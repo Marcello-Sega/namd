@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: Molecule.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/11/21 23:36:04 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.5 $	$Date: 1996/12/03 17:50:13 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -25,6 +25,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.5  1996/12/03 17:50:13  nealk
+ * Added nonbonded excl stuff.
+ *
  * Revision 1.4  1996/11/21 23:36:04  ari
  * *** empty log message ***
  *
@@ -142,6 +145,7 @@ private:
 	Angle *angles;		//  Array of angle structures
 	Dihedral *dihedrals;	//  Array of dihedral structures
 	Improper *impropers;	//  Array of improper structures
+	NonbondedExcl *nonbondedexcls;	// Array of Nonbonded Excl structures
 	Bond *donors;	        //  Array of hydrogen bond donor structures
 	Bond *acceptors;	//  Array of hydrogen bond acceptor
 	Exclusion *exclusions;	//  Array of exclusion structures
@@ -152,11 +156,13 @@ private:
 	Real *langForceVals;    //  Calculated values for langvin random forces
 
 	LintList *bondsByAtom;	//  List of bonds involving each atom
-	LintList *anglesByAtom;  //  List of angles involving each atom
+	LintList *anglesByAtom;	//  List of angles involving each atom
 	LintList *dihedralsByAtom;
 				//  List of dihedrals by atom
 	LintList *impropersByAtom;
 				//  List of impropers by atom
+	LintList *nonbondedexclsByAtom;
+				//  List of nonbonded excls involving each atom
 
 	IntList *all_exclusions;
 				//  List of all exclusions, including
@@ -208,6 +214,7 @@ public:
 	int numAngles;		//  Number of angles
 	int numDihedrals;	//  Number of dihedrals
 	int numImpropers;	//  Number of impropers
+	int numNonbondedExcls;	//  Number of nonbonded excls
 	int numDonors;	        //  Number of hydrogen bond donors
 	int numAcceptors;	//  Number of hydrogen bond acceptors
 	int numExclusions;	//  Number of exclusions
@@ -286,6 +293,10 @@ public:
 	//  Retrieve a dihedral structure
 	Dihedral *get_dihedral(int dnum) const {return (&(dihedrals[dnum]));}
 
+	//  Retrieve a nonbonded excl structure
+	NonbondedExcl *get_nonbondedexcl(int nnum) const
+		{return (&(nonbondedexcls[nnum]));}
+
 	//  Retrieve a hydrogen bond donor structure
 	Bond *get_donor(int dnum) const {return (&(donors[dnum]));}
 
@@ -313,6 +324,8 @@ public:
 			{return (&(dihedralsByAtom[anum]));}
 	LintList *get_impropers_for_atom(int anum) 
 			{return (&(impropersByAtom[anum]));}
+	LintList *get_nonbondedexcls_for_atom(int anum)
+			{return (&(nonbondedexclsByAtom[anum]));}
 	
 	//  Check for exclusions, either explicit or bonded.
 	//  Inline this funcion since it is called so often
