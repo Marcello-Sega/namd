@@ -15,7 +15,7 @@ parameters.
 The simplest non-bonded 
 interaction is the van der Waals interaction.  In 
 \NAMD, van der Waals interactions are always truncated at the 
-cutoff distance, specified by {\tt vdwcutoff} or {\tt cutoff}.  
+cutoff distance, specified by {\tt cutoff}.  
 The main option that effects van der Waals interactions
 is the {\tt switching} parameter.  With this option set to {\tt on},
 a smooth switching function will be used to truncate the
@@ -371,9 +371,7 @@ is unavoidable when truncation is used, this parameter may only
 be specified when {\tt switching} is set to {\tt on}.  If this
 parameter is not specified and {\tt switching} is set to {\tt on},
 the value of {\tt cutoff} is used.  
-A value of at least one greater than the maximum of 
-{\tt eleccutoff}, {\tt vdwcutoff}, and {\tt cutoff} 
-is recommended.  
+A value of at least one greater than {\tt cutoff} is recommended.  
 }
 
 \item
