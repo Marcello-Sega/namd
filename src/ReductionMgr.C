@@ -359,6 +359,10 @@ ReductionMgrData *	ReductionMgr::find(int seq)
   }
   current = data;
 
+  if ( current->sequenceNum > seq ) {
+    NAMD_die("Extra reduction submitted!");
+  } 
+
   // find the sequence
   while(current && (current->sequenceNum < seq))
     {
@@ -532,12 +536,15 @@ void	ReductionMgr::unsubscribe(ReductionTag tag)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1030 $	$Date: 1999/02/17 05:43:13 $
+ *	$Revision: 1.1031 $	$Date: 1999/04/29 15:39:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.C,v $
+ * Revision 1.1031  1999/04/29 15:39:23  jim
+ * Added check for extra reduction submissions.
+ *
  * Revision 1.1030  1999/02/17 05:43:13  jim
  * Fixed memory leak in more nodes than patches code.
  *
