@@ -4954,10 +4954,9 @@ void Molecule::build_atom_status(void) {
         sprintf(msg, "H atom %d bonded only to child H atoms",i+1);
         NAMD_die(msg);
       }
-      hg[i].GPID = i;
       hg[hg[i].GPID].atomsInGroup = 0;
-      hg[hg[i].GPID].GPID = 0;
       hg[hg[i].GPID].isGP = 0;
+      hg[i].GPID = i;
       if ( hg[i].atomsInGroup != 2 ) {
         char msg[256];
         sprintf(msg, "H atom %d bonded to multiple H atoms",i+1);
