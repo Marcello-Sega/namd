@@ -172,7 +172,6 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   // ONLY THE MASTER (NODE 0) NEEDS TO DO THIS:
 
   int numProcs = CNumPes();
-  PmtaInitData pmta_data;
   slavetids = new int[numProcs];
   if (slavetids == NULL)
   {
@@ -205,6 +204,8 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   SimParameters *simParams = Node::Object()->simParameters;
 
   //  initialize DPMTA
+  PmtaInitData pmta_data;
+  memset(&pmta_data,0,sizeof(pmta_data));
   pmta_data.nprocs = numProcs;
   pmta_data.nlevels = simParams->FMALevels;
   pmta_data.mp = simParams->FMAMp;
@@ -342,20 +343,6 @@ void ComputeDPMTA::doWork()
     DebugM(2,"Node *not* resizing FMA\n");
   }
 
-  // 1c. wait until node 0 says "go ahead"
-  // *** Using the Communicate::receive function will be removed later,
-  // *** after the new broadcast function has been build.  Since it currently
-  // *** doesn't exist, we are using the old code.
-  Message *conv_msg;
-  DebugM(2,"waiting for FMA go-ahead\n");
-  do
-  {
-    // get next DPMTATAG from node 0
-    conv_msg = comm->receive(-1,DPMTATAG);
-  } while (conv_msg == NULL);
-  delete conv_msg;
-  DebugM(2,"got FMA go-ahead\n");
-
   // 2. setup atom list
   int i,j;
   particle_list = (PmtaParticle *)calloc(totalAtoms,sizeof(PmtaParticle));
@@ -396,6 +383,20 @@ void ComputeDPMTA::doWork()
     (*ap).positionBox->close(&x);
   } 
 
+  // wait until node 0 says "go ahead"
+  // *** Using the Communicate::receive function will be removed later,
+  // *** after the new broadcast function has been build.  Since it currently
+  // *** doesn't exist, we are using the old code.
+  Message *conv_msg;
+  DebugM(2,"waiting for FMA go-ahead\n");
+  do
+  {
+    // get next DPMTATAG from node 0
+    conv_msg = comm->receive(-1,DPMTATAG);
+  } while (conv_msg == NULL);
+  delete conv_msg;
+  DebugM(2,"got FMA go-ahead\n");
+
   DebugM(2,"DPMTA doWork() there are " << totalAtoms << " atoms in this node.\n");
 
   // 3. (run DPMTA) compute the forces
@@ -403,6 +404,7 @@ void ComputeDPMTA::doWork()
     {
       NAMD_die("PMTAforce failed!!");
     }
+  DebugM(2,"DPMTA forces done.  Now depositing.\n");
 
   // 4. deposit
   BigReal potential=0;
@@ -447,12 +449,15 @@ void ComputeDPMTA::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1035 $	$Date: 1997/03/19 18:47:29 $
+ *	$Revision: 1.1036 $	$Date: 1997/03/20 19:45:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.C,v $
+ * Revision 1.1036  1997/03/20 19:45:08  nealk
+ * Moved syncronize point in doWork to fix timing problem.  (Very weird.)
+ *
  * Revision 1.1035  1997/03/19 18:47:29  nealk
  * Added log info to Hydrogen.h
  * Fixed ComputeDPMTA.C so node 0 initializes before any other nodes register
