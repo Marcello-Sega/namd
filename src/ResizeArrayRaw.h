@@ -219,13 +219,4 @@ template <class Elem> class ResizeArrayRaw {
     }
 };	// end template definition
 
-// If ~Elem() is done properly, on light classes, the loop should
-// optimize to nothing.
-template <class Elem>
-ResizeArrayRaw<Elem>::~ResizeArrayRaw() {
-  for (int i=0; i < size(); i++) {
-    array[i].~Elem();
-  }
-  delete[] varray;
-}
 #endif
