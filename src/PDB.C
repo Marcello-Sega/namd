@@ -13,7 +13,7 @@
  * for a bit more information.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PDB.C,v 1.1002 1997/04/03 19:59:09 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PDB.C,v 1.1003 1997/04/07 14:54:32 nealk Exp $";
 
 #include <stdio.h>
 #include <strings.h>
@@ -62,7 +62,7 @@ PDB::PDB( const char *pdbfilename) {
        add_atom_element( (PDBAtom *) newelement);
    }
   }  // input while loop
- fclose(infile);
+ Fclose(infile);
  
  // now I have a linked list, and I know the size.  However,
  // that's got pretty slow access time for ramdom fetches, so
@@ -389,12 +389,16 @@ main()
  *
  *	$RCSfile: PDB.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/04/03 19:59:09 $
+ *	$Revision: 1.1003 $	$Date: 1997/04/07 14:54:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PDB.C,v $
+ * Revision 1.1003  1997/04/07 14:54:32  nealk
+ * Changed fclose() to Fclose() (found in common.[Ch]) to use with popen().
+ * Also corrected compilation warnings in Set.[Ch].
+ *
  * Revision 1.1002  1997/04/03 19:59:09  nealk
  * 1) New Fopen() which handles .Z and .gz files.
  * 2) localWaters and localNonWaters lists on each patch.

@@ -3,23 +3,23 @@
 #include <iostream.h>
 
 
- Set::Set() 
- {
+Set::Set() 
+{
    head = (listNode *) 0;
- }
+}
 
- Set::insert(InfoRecord *info) 
- {
+void Set::insert(InfoRecord *info) 
+{
    listNode *node = new listNode();
 
    node->info = info;
    node->next = head;
    head = node;
    
- }
+}
 
 
-Set::myRemove(listNode **n, InfoRecord *r)
+void Set::myRemove(listNode **n, InfoRecord *r)
 {
   if ((*n)->info == r)
    *n = (*n)->next;

@@ -70,7 +70,7 @@ void read_binary_coors(char *fname, PDB *pdbobj) {
   pdbobj->set_all_positions(newcoords);
 
   //  Clean up
-  fclose(fp);
+  Fclose(fp);
   delete [] newcoords;
 } // END OF FUNCTION read_binary_coors()
 
@@ -163,7 +163,7 @@ void velocities_from_binfile(char *fname, Vector *vels, int n)
 
 	fread(vels, sizeof(Vector), n, fp);
 
-	fclose(fp);
+	Fclose(fp);
 }
 /*		END OF FUNCTION velocities_from_binfile		*/
 
@@ -314,13 +314,17 @@ void remove_com_motion(Vector *vel, Molecule *structure, int n)
 * RCS INFORMATION:
 *
 *	$RCSfile: NamdOneTools.C,v $
-*	$Author: ari $	$Locker:  $		$State: Exp $
-*	$Revision: 1.6 $	$Date: 1997/04/06 22:45:06 $
+*	$Author: nealk $	$Locker:  $		$State: Exp $
+*	$Revision: 1.7 $	$Date: 1997/04/07 14:54:30 $
 *
 ***************************************************************************
 * REVISION HISTORY:
 *
 * $Log: NamdOneTools.C,v $
+* Revision 1.7  1997/04/07 14:54:30  nealk
+* Changed fclose() to Fclose() (found in common.[Ch]) to use with popen().
+* Also corrected compilation warnings in Set.[Ch].
+*
 * Revision 1.6  1997/04/06 22:45:06  ari
 * Add priorities to messages.  Mods to help proxies without computes.
 * Added quick enhancement to end of list insertion of ResizeArray(s)
@@ -349,4 +353,4 @@ void remove_com_motion(Vector *vel, Molecule *structure, int n)
 *
 ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdOneTools.C,v 1.6 1997/04/06 22:45:06 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdOneTools.C,v 1.7 1997/04/07 14:54:30 nealk Exp $";

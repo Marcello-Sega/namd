@@ -11,7 +11,7 @@
  *
  *	$RCSfile: ConfigList.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/04/03 19:59:01 $
+ *	$Revision: 1.1003 $	$Date: 1997/04/07 14:54:28 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -41,6 +41,10 @@
  * REVISION HISTORY:
  *
  * $Log: ConfigList.C,v $
+ * Revision 1.1003  1997/04/07 14:54:28  nealk
+ * Changed fclose() to Fclose() (found in common.[Ch]) to use with popen().
+ * Also corrected compilation warnings in Set.[Ch].
+ *
  * Revision 1.1002  1997/04/03 19:59:01  nealk
  * 1) New Fopen() which handles .Z and .gz files.
  * 2) localWaters and localNonWaters lists on each patch.
@@ -110,7 +114,7 @@
  * Initial revision
  *
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ConfigList.C,v 1.1002 1997/04/03 19:59:01 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ConfigList.C,v 1.1003 1997/04/07 14:54:28 nealk Exp $";
 
 #include <iostream.h>
 #include <string.h> // for strncpy, strcasecmp
@@ -312,7 +316,7 @@ ConfigList::ConfigList(const char *filename)
   } // while I can still get data with fgets
   
   if (strcmp(filename,"-")) {  // close the input file if not stdin
-    fclose(infile);
+    Fclose(infile);
   }
 }
 
@@ -378,12 +382,16 @@ main()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/04/03 19:59:01 $
+ *	$Revision: 1.1003 $	$Date: 1997/04/07 14:54:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ConfigList.C,v $
+ * Revision 1.1003  1997/04/07 14:54:28  nealk
+ * Changed fclose() to Fclose() (found in common.[Ch]) to use with popen().
+ * Also corrected compilation warnings in Set.[Ch].
+ *
  * Revision 1.1002  1997/04/03 19:59:01  nealk
  * 1) New Fopen() which handles .Z and .gz files.
  * 2) localWaters and localNonWaters lists on each patch.

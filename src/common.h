@@ -111,6 +111,7 @@ int *NAMD_bsearch(int *, int *, int, int,
 		int (*cmpfn) (const void *, const void*));
 BigReal NAMD_random();
 FILE *Fopen(const char *filename, const char *mode);
+int  Fclose(FILE *fout);
 
 // message tags
 // NOTE!!!  Do NOT use any tags smaller than 100.  Add tags sequentially
@@ -248,12 +249,16 @@ FILE *Fopen(const char *filename, const char *mode);
  *
  *	$RCSfile: common.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/04/03 19:59:15 $
+ *	$Revision: 1.1006 $	$Date: 1997/04/07 14:54:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.h,v $
+ * Revision 1.1006  1997/04/07 14:54:39  nealk
+ * Changed fclose() to Fclose() (found in common.[Ch]) to use with popen().
+ * Also corrected compilation warnings in Set.[Ch].
+ *
  * Revision 1.1005  1997/04/03 19:59:15  nealk
  * 1) New Fopen() which handles .Z and .gz files.
  * 2) localWaters and localNonWaters lists on each patch.

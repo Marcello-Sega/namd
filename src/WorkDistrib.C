@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1020 1997/04/06 22:45:14 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1021 1997/04/07 14:54:37 nealk Exp $";
 
 #include <stdio.h>
 
@@ -681,7 +681,7 @@ void WorkDistrib::velocities_from_binfile(char *fname, Vector *vels, int n)
 
   fread(vels, sizeof(Vector), n, fp);
 
-  fclose(fp);
+  Fclose(fp);
 }
 //               END OF FUNCTION velocities_from_binfile
 
@@ -809,13 +809,17 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1020 $	$Date: 1997/04/06 22:45:14 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1021 $	$Date: 1997/04/07 14:54:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1021  1997/04/07 14:54:37  nealk
+ * Changed fclose() to Fclose() (found in common.[Ch]) to use with popen().
+ * Also corrected compilation warnings in Set.[Ch].
+ *
  * Revision 1.1020  1997/04/06 22:45:14  ari
  * Add priorities to messages.  Mods to help proxies without computes.
  * Added quick enhancement to end of list insertion of ResizeArray(s)

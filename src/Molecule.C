@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Molecule.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/04/03 19:59:03 $
+ *	$Revision: 1.1013 $	$Date: 1997/04/07 14:54:29 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,10 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1013  1997/04/07 14:54:29  nealk
+ * Changed fclose() to Fclose() (found in common.[Ch]) to use with popen().
+ * Also corrected compilation warnings in Set.[Ch].
+ *
  * Revision 1.1012  1997/04/03 19:59:03  nealk
  * 1) New Fopen() which handles .Z and .gz files.
  * 2) localWaters and localNonWaters lists on each patch.
@@ -210,7 +214,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1012 1997/04/03 19:59:03 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1013 1997/04/07 14:54:29 nealk Exp $";
 
 #include "Templates/UniqueSortedArray.h"
 #include "Molecule.h"
@@ -660,7 +664,7 @@ void Molecule::read_psf_file(char *fname, Parameters *params)
 	/*  Close the .psf file.  There is a Group section in the .psf  */
 	/*  file after the NNB section, but currently, NAMD does not    */
 	/*  use this section for anything.				*/
-	fclose(psf_file);
+	Fclose(psf_file);
 
 	//  analyze the data and find the status of each atom
 	build_atom_status();
@@ -3421,12 +3425,16 @@ void Molecule::send_Molecule(Communicate *com_obj)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/04/03 19:59:03 $
+ *	$Revision: 1.1013 $	$Date: 1997/04/07 14:54:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1013  1997/04/07 14:54:29  nealk
+ * Changed fclose() to Fclose() (found in common.[Ch]) to use with popen().
+ * Also corrected compilation warnings in Set.[Ch].
+ *
  * Revision 1.1012  1997/04/03 19:59:03  nealk
  * 1) New Fopen() which handles .Z and .gz files.
  * 2) localWaters and localNonWaters lists on each patch.

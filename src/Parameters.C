@@ -13,7 +13,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Parameters.C,v 1.1003 1997/04/03 19:59:10 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Parameters.C,v 1.1004 1997/04/07 14:54:33 nealk Exp $";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -355,7 +355,7 @@ void Parameters::read_parameter_file(char *fname)
 	}
 
 	/*  Close the file						*/
-	fclose(pfile);
+	Fclose(pfile);
 
 	return;
 }
@@ -3828,12 +3828,16 @@ int Parameters::vdw_pair_to_arrays(int *ind1_array, int *ind2_array,
  *
  *	$RCSfile: Parameters.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/04/03 19:59:10 $
+ *	$Revision: 1.1004 $	$Date: 1997/04/07 14:54:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Parameters.C,v $
+ * Revision 1.1004  1997/04/07 14:54:33  nealk
+ * Changed fclose() to Fclose() (found in common.[Ch]) to use with popen().
+ * Also corrected compilation warnings in Set.[Ch].
+ *
  * Revision 1.1003  1997/04/03 19:59:10  nealk
  * 1) New Fopen() which handles .Z and .gz files.
  * 2) localWaters and localNonWaters lists on each patch.

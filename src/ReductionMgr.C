@@ -28,7 +28,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1014 1997/04/06 22:45:13 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1015 1997/04/07 14:54:35 nealk Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -95,7 +95,7 @@ ReductionMgr::ReductionMgr(InitMsg *msg)
     }
 
     nextSequence = -1; // checked later and changed to firstTimeStep
-    data = 0;
+    data = NULL;
     // data = createdata();
 
     /* node 0 received data from each remove node */
@@ -777,12 +777,16 @@ void	ReductionMgr::unsubscribe(ReductionTag tag)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1997/04/06 22:45:13 $
+ *	$Revision: 1.1015 $	$Date: 1997/04/07 14:54:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.C,v $
+ * Revision 1.1015  1997/04/07 14:54:35  nealk
+ * Changed fclose() to Fclose() (found in common.[Ch]) to use with popen().
+ * Also corrected compilation warnings in Set.[Ch].
+ *
  * Revision 1.1014  1997/04/06 22:45:13  ari
  * Add priorities to messages.  Mods to help proxies without computes.
  * Added quick enhancement to end of list insertion of ResizeArray(s)

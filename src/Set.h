@@ -22,10 +22,10 @@ private:
 
 public:
  Set();
- insert(InfoRecord *);
+ void insert(InfoRecord *);
  find(InfoRecord *) ;
  void remove(InfoRecord *);
- myRemove(listNode **n, InfoRecord *r);
+ void myRemove(listNode **n, InfoRecord *r);
  InfoRecord *iterator(Iterator *);
  InfoRecord *next(Iterator *);
  int numElements();

@@ -10,7 +10,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1006 1997/04/04 17:31:44 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1007 1997/04/07 14:54:39 nealk Exp $";
 
 #include "chare.h"
 #include "ckdefs.h"
@@ -212,6 +212,7 @@ FILE *Fopen	(const char *filename, const char *mode)
 {
   struct stat buf;
   // check if basic filename exists (and not a directory)
+  iout << "Filename = " << filename << "\n" << endi;
   if (!stat(filename,&buf))
 	{
 	if (!S_ISDIR(buf.st_mode))
@@ -225,11 +226,14 @@ FILE *Fopen	(const char *filename, const char *mode)
   // check for .Z (unix compress)
   sprintf(command,"zcat %s.Z",filename);
   realfilename = command+5;
+  iout << "Command = " << command << "\n" << endi;
+  iout << "Filename.Z = " << realfilename << "\n" << endi;
   if (!stat(realfilename,&buf))
 	{
 	if (!S_ISDIR(buf.st_mode))
 		{
 		fout = popen(command,mode);
+iout << iPE << " " << fout << " = popen(" << command << "," << mode << ")\n" << endi;
 		free(command);
 		return(fout);
 		}
@@ -237,11 +241,14 @@ FILE *Fopen	(const char *filename, const char *mode)
   // check for .gz (gzip)
   sprintf(command,"gzip -d -c %s.gz",filename);
   realfilename = command+11;
+  iout << "Command = " << command << "\n" << endi;
+  iout << "Filename.gz = " << realfilename << "\n" << endi;
   if (!stat(realfilename,&buf))
 	{
 	if (!S_ISDIR(buf.st_mode))
 		{
 		fout = popen(command,mode);
+iout << iPE << " " << fout << " = popen(" << command << "," << mode << ")\n" << endi;
 		free(command);
 		return(fout);
 		}
@@ -250,18 +257,36 @@ FILE *Fopen	(const char *filename, const char *mode)
   return(NULL);
 } /* Fopen() */
 
+/***************************************************************************
+ Fclose(FILE *fout):  similar to fclose(fout) except it first checks if the
+ file handle fout is a named pipe.
+ ***************************************************************************/
+int	Fclose	(FILE *fout)
+{
+  int rc;
+  rc = pclose(fout);
+  if (rc == -1)	// stream not associated with a popen()
+    {
+    rc = fclose(fout);
+    }
+  return rc;
+} /* Fclose() */
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: common.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/04/04 17:31:44 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1007 $	$Date: 1997/04/07 14:54:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.C,v $
+ * Revision 1.1007  1997/04/07 14:54:39  nealk
+ * Changed fclose() to Fclose() (found in common.[Ch]) to use with popen().
+ * Also corrected compilation warnings in Set.[Ch].
+ *
  * Revision 1.1006  1997/04/04 17:31:44  brunner
  * New charm fixes for CommunicateConverse, and LdbCoordinator data file
  * output, required proxies, and idle time.
