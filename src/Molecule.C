@@ -183,7 +183,6 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   modExclusionsByAtom=NULL;
   all_exclusions=NULL;
   langevinParams=NULL;
-  langForceVals=NULL;
   fixedAtomFlags=NULL;
   cluster=NULL;
   clusterSize=NULL;
@@ -1788,7 +1787,6 @@ void Molecule::send_Molecule(Communicate *com_obj)
       if (simParams->langevinOn || simParams->tCoupleOn)
       {
         msg->put(numAtoms, langevinParams);
-        msg->put(numAtoms, langForceVals);
       }
 
       //  Send fixed atoms, if active
@@ -2017,12 +2015,9 @@ void Molecule::receive_Molecule(MIStream *msg)
       if (simParams->langevinOn || simParams->tCoupleOn)
       {
         delete [] langevinParams;
-        delete [] langForceVals;
         langevinParams = new Real[numAtoms];
-        langForceVals = new Real[numAtoms];
 
         msg->get(numAtoms, langevinParams);
-        msg->get(numAtoms, langForceVals);
       }
 
       //  Get the fixed atoms, if they are active
@@ -4037,18 +4032,11 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
 
   //  Allocate the array to hold all the data
   langevinParams = new Real[numAtoms];
-  langForceVals = new Real[numAtoms];
 
-  if ( (langevinParams == NULL) || (langForceVals == NULL) )
+  if ( (langevinParams == NULL) )
   {
     NAMD_die("memory allocation failed in Molecule::build_langevin_params()");
   }
-
-  //  Calculate the constant portion of the force values.  Note that
-  //  because we need to convert from femtoseconds to picoseconds,
-  //  the factor of 0.001 is needed.
-  BigReal forceConstant = 0.002*TIMEFACTOR*TIMEFACTOR*BOLTZMAN*
-			(simParams->langevinTemp)/(simParams->dt);
 
   //  Loop through all the atoms and get the b value
   for (int i=0; i<numAtoms; i++)
@@ -4059,9 +4047,6 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
 
     //  Assign the b value
     langevinParams[i] = bval;
-
-    //  Calculate the random force value
-    langForceVals[i] = sqrt(forceConstant*atoms[i].mass*bval);
   }
 
 }
@@ -4093,7 +4078,6 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
        int bcol = 4;      //  Column that data is in
        Real bval = 0;      //  b value from PDB file
        int i;      //  Loop counter
-       BigReal forceConstant;  //  Constant factor in force calc
        char filename[129];    //  Filename
        
        //  Get the PDB object that contains the b values.  If
@@ -4176,18 +4160,12 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
        
        //  Allocate the array to hold all the data
        langevinParams = new Real[numAtoms];
-       langForceVals = new Real[numAtoms];
        
-       if ( (langevinParams == NULL) || (langForceVals == NULL) )
+       if ( (langevinParams == NULL) )
        {
     NAMD_die("memory allocation failed in Molecule::build_langevin_params()");
        }
 
-       //  Calculate the constant portion of the force values.  Note that
-       //  because we need to convert from femtoseconds to picoseconds,
-       //  the factor of 0.001 is needed.  
-       forceConstant = 0.002*TIMEFACTOR*TIMEFACTOR*BOLTZMAN*(simParams->langevinTemp)/(simParams->dt);
-       
        //  Loop through all the atoms and get the b value
        for (i=0; i<numAtoms; i++)
        {
@@ -4213,9 +4191,6 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
     
     //  Assign the b value
     langevinParams[i] = bval;
-
-    //  Calculate the random force value
-    langForceVals[i] = sqrt(forceConstant*atoms[i].mass*bval);
        }
        
        //  If we had to create a PDB object, delete it now
@@ -4686,8 +4661,8 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
     }
    
     // Get the column that the fep flag is in. It can be in any of the 5 
-    // floating point fields in the PDB ie X, Y, X, O or B.
-    // The default is 4th field ie the occupancy field
+    // floating point fields in the PDB ie X, Y, Z, O or B.
+    // The default is 5th field ie the beta field
     if (fepcol == NULL) {
       bcol = 5;
     }
@@ -4726,6 +4701,11 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
     NAMD_die("Memory allocation failed in Molecule::build_fep_params()");
    }
 
+   double lesMassFactor = 1.0;
+   if ( simParams->lesOn && simParams->lesReduceMass ) {
+     lesMassFactor = 1.0 / simParams->lesFactor;
+   }
+
    // loop through all the atoms and get the b value
    for (i = 0; i < numAtoms; i++) {
    // Get the fep flag value
@@ -4753,6 +4733,7 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
         if ( bval > simParams->lesFactor ) 
           NAMD_die("LES flag must be less than or equal to lesFactor.");
         fepAtomFlags[i] = (int) bval;
+        atoms[i].mass *= lesMassFactor;
         numFepFinal++;
         numFepInitial++;
       } else {

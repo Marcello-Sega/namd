@@ -255,6 +255,8 @@ public:
 
 	Bool lesOn;			//  Locally enhanced sampling?
 	int lesFactor;			//  local enhancement factor
+	Bool lesReduceTemp;		//  Reduce enhanced atom temperature?
+	Bool lesReduceMass;		//  Reduce enhanced atom mass?
 
         Bool extForcesOn;		//  Are ext command forces present?
         char extForcesCommand[256];

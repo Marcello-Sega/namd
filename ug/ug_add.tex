@@ -1426,7 +1426,6 @@ The following parameters are used to enable LES:
 off}}{{\tt off}}
 {Specifies whether or not LES is active.}
 
-\item
 \NAMDCONF{lesFactor}{number of LES images to use}
 {positive integer equal to the number of images present}
 {This should be equal to the factor used in {\tt multiply}
@@ -1434,6 +1433,28 @@ off}}{{\tt off}}
  divided by {\tt lesFactor}.  
 }
 
+\item
+\NAMDCONFWDEF{lesReduceTemp}{reduce enhanced atom temperature?}{{\tt on} or {\tt
+off}}{{\tt off}}
+{Enhanced atoms experience interaction potentials divided by {\tt lesFactor}.
+This allows them to enter regions that would not normally be thermally
+accessible.  If this is not desired, then the temperature of these atoms
+may be reduced to correspond with the reduced potential.  This option
+affects velocity initialization, reinititialization, reassignment, and
+the target temperature for langevin dynamics.  Langevin dynamics is
+recommended with this option, since in a constant energy simulation energy
+will flow into the enhanced degrees of freedom until they reach thermal
+equilibrium with the rest of the system.  The reduced temperature atoms
+will have reduced velocities as well, unless {\tt lesReduceMass} is also
+enabled.}
+
+\item
+\NAMDCONFWDEF{lesReduceMass}{reduce enhanced atom mass?}{{\tt on} or {\tt off}}{{\tt off}}
+{Used with {\tt lesReduceTemp} to restore velocity distribution to
+enhanced atoms.  If used alone, enhanced atoms would move faster than
+normal atoms, and hence a smaller timestep would be required.}
+
+\item
 \item
 \NAMDCONFWDEF{lesFile}{PDB file containing LES flags}{UNIX filename} {{\tt coordinates}}
 {PDB file to specify the LES image number of each atom.

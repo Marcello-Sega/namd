@@ -682,6 +682,10 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
      "default is the input PDB file", PARSE_STRING); 
    opts.optional("les", "lesCol", "Column in the lesFile with the "
      "enhancement flag", PARSE_STRING);
+   opts.optionalB("les", "lesReduceTemp", "Reduce enhanced atom temperature?",
+     &lesReduceTemp, FALSE);
+   opts.optionalB("les", "lesReduceMass", "Reduce enhanced atom mass?",
+     &lesReduceMass, FALSE);
 
    // Pair interaction calculations
     opts.optionalB("main", "pairInteraction", 
@@ -2795,6 +2799,10 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << iINFO << "LOCALLY ENHANCED SAMPLING ACTIVE\n";
      iout << iINFO << "LOCAL ENHANCEMENT FACTOR IS "
           << lesFactor << "\n";
+     if ( lesReduceTemp ) iout << iINFO
+       << "SCALING ENHANCED ATOM TEMPERATURE BY 1/" << lesFactor << "\n";
+     if ( lesReduceMass ) iout << iINFO
+       << "SCALING ENHANCED ATOM MASS BY 1/" << lesFactor << "\n";
    }
    
    if ( pairInteractionOn ) {

@@ -1288,7 +1288,12 @@ void WorkDistrib::random_velocities(BigReal Temp,Molecule *structure,
   BigReal kbT;		//  Boltzman constant * Temp
   BigReal randnum;	//  Random number from -6.0 to 6.0
   BigReal kbToverM;	//  sqrt(Kb*Temp/Mass)
-  Random vel_random(Node::Object()->simParameters->randomSeed);
+  SimParameters *simParams = Node::Object()->simParameters;
+  Bool lesOn = simParams->lesOn;
+  Random vel_random(simParams->randomSeed);
+
+  int lesReduceTemp = lesOn && simParams->lesReduceTemp;
+  BigReal tempFactor = lesReduceTemp ? 1.0 / simParams->lesFactor : 1.0;
 
   kbT = Temp*BOLTZMAN;
 
@@ -1296,7 +1301,9 @@ void WorkDistrib::random_velocities(BigReal Temp,Molecule *structure,
   //  the x, y and z directions for each one
   for (i=0; i<totalAtoms; i++)
   {
-    kbToverM = sqrt(kbT/structure->atommass(i));
+    kbToverM = sqrt(kbT *
+      ( lesOn && structure->get_fep_type(i) ? tempFactor : 1.0 ) /
+			structure->atommass(i) );
 
     //  The following comment was stolen from X-PLOR where
     //  the following section of code was adapted from.

@@ -122,7 +122,6 @@ private:
                                 //  Parameters for each atom rotation-dragged
 
   Real *langevinParams;   //  b values for langevin dynamics
-  Real *langForceVals;    //  Calculated values for langvin random forces
   int32 *fixedAtomFlags;  //  1 for fixed, -1 for fixed group, else 0
   int32 *exPressureAtomFlags; // 1 for excluded, -1 for excluded group.
         int32 *cluster;   //  first atom of connected cluster
@@ -515,11 +514,6 @@ public:
     v = consTorqueParams[consTorqueIndexes[atomnum]].v;
     a = consTorqueParams[consTorqueIndexes[atomnum]].a;
     p = consTorqueParams[consTorqueIndexes[atomnum]].p;
-  }
-
-  Real langevin_force_val(int atomnum) const
-  {
-    return(langForceVals[atomnum]);
   }
 
 //fepb
