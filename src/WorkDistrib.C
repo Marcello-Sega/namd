@@ -70,6 +70,7 @@ WorkDistrib::WorkDistrib()
   CpvAccess(BOCclass_group).workDistrib = thisgroup;
   mapsArrived = false;
   awaitingMaps = false;
+  numComputeHomePatchesPerType = -1;
 }
 
 //----------------------------------------------------------------------
@@ -882,8 +883,10 @@ void WorkDistrib::mapComputeHomePatches(ComputeType type)
   int numPatches = patchMap->numPatches();
   ComputeID *cid = new ComputeID[numNodes];
 
+  numComputeHomePatchesPerType = 0;
   for(int i=0; i<numNodes; i++) {
     if ( patchMap->numPatchesOnNode(i) ) {
+      numComputeHomePatchesPerType += 1;
       cid[i]=computeMap->storeCompute(i,numPatches,type);
     }
   }
@@ -897,6 +900,14 @@ void WorkDistrib::mapComputeHomePatches(ComputeType type)
   }
 
   delete [] cid;
+}
+
+/* getNumComputeGlobals returns the total number of global compute
+   objects that will be set up.  The calculation is done 
+   in mapComputeHomePatches() and saved for use here.  */
+
+int WorkDistrib::getNumComputeGlobals() {
+  return numComputeHomePatchesPerType;
 }
 
 //----------------------------------------------------------------------
@@ -1371,16 +1382,6 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
 
 }
 /*			END OF FUNCTION remove_com_motion		*/
-
-/* getNumComputeGlobals returns the total number of global compute
-   objects that will be set up.  This is either the number of nodes,
-   or the number of patches, whichever is smaller. */
-int WorkDistrib::getNumComputeGlobals() {
-  int numWorkingPes = CkNumPes();
-  int npatches=(PatchMap::Object())->numPatches();
-  if ( numWorkingPes > npatches ) numWorkingPes = npatches;
-  return numWorkingPes;
-}
 
 #include "WorkDistrib.def.h"
 

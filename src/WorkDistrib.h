@@ -92,6 +92,8 @@ private:
   int saveComputeMapReturnEP;
   CkGroupID saveComputeMapReturnChareID;
   int saveComputeMapCount;
+
+  int numComputeHomePatchesPerType;
 };
 
 #endif /* WORKDISTRIB_H */
