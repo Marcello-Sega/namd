@@ -21,20 +21,7 @@
 #include "NamdTypes.h"
 
 class Patch;
-
-// Message to charmm runtime to for <linkto class=Compute>Compute</linkto>
-// object to schedule work for itself.
-class LocalWorkMsg : public comm_object
-{
-private:
-      void *Calcfptr;
-
-public:
-      LocalWorkMsg();
-      ~LocalWorkMsg();
-};
-
-
+class LocalWorkMsg;
 
 // Base class for various forms of Compute objects
 // including: <linkto class=ComputeAtoms>ComputeAtoms</linkto> 
@@ -132,13 +119,16 @@ class ComputePatches : public Compute
  * RCS INFORMATION:
  *
  *	$RCSfile: Compute.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/19 22:07:49 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1996/10/04 21:07:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.h,v $
+ * Revision 1.2  1996/10/04 21:07:06  jim
+ * eliminated redundant message class definition
+ *
  * Revision 1.1  1996/08/19 22:07:49  ari
  * Initial revision
  *
