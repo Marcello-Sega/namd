@@ -24,7 +24,9 @@ public:
 
   void checkIn(PositionBox<Owner> * box); 
 
-  int isOpen() { return (openCount); };
+  int isOpen() {
+    return (closeCount != numberUsers || openCount != numberUsers);
+  }
 
 private:
   Owner *owner;

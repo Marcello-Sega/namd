@@ -87,7 +87,3 @@ template <class Owner>
       closeCount--; openCount--;
     }
   }
-
-template <class Owner>
-  int PositionOwnerBox<Owner>::isOpen() { return (openCount); };
-
