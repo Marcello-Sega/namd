@@ -8,7 +8,7 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
 {
   bytesPerAtom = 32;
   strategyName = "dummy";
-  overLoad = 1.01;
+  overLoad = 1.03;
   computes = computeArray;
   patches =  patchArray;
   processors =  processorArray;
@@ -167,7 +167,7 @@ int Rebalancer::refine()
   while (!done){
     double bestSize0, bestSize1, bestSize2;
     computeInfo *bestCompute0, *bestCompute1, *bestCompute2;
-    processorInfo *bestP;
+    processorInfo *bestP,*bestP0,*bestP1,*bestP2;
     
     processorInfo *donor = (processorInfo *) heavyProcessors->deleteMax();
     if (!donor) break;
@@ -176,6 +176,7 @@ int Rebalancer::refine()
     processorInfo *p = (processorInfo *) 
       lightProcessors->iterator((Iterator *) &nextProcessor);
     bestSize0 = bestSize1 = bestSize2 = 0;
+    bestP0 = bestP1 = bestP2 = 0;
     bestCompute0 = bestCompute1 = bestCompute2 = 0;
     // iout << iINFO << "Finding receiver for processor " << donor->Id << "\n" << endi;
     while (p){
@@ -192,21 +193,21 @@ int Rebalancer::refine()
 		    (c->load > bestSize0)) {
 	  bestSize0 = c->load;
 	  bestCompute0 = c;
-	  bestP = p;
+	  bestP0 = p;
 	}
 	break;
 	case 1: if (( c->load + p->load < overLoad*averageLoad) &&
 		    (c->load > bestSize1)){
 	  bestSize1 = c->load;
 	  bestCompute1 = c;
-	  bestP = p;
+	  bestP1 = p;
 	}
 	break;
 	case 2: if (( c->load + p->load < overLoad*averageLoad) &&
 		    (c->load > bestSize2)){
 	  bestSize2 = c->load;
 	  bestCompute2 = c;
-	  bestP = p;
+	  bestP2 = p;
 	}
 	break;
 	default:
@@ -221,15 +222,18 @@ int Rebalancer::refine()
     //we have narrowed the choice to 3 candidates.
     if (bestCompute2){
       deAssign(bestCompute2, donor);      
-      assign(bestCompute2, bestP);
+      assign(bestCompute2, bestP2);
+      bestP = bestP2;
     }
     else if (bestCompute1){
       deAssign(bestCompute1, donor);
-      assign(bestCompute1, bestP);
+      assign(bestCompute1, bestP1);
+      bestP = bestP1;
     }
     else if (bestCompute0){
       deAssign(bestCompute0, donor);
-      assign(bestCompute0, bestP);
+      assign(bestCompute0, bestP0);
+      bestP = bestP0;
     }
     else { 
       iout << iINFO << "No receiver found" << "\n" << endi;
