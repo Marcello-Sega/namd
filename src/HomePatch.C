@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.14 1996/12/17 08:55:25 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.15 1996/12/17 22:13:22 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -70,6 +70,22 @@ void HomePatch::unregisterProxy(UnregisterProxyMsg *msg) {
   forceBox.checkIn(proxy[i].forceBox);
   proxy.del(i);
 }
+
+
+void HomePatch::positionsReady(void)
+{
+  ProxyListIter pli(proxy);
+  for ( pli = pli.begin(); pli != pli.end(); ++pli )
+  {
+    ProxyDataMsg *nmsg = new (MsgIndex(ProxyDataMsg)) ProxyDataMsg;
+    nmsg->patch = patchID;
+    nmsg->positionList = p;
+    ProxyMgr::Object()->sendProxyData(nmsg,(*pli).node);
+  }
+
+  Patch::positionsReady();
+}
+
 
 void HomePatch::addForceToMomentum(const BigReal timestep)
 {
@@ -287,12 +303,15 @@ void HomePatch::dispose(char *&data)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.14 $	$Date: 1996/12/17 08:55:25 $
+ *	$Revision: 1.15 $	$Date: 1996/12/17 22:13:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.15  1996/12/17 22:13:22  jim
+ * implemented ProxyDataMsg use
+ *
  * Revision 1.14  1996/12/17 08:55:25  jim
  * added node argument to sendProxyAtoms
  *

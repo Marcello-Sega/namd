@@ -15,7 +15,6 @@
 #define PROXYPATCH_H
 
 #include "Patch.h"
-#include "Templates/Queue.h"
 
 class ProxyDataMsg;
 class ProxyAtomsMsg;
@@ -37,7 +36,7 @@ class ProxyPatch : public Patch
   private:
 
      void sendResults(void);
-     ShortQueue<ProxyDataMsg*> msgBuffer;
+     ProxyDataMsg* msgBuffer;
 
 };
 
@@ -48,13 +47,16 @@ class ProxyPatch : public Patch
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyPatch.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/12/05 01:44:16 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1996/12/17 22:13:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.h,v $
+ * Revision 1.2  1996/12/17 22:13:22  jim
+ * implemented ProxyDataMsg use
+ *
  * Revision 1.1  1996/12/05 01:44:16  ari
  * Initial revision
  *

@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.8 1996/12/16 22:52:43 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.9 1996/12/17 22:13:22 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -29,7 +29,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.
 #define  DEBUGM
 #include "Debug.h"
 
-ProxyPatch::ProxyPatch(PatchID pd) : Patch(pd)
+ProxyPatch::ProxyPatch(PatchID pd) : Patch(pd), msgBuffer(NULL)
 {
   ProxyMgr::Object()->registerProxy(patchID);
 }
@@ -43,7 +43,7 @@ void ProxyPatch::boxClosed(int box)
   if ( ! --boxesOpen )
   {
     DebugM(2,patchID << ": " << "Checking message buffer.\n");
-    if ( ! msgBuffer.empty() ) receiveData(msgBuffer.pop());
+    if ( msgBuffer) receiveData(msgBuffer);
   }
   else
   {
@@ -62,11 +62,13 @@ void ProxyPatch::receiveData(ProxyDataMsg *msg)
 {
   if ( boxesOpen )
   {
-    // store message in queue
-    DebugM(4,"Proxy data arrived.\n");
-    msgBuffer.append(msg);
+    // store message in queue (only need one element, though)
+    DebugM(4,"Proxy data arrived early, adding to buffer.\n");
+    msgBuffer = msg;
     return;
   }
+  DebugM(3,"Processing proxy data\n");
+  msgBuffer = NULL;
   p = msg->positionList;
   delete msg;
   positionsReady();
@@ -85,12 +87,15 @@ void ProxyPatch::sendResults(void)
  *
  *	$RCSfile: ProxyPatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1996/12/16 22:52:43 $
+ *	$Revision: 1.9 $	$Date: 1996/12/17 22:13:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.9  1996/12/17 22:13:22  jim
+ * implemented ProxyDataMsg use
+ *
  * Revision 1.8  1996/12/16 22:52:43  jim
  * added placement new and explicit destructor calls to ProxyAtomsMsg
  *

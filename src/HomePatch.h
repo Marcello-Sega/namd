@@ -45,6 +45,8 @@ class HomePatch : public Patch {
 		{ sequencer->run(numberOfCycles); }
 
      // methods for Sequencer to use
+     void positionsReady(void);
+
      void addForceToMomentum(const BigReal);
      void addVelocityToPosition(const BigReal);
 
@@ -106,12 +108,15 @@ class HomePatch : public Patch {
  *
  *	$RCSfile: HomePatch.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.11 $	$Date: 1996/12/17 17:07:41 $
+ *	$Revision: 1.12 $	$Date: 1996/12/17 22:13:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.12  1996/12/17 22:13:22  jim
+ * implemented ProxyDataMsg use
+ *
  * Revision 1.11  1996/12/17 17:07:41  jim
  * moved messages from main to ProxyMgr
  *
