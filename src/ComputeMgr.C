@@ -327,34 +327,6 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	c = computeGlobalObject = new ComputeGlobal(i,this); // unknown delete
 	map->registerCompute(i,c);
 	c->initialize();
-
-	if ( !CkMyPe() ) {
-	  DebugM(4,"Mgr running on Node "<<CkMyPe()<<"\n");
-	  // XXX this is in a very strange place now
-	  /* create a master server to allow multiple masters */
-	  masterServerObject = new GlobalMasterServer(this,
-	    Node::Object()->workDistrib->getNumComputeGlobals());
-
-	  /* create the individual global masters */
-	  // masterServerObject->addClient(new GlobalMasterTest());
-	  if(simParams->tclForcesOn)
-	    masterServerObject->addClient(new GlobalMasterTcl());
-	  if(simParams->IMDon && !simParams->IMDignore)
-	    masterServerObject->addClient(new GlobalMasterIMD());
-
-
-	  if(simParams->SMDOn)
-	    masterServerObject->addClient(
-	      new GlobalMasterSMD(simParams->SMDk, simParams->SMDVel,
-				  simParams->SMDDir, simParams->SMDOutputFreq,
-				  simParams->firstTimestep, simParams->SMDFile)
-					  );
-	  if(simParams->miscForcesOn)
-	    masterServerObject->addClient(new GlobalMasterMisc());
-	  if ( simParams->freeEnergyOn )
-	    masterServerObject->addClient(new GlobalMasterFreeEnergy());
-	}
-
 	break;
       case computeExtType:
 	c = new ComputeExt(i); // unknown delete
@@ -401,11 +373,37 @@ void
 ComputeMgr::createComputes(ComputeMap *map)
 {
   Node *node = Node::Object();
+  SimParameters *simParams = node->simParameters;
   int myNode = node->myid();
 
   numNonbondedSelf = 0;
   numNonbondedPair = 0;
   ComputeNonbondedUtil::select();
+
+  if ( simParams->globalForcesOn && !myNode ) {
+    DebugM(4,"Mgr running on Node "<<CkMyPe()<<"\n");
+    /* create a master server to allow multiple masters */
+    masterServerObject = new GlobalMasterServer(this,
+    Node::Object()->workDistrib->getNumComputeGlobals());
+
+    /* create the individual global masters */
+    // masterServerObject->addClient(new GlobalMasterTest());
+    if(simParams->tclForcesOn)
+      masterServerObject->addClient(new GlobalMasterTcl());
+    if(simParams->IMDon && !simParams->IMDignore)
+      masterServerObject->addClient(new GlobalMasterIMD());
+
+    if(simParams->SMDOn)
+      masterServerObject->addClient(
+        new GlobalMasterSMD(simParams->SMDk, simParams->SMDVel,
+			  simParams->SMDDir, simParams->SMDOutputFreq,
+			  simParams->firstTimestep, simParams->SMDFile)
+		  );
+    if(simParams->miscForcesOn)
+      masterServerObject->addClient(new GlobalMasterMisc());
+    if ( simParams->freeEnergyOn )
+      masterServerObject->addClient(new GlobalMasterFreeEnergy());
+  }
 
   for(int i=0; i < map->nComputes; i++)
   {
