@@ -63,13 +63,14 @@ protected:
     HomePatch *const patch;		// access methods in patch
     ReductionMgr *const reduction;
     CollectionMgr *const collection;
+    ControllerBroadcasts * broadcast;
+
+    void rebalanceLoad(int timestep);
 
 private:
-    void rebalanceLoad(int timestep);
     CthThread thread;
     static void threadRun(Sequencer*);
 
-    ControllerBroadcasts * broadcast;
     LdbCoordinator *ldbCoordinator;
 };
 
@@ -81,12 +82,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1998/03/06 20:55:26 $
+ *	$Revision: 1.1016 $	$Date: 1998/03/31 04:55:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.h,v $
+ * Revision 1.1016  1998/03/31 04:55:46  jim
+ * Added test mode, fixed errors in virial with full electrostatics.
+ *
  * Revision 1.1015  1998/03/06 20:55:26  jim
  * Added temperature coupling.
  *

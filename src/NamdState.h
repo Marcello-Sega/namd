@@ -31,6 +31,7 @@ class NamdState {
   friend class Namd; 
   friend class Node;
   friend class Controller;
+  friend class TestController;
   private:
     Molecule *molecule;
     Parameters *parameters;
@@ -55,13 +56,16 @@ class NamdState {
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdState.h,v $
- *	$Author: sergei $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1998/01/14 01:52:54 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1998/03/31 04:55:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdState.h,v $
+ * Revision 1.1008  1998/03/31 04:55:45  jim
+ * Added test mode, fixed errors in virial with full electrostatics.
+ *
  * Revision 1.1007  1998/01/14 01:52:54  sergei
  * little fixes for SMD
  *

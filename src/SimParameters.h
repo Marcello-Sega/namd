@@ -298,6 +298,8 @@ public:
         BigReal rigidTol;               // error tolerance for rigid bonds
         int rigidIter;                  // Number of NR iterations 
 
+	Bool testOn;			//  Do tests rather than simulation
+
 	int totalAtoms;			//  Total Number of atoms in simulation
 
 	//
@@ -354,12 +356,15 @@ public:
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1998/02/17 06:39:25 $
+ *	$Revision: 1.1019 $	$Date: 1998/03/31 04:55:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1019  1998/03/31 04:55:48  jim
+ * Added test mode, fixed errors in virial with full electrostatics.
+ *
  * Revision 1.1018  1998/02/17 06:39:25  jim
  * SHAKE/RATTLE (rigidBonds) appears to work!!!  Still needs langevin,
  * proper startup, and degree of freedom tracking.

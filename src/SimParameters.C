@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *  $RCSfile: SimParameters.C,v $
- *  $Author: brunner $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1036 $  $Date: 1998/03/03 23:05:29 $
+ *  $Author: jim $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1037 $  $Date: 1998/03/31 04:55:47 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1037  1998/03/31 04:55:47  jim
+ * Added test mode, fixed errors in virial with full electrostatics.
+ *
  * Revision 1.1036  1998/03/03 23:05:29  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *
@@ -444,7 +447,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1036 1998/03/03 23:05:29 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1037 1998/03/31 04:55:47 jim Exp $";
 
 
 #include "charm++.h"
@@ -1043,6 +1046,9 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
      &firstTimestep, 0);
    opts.range("firsttimestep", NOT_NEGATIVE);
  
+   /////  Test mode options
+   opts.optionalB("main", "test", "Perform self-tests rather than simulation",
+		&testOn, FALSE);
 
    ///////////////  hydrogen bond computation options
    opts.optionalB("main", "hbonds", "Use explicit hydrogen bond term",
@@ -2722,6 +2728,10 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
 
   // Send fixed-atoms parameters
   msg->put(fixedAtomsOn);
+
+  // Send test mode data
+  msg->put(testOn);
+
   msg->end();
 }
 /*    END OF FUNCITON send_SimParameters    */
@@ -2899,6 +2909,10 @@ void SimParameters::receive_SimParameters(MIStream *msg)
 
   // Fixed atom parameters
   msg->get(fixedAtomsOn);
+
+  // Receive test mode data
+  msg->get(testOn);
+
   //  Free the message
   delete msg;
 
@@ -2911,12 +2925,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1036 $  $Date: 1998/03/03 23:05:29 $
+ *  $Revision: 1.1037 $  $Date: 1998/03/31 04:55:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1037  1998/03/31 04:55:47  jim
+ * Added test mode, fixed errors in virial with full electrostatics.
+ *
  * Revision 1.1036  1998/03/03 23:05:29  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

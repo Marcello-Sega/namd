@@ -1,0 +1,118 @@
+/***************************************************************************/
+/*                                                                         */
+/*              (C) Copyright 1996 The Board of Trustees of the            */
+/*                          University of Illinois                         */
+/*                           All Rights Reserved                           */
+/*									   */
+/***************************************************************************/
+
+/***************************************************************************
+ * DESCRIPTION:
+ *
+ ***************************************************************************/
+
+#include "Node.h"
+#include "Molecule.h"
+#include "SimParameters.h"
+#include "TestController.h"
+#include "ReductionMgr.h"
+#include "CollectionMaster.h"
+#include "Output.h"
+#include "strlib.h"
+#include "BroadcastObject.h"
+#include "NamdState.h"
+#include "Broadcasts.h"
+#include "Thread.h"
+#include <math.h>
+
+#ifndef cbrt
+  // cbrt() not in math.h on goneril
+  #define cbrt(x)  pow(x,(double)(1.0/3.0))
+#endif
+
+#define MIN_DEBUG_LEVEL 3
+//#define DEBUGM
+#include "Debug.h"
+
+TestController::TestController(NamdState *s) :
+	Controller(s)
+{
+  ;
+}
+
+TestController::~TestController(void)
+{
+  ;
+}
+
+extern int eventEndOfTimeStep;
+extern "C" void trace_user_event(int event);
+
+void TestController::algorithm(void)
+{
+    int step = simParams->firstTimestep;
+
+    const int numberOfSteps = simParams->N;
+    const int stepsPerCycle = simParams->stepsPerCycle;
+    const BigReal timestep = simParams->dt;
+
+    iout << iINFO << "**********************************\n";
+    iout << iINFO << "* NAMD RUNNING IN SELF-TEST MODE *\n";
+    iout << iINFO << "**********************************\n" << endi;
+
+    for ( ; step <= numberOfSteps; ++step )
+    {
+        // enqueueCollections(step);
+        trace_user_event(eventEndOfTimeStep);
+        printEnergies(step);
+        rescaleVelocities(step);
+	tcoupleVelocities(step);
+	berendsenPressure(step);
+#ifdef CYCLE_BARRIER
+	if (!((step+1) % stepsPerCycle))
+	{
+	  broadcast->cycleBarrier.publish(step,1);
+	  CPrintf("Cycle time at sync Wall: %f CPU %f\n",
+		  CmiWallTimer(),CmiTimer());
+	}
+#endif
+    }
+
+    terminate();
+}
+
+void TestController::berendsenPressure(int step)
+{
+  const int freq = simParams->berendsenPressureFreq;
+  if ( simParams->berendsenPressureOn && !(step%freq) )
+  {
+    BigReal factor = 0.001;
+    /*
+    BigReal factor = pressure - simParams->berendsenPressureTarget;
+    factor *= simParams->berendsenPressureCompressibility;
+    factor *= ( simParams->dt * freq );
+    factor /= simParams->berendsenPressureRelaxationTime;
+    */
+    factor += 1.0;
+    factor = cbrt(factor);
+    broadcast->positionRescaleFactor.publish(step,factor);
+    state->lattice.rescale(factor);
+  }
+}
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1 $	$Date: 1998/03/31 04:55:48 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: TestController.C,v $
+ * Revision 1.1  1998/03/31 04:55:48  jim
+ * Added test mode, fixed errors in virial with full electrostatics.
+ *
+ *
+ ***************************************************************************/

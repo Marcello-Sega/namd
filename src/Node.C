@@ -9,7 +9,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1026 1998/03/03 23:05:19 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1027 1998/03/31 04:55:46 jim Exp $";
 
 #include <unistd.h>
 #include "charm++.h"
@@ -53,6 +53,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "LdbCoordinator.h"
 #include "SMD.h"
 #include "SMDMsgs.h"
+#include "TestController.h"
+#include "TestSequencer.h"
 
 //======================================================================
 // Public Functions
@@ -319,14 +321,18 @@ void Node::buildSequencers() {
 
   // Controller object is only on Pe(0)
   if ( ! CMyPe() ) {
-    Controller *controller = new Controller(state);
+    Controller *controller;
+    if ( simParameters->testOn ) controller = new TestController(state);
+    else controller = new Controller(state);
     state->useController(controller);
   }
 
   // Assign Sequencer to all HomePatch(es)
   for (ai=ai.begin(); ai != ai.end(); ai++) {
     HomePatch *patch = (*ai).patch;
-    Sequencer *sequencer = new Sequencer(patch);
+    Sequencer *sequencer;
+    if ( simParameters->testOn ) sequencer = new TestSequencer(patch);
+    else sequencer = new Sequencer(patch);
     patch->useSequencer(sequencer);
   }
 }
@@ -465,13 +471,16 @@ void Node::recvSMDData(SMDDataMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1026 $	$Date: 1998/03/03 23:05:19 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1027 $	$Date: 1998/03/31 04:55:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1027  1998/03/31 04:55:46  jim
+ * Added test mode, fixed errors in virial with full electrostatics.
+ *
  * Revision 1.1026  1998/03/03 23:05:19  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

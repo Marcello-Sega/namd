@@ -121,7 +121,7 @@ void ComputeNonbondedUtil :: NAME
   FULL
   (
   BigReal fullElectEnergy = 0;
-  BigReal fullElectVirial = 0;	// value == fullElectEnergy until the end
+  BigReal fullElectVirial = 0;
   )
   NOEXCL
   (
@@ -441,6 +441,7 @@ NOEXCL
 	  (
 	    // Do a quick fix and get out!
 	    fullElectEnergy -= f;
+	    fullElectVirial -= f;
 	    fullforce_r = -f * r_1*r_1;
 	    tmp_x = fullforce_r * p_ij_x;
 	    fullf_i.x += tmp_x;
@@ -641,7 +642,7 @@ NOEXCL
 
       FULL
       (
-      fullElectVirial = fullElectEnergy + fullforce_r * r2;
+      fullElectVirial += fullforce_r * r2;
 
       tmp_x = fullforce_r * p_ij_x;
       fullf_i.x += tmp_x;
@@ -676,12 +677,15 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1031 $	$Date: 1997/09/22 05:14:03 $
+ *	$Revision: 1.1032 $	$Date: 1998/03/31 04:55:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1032  1998/03/31 04:55:43  jim
+ * Added test mode, fixed errors in virial with full electrostatics.
+ *
  * Revision 1.1031  1997/09/22 05:14:03  jim
  * Sped up fixed atom simulations with tuned group-cutoff loop.
  *

@@ -12,59 +12,24 @@
  *
  ***************************************************************************/
 
-#ifndef CONTROLLER_H
-#define CONTROLLER_H
+#ifndef TESTCONTROLLER_H
+#define TESTCONTROLLER_H
 
-#include "converse.h"
-#include "Node.h"
-#include "common.h"
+#include "Controller.h"
 
-class ControllerBroadcasts;
-class NamdState;
-class SimParameters;
-class ReductionMgr;
-class CollectionMaster;
-
-class Controller
+class TestController : public Controller
 {
 public:
-    Controller(NamdState *s);
-    ~Controller(void);
-    void run(int numberOfCycles);             // spawn thread, etc.
-    void awaken(void) { CthAwaken(thread); };
+    TestController(NamdState *s);
+    ~TestController(void);
 
 protected:
     virtual void algorithm(void);	// subclasses redefine this method
-
-    void printEnergies(int);
-    void enqueueCollections(int);
-    void rescaleVelocities(int);
-    void tcoupleVelocities(int);
     void berendsenPressure(int);
 
-    // void suspend(void) { CthSuspend(); };
-    void terminate(void) {
-	CPrintf("Controller terminating\n");
-	Node::messageHomeDone();
-	CthFree(thread); CthSuspend(); 
-    };
-
-    SimParameters *const simParams;	// for convenience
-    int numberOfCycles;			// stores argument to run()
-    NamdState *const state;		// access data in state
-    ReductionMgr *const reduction;
-    CollectionMaster *const collection;
-    ControllerBroadcasts * broadcast;
-
-private:
-    CthThread thread;
-    static void threadRun(Controller*);
-
-    BigReal temperature;
-    BigReal pressure;
 };
 
-#endif // SEQUENCER_H
+#endif // TESTCONTROLLER_H
 
 
 /***************************************************************************
@@ -72,13 +37,13 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1998/03/31 04:55:44 $
+ *	$Revision: 1.1 $	$Date: 1998/03/31 04:55:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
- * $Log: Controller.h,v $
- * Revision 1.1009  1998/03/31 04:55:44  jim
+ * $Log: TestController.h,v $
+ * Revision 1.1  1998/03/31 04:55:49  jim
  * Added test mode, fixed errors in virial with full electrostatics.
  *
  * Revision 1.1008  1998/03/06 20:55:25  jim

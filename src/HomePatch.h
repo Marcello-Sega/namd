@@ -31,6 +31,7 @@ class Sequencer;
 class HomePatch : public Patch {
   friend class PatchMgr;
   friend class Sequencer;
+  friend class TestSequencer;
 
 private: 
   static char ident[];
@@ -119,13 +120,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1998/03/03 23:05:14 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1016 $	$Date: 1998/03/31 04:55:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.1016  1998/03/31 04:55:44  jim
+ * Added test mode, fixed errors in virial with full electrostatics.
+ *
  * Revision 1.1015  1998/03/03 23:05:14  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *
