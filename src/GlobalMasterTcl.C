@@ -1,0 +1,395 @@
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+#include "Node.h"
+#include "Molecule.h"
+#include "ReductionMgr.h"
+#include "ScriptTcl.h"
+#include <stdio.h>
+
+#include "InfoStream.h"
+#include "GlobalMaster.h"
+#include "GlobalMasterTcl.h"
+
+#ifdef NAMD_TCL
+#include <tcl.h>
+#endif
+#include "TclCommands.h"
+
+//#define DEBUGM
+#define MIN_DEBUG_LEVEL 1
+#include "Debug.h"
+
+
+#ifdef NAMD_TCL
+int GlobalMasterTcl::Tcl_print(ClientData,
+	Tcl_Interp *, int argc, char *argv[]) {
+  char *msg = Tcl_Merge(argc-1,argv+1);
+  CkPrintf("TCL: %s\n",msg);
+  Tcl_Free(msg);
+  return TCL_OK;
+}
+
+
+int GlobalMasterTcl::Tcl_atomid(ClientData clientData,
+	Tcl_Interp *interp, int argc, char *argv[]) {
+  if (argc != 4) {
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  char *segid = argv[1];
+  int resid;
+  if (Tcl_GetInt(interp,argv[2],&resid) != TCL_OK) {
+    return TCL_ERROR;
+  }
+  char *aname = argv[3];
+
+  Molecule *mol = (Molecule *)clientData;
+  int atomid = mol->get_atom_from_name(segid,resid,aname);
+
+  if (atomid < 0) {
+    Tcl_SetResult(interp,"atom not found",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  atomid += 1;
+
+  char s[10];  sprintf(s,"%d",atomid);
+  Tcl_SetResult(interp,s,TCL_VOLATILE);
+  DebugM(4,"Atom ID " << atomid << " identified by name\n");
+  return TCL_OK;
+}
+
+
+int GlobalMasterTcl::Tcl_addatom(ClientData clientData,
+	Tcl_Interp *interp, int argc, char *argv[]) {
+  DebugM(2,"Tcl_addatom called\n");
+  if (argc != 2) {
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  int atomid;
+  if (Tcl_GetInt(interp,argv[1],&atomid) != TCL_OK) {
+    return TCL_ERROR;
+  }
+  GlobalMasterTcl *self = (GlobalMasterTcl *)clientData;
+  self->modifyRequestedAtoms().add(atomid-1);
+  DebugM(4,"Atom ID " << atomid << " added to config list\n");
+  return TCL_OK;
+}
+
+
+int GlobalMasterTcl::Tcl_addgroup(ClientData clientData,
+	Tcl_Interp *interp, int argc, char *argv[]) {
+  DebugM(2,"Tcl_addgroup called\n");
+  if (argc != 2) {
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+
+  GlobalMasterTcl *self = (GlobalMasterTcl *)clientData;
+  ResizeArray<AtomIDList> &group_list = self->modifyRequestedGroups();
+  ForceList &force_list = self->modifyGroupForces();
+
+  /* set gcount to the number of groups after we add one, and add it! */
+  int gcount = 1 + group_list.size();
+  group_list.resize(gcount);
+  force_list.add(Vector(0,0,0)); // make sure the force is zero
+
+  /* get the list of atoms that go in the group */
+  int listc, i;  char **listv;
+  if (Tcl_SplitList(interp,argv[1],&listc,&listv) != TCL_OK) {
+    return TCL_ERROR;
+  }
+
+  /* add each atom to the new group */
+  for ( i = 0; i < listc; ++i ) {
+    int atomid;
+    if (Tcl_GetInt(interp,listv[i],&atomid) != TCL_OK) { // error getting int
+      group_list.resize(gcount-1); // remove the group we made
+      Tcl_Free((char*) listv);
+      return TCL_ERROR;
+    }
+    group_list[gcount-1].add(atomid-1); // add the atom to the group
+  }
+  Tcl_Free((char*) listv);
+
+  /* return the group number to TCL */
+  char s[10];  sprintf(s,"g%d",gcount);
+  Tcl_SetResult(interp,s,TCL_VOLATILE);
+
+  DebugM(4,"Group " << s << " added to config list\n");
+  return TCL_OK;
+}
+
+/* this function is useless - it reconfigures whenever you add atoms! */
+int GlobalMasterTcl::Tcl_reconfig(ClientData clientData,
+	Tcl_Interp *interp, int argc, char **) {
+  DebugM(2,"Tcl_reconfig called\n");
+  if (argc != 1) {
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  iout << iWARN << "'reconfig' is obsolete - reconfiguration is now automatic." << endi;
+  DebugM(4,"Reconfiguration turned on\n");
+  return TCL_OK;
+}
+
+int GlobalMasterTcl::Tcl_loadcoords(ClientData clientData,
+	Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+  if (objc != 2) {
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  Tcl_Obj * const vname = objv[1];
+  GlobalMasterTcl *self = (GlobalMasterTcl *)clientData;
+  AtomIDList::iterator a_i = self->getAtomIdBegin();
+  AtomIDList::iterator a_e = self->getAtomIdEnd();
+  PositionList::iterator p_i = self->getAtomPositionBegin();
+  for ( ; a_i != a_e; ++a_i, ++p_i ) {
+    Tcl_Obj *newlist = Tcl_NewListObj(0, NULL);
+    Tcl_Obj *arrkey = Tcl_NewIntObj((int)((*a_i)+1));
+    
+    Tcl_ListObjAppendElement(interp, newlist, 
+      Tcl_NewDoubleObj((double)((*p_i).x)));
+    Tcl_ListObjAppendElement(interp, newlist, 
+      Tcl_NewDoubleObj((double)((*p_i).y)));
+    Tcl_ListObjAppendElement(interp, newlist, 
+      Tcl_NewDoubleObj((double)((*p_i).z)));
+   
+    if (!Tcl_ObjSetVar2(interp, vname, arrkey, newlist, 0)) {
+      NAMD_die("TCL error in global force calculation!");
+      return TCL_ERROR;
+    }
+  }
+
+  /* do the group stuff */
+  PositionList::iterator c_i = self->getGroupPositionBegin();
+  PositionList::iterator c_e = self->getGroupPositionEnd();
+  int gcount = 1;
+  for ( ; c_i != c_e; ++c_i, ++gcount ) {
+    Tcl_Obj *newlist = Tcl_NewListObj(0, NULL);
+    char buf[10];
+    sprintf(buf, "g%d", gcount);
+    Tcl_Obj *arrkey = Tcl_NewStringObj(buf, -1);
+ 
+    Tcl_ListObjAppendElement(interp, newlist,
+      Tcl_NewDoubleObj((double)((*c_i).x)));
+    Tcl_ListObjAppendElement(interp, newlist,
+      Tcl_NewDoubleObj((double)((*c_i).y)));
+    Tcl_ListObjAppendElement(interp, newlist,
+      Tcl_NewDoubleObj((double)((*c_i).z)));
+   
+    if (!Tcl_ObjSetVar2(interp, vname, arrkey, newlist, 0)) {
+      NAMD_die("TCL error in global force calculation!");
+      return TCL_ERROR;
+    }
+  }
+  return TCL_OK;
+}
+
+
+int GlobalMasterTcl::Tcl_loadmasses(ClientData clientData,
+	Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+  if (objc != 2) {
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  Tcl_Obj * const vname = objv[1];
+  GlobalMasterTcl *self = (GlobalMasterTcl *)clientData;
+  Molecule *mol = Node::Object()->molecule;
+  AtomIDList::iterator a_i = self->getAtomIdBegin();
+  AtomIDList::iterator a_e = self->getAtomIdEnd();
+  for ( ; a_i != a_e; ++a_i) {
+    if (!Tcl_ObjSetVar2(interp, vname,
+                        Tcl_NewIntObj((int)((*a_i)+1)),
+                        Tcl_NewDoubleObj((double)(mol->atommass(*a_i))),
+                        0)) {
+      NAMD_die("TCL error in global force calculation!");
+      return TCL_ERROR;
+    }
+  }
+
+  const BigReal *g_i, *g_e;
+  g_i = self->getGroupMassBegin();
+  g_e = self->getGroupMassEnd();
+  int gcount = 1;
+  for ( ; g_i != g_e; ++g_i, ++gcount) {
+    char buf[10];
+    sprintf(buf, "g%d", gcount);
+    if (!Tcl_ObjSetVar2(interp, vname,
+                        Tcl_NewStringObj(buf, -1),
+                        Tcl_NewDoubleObj((double)(*g_i)),
+                        0)) {
+      NAMD_die("TCL error in global force calculation!");
+      return TCL_ERROR;
+    }
+  }
+  return TCL_OK;
+}
+
+
+int GlobalMasterTcl::Tcl_addforce(ClientData clientData,
+	Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+  DebugM(2,"Tcl_addforce called\n");
+  if (objc != 3) {
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  Tcl_Obj **force;  int fnum;  int atomid;  double x, y, z;
+  int isgroup = 0;
+  char *id = Tcl_GetStringFromObj(objv[1], NULL); 
+  if ( id[0] == 'g' ) {
+    isgroup = 1;
+    if ( Tcl_GetInt(interp,id+1,&atomid) != TCL_OK ) return TCL_ERROR;
+  } else {
+    if ( Tcl_GetInt(interp,id,&atomid) != TCL_OK ) return TCL_ERROR;
+  }
+  if (Tcl_ListObjGetElements(interp, objv[2], &fnum, &force) != TCL_OK) {
+    return TCL_ERROR;
+  }
+  if ( (fnum != 3) ||
+       (Tcl_GetDoubleFromObj(interp, force[0],&x) != TCL_OK) ||
+       (Tcl_GetDoubleFromObj(interp, force[1],&y) != TCL_OK) ||
+       (Tcl_GetDoubleFromObj(interp, force[2],&z) != TCL_OK) ) {
+    Tcl_SetResult(interp,"force not a vector",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+
+  GlobalMasterTcl *self = (GlobalMasterTcl *)clientData;
+  if ( isgroup ) {
+    self->modifyGroupForces().item(atomid-1) += Vector(x,y,z);
+  } else {
+    self->modifyForcedAtoms().add(atomid-1);
+    self->modifyAppliedForces().add(Vector(x,y,z));
+  }
+  DebugM(4,"Atom ID " << atomid << " added to force list\n");
+  return TCL_OK;
+}
+#endif
+
+
+GlobalMasterTcl::GlobalMasterTcl() {
+  DebugM(3,"Constructing GlobalMasterTcl\n");
+#ifdef NAMD_TCL
+  interp = 0;
+#endif
+  initialize();
+  DebugM(2,"Done constructing ("<<requestedGroups().size()<<" initial groups)\n");
+}
+
+GlobalMasterTcl::~GlobalMasterTcl() {
+  DebugM(3,"Destructing GlobalMasterTcl\n");
+#ifdef NAMD_TCL
+/*
+  if ( interp ) Tcl_DeleteInterp(interp);
+*/
+#endif
+}
+
+
+void GlobalMasterTcl::initialize() {
+  DebugM(4,"Initializing master\n");
+#ifdef NAMD_TCL
+  DebugM(1,"here\n");
+  if(Node::Object() == NULL) NAMD_die("Node::Object() == NULL");
+  if(Node::Object()->getScript() == NULL)
+    NAMD_die("Node::Object()->getScript() == NULL");
+
+  interp = Node::Object()->getScript()->interp;
+  DebugM(1,"here\n");
+  Tcl_CreateCommand(interp, "atomid", Tcl_atomid,
+    (ClientData) (Node::Object()->molecule), (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "vecadd", proc_vecadd,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "vecsub", proc_vecsub,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "vecscale", proc_vecscale,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+
+  DebugM(1,"here\n");
+  // Call interpreter to determine requested atoms
+  Tcl_CreateCommand(interp, "addatom", Tcl_addatom,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "addgroup", Tcl_addgroup,
+      (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+
+  DebugM(1,"here\n");
+  // Get the script
+  StringList *script = Node::Object()->configList->find("tclForcesScript");
+
+  DebugM(1,"here\n");
+  for ( ; script; script = script->next ) {
+    int code;
+    DebugM(1,"here "<<script->data<<"\n");
+    if ( script->data[0] == '{' ) {
+       script->data[strlen(script->data)-1] = 0;
+       code = Tcl_Eval(interp,script->data+1);
+    }
+    else code = Tcl_EvalFile(interp,script->data);
+    DebugM(1,"here\n");
+    char *result = Tcl_GetStringResult(interp);
+    DebugM(1,"here\n");
+    if (*result != 0) CkPrintf("TCL: %s\n",result);
+    DebugM(1,"here\n");
+    if (code != TCL_OK) {
+      char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
+      NAMD_die(errorInfo);
+    }
+  }
+
+  DebugM(1,"here\n");
+  Tcl_DeleteCommand(interp, "addatom");
+  Tcl_DeleteCommand(interp, "addgroup");
+#else
+
+  NAMD_die("Sorry, tclForces is not available; built without TCL.");
+
+#endif
+  DebugM(2,"done initializing master\n");
+}
+
+
+void GlobalMasterTcl::calculate() {
+  DebugM(4,"Calculating forces on master\n");
+
+  /* clear out the requested forces first! */
+  modifyAppliedForces().resize(0);
+  modifyForcedAtoms().resize(0);
+  modifyGroupForces().setall(Vector(0,0,0));
+
+#ifdef NAMD_TCL
+  // Call interpreter to calculate forces
+  Tcl_CreateObjCommand(interp, (char *)"loadcoords", Tcl_loadcoords,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateObjCommand(interp, (char *)"loadmasses", Tcl_loadmasses,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateObjCommand(interp, (char *)"addforce", Tcl_addforce,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, (char *)"reconfig", Tcl_reconfig,
+      (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, (char *)"addatom", Tcl_addatom,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, (char *)"addgroup", Tcl_addgroup,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+
+  char cmd[129];  int code;
+  strcpy(cmd,"calcforces");  code = Tcl_Eval(interp,cmd);
+  char *result = Tcl_GetStringResult(interp);
+  if (*result != 0) CkPrintf("TCL: %s\n",result);
+  if (code != TCL_OK) {
+    char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
+    NAMD_die(errorInfo);
+  }
+
+  Tcl_DeleteCommand(interp, "loadcoords");
+  Tcl_DeleteCommand(interp, "loadmasses");
+  Tcl_DeleteCommand(interp, "addforce");
+  Tcl_DeleteCommand(interp, "reconfig");
+  Tcl_DeleteCommand(interp, "addatom");
+  Tcl_DeleteCommand(interp, "addgroup");
+#endif
+
+}

@@ -18,7 +18,7 @@ typedef ARestraint* pRestr;
 const int kNumToStart = 1024;
 const int kMultiplier = 4;
 
-class ComputeFreeEnergy;
+class GlobalMasterFreeEnergy;
 
 class ARestraintManager {
 private:
@@ -33,8 +33,8 @@ public:
   ARestraint*  operator[] (int Index);
   void   Add(ARestraint* pRestraint);
   int    GetNumRestraints() {return(m_NumRestraints);}
-  void   UpdateCOMs(ComputeFreeEnergy& CFE);
-  void   AddForces(ComputeFreeEnergy& CFE);
+  void   UpdateCOMs(GlobalMasterFreeEnergy& CFE);
+  void   AddForces(GlobalMasterFreeEnergy& CFE);
   void   PrintEnergyInfo();
   void   PrintRestraintInfo();
   void   Print_dU_dLambda_Info();

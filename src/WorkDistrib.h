@@ -66,6 +66,7 @@ public:
 
   void saveMaps(MapDistribMsg *msg);
 
+  int getNumComputeGlobals();
 private:
   void mapComputeNonbonded(void);
   void mapComputeHomePatches(ComputeType);

@@ -16,6 +16,9 @@
 
 #include "ResizeArray.h"
 
+#include "GlobalMaster.h"
+#include "GlobalMasterServer.h"
+
 class Compute;
 class ComputeMap;
 class CkQdMsg;
@@ -63,7 +66,8 @@ private:
   int numNonbondedSelf;
   int numNonbondedPair;
 
-  ComputeGlobal *computeGlobalObject;
+  ComputeGlobal *computeGlobalObject; /* node part of global computes */
+  GlobalMasterServer *masterServerObject; /* master part of global computes */
   ComputeDPME *computeDPMEObject;
 
   int updateComputesCount;

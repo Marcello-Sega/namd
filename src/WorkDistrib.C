@@ -36,8 +36,8 @@
 #include "Random.h"
 #include "varsizemsg.h"
 
-//#define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
+#define MIN_DEBUG_LEVEL 2
 #include "Debug.h"
 
 
@@ -607,8 +607,10 @@ void WorkDistrib::mapComputes(void)
 #endif
   }
 
-  if ( node->simParameters->globalForcesOn )
+  if ( node->simParameters->globalForcesOn ) {
+    DebugM(2,"adding ComputeGlobal\n");
     mapComputeHomePatches(computeGlobalType);
+  }
 
   if ( node->simParameters->extForcesOn )
     mapComputeHomePatches(computeExtType);
@@ -1222,6 +1224,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
 
 }
 /*			END OF FUNCTION remove_com_motion		*/
+
+/* getNumComputeGlobals returns the total number of global compute
+   objects that will be set up.  This is either the number of nodes,
+   or the number of patches, whichever is smaller. */
+int WorkDistrib::getNumComputeGlobals() {
+  int numWorkingPes = CkNumPes();
+  int npatches=(PatchMap::Object())->numPatches();
+  if ( numWorkingPes > npatches ) numWorkingPes = npatches;
+  return numWorkingPes;
+}
 
 #include "WorkDistrib.def.h"
 

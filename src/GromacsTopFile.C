@@ -20,8 +20,6 @@
    atoms in the simulation - all that matters is the number that have
    to be individually defined. */
 
-/* XXX I have no destructors yet */
-
 /* GromacsTopFile initializes this to represent the data stored in the
    file <filename>, or exits on error. */
 #define LINESIZE 200
@@ -409,7 +407,8 @@ GromacsTopFile::GromacsTopFile(char *filename) {
       i = sscanf(buf," %d %5s %d %5s %5s %d %f %f",
 		   &num, type, &resnum, restype,
 		 atomname, &chargegp, &charge, &mass);
-      if(i==7) { /* XXX temporary */
+      if(i==7) { /* XXX temporary - I should be able to get more
+		    params */
         typenum = atomTable.getParams(type,&mass,&junkf,&junkf,&junkf);
 	i=8;
       }

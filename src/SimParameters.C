@@ -1545,11 +1545,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
       NAMD_die("COLD and velocity rescaling are mutually exclusive dynamics modes");
    }
 
-   if ( (!!SMDOn+!!(IMDon && ! IMDignore)+!!tclForcesOn+!!miscForcesOn+!!freeEnergyOn) > 1)
-   {
-      NAMD_die("Sorry, only one of IMD, TclForces, MiscForces, and FreeEnergy may be used at a time.");
-   }
-
    if (splitPatch == SPLIT_PATCH_POSITION && mollyOn )
    {
       NAMD_die("splitPatch hydrogen is required for MOLLY");

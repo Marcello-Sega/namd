@@ -60,7 +60,18 @@ public:
   AtomIDList aid;
   ForceList f;
   ForceList gforce;  // force on group
+
   int reconfig;
+
+  /* If <resendCoordinates> is 1, this message indicates a request for
+     another set of coordinates (a ComputeGlobalDataMessage) during
+     this timestep.  It may be 1 even if reconfig was not set,
+     though there is no particular reason to do that.  A 1 here also
+     indicates that the ComputeGlobal should ignore any forces
+     included in this message, and wait instead for the next Results
+     Message to come in. */
+  int resendCoordinates;
+  
   AtomIDList newaid;
   AtomIDList newgdef;
 
@@ -71,6 +82,7 @@ public:
   // pack and unpack functions
   static void* pack(ComputeGlobalResultsMsg *msg);
   static ComputeGlobalResultsMsg* unpack(void *ptr);
+
 };
 
 

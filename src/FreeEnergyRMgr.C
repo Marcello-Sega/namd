@@ -25,7 +25,10 @@
 #include "FreeEnergyRMgr.h"
 #include "FreeEnergyLambda.h"
 #include "FreeEnergyLambdMgr.h"
-#include "ComputeFreeEnergy.h"
+
+#include "NamdTypes.h"
+#include "GlobalMaster.h"
+#include "GlobalMasterFreeEnergy.h"
 
 ARestraintManager::ARestraintManager() {
 //------------------------------------------------------------------------
@@ -85,7 +88,7 @@ void ARestraintManager::Add(ARestraint* pRestraint) {
 }
 
 
-void ARestraintManager::UpdateCOMs(ComputeFreeEnergy& CFE) {
+void ARestraintManager::UpdateCOMs(GlobalMasterFreeEnergy& CFE) {
 //------------------------------------------------------------------------
 // update the centers-of-mass in each restraint in the list
 // note:  m_ppRestraints points to a list of restraint pointers
@@ -98,7 +101,7 @@ void ARestraintManager::UpdateCOMs(ComputeFreeEnergy& CFE) {
 }
 
 
-void ARestraintManager::AddForces(ComputeFreeEnergy& CFE) {
+void ARestraintManager::AddForces(GlobalMasterFreeEnergy& CFE) {
 //---------------------------------------------------------------------------
 // for each restraint, apply restraining force to each COM (center-of-mass).
 //---------------------------------------------------------------------------

@@ -44,7 +44,7 @@ private:
   void setParameter(const char* param, int value);
 #ifdef NAMD_TCL
   friend class Controller;
-  friend class ComputeTcl;
+  friend class GlobalMasterTcl;
   Tcl_Interp *interp;
   static int Tcl_exit(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_abort(ClientData, Tcl_Interp *, int, char **);

@@ -21,13 +21,13 @@ enum TimeUnits_t  {k_fs, k_ps, k_ns, kUnknownTime};
 // the "main" function for parsing
 void   ReadInput(char* Str, ARestraintManager& RMgr,
                             ALambdaManager& LMgr,
-                            ComputeFreeEnergy& CFE,
+                            GlobalMasterFreeEnergy& CFE,
                             double dT);
 
 // get an initialized restraint that's read from the input String
 int    ReadRestraints(char* Str, ARestraintManager& RMgr,
-                                 ComputeFreeEnergy& CFE);
-ARestraint* GetRestraint(char* Str, int& NumChars, ComputeFreeEnergy& CFE);
+                                 GlobalMasterFreeEnergy& CFE);
+ARestraint* GetRestraint(char* Str, int& NumChars, GlobalMasterFreeEnergy& CFE);
 
 // for reading pmf/mcti blocks
 int    ReadPmfBlock(char* Str, ALambdaControl& PmfBlock, double dT);
@@ -61,15 +61,15 @@ item_t  ReadNextItem(char* Str, int& NumChars);
 restr_t ReadNextRestraintType(char* Str, int& NumChars);
 
 // functions for putting the specified atoms into Group's
-int  AddAtoms(AGroup& Group, char* Str, ComputeFreeEnergy& CFE);
-void AddAtom(AGroup& Group, char* Atom, ComputeFreeEnergy& CFE);
-void AddResidues(AGroup& Group, char* ResRange, ComputeFreeEnergy& CFE);
+int  AddAtoms(AGroup& Group, char* Str, GlobalMasterFreeEnergy& CFE);
+void AddAtom(AGroup& Group, char* Atom, GlobalMasterFreeEnergy& CFE);
+void AddResidues(AGroup& Group, char* ResRange, GlobalMasterFreeEnergy& CFE);
 void AddAtomsInResidues(AGroup& Group, char* AtomNames, char* ResRange,
-                        ComputeFreeEnergy& CFE);
+                        GlobalMasterFreeEnergy& CFE);
 
 // functions for helping with the above
 void AddAtom(AGroup& Group, char* ResRange, char* AtomName,
-             ComputeFreeEnergy& CFE);
+             GlobalMasterFreeEnergy& CFE);
 void GetResRange(char* ResRange, int& ResNum1, int& ResNum2);
 int  GetSegName(char* Str, char* SegName);
 int  GetResNum(char* Str, int& ResNum);

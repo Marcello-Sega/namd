@@ -26,7 +26,11 @@
 #include "FreeEnergyRMgr.h"
 #include "FreeEnergyLambda.h"
 #include "FreeEnergyLambdMgr.h"
-#include "ComputeFreeEnergy.h"
+
+#include "NamdTypes.h"
+#include "GlobalMaster.h"
+#include "GlobalMasterFreeEnergy.h"
+
 #include "FreeEnergyParse.h"
 
 
@@ -74,7 +78,7 @@ void CheckParentheses(const char* Str) {
 
 void ReadInput(char* Str, ARestraintManager& RMgr,
                           ALambdaManager& LMgr,
-                          ComputeFreeEnergy& CFE,
+                          GlobalMasterFreeEnergy& CFE,
                           double dT) {
 //----------------------------------------------------------------------------
 // parse the input string.  Add restraints to RMgr.  Add PmfBlocks to LMgr.
@@ -369,7 +373,7 @@ GotIt:
 
 
 int ReadRestraints(char* Str, ARestraintManager& AllRestraints,
-                              ComputeFreeEnergy& CFE) {
+                              GlobalMasterFreeEnergy& CFE) {
 //----------------------------------------------------------------------------
 // if Str starts with "urestr", read each restraint spec, create
 // a restraint, and put a pointer to the restraint into AllRestraints
@@ -409,7 +413,7 @@ int ReadRestraints(char* Str, ARestraintManager& AllRestraints,
 }
 
 
-ARestraint* GetRestraint(char* Str, int& NumChars, ComputeFreeEnergy& CFE) {
+ARestraint* GetRestraint(char* Str, int& NumChars, GlobalMasterFreeEnergy& CFE) {
 //----------------------------------------------------------------------------
 // read spec's for a restraint, from the input string.
 // allocate space for and initialize a restraint object with these specs.
@@ -874,7 +878,7 @@ GotIt:
 }
 
 
-int AddAtoms(AGroup& Group, char* Str, ComputeFreeEnergy& CFE) {
+int AddAtoms(AGroup& Group, char* Str, GlobalMasterFreeEnergy& CFE) {
 //----------------------------------------------------------------------------
 // Str contains specifications for which atoms to add to Group.
 // The atoms may be:
@@ -937,7 +941,7 @@ int AddAtoms(AGroup& Group, char* Str, ComputeFreeEnergy& CFE) {
 
 
 void AddAtomsInResidues(AGroup& Group, char* AtomNames, char* ResRange,
-                        ComputeFreeEnergy& CFE) {
+                        GlobalMasterFreeEnergy& CFE) {
 //-------------------------------------------------------------------
 // Group contains a list of int's representing AtomID's.
 // ResRange should be "(segname, resnum) to (segname, resnum)"
@@ -978,7 +982,7 @@ void AddAtomsInResidues(AGroup& Group, char* AtomNames, char* ResRange,
 }
 
 
-void AddResidues(AGroup& Group, char* ResRange, ComputeFreeEnergy& CFE) {
+void AddResidues(AGroup& Group, char* ResRange, GlobalMasterFreeEnergy& CFE) {
 //-------------------------------------------------------------------
 // Group contains a list of int's representing AtomID's.
 // ResRange should be "(segname, resnum) to (segname, resnum)"
@@ -1010,7 +1014,7 @@ void AddResidues(AGroup& Group, char* ResRange, ComputeFreeEnergy& CFE) {
 }
 
 
-void AddAtom(AGroup& Group, char* Atom, ComputeFreeEnergy& CFE) {
+void AddAtom(AGroup& Group, char* Atom, GlobalMasterFreeEnergy& CFE) {
 //-------------------------------------------------------------------
 // Group contains a list of int's representing AtomID's.
 // Atom should be "(segname, resnum, atomname)"
@@ -1024,7 +1028,7 @@ void AddAtom(AGroup& Group, char* Atom, ComputeFreeEnergy& CFE) {
 
 
 void AddAtom(AGroup& Group, char* ResRange, char* AtomName,
-             ComputeFreeEnergy& CFE) {
+             GlobalMasterFreeEnergy& CFE) {
 //-------------------------------------------------------------------
 // Group contains a list of int's representing AtomID's.
 // ResRange should be "(segname, resnum) to (segname, resnum)"

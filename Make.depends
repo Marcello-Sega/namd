@@ -561,6 +561,8 @@ obj/ComputeDPME.o: \
 	src/Communicate.h \
 	src/MStream.h \
 	src/ComputeMgr.h \
+	src/GlobalMaster.h \
+	src/GlobalMasterServer.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeDPME.o $(COPTC) src/ComputeDPME.C
 obj/ComputeDPMEMsgs.o: \
@@ -709,6 +711,8 @@ obj/ComputeExt.o: \
 	src/GromacsTopFile.h \
 	src/ReductionMgr.h \
 	src/ComputeMgr.h \
+	src/GlobalMaster.h \
+	src/GlobalMasterServer.h \
 	inc/ComputeMgr.decl.h \
 	src/Debug.h \
 	src/SimParameters.h \
@@ -720,69 +724,6 @@ obj/ComputeExt.o: \
 	src/varsizemsg.h \
 	inc/ComputeExtMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeExt.o $(COPTC) src/ComputeExt.C
-obj/ComputeFreeEnergy.o: \
-	src/ComputeFreeEnergy.C \
-	src/InfoStream.h \
-	src/FreeEnergyEnums.h \
-	src/FreeEnergyAssert.h \
-	src/FreeEnergyGroup.h \
-	src/Vector.h \
-	src/common.h \
-	src/FreeEnergyVector.h \
-	src/FreeEnergyRestrain.h \
-	src/FreeEnergyRMgr.h \
-	src/FreeEnergyLambda.h \
-	src/FreeEnergyLambdMgr.h \
-	src/ComputeFreeEnergy.h \
-	src/ComputeGlobalMaster.h \
-	src/ComputeHomePatches.h \
-	src/NamdTypes.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
-	src/Compute.h \
-	src/main.h \
-	src/HomePatch.h \
-	src/Patch.h \
-	src/OwnerBox.h \
-	src/Box.h \
-	src/PositionOwnerBox.h \
-	src/PositionBox.h \
-	src/Lattice.h \
-	src/Tensor.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
-	src/PatchTypes.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
-	src/ResizeArrayIter.h \
-	src/ProcessorPrivate.h \
-	src/BOCgroup.h \
-	src/MigrateAtomsMsg.h \
-	src/Migration.h \
-	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
-	src/FreeEnergyParse.h \
-	src/Node.h \
-	inc/Node.decl.h \
-	src/ComputeGlobal.h \
-	src/ComputeGlobalMsgs.h \
-	inc/ComputeMgr.decl.h \
-	src/Molecule.h \
-	src/parm.h \
-	src/structures.h \
-	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
-	src/Hydrogen.h \
-	src/GromacsTopFile.h \
-	src/ReductionMgr.h \
-	src/SimParameters.h \
-	src/Communicate.h \
-	src/MStream.h \
-	src/ComputeMgr.h \
-	src/Debug.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeFreeEnergy.o $(COPTC) src/ComputeFreeEnergy.C
 obj/ComputeFullDirect.o: \
 	src/ComputeFullDirect.C \
 	src/Node.h \
@@ -1021,21 +962,6 @@ obj/ComputeGlobal.o: \
 	src/ComputeGlobalMaster.h \
 	src/ComputeGlobalMsgs.h \
 	inc/ComputeMgr.decl.h \
-	src/ComputeMisc.h \
-	src/ComputeGlobalEasy.h \
-	src/ComputeTcl.h \
-	src/FreeEnergyEnums.h \
-	src/FreeEnergyAssert.h \
-	src/FreeEnergyGroup.h \
-	src/FreeEnergyVector.h \
-	src/FreeEnergyRestrain.h \
-	src/FreeEnergyRMgr.h \
-	src/FreeEnergyLambda.h \
-	src/FreeEnergyLambdMgr.h \
-	src/ComputeFreeEnergy.h \
-	src/FreeEnergyParse.h \
-	src/ComputeIMD.h \
-	src/ComputeSMD.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
 	src/parm.h \
@@ -1047,122 +973,13 @@ obj/ComputeGlobal.o: \
 	src/GromacsTopFile.h \
 	src/ReductionMgr.h \
 	src/ComputeMgr.h \
+	src/GlobalMaster.h \
+	src/GlobalMasterServer.h \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/MStream.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeGlobal.o $(COPTC) src/ComputeGlobal.C
-obj/ComputeGlobalEasy.o: \
-	src/ComputeGlobalEasy.C \
-	src/Node.h \
-	src/main.h \
-	src/ProcessorPrivate.h \
-	src/BOCgroup.h \
-	inc/Node.decl.h \
-	src/PatchMap.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/common.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
-	src/HomePatchList.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
-	src/ResizeArrayIter.h \
-	src/Lattice.h \
-	src/Tensor.h \
-	src/PatchMap.inl \
-	src/AtomMap.h \
-	src/ComputeGlobal.h \
-	src/ComputeHomePatches.h \
-	src/Compute.h \
-	src/HomePatch.h \
-	src/Patch.h \
-	src/OwnerBox.h \
-	src/Box.h \
-	src/PositionOwnerBox.h \
-	src/PositionBox.h \
-	src/UniqueSortedArray.h \
-	src/PatchTypes.h \
-	src/MigrateAtomsMsg.h \
-	src/Migration.h \
-	src/InfoStream.h \
-	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
-	src/ComputeMisc.h \
-	src/ComputeGlobalEasy.h \
-	src/ComputeGlobalMaster.h \
-	src/ComputeGlobalMsgs.h \
-	inc/ComputeMgr.decl.h \
-	src/PatchMgr.h \
-	src/Molecule.h \
-	src/parm.h \
-	src/structures.h \
-	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
-	src/Hydrogen.h \
-	src/GromacsTopFile.h \
-	src/ReductionMgr.h \
-	src/SimParameters.h \
-	src/Communicate.h \
-	src/MStream.h \
-	src/ComputeMgr.h \
-	src/Debug.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeGlobalEasy.o $(COPTC) src/ComputeGlobalEasy.C
-obj/ComputeGlobalMaster.o: \
-	src/ComputeGlobalMaster.C \
-	src/Node.h \
-	src/main.h \
-	src/ProcessorPrivate.h \
-	src/BOCgroup.h \
-	inc/Node.decl.h \
-	src/PatchMap.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/common.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
-	src/HomePatchList.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
-	src/ResizeArrayIter.h \
-	src/Lattice.h \
-	src/Tensor.h \
-	src/PatchMap.inl \
-	src/AtomMap.h \
-	src/ComputeGlobal.h \
-	src/ComputeHomePatches.h \
-	src/Compute.h \
-	src/HomePatch.h \
-	src/Patch.h \
-	src/OwnerBox.h \
-	src/Box.h \
-	src/PositionOwnerBox.h \
-	src/PositionBox.h \
-	src/UniqueSortedArray.h \
-	src/PatchTypes.h \
-	src/MigrateAtomsMsg.h \
-	src/Migration.h \
-	src/InfoStream.h \
-	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
-	src/ComputeGlobalMaster.h \
-	src/ComputeGlobalMsgs.h \
-	inc/ComputeMgr.decl.h \
-	src/PatchMgr.h \
-	src/Molecule.h \
-	src/parm.h \
-	src/structures.h \
-	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
-	src/Hydrogen.h \
-	src/GromacsTopFile.h \
-	src/ReductionMgr.h \
-	src/ComputeMgr.h \
-	src/Debug.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeGlobalMaster.o $(COPTC) src/ComputeGlobalMaster.C
 obj/ComputeGlobalMsgs.o: \
 	src/ComputeGlobalMsgs.C \
 	src/ComputeGlobalMsgs.h \
@@ -1175,54 +992,6 @@ obj/ComputeGlobalMsgs.o: \
 	src/packmsg.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeGlobalMsgs.o $(COPTC) src/ComputeGlobalMsgs.C
-obj/ComputeIMD.o: \
-	src/ComputeIMD.C \
-	src/vmdsock.h \
-	src/Node.h \
-	src/main.h \
-	src/ProcessorPrivate.h \
-	src/BOCgroup.h \
-	inc/Node.decl.h \
-	src/IMDOutput.h \
-	src/common.h \
-	src/imd.h \
-	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
-	src/MStream.h \
-	src/Vector.h \
-	src/Lattice.h \
-	src/NamdTypes.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
-	src/Tensor.h \
-	src/ComputeGlobal.h \
-	src/ComputeHomePatches.h \
-	src/Compute.h \
-	src/HomePatch.h \
-	src/Patch.h \
-	src/OwnerBox.h \
-	src/Box.h \
-	src/PositionOwnerBox.h \
-	src/PositionBox.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
-	src/PatchTypes.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
-	src/ResizeArrayIter.h \
-	src/MigrateAtomsMsg.h \
-	src/Migration.h \
-	src/InfoStream.h \
-	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
-	src/ComputeGlobalMsgs.h \
-	inc/ComputeMgr.decl.h \
-	src/ComputeIMD.h \
-	src/ComputeGlobalMaster.h \
-	src/ComputeMgr.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeIMD.o $(COPTC) src/ComputeIMD.C
 obj/ComputeMap.o: \
 	src/ComputeMap.C \
 	src/ComputeMap.h \
@@ -1237,42 +1006,6 @@ obj/ComputeMap.o: \
 	src/main.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeMap.o $(COPTC) src/ComputeMap.C
-obj/ComputeMisc.o: \
-	src/ComputeMisc.C \
-	src/ComputeMisc.h \
-	src/ComputeHomePatches.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/common.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
-	src/Compute.h \
-	src/main.h \
-	src/HomePatch.h \
-	src/Patch.h \
-	src/OwnerBox.h \
-	src/Box.h \
-	src/PositionOwnerBox.h \
-	src/PositionBox.h \
-	src/Lattice.h \
-	src/Tensor.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
-	src/PatchTypes.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
-	src/ResizeArrayIter.h \
-	src/ProcessorPrivate.h \
-	src/BOCgroup.h \
-	src/MigrateAtomsMsg.h \
-	src/Migration.h \
-	src/InfoStream.h \
-	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
-	src/ComputeGlobalEasy.h \
-	src/ComputeGlobalMaster.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeMisc.o $(COPTC) src/ComputeMisc.C
 obj/ComputeMgr.o: \
 	src/ComputeMgr.C \
 	src/ProcessorPrivate.h \
@@ -1286,6 +1019,8 @@ obj/ComputeMgr.o: \
 	src/common.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
+	src/GlobalMaster.h \
+	src/GlobalMasterServer.h \
 	inc/ProxyMgr.decl.h \
 	src/ProxyMgr.h \
 	src/PatchTypes.h \
@@ -1365,6 +1100,22 @@ obj/ComputeMgr.o: \
 	src/ComputeConsForce.h \
 	src/WorkDistrib.h \
 	inc/WorkDistrib.decl.h \
+	src/FreeEnergyEnums.h \
+	src/FreeEnergyAssert.h \
+	src/FreeEnergyGroup.h \
+	src/FreeEnergyVector.h \
+	src/FreeEnergyRestrain.h \
+	src/FreeEnergyRMgr.h \
+	src/FreeEnergyLambda.h \
+	src/FreeEnergyLambdMgr.h \
+	src/GlobalMasterTest.h \
+	src/GlobalMasterIMD.h \
+	src/GlobalMasterTcl.h \
+	src/GlobalMasterSMD.h \
+	src/GlobalMasterEasy.h \
+	src/ComputeGlobalMaster.h \
+	src/GlobalMasterMisc.h \
+	src/GlobalMasterFreeEnergy.h \
 	inc/ComputeMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeMgr.o $(COPTC) src/ComputeMgr.C
 obj/ComputeNonbondedSelf.o: \
@@ -1585,6 +1336,8 @@ obj/ComputePme.o: \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	src/ComputeMgr.h \
+	src/GlobalMaster.h \
+	src/GlobalMasterServer.h \
 	inc/ComputeMgr.decl.h \
 	src/Debug.h \
 	src/SimParameters.h \
@@ -1638,60 +1391,6 @@ obj/ComputeRestraints.o: \
 	src/PDB.h \
 	src/PDBData.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeRestraints.o $(COPTC) src/ComputeRestraints.C
-obj/ComputeSMD.o: \
-	src/ComputeSMD.C \
-	src/ComputeSMD.h \
-	src/ComputeGlobalMaster.h \
-	src/ComputeHomePatches.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/common.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
-	src/Compute.h \
-	src/main.h \
-	src/HomePatch.h \
-	src/Patch.h \
-	src/OwnerBox.h \
-	src/Box.h \
-	src/PositionOwnerBox.h \
-	src/PositionBox.h \
-	src/Lattice.h \
-	src/Tensor.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
-	src/PatchTypes.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
-	src/ResizeArrayIter.h \
-	src/ProcessorPrivate.h \
-	src/BOCgroup.h \
-	src/MigrateAtomsMsg.h \
-	src/Migration.h \
-	src/InfoStream.h \
-	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
-	src/Node.h \
-	inc/Node.decl.h \
-	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
-	src/MStream.h \
-	src/ComputeMgr.h \
-	src/ComputeGlobal.h \
-	src/ComputeGlobalMsgs.h \
-	inc/ComputeMgr.decl.h \
-	src/PDB.h \
-	src/parm.h \
-	src/GromacsTopFile.h \
-	src/PDBData.h \
-	src/Molecule.h \
-	src/structures.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
-	src/Hydrogen.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeSMD.o $(COPTC) src/ComputeSMD.C
 obj/ComputeSphericalBC.o: \
 	src/ComputeSphericalBC.C \
 	src/ComputeSphericalBC.h \
@@ -1724,65 +1423,6 @@ obj/ComputeSphericalBC.o: \
 	src/SortedArray.h \
 	src/SortableResizeArray.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeSphericalBC.o $(COPTC) src/ComputeSphericalBC.C
-obj/ComputeTcl.o: \
-	src/ComputeTcl.C \
-	src/Node.h \
-	src/main.h \
-	src/ProcessorPrivate.h \
-	src/BOCgroup.h \
-	inc/Node.decl.h \
-	src/ComputeTcl.h \
-	src/ComputeGlobalMaster.h \
-	src/ComputeHomePatches.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/common.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
-	src/Compute.h \
-	src/HomePatch.h \
-	src/Patch.h \
-	src/OwnerBox.h \
-	src/Box.h \
-	src/PositionOwnerBox.h \
-	src/PositionBox.h \
-	src/Lattice.h \
-	src/Tensor.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
-	src/PatchTypes.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
-	src/ResizeArrayIter.h \
-	src/MigrateAtomsMsg.h \
-	src/Migration.h \
-	src/InfoStream.h \
-	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
-	src/ComputeGlobal.h \
-	src/ComputeGlobalMsgs.h \
-	inc/ComputeMgr.decl.h \
-	src/Molecule.h \
-	src/parm.h \
-	src/structures.h \
-	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
-	src/Hydrogen.h \
-	src/GromacsTopFile.h \
-	src/ReductionMgr.h \
-	src/ComputeMgr.h \
-	src/ScriptTcl.h \
-	src/Broadcasts.h \
-	src/BroadcastObject.h \
-	src/BroadcastMgr.h \
-	src/UniqueSetIter.h \
-	inc/BroadcastMgr.decl.h \
-	src/BroadcastClient.h \
-	src/TclCommands.h \
-	src/Debug.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeTcl.o $(COPTC) src/ComputeTcl.C
 obj/ComputeConsForce.o: \
 	src/ComputeConsForce.C \
 	src/ComputeConsForce.h \
@@ -1951,35 +1591,11 @@ obj/FreeEnergyParse.o: \
 	src/FreeEnergyRMgr.h \
 	src/FreeEnergyLambda.h \
 	src/FreeEnergyLambdMgr.h \
-	src/ComputeFreeEnergy.h \
-	src/ComputeGlobalMaster.h \
-	src/ComputeHomePatches.h \
 	src/NamdTypes.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/Compute.h \
-	src/main.h \
-	src/HomePatch.h \
-	src/Patch.h \
-	src/OwnerBox.h \
-	src/Box.h \
-	src/PositionOwnerBox.h \
-	src/PositionBox.h \
-	src/Lattice.h \
-	src/Tensor.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
-	src/PatchTypes.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
-	src/ResizeArrayIter.h \
-	src/ProcessorPrivate.h \
-	src/BOCgroup.h \
-	src/MigrateAtomsMsg.h \
-	src/Migration.h \
-	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
+	src/GlobalMaster.h \
+	src/GlobalMasterFreeEnergy.h \
 	src/FreeEnergyParse.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/FreeEnergyParse.o $(COPTC) src/FreeEnergyParse.C
 obj/FreeEnergyRestrain.o: \
@@ -1995,35 +1611,11 @@ obj/FreeEnergyRestrain.o: \
 	src/FreeEnergyRMgr.h \
 	src/FreeEnergyLambda.h \
 	src/FreeEnergyLambdMgr.h \
-	src/ComputeFreeEnergy.h \
-	src/ComputeGlobalMaster.h \
-	src/ComputeHomePatches.h \
 	src/NamdTypes.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/Compute.h \
-	src/main.h \
-	src/HomePatch.h \
-	src/Patch.h \
-	src/OwnerBox.h \
-	src/Box.h \
-	src/PositionOwnerBox.h \
-	src/PositionBox.h \
-	src/Lattice.h \
-	src/Tensor.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
-	src/PatchTypes.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
-	src/ResizeArrayIter.h \
-	src/ProcessorPrivate.h \
-	src/BOCgroup.h \
-	src/MigrateAtomsMsg.h \
-	src/Migration.h \
-	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h
+	src/GlobalMaster.h \
+	src/GlobalMasterFreeEnergy.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/FreeEnergyRestrain.o $(COPTC) src/FreeEnergyRestrain.C
 obj/FreeEnergyRMgr.o: \
 	src/FreeEnergyRMgr.C \
@@ -2038,12 +1630,273 @@ obj/FreeEnergyRMgr.o: \
 	src/FreeEnergyRMgr.h \
 	src/FreeEnergyLambda.h \
 	src/FreeEnergyLambdMgr.h \
-	src/ComputeFreeEnergy.h \
-	src/ComputeGlobalMaster.h \
-	src/ComputeHomePatches.h \
 	src/NamdTypes.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
+	src/GlobalMaster.h \
+	src/GlobalMasterFreeEnergy.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/FreeEnergyRMgr.o $(COPTC) src/FreeEnergyRMgr.C
+obj/FreeEnergyVector.o: \
+	src/FreeEnergyVector.C \
+	src/InfoStream.h \
+	src/FreeEnergyEnums.h \
+	src/FreeEnergyAssert.h \
+	src/Vector.h \
+	src/common.h \
+	src/FreeEnergyVector.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/FreeEnergyVector.o $(COPTC) src/FreeEnergyVector.C
+obj/GlobalMaster.o: \
+	src/GlobalMaster.C \
+	src/Node.h \
+	src/main.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/Node.decl.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/common.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
+	src/GlobalMaster.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMaster.o $(COPTC) src/GlobalMaster.C
+obj/GlobalMasterServer.o: \
+	src/GlobalMasterServer.C \
+	src/ComputeGlobalMsgs.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	inc/ComputeMgr.decl.h \
+	src/ComputeMgr.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/GlobalMaster.h \
+	src/GlobalMasterServer.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterServer.o $(COPTC) src/GlobalMasterServer.C
+obj/GlobalMasterTest.o: \
+	src/GlobalMasterTest.C \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/GlobalMaster.h \
+	src/GlobalMasterTest.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterTest.o $(COPTC) src/GlobalMasterTest.C
+obj/GlobalMasterIMD.o: \
+	src/GlobalMasterIMD.C \
+	src/vmdsock.h \
+	src/Node.h \
+	src/main.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/Node.decl.h \
+	src/IMDOutput.h \
+	src/common.h \
+	src/imd.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/MStream.h \
+	src/Vector.h \
+	src/Lattice.h \
+	src/NamdTypes.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/Tensor.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/GlobalMaster.h \
+	src/GlobalMasterIMD.h \
+	src/InfoStream.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterIMD.o $(COPTC) src/GlobalMasterIMD.C
+obj/GlobalMasterTcl.o: \
+	src/GlobalMasterTcl.C \
+	src/Node.h \
+	src/main.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/Node.decl.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/common.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
+	src/ReductionMgr.h \
+	src/ScriptTcl.h \
+	src/Broadcasts.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/BroadcastObject.h \
+	src/BroadcastMgr.h \
+	src/UniqueSetIter.h \
+	inc/BroadcastMgr.decl.h \
+	src/BroadcastClient.h \
+	src/InfoStream.h \
+	src/GlobalMaster.h \
+	src/GlobalMasterTcl.h \
+	src/TclCommands.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterTcl.o $(COPTC) src/GlobalMasterTcl.C
+obj/GlobalMasterSMD.o: \
+	src/GlobalMasterSMD.C \
+	src/Node.h \
+	src/main.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/Node.decl.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/common.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
+	src/GlobalMaster.h \
+	src/GlobalMasterSMD.h \
+	src/PDB.h \
+	src/PDBData.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/InfoStream.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterSMD.o $(COPTC) src/GlobalMasterSMD.C
+obj/GlobalMasterFreeEnergy.o: \
+	src/GlobalMasterFreeEnergy.C \
+	src/InfoStream.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/FreeEnergyEnums.h \
+	src/FreeEnergyAssert.h \
+	src/FreeEnergyGroup.h \
+	src/FreeEnergyVector.h \
+	src/FreeEnergyRestrain.h \
+	src/FreeEnergyRMgr.h \
+	src/FreeEnergyLambda.h \
+	src/FreeEnergyLambdMgr.h \
+	src/GlobalMaster.h \
+	src/GlobalMasterFreeEnergy.h \
+	src/FreeEnergyParse.h \
+	src/Node.h \
+	src/main.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/Node.decl.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
+	src/ReductionMgr.h \
+	src/SimParameters.h \
+	src/Communicate.h \
+	src/MStream.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterFreeEnergy.o $(COPTC) src/GlobalMasterFreeEnergy.C
+obj/GlobalMasterEasy.o: \
+	src/GlobalMasterEasy.C \
+	src/Node.h \
+	src/main.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/Node.decl.h \
+	src/PatchMap.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/PatchMap.inl \
+	src/AtomMap.h \
+	src/GlobalMaster.h \
+	src/GlobalMasterEasy.h \
+	src/ComputeGlobalMaster.h \
+	src/ComputeHomePatches.h \
+	src/Compute.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/InfoStream.h \
+	inc/PatchMgr.decl.h \
+	src/HomePatchTypes.h \
+	src/PatchMgr.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/GromacsTopFile.h \
+	src/ReductionMgr.h \
+	src/ComputeMgr.h \
+	src/GlobalMasterServer.h \
+	inc/ComputeMgr.decl.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterEasy.o $(COPTC) src/GlobalMasterEasy.C
+obj/GlobalMasterMisc.o: \
+	src/GlobalMasterMisc.C \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/GlobalMaster.h \
+	src/GlobalMasterMisc.h \
+	src/ComputeHomePatches.h \
 	src/Compute.h \
 	src/main.h \
 	src/HomePatch.h \
@@ -2065,18 +1918,13 @@ obj/FreeEnergyRMgr.o: \
 	src/BOCgroup.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
-	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/FreeEnergyRMgr.o $(COPTC) src/FreeEnergyRMgr.C
-obj/FreeEnergyVector.o: \
-	src/FreeEnergyVector.C \
 	src/InfoStream.h \
-	src/FreeEnergyEnums.h \
-	src/FreeEnergyAssert.h \
-	src/Vector.h \
-	src/common.h \
-	src/FreeEnergyVector.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/FreeEnergyVector.o $(COPTC) src/FreeEnergyVector.C
+	inc/PatchMgr.decl.h \
+	src/HomePatchTypes.h \
+	src/GlobalMasterEasy.h \
+	src/ComputeGlobalMaster.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterMisc.o $(COPTC) src/GlobalMasterMisc.C
 obj/GromacsTopFile.o: \
 	src/GromacsTopFile.C \
 	src/common.h \
@@ -2233,6 +2081,8 @@ obj/LdbCoordinator.o: \
 	src/Sequencer.h \
 	src/PatchTypes.h \
 	src/ComputeMgr.h \
+	src/GlobalMaster.h \
+	src/GlobalMasterServer.h \
 	src/packmsg.h \
 	inc/ComputeMgr.decl.h \
 	inc/LdbCoordinator.def.h
@@ -2562,6 +2412,8 @@ obj/Node.o: \
 	src/HomePatchTypes.h \
 	src/Compute.h \
 	src/ComputeMgr.h \
+	src/GlobalMaster.h \
+	src/GlobalMasterServer.h \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \

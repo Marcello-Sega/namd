@@ -70,18 +70,13 @@ OBJS = \
 	$(DSTDIR)/ComputeDPMTA.o \
 	$(DSTDIR)/ComputeEField.o \
 	$(DSTDIR)/ComputeExt.o \
-	$(DSTDIR)/ComputeFreeEnergy.o \
 	$(DSTDIR)/ComputeFullDirect.o \
 	$(DSTDIR)/ComputeHomePatch.o \
 	$(DSTDIR)/ComputeHomePatches.o \
 	$(DSTDIR)/ComputeImpropers.o \
 	$(DSTDIR)/ComputeGlobal.o \
-	$(DSTDIR)/ComputeGlobalEasy.o \
-	$(DSTDIR)/ComputeGlobalMaster.o \
 	$(DSTDIR)/ComputeGlobalMsgs.o \
-	$(DSTDIR)/ComputeIMD.o \
 	$(DSTDIR)/ComputeMap.o \
-	$(DSTDIR)/ComputeMisc.o \
 	$(DSTDIR)/ComputeMgr.o \
 	$(DSTDIR)/ComputeNonbondedSelf.o \
 	$(DSTDIR)/ComputeNonbondedPair.o \
@@ -90,9 +85,7 @@ OBJS = \
 	$(DSTDIR)/ComputePatchPair.o \
 	$(DSTDIR)/ComputePme.o \
 	$(DSTDIR)/ComputeRestraints.o \
-	$(DSTDIR)/ComputeSMD.o \
 	$(DSTDIR)/ComputeSphericalBC.o \
-	$(DSTDIR)/ComputeTcl.o \
 	$(DSTDIR)/ComputeConsForce.o \
 	$(DSTDIR)/ConfigList.o \
 	$(DSTDIR)/Controller.o \
@@ -106,6 +99,15 @@ OBJS = \
         $(DSTDIR)/FreeEnergyRestrain.o \
         $(DSTDIR)/FreeEnergyRMgr.o \
         $(DSTDIR)/FreeEnergyVector.o \
+	$(DSTDIR)/GlobalMaster.o \
+	$(DSTDIR)/GlobalMasterServer.o \
+	$(DSTDIR)/GlobalMasterTest.o \
+	$(DSTDIR)/GlobalMasterIMD.o \
+	$(DSTDIR)/GlobalMasterTcl.o \
+	$(DSTDIR)/GlobalMasterSMD.o \
+	$(DSTDIR)/GlobalMasterFreeEnergy.o \
+	$(DSTDIR)/GlobalMasterEasy.o \
+	$(DSTDIR)/GlobalMasterMisc.o \
         $(DSTDIR)/GromacsTopFile.o \
 	$(DSTDIR)/heap.o \
 	$(DSTDIR)/HomePatch.o \
@@ -217,11 +219,11 @@ CHARMLIB = $(CHARM)/lib
 LIBS = $(DPMTALIBS) $(DPMELIBS) $(TCLDLL)
 
 # CXX is platform dependent
-CXXFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXOPTS) $(RELEASE)
+CXXFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXOPTS) $(RELEASE) $(NEWMASTER) $(NEWMASTER)
 CXXTHREADFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXTHREADOPTS) $(RELEASE)
-CXXSIMPARAMFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXSIMPARAMOPTS) $(RELEASE)
-CXXNOALIASFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXNOALIASOPTS) $(RELEASE)
-GXXFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(RELEASE)
+CXXSIMPARAMFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXSIMPARAMOPTS) $(RELEASE) $(NEWMASTER)
+CXXNOALIASFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXNOALIASOPTS) $(RELEASE) $(NEWMASTER)
+GXXFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(RELEASE) $(NEWMASTER)
 CFLAGS = $(COPTI)$(SRCDIR) $(TCL) $(COPTS) $(RELEASE)
 
 # Add new executables here.
@@ -241,7 +243,7 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(FFTLIB) \
 	-lm -o namd2
 
-charmrun:
+charmrun: $(CHARM)/bin/charmrun # XXX
 	$(COPY) $(CHARM)/bin/charmrun $@
 
 win32binaries: namd2.exe psfgen.exe charmd.exe charmd_faceless.exe charmrun.exe

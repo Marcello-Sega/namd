@@ -9,7 +9,7 @@
 #if !defined(RESTRAINT_HPP)
   #define RESTRAINT_HPP
 
-class ComputeFreeEnergy;
+class GlobalMasterFreeEnergy;
 
 //****************************************************************************
 //  ARestraint:
@@ -58,8 +58,8 @@ public:
   void    SetGroups(AGroup& Group1, AGroup& Group2);
   void    SetGroups(AGroup& Group1, AGroup& Group2, AGroup& Group3);
   void    SetGroups(AGroup& Group1, AGroup& Group2, AGroup& Group3, AGroup& Group4);
-  void    UpdateCOMs(ComputeFreeEnergy& CFE);
-  void    DistributeForce(int WhichGroup, AVector Force, ComputeFreeEnergy& CFE);
+  void    UpdateCOMs(GlobalMasterFreeEnergy& CFE);
+  void    DistributeForce(int WhichGroup, AVector Force, GlobalMasterFreeEnergy& CFE);
 
 //---------------- only for testing------------//
 #if defined(_DEBUG)                            //

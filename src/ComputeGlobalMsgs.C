@@ -49,6 +49,7 @@ PACK_MSG(ComputeGlobalDataMsg,
 
 ComputeGlobalResultsMsg::ComputeGlobalResultsMsg(void) : tag(-1) { 
   reconfig = 0;
+  resendCoordinates = 0;
 }
 
 ComputeGlobalResultsMsg::~ComputeGlobalResultsMsg(void) { 
@@ -60,9 +61,9 @@ PACK_MSG(ComputeGlobalResultsMsg,
   PACK_RESIZE(f);
   PACK_RESIZE(gforce);
   PACK(reconfig);
+  PACK(resendCoordinates);
   if ( packmsg_msg->reconfig ) {
     PACK_RESIZE(newaid);
     PACK_RESIZE(newgdef);
   }
 )
-

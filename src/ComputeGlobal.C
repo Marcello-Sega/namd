@@ -13,32 +13,7 @@
 #include "PatchMap.inl"
 #include "AtomMap.h"
 #include "ComputeGlobal.h"
-#include "ComputeGlobalMaster.h"
 #include "ComputeGlobalMsgs.h"
-#include "ComputeMisc.h"
-#include "ComputeTcl.h"
-//---these include files are needed for ComputeFreeEnergy---
-#include <string.h>
-#if !defined(WIN32) || defined(__CYGWIN__)
-#include <strstream.h>
-#else
-#include <strstrea.h>
-#endif
-#include "InfoStream.h"
-#include "FreeEnergyEnums.h"
-#include "FreeEnergyAssert.h"
-#include "FreeEnergyGroup.h"
-#include "Vector.h"
-#include "FreeEnergyVector.h"
-#include "FreeEnergyRestrain.h"
-#include "FreeEnergyRMgr.h"
-#include "FreeEnergyLambda.h"
-#include "FreeEnergyLambdMgr.h"
-#include "ComputeFreeEnergy.h"
-#include "FreeEnergyParse.h"
-//----------------------------------------------------------
-#include "ComputeIMD.h"
-#include "ComputeSMD.h"
 #include "PatchMgr.h"
 #include "Molecule.h"
 #include "ReductionMgr.h"
@@ -48,51 +23,24 @@
 #include <stdio.h>
 
 //#define DEBUGM
-#define MIN_DEBUG_LEVEL 4
+#define MIN_DEBUG_LEVEL 1
 #include "Debug.h"
 
-
-// PASS-THROUGH
-
-void ComputeGlobal::recvData(ComputeGlobalDataMsg *msg) {
-  int tag = msg->tag;
-  if (tag >= 0 && tag < masterlist.size() && masterlist[tag].master != 0) {
-    masterlist[tag].master->recvData(msg);
-  } else {
-    char buf[1024];
-    sprintf(buf, "ComputeGlobal::received DataMsg for nonexistent master!  tag=%d, size=%d", msg->tag, masterlist.size());
-    NAMD_die(buf);
-  }
-}
-    
 // CLIENTS
 
 ComputeGlobal::ComputeGlobal(ComputeID c, ComputeMgr *m)
 	: ComputeHomePatches(c)
 {
   DebugM(3,"Constructing client\n");
+    
   ComputeGlobalMaster *master;
-  if ( !CkMyPe() ) { 
-    SimParameters * simParams = Node::Object()->simParameters;
-    if (simParams->IMDon && ! simParams->IMDignore) master = new ComputeIMD(m);
-    else if ( simParams->tclForcesOn ) master = new ComputeTcl(m);
-    else if ( simParams->miscForcesOn ) master = new ComputeMisc(m);
-    else if ( simParams->freeEnergyOn ) master = new ComputeFreeEnergy(m);
-    else if ( simParams->SMDOn ) master = new ComputeSMD(m);
-    else NAMD_die("Internal error in ComputeGlobal::ComputeGlobal");
- 
-    master->set_tag(0); // Hard-coded until we can have multiple masters
-  } else {
-    master = 0;
-  }
+  master = 0;
   masterlist.item(0).master = master; 
   comm = m;
 }
 
 ComputeGlobal::~ComputeGlobal()
 {
-  for (int i=0; i<masterlist.size(); i++) 
-    delete masterlist[i].master;
 }
 
 void ComputeGlobal::configure(int tag, AtomIDList newaid, AtomIDList newgdef) {
@@ -122,6 +70,7 @@ void ComputeGlobal::configure(int tag, AtomIDList newaid, AtomIDList newgdef) {
 }
 
 void ComputeGlobal::recvConfig(ComputeGlobalConfigMsg *msg) {
+  DebugM(3,"Receiving configure on client\n");
   int tag = msg->tag;
   if (tag >= 0 && tag < masterlist.size()) { 
     configure(tag, msg->aid,msg->gdef);
@@ -133,66 +82,91 @@ void ComputeGlobal::recvConfig(ComputeGlobalConfigMsg *msg) {
 }
 
 void ComputeGlobal::recvResults(ComputeGlobalResultsMsg *msg) {
-  DebugM(3,"Receiving results (" << msg->aid.size() << " forces) on client\n");
+  DebugM(3,"Receiving results (" << msg->aid.size() << " forces, "
+	 << msg->newgdef.size() << " new group atoms) on client\n");
 
   if (msg->tag < 0 || msg->tag >= masterlist.size()) {
     NAMD_die("ComputeGlobal: got ResultsMsg for nonexistent master!");
   }
   MasterConfig &mc = masterlist[msg->tag];
-  
-  // Store forces to patches
-  PatchMap *patchMap = PatchMap::Object();
-  int numPatches = patchMap->numPatches();
-  AtomMap *atomMap = AtomMap::Object();
-  ResizeArrayIter<PatchElem> ap(patchList);
-  Force **f = new Force*[numPatches];
-  for ( int i = 0; i < numPatches; ++i ) f[i] = 0;
 
-  for (ap = ap.begin(); ap != ap.end(); ap++) {
-    (*ap).r = (*ap).forceBox->open();
-    f[(*ap).patchID] = (*ap).r->f[Results::normal];
-  }
+  // set the forces only if we aren't going to resend the data
+  int setForces = !msg->resendCoordinates;
 
-  AtomIDList::iterator a = msg->aid.begin();
-  AtomIDList::iterator a_e = msg->aid.end();
-  ForceList::iterator f2 = msg->f.begin();
-  for ( ; a != a_e; ++a, ++f2 ) {
-    LocalID localID = atomMap->localID(*a);
-    if ( localID.pid == notUsed || ! f[localID.pid] ) continue;
-    f[localID.pid][localID.index] += (*f2);
-  }
+  if(setForces) { // we are requested to 
+    // Store forces to patches
+    PatchMap *patchMap = PatchMap::Object();
+    int numPatches = patchMap->numPatches();
+    AtomMap *atomMap = AtomMap::Object();
+    ResizeArrayIter<PatchElem> ap(patchList);
+    Force **f = new Force*[numPatches];
+    for ( int i = 0; i < numPatches; ++i ) f[i] = 0;
+
+    for (ap = ap.begin(); ap != ap.end(); ap++) {
+      (*ap).r = (*ap).forceBox->open();
+      f[(*ap).patchID] = (*ap).r->f[Results::normal];
+    }
+
+    AtomIDList::iterator a = msg->aid.begin();
+    AtomIDList::iterator a_e = msg->aid.end();
+    ForceList::iterator f2 = msg->f.begin();
+    for ( ; a != a_e; ++a, ++f2 ) {
+      DebugM(1,"processing atom "<<(*a)<<", F="<<(*f2)<<"...\n");
+      /* XXX if (*a) is out of bounds here we get a segfault */
+      LocalID localID = atomMap->localID(*a);
+      if ( localID.pid == notUsed || ! f[localID.pid] ) continue;
+      f[localID.pid][localID.index] += (*f2);
+    }
+    DebugM(1,"done with the loop\n");
 
   // calculate forces for atoms in groups
-  Molecule *mol = Node::Object()->molecule;
-  AtomIDList::iterator g_i, g_e;
-  g_i = mc.gdef.begin(); g_e = mc.gdef.end();
-  ResizeArray<BigReal>::iterator gm_i = mc.gmass.begin();
-  ForceList::iterator gf_i = msg->gforce.begin();
-  //iout << iDEBUG << "recvResults\n" << endi;
-  for ( ; g_i != g_e; ++g_i, ++gm_i, ++gf_i ) {
-    //iout << iDEBUG << *gf_i << '\n' << endi;
-    Vector accel = (*gf_i) / (*gm_i);
-    for ( ; *g_i != -1; ++g_i ) {
-      //iout << iDEBUG << *g_i << '\n' << endi;
-      LocalID localID = atomMap->localID(*g_i);
-      if ( localID.pid == notUsed || ! f[localID.pid] ) continue;
-      f[localID.pid][localID.index] += accel * mol->atommass(*g_i);
+    Molecule *mol = Node::Object()->molecule;
+    AtomIDList::iterator g_i, g_e;
+    g_i = mc.gdef.begin(); g_e = mc.gdef.end();
+    ResizeArray<BigReal>::iterator gm_i = mc.gmass.begin();
+    ForceList::iterator gf_i = msg->gforce.begin();
+    //iout << iDEBUG << "recvResults\n" << endi;
+    for ( ; g_i != g_e; ++g_i, ++gm_i, ++gf_i ) {
+      //iout << iDEBUG << *gf_i << '\n' << endi;
+      Vector accel = (*gf_i) / (*gm_i);
+      for ( ; *g_i != -1; ++g_i ) {
+	//iout << iDEBUG << *g_i << '\n' << endi;
+	LocalID localID = atomMap->localID(*g_i);
+	if ( localID.pid == notUsed || ! f[localID.pid] ) continue;
+	f[localID.pid][localID.index] += accel * mol->atommass(*g_i);
+      }
     }
-  }
+    DebugM(1,"done with the groups\n");
 
-  for (ap = ap.begin(); ap != ap.end(); ap++) {
-    (*ap).forceBox->close(&((*ap).r));
+    for (ap = ap.begin(); ap != ap.end(); ap++) {
+      (*ap).forceBox->close(&((*ap).r));
+    }
+
+    delete [] f;
   }
+  // done setting the forces
 
   // Get reconfiguration if present
   if ( msg->reconfig ) configure(msg->tag, msg->newaid, msg->newgdef);
 
-  delete [] f;
+  // send another round of data if requested
+
+  if(msg->resendCoordinates) {
+    // XXX is this NAMD_die necessary?  Why should it be?
+    if(!masterlist[msg->tag].configured)
+      NAMD_die("Master requested data before sending reconfig.");
+
+    DebugM(3,"Sending requested data right away\n");
+    sendData(msg->tag);
+  }
+
   delete msg;
+  DebugM(3,"Done processing results\n");
 }
 
 void ComputeGlobal::doWork()
 {
+  DebugM(2,"doWork\n");
   for (int i=0; i<masterlist.size(); i++) {
     if (masterlist[i].configured) {
       sendData(i);
@@ -203,10 +177,12 @@ void ComputeGlobal::doWork()
       comm->sendComputeGlobalData(msg);
     }
   }
+  DebugM(2,"done with doWork\n");
 }
 
 void ComputeGlobal::sendData(int tag)
 {
+  DebugM(2,"sendData\n");
   // Get positions from patches
   PatchMap *patchMap = PatchMap::Object();
   int numPatches = patchMap->numPatches();
@@ -224,6 +200,7 @@ void ComputeGlobal::sendData(int tag)
 
   ComputeGlobalDataMsg *msg = new  ComputeGlobalDataMsg;
   msg->tag = tag;
+
   MasterConfig &mc = masterlist[tag];
 
   AtomIDList::iterator a = mc.aid.begin();
@@ -258,11 +235,11 @@ void ComputeGlobal::sendData(int tag)
   for (ap = ap.begin(); ap != ap.end(); ap++) {
     (*ap).positionBox->close(&(x[(*ap).patchID]));
   }
+
   delete [] x;
   delete [] t;
 
   DebugM(3,"Sending data (" << msg->aid.size() << " positions) on client\n");
-
   comm->sendComputeGlobalData(msg);
 }
 

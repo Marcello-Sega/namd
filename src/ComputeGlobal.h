@@ -26,7 +26,6 @@ public:
   virtual ~ComputeGlobal();
   void doWork();
   void recvConfig(ComputeGlobalConfigMsg *);
-  void recvData(ComputeGlobalDataMsg *);
   void recvResults(ComputeGlobalResultsMsg *);
 
 private:

@@ -22,11 +22,11 @@
 #include "FreeEnergyRMgr.h"
 #include "FreeEnergyLambda.h"
 #include "FreeEnergyLambdMgr.h"
-#include "ComputeFreeEnergy.h"
+#include "GlobalMasterFreeEnergy.h"
 
 void main() {
 
-  ComputeFreeEnergy  CFE;
+  GlobalMasterFreeEnergy  CFE;
 
   char  AStr[] =
   "urestraint { \

@@ -8,8 +8,8 @@
 
 #include "ProcessorPrivate.h"
 
-#define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
+#define MIN_DEBUG_LEVEL 1
 #include "Debug.h"
 
 #include "BOCgroup.h"
@@ -45,6 +45,24 @@
 #include "ComputeRestraints.h"
 #include "ComputeConsForce.h"
 #include "WorkDistrib.h"
+
+/* include all of the specific masters we need here */
+#include "FreeEnergyEnums.h"
+#include "FreeEnergyAssert.h"
+#include "FreeEnergyGroup.h"
+#include "FreeEnergyVector.h"
+#include "FreeEnergyRestrain.h"
+#include "FreeEnergyRMgr.h"
+#include "FreeEnergyLambda.h"
+#include "FreeEnergyLambdMgr.h"
+
+#include "GlobalMasterTest.h"
+#include "GlobalMasterIMD.h"
+#include "GlobalMasterTcl.h"
+#include "GlobalMasterSMD.h"
+#include "GlobalMasterEasy.h"
+#include "GlobalMasterMisc.h"
+#include "GlobalMasterFreeEnergy.h"
 
 ComputeMgr::ComputeMgr()
 {
@@ -211,6 +229,7 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
     PatchID pid2[2];
     PatchIDList pids;
     int trans2[2];
+    SimParameters *simParams = Node::Object()->simParameters;
 
     switch ( map->type(i) )
     {
@@ -306,6 +325,34 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	c = computeGlobalObject = new ComputeGlobal(i,this); // unknown delete
 	map->registerCompute(i,c);
 	c->initialize();
+
+	if ( !CkMyPe() ) {
+	  DebugM(4,"Mgr running on Node "<<CkMyPe()<<"\n");
+	  // XXX this is in a very strange place now
+	  /* create a master server to allow multiple masters */
+	  masterServerObject = new GlobalMasterServer(this,
+	    Node::Object()->workDistrib->getNumComputeGlobals());
+
+	  /* create the individual global masters */
+	  // masterServerObject->addClient(new GlobalMasterTest());
+	  if(simParams->tclForcesOn)
+	    masterServerObject->addClient(new GlobalMasterTcl());
+	  if(simParams->IMDon && !simParams->IMDignore)
+	    masterServerObject->addClient(new GlobalMasterIMD());
+
+
+	  if(simParams->SMDOn)
+	    masterServerObject->addClient(
+	      new GlobalMasterSMD(simParams->SMDk, simParams->SMDVel,
+				  simParams->SMDDir, simParams->SMDOutputFreq,
+				  simParams->firstTimestep, simParams->SMDFile)
+					  );
+	  if(simParams->miscForcesOn)
+	    masterServerObject->addClient(new GlobalMasterMisc());
+	  if ( simParams->freeEnergyOn )
+	    masterServerObject->addClient(new GlobalMasterFreeEnergy());
+	}
+
 	break;
       case computeExtType:
 	c = new ComputeExt(i); // unknown delete
@@ -367,7 +414,7 @@ ComputeMgr::createComputes(ComputeMap *map)
     DebugM(1,"  numPidsAllocated = " << map->computeData[i].numPidsAllocated << '\n');
     for(int j=0; j < map->computeData[i].numPids; j++)
     {
-      DebugM(1,"  pid " << map->computeData[i].pids[j] << '\n');
+      //      DebugM(1,"  pid " << map->computeData[i].pids[j] << '\n');
       if (!((j+1) % 6))
 	DebugM(1,'\n');
     }
@@ -410,11 +457,9 @@ void ComputeMgr:: sendComputeGlobalData(ComputeGlobalDataMsg *msg)
 
 void ComputeMgr:: recvComputeGlobalData(ComputeGlobalDataMsg *msg)
 {
-  if ( computeGlobalObject ) {
-    computeGlobalObject->recvData(msg);
-  }
-  else if ( CkMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
-  else NAMD_die("ComputeMgr::computeGlobalObject is NULL!");
+  if(masterServerObject) { // make sure it has been initialized
+    masterServerObject->recvData(msg);
+  } else NAMD_die("ComputeMgr::masterServerObject is NULL!");
 }
 
 void ComputeMgr:: sendComputeGlobalResults(ComputeGlobalResultsMsg *msg)

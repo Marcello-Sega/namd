@@ -26,7 +26,10 @@
 #include "FreeEnergyRMgr.h"
 #include "FreeEnergyLambda.h"
 #include "FreeEnergyLambdMgr.h"
-#include "ComputeFreeEnergy.h"
+
+#include "NamdTypes.h"
+#include "GlobalMaster.h"
+#include "GlobalMasterFreeEnergy.h"
 
 // initialize static member variables
 // (lambda is the same for all forcing restraints)
@@ -185,7 +188,7 @@ double ARestraint::GetDihe(AVector& A, AVector& B, AVector& C, AVector& D) {
 
 
 void ARestraint::DistributeForce(int WhichGroup, AVector Force,
-                                 ComputeFreeEnergy& CFE) {
+                                 GlobalMasterFreeEnergy& CFE) {
 //----------------------------------------------------------------------
 // Distribute Force among the group of atoms specified by WhichGroup
 //
@@ -224,7 +227,7 @@ void ARestraint::DistributeForce(int WhichGroup, AVector Force,
 }
 
 
-void ARestraint::UpdateCOMs(ComputeFreeEnergy& CFE) {
+void ARestraint::UpdateCOMs(GlobalMasterFreeEnergy& CFE) {
 //-----------------------------------------------------------------
 // calculate the center-of-mass of each group of atoms
 //
