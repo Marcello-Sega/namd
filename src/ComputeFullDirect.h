@@ -19,14 +19,6 @@ public:
   ComputeFullDirect(ComputeID c);
   virtual ~ComputeFullDirect();
   void doWork();
-
-private:
-
-  int numLocalAtoms;
-  Position *localPositions;
-  BigReal *localCharges;
-  Force *localForces;
-
 };
 
 #endif
@@ -34,13 +26,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeFullDirect.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/20 23:53:37 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/12/17 10:28:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFullDirect.h,v $
+ * Revision 1.1002  1997/12/17 10:28:08  jim
+ * Full direct electrostatics now works in parallel.
+ *
  * Revision 1.1001  1997/03/20 23:53:37  ari
  * Some changes for comments. Copyright date additions.
  * Hooks for base level update of Compute objects from ComputeMap

@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1037 1997/11/07 20:17:50 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1038 1997/12/17 10:28:09 jim Exp $";
 
 #include <stdio.h>
 
@@ -541,9 +541,7 @@ void WorkDistrib::mapComputes(void)
   // Handle full electrostatics
   if ( node->simParameters->fullDirectOn )
   {
-    if ( node->numNodes() > 1 )
-      NAMD_die("Full direct electrostatics only works on one processor.");
-    else if ( patchMap->xIsPeriodic() ||
+    if ( patchMap->xIsPeriodic() ||
 		patchMap->yIsPeriodic() || patchMap->zIsPeriodic() )
       NAMD_die("Full direct electrostatics is incompatible with periodic boundary conditions.");
     else
@@ -996,13 +994,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1037 $	$Date: 1997/11/07 20:17:50 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1038 $	$Date: 1997/12/17 10:28:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1038  1997/12/17 10:28:09  jim
+ * Full direct electrostatics now works in parallel.
+ *
  * Revision 1.1037  1997/11/07 20:17:50  milind
  * Made NAMD to run on shared memory machines.
  *

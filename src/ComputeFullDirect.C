@@ -17,11 +17,12 @@
 #include "PatchMgr.h"
 #include "Molecule.h"
 #include "ReductionMgr.h"
+#include "Communicate.h"
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 3
 #include "Debug.h"
 
-// Only works on one processor, without periodic boundary conditions.  -JCP
+// Only works without periodic boundary conditions.  -JCP
 
 ComputeFullDirect::ComputeFullDirect(ComputeID c) : ComputeHomePatches(c)
 {
@@ -36,10 +37,70 @@ ComputeFullDirect::~ComputeFullDirect()
 }
 
 
+BigReal calc_fulldirect(BigReal *data1, BigReal *results1, int n1,
+                        BigReal *data2, BigReal *results2, int n2, int selfmode)
+{
+  const BigReal coloumb = COLOUMB * ComputeNonbondedUtil::dielectric_1;
+  BigReal *dp1 = data1;
+  BigReal *rp1 = results1;
+  int j_begin = 0;
+  register BigReal electEnergy = 0.;
+  for(int i=0; i<n1; ++i)
+  {
+    register BigReal p_i_x = *(dp1++);
+    register BigReal p_i_y = *(dp1++);
+    register BigReal p_i_z = *(dp1++);
+    register BigReal kq_i = coloumb * *(dp1++);
+    register BigReal f_i_x = 0.;
+    register BigReal f_i_y = 0.;
+    register BigReal f_i_z = 0.;
+    if ( selfmode )
+    {
+      ++j_begin; data2 += 4; results2 += 3;
+    }
+    register BigReal *dp2 = data2;
+    register BigReal *rp2 = results2;
+    register int n2c = n2;
+    register int j;
+    for( j = j_begin; j<n2c; ++j)
+    {
+      register BigReal p_ij_x = p_i_x - *(dp2++);
+      register BigReal p_ij_y = p_i_y - *(dp2++);
+      register BigReal p_ij_z = p_i_z - *(dp2++);
+
+      register BigReal r_1;
+      r_1 = 1./sqrt(p_ij_x * p_ij_x + p_ij_y * p_ij_y + p_ij_z * p_ij_z);
+      register BigReal f = *(dp2++) * kq_i * r_1;
+      electEnergy += f;
+      f *= r_1*r_1;
+      p_ij_x *= f;
+      p_ij_y *= f;
+      p_ij_z *= f;
+      f_i_x += p_ij_x;
+      f_i_y += p_ij_y;
+      f_i_z += p_ij_z;
+      *(rp2++) -= p_ij_x;
+      *(rp2++) -= p_ij_y;
+      *(rp2++) -= p_ij_z;
+    }
+    *(rp1++) += f_i_x;
+    *(rp1++) += f_i_y;
+    *(rp1++) += f_i_z;
+  }
+
+  return electEnergy;
+}
+
+
 void ComputeFullDirect::doWork()
 {
+  int numLocalAtoms;
+  BigReal *localData;
+  BigReal *localResults;
+  BigReal *newLocalResults;
+  register BigReal *local_ptr;
+
   ResizeArrayIter<PatchElem> ap(patchList);
-  register int i,j;
 
   // Skip computations if nothing to do.
   if ( ! patchList[0].p->flags.doFullElectrostatics )
@@ -63,60 +124,157 @@ void ComputeFullDirect::doWork()
     numLocalAtoms += (*ap).p->getNumAtoms();
   }
 
-  localPositions = new Position[numLocalAtoms];	// freed at end of this method
-  localCharges = new BigReal[numLocalAtoms];	// freed at end of this method
-  localForces = new Force[numLocalAtoms];	// freed at end of this method
+  localData = new BigReal[4*numLocalAtoms];	// freed at end of this method
+  localResults = new BigReal[3*numLocalAtoms];	// freed at end of this method
+  newLocalResults = new BigReal[3*numLocalAtoms];  // freed at end of this method
 
   // get positions and charges
-  j = 0;
+  local_ptr = localData;
   for (ap = ap.begin(); ap != ap.end(); ap++) {
     Position *x = (*ap).positionBox->open();
     AtomProperties *a = (*ap).atomBox->open();
     int numAtoms = (*ap).p->getNumAtoms();
 
-    for(int i=0; i<numAtoms; ++i, ++j)
+    for(int i=0; i<numAtoms; ++i)
     {
-      localPositions[j] = x[i];
-      localCharges[j] = a[i].charge;
+      *(local_ptr++) = x[i].x;
+      *(local_ptr++) = x[i].y;
+      *(local_ptr++) = x[i].z;
+      *(local_ptr++) = a[i].charge;
     }
 
     (*ap).positionBox->close(&x);
     (*ap).atomBox->close(&a);
   } 
 
-  // perform local calculations
-  BigReal electEnergy = 0;
-  const BigReal coloumb = COLOUMB * ComputeNonbondedUtil::dielectric_1;
-  for(i=0; i<numLocalAtoms; ++i)
+  // zero out forces
+  local_ptr = localResults;
+  for(int j=0; j<numLocalAtoms; ++j)
   {
-    register BigReal kq_i = coloumb * localCharges[i];
-    register BigReal p_i_x = localPositions[i].x;
-    register BigReal p_i_y = localPositions[i].y;
-    register BigReal p_i_z = localPositions[i].z;
-    register BigReal f_i_x = 0.;
-    register BigReal f_i_y = 0.;
-    register BigReal f_i_z = 0.;
-    for(j=i+1; j<numLocalAtoms; ++j)
-    {
-      register Position *p_j = localPositions + j;
-      register BigReal p_ij_x = p_i_x - p_j->x;
-      register BigReal p_ij_y = p_i_y - p_j->y;
-      register BigReal p_ij_z = p_i_z - p_j->z;
+    *(local_ptr++) = 0.;
+    *(local_ptr++) = 0.;
+    *(local_ptr++) = 0.;
+  }
 
-      register BigReal r_1;
-      r_1 = 1./sqrt(p_ij_x * p_ij_x + p_ij_y * p_ij_y + p_ij_z * p_ij_z);
-      register BigReal f = localCharges[j] * kq_i * r_1;
-      electEnergy += f;
-      f *= r_1*r_1;
-      p_ij_x *= f;
-      p_ij_y *= f;
-      p_ij_z *= f;
-      f_i_x += p_ij_x;
-      f_i_y += p_ij_y;
-      f_i_z += p_ij_z;
-      localForces[j] -= Vector(p_ij_x,p_ij_y,p_ij_z);
+  // perform calculations
+  BigReal electEnergy = 0;
+
+#define PEMOD(N) (((N)+CNumPes())%CNumPes())
+
+  int numStages = CNumPes() / 2 + 2;
+  int lastStage = numStages - 2;
+  int sendDataPE = PEMOD(CMyPe()+1);
+  int recvDataPE = PEMOD(CMyPe()-1);
+  int sendResultsPE = PEMOD(CMyPe()-1);
+  int recvResultsPE = PEMOD(CMyPe()+1);
+  int numRemoteAtoms = numLocalAtoms;
+  int oldNumRemoteAtoms;
+  BigReal *remoteData = 0;
+  BigReal *remoteResults = 0;
+  register BigReal *remote_ptr;
+  register BigReal *end_ptr;
+
+  for ( int stage = 0; stage < numStages; ++stage )
+  {
+    // send remoteResults to sendResultsPE
+    if ( stage > 1 )
+    {
+      DebugM(4,"send remoteResults to sendResultsPE " << sendResultsPE << "\n");
+      MOStream *msg=CpvAccess(comm)->
+		newOutputStream(sendResultsPE, FULLFORCETAG, BUFSIZE);
+      msg->put(3*oldNumRemoteAtoms,remoteResults);
+      delete [] remoteResults;
+      msg->end();
+      delete msg;
+      sendResultsPE = PEMOD(sendResultsPE-1);
     }
-    localForces[i] += Vector(f_i_x,f_i_y,f_i_z);
+
+    // send remoteData to sendDataPE
+    if ( stage < lastStage )
+    {
+      DebugM(4,"send remoteData to sendDataPE " << sendDataPE << "\n");
+      MOStream *msg=CpvAccess(comm)->
+		newOutputStream(sendDataPE, FULLTAG, BUFSIZE);
+      msg->put(numRemoteAtoms);
+      msg->put(4*numRemoteAtoms,(stage?remoteData:localData));
+      msg->end();
+      delete msg;
+    }
+
+    // allocate new result storage
+    if ( stage > 0 && stage <= lastStage )
+    {
+      DebugM(4,"allocate new result storage\n");
+      remoteResults = new BigReal[3*numRemoteAtoms];
+      remote_ptr = remoteResults;
+      end_ptr = remoteResults + 3*numRemoteAtoms;
+      for ( ; remote_ptr != end_ptr; ++remote_ptr ) *remote_ptr = 0.;
+    }
+
+    // do calculation
+    if ( stage == 0 )
+    {  // self interaction
+      DebugM(4,"self interaction\n");
+      electEnergy += calc_fulldirect(
+        localData,localResults,numLocalAtoms,
+        localData,localResults,numLocalAtoms,1);
+    }
+    else if ( stage < lastStage ||
+            ( stage == lastStage && ( CNumPes() % 2 ) ) )
+    {  // full other interaction
+      DebugM(4,"full other interaction\n");
+      electEnergy += calc_fulldirect(
+        localData,localResults,numLocalAtoms,
+        remoteData,remoteResults,numRemoteAtoms,0);
+    }
+    else if ( stage == lastStage )
+    {  // half other interaction
+      DebugM(4,"half other interaction\n");
+      if ( CMyPe() < ( CNumPes() / 2 ) )
+        electEnergy += calc_fulldirect(
+          localData,localResults,numLocalAtoms/2,
+          remoteData,remoteResults,numRemoteAtoms,0);
+      else
+        electEnergy += calc_fulldirect(
+          localData,localResults,numLocalAtoms,
+          remoteData + 4*(numRemoteAtoms/2),
+          remoteResults + 3*(numRemoteAtoms/2),
+          numRemoteAtoms - (numRemoteAtoms/2), 0);
+    }
+
+    delete [] remoteData;  remoteData = 0;
+    oldNumRemoteAtoms = numRemoteAtoms;
+
+    // receive newLocalResults from recvResultsPE
+    if ( stage > 1 )
+    {
+      DebugM(4,"receive newLocalResults from recvResultsPE "
+						<< recvResultsPE << "\n");
+      MIStream *msg=CpvAccess(comm)->
+		newInputStream(recvResultsPE, FULLFORCETAG);
+      msg->get(3*numLocalAtoms,newLocalResults);
+      delete msg;
+      recvResultsPE = PEMOD(recvResultsPE+1);
+      remote_ptr = newLocalResults;
+      local_ptr = localResults;
+      end_ptr = localResults + 3*numLocalAtoms;
+      for ( ; local_ptr != end_ptr; ++local_ptr, ++remote_ptr )
+	*local_ptr += *remote_ptr;
+    }
+
+    // receive remoteData from recvDataPE
+    if ( stage < lastStage )
+    {
+      DebugM(4,"receive remoteData from recvDataPE "
+						<< recvDataPE << "\n");
+      MIStream *msg=CpvAccess(comm)->
+		newInputStream(recvDataPE, FULLTAG);
+      msg->get(numRemoteAtoms);
+      remoteData = new BigReal[4*numRemoteAtoms];
+      msg->get(4*numRemoteAtoms,remoteData);
+      delete msg;
+    }
+
   }
 
   // send out reductions
@@ -125,24 +283,26 @@ void ComputeFullDirect::doWork()
   reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL, electEnergy);  // TRUE! -JCP
 
   // add in forces
-  j = 0;
+  local_ptr = localResults;
   for (ap = ap.begin(); ap != ap.end(); ap++) {
     Results *r = (*ap).forceBox->open();
     Force *f = r->f[Results::slow];
     int numAtoms = (*ap).p->getNumAtoms();
 
-    for(int i=0; i<numAtoms; ++i, ++j)
+    for(int i=0; i<numAtoms; ++i)
     {
-      f[i] += localForces[j];
+      f[i].x += *(local_ptr++);
+      f[i].y += *(local_ptr++);
+      f[i].z += *(local_ptr++);
     }
 
     (*ap).forceBox->close(&r);
   }
 
   // free storage
-  delete [] localPositions;	// allocated at beginning of this method
-  delete [] localCharges;	// allocated at beginning of this method
-  delete [] localForces;	// allocated at beginning of this method
+  delete [] localData;		// allocated at beginning of this method
+  delete [] localResults;	// allocated at beginning of this method
+  delete [] newLocalResults;	// allocated at beginning of this method
 }
 
 
@@ -151,12 +311,15 @@ void ComputeFullDirect::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/04/06 22:44:58 $
+ *	$Revision: 1.1013 $	$Date: 1997/12/17 10:28:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFullDirect.C,v $
+ * Revision 1.1013  1997/12/17 10:28:07  jim
+ * Full direct electrostatics now works in parallel.
+ *
  * Revision 1.1012  1997/04/06 22:44:58  ari
  * Add priorities to messages.  Mods to help proxies without computes.
  * Added quick enhancement to end of list insertion of ResizeArray(s)
