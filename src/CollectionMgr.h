@@ -50,8 +50,8 @@ private:
     AtomIDList aid;
     ResizeArray<Vector> data;
 
-    operator<(CollectVectorInstance &o) { return (seq < o.seq); }
-    operator==(CollectVectorInstance &o) { return (seq == o.seq); }
+    operator<(const CollectVectorInstance &o) { return (seq < o.seq); }
+    operator==(const CollectVectorInstance &o) { return (seq == o.seq); }
     void * operator new(size_t size) { return ::operator new(size); }
     void operator delete(void* ptr) { ::operator delete(ptr); }
 
