@@ -51,7 +51,7 @@ protected:
 
     void rescaleVelocities(int);
     void berendsenPressure(int);
-    void langevinVelocities(int);
+    void langevinVelocities(BigReal);
 
     void terminate(void);
     SimParameters *const simParams;	// for convenience
@@ -77,12 +77,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1998/02/17 06:39:24 $
+ *	$Revision: 1.1013 $	$Date: 1998/02/18 19:14:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.h,v $
+ * Revision 1.1013  1998/02/18 19:14:00  jim
+ * Fixed Langevin dynamics, undoing changes from yesterday.
+ *
  * Revision 1.1012  1998/02/17 06:39:24  jim
  * SHAKE/RATTLE (rigidBonds) appears to work!!!  Still needs langevin,
  * proper startup, and degree of freedom tracking.
