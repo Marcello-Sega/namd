@@ -17,7 +17,22 @@
 #include "ComputeGlobalMaster.h"
 #include "ComputeGlobalMsgs.h"
 #include "ComputeTcl.h"
+//---these include files are needed for ComputeFreeEnergy---
+#include <string.h>
+#include <strstream.h>
+#include "InfoStream.h"
+#include "FreeEnergyEnums.h"
+#include "FreeEnergyAssert.h"
+#include "FreeEnergyGroup.h"
+#include "Vector.h"
+#include "FreeEnergyVector.h"
+#include "FreeEnergyRestrain.h"
+#include "FreeEnergyRMgr.h"
+#include "FreeEnergyLambda.h"
+#include "FreeEnergyLambdMgr.h"
 #include "ComputeFreeEnergy.h"
+#include "FreeEnergyParse.h"
+//----------------------------------------------------------
 #include "ComputeMDComm.h"
 #include "PatchMgr.h"
 #include "Molecule.h"
@@ -218,12 +233,16 @@ void ComputeGlobal::sendData()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1998/04/30 04:53:22 $
+ *	$Revision: 1.11 $	$Date: 1998/05/21 22:43:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGlobal.C,v $
+ * Revision 1.11  1998/05/21 22:43:23  hurwitz
+ * initial check in of fixed and forcing restraints
+ * -Dave Hurwitz
+ *
  * Revision 1.10  1998/04/30 04:53:22  jim
  * Added forces from MDComm and other improvements to ComputeGlobal.
  *
