@@ -1845,6 +1845,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      }
      PMEEwaldCoefficient = ewaldcof;
    } else {  // initialize anyway
+     useDPME = 0;
      PMEGridSizeX = 0;
      PMEGridSizeY = 0;
      PMEGridSizeZ = 0;
@@ -1911,6 +1912,13 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
      if (!opts.defined("fmaTheta"))
      fmaTheta=0.715;  /* Suggested by Duke developers */
+   }
+
+   if ( lesOn && ( FMAOn || useDPME || fullDirectOn ) ) {
+     NAMD_die("Sorry, LES is only implemented for PME full electrostatics.");
+   }
+   if ( fepOn && ( FMAOn || useDPME || fullDirectOn ) ) {
+     NAMD_die("Sorry, FEP is only implemented for PME full electrostatics.");
    }
 
    if (!opts.defined("constraints"))
