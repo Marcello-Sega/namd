@@ -918,7 +918,8 @@ void Controller::receivePressure(int step, int minimize)
     // accumulate the pressure profile computed for this step into the average.
     for (i=0; i<3*simParameters->pressureProfileSlabs; i++)
       pressureProfileAverage[i] += pressureProfileReduction->item(i);
-    if (!(step % simParameters->pressureProfileFreq)) {
+    if (step != simParameters->firstTimestep && 
+        !(step % simParameters->pressureProfileFreq)) {
 
       // convert NAMD internal virial to pressure in units of bar by 
       // multiplying by PRESSUREFACTOR and dividing by the volume of one slab.
