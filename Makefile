@@ -1,4 +1,4 @@
-include Make.charm
+include .rootdir/Make.charm
 include Makearch
 
 # directories
@@ -325,7 +325,7 @@ $(INCDIR)/main.def.h:	$(SRCDIR)/main.ci
 	$(CHARMXI) $(SRCDIR)/main.ci
 	$(MOVECIFILES)
 
-DEPENDFILE = Make.depends
+DEPENDFILE = .rootdir/Make.depends
 
 # make depends is ugly!  The problem: we have obj/file.o and want src/file.C.
 # Solution: heavy use of basename and awk.
@@ -378,7 +378,7 @@ veryclean:	clean
 	rm -f $(BINARIES)
 
 NAMD_VERSION = 2.1b3
-RELEASE_DIR_NAME = NAMD_$(NAMD_VERSION)_$(NAMD_ARCH)
+RELEASE_DIR_NAME = NAMD_$(NAMD_VERSION)_$(NAMD_PLATFORM)
 RELEASE_FILES = .rootdir/README.txt \
 		.rootdir/announce.txt \
 		.rootdir/license.txt \

@@ -2,9 +2,9 @@
 goto begin
 syntax:
   echo ''
-  echo 'Usage: config [build_dir/]<arch> '
+  echo 'Usage: config [tcl] [fftw] [ccs] [<build_dir>/]<arch> '
   echo ''
-  echo 'arch: ' `( cd arch ; ls -1 Makearch.* |sed -e 's/Makearch\.//' | egrep -v 'template' )`
+  echo 'arch: ' `( cd arch ; ls -1 *.arch |sed -e 's/\.arch//' | egrep -v 'template' )`
   echo ''
   exit 1
 
@@ -17,11 +17,35 @@ exists:
 begin:
 
   if ($#argv < 1) goto syntax
+  if ( $1 == tcl ) then
+    set use_tcl = 1
+    shift
+  else
+    set use_tcl = 0
+  endif
+
+  if ($#argv < 1) goto syntax
+  if ( $1 == fftw ) then
+    set use_fftw = 1
+    shift
+  else
+    set use_fftw = 0
+  endif
+
+  if ($#argv < 1) goto syntax
+  if ( $1 == ccs ) then
+    set use_ccs = 1
+    shift
+  else
+    set use_ccs = 0
+  endif
+
+  if ($#argv < 1) goto syntax
   set ARCH=$1 ; shift
   set DIR=`pwd`;
 
   if ( x$ARCH == x ) goto syntax
-  if ( ! -f arch/Makearch.$ARCH:t ) goto syntax
+  if ( ! -f arch/$ARCH:t.arch ) goto syntax
   if ( -d $ARCH ) goto exists
 
   echo "Creating Directory: $ARCH"
@@ -33,12 +57,20 @@ begin:
 
   echo "Creating link: $ROOTDIR to .rootdir"
   ln -s $ROOTDIR .rootdir
-  echo "Creating link: Makearch.$ARCH:t to Makearch"
-  ln -s .rootdir/arch/Makearch.$ARCH:t ./Makearch
+  echo "Creating Makearch"
+  echo include .rootdir/arch/$ARCH:t.arch >! Makearch
+  echo 'CHARM = $(CHARMBASE)/$(CHARMARCH)' >> Makearch
+  if ( $ARCH:t =~ *-MPI* ) then
+    echo 'NAMD_PLATFORM = $(NAMD_ARCH)-MPI' >> Makearch
+  else
+    echo 'NAMD_PLATFORM = $(NAMD_ARCH)' >> Makearch
+  endif
+  echo 'include .rootdir/arch/$(NAMD_ARCH).base' >> Makearch
+  if ( $use_tcl ) echo 'include .rootdir/arch/$(NAMD_ARCH).tcl' >> Makearch
+  if ( $use_fftw ) echo 'include .rootdir/arch/$(NAMD_ARCH).fftw' >> Makearch
+  if ( $use_ccs ) echo 'CCS=-DNAMD_CCS' >> Makearch
   echo "Linking Makefiles"
   ln -s .rootdir/Makefile ./Makefile
-  ln -s .rootdir/Make.depends ./Make.depends
-  ln -s .rootdir/Make.charm ./Make.charm
   echo "Linking src"
   ln -s .rootdir/src ./src
   echo "Creating dpme2 and linking files"

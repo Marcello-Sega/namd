@@ -1,0 +1,10 @@
+NAMD_ARCH = Tru64-Alpha
+CHARMARCH = net-axp-cc
+
+CXX = cxx
+CXXOPTS = -O4 -arch host -tune host -nocleanup
+CXXTHREADOPTS = $(CXXOPTS)
+CXXSIMPARAMOPTS = $(CXXOPTS)
+CC = cc
+COPTS = -O4 -arch host -tune host
+

@@ -1,0 +1,11 @@
+NAMD_ARCH = T3E
+CHARMARCH = t3e
+
+# compiler options
+CXX = CC 
+CXXOPTS = -O2
+CXXTHREADOPTS = $(CXXOPTS)
+CXXSIMPARAMOPTS = -g
+CC = cc
+COPTS = -O2
+

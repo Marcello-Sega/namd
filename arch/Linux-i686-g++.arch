@@ -1,0 +1,10 @@
+NAMD_ARCH = Linux-i686
+CHARMARCH = net-linux
+
+CXX = g++
+CXXOPTS = -O3 -Wall -march=pentiumpro -ffast-math
+CXXTHREADOPTS = $(CXXOPTS)
+CXXSIMPARAMOPTS = $(CXXOPTS)
+CC = gcc
+COPTS = -O3 -march=pentiumpro -ffast-math
+

@@ -1,4 +1,4 @@
-include ../Make.charm
+include .rootdir/Make.charm
 include ../Makearch
 
 #**************************************************************

@@ -1,0 +1,10 @@
+NAMD_ARCH = Origin2000
+CHARMARCH = origin2000
+
+CXX = CC -64 -D_SGI_MP_SOURCE -DEBUG:woff=3333
+CXXOPTS = -O3 -mips4 -r10000 -INLINE:all -OPT:IEEE_arithmetic=3:roundoff=3 -lfastm -lm
+CXXTHREADOPTS = -r10000 -INLINE:all
+CXXSIMPARAMOPTS = $(CXXOPTS)
+CC = cc -64 -D_SGI_MP_SOURCE
+COPTS = -O3 -mips4 -r10000 -INLINE:all -OPT:IEEE_arithmetic=3:roundoff=3 -lfastm -lm
+
