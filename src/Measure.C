@@ -46,7 +46,7 @@ static int Tcl_centerOfNumber(ClientData, Tcl_Interp *interp, int argc, char *ar
   center /= number;
 
   char s[1024];
-  sprintf(s,"{ %g %g %g }", center.x, center.y, center.z);
+  sprintf(s,"%g %g %g", center.x, center.y, center.z);
   Tcl_SetResult(interp,s,TCL_VOLATILE);
 
   return TCL_OK;
@@ -70,7 +70,7 @@ static int Tcl_centerOfMass(ClientData, Tcl_Interp *interp, int argc, char *argv
   center /= totalMass;
 
   char s[1024];
-  sprintf(s,"{ %g %g %g }", center.x, center.y, center.z);
+  sprintf(s,"%g %g %g", center.x, center.y, center.z);
   Tcl_SetResult(interp,s,TCL_VOLATILE);
 
   return TCL_OK;
