@@ -2,7 +2,7 @@
 goto begin
 syntax:
   echo ''
-  echo 'Usage: config [debug] [tcl] [fftw] [plugins] [<build_dir>/]<arch>[.comment]'
+  echo 'Usage: config [debug] [tcl] [fftw] [plugins] [<build_dir>/]<arch>[.comment] [suffix]'
   echo 'Environment variable NAMD_BUILD_BASE may point to scratch directory.'
   echo ''
   echo '<arch>: ' 
@@ -90,15 +90,17 @@ begin:
   echo 'CHARM = $(CHARMBASE)/$(CHARMARCH)' >> Makearch
   set ARCH_SUFFIX = ""
   if ( $ARCH =~ *-Scyld* ) set ARCH_SUFFIX = -Scyld
-  if ( $ARCH =~ *-ScyldCD* ) set ARCH_SUFFIX = -ScyldCD
   if ( $ARCH =~ *-Clustermatic* ) set ARCH_SUFFIX = -Clustermatic
-  if ( $ARCH =~ *-Clustermatic4* ) set ARCH_SUFFIX = -Clustermatic4
   if ( $ARCH =~ *-MPI* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-MPI
   if ( $ARCH =~ *-CMPI* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-CMPI
   if ( $ARCH =~ *-VMI* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-VMI
   if ( $ARCH =~ *-TCP* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-TCP
   if ( $ARCH =~ *-GM* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-GM
   if ( $ARCH =~ *-Elan* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-Elan
+  if ($#argv > 0) then
+    set ARCH_SUFFIX = -$1
+    shift
+  endif
   echo NAMD_PLATFORM = \$\(NAMD_ARCH\)${ARCH_SUFFIX} >> Makearch
   if ( $ARCH =~ *Win32* ) then
    cat .rootdir/arch/Win32.base >> Makearch
