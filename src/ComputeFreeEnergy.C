@@ -216,6 +216,11 @@ void ComputeFreeEnergy::initialize() {
       config = new_config;
     } else {
       FILE *infile = fopen(script->data,"r");
+      if ( ! infile ) {
+	char errmsg[256];
+	sprintf(errmsg,"Error trying to read file %s!\n",script->data);
+	NAMD_die(errmsg);
+      }
       fseek(infile,0,SEEK_END);
       size_t add_len = ftell(infile);
       size_t config_len = 0;
@@ -231,16 +236,6 @@ void ComputeFreeEnergy::initialize() {
       new_config[0] = '\n';
       new_config[1] = '\0';
       fclose(infile);
-
-/* 
-      ifstream infile(script->data);
-      if ( infile ) infile.get(*oconfig.rdbuf(),'\0');
-      if ( ! infile ) {
-	char errmsg[100];
-	sprintf(errmsg,"Error trying to read file %s!\n",script->data);
-	NAMD_die(errmsg);
-      }
-*/
     }
   }
 
@@ -278,12 +273,15 @@ void ComputeFreeEnergy::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.15 $	$Date: 1999/04/14 01:56:25 $
+ *	$Revision: 1.16 $	$Date: 1999/04/14 15:48:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFreeEnergy.C,v $
+ * Revision 1.16  1999/04/14 15:48:31  jim
+ * Added error checking to file open.
+ *
  * Revision 1.15  1999/04/14 01:56:25  jim
  * Fixed problems with free energy config file reading.
  *
