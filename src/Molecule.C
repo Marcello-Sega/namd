@@ -11,7 +11,7 @@
  *
  *  $RCSfile: Molecule.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1026 $  $Date: 1998/04/30 04:53:25 $
+ *  $Revision: 1.1027 $  $Date: 1998/07/08 22:23:05 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1027  1998/07/08 22:23:05  jim
+ * Eliminated exclusion checking for atoms within hydrogen group (safely).
+ *
  * Revision 1.1026  1998/04/30 04:53:25  jim
  * Added forces from MDComm and other improvements to ComputeGlobal.
  *
@@ -263,7 +266,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1026 1998/04/30 04:53:25 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1027 1998/07/08 22:23:05 jim Exp $";
 
 #include "UniqueSortedArray.h"
 #include "Molecule.h"
@@ -2778,6 +2781,7 @@ void Molecule::receive_Molecule(MIStream *msg)
       ExclusionSettings exclude_flag;    //  Exclusion policy
 
       exclude_flag = simParams->exclude;
+      int stripHGroupExclFlag = (simParams->splitPatch == SPLIT_PATCH_HYDROGEN);
 
       //  Go through the explicit exclusions and add them to the arrays
       for (i=0; i<numExclusions; i++)
@@ -2796,16 +2800,19 @@ void Molecule::receive_Molecule(MIStream *msg)
         case ONETHREE:
           build12excl();
           build13excl();
+	  if ( stripHGroupExclFlag ) stripHGroupExcl();
           break;
         case ONEFOUR:
           build12excl();
           build13excl();
           build14excl(0);
+	  if ( stripHGroupExclFlag ) stripHGroupExcl();
           break;
         case SCALED14:
           build12excl();
           build13excl();
           build14excl(1);
+	  if ( stripHGroupExclFlag ) stripHGroupExcl();
           break;
       }
 
@@ -3031,6 +3038,35 @@ void Molecule::receive_Molecule(MIStream *msg)
        }
     }
     /*      END OF FUNCTION build14excl      */
+
+
+    /************************************************************************/
+    /*                                                                      */
+    /*        FUNCTION stripHGroupExcl                                      */
+    /*                                                                      */
+    /*  This function removes all exclusions which are entirely             */
+    /*  within a single hydrogen group.  This assumes that they all         */
+    /*  exist, which should be true for exclusion policy 1-3 or higher.     */
+    /*                                                                      */
+    /************************************************************************/
+
+  void Molecule::stripHGroupExcl(void)
+  {
+
+    HydrogenGroup::iterator h_i, h_e, h_j;
+    h_i = hydrogenGroup.begin();  h_e = hydrogenGroup.end();
+    for( ; h_i != h_e; ++h_i ) {
+      for ( h_j = h_i + 1; h_j != h_e && ! h_j->isGP; ++h_j ) {
+	if ( h_i->atomID < h_j->atomID )
+	  exclusionSet.del(Exclusion(h_i->atomID,h_j->atomID));
+	else
+	  exclusionSet.del(Exclusion(h_j->atomID,h_i->atomID));
+      }
+    }
+
+  }
+    /*      END OF FUNCTION stripHGroupExcl      */
+
 
     /************************************************************************/
     /*                  */
@@ -3927,12 +3963,15 @@ void Molecule::receive_Molecule(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1026 $  $Date: 1998/04/30 04:53:25 $
+ *  $Revision: 1.1027 $  $Date: 1998/07/08 22:23:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1027  1998/07/08 22:23:05  jim
+ * Eliminated exclusion checking for atoms within hydrogen group (safely).
+ *
  * Revision 1.1026  1998/04/30 04:53:25  jim
  * Added forces from MDComm and other improvements to ComputeGlobal.
  *

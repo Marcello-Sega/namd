@@ -259,6 +259,7 @@ NOEXCL
 
   HGROUPING
   (
+  SELF( int j_hgroup; )
   if (a_i.nonbondedGroupSize) // if hydrogen group parent
     {
     SELF
@@ -292,6 +293,8 @@ NOEXCL
     PAIR( j = 0; )
     SELF
       (
+      // exclude child hydrogens of i
+      j_hgroup = i + a_1[i].hydrogenGroupSize;
       // add all child hydrogens of i
       for( j=i+1; (j<j_upper) && (a_1[j].nonbondedGroupSize == 0); j++)
 	{
@@ -496,11 +499,11 @@ NOEXCL
       const LJTable::TableEntry * lj_pars = 
 		ljTable->table_val(a_i.type, a_j.type);
 
-      if ( r2 <= lj_pars->exclcut2 )
+      if ( r2 <= lj_pars->exclcut2 SELF( || j < j_hgroup ) )
       {
 	NOEXCL
 	(
-	if ( mol->checkexcl(a_i.id,a_j.id) )  // Inline this by hand.
+	if ( SELF( j < j_hgroup || ) mol->checkexcl(a_i.id,a_j.id) )  // Inline this by hand.
 	{
 	  FULL
 	  (
@@ -742,12 +745,15 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1036 $	$Date: 1998/07/03 22:32:06 $
+ *	$Revision: 1.1037 $	$Date: 1998/07/08 22:23:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1037  1998/07/08 22:23:04  jim
+ * Eliminated exclusion checking for atoms within hydrogen group (safely).
+ *
  * Revision 1.1036  1998/07/03 22:32:06  jim
  * Bug fixes for compute self splitting.  N.B. i_upper is numAtoms - 1.
  *

@@ -127,6 +127,7 @@ private:
 	void build12excl(void);
 	void build13excl(void);
 	void build14excl(int);
+	void stripHGroupExcl(void);
 	void build_exclusions();
 
 	// analyze the atoms, and determine which are oxygen, hb donors, etc.
@@ -395,12 +396,15 @@ public:
  *
  *	$RCSfile: Molecule.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1019 $	$Date: 1998/04/30 04:53:27 $
+ *	$Revision: 1.1020 $	$Date: 1998/07/08 22:23:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.1020  1998/07/08 22:23:06  jim
+ * Eliminated exclusion checking for atoms within hydrogen group (safely).
+ *
  * Revision 1.1019  1998/04/30 04:53:27  jim
  * Added forces from MDComm and other improvements to ComputeGlobal.
  *
