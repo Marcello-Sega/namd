@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: Parameters.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/10/31 20:42:40 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.4 $	$Date: 1996/12/03 17:45:15 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: Parameters.h,v $
+ * Revision 1.4  1996/12/03 17:45:15  nealk
+ * Added NonbondedExcl stub.
+ *
  * Revision 1.3  1996/10/31 20:42:40  jim
  * small changes to support LJTable
  *
@@ -143,6 +146,14 @@ typedef struct improper_val
 	int multiplicity;
 	FourBodyConsts values[MAX_MULTIPLICITY];
 } ImproperValue;
+
+typedef struct nonbondedexcl_val
+{
+	// need to put parameters here...
+	// for now, copy bond
+	Real k;		//  Force constant for the bond
+	Real x0;	//  Rest distance for the bond
+} NonbondedExclValue;
 
 typedef struct vdw_val
 {
