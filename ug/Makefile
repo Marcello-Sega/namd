@@ -32,10 +32,9 @@ doc:	$(DOCDIR)/ug.ps
 
 ### run latex2html
 html:	$(DOCDIR)/ug.ps
-	latex2html -local_icons -split 5 -toc_depth 4 \
+	latex2html -local_icons -split 5 -toc_depth 4 -toc_stars \
 	-t "NAMD 2.1 User's Guide" -address "namd@ks.uiuc.edu" \
-	-up_url "../../" -up_title "Main NAMD Page" ug; \
-	echo 'body { background-color : white }' >> ug/ug.css
+	-up_url "../../" -up_title "Main NAMD Page" ug
 
 ### run pdflatex
 pdf:	$(DOCDIR)/ug.pdf
