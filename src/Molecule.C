@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *  $RCSfile: Molecule.C,v $
- *  $Author: milind $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1018 $  $Date: 1997/12/26 23:10:51 $
+ *  $Author: sergei $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1019 $  $Date: 1998/01/05 20:22:55 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,10 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1019  1998/01/05 20:22:55  sergei
+ * for constraints added a NAMD_die for the case when the
+ * movingConstraints are ON and the chosen atom is not constrained.
+ *
  * Revision 1.1018  1997/12/26 23:10:51  milind
  * Made namd2 to compile, link and run under linux. Merged Templates and src
  * directoriies, and removed separate definition and declaration files for
@@ -233,7 +237,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1018 1997/12/26 23:10:51 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1019 1998/01/05 20:22:55 sergei Exp $";
 
 #include "UniqueSortedArray.h"
 #include "Molecule.h"
@@ -291,10 +295,8 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
   langevinParams=NULL;
   langForceVals=NULL;
   fixedAtomFlags=NULL;
-  consIndexes=0;
-  consParams=0;
-  numMultipleDihedrals=0;
-  numMultipleImpropers=0;
+  consIndexes=NULL;
+  consParams=NULL;
 
   /*  Initialize counts to 0 */
   numAtoms=0;
@@ -307,10 +309,13 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
   numExclusions=0;
   numConstraints=0;
   numFixedAtoms=0;
+  numMultipleDihedrals=0;
+  numMultipleImpropers=0;
 
   if (param != NULL && filename != NULL) {
       read_psf_file(filename, param);
   }
+  
 }
 /*      END OF FUNCTION Molecule      */
 
@@ -2873,6 +2878,7 @@ void Molecule::receive_Molecule(MIStream *msg)
        int kcol;      //  Column to look for force constant in
        Real kval;      //  Force constant value retreived
        char filename[129];    //  PDB filename
+       char err_msg[512];  //  Error message for NAMD_die
        
        //  Get the PDB object that contains the reference positions.  If
        //  the user gave another file name, use it.  Otherwise, just use
@@ -3109,6 +3115,21 @@ void Molecule::receive_Molecule(MIStream *msg)
        {
     delete kPDB;
        }
+
+       //****** BEGIN moving constraints changes 
+       if (simParams->movingConstraintsOn
+	   && consIndexes[simParams->movingConsAtom] == -1) {
+	 sprintf(err_msg, "Atom %d (%d in PDB file) indicated for the "
+		 "moving constraint option is not constrained. "
+		 "Check the input files.\n", 
+		 simParams->movingConsAtom, simParams->movingConsAtom+1);
+	 NAMD_die(err_msg);
+       }
+
+       //****** END moving constraints changes 
+
+
+
     }
     /*      END OF FUNCTION build_constraint_params    */
 
@@ -3634,12 +3655,16 @@ void Molecule::receive_Molecule(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1018 $  $Date: 1997/12/26 23:10:51 $
+ *  $Revision: 1.1019 $  $Date: 1998/01/05 20:22:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1019  1998/01/05 20:22:55  sergei
+ * for constraints added a NAMD_die for the case when the
+ * movingConstraints are ON and the chosen atom is not constrained.
+ *
  * Revision 1.1018  1997/12/26 23:10:51  milind
  * Made namd2 to compile, link and run under linux. Merged Templates and src
  * directoriies, and removed separate definition and declaration files for
