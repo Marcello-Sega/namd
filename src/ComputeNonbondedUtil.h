@@ -62,7 +62,6 @@ public:
 //sd-de
 	 TENSOR(virialIndex), TENSOR(fullElectVirialIndex),
          VECTOR(pairForceIndex),
-         TENSOR(pairVirialIndex),
 	 reductionDataSize };
   static void submitReductionData(BigReal*,SubmitReduction*);
 
@@ -102,9 +101,7 @@ public:
   static BigReal lesScaling;
 
   static Bool pairInteractionOn;
-  static Bool pairInteractionOnly;
-  static Bool pairInteractionGroup1;
-  static Bool pairInteractionGroup2;
+  static Bool pairInteractionSelf;
 
   // for particle mesh Ewald
   static BigReal ewaldcof;

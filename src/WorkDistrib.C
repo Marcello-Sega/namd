@@ -720,10 +720,10 @@ void WorkDistrib::mapComputes(void)
 
   mapComputeNonbonded();
 
-  // pair interaction calculations aren't implemented for
-  // bonded interactions, so if pairInteractionOnly is true,
-  // don't compute them.
-  if ( !node->simParameters->pairInteractionOnly ) {
+  // If we're doing true pair interactions, no need for bonded terms.
+  // But if we're doing within-group interactions, we do need them.
+  if ( !node->simParameters->pairInteractionOn || 
+      node->simParameters->pairInteractionSelf) { 
     mapComputeHomePatches(computeBondsType);
     mapComputeHomePatches(computeAnglesType);
     mapComputeHomePatches(computeDihedralsType);
@@ -733,6 +733,7 @@ void WorkDistrib::mapComputes(void)
     mapComputePatch(computeSelfDihedralsType);
     mapComputePatch(computeSelfImpropersType);
   }
+
 
   if ( node->simParameters->eFieldOn )
     mapComputePatch(computeEFieldType);

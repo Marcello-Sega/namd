@@ -329,8 +329,10 @@ int NamdState::configListInit(ConfigList *cfgList) {
         if (simParameters->pairInteractionOn) {
            iout << iINFO << "PAIR INTERACTION GROUP 1 CONTAINS "
                 <<  molecule->numFepInitial << " ATOMS\n";
-           iout << iINFO << "PAIR INTERACTION GROUP 2 CONTAINS "
-                <<  molecule->numFepFinal << " ATOMS\n";
+           if (!simParameters->pairInteractionSelf) {
+             iout << iINFO << "PAIR INTERACTION GROUP 2 CONTAINS "
+                  <<  molecule->numFepFinal << " ATOMS\n";
+           }
         }
            
 

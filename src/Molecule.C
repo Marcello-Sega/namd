@@ -2017,6 +2017,8 @@ void Molecule::receive_Molecule(MIStream *msg)
 
        int32 *byAtomSize = new int32[numAtoms];
 
+       const int pair_self = simParams->pairInteractionSelf;
+
        DebugM(3,"Building bond lists.\n");
     
        //  Build the bond lists
@@ -2073,6 +2075,8 @@ void Molecule::receive_Molecule(MIStream *msg)
        {
          if ( numFixedAtoms && fixedAtomFlags[bonds[i].atom1]
                             && fixedAtomFlags[bonds[i].atom2] ) continue;
+   
+         if ( pair_self && fepAtomFlags[bonds[i].atom1] != 1) continue;
          byAtomSize[bonds[i].atom1]++;
          numCalcBonds++;
        }
@@ -2086,6 +2090,7 @@ void Molecule::receive_Molecule(MIStream *msg)
        {
          if ( numFixedAtoms && fixedAtomFlags[bonds[i].atom1]
                             && fixedAtomFlags[bonds[i].atom2] ) continue;
+         if ( pair_self && fepAtomFlags[bonds[i].atom1] != 1) continue;
          int a1 = bonds[i].atom1;
          bondsByAtom[a1][byAtomSize[a1]++] = i;
        }
@@ -2103,6 +2108,7 @@ void Molecule::receive_Molecule(MIStream *msg)
          if ( numFixedAtoms && fixedAtomFlags[angles[i].atom1]
                             && fixedAtomFlags[angles[i].atom2]
                             && fixedAtomFlags[angles[i].atom3] ) continue;
+         if ( pair_self && fepAtomFlags[angles[i].atom1] != 1) continue;
          byAtomSize[angles[i].atom1]++;
          numCalcAngles++;
        }
@@ -2114,6 +2120,7 @@ void Molecule::receive_Molecule(MIStream *msg)
        }
        for (i=0; i<numAngles; i++)
        {
+         if ( pair_self && fepAtomFlags[angles[i].atom1] != 1) continue;
          if ( numFixedAtoms && fixedAtomFlags[angles[i].atom1]
                             && fixedAtomFlags[angles[i].atom2]
                             && fixedAtomFlags[angles[i].atom3] ) continue;
@@ -2135,6 +2142,7 @@ void Molecule::receive_Molecule(MIStream *msg)
                             && fixedAtomFlags[impropers[i].atom2]
                             && fixedAtomFlags[impropers[i].atom3]
                             && fixedAtomFlags[impropers[i].atom4] ) continue;
+         if ( pair_self && fepAtomFlags[impropers[i].atom1] != 1) continue;
          byAtomSize[impropers[i].atom1]++;
          numCalcImpropers++;
        }
@@ -2150,6 +2158,7 @@ void Molecule::receive_Molecule(MIStream *msg)
                             && fixedAtomFlags[impropers[i].atom2]
                             && fixedAtomFlags[impropers[i].atom3]
                             && fixedAtomFlags[impropers[i].atom4] ) continue;
+         if ( pair_self && fepAtomFlags[impropers[i].atom1] != 1) continue;
          int a1 = impropers[i].atom1;
          impropersByAtom[a1][byAtomSize[a1]++] = i;
        }
@@ -2168,6 +2177,7 @@ void Molecule::receive_Molecule(MIStream *msg)
                             && fixedAtomFlags[dihedrals[i].atom2]
                             && fixedAtomFlags[dihedrals[i].atom3]
                             && fixedAtomFlags[dihedrals[i].atom4] ) continue;
+         if ( pair_self && fepAtomFlags[dihedrals[i].atom1] != 1) continue;
          byAtomSize[dihedrals[i].atom1]++;
          numCalcDihedrals++;
        }
@@ -2183,6 +2193,7 @@ void Molecule::receive_Molecule(MIStream *msg)
                             && fixedAtomFlags[dihedrals[i].atom2]
                             && fixedAtomFlags[dihedrals[i].atom3]
                             && fixedAtomFlags[dihedrals[i].atom4] ) continue;
+         if ( pair_self && fepAtomFlags[dihedrals[i].atom1] != 1) continue;
          int a1 = dihedrals[i].atom1;
          dihedralsByAtom[a1][byAtomSize[a1]++] = i;
        }
@@ -3991,7 +4002,7 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
       } else {
         fepAtomFlags[i] = 0;
       }
-    } else if (simParams->pairInteractionOn || simParams->fepOn) {
+    } else if (simParams->fepOn) {
       if (bval == 1.0) {
         fepAtomFlags[i] = 1;
         numFepFinal++;
@@ -4001,8 +4012,17 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
       } else {
         fepAtomFlags[i] = 0;
       }
+    } else if (simParams->pairInteractionOn) {
+      if (bval == simParams->pairInteractionGroup1) {
+        fepAtomFlags[i] = 1;
+        numFepInitial++;
+      } else if (bval == simParams->pairInteractionGroup2) {
+        fepAtomFlags[i] = 2;
+        numFepFinal++;
+      } else {
+        fepAtomFlags[i] = 0;
+      }
     }
-
   }
 
   // if PDB object was created, delete it

@@ -44,6 +44,7 @@ protected:
       Tensor controlPressure_normal;
       Tensor controlPressure_nbond;
       Tensor controlPressure_slow;
+      Tensor pairVirial;
       int nbondFreq;
       int slowFreq;
       BigReal pressure_avg;

@@ -425,25 +425,28 @@ void ComputeNonbondedUtil :: NAME
       int jfep_type = p_j->partition;
       BigReal lambda_pair = 1.0;
       BigReal d_lambda_pair = 1.0;
-      // for pair interactions, we want lambda = d_lambda = 1 for 
-      // pairs containing one atom from each group; otherwise skip it.
       if (pairInteractionOn) {
-        if (pairInteractionGroup1) {
+
+        // for pair-self, both atoms must be in group 1.
+        if (pairInteractionSelf) {
           if (ifep_type != 1 || jfep_type != 1) {
-            if (pairInteractionOnly) continue; else d_lambda_pair = 0;
+            //iout << iINFO << "self: skipping " <<  p_i.id << " " <<  p_j->id 
+                 //<< "\n" << endi;
+            continue;
           }
-        } else if (pairInteractionGroup2) {
-          if (ifep_type != 2 || jfep_type != 2) {
-            if (pairInteractionOnly) continue; else d_lambda_pair = 0;
+        } else {
+
+          if (!(ifep_type == 1 && jfep_type == 2) && 
+              !(ifep_type == 2 && jfep_type == 1)) {
+            // for pair, must have one from each group.
+            //iout << iINFO << "pair: skipping " <<  p_i.id << " " <<  p_j->id 
+                 //<< "\n" << endi;
+            continue;
           }
-        } else if (!ifep_type || !jfep_type || ifep_type == jfep_type) {
-           // no pairInteraction for this pair of atoms.  If that's all we
-           // care about, skip it, otherwise mark d_lambda_pair as zero
-           // so it doesn't get added to our reduction.
-           if (pairInteractionOnly) continue; else d_lambda_pair = 0;
         }
         //iout << iINFO << "Doing interaction for atoms " << p_i.id << " " 
              //<< p_j->id << "\n" << endi;
+
       } else {
       if (ifep_type || jfep_type) {
         if (ifep_type && jfep_type && ifep_type != jfep_type) {
@@ -546,15 +549,6 @@ void ComputeNonbondedUtil :: NAME
       reduction[pairForceIndex_X] += tmp_x; 
       reduction[pairForceIndex_Y] += tmp_y; 
       reduction[pairForceIndex_Z] += tmp_z; 
-      reduction[pairVirialIndex_XX] += tmp_x * p_ij_x;
-      reduction[pairVirialIndex_XY] += tmp_x * p_ij_y;
-      reduction[pairVirialIndex_XZ] += tmp_x * p_ij_z;
-      reduction[pairVirialIndex_YX] += tmp_x * p_ij_y;
-      reduction[pairVirialIndex_YY] += tmp_y * p_ij_y;
-      reduction[pairVirialIndex_YZ] += tmp_y * p_ij_z;
-      reduction[pairVirialIndex_ZX] += tmp_x * p_ij_z;
-      reduction[pairVirialIndex_ZY] += tmp_y * p_ij_z;
-      reduction[pairVirialIndex_ZZ] += tmp_z * p_ij_z;
       )
 
       )
@@ -602,15 +596,6 @@ void ComputeNonbondedUtil :: NAME
       reduction[pairForceIndex_X] += tmp_x; 
       reduction[pairForceIndex_Y] += tmp_y; 
       reduction[pairForceIndex_Z] += tmp_z; 
-      reduction[pairVirialIndex_XX] += tmp_x * p_ij_x;
-      reduction[pairVirialIndex_XY] += tmp_x * p_ij_y;
-      reduction[pairVirialIndex_XZ] += tmp_x * p_ij_z;
-      reduction[pairVirialIndex_YX] += tmp_x * p_ij_y;
-      reduction[pairVirialIndex_YY] += tmp_y * p_ij_y;
-      reduction[pairVirialIndex_YZ] += tmp_y * p_ij_z;
-      reduction[pairVirialIndex_ZX] += tmp_x * p_ij_z;
-      reduction[pairVirialIndex_ZY] += tmp_y * p_ij_z;
-      reduction[pairVirialIndex_ZZ] += tmp_z * p_ij_z;
       )
 
       }

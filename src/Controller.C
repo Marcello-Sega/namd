@@ -732,6 +732,13 @@ void Controller::receivePressure(int step, int minimize)
     virial_nbond -= outer(extForce_nbond,extPosition);
     virial_slow -= outer(extForce_slow,extPosition);
 
+    if (simParameters->pairInteractionOn) {
+      pairVirial = virial_normal + virial_nbond + virial_slow;
+      if (simParameters->useGroupPressure) {
+        pairVirial -= (intVirial_normal + intVirial_nbond + intVirial_slow);
+      }
+    }
+      
     temperature = 2.0 * kineticEnergy / ( numDegFreedom * BOLTZMAN );
 
     if ( (volume=lattice.volume()) != 0. )
@@ -1152,10 +1159,8 @@ void Controller::printEnergies(int step, int minimize)
     pressure_avg_count += 1;
 
     Vector pairForce;
-    Tensor pairVirial;
     if ( simParameters->pairInteractionOn ) {
       GET_VECTOR(pairForce,reduction,REDUCTION_PAIR_FORCE);
-      GET_TENSOR(pairVirial,reduction,REDUCTION_PAIR_VIRIAL);
     }
     
     // NO CALCULATIONS OR REDUCTIONS BEYOND THIS POINT!!!
@@ -1229,8 +1234,6 @@ void Controller::printEnergies(int step, int minimize)
     if (simParameters->pairInteractionOn) {
       iout << "PAIR INTERACTION:";
       iout << " STEP: " << step;
-      iout << " VDW: " << FORMAT(ljEnergy_f);
-      iout << " ELECT: " << FORMAT(electEnergy_f + electEnergySlow_f);
       iout << " FORCE: ";
       iout << FORMAT(pairForce.x);
       iout << FORMAT(pairForce.y);

@@ -638,15 +638,13 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
     opts.optional("pairInteraction", "pairInteractionCol", 
 	"Column in the pairInteractionFile with the interaction flags",
 	PARSE_STRING);
-    opts.optionalB("pairInteraction", "pairInteractionOnly",
-        "Should only defined pair interactions be calculated?", 
-        &pairInteractionOnly, FALSE);
-    opts.optionalB("PairInteraction", "pairInteractionGroup1",
-        "Should interactions only in group 1 be calculated?",
-        &pairInteractionGroup1, FALSE);
-    opts.optionalB("PairInteraction", "pairInteractionGroup2",
-        "Should interactions only in group 2 be calculated?",
-        &pairInteractionGroup2, FALSE);
+    opts.require("pairInteraction", "pairInteractionGroup1",
+        "Flag for interaction group 1", &pairInteractionGroup1);
+    opts.optional("pairInteraction", "pairInteractionGroup2",
+        "Flag for interaction group 2", &pairInteractionGroup2, -1);
+    opts.optionalB("pairInteraction", "pairInteractionSelf",
+        "Compute only within-group interactions?", &pairInteractionSelf, 
+        FALSE);
 
    //  Dihedral angle dynamics
    opts.optionalB("main", "globalTest", "Should global integration (for development) be used?",
@@ -1830,8 +1828,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    }
    if ((pairInteractionOn && fepOn) || (pairInteractionOn && lesOn)) 
      NAMD_die("Sorry, pair interactions may not be calculated when LES or FEP is enabled.");
-   if (pairInteractionGroup1 && pairInteractionGroup2) 
-     NAMD_die("Only one of pairInteractionGroup1 and pairInteractionGroup2 may be chosen.");
 
    //  Set up load balancing variables
    if (opts.defined("ldbStrategy"))
@@ -1995,6 +1991,8 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    if ( pairInteractionOn && ( PMEOn || FMAOn || useDPME || fullDirectOn ) ) {
      NAMD_die("Sorry, pairInteraction not implemented for full electrostatics.");
    }
+   if ( !pairInteractionSelf && !config->find("pairInteractionGroup2")) 
+     NAMD_die("pairInteractionGroup2 must be specified");
 
    if ( ! fixedAtomsOn ) {
      fixedAtomsForces = 0;
@@ -2559,13 +2557,14 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    
    if ( pairInteractionOn ) {
      iout << iINFO << "PAIR INTERACTION CALCULATIONS ACTIVE\n";
-     if ( pairInteractionOnly ) {
-       iout << iINFO << "ONLY PAIR INTERACTION CALCULATIONS WILL BE PERFORMED\n";
+     iout << iINFO << "USING FLAG " << pairInteractionGroup1 
+          << " FOR GROUP 1\n";
+     if (pairInteractionSelf) {
+       iout << iINFO << "COMPUTING ONLY SELF INTERACTIONS FOR GROUP 1 ATOMS\n";
+     } else {
+       iout << iINFO << "USING FLAG " << pairInteractionGroup2 
+            << " FOR GROUP 2\n";
      }
-     if ( pairInteractionGroup1 ) 
-       iout << iINFO << "COMPUTING PAIR INTERACTIONS FOR GROUP 1 ONLY\n";
-     if (pairInteractionGroup2 ) 
-       iout << iINFO << "COMPUTING PAIR INTERACTIONS FOR GROUP 2 ONLY\n";
    }
 
    if (consForceOn)

@@ -58,9 +58,7 @@ int             ComputeNonbondedUtil::lesFactor;
 BigReal         ComputeNonbondedUtil::lesScaling;
 
 Bool            ComputeNonbondedUtil::pairInteractionOn;
-Bool            ComputeNonbondedUtil::pairInteractionOnly;
-Bool            ComputeNonbondedUtil::pairInteractionGroup1;
-Bool            ComputeNonbondedUtil::pairInteractionGroup2;
+Bool            ComputeNonbondedUtil::pairInteractionSelf;
 
 BigReal		ComputeNonbondedUtil::ewaldcof;
 BigReal		ComputeNonbondedUtil::pi_ewaldcof;
@@ -94,7 +92,6 @@ void ComputeNonbondedUtil::submitReductionData(BigReal *data, SubmitReduction *r
   ADD_TENSOR(reduction,REDUCTION_VIRIAL_NBOND,data,virialIndex);
   ADD_TENSOR(reduction,REDUCTION_VIRIAL_SLOW,data,fullElectVirialIndex);
   ADD_VECTOR(reduction,REDUCTION_PAIR_FORCE,data,pairForceIndex);
-  ADD_TENSOR(reduction,REDUCTION_PAIR_VIRIAL,data,pairVirialIndex);
   reduction->item(REDUCTION_COMPUTE_CHECKSUM) += 1.;
 }
 
@@ -122,9 +119,7 @@ void ComputeNonbondedUtil::select(void)
   lesScaling = lesFactor = 0;
 
   pairInteractionOn = simParams->pairInteractionOn;
-  pairInteractionOnly = simParams->pairInteractionOnly;
-  pairInteractionGroup1 = simParams->pairInteractionGroup1;
-  pairInteractionGroup2 = simParams->pairInteractionGroup2;
+  pairInteractionSelf = simParams->pairInteractionSelf;
 
   if ( fepOn || lesOn || pairInteractionOn ) {
     if ( fepOn ) lambda = simParams->lambda;
