@@ -77,7 +77,6 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   totalAtoms = 0;
   fmaResults = NULL;
   ljResults = NULL;
-  local_timestep = 0;
 
   reduction->Register(REDUCTION_ELECT_ENERGY);
 
@@ -206,13 +205,10 @@ void ComputeDPMTA::doWork()
 
   // 0. only run when necessary
   // Skip computations if nothing to do.
-  local_timestep++;
   DebugM(2,"fake_seq=" << fake_seq
-	<< " timestep=" << local_timestep
 	<< " fmaFrequency=" << simParameters->fmaFrequency
 	<< "\n");
-  if ((!patchList[0].p->flags.doFullElectrostatics)
-	|| (local_timestep % simParameters->fmaFrequency != 1))
+  if (!patchList[0].p->flags.doFullElectrostatics)
   {
     for (ap = ap.begin(); ap != ap.end(); ap++) {
       Position *x = (*ap).positionBox->open();

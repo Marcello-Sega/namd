@@ -33,7 +33,6 @@ typedef struct patch_info
 
 class ComputeDPMTA : public ComputeHomePatches {
 private:
-  int local_timestep;		//  local FMA timestep
   int *slavetids;	//  PID for slave processes
   PatchInfo *patchData;	//  List containing data from patches
   PatchInfo *patchTail;	//  Tail of patch data list
@@ -59,12 +58,16 @@ public:
  *
  *	$RCSfile: ComputeDPMTA.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/02/28 17:47:08 $
+ *	$Revision: 1.1007 $	$Date: 1997/02/28 20:39:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.h,v $
+ * Revision 1.1007  1997/02/28 20:39:45  nealk
+ * Removed local_timestep.  Jim says multiple timestepping is not implemented
+ * yet.
+ *
  * Revision 1.1006  1997/02/28 17:47:08  nealk
  * More debugging code.
  * Re-added "local_timestep" since "fake_seq" is some weird, nearly random
