@@ -10,13 +10,9 @@
 
 #include "Namd.h"
 #include "Node.h"
-#include "PatchMap.h"
-#include "PatchMap.inl"
-#include "AtomMap.h"
 #include "ComputeTcl.h"
 #include "ComputeGlobal.h"
 #include "ComputeGlobalMsgs.h"
-#include "PatchMgr.h"
 #include "Molecule.h"
 #include "ReductionMgr.h"
 #include "ComputeMgr.h"
@@ -270,12 +266,15 @@ void ComputeTcl::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1998/02/10 05:35:04 $
+ *	$Revision: 1.2 $	$Date: 1998/02/10 06:45:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeTcl.C,v $
+ * Revision 1.2  1998/02/10 06:45:10  jim
+ * Added class ComputeFreeEnergy.
+ *
  * Revision 1.1  1998/02/10 05:35:04  jim
  * Split ComputeGlobal into different classes and files.
  * Switched globalForces and globalForcesTcl to tclForces and tclForcesScript.

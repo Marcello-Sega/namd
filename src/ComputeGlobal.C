@@ -17,6 +17,7 @@
 #include "ComputeGlobalMaster.h"
 #include "ComputeGlobalMsgs.h"
 #include "ComputeTcl.h"
+#include "ComputeFreeEnergy.h"
 #include "PatchMgr.h"
 #include "Molecule.h"
 #include "ReductionMgr.h"
@@ -50,7 +51,7 @@ ComputeGlobal::ComputeGlobal(ComputeID c, ComputeMgr *m)
   else {
     SimParameters * simParams = Node::Object()->simParameters;
     if ( simParams->tclForcesOn ) master = new ComputeTcl(this);
-//    else if ( simParams->freeEnergyOn ) master = new ComputeFreeEnergy(this);
+    else if ( simParams->freeEnergyOn ) master = new ComputeFreeEnergy(this);
     else NAMD_die("Internal error in ComputeGlobal::ComputeGlobal");
   }
   comm = m;
@@ -164,12 +165,15 @@ void ComputeGlobal::sendData()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1998/02/10 05:35:02 $
+ *	$Revision: 1.7 $	$Date: 1998/02/10 06:45:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGlobal.C,v $
+ * Revision 1.7  1998/02/10 06:45:09  jim
+ * Added class ComputeFreeEnergy.
+ *
  * Revision 1.6  1998/02/10 05:35:02  jim
  * Split ComputeGlobal into different classes and files.
  * Switched globalForces and globalForcesTcl to tclForces and tclForcesScript.
