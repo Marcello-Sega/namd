@@ -22,12 +22,13 @@ class ComputeMgr;
 class ComputeGlobal;
 
 class ComputeGlobalMaster {
-protected:
-  friend class ComputeGlobal;
-  ComputeGlobal *host;
-  ComputeGlobalMaster(ComputeGlobal *);
+public:
+  ComputeGlobalMaster(ComputeMgr *);
   virtual ~ComputeGlobalMaster();
   void recvData(ComputeGlobalDataMsg *);
+
+protected:
+  ComputeMgr *comm;
   int numWorkingPes;
   int msgcount;
   virtual void initialize();

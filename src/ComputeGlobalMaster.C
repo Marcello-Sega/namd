@@ -27,9 +27,9 @@
 #include "Debug.h"
 
 
-ComputeGlobalMaster::ComputeGlobalMaster(ComputeGlobal *h) {
+ComputeGlobalMaster::ComputeGlobalMaster(ComputeMgr *c) {
   DebugM(3,"Constructing master\n");
-  host = h;
+  comm = c; 
   initialized = 0;
   msgcount = 0;
   numWorkingPes = CkNumPes();
@@ -73,7 +73,7 @@ void ComputeGlobalMaster::initialize() {
   // Build config here
 
   // Send config to clients
-  host->comm->sendComputeGlobalConfig(msg);
+  comm->sendComputeGlobalConfig(msg);
 }
 
 void ComputeGlobalMaster::storedata(ComputeGlobalDataMsg *msg) {
@@ -137,6 +137,6 @@ void ComputeGlobalMaster::calculate() {
     DebugM(4,"Sending new configuration (" <<
 			msg->newaid.size() << " atoms) on master\n");
   }
-  host->comm->sendComputeGlobalResults(msg);
+  comm->sendComputeGlobalResults(msg);
 }
 

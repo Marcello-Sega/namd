@@ -40,8 +40,8 @@ static int find_free_port(void *sock, int defport) {
   return -1;
 }
  
-ComputeIMD::ComputeIMD(ComputeGlobal *h)
-: ComputeGlobalMaster(h) {
+ComputeIMD::ComputeIMD(ComputeMgr *c)
+: ComputeGlobalMaster(c) {
   SimParameters *simparams = Node::Object()->simParameters;
   int port = simparams->IMDport;
   IMDwait = simparams->IMDwait;
@@ -68,7 +68,7 @@ ComputeIMD::~ComputeIMD() {
 
 void ComputeIMD::initialize() {
   configMsg = new ComputeGlobalConfigMsg;
-  host->comm->sendComputeGlobalConfig(configMsg);
+  comm->sendComputeGlobalConfig(configMsg);
   configMsg = 0;
 }
 
@@ -128,7 +128,7 @@ void ComputeIMD::calculate() {
       f_i[i] = v_i->force;
     }
   // Send results to clients
-  host->comm->sendComputeGlobalResults(resultsMsg);
+  comm->sendComputeGlobalResults(resultsMsg);
   resultsMsg = 0;
 }
 

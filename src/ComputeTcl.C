@@ -248,7 +248,7 @@ int ComputeTcl::Tcl_addforce(ClientData clientData,
 #endif
 
 
-ComputeTcl::ComputeTcl(ComputeGlobal *h) : ComputeGlobalMaster(h) {
+ComputeTcl::ComputeTcl(ComputeMgr *c) : ComputeGlobalMaster(c) {
   DebugM(3,"Constructing ComputeTcl\n");
 #ifdef NAMD_TCL
   interp = 0;
@@ -317,7 +317,7 @@ void ComputeTcl::initialize() {
   storedefs(msg->gdef);
 
   // Send config to clients
-  host->comm->sendComputeGlobalConfig(msg);
+  comm->sendComputeGlobalConfig(msg);
 }
 
 
@@ -368,6 +368,6 @@ void ComputeTcl::calculate() {
     DebugM(4,"Sending new configuration (" <<
 			msg->newaid.size() << " atoms) on master\n");
   }
-  host->comm->sendComputeGlobalResults(msg);
+  comm->sendComputeGlobalResults(msg);
 }
 

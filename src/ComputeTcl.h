@@ -25,10 +25,10 @@ class ComputeMgr;
 #endif
 
 class ComputeTcl : public ComputeGlobalMaster {
-private:
-  friend class ComputeGlobal;
-  ComputeTcl(ComputeGlobal *);
+public:
+  ComputeTcl(ComputeMgr *);
   ~ComputeTcl();
+private:
   virtual void initialize();
   virtual void calculate();
 #ifdef NAMD_TCL

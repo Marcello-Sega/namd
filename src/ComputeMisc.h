@@ -22,10 +22,10 @@ class ComputeGlobalMaster;
 class ComputeMgr;
 
 class ComputeMisc : public ComputeGlobalEasy {
-protected:
-  friend class ComputeGlobal;
-  ComputeMisc(ComputeGlobal *);
+public:
+  ComputeMisc(ComputeMgr *);
   virtual ~ComputeMisc();
+protected:
 
   virtual void easy_init(const char *);
   virtual void easy_calc(void);

@@ -21,8 +21,8 @@
 #endif
 #include <string.h>
 
-ComputeSMD::ComputeSMD(ComputeGlobal *h)
-: ComputeGlobalMaster(h) {
+ComputeSMD::ComputeSMD(ComputeMgr *c)
+: ComputeGlobalMaster(c) {
   SimParameters *simParams = Node::Object()->simParameters;
 
   moveVel = simParams->SMDVel;
@@ -71,7 +71,7 @@ ComputeSMD::~ComputeSMD() { }
 void ComputeSMD::initialize() {
   // Send the configMsg we created in parse_atoms
   storedefs(configMsg->gdef);
-  host->comm->sendComputeGlobalConfig(configMsg);
+  comm->sendComputeGlobalConfig(configMsg);
   configMsg = 0; 
 }
 
@@ -91,7 +91,7 @@ void ComputeSMD::calculate() {
     output(currentTime, curcm, f);
 
   // Send results to clients
-  host->comm->sendComputeGlobalResults(resultsMsg);
+  comm->sendComputeGlobalResults(resultsMsg);
   resultsMsg = 0;
   currentTime++;
 }

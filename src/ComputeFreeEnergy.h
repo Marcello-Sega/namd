@@ -24,10 +24,10 @@ class Molecule;
 class SimParameters;
 
 class ComputeFreeEnergy : public ComputeGlobalMaster {
-private:
-  friend class ComputeGlobal;
-  ComputeFreeEnergy(ComputeGlobal *);
+public:
+  ComputeFreeEnergy(ComputeMgr *);
   ~ComputeFreeEnergy();
+private:
   virtual void initialize();
   virtual void calculate();
   virtual void user_initialize();

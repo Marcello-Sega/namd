@@ -71,11 +71,11 @@ ComputeGlobal::ComputeGlobal(ComputeID c, ComputeMgr *m)
   if ( CkMyPe() ) master = 0;
   else {
     SimParameters * simParams = Node::Object()->simParameters;
-    if (simParams->IMDon) master = new ComputeIMD(this);
-    else if ( simParams->tclForcesOn ) master = new ComputeTcl(this);
-    else if ( simParams->miscForcesOn ) master = new ComputeMisc(this);
-    else if ( simParams->freeEnergyOn ) master = new ComputeFreeEnergy(this);
-    else if ( simParams->SMDOn ) master = new ComputeSMD(this);
+    if (simParams->IMDon) master = new ComputeIMD(m);
+    else if ( simParams->tclForcesOn ) master = new ComputeTcl(m);
+    else if ( simParams->miscForcesOn ) master = new ComputeMisc(m);
+    else if ( simParams->freeEnergyOn ) master = new ComputeFreeEnergy(m);
+    else if ( simParams->SMDOn ) master = new ComputeSMD(m);
     else NAMD_die("Internal error in ComputeGlobal::ComputeGlobal");
   }
   comm = m;

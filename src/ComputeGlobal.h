@@ -29,10 +29,9 @@ public:
   void recvData(ComputeGlobalDataMsg *);
   void recvResults(ComputeGlobalResultsMsg *);
 
-  ComputeMgr *comm;
-
 private:
   ComputeGlobalMaster *master;
+  ComputeMgr *comm;
 
   void sendData();
   int configured;

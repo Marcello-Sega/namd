@@ -28,8 +28,8 @@
 #include "Debug.h"
 
 
-ComputeGlobalEasy::ComputeGlobalEasy(ComputeGlobal *h, const char *cn)
-  : ComputeGlobalMaster(h) {
+ComputeGlobalEasy::ComputeGlobalEasy(ComputeMgr *c, const char *cn)
+  : ComputeGlobalMaster(c) {
 
   molecule = Node::Object()->molecule;
   simParams = Node::Object()->simParameters;
@@ -162,7 +162,7 @@ void ComputeGlobalEasy::initialize() {
   delete [] config;
 
   // Send config to clients
-  host->comm->sendComputeGlobalConfig(configMsg);
+  comm->sendComputeGlobalConfig(configMsg);
   configMsg = 0;
 }
 
@@ -177,7 +177,7 @@ void ComputeGlobalEasy::calculate() {
   easy_calc();
 
   // Send results to clients
-  host->comm->sendComputeGlobalResults(resultsMsg);
+  comm->sendComputeGlobalResults(resultsMsg);
   resultsMsg = 0;
   reduction->item(REDUCTION_MISC_ENERGY) += energy;
   reduction->submit();

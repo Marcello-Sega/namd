@@ -25,8 +25,7 @@ class SubmitReduction;
 
 class ComputeGlobalEasy : public ComputeGlobalMaster {
 protected:
-  friend class ComputeGlobal;
-  ComputeGlobalEasy(ComputeGlobal *, const char *);
+  ComputeGlobalEasy(ComputeMgr *, const char *);
   virtual ~ComputeGlobalEasy();
 
   int getAtomID(const char *segid, int resid, const char *aname);

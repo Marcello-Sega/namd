@@ -178,7 +178,7 @@ int ComputeFreeEnergy::addForce(int atomid, Force force)
 }
 
 
-ComputeFreeEnergy::ComputeFreeEnergy(ComputeGlobal *h) : ComputeGlobalMaster(h) {
+ComputeFreeEnergy::ComputeFreeEnergy(ComputeMgr *c) : ComputeGlobalMaster(c) {
   DebugM(3,"Constructing ComputeFreeEnergy\n");
   molecule = Node::Object()->molecule;
   simParams = Node::Object()->simParameters;
@@ -244,7 +244,7 @@ void ComputeFreeEnergy::initialize() {
   user_initialize();
 
   // Send config to clients
-  host->comm->sendComputeGlobalConfig(configMsg);
+  comm->sendComputeGlobalConfig(configMsg);
   configMsg = 0;
 }
 
@@ -265,7 +265,7 @@ void ComputeFreeEnergy::calculate() {
     DebugM(4,"Sending new configuration (" <<
 			resultsMsg->newaid.size() << " atoms) on master\n");
   }
-  host->comm->sendComputeGlobalResults(resultsMsg);
+  comm->sendComputeGlobalResults(resultsMsg);
   resultsMsg = 0;
 }
 

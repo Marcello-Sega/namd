@@ -13,12 +13,11 @@ class ComputeGlobalConfigMsg;
 class ComputeGlobalResultsMsg;
 
 class ComputeSMD : public ComputeGlobalMaster {
-friend class ComputeGlobal;
-
-private:
-  ComputeSMD(ComputeGlobal *);
+public:
+  ComputeSMD(ComputeMgr *);
   ~ComputeSMD();
 
+private:
   virtual void initialize();
   virtual void calculate();
 

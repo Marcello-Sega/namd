@@ -11,8 +11,8 @@
 #include "ComputeMisc.h"
 #include "InfoStream.h"
 
-ComputeMisc::ComputeMisc(ComputeGlobal *h)
-  : ComputeGlobalEasy(h,"miscForcesScript") {
+ComputeMisc::ComputeMisc(ComputeMgr *c)
+  : ComputeGlobalEasy(c,"miscForcesScript") {
   ;
 }
 
