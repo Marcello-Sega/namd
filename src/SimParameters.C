@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1060 $  $Date: 1999/03/17 21:49:57 $
+ *  $Revision: 1.1061 $  $Date: 1999/03/18 02:29:04 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1061  1999/03/18 02:29:04  jim
+ * Improved some parameter handling.
+ *
  * Revision 1.1060  1999/03/17 21:49:57  jim
  * Switch to fullElectFrequency for external parameter as well.
  *
@@ -1584,7 +1587,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    //  Get multiple timestep integration scheme
    if (!opts.defined("MTSAlgorithm"))
    {
-  MTSAlgorithm = NAIVE;
+  MTSAlgorithm = VERLETI;
    }
    else
    {
@@ -2999,6 +3002,11 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
    if (berendsenPressureOn)
    {
+     if ( ! opts.defined("BerendsenPressureFreq") ) {
+	berendsenPressureFreq = nonbondedFrequency;
+	if ( fullElectFrequency )
+		berendsenPressureFreq = fullElectFrequency;
+     }
      if ( (berendsenPressureFreq % nonbondedFrequency) || ( fullElectFrequency
 		&& (berendsenPressureFreq % fullElectFrequency) ) )
 	NAMD_die("berendsenPressureFreq must be a multiple of both fullElectFrequency and nonbondedFrequency\n");
@@ -3082,19 +3090,19 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
      iout << endi;
    }
 
-   if (MTSAlgorithm != NAIVE)
+   if (MTSAlgorithm != VERLETI)
    {
-  if (MTSAlgorithm == VERLETI)
+  if (MTSAlgorithm == NAIVE)
   {
-    iout << iINFO << "VERLET I MTS SCHEME\n";
+    iout << iWARN << "NAIVE MTS SCHEME IS NOT SUPPORTED, USING VERLET I (r-RESPA).\n";
   }
   else if (MTSAlgorithm == VERLETII )
         {
-    iout << iINFO << "VERLET II MTS SCHEME\n";
+    iout << iWARN << "VERLET II MTS SCHEME IS NOT SUPPORTED, USING VERLET I (r-RESPA).\n";
         }
         else
   {
-    iout << iINFO << "VERLET X MTS SCHEME\n";
+    iout << iWARN << "VERLET X MTS SCHEME IS NOT SUPPORTED, USING VERLET I (r-RESPA).\n";
   }
      iout << endi;
    }
@@ -3602,12 +3610,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1060 $  $Date: 1999/03/17 21:49:57 $
+ *  $Revision: 1.1061 $  $Date: 1999/03/18 02:29:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1061  1999/03/18 02:29:04  jim
+ * Improved some parameter handling.
+ *
  * Revision 1.1060  1999/03/17 21:49:57  jim
  * Switch to fullElectFrequency for external parameter as well.
  *
