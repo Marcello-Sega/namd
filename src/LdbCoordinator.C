@@ -15,6 +15,21 @@
 // static initialization
 LdbCoordinator *LdbCoordinator::_instance = 0;
 
+CmiHandler notifyIdleStart(void)
+{
+  LdbCoordinator::Object()->idleStart = CmiTimer();
+  return 0;
+}
+
+CmiHandler notifyIdleEnd(void)
+{
+  const double idleEndTime = CmiTimer();
+  LdbCoordinator::Object()->idleTime +=
+    idleEndTime - LdbCoordinator::Object()->idleStart;
+  LdbCoordinator::Object()->idleStart = -1;
+  return 0;
+}
+
 LdbCoordinator::LdbCoordinator(InitMsg *msg)
 {
   if (_instance == NULL)
@@ -34,8 +49,13 @@ LdbCoordinator::LdbCoordinator(InitMsg *msg)
   if (CMyPe() == 0)
     statsMsgs = new (LdbStatsMsg *[CNumPes()]);
   else statsMsgs = NULL;
+  ldbStatsFP = NULL;
 
   delete msg;
+
+  // Register Converse timer routines
+  CsdSetNotifyIdle((CmiHandler)notifyIdleStart,(CmiHandler)notifyIdleEnd);
+  idleTime = 0;
 }
 
 LdbCoordinator::~LdbCoordinator(void)
@@ -46,6 +66,8 @@ LdbCoordinator::~LdbCoordinator(void)
   delete [] computeTotalTime;
   if (CMyPe() == 0)
     delete [] statsMsgs;
+  if (ldbStatsFP)
+    fclose(ldbStatsFP);
 }
 
 void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap)
@@ -119,9 +141,14 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap)
     nComputesExpected += nLocalComputes;
     first_ldbcycle = FALSE;
   }
+
+  // Start idle-time recording
+  idleTime = 0;
+  CsdStartNotifyIdle();
+  totalStartTime = CmiTimer();
 }
 
-void LdbCoordinator::patchLoad(PatchID id, int nAtoms, int timestep)
+void LdbCoordinator::patchLoad(PatchID id, int nAtoms, int /* timestep */)
 {
   if (patchNAtoms[id] != -1)
   {
@@ -133,7 +160,7 @@ void LdbCoordinator::patchLoad(PatchID id, int nAtoms, int timestep)
   checkAndSendStats();
 }
 
-void LdbCoordinator::startWork(ComputeID id, int timestep)
+void LdbCoordinator::startWork(ComputeID id, int /* timestep */ )
 {
   if (Node::Object()->simParameters->ldbStrategy == LDBSTRAT_NONE)
     return;
@@ -149,7 +176,7 @@ void LdbCoordinator::startWork(ComputeID id, int timestep)
     computeStartTime[id] = CmiTimer();
 }
 
-void LdbCoordinator::endWork(ComputeID id, int timestep)
+void LdbCoordinator::endWork(ComputeID id, int /* timestep */)
 {
   double endTime = CmiTimer();
 
@@ -184,6 +211,12 @@ int LdbCoordinator::checkAndSendStats(void)
   if ( (nPatchesReported == nPatchesExpected) 
        && (nComputesReported == nComputesExpected) )
   {
+    // Turn off idle-time calculation
+    CsdStopNotifyIdle();
+    totalTime = CmiTimer() - totalStartTime;
+    if (idleStart!= -1)
+      CPrintf("WARNING: idle time still accumulating?\n");
+
     // Here, all the data gets sent to Node 0
     // For now, just send a dummy message to Node 0.
 
@@ -211,11 +244,12 @@ int LdbCoordinator::checkAndSendStats(void)
       NAMD_die("LdbCoordinator::checkAndSendStats: Insufficient memory");
 
     msg->proc = Node::Object()->myid();
-    msg->procLoad = 0;
-
+    msg->procLoad = totalTime - idleTime;
+    CPrintf("[%d] Processor idle time=%5.1f%%\n",
+	    msg->proc,100.*idleTime/totalTime);
+    int i;
     msg->nPatches = 0;
 
-    int i;
     for(i=0;i<patchMap->numPatches();i++)
     {
       if (patchNAtoms[i] != -1)
@@ -236,6 +270,8 @@ int LdbCoordinator::checkAndSendStats(void)
 	msg->nComputes++;
       }
     }
+    for(i=0;i<msg->nComputes;i++)
+      msg->procLoad -= msg->computeTime[i];
 
     CSendMsgBranch(LdbCoordinator, analyze, msg, thisgroup,0);
     return 1;
@@ -299,6 +335,53 @@ void LdbCoordinator::awakenSequencers()
   }
 }
 
+// Figure out which proxies we will definitely create on other
+// nodes, without regard for non-bonded computes.  This code is swiped
+// from ProxyMgr, and changes there probable need to be propagated here.
+
+void LdbCoordinator::requiredProxies(PatchID id, FILE *fp)
+{
+  int numPatches = patchMap->numPatches();
+  enum proxyHere { No, Yes };
+  int numNodes = CNumPes();
+  proxyHere *proxyNodes = new proxyHere[numNodes];
+  int nProxyNodes;
+  int i;
+
+  // Note all home patches.
+  for ( i = 0; i < numNodes; ++i )
+  {
+    proxyNodes[i] = No;
+  }
+  nProxyNodes=0;
+
+  // Check all two-away neighbors.
+  // This is really just one-away neighbors, since 
+  // two-away always returns zero: RKB
+  PatchID neighbors[PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
+
+  int myNode = patchMap->node(id);
+  int numNeighbors = patchMap->oneAwayNeighbors(id,neighbors);
+  numNeighbors += patchMap->twoAwayNeighbors(id,neighbors+numNeighbors);
+  for ( i = 0; i < numNeighbors; ++i )
+  {
+    const int proxyNode = patchMap->node(neighbors[i]);
+    if (proxyNode != myNode)
+      if (proxyNodes[proxyNode] == No)
+      {
+	proxyNodes[proxyNode] = Yes;
+	nProxyNodes++;
+      }
+  }
+
+  fprintf(fp,"%4d ",nProxyNodes);
+  for(i=0;i<numNodes;i++)
+    if (proxyNodes[i]==Yes)
+      fprintf(fp,"%4d ",i);
+
+  delete [] proxyNodes;
+}
+
 void LdbCoordinator::printLocalLdbReport(void)
 {
   char outputBuf[255];
@@ -346,29 +429,39 @@ void LdbCoordinator::printLocalLdbReport(void)
 
 void LdbCoordinator::printLdbReport(void)
 {
+  if (ldbStatsFP == NULL)
+  {
+    ldbStatsFP = fopen("ldbreport.dat","w");
+  }
+
   const int nProcs = Node::Object()->numNodes();
   const int nPatches = patchMap->numPatches();
   const int nComputes = computeMap->numComputes();
 
   int i,j;
 
-  CPrintf("*** Load balancer report ***\n");
+  fprintf(ldbStatsFP,"*** Load balancer report ***\n");
 
-  CPrintf("%4d %4d %4d\n",nProcs,nPatches,nComputes);
+  fprintf(ldbStatsFP,"%4d %4d %4d\n",nProcs,nPatches,nComputes);
 
   // Print out processor background load
   for (i=0;i<nProcs;i++)
-    CPrintf("%4d ",statsMsgs[i]->procLoad);
-  CPrintf("\n\n");
+    fprintf(ldbStatsFP,"%8.3f ",statsMsgs[i]->procLoad);
+  fprintf(ldbStatsFP,"\n\n");
 
   // Print out info for each patch
   for (i=0;i<nProcs;i++)
   {
     const LdbStatsMsg *msg = statsMsgs[i];
     for ( j=0; j < msg->nPatches; j++)
-      CPrintf("%4d %4d %4d %4d\n",msg->pid[j],msg->nAtoms[j],msg->proc,0);
+    {
+      fprintf(ldbStatsFP,"%4d %4d %4d ",
+	      msg->pid[j],msg->nAtoms[j],msg->proc);
+      requiredProxies(msg->pid[j],ldbStatsFP);
+      fprintf(ldbStatsFP,"\n");
+    }
   }
-  CPrintf("\n");
+  fprintf(ldbStatsFP,"\n");
   
   // Print out info for each compute
   for (i=0;i<nProcs;i++)
@@ -385,11 +478,12 @@ void LdbCoordinator::printLdbReport(void)
       else 
 	p1 = p0;
 
-      CPrintf("%4d %4d %4d %4d %8.3f\n",
+      fprintf(ldbStatsFP,"%4d %4d %4d %4d %8.3f\n",
 	      msg->cid[j],msg->proc,p0,p1,msg->computeTime[j]);
     }
   }
-  CPrintf("\n");
-  CPrintf("*** Load balancer report complete ***\n");
+  fprintf(ldbStatsFP,"\n");
+  fprintf(ldbStatsFP,"*** Load balancer report complete ***\n");
+  fflush(ldbStatsFP);
 }
 #include "LdbCoordinator.bot.h"

@@ -76,6 +76,7 @@ class SimParameters
 {
 private:
 public:
+  char dummy;
 	BigReal dt;	   		//  Timestep size
 	int N;		   		//  Number of steps to be performed
 	int stepsPerCycle;		//  Number of timesteps per cycle
@@ -303,13 +304,17 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/03/27 17:08:32 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1997/04/04 17:31:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1008  1997/04/04 17:31:43  brunner
+ * New charm fixes for CommunicateConverse, and LdbCoordinator data file
+ * output, required proxies, and idle time.
+ *
  * Revision 1.1007  1997/03/27 17:08:32  nealk
  * Added hydrogen groupings.  Now configuration parameter "splitPatch" determines
  * atom-into-patch distribution.

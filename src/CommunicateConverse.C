@@ -11,7 +11,7 @@
  * send/receive data.
  * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/CommunicateConverse.C,v 1.1004 1997/03/06 22:05:56 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/CommunicateConverse.C,v 1.1005 1997/04/04 17:31:40 brunner Exp $";
 
 #include <iostream.h>
 #include <string.h>
@@ -38,9 +38,9 @@ CpvStaticDeclare(CmmTable, CsmMessages);
 static void CsmHandler(void *msg)
 {
   CmiGrabBuffer((char **)&msg);
-  int *m = (int *) msg;
+  int *m = (int *) ((char *)msg+CmiMsgHeaderSizeBytes);
   // sending node acts as a single tag
-  CmmPut(CpvAccess(CsmMessages), 1, &(m[2]), m);
+  CmmPut(CpvAccess(CsmMessages), 1, &(m[1]), msg);
 }
 
 static void mycpy(void *d, const void *s, int bytes)
@@ -496,7 +496,7 @@ CommunicateConverse::CommunicateConverse(int argc, char *argv[], int dbg)
 // class destructor
 CommunicateConverse::~CommunicateConverse(void) 
 {
-  ConverseExit();
+  // ConverseExit();
 }
 
 
@@ -520,13 +520,17 @@ int *CommunicateConverse::get_tids()
  * RCS INFORMATION:
  *
  *  $RCSfile: CommunicateConverse.C,v $
- *  $Author: ari $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1004 $  $Date: 1997/03/06 22:05:56 $
+ *  $Author: brunner $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1005 $  $Date: 1997/04/04 17:31:40 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CommunicateConverse.C,v $
+ * Revision 1.1005  1997/04/04 17:31:40  brunner
+ * New charm fixes for CommunicateConverse, and LdbCoordinator data file
+ * output, required proxies, and idle time.
+ *
  * Revision 1.1004  1997/03/06 22:05:56  ari
  * Removed Compute.ci
  * Comments added - more code cleaning

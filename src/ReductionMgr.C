@@ -28,7 +28,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1012 1997/04/02 21:29:41 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1013 1997/04/04 17:31:42 brunner Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -93,6 +93,7 @@ ReductionMgr::ReductionMgr(InitMsg *msg)
     }
 
     nextSequence = -1; // checked later and changed to firstTimeStep
+    data = 0;
     // data = createdata();
 
     /* node 0 received data from each remove node */
@@ -768,12 +769,16 @@ void	ReductionMgr::unsubscribe(ReductionTag tag)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/04/02 21:29:41 $
+ *	$Revision: 1.1013 $	$Date: 1997/04/04 17:31:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.C,v $
+ * Revision 1.1013  1997/04/04 17:31:42  brunner
+ * New charm fixes for CommunicateConverse, and LdbCoordinator data file
+ * output, required proxies, and idle time.
+ *
  * Revision 1.1012  1997/04/02 21:29:41  jim
  * Fixed bad assumption about first sequence number being 0.
  *

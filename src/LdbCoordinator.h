@@ -15,6 +15,8 @@
 #ifndef LDBCOORDINATOR_H
 #define LDBCOORDINATOR_H
 
+#include <stdio.h>
+
 #include "ckdefs.h"
 #include "chare.h"
 #include "c++interface.h"
@@ -33,7 +35,7 @@ enum {LDB_COMPUTES = 8192};
 struct LdbStatsMsg : public comm_object
 {
   int proc;
-  int procLoad;
+  double procLoad;
   int nPatches;
   int pid[LDB_PATCHES];
   int nAtoms[LDB_PATCHES];
@@ -62,9 +64,14 @@ public:
   void analyze(LdbStatsMsg *msg);
   void resume(LdbResumeMsg *msg);
 
+  // Public variables accessed by the idle-event functions
+  double idleStart;
+  double idleTime;
+
 private:
   int checkAndSendStats(void);
   void awakenSequencers(void);
+  void requiredProxies(PatchID id, FILE *fp);
   void printLocalLdbReport(void);
   void printLdbReport(void);
 
@@ -87,6 +94,9 @@ private:
   int first_ldbcycle;
 
   LdbStatsMsg **statsMsgs;
+  FILE *ldbStatsFP;
+  double totalStartTime;
+  double totalTime;
 };
 
 #endif // LDBCOORDINATOR_H
@@ -97,12 +107,16 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1997/04/01 23:20:16 $
+ *	$Revision: 1.4 $	$Date: 1997/04/04 17:31:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LdbCoordinator.h,v $
+ * Revision 1.4  1997/04/04 17:31:42  brunner
+ * New charm fixes for CommunicateConverse, and LdbCoordinator data file
+ * output, required proxies, and idle time.
+ *
  * Revision 1.3  1997/04/01 23:20:16  brunner
  * Collection on node 0 added
  *

@@ -10,7 +10,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1005 1997/04/03 19:59:14 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1006 1997/04/04 17:31:44 brunner Exp $";
 
 #include "chare.h"
 #include "ckdefs.h"
@@ -24,13 +24,23 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 
 
 //  Provide alternate new and delete operators if the MTS fast allocator is being
 //  used
+#ifdef GLOBALS
+#ifdef MTS
+void * operator new (size_t t) { return malloc (t); }
+void   operator delete (void *p) { free (p); }
+#else
+void * operator new (size_t t) { return CmiAlloc (t); }
+void   operator delete (void *p) { if ( p ) CmiFree (p); }
+#endif  // MTS
+#else
 #ifdef MTS
 void * ::operator new (size_t t) { return malloc (t); }
 void   ::operator delete (void *p) { free (p); }
 #else
 void * ::operator new (size_t t) { return CmiAlloc (t); }
 void   ::operator delete (void *p) { if ( p ) CmiFree (p); }
-#endif
+#endif // MTS
+#endif // GLOBALS
 
 // print out title
 void NAMD_title(void)
@@ -245,13 +255,17 @@ FILE *Fopen	(const char *filename, const char *mode)
  * RCS INFORMATION:
  *
  *	$RCSfile: common.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/04/03 19:59:14 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1006 $	$Date: 1997/04/04 17:31:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.C,v $
+ * Revision 1.1006  1997/04/04 17:31:44  brunner
+ * New charm fixes for CommunicateConverse, and LdbCoordinator data file
+ * output, required proxies, and idle time.
+ *
  * Revision 1.1005  1997/04/03 19:59:14  nealk
  * 1) New Fopen() which handles .Z and .gz files.
  * 2) localWaters and localNonWaters lists on each patch.
