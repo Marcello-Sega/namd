@@ -1417,16 +1417,16 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
    }
 
-   if ( opts.defined("cellBasisVector3") &&
-  ! opts.defined("cellBasisVector2") )
-   {
-  NAMD_die("Used cellBasisVector3 without cellBasisVector2!");
+   if ( cellBasisVector3.length2() && ! cellBasisVector2.length2() ) {
+     NAMD_die("Used cellBasisVector3 without cellBasisVector2!");
    }
 
-   if ( opts.defined("cellBasisVector2") &&
-  ! opts.defined("cellBasisVector1") )
-   {
-  NAMD_die("Used cellBasisVector2 without cellBasisVector1!");
+   if ( cellBasisVector2.length2() && ! cellBasisVector1.length2() ) {
+     NAMD_die("Used cellBasisVector2 without cellBasisVector1!");
+   }
+
+   if ( cellOrigin.length2() && ! cellBasisVector1.length2() ) {
+     NAMD_die("Used cellOrigin without cellBasisVector1!");
    }
 
    lattice.set(cellBasisVector1,cellBasisVector2,cellBasisVector3,cellOrigin);
