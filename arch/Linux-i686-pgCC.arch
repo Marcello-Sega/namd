@@ -1,5 +1,5 @@
 NAMD_ARCH = Linux-i686
-CHARMARCH = mpi-linux-vmi-pgcc
+CHARMARCH = mpi-linux-pgcc
 
 CXX = pgCC -DSOCKLEN_T=socklen_t
 CXXOPTS = -O2 --no_exceptions -tp p6
