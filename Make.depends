@@ -188,6 +188,19 @@ obj/CollectionMgr.o: \
 	src/ProcessorPrivate.h \
 	inc/CollectionMaster.top.h \
 	src/CollectionMaster.h \
+	src/Node.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/ObjectArena.h \
+	src/Hydrogen.h \
+	src/SimParameters.h \
+	src/Communicate.h \
+	src/MStream.h \
 	src/Debug.h \
 	inc/CollectionMgr.bot.h
 	$(CXX) $(CXXFLAGS) -o obj/CollectionMgr.o -c src/CollectionMgr.C
@@ -1617,6 +1630,9 @@ obj/Controller.o: \
 	src/Set.h \
 	src/ComputeMgr.h \
 	src/Thread.h \
+	src/NamdOneTools.h \
+	src/PDB.h \
+	src/PDBData.h \
 	src/Debug.h
 	$(CXX) $(CXXTHREADFLAGS) -o obj/Controller.o -c src/Controller.C
 obj/defmain.o: \
@@ -1646,6 +1662,7 @@ obj/FreeEnergyLambda.o: \
 	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyLambda.o -c src/FreeEnergyLambda.C
 obj/FreeEnergyLambdMgr.o: \
 	src/FreeEnergyLambdMgr.C \
+	src/InfoStream.h \
 	src/FreeEnergyEnums.h \
 	src/FreeEnergyAssert.h \
 	src/FreeEnergyLambda.h \
@@ -1760,11 +1777,11 @@ obj/FreeEnergyRMgr.o: \
 	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyRMgr.o -c src/FreeEnergyRMgr.C
 obj/FreeEnergyVector.o: \
 	src/FreeEnergyVector.C \
+	src/InfoStream.h \
 	src/FreeEnergyEnums.h \
 	src/FreeEnergyAssert.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/FreeEnergyVector.h
 	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyVector.o -c src/FreeEnergyVector.C
 obj/heap.o: \
