@@ -11,7 +11,7 @@
 /*								           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/MigrateAtomsMsg.C,v 1.1 1997/02/17 23:47:01 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/MigrateAtomsMsg.C,v 1.2 1997/02/26 16:53:11 ari Exp $";
 
 
 #include "ckdefs.h"
@@ -41,33 +41,37 @@ MigrateAtomsMsg::MigrateAtomsMsg(PatchID src, PatchID dest, MigrationList *m) :
     fromNodeID = CMyPe();
 }
 
+
 void * MigrateAtomsMsg::pack (int *length) {
   *length = sizeof(NodeID) + sizeof(PatchID) + sizeof(PatchID) + sizeof(int) 
-      + (migrationList != NULL 
-	     ? migrationList->size() * sizeof(MigrationElem) 
-	     : 0 );
+    + (migrationList != NULL 
+	   ? migrationList->size() * sizeof(MigrationElem) 
+	   : 0 );
 
-    char *buffer = (char*)new_packbuffer(this,*length);
-    char *b = buffer;
+  // This is what I want
+  char *buffer;
+  char *b = buffer = (char*)new_packbuffer(this,*length);
 
-    *((NodeID*)b) = fromNodeID; b += sizeof(NodeID);
-    *((PatchID*)b) = srcPatchID; b += sizeof(PatchID);
-    *((PatchID*)b) = destPatchID; b += sizeof(PatchID);
+  *((NodeID*)b) = fromNodeID; b += sizeof(NodeID);
+  *((PatchID*)b) = srcPatchID; b += sizeof(PatchID);
+  *((PatchID*)b) = destPatchID; b += sizeof(PatchID);
 
-    if (migrationList != NULL) {
-      *((int*)b) = migrationList->size(); b += sizeof(int);
-      for ( int i = 0; i < migrationList->size(); i++ ) {
-	*((MigrationElem*)b) = (*migrationList)[i]; b += sizeof(MigrationElem);
-      }
+  if (migrationList != NULL) {
+    *((int*)b) = migrationList->size(); b += sizeof(int);
+    for ( int i = 0; i < migrationList->size(); i++ ) {
+      *((MigrationElem*)b) = (*migrationList)[i]; b += sizeof(MigrationElem);
     }
-    else {
-      *((int*)b) = 0; b += sizeof(int);
-    }
-    // Delete of new'd item from HomePatch::doAtomMigration()
-    delete migrationList;
+  }
+  else {
+    *((int*)b) = 0; b += sizeof(int);
+  }
 
-    this->~MigrateAtomsMsg();
-    return buffer;
+  // Delete of new'd item from HomePatch::doAtomMigration()
+  delete migrationList;
+  migrationList = 0;
+
+  this->~MigrateAtomsMsg();
+  return buffer;
 }
 
 void MigrateAtomsMsg::unpack (void *in) {
@@ -95,11 +99,16 @@ void MigrateAtomsMsg::unpack (void *in) {
  *
  *	$RCSfile: MigrateAtomsMsg.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1997/02/17 23:47:01 $
+ *	$Revision: 1.2 $	$Date: 1997/02/26 16:53:11 $
  *
  * REVISION HISTORY:
  *
  * $Log: MigrateAtomsMsg.C,v $
+ * Revision 1.2  1997/02/26 16:53:11  ari
+ * Cleaning and debuging for memory leaks.
+ * Adding comments.
+ * Removed some dead code due to use of Quiescense detection.
+ *
  * Revision 1.1  1997/02/17 23:47:01  ari
  * Added files for cleaning up atom migration code
  *

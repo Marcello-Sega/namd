@@ -29,20 +29,29 @@
 #define MIN_DEBUG_LEVEL 5
 #include "Debug.h"
 
-void * ProxyAtomsMsg::pack (int *length)
-  {
+// Use before CSendMsg... but don't use if msg is sent to local node 
+// in this case, msg will never be sent locally.  
+void ProxyAtomsMsg::prepack() {
     int size = atomIDList.size();
-    DebugM(3,"Size of atomIDList " << size << "\n");
-    *length = 2 * sizeof(int) + size * sizeof(AtomID);
-    char *buffer = (char*)new_packbuffer(this,*length);
-    *((int*)buffer) = patch;
-    *((int*)(buffer+sizeof(int))) = size;
-    AtomID *data = (AtomID*)(buffer+2*sizeof(int));
+    mylength = sizeof(PatchID) + sizeof(int) + size * sizeof(AtomID);
+    char *b = mybuffer = (char*)new char[mylength];
+    *((int *)b) = patch; b += sizeof(PatchID);
+    *((int *)b) = size; b += sizeof(int);
+    AtomID *data = (AtomID *)b;
     for ( int i = 0; i < size; ++i )
       data[i] = atomIDList[i];
+}
+  
+  
+void * ProxyAtomsMsg::pack (int *length) {
+    *length = mylength;
+    char *buffer = (char*)new_packbuffer(this,*length);
+    memcpy(buffer, mybuffer, mylength);
+    delete mybuffer;
+
     this->~ProxyAtomsMsg();
     return buffer;
-  }
+}
 
 void ProxyAtomsMsg:: unpack (void *in)
   {
@@ -115,10 +124,6 @@ void ProxyAllMsg:: unpack (void *in)
     patch = *((int*)buffer);
     int size = *((int*)(buffer+sizeof(int)));
     positionList.resize(size);
-    DebugM(5, "POSITION STATUS\n");
-#ifdef DEBUGM    
-    positionList.status();
-#endif
     Position *data = (Position*)(buffer+2*sizeof(int));
     for ( i = 0; i < size; ++i )
       positionList[i] = data[i];
@@ -292,7 +297,7 @@ void
 ProxyMgr::recvResults(ProxyResultMsg *msg) {
   DebugM(1,"For patch " << msg->patch << " received results from proxy on node " << msg->node << endl);
   HomePatch *home = (HomePatch *) PatchMap::Object()->patch(msg->patch);
-  home->receiveResults(msg);
+  home->receiveResults(msg); // delete done in HomePatch::receiveResults()
 }
 
 void
@@ -305,7 +310,7 @@ void
 ProxyMgr::recvProxyData(ProxyDataMsg *msg) {
   DebugM(1,"For patch " << msg->patch << " received data for proxy on node " << CMyPe() << endl);
   ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
-  proxy->receiveData(msg);
+  proxy->receiveData(msg); // deleted in ProxyPatch::receiveAtoms()
 }
 
 void
@@ -318,7 +323,7 @@ void
 ProxyMgr::recvProxyAtoms(ProxyAtomsMsg *msg) {
   DebugM(1,"For patch " << msg->patch << " received atoms for proxy on node " << CMyPe() << endl);
   ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
-  proxy->receiveAtoms(msg);
+  proxy->receiveAtoms(msg); // deleted in ProxyPatch::receiveAtoms()
 }
 
 void
@@ -331,7 +336,7 @@ void
 ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
   DebugM(1,"For patch " << msg->patch << " received data for proxy on node " << CMyPe() << endl);
   ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
-  proxy->receiveAll(msg);
+  proxy->receiveAll(msg); // delete done in ProxyPatch::receiveAll()
 }
 
 #include "ProxyMgr.bot.h"
@@ -341,13 +346,18 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/02/25 18:26:22 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1009 $	$Date: 1997/02/26 16:53:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.1009  1997/02/26 16:53:16  ari
+ * Cleaning and debuging for memory leaks.
+ * Adding comments.
+ * Removed some dead code due to use of Quiescense detection.
+ *
  * Revision 1.1008  1997/02/25 18:26:22  nealk
  * More DPMTA debugging
  * Disabled ProxyMgr debugging

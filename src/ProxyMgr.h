@@ -38,6 +38,11 @@ class ProxyAtomsMsg : public comm_object {
 public:
   PatchID patch;
   AtomIDList atomIDList;
+  int mylength;
+  char *mybuffer;
+
+  void prepack();
+
   void * pack (int *length);
   void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
   void * operator new(size_t s) { return comm_object::operator new(s); }
@@ -123,13 +128,18 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/13 04:43:15 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/02/26 16:53:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.h,v $
+ * Revision 1.1002  1997/02/26 16:53:17  ari
+ * Cleaning and debuging for memory leaks.
+ * Adding comments.
+ * Removed some dead code due to use of Quiescense detection.
+ *
  * Revision 1.1001  1997/02/13 04:43:15  jim
  * Fixed initial hanging (bug in PatchMap, but it still shouldn't have
  * happened) and saved migration messages in the buffer from being

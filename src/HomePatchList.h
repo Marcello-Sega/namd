@@ -8,7 +8,8 @@
 /***************************************************************************/
 
 /***************************************************************************
- * DESCRIPTION:
+ * DESCRIPTION: Helper class for PatchMgr to manager HomePatch(es)
+ *              It is object contained in the container HomePatchList
  *
  ***************************************************************************/
 
@@ -37,6 +38,7 @@ public:
 };
 
 typedef SortedArray<HomePatchElem> HomePatchList;
+typedef ResizeArrayIter<HomePatchElem> HomePatchListIter;
 
 #endif /* HOMEPATCHLIST_H */
 /***************************************************************************
@@ -44,10 +46,15 @@ typedef SortedArray<HomePatchElem> HomePatchList;
  *
  *	$RCSfile: HomePatchList.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:27 $
+ *	$Revision: 1.1001 $	$Date: 1997/02/26 16:53:10 $
  *
  ***************************************************************************
  * $Log: HomePatchList.h,v $
+ * Revision 1.1001  1997/02/26 16:53:10  ari
+ * Cleaning and debuging for memory leaks.
+ * Adding comments.
+ * Removed some dead code due to use of Quiescense detection.
+ *
  * Revision 1.1000  1997/02/06 15:58:27  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

@@ -11,7 +11,7 @@
 /*								           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1003 1997/02/17 23:47:03 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1004 1997/02/26 16:53:14 ari Exp $";
 
 
 #include "ckdefs.h"
@@ -22,7 +22,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,
 #include "PatchMgr.h"
 
 #include "NamdTypes.h"
-#include "Compute.h"
+//#include "Compute.h"
 #include "HomePatch.h"
 #include "PatchMap.h"
 
@@ -32,33 +32,42 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,
 #include "WorkDistrib.top.h"
 #include "WorkDistrib.h"
 
-#include "Node.top.h"
-#include "Node.h"
+// #include "Node.top.h"
+// #include "Node.h"
 
 // #define DEBUGM
 #define MIN_DEBUG_LEVEL 3
 #include "Debug.h"
 
 
+// Singleton pattern - static initialization
+PatchMgr *PatchMgr::_instance = 0;
+
+// BOC constructor
 PatchMgr::PatchMgr(InitMsg *msg)
 {
     delete msg;
 
-    _instance = this;
+    // Singleton pattern
+    if (_instance == NULL) {
+	_instance = this;
+    } else {
+	iout << iFILE << iERROR << iPE 
+	  << "PatchMgr instanced twice on same node!" << endi;
+	CharmExit();
+    }
+
+    // Get PatchMap singleton started
     patchMap = PatchMap::Instance();
     patchMap->registerPatchMgr(this);
 }
 
 PatchMgr::~PatchMgr()
 {
-    // This is should clean up and delete the only thing that dangles,
-    // the home patch pointers.  Of course, we expect PatchMgr to dissappear!
-    // This is a kludge - the lists should have better semantics.
-
-    MovePatchListIter m(move);
-    for ( m = m.begin(); m != m.end(); m++) {
-      HomePatchElem* hp = homePatches.find(HomePatchElem((*m).pid));
-      delete hp->p;
+    HomePatchListIter hi(homePatches);
+    for ( hi = hi.begin(); hi != hi.end(); hi++) {
+      HomePatchElem* elem = homePatches.find(HomePatchElem(hi->pid));
+      delete elem->p;
     }
 }
 
@@ -66,85 +75,81 @@ PatchMgr::~PatchMgr()
 void PatchMgr::createHomePatch(PatchID pid, AtomIDList aid, 
 	PositionList p, VelocityList v) 
 {
-    DebugM(3, "PatchMgr::createHomePatch() number atoms = " << aid.size() << endl );
     HomePatch *patch = new HomePatch(pid, aid, p, v);
     homePatches.load(HomePatchElem(pid, patch));
     patchMap->registerPatch(pid, patch);
 }
 
+
+// Add a HomePatch to a list of patches to be moved 
+// HomePatches are actually moved by invoking sendMovePatches() below
 void PatchMgr::movePatch(PatchID pid, NodeID nodeID) 
 {
     move.load(MovePatch(pid,nodeID));
 }
 
+
+// Uses list constructed by movePatch() and dispatches
+// HomePatch(es) to new nodes
 void PatchMgr::sendMovePatches() 
 {
-    DebugM(2,"sendMovePatches() - moving " << move.size() << " patches.\n");
-    ackMovePending = move.size();
-    if (ackMovePending == 0) {   // tell local WorkDistrib we are
-	WorkDistrib::messageMovePatchDone();  // done with patch moves
+    if (! move.size())
 	return;
-    }
+
     MovePatchListIter m(move);
     for ( m = m.begin(); m != m.end(); m++) {
-      DebugM(1,"sendMovePatches() - moving patch " << (*m).pid << ".\n");
-      HomePatch *p = homePatch((*m).pid);
-      patchMap->unregisterPatch((*m).pid, p);
+      HomePatch *p = homePatch(m->pid);
+      patchMap->unregisterPatch(m->pid, p);
 
       MovePatchesMsg *msg = new (MsgIndex(MovePatchesMsg))
-	MovePatchesMsg((*m).pid, p->atomIDList, p->p, p->v);
+	MovePatchesMsg(m->pid, p->atomIDList, p->p, p->v);
 
       // Sending to PatchMgr::recvMovePatches on remote node
-      CSendMsgBranch(PatchMgr, recvMovePatches, msg, thisgroup, (*m).nodeID);
+      CSendMsgBranch(PatchMgr, recvMovePatches, msg, thisgroup, m->nodeID);
 
       // Deleting the HomePatchElem will call a destructor for clean up
       // but the msg elements are safe since they use a container template
       // that uses ref counting.
       delete p;
-      homePatches.del(HomePatchElem((*m).pid)); 
+      homePatches.del(HomePatchElem(m->pid)); 
     }
     move.resize(0);
 }
 
 void PatchMgr::recvMovePatches(MovePatchesMsg *msg) {
-    // Tell sending PatchMgr we received MovePatchMsg
-    AckMovePatchesMsg *ackmsg = 
-      new (MsgIndex(AckMovePatchesMsg)) AckMovePatchesMsg;
-    CSendMsgBranch(PatchMgr,ackMovePatches, ackmsg, thisgroup, msg->fromNodeID);
-
-     DebugM(1,"received patch " << msg->pid << " from node " << msg->fromNodeID << ".\n");
-     DebugM(1,"recvMovePatches() - creating patch " << msg->pid << ".\n");
-     DebugM(1,"aid.size() = " << msg->aid.size() << "\n");
-     DebugM(1,"p.size() = " << msg->p.size() << "\n");
-     DebugM(1,"v.size() = " << msg->v.size() << "\n");
     // Make a new HomePatch
     createHomePatch(msg->pid, msg->aid, msg->p, msg->v);
     delete msg;
+
+    // Tell sending PatchMgr we received MovePatchMsg
+//    AckMovePatchesMsg *ackmsg = 
+//      new (MsgIndex(AckMovePatchesMsg)) AckMovePatchesMsg;
+//    CSendMsgBranch(PatchMgr,ackMovePatches, ackmsg, thisgroup, msg->fromNodeID);
 }
     
 
-void PatchMgr::ackMovePatches(AckMovePatchesMsg *msg)
-{
-    delete msg;
-    if (! --ackMovePending) 
-	WorkDistrib::messageMovePatchDone();
+//void PatchMgr::ackMovePatches(AckMovePatchesMsg *msg)
+//{
+//    delete msg;
+//    if (! --ackMovePending) 
+//	WorkDistrib::messageMovePatchDone();
+//}
+
+
+
+// Called by HomePatch to migrate atoms off to new patches
+// Message combining could occur here
+void PatchMgr::sendMigrationMsg(PatchID src, MigrationInfo m) {
+  // We note that m.mList may be NULL indicating no atoms to migrate
+  MigrateAtomsMsg *msg = 
+    new (MsgIndex(MigrateAtomsMsg)) MigrateAtomsMsg(src,m.destPatchID,m.mList);
+  CSendMsgBranch(PatchMgr,recvMigrateAtoms,msg,thisgroup,m.destNodeID);
 }
 
+// Receive end of sendMigrateionMsg() above
 void PatchMgr::recvMigrateAtoms (MigrateAtomsMsg *msg) {
   //  msg must be deleted by HomePatch::depositMigrationMsg();
   PatchMap::Object()->homePatch(msg->destPatchID)->depositMigration(msg);
-}
-
-void PatchMgr::sendMigrationMsg(PatchID src, MigrationInfo m) {
-  
-  MigrateAtomsMsg *msg = new (MsgIndex(MigrateAtomsMsg)) 
-     MigrateAtomsMsg(src,m.destPatchID,m.mList);
-  if (m.mList) {
-    DebugM(4,"Sending "<<m.destPatchID<<" from "<<src<<"size="<<(*m.mList).size()<<"\n" );
-  } else {
-    DebugM(4,"Sending "<<m.destPatchID<<" from "<<src<<" nothing\n");
-  }
-  CSendMsgBranch(PatchMgr,recvMigrateAtoms,msg,thisgroup,m.destNodeID);
 }
 
 void * MovePatchesMsg::pack (int *length)
@@ -197,11 +202,16 @@ void MovePatchesMsg::unpack (void *in)
  *
  *	$RCSfile: PatchMgr.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/02/17 23:47:03 $
+ *	$Revision: 1.1004 $	$Date: 1997/02/26 16:53:14 $
  *
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.C,v $
+ * Revision 1.1004  1997/02/26 16:53:14  ari
+ * Cleaning and debuging for memory leaks.
+ * Adding comments.
+ * Removed some dead code due to use of Quiescense detection.
+ *
  * Revision 1.1003  1997/02/17 23:47:03  ari
  * Added files for cleaning up atom migration code
  *

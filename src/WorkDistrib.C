@@ -6,12 +6,14 @@
 /*                                                                         */
 /***************************************************************************/
 
-/***************************************************************************/
-/* DESCRIPTION:								   */
-/*                                                                         */
-/***************************************************************************/
+/***************************************************************************
+ * DESCRIPTION:	Currently, WorkDistrib generates the layout of the Patches,
+ *              directs the construction and distribution of Computes and
+ *              associates Computes with Patches.
+ *                                                                         
+ ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1005 1997/02/14 20:24:57 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1006 1997/02/26 16:53:19 ari Exp $";
 
 #include <stdio.h>
 
@@ -387,30 +389,25 @@ void WorkDistrib::createPatches(void)
 
   Vector *velocities = new Velocity[numAtoms];
 
-  if ( params->initialTemp < 0.0 )
-  {
+  if ( params->initialTemp < 0.0 ) {
     Bool binvels=FALSE;
 
     //  Reading the veolcities from a PDB
     current = node->configList->find("velocities");
 
-    if (current == NULL)
-    {
+    if (current == NULL) {
       current = node->configList->find("binvelocities");
       binvels = TRUE;
     }
 
-    if (!binvels)
-    {
+    if (!binvels) {
       velocities_from_PDB(current->data, velocities, numAtoms);
     }
-    else
-    {
+    else {
       velocities_from_binfile(current->data, velocities, numAtoms);
     }
   }
-  else
-  {
+  else {
     // Random velocities for a given temperature
     random_velocities(params->initialTemp, molecule, velocities, numAtoms);
   }
@@ -418,8 +415,7 @@ void WorkDistrib::createPatches(void)
   int numDegFreedom = 3*numAtoms;
 
   //  If COMMotion == no, remove center of mass motion
-  if (!(params->comMove))
-  {
+  if (!(params->comMove)) {
     remove_com_motion(velocities, molecule, numAtoms);
     numDegFreedom -= 3;
   }
@@ -430,10 +426,8 @@ void WorkDistrib::createPatches(void)
 
   Lattice lattice = params->lattice;
 
-  for(i=0; i < numAtoms; i++)
-  {
-    if ( ! ( i % 1000 ) )
-    {
+  for(i=0; i < numAtoms; i++) {
+    if ( ! ( i % 1000 ) ) {
       DebugM(4,"Assigned " << i << " atoms to patches so far.\n");
     }
     int pid = patchMap->assignToPatch(positions[i]);
@@ -479,7 +473,11 @@ void WorkDistrib::createPatches(void)
     }
   }
   patchMgr->sendMovePatches();
+  // NOTE:  Using Quiescence detection in Node::Startup2()
+  // sendMovePatches() generates flock of messages and work
+  // when it dies out - Quiescence should be detected
 }
+
 
 //----------------------------------------------------------------------
 // saveMaps() is called when the map message is received
@@ -748,7 +746,6 @@ void WorkDistrib::mapComputeNonbonded(void)
 
 //----------------------------------------------------------------------
 void WorkDistrib::messageEnqueueWork(Compute *compute) {
-  DebugM(2,"WorkDistrib::messageEnqueueWork() triggered\n");
   LocalWorkMsg *msg = new (MsgIndex(LocalWorkMsg)) LocalWorkMsg;
   msg->compute = compute; // pointer is valid since send is to local Pe
   CSendMsgBranch(WorkDistrib, enqueueWork, msg, group.workDistrib, CMyPe() );
@@ -759,15 +756,15 @@ void WorkDistrib::enqueueWork(LocalWorkMsg *msg) {
   delete msg;
 }
 
-void WorkDistrib::messageMovePatchDone() {
+//void WorkDistrib::messageMovePatchDone() {
   // Send msg to WorkDistrib that all patchMoves are completed
-  DoneMsg *msg = new (MsgIndex(DoneMsg)) DoneMsg;
-  CSendMsgBranch(WorkDistrib, movePatchDone, msg, group.workDistrib, CMyPe());
-}
+//  DoneMsg *msg = new (MsgIndex(DoneMsg)) DoneMsg;
+//  CSendMsgBranch(WorkDistrib, movePatchDone, msg, group.workDistrib, CMyPe());
+//}
 
-void WorkDistrib::movePatchDone(DoneMsg *msg) {
-  delete msg;
-}
+//void WorkDistrib::movePatchDone(DoneMsg *msg) {
+//  delete msg;
+//}
 
 #include "WorkDistrib.bot.h"
 
@@ -775,13 +772,18 @@ void WorkDistrib::movePatchDone(DoneMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/02/14 20:24:57 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1006 $	$Date: 1997/02/26 16:53:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1006  1997/02/26 16:53:19  ari
+ * Cleaning and debuging for memory leaks.
+ * Adding comments.
+ * Removed some dead code due to use of Quiescense detection.
+ *
  * Revision 1.1005  1997/02/14 20:24:57  jim
  * Patches are now sized according to config file.
  *

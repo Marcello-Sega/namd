@@ -23,6 +23,8 @@
 #include "BOCgroup.h"
 #include "NamdTypes.h"
 
+// Message to send our per processor BOC's list of groupIDs of 
+// all other BOC's
 class GroupInitMsg : public comm_object
 {
 public:
@@ -35,24 +37,30 @@ public:
   ChareIDType master;
 };
 
+// Our basic trigger message
 class EmptyMsg : public comm_object {
   int dummy;
 };
 
+// Used for start up of objects
 class InitMsg : public EmptyMsg { 
 };
 
+// Used to trigger running of object
 class RunMsg : public EmptyMsg { 
 };
 
+// Used to acknowledge that data or other resource is ready to be used
 class ReadyMsg : public EmptyMsg { 
 };
 
+// Used to signal completion of a task
 class DoneMsg : public EmptyMsg { 
 };
 
 class Compute;
 
+// For Compute objects to enqueue themselves when ready to compute
 class LocalWorkMsg : public comm_object
 {
 public:
@@ -66,12 +74,17 @@ public:
  *
  *	$RCSfile: main.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:59:37 $
+ *	$Revision: 1.1001 $	$Date: 1997/02/26 16:53:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: main.h,v $
+ * Revision 1.1001  1997/02/26 16:53:22  ari
+ * Cleaning and debuging for memory leaks.
+ * Adding comments.
+ * Removed some dead code due to use of Quiescense detection.
+ *
  * Revision 1.1000  1997/02/06 15:59:37  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

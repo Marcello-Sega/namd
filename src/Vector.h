@@ -12,7 +12,7 @@
  *
  *	$RCSfile: Vector.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:59:23 $
+ *	$Revision: 1.1001 $	$Date: 1997/02/26 16:53:18 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -25,6 +25,11 @@
  * REVISION HISTORY:
  *
  * $Log: Vector.h,v $
+ * Revision 1.1001  1997/02/26 16:53:18  ari
+ * Cleaning and debuging for memory leaks.
+ * Adding comments.
+ * Removed some dead code due to use of Quiescense detection.
+ *
  * Revision 1.1000  1997/02/06 15:59:23  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
@@ -113,7 +118,7 @@ class Vector {
    public:
      BigReal x,y,z;
      
-     inline Vector( void) {         // default is to create a 0 vector
+     inline Vector(void) {         // default is to create a 0 vector
        x = y = z = 0.0;
      }
      inline Vector( const Vector &v2) { // Vector x = another_vector

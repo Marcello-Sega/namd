@@ -56,18 +56,17 @@ public:
   void unpack (void *in);
 };
 
-class AckMovePatchesMsg : public comm_object {
-public:
-   int dummy;
-
-   AckMovePatchesMsg() {};
-   ~AckMovePatchesMsg() {};
-};
+//class AckMovePatchesMsg : public comm_object {
+//public:
+ //  int dummy;
+//
+ //  AckMovePatchesMsg() {};
+  // ~AckMovePatchesMsg() {};
+//};
 
 
 // PatchMgr creates and manages homepatches. There exist one instance of 
-// PatchMgr on each node (derived from Charm++ groupmember).
-// That is, when a new operator causes creation of one instance on each node. 
+// PatchMgr on each node (derived from Charm++ groupmember).  // That is, when a new operator causes creation of one instance on each node. 
 // In addition to creation of homepatches, it handles the atom redistribution
 // at the end of each cycle (i.e., atoms can move from patch to patch at the
 // cycle boundaries).
@@ -91,8 +90,6 @@ struct MovePatch
 typedef SortedArray<MovePatch> MovePatchList;
 typedef ResizeArrayIter<MovePatch> MovePatchListIter;
 
-typedef ResizeArray<int> PatchIndex;
-
 class PatchMgr : public BOCclass
 {
 
@@ -102,13 +99,16 @@ public:
 
   static PatchMgr* Object() { return _instance; }
   
-  void recvMovePatches(MovePatchesMsg *msg);
 
   void createHomePatch(PatchID pid, AtomIDList aid, PositionList p, 
      VelocityList v); 
+
   void movePatch(PatchID, NodeID);
   void sendMovePatches();
-  void ackMovePatches(AckMovePatchesMsg *msg);
+  void recvMovePatches(MovePatchesMsg *msg);
+
+  // void ackMovePatches(AckMovePatchesMsg *msg);
+
   HomePatch *homePatch(PatchID pid) {
      return homePatches.find(HomePatchElem(pid))->p;
   } 
@@ -118,6 +118,7 @@ public:
   static void setGroup(BOCgroup g);
  
 private:
+  // Singleton Pattern
   static PatchMgr* _instance;
 
   friend PatchMap;
@@ -125,9 +126,6 @@ private:
 
   int numAllPatches;
   int numHomePatches;
-
-  // global patch number to local patch table conversion table
-  PatchIndex patchIndex;
 
   // an array of patch pointers residing on this node
   HomePatchList homePatches;
@@ -145,12 +143,17 @@ private:
  *
  *	$RCSfile: PatchMgr.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/17 23:47:04 $
+ *	$Revision: 1.1003 $	$Date: 1997/02/26 16:53:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.h,v $
+ * Revision 1.1003  1997/02/26 16:53:15  ari
+ * Cleaning and debuging for memory leaks.
+ * Adding comments.
+ * Removed some dead code due to use of Quiescense detection.
+ *
  * Revision 1.1002  1997/02/17 23:47:04  ari
  * Added files for cleaning up atom migration code
  *

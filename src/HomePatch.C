@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1015 1997/02/17 23:46:59 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1016 1997/02/26 16:53:09 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -121,6 +121,7 @@ void HomePatch::registerProxy(RegisterProxyMsg *msg) {
   ProxyAtomsMsg *nmsg = new (MsgIndex(ProxyAtomsMsg)) ProxyAtomsMsg;
   nmsg->patch = patchID;
   nmsg->atomIDList = atomIDList;
+  nmsg->prepack();
   ProxyMgr::Object()->sendProxyAtoms(nmsg,msg->node);
   delete msg;
 }
@@ -389,12 +390,17 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1997/02/17 23:46:59 $
+ *	$Revision: 1.1016 $	$Date: 1997/02/26 16:53:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1016  1997/02/26 16:53:09  ari
+ * Cleaning and debuging for memory leaks.
+ * Adding comments.
+ * Removed some dead code due to use of Quiescense detection.
+ *
  * Revision 1.1015  1997/02/17 23:46:59  ari
  * Added files for cleaning up atom migration code
  *

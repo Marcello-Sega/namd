@@ -23,6 +23,10 @@
 #include "Templates/SortedArray.h"
 #include "Migration.h"
 
+// Message which stores list of atoms and their data
+// which are to be migrated from one patch to another.
+// This message does not contain information that will change asynchronously
+// It does not need to be prepacked
 class MigrateAtomsMsg : public comm_object {
 public:
   NodeID  fromNodeID;

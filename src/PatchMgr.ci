@@ -1,13 +1,11 @@
 extern message InitMsg;
 packmessage MovePatchesMsg;
-message AckMovePatchesMsg;
 packmessage MigrateAtomsMsg;
 
 group PatchMgr
 {
   entry PatchMgr(InitMsg *);
   entry recvMovePatches(MovePatchesMsg *);
-  entry ackMovePatches(AckMovePatchesMsg *);
   entry recvMigrateAtoms(MigrateAtomsMsg *);
 } ;
 

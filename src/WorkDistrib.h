@@ -37,8 +37,8 @@ public:
   WorkDistrib(InitMsg *msg);
   ~WorkDistrib(void);
 
-  static void messageMovePatchDone();
-  void movePatchDone(DoneMsg *msg);
+  // static void messageMovePatchDone();
+  // void movePatchDone(DoneMsg *msg);
 
   static void messageEnqueueWork(Compute *);
   void enqueueWork(LocalWorkMsg *msg); // This is for testing
@@ -121,13 +121,18 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/14 20:24:58 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/02/26 16:53:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.1003  1997/02/26 16:53:20  ari
+ * Cleaning and debuging for memory leaks.
+ * Adding comments.
+ * Removed some dead code due to use of Quiescense detection.
+ *
  * Revision 1.1002  1997/02/14 20:24:58  jim
  * Patches are now sized according to config file.
  *

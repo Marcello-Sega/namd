@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1006 1997/02/13 23:17:20 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1007 1997/02/26 16:53:17 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -58,7 +58,6 @@ void ProxyPatch::boxClosed(int box)
 void ProxyPatch::receiveAtoms(ProxyAtomsMsg *msg)
 {
   loadAtoms(msg->atomIDList);
-  // loadAtomProperties();
   AtomMap::Object()->registerIDs(patchID,msg->atomIDList);
   delete msg;
 }
@@ -116,12 +115,17 @@ void ProxyPatch::sendResults(void)
  *
  *	$RCSfile: ProxyPatch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/02/13 23:17:20 $
+ *	$Revision: 1.1007 $	$Date: 1997/02/26 16:53:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.1007  1997/02/26 16:53:17  ari
+ * Cleaning and debuging for memory leaks.
+ * Adding comments.
+ * Removed some dead code due to use of Quiescense detection.
+ *
  * Revision 1.1006  1997/02/13 23:17:20  ari
  * Fixed a final bug in AtomMigration - numatoms in ComputePatchPair.C not
  * set correctly in atomUpdate()

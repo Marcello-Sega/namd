@@ -6,7 +6,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.1000 1997/02/06 15:59:35 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.1001 1997/02/26 16:53:21 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -27,20 +27,25 @@ Inform namdWarn("Warning");
 Inform namdInfo("Info");
 Inform namdDebug("** DEBUG **");
 
+#define MIN_DEBUG_LEVEL 4
+//#define DEBUGM
+#include "Debug.h"
+
 class main : public chare_object
 {
 public:
   main(int argc, char **argv)
   {
+    // Namd object is only on Pe(0)
     Namd *namd = new Namd;
-    CPrintf("main::main() - Namd::Namd() should have been invoked\n");
 
-
-    if (argc >= 2)
+    if (argc >= 2) {
 	namd->startup(argv[argc-1]);
-    else
+    }
+    else {
        CPrintf("main::main() no arguments, exiting\n");
-    CPrintf("main() - leaving - Charm should queue up messages now!\n");
+    }
+    DebugM(1, "main() - leaving - Charm should queue up messages now!\n");
   }
 };
 
@@ -50,7 +55,7 @@ public:
  *
  *	$RCSfile: main.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:59:35 $
+ *	$Revision: 1.1001 $	$Date: 1997/02/26 16:53:21 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -59,6 +64,11 @@ public:
  * REVISION HISTORY:
  *
  * $Log: main.C,v $
+ * Revision 1.1001  1997/02/26 16:53:21  ari
+ * Cleaning and debuging for memory leaks.
+ * Adding comments.
+ * Removed some dead code due to use of Quiescense detection.
+ *
  * Revision 1.1000  1997/02/06 15:59:35  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

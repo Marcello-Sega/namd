@@ -61,11 +61,13 @@ class Patch
 
      // methods for use by Compute objects
      PositionBox<Patch>* registerPositionPickup(ComputeID cid, int trans = 13);
-     void unregisterPositionPickup(ComputeID cid, PositionBox<Patch> **const box);
+     void unregisterPositionPickup(ComputeID cid,
+				   PositionBox<Patch>**const box);
      Box<Patch,Force>* registerForceDeposit(ComputeID cid);
      void unregisterForceDeposit(ComputeID cid, Box<Patch,Force> **const box);
      Box<Patch,AtomProperties>* registerAtomPickup(ComputeID cid);
-     void unregisterAtomPickup(ComputeID cid, Box<Patch,AtomProperties> **const box);
+     void unregisterAtomPickup(ComputeID cid,
+			       Box<Patch,AtomProperties> **const box);
 
      // methods for use by Sequencer or ProxyManager
      // void positionsReady(void) { positionsReady(0); }
@@ -125,12 +127,17 @@ class Patch
  *
  *	$RCSfile: Patch.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/11 18:51:54 $
+ *	$Revision: 1.1003 $	$Date: 1997/02/26 16:53:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.h,v $
+ * Revision 1.1003  1997/02/26 16:53:13  ari
+ * Cleaning and debuging for memory leaks.
+ * Adding comments.
+ * Removed some dead code due to use of Quiescense detection.
+ *
  * Revision 1.1002  1997/02/11 18:51:54  ari
  * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
  * fixed non-buffering of migration msgs

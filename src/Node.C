@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1003 1997/02/13 16:17:16 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1004 1997/02/26 16:53:12 ari Exp $";
 
 
 #include "ckdefs.h"
@@ -249,6 +249,10 @@ void Node::startup2(InitMsg *msg)
   if ( ! CMyPe() )
   {
     ComputeMap::Object()->printComputeMap();
+
+    // In createPatches(), WorkDistrib and PatchMgr generate a 
+    // flock of messages, work and acknowledgements - when
+    // they die out - we are done and Quiescence is detected.
     workDistrib->createPatches();
     output = new Output;
   }
@@ -461,12 +465,17 @@ void Node::saveMolDataPointers(Molecule *molecule,
  *
  *	$RCSfile: Node.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/02/13 16:17:16 $
+ *	$Revision: 1.1004 $	$Date: 1997/02/26 16:53:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1004  1997/02/26 16:53:12  ari
+ * Cleaning and debuging for memory leaks.
+ * Adding comments.
+ * Removed some dead code due to use of Quiescense detection.
+ *
  * Revision 1.1003  1997/02/13 16:17:16  ari
  * Intermediate debuging commit - working to fix deep bug in migration?
  *
