@@ -2023,6 +2023,9 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    if ( pairInteractionOn && ( PMEOn || FMAOn || useDPME || fullDirectOn ) ) {
      NAMD_die("Sorry, pairInteraction not implemented for full electrostatics.");
    }
+   if ( ! pairInteractionOn ) {
+     pairInteractionSelf = 0;
+   }
    if ( pairInteractionOn && !pairInteractionSelf && !config->find("pairInteractionGroup2")) 
      NAMD_die("pairInteractionGroup2 must be specified");
 
