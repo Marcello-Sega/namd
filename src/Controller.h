@@ -39,6 +39,8 @@ protected:
     void printEnergies(int);
     void enqueueCollections(int);
     void rescaleVelocities(int);
+      BigReal rescaleVelocities_sumTemps;
+      int rescaleVelocities_numTemps;
     void tcoupleVelocities(int);
     void berendsenPressure(int);
 
@@ -76,12 +78,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1998/07/06 19:17:01 $
+ *	$Revision: 1.1011 $	$Date: 1998/08/02 21:26:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.h,v $
+ * Revision 1.1011  1998/08/02 21:26:39  jim
+ * Altered velocity rescaling to use averaged temperature.
+ *
  * Revision 1.1010  1998/07/06 19:17:01  brunner
  * Changed path info in Makearch.T3E, changed patch partition equation,
  * and added timing prints to Controller

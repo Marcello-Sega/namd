@@ -53,6 +53,7 @@ protected:
     void minimizationQuenchVelocity(void);
 
     void rescaleVelocities(int);
+      int rescaleVelocities_numTemps;
     void tcoupleVelocities(BigReal,int);
     void berendsenPressure(int);
     void langevinVelocities(BigReal);
@@ -82,12 +83,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1998/03/31 04:55:46 $
+ *	$Revision: 1.1017 $	$Date: 1998/08/02 21:26:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.h,v $
+ * Revision 1.1017  1998/08/02 21:26:41  jim
+ * Altered velocity rescaling to use averaged temperature.
+ *
  * Revision 1.1016  1998/03/31 04:55:46  jim
  * Added test mode, fixed errors in virial with full electrostatics.
  *

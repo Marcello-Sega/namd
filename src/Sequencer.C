@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1043 1998/06/18 14:48:05 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1044 1998/08/02 21:26:40 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -243,12 +243,14 @@ void Sequencer::berendsenPressure(int step)
 void Sequencer::rescaleVelocities(int step)
 {
   const int rescaleFreq = simParams->rescaleFreq;
-  if ( rescaleFreq > 0 && !(step%rescaleFreq) )
-  {
-    BigReal factor = broadcast->velocityRescaleFactor.get(step);
-    for ( int i = 0; i < patch->numAtoms; ++i )
-    {
-      patch->v[i] *= factor;
+  if ( rescaleFreq > 0 ) {
+    ++rescaleVelocities_numTemps;
+    if ( rescaleVelocities_numTemps == rescaleFreq ) {
+      BigReal factor = broadcast->velocityRescaleFactor.get(step);
+      for ( int i = 0; i < patch->numAtoms; ++i )
+      {
+        patch->v[i] *= factor;
+      }
     }
   }
 }
@@ -437,12 +439,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1043 $     $Date: 1998/06/18 14:48:05 $
+ *      $Revision: 1.1044 $     $Date: 1998/08/02 21:26:40 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1044  1998/08/02 21:26:40  jim
+ * Altered velocity rescaling to use averaged temperature.
+ *
  * Revision 1.1043  1998/06/18 14:48:05  jim
  * Split virial into NORMAL, NBOND, and SLOW parts to match force classes.
  *

@@ -72,6 +72,8 @@ Controller::Controller(NamdState *s) :
     reduction->subscribe(REDUCTION_ANGULAR_MOMENTUM_X);
     reduction->subscribe(REDUCTION_ANGULAR_MOMENTUM_Y);
     reduction->subscribe(REDUCTION_ANGULAR_MOMENTUM_Z);
+
+    rescaleVelocities_sumTemps = 0;  rescaleVelocities_numTemps = 0;
 }
 
 Controller::~Controller(void)
@@ -177,13 +179,18 @@ void Controller::berendsenPressure(int step)
 void Controller::rescaleVelocities(int step)
 {
   const int rescaleFreq = simParams->rescaleFreq;
-  if ( rescaleFreq > 0 && !(step%rescaleFreq) )
-  {
-    const BigReal rescaleTemp = simParams->rescaleTemp;
-    BigReal factor = sqrt(rescaleTemp/temperature);
-    broadcast->velocityRescaleFactor.publish(step,factor);
-    iout << "RESCALING VELOCITIES AT STEP " << step
-         << " TO " << rescaleTemp << " KELVIN.\n" << endi;
+  if ( rescaleFreq > 0 ) {
+    rescaleVelocities_sumTemps += temperature;  ++rescaleVelocities_numTemps;
+    if ( rescaleVelocities_numTemps == rescaleFreq ) {
+      BigReal avgTemp = rescaleVelocities_sumTemps / rescaleVelocities_numTemps;
+      const BigReal rescaleTemp = simParams->rescaleTemp;
+      BigReal factor = sqrt(rescaleTemp/avgTemp);
+      broadcast->velocityRescaleFactor.publish(step,factor);
+      iout << "RESCALING VELOCITIES AT STEP " << step
+           << " FROM AVERAGE TEMPERATURE OF " << avgTemp
+           << " TO " << rescaleTemp << " KELVIN.\n" << endi;
+      rescaleVelocities_sumTemps = 0;  rescaleVelocities_numTemps = 0;
+    }
   }
 }
 
@@ -422,12 +429,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1037 $	$Date: 1998/07/08 20:17:21 $
+ *	$Revision: 1.1038 $	$Date: 1998/08/02 21:26:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1038  1998/08/02 21:26:39  jim
+ * Altered velocity rescaling to use averaged temperature.
+ *
  * Revision 1.1037  1998/07/08 20:17:21  brunner
  * Initialized timers
  *
