@@ -11,7 +11,7 @@
 %
 %       $RCSfile: ug_intro.tex,v $
 %       $Author: jim $        $Locker:  $                $State: Exp $
-%       $Revision: 1.17 $      $Date: 2002/01/23 19:45:04 $
+%       $Revision: 1.18 $      $Date: 2002/02/22 16:12:45 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -21,6 +21,9 @@
 % REVISION HISTORY:
 %
 % $Log: ug_intro.tex,v $
+% Revision 1.18  2002/02/22 16:12:45  jim
+% Added new features.
+%
 % Revision 1.17  2002/01/23 19:45:04  jim
 % Changes for version 2.4b1.  Only need to change version in one place now.
 %
@@ -139,6 +142,16 @@ at {\tt namd@ks.uiuc.edu}.
 Full electrostatics calculations now transmit less data and take
 better advantage of large clusters of multiprocessors to allow
 efficient use of several hundred processors for large systems.
+
+\subsubsection*{Locally Enhanced Sampling}
+
+Multiple images of a subset of the system with a reduced nonbonded
+potential can be used to increase sampling and transition rates.
+
+\subsubsection*{Alchemical Free Energy Perturbation}
+
+A dual topology method allows NAMD to calculate free energy changes
+resulting from chemical mutations, the removal of ligands, etc.
 
 \subsubsection*{GROMACS Input File Compatibility}
 
