@@ -56,7 +56,7 @@ template <class Elem> class UniqueSortedArray : public SortedArray<Elem> {
 template <class Elem>
 inline int 
 UniqueSortedArray<Elem>::insert(const Elem& elem) {
-  this->found = bsearch(elem);
+  this->found = this->bsearch(elem);
   if (this->found == -1) {
     return ResizeArray<Elem>::insert(elem, 0);
   }
