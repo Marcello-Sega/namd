@@ -11,7 +11,13 @@
 #include "main.decl.h"
 #include "main.h"
 
-#ifndef WIN32
+#ifdef WIN32
+#ifndef NO_SOCKET
+#define NO_SOCKET
+#endif
+#endif
+
+#ifndef NO_SOCKET
 
 #define TBSOFT_TRACK_HOST   "130.126.120.106" /* www.ks.uiuc.edu */
 #define TBSOFT_TRACK_PORT   3141              /* UDP port 3141   */
@@ -90,7 +96,7 @@ int tbsoft_sendusage(const char *program,
 
 #endif
 
-#ifndef WIN32
+#ifndef NO_SOCKET
   extern const char *namd_build_date;
   extern const char *namd_build_user;
   extern const char *namd_build_machine;
@@ -148,7 +154,7 @@ public:
     iout << iINFO << "Based on Charm++/Converse " << charm_version
          << " for " << CMK_MACHINE_NAME << "\n" << endi;
 
-#ifndef WIN32
+#ifndef NO_SOCKET
     iout << iINFO << "Built " << namd_build_date << " by "
          << namd_build_user << " on " << namd_build_machine << "\n"
          << endi;
@@ -160,7 +166,6 @@ public:
     iout << iINFO << "Running on " << CmiNumPes() << " processors.\n" << endi;
     iout << iINFO << (memusage()/1024) << " kB of memory in use.\n" << endi;
   }
-
 };
 
 #include "main.def.h"
