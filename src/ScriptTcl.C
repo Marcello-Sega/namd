@@ -22,6 +22,9 @@
 #include "Measure.h"
 #include <stdio.h>
 #include <ctype.h>  // for isspace
+#ifndef WIN32
+#include <strings.h>
+#endif
 
 #ifdef NAMD_TCL
 #include <tcl.h>
@@ -117,7 +120,11 @@ int ScriptTcl::Tcl_print(ClientData,
 
 int ScriptTcl::Tcl_config(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
-  char *buf = Tcl_Merge(argc-1,argv+1);
+  int arglen = 1;  int ai;
+  for (ai=1; ai<argc; ++ai) { arglen += strlen(argv[ai]) + 1; }
+  char *buf = new char[arglen];  *buf = 0;
+  for (ai=1; ai<argc; ++ai) { strcat(buf,argv[ai]); strcat(buf," "); }
+  ai = strlen(buf);  if ( ai ) buf[ai-1] = 0;
   char *namestart, *nameend, *datastart, *dataend, *s;
   namestart = nameend = datastart = dataend = NULL;
   int spacecount = 0;
@@ -155,7 +162,7 @@ int ScriptTcl::Tcl_config(ClientData clientData,
     }
 
     if (!namestart || !nameend || !datastart || !dataend) {
-      Tcl_Free(buf);
+      delete [] buf;
       Tcl_SetResult(interp,"error parsing config file",TCL_VOLATILE);
       return TCL_ERROR;
     }
@@ -164,7 +171,7 @@ int ScriptTcl::Tcl_config(ClientData clientData,
   script->config->add_element( namestart, nameend - namestart + 1,
                                datastart, dataend - datastart + 1 );
 
-  Tcl_Free(buf);
+  delete [] buf;
   return TCL_OK;
 }
 

@@ -32,9 +32,13 @@
 #ifdef NAMD_TCL
 int ComputeTcl::Tcl_print(ClientData,
 	Tcl_Interp *, int argc, char *argv[]) {
-  char *msg = Tcl_Merge(argc-1,argv+1);
-  CkPrintf("TCL: %s\n",msg);
-  Tcl_Free(msg);
+  int arglen = 1;  int ai;
+  for (ai=1; ai<argc; ++ai) { arglen += strlen(argv[ai]) + 1; }
+  char *buf = new char[arglen];  *buf = 0;
+  for (ai=1; ai<argc; ++ai) { strcat(buf,argv[ai]); strcat(buf," "); }
+  ai = strlen(buf);  if ( ai ) buf[ai-1] = 0;
+  CkPrintf("TCL: %s\n",buf);
+  delete [] buf;
   return TCL_OK;
 }
 
