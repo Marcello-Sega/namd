@@ -13,11 +13,12 @@
  */
 
 // The original implementation requires space between adjacent
-// data, which (in particular, 12I6 format) is not true for
-// large system. So a large part of it is modified. All reads of
-// integer in 12I6 format is now implemented using the new
-// method, which doesn't assume space between entries.
-// Apr. 2, 2002
+// data. This is not true for AMBER 6 format files if it's a
+// large system. So a large part of the code is modified. All
+// reads of integer in 12I6 format is now implemented using the
+// new method, which doesn't assume space between entries.
+// Also, code has been added to read AMBER 7 format files.
+// Apr. 9, 2002
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -150,8 +151,8 @@ void Ambertoppar::preadln(FILE *file, const char *name, char *string)
 int Ambertoppar::readparm(char *name)
 {
 	_REAL 		*H;
-//	int		i, idum, res, ifpert;
-	int		i, res, ifpert, *buffer;
+	int		i, idum, res, ifpert;
+	int		*buffer, amber7_format;
 	FILE 		*file;
 
 	if (data_read)
@@ -173,58 +174,81 @@ int Ambertoppar::readparm(char *name)
 // so the following is disabled in order to avoid strange output
 //	printf("%s title:\n%s", name, ititl);
 
+	// Check whether it's in AMBER 7 format or in old format
+	
+	if (strncmp(ititl,"%VERSION",8))
+		amber7_format = 0;  // old format
+	else
+	{	amber7_format = 1;  // AMBER 7 format
+		iout << "PARM file in AMBER 7 format\n" << endi;
+		if (!moveto(file,"TITLE"))
+		{ genclose(file);
+		  return 0;
+		}
+		preadln(file, name, ititl);
+	}
+
 	/* READ CONTROL INTEGERS */
 
+	if (amber7_format)
+	{	if (!moveto(file,"POINTERS"))
+		{ genclose(file);
+		  return 0;
+		}
 //	fscanf(file, f9118, 
-//		&Natom,  &Ntypes, &Nbonh, &Mbona, 
-//		&Ntheth, &Mtheta, &Nphih, &Mphia, 
-//		&Nhparm, &Nparm,  &Nnb,   &Nres);
+		fscanf(file, "%d%d%d%d%d%d%d%d%d%d%d%d",
+		&Natom,  &Ntypes, &Nbonh, &Mbona, 
+		&Ntheth, &Mtheta, &Nphih, &Mphia, 
+		&Nhparm, &Nparm,  &Nnb,   &Nres);
 
 //	fscanf(file, f9118, 
-//		&Nbona,  &Ntheta, &Nphia, &Numbnd, 
-//		&Numang, &Nptra,  &Natyp, &Nphb, 
-//		&ifpert,      &idum,        &idum,       &idum);
+		fscanf(file, "%d%d%d%d%d%d%d%d%d%d%d%d",
+		&Nbona,  &Ntheta, &Nphia, &Numbnd, 
+		&Numang, &Nptra,  &Natyp, &Nphb, 
+		&ifpert,      &idum,        &idum,       &idum);
 
-	buffer = new int[30];
-	if (!read_fortran_12I6(file,buffer,30))
-	{ genclose(file);
-	  return 0;
+		fscanf(file, " %d %d %d %d %d %d", 
+		&idum, &idum,&idum,&IfBox,&Nmxrs,&IfCap);
 	}
-	Natom = buffer[0];
-	Ntypes = buffer[1];
-	Nbonh = buffer[2];
-	Mbona = buffer[3];
-	Ntheth = buffer[4];
-	Mtheta = buffer[5];
-	Nphih = buffer[6];
-	Mphia = buffer[7];
-	Nhparm = buffer[8];
-	Nparm = buffer[9];
-	Nnb = buffer[10];
-	Nres = buffer[11];
-	Nbona = buffer[12];
-	Ntheta = buffer[13];
-	Nphia = buffer[14];
-	Numbnd = buffer[15];
-	Numang = buffer[16];
-	Nptra = buffer[17];
-	Natyp = buffer[18];
-	Nphb = buffer[19];
-	ifpert = buffer[20];
-	IfBox = buffer[27];
-	Nmxrs = buffer[28];
-	IfCap = buffer[29];
-	delete [] buffer;
+	else
+	{	buffer = new int[30];
+		if (!read_fortran_12I6(file,buffer,30))
+		{ genclose(file);
+		  return 0;
+		}
+		Natom = buffer[0];
+		Ntypes = buffer[1];
+		Nbonh = buffer[2];
+		Mbona = buffer[3];
+		Ntheth = buffer[4];
+		Mtheta = buffer[5];
+		Nphih = buffer[6];
+		Mphia = buffer[7];
+		Nhparm = buffer[8];
+		Nparm = buffer[9];
+		Nnb = buffer[10];
+		Nres = buffer[11];
+		Nbona = buffer[12];
+		Ntheta = buffer[13];
+		Nphia = buffer[14];
+		Numbnd = buffer[15];
+		Numang = buffer[16];
+		Nptra = buffer[17];
+		Natyp = buffer[18];
+		Nphb = buffer[19];
+		ifpert = buffer[20];
+		IfBox = buffer[27];
+		Nmxrs = buffer[28];
+		IfCap = buffer[29];
+		delete [] buffer;
+//	skipeoln(file);
+		readtoeoln(file);
+	}
 
 	if (ifpert) {
 		printf("not equipped to read perturbation prmtop\n");
 		return(0);
 	}
-//	fscanf(file, " %d %d %d %d %d %d", 
-//		&idum, &idum,&idum,&IfBox,&Nmxrs,&IfCap);
-
-//	skipeoln(file);
-	readtoeoln(file);	
 
 	/* ALLOCATE MEMORY */
 
@@ -290,6 +314,11 @@ int Ambertoppar::readparm(char *name)
 	 * READ ATOM NAMES -IH(M04)
 	 */
 
+	if (amber7_format)
+		if (!moveto(file,"ATOM_NAME"))
+		{ genclose(file);
+		  return 0;
+		}
 	for (i=0; i<(Natom/20 + (Natom%20 ? 1 : 0)); i++)
 		preadln(file, "", &AtomNames[i*80]);
 
@@ -299,6 +328,11 @@ int Ambertoppar::readparm(char *name)
 	 *	 for faster force field calculations)
 	 */
 
+	if (amber7_format)
+		if (!moveto(file,"CHARGE"))
+		{ genclose(file);
+		  return 0;
+		}
 	for (i=0; i<Natom; i++)
 #ifdef DOUBLE
 		fscanf(file, " %lf", &Charges[i]);
@@ -312,6 +346,11 @@ int Ambertoppar::readparm(char *name)
 	 * READ ATOM MASSES -X(L20)
 	 */
 
+	if (amber7_format)
+		if (!moveto(file,"MASS"))
+		{ genclose(file);
+		  return 0;
+		}
 	for (i=0; i<Natom; i++)
 #ifdef DOUBLE
 		fscanf(file, " %le", &Masses[i]);
@@ -325,45 +364,74 @@ int Ambertoppar::readparm(char *name)
 	 * READ ATOM L-J TYPES -IX(I04)
 	 */
 
-//	for (i=0; i<Natom; i++)
-//		fscanf(file, " %d", &Iac[i]);
-//	skipeoln(file);
-	if (!read_fortran_12I6(file,Iac,Natom))
-	{ genclose(file);
-	  return 0;
+	if (amber7_format)
+	{	if (!moveto(file,"ATOM_TYPE_INDEX"))
+		{ genclose(file);
+		  return 0;
+		}
+		for (i=0; i<Natom; i++)
+			fscanf(file, " %d", &Iac[i]);
 	}
-	readtoeoln(file);
+	else
+	{	if (!read_fortran_12I6(file,Iac,Natom))
+		{ genclose(file);
+		  return 0;
+		}
+//	skipeoln(file);
+		readtoeoln(file);
+	}
 
 	/* 
 	 * READ ATOM INDEX TO 1st IN EXCLUDED ATOM LIST "NATEX" -IX(I08)
 	 */
 
-//	for (i=0; i<Natom; i++)
-//		fscanf(file, " %d", &Iblo[i]);
-//	skipeoln(file);
-	if (!read_fortran_12I6(file,Iblo,Natom))
-	{ genclose(file);
-	  return 0;
+	if (amber7_format)
+	{	if (!moveto(file,"NUMBER_EXCLUDED_ATOMS"))
+		{ genclose(file);
+		  return 0;
+		}
+		for (i=0; i<Natom; i++)
+			fscanf(file, " %d", &Iblo[i]);
 	}
-	readtoeoln(file);
+	else
+	{	if (!read_fortran_12I6(file,Iblo,Natom))
+		{ genclose(file);
+		  return 0;
+		}
+//	skipeoln(file);
+		readtoeoln(file);
+	}
 
 	/* 
 	 * READ TYPE INDEX TO N-B TYPE -IX(I06)
 	 */
 
-//	for (i=0; i<Ntype2d; i++)
-//		fscanf(file, " %d", &Cno[i]);
-//	skipeoln(file);
-	if (!read_fortran_12I6(file,Cno,Ntype2d))
-	{ genclose(file);
-	  return 0;
+	if (amber7_format)
+	{	if (!moveto(file,"NONBONDED_PARM_INDEX"))
+		{ genclose(file);
+		  return 0;
+		}
+		for (i=0; i<Ntype2d; i++)
+			fscanf(file, " %d", &Cno[i]);
 	}
-	readtoeoln(file);
+	else
+	{	if (!read_fortran_12I6(file,Cno,Ntype2d))
+		{ genclose(file);
+		  return 0;
+		}
+//	skipeoln(file);
+		readtoeoln(file);
+	}
 
 	/* 
 	 * READ RES NAMES (4 chars each, 4th blank) -IH(M02)
 	 */
 
+	if (amber7_format)
+		if (!moveto(file,"RESIDUE_LABEL"))
+		{ genclose(file);
+		  return 0;
+		}
 	for (i=0; i<(Nres/20 + (Nres%20 ? 1 : 0)); i++)
 		preadln(file, "", &ResNames[i*80]);
 
@@ -371,20 +439,33 @@ int Ambertoppar::readparm(char *name)
 	 * READ RES POINTERS TO 1st ATOM 		-IX(I02)
 	 */
 
-//	for (i=0; i<Nres; i++) 
-//		fscanf(file, " %d", &Ipres[i]);
-	if (!read_fortran_12I6(file,Ipres,Nres))
-	{ genclose(file);
-	  return 0;
+	if (amber7_format)
+	{	if (!moveto(file,"RESIDUE_POINTER"))
+		{ genclose(file);
+		  return 0;
+		}
+		for (i=0; i<Nres; i++) 
+			fscanf(file, " %d", &Ipres[i]);
+	}
+	else
+	{	if (!read_fortran_12I6(file,Ipres,Nres))
+		{ genclose(file);
+		  return 0;
+		}
+//	skipeoln(file);
+		readtoeoln(file);
 	}
 	Ipres[Nres] = Natom + 1;
-//	skipeoln(file);
-	readtoeoln(file);
 
 	/* 
 	 * READ BOND FORCE CONSTANTS 			-RK()
 	 */
 
+	if (amber7_format)
+		if (!moveto(file,"BOND_FORCE_CONSTANT"))
+		{ genclose(file);
+		  return 0;
+		}
 	for (i=0; i< Numbnd; i++) 
 #ifdef DOUBLE
 		fscanf(file, " %lf", &Rk[i]);
@@ -398,6 +479,11 @@ int Ambertoppar::readparm(char *name)
 	 * READ BOND LENGTH OF MINIMUM ENERGY  		-REQ()
 	 */
 
+	if (amber7_format)
+		if (!moveto(file,"BOND_EQUIL_VALUE"))
+		{ genclose(file);
+		  return 0;
+		}
 	for (i=0; i< Numbnd; i++) 
 #ifdef DOUBLE
 		fscanf(file, " %lf", &Req[i]);
@@ -411,6 +497,11 @@ int Ambertoppar::readparm(char *name)
 	 * READ BOND ANGLE FORCE CONSTANTS (following Rk nomen) -TK()
 	 */
 
+	if (amber7_format)
+		if (!moveto(file,"ANGLE_FORCE_CONSTANT"))
+		{ genclose(file);
+		  return 0;
+		}
 	for (i=0; i< Numang; i++) 
 #ifdef DOUBLE
 		fscanf(file, " %lf", &Tk[i]);
@@ -424,6 +515,11 @@ int Ambertoppar::readparm(char *name)
 	 * READ BOND ANGLE OF MINIMUM ENERGY (following Req nomen) -TEQ()
 	 */
 
+	if (amber7_format)
+		if (!moveto(file,"ANGLE_EQUIL_VALUE"))
+		{ genclose(file);
+		  return 0;
+		}
 	for (i=0; i< Numang; i++) 
 #ifdef DOUBLE
 		fscanf(file, " %lf", &Teq[i]);
@@ -437,6 +533,11 @@ int Ambertoppar::readparm(char *name)
 	 * READ DIHEDRAL PEAK MAGNITUDE 		-PK()
 	 */
 
+	if (amber7_format)
+		if (!moveto(file,"DIHEDRAL_FORCE_CONSTANT"))
+		{ genclose(file);
+		  return 0;
+		}
 	for (i=0; i< Nptra; i++) 
 #ifdef DOUBLE
 		fscanf(file, " %lf", &Pk[i]);
@@ -450,6 +551,11 @@ int Ambertoppar::readparm(char *name)
 	 * READ DIHEDRAL PERIODICITY 			-PN()
 	 */
 
+	if (amber7_format)
+		if (!moveto(file,"DIHEDRAL_PERIODICITY"))
+		{ genclose(file);
+		  return 0;
+		}
 	for (i=0; i< Nptra; i++) 
 #ifdef DOUBLE
 		fscanf(file, " %lf", &Pn[i]);
@@ -463,6 +569,11 @@ int Ambertoppar::readparm(char *name)
 	 * READ DIHEDRAL PHASE  			-PHASE()
 	 */
 
+	if (amber7_format)
+		if (!moveto(file,"DIHEDRAL_PHASE"))
+		{ genclose(file);
+		  return 0;
+		}
 	for (i=0; i< Nptra; i++) 
 #ifdef DOUBLE
 		fscanf(file, " %lf", &Phase[i]);
@@ -476,6 +587,11 @@ int Ambertoppar::readparm(char *name)
 	 * ?? "RESERVED" 				-SOLTY()
 	 */
 
+	if (amber7_format)
+		if (!moveto(file,"SOLTY"))
+		{ genclose(file);
+		  return 0;
+		}
 	for (i=0; i< Natyp; i++) 
 #ifdef DOUBLE
 		fscanf(file, " %lf", &Solty[i]);
@@ -490,6 +606,11 @@ int Ambertoppar::readparm(char *name)
 	 *	(SHOULD BE 0 WHERE H-BONDS)
 	 */
 
+	if (amber7_format)
+		if (!moveto(file,"LENNARD_JONES_ACOEF"))
+		{ genclose(file);
+		  return 0;
+		}
 	for (i=0; i< Nttyp; i++) 
 #ifdef DOUBLE
 		fscanf(file, " %lf", &Cn1[i]);
@@ -504,6 +625,11 @@ int Ambertoppar::readparm(char *name)
 	 *	(SHOULD BE 0 WHERE H-BONDS)
 	 */
 
+	if (amber7_format)
+		if (!moveto(file,"LENNARD_JONES_BCOEF"))
+		{ genclose(file);
+		  return 0;
+		}
 	for (i=0; i< Nttyp; i++) 
 #ifdef DOUBLE
 		fscanf(file, " %lf", &Cn2[i]);
@@ -520,21 +646,30 @@ int Ambertoppar::readparm(char *name)
 	 *	ICBH = BOND ARRAY PTR	-IX(I16)
 	 */
 
-	buffer = new int[3*Nbonh];
-	if (!read_fortran_12I6(file,buffer,3*Nbonh))
-	{ genclose(file);
-	  return 0;
+	if (amber7_format)
+	{	if (!moveto(file,"BONDS_INC_HYDROGEN"))
+		{ genclose(file);
+		  return 0;
+		}
+		for (i=0; i<Nbonh; i++)
+			fscanf(file, " %d %d %d", 
+			    &BondHAt1[i], &BondHAt2[i], &BondHNum[i]);
 	}
-	for (i=0; i<Nbonh; i++) 
-	{ BondHAt1[i] = buffer[3*i];
-	  BondHAt2[i] = buffer[3*i+1];
-	  BondHNum[i] = buffer[3*i+2];
-//		fscanf(file, " %d %d %d", 
-//		    &BondHAt1[i], &BondHAt2[i], &BondHNum[i]);
-	}
-	delete [] buffer;
+	else
+	{	buffer = new int[3*Nbonh];
+		if (!read_fortran_12I6(file,buffer,3*Nbonh))
+		{ genclose(file);
+		  return 0;
+		}
+		for (i=0; i<Nbonh; i++) 
+		{ BondHAt1[i] = buffer[3*i];
+		  BondHAt2[i] = buffer[3*i+1];
+		  BondHNum[i] = buffer[3*i+2];
+		}
+		delete [] buffer;
 //	skipeoln(file);
-	readtoeoln(file);
+		readtoeoln(file);
+	}
 
 	/* 
 	 * READ COVALENT BOND W/OUT HYDROGEN (3*(atnum-1)):
@@ -543,21 +678,30 @@ int Ambertoppar::readparm(char *name)
 	 *	ICB = BOND ARRAY PTR	-IX(I22)
 	 */
 
-	buffer = new int[3*Nbona];
-	if (!read_fortran_12I6(file,buffer,3*Nbona))
-	{ genclose(file);
-	  return 0;
+	if (amber7_format)
+	{	if (!moveto(file,"BONDS_WITHOUT_HYDROGEN"))
+		{ genclose(file);
+		  return 0;
+		}
+		for (i=0; i<Nbona; i++)
+			fscanf(file, " %d %d %d", 
+				&BondAt1[i], &BondAt2[i], &BondNum[i]);
 	}
-	for (i=0; i<Nbona; i++)
-	{ BondAt1[i] = buffer[3*i];
-	  BondAt2[i] = buffer[3*i+1];
-	  BondNum[i] = buffer[3*i+2];
-//		fscanf(file, " %d %d %d", 
-//			&BondAt1[i], &BondAt2[i], &BondNum[i]);
-	}
-	delete [] buffer;
+	else
+	{	buffer = new int[3*Nbona];
+		if (!read_fortran_12I6(file,buffer,3*Nbona))
+		{ genclose(file);
+		  return 0;
+		}
+		for (i=0; i<Nbona; i++)
+		{ BondAt1[i] = buffer[3*i];
+		  BondAt2[i] = buffer[3*i+1];
+		  BondNum[i] = buffer[3*i+2];
+		}
+		delete [] buffer;
 //	skipeoln(file);
-	readtoeoln(file);
+		readtoeoln(file);
+	}
 
 	/* 
 	 * READ ANGLE W/ HYDROGEN: 
@@ -567,23 +711,32 @@ int Ambertoppar::readparm(char *name)
 	 *	ICTH = ANGLE ARRAY PTR		-IX(I30)
 	 */
 
-	buffer = new int[4*Ntheth];
-	if (!read_fortran_12I6(file,buffer,4*Ntheth))
-	{ genclose(file);
-	  return 0;
+	if (amber7_format)
+	{	if (!moveto(file,"ANGLES_INC_HYDROGEN"))
+		{ genclose(file);
+		  return 0;
+		}
+		for (i=0; i<Ntheth; i++)
+			fscanf(file, " %d %d %d %d", 
+		    		&AngleHAt1[i], &AngleHAt2[i], 
+				&AngleHAt3[i], &AngleHNum[i]);
 	}
-	for (i=0; i<Ntheth; i++)
-	{ AngleHAt1[i] = buffer[4*i];
-	  AngleHAt2[i] = buffer[4*i+1];
-	  AngleHAt3[i] = buffer[4*i+2];
-	  AngleHNum[i] = buffer[4*i+3];
-//		fscanf(file, " %d %d %d %d", 
-//		    		&AngleHAt1[i], &AngleHAt2[i], 
-//				&AngleHAt3[i], &AngleHNum[i]);
-	}
-	delete [] buffer;
+	else
+	{	buffer = new int[4*Ntheth];
+		if (!read_fortran_12I6(file,buffer,4*Ntheth))
+		{ genclose(file);
+		  return 0;
+		}
+		for (i=0; i<Ntheth; i++)
+		{ AngleHAt1[i] = buffer[4*i];
+		  AngleHAt2[i] = buffer[4*i+1];
+		  AngleHAt3[i] = buffer[4*i+2];
+		  AngleHNum[i] = buffer[4*i+3];
+		}
+		delete [] buffer;
 //	skipeoln(file);
-	readtoeoln(file);
+		readtoeoln(file);
+	}
 
 	/* 
 	 * READ ANGLE W/OUT HYDROGEN: 
@@ -593,23 +746,32 @@ int Ambertoppar::readparm(char *name)
 	 *	ICT = ANGLE ARRAY PTR		-IX(I38)
 	 */
 
-	buffer = new int[4*Ntheta];
-	if (!read_fortran_12I6(file,buffer,4*Ntheta))
-	{ genclose(file);
-	  return 0;
+	if (amber7_format)
+	{	if (!moveto(file,"ANGLES_WITHOUT_HYDROGEN"))
+		{ genclose(file);
+		  return 0;
+		}
+		for (i=0; i<Ntheta; i++)
+			fscanf(file, " %d %d %d %d", 
+		    		&AngleAt1[i], &AngleAt2[i], 
+				&AngleAt3[i], &AngleNum[i]);
 	}
-	for (i=0; i<Ntheta; i++)
-	{ AngleAt1[i] = buffer[4*i];
-	  AngleAt2[i] = buffer[4*i+1];
-	  AngleAt3[i] = buffer[4*i+2];
-	  AngleNum[i] = buffer[4*i+3];
-//		fscanf(file, " %d %d %d %d", 
-//		    		&AngleAt1[i], &AngleAt2[i], 
-//				&AngleAt3[i], &AngleNum[i]);
-	}
-	delete [] buffer;
+	else
+	{	buffer = new int[4*Ntheta];
+		if (!read_fortran_12I6(file,buffer,4*Ntheta))
+		{ genclose(file);
+		  return 0;
+		}
+		for (i=0; i<Ntheta; i++)
+		{ AngleAt1[i] = buffer[4*i];
+		  AngleAt2[i] = buffer[4*i+1];
+		  AngleAt3[i] = buffer[4*i+2];
+		  AngleNum[i] = buffer[4*i+3];
+		}
+		delete [] buffer;
 //	skipeoln(file);
-	readtoeoln(file);
+		readtoeoln(file);
+	}
 
 	/* 
 	 * READ DIHEDRAL W/ HYDROGEN: 
@@ -620,24 +782,33 @@ int Ambertoppar::readparm(char *name)
 	 *	ICTH = DIHEDRAL ARRAY PTR	-IX(48)
 	 */
 
-	buffer = new int[5*Nphih];
-	if (!read_fortran_12I6(file,buffer,5*Nphih))
-	{ genclose(file);
-	  return 0;
+	if (amber7_format)
+	{	if (!moveto(file,"DIHEDRALS_INC_HYDROGEN"))
+		{ genclose(file);
+		  return 0;
+		}
+		for (i=0; i<Nphih; i++)
+			fscanf(file, " %d %d %d %d %d", 
+		    		&DihHAt1[i], &DihHAt2[i], &DihHAt3[i], 
+				&DihHAt4[i], &DihHNum[i]);
 	}
-	for (i=0; i<Nphih; i++)
-	{ DihHAt1[i] = buffer[5*i];
-	  DihHAt2[i] = buffer[5*i+1];
-	  DihHAt3[i] = buffer[5*i+2];
-	  DihHAt4[i] = buffer[5*i+3];
-	  DihHNum[i] = buffer[5*i+4];
-//		fscanf(file, " %d %d %d %d %d", 
-//		    	&DihHAt1[i], &DihHAt2[i], &DihHAt3[i], 
-//			&DihHAt4[i], &DihHNum[i]);
-	}
-	delete [] buffer;
+	else
+	{	buffer = new int[5*Nphih];
+		if (!read_fortran_12I6(file,buffer,5*Nphih))
+		{ genclose(file);
+		  return 0;
+		}
+		for (i=0; i<Nphih; i++)
+		{ DihHAt1[i] = buffer[5*i];
+		  DihHAt2[i] = buffer[5*i+1];
+		  DihHAt3[i] = buffer[5*i+2];
+		  DihHAt4[i] = buffer[5*i+3];
+		  DihHNum[i] = buffer[5*i+4];
+		}
+		delete [] buffer;
 //	skipeoln(file);
-	readtoeoln(file);
+		readtoeoln(file);
+	}
 
 	/* 
 	 * READ DIHEDRAL W/OUT HYDROGEN: 
@@ -648,41 +819,64 @@ int Ambertoppar::readparm(char *name)
 	 *	ICT = DIHEDRAL ARRAY PTR
 	 */
 
-	buffer = new int[5*Nphia];
-	if (!read_fortran_12I6(file,buffer,5*Nphia))
-	{ genclose(file);
-	  return 0;
+	if (amber7_format)
+	{	if (!moveto(file,"DIHEDRALS_WITHOUT_HYDROGEN"))
+		{ genclose(file);
+		  return 0;
+		}
+		for (i=0; i<Nphia; i++)
+			fscanf(file, " %d %d %d %d %d", 
+			    	&DihAt1[i], &DihAt2[i], &DihAt3[i], 
+				&DihAt4[i], &DihNum[i]);
 	}
-	for (i=0; i<Nphia; i++) {
-	  DihAt1[i] = buffer[5*i];
-	  DihAt2[i] = buffer[5*i+1];
-	  DihAt3[i] = buffer[5*i+2];
-	  DihAt4[i] = buffer[5*i+3];
-	  DihNum[i] = buffer[5*i+4];
-//		fscanf(file, " %d %d %d %d %d", 
-//		    	&DihAt1[i], &DihAt2[i], &DihAt3[i], 
-//			&DihAt4[i], &DihNum[i]);
-	}
-	delete [] buffer;
+	else
+	{	buffer = new int[5*Nphia];
+		if (!read_fortran_12I6(file,buffer,5*Nphia))
+		{ genclose(file);
+		  return 0;
+		}
+		for (i=0; i<Nphia; i++) {
+		  DihAt1[i] = buffer[5*i];
+		  DihAt2[i] = buffer[5*i+1];
+		  DihAt3[i] = buffer[5*i+2];
+		  DihAt4[i] = buffer[5*i+3];
+		  DihNum[i] = buffer[5*i+4];
+		}
+		delete [] buffer;
 //	skipeoln(file);
-	readtoeoln(file);
+		readtoeoln(file);
+	}
 
 	/*
 	 * READ EXCLUDED ATOM LIST	-IX(I10)
 	 */
-//	for (i=0; i<Nnb; i++)
-//		fscanf(file, " %d", &ExclAt[i]);
-//	skipeoln(file);
-	if (!read_fortran_12I6(file,ExclAt,Nnb))
-	{ genclose(file);
-	  return 0;
+
+	if (amber7_format)
+	{	if (!moveto(file,"EXCLUDED_ATOMS_LIST"))
+		{ genclose(file);
+		  return 0;
+		}
+		for (i=0; i<Nnb; i++)
+			fscanf(file, " %d", &ExclAt[i]);
 	}
-	readtoeoln(file);
+	else
+	{	if (!read_fortran_12I6(file,ExclAt,Nnb))
+		{ genclose(file);
+		  return 0;
+		}
+//	skipeoln(file);
+		readtoeoln(file);
+	}
 
 	/*
 	 * READ H-BOND R**12 TERM FOR ALL N-B TYPES	-ASOL()
 	 */
 
+	if (amber7_format)
+		if (!moveto(file,"HBOND_ACOEF"))
+		{ genclose(file);
+		  return 0;
+		}
 	for (i=0; i<Nphb; i++) 
 #ifdef DOUBLE
 		fscanf(file, " %lf", &HB12[i]);
@@ -696,6 +890,11 @@ int Ambertoppar::readparm(char *name)
 	 * READ H-BOND R**6 TERM FOR ALL N-B TYPES	-BSOL()
 	 */
 
+	if (amber7_format)
+		if (!moveto(file,"HBOND_BCOEF"))
+		{ genclose(file);
+		  return 0;
+		}
 	for (i=0; i<Nphb; i++) 
 #ifdef DOUBLE
 		fscanf(file, " %lf", &HB6[i]);
@@ -709,6 +908,11 @@ int Ambertoppar::readparm(char *name)
 	 * READ H-BOND CUTOFF (NOT USED) ??		-HBCUT()
 	 */
 
+	if (amber7_format)
+		if (!moveto(file,"HBCUT"))
+		{ genclose(file);
+		  return 0;
+		}
 	H = (_REAL *) get(Nphb * sizeof(_REAL));
 	for (i=0; i<Nphb; i++) 
 #ifdef DOUBLE
@@ -725,6 +929,11 @@ int Ambertoppar::readparm(char *name)
 	 * READ ATOM SYMBOLS (FOR ANALYSIS PROGS)	-IH(M06)
 	 */
 
+	if (amber7_format)
+		if (!moveto(file,"AMBER_ATOM_TYPE"))
+		{ genclose(file);
+		  return 0;
+		}
 	for (i=0; i<(Natom/20 + (Natom%20 ? 1 : 0)); i++)
 		preadln(file, "", &AtomSym[i*80]);
 
@@ -732,6 +941,11 @@ int Ambertoppar::readparm(char *name)
 	 * READ TREE SYMBOLS (FOR ANALYSIS PROGS)	-IH(M08)
 	 */
 
+	if (amber7_format)
+		if (!moveto(file,"TREE_CHAIN_CLASSIFICATION"))
+		{ genclose(file);
+		  return 0;
+		}
 	for (i=0; i<(Natom/20 + (Natom%20 ? 1 : 0)); i++)
 		preadln(file, "", &AtomTree[i*80]);
 
@@ -739,14 +953,22 @@ int Ambertoppar::readparm(char *name)
 	 * READ TREE JOIN INFO (FOR ANALYSIS PROGS)	-IX(I64)
 	 */
 
-//	for (i=0; i<Natom; i++)
-//		fscanf(file, " %d", &TreeJoin[i]);
-//	skipeoln(file);
-	if (!read_fortran_12I6(file,TreeJoin,Natom))
-	{ genclose(file);
-	  return 0;
+	if (amber7_format)
+	{	if (!moveto(file,"JOIN_ARRAY"))
+		{ genclose(file);
+		  return 0;
+		}
+		for (i=0; i<Natom; i++)
+			fscanf(file, " %d", &TreeJoin[i]);
 	}
-	readtoeoln(file);
+	else
+	{	if (!read_fortran_12I6(file,TreeJoin,Natom))
+		{ genclose(file);
+		  return 0;
+		}
+//	skipeoln(file);
+		readtoeoln(file);
+	}
 
 	/*
 	 * READ PER-ATOM RES NUMBER			-IX(I66)
@@ -754,12 +976,19 @@ int Ambertoppar::readparm(char *name)
 	 *	NOTE: overwriting this with correct PER-ATOM RES NUMBERs
 	 */
 
-//	for (i=0; i<Natom; i++)
-//		fscanf(file, " %d", &AtomRes[i]);
-	if (!read_fortran_12I6(file,AtomRes,Natom))
-	{ genclose(file);
-	  return 0;
+	if (amber7_format)
+	{	if (!moveto(file,"IROTAT"))
+		{ genclose(file);
+		  return 0;
+		}
+		for (i=0; i<Natom; i++)
+			fscanf(file, " %d", &AtomRes[i]);
 	}
+	else
+		if (!read_fortran_12I6(file,AtomRes,Natom))
+		{ genclose(file);
+		  return 0;
+		}
 	res = 0;
 	for (i=0; i<Natom; i++) {
 		if (i+1 == Ipres[res+1])	/* atom is 1st of next res */
@@ -776,31 +1005,52 @@ int Ambertoppar::readparm(char *name)
 		Boundary = (int *) get(sizeof(int)*Nspm);
 		Boundary[0] = Natom;
 	} else {
-//		skipeoln(file);
-		readtoeoln(file);
-//		fscanf(file, " %d %d %d", &Iptres, &Nspm, 
-//							&Nspsol);
-		buffer = new int[3];
-		if (!read_fortran_12I6(file,buffer,3))
-		{ genclose(file);
-		  return 0;
+		if (amber7_format)
+		{	if (!moveto(file,"SOLVENT_POINTERS"))
+			{ genclose(file);
+			  return 0;
+			}
+			fscanf(file, " %d %d %d", &Iptres, &Nspm, 
+							&Nspsol);
 		}
-		Iptres = buffer[0];
-		Nspm = buffer[1];
-		Nspsol = buffer[2];
-		delete [] buffer;
-
+		else
+		{
 //		skipeoln(file);
-		readtoeoln(file);
+			readtoeoln(file);
+			buffer = new int[3];
+			if (!read_fortran_12I6(file,buffer,3))
+			{ genclose(file);
+			  return 0;
+			}
+			Iptres = buffer[0];
+			Nspm = buffer[1];
+			Nspsol = buffer[2];
+			delete [] buffer;
+//		skipeoln(file);
+			readtoeoln(file);
+		}
 		Boundary = (int *) get(sizeof(int)*Nspm);
-//		for (i=0; i<Nspm; i++)
-//			fscanf(file, " %d", &Boundary[i]);
-		if (!read_fortran_12I6(file,Boundary,Nspm))
-		{ genclose(file);
-		  return 0;
+		if (amber7_format)
+		{	if (!moveto(file,"ATOMS_PER_MOLECULE"))
+			{ genclose(file);
+			  return 0;
+			}
+			for (i=0; i<Nspm; i++)
+				fscanf(file, " %d", &Boundary[i]);
 		}
+		else
+		{	if (!read_fortran_12I6(file,Boundary,Nspm))
+			{ genclose(file);
+			  return 0;
+			}
 //		skipeoln(file);
-		readtoeoln(file);
+			readtoeoln(file);
+		}
+		if (amber7_format)
+			if (!moveto(file,"BOX_DIMENSIONS"))
+			{ genclose(file);
+			  return 0;
+			}
 #ifdef DOUBLE
 		fscanf(file, " %lf %lf %lf", 
 #else
@@ -818,7 +1068,10 @@ int Ambertoppar::readparm(char *name)
 	 * ----- LOAD THE CAP INFORMATION IF NEEDED -----
 	 */
 
-	if (IfCap) {
+	// I don't know the label for it, so I don't read it if
+	// it's AMBER 7 format. It's not used in NAMD anyway.
+//	if (IfCap) {
+	if (IfCap && !amber7_format) {
 		/* if (IfBox) 
 			skipeoln(file); */
 #ifdef DOUBLE
@@ -959,5 +1212,30 @@ int Ambertoppar::read_fortran_12I6(FILE *fp, int *data, int count)
       readtoeoln(fp);
   }
   
+  return 1;
+}
+
+
+// Used for AMBER 7 format. The function moves the file postion to
+// the beginning of the data section labeled by "label"
+
+int Ambertoppar::moveto(FILE *fp, char *label)
+{
+  char s[76],buf[81];
+
+  // Find the string "%FLAG"
+  do preadln(fp, "parm file", buf);
+  while (strncmp(buf,"%FLAG",5));
+
+  // See if the label is what we expected
+  sscanf(buf+5,"%s",s);
+  if (strcasecmp(s,label))
+    return 0;
+
+  // The next line should begin with "%FORMAT"
+  preadln(fp, "parm file", buf);
+  if (strncmp(buf,"%FORMAT",7))
+    return 0;
+
   return 1;
 }

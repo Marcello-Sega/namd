@@ -41,6 +41,7 @@ typedef struct parm {
 	void  preadln (FILE *, const char *, char *);
 	int  readparm (char *);
 	int  firstwat();
-	int  read_fortran_12I6(FILE *, int *, int);  // Read FORTRAN 12I6 format data
+	int  read_fortran_12I6 (FILE *, int *, int);  // Read FORTRAN 12I6 format data
+	int  moveto (FILE *, char *);  // Move to a section (AMBER 7)
 } Ambertoppar;
 #endif
