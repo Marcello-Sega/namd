@@ -4,10 +4,11 @@
 |                                                                    |
 +--------------------------------------------------------------------+
 
-This file includes directions for running and compiling NAMD,
-an explanation of the automated usage reporting mechanism,
-advice for dealing with endian issues when switching platforms,
-tips on limiting memory usage, and advice for reporting bugs.
+This file includes directions for running NAMD on various plaftorms,
+tips on limiting memory usage and improving parallel scaling, an
+explanation of the automated usage reporting mechanism, advice for
+dealing with endian issues when switching platforms, a procedure for
+reporting bugs, and detailed compilation instructions.
 
 ----------------------------------------------------------------------
 
@@ -250,6 +251,62 @@ Then run NAMD with the following command:
 
 ----------------------------------------------------------------------
 
+Memory Usage
+
+NAMD has traditionally used less than 100MB of memory even for systems
+of 100,000 atoms.  With the reintroduction of pairlists in NAMD 2.5,
+however, memory usage for a 100,000 atom system with a 12A cutoff can
+approach 300MB, and will grow with the cube of the cutoff.  This extra
+memory is distributed across processors during a parallel run, but a
+single workstation may run out of physical memory with a large system.
+
+To avoid this, NAMD now provides a pairlistMinProcs config file option
+that specifies the minimum number of processors that a run must use
+before pairlists will be enabled (on fewer processors small local
+pairlists are generated and recycled rather than being saved, the
+default is "pairlistMinProcs 1").  This is a per-simulation rather than
+a compile time option because memory usage is molecule-dependent.
+
+----------------------------------------------------------------------
+
+Improving Parallel Scaling
+
+While NAMD is designed to be a scalable program, particularly for
+simulations of 100,000 atoms or more, at some point adding additional
+processors to a simulation will provide little or no extra performance.
+If you are lucky enough to have access to a parallel machine you should
+measure NAMD's parallel speedup for a variety of processor counts when
+running your particular simulation.  The easiest and most accurate way
+to do this is to look at the "Benchmark time:" lines that are printed
+after 20 and 25 cycles (usually less than 500 steps).  You can monitor
+performance during the entire simulation by adding "outputTiming <N>"
+to your configuration file, but be careful to look at the "wall time"
+rather than "CPU time" fields on the "TIMING:" output lines produced.
+For an external measure of performance, you should run simulations of
+both 25 and 50 cycles (see the stepspercycle parameter) and base your
+estimate on the additional time needed for the longer simulation in
+order to exclude startup costs and allow for initial load balancing.
+
+On some large machines with very high bandwidth interconnects you may
+be able to increase performance for PME simulations by adding either
+"+strategy USE_MESH" or "+strategy USE_GRID" to the command line.
+These flags instruct the Charm++ communication optimization library to
+reduce the number of messages sent during PME 3D FFT by combining data
+into larger messages to be transmitted along each dimension of either
+a 2D mesh or a 3D grid, respectively.  While reducing the number of
+messages sent per processor from N to 2*sqrt(N) or 3*cbrt(N), the
+total amount of data transmitted for the FFT is doubled or tripled.
+
+Extremely short cycle lengths (less than 10 steps) will also limit
+parallel scaling, since the atom migration at the end of each cycle
+sends many more messages than a normal force evaluation.  Increasing
+pairlistdist from, e.g., cutoff + 1.5 to cutoff + 2.5, while also
+doubling stepspercycle from 10 to 20, may increase parallel scaling,
+but it is important to measure.  When increasing stepspercycle, also
+try increasing pairlistspercycle by the same proportion.
+
+----------------------------------------------------------------------
+
 Automated Usage Reporting
 
 NAMD may print information similar to the following at startup:
@@ -285,29 +342,11 @@ read on a "small-endian" machine (Intel, Alpha) or vice versa.
 NAMD generates DCD trajectory files and binary coordinate and velocity
 files which are "endian-sensitive".  While VMD can now read DCD files
 from any machine and NAMD reads most other-endian binary restart files,
-most analysis programs (like CHARMM or X-PLOR) require same-endian DCD
+many analysis programs (like CHARMM or X-PLOR) require same-endian DCD
 files.  We provide the programs flipdcd and flipbinpdb for switching the
 endianness of DCD and binary restart files, respectively.  These programs
 use mmap to alter the file in-place and may therefore appear to consume
 an amount of memory equal to the size of the file.
-
-----------------------------------------------------------------------
-
-Memory Usage
-
-NAMD has traditionally used less than 100MB of memory even for systems
-of 100,000 atoms.  With the reintroduction of pairlists in NAMD 2.5,
-however, memory usage for a 100,000 atom system with a 12A cutoff can
-approach 300MB, and will grow with the cube of the cutoff.  This extra
-memory is distributed across processors during a parallel run, but a
-single workstation may run out of physical memory with a large system.
-
-To avoid this, NAMD now provides a pairlistMinProcs config file option
-that specifies the minimum number of processors that a run must use
-before pairlists will be enabled (on fewer processors small local
-pairlists are generated and recycled rather than being saved, the
-default is "pairlistMinProcs 1").  This is a per-simulation rather than
-a compile time option because memory usage is molecule-dependent.
 
 ----------------------------------------------------------------------
 
