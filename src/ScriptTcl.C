@@ -17,6 +17,7 @@
 #include "ProcessorPrivate.h"
 #include "PatchMgr.h"
 #include <stdio.h>
+#include <ctype.h>  // for isspace
 
 #ifdef NAMD_TCL
 #include <tcl.h>
@@ -37,18 +38,41 @@ int ScriptTcl::Tcl_print(ClientData,
 }
 
 int ScriptTcl::Tcl_config(ClientData clientData,
-	Tcl_Interp *, int argc, char *argv[]) {
-  /*
-  char *msg = Tcl_Merge(argc-1,argv+1);
-  CkPrintf("TCL: %s\n",msg);
-  free(msg);
-  */
-  char *name = argv[1];
-  char *data = Tcl_Merge(argc-2,argv+2);
-  ScriptTcl *script = (ScriptTcl *)clientData;
-  script->config->add_element(name,strlen(name),data,strlen(data));
-  free(data);
+	Tcl_Interp *interp, int argc, char *argv[]) {
+  char *buf = Tcl_Merge(argc-1,argv+1);
+  char *namestart, *nameend, *datastart, *dataend, *s;
+  namestart = nameend = datastart = dataend = NULL;
+  int spacecount = 0;
 
+    for (s = buf; *s; s++) {    // get to the end of the line
+       if (*s == '#')                       // found a comment, so break
+          { *s = 0; break; }
+       if ( !isspace(*s) )    // dataend will always be the last non-blank char
+          dataend = s;
+       if ( !isspace(*s) && !namestart)     // found first character of name
+          {namestart = s; continue; }
+       if ( (isspace(*s)  || *s == '=') &&  // found last character of name
+                 namestart && !nameend)
+          nameend = s - 1;
+       if ( !isspace(*s) && !datastart &&   // found the next char. after name
+                 nameend)
+          if (*s == '=' && spacecount == 0) // an equals is allowed
+             {spacecount++; continue; }     // but only once
+            else
+             {datastart = s; continue; }    // otherwise, use it
+    }
+
+    if (!namestart || !nameend || !datastart || !dataend) {
+      free(buf);
+      interp->result = "error parsing config file";
+      return TCL_ERROR;
+    }
+
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  script->config->add_element( namestart, nameend - namestart + 1,
+                               datastart, dataend - datastart + 1 );
+
+  free(buf);
   return TCL_OK;
 }
 
