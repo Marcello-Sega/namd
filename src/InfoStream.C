@@ -12,11 +12,13 @@
 #include <charm++.h>
 #include "Vector.h"
 #include "Tensor.h"
+#include <stdio.h>
 
 /* output using CkPrintf() (end by inform) */
 void infostream::endi() {
   *this << ends;
   CkPrintf("%s",iBuffer);
+  fflush(stdout);  // since CkPrintf doesn't always flush
   (*this).seekp(0);   // clear buffer
 }
 
