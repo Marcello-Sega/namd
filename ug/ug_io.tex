@@ -44,9 +44,9 @@ although it is possible to build them by hand.
 CHARMM can generate an X-PLOR format PSF file with the command
 ``{\tt write psf card xplor}''.
 
-\subsubsection{CHARMM19 and CHARMM22 parameter files}
+\subsubsection{CHARMM19, CHARMM22, and CHARMM27 parameter files}
 
-\NAMD\ supports CHARMM19 and CHARMM22 parameter files in both
+\NAMD\ supports CHARMM19, CHARMM22, and CHARMM27 parameter files in both
 X-PLOR and CHARMM formats.
 (X-PLOR format is the default, CHARMM format parameter files
 may be used given the parameter ``{\tt paraTypeCharmm on}''.)
@@ -94,7 +94,7 @@ Only one value may be specified.}
 \item
 \NAMDCONF{parameters}{parameter file}{UNIX filename}
 {\label{param:parameters}
-A CHARMM19 or CHARMM22 parameter file that defines all or part 
+A CHARMM19, CHARMM22, or CHARMM27 parameter file that defines all or part 
 of the parameters necessary for the molecular system to be simulated.  
 At least one parameter file must be specified for each simulation.  
 Multiple definitions (but only one file per definition)
