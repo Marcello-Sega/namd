@@ -68,7 +68,7 @@ void NamdNborLB::neighbors(int* _n) {
 #define SEQ(x, y) ((x)*yDim + (y))
 #define WRAP   0
     numNbors = 0;
-    int yDim = sqrt((double)CkNumPes());
+    int yDim = (int)sqrt((double)CkNumPes());
     int xDim = CkNumPes() / yDim;
     if (CkNumPes() % yDim) xDim++;
     int x = CmiMyPe()/yDim;
@@ -234,10 +234,10 @@ int NamdNborLB::buildData(NborBaseLB::LDStats* stats, int count)
   for (i=0; i<CmiNumPes(); i++) {
     processorArray[i].load = 0.0;
     processorArray[i].backgroundLoad = 0.0;
-    processorArray[i].move = CmiFalse;
+    processorArray[i].available = CmiFalse;
     if (i == CmiMyPe()) {
       processorArray[i].Id = i;
-      processorArray[i].move = myStats.move;
+      processorArray[i].available = myStats.move;
     if (patchMap->numPatches() > 0)
       processorArray[i].backgroundLoad = myStats.bg_walltime*bg_weight;
     else 
@@ -247,7 +247,7 @@ int NamdNborLB::buildData(NborBaseLB::LDStats* stats, int count)
     int peslot = NeighborIndex(i);
     if (peslot != -1) {
     processorArray[i].Id = i;
-      processorArray[i].move = stats[peslot].move;
+      processorArray[i].available = stats[peslot].move;
     if (patchMap->numPatches() > 0)
       processorArray[i].backgroundLoad = bg_weight * stats[peslot].bg_walltime;
     else 

@@ -7,9 +7,9 @@
 #include "InfoStream.h"
 #include <iostream.h>
 #include <iomanip.h>
-#include "SimParameters.h"
 #include "Node.h"
 #include "Rebalancer.h"
+
 
 Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
       processorInfo *processorArray, int nComps, int nPatches, int nPes)
@@ -24,6 +24,7 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
    P = nPes;
    pes = NULL;
    computesHeap = NULL;
+   overLoad = 0.;
    int i;
    for (i=0; i<P; i++)
    {
@@ -251,38 +252,32 @@ void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
    }
 }
 
-extern int isPmeProcessor(int);
-
 void Rebalancer::refine_togrid(pcgrid &grid, double thresholdLoad,
 			processorInfo *p, computeInfo *c) {
 
-  const SimParameters* simParams = Node::Object()->simParameters;
+  if(p->available == CmiFalse) return;
 
-  if( simParams->PMEOn && simParams->ldbUnloadPME &&
-	( (simParams->PMEBarrier && p->Id == 0) || isPmeProcessor(p->Id) ) )
-    return;
-
-            if ( c->load + p->load < thresholdLoad) {
-               int nPatches = numPatchesAvail(c,p);
-	       int nProxies = numProxiesAvail(c,p);
+  if ( c->load + p->load < thresholdLoad) {
+    int nPatches = numPatchesAvail(c,p);
+    int nProxies = numProxiesAvail(c,p);
 	       
-	       if (nPatches < 0 || nPatches > 2)
-		 iout << iERROR << "Too many patches: " << nPatches 
-		      << "\n" << endi;
-	       if (nProxies < 0 || nProxies > 2)
-		 iout << iERROR << "Too many proxies: " << nProxies 
-		      << "\n" << endi;
-	       if (nProxies + nPatches > 2)
-		 iout << iERROR << "Too many patches (" << nPatches
-		      << ") + proxies (" << nProxies << ")\n" << endi;
+    if (nPatches < 0 || nPatches > 2)
+	 iout << iERROR << "Too many patches: " << nPatches 
+	      << "\n" << endi;
+    if (nProxies < 0 || nProxies > 2)
+	 iout << iERROR << "Too many proxies: " << nProxies 
+	      << "\n" << endi;
+    if (nProxies + nPatches > 2)
+	 iout << iERROR << "Too many patches (" << nPatches
+	      << ") + proxies (" << nProxies << ")\n" << endi;
 
-	       pcpair *pair = &grid[nPatches][nProxies];
-	       if ( ( ! pair->c || c->load >= pair->c->load )
-		 && ( ! pair->p || p->load <= pair->p->load ) ) {
-		 pair->c = c;
-		 pair->p = p;
-	       }
-	    }
+    pcpair *pair = &grid[nPatches][nProxies];
+    if ( ( ! pair->c || c->load >= pair->c->load )
+	 && ( ! pair->p || p->load <= pair->p->load ) ) {
+	 pair->c = c;
+	 pair->p = p;
+    }
+  }
 }
 
 int Rebalancer::refine()
@@ -604,14 +599,14 @@ void Rebalancer::printLoads()
    iout << iINFO << "------------------------------------------------------------\n" << endi; 
    iout << iINFO << "          LOAD SUMMARY FOR STRATEGY \"" << strategyName << "\"\n\n" << endi;
    iout << iINFO << "Processors = " << setw(5) << P << "\t"
-        << "  Overload = " << setw(7) << overLoad << "\n";
+        << "  Overload = " ; setw(7); iout << overLoad << "\n";
    iout << iINFO << "Patches    = " << setw(5) << numPatches << "\t"
-        << "  Avg load = " << setw(7) << averageLoad << "\n";
+        << "  Avg load = " ; setw(7); iout << averageLoad << "\n";
    iout << iINFO << "Computes   = " << setw(5) << numComputes << "\t"
-        << "  Max load = " << setw(7) << max << "\n";
+        << "  Max load = " ; setw(7); iout << max << "\n";
    iout << iINFO << "# messages = " << setw(5) << total << "\t"
         << "  Msg size = " << numBytes << " bytes" << "\n" << "\n";
-  iout << iINFO <<"============================================================\n"
+   iout << iINFO <<"============================================================\n"
        << "\n" << endi;
    iout.unsetf(ios::right);
 

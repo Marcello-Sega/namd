@@ -26,7 +26,7 @@ enum {
   positionRescaleFactorTag,
   tcoupleCoefficientTag,
   minimizeCoefficientTag,
-#ifdef CYCLE_BARRIER
+#if USE_BARRIER
   cycleBarrierTag,
 #endif
   scriptBarrierTag,
@@ -40,7 +40,7 @@ struct ControllerBroadcasts
   SimpleBroadcastObject<Tensor> positionRescaleFactor;
   SimpleBroadcastObject<BigReal> tcoupleCoefficient;
   SimpleBroadcastObject<BigReal> minimizeCoefficient;
-#ifdef CYCLE_BARRIER
+#if USE_BARRIER
   SimpleBroadcastObject<int> cycleBarrier;
 #endif
   SimpleBroadcastObject<int> scriptBarrier;
@@ -50,7 +50,7 @@ struct ControllerBroadcasts
     positionRescaleFactor(positionRescaleFactorTag),
     tcoupleCoefficient(tcoupleCoefficientTag),
     minimizeCoefficient(minimizeCoefficientTag),
-#ifdef CYCLE_BARRIER
+#if USE_BARRIER
     cycleBarrier(cycleBarrierTag),
 #endif
     scriptBarrier(scriptBarrierTag)

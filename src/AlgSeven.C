@@ -7,7 +7,6 @@
 #include <iostream.h>
 #include "common.h"
 #include "InfoStream.h"
-#include "SimParameters.h"
 #include "Node.h"
 #include "Alg7.h"
 
@@ -28,12 +27,7 @@ extern int isPmeProcessor(int);
 
 void Alg7::togrid(processorInfo* goodP[3][3], processorInfo* poorP[3][3],
 			processorInfo *p, computeInfo *c) {
-      const SimParameters* simParams = Node::Object()->simParameters;
-
-      if( simParams->PMEOn && simParams->ldbUnloadPME &&
-        ( (simParams->PMEBarrier && p->Id == 0) || isPmeProcessor(p->Id) ) )
-        return;
-
+      if(p->available == CmiFalse) return;
 
       int nPatches = numPatchesAvail(c,p);
       int nProxies = numProxiesAvail(c,p);

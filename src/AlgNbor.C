@@ -37,7 +37,7 @@ void AlgNbor::strategy()
   }
 
   // black-red mode balancing
-  if (processors[mype].move == CmiFalse) return;
+  if (processors[mype].available == CmiFalse) return;
 
   // calculate avarage load for neighbors
   double myload = processors[mype].load;

@@ -335,6 +335,9 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
   BigReal bgfactor = simParams->ldbBackgroundScaling;
   BigReal pmebgfactor = simParams->ldbPMEBackgroundScaling;
   int pmeOn = simParams->PMEOn;
+  int unLoadPme = simParams->ldbUnloadPME;
+  int pmeBarrier = simParams->PMEBarrier;
+
   int i;
   for (i=0; i<count; ++i) {
     processorArray[i].Id = i;
@@ -383,6 +386,12 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
   }
   // CkPrintf("\n");
 #endif  
+
+  if (pmeOn && unLoadPme)
+    for (i=0; i<count; i++) {
+      if ((pmeBarrier && i==0) || isPmeProcessor(i)) 
+	processorArray[i].available = CmiFalse;
+    }
 
   int nMoveableComputes=0;
   int nProxies = 0;		// total number of estimated proxies
