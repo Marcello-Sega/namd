@@ -186,7 +186,7 @@ void Controller::berendsenPressure(int step)
   const int freq = simParams->berendsenPressureFreq;
   if ( simParams->berendsenPressureOn && !(step%freq) )
   {
-    BigReal factor = pressure - simParams->berendsenPressureTarget;
+    BigReal factor = controlPressure - simParams->berendsenPressureTarget;
     factor *= simParams->berendsenPressureCompressibility;
     factor *= ( simParams->dt * freq );
     factor /= simParams->berendsenPressureRelaxationTime;
@@ -206,7 +206,7 @@ void Controller::langevinPiston1(int step)
     BigReal kT = BOLTZMAN * simParams->langevinPistonTemp;
     BigReal tau = simParams->langevinPistonPeriod;
     BigReal gamma = 1 / simParams->langevinPistonDecay;
-    BigReal mass = numDegFreedom * kT * tau * tau;
+    BigReal mass = controlNumDegFreedom * kT * tau * tau;
     BigReal f1 = exp( -0.5 * dt * gamma );
     BigReal f2 = sqrt( ( 1. - f1*f1 ) * kT / mass );
 
@@ -214,7 +214,7 @@ void Controller::langevinPiston1(int step)
     strainRate += f2 * gaussian_random_number();
 
     strainRate += ( 0.5 * dt * 3 * state->lattice.volume() / mass ) *
-		( pressure - simParams->langevinPistonTarget );
+		( controlPressure - simParams->langevinPistonTarget );
 
     BigReal factor = exp( dt * strainRate );
     broadcast->positionRescaleFactor.publish(step,factor);
@@ -231,12 +231,12 @@ void Controller::langevinPiston2(int step)
     BigReal kT = BOLTZMAN * simParams->langevinPistonTemp;
     BigReal tau = simParams->langevinPistonPeriod;
     BigReal gamma = 1 / simParams->langevinPistonDecay;
-    BigReal mass = numDegFreedom * kT * tau * tau;
+    BigReal mass = controlNumDegFreedom * kT * tau * tau;
     BigReal f1 = exp( -0.5 * dt * gamma );
     BigReal f2 = sqrt( ( 1. - f1*f1 ) * kT / mass );
 
     strainRate += ( 0.5 * dt * 3 * state->lattice.volume() / mass ) *
-		( pressure - simParams->langevinPistonTarget );
+		( controlPressure - simParams->langevinPistonTarget );
 
     strainRate *= f1;
     strainRate += f2 * gaussian_random_number();
@@ -365,6 +365,17 @@ void Controller::receivePressure(int seq)
     {
       pressure = 0.;
       groupPressure = 0.;
+    }
+
+    if ( simParameters->useGroupPressure )
+    {
+      controlPressure = groupPressure;
+      controlNumDegFreedom = 3 * molecule->numHydrogenGroups;
+    }
+    else
+    {
+      controlPressure = pressure;
+      controlNumDegFreedom = numDegFreedom;
     }
 
 }
@@ -629,12 +640,16 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1047 $	$Date: 1998/11/18 21:17:41 $
+ *	$Revision: 1.1048 $	$Date: 1998/11/29 22:00:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1048  1998/11/29 22:00:58  jim
+ * Added group-based pressure control to work with rigidBonds.
+ * New option useGroupPressure, turned on automatically if needed.
+ *
  * Revision 1.1047  1998/11/18 21:17:41  jim
  * Added checksum to make sure compute objects don't go missing.
  *

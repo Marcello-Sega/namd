@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *  $RCSfile: SimParameters.C,v $
- *  $Author: krishnan $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1050 $  $Date: 1998/10/25 04:40:10 $
+ *  $Author: jim $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1051 $  $Date: 1998/11/29 22:00:59 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,10 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1051  1998/11/29 22:00:59  jim
+ * Added group-based pressure control to work with rigidBonds.
+ * New option useGroupPressure, turned on automatically if needed.
+ *
  * Revision 1.1050  1998/10/25 04:40:10  krishnan
  * Added the binaryOutput parameter to specify the format of the output file
  * that is generated (PDB or binary).
@@ -880,6 +884,11 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.optional("main", "reassignIncr", "Temperature increment for velocity reassignment",
     &reassignIncr);
    opts.units("reassignIncr", N_KELVIN);
+
+   ////  Group rather than atomic pressure
+   opts.optionalB("main", "useGroupPressure", 
+      "Use group rather than atomic quantities for pressure control?",
+      &useGroupPressure, FALSE);
 
    ////  Berendsen pressure bath coupling
    opts.optionalB("main", "BerendsenPressure", 
@@ -2813,6 +2822,14 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
       NAMD_die("Multiple pressure control algorithms selected!\n");
    }
 
+   if (berendsenPressureOn || langevinPistonOn) {
+     if (rigidBonds != RIGID_NONE && useGroupPressure == FALSE) {
+       useGroupPressure = TRUE;
+       iout << iWARN << "Option useGroupPressure enabled for "
+            << "pressure control with rigidBonds.\n" << endi;
+     }
+   }
+
    if (berendsenPressureOn)
    {
      iout << iINFO << "BERENDSEN PRESSURE COUPLING ACTIVE\n";
@@ -2824,6 +2841,8 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
         << berendsenPressureRelaxationTime << " FS\n";
      iout << iINFO << "    APPLIED EVERY "
         << berendsenPressureFreq << " STEPS\n";
+     iout << iINFO << "    PRESSURE CONTROL IS "
+	<< (useGroupPressure?"GROUP":"ATOM") << "-BASED\n";
      iout << endi;
      berendsenPressureTarget /= PRESSUREFACTOR;
      berendsenPressureCompressibility *= PRESSUREFACTOR;
@@ -2840,6 +2859,8 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
         << langevinPistonDecay << " FS\n";
      iout << iINFO << "    PISTON TEMPERATURE IS "
         << langevinPistonTemp << " K\n";
+     iout << iINFO << "      PRESSURE CONTROL IS "
+	<< (useGroupPressure?"GROUP":"ATOM") << "-BASED\n";
      iout << endi;
      langevinPistonTarget /= PRESSUREFACTOR;
    }
@@ -3144,6 +3165,7 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
   msg->put(&cellOrigin);
 
   // send pressure control data
+  msg->put(useGroupPressure);
   msg->put(berendsenPressureOn);
   msg->put(berendsenPressureTarget);
   msg->put(berendsenPressureCompressibility);
@@ -3346,6 +3368,7 @@ void SimParameters::receive_SimParameters(MIStream *msg)
   lattice.set(cellBasisVector1,cellBasisVector2,cellBasisVector3,cellOrigin);
 
   // receive pressure control data
+  msg->get(useGroupPressure);
   msg->get(berendsenPressureOn);
   msg->get(berendsenPressureTarget);
   msg->get(berendsenPressureCompressibility);
@@ -3375,12 +3398,16 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1050 $  $Date: 1998/10/25 04:40:10 $
+ *  $Revision: 1.1051 $  $Date: 1998/11/29 22:00:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1051  1998/11/29 22:00:59  jim
+ * Added group-based pressure control to work with rigidBonds.
+ * New option useGroupPressure, turned on automatically if needed.
+ *
  * Revision 1.1050  1998/10/25 04:40:10  krishnan
  * Added the binaryOutput parameter to specify the format of the output file
  * that is generated (PDB or binary).

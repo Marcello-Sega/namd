@@ -45,6 +45,8 @@ protected:
       BigReal temperature;
       BigReal pressure;
       BigReal groupPressure;
+      int controlNumDegFreedom;
+      BigReal controlPressure;
     void enqueueCollections(int);
     void rescaleVelocities(int);
       BigReal rescaleVelocities_sumTemps;
@@ -89,12 +91,16 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1998/11/18 21:17:42 $
+ *	$Revision: 1.1018 $	$Date: 1998/11/29 22:00:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.h,v $
+ * Revision 1.1018  1998/11/29 22:00:58  jim
+ * Added group-based pressure control to work with rigidBonds.
+ * New option useGroupPressure, turned on automatically if needed.
+ *
  * Revision 1.1017  1998/11/18 21:17:42  jim
  * Added checksum to make sure compute objects don't go missing.
  *

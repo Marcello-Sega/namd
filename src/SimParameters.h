@@ -239,6 +239,9 @@ public:
 	BigReal reassignTemp;		//  Temperature to reassign to
 	BigReal reassignIncr;		//  Added to reassignTemp each time
 
+	Bool useGroupPressure;		//  Use group rather than atomic
+					//  quantities for pressure calc
+
 	Bool berendsenPressureOn;	//  Berendsen pressure bath
 	BigReal berendsenPressureTarget;
 	BigReal berendsenPressureCompressibility;
@@ -389,13 +392,17 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.h,v $
- *	$Author: krishnan $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1026 $	$Date: 1998/10/26 17:14:51 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1027 $	$Date: 1998/11/29 22:01:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1027  1998/11/29 22:01:00  jim
+ * Added group-based pressure control to work with rigidBonds.
+ * New option useGroupPressure, turned on automatically if needed.
+ *
  * Revision 1.1026  1998/10/26 17:14:51  krishnan
  * Added binaryOutput
  *

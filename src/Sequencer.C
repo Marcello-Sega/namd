@@ -237,12 +237,36 @@ void Sequencer::berendsenPressure(int step)
   const int freq = simParams->berendsenPressureFreq;
   if ( simParams->berendsenPressureOn && !(step%freq) )
   {
-    BigReal factor = broadcast->positionRescaleFactor.get(step);
-    patch->lattice.rescale(factor);
+   BigReal factor = broadcast->positionRescaleFactor.get(step);
+   patch->lattice.rescale(factor);
+   if ( simParams->useGroupPressure )
+   {
+    int hgs;
+    for ( int i = 0; i < patch->numAtoms; i += hgs ) {
+      hgs = patch->a[i].hydrogenGroupSize;
+      int j;
+      BigReal m_cm = 0;
+      Position x_cm;
+      for ( j = i; j < (i+hgs); ++j ) {
+        m_cm += patch->a[j].mass;
+        x_cm += patch->a[j].mass * patch->p[j];
+      }
+      x_cm /= m_cm;
+      Position new_x_cm = x_cm;
+      patch->lattice.rescale(new_x_cm,factor);
+      Position delta_x_cm = new_x_cm - x_cm;
+      for ( j = i; j < (i+hgs); ++j ) {
+        patch->p[j] += delta_x_cm;
+      }
+    }
+   }
+   else
+   {
     for ( int i = 0; i < patch->numAtoms; ++i )
     {
       patch->lattice.rescale(patch->p[i],factor);
     }
+   }
   }
 }
 
@@ -250,14 +274,43 @@ void Sequencer::langevinPiston(int step)
 {
   if ( simParams->langevinPistonOn )
   {
-    BigReal factor = broadcast->positionRescaleFactor.get(step);
-    BigReal velFactor = 1 / factor;
-    patch->lattice.rescale(factor);
+   BigReal factor = broadcast->positionRescaleFactor.get(step);
+   BigReal velFactor = 1 / factor;
+   patch->lattice.rescale(factor);
+   if ( simParams->useGroupPressure )
+   {
+    int hgs;
+    for ( int i = 0; i < patch->numAtoms; i += hgs ) {
+      hgs = patch->a[i].hydrogenGroupSize;
+      int j;
+      BigReal m_cm = 0;
+      Position x_cm;
+      Velocity v_cm;
+      for ( j = i; j < (i+hgs); ++j ) {
+        m_cm += patch->a[j].mass;
+        x_cm += patch->a[j].mass * patch->p[j];
+        v_cm += patch->a[j].mass * patch->v[j];
+      }
+      x_cm /= m_cm;
+      Position new_x_cm = x_cm;
+      patch->lattice.rescale(new_x_cm,factor);
+      Position delta_x_cm = new_x_cm - x_cm;
+      v_cm /= m_cm;
+      Velocity delta_v_cm = ( velFactor - 1. ) * v_cm;
+      for ( j = i; j < (i+hgs); ++j ) {
+        patch->p[j] += delta_x_cm;
+        patch->v[j] += delta_v_cm;
+      }
+    }
+   }
+   else
+   {
     for ( int i = 0; i < patch->numAtoms; ++i )
     {
       patch->lattice.rescale(patch->p[i],factor);
       patch->v[i] *= velFactor;
     }
+   }
   }
 }
 
@@ -479,12 +532,16 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1050 $     $Date: 1998/11/01 23:25:49 $
+ *      $Revision: 1.1051 $     $Date: 1998/11/29 22:00:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1051  1998/11/29 22:00:58  jim
+ * Added group-based pressure control to work with rigidBonds.
+ * New option useGroupPressure, turned on automatically if needed.
+ *
  * Revision 1.1050  1998/11/01 23:25:49  jim
  * Added basic correctness checking: atom counts, etc.
  *
