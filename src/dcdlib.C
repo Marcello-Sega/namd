@@ -37,15 +37,19 @@
 
 #define NAMD_write NAMD_write64
 // same as write, only does error checking internally
-void NAMD_write(int fd, const void *buf, size_t count) {
+void NAMD_write(int fd, const char *buf, size_t count) {
+  while ( count ) {
+    if ( count < 0 ) NAMD_bug("count < 0 in NAMD_write64()");
+    ssize_t retval =
 #if defined(WIN32) && !defined(__CYGWIN__)
-   if ( _write(fd,buf,count) < 0 ) {
+   	_write(fd,buf,count);
 #else
-   if ( write(fd,buf,count) < 0 ) {
+   	write(fd,buf,count);
 #endif
-     // NAMD_die("NAMD_write - write to file descriptor failed.");
-     NAMD_die(strerror(errno));
-   }
+    if ( retval < 0 ) NAMD_die(strerror(errno));
+    buf += retval;
+    count -= retval;
+  }
 }
 
 
@@ -705,11 +709,9 @@ int write_dcdstep(int fd, int N, float *X, float *Y, float *Z)
 #ifdef WIN32
 #define LSEEK _lseek
 #define READ _read
-#define WRITE _write
 #else
 #define LSEEK lseek
 #define READ read
-#define WRITE write
 #endif
 
 	/* don't update header until after write succeeds */
@@ -722,9 +724,9 @@ int write_dcdstep(int fd, int N, float *X, float *Y, float *Z)
 	NSTEP += NSAVC;
 	NFILE += 1;
 	LSEEK(fd,NSTEP_POS,SEEK_SET);
-	WRITE(fd,(void*) &NSTEP,sizeof(int32));
+	NAMD_write(fd,(char*) &NSTEP,sizeof(int32));
 	LSEEK(fd,NFILE_POS,SEEK_SET);
-	WRITE(fd,(void*) &NFILE,sizeof(int32));
+	NAMD_write(fd,(char*) &NFILE,sizeof(int32));
 	LSEEK(fd,0,SEEK_END);
 
 	return(0);

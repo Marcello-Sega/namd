@@ -129,17 +129,19 @@ void NAMD_backup_file(const char *filename, const char *extension)
 }
 
 // same as write, only does error checking internally
-void NAMD_write(int fd, const void *buf, size_t count)
-
-{
+void NAMD_write(int fd, const char *buf, size_t count) {
+  while ( count ) {
+    if ( count < 0 ) NAMD_bug("count < 0 in NAMD_write()");
+    ssize_t retval =
 #if defined(WIN32) && !defined(__CYGWIN__)
-   if ( _write(fd,buf,count) < 0 ) {
+        _write(fd,buf,count);
 #else
-   if ( write(fd,buf,count) < 0 ) {
+        write(fd,buf,count);
 #endif
-     // NAMD_die("NAMD_write - write to file descriptor failed.");
-     NAMD_die(strerror(errno));
-   }
+    if ( retval < 0 ) NAMD_die(strerror(errno));
+    buf += retval;
+    count -= retval;
+  }
 }
 
 
