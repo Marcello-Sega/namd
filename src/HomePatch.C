@@ -245,11 +245,18 @@ void HomePatch::addForceToMomentum(const BigReal timestep, const int ftag,
 							const int useSaved)
 {
   const BigReal dt = timestep / TIMEFACTOR;
-  for ( int i = 0; i < numAtoms; ++i )
-  {
-    if (useSaved) atom[i].velocity += f_saved[ftag][i] * ( dt / atom[i].mass );
-    else atom[i].velocity += f[ftag][i] * ( dt / atom[i].mass );
-    if ( atom[i].atomFixed ) atom[i].velocity = 0;
+  if ( useSaved ) {
+    for ( int i = 0; i < numAtoms; ++i )
+    {
+      atom[i].velocity += f_saved[ftag][i] * ( dt / atom[i].mass );
+      if ( atom[i].atomFixed ) atom[i].velocity = 0;
+    }
+  } else {
+    for ( int i = 0; i < numAtoms; ++i )
+    {
+      atom[i].velocity += f[ftag][i] * ( dt / atom[i].mass );
+      if ( atom[i].atomFixed ) atom[i].velocity = 0;
+    }
   }
 }
 
