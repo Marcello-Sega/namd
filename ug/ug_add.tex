@@ -2,10 +2,10 @@
 \label{section:add}
 
 
-\subsection{\NAMD\ configuration parameters}
+\subsection{Constraints and Restraints}
 \label{section:config_add}
 
-\subsubsection{Harmonic constraints}
+\subsubsection{Harmonic constraint parameters}
 
 The following describes the parameters for the 
 harmonic constraints feature of \NAMD.  Actually, this feature 
@@ -62,6 +62,462 @@ that atom's restraining potential.}
 
 \end{itemize}
 
+\subsubsection{Fixed atoms parameters}
+
+Atoms may be held fixed during a simulation.  \NAMD\ avoids calculating most interactions in which all affected atoms are fixed.
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{fixedAtoms}{are there fixed atoms?}{\verb!on! or \verb!off!}{\verb!off!}
+{Specifies whether or not fixed atoms are present.} 
+
+\item
+\NAMDCONFWDEF{fixedAtomsFile}{PDB file containing fixed atom parameters}%
+{UNIX filename}{\verb!coordinates!}
+{PDB file to use for the fixed atom flags for each atom.  
+If this parameter is not specified, then 
+the PDB file specified by \verb!coordinates! is used.}
+
+\item
+\NAMDCONFWDEF{fixedAtomsCol}{column of PDB containing fixed atom parameters}
+{\verb!X!, \verb!Y!, \verb!Z!, \verb!O!, or \verb!B!}{\verb!O!} 
+{Column of the PDB file to use for the containing fixed atom parameters for 
+each atom.  The coefficients can be read from any 
+floating point column of the PDB file.  
+A value of 0 indicates that the atom is not fixed.}
+
+\end{itemize}
+
+\subsection{Energy Minimization}
+
+\subsubsection{Velocity quenching parameters}
+
+As described in the \PG, \NAMD\ has the capability
+of performing energy minimization using a simple quenching
+scheme.   While this algorithm is not the most rapidly convergent, it
+is sufficient for most applications.  There are only two parameters
+for minimization:  one to activate minimization and another
+to specify the maximum movement of any atom.  
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{minimization}{Perform energy minimization?}{\verb!on! or \verb!off!}{\verb!off!}
+{Turns energy minimization \verb!on! or \verb!off!.}
+
+\item
+\NAMDCONFWDEF{maximumMove}{maximum distance an atom can move during each step (\AA)}%
+{positive decimal}%
+{$0.75\times\mbox{\verb!cutoff!}/\mbox{\verb!stepsPerCycle!}$}
+{Maximum distance that an atom can move during any single timestep of
+minimization.  This is to insure that atoms do not go flying off into
+space during the first few timesteps when the largest energy conflicts
+are resolved.}
+
+\end{itemize}
+
+\subsection{Temperature Control and Equilibration}
+
+\subsubsection{Langevin dynamics parameters}
+
+As described in the \PG, \NAMD\ is capable
+of performing Langevin dynamics, where additional damping and
+random forces are introduced to the system.  This capability
+is based on that implemented in X-PLOR which is detailed
+in the X-PLOR {\it User's Manual} \mycite{(Br\"unger, 1992)}{BRUN92b},
+although a different integrator is used.
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{langevin}{use Langevin dynamics?}{\verb!on! or \verb!off!}{\verb!off!}
+{Specifies whether or not Langevin dynamics active.  
+If set to \verb!on!, then the parameter \verb!langevinTemp! must be set 
+and the parameters \verb!langevinFile! and \verb!langevinCol! can
+optionally be set to control the behavior of this feature.} 
+
+\item
+\NAMDCONF{langevinTemp}{temperature for Langevin calculations (K)}{positive decimal}
+{Temperature to which atoms affected by Langevin dynamics will be adjusted.  
+This temperature will be roughly maintained across the affected atoms 
+through the addition of friction and random forces.}
+
+\item
+\NAMDCONFWDEF{langevinFile}{PDB file containing Langevin parameters}%
+{UNIX filename}{\verb!coordinates!}
+{PDB file to use for the Langevin coupling coefficients for each atom.  
+If this parameter is not specified, then 
+the PDB file specified by \verb!coordinates! is used.}
+
+\item
+\NAMDCONFWDEF{langevinCol}{column of PDB from which to read coefficients}
+{\verb!X!, \verb!Y!, \verb!Z!, \verb!O!, or \verb!B!}{\verb!O!} 
+{Column of the PDB file to use for the Langevin coupling coefficients for 
+each atom.  The coefficients can be read from any 
+floating point column of the PDB file.  
+A value of 0 indicates that the atom will remain unaffected.}
+
+\end{itemize}
+
+\subsubsection{Temperature coupling parameters}
+
+As described in the \PG, \NAMD\ is capable
+of performing temperature coupling, in which forces are added or 
+reduced to simulate the coupling of the system to a heat bath 
+of a specified temperature.  
+This capability is based on that implemented in X-PLOR which is detailed
+in the X-PLOR {\it User's Manual} \mycite{(Br\"unger, 1992)}{BRUN92b}.
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{tCouple}{perform temperature coupling?}{\verb!on! or \verb!off!}{\verb!off!}
+{Specifies whether or not temperature coupling is active.  
+If set to \verb!on!, then the parameter \verb!tCoupleTemp! must be set and 
+the parameters \verb!tCoupleFile! and \verb!tCoupleCol! can 
+optionally be set to control the behavior of this feature.} 
+
+\item
+\NAMDCONF{tCoupleTemp}{temperature for heat bath (K)}{positive decimal}
+{Temperature to which atoms affected 
+by temperature coupling will be adjusted.  
+This temperature will be roughly maintained across the affected atoms 
+through the addition of forces.}
+
+\item
+\NAMDCONFWDEF{tCoupleFile}{PDB file with tCouple parameters}%
+{UNIX filename}{\verb!coordinates!}%
+{PDB file to use for the temperature coupling coefficient for each atom.  
+If this parameter is not specified, then 
+the PDB file specified by \verb!coordinates! is used.} 
+
+\item
+\NAMDCONFWDEF{tCoupleCol}{column of PDB from which to read coefficients}
+{\verb!X!, \verb!Y!, \verb!Z!, \verb!O!, or \verb!B!}{\verb!O!} 
+{Column of the PDB file to use for the temperature coupling coefficient for 
+each atom.  This value can be read from any 
+floating point column of the PDB file.  
+A value of $0$ indicates that the atom will remain unaffected.}
+
+\end{itemize}
+
+\subsubsection{Temperature rescaling parameters}
+
+\NAMD\ allows equilibration of a system by means of temperature 
+rescaling.  Using this method, all of the velocities in the system 
+are periodically rescaled so that the entire system is set to the 
+desired temperature.  The following parameters specify how often 
+and to what temperature this rescaling is performed.  
+
+\begin{itemize}
+
+\item
+\NAMDCONF{rescaleFreq}{number of timesteps between temperature rescaling}{positive integer}
+{The equilibration feature of \NAMD\ is activated by 
+specifying the number of timesteps between each temperature rescaling.  
+If this value is given, then the \verb!rescaleTemp! parameter must also 
+be given to specify the target temperature. }
+
+\item
+\NAMDCONF{rescaleTemp}{temperature for equilibration (K)}{positive decimal}
+{The temperature to which all velocities will be rescaled
+every \verb!rescaleFreq! timesteps.  
+This parameter is valid only if \verb!rescaleFreq! has been set.}
+
+\end{itemize}
+
+\subsubsection{Temperature reassignment parameters}
+
+\NAMD\ allows equilibration of a system by means of temperature 
+reassignment.  Using this method, all of the velocities in the system 
+are periodically reassigned so that the entire system is set to the 
+desired temperature.  The following parameters specify how often 
+and to what temperature this reassignment is performed.  
+
+\begin{itemize}
+
+\item
+\NAMDCONF{reassignFreq}{number of timesteps between temperature reassignment}{positive integer}
+{The equilibration feature of \NAMD\ is activated by 
+specifying the number of timesteps between each temperature reassignment.  
+If this value is given, then the \verb!reassignTemp! parameter must also 
+be given to specify the target temperature. }
+
+\item
+\NAMDCONF{reassignTemp}{temperature for equilibration (K)}{positive decimal}
+{The temperature to which all velocities will be reassigned
+every \verb!reassignFreq! timesteps.  
+This parameter is valid only if \verb!reassignFreq! has been set.}
+
+\item
+\NAMDCONFWDEF{reassignIncr}{temperature increment for equilibration (K)}{positive decimal}{0}
+{In order to allow simulated annealing or other slow heating/cooling protocols, \verb!reassignIncr! will be added to \verb!reassignTemp! after each reassignment.
+This parameter is valid only if \verb!reassignFreq! has been set.}
+
+\end{itemize}
+
+\subsection{Boundary Conditions}
+
+\subsubsection{Spherical harmonic boundary conditions}
+
+\NAMD\ provides spherical harmonic boundary conditions.  These 
+boundary conditions can consist of a single potential or a 
+combination of two potentials as described in the \PG.  
+The following parameters are used to define these boundary conditions.  
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{sphericalBC}{use spherical boundary conditions?}{\verb!on! or \verb!off!}{\verb!off!}
+{Specifies whether or not spherical boundary conditions 
+are to be applied to the system.  If 
+set to \verb!on!, then \verb!sphericalBCr1! and \verb!sphericalBCk1! 
+must be defined, and \verb!sphericalBCexp1!, \verb!sphericalBCr2!, 
+\verb!sphericalBCk2!, and \verb!sphericalBCexp2! can optionally be 
+defined.}
+
+\item
+\NAMDCONF{sphericalBCr1}{radius for first boundary condition (\AA)}{positive decimal}
+{Distance at which the first potential of the boundary conditions takes
+effect.  This distance is a radius from the center of mass.}
+
+\item
+\NAMDCONF{sphericalBCk1}{force constant for first potential}{non-zero decimal}
+{Force constant for the first harmonic potential.  A positive
+value will push atoms toward the center of mass, and a negative
+value will pull atoms away from the center of mass.}
+
+\item
+\NAMDCONFWDEF{sphericalBCexp1}{exponent for first potential}{positive, even integer}{2}
+{Exponent for first boundary potential.  The only likely values to
+use are 2 and 4.}
+
+\item
+\NAMDCONF{sphericalBCr2}{radius for second boundary condition (\AA)}{positive decimal}
+{Distance at which the second potential of the boundary conditions takes
+effect.  This distance is a radius from the center of mass.
+If this parameter is defined, then \verb!spericalBCk2! must also
+be defined.}
+
+\item
+\NAMDCONF{sphericalBCk2}{force constant for second potential}{non-zero decimal}
+{Force constant for the second harmonic potential.  A positive
+value will push atoms toward the center of mass, and a negative
+value will pull atoms away from the center of mass.}
+
+\item
+\NAMDCONFWDEF{sphericalBCexp2}{exponent for second potential}{positive, even integer}{2}
+{Exponent for second boundary potential.  The only likely values to
+use are 2 and 4.}
+
+\end{itemize}
+
+\subsubsection{Cylindrical harmonic boundary conditions}
+
+\NAMD\ provides cylindrical harmonic boundary conditions.  These 
+boundary conditions can consist of a single potential or a 
+combination of two potentials as described in the \PG.  
+The following parameters are used to define these boundary conditions.  
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{cylindricalBC}{use cylindrical boundary conditions?}{\verb!on! or \verb!off!}{\verb!off!}
+{Specifies whether or not cylindrical boundary conditions 
+are to be applied to the system.  If 
+set to \verb!on!, then \verb!cylindricalBCr1!, \verb!cylindricalBCl1! and \verb!cylindricalBCk1! 
+must be defined, and \verb!cylindricalBCAxis!, \verb!cylindricalBCCenter!, \verb!cylindricalBCexp1!, \verb!cylindricalBCr2!, \verb!cylindricalBCl2!,
+\verb!cylindricalBCk2!, and \verb!cylindricalBCexp2! can optionally be 
+defined.}
+
+\item
+\NAMDCONF{cylindricalBCCenter}{center of  cylinder (\AA)}{position}
+{Location around which cylinder is centered.  If not specified, center of mass is used.}
+
+\item
+\NAMDCONF{cylindricalBCAxis}{axis of  cylinder (\AA)}{\verb!x!, \verb!y!, or \verb!z!}
+{Axis along which cylinder is aligned.}
+
+\item
+\NAMDCONF{cylindricalBCr1}{radius for first boundary condition (\AA)}{positive decimal}
+{Distance at which the first potential of the boundary conditions takes
+effect along the non-axis plane of the cylinder.}
+
+\item
+\NAMDCONF{cylindricalBCl1}{distance along cylinder axis for first boundary condition (\AA)}{positive decimal}
+{Distance at which the first potential of the boundary conditions takes
+effect along the cylinder axis.}
+
+\item
+\NAMDCONF{cylindricalBCk1}{force constant for first potential}{non-zero decimal}
+{Force constant for the first harmonic potential.  A positive
+value will push atoms toward the center, and a negative
+value will pull atoms away from the center.}
+
+\item
+\NAMDCONFWDEF{cylindricalBCexp1}{exponent for first potential}{positive, even integer}{2}
+{Exponent for first boundary potential.  The only likely values to
+use are 2 and 4.}
+
+\item
+\NAMDCONF{cylindricalBCr2}{radius for second boundary condition (\AA)}{positive decimal}
+{Distance at which the second potential of the boundary conditions takes
+effect along the non-axis plane of the cylinder.
+If this parameter is defined, then \verb!cylindricalBCl2! and \verb!spericalBCk2! must also
+be defined.}
+
+\item
+\NAMDCONF{cylindricalBCl2}{radius for second boundary condition (\AA)}{positive decimal}
+{Distance at which the second potential of the boundary conditions takes
+effect along the cylinder axis.
+If this parameter is defined, then \verb!cylindricalBCr2! and \verb!spericalBCk2! must also
+be defined.}
+
+\item
+\NAMDCONF{cylindricalBCk2}{force constant for second potential}{non-zero decimal}
+{Force constant for the second harmonic potential.  A positive
+value will push atoms toward the center, and a negative
+value will pull atoms away from the center.}
+
+\item
+\NAMDCONFWDEF{cylindricalBCexp2}{exponent for second potential}{positive, even integer}{2}
+{Exponent for second boundary potential.  The only likely values to
+use are 2 and 4.}
+
+\end{itemize}
+
+%\paragraph{Applied electric field}
+%
+%\NAMD\ provides the ability to apply a constant electric field to the molecular
+%system being simulated.  There are two parameters that control this feature.
+%
+%\begin{itemize}
+%
+%\item
+%\NAMDCONFWDEF{eFieldOn}{apply electric field?}{\verb!yes! or %\verb!no!}{\verb!no!}
+%{Specifies whether or not an electric field is applied.}
+%
+%\item
+%\NAMDCONF{eField}{electric field vector}{vector of decimals}
+%{Vector which describes the electric field to be applied.}
+%
+%\end{itemize}
+
+\subsubsection{Periodic boundary conditions}
+
+\NAMD\ provides periodic boundary conditions in 1, 2 or 3 dimensions.
+The basis vectors of the periodic cell must be along the x, y, and z axes.  
+This restriction will be eliminated in future versions of \NAMD.
+The following parameters are used to define these boundary conditions.  
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{cellBasisVector1}{basis vector for periodic boundaries (\AA)}{vector along x axis}{0 0 0}
+{Specifies whether or not periodic boundary conditions 
+are to be applied to the system in the x direction.}
+
+\item
+\NAMDCONFWDEF{cellBasisVector2}{basis vector for periodic boundaries (\AA)}{vector along y axis}{0 0 0}
+{Specifies whether or not periodic boundary conditions 
+are to be applied to the system in the y direction.}
+
+\item
+\NAMDCONFWDEF{cellBasisVector3}{basis vector for periodic boundaries (\AA)}{vector along z axis}{0 0 0}
+{Specifies whether or not periodic boundary conditions 
+are to be applied to the system in the z direction.}
+
+\item
+\NAMDCONFWDEF{cellOrigin}{center of periodic cell (\AA)}{position}{0 0 0}
+{When position rescaling is used to control pressure, this location will remain constant.  Also used as the center of the cell for wrapped output coordinates.}
+
+\item
+\NAMDCONF{extendedSystem}{XSC file to read cell parameters from}{file name}
+{In addition to .coor and .vel output files, \NAMD\ generates a .xsc (eXtended System Configuration) file which contains the periodic cell parameters and extended system variables, such as the strain rate in constant pressure simulations.  Periodic cell parameters will be read from this file if this option is present, ignoring the above parameters.}
+
+\item
+\NAMDCONF{XSTfile}{XST file to read cell trajectory to}{file name}
+{\NAMD\ can also generate a .xst (eXtended System Trajectory) file which contains a record of the periodic cell parameters and extended system variables during the simulation.}
+
+\item
+\NAMDCONFWDEF{XSTFreq}{how often to append state to XST file}{positive integer}{1}
+{Like the \verb!DCDfreq! option, controls how often the extended system configuration will be appended to the XST file.}
+
+\item
+\NAMDCONFWDEF{wrapWater}{wrap water coordinates around periodic boundaries?}{on or off}{off}
+{Coordinates are normally output relative to the way they were read in.  Hence, if part of a molecule crosses a periodic boundary it is not translated to the other side of the cell.  This option alters this behavior for water molecules only.}
+
+\end{itemize}
+
+\subsection{Pressure Control}
+
+\subsubsection{Berendsen pressure bath coupling}
+
+\NAMD\ provides constant pressure simulation using Berendsen's method.  
+The following parameters are used to define the algorithm.  
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{BerendsenPressure}{use Berendsen pressure bath coupling?}{\verb!on! or \verb!off!}{\verb!off!}
+{Specifies whether or not Berendsen pressure bath coupling is active.  
+If set to \verb!on!, then the parameters \verb!BerendsenPressureTarget!, \verb!BerendsenPressureCompressibility! and \verb!BerendsenPressureRelaxationTime! must be set 
+and the parameter \verb!BerendsenPressureFreq! can
+optionally be set to control the behavior of this feature.} 
+
+\item
+\NAMDCONF{BerendsenPressureTarget}{target pressure (bar)}{positive decimal}
+{Specifies target pressure for Berendsen's method.}
+
+\item
+\NAMDCONF{BerendsenPressureCompressibility}{compressibility (bar$^{-1}$)}{positive decimal}
+{Specifies compressibility for Berendsen's method.}
+
+\item
+\NAMDCONF{BerendsenPressureRelaxationTime}{relaxation time (fs)}{positive decimal}
+{Specifies relaxation time for Berendsen's method.}
+
+\item
+\NAMDCONFWDEF{BerendsenPressureFreq}{how often to rescale positions}{positive integer}{1}
+{Specifies number of timesteps between position rescalings for Berendsen's method.}
+
+\end{itemize}
+
+\subsubsection{Nos\'{e}-Hoover Langevin piston pressure control}
+
+\NAMD\ provides constant pressure simulation using a modified Hos\'{e}-Hoover method in which Langevin dynamics is used to control fluctuations in the barostat.
+This method should be combined with a method of temperature control, such as Langevin dynamics, in order to simulate the NPT ensemble.
+The following parameters are used to define the algorithm.  
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{LangevinPiston}{use Langevin piston pressure control?}{\verb!on! or \verb!off!}{\verb!off!}
+{Specifies whether or not Langevin piston pressure control is active.  
+If set to \verb!on!, then the parameters \verb!LangevinPistonTarget!, \verb!LangevinPistonPeriod!, \verb!LangevinPistonDecay! and \verb!LangevinPistonTemp! must be set.}
+
+\item
+\NAMDCONF{LangevinPistonTarget}{target pressure (bar)}{positive decimal}
+{Specifies target pressure for Langevin piston method.}
+
+\item
+\NAMDCONF{LangevinPistonPeriod}{oscillation period (fs)}{positive decimal}
+{Specifies barostat oscillation time scale for Langevin piston method.}
+
+\item
+\NAMDCONF{LangevinPistonDecay}{damping time scale (fs)}{positive decimal}
+{Specifies barostat damping time scale for Langevin piston method.}
+
+\item
+\NAMDCONF{LangevinPistonTemp}{noise temperature (K)}{positive decimal}
+{Specifies barostat noise temperature for Langevin piston method.
+This should be set equal to the target temperature for the chosen method of temperature control.}
+
+\end{itemize}
+
+\subsection{Applied Forces and Analysis}
+
 \subsubsection{Steered Molecular Dynamics in \NAMD}
 
 Currently, there are two ways to run SMD simulations with \NAMD. One
@@ -89,7 +545,7 @@ point), given by
 \label{eq:smdrefpos}
 \end{equation}
 
-\paragraph{Moving Constraints}
+\paragraph*{Moving Constraints}
 
 Moving constraints feature works in conjunction with the Harmonic
 Constraints (see an appropriate section of the User's guide).  In
@@ -116,7 +572,7 @@ effectively, the force constant is $2 k$ in calculations. This caveat
 was removed in SMD feature.
 
 
-\paragraph{Steered Molecular Dynamics (SMD)}
+\paragraph*{Steered Molecular Dynamics (SMD)}
 
 SMD feature is independent from the harmonic constraints, although it
 follows the same ideas. One has to specify the force constant $k$
@@ -142,7 +598,7 @@ When restarting the simulation it may be useful to set $t_0$ to
 whatever time the reference position specified in the configuration
 file refers to.
 
-\paragraph{Changing direction of reference position movement}
+\paragraph*{Changing direction of reference position movement}
 
 One may want to change the direction of the reference position
 movement, e.g., if the restrained atom is moving too slow in the given
@@ -174,7 +630,7 @@ direction of $\vec n_{new}$. The time stamp $t_0$ is set to current
 time.
 
 
-\paragraph{Choice of new direction}
+\paragraph*{Choice of new direction}
 The choice of the new (random) direction is based on the specified
 initial direction $\vec n$, the angle $\theta_c$ of the cone which has
 $\vec n$ as its axis, and the method by which the random numbers are
@@ -213,7 +669,7 @@ given by
 \end{equation}
 
 
-\paragraph{Resetting the applied force}
+\paragraph*{Resetting the applied force}
 
 Sometimes, especially when a small enough $k$ is employed, the
 movement of the restrained atom proceeds in steps, resulting in a fast
@@ -230,7 +686,7 @@ reference position is reset according to Eq.~\ref{eq:smdreset}. The
 time stamp $t_0$ is set to current time.
 
 
-\paragraph{Output}
+\paragraph*{Output}
 
 \NAMD\ provides output of the current SMD data. The frequency of
 output is specified by the \verb!SMDOutputFreq! parameter in the
@@ -259,7 +715,7 @@ becomes the time stamp for the following simulation until the next
 change occurs.
 
 
-\paragraph{Moving Constraints}
+\paragraph*{Moving Constraints}
 The following parameters describe the parameters for the 
 moving harmonic constraint feature of \NAMD.  
 This feature allows a harmonic restraining force to be applied
@@ -294,7 +750,7 @@ If the atom is numbered $N$ in the PDB file, $N-1$ must be specified.
 
 \end{itemize}
 
-\paragraph{Steered Molecular Dynamics (SMD)}
+\paragraph*{Steered Molecular Dynamics (SMD)}
 The following parameters describe the parameters for the 
 SMD feature of \NAMD.
 This feature allows a harmonic restraining force to be applied
@@ -452,374 +908,6 @@ average velocity to
 \verb!SMDVmax!.}
 \end{itemize}
 
-\subsubsection{Fixed atoms parameters}
-
-Atoms may be held fixed during a simulation.  \NAMD\ avoids calculating most interactions in which all affected atoms are fixed.
-
-\begin{itemize}
-
-\item
-\NAMDCONFWDEF{fixedAtoms}{are there fixed atoms?}{\verb!on! or \verb!off!}{\verb!off!}
-{Specifies whether or not fixed atoms are present.} 
-
-\item
-\NAMDCONFWDEF{fixedAtomsFile}{PDB file containing fixed atom parameters}%
-{UNIX filename}{\verb!coordinates!}
-{PDB file to use for the fixed atom flags for each atom.  
-If this parameter is not specified, then 
-the PDB file specified by \verb!coordinates! is used.}
-
-\item
-\NAMDCONFWDEF{fixedAtomsCol}{column of PDB containing fixed atom parameters}
-{\verb!X!, \verb!Y!, \verb!Z!, \verb!O!, or \verb!B!}{\verb!O!} 
-{Column of the PDB file to use for the containing fixed atom parameters for 
-each atom.  The coefficients can be read from any 
-floating point column of the PDB file.  
-A value of 0 indicates that the atom is not fixed.}
-
-\end{itemize}
-
-\subsubsection{Energy minimization parameters}
-
-As described in the \PG, \NAMD\ has the capability
-of performing energy minimization using a simple quenching
-scheme.   While this algorithm is not the most rapidly convergent, it
-is sufficient for most applications.  There are only two parameters
-for minimization:  one to activate minimization and another
-to specify the maximum movement of any atom.  
-
-\begin{itemize}
-
-\item
-\NAMDCONFWDEF{minimization}{Perform energy minimization?}{\verb!on! or \verb!off!}{\verb!off!}
-{Turns energy minimization \verb!on! or \verb!off!.}
-
-\item
-\NAMDCONFWDEF{maximumMove}{maximum distance an atom can move during each step (\AA)}%
-{positive decimal}%
-{$0.75\times\mbox{\verb!cutoff!}/\mbox{\verb!stepsPerCycle!}$}
-{Maximum distance that an atom can move during any single timestep of
-minimization.  This is to insure that atoms do not go flying off into
-space during the first few timesteps when the largest energy conflicts
-are resolved.}
-
-\end{itemize}
-
-\subsubsection{Langevin dynamics parameters}
-
-As described in the \PG, \NAMD\ is capable
-of performing Langevin dynamics, where additional damping and
-random forces are introduced to the system.  This capability
-is based on that implemented in X-PLOR which is detailed
-in the X-PLOR {\it User's Manual} \mycite{(Br\"unger, 1992)}{BRUN92b},
-although a different integrator is used.
-
-\begin{itemize}
-
-\item
-\NAMDCONFWDEF{langevin}{use Langevin dynamics?}{\verb!on! or \verb!off!}{\verb!off!}
-{Specifies whether or not Langevin dynamics active.  
-If set to \verb!on!, then the parameter \verb!langevinTemp! must be set 
-and the parameters \verb!langevinFile! and \verb!langevinCol! can
-optionally be set to control the behavior of this feature.} 
-
-\item
-\NAMDCONF{langevinTemp}{temperature for Langevin calculations (K)}{positive decimal}
-{Temperature to which atoms affected by Langevin dynamics will be adjusted.  
-This temperature will be roughly maintained across the affected atoms 
-through the addition of friction and random forces.}
-
-\item
-\NAMDCONFWDEF{langevinFile}{PDB file containing Langevin parameters}%
-{UNIX filename}{\verb!coordinates!}
-{PDB file to use for the Langevin coupling coefficients for each atom.  
-If this parameter is not specified, then 
-the PDB file specified by \verb!coordinates! is used.}
-
-\item
-\NAMDCONFWDEF{langevinCol}{column of PDB from which to read coefficients}
-{\verb!X!, \verb!Y!, \verb!Z!, \verb!O!, or \verb!B!}{\verb!O!} 
-{Column of the PDB file to use for the Langevin coupling coefficients for 
-each atom.  The coefficients can be read from any 
-floating point column of the PDB file.  
-A value of 0 indicates that the atom will remain unaffected.}
-
-\end{itemize}
-
-\subsubsection{Temperature coupling parameters}
-
-As described in the \PG, \NAMD\ is capable
-of performing temperature coupling, in which forces are added or 
-reduced to simulate the coupling of the system to a heat bath 
-of a specified temperature.  
-This capability is based on that implemented in X-PLOR which is detailed
-in the X-PLOR {\it User's Manual} \mycite{(Br\"unger, 1992)}{BRUN92b}.
-
-\begin{itemize}
-
-\item
-\NAMDCONFWDEF{tCouple}{perform temperature coupling?}{\verb!on! or \verb!off!}{\verb!off!}
-{Specifies whether or not temperature coupling is active.  
-If set to \verb!on!, then the parameter \verb!tCoupleTemp! must be set and 
-the parameters \verb!tCoupleFile! and \verb!tCoupleCol! can 
-optionally be set to control the behavior of this feature.} 
-
-\item
-\NAMDCONF{tCoupleTemp}{temperature for heat bath (K)}{positive decimal}
-{Temperature to which atoms affected 
-by temperature coupling will be adjusted.  
-This temperature will be roughly maintained across the affected atoms 
-through the addition of forces.}
-
-\item
-\NAMDCONFWDEF{tCoupleFile}{PDB file with tCouple parameters}%
-{UNIX filename}{\verb!coordinates!}%
-{PDB file to use for the temperature coupling coefficient for each atom.  
-If this parameter is not specified, then 
-the PDB file specified by \verb!coordinates! is used.} 
-
-\item
-\NAMDCONFWDEF{tCoupleCol}{column of PDB from which to read coefficients}
-{\verb!X!, \verb!Y!, \verb!Z!, \verb!O!, or \verb!B!}{\verb!O!} 
-{Column of the PDB file to use for the temperature coupling coefficient for 
-each atom.  This value can be read from any 
-floating point column of the PDB file.  
-A value of $0$ indicates that the atom will remain unaffected.}
-
-\end{itemize}
-
-\subsubsection{Temperature rescaling parameters}
-
-\NAMD\ allows equilibration of a system by means of temperature 
-rescaling.  Using this method, all of the velocities in the system 
-are periodically rescaled so that the entire system is set to the 
-desired temperature.  The following parameters specify how often 
-and to what temperature this rescaling is performed.  
-
-\begin{itemize}
-
-\item
-\NAMDCONF{rescaleFreq}{number of timesteps between temperature rescaling}{positive integer}
-{The equilibration feature of \NAMD\ is activated by 
-specifying the number of timesteps between each temperature rescaling.  
-If this value is given, then the \verb!rescaleTemp! parameter must also 
-be given to specify the target temperature. }
-
-\item
-\NAMDCONF{rescaleTemp}{temperature for equilibration (K)}{positive decimal}
-{The temperature to which all velocities will be rescaled
-every \verb!rescaleFreq! timesteps.  
-This parameter is valid only if \verb!rescaleFreq! has been set.}
-
-\end{itemize}
-
-\subsubsection{Spherical harmonic boundary conditions}
-
-\NAMD\ provides spherical harmonic boundary conditions.  These 
-boundary conditions can consist of a single potential or a 
-combination of two potentials as described in the \PG.  
-The following parameters are used to define these boundary conditions.  
-
-\begin{itemize}
-
-\item
-\NAMDCONFWDEF{sphericalBC}{use spherical boundary conditions?}{\verb!on! or \verb!off!}{\verb!off!}
-{Specifies whether or not spherical boundary conditions 
-are to be applied to the system.  If 
-set to \verb!on!, then \verb!sphericalBCr1! and \verb!sphericalBCk1! 
-must be defined, and \verb!sphericalBCexp1!, \verb!sphericalBCr2!, 
-\verb!sphericalBCk2!, and \verb!sphericalBCexp2! can optionally be 
-defined.}
-
-\item
-\NAMDCONF{sphericalBCr1}{radius for first boundary condition (\AA)}{positive decimal}
-{Distance at which the first potential of the boundary conditions takes
-effect.  This distance is a radius from the center of mass.}
-
-\item
-\NAMDCONF{sphericalBCk1}{force constant for first potential}{non-zero decimal}
-{Force constant for the first harmonic potential.  A positive
-value will push atoms toward the center of mass, and a negative
-value will pull atoms away from the center of mass.}
-
-\item
-\NAMDCONFWDEF{sphericalBCexp1}{exponent for first potential}{positive, even integer}{2}
-{Exponent for first boundary potential.  The only likely values to
-use are 2 and 4.}
-
-\item
-\NAMDCONF{sphericalBCr2}{radius for second boundary condition (\AA)}{positive decimal}
-{Distance at which the second potential of the boundary conditions takes
-effect.  This distance is a radius from the center of mass.
-If this parameter is defined, then \verb!spericalBCk2! must also
-be defined.}
-
-\item
-\NAMDCONF{sphericalBCk2}{force constant for second potential}{non-zero decimal}
-{Force constant for the second harmonic potential.  A positive
-value will push atoms toward the center of mass, and a negative
-value will pull atoms away from the center of mass.}
-
-\item
-\NAMDCONFWDEF{sphericalBCexp2}{exponent for second potential}{positive, even integer}{2}
-{Exponent for second boundary potential.  The only likely values to
-use are 2 and 4.}
-
-\end{itemize}
-
-\subsubsection{Cylindrical harmonic boundary conditions}
-
-\NAMD\ provides cylindrical harmonic boundary conditions.  These 
-boundary conditions can consist of a single potential or a 
-combination of two potentials as described in the \PG.  
-The following parameters are used to define these boundary conditions.  
-
-\begin{itemize}
-
-\item
-\NAMDCONFWDEF{cylindricalBC}{use cylindrical boundary conditions?}{\verb!on! or \verb!off!}{\verb!off!}
-{Specifies whether or not cylindrical boundary conditions 
-are to be applied to the system.  If 
-set to \verb!on!, then \verb!cylindricalBCr1!, \verb!cylindricalBCl1! and \verb!cylindricalBCk1! 
-must be defined, and \verb!cylindricalBCAxis!, \verb!cylindricalBCCenter!, \verb!cylindricalBCexp1!, \verb!cylindricalBCr2!, \verb!cylindricalBCl2!,
-\verb!cylindricalBCk2!, and \verb!cylindricalBCexp2! can optionally be 
-defined.}
-
-\item
-\NAMDCONF{cylindricalBCCenter}{center of  cylinder (\AA)}{position}
-{Location around which cylinder is centered.  If not specified, center of mass is used.}
-
-\item
-\NAMDCONF{cylindricalBCAxis}{axis of  cylinder (\AA)}{\verb!x!, \verb!y!, or \verb!z!}
-{Axis along which cylinder is aligned.}
-
-\item
-\NAMDCONF{cylindricalBCr1}{radius for first boundary condition (\AA)}{positive decimal}
-{Distance at which the first potential of the boundary conditions takes
-effect along the non-axis plane of the cylinder.}
-
-\item
-\NAMDCONF{cylindricalBCl1}{distance along cylinder axis for first boundary condition (\AA)}{positive decimal}
-{Distance at which the first potential of the boundary conditions takes
-effect along the cylinder axis.}
-
-\item
-\NAMDCONF{cylindricalBCk1}{force constant for first potential}{non-zero decimal}
-{Force constant for the first harmonic potential.  A positive
-value will push atoms toward the center, and a negative
-value will pull atoms away from the center.}
-
-\item
-\NAMDCONFWDEF{cylindricalBCexp1}{exponent for first potential}{positive, even integer}{2}
-{Exponent for first boundary potential.  The only likely values to
-use are 2 and 4.}
-
-\item
-\NAMDCONF{cylindricalBCr2}{radius for second boundary condition (\AA)}{positive decimal}
-{Distance at which the second potential of the boundary conditions takes
-effect along the non-axis plane of the cylinder.
-If this parameter is defined, then \verb!cylindricalBCl2! and \verb!spericalBCk2! must also
-be defined.}
-
-\item
-\NAMDCONF{cylindricalBCl2}{radius for second boundary condition (\AA)}{positive decimal}
-{Distance at which the second potential of the boundary conditions takes
-effect along the cylinder axis.
-If this parameter is defined, then \verb!cylindricalBCr2! and \verb!spericalBCk2! must also
-be defined.}
-
-\item
-\NAMDCONF{cylindricalBCk2}{force constant for second potential}{non-zero decimal}
-{Force constant for the second harmonic potential.  A positive
-value will push atoms toward the center, and a negative
-value will pull atoms away from the center.}
-
-\item
-\NAMDCONFWDEF{cylindricalBCexp2}{exponent for second potential}{positive, even integer}{2}
-{Exponent for second boundary potential.  The only likely values to
-use are 2 and 4.}
-
-\end{itemize}
-
-%\paragraph{Applied electric field}
-%
-%\NAMD\ provides the ability to apply a constant electric field to the molecular
-%system being simulated.  There are two parameters that control this feature.
-%
-%\begin{itemize}
-%
-%\item
-%\NAMDCONFWDEF{eFieldOn}{apply electric field?}{\verb!yes! or %\verb!no!}{\verb!no!}
-%{Specifies whether or not an electric field is applied.}
-%
-%\item
-%\NAMDCONF{eField}{electric field vector}{vector of decimals}
-%{Vector which describes the electric field to be applied.}
-%
-%\end{itemize}
-
-\subsubsection{Periodic boundary conditions}
-
-\NAMD\ provides periodic boundary conditions in 1, 2 or 3 dimensions.
-The basis vectors of the periodic cell must be along the x, y, and z axes.  
-The following parameters are used to define these boundary conditions.  
-
-\begin{itemize}
-
-\item
-\NAMDCONFWDEF{cellBasisVector1}{basis vector for periodic boundaries (\AA)}{vector along x axis}{0 0 0}
-{Specifies whether or not periodic boundary conditions 
-are to be applied to the system in the x direction.}
-
-\item
-\NAMDCONFWDEF{cellBasisVector2}{basis vector for periodic boundaries (\AA)}{vector along y axis}{0 0 0}
-{Specifies whether or not periodic boundary conditions 
-are to be applied to the system in the y direction.}
-
-\item
-\NAMDCONFWDEF{cellBasisVector3}{basis vector for periodic boundaries (\AA)}{vector along z axis}{0 0 0}
-{Specifies whether or not periodic boundary conditions 
-are to be applied to the system in the z direction.}
-
-\item
-\NAMDCONFWDEF{cellOrigin}{center of periodic cell (\AA)}{0 0 0}
-{When position rescaling is used to control pressure, this location will remain constant.  Also used as the center of the cell for output coordinates.}
-
-\end{itemize}
-
-\subsubsection{Berendsen pressure bath coupling}
-
-\NAMD\ provides constant pressure simulation using Berendsen's method.  
-The following parameters are used to define the algorithm.  
-
-\begin{itemize}
-
-\item
-\NAMDCONFWDEF{BerendsenPressure}{use Berendsen pressure bath coupling?}{\verb!on! or \verb!off!}{\verb!off!}
-{Specifies whether or not Berendsen pressure bath coupling is active.  
-If set to \verb!on!, then the parameters \verb!BerendsenPressureTarget!, \verb!BerendsenPressureCompressibility! and \verb!BerendsenPressureRelaxationTime! must be set 
-and the parameter \verb!BerendsenPressureFreq! can
-optionally be set to control the behavior of this feature.} 
-
-\item
-\NAMDCONF{BerendsenPressureTarget}{target pressure (bar)}{positive decimal}
-{Specifies target pressure for Berendsen's method.}
-
-\item
-\NAMDCONF{BerendsenPressureCompressibility}{compressibility (bar$^{-1}$)}{positive decimal}
-{Specifies compressibility for Berendsen's method.}
-
-\item
-\NAMDCONF{BerendsenPressureRelaxationTime}{relaxation time (fs)}{positive decimal}
-{Specifies relaxation time for Berendsen's method.}
-
-\item
-\NAMDCONFWDEF{BerendsenPressureFreq}{how often to rescale positions}{positive integer}{1}
-{Specifies number of timesteps between position rescalings for Berendsen's method.}
-
-\end{itemize}
-
-
 \subsubsection{\NAMD\ Tcl interface}
 
 \NAMD\ provides a limited Tcl scripting interface designed for applying forces and performing on-the-fly analysis.
@@ -906,4 +994,7 @@ For example, ``\verb!addforce $groupid { 1. 0. 2. }!''.
 
 Several vector routines from the VMD Tcl interface are also defined.
 
+\subsubsection{Free energy of conformational change parameters}
+
+\NAMD\ provides for the calculation of free energy differences between conformational substates of a molecule.
 

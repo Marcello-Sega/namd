@@ -26,15 +26,16 @@ potential with this switching function is shown in Figure
 van der Waals energy is just abruptly truncated at the cutoff 
 distance, so that energy may not be conserved.  
 
-\displayepsf[htb] (figures/switching.eps) {
+\begin{figure}[htb]
+  \center{\psfig{file=figures/switching.eps}}
   \caption[Graph of van der Waals potential with and without switching]
-  {{\small Graph of van der Waals potential with and without the
+  {\small Graph of van der Waals potential with and without the
   application of the switching function.  With the switching function
   active, the potential is smoothly reduced to 0 at the cutoff distance.
   Without the switching function, there is a discontinuity where the
-  potential is truncated.}}
+  potential is truncated.}
   \label{fig:switching}
-}
+\end{figure}
 
 The details of the switching function are given in the \PG.
 The switching function used is based on the X-PLOR switching
@@ -64,12 +65,13 @@ intersects the x-axis at the cutoff distance.  This shifting function
 is fully described in the \PG\ and is based on the
 shifting function used by X-PLOR.
 
-\displayepsf[htb] (figures/shifting.eps) {
+\begin{figure}[htb]
+  \center{\psfig{file=figures/shifting.eps}}
   \caption[Graph of electrostatic potential with and without shifting function]
-  {{\small Graph showing an electrostatic potential with and without the
-  application of the shifting function.}}
+  {\small Graph showing an electrostatic potential with and without the
+  application of the shifting function.}
   \label{fig:shifting}
-}
+\end{figure}
 
 Next, consider the case where full electrostatics are calculated.  In this
 case, the electrostatic interactions are not truncated at any distance.  In
@@ -81,14 +83,15 @@ interactions will be calculated only periodically using DPMTA.  These forces
 will be applied using a multiple timestep integration scheme as described in
 Section \ref{section:fmadesc}.
 
-\displayepsf[htb] (figures/fmaOn.eps) {
+\begin{figure}[htb]
+  \center{\psfig{file=figures/fmaOn.eps}}
   \caption[Graph of electrostatic split between short and long range forces]
-  {{\small Graph showing an electrostatic potential 
+  {\small Graph showing an electrostatic potential 
   when full electrostatics are used within \NAMD, 
   with one curve portion calculated directly 
-  and the other calculated using DPMTA.}}
+  and the other calculated using DPMTA.}
   \label{fig:fmaOn}
-}
+\end{figure}
 
 \subsubsection{Nonbonded interaction distance-testing}
 The last critical parameter for non-bonded
@@ -140,7 +143,8 @@ such that no atom pair moves more than
 $\mbox{\verb!pairlistdist!}-\mbox{\verb!cutoff!}$ 
 in one cycle.  This will insure energy conservation.
 
-\displayepsf[htb] (figures/pairlistdist.eps) {
+\begin{figure}[htb]
+  \center{\psfig{file=figures/pairlistdist.eps}}
   \caption[Example of cutoff and pairlist distance uses]
   {{\small Depiction of the difference between the cutoff distance and the
   pair list distance.  The pair list distance specifies a sphere that is
@@ -148,7 +152,7 @@ in one cycle.  This will insure energy conservation.
   move in and out of the cutoff distance without causing energy conservation
   to be disturbed.}}
   \label{fig:pairlistdist}
-}
+\end{figure}
 
 NAMD 2.X eliminated the explicit use of pairlists in order to reduce memory usage in light of equally efficient distance-testing algorithms.
 Specifically, it was realized that building a pairlist on top of the existing spatial decomposition was only marginally more efficient than actually testing atom distances at every timestep given efficient methods for dealing with nonbonded exclusions.
@@ -156,7 +160,8 @@ The \verb!pairlistdist! parameter now serves the same function, but is instead u
 Unless the \verb!splitPatch! parameter is explicitly set to \verb!position!, hydrogen atoms will be placed on the same patch as the ``mother atom'' to which they are bonded.
 These {\em hydrogen groups} are then distance tested against each other using only a cutoff increased by the the value of the \verb!hgroupCutoff! parameter.
 The size of the patches is also increased by this amount.
-Warning messages are printed if a hydrogen atom and its mother atom are separated by more than half of \verb!hgroupCutoff! or if an atom moves outside of a safe zone surrounding the patch to which it is assigned.
+\NAMD\ functions correctly even if a hydrogen atom and its mother atom are separated by more than half of \verb!hgroupCutoff! by breaking that group into its individual atoms for distance testing.
+Warning messages are printed if an atom moves outside of a safe zone surrounding the patch to which it is assigned, indicating that \verb!pairlistdist! should be increased in order for forces to be calculated correctly and energy to be conserved.
 
 \subsection{Full electrostatic integration}
 \label{section:fmadesc}
@@ -532,7 +537,7 @@ convergence is usually reached after fewer than 10 iterations.
 
 \subsubsection{DPMTA parameters}
 
-These parameters control the options to DPMTA, the algorithm
+These parameters control the options to DPMTA, an algorithm
 used to provide full electrostatic interactions.  DPMTA is a
 modified version of the FMA (Fast Multipole Algorithm) and, 
 unfortunately, most of the parameters still refer to FMA
@@ -607,18 +612,65 @@ This parameter is only used if both \verb!FMA! and \verb!FMAFFT!
 are set to \verb!on!.  The default value of 4 should be suitable
 for most applications.}
 
+\end{itemize}
+
+\subsubsection{DPME parameters}
+
+DPME stands for Distributed Particle Mesh Ewald and is an efficient
+full electrostatics method for use with periodic boundary conditions.
+None of the parameters should affect energy conservation, although they may affect the accuracy of the results and momentum conservation.
+
+\begin{itemize}
+
 \item
-\NAMDCONFWDEF{FullDirect}{calculate full electrostatics directly?}{\verb!yes! or \verb!no!}{\verb!no!}
-{Specifies whether or not direct computation of 
-full electrostatics should be performed.  
+\NAMDCONFWDEF{PME}{Use particle mesh Ewald for electrostatics?}{\verb!yes! or \verb!no!}{\verb!no!}
+{Turns on DPME.}
+
+\item
+\NAMDCONFWDEF{PMETolerance}{PME direct space tolerance}{positive decimal}{$10^{-6}$}
+{Affects the value of the Ewald coefficient and the overall accuracy of the results.}
+
+\item
+\NAMDCONFWDEF{PMEInterpOrder}{PME interpolation order}{positive integer}{4 (cubic)}
+{Charges are interpolated onto the grid and forces are interpolated off using this many points, equal to the order of the interpolation function plus one.}
+
+\item
+\NAMDCONF{PMEGridSizeX}{PME grid in x dimension}{positive integer}
+{The grid size partially determines the accuracy and efficiency of DPME.
+For speed, \verb!PMEGridSizeX! should have only small integer factors (2, 3 and 5).}
+
+\item
+\NAMDCONF{PMEGridSizeY}{PME grid in y dimension}{positive integer}
+{The grid size partially determines the accuracy and efficiency of DPME.
+For speed, \verb!PMEGridSizeY! should have only small integer factors (2, 3 and 5).}
+
+\item
+\NAMDCONF{PMEGridSizeZ}{PME grid in z dimension}{positive integer}
+{The grid size partially determines the accuracy and efficiency of DPME.
+For speed, \verb!PMEGridSizeZ! should have only small integer factors (2, 3 and 5).}
+
+\end{itemize}
+
+\subsubsection{Full direct parameters}
+
 The direct computation of electrostatics 
 is not intended to be used during 
 real calculations, but rather as a testing or 
 comparison measure.  Because of the ${\mathcal O}(N^2)$ 
 computational complexity for performing 
 direct calculations, this is {\it much} 
-slower than using FMA to compute full 
-electrostatics.}
+slower than using DPMTA or DPME to compute full 
+electrostatics for large systems.
+In the case of periodic boundary conditions,
+the nearest image convention is used rather than a
+full Ewald sum.
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{FullDirect}{calculate full electrostatics directly?}{\verb!yes! or \verb!no!}{\verb!no!}
+{Specifies whether or not direct computation of 
+full electrostatics should be performed.}
 
 \end{itemize}
 
