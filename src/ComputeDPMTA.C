@@ -32,41 +32,41 @@
 
 extern Communicate *comm;
 
-void ComputeDPMTA::get_FMA_cube()
+void ComputeDPMTA::get_FMA_cube(int usePBC)
 {
   Vector boxSize;	// used to see if things change
   PatchMap *patchMap = PatchMap::Object();
 
-#ifdef NO_PBC
+  if (usePBC == FALSE)
+  {
+    //  From these extremes, figure out how many patches we will
+    //  have to have in each direction
+    //  And add the skirt of empty patches by adding 2 patches
+    //  in every direction
+    SimParameters *simParams = Node::Object()->simParameters;
+    int dim_x = patchMap->xDimension() + 2;
+    int dim_y = patchMap->yDimension() + 2;
+    int dim_z = patchMap->zDimension() + 2;
 
-  //  From these extremes, figure out how many patches we will
-  //  have to have in each direction
-  //  And add the skirt of empty patches by adding 2 patches
-  //  in every direction
-  SimParameters *simParams = Node::Object()->simParameters;
-  int dim_x = patchMap->xDimension() + 2;
-  int dim_y = patchMap->yDimension() + 2;
-  int dim_z = patchMap->zDimension() + 2;
+    boxSize.x = dim_x*simParams->patchDimension;
+    boxSize.y = dim_y*simParams->patchDimension;
+    boxSize.z = dim_z*simParams->patchDimension;
+  }
+  else
+  {
+    DebugM(1,"getting patch info for FMA box\n");
 
-  boxSize->x = dim_x*simParams->patchDimension;
-  boxSize->y = dim_y*simParams->patchDimension;
-  boxSize->z = dim_z*simParams->patchDimension;
-
-#else
-
-  DebugM(1,"getting patch info for FMA box\n");
-
-  // determine boxSize from the PBC lattice
-  // lattice is the same on all patches, so choose first patch
-  ResizeArrayIter<PatchElem> ap(patchList);
-  DebugM(1,"getting first patch info for FMA box\n");
-  ap = ap.begin();
-  Lattice lattice = (*ap).p->lattice;
-  DebugM(1,"getting patch dimension for FMA box\n");
-  boxSize = lattice.dimension();
-  DebugM(1,"boxSize is " << boxSize << "\n");
-
-#endif
+    // determine boxSize from the PBC lattice
+    // lattice is the same on all patches, so choose first patch
+    ResizeArrayIter<PatchElem> ap(patchList);
+    DebugM(1,"getting first patch info for FMA box\n");
+    ap = ap.begin();
+    DebugM(1,"getting lattice from patch for FMA box\n");
+    Lattice lattice = (*ap).p->lattice;
+    DebugM(1,"getting patch dimension for FMA box\n");
+    boxSize = lattice.dimension();
+    DebugM(1,"boxSize is " << boxSize << "\n");
+  }
 
   // don't bother checking if the center has moved since it depends on the size.
   if (boxsize != boxSize)
@@ -147,7 +147,7 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
 
   //  Get the size of the FMA cube
   DebugM(1,"DPMTA getting FMA cube\n");
-  get_FMA_cube();
+  get_FMA_cube(FALSE);	// PBC lattice not yet defined
   DebugM(1,"DPMTA got FMA cube\n");
 
   // reduce function calling time
@@ -246,7 +246,7 @@ void ComputeDPMTA::doWork()
   for (totalAtoms=0, ap = ap.begin(); ap != ap.end(); ap++)
      totalAtoms += (*ap).p->getNumAtoms();
   // check if box has changes for PBC
-  get_FMA_cube();
+  get_FMA_cube(TRUE);	// PBC lattice should be defined
 
   // 2. setup atom list
   int i,j;
