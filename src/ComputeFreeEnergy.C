@@ -24,10 +24,12 @@
 #include "Debug.h"
 
 
-void ComputeFreeEnergy::user_initialize(const char *filename)
+void ComputeFreeEnergy::user_initialize()
 {
-  iout << iDEBUG << "Initializing free energy from " <<
-					filename << "\n" << endi; 
+  iout << iDEBUG << "Initializing free energy.\n"; 
+  iout << iDEBUG << "***********************************\n"; 
+  iout << config.str(); 
+  iout << iDEBUG << "***********************************\n" << endi; 
 }
 
 
@@ -78,6 +80,7 @@ int ComputeFreeEnergy::addForce(int atomid, Force force)
 ComputeFreeEnergy::ComputeFreeEnergy(ComputeGlobal *h) : ComputeGlobalMaster(h) {
   DebugM(3,"Constructing ComputeFreeEnergy\n");
   molecule = Node::Object()->molecule;
+  simParams = Node::Object()->simParameters;
   configMsg = 0;  resultsMsg = 0;
 }
 
@@ -92,10 +95,15 @@ void ComputeFreeEnergy::initialize() {
   configMsg = new (MsgIndex(ComputeGlobalConfigMsg)) ComputeGlobalConfigMsg;
 
   // Get the path for our script
-  char *filename = Node::Object()->configList->find("freeEnergyConfig")->data;
+  StringList *script = Node::Object()->configList->find("freeEnergyConfig");
+
+  for ( ; script; script = script->next) {
+    config << script->data << "\n";
+  }
+  config.flush();
 
   iout << iDEBUG << "Free energy perturbation - initialize()\n" << endi; 
-  user_initialize(filename);
+  user_initialize();
 
   // Send config to clients
   host->comm->sendComputeGlobalConfig(configMsg);
@@ -127,12 +135,15 @@ void ComputeFreeEnergy::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1998/02/11 17:49:03 $
+ *	$Revision: 1.4 $	$Date: 1998/02/13 22:02:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFreeEnergy.C,v $
+ * Revision 1.4  1998/02/13 22:02:39  jim
+ * Added script reading from config file and used streams in free energy.
+ *
  * Revision 1.3  1998/02/11 17:49:03  jim
  * Added filename parameter to user_initialize().
  *

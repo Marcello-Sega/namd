@@ -231,17 +231,26 @@ void ComputeTcl::initialize() {
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 */
 
-  // Get the path for our script
-  char *filename = Node::Object()->configList->find("tclForcesScript")->data;
-
   // Call interpreter to determine requested atoms
   Tcl_CreateCommand(interp, "addatom", Tcl_addatom,
     (ClientData) &(msg->aid), (Tcl_CmdDeleteProc *) NULL);
 
-  int code;
-  code = Tcl_EvalFile(interp,filename);
+  // Get the script
+  StringList *script = Node::Object()->configList->find("tclForcesScript");
+
+  Tcl_DString cmd;
+  Tcl_DStringInit(&cmd);
+
+  for ( ; script; script = script->next) {
+    Tcl_DStringAppend(&cmd,script->data,-1);
+    Tcl_DStringAppend(&cmd,"\n",-1);
+  }
+
+  int code = Tcl_Eval(interp,cmd.string);
   if (*interp->result != 0) CPrintf("TCL: %s\n",interp->result);
   if (code != TCL_OK) NAMD_die("TCL error in global force initialization!");
+
+  Tcl_DStringFree(&cmd);
 
   Tcl_DeleteCommand(interp, "addatom");
 #endif
@@ -297,12 +306,15 @@ void ComputeTcl::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1998/02/11 09:13:25 $
+ *	$Revision: 1.4 $	$Date: 1998/02/13 22:02:40 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeTcl.C,v $
+ * Revision 1.4  1998/02/13 22:02:40  jim
+ * Added script reading from config file and used streams in free energy.
+ *
  * Revision 1.3  1998/02/11 09:13:25  jim
  * Added atomid command to tclForces.  Finds id from segname, resid, atomname.
  *

@@ -13,6 +13,7 @@
 
 #include "ComputeGlobalMaster.h"
 #include "NamdTypes.h"
+#include "iostream.h"
 
 class ComputeGlobalConfigMsg;
 class ComputeGlobalDataMsg;
@@ -20,6 +21,7 @@ class ComputeGlobalResultsMsg;
 class ComputeGlobalMaster;
 class ComputeMgr;
 class Molecule;
+class SimParameters;
 
 class ComputeFreeEnergy : public ComputeGlobalMaster {
 private:
@@ -28,11 +30,13 @@ private:
   ~ComputeFreeEnergy();
   virtual void initialize();
   virtual void calculate();
-  virtual void user_initialize(const char *filename);
+  virtual void user_initialize();
   virtual void user_calculate();
   ComputeGlobalConfigMsg *configMsg;
   ComputeGlobalResultsMsg *resultsMsg;
   Molecule *molecule;
+  SimParameters *simParams;
+  strstream config;
 protected:
   // These all return -1 on error.
   int getAtomID(const char *segid, int resid, const char *aname);
@@ -47,12 +51,15 @@ protected:
  *
  *	$RCSfile: ComputeFreeEnergy.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1998/02/11 17:49:03 $
+ *	$Revision: 1.4 $	$Date: 1998/02/13 22:02:40 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFreeEnergy.h,v $
+ * Revision 1.4  1998/02/13 22:02:40  jim
+ * Added script reading from config file and used streams in free energy.
+ *
  * Revision 1.3  1998/02/11 17:49:03  jim
  * Added filename parameter to user_initialize().
  *

@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1032 $  $Date: 1998/02/10 05:35:06 $
+ *  $Revision: 1.1033 $  $Date: 1998/02/13 22:02:42 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1033  1998/02/13 22:02:42  jim
+ * Added script reading from config file and used streams in free energy.
+ *
  * Revision 1.1032  1998/02/10 05:35:06  jim
  * Split ComputeGlobal into different classes and files.
  * Switched globalForces and globalForcesTcl to tclForces and tclForcesScript.
@@ -429,7 +432,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1032 1998/02/10 05:35:06 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1033 1998/02/13 22:02:42 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -914,13 +917,13 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.optionalB("main", "tclForces", "Are Tcl global forces active?",
      &tclForcesOn, FALSE);
    opts.require("tclForces", "tclForcesScript",
-     "Tcl script for global forces", PARSE_STRING);
+     "Tcl script for global forces", PARSE_MULTIPLES);
 
    ////  Free Energy Perturbation
    opts.optionalB("main", "freeEnergy", "Perform free energy perturbation?",
      &freeEnergyOn, FALSE);
    opts.require("freeEnergy", "freeEnergyConfig",
-     "Configuration file for free energy perturbation", PARSE_STRING);
+     "Configuration file for free energy perturbation", PARSE_MULTIPLES);
 
    //// Spherical Boundary Conditions
    opts.optionalB("main", "sphericalBC", "Are spherical boundary counditions "
@@ -2862,12 +2865,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1032 $  $Date: 1998/02/10 05:35:06 $
+ *  $Revision: 1.1033 $  $Date: 1998/02/13 22:02:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1033  1998/02/13 22:02:42  jim
+ * Added script reading from config file and used streams in free energy.
+ *
  * Revision 1.1032  1998/02/10 05:35:06  jim
  * Split ComputeGlobal into different classes and files.
  * Switched globalForces and globalForcesTcl to tclForces and tclForcesScript.

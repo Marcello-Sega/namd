@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: ConfigList.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/12/10 17:53:34 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1006 $	$Date: 1998/02/13 22:02:41 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -41,6 +41,9 @@
  * REVISION HISTORY:
  *
  * $Log: ConfigList.C,v $
+ * Revision 1.1006  1998/02/13 22:02:41  jim
+ * Added script reading from config file and used streams in free energy.
+ *
  * Revision 1.1005  1997/12/10 17:53:34  milind
  * Removed the dcd file already exists error. Now, if a dcd file already exists,
  * it is moved to a .bak before writing new dcd file.
@@ -122,7 +125,7 @@
  * Initial revision
  *
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ConfigList.C,v 1.1005 1997/12/10 17:53:34 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ConfigList.C,v 1.1006 1998/02/13 22:02:41 jim Exp $";
 
 #include <iostream.h>
 #include <string.h> // for strncpy, strcasecmp
@@ -294,21 +297,27 @@ ConfigList::ConfigList(const char *filename)
    if (datastart[0] == '{') {
      char newdata[1000];
      int found_end = 0;
+     int open_brace_count = 1;
      while (fgets(newdata, 999, infile)) {
        linenumber ++;
        int i;
        for (i=0; i<1000; i++) {
-	 if (newdata[i] == '}') {
-	   found_end = 1;
+	 if (! newdata[i]) {
 	   break;
+         }
+	 if (newdata[i] == '{' && ( ! i || newdata[i-1] != '\\' ) ) {
+	   ++open_brace_count;
 	 }
-	 if (!isspace(newdata[i])) {
-	   break;
+	 if (newdata[i] == '}' && ( ! i || newdata[i-1] != '\\' ) ) {
+	   if ( found_end = ! --open_brace_count ) {
+	     newdata[i] = '\n';
+	     newdata[i+1] = 0;
+	     break;
+	   }
 	 }
        }
-       if (found_end) break;
-       // the "-1" is to get rid of the ending "\n"
        add_element(namestart, nameend-namestart+1, newdata, strlen(newdata)-1);
+       if (found_end) break;
      }
      if (!found_end) {
        *(nameend+1) = 0;
@@ -390,12 +399,15 @@ main()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/12/10 17:53:34 $
+ *	$Revision: 1.1006 $	$Date: 1998/02/13 22:02:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ConfigList.C,v $
+ * Revision 1.1006  1998/02/13 22:02:41  jim
+ * Added script reading from config file and used streams in free energy.
+ *
  * Revision 1.1005  1997/12/10 17:53:34  milind
  * Removed the dcd file already exists error. Now, if a dcd file already exists,
  * it is moved to a .bak before writing new dcd file.
