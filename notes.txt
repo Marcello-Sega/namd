@@ -461,7 +461,8 @@ Edit arch/BASEARCH.fftw, arch/BASEARCH.plugins, and arch/BASEARCH.tcl
 to point to the libraries you downloaded.  View arch/ARCH.arch and
 look for a line like "CHARMARCH = net-linux-clustermatic-tcp-icc" to
 find out what Charm++ platform you need to build.  The CHARMARCH name
-is of the format comm-OS-cpu-options-compiler.
+is of the format comm-OS-cpu-options-compiler.  It is very important
+that Charm++ and NAMD be built with the same C++ compiler.
 
 Enter the charm directory and run the build script without options
 to see a list of available platforms.  Only the comm-OS-cpu part will
@@ -475,10 +476,16 @@ For this specific example:
 
   ./build charm++ net-linux clustermatic tcp icc -O -DCMK_OPTIMIZE=1
 
-The README distributed with Charm contains a complete explanation.
+The README distributed with Charm++ contains a complete explanation.
 You only actually need the bin, include, and lib subdirectories, so
 you can copy those elsewhere and delete the whole charm directory,
 but don't forget to edit Make.charm if you do this.
+
+If you're building an MPI version you will probably need to edit
+compiler flags or commands in the Charm++ src/arch directory.  The
+file charm/src/arch/mpi-linux/conv-mach.sh contains the definitions
+that select the mpiCC compiler for mpi-linux, while other compiler
+choices are defined by files in charm/src/arch/common/.
 
 Now you can run the NAMD config script to set up a build directory:
 
