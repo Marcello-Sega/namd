@@ -94,7 +94,16 @@ void GlobalMasterFreeEnergy::user_initialize() {
 
   iout << iINFO << "  FREE ENERGY PERTURBATION CONFIG\n"; 
   iout << iINFO << "***********************************\n"; 
-  iout << config;
+  int config_len = strlen(config);
+  if ( config_len < 10000 ) {
+    iout << config;
+  } else {
+    char *new_config = new char[10000 + 10];
+    strncpy(new_config,config,10000);
+    strcat(new_config,"\n...\n");
+    iout << new_config;
+    delete [] new_config;
+  }
   iout << iINFO << "***********************************\n" << endi; 
 
   ReadInput(config, m_RestraintManager, m_LambdaManager, *this, simParams->dt);
