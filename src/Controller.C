@@ -39,7 +39,11 @@ Controller::Controller(NamdState *s) :
 	state(s),
 	simParams(Node::Object()->simParameters),
 	reduction(ReductionMgr::Object()),
-	collection(CollectionMaster::Object())
+	collection(CollectionMaster::Object()),
+        startWTime(0),
+        startCTime(0),
+        startBenchTime(0)
+
 {
     broadcast = new ControllerBroadcasts;
 
@@ -418,12 +422,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1036 $	$Date: 1998/07/06 19:16:59 $
+ *	$Revision: 1.1037 $	$Date: 1998/07/08 20:17:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1037  1998/07/08 20:17:21  brunner
+ * Initialized timers
+ *
  * Revision 1.1036  1998/07/06 19:16:59  brunner
  * Changed path info in Makearch.T3E, changed patch partition equation,
  * and added timing prints to Controller
