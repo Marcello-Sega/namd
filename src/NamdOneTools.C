@@ -364,17 +364,131 @@ void remove_com_motion(Vector *vel, Molecule *structure, int n)
 /*			END OF FUNCTION remove_com_motion		*/
 
 
+/* 
+ * Generate a 3x3 transformation matrix for rotation about a given
+ * vector v by an angle given in degrees
+ */
+void vec_rotation_matrix( BigReal angle, Vector v, BigReal m[] ) {
+   /* This function contributed by Erich Boleyn (erich@uruk.org) */
+   BigReal mag, s, c;
+   BigReal xx, yy, zz, xy, yz, zx, xs, ys, zs, one_c;
+
+   s = sin(angle * PI/180.0);
+   c = cos(angle * PI/180.0);
+
+   mag = v.length();
+
+   if (mag == 0.0) {
+      /* generate an identity matrix and return */
+      bzero(m, sizeof(BigReal)*9);
+      m[0] = m[4] = m[8] = 1.0;
+      return;
+   }
+
+   // normalize the vector 
+   v /= mag;
+
+   /*
+    *     Arbitrary axis rotation matrix.
+    *
+    *  This is composed of 5 matrices, Rz, Ry, T, Ry', Rz', multiplied
+    *  like so:  Rz * Ry * T * Ry' * Rz'.  T is the final rotation
+    *  (which is about the X-axis), and the two composite transforms
+    *  Ry' * Rz' and Rz * Ry are (respectively) the rotations necessary
+    *  from the arbitrary axis to the X-axis then back.  They are
+    *  all elementary rotations.
+    *
+    *  Rz' is a rotation about the Z-axis, to bring the axis vector
+    *  into the x-z plane.  Then Ry' is applied, rotating about the
+    *  Y-axis to bring the axis vector parallel with the X-axis.  The
+    *  rotation about the X-axis is then performed.  Ry and Rz are
+    *  simply the respective inverse transforms to bring the arbitrary
+    *  axis back to it's original orientation.  The first transforms
+    *  Rz' and Ry' are considered inverses, since the data from the
+    *  arbitrary axis gives you info on how to get to it, not how
+    *  to get away from it, and an inverse must be applied.
+    *
+    *  The basic calculation used is to recognize that the arbitrary
+    *  axis vector (x, y, z), since it is of unit length, actually
+    *  represents the sines and cosines of the angles to rotate the
+    *  X-axis to the same orientation, with theta being the angle about
+    *  Z and phi the angle about Y (in the order described above)
+    *  as follows:
+    *
+    *  cos ( theta ) = x / sqrt ( 1 - z^2 )
+    *  sin ( theta ) = y / sqrt ( 1 - z^2 )
+    *
+    *  cos ( phi ) = sqrt ( 1 - z^2 )
+    *  sin ( phi ) = z
+    *
+    *  Note that cos ( phi ) can further be inserted to the above
+    *  formulas:
+    *
+    *  cos ( theta ) = x / cos ( phi )
+    *  sin ( theta ) = y / sin ( phi )
+    *
+    *  ...etc.  Because of those relations and the standard trigonometric
+    *  relations, it is pssible to reduce the transforms down to what
+    *  is used below.  It may be that any primary axis chosen will give the
+    *  same results (modulo a sign convention) using thie method.
+    *
+    *  Particularly nice is to notice that all divisions that might
+    *  have caused trouble when parallel to certain planes or
+    *  axis go away with care paid to reducing the expressions.
+    *  After checking, it does perform correctly under all cases, since
+    *  in all the cases of division where the denominator would have
+    *  been zero, the numerator would have been zero as well, giving
+    *  the expected result.
+    */
+
+   // store matrix in (row, col) form, i.e., m(row,col) = m[row*3+col]
+
+   xx = v.x * v.x;
+   yy = v.y * v.y;
+   zz = v.z * v.z;
+   xy = v.x * v.y;
+   yz = v.y * v.z;
+   zx = v.z * v.x;
+   xs = v.x * s;
+   ys = v.y * s;
+   zs = v.z * s;
+   one_c = 1.0 - c;
+
+   m[0] = (one_c * xx) + c;
+   m[1] = (one_c * xy) - zs;
+   m[2] = (one_c * zx) + ys;
+   
+   m[3] = (one_c * xy) + zs;
+   m[4] = (one_c * yy) + c;
+   m[5] = (one_c * yz) - xs;
+   
+   m[6] = (one_c * zx) - ys;
+   m[7] = (one_c * yz) + xs;
+   m[8] = (one_c * zz) + c;
+}
+
+// multiply vector v by a 3x3 matrix m stored so that m(row,col) = m[row*3+col]
+Vector mat_multiply_vec(const Vector &v, BigReal m[]) {
+      return Vector( m[0]*v.x + m[1]*v.y + m[2]*v.z,
+		     m[3]*v.x + m[4]*v.y + m[5]*v.z,
+		     m[6]*v.x + m[7]*v.y + m[8]*v.z );
+}
+
+
 /***************************************************************************
 * RCS INFORMATION:
 *
 *	$RCSfile: NamdOneTools.C,v $
-*	$Author: brunner $	$Locker:  $		$State: Exp $
-*	$Revision: 1.14 $	$Date: 1998/09/01 23:10:34 $
+*	$Author: sergei $	$Locker:  $		$State: Exp $
+*	$Revision: 1.15 $	$Date: 1998/10/01 00:28:56 $
 *
 ***************************************************************************
 * REVISION HISTORY:
 *
 * $Log: NamdOneTools.C,v $
+* Revision 1.15  1998/10/01 00:28:56  sergei
+* added vec_rotation_matrix (adopted from Mesa code) and mat_multiply_vec
+*
 * Revision 1.14  1998/09/01 23:10:34  brunner
 * Fixed PDB velocity input conversion problem: PDBVELINVFACTOR
 *
@@ -430,4 +544,4 @@ void remove_com_motion(Vector *vel, Molecule *structure, int n)
 *
 ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdOneTools.C,v 1.14 1998/09/01 23:10:34 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdOneTools.C,v 1.15 1998/10/01 00:28:56 sergei Exp $";

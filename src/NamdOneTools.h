@@ -26,18 +26,24 @@ extern void random_velocities(BigReal Temp,
 			Molecule *structure, Vector *v, int totalAtoms);
 extern void remove_com_motion(Vector *vel, Molecule *structure, int n);
 extern void read_binary_coors(char *fname, PDB *pdbobj);
+extern void vec_rotation_matrix(BigReal angle, Vector v, BigReal m[]);
+extern Vector mat_multiply_vec(const Vector &v, BigReal m[]);
+
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdOneTools.h,v $
  *	$Author: sergei $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1998/01/05 20:34:09 $
+ *	$Revision: 1.4 $	$Date: 1998/10/01 00:28:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdOneTools.h,v $
+ * Revision 1.4  1998/10/01 00:28:57  sergei
+ * added vec_rotation_matrix (adopted from Mesa code) and mat_multiply_vec
+ *
  * Revision 1.3  1998/01/05 20:34:09  sergei
  * added function BigReal gaussian_random_number(void);
  *
