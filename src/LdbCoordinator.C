@@ -45,7 +45,12 @@ void LdbCoordinator::Migrate(LDObjHandle handle, int dest)
   msg->handle = handle;
   msg->from = CkMyPe();
   msg->to = dest;
+#if CHARM_VERSION > 050402
+  CProxy_LdbCoordinator ldbProxy(thisgroup);
+  ldbProxy[CkMyPe()].RecvMigrate(msg);
+#else
   CProxy_LdbCoordinator(thisgroup).RecvMigrate(msg,CkMyPe());
+#endif
 }
 
 void LdbCoordinator::staticStatsFn(LDOMHandle h, int state)
@@ -77,7 +82,11 @@ void LdbCoordinator::ResumeFromSync()
 {
   theLbdb->DoneRegisteringObjects(myHandle);
   CProxy_LdbCoordinator cl(thisgroup);
+#if CHARM_VERSION > 050402
+  cl[0].nodeDone();
+#else
   cl.nodeDone(0);
+#endif
 }
 
 LdbCoordinator::LdbCoordinator()
@@ -414,8 +423,13 @@ void LdbCoordinator::ExecuteMigrations(void)
 
   CProxy_ComputeMgr cm(CpvAccess(BOCclass_group).computeMgr);
   ComputeMgr *computeMgr = cm.ckLocalBranch();
+#if CHARM_VERSION > 050402
+  computeMgr->updateComputes(CkIndex_LdbCoordinator::
+			     updateComputesReady(),thisgroup);
+#else
   computeMgr->updateComputes(CProxy_LdbCoordinator::
 			     ckIdx_updateComputesReady(),thisgroup);
+#endif
 }
 
 void LdbCoordinator::RecvMigrate(LdbMigrateMsg* m)
@@ -429,7 +443,12 @@ void LdbCoordinator::RecvMigrate(LdbMigrateMsg* m)
   theLbdb->UnregisterObj(objHandles[id]);
   objHandles[id].id.id[0] = -1;
 
+#if CHARM_VERSION > 050402
+  CProxy_LdbCoordinator ldbProxy(thisgroup);
+  ldbProxy[0].ProcessMigrate(m);
+#else
   CProxy_LdbCoordinator(thisgroup).ProcessMigrate(m,0);
+#endif
 }
 
 void LdbCoordinator::ProcessMigrate(LdbMigrateMsg* m)
@@ -445,7 +464,12 @@ void LdbCoordinator::ProcessMigrate(LdbMigrateMsg* m)
   new_migration->next = migrations;
   migrations = new_migration;
 
+#if CHARM_VERSION > 050402
+  CProxy_LdbCoordinator  ldbProxy(thisgroup);
+  ldbProxy[m->to].ExpectMigrate(m);
+#else
   CProxy_LdbCoordinator(thisgroup).ExpectMigrate(m,m->to);
+#endif
 }
 
 void LdbCoordinator::ExpectMigrate(LdbMigrateMsg* m)
@@ -462,7 +486,11 @@ void LdbCoordinator::updateComputesReady() {
   DebugM(3,"updateComputesReady()\n");
 
   CProxy_LdbCoordinator(thisgroup).resume();
+#if CHARM_VERSION > 050402
+  CkStartQD(CkIndex_LdbCoordinator::resumeReady((CkQdMsg*)0),&thishandle);
+#else
   CkStartQD(CProxy_LdbCoordinator::ckIdx_resumeReady((CkQdMsg*)0),&thishandle);
+#endif
 }
 
 void LdbCoordinator::resume(void)
