@@ -32,8 +32,8 @@ public:
     char **argv = msg->argv;
 
     // print banner
-    iout << iINFO << "NAMD 2.1b1\n"
-#if 1
+    iout << iINFO << "NAMD 2.1b2\n"
+#if 0
          << iWARN << "\n"
          << iWARN << "          ***  UNRELEASED EXPERIMENTAL VERSION  ***\n"
          << iWARN << "\n"
