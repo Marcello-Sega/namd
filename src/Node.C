@@ -9,7 +9,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1010 1997/03/20 23:53:45 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1011 1997/03/21 16:36:00 nealk Exp $";
 
 #include <unistd.h>
 #include "ckdefs.h"
@@ -20,7 +20,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "Namd.h"
 
 #define MIN_DEBUG_LEVEL 3
-#define DEBUGM
+// #define DEBUGM
 #include "Debug.h"
 
 #include <stdio.h>
@@ -429,13 +429,18 @@ void Node::saveMolDataPointers(NamdState *state)
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/03/20 23:53:45 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1011 $	$Date: 1997/03/21 16:36:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1011  1997/03/21 16:36:00  nealk
+ * Modified sorting case when both atoms are group members.
+ * Was incorrectly sorting them by their atomID.  Now sorting by GPID.
+ * Also turned off debugging in Node.C.
+ *
  * Revision 1.1010  1997/03/20 23:53:45  ari
  * Some changes for comments. Copyright date additions.
  * Hooks for base level update of Compute objects from ComputeMap

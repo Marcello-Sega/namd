@@ -38,7 +38,10 @@ class HydrogenGroupID {
 	// case 3: only 'a' is a group parent
 	if (a.isGP)	rval = (GPID < a.atomID);
 	// case 4: both are in a group
-	else		rval = (atomID < a.atomID);
+	// case 4.1: both in different groups
+	else if (GPID != a.GPID)	rval = (GPID < a.GPID);
+	// case 4.2: both in same group
+	else rval = (atomID < a.atomID);
 	}
       return(rval);
     }
@@ -58,12 +61,17 @@ typedef UniqueSortedArray<HydrogenGroupID> HydrogenGroup ;
  *
  *      $RCSfile: Hydrogen.h,v $
  *      $Author: nealk $        $Locker:  $             $State: Exp $
- *      $Revision: 1.5 $     $Date: 1997/03/20 16:58:35 $
+ *      $Revision: 1.6 $     $Date: 1997/03/21 16:35:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Hydrogen.h,v $
+ * Revision 1.6  1997/03/21 16:35:59  nealk
+ * Modified sorting case when both atoms are group members.
+ * Was incorrectly sorting them by their atomID.  Now sorting by GPID.
+ * Also turned off debugging in Node.C.
+ *
  * Revision 1.5  1997/03/20 16:58:35  nealk
  * Atoms now sorted by: (1) hydrogen groups, (2) "groups".  The groups are
  * in the order: non-special, OH (special-1), OHH (special-2).
