@@ -38,11 +38,14 @@ static void sendDataFunction(void)
   }
 
   /* Do the CcsSendReply */
+  /*
 #if CMK_USE_PERSISTENT_CCS
   CcsSendReplyFd(appletIP, appletPort, strlen(reply) + 1, reply);
 #else
   CcsSendReply(appletIP, appletPort, strlen(reply) + 1, reply);
 #endif
+*/
+  CcsSendReply(strlen(reply) + 1, reply);
   free(reply);
 
   /* Free applicationValueArray contents */
@@ -105,11 +108,15 @@ extern "C" void CApplicationDepositNode0Data(char *data)
   strcat(reply, data);
   
   /* Do the CcsSendReply */
+  /*
 #if CMK_USE_PERSISTENT_CCS
   CcsSendReplyFd(appletIP, appletPort, strlen(reply) + 1, reply);
 #else
   CcsSendReply(appletIP, appletPort, strlen(reply) + 1, reply);
 #endif
+*/
+  CcsSendReply(strlen(reply) + 1, reply);
+
   free(reply);
 }
 
