@@ -53,41 +53,23 @@ public:
 
   // default constructor
   Random(void) {
-    second_gaussian = 0;
-    second_gaussian_waiting = 0;
-    rand48_seed_0 = RAND48_SEED_0;
+    init(0);
     rand48_seed_1 = RAND48_SEED_1;
     rand48_seed_2 = RAND48_SEED_2;
-    rand48_mult_0 = RAND48_MULT_0;
-    rand48_mult_1 = RAND48_MULT_1;
-    rand48_mult_2 = RAND48_MULT_2;
-    rand48_add_0  = RAND48_ADD_0;
-    rand48_add_1  = RAND48_ADD_1;
-    rand48_add_2  = RAND48_ADD_2;
   }
 
   // constructor with seed
-  Random(long seed) {
-    second_gaussian = 0;
-    second_gaussian_waiting = 0;
-    rand48_seed_0 = RAND48_SEED_0;
-    rand48_seed_1 = (unsigned short) seed;
-    rand48_seed_2 = (unsigned short) (seed >> 16);
-    rand48_mult_0 = RAND48_MULT_0;
-    rand48_mult_1 = RAND48_MULT_1;
-    rand48_mult_2 = RAND48_MULT_2;
-    rand48_add_0  = RAND48_ADD_0;
-    rand48_add_1  = RAND48_ADD_1;
-    rand48_add_2  = RAND48_ADD_2;
+  Random(unsigned long seed) {
+    init(seed);
   }
 
   // reinitialize with seed
-  void init(long seed) {
+  void init(unsigned long seed) {
     second_gaussian = 0;
     second_gaussian_waiting = 0;
     rand48_seed_0 = RAND48_SEED_0;
-    rand48_seed_1 = (unsigned short) seed;
-    rand48_seed_2 = (unsigned short) (seed >> 16);
+    rand48_seed_1 = (unsigned short) (seed & 0xffffu);
+    rand48_seed_2 = (unsigned short) ((seed >> 16) & 0xffffu);
     rand48_mult_0 = RAND48_MULT_0;
     rand48_mult_1 = RAND48_MULT_1;
     rand48_mult_2 = RAND48_MULT_2;
@@ -96,26 +78,56 @@ public:
     rand48_add_2  = RAND48_ADD_2;
   }
 
-  // advance generator by one
+  // advance generator by one (seed = seed * mult + add, to 48 bits)
   void skip(void) {
-    unsigned long accu;
-    unsigned short temp_0;
-    unsigned short temp_1;
+    unsigned long seed_0 = rand48_seed_0;
+    unsigned long seed_1 = rand48_seed_1;
+    unsigned long seed_2 = rand48_seed_2;
+    unsigned long mult_0 = rand48_mult_0;
+    unsigned long mult_1 = rand48_mult_1;
+    unsigned long mult_2 = rand48_mult_2;
+    unsigned long add_0 = rand48_add_0;
+    unsigned long add_1 = rand48_add_1;
+    unsigned long add_2 = rand48_add_2;
+    const unsigned long screen = 0xffffu;
 
-    accu = (unsigned long) rand48_mult_0 * (unsigned long) rand48_seed_0 +
-           (unsigned long) rand48_add_0;
-    temp_0 = (unsigned short) accu;	/* lower 16 bits */
-    accu >>= sizeof(unsigned short) * 8;
-    accu += (unsigned long) rand48_mult_0 * (unsigned long) rand48_seed_1 +
-            (unsigned long) rand48_mult_1 * (unsigned long) rand48_seed_0 +
-            (unsigned long) rand48_add_1;
-    temp_1 = (unsigned short) accu;	/* middle 16 bits */
-    accu >>= sizeof(unsigned short) * 8;
-    accu += rand48_mult_0 * rand48_seed_2 + rand48_mult_1 * rand48_seed_1 +
-            rand48_mult_2 * rand48_seed_0 + rand48_add_2;
-    rand48_seed_0 = temp_0;
-    rand48_seed_1 = temp_1;
-    rand48_seed_2 = (unsigned short) accu;
+    unsigned long accu;
+    unsigned long tmp_0, tmp_1, tmp_2;
+
+    // tmp = mult_0 * seed
+    tmp_0 = (accu = mult_0 * seed_0) & screen;
+    accu >>= 16;  accu &= screen;
+    tmp_1 = (accu += mult_0 * seed_1) & screen;
+    accu >>= 16;  accu &= screen;
+    tmp_2 = (accu += mult_0 * seed_2) & screen;
+
+    // add += tmp
+    add_0 = (accu = add_0 + tmp_0) & screen;
+    accu >>= 16;  accu &= screen;
+    add_1 = (accu += add_1 + tmp_1) & screen;
+    accu >>= 16;  accu &= screen;
+    add_2 = (accu += add_2 + tmp_2) & screen;
+
+    // tmp = 0x10000 * mult_1 * seed
+    tmp_1 = (accu = mult_1 * seed_0) & screen;
+    accu >>= 16;  accu &= screen;
+    tmp_2 = (accu += mult_1 * seed_1) & screen;
+
+    // add += tmp
+    add_1 = (accu = add_1 + tmp_1) & screen;
+    accu >>= 16;  accu &= screen;
+    add_2 = (accu += add_2 + tmp_2) & screen;
+
+    // tmp = 0x100000000 * mult_2 * seed
+    tmp_2 = (mult_2 * seed_0) & screen;
+
+    // add += tmp
+    add_2 = (add_2 + tmp_2) & screen;
+
+    rand48_seed_0 = add_0;
+    rand48_seed_1 = add_1;
+    rand48_seed_2 = add_2;
+
   }
 
   // split into numStreams different steams and take stream iStream
