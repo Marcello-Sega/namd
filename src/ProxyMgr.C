@@ -125,6 +125,7 @@ ProxyMgr::registerProxy(PatchID pid) {
 
 void
 ProxyMgr::recvRegisterProxy(RegisterProxyMsg *msg) {
+  DebugM(1,"For patch " << msg->patch << " registering proxy on node " << msg->node << " with home patch on node " << CMyPe() << endl);
   HomePatch *homePatch = (HomePatch *)PatchMap::Object()->patch(msg->patch);
   homePatch->registerProxy(msg);
   delete msg;
@@ -139,8 +140,8 @@ ProxyMgr::recvResults(ProxyResultMsg *msg) {
 }
 
 void
-ProxyMgr::sendProxyData(ProxyDataMsg *msg) {
-  NodeID node = PatchMap::Object()->node(msg->patch);
+ProxyMgr::sendProxyData(ProxyDataMsg *msg, NodeID node) {
+  DebugM(1,"For patch " << msg->patch << " sending data for proxy on node " << node << " from home patch on node " << CMyPe() << endl);
   CSendMsgBranch(ProxyMgr, recvProxyData, msg, group.proxyMgr, node);
 }
 
@@ -152,8 +153,8 @@ ProxyMgr::recvProxyData(ProxyDataMsg *msg) {
 }
 
 void
-ProxyMgr::sendProxyAtoms(ProxyAtomsMsg *msg) {
-  NodeID node = PatchMap::Object()->node(msg->patch);
+ProxyMgr::sendProxyAtoms(ProxyAtomsMsg *msg, NodeID node) {
+  DebugM(1,"For patch " << msg->patch << " sending atoms for proxy on node " << node << " from home patch on node " << CMyPe() << endl);
   CSendMsgBranch(ProxyMgr, recvProxyAtoms, msg, group.proxyMgr, node);
 }
 
@@ -172,12 +173,15 @@ ProxyMgr::recvProxyAtoms(ProxyAtomsMsg *msg) {
  *
  *	$RCSfile: ProxyMgr.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1996/12/14 00:02:42 $
+ *	$Revision: 1.9 $	$Date: 1996/12/17 08:56:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.9  1996/12/17 08:56:38  jim
+ * added node argument to sendProxyData and sendProxyAtoms
+ *
  * Revision 1.8  1996/12/14 00:02:42  jim
  * debugging ProxyAtomsMsg path to make compute creation work
  *

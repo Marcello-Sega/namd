@@ -40,10 +40,10 @@ public:
   void sendResults(ProxyResultMsg *);
   void recvResults(ProxyResultMsg *);
 
-  void sendProxyData(ProxyDataMsg *);
+  void sendProxyData(ProxyDataMsg *, NodeID);
   void recvProxyData(ProxyDataMsg *);
 
-  void sendProxyAtoms(ProxyAtomsMsg *);
+  void sendProxyAtoms(ProxyAtomsMsg *, NodeID);
   void recvProxyAtoms(ProxyAtomsMsg *);
 
   static ProxyMgr *Object() { return _instance; }
@@ -64,12 +64,15 @@ private:
  *
  *	$RCSfile: ProxyMgr.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/12/14 00:02:42 $
+ *	$Revision: 1.4 $	$Date: 1996/12/17 08:56:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.h,v $
+ * Revision 1.4  1996/12/17 08:56:38  jim
+ * added node argument to sendProxyData and sendProxyAtoms
+ *
  * Revision 1.3  1996/12/14 00:02:42  jim
  * debugging ProxyAtomsMsg path to make compute creation work
  *
