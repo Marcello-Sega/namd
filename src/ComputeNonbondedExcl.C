@@ -12,6 +12,7 @@
  ***************************************************************************/
 
 #include "ComputeNonbondedExcl.h"
+#include "ComputeNonbondedUtil.h"
 #include "Molecule.h"
 #include "Parameters.h"
 #include "Node.h"
