@@ -21,9 +21,9 @@ NORMAL( MODIFIED( foo bar ) )
       register const BigReal p_ij_z = p_i_z - p_j->position.z;
       r2 += p_ij_z * p_ij_z;
 
-      r2f[k] = r2;
-      int table_i = ((*((int32 *)&r2f[k])) >> 17) + r2_delta_expc;
-      if ( r2 < r2_delta ) { table_i = 0; r2f[k] = r2_delta; }
+      r2f[k].f = r2;
+      int table_i = (r2f[k].i >> 17) + r2_delta_expc;
+      if ( r2 < r2_delta ) { table_i = 0; r2f[k].f = r2_delta; }
 
       FAST(
       const LJTable::TableEntry * lj_pars = 
@@ -42,7 +42,7 @@ NORMAL( MODIFIED( foo bar ) )
       BigReal slow_a = scor_i[0]; 
       )
 
-      *((int32 *)&r2f[k]) &= 0xfffe0000;
+      r2f[k].i &= 0xfffe0000;
 
       /*
       BigReal modf = 0.0;
@@ -63,7 +63,7 @@ NORMAL( MODIFIED( foo bar ) )
       */
 
       BigReal kqq = kq_i * p_j->charge;
-      const BigReal diffa = r2 - r2f[k];
+      const BigReal diffa = r2 - r2f[k].f;
 
       FEP(
       int jfep_type = p_j->partition;

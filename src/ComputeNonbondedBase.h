@@ -131,6 +131,7 @@ LAM( INT( foo bar ) )
 FEP( NOENERGY( foo bar ) )
 ENERGY( NOENERGY( foo bar ) )
 
+
 // ************************************************************
 // function header
 void ComputeNonbondedUtil :: NAME
@@ -265,8 +266,9 @@ void ComputeNonbondedUtil :: NAME
   plint *pairlistm_save;  int npairm;
   plint *pairlisti = ( j_upper >= 1000 ? new plint[j_upper+5] : pairlisti_std );
 
-  float r2f_std[1005];
-  float *r2f = (j_upper < 1000 ? r2f_std : new float[j_upper+5]);
+  float_int_union_t r2f_std[1005];
+  float_int_union_t *r2f = ( j_upper < 1000 ? r2f_std :
+			new float_int_union_t[j_upper+5] );
 
   int fixg_upper = 0;
   int g_upper = 0;
