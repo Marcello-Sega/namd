@@ -172,7 +172,7 @@ public:
   void printPatchMap(void);
 
   inline Patch *patch(PatchID pid);
-  inline HomePatch *homePatch(PatchID pid);
+  HomePatch *homePatch(PatchID pid);
 
   void registerPatch(PatchID pid, Patch *pptr);
   void unregisterPatch(PatchID pid, Patch *pptr);
@@ -214,11 +214,6 @@ inline Patch *PatchMap::patch(PatchID pid)
   return patchData[pid].myPatch;
 }
 
-inline HomePatch *PatchMap::homePatch(PatchID pid)
-{
-  return (HomePatch *)patchData[pid].myPatch;
-}
-
 #endif /* PATCHMAP_H */
 
 
@@ -226,13 +221,16 @@ inline HomePatch *PatchMap::homePatch(PatchID pid)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.h,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/11/07 20:17:44 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1009 $	$Date: 1998/06/18 14:44:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.h,v $
+ * Revision 1.1009  1998/06/18 14:44:36  jim
+ * Eliminated warnings and errors from aCC.
+ *
  * Revision 1.1008  1997/11/07 20:17:44  milind
  * Made NAMD to run on shared memory machines.
  *

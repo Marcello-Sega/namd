@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1021 1998/04/14 20:08:09 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1022 1998/06/18 14:44:34 jim Exp $";
 
 #include "charm++.h"
 
@@ -28,6 +28,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1
 //#define  DEBUGM
 #define MIN_DEBUG_LEVEL 4
 #include "Debug.h"
+
+PatchMap *Patch::patchMap=0;
 
 Patch::Patch(PatchID pd) :
    patchID(pd),
@@ -338,12 +340,15 @@ void Patch::doGroupSizeCheck(void)
  *
  *	$RCSfile: Patch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1021 $	$Date: 1998/04/14 20:08:09 $
+ *	$Revision: 1.1022 $	$Date: 1998/06/18 14:44:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.1022  1998/06/18 14:44:34  jim
+ * Eliminated warnings and errors from aCC.
+ *
  * Revision 1.1021  1998/04/14 20:08:09  jim
  * Slight performance improvement in group size check.
  *

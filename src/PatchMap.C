@@ -462,19 +462,27 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
   }
 }
 
+//----------------------------------------------------------------------
+HomePatch *PatchMap::homePatch(PatchID pid)
+{
+  return (HomePatch *)patchData[pid].myPatch;
+}
 
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1998/03/03 23:05:21 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1017 $	$Date: 1998/06/18 14:44:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.1017  1998/06/18 14:44:35  jim
+ * Eliminated warnings and errors from aCC.
+ *
  * Revision 1.1016  1998/03/03 23:05:21  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

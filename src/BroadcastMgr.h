@@ -45,8 +45,7 @@ public:
     memcpy(b, (void *)&node, sizeof(int)); b += sizeof(int);
     memcpy(b, msg, size); b += size;
 
-    delete msg; // don't need [] since msg is an array of simple type
-		// with no need for destructor calls
+    delete [] (char *)msg;
     msg = 0;
 
     return(buffer);
@@ -149,12 +148,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1998/03/03 23:13:46 $
+ *	$Revision: 1.8 $	$Date: 1998/06/18 14:44:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: BroadcastMgr.h,v $
+ * Revision 1.8  1998/06/18 14:44:33  jim
+ * Eliminated warnings and errors from aCC.
+ *
  * Revision 1.7  1998/03/03 23:13:46  brunner
  * Changing include files for new charm++ includes
  *

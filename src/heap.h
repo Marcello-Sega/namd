@@ -27,7 +27,7 @@ private:
 public:
   minHeap(int size);
   int numElements();
-  insert(InfoRecord *);
+  int insert(InfoRecord *);
   InfoRecord *deleteMin();
   InfoRecord *iterator(heapIterator *);
   InfoRecord *next(heapIterator *);
@@ -50,7 +50,7 @@ private:
 public:  
   maxHeap(int size);
   int numElements();
-  insert(InfoRecord *);
+  int insert(InfoRecord *);
   InfoRecord *deleteMax();
   InfoRecord *iterator(heapIterator *);
   InfoRecord *next(heapIterator *);

@@ -29,7 +29,7 @@ template <class T> class SimpleBroadcastObject : public BroadcastClient {
         suspendFor(tag);
       }
       T tmp = *(T *)buf;
-      delete buf;
+      delete (T *)buf;
       return tmp;
     }
     

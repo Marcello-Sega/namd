@@ -11,12 +11,12 @@ minHeap::minHeap(int size)
   count = 0;
 }
 
-minHeap::numElements()
+int minHeap::numElements()
 {
   return count;
 }
 
-minHeap::insert(InfoRecord *x)
+int minHeap::insert(InfoRecord *x)
 {
   h[count].info = x;
   h[count].deleted = 0;
@@ -102,12 +102,12 @@ maxHeap::maxHeap(int size)
   count = 0;
 }
 
-maxHeap::numElements()
+int maxHeap::numElements()
 {
   return count;
 }
 
-maxHeap::insert(InfoRecord *x)
+int maxHeap::insert(InfoRecord *x)
 {
   h[count].info = x;
   h[count].deleted  = 0;
