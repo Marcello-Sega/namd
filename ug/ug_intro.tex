@@ -11,7 +11,7 @@
 %
 %       $RCSfile: ug_intro.tex,v $
 %       $Author: jim $        $Locker:  $                $State: Exp $
-%       $Revision: 1.10 $      $Date: 1999/10/06 21:06:00 $
+%       $Revision: 1.11 $      $Date: 2000/09/05 19:40:48 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -21,6 +21,9 @@
 % REVISION HISTORY:
 %
 % $Log: ug_intro.tex,v $
+% Revision 1.11  2000/09/05 19:40:48  jim
+% Updated for 2.2b1.
+%
 % Revision 1.10  1999/10/06 21:06:00  jim
 % Various doc updates for 2.1.
 %
@@ -112,33 +115,32 @@ at the end of this section.
 
 \subsection{New features in version \NAMDVER}
 
-\subsubsection*{Mollified impulse method (MOLLY)}
+\subsubsection*{Parallel PME Reciprocal Sum}
 
-This method eliminates the components of the long range electrostatic
-forces which contribute to resonance along bonds to hydrogen atoms,
-allowing a fullElectFrequency of 6 (vs.\ 4) with a 1~fs timestep
-without using ``rigidBonds all''.  You may use ``rigidBonds water'' but
-using ``rigidBonds all'' with MOLLY makes no sense since the degrees of
-freedom which MOLLY protects from resonance are already frozen.
+Formerly a serial bottleneck, the particle mesh Ewald FFT and
+reciprocal space sum have been distributed.  Early results have
+demonstrated speedups on 128 processors of a Cray T3E.  The number
+of processors used may be limited with the "PMEProcessors" parameter.
 
-\subsubsection*{Non-orthogonal periodic cells}
+\subsubsection*{FFTW in Shipping Binaries}
 
-The parameters (cellBasisVector[123] and cellOrigin) have not changed,
-but the basis vectors may now be in any direction.
+Under a new license with MIT, FFTW (www.fftw.org) is now included in
+all release binaries.  Users no longer need recompile NAMD themselves
+to obtain this performance boost.  (FFTW is also available under GPL.)
 
-\subsubsection*{Interactive molecular dynamics}
+\subsubsection*{Conjugate Gradient Minimizer}
 
-NAMD now works directly with VMD ({\tt http://www.ks.uiuc.edu/Research/vmd/})
-to allow you to view and interactively steer your simulation.  NAMD will
-wait for VMD to connect on startup.
+The default minimizer is now based on conjugate gradients and line
+searches.  It is orders of magnitude faster than the old method, which
+is still available via the "velocityQuenching" option.  If you have
+any problems with the new minimizer, please contact us immediately.
 
-\subsubsection*{Faster particle mesh Ewald}
+\subsubsection*{Improved Load Balancer}
 
-If for some reason you wish to use the slower DPME implementation
-of the particle mesh Ewald method add ``useDPME yes''.  If you set
-cellOrigin to something other than (0,0,0) the energy may differ
-slightly between the old and new implementations.  For even better
-performance get the NAMD source code and compile with FFTW.
+With a new load balancing framework and careful removal of serial
+bottlenecks, we have demonstrated scaling to 1024 or even 2048
+processors on the ASCI Red machine.  This work will be presented at
+SC2000 and is a finalist for the Gordon Bell award.
 
 \subsection{\NAMD\ and molecular dynamics simulations}
 
