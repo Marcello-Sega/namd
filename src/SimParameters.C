@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1044 $  $Date: 1998/09/13 21:06:13 $
+ *  $Revision: 1.1045 $  $Date: 1998/09/13 21:10:21 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1045  1998/09/13 21:10:21  jim
+ * Quick fix.
+ *
  * Revision 1.1044  1998/09/13 21:06:13  jim
  * Cleaned up output, defaults, etc.
  *
@@ -469,7 +472,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1044 1998/09/13 21:06:13 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1045 1998/09/13 21:10:21 jim Exp $";
 
 
 #include "charm++.h"
@@ -2863,8 +2866,8 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
      iout << iINFO << "RIGID BONDS TO HYDROGEN : ";
      if (rigidBonds == RIGID_ALL)    iout << "ALL\n";
      if (rigidBonds == RIGID_WATER)  iout << "WATER\n";
-     iout << iINFO << "        ERROR TOLERANCE : " << rigidIter << "\n";
-     iout << iINFO << "         MAX ITERATIONS : " << rigidTol << "\n";
+     iout << iINFO << "        ERROR TOLERANCE : " << rigidTol << "\n";
+     iout << iINFO << "         MAX ITERATIONS : " << rigidIter << "\n";
      iout << endi;
    }
    
@@ -3305,12 +3308,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1044 $  $Date: 1998/09/13 21:06:13 $
+ *  $Revision: 1.1045 $  $Date: 1998/09/13 21:10:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1045  1998/09/13 21:10:21  jim
+ * Quick fix.
+ *
  * Revision 1.1044  1998/09/13 21:06:13  jim
  * Cleaned up output, defaults, etc.
  *
