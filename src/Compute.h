@@ -62,6 +62,7 @@ public:
   virtual int noWork(); // cleans up and returns 1 if no work to do
   virtual void doWork(); // actually does the work if noWork() returns 0
   virtual int priority(void); // returns execution priority for this work
+  virtual int sequence(void); // returns sequence number for analysis
 };
 
 #endif
@@ -69,13 +70,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: Compute.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/04/10 09:13:48 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1007 $	$Date: 1997/08/20 23:27:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.h,v $
+ * Revision 1.1007  1997/08/20 23:27:37  jim
+ * Created multiple enqueueWork entry points to aid analysis.
+ *
  * Revision 1.1006  1997/04/10 09:13:48  ari
  * Final debugging for compute migration / proxy creation for load balancing.
  * Lots of debug code added, mostly turned off now.

@@ -141,18 +141,26 @@ void ComputePatchPair::doWork() {
   }
 }
 
+int ComputePatchPair::sequence(void)
+{
+  return patch[0]->flags.seq;
+}
+
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputePatchPair.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/04/10 09:13:55 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1011 $	$Date: 1997/08/20 23:27:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatchPair.C,v $
+ * Revision 1.1011  1997/08/20 23:27:39  jim
+ * Created multiple enqueueWork entry points to aid analysis.
+ *
  * Revision 1.1010  1997/04/10 09:13:55  ari
  * Final debugging for compute migration / proxy creation for load balancing.
  * Lots of debug code added, mostly turned off now.

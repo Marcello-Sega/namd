@@ -36,6 +36,7 @@ public:
   virtual void initialize();
   virtual void atomUpdate();
   virtual void doWork();
+  virtual int sequence(void); // returns sequence number for analysis
 
 protected :
   int numAtoms;
@@ -56,12 +57,15 @@ private:
  *
  *	$RCSfile: ComputePatch.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/13 06:37:07 $
+ *	$Revision: 1.1004 $	$Date: 1997/08/20 23:27:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatch.h,v $
+ * Revision 1.1004  1997/08/20 23:27:38  jim
+ * Created multiple enqueueWork entry points to aid analysis.
+ *
  * Revision 1.1003  1997/03/13 06:37:07  jim
  * Multiple time-stepping implemented, still needs proper splitting functions.
  *

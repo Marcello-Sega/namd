@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1031 1997/08/14 15:29:48 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1032 1997/08/20 23:27:41 jim Exp $";
 
 #include <stdio.h>
 
@@ -735,15 +735,46 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
   //*CPriorityPtr(msg) = (unsigned int)compute->priority();
   //CSetQueueing(msg, Priorities::strategy);
   //DebugM(3, "Priority = " << (unsigned int)compute->priority() << "\n");
-  CSendMsgBranch(WorkDistrib, enqueueWork, msg, group.workDistrib, CMyPe() );
+
+  int seq = compute->sequence();
+  if ( seq < 0 ) {
+   CSendMsgBranch(WorkDistrib, enqueueWork, msg, group.workDistrib, CMyPe() );
+  }
+  else switch ( seq % 3 ) {
+  case 0:
+   CSendMsgBranch(WorkDistrib, enqueueWorkA, msg, group.workDistrib, CMyPe() );
+   break;
+  case 1:
+   CSendMsgBranch(WorkDistrib, enqueueWorkB, msg, group.workDistrib, CMyPe() );
+   break;
+  case 2:
+   CSendMsgBranch(WorkDistrib, enqueueWorkC, msg, group.workDistrib, CMyPe() );
+   break;
+  default:
+   NAMD_die("WorkDistrib::messageEnqueueWork case statement error!");
+   delete msg;
+  }
 }
 
 void WorkDistrib::enqueueWork(LocalWorkMsg *msg) {
-  // DebugM(4, "Starting compute#" << msg->compute->cid << " address=" << msg->compute <<"\n");
   msg->compute->doWork();
   delete msg;
 }
 
+void WorkDistrib::enqueueWorkA(LocalWorkMsg *msg) {
+  msg->compute->doWork();
+  delete msg;
+}
+
+void WorkDistrib::enqueueWorkB(LocalWorkMsg *msg) {
+  msg->compute->doWork();
+  delete msg;
+}
+
+void WorkDistrib::enqueueWorkC(LocalWorkMsg *msg) {
+  msg->compute->doWork();
+  delete msg;
+}
 
 //**********************************************************************
 //
@@ -966,16 +997,19 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1031 $	$Date: 1997/08/14 15:29:48 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1032 $	$Date: 1997/08/20 23:27:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
- * Revision 1.1031  1997/08/14 15:29:48  brunner
- * More fixes for 32 bit ints in binary restart format
+ * Revision 1.1032  1997/08/20 23:27:41  jim
+ * Created multiple enqueueWork entry points to aid analysis.
  *
+ * Revision 1.1031  97/08/14  15:29:48  15:29:48  brunner (Robert Brunner)
+ * More fixes for 32 bit ints in binary restart format
+ * 
  * Revision 1.1030  1997/04/22 04:26:03  jim
  * Added atomic restraints (harmonic constraints) via ComputeRestraints class.
  *

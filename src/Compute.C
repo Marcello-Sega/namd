@@ -90,17 +90,25 @@ int Compute::priority(void)
   return Priorities::low;
 }
 
+int Compute::sequence(void)
+{
+  return -1;
+}
+
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: Compute.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/04/10 09:13:47 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1012 $	$Date: 1997/08/20 23:27:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.C,v $
+ * Revision 1.1012  1997/08/20 23:27:36  jim
+ * Created multiple enqueueWork entry points to aid analysis.
+ *
  * Revision 1.1011  1997/04/10 09:13:47  ari
  * Final debugging for compute migration / proxy creation for load balancing.
  * Lots of debug code added, mostly turned off now.

@@ -44,7 +44,10 @@ public:
   // void movePatchDone(DoneMsg *msg);
 
   static void messageEnqueueWork(Compute *);
-  void enqueueWork(LocalWorkMsg *msg); // This is for testing
+  void enqueueWork(LocalWorkMsg *msg);
+  void enqueueWorkA(LocalWorkMsg *msg);
+  void enqueueWorkB(LocalWorkMsg *msg);
+  void enqueueWorkC(LocalWorkMsg *msg);
 
   void mapComputes(void);
   void sendMaps(void);
@@ -171,13 +174,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/04/08 07:09:05 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1010 $	$Date: 1997/08/20 23:27:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.1010  1997/08/20 23:27:43  jim
+ * Created multiple enqueueWork entry points to aid analysis.
+ *
  * Revision 1.1009  1997/04/08 07:09:05  ari
  * Modification for dynamic loadbalancing - moving computes
  * Still bug in new computes or usage of proxies/homepatches.

@@ -122,18 +122,26 @@ void ComputePatch::doWork() {
   DebugM(2,patchID << ": doWork() completed.\n");
 }
 
+int ComputePatch::sequence(void)
+{
+  return patch->flags.seq;
+}
+
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputePatch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/04/10 09:13:54 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1997/08/20 23:27:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatch.C,v $
+ * Revision 1.1008  1997/08/20 23:27:38  jim
+ * Created multiple enqueueWork entry points to aid analysis.
+ *
  * Revision 1.1007  1997/04/10 09:13:54  ari
  * Final debugging for compute migration / proxy creation for load balancing.
  * Lots of debug code added, mostly turned off now.
