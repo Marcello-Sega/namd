@@ -11,6 +11,7 @@
 #include "common.h"
 #include "Node.h"
 
+#include <new.h>
 #include <charm++.h>
 
 #include "main.decl.h"
@@ -54,27 +55,38 @@ void BackEnd::ExitSchedOn(int pe)
   CmiSyncSendAndFree(pe,CmiMsgHeaderSizeBytes,msg);
 }
 
-// called on all procs by namd_init()
-void slave_init(int argc, char **argv)
+void NAMD_new_handler() {
+  char tmp[100];
+  sprintf(tmp,"Memory allocation failed on processor %d.",CmiMyPe());
+  NAMD_die(tmp);
+}
+
+// called on all procs
+void all_init(int argc, char **argv)
 {
+  set_new_handler(NAMD_new_handler);
   ProcessorPrivateInit();
   register_exit_sched();
-  _initCharm(argc, argv);
+  _initCharm(argc, argv);  // message main Chare
+}
+
+// called on slave procs
+void slave_init(int argc, char **argv)
+{
+  all_init(argc, argv);
   CsdScheduler(-1);
 }
 
-// called on all procs by front end
+// called by main on one or all procs
 void BackEnd::init(int argc, char **argv) {
-  ConverseInit(argc, argv, slave_init, 1, 1);
+  ConverseInit(argc, argv, slave_init, 1, 1);  // calls slave_init on others
   cpuTime_start = CmiCpuTimer();
   wallTime_start = CmiWallTimer();
   if ( CmiMyPe() ) {
     slave_init(argc, argv);  // for procs that call main
     ConverseExit();  // should never return
   }
-  ProcessorPrivateInit();
-  register_exit_sched();
-  _initCharm(argc, argv);  // message main Chare
+  all_init(argc, argv);
 
   // Create branch-office chares
   BOCgroup group;
