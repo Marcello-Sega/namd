@@ -28,13 +28,14 @@
 #include "Migration.h"
 #include "PatchMgr.h"
 #include "Sequencer.h"
+#include "LdbCoordinator.h"
 
 #define MIN_DEBUG_LEVEL 4
 // #define DEBUGM
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1023 1997/03/27 08:04:16 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1024 1997/03/27 20:25:44 brunner Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
 		     VelocityList vl) : Patch(pd,al,pl), v(vl) 
@@ -251,6 +252,11 @@ Vector HomePatch::calcAngularMomentum()
   return total;
 }
 
+void HomePatch::submitLoadStats(int timestep)
+{
+  LdbCoordinator::Object()->patchLoad(patchID,numAtoms,timestep);
+}
+
 
 void
 HomePatch::doAtomMigration()
@@ -413,13 +419,16 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1023 $	$Date: 1997/03/27 08:04:16 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1024 $	$Date: 1997/03/27 20:25:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1024  1997/03/27 20:25:44  brunner
+ * Changes for LdbCoordinator, the load balance control BOC
+ *
  * Revision 1.1023  1997/03/27 08:04:16  jim
  * Reworked Lattice to keep center of cell fixed during rescaling.
  *

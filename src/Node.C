@@ -9,7 +9,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1011 1997/03/21 16:36:00 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1012 1997/03/27 20:25:49 brunner Exp $";
 
 #include <unistd.h>
 #include "ckdefs.h"
@@ -49,6 +49,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "SimParameters.h"
 #include "CommunicateConverse.h"
 #include "Inform.h"
+#include "LdbCoordinator.h"
 
 extern "C" int gethostname(char *, size_t);
 extern Communicate *comm;
@@ -98,6 +99,7 @@ Node::Node(GroupInitMsg *msg)
   proxyMgr = CLocalBranch(ProxyMgr,group.proxyMgr);
   workDistrib = CLocalBranch(WorkDistrib,group.workDistrib);
   computeMgr = CLocalBranch(ComputeMgr,group.computeMgr);
+  ldbCoordinator = CLocalBranch(LdbCoordinator,group.ldbCoordinator);
 
   // Where are we?
   char host[1024];
@@ -210,6 +212,8 @@ void Node::startup(InitMsg *msg) {
     computeMgr->createComputes(ComputeMap::Object());
     DebugM(4,"Building Sequencers\n");
     buildSequencers();
+    DebugM(4,"Initializing LDB\n");
+    LdbCoordinator::Object()->initialize(patchMap,computeMap);
   break;
 
   case 7:
@@ -429,13 +433,16 @@ void Node::saveMolDataPointers(NamdState *state)
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/03/21 16:36:00 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1012 $	$Date: 1997/03/27 20:25:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1012  1997/03/27 20:25:49  brunner
+ * Changes for LdbCoordinator, the load balance control BOC
+ *
  * Revision 1.1011  1997/03/21 16:36:00  nealk
  * Modified sorting case when both atoms are group members.
  * Was incorrectly sorting them by their atomID.  Now sorting by GPID.

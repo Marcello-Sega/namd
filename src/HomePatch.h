@@ -74,7 +74,10 @@ public:
   BigReal calcKineticEnergy();
   Vector calcMomentum();
   Vector calcAngularMomentum();
-  
+
+  // load-balancing trigger
+  void submitLoadStats(int timestep);
+
 protected:
   virtual void boxClosed(int);
 
@@ -114,13 +117,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/03/27 08:04:17 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1010 $	$Date: 1997/03/27 20:25:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.1010  1997/03/27 20:25:45  brunner
+ * Changes for LdbCoordinator, the load balance control BOC
+ *
  * Revision 1.1009  1997/03/27 08:04:17  jim
  * Reworked Lattice to keep center of cell fixed during rescaling.
  *

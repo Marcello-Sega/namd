@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1025 1997/03/27 08:04:23 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1026 1997/03/27 20:25:51 brunner Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -25,6 +25,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C
 #include "Broadcasts.h"
 #include "Molecule.h"
 #include "NamdOneTools.h"
+#include "LdbCoordinator.h"
 
 #define MIN_DEBUG_LEVEL 3
 //#define DEBUGM
@@ -41,6 +42,7 @@ Sequencer::Sequencer(HomePatch *p) :
     reduction->Register(REDUCTION_KINETIC_ENERGY);
     reduction->Register(REDUCTION_BC_ENERGY); // in case not used elsewhere
     reduction->Register(REDUCTION_ALT_VIRIAL);
+    ldbCoordinator = (LdbCoordinator::Object());
 }
 
 Sequencer::~Sequencer(void)
@@ -129,6 +131,10 @@ void Sequencer::algorithm(void)
 	rescaleVelocities(step);
 	berendsenPressure(step);
 	langevinVelocities(step);
+	//
+	// Trigger load balance stats collection
+	//
+	rebalanceLoad(step);
     }
 
     terminate();
@@ -220,6 +226,15 @@ void Sequencer::runComputeObjects(int migration)
   suspend(); // until all deposit boxes close
 }
 
+void Sequencer::rebalanceLoad(int timestep)
+{
+  if ( (timestep % simParams->ldbStepsPerCycle) == 0)
+  {
+    patch->submitLoadStats(timestep);
+    ldbCoordinator->rebalance(this,patch->getPatchID());
+  }
+}
+
 void
 Sequencer::terminate() {
   Node::messageHomeDone();
@@ -231,13 +246,16 @@ Sequencer::terminate() {
  * RCS INFORMATION:
  *
  *      $RCSfile: Sequencer.C,v $
- *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1025 $     $Date: 1997/03/27 08:04:23 $
+ *      $Author: brunner $  $Locker:  $             $State: Exp $
+ *      $Revision: 1.1026 $     $Date: 1997/03/27 20:25:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1026  1997/03/27 20:25:51  brunner
+ * Changes for LdbCoordinator, the load balance control BOC
+ *
  * Revision 1.1025  1997/03/27 08:04:23  jim
  * Reworked Lattice to keep center of cell fixed during rescaling.
  *

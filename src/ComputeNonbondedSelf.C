@@ -14,6 +14,7 @@
 #include "ComputeNonbondedSelf.h"
 #include "ReductionMgr.h"
 #include "Patch.h"
+#include "LdbCoordinator.h"
 
 #define MIN_DEBUG_LEVEL 4
 #define DEBUGM
@@ -37,6 +38,10 @@ void ComputeNonbondedSelf::doForce(Position* p,
                                Results* r,
                                AtomProperties* a)
 {
+  // Inform load balancer. 
+  // I assume no threads will suspend until endWork is called
+  LdbCoordinator::Object()->startWork(cid,0); // Timestep not used
+
   DebugM(2,"doForce() called.\n");
   DebugM(1,numAtoms << " patch 1 atoms\n");
   DebugM(3, "NUMATOMSxNUMATOMS = " << numAtoms*numAtoms << "\n");
@@ -54,19 +59,24 @@ void ComputeNonbondedSelf::doForce(Position* p,
   }
 
   submitReductionData(reductionData,reduction,patch->flags.seq);
+  // Inform load balancer
+  LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
 }
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedSelf.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/25 23:00:59 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1006 $	$Date: 1997/03/27 20:25:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.C,v $
+ * Revision 1.1006  1997/03/27 20:25:43  brunner
+ * Changes for LdbCoordinator, the load balance control BOC
+ *
  * Revision 1.1005  1997/03/25 23:00:59  jim
  * Added nonbondedFrequency parameter and multiple time-stepping
  *

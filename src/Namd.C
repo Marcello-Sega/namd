@@ -9,7 +9,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.1003 1997/03/19 11:54:34 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.1004 1997/03/27 20:25:48 brunner Exp $";
 
 #include "unistd.h"
 
@@ -43,6 +43,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.
 #include "CollectionMaster.h"
 #include "BroadcastMgr.top.h"
 #include "BroadcastMgr.h"
+#include "LdbCoordinator.top.h"
+#include "LdbCoordinator.h"
 
 
 // Namd(void ) is the constructor for the startup node.  It needs to
@@ -82,6 +84,10 @@ Namd::Namd(void)
   // Create Broadcast system
   InitMsg *initmsg8 = new (MsgIndex(InitMsg)) InitMsg;
   group.broadcastMgr = new_group(BroadcastMgr, initmsg8);
+
+  // Create Load-balance coordinator
+  InitMsg *initmsg9 = new (MsgIndex(InitMsg)) InitMsg;
+  group.ldbCoordinator = new_group(LdbCoordinator, initmsg9);
 
   // Create the Node object and send it the IDs of all the other
   // parallel objects.
@@ -123,13 +129,16 @@ void Namd::startup(char *confFile)
  * RCS INFORMATION:
  *
  *	$RCSfile: Namd.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/19 11:54:34 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/03/27 20:25:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Namd.C,v $
+ * Revision 1.1004  1997/03/27 20:25:48  brunner
+ * Changes for LdbCoordinator, the load balance control BOC
+ *
  * Revision 1.1003  1997/03/19 11:54:34  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

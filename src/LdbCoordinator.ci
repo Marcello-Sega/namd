@@ -1,0 +1,28 @@
+extern message InitMsg;
+message LdbStatsMsg;
+message LdbResumeMsg;
+
+group LdbCoordinator
+{
+  entry LdbCoordinator(InitMsg *);
+  entry analyze(LdbStatsMsg *);
+  entry resume(LdbResumeMsg *);
+} ;
+
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1 $	$Date: 1997/03/27 20:25:46 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: LdbCoordinator.ci,v $
+ * Revision 1.1  1997/03/27 20:25:46  brunner
+ * Changes for LdbCoordinator, the load balance control BOC
+ *
+ *
+ ***************************************************************************/

@@ -14,6 +14,7 @@
 #include "ComputeNonbondedPair.h"
 #include "ReductionMgr.h"
 #include "Patch.h"
+#include "LdbCoordinator.h"
 
 #define MIN_DEBUG_LEVEL 4
 #define DEBUGM
@@ -40,6 +41,8 @@ int ComputeNonbondedPair::noWork() {
     return 0;  // work to do, enqueue as usual
   } else
   {
+    // Inform load balancer
+    LdbCoordinator::Object()->startWork(cid,0); // Timestep not used
     // fake out patches and reduction system
 
     BigReal reductionData[reductionDataSize];
@@ -65,6 +68,9 @@ int ComputeNonbondedPair::noWork() {
 
     submitReductionData(reductionData,reduction,patch[0]->flags.seq);
 
+    // Inform load balancer
+    LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
+
     return 1;  // no work to do, do not enqueue
   }
 }
@@ -74,6 +80,10 @@ void ComputeNonbondedPair::doForce(Position* p[2],
                                Results* r[2],
                                AtomProperties* a[2])
 {
+  // Inform load balancer. 
+  // I assume no threads will suspend until endWork is called
+  LdbCoordinator::Object()->startWork(cid,0); // Timestep not used
+
   DebugM(2,"doForce() called.\n");
   DebugM(2, numAtoms[0] << " patch #1 atoms and " <<
 	numAtoms[1] << " patch #2 atoms\n");
@@ -124,19 +134,25 @@ void ComputeNonbondedPair::doForce(Position* p[2],
   }
 
   submitReductionData(reductionData,reduction,patch[0]->flags.seq);
+
+  // Inform load balancer
+  LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
 }
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedPair.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/03/25 23:00:57 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1997/03/27 20:25:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.C,v $
+ * Revision 1.1008  1997/03/27 20:25:42  brunner
+ * Changes for LdbCoordinator, the load balance control BOC
+ *
  * Revision 1.1007  1997/03/25 23:00:57  jim
  * Added nonbondedFrequency parameter and multiple time-stepping
  *

@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1009 1997/03/20 23:53:38 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1010 1997/03/27 20:25:40 brunner Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -192,6 +192,14 @@ int ComputeMap::pid(ComputeID cid,int i)
 }
 
 //----------------------------------------------------------------------
+ComputeType ComputeMap::type(ComputeID cid)
+{
+  if (computeData != NULL)
+    return computeData[cid].type;
+  else return computeErrorType;
+}
+
+//----------------------------------------------------------------------
 int ComputeMap::allocateCids(int n)
 {
   int i;
@@ -298,13 +306,16 @@ void ComputeMap::printComputeMap(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/03/20 23:53:38 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1010 $	$Date: 1997/03/27 20:25:40 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.C,v $
+ * Revision 1.1010  1997/03/27 20:25:40  brunner
+ * Changes for LdbCoordinator, the load balance control BOC
+ *
  * Revision 1.1009  1997/03/20 23:53:38  ari
  * Some changes for comments. Copyright date additions.
  * Hooks for base level update of Compute objects from ComputeMap

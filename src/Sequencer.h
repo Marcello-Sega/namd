@@ -23,6 +23,7 @@ class SimParameters;
 class ReductionMgr;
 class CollectionMgr;
 class ControllerBroadcasts;
+class LdbCoordinator;
 
 class Sequencer
 {
@@ -32,6 +33,7 @@ public:
     ~Sequencer(void);
     void run(int numberOfCycles);             // spawn thread, etc.
     void awaken(void) { CthAwaken(thread); }
+    void suspend(void) { CthSuspend(); }
 
 protected:
     virtual void algorithm(void);	// subclasses redefine this method
@@ -48,7 +50,6 @@ protected:
     void berendsenPressure(int);
     void langevinVelocities(int);
 
-    void suspend(void) { CthSuspend(); }
     void terminate(void);
     SimParameters *const simParams;	// for convenience
     int numberOfCycles;			// stores argument to run()
@@ -57,10 +58,12 @@ protected:
     CollectionMgr *const collection;
 
 private:
+    void rebalanceLoad(int timestep);
     CthThread thread;
     static void threadRun(Sequencer*);
 
     ControllerBroadcasts * broadcast;
+    LdbCoordinator *ldbCoordinator;
 };
 
 #endif // SEQUENCER_H
@@ -71,12 +74,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/03/25 04:04:59 $
+ *	$Revision: 1.1010 $	$Date: 1997/03/27 20:25:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.h,v $
+ * Revision 1.1010  1997/03/27 20:25:52  brunner
+ * Changes for LdbCoordinator, the load balance control BOC
+ *
  * Revision 1.1009  1997/03/25 04:04:59  jim
  * Simplified algorithm a bit.
  *

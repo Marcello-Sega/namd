@@ -35,6 +35,7 @@ class ComputeMgr;
 class Communicate;
 class NamdState;
 class Output;
+class LdbCoordinator;
 
 class Node : public BOCclass
 {
@@ -90,6 +91,7 @@ protected:
   AtomMap    *atomMap;
   PatchMap   *patchMap;
   ComputeMap *computeMap;
+  LdbCoordinator *ldbCoordinator;
 
 private:
   static Node *_instance;
@@ -124,12 +126,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/03/19 05:50:12 $
+ *	$Revision: 1.1007 $	$Date: 1997/03/27 20:25:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.1007  1997/03/27 20:25:50  brunner
+ * Changes for LdbCoordinator, the load balance control BOC
+ *
  * Revision 1.1006  1997/03/19 05:50:12  jim
  * Added ComputeSphericalBC, cleaned up make dependencies.
  *

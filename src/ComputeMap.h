@@ -35,7 +35,8 @@ enum ComputeType
 #endif
   computeFullDirectType,
   computeSphericalBCType,
-  computeCylindricalBCType
+  computeCylindricalBCType,
+  computeErrorType
 };
 
 class ComputeMap
@@ -87,6 +88,9 @@ public:
   // pid(cid,i) returns the i-th patch id registered
   // with the patch.  
   int pid(ComputeID cid, int i);
+
+  // type(cid) returns the compute type of the given ComputeID
+  ComputeType type(ComputeID cid);
 
   // allocate_cids(n) tells the ComputeMap to set aside
   // room for n compute objects.  I need not use them all.
@@ -156,13 +160,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/20 23:53:39 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/03/27 20:25:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.h,v $
+ * Revision 1.1005  1997/03/27 20:25:41  brunner
+ * Changes for LdbCoordinator, the load balance control BOC
+ *
  * Revision 1.1004  1997/03/20 23:53:39  ari
  * Some changes for comments. Copyright date additions.
  * Hooks for base level update of Compute objects from ComputeMap

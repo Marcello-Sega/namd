@@ -28,6 +28,7 @@ public:
   int reductionMgr;
   int collectionMgr;
   int broadcastMgr;
+  int ldbCoordinator;
   int node;
 };
 
@@ -44,12 +45,15 @@ protected:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:53:50 $
+ *	$Revision: 1.1002 $	$Date: 1997/03/27 20:25:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: BOCgroup.h,v $
+ * Revision 1.1002  1997/03/27 20:25:39  brunner
+ * Changes for LdbCoordinator, the load balance control BOC
+ *
  * Revision 1.1001  1997/03/19 11:53:50  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

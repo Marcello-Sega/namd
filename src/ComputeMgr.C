@@ -86,7 +86,7 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
     int trans2[2];
 
   DebugM(2,"createComputes 2: looping " << i << "on type: " << map->computeData[i].type << "\n");
-    switch ( map->computeData[i].type )
+    switch ( map->type(i) )
     {
       case computeNonbondedSelfType:
 	c = new ComputeNonbondedSelf(i,map->computeData[i].pids[0].pid); // unknown delete
@@ -237,13 +237,16 @@ ComputeMgr::createComputes(ComputeMap *map)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/03/20 23:53:40 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1010 $	$Date: 1997/03/27 20:25:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.C,v $
+ * Revision 1.1010  1997/03/27 20:25:41  brunner
+ * Changes for LdbCoordinator, the load balance control BOC
+ *
  * Revision 1.1009  1997/03/20 23:53:40  ari
  * Some changes for comments. Copyright date additions.
  * Hooks for base level update of Compute objects from ComputeMap

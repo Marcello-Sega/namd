@@ -23,9 +23,11 @@ public:
   int seq;			// sequence number
   int doNonbonded;
   int doFullElectrostatics;
+  int submitLoadStats;
 
 private:
-  int spacer;  // Use this to keep byte-aligned for now.  -JCP
+//int spacer;  // Use this to keep byte-aligned for now.  -JCP
+               // Actually double-word aligned, I think -RKB
 };
 
 class Results
@@ -43,12 +45,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1997/03/25 23:01:00 $
+ *	$Revision: 1.6 $	$Date: 1997/03/27 20:25:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchTypes.h,v $
+ * Revision 1.6  1997/03/27 20:25:50  brunner
+ * Changes for LdbCoordinator, the load balance control BOC
+ *
  * Revision 1.5  1997/03/25 23:01:00  jim
  * Added nonbondedFrequency parameter and multiple time-stepping
  *
