@@ -32,7 +32,19 @@
 #endif
 
 #if defined DECLARATION || defined DEFINITION
-DECL( static ) void NODECL( ComputeNonbondedUtil :: ) NAME (Position* p PLEN, Force* f PLEN, AtomProperties* a PLEN, int numAtoms PLEN) DECL( ; )
+DECL( static ) void NODECL( ComputeNonbondedUtil :: ) NAME
+NOEXCL
+(
+(Position* p PLEN, Force* f PLEN, AtomProperties* a PLEN, int numAtoms PLEN)
+)
+EXCL
+(
+(const Position & p_i, const Position & p_j,
+ Force & f_i, Force & f_j,
+ const AtomProperties & a_i, const AtomProperties & a_j,
+ int m14)
+)
+DECL( ; )
 #endif
 #ifdef DEFINITION
 {
@@ -62,37 +74,48 @@ SW
   const BigReal c6 = -4 * c5;
 )
 
+NOEXCL
+(
   for ( int i = I_LOWER; i < I_UPPER; ++i )
   {
     const Position & p_i = p[I_SUB];
     const AtomProperties & a_i = a[I_SUB];
 
     Force & f_i = f[I_SUB];
+)
 
-    const BigReal M14( kq_i_u ) NOM14( kq_i ) =
+    const BigReal NOEXCL( M14( kq_i_u ) NOM14( kq_i ) ) EXCL( kq_i ) =
     			COLOUMB * a_i.charge * dielectric_1;
 
+NOEXCL
+(
     M14( const BigReal kq_i_s = kq_i_u * scale14; )
 
     for ( int j = J_LOWER; j < J_UPPER; ++j )
     {
       const Position & p_j = p[J_SUB];
+)
 
       Vector f_vdw = p_i - p_j;
 
       const BigReal r2 = f_vdw.length2();
 
-      if ( r2 > cutoff2 ) continue;
+      if ( r2 > cutoff2 ) NOEXCL( continue ) EXCL( return );
 
+NOEXCL
+(
       M14 ( BigReal kq_i = kq_i_u; )
 
       const AtomProperties & a_j = a[J_SUB];
+)
 
       const LJTable::TableEntry * NOM14( const ) lj_pars = 
 		ljTable->table_val(a_i.type, a_j.type);
-		
+
       if ( r2 <= lj_pars->exclcut2 )
       {
+NOEXCL
+(
 	if ( mol->checkexcl(a_i.id,a_j.id) ) continue;
 	
 M14
@@ -104,9 +127,17 @@ M14
 	}
 )
 
+)
+EXCL
+(
+	return;
+)
       }
 
+NOEXCL
+(
       Force & f_j = f[J_SUB];
+)
 
       const BigReal r = sqrt(r2);
       const BigReal r_1 = 1/r;
@@ -140,14 +171,42 @@ SW
 
       BigReal f = kqq*r_1;
       
+EXCL
+(
+      electEnergy -= f SW( * shiftVal );
+M14
+(
+      if ( m14 ) electEnergy += f SW( * shiftVal ) * scale14;
+)
+)
+NOEXCL
+(
       electEnergy += f SW( * shiftVal );
+)
       
       f *= r_1*( SW( shiftVal * ) r_1 SW( - dShiftVal ) );
 
-      const Vector f_elec = f_vdw*f;
+      NOEXCL( const ) Vector f_elec = f_vdw*f;
 
+EXCL
+(
+      f_i -= f_elec;
+      f_j += f_elec;
+M14
+(
+      if ( m14 )
+      {
+	f_elec *= scale14;
+	f_i += f_elec;
+	f_j -= f_elec;
+      }
+)
+)
+NOEXCL
+(
       f_i += f_elec;
       f_j -= f_elec;
+)
 
       BigReal r_6 = r_1*r_1*r_1; r_6 *= r_6;
       const BigReal r_12 = r_6*r_6;
@@ -157,15 +216,50 @@ SW
 
       const BigReal AmBterm = (A*r_6 - B) * r_6;
 
+EXCL
+(
+      vdwEnergy -= SW( switchVal * ) AmBterm;
+M14
+(
+      if ( m14 )
+      {
+	lj_pars = ljTable->table_val(a_i.type, a_j.type, 1);
+	const BigReal Ax = lj_pars->A;
+	const BigReal Bx = lj_pars->B;
+	const BigReal AmBtermx = (A*r_6 - B) * r_6;
+	vdwEnergy += SW( switchVal * ) AmBtermx;
+	const Vector f_vdwx = f_vdw * ( ( SW( switchVal * ) 6 * (A*r_12 + AmBterm) *
+			r_1 SW( - AmBterm*dSwitchVal ) )*r_1 );
+	f_i += f_vdwx;
+	f_j -= f_vdwx;
+      }
+)
+)
+NOEXCL
+(
       vdwEnergy += SW( switchVal * ) AmBterm;
-      
+)
+
+
       f_vdw *= ( SW( switchVal * ) 6 * (A*r_12 + AmBterm) *
 			r_1 SW( - AmBterm*dSwitchVal ) )*r_1;
 
+EXCL
+(
+      f_i -= f_vdw;
+      f_j += f_vdw;
+)
+NOEXCL
+(
       f_i += f_vdw;
       f_j -= f_vdw;
+)
+
+NOEXCL
+(
     }
   }
+)
 
   DebugM(3, "Nonbonded computation results: electEnergy = " 
     << electEnergy << " vdwEnergy = " << vdwEnergy << endl);
@@ -177,12 +271,15 @@ SW
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/11/30 20:30:36 $
+ *	$Revision: 1.8 $	$Date: 1996/12/03 21:05:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.8  1996/12/03 21:05:09  jim
+ * added support for exclusion correction computes
+ *
  * Revision 1.7  1996/11/30 20:30:36  jim
  * turned off some debugging, switched to DebugM()
  *

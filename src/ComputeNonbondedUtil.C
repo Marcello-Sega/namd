@@ -36,6 +36,11 @@ void ComputeNonbondedUtil::select(void)
 #undef NBEXCL
 #include "ComputeNonbondedHack.h"
       calcSelf = NAME;
+#undef NBPAIR
+#undef NBSELF
+#define NBEXCL
+#include "ComputeNonbondedHack.h"
+      calcExcl = NAME;
     }
     else
 #undef SWITCHING
@@ -50,6 +55,11 @@ void ComputeNonbondedUtil::select(void)
 #undef NBEXCL
 #include "ComputeNonbondedHack.h"
       calcSelf = NAME;
+#undef NBPAIR
+#undef NBSELF
+#define NBEXCL
+#include "ComputeNonbondedHack.h"
+      calcExcl = NAME;
     }
   }
   else
@@ -68,6 +78,11 @@ void ComputeNonbondedUtil::select(void)
 #undef NBEXCL
 #include "ComputeNonbondedHack.h"
       calcSelf = NAME;
+#undef NBPAIR
+#undef NBSELF
+#define NBEXCL
+#include "ComputeNonbondedHack.h"
+      calcExcl = NAME;
     }
     else
 #undef SWITCHING
@@ -82,6 +97,11 @@ void ComputeNonbondedUtil::select(void)
 #undef NBEXCL
 #include "ComputeNonbondedHack.h"
       calcSelf = NAME;
+#undef NBPAIR
+#undef NBSELF
+#define NBEXCL
+#include "ComputeNonbondedHack.h"
+      calcExcl = NAME;
     }
   }
 }
@@ -131,17 +151,41 @@ void ComputeNonbondedUtil::select(void)
 #include "ComputeNonbondedBase.h"
 
 
+#undef NBPAIR
+#undef NBSELF
+#define NBEXCL
+
+#define MODIFY14
+#define SWITCHING
+#include "ComputeNonbondedBase.h"
+
+#define MODIFY14
+#undef SWITCHING
+#include "ComputeNonbondedBase.h"
+
+#undef MODIFY14
+#define SWITCHING
+#include "ComputeNonbondedBase.h"
+
+#undef MODIFY14
+#undef SWITCHING
+#include "ComputeNonbondedBase.h"
+
+
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/11/21 00:00:40 $
+ *	$Revision: 1.4 $	$Date: 1996/12/03 21:05:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.4  1996/12/03 21:05:09  jim
+ * added support for exclusion correction computes
+ *
  * Revision 1.3  1996/11/21 00:00:40  jim
  * added select(), calcPair, and calcSelf
  *

@@ -45,11 +45,14 @@
 #endif
 
 #undef EXCL
+#undef NOEXCL
 #ifdef NBEXCL
 #define CLASS ComputeNonbondedExcl
 #define EXCL(X) X
+#define NOEXCL(X)
 #else
 #define EXCL(X)
+#define NOEXCL(X) X
 #endif
 
 #define NAME CLASSNAME(calc)
@@ -132,12 +135,15 @@
  *
  *	$RCSfile: ComputeNonbondedHack.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/11/20 23:16:39 $
+ *	$Revision: 1.6 $	$Date: 1996/12/03 21:05:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedHack.h,v $
+ * Revision 1.6  1996/12/03 21:05:09  jim
+ * added support for exclusion correction computes
+ *
  * Revision 1.5  1996/11/20 23:16:39  jim
  * first compiling version of generic nonbonded function
  *
