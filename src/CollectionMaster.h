@@ -6,6 +6,8 @@
 #include "main.h"
 #include "NamdTypes.h"
 #include "ProcessorPrivate.h"
+#include "PatchMap.h"
+#include "PatchMap.inl"
 
 class CollectVectorMsg;
 
@@ -39,7 +41,10 @@ public:
     CollectVectorInstance(void) : seq(-1) { ; }
 
     CollectVectorInstance(int s) :
-      seq(s), remaining(CNumPes()) { ; }
+      seq(s), remaining(CNumPes()) { 
+		int npatches=(PatchMap::Object())->numPatches(); 
+		if (CNumPes() > npatches) remaining=npatches; 
+		}
 
     // true -> send it and delete it!
     int append(AtomIDList &a, ResizeArray<Vector> &d)
@@ -152,12 +157,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1998/09/14 16:11:34 $
+ *	$Revision: 1.1012 $	$Date: 1998/11/30 04:12:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMaster.h,v $
+ * Revision 1.1012  1998/11/30 04:12:34  krishnan
+ * Fixed the numNodes > nPatches bug.
+ *
  * Revision 1.1011  1998/09/14 16:11:34  jim
  * Changes to reduce node 0 memory use.  Fixed bug in ResizeArray::item().
  *
