@@ -256,20 +256,22 @@ namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS) $(DSTDIR)/moduleinit.o
 	$(LINK) $(LINKOPTS) /nodefaultlib:libc /nodefaultlib:libcmt.lib \
 	/out:namd2.exe \
 	$(CHARMLIB)/libldb-rand.o \
-	$(CHARMLIB)/libconv-core.a \
-	$(CHARMLIB)/libconv-cplus-y.a \
+	$(OBJS) \
+	$(DSTDIR)/moduleinit.o \
+	$(CHARMLIB)/libmoduleNeighborLB.a \
 	$(CHARMLIB)/libck.a \
+	$(CHARMLIB)/libconv-cplus-y.a \
+	$(CHARMLIB)/libconv-core.a \
 	$(CHARMLIB)/libconv-util.a \
 	$(CHARMLIB)/libmemory-default.o \
-	$(CHARMLIB)/libmoduleNeighborLB.a \
-	$(OBJS) $(DSTDIR)/moduleinit.o \
 	$(DPMTALIB) \
 	$(DPMELIB) \
 	$(TCLLIB) \
 	$(FFTLIB)
 
-$(DSTDIR)/moduleinit.o: src/moduleinit.C
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/moduleinit.o $(COPTC) src/moduleinit.C
+$(DSTDIR)/moduleinit.o:
+	-cd $(DSTDIR); \
+	$(CHARMC) -module NeighborLB -language charm++ fail.o -o fail
 
 charmd.exe:
 	$(COPY) $(CHARM)/bin/charmd.exe charmd.exe
