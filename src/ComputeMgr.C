@@ -403,7 +403,8 @@ ComputeMgr::createComputes(ComputeMap *map)
       masterServerObject->addClient(
         new GlobalMasterSMD(simParams->SMDk, simParams->SMDVel,
 			  simParams->SMDDir, simParams->SMDOutputFreq,
-			  simParams->firstTimestep, simParams->SMDFile)
+			  simParams->firstTimestep, simParams->SMDFile,
+			  node->molecule->numAtoms)
 		  );
     if(simParams->miscForcesOn)
       masterServerObject->addClient(new GlobalMasterMisc());

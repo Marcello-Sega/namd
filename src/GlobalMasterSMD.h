@@ -17,7 +17,7 @@ public:
      simulation <first_timestep> */
   GlobalMasterSMD(BigReal spring_constant, BigReal velocity,
 		  const Vector direction, int output_frequency,
-		  int first_timestep, const char *filename);
+		  int first_timestep, const char *filename, int);
   ~GlobalMasterSMD();
 
 private:
@@ -28,7 +28,7 @@ private:
   void output(int t, Position p, Force f);
 
   /* read the atoms from the file into group 0 (only call this once!) */
-  void parseAtoms(const char *file);
+  void parseAtoms(const char *file, int);
  
   BigReal k;
   BigReal moveVel;   // A/timestep

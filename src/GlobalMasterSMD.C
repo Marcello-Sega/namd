@@ -30,7 +30,8 @@
 
 GlobalMasterSMD::GlobalMasterSMD(BigReal spring_constant, BigReal velocity,
                const Vector direction, int output_frequency,
-	       int first_timestep, const char *filename) {
+	       int first_timestep, const char *filename,
+	       int numAtoms) {
   DebugM(3,"initialize called\n");
   moveVel = velocity;
   moveDir = direction;
@@ -38,17 +39,19 @@ GlobalMasterSMD::GlobalMasterSMD(BigReal spring_constant, BigReal velocity,
   k = spring_constant;
   currentTime = first_timestep;
 
-  parseAtoms(filename);
+  parseAtoms(filename,numAtoms);
   iout << iINFO << requestedGroups()[0].size() << " SMD ATOMS\n" << endi;
   DebugM(1,"done with initialize\n");
 }
 
-void GlobalMasterSMD::parseAtoms(const char *file) {
+void GlobalMasterSMD::parseAtoms(const char *file, int numTotalAtoms) {
   DebugM(3,"parseAtoms called\n");
   PDB smdpdb(file);
   int numatoms = smdpdb.num_atoms();
   if (numatoms < 1) 
     NAMD_die("No atoms found in SMDFile\n");
+  if (numatoms != numTotalAtoms)
+    NAMD_die("The number of atoms in SMDFile must be equal to the total number of atoms in the structure!");
 
   // add a single group
   modifyRequestedGroups().resize(1);
