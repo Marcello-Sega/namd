@@ -1881,7 +1881,6 @@ obj/ComputePme.o: \
 	src/MStream.h \
 	src/PmeCoulomb.h \
 	src/PmeFFT.h \
-	/home/jim/tmp/fftw/include/rfftw.h \
 	src/PmeRealSpace.h \
 	src/PmeKSpace.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputePme.o -c src/ComputePme.C
@@ -3166,14 +3165,14 @@ obj/PmeCoulomb.o: \
 	src/PmeCoulomb.h \
 	src/PmeBase.h \
 	src/PmeFFT.h \
-	/home/jim/tmp/fftw/include/rfftw.h \
 	src/PmeRealSpace.h \
 	src/PmeKSpace.h
 	$(CXX) $(CXXFLAGS) -o obj/PmeCoulomb.o -c src/PmeCoulomb.C
 obj/PmeFFT.o: \
 	src/PmeFFT.C \
 	src/PmeFFT.h \
-	/home/jim/tmp/fftw/include/rfftw.h
+	src/common.h \
+	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) -o obj/PmeFFT.o -c src/PmeFFT.C
 obj/PmeKSpace.o: \
 	src/PmeKSpace.C \

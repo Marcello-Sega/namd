@@ -3,7 +3,7 @@
 #define PME_FFT_H__
 
 #ifdef NAMD_FFTW
-#include "rfftw.h"
+#include <rfftw.h>
 #endif
 
 class PmeFFT {
