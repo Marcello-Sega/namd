@@ -64,6 +64,8 @@ OBJS = \
 	$(DSTDIR)/Compute.o \
 	$(DSTDIR)/ComputeAngles.o \
 	$(DSTDIR)/ComputeBonds.o \
+	$(DSTDIR)/ComputeConsForce.o \
+	$(DSTDIR)/ComputeConsForceMsgs.o \
 	$(DSTDIR)/ComputeCylindricalBC.o \
 	$(DSTDIR)/ComputeDihedrals.o \
 	$(DSTDIR)/ComputeDPME.o \
@@ -90,8 +92,7 @@ OBJS = \
 	$(DSTDIR)/ComputePme.o \
 	$(DSTDIR)/ComputeRestraints.o \
 	$(DSTDIR)/ComputeSphericalBC.o \
-	$(DSTDIR)/ComputeConsForce.o \
-	$(DSTDIR)/ComputeConsForceMsgs.o \
+	$(DSTDIR)/ComputeStir.o \
 	$(DSTDIR)/ConfigList.o \
 	$(DSTDIR)/Controller.o \
 	$(DSTDIR)/ccsinterface.o \
@@ -109,7 +110,6 @@ OBJS = \
 	$(DSTDIR)/GlobalMasterServer.o \
 	$(DSTDIR)/GlobalMasterTest.o \
 	$(DSTDIR)/GlobalMasterIMD.o \
-	$(DSTDIR)/ComputeStir.o \
 	$(DSTDIR)/GlobalMasterTcl.o \
 	$(DSTDIR)/GlobalMasterSMD.o \
 	$(DSTDIR)/GlobalMasterFreeEnergy.o \
