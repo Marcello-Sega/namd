@@ -853,8 +853,10 @@ void Sequencer::submitHalfstep(int step)
   }
  
   if (pressureProfileReduction) {
-    BigReal idz = 1.0/simParams->pressureProfileThickness;
-    BigReal zmin = simParams->pressureProfileMin;
+    const Lattice &lattice = patch->lattice;
+    BigReal pressureProfileThickness = lattice.c().z;
+    BigReal idz = 1.0/pressureProfileThickness;
+    BigReal zmin = lattice.origin().z - 0.5*lattice.c().z;
     int nslabs = simParams->pressureProfileSlabs;
     int useGroupPressure = simParams->useGroupPressure;
 
@@ -1009,8 +1011,10 @@ void Sequencer::submitReductions(int step)
 
   if (pressureProfileReduction && simParams->useGroupPressure) {
     // subtract off internal virial term, calculated as for intVirial.
-    BigReal idz = 1.0/simParams->pressureProfileThickness;
-    BigReal zmin = simParams->pressureProfileMin;
+    const Lattice &lattice = patch->lattice;
+    BigReal pressureProfileThickness = lattice.c().z;
+    BigReal idz = 1.0/pressureProfileThickness;
+    BigReal zmin = lattice.origin().z - 0.5*lattice.c().z;
     int nslabs = simParams->pressureProfileSlabs;
     int useGroupPressure = simParams->useGroupPressure;
 
