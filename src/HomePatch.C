@@ -50,7 +50,7 @@ void mollify(Vector *qtilde,const HGArrayVector &q0,const BigReal *lambda, HGArr
 
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1059 1999/08/31 15:43:31 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1060 1999/09/03 20:46:14 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, TransformList tl,
       PositionList pl, VelocityList vl) : Patch(pd,al,pl), v(vl), t(tl)
@@ -60,12 +60,12 @@ HomePatch::HomePatch(PatchID pd, AtomIDList al, TransformList tl,
     CkPrintf("HomePatch::HomePatch(...) : size mismatch-Velocities and IDs!\n");
   }
   AtomMap::Object()->registerIDs(pd,al);  
-  min.x = PatchMap::Object()->minX(patchID);
-  min.y = PatchMap::Object()->minY(patchID);
-  min.z = PatchMap::Object()->minZ(patchID);
-  max.x = PatchMap::Object()->maxX(patchID);
-  max.y = PatchMap::Object()->maxY(patchID);
-  max.z = PatchMap::Object()->maxZ(patchID);
+  min.x = PatchMap::Object()->min_a(patchID);
+  min.y = PatchMap::Object()->min_b(patchID);
+  min.z = PatchMap::Object()->min_c(patchID);
+  max.x = PatchMap::Object()->max_a(patchID);
+  max.y = PatchMap::Object()->max_b(patchID);
+  max.z = PatchMap::Object()->max_c(patchID);
   center = 0.5*(min+max);
 
   migrationSuspended = false;
@@ -103,8 +103,8 @@ void HomePatch::readPatchMap() {
     for (int j=0; j<3; j++)
       for (int k=0; k<3; k++)
       {
-	int pid =  p->pid(p->xIndex(patchID)+i-1, 
-	    p->yIndex(patchID)+j-1, p->zIndex(patchID)+k-1);
+	int pid =  p->pid(p->index_a(patchID)+i-1, 
+	    p->index_b(patchID)+j-1, p->index_c(patchID)+k-1);
 	if (pid < 0) {
 	   DebugM(5, "ERROR, for patchID " << patchID <<" I got neigh pid = " << pid << "\n");
 	}
@@ -1246,12 +1246,15 @@ void mollify(Vector *qtilde,const HGArrayVector &q0,const BigReal *lambda, HGArr
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1059 $	$Date: 1999/08/31 15:43:31 $
+ *	$Revision: 1.1060 $	$Date: 1999/09/03 20:46:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1060  1999/09/03 20:46:14  jim
+ * Support for non-orthogonal periodic boundary conditions.
+ *
  * Revision 1.1059  1999/08/31 15:43:31  jim
  * Cleaned up MOLLY code.
  *

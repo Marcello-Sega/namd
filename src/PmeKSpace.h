@@ -3,6 +3,7 @@
 #define PME_K_SPACE_H__
 
 #include "PmeBase.h"
+#include "Lattice.h"
 
 class PmeKSpace {
 
@@ -10,7 +11,8 @@ public:
   PmeKSpace(PmeGrid grid);
   ~PmeKSpace();
 
-  double compute_energy(double q_arr[], PmeBox *box, double virial[]);
+  double compute_energy(double q_arr[], Lattice lattice, double ewald,
+                        double virial[]);
   
 private:
   // b-spline moduli

@@ -277,6 +277,7 @@ public:
 	BigReal langevinPistonDecay;
 	BigReal langevinPistonTemp;
 	Vector strainRate;
+	Vector strainRate2; // off diagonal elements (xy, xz, yz)
 
 	unsigned int randomSeed;	//  Seed for random number generator
 
@@ -291,6 +292,7 @@ public:
 
 	Bool PMEOn;			//  Flag TRUE -> PME active
 	BigReal PMETolerance;		//  Direct space tolerance
+        BigReal PMEEwaldCoefficient;    //  From tolerance and cutoff
 	int PMEInterpOrder;		//  Order of interpolation
 	int PMEGridSizeX;		//  No. of grid points in x dim
 	int PMEGridSizeY;		//  No. of grid points in y dim
@@ -452,13 +454,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.h,v $
- *	$Author: justin $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1043 $	$Date: 1999/09/02 23:04:52 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1044 $	$Date: 1999/09/03 20:46:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1044  1999/09/03 20:46:28  jim
+ * Support for non-orthogonal periodic boundary conditions.
+ *
  * Revision 1.1043  1999/09/02 23:04:52  justin
  * Eliminated MDComm from all files and Makefiles
  *

@@ -4,6 +4,7 @@
 
 #include "NamdTypes.h"
 #include <math.h>
+#include "Tensor.h"
 
 #define rint(X) floor((X)+0.5)
 
@@ -12,7 +13,7 @@ typedef Vector ScaledPosition;
 class Lattice
 {
 public:
-  Lattice(void) : a1(0), a2(0), a3(0) {};
+  Lattice(void) : p1(0), p2(0), p3(0) {};
 
   // maps a transformation triplet onto a single integer
   static int index(int i=0, int j=0, int k=0)
@@ -21,118 +22,128 @@ public:
   }
 
   // sets lattice basis vectors and origin (fixed center)
-  // sets lattice basis vectors and origin (fixed center)
   void set(Vector A, Vector B, Vector C, Position Origin)
   {
-    a1 = A.x;  b1 = ( a1 ? 1. / a1 : 0 );
-    a2 = B.y;  b2 = ( a2 ? 1. / a2 : 0 );
-    a3 = C.z;  b3 = ( a3 ? 1. / a3 : 0 );
-    o = Origin;
+    a1 = A; a2 = B; a3 = C; o = Origin;
+    p1 = ( a1.length2() ? 1 : 0 );
+    p2 = ( a2.length2() ? 1 : 0 );
+    p3 = ( a3.length2() ? 1 : 0 );
+    if ( ! p1 ) a1 = Vector(1.0,0.0,0.0);
+    if ( ! p2 ) {
+      Vector u1 = a1 / a1.length();
+      Vector e_z(0.0,0.0,1.0);
+      if ( fabs(e_z * u1) < 0.9 ) { a2 = cross(e_z,a1); }
+      else { a2 = cross(Vector(1.0,0.0,0.0),a1); }
+      a2 /= a2.length();
+    }
+    if ( ! p3 ) {
+      a3 = cross(a1,a2);
+      a3 /= a3.length();
+    }
+    if ( volume() < 0.0 ) a3 *= -1.0;
+    recalculate();
   }
 
   // rescale lattice dimensions by factor, origin doesn't move
-  void rescale(Vector factor)
+  void rescale(Tensor factor)
   {
-    a1 *= factor.x;  b1 = ( a1 ? 1. / a1 : 0 );
-    a2 *= factor.y;  b2 = ( a2 ? 1. / a2 : 0 );
-    a3 *= factor.z;  b3 = ( a3 ? 1. / a3 : 0 );
+    a1 = factor * a1;
+    a2 = factor * a2;
+    a3 = factor * a3;
+    recalculate();
   }
 
   // rescale a position, keeping origin constant, assume 3D
-  void rescale(Position &p, Vector factor) const
+  void rescale(Position &p, Tensor factor) const
   {
     p -= o;
-    p.x *= factor.x;
-    p.y *= factor.y;
-    p.z *= factor.z;
+    p = factor * p;
     p += o;
   }
 
   // transform scaled position to unscaled position
   Position unscale(ScaledPosition s) const
   {
-    return Vector
-    (
-	( a1 ? ( o.x + a1 * s.x ) : s.x ),
-	( a2 ? ( o.y + a2 * s.y ) : s.y ),
-	( a3 ? ( o.z + a3 * s.z ) : s.z )
-    );
+    return (o + a1*s.x + a2*s.y + a3*s.z);
   }
 
   // transform unscaled position to scaled position
   ScaledPosition scale(Position p) const
   {
-    return Vector
-    (
-	( a1 ? ( b1 * ( p.x - o.x ) ) : p.x ),
-	( a2 ? ( b2 * ( p.y - o.y ) ) : p.y ),
-	( a3 ? ( b3 * ( p.z - o.z ) ) : p.z )
-    );
+    p -= o;
+    return Vector(b1*p,b2*p,b3*p);
   }
 
   // transforms a position nearest to a SCALED reference position
   Position nearest(Position data, ScaledPosition ref) const
   {
-    BigReal tmp;
-    return Vector
-    (
-	( a1 ? ( tmp=b1*(data.x-o.x)-ref.x, o.x+a1*(ref.x+tmp-rint(tmp)) ) : data.x ),
-	( a2 ? ( tmp=b2*(data.y-o.y)-ref.y, o.y+a2*(ref.y+tmp-rint(tmp)) ) : data.y ),
-	( a3 ? ( tmp=b3*(data.z-o.z)-ref.z, o.z+a3*(ref.z+tmp-rint(tmp)) ) : data.z )
-    );
+    ScaledPosition sn = scale(data);
+    if ( p1 ) {
+      BigReal tmp = sn.x - ref.x;
+      sn.x = ref.x + tmp - rint(tmp);
+    }
+    if ( p2 ) {
+      BigReal tmp = sn.y - ref.y;
+      sn.y = ref.y + tmp - rint(tmp);
+    }
+    if ( p3 ) {
+      BigReal tmp = sn.z - ref.z;
+      sn.z = ref.z + tmp - rint(tmp);
+    }
+    return unscale(sn);
   }
 
   // transforms a position nearest to a SCALED reference position
   // adds transform for later reversal
   Position nearest(Position data, ScaledPosition ref, Transform *t) const
   {
-    BigReal tmp;
-    BigReal rit;
-    Vector v = data;
-    if ( a1 ) {
-      tmp=b1*(data.x-o.x)-ref.x;
-      rit = rint(tmp);
-      v.x = o.x+a1*(ref.x+tmp-rit);
+    ScaledPosition sn = scale(data);
+    if ( p1 ) {
+      BigReal tmp = sn.x - ref.x;
+      BigReal rit = rint(tmp);
+      sn.x = ref.x + tmp - rit;
       t->i -= (int) rit;
     }
-    if ( a2 ) {
-      tmp=b2*(data.y-o.y)-ref.y;
-      rit = rint(tmp);
-      v.y = o.y+a2*(ref.y+tmp-rit);
+    if ( p2 ) {
+      BigReal tmp = sn.y - ref.y;
+      BigReal rit = rint(tmp);
+      sn.y = ref.y + tmp - rit;
       t->j -= (int) rit;
     }
-    if ( a3 ) {
-      tmp=b3*(data.z-o.z)-ref.z;
-      rit = rint(tmp);
-      v.z = o.z+a3*(ref.z+tmp-rit);
+    if ( p3 ) {
+      BigReal tmp = sn.z - ref.z;
+      BigReal rit = rint(tmp);
+      sn.z = ref.z + tmp - rit;
       t->k -= (int) rit;
     }
-    return v;
+    return unscale(sn);
   }
 
   // reverses cumulative transformations for output
   Position reverse_transform(Position data, const Transform &t) const
   {
-    return ( data - Vector(t.i*a1, t.j*a2, t.k*a3) );
+    return ( data - t.i*a1 - t.j*a2 - t.k*a3 );
   }
 
   // calculates shortest vector from p2 to p1 (equivalent to p1 - p2)
-  Vector delta(Position p1, Position p2) const
+  Vector delta(Position pos1, Position pos2) const
   {
-    Vector result = p1 - p2;
-    result.x -= a1 * rint( b1 * result.x );
-    result.y -= a2 * rint( b2 * result.y );
-    result.z -= a3 * rint( b3 * result.z );
+    Vector diff = pos1 - pos2;
+    Vector result = diff;
+    if ( p1 ) result -= a1*rint(b1*diff);
+    if ( p2 ) result -= a2*rint(b2*diff);
+    if ( p3 ) result -= a3*rint(b3*diff);
     return result;
   }
 
   // calculates shortest vector from origin to p1 (equivalent to p1 - o)
-  Vector delta(Position p1) const
+  Vector delta(Position pos1) const
   {
-    Vector result = p1 - o;
-    result.x -= a1 * rint( b1 * result.x );
-    result.y -= a2 * rint( b2 * result.y );
-    result.z -= a3 * rint( b3 * result.z );
+    Vector diff = pos1 - o;
+    Vector result = diff;
+    if ( p1 ) result -= a1*rint(b1*diff);
+    if ( p2 ) result -= a2*rint(b2*diff);
+    if ( p3 ) result -= a3*rint(b3*diff);
     return result;
   }
 
@@ -142,7 +153,7 @@ public:
     if ( i != 13 )
     {
       dt = new Position[n];
-      Vector shift( (i%3-1) * a1 , ((i/3)%3-1) * a2 , (i/9-1) * a3 );
+      Vector shift = (i%3-1) * a1 + ((i/3)%3-1) * a2 + (i/9-1) * a3;
       for( int j = 0; j < n; ++j )
         dt[j] = d[j] + shift;
     }
@@ -159,29 +170,58 @@ public:
     *d = NULL;
   }
 
-  BigReal a() const { return a1; }
-  BigReal b() const { return a2; }
-  BigReal c() const { return a3; }
+  // lattice vectors
+  Vector a() const { return a1; }
+  Vector b() const { return a2; }
+  Vector c() const { return a3; }
 
-  Vector dimension() const
-  {
-    return Vector(a1,a2,a3);
+  // only if along x y z axes
+  int orthogonal() const {
+    return ( ! ( a1.y || a1.z || a2.x || a2.z || a3.x || a3.y ) );
   }
 
+  // origin (fixed center of cell)
   Vector origin() const
   {
     return o;
   }
 
+  // reciprocal lattice vectors
+  Vector a_r() const { return b1; }
+  Vector b_r() const { return b2; }
+  Vector c_r() const { return b3; }
+
+  // periodic along this direction
+  int a_p() const { return p1; }
+  int b_p() const { return p2; }
+  int c_p() const { return p3; }
+
   BigReal volume(void) const
   {
-    return ( a1 * a2 * a3 );
+    return ( p1 && p2 && p3 ? cross(a1,a2) * a3 : 0.0 );
   }
 
 private:
-  BigReal a1,a2,a3; // real lattice vectors (eventually)
-  BigReal b1,b2,b3; // reciprocal lattice vectors (eventually)
+  Vector a1,a2,a3; // real lattice vectors
+  Vector b1,b2,b3; // reciprocal lattice vectors (more or less)
   Vector o; // origin (fixed center of cell)
+  int p1, p2, p3; // periodic along this lattice vector?
+
+  // calculate reciprocal lattice vectors
+  void recalculate(void) {
+    {
+      Vector c = cross(a2,a3);
+      b1 = c / ( a1 * c );
+    }
+    {
+      Vector c = cross(a3,a1);
+      b2 = c / ( a2 * c );
+    }
+    {
+      Vector c = cross(a1,a2);
+      b3 = c / ( a3 * c );
+    }
+  }
 
 };
 
@@ -192,12 +232,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1999/01/06 19:19:20 $
+ *	$Revision: 1.1011 $	$Date: 1999/09/03 20:46:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Lattice.h,v $
+ * Revision 1.1011  1999/09/03 20:46:15  jim
+ * Support for non-orthogonal periodic boundary conditions.
+ *
  * Revision 1.1010  1999/01/06 19:19:20  jim
  * Broadcast and Sequencers understand anisotropic volume rescaling factors.
  *

@@ -68,13 +68,6 @@ void ComputeNonbondedUtil::submitReductionData(BigReal *data, SubmitReduction *r
   reduction->item(REDUCTION_COMPUTE_CHECKSUM) += 1.;
 }
 
-#ifdef DPME
-//  This is defined by dpme if needed.
-extern "C" {
-  int find_ewaldcof(double *cutoff, double *dtol, double *ewaldcof);
-}
-#endif
-
 //  Not in KCC's math.h
 extern "C" {
   extern double erfc(double);
@@ -129,21 +122,13 @@ void ComputeNonbondedUtil::select(void)
   c7 = 0.5 / ( cutoff * cutoff2 );
   c8 = 1.5 / cutoff;
 
-#ifdef DPME
   int PMEOn = simParams->PMEOn;
 
   if ( PMEOn ) {
-    double cutoff_double = cutoff;
-    double dtol_double = simParams->PMETolerance;
-    double ewaldcof_double;
-    find_ewaldcof(&cutoff_double, &dtol_double, &ewaldcof_double);
-    ewaldcof = ewaldcof_double;
+    ewaldcof = simParams->PMEEwaldCoefficient;
     BigReal TwoBySqrtPi = 1.12837916709551;
     pi_ewaldcof = TwoBySqrtPi * ewaldcof;
   }
-#else
-  int PMEOn = 0;
-#endif
 
   if ( ! ( simParams->fullDirectOn || simParams->FMAOn || PMEOn ) )
   {
@@ -419,12 +404,15 @@ void ComputeNonbondedUtil::select(void)
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1026 $	$Date: 1999/08/20 19:11:10 $
+ *	$Revision: 1.1027 $	$Date: 1999/09/03 20:46:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1027  1999/09/03 20:46:09  jim
+ * Support for non-orthogonal periodic boundary conditions.
+ *
  * Revision 1.1026  1999/08/20 19:11:10  jim
  * Added MOLLY - mollified impluse method.
  *

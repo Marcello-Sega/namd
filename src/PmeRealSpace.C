@@ -79,7 +79,7 @@ void PmeRealSpace::fill_charges(double *q_arr, PmeParticle p[]) {
 }
 
 void PmeRealSpace::compute_forces(const double *q_arr, const PmeParticle p[],
-                                  PmeVector f[]) {
+                                  Vector f[]) {
   
   int i, j, k, l, stride;
   double f1, f2, f3;

@@ -80,8 +80,8 @@ class PDB {
                                   Real x2, Real y2, Real z2, Lattice lat );
 
 	// Find the extreme edges of the molecule
-    void find_extremes(Vector *low, Vector *high);
-    void find_99percent_extremes(Vector *low, Vector *high);
+    void find_extremes(BigReal *min, BigReal *max, Vector rec,
+                                                  BigReal frac=1.0) const;
 
     void set_all_positions(Vector *);	//  Reset all the positions in PDB
 
@@ -94,12 +94,15 @@ class PDB {
  *
  *	$RCSfile: PDB.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1998/05/25 21:22:04 $
+ *	$Revision: 1.1003 $	$Date: 1999/09/03 20:46:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PDB.h,v $
+ * Revision 1.1003  1999/09/03 20:46:17  jim
+ * Support for non-orthogonal periodic boundary conditions.
+ *
  * Revision 1.1002  1998/05/25 21:22:04  jim
  * Use 99% bounding box unless FMA is active.  Avoids huge number of
  * patches when a small number of atoms have drifted off.

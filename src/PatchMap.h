@@ -30,15 +30,15 @@ public:
   static PatchMap *Instance();
   inline static PatchMap *Object() { return CpvAccess(PatchMap_instance); }
 
+  void initialize(ScaledPosition xmin, ScaledPosition xmax,
+                      Lattice lattice, BigReal patchSize);
   void checkMap();
-
 
   ~PatchMap(void);
 
   enum { MaxTwoAway = 5*5*5 - 3*3*3 };
   enum { MaxOneAway = 3*3*3 - 1 };
   enum { MaxOneOrTwoAway = MaxOneAway + MaxTwoAway };
-  enum ErrCode { OK = 0, ERROR = -1 };
 
   static void registerPatchMgr(PatchMgr *pmgr) {
     CpvAccess(PatchMap_patchMgr) = pmgr;
@@ -47,111 +47,62 @@ public:
   HomePatchList *homePatchList();
   int numHomePatches(void);
 
-  // numPatches() returns the number of patches being managed 
-  // by the map.
-  inline int numPatches(void);
+  // returns the number of patches being managed 
+  inline int numPatches(void) const { return nPatches; }
 
-  void setGridOriginAndLength(Vector o, Vector l);
+  // returns the number of patches in each dimension
+  inline int gridsize_a(void) const { return aDim; }
+  inline int gridsize_b(void) const { return bDim; }
+  inline int gridsize_c(void) const { return cDim; }
 
-  // assignToPatch(p,l) returns the patchID in which the position
-  // p should be placed, based on the lattice l
-  inline PatchID assignToPatch(Position p /* , Lattice &l */);
+  // returns 1 if periodic in each dimension
+  inline int periodic_a(void) const { return aPeriodic; }
+  inline int periodic_b(void) const { return bPeriodic; }
+  inline int periodic_c(void) const { return cPeriodic; }
 
-  // xDimension() returns the how many patches span the simulation space
-  // along the x axis.
-  inline int xDimension(void);
+  // returns the origin (minimum, not center) of patch grid
+  inline ScaledPosition origin(void) const {
+    return ScaledPosition(aOrigin,bOrigin,cOrigin);
+  }
 
-  // yDim() returns the how many patches span the simulation space
-  // along the y axis.
-  inline int yDimension(void);
+  // returns the patch id for the given indices
+  inline int pid(int aIndex, int bIndex, int cIndex);
 
-  // zDim() returns the how many patches span the simulation space
-  // along the z axis.
-  inline int zDimension(void);
+  // returns the [abc] index for the given patch id.
+  inline int index_a(int pid) const { return pid % aDim; }
+  inline int index_b(int pid) const { return (pid / aDim) % bDim; }
+  inline int index_c(int pid) const { return pid / (aDim*bDim); }
 
-  // Origin() returns the vector origin
-  inline Vector Origin	(void);
+  // returns the min/max [abc] scaled coordinate
+  inline BigReal min_a(int pid) const { return patchData[pid].aMin; }
+  inline BigReal max_a(int pid) const { return patchData[pid].aMax; }
+  inline BigReal min_b(int pid) const { return patchData[pid].bMin; }
+  inline BigReal max_b(int pid) const { return patchData[pid].bMax; }
+  inline BigReal min_c(int pid) const { return patchData[pid].cMin; }
+  inline BigReal max_c(int pid) const { return patchData[pid].cMax; }
 
-  inline int xIsPeriodic(void);
-  inline int yIsPeriodic(void);
-  inline int zIsPeriodic(void);
-
-  // pid(xindex, yindex, zindex) returns the patch id for the given
-  // patch coordinates.
-  inline int pid(int xindex, int yindex, int zindex);
-
-  // xIndex(pid) returns the x index for the given patch id.
-  inline int xIndex(int pid);
-
-  // yIndex(pid) returns the y index for the given patch id.
-  inline int yIndex(int pid);
-
-  // zIndex(pid) returns the z index for the given patch id.
-  inline int zIndex(int pid);
+  // asssigns atom to patch based on position and lattice
+  inline PatchID assignToPatch(Position p, const Lattice &l);
 
   // gives more downstream patch of pid1, pid2; handles periodicity right
   // given patches must be neighbors!!!
   inline int downstream(int pid1, int pid2);
 
-  // node(pid) returns the node where the patch currently exists.
-  inline int node(int pid);
-
-  // minX(pid) returns the minimum x coordinate of the region of
-  // space the patch is responsible for.
-  inline Coordinate minX(int pid);
-
-  // maxX(pid) returns the maximum x coordinate of the region of
-  // space the patch is responsible for.
-  inline Coordinate maxX(int pid);
-
-  // minY(pid) returns the minimum y coordinate of the region of
-  // space the patch is responsible for.
-  inline Coordinate minY(int pid);
-
-  // maxY(pid) returns the maximum y coordinate of the region of
-  // space the patch is responsible for.
-  inline Coordinate maxY(int pid);
-  
-  // minZ(pid) returns the minimum z coordinate of the region of
-  // space the patch is responsible for.
-  inline Coordinate minZ(int pid);
-
-  // maxZ(pid) returns the maximum z coordinate of the region of
-  // space the patch is responsible for.
-  inline Coordinate maxZ(int pid);
+  // returns the node where the patch currently exists.
+  inline int node(int pid) const { return patchData[pid].node; }
 
   // numCids(pid) returns the number of compute ids which are registered
-  // with the patch.  
-  inline int numCids(int pid);
+  inline int numCids(int pid) const { return patchData[pid].numCids; }
   
   // cid(pid,i) returns the i-th compute id registered
-  // with the patch.  
-  inline int cid(int pid, int i);
-
-  void setPeriodicity(int x_per, int y_per, int z_per);
-
-  // allocatePids(x_dim, y_dim, z_dim) tells the PatchMap to set aside
-  // room for x_dim * y_dim * z_dim patches.
-  ErrCode allocatePids(int x_dim, int y_dim, int z_dim);
-
-  // PatchID requestPid(int *xi, int *yi, int *zi) tells the
-  // PatchMap to return the next unused pid, and the indices of
-  // that patch.
-  PatchID requestPid(int *xi, int *yi, int *zi);
-
-  // storePatch(pid, node, max_computes, x0, y0, z0, x1, y1, z1)
-  // stores the info about the patch into the previously requested
-  // pid.
-  void storePatchCoord(PatchID pid, ScaledPosition min, ScaledPosition max);
+  inline int cid(int pid, int i) const { return patchData[pid].cids[i]; }
 
   void assignNode(PatchID, NodeID);
-
-  void allocateCompute(PatchID, int);
 
   // newCid(pid,cid) stores a compute id associated with
   // patch id pid.  Error returned when there is no room to store
   // the pid.
-  ErrCode newCid(int pid, int cid);
+  void newCid(int pid, int cid);
 
   // oneAwayNeighbors(pid, &n, neighbor_ids) returns the number 
   // and ids of adjacent patches.  The caller is expected to provide
@@ -198,22 +149,21 @@ private:
   struct PatchData
   {
     int node;
-    int xi, yi, zi;
-    Coordinate x0, x1, y0, y1, z0, z1;
+    int aIndex, bIndex, cIndex;
+    Coordinate aMin, aMax, bMin, bMax, cMin, cMax;
     int numCids;
     int numCidsAllocated;
     ComputeID *cids;
     Patch *myPatch;
     HomePatch *myHomePatch;
   };
-  int curPatch;
   int nPatches;
   PatchData *patchData;
-  int xDim, yDim, zDim;
-  int xPeriodic, yPeriodic, zPeriodic;
-  int xMaxIndex, yMaxIndex, zMaxIndex;
-  BigReal xOrigin, yOrigin, zOrigin;
-  BigReal xLength, yLength, zLength;
+  int aDim, bDim, cDim;
+  int aPeriodic, bPeriodic, cPeriodic;
+  int aMaxIndex, bMaxIndex, cMaxIndex;
+  BigReal aOrigin, bOrigin, cOrigin;
+  BigReal aLength, bLength, cLength;
 
 };
 
@@ -233,12 +183,15 @@ inline Patch *PatchMap::patch(PatchID pid)
  *
  *	$RCSfile: PatchMap.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1999/08/11 16:52:23 $
+ *	$Revision: 1.1014 $	$Date: 1999/09/03 20:46:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.h,v $
+ * Revision 1.1014  1999/09/03 20:46:19  jim
+ * Support for non-orthogonal periodic boundary conditions.
+ *
  * Revision 1.1013  1999/08/11 16:52:23  jim
  * Make homePatch() method return NULL for proxies rather than casting.
  *

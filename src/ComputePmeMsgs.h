@@ -41,7 +41,7 @@ public:
   // data members
   int node;
   int numParticles;
-  PmeVector *forces;
+  Vector *forces;
 
   // constructor and destructor
   ComputePmeResultsMsg(void);
@@ -61,12 +61,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1999/06/08 14:52:07 $
+ *	$Revision: 1.2 $	$Date: 1999/09/03 20:46:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePmeMsgs.h,v $
+ * Revision 1.2  1999/09/03 20:46:12  jim
+ * Support for non-orthogonal periodic boundary conditions.
+ *
  * Revision 1.1  1999/06/08 14:52:07  jim
  * Incorporated Justin's faster PME code along side DPME.
  *

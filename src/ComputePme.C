@@ -203,16 +203,10 @@ void ComputePmeMaster::recvData(ComputePmeDataMsg *msg)
   Lattice lattice = host->getFlags()->lattice;
   SimParameters * simParams = Node::Object()->simParameters;
   int i;
-  PmeVector *localResults;
+  Vector *localResults;
   double recip_vir[6];
   BigReal ewaldcof = ComputeNonbondedUtil::ewaldcof;
-  PmeBox box;
-  box.recipx=1.0/lattice.a();
-  box.recipy=1.0/lattice.b();
-  box.recipz=1.0/lattice.c();
-  box.volume=lattice.volume();
-  box.ewald = ewaldcof;
-  localResults = new PmeVector[numLocalAtoms];
+  localResults = new Vector[numLocalAtoms];
 
   // perform calculations
   BigReal electEnergy = 0;
@@ -235,7 +229,7 @@ void ComputePmeMaster::recvData(ComputePmeDataMsg *msg)
   // Last argument should be nonzero if this is the last call
   // Compute it using mytime, tsteps, etc.
   // I'll just let the runtime environment take care of it for now.
-  recipEnergy = myPme->compute_recip(localData, &box, recip_vir, localResults);
+  recipEnergy = myPme->compute_recip(localData, lattice, ewaldcof, recip_vir, localResults);
   if ( runcount == 1 ) {
     iout << iINFO << "PME reciprocal sum CPU time per evaluation: "
          << (CmiTimer() - pme_start_time) << "\n" << endi;
@@ -256,7 +250,7 @@ void ComputePmeMaster::recvData(ComputePmeDataMsg *msg)
   reduction->item(REDUCTION_VIRIAL_SLOW_Z) += (BigReal)(recip_vir[5]);
   reduction->submit();
 
-  PmeVector *results_ptr;
+  Vector *results_ptr;
   results_ptr = localResults;
 
   numLocalAtoms = 0;
@@ -264,7 +258,7 @@ void ComputePmeMaster::recvData(ComputePmeDataMsg *msg)
     ComputePmeResultsMsg *msg = new ComputePmeResultsMsg;
     msg->node = homeNode[i];
     msg->numParticles = endForNode[i] - numLocalAtoms;
-    msg->forces = new PmeVector[msg->numParticles];
+    msg->forces = new Vector[msg->numParticles];
     for ( int j = 0; j < msg->numParticles; ++j, ++results_ptr ) {
       msg->forces[j] = *results_ptr;
     }
@@ -292,7 +286,7 @@ void ComputePme::recvResults(ComputePmeResultsMsg *msg)
     return;
   }
 
-  PmeVector *results_ptr = msg->forces;
+  Vector *results_ptr = msg->forces;
   ResizeArrayIter<PatchElem> ap(patchList);
 
   // add in forces
@@ -321,12 +315,15 @@ void ComputePme::recvResults(ComputePmeResultsMsg *msg)
  *
  *	$RCSfile: ComputePme.C,v $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1999/08/20 19:11:11 $
+ *	$Revision: 1.6 $	$Date: 1999/09/03 20:46:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePme.C,v $
+ * Revision 1.6  1999/09/03 20:46:10  jim
+ * Support for non-orthogonal periodic boundary conditions.
+ *
  * Revision 1.5  1999/08/20 19:11:11  jim
  * Added MOLLY - mollified impluse method.
  *

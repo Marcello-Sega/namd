@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *  $RCSfile: SimParameters.C,v $
- *  $Author: justin $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1077 $  $Date: 1999/09/02 23:04:52 $
+ *  $Author: jim $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1078 $  $Date: 1999/09/03 20:46:27 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1078  1999/09/03 20:46:27  jim
+ * Support for non-orthogonal periodic boundary conditions.
+ *
  * Revision 1.1077  1999/09/02 23:04:52  justin
  * Eliminated MDComm from all files and Makefiles
  *
@@ -1587,8 +1590,10 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
        xscFile.getline(labels,1023);
      } while ( strncmp(labels,"#$LABELS ",9) );
 
-     int a_x, b_y, c_z, o_x, o_y, o_z, s_x, s_y, s_z;
-     a_x = b_y = c_z = o_x = o_y = o_z = s_x = s_y = s_z = -1;
+     int a_x, a_y, a_z, b_x, b_y, b_z, c_x, c_y, c_z;
+     a_x = a_y = a_z = b_x = b_y = b_z = c_x = c_y = c_z = -1;
+     int o_x, o_y, o_z, s_u, s_v, s_w, s_x, s_y, s_z;
+     o_x = o_y = o_z = s_u = s_v = s_w = s_x = s_y = s_z = -1;
 
      int pos = 0;
      char *l_i = labels + 8;
@@ -1598,11 +1603,20 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
        for ( l_i2 = l_i; *l_i2 && *l_i2 != ' '; ++l_i2 );
        if ( (l_i2 - l_i) == 3 && (l_i[1] == '_') ) {
 	 if (l_i[0] == 'a' && l_i[2] == 'x') a_x = pos;
+	 if (l_i[0] == 'a' && l_i[2] == 'y') a_y = pos;
+	 if (l_i[0] == 'a' && l_i[2] == 'z') a_z = pos;
+	 if (l_i[0] == 'b' && l_i[2] == 'x') b_x = pos;
 	 if (l_i[0] == 'b' && l_i[2] == 'y') b_y = pos;
+	 if (l_i[0] == 'b' && l_i[2] == 'z') b_z = pos;
+	 if (l_i[0] == 'c' && l_i[2] == 'x') c_x = pos;
+	 if (l_i[0] == 'c' && l_i[2] == 'y') c_y = pos;
 	 if (l_i[0] == 'c' && l_i[2] == 'z') c_z = pos;
 	 if (l_i[0] == 'o' && l_i[2] == 'x') o_x = pos;
 	 if (l_i[0] == 'o' && l_i[2] == 'y') o_y = pos;
 	 if (l_i[0] == 'o' && l_i[2] == 'z') o_z = pos;
+	 if (l_i[0] == 's' && l_i[2] == 'u') s_u = pos;
+	 if (l_i[0] == 's' && l_i[2] == 'v') s_v = pos;
+	 if (l_i[0] == 's' && l_i[2] == 'w') s_w = pos;
 	 if (l_i[0] == 's' && l_i[2] == 'x') s_x = pos;
 	 if (l_i[0] == 's' && l_i[2] == 'y') s_y = pos;
 	 if (l_i[0] == 's' && l_i[2] == 'z') s_z = pos;
@@ -1617,11 +1631,20 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
        xscFile >> tmp;
        if ( ! xscFile ) NAMD_die("Error reading extended system file.\n");
        if ( pos == a_x ) cellBasisVector1.x = tmp;
+       if ( pos == a_y ) cellBasisVector1.y = tmp;
+       if ( pos == a_z ) cellBasisVector1.z = tmp;
+       if ( pos == b_x ) cellBasisVector2.x = tmp;
        if ( pos == b_y ) cellBasisVector2.y = tmp;
+       if ( pos == b_z ) cellBasisVector2.z = tmp;
+       if ( pos == c_x ) cellBasisVector3.x = tmp;
+       if ( pos == c_y ) cellBasisVector3.y = tmp;
        if ( pos == c_z ) cellBasisVector3.z = tmp;
        if ( pos == o_x ) cellOrigin.x = tmp;
        if ( pos == o_y ) cellOrigin.y = tmp;
        if ( pos == o_z ) cellOrigin.z = tmp;
+       if ( pos == s_u ) strainRate2.x = tmp;
+       if ( pos == s_v ) strainRate2.y = tmp;
+       if ( pos == s_w ) strainRate2.z = tmp;
        if ( pos == s_x ) strainRate.x = tmp;
        if ( pos == s_y ) strainRate.y = tmp;
        if ( pos == s_z ) strainRate.z = tmp;
@@ -1629,7 +1652,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
    }
 
-   /* Save for more flexible PBCs in future
    if ( opts.defined("cellBasisVector3") &&
   ! opts.defined("cellBasisVector2") )
    {
@@ -1640,21 +1662,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
   ! opts.defined("cellBasisVector1") )
    {
   NAMD_die("Used cellBasisVector2 without cellBasisVector1!");
-   }
-   */
-
-   if (  cellBasisVector1.y || cellBasisVector1.z
-      || cellBasisVector2.x || cellBasisVector2.z
-      || cellBasisVector3.x || cellBasisVector3.y )
-   {
-  NAMD_die("Basis vectors 1/2/3 must align with x/y/z axes.");
-   }
-
-   if (  cellBasisVector1.x < 0
-      || cellBasisVector2.y < 0
-      || cellBasisVector3.z < 0 )
-   {
-  NAMD_die("Basis vector elements must be positive.");
    }
 
    lattice.set(cellBasisVector1,cellBasisVector2,cellBasisVector3,cellOrigin);
@@ -2260,12 +2267,28 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
    //  Check on PME parameters
    if (PMEOn) {  // idiot checking
-     if ( lattice.volume() == 0. )
+     if ( lattice.volume() == 0. ) {
 	NAMD_die("PME requires periodic boundary conditions.");
+     }
+     BigReal tolerance = PMETolerance;
+     BigReal ewaldcof = 1.0;
+     while ( erfc(ewaldcof*cutoff)/cutoff >= tolerance ) ewaldcof *= 2.0;
+     BigReal ewaldcof_lo = 0.;
+     BigReal ewaldcof_hi = ewaldcof;
+     for ( int i = 0; i < 100; ++i ) {
+       ewaldcof = 0.5 * ( ewaldcof_lo + ewaldcof_hi );
+       if ( erfc(ewaldcof*cutoff)/cutoff >= tolerance ) {
+         ewaldcof_lo = ewaldcof;
+       } else {
+         ewaldcof_hi = ewaldcof;
+       }
+     }
+     PMEEwaldCoefficient = ewaldcof;
    } else {  // initialize anyway
      PMEGridSizeX = 0;
      PMEGridSizeY = 0;
      PMEGridSizeZ = 0;
+     PMEEwaldCoefficient = 0;
    }
 
 
@@ -2529,8 +2552,13 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    iout << iINFO << "STEPS PER CYCLE        " << stepsPerCycle << "\n";
    iout << endi;
 
-   if ( lattice.a() || lattice.b() || lattice.c() ) {
-     iout << iINFO << "PERIODIC CELL          " << lattice.dimension() << "\n";
+   if ( lattice.a_p() || lattice.b_p() || lattice.c_p() ) {
+     if ( lattice.a_p() )
+       iout << iINFO << "PERIODIC CELL BASIS 1  " << lattice.a() << "\n";
+     if ( lattice.b_p() )
+       iout << iINFO << "PERIODIC CELL BASIS 2  " << lattice.b() << "\n";
+     if ( lattice.c_p() )
+       iout << iINFO << "PERIODIC CELL BASIS 3  " << lattice.c() << "\n";
      iout << iINFO << "PERIODIC CELL CENTER   " << lattice.origin() << "\n";
      if (wrapWater) {
        iout << iINFO << "WRAPPING WATERS AROUND PERIODIC BOUNDARIES ON OUTPUT.\n";
@@ -3285,6 +3313,8 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << iINFO << "PARTICLE MESH EWALD (PME) ACTIVE\n";
      iout << iINFO << "PME TOLERANCE               "
 	<< PMETolerance << "\n";
+     iout << iINFO << "PME EWALD COEFFICIENT       "
+	<< PMEEwaldCoefficient << "\n";
      iout << iINFO << "PME INTERPOLATION ORDER     "
 	<< PMEInterpOrder << "\n";
      iout << iINFO << "PME GRID DIMENSIONS         "
@@ -3528,12 +3558,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1077 $  $Date: 1999/09/02 23:04:52 $
+ *  $Revision: 1.1078 $  $Date: 1999/09/03 20:46:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1078  1999/09/03 20:46:27  jim
+ * Support for non-orthogonal periodic boundary conditions.
+ *
  * Revision 1.1077  1999/09/02 23:04:52  justin
  * Eliminated MDComm from all files and Makefiles
  *

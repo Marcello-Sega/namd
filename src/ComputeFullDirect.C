@@ -39,7 +39,7 @@ BigReal calc_fulldirect(BigReal *data1, BigReal *results1, int n1,
                         BigReal *data2, BigReal *results2, int n2,
 			int selfmode, Lattice *lattice, Vector &virial)
 {
-  if ( lattice->a() != 0. || lattice->b() != 0. || lattice->c() != 0. ) {
+  if ( lattice->a_p() || lattice->b_p() || lattice->c_p() ) {
     #define FULLDIRECT_PERIODIC
     #include "ComputeFullDirectBase.h"
   } else {
@@ -287,12 +287,15 @@ void ComputeFullDirect::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1022 $	$Date: 1999/08/20 19:11:08 $
+ *	$Revision: 1.1023 $	$Date: 1999/09/03 20:46:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFullDirect.C,v $
+ * Revision 1.1023  1999/09/03 20:46:08  jim
+ * Support for non-orthogonal periodic boundary conditions.
+ *
  * Revision 1.1022  1999/08/20 19:11:08  jim
  * Added MOLLY - mollified impluse method.
  *

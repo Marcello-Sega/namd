@@ -232,10 +232,14 @@ void ComputeDPMEMaster::recvData(ComputeDPMEDataMsg *msg)
   atom_info.nlocal = numLocalAtoms;
   atom_info.nother = 0;
 
+  if ( ! lattice.orthogonal() ) {
+    NAMD_die("DPME only supports orthogonal PBC's.");
+  }
+
   BoxInfo box_info;
-  box_info.box.x = lattice.a();
-  box_info.box.y = lattice.b();
-  box_info.box.z = lattice.c();
+  box_info.box.x = lattice.a().x;
+  box_info.box.y = lattice.b().y;
+  box_info.box.z = lattice.c().z;
   box_info.box.origin = 0.;  // why only one number?
   box_info.prd.x = box_info.box.x;
   box_info.prd.y = box_info.box.y;
@@ -387,12 +391,15 @@ void ComputeDPME::recvResults(ComputeDPMEResultsMsg *msg)
  *
  *	$RCSfile: ComputeDPME.C,v $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.16 $	$Date: 1999/08/20 19:11:07 $
+ *	$Revision: 1.17 $	$Date: 1999/09/03 20:46:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPME.C,v $
+ * Revision 1.17  1999/09/03 20:46:06  jim
+ * Support for non-orthogonal periodic boundary conditions.
+ *
  * Revision 1.16  1999/08/20 19:11:07  jim
  * Added MOLLY - mollified impluse method.
  *

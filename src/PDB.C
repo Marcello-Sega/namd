@@ -310,64 +310,25 @@ PDBAtom *PDB::atom(int place)
 }
 
 
-// find the lowest and highest bounds to the atom
-void PDB::find_extremes(Vector *low, Vector *high)
+// find the lowest and highest bounds for a fraction of the atoms
+void PDB::find_extremes(BigReal *min, BigReal *max, Vector rec, BigReal frac) const
 {
-  PDBAtomPtr *atomptr = atomArray;
-  PDBAtom *atom;
-  Real tmpcoor;
-  int i;
-
-  low->x=low->y=low->z=99999;   // larger than a legal PDB file allows -- .1mm!
-  high->x=high->y=high->z=-99999;
-
-  // search the array
-  // the count down is for speed, I just use i as a counter, and it is
-  //  quick to check against 0
-  for (i=atomCount ; i>0; i--) {
-    atom = *atomptr;
-    if ( (low->x) > (tmpcoor=atom->xcoor()) )
-	low->x = tmpcoor;
-    if ( (high->x) < tmpcoor)
-	high->x = tmpcoor;
-    
-    if ( (low->y) > (tmpcoor=atom->ycoor()) )
-	low->y = tmpcoor;
-    if ( (high->y) < tmpcoor)
-	high->y = tmpcoor;
-    
-    if ( (low->z) > (tmpcoor=atom->zcoor()) )
-	low->z = tmpcoor;
-    if ( (high->z) < tmpcoor)
-	high->z = tmpcoor;
-    atomptr++;  // next!
-  }
-}
-
-// find the lowest and highest bounds for 99% of the atoms
-void PDB::find_99percent_extremes(Vector *low, Vector *high)
-{
-    SortableResizeArray<Real> xcoor;
-    SortableResizeArray<Real> ycoor;
-    SortableResizeArray<Real> zcoor;
+    SortableResizeArray<Real> coor;
+    coor.resize(atomCount);
+    SortableResizeArray<Real>::iterator c_i = coor.begin();
     PDBAtomPtr *atomptr = atomArray;
-    for (int i=atomCount ; i>0; i--, atomptr++) {
+    for (int i=0; i<atomCount; ++i, ++atomptr) {
       PDBAtom *atom = *atomptr;
-      xcoor.add(atom->xcoor());
-      ycoor.add(atom->ycoor());
-      zcoor.add(atom->zcoor());
+      Vector pos(atom->xcoor(),atom->ycoor(),atom->zcoor());
+      c_i[i] = rec*pos;
     }
-    xcoor.sort();
-    ycoor.sort();
-    zcoor.sort();
-    int ilow = atomCount / 100;
-    low->x = xcoor[ilow];
-    low->y = ycoor[ilow];
-    low->z = zcoor[ilow];
+    coor.sort();
+    int ilow = (1.0 - frac) * atomCount;
+    if ( ilow < 0 ) ilow = 0;
+    if ( ilow > atomCount/2 ) ilow = atomCount/2;
+    *min = coor[ilow];
     int ihigh = atomCount - ilow - 1;
-    high->x = xcoor[ihigh];
-    high->y = ycoor[ihigh];
-    high->z = zcoor[ihigh];
+    *max = coor[ihigh];
 }
 
 //#define TEST_PDB_CLASS
@@ -417,12 +378,15 @@ main()
  *
  *	$RCSfile: PDB.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1999/08/04 20:42:31 $
+ *	$Revision: 1.1009 $	$Date: 1999/09/03 20:46:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PDB.C,v $
+ * Revision 1.1009  1999/09/03 20:46:16  jim
+ * Support for non-orthogonal periodic boundary conditions.
+ *
  * Revision 1.1008  1999/08/04 20:42:31  jim
  * Eliminated seg fault for binary pdb file read in as text.
  *

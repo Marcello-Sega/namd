@@ -183,8 +183,8 @@ void Controller::berendsenPressure(int step)
       factor = 1.1;
     }
     factor = cbrt(factor);
-    broadcast->positionRescaleFactor.publish(step,Vector(1,1,1)*factor);
-    state->lattice.rescale(Vector(1,1,1)*factor);
+    broadcast->positionRescaleFactor.publish(step,Tensor::identity()*factor);
+    state->lattice.rescale(Tensor::identity()*factor);
   }
 }
 
@@ -228,10 +228,10 @@ void Controller::langevinPiston1(int step)
 
     if ( ! ( (step-1-slowFreq/2) % slowFreq ) )
     {
-      Vector factor;
-      factor.x = exp( dt_long * strainRate.x );
-      factor.y = exp( dt_long * strainRate.y );
-      factor.z = exp( dt_long * strainRate.z );
+      Tensor factor;
+      factor.xx = exp( dt_long * strainRate.x );
+      factor.yy = exp( dt_long * strainRate.y );
+      factor.zz = exp( dt_long * strainRate.z );
       broadcast->positionRescaleFactor.publish(step,factor);
       state->lattice.rescale(factor);
 #ifdef DEBUG_PRESSURE
@@ -838,12 +838,15 @@ void Controller::terminate(void) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1082 $	$Date: 1999/09/02 23:04:50 $
+ *	$Revision: 1.1083 $	$Date: 1999/09/03 20:46:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1083  1999/09/03 20:46:12  jim
+ * Support for non-orthogonal periodic boundary conditions.
+ *
  * Revision 1.1082  1999/09/02 23:04:50  justin
  * Eliminated MDComm from all files and Makefiles
  *

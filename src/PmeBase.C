@@ -64,44 +64,4 @@ void compute_b_spline(double *frac, double *M, double *dM, int order) {
   Mz[1] *= (1.0-z)*div;
 }
 
-extern "C" {
-  extern double erfc(double);
-}
-
-int find_ewaldcof(double *cutoff, double *dtol,
-        double *ewaldcof)
-{
-
-    double myerfc, term;
-    int i, n;
-    double x, y, xhi, xlo;
-
-
-    x = .5;
-    i = 0;
-
-    do {
-    x *= 2.;
-    ++i;
-    y = x * *cutoff;
-    myerfc=erfc(y);
-    term = myerfc / *cutoff;
-  }
-    while(term >= *dtol);
-
-    n = i + 60;
-    xlo = 0.;
-    xhi = x;
-    for (i = 1; i <= n; ++i) {        x = (xlo + xhi) / 2;
-        y = x * *cutoff;
-        myerfc=erfc(y);
-        term = myerfc / *cutoff;
-        if (term >= *dtol) {            xlo = x;
-        } else {
-          xhi = x;
-        }
-      }
-    *ewaldcof = x;
-    return 0;
-  }
 

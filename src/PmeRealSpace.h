@@ -3,6 +3,7 @@
 #define PME_REAL_SPACE_H__
 
 #include "PmeBase.h"
+#include "Vector.h"
 
 class PmeRealSpace {
   
@@ -12,7 +13,7 @@ public:
 
   void fill_charges(double *q_arr, PmeParticle p[]); 
   void compute_forces(const double *q_arr, const PmeParticle p[], 
-                      PmeVector f[]);
+                      Vector f[]);
 
 private:
   void fill_b_spline(PmeParticle p[]);

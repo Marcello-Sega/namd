@@ -16,6 +16,7 @@ obj/common.o: \
 	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
 	src/ResizeArrayPrimIter.h \
+	src/Tensor.h \
 	src/Node.h \
 	src/main.h \
 	src/BOCgroup.h \
@@ -204,6 +205,7 @@ obj/CollectionMaster.o: \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/Node.h \
@@ -241,6 +243,7 @@ obj/CollectionMgr.o: \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/ProcessorPrivate.h \
 	src/CollectionMaster.h \
 	src/PatchMap.inl \
@@ -301,6 +304,7 @@ obj/Compute.o: \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/Box.h \
 	src/OwnerBox.h \
 	src/Node.h \
@@ -344,6 +348,7 @@ obj/ComputeAngles.o: \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
@@ -425,6 +430,7 @@ obj/ComputeBonds.o: \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
@@ -480,6 +486,7 @@ obj/ComputeCylindricalBC.o: \
 	inc/BroadcastMgr.decl.h \
 	src/PatchTypes.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/Box.h \
 	src/OwnerBox.h \
 	src/PositionBox.h \
@@ -530,6 +537,7 @@ obj/ComputeDihedrals.o: \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
@@ -596,6 +604,7 @@ obj/ComputeDPME.o: \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/ComputeDPME.h \
@@ -689,6 +698,7 @@ obj/ComputeDPMTA.o: \
 	src/Communicate.h \
 	src/MStream.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/ComputeNonbondedUtil.h \
 	src/PatchMap.inl \
 	src/PatchMap.h \
@@ -764,6 +774,7 @@ obj/ComputeFreeEnergy.o: \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/PatchTypes.h \
 	src/FreeEnergyParse.h \
 	src/Namd.h \
@@ -819,6 +830,7 @@ obj/ComputeFullDirect.o: \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/ComputeFullDirect.h \
@@ -883,6 +895,7 @@ obj/ComputeHomePatches.o: \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/ComputeHomePatches.h \
 	src/Compute.h \
 	src/Patch.h \
@@ -945,6 +958,7 @@ obj/ComputeImpropers.o: \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
@@ -1012,6 +1026,7 @@ obj/ComputeGeneral.o: \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
@@ -1050,6 +1065,7 @@ obj/ComputeGlobal.o: \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/ComputeGlobal.h \
@@ -1130,6 +1146,7 @@ obj/ComputeGlobalEasy.o: \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/ComputeGlobal.h \
@@ -1198,6 +1215,7 @@ obj/ComputeGlobalMaster.o: \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/ComputeGlobal.h \
@@ -1275,12 +1293,14 @@ obj/ComputeIMD.o: \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
 	src/ProcessorPrivate.h \
+	src/IMDOutput.h \
 	src/imd.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
 	src/MStream.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/ComputeGlobal.h \
 	src/ComputeHomePatches.h \
 	src/Compute.h \
@@ -1361,6 +1381,7 @@ obj/ComputeMisc.o: \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/PatchTypes.h \
 	src/ComputeGlobalEasy.h \
 	src/ComputeGlobalMaster.h
@@ -1397,6 +1418,7 @@ obj/ComputeMgr.o: \
 	src/ProxyMgr.h \
 	src/PatchTypes.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/UniqueSetIter.h \
@@ -1510,6 +1532,7 @@ obj/ComputeNonbondedExcl.o: \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/ComputeNonbondedExcl.h \
 	src/ComputeHomeTuples.h \
 	src/Compute.h \
@@ -1565,6 +1588,7 @@ obj/ComputeNonbondedSelf.o: \
 	inc/BroadcastMgr.decl.h \
 	src/PatchTypes.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/Box.h \
 	src/OwnerBox.h \
 	src/PositionBox.h \
@@ -1615,6 +1639,7 @@ obj/ComputeNonbondedPair.o: \
 	inc/BroadcastMgr.decl.h \
 	src/PatchTypes.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/Box.h \
 	src/OwnerBox.h \
 	src/PositionBox.h \
@@ -1655,6 +1680,7 @@ obj/ComputeNonbondedUtil.o: \
 	src/Communicate.h \
 	src/MStream.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/Node.h \
 	src/main.h \
 	src/BOCgroup.h \
@@ -1714,6 +1740,7 @@ obj/ComputePatch.o: \
 	src/Compute.h \
 	src/PatchTypes.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/Box.h \
 	src/OwnerBox.h \
 	src/PositionBox.h \
@@ -1757,6 +1784,7 @@ obj/ComputePatchPair.o: \
 	src/Compute.h \
 	src/PatchTypes.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/Box.h \
 	src/OwnerBox.h \
 	src/PositionBox.h \
@@ -1800,6 +1828,7 @@ obj/ComputePme.o: \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/ComputePme.h \
@@ -1888,6 +1917,7 @@ obj/ComputeRestraints.o: \
 	inc/BroadcastMgr.decl.h \
 	src/PatchTypes.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/Box.h \
 	src/OwnerBox.h \
 	src/PositionBox.h \
@@ -1943,6 +1973,7 @@ obj/ComputeSMD.o: \
 	inc/BroadcastMgr.decl.h \
 	src/PatchTypes.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/Box.h \
 	src/OwnerBox.h \
 	src/PositionBox.h \
@@ -1989,6 +2020,7 @@ obj/ComputeSphericalBC.o: \
 	inc/BroadcastMgr.decl.h \
 	src/PatchTypes.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/Box.h \
 	src/OwnerBox.h \
 	src/PositionBox.h \
@@ -2041,6 +2073,7 @@ obj/ComputeTcl.o: \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/PatchTypes.h \
 	src/ComputeGlobal.h \
 	src/ComputeGlobalMsgs.h \
@@ -2105,6 +2138,7 @@ obj/Controller.o: \
 	src/Communicate.h \
 	src/MStream.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/Controller.h \
 	src/ReductionMgr.h \
 	src/CollectionMaster.h \
@@ -2129,6 +2163,8 @@ obj/Controller.o: \
 	src/PDB.h \
 	src/PDBData.h \
 	src/Random.h \
+	src/imd.h \
+	src/IMDOutput.h \
 	src/Debug.h
 	$(CXX) $(CXXTHREADFLAGS) -o obj/Controller.o -c src/Controller.C
 obj/ccsinterface.o: \
@@ -2213,6 +2249,7 @@ obj/FreeEnergyParse.o: \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/PatchTypes.h \
 	src/FreeEnergyParse.h
 	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyParse.o -c src/FreeEnergyParse.C
@@ -2260,6 +2297,7 @@ obj/FreeEnergyRestrain.o: \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/PatchTypes.h
 	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyRestrain.o -c src/FreeEnergyRestrain.C
 obj/FreeEnergyRMgr.o: \
@@ -2306,6 +2344,7 @@ obj/FreeEnergyRMgr.o: \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/PatchTypes.h
 	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyRMgr.o -c src/FreeEnergyRMgr.C
 obj/FreeEnergyVector.o: \
@@ -2341,6 +2380,7 @@ obj/HomePatch.o: \
 	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
 	src/ResizeArrayPrimIter.h \
+	src/Tensor.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
@@ -2412,6 +2452,7 @@ obj/HBondParam.o: \
 	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
 	src/ResizeArrayPrimIter.h \
+	src/Tensor.h \
 	src/Inform.h
 	$(CXX) $(CXXFLAGS) -o obj/HBondParam.o -c src/HBondParam.C
 obj/IMDOutput.o: \
@@ -2420,7 +2461,44 @@ obj/IMDOutput.o: \
 	src/common.h \
 	src/InfoStream.h \
 	src/imd.h \
+	src/Molecule.h \
+	src/NamdTypes.h \
 	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/ResizeArrayPrimIter.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/ObjectArena.h \
+	src/Hydrogen.h \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h \
+	inc/main.decl.h \
+	inc/WorkDistrib.decl.h \
+	inc/ReductionMgr.decl.h \
+	inc/PatchMgr.decl.h \
+	inc/ProxyMgr.decl.h \
+	inc/Node.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/ComputeMgr.decl.h \
+	inc/CollectionMgr.decl.h \
+	inc/CollectionMaster.decl.h \
+	inc/BroadcastMgr.decl.h \
+	src/ProcessorPrivate.h \
+	src/SimParameters.h \
+	src/Communicate.h \
+	src/MStream.h \
+	src/Lattice.h \
+	src/Tensor.h \
 	src/vmdsock.h
 	$(CXX) $(CXXFLAGS) -o obj/IMDOutput.o -c src/IMDOutput.C
 obj/Inform.o: \
@@ -2476,6 +2554,7 @@ obj/LdbCoordinator.o: \
 	src/Communicate.h \
 	src/MStream.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/Namd.h \
 	src/PatchMap.inl \
 	src/PatchMap.h \
@@ -2532,6 +2611,7 @@ obj/LJTable.o: \
 	src/ConfigList.h \
 	src/Communicate.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/LJTable.o -c src/LJTable.C
 obj/MStream.o: \
@@ -2559,6 +2639,7 @@ obj/MigrateAtomsMsg.o: \
 	src/ResizeArrayPrimIter.h \
 	src/PatchTypes.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/MigrateAtomsMsg.h \
 	inc/PatchMgr.decl.h \
 	src/Debug.h \
@@ -2616,6 +2697,7 @@ obj/Molecule.o: \
 	src/VoidTree.h \
 	src/SimParameters.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/PDB.h \
 	src/PDBData.h \
 	src/UniqueSetIter.h \
@@ -2650,6 +2732,7 @@ obj/Namd.o: \
 	src/Namd.h \
 	src/NamdState.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/Molecule.h \
 	src/IntList.h \
 	src/LintList.h \
@@ -2729,6 +2812,7 @@ obj/NamdState.o: \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/PDB.h \
 	src/PDBData.h \
 	src/NamdState.h \
@@ -2769,6 +2853,7 @@ obj/NamdOneTools.o: \
 	src/IntList.h \
 	src/PDBData.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/Molecule.h \
 	src/LintList.h \
 	src/structures.h \
@@ -2810,11 +2895,13 @@ obj/Node.o: \
 	src/Namd.h \
 	src/Debug.h \
 	src/IMDOutput.h \
+	src/imd.h \
 	src/WorkDistrib.h \
 	src/ComputeMap.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/PatchMgr.h \
 	src/HomePatch.h \
 	src/Patch.h \
@@ -2874,6 +2961,7 @@ obj/Output.o: \
 	src/IMDOutput.h \
 	src/common.h \
 	src/InfoStream.h \
+	src/imd.h \
 	src/Output.h \
 	src/dcdlib.h \
 	src/strlib.h \
@@ -2919,6 +3007,7 @@ obj/Output.o: \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/PDB.h \
 	src/PDBData.h \
 	src/PatchMap.h \
@@ -2949,7 +3038,8 @@ obj/Parameters.o: \
 	src/SortedArray.h \
 	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h
+	src/ResizeArrayPrimIter.h \
+	src/Tensor.h
 	$(CXX) $(CXXFLAGS) -o obj/Parameters.o -c src/Parameters.C
 obj/ParseOptions.o: \
 	src/ParseOptions.C \
@@ -2978,6 +3068,7 @@ obj/Patch.o: \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
@@ -3034,6 +3125,7 @@ obj/PatchMgr.o: \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
@@ -3080,6 +3172,7 @@ obj/PatchMap.o: \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
@@ -3120,7 +3213,8 @@ obj/PDB.o: \
 	src/SortedArray.h \
 	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h
+	src/ResizeArrayPrimIter.h \
+	src/Tensor.h
 	$(CXX) $(CXXFLAGS) -o obj/PDB.o -c src/PDB.C
 obj/PDBData.o: \
 	src/PDBData.C \
@@ -3138,9 +3232,20 @@ obj/PmeCoulomb.o: \
 	src/PmeBase.h \
 	src/PmeFFT.h \
 	src/PmeRealSpace.h \
-	src/PmeKSpace.h \
+	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h
+	src/InfoStream.h \
+	src/PmeKSpace.h \
+	src/Lattice.h \
+	src/NamdTypes.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/ResizeArrayPrimIter.h \
+	src/Tensor.h
 	$(CXX) $(CXXFLAGS) -o obj/PmeCoulomb.o -c src/PmeCoulomb.C
 obj/PmeFFT.o: \
 	src/PmeFFT.C \
@@ -3151,12 +3256,28 @@ obj/PmeFFT.o: \
 obj/PmeKSpace.o: \
 	src/PmeKSpace.C \
 	src/PmeKSpace.h \
-	src/PmeBase.h
+	src/PmeBase.h \
+	src/Lattice.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/ResizeArrayPrimIter.h \
+	src/Tensor.h
 	$(CXX) $(CXXFLAGS) -o obj/PmeKSpace.o -c src/PmeKSpace.C
 obj/PmeRealSpace.o: \
 	src/PmeRealSpace.C \
 	src/PmeRealSpace.h \
-	src/PmeBase.h
+	src/PmeBase.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) -o obj/PmeRealSpace.o -c src/PmeRealSpace.C
 obj/ProcessorPrivate.o: \
 	src/ProcessorPrivate.C \
@@ -3192,6 +3313,7 @@ obj/ProxyMgr.o: \
 	src/ProxyMgr.h \
 	src/PatchTypes.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/UniqueSetIter.h \
@@ -3248,6 +3370,7 @@ obj/ProxyPatch.o: \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/PatchTypes.h \
 	src/ProxyMgr.h \
 	src/UniqueSet.h \
@@ -3283,6 +3406,7 @@ obj/RecBisection.o: \
 	src/ResizeArrayPrimIter.h \
 	src/HomePatchList.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
 	src/AtomMap.h \
@@ -3309,6 +3433,7 @@ obj/ReductionMgr.o: \
 	src/ResizeArrayPrimIter.h \
 	src/HomePatchList.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
 	src/Node.h \
@@ -3357,6 +3482,7 @@ obj/ScriptTcl.o: \
 	src/ResizeArrayPrimIter.h \
 	src/Broadcasts.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/BroadcastObject.h \
 	src/BroadcastMgr.h \
 	src/main.h \
@@ -3431,6 +3557,7 @@ obj/Sequencer.o: \
 	src/Communicate.h \
 	src/MStream.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/Sequencer.h \
 	src/PatchTypes.h \
 	src/HomePatch.h \
@@ -3498,6 +3625,7 @@ obj/SimParameters.o: \
 	src/Communicate.h \
 	src/MStream.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/ParseOptions.h \
 	src/structures.h \
 	src/Debug.h
@@ -3520,6 +3648,7 @@ obj/SMD.o: \
 	src/IntList.h \
 	src/PDBData.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/Molecule.h \
 	src/LintList.h \
 	src/structures.h \
@@ -3624,6 +3753,7 @@ obj/TestController.o: \
 	src/Communicate.h \
 	src/MStream.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/TestController.h \
 	src/Controller.h \
 	src/ReductionMgr.h \
@@ -3680,6 +3810,7 @@ obj/TestSequencer.o: \
 	src/Communicate.h \
 	src/MStream.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/TestSequencer.h \
 	src/Sequencer.h \
 	src/PatchTypes.h \
@@ -3759,6 +3890,7 @@ obj/WorkDistrib.o: \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/Lattice.h \
+	src/Tensor.h \
 	src/Node.h \
 	src/PatchMgr.h \
 	src/HomePatch.h \

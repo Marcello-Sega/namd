@@ -20,9 +20,12 @@
   register BigReal virial_z = 0.;
 
 #ifdef FULLDIRECT_PERIODIC
-  BigReal a1 = lattice->a();  BigReal b1 = ( a1 ? 1. / a1 : 0 );
-  BigReal a2 = lattice->b();  BigReal b2 = ( a2 ? 1. / a2 : 0 );
-  BigReal a3 = lattice->c();  BigReal b3 = ( a3 ? 1. / a3 : 0 );
+  Vector a1 = lattice->a();
+  Vector b1;  if ( lattice->a_p() ) b1 = lattice->a_r();
+  Vector a2 = lattice->b();
+  Vector b2;  if ( lattice->b_p() ) b2 = lattice->b_r();
+  Vector a3 = lattice->c();
+  Vector b3;  if ( lattice->c_p() ) b3 = lattice->c_r();
 #endif
 
   for(int i=0; i<n1; ++i)
@@ -49,9 +52,11 @@
       register BigReal p_ij_z = p_i_z - *(dp2++);
 
 #ifdef FULLDIRECT_PERIODIC
-      p_ij_x -= a1 * rint( b1 * p_ij_x );
-      p_ij_y -= a2 * rint( b2 * p_ij_y );
-      p_ij_z -= a3 * rint( b3 * p_ij_z );
+      Vector p_ij(p_ij_x,p_ij_y,p_ij_z);
+      p_ij -= ( a1*rint(b1*p_ij) + a2*rint(b2*p_ij) + a3*rint(b3*p_ij) );
+      p_ij_x = p_ij.x;
+      p_ij_y = p_ij.y;
+      p_ij_z = p_ij.z;
 #endif
 
       register BigReal r_1;
@@ -88,12 +93,15 @@
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1999/05/27 19:00:43 $
+ *	$Revision: 1.4 $	$Date: 1999/09/03 20:46:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFullDirectBase.h,v $
+ * Revision 1.4  1999/09/03 20:46:08  jim
+ * Support for non-orthogonal periodic boundary conditions.
+ *
  * Revision 1.3  1999/05/27 19:00:43  jim
  * Added nonbondedScaling parameter and fixed Tcl scripting bug.
  *

@@ -176,7 +176,7 @@ void WorkDistrib::createHomePatches(void)
   PositionList *atomPositions = new PositionList[numPatches];
   VelocityList *atomVelocities = new VelocityList[numPatches];
 
-  Lattice lattice = params->lattice;
+  const Lattice lattice = params->lattice;
 
   if (params->splitPatch == SPLIT_PATCH_HYDROGEN)
     {
@@ -193,7 +193,7 @@ void WorkDistrib::createHomePatches(void)
       // listed first.  Thus, only change the pid if an atom is a group parent.
       aid = molecule->hydrogenGroup[i].atomID;
       if (molecule->hydrogenGroup[i].isGP)
-	pid = patchMap->assignToPatch(positions[aid]);
+	pid = patchMap->assignToPatch(positions[aid],lattice);
       // else: don't change pid
       atomIDs[pid].add(aid);
       atomPositions[pid].add(positions[aid]);
@@ -209,7 +209,7 @@ void WorkDistrib::createHomePatches(void)
 	{
 	DebugM(3,"Assigned " << i << " atoms to patches so far.\n");
 	}
-      int pid = patchMap->assignToPatch(positions[i]);
+      int pid = patchMap->assignToPatch(positions[i],lattice);
       atomIDs[pid].add(i);
       atomPositions[pid].add(positions[i]);
       atomVelocities[pid].add(velocities[i]);
@@ -226,9 +226,9 @@ void WorkDistrib::createHomePatches(void)
       DebugM(3,"Created " << i << " patches so far.\n");
     }
 
-    ScaledPosition center(0.5*(patchMap->minX(i)+patchMap->maxX(i)),
-			  0.5*(patchMap->minY(i)+patchMap->maxY(i)),
-			  0.5*(patchMap->minZ(i)+patchMap->maxZ(i)));
+    ScaledPosition center(0.5*(patchMap->min_a(i)+patchMap->max_a(i)),
+			  0.5*(patchMap->min_b(i)+patchMap->max_b(i)),
+			  0.5*(patchMap->min_c(i)+patchMap->max_c(i)));
 
     atomTransforms[i].resize(atomIDs[i].size());
 
@@ -299,6 +299,7 @@ void WorkDistrib::patchMapInit(void)
   CProxy_Node nd(CpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
   SimParameters *params = node->simParameters;
+  Lattice lattice = params->lattice;
 
   BigReal patchSize = params->patchDimension;
 
@@ -306,35 +307,37 @@ void WorkDistrib::patchMapInit(void)
   int xper, yper, zper;
   int xi, yi, zi, pid;
   int i;
-  Vector xmin, xmax;
-  Vector sysDim, sysMin;
+  ScaledPosition xmin, xmax;
+  ScaledPosition sysDim, sysMin;
 
   DebugM(3,"Mapping patches\n");
   // Need to use full box for FMA to match NAMD 1.X results.
-  if ( params->FMAOn ) node->pdb->find_extremes(&xmin,&xmax);
+  if ( params->FMAOn ) {
+    node->pdb->find_extremes(&(xmin.x),&(xmax.x),lattice.a_r());
+    node->pdb->find_extremes(&(xmin.y),&(xmax.y),lattice.b_r());
+    node->pdb->find_extremes(&(xmin.z),&(xmax.z),lattice.c_r());
   // Otherwise, this allows a small number of stray atoms.
-  else node->pdb->find_99percent_extremes(&xmin,&xmax);
+  } else {
+    node->pdb->find_extremes(&(xmin.x),&(xmax.x),lattice.a_r(),0.99);
+    node->pdb->find_extremes(&(xmin.y),&(xmax.y),lattice.b_r(),0.99);
+    node->pdb->find_extremes(&(xmin.z),&(xmax.z),lattice.c_r(),0.99);
+  }
 
-  DebugM(3,"xmin.x = " << xmin.x << endl);
-  DebugM(3,"xmin.y = " << xmin.y << endl);
-  DebugM(3,"xmin.z = " << xmin.z << endl);
+  patchMap->initialize(xmin,xmax,lattice,patchSize);
 
-  DebugM(3,"xmax.x = " << xmax.x << endl);
-  DebugM(3,"xmax.y = " << xmax.y << endl);
-  DebugM(3,"xmax.z = " << xmax.z << endl);
-
-  Vector center = 0.5 * ( xmax + xmin );
+/*
+  ScaledPosition center = 0.5 * ( xmax + xmin );
 
   iout << iINFO << "PATCH GRID IS ";
 
-  if ( params->cellBasisVector1.x )
+  if ( lattice.a_p() )
   {
     xper = 1;
-    sysDim.x = params->cellBasisVector1.x;
+    sysDim.x = cross(lattice.b(),lattice.c()).unit() * lattice.a();
     xdim = (int)(sysDim.x / patchSize);
     if ( xdim < 2 ) xdim = 2;
     iout << xdim << " (PERIODIC)";
-    center.x = params->lattice.origin().x;
+    center.x = 0.0;
   }
   else
   {
@@ -349,14 +352,14 @@ void WorkDistrib::patchMapInit(void)
 
   iout << " BY ";
 
-  if ( params->cellBasisVector2.y )
+  if ( lattice.b_p() )
   {
     yper = 1;
-    sysDim.y = params->cellBasisVector2.y;
+    sysDim.y = cross(lattice.c(),lattice.a()).unit() * lattice.b();
     ydim = (int)((float)sysDim.y / patchSize);
     if ( ydim < 2 ) ydim = 2;
     iout << ydim << " (PERIODIC)";
-    center.y = params->lattice.origin().y;
+    center.y = 0.0;
   }
   else
   {
@@ -371,14 +374,14 @@ void WorkDistrib::patchMapInit(void)
 
   iout << " BY ";
 
-  if ( params->cellBasisVector3.z )
+  if ( lattice.c_p() )
   {
     zper = 1;
-    sysDim.z = params->cellBasisVector3.z;
+    sysDim.z = cross(lattice.a(),lattice.b()).unit() * lattice.c();
     zdim = (int)((float)sysDim.z / patchSize);
     if ( zdim < 2 ) zdim = 2;
     iout << zdim << " (PERIODIC)";
-    center.z = params->lattice.origin().z;
+    center.z = 0.0;
   }
   else
   {
@@ -400,8 +403,6 @@ void WorkDistrib::patchMapInit(void)
 
   patchMap->setGridOriginAndLength(sysMin,sysDim);
 
-  Lattice lattice = params->lattice;
-
   for(i=0; i < patchMap->numPatches(); i++)
   {
     pid=patchMap->requestPid(&xi,&yi,&zi); // generates next pid and grid pos
@@ -416,6 +417,7 @@ lattice.scale( Vector(	((float)(xi+1)/(float)xdim)*sysDim.x+sysMin.x,
     DebugM(3,"Patch " 
         << pid << " is at grid " << xi << " " << yi << " " << zi << ".\n");
   }
+*/
 }
 
 //----------------------------------------------------------------------
@@ -781,9 +783,9 @@ void WorkDistrib::mapComputeNonbonded(void)
       {
 	int p2 = oneAway[j];
 
-	int x = max(patchMap->xIndex(p1),patchMap->xIndex(p2));
-	int y = max(patchMap->yIndex(p1),patchMap->yIndex(p2));
-	int z = max(patchMap->zIndex(p1),patchMap->zIndex(p2));
+	int x = max(patchMap->index_a(p1),patchMap->index_a(p2));
+	int y = max(patchMap->index_b(p1),patchMap->index_b(p2));
+	int z = max(patchMap->index_c(p1),patchMap->index_c(p2));
 
 	cid=computeMap->storeCompute(patchMap->node(patchMap->pid(x,y,z)),2,
 				     computeNonbondedPairType);
@@ -1125,12 +1127,15 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1069 $	$Date: 1999/07/22 15:39:47 $
+ *	$Revision: 1.1070 $	$Date: 1999/09/03 20:46:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1070  1999/09/03 20:46:31  jim
+ * Support for non-orthogonal periodic boundary conditions.
+ *
  * Revision 1.1069  1999/07/22 15:39:47  jim
  * Eliminated last remnants of non-reentrant rand48 calls.
  *

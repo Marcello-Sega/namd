@@ -38,13 +38,108 @@ PatchMap::PatchMap(void)
 {
   nPatches = 0;
   patchData = NULL;
-  xDim = yDim = zDim = 0;
-  xPeriodic = yPeriodic = zPeriodic = 0;
-  xMaxIndex = yMaxIndex = zMaxIndex = 0;
+  aDim = bDim = cDim = 0;
+  aPeriodic = bPeriodic = cPeriodic = 0;
+  aMaxIndex = bMaxIndex = cMaxIndex = 0;
 }
 
-void
-PatchMap::checkMap(void)
+void PatchMap::initialize(ScaledPosition xmin, ScaledPosition xmax,
+                              Lattice lattice, BigReal patchSize)
+{
+  aPeriodic = lattice.a_p();
+  bPeriodic = lattice.b_p();
+  cPeriodic = lattice.c_p();
+
+  if ( aPeriodic ) {
+    BigReal sysDim = lattice.a_r().unit() * lattice.a();
+    aDim = (int)(sysDim / patchSize);
+  } else {
+    BigReal sysDim = xmax.x - xmin.x;
+    aDim = (int)(sysDim / patchSize);
+    if ((aDim * patchSize) < sysDim) aDim++;
+  }
+
+  if ( bPeriodic ) {
+    BigReal sysDim = lattice.b_r().unit() * lattice.b();
+    bDim = (int)(sysDim / patchSize);
+  } else {
+    BigReal sysDim = xmax.y - xmin.y;
+    bDim = (int)(sysDim / patchSize);
+    if ((bDim * patchSize) < sysDim) bDim++;
+  }
+
+  if ( cPeriodic ) {
+    BigReal sysDim = lattice.c_r().unit() * lattice.c();
+    cDim = (int)(sysDim / patchSize);
+  } else {
+    BigReal sysDim = xmax.z - xmin.z;
+    cDim = (int)(sysDim / patchSize);
+    if ((cDim * patchSize) < sysDim) cDim++;
+  }
+
+  if ( aDim < 0 || bDim < 0 || cDim < 0 ) {
+    NAMD_die("Bug in PatchMap::initialize - negative grid dimension.");
+  }
+
+  if ( aDim == 0 ) aDim = 1;
+  if ( bDim == 0 ) bDim = 1;
+  if ( cDim == 0 ) cDim = 1;
+
+  if ( aPeriodic && aDim < 2 ) aDim = 2;
+  if ( bPeriodic && bDim < 2 ) bDim = 2;
+  if ( cPeriodic && cDim < 2 ) cDim = 2;
+
+  iout << iINFO << "PATCH GRID IS ";
+  iout << aDim;
+  if ( aPeriodic ) iout << " (PERIODIC)";
+  iout << " BY ";
+  iout << bDim;
+  if ( bPeriodic ) iout << " (PERIODIC)";
+  iout << " BY ";
+  iout << cDim;
+  if ( cPeriodic ) iout << " (PERIODIC)";
+  iout << "\n" << endi;
+
+  aMaxIndex = ( ! aPeriodic || aDim == 2 ) ? 10000 : aDim;
+  bMaxIndex = ( ! bPeriodic || bDim == 2 ) ? 10000 : bDim;
+  cMaxIndex = ( ! cPeriodic || cDim == 2 ) ? 10000 : cDim;
+
+  aLength = aPeriodic ? 1.0 : aDim * patchSize;
+  bLength = bPeriodic ? 1.0 : bDim * patchSize;
+  cLength = cPeriodic ? 1.0 : cDim * patchSize;
+
+  aOrigin = aPeriodic ? -0.5 : 0.5 * (xmin.x + xmax.x - aLength);
+  bOrigin = bPeriodic ? -0.5 : 0.5 * (xmin.y + xmax.y - bLength);
+  cOrigin = cPeriodic ? -0.5 : 0.5 * (xmin.z + xmax.z - cLength);
+
+  nPatches=aDim*bDim*cDim;
+  patchData = new PatchData[nPatches];
+
+  for(int i=0; i<nPatches; ++i)
+  {
+    PatchData &p = patchData[i];
+    p.numCids = 0;
+    p.aIndex = index_a(i);
+    p.bIndex = index_b(i);
+    p.cIndex = index_c(i);
+    p.myPatch = 0;
+    p.myHomePatch = 0;
+    p.aMin = ((float)p.aIndex/(float)aDim) * aLength + aOrigin;
+    p.bMin = ((float)p.bIndex/(float)bDim) * bLength + bOrigin;
+    p.cMin = ((float)p.cIndex/(float)cDim) * cLength + cOrigin;
+    p.aMax = ((float)(p.aIndex+1)/(float)aDim) * aLength + aOrigin;
+    p.bMax = ((float)(p.bIndex+1)/(float)bDim) * bLength + bOrigin;
+    p.cMax = ((float)(p.cIndex+1)/(float)cDim) * cLength + cOrigin;
+    p.numCids = 0;
+    int max_computes = 100;
+    p.cids = new int[max_computes];
+    for ( int j = 0; j < max_computes; ++j ) p.cids[j] = -1;
+    p.numCidsAllocated = max_computes;
+  }
+
+}
+
+void PatchMap::checkMap(void)
 {
   int patchCount=0;
   for (int i=0; i<nPatches; i++) {
@@ -101,14 +196,13 @@ void PatchMap::pack (char *buffer)
 
   // fill in the data
   char *b = buffer;
-  PACK(int,curPatch);
   PACK(int,nPatches);
   DebugM(3,"nPatches = " << nPatches << endl);
-  PACK(int,xDim); PACK(int,yDim); PACK(int,zDim);
-  PACK(int,xPeriodic); PACK(int,yPeriodic); PACK(int,zPeriodic);
-  PACK(int,xMaxIndex); PACK(int,yMaxIndex); PACK(int,zMaxIndex);
-  PACK(BigReal,xOrigin); PACK(BigReal,yOrigin); PACK(BigReal,zOrigin);
-  PACK(BigReal,xLength); PACK(BigReal,yLength); PACK(BigReal,zLength);
+  PACK(int,aDim); PACK(int,bDim); PACK(int,cDim);
+  PACK(int,aPeriodic); PACK(int,bPeriodic); PACK(int,cPeriodic);
+  PACK(int,aMaxIndex); PACK(int,bMaxIndex); PACK(int,cMaxIndex);
+  PACK(BigReal,aOrigin); PACK(BigReal,bOrigin); PACK(BigReal,cOrigin);
+  PACK(BigReal,aLength); PACK(BigReal,bLength); PACK(BigReal,cLength);
   for(i=0;i<nPatches;++i)
   {
     DebugM(3,"Packing Patch " << i << " is on node " << patchData[i].node << 
@@ -128,14 +222,13 @@ void PatchMap::unpack (char *ptr)
   DebugM(4,"Unpacking PatchMap on node " << CkMyPe() << endl);
   int i,j;
   char *b = (char*)ptr;
-  UNPACK(int,curPatch);
   UNPACK(int,nPatches);
   DebugM(3,"nPatches = " << nPatches << endl);
-  UNPACK(int,xDim); UNPACK(int,yDim); UNPACK(int,zDim);
-  UNPACK(int,xPeriodic); UNPACK(int,yPeriodic); UNPACK(int,zPeriodic);
-  UNPACK(int,xMaxIndex); UNPACK(int,yMaxIndex); UNPACK(int,zMaxIndex);
-  UNPACK(BigReal,xOrigin); UNPACK(BigReal,yOrigin); UNPACK(BigReal,zOrigin);
-  UNPACK(BigReal,xLength); UNPACK(BigReal,yLength); UNPACK(BigReal,zLength);
+  UNPACK(int,aDim); UNPACK(int,bDim); UNPACK(int,cDim);
+  UNPACK(int,aPeriodic); UNPACK(int,bPeriodic); UNPACK(int,cPeriodic);
+  UNPACK(int,aMaxIndex); UNPACK(int,bMaxIndex); UNPACK(int,cMaxIndex);
+  UNPACK(BigReal,aOrigin); UNPACK(BigReal,bOrigin); UNPACK(BigReal,cOrigin);
+  UNPACK(BigReal,aLength); UNPACK(BigReal,bLength); UNPACK(BigReal,cLength);
   patchData = new PatchData[nPatches];
   for(i=0;i<nPatches;++i)
   {
@@ -164,110 +257,19 @@ HomePatchList *PatchMap::homePatchList() {
 }
 
 //----------------------------------------------------------------------
-void PatchMap::setGridOriginAndLength(Vector o, Vector l)
-{
-  xOrigin = o.x; yOrigin = o.y; zOrigin = o.z;
-  xLength = l.x; yLength = l.y; zLength = l.z;
-}
-
-//----------------------------------------------------------------------
-void PatchMap::setPeriodicity(int x_per, int y_per, int z_per)
-{
-  xPeriodic = x_per;
-  yPeriodic = y_per;
-  zPeriodic = z_per;
-}
-
-//----------------------------------------------------------------------
-PatchMap::ErrCode PatchMap::allocatePids(int ixDim, int iyDim, int izDim)
-{
-  int i;
-
-  if (patchData)
-  {
-    for (i=0; i<nPatches;i++)
-    {
-      delete [] patchData[i].cids;
-      patchData[i].cids=NULL;
-    }
-    delete [] patchData;
-  }
-  curPatch=0;
-  xDim = ixDim;
-  xMaxIndex = ( ! xPeriodic || xDim == 2 ) ? 10000 : xDim;
-  yDim = iyDim;
-  yMaxIndex = ( ! yPeriodic || yDim == 2 ) ? 10000 : yDim;
-  zDim = izDim;
-  zMaxIndex = ( ! zPeriodic || zDim == 2 ) ? 10000 : zDim;
-  nPatches=xDim*yDim*zDim;
-  patchData = new PatchData[nPatches];
-  if (!patchData)
-    return ERROR;
-
-  for(i=0;i<nPatches;i++)
-  {
-    patchData[i].numCids=0;
-    patchData[i].xi = xIndex(i);
-    patchData[i].yi = yIndex(i);
-    patchData[i].zi = zIndex(i);
-    patchData[i].cids=NULL;
-    patchData[i].numCidsAllocated=0;
-    patchData[i].myPatch=NULL;
-    patchData[i].myHomePatch=NULL;
-  }
-
-  return OK;
-}
-
-//----------------------------------------------------------------------
-PatchID PatchMap::requestPid(int *xi, int *yi, int *zi)
-{
-  int pid;
-  
-  if ((patchData != NULL) && (curPatch < nPatches))
-  {
-    pid = curPatch;
-    curPatch++;
-    *xi = patchData[pid].xi;
-    *yi = patchData[pid].yi;
-    *zi = patchData[pid].zi;
-    return pid;
-  }
-  return -1;
-}
-
-//----------------------------------------------------------------------
-void PatchMap::storePatchCoord(PatchID pid,
-				ScaledPosition min, ScaledPosition max)
-{
-  patchData[pid].x0 = min.x;
-  patchData[pid].x1 = max.x;
-  patchData[pid].y0 = min.y;
-  patchData[pid].y1 = max.y;
-  patchData[pid].z0 = min.z;
-  patchData[pid].z1 = max.z;
-}
-
 void PatchMap::assignNode(PatchID pid, NodeID node) {
   patchData[pid].node=node;
 }
 
-void PatchMap::allocateCompute(PatchID pid, int max_computes) {
-  patchData[pid].numCids = 0;
-  patchData[pid].cids = new int[max_computes];
-  for ( int i = 0; i < max_computes; ++i ) patchData[pid].cids[i] = -1;
-  patchData[pid].numCidsAllocated = max_computes;
-}
-
 //----------------------------------------------------------------------
-PatchMap::ErrCode PatchMap::newCid(int pid, int cid)
+void PatchMap::newCid(int pid, int cid)
 {
-  if (patchData[pid].numCids < patchData[pid].numCidsAllocated)
-  {
-    patchData[pid].cids[patchData[pid].numCids]=cid;
-    patchData[pid].numCids++;
-    return OK;
-  } else return ERROR;
+  if (patchData[pid].numCids >= patchData[pid].numCidsAllocated)
+  { // allocate more
+    NAMD_die("PatchMap::newCid - not enough compute ID's allocated.");
+  }
+  patchData[pid].cids[patchData[pid].numCids]=cid;
+  patchData[pid].numCids++;
 }
 
 //----------------------------------------------------------------------
@@ -279,30 +281,30 @@ int PatchMap::oneAwayNeighbors(int pid, PatchID *neighbor_ids, int *transform_id
 
   for(zinc=-1;zinc<=1;zinc++)
   {
-    zi = patchData[pid].zi + zinc;
-    if ((zi < 0) || (zi >= zDim))
-      if ( ! zPeriodic ) continue;
+    zi = patchData[pid].cIndex + zinc;
+    if ((zi < 0) || (zi >= cDim))
+      if ( ! cPeriodic ) continue;
     for(yinc=-1;yinc<=1;yinc++)
     {
-      yi = patchData[pid].yi + yinc;
-      if ((yi < 0) || (yi >= yDim))
-	if ( ! yPeriodic ) continue;
+      yi = patchData[pid].bIndex + yinc;
+      if ((yi < 0) || (yi >= bDim))
+	if ( ! bPeriodic ) continue;
       for(xinc=-1;xinc<=1;xinc++)
       {
 	if ((xinc==0) && (yinc==0) && (zinc==0))
 	  continue;
 
-	xi = patchData[pid].xi + xinc;
-	if ((xi < 0) || (xi >= xDim))
-	  if ( ! xPeriodic ) continue;
+	xi = patchData[pid].aIndex + xinc;
+	if ((xi < 0) || (xi >= aDim))
+	  if ( ! aPeriodic ) continue;
 
 	if (neighbor_ids)
 	  neighbor_ids[n]=this->pid(xi,yi,zi);
 	if ( transform_ids )
 	{
-	  int xt = 0; if ( xi < 0 ) xt = -1; if ( xi >= xDim ) xt = 1;
-	  int yt = 0; if ( yi < 0 ) yt = -1; if ( yi >= yDim ) yt = 1;
-	  int zt = 0; if ( zi < 0 ) zt = -1; if ( zi >= zDim ) zt = 1;
+	  int xt = 0; if ( xi < 0 ) xt = -1; if ( xi >= aDim ) xt = 1;
+	  int yt = 0; if ( yi < 0 ) yt = -1; if ( yi >= bDim ) yt = 1;
+	  int zt = 0; if ( zi < 0 ) zt = -1; if ( zi >= cDim ) zt = 1;
 	  transform_ids[n] = Lattice::index(xt,yt,zt);
 	}
 	n++;
@@ -329,30 +331,30 @@ int PatchMap::twoAwayNeighbors(int pid, PatchID *neighbor_ids,  int *transform_i
 
   for(zinc=-2;zinc<=2;zinc++)
   {
-    zi = patchData[pid].zi + zinc;
-    if ((zi < 0) || (zi >= zDim))
-      if ( ! zPeriodic ) continue;
+    zi = patchData[pid].cIndex + zinc;
+    if ((zi < 0) || (zi >= cDim))
+      if ( ! cPeriodic ) continue;
     for(yinc=-2;yinc<=2;yinc++)
     {
-      yi = patchData[pid].yi + yinc;
-      if ((yi < 0) || (yi >= yDim))
-	if ( ! yPeriodic ) continue;
+      yi = patchData[pid].bIndex + yinc;
+      if ((yi < 0) || (yi >= bDim))
+	if ( ! bPeriodic ) continue;
       for(xinc=-2;xinc<=2;xinc++)
       {
 	if (!((xinc==2) || (yinc==2) || (zinc==2) ||
 	    (xinc==-2) || (yinc==-2) || (zinc==-2)))
 	  continue;
 
-	xi = patchData[pid].xi + xinc;
-	if ((xi < 0) || (xi >= xDim))
-	  if ( ! xPeriodic ) continue;
+	xi = patchData[pid].aIndex + xinc;
+	if ((xi < 0) || (xi >= aDim))
+	  if ( ! aPeriodic ) continue;
 
 	neighbor_ids[n]=this->pid(xi,yi,zi);
 	if ( transform_ids )
 	{
-	  int xt = 0; if ( xi < 0 ) xt = 1; if ( xi >= xDim ) xt = -1;
-	  int yt = 0; if ( yi < 0 ) yt = 1; if ( yi >= yDim ) yt = -1;
-	  int zt = 0; if ( zi < 0 ) zt = 1; if ( zi >= zDim ) zt = -1;
+	  int xt = 0; if ( xi < 0 ) xt = 1; if ( xi >= aDim ) xt = -1;
+	  int yt = 0; if ( yi < 0 ) yt = 1; if ( yi >= bDim ) yt = -1;
+	  int zt = 0; if ( zi < 0 ) zt = 1; if ( zi >= cDim ) zt = -1;
 	  transform_ids[n] = Lattice::index(xt,yt,zt);
 	}
 	n++;
@@ -382,30 +384,30 @@ int PatchMap::upstreamNeighbors(int pid, PatchID *neighbor_ids, int *transform_i
 
   for(zinc=0;zinc<=1;zinc++)
   {
-    zi = patchData[pid].zi + zinc;
-    if ((zi < 0) || (zi >= zDim))
-      if ( ! zPeriodic ) continue;
+    zi = patchData[pid].cIndex + zinc;
+    if ((zi < 0) || (zi >= cDim))
+      if ( ! cPeriodic ) continue;
     for(yinc=0;yinc<=1;yinc++)
     {
-      yi = patchData[pid].yi + yinc;
-      if ((yi < 0) || (yi >= yDim))
-	if ( ! yPeriodic ) continue;
+      yi = patchData[pid].bIndex + yinc;
+      if ((yi < 0) || (yi >= bDim))
+	if ( ! bPeriodic ) continue;
       for(xinc=0;xinc<=1;xinc++)
       {
 	if ((xinc==0) && (yinc==0) && (zinc==0))
 	  continue;
 
-	xi = patchData[pid].xi + xinc;
-	if ((xi < 0) || (xi >= xDim))
-	  if ( ! xPeriodic ) continue;
+	xi = patchData[pid].aIndex + xinc;
+	if ((xi < 0) || (xi >= aDim))
+	  if ( ! aPeriodic ) continue;
 
 	if (neighbor_ids)
 	  neighbor_ids[n]=this->pid(xi,yi,zi);
 	if ( transform_ids )
 	{
-	  int xt = 0; if ( xi < 0 ) xt = -1; if ( xi >= xDim ) xt = 1;
-	  int yt = 0; if ( yi < 0 ) yt = -1; if ( yi >= yDim ) yt = 1;
-	  int zt = 0; if ( zi < 0 ) zt = -1; if ( zi >= zDim ) zt = 1;
+	  int xt = 0; if ( xi < 0 ) xt = -1; if ( xi >= aDim ) xt = 1;
+	  int yt = 0; if ( yi < 0 ) yt = -1; if ( yi >= bDim ) yt = 1;
+	  int zt = 0; if ( zi < 0 ) zt = -1; if ( zi >= cDim ) zt = 1;
 	  transform_ids[n] = Lattice::index(xt,yt,zt);
 	}
 	n++;
@@ -426,30 +428,30 @@ int PatchMap::downstreamNeighbors(int pid, PatchID *neighbor_ids,
 
   for(zinc=-1;zinc<=0;zinc++)
   {
-    zi = patchData[pid].zi + zinc;
-    if ((zi < 0) || (zi >= zDim))
-      if ( ! zPeriodic ) continue;
+    zi = patchData[pid].cIndex + zinc;
+    if ((zi < 0) || (zi >= cDim))
+      if ( ! cPeriodic ) continue;
     for(yinc=-1;yinc<=0;yinc++)
     {
-      yi = patchData[pid].yi + yinc;
-      if ((yi < 0) || (yi >= yDim))
-	if ( ! yPeriodic ) continue;
+      yi = patchData[pid].bIndex + yinc;
+      if ((yi < 0) || (yi >= bDim))
+	if ( ! bPeriodic ) continue;
       for(xinc=-1;xinc<=0;xinc++)
       {
 	if ((xinc==0) && (yinc==0) && (zinc==0))
 	  continue;
 
-	xi = patchData[pid].xi + xinc;
-	if ((xi < 0) || (xi >= xDim))
-	  if ( ! xPeriodic ) continue;
+	xi = patchData[pid].aIndex + xinc;
+	if ((xi < 0) || (xi >= aDim))
+	  if ( ! aPeriodic ) continue;
 
 	if (neighbor_ids)
 	  neighbor_ids[n]=this->pid(xi,yi,zi);
 	if ( transform_ids )
 	{
-	  int xt = 0; if ( xi < 0 ) xt = -1; if ( xi >= xDim ) xt = 1;
-	  int yt = 0; if ( yi < 0 ) yt = -1; if ( yi >= yDim ) yt = 1;
-	  int zt = 0; if ( zi < 0 ) zt = -1; if ( zi >= zDim ) zt = 1;
+	  int xt = 0; if ( xi < 0 ) xt = -1; if ( xi >= aDim ) xt = 1;
+	  int yt = 0; if ( yi < 0 ) yt = -1; if ( yi >= bDim ) yt = 1;
+	  int zt = 0; if ( zi < 0 ) zt = -1; if ( zi >= cDim ) zt = 1;
 	  transform_ids[n] = Lattice::index(xt,yt,zt);
 	}
 	n++;
@@ -466,18 +468,17 @@ void PatchMap::printPatchMap(void)
   CkPrintf("---------------------------------------");
   CkPrintf("---------------------------------------\n");
 
-  CkPrintf("curPatch = %d\n",curPatch);  
   CkPrintf("nPatches = %d\n",nPatches);
   for(int i=0;i<nPatches;i++)
   {
     CkPrintf("Patch %d:\n",i);
     CkPrintf("  node = %d\n",patchData[i].node);
     CkPrintf("  xi,yi,zi = %d, %d, %d\n",
-	    patchData[i].xi,patchData[i].yi,patchData[i].zi);
+	    patchData[i].aIndex,patchData[i].bIndex,patchData[i].cIndex);
     CkPrintf("  x0,y0,z0 = %f, %f, %f\n",
-	    patchData[i].x0,patchData[i].y0,patchData[i].z0);
+	    patchData[i].aMin,patchData[i].bMin,patchData[i].cMin);
     CkPrintf("  x1,y1,z1 = %f, %f, %f\n",
-	    patchData[i].x1,patchData[i].y1,patchData[i].z1);
+	    patchData[i].aMax,patchData[i].bMax,patchData[i].cMax);
     CkPrintf("  numCids = %d\n",patchData[i].numCids);
     CkPrintf("  numCidsAllocated = %d\n",patchData[i].numCidsAllocated);
     for(int j=0; j < patchData[i].numCids; j++)
@@ -542,12 +543,15 @@ HomePatch *PatchMap::homePatch(PatchID pid)
  *
  *	$RCSfile: PatchMap.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1021 $	$Date: 1999/08/11 16:52:21 $
+ *	$Revision: 1.1022 $	$Date: 1999/09/03 20:46:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.1022  1999/09/03 20:46:18  jim
+ * Support for non-orthogonal periodic boundary conditions.
+ *
  * Revision 1.1021  1999/08/11 16:52:21  jim
  * Make homePatch() method return NULL for proxies rather than casting.
  *

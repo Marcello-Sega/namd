@@ -76,7 +76,7 @@ void * ComputePmeResultsMsg::pack (ComputePmeResultsMsg *msg) {
 
   memcpy(b, &(msg->node), sizeof(int)); b += sizeof(int);
   memcpy(b, &(msg->numParticles), sizeof(int)); b += sizeof(int);
-  memcpy(b, msg->forces, msg->numParticles*sizeof(PmeVector));
+  memcpy(b, msg->forces, msg->numParticles*sizeof(Vector));
   delete msg;
   return buffer;
 }
@@ -88,8 +88,8 @@ ComputePmeResultsMsg* ComputePmeResultsMsg::unpack (void *ptr) {
 
   memcpy(&(m->node), b, sizeof(int)); b += sizeof(int);
   memcpy(&(m->numParticles), b, sizeof(int)); b += sizeof(int);
-  m->forces = new PmeVector[m->numParticles];
-  memcpy(m->forces, b, m->numParticles*sizeof(PmeVector));
+  m->forces = new Vector[m->numParticles];
+  memcpy(m->forces, b, m->numParticles*sizeof(Vector));
   CkFreeMsg(ptr);
   return m;
 }
@@ -101,11 +101,14 @@ ComputePmeResultsMsg* ComputePmeResultsMsg::unpack (void *ptr) {
  *
  *	$RCSfile: ComputePmeMsgs.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1999/06/08 14:52:07 $
+ *	$Revision: 1.2 $	$Date: 1999/09/03 20:46:11 $
  *
  * REVISION HISTORY:
  *
  * $Log: ComputePmeMsgs.C,v $
+ * Revision 1.2  1999/09/03 20:46:11  jim
+ * Support for non-orthogonal periodic boundary conditions.
+ *
  * Revision 1.1  1999/06/08 14:52:07  jim
  * Incorporated Justin's faster PME code along side DPME.
  *

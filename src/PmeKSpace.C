@@ -71,161 +71,223 @@ PmeKSpace::~PmeKSpace() {
   delete [] exp3;
 }
 
-#define INNER_LOOP \
-      /* Hand code the k3=0 term */  \
-      if (k1 != 0 || k2 != 0) {  \
-        double msq, imsq, vir, fac; \
-        double theta3, theta, q2, qr, qc, C;  \
-        theta3 = bm3[0]*b1b2;    \
-        qr = q_arr[ind]; qc = q_arr[ind+1];  \
-        q2 = (qr*qr + qc*qc)*theta3;  \
-        msq = m11 + m22;  \
-        imsq = 1.0/msq;  \
-        C = xp2*imsq;  \
-	theta = theta3*C;    \
-  	q_arr[ind] *= theta; \
-	q_arr[ind+1] *= theta;  \
-        vir = -2*(piob+imsq);  \
-        fac = q2*C;  \
-	energy += fac;  \
-        virial[0] += fac*(1.0+vir*m11);  \
-        virial[1] += fac*vir*m1*m2;  \
-        virial[3] += fac*(1.0+vir*m22);  \
-        virial[5] += fac;   \
-      }  \
-      else q_arr[ind] = q_arr[ind+1] = 0.0;  \
-      ind += 2;  \
-      for (k3=1; k3 < K3/2; k3++) { \
-        double m3, m33, xp3, msq, imsq, vir, fac; \
-        double theta3, theta, q2, qr, qc, C;  \
-	theta3 = bm3[k3] *b1b2; \
-        m3 = k3*recipz; \
-        m33 = m3*m3;        \
-        xp3 = exp3[k3]; \
-        qr = q_arr[ind]; qc=q_arr[ind+1]; \
-        q2 = 2*(qr*qr + qc*qc)*theta3; \
-        msq = m11 + m22 + m33;  \
-        imsq = 1.0/msq;  \
-        C = xp2*xp3*imsq;  \
-	theta = theta3*C;    \
-  	q_arr[ind] *= theta; \
-	q_arr[ind+1] *= theta;  \
-        vir = -2*(piob+imsq);  \
-        fac = q2*C;  \
-	energy += fac;  \
-        virial[0] += fac*(1.0+vir*m11);  \
-        virial[1] += fac*vir*m1*m2;  \
-        virial[2] += fac*vir*m1*m3;  \
-        virial[3] += fac*(1.0+vir*m22);  \
-        virial[4] += fac*vir*m2*m3;  \
-        virial[5] += fac*(1.0+vir*m33);   \
-        ind += 2;  \
-      } \
-      if (!(K3 & 1)) { \
-        double m3, m33, xp3, msq, imsq, vir, fac; \
-        double theta3, theta, q2, qr, qc, C;  \
-	k3 = K3/2; \
-	theta3 = bm3[k3] *b1b2; \
-        m3 = k3*recipz; \
-        m33 = m3*m3;        \
-        xp3 = exp3[k3]; \
-        qr = q_arr[ind]; qc=q_arr[ind+1]; \
-        q2 = (qr*qr + qc*qc)*theta3; \
-        msq = m11 + m22 + m33;  \
-        imsq = 1.0/msq;  \
-        C = xp2*xp3*imsq;  \
-	theta = theta3*C;    \
-  	q_arr[ind] *= theta; \
-	q_arr[ind+1] *= theta;  \
-        vir = -2*(piob+imsq);  \
-        fac = q2*C;  \
-	energy += fac;  \
-        virial[0] += fac*(1.0+vir*m11);  \
-        virial[1] += fac*vir*m1*m2;  \
-        virial[2] += fac*vir*m1*m3;  \
-        virial[3] += fac*(1.0+vir*m22);  \
-        virial[4] += fac*vir*m2*m3;  \
-        virial[5] += fac*(1.0+vir*m33);   \
-        ind += 2;  \
-     }  
-
-double PmeKSpace::compute_energy(double *q_arr, PmeBox *box, double *virial) {
+double PmeKSpace::compute_energy(double *q_arr, Lattice lattice, double ewald, double *virial) {
   double energy = 0.0;
 
-  double recipx, recipy, recipz;
   int pad2, pad3, n;
   int k1, k2, k3, ind;
   int K1, K2, K3;
 
   K1=myGrid.K1; K2=myGrid.K2; K3=myGrid.K3;
-  recipx=box->recipx; recipy=box->recipy; recipz=box->recipz;
   pad2 = (myGrid.dim2-K2)*myGrid.dim3;
   pad3 = myGrid.dim3-K3-(K3 & 1 ? 1 : 2);
 
-  i_pi_volume = 1.0/(M_PI * box->volume);
-  piob = M_PI/box->ewald;
+  i_pi_volume = 1.0/(M_PI * lattice.volume());
+  piob = M_PI/ewald;
   piob *= piob;
-
-  init_exp(exp1, K1, box->recipx);
-  init_exp(exp2, K2, box->recipy);
-  init_exp(exp3, K3, box->recipz);
 
   for (n=0; n<6; virial[n++] = 0.0);
 
-  ind = 0;
-  for (k1=0; k1 <= K1/2; k1++) {
-    double m1, m11, b1, xp1;
-    b1 = bm1[k1]; 
-    m1 = k1*recipx;
-    m11 = m1*m1;
-    xp1 = i_pi_volume*exp1[k1];
-    for (k2=0; k2 <= K2/2; k2++) {
-      double m2, m22, b1b2, xp2;
-      b1b2 = b1*bm2[k2];
-      m2 = k2*recipy;
-      m22 = m2*m2;
-      xp2 = exp2[k2]*xp1;
-INNER_LOOP
-      ind += pad3;
+  if ( lattice.orthogonal() ) {
+  // if ( 0 ) { // JCP FOR TESTING
+
+    double recipx = lattice.a_r().x;
+    double recipy = lattice.b_r().y;
+    double recipz = lattice.c_r().z;
+    init_exp(exp1, K1, recipx);
+    init_exp(exp2, K2, recipy);
+    init_exp(exp3, K3, recipz);
+
+    ind = 0;
+    for ( k1=0; k1<K1; ++k1 ) {
+      double m1, m11, b1, xp1;
+      b1 = bm1[k1];
+      int k1_s = k1<=K1/2 ? k1 : k1-K1;
+      m1 = k1_s*recipx;
+      m11 = m1*m1;
+      xp1 = i_pi_volume*exp1[abs(k1_s)];
+      for ( k2=0; k2<K2; ++k2 ) {
+        double m2, m22, b1b2, xp2;
+        b1b2 = b1*bm2[k2];
+        int k2_s = k2<=K2/2 ? k2 : k2-K2;
+        m2 = k2_s*recipy;
+        m22 = m2*m2;
+        xp2 = exp2[abs(k2_s)]*xp1;
+        if ( k1==0 && k2==0 ) {
+          q_arr[ind++] = 0.0;
+          q_arr[ind++] = 0.0;
+          k3 = 1;
+        } else {
+          k3 = 0;
+        }
+        for ( ; k3<=K3/2; ++k3 ) {
+          double m3, m33, xp3, msq, imsq, vir, fac;
+          double theta3, theta, q2, qr, qc, C;
+          theta3 = bm3[k3] *b1b2;
+          m3 = k3*recipz;
+          m33 = m3*m3;
+          xp3 = exp3[k3];
+          qr = q_arr[ind]; qc=q_arr[ind+1];
+          q2 = 2*(qr*qr + qc*qc)*theta3;
+          if ( (k3 == 0) || ( k3 == K3/2 && ! (K3 & 1) ) ) q2 *= 0.5;
+          msq = m11 + m22 + m33;
+          imsq = 1.0/msq;
+          C = xp2*xp3*imsq;
+          theta = theta3*C;
+          q_arr[ind] *= theta;
+          q_arr[ind+1] *= theta;
+          vir = -2*(piob+imsq);
+          fac = q2*C;
+          energy += fac;
+          virial[0] += fac*(1.0+vir*m11);
+          virial[1] += fac*vir*m1*m2;
+          virial[2] += fac*vir*m1*m3;
+          virial[3] += fac*(1.0+vir*m22);
+          virial[4] += fac*vir*m2*m3;
+          virial[5] += fac*(1.0+vir*m33);
+          ind += 2;
+        }
+        ind += pad3;
+      }
+      ind += pad2;
     }
-    for (k2 -= K2; k2 < 0; k2++) {
-      double m2, m22, b1b2, xp2;
-      b1b2 = b1*bm2[k2 + K2];
-      m2 = k2*recipy;
-      m22 = m2*m2;
-      xp2 = exp2[-k2]*xp1; 
-INNER_LOOP
-      ind += pad3;
+
+  } else if ( cross(lattice.a(),lattice.b()).unit() == lattice.c().unit() ) {
+  // } else if ( 0 ) { // JCP FOR TESTING
+
+    Vector recip1 = lattice.a_r();
+    Vector recip2 = lattice.b_r();
+    Vector recip3 = lattice.c_r();
+    double recip3_x = recip3.x;
+    double recip3_y = recip3.y;
+    double recip3_z = recip3.z;
+    init_exp(exp3, K3, recip3.length());
+
+    ind = 0;
+    for ( k1=0; k1<K1; ++k1 ) {
+      double b1; Vector m1;
+      b1 = bm1[k1];
+      int k1_s = k1<=K1/2 ? k1 : k1-K1;
+      m1 = k1_s*recip1;
+      // xp1 = i_pi_volume*exp1[abs(k1_s)];
+      for ( k2=0; k2<K2; ++k2 ) {
+        double xp2, b1b2, m2_x, m2_y, m2_z;
+        b1b2 = b1*bm2[k2];
+        int k2_s = k2<=K2/2 ? k2 : k2-K2;
+        m2_x = m1.x + k2_s*recip2.x;
+        m2_y = m1.y + k2_s*recip2.y;
+        m2_z = m1.z + k2_s*recip2.z;
+        // xp2 = exp2[abs(k2_s)]*xp1;
+        xp2 = i_pi_volume*exp(-piob*(m2_x*m2_x+m2_y*m2_y+m2_z*m2_z));
+        if ( k1==0 && k2==0 ) {
+          q_arr[ind++] = 0.0;
+          q_arr[ind++] = 0.0;
+          k3 = 1;
+        } else {
+          k3 = 0;
+        }
+        for ( ; k3<=K3/2; ++k3 ) {
+          double xp3, msq, imsq, vir, fac;
+          double theta3, theta, q2, qr, qc, C;
+          double m_x, m_y, m_z;
+          theta3 = bm3[k3] *b1b2;
+          m_x = m2_x + k3*recip3_x;
+          m_y = m2_y + k3*recip3_y;
+          m_z = m2_z + k3*recip3_z;
+          msq = m_x*m_x + m_y*m_y + m_z*m_z;
+          xp3 = exp3[k3];
+          qr = q_arr[ind]; qc=q_arr[ind+1];
+          q2 = 2*(qr*qr + qc*qc)*theta3;
+          if ( (k3 == 0) || ( k3 == K3/2 && ! (K3 & 1) ) ) q2 *= 0.5;
+          imsq = 1.0/msq;
+          C = xp2*xp3*imsq;
+          theta = theta3*C;
+          q_arr[ind] *= theta;
+          q_arr[ind+1] *= theta;
+          vir = -2*(piob+imsq);
+          fac = q2*C;
+          energy += fac;
+          virial[0] += fac*(1.0+vir*m_x*m_x);
+          virial[1] += fac*vir*m_x*m_y;
+          virial[2] += fac*vir*m_x*m_z;
+          virial[3] += fac*(1.0+vir*m_y*m_y);
+          virial[4] += fac*vir*m_y*m_z;
+          virial[5] += fac*(1.0+vir*m_z*m_z);
+          ind += 2;
+        }
+        ind += pad3;
+      }
+      ind += pad2;
     }
-    ind += pad2; 
+
+  } else {
+
+    Vector recip1 = lattice.a_r();
+    Vector recip2 = lattice.b_r();
+    Vector recip3 = lattice.c_r();
+    double recip3_x = recip3.x;
+    double recip3_y = recip3.y;
+    double recip3_z = recip3.z;
+
+    ind = 0;
+    for ( k1=0; k1<K1; ++k1 ) {
+      double b1; Vector m1;
+      b1 = bm1[k1];
+      int k1_s = k1<=K1/2 ? k1 : k1-K1;
+      m1 = k1_s*recip1;
+      // xp1 = i_pi_volume*exp1[abs(k1_s)];
+      for ( k2=0; k2<K2; ++k2 ) {
+        double b1b2, m2_x, m2_y, m2_z;
+        b1b2 = b1*bm2[k2];
+        int k2_s = k2<=K2/2 ? k2 : k2-K2;
+        m2_x = m1.x + k2_s*recip2.x;
+        m2_y = m1.y + k2_s*recip2.y;
+        m2_z = m1.z + k2_s*recip2.z;
+        // xp2 = exp2[abs(k2_s)]*xp1;
+        if ( k1==0 && k2==0 ) {
+          q_arr[ind++] = 0.0;
+          q_arr[ind++] = 0.0;
+          k3 = 1;
+        } else {
+          k3 = 0;
+        }
+        for ( ; k3<=K3/2; ++k3 ) {
+          double xp3, msq, imsq, vir, fac;
+          double theta3, theta, q2, qr, qc, C;
+          double m_x, m_y, m_z;
+          theta3 = bm3[k3] *b1b2;
+          m_x = m2_x + k3*recip3_x;
+          m_y = m2_y + k3*recip3_y;
+          m_z = m2_z + k3*recip3_z;
+          msq = m_x*m_x + m_y*m_y + m_z*m_z;
+          // xp3 = exp3[k3];
+          xp3 = i_pi_volume*exp(-piob*msq);
+          qr = q_arr[ind]; qc=q_arr[ind+1];
+          q2 = 2*(qr*qr + qc*qc)*theta3;
+          if ( (k3 == 0) || ( k3 == K3/2 && ! (K3 & 1) ) ) q2 *= 0.5;
+          imsq = 1.0/msq;
+          C = xp3*imsq;
+          theta = theta3*C;
+          q_arr[ind] *= theta;
+          q_arr[ind+1] *= theta;
+          vir = -2*(piob+imsq);
+          fac = q2*C;
+          energy += fac;
+          virial[0] += fac*(1.0+vir*m_x*m_x);
+          virial[1] += fac*vir*m_x*m_y;
+          virial[2] += fac*vir*m_x*m_z;
+          virial[3] += fac*(1.0+vir*m_y*m_y);
+          virial[4] += fac*vir*m_y*m_z;
+          virial[5] += fac*(1.0+vir*m_z*m_z);
+          ind += 2;
+        }
+        ind += pad3;
+      }
+      ind += pad2;
+    }
+
   }
 
-  for (k1 -= K1; k1 < 0; k1++) {
-    double m1, m11, b1, xp1;
-    b1 = bm1[k1+K1];
-    m1 = k1*recipx;
-    m11 = m1*m1;
-    xp1 = i_pi_volume*exp1[-k1];
-    for (k2=0; k2 <= K2/2; k2++) {
-      double m2, m22, b1b2, xp2;
-      b1b2 = b1*bm2[k2];
-      m2 = k2*recipy;
-      m22 = m2*m2;
-      xp2 = exp2[k2]*xp1;
-INNER_LOOP
-      ind += pad3;
-    }
-    for (k2 -= K2; k2 < 0; k2++) {
-      double m2, m22, b1b2, xp2;
-      b1b2 = b1*bm2[k2+K2];
-      m2 = k2*recipy;
-      m22 = m2*m2;
-      xp2 = exp2[-k2]*xp1;
-INNER_LOOP
-      ind += pad3; 
-    }
-    ind += pad2;
-  }
   for (n=0; n<6; ++n) virial[n] *= 0.5;
   return 0.5*energy;
 }

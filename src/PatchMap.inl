@@ -16,109 +16,40 @@
 #include "AtomMap.h"
 
 //----------------------------------------------------------------------
-inline int PatchMap::numPatches(void)
+inline PatchID PatchMap::assignToPatch(Position p, const Lattice &l)
 {
-  return nPatches;
-}
-
-//----------------------------------------------------------------------
-inline PatchID PatchMap::assignToPatch(Position p)
-{
-  int xi, yi, zi;
-  xi = (int)floor(((BigReal)xDim)*((p.x-xOrigin)/xLength));
-  yi = (int)floor(((BigReal)yDim)*((p.y-yOrigin)/yLength));
-  zi = (int)floor(((BigReal)zDim)*((p.z-zOrigin)/zLength));
-  return pid(xi,yi,zi);
-}
-
-//----------------------------------------------------------------------
-inline int PatchMap::xDimension(void)
-{
-  return xDim;
-}
-
-//----------------------------------------------------------------------
-inline int PatchMap::yDimension(void)
-{
-  return yDim;
-}
-
-//----------------------------------------------------------------------
-inline int PatchMap::zDimension(void)
-{
-  return zDim;
-}
-
-//----------------------------------------------------------------------
-inline Vector PatchMap::Origin(void)
-{
-  Vector o;
-  o.x = xOrigin;
-  o.y = yOrigin;
-  o.z = zOrigin;
-  return(o);
-}
-
-//----------------------------------------------------------------------
-inline int PatchMap::xIsPeriodic(void)
-{
-  return xPeriodic;
-}
-
-//----------------------------------------------------------------------
-inline int PatchMap::yIsPeriodic(void)
-{
-  return yPeriodic;
-}
-
-//----------------------------------------------------------------------
-inline int PatchMap::zIsPeriodic(void)
-{
-  return zPeriodic;
+  int ai, bi, ci;
+  ScaledPosition s = l.scale(p);
+  ai = (int)floor(((BigReal)aDim)*((s.x-aOrigin)/aLength));
+  bi = (int)floor(((BigReal)bDim)*((s.y-bOrigin)/bLength));
+  ci = (int)floor(((BigReal)cDim)*((s.z-cOrigin)/cLength));
+  return pid(ai,bi,ci);
 }
 
 //----------------------------------------------------------------------
 #define MODULO(I,J) ( (I)<0 ? ((J)-(-1*(I))%(J))%(J) : (I)%(J) )
 
-inline int PatchMap::pid(int xIndex, int yIndex, int zIndex)
+inline int PatchMap::pid(int aIndex, int bIndex, int cIndex)
 {
-  if ( xPeriodic ) xIndex = MODULO(xIndex,xDim);
+  if ( aPeriodic ) aIndex = MODULO(aIndex,aDim);
   else
   {
-    if ( xIndex < 0 ) xIndex = 0;
-    if ( xIndex >= xDim ) xIndex = xDim - 1;
+    if ( aIndex < 0 ) aIndex = 0;
+    if ( aIndex >= aDim ) aIndex = aDim - 1;
   }
-  if ( yPeriodic ) yIndex = MODULO(yIndex,yDim);
+  if ( bPeriodic ) bIndex = MODULO(bIndex,bDim);
   else
   {
-    if ( yIndex < 0 ) yIndex = 0;
-    if ( yIndex >= yDim ) yIndex = yDim - 1;
+    if ( bIndex < 0 ) bIndex = 0;
+    if ( bIndex >= bDim ) bIndex = bDim - 1;
   }
-  if ( zPeriodic ) zIndex = MODULO(zIndex,zDim);
+  if ( cPeriodic ) cIndex = MODULO(cIndex,cDim);
   else
   {
-    if ( zIndex < 0 ) zIndex = 0;
-    if ( zIndex >= zDim ) zIndex = zDim - 1;
+    if ( cIndex < 0 ) cIndex = 0;
+    if ( cIndex >= cDim ) cIndex = cDim - 1;
   }
-  return ((zIndex*yDim)+yIndex)*xDim + xIndex;
-}
-
-//----------------------------------------------------------------------
-inline int PatchMap::xIndex(int pid)
-{
-  return pid % xDim;
-}
-
-//----------------------------------------------------------------------
-inline int PatchMap::yIndex(int pid)
-{
-  return (pid / xDim) % yDim;
-}
-
-//----------------------------------------------------------------------
-inline int PatchMap::zIndex(int pid)
-{
-  return (pid / (xDim*yDim));
+  return ((cIndex*bDim)+bIndex)*aDim + aIndex;
 }
 
 //----------------------------------------------------------------------
@@ -134,79 +65,25 @@ inline int PatchMap::downstream(int pid1, int pid2)
     register PatchData *pdat1 = &(patchData[pid1]);
     register PatchData *pdat2 = &(patchData[pid2]);
 
-    // z
-    register int k = pdat1->zi;
-    register int k2 = pdat2->zi;
-    if ( ( k ? k : zMaxIndex ) == k2 + 1 ) k = k2;
+    // c
+    register int k = pdat1->cIndex;
+    register int k2 = pdat2->cIndex;
+    if ( ( k ? k : cMaxIndex ) == k2 + 1 ) k = k2;
 
-    // y
-    register int j = pdat1->yi;
-    register int j2 = pdat2->yi;
-    if ( ( j ? j : yMaxIndex ) == j2 + 1 ) j = j2;
+    // b
+    register int j = pdat1->bIndex;
+    register int j2 = pdat2->bIndex;
+    if ( ( j ? j : bMaxIndex ) == j2 + 1 ) j = j2;
 
-    // x
-    register int i = pdat1->xi;
-    register int i2 = pdat2->xi;
-    if ( ( i ? i : xMaxIndex ) == i2 + 1 ) i = i2;
+    // a
+    register int i = pdat1->aIndex;
+    register int i2 = pdat2->aIndex;
+    if ( ( i ? i : aMaxIndex ) == i2 + 1 ) i = i2;
 
-    ds = ((k*yDim)+j)*xDim + i;
+    ds = ((k*bDim)+j)*aDim + i;
   }
 
   return ds;
-}
-
-//----------------------------------------------------------------------
-inline int PatchMap::node(int pid)
-{
-  return patchData[pid].node;
-}
-
-//----------------------------------------------------------------------
-inline Coordinate PatchMap::minX(int pid)
-{
-  return patchData[pid].x0;
-}
-
-//----------------------------------------------------------------------
-inline Coordinate PatchMap::maxX(int pid)
-{
-  return patchData[pid].x1;
-}
-
-//----------------------------------------------------------------------
-inline Coordinate PatchMap::minY(int pid)
-{
-  return patchData[pid].y0;
-}
-
-//----------------------------------------------------------------------
-inline Coordinate PatchMap::maxY(int pid)
-{
-  return patchData[pid].y1;
-}
-
-//----------------------------------------------------------------------
-inline Coordinate PatchMap::minZ(int pid)
-{
-  return patchData[pid].z0;
-}
-
-//----------------------------------------------------------------------
-inline Coordinate PatchMap::maxZ(int pid)
-{
-  return patchData[pid].z1;
-}
-
-//----------------------------------------------------------------------
-inline int PatchMap::numCids(int pid)
-{
-  return patchData[pid].numCids;
-}
-
-//----------------------------------------------------------------------
-inline int PatchMap::cid(int pid,int i)
-{
-  return patchData[pid].cids[i];
 }
 
 #endif
@@ -215,12 +92,15 @@ inline int PatchMap::cid(int pid,int i)
  *
  *	$RCSfile: PatchMap.inl,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1998/08/17 23:29:53 $
+ *	$Revision: 1.4 $	$Date: 1999/09/03 20:46:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.inl,v $
+ * Revision 1.4  1999/09/03 20:46:19  jim
+ * Support for non-orthogonal periodic boundary conditions.
+ *
  * Revision 1.3  1998/08/17 23:29:53  jim
  * Fixed MODULO macro needed for negative arguments.  I can't do math.
  *

@@ -100,8 +100,8 @@ void TestController::berendsenPressure(int step)
     */
     factor += 1.0;
     factor = cbrt(factor);
-    broadcast->positionRescaleFactor.publish(step,Vector(1,1,1)*factor);
-    state->lattice.rescale(Vector(1,1,1)*factor);
+    broadcast->positionRescaleFactor.publish(step,Tensor::identity()*factor);
+    state->lattice.rescale(Tensor::identity()*factor);
   }
 }
 
@@ -110,12 +110,15 @@ void TestController::berendsenPressure(int step)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1999/05/11 23:56:52 $
+ *	$Revision: 1.8 $	$Date: 1999/09/03 20:46:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: TestController.C,v $
+ * Revision 1.8  1999/09/03 20:46:31  jim
+ * Support for non-orthogonal periodic boundary conditions.
+ *
  * Revision 1.7  1999/05/11 23:56:52  brunner
  * Changes for new charm version
  *

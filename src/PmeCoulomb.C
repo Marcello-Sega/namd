@@ -5,8 +5,6 @@
 PmeCoulomb::PmeCoulomb(PmeGrid grid, int natoms) 
   : myGrid(grid), N(natoms) {
   int qsize;
-  if (grid.K3 & 1)  // If K3 is odd, DIE.
-    NAMD_die("Sorry, PmeGridSizeZ must be even.");
 
   myFFT = new PmeFFT(myGrid.K1, myGrid.K2, myGrid.K3);
   myFFT->getdims(&(myGrid.dim2), &(myGrid.dim3));
@@ -22,65 +20,84 @@ PmeCoulomb::~PmeCoulomb() {
   delete [] q_arr;
 }
 
-double PmeCoulomb::compute_recip(PmeParticle p[], PmeBox *box, 
-                        double virial[], PmeVector f[]) {
+double PmeCoulomb::compute_recip(PmeParticle p[], Lattice lattice, 
+                        double ewaldcof, double virial[], Vector f[]) {
   double energy;
   int i, qsize;
 
   qsize = myGrid.K1 * myGrid.dim2 * myGrid.dim3;
   for (i=0; i<qsize; q_arr[i++] = 0.0);
 
-  scale_coordinates(p, box);
+  scale_coordinates(p, lattice);  // move to nodes
   myRealSpace->fill_charges(q_arr, p);
 
   myFFT->forward(q_arr);
 
-  energy = myKSpace->compute_energy(q_arr, box, virial);
+  energy = myKSpace->compute_energy(q_arr, lattice, ewaldcof, virial);
 
   myFFT->backward(q_arr);
 
   myRealSpace->compute_forces(q_arr, p, f);
-  scale_forces(f, box);
+  scale_forces(f, lattice);  // move to nodes
 
   return energy;
 }
 
-void PmeCoulomb::scale_coordinates(PmeParticle p[], PmeBox *box) { 
-  int i;
-  double recipx, recipy, recipz, fr1, fr2, fr3; 
-  int K1, K2, K3;
-  recipx=box->recipx;
-  recipy=box->recipy;
-  recipz=box->recipz;
-  K1 = myGrid.K1;
-  K2 = myGrid.K2;
-  K3 = myGrid.K3;
+void PmeCoulomb::scale_coordinates(PmeParticle p[], Lattice lattice) { 
+  Vector origin = lattice.origin();
+  Vector recip1 = lattice.a_r();
+  Vector recip2 = lattice.b_r();
+  Vector recip3 = lattice.c_r();
+  double ox = origin.x;
+  double oy = origin.y;
+  double oz = origin.z;
+  double r1x = recip1.x;
+  double r1y = recip1.y;
+  double r1z = recip1.z;
+  double r2x = recip2.x;
+  double r2y = recip2.y;
+  double r2z = recip2.z;
+  double r3x = recip3.x;
+  double r3y = recip3.y;
+  double r3z = recip3.z;
+  int K1 = myGrid.K1;
+  int K2 = myGrid.K2;
+  int K3 = myGrid.K3;
 
-  for (i=0; i<N; i++) {
-    fr1=p[i].x*recipx + 0.5;
-    fr2=p[i].y*recipy + 0.5;
-    fr3=p[i].z*recipz + 0.5;
-    p[i].x = K1*(fr1-(int)(fr1+0.5) + 0.5);
-    p[i].y = K2*(fr2-(int)(fr2+0.5) + 0.5);
-    p[i].z = K3*(fr3-(int)(fr3+0.5) + 0.5);
+  for (int i=0; i<N; i++) {
+    double px = p[i].x - ox;
+    double py = p[i].y - oy;
+    double pz = p[i].z - oz;
+    double sx = px*r1x + py*r1y + pz*r1z;
+    double sy = px*r2x + py*r2y + pz*r2z;
+    double sz = px*r3x + py*r3y + pz*r3z;
+    p[i].x = K1 * ( sx - floor(sx) );
+    p[i].y = K2 * ( sy - floor(sy) );
+    p[i].z = K3 * ( sz - floor(sz) );
   }
 }
 
-void PmeCoulomb::scale_forces(PmeVector f[], PmeBox *box) {
-  int i;
-  double rxx, ryy, rzz;
-  double f1, f2, f3;
-  rxx=box->recipx;
-  ryy=box->recipy;
-  rzz=box->recipz;
+void PmeCoulomb::scale_forces(Vector f[], Lattice lattice) {
+  Vector recip1 = lattice.a_r();
+  Vector recip2 = lattice.b_r();
+  Vector recip3 = lattice.c_r();
+  double r1x = recip1.x;
+  double r1y = recip1.y;
+  double r1z = recip1.z;
+  double r2x = recip2.x;
+  double r2y = recip2.y;
+  double r2z = recip2.z;
+  double r3x = recip3.x;
+  double r3y = recip3.y;
+  double r3z = recip3.z;
   
-  for (i=0; i<N; i++) {
-    f1=rxx*f[i].x;
-    f2=             ryy*f[i].y;
-    f3=                           rzz*f[i].z;
-    f[i].x = f1;
-    f[i].y = f2;
-    f[i].z = f3;
+  for (int i=0; i<N; i++) {
+    double f1 = f[i].x;
+    double f2 = f[i].y;
+    double f3 = f[i].z;
+    f[i].x = f1*r1x + f2*r2x + f3*r3x;
+    f[i].y = f1*r1y + f2*r2y + f3*r3y;
+    f[i].z = f1*r1z + f2*r2z + f3*r3z;
   }
 }
 

@@ -43,16 +43,16 @@ void ComputeDPMTA::get_FMA_cube(int resize)
     //  From these extremes, figure out how many patches we will
     //  have to have in each direction
     SimParameters *simParams = Node::Object()->simParameters;
-    int dim_x = patchMap->xDimension();
-    int dim_y = patchMap->yDimension();
-    int dim_z = patchMap->zDimension();
+    int dim_x = patchMap->gridsize_a();
+    int dim_y = patchMap->gridsize_b();
+    int dim_z = patchMap->gridsize_c();
 
     boxSize.x = dim_x*simParams->patchDimension;
     boxSize.y = dim_y*simParams->patchDimension;
     boxSize.z = dim_z*simParams->patchDimension;
     BigReal skirt = 2*simParams->patchDimension;
 
-    boxCenter = patchMap->Origin();
+    boxCenter = patchMap->origin();
     boxCenter.x += boxSize.x/2.0;
     boxCenter.y += boxSize.y/2.0;
     boxCenter.z += boxSize.z/2.0;
@@ -73,8 +73,13 @@ void ComputeDPMTA::get_FMA_cube(int resize)
     ap = ap.begin();
     DebugM(2,"getting lattice from patch for FMA box\n");
     Lattice lattice = (*ap).p->lattice;
+    if ( ! lattice.orthogonal() ) {
+      NAMD_die("DPMTA (FMA) only supports orthogonal PBC's.");
+    }
     DebugM(2,"getting patch dimension for FMA box\n");
-    boxSize = lattice.dimension();
+    boxSize.x = lattice.a().x;
+    boxSize.y = lattice.b().y;
+    boxSize.z = lattice.c().z;
     DebugM(2,"boxSize is " << boxSize << "\n");
     boxCenter = lattice.origin();
   }
@@ -146,7 +151,9 @@ void ComputeDPMTA::initialize()
   DebugM(2,"init() getting first patch info for FMA box\n");
   ap = ap.begin();
   DebugM(2,"init() getting lattice from patch for FMA box\n");
-  initLattice = (*ap).p->lattice.dimension();
+  initLattice.x = (*ap).p->lattice.a().x;
+  initLattice.y = (*ap).p->lattice.b().y;
+  initLattice.z = (*ap).p->lattice.c().z;
   DebugM(2,"init() initLattice is " << initLattice << "\n");
 
   //  NOTE that the theta value is hardwired to the value of 0.715
@@ -156,13 +163,12 @@ void ComputeDPMTA::initialize()
   //  but it defaults to 0.715
 
   // check for PBC
-  usePBC = patchMap->xIsPeriodic()
-	 + patchMap->yIsPeriodic()
-	 + patchMap->zIsPeriodic();
+  usePBC = ( patchMap->periodic_a() ? 1 : 0 )
+	 + ( patchMap->periodic_b() ? 1 : 0 )
+	 + ( patchMap->periodic_c() ? 1 : 0 );
   if ((usePBC != 0) && (usePBC != 3))
   {
-    iout << iERROR << "DPMTA (FMA) does not support " << usePBC
-	 << "-dimension PBC.\n" << endi;
+    NAMD_die("DPMTA (FMA) does not support 1 or 2 dimensional PBC's.");
   }
   DebugM(2,"Use PBC = " << usePBC << "\n");
   usePBC = (usePBC == 3);	// either PBC "3D" or no PBC
@@ -352,7 +358,12 @@ void ComputeDPMTA::doWork()
     {
     ap = ap.begin();
     Lattice lattice = (*ap).p->lattice;
-    newLattice = lattice.dimension();
+    if ( ! lattice.orthogonal() ) {
+      NAMD_die("DPMTA (FMA) only supports orthogonal PBC's.");
+    }
+    newLattice.x = lattice.a().x;
+    newLattice.y = lattice.b().y;
+    newLattice.z = lattice.c().z;
     rescaleFactor.x = initLattice.x / newLattice.x;
     rescaleFactor.y = initLattice.y / newLattice.y;
     rescaleFactor.z = initLattice.z / newLattice.z;
@@ -506,12 +517,15 @@ void ComputeDPMTA::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1059 $	$Date: 1999/08/20 19:11:07 $
+ *	$Revision: 1.1060 $	$Date: 1999/09/03 20:46:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.C,v $
+ * Revision 1.1060  1999/09/03 20:46:06  jim
+ * Support for non-orthogonal periodic boundary conditions.
+ *
  * Revision 1.1059  1999/08/20 19:11:07  jim
  * Added MOLLY - mollified impluse method.
  *

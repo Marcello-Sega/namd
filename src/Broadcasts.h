@@ -35,7 +35,7 @@ enum {
 struct ControllerBroadcasts
 {
   SimpleBroadcastObject<BigReal> velocityRescaleFactor;
-  SimpleBroadcastObject<Vector> positionRescaleFactor;
+  SimpleBroadcastObject<Tensor> positionRescaleFactor;
   SimpleBroadcastObject<BigReal> tcoupleCoefficient;
 #ifdef CYCLE_BARRIER
   SimpleBroadcastObject<int> cycleBarrier;
@@ -60,12 +60,15 @@ struct ControllerBroadcasts
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1999/05/26 22:23:53 $
+ *	$Revision: 1.6 $	$Date: 1999/09/03 20:46:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Broadcasts.h,v $
+ * Revision 1.6  1999/09/03 20:46:05  jim
+ * Support for non-orthogonal periodic boundary conditions.
+ *
  * Revision 1.5  1999/05/26 22:23:53  jim
  * Added basic Tcl scripting, fixed bugs in broadcasts.
  *

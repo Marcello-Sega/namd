@@ -14,8 +14,8 @@ public:
   PmeCoulomb(PmeGrid grid, int natoms);
   ~PmeCoulomb();
 
-  double compute_recip(PmeParticle particles[], PmeBox *box, double virial[],
-                       PmeVector forces[]);
+  double compute_recip(PmeParticle particles[], Lattice lattice,
+                       double ewaldcof, double virial[], Vector forces[]);
 
 private:
   PmeFFT *myFFT;
@@ -28,9 +28,10 @@ private:
   PmeGrid myGrid;   // Grid dimensions
   const int N;            // Number of atoms
 
-  void scale_coordinates(PmeParticle particles[], PmeBox *box);
+  void scale_coordinates(PmeParticle particles[], Lattice lattice);
 
-  void scale_forces(PmeVector forces[], PmeBox *box);
+  void scale_forces(Vector forces[], Lattice lattice);
+
 };
 
 #endif

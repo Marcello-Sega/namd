@@ -267,7 +267,7 @@ void Sequencer::berendsenPressure(int step)
   const int freq = simParams->berendsenPressureFreq;
   if ( simParams->berendsenPressureOn && !((step-1)%freq) )
   {
-   Vector factor = broadcast->positionRescaleFactor.get(step);
+   Tensor factor = broadcast->positionRescaleFactor.get(step);
    patch->lattice.rescale(factor);
    if ( simParams->useGroupPressure )
    {
@@ -304,8 +304,9 @@ void Sequencer::langevinPiston(int step)
 {
   if ( simParams->langevinPistonOn && ! ( (step-1-slowFreq/2) % slowFreq ) )
   {
-   Vector factor = broadcast->positionRescaleFactor.get(step);
-   Vector velFactor(1/factor.x,1/factor.y,1/factor.z);
+   Tensor factor = broadcast->positionRescaleFactor.get(step);
+   // JCP FIX THIS!!!
+   Vector velFactor(1/factor.xx,1/factor.yy,1/factor.zz);
    patch->lattice.rescale(factor);
    if ( simParams->useGroupPressure )
    {
@@ -646,12 +647,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1071 $     $Date: 1999/08/20 19:11:15 $
+ *      $Revision: 1.1072 $     $Date: 1999/09/03 20:46:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1072  1999/09/03 20:46:26  jim
+ * Support for non-orthogonal periodic boundary conditions.
+ *
  * Revision 1.1071  1999/08/20 19:11:15  jim
  * Added MOLLY - mollified impluse method.
  *
