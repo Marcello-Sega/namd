@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: common.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/06 20:38:38 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1996/08/15 20:32:14 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -22,6 +22,9 @@
  * REVISION HISTORY:
  *
  * $Log: common.C,v $
+ * Revision 1.2  1996/08/15 20:32:14  brunner
+ * Made NamdDIE use CPrintf
+ *
  * Revision 1.1  1996/08/06 20:38:38  ari
  * Initial revision
  *
@@ -89,7 +92,11 @@
  * Removed NAMD_warn; using Inform objects now to report information.
  * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1 1996/08/06 20:38:38 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.2 1996/08/15 20:32:14 brunner Exp $";
+
+#include "chare.h"
+#include "ckdefs.h"
+#include "c++interface.h"
 
 #include "common.h"
 #include "Communicate.h"
@@ -144,8 +151,8 @@ void NAMD_quit(Bool die_hard)
 void NAMD_die(char *err_msg)
 
 {
-    cout << err_msg << endl;
-    abort();
+    CPrintf("%s\n",err_msg);
+    CharmExit();
 }
 
 
