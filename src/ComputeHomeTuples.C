@@ -129,6 +129,8 @@ void ComputeHomeTuples<T,S>::loadTuples() {
     }
   }
 
+/*
+
   tupleList.clear();
 
   if ( node->simParameters->fixedAtomsOn ) {
@@ -152,21 +154,27 @@ void ComputeHomeTuples<T,S>::loadTuples() {
 
   delete [] tupleFlag;
 
+
   // Resolve all atoms in tupleList to correct PatchList element and index
   // and eliminate tuples we aren't responsible for
   UniqueSetIter<T> al(tupleList);
   UniqueSet<T> tupleList2;
 
+*/
+
+  tupleList.clear();
+
+  int al;
   LocalID aid[T::size];
-  for (al = al.begin(); al != al.end(); al++ ) {
+  for (al = 0; al < numTuples; al++ ) {
+    T t(&tupleStructs[al]);
     register int i;
-    aid[0] = atomMap->localID(al->atomID[0]);
+    aid[0] = atomMap->localID(t.atomID[0]);
     int homepatch = aid[0].pid;
     for (i=1; i < T::size; i++) {
-	aid[i] = atomMap->localID(al->atomID[i]);
+	aid[i] = atomMap->localID(t.atomID[i]);
 	homepatch = patchMap->downstream(homepatch,aid[i].pid);
     }
-    T &t = *al;
     if ( homepatch != notUsed && patchMap->node(homepatch) == CMyPe() ) {
       for (i=0; i < T::size; i++) {
 	t.p[i] = tuplePatchList.find(TuplePatchElem(aid[i].pid));
@@ -180,10 +188,11 @@ void ComputeHomeTuples<T,S>::loadTuples() {
 	*/
 	t.localIndex[i] = aid[i].index;
       }
-      tupleList2.load(t);
+      tupleList.load(t);
     }
   }
-  tupleList = tupleList2;
+
+  delete [] tupleFlag;
 
 }
 
@@ -239,12 +248,17 @@ void ComputeHomeTuples<T,S>::doWork() {
  *
  *      $RCSfile: ComputeHomeTuples.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1019 $     $Date: 1997/10/17 17:16:46 $
+ *      $Revision: 1.1020 $     $Date: 1997/10/17 20:26:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.C,v $
+ * Revision 1.1020  1997/10/17 20:26:31  jim
+ * Sped up tuples, but slowed down fixed atom code.
+ * There is a much more efficient way of doing fixed atoms that can
+ * be included later.
+ *
  * Revision 1.1019  1997/10/17 17:16:46  jim
  * Switched from hash tables to checklists, eliminated special exclusion code.
  *
