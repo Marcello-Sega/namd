@@ -270,7 +270,8 @@ ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), pmeProxyDir(thisgroup), pm
   CpvAccess(BOCclass_group).computePmeMgr = thisgroup;
 
 #ifdef USE_COMM_LIB
-  pmeProxy.ckDelegate(delegateMgr);
+  CProxy_ComlibManager gproxy(delegateMgr);
+  pmeProxy.ckDelegate(gproxy.ckLocalBranch());
 #endif
 
 #ifdef NAMD_FFTW
