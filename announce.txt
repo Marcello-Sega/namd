@@ -1,10 +1,10 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                   NAMD 2.2 Release Announcement                    |
+|                  NAMD 2.3b1 Release Announcement                   |
 |                                                                    |
 +--------------------------------------------------------------------+
 
-                                                   September 29, 2000
+                                                   February 29, 2001
 
 The Theoretical Biophysics Group at the University of Illinois is
 proud to announce the public release of a new version of NAMD, a
@@ -13,21 +13,13 @@ high-performance simulation of large biomolecular systems.  NAMD is
 distributed free of charge and includes source code.  NAMD development
 is supported by the NIH National Center for Research Resources.
 
-NAMD 2.2 has several advantages over NAMD 2.1:
+NAMD 2.3b1 has several advantages over NAMD 2.2:
 
-- New ports to the IBM RS/6000 SP, Alpha Linux, and Windows.
+- The new psfgen tool for building PSF structure files.
 
-- Parallelized particle mesh Ewald FFT and reciprocal space sum
-  with demonstrated scaling to 128 processors for large systems.
+- Simpler to run on a single workstation.  (No more rsh!)
 
-- Release binaries contain FFTW (under special license) for
-  better serial performance when using particle mesh Ewald.
-
-- Much faster minimizer based on conjugate gradient method, also
-  more stable when dealing with very bad initial contacts.
-
-- Improved load balancer with demonstrated scaling to over
-  1024 processors for large cutoff systems.
+- New ports to the Compaq AlphaServer SC and Scyld Beowulf.
 
 NAMD is available from http://www.ks.uiuc.edu/Research/namd/.
 
