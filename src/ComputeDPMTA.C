@@ -32,30 +32,58 @@
 
 extern Communicate *comm;
 
-void ComputeDPMTA::get_FMA_cube(Vector *boxsize, Vector *boxcenter)
+void ComputeDPMTA::get_FMA_cube()
 {
-  int dim_x,dim_y,dim_z;
-
+  Vector boxSize;	// used to see if things change
   PatchMap *patchMap = PatchMap::Object();
-  SimParameters *simParams = Node::Object()->simParameters;
+
+#ifdef NO_PBC
 
   //  From these extremes, figure out how many patches we will
   //  have to have in each direction
   //  And add the skirt of empty patches by adding 2 patches
   //  in every direction
-  dim_x = patchMap->xDimension() + 2;
-  dim_y = patchMap->yDimension() + 2;
-  dim_z = patchMap->zDimension() + 2;
+  SimParameters *simParams = Node::Object()->simParameters;
+  int dim_x = patchMap->xDimension() + 2;
+  int dim_y = patchMap->yDimension() + 2;
+  int dim_z = patchMap->zDimension() + 2;
 
-  boxsize->x = dim_x*simParams->patchDimension;
-  boxsize->y = dim_y*simParams->patchDimension;
-  boxsize->z = dim_z*simParams->patchDimension;
-  *boxcenter = patchMap->Origin();
-  boxcenter->x += boxsize->x/2.0;
-  boxcenter->y += boxsize->y/2.0;
-  boxcenter->z += boxsize->z/2.0;
+  boxSize->x = dim_x*simParams->patchDimension;
+  boxSize->y = dim_y*simParams->patchDimension;
+  boxSize->z = dim_z*simParams->patchDimension;
 
-  DebugM(2,"cube center: " << (*boxcenter) << " size=" << (*boxsize) << "\n");
+#else
+
+  // determine boxSize from the PBC lattice
+  // lattice is the same on all patches, so choose first patch
+  ResizeArrayIter<PatchElem> ap(patchList);
+  ap = ap.begin();
+  Lattice lattice = (*ap).p->lattice;
+  boxSize = lattice.dimension();
+
+#endif
+
+  // don't bother checking if the center has moved since it depends on the size.
+  if (boxsize != boxSize)
+	{
+	// reset the size and center
+	boxsize = boxSize;
+	boxcenter = patchMap->Origin();
+	boxcenter.x += boxsize.x/2.0;
+	boxcenter.y += boxsize.y/2.0;
+	boxcenter.z += boxsize.z/2.0;
+
+	// reset DPMTA
+	PmtaVector center,size;
+	center.x = boxcenter.x;
+	center.y = boxcenter.y;
+	center.z = boxcenter.z;
+	size.x = boxsize.x;
+	size.y = boxsize.y;
+	size.z = boxsize.z;
+	PMTAresize(&size,&center);
+	}
+  DebugM(2,"cube center: " << (*boxcenter) << " size=" << (*boxSize) << "\n");
 }
 
 ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
@@ -71,6 +99,8 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   totalAtoms = 0;
   fmaResults = NULL;
   ljResults = NULL;
+  boxcenter = 0;	// zero the array
+  boxsize = 0;	// zero the array
 
   reduction->Register(REDUCTION_ELECT_ENERGY);
 
@@ -79,9 +109,6 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
 
   //  NOTE 2: Theta is now an optional config parameter,
   //  but it defaults to 0.715
-
-  int numProcs = CNumPes();
-  PmtaInitData pmta_data;
 
   if (CMyPe() != 0)
   {
@@ -98,6 +125,8 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   // *****************************************
   // ONLY THE MASTER (NODE 0) NEEDS TO DO THIS:
 
+  int numProcs = CNumPes();
+  PmtaInitData pmta_data;
   slavetids = new int[numProcs];
   if (slavetids == NULL)
   {
@@ -110,7 +139,7 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
 
   //  Get the size of the FMA cube
   DebugM(1,"DPMTA getting FMA cube\n");
-  get_FMA_cube(&boxsize, &boxcenter);
+  get_FMA_cube();
   DebugM(1,"DPMTA got FMA cube\n");
 
   // reduce function calling time
@@ -208,6 +237,8 @@ void ComputeDPMTA::doWork()
   // 1. get totalAtoms
   for (totalAtoms=0, ap = ap.begin(); ap != ap.end(); ap++)
      totalAtoms += (*ap).p->getNumAtoms();
+  // check if box has changes for PBC
+  get_FMA_cube();
 
   // 2. setup atom list
   int i,j;

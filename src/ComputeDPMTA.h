@@ -28,8 +28,10 @@ private:
   int totalAtoms;	//  Total number of atoms being dealt with
   PmtaPartInfo *fmaResults;	//  Results from the PMTA code
   PmtaPartInfo *ljResults;	//  Results from the PMTA code
+  Vector boxsize;	// FMA box size, set by get_FMA_cube()
+  Vector boxcenter;	// FMA box center, set by get_FMA_cube()
 
-  void get_FMA_cube(Vector *boxsize, Vector *boxcenter);
+  void get_FMA_cube();
 
 public:
   ComputeDPMTA(ComputeID c);
@@ -44,12 +46,15 @@ public:
  *
  *	$RCSfile: ComputeDPMTA.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/03/04 15:52:37 $
+ *	$Revision: 1.1009 $	$Date: 1997/03/07 19:20:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.h,v $
+ * Revision 1.1009  1997/03/07 19:20:24  nealk
+ * Modified for PBC
+ *
  * Revision 1.1008  1997/03/04 15:52:37  nealk
  * Modified get_FMA_cube to allow for a rectanglar region.
  *
