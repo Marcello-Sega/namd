@@ -23,6 +23,7 @@ obj/main.o: \
 	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
@@ -103,6 +104,16 @@ obj/AlgRecBisection.o: \
 	src/Set.h \
 	src/heap.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/AlgRecBisection.o $(COPTC) src/AlgRecBisection.C
+obj/AlgNbor.o: \
+	src/AlgNbor.C \
+	src/common.h \
+	src/InfoStream.h \
+	src/AlgNbor.h \
+	src/Rebalancer.h \
+	src/elements.h \
+	src/Set.h \
+	src/heap.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/AlgNbor.o $(COPTC) src/AlgNbor.C
 obj/AtomMap.o: \
 	src/AtomMap.C \
 	src/ProcessorPrivate.h \
@@ -132,6 +143,7 @@ obj/BackEnd.o: \
 	inc/ProxyMgr.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
@@ -244,6 +256,7 @@ obj/CollectionMgr.o: \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
+	src/GromacsTopFile.h \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/MStream.h \
@@ -325,6 +338,7 @@ obj/ComputeAngles.o: \
 	src/Molecule.h \
 	src/parm.h \
 	src/Hydrogen.h \
+	src/GromacsTopFile.h \
 	src/Parameters.h \
 	src/strlib.h \
 	src/ReductionMgr.h \
@@ -333,6 +347,7 @@ obj/ComputeAngles.o: \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
 	src/ComputeAngles.inl \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeAngles.o $(COPTC) src/ComputeAngles.C
@@ -352,6 +367,7 @@ obj/ComputeBonds.o: \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
 	src/ReductionMgr.h \
 	src/main.h \
 	src/BOCgroup.h \
@@ -392,6 +408,7 @@ obj/ComputeBonds.o: \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
 	src/ComputeBonds.inl \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeBonds.o $(COPTC) src/ComputeBonds.C
@@ -475,6 +492,7 @@ obj/ComputeDihedrals.o: \
 	src/Molecule.h \
 	src/parm.h \
 	src/Hydrogen.h \
+	src/GromacsTopFile.h \
 	src/Parameters.h \
 	src/strlib.h \
 	src/ReductionMgr.h \
@@ -483,6 +501,7 @@ obj/ComputeDihedrals.o: \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
 	src/ComputeDihedrals.inl \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeDihedrals.o $(COPTC) src/ComputeDihedrals.C
@@ -535,6 +554,7 @@ obj/ComputeDPME.o: \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
+	src/GromacsTopFile.h \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/MStream.h \
@@ -603,6 +623,7 @@ obj/ComputeDPMTA.o: \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
+	src/GromacsTopFile.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeDPMTA.o $(COPTC) src/ComputeDPMTA.C
 obj/ComputeEField.o: \
@@ -692,6 +713,7 @@ obj/ComputeFreeEnergy.o: \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
+	src/GromacsTopFile.h \
 	src/ReductionMgr.h \
 	src/SimParameters.h \
 	src/Communicate.h \
@@ -746,6 +768,7 @@ obj/ComputeFullDirect.o: \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
+	src/GromacsTopFile.h \
 	src/Communicate.h \
 	src/MStream.h \
 	src/Debug.h \
@@ -832,6 +855,7 @@ obj/ComputeHomePatches.o: \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
+	src/GromacsTopFile.h \
 	src/ReductionMgr.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeHomePatches.o $(COPTC) src/ComputeHomePatches.C
@@ -883,6 +907,7 @@ obj/ComputeImpropers.o: \
 	src/Molecule.h \
 	src/parm.h \
 	src/Hydrogen.h \
+	src/GromacsTopFile.h \
 	src/Parameters.h \
 	src/strlib.h \
 	src/ReductionMgr.h \
@@ -891,6 +916,7 @@ obj/ComputeImpropers.o: \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeImpropers.o $(COPTC) src/ComputeImpropers.C
 obj/ComputeGlobal.o: \
@@ -956,6 +982,7 @@ obj/ComputeGlobal.o: \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
+	src/GromacsTopFile.h \
 	src/ReductionMgr.h \
 	src/ComputeMgr.h \
 	src/SimParameters.h \
@@ -1013,6 +1040,7 @@ obj/ComputeGlobalEasy.o: \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
+	src/GromacsTopFile.h \
 	src/ReductionMgr.h \
 	src/SimParameters.h \
 	src/Communicate.h \
@@ -1068,6 +1096,7 @@ obj/ComputeGlobalMaster.o: \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
+	src/GromacsTopFile.h \
 	src/ReductionMgr.h \
 	src/ComputeMgr.h \
 	src/Debug.h
@@ -1243,12 +1272,14 @@ obj/ComputeMgr.o: \
 	src/Molecule.h \
 	src/parm.h \
 	src/Hydrogen.h \
+	src/GromacsTopFile.h \
 	src/Parameters.h \
 	src/strlib.h \
 	src/ComputeSelfTuples.h \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
 	src/ComputeAngles.inl \
 	src/ComputeDihedrals.h \
 	src/ComputeDihedrals.inl \
@@ -1302,6 +1333,7 @@ obj/ComputeNonbondedSelf.o: \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedSelf.o $(COPTC) src/ComputeNonbondedSelf.C
 obj/ComputeNonbondedPair.o: \
@@ -1333,6 +1365,7 @@ obj/ComputeNonbondedPair.o: \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/ResizeArrayIter.h \
@@ -1365,10 +1398,11 @@ obj/ComputeNonbondedUtil.o: \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
 	src/LJTable.h \
 	src/InfoStream.h \
 	src/ComputeNonbondedBase.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedUtil.o $(COPTC) src/ComputeNonbondedUtil.C
+	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedUtil.o $(COPTC) src/ComputeNonbondedUtil.C
 obj/ComputePatch.o: \
 	src/ComputePatch.C \
 	inc/WorkDistrib.decl.h \
@@ -1486,6 +1520,7 @@ obj/ComputePme.o: \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
+	src/GromacsTopFile.h \
 	src/ComputeMgr.h \
 	inc/ComputeMgr.decl.h \
 	src/Debug.h \
@@ -1529,6 +1564,7 @@ obj/ComputeRestraints.o: \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/MStream.h \
@@ -1585,6 +1621,7 @@ obj/ComputeSMD.o: \
 	inc/ComputeMgr.decl.h \
 	src/PDB.h \
 	src/parm.h \
+	src/GromacsTopFile.h \
 	src/PDBData.h \
 	src/Molecule.h \
 	src/structures.h \
@@ -1670,6 +1707,7 @@ obj/ComputeTcl.o: \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
+	src/GromacsTopFile.h \
 	src/ReductionMgr.h \
 	src/ComputeMgr.h \
 	src/ScriptTcl.h \
@@ -1708,6 +1746,7 @@ obj/ComputeConsForce.o: \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
 	src/Node.h \
 	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
@@ -1740,6 +1779,7 @@ obj/Controller.o: \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/MStream.h \
@@ -1768,6 +1808,7 @@ obj/Controller.o: \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
 	src/Thread.h \
 	src/NamdOneTools.h \
 	src/PDB.h \
@@ -1973,6 +2014,12 @@ obj/FreeEnergyVector.o: \
 	src/common.h \
 	src/FreeEnergyVector.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/FreeEnergyVector.o $(COPTC) src/FreeEnergyVector.C
+obj/GromacsTopFile.o: \
+	src/GromacsTopFile.C \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/GromacsTopFile.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/GromacsTopFile.o $(COPTC) src/GromacsTopFile.C
 obj/heap.o: \
 	src/heap.C \
 	src/heap.h \
@@ -2026,11 +2073,13 @@ obj/HomePatch.o: \
 	src/parm.h \
 	src/structures.h \
 	src/Hydrogen.h \
+	src/GromacsTopFile.h \
 	src/PatchMgr.h \
 	src/Sequencer.h \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
 	src/Sync.h \
 	inc/Sync.decl.h \
 	src/ResizeArrayPrimIter.h \
@@ -2054,6 +2103,7 @@ obj/IMDOutput.o: \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
 	src/Node.h \
 	src/main.h \
 	src/ProcessorPrivate.h \
@@ -2106,6 +2156,9 @@ obj/LdbCoordinator.o: \
 	src/Alg7.h \
 	src/AlgRecBisection.h \
 	src/InfoStream.h \
+	src/NamdNborLB.h \
+	inc/NamdNborLB.decl.h \
+	src/AlgNbor.h \
 	inc/LdbCoordinator.decl.h \
 	src/LdbCoordinator.h \
 	src/PatchMap.inl \
@@ -2143,6 +2196,7 @@ obj/LJTable.o: \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/Tensor.h \
+	src/GromacsTopFile.h \
 	src/InfoStream.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/LJTable.o $(COPTC) src/LJTable.C
@@ -2169,6 +2223,7 @@ obj/Measure.o: \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/Tensor.h \
+	src/GromacsTopFile.h \
 	src/Molecule.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
@@ -2231,6 +2286,7 @@ obj/Molecule.o: \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
 	src/strlib.h \
 	src/InfoStream.h \
 	src/MStream.h \
@@ -2281,8 +2337,46 @@ obj/NamdCentLB.o: \
 	inc/NamdCentLB.def.h \
 	src/ComputeMap.h \
 	src/LdbCoordinator.h \
-	inc/LdbCoordinator.decl.h
+	inc/LdbCoordinator.decl.h \
+	inc/NamdNborLB.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdCentLB.o $(COPTC) src/NamdCentLB.C
+obj/NamdNborLB.o: \
+	src/NamdNborLB.C \
+	src/NamdNborLB.h \
+	inc/NamdNborLB.decl.h \
+	src/Node.h \
+	src/main.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/Node.decl.h \
+	src/PatchMap.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/MStream.h \
+	src/AlgNbor.h \
+	src/Rebalancer.h \
+	src/elements.h \
+	src/Set.h \
+	src/heap.h \
+	src/InfoStream.h \
+	inc/NamdNborLB.def.h \
+	src/ComputeMap.h \
+	src/LdbCoordinator.h \
+	inc/LdbCoordinator.decl.h \
+	inc/NamdCentLB.decl.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdNborLB.o $(COPTC) src/NamdNborLB.C
 obj/NamdState.o: \
 	src/NamdState.C \
 	src/common.h \
@@ -2299,6 +2393,7 @@ obj/NamdState.o: \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
 	src/Parameters.h \
 	src/strlib.h \
 	src/MStream.h \
@@ -2334,6 +2429,7 @@ obj/NamdOneTools.o: \
 	src/NamdOneTools.h \
 	src/PDB.h \
 	src/parm.h \
+	src/GromacsTopFile.h \
 	src/PDBData.h \
 	src/Lattice.h \
 	src/Tensor.h \
@@ -2366,6 +2462,7 @@ obj/Node.o: \
 	inc/ProxyMgr.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
@@ -2407,6 +2504,7 @@ obj/Node.o: \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
+	src/GromacsTopFile.h \
 	src/AtomMap.h \
 	src/Sequencer.h \
 	src/Controller.h \
@@ -2451,6 +2549,7 @@ obj/Output.o: \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
 	src/Node.h \
 	src/main.h \
 	src/ProcessorPrivate.h \
@@ -2496,6 +2595,7 @@ obj/Parameters.o: \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/Tensor.h \
+	src/GromacsTopFile.h \
 	src/InfoStream.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Parameters.o $(COPTC) src/Parameters.C
@@ -2543,6 +2643,7 @@ obj/Patch.o: \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
+	src/GromacsTopFile.h \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/MStream.h \
@@ -2591,6 +2692,7 @@ obj/PatchMgr.o: \
 	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
@@ -2643,12 +2745,13 @@ obj/PDB.o: \
 	src/common.h \
 	src/PDB.h \
 	src/parm.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/GromacsTopFile.h \
 	src/PDBData.h \
 	src/Vector.h \
 	src/Lattice.h \
 	src/NamdTypes.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
 	src/Tensor.h \
 	src/SortableResizeArray.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/PDB.o $(COPTC) src/PDB.C
@@ -2739,6 +2842,7 @@ obj/ProxyPatch.o: \
 	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
@@ -2952,12 +3056,14 @@ obj/Sequencer.o: \
 	src/parm.h \
 	src/structures.h \
 	src/Hydrogen.h \
+	src/GromacsTopFile.h \
 	src/NamdOneTools.h \
 	src/PDB.h \
 	src/PDBData.h \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
 	src/Thread.h \
 	src/Random.h \
 	src/PatchMap.inl \
@@ -3054,6 +3160,7 @@ obj/WorkDistrib.o: \
 	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
@@ -3085,6 +3192,7 @@ obj/WorkDistrib.o: \
 	src/AtomMap.h \
 	src/PDB.h \
 	src/parm.h \
+	src/GromacsTopFile.h \
 	src/PDBData.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
