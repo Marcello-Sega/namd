@@ -24,6 +24,10 @@ class ProxyPatch : public Patch
      void receiveData(ProxyDataMsg*);
      void receiveAll(ProxyAllMsg*);
 
+     void setSpanningTree(int, int*, int);
+     int  getSpanningTreeParent() { return parent; }
+     int  getSpanningTreeChild(int *);
+     ProxyCombinedResultMsg *depositCombinedResultMsg(ProxyCombinedResultMsg *);
   protected:
 
      virtual void boxClosed(int);
@@ -34,6 +38,10 @@ class ProxyPatch : public Patch
      ProxyDataMsg* msgBuffer;
      ProxyAllMsg* msgAllBuffer;
 
+     // for spanning tree
+     ProxyCombinedResultMsg *msgCBuffer;
+     int parent, child[PROXY_SPAN_DIM]; // spanning tree for recvResults()
+     int nChild, nWait;
 };
 
 

@@ -23,6 +23,8 @@ ProxyPatch::ProxyPatch(PatchID pd) :
   DebugM(4, "ProxyPatch(" << pd << ") at " << this << "\n");
   ProxyMgr::Object()->registerProxy(patchID);
   numAtoms = -1;
+  parent = -1;
+  nChild = 0;
 }
 
 ProxyPatch::~ProxyPatch()
@@ -83,7 +85,7 @@ void ProxyPatch::receiveData(ProxyDataMsg *msg)
 
 void ProxyPatch::receiveAll(ProxyAllMsg *msg)
 {
-  DebugM(3, "receiveData(" << patchID << ")\n");
+  DebugM(3, "receiveAll(" << patchID << ")\n");
   if ( boxesOpen )
   {
     // store message in queue (only need one element, though)
@@ -106,12 +108,6 @@ void ProxyPatch::receiveAll(ProxyAllMsg *msg)
 void ProxyPatch::sendResults(void)
 {
   DebugM(3, "sendResults(" << patchID << ")\n");
-  ProxyResultMsg *msg = new (sizeof(int)*8) ProxyResultMsg;
-  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-  int seq = flags.sequence;
-  *((int*) CkPriorityPtr(msg)) = 256 + (seq % 256) * 256 + (patchID % 64);
-  msg->node = CkMyPe();
-  msg->patch = patchID;
   register int i = 0;
   register ForceList::iterator f_i, f_e, f2_i;
   for ( i = Results::normal + 1 ; i <= flags.maxForceMerged; ++i ) {
@@ -122,8 +118,65 @@ void ProxyPatch::sendResults(void)
   }
   for ( i = flags.maxForceUsed + 1; i < Results::maxNumForces; ++i )
     f[i].resize(0);
-  for ( i = 0; i < Results::maxNumForces; ++i ) 
-    msg->forceList[i] = f[i];
-  ProxyMgr::Object()->sendResults(msg);
+  if (proxyRecvSpanning == 0) {
+    ProxyResultMsg *msg = new (sizeof(int)*8) ProxyResultMsg;
+    CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+    int seq = flags.sequence;
+    *((int*) CkPriorityPtr(msg)) = 256 + (seq % 256) * 256 + (patchID % 64);
+    msg->node = CkMyPe();
+    msg->patch = patchID;
+    for ( i = 0; i < Results::maxNumForces; ++i ) 
+      msg->forceList[i] = f[i];
+    ProxyMgr::Object()->sendResults(msg);
+  }
+  else {
+    ProxyCombinedResultMsg *msg = new (sizeof(int)*8) ProxyCombinedResultMsg;
+    CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+    int seq = flags.sequence;
+    *((int*) CkPriorityPtr(msg)) = 256 + (seq % 256) * 256 + (patchID % 64);
+    msg->nodes.add(CkMyPe());
+    msg->patch = patchID;
+    for ( i = 0; i < Results::maxNumForces; ++i ) 
+      msg->forceList[i] = f[i];
+    ProxyMgr::Object()->sendResults(msg);
+  }
 }
 
+void ProxyPatch::setSpanningTree(int p, int *c, int n) { 
+  parent=p; nChild = n; nWait = 0;
+  for (int i=0; i<n; i++) child[i] = c[i];
+//CkPrintf("setSpanningTree: [%d:%d] %d %d:%d %d\n", CkMyPe(), patchID, parent, nChild, child[0], child[1]);
+}
+
+int ProxyPatch::getSpanningTreeChild(int *c) { 
+  for (int i=0; i<nChild; i++) c[i] = child[i];
+  return nChild;
+}
+
+ProxyCombinedResultMsg *ProxyPatch::depositCombinedResultMsg(ProxyCombinedResultMsg *msg) {
+  nWait++;
+  if (nWait == 1) msgCBuffer = msg;
+  else {
+    NodeIDList::iterator n_i, n_e;
+    n_i = msg->nodes.begin();
+    n_e = msg->nodes.end();
+    for (; n_i!=n_e; ++n_i) msgCBuffer->nodes.add(*n_i);
+    for ( int k = 0; k < Results::maxNumForces; ++k )
+    {
+    register ForceList::iterator r_i, r_e;
+    r_i = msgCBuffer->forceList[k].begin();
+    r_e = msgCBuffer->forceList[k].end();
+    register ForceList::iterator f_i, f_e;
+    f_i = msg->forceList[k].begin();
+    f_e = msg->forceList[k].end();
+    for ( ; f_i != f_e; ++f_i, ++r_i ) *r_i += *f_i;
+    }
+    delete msg;
+  }
+//CkPrintf("[%d:%d] wait: %d of %d (%d %d %d)\n", CkMyPe(), patchID, nWait, nChild+1, parent, child[0],child[1]);
+  if (nWait == nChild + 1) {
+    nWait = 0;
+    return msgCBuffer;
+  }
+  return NULL;
+}
