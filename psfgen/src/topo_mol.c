@@ -827,11 +827,19 @@ int topo_mol_end(topo_mol *mol) {
         topo_mol_log_error(mol,errmsg);
       }
     }
+    if ( seg->auto_angles && resdef->angles ) {
+      sprintf(errmsg,"Warning: explicit angles in residue %s:%s may conflict with autogeneration",res->name,res->resid);
+      topo_mol_log_error(mol,errmsg);
+    }
     for ( angldef = resdef->angles; angldef; angldef = angldef->next ) {
       if ( topo_mol_add_angle(mol,&target,1,angldef) ) {
         sprintf(errmsg,"Warning: add angle failed in residue %s:%s",res->name,res->resid);
         topo_mol_log_error(mol,errmsg);
       }
+    }
+    if ( seg->auto_dihedrals && resdef->dihedrals) {
+      sprintf(errmsg,"Warning: explicit dihedrals in residue %s:%s may conflict with autogeneration",res->name,res->resid);
+      topo_mol_log_error(mol,errmsg);
     }
     for ( dihedef = resdef->dihedrals; dihedef; dihedef = dihedef->next ) {
       if ( topo_mol_add_dihedral(mol,&target,1,dihedef) ) {
@@ -862,14 +870,16 @@ int topo_mol_end(topo_mol *mol) {
 
   target.segid = seg->segid;
   target.resid = res->resid;
-  if ( topo_mol_patch(mol, &target, 1, seg->pfirst, 1) ) return -10;
+  if ( topo_mol_patch(mol, &target, 1, seg->pfirst, 1,
+	seg->auto_angles, seg->auto_dihedrals) ) return -10;
 
   res = &(seg->residue_array[n-1]);
   if ( ! strlen(seg->plast) ) strcpy(seg->plast,"NONE");
 
   target.segid = seg->segid;
   target.resid = res->resid;
-  if ( topo_mol_patch(mol, &target, 1, seg->plast, 0) ) return -11;
+  if ( topo_mol_patch(mol, &target, 1, seg->plast, 0,
+	seg->auto_angles, seg->auto_dihedrals) ) return -11;
 
   if (topo_mol_auto_angles(mol, seg)) return -12;
   if (topo_mol_auto_dihedrals(mol, seg)) return -13;
@@ -1012,7 +1022,8 @@ int topo_mol_auto_dihedrals(topo_mol *mol, topo_mol_segment_t *seg) {
 }
 
 int topo_mol_patch(topo_mol *mol, const topo_mol_ident_t *targets,
-                        int ntargets, const char *rname, int prepend) {
+                        int ntargets, const char *rname, int prepend,
+			int warn_angles, int warn_dihedrals) {
 
   int idef;
   topo_defs_residue_t *resdef;
@@ -1061,12 +1072,20 @@ int topo_mol_patch(topo_mol *mol, const topo_mol_ident_t *targets,
       topo_mol_log_error(mol,errmsg);
     }
   }
+  if ( warn_angles && resdef->angles ) {
+    sprintf(errmsg,"Warning: explicit angles in patch %s may conflict with autogeneration",rname);
+    topo_mol_log_error(mol,errmsg);
+  }
   for ( angldef = resdef->angles; angldef; angldef = angldef->next ) {
     if ( angldef->del ) topo_mol_del_angle(mol,targets,ntargets,angldef);
     else if ( topo_mol_add_angle(mol,targets,ntargets,angldef) ) {
       sprintf(errmsg,"Warning: add angle failed in patch %s",rname);
       topo_mol_log_error(mol,errmsg);
     }
+  }
+  if ( warn_dihedrals && resdef->dihedrals ) {
+    sprintf(errmsg,"Warning: explicit dihedrals in patch %s may conflict with autogeneration",rname);
+    topo_mol_log_error(mol,errmsg);
   }
   for ( dihedef = resdef->dihedrals; dihedef; dihedef = dihedef->next ) {
     if ( dihedef->del ) topo_mol_del_dihedral(mol,targets,ntargets,dihedef);

@@ -32,7 +32,8 @@ typedef struct topo_mol_ident_t {
 } topo_mol_ident_t;
 
 int topo_mol_patch(topo_mol *mol, const topo_mol_ident_t *targets,
-			int ntargets, const char *rname, int prepend);
+			int ntargets, const char *rname, int prepend,
+			int warn_angles, int warn_dihedrals);
 
 void topo_mol_delete_atom(topo_mol *mol, const topo_mol_ident_t *target);
 
