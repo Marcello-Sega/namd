@@ -391,6 +391,7 @@ void
 ProxyMgr::buildProxySpanningTree()
 {
   PatchIDList pids;
+  CkPrintf("Building spanning tree: send:%d recv:%d\n", proxySendSpanning, proxyRecvSpanning);
   PatchMap::Object()->homePatchIDList(pids);
   for (int i=0; i<pids.size(); i++) {
     HomePatch *home = PatchMap::Object()->homePatch(pids[i]);
