@@ -1,6 +1,6 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                       NAMD 2.3 Release Notes                       |
+|                      NAMD 2.4b1 Release Notes                      |
 |                                                                    |
 +--------------------------------------------------------------------+
 
@@ -13,36 +13,18 @@ a list of know deficiencies, and advice for reporting bugs.
 
 New Features
 
---- Charmrun on All Platforms ---
+--- Improved Parallel Scaling with Particle Mesh Ewald ---
 
-The former "conv-host" is now "charmrun" and is present on all
-platforms.  On some platforms this is a script which attempts to
-provide a uniform command format.  Your results may vary but on
-any platform you can try "charmrun namd2 +p<procs> <configfile>".
+Full electrostatics calculations now transmit less data and take
+better advantage of large clusters of multiprocessors to allow
+efficient use of several hundred processors for large systems.
 
---- Simple Local Usage ---
+--- GROMACS Input File Compatibility ---
 
-Workstation network versions of NAMD no longer require the ability
-to "rsh localhost" or a nodelist file in order to run only on the
-local machine.  The new option "++local" spawns processes directly,
-as in "charmrun namd2 ++local +p<procs> <configfile>".
-
---- Support for Scyld Beowulf ---
-
-NAMD has been ported to the Linux-based Scyld Beowulf operating
-system, which provides a single system image for PC clusters.
-
---- Building PSF Structure Files ---
-
-A new tool, "psfgen", has been added, which uses CHARMM topology
-files and PDB coordinate files to generate PSF structure files
-suitable for use with NAMD.
-
---- AMBER Input File Compatibility ---
-
-NAMD can read AMBER parm (combined structure and parameter) and
-coordinate files as input.  Output file formats are still limited
-to PDB and CHARMM DCD trajectory files.
+NAMD can load GROMACS ASCII topology (.top) and coordinate (.gro)
+files, allowing most GROMACS simulations to be run in NAMD.  There
+are, however, several performance-enabling features of the GROMACS
+force field which NAMD does not (yet) take advantage of.
 
 ----------------------------------------------------------------------
 
@@ -242,7 +224,7 @@ development of NAMD to the NIH, our primary source of funding.  We
 also use collected information to direct NAMD development efforts.
 If you are opposed to this reporting, you are welcome to recompile
 NAMD and disable it.  Usage reporting is disabled in the release
-Windows binaries for version 2.2, but will be added in version 2.3.
+Windows binaries, but will be added in a later version.
 
 ----------------------------------------------------------------------
 
@@ -305,13 +287,13 @@ and FFTW from http://www.fftw.org/ (use --disable-type-prefix) if
 not already available on your machine.  Both are free.
 
 Unpack source code and enter directory:
-  tar xzf NAMD_2.3_Source.tar.gz
-  cd NAMD_2.3_Source
+  tar xzf NAMD_2.4b1_Source.tar.gz
+  cd NAMD_2.4b1_Source
 
 Download and build Charm++/Converse library:
-  setenv CVSROOT ":pserver:checkout@thrift.cs.uiuc.edu:/expand6/cvsroot"
+  setenv CVSROOT ":pserver:checkout@charm.cs.uiuc.edu:/cvsroot"
   cvs login   (PRESS RETURN WHEN ASKED FOR A PASSWORD)
-  cvs co -D 2001-05-11 -P charm
+  cvs co -D 2002-01-03 -P charm
   cd charm
   ./build charm++ net-linux
   cd ..
@@ -336,9 +318,9 @@ That's it.  A more complete explanation of the build process follows.
 
 You must first download and install NAMD's communications library,
 Charm++/Converse, from http://charm.cs.uiuc.edu/.  You will have
-to obtain the May 11, 2001 beta version via public CVS.  Follow the
+to obtain the January 3, 2002 beta version via public CVS.  Follow the
 directions at http://charm.cs.uiuc.edu/beta.html for connecting but
-use the command "cvs co -D 2001-05-11 -P charm" to get the files.
+use the command "cvs co -D 2002-01-03 -P charm" to get the files.
 
 This table shows the version needed for each NAMD architecture.  It is
 important that the same C++ compiler is used for both Charm and NAMD.
@@ -386,7 +368,7 @@ important that the same C++ compiler is used for both Charm and NAMD.
 
 Once you have obtained the Charm++/Converse source code, you can
 build the libraries needed by NAMD for each architecture with the
-SUPER_INSTALL command in the charm directory:
+build command in the charm directory:
 
   ./build charm++ CHARMVERSION
 

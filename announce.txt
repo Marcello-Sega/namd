@@ -1,10 +1,10 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                   NAMD 2.3 Release Announcement                    |
+|                  NAMD 2.4b1 Release Announcement                   |
 |                                                                    |
 +--------------------------------------------------------------------+
 
-                                                      August 2, 2001
+                                                    January 25, 2002
 
 The Theoretical Biophysics Group at the University of Illinois is
 proud to announce the public release of a new version of NAMD, a
@@ -13,24 +13,23 @@ high-performance simulation of large biomolecular systems.  NAMD is
 distributed free of charge and includes source code.  NAMD development
 is supported by the NIH National Center for Research Resources.
 
-NAMD 2.3 has several advantages over NAMD 2.2:
+NAMD 2.4b1 has several advantages over NAMD 2.3:
 
-- AMBER file compatibility (parm and coordinate input only).
+- Greatly improved parallel scaling with particle mesh Ewald.
 
-- The new psfgen tool for building PSF structure files.
-
-- Simpler to run on a single workstation.  (No more rsh!)
-
-- New ports to the Compaq AlphaServer SC, Scyld Beowulf, and Mac OS X.
-
-- Improved serial performance, particularly with PME on Alpha.
+- GROMACS ASCII topology and coordinate input file compatibility.
 
 NAMD is available from http://www.ks.uiuc.edu/Research/namd/.
 
-For your convenience, NAMD has been ported to and will be installed on
-both the PSC TCS1 Alpha cluster and the NCSA Platinum Linux cluster.
-Please consider the performance advantages of running NAMD when you
-apply for time on these new resources.  Benchmarks for your proposal
+"Biomedical Applications of Molecular Dynamics on the TeraGrid", a
+three-day NAMD users workshop co-sponsored by NCSA, will be held
+April 17-19 in Urbana, Ilinois and broadcast on the Access Grid.
+See http://hpcsoftware.ncsa.uiuc.edu/training/NAMD/ for information.
+
+For your convenience, NAMD has been ported to and will be installed
+on the machines at the NSF-sponsored national supercomputing centers.
+If you are planning substantial simulation work of an academic nature
+you should apply for these resources.  Benchmarks for your proposal
 are available at http://www.ks.uiuc.edu/Research/namd/performance.html
 
 The Theoretical Biophysics Group encourages NAMD users to be closely
