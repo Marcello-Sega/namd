@@ -341,7 +341,7 @@ void ComputeNonbondedUtil :: NAME
       // common code
       register BigReal r2 = square(p_ij_x,p_ij_y,p_ij_z);
 
-      if ( r2 > cutoff2 )
+      if ( r2 > cutoff2 || r2 == 0 )
       {
 	continue;
       }

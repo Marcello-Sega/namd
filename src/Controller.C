@@ -215,6 +215,7 @@ void Controller::minimize() {
   BigReal tinystep = simParams->minTinyStep;  // 1.0e-6
   BigReal babystep = simParams->minBabyStep;  // 1.0e-2
   BigReal linegoal = simParams->minLineGoal;  // 1.0e-4
+  BigReal initstep = tinystep;
 
   CALCULATE
 
@@ -237,33 +238,43 @@ void Controller::minimize() {
     lo.dudx = -1. * min_f_dot_v;
     mid = lo;
     BigReal tol = fabs( linegoal * min_f_dot_v );
+    if ( initstep > babystep ) initstep = babystep;
+    iout << "INITIAL STEP: " << initstep << "\n" << endi;
     iout << "GRADIENT TOLERANCE: " << tol << "\n" << endi;
-    x = babystep; if ( atStart ) { x = tinystep; }
+    x = initstep;
     x *= sqrt( min_f_dot_f / min_v_dot_v ); MOVETO(x)
     // bracket minimum on line
+    initstep *= 0.25;
     while ( last.u < mid.u ) {
+      initstep *= 2.0;
       lo = mid; mid = last;
       x *= 2.0; MOVETO(x)
     }
     hi = last;
     iout << "BRACKET: " << (hi.x-lo.x) << " " << ((hi.u>lo.u?hi.u:lo.u)-mid.u) << " " << lo.dudx << " " << mid.dudx << " " << hi.dudx << " \n" << endi;
     // converge on minimum on line
-    int itcnt = 0;
-    while ( fabs(last.dudx) > tol && itcnt < 30 ) {
+    int itcnt;
+    for ( itcnt = 10; fabs(last.dudx) > tol && itcnt > 0 ; --itcnt ) {
       // select new position
       if ( mid.dudx > 0. ) {
-        BigReal altx = 0.1 * lo.x + 0.9 * mid.x;
+        BigReal altxhi = 0.1 * lo.x + 0.9 * mid.x;
+        BigReal altxlo = 0.9 * lo.x + 0.1 * mid.x;
         x = mid.dudx*(mid.x*mid.x-lo.x*lo.x) + 2*mid.x*(lo.u-mid.u);
         x /= 2*(mid.dudx*(mid.x-lo.x)+(lo.u-mid.u));
-        if ( x > altx ) x = altx;
-        if (x-last.x) { MOVETO(x) } else break;
+        if ( x > altxhi ) x = altxhi;
+        if ( x < altxlo ) x = altxlo;
+        if ( x-last.x == 0 ) break;
+        MOVETO(x)
         if ( last.u <= mid.u ) { hi = mid; mid = last; } else { lo = last; }
       } else {
-        BigReal altx = 0.1 * hi.x + 0.9 * mid.x;
+        BigReal altxlo = 0.1 * hi.x + 0.9 * mid.x;
+        BigReal altxhi = 0.9 * hi.x + 0.1 * mid.x;
         x = mid.dudx*(mid.x*mid.x-hi.x*hi.x) + 2*mid.x*(hi.u-mid.u);
         x /= 2*(mid.dudx*(mid.x-hi.x)+(hi.u-mid.u));
-        if ( x < altx ) x = altx;
-        if (x-last.x) { MOVETO(x) } else break;
+        if ( x < altxlo ) x = altxlo;
+        if ( x > altxhi ) x = altxhi;
+        if ( x-last.x == 0 ) break;
+        MOVETO(x)
         if ( last.u <= mid.u ) { lo = mid; mid = last; } else { hi = last; }
       }
       iout << "BRACKET: " << (hi.x-lo.x) << " " << ((hi.u>lo.u?hi.u:lo.u)-mid.u) << " " << lo.dudx << " " << mid.dudx << " " << hi.dudx << " \n" << endi;
@@ -271,12 +282,13 @@ void Controller::minimize() {
     // new direction
     broadcast->minimizeCoefficient.publish(minSeq++,0.);
     BigReal c = min_f_dot_f / old_f_dot_f;
-    iout << "NEW SEARCH DIRECTION " << c << "\n" << endi;
     c = ( c > 1.5 ? 1.5 : c );
     if ( atStart ) { c = 0; --atStart; }
-    if ( c*c*min_v_dot_v > 100*min_f_dot_f ) {
-      iout << "RESTARTING CONJUGATE GRADIENT ALGORITHM.\n" << endi;
-      c = 0;
+    if ( c*c*min_v_dot_v > 100*min_f_dot_f ) { c = 0; }
+    if ( c == 0 ) {
+      iout << "RESTARTING CONJUGATE GRADIENT ALGORITHM\n" << endi;
+    } else {
+      iout << "NEW SEARCH DIRECTION\n" << endi;
     }
     broadcast->minimizeCoefficient.publish(minSeq++,c); // v = c*v+f
     old_f_dot_f = min_f_dot_f;
@@ -527,7 +539,7 @@ void Controller::tcoupleVelocities(int step)
 static char *FORMAT(BigReal X)
 {
   static char tmp_string[25];
-  const double maxnum = 1000000000000.0;
+  const double maxnum = 99999999.9999;
   if ( X > maxnum ) X = maxnum;
   if ( X < -maxnum ) X = -maxnum;
   sprintf(tmp_string,"%.4f ",X); 
@@ -744,10 +756,15 @@ void Controller::printMinimizeEnergies(int step) {
     totalEnergy = bondEnergy + angleEnergy + dihedralEnergy + improperEnergy +
 	electEnergy + electEnergySlow + ljEnergy + boundaryEnergy + miscEnergy;
 
+    min_energy = totalEnergy;
+    min_f_dot_f = reduction->item(REDUCTION_MIN_F_DOT_F);
+    min_f_dot_v = reduction->item(REDUCTION_MIN_F_DOT_V);
+    min_v_dot_v = reduction->item(REDUCTION_MIN_V_DOT_V);
+
     if ( ( step % 10 ) == 0 ) {
 	iout << "ETITLE:     TS    BOND        ANGLE       "
 	     << "DIHED       IMPRP       ELECT       VDW       "
-	     << "BOUNDARY    MISC        TOTAL\n" << endi;
+	     << "BOUNDARY    MISC        TOTAL       GRADIENT\n" << endi;
     }
 
     // N.B.  HP's aCC compiler merges FORMAT calls in the same expression.
@@ -763,12 +780,8 @@ void Controller::printMinimizeEnergies(int step) {
     iout << FORMAT(boundaryEnergy);
     iout << FORMAT(miscEnergy);
     iout << FORMAT(totalEnergy);
+    iout << FORMAT(sqrt(min_f_dot_f));
     iout << "\n" << endi;
-
-    min_energy = totalEnergy;
-    min_f_dot_f = reduction->item(REDUCTION_MIN_F_DOT_F);
-    min_f_dot_v = reduction->item(REDUCTION_MIN_F_DOT_V);
-    min_v_dot_v = reduction->item(REDUCTION_MIN_V_DOT_V);
 }
 
 void Controller::printEnergies(int step)

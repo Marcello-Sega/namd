@@ -282,6 +282,7 @@ void Sequencer::newMinimizeDirection(BigReal c) {
   for ( int i = 0; i < numAtoms; ++i ) {
     a[i].velocity *= c;
     a[i].velocity += f1[i] + f2[i] + f3[i];
+    if ( a[i].atomFixed ) a[i].velocity = 0;
   }
 }
 
@@ -713,6 +714,7 @@ void Sequencer::submitMinimizeReductions(int step)
   BigReal fdotv = 0;
   BigReal vdotv = 0;
   for ( int i = 0; i < numAtoms; ++i ) {
+    if ( a[i].atomFixed ) continue;
     Force f = f1[i] + f2[i] + f3[i];
     BigReal ff = f * f;
     if ( ff > fmax2 ) {

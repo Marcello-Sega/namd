@@ -2375,8 +2375,8 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    if (minimizeCGOn)
    {
       iout << iINFO << "CONJUGATE GRADIENT MINIMIZATION ACTIVE\n";
-      iout << iINFO << "LINE MINIMIZATION GOAL = " << minTinyStep << "\n";
-      iout << iINFO << "BABY STEP SIZE = " << minTinyStep << "\n";
+      iout << iINFO << "LINE MINIMIZATION GOAL = " << minLineGoal << "\n";
+      iout << iINFO << "BABY STEP SIZE = " << minBabyStep << "\n";
       iout << iINFO << "TINY STEP SIZE = " << minTinyStep << "\n";
       iout << endi;
    }
