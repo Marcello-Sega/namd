@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.14 1996/10/29 23:35:27 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.15 1996/11/05 16:59:58 ari Exp $";
 
 #include <stdio.h>
 
@@ -37,8 +37,10 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib
 //----------------------------------------------------------------------
 WorkDistrib::WorkDistrib(InitMsg *msg)
 {
+  CPrintf("WorkDistrib::WorkDistrib() - constructing\n");
   mapsArrived = false;
   awaitingMaps = false;
+  CPrintf("WorkDistrib::WorkDistrib() - done constructing\n");
 }
 
 //----------------------------------------------------------------------
@@ -340,12 +342,15 @@ void WorkDistrib::enqueueWork(LocalWorkMsg *msg) {
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.14 $	$Date: 1996/10/29 23:35:27 $
+ *	$Revision: 1.15 $	$Date: 1996/11/05 16:59:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.15  1996/11/05 16:59:58  ari
+ * *** empty log message ***
+ *
  * Revision 1.14  1996/10/29 23:35:27  ari
  * *** empty log message ***
  *

@@ -6,7 +6,9 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.8 1996/09/03 22:54:09 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.9 1996/11/05 16:59:58 ari Exp $";
+
+#include "unistd.h"
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -47,7 +49,9 @@ Namd::Namd(void)
   // Create the Node object and send it the IDs of all the other
   // parallel objects.
   nodeGroup = new_group(Node, node_msg);
+  CPrintf("I'm getting the Node *node in Namd::Namd()\n");
   node = CLocalBranch(Node,nodeGroup);
+  CPrintf("I've got the Node *node in Namd::Namd()\n");
 }
 
 
@@ -78,7 +82,6 @@ void Namd::startup(char *confFile)
   // Tell Node to do any startup work
   initmsg = new (MsgIndex(InitMsg)) InitMsg;
   CSendMsgBranch(Node, startup, initmsg, nodeGroup, CMyPe());
-
 }
 
 
@@ -86,7 +89,9 @@ void Namd::startup(char *confFile)
 void Namd::run(void)
 {
   CPrintf("Namd::run() invoked\n");
-//  node->run();
+  node->run();
+  CPrintf("Namd::run() - finished node->run()\n");
+  sleep(15);
   CharmExit();
 }
 
@@ -95,7 +100,7 @@ void Namd::run(void)
  *
  *	$RCSfile: Namd.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1996/09/03 22:54:09 $
+ *	$Revision: 1.9 $	$Date: 1996/11/05 16:59:58 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -104,6 +109,9 @@ void Namd::run(void)
  * REVISION HISTORY:
  *
  * $Log: Namd.C,v $
+ * Revision 1.9  1996/11/05 16:59:58  ari
+ * *** empty log message ***
+ *
  * Revision 1.8  1996/09/03 22:54:09  ari
  * *** empty log message ***
  *

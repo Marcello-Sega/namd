@@ -5,9 +5,10 @@
 /*                           All Rights Reserved                           */
 /*                                                                         */
 /***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.9 1996/10/29 23:35:27 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.10 1996/11/05 16:59:58 ari Exp $";
 
 #include <stdio.h>
+#include "unistd.h"
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -21,6 +22,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "PatchMgr.h"
 #include "Patch.h"
 #include "Compute.h"
+#include "ComputeAngles.h"
 //#include "ProxyMgr.h"
 //#include "MessageComm.h"
 //#include "PatchMap.h"
@@ -49,6 +51,7 @@ Node::Node(NodeInitMsg *msg)
     CPrintf("Node::Node() - another instance of Node exists!\n");
   }
 
+  CPrintf("Node::Node() - constructing\n");
   workDistribGroup = msg->workDistribGroup;
   workDistrib = CLocalBranch(WorkDistrib,workDistribGroup);
   patchMgrGroup = msg->patchMgrGroup;
@@ -57,6 +60,9 @@ Node::Node(NodeInitMsg *msg)
   patchMap = PatchMap::Instance();
   atomMap = AtomMap::Instance();
   computeMap = ComputeMap::Instance();
+  CPrintf("Node::Node() - I have the following groups\n");
+  CPrintf("Node::Node() - WorkDistrib %d\n", workDistribGroup);
+  CPrintf("Node::Node() - PatchMgr %d\n", patchMgrGroup);
 }
 
 //----------------------------------------------------------------------
@@ -102,6 +108,18 @@ void Node::startup(InitMsg *msg)
 void Node::run(void)
 {
   CPrintf("Node::run() - invoked\n");
+  ComputeAngles *angles = new ComputeAngles(1);
+  CPrintf("Node::run() - created new ComputeAngles(1), signaling mapReady()\n");
+  angles->mapReady();
+
+  HomePatchList *hpl = PatchMap::Object()->homePatchList();
+  ResizeArrayIter<HomePatchElem> ai(*hpl);
+  CPrintf("Node::run() - iterating over home patches!\n");
+  for (ai=ai.begin(); ai != ai.end(); ai++) {
+    CPrintf("Node::run() - signaling patch %d\n", (*ai).p->getPatchID());
+    (*ai).p->positionsReady();
+  }
+  sleep(10);
 }
 
 int Node::numNodes(void)
@@ -138,7 +156,7 @@ void Node::saveMolDataPointers(Molecule *molecule,
  *
  *	$RCSfile: Node.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1996/10/29 23:35:27 $
+ *	$Revision: 1.10 $	$Date: 1996/11/05 16:59:58 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -147,6 +165,9 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.10  1996/11/05 16:59:58  ari
+ * *** empty log message ***
+ *
  * Revision 1.9  1996/10/29 23:35:27  ari
  * *** empty log message ***
  *

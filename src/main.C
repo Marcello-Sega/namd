@@ -6,7 +6,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.5 1996/08/16 04:39:46 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.6 1996/11/05 16:59:58 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -27,6 +27,9 @@ Inform namdWarn("Warning");
 Inform namdInfo("Info");
 Inform namdDebug("** DEBUG **");
 
+int nodeReady = 0;
+int workDistribReady = 0;
+int patchMgrReady = 0;
 
 class main : public chare_object
 {
@@ -34,6 +37,7 @@ public:
   main(int argc, char **argv)
   {
     Namd namd;
+    CPrintf("main::main() - Namd::Namd() should have been invoked\n");
 
     // Needed for namd.1.X components - comm is global!
     comm = new Communicate();
@@ -54,7 +58,7 @@ public:
  *
  *	$RCSfile: main.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/08/16 04:39:46 $
+ *	$Revision: 1.6 $	$Date: 1996/11/05 16:59:58 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -63,6 +67,9 @@ public:
  * REVISION HISTORY:
  *
  * $Log: main.C,v $
+ * Revision 1.6  1996/11/05 16:59:58  ari
+ * *** empty log message ***
+ *
  * Revision 1.5  1996/08/16 04:39:46  ari
  * *** empty log message ***
  *
