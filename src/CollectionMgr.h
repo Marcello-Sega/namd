@@ -51,8 +51,8 @@ public:
     AtomIDList aid;
     ResizeArray<Vector> data;
 
-    operator<(const CollectVectorInstance &o) { return (seq < o.seq); }
-    operator==(const CollectVectorInstance &o) { return (seq == o.seq); }
+    int operator<(const CollectVectorInstance &o) { return (seq < o.seq); }
+    int operator==(const CollectVectorInstance &o) { return (seq == o.seq); }
     void * operator new(size_t size) { return ::operator new(size); }
     void * operator new(size_t, void * ptr) { return ptr; }
     void operator delete(void* ptr) { ::operator delete(ptr); }
@@ -111,12 +111,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/11/07 20:17:35 $
+ *	$Revision: 1.1006 $	$Date: 1998/01/15 05:40:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMgr.h,v $
+ * Revision 1.1006  1998/01/15 05:40:52  jim
+ * Added int return type to comparison operators.
+ *
  * Revision 1.1005  1997/11/07 20:17:35  milind
  * Made NAMD to run on shared memory machines.
  *

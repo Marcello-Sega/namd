@@ -58,8 +58,8 @@ public:
 
     int seq;
 
-    operator<(const CollectVectorInstance &o) { return (seq < o.seq); }
-    operator==(const CollectVectorInstance &o) { return (seq == o.seq); }
+    int operator<(const CollectVectorInstance &o) { return (seq < o.seq); }
+    int operator==(const CollectVectorInstance &o) { return (seq == o.seq); }
     void * operator new(size_t size) { return ::operator new(size); }
     void * operator new(size_t, void * ptr) { return ptr; }
     void operator delete(void* ptr) { ::operator delete(ptr); }
@@ -71,8 +71,8 @@ public:
       VectorData(AtomID a, Vector d) : aid(a), data(d) { ; }
       AtomID aid;
       Vector data;
-      operator<(const VectorData &o) { return (aid < o.aid); }
-      operator==(const VectorData &o) { return (aid == o.aid); }
+      int operator<(const VectorData &o) { return (aid < o.aid); }
+      int operator==(const VectorData &o) { return (aid == o.aid); }
       void * operator new(size_t size) { return ::operator new(size); }
       void * operator new(size_t, void * ptr) { return ptr; }
       void operator delete(void* ptr) { ::operator delete(ptr); }
@@ -168,12 +168,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/11/07 20:17:34 $
+ *	$Revision: 1.1009 $	$Date: 1998/01/15 05:40:53 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMaster.h,v $
+ * Revision 1.1009  1998/01/15 05:40:53  jim
+ * Added int return type to comparison operators.
+ *
  * Revision 1.1008  1997/11/07 20:17:34  milind
  * Made NAMD to run on shared memory machines.
  *

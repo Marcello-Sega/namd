@@ -24,8 +24,8 @@ public:
   PatchID   pid;
   HomePatch *patch;
 
-  operator<(HomePatchElem e) { return (pid < e.pid); }
-  operator==(HomePatchElem e) { return (pid == e.pid); }
+  int operator<(HomePatchElem e) { return (pid < e.pid); }
+  int operator==(HomePatchElem e) { return (pid == e.pid); }
 
   HomePatchElem(PatchID id=-1, HomePatch *p=NULL) : pid(id), patch(p) {};
   ~HomePatchElem() { };
@@ -46,11 +46,14 @@ typedef ResizeArrayIter<HomePatchElem> HomePatchListIter;
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatchList.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/06 22:06:03 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1998/01/15 05:40:52 $
  *
  ***************************************************************************
  * $Log: HomePatchList.h,v $
+ * Revision 1.1003  1998/01/15 05:40:52  jim
+ * Added int return type to comparison operators.
+ *
  * Revision 1.1002  1997/03/06 22:06:03  ari
  * Removed Compute.ci
  * Comments added - more code cleaning
