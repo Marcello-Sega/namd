@@ -2,8 +2,7 @@ NAMD_ARCH = IBM-SP
 CHARMARCH = mpi-sp
 
 CXX = mpCC -w -DSOCKLEN_T=size_t
-#CXXOPTS = -O3 -qstrict -Q -qarch=pwr3 -qtune=pwr3 -qfloat=rsqrt:fltint
-CXXOPTS = -qarch=pwr3 -qtune=pwr3 -qfloat=rsqrt:fltint
+CXXOPTS = -O3 -qstrict -Q -qarch=pwr3 -qtune=pwr3 -qfloat=rsqrt:fltint
 CXXTHREADOPTS = $(CXXOPTS)
 CXXSIMPARAMOPTS = $(CXXOPTS)
 CC = mpcc -w 

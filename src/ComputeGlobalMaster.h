@@ -19,6 +19,7 @@ class ComputeGlobalDataMsg;
 class ComputeGlobalResultsMsg;
 class ComputeGlobalMaster;
 class ComputeMgr;
+class ComputeGlobal;
 
 class ComputeGlobalMaster {
 protected:
