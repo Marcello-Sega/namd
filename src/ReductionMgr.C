@@ -21,7 +21,7 @@
  Doing this out-of-order will cause errors.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1 1996/12/18 19:53:39 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.2 1996/12/18 20:18:40 nealk Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -39,24 +39,23 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMg
  ReductionMgr::ReductionMgr(): init object
  *******************************************/
 ReductionMgr::ReductionMgr()
-  {
+{
     #if PANIC > 0
     panicMode = 0;
     #endif
     data = NULL;
-    for(i=0; i<REDUCTION_MAX_RESERVED; i++)
+    for(int i=0; i<REDUCTION_MAX_RESERVED; i++)
     {
     	numSubscribed[i] = 0;
 	maxData[i] = 0;
     }
-    return *this;
-  }
+} /* ReductionMgr::ReductionMgr() */
 
 /*******************************************
  ReductionMgr::~ReductionMgr(): free object
  *******************************************/
 ReductionMgr::~ReductionMgr()
-  {
+{
     ReductionMgrData *nextdata;
     while(data != NULL)
     {
@@ -64,7 +63,7 @@ ReductionMgr::~ReductionMgr()
       delete data;
       data = nextdata;
     }
-  }
+} /* ReductionMgr::~ReductionMgr() */
 
 /*******************************************
  ReductionMgr::createdata(): create a blank
@@ -74,7 +73,7 @@ ReductionMgrData *ReductionMgr::createdata(int seq)
 {
   ReductionMgrData *data;
   data = new ReductionMgrData;
-  data->sequence = seq;
+  data->sequenceNum = seq;
   data->dataToSend = REDUCTION_MAX_RESERVED;
   data->next = NULL;
   for(int i=0; i<REDUCTION_MAX_RESERVED; i++)
@@ -86,48 +85,48 @@ ReductionMgrData *ReductionMgr::createdata(int seq)
 } /* ReductionMgr::createdata() */
 
 /*******************************************
-  ReductionMgr::register(): increase counter
+  ReductionMgr::Register(): increase counter
   to a reduction tag.
   ASSUMPTION: this function will only be called
   before data has been depositied.
   (un)register to submit data for reduction
   may cause an error if reductions are active
  *******************************************/
-void	ReductionMgr::register(ReductionTag tag)
+void	ReductionMgr::Register(ReductionTag tag)
 {
   #if PANIC > 0
   if (panicMode != 0)
   {
     iout << iERRORF << "Panic due to wrong mode: " << panicMode << "\n" << endi;
-    NAMD_die(""Panic due to wrong mode");
+    NAMD_die("Panic due to wrong mode");
   }
   panicMode = 0;
   #endif
 
   maxData[tag]++;
-} /* ReductionMgr::register() */
+} /* ReductionMgr::Register() */
 
 /*******************************************
- ReductionMgr::unregister(): 
+ ReductionMgr::unRegister(): 
  of counters.
  ASSUMPTION: this function will only be called
  after data has been depositied.
  (un)register to submit data for reduction
  may cause an error if reductions are active
  *******************************************/
-void	ReductionMgr::unregister(ReductionTag tag)
+void	ReductionMgr::unRegister(ReductionTag tag)
 {
   #if PANIC > 0
   if (panicMode < 1)
   {
     iout << iERRORF << "Panic due to wrong mode: " << panicMode << "\n" << endi;
-    NAMD_die(""Panic due to wrong mode");
+    NAMD_die("Panic due to wrong mode");
   }
   panicMode = 2;
   #endif
 
   maxData[tag]--;
-} /* ReductionMgr::unregister() */
+} /* ReductionMgr::unRegister() */
 
 /*******************************************
  ReductionMgr::remove(): remove a sequence
@@ -143,7 +142,7 @@ void	ReductionMgr::remove(int seq)
   ReductionMgrData *currentdata = data;
   ReductionMgrData *previousdata = NULL;
 
-  for(int i=data->sequence; i<seq; i++)
+  for(int i=data->sequenceNum; i<seq; i++)
   {
 	#if PANIC > 0
 	if (!currentdata)
@@ -157,10 +156,10 @@ void	ReductionMgr::remove(int seq)
 	currentdata = currentdata->next;
   }
   #if PANIC > 0
-  if (currentdata->sequence != seq)
+  if (currentdata->sequenceNum != seq)
   {
     iout << iERRORF << "Yikes! Missed sequence " << seq << " and found "
-	 << currentdata->sequence << " instead!\n" << endi;
+	 << currentdata->sequenceNum << " instead!\n" << endi;
     NAMD_die("Remove without register");
   }
   #endif
@@ -189,17 +188,17 @@ ReductionMgrData *	ReductionMgr::find(int seq)
   ReductionMgrData *previous=NULL;
 
   #if PANIC > 0
-  if (current && (seq < current->sequence))
+  if (current && (seq < current->sequenceNum))
   {
     iout << iERRORF << "Searching for data that has been removed. "
-	 << "want " << seq << " but queue starts at " << current->sequence
+	 << "want " << seq << " but queue starts at " << current->sequenceNum
 	 << "\n" << endi;
     NAMD_die("Searching for data that has been removed");
   }
   #endif
 
   // find the sequence
-  while(current && (current->sequence < seq))
+  while(current && (current->sequenceNum < seq))
   {
     previous = current;
     current = current->next;
@@ -229,13 +228,13 @@ ReductionMgrData *	ReductionMgr::find(int seq)
  ReductionMgr::submit(): submit data for reduction.
  more == 1 signals immediate submission of other data
  *******************************************/
-ReductionMgr::submit(int seq, ReductionTag tag, BigReal data, int more=0)
+void	ReductionMgr::submit(int seq, ReductionTag tag, BigReal data, int more)
 {
   #if PANIC > 0
   if (panicMode > 1)
   {
     iout << iERRORF << "Panic due to wrong mode: " << panicMode << "\n" << endi;
-    NAMD_die(""Panic due to wrong mode");
+    NAMD_die("Panic due to wrong mode");
   }
   panicMode = 1;
   #endif
@@ -269,13 +268,13 @@ ReductionMgr::submit(int seq, ReductionTag tag, BigReal data, int more=0)
 /*******************************************
  ReductionMgr::submit(): pass on submitting data
  *******************************************/
-ReductionMgr::submit(int seq, ReductionTag tag, int more=0)
+void	ReductionMgr::submit(int seq, ReductionTag tag, int more)
 {
   #if PANIC > 0
   if (panicMode > 1)
   {
     iout << iERRORF << "Panic due to wrong mode: " << panicMode << "\n" << endi;
-    NAMD_die(""Panic due to wrong mode");
+    NAMD_die("Panic due to wrong mode");
   }
   panicMode = 1;
   #endif
@@ -292,7 +291,7 @@ void	ReductionMgr::require(int seq, ReductionTag tag, BigReal &data)
   if (panicMode > 1)
   {
     iout << iERRORF << "Panic due to wrong mode: " << panicMode << "\n" << endi;
-    NAMD_die(""Panic due to wrong mode");
+    NAMD_die("Panic due to wrong mode");
   }
   panicMode = 1;
   #endif
@@ -323,7 +322,7 @@ void	ReductionMgr::subscribe(ReductionTag tag)
   if (panicMode != 0)
   {
     iout << iERRORF << "Panic due to wrong mode: " << panicMode << "\n" << endi;
-    NAMD_die(""Panic due to wrong mode");
+    NAMD_die("Panic due to wrong mode");
   }
   panicMode = 0;
   #endif
@@ -343,7 +342,7 @@ void	ReductionMgr::unsubscribe(ReductionTag tag)
 
   numSubscribed[tag]--;
   #if PANIC > 0
-  if (numSubscribed < 0)
+  if (numSubscribed[tag] < 0)
   {
     iout << iERRORF << "Too many unsubscribed. " << numSubscribed[tag]
 	 << " for tag==" << tag << "\n" << endi;
