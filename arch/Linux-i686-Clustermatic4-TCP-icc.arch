@@ -1,4 +1,4 @@
-include .rootdir/arch/Linux-i686-Clustermatic-icc.arch
+include .rootdir/arch/Linux-i686-Clustermatic4-icc.arch
 
 CHARMARCH = net-linux-clustermatic4-tcp-icc
 

@@ -89,9 +89,10 @@ begin:
   endif
   echo 'CHARM = $(CHARMBASE)/$(CHARMARCH)' >> Makearch
   set ARCH_SUFFIX = ""
-  if ( $ARCH =~ *-ScyldCD* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-ScyldCD
-  if ( $ARCH =~ *-Scyld* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-Scyld
-  if ( $ARCH =~ *-Clustermatic* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-Clustermatic
+  if ( $ARCH =~ *-Scyld* ) set ARCH_SUFFIX = -Scyld
+  if ( $ARCH =~ *-ScyldCD* ) set ARCH_SUFFIX = -ScyldCD
+  if ( $ARCH =~ *-Clustermatic* ) set ARCH_SUFFIX = -Clustermatic
+  if ( $ARCH =~ *-Clustermatic4* ) set ARCH_SUFFIX = -Clustermatic4
   if ( $ARCH =~ *-MPI* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-MPI
   if ( $ARCH =~ *-VMI* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-VMI
   if ( $ARCH =~ *-TCP* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-TCP
@@ -104,10 +105,10 @@ begin:
    if ( $use_fftw ) cat .rootdir/arch/Win32.fftw >> Makearch
    if ( $use_plugins ) cat .rootdir/arch/Win32.plugins >> Makearch
   else
-   echo 'include .rootdir/arch/$(NAMD_ARCH).base' >> Makearch
-   if ( $use_tcl ) echo 'include .rootdir/arch/$(NAMD_ARCH).tcl' >> Makearch
-   if ( $use_fftw ) echo 'include .rootdir/arch/$(NAMD_ARCH).fftw' >> Makearch
-   if ( $use_plugins ) echo 'include .rootdir/arch/$(NAMD_ARCH).plugins' >> Makearch
+   echo 'include .rootdir/arch/$(NAMD_ARCH)$(NAMD_SUBARCH).base' >> Makearch
+   if ( $use_tcl ) echo 'include .rootdir/arch/$(NAMD_ARCH)$(NAMD_SUBARCH).tcl' >> Makearch
+   if ( $use_fftw ) echo 'include .rootdir/arch/$(NAMD_ARCH)$(NAMD_SUBARCH).fftw' >> Makearch
+   if ( $use_plugins ) echo 'include .rootdir/arch/$(NAMD_ARCH)$(NAMD_SUBARCH).plugins' >> Makearch
    if ( $use_debug ) then
     echo 'CXXOPTS = -g' >> Makearch
     echo 'CXXTHREADOPTS = -g' >> Makearch
