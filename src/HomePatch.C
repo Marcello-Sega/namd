@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1011 1997/02/13 04:43:09 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1012 1997/02/13 16:17:13 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -73,6 +73,9 @@ HomePatch::readPatchMap() {
       {
 	int pid =  p->pid(p->xIndex(patchID)+i-1, 
 	    p->yIndex(patchID)+j-1, p->zIndex(patchID)+k-1);
+	if (pid < 0) {
+	   DebugM(5, "ERROR, for patchID " << patchID <<" I got neigh pid = " << pid << "\n");
+	}
 	if (pid == patchID) {
 	  mInfo[i][j][k] = NULL;
 	}
@@ -176,6 +179,9 @@ void HomePatch::positionsReady(int doMigration)
 void HomePatch::addForceToMomentum(const BigReal timestep)
 {
   const BigReal dt = timestep / TIMEFACTOR;
+  //if (v.check() == NULL || f.check() == NULL || a.check() == NULL) {
+      //DebugM(5, "NULL found! v="<<v<<" f="<<f<<" a="<<a<<"\n");
+  //}
   for ( int i = 0; i < numAtoms; ++i )
   {
     v[i] += f[i] * ( dt / a[i].mass );
@@ -229,9 +235,14 @@ HomePatch::doAtomMigration()
   int xdev, ydev, zdev;
   MigrationList *mCur;
 
-  // signal depositMigration() that we are inMigration mode
-  inMigration = true;
 
+  // Drain the migration message buffer
+  //for (i=0; i<numMlBuf; i++) {
+  //   DebugM(3, "Draining migration buffer ("<<i<<","<<numMlBuf<<")\n");
+  //   depositMigration(srcID[i], mlBuf[i]);
+  //}
+  //numMlBuf = 0;
+     
   // realInfo points to migration lists for neighbors we actually have. 
   //    element of mInfo[3][3][3] points to an element of realInfo
   for (i=0; i<numNeighbors; i++) {
@@ -291,6 +302,9 @@ HomePatch::doAtomMigration()
     PatchMgr::Object()->sendMigrationMsg(patchID, realInfo[i]);
   }
 
+  // signal depositMigration() that we are inMigration mode
+  inMigration = true;
+
   // Drain the migration message buffer
   for (i=0; i<numMlBuf; i++) {
      DebugM(4, "Draining migration buffer ("<<i<<","<<numMlBuf<<")\n");
@@ -299,7 +313,7 @@ HomePatch::doAtomMigration()
   numMlBuf = 0;
      
   if (!allMigrationIn) {
-    DebugM(4,"All Migrations NOT in, we are suspending patch "<<patchID<<"\n");
+    DebugM(3,"All Migrations NOT in, we are suspending patch "<<patchID<<"\n");
     migrationSuspended = true;
     sequencer->suspend();
     migrationSuspended = false;
@@ -318,12 +332,12 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
 {
   if (!inMigration) { // We have to buffer changes due to migration
 		      // until our patch is in migration mode
-    DebugM(4,"depositMigration buffered from patch "<<srcPatchID<<"\n");
+    DebugM(3,"depositMigration buffered from patch "<<srcPatchID<<"\n");
     srcID[numMlBuf] = srcPatchID;
     mlBuf[numMlBuf++] = migrationList;
     return;
   } 
-  DebugM(4,"depositMigration from "<<srcPatchID<<" on "<<patchID<<"\n");
+  DebugM(3,"depositMigration from "<<srcPatchID<<" on "<<patchID<<"\n");
   if (migrationList) {
     MigrationListIter mi(*migrationList);
     for (mi = mi.begin(); mi != mi.end(); mi++) {
@@ -344,16 +358,18 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
 
   DebugM(3,"Counter on " << patchID << " = " << patchMigrationCounter << "\n");
   if (!--patchMigrationCounter) {
-    DebugM(4,"All Migrations are in for patch "<<patchID<<"\n");
+    DebugM(3,"All Migrations are in for patch "<<patchID<<"\n");
     allMigrationIn = true;
     patchMigrationCounter = numNeighbors;
     if (migrationSuspended) {
-      DebugM(4,"patch "<<patchID<<" is being awakened\n");
+      DebugM(3,"patch "<<patchID<<" is being awakened\n");
       migrationSuspended = false;
       sequencer->awaken();
       return;
     }
-    else DebugM(4,"patch "<<patchID<<" was not suspended\n");
+    else {
+       DebugM(3,"patch "<<patchID<<" was not suspended\n");
+    }
   }
 }
 
@@ -362,13 +378,16 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/02/13 04:43:09 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1012 $	$Date: 1997/02/13 16:17:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1012  1997/02/13 16:17:13  ari
+ * Intermediate debuging commit - working to fix deep bug in migration?
+ *
  * Revision 1.1011  1997/02/13 04:43:09  jim
  * Fixed initial hanging (bug in PatchMap, but it still shouldn't have
  * happened) and saved migration messages in the buffer from being

@@ -11,6 +11,8 @@
  *
  ***************************************************************************/
 
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1007 1997/02/13 16:17:20 ari Exp $";
+
 #include "Node.h"
 #include "SimParameters.h"
 #include "Sequencer.h"
@@ -19,10 +21,10 @@
 #include "CollectionMgr.h"
 
 #define MIN_DEBUG_LEVEL 4
-// #define DEBUGM
+//#define DEBUGM
 #include "Debug.h"
 
-#define MIGRATION 0
+#define MIGRATION 1
 
 Sequencer::Sequencer(HomePatch *p) :
 	patch(p),
@@ -62,12 +64,12 @@ void Sequencer::algorithm(void)
     const BigReal timestep = simParams->dt;
     int step, cycle=-1;	// cycle is unused!
     int seq = 0;
-    threadStatus = NOTSUSPENDED;
+    // threadStatus = NOTSUSPENDED;
     patch->positionsReady();
-    if (threadStatus != AWAKENED)
-	{
+    // if (threadStatus != AWAKENED)
+//	{
 	suspend();
-	}
+//	}
     DebugM(4,"Submit seq=" << seq << " Patch=" << patch->getPatchID() << "\n");
     reduction->submit(seq,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
     collection->submitPositions(seq,patch->atomIDList,patch->p);
@@ -88,13 +90,14 @@ void Sequencer::algorithm(void)
 #else
             patch->positionsReady(0);
 #endif
+            //Node::Object()->throwSequencer();
 	    DebugM(4, patch->getPatchID()
 		<< ": (" << cycle << "," << step << ") "
 		<< "Suspending " << CthSelf() << " @" << CmiTimer() << "\n");
-	    if (threadStatus != AWAKENED)
-		{
+//	    if (threadStatus != AWAKENED)
+//		{
 		suspend();
-		}
+//		}
 	    DebugM(4, patch->getPatchID()
 		<< ": (" << cycle << "," << step << ") "
 		<< "Awakened!\n");
@@ -110,3 +113,25 @@ void Sequencer::algorithm(void)
     terminate();
 }
 
+void
+Sequencer::terminate() {
+  Node::messageHomeDone();
+  CthFree(thread);
+  CthSuspend();
+}
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *      $RCSfile: Sequencer.C,v $
+ *      $Author: ari $  $Locker:  $             $State: Exp $
+ *      $Revision: 1.1007 $     $Date: 1997/02/13 16:17:20 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: Sequencer.C,v $
+ * Revision 1.1007  1997/02/13 16:17:20  ari
+ * Intermediate debuging commit - working to fix deep bug in migration?
+ *
+ ***************************************************************************/

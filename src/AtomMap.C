@@ -11,7 +11,16 @@
  *
  ***************************************************************************/
 
+#include "ckdefs.h"
+#include "chare.h"
+#include "c++interface.h"
+
 #include "AtomMap.h"
+
+#define MIN_DEBUG_LEVEL 4
+#define DEBUGM
+#include "Debug.h"
+
 
 AtomMap *AtomMap::_instance = 0;
 
@@ -59,6 +68,8 @@ int AtomMap::unregisterIDs(PatchID pid, AtomIDList al)
 	if (localIDTable[ali = al[i]].pid == pid) {
 	    localIDTable[ali].pid = notUsed;
 	    localIDTable[ali].index = notUsed;
+	} else {
+	    DebugM(4, "Avoided overwriting atomID " << ali << "\n");
 	}
     }
     return 0;
@@ -73,6 +84,10 @@ int AtomMap::registerIDs(PatchID pid, AtomIDList al)
   {
     for(int i = 0; i < al.size(); ++i)
     {
+	if (localIDTable[al[i]].pid != notUsed) {
+	  DebugM(4, "Overwriting atomID " << al[i] <<" used to be on " 
+	    << localIDTable[al[i]].pid << " now is on " << pid << "\n");
+	}
 	localIDTable[al[i]].pid = pid;
 	localIDTable[al[i]].index = i;
     }
@@ -92,17 +107,29 @@ void AtomMap::clearMap(void)
   }
 }
 
+void AtomMap::print()
+{
+  for (int i=0; i<tableSz; i++) {
+    CPrintf("AtomMap on node %d\n", CMyPe());
+    CPrintf("AtomID %d -> PatchID %d:Index %d\n", i, localIDTable[i].pid,
+      localIDTable[i].index);
+  }
+}
+
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: AtomMap.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/07 16:49:26 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/02/13 16:17:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: AtomMap.C,v $
+ * Revision 1.1003  1997/02/13 16:17:09  ari
+ * Intermediate debuging commit - working to fix deep bug in migration?
+ *
  * Revision 1.1002  1997/02/07 16:49:26  jim
  * Fixing bugs that affect parallel atom migration.
  *

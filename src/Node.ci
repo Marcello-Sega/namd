@@ -19,4 +19,6 @@ group Node
   entry startupDone(DoneMsg *);
   entry run(RunMsg *);
   entry quiescence(QuiescenceMessage *);
+  entry homeDone(DoneMsg *);
+  entry nodeDone(DoneMsg *);
 } ;

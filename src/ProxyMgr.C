@@ -179,38 +179,42 @@ void ProxyMgr::removeProxies(void)
   numProxies = 0;
 }
 
+// Figure out which proxies we need and create them
 void ProxyMgr::createProxies(void)
 {
   // Delete the old proxies.
   removeProxies();
 
-  // Figure out which proxies we will be needing.
   PatchMap *patchMap = PatchMap::Object();
-  int n = patchMap->numPatches();
+  int numPatches = patchMap->numPatches();
   int myNode = CMyPe();
-  int *pflags = new int[n]; // 0 = unknown, 1 = home, 2 = proxy needed
+  enum PatchFlag { Unknown, Home, NeedProxy };
+  int *patchFlag = new int[numPatches]; 
   int i, j;
+
   // Note all home patches.
-  for ( i = 0; i < n; ++i )
+  for ( i = 0; i < numPatches; ++i )
   {
-    pflags[i] = ( patchMap->node(i) == myNode ) ? 1 : 0;
+    patchFlag[i] = ( patchMap->node(i) == myNode ) ? Home : Unknown;
   }
+
   // Check all two-away neighbors.
   PatchID neighbors[PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
-  for ( i = 0; i < n; ++i )
+  for ( i = 0; i < numPatches; ++i )
   {
-    if ( patchMap->node(i) != myNode ) continue;
-    int nn = patchMap->oneAwayNeighbors(i,neighbors);
-    nn += patchMap->twoAwayNeighbors(i,neighbors+nn);
-    for ( j = 0; j < nn; ++j )
+    if ( patchMap->node(i) != myNode ) 
+      continue;
+    int numNeighbors = patchMap->oneAwayNeighbors(i,neighbors);
+    numNeighbors += patchMap->twoAwayNeighbors(i,neighbors+numNeighbors);
+    for ( j = 0; j < numNeighbors; ++j )
     {
-      if ( ! pflags[neighbors[j]] )
-      {
+      if ( ! patchFlag[neighbors[j]] ) {
+	patchFlag[neighbors[j]] = NeedProxy;
 	DebugM(4,"Proxy for " << neighbors[j] << " needed for neighbor.\n");
-	pflags[neighbors[j]] = 2;
       }
     }
   }
+
   // Check all patch-based compute objects.
   ComputeMap *cmap = ComputeMap::Object();
   int nc = cmap->numComputes();
@@ -221,25 +225,34 @@ void ProxyMgr::createProxies(void)
     for ( j = 0; j < ncp; ++j )
     {
       int pid = cmap->pid(i,j);
-      if ( ! pflags[pid] )
-      {
+      if ( ! patchFlag[pid] ) {
+	patchFlag[pid] = NeedProxy;
 	DebugM(4,"Proxy for " << pid << " needed for compute " << i << ".\n");
-	pflags[pid] = 2;
       }
     }
   }
   
-  // Create proxies.
-  for ( i = 0; i < n; ++i ) if ( pflags[i] == 2 ) ++numProxies;
-  proxyList = new ProxyPatch*[numProxies];
+  // Count needed Proxies
   numProxies = 0;
-  for ( i = 0; i < n; ++i ) if ( pflags[i] == 2 )
-  {
-    ProxyPatch *proxy = new ProxyPatch(i);
-    proxyList[numProxies++] = proxy;
-    patchMap->registerPatch(i, proxy);
+  for ( i = 0; i < numPatches; ++i ) {
+    if ( patchFlag[i] == NeedProxy ) {
+      ++numProxies;
+    }
   }
-  delete[] pflags;
+
+  // Create proxy list
+  proxyList = new ProxyPatch*[numProxies];
+  int tmpNumProxies = numProxies;
+  numProxies = 0;
+  for ( i = 0; i < numPatches; ++i ) {
+    if ( patchFlag[i] == NeedProxy )
+    { // create proxy patch
+      ProxyPatch *proxy = new ProxyPatch(i);
+      proxyList[numProxies++] = proxy;
+      patchMap->registerPatch(i, proxy);
+    }
+  }
+  delete[] patchFlag;
 }
 
 void
@@ -326,13 +339,16 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/02/13 04:43:14 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/02/13 16:17:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.1005  1997/02/13 16:17:18  ari
+ * Intermediate debuging commit - working to fix deep bug in migration?
+ *
  * Revision 1.1004  1997/02/13 04:43:14  jim
  * Fixed initial hanging (bug in PatchMap, but it still shouldn't have
  * happened) and saved migration messages in the buffer from being

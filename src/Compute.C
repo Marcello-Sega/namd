@@ -40,7 +40,7 @@ void Compute::enqueueWork() {
 // have checked-in, we are ready to enqueueWork()
 void Compute::patchReady(PatchID patchID, int doneMigration) { 
   if (doneMigration) { // If any patch has done migration - we must remap
-    doAtomUpdate = 1; 
+    doAtomUpdate = true; 
   }
 
   if (numPatches <= 0) {
@@ -72,12 +72,15 @@ void Compute::doWork() {
  *
  *	$RCSfile: Compute.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/11 18:51:39 $
+ *	$Revision: 1.1002 $	$Date: 1997/02/13 16:17:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.C,v $
+ * Revision 1.1002  1997/02/13 16:17:11  ari
+ * Intermediate debuging commit - working to fix deep bug in migration?
+ *
  * Revision 1.1001  1997/02/11 18:51:39  ari
  * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
  * fixed non-buffering of migration msgs

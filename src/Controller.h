@@ -16,6 +16,7 @@
 #define CONTROLLER_H
 
 #include "converse.h"
+#include "Node.h"
 #include "common.h"
 
 class NamdState;
@@ -33,8 +34,13 @@ public:
 protected:
     virtual void algorithm(void);	// subclasses redefine this method
 
-    void terminate(void) { CthFree(thread); CthSuspend();
-			   NAMD_die("Controller: Terminate failed!"); };
+    // void suspend(void) { CthSuspend(); };
+    void terminate(void) {
+	CPrintf("Controller terminating\n");
+	Node::messageHomeDone();
+	CthFree(thread); CthSuspend(); 
+    };
+
     SimParameters *const simParams;	// for convenience
     int numberOfCycles;			// stores argument to run()
     int stepsPerCycle;			// stores info from run()

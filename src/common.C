@@ -11,7 +11,7 @@
  *
  *	$RCSfile: common.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/11 18:52:00 $
+ *	$Revision: 1.1002 $	$Date: 1997/02/13 16:17:22 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -22,6 +22,9 @@
  * REVISION HISTORY:
  *
  * $Log: common.C,v $
+ * Revision 1.1002  1997/02/13 16:17:22  ari
+ * Intermediate debuging commit - working to fix deep bug in migration?
+ *
  * Revision 1.1001  1997/02/11 18:52:00  ari
  * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
  * fixed non-buffering of migration msgs
@@ -119,7 +122,7 @@
  * Removed NAMD_warn; using Inform objects now to report information.
  * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1001 1997/02/11 18:52:00 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1002 1997/02/13 16:17:22 ari Exp $";
 
 #include "chare.h"
 #include "ckdefs.h"
@@ -181,7 +184,7 @@ void NAMD_die(char *err_msg)
 
 {
     CPrintf("%s\n",err_msg);
-    CharmExit();
+    abort(); CharmExit();
 }
 
 

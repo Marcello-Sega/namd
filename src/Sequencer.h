@@ -33,7 +33,8 @@ public:
     void run(int numberOfCycles);             // spawn thread, etc.
     void awaken(void)
 	{
-	  if (threadStatus == SUSPENDED) CthAwaken(thread);
+	  //if (threadStatus == SUSPENDED) 
+	    CthAwaken(thread);
 	  threadStatus = AWAKENED;
 	};
 
@@ -45,8 +46,7 @@ protected:
 	  threadStatus = SUSPENDED;
 	  CthSuspend();
 	};
-    void terminate(void) { CthFree(thread); CthSuspend();
-			   NAMD_die("Sequencer: Terminate failed!"); };
+    void terminate(void);
     SimParameters *const simParams;	// for convenience
     int numberOfCycles;			// stores argument to run()
     int stepsPerCycle;			// stores info from run()

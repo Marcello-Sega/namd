@@ -92,11 +92,16 @@ enum ComputeType
   computeFullDirectType
 };
 
-enum Boolean
-{
-  false=0,
-  true=1
-};
+//enum Boolean
+//{
+//  false=0,
+//  true=1
+//};
+#ifndef BOOLTYPE
+typedef int Boolean;
+#define false 0
+#define true 1
+#endif
 
 #endif /* NAMDTYPES_H */
 
@@ -105,12 +110,15 @@ enum Boolean
  *
  *	$RCSfile: NamdTypes.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/11 18:51:49 $
+ *	$Revision: 1.1002 $	$Date: 1997/02/13 16:17:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdTypes.h,v $
+ * Revision 1.1002  1997/02/13 16:17:15  ari
+ * Intermediate debuging commit - working to fix deep bug in migration?
+ *
  * Revision 1.1001  1997/02/11 18:51:49  ari
  * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
  * fixed non-buffering of migration msgs

@@ -29,7 +29,8 @@ public:
     // read in various input files by invoking
     // proper classes (parameters, molecule etc)
   void startup(char *);   
-  static void die() { CharmExit(); }
+  static void finishup(void) { CPrintf("We're Outta Here\n"); CharmExit(); }
+  static void die() { abort(); CharmExit(); }
 
 private:
   Node *node;
@@ -47,7 +48,7 @@ private:
  *
  *	$RCSfile: Namd.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:47 $
+ *	$Revision: 1.1001 $	$Date: 1997/02/13 16:17:14 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -56,6 +57,9 @@ private:
  * REVISION HISTORY:
  *
  * $Log: Namd.h,v $
+ * Revision 1.1001  1997/02/13 16:17:14  ari
+ * Intermediate debuging commit - working to fix deep bug in migration?
+ *
  * Revision 1.1000  1997/02/06 15:58:47  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

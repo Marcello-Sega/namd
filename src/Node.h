@@ -53,6 +53,11 @@ public:
   static void messageRun();
   void run(RunMsg *);                  
 
+  // Signal HomePatch and Node is done
+  static void messageHomeDone();
+  void homeDone(DoneMsg *);
+  void nodeDone(DoneMsg *);
+
   // Deal with quiescence
   void quiescence(QuiescenceMessage *);
 
@@ -94,6 +99,14 @@ public:
   int myid() { return CMyPe(); }
   int numNodes() { return CNumPes(); }
 
+  // Debugging
+  void throwSequencer() {
+    if (!--numSequencer) { 
+      numSequencer = numHomePatchesRunning;
+      CPrintf("###### Sequencer throw caught on %d expecting %d\n", CMyPe(), numHomePatchesRunning);
+    }
+  }
+
 protected:
   // Map Databases - they have a singleton this access method ::Object()
   AtomMap    *atomMap;
@@ -111,6 +124,14 @@ private:
   // Countdown for Node::startup barrier
   int numNodeStartup;
 
+  // Countdown for Node::homeDone termination 
+  int numHomePatchesRunning;
+
+  // Countdown for Node::nodeDone termination
+  int numNodesRunning;
+
+  // Countdown for Node::throwSequencer
+  int numSequencer;
 };
 
 #endif /* _NODE_H */
@@ -120,12 +141,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/11 22:56:14 $
+ *	$Revision: 1.1002 $	$Date: 1997/02/13 16:17:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.1002  1997/02/13 16:17:17  ari
+ * Intermediate debuging commit - working to fix deep bug in migration?
+ *
  * Revision 1.1001  1997/02/11 22:56:14  jim
  * Added dcd file writing.
  *

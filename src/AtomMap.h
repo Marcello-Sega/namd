@@ -34,6 +34,7 @@ public:
   LocalID localID(AtomID id);
 
   void clearMap(void);
+  void print(void);
 
 
 protected:
@@ -62,12 +63,15 @@ inline LocalID AtomMap::localID(AtomID id)
  *
  *	$RCSfile: AtomMap.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/07 05:42:29 $
+ *	$Revision: 1.1002 $	$Date: 1997/02/13 16:17:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: AtomMap.h,v $
+ * Revision 1.1002  1997/02/13 16:17:10  ari
+ * Intermediate debuging commit - working to fix deep bug in migration?
+ *
  * Revision 1.1001  1997/02/07 05:42:29  ari
  * Some bug fixing - atom migration on one node works
  * Atom migration on multiple nodes gets SIGSEGV

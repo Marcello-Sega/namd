@@ -23,7 +23,7 @@ void CollectionMaster::receivePositions(CollectVectorMsg *msg)
   CollectVectorInstance *c;
   if ( c = positions.submitData(msg->seq,msg->aid,msg->data) )
   {
-    DebugM(3,"Collected positions at " << c->seq << endl);
+    DebugM(1,"Collected positions at " << c->seq << endl);
     c->data.sort();
     int size = c->data.size();
     // iout << "\n\n********** POSITIONS " << c->seq << " **********\n\n";

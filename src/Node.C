@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1002 1997/02/13 04:43:10 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1003 1997/02/13 16:17:16 ari Exp $";
 
 
 #include "ckdefs.h"
@@ -19,6 +19,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "c++interface.h"
 #include "Node.top.h"
 #include "Node.h"
+#include "Namd.h"
 
 #include <stdio.h>
 #include "converse.h"
@@ -366,6 +367,12 @@ void Node::run(RunMsg *msg)
 {
   delete msg;
 
+  numSequencer = numHomePatchesRunning = patchMap->numHomePatches();
+  if (CMyPe() == 0) {
+    numHomePatchesRunning++; //Take into account controller on node 0
+  } 
+  numNodesRunning = numNodes();
+
   // This is testbed code!
   DebugM(4, "Node::run() - invoked\n");
   DebugM(1, "Node::run() - message address was " << msg << "\n");
@@ -383,9 +390,37 @@ void Node::run(RunMsg *msg)
 
   for (ai=ai.begin(); ai != ai.end(); ai++) {
     HomePatch *p = (*ai).p;
+    DebugM(4, "Node::run() - running Sequencer " << p->getPatchID() << "\n");
     p->runSequencer();
   }
 }
+
+
+//-----------------------------------------------------------------------
+// Node homeDone() - broadcast to all nodes
+
+void Node::messageHomeDone() {
+  DoneMsg *msg = new (MsgIndex(DoneMsg)) DoneMsg;
+  CSendMsgBranch(Node, homeDone, msg, group.node, CMyPe());
+}
+
+void Node::homeDone(DoneMsg *msg) {
+  delete msg;
+
+  if (!--numHomePatchesRunning) {
+     DoneMsg *msg = new (MsgIndex(DoneMsg)) DoneMsg;
+     CSendMsgBranch(Node, nodeDone, msg, group.node, 0);
+  }
+}
+
+void Node::nodeDone(DoneMsg *msg) {
+  delete msg;
+
+  if (!--numNodesRunning) {
+     Namd::finishup();
+  }
+}
+
 
 
 // Deal with quiescence - this terminates the program (for now)
@@ -425,13 +460,16 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/13 04:43:10 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/02/13 16:17:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1003  1997/02/13 16:17:16  ari
+ * Intermediate debuging commit - working to fix deep bug in migration?
+ *
  * Revision 1.1002  1997/02/13 04:43:10  jim
  * Fixed initial hanging (bug in PatchMap, but it still shouldn't have
  * happened) and saved migration messages in the buffer from being

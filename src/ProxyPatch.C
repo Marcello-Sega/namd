@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1004 1997/02/10 08:26:03 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1005 1997/02/13 16:17:19 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -52,7 +52,7 @@ void ProxyPatch::boxClosed(int box)
     }
   }
   else {
-    DebugM(2,patchID << ": " << boxesOpen << " boxes left to close.\n");
+    DebugM(4,"ProxyPatch " << patchID << ": " << boxesOpen << " boxes left to close.\n");
   }
 }
 
@@ -94,7 +94,6 @@ void ProxyPatch::receiveAll(ProxyAllMsg *msg)
 
   AtomMap::Object()->unregisterIDs(patchID,atomIDList);
   loadAtoms(msg->atomIDList);
-  // loadAtomProperties();
   AtomMap::Object()->registerIDs(patchID,msg->atomIDList);
   p = msg->positionList;
   DebugM(4,"  ProxyAll received atomIDList.size = " << atomIDList.size() << " positionList.size = " << p.size() << "\n");
@@ -117,13 +116,16 @@ void ProxyPatch::sendResults(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyPatch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/02/10 08:26:03 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/02/13 16:17:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.1005  1997/02/13 16:17:19  ari
+ * Intermediate debuging commit - working to fix deep bug in migration?
+ *
  * Revision 1.1004  1997/02/10 08:26:03  jim
  * Turned off debugging.
  *
