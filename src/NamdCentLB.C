@@ -98,7 +98,8 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
                                   numProcessors);
     }
   } else if (simParams->ldbStrategy == LDBSTRAT_OTHER) {
-    if (step() == 0) {
+    // if (step() == 0) {
+    if (step() < 2) {
       iout << iINFO << "Load balance cycle " << step()
         << " using Alg7\n" << endi;
       Alg7(computeArray,patchArray,processorArray,
