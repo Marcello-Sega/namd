@@ -103,6 +103,7 @@ OBJS = \
 	$(DSTDIR)/ComputeGlobalMsgs.o \
 	$(DSTDIR)/ComputeMap.o \
 	$(DSTDIR)/ComputeMgr.o \
+	$(DSTDIR)/ComputeMDComm.o \
 	$(DSTDIR)/ComputeNonbondedExcl.o \
 	$(DSTDIR)/ComputeNonbondedSelf.o \
 	$(DSTDIR)/ComputeNonbondedPair.o \

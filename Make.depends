@@ -868,6 +868,7 @@ obj/ComputeGlobal.o: \
 	src/ComputeGlobalMsgs.h \
 	src/ComputeTcl.h \
 	src/ComputeFreeEnergy.h \
+	src/ComputeMDComm.h \
 	src/PatchMgr.h \
 	src/HomePatch.h \
 	src/MigrateAtomsMsg.h \
@@ -1072,6 +1073,56 @@ obj/ComputeMgr.o: \
 	src/WorkDistrib.h \
 	inc/ComputeMgr.bot.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeMgr.o -c src/ComputeMgr.C
+obj/ComputeMDComm.o: \
+	src/ComputeMDComm.C \
+	src/Namd.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/ResizeArrayPrimIter.h \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/ProcessorPrivate.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/MStream.h \
+	src/ComputeMDComm.h \
+	src/ComputeGlobalMaster.h \
+	src/ComputeHomePatches.h \
+	src/Compute.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/PatchTypes.h \
+	src/ComputeGlobal.h \
+	src/ComputeGlobalMsgs.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/ObjectArena.h \
+	src/Hydrogen.h \
+	src/ReductionMgr.h \
+	src/ComputeMgr.h \
+	inc/ComputeMgr.top.h \
+	src/mdcomm.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputeMDComm.o -c src/ComputeMDComm.C
 obj/ComputeNonbondedExcl.o: \
 	src/ComputeNonbondedExcl.C \
 	src/Namd.h \
