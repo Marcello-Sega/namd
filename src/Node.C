@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.16 1996/11/30 00:44:24 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.17 1996/12/01 22:46:11 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -197,7 +197,7 @@ void Node::run(RunMsg *msg)
     DebugM(1, "Node::run() - signaling patch "<< p->getPatchID() << endl);
     Sequencer *sequencer = new Sequencer(p);
     p->useSequencer(sequencer);
-    p->runSequencer(1);
+    p->runSequencer();
   }
 }
 
@@ -239,12 +239,15 @@ void Node::saveMolDataPointers(Molecule *molecule,
  *
  *	$RCSfile: Node.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.16 $	$Date: 1996/11/30 00:44:24 $
+ *	$Revision: 1.17 $	$Date: 1996/12/01 22:46:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.17  1996/12/01 22:46:11  jim
+ * switched to use simParams for number of cycles
+ *
  * Revision 1.16  1996/11/30 00:44:24  jim
  * added sequencer use, ComputeMgr use, and quiescence detection
  *

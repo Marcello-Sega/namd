@@ -32,7 +32,8 @@ class HomePatch : public Patch {
       ~HomePatch();
 
       void useSequencer(Sequencer *sequencerPtr) {sequencer=sequencerPtr;}
-      void runSequencer(int numberOfCycles) {sequencer->run(numberOfCycles);}
+      void runSequencer(int numberOfCycles = 0)
+		{ sequencer->run(numberOfCycles); }
 
    protected:
       virtual void boxClosed(int);
@@ -87,12 +88,15 @@ class HomePatch : public Patch {
  *
  *	$RCSfile: HomePatch.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/11/30 00:35:51 $
+ *	$Revision: 1.7 $	$Date: 1996/12/01 22:46:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.7  1996/12/01 22:46:11  jim
+ * switched to use simParams for number of cycles
+ *
  * Revision 1.6  1996/11/30 00:35:51  jim
  * implemented boxClosed(), useSequencer(), runSequencer()
  *
