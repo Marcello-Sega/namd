@@ -249,6 +249,14 @@ If {\tt restartfreq} is defined, then {\tt restartname}
 must also be defined.}
 
 \item
+\NAMDCONFWDEF{restartsave}{use timestep in restart filenames?}
+{{\tt yes} or {\tt no}}{{\tt no}}
+{
+Appends the current timestep to the restart filename prefix, producing
+a sequence of restart files rather than only the last version written.
+}
+
+\item
 \NAMDCONFWDEF{binaryrestart}{use binary restart files?}
 {{\tt yes} or {\tt no}}{{\tt yes}}
 {
