@@ -15,28 +15,29 @@
 
 #include "BroadcastMgr.h"
 #include "BroadcastClient.h"
+#include "common.h"
 
 template <class T> class SimpleBroadcastObject : public BroadcastClient {
 
   public:
 
-    SimpleBroadcastObject(int id) : BroadcastClient(id) { }
+    SimpleBroadcastObject(int id) : BroadcastClient(id) { 
+      if ( sizeof(T) > BCASTMSGSIZE ) {
+        NAMD_bug("SimpleBroadcastObject instantiated on class larger than BCASTMSGSIZE");
+      }
+    }
     ~SimpleBroadcastObject() { }
 
     T get(int tag) {
-      void *buf;
-      while (!(buf = (BroadcastMgr::Object())->getbuf(*this, tag))) {
+      T tmp;
+      while ( BroadcastMgr::Object()->getbuf(*this, tag, (void*)(&tmp)) < 0 ) {
         suspendFor(tag);
       }
-      T tmp = *(T *)buf;
-      delete (T *)buf;
       return tmp;
     }
     
     void publish(int tag,const T &t ) {
-      void *buf = new T;
-      *(T *)buf = t;
-      BroadcastMgr::Object()->send(*this, tag, buf, sizeof(T));
+      BroadcastMgr::Object()->send(*this, tag, (void*)(&t), sizeof(T));
     }
 
 };

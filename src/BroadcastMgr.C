@@ -22,39 +22,35 @@ BroadcastMgr::~BroadcastMgr(void) {
   for (boidIter = boidIter.begin(); boidIter != boidIter.end(); boidIter++) {
     delete boidIter->broadcastSet;
     if (boidIter->taggedMsg) {
-      UniqueSetIter<TaggedMsg> tmIter(*(boidIter->taggedMsg));
-      for (tmIter = tmIter.begin(); tmIter != tmIter.end(); tmIter++) {
-	delete tmIter->msg;
-      }
       delete boidIter->taggedMsg;
     }
   }
 }
 
 
-void *
-BroadcastMgr::getbuf(BroadcastClient &b, int tag) {
-  void *msg = 0;
+int
+BroadcastMgr::getbuf(BroadcastClient &b, int tag, void *msg) {
+  int rval = -1;
   TaggedMsg *tm;
   BOID* boidTmp = boid.find(BOID(b.id));
   if (!boidTmp) {
-    return(NULL);
+    return(-2);
   }
   if ( (tm = (boidTmp->taggedMsg->find(TaggedMsg(tag)))) ) {
-    msg = (void *)new char[tm->msgSize];
+    rval = tm->msgSize;
     memcpy(msg, tm->msg, tm->msgSize);
     if (!--(tm->counter)) {
       (boid.find(BOID(b.id)))->taggedMsg->del(TaggedMsg(tag));
     }
   }
-  return(msg);
+  return(rval);
 }
 
 
 void 
 BroadcastMgr::send(BroadcastClient &b, int tag, void *buf, size_t size) {
   BroadcastMsg* msg = new BroadcastMsg;
-  msg->msg = buf;
+  memcpy((void*)(msg->msg),buf,size);
   msg->size = (int)size;
   msg->tag = tag;
   msg->id = b.id;
@@ -82,10 +78,6 @@ BroadcastMgr::unsubscribe(BroadcastClient &bc) {
     if (!b->broadcastSet->size()) {
       delete b->broadcastSet;
       b->broadcastSet = 0;
-      UniqueSetIter<TaggedMsg> tmIter(*(b->taggedMsg));
-      for (tmIter = tmIter.begin(); tmIter != tmIter.end(); tmIter++) {
-	delete[] tmIter->msg;
-      }
       delete b->taggedMsg;
       b->taggedMsg = 0;
     }

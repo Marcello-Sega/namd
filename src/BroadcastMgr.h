@@ -20,44 +20,17 @@
 #ifndef _BCASTMGR_H
 #define _BCASTMGR_H
 
+#define BCASTMSGSIZE (9*sizeof(double))
+
 class BroadcastMsg : public CMessage_BroadcastMsg {
 friend class BroadcastMgr;
 public:
   ~BroadcastMsg() { }
-  BroadcastMsg() { msg = 0; }
-
-  // pack and unpack functions
-  static void* pack(BroadcastMsg *ptr) {
-    int length = ptr->size + 4*sizeof(int);
-    char *buffer;
-    char *b = buffer = (char *)CkAllocBuffer(ptr, length);
-    memcpy(b, (void *)&(ptr->size), sizeof(int)); b += sizeof(int);
-    memcpy(b, (void *)&(ptr->id), sizeof(int)); b += sizeof(int);
-    memcpy(b, (void *)&(ptr->tag), sizeof(int)); b += sizeof(int);
-    memcpy(b, (void *)&(ptr->node), sizeof(int)); b += sizeof(int);
-    memcpy(b, ptr->msg, ptr->size); b += ptr->size;
-    delete[] (char *)ptr->msg;
-    delete ptr;
-    return buffer;
-  }
-    
-  static BroadcastMsg* unpack(void *ptr) {
-    void *_ptr = CkAllocBuffer(ptr, sizeof(BroadcastMsg));
-    BroadcastMsg *m = new (_ptr) BroadcastMsg;
-    char *b = (char *)ptr;
-    memcpy((void *)&(m->size), b, sizeof(int)); b += sizeof(int);
-    memcpy((void *)&(m->id), b, sizeof(int)); b += sizeof(int);
-    memcpy((void *)&(m->tag), b, sizeof(int)); b += sizeof(int);
-    memcpy((void *)&(m->node), b, sizeof(int)); b += sizeof(int);
-    m->msg = (void *)new char[m->size];
-    memcpy((void *)m->msg, b, m->size); b += m->size;
-    CkFreeMsg(ptr);
-    return m;
-  }
+  BroadcastMsg() { }
 
 private:
   // Only seen by BroadcastMgr
-  void *msg;
+  char msg[BCASTMSGSIZE];
   int size;
   int id;
   int tag;
@@ -85,13 +58,13 @@ public:
   TaggedMsg() {}
   TaggedMsg(int t) : tag(t) {}
   TaggedMsg(int t, int s, int c, void *m) 
-    : tag(t), counter(c), msg(m), msgSize(s) {}
+    : tag(t), counter(c), msgSize(s) { memcpy((void*)msg,m,s); }
   ~TaggedMsg() {}
 
   int tag;
   int counter;
-  void *msg;
   int msgSize;
+  char msg[BCASTMSGSIZE];
 
   int hash() const { return tag; }
   int operator==(const TaggedMsg &tm) const { return(tag == tm.tag); }
@@ -124,7 +97,7 @@ public:
     return CpvAccess(BroadcastMgr_instance);
   }
 
-  void *getbuf(BroadcastClient &b, int tag);
+  int getbuf(BroadcastClient &b, int tag, void* msg);
   void send(BroadcastClient &b, int tag, void *buf, size_t);
   void subscribe(BroadcastClient &bc);
   void unsubscribe(BroadcastClient &bc);

@@ -5,7 +5,7 @@
 **/
 
 module BroadcastMgr {
-  message [packed] BroadcastMsg;
+  message BroadcastMsg;
 
   group BroadcastMgr
   {
