@@ -1,3 +1,6 @@
+
+// WorkDistributor - is a bit of a mishmash
+
 extern message InitMsg;
 extern message LocalWorkMsg;
 packmessage MapDistribMsg;

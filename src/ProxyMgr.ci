@@ -1,3 +1,6 @@
+
+// Handles Message to Proxy(s)
+
 extern message InitMsg;
 message RegisterProxyMsg;
 message UnregisterProxyMsg;

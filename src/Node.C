@@ -9,8 +9,9 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1006 1997/03/06 22:06:06 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1007 1997/03/10 17:40:14 ari Exp $";
 
+#include <unistd.h>
 #include "ckdefs.h"
 #include "chare.h"
 #include "c++interface.h"
@@ -52,6 +53,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "Parameters.h"
 #include "SimParameters.h"
 #include "CommunicateConverse.h"
+
+extern "C" int gethostname(char *, size_t);
 
 extern Communicate *comm;
 
@@ -105,6 +108,11 @@ Node::Node(GroupInitMsg *msg)
 
   // Put num<name of BOC>Startup here
   numNodeStartup = CNumPes();
+
+  // Where are we?
+  char host[1024];
+  gethostname(host, 1024);
+  iout << iINFO << "Starting out on host: " << host << "\n" << endi;
 }
 
 //----------------------------------------------------------------------
@@ -471,12 +479,15 @@ void Node::saveMolDataPointers(NamdState *state)
  *
  *	$RCSfile: Node.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/03/06 22:06:06 $
+ *	$Revision: 1.1007 $	$Date: 1997/03/10 17:40:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1007  1997/03/10 17:40:14  ari
+ * UniqueSet changes - some more commenting and cleanup
+ *
  * Revision 1.1006  1997/03/06 22:06:06  ari
  * Removed Compute.ci
  * Comments added - more code cleaning

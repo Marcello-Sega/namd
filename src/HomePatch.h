@@ -36,6 +36,7 @@ class HomePatch : public Patch {
   friend Sequencer;
 
 private: 
+  static char ident[];
   // for PatchMgr to use only
   HomePatch(PatchID, AtomIDList, PositionList, VelocityList);
   Vector min, max, center;
@@ -117,12 +118,15 @@ private:
  *
  *	$RCSfile: HomePatch.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/06 22:06:02 $
+ *	$Revision: 1.1006 $	$Date: 1997/03/10 17:40:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.1006  1997/03/10 17:40:12  ari
+ * UniqueSet changes - some more commenting and cleanup
+ *
  * Revision 1.1005  1997/03/06 22:06:02  ari
  * Removed Compute.ci
  * Comments added - more code cleaning

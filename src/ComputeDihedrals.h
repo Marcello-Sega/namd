@@ -33,6 +33,10 @@ public:
     // Internal data
     Index dihedralType;
 
+  int hash() const { 
+    return 0x7FFFFFFF &((atomID[0]<<24) + (atomID[1]<<16) + (atomID[2]<<8) + atomID[3]);
+  }
+
   enum { dihedralEnergyIndex, reductionDataSize };
   static void registerReductionData(ReductionMgr*);
   static void submitReductionData(BigReal*,ReductionMgr*,int);
@@ -63,12 +67,15 @@ public:
  *
  *	$RCSfile: ComputeDihedrals.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:57:51 $
+ *	$Revision: 1.1001 $	$Date: 1997/03/10 17:40:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDihedrals.h,v $
+ * Revision 1.1001  1997/03/10 17:40:04  ari
+ * UniqueSet changes - some more commenting and cleanup
+ *
  * Revision 1.1000  1997/02/06 15:57:51  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

@@ -1,3 +1,6 @@
+
+// ReductionMgr on each node
+
 extern message InitMsg;
 message ReductionDataMsg;
 

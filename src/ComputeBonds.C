@@ -24,8 +24,8 @@ void BondElem::loadTuplesForAtom
   (void *voidlist, AtomID atomID, Molecule *molecule)
 {
       DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
-      UniqueSortedArray<BondElem> &bondList =
-                  *( (UniqueSortedArray<BondElem>*) voidlist );
+      UniqueSet<BondElem> &bondList =
+                  *( (UniqueSet<BondElem>*) voidlist );
 
       DebugM(1, "::loadTuplesForAtom - current list size " << bondList.size() << endl );
 
@@ -40,7 +40,7 @@ void BondElem::loadTuplesForAtom
       {
         /* store bond in the list */
         DebugM(1, "::loadTuplesForAtom - loading bond " << bondNum << endl );
-        bondList.load(BondElem(molecule->get_bond(bondNum)));
+        bondList.add(BondElem(molecule->get_bond(bondNum)));
         bondNum = bonds->next();
       }
 }

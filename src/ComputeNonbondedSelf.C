@@ -15,7 +15,7 @@
 #include "ReductionMgr.h"
 #include "Patch.h"
 
-#define MIN_DEBUG_LEVEL 5
+#define MIN_DEBUG_LEVEL 4
 #define DEBUGM
 #include "Debug.h"
 
@@ -40,6 +40,7 @@ void ComputeNonbondedSelf::doForce(Position* p,
 {
   DebugM(2,"doForce() called.\n");
   DebugM(1,numAtoms << " patch 1 atoms\n");
+  DebugM(3, "NUMATOMSxNUMATOMS = " << numAtoms*numAtoms << "\n");
 
   BigReal reductionData[reductionDataSize];
   for ( int i = 0; i < reductionDataSize; ++i ) reductionData[i] = 0;
@@ -57,13 +58,16 @@ void ComputeNonbondedSelf::doForce(Position* p,
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedSelf.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/28 04:47:05 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/03/10 17:40:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.C,v $
+ * Revision 1.1002  1997/03/10 17:40:10  ari
+ * UniqueSet changes - some more commenting and cleanup
+ *
  * Revision 1.1001  1997/02/28 04:47:05  jim
  * Full electrostatics now works with fulldirect on one node.
  *

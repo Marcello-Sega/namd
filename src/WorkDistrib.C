@@ -13,7 +13,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1011 1997/03/08 21:09:04 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1012 1997/03/10 17:40:18 ari Exp $";
 
 #include <stdio.h>
 
@@ -37,11 +37,13 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib
 #include "PDB.h"
 #include "SimParameters.h"
 #include "Molecule.h"
+#include "NamdOneTools.h"
 
 #define MIN_DEBUG_LEVEL 4
-// #define DEBUGM
+#define DEBUGM
 #include "Debug.h"
 
+extern "C" long int lrand48(void);
 
 //======================================================================
 // Public functions
@@ -50,10 +52,10 @@ WorkDistrib::WorkDistrib(InitMsg *msg)
 {
   delete msg;
 
-  DebugM(4,"WorkDistrib::WorkDistrib() - constructing\n");
+  DebugM(3,"WorkDistrib::WorkDistrib() - constructing\n");
   mapsArrived = false;
   awaitingMaps = false;
-  DebugM(4,"WorkDistrib::WorkDistrib() - done constructing\n");
+  DebugM(3,"WorkDistrib::WorkDistrib() - done constructing\n");
 }
 
 //----------------------------------------------------------------------
@@ -190,7 +192,7 @@ void WorkDistrib::createPatches(void)
   {
     if (patchMap->node(i) != node->myid() )
     {
-      DebugM(1,"patchMgr->movePatch("
+      DebugM(4,"patchMgr->movePatch("
 	<< i << "," << patchMap->node(i) << ")\n");
       patchMgr->movePatch(i,patchMap->node(i));
     }
@@ -326,13 +328,19 @@ void WorkDistrib::mapPatches(void)
 
   patchMap->setPeriodicity(xper,yper,zper);
   patchMap->allocatePids(xdim, ydim, zdim);
+
+//  int *num_patch_stored = new int[node->numNodes()];
+//  int min;
+//  for (i=0; i<node->numNodes(); i++) {
+//    num_patch_stored[i] = 0;
+//  }
   patchMap->setGridOriginAndLength(sysMin,sysDim);
 
   int assignedNode=0;
   for(i=0; i < patchMap->numPatches(); i++)
   {
     pid=patchMap->requestPid(&xi,&yi,&zi);
-    DebugM(3,"Patch " << pid << " is at grid " << xi << " " << yi << " " << zi << " on node " << assignedNode << ".\n");
+    DebugM(4,"Patch " << pid << " is at grid " << xi << " " << yi << " " << zi << " on node " << assignedNode << ".\n");
     patchMap->storePatch(pid,assignedNode,250, 
 			 ((float)xi/(float)xdim)*sysDim.x+sysMin.x,
 			 ((float)yi/(float)ydim)*sysDim.y+sysMin.y,
@@ -340,6 +348,18 @@ void WorkDistrib::mapPatches(void)
 			 ((float)(xi+1)/(float)xdim)*sysDim.x+sysMin.x,
 			 ((float)(yi+1)/(float)ydim)*sysDim.y+sysMin.y,
 			 ((float)(zi+1)/(float)zdim)*sysDim.z+sysMin.z);
+
+//    num_patch_stored[assignedNode]++;
+//    min = num_patch_stored[0];
+//    for (int n=1; n<node->numNodes(); n++) {
+//      if (num_patch_stored[n] < min) {
+//	min = num_patch_stored[n];
+//      }
+//    }
+    // Pseudo Random allocation
+//    while (num_patch_stored[assignedNode] > min) {
+ //     assignedNode = lrand48() % node->numNodes();
+  //  }
 
     // Strip allocation
     /*
@@ -462,8 +482,15 @@ void WorkDistrib::mapComputeNonbonded(void)
     {
       if (i < oneAway[j])
       {
-	cid=computeMap->storeCompute(patchMap->node(i),2,
+	// Random choice which node wins the Compute
+//	if (lrand48()%2) {
+	    cid=computeMap->storeCompute(patchMap->node(i),2,
 				     computeNonbondedPairType);
+//	} else {
+//	    cid=computeMap->storeCompute(patchMap->node(oneAway[j]),2,
+//				     computeNonbondedPairType);
+//	}
+	 
 	computeMap->newPid(cid,i);
 	computeMap->newPid(cid,oneAway[j],oneAwayTrans[j]);
 	patchMap->newCid(i,cid);
@@ -734,13 +761,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/03/08 21:09:04 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1012 $	$Date: 1997/03/10 17:40:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1012  1997/03/10 17:40:18  ari
+ * UniqueSet changes - some more commenting and cleanup
+ *
  * Revision 1.1011  1997/03/08 21:09:04  jim
  * Patches are now centered on system so FMA results should match NAMD 1.X.
  *

@@ -24,8 +24,8 @@ void AngleElem::loadTuplesForAtom
   (void *voidlist, AtomID atomID, Molecule *molecule)
 {
       DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
-      UniqueSortedArray<AngleElem> &angleList =
-                  *( (UniqueSortedArray<AngleElem>*) voidlist );
+      UniqueSet<AngleElem> &angleList =
+                  *( (UniqueSet<AngleElem>*) voidlist );
 
       DebugM(1, "::loadTuplesForAtom - current list size " << angleList.size() << endl );
 
@@ -40,7 +40,7 @@ void AngleElem::loadTuplesForAtom
       {
         /* store angle in the list */
         DebugM(1, "::loadTuplesForAtom - loading angle " << angleNum << endl );
-        angleList.load(AngleElem(molecule->get_angle(angleNum)));
+        angleList.add(AngleElem(molecule->get_angle(angleNum)));
         angleNum = angles->next();
       }
 }

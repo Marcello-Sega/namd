@@ -29,6 +29,9 @@ public:
     void computeForce(BigReal*);
     // The following is evil, but the compiler chokes otherwise. (JCP)
     static void loadTuplesForAtom(void*, AtomID, Molecule*);
+  int hash() const {
+    return 0x7FFFFFFF & (atomID[1] << 16 + atomID[0]);
+  }
 
     // Internal data
     Index modified;
@@ -81,13 +84,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedExcl.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/09 22:28:24 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/03/10 17:40:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedExcl.h,v $
+ * Revision 1.1002  1997/03/10 17:40:09  ari
+ * UniqueSet changes - some more commenting and cleanup
+ *
  * Revision 1.1001  1997/03/09 22:28:24  jim
  * (Hopefully) sped up exclusion calculation (removed gross inefficiencies).
  *

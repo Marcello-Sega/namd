@@ -1,3 +1,6 @@
+
+// Handles messages to Patch(s)
+
 extern message InitMsg;
 packmessage MovePatchesMsg;
 packmessage MigrateAtomsMsg;

@@ -1,3 +1,6 @@
+
+// Collection Chare 
+
 extern message InitMsg;
 packmessage CollectVectorMsg;
 

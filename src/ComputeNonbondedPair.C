@@ -15,8 +15,8 @@
 #include "ReductionMgr.h"
 #include "Patch.h"
 
-#define MIN_DEBUG_LEVEL 5
-//#define DEBUGM
+#define MIN_DEBUG_LEVEL 4
+#define DEBUGM
 #include "Debug.h"
 
 ComputeNonbondedPair::ComputeNonbondedPair(ComputeID c, PatchID pid[], int trans[])
@@ -39,7 +39,7 @@ void ComputeNonbondedPair::doForce(Position* p[2],
                                AtomProperties* a[2])
 {
   DebugM(2,"doForce() called.\n");
-  DebugM(5, numAtoms[0] << " patch #1 atoms and " <<
+  DebugM(2, numAtoms[0] << " patch #1 atoms and " <<
 	numAtoms[1] << " patch #2 atoms\n");
 
   BigReal reductionData[reductionDataSize];
@@ -62,6 +62,7 @@ void ComputeNonbondedPair::doForce(Position* p[2],
       int numAtoms_r[2];
       numAtoms_r[0] = numAtoms[1];
       numAtoms_r[1] = numAtoms[0];
+      DebugM(3, "NUMATOMSxNUMATOMS = " << numAtoms_r[0]*numAtoms_r[1] << "\n" );
       if ( patch[0]->flags.doFullElectrostatics )
         ComputeNonbondedUtil::calcFullPair(p_r,f_r,f_r,a_r,numAtoms_r,reductionData);
       else
@@ -84,13 +85,16 @@ void ComputeNonbondedPair::doForce(Position* p[2],
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedPair.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/28 04:47:04 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/03/10 17:40:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.C,v $
+ * Revision 1.1003  1997/03/10 17:40:09  ari
+ * UniqueSet changes - some more commenting and cleanup
+ *
  * Revision 1.1002  1997/02/28 04:47:04  jim
  * Full electrostatics now works with fulldirect on one node.
  *

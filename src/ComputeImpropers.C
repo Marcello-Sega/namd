@@ -24,8 +24,8 @@ void ImproperElem::loadTuplesForAtom
   (void *voidlist, AtomID atomID, Molecule *molecule)
 {
       DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
-      UniqueSortedArray<ImproperElem> &improperList =
-                  *( (UniqueSortedArray<ImproperElem>*) voidlist );
+      UniqueSet<ImproperElem> &improperList =
+                  *( (UniqueSet<ImproperElem>*) voidlist );
 
       DebugM(1, "::loadTuplesForAtom - current list size " << improperList.size() << endl );
 
@@ -40,7 +40,7 @@ void ImproperElem::loadTuplesForAtom
       {
         /* store improper in the list */
         DebugM(1, "::loadTuplesForAtom - loading improper " << improperNum << endl );
-        improperList.load(ImproperElem(molecule->get_improper(improperNum)));
+        improperList.add(ImproperElem(molecule->get_improper(improperNum)));
         improperNum = impropers->next();
       }
 }

@@ -23,8 +23,8 @@ void DihedralElem::loadTuplesForAtom
   (void *voidlist, AtomID atomID, Molecule *molecule)
 {
       DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
-      UniqueSortedArray<DihedralElem> &dihedralList =
-                  *( (UniqueSortedArray<DihedralElem>*) voidlist );
+      UniqueSet<DihedralElem> &dihedralList =
+                  *( (UniqueSet<DihedralElem>*) voidlist );
 
       DebugM(1, "::loadTuplesForAtom - current list size " << dihedralList.size() << endl );
 
@@ -39,7 +39,7 @@ void DihedralElem::loadTuplesForAtom
       {
         /* store dihedral in the list */
         DebugM(1, "::loadTuplesForAtom - loading dihedral " << dihedralNum << endl );
-        dihedralList.load(DihedralElem(molecule->get_dihedral(dihedralNum)));
+        dihedralList.add(DihedralElem(molecule->get_dihedral(dihedralNum)));
         dihedralNum = dihedrals->next();
       }
 }

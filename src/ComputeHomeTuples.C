@@ -18,8 +18,13 @@
 #include "HomePatchList.h"
 #include "Molecule.h"
 #include "ReductionMgr.h"
+
+#define DEBUGM
 #define MIN_DEBUG_LEVEL 3
 #include "Debug.h"
+
+#include "Templates/UniqueSet.h"
+#include "Templates/UniqueSetIter.h"
 
 template <class T>
 ComputeHomeTuples<T>::ComputeHomeTuples(ComputeID c) : Compute(c) {
@@ -53,7 +58,7 @@ void ComputeHomeTuples<T>::initialize() {
   ResizeArrayIter<HomePatchElem> ai(*a);
 
   // Start with empty list
-  tuplePatchList.resize(0);
+  tuplePatchList.clear();
 
   for ( ai = ai.begin(); ai != ai.end(); ai++ ) {
     tuplePatchList.add(TuplePatchElem((*ai).patch, HOME, cid));
@@ -104,7 +109,7 @@ void ComputeHomeTuples<T>::loadTuples() {
   HomePatchList *a = patchMap->homePatchList();
   ResizeArrayIter<HomePatchElem> ai(*a);
 
-  tupleList.resize(0);
+  tupleList.clear();
   for ( ai = ai.begin(); ai != ai.end(); ai++ )
   {
     Patch *patch = (*ai).patch;
@@ -116,12 +121,10 @@ void ComputeHomeTuples<T>::loadTuples() {
       T::loadTuplesForAtom((void*)&tupleList,atomID[i],node->molecule);
     }
   }
-  tupleList.sort(); // This is the expensive operation - tupleList
-		    // should be a more efficient container (e.g. hash)
-  tupleList.uniq();
+  tupleList.rehash();
 
   // Resolve all atoms in tupleList to correct PatchList element and index
-  ResizeArrayIter<T> al(tupleList);
+  UniqueSetIter<T> al(tupleList);
 
   for (al = al.begin(); al != al.end(); al++ ) {
     for (int i=0; i < T::size; i++) {
@@ -152,7 +155,7 @@ void ComputeHomeTuples<T>::sizeDummy() {
   maxProxyAtoms = 0;
 
   // find size of largest patch on tuplePatchList, setup dummy force array
-  ResizeArrayIter<TuplePatchElem> tpi(tuplePatchList);
+  UniqueSetIter<TuplePatchElem> tpi(tuplePatchList);
   for ( tpi = tpi.begin(); tpi != tpi.end(); tpi++ ) {
     if (tpi->p->getNumAtoms() > maxProxyAtoms) {
       maxProxyAtoms = tpi->p->getNumAtoms();
@@ -173,24 +176,24 @@ void ComputeHomeTuples<T>::doWork() {
 
   // Open Boxes - register tFat we are using Positions
   // and will be depositing Forces.
-  ResizeArrayIter<TuplePatchElem> ap(tuplePatchList);
+  UniqueSetIter<TuplePatchElem> ap(tuplePatchList);
   for (ap = ap.begin(); ap != ap.end(); ap++) {
-    (*ap).x = (*ap).positionBox->open();
-    (*ap).a = (*ap).atomBox->open();
+    ap->x = ap->positionBox->open();
+    ap->a = ap->atomBox->open();
     // We only deposit real forces for HomePatch atoms on our Node
-    if ( (*ap).patchType == HOME ) 
-      (*ap).f = (*ap).forceBox->open();
+    if ( ap->patchType == HOME ) 
+      ap->f = ap->forceBox->open();
     else 
-      (*ap).f = dummy;
+      ap->f = dummy;
   } 
 
   BigReal reductionData[T::reductionDataSize];
   for ( int i = 0; i < T::reductionDataSize; ++i ) reductionData[i] = 0;
 
   // take triplet and pass with tuple info to force eval
-  ResizeArrayIter<T> al(tupleList);
+  UniqueSetIter<T> al(tupleList);
   for (al = al.begin(); al != al.end(); al++ ) {
-    (*al).computeForce(reductionData);
+    al->computeForce(reductionData);
   }
 
   T::submitReductionData(reductionData,reduction,fake_seq);
@@ -199,11 +202,37 @@ void ComputeHomeTuples<T>::doWork() {
   // Close boxes - i.e. signal we are done with Positions and
   // AtomProperties and that we are depositing Forces
   for (ap = ap.begin(); ap != ap.end(); ap++) {
-    (*ap).positionBox->close(&(*ap).x);
-    (*ap).atomBox->close(&(*ap).a);
+    ap->positionBox->close(&(ap->x));
+    ap->atomBox->close(&(ap->a));
 
-    if ( (*ap).patchType == HOME ) 
-      (*ap).forceBox->close(&(*ap).f);
+    if ( ap->patchType == HOME ) 
+      ap->forceBox->close(&(ap->f));
   }
   DebugM(1, "ComputeHomeTuples::doWork() -- done" << endl);
 }
+
+;
+
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *      $RCSfile: ComputeHomeTuples.C,v $
+ *      $Author: ari $  $Locker:  $             $State: Exp $
+ *      $Revision: 1.1005 $     $Date: 1997/03/10 17:40:05 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: ComputeHomeTuples.C,v $
+ * Revision 1.1005  1997/03/10 17:40:05  ari
+ * UniqueSet changes - some more commenting and cleanup
+ *
+ * Revision 1.1004  1997/03/04 22:38:16  ari
+ * Reworked ResizeArray - much more rational.  Overall about
+ * same performance as before (sometimes a little better).
+ * Needed tricks to make ResizeArray(Raw) work fast.
+ * Clean up of code.
+ *
+ *
+ ***************************************************************************/

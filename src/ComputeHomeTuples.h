@@ -25,6 +25,7 @@
 #include "Templates/OwnerBox.h"
 #include "PositionBox.h"
 #include "PositionOwnerBox.h"
+#include "Templates/UniqueSet.h"
 
 enum PatchType {HOME,PROXY};
 
@@ -39,6 +40,8 @@ class TuplePatchElem {
     Position *x;
     Force *f;
     AtomProperties *a;
+
+    int hash() const { return patchID; }
 
   TuplePatchElem() {
     patchID = -1;
@@ -86,7 +89,7 @@ class TuplePatchElem {
   }
 };
 
-typedef UniqueSortedArray<TuplePatchElem> TuplePatchList;
+typedef UniqueSet<TuplePatchElem> TuplePatchList;
 
 class AtomMap;
 class ReductionMgr;
@@ -97,7 +100,7 @@ private:
   void loadTuples();
   void sizeDummy();
 
-  UniqueSortedArray<T> tupleList;
+  UniqueSet<T> tupleList;
   TuplePatchList tuplePatchList;
 
   PatchMap *patchMap;
@@ -123,12 +126,15 @@ public:
  *
  *	$RCSfile: ComputeHomeTuples.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/17 23:46:58 $
+ *	$Revision: 1.1002 $	$Date: 1997/03/10 17:40:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.h,v $
+ * Revision 1.1002  1997/03/10 17:40:05  ari
+ * UniqueSet changes - some more commenting and cleanup
+ *
  * Revision 1.1001  1997/02/17 23:46:58  ari
  * Added files for cleaning up atom migration code
  *

@@ -23,8 +23,8 @@ void NonbondedExclElem::loadTuplesForAtom
   (void *voidlist, AtomID atomID, Molecule *molecule)
 {
       DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
-      UniqueSortedArray<NonbondedExclElem> &exclList =
-                  *( (UniqueSortedArray<NonbondedExclElem>*) voidlist );
+      UniqueSet<NonbondedExclElem> &exclList =
+                  *( (UniqueSet<NonbondedExclElem>*) voidlist );
 
       DebugM(1, "::loadTuplesForAtom - current list size " << exclList.size() << endl );
 
@@ -39,7 +39,7 @@ void NonbondedExclElem::loadTuplesForAtom
       {
         /* store exclusion in the list */
         DebugM(1, "::loadTuplesForAtom - adding excl " << exclNum << endl );
-        exclList.load(NonbondedExclElem(molecule->get_exclusion(exclNum)));
+        exclList.add(NonbondedExclElem(molecule->get_exclusion(exclNum)));
         exclNum = excls->next();
       }
 }

@@ -15,9 +15,16 @@
 #ifndef COMPUTEBOND_H
 #define COMPUTEBOND_H
 
-#include "ComputeHomeTuples.h"
+#include "common.h"
+#include "NamdTypes.h"
+#include "Molecule.h"
+
+//class ReductionMgr;
+//class Molecule;
+
+
+class TuplePatchElem;
 class ReductionMgr;
-class Molecule;
 
 class BondElem {
 public:
@@ -29,6 +36,8 @@ public:
     void computeForce(BigReal*);
     // The following is evil, but the compiler chokes otherwise. (JCP)
     static void loadTuplesForAtom(void*, AtomID, Molecule*);
+
+    int hash() const { return 0x7FFFFFFF & ( (atomID[0]<<16) + (atomID[1])); }
 
     // Internal data
     Index bondType;
@@ -47,6 +56,8 @@ public:
   inline int operator<(const BondElem &a) const;
 };
 
+#include "ComputeHomeTuples.h"
+
 class ComputeBonds : public ComputeHomeTuples<BondElem>
 {
 public:
@@ -63,12 +74,15 @@ public:
  *
  *	$RCSfile: ComputeBonds.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:57:47 $
+ *	$Revision: 1.1001 $	$Date: 1997/03/10 17:40:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeBonds.h,v $
+ * Revision 1.1001  1997/03/10 17:40:01  ari
+ * UniqueSet changes - some more commenting and cleanup
+ *
  * Revision 1.1000  1997/02/06 15:57:47  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

@@ -34,6 +34,10 @@ public:
     // Internal data
     Index angleType;
 
+  int hash() const { 
+    return 0x7FFFFFFF & ((atomID[0]<<22) + (atomID[1]<<11) + (atomID[3])); 
+  }
+
   enum { angleEnergyIndex, reductionDataSize };
   static void registerReductionData(ReductionMgr*);
   static void submitReductionData(BigReal*,ReductionMgr*,int);
@@ -63,13 +67,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeAngles.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/21 20:45:10 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/03/10 17:40:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.h,v $
+ * Revision 1.1003  1997/03/10 17:40:00  ari
+ * UniqueSet changes - some more commenting and cleanup
+ *
  * Revision 1.1002  1997/02/21 20:45:10  jim
  * Eliminated multiple function for switching and modified 1-4 interactions.
  * Now assumes a switching function, but parameters are such that nothing

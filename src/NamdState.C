@@ -7,12 +7,14 @@
  * DESCRIPTION: Holds pointers to large molecule data structure, simulation
  *		Parameters...
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1003 1997/03/04 22:37:12 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1004 1997/03/10 17:40:13 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
 #include "c++interface.h"
 
+#include "Inform.h"
+#include "common.h"
 #include "InfoStream.h"
 #include "Molecule.h"
 #include "Parameters.h"
@@ -113,7 +115,8 @@ NamdState::configFileInit(char *confFile)
   molecule = new Molecule(simParameters, parameters, moleculeFilename->data);
   pdb = new PDB(coordinateFilename->data);
   if (pdb->num_atoms() != molecule->numAtoms) {
-    iout << iERRORF << "Number of pdb and psf atoms are not the same!" << "\n" << endi;
+    iout << iERRORF 
+      << "Number of pdb and psf atoms are not the same!" << "\n" << endi;
     return(1);
   }
 
@@ -124,9 +127,13 @@ NamdState::configFileInit(char *confFile)
 
   DebugM(4, "::configFileInit() - printing Molecule Information\n");
 
+  namdDebug.on(1);
+
   molecule->print_atoms(parameters);
   molecule->print_bonds(parameters);
   molecule->print_exclusions();
+
+  namdDebug.on(0);
 
   DebugM(4, "::configFileInit() - done printing Molecule Information\n");
   DebugM(1, "::configFileInit() - done\n");
@@ -139,12 +146,15 @@ NamdState::configFileInit(char *confFile)
  *
  *	$RCSfile: NamdState.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/04 22:37:12 $
+ *	$Revision: 1.1004 $	$Date: 1997/03/10 17:40:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdState.C,v $
+ * Revision 1.1004  1997/03/10 17:40:13  ari
+ * UniqueSet changes - some more commenting and cleanup
+ *
  * Revision 1.1003  1997/03/04 22:37:12  ari
  * Clean up of code.  Debug statements removal, dead code removal.
  * Minor fixes, output fixes.

@@ -1,3 +1,5 @@
+
+// CollectionMgr on each Node
 extern message SlaveInitMsg;
 extern packmessage CollectVectorMsg;
 

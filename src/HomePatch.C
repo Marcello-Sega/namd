@@ -15,12 +15,10 @@
  * superclass: 	Patch		
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1019 1997/03/06 22:06:02 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
 #include "c++interface.h"
-
 #include "HomePatch.h"
 #include "AtomMap.h"
 #include "PatchMap.h"
@@ -33,6 +31,9 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C
 #define MIN_DEBUG_LEVEL 4
 // #define DEBUGM
 #include "Debug.h"
+
+// avoid dissappearence of ident?
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1020 1997/03/10 17:40:11 ari Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
 		     VelocityList vl) : Patch(pd,al,pl), v(vl) 
@@ -397,12 +398,15 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1019 $	$Date: 1997/03/06 22:06:02 $
+ *	$Revision: 1.1020 $	$Date: 1997/03/10 17:40:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1020  1997/03/10 17:40:11  ari
+ * UniqueSet changes - some more commenting and cleanup
+ *
  * Revision 1.1019  1997/03/06 22:06:02  ari
  * Removed Compute.ci
  * Comments added - more code cleaning
