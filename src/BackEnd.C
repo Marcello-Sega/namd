@@ -12,7 +12,12 @@
 #include "Node.h"
 #include "memusage.h"
 
+#ifndef NO_STRSTREAM_H
 #include <new.h>
+#else
+#include <new>
+using namespace std;
+#endif
 #include <charm++.h>
 
 #ifdef USE_COMM_LIB

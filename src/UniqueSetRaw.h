@@ -12,7 +12,12 @@
 #ifndef USETRAW_H
 #define USETRAW_H
 
+#ifndef NO_STRSTREAM_H
 #include <new.h>
+#else
+#include <new>
+using namespace std;
+#endif
 
 template <class Elem> class EntryGlob;
 template <class Elem> class UniqueSetRaw;

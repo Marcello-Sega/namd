@@ -16,7 +16,12 @@
 #ifndef RESIZEARRAYRAW_H
 #define RESIZEARRAYRAW_H
 
+#ifndef NO_STRSTREAM_H
 #include <new.h>
+#else
+#include <new>
+using namespace std;
+#endif
 #include <string.h>
 
 #define GrowthFactor 1.5
