@@ -156,7 +156,7 @@ void HomePatch::unregisterProxy(UnregisterProxyMsg *msg) {
   ProxyListElem *pe = proxy.begin();
   for ( ; pe->node != n; ++pe );
   forceBox.checkIn(pe->forceBox);
-  proxy.del(pe - proxy.end());
+  proxy.del(pe - proxy.begin());
   delete msg;
 }
 

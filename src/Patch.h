@@ -56,6 +56,7 @@ class Patch
 
      int getNumAtoms() { return numAtoms; }
      PatchID getPatchID() { return patchID; }
+     int getNumComputes() { return positionComputeList.size(); }
 
      Lattice &lattice;
      Flags flags;

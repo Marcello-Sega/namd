@@ -92,6 +92,7 @@ public:
   ~ProxyMgr();
 
   void removeProxies(void);
+  void removeUnusedProxies(void);
   void createProxies(void);
 
   void createProxy(PatchID pid);
@@ -99,6 +100,9 @@ public:
 
   void registerProxy(PatchID pid);
   void recvRegisterProxy(RegisterProxyMsg *);
+
+  void unregisterProxy(PatchID pid);
+  void recvUnregisterProxy(UnregisterProxyMsg *);
 
   void sendResults(ProxyResultMsg *);
   void recvResults(ProxyResultMsg *);

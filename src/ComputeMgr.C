@@ -128,6 +128,8 @@ ComputeMgr::updateLocalComputes2(CkQdMsg *msg) {
 void
 ComputeMgr::updateLocalComputes3() {
   ComputeMap *computeMap = ComputeMap::Object();
+  CProxy_ProxyMgr pm(CpvAccess(BOCclass_group).proxyMgr);
+  ProxyMgr *proxyMgr = pm.ckLocalBranch();
 
   for (int i=0; i<computeMap->numComputes(); i++) {
     if (1 == computeFlag[i]) {
@@ -142,6 +144,8 @@ ComputeMgr::updateLocalComputes3() {
     }
   }
   delete[] computeFlag;
+
+  proxyMgr->removeUnusedProxies();
 
   DebugM(4, "msg to doneUpdateLocalComputes on Pe("<<CkMyPe()<<")\n");
   ComputeMap::Object()->checkMap();

@@ -18,7 +18,7 @@ class ProxyPatch : public Patch
   public:
 
      ProxyPatch(PatchID pd);
-     virtual ~ProxyPatch(void) { };
+     virtual ~ProxyPatch(void);
 
      void receiveAtoms(ProxyAtomsMsg*);
      void receiveData(ProxyDataMsg*);

@@ -156,6 +156,22 @@ void ProxyMgr::removeProxies(void)
   proxySet.clear();
 }
 
+void ProxyMgr::removeUnusedProxies(void)
+{
+  ResizeArray<PatchID> toDelete;
+  ProxySetIter pi(proxySet);
+  for ( pi = pi.begin(); pi != pi.end(); pi++)
+  {
+    if ( pi->proxyPatch->getNumComputes() == 0 ) {
+      toDelete.add(pi->patchID);
+    }
+  }
+  PatchID *pidi = toDelete.begin();
+  for ( ; pidi != toDelete.end(); ++pidi ) {
+    removeProxy(*pidi);
+  }
+}
+
 // Figure out which proxies we need and create them
 void ProxyMgr::createProxies(void)
 {
@@ -238,8 +254,10 @@ void
 ProxyMgr::removeProxy(PatchID pid) {
   ProxyElem *p = proxySet.find(ProxyElem(pid));
   if (p) { 
+    PatchMap::Object()->unregisterPatch(pid,p->proxyPatch);
     delete p->proxyPatch;
     proxySet.del(ProxyElem(pid));
+    iout << iINFO << "Removing unused proxy " << pid << " on " << iPE << ".\n" << endi;
   }
 }
   
@@ -261,6 +279,26 @@ void
 ProxyMgr::recvRegisterProxy(RegisterProxyMsg *msg) {
   HomePatch *homePatch = PatchMap::Object()->homePatch(msg->patch);
   homePatch->registerProxy(msg); // message deleted in registerProxy()
+}
+
+void
+ProxyMgr::unregisterProxy(PatchID pid) {
+  // determine which node gets message
+  NodeID node = PatchMap::Object()->node(pid);
+
+  UnregisterProxyMsg *msg = new UnregisterProxyMsg;
+
+  msg->node=CkMyPe();
+  msg->patch = pid;
+
+  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+  cp.recvUnregisterProxy(msg,node);
+}
+
+void
+ProxyMgr::recvUnregisterProxy(UnregisterProxyMsg *msg) {
+  HomePatch *homePatch = PatchMap::Object()->homePatch(msg->patch);
+  homePatch->unregisterProxy(msg); // message deleted in registerProxy()
 }
 
 void
