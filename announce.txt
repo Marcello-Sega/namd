@@ -4,7 +4,7 @@
 |                                                                    |
 +--------------------------------------------------------------------+
 
-                                                   February 29, 2001
+                                                   February 23, 2001
 
 The Theoretical Biophysics Group at the University of Illinois is
 proud to announce the public release of a new version of NAMD, a
