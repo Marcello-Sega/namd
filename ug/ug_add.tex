@@ -580,34 +580,19 @@ Is overridden by value read from file specified with {\tt extendedSystem}.}
 Currently, there are two ways to steer simulations with \NAMD. One
 is called ``moving constraints'' and is based on the harmonic
 constraints feature. The other is a stand-alone feature called
-``SMD''. In both cases the user specifies a reference position 
-$\vec r_0$, force constant $k$, velocity of the reference position
-movement $\vec v$ and the number of the constrained atom $i$. Then
-during the simulation a potential $U_{SMD}$ and a corresponding force
-$\vec f_{SMD}$ are added for the specified atom. 
-The potential is computed according to
-\begin{equation}
-   U_{SMD}(t) \; = \; \frac{k \, [\vec r(t) \, - \, \vec r_i(t)]^2}{2} \, ,
-\end{equation}
-and the force acting on atom $i$ is (by differentiating $U_{SMD}$) 
-\begin{equation}
-   \vec f_{SMD}(t) \; = \; \, k \, [\vec r(t) \, - \, \vec r_i(t)] \, ,
-\label{eq:smdforce}
-\end{equation}
-where t is time, $\vec r_i$ is the position of the atom $i$ and 
-$\vec r$ is the current reference position (position of the restraint
-point), given by 
-\begin{equation}
-   \vec r(t) \; = \; \vec r_0 \, + \, \vec v t \,.
-\label{eq:smdrefpos}
-\end{equation}
+``SMD''. 
 
 \subsubsection{Moving Constraints}
 
 Moving constraints feature works in conjunction with the Harmonic
 Constraints (see an appropriate section of the User's guide).
 The reference positions of all constraints
-will move according to Eq.~\ref{eq:smdrefpos}.
+will move according to
+\begin{equation}
+\label{eq:smdrefpos}
+   \vec r(t) \; = \; \vec r_0 \, + \, \vec v t \,.
+\end{equation}
+
 A velocity vector $\vec v$ ({\tt movingConsVel}) needs to be specified.
 
 The way the moving constraints work is that the moving reference
@@ -628,10 +613,6 @@ was removed in SMD feature.
 
 The following parameters describe the parameters for the
 moving harmonic constraint feature of \NAMD.
-This feature allows the restraint reference positions
-for {\em all restrained atoms} to be moved.
-Moving the restraint reference positions for a single atom
-is provided by the SMD feature.
 
 \begin{itemize}
 
@@ -766,182 +747,70 @@ through the pivot point.}
 \subsubsection{Steered Molecular Dynamics (SMD)}
 
 The SMD feature is independent from the harmonic constraints, although it
-follows the same ideas. One has to specify the force constant $k$
-({\tt SMDk}), the number (1-based indexing) of the atom ({\tt
-SMDAtom}), which is restrained to the moving reference position, the
-initial reference position $\vec r_0$ ({\tt SMDRefPos}), the {\em
-absolute} value of the velocity of movement $v$ ({\tt SMDVel}), and
-the direction of movement $\vec n$ ({\tt SMDDir}). The velocity $\vec
-v$ is then given by $\vec v \, = \, v \vec n$. Vector $\vec n$ is
-normalized by \NAMD\ before being used. Optionally, the frequency of
-SMD data output can be specified. 
+follows the same ideas.  In both SMD and harmonic constraints, one specifies
+a PDB file which indicates which atoms are 'tagged' as constrained.  The PDB
+file also gives initial coordinates for the constraint positions.  One also
+specifies such parameters as the force constant(s) for the constraints, 
+and the velocity with which the constraints move.  
 
-The time used in the reference position calculation starts at time
-$t_0$ which can be specified through {\tt SMDTStamp} parameter,
-defaulting to {\tt firstTimestep}. The reference position is
-calculated then by 
+There are two major differences between SMD and
+harmonic constraints:
+\begin{itemize}
+\item In harmonic constraints, each tagged atom is harmonically constrained
+  to a reference point which moves with constant velocity.  In SMD, it is
+  the {\em center of mass} of the tagged atoms which is constrained to move
+  with constant velocity.
+
+\item In harmonic constraints, each tagged atom is constrained in all three
+  spatial dimensions.  In SMD, tagged atoms are constrained {\em only along
+  the constraint direction}.
+\end{itemize}
+
+The center of mass of the SMD atoms will be harmonically constrained with 
+force constant $k$ ({\tt SMDk}) to move with velocity $v$ ({\tt SMDVel}) in 
+the direction $\vec n$ ({\tt SMDDir}).  SMD thus results in the following
+potential being applied to the system:
 \begin{equation}
-  \vec r \; = \; \vec r_0 \, + \, \vec n v \, (t - t_0) \, ,
+\label{eq:SMDpotential}
+U(\vec r_1, \vec r_2, ..., t) \; = \; \frac{1}{2} 
+  k\left[vt - (\vec R(t) - \vec R_0)\cdot \vec n \right]^2.
 \end{equation}
-where $t$ is the current timestep (i.e., {\tt firstTimestep} plus
-however many timesteps have passed since the beginning of \NAMD\ run).
-When restarting the simulation it may be useful to set $t_0$ to 
-whatever time the reference position specified in the configuration
-file refers to.
-
-\paragraph*{Changing direction of reference position movement}
-
-One may want to change the direction of the reference position
-movement, e.g., if the restrained atom is moving too slow in the given
-direction. To check for such slow movement, the minimum allowed
-average velocity $v_{min}$ ({\tt SMDVmin}) and the averaging time
-$\tau_{min}$ ({\tt SMDVminTave}) have to be specified. Then every
-$\tau_{min}$ timesteps \NAMD\ will compute the average velocity in the
-current direction over the past $\tau_{min}$ timesteps, and compare it
-to $v_{min}$. The average velocity is computed simply by 
-\begin{equation}
-   \langle v\rangle_{min} \; = \; \frac{\vec n \cdot [\vec r_i(t) \, - \,
-   	\vec r_i(t - \tau_{min}) ]}{\tau_{min}} \, .
-\label{eq:smdvmin}
-\end{equation}
-In the case that $\langle v\rangle_{min}$ is less than $v_{min}$, 
-a new direction is chosen, and the simulation proceeds. 
-
-Every time the direction is changed, the reference point is also
-changed to
-\begin{equation}
-  \vec r_{0,new} \; = \; \vec r_i(t) + \vec n_{new} F_{min}/k \, ,
-\label{eq:smdreset}
-\end{equation}
-where $t$ is the current timestep, and $F_{min}$ ({\tt SMDFmin}) is
-the minimum force to which the force imposed by the restraint is
-reset. Thus, after the direction is changed to $\vec n_{new}$ the
-force applied to the atom has an absolute value of $F_{min}$ and the
-direction of $\vec n_{new}$. The time stamp $t_0$ is set to current
-time.
-
-
-\paragraph*{Choice of new direction}
-The choice of the new (random) direction is based on the specified
-initial direction $\vec n$, the angle $\theta_c$ of the cone which has
-$\vec n$ as its axis, and the method by which the random numbers are
-generated.  The new direction is guaranteed to lie within the
-specified cone. The method can be ``uniform'' (default) or
-``gaussian''. Uniform method uses uniformly distributed random numbers
-to find angles $\varphi$ and $\theta$ defining the new
-direction. Angle $\varphi$ is a random number between 0 and 360
-degrees, and $\theta$ is a random number between 0 and
-$\theta_c/2$. Gaussian method uses uniformly distributed random
-numbers to find $\varphi$ and normally distributed random numbers with
-variance $\sigma$ ({\tt SMDGaussW}) to find $\theta$. All $\theta$
-values that exceed $\theta_c/2$ are ignored. The distribution of
-$\theta$ values is given by 
-\begin{equation}
-p(\theta) \, = \, \frac{1}{\sigma \sqrt{2\pi}} 
-\exp(- \frac{\theta^2}{\sigma^2}) \, .
-\end{equation}
-
-After the angles $\varphi$ and $\theta$ are calculated, the new
-direction is found by constructing a right orthonormal system of
-coordinates with $\vec n_0$, the initial direction specified by {\tt
-SMDDir} in the configuration file, being the $z$ direction.  The
-other two vectors $\vec a$ and $\vec b$, orthogonal to $\vec n_0$ and
-to each other are found by first producing $\vec a \, = \, \vec n_0
-\times
-\vec{(0, 1, 1)}$, or $\vec a \, = \, \vec n_0 \times 
-\vec{(1, 1, 1)}$ in the case when $\vec n_0$ is collinear to 
-$\vec{(0, 1, 1)}$, normalizing $\vec a$, and, finally, producing 
-$\vec b \, = \, \vec n_0 \times \vec a$. Then the new direction is
-given by 
-\begin{equation}
-\vec n_{new} \; = \; \vec a \cos\varphi \sin\theta \, + \,
-	\vec b \sin\varphi \sin\theta \, + \,
-	\vec n_0 \cos\theta \, .
-\end{equation}
-
-
-\paragraph*{Resetting the applied force}
-
-Sometimes, especially when a small enough $k$ is employed, the
-movement of the restrained atom proceeds in steps, resulting in a fast
-movement of the atom over a short period of time. When this happens,
-it may be desirable to reset (reduce) the applied force. Resetting of
-the force to a specified value $F_{min}$ ({\tt SMDFmin}) should happen
-when the average velocity of atom movement $\langle v\rangle_{max}$
-over a given period of time $\tau_{max}$ ({\tt SMDVmaxTave}) exceeds
-the specified maximum allowed velocity $v_{max}$ ({\tt SMDVmax}) in
-the direction of reference position movement $\vec n$. The average
-velocity is calculated similarly to Eq.~\ref{eq:smdvmin}, and in the
-case when $\langle v\rangle_{max}$ is larger than $v_{max}$, the
-reference position is reset according to Eq.~\ref{eq:smdreset}. The
-time stamp $t_0$ is set to current time.
-
+Here, $t \equiv N_{ts} dt$ where $N_{ts}$ is the number of elapsed timesteps
+in the simulation and $dt$ is the size of the timestep in femtoseconds.
+Also, $\vec R(t)$ is the current center of mass of the SMD atoms and $R_0$ is
+the initial center of mass as defined by the coordinates in {\tt SMDFile}.
+Vector $\vec n$ is normalized by \NAMD\ before being used.  
 
 \paragraph*{Output}
 
 \NAMD\ provides output of the current SMD data. The frequency of
 output is specified by the {\tt SMDOutputFreq} parameter in the
 configuration file. Every {\tt SMDOutputFreq} timesteps \NAMD\ will
-print the current timestep, current position of the restrained atom,
-the current force applied to the restrained atom (in piconewtons, pN),
-the reference position at the time of the last change of
-direction or force resetting (initially, the reference position
-specified in the configuration file), current direction of the
-reference position movement, and the time stamp, indicating the
-timestep when the direction was changed or force reset (initially, 
-{\tt SMDTStep} specified in the configuration file, or its default
-value). The output line starts with word {\tt SMD}
-
-The energy of the SMD restraint is printed out along with other
-energies in the column titled {\tt SMD}. The frequency of this output
-is defined by {\tt outputEnergies} parameter in the configuration
-file. 
-
-When the direction of the reference position movement changes or the
-force is reset, this change is indicated by an output line starting
-with {\tt SMDChange} and showing the current timestep, the current
-atom position, the new reference position after the change, and the
-new direction of the reference position movement. The current timestep
-becomes the time stamp for the following simulation until the next
-change occurs.
+print the current timestep, current position of the center of mass of the
+restrained atoms, and
+the current force applied to the center of mass (in piconewtons, pN).
+The output line starts with word {\tt SMD}
 
 \paragraph*{Parameters}
 
 The following parameters describe the parameters for the 
 SMD feature of \NAMD.
-This feature allows a harmonic restraining force to be applied
-to any ONE atom in the simulation and the restraining reference
-position to be moved. It also allows to randomly change the direction
-of the reference position movement if the restrained atom progress is
-too slow, and to reset the applied force to a given value if the
-progress of the restrained atom is too fast.
-
 \begin{itemize}
-
 \item 
 \NAMDCONFWDEF{SMD}{Are SMD features active}
 {{\tt on} or {\tt off}}{{\tt off}}
 {Should SMD harmonic constraint be applied to the system. If set 
-to {\tt on}, then  {\tt SMDk}, {\tt SMDRefPos}, {\tt SMDVel},
-{\tt SMDDir} and {\tt SMDAtom} must be defined. Also,
-{\tt SMDOutputFreq}, {\tt SMDChDir} and associated parameters,
-{\tt SMDChForce} and associated parameters, and {\tt SMDTStamp} can
-be optionally defined.}
+to {\tt on}, then  {\tt SMDk}, {\tt SMDFile}, {\tt SMDVel}, and
+{\tt SMDDir} must be defined.  Specifying {\tt SMDOutputFreq} 
+is optional.}
 
 \item
-\NAMDCONFWDEF{SMDexp}{exponent to use in SMD harmonic constraint energy 
-function}{positive, even integer}{2}
-{Exponent to be used in the SMD harmonic constraint energy function.
-This value must be a positive integer, and only even values really make
-sense.  This parameter is only used if {\tt SMD} is set to 
-{\tt on}.}
-
-\item
-\NAMDCONF{SMDRefPos}{SMD constraint reference position}
-{vector} {Vector to use for the initial reference position for the SMD
-harmonic constraints. The atom that is specified by {\tt SMDAtom}
-will be initially constrained to this reference position. During the
-simulation, this reference position will move with velocity
+\NAMDCONF{SMDFile}{SMD constraint reference position}
+{UNIX filename} {File to use for the initial reference position for the SMD
+harmonic constraints.  All atoms in this PDB file with a nonzero value in the
+{\em occupancy} column will be tagged as SMD atoms.  The coordinates of the
+tagged SMD atoms will be used to calculate the initial center of mass.
+During the simulation, this center of mass will move with velocity
 {\tt SMDVel} in the direction {\tt SMDDir}.}
 
 \item
@@ -952,116 +821,20 @@ kcal/mol/\AA$^2$. The conversion factor is 1 kcal/mol = 69.479 pN \AA.}
 
 \item
 \NAMDCONF{SMDVel}{Velocity of the SMD reference position movement}
-{positive real, \AA/timestep}
-{The velocity of the SMD reference position movement. Gives the absolute
+{nonzero real, \AA/timestep}
+{The velocity of the SMD center of mass movement. Gives the absolute
 value.}
 
 \item
-\NAMDCONF{SMDDir}{Direction of the SMD reference position movement}
+\NAMDCONF{SMDDir}{Direction of the SMD center of mass movement}
 {non-zero vector}
 {The direction of the SMD reference position movement. The vector does
 not have to be normalized, it is normalized by \NAMD before being used.}
 
 \item
-\NAMDCONF{SMDAtom}{Index (1-based) of the atom constrained to
-the moving reference position}
-{positive integer}
-{The index of the atom constrained to the moving reference position. 
-If the atom is numbered $N$ in the PDB file, $N$ must be specified.
-}
-
-\item
 \NAMDCONFWDEF{SMDOutputFreq}{frequency of SMD output}
 {positive integer}{1} {The frequency in timesteps with which the
 current SMD data values are printed out.}
-
-\item
-\NAMDCONFWDEF{SMDTStamp}{time of the last change in reference
-position}{non-negative integer}{{\tt firstTimestep}}
-{The timestep at which the reference position $\vec r_0$ was last
-reset. Normally, it would be the {\tt firstTimestep}, but if the
-force or direction was reset during the simulation, this parameter may
-be useful for restarts.}
-
-\item
-\NAMDCONFWDEF{SMDFmin}{value of the force to reset to}{non-negative
-real}{0} {The value in pN to which the force gets reset when the
-direction changes or the average velocity exceeds the given
-{\tt SMDVmax} value. This parameter is only used if {\tt SMDChDir}
-or {\tt SMDChForce} are
-{\tt on}.}
-
-\item
-\NAMDCONFWDEF{SMDChDir}{Is changing direction option of SMD active}
-{{\tt on}, {\tt off}}{{\tt off}}
-{If turned {\tt on}, this option allows to change the direction of
-the reference position movement when the average velocity of the
-restrained atom in this direction is smaller than the given
-{\tt SMDVmin} value. Uses settings of 
-{\tt SMDVmin}, {\tt SMDVminTave}, {\tt SMDConeAngle},
-{\tt SMDChDirMethod}.}
-
-\item
-\NAMDCONF{SMDVmin}{minimum allowed average velocity of the restrained
-atom}{non-negative real} {The minimum allowed average velocity in
-\AA/timestep of the restrained atom in the direction of the reference
-position movement. The averaging time is given by {\tt SMDVminTave}.}
-
-\item
-\NAMDCONF{SMDVminTave}{averaging time for velocity to compare to Vmin}
-{positive integer} {The averaging time in timesteps for calculation of
-the average velocity of the restrained atom and for comparison of this
-average velocity to
-{\tt SMDVmin}.}
-
-\item
-\NAMDCONFWDEF{SMDConeAngle}{angle of the cone to choose the new
-direction from}{non-negative}{360}{The angle (in degrees) of the cone
-with the axis along the initial direction of the reference position
-movement {\tt SMDDir}. The new direction will come from the vertex of
-the cone and will lie within the cone. This angle is twice the angle
-between the cone's axis and any line going through the cone's vertex
-on the cone's surface.  Omitting this parameter will lead to choosing
-a direction without any restrictions (all directions are possible).}
-
-\item
-\NAMDCONFWDEF{SMDChDirMethod}{method to use when choosing a new
-direction}{{\tt gaussian}, {\tt uniform}}{{\tt uniform}}
-{The method to choose the angle between the new direction and the
-initial direction of the reference position movement. When
-{\tt gaussian} is specified, it is recommended to set the variance of
-the distribution with {\tt SMDGaussW}.}
-
-\item
-\NAMDCONFWDEF{SMDGaussW}{variance of the gaussian distribution used to
-choose new directions}{positive real}{360}
-{Variance of the gaussian distribution (in degrees) used
-for choosing the angle between the new direction and the
-initial direction of the reference position movement.}
-
-
-\item
-\NAMDCONFWDEF{SMDChForce}{is resetting force SMD option active}
-{{\tt on}, {\tt off}}{{\tt off}}
-{If turned {\tt on}, this option allows to reset
-the reference position (so that the applied force becomes
-{\tt SMDFmin}) when the average velocity of the
-restrained atom in the direction of the reference position movement is
-larger than a given {\tt SMDVmax} value. Uses settings of 
-{\tt SMDVmax} and {\tt SMDVmaxTave}.}
-
-\item
-\NAMDCONF{SMDVmax}{maximum allowed average velocity of the restrained
-atom}{non-negative real} {The maximum allowed average velocity in
-\AA/timestep of the restrained atom in the direction of the reference
-position movement. The averaging time is given by {\tt SMDVmaxTave}.}
-
-\item
-\NAMDCONF{SMDVmaxTave}{averaging time for velocity to compare to Vmax}
-{positive integer} {The averaging time in timesteps for calculation of
-the average velocity of the restrained atom and for comparison of this
-average velocity to
-{\tt SMDVmax}.}
 \end{itemize}
 
 
