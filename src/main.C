@@ -70,6 +70,8 @@ int tbsoft_sendusage(const char *program,
 
   sprintf(sendbuf, "1 %s  %s  %s  %s  %s  %s  %s", 
     program, versionnum, platform, numcpus, miscinfo, host, user);
+  iout << iINFO << "Sending usage information to NAMD developers via UDP.\n";
+  iout << iINFO << "Sent data is: " << sendbuf << "\n" << endi;
   send_dgram(TBSOFT_TRACK_HOST, TBSOFT_TRACK_PORT, sendbuf, strlen(sendbuf));
 
 #endif
@@ -96,8 +98,6 @@ public:
          << endi;
 
 #ifndef WIN32
-    iout << iINFO
-      << "Reporting usage information via UDP to NAMD developers.\n" << endi;
     char numcpus[512];
     sprintf(numcpus,"%d",CmiNumPes());
     tbsoft_sendusage("NAMD",NAMD_VERSION,NAMD_PLATFORM,numcpus,"");
