@@ -18,10 +18,11 @@ ALambdaControl::ALambdaControl() {
 //------------------------------------------------------------------------
   // initialize these for the first block.
   m_StartStep = 0;
-  m_LambdaKf  = 1.0;      // applied to Kf
-  m_LambdaRef = 0.0;      // applied to reference (pos, dist, angle, dihe)
-  m_Sum_dU_dLambda = 0.0; // for free energy measurement
-  m_Num_dU_dLambda = 0;   // "
+  m_LambdaKf  = 1.0;         // applied to Kf
+  m_LambdaRef = 0.0;         // applied to reference (pos, dist, angle, dihe)
+  m_Sum_dU_dLambda = 0.0;    // for free energy measurement
+  m_Num_dU_dLambda = 0;      // "
+  m_MCTI_Integration = 0.0;  // "
 
   // set the rest to illegal values.
   m_Task =           kUnknownTask;
@@ -61,7 +62,7 @@ void ALambdaControl::Init(ALambdaControl& PriorBlock) {
     default:        ASSERT(kFalse); break;  //should never get here
 
   }
-  m_StartStep = PriorBlock.GetLastStep() + 1;
+  m_StartStep = PriorBlock.GetLastStep();
 }
 
 
@@ -114,6 +115,43 @@ void ALambdaControl::Accumulate(double dU_dLambda) {
 }
 
 
+void ALambdaControl::Integrate_MCTI() {
+//------------------------------------------------------------------------
+// integrate MCTI:  <dU/dLambda> * dLambda
+//------------------------------------------------------------------------
+  ASSERT(m_Task==kStepUp   || m_Task==kStepDown || 
+         m_Task==kStepGrow || m_Task==kStepFade);
+
+  switch (m_Task) {
+    // lambda is increasing
+    case kStepUp:
+    case kStepGrow:
+      m_MCTI_Integration += GetAccumulation() / (double)m_NumRepeats;
+      break;
+    // lambda is decreasing
+    case kStepDown:
+    case kStepFade:
+      m_MCTI_Integration -= GetAccumulation() / (double)m_NumRepeats;
+      break;
+    // should never get here
+    default:
+      ASSERT(kFalse);
+      break;
+  }
+}
+
+
+double ALambdaControl::GetIntegration() {
+//------------------------------------------------------------------------
+// get MCTI integral.  integral(dU/dLambda> * dLambda
+//------------------------------------------------------------------------
+  ASSERT(m_Task==kStepUp   || m_Task==kStepDown || 
+         m_Task==kStepGrow || m_Task==kStepFade);
+
+  return(m_MCTI_Integration);
+}
+
+
 double ALambdaControl::GetAccumulation() {
 //------------------------------------------------------------------------
 // if lambda is constant, return (sum/N)
@@ -136,6 +174,27 @@ double ALambdaControl::GetAccumulation() {
 }
 
 
+int ALambdaControl::GetNumAccumStepsSoFar() {
+//------------------------------------------------------------------------
+// return the total number of steps dU/dLambda has been accumulated
+// this is only called during MCTI
+//------------------------------------------------------------------------
+  ASSERT(m_Task==kStepUp   || m_Task==kStepDown || 
+         m_Task==kStepGrow || m_Task==kStepFade);
+
+  int Count, Maybe;
+
+  Count = (m_CurrStep-m_StartStep) / (m_NumAccumSteps+m_NumEquilSteps);
+  Count *= m_NumAccumSteps;
+  Maybe = (m_CurrStep-m_StartStep) % (m_NumAccumSteps+m_NumEquilSteps);
+  Maybe -= m_NumEquilSteps;
+  if (Maybe > 0) {
+    Count += Maybe;
+  }
+  return(Count);
+}
+
+
 int ALambdaControl::GetNumSteps() {
 //------------------------------------------------------------------------
 // get the number of steps needed for this pmf or mcti block
@@ -144,6 +203,19 @@ int ALambdaControl::GetNumSteps() {
   GetLastStep();
   
   return( (m_StopStep - m_StartStep) + 1 );
+}
+
+
+Bool_t ALambdaControl::IsLastStep() {
+//------------------------------------------------------------------------
+// return true if we're on the last step of this pmf or mcti block
+//------------------------------------------------------------------------
+	if (m_CurrStep == GetLastStep()) {
+    return(kTrue);
+  }
+  else {
+    return(kFalse);
+  }
 }
 
 
@@ -162,14 +234,34 @@ int ALambdaControl::GetLastStep() {
     case kStepGrow:
     case kStepFade:
       m_StopStep = m_StartStep +
-                  (m_NumAccumSteps+m_NumEquilSteps) * (m_NumRepeats+1) - 1;
+                  (m_NumAccumSteps+m_NumEquilSteps) * m_NumRepeats;
       break;
     default:
-      m_StopStep = m_StartStep + m_NumSteps - 1;
+      m_StopStep = m_StartStep + m_NumSteps;
       break;
   }
   // and return it
   return(m_StopStep);
+}
+
+
+void ALambdaControl::GetPaddedTaskStr(char* Str) {
+//------------------------------------------------------------------------
+// get a string that describes this task
+//------------------------------------------------------------------------
+  switch (m_Task) {
+    case kUp:        strcpy(Str, "      Up");      break;
+    case kDown:      strcpy(Str, "    Down");      break;
+    case kStop:      strcpy(Str, "    Stop");      break;
+    case kGrow:      strcpy(Str, "    Grow");      break;
+    case kFade:      strcpy(Str, "    Fade");      break;
+    case kNoGrow:    strcpy(Str, "  NoGrow");      break;
+    case kStepUp:    strcpy(Str, "  StepUp");      break;
+    case kStepDown:  strcpy(Str, "StepDown");      break;
+    case kStepGrow:  strcpy(Str, "StepGrow");      break;
+    case kStepFade:  strcpy(Str, "StepFade");      break;
+    default:         strcpy(Str, "Bug Alert!!!");  break;
+  }
 }
 
 
@@ -197,6 +289,7 @@ Bool_t ALambdaControl::IsTimeToClearAccumulator() {
 //------------------------------------------------------------------------
 // ASSUMING that this object is currently active, decide if it's time
 // to start accumulating dU/dLambda from zero.
+// (clear the accumulator on the 1st step)
 //------------------------------------------------------------------------
   Bool_t  RetVal=kFalse;
 
@@ -211,7 +304,7 @@ Bool_t ALambdaControl::IsTimeToClearAccumulator() {
     // for mcti blocks, clear accumulator after each equilibration
     case kStepUp:  case kStepDown:  case kStepGrow:  case kStepFade:
       if ( (m_CurrStep-(m_StartStep+m_NumEquilSteps)) % 
-             (m_NumEquilSteps+m_NumAccumSteps) == 0) {
+             (m_NumEquilSteps+m_NumAccumSteps) == 1) {
         RetVal = kTrue;
       }
       break;
@@ -219,6 +312,20 @@ Bool_t ALambdaControl::IsTimeToClearAccumulator() {
     default:
       ASSERT(kFalse);
       break;
+  }
+  return(RetVal);
+}
+
+
+Bool_t ALambdaControl::IsFirstStep() {
+//------------------------------------------------------------------------
+// ASSUMING that this object is currently active, decide if it's the
+// first step of the control object.
+//------------------------------------------------------------------------
+  Bool_t  RetVal=kFalse;
+
+  if (m_CurrStep == (m_StartStep+1)) {
+    RetVal = kTrue;
   }
   return(RetVal);
 }
@@ -234,8 +341,48 @@ Bool_t ALambdaControl::IsTimeToPrint() {
   // if printing is required
   if (m_NumPrintSteps > 0) {
     // if number-of-steps from StartStep is an even multiple of NumPrintSteps
+    // or if it's the last step of this pmf or mcti block,
     // then it's time to print
-    if ( ((m_CurrStep-m_StartStep) % m_NumPrintSteps) == 0) {
+    if ( IsLastStep() || (((m_CurrStep-m_StartStep)%m_NumPrintSteps)==0) ) {
+      RetVal = kTrue;
+    }
+  }
+  return(RetVal);
+}
+
+
+Bool_t ALambdaControl::IsEndOf_MCTI() {
+//------------------------------------------------------------------------
+// ASSUMING that this object is currently active, decide if this is
+// the last time step of an mcti block.
+//------------------------------------------------------------------------
+  Bool_t  RetVal=kFalse;
+
+  // if an MCTI block is currently active
+  if ( (m_Task==kStepUp)   || (m_Task==kStepDown) ||
+       (m_Task==kStepGrow) || (m_Task==kStepFade) ) {
+    // if this is the last step
+    if (m_CurrStep == GetLastStep()) {
+      RetVal = kTrue;
+    }
+  }
+  return(RetVal);
+}
+
+
+Bool_t ALambdaControl::IsEndOf_MCTI_Step() {
+//------------------------------------------------------------------------
+// ASSUMING that this object is currently active, decide if this is
+// the last time step of an mcti step.
+//------------------------------------------------------------------------
+  Bool_t  RetVal=kFalse;
+
+  // if an MCTI block is currently active
+  if ( (m_Task==kStepUp)   || (m_Task==kStepDown) ||
+       (m_Task==kStepGrow) || (m_Task==kStepFade) ) {
+    // if this is the last step of accumulation
+    if (((m_CurrStep-m_StartStep)%(m_NumEquilSteps+m_NumAccumSteps))==0) {
+      // then this is the last time step of this mcti step
       RetVal = kTrue;
     }
   }
@@ -253,14 +400,15 @@ Bool_t ALambdaControl::IsTimeToPrint_dU_dLambda() {
   // if printing is required
   if (m_NumPrintSteps > 0) {
     // if number-of-steps from StartStep is an even multiple of NumPrintSteps
+    // or if it's the last step of this pmf or mcti block,
     // then it might be time to print du/dLambda
-    if ( ((m_CurrStep-m_StartStep) % m_NumPrintSteps) == 0) {
+    if ( IsLastStep() || (((m_CurrStep-m_StartStep)%m_NumPrintSteps)==0) ) {
       // for mcti blocks
       if ((m_Task==kStepUp)   || (m_Task==kStepDown) ||
           (m_Task==kStepGrow) || (m_Task==kStepFade)) {
         // it's only time to print if we're no longer equilibrating
-        if ( ((m_CurrStep-m_StartStep) % (m_NumEquilSteps+m_NumAccumSteps))
-             >= m_NumEquilSteps) {
+        if ( ((m_CurrStep-m_StartStep-1) % (m_NumEquilSteps+m_NumAccumSteps))
+             > m_NumEquilSteps) {
           RetVal = kTrue;
         }
       }
@@ -274,23 +422,44 @@ Bool_t ALambdaControl::IsTimeToPrint_dU_dLambda() {
 }
 
 
+void ALambdaControl::PrintLambdaHeader(double dT) {
+//----------------------------------------------------------------------------
+// ASSUMING that this object is currently active, write out the header for
+// a new lambda control object
+//----------------------------------------------------------------------------
+  double Time;
+  
+  // calculate current time in femto-seconds
+  Time = (double)m_CurrStep * dT;
+
+iout << "FreeEnergy: ";
+#if !defined(_VERBOSE_PMF)
+  iout << "nstep  time(ps)  ";
+  iout << "    task  lambdaKf  lambdaRef     delta-G  #steps  n*{value  target |}" << endl;
+  iout << "FreeEnergy: -----  --------  ";
+  iout << "--------  --------  ---------  ----------  ------  -------------------" << endl;
+  iout << endi;
+#endif
+}
+
+
 void ALambdaControl::PrintHeader(double dT) {
 //----------------------------------------------------------------------------
 // ASSUMING that this object is currently active, write out the current time
 //----------------------------------------------------------------------------
   double  Time;
-  char    Str[100];
+  char    Str[100], Str2[100];
 
+  // calculate current time in femto-seconds
+  Time = (double)m_CurrStep * dT;
+
+#if defined(_VERBOSE_PMF)
   iout << "FreeEnergy: " << endl << endi;
   iout << "FreeEnergy: ";
   iout << "Time Step = "  << m_CurrStep            <<    ",  ";
   iout << "Time = ";
-  // calculate current time in femto-seconds
-  Time = (double)m_CurrStep * dT;
-  // write out time in either fs, ps, or ns
-  if      (Time < 1000)    {iout << Time           << " fs,  ";}
-  else if (Time < 1000000) {iout << Time/1000.0    << " ps,  ";}
-  else                     {iout << Time/1000000.0 << " ns,  ";}
+  // write out time in ps
+  iout << Time/1000.0     << " ps,  ";
   iout << "Lambda_Kf = "  << m_LambdaKf            <<    ",  ";
   iout << "Lambda_Ref = " << m_LambdaRef           <<     "  ";
   GetTaskStr(Str);
@@ -300,6 +469,19 @@ void ALambdaControl::PrintHeader(double dT) {
   iout << "------------------------------------------------";
   iout << "-------------------";
   iout << endl << endi;
+#else
+  sprintf(Str, "%5d", m_CurrStep);
+  // write out time in ps
+  sprintf(Str2, "%8.3f", Time/1000.0);
+  iout << "FreeEnergy: ";
+  iout << Str << "  " << Str2 << "  ";
+  GetPaddedTaskStr(Str);
+  iout << Str << "  ";
+  sprintf(Str, "%8.5f", m_LambdaKf);
+  iout << Str << "  ";
+  sprintf(Str, "%9.5f", m_LambdaRef);
+  iout << Str << "  ";
+#endif
 }
 
 
@@ -339,12 +521,12 @@ double ALambdaControl::GetLambdaKf() {
         m_LambdaKf = 1.0-(CurrStep-StartStep)/NumSteps;
         break;
       case kStepGrow:
-        N = (int) ( (CurrStep-StartStep) / (NumEquilSteps+NumAccumSteps) );
-        m_LambdaKf = N/NumRepeats;
+        N = (int) ( (CurrStep-StartStep-1) / (NumEquilSteps+NumAccumSteps) );
+        m_LambdaKf = (N+1)/NumRepeats;
         break;
       case kStepFade:
-        N = (int) ( (CurrStep-StartStep) / (NumEquilSteps+NumAccumSteps) );
-        m_LambdaKf = 1.0 - N/NumRepeats;
+        N = (int) ( (CurrStep-StartStep-1) / (NumEquilSteps+NumAccumSteps) );
+        m_LambdaKf = 1.0 - (N+1)/NumRepeats;
         break;
       case kNoGrow:
         break;              // return prior setting of m_LambdaKf
@@ -383,12 +565,12 @@ double ALambdaControl::GetLambdaRef() {
         m_LambdaRef = 1.0-(CurrStep-StartStep)/NumSteps;
         break;
       case kStepUp:
-        N = (int) ( (CurrStep-StartStep) / (NumEquilSteps+NumAccumSteps) );
-        m_LambdaRef = N/NumRepeats;
+        N = (int) ( (CurrStep-StartStep-1) / (NumEquilSteps+NumAccumSteps) );
+        m_LambdaRef = (N+1)/NumRepeats;
         break;
       case kStepDown:
-        N = (int) ( (CurrStep-StartStep) / (NumEquilSteps+NumAccumSteps) );
-        m_LambdaRef = 1.0 - N/NumRepeats;
+        N = (int) ( (CurrStep-StartStep-1) / (NumEquilSteps+NumAccumSteps) );
+        m_LambdaRef = 1.0 - (N+1)/NumRepeats;
       default: 
         break;             // return prior setting of m_LambdaRef
     }
@@ -410,6 +592,11 @@ double ALambdaControl::GetLambdaRef() {
  * REVISION HISTORY:
  *
  * $Log: FreeEnergyLambda.C,v $
+ * Revision 1.5  1998/09/20 16:34:58  hurwitz
+ * make sure Lambda control objects start and stop on just the right step.
+ * made output shorter and more readable (compile with _VERBOSE_PMF for old output)
+ * : ----------------------------------------------------------------------
+ *
  * Revision 1.4  1998/06/09 22:00:17  hurwitz
  * small fix:  if Lambda is decreasing, dLambda is negative
  *

@@ -60,16 +60,30 @@ void ComputeFreeEnergy::update() {
     Sum_dU_dLambdas = m_RestraintManager.Sum_dU_dLambdas();
     m_LambdaManager.Accumulate(Sum_dU_dLambdas);
 
+    // for integrating all the MCTI averages
+    if (m_LambdaManager.IsEndOf_MCTI_Step()) {
+      m_LambdaManager.Integrate_MCTI();
+    }
+
     // stuff that's done when it's time to print
+    if (m_LambdaManager.IsFirstStep()) {
+      m_LambdaManager.PrintLambdaHeader(simParams->dt);
+    }
     if (m_LambdaManager.IsTimeToPrint()) {
       m_LambdaManager.PrintHeader(simParams->dt);
-      m_RestraintManager.PrintEnergyInfo();
-      m_RestraintManager.PrintRestraintInfo();
       if (m_LambdaManager.IsTimeToPrint_dU_dLambda()) {
         m_RestraintManager.Print_dU_dLambda_Info();
         if (m_RestraintManager.ThereIsAForcingRestraint()) {
           m_LambdaManager.Print_dU_dLambda_Summary(Sum_dU_dLambdas);
         }
+      }
+      else {
+        m_LambdaManager.PrintSomeSpaces();
+      }
+      m_RestraintManager.PrintEnergyInfo();
+      m_RestraintManager.PrintRestraintInfo();
+      if (m_LambdaManager.IsEndOf_MCTI()) {
+        m_LambdaManager.Print_MCTI_Integration();
       }
     }
   }
@@ -239,12 +253,17 @@ void ComputeFreeEnergy::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.12 $	$Date: 1998/06/05 22:54:38 $
+ *	$Revision: 1.13 $	$Date: 1998/09/20 16:34:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFreeEnergy.C,v $
+ * Revision 1.13  1998/09/20 16:34:55  hurwitz
+ * make sure Lambda control objects start and stop on just the right step.
+ * made output shorter and more readable (compile with _VERBOSE_PMF for old output)
+ * : ----------------------------------------------------------------------
+ *
  * Revision 1.12  1998/06/05 22:54:38  hurwitz
  * accumulate dU/dLambda for free energy calculation
  *

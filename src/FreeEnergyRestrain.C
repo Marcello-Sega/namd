@@ -263,10 +263,30 @@ APosRestraint::APosRestraint() {
 
 void APosRestraint::PrintInfo() {
 //--------------------------------------------------------------------
-// print the position of this position restraint
+// print the position for this position restraint
 //--------------------------------------------------------------------
+  double  Distance;
+  char    Str[20];
+
+  Distance = GetDistance();
+  sprintf(Str, "%7.3f", Distance);
+
+#if defined(_VERBOSE_PMF)
   iout << "Position = ";
   m_pCOMs[0].Out();
+  iout << "  Target = ";
+  GetPosTarget().Out();
+  iout << "  Distance = ";
+  iout << Str;
+  iout << endl << endi;
+#else
+  m_pCOMs[0].Out();
+  iout << "  ";
+  GetPosTarget().Out();
+  iout << "  ";
+  iout << Str;
+  iout << " | ";
+#endif
 }
 
 
@@ -322,9 +342,26 @@ void ADistRestraint::PrintInfo() {
 //--------------------------------------------------------------------
 // print the distance for this distance restraint
 //--------------------------------------------------------------------
+  double  Distance;
+  char    Str1[20], Str2[20];
+
+  Distance = m_pCOMs[0].Dist(m_pCOMs[1]);
+  sprintf(Str1, "%7.3f", Distance);
+  Distance = GetDistTarget();
+  sprintf(Str2, "%7.3f", Distance);
+
+#if defined(_VERBOSE_PMF)
   iout << "Distance = ";
-  iout << m_pCOMs[0].Dist(m_pCOMs[1]);
+  iout << Str1;
+  iout << "  Target = ";
+  iout << Str2;
   iout << endl << endi;
+#else
+  iout << Str1;
+  iout << "  ";
+  iout << Str2;
+  iout << " | ";
+#endif
 }
 
 
@@ -391,11 +428,30 @@ AnAngleRestraint::AnAngleRestraint() {
 
 void AnAngleRestraint::PrintInfo() {
 //--------------------------------------------------------------------
-// print the position of this position restraint
+// print the angle for this angle restraint
 //--------------------------------------------------------------------
+  double  Angle;
+  char    Str1[20], Str2[20];
+
+  Angle = GetAngle(m_pCOMs[0], m_pCOMs[1], m_pCOMs[2]) * (180/kPi);
+  sprintf(Str1, "%8.3f", Angle);
+  Angle = GetAngleTarget() * (180/kPi);
+  sprintf(Str2, "%8.3f", Angle);
+
+#if defined(_VERBOSE_PMF)
   iout << "Angle = ";
-  iout << GetAngle(m_pCOMs[0], m_pCOMs[1], m_pCOMs[2]) * (180/kPi);
-  iout << " degrees" << endl << endi;
+  iout << Str1;
+  iout << " degrees";
+  iout << "  Target = ";
+  iout << Str2;
+  iout << " degrees";
+  iout << endl << endi;
+#else
+  iout << Str1;
+  iout << "  ";
+  iout << Str2;
+  iout << " | ";
+#endif
 }
 
 
@@ -488,11 +544,41 @@ ADiheRestraint::ADiheRestraint() {
 
 void ADiheRestraint::PrintInfo() {
 //--------------------------------------------------------------------
-// print the position of this position restraint
+// print the dihedral angle for this dihedral restraint
 //--------------------------------------------------------------------
+  double  Dihedral;
+  char    Str1[20], Str2[20], Str3[20];
+
+  Dihedral = GetDihe(m_pCOMs[0], m_pCOMs[1], m_pCOMs[2], m_pCOMs[3]) * (180/kPi);
+  sprintf(Str1, "%8.3f", Dihedral);
+  Dihedral = GetDiheTarget1() * (180/kPi);
+  sprintf(Str2, "%8.3f", Dihedral);
+  Dihedral = GetDiheTarget2() * (180/kPi);
+  sprintf(Str3, "%8.3f", Dihedral);
+
+#if defined(_VERBOSE_PMF)
   iout << "Dihedral = ";
-  iout << GetDihe(m_pCOMs[0], m_pCOMs[1], m_pCOMs[2], m_pCOMs[3]) * (180/kPi);
-  iout << " degrees" << endl << endi;
+  iout << Str1;
+  iout << " degrees";
+  iout << "  Target = ";
+  iout << Str2;
+  iout << " degrees";
+  if (TwoTargets()) {
+    iout << " to ";
+    iout << Str3;
+    iout << " degrees";
+  }
+  iout << endl << endi;
+#else
+  iout << Str1;
+  iout << "  ";
+  iout << Str2;
+  if (TwoTargets()) {
+    iout << ", ";
+    iout << Str3;
+  }
+  iout << " | ";
+#endif
 }
 
 
@@ -1018,6 +1104,11 @@ double AForcingDiheRestraint::Get_dU_dLambda() {
  * REVISION HISTORY:
  *
  * $Log: FreeEnergyRestrain.C,v $
+ * Revision 1.5  1998/09/20 16:35:00  hurwitz
+ * make sure Lambda control objects start and stop on just the right step.
+ * made output shorter and more readable (compile with _VERBOSE_PMF for old output)
+ * : ----------------------------------------------------------------------
+ *
  * Revision 1.4  1998/06/03 20:09:53  hurwitz
  * changed sign of dihedral angle so it conforms to convention
  *

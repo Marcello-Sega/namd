@@ -139,11 +139,13 @@ void ARestraintManager::PrintEnergyInfo() {
 //---------------------------------------------------------------------------
 // for a restraint, print restraint type and Energy.
 //---------------------------------------------------------------------------
+#if defined(_VERBOSE_PMF)
   for (int i=0; i<m_NumRestraints; i++) {
     PrintPreInfo(i);
     iout << "Energy = ";
     iout << m_ppRestraints[i]->GetEnergy() << endl << endi;
   }
+#endif
 }
 
 
@@ -152,9 +154,14 @@ void ARestraintManager::PrintRestraintInfo() {
 // for a restraint, print its position, distance, angle, or dihedral angle.
 //---------------------------------------------------------------------------
   for (int i=0; i<m_NumRestraints; i++) {
+#if defined(_VERBOSE_PMF)
     PrintPreInfo(i);
+#endif
     m_ppRestraints[i]->PrintInfo();
   }
+#if !defined(_VERBOSE_PMF)
+  iout << endl << endi;
+#endif
 }
 
 
@@ -162,6 +169,7 @@ void ARestraintManager::Print_dU_dLambda_Info() {
 //---------------------------------------------------------------------------
 // if restraint is a forcing restraint, print dU/dLambda.
 //---------------------------------------------------------------------------
+#if defined(_VERBOSE_PMF)
   for (int i=0; i<m_NumRestraints; i++) {
     if (m_ppRestraints[i]->IsForcing()) {
       PrintPreInfo(i);
@@ -169,6 +177,7 @@ void ARestraintManager::Print_dU_dLambda_Info() {
       iout << m_ppRestraints[i]->Get_dU_dLambda() << endl << endi;
     }
   }
+#endif
 }
 
 
@@ -196,6 +205,11 @@ void ARestraintManager::PrintPreInfo(int Index) {
  * REVISION HISTORY:
  *
  * $Log: FreeEnergyRMgr.C,v $
+ * Revision 1.3  1998/09/20 16:34:59  hurwitz
+ * make sure Lambda control objects start and stop on just the right step.
+ * made output shorter and more readable (compile with _VERBOSE_PMF for old output)
+ * : ----------------------------------------------------------------------
+ *
  * Revision 1.2  1998/06/05 22:54:41  hurwitz
  * accumulate dU/dLambda for free energy calculation
  *

@@ -19,6 +19,7 @@ private:
   task_t  m_Task;             // "
   double  m_Sum_dU_dLambda;   // for accumulating dU/dLambda
   int     m_Num_dU_dLambda;   // number averaged
+  double  m_MCTI_Integration; // for accumulating <dU/dLambda> * dLambda
 
   static int  m_CurrStep;     // for all pmf & mcti blocks
 
@@ -29,13 +30,20 @@ public:
   double  GetLambdaRef();
   Bool_t  IsActive();
   Bool_t  IsTimeToPrint();
+  Bool_t  IsFirstStep();
   Bool_t  IsTimeToPrint_dU_dLambda();
   Bool_t  IsTimeToClearAccumulator();
+  Bool_t  IsEndOf_MCTI_Step();
+  Bool_t  IsEndOf_MCTI();
   void    PrintHeader(double dT);
+  void    PrintLambdaHeader(double dT);
   void    IncCurrStep() {m_CurrStep++;}
   ALambdaControl&  operator= (ALambdaControl& PmfBlock);
   void    GetTaskStr(char* Str);
+  void    GetPaddedTaskStr(char* Str);
+  void    Integrate_MCTI();
   void    Accumulate(double dU_dLambda);
+  double  GetIntegration();
   double  GetAccumulation();
   void    ZeroAccumulator() {
     m_Sum_dU_dLambda = 0.0;
@@ -43,6 +51,8 @@ public:
   }
 
   int    GetNumSteps();
+  int    GetNumStepsSoFar()            {return(m_CurrStep-m_StartStep);}
+  int    GetNumAccumStepsSoFar();
   int    GetNum_dU_dLambda()           {return(m_Num_dU_dLambda);}
   void   SetNumSteps(int Steps)        {m_NumSteps=Steps;}
   void   SetNumEquilSteps(int Steps)   {m_NumEquilSteps=Steps;}
@@ -57,7 +67,8 @@ public:
   task_t GetTask()                     {return(m_Task);}
 
 private:
-  int  GetLastStep();
+  Bool_t IsLastStep();
+  int    GetLastStep();
 };
 
 #endif
@@ -72,6 +83,11 @@ private:
  * REVISION HISTORY:
  *
  * $Log: FreeEnergyLambda.h,v $
+ * Revision 1.4  1998/09/20 16:34:58  hurwitz
+ * make sure Lambda control objects start and stop on just the right step.
+ * made output shorter and more readable (compile with _VERBOSE_PMF for old output)
+ * : ----------------------------------------------------------------------
+ *
  * Revision 1.3  1998/06/05 22:54:41  hurwitz
  * accumulate dU/dLambda for free energy calculation
  *

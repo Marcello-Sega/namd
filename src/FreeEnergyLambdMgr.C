@@ -38,6 +38,15 @@ int  ALambdaManager::GetNum_dU_dLambda() {
 }
 
 
+void ALambdaManager::Integrate_MCTI() {
+//------------------------------------------------------------------------
+// integrate <dU/dLambda> for MCTI
+//------------------------------------------------------------------------
+  ASSERT((*this)[m_ActiveIndex].IsActive());
+  (*this)[m_ActiveIndex].Integrate_MCTI();
+}
+
+
 void ALambdaManager::Accumulate(double dU_dLambda) {
 //------------------------------------------------------------------------
 // add dU_dLambda to the active accumulator (in one of the lambda objects)
@@ -56,12 +65,31 @@ double ALambdaManager::GetAccumulation() {
 }
 
 
+double ALambdaManager::GetIntegration() {
+//------------------------------------------------------------------------
+// get accumulation of <dU_dLambda> * dLambda from active lambda object.
+//------------------------------------------------------------------------
+  ASSERT((*this)[m_ActiveIndex].IsActive());
+  return((*this)[m_ActiveIndex].GetIntegration());
+}
+
+
 void ALambdaManager::ZeroAccumulator() {
 //------------------------------------------------------------------------
 // zero accumulation of dU_dLambda in the active lambda object.
 //------------------------------------------------------------------------
   ASSERT((*this)[m_ActiveIndex].IsActive());
   (*this)[m_ActiveIndex].ZeroAccumulator();
+}
+
+
+Bool_t ALambdaManager::IsFirstStep() {
+//------------------------------------------------------------------------
+// ASSUMING that the m_ActiveIndex'th LambdaControl is active,
+// decide if it's time to print restraint information
+//------------------------------------------------------------------------
+  ASSERT((*this)[m_ActiveIndex].IsActive());
+  return((*this)[m_ActiveIndex].IsFirstStep());
 }
 
 
@@ -95,6 +123,35 @@ Bool_t ALambdaManager::IsTimeToClearAccumulator() {
 }
 
 
+Bool_t ALambdaManager::IsEndOf_MCTI_Step() {
+//------------------------------------------------------------------------
+// ASSUMING that the m_ActiveIndex'th LambdaControl is active,
+// decide if this is the last time step of an MCTI step
+//------------------------------------------------------------------------
+  ASSERT((*this)[m_ActiveIndex].IsActive());
+  return((*this)[m_ActiveIndex].IsEndOf_MCTI_Step());
+}
+
+
+Bool_t ALambdaManager::IsEndOf_MCTI() {
+//------------------------------------------------------------------------
+// ASSUMING that the m_ActiveIndex'th LambdaControl is active,
+// decide if this is the last time step of an MCTI block
+//------------------------------------------------------------------------
+  ASSERT((*this)[m_ActiveIndex].IsActive());
+  return((*this)[m_ActiveIndex].IsEndOf_MCTI());
+}
+
+
+void ALambdaManager::PrintLambdaHeader(double dT) {
+//------------------------------------------------------------------------
+// print header for a new lambda control object
+//------------------------------------------------------------------------
+  ASSERT((*this)[m_ActiveIndex].IsActive());
+  (*this)[m_ActiveIndex].PrintLambdaHeader(dT);
+}
+
+
 void ALambdaManager::PrintHeader(double dT) {
 //------------------------------------------------------------------------
 // print information about current time step
@@ -104,11 +161,42 @@ void ALambdaManager::PrintHeader(double dT) {
 }
 
 
+int ALambdaManager::GetNumStepsSoFar() {
+//------------------------------------------------------------------------
+// return the number of steps taken in the active LambdaControl block
+//------------------------------------------------------------------------
+  ASSERT((*this)[m_ActiveIndex].IsActive());
+  return((*this)[m_ActiveIndex].GetNumStepsSoFar());
+}
+
+
+int ALambdaManager::GetNumAccumStepsSoFar() {
+//------------------------------------------------------------------------
+// return the total number of steps dU/dLambda has been accumulated
+//------------------------------------------------------------------------
+  ASSERT((*this)[m_ActiveIndex].IsActive());
+  return((*this)[m_ActiveIndex].GetNumAccumStepsSoFar());
+}
+
+
+void ALambdaManager::PrintSomeSpaces() {
+//------------------------------------------------------------------------
+// some stuff to make the output look nice
+//------------------------------------------------------------------------
+#if !defined(_VERBOSE_PMF)
+  iout << "                    ";
+#endif
+}
+
+
 void ALambdaManager::Print_dU_dLambda_Summary(double Sum_dU_dLambdas) {
 //------------------------------------------------------------------------
 // print sum of dU/dLambda's for current time-step and
 // the accumulation of the above.
 //------------------------------------------------------------------------
+  char  Str[100];
+
+#if defined(_VERBOSE_PMF)
   iout << "FreeEnergy: ";
   iout << "For all forcing restraints, dU/dLambda  = ";
   iout << Sum_dU_dLambdas << endl << endi;
@@ -116,6 +204,23 @@ void ALambdaManager::Print_dU_dLambda_Summary(double Sum_dU_dLambdas) {
   iout << "For all forcing restraints, Free Energy = ";
   iout << GetAccumulation();
   iout << " for " << GetNum_dU_dLambda() << " steps" << endl << endi;
+#else
+  sprintf(Str, "%10.2e", GetAccumulation());
+  iout << Str << "  ";
+  sprintf(Str, "%6d", GetNum_dU_dLambda());
+  iout << Str << "  ";
+#endif
+}
+
+
+void ALambdaManager::Print_MCTI_Integration() {
+//------------------------------------------------------------------------
+// print the integral of: <dU/dLambda> * dLambda
+//------------------------------------------------------------------------
+  iout << "FreeEnergy: ";
+  iout << "For MCTI, Free Energy Integral = ";
+  iout << GetIntegration();
+  iout << " for " << GetNumAccumStepsSoFar() << " steps" << endl << endi;
 }
 
 
@@ -221,6 +326,11 @@ int ALambdaManager::GetTotalNumSteps() {
  * REVISION HISTORY:
  *
  * $Log: FreeEnergyLambdMgr.C,v $
+ * Revision 1.4  1998/09/20 16:34:56  hurwitz
+ * make sure Lambda control objects start and stop on just the right step.
+ * made output shorter and more readable (compile with _VERBOSE_PMF for old output)
+ * : ----------------------------------------------------------------------
+ *
  * Revision 1.3  1998/06/05 22:54:39  hurwitz
  * accumulate dU/dLambda for free energy calculation
  *

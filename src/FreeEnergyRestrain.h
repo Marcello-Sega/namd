@@ -103,6 +103,10 @@ public:
 protected:
   double  GetE(AVector RefPos, double LambdaKf=1.0);
   AVector GetGrad(int WhichGroup, AVector RefPos, double LambdaKf=1.0);
+public:
+  // pure virtual functions
+  virtual AVector GetPosTarget() = 0;
+  virtual double  GetDistance() = 0;
 };
 
 class ADistRestraint : public ARestraint {
@@ -115,6 +119,8 @@ public:
 protected:
   double  GetE(double RefDist, double LambdaKf=1.0);
   AVector GetGrad(int WhichGroup, double RefDist, double LambdaKf=1.0);
+public:
+  virtual double GetDistTarget() = 0;
 };
 
 class AnAngleRestraint : public ARestraint {
@@ -127,6 +133,8 @@ public:
 protected:
   double  GetE(double RefAngle, double LambdaKf=1.0);
   AVector GetGrad(int WhichGroup, double RefAngle, double LambdaKf=1.0);
+public:
+  virtual double GetAngleTarget() = 0;
 };
 
 class ADiheRestraint : public ARestraint {
@@ -142,6 +150,10 @@ protected:
   AVector gradU(AVector& P1P2P3, AVector& P4P5P6,
                 AVector& dP1,    AVector& dP2,    AVector& dP3,
                 AVector& dP4,    AVector& dP5,    AVector& dP6);
+public:
+  virtual Bool_t TwoTargets() = 0;
+  virtual double GetDiheTarget1() = 0;
+  virtual double GetDiheTarget2() = 0;
 };
 
 
@@ -162,6 +174,8 @@ public:
   void    GetStr(char* Str) {
     strcpy(Str, "Fixed   Position Restraint");
   }
+  AVector GetPosTarget()  {return(m_RefPos);}
+  double  GetDistance()   {return(m_RefPos.Dist(m_pCOMs[0]));}
 };
 
 class ABoundPosRestraint : public APosRestraint {
@@ -184,6 +198,8 @@ public:
   void    GetStr(char* Str) {
     strcpy(Str, "Bound   Position Restraint");
   }
+  AVector GetPosTarget()  {return(m_RefPos);}
+  double  GetDistance()   {return(m_RefPos.Dist(m_pCOMs[0]));}
 };
 
 class AForcingPosRestraint : public APosRestraint {
@@ -205,6 +221,13 @@ public:
   void    GetStr(char* Str) {
     strcpy(Str, "Forcing Position Restraint");
   }
+  AVector GetPosTarget() {
+    return(m_StopPos*m_LambdaRef + m_StartPos*(1.0-m_LambdaRef));
+  }
+  double  GetDistance() {
+    AVector RefPos = m_StopPos*m_LambdaRef + m_StartPos*(1.0-m_LambdaRef);
+    return(RefPos.Dist(m_pCOMs[0]));
+  }
 };
 
 
@@ -225,6 +248,7 @@ public:
   void    GetStr(char* Str) {
     strcpy(Str, "Fixed   Distance Restraint");
   }
+  double  GetDistTarget()  {return(m_RefDist);}
 };
 
 class ABoundDistRestraint : public ADistRestraint {
@@ -244,6 +268,7 @@ public:
   void    GetStr(char* Str) {
     strcpy(Str, "Bound   Distance Restraint");
   }
+  double  GetDistTarget()  {return(m_RefDist);}
 };
 
 class AForcingDistRestraint : public ADistRestraint {
@@ -265,6 +290,9 @@ public:
   void    GetStr(char* Str) {
     strcpy(Str, "Forcing Distance Restraint");
   }
+  double  GetDistTarget() {
+    return(m_StopDist*m_LambdaRef + m_StartDist*(1.0-m_LambdaRef));
+  }
 };
 
 
@@ -285,6 +313,7 @@ public:
   void    GetStr(char* Str) {
     strcpy(Str, "Fixed   Angle    Restraint");
   }
+  double  GetAngleTarget()  {return(m_RefAngle);}
 };
 
 class ABoundAngleRestraint : public AnAngleRestraint {
@@ -304,6 +333,7 @@ public:
   void    GetStr(char* Str) {
     strcpy(Str, "Bound   Angle    Restraint");
   }
+  double  GetAngleTarget()  {return(m_RefAngle);}
 };
 
 class AForcingAngleRestraint : public AnAngleRestraint {
@@ -325,6 +355,9 @@ public:
   void    GetStr(char* Str) {
     strcpy(Str, "Forcing Angle    Restraint");
   }
+  double  GetAngleTarget() {
+    return(m_StopAngle*m_LambdaRef + m_StartAngle*(1.0-m_LambdaRef));
+  }
 };
 
 
@@ -345,6 +378,9 @@ public:
   void    GetStr(char* Str) {
     strcpy(Str, "Fixed   Dihedral Restraint");
   }
+  Bool_t  TwoTargets()      {return(kFalse);}
+  double  GetDiheTarget1()  {return(m_RefAngle);}
+  double  GetDiheTarget2()  {return(0);}
 };
 
 class ABoundDiheRestraint : public ADiheRestraint {
@@ -367,6 +403,9 @@ public:
   void    GetStr(char* Str) {
     strcpy(Str, "Bound   Dihedral Restraint");
   }
+  Bool_t  TwoTargets()      {return(kTrue);}
+  double  GetDiheTarget1()  {return(m_LowerAngle);}
+  double  GetDiheTarget2()  {return(m_UpperAngle);}
 };
 
 class AForcingDiheRestraint : public ADiheRestraint {
@@ -388,6 +427,29 @@ public:
   void    GetStr(char* Str) {
     strcpy(Str, "Forcing Dihedral Restraint");
   }
+  Bool_t  TwoTargets()     {return(kFalse);}
+  double  GetDiheTarget1() {
+    return(m_StopAngle*m_LambdaRef + m_StartAngle*(1.0-m_LambdaRef));
+  }
+  double  GetDiheTarget2() {return(0);}
 };
 
 #endif
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker $		$State $
+ *	$Revision $	$Date $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: FreeEnergyRestrain.h,v $
+ * Revision 1.3  1998/09/20 16:35:01  hurwitz
+ * make sure Lambda control objects start and stop on just the right step.
+ * made output shorter and more readable (compile with _VERBOSE_PMF for old output)
+ * : ----------------------------------------------------------------------
+ *
+ *
+ ***************************************************************************/

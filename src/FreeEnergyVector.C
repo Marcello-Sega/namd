@@ -262,7 +262,12 @@ void AVector::Out() {
 //-------------------------------------------------------------------
 // write it
 //-------------------------------------------------------------------
-  iout << "(" << m_x << "," << m_y << "," << m_z << ")" << endl << endi;
+  char  Str1[20], Str2[20], Str3[20];
+
+  sprintf(Str1, "%8.3f", m_x);
+  sprintf(Str2, "%8.3f", m_y);
+  sprintf(Str3, "%8.3f", m_z);
+  iout << "(" << Str1 << "," << Str2 << "," << Str3 << ")";
 }
 
 
@@ -273,16 +278,16 @@ void AVector::Output() {
   char  Word1[20], Word2[20], Word3[20];
 
   if ( (fabs(m_x)<99999) && (fabs(m_y)<99999) && (fabs(m_z)<99999) ) {
-    sprintf(Word1, "%14.7f", m_x);
-    sprintf(Word2, "%14.7f", m_y);
-    sprintf(Word3, "%14.7f", m_z);
+    sprintf(Word1, "%10.3f", m_x);
+    sprintf(Word2, "%10.3f", m_y);
+    sprintf(Word3, "%10.3f", m_z);
   }
   else {
-    sprintf(Word1, "%14.5e", m_x);
-    sprintf(Word2, "%14.5e", m_y);
-    sprintf(Word3, "%14.5e", m_z);
+    sprintf(Word1, "%10.2e", m_x);
+    sprintf(Word2, "%10.2e", m_y);
+    sprintf(Word3, "%10.2e", m_z);
   }
-  cout << "( " << Word1 << " " << Word2 << " " << Word3 << " )" << endl;
+  iout << "( " << Word1 << " " << Word2 << " " << Word3 << " )";
 }
 
 
@@ -296,3 +301,22 @@ AVector& AVector::Scale(AVector& SmallVec, AVector& BigVec) {
   m_z = SmallVec.m_z + (BigVec.m_z - SmallVec.m_z) * m_z;
   return(*this);
 }
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker $		$State $
+ *	$Revision $	$Date $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: FreeEnergyVector.C,v $
+ * Revision 1.2  1998/09/20 16:35:01  hurwitz
+ * make sure Lambda control objects start and stop on just the right step.
+ * made output shorter and more readable (compile with _VERBOSE_PMF for old output)
+ * : ----------------------------------------------------------------------
+ *
+ *
+ ***************************************************************************/
