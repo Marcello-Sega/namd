@@ -16,19 +16,9 @@
 
 #include "NamdTypes.h"
 
-class ComputeNonbondedSelf;
-class ComputeNonbondedPair;
-
 class ComputeNonbondedUtil {
 
 public:
-
-protected:
-
-private:
-
-  friend ComputeNonbondedSelf;
-  friend ComputeNonbondedPair;
 
   static void select(void);
   static void (*calcPair)(Position*[2],Force*[2],AtomProperties*[2],int[2]);
@@ -87,12 +77,15 @@ private:
  *
  *	$RCSfile: ComputeNonbondedUtil.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/11/21 00:00:40 $
+ *	$Revision: 1.4 $	$Date: 1996/11/21 01:00:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.h,v $
+ * Revision 1.4  1996/11/21 01:00:15  jim
+ * made methods public, got rid of friends
+ *
  * Revision 1.3  1996/11/21 00:00:40  jim
  * added select(), calcPair, and calcSelf
  *
