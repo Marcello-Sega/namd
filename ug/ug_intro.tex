@@ -11,7 +11,7 @@
 %
 %       $RCSfile: ug_intro.tex,v $
 %       $Author: jim $        $Locker:  $                $State: Exp $
-%       $Revision: 1.5 $      $Date: 1999/02/03 20:44:59 $
+%       $Revision: 1.6 $      $Date: 1999/02/23 02:01:13 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -21,6 +21,9 @@
 % REVISION HISTORY:
 %
 % $Log: ug_intro.tex,v $
+% Revision 1.6  1999/02/23 02:01:13  jim
+% Small tweaks.
+%
 % Revision 1.5  1999/02/03 20:44:59  jim
 % Fixed several configuration options.
 %
@@ -107,6 +110,8 @@ New features in \NAMD\ \NAMDVER\ include periodic boundary conditions, particle-
 The new multiple timestepping parameter \verb!nonbondedFreq! allows nonbonded interactions to be evaluated less frequently, leaving only bonded interactions to be calculated every timestep.
 The new spatial partitioning parameters \verb!splitPatch! and \verb!hgroupCutoff! have been added due to a change from pairlists to group-based distance checking.
 The Langevin dynamics and temperature coupling algorithms has been altered to be more suitable for temperature control with small damping coefficients.
+Finally, \NAMD\ \NAMDVER\ can now read CHARMM as well as X-PLOR formatted 
+structure and parameter files.
 
 Several options have been removed in this release.
 Multiple timestepping is currently limited to impulse methods.
@@ -172,7 +177,7 @@ It is also possible to employ an intermediate timestep for the short-range non-b
 
 \item{\bf Input and Output Compatibility}\\
 The input and output file formats used by \NAMD\ are identical to those
-used by X-PLOR.  Input formats include coordinate files in PDB format
+used by CHARMM and X-PLOR.  Input formats include coordinate files in PDB format
 \mycite{(Bernstein \ETAL, 1977)}{BERN77}, structure files in PSF format, 
 and energy parameter files in the same format used by ~CHARMM and X-PLOR.
 Output formats include PDB coordinate files and binary DCD trajectory files.

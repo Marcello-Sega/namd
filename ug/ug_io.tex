@@ -7,11 +7,9 @@ especially the packages X-PLOR
 and CHARMM \mycite{(Brooks \ETAL, 1983)}{BROO83}.  
 To achieve this compatibility,
 the set of input files which \NAMD\ uses to define 
-a molecular system are identical to the input files used by X-PLOR.  
-These input files are very similar to those used by CHARMM.  
+a molecular system are identical to the input files used by X-PLOR and CHARMM.  
 Thus it is trivial to move an existing simulation from
-X-PLOR to \NAMD\ and requires minimal effort to convert 
-a simulation from CHARMM to \NAMD.  
+X-PLOR or CHARMM to \NAMD\.
 A description of these molecular system definition 
 files is given in Section \ref{section:formats}.  
 \prettypar
@@ -37,10 +35,10 @@ A full description of this file format can be obtained via anonymous FTP from
 
 \subsubsection{X-PLOR format PSF files}
 
-\NAMD\ uses the same protein structure files that X-PLOR does.
+\NAMD\ uses the same protein structure files that X-PLOR and CHARMM do.
 At this time, the
-easiest way to generate these files is using X-PLOR, although it is possible
-to build them by hand.
+easiest way to generate these files is using X-PLOR or CHARMM,
+although it is possible to build them by hand.
 
 \subsubsection{CHARMM19 and CHARMM22 parameter files}
 
@@ -81,7 +79,7 @@ Only one value may be specified.}
 \NAMDCONF{structure}{PSF file}{UNIX filename}
 {\label{param:structure}
 %% This parameter is {\it required\/} for every simulation.
-The X-PLOR style PSF file describing the molecular 
+The X-PLOR or CHARMM style PSF file describing the molecular 
 system to be simulated.  
 Only one value may be specified.}
 
