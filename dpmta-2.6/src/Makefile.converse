@@ -10,10 +10,13 @@
 # for compilation on generic workstation networks should use the default
 # makefile
 #
-# RCS Info: $Id: Makefile.converse,v 1.3 1997/09/29 23:58:33 jim Exp $
+# RCS Info: $Id: Makefile.converse,v 1.4 1997/12/17 15:22:28 milind Exp $
 #
 # Revision History:
 # $Log: Makefile.converse,v $
+# Revision 1.4  1997/12/17 15:22:28  milind
+# Fixed a makefile bug to take care of PVM_ARCH.
+#
 # Revision 1.3  1997/09/29 23:58:33  jim
 # Incorporated changes from version 2.6.1 of DPMTA.
 #   - fixes for bad handling of empty/invalid multipoles when
@@ -120,7 +123,7 @@ LDIR =  -L. -L../mpole -L$(PVM_LDIR)
 #
 ################################################################
 
-CFLAGS = -O -D$(PVM_ARCH) -DEMBEDDED $(DFLAGS) $(IDIR)
+CFLAGS = -D$(PVM_ARCH) -DEMBEDDED $(DFLAGS) $(IDIR)
 LDLIBS= -ldpmta2 -lmpole -lpvm3 -lm $(OSLIBS)
 LDFLAGS = $(LDIR)
 
