@@ -33,11 +33,11 @@ template <class Owner, class Data> class OwnerBox {
       if ( ! closeCount ) close();
     }
   
-    void close(void);
+    inline void close(void);
 
-    Box<Owner,Data> *checkOut(void);
+    inline Box<Owner,Data> *checkOut(void);
 
-    void checkIn(Box<Owner,Data> * box);
+    inline void checkIn(Box<Owner,Data> * box);
   
     int isOpen() {
       return (closeCount != numberUsers || openCount != numberUsers);
@@ -51,7 +51,7 @@ template <class Owner, class Data> class OwnerBox {
 };
 
 template <class Owner, class Data>
-Box<Owner,Data> *OwnerBox<Owner,Data>::checkOut(void) {
+inline Box<Owner,Data> *OwnerBox<Owner,Data>::checkOut(void) {
   if (closeCount != numberUsers || openCount != numberUsers) {
     CkPrintf("OwnerBox::checkOut() Tried to checkOut while in use\n");
   }
@@ -60,7 +60,7 @@ Box<Owner,Data> *OwnerBox<Owner,Data>::checkOut(void) {
 }
 
 template <class Owner, class Data>
-void OwnerBox<Owner,Data>::checkIn(Box<Owner,Data> * box) {
+inline void OwnerBox<Owner,Data>::checkIn(Box<Owner,Data> * box) {
   delete box;
   if (closeCount != numberUsers || openCount != numberUsers) {
     CkPrintf("OwnerBox::checkIn() Tried to checkIn while in use\n");
@@ -74,7 +74,7 @@ void OwnerBox<Owner,Data>::checkIn(Box<Owner,Data> * box) {
 }
 
 template <class Owner, class Data>
-void OwnerBox<Owner,Data>::close(void) {
+inline void OwnerBox<Owner,Data>::close(void) {
   if (!closeCount && !openCount) {
     data = 0; closeCount = openCount = numberUsers;
     (owner->*callback)();
