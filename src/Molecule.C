@@ -4,6 +4,7 @@
 ***  All rights reserved.
 **/
 
+
 /*
    The class Molecule is used to hold all of the structural information
    for a simulation.  This information is read in from a .psf file and
@@ -28,6 +29,7 @@
 #include "SimParameters.h"
 #include "Hydrogen.h"
 #include "UniqueSetIter.h"
+
 
 #define MIN_DEBUG_LEVEL 3
 // #define DEBUGM
@@ -187,6 +189,8 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   rigidBondLengths=NULL;
   consIndexes=NULL;
   consParams=NULL;
+  stirIndexes=NULL;
+  stirParams=NULL;
   movDragIndexes=NULL;
   movDragParams=NULL;
   rotDragIndexes=NULL;
@@ -216,6 +220,7 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   numAcceptors=0;
   numExclusions=0;
   numConstraints=0;
+  numStirredAtoms=0;
   numMovDrag=0;
   numRotDrag=0;
   numConsTorque=0;
@@ -341,8 +346,13 @@ Molecule::~Molecule()
   if (fixedAtomFlags != NULL)
        delete [] fixedAtomFlags;
 
+  if (stirIndexes != NULL)
+    delete [] stirIndexes;
+
+  
   if (cluster != NULL)
        delete [] cluster;
+
 
   if (clusterSize != NULL)
        delete [] clusterSize;
@@ -1712,6 +1722,22 @@ void Molecule::send_Molecule(Communicate *com_obj)
          }
       }
       
+      //  Send the stirring information, if used
+      if (simParams->stirOn)
+      {
+	       //CkPrintf ("DEBUG: putting numStirredAtoms..\n");
+         msg->put(numStirredAtoms);
+	       //CkPrintf ("DEBUG: putting numAtoms,stirIndexes.. numAtoms=%d\n",numStirredAtoms);
+         msg->put(numAtoms, stirIndexes);
+	       //CkPrintf ("DEBUG: if numStirredAtoms..\n");
+         if (numStirredAtoms)
+         {
+           //CkPrintf ("DEBUG: big put, with (char*)stirParams\n");
+           msg->put(numStirredAtoms*sizeof(StirParams), (char*)stirParams);
+         }
+      }
+      
+      
       //  Send the moving drag information, if used
       if (simParams->movDragOn) {
          msg->put(numMovDrag);
@@ -1901,6 +1927,26 @@ void Molecule::receive_Molecule(MIStream *msg)
            consParams = new ConstraintParams[numConstraints];
       
            msg->get(numConstraints*sizeof(ConstraintParams), (char*)consParams);
+         }
+      }
+
+            
+      //  Get the stirring information, if stirring is  active
+      if (simParams->stirOn)
+      {
+         msg->get(numStirredAtoms);
+
+         delete [] stirIndexes;
+         stirIndexes = new int32[numAtoms];
+         
+         msg->get(numAtoms, stirIndexes);
+         
+         if (numStirredAtoms)
+         {
+           delete [] stirParams;
+           stirParams = new StirParams[numStirredAtoms];
+      
+           msg->get(numStirredAtoms*sizeof(StirParams), (char*)stirParams);
          }
       }
       
@@ -2913,7 +2959,7 @@ void Molecule::receive_Molecule(MIStream *msg)
        if (current_index == 0)
        {
     //  Constraints were turned on, but there weren't really any constrained
-    iout << iWARN << "NO CONSTRAINED ATOMS WERE FOUND, BUT CONSTRAINTS ARE ON . . . " << endi;
+    iout << iWARN << "NO CONSTRAINED ATOMS WERE FOUND, BUT CONSTRAINTS ARE ON . . .\n" << endi;
        }
        else
        {
@@ -4311,6 +4357,207 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
 
 }
     /*      END OF FUNCTION build_fixed_atoms    */
+
+
+
+
+/************************************************************************/
+/*                                                                      */
+/*      FUNCTION build_stirred_atoms                                    */
+/*                                                                      */
+/*   INPUTS:                                                            */
+/*  stirredfile - Value of stirFilename from config file    */
+/*  stirredcol - Value of stircol from config file (but B, O only */
+/*                    since we need X, Y, Z!     */
+/*  initial_pdb - PDB object that contains initial positions  */
+/*  cwd - Current working directory        */
+/*                  */
+/*  This function builds the list of fixed atoms.      */
+/*   It takes the name of the PDB file and the      */
+/*   column in the PDB file that contains the flags.  It then  */
+/*   builds the array fixedAtomFlags for use during the program.  */
+/*                                                                      */
+/************************************************************************/
+
+    void Molecule::build_stirred_atoms(StringList *stirredfile, 
+           StringList *stirredcol, 
+           PDB *initial_pdb,
+           char *cwd)
+       
+{
+       PDB *sPDB;      //  Pointer to PDB object to use
+       int bcol = 4;      //  Column that data is in
+       Real bval = 0;      //  b value from PDB file
+       int i;      //  Loop counter
+       int current_index=0;    //  Index into values used
+       char filename[129];    //  Filename
+       
+       //  Get the PDB object that contains the b values.  If
+       //  the user gave another file name, use it.  Otherwise, just use
+       //  the PDB file that has the initial coordinates. 
+       //  use posssible only if this is 'optional' in simulation parameters
+       // dangerous, since restarted simulations will be different
+       if (stirredfile == NULL)
+       {
+    sPDB = initial_pdb;
+    // dangerous, since restarted simulations will be different, so warn
+        iout << iWARN << "STIRRING USING INITIAL POSITION FILE FOR REFERENCE POSITIONS" << endi;
+       }
+       else
+       {
+    if (stirredfile->next != NULL)
+    {
+       NAMD_die("Multiple definitions of stirred atoms PDB file in configuration file");
+    }
+
+    if ( (cwd == NULL) || (stirredfile->data[0] == '/') )
+    {
+         strcpy(filename, stirredfile->data);
+    }
+    else
+    {
+         strcpy(filename, cwd);
+         strcat(filename, stirredfile->data);
+    }
+        
+    //CkPrintf ("DEBUG: the stir filename is %s\n",filename);    
+    sPDB = new PDB(filename);
+
+    if ( sPDB == NULL )
+    {
+      NAMD_die("Memory allocation failed in Molecule::build_stirred_atoms");
+
+    }
+
+    if (sPDB->num_atoms() != numAtoms)
+      {
+	NAMD_die("Number of atoms in stirred atoms PDB doesn't match coordinate PDB");
+      }
+ 
+       }
+
+//  Get the column that the b vaules are in.  It
+//  can be in any of the 5 floating point fields in the PDB, according
+//  to what the user wants.  The allowable fields are X, Y, Z, O, or
+//  B which correspond to the 1st, 2nd, ... 5th floating point fields.
+//  The default is the 4th field, which is the occupancy
+
+ 
+      if (stirredcol == NULL)
+      {
+	 bcol = 4;
+      }
+      else
+    {
+      if (stirredcol->next != NULL)
+	{
+	  NAMD_die("Multiple definitions of stirred atoms column in config file");
+	}
+      
+      if  (strcasecmp(stirredcol->data, "O") == 0)
+	{
+	  bcol=4;
+	}
+      else if (strcasecmp(stirredcol->data, "B") == 0)
+	{
+	  bcol=5;
+	}
+      else
+	{
+	  NAMD_die("stirredAtomsCol must have value of O or B");
+	}
+    }
+          
+       //  Allocate an array that will store an index into the stir
+       //  parameters for each atom.  If the atom is not stirred, its
+       //  value will be set to -1 in this array.
+       stirIndexes = new int32[numAtoms];
+       
+       if (stirIndexes == NULL)
+       {
+    NAMD_die("memory allocation failed in Molecule::build_stirred_params()");
+       }
+       
+       current_index = 0;
+       //  Loop through all the atoms and find out which ones are stirred
+       for (i=0; i<numAtoms; i++)
+       {
+
+
+
+	 //  Get the b value based on where we were told to find it
+	 switch (bcol)
+	   {
+
+	   case 4:
+	     bval = (sPDB->atom(i))->occupancy();
+	     break;
+	   case 5:
+	     bval = (sPDB->atom(i))->temperaturefactor();
+	     break;
+	   }
+
+	// CkPrintf ("DEBUG--for atom i= %d  bcol= %d    bval= %g   occ= %g   realbval= %g  x= %g numAtoms= %d test= %g\n" ,i        ,bcol, bval, (sPDB->atom(i))->occupancy(), (sPDB->atom(i))->temperaturefactor(),(sPDB->atom(i))->xcoor(), sPDB->num_atoms(), 0.123 );
+	 //  Assign the b value
+	 if ( bval != 0 )
+	 {
+	   // This atom is stirred 
+	   stirIndexes[i] = current_index;
+	   current_index++;
+	 }
+	 else
+	 {
+           //This atom is not stirred 
+	   stirIndexes[i] = -1;
+	 }
+       }
+	 
+
+    
+
+       
+       if (current_index == 0)
+       {
+    //  Stirring was turned on, but there weren't really any stirred atoms found in file
+    iout << iWARN << "NO STIRRED ATOMS WERE FOUND, BUT STIRRING TORQUES ARE ON . . .\n" << endi;
+       }
+       else
+       {
+    //  Allocate an array to hold the stirring parameters
+    stirParams = new StirParams[current_index];
+    
+    if (stirParams == NULL)
+    {
+       NAMD_die("memory allocation failed in Molecule::build_stir_params");
+    }
+       }
+       
+       numStirredAtoms = current_index;
+       
+       //  Loop through all the atoms and assign the parameters for those
+       //  that are stirred
+       for (i=0; i<numAtoms; i++)
+       {
+    if (stirIndexes[i] != -1)
+    {
+       
+       //  This atom is stirred, so get the reference position
+       stirParams[stirIndexes[i]].refPos.x = (sPDB->atom(i))->xcoor();
+       stirParams[stirIndexes[i]].refPos.y = (sPDB->atom(i))->ycoor();
+       stirParams[stirIndexes[i]].refPos.z = (sPDB->atom(i))->zcoor();
+    }
+       }
+       
+       //  If we had to create a PDB object, delete it now
+       if (stirredfile != NULL)
+       {
+	 delete sPDB;
+       }
+       
+
+    }
+
+    /*      END OF FUNCTION build_stirred_atoms    */
 
 //Modifications for alchemical fep
 //SD & CC, CNRS - LCTN, Nancy

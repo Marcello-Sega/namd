@@ -109,6 +109,7 @@ OBJS = \
 	$(DSTDIR)/GlobalMasterServer.o \
 	$(DSTDIR)/GlobalMasterTest.o \
 	$(DSTDIR)/GlobalMasterIMD.o \
+	$(DSTDIR)/ComputeStir.o \
 	$(DSTDIR)/GlobalMasterTcl.o \
 	$(DSTDIR)/GlobalMasterSMD.o \
 	$(DSTDIR)/GlobalMasterFreeEnergy.o \

@@ -140,6 +140,8 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_FLOAT("constraintScaling",constraintScaling)
   SCRIPT_PARSE_STRING("outputname",outputFilename)
   SCRIPT_PARSE_VECTOR("eField",eField)
+  SCRIPT_PARSE_VECTOR("stirAxis",stirAxis)
+  SCRIPT_PARSE_VECTOR("stirPivot",stirPivot)
 
   if ( ! strncasecmp(param,"fixedatoms",MAX_SCRIPT_PARAM_SIZE) ) {
     if ( ! fixedAtomsOn )
@@ -1007,7 +1009,7 @@ void SimParameters::config_parser_constorque(ParseOptions &opts) {
 }
 
 void SimParameters::config_parser_boundary(ParseOptions &opts) {
-   
+    
    //// Spherical Boundary Conditions
    opts.optionalB("main", "sphericalBC", "Are spherical boundary counditions "
       "active?", &sphericalBCOn, FALSE);
@@ -1084,7 +1086,22 @@ void SimParameters::config_parser_boundary(ParseOptions &opts) {
    opts.optionalB("main", "eFieldOn", "Should and electric field be applied",
                  &eFieldOn, FALSE);
    opts.require("eFieldOn", "eField", "Electric field vector", &eField);
-   
+
+      ///////////////  Stir options
+   opts.optionalB("main", "stirOn", "Should stirring torque be applied",
+                 &stirOn, FALSE);
+   opts.optional("stirOn", "stirFilename", "PDB file with flags for "
+     "stirred atoms (default is the PDB input file)",
+		 PARSE_STRING);
+   opts.optional("stirOn", "stirredAtomsCol", "Column in the stirredAtomsFile "
+		 "containing the flags (nonzero means fixed);\n"
+		 "default is 'O'", PARSE_STRING);
+   opts.require("stirOn", "stirStartingTheta", "Stir starting theta offset", &stirStartingTheta);
+   opts.require("stirOn", "stirK", "Stir force harmonic spring constant", &stirK);
+   //should make this optional, compute from firsttimestep * stirVel
+   opts.require("stirOn", "stirVel", "Stir angular velocity (deg/timestep)", &stirVel);
+   opts.require("stirOn", "stirAxis", "Stir axis (direction vector)", &stirAxis);
+   opts.require("stirOn", "stirPivot", "Stir pivot point (coordinate)", &stirPivot);
 }
 
 void SimParameters::config_parser_misc(ParseOptions &opts) {
@@ -2209,6 +2226,20 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
         eField.z = 0.0;
    }
 
+   if (!stirOn)
+   { 
+     stirFilename[0] = STRINGNULL;
+     stirStartingTheta = 0.0;
+     stirVel = 0.0;
+     stirK = 0.0;
+     stirAxis.x = 0.0;
+     stirAxis.y = 0.0;
+     stirAxis.z = 0.0;
+     stirPivot.x = 0.0;
+     stirPivot.y = 0.0;
+     stirPivot.z = 0.0;
+   }
+  
    if (!opts.defined("langevin"))
    {
   langevinTemp = 0.0;
@@ -2897,6 +2928,27 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
       iout << iINFO << "E-FIELD VECTOR         ("
          << eField.x << ", " << eField.y
          << ", " << eField.z << ")\n";
+      iout << endi;
+   }
+
+      if (stirOn)
+   {
+      iout << iINFO << "STIRRING TORQUES ACTIVE\n";
+      
+      iout << iINFO << "STIR STARTING THETA   (deg)  "<< stirStartingTheta << "\n";
+      iout << iINFO << "STIR ANGULAR VELOCITY (deg/ts)   " << stirVel <<"\n";
+      iout << iINFO << "STIR FORCE HARMONIC SPRING CONSTANT "<< stirK << "\n";
+      iout << iINFO << "STIR AXIS OF ROTATION (DIRECTION)      ("
+         << stirAxis.x << ", " << stirAxis.y
+         << ", " << stirAxis.z << ")\n";
+	          iout << iINFO << "STIR PIVOT POINT (COORDINATE)           ("
+         << stirPivot.x << ", " << stirPivot.y
+         << ", " << stirPivot.z << ")\n";
+      current = config->find("stirFilename");
+		  
+      iout << iINFO << "STIR ATOMS AND ORIGINAL POSITIONS FROM FILE    " <<current ->data << '\n';
+      current = config->find("stirredAtomsCol");
+      iout << iINFO <<"STIR FILE COLUMN " << current ->data << '\n';
       iout << endi;
    }
 

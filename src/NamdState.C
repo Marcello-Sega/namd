@@ -174,7 +174,18 @@ int NamdState::configListInit(ConfigList *cfgList) {
 					      pdb,
 					      NULL);
 	}
+	//CkPrintf ("DEBUG--check if StirOn to build stir params..\n");
+	if (simParameters->stirOn)
+	{	
+	//CkPrintf ("DEBUG--now to build stir params..\n");
+	  
+	   molecule->build_stirred_atoms(configList->find("stirFilename"),
+				       configList->find("stirredAtomsCol"),
+				       pdb,
+				       NULL);
+	}
 
+	
 	if (simParameters->fixedAtomsOn)
 	{
 	   molecule->build_fixed_atoms(configList->find("fixedatomsfile"),
@@ -310,6 +321,9 @@ int NamdState::configListInit(ConfigList *cfgList) {
 
 	if (simParameters->consForceOn)
 	  iout << iINFO << molecule->numConsForce << " CONSTANT FORCES\n";
+
+        if (simParameters->stirOn)
+	  iout << iINFO << molecule->numStirredAtoms << " STIRRED ATOMS\n";
 
 	if (simParameters->fixedAtomsOn)
 	{

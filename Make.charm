@@ -1,5 +1,5 @@
 # Set CHARMBASE to the top level charm directory.
 
-CHARMBASE = /Projects/namd2/charm
+CHARMBASE = /home2/barryi/projects/namd2/charm/charm-5.4
 #CHARMBASE = C:/cygwin$(HOME)/charm
 

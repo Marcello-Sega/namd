@@ -838,6 +838,8 @@ void WorkDistrib::mapComputes(void)
 
   if ( node->simParameters->eFieldOn )
     mapComputePatch(computeEFieldType);
+  if ( node->simParameters->stirOn )
+    mapComputePatch(computeStirType);
   if ( node->simParameters->sphericalBCOn )
     mapComputePatch(computeSphericalBCType);
   if ( node->simParameters->cylindricalBCOn )

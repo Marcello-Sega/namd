@@ -395,6 +395,15 @@ public:
 	Bool eFieldOn;                  //  Should a electric field be applied
 	zVector eField;                  //  Electric field vector to be applied
 	
+	Bool stirOn;                   // Should a stirring torque be applied
+	char stirFilename[129];	       // Stirring filename (atoms marked)
+	//do the below two even needed to be defined?
+	BigReal stirStartingTheta;     // Stir starting theta offset
+	BigReal stirVel;               // Stir angular velocity
+	BigReal stirK;                 // Stir force harmonic spring constant
+        zVector stirAxis;              // Direction of stir axis
+        zVector stirPivot;             // Pivot point of stir axis
+
 	Bool consForceOn;		//  Should constant force be applied
 
 	int outputEnergies;		//  Number of timesteps between energy

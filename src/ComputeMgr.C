@@ -40,6 +40,7 @@
 #include "ComputeDPMEMsgs.h"
 #include "ComputePme.h"
 #include "ComputeEField.h"
+#include "ComputeStir.h"
 #include "ComputeSphericalBC.h"
 #include "ComputeCylindricalBC.h"
 #include "ComputeRestraints.h"
@@ -328,6 +329,11 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
+      case computeStirType:
+	c = new ComputeStir(i,map->computeData[i].pids[0].pid); // unknown delete
+        map->registerCompute(i,c);
+        c->initialize();
+        break;
       case computeExtType:
 	c = new ComputeExt(i); // unknown delete
 	map->registerCompute(i,c);
