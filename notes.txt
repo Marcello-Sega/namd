@@ -286,36 +286,96 @@ Your feedback will help us improve NAMD.
 
 Compiling NAMD
 
+Building a complete NAMD binary from source code requires working
+C and C++ compilers, Charm++/Converse, TCL, and FFTW.  NAMD will still
+compile without TCL and FFTW but certain features will be disabled.
+Fortunately, all required packages are freely available on the net.
+TCL and FFTW are not used by default, but must be enabled when you run
+the NAMD config script and some files in arch may need editing.
+
+As an example, here is the build sequence for Linux workstations:
+
+Download and build Tcl from http://www.scriptics.com/products/tcltk/
+and FFTW from http://www.fftw.org/ (use --disable-type-prefix) if
+not already available on your machine.  Both are free.
+
+Unpack source code and enter directory:
+  tar xzf NAMD_2.3b1_Source.tar.gz
+  cd NAMD_2.3b1_Source
+
+Download and build Charm++/Converse library:
+  setenv CVSROOT ":pserver:checkout@thrift.cs.uiuc.edu:/expand6/cvsroot"
+  cvs login   (PRESS RETURN WHEN ASKED FOR A PASSWORD)
+  cvs co -D 2001-02-22 -P charm
+  cd charm
+  ./build charm++ net-linux
+  cd ..
+
+Edit various configuration files:
+  vi Make.charm  (set CHARMBASE to .rootdir/charm or full path to charm)
+  vi arch/Linux-i686.tcl   (fix library version and path to Tcl files)
+  vi arch/Linux-i686.fftw  (fix library name and path to files)
+
+Set up build directory and compile:
+  ./config tcl fftw Linux-i686-g++
+  cd Linux-i686-g++ 
+  make
+
+Quick tests using one and two processes:
+  ./charmrun ++local +p1 ./namd2
+  ./charmrun ++local +p2 ./namd2
+  ./charmrun ++local +p1 ./namd2 src/alanin
+  ./charmrun ++local +p2 ./namd2 src/alanin
+
+That's it.  A more complete explanation of the build process follows.
+
 You must first download and install NAMD's communications library,
 Charm++/Converse, from http://charm.cs.uiuc.edu/.  You will have
-to obtain the ?????, 2001 beta version via public CVS.  The following
-table shows the version needed for each NAMD architecture.  It is
-important that the same compiler is used for both Charm++ and NAMD.
+to obtain the Feb. 22, 2001 beta version via public CVS.  Follow the
+directions at http://charm.cs.uiuc.edu/beta.html for connecting but
+use the command "cvs co -D 2001-02-22 -P charm" to get the files.
 
-    NAMD Arch Name     Description                   Charm Version
-   ----------------   ---------------------------   ---------------
-    Linux-i686-KCC     Linux with KCC 3.3 compiler   net-linux-kcc
-    Linux-i686-g++     Linux with GNU compiler       net-linux
-    Linux-Alpha-cxx    Alpha Linux w/ DEC compiler   net-linux-axp-cxx
-    Linux-Alpha-g++    Alpha Linux w/ GNU compiler   net-linux-axp
-    Origin2000-MPI-CC  SGI Origin 2000 with MPI      mpi-origin
-    Origin2000-CC      SGI Origin 2000 w/o MPI       origin2000
-    Tru64-Alpha-CC     Tru64 Unix w/ DEC compiler    net-axp-cc
-  * Tru64-Alpha-g++    Tru64 Unix w/ GNU compiler    net-axp
-    T3E-CC             SGI/Cray T3E                  t3e
-    Solaris-Sparc-CC   Solaris 2.6 or later          net-sol-cc
-    Solaris-Sparc-g++  Solaris 2.6 or later          net-sol
-    Solaris-i686-g++   Solaris 2.6 or later          net-sol-x86
-  * HPUX-CC            HP-UX 10.0 or later with CC   net-hp-cc
-    HPUX-aCC           HP-UX 10.0 or later with aCC  net-hp-acc
-    HPUX-g++           HP-UX 10.0 or later with GNU  net-hp
-    AIX-RS6000-xlC     IBM AIX with xlC              net-rs6k
-    IBM-SP             IBM SP Series                 sp3
-    ASCI-Red           ASCI Red                      paragon-red
-  * Win32-i686-MSVC    Windows with MS Visual C++    net-win32
+This table shows the version needed for each NAMD architecture.  It is
+important that the same C++ compiler is used for both Charm and NAMD.
+
+    NAMD Arch Name           Charm Version            Comments
+   ----------------------   ---------------------    ------------------
+    AIX-RS6000-xlC           net-rs6k                 IBM compiler
+  * ASCI-Red                 paragon-red              ASCI Red (Sandia)
+  * Cygwin-i686-MSVC         net-win32                Microsoft compiler
+  * Cygwin-i686              net-cygwin               GNU compiler
+    HPUX-aCC                 net-hp-acc               ANSI HP compiler
+  * HPUX-CC                  net-hp-cc                Old HP compiler
+    HPUX-g++                 net-hp                   GNU compiler
+  * HPUX-KCC                 net-hp-kcc               KAI C++ compiler
+    HPUX-PA2.0-aCC           net-hp-acc               Newer HP CPUs
+    IBM-SP                   mpi-sp                   IBM xlC compiler
+    Linux-Alpha-cxx          net-linux-axp-cxx        Compaq compiler
+    Linux-Alpha-g++          net-linux-axp            GNU compiler
+    Linux-Alpha-MPI-cxx      mpi-linux-axp-cxx        Compaq compiler
+    Linux-Alpha-Scyld-cxx    net-linux-axp-scyld-cxx  Scyld Beowulf
+    Linux-Alpha-ScyldCD-cxx  net-linux-axp-scyld-cxx  Scyld distribution
+    Linux-i686-g++           net-linux                GNU compiler
+    Linux-i686-KCC           net-linux-kcc            KAI C++ compiler
+    Linux-i686-MPI-pgCC      mpi-linux-pgcc           NCSA Linux cluster
+    Linux-i686-MPI           mpi-linux                GNU compiler
+    Linux-i686-Scyld         net-linux-scyld          Scyld Beowulf
+    Linux-i686-ScyldCD       net-linux-scyld          Scyld distribution
+    Origin2000-CC            origin2000               SGI compiler
+    Origin2000-MPI-CC        mpi-origin               SGI compiler
+    Solaris-i686-g++         net-sol-x86              GNU compiler
+    Solaris-Sparc-CC         net-sol-cc               Sun compiler
+    Solaris-Sparc-g++        net-sol                  GNU compiler
+    T3E-CC                   t3e                      Cray compiler
+    Tru64-Alpha-CC           net-axp-cc               Compaq compiler
+  * Tru64-Alpha-g++          net-axp                  GNU compiler
+    Tru64-Alpha-MPI-CC       mpi-axp-cc               Alphaserver SC
+  * Win32-i686-MSVC          net-win32                MSVC and nmake
 
   * These architectures may fail to build or be unstable.  Building
-    on Win32 is not fully automated yet.  Don't try it at home.
+    on Win32 is not simple.  Cygwin is needed to build Charm on any
+    Windows platform, but Win32-i686-MSVC may be built with only
+    MSVC and nmake from the DOS command line.
 
 Once you have obtained the Charm++/Converse source code, you can
 build the libraries needed by NAMD for each architecture with the
