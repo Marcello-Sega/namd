@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1002 1997/02/06 21:20:50 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1003 1997/02/06 23:25:07 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -40,9 +40,9 @@ HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl,
   min.x = PatchMap::Object()->minX(patchID);
   min.y = PatchMap::Object()->minY(patchID);
   min.z = PatchMap::Object()->minZ(patchID);
-  min.x = PatchMap::Object()->maxX(patchID);
-  min.y = PatchMap::Object()->maxY(patchID);
-  min.z = PatchMap::Object()->maxZ(patchID);
+  max.x = PatchMap::Object()->maxX(patchID);
+  max.y = PatchMap::Object()->maxY(patchID);
+  max.z = PatchMap::Object()->maxZ(patchID);
 
   migrationSuspended = false;
   patchMapRead = 0; // We delay read of PatchMap data
@@ -225,27 +225,23 @@ HomePatch::doAtomMigration()
     realInfo[i].mList = NULL;
   }
 
-  int destPatchID;
-
   // Determine atoms that need to migrate
-  i = 0;
-  while (i < numAtoms) {
+  numAtoms = atomIDList.size();
+  for (i=0; i<numAtoms; ++i) {
      if (p[i].x < min.x) xdev = 0;
      else if (max.x <= p[i].x) xdev = 2; 
      else xdev = 1;
 
      if (p[i].y < min.y) ydev = 0;
-     else if (min.y <= p[i].y) ydev = 2; 
+     else if (max.y <= p[i].y) ydev = 2; 
      else ydev = 1;
 
      if (p[i].z < min.z) zdev = 0;
      else if (max.z <= p[i].z) zdev = 2; 
      else zdev = 1;
 
-     destPatchID = mInfo[xdev][ydev][zdev]->destPatchID;
-
      // Don't migrate if destination is myself
-     if (patchID != destPatchID) {
+     if (mInfo[xdev][ydev][zdev]) {
 
        // See if we have a migration list already
        if (NULL == (mCur = mInfo[xdev][ydev][zdev]->mList)) {
@@ -263,7 +259,6 @@ HomePatch::doAtomMigration()
        f_short.del(i);
        f_long.del(i);
      }
-     i++;
   }
   for (i=0; i < numNeighbors; i++) {
     PatchMgr::Object()->sendMigrationMsg(patchID, realInfo[i]);
@@ -316,12 +311,15 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/06 21:20:50 $
+ *	$Revision: 1.1003 $	$Date: 1997/02/06 23:25:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1003  1997/02/06 23:25:07  jim
+ * Fixed bugs.
+ *
  * Revision 1.1002  1997/02/06 21:20:50  jim
  * Fixed a couple of atom migration bugs.
  *

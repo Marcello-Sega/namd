@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1002 1997/02/06 21:20:49 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1003 1997/02/06 23:25:06 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -86,7 +86,7 @@ void Patch::loadAtomProperties(void)
 //      ap.charge = mol->atomcharge(*ai);
 //      a.add(ap);
 //    }
-    for ( int i=0; i<atomIDList.size(); i++)
+    for ( int i=0; i<numAtoms; i++)
     {
       localIndex.load(LocalAtomID(atomIDList[i], i));
       AtomProperties ap;
@@ -103,8 +103,9 @@ void Patch::loadAtomProperties(void)
 void
 Patch::indexAtoms()
 {
+    numAtoms = atomIDList.size();
     localIndex.resize(0);
-    for ( int i=0; i<atomIDList.size(); i++)
+    for ( int i=0; i<numAtoms; i++)
     {
       localIndex.load(LocalAtomID(atomIDList[i], i));
     }
@@ -230,12 +231,15 @@ void Patch::positionsReady(int doneMigration)
  *
  *	$RCSfile: Patch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/06 21:20:49 $
+ *	$Revision: 1.1003 $	$Date: 1997/02/06 23:25:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.1003  1997/02/06 23:25:06  jim
+ * Fixed bugs.
+ *
  * Revision 1.1002  1997/02/06 21:20:49  jim
  * Fixed a couple of atom migration bugs.
  *
