@@ -102,7 +102,12 @@ NOEXCL
   register int i;
 
 #if 1
+// only define this when using hydrogen grouping code.
+// don't define this if you want the original code.
 #define USINGSPECIALCODE
+#endif
+
+#ifdef USINGSPECIALCODE
   int pairlistindex=0;
   static int pairlist_std[1001];
   int pairlistoffset=0;
@@ -561,12 +566,15 @@ FULL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1997/05/09 18:24:22 $
+ *	$Revision: 1.1015 $	$Date: 1997/05/12 18:45:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1015  1997/05/12 18:45:21  nealk
+ * Minor coding changes (looks nicer).
+ *
  * Revision 1.1014  1997/05/09 18:24:22  nealk
  * 1. Added hydrogen grouping code to improve performance in ComputeNonbondedBase
  *    CODE ONLY WORKS WITH HYDROGEN GROUPING!
