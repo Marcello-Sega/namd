@@ -19,6 +19,7 @@
 #include "c++interface.h"
 
 #include "BOCgroup.h"
+#include "NamdTypes.h"
 
 class GroupInitMsg : public comm_object
 {
@@ -42,6 +43,16 @@ class ReadyMsg : public EmptyMsg {
 class DoneMsg : public EmptyMsg { 
 };
 
+class RegisterProxyMsg : public comm_object {
+public:
+  NodeID node;
+};
+
+class UnregisterProxyMsg : public comm_object {
+public:
+  NodeID node;
+};
+
 class Compute;
 
 class LocalWorkMsg : public comm_object
@@ -57,12 +68,15 @@ public:
  *
  *	$RCSfile: main.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1996/11/22 00:18:51 $
+ *	$Revision: 1.9 $	$Date: 1996/12/05 01:47:40 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: main.h,v $
+ * Revision 1.9  1996/12/05 01:47:40  ari
+ * added messages for proxy management
+ *
  * Revision 1.8  1996/11/22 00:18:51  ari
  * *** empty log message ***
  *
