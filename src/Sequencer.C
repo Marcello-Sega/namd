@@ -244,10 +244,9 @@ void Sequencer::minimize() {
   int &doMolly = patch->flags.doMolly;
   doMolly = simParams->mollyOn && doFullElectrostatics;
 
-  rattle1(0.);  // enforce rigid bond constraints on initial positions
+  patch->checkpoint();  // checkpoint current minimum
   runComputeObjects(1); // must migrate here!
 
-  // addForceToMomentum(0.); // zero velocities of fixed atoms
   submitMinimizeReductions(step);
   rebalanceLoad(step);
 
@@ -262,13 +261,13 @@ void Sequencer::minimize() {
     }  // same direction
     newMinimizePosition(c);  // x = x + c * v
 
-    rattle1(0.);
     runComputeObjects(1);
     submitMinimizeReductions(step);
     submitCollections(step);
     rebalanceLoad(step);
   }
   patch->revert();  // go to last known minimum
+  quenchVelocities();  // zero out bogus velocity
 }
 
 // v = c * v + f
@@ -293,6 +292,16 @@ void Sequencer::newMinimizePosition(BigReal c) {
 
   for ( int i = 0; i < numAtoms; ++i ) {
     a[i].position += c * a[i].velocity;
+  }
+}
+
+// v = 0
+void Sequencer::quenchVelocities() {
+  FullAtom *a = patch->atom.begin();
+  int numAtoms = patch->numAtoms;
+
+  for ( int i = 0; i < numAtoms; ++i ) {
+    a[i].velocity = 0;
   }
 }
 

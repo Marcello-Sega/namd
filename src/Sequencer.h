@@ -46,6 +46,7 @@ protected:
 
     void newMinimizeDirection(BigReal);
     void newMinimizePosition(BigReal);
+    void quenchVelocities();
 
     void rattle1(BigReal);
     void rattle2(BigReal,int);
