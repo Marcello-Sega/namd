@@ -2962,6 +2962,17 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
             << "due to pressure control with rigidBonds.\n" << endi;
      }
    }
+   if (useSettle) {
+     if (berendsenPressureOn || langevinPistonOn) {
+       iout << iWARN << 
+        "Settle does not compute atom-based pressure.\n" << endi;
+       iout << iWARN << "PRESSURE (but not GPRESSURE) output will be wrong!\n" 
+            << endi;
+       if (useGroupPressure == FALSE) {
+         NAMD_die("useSettle requires useGroupPressure.\n");
+       }
+     }
+   }
 
    if (berendsenPressureOn)
    {
