@@ -1,8 +1,10 @@
 extern message InitMsg;
+extern message MovePatchDoneMsg;
 message MapDistribMsg;
 
 group WorkDistrib
 {
   entry WorkDistrib(InitMsg *);
   entry saveMaps(MapDistribMsg *);
+  entry movePatchDone(MovePatchDoneMsg *);
 } ;

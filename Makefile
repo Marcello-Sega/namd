@@ -30,7 +30,7 @@ cifiles:
 	   $(CHARMXI) $$i; \
 	done;
 
-depends: 
+depends: $(DEPENDSFILE)
 	$(ECHO) "Creating " $(DEPENDFILE) " ..."; \
 	if [ -f $(DEPENDFILE) ]; then \
 	   $(MOVE) -f $(DEPENDFILE) $(DEPENDFILE).old; \
@@ -42,6 +42,9 @@ depends:
 	      g++ -MM $(CXXFLAGS) $$i |grep -v "/usr/include" >> $(DEPENDFILE);\
 	   fi; \
 	done;
+
+Make.depends:
+	touch $(DEPENDSFILE)
 
 include	$(DEPENDFILE)
 

@@ -23,6 +23,17 @@ class InitMsg : public comm_object
   int x;
 };
 
+class MovePatchDoneMsg : public comm_object
+{
+  int x;
+};
+
+class PatchMgrInitMsg : public comm_object
+{
+public:
+  int workDistribGroup;
+};
+
 class NodeInitMsg : public comm_object
 {
 public:
@@ -37,12 +48,15 @@ public:
  *
  *	$RCSfile: main.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/08/22 16:15:07 $
+ *	$Revision: 1.5 $	$Date: 1996/08/29 00:50:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: main.h,v $
+ * Revision 1.5  1996/08/29 00:50:42  ari
+ * *** empty log message ***
+ *
  * Revision 1.4  1996/08/22 16:15:07  ari
  * *** empty log message ***
  *

@@ -33,8 +33,8 @@ typedef ResizeArray<Position> PositionList;
 typedef ResizeArray<Velocity> VelocityList;
 typedef ResizeArray<Force> ForceList;
 
-class AtomIDList : public ResizeArray<AtomID> { };
-class AtomIDListIter : public ResizeArrayIter<AtomID> { };  
+typedef ResizeArray<AtomID> AtomIDList;
+typedef ResizeArrayIter<AtomID> AtomIDListIter;
 
 typedef int PatchID;
 typedef int ComputeID;
@@ -67,12 +67,15 @@ enum Boolean
  *
  *	$RCSfile: NamdTypes.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/08/23 21:36:58 $
+ *	$Revision: 1.6 $	$Date: 1996/08/29 00:52:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdTypes.h,v $
+ * Revision 1.6  1996/08/29 00:52:06  ari
+ * *** empty log message ***
+ *
  * Revision 1.5  1996/08/23 21:36:58  ari
  * *** empty log message ***
  *

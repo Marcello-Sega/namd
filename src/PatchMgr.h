@@ -19,26 +19,38 @@
 #include "c++interface.h"
 
 #include "NamdTypes.h"
+#include "Templates/SortedArray.h"
+#include "HomePatch.h"
 
-class InitMsg;
+class PatchMgrInitMsg;
 class HomePatch;
 
-typedef ResizeArray<HomePatch *> HomePatchList;
-
-// This class is used to send atom redistribution information.
-// It is derived from the Charm++ communication object
-class AtomRedistMsg : public comm_object {
+class MovePatchesMsg : public comm_object {
 public:
-    int x;
-   
-    AtomRedistMsg();
-    ~AtomRedistMsg();
+    NodeID  fromNodeID;
+    PatchID pid;
+    AtomIDList aid;
+    PositionList p;
+    VelocityList v;
+
+    MovePatchesMsg(PatchID p, AtomIDList a, PositionList pl, VelocityList vl) : 
+      pid(p), aid(a), p(pl), v(vl) {
+      fromNodeID = CMyPe();
+    }
+    ~MovePatchesMsg() {};
+
     pack();
     unpack();
 };
 
-typedef ResizeArray<int> LocalIndex;
-typedef ResizeArray<Patch *> homePatchList;
+class AckMovePatchesMsg : public comm_object {
+public:
+   int dummy;
+
+   AckMovePatchesMsg() {};
+   ~AckMovePatchesMsg() {};
+};
+
 
 // PatchMgr creates and manages homepatches. There exist one instance of 
 // PatchMgr on each node (derived from Charm++ groupmember).
@@ -46,25 +58,78 @@ typedef ResizeArray<Patch *> homePatchList;
 // In addition to creation of homepatches, it handles the atom redistribution
 // at the end of each cycle (i.e., atoms can move from patch to patch at the
 // cycle boundaries).
+
+class HomePatch;
+
+class HomePatchElem {
+public:
+  PatchID   pid;
+  HomePatch *p;
+
+  operator<(HomePatchElem e) { return (pid < e.pid); }
+  operator==(HomePatchElem e) { return (pid == e.pid); }
+
+  HomePatchElem(PatchID id=-1, HomePatch *patch=NULL) : pid(id), p(patch) {};
+  ~HomePatchElem() { delete p; p = NULL; };
+};
+
+typedef SortedArray<HomePatchElem> HomePatchList;
+
+struct MovePatch 
+{
+    MovePatch(NodeID n=-1, PatchID p=-1) : nodeID(n), pid(p) {};
+    ~MovePatch() {};
+
+    NodeID nodeID;
+    PatchID pid;
+
+    int operator<(MovePatch m) {
+      return ( nodeID < m.nodeID );
+    }
+
+    int operator==(MovePatch m) {
+      return ( nodeID == m.nodeID );
+    }
+};
+typedef SortedArray<MovePatch> MovePatchList;
+typedef ResizeArrayIter<MovePatch> MovePatchListIter;
+
+typedef ResizeArray<int> PatchIndex;
+
 class PatchMgr : public groupmember
 {
-
 private:
+
   int numAllPatches;
   int numHomePatches;
 
   // global patch number to local patch table conversion table
-  LocalIndex indexGlb;
+  PatchIndex patchIndex;
 
   // an array of patch pointers residing on this node
-  HomePatchList homePatch;
+  HomePatchList homePatches;
+
+  // an array of patches to move off this node
+  MovePatchList move;
+  int ackMovePending;
+  
+  int workDistribGroup;
 
 public:
-  PatchMgr(InitMsg *);
+  PatchMgr(PatchMgrInitMsg *);
   ~PatchMgr();
   
-  void createPatch(PatchID, PositionList&, VelocityList&);
-  void movePatch(PatchIDList&, NodeID);
+  void recvMovePatches(MovePatchesMsg *msg);
+
+  void createHomePatch(PatchID pid, AtomIDList aid, PositionList p, 
+     VelocityList v); 
+  void movePatch(PatchID, NodeID);
+  void sigWorkDistrib();
+  void sendMovePatches();
+  void ackMovePatches(AckMovePatchesMsg *msg);
+  HomePatch *homePatch(PatchID pid) {
+     return homePatches.find(HomePatchElem(pid))->p;
+  }
 };
 
   // this is a list of immediate neighbor nodes (that is neighbor nodes
@@ -94,12 +159,15 @@ public:
  *
  *	$RCSfile: PatchMgr.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/19 22:07:49 $
+ *	$Revision: 1.2 $	$Date: 1996/08/29 00:50:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.h,v $
+ * Revision 1.2  1996/08/29 00:50:42  ari
+ * *** empty log message ***
+ *
  * Revision 1.1  1996/08/19 22:07:49  ari
  * Initial revision
  *

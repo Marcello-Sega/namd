@@ -1,6 +1,10 @@
-extern message InitMsg;
+extern message PatchMgrInitMsg;
+message MovePatchesMsg;
+message AckMovePatchesMsg;
 
 group PatchMgr
 {
-  entry PatchMgr(InitMsg *);
+  entry PatchMgr(PatchMgrInitMsg *);
+  entry recvMovePatches(MovePatchesMsg *);
+  entry ackMovePatches(AckMovePatchesMsg *);
 } ;

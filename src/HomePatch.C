@@ -11,7 +11,11 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1 1996/08/19 22:07:49 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.2 1996/08/29 00:50:42 ari Exp $";
+
+#include "ckdefs.h"
+#include "chare.h"
+#include "c++interface.h"
 
 #include "HomePatch.h"
 
@@ -218,12 +222,15 @@ void HomePatch::dispose(char *&data)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/19 22:07:49 $
+ *	$Revision: 1.2 $	$Date: 1996/08/29 00:50:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.2  1996/08/29 00:50:42  ari
+ * *** empty log message ***
+ *
  * Revision 1.1  1996/08/19 22:07:49  ari
  * Initial revision
  *

@@ -28,7 +28,13 @@ public:
   int nodes(void) { return 1; }
   int this_node(void) { return 0; }
 
-  int send(Message *msg, int node, int tag, int delmsg = TRUE) { return 0; }
+  int send(Message *msg, int node, int tag, int delmsg = TRUE) { 
+     msg = NULL;
+     node = 0;
+     tag = 0;
+     delmsg = 0;
+     return 0; 
+  }
 
   int send_all(void){ return 0; };
 

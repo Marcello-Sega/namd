@@ -1,5 +1,7 @@
 message InitMsg;
 message NodeInitMsg;
+message MovePatchDoneMsg;
+message PatchMgrInitMsg;
 
 chare main {
   entry main();

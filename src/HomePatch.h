@@ -14,20 +14,46 @@
 #ifndef HOMEPATCH_H
 #define HOMEPATCH_H
 
+#include "ckdefs.h"
+#include "chare.h"
+#include "c++interface.h"
+
 #include "NamdTypes.h"
 #include "Patch.h"
+#include "Templates/UniqueSortedArray.h"
 
+
+class LocalAtomID {
+public:
+    AtomID atomID;
+    int index;
+    LocalAtomID(AtomID a, int i) : atomID(a), index(i) {};
+    LocalAtomID() {};
+    ~LocalAtomID() {};
+    int operator < (const LocalAtomID &a) const {
+	return (atomID < a.atomID);
+    }
+    int operator== (const LocalAtomID &a) const {
+       return (atomID == a.atomID);
+    }
+};
+
+
+class LocalIndex : public UniqueSortedArray<LocalAtomID> { };
 
 class HomePatch : public Patch {
+   friend PatchMgr;
 
    private:
-
+      PatchID       patchID;
       PositionList  p;
       PositionList  pBegin;
       VelocityList  v; 
       ForceList     f;
       ForceList     f_short;
       ForceList     f_long;
+      AtomIDList    atomIDList;
+      LocalIndex    localIndex;
 
       //Sequencer  *sequencer;
       // keeps track of remaining proxies that i am waiting to updat my data
@@ -44,6 +70,23 @@ class HomePatch : public Patch {
    public:
 
       HomePatch();
+      HomePatch(PatchID pd, AtomIDList al, 
+	PositionList pl, VelocityList vl) : 
+	  patchID(pd), atomIDList(al), p(pl), pBegin(pl), v(vl) {
+	if (atomIDList.size() != p.size() || atomIDList.size() != v.size()) {
+	  CPrintf("HomePatch::HomePatch(...) : Whoa - got different # of\
+	  atom coordinates, id's or velocities!\n");
+	}
+	AtomIDListIter a(atomIDList);
+	int i = 0;
+	for ( a = a.begin(); a != a.end(); a++ ) {
+	  LocalAtomID la(*a, i++);
+	  localIndex.load(la);
+	}
+	localIndex.sort();
+	localIndex.uniq();
+      }
+	
       ~HomePatch();
 
 
@@ -91,12 +134,15 @@ class HomePatch : public Patch {
  *
  *	$RCSfile: HomePatch.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/19 22:07:49 $
+ *	$Revision: 1.2 $	$Date: 1996/08/29 00:50:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.2  1996/08/29 00:50:42  ari
+ * *** empty log message ***
+ *
  * Revision 1.1  1996/08/19 22:07:49  ari
  * Initial revision
  *

@@ -22,6 +22,7 @@
 
 class Node;
 class InitMsg;
+class MovePatchDoneMsg;
 
 const double patchSize = 4.;
 
@@ -45,6 +46,8 @@ public:
   WorkDistrib(InitMsg *msg);
   ~WorkDistrib(void);
 
+  void movePatchDone(MovePatchDoneMsg *msg) {};
+
   void parentNode(Node *inode);
 
   void buildMaps(void);
@@ -60,13 +63,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/08/23 22:03:52 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.7 $	$Date: 1996/08/29 00:50:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.7  1996/08/29 00:50:42  ari
+ * *** empty log message ***
+ *
  * Revision 1.6  1996/08/23 22:03:52  brunner
  * *** empty log message ***
  *
