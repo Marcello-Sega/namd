@@ -14,6 +14,10 @@
 #include "Tensor.h"
 #include <stdio.h>
 
+infostream::infostream() : ostrstream(iBuffer,sizeof(iBuffer)) {;}
+
+infostream::~infostream() {;}
+
 /* output using CkPrintf() (end by inform) */
 void infostream::endi() {
   *this << ends;
@@ -21,6 +25,8 @@ void infostream::endi() {
   fflush(stdout);  // since CkPrintf doesn't always flush
   (*this).seekp(0);   // clear buffer
 }
+
+infostream& endi(infostream& s)  { s.endi(); return s; }
 
 ostream& iPE(ostream& s) {
   return s << "Pe(" << CkMyPe() << ')';
@@ -51,6 +57,41 @@ infostream& operator<<(infostream& strm, const Tensor &t1) {
        return strm;
 }
 
+/* define how to use the remaining << args */
+/** infostream<<ostream (hot to handle inherited modifiers) **/
+infostream& infostream::operator<<(ostream& (*f)(ostream&)) { f(*this); return(*this); }
+/** infostream<<infostream (how to handle class modifiers) **/
+infostream& infostream::operator<<(infostream& (*f)(infostream&)) { return f(*this); }
+
+#define LOCALMOD(type) infostream& infostream::operator<<(type x) \
+		{ (ostream&)(*this) << x; return(*this); }
+/** << characters **/
+LOCALMOD(char);
+LOCALMOD(unsigned char);
+LOCALMOD(const char *);
+/** << integers **/
+LOCALMOD(int);
+LOCALMOD(long);
+LOCALMOD(short);
+LOCALMOD(unsigned int);
+LOCALMOD(unsigned long);
+LOCALMOD(unsigned short);
+/** << floats **/
+LOCALMOD(float);
+LOCALMOD(double);
+/** << pointers **/
+LOCALMOD(void *);
+LOCALMOD(streambuf *);
+#undef LOCALMOD
+
+/** common messages **/
+/** iINFO, iWARN, iERROR, iDEBUG provide initial headings. **/
+/** iINFOF, iWARNF, iERRORF, iDEBUGF provide initial headings with file name
+    and line numbers. **/
+ostream& iINFO (ostream& s)  { return s << "Info: "; }
+ostream& iWARN (ostream& s)  { return s << "Warning: "; }
+ostream& iERROR(ostream& s)  { return s << "ERROR: "; }
+ostream& iDEBUG(ostream& s)  { return s << "DEBUG: "; }
 
 infostream iout;
 

@@ -27,19 +27,17 @@ class infostream : public ostrstream
   char iBuffer[16384];
 
   public:
-  infostream() : ostrstream(iBuffer,sizeof(iBuffer)) {;}
-  ~infostream() {;}
-
+  infostream();
+  ~infostream();
   void endi();
 
   /* define how to use the remaining << args */
   /** infostream<<ostream (hot to handle inherited modifiers) **/
-  infostream& operator<<(ostream& (*f)(ostream&)) { f(*this); return(*this); }
+  infostream& operator<<(ostream& (*f)(ostream&));
   /** infostream<<infostream (how to handle class modifiers) **/
-  infostream& operator<<(infostream& (*f)(infostream&)) { return f(*this); }
+  infostream& operator<<(infostream& (*f)(infostream&));
 
-  #define LOCALMOD(type) infostream& operator<<(type x) \
-		{ (ostream&)(*this) << x; return(*this); }
+  #define LOCALMOD(type) infostream& operator<<(type x);
   /** << characters **/
   LOCALMOD(char);
   LOCALMOD(unsigned char);
@@ -67,16 +65,16 @@ ostream& operator<<(ostream& strm, const Tensor &t1);
 infostream& operator<<(infostream& strm, const Tensor &t1);
 
 /** modifiers **/
-inline infostream& endi(infostream& s)  { s.endi(); return s; }
+infostream& endi(infostream& s);
 
 /** common messages **/
 /** iINFO, iWARN, iERROR, iDEBUG provide initial headings. **/
 /** iINFOF, iWARNF, iERRORF, iDEBUGF provide initial headings with file name
     and line numbers. **/
-inline ostream& iINFO (ostream& s)  { return s << "Info: "; }
-inline ostream& iWARN (ostream& s)  { return s << "Warning: "; }
-inline ostream& iERROR(ostream& s)  { return s << "ERROR: "; }
-inline ostream& iDEBUG(ostream& s)  { return s << "DEBUG: "; }
+ostream& iINFO (ostream& s);
+ostream& iWARN (ostream& s);
+ostream& iERROR(ostream& s);
+ostream& iDEBUG(ostream& s);
 ostream& iPE(ostream& s);  // outlined because of CkMyPe()
 
 #define iFILE __FILE__<<'('<<__LINE__<<"): "
@@ -84,7 +82,6 @@ ostream& iPE(ostream& s);  // outlined because of CkMyPe()
 #define iWARNF  iWARN << iFILE
 #define iERRORF  iERROR << iFILE
 #define iDEBUGF  iDEBUG << iFILE
-
 
 extern infostream iout;
 
