@@ -11,6 +11,7 @@
  *
  ***************************************************************************/
 
+#include "charm++.h"
 #include "WorkDistrib.top.h"
 #include "Node.h"
 #include "ComputePatch.h"
@@ -142,13 +143,17 @@ int ComputePatch::sequence(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputePatch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/10/06 00:12:30 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1012 $	$Date: 1999/01/18 21:53:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatch.C,v $
+ * Revision 1.1012  1999/01/18 21:53:57  brunner
+ * Changes to deal with recent Charm++ changes.  More extensive changes
+ * may be needed soon, but this works for now.
+ *
  * Revision 1.1011  1997/10/06 00:12:30  jim
  * Added PatchMap.inl, sped up cycle-boundary tuple code.
  *

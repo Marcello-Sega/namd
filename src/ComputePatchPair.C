@@ -11,6 +11,7 @@
  *
  ***************************************************************************/
 
+#include "charm++.h"
 #include "WorkDistrib.top.h"
 #include "Node.h"
 #include "ComputePatchPair.h"
@@ -169,13 +170,17 @@ int ComputePatchPair::sequence(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputePatchPair.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1997/10/06 00:12:30 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1015 $	$Date: 1999/01/18 21:53:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatchPair.C,v $
+ * Revision 1.1015  1999/01/18 21:53:58  brunner
+ * Changes to deal with recent Charm++ changes.  More extensive changes
+ * may be needed soon, but this works for now.
+ *
  * Revision 1.1014  1997/10/06 00:12:30  jim
  * Added PatchMap.inl, sped up cycle-boundary tuple code.
  *
