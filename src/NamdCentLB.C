@@ -519,7 +519,7 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 	nMoveableComputes++;
       }
     }
-#if ! CHARM_VERSION > 050607
+#if ! ( CHARM_VERSION > 050607 )
   }
 #endif
 #if 0
