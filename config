@@ -2,7 +2,7 @@
 goto begin
 syntax:
   echo ''
-  echo 'Usage: config <arch> '
+  echo 'Usage: config [build_dir/]<arch> '
   echo ''
   echo 'arch: ' `( cd arch ; ls -1 |sed -e 's/Makearch\.//' | egrep -v 'template' )`
   echo ''
@@ -21,20 +21,23 @@ begin:
   set DIR=`pwd`;
 
   if ( x$ARCH == x ) goto syntax
-  if ( ! -f arch/Makearch.$ARCH ) goto syntax
+  if ( ! -f arch/Makearch.$ARCH:t ) goto syntax
   if ( -d $ARCH ) goto exists
 
   echo "Creating Directory: $ARCH"
   mkdir $ARCH
   cd $ARCH
 
-  echo "Creating link: Makearch.$ARCH to Makearch"
-  ln -s ../arch/Makearch.$ARCH ./Makearch
+  set ROOTDIR=$DIR
+  if ( $ARCH:t == $ARCH ) set ROOTDIR='..'
+
+  echo "Creating link: Makearch.$ARCH:t to Makearch"
+  ln -s $ROOTDIR/arch/Makearch.$ARCH:t ./Makearch
   echo "Linking Makefiles"
-  ln -s ../Makefile ./Makefile
-  ln -s ../Make.depends ./Make.depends
-  ln -s ../Make.charm ./Make.charm
-  ln -s .. .rootdir
+  ln -s $ROOTDIR/Makefile ./Makefile
+  ln -s $ROOTDIR/Make.depends ./Make.depends
+  ln -s $ROOTDIR/Make.charm ./Make.charm
+  ln -s $ROOTDIR .rootdir
   echo "Creating src and linking files"
   (cd $DIR/src ; find . -name CVS -prune -o -type d -print )|sed -e s@.@@> temp.d
   (cd $DIR/src ; find . -name CVS -prune -o -type f -print )|sed -e s@.@@> temp.f
