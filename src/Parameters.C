@@ -4562,3 +4562,165 @@ int Parameters::vdw_pair_to_arrays(int *ind1_array, int *ind2_array,
 }
 /*      END OF FUNCTION vdw_pair_to_arrays    */
 
+
+/************************************************************************/
+/*                  */
+/*      FUNCTION Parameters        */
+/*                  */
+/*  This is the constructor for reading AMBER parameter data    */
+/*                  */
+/************************************************************************/
+
+Parameters::Parameters(Ambertoppar *amber_data, BigReal vdw14)
+{
+  /*  Set all the pointers to NULL        */
+  atomTypeNames=NULL;
+  bondp=NULL;
+  anglep=NULL;
+  improperp=NULL;
+  dihedralp=NULL;
+  vdwp=NULL;
+  vdw_pairp=NULL;
+  bond_array=NULL;
+  angle_array=NULL;
+  dihedral_array=NULL;
+  improper_array=NULL;
+  vdw_pair_tree=NULL;
+  maxDihedralMults=NULL;
+  maxImproperMults=NULL;
+
+  /*  Set all the counts to 0          */
+  NumBondParams=0;
+  NumAngleParams=0;
+  NumDihedralParams=0;
+  NumImproperParams=0;
+  NumVdwParams=0;
+  NumVdwPairParams=0;
+
+  // Read in parm parameters
+  read_parm(amber_data,vdw14);
+}
+/*      END OF FUNCTION Parameters      */
+
+
+/************************************************************************/
+/*                  */
+/*      FUNCTION read_parm   */
+/*                  */
+/*   INPUTS:                */
+/*  amber_data - AMBER data structure    */
+/*                  */
+/*  This function copys AMBER parameter data to the corresponding data  */
+/*   structures      */
+/*                  */
+/************************************************************************/
+
+void Parameters::read_parm(Ambertoppar *amber_data, BigReal vdw14)
+{ 
+  int i,j,ico,numtype,mul;
+  IndexedVdwPair *new_node;
+
+  if (!amber_data->data_read)
+    NAMD_die("No data read from parm file yet!");
+
+  // Copy bond parameters
+  NumBondParams = amber_data->Numbnd;
+  if (NumBondParams)
+  { bond_array = new BondValue[NumBondParams];
+    if (bond_array == NULL)
+      NAMD_die("memory allocation of bond_array failed!");
+  }
+  for (i=0; i<NumBondParams; ++i)
+  { bond_array[i].k = amber_data->Rk[i];
+    bond_array[i].x0 = amber_data->Req[i];
+  }
+
+  // Copy angle parameters
+  NumAngleParams = amber_data->Numang;
+  if (NumAngleParams)
+  { angle_array = new AngleValue[NumAngleParams];
+    if (angle_array == NULL)
+      NAMD_die("memory allocation of angle_array failed!");
+  }
+  for (i=0; i<NumAngleParams; ++i)
+  { angle_array[i].k = amber_data->Tk[i];
+    angle_array[i].theta0 = amber_data->Teq[i];
+    // Amber has no k_ub and r_ub for angle parameters, so they're set to 0
+    angle_array[i].k_ub = angle_array[i].r_ub = 0;
+  }
+
+  // Copy dihedral parameters
+  // Note: If the periodicity is negative, it means the following
+  //  entry is another term in a multitermed dihedral, and the
+  //  absolute value is the true periodicity; in this case the
+  //  following entry in "dihedral_array" should be left empty,
+  //  NOT be skipped, in order to keep the next dihedral's index
+  //  unchanged.
+  NumDihedralParams = amber_data->Nptra;
+  if (NumDihedralParams)
+  { dihedral_array = new DihedralValue[amber_data->Nptra];
+    if (dihedral_array == NULL)
+      NAMD_die("memory allocation of dihedral_array failed!");
+  }
+  mul = 0;
+  for (i=0; i<NumDihedralParams; ++i)
+  { dihedral_array[i-mul].values[mul].k = amber_data->Pk[i];
+    dihedral_array[i-mul].values[mul].n = int(fabs(amber_data->Pn[i])+0.5);
+    if (dihedral_array[i-mul].values[mul].n == 0)
+    { char err_msg[128];
+      sprintf(err_msg, "The periodicity of dihedral # %d is zero!", i+1);
+      NAMD_die(err_msg);
+    }
+    dihedral_array[i-mul].values[mul].delta = amber_data->Phase[i];
+    // If the periodicity is positive, it means the following
+    // entry is a new dihedral term.
+    if (amber_data->Pn[i] > 0)
+    { dihedral_array[i-mul].multiplicity = mul+1;
+      mul = 0;
+    }
+    else if (++mul >= MAX_MULTIPLICITY)
+    { char err_msg[181];
+      sprintf(err_msg, "Multiple dihedral with multiplicity of %d greater than max of %d",
+         mul+1, MAX_MULTIPLICITY);
+      NAMD_die(err_msg);
+    }
+  }
+  if (mul > 0)
+    NAMD_die("Negative periodicity in the last dihedral entry!");
+
+  // Copy VDW parameters: AMBER explicitly gives VDW parameters between every
+  // 2 atom types, so the data are copied to vdw_pair_tree
+  // In AMBER, all 1-4 VDW interactions are divided by factor vdw14
+  NumVdwParamsAssigned = numtype = amber_data->Ntypes; // Number of atom types
+  NumVdwPairParams = numtype * (numtype+1) / 2;
+  for (i=0; i<numtype; ++i)
+    for (j=i; j<numtype; ++j)
+    { new_node = new IndexedVdwPair;
+      if (new_node == NULL)
+        NAMD_die("memory allocation of vdw_pair_tree failed!");
+      new_node->ind1 = i;
+      new_node->ind2 = j;
+      new_node->left = new_node->right = NULL;
+      // ico is the index of interaction between atom type i and j into
+      // the parameter arrays. If it's positive, the interaction is
+      // 6-12 VDW; otherwise it's 10-12 H-bond interaction. NAMD doesn't
+      // have 10-12 term, so if ico is negative, then the 10-12
+      // coefficients must be 0, otherwise die.
+      ico = amber_data->Cno[numtype*i+j];
+      if (ico>0)
+      { new_node->A = amber_data->Cn1[ico-1];
+        new_node->A14 = new_node->A / vdw14;
+        new_node->B = amber_data->Cn2[ico-1];
+        new_node->B14 = new_node->B / vdw14;
+      }
+      else if (amber_data->HB12[abs(ico)-1]==0.0 && amber_data->HB6[abs(ico)-1]==0.0)
+      { new_node->A = new_node->A14 = new_node->B = new_node->B14 = 0.0;
+        iout << iWARN << "Encounter 10-12 H-bond term\n";
+      }
+      else
+        NAMD_die("Encounter non-zero 10-12 H-bond term!");
+      // Add the node to the binary tree
+      vdw_pair_tree = add_to_indexed_vdw_pairs(new_node, vdw_pair_tree);
+    }
+}
+/*      END OF FUNCTION read_parm    */

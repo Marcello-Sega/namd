@@ -335,21 +335,37 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
 void SimParameters::config_parser_fileio(ParseOptions &opts) {
    
    /////////////// file I/O
+
    opts.optional("main", "cwd", "current working directory", PARSE_STRING);
 
-   opts.require("main", "coordinates", "initial PDB coordinate file",
+// In order to include AMBER options, "coordinates", "structure"
+// and "parameters" are now optional, not required. The presence
+// of them will be checked later in check_config()
+
+//   opts.require("main", "coordinates", "initial PDB coordinate file",
+//    PARSE_STRING);
+   opts.optional("main", "coordinates", "initial PDB coordinate file",
     PARSE_STRING);
+
    opts.optional("main", "velocities",
      "initial velocities, given as a PDB file", PARSE_STRING);
    opts.optional("main", "binvelocities",
      "initial velocities, given as a binary restart", PARSE_STRING);
    opts.optional("main", "bincoordinates",
      "initial coordinates in a binary restart file", PARSE_STRING);
-   opts.require("main", "structure", "initial PSF structure file",
+
+//   opts.require("main", "structure", "initial PSF structure file",
+//    PARSE_STRING);
+   opts.optional("main", "structure", "initial PSF structure file",
     PARSE_STRING);
-   opts.require("main", "parameters",
+
+//   opts.require("main", "parameters",
+//"CHARMm 19 or CHARMm 22 compatable force field file (multiple "
+//"inputs allowed)", PARSE_MULTIPLES);
+   opts.optional("main", "parameters",
 "CHARMm 19 or CHARMm 22 compatable force field file (multiple "
 "inputs allowed)", PARSE_MULTIPLES);
+
 
    //****** BEGIN CHARMM/XPLOR type changes
    //// enable XPLOR as well as CHARMM input files for parameters
@@ -390,8 +406,17 @@ void SimParameters::config_parser_fileio(ParseOptions &opts) {
 
    opts.optionalB("outputname", "binaryoutput", "Specify use of binary output files ", 
        &binaryOutput, TRUE);
-   
+
+   opts.optionalB("main", "amber", "Is it AMBER force field?",
+       &amberOn, FALSE);
+   opts.optionalB("amber", "readexclusions", "Read exclusions from parm file?",
+       &readExclusions, TRUE);
+   opts.require("amber", "scnb", "1-4 VDW interactions are divided by scnb",
+       &vdwscale14, 2.0);
+   opts.require("amber", "parmfile", "AMBER parm file", PARSE_STRING);
+   opts.optional("amber", "ambercoor", "AMBER coordinate file", PARSE_STRING);
 }
+
 
 void SimParameters::config_parser_fullelect(ParseOptions &opts) {
    
@@ -939,6 +964,24 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
       strcat(cwd, PATHSEPSTR);
    }
 
+   // If it's not AMBER, then "coordinates", "structure"
+   // and "parameters" must be specified.
+   if (!amberOn)
+   { if (!opts.defined("coordinates"))
+       NAMD_die("coordinates not found in the configuration file!");
+     if (!opts.defined("structure"))
+       NAMD_die("structure not found in the configuration file!");
+     if (!opts.defined("parameters"))
+       NAMD_die("parameters not found in the configuration file!");
+   }
+   
+   // In any case, there should be either "coordinates" or
+   // "ambercoor", but not both
+   if (opts.defined("coordinates") && opts.defined("ambercoor"))
+     NAMD_die("Cannot specify both coordinates and ambercoor!");
+   if (!opts.defined("coordinates") && !opts.defined("ambercoor"))
+     NAMD_die("Coordinate file not found!");
+
    //  Make sure that both a temperature and a velocity PDB were
    //  specified
    if (opts.defined("temperature") &&
@@ -986,18 +1029,20 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    }
 
 
-   //****** BEGIN CHARMM/XPLOR type changes
-   //// set default
-   if (!paraTypeXplorOn && !paraTypeCharmmOn) 
-   {
-     paraTypeXplorOn = TRUE;
+   if (!amberOn)
+   { //****** BEGIN CHARMM/XPLOR type changes
+     //// set default
+     if (!paraTypeXplorOn && !paraTypeCharmmOn) 
+     {
+       paraTypeXplorOn = TRUE;
+     }
+     //// make sure that there is just one type of input parameters specified
+     if (paraTypeXplorOn && paraTypeCharmmOn) 
+     {
+       NAMD_die("Please specify either XPLOR or CHARMM format for parameters!");
+     }
+     //****** END CHARMM/XPLOR type changes
    }
-   //// make sure that there is just one type of input parameters specified
-   if (paraTypeXplorOn && paraTypeCharmmOn) 
-   {
-     NAMD_die("Please specify either XPLOR or CHARMM format for parameters!");
-   }
-   //****** END CHARMM/XPLOR type changes
 
    
    //  If minimization isn't on, must have a temp or velocity
@@ -2610,42 +2655,46 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
   iout << "NO\n" << endi;
    }
 
+// If this is AMBER, then there's no following options
 
-   current = config->find("coordinates");
-
-   iout << iINFO << "COORDINATE PDB         " << current->data << '\n' << endi;
-
-   if (opts.defined("bincoordinates"))
+   if (!amberOn)
    {
-  current = config->find("bincoordinates");
+     current = config->find("coordinates");
 
-     iout << iINFO << "BINARY COORDINATES     " 
-              << current->data << "\n";
-   }
+     iout << iINFO << "COORDINATE PDB         " << current->data << '\n' << endi;
 
-   current = config->find("structure");
+     if (opts.defined("bincoordinates"))
+     {
+    current = config->find("bincoordinates");
 
-   iout << iINFO << "STRUCTURE FILE         " 
-      << current->data << "\n" << endi;
+       iout << iINFO << "BINARY COORDINATES     " 
+                << current->data << "\n";
+     }
 
-   //****** BEGIN CHARMM/XPLOR type changes
-   if (paraTypeXplorOn)
-   {
-     iout << iINFO << "PARAMETER file: XPLOR format! (default) \n" << endi;
-   }
-   else if (paraTypeCharmmOn)
-   {
-     iout << iINFO << "PARAMETER file: CHARMM format! \n" << endi;
-   }
-   //****** END CHARMM/XPLOR type changes
+     current = config->find("structure");
 
-   current = config->find("parameters");
-
-   while (current != NULL)
-   {
-     iout << iINFO << "PARAMETERS             " 
+     iout << iINFO << "STRUCTURE FILE         " 
         << current->data << "\n" << endi;
-     current = current->next;
+
+     //****** BEGIN CHARMM/XPLOR type changes
+     if (paraTypeXplorOn)
+     {
+       iout << iINFO << "PARAMETER file: XPLOR format! (default) \n" << endi;
+     }
+     else if (paraTypeCharmmOn)
+     {
+       iout << iINFO << "PARAMETER file: CHARMM format! \n" << endi;
+     }
+     //****** END CHARMM/XPLOR type changes
+
+     current = config->find("parameters");
+
+     while (current != NULL)
+     {
+       iout << iINFO << "PARAMETERS             " 
+          << current->data << "\n" << endi;
+       current = current->next;
+     }
    }
 
 
@@ -2654,7 +2703,6 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
   iout << iINFO << "FIRST TIMESTEP         "
      << firstTimestep << "\n" << endi;
    }
-
 }
 /*    END OF FUNCTION initialize_config_data    */
 

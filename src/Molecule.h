@@ -17,6 +17,8 @@
 
 #define MOLECULE_H
 
+#include "parm.h"
+
 #include "common.h"
 #include "NamdTypes.h"
 #include "structures.h"
@@ -168,6 +170,10 @@ public:
 	int waterIndex;
 
 	Molecule(SimParameters *, Parameters *param, char *filename=NULL);
+	
+	Molecule(SimParameters *, Parameters *, Ambertoppar *);
+	void read_parm(Ambertoppar *);
+	
 	~Molecule();		//  Destructor
 
 	void read_psf_file(char *, Parameters *);

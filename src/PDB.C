@@ -12,6 +12,7 @@
 */
 
 #include <stdio.h>
+#include <stdlib.h>
 #ifndef WIN32
 #include <strings.h>
 #endif
@@ -267,3 +268,76 @@ main()
 }
 #endif // TEST_PDB_CLASS
 
+
+
+// This function was borrowed from VMD code in "ReadPARM.C".
+// It skips to a new line.
+static int readtoeoln(FILE *f) {
+  char c;
+
+  /* skip to eoln */
+  while((c = getc(f)) != '\n') {
+    if (c == EOF) 
+      return -1;
+  }
+
+  return 0;
+}  
+
+
+
+// read in an AMBER coordinate file and populate the PDB structure
+PDB::PDB( const char *filename, Ambertoppar *amber_data)
+{ int i,j,k;
+  Real coor[3];
+  char buf[13],resname[5],atomname[5];
+  FILE *infile;
+  PDBAtom *pdb;
+  
+  if ((infile=Fopen(filename, "r")) == NULL)
+    NAMD_die("Can't open AMBER coordinate file!");
+
+  readtoeoln(infile);  // Skip the first line (title)
+
+  fscanf(infile,"%d",&atomCount);  // Read in num of atoms
+  if (atomCount != amber_data->Natom)
+    NAMD_die("Num of atoms in coordinate file is different from that in parm file!");
+  readtoeoln(infile);
+
+  atomArray = new PDBAtomPtr[atomCount];
+  if ( atomArray == NULL )
+  {
+    NAMD_die("memory allocation failed in PDB::PDB");
+  }
+  
+  // Read in the coordinates, which are in the format of 6F12.7
+  // Other fields are copied from "amber_data"
+  for (i=0; i<atomCount; ++i)
+  { // Read x,y,z coordinates
+    for (j=0; j<3; ++j)
+    { for (k=0; k<12; ++k)
+      { buf[k]=getc(infile);
+        if (buf[k]=='\n' || buf[k]=='\0' || buf[k]==EOF)
+          NAMD_die("Error reading AMBER coordinate file!");
+      }
+      buf[12] = '\0';
+      coor[j] = atof(buf);
+    }
+    if (i%2 == 1)
+      readtoeoln(infile);
+    // Copy name, resname and resid from "amber_data"
+    for (j=0; j<4; ++j)
+    { resname[j] = amber_data->ResNames[amber_data->AtomRes[i]*4+j];
+      atomname[j] = amber_data->AtomNames[i*4+j];
+    }
+    resname[4] = atomname[4] = '\0';
+    // Create a new PDB record, and fill in its entries
+    pdb = new PDBAtomRecord("");
+    pdb->name(atomname);
+    pdb->residuename(resname);
+    pdb->serialnumber(i+1);
+    pdb->residueseq(amber_data->AtomRes[i]+1);
+    pdb->coordinates(coor);
+    atomArray[i] = pdb;  // Include the new record into the array
+  }
+}

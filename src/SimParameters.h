@@ -380,6 +380,11 @@ public:
  	int IMDfreq;  // frequency at which coordinates will be available
         int IMDwait;  // if true, pause the simulation when there is no
                       // connection
+        
+        // AMBER options
+        Bool amberOn; // FLAG TRUE-> amber force field is used
+        Bool readExclusions; // FLAG TRUE-> Read exclusions from parm file
+        BigReal vdwscale14; //  Scaling factor for 1-4 VDW interactions
 
 public:
 

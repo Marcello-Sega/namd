@@ -17,6 +17,8 @@
 //   the typedef PDBAtomList (a singly linked list of PDBAtom *
 //   the class PDB
 
+#include "parm.h"
+
 #include "PDBData.h"
 #include "Vector.h"
 #include "Lattice.h"
@@ -37,6 +39,7 @@ class PDB {
     
   public:
     PDB( const char *pdbfilename);   // read in PDB from a file
+    PDB(const char *, Ambertoppar *);  // read AMBER coordinate file
     ~PDB( void);               // clear everything
     void write(const char *outfilename, const char *commentline=NULL); // write the coordinates to a file
        // the following deals only with ATOMs and HETATMs

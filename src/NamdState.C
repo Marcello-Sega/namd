@@ -24,6 +24,7 @@
 #include <unistd.h>
 #endif
 #include <sys/stat.h>
+#include "parm.h"
 
 //#define DEBUGM
 #include "Debug.h"
@@ -87,19 +88,47 @@ int NamdState::configListInit(ConfigList *cfgList) {
   }
   DebugM(1,"NamdState::configFileInit configList okay\n");
 
-  StringList *moleculeFilename = configList->find("structure");
-  StringList *parameterFilename = configList->find("parameters");
-  StringList *coordinateFilename = configList->find("coordinates");
   char *currentdir = 0;
   simParameters =  new SimParameters(configList,currentdir);
   lattice = simParameters->lattice;
-  //****** BEGIN CHARMM/XPLOR type changes
-  parameters = new Parameters(simParameters, parameterFilename);
-  //****** END CHARMM/XPLOR type changes
-  parameters->print_param_summary();
+  
+  // If it's AMBER force field, read the AMBER style files;
+  // Otherwise read the CHARMM style files
 
-  molecule = new Molecule(simParameters, parameters, moleculeFilename->data);
-  pdb = new PDB(coordinateFilename->data);
+  if (simParameters->amberOn)
+  { StringList *parmFilename = configList->find("parmfile");
+    StringList *coorFilename = configList->find("ambercoor");
+    // "amber" is a temporary data structure, which records all
+    // the data from the parm file. After copying them into
+    // molecule, parameter and pdb structures, it will be deleted.
+    Ambertoppar *amber;
+    amber = new Ambertoppar;
+    if (amber->readparm(parmFilename->data))
+    { parameters = new Parameters(amber, simParameters->vdwscale14);
+      molecule = new Molecule(simParameters, parameters, amber);
+      if (coorFilename != NULL)
+        pdb = new PDB(coorFilename->data,amber);
+      delete amber;
+    }
+    else
+      NAMD_die("Failed to read AMBER parm file!");
+    parameters->print_param_summary();
+  }
+  else
+  { StringList *moleculeFilename = configList->find("structure");
+    StringList *parameterFilename = configList->find("parameters");
+    //****** BEGIN CHARMM/XPLOR type changes
+    // For AMBER use different constructor based on parm_struct!!!  -JCP
+    parameters = new Parameters(simParameters, parameterFilename);
+    //****** END CHARMM/XPLOR type changes
+    parameters->print_param_summary();
+
+    molecule = new Molecule(simParameters, parameters, moleculeFilename->data);
+  }
+  
+  StringList *coordinateFilename = configList->find("coordinates");
+  if (coordinateFilename != NULL)
+    pdb = new PDB(coordinateFilename->data);
   if (pdb->num_atoms() != molecule->numAtoms) {
     iout << iERRORF 
       << "Number of pdb and psf atoms are not the same!" << "\n" << endi;

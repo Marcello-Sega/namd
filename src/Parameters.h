@@ -14,6 +14,8 @@
 
 #define PARAM_H
 
+#include "parm.h"
+
 #include "common.h"
 #include "structures.h"
 #include "strlib.h"
@@ -245,6 +247,10 @@ public:
         //// added SimParameters to argument list
 	Parameters(SimParameters *, StringList *f=NULL);
         //****** END CHARMM/XPLOR type changes
+        
+        Parameters(Ambertoppar *, BigReal);
+        void read_parm(Ambertoppar *, BigReal);
+        
 	~Parameters();				//  Destructor
 
         // return a string for the Nth atom type.  This can only be
