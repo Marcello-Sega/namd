@@ -28,7 +28,7 @@ public:
  private:
   PmeGrid myGrid;
   int qsize, fsize, bsize;
-  double *q_arr;
+  double **q_arr;
   char *f_arr;
   double energy;
   double virial[6];

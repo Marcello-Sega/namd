@@ -643,12 +643,18 @@ ComputePme::ComputePme(ComputeID c) :
   myGrid.dim3 = 2 * (myGrid.K3/2 + 1);
   qsize = myGrid.K1 * myGrid.dim2 * myGrid.dim3;
   fsize = myGrid.K1 * myGrid.dim2;
-  q_arr = new double[qsize];
+  q_arr = new double*[fsize];
+  memset( (void*) q_arr, 0, fsize * sizeof(double*) );
   f_arr = new char[fsize];
 }
 
 ComputePme::~ComputePme()
 {
+  for (int i=0; i<fsize; ++i) {
+    if ( q_arr[i] ) {
+      delete [] q_arr[i];
+    }
+  }
   delete [] q_arr;
   delete [] f_arr;
 }
@@ -725,7 +731,11 @@ void ComputePme::doWork()
   selfEnergy *= -1. * ewaldcof / SQRT_PI;
   energy += selfEnergy;
 
-  memset( (void*) q_arr, 0, qsize * sizeof(double) );
+  for (i=0; i<fsize; ++i) {
+    if ( q_arr[i] ) {
+      memset( (void*) (q_arr[i]), 0, myGrid.dim3 * sizeof(double) );
+    }
+  }
   memset( (void*) f_arr, 0, fsize * sizeof(char) );
   myRealSpace = new PmeRealSpace(myGrid,numLocalAtoms);
   scale_coordinates(localData, numLocalAtoms, lattice, myGrid);
@@ -774,14 +784,13 @@ void ComputePme::sendData(int numRecipPes, int *recipPeMap) {
     msg->len = flen;
     memcpy((void*)(msg->fgrid),(void*)(f),flen*sizeof(char));
 
-    double *q = q_arr + start;
+    double **q = q_arr + fstart;
     double *qmsg = msg->qgrid;
     for ( i=0; i<flen; ++i ) {
       if ( f[i] ) {
-        memcpy((void*)(qmsg),(void*)(q),zdim*sizeof(double));
+        memcpy((void*)(qmsg),(void*)(q[i]),zdim*sizeof(double));
         qmsg += zdim;
       }
-      q += zdim;
     }
 
     pmeProxy.recvGrid(msg,recipPeMap[pe]);
@@ -802,13 +811,12 @@ void ComputePme::copyResults(PmeGridMsg *msg) {
   int fstart = msg->start;
   char *f = msg->fgrid;
   double *qmsg = msg->qgrid;
-  double *q = q_arr + fstart * zdim;
+  double **q = q_arr + fstart;
   for ( int i=0; i<flen; ++i ) {
     if ( f[i] ) {
-      memcpy((void*)(q),(void*)(qmsg),zdim*sizeof(double));
+      memcpy((void*)(q[i]),(void*)(qmsg),zdim*sizeof(double));
       qmsg += zdim;
     }
-    q += zdim;
   }
 }
 
