@@ -24,6 +24,10 @@ infostream iout;
 //    iout << iINFO << blah << endi;
 // Send an error message to the information monitor
 //    iout << iERROR << blah << endi;
+// Set your own information to level 4
+//    iout << blah << level(4) << blah << endi;
+// Display all information that is at level 6 or higher
+//    iout << blah << endi(6);
 
 // Debug messages should use DebugM()!  not iout.
 

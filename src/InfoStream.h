@@ -13,50 +13,84 @@
 #ifndef INFOSTREAM_H
 #define INFOSTREAM_H
 
-#include <stdio.h>
 #include <iostream.h>	// for cout
 #include <strstream.h>	// for ostrstream
+#include <stdio.h>	// for CPrintf
 #include "ckdefs.h"	// for CPrintf
 
+
 class infostream : public ostrstream
-  {
+{
   private:
-  char Buffer[1024];
+  char iBuffer[1024];
 
   public:
-  infostream() : ostrstream(Buffer,sizeof(Buffer)) {;}
+  infostream() : ostrstream(iBuffer,sizeof(iBuffer)) {;}
+  ~infostream() {;}
 
   /* output using CPrintf() (end by inform) */
-  infostream& endi()
+  void endi()
     {
     *this << ends;
-    CPrintf("%s",Buffer);
-    this->seekp(0);	// clear buffer
-    return *this;
+    CPrintf("%s",iBuffer);
+    (*this).seekp(0);	// clear buffer
     }
 
   /* output to stdout (end by console) */
-  infostream& endc()
+  void endc()
     {
     *this << ends;
-    cout << Buffer;
-    this->seekp(0);	// clear buffer
-    return *this;
+    cout << iBuffer << ends;
+    (*this).seekp(0);	// clear buffer
     }
 
-  };
+  /* define how to use the remaining << args */
+  /** infostream<<ostream (hot to handle inherited modifiers) **/
+  infostream& operator<<(ostream& (*f)(ostream&)) { f(*this); return(*this); }
+  /** infostream<<infostream (how to handle class modifiers) **/
+  infostream& operator<<(infostream& (*f)(infostream&)) { return f(*this); }
+
+  #define LOCALMOD(type) infostream& operator<<(type x) \
+		{ (ostream&)(*this) << x; return(*this); }
+  /** << characters **/
+  LOCALMOD(char);
+  LOCALMOD(unsigned char);
+  LOCALMOD(const char *);
+  /** << integers **/
+  LOCALMOD(int);
+  LOCALMOD(long);
+  LOCALMOD(short);
+  LOCALMOD(unsigned int);
+  LOCALMOD(unsigned long);
+  LOCALMOD(unsigned short);
+  /** << floats **/
+  LOCALMOD(float);
+  LOCALMOD(double);
+  /** << pointers */
+  LOCALMOD(void *);
+  LOCALMOD(streambuf *);
+  #undef LOCALMOD
+};
+
+/** modifiers **/
+inline infostream& endc(infostream& s)  { s.endc(); return s; }
+inline infostream& endi(infostream& s)  { s.endi(); return s; }
+
+/** common messages **/
+/** iINFO, iWARN, iERROR, iDEBUG provide initial headings. **/
+/** iINFOF, iWARNF, iERRORF, iDEBUGF provide initial headings with file name
+    and line numbers. **/
+inline ostream& iFILE(ostream& s) {return s <<__FILE__<<'('<<__LINE__<<')';}
+inline ostream& iINFO (ostream& s)  { return s << "Info: "; }
+inline ostream& iINFOF(ostream& s)  { return s << "Info " << iFILE << ": "; }
+inline ostream& iWARN (ostream& s)  { return s << "Warning: "; }
+inline ostream& iWARNF(ostream& s)  { return s << "Warning " << iFILE << ": "; }
+inline ostream& iERROR(ostream& s)  { return s << "ERROR: "; }
+inline ostream& iERRORF(ostream& s) { return s << "ERROR " << iFILE << ": "; }
+inline ostream& iDEBUG(ostream& s)  { return s << "DEBUG: "; }
+inline ostream& iDEBUGF(ostream& s) { return s << "DEBUG " << iFILE << ": "; }
 
 extern infostream iout;
 
-/** now we have a stream.  Let's tell the stream when/where to output **/
-/** iout << endi;  (send output to information console -- CPrintf) **/
-/** iout << endc;  (send output to host console -- cout) **/
-inline infostream& endi(infostream& s)   { return s.endi(); }
-inline infostream& endc(infostream& s)   { return s.endc(); }
-/** common messages **/
-inline infostream& iINFO(infostream& s)  { s << "Info: "; return s; }
-inline infostream& iWARN(infostream& s)  { s << "Warning: "; return s; }
-inline infostream& iERROR(infostream& s) { s << "ERROR: "; return s; }
-
-#endif
+#endif /* INFOSTREAM_H */
 
