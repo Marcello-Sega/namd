@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.31 1996/12/27 22:22:33 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.32 1996/12/30 20:37:38 nealk Exp $";
 
 
 #include "ckdefs.h"
@@ -66,7 +66,12 @@ Node::Node(GroupInitMsg *msg)
   delete msg;
 
   /* in case any node other than 0 reaches this place first. */
-  if (comm == NULL) comm = new CommunicateConverse(0,0);
+  if (comm == NULL)
+  {
+    comm = new CommunicateConverse(0,0);
+    DebugM(3,"comm being initialized.\n");
+  }
+  else DebugM(3,"comm already initialized.\n");
 
   molecule = NULL;
   parameters = NULL;
@@ -137,7 +142,12 @@ void Node::startup(InitMsg *msg)
   delete msg;
 
   /* in case node 0 reaches here before other nodes... */
-  if (comm == NULL) comm = new CommunicateConverse(0,0);
+  if (comm == NULL)
+  {
+    comm = new CommunicateConverse(0,0);
+    DebugM(3,"comm being initialized.\n");
+  }
+  else DebugM(3,"comm already initialized.\n");
 
   if ( CMyPe() ) {
      simParameters = new SimParameters;
@@ -383,12 +393,15 @@ void Node::saveMolDataPointers(Molecule *molecule,
  *
  *	$RCSfile: Node.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.31 $	$Date: 1996/12/27 22:22:33 $
+ *	$Revision: 1.32 $	$Date: 1996/12/30 20:37:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.32  1996/12/30 20:37:38  nealk
+ * Mode debug code.
+ *
  * Revision 1.31  1996/12/27 22:22:33  nealk
  * Made extern comm global to file (was already) and readded second comm=new.
  *
