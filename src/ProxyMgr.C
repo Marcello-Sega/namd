@@ -25,7 +25,7 @@
 #include "ComputeMap.h"
 #include "HomePatch.h"
 
-#define DEBUGM
+// #define DEBUGM
 #define MIN_DEBUG_LEVEL 5
 #include "Debug.h"
 
@@ -341,13 +341,17 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/02/17 23:47:05 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1997/02/25 18:26:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.1008  1997/02/25 18:26:22  nealk
+ * More DPMTA debugging
+ * Disabled ProxyMgr debugging
+ *
  * Revision 1.1007  1997/02/17 23:47:05  ari
  * Added files for cleaning up atom migration code
  *

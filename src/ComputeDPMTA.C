@@ -82,7 +82,11 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   if (CMyPe() != 0)
   {
     slavetids=NULL;
-    DebugM(1,"DPMTA not configured since not Node 0\n");
+    if (PMTAregister() < 0)
+    {
+	NAMD_die("PMTARegister failed!!");
+    }
+    DebugM(1,"DPMTA done PMTAinit.\n");
     return;
   }
   DebugM(1,"DPMTA configuring\n");
