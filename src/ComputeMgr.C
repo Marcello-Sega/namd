@@ -19,9 +19,11 @@
 #include "ComputeMgr.top.h"
 #include "ComputeMgr.h"
 
+#include "ComputeNonbondedSelf.h"
+#include "ComputeNonbondedPair.h"
 #include "ComputeAngles.h"
 
-#define MIN_DEBUG_LEVEL 3
+#define MIN_DEBUG_LEVEL 4
 #define DEBUGM 1
 #include "Debug.h"
 
@@ -37,6 +39,9 @@ ComputeMgr::~ComputeMgr(void)
 
 void ComputeMgr:: createComputes(ComputeMap *map)
 {
+  int numNonbondedSelf = 0;
+  int numNonbondedPair = 0;
+
   DebugM(1,"---------------------------------------");
   DebugM(1,"---------------------------------------\n");
 
@@ -62,39 +67,53 @@ void ComputeMgr:: createComputes(ComputeMap *map)
     DebugM(1,"---------------------------------------\n");
 
     Compute *c;
+    PatchID pid2[2];
 
     switch ( map->computeData[i].type )
     {
       case computeNonbondedSelfType:
-        DebugM(2,"ComputeNonbondedSelf would have been created.\n");
-        break;
+	c = new ComputeNonbondedSelf(i,map->computeData[i].pids[0]);
+	DebugM(3,"ComputeNonbondedSelf created\n");
+	++numNonbondedSelf;
+	map->registerCompute(i,c);
+	c->mapReady();
+	break;
       case computeNonbondedPairType:
-        DebugM(2,"ComputeNonbondedPair would have been created.\n");
-        break;
+	pid2[0] = map->computeData[i].pids[0];
+	pid2[1] = map->computeData[i].pids[1];
+	c = new ComputeNonbondedPair(i,pid2);
+	DebugM(3,"ComputeNonbondedPair created\n");
+	++numNonbondedPair;
+	map->registerCompute(i,c);
+	c->mapReady();
+	break;
       case computeNonbondedExclType:
-        DebugM(2,"ComputeNonbondedExcl would have been created.\n");
-        break;
+	DebugM(2,"ComputeNonbondedExcl would have been created.\n");
+	break;
       case computeBondsType:
-        DebugM(2,"ComputeBonds would have been created.\n");
-        break;
+	DebugM(2,"ComputeBonds would have been created.\n");
+	break;
       case computeAnglesType:
-        c = new ComputeAngles(i);
-        map->registerCompute(i,c);
-        DebugM(3,"ComputeAngles created\n");
-        c->mapReady();
-        DebugM(3,"mapReady() sent\n");
-        break;
+	c = new ComputeAngles(i);
+	DebugM(3,"ComputeAngles created\n");
+	map->registerCompute(i,c);
+	c->mapReady();
+	break;
       case computeDihedralsType:
-        DebugM(2,"ComputeDihedrals would have been created.\n");
-        break;
+	DebugM(2,"ComputeDihedrals would have been created.\n");
+	break;
       case computeImpropersType:
-        DebugM(2,"ComputeImpropers would have been created.\n");
-        break;
+	DebugM(2,"ComputeImpropers would have been created.\n");
+	break;
       default:
-        DebugM(10,"Unknown compute type not created!\n");
+	DebugM(10,"Unknown compute type not created!\n");
     }
 
   }
+
+  DebugM(4, numNonbondedSelf << " ComputeNonbondedSelf created\n");
+  DebugM(4, numNonbondedPair << " ComputeNonbondedPair created\n");
+
 }
 
 void ComputeMgr:: enqueueWork(Compute *compute)
@@ -109,7 +128,7 @@ void ComputeMgr:: enqueueWork(Compute *compute)
  *
  *	$RCSfile: ComputeMgr.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/11/30 01:27:34 $
+ *	$Revision: 1.3 $	$Date: 1996/11/30 02:02:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
