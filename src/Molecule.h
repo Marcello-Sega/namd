@@ -92,6 +92,7 @@ private:
 	Real *langForceVals;    //  Calculated values for langvin random forces
 	int32 *fixedAtomFlags;	//  1 for fixed, -1 for fixed group, else 0
 	int32 *exPressureAtomFlags; // 1 for excluded, -1 for excluded group.
+        int32 *clusters;	//  size of contiguous connected cluster or 0
 	Real *rigidBondLengths;  //  if H, length to parent or 0. or
 				//  if not H, length between children or 0.
 //fepb
@@ -248,6 +249,8 @@ public:
 	Bool is_water(int);        // return true if atom is part of water 
 	int  get_groupSize(int);     // return # atoms in (hydrogen) group
         int get_mother_atom(int);  // return mother atom of a hydrogen
+
+	int get_cluster(int anum) const { return clusters[anum]; }
 
 	//  Get the mass of an atom
 	Real atommass(int anum) const

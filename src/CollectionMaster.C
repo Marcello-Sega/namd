@@ -46,9 +46,9 @@ void CollectionMaster::receivePositions(CollectVectorMsg *msg)
   while ( ( c = positions.removeReady() ) ) { disposePositions(c); }
 }
 
-void CollectionMaster::enqueuePositions(int seq)
+void CollectionMaster::enqueuePositions(int seq, Lattice &lattice)
 {
-  positions.enqueue(seq);
+  positions.enqueue(seq,lattice);
 
   CollectVectorInstance *c;
   while ( ( c = positions.removeReady() ) ) { disposePositions(c); }
@@ -62,7 +62,7 @@ void CollectionMaster::disposePositions(CollectVectorInstance *c)
     if ( ! size ) size = c->fdata.size();
     Vector *data = c->data.begin();
     FloatVector *fdata = c->fdata.begin();
-    Node::Object()->output->coordinate(seq,size,data,fdata);
+    Node::Object()->output->coordinate(seq,size,data,fdata,c->lattice);
     c->free();
 }
 
@@ -78,7 +78,8 @@ void CollectionMaster::receiveVelocities(CollectVectorMsg *msg)
 
 void CollectionMaster::enqueueVelocities(int seq)
 {
-  velocities.enqueue(seq);
+  Lattice dummy;
+  velocities.enqueue(seq,dummy);
 
   CollectVectorInstance *c;
   while ( ( c = velocities.removeReady() ) ) { disposeVelocities(c); }

@@ -178,6 +178,7 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
   langevinParams=NULL;
   langForceVals=NULL;
   fixedAtomFlags=NULL;
+  clusters=NULL;
   exPressureAtomFlags=NULL;
   rigidBondLengths=NULL;
   consIndexes=NULL;
@@ -302,6 +303,9 @@ Molecule::~Molecule()
   
   if (fixedAtomFlags != NULL)
        delete [] fixedAtomFlags;
+
+  if (clusters != NULL)
+       delete [] clusters;
 
   if (exPressureAtomFlags != NULL)
        delete [] exPressureAtomFlags;
@@ -1955,6 +1959,7 @@ void Molecule::receive_Molecule(MIStream *msg)
 //fepe
        tmpArena = new ObjectArena<int32>;
        bondsWithAtom = new int32 *[numAtoms];
+       clusters = new int32 [numAtoms];
        bondsByAtom = new int32 *[numAtoms];
        anglesByAtom = new int32 *[numAtoms];
        dihedralsByAtom = new int32 *[numAtoms];
@@ -1987,6 +1992,26 @@ void Molecule::receive_Molecule(MIStream *msg)
          int a2 = bonds[i].atom2;
          bondsWithAtom[a1][byAtomSize[a1]++] = i;
          bondsWithAtom[a2][byAtomSize[a2]++] = i;
+       }
+
+       //  Build cluster information (contiguous clusters)
+       for (i=0; i<numAtoms; i++) {
+         clusters[i] = 0;
+       }
+       int first_atom_in_cluster = 0;
+       int last_atom_in_cluster = 0;
+       for (i=0; i<numAtoms; i++) {
+         for ( int32 *b = bondsWithAtom[i]; *b != -1; ++b ) {
+           int a = bonds[*b].atom1;
+           if ( a == i ) a = bonds[*b].atom2;
+           if ( a > last_atom_in_cluster ) last_atom_in_cluster = a;
+         }
+         if ( last_atom_in_cluster == i ) {
+           int cs = last_atom_in_cluster - first_atom_in_cluster + 1;
+           clusters[first_atom_in_cluster] = cs;
+           first_atom_in_cluster = i + 1;
+           last_atom_in_cluster = i + 1;
+         }
        }
        
        //  Build the bond lists
@@ -4003,6 +4028,7 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, Ambertoppar *amb
   langevinParams=NULL;
   langForceVals=NULL;
   fixedAtomFlags=NULL;
+  clusters=NULL;
   rigidBondLengths=NULL;
   consIndexes=NULL;
   consParams=NULL;
@@ -4380,6 +4406,7 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param,
   langevinParams=NULL;
   langForceVals=NULL;
   fixedAtomFlags=NULL;
+  clusters=NULL;
   rigidBondLengths=NULL;
   consIndexes=NULL;
   consParams=NULL;

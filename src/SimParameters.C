@@ -302,6 +302,10 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
 
    opts.optionalB("main", "wrapWater", "wrap waters around periodic boundaries on output",
       &wrapWater, FALSE);
+   opts.optionalB("main", "wrapAll", "wrap all clusters around periodic boundaries on output",
+      &wrapAll, FALSE);
+   opts.optionalB("main", "wrapNearest", "wrap to nearest image to cell origin",
+      &wrapNearest, FALSE);
 
    opts.optional("main", "dielectric", "dielectric constant",
      &dielectric, 1.0);
@@ -2099,6 +2103,12 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << iINFO << "PERIODIC CELL CENTER   " << lattice.origin() << "\n";
      if (wrapWater) {
        iout << iINFO << "WRAPPING WATERS AROUND PERIODIC BOUNDARIES ON OUTPUT.\n";
+     }
+     if (wrapAll) {
+       iout << iINFO << "WRAPPING ALL CLUSTERS AROUND PERIODIC BOUNDARIES ON OUTPUT.\n";
+     }
+     if (wrapNearest) {
+       iout << iINFO << "WRAPPING TO IMAGE NEAREST TO PERIODIC CELL CENTER.\n";
      }
      iout << endi;
    }

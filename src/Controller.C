@@ -170,8 +170,8 @@ void Controller::integrate() {
         rescaleVelocities(step);
 	tcoupleVelocities(step);
 	berendsenPressure(step);
-        enqueueCollections(step);
 	langevinPiston1(step);
+	enqueueCollections(step);  // after lattice scaling!
 	receivePressure(step);
 	langevinPiston2(step);
         reassignVelocities(step);
@@ -1200,7 +1200,7 @@ void Controller::writeExtendedSystemData(int step, ofstream &file) {
 void Controller::enqueueCollections(int timestep)
 {
   if ( Output::coordinateNeeded(timestep) )
-    collection->enqueuePositions(timestep);
+    collection->enqueuePositions(timestep,state->lattice);
   if ( Output::velocityNeeded(timestep) )
     collection->enqueueVelocities(timestep);
 }

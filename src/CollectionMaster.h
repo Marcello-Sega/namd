@@ -10,6 +10,7 @@
 #include "charm++.h"
 #include "main.h"
 #include "NamdTypes.h"
+#include "Lattice.h"
 #include "ProcessorPrivate.h"
 #include "PatchMap.h"
 #include "PatchMap.inl"
@@ -34,7 +35,7 @@ public:
 
   void receiveDataStream(DataStreamMsg *msg);
 
-  void enqueuePositions(int seq);
+  void enqueuePositions(int seq, Lattice &lattice);
   void enqueueVelocities(int seq);
 
   class CollectVectorInstance;
@@ -78,6 +79,7 @@ public:
     int ready(void) { return ( ! remaining ); }
 
     int seq;
+    Lattice lattice;
 
     ResizeArray<Vector> data;
     ResizeArray<FloatVector> fdata;
@@ -110,7 +112,10 @@ public:
       (*c)->append(i,d,fd);
     }
 
-    void enqueue(int seq) { queue.add(seq); }
+    void enqueue(int seq, Lattice &lattice) {
+      queue.add(seq);
+      latqueue.add(lattice);
+    }
 
     CollectVectorInstance* removeReady(void)
     {
@@ -124,7 +129,9 @@ public:
         if ( c != c_e && (*c)->ready() )
         {
 	  o = *c;
+	  o->lattice = latqueue[0];
 	  queue.del(0,1);
+	  latqueue.del(0,1);
         }
       }
       return o;
@@ -132,6 +139,7 @@ public:
 
     ResizeArray<CollectVectorInstance*> data;
     ResizeArray<int> queue;
+    ResizeArray<Lattice> latqueue;
 
   };
 private:

@@ -28,6 +28,7 @@
 #include "PatchMap.inl"
 #include "ScriptTcl.h"
 #include "InfoStream.h"
+#include "Lattice.h"
 
 // These make the NAMD 1 names work in NAMD 2
 #define namdMyNode Node::Object()
@@ -109,9 +110,60 @@ int Output::coordinateNeeded(int timestep)
   return positionsNeeded;
 }
 
-void Output::coordinate(int timestep, int n, Vector *coor, FloatVector *fcoor)
+void wrap_coor(Vector *coor, Lattice &lattice, double *done) {
+  SimParameters *simParams = Node::Object()->simParameters;
+  if ( *done || ! simParams->wrapAll ) return;
+  *done = 1;
+  const int wrapNearest = simParams->wrapNearest;
+  Molecule *molecule = Node::Object()->molecule;
+  int n = molecule->numAtoms;
+  for ( int i = 0; i < n; ) {
+    int cs = molecule->get_cluster(i);
+    if ( ! cs ) NAMD_bug("Cluster list corrupted on output!");
+    int j;
+    Position con = 0;
+    for ( j = 0; j < cs; ++j ) con += coor[j];
+    con /= cs;
+    Vector trans = ( wrapNearest ?
+	lattice.wrap_nearest_delta(con) : lattice.wrap_delta(con) );
+    for ( j = 0; j < cs; ++j ) coor[j] += trans;
+    coor += cs;
+    i += cs;
+  }
+}
+
+void wrap_coor(FloatVector *coor, Lattice &lattice, float *done) {
+  SimParameters *simParams = Node::Object()->simParameters;
+  if ( *done || ! simParams->wrapAll ) return;
+  *done = 1;
+  const int wrapNearest = simParams->wrapNearest;
+  Molecule *molecule = Node::Object()->molecule;
+  int n = molecule->numAtoms;
+  for ( int i = 0; i < n; ) {
+    int cs = molecule->get_cluster(i);
+    if ( ! cs ) NAMD_bug("Cluster list corrupted on output!");
+    int j;
+    Position con = 0;
+    for ( j = 0; j < cs; ++j ) con += coor[j];
+    con /= cs;
+    Vector trans = ( wrapNearest ?
+	lattice.wrap_nearest_delta(con) : lattice.wrap_delta(con) );
+    for ( j = 0; j < cs; ++j ) {
+      coor[j].x += trans.x;
+      coor[j].y += trans.y;
+      coor[j].z += trans.z;
+    }
+    coor += cs;
+    i += cs;
+  }
+}
+
+void Output::coordinate(int timestep, int n, Vector *coor, FloatVector *fcoor,
+							Lattice &lattice)
 {
   SimParameters *simParams = Node::Object()->simParameters;
+  double coor_wrapped = 0;
+  float fcoor_wrapped = 0;
 
   if ( timestep >= 0 ) {
 
@@ -119,6 +171,7 @@ void Output::coordinate(int timestep, int n, Vector *coor, FloatVector *fcoor)
     if ( simParams->dcdFrequency &&
        ((timestep % simParams->dcdFrequency) == 0) )
     {
+      wrap_coor(fcoor,lattice,&fcoor_wrapped);
       output_dcdfile(timestep, n, fcoor);
     }
 
@@ -128,6 +181,7 @@ void Output::coordinate(int timestep, int n, Vector *coor, FloatVector *fcoor)
     {
       iout << "WRITING COORDINATES TO RESTART FILE AT STEP "
 				<< timestep << "\n" << endi;
+      wrap_coor(coor,lattice,&coor_wrapped);
       output_restart_coordinates(coor, n, timestep);
       iout << "FINISHED WRITING RESTART COORDINATES\n" <<endi;
     }
@@ -138,6 +192,7 @@ void Output::coordinate(int timestep, int n, Vector *coor, FloatVector *fcoor)
          (timestep == simParams->firstTimestep) ) )
     {
       IMDOutput *imd = Node::Object()->imd;
+      wrap_coor(fcoor,lattice,&fcoor_wrapped);
       if (imd != NULL) imd->gather_coordinates(timestep, n, fcoor);
     }
 
@@ -146,6 +201,7 @@ void Output::coordinate(int timestep, int n, Vector *coor, FloatVector *fcoor)
   if (timestep == EVAL_MEASURE)
   {
 #ifdef NAMD_TCL
+    wrap_coor(coor,lattice,&coor_wrapped);
     Node::Object()->getScript()->measure(coor);
 #endif
   }
@@ -155,6 +211,7 @@ void Output::coordinate(int timestep, int n, Vector *coor, FloatVector *fcoor)
   {
     iout << "WRITING COORDINATES TO OUTPUT FILE AT STEP "
 				<< simParams->N << "\n" << endi;
+    wrap_coor(coor,lattice,&coor_wrapped);
     output_final_coordinates(coor, n, simParams->N);
   }
 

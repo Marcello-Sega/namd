@@ -162,6 +162,46 @@ public:
     return result;
   }
 
+  // calculates vector to bring p1 closest to origin
+  Vector wrap_delta(Position pos1) const
+  {
+    Vector diff = pos1 - o;
+    Vector result(0.,0.,0.);
+    if ( p1 ) result -= a1*rint(b1*diff);
+    if ( p2 ) result -= a2*rint(b2*diff);
+    if ( p3 ) result -= a3*rint(b3*diff);
+    return result;
+  }
+
+  // calculates vector to bring p1 closest to origin in unscaled coordinates
+  Vector wrap_nearest_delta(Position pos1) const
+  {
+    Vector diff = pos1 - o;
+    Vector result(0.,0.,0.);
+    if ( p1 ) result -= a1*rint(b1*diff);
+    if ( p2 ) result -= a2*rint(b2*diff);
+    if ( p3 ) result -= a3*rint(b3*diff);
+    diff += result;
+    BigReal newdist = diff.length2();
+    Vector newresult = result;
+    if ( p1 ) {
+      int s = ( b1*diff < 0. ? 1 : -1 );
+      BigReal dist = (diff+s*a1).length2();
+      if ( dist < newdist ) { newdist = dist; newresult = result+s*a1; }
+    }
+    if ( p2 ) {
+      int s = ( b2*diff < 0. ? 1 : -1 );
+      BigReal dist = (diff+s*a2).length2();
+      if ( dist < newdist ) { newdist = dist; newresult = result+s*a2; }
+    }
+    if ( p3 ) {
+      int s = ( b3*diff < 0. ? 1 : -1 );
+      BigReal dist = (diff+s*a3).length2();
+      if ( dist < newdist ) { newdist = dist; newresult = result+s*a3; }
+    }
+    return newresult;
+  }
+
   CompAtom* create(CompAtom *d, int n, int i) const
   {
     CompAtom *dt;

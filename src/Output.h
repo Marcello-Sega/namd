@@ -15,6 +15,7 @@
 
 class Vector;
 class FloatVector;
+class Lattice;
 
 // semaphore "steps", must be negative
 #define FILE_OUTPUT -1
@@ -47,7 +48,7 @@ public :
    void energy(int, BigReal *);			//  Output energies
 
    static int coordinateNeeded(int);
-   void coordinate(int, int, Vector *, FloatVector *);
+   void coordinate(int, int, Vector *, FloatVector *, Lattice &);
 						//  Produce appropriate 
 						//  coordinate output for 
 						//  the current timestep

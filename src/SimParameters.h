@@ -98,6 +98,8 @@ public:
 	Bool comMove;     		//  Should the center of mass be 
 					//  able to move
 	Bool wrapWater;			//  Wrap water around on output
+	Bool wrapAll;			//  Wrap clusters around on output
+	Bool wrapNearest;		//  Wrap to closest image to origin
 	BigReal dielectric;   		//  Dielectric constant
 	ExclusionSettings exclude;      //  What electrostatic exclusions should
 					//  be made
