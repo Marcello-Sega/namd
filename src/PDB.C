@@ -32,7 +32,7 @@ PDB::PDB( const char *pdbfilename) {
   if (! infile) {
      char s[500];
      sprintf(s, "Cannot open file '%s' for input in PDB::PDB.", pdbfilename);
-     NAMD_die(s);
+     NAMD_err(s);
   }
   
     // loop through each line in the file and get a record
@@ -110,7 +110,7 @@ void PDB::write(const char *outfilename, const char *commentline)
 	FILE *outfile;
 	if ((outfile = fopen(outfilename, "w")) == NULL) {
 	   sprintf(s, "Cannot open file '%s' in PDB::write.", outfilename);
-	   NAMD_die(s);
+	   NAMD_err(s);
 	}
 
 	if (commentline != NULL)
@@ -118,23 +118,23 @@ void PDB::write(const char *outfilename, const char *commentline)
 		sprintf(s, "REMARK  %s\n", commentline);
 		if (fputs(s, outfile) == EOF)
 		{
-			NAMD_die("EOF in PDB::write writing the comment line - file system full?");
+			NAMD_err("EOF in PDB::write writing the comment line - file system full?");
 		}
 	}
 
 	for (i=0; i<atomCount; i++){ // I only contain ATOM/HETATM records
 	  atomArray[i]->sprint(s, PDBData::COLUMNS);
 	  if ( (fputs(s, outfile)    == EOF) || 
-	       (fputc('\n', outfile) == EOF)    ) {
+	       (fputs("\n", outfile) == EOF)    ) {
 	    sprintf(s, "EOF in PDB::write line %d - file system full?", i);
-	    NAMD_die(s);
+	    NAMD_err(s);
 	  }
 	}
 	if (fputs("END\n", outfile) == EOF) {
-	   NAMD_die("EOF in PDB::write while printing 'END' -- file system full?");
+	   NAMD_err("EOF in PDB::write while printing 'END' -- file system full?");
 	}
 	if (fclose(outfile) == EOF) {
-	   NAMD_die("EOF in PDB::write while closing -- file system full?");
+	   NAMD_err("EOF in PDB::write while closing -- file system full?");
 	}
 	  
 }
@@ -297,7 +297,7 @@ PDB::PDB( const char *filename, Ambertoppar *amber_data)
   PDBAtom *pdb;
 
   if ((infile=Fopen(filename, "r")) == NULL)
-    NAMD_die("Can't open AMBER coordinate file!");
+    NAMD_err("Can't open AMBER coordinate file!");
 
   readtoeoln(infile);  // Skip the first line (title)
 
@@ -358,11 +358,11 @@ PDB::PDB(const char *filename, const GromacsTopFile *topology) {
   /* open up the coordinate file */
   infile=Fopen(filename, "r");
   if (infile == NULL)
-    NAMD_die("Can't open GROMACS coordinate file!");
+    NAMD_err("Can't open GROMACS coordinate file!");
 
   fgets(buf,LINESIZE-1,infile); // get the title
-  if(strcmp(buf,topology->getSystemName()) != 0)
-    NAMD_die("System names in topology and coordinate files differ.");
+  // if(strcmp(buf,topology->getSystemName()) != 0)
+  //   NAMD_die("System names in topology and coordinate files differ.");
 
   fgets(buf,LINESIZE-1,infile); // get the number of atoms
   sscanf(buf,"%d",&atomCount);
