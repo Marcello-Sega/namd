@@ -28,6 +28,7 @@ public:
 
 protected:
     void suspend(void) { CthSuspend(); };
+    void terminate(void) { CthFree(thread); CthSuspend(); };
     virtual void threadRun(void);  // subclasses redefine this method
     int numberOfCycles;            // stores argument to run()
     HomePatch *const patch;        // access methods in patch

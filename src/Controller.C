@@ -14,6 +14,10 @@
 #include "Sequencer.h"
 #include "HomePatch.h"
 
+#define MIN_DEBUG_LEVEL 4
+#define DEBUGM
+#include "Debug.h"
+
 void SequencerThreadRun(Sequencer* arg)
 {
     arg->threadRun();
@@ -38,9 +42,17 @@ void Sequencer::threadRun(void)
         {
             // patch->addForceToMomentum(0.5*timestep);
             // patch->addVelocityToPosition(timestep);
+	    DebugM(3,"(" << cycle << "," << step << ") "
+		<< "Sending positionsReady().\n");
             patch->positionsReady();
+	    DebugM(2,"(" << cycle << "," << step << ") "
+		<< "Suspending.\n");
             suspend();
+	    DebugM(2,"(" << cycle << "," << step << ") "
+		<< "Awakened!\n");
             // patch->addForceToMomentum(0.5*timestep);
         }
     }
+    DebugM(4,"Exiting.\n");
+    terminate();
 }
