@@ -334,11 +334,11 @@ void ComputeNonbondedUtil::select(void)
   table_alloc = new BigReal[60*n+16];
   BigReal *table_align = table_alloc;
   while ( ((long)table_align) % 128 ) ++table_align;
-  table_short = table_align;
-  table_noshort = table_align + 16*n;
-  fast_table = table_align + 32*n;
-  scor_table = table_align + 36*n;
-  slow_table = table_align + 40*n;
+  table_noshort = table_align;
+  table_short = table_align + 16*n;
+  slow_table = table_align + 32*n;
+  fast_table = table_align + 36*n;
+  scor_table = table_align + 40*n;
   corr_table = table_align + 44*n;
   full_table = table_align + 48*n;
   vdwa_table = table_align + 52*n;
