@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *  $RCSfile: SimParameters.C,v $
- *  $Author: sergei $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1047 $  $Date: 1998/10/01 00:31:29 $
+ *  $Author: jim $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1048 $  $Date: 1998/10/14 21:20:28 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1048  1998/10/14 21:20:28  jim
+ * Fixed bug from moving constraint changes.
+ *
  * Revision 1.1047  1998/10/01 00:31:29  sergei
  * added rotating restraints feature;
  * changed the moving restraints from only moving one atom to moving all
@@ -480,7 +483,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1047 1998/10/01 00:31:29 sergei Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1048 1998/10/14 21:20:28 jim Exp $";
 
 
 #include "charm++.h"
@@ -2499,7 +2502,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 	iout << iINFO << "MOVING CONSTRAINT VELOCITY    "
 	     << movingConsVel << " ANGSTROM/TIMESTEP\n";
 	
-	iout << iINFO << "ALL CONSTRAINED ATOMS WILL MOVE\n"
+	iout << iINFO << "ALL CONSTRAINED ATOMS WILL MOVE\n";
       }
       //****** END moving constraints changes 
       iout << endi;
@@ -3365,12 +3368,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1047 $  $Date: 1998/10/01 00:31:29 $
+ *  $Revision: 1.1048 $  $Date: 1998/10/14 21:20:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1048  1998/10/14 21:20:28  jim
+ * Fixed bug from moving constraint changes.
+ *
  * Revision 1.1047  1998/10/01 00:31:29  sergei
  * added rotating restraints feature;
  * changed the moving restraints from only moving one atom to moving all
