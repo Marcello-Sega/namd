@@ -95,11 +95,13 @@ int vmdsock_listen(void * v) {
 int  vmdsock_accept(void * v) {
   int rc;
   vmdsocket *s = (vmdsocket *) v;
-#if defined __linux__ || defined _AIX
-  socklen_t len;
+
+#ifdef SOCKLEN_T
+  SOCKLEN_T len;
 #else
   int len;
 #endif
+
   len = sizeof(s->addr);
   rc = accept(s->sd, (struct sockaddr *) &s->addr, &len);
   if (rc >= 0) s->sd = rc;

@@ -1,7 +1,7 @@
 NAMD_ARCH = Linux-i686
 CHARMARCH = net-linux-kcc
 
-CXX = KCC
+CXX = KCC -DSOCKLEN_T=socklen_t
 CXXOPTS = -O3 +K3 -Bstatic --backend -march=pentiumpro --backend -ffast-math
 CXXTHREADOPTS = $(CXXOPTS)
 CXXSIMPARAMOPTS = $(CXXOPTS)

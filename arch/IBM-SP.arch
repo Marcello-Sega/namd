@@ -1,7 +1,7 @@
 NAMD_ARCH = IBM-SP
 CHARMARCH = sp3
 
-CXX = mpCC -w
+CXX = mpCC -w -DSOCKLEN_T=size_t
 CXXOPTS = -O3 -qstrict -Q -qarch=pwr -qtune=pwr
 CXXTHREADOPTS = $(CXXOPTS)
 CXXSIMPARAMOPTS = $(CXXOPTS)

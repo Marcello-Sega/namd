@@ -1,7 +1,7 @@
 NAMD_ARCH = Linux-i686
 CHARMARCH = net-linux
 
-CXX = g++
+CXX = g++ -DSOCKLEN_T=socklen_t
 CXXOPTS = -O3 -Wall -march=pentiumpro -ffast-math
 CXXTHREADOPTS = $(CXXOPTS)
 CXXSIMPARAMOPTS = $(CXXOPTS)
