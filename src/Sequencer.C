@@ -422,7 +422,6 @@ void Sequencer::rattle2(BigReal dt, int step)
   if ( simParams->rigidBonds != RIGID_NONE ) {
     Vector virial(0.,0.,0.);
     patch->rattle2(dt, &virial);
-    /*
     reduction->item(REDUCTION_VIRIAL_NORMAL_X) += virial.x;
     reduction->item(REDUCTION_VIRIAL_NORMAL_Y) += virial.y;
     reduction->item(REDUCTION_VIRIAL_NORMAL_Z) += virial.z;
@@ -432,7 +431,6 @@ void Sequencer::rattle2(BigReal dt, int step)
     reduction->item(REDUCTION_INT_VIRIAL_NORMAL_X) += virial.x;
     reduction->item(REDUCTION_INT_VIRIAL_NORMAL_Y) += virial.y;
     reduction->item(REDUCTION_INT_VIRIAL_NORMAL_Z) += virial.z;
-    */
   }
 }
 
@@ -618,12 +616,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1068 $     $Date: 1999/07/22 15:39:45 $
+ *      $Revision: 1.1069 $     $Date: 1999/08/11 16:49:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1069  1999/08/11 16:49:22  jim
+ * Turned on printing of atomic pressure with RATTLE.
+ *
  * Revision 1.1068  1999/07/22 15:39:45  jim
  * Eliminated last remnants of non-reentrant rand48 calls.
  *

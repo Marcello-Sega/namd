@@ -755,7 +755,7 @@ void Controller::printEnergies(int step)
 
     int printAtomicPressure = 1;
 #ifndef DEBUG_PRESSURE
-    if ( simParams->rigidBonds != RIGID_NONE ) { printAtomicPressure = 0; }
+    // if ( simParams->rigidBonds != RIGID_NONE ) { printAtomicPressure = 0; }
 #endif
 
     if ( (step % (10 * node->simParameters->outputEnergies) ) == 0 )
@@ -824,12 +824,15 @@ void Controller::terminate(void) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1075 $	$Date: 1999/07/22 15:39:41 $
+ *	$Revision: 1.1076 $	$Date: 1999/08/11 16:49:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1076  1999/08/11 16:49:19  jim
+ * Turned on printing of atomic pressure with RATTLE.
+ *
  * Revision 1.1075  1999/07/22 15:39:41  jim
  * Eliminated last remnants of non-reentrant rand48 calls.
  *
