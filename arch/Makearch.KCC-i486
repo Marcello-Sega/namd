@@ -6,7 +6,7 @@ CXX = KCC
 CXXOPTS = -O3 +K3 -Bstatic --backend -march=pentiumpro --backend -ffast-math
 CXXTHREADOPTS = $(CXXOPTS)
 CXXSIMPARAMOPTS = $(CXXOPTS)
-CC = egcs -DGCC
+CC = gcc -DGCC
 COPTS = -O3 -march=pentiumpro -ffast-math
 
 # definitions for Charm routines
