@@ -1,0 +1,2103 @@
+obj/common.o: \
+	src/common.C \
+	src/common.h \
+	src/InfoStream.h \
+	src/Communicate.h \
+	src/Message.h \
+	src/IntTree.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Vector.h \
+	src/Lattice.h \
+	src/NamdTypes.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h
+	$(CXX) $(CXXFLAGS) -o obj/common.o -c src/common.C
+obj/dcdlib.o: \
+	src/dcdlib.C \
+	src/dcdlib.h
+	$(CXX) $(CXXFLAGS) -o obj/dcdlib.o -c src/dcdlib.C
+obj/main.o: \
+	src/main.C \
+	inc/main.top.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/Namd.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/Node.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/Message.h \
+	src/IntTree.h \
+	src/CommunicateConverse.h \
+	src/Inform.h \
+	src/Debug.h \
+	inc/main.bot.h
+	$(CXX) $(CXXFLAGS) -o obj/main.o -c src/main.C
+obj/strlib.o: \
+	src/strlib.C \
+	src/strlib.h \
+	src/common.h \
+	src/InfoStream.h
+	$(CXX) $(CXXFLAGS) -o obj/strlib.o -c src/strlib.C
+obj/AlgSeven.o: \
+	src/AlgSeven.C \
+	src/Alg7.h \
+	src/Rebalancer.h \
+	src/elements.h \
+	src/Set.h \
+	src/heap.h
+	$(CXX) $(CXXFLAGS) -o obj/AlgSeven.o -c src/AlgSeven.C
+obj/AtomMap.o: \
+	src/AtomMap.C \
+	src/AtomMap.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/AtomMap.o -c src/AtomMap.C
+obj/BroadcastMgr.o: \
+	src/BroadcastMgr.C \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/Templates/UniqueSetIter.h \
+	inc/BroadcastMgr.top.h \
+	src/BroadcastMgr.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/BroadcastClient.h \
+	src/BroadcastObject.h \
+	src/Debug.h \
+	inc/BroadcastMgr.bot.h
+	$(CXX) $(CXXFLAGS) -o obj/BroadcastMgr.o -c src/BroadcastMgr.C
+obj/BroadcastClient.o: \
+	src/BroadcastClient.C \
+	src/BroadcastMgr.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/Templates/UniqueSetIter.h \
+	src/BroadcastClient.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/BroadcastClient.o -c src/BroadcastClient.C
+obj/CollectionMaster.o: \
+	src/CollectionMaster.C \
+	inc/CollectionMaster.top.h \
+	src/CollectionMaster.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/Node.h \
+	src/Output.h \
+	src/Debug.h \
+	inc/CollectionMaster.bot.h
+	$(CXX) $(CXXFLAGS) -o obj/CollectionMaster.o -c src/CollectionMaster.C
+obj/CollectionMgr.o: \
+	src/CollectionMgr.C \
+	inc/CollectionMgr.top.h \
+	src/CollectionMgr.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/Lattice.h \
+	inc/CollectionMaster.top.h \
+	src/CollectionMaster.h \
+	src/Priorities.h \
+	src/Debug.h \
+	inc/CollectionMgr.bot.h
+	$(CXX) $(CXXFLAGS) -o obj/CollectionMgr.o -c src/CollectionMgr.C
+obj/Communicate.o: \
+	src/Communicate.C \
+	src/Communicate.h \
+	src/Message.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/IntTree.h \
+	src/MessageManager.h \
+	src/MessageQueue.h
+	$(CXX) $(CXXFLAGS) -o obj/Communicate.o -c src/Communicate.C
+obj/CommunicateConverse.o: \
+	src/CommunicateConverse.C \
+	src/CommunicateConverse.h \
+	src/Communicate.h \
+	src/Message.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/IntTree.h \
+	src/MessageQueue.h \
+	src/MessageManager.h \
+	pvm3/pvmc.h \
+	pvm3/pvm3.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/CommunicateConverse.o -c src/CommunicateConverse.C
+obj/Compute.o: \
+	src/Compute.C \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	inc/WorkDistrib.top.h \
+	src/WorkDistrib.h \
+	src/ComputeMap.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/Lattice.h \
+	src/Templates/Box.h \
+	src/Templates/OwnerBox.h \
+	src/Node.h \
+	src/Compute.h \
+	src/Priorities.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/Compute.o -c src/Compute.C
+obj/ComputeAngles.o: \
+	src/ComputeAngles.C \
+	src/ComputeAngles.h \
+	src/ComputeHomeTuples.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/structures.h \
+	src/Compute.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/Templates/OwnerBox.h \
+	src/Templates/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/Lattice.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/ComputeAngles.inl \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/ConfigList.h \
+	src/Templates/ObjectArena.h \
+	src/Hydrogen.h \
+	src/Parameters.h \
+	src/strlib.h \
+	src/Message.h \
+	src/HBondParam.h \
+	src/HBondPairData.h \
+	src/VoidTree.h \
+	src/Node.h \
+	src/ReductionMgr.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputeAngles.o -c src/ComputeAngles.C
+obj/ComputeBonds.o: \
+	src/ComputeBonds.C \
+	src/ComputeBonds.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/Templates/ObjectArena.h \
+	src/Hydrogen.h \
+	src/ComputeHomeTuples.h \
+	src/Compute.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/Templates/OwnerBox.h \
+	src/Templates/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/Lattice.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
+	src/ComputeBonds.inl \
+	src/Parameters.h \
+	src/strlib.h \
+	src/Message.h \
+	src/HBondParam.h \
+	src/HBondPairData.h \
+	src/VoidTree.h \
+	src/Node.h \
+	src/ReductionMgr.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputeBonds.o -c src/ComputeBonds.C
+obj/ComputeCylindricalBC.o: \
+	src/ComputeCylindricalBC.C \
+	src/ComputeCylindricalBC.h \
+	src/ComputePatch.h \
+	src/Compute.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/PatchTypes.h \
+	src/Lattice.h \
+	src/Templates/Box.h \
+	src/Templates/OwnerBox.h \
+	src/PositionBox.h \
+	src/PositionOwnerBox.h \
+	src/ReductionMgr.h \
+	src/Node.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/Message.h \
+	src/IntTree.h \
+	src/Patch.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputeCylindricalBC.o -c src/ComputeCylindricalBC.C
+obj/ComputeDihedrals.o: \
+	src/ComputeDihedrals.C \
+	src/ComputeDihedrals.h \
+	src/ComputeHomeTuples.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/structures.h \
+	src/Compute.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/Templates/OwnerBox.h \
+	src/Templates/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/Lattice.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/ComputeDihedrals.inl \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/ConfigList.h \
+	src/Templates/ObjectArena.h \
+	src/Hydrogen.h \
+	src/Parameters.h \
+	src/strlib.h \
+	src/Message.h \
+	src/HBondParam.h \
+	src/HBondPairData.h \
+	src/VoidTree.h \
+	src/Node.h \
+	src/ReductionMgr.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputeDihedrals.o -c src/ComputeDihedrals.C
+obj/ComputeDPMTA.o: \
+	src/ComputeDPMTA.C \
+	src/common.h \
+	src/InfoStream.h \
+	src/Namd.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/Message.h \
+	src/IntTree.h \
+	src/ComputeNonbondedUtil.h \
+	src/ComputeNonbondedSplitting.h \
+	src/LJTable.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/Templates/ObjectArena.h \
+	src/Hydrogen.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/AtomMap.h \
+	src/ComputeDPMTA.h \
+	dpmta2/include/dpmta.h \
+	src/ComputeHomePatches.h \
+	src/Compute.h \
+	src/Patch.h \
+	src/Templates/OwnerBox.h \
+	src/Templates/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/PatchTypes.h \
+	src/PatchMgr.h \
+	src/HomePatch.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
+	src/ReductionMgr.h \
+	pvm3/pvmc.h \
+	pvm3/pvm3.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputeDPMTA.o -c src/ComputeDPMTA.C
+obj/ComputeFullDirect.o: \
+	src/ComputeFullDirect.C \
+	src/Namd.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/Message.h \
+	src/IntTree.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/AtomMap.h \
+	src/ComputeFullDirect.h \
+	src/ComputeHomePatches.h \
+	src/Compute.h \
+	src/Patch.h \
+	src/Templates/OwnerBox.h \
+	src/Templates/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/PatchTypes.h \
+	src/ComputeNonbondedUtil.h \
+	src/ComputeNonbondedSplitting.h \
+	src/LJTable.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/Templates/ObjectArena.h \
+	src/Hydrogen.h \
+	src/PatchMgr.h \
+	src/HomePatch.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
+	src/ReductionMgr.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputeFullDirect.o -c src/ComputeFullDirect.C
+obj/ComputeHomePatches.o: \
+	src/ComputeHomePatches.C \
+	src/Namd.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/Message.h \
+	src/IntTree.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ComputeHomePatches.h \
+	src/Compute.h \
+	src/Patch.h \
+	src/Templates/OwnerBox.h \
+	src/Templates/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/PatchTypes.h \
+	src/PatchMgr.h \
+	src/HomePatch.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/Templates/ObjectArena.h \
+	src/Hydrogen.h \
+	src/ReductionMgr.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputeHomePatches.o -c src/ComputeHomePatches.C
+obj/ComputeImpropers.o: \
+	src/ComputeImpropers.C \
+	src/ComputeImpropers.h \
+	src/ComputeHomeTuples.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/structures.h \
+	src/Compute.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/Templates/OwnerBox.h \
+	src/Templates/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/Lattice.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/ConfigList.h \
+	src/Templates/ObjectArena.h \
+	src/Hydrogen.h \
+	src/Parameters.h \
+	src/strlib.h \
+	src/Message.h \
+	src/HBondParam.h \
+	src/HBondPairData.h \
+	src/VoidTree.h \
+	src/Node.h \
+	src/ReductionMgr.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputeImpropers.o -c src/ComputeImpropers.C
+obj/ComputeGeneral.o: \
+	src/ComputeGeneral.C \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/Templates/Box.h \
+	src/Templates/OwnerBox.h \
+	src/Node.h \
+	src/Patch.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/Lattice.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ComputeGeneral.h \
+	src/Compute.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputeGeneral.o -c src/ComputeGeneral.C
+obj/ComputeMap.o: \
+	src/ComputeMap.C \
+	src/ComputeMap.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/Compute.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputeMap.o -c src/ComputeMap.C
+obj/ComputeMgr.o: \
+	src/ComputeMgr.C \
+	src/Debug.h \
+	src/InfoStream.h \
+	src/BOCgroup.h \
+	inc/ComputeMgr.top.h \
+	src/ComputeMgr.h \
+	src/main.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	inc/ProxyMgr.top.h \
+	src/ProxyMgr.h \
+	src/PatchTypes.h \
+	src/Lattice.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/Templates/UniqueSetIter.h \
+	src/Node.h \
+	src/ComputeMap.h \
+	src/Compute.h \
+	src/ComputeNonbondedUtil.h \
+	src/ComputeNonbondedSplitting.h \
+	src/LJTable.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/Templates/ObjectArena.h \
+	src/Hydrogen.h \
+	src/ComputeNonbondedSelf.h \
+	src/Priorities.h \
+	src/ComputePatch.h \
+	src/Templates/Box.h \
+	src/Templates/OwnerBox.h \
+	src/PositionBox.h \
+	src/PositionOwnerBox.h \
+	src/ComputeNonbondedPair.h \
+	src/ComputePatchPair.h \
+	src/ComputeAngles.h \
+	src/ComputeHomeTuples.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
+	src/ComputeAngles.inl \
+	src/ComputeDihedrals.h \
+	src/ComputeDihedrals.inl \
+	src/ComputeImpropers.h \
+	src/ComputeBonds.h \
+	src/ComputeBonds.inl \
+	src/ComputeNonbondedExcl.h \
+	src/ComputeFullDirect.h \
+	src/ComputeHomePatches.h \
+	src/ComputeDPMTA.h \
+	dpmta2/include/dpmta.h \
+	src/ComputeSphericalBC.h \
+	src/ReductionMgr.h \
+	src/ComputeCylindricalBC.h \
+	src/ComputeRestraints.h \
+	src/WorkDistrib.h \
+	inc/ComputeMgr.bot.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputeMgr.o -c src/ComputeMgr.C
+obj/ComputeNonbondedExcl.o: \
+	src/ComputeNonbondedExcl.C \
+	src/Namd.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/Message.h \
+	src/IntTree.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/Templates/ObjectArena.h \
+	src/Hydrogen.h \
+	src/Parameters.h \
+	src/strlib.h \
+	src/HBondParam.h \
+	src/HBondPairData.h \
+	src/VoidTree.h \
+	src/ComputeNonbondedExcl.h \
+	src/ComputeHomeTuples.h \
+	src/Compute.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/Templates/OwnerBox.h \
+	src/Templates/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
+	src/ComputeNonbondedUtil.h \
+	src/ComputeNonbondedSplitting.h \
+	src/LJTable.h \
+	src/AtomMap.h \
+	src/Debug.h \
+	src/Inform.h \
+	src/Templates/UniqueSetIter.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputeNonbondedExcl.o -c src/ComputeNonbondedExcl.C
+obj/ComputeNonbondedSelf.o: \
+	src/ComputeNonbondedSelf.C \
+	src/ComputeNonbondedSelf.h \
+	src/Priorities.h \
+	src/ComputePatch.h \
+	src/Compute.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/PatchTypes.h \
+	src/Lattice.h \
+	src/Templates/Box.h \
+	src/Templates/OwnerBox.h \
+	src/PositionBox.h \
+	src/PositionOwnerBox.h \
+	src/ComputeNonbondedUtil.h \
+	src/ComputeNonbondedSplitting.h \
+	src/LJTable.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/Templates/ObjectArena.h \
+	src/Hydrogen.h \
+	src/ReductionMgr.h \
+	src/Patch.h \
+	src/LdbCoordinator.h \
+	src/elements.h \
+	src/Set.h \
+	src/ComputeMgr.h \
+	src/Node.h \
+	src/SimParameters.h \
+	src/Communicate.h \
+	src/Message.h \
+	src/IntTree.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputeNonbondedSelf.o -c src/ComputeNonbondedSelf.C
+obj/ComputeNonbondedPair.o: \
+	src/ComputeNonbondedPair.C \
+	src/ComputeNonbondedPair.h \
+	src/ComputePatchPair.h \
+	src/Compute.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/PatchTypes.h \
+	src/Lattice.h \
+	src/Templates/Box.h \
+	src/Templates/OwnerBox.h \
+	src/PositionBox.h \
+	src/PositionOwnerBox.h \
+	src/ComputeNonbondedUtil.h \
+	src/ComputeNonbondedSplitting.h \
+	src/LJTable.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/Templates/ObjectArena.h \
+	src/Hydrogen.h \
+	src/ReductionMgr.h \
+	src/Patch.h \
+	src/LdbCoordinator.h \
+	src/elements.h \
+	src/Set.h \
+	src/ComputeMgr.h \
+	src/Node.h \
+	src/SimParameters.h \
+	src/Communicate.h \
+	src/Message.h \
+	src/IntTree.h \
+	src/Priorities.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputeNonbondedPair.o -c src/ComputeNonbondedPair.C
+obj/ComputeNonbondedUtil.o: \
+	src/ComputeNonbondedUtil.C \
+	src/ComputeNonbondedUtil.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/ComputeNonbondedSplitting.h \
+	src/LJTable.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/Templates/ObjectArena.h \
+	src/Hydrogen.h \
+	src/SimParameters.h \
+	src/Communicate.h \
+	src/Message.h \
+	src/IntTree.h \
+	src/Lattice.h \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/ReductionMgr.h \
+	src/ComputeNonbondedBase.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputeNonbondedUtil.o -c src/ComputeNonbondedUtil.C
+obj/ComputePatch.o: \
+	src/ComputePatch.C \
+	inc/WorkDistrib.top.h \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/ComputePatch.h \
+	src/Compute.h \
+	src/PatchTypes.h \
+	src/Lattice.h \
+	src/Templates/Box.h \
+	src/Templates/OwnerBox.h \
+	src/PositionBox.h \
+	src/PositionOwnerBox.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/Patch.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputePatch.o -c src/ComputePatch.C
+obj/ComputePatchPair.o: \
+	src/ComputePatchPair.C \
+	inc/WorkDistrib.top.h \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/ComputePatchPair.h \
+	src/Compute.h \
+	src/PatchTypes.h \
+	src/Lattice.h \
+	src/Templates/Box.h \
+	src/Templates/OwnerBox.h \
+	src/PositionBox.h \
+	src/PositionOwnerBox.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/Patch.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputePatchPair.o -c src/ComputePatchPair.C
+obj/ComputeRestraints.o: \
+	src/ComputeRestraints.C \
+	src/ComputeRestraints.h \
+	src/ComputePatch.h \
+	src/Compute.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/PatchTypes.h \
+	src/Lattice.h \
+	src/Templates/Box.h \
+	src/Templates/OwnerBox.h \
+	src/PositionBox.h \
+	src/PositionOwnerBox.h \
+	src/ReductionMgr.h \
+	src/Node.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/Templates/ObjectArena.h \
+	src/Hydrogen.h \
+	src/SimParameters.h \
+	src/Communicate.h \
+	src/Message.h \
+	src/IntTree.h \
+	src/Patch.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputeRestraints.o -c src/ComputeRestraints.C
+obj/ComputeSphericalBC.o: \
+	src/ComputeSphericalBC.C \
+	src/ComputeSphericalBC.h \
+	src/ComputePatch.h \
+	src/Compute.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/PatchTypes.h \
+	src/Lattice.h \
+	src/Templates/Box.h \
+	src/Templates/OwnerBox.h \
+	src/PositionBox.h \
+	src/PositionOwnerBox.h \
+	src/ReductionMgr.h \
+	src/Node.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/Message.h \
+	src/IntTree.h \
+	src/Patch.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputeSphericalBC.o -c src/ComputeSphericalBC.C
+obj/ConfigList.o: \
+	src/ConfigList.C \
+	src/InfoStream.h \
+	src/ConfigList.h \
+	src/common.h
+	$(CXX) $(CXXFLAGS) -o obj/ConfigList.o -c src/ConfigList.C
+obj/Controller.o: \
+	src/Controller.C \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/Templates/ObjectArena.h \
+	src/Hydrogen.h \
+	src/SimParameters.h \
+	src/Communicate.h \
+	src/Message.h \
+	src/IntTree.h \
+	src/Lattice.h \
+	src/Controller.h \
+	src/ReductionMgr.h \
+	src/CollectionMaster.h \
+	src/Output.h \
+	src/strlib.h \
+	src/BroadcastObject.h \
+	src/BroadcastMgr.h \
+	src/Templates/UniqueSetIter.h \
+	src/BroadcastClient.h \
+	src/NamdState.h \
+	src/Broadcasts.h \
+	src/Thread.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/Controller.o -c src/Controller.C
+obj/heap.o: \
+	src/heap.C \
+	src/heap.h \
+	src/elements.h \
+	src/Set.h
+	$(CXX) $(CXXFLAGS) -o obj/heap.o -c src/heap.C
+obj/HomePatch.o: \
+	src/HomePatch.C \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Communicate.h \
+	src/Message.h \
+	src/IntTree.h \
+	src/Vector.h \
+	src/Lattice.h \
+	src/NamdTypes.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/Templates/OwnerBox.h \
+	src/Templates/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/AtomMap.h \
+	src/Node.h \
+	inc/ProxyMgr.top.h \
+	src/ProxyMgr.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/Templates/UniqueSetIter.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/Templates/ObjectArena.h \
+	src/Hydrogen.h \
+	src/PatchMgr.h \
+	src/Sequencer.h \
+	src/LdbCoordinator.h \
+	src/elements.h \
+	src/Set.h \
+	src/ComputeMgr.h \
+	src/Priorities.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/HomePatch.o -c src/HomePatch.C
+obj/HBondParam.o: \
+	src/HBondParam.C \
+	src/HBondParam.h \
+	src/HBondPairData.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/VoidTree.h \
+	src/structures.h \
+	src/Parameters.h \
+	src/strlib.h \
+	src/Message.h \
+	src/Inform.h
+	$(CXX) $(CXXFLAGS) -o obj/HBondParam.o -c src/HBondParam.C
+obj/Inform.o: \
+	src/Inform.C \
+	src/common.h \
+	src/InfoStream.h \
+	src/Inform.h
+	$(CXX) $(CXXFLAGS) -o obj/Inform.o -c src/Inform.C
+obj/InfoStream.o: \
+	src/InfoStream.C \
+	src/InfoStream.h
+	$(CXX) $(CXXFLAGS) -o obj/InfoStream.o -c src/InfoStream.C
+obj/IntTree.o: \
+	src/IntTree.C \
+	src/IntTree.h \
+	src/common.h \
+	src/InfoStream.h
+	$(CXX) $(CXXFLAGS) -o obj/IntTree.o -c src/IntTree.C
+obj/LdbCoordinator.o: \
+	src/LdbCoordinator.C \
+	inc/LdbCoordinator.top.h \
+	src/LdbCoordinator.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/elements.h \
+	src/Set.h \
+	src/ComputeMgr.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/Node.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/Message.h \
+	src/IntTree.h \
+	src/Lattice.h \
+	src/Namd.h \
+	src/NamdState.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ComputeMap.h \
+	src/Debug.h \
+	src/Sequencer.h \
+	src/PatchTypes.h \
+	src/RefineOnly.h \
+	src/Rebalancer.h \
+	src/heap.h \
+	src/Alg7.h \
+	inc/LdbCoordinator.bot.h
+	$(CXX) $(CXXFLAGS) -o obj/LdbCoordinator.o -c src/LdbCoordinator.C
+obj/LJTable.o: \
+	src/LJTable.C \
+	src/LJTable.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/Parameters.h \
+	src/structures.h \
+	src/strlib.h \
+	src/Message.h \
+	src/HBondParam.h \
+	src/HBondPairData.h \
+	src/VoidTree.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/LJTable.o -c src/LJTable.C
+obj/Message.o: \
+	src/Message.C \
+	src/Message.h \
+	src/common.h \
+	src/InfoStream.h
+	$(CXX) $(CXXFLAGS) -o obj/Message.o -c src/Message.C
+obj/MessageManager.o: \
+	src/MessageManager.C \
+	src/MessageManager.h \
+	src/MessageQueue.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Message.h \
+	src/Communicate.h \
+	src/IntTree.h
+	$(CXX) $(CXXFLAGS) -o obj/MessageManager.o -c src/MessageManager.C
+obj/MessageQueue.o: \
+	src/MessageQueue.C \
+	src/MessageQueue.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Message.h \
+	src/Communicate.h \
+	src/IntTree.h
+	$(CXX) $(CXXFLAGS) -o obj/MessageQueue.o -c src/MessageQueue.C
+obj/MigrateAtomsMsg.o: \
+	src/MigrateAtomsMsg.C \
+	src/Migration.h \
+	src/InfoStream.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/PatchTypes.h \
+	src/Lattice.h \
+	src/MigrateAtomsMsg.h \
+	src/Debug.h \
+	inc/PatchMgr.top.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/Templates/OwnerBox.h \
+	src/Templates/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/HomePatchTypes.h \
+	src/main.h \
+	src/BOCgroup.h
+	$(CXX) $(CXXFLAGS) -o obj/MigrateAtomsMsg.o -c src/MigrateAtomsMsg.C
+obj/Molecule.o: \
+	src/Molecule.C \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Molecule.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/Templates/ObjectArena.h \
+	src/Hydrogen.h \
+	src/strlib.h \
+	src/Message.h \
+	src/Parameters.h \
+	src/HBondParam.h \
+	src/HBondPairData.h \
+	src/VoidTree.h \
+	src/PDB.h \
+	src/PDBData.h \
+	src/Lattice.h \
+	src/SimParameters.h \
+	src/Communicate.h \
+	src/IntTree.h \
+	src/Templates/UniqueSetIter.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/Molecule.o -c src/Molecule.C
+obj/Namd.o: \
+	src/Namd.C \
+	inc/main.top.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/Namd.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/Node.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/Message.h \
+	src/IntTree.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/Templates/ObjectArena.h \
+	src/Hydrogen.h \
+	src/Parameters.h \
+	src/strlib.h \
+	src/HBondParam.h \
+	src/HBondPairData.h \
+	src/VoidTree.h \
+	inc/Node.top.h \
+	inc/WorkDistrib.top.h \
+	src/WorkDistrib.h \
+	src/ComputeMap.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	inc/PatchMgr.top.h \
+	src/PatchMgr.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/Templates/OwnerBox.h \
+	src/Templates/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/PatchTypes.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
+	inc/ComputeMgr.top.h \
+	src/ComputeMgr.h \
+	inc/ProxyMgr.top.h \
+	src/ProxyMgr.h \
+	src/Templates/UniqueSetIter.h \
+	inc/ReductionMgr.top.h \
+	src/ReductionMgr.h \
+	inc/CollectionMgr.top.h \
+	src/CollectionMgr.h \
+	inc/CollectionMaster.top.h \
+	src/CollectionMaster.h \
+	inc/BroadcastMgr.top.h \
+	src/BroadcastMgr.h \
+	inc/LdbCoordinator.top.h \
+	src/LdbCoordinator.h \
+	src/elements.h \
+	src/Set.h
+	$(CXX) $(CXXFLAGS) -o obj/Namd.o -c src/Namd.C
+obj/NamdState.o: \
+	src/NamdState.C \
+	src/Inform.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Molecule.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/Templates/ObjectArena.h \
+	src/Hydrogen.h \
+	src/Parameters.h \
+	src/strlib.h \
+	src/Message.h \
+	src/HBondParam.h \
+	src/HBondPairData.h \
+	src/VoidTree.h \
+	src/SimParameters.h \
+	src/Communicate.h \
+	src/IntTree.h \
+	src/Lattice.h \
+	src/PDB.h \
+	src/PDBData.h \
+	src/NamdState.h \
+	src/Controller.h \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/NamdState.o -c src/NamdState.C
+obj/NamdOneTools.o: \
+	src/NamdOneTools.C \
+	src/common.h \
+	src/InfoStream.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/PDB.h \
+	src/IntList.h \
+	src/PDBData.h \
+	src/Lattice.h \
+	src/Molecule.h \
+	src/LintList.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/Templates/ObjectArena.h \
+	src/Hydrogen.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/NamdOneTools.o -c src/NamdOneTools.C
+obj/Node.o: \
+	src/Node.C \
+	inc/Node.top.h \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/Namd.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/Message.h \
+	src/IntTree.h \
+	src/Debug.h \
+	inc/main.top.h \
+	src/WorkDistrib.h \
+	src/ComputeMap.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/PatchMgr.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/Templates/OwnerBox.h \
+	src/Templates/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/PatchTypes.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
+	src/Compute.h \
+	src/ComputeMgr.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/Templates/ObjectArena.h \
+	src/Hydrogen.h \
+	src/AtomMap.h \
+	src/Sequencer.h \
+	src/Controller.h \
+	src/Output.h \
+	src/ProxyMgr.h \
+	src/Templates/UniqueSetIter.h \
+	src/Parameters.h \
+	src/strlib.h \
+	src/HBondParam.h \
+	src/HBondPairData.h \
+	src/VoidTree.h \
+	src/CommunicateConverse.h \
+	src/Inform.h \
+	src/LdbCoordinator.h \
+	src/elements.h \
+	src/Set.h \
+	inc/Node.bot.h
+	$(CXX) $(CXXFLAGS) -o obj/Node.o -c src/Node.C
+obj/Output.o: \
+	src/Output.C \
+	src/Output.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/dcdlib.h \
+	src/strlib.h \
+	src/Inform.h \
+	src/Molecule.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/Templates/ObjectArena.h \
+	src/Hydrogen.h \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/Parameters.h \
+	src/Message.h \
+	src/HBondParam.h \
+	src/HBondPairData.h \
+	src/VoidTree.h \
+	src/PDB.h \
+	src/PDBData.h \
+	src/Lattice.h \
+	src/SimParameters.h \
+	src/Communicate.h \
+	src/IntTree.h
+	$(CXX) $(CXXFLAGS) -o obj/Output.o -c src/Output.C
+obj/Parameters.o: \
+	src/Parameters.C \
+	src/Parameters.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/structures.h \
+	src/strlib.h \
+	src/Message.h \
+	src/HBondParam.h \
+	src/HBondPairData.h \
+	src/VoidTree.h \
+	src/Communicate.h \
+	src/IntTree.h \
+	src/ConfigList.h
+	$(CXX) $(CXXFLAGS) -o obj/Parameters.o -c src/Parameters.C
+obj/ParseOptions.o: \
+	src/ParseOptions.C \
+	src/ParseOptions.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Vector.h \
+	src/ConfigList.h
+	$(CXX) $(CXXFLAGS) -o obj/ParseOptions.o -c src/ParseOptions.C
+obj/Patch.o: \
+	src/Patch.C \
+	src/Patch.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/Templates/OwnerBox.h \
+	src/Templates/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/Lattice.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/Compute.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/ComputeMap.h \
+	src/Node.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/Templates/ObjectArena.h \
+	src/Hydrogen.h \
+	src/SimParameters.h \
+	src/Communicate.h \
+	src/Message.h \
+	src/IntTree.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/Patch.o -c src/Patch.C
+obj/PatchMgr.o: \
+	src/PatchMgr.C \
+	inc/PatchMgr.top.h \
+	src/PatchMgr.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/Templates/OwnerBox.h \
+	src/Templates/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/Lattice.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
+	src/main.h \
+	src/BOCgroup.h \
+	inc/main.top.h \
+	inc/WorkDistrib.top.h \
+	src/WorkDistrib.h \
+	src/ComputeMap.h \
+	src/Debug.h \
+	inc/PatchMgr.bot.h
+	$(CXX) $(CXXFLAGS) -o obj/PatchMgr.o -c src/PatchMgr.C
+obj/PatchMap.o: \
+	src/PatchMap.C \
+	src/PatchMgr.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/Templates/OwnerBox.h \
+	src/Templates/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/Lattice.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/PatchMap.o -c src/PatchMap.C
+obj/PDB.o: \
+	src/PDB.C \
+	src/common.h \
+	src/InfoStream.h \
+	src/PDB.h \
+	src/IntList.h \
+	src/PDBData.h \
+	src/Vector.h \
+	src/Lattice.h \
+	src/NamdTypes.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h
+	$(CXX) $(CXXFLAGS) -o obj/PDB.o -c src/PDB.C
+obj/PDBData.o: \
+	src/PDBData.C \
+	src/PDBData.h \
+	src/common.h \
+	src/InfoStream.h
+	$(CXX) $(CXXFLAGS) -o obj/PDBData.o -c src/PDBData.C
+obj/Priorities.o: \
+	src/Priorities.C \
+	src/Priorities.h
+	$(CXX) $(CXXFLAGS) -o obj/Priorities.o -c src/Priorities.C
+obj/ProxyMgr.o: \
+	src/ProxyMgr.C \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	inc/ProxyMgr.top.h \
+	src/ProxyMgr.h \
+	src/PatchTypes.h \
+	src/Lattice.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/Templates/UniqueSetIter.h \
+	src/Namd.h \
+	src/NamdState.h \
+	src/Node.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/Message.h \
+	src/IntTree.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ProxyPatch.h \
+	src/Patch.h \
+	src/Templates/OwnerBox.h \
+	src/Templates/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/ComputeMap.h \
+	src/HomePatch.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
+	src/Debug.h \
+	inc/ProxyMgr.bot.h
+	$(CXX) $(CXXFLAGS) -o obj/ProxyMgr.o -c src/ProxyMgr.C
+obj/ProxyPatch.o: \
+	src/ProxyPatch.C \
+	inc/main.top.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/ProxyPatch.h \
+	src/Patch.h \
+	src/Templates/OwnerBox.h \
+	src/Templates/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/Lattice.h \
+	src/PatchTypes.h \
+	inc/ProxyMgr.top.h \
+	src/ProxyMgr.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/Templates/UniqueSetIter.h \
+	src/AtomMap.h \
+	src/Priorities.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/ProxyPatch.o -c src/ProxyPatch.C
+obj/Rebalancer.o: \
+	src/Rebalancer.C \
+	src/InfoStream.h \
+	src/Rebalancer.h \
+	src/elements.h \
+	src/Set.h \
+	src/heap.h
+	$(CXX) $(CXXFLAGS) -o obj/Rebalancer.o -c src/Rebalancer.C
+obj/RecBisection.o: \
+	src/RecBisection.C \
+	src/RecBisection.h \
+	src/PatchMap.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/HomePatchList.h \
+	src/Lattice.h \
+	src/Patch.h \
+	src/Templates/OwnerBox.h \
+	src/Templates/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/PatchTypes.h
+	$(CXX) $(CXXFLAGS) -o obj/RecBisection.o -c src/RecBisection.C
+obj/ReductionMgr.o: \
+	src/ReductionMgr.C \
+	src/InfoStream.h \
+	src/PatchMap.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/HomePatchList.h \
+	src/Lattice.h \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/Message.h \
+	src/IntTree.h \
+	src/Priorities.h \
+	inc/ReductionMgr.top.h \
+	src/ReductionMgr.h \
+	src/Debug.h \
+	inc/ReductionMgr.bot.h
+	$(CXX) $(CXXFLAGS) -o obj/ReductionMgr.o -c src/ReductionMgr.C
+obj/RefineOnly.o: \
+	src/RefineOnly.C \
+	src/InfoStream.h \
+	src/RefineOnly.h \
+	src/elements.h \
+	src/Set.h \
+	src/Rebalancer.h \
+	src/heap.h
+	$(CXX) $(CXXFLAGS) -o obj/RefineOnly.o -c src/RefineOnly.C
+obj/Sequencer.o: \
+	src/Sequencer.C \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/Message.h \
+	src/IntTree.h \
+	src/Lattice.h \
+	src/Sequencer.h \
+	src/PatchTypes.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/Templates/OwnerBox.h \
+	src/Templates/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
+	src/ReductionMgr.h \
+	src/CollectionMgr.h \
+	src/BroadcastObject.h \
+	src/BroadcastMgr.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/Templates/UniqueSetIter.h \
+	src/BroadcastClient.h \
+	src/Output.h \
+	src/Controller.h \
+	src/Broadcasts.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/Templates/ObjectArena.h \
+	src/Hydrogen.h \
+	src/NamdOneTools.h \
+	src/PDB.h \
+	src/PDBData.h \
+	src/LdbCoordinator.h \
+	src/elements.h \
+	src/Set.h \
+	src/ComputeMgr.h \
+	src/Thread.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/Sequencer.o -c src/Sequencer.C
+obj/Set.o: \
+	src/Set.C \
+	src/Set.h \
+	src/elements.h
+	$(CXX) $(CXXFLAGS) -o obj/Set.o -c src/Set.C
+obj/SimParameters.o: \
+	src/SimParameters.C \
+	src/ConfigList.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/SimParameters.h \
+	src/Communicate.h \
+	src/Message.h \
+	src/IntTree.h \
+	src/Vector.h \
+	src/Lattice.h \
+	src/NamdTypes.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/ParseOptions.h \
+	src/structures.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/SimParameters.o -c src/SimParameters.C
+obj/VoidTree.o: \
+	src/VoidTree.C \
+	src/VoidTree.h \
+	src/common.h \
+	src/InfoStream.h
+	$(CXX) $(CXXFLAGS) -o obj/VoidTree.o -c src/VoidTree.C
+obj/WorkDistrib.o: \
+	src/WorkDistrib.C \
+	src/BOCgroup.h \
+	inc/WorkDistrib.top.h \
+	src/WorkDistrib.h \
+	src/main.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Templates/ResizeArray.h \
+	src/Templates/ResizeArrayRaw.h \
+	src/Templates/UniqueSortedArray.h \
+	src/Templates/SortedArray.h \
+	src/Templates/SortableResizeArray.h \
+	src/Templates/ResizeArrayIter.h \
+	src/Templates/ResizeArrayPrimIter.h \
+	src/ComputeMap.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/Lattice.h \
+	inc/main.top.h \
+	src/Node.h \
+	src/PatchMgr.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/Templates/OwnerBox.h \
+	src/Templates/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/PatchTypes.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
+	src/PDB.h \
+	src/IntList.h \
+	src/PDBData.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/Message.h \
+	src/IntTree.h \
+	src/Molecule.h \
+	src/LintList.h \
+	src/structures.h \
+	src/Templates/UniqueSet.h \
+	src/Templates/UniqueSetRaw.h \
+	src/Templates/ObjectArena.h \
+	src/Hydrogen.h \
+	src/NamdOneTools.h \
+	src/Compute.h \
+	src/Priorities.h \
+	src/RecBisection.h \
+	src/Debug.h \
+	inc/WorkDistrib.bot.h
+	$(CXX) $(CXXFLAGS) -o obj/WorkDistrib.o -c src/WorkDistrib.C
