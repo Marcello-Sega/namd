@@ -9,7 +9,6 @@
  ***************************************************************************/
 
 #include <string.h>
-#include <strstream.h>
 #include "InfoStream.h"
 #include "FreeEnergyEnums.h"
 #include "FreeEnergyAssert.h"
@@ -92,16 +91,15 @@ void ComputeFreeEnergy::update() {
 
 void ComputeFreeEnergy::user_initialize() {
 //-----------------------------------------------------------------
-// get char* from the input stream.  read all the input
+// read all the input from config
 //-----------------------------------------------------------------
-  char* Str = config;
 
-  iout << iDEBUG << "Initializing free energy.\n"; 
-  iout << iDEBUG << "***********************************\n"; 
-  iout << Str;
-  iout << iDEBUG << "***********************************\n" << endi; 
+  iout << iINFO << "  FREE ENERGY PERTURBATION CONFIG\n"; 
+  iout << iINFO << "***********************************\n"; 
+  iout << config;
+  iout << iINFO << "***********************************\n" << endi; 
 
-  ReadInput(Str, m_RestraintManager, m_LambdaManager, *this, simParams->dt);
+  ReadInput(config, m_RestraintManager, m_LambdaManager, *this, simParams->dt);
 
   // exit if there aren't enough steps to complete all pmf & mcti blocks
   int Total = m_LambdaManager.GetTotalNumSteps();
@@ -201,12 +199,40 @@ void ComputeFreeEnergy::initialize() {
   // Get our script
   StringList *script = Node::Object()->configList->find("freeEnergyConfig");
 
-  ostrstream oconfig;
+  config = new char[1];
+  config[0] = '\0';
 
   for ( ; script; script = script->next) {
-    if ( script->data[0] == '{' ) {  // this is a flag, no } at end
-      oconfig << script->data + 1;    // so skip it at beginning
+    if ( script->data[0] == '{' ) {
+      // this is a flag, no '}' at end so skip it at beginning
+      size_t add_len = strlen(script->data + 1);
+      size_t config_len = 0;
+      config_len = strlen(config);
+      char *new_config = new char[config_len + add_len + 2];
+      strcpy(new_config,config);
+      strcat(new_config,script->data + 1);
+      strcat(new_config,"\n");  // just to be safe
+      delete [] config;
+      config = new_config;
     } else {
+      FILE *infile = fopen(script->data,"r");
+      fseek(infile,0,SEEK_END);
+      size_t add_len = ftell(infile);
+      size_t config_len = 0;
+      config_len = strlen(config);
+      char *new_config = new char[config_len + add_len + 3];
+      strcpy(new_config,config);
+      delete [] config;
+      config = new_config;
+      new_config += config_len;
+      rewind(infile);
+      fread(new_config,sizeof(char),add_len,infile);
+      new_config += add_len;
+      new_config[0] = '\n';
+      new_config[1] = '\0';
+      fclose(infile);
+
+/* 
       ifstream infile(script->data);
       if ( infile ) infile.get(*oconfig.rdbuf(),'\0');
       if ( ! infile ) {
@@ -214,13 +240,11 @@ void ComputeFreeEnergy::initialize() {
 	sprintf(errmsg,"Error trying to read file %s!\n",script->data);
 	NAMD_die(errmsg);
       }
+*/
     }
   }
-  oconfig.flush();
-  char *configstr = oconfig.str();
-  config = configstr;
 
-  iout << iDEBUG << "Free energy perturbation - initialize()\n" << endi; 
+  // iout << iDEBUG << "Free energy perturbation - initialize()\n" << endi; 
   user_initialize();
 
   // Send config to clients
@@ -254,12 +278,15 @@ void ComputeFreeEnergy::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.14 $	$Date: 1999/02/17 04:09:55 $
+ *	$Revision: 1.15 $	$Date: 1999/04/14 01:56:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFreeEnergy.C,v $
+ * Revision 1.15  1999/04/14 01:56:25  jim
+ * Fixed problems with free energy config file reading.
+ *
  * Revision 1.14  1999/02/17 04:09:55  jim
  * Fixes to make optional force modules work with more nodes than patches.
  *
