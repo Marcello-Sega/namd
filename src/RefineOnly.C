@@ -36,8 +36,8 @@ iout << iINFO << "numComputes: " << numComputes << "\n" << endi;
   iout << iINFO
        << "------------------------------------------------------------\n"
        << iINFO << "Before load balancing (measured stats):\n" << endi;
-  printLoads();
 #endif
+  printLoads();
 
   const double overloadStep = 0.01;
   const double overloadStart = 1.02;
@@ -97,8 +97,9 @@ iout << iINFO << "numComputes: " << numComputes << "\n" << endi;
        << "------------------------------------------------------------\n"
        << iINFO 
        << "After load balancing (predicted stats):\n" << endi;
+#endif
   printLoads();
-  iout << iINFO 
+#if 0
        << "------------------------------------------------------------\n"
        << endi;
 #endif

@@ -508,11 +508,12 @@ void Rebalancer::printResults()
 
 void Rebalancer::printLoads()
 {
-#if 0  // Something evil in these print statements.  -JCP
+#if 1  // Something evil in these print statements.  -JCP
 
    int i, total = 0, numBytes = 0;
    double max;
 
+#if 0
    iout << iINFO << "\n" << iINFO;
    for(i=0; i<3; i++) iout << "     TOTAL  BACKGRD COMPUTE | ";
    iout << "\n" << iINFO;
@@ -520,11 +521,13 @@ void Rebalancer::printLoads()
    iout << "\n" << iINFO;
    for(i=0; i<3; i++) iout << "--- ------- ------- ------- | ";
    iout << "\n" << endi;
+#endif
 
    iout.setf(ios::right | ios::fixed);
    iout.precision(3);
    for (i=0; i<P; i++)
    {
+#if 0
       if (i == 0 ) iout << iINFO;
       if (i != 0 && i % 3 == 0) iout << "\n" << endi << iINFO;
       iout << setw(3) << i << " "
@@ -542,6 +545,7 @@ void Rebalancer::printLoads()
       // iout << iINFO << "# Messages received: " 
       //      << processors[i].proxies->numElements() - 
       //         processors[i].patchSet->numElements();
+#endif
 
       Iterator p;
       int count = 0;
