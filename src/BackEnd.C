@@ -11,7 +11,8 @@
 #include "common.h"
 #include "Node.h"
 
-#include "charm++.h"
+#include <charm++.h>
+
 #include "main.decl.h"
 #include "main.h"
 #include "BOCgroup.h"
@@ -37,7 +38,6 @@ extern "C" void exit_sched(void* msg)
 {
   //  CmiPrintf("Exiting scheduler on %d\n",CmiMyPe());
   CsdExitScheduler();
-  CmiFree(msg);
 }
 
 static void register_exit_sched(void)
