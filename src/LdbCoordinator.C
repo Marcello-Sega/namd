@@ -686,8 +686,7 @@ int LdbCoordinator::requiredProxies(PatchID id, int neighborNodes[])
   PatchID neighbors[PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
 
   int myNode = patchMap->node(id);
-  int numNeighbors = patchMap->oneAwayNeighbors(id,neighbors);
-  numNeighbors += patchMap->twoAwayNeighbors(id,neighbors+numNeighbors);
+  int numNeighbors = patchMap->upstreamNeighbors(id,neighbors);
   for ( i = 0; i < numNeighbors; ++i )
   {
     const int proxyNode = patchMap->node(neighbors[i]);
