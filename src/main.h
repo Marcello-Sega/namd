@@ -62,8 +62,8 @@ public:
   void * pack (int *length)
   {
     int size = atomIDList.size();
-    char *buffer = (char*)new_packbuffer(this,
-    	sizeof(int) + size * sizeof(AtomID));
+    *length = sizeof(int) + size * sizeof(AtomID)
+    char *buffer = (char*)new_packbuffer(this,*length);
     *((int*)buffer) = size;
     AtomID *data = (AtomID*)(buffer+sizeof(int));
     for ( int i = 0; i < size; ++i )
@@ -88,8 +88,8 @@ public:
   void * pack (int *length)
   {
     int size = positionList.size();
-    char *buffer = (char*)new_packbuffer(this,
-    	sizeof(int) + size * sizeof(Position));
+    *length = sizeof(int) + size * sizeof(Position)
+    char *buffer = (char*)new_packbuffer(this,*length);
     *((int*)buffer) = size;
     Position *data = (Position*)(buffer+sizeof(int));
     for ( int i = 0; i < size; ++i )
@@ -114,8 +114,8 @@ public:
   void * pack (int *length)
   {
     int size = forceList.size();
-    char *buffer = (char*)new_packbuffer(this,
-    	sizeof(int) + size * sizeof(Force));
+    *length = sizeof(int) + size * sizeof(Force)
+    char *buffer = (char*)new_packbuffer(this,*length);
     *((int*)buffer) = size;
     Force *data = (Force*)(buffer+sizeof(int));
     for ( int i = 0; i < size; ++i )
@@ -148,12 +148,15 @@ public:
  *
  *	$RCSfile: main.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.12 $	$Date: 1996/12/05 17:56:58 $
+ *	$Revision: 1.13 $	$Date: 1996/12/05 20:25:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: main.h,v $
+ * Revision 1.13  1996/12/05 20:25:03  jim
+ * forgot to fill in length of message
+ *
  * Revision 1.12  1996/12/05 17:56:58  jim
  * added pack and unpack functions for proxy messages
  *
