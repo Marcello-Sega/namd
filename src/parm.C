@@ -20,9 +20,10 @@
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/errno.h>
+#include <errno.h>
 #include <string.h>
 
+#include "common.h"
 #include "parm.h"
 
 extern int 	errno;
@@ -58,76 +59,11 @@ static int readtoeoln(FILE *f) {
 /*
  *  genopen() - fopen regular or popen compressed file for reading
  */
+//  replaced with NAMD implementation
 
 FILE *Ambertoppar::genopen(const char *name)
 {
-	struct stat	buf;
-	char		cbuf[120];
-	int		length, compressed;
-	FILE		*fp;
-
-	length = strlen(name);
-// "iscompressed()" seems to be undefined, so it's disabled
-//	compressed = iscompressed(name);
-	compressed = 0;
-	strcpy(cbuf, name);
-
-	/*
-	 *  if file doesn't exist, maybe it has been compressed/decompressed
-	 */
-
-	if (stat(cbuf, &buf) == -1) {
-		switch (errno) {
-		case ENOENT:	{
-			if (!compressed) {
-				strcat(cbuf, ".Z");
-				if (stat(cbuf, &buf) == -1) {
-					printf("%s, %s: does not exist\n", 
-						name, cbuf);
-					return(NULL);
-				}
-				compressed++;
-// Don't modify the incoming parameter!
-//				strcat(name, ".Z"); /* TODO: add protection */
-			} else {
-				cbuf[length-2] = '\0';
-				if (stat(cbuf, &buf) == -1) {
-					printf("%s, %s: does not exist\n", 
-							name, cbuf);
-					return(NULL);
-				}
-				compressed = 0;
-			}
-			break;
-		}
-		default:
-// "syserr()" seems to be undefined, so it's removed
-//			printf("%s: sys err %s\n", name, syserr());
-			printf("%s: sys err\n", name);
-			return(NULL);
-		}
-	}
-	popn = compressed;	// Set the label
-
-	/*
-	 *  open the file
-	 */
-
-	if (compressed) {
-		char pcmd[120];
-
-		sprintf(pcmd, "zcat %s", cbuf);
-		if ((fp = popen(pcmd, "r")) == NULL) {
-			perror(pcmd);
-			exit(1);
-		}
-	} else {
-		if ((fp = fopen(cbuf, "r")) == NULL) {
-			perror(cbuf);
-			exit(1);
-		}
-	}
-	return(fp);
+	return(Fopen(name,"r"));
 }
 
 /***********************************************************************
@@ -137,16 +73,11 @@ FILE *Ambertoppar::genopen(const char *name)
 /*
  *  genclose() - close fopened or popened file
  */
+//  replaced with NAMD implementation
 
 void Ambertoppar::genclose(FILE *fileptr)
 {
-	if (popn) {
-		if (pclose(fileptr) == -1)
-			perror("pclose");
-	} else {
-		if (fclose(fileptr) == -1)
-			perror("fclose");
-	}
+	Fclose(fileptr);
 }
 
 
@@ -844,3 +775,4 @@ Ambertoppar::~parm()
   free(AtomTree);
   free(TreeJoin);
   free(AtomRes);}
+
