@@ -13,6 +13,7 @@
 #ifndef INFOSTREAM_H
 #define INFOSTREAM_H
 
+#include <stdio.h>
 #include <iostream.h>	// for cout
 #include <strstream.h>	// for ostrstream
 #include "ckdefs.h"	// for CPrintf
