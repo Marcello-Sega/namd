@@ -135,16 +135,21 @@ void ProxyAllMsg:: unpack (void *in)
 
 void * ProxyResultMsg:: pack (int *length)
   {
-    int size = forceList[0].size();
-    *length = 4 * sizeof(int) + size * sizeof(Force) * Results::maxNumForces;
-    char *buffer = (char*)new_packbuffer(this,*length);
-    *((int*)buffer) = node;
-    *((int*)(buffer+sizeof(int))) = patch;
-    *((int*)(buffer+2*sizeof(int))) = size;
+    *length = ( 4 + Results::maxNumForces ) * sizeof(int);
     for ( int j = 0; j < Results::maxNumForces; ++j )
     {
-      Force *data = (Force*)(buffer+4*sizeof(int)+size*sizeof(Force)*j);
-      PACKDATA(forceList[j],Force,data);
+      *length += sizeof(Force) * forceList[j].size();
+    }
+    char *buffer = (char*)new_packbuffer(this,*length);
+    char *b = buffer;
+    *((int*)b) = node;  b += sizeof(int);
+    *((int*)b) = patch;  b += sizeof(int);
+    for ( j = 0; j < Results::maxNumForces; ++j )
+    {
+      int size = forceList[j].size();
+      memcpy((void*)b,(void*)(&size),sizeof(int));  b += sizeof(int);
+      memcpy((void*)b,(void*)(forceList[j].begin()),size*sizeof(Force));
+      b += size*sizeof(Force);
     }
     this->~ProxyResultMsg();
     return buffer;
@@ -153,15 +158,16 @@ void * ProxyResultMsg:: pack (int *length)
 void ProxyResultMsg:: unpack (void *in)
   {
     new((void*)this) ProxyResultMsg;
-    char *buffer = (char*)in;
-    node = *((int*)buffer);
-    patch = *((int*)(buffer+sizeof(int)));
-    int size = *((int*)(buffer+2*sizeof(int)));
+    char *b = (char*)in;
+    node = *((int*)b);  b += sizeof(int);
+    patch = *((int*)b);  b += sizeof(int);
     for ( int j = 0; j < Results::maxNumForces; ++j )
     {
+      int size;
+      memcpy((void*)(&size),(void*)b,sizeof(int));  b += sizeof(int);
       forceList[j].resize(size);
-      Force *data = (Force*)(buffer+4*sizeof(int)+size*sizeof(Force)*j);
-      UNPACKDATA(forceList[j],Force,data);
+      memcpy((void*)(forceList[j].begin()),(void*)b,size*sizeof(Force));
+      b += size*sizeof(Force);
     }
   }
 
@@ -346,12 +352,19 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
  *
  *	$RCSfile: ProxyMgr.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1019 $	$Date: 1997/12/19 23:42:36 $
+ *	$Revision: 1.1020 $	$Date: 1997/12/22 21:29:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.1020  1997/12/22 21:29:26  jim
+ * Proxies no longer send empty arrays back to HomePatch.  Requires some new
+ * flags to be set correctly in Sequencer in order to work.  These are:
+ *   maxForceMerged - this and faster are added into Results::normal array
+ *   maxForceUsed - all forces slower than this are discarded (assumed zero)
+ * Generally maxForceMerged doesn't change but maxForceUsed depends on timestep.
+ *
  * Revision 1.1019  1997/12/19 23:42:36  jim
  * Replaced assignments with memcpys and reordered memcpys for efficiency.
  *

@@ -25,6 +25,8 @@ public:
   int doNonbonded;
   int doFullElectrostatics;
   int submitLoadStats;
+  int maxForceUsed;		// may ignore slower force classes
+  int maxForceMerged;		// add this and faster to normal
 
   Lattice lattice;		// rather than shipping around separately
 
@@ -48,12 +50,19 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1997/04/10 09:14:05 $
+ *	$Revision: 1.9 $	$Date: 1997/12/22 21:29:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchTypes.h,v $
+ * Revision 1.9  1997/12/22 21:29:25  jim
+ * Proxies no longer send empty arrays back to HomePatch.  Requires some new
+ * flags to be set correctly in Sequencer in order to work.  These are:
+ *   maxForceMerged - this and faster are added into Results::normal array
+ *   maxForceUsed - all forces slower than this are discarded (assumed zero)
+ * Generally maxForceMerged doesn't change but maxForceUsed depends on timestep.
+ *
  * Revision 1.8  1997/04/10 09:14:05  ari
  * Final debugging for compute migration / proxy creation for load balancing.
  * Lots of debug code added, mostly turned off now.

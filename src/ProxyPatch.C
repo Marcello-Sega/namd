@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1016 1997/09/28 10:19:07 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1017 1997/12/22 21:29:27 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -109,7 +109,16 @@ void ProxyPatch::sendResults(void)
     = new (MsgIndex(ProxyResultMsg)) ProxyResultMsg;
   msg->node = CMyPe();
   msg->patch = patchID;
-  register int i;
+  register int i = 0;
+  register ForceList::iterator f_i, f_e, f2_i;
+  for ( i = Results::normal + 1 ; i <= flags.maxForceMerged; ++i ) {
+    f_i = f[Results::normal].begin(); f_e = f[Results::normal].end();
+    f2_i = f[i].begin();
+    for ( ; f_i != f_e; ++f_i, ++f2_i ) *f_i += *f2_i;
+    f[i].resize(0);
+  }
+  for ( i = flags.maxForceUsed + 1; i < Results::maxNumForces; ++i )
+    f[i].resize(0);
   for ( i = 0; i < Results::maxNumForces; ++i ) 
     msg->forceList[i] = f[i];
   ProxyMgr::Object()->sendResults(msg);
@@ -119,13 +128,20 @@ void ProxyPatch::sendResults(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyPatch.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1997/09/28 10:19:07 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1017 $	$Date: 1997/12/22 21:29:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.1017  1997/12/22 21:29:27  jim
+ * Proxies no longer send empty arrays back to HomePatch.  Requires some new
+ * flags to be set correctly in Sequencer in order to work.  These are:
+ *   maxForceMerged - this and faster are added into Results::normal array
+ *   maxForceUsed - all forces slower than this are discarded (assumed zero)
+ * Generally maxForceMerged doesn't change but maxForceUsed depends on timestep.
+ *
  * Revision 1.1016  1997/09/28 10:19:07  milind
  * Fixed priorities, ReductionMgr etc.
  *

@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1034 1997/09/19 09:39:06 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1035 1997/12/22 21:29:28 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -83,9 +83,21 @@ void Sequencer::algorithm(void)
     int &step = patch->flags.seq;
     step = simParams->firstTimestep;
 
+    int &maxForceUsed = patch->flags.maxForceUsed;
+    int &maxForceMerged = patch->flags.maxForceMerged;
+    maxForceUsed = Results::normal;
+    maxForceMerged = Results::normal;
+
     const int numberOfSteps = simParams->N;
     const int stepsPerCycle = simParams->stepsPerCycle;
     const BigReal timestep = simParams->dt;
+
+    const int nonbondedFrequency = simParams->nonbondedFrequency;
+    const BigReal nbondstep = timestep * nonbondedFrequency;
+    int &doNonbonded = patch->flags.doNonbonded;
+    doNonbonded = !(step%nonbondedFrequency);
+    if ( nonbondedFrequency == 1 ) maxForceMerged = Results::nbond;
+    if ( doNonbonded ) maxForceUsed = Results::nbond;
 
     // Do we do full electrostatics?
     const int dofull = ( simParams->fullDirectOn || simParams->FMAOn );
@@ -93,11 +105,8 @@ void Sequencer::algorithm(void)
     const BigReal slowstep = timestep * fullElectFrequency;
     int &doFullElectrostatics = patch->flags.doFullElectrostatics;
     doFullElectrostatics = (dofull && !(step%fullElectFrequency));
-
-    const int nonbondedFrequency = simParams->nonbondedFrequency;
-    const BigReal nbondstep = timestep * nonbondedFrequency;
-    int &doNonbonded = patch->flags.doNonbonded;
-    doNonbonded = !(step%nonbondedFrequency);
+    if ( dofull && (fullElectFrequency == 1) ) maxForceMerged = Results::slow;
+    if ( doFullElectrostatics ) maxForceUsed = Results::slow;
 
     runComputeObjects();
     addForceToMomentum(0.); // zero velocities of fixed atoms
@@ -119,6 +128,10 @@ void Sequencer::algorithm(void)
 
 	doNonbonded = !(step%nonbondedFrequency);
 	doFullElectrostatics = (dofull && !(step%fullElectFrequency));
+
+        maxForceUsed = Results::normal;
+	if ( doNonbonded ) maxForceUsed = Results::nbond;
+	if ( doFullElectrostatics ) maxForceUsed = Results::slow;
 
 	// Migrate Atoms on stepsPerCycle
 	runComputeObjects(!(step%stepsPerCycle));
@@ -258,12 +271,19 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1034 $     $Date: 1997/09/19 09:39:06 $
+ *      $Revision: 1.1035 $     $Date: 1997/12/22 21:29:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1035  1997/12/22 21:29:28  jim
+ * Proxies no longer send empty arrays back to HomePatch.  Requires some new
+ * flags to be set correctly in Sequencer in order to work.  These are:
+ *   maxForceMerged - this and faster are added into Results::normal array
+ *   maxForceUsed - all forces slower than this are discarded (assumed zero)
+ * Generally maxForceMerged doesn't change but maxForceUsed depends on timestep.
+ *
  * Revision 1.1034  1997/09/19 09:39:06  jim
  * Small tweaks for fixed atoms.
  *

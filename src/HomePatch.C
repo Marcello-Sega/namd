@@ -38,7 +38,7 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1038 1997/11/14 04:56:45 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1039 1997/12/22 21:29:24 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
 		     VelocityList vl) : Patch(pd,al,pl), v(vl) 
@@ -161,10 +161,10 @@ void HomePatch::receiveResults(ProxyResultMsg *msg)
   for ( int k = 0; k < Results::maxNumForces; ++k )
   {
     Force *f = r->f[k];
-    for ( register int j = 0; j < numAtoms; ++j )
-    {
-      f[j] += msg->forceList[k][j];
-    }
+    register ForceList::iterator f_i, f_e;
+    f_i = msg->forceList[k].begin();
+    f_e = msg->forceList[k].end();
+    for ( ; f_i != f_e; ++f_i, ++f ) *f += *f_i;
   }
   proxy[i].forceBox->close(&r);
   delete msg;
@@ -464,12 +464,19 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1038 $	$Date: 1997/11/14 04:56:45 $
+ *	$Revision: 1.1039 $	$Date: 1997/12/22 21:29:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1039  1997/12/22 21:29:24  jim
+ * Proxies no longer send empty arrays back to HomePatch.  Requires some new
+ * flags to be set correctly in Sequencer in order to work.  These are:
+ *   maxForceMerged - this and faster are added into Results::normal array
+ *   maxForceUsed - all forces slower than this are discarded (assumed zero)
+ * Generally maxForceMerged doesn't change but maxForceUsed depends on timestep.
+ *
  * Revision 1.1038  1997/11/14 04:56:45  jim
  * Added STL-style iterators, eliminated bad algorithm in doAtomMigration.
  *
