@@ -67,14 +67,22 @@ void ComputeMgr::updateComputes(int ep, int chareID) {
     CkExit();
     return;
   }
+#if CHARM_VERSION > 050402
+  CkStartQD(CkIndex_ComputeMgr::updateComputes2((CkQdMsg*)0),&thishandle);
+#else
   CkStartQD(CProxy_ComputeMgr::ckIdx_updateComputes2((CkQdMsg*)0),&thishandle);
+#endif
 }
 
 void ComputeMgr::updateComputes2(CkQdMsg *msg) {
   delete msg;
   CProxy_WorkDistrib wd(CpvAccess(BOCclass_group).workDistrib);
   WorkDistrib  *workDistrib = wd.ckLocalBranch();
+#if CHARM_VERSION > 050402
+  workDistrib->saveComputeMapChanges(CkIndex_ComputeMgr::updateComputes3(),thisgroup);
+#else
   workDistrib->saveComputeMapChanges(CProxy_ComputeMgr::ckIdx_updateComputes3(),thisgroup);
+#endif
 }
 
 void ComputeMgr::updateComputes3() {
@@ -114,7 +122,11 @@ void ComputeMgr::updateLocalComputes() {
  
   DebugM(4, "updateComputes - totalComputes = "<<Compute::totalComputes<<"\n");
   if (!CkMyPe()) {
+#if CHARM_VERSION > 050402
+      CkStartQD(CkIndex_ComputeMgr::updateLocalComputes2((CkQdMsg*)0), &thishandle);
+#else
       CkStartQD(CProxy_ComputeMgr::ckIdx_updateLocalComputes2((CkQdMsg*)0), &thishandle);
+#endif
   }
 }
 
@@ -151,7 +163,11 @@ ComputeMgr::updateLocalComputes3() {
   PatchMap::Object()->checkMap();
 
   if (!CkMyPe()) {
+#if CHARM_VERSION > 050402
+    CkStartQD(CkIndex_ComputeMgr::updateLocalComputes4((CkQdMsg*)0), &thishandle);
+#else
     CkStartQD(CProxy_ComputeMgr::ckIdx_updateLocalComputes4((CkQdMsg*)0), &thishandle);
+#endif
 // added a new phase to build spanning tree after load balance
 // was
 //    CkStartQD(CProxy_ComputeMgr::ckIdx_doneUpdateLocalComputes(), &thishandle);
@@ -170,7 +186,11 @@ ComputeMgr::updateLocalComputes5() {
   if (proxySendSpanning || proxyRecvSpanning )
     ProxyMgr::Object()->buildProxySpanningTree();
   if (!CkMyPe()) 
+#if CHARM_VERSION > 050402
+    CkStartQD(CkIndex_ComputeMgr::doneUpdateLocalComputes(), &thishandle);
+#else
     CkStartQD(CProxy_ComputeMgr::ckIdx_doneUpdateLocalComputes(), &thishandle);
+#endif
 }
 
 void ComputeMgr::doneUpdateLocalComputes() {
@@ -375,7 +395,11 @@ void ComputeMgr:: recvComputeGlobalConfig(ComputeGlobalConfigMsg *msg)
 void ComputeMgr:: sendComputeGlobalData(ComputeGlobalDataMsg *msg)
 {
   CProxy_ComputeMgr cm(CpvAccess(BOCclass_group).computeMgr);
+#if CHARM_VERSION > 050402
+  cm[0].recvComputeGlobalData(msg);
+#else
   cm.recvComputeGlobalData(msg, 0);
+#endif
 }
 
 void ComputeMgr:: recvComputeGlobalData(ComputeGlobalDataMsg *msg)
@@ -428,7 +452,11 @@ void ComputeMgr:: recvComputeDPMEData(ComputeDPMEDataMsg *msg)
 void ComputeMgr:: sendComputeDPMEResults(ComputeDPMEResultsMsg *msg, int node)
 {
   CProxy_ComputeMgr cm(CpvAccess(BOCclass_group).computeMgr);
+#if CHARM_VERSION > 050402
+  cm[node].recvComputeDPMEResults(msg);
+#else
   cm.recvComputeDPMEResults(msg, node);
+#endif
 }
 
 void ComputeMgr:: recvComputeDPMEResults(ComputeDPMEResultsMsg *msg)

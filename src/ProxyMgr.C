@@ -358,7 +358,11 @@ ProxyMgr::registerProxy(PatchID pid) {
   msg->patch = pid;
 
   CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+#if CHARM_VERSION > 050402
+  cp[node].recvRegisterProxy(msg);
+#else
   cp.recvRegisterProxy(msg,node);
+#endif
 }
 
 void
@@ -378,7 +382,11 @@ ProxyMgr::unregisterProxy(PatchID pid) {
   msg->patch = pid;
 
   CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+#if CHARM_VERSION > 050402
+  cp[node].recvUnregisterProxy(msg);
+#else
   cp.recvUnregisterProxy(msg,node);
+#endif
 }
 
 void
@@ -403,7 +411,11 @@ ProxyMgr::buildProxySpanningTree()
 void 
 ProxyMgr::sendSpanningTree(ProxySpanningTreeMsg *msg) {
   CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+#if CHARM_VERSION > 050402
+  cp[msg->tree[0]].recvSpanningTree(msg);
+#else
   cp.recvSpanningTree(msg, msg->tree[0]);
+#endif
 }
 
 void 
@@ -456,7 +468,11 @@ void
 ProxyMgr::sendResults(ProxyResultMsg *msg) {
   CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
   NodeID node = PatchMap::Object()->node(msg->patch);
+#if CHARM_VERSION > 050402
+  cp[node].recvResults(msg);
+#else
   cp.recvResults(msg, node);
+#endif
 }
 
 void
@@ -471,7 +487,11 @@ ProxyMgr::sendResults(ProxyCombinedResultMsg *msg) {
   ProxyCombinedResultMsg *cMsg = patch->depositCombinedResultMsg(msg);
   if (cMsg) {
     CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+#if CHARM_VERSION > 050402
+    cp[patch->getSpanningTreeParent()].recvResults(cMsg);
+#else
     cp.recvResults(cMsg, patch->getSpanningTreeParent());
+#endif
   }
 }
 
@@ -486,7 +506,11 @@ ProxyMgr::recvResults(ProxyCombinedResultMsg *msg) {
     ProxyCombinedResultMsg *cMsg = patch->depositCombinedResultMsg(msg);
     if (cMsg) {
       CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+#if CHARM_VERSION > 050402
+      cp[patch->getSpanningTreeParent()].recvResults(cMsg);
+#else
       cp.recvResults(cMsg, patch->getSpanningTreeParent());
+#endif
     }
   }
 }
