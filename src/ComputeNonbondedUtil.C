@@ -429,7 +429,7 @@ void ComputeNonbondedUtil::select(void)
     full_table[i] = fast_table[i] + slow_table[i];
   }
 
-#if 1
+#if 0
   char fname[100];
   sprintf(fname,"/tmp/namd.table.pe%d.dat",CkMyPe());
   FILE *f = fopen(fname,"w");
