@@ -44,8 +44,11 @@ PVM=-I$(PVMDIR)
 #####
 ## Choose your favorite Compiler options
 ####
-CXXOPTS = -O
-#CXXOPTS = +O3 -G -z 
+#CXXOPTS = -O
+# this one below leads to numerical changes!
+#CXXOPTS = +O3 -G -z -ptn +Oentrysched +Ofastaccess +Onofltacc +Oregionsched
+#CXXOPTS = +O3 -G -z -ptn +Oentrysched
+CXXOPTS = +O3 -G -z
 #CXXOPTS = -O +DAK460 +DSK460
 #CXXOPTS = -g
 
@@ -103,6 +106,7 @@ OBJS = \
 	$(DSTDIR)/Molecule.o \
 	$(DSTDIR)/Namd.o \
 	$(DSTDIR)/NamdState.o \
+	$(DSTDIR)/NamdOneTools.o \
 	$(DSTDIR)/Node.o \
 	$(DSTDIR)/Output.o \
 	$(DSTDIR)/Parameters.o \
