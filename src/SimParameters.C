@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1997/04/16 23:44:04 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1015 $	$Date: 1997/04/24 18:51:45 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,11 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1015  1997/04/24 18:51:45  nealk
+ * Corrected parameter bug with DPMTA options.
+ * In particular: FFT Block must be 4 and FFTMp must be a multiple
+ * of FFT Block.
+ *
  * Revision 1.1014  1997/04/16 23:44:04  brunner
  * Put ldbStrategy={none|refineonly|alg7}, ldbPeriod, and firstLdbStep
  * in SimParameters.
@@ -361,7 +366,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1014 1997/04/16 23:44:04 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1015 1997/04/24 18:51:45 nealk Exp $";
 
 
 #include "ckdefs.h"
@@ -1537,6 +1542,15 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    	FMAFFTOn = FALSE;
    	FMAFFTBlock = 0;
    }
+   else
+   {
+	// idiot checking: frm bug reported by Tom Bishop.
+	// DPMTA requires: (#terms in fma)/(fft blocking factor) = integer.
+	if (FMAFFTBlock != 4)
+		NAMD_die("FMAFFTBlock: Block length must be 4 for short FFT's");
+	if (FMAMp % FMAFFTBlock != 0)
+		NAMD_die("FMAMp: multipole term must be multiple of block length (FMAFFTBlock)");
+    }
 
    if (!FMAOn && !fullDirectOn)
    {
@@ -2390,12 +2404,17 @@ void SimParameters::receive_SimParameters(Message *msg)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1997/04/16 23:44:04 $
+ *	$Revision: 1.1015 $	$Date: 1997/04/24 18:51:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1015  1997/04/24 18:51:45  nealk
+ * Corrected parameter bug with DPMTA options.
+ * In particular: FFT Block must be 4 and FFTMp must be a multiple
+ * of FFT Block.
+ *
  * Revision 1.1014  1997/04/16 23:44:04  brunner
  * Put ldbStrategy={none|refineonly|alg7}, ldbPeriod, and firstLdbStep
  * in SimParameters.
