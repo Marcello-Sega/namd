@@ -10,8 +10,8 @@
 % RCS INFORMATION:
 %
 %       $RCSfile: ug_psfgen.tex,v $
-%       $Author: justin $        $Locker:  $                $State: Exp $
-%       $Revision: 1.4 $      $Date: 2001/03/22 17:42:31 $
+%       $Author: jim $        $Locker:  $                $State: Exp $
+%       $Revision: 1.5 $      $Date: 2001/05/08 20:57:31 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -33,15 +33,163 @@ Current capabilities include
 \item generating a full molecular structure from sequence data
 \item applying patches to modify or link different segments
 \item writing NAMD and VMD compatible PSF structure files
-\item extracting coordinate data from single segment PDB files
+\item extracting coordinate data from PDB files
 \item constructing (guessing) missing atomic coordinates
 \item writing NAMD and VMD compatible PDB coordinate files
 \end{itemize}
 
 We are currently refining the interface of \verb#psfgen# and adding
-features to create a complete molecular building solution.  In the
-meantime, documentation is provided by the following commented example.
+features to create a complete molecular building solution.
 We welcome your feedback on this new tool.
+
+\subsection{Ordinary Usage}
+
+The \verb#psfgen# tool is implemented as a Tcl interpreter which reads
+commands from standard output.  You may use loops, variables, etc. as
+you would in a VMD or NAMD script.  You may use psfgen interactively,
+but we expect it to be run most often with a script file redirected to
+standard input.
+
+Generating PSF and PDB files for use with NAMD will typically consist of
+the following steps:
+
+\begin{enumerate}
+\item Preparing separate PDB files containing individual segments of
+protein, solvent, etc. before running \verb#psfgen#.
+\item Reading in the appropriate topology definition files and aliasing
+residue and atom names found in the PDB file to those found in the topology
+files.  This will generally include selecting a default protonation state
+for histidine residues.
+\item Generating the default structure using segment and pdb commands.
+\item Applying additional patches to the structure.
+\item Reading coordinates from the PDB files.
+\item Guessing missing coordinates of hydrogens and other atoms.
+\item Writing PSF and PDB files for use in NAMD.
+\end{enumerate}
+
+
+\subsection{List of Commands}
+
+\begin{itemize}
+
+\item \COMMAND{\KEY{topology} \ARG{file name}}
+{Read in molecular topology definitions from file.}
+{\ARGDEF{file name}{CHARMM format topology file.}}
+{Beginning of script, before segment.  May call multiple times.}
+
+\item \COMMAND{\KEY{alias residue} \ARG{alternate name} \ARG{real name}}
+{Provide translations from residues found in PDB files to proper
+residue names read in from topology definition files.  Proper names
+from topology files will be used in generated PSF and PDB files.}
+{\ARGDEF{alternate name}{Residue name found in PDB file.}\\
+\ARGDEF{real name}{Residue name found in topology file.}}
+{Before reading sequence with pdb.  May call multiple times.}
+
+\item \COMMAND{\KEY{segment} \ARG{segment ID} \{ \ARG{commands} \}}
+{Build a segment of the molecule.  A segment is typically a single
+chain of protein or DNA, with default patches applied to the termini.
+Segments may also contain pure solvent or lipid.}
+{\ARGDEF{segment ID}{Unique name for segment, 1--4 characters.}\\
+\ARGDEF{commands}{Sequence of commands in Tcl syntax to build the primary
+structure of the segment, including auto, first, last, residue, pdb, etc.}}
+{After topology definitions and residue aliases.  May call multiple times.
+Structure information is generated at the end of every segment command.}
+
+\item \COMMAND{\KEY{auto} \OKEY{angles} \OKEY{dihedrals} \OKEY{none}}
+{Override default settings from topology file for automatic generation of
+angles and dihedrals for the current segment.}
+{\KEYDEF{angles}{Enable generation of angles from bonds.}\\
+\KEYDEF{dihedrals}{Enable generation of dihedrals from angles.}\\
+\KEYDEF{none}{Disable generation of angles and dihedrals.}}
+{Anywhere within segment, does not affect later segments.}
+
+\item \COMMAND{\KEY{first} \ARG{patch name}}
+{Override default patch applied to first residue in segment.
+Default is read from topology file and may be residue-specific.}
+{\ARGDEF{patch name}{Single-target patch residue name or \KEY{none}.}}
+{Anywhere within segment, does not affect later segments.}
+
+\item \COMMAND{\KEY{last} \ARG{patch name}}
+{Override default patch applied to last residue in segment.
+Default is read from topology file and may be residue-specific.}
+{\ARGDEF{patch name}{Single-target patch residue name or \KEY{none}.}}
+{Anywhere within segment, does not affect later segments.}
+
+\item \COMMAND{\KEY{residue} \ARG{resid} \ARG{resname}}
+{Add a single residue to the end of the current segment.}
+{\ARGDEF{resid}{Unique name for residue, 1--5 characters, usually numeric.}
+\ARGDEF{resname}{Residue type name from topology file.}}
+{Anywhere within segment.}
+
+\item \COMMAND{\KEY{pdb} \ARG{file name}}
+{Extract sequence information from PDB file when building segment.
+Residue IDs will be preserved, residue names must match entries in
+the topology file or should be aliased before pdb is called.}
+{\ARGDEF{file name}{PDB file containing known or aliased residues.}}
+{Anywhere within segment.}
+
+\item \COMMAND{\KEY{patch} \ARG{patch residue name} \ARG{segid:resid} \OARG{...}}
+{Apply a patch to one or more residues.  Patches make small modifications to
+the structure of residues such as converting one to a terminus, changing the
+protonation state, or creating disulphide bonds between a pair of residues.}
+{\ARGDEF{patch residue name}{Name of patch residue from topology definition file.}\\
+\ARGDEF{segid:resid}{List of segment and residue pairs to which patch should be applied.}}
+{After one or more segments have been built.}
+
+\item \COMMAND{\KEY{writepsf} \OKEY{charmm} \OKEY{x-plor} \ARG{file name}}
+{Write out structure information as PSF file.}
+{ \KEYDEF{charmm}{Use CHARMM format (numbers for atom types).}\\
+\KEYDEF{x-plor}{Use X-PLOR format (names for atom types), the default format required by NAMD.}\\
+\ARGDEF{file name}{PSF file to be generated.}}
+{After all segments have been built and patched.}
+
+\item \COMMAND{\KEY{readpsf} \ARG{file name}}
+{Read in structure information from PSF file and adds it to the structure.
+It is an error if any segments in the PSF file already exist.}
+{\ARGDEF{file name}{PSF file in X-PLOR format (names for atom types).}}
+{Anywhere but within segment.}
+
+\item \COMMAND{\KEY{alias atom} \ARG{residue name} \ARG{alternate name} \ARG{real name}}
+{Provide translations from atom names found in PDB files to proper
+atom names read in from topology definition files.  Proper names
+from topology files will be used in generated PSF and PDB files.}
+{\ARGDEF{residue name}{Proper or aliased residue name.}\\
+\ARGDEF{alternate name}{Atom name found in PDB file.}\\
+\ARGDEF{real name}{Atom name found in topology file.}}
+{Before reading coordinates with coordpdb.  May call multiple times.}
+
+\item \COMMAND{\KEY{coord} \ARG{segid} \ARG{resid} \ARG{atomname} \ARG{\{ x y z \}}}
+{Set coordinates for a single atom.}
+{\ARGDEF{segid}{Segment ID of target atom.}\\
+\ARGDEF{resid}{Residue ID of target atom.}\\
+\ARGDEF{atomname}{Name of target atom.}\\
+\ARGDEF{\{ x y z \}}{Coordinates to be assigned.}}
+{After structure has been generated.}
+
+\item \COMMAND{\KEY{coordpdb} \ARG{file name} \OARG{segid}}
+{Read coordinates from PDB file, matching segment, residue and atom names.}
+{\ARGDEF{file name}{PDB file containing known or aliased residues and atoms.}\\
+\ARGDEF{segid}{If specified override segment IDs in PDB file.}}
+{After segment has been generated and atom aliases defined.}
+
+\item \COMMAND{\KEY{guesscoord}}
+{Guesses coordinates of atoms for which they were not explicitly set.
+Calculation is based on internal coordinate hints contained in toplogy
+definition files.  When these are insufficient, wild guesses are attempted
+based on bond lengths of 1 \AA\ and angles of 109$^\circ$.}
+{None.}
+{After stucture has been generated and known coordinates read in.}
+
+\item \COMMAND{\KEY{writepdb} \ARG{file name}}
+{Writes PDB file containing coordinates.  Atoms order is identical to
+PSF file generated by writepsf (unless structure has been changed).
+The O field is set to 0 for atoms with known coordinates, 1 for atoms
+with guessed coordinates, and -1 for atoms with no coordinate data
+available (coordinates are set to 0 for these atoms).}
+{\ARGDEF{file name}{PDB file to be written.}}
+{After structure and coordinates are complete.}
+
+\end{itemize}
 
 \subsection{BPTI Example}
 
@@ -283,13 +431,5 @@ minimize 1000
 
 run 20000
 \end{verbatim}
-
-%\subsection{Summary of psfgen commands}
-%\begin{itemize}
-%\item
-%{\bf readpsf <filename>} : Reads the psf file given by filename and adds it to the
-%molecular structure.  It is an error if any segments in the psf file have
-%already been created.
-%\end{itemize}
 
  

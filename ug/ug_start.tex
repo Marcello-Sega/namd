@@ -16,9 +16,13 @@ The initial coordinates of the molecular system in the form of a PDB file.
 A \NAMD\ configuration file.
 \end{itemize}
 
-We strongly recommend that you have access to either CHARMM or X-PLOR,
-either of which is capable of generating both the PSF and PDB files.
-\NAMD\ currently provides no automatic method of generating these files.
+\NAMD\ provides the \verb#psfgen# utility,
+documented in Section~\ref{section:psfgen},
+which is capable of generating the required PSF and PDB files by
+merging PDB files and guessing coordinates for missing atoms.
+If \verb#psfgen# is insufficient for your system,
+we recommend that you obtain access to either CHARMM or X-PLOR,
+both of which are capable of generating the required files.
 
 \subsection{\NAMD\ configuration file}
 \label{section:config}
