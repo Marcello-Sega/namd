@@ -76,6 +76,7 @@ void Controller::algorithm(void)
     BigReal ljEnergy;
     BigReal kineticEnergy;
     BigReal totalEnergy;
+iout << "Starting...\n" << endi;
     reduction->require(seq, REDUCTION_BOND_ENERGY, bondEnergy);
     reduction->require(seq, REDUCTION_ANGLE_ENERGY, angleEnergy);
     reduction->require(seq, REDUCTION_DIHEDRAL_ENERGY, dihedralEnergy);
@@ -83,6 +84,7 @@ void Controller::algorithm(void)
     reduction->require(seq, REDUCTION_ELECT_ENERGY, electEnergy);
     reduction->require(seq, REDUCTION_LJ_ENERGY, ljEnergy);
     reduction->require(seq, REDUCTION_KINETIC_ENERGY, kineticEnergy);
+iout << "Got it...\n" << endi;
     totalEnergy = bondEnergy + angleEnergy + dihedralEnergy + improperEnergy +
 	 electEnergy + ljEnergy + kineticEnergy;
     iout << "ENERGY[" << seq << "] = { " <<
@@ -107,7 +109,7 @@ void Controller::algorithm(void)
     reduction->require(seq, REDUCTION_LJ_ENERGY, ljEnergy);
     reduction->require(seq, REDUCTION_KINETIC_ENERGY, kineticEnergy);
     totalEnergy = bondEnergy + angleEnergy + dihedralEnergy + improperEnergy +
-	 electEnergy + ljEnergy + kineticEnergy;
+ 	 electEnergy + ljEnergy + kineticEnergy;
     iout << "ENERGY[" << seq << "] = { " <<
 	"bond: " << bondEnergy << ", " << 
 	"angle: " << angleEnergy << ", " << 

@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1007 1997/02/10 08:17:30 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1008 1997/02/10 19:44:29 nealk Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -26,7 +26,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C
 #include "Migration.h"
 #include "PatchMgr.h"
 
-#define MIN_DEBUG_LEVEL 3
+#define MIN_DEBUG_LEVEL 4
 // #define DEBUGM
 #include "Debug.h"
 
@@ -95,11 +95,15 @@ HomePatch::~HomePatch()
 }
 
 
+#include <unistd.h>
+
 void HomePatch::boxClosed(int)
 {
   if ( ! --boxesOpen )
   {
-    DebugM(2,patchID << ": " << "Trying to awaken sequencer.\n");
+sleep(1);
+    DebugM(4,patchID << ": " << CthSelf() << " awakening sequencer "
+	<< sequencer->thread << "(" << patchID << ") @" << CmiTimer() << "\n");
     sequencer->awaken();
   }
   else
@@ -153,8 +157,6 @@ void HomePatch::positionsReady(int doMigration)
       allmsg->patch = patchID;
       allmsg->positionList = p;
       allmsg->atomIDList = atomIDList;
-      DebugM(4, "atomIDList.size() = " << atomIDList.size() 
-	<< " positionList.size() = " << positionList.size() << "\n" );
       ProxyMgr::Object()->sendProxyAll(allmsg,pli->node);
     } else {
       ProxyDataMsg *nmsg = new (MsgIndex(ProxyDataMsg)) ProxyDataMsg;
@@ -254,7 +256,7 @@ HomePatch::doAtomMigration()
        if (NULL == (mCur = mInfo[xdev][ydev][zdev]->mList)) {
 	 mCur = mInfo[xdev][ydev][zdev]->mList = new MigrationList;
        }
-       DebugM(4,"Migrating atom " << atomIDList[i] << " from patch "
+       DebugM(3,"Migrating atom " << atomIDList[i] << " from patch "
 		<< patchID << " with position " << p[i] << "\n");
        mCur->add(MigrationElem(atomIDList[i], a[i], p[i],
          p[i], v[i], f[i], f[i], f[i])
@@ -282,7 +284,7 @@ HomePatch::doAtomMigration()
   }
 
   if (!allMigrationIn) {
-    DebugM(4,"All Migrations NOT in, we are suspending patch "<<patchID<<"\n");
+    DebugM(3,"All Migrations NOT in, we are suspending patch "<<patchID<<"\n");
     migrationSuspended = true;
     sequencer->suspend();
     migrationSuspended = false;
@@ -297,11 +299,11 @@ HomePatch::doAtomMigration()
 void 
 HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
 {
-  DebugM(4,"depositMigration from "<<srcPatchID<<" on "<<patchID<<"\n");
+  DebugM(3,"depositMigration from "<<srcPatchID<<" on "<<patchID<<"\n");
   if (migrationList) {
     MigrationListIter mi(*migrationList);
     for (mi = mi.begin(); mi != mi.end(); mi++) {
-      DebugM(4,"Migrating atom " << mi->atomID << " to patch "
+      DebugM(3,"Migrating atom " << mi->atomID << " to patch "
 		<< patchID << " with position " << mi->pos << "\n"); 
       a.add(mi->atomProp);
       atomIDList.add(mi->atomID);
@@ -315,7 +317,7 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
   }
   numAtoms = atomIDList.size();
 
-  DebugM(4,"Counter on " << patchID << " = " << patchMigrationCounter << "\n");
+  DebugM(3,"Counter on " << patchID << " = " << patchMigrationCounter << "\n");
   if (!--patchMigrationCounter) {
     DebugM(4,"All Migrations are in for patch "<<patchID<<"\n");
     allMigrationIn = true;
@@ -325,6 +327,7 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
       migrationSuspended = false;
       sequencer->awaken();
     }
+    else DebugM(4,"patch "<<patchID<<" was not suspended\n");
   }
 }
 
@@ -333,13 +336,16 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/02/10 08:17:30 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1997/02/10 19:44:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1008  1997/02/10 19:44:29  nealk
+ * More debugging code.  Corrected HomePatch/Sequencer awaken/suspend bug.
+ *
  * Revision 1.1007  1997/02/10 08:17:30  jim
  * Commented out sending and allocation of unused data.
  *

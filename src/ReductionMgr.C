@@ -28,7 +28,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1002 1997/02/06 18:05:29 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1003 1997/02/10 19:44:30 nealk Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -47,7 +47,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMg
 #include "ReductionMgr.h"
 
 // #define DEBUGM
-#define MIN_DEBUG_LEVEL 5
+#define MIN_DEBUG_LEVEL 2
 #define STDERR_LEVEL 7
 #include "Debug.h"
 
@@ -261,7 +261,7 @@ void	ReductionMgr::remove(int seq)
   ReductionMgrData *previousdata = NULL;
   int i;	// loop variable
 
-  DebugM(4,"remove()? seq=" << seq << "\n");
+  DebugM(5,"remove()? seq=" << seq << "\n");
 
   // check if data is removable
   if (currentdata->numEvents < maxEvents)
@@ -291,7 +291,7 @@ void	ReductionMgr::remove(int seq)
   }
   #endif
 
-  DebugM(4,"remove()! seq=" << seq << "\n");
+  DebugM(5,"remove()! seq=" << seq << "\n");
 
   // delete data
   if (!previousdata)
@@ -366,6 +366,16 @@ void	ReductionMgr::recvReductionData	(ReductionDataMsg *msg)
     gotAllData(current);
   }
 
+  #if PANIC > 0
+  if (current->suspendFlag[tag] != 0)
+  {
+    iout << "Hey! Someone is suspended & awaiting data! "
+	 << "tag=" << tag << " "
+	 << "event=" << current->numEvents << "/" << maxEvents << " "
+	 << current->numData[tag] << "/" << maxData[tag] << "\n" << endi;
+  }
+  #endif
+
   if (current->numEvents >= maxEvents)
 	remove(current->sequenceNum);
 } /* ReductionMgr::recvReductionData() */
@@ -400,7 +410,7 @@ ReductionMgrData *	ReductionMgr::find(int seq)
   while(current && (current->sequenceNum < seq))
     {
       previous = current;
-      DebugM(2,"browsing over seq=" << current->sequenceNum << "\n");
+      DebugM(1,"browsing over seq=" << current->sequenceNum << "\n");
       current = current->next;
     }
 
@@ -549,6 +559,16 @@ void	ReductionMgr::submit(int seq, ReductionTag tag, BigReal data, int more)
     // all done here!
     gotAllData(current);
   }
+
+  #if PANIC > 0
+  if (current->suspendFlag[tag] != 0)
+  {
+    iout << "Hey! Someone is suspended! "
+	 << "tag=" << tag << " "
+	 << "event=" << current->numEvents << "/" << maxEvents << " "
+	 << current->numData[tag] << "/" << maxData[tag] << "\n" << endi;
+  }
+  #endif
 } /* ReductionMgr::submit() */
 
 /*******************************************
@@ -608,19 +628,16 @@ void	ReductionMgr::require(int seq, ReductionTag tag, BigReal &data)
     while(current->suspendFlag[tag] == 1)
     {
 	CthSuspend();
+	#if PANIC > 0
 	if (current->suspendFlag[tag] == 1)
 	{
 	  iout << iERRORF << iPE
 	       << " CthSuspend() resumed improperly.  Suspending again!\n"
 	       << endi;
 	}
+	#endif
     }
     // ...then return value
-    if (current->suspendFlag[tag] == 1)
-    {
-	iout << iERRORF << iPE << " Processes didn't suspend!\n" << endi;
-	NAMD_die("ReductionMgr.C: Processes didn't suspend!");
-    }
     DebugM(5,"unSuspend seq=" << seq << " tag=" << tag
 	<< " thread=" << current->threadNum[tag]
 	<< "\n");
