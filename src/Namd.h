@@ -18,6 +18,8 @@
 #include <stdlib.h>
 
 #include "NamdState.h"
+#include "Node.h"	// for determining time to compute 1ns
+#include "SimParameters.h" // for timesteps
 
 class Node;
 
@@ -36,8 +38,18 @@ public:
   // last call of system
   static void namdDone(void) { 
     CPrintf("==========================================\n");
-    CPrintf("WallClock : %f  CPUTime : %f \n", CmiWallTimer()-cmiWallStart, 
-      CmiCpuTimer()-cmiCpuStart);
+    Real CPUtime = CmiCpuTimer()-cmiCpuStart;
+    Real Walltime = CmiWallTimer()-cmiWallStart;
+    CPrintf("WallClock : %f  CPUTime : %f \n",Walltime,CPUtime);
+
+    // femtoseconds
+    SimParameters *params = Node::Object()->simParameters;
+    BigReal fs = params->N * params->dt;
+    // scale to nanoseconds
+    BigReal ns = fs / 1000000.0;
+    BigReal days = 1.0 / (24.0 * 60.0 * 60.0);
+    CPrintf("Days per ns:  WallClock : %lf  CPUTime : %lf \n",
+	days*Walltime/ns, days*CPUtime/ns);
     CharmExit(); 
   }
 
@@ -64,13 +76,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: Namd.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/18 18:09:05 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1006 $	$Date: 1997/05/28 19:30:56 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Namd.h,v $
+ * Revision 1.1006  1997/05/28 19:30:56  nealk
+ * Added output to show number of days to compute 1 ns.
+ *
  * Revision 1.1005  1997/03/18 18:09:05  jim
  * Revamped collection system to ensure ordering and eliminate
  * unnecessary collections.  Also reduced make dependencies.
