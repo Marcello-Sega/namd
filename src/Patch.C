@@ -71,11 +71,9 @@ void Patch::loadAtomProperties(void)
     Molecule *mol = Node::Object()->molecule;
     int splitPatch = (Node::Object()->simParameters->splitPatch == SPLIT_PATCH_HYDROGEN);
     a.resize(0);
-    // localIndex.resize(0);  NEVER USED -JCP
     register int i;
     for ( i=0; i<numAtoms; i++)
     {
-      // localIndex.load(LocalAtomID(atomIDList[i], i));  NEVER USED -JCP
       AtomProperties ap;
       ap.id = atomIDList[i];
       ap.type = mol->atomvdwtype(ap.id);
@@ -93,7 +91,6 @@ void Patch::loadAtomProperties(void)
 	  ap.hydrogenGroupSize = 0;
       }
       else ap.hydrogenGroupSize = 1;  // A group unto itself.
-      // ap.water = mol->is_water(atomIDList[i]);  NEVER USED -JCP
 
       ap.flags = 0;
       // fixed atoms - pass one
@@ -121,50 +118,7 @@ void Patch::loadAtomProperties(void)
       }
     }
 
-    /* NEVER USED -JCP
-    localIndex.sort();
-    localIndex.uniq();
-
-    // load water/nonwater lists
-    localWaters.resize(0);
-    localNonWaters.resize(0);
-    for(i=0; i<numAtoms; i++)
-    {
-      if (a[i].hydrogenGroupSize) // THIS WILL NO LONGER WORK -JCP
-      {
-	if (a[i].water) localWaters.load(i);
-	else localNonWaters.load(i);
-      }
-    }
-    */
 }
-
-/* NEVER USED -JCP
-void
-Patch::indexAtoms()
-{
-    numAtoms = atomIDList.size();
-    localIndex.resize(0);
-    for ( register int i=0; i<numAtoms; i++)
-    {
-      localIndex.load(LocalAtomID(atomIDList[i], i));
-    }
-    localIndex.sort();
-    localIndex.uniq();
-
-    // load water/nonwater lists
-    localWaters.resize(0);
-    localNonWaters.resize(0);
-    for(i=0; i<numAtoms; i++)
-    {
-      if (a[i].hydrogenGroupSize) // THIS WILL NO LONGER WORK -JCP
-      {
-	if (a[i].water) localWaters.load(i);
-	else localNonWaters.load(i);
-      }
-    }
-}
-*/
 
 PositionBox<Patch>* Patch::registerPositionPickup(ComputeID cid, int trans)
 {

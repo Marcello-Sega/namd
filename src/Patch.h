@@ -91,9 +91,6 @@ class Patch
      PatchID       patchID;
      int           numAtoms;
      AtomIDList    atomIDList;
-     // LocalIndex    localIndex;  NEVER USED -JCP
-     // LocalInt      localWaters;  NEVER USED -JCP
-     // LocalInt      localNonWaters;  NEVER USED -JCP
      PositionList  p;
      PositionList  p_avg;
      Position      *positionPtr;
