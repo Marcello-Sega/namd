@@ -767,6 +767,7 @@ void HomePatch::doGroupSizeCheck()
     BigReal z = p_i->position.z;
     ++p_i;
     int oversize = 0;
+    // limit spatial extent
     for ( int i = 1; i < hgs; ++i ) {
       p_i->nonbondedGroupSize = 0;
       BigReal dx = p_i->position.x - x;
@@ -776,7 +777,8 @@ void HomePatch::doGroupSizeCheck()
       ++p_i;
       if ( r2 > hgcut ) oversize = 1;
     }
-    if ( oversize ) {
+    // also limit to at most 4 atoms per group
+    if ( oversize || hgs > 4 ) {
       p_i -= hgs;
       for ( int i = 0; i < hgs; ++i ) {
         p_i->nonbondedGroupSize = 1;
