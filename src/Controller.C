@@ -26,6 +26,8 @@
 #include "Thread.h"
 #include <math.h>
 #include "NamdOneTools.h"
+#include "PatchMap.h"
+#include "PatchMap.inl"
 
 #ifndef cbrt
   // cbrt() not in math.h on goneril
@@ -153,9 +155,13 @@ void Controller::algorithm(void)
     int first = 1;
 
     const int numberOfSteps = simParams->N;
+    const int nPatches=(PatchMap::Object())->numPatches();
 
     for ( ; step <= numberOfSteps; ++step, first = 0 )
     {
+	if (CNumPes() > nPatches) {
+		reduction->broadcastDoSubmit(step, nPatches);
+	}
         enqueueCollections(step);
         trace_user_event(eventEndOfTimeStep);
         reassignVelocities(step);
@@ -647,12 +653,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1049 $	$Date: 1998/11/30 03:19:14 $
+ *	$Revision: 1.1050 $	$Date: 1998/11/30 04:10:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1050  1998/11/30 04:10:25  krishnan
+ * Added code to trigger the reduction manager on every timestep, if numNodes > nPatches
+ *
  * Revision 1.1049  1998/11/30 03:19:14  jim
  * Fixed startup bug in algorithm.
  *
