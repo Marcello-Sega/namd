@@ -131,7 +131,7 @@ void WorkDistrib::doneSaveComputeMap() {
 //----------------------------------------------------------------------
 // This should only be called on node 0.
 //----------------------------------------------------------------------
-void WorkDistrib::createHomePatches(void)
+FullAtomList *WorkDistrib::createAtomLists(void)
 {
   int i;
   StringList *current;	//  Pointer used to retrieve configuration items
@@ -231,11 +231,6 @@ void WorkDistrib::createHomePatches(void)
 
   for(i=0; i < numPatches; i++)
   {
-    if ( ! ( i % 100 ) )
-    {
-      DebugM(3,"Created " << i << " patches so far.\n");
-    }
-
     ScaledPosition center(0.5*(patchMap->min_a(i)+patchMap->max_a(i)),
 			  0.5*(patchMap->min_b(i)+patchMap->max_b(i)),
 			  0.5*(patchMap->min_c(i)+patchMap->max_c(i)));
@@ -298,6 +293,34 @@ void WorkDistrib::createHomePatches(void)
       }
     }
 
+  }
+
+  return atoms;
+
+}
+
+
+//----------------------------------------------------------------------
+// This should only be called on node 0.
+//----------------------------------------------------------------------
+void WorkDistrib::createHomePatches(void)
+{
+  int i;
+  PatchMap *patchMap = PatchMap::Object();
+  CProxy_PatchMgr pm(CpvAccess(BOCclass_group).patchMgr);
+  PatchMgr *patchMgr = pm.ckLocalBranch();
+
+  int numPatches = patchMap->numPatches();
+
+  FullAtomList *atoms = createAtomLists();
+
+  for(i=0; i < numPatches; i++)
+  {
+    if ( ! ( i % 100 ) )
+    {
+      DebugM(3,"Created " << i << " patches so far.\n");
+    }
+
     patchMgr->createHomePatch(i,atoms[i]);
   }
 
@@ -324,6 +347,24 @@ void WorkDistrib::distributeHomePatches() {
     }
   }
   patchMgr->sendMovePatches();
+}
+
+void WorkDistrib::reinitAtoms() {
+
+  PatchMap *patchMap = PatchMap::Object();
+  CProxy_PatchMgr pm(CpvAccess(BOCclass_group).patchMgr);
+  PatchMgr *patchMgr = pm.ckLocalBranch();
+
+  int numPatches = patchMap->numPatches();
+
+  FullAtomList *atoms = createAtomLists();
+
+  for(int i=0; i < numPatches; i++) {
+    patchMgr->sendAtoms(i,atoms[i]);
+  }
+
+  delete [] atoms;
+
 }
 
 

@@ -129,6 +129,23 @@ void PatchMgr::recvMovePatches(MovePatchesMsg *msg) {
 //}
 
 
+void PatchMgr::sendAtoms(PatchID pid, FullAtomList a) {
+
+      MovePatchesMsg *msg = new MovePatchesMsg(pid, a);
+
+      CProxy_PatchMgr cp(thisgroup);
+#if CHARM_VERSION > 050402
+      cp[patchMap->node(pid)].recvAtoms(msg);
+#else
+      cp.recvAtoms(msg, patchMap->node(pid));
+#endif
+
+}
+
+void PatchMgr::recvAtoms(MovePatchesMsg *msg) {
+    patchMap->homePatch(msg->pid)->reinitAtoms(msg->atom);
+}
+
 
 // Called by HomePatch to migrate atoms off to new patches
 // Message combining could occur here

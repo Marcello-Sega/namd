@@ -13,6 +13,7 @@
 #include "Broadcasts.h"
 #include "ConfigList.h"
 #include "Node.h"
+#include "WorkDistrib.h"
 #include "NamdState.h"
 #include "Controller.h"
 #include "SimParameters.h"
@@ -78,6 +79,11 @@ void ScriptTcl::setParameter(const char* param, int value) {
   strncpy(msg->param,param,MAX_SCRIPT_PARAM_SIZE);
   sprintf(msg->value,"%d",value);
   (CProxy_Node(CpvAccess(BOCclass_group).node)).scriptParam(msg);
+  barrier();
+}
+
+void ScriptTcl::reinitAtoms(void) {
+  Node::Object()->workDistrib->reinitAtoms();
   barrier();
 }
 
@@ -448,6 +454,22 @@ void ScriptTcl::doCallback(const char *labels, const char *data) {
   }
 }
 
+int ScriptTcl::Tcl_reinitatoms(ClientData clientData,
+        Tcl_Interp *interp, int argc, char *argv[]) {
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  script->initcheck();
+  if (argc != 1) {
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+
+  iout << "TCL: Reinitializing atom data\n" << endi;
+  script->reinitAtoms();
+
+  return TCL_OK;
+}
+
+
 #endif  // NAMD_TCL
 
 
@@ -510,6 +532,8 @@ void ScriptTcl::algorithm() {
   Tcl_CreateCommand(interp, "revert", Tcl_revert,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "reinitvels", Tcl_reinitvels,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "reinitatoms", Tcl_reinitatoms,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "callback", Tcl_callback,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);

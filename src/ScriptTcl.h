@@ -37,6 +37,7 @@ private:
   int runWasCalled;
   void barrier();
   void initcheck();
+  void reinitAtoms();
   SimpleBroadcastObject<int> scriptBarrier;
   int barrierStep;
   void runController(int task);
@@ -60,6 +61,7 @@ private:
   static int Tcl_checkpoint(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_revert(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_callback(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_reinitatoms(ClientData, Tcl_Interp *, int, char **);
   char *callbackname;
   void doCallback(const char *labels, const char *data);
   int doCallback() { return ! ! callbackname; }

@@ -37,6 +37,7 @@ class HomePatch : public Patch {
 private: 
   // for PatchMgr to use only
   HomePatch(PatchID, FullAtomList);
+  void reinitAtoms(FullAtomList);
   ScaledPosition min, max, center;
 
 public:

@@ -74,6 +74,11 @@ HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
   nChild = 0;	// number of proxy spanning tree children
 }
 
+void HomePatch::reinitAtoms(FullAtomList al) {
+  atom = al;
+  numAtoms = atom.size();
+}
+
 // Bind a Sequencer to this HomePatch
 void HomePatch::useSequencer(Sequencer *sequencerPtr)
 { sequencer=sequencerPtr; }

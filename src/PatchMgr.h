@@ -86,6 +86,9 @@ public:
   void sendMovePatches();
   void recvMovePatches(MovePatchesMsg *msg);
 
+  void sendAtoms(PatchID pid, FullAtomList a);
+  void recvAtoms(MovePatchesMsg *msg);
+
   // void ackMovePatches(AckMovePatchesMsg *msg);
 
   HomePatch *homePatch(PatchID pid) {

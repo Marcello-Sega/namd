@@ -59,8 +59,10 @@ public:
   void saveComputeMapChanges(int,CkGroupID);
   void recvComputeMapChanges(ComputeMapChangeMsg *);
   void doneSaveComputeMap();
+  FullAtomList *createAtomLists(void);
   void createHomePatches(void);
   void distributeHomePatches(void);
+  void reinitAtoms(void);
   void patchMapInit(void);
   void assignNodeToPatch(void);
 
