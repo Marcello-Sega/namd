@@ -7,8 +7,8 @@
 #####
 ## Choose your favorite Compiler options
 ####
-CXX = /usr/lib64/cmplrs/CC -64 
-CC = /usr/lib64/cmplrs/cc -64 
+CXX = CC -64 -DGCC
+CC = cc -64 
 CXXOPTS = -D_SGI_MP_SOURCE -O3 -mips4 -r10000 -INLINE:all -DGLOBALS 
 CXXTHREADOPTS = -D_SGI_MP_SOURCE -r10000 -INLINE:all -DGLOBALS
 COPTS = -D_SGI_MP_SOURCE -O3 -mips4 -r10000 -INLINE:all
