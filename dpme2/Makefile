@@ -9,8 +9,8 @@ include ../Makearch
 MAKE   = make
 SHELL  = /bin/sh
 # CC     = gcc # -Wall  sun :,sgi: cc -fullwarn -g3 
-CC     = $(CXX)
-CFLAGS = $(CXXOPTS)
+# CC     = $(CXX)
+CFLAGS = $(COPTS)
 AR     = ar
 RM     = rm -f
 

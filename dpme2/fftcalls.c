@@ -69,10 +69,10 @@ fftwnd_plan backward_plan;
 } /* get_fftdims */
 
 /* --------------------------------------------------------------- */
-/* Subroutine */ int fft_setup(double * /* array */, double *fftable, 
-	double * /* ffwork */,  int *nfft1,  int *nfft2,  int *nfft3, 
-	 int * /* nfftdim1 */,  int * /* nfftdim2 */,  int * /* nfftdim3 */,
-	 int *nfftable,  int * /* nffwork */)
+/* Subroutine */ int fft_setup(double * DUMMY1 /* array */, double *fftable, 
+	double * DUMMY2 /* ffwork */,  int *nfft1,  int *nfft2,  int *nfft3, 
+	 int * DUMMY3 /* nfftdim1 */,  int * DUMMY4 /* nfftdim2 */,  int * DUMMY5 /* nfftdim3 */,
+	 int *nfftable,  int * DUMMY6 /* nffwork */)
 {
 
     /* Local variables */
@@ -101,7 +101,7 @@ fftwnd_plan backward_plan;
 /* ----------------------------------------------------------- */
 /* Subroutine */ int fft_forward(doublecomplex *array, double *fftable, 
 	doublecomplex *ffwork,  int *nfft1,  int *nfft2,  int *nfft3, 
-	 int *nfftdim1,  int *nfftdim2,  int * /* nfftdim3 */,
+	 int *nfftdim1,  int *nfftdim2,  int * DUMMY1 /* nfftdim3 */,
 	 int *nfftable,  int *nffwork)
 {
       int isign;
@@ -128,7 +128,7 @@ fftwnd_plan backward_plan;
 /* ----------------------------------------------------------- */
 /* Subroutine */ int fft_back(doublecomplex *array, double *fftable, 
 	 doublecomplex *ffwork,  int *nfft1,  int *nfft2,  int *nfft3, 
-	 int *nfftdim1,  int *nfftdim2,  int * /* nfftdim3 */,
+	 int *nfftdim1,  int *nfftdim2,  int * DUMMY1 /* nfftdim3 */,
 	 int *nfftable,  int *nffwork)
 {
   int isign;

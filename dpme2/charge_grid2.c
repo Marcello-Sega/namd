@@ -7,7 +7,7 @@
 #include "dpme2.h"
 #include "math.h"
 
-int fill_charge_grid2(int /* numatoms */, int nlocal,
+int fill_charge_grid2(int DUMMY1 /* numatoms */, int nlocal,
 		      Pme2Particle *ParticlePtr,
 		      double *theta1, double *theta2, double *theta3, 
 	double *fr1, double *fr2, double *fr3,  int order, 
@@ -117,7 +117,7 @@ int fill_charge_grid2(int /* numatoms */, int nlocal,
 	double *volume, double *recip, double *bsp_mod1, 
 	double *bsp_mod2, double *bsp_mod3, int *nfft1, 
 	int *nfft2, int *nfft3, int *nfftdim1, int *nfftdim2, 
-	int * /* nfftdim3 */, double *eer, double *vir)
+	int * DUMMY1 /* nfftdim3 */, double *eer, double *vir)
 {
     /* System generated locals */
      int q_dim2, q_dim3, q_offset;
@@ -247,7 +247,7 @@ int fill_charge_grid2(int /* numatoms */, int nlocal,
 	dtheta3, PmeVector *rfparticle, double *
 	fr1, double *fr2, double *fr3,  int order,  int nfft1,
 	  int nfft2,  int nfft3,  int nfftdim1,  int nfftdim2,
-	  int /* nfftdim3 */, double *q)
+	  int DUMMY1 /* nfftdim3 */, double *q)
 {
     /* System generated locals */
     int theta1_dim1, theta2_dim1, theta3_dim1, dtheta1_dim1,

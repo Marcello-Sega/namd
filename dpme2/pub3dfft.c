@@ -35,7 +35,7 @@
 **/
 /* Subroutine */ int pubz3d(int *isign, int *n1, int *n2, 
 	int *n3, doublecomplex *w, int *ld1, int *ld2, double 
-	*table, int *ntable, doublecomplex *work, int * /* nwork */)
+	*table, int *ntable, doublecomplex *work, int * DUMMY1 /* nwork */)
 {
     /* System generated locals */
     int w_dim1, w_dim2, w_offset, table_dim1, table_offset, i_1, i_2, i_3,

@@ -89,7 +89,9 @@ void ComputeNonbondedUtil::unregisterReductionData(ReductionMgr *reduction)
 
 #ifdef DPME
 //  This is defined by dpme if needed.
-int find_ewaldcof(double *cutoff, double *dtol, double *ewaldcof);
+extern "C" {
+  int find_ewaldcof(double *cutoff, double *dtol, double *ewaldcof);
+}
 #endif
 
 //  Not in KCC's math.h
@@ -350,12 +352,15 @@ void ComputeNonbondedUtil::select(void)
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1021 $	$Date: 1999/01/06 00:56:23 $
+ *	$Revision: 1.1022 $	$Date: 1999/03/22 20:55:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1022  1999/03/22 20:55:44  jim
+ * DPME now compiles using C compiler.
+ *
  * Revision 1.1021  1999/01/06 00:56:23  jim
  * All compute objects except DPMTA now return diagonal of virial tensor.
  *

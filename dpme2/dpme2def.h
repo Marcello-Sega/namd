@@ -56,6 +56,10 @@
 /* total nbrs for all atoms (nour added 4/97) */
 #define npnmax npmax*nnmax
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /********************************************************/
 /* macro definitions */
 /* are now folded in dpme2.h */
@@ -159,3 +163,8 @@ typedef struct GridInfoS{
   double volume; /* box volume */
 }GridInfo;  
 /*************************************************************************/
+
+#ifdef __cplusplus
+}
+#endif
+

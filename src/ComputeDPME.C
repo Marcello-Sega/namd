@@ -70,35 +70,33 @@ ComputeDPME::~ComputeDPME()
 
 // These are needed to fix up argument mismatches in DPME.
 
-extern int cfftf(int *, double *, double *);
+extern "C" {
+  extern int cfftf(int *, double *, double *);
+  extern int cfftb(int *, double *, double *);
+  extern int cffti1(int *, double *, int *);
+  extern int cfftf1(int *n, double *c, double *ch, double *wa, int *ifac);
+  extern int cfftb1(int *n, double *c, double *ch, double *wa, int *ifac);
+}
 
 int cfftf(int *n, doublecomplex *c, double *wsave) {
   // Casting (doublecomplex*) to (double*) is probably OK.
   return cfftf(n, (double *)c, wsave);
 }
 
-extern int cfftb(int *, double *, double *);
-
 int cfftb(int *n, doublecomplex *c, double *wsave) {
   // Casting (doublecomplex*) to (double*) is probably OK.
   return cfftb(n, (double *)c, wsave);
 }
-
-extern int cffti1(int *, double *, int *);
 
 int cffti1(int *n, double *wa, double *ifac) {
   // Casting (double*) to (int*) is dangerous if sizes differ!!!
   return cffti1(n, wa, (int *)ifac);
 }
 
-extern int cfftf1(int *n, double *c, double *ch, double *wa, int *ifac);
-
 int cfftf1(int *n, double *c, double *ch, double *wa, double *ifac) {
   // Casting (double*) to (int*) is dangerous if sizes differ!!!
   return cfftf1(n, c, ch, wa, (int *)ifac);
 }
-
-extern int cfftb1(int *n, double *c, double *ch, double *wa, int *ifac);
 
 int cfftb1(int *n, double *c, double *ch, double *wa, double *ifac) {
   // Casting (double*) to (int*) is dangerous if sizes differ!!!
@@ -394,12 +392,15 @@ void ComputeDPME::recvResults(ComputeDPMEResultsMsg *msg)
  *
  *	$RCSfile: ComputeDPME.C,v $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1999/03/10 00:52:26 $
+ *	$Revision: 1.10 $	$Date: 1999/03/22 20:55:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPME.C,v $
+ * Revision 1.10  1999/03/22 20:55:43  jim
+ * DPME now compiles using C compiler.
+ *
  * Revision 1.9  1999/03/10 00:52:26  jim
  * Adding timing output for PME reciprocal sum.
  *

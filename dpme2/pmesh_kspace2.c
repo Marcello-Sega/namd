@@ -7,9 +7,7 @@
 #include "dpme2.h"
 #include "math.h"
 
-extern "C" {
   extern double rint(double);
-}
 
 /* Subroutine */ 
 int pmesh_kspace_get_sizes( int *nfft1,  int *nfft2, 
@@ -54,7 +52,7 @@ int pmesh_kspace_get_sizes( int *nfft1,  int *nfft2,
 int pmesh_kspace_setup(double *bsp_mod1, double *
 		       bsp_mod2, double *bsp_mod3, double *fftable, double *ffwork,  
 		       int *nfft1,  int *nfft2,  int *nfft3,  int *order,  
-		       int * /* sizfftab */,  int * /* sizffwrk */)
+		       int * DUMMY1 /* sizfftab */,  int * DUMMY2 /* sizffwrk */)
 {
   int nfftable, sfft, sffw;
   double *dummy = NULL;

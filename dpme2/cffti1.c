@@ -1,9 +1,7 @@
 
 /* Builtin functions */
-extern "C" {
   double cos(double);
   double sin(double);
-}
 
 /* Subroutine */ int cffti1(int *n, double *wa, int *ifac)
 {

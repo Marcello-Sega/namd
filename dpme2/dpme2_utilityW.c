@@ -3,7 +3,7 @@
  *  Copyright (c) 1996,1997 Duke University
  *  All rights reserved
  */
-/* $Id: dpme2_utilityW.c,v 1.4 1998/10/24 20:04:11 jim Exp $
+/* $Id: dpme2_utilityW.c,v 1.5 1999/03/22 20:55:32 jim Exp $
  */
 
 /*******************************************************************************
@@ -17,10 +17,8 @@
 #include "dpme2.h"
 #include "math.h"
 
-extern "C" {
   extern double rint(double);
   extern double erfc(double);
-}
 
 #define FIXIT 1 /* this was added to fix the swap boundaries when NPE=3 */
 
@@ -492,8 +490,8 @@ fflush(stdout);
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
-int setup_atom( AtomInfo *atom_info,int **mylist, Pme2Particle **ParticlePtr, PmeBVector /* box */, 
-	       double *border, PmeVector /* prd2 */, MYPROC *myproc,
+int setup_atom( AtomInfo *atom_info,int **mylist, Pme2Particle **ParticlePtr, PmeBVector DUMMY1 /* box */, 
+	       double *border, PmeVector DUMMY2 /* prd2 */, MYPROC *myproc,
 	       int *tidarray)
 {
   int  *list;
@@ -1412,9 +1410,9 @@ int mesh_3d(int *nx, int *ny, int *nz, int *node,
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 double dir_energy(int *atompnt, int *nlocal, int *nnlist, int *nlist, int *list, 
-		  MYPROC , PmeVector myprd, double cutoff, double ewaldcof, 
+		  MYPROC DUMMY1 , PmeVector myprd, double cutoff, double ewaldcof, 
 		  Pme2Particle *Myparticles,
-		  PmeVector mymc2,int * /* tidarray */)
+		  PmeVector mymc2,int * DUMMY2 /* tidarray */)
 {
   int i,i_2,ii,j,k; 
   double direct_eng,factor,rsq,delx,dely,delz;
@@ -1463,7 +1461,7 @@ double dir_energy(int *atompnt, int *nlocal, int *nnlist, int *nlist, int *list,
 double dpme_dir_force(AtomInfo *atom_info, int *list, SwapInfo swap_info,
 		 Pme2Particle *Myparticles, BoxInfo box_info, 
 		 PmeVector **directF, double *virial, 
-		 PeInfo pe_info,int /* time_count */, int /* tsteps */,
+		 PeInfo pe_info,int DUMMY1 /* time_count */, int DUMMY2 /* tsteps */,
 		 double *mytime, int max_used)
                    
 {
@@ -1824,7 +1822,7 @@ void  update_coordinates(AtomInfo atom_info, Pme2Particle *particlelist,BoxInfo 
 double dpme_adjust_dir(AtomInfo *atom_info, SwapInfo swap_info,
 		  Pme2Particle *Myparticles, BoxInfo box_info, 
 		  PmeVector *mydirectF, PeInfo pe_info,
-		  int /* time_count */, int /* tsteps */,
+		  int DUMMY1 /* time_count */, int DUMMY2 /* tsteps */,
 		  double *dir_vir,  int *list,
 		  double *my_adj_dir_eng, double *mytime)
      
@@ -1952,7 +1950,7 @@ double dpme_adjust_dir(AtomInfo *atom_info, SwapInfo swap_info,
 
 double dpme_adjust_recip(AtomInfo atom_info,BoxInfo box_info,Pme2Particle *Myparticles,
 		    PeInfo pe_info,
-		    int /* time_count */, int /* tsteps */, double *adj_vir, 
+		    int DUMMY1 /* time_count */, int DUMMY2 /* tsteps */, double *adj_vir, 
 		    double *my_adj_rcp_eng, PmeVector **adjustF,double *mytime)
 {
   static int firsttime=0;
@@ -2441,7 +2439,7 @@ int verify_results(int nlocal, PmeVector *directF, PmeVector *recipF, PmeVector 
 int dpme_reneighbor(AtomInfo *atom_info, int **list, BoxInfo *box_info, 
 		    Pme2Particle **ParticlePtr,PeInfo *pe_info,BndryInfo *bndry_info,
 		    SwapInfo *swap_info,BinInfo *bin_info, int time_count,
-		    int /* tsteps */, double *time_used)
+		    int DUMMY1 /* tsteps */, double *time_used)
 {
   
   static int firsttime = 0;

@@ -3,8 +3,12 @@
  *  Copyright (c) 1996,1997 Duke University
  *  All rights reserved
  */
-/* $Id: protype.h,v 1.4 1999/03/18 22:06:32 jim Exp $
+/* $Id: protype.h,v 1.5 1999/03/22 20:55:34 jim Exp $
  */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* prototype of functions and subroutines used in DPME2 */
 
@@ -253,3 +257,8 @@ int pmesh_kspace_get_sizes( int *nfft1,  int *nfft2,
 	 int *nfft);
 double *dvector_pme(int nh);
 /*****************************************/
+
+#ifdef __cplusplus
+}
+#endif
+
