@@ -129,6 +129,10 @@ void ComputeNonbondedUtil :: NAME
   // Probably makes things slower in exclusion mode, though.
 
   register const BigReal cutoff2 = ComputeNonbondedUtil:: cutoff2;
+  HGROUPING
+  (
+  register const BigReal groupcutoff2 = ComputeNonbondedUtil:: groupcutoff2;
+  )
   const BigReal dielectric_1 = ComputeNonbondedUtil:: dielectric_1;
 
   const LJTable* const ljTable = ComputeNonbondedUtil:: ljTable;
@@ -618,12 +622,15 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1025 $	$Date: 1997/09/05 20:14:27 $
+ *	$Revision: 1.1026 $	$Date: 1997/09/19 02:59:56 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1026  1997/09/19 02:59:56  jim
+ * Added caching of groupcutoff2.
+ *
  * Revision 1.1025  1997/09/05 20:14:27  jim
  * Small fixes.
  *
