@@ -484,9 +484,9 @@ void WorkDistrib::assignNodeToPatch()
     }
   }
 
-  for(i=0; i < nNodes; i++)
-    iout << iINFO 
-	 << nAtoms[i] << " atoms assigned to node " << i << "\n" << endi;
+//  for(i=0; i < nNodes; i++)
+//    iout << iINFO 
+//	 << nAtoms[i] << " atoms assigned to node " << i << "\n" << endi;
   if ( numAtoms != Node::Object()->molecule->numAtoms ) {
     NAMD_die("Incorrect atom count in WorkDistrib::assignNodeToPatch\n");
   }

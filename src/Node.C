@@ -114,12 +114,12 @@ Node::Node(GroupInitMsg *msg)
   CProxy_LdbCoordinator lc(CpvAccess(BOCclass_group).ldbCoordinator);
   ldbCoordinator = lc.ckLocalBranch();
 
-#if !defined(NOHOSTNAME)
-  // Where are we?
-  char host[1024];
-  gethostname(host, 1024);
-  iout << iINFO << iPE << " Starting out on host: " << host << "\n" << endi;
-#endif
+// #if !defined(NOHOSTNAME)
+//   // Where are we?
+//   char host[1024];
+//   gethostname(host, 1024);
+//   iout << iINFO << iPE << " Starting out on host: " << host << "\n" << endi;
+// #endif
 }
 
 //----------------------------------------------------------------------
@@ -343,7 +343,7 @@ void Node::messageRun() {
 //-----------------------------------------------------------------------
 void Node::run()
 {
-  iout << iINFO << iPE << " Running\n" << endi;
+  // iout << iINFO << iPE << " Running\n" << endi;
   numHomePatchesRunning = patchMap->numHomePatches();
   if (CkMyPe() == 0) {
     numHomePatchesRunning++; //Take into account controller on node 0
