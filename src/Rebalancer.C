@@ -249,6 +249,32 @@ void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
    }
 }
 
+void Rebalancer::refine_togrid(pcgrid &grid, double thresholdLoad,
+			processorInfo *p, computeInfo *c) {
+
+            if ( c->load + p->load < thresholdLoad) {
+               int nPatches = numPatchesAvail(c,p);
+	       int nProxies = numProxiesAvail(c,p);
+	       
+	       if (nPatches < 0 || nPatches > 2)
+		 iout << iERROR << "Too many patches: " << nPatches 
+		      << "\n" << endi;
+	       if (nProxies < 0 || nProxies > 2)
+		 iout << iERROR << "Too many proxies: " << nProxies 
+		      << "\n" << endi;
+	       if (nProxies + nPatches > 2)
+		 iout << iERROR << "Too many patches (" << nPatches
+		      << ") + proxies (" << nProxies << ")\n" << endi;
+
+	       pcpair *pair = &grid[nPatches][nProxies];
+	       if ( ( ! pair->c || c->load >= pair->c->load )
+		 && ( ! pair->p || p->load <= pair->p->load ) ) {
+		 pair->c = c;
+		 pair->p = p;
+	       }
+	    }
+}
+
 int Rebalancer::refine()
 {
    int finish = 1;
@@ -269,11 +295,6 @@ int Rebalancer::refine()
    int done = 0;
    while (!done)
    {
-      processorInfo* goodP[3][3];  // goodP[# of real patches][# of proxies]
-      computeInfo* goodCompute[3][3];
-      double goodSize[3][3];
-      processorInfo* bestP;
-    
       processorInfo *donor = (processorInfo *) heavyProcessors->deleteMax();
       /* Keep selecting new donors, until we find one with some compute to
        * migrate
@@ -301,52 +322,83 @@ int Rebalancer::refine()
   
       if (!donor) break;  // No donors found at all! Give up 
 
+      pcgrid grid;
+#define REASSIGN(GRID) if (GRID.c) { \
+	   deAssign(GRID.c, donor); \
+           assign(GRID.c, GRID.p); \
+           bestP = GRID.p; \
+        }
+
+      // try for at least one proxy
+      {
+        Iterator nextCompute;
+        nextCompute.id = 0;
+        computeInfo *c = (computeInfo *) 
+           donor->computeSet.iterator((Iterator *)&nextCompute);
+        while (c)
+        {
+          Iterator nextProc;
+          processorInfo *p;
+
+	  p = &processors[patches[c->patch1].processor];
+	  refine_togrid(grid, thresholdLoad, p, c);
+
+	  p = &processors[patches[c->patch2].processor];
+	  refine_togrid(grid, thresholdLoad, p, c);
+
+	  p = (processorInfo *)patches[c->patch1].
+				proxiesOn.iterator((Iterator *)&nextProc);
+          while (p) {
+	    refine_togrid(grid, thresholdLoad, p, c);
+            p = (processorInfo *)patches[c->patch1].
+				proxiesOn.next((Iterator*)&nextProc);
+          }
+
+	  p = (processorInfo *)patches[c->patch2].
+				proxiesOn.iterator((Iterator *)&nextProc);
+          while (p) {
+	    refine_togrid(grid, thresholdLoad, p, c);
+            p = (processorInfo *)patches[c->patch2].
+				proxiesOn.next((Iterator*)&nextProc);
+          }
+
+          nextCompute.id++;
+          c = (computeInfo *) donor->computeSet.
+	    next((Iterator *)&nextCompute);
+        }
+        processorInfo* bestP = 0;
+	REASSIGN(grid[2][0])
+	else REASSIGN(grid[1][1])
+	else REASSIGN(grid[0][2])
+	else REASSIGN(grid[1][0])
+	else REASSIGN(grid[0][1])
+	else REASSIGN(grid[0][0])
+	// else { finish = 0; break; }
+        if (bestP) {
+	  if (bestP->load > averageLoad) lightProcessors->remove(bestP);
+	  if (donor->load > thresholdLoad)
+		heavyProcessors->insert((InfoRecord *) donor);
+	  else lightProcessors->insert((InfoRecord *) donor);
+	  continue;
+        }
+      }
+
+      // no luck, do it the long way
+
       //find the best pair (c,receiver)
       Iterator nextProcessor;
       processorInfo *p = (processorInfo *) 
       lightProcessors->iterator((Iterator *) &nextProcessor);
 
-      int i,j;
-      for(i=0; i < 3; i++)
-	for(j=0; j<3; j++) {
-	  goodP[i][j] = 0;
-	  goodCompute[i][j] = 0;
-	  goodSize[i][j] = 0.;
-	}
-
-      // iout << iINFO << "Finding receiver for processor " << donor->Id << "\n" << endi;
       while (p)
       {
          Iterator nextCompute;
          nextCompute.id = 0;
          computeInfo *c = (computeInfo *) 
             donor->computeSet.iterator((Iterator *)&nextCompute);
-         // iout << iINFO << "Considering Procsessor : " << p->Id << "\n" << endi;
          while (c)
          {
-            if ( c->load + p->load < thresholdLoad) 
-            {
-               int nPatches = numPatchesAvail(c,p);
-	       int nProxies = numProxiesAvail(c,p);
-	       
-	       if (nPatches < 0 || nPatches > 2)
-		 iout << iERROR << "Too many patches: " << nPatches 
-		      << "\n" << endi;
-	       if (nProxies < 0 || nProxies > 2)
-		 iout << iERROR << "Too many proxies: " << nProxies 
-		      << "\n" << endi;
-	       if (nProxies + nPatches > 2)
-		 iout << iERROR << "Too many patches (" << nPatches
-		      << ") + proxies (" << nProxies << ")\n" << endi;
-
-	       if ((c->load > goodSize[nPatches][nProxies]) 
-		   && (!goodP[nPatches][nProxies] 
-		       || p->load < goodP[nPatches][nProxies]->load) ) {
-		 goodSize[nPatches][nProxies] = c->load;
-		 goodCompute[nPatches][nProxies] = c;
-		 goodP[nPatches][nProxies] = p;
-	       }
-	    }
+	    refine_togrid(grid, thresholdLoad, p, c);
             nextCompute.id++;
             c = (computeInfo *) donor->computeSet.
 	      next((Iterator *)&nextCompute);
@@ -356,42 +408,21 @@ int Rebalancer::refine()
       }
 
       //we have narrowed the choice to 6 candidates.
-      if (goodCompute[2][0]) {
-         deAssign(goodCompute[2][0], donor);      
-         assign(goodCompute[2][0], goodP[2][0]);
-         bestP = goodP[2][0];
-      } else if (goodCompute[1][1]) {
-         deAssign(goodCompute[1][1], donor);      
-         assign(goodCompute[1][1], goodP[1][1]);
-         bestP = goodP[1][1];
-      } else if (goodCompute[0][2]) {
-         deAssign(goodCompute[0][2], donor);      
-         assign(goodCompute[0][2], goodP[0][2]);
-         bestP = goodP[0][2];
-      } else if (goodCompute[1][0]) {
-         deAssign(goodCompute[1][0], donor);      
-         assign(goodCompute[1][0], goodP[1][0]);
-         bestP = goodP[1][0];
-      } else if (goodCompute[0][1]) {
-         deAssign(goodCompute[0][1], donor);      
-         assign(goodCompute[0][1], goodP[0][1]);
-         bestP = goodP[0][1];
-      } else if (goodCompute[0][0]) {
-         deAssign(goodCompute[0][0], donor);      
-         assign(goodCompute[0][0], goodP[0][0]);
-         bestP = goodP[0][0];
-      } else {
-         // iout << iINFO << "Refine: No receiver found" << "\n" << endl;
-         finish = 0;
-         break;
+      {
+        processorInfo* bestP;
+	REASSIGN(grid[2][0])
+	else REASSIGN(grid[1][1])
+	else REASSIGN(grid[0][2])
+	else REASSIGN(grid[1][0])
+	else REASSIGN(grid[0][1])
+	else REASSIGN(grid[0][0])
+	else { finish = 0; break; }
+	if (bestP->load > averageLoad) lightProcessors->remove(bestP);
+	if (donor->load > thresholdLoad)
+		heavyProcessors->insert((InfoRecord *) donor);
+	else lightProcessors->insert((InfoRecord *) donor);
       }
 
-      if (bestP->load > averageLoad)
-         lightProcessors->remove(bestP);
-    
-      if (donor->load > thresholdLoad)
-         heavyProcessors->insert((InfoRecord *) donor);
-      else lightProcessors->insert((InfoRecord *) donor);
    }  
 #if 1
    // After refining, compute min, max and avg processor load

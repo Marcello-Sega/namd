@@ -16,6 +16,16 @@ private:
   int bytesPerAtom;
   void InitProxyUsage();
 
+  struct pcpair {
+    processorInfo *p;
+    computeInfo *c;
+    pcpair() : p(0),c(0) {;}
+  };
+  typedef pcpair pcgrid[3][3];
+
+  void refine_togrid(pcgrid &grid, double thresholdLoad,
+                        processorInfo *p, computeInfo *c);
+
 protected: 
   const char *strategyName;
   computeInfo *computes;
