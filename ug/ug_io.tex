@@ -45,9 +45,9 @@ to build them by hand.
 \subsubsection{CHARMM19 and CHARMM22 parameter files}
 
 \NAMD\ supports CHARMM19 and CHARMM22 parameter files in the same format 
-that is used by X-PLOR.  
+that is used by X-PLOR and CHARMM.  
 For a full description of the format of commands 
-used in these files, see the X-PLOR User's Manual 
+used in these files, see the X-PLOR and CHARMM User's Manual 
 \mycite{(Br\"unger, 1992)}{BRUN92b}.  
 
 \subsubsection{DCD trajectory files}
@@ -113,6 +113,25 @@ parameters are read, a warning message is printed and the last
 parameter value read is used.  Thus, the order that files are read 
 can be important in cases where duplicate values appear in 
 separate files.}
+
+\item
+\NAMDCONFWDEF{paraTypeXplor}{Is the parameter file in X-PLOR format?}{\verb!on! or \verb!off!}{\verb!on!}
+{Specifies whether or not the parameter file(s) are in X-PLOR format.
+ X-PLOR format is the default for parameter files!
+ Caveat: The PSF file should be also constructed with X-PLOR in
+ case of a X-PLOR parameter file because X-PLOR stores information
+ about the multiplicity of dihedrals in the PSF file. See X-PLOR
+ manual for details.}
+
+\item
+\NAMDCONFWDEF{paraTypeCharmm}{Is the parameter file in CHARMM format?}{\verb!on! or \verb!off!}{\verb!off!}
+{Specifies whether or not the parameter file(s) are in CHARMM format.
+ X-PLOR format is the default for parameter files!
+ Caveat: The information about multiplicity of dihedrals will be
+ obtained directly from the parameter file, and the full multiplicity
+ will be used (same behaviour as in CHARMM). If the PSF file originates
+ from X-PLOR, consecutive multiple entries for the same dihedral - 
+ indicating the dihedral multiplicity for X-PLOR - will be ignored.}
 
 \item
 \NAMDCONF{velocities}{velocity PDB file}{UNIX filename}
