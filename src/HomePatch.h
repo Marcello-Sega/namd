@@ -69,6 +69,10 @@ public:
   // methods to implement integration
   void addForceToMomentum(const BigReal, const int ftag = Results::normal);
   void addVelocityToPosition(const BigReal);
+
+  // methods for rigidBonds
+  void rattle1(const BigReal);
+  void rattle2(const BigReal, BigReal *virial);
   
   // patch-wise calculations
   BigReal calcKineticEnergy();
@@ -118,12 +122,16 @@ private:
  *
  *	$RCSfile: HomePatch.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1998/01/15 04:58:48 $
+ *	$Revision: 1.1014 $	$Date: 1998/02/17 06:39:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.1014  1998/02/17 06:39:20  jim
+ * SHAKE/RATTLE (rigidBonds) appears to work!!!  Still needs langevin,
+ * proper startup, and degree of freedom tracking.
+ *
  * Revision 1.1013  1998/01/15 04:58:48  jim
  * Corrected "friend foo" to "friend class foo".
  *

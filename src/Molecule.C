@@ -11,7 +11,7 @@
  *
  *  $RCSfile: Molecule.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1021 $  $Date: 1998/02/11 07:27:23 $
+ *  $Revision: 1.1022 $  $Date: 1998/02/17 06:39:21 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,10 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1022  1998/02/17 06:39:21  jim
+ * SHAKE/RATTLE (rigidBonds) appears to work!!!  Still needs langevin,
+ * proper startup, and degree of freedom tracking.
+ *
  * Revision 1.1021  1998/02/11 07:27:23  jim
  * Completed interface to free energy perturbation, added code for
  * determining atomid from segid, resid, and atomname.
@@ -246,7 +250,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1021 1998/02/11 07:27:23 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1022 1998/02/17 06:39:21 jim Exp $";
 
 #include "UniqueSortedArray.h"
 #include "Molecule.h"
@@ -358,6 +362,7 @@ int Molecule::get_atom_from_name(
 Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
 {
   this->simParams = simParams;
+  this->params = param;
   /*  Initialize array pointers to NULL  */
   atoms=NULL;
   atomNames=NULL;
@@ -379,6 +384,7 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
   langevinParams=NULL;
   langForceVals=NULL;
   fixedAtomFlags=NULL;
+  rigidBondLengths=NULL;
   consIndexes=NULL;
   consParams=NULL;
 
@@ -480,6 +486,9 @@ Molecule::~Molecule()
 
   if (fixedAtomFlags != NULL)
        delete [] fixedAtomFlags;
+
+  if (rigidBondLengths != NULL)
+       delete [] rigidBondLengths;
 }
 /*      END OF FUNCTION Molecule      */
 
@@ -941,6 +950,7 @@ void Molecule::read_bonds(FILE *fd, Parameters *params)
   char tmp_string[11];  // Temporary string to read in atom #'s
   register int j;      // Loop counter
   int num_read=0;    // Number of bonds read so far
+  int origNumBonds = numBonds;   // number of bonds in file header
 
   /*  Allocate the array to hold the bonds      */
   bonds=new Bond[numBonds];
@@ -996,7 +1006,19 @@ void Molecule::read_bonds(FILE *fd, Parameters *params)
     b->atom1=atom_nums[0];
     b->atom2=atom_nums[1];
 
-    num_read++;
+    /*  Make sure this isn't a fake bond meant for shake in x-plor.  */
+    Real k, x0;
+    params->get_bond_params(&k,&x0,b->bond_type);
+    if ( k == 0. ) --numBonds;  // fake bond
+    else ++num_read;  // real bond
+  }
+
+  /*  Tell user about our subterfuge  */
+  if ( numBonds != origNumBonds ) {
+    iout << iWARN << "Ignored " << origNumBonds - numBonds <<
+            " bonds with zero force constants.\n" << endi;
+    iout << iWARN <<
+	"Will get H-H distance in rigid H2O from H-O-H angle.\n" << endi;
   }
 
   return;
@@ -1029,7 +1051,7 @@ void Molecule::read_angles(FILE *fd, Parameters *params)
   char tmp_string[11];  //  Temporary string for reading atoms
   register int j;      //  Loop counter
   int num_read=0;    //  Number of angles read so far
-
+  int origNumAngles = numAngles;  // Number of angles in file
   /*  Alloc the array of angles          */
   angles=new Angle[numAngles];
 
@@ -1090,7 +1112,17 @@ void Molecule::read_angles(FILE *fd, Parameters *params)
     angles[num_read].atom2=atom_nums[1];
     angles[num_read].atom3=atom_nums[2];
 
-    num_read++;
+    /*  Make sure this isn't a fake angle meant for shake in x-plor.  */
+    Real k, t0, k_ub, r_ub;
+    params->get_angle_params(&k,&t0,&k_ub,&r_ub,angles[num_read].angle_type);
+    if ( k == 0. && k_ub == 0. ) --numAngles;  // fake angle
+    else ++num_read;  // real angle
+  }
+
+  /*  Tell user about our subterfuge  */
+  if ( numAngles != origNumAngles ) {
+    iout << iWARN << "Ignored " << origNumAngles - numAngles <<
+            " angles with zero force constants.\n" << endi;
   }
 
   return;
@@ -2390,7 +2422,6 @@ void Molecule::receive_Molecule(MIStream *msg)
         msg->get(numAtoms, fixedAtomFlags);
       }
 
-
       //  Now free the message 
       delete msg;
       
@@ -3417,7 +3448,6 @@ void Molecule::receive_Molecule(MIStream *msg)
        int bcol;      //  Column that data is in
        Real bval;      //  b value from PDB file
        int i;      //  Loop counter
-       BigReal forceConstant;  //  Constant factor in force calc
        char filename[129];    //  Filename
        
        //  Get the PDB object that contains the b values.  If
@@ -3626,7 +3656,7 @@ void Molecule::receive_Molecule(MIStream *msg)
     // it's own.
     void Molecule::build_atom_status(void) {
       register int i;
-      int a1, a2;
+      int a1, a2, a3;
 
       // initialize information for each atom (note that the status has
       // already been initialized during the read/receive phase)
@@ -3649,23 +3679,23 @@ void Molecule::receive_Molecule(MIStream *msg)
   a1 = bonds[i].atom1;
   a2 = bonds[i].atom2;
   if (is_hydrogen(a1))
-    {
+  {
     atoms[a1].partner = a2;
     // check for hydrogen gas...  For H2, explicitly define the group parent.
     // I have been informed that H3 is not a concern.  This is good since
     // this code will fail for H3.
-    if (is_hydrogen(a2))
+    if (is_hydrogen(a2)) {
         hg[a1].isGP = 1;
-    else
-      {
+	iout << iWARN << "Found H-H bond - are you sure?" << endi;
+    } else {
       hg[a2].atomsInGroup++;
       hg[a1].atomsInGroup = 0;
       hg[a1].GPID = a2;
       hg[a1].isGP = 0;
       // check for waters (put them in their own groups: OH or OHH)
-  if (is_oxygen(a2))  hg[a2].sortVal++;
+      if (is_oxygen(a2))  hg[a2].sortVal++;
+    }
   }
-      }
     if (is_hydrogen(a2))
       {
       atoms[a2].partner = a1;
@@ -3745,6 +3775,66 @@ void Molecule::receive_Molecule(MIStream *msg)
    << "\n" << endi;
   #endif
   delete [] hg;
+
+  // now deal with rigidBonds
+  if ( simParams->rigidBonds != RIGID_NONE ) {
+
+    delete [] rigidBondLengths;
+    rigidBondLengths = new Real[numAtoms];
+    if ( ! rigidBondLengths ) {
+      NAMD_die("Memory allocation failed in Molecule::build_atom_status()\n");
+    }
+    int mode = simParams->rigidBonds;
+
+    // add H-mother lengths or 0 if not constrained
+    for (i=0; i < numBonds; i++) {
+      a1 = bonds[i].atom1;
+      a2 = bonds[i].atom2;
+      Real dum, x0;
+      params->get_bond_params(&dum,&x0,bonds[i].bond_type);
+      if (is_hydrogen(a1))
+      {
+	if (is_hydrogen(a2)) {
+	  rigidBondLengths[a2] = x0;
+	} else if ( is_water(a2) || mode == RIGID_ALL ) {
+	  rigidBondLengths[a1] = x0;
+	} else {
+	  rigidBondLengths[a1] = 0.;
+        }
+      }
+      if (is_hydrogen(a2))
+      {
+	if ( is_water(a1) || mode == RIGID_ALL ) {
+	  rigidBondLengths[a2] = x0;
+	} else {
+	  rigidBondLengths[a2] = 0.;
+        }
+      }
+    }
+
+    // zero out H-H lengths - water handled below
+    HydrogenGroup::iterator h_i, h_e;
+    h_i = hydrogenGroup.begin();  h_e = hydrogenGroup.end();
+    for( ; h_i != h_e; ++h_i ) {
+      if ( h_i->isGP ) rigidBondLengths[h_i->atomID] = 0.;
+    }
+
+    // fill in H-H lengths for water by searching angles - yuck
+    for (i=0; i < numAngles; i++) {
+      a2 = angles[i].atom2;
+      if ( ! is_water(a2) ) continue;
+      a1 = angles[i].atom1;
+      a3 = angles[i].atom3;
+      if ( rigidBondLengths[a1] != rigidBondLengths[a3] ) {
+	NAMD_die("Asymmetric water molecule found???  This can't be right.\n");
+      }
+      Real dum, t0;
+      params->get_angle_params(&dum,&t0,&dum,&dum,angles[i].angle_type);
+      rigidBondLengths[a2] = 2. * rigidBondLengths[a1] * sin(0.5*t0);
+    }
+
+  }
+
 }
 
 /***************************************************************************
@@ -3752,12 +3842,16 @@ void Molecule::receive_Molecule(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1021 $  $Date: 1998/02/11 07:27:23 $
+ *  $Revision: 1.1022 $  $Date: 1998/02/17 06:39:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1022  1998/02/17 06:39:21  jim
+ * SHAKE/RATTLE (rigidBonds) appears to work!!!  Still needs langevin,
+ * proper startup, and degree of freedom tracking.
+ *
  * Revision 1.1021  1998/02/11 07:27:23  jim
  * Completed interface to free energy perturbation, added code for
  * determining atomid from segid, resid, and atomname.

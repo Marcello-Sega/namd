@@ -9,7 +9,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1024 1998/02/10 23:30:30 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1025 1998/02/17 06:39:22 jim Exp $";
 
 #include <unistd.h>
 #include "ckdefs.h"
@@ -265,7 +265,7 @@ void Node::namdOneRecv() {
   // Receive molecule and simulation parameter information
   simParameters = new SimParameters;
   parameters = new Parameters;
-  molecule = new Molecule(simParameters);
+  molecule = new Molecule(simParameters,parameters);
   smdData = new SMDData(simParameters);
 
   DebugM(4, "Getting SimParameters\n");
@@ -467,13 +467,17 @@ void Node::recvSMDData(SMDDataMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1024 $	$Date: 1998/02/10 23:30:30 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1025 $	$Date: 1998/02/17 06:39:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1025  1998/02/17 06:39:22  jim
+ * SHAKE/RATTLE (rigidBonds) appears to work!!!  Still needs langevin,
+ * proper startup, and degree of freedom tracking.
+ *
  * Revision 1.1024  1998/02/10 23:30:30  milind
  * Fixed to reflect the current changes to Charm++ translator.
  *

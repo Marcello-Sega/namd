@@ -46,6 +46,9 @@ protected:
     void addForceToMomentum(BigReal, const int ftag = Results::normal);
     void addVelocityToPosition(BigReal);
 
+    void rattle1(BigReal);
+    void rattle2(BigReal,int);
+
     void rescaleVelocities(int);
     void berendsenPressure(int);
     void langevinVelocities(int);
@@ -74,12 +77,16 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1998/01/15 04:58:50 $
+ *	$Revision: 1.1012 $	$Date: 1998/02/17 06:39:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.h,v $
+ * Revision 1.1012  1998/02/17 06:39:24  jim
+ * SHAKE/RATTLE (rigidBonds) appears to work!!!  Still needs langevin,
+ * proper startup, and degree of freedom tracking.
+ *
  * Revision 1.1011  1998/01/15 04:58:50  jim
  * Corrected "friend foo" to "friend class foo".
  *

@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1034 $  $Date: 1998/02/14 09:55:24 $
+ *  $Revision: 1.1035 $  $Date: 1998/02/17 06:39:24 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,10 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1035  1998/02/17 06:39:24  jim
+ * SHAKE/RATTLE (rigidBonds) appears to work!!!  Still needs langevin,
+ * proper startup, and degree of freedom tracking.
+ *
  * Revision 1.1034  1998/02/14 09:55:24  jim
  * Final changes to allow inline reading of { } delimited input.
  * Strings read this way begin with a { but do not end with a }.
@@ -437,7 +441,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1034 1998/02/14 09:55:24 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1035 1998/02/17 06:39:24 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -622,6 +626,9 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.optional("main", "rigidBonds", "Rigid bonds to hydrogen",PARSE_STRING);
    opts.optional("main", "rigidTolerance", 
                   "Error tolerance for rigid bonds to hydrogen",&rigidTol);
+   opts.optional("main", "rigidIterations", 
+		 "Number of Newton-Rhapson iterations for rigid bonds to hydrogen",
+		 &rigidIter);
 
    opts.optional("main", "nonbondedFreq", "Nonbonded evaluation frequency",
     &nonbondedFrequency, 1);
@@ -1382,7 +1389,14 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
       {
          rigidTol = 0.00001;
          iout << iWARN << "rigidBonds is on but rigidTol is not provided:" ;
-         iout << iWARN << " using default value" << endi;
+         iout << iWARN << " using default value of " << rigidTol << endi;
+      }
+
+      if (!opts.defined("rigidIterations"))
+      {
+         rigidIter = 100;
+         iout << iWARN << "rigidBonds is on but rigidIterations not provided:";
+         iout << iWARN << " using default value of " << rigidIter << endi;
       }
    }
    
@@ -1546,6 +1560,11 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    if (tclForcesOn && freeEnergyOn)
    {
       NAMD_die("Sorry, tclForces and freeEnergy cannot be used simultaneously");
+   }
+
+   if (splitPatch == SPLIT_PATCH_POSITION && rigidBonds != RIGID_NONE)
+   {
+      NAMD_die("splitPatch hydrogen is required for rigidBonds");
    }
 
    //  Set the default value for the maximum movement parameter
@@ -2668,6 +2687,7 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
   msg->put(fmaFrequency)->put(fmaTheta);
   msg->put(rigidBonds);
   msg->put(rigidTol);
+  msg->put(rigidIter);
   msg->put(nonbondedFrequency);
 
   // send hydrogen bond data
@@ -2831,6 +2851,7 @@ void SimParameters::receive_SimParameters(MIStream *msg)
   msg->get(fmaTheta);
   msg->get(rigidBonds);
   msg->get(rigidTol);
+  msg->get(rigidIter);
   msg->get(nonbondedFrequency);
 
   // receive hydrogen bond data
@@ -2888,12 +2909,16 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1034 $  $Date: 1998/02/14 09:55:24 $
+ *  $Revision: 1.1035 $  $Date: 1998/02/17 06:39:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1035  1998/02/17 06:39:24  jim
+ * SHAKE/RATTLE (rigidBonds) appears to work!!!  Still needs langevin,
+ * proper startup, and degree of freedom tracking.
+ *
  * Revision 1.1034  1998/02/14 09:55:24  jim
  * Final changes to allow inline reading of { } delimited input.
  * Strings read this way begin with a { but do not end with a }.

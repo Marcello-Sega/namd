@@ -296,6 +296,7 @@ public:
 
 
         BigReal rigidTol;               // error tolerance for rigid bonds
+        int rigidIter;                  // Number of NR iterations 
 
 	int totalAtoms;			//  Total Number of atoms in simulation
 
@@ -353,12 +354,16 @@ public:
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1998/02/10 05:35:06 $
+ *	$Revision: 1.1018 $	$Date: 1998/02/17 06:39:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1018  1998/02/17 06:39:25  jim
+ * SHAKE/RATTLE (rigidBonds) appears to work!!!  Still needs langevin,
+ * proper startup, and degree of freedom tracking.
+ *
  * Revision 1.1017  1998/02/10 05:35:06  jim
  * Split ComputeGlobal into different classes and files.
  * Switched globalForces and globalForcesTcl to tclForces and tclForcesScript.

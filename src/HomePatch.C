@@ -38,7 +38,7 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1041 1998/01/14 00:40:57 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1042 1998/02/17 06:39:19 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
 		     VelocityList vl) : Patch(pd,al,pl), v(vl), pInit(&pl)
@@ -241,6 +241,169 @@ void HomePatch::addVelocityToPosition(const BigReal timestep)
   {
     if ( ! ( a[i].flags & ATOM_FIXED ) ) p[i] += v[i] * dt;
   }
+}
+
+//  RATTLE algorithm from Allen & Tildesley
+void HomePatch::rattle1(const BigReal timestep)
+{
+  Molecule *mol = Node::Object()->molecule;
+  SimParameters *simParams = Node::Object()->simParameters;
+  const BigReal dt = timestep / TIMEFACTOR;
+  BigReal tol2 = simParams->rigidTol;  tol2 *= tol2;
+  int maxiter = simParams->rigidIter;
+  int i, iter;
+  BigReal dsq[10], tmp;
+  int ial[10], ibl[10];
+  Vector ref[10];  // reference position
+  Vector pos[10];  // new position
+  Vector vel[10];  // new velocity
+  BigReal rmass[10];  // 1 / mass
+  int fixed[10];  // is atom fixed?
+  
+  for ( int ig = 0; ig < numAtoms; ig += a[ig].hydrogenGroupSize ) {
+    int hgs = a[ig].hydrogenGroupSize;
+    if ( hgs == 1 ) continue;  // only one atom in group
+    // cache data in local arrays and integrate positions normally
+    for ( i = 0; i < hgs; ++i ) {
+      ref[i] = p[ig+i];
+      pos[i] = p[ig+i];
+      vel[i] = v[ig+i];
+      rmass[i] = 1. / a[ig+i].mass;
+      fixed[i] = ( a[ig+i].flags & ATOM_FIXED );
+      // undo addVelocityToPosition to get proper reference coordinates
+      if ( fixed[i] ) rmass[i] = 0.; else ref[i] -= vel[i] * dt;
+    }
+    int icnt = 0;
+    if ( tmp = mol->rigid_bond_length(a[ig].id) ) {  // for water
+      if ( hgs != 3 ) {
+        NAMD_die("Hydrogen group error caught in rattle1().  It's a bug!\n");
+      }
+      dsq[icnt] = tmp * tmp;  ial[icnt] = 1;  ibl[icnt] = 2;  ++icnt;
+      if ( fixed[1] && fixed[2] ) --icnt;  // both fixed so skip it
+    }
+    for ( i = 1; i < hgs; ++i ) {  // normal bonds to mother atom
+      if ( tmp = mol->rigid_bond_length(a[ig+i].id) ) {
+        dsq[icnt] = tmp * tmp;  ial[icnt] = 0;  ibl[icnt] = i;  ++icnt;
+        if ( fixed[0] && fixed[i] ) --icnt;  // both fixed so skip it
+      }
+    }
+    if ( icnt == 0 ) continue;  // no constraints
+    for ( iter = 0; iter < maxiter; ++iter ) {
+      int done = 1;
+      for ( i = 0; i < icnt; ++i ) {
+	int a = ial[i];  int b = ibl[i];
+	Vector pab = pos[a] - pos[b];
+	BigReal pabsq = pab.x*pab.x + pab.y*pab.y + pab.z*pab.z;
+	BigReal rabsq = dsq[i];
+	BigReal diffsq = rabsq - pabsq;
+	if ( fabs(diffsq) > (rabsq * tol2) ) {
+	  Vector rab = ref[a] - ref[b];
+	  BigReal rpab = rab.x*pab.x + rab.y*pab.y + rab.z*pab.z;
+	  if ( rpab < ( rabsq * 1.0e-6 ) ) {
+	    NAMD_die("Constraint failure in RATTLE algorithm!\n");
+	  }
+	  BigReal rma = rmass[a];
+	  BigReal rmb = rmass[b];
+	  BigReal gab = diffsq / ( 2.0 * ( rma + rmb ) * rpab );
+	  Vector dp = rab * gab;
+	  pos[a] += rma * dp;
+	  pos[b] -= rmb * dp;
+	  if ( dt != 0. ) {
+	    dp /= dt;
+	    vel[a] += rma * dp;
+	    vel[b] -= rmb * dp;
+	  }
+	  done = 0;
+	}
+      }
+      if ( done ) break;
+    }
+    if ( iter == maxiter ) {
+      NAMD_die("Exceeded maximum number of iterations in rattle1().\n");
+    }
+    // store data back to patch
+    for ( i = 0; i < hgs; ++i ) {
+      p[ig+i] = pos[i];
+      v[ig+i] = vel[i];
+    }
+  }
+
+}
+
+//  RATTLE algorithm from Allen & Tildesley
+void HomePatch::rattle2(const BigReal timestep, BigReal *virial)
+{
+  Molecule *mol = Node::Object()->molecule;
+  SimParameters *simParams = Node::Object()->simParameters;
+  const BigReal dt = timestep / TIMEFACTOR;
+  BigReal wc = 0.;  // constraint virial
+  BigReal tol = simParams->rigidTol;
+  int maxiter = simParams->rigidIter;
+  int i, iter;
+  BigReal dsq[10], tmp;
+  int ial[10], ibl[10];
+  Vector ref[10];  // reference position
+  Vector vel[10];  // new velocity
+  BigReal rmass[10];  // 1 / mass
+  int fixed[10];  // is atom fixed?
+  
+  for ( int ig = 0; ig < numAtoms; ig += a[ig].hydrogenGroupSize ) {
+    int hgs = a[ig].hydrogenGroupSize;
+    if ( hgs == 1 ) continue;  // only one atom in group
+    // cache data in local arrays and integrate positions normally
+    for ( i = 0; i < hgs; ++i ) {
+      ref[i] = p[ig+i];
+      vel[i] = v[ig+i];
+      rmass[i] = 1. / a[ig+i].mass;
+      fixed[i] = ( a[ig+i].flags & ATOM_FIXED );
+      if ( fixed[i] ) rmass[i] = 0.;
+    }
+    int icnt = 0;
+    if ( tmp = mol->rigid_bond_length(a[ig].id) ) {  // for water
+      if ( hgs != 3 ) {
+        NAMD_die("Hydrogen group error caught in rattle1().  It's a bug!\n");
+      }
+      dsq[icnt] = tmp * tmp;  ial[icnt] = 1;  ibl[icnt] = 2;  ++icnt;
+      if ( fixed[1] && fixed[2] ) --icnt;  // both fixed so skip it
+    }
+    for ( i = 1; i < hgs; ++i ) {  // normal bonds to mother atom
+      if ( tmp = mol->rigid_bond_length(a[ig+i].id) ) {
+        dsq[icnt] = tmp * tmp;  ial[icnt] = 0;  ibl[icnt] = i;  ++icnt;
+        if ( fixed[0] && fixed[i] ) --icnt;  // both fixed so skip it
+      }
+    }
+    if ( icnt == 0 ) continue;  // no constraints
+    for ( iter = 0; iter < maxiter; ++iter ) {
+      int done = 1;
+      for ( i = 0; i < icnt; ++i ) {
+	int a = ial[i];  int b = ibl[i];
+	Vector vab = vel[a] - vel[b];
+	Vector rab = ref[a] - ref[b];
+	BigReal rvab = rab.x*vab.x + rab.y*vab.y + rab.z*vab.z;
+	BigReal rma = rmass[a];
+	BigReal rmb = rmass[b];
+	BigReal gab = -rvab / ( ( rma + rmb ) * dsq[i] );
+	if ( fabs(gab) > tol ) {
+	  wc += gab * dsq[i];
+	  Vector dp = rab * gab;
+	  vel[a] += rma * dp;
+	  vel[b] -= rmb * dp;
+	  done = 0;
+	}
+      }
+      if ( done ) break;
+    }
+    if ( iter == maxiter ) {
+      NAMD_die("Exceeded maximum number of iterations in rattle2().\n");
+    }
+    // store data back to patch
+    for ( i = 0; i < hgs; ++i ) {
+      v[ig+i] = vel[i];
+    }
+    // check that there isn't a constant needed here!
+    *virial += wc / ( 1.5 * dt );
+  }
+
 }
 
 BigReal HomePatch::calcKineticEnergy()
@@ -555,12 +718,16 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1041 $	$Date: 1998/01/14 00:40:57 $
+ *	$Revision: 1.1042 $	$Date: 1998/02/17 06:39:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1042  1998/02/17 06:39:19  jim
+ * SHAKE/RATTLE (rigidBonds) appears to work!!!  Still needs langevin,
+ * proper startup, and degree of freedom tracking.
+ *
  * Revision 1.1041  1998/01/14 00:40:57  jim
  * Added hydrogen group size checking (vs. hgroupcutoff parameter).
  *

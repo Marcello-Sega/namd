@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1036 1998/01/05 20:26:49 sergei Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1037 1998/02/17 06:39:23 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -43,6 +43,9 @@ Sequencer::Sequencer(HomePatch *p) :
     reduction->Register(REDUCTION_KINETIC_ENERGY);
     reduction->Register(REDUCTION_BC_ENERGY); // in case not used elsewhere
     reduction->Register(REDUCTION_SMD_ENERGY); // in case not used elsewhere
+    if ( simParams->rigidBonds != RIGID_NONE ) {
+	;// reduction->Register(REDUCTION_VIRIAL);
+    }
     reduction->Register(REDUCTION_ALT_VIRIAL);
     ldbCoordinator = (LdbCoordinator::Object());
 }
@@ -54,6 +57,9 @@ Sequencer::~Sequencer(void)
     reduction->unRegister(REDUCTION_KINETIC_ENERGY);
     reduction->unRegister(REDUCTION_BC_ENERGY); // in case not used elsewhere
     reduction->unRegister(REDUCTION_SMD_ENERGY); // in case not used elsewhere
+    if ( simParams->rigidBonds != RIGID_NONE ) {
+	;// reduction->unRegister(REDUCTION_VIRIAL);
+    }
     reduction->unRegister(REDUCTION_ALT_VIRIAL);
 }
 
@@ -110,8 +116,10 @@ void Sequencer::algorithm(void)
     if ( dofull && (fullElectFrequency == 1) ) maxForceMerged = Results::slow;
     if ( doFullElectrostatics ) maxForceUsed = Results::slow;
 
+    rattle1(0.);  // enforce rigid bond constraints on initial positions
     runComputeObjects();
     addForceToMomentum(0.); // zero velocities of fixed atoms
+    rattle2(timestep,step);  // enfore rigid bonds on initial velocities
     submitReductions(step);
     submitCollections(step);
     rescaleVelocities(step);
@@ -127,6 +135,7 @@ void Sequencer::algorithm(void)
 		addForceToMomentum(0.5*slowstep,Results::slow);
 
 	addVelocityToPosition(timestep);
+	rattle1(timestep);
 
 	doNonbonded = !(step%nonbondedFrequency);
 	doFullElectrostatics = (dofull && !(step%fullElectFrequency));
@@ -143,6 +152,8 @@ void Sequencer::algorithm(void)
 		addForceToMomentum(0.5*nbondstep,Results::nbond);
 	if (doFullElectrostatics)
 		addForceToMomentum(0.5*slowstep,Results::slow);
+
+	rattle2(timestep,step);
 
 	submitReductions(step);
 	submitCollections(step);
@@ -221,6 +232,22 @@ void Sequencer::addVelocityToPosition(BigReal dt)
   patch->addVelocityToPosition(dt);
 }
 
+void Sequencer::rattle1(BigReal dt)
+{
+  if ( simParams->rigidBonds != RIGID_NONE ) {
+    patch->rattle1(dt);
+  }
+}
+
+void Sequencer::rattle2(BigReal dt, int step)
+{
+  if ( simParams->rigidBonds != RIGID_NONE ) {
+    BigReal virial = 0.;
+    patch->rattle2(dt, &virial);
+    // reduction->submit(step, REDUCTION_VIRIAL, virial);
+  }
+}
+
 void Sequencer::submitReductions(int step)
 {
   reduction->submit(step,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
@@ -273,13 +300,17 @@ Sequencer::terminate() {
  * RCS INFORMATION:
  *
  *      $RCSfile: Sequencer.C,v $
- *      $Author: sergei $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1036 $     $Date: 1998/01/05 20:26:49 $
+ *      $Author: jim $  $Locker:  $             $State: Exp $
+ *      $Revision: 1.1037 $     $Date: 1998/02/17 06:39:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1037  1998/02/17 06:39:23  jim
+ * SHAKE/RATTLE (rigidBonds) appears to work!!!  Still needs langevin,
+ * proper startup, and degree of freedom tracking.
+ *
  * Revision 1.1036  1998/01/05 20:26:49  sergei
  * added reduction->(un)Register(REDUCTION_SMD_ENERGY) to (con/de)structor
  * added reduction->submit(step,REDUCTION_SMD_ENERGY,0.) to submitReductions()

@@ -79,6 +79,8 @@ private:
 	Real *langevinParams;   //  b values for langevin dynamics
 	Real *langForceVals;    //  Calculated values for langvin random forces
 	int *fixedAtomFlags;	//  1 for fixed, -1 for fixed group, else 0
+	Real *rigidBondLengths;  //  if H, length to parent or 0. or
+				//  if not H, length between children or 0.
 
 	ObjectArena<int> arena;
 	int **bondsByAtom;	//  List of bonds involving each atom
@@ -133,6 +135,7 @@ private:
 
 	// added during the trasition from 1x to 2
 	SimParameters *simParams;
+	Parameters *params;
 
 public:
 	int numAtoms;		//  Number of atoms 
@@ -156,7 +159,7 @@ public:
 	HydrogenGroup hydrogenGroup;
 	int waterIndex;
 
-	Molecule(SimParameters *, Parameters *param=NULL, char *filename=NULL);
+	Molecule(SimParameters *, Parameters *param, char *filename=NULL);
 	~Molecule();		//  Destructor
 
 	void read_psf_file(char *, Parameters *);
@@ -363,6 +366,12 @@ public:
 		return (numFixedAtoms && (fixedAtomFlags[atomnum] == -1));
 	}
 
+	// 0 if not rigid or length to parent, for parent refers to H-H length
+	Real rigid_bond_length(int atomnum) const
+	{
+		return(rigidBondLengths[atomnum]);
+	}
+
 	void print_atoms(Parameters *);	
 				//  Print out list of atoms
 	void print_bonds(Parameters *);	
@@ -377,12 +386,16 @@ public:
  *
  *	$RCSfile: Molecule.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1998/02/11 07:27:24 $
+ *	$Revision: 1.1017 $	$Date: 1998/02/17 06:39:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.1017  1998/02/17 06:39:22  jim
+ * SHAKE/RATTLE (rigidBonds) appears to work!!!  Still needs langevin,
+ * proper startup, and degree of freedom tracking.
+ *
  * Revision 1.1016  1998/02/11 07:27:24  jim
  * Completed interface to free energy perturbation, added code for
  * determining atomid from segid, resid, and atomname.
