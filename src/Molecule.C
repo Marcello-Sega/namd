@@ -11,7 +11,7 @@
  *
  *  $RCSfile: Molecule.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1028 $  $Date: 1998/07/16 00:49:21 $
+ *  $Revision: 1.1029 $  $Date: 1998/07/17 18:50:22 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1029  1998/07/17 18:50:22  jim
+ * Eliminated completely fixed tuples from lookup tables.
+ *
  * Revision 1.1028  1998/07/16 00:49:21  jim
  * Removed unnecessary tuple uniqueness code, changed tuplesByAtom
  * lists to only include tuple on list for first atom rather than all.
@@ -270,7 +273,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1028 1998/07/16 00:49:21 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1029 1998/07/17 18:50:22 jim Exp $";
 
 #include "UniqueSortedArray.h"
 #include "Molecule.h"
@@ -2517,6 +2520,7 @@ void Molecule::receive_Molecule(MIStream *msg)
        
     {
        register int i;      //  Loop counter
+       register int numFixedAtoms = this->numFixedAtoms;  // many tests
        
        tmpArena = new ObjectArena<int>;
        bondsWithAtom = new intPtr[numAtoms];
@@ -2533,46 +2537,50 @@ void Molecule::receive_Molecule(MIStream *msg)
        //  Build the bond lists
        for (i=0; i<numAtoms; i++)
        {
-    byAtomSize[i] = 0;
+         byAtomSize[i] = 0;
        }
        for (i=0; i<numBonds; i++)
        {
-    byAtomSize[bonds[i].atom1]++;
-    byAtomSize[bonds[i].atom2]++;
+         byAtomSize[bonds[i].atom1]++;
+         byAtomSize[bonds[i].atom2]++;
        }
        for (i=0; i<numAtoms; i++)
        {
-    bondsWithAtom[i] = arena.getNewArray(byAtomSize[i]+1);
-    bondsWithAtom[i][byAtomSize[i]] = -1;
-    byAtomSize[i] = 0;
+         bondsWithAtom[i] = tmpArena->getNewArray(byAtomSize[i]+1);
+         bondsWithAtom[i][byAtomSize[i]] = -1;
+         byAtomSize[i] = 0;
        }
        for (i=0; i<numBonds; i++)
        {
-    int a1 = bonds[i].atom1;
-    int a2 = bonds[i].atom2;
-    bondsWithAtom[a1][byAtomSize[a1]++] = i;
-    bondsWithAtom[a2][byAtomSize[a2]++] = i;
+         int a1 = bonds[i].atom1;
+         int a2 = bonds[i].atom2;
+         bondsWithAtom[a1][byAtomSize[a1]++] = i;
+         bondsWithAtom[a2][byAtomSize[a2]++] = i;
        }
        
        //  Build the bond lists
        for (i=0; i<numAtoms; i++)
        {
-    byAtomSize[i] = 0;
+         byAtomSize[i] = 0;
        }
        for (i=0; i<numBonds; i++)
        {
-    byAtomSize[bonds[i].atom1]++;
+         if ( numFixedAtoms && fixedAtomFlags[bonds[i].atom1]
+                            && fixedAtomFlags[bonds[i].atom2] ) continue;
+         byAtomSize[bonds[i].atom1]++;
        }
        for (i=0; i<numAtoms; i++)
        {
-    bondsByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
-    bondsByAtom[i][byAtomSize[i]] = -1;
-    byAtomSize[i] = 0;
+         bondsByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
+         bondsByAtom[i][byAtomSize[i]] = -1;
+         byAtomSize[i] = 0;
        }
        for (i=0; i<numBonds; i++)
        {
-    int a1 = bonds[i].atom1;
-    bondsByAtom[a1][byAtomSize[a1]++] = i;
+         if ( numFixedAtoms && fixedAtomFlags[bonds[i].atom1]
+                            && fixedAtomFlags[bonds[i].atom2] ) continue;
+         int a1 = bonds[i].atom1;
+         bondsByAtom[a1][byAtomSize[a1]++] = i;
        }
        
        DebugM(3,"Building angle lists.\n");
@@ -2580,22 +2588,28 @@ void Molecule::receive_Molecule(MIStream *msg)
        //  Build the angle lists
        for (i=0; i<numAtoms; i++)
        {
-    byAtomSize[i] = 0;
+         byAtomSize[i] = 0;
        }
        for (i=0; i<numAngles; i++)
        {
-    byAtomSize[angles[i].atom1]++;
+         if ( numFixedAtoms && fixedAtomFlags[angles[i].atom1]
+                            && fixedAtomFlags[angles[i].atom2]
+                            && fixedAtomFlags[angles[i].atom3] ) continue;
+         byAtomSize[angles[i].atom1]++;
        }
        for (i=0; i<numAtoms; i++)
        {
-    anglesByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
-    anglesByAtom[i][byAtomSize[i]] = -1;
-    byAtomSize[i] = 0;
+         anglesByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
+         anglesByAtom[i][byAtomSize[i]] = -1;
+         byAtomSize[i] = 0;
        }
        for (i=0; i<numAngles; i++)
        {
-    int a1 = angles[i].atom1;
-    anglesByAtom[a1][byAtomSize[a1]++] = i;
+         if ( numFixedAtoms && fixedAtomFlags[angles[i].atom1]
+                            && fixedAtomFlags[angles[i].atom2]
+                            && fixedAtomFlags[angles[i].atom3] ) continue;
+         int a1 = angles[i].atom1;
+         anglesByAtom[a1][byAtomSize[a1]++] = i;
        }
        
        DebugM(3,"Building improper lists.\n");
@@ -2603,22 +2617,30 @@ void Molecule::receive_Molecule(MIStream *msg)
        //  Build the improper lists
        for (i=0; i<numAtoms; i++)
        {
-    byAtomSize[i] = 0;
+         byAtomSize[i] = 0;
        }
        for (i=0; i<numImpropers; i++)
        {
-    byAtomSize[impropers[i].atom1]++;
+         if ( numFixedAtoms && fixedAtomFlags[impropers[i].atom1]
+                            && fixedAtomFlags[impropers[i].atom2]
+                            && fixedAtomFlags[impropers[i].atom3]
+                            && fixedAtomFlags[impropers[i].atom4] ) continue;
+         byAtomSize[impropers[i].atom1]++;
        }
        for (i=0; i<numAtoms; i++)
        {
-    impropersByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
-    impropersByAtom[i][byAtomSize[i]] = -1;
-    byAtomSize[i] = 0;
+         impropersByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
+         impropersByAtom[i][byAtomSize[i]] = -1;
+         byAtomSize[i] = 0;
        }
        for (i=0; i<numImpropers; i++)
        {
-    int a1 = impropers[i].atom1;
-    impropersByAtom[a1][byAtomSize[a1]++] = i;
+         if ( numFixedAtoms && fixedAtomFlags[impropers[i].atom1]
+                            && fixedAtomFlags[impropers[i].atom2]
+                            && fixedAtomFlags[impropers[i].atom3]
+                            && fixedAtomFlags[impropers[i].atom4] ) continue;
+         int a1 = impropers[i].atom1;
+         impropersByAtom[a1][byAtomSize[a1]++] = i;
        }
        
        DebugM(3,"Building dihedral lists.\n");
@@ -2626,22 +2648,30 @@ void Molecule::receive_Molecule(MIStream *msg)
        //  Build the dihedral lists
        for (i=0; i<numAtoms; i++)
        {
-    byAtomSize[i] = 0;
+         byAtomSize[i] = 0;
        }
        for (i=0; i<numDihedrals; i++)
        {
-    byAtomSize[dihedrals[i].atom1]++;
+         if ( numFixedAtoms && fixedAtomFlags[dihedrals[i].atom1]
+                            && fixedAtomFlags[dihedrals[i].atom2]
+                            && fixedAtomFlags[dihedrals[i].atom3]
+                            && fixedAtomFlags[dihedrals[i].atom4] ) continue;
+         byAtomSize[dihedrals[i].atom1]++;
        }
        for (i=0; i<numAtoms; i++)
        {
-    dihedralsByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
-    dihedralsByAtom[i][byAtomSize[i]] = -1;
-    byAtomSize[i] = 0;
+         dihedralsByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
+         dihedralsByAtom[i][byAtomSize[i]] = -1;
+         byAtomSize[i] = 0;
        }
        for (i=0; i<numDihedrals; i++)
        {
-    int a1 = dihedrals[i].atom1;
-    dihedralsByAtom[a1][byAtomSize[a1]++] = i;
+         if ( numFixedAtoms && fixedAtomFlags[dihedrals[i].atom1]
+                            && fixedAtomFlags[dihedrals[i].atom2]
+                            && fixedAtomFlags[dihedrals[i].atom3]
+                            && fixedAtomFlags[dihedrals[i].atom4] ) continue;
+         int a1 = dihedrals[i].atom1;
+         dihedralsByAtom[a1][byAtomSize[a1]++] = i;
        }
     
        DebugM(3,"Building exclusion data.\n");
@@ -2662,7 +2692,7 @@ void Molecule::receive_Molecule(MIStream *msg)
        UniqueSetIter<Exclusion> exclIter(exclusionSet);
        for ( exclIter=exclIter.begin(),i=0; exclIter != exclIter.end(); exclIter++,i++ )
        {
-    exclusions[i] = *exclIter;
+         exclusions[i] = *exclIter;
        }
        // Free exclusionSet storage
        // exclusionSet.clear(1);
@@ -2672,22 +2702,26 @@ void Molecule::receive_Molecule(MIStream *msg)
     
        for (i=0; i<numAtoms; i++)
        {
-    byAtomSize[i] = 0;
+         byAtomSize[i] = 0;
        }
        for (i=0; i<numTotalExclusions; i++)
        {
-    byAtomSize[exclusions[i].atom1]++;
+         if ( numFixedAtoms && fixedAtomFlags[exclusions[i].atom1]
+                            && fixedAtomFlags[exclusions[i].atom2] ) continue;
+         byAtomSize[exclusions[i].atom1]++;
        }
        for (i=0; i<numAtoms; i++)
        {
-    exclusionsByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
-    exclusionsByAtom[i][byAtomSize[i]] = -1;
-    byAtomSize[i] = 0;
+         exclusionsByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
+         exclusionsByAtom[i][byAtomSize[i]] = -1;
+         byAtomSize[i] = 0;
        }
        for (i=0; i<numTotalExclusions; i++)
        {
-    int a1 = exclusions[i].atom1;
-    exclusionsByAtom[a1][byAtomSize[a1]++] = i;
+         if ( numFixedAtoms && fixedAtomFlags[exclusions[i].atom1]
+                            && fixedAtomFlags[exclusions[i].atom2] ) continue;
+         int a1 = exclusions[i].atom1;
+         exclusionsByAtom[a1][byAtomSize[a1]++] = i;
        }
 
        //  Allocate an array of intPtr's to hold the exclusions for
@@ -2696,28 +2730,34 @@ void Molecule::receive_Molecule(MIStream *msg)
 
        for (i=0; i<numAtoms; i++)
        {
-    byAtomSize[i] = 0;
+         byAtomSize[i] = 0;
        }
        for (i=0; i<numTotalExclusions; i++)
        {
-    // first atom should alway have lower number!
-    if ( ! exclusions[i].modified )
-       byAtomSize[exclusions[i].atom1]++;
+         // first atom should alway have lower number!
+         if ( ! exclusions[i].modified )
+         {
+            if ( numFixedAtoms && fixedAtomFlags[exclusions[i].atom1]
+                               && fixedAtomFlags[exclusions[i].atom2] ) continue;
+            byAtomSize[exclusions[i].atom1]++;
+         }
        }
        for (i=0; i<numAtoms; i++)
        {
-    all_exclusions[i] = arena.getNewArray(byAtomSize[i]+1);
-    all_exclusions[i][byAtomSize[i]] = -1;
-    byAtomSize[i] = 0;
+         all_exclusions[i] = arena.getNewArray(byAtomSize[i]+1);
+         all_exclusions[i][byAtomSize[i]] = -1;
+         byAtomSize[i] = 0;
        }
        for (i=0; i<numTotalExclusions; i++)
        {
-    if ( ! exclusions[i].modified )
-    {
-       int a1 = exclusions[i].atom1;
-       int a2 = exclusions[i].atom2;
-       all_exclusions[a1][byAtomSize[a1]++] = a2;
-    }
+         if ( ! exclusions[i].modified )
+         {
+            if ( numFixedAtoms && fixedAtomFlags[exclusions[i].atom1]
+                               && fixedAtomFlags[exclusions[i].atom2] ) continue;
+            int a1 = exclusions[i].atom1;
+            int a2 = exclusions[i].atom2;
+            all_exclusions[a1][byAtomSize[a1]++] = a2;
+         }
        }
 
        //  If the exclusion policy is scaled 1-4, then allocate
@@ -2725,33 +2765,39 @@ void Molecule::receive_Molecule(MIStream *msg)
        //  Allocate them all the time and assume they are there! -JCP
        // if (simParams->exclude == SCALED14)
        { 
-    onefour_exclusions = new intPtr[numAtoms];
+         onefour_exclusions = new intPtr[numAtoms];
 
-    for (i=0; i<numAtoms; i++)
-    {
-       byAtomSize[i] = 0;
-    }
-    for (i=0; i<numTotalExclusions; i++)
-    {
-       // first atom should alway have lower number!
-       if ( exclusions[i].modified )
-    byAtomSize[exclusions[i].atom1]++;
-    }
-    for (i=0; i<numAtoms; i++)
-    {
-       onefour_exclusions[i] = arena.getNewArray(byAtomSize[i]+1);
-       onefour_exclusions[i][byAtomSize[i]] = -1;
-       byAtomSize[i] = 0;
-    }
-    for (i=0; i<numTotalExclusions; i++)
-    {
-       if ( exclusions[i].modified )
-       {
-    int a1 = exclusions[i].atom1;
-    int a2 = exclusions[i].atom2;
-    onefour_exclusions[a1][byAtomSize[a1]++] = a2;
-       }
-    }
+         for (i=0; i<numAtoms; i++)
+         {
+            byAtomSize[i] = 0;
+         }
+         for (i=0; i<numTotalExclusions; i++)
+         {
+            // first atom should alway have lower number!
+            if ( exclusions[i].modified )
+            {
+              if ( numFixedAtoms && fixedAtomFlags[exclusions[i].atom1]
+                                 && fixedAtomFlags[exclusions[i].atom2] ) continue;
+              byAtomSize[exclusions[i].atom1]++;
+            }
+         }
+         for (i=0; i<numAtoms; i++)
+         {
+            onefour_exclusions[i] = arena.getNewArray(byAtomSize[i]+1);
+            onefour_exclusions[i][byAtomSize[i]] = -1;
+            byAtomSize[i] = 0;
+         }
+         for (i=0; i<numTotalExclusions; i++)
+         {
+            if ( exclusions[i].modified )
+            {
+              if ( numFixedAtoms && fixedAtomFlags[exclusions[i].atom1]
+                                 && fixedAtomFlags[exclusions[i].atom2] ) continue;
+              int a1 = exclusions[i].atom1;
+              int a2 = exclusions[i].atom2;
+              onefour_exclusions[a1][byAtomSize[a1]++] = a2;
+            }
+         }
        }
 
        delete [] byAtomSize;
@@ -3969,12 +4015,15 @@ void Molecule::receive_Molecule(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1028 $  $Date: 1998/07/16 00:49:21 $
+ *  $Revision: 1.1029 $  $Date: 1998/07/17 18:50:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1029  1998/07/17 18:50:22  jim
+ * Eliminated completely fixed tuples from lookup tables.
+ *
  * Revision 1.1028  1998/07/16 00:49:21  jim
  * Removed unnecessary tuple uniqueness code, changed tuplesByAtom
  * lists to only include tuple on list for first atom rather than all.
