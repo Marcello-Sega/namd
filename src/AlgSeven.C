@@ -124,31 +124,31 @@ void Alg7::strategy()
 
     if (numAssigned >= 0)
     {
-    if (bestP2)
-    {
+      if (bestP2)
+      {
 //      if ((bestP0==NULL) || (bestP2->load < 1.2*bestP0->load)) {
 	assign(c, bestP2);
 	numAssigned++;
 	numAssignedP2++;
 //      }
-    }
-    else if (bestP1)
-    {
+      }
+      else if (bestP1)
+      {
 //      if ((bestP0==NULL) || (bestP1->load < 1.2*bestP0->load)){
 	assign(c, bestP1);
 	numAssigned++;
 	numAssignedP1++;
 //      }
-    }
-    else if (bestP0){
-      assign(c, bestP0);
-      numAssigned++;
-      numAssignedP0++;
-    }
-    else { 
-      iout << iINFO  << "Alg 7 No receiver found 1" << "\n" <<endi;
-      break;
-    }
+      }
+      else if (bestP0){
+        assign(c, bestP0);
+        numAssigned++;
+        numAssignedP0++;
+      }
+      else { 
+        iout << iINFO  << "Alg 7 No receiver found 1" << "\n" <<endi;
+        break;
+      }
     }
     else 
     {
