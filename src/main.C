@@ -32,6 +32,7 @@ int send_dgram(const char *host_addr, int port, const char *buf, int buflen) {
   struct sockaddr_in addr;
   int sockfd;
 
+#ifndef NOHOSTNAME
   if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
     return -1;
   } 
@@ -44,6 +45,8 @@ int send_dgram(const char *host_addr, int port, const char *buf, int buflen) {
   sendto(sockfd, buf, buflen, 0, (struct sockaddr *)&addr, sizeof(addr));
 
   close(sockfd);
+#endif
+
   return 0;
 }                     
 
@@ -54,6 +57,7 @@ int tbsoft_sendusage(const char *program,
                      const char *numcpus,
                      const char *miscinfo) {
 
+#ifndef NOHOSTNAME
   char sendbuf[TBSOFT_TRACK_MAXLEN];
   char host[1024];
   char user[1024];
@@ -67,6 +71,7 @@ int tbsoft_sendusage(const char *program,
     program, versionnum, platform, numcpus, miscinfo, host, user);
   send_dgram(TBSOFT_TRACK_HOST, TBSOFT_TRACK_PORT, sendbuf, strlen(sendbuf));
 
+#endif
   return 0;
 }
 
