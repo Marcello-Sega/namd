@@ -16,7 +16,10 @@
 LJTable::LJTable()
 {
   table_dim = Node::Object()->parameters->get_num_vdw_params();
-  table = new TableEntry[2 * table_dim * table_dim];
+  table_alloc = new char[2*table_dim*table_dim*sizeof(TableEntry) + 31];
+  char *table_align = table_alloc;
+  while ( (long)table_align % 32 ) table_align++;
+  table = (TableEntry *) table_align;
 
   for (register int i=0; i < table_dim; i++)
     for (register int j=i; j < table_dim; j++)
@@ -35,7 +38,7 @@ LJTable::LJTable()
 //----------------------------------------------------------------------  
 LJTable::~LJTable()
 {
-  delete [] table;
+  delete [] table_alloc;
 }
 
 //----------------------------------------------------------------------
@@ -100,7 +103,7 @@ void LJTable::compute_vdw_params(int i, int j,
     cur_scaled->A = cur_scaled->B * sigma_ij14;
   }
   //  Calculate exclcut2
-  cur_scaled->exclcut2 = cur->exclcut2 = 0.64 * sigma_max * sigma_max;
+  // cur_scaled->exclcut2 = cur->exclcut2 = 0.64 * sigma_max * sigma_max;
 
 }
 

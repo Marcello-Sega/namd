@@ -15,7 +15,7 @@ class LJTable
 public:
   struct TableEntry
   {
-    BigReal exclcut2;
+    // BigReal exclcut2;
     BigReal A;
     BigReal B;
   };
@@ -41,6 +41,7 @@ private:
   void compute_vdw_params(int i, int j, 
 			  TableEntry *cur, TableEntry *cur_scaled);
 
+  char *table_alloc;
   TableEntry *table;
   unsigned int table_dim;
 
