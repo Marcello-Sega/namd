@@ -6,8 +6,7 @@
 #include "ResizeArray.h"
 #include "GromacsTopFile.h"
 
-#undef PI
-#define PI 3.14159
+#define JOULES_PER_CALORIE 4.184
 
 /* A GromacsTopFile represents the information stored in a GROMACS
    topolgy file.  This is an immutable type. */
@@ -159,13 +158,13 @@ GromacsTopFile::GromacsTopFile(char *filename) {
 
     case NONBOND:
       if(5 != sscanf(buf," %5s %5s %d %f %f",
-		     &typea, &typeb, &funct, &c6, &c12)) {
+		     typea, typeb, &funct, &c6, &c12)) {
 	fprintf(stderr,"Syntax error in NONBOND\n");
 	exit(1);
       }
       // convert kJ/mol*nm6 to kcal/mol*A6 and ..12 ..12
-      c6 =  c6/4.84*1E6;
-      c12= c12/4.84*1E12;
+      c6 =  c6/JOULES_PER_CALORIE*1E6;
+      c12= c12/JOULES_PER_CALORIE*1E12;
       vdwTable.addType(typea,typeb,c6,c12);
       break;
 
@@ -190,11 +189,11 @@ GromacsTopFile::GromacsTopFile(char *filename) {
 	b0 = c0*10; /* convert nm to A */
 	if(funct==1) { /* harmonic potential */
 	  /* convert kJ/nm2 to kcal/A2 and use E=kx2 instead of half that. */
-	  kB = c1/4.84/100/2;
+	  kB = c1/JOULES_PER_CALORIE/100/2;
 	}
 	else if(funct==2) { /* special fourth-order potential */
 	  /* convert to the normal harmonic constant and kJ/nm2 to kcal/A2 */
-	  kB = 2*c1*c0*c0/4.84/100;
+	  kB = 2*c1*c0*c0/JOULES_PER_CALORIE/100;
 	  kB /= 2; /* use the NAMD system where E=kx2 */
 	}
 	else {
@@ -214,7 +213,7 @@ GromacsTopFile::GromacsTopFile(char *filename) {
       
     case BONDTYPES:
       if(5 != sscanf(buf," %5s %5s %d %f %f",
-		     &typea,&typeb,&funct,&c0,&c1)) {
+		     typea,typeb,&funct,&c0,&c1)) {
 	fprintf(stderr,"Syntax error in BONDTYPES\n");
 	exit(1);
       }
@@ -223,11 +222,11 @@ GromacsTopFile::GromacsTopFile(char *filename) {
       b0 = c0*10; /* convert nm to A */
       if(funct==1) { /* harmonic potential */
 	/* convert kJ/nm2 to kcal/A2 and use E=kx2 instead of half that. */
-	kB = c1/4.84/100/2;
+	kB = c1/JOULES_PER_CALORIE/100/2;
       }
       else if(funct==2) { /* special fourth-order potential */
 	/* convert to the normal harmonic constant and kJ/nm2 to kcal/A2 */
-	kB = 2*c1*c0*c0/4.84/100;
+	kB = 2*c1*c0*c0/JOULES_PER_CALORIE/100;
 	kB /= 2; /* use the NAMD system where E=kx2 */
       }
       else {
@@ -262,12 +261,12 @@ GromacsTopFile::GromacsTopFile(char *filename) {
 	/* first set the values of th0 and kth correctly */
 	if(funct == 1) {
 	  th0 = c0; /* both are in degrees */
-	  kth = c1/4.84/2; /* convert kJ/rad2 to kcal/rad2 and use E=kx2 */
+	  kth = c1/JOULES_PER_CALORIE/2; /* convert kJ/rad2 to kcal/rad2 and use E=kx2 */
 	}
 	else if(funct == 2) {
 	  th0 = c0; /* both are in degrees */
 	  /* convert G96 kJ to kcal/rad2 and use E=kx2 */
-	  kth = sin(th0*PI/180)*sin(th0*PI/180)*c1/4.84/2;
+	  kth = sin(th0*PI/180)*sin(th0*PI/180)*c1/JOULES_PER_CALORIE/2;
 	}
 	else {
 	  fprintf(stderr,"I don't know what funct=%d means in ANGLES\n",funct);
@@ -294,12 +293,12 @@ GromacsTopFile::GromacsTopFile(char *filename) {
       /* first set the values of th0 and kth correctly */
       if(funct == 1) {
 	th0 = c0; /* both are in degrees */
-	kth = c1/4.84/2; /* convert kJ/rad2 to kcal/rad2 and use E=kx2 */
+	kth = c1/JOULES_PER_CALORIE/2; /* convert kJ/rad2 to kcal/rad2 and use E=kx2 */
       }
       else if(funct == 2) {
 	th0 = c0; /* both are in degrees */
 	/* convert G96 kJ to kcal/rad2 and use E=kx2 */
-	kth = sin(th0*PI/180)*sin(th0*PI/180)*c1/4.84/2;
+	kth = sin(th0*PI/180)*sin(th0*PI/180)*c1/JOULES_PER_CALORIE/2;
       }
       else {
 	fprintf(stderr,"I don't know what funct=%d means in ANGLETYPES\n",
@@ -327,7 +326,7 @@ GromacsTopFile::GromacsTopFile(char *filename) {
 					tmptyped, funct, c, &mult);
 	if(index==-1) {
 	  fprintf(stderr,
-	     "Required dihedraltype %s--%s--%s--&s (function %d) not found.\n",
+	     "Required dihedraltype %s--%s--%s--%s (function %d) not found.\n",
 		  tmptypea,tmptypeb,tmptypec,tmptyped,funct);
 	  exit(1);
 	}
@@ -339,7 +338,7 @@ GromacsTopFile::GromacsTopFile(char *filename) {
 	    exit(1);
 	  }
 	  c[0] = c[0]; /* both in deg */
-	  c[1] = c[1]/4.84; /* convert kJ to kcal and still use E=kx2*/
+	  c[1] = c[1]/JOULES_PER_CALORIE; /* convert kJ to kcal and still use E=kx2*/
 	  /* for funct==1 these are both divided by rad^2 */
 	  if(funct==1) {
 	    mult=(int)(c[2]+0.5); /* round to nearest integer :p */
@@ -352,7 +351,7 @@ GromacsTopFile::GromacsTopFile(char *filename) {
 	  }
 
 	  for(j=0;j<6;j++) {
-	    c[j] = c[j]/4.84; /* convert kJ to kcal and E=Cn cos^n */
+	    c[j] = c[j]/JOULES_PER_CALORIE; /* convert kJ to kcal and E=Cn cos^n */
 	  }
 	}
 	else {
@@ -380,7 +379,7 @@ GromacsTopFile::GromacsTopFile(char *filename) {
 	  exit(1);
 	}
 	c[0] = c[0]; /* both in deg */
-	c[1] = c[1]/4.84; /* convert kJ to kcal and still use E=kx2*/
+	c[1] = c[1]/JOULES_PER_CALORIE; /* convert kJ to kcal and still use E=kx2*/
 	/* for funct==1 these are both divided by rad^2 */
 	if(funct==1) {
 	  mult=(int)(c[2]+0.5); /* round to nearest integer :p */
@@ -392,7 +391,7 @@ GromacsTopFile::GromacsTopFile(char *filename) {
 	  exit(1);
 	}
 	for(j=0;j<6;j++) {
-	  c[j] = c[j]/4.84; /* convert kJ to kcal and E=Cn cos^n */
+	  c[j] = c[j]/JOULES_PER_CALORIE; /* convert kJ to kcal and E=Cn cos^n */
 	}
       }
       else {
@@ -434,8 +433,8 @@ GromacsTopFile::GromacsTopFile(char *filename) {
 	 c6  - kJ/mol nm6  -> kcal/mol A6
 	 c12 - kJ/mol nm12 -> kcal/mol A12 */
       atomTable.addType(type,mass,charge,
-			    c6/4.84*1E6,
-			    c12/4.84*1E12);
+			    c6/JOULES_PER_CALORIE*1E6,
+			    c12/JOULES_PER_CALORIE*1E12);
       break;
 
     case MOLECULETYPE:
