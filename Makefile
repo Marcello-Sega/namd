@@ -97,6 +97,7 @@ OBJS = \
 	$(DSTDIR)/MStream.o \
 	$(DSTDIR)/MigrateAtomsMsg.o \
 	$(DSTDIR)/Molecule.o \
+	$(DSTDIR)/NamdCentLB.o \
 	$(DSTDIR)/NamdState.o \
 	$(DSTDIR)/NamdOneTools.o \
 	$(DSTDIR)/Node.o \
@@ -143,6 +144,8 @@ CIFILES = 	\
 		$(INCDIR)/ComputeMgr.def.h \
 		$(INCDIR)/LdbCoordinator.decl.h \
 		$(INCDIR)/LdbCoordinator.def.h \
+		$(INCDIR)/NamdCentLB.decl.h \
+		$(INCDIR)/NamdCentLB.def.h \
 		$(INCDIR)/Node.decl.h \
 		$(INCDIR)/Node.def.h \
 		$(INCDIR)/PatchMgr.decl.h \
@@ -272,9 +275,16 @@ $(INCDIR)/ComputeMgr.decl.h: $(SRCDIR)/ComputeMgr.ci
 
 $(INCDIR)/LdbCoordinator.def.h: $(INCDIR)/LdbCoordinator.decl.h
 
-$(INCDIR)/LdbCoordinator.decl.h: $(SRCDIR)/LdbCoordinator.ci
+$(INCDIR)/LdbCoordinator.decl.h: $(SRCDIR)/LdbCoordinator.ci \
+	$(INCDIR)/NamdCentLB.decl.h
 	$(CHARMXI) $(SRCDIR)/LdbCoordinator.ci
 	$(MOVE) LdbCoordinator.decl.h LdbCoordinator.def.h $(INCDIR)
+
+$(INCDIR)/NamdCentLB.def.h: $(INCDIR)/NamdCentLB.decl.h
+
+$(INCDIR)/NamdCentLB.decl.h: $(SRCDIR)/NamdCentLB.ci
+	$(CHARMXI) $(SRCDIR)/NamdCentLB.ci
+	$(MOVE) NamdCentLB.decl.h NamdCentLB.def.h $(INCDIR)
 
 $(INCDIR)/Node.def.h: $(INCDIR)/Node.decl.h
 
