@@ -215,6 +215,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   }
 
   {  // decide which pes to use by bit reversal
+    int i;
     int ncpus = CkNumPes();
 
     // find next highest power of two
@@ -223,7 +224,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 
     // build bit reversal sequence
     SortableResizeArray<int> seq(ncpus);
-    int i = 0;
+    i = 0;
     for ( int icpu=0; icpu<ncpus; ++icpu ) {
       int ri;
       for ( ri = ncpus; ri >= ncpus; ++i ) {
@@ -239,14 +240,14 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     }
 
     // extract and sort PME locations
-    for ( int i=0; i<numRecipPes; ++i ) {
+    for ( i=0; i<numRecipPes; ++i ) {
       seq[i] = seq[ncpus - numRecipPes + i];
     }
     seq.resize(numRecipPes);
     seq.sort();
 
     myRecipPe = -1;
-    for ( int i=0; i<numRecipPes; ++i ) {
+    for ( i=0; i<numRecipPes; ++i ) {
       recipPeMap[i] = seq[i];
       if ( recipPeMap[i] == CkMyPe() ) myRecipPe = i;
     }
