@@ -10,12 +10,13 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1007 1997/04/07 14:54:39 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1008 1997/04/10 18:44:34 nealk Exp $";
 
 #include "chare.h"
 #include "ckdefs.h"
 #include "c++interface.h"
 #include <sys/stat.h>
+#include <ctype.h>
 
 #include "common.h"
 #include "Communicate.h"
@@ -212,7 +213,6 @@ FILE *Fopen	(const char *filename, const char *mode)
 {
   struct stat buf;
   // check if basic filename exists (and not a directory)
-  iout << "Filename = " << filename << "\n" << endi;
   if (!stat(filename,&buf))
 	{
 	if (!S_ISDIR(buf.st_mode))
@@ -222,7 +222,7 @@ FILE *Fopen	(const char *filename, const char *mode)
   char *realfilename;
   char *command;
   FILE *fout;
-  command = (char *)calloc(strlen(filename)+25,1);
+  command = (char *)malloc(strlen(filename)+25);
   // check for .Z (unix compress)
   sprintf(command,"zcat %s.Z",filename);
   realfilename = command+5;
@@ -233,7 +233,19 @@ FILE *Fopen	(const char *filename, const char *mode)
 	if (!S_ISDIR(buf.st_mode))
 		{
 		fout = popen(command,mode);
-iout << iPE << " " << fout << " = popen(" << command << "," << mode << ")\n" << endi;
+		// on HP-UX, the first character(s) out of pipe may be
+		// garbage!  (Argh!)
+		int C;
+		do
+		  {
+		  C = fgetc(fout);
+		  // iout << "C is " << C << "\n" << endi;
+		  if (isalnum(C) || isspace(C))
+			{
+			ungetc(C,fout);
+			C = -1;	// outta loop
+			}
+		  } while(C != -1);
 		free(command);
 		return(fout);
 		}
@@ -248,7 +260,19 @@ iout << iPE << " " << fout << " = popen(" << command << "," << mode << ")\n" << 
 	if (!S_ISDIR(buf.st_mode))
 		{
 		fout = popen(command,mode);
-iout << iPE << " " << fout << " = popen(" << command << "," << mode << ")\n" << endi;
+		// on HP-UX, the first character(s) out of pipe may be
+		// garbage!  (Argh!)
+		int C;
+		do
+		  {
+		  C = fgetc(fout);
+		  // iout << "C is " << C << "\n" << endi;
+		  if (isalnum(C) || isspace(C))
+			{
+			ungetc(C,fout);
+			C = -1;	// outta loop
+			}
+		  } while(C != -1);
 		free(command);
 		return(fout);
 		}
@@ -277,12 +301,19 @@ int	Fclose	(FILE *fout)
  *
  *	$RCSfile: common.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/04/07 14:54:39 $
+ *	$Revision: 1.1008 $	$Date: 1997/04/10 18:44:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.C,v $
+ * Revision 1.1008  1997/04/10 18:44:34  nealk
+ * 1. changed endl to endi on Controller.C
+ * 2. identified popen() bug under HP-UX 9.  popen() occasionally (1/3 of the
+ * time) includes garbage characters at the head of the stream, and may
+ * close the stream prematurely.  I corrected the garbage bug.  Still need
+ * to correct for the closing bug.  Ugh.
+ *
  * Revision 1.1007  1997/04/07 14:54:39  nealk
  * Changed fclose() to Fclose() (found in common.[Ch]) to use with popen().
  * Also corrected compilation warnings in Set.[Ch].

@@ -195,12 +195,12 @@ void Controller::printEnergies(int seq)
 	     << "DIHED       IMPRP       ELECT       VDW       "
 	     << "BOUNDARY    KINETIC        TOTAL     TEMP";
 	if ( volume != 0. ) iout << "     PRESSURE    VOLUME";
-	iout << "\n";
+	iout << "\n" << endi;
     }
 
     iout << iINFO
 	 << "CPU time = " << CmiTimer() << " Wall Time = " 
-	 << CmiWallTimer() << endl;
+	 << CmiWallTimer() << endi;
 
     iout << ETITLE(seq)
 	 << FORMAT(bondEnergy)
@@ -241,12 +241,19 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1997/04/10 17:28:43 $
+ *	$Revision: 1.1018 $	$Date: 1997/04/10 18:44:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1018  1997/04/10 18:44:33  nealk
+ * 1. changed endl to endi on Controller.C
+ * 2. identified popen() bug under HP-UX 9.  popen() occasionally (1/3 of the
+ * time) includes garbage characters at the head of the stream, and may
+ * close the stream prematurely.  I corrected the garbage bug.  Still need
+ * to correct for the closing bug.  Ugh.
+ *
  * Revision 1.1017  1997/04/10 17:28:43  brunner
  * Made time output in energy actually work.  The one in output doesn't do
  * anything.
