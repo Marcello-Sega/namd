@@ -15,13 +15,17 @@ class AlgRecBisection : public Rebalancer
 {
 private: 
 
-typedef struct {
+class Partition {
+public:
   int refno;
   double load;				// total load in this set
   int origin[3];
   int corner[3];
   int  count;
-} Partition;
+  int node, mapped;
+public:
+  Partition(): refno(0), load(0.0), node(-1), mapped(0) {};
+};
 
 typedef struct {
   int id;
@@ -31,14 +35,12 @@ typedef struct {
   int  tv;
 } ComputeLoad;
 
-public:
 
 typedef struct {
   int v;
   int id;
 } VecArray;
 
-private:
 enum {XDIR=0, YDIR, ZDIR};
 
 ComputeLoad *computeLoad;
@@ -54,6 +56,7 @@ void setVal(int x, int y, int z);
 int sort_partition(int x, int p, int r);
 void qsort(int x, int p, int r);
 void quicksort(int x);
+void mapPartitionsToNodes();
 
 
 public:
