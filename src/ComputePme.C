@@ -642,14 +642,14 @@ void ComputePmeMgr::gridCalc1(void) {
 
 void ComputePmeMgr::sendTransBarrier(void) {
   sendTransBarrier_received += 1;
-  // CkPrintf("sendTransBarrier on %d %d\n",myTransPe,numGridPes-sendTransBarrier_received);
+  // CkPrintf("sendTransBarrier on %d %d\n",myGridPe,numGridPes-sendTransBarrier_received);
   if ( sendTransBarrier_received < numGridPes ) return;
   sendTransBarrier_received = 0;
-  for ( int i=0; i<numTransPes; ++i ) {
+  for ( int i=0; i<numGridPes; ++i ) {
 #if CHARM_VERSION > 050402
-    pmeProxyDir[transPeMap[i]].sendTrans();
+    pmeProxyDir[gridPeMap[i]].sendTrans();
 #else
-    pmeProxyDir.sendTrans(transPeMap[i]);
+    pmeProxyDir.sendTrans(gridPeMap[i]);
 #endif
   }
 }
