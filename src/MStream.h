@@ -9,7 +9,9 @@ struct StreamMessage {
   int PE;
   int tag;
   unsigned short len; // sizeof the data 
+  unsigned short index; // index of packet in stream
   unsigned short isLast; // 1 if its last packet
+  StreamMessage *next; // for linked list of early packets
   char data[1];
 };
 
@@ -20,6 +22,8 @@ class MIStream {
     int PE, tag;
     StreamMessage *msg;
     int currentPos;
+    int currentIndex;
+    StreamMessage *early;
     Communicate *cobj;
     MIStream *Get(char *buf, int len);  // get len bytes from message to buf
   public:

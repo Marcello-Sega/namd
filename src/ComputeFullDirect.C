@@ -148,6 +148,11 @@ void ComputeFullDirect::doWork()
   register BigReal *remote_ptr;
   register BigReal *end_ptr;
 
+  MOStream *sendDataMsg=CpvAccess(comm)->
+		newOutputStream(sendDataPE, FULLTAG, BUFSIZE);
+  MIStream *recvDataMsg=CpvAccess(comm)->
+		newInputStream(recvDataPE, FULLTAG);
+
   for ( int stage = 0; stage < numStages; ++stage )
   {
     // send remoteResults to sendResultsPE
@@ -167,12 +172,9 @@ void ComputeFullDirect::doWork()
     if ( stage < lastStage )
     {
       DebugM(4,"send remoteData to sendDataPE " << sendDataPE << "\n");
-      MOStream *msg=CpvAccess(comm)->
-		newOutputStream(sendDataPE, FULLTAG, BUFSIZE);
-      msg->put(numRemoteAtoms);
-      msg->put(4*numRemoteAtoms,(stage?remoteData:localData));
-      msg->end();
-      delete msg;
+      sendDataMsg->put(numRemoteAtoms);
+      sendDataMsg->put(4*numRemoteAtoms,(stage?remoteData:localData));
+      sendDataMsg->end();
     }
 
     // allocate new result storage
@@ -241,15 +243,15 @@ void ComputeFullDirect::doWork()
     {
       DebugM(4,"receive remoteData from recvDataPE "
 						<< recvDataPE << "\n");
-      MIStream *msg=CpvAccess(comm)->
-		newInputStream(recvDataPE, FULLTAG);
-      msg->get(numRemoteAtoms);
+      recvDataMsg->get(numRemoteAtoms);
       remoteData = new BigReal[4*numRemoteAtoms];
-      msg->get(4*numRemoteAtoms,remoteData);
-      delete msg;
+      recvDataMsg->get(4*numRemoteAtoms,remoteData);
     }
 
   }
+
+  delete sendDataMsg;
+  delete recvDataMsg;
 
   // send out reductions
   DebugM(4,"Full-electrostatics energy: " << electEnergy << "\n");
@@ -287,12 +289,15 @@ void ComputeFullDirect::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1999/02/17 04:09:55 $
+ *	$Revision: 1.1019 $	$Date: 1999/04/13 08:17:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFullDirect.C,v $
+ * Revision 1.1019  1999/04/13 08:17:58  jim
+ * Eliminated memory leaks and corruption in MStream and ComputeFullDirect.
+ *
  * Revision 1.1018  1999/02/17 04:09:55  jim
  * Fixes to make optional force modules work with more nodes than patches.
  *

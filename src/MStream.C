@@ -8,6 +8,8 @@ MIStream::MIStream(Communicate *c, int p, int t)
   PE = p;
   tag = t;
   msg = (StreamMessage *) 0;
+  early = (StreamMessage *) 0;
+  currentIndex = 0;
 }
 
 MIStream::~MIStream()
@@ -27,20 +29,43 @@ MOStream::MOStream(Communicate *c, int p, int t, unsigned int size)
   msgBuf->tag = tag;
   msgBuf->len = 0;
   msgBuf->isLast = 0;
+  msgBuf->index = 0;
+  msgBuf->next = (StreamMessage *)0;
 }
 
 MOStream::~MOStream()
 {
   if(msgBuf != 0)
-    end();
+    CmiFree(msgBuf);
 }
 
 MIStream *MIStream::Get(char *buf, int len)
 {
   while(len) {
     if(msg==0) {
-      msg = (StreamMessage *) cobj->getMessage(PE, tag);
+      if ( early && (early->index == currentIndex) ) {
+        msg = early;
+        early = early->next;
+        msg->next = (StreamMessage *)0;
+      } else {
+        msg = (StreamMessage *) cobj->getMessage(PE, tag);
+      }
+      while ( msg->index != currentIndex ) {
+        if ( (! early) || (early->index > msg->index) ) {
+          msg->next = early;
+          early = msg;
+        } else {
+          StreamMessage *cur = early;
+          while ( cur->next && (cur->next->index < msg->index) ) {
+            cur = cur->next;
+          }
+          msg->next = cur->next;
+          cur->next = msg;
+        }
+        msg = (StreamMessage *) cobj->getMessage(PE, tag);
+      }
       currentPos = 0;
+      currentIndex += 1;
     }
     if(currentPos+len <= msg->len) {
       memcpy(buf, &(msg->data[currentPos]), len);
@@ -75,6 +100,7 @@ MOStream *MOStream::Put(char *buf, size_t len)
       cobj->sendMessage(PE, (void *)msgBuf, bufLen+sizeof(StreamMessage));
       msgBuf->len = 0;
       msgBuf->isLast = 0;
+      msgBuf->index += 1;
       len -= b;
       buf += b;
     }
@@ -88,5 +114,6 @@ void MOStream::end(void)
   cobj->sendMessage(PE,(void*)msgBuf,msgBuf->len+sizeof(StreamMessage));
   msgBuf->len = 0;
   msgBuf->isLast = 0;
+  msgBuf->index += 1;
 }
 
