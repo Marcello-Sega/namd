@@ -811,6 +811,31 @@ void Sequencer::submitHalfstep(int step)
     ADD_TENSOR_OBJECT(reduction,REDUCTION_ALT_VIRIAL_NORMAL,virial);
 #endif
   }
+ 
+  if (pressureProfileReduction) {
+    BigReal idz = 1.0/simParams->pressureProfileThickness;
+    BigReal zmin = simParams->pressureProfileMin;
+    int nslabs = simParams->pressureProfileSlabs;
+
+    // Compute kinetic energy partition
+    for (int i=0; i<numAtoms; i++) {
+      Position realpos = patch->lattice.reverse_transform(
+        a[i].position, a[i].transform);
+      BigReal z = realpos.z;
+      int slab = (int)floor((z-zmin)*idz);
+      if (slab < 0) slab += nslabs;
+      else if (slab >= nslabs) slab -= nslabs;
+      pressureProfileReduction->item(3*slab) +=
+        0.5 * a[i].mass * a[i].velocity.x * a[i].velocity.x;
+      pressureProfileReduction->item(3*slab+1) +=
+        0.5 * a[i].mass * a[i].velocity.y * a[i].velocity.y;
+      pressureProfileReduction->item(3*slab+2) +=
+        0.5 * a[i].mass * a[i].velocity.z * a[i].velocity.z;
+    }
+
+    // always submit reduction 
+    pressureProfileReduction->submit();
+  }
 
   {
     Tensor intVirialNormal;
@@ -945,34 +970,6 @@ void Sequencer::submitReductions(int step)
   reduction->item(REDUCTION_ANGULAR_MOMENTUM_Z) += angularMomentum.z;  
 
   reduction->submit();
- 
-  if (pressureProfileReduction) {
-    BigReal idz = 1.0/simParams->pressureProfileThickness;
-    BigReal zmin = simParams->pressureProfileMin;
-    int nslabs = simParams->pressureProfileSlabs;
-
-    // Compute kinetic energy partition
-    for (int i=0; i<numAtoms; i++) {
-      Position realpos = patch->lattice.reverse_transform(
-        patch->atom[i].position, patch->atom[i].transform);
-      BigReal z = realpos.z;
-      int slab = (int)floor((z-zmin)*idz);
-      if (slab < 0) slab += nslabs;
-      if (slab >= nslabs) slab -= nslabs;
-      pressureProfileReduction->item(3*slab) +=
-        patch->atom[i].mass * patch->atom[i].velocity.x * 
-                              patch->atom[i].velocity.x;
-      pressureProfileReduction->item(3*slab+1) +=
-        patch->atom[i].mass * patch->atom[i].velocity.y * 
-                              patch->atom[i].velocity.y;
-      pressureProfileReduction->item(3*slab+2) +=
-        patch->atom[i].mass * patch->atom[i].velocity.z * 
-                              patch->atom[i].velocity.z;
-    }
-
-    // always submit reduction 
-    pressureProfileReduction->submit();
-  }
 }
 
 void Sequencer::submitMinimizeReductions(int step)
