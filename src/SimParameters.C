@@ -651,81 +651,22 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
    opts.optionalB("main", "SMD",
       "Do we use SMD option?", 
       &SMDOn, FALSE);
-   opts.optional("SMD", "SMDexp", "Exponent for SMD (harmonic) potential",
-    &SMDExp, 2);
-   opts.range("SMDexp", POSITIVE);
-   opts.require("SMD", "SMDk", "SMD restraint force constant, kcal/mol/A^2",
-     &SMDk);
-   opts.range("SMDk", POSITIVE);
-   opts.require("SMD", "SMDRefPos", 
-		"Initial reference position for SMD restraint",
-		&SMDRefPos);
    opts.require("SMD", "SMDVel",
 		"Velocity of the movement, A/timestep", &SMDVel);
    opts.range("SMDVel", NOT_NEGATIVE);
    opts.require("SMD", "SMDDir",
 		"Direction of movement", &SMDDir);
-   opts.require("SMD", "SMDAtom",
-		"Index of the atom to move", 
-		&SMDAtom);
-   opts.range("SMDAtom", POSITIVE);
+   opts.require("SMD", "SMDk",
+                "Elastic constant for SMD", &SMDk);
+   opts.range("SMDk", NOT_NEGATIVE);
+   opts.require("SMD", "SMDFile",
+		"File for SMD information",
+                 SMDFile);
    opts.optional("SMD", "SMDOutputFreq",
 		 "Frequency of output",
 		 &SMDOutputFreq, 1);
    opts.range("SMDOutputFreq", POSITIVE);
    
-   opts.optional("SMD", "SMDTStamp",
-		 "Timestep of the last refPos change",
-		 &SMDTStamp);
-
-   opts.optionalB("SMD", "SMDProjectForce",
-		 "Project force along pulling direction?",
-		 &SMDProjectForce, FALSE);
-
-   //// this is only used if any of SMDChDir or SMDChForce is ON
-   opts.optional("SMD", "SMDFmin",
-		"Force value to reset constraint to, pN",
-		&SMDFmin, 0);
-   opts.range("SMDFmin", NOT_NEGATIVE);   
-
-
-   //// Changing directions with moving harmonic constraints
-   opts.optionalB("SMD", "SMDChDir",
-		  "Use changing direction function?",
-		  &SMDChDirOn, FALSE);
-   opts.require("SMDChDir", "SMDVmin",
-		"Min allowed ave velocity, A/timestep",
-		&SMDVmin);
-   opts.range("SMDVmin", NOT_NEGATIVE);
-   opts.require("SMDChDir", "SMDVminTave",
-		"Averaging time for Vmin, timesteps",
-		&SMDVminTave);
-   opts.range("SMDVminTave", POSITIVE);
-   opts.optional("SMDChDir", "SMDConeAngle",
-		 "Angle of cone to choose directions from, deg",
-		 &SMDConeAngle, 360);
-   opts.range("SMDConeAngle", NOT_NEGATIVE);
-   opts.require("SMDChDir", "SMDChDirMethod",
-		 "Distribution of directions to use", 
-		 chDirMethod);
-   opts.optional("SMDChDirMethod", "SMDGaussW",
-		 "Width of gaussian distribution for ChDir, deg",
-		 &SMDGaussW, 360);
-   opts.range("SMDGaussW", POSITIVE);
-
-   //// changing forces when the constrained atom(s) move too quickly
-   opts.optionalB("SMD", "SMDChForce",
-		  "Use changing force function?",
-		  &SMDChForceOn, FALSE);
-   opts.require("SMDChForce", "SMDVmax",
-		"Max allowed ave velocity, A/timestep",
-		&SMDVmax);
-   opts.range("SMDVmax", NOT_NEGATIVE);
-   opts.require("SMDChForce", "SMDVmaxTave",
-		"Averaging time for Vmax, timesteps",
-		&SMDVmaxTave);
-   opts.range("SMDVmaxTave", POSITIVE);
-
    //****** END SMD constraints changes 
 
    ////  Global Forces / Tcl
@@ -901,7 +842,6 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
 void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&cwd) {
    
    int len;    //  String length
-   char tmpstr[257];  //  Temporary string
    StringList *current; //  Pointer to config option list
 
    //  Take care of cwd processing
@@ -1428,7 +1368,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
       NAMD_die("COLD and velocity rescaling are mutually exclusive dynamics modes");
    }
 
-   if ( (!!IMDon + !!tclForcesOn + !!miscForcesOn + !!freeEnergyOn) > 1)
+   if ( (!!SMDOn+!!IMDon+!!tclForcesOn+!!miscForcesOn+!!freeEnergyOn) > 1)
    {
       NAMD_die("Sorry, only one of IMD, TclForces, MiscForces, and FreeEnergy may be used at a time.");
    }
@@ -1733,9 +1673,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    
    if (!opts.defined("SMD")) {     
      SMDOn = FALSE;
-     SMDChDirOn = FALSE;
-     SMDChForceOn = FALSE;
-     SMDAtom = -1;
    }
 
    if (SMDOn) {
@@ -1747,60 +1684,13 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
        SMDDir = SMDDir.unit();
      }
 
-     // convert from pdb file atom number to internal representation.
-     SMDAtom--;
-
-     if (!opts.defined("SMDTStamp")) {
-       // set the time stamp to firsttimestep
-       SMDTStamp = firstTimestep;
-     }
-
      if (SMDOutputFreq > 0 && SMDOutputFreq < stepsPerCycle
 	 || SMDOutputFreq % stepsPerCycle != 0) {
        NAMD_die("SMDOutputFreq must be a multiple of stepsPerCycle");
      }
-
-     if (SMDChDirOn) {
-       if (SMDVminTave < stepsPerCycle 
-	   || SMDVminTave % stepsPerCycle != 0) {
-	 NAMD_die("SMDVminTave  must be a multiple of stepsPerCycle");
-       }
-       if (SMDConeAngle > 360.0) {
-	 NAMD_die("SMDConeAngle must be between 0 and 360 degrees");
-       }
-       else {
-	 SMDConeAngle = SMDConeAngle/2.;
-       }
-
-       if (opts.defined("SMDChDirMethod")) {
-	 if (strcasecmp(chDirMethod, "uniform") == 0) {
-	   SMDChDirMethod = SMD_UNIFORM;
-	 }
-	 else if (strcasecmp(chDirMethod, "gaussian") == 0) {
-	   SMDChDirMethod = SMD_GAUSSIAN;
-	 }
-	 else {
-	   NAMD_die("Unknown SMDChDirMethod selected");
-	 }
-       }
-       else {
-	 SMDChDirMethod = SMD_UNIFORM;
-       }
-     }
-
-     if (SMDChForceOn) {
-       if (SMDVmaxTave < stepsPerCycle 
-	   || SMDVmaxTave % stepsPerCycle != 0) {
-	 NAMD_die("SMDV(min/max)Tave  must be a multiple of stepsPerCycle");
-       }
-     }
    }
      
    //****** END SMD constraints changes 
-
-   
-   
-   
    
    if (!sphericalBCOn)
      {
@@ -2192,69 +2082,20 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    if (SMDOn) {
      iout << iINFO << "SMD ACTIVE\n";
      
-     iout << iINFO << "SMD EXPONENT    "
-	  << SMDExp << "\n";
-     
-     iout << iINFO << "SMD FORCE CONSTANT    "
-	  << SMDk << " kcal/mol/A^2 =   " 
-	  << SMDk*PNPERKCALMOL << " pN/A\n";
-     
-     iout << iINFO << "SMD INIT REFERENCE POSITION    "
-	  << SMDRefPos << "\n";
-
      iout << iINFO << "SMD VELOCITY    "
 	  << SMDVel << " ANGSTROM/TIMESTEP\n";
 	
      iout << iINFO << "SMD DIRECTION   "
 	  << SMDDir << "\n";
-
-     iout << iINFO << "SMD ATOM NUMBER IN PDB FILE    "
-	  << SMDAtom+1 << "\n";
+ 
+     iout << iINFO << "SMD K   " 
+          << SMDk << "\n";
 
      iout << iINFO << "SMD OUTPUT FREQUENCY   "
 	  << SMDOutputFreq << " TIMESTEPS\n";
-     
-     iout << iINFO << "SMD LAST REF POSITION CHANGE TIME    "
-	  << SMDTStamp << "\n";
-     
-     iout << iINFO << "SMD RESET FORCE VALUE    "
-	  << SMDFmin << " pN\n";
+    
+     iout << iINFO << "SMD FILE " << SMDFile << "\n"; 
 
-     if (SMDProjectForce) {
-       iout << iINFO << "SMD FORCE APPLIED ALONG SMD DIRECTION ONLY\n";
-     }
-
-     if (SMDChDirOn) {
-       iout << iINFO << "SMD CHANGING DIRECTION ACTIVE\n";
-	  
-       iout << iINFO << "SMD MIN ALLOWED AVERAGE ATOM VELOCITY  "
-	    << SMDVmin << " ANGSTROM/TIMESTEP (VMIN)\n";
-       
-       iout << iINFO << "SMD VMIN AVERAGING TIME   "
-	    << SMDVminTave << " TIMESTEPS\n";
-       
-       iout << iINFO << "SMD CONE ANGLE   "
-	    << SMDConeAngle << " DEGREES\n";
-       
-       iout << iINFO << "SMD DIRECTION DISTRIBUTION   " 
-	    << chDirMethod << "\n";
-       
-       if (SMDChDirMethod == SMD_GAUSSIAN) {
-	 iout << iINFO << "SMD GAUSSIAN DISTRIBUTION WIDTH   "
-	      << SMDGaussW << " DEGREES\n";
-       }
-     }
-     
-     if (SMDChForceOn) {
-       iout << iINFO << "SMD CHANGING FORCE ACTIVE\n";
-       
-       iout << iINFO << "SMD MAX ALLOWED ATOM AVE VELOCITY    "
-	    << SMDVmax << " ANGSTROM/TIMESTEP (VMAX)\n";
-       
-       iout << iINFO << "SMD VMAX AVERAGING TIME    "
-	    << SMDVmaxTave << " TIMESTEPS\n";	  
-     }
-     
      iout << endi;
    }
    
@@ -2262,7 +2103,8 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    
    // Global forces configuration
 
-   globalForcesOn = ( tclForcesOn || freeEnergyOn || miscForcesOn || IMDon );
+   globalForcesOn = ( tclForcesOn || freeEnergyOn || miscForcesOn || IMDon 
+                      || SMDOn);
 
    if (tclForcesOn)
    {

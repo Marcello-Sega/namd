@@ -6,138 +6,94 @@
 
 #include "ComputeSMD.h"
 #include "Node.h"
-#include "SMD.h"
 #include "SimParameters.h"
-#include "Patch.h"
+#include "ComputeMgr.h"
+#include "ComputeGlobal.h"
+#include "ComputeGlobalMsgs.h"
+#include "PDB.h"
+#include "PDBData.h"
+#include "Molecule.h"
+#include <iostream.h>
+#include <strstream.h>
+#include <string.h>
 
-/************************************************************************/
-/*									*/
-/*			FUNCTION ComputeSMD	   		        */
-/*									*/
-/************************************************************************/
+ComputeSMD::ComputeSMD(ComputeGlobal *h)
+: ComputeGlobalMaster(h) {
+  SimParameters *simParams = Node::Object()->simParameters;
 
-ComputeSMD::ComputeSMD(ComputeID c, PatchID pid)
-  : ComputeHomePatch(c,pid)
-{
-	reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+  moveVel = simParams->SMDVel;
+  moveDir = simParams->SMDDir;
+  outputFreq = simParams->SMDOutputFreq;
+  k = simParams->SMDk;
+  currentTime = simParams->firstTimestep;
 
-	SimParameters *simParams = Node::Object()->simParameters;
-
-	//  Get parameters from the SimParameters object
-	consExp = simParams->SMDExp;
-	k = simParams->SMDk;
-	moveVel = simParams->SMDVel;
-	moveAtom = simParams->SMDAtom;
-	outputFreq = simParams->SMDOutputFreq;
-	chDirOn = simParams->SMDChDirOn;
-	chForceOn =  simParams->SMDChForceOn;
- 	projectForce = simParams->SMDProjectForce;
-	
-
+  char *file = simParams->SMDFile;
+  configMsg = new ComputeGlobalConfigMsg;
+  parse_atoms(file);  
+  iout << iINFO << "SMD ATOMS:  ";
+  for (int i=0; i<configMsg->gdef.size()-1; i++)
+    iout << configMsg->gdef[i]+1 << ' ';
+  iout << "\n" << endi;
 }
-/*			END OF FUNCTION ComputeSMD		*/
 
-/************************************************************************/
-/*									*/
-/*			FUNCTION ~ComputeSMD			        */
-/*									*/
-/*	This is the destructor for the ComputeSMD force object.	        */
-/*									*/
-/************************************************************************/
-
-ComputeSMD::~ComputeSMD()
-
-{
-  delete reduction;
+void ComputeSMD::parse_atoms(char *file) {
+  PDB smdpdb(file);
+  int numatoms = smdpdb.num_atoms();
+  if (numatoms < 1) 
+    NAMD_die("No atoms found in SMDFile\n");
+  cm.x = cm.y = cm.z = 0;
+  Molecule *mol = Node::Object()->molecule;
+  BigReal imass = 0;
+  for (int i=0; i<numatoms; i++) {
+    PDBAtom *atom;
+    if ((atom = smdpdb.atom(i))->occupancy()) {
+      int ind = atom->serialnumber()-1;
+      BigReal mass = mol->atommass(ind); 
+      configMsg->gdef.add(atom->serialnumber()-1);
+      cm.x += atom->xcoor()*mass;
+      cm.y += atom->ycoor()*mass;
+      cm.z += atom->zcoor()*mass;
+      imass += mass; 
+    }
+  }
+  configMsg->gdef.add(-1);
+  if (imass == 0) 
+    NAMD_die("SMDFile contained no SMD atoms - occupancy must be nonzero\n");
+  cm /= imass;
 }
-/*			END OF FUNCTION ~ComputeSMD		       */
 
-/************************************************************************/
-/*									*/
-/*				FUNCTION force				*/
-/*									*/
-/************************************************************************/
+ComputeSMD::~ComputeSMD() { }
 
-void ComputeSMD::doForce(Position* p, Results* res, AtomProperties* a, Transform* t)
-
-{
-	SMDData *smdData = Node::Object()->smdData;
-	Lattice &lattice = patch->lattice;
-	Vector refPos;		//  Reference position
-	BigReal r, r2; 	//  r=distance between atom position and the
-			//  reference position, r2 = r^2
-	Vector Rij;	//  vector between current position and reference pos
-	BigReal value;	//  Current calculated value
-
-	// aliases to work with old code
-	Force *f = res->f[Results::normal];
-	BigReal energy = 0;
-
-	int currentTime = patch->flags.step;
-	int timeStamp; 
-	Vector moveDir;
-
-	for (int localID=0; localID<numAtoms; ++localID) {	  
-	  if (a[localID].id == moveAtom) { 
-	    Position atomPos = lattice.reverse_transform(p[localID],t[localID]);
-
-	    // this call will do all the necessary changes
-	    smdData->update(currentTime, atomPos);
-
-	    // now calculate the force and energy
-	    smdData->get_smd_params(timeStamp, moveDir, refPos);
-
-            Vector smdForce;
-            if (projectForce) {  // Valid for exponent of 2 ONLY!
-              r = moveVel*(currentTime - timeStamp)  
-                  - (atomPos - refPos)*moveDir;
-              value = k*r;
-              energy += 0.5*value*r;
-              smdForce = value*moveDir;
-            }
-            else {
-	      Rij = refPos + (currentTime - timeStamp) * moveVel * moveDir
-	        - atomPos;
-
-	      //  Calculate the distance and the distance squared
-              r2 = Rij.length2();
-              r = sqrt(r2);
-
-	      //  Only calculate the energy and the force if the distance is
-	      //  non-zero.   Otherwise, you could end up dividing by 0, which
-	      //  is bad
-	      if (r>0.0)
-	      {
-	        value=k;
-                 
-	        //  Loop through and multiple k by r consExp times.
-	        //  i.e.  calculate kr^e/e
-	        //  I know, I could use pow(), but I don't trust it.
-	        for (int i=0; i<consExp; ++i) value *= r;
-
-	        //  Add to the energy total
-	        energy += value/consExp;
-      
-	        //  Now calculate the force, which is kr^(e-1).  Also, divide
-	        //  by another factor of r to normalize the vector before we
-	        //  multiple it by the magnitude
-	        value /= r2;
-	        Rij.mult(value);
-                smdForce = Rij;
-	      }
-            } 
-            f[localID] += smdForce;
-	    if (currentTime % outputFreq == 0) 
-	      smdData->output(currentTime, atomPos, smdForce);
-	    
-	    break;  // change this when there are many atoms restrained.
-
-	  } // if found atom
-	} // loop
-
-	reduction->item(REDUCTION_SMD_ENERGY) += energy;
-	reduction->submit();
-
+void ComputeSMD::initialize() {
+  // Send the configMsg we created in parse_atoms
+  storedefs(configMsg->gdef);
+  host->comm->sendComputeGlobalConfig(configMsg);
+  configMsg = 0; 
 }
-/*			END OF FUNCTION force				*/
+
+void ComputeSMD::calculate() {
+
+  ComputeGlobalResultsMsg *resultsMsg = new ComputeGlobalResultsMsg;
+  resultsMsg->gforce.resize(gmass.size());
+
+  Position curcm = gcom[0];
+  BigReal diff = (curcm - cm)*moveDir;
+  Force f = k*(moveVel*currentTime - diff)*moveDir;
+  for (int i=0; i<gmass.size(); i++) 
+    resultsMsg->gforce[i] = f;
+
+  if (currentTime % outputFreq == 0)
+    output(currentTime, curcm, f);
+
+  // Send results to clients
+  host->comm->sendComputeGlobalResults(resultsMsg);
+  resultsMsg = 0;
+  currentTime++;
+}
+
+void ComputeSMD::output(int t, Position p, Force f) {
+  if (t % (100*outputFreq) == 0) 
+    iout << "SMDTITLE: TS   CURRENT_POSITION         FORCE\n" << endi; 
+  iout << "SMD  " << t << ' ' << p << ' ' << f*PNPERKCALMOL << '\n' << endi;
+}
 

@@ -7,38 +7,32 @@
 #ifndef COMPUTESMD_H
 #define COMPUTESMD_H
 
-#include "ComputeHomePatch.h"
-#include "ReductionMgr.h"
+#include "ComputeGlobalMaster.h"
 
-class ComputeSMD : public ComputeHomePatch
-{
+class ComputeGlobalConfigMsg;
+class ComputeGlobalResultsMsg;
+
+class ComputeSMD : public ComputeGlobalMaster {
+friend class ComputeGlobal;
+
 private:
-	int consExp;		//  Exponent for energy function from SimParameters
-        BigReal k;              //  Restraint force constant
-	int moveAtom;           //  Index of the atom to move
-        BigReal moveVel;         // velocity of the restraint movement 
-                                // (A/timestep).
-        int outputFreq;         // output frequency
-        Bool chDirOn;           // is changing direction on?
-        Bool chForceOn;         // is changing force on?
-	Bool projectForce;	// If true, force applied only in pulling
-				// direction.
+  ComputeSMD(ComputeGlobal *);
+  ~ComputeSMD();
 
-public:
-	ComputeSMD(ComputeID c, PatchID pid); 	//  Constructor
-	virtual ~ComputeSMD();			//  Destructor
+  virtual void initialize();
+  virtual void calculate();
 
-	virtual void doForce(Position* p, Results* r, AtomProperties* a, Transform* t);
+  void output(int, Position, Force);
+  void parse_atoms(char *);
+ 
+  ComputeGlobalConfigMsg *configMsg;
 
-	SubmitReduction *reduction;
-
+  BigReal k;
+  BigReal moveVel;   // A/timestep
+  Vector moveDir;
+  int outputFreq;
+  Position cm;       // Initial center of mass
+  int currentTime;   // Keep track of elapsed time steps for yourself!
 };
-
 #endif
-
-
-
-
-
-
 

@@ -43,7 +43,6 @@
 #include "ComputeSphericalBC.h"
 #include "ComputeCylindricalBC.h"
 #include "ComputeRestraints.h"
-#include "ComputeSMD.h"
 #include "WorkDistrib.h"
 
 ComputeMgr::ComputeMgr()
@@ -260,12 +259,6 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
-      case computeSMDType:
-	c = new ComputeSMD(i,map->computeData[i].pids[0].pid); // unknown delete
-	map->registerCompute(i,c);
-	c->initialize();
-	break;
-      
       default:
 	break;
     }

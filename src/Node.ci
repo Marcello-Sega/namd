@@ -9,7 +9,6 @@ module Node {
 
   extern module main;
 
-  message [packed] SMDDataMsg;
   message ScriptParamMsg;
 
   group Node
@@ -32,8 +31,6 @@ module Node {
 
     // terminate program at end of run
     entry void haltBarrier(CkQdMsg *);
-
-    entry void recvSMDData(SMDDataMsg *);
   };
 }
 

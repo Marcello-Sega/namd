@@ -21,7 +21,6 @@
 #include "Namd.h"
 #include "NamdState.h"
 #include "Controller.h"
-#include "SMD.h"
 #include "ScriptTcl.h"
 #include <unistd.h>
 #include <sys/stat.h>
@@ -36,7 +35,6 @@ NamdState::NamdState()
     parameters = NULL;
     molecule = NULL;
     pdb = NULL;
-    smdData = NULL;
 }
 
 int
@@ -67,11 +65,6 @@ NamdState::status()
     }
     else ret++;
     
-    if (smdData != NULL) {
-      DebugM(1, "SMDData exists\n");
-    }
-    else ret++;
-
     return(ret);
 }
 
@@ -149,8 +142,6 @@ int NamdState::configFileInitCont(void) {
       << "Number of pdb and psf atoms are not the same!" << "\n" << endi;
     return(1);
   }
-  smdData = new SMDData(simParameters);
-  smdData->init(pdb);
 
   StringList *binCoordinateFilename = configList->find("bincoordinates");
   if ( binCoordinateFilename ) {

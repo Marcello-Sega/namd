@@ -51,8 +51,6 @@
 #include "Communicate.h"
 #include "Inform.h"
 #include "LdbCoordinator.h"
-#include "SMD.h"
-#include "SMDMsgs.h"
 #include "TestController.h"
 #include "TestSequencer.h"
 #include "ScriptTcl.h"
@@ -101,7 +99,6 @@ Node::Node(GroupInitMsg *msg)
   pdb = NULL;
   state = NULL;
   output = NULL;
-  smdData = NULL;
   script = NULL;
 #ifdef NAMD_TCL
   script = new ScriptTcl;
@@ -285,7 +282,6 @@ void Node::namdOneRecv() {
   parameters = new Parameters(simParameters);
   //****** END CHARMM/XPLOR type changes
   molecule = new Molecule(simParameters,parameters);
-  smdData = new SMDData(simParameters);
 
   DebugM(4, "Getting SimParameters\n");
   conv_msg = CpvAccess(comm)->newInputStream(0, SIMPARAMSTAG);
@@ -299,10 +295,6 @@ void Node::namdOneRecv() {
   conv_msg = CpvAccess(comm)->newInputStream(0, MOLECULETAG);
   molecule->receive_Molecule(conv_msg);
 
-  DebugM(4, "Getting SMDData\n");
-  conv_msg = CpvAccess(comm)->newInputStream(0, SMDDATATAG);
-  smdData->receive_SMDData(conv_msg);
-
   DebugM(4, "Done Receiving\n");
 }
 
@@ -314,9 +306,6 @@ void Node::namdOneSend() {
   parameters->send_Parameters(CpvAccess(comm));
   DebugM(4, "Sending Molecule\n");
   molecule->send_Molecule(CpvAccess(comm));
-  DebugM(4, "Sending SMDData\n");
-  smdData->send_SMDData(CpvAccess(comm));
-  DebugM(4, "Done Sending\n");  
 }
 
 // Initial thread setup
@@ -457,28 +446,8 @@ void Node::saveMolDataPointers(NamdState *state)
   this->simParameters = state->simParameters;
   this->configList = state->configList;
   this->pdb = state->pdb;
-  this->smdData = state->smdData;
   this->state = state;
 }
-
-//------------------------------------------------------------------------
-// send the SMD data
-//------------------------------------------------------------------------
-void Node::sendSMDData(SMDDataMsg *msg) {
-  CProxy_Node(CpvAccess(BOCclass_group).node).recvSMDData(msg);
-}
-
-//------------------------------------------------------------------------
-// receive the SMD data
-//------------------------------------------------------------------------
-void Node::recvSMDData(SMDDataMsg *msg) {
-  if ( smdData ) {
-    smdData->recvData(msg);
-  }
-  else NAMD_die("Node::smdData is NULL!");
-}
-
-
 
 //======================================================================
 // Private functions

@@ -186,9 +186,7 @@ int  Fclose(FILE *fout);
 
 #define DPMTATAG	136	//  Tag for DPMTA
 
-#define SMDDATATAG      137     //  Tag for sending SMDData to clients
-
-#define MAXTAGVALUE	137	//  Maximum tag value.  NOTE!!  Always
+#define MAXTAGVALUE	136	//  Maximum tag value.  NOTE!!  Always
 				//  reset this when new tags are added,
 				//  otherwise MessageManager object will
 				//  almost certainly cause a core dump!!

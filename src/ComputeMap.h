@@ -34,7 +34,6 @@ enum ComputeType
   computeSphericalBCType,
   computeCylindricalBCType,
   computeRestraintsType,
-  computeSMDType,
   computeErrorType
 };
 

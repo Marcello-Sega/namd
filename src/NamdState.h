@@ -15,7 +15,6 @@ class Parameters;
 class ConfigList;
 class PDB;
 class Controller;
-class SMDData;
 
 // Everything needed to specify a simulation is in this object
 // For the moment it is really only a structure.  Eventually
@@ -33,7 +32,6 @@ class NamdState {
     PDB *pdb;
     Controller *controller;
     Lattice lattice;
-    SMDData *smdData;
     char *currentdir;
   public:
     NamdState(void);

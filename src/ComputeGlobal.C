@@ -35,6 +35,7 @@
 #include "FreeEnergyParse.h"
 //----------------------------------------------------------
 #include "ComputeIMD.h"
+#include "ComputeSMD.h"
 #include "PatchMgr.h"
 #include "Molecule.h"
 #include "ReductionMgr.h"
@@ -71,6 +72,7 @@ ComputeGlobal::ComputeGlobal(ComputeID c, ComputeMgr *m)
     else if ( simParams->tclForcesOn ) master = new ComputeTcl(this);
     else if ( simParams->miscForcesOn ) master = new ComputeMisc(this);
     else if ( simParams->freeEnergyOn ) master = new ComputeFreeEnergy(this);
+    else if ( simParams->SMDOn ) master = new ComputeSMD(this);
     else NAMD_die("Internal error in ComputeGlobal::ComputeGlobal");
   }
   comm = m;
@@ -131,6 +133,7 @@ void ComputeGlobal::recvResults(ComputeGlobalResultsMsg *msg) {
   AtomIDList::iterator a = msg->aid.begin();
   AtomIDList::iterator a_e = msg->aid.end();
   ForceList::iterator f2 = msg->f.begin();
+  int q=0;
   for ( ; a != a_e; ++a, ++f2 ) {
     LocalID localID = atomMap->localID(*a);
     if ( localID.pid == notUsed || ! f[localID.pid] ) continue;
@@ -143,9 +146,12 @@ void ComputeGlobal::recvResults(ComputeGlobalResultsMsg *msg) {
   g_i = gdef.begin(); g_e = gdef.end();
   ResizeArray<BigReal>::iterator gm_i = gmass.begin();
   ForceList::iterator gf_i = msg->gforce.begin();
+  //iout << iDEBUG << "recvResults\n" << endi;
   for ( ; g_i != g_e; ++g_i, ++gm_i, ++gf_i ) {
+    //iout << iDEBUG << *gf_i << '\n' << endi;
     Vector accel = (*gf_i) / (*gm_i);
     for ( ; *g_i != -1; ++g_i ) {
+      //iout << iDEBUG << *g_i << '\n' << endi;
       LocalID localID = atomMap->localID(*g_i);
       if ( localID.pid == notUsed || ! f[localID.pid] ) continue;
       f[localID.pid][localID.index] += accel * mol->atommass(*g_i);

@@ -42,8 +42,6 @@ class Namd;
 class NamdState;
 class Output;
 class LdbCoordinator;
-class SMDData;
-class SMDDataMsg;
 class ScriptTcl;
 class IMDOutput;
 
@@ -102,10 +100,6 @@ public:
   // Init the socket connect for imd
   void IMDinit(void *);
 
-  // Deal with SMD data message
-  void sendSMDData(SMDDataMsg *);
-  void recvSMDData(SMDDataMsg *);
-
   // NAMD 1.X molecule database objects - must be public for now
   Molecule *molecule;
   Parameters *parameters;
@@ -114,7 +108,6 @@ public:
   PDB *pdb;
   NamdState *state;
   Output *output;
-  SMDData *smdData;
   IMDOutput *imd;
 
   // Remove these calls?

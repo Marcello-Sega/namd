@@ -569,7 +569,6 @@ void Controller::printEnergies(int step)
     BigReal improperEnergy;
     BigReal boundaryEnergy;
     BigReal miscEnergy;
-    BigReal smdEnergy;
     BigReal totalEnergy;
     Vector momentum;
     Vector angularMomentum;
@@ -581,7 +580,6 @@ void Controller::printEnergies(int step)
     improperEnergy = reduction->item(REDUCTION_IMPROPER_ENERGY);
     boundaryEnergy = reduction->item(REDUCTION_BC_ENERGY);
     miscEnergy = reduction->item(REDUCTION_MISC_ENERGY);
-    smdEnergy = reduction->item(REDUCTION_SMD_ENERGY);
 
     if ( ! ( step % nbondFreq ) )
     {
@@ -603,7 +601,7 @@ void Controller::printEnergies(int step)
 
     totalEnergy = bondEnergy + angleEnergy + dihedralEnergy + improperEnergy +
 	electEnergy + electEnergySlow + ljEnergy + kineticEnergy +
-	boundaryEnergy + miscEnergy + smdEnergy;
+	boundaryEnergy + miscEnergy;
 
     if ( node->simParameters->outputMomenta &&
          ! ( step % node->simParameters->outputMomenta ) )
@@ -747,7 +745,6 @@ void Controller::printEnergies(int step)
 	  iout << "    GPRESSURE";
 	  iout << "    VOLUME";
 	}
-	if (simParams->SMDOn) iout << "     SMD";
 	iout << "\n" << endi;
     }
 
@@ -782,10 +779,6 @@ void Controller::printEnergies(int step)
 	}
 	iout << FORMAT(trace(groupPressure)*PRESSUREFACTOR/3.);
 	iout << FORMAT(volume);
-    }
-
-    if (simParams->SMDOn) {
-      iout << FORMAT(smdEnergy);
     }
 
     iout << "\n" << endi;

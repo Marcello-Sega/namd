@@ -63,15 +63,6 @@ typedef int  MTSChoices;
 #define RIGID_ALL     1
 #define RIGID_WATER   2
 
-//****** BEGIN SMD constraints changes 
-
-// The following definitions are used to distinguish between
-// changing moving constraint direction strategies
-#define SMD_UNIFORM   0
-#define SMD_GAUSSIAN  1
-//****** END SMD constraints changes 
-
-
 class SimParameters
 {
 private:
@@ -188,30 +179,12 @@ public:
         BigReal rotConsVel;             //  Velocity of rotation, Deg/timestep
         //****** END rotating constraints changes 
         //****** BEGIN SMD constraints changes   
-        Bool SMDOn;                     //  Flag TRUE-> SMD constraints 
-                                        //  active
-        int SMDExp;                     //  Exponent for SMD constraints
-        Vector SMDRefPos;               //  Initial pos. of SMD restraint point
-        BigReal SMDk;                   //  SMD force constant (kcal/mol)
+        Bool SMDOn;                     //  Flag TRUE-> SMD constraints active
         BigReal SMDVel;                 //  Velocity of the movement, A/timestep
         Vector SMDDir;                  //  Direction of the movement
-        int SMDAtom;                    //  Index of the atom to be moved
+        BigReal SMDk; 			//  Elastic constant for SMD
+ 	char SMDFile[128];		//  File for SMD information
         int SMDOutputFreq;              //  Output frequency for SMD constr.
-
-        int SMDTStamp;                  //  Time of the last refPos change
-        Bool SMDChDirOn;                //  Is changing directions on?
-        BigReal SMDVmin;                //  Min allowed ave velocity 
-        int SMDVminTave;                //  Time for averaging Vmin (timesteps)
-        BigReal SMDConeAngle;           //  Angle of the cone to choose 
-                                        //    directions from
-        int SMDChDirMethod;             //  Distribution to use (uniform/gauss)
-        BigReal SMDGaussW;              //  width of gaussian distribution
-
-        Bool SMDChForceOn;              //  Is changing forces on?
-        BigReal SMDVmax;                //  Max allowed ave velocity
-        int SMDVmaxTave;                //  Time for averaging Vmax (timesteps)
-        BigReal SMDFmin;                //  Force (pN) to which to reset
-	Bool SMDProjectForce;		// Project force along pulling dir?
         //****** END SMD constraints changes 
 
 	Bool globalForcesOn;		//  Are global forces present?
@@ -427,12 +400,6 @@ private:
 
 	int fmaFrequency;		//  outdated parameter name
 	char loadStrategy[65];		//  Load balancing strategy
-	//****** BEGIN SMD constraints changes
-	char chDirMethod[65];           // SMD changing direction method
-	//****** END SMD constraints changes
-
-
-
 };
 
 #endif

@@ -621,8 +621,6 @@ void WorkDistrib::mapComputes(void)
     mapComputePatch(computeCylindricalBCType);
   if ( node->simParameters->constraintsOn )
     mapComputePatch(computeRestraintsType);
-  if ( node->simParameters->SMDOn )
-    mapComputePatch(computeSMDType);
 }
 
 //----------------------------------------------------------------------
