@@ -26,17 +26,17 @@ CHARMXI = /Projects/l1/namd.2.0/charm/bin/charmc $(PURIFY)
 #####
 # definitions for PMTA routines
 #####
-#DPMTADIR=dpmta2
-#DPMTAINCL=-I$(DPMTADIR)/include
-#DPMTALIB=-L$(DPMTADIR) -ldpmta2 -lmpole
-#DPMTAFLAGS=-DDPMTA
-#DPMTA=$(DPMTAINCL) $(DPMTAFLAGS)
+DPMTADIR=dpmta2
+DPMTAINCL=-I$(DPMTADIR)/include
+DPMTALIB=-L$(DPMTADIR) -ldpmta2 -lmpole
+DPMTAFLAGS=-DDPMTA
+DPMTA=$(DPMTAINCL) $(DPMTAFLAGS)
 ######
 ## definitions for PVM routines
 ######
-#PVMDIR=pvm3
-#PVMLIB=-L$(PVMDIR) -lpvmc
-#PVM=-I$(PVMDIR)
+PVMDIR=pvm3
+PVMLIB=-L$(PVMDIR) -lpvmc
+PVM=-I$(PVMDIR)
 
 # CXXOPTS = -O
 #CXXOPTS = -g
