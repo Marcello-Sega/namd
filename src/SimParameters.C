@@ -34,9 +34,11 @@
 #define PATHSEPSTR "/"
 #endif
 #include <fstream.h>
+#ifndef _IA64
 extern "C" {
   extern double erfc(double);
 }
+#endif
 
 #ifdef _AIX
 #include "strlib.h"    //  For strcasecmp and strncasecmp
