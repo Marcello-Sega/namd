@@ -138,15 +138,17 @@ void ComputeHomeTuples<T>::loadTuples() {
 	homepatch = patchMap->downstream(homepatch,aid[i].pid);
     }
     T &t = *al;
-    if ( patchMap->node(homepatch) == CMyPe() ) {
+    if ( homepatch != notUsed && patchMap->node(homepatch) == CMyPe() ) {
       for (i=0; i < T::size; i++) {
 	t.p[i] = tuplePatchList.find(TuplePatchElem(aid[i].pid));
+	/*
         if ( ! (al->p)[i] ) {
  	  iout << iERROR << "ComputeHomeTuples couldn't find patch " 
  	    << aid[i].pid << " for atom " << al->atomID[i] 
  	    << ", aborting.\n" << endi;
  	  Namd::die();
         }
+	*/
 	t.localIndex[i] = aid[i].index;
       }
     }
@@ -203,12 +205,15 @@ void ComputeHomeTuples<T>::doWork() {
  *
  *      $RCSfile: ComputeHomeTuples.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1015 $     $Date: 1997/09/28 22:36:49 $
+ *      $Revision: 1.1016 $     $Date: 1997/09/30 16:57:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.C,v $
+ * Revision 1.1016  1997/09/30 16:57:42  jim
+ * Fixed bug dealing with atoms on unknown patches.
+ *
  * Revision 1.1015  1997/09/28 22:36:49  jim
  * Modified tuple-based computations to not duplicate calculations and
  * only require "upstream" proxies.

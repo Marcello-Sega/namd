@@ -21,6 +21,7 @@
 #include "Patch.h"
 #include "Lattice.h"
 #include "HomePatchList.h"
+#include "AtomMap.h"
 
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 5
@@ -290,6 +291,8 @@ int PatchMap::downstream(int pid1, int pid2)
   register int i2;
   register int i;
   register int ds;
+
+  if ( pid1 == notUsed || pid2 == notUsed ) return notUsed;
 
   // z
   i1 = (pid1 / (xDim*yDim));
@@ -679,12 +682,15 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
  *
  *	$RCSfile: PatchMap.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/09/28 22:36:52 $
+ *	$Revision: 1.1013 $	$Date: 1997/09/30 16:57:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.1013  1997/09/30 16:57:45  jim
+ * Fixed bug dealing with atoms on unknown patches.
+ *
  * Revision 1.1012  1997/09/28 22:36:52  jim
  * Modified tuple-based computations to not duplicate calculations and
  * only require "upstream" proxies.

@@ -127,7 +127,7 @@ ComputeNonbondedExcls::loadTuples() {
     aid[1] = atomMap->localID(al->atomID[1]);
     int homepatch = patchMap->downstream(aid[0].pid,aid[1].pid);;
     NonbondedExclElem &t = *al;
-    if ( patchMap->node(homepatch) == CMyPe() ) {
+    if ( homepatch != notUsed && patchMap->node(homepatch) == CMyPe() ) {
       for (i=0; i < NonbondedExclElem::size; i++) {
 	t.p[i] = tuplePatchList.find(TuplePatchElem(aid[i].pid));
         /*
@@ -152,12 +152,15 @@ ComputeNonbondedExcls::loadTuples() {
  *
  *	$RCSfile: ComputeNonbondedExcl.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1997/09/28 22:36:51 $
+ *	$Revision: 1.1017 $	$Date: 1997/09/30 16:57:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedExcl.C,v $
+ * Revision 1.1017  1997/09/30 16:57:44  jim
+ * Fixed bug dealing with atoms on unknown patches.
+ *
  * Revision 1.1016  1997/09/28 22:36:51  jim
  * Modified tuple-based computations to not duplicate calculations and
  * only require "upstream" proxies.
