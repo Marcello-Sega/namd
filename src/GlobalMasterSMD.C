@@ -65,11 +65,10 @@ void GlobalMasterSMD::parseAtoms(const char *file) {
     PDBAtom *atom = smdpdb.atom(i); // get an atom from the file
     if (atom->occupancy()) { // if occupancy is not 0, then add it!
       // add the atom to the list
-      int ind = atom->serialnumber()-1;
-      modifyRequestedGroups()[0].add(atom->serialnumber()-1);
+      modifyRequestedGroups()[0].add(i);
 
       // compute the center of mass
-      BigReal mass = mol->atommass(ind); 
+      BigReal mass = mol->atommass(i); 
       cm.x += atom->xcoor()*mass;
       cm.y += atom->ycoor()*mass;
       cm.z += atom->zcoor()*mass;

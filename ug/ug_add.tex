@@ -1044,7 +1044,9 @@ harmonic constraints.  All atoms in this PDB file with a nonzero value in the
 {\em occupancy} column will be tagged as SMD atoms.  The coordinates of the
 tagged SMD atoms will be used to calculate the initial center of mass.
 During the simulation, this center of mass will move with velocity
-{\tt SMDVel} in the direction {\tt SMDDir}.}
+{\tt SMDVel} in the direction {\tt SMDDir}. The actual atom order in this PDB
+file must match that in the structure or coordinate file, since the atom
+number field in this PDB file will be ignored.}
 
 \item
 \NAMDCONF{SMDk}{force constant to use in SMD simulation}
