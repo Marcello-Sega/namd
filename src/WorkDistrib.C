@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1054 1998/07/06 19:17:01 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1055 1998/07/28 21:15:11 brunner Exp $";
 
 #include <stdio.h>
 
@@ -422,7 +422,7 @@ void WorkDistrib::assignNodeToPatch()
 
   PatchMap *patchMap = PatchMap::Object();
   int nNodes = Node::Object()->numNodes();
-  if (nNodes <= patchMap->numPatches())
+  if (nNodes >= patchMap->numPatches())
     assignPatchesRoundRobin();
   else if (method==1)
     assignPatchesRecursiveBisection();
@@ -1100,12 +1100,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1054 $	$Date: 1998/07/06 19:17:01 $
+ *	$Revision: 1.1055 $	$Date: 1998/07/28 21:15:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1055  1998/07/28 21:15:11  brunner
+ * AssignPatchesRoundRobin was being called all the time. This results in
+ * too much communication for small numbers of processors.
+ *
  * Revision 1.1054  1998/07/06 19:17:01  brunner
  * Changed path info in Makearch.T3E, changed patch partition equation,
  * and added timing prints to Controller
