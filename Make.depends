@@ -718,7 +718,7 @@ obj/ComputeFullDirect.o: \
 	src/ReductionMgr.h \
 	src/Debug.h \
 	src/ComputeFullDirectBase.h
-	$(CXX) $(CXXFLAGS) -o obj/ComputeFullDirect.o -c src/ComputeFullDirect.C
+	$(CXX) $(CXXTHREADFLAGS) -o obj/ComputeFullDirect.o -c src/ComputeFullDirect.C
 obj/ComputeHomePatches.o: \
 	src/ComputeHomePatches.C \
 	src/Namd.h \
@@ -1984,7 +1984,8 @@ obj/MStream.o: \
 	src/MStream.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h
+	src/InfoStream.h \
+	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/MStream.o -c src/MStream.C
 obj/MigrateAtomsMsg.o: \
 	src/MigrateAtomsMsg.C \
