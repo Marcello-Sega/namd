@@ -12,6 +12,7 @@ while (<>) {
 # if line ends with : it is the start of a dependency
   chop;
   if ( ($target,$other) = /([a-zA-Z_]*\.o:)(.*)$/ ) {
+    print "obj/";
     print $target;
     $go=1;
     $first=1;
@@ -47,9 +48,10 @@ while (<>) {
 	}
     }
   }
-  print "\n\t\$(CXX) \$(CXXFLAGS)";
-  print " -o \$(DSTDIR)/\$\@";
-  print " -c \$(SRCDIR)/\$(\@:.o=.C)";
+  # save compiler specifications for the make file
+  # print "\n\t\$(CXX) \$(CXXFLAGS)";
+  # print " -o \$\@";
+  # print " -c ",$other,"\n";
   print "\n";
 }
 
