@@ -39,6 +39,7 @@ protected:
   void deAssign(computeInfo *c, processorInfo *pRec);
   int refine();
   void multirefine();
+  void printSummary();
   void printResults();
   void printLoads();
   double computeAverage();

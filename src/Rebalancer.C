@@ -567,6 +567,34 @@ void Rebalancer::printLoads()
 
 }
 
+void Rebalancer::printSummary()
+{
+   int i;
+   // After refining, compute min, max and avg processor load
+   double total = processors[0].load;
+   double min = processors[0].load;
+   int min_proc = 0;
+   double max = processors[0].load;
+   int max_proc = 0;
+   for (i=1; i<P; i++) {
+     total += processors[i].load;
+     if (processors[i].load < min) {
+       min = processors[i].load;
+       min_proc = i;
+     }
+     if (processors[i].load > max) {
+       max = processors[i].load;
+       max_proc = i;
+     }
+   }
+   iout << iINFO << "SUMMARY" << "\n";
+   iout << iINFO << "  min = " << min << " processor " << min_proc << "\n";
+   iout << iINFO << "  max = " << max << " processor " << max_proc << "\n";
+   iout << iINFO << "  total = " << total << " average = " << total/P << "\n"
+	<< endi;
+   
+}
+
 double Rebalancer::computeAverage()
 {
    int i;
