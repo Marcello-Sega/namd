@@ -26,6 +26,7 @@ void RefineOnly::strategy()
   printLoads();
 
   double max = computeMax();
+  overLoad = 1.02;
   refine();
 
   computeAverage();

@@ -2,7 +2,7 @@
 #include <InfoStream.h>
 #include "Alg7.h"
 
-#define TINYLOAD 0.002
+#define TINYLOAD 0.0005
 
 Alg7::Alg7(computeInfo *computeArray, patchInfo *patchArray, 
 	   processorInfo *processorArray, int nComps, 
@@ -20,7 +20,7 @@ void Alg7::strategy()
    double bestSize0, bestSize1, bestSize2;
    computeInfo *c;
    int numAssigned;
-   processorInfo *bestP0, *bestP1, *bestP2;
+   processorInfo *bestP, *bestP0, *bestP1, *bestP2;
    bestP0 = bestP1 = bestP2 = (processorInfo *)0;
    //   iout << iINFO  << "calling makeHeaps. \n";
    makeHeaps();
@@ -35,11 +35,12 @@ void Alg7::strategy()
    int numAssignedP2 = 0;
    int numAssignedP1 = 0;
    int numAssignedP0 = 0;
+   int numAssignedP4 = 0;
 
    //   for (int i=0; i<numPatches; i++)
    //     { cout << "(" << patches[i].Id << "," << patches[i].processor ;}
    int i;
-
+#if 0
    for (i=0; i<numComputes; i++){
      /* if compute i is a self-interaction, assign it to the home processor.
 	Also, if compute i represents load below a threshold ("zero load")
@@ -67,10 +68,11 @@ void Alg7::strategy()
        numAssigned2++;
      }
    }
-
+#endif
    //   iout << iINFO  << numAssigned <<  "done initial assignments.\n";
 
    //   printLoads();
+   overLoad = 1.7;
   for (i=0; i<numComputes; i++){
      c = (computeInfo *) computesHeap->deleteMax();
      if (c->processor != -1) continue; // skip to the next compute;
@@ -119,22 +121,24 @@ void Alg7::strategy()
        }
      p = (processorInfo *) pes->next(&nextProcessor);
     }
-    
+
+    if (numAssigned >= 0)
+    {
     if (bestP2)
     {
-      if ((bestP0==NULL) || (bestP2->load < 1.2*bestP0->load)) {
+//      if ((bestP0==NULL) || (bestP2->load < 1.2*bestP0->load)) {
 	assign(c, bestP2);
 	numAssigned++;
 	numAssignedP2++;
-      }
+//      }
     }
     else if (bestP1)
     {
-      if ((bestP0==NULL) || (bestP1->load < 1.2*bestP0->load)){
+//      if ((bestP0==NULL) || (bestP1->load < 1.2*bestP0->load)){
 	assign(c, bestP1);
 	numAssigned++;
 	numAssignedP1++;
-      }
+//      }
     }
     else if (bestP0){
       assign(c, bestP0);
@@ -145,10 +149,36 @@ void Alg7::strategy()
       iout << iINFO  << "No receiver found" << "\n" <<endi;
       break;
     }
-
+    }
+    else 
+    {
+      // At start, load is most important, rather than communications
+      int *numAssignedptr = &numAssignedP2;
+      bestP = bestP2;
+      if (!bestP || (bestP1 && (bestP1->load < 0.8 * bestP->load)) )
+      {
+	bestP=bestP1;
+	numAssignedptr = &numAssignedP1;
+      }
+      if (!bestP || (bestP0 && (bestP0->load < 0.75 * bestP->load)))
+      {
+	bestP=bestP0;
+	numAssignedptr = &numAssignedP0;
+      }
+      if (!bestP)
+      {
+	iout << iINFO  << "No receiver found 2" << "\n" <<endi;
+	break;
+      }
+      assign(c,bestP);
+      (*numAssignedptr)++;
+      numAssigned++;
+      numAssignedP4++;
+      
+    }
   }
 
-#ifdef DEBUG
+//#ifdef DEBUG
   iout << iINFO
        << "numAssigned = " << numAssigned
        << "\nnumAssigned1 = " << numAssigned1
@@ -156,8 +186,9 @@ void Alg7::strategy()
        << "\nnumAssignedP2 = " << numAssignedP2
        << "\nnumAssignedP1 = " << numAssignedP1
        << "\nnumAssignedP0 = " << numAssignedP0
+       << "\nnumAssignedP4 = " << numAssignedP4
        << "\n" << endi;
-#endif
+//#endif
 
 //
 
@@ -171,15 +202,15 @@ void Alg7::strategy()
 //     p = (processorInfo *) pes->next(&nextProcessor);
 //  }
     
-  //  printLoads();
-  overLoad = 1.1;
+  printLoads();
+  overLoad = 1.02;
   //  iout << iINFO  << "num assigned: " << numAssigned << endi;
   //  iout << iINFO  << "Starting overLoad = " << overLoad << endi;
   for (; !refine(); overLoad += .01);
   //  iout << iINFO  << "Ending overLoad = " << overLoad << endi;
   //  iout << iINFO
   //   << "After assignment\n" << endi;
-  //  printLoads();
+  printLoads();
 }
 
 

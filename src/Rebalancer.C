@@ -8,7 +8,6 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
 {
   bytesPerAtom = 32;
   strategyName = "dummy";
-  overLoad = 1.03;
   computes = computeArray;
   patches =  patchArray;
   processors =  processorArray;
@@ -266,9 +265,9 @@ int i, total = 0, numBytes = 0;
 double max;
 
   for (i=0; i<P; i++){
-    iout << iINFO << "load on "<< i << " is :" << processors[i].load 
-    	 << "[ " << processors[i].backgroundLoad << "," 
-         << processors[i].computeLoad << "]. " << endl << endi;
+//    iout << iINFO << "load on "<< i << " is :" << processors[i].load 
+//    	 << "[ " << processors[i].backgroundLoad << "," 
+//         << processors[i].computeLoad << "]. " << endl << endi;
 
     // iout << iINFO << "# Messages received: "
     //	 << processors[i].proxies->numElements() - processors[i].patchSet->numElements() 
@@ -301,7 +300,7 @@ double max;
   iout << iINFO 
        << "Load summary for strategy: " << strategyName
        << "\n" << iINFO 
-       << "Processors = " << P
+       << "Processors = " << P << " overload = " << overLoad
        << "\n" << iINFO 
        << "Patches = " << numPatches << "  Computes = " << numComputes
        << "\n" << iINFO 
