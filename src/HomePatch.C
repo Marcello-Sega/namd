@@ -451,8 +451,14 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial)
         settle1(ref, atom[ig].mass, atom[ig+1].mass, pos, vel, dt,
                 mol->rigid_bond_length(atom[ig].id),
                 mol->rigid_bond_length(atom[ig+1].id));
-        for (i=0; i<3; i++) {
+        if ( dt == 0 ) for ( i = 0; i < 3; ++i ) {
           atom[ig+i].position = pos[i];
+        } else if ( virial == 0 ) for ( i = 0; i < 3; ++i ) {
+          atom[ig+i].velocity = vel[i];
+        } else for ( i = 0; i < 3; ++i ) {
+          Force df = (vel[i] - atom[ig+i].velocity) * ( atom[ig+i].mass / dt );
+          wc += outer(df,ref[i]);
+          f[Results::normal][ig+i] += df;
           atom[ig+i].velocity = vel[i];
         }
         continue;
@@ -533,7 +539,7 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial)
     } else if ( virial == 0 ) for ( i = 0; i < hgs; ++i ) {
       atom[ig+i].velocity = vel[i];
     } else for ( i = 0; i < hgs; ++i ) {
-      Force df = (vel[i] - atom[ig+i].velocity) * ( atom[i].mass / dt );
+      Force df = (vel[i] - atom[ig+i].velocity) * ( atom[ig+i].mass / dt );
       wc += outer(df,ref[i]);
       f[Results::normal][ig+i] += df;
       atom[ig+i].velocity = vel[i];
