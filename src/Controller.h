@@ -22,6 +22,7 @@
 class NamdState;
 class SimParameters;
 class ReductionMgr;
+class CollectionMaster;
 
 class Controller
 {
@@ -34,7 +35,8 @@ public:
 protected:
     virtual void algorithm(void);	// subclasses redefine this method
 
-    void printEnergies(int seq);
+    void printEnergies(int);
+    void enqueueCollections(int);
 
     // void suspend(void) { CthSuspend(); };
     void terminate(void) {
@@ -48,6 +50,7 @@ protected:
     int stepsPerCycle;			// stores info from run()
     NamdState *const state;		// access data in state
     ReductionMgr *const reduction;
+    CollectionMaster *const collection;
 
 private:
     CthThread thread;

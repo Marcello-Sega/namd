@@ -16,6 +16,8 @@
 #include "SimParameters.h"
 #include "Controller.h"
 #include "ReductionMgr.h"
+#include "CollectionMaster.h"
+#include "Output.h"
 #include "strlib.h"
 
 #define MIN_DEBUG_LEVEL 3
@@ -25,7 +27,8 @@
 Controller::Controller(NamdState *s) :
 	state(s),
 	simParams(Node::Object()->simParameters),
-	reduction(ReductionMgr::Object())
+	reduction(ReductionMgr::Object()),
+	collection(CollectionMaster::Object())
 {
     reduction->subscribe(REDUCTION_BOND_ENERGY);
     reduction->subscribe(REDUCTION_ANGLE_ENERGY);
@@ -76,15 +79,18 @@ void Controller::algorithm(void)
     const int numberOfCycles = this->numberOfCycles;
     const int stepsPerCycle = this->stepsPerCycle;
     const BigReal timestep = simParams->dt;
+    const int first = simParams->firstTimestep;
     DebugM(4, "Controller algorithm active. timestep = " << timestep << "\n");
     // int step;
     int cycle;
     int seq = 0;
+    enqueueCollections(seq+first);
     printEnergies(seq++);
     for ( cycle = 0; cycle < numberOfCycles; ++cycle )
     {
         // for ( step = 0; step < stepsPerCycle; ++step )
         // {
+        enqueueCollections(seq+first);
         printEnergies(seq++);
         // }
     }
@@ -157,5 +163,12 @@ void Controller::printEnergies(int seq)
 
 }
 
+void Controller::enqueueCollections(int timestep)
+{
+  if ( Output::coordinateNeeded(timestep) )
+    collection->enqueuePositions(timestep);
+  if ( Output::velocityNeeded(timestep) )
+    collection->enqueueVelocities(timestep);
+}
 
 

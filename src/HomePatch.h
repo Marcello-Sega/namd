@@ -20,8 +20,6 @@
 #include "Patch.h"
 #include "PatchMap.h"
 
-#include "Sequencer.h"
-
 #include "MigrateAtomsMsg.h"
 #include "HomePatchTypes.h"
 #include "main.h"
@@ -30,6 +28,7 @@
 class RegisterProxyMsg;
 class UnregisterProxyMsg;
 class ProxyResultMsg;
+class Sequencer;
 
 class HomePatch : public Patch {
   friend PatchMgr;
@@ -56,9 +55,9 @@ public:
   void depositMigration(MigrateAtomsMsg *);
 
   // Bind a Sequencer to this HomePatch
-  void useSequencer(Sequencer *sequencerPtr) {sequencer=sequencerPtr;}
+  void useSequencer(Sequencer *sequencerPtr);
   // start simulation over this Patch of atoms
-  void runSequencer(int numberOfCycles = 0) { sequencer->run(numberOfCycles); }
+  void runSequencer(int numberOfCycles = 0);
   
   //--------------------------------------------------------------------
   // methods for Sequencer to use
@@ -116,12 +115,16 @@ private:
  *
  *	$RCSfile: HomePatch.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/03/12 22:06:41 $
+ *	$Revision: 1.1008 $	$Date: 1997/03/18 18:09:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.1008  1997/03/18 18:09:03  jim
+ * Revamped collection system to ensure ordering and eliminate
+ * unnecessary collections.  Also reduced make dependencies.
+ *
  * Revision 1.1007  1997/03/12 22:06:41  jim
  * First step towards multiple force returns and multiple time stepping.
  *

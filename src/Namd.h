@@ -15,6 +15,7 @@
 #include "ckdefs.h"
 #include "chare.h"
 #include "c++interface.h"
+#include <stdlib.h>
 
 #include "NamdState.h"
 
@@ -63,13 +64,17 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: Namd.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/06 22:06:05 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/03/18 18:09:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Namd.h,v $
+ * Revision 1.1005  1997/03/18 18:09:05  jim
+ * Revamped collection system to ensure ordering and eliminate
+ * unnecessary collections.  Also reduced make dependencies.
+ *
  * Revision 1.1004  1997/03/06 22:06:05  ari
  * Removed Compute.ci
  * Comments added - more code cleaning

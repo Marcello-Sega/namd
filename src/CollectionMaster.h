@@ -14,6 +14,7 @@ class CollectionMaster : public chare_object
 {
 public:
 
+  static CollectionMaster *Object() { return _instance; }
   CollectionMaster(InitMsg *msg);
   ~CollectionMaster(void);
 
@@ -21,7 +22,18 @@ public:
   void receiveVelocities(CollectVectorMsg *msg);
   void receiveForces(CollectVectorMsg *msg);
 
+  void enqueuePositions(int seq);
+  void enqueueVelocities(int seq);
+  void enqueueForces(int seq);
+
+  class CollectVectorInstance;
+  void disposePositions(CollectVectorInstance *c);
+  void disposeVelocities(CollectVectorInstance *c);
+  void disposeForces(CollectVectorInstance *c);
+
 private:
+
+  static CollectionMaster *_instance;
 
   class CollectVectorInstance
   {
@@ -42,6 +54,8 @@ private:
       }
       return ( ! --remaining );
     }
+
+    int ready(void) { return ( ! remaining ); }
 
     int seq;
 
@@ -85,11 +99,12 @@ private:
 	data.add(CollectVectorInstance(seq));
 	c = data.find(CollectVectorInstance(seq));
       }
-      if ( c->append(i,d) )
+      if ( c->append(i,d) && queue.size() && queue[0] == seq )
       {
 	c = new CollectVectorInstance(*c);
 	data.del(CollectVectorInstance(seq));
-        return c;
+	queue.del(0,1);
+	return c;
       }
       else
       {
@@ -97,7 +112,25 @@ private:
       }
     }
 
+    CollectVectorInstance* enqueue(int seq)
+    {
+      queue.add(seq);
+      if ( queue[0] == seq )
+      {
+        CollectVectorInstance *c = data.find(CollectVectorInstance(seq));
+        if ( c && c->ready() )
+        {
+	  c = new CollectVectorInstance(*c);
+	  data.del(CollectVectorInstance(seq));
+	  queue.del(0,1);
+	  return c;
+        }
+      }
+      return 0;
+    }
+
     ResizeArray<CollectVectorInstance> data;
+    ResizeArray<int> queue;
 
     void * operator new(size_t size) { return ::operator new(size); }
     void operator delete(void* ptr) { ::operator delete(ptr); }

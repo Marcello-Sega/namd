@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Output.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1997/02/26 18:38:24 $
+ *	$Revision: 1.3 $	$Date: 1997/03/18 18:09:11 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -20,6 +20,10 @@
  * REVISION HISTORY:
  *
  * $Log: Output.C,v $
+ * Revision 1.3  1997/03/18 18:09:11  jim
+ * Revamped collection system to ensure ordering and eliminate
+ * unnecessary collections.  Also reduced make dependencies.
+ *
  * Revision 1.2  1997/02/26 18:38:24  jim
  * Eliminated +1 from output timestep checks, now makes sense.
  * This should match changes being made in NAMD 1.X.
@@ -173,7 +177,7 @@
  * Initial revision
  * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Output.C,v 1.2 1997/02/26 18:38:24 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Output.C,v 1.3 1997/03/18 18:09:11 jim Exp $";
 
 #include <string.h>
 #include <stdlib.h>
@@ -468,6 +472,48 @@ void Output::energy(int timestep, BigReal *energy)
 /*									*/
 /************************************************************************/
 
+int Output::coordinateNeeded(int timestep)
+{
+	SimParameters *simParams = Node::Object()->simParameters;
+
+	int positionsNeeded = 0;
+
+	//  Output a DCD trajectory 
+	if ( (simParams->dcdFrequency != -1) &&
+	     ( ((timestep % simParams->dcdFrequency) == 0) ||
+	       (timestep == 0) ) )
+	{
+		positionsNeeded = 1;
+	}
+
+	//  Output a restart file
+	if ( (simParams->restartFrequency != -1) &&
+	     ((timestep % simParams->restartFrequency) == 0) )
+	{
+		positionsNeeded = 1;
+	}
+
+	//  Output final coordinates
+	if (timestep == simParams->N)
+	{
+		positionsNeeded = 1;
+	}
+
+#ifdef MDCOMM
+	//  If there is an active VMD connection and it is either the
+	//  0th timestep or a mutiple of the vmdFrequency, then send
+	//  the coordinates to VMD as well
+        if ( (simParams->vmdFrequency != -1) && 
+	   ( ( (timestep % simParams->vmdFrequency) == 0) ||
+	     (timestep == 0) ) )
+        {
+		positionsNeeded = 1;
+        }
+#endif
+
+	return positionsNeeded;
+}
+
 void Output::coordinate(int timestep, int n, Vector *coor)
 {
 	//  Output a DCD trajectory 
@@ -520,6 +566,35 @@ void Output::coordinate(int timestep, int n, Vector *coor)
 /*   be called from here.						*/
 /*									*/
 /************************************************************************/
+
+int Output::velocityNeeded(int timestep)
+{
+	SimParameters *simParams = Node::Object()->simParameters;
+
+	int velocitiesNeeded = 0;
+
+	if ( (simParams->restartFrequency != -1) &&
+	     ((timestep % simParams->restartFrequency) == 0) )
+	{
+		velocitiesNeeded = 1;
+	}
+
+	//  Output velocity DCD trajectory
+	if ( (simParams->velDcdFrequency != -1) &&
+	     ( ((timestep % simParams->velDcdFrequency) == 0)  ||
+	       (timestep==0) ) )
+	{
+		velocitiesNeeded = 1;
+	}
+
+	//  Output final velocities
+	if (timestep == simParams->N)
+	{
+		velocitiesNeeded = 1;
+	}
+
+	return velocitiesNeeded;
+}
 
 void Output::velocity(int timestep, int n, Vector *vel)
 {

@@ -14,6 +14,7 @@
 #include "WorkDistrib.top.h"
 #include "Node.h"
 #include "ComputePatch.h"
+#include "Patch.h"
 
 #define MIN_DEBUG_LEVEL 4
 #define DEBUGM
@@ -103,12 +104,16 @@ void ComputePatch::doWork() {
  *
  *	$RCSfile: ComputePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/13 06:37:06 $
+ *	$Revision: 1.1004 $	$Date: 1997/03/18 18:08:54 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatch.C,v $
+ * Revision 1.1004  1997/03/18 18:08:54  jim
+ * Revamped collection system to ensure ordering and eliminate
+ * unnecessary collections.  Also reduced make dependencies.
+ *
  * Revision 1.1003  1997/03/13 06:37:06  jim
  * Multiple time-stepping implemented, still needs proper splitting functions.
  *

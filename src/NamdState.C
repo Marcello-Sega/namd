@@ -7,7 +7,7 @@
  * DESCRIPTION: Holds pointers to large molecule data structure, simulation
  *		Parameters...
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1004 1997/03/10 17:40:13 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1005 1997/03/18 18:09:06 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -22,6 +22,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C
 #include "ConfigList.h"
 #include "PDB.h"
 #include "NamdState.h"
+#include "Controller.h"
 #include <unistd.h>
 #include <sys/stat.h>
 
@@ -66,6 +67,16 @@ NamdState::status()
     else ret++;
 
     return(ret);
+}
+
+void NamdState:: useController(Controller *controllerPtr)
+{
+  controller=controllerPtr;
+}
+
+void NamdState:: runController(int numberOfCycles)
+{
+  controller->run(numberOfCycles);
 }
 
 extern void read_binary_coors(char *fname, PDB *pdbobj);
@@ -145,13 +156,17 @@ NamdState::configFileInit(char *confFile)
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdState.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/10 17:40:13 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/03/18 18:09:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdState.C,v $
+ * Revision 1.1005  1997/03/18 18:09:06  jim
+ * Revamped collection system to ensure ordering and eliminate
+ * unnecessary collections.  Also reduced make dependencies.
+ *
  * Revision 1.1004  1997/03/10 17:40:13  ari
  * UniqueSet changes - some more commenting and cleanup
  *

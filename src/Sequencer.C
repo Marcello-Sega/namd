@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1015 1997/03/15 22:15:29 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1016 1997/03/18 18:09:15 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -19,6 +19,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C
 #include "HomePatch.h"
 #include "ReductionMgr.h"
 #include "CollectionMgr.h"
+#include "Output.h"
 
 #define MIN_DEBUG_LEVEL 3
 //#define DEBUGM
@@ -89,8 +90,7 @@ void Sequencer::algorithm(void)
     DebugM(4,"Submit seq=" << seq << " Patch=" << patch->getPatchID() << "\n");
     reduction->submit(seq,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
     reduction->submit(seq,REDUCTION_BC_ENERGY,0.);
-    collection->submitPositions(seq+first,patch->atomIDList,patch->p);
-    collection->submitVelocities(seq+first,patch->atomIDList,patch->v);
+    submitCollections(seq+first);
     ++seq;
     for ( step = 0; step < numberOfCycles; ++step )
     {
@@ -115,11 +115,18 @@ void Sequencer::algorithm(void)
 	reduction->submit(seq, REDUCTION_KINETIC_ENERGY,
 	    patch->calcKineticEnergy());
 	reduction->submit(seq,REDUCTION_BC_ENERGY,0.);
-	collection->submitPositions(seq+first,patch->atomIDList,patch->p);
-	collection->submitVelocities(seq+first,patch->atomIDList,patch->v);
+	submitCollections(seq+first);
 	++seq;
     }
     terminate();
+}
+
+void Sequencer::submitCollections(int timestep)
+{
+  if ( Output::coordinateNeeded(timestep) )
+    collection->submitPositions(timestep,patch->atomIDList,patch->p);
+  if ( Output::velocityNeeded(timestep) )
+    collection->submitVelocities(timestep,patch->atomIDList,patch->v);
 }
 
 void
@@ -134,12 +141,16 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1015 $     $Date: 1997/03/15 22:15:29 $
+ *      $Revision: 1.1016 $     $Date: 1997/03/18 18:09:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1016  1997/03/18 18:09:15  jim
+ * Revamped collection system to ensure ordering and eliminate
+ * unnecessary collections.  Also reduced make dependencies.
+ *
  * Revision 1.1015  1997/03/15 22:15:29  jim
  * Added ComputeCylindricalBC.  Doesn't break anything but untested and
  * cylinder is along x axis (will fix soon).

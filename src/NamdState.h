@@ -14,13 +14,12 @@
 #ifndef _NAMDSTATE_H
 #define _NAMDSTATE_H
 
-#include "Controller.h"
-
 class Molecule;
 class SimParameters;
 class Parameters;
 class ConfigList;
 class PDB;
+class Controller;
 
 // Everything needed to specify a simulation is in this object
 // For the moment it is really only a structure.  Eventually
@@ -40,9 +39,8 @@ class NamdState {
     ~NamdState() {}
     int configFileInit(char *);
     int status();
-    void useController(Controller *controllerPtr) {controller=controllerPtr;}
-    void runController(int numberOfCycles = 0)
-		{ controller->run(numberOfCycles); }
+    void useController(Controller *controllerPtr);
+    void runController(int numberOfCycles = 0);
 };
 
 #endif /* _NAMDSTATE_H */
@@ -51,13 +49,17 @@ class NamdState {
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdState.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/04 22:37:13 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/03/18 18:09:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdState.h,v $
+ * Revision 1.1003  1997/03/18 18:09:08  jim
+ * Revamped collection system to ensure ordering and eliminate
+ * unnecessary collections.  Also reduced make dependencies.
+ *
  * Revision 1.1002  1997/03/04 22:37:13  ari
  * Clean up of code.  Debug statements removal, dead code removal.
  * Minor fixes, output fixes.

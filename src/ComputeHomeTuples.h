@@ -19,7 +19,7 @@
 #include "common.h"
 #include "structures.h"
 #include "Compute.h"
-#include "Patch.h"
+#include "HomePatch.h"
 
 #include "Templates/Box.h"
 #include "Templates/OwnerBox.h"
@@ -133,12 +133,16 @@ public:
  *
  *	$RCSfile: ComputeHomeTuples.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/13 22:39:36 $
+ *	$Revision: 1.1006 $	$Date: 1997/03/18 18:08:53 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.h,v $
+ * Revision 1.1006  1997/03/18 18:08:53  jim
+ * Revamped collection system to ensure ordering and eliminate
+ * unnecessary collections.  Also reduced make dependencies.
+ *
  * Revision 1.1005  1997/03/13 22:39:36  jim
  * Fixed some bugs in multiple-force return / full electrostatics.
  *

@@ -27,13 +27,14 @@
 #include "ProxyMgr.h"
 #include "Migration.h"
 #include "PatchMgr.h"
+#include "Sequencer.h"
 
 #define MIN_DEBUG_LEVEL 4
 // #define DEBUGM
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1021 1997/03/12 22:06:40 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1022 1997/03/18 18:09:01 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
 		     VelocityList vl) : Patch(pd,al,pl), v(vl) 
@@ -57,6 +58,13 @@ HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl,
   inMigration = false;
   numMlBuf = 0;
 }
+
+// Bind a Sequencer to this HomePatch
+void HomePatch::useSequencer(Sequencer *sequencerPtr)
+{ sequencer=sequencerPtr; }
+// start simulation over this Patch of atoms
+void HomePatch::runSequencer(int numberOfCycles)
+{ sequencer->run(numberOfCycles); }
 
 void
 HomePatch::readPatchMap() {
@@ -403,12 +411,16 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1021 $	$Date: 1997/03/12 22:06:40 $
+ *	$Revision: 1.1022 $	$Date: 1997/03/18 18:09:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1022  1997/03/18 18:09:01  jim
+ * Revamped collection system to ensure ordering and eliminate
+ * unnecessary collections.  Also reduced make dependencies.
+ *
  * Revision 1.1021  1997/03/12 22:06:40  jim
  * First step towards multiple force returns and multiple time stepping.
  *

@@ -21,6 +21,7 @@
 #include "Templates/OwnerBox.h"
 
 #include "Node.h"
+#include "Patch.h"
 #include "ComputeGeneral.h"
 
 
@@ -99,12 +100,16 @@ void ComputeGeneral::doWork() {
  *
  *	$RCSfile: ComputeGeneral.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/12 22:06:33 $
+ *	$Revision: 1.1002 $	$Date: 1997/03/18 18:08:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGeneral.C,v $
+ * Revision 1.1002  1997/03/18 18:08:51  jim
+ * Revamped collection system to ensure ordering and eliminate
+ * unnecessary collections.  Also reduced make dependencies.
+ *
  * Revision 1.1001  1997/03/12 22:06:33  jim
  * First step towards multiple force returns and multiple time stepping.
  *

@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Output.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1997/02/11 22:56:16 $
+ *	$Revision: 1.2 $	$Date: 1997/03/18 18:09:13 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -20,6 +20,10 @@
  * REVISION HISTORY:
  *
  * $Log: Output.h,v $
+ * Revision 1.2  1997/03/18 18:09:13  jim
+ * Revamped collection system to ensure ordering and eliminate
+ * unnecessary collections.  Also reduced make dependencies.
+ *
  * Revision 1.1  1997/02/11 22:56:16  jim
  * Added dcd file writing.
  *
@@ -239,9 +243,12 @@ public :
    Output();					//  Constructor
    ~Output();					//  Destructor
    void energy(int, BigReal *);			//  Output energies
+
+   static int coordinateNeeded(int);
    void coordinate(int, int, Vector *);		//  Produce appropriate 
 						//  coordinate output for 
 						//  the current timestep
+   static int velocityNeeded(int);
    void velocity(int, int, Vector *);		//  Produce appropriate velocity
 						//  output for the current 
 						//  timestep

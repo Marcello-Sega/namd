@@ -41,6 +41,8 @@ public:
 protected:
     virtual void algorithm(void);	// subclasses redefine this method
 
+    void submitCollections(int);
+
     void suspend(void)
 	{
 	  threadStatus = SUSPENDED;

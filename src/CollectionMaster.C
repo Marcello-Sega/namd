@@ -10,6 +10,11 @@
 CollectionMaster::CollectionMaster(InitMsg *msg)
 {
   delete msg;
+  if (_instance == 0) {
+    _instance = this;
+  } else {
+    DebugM(1, "CollectionMaster::CollectionMaster() - another instance of CollectionMaster exists!\n");
+  }
 }
 
 
@@ -23,7 +28,23 @@ void CollectionMaster::receivePositions(CollectVectorMsg *msg)
   CollectVectorInstance *c;
   if ( c = positions.submitData(msg->seq,msg->aid,msg->data) )
   {
-    DebugM(1,"Collected positions at " << c->seq << endl);
+    disposePositions(c);
+  }
+  delete msg;
+}
+
+void CollectionMaster::enqueuePositions(int seq)
+{
+  CollectVectorInstance *c;
+  if ( c = positions.enqueue(seq) )
+  {
+    disposePositions(c);
+  }
+}
+
+void CollectionMaster::disposePositions(CollectVectorInstance *c)
+{
+    DebugM(3,"Collected positions at " << c->seq << endl);
     int size = c->data.size();
     Vector *data = new Vector[size];
     for ( int i = 0; i < size; ++i )
@@ -31,10 +52,8 @@ void CollectionMaster::receivePositions(CollectVectorMsg *msg)
       data[c->data[i].aid] = c->data[i].data;
     }
     delete c;
-    Node::Object()->output->coordinate(msg->seq,size,data);
+    Node::Object()->output->coordinate(c->seq,size,data);
     delete data;
-  }
-  delete msg;
 }
 
 
@@ -43,6 +62,22 @@ void CollectionMaster::receiveVelocities(CollectVectorMsg *msg)
   CollectVectorInstance *c;
   if ( c = velocities.submitData(msg->seq,msg->aid,msg->data) )
   {
+    disposeVelocities(c);
+  }
+  delete msg;
+}
+
+void CollectionMaster::enqueueVelocities(int seq)
+{
+  CollectVectorInstance *c;
+  if ( c = velocities.enqueue(seq) )
+  {
+    disposeVelocities(c);
+  }
+}
+
+void CollectionMaster::disposeVelocities(CollectVectorInstance *c)
+{
     DebugM(3,"Collected velocities at " << c->seq << endl);
     int size = c->data.size();
     Vector *data = new Vector[size];
@@ -51,10 +86,8 @@ void CollectionMaster::receiveVelocities(CollectVectorMsg *msg)
       data[c->data[i].aid] = c->data[i].data;
     }
     delete c;
-    Node::Object()->output->velocity(msg->seq,size,data);
+    Node::Object()->output->velocity(c->seq,size,data);
     delete data;
-  }
-  delete msg;
 }
 
 
@@ -63,6 +96,22 @@ void CollectionMaster::receiveForces(CollectVectorMsg *msg)
   CollectVectorInstance *c;
   if ( c = forces.submitData(msg->seq,msg->aid,msg->data) )
   {
+    disposeForces(c);
+  }
+  delete msg;
+}
+
+void CollectionMaster::enqueueForces(int seq)
+{
+  CollectVectorInstance *c;
+  if ( c = forces.enqueue(seq) )
+  {
+    disposeForces(c);
+  }
+}
+
+void CollectionMaster::disposeForces(CollectVectorInstance *c)
+{
     DebugM(3,"Collected forces at " << c->seq << endl);
     int size = c->data.size();
     Vector *data = new Vector[size];
@@ -71,10 +120,8 @@ void CollectionMaster::receiveForces(CollectVectorMsg *msg)
       data[c->data[i].aid] = c->data[i].data;
     }
     delete c;
-    Node::Object()->output->all_force(msg->seq,size,data);
+    Node::Object()->output->all_force(c->seq,size,data);
     delete data;
-  }
-  delete msg;
 }
 
 

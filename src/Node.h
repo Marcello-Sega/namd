@@ -21,9 +21,9 @@
 #include "PatchMap.h"
 #include "AtomMap.h"
 #include "ComputeMap.h"
-#include "PatchMgr.h"
 #include "ProxyMgr.h"
 
+class PatchMgr;
 class Molecule;
 class Parameters;
 class SimParameters;
@@ -124,12 +124,16 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/14 21:40:13 $
+ *	$Revision: 1.1005 $	$Date: 1997/03/18 18:09:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.1005  1997/03/18 18:09:09  jim
+ * Revamped collection system to ensure ordering and eliminate
+ * unnecessary collections.  Also reduced make dependencies.
+ *
  * Revision 1.1004  1997/03/14 21:40:13  ari
  * Reorganized startup to make possible inital load
  * balancing by changing methods in WorkDistrib.
