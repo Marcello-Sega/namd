@@ -2,6 +2,7 @@
 #define MSTREAM_H
 
 #include "Vector.h"
+#include <string.h>
 
 struct StreamMessage {
   char header[CmiMsgHeaderSizeBytes];

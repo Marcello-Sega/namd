@@ -260,13 +260,30 @@ void Controller::printEnergies(int seq)
 	 electEnergy + ljEnergy + kineticEnergy + boundaryEnergy + smdEnergy;
 
     if ( node->simParameters->outputMomenta &&
-         ! ( seq % node->simParameters->outputEnergies ) )
+         ! ( seq % node->simParameters->outputMomenta ) )
     {
       iout << "MOMENTA: " << seq 
            << " P=" << momentum
            << " L=" << angularMomentum
            << "\n" << endi;
     }
+
+#ifdef MDCOMM
+    if ( node->simParameters->vmdFrequency != -1 &&
+         ! ( seq % node->simParameters->vmdFrequency ) )
+    {
+      BigReal energies[8];
+      energies[0] = bondEnergy;
+      energies[1] = angleEnergy;
+      energies[2] = dihedralEnergy;
+      energies[3] = improperEnergy;
+      energies[4] = electEnergy;
+      energies[5] = ljEnergy;
+      energies[7] = kineticEnergy;
+      Node::Object()->output->
+	gather_vmd_energies(seq,energies,temperature,totalEnergy);
+    }
+#endif  // MDCOMM
 
     // NO CALCULATIONS OR REDUCTIONS BEYOND THIS POINT!!!
     if ( seq % node->simParameters->outputEnergies ) return;
@@ -328,12 +345,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1031 $	$Date: 1998/04/06 16:34:07 $
+ *	$Revision: 1.1032 $	$Date: 1998/04/14 03:19:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1032  1998/04/14 03:19:20  jim
+ * Fixed up MDCOMM code.
+ *
  * Revision 1.1031  1998/04/06 16:34:07  jim
  * Added DPME (single processor only), test mode, and momenta printing.
  *

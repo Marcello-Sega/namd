@@ -141,9 +141,6 @@ private:
 
    int name_cmp(const char *, const char *);	//  Do a compare of name strings
 
-
-   void gather_vmd_energies(int, BigReal *, BigReal, BigReal);
-						//  Collect energy values for VMD
    void gather_vmd_coords(int, int, Vector *);
 						//  Collect coordinates for VMD
 
@@ -195,6 +192,9 @@ public :
    void print_vmd_static_data();		//  Debugging routine to print
 						//  VMD static info to screen
    void recv_vmd_patch_loads();			//  Collect Patch load messages
+
+   void gather_vmd_energies(int, BigReal *, BigReal, BigReal);
+						//  Collect energy values for VMD
 #endif /* MDCOMM */
 };
 
@@ -203,13 +203,16 @@ public :
  * RCS INFORMATION:
  *
  *	$RCSfile: Output.h,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1997/04/04 23:34:23 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.5 $	$Date: 1998/04/14 03:19:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Output.h,v $
+ * Revision 1.5  1998/04/14 03:19:23  jim
+ * Fixed up MDCOMM code.
+ *
  * Revision 1.4  1997/04/04 23:34:23  milind
  * Got NAMD2 to run on Origin2000.
  * Included definitions of class static variables in C files.

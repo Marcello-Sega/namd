@@ -56,6 +56,10 @@ obj/main.o: \
 	src/Debug.h \
 	inc/main.bot.h
 	$(CXX) $(CXXFLAGS) -o obj/main.o -c src/main.C
+obj/mdcomm.o: \
+	src/mdcomm.C \
+	src/mdcomm.h
+	$(CXX) $(CXXFLAGS) -o obj/mdcomm.o -c src/mdcomm.C
 obj/strlib.o: \
 	src/strlib.C \
 	src/strlib.h \
@@ -157,6 +161,7 @@ obj/CollectionMaster.o: \
 	src/ProcessorPrivate.h \
 	src/Node.h \
 	src/Output.h \
+	src/mdcomm.h \
 	src/Debug.h \
 	inc/CollectionMaster.bot.h
 	$(CXX) $(CXXFLAGS) -o obj/CollectionMaster.o -c src/CollectionMaster.C
@@ -497,6 +502,7 @@ obj/ComputeDPME.o: \
 	src/HomePatchTypes.h \
 	src/ReductionMgr.h \
 	src/ComputeMgr.h \
+	inc/ComputeMgr.top.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeDPME.o -c src/ComputeDPME.C
 obj/ComputeDPMEMsgs.o: \
@@ -1529,6 +1535,7 @@ obj/Controller.o: \
 	src/ReductionMgr.h \
 	src/CollectionMaster.h \
 	src/Output.h \
+	src/mdcomm.h \
 	src/strlib.h \
 	src/BroadcastObject.h \
 	src/BroadcastMgr.h \
@@ -1981,6 +1988,7 @@ obj/Node.o: \
 	src/Sequencer.h \
 	src/Controller.h \
 	src/Output.h \
+	src/mdcomm.h \
 	src/ProxyMgr.h \
 	src/UniqueSetIter.h \
 	src/Parameters.h \
@@ -2003,6 +2011,7 @@ obj/Output.o: \
 	src/Output.h \
 	src/common.h \
 	src/InfoStream.h \
+	src/mdcomm.h \
 	src/dcdlib.h \
 	src/strlib.h \
 	src/Inform.h \
@@ -2404,6 +2413,7 @@ obj/Sequencer.o: \
 	src/UniqueSetIter.h \
 	src/BroadcastClient.h \
 	src/Output.h \
+	src/mdcomm.h \
 	src/Controller.h \
 	src/Broadcasts.h \
 	src/Molecule.h \
@@ -2480,6 +2490,7 @@ obj/SMD.o: \
 	src/BOCgroup.h \
 	src/ProcessorPrivate.h \
 	src/Output.h \
+	src/mdcomm.h \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/MStream.h \
@@ -2543,6 +2554,7 @@ obj/TestController.o: \
 	src/ReductionMgr.h \
 	src/CollectionMaster.h \
 	src/Output.h \
+	src/mdcomm.h \
 	src/strlib.h \
 	src/BroadcastObject.h \
 	src/BroadcastMgr.h \
@@ -2598,6 +2610,7 @@ obj/TestSequencer.o: \
 	src/UniqueSetIter.h \
 	src/BroadcastClient.h \
 	src/Output.h \
+	src/mdcomm.h \
 	src/Controller.h \
 	src/Broadcasts.h \
 	src/Molecule.h \

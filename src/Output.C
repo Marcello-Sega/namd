@@ -8,7 +8,7 @@
  * This object outputs the data collected on the master node
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Output.C,v 1.12 1997/11/10 16:45:56 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Output.C,v 1.13 1998/04/14 03:19:22 jim Exp $";
 
 #include <string.h>
 #include <stdlib.h>
@@ -26,6 +26,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Output.C,v 
 #include "structures.h"
 #include "MStream.h"
 #include "Communicate.h"
+#include "PatchMap.h"
+#include "PatchMap.inl"
 
 // These make the NAMD 1 names work in NAMD 2
 #define namdMyNode Node::Object()
@@ -158,7 +160,7 @@ void Output::energy(int timestep, BigReal *energy)
    }
 
    // temperature = 4.0 * energy[ENERGY_KINE] /
-   //  (6.0 * namdMyNode->structure->numAtoms * BOLTZMAN);
+   //  (6.0 * namdMyNode->molecule->numAtoms * BOLTZMAN);
  
    // temperature depends on teh number of degrees of freedon.
    // calculation is as follows
@@ -1004,7 +1006,7 @@ VmdStaticData *Output::build_vmd_static_data(VmdStaticData *sdata)
   sdata->nameLen = VMD_NAME_LEN;
 
   //  Get the number of atoms
-  sdata->numAtoms = namdMyNode->structure->numAtoms;
+  sdata->numAtoms = namdMyNode->molecule->numAtoms;
 
   //  Allocate data for structures that require it
 #ifdef OLD_MDCOMM
@@ -1012,7 +1014,7 @@ VmdStaticData *Output::build_vmd_static_data(VmdStaticData *sdata)
   sdata->atomNameIndexes =  new int[sdata->numAtoms]; 
   sdata->atomTypes =  new char[sdata->numAtoms*VMD_NAME_LEN]; 
   sdata->atomTypeIndexes =  new int[sdata->numAtoms]; 
-  sdata->bonds = new int[namdMyNode->structure->numBonds*2];
+  sdata->bonds = new int[namdMyNode->molecule->numBonds*2];
   sdata->resIds = new char[sdata->numAtoms*VMD_NAME_LEN];
   sdata->resNames = new char[sdata->numAtoms*VMD_NAME_LEN];
   sdata->radii =  new float[sdata->numAtoms]; 
@@ -1029,7 +1031,7 @@ VmdStaticData *Output::build_vmd_static_data(VmdStaticData *sdata)
               sizeof(char)); 
   sdata->atomTypeIndexes =  (int *) calloc(sdata->numAtoms, 
              sizeof(int)); 
-  sdata->bonds = (int *) calloc(namdMyNode->structure->numBonds*2, 
+  sdata->bonds = (int *) calloc(namdMyNode->molecule->numBonds*2, 
               sizeof(int));
   sdata->resIds = (char *) calloc(sdata->numAtoms*VMD_NAME_LEN, 
           sizeof(char));
@@ -1066,17 +1068,17 @@ VmdStaticData *Output::build_vmd_static_data(VmdStaticData *sdata)
   sdata->numAtomTypes=0;
 
   //  Get the patch info
-  sdata->maxNumPatches = namdMyNode->patchMap->maxPatchNum;
+  sdata->maxNumPatches = PatchMap::Object()->numPatches();
 
   //  Get the bond info
-  sdata->numBonds = namdMyNode->structure->numBonds;
+  sdata->numBonds = namdMyNode->molecule->numBonds;
 
   for (i=0, j=0; i<sdata->numBonds; i++, j+=2)
   {
-    bondPtr = namdMyNode->structure->get_bond(i);
+    bondPtr = namdMyNode->molecule->get_bond(i);
 
-    sdata->bonds[j] = bondPtr->atom[0];
-    sdata->bonds[j+1] = bondPtr->atom[1];
+    sdata->bonds[j] = bondPtr->atom1;
+    sdata->bonds[j+1] = bondPtr->atom2;
   }
   //  Set the other (unused) static data members
   sdata->nHBondDonors = 0;
@@ -1092,8 +1094,8 @@ VmdStaticData *Output::build_vmd_static_data(VmdStaticData *sdata)
   //  of unique atom names and types
   for (i=0, j=0; i<sdata->numAtoms; i++, j+=VMD_NAME_LEN)
   {
-    sdata->mass[i] = namdMyNode->structure->atommass(i);
-    sdata->charge[i] = namdMyNode->structure->atomcharge(i);
+    sdata->mass[i] = namdMyNode->molecule->atommass(i);
+    sdata->charge[i] = namdMyNode->molecule->atomcharge(i);
     sdata->occupancy[i] = (pdbData->atom(i))->occupancy();
     sdata->beta[i] = (pdbData->atom(i))->temperaturefactor();
 
@@ -1146,8 +1148,8 @@ VmdStaticData *Output::build_vmd_static_data(VmdStaticData *sdata)
     }
 
     //  Calculate the vdw radii
-    namdMyNode->params->get_vdw_params(&sigma, &epsilon, &s14, &e14,
-               namdMyNode->structure->atomvdwtype(i));
+    namdMyNode->parameters->get_vdw_params(&sigma, &epsilon, &s14, &e14,
+               namdMyNode->molecule->atomvdwtype(i));
 
     sdata->radii[i] = sigma*two_6*0.5;  //  Note that the extra factor
                 //  of 0.5 is purely a fudge
@@ -1160,7 +1162,7 @@ VmdStaticData *Output::build_vmd_static_data(VmdStaticData *sdata)
           sdata->numAtomNames);
 
     //  Insert into atom type list
-    insert_into_unique_list(namdMyNode->structure->get_atomtype(i), 
+    insert_into_unique_list(namdMyNode->molecule->get_atomtype(i), 
           sdata->atomTypes, sdata->numAtomTypes);
     
   }
@@ -1176,7 +1178,7 @@ VmdStaticData *Output::build_vmd_static_data(VmdStaticData *sdata)
       NAMD_die("Couldn't find atom name in unique list");
     }
 
-    if ((sdata->atomTypeIndexes[i]=search_list(namdMyNode->structure->get_atomtype(i), 
+    if ((sdata->atomTypeIndexes[i]=search_list(namdMyNode->molecule->get_atomtype(i), 
             sdata->atomTypes, sdata->numAtomTypes)) == -1)
     {
       NAMD_die("Couldn't find atom type in unique list");
@@ -1541,8 +1543,6 @@ void Output::gather_vmd_coords(int timestep, int N, Vector *coords)
 
   if (first)
   {
-    Vector pOrigin;    //  Origin of the patch
-
     //  This is the first call to the function, so allocate
     //  arrays to hold the X, Y, and Z coordinates
     vmdData->X = (float *) calloc(N, sizeof(float));
@@ -1558,7 +1558,7 @@ void Output::gather_vmd_coords(int timestep, int N, Vector *coords)
     vmdStaticData->numAtoms = N;
 
     //  Now get the patch information
-    *vmdData->numPatches = namdMyNode->patchMap->maxPatchNum;
+    *vmdData->numPatches = PatchMap::Object()->numPatches();
 
     //  Allocate arrays to hold all the data
 #ifdef OLD_MDCOMM
@@ -1608,19 +1608,19 @@ void Output::gather_vmd_coords(int timestep, int N, Vector *coords)
     //  Now populate the patch data
     for (i=0; i<*vmdData->numPatches; i++)
     {
-      namdMyNode->patchMap->get_patch_origin(i, pOrigin);
+      PatchMap *patchMap = PatchMap::Object();
 
-      vmdData->pXOrigins[i] = pOrigin.x;
-      vmdData->pYOrigins[i] = pOrigin.y;
-      vmdData->pZOrigins[i] = pOrigin.z;
+      vmdData->pXOrigins[i] = patchMap->minX(i);
+      vmdData->pYOrigins[i] = patchMap->minY(i);
+      vmdData->pZOrigins[i] = patchMap->minZ(i);
 
-      vmdData->patchWidth[i] = namdMyNode->simParams->patchDimension;
-      vmdData->patchHeight[i] = namdMyNode->simParams->patchDimension;
-      vmdData->patchLength[i] = namdMyNode->simParams->patchDimension;
+      vmdData->patchWidth[i] = patchMap->maxX(i) - patchMap->minX(i);
+      vmdData->patchHeight[i] = patchMap->maxY(i) - patchMap->minY(i);
+      vmdData->patchLength[i] = patchMap->maxZ(i) - patchMap->minZ(i);
 
       vmdData->patchLoads[i] = 1.0;
-      vmdData->patchNode[i] = namdMyNode->patchMap->patch_node(i);
-      vmdData->patchAtomNums[i] = namdMyNode->patchMap->get_num_atoms(i);
+      vmdData->patchNode[i] = PatchMap::Object()->node(i);
+      vmdData->patchAtomNums[i] = 1;
     }
 
     first=FALSE;
@@ -2087,7 +2087,15 @@ int vmd_send_dyn(mdc_app_arena *arena)
 
 void Output::recv_vmd_patch_loads()
 {
-  int notReceived=namdNumNodes;  //  Number of nodes we are waiting for
+  int numPatches = PatchMap::Object()->numPatches();
+  int i;
+  for (i=0; i<numPatches; i++)
+  {
+    vmdData->patchLoads[i] = 1.0;
+    vmdData->patchAtomNums[i] = 1;
+  }
+#if 0
+  int notReceived=CNumPes();  //  Number of nodes we are waiting for
   int tag=PATCHLOADTAG;    //  tag for load messages
   MIStream *msg;      //  Message received
   int i;        //  Loop counter
@@ -2126,6 +2134,7 @@ void Output::recv_vmd_patch_loads()
     notReceived--;
 
     }
+#endif
 }
 /*      END OF FUNCTION recv_vmd_patch_loads      */
 
@@ -2507,13 +2516,16 @@ void Output::output_allforcedcdfile(int timestep, int n, Vector *forces)
  * RCS INFORMATION:
  *
  *  $RCSfile: Output.C,v $
- *  $Author: milind $  $Locker:  $    $State: Exp $
- *  $Revision: 1.12 $  $Date: 1997/11/10 16:45:56 $
+ *  $Author: jim $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.13 $  $Date: 1998/04/14 03:19:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Output.C,v $
+ * Revision 1.13  1998/04/14 03:19:22  jim
+ * Fixed up MDCOMM code.
+ *
  * Revision 1.12  1997/11/10 16:45:56  milind
  * Made comm a Cpv Variable.
  *

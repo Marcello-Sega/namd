@@ -77,8 +77,8 @@ LIBS = $(DPMTALIBS) $(PVMLIBS) $(DPMELIBS)
 
 # CXX is platform dependent
 INCLUDE = $(CHARM)/include
-CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(TCL) $(CXXOPTS) $(NOWARN) $(NAMDFLAGS)
-GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(TCL) $(NOWARN) $(NAMDFLAGS)
+CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(MDCOMM) $(TCL) $(CXXOPTS) $(NOWARN) $(NAMDFLAGS)
+GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(MDCOMM) $(TCL) $(NOWARN) $(NAMDFLAGS)
 
 .SUFFIXES: 	.ci
 
@@ -88,6 +88,7 @@ OBJS = \
 	$(DSTDIR)/common.o \
 	$(DSTDIR)/dcdlib.o \
 	$(DSTDIR)/main.o \
+	$(DSTDIR)/mdcomm.o \
 	$(DSTDIR)/strlib.o \
 	$(DSTDIR)/AlgSeven.o \
 	$(DSTDIR)/AtomMap.o \
@@ -183,6 +184,7 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(DPMTALIB) \
 	$(DPMELIB) \
 	$(PVMLIB) \
+	$(MDCOMMLIB) \
 	$(TCLLIB)
 
 # Now sit back, have a coke, and relax.
@@ -198,6 +200,7 @@ projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(DPMTALIB) \
 	$(DPMELIB) \
 	$(PVMLIB) \
+	$(MDCOMMLIB) \
 	$(TCLLIB)
 
 # Now sit back, have a coke, and relax.
