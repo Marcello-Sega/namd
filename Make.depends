@@ -2685,6 +2685,54 @@ obj/LJTable.o: \
 	src/Tensor.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/LJTable.o -c src/LJTable.C
+obj/Measure.o: \
+	src/Measure.C \
+	src/Measure.h \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/ResizeArrayPrimIter.h \
+	inc/main.decl.h \
+	inc/WorkDistrib.decl.h \
+	inc/ReductionMgr.decl.h \
+	inc/PatchMgr.decl.h \
+	inc/ProxyMgr.decl.h \
+	inc/Node.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/ComputeMgr.decl.h \
+	inc/CollectionMgr.decl.h \
+	inc/CollectionMaster.decl.h \
+	inc/BroadcastMgr.decl.h \
+	src/ProcessorPrivate.h \
+	src/Parameters.h \
+	src/structures.h \
+	src/strlib.h \
+	src/MStream.h \
+	src/HBondParam.h \
+	src/HBondPairData.h \
+	src/VoidTree.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/ObjectArena.h \
+	src/Hydrogen.h
+	$(CXX) $(CXXFLAGS) -o obj/Measure.o -c src/Measure.C
 obj/MStream.o: \
 	src/MStream.C \
 	src/Communicate.h \
@@ -3000,7 +3048,13 @@ obj/Output.o: \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/PatchMap.inl \
-	src/AtomMap.h
+	src/AtomMap.h \
+	src/ScriptTcl.h \
+	src/Broadcasts.h \
+	src/BroadcastObject.h \
+	src/BroadcastMgr.h \
+	src/UniqueSetIter.h \
+	src/BroadcastClient.h
 	$(CXX) $(CXXFLAGS) -o obj/Output.o -c src/Output.C
 obj/Parameters.o: \
 	src/Parameters.C \
@@ -3513,6 +3567,7 @@ obj/ScriptTcl.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/HomePatchTypes.h \
+	src/Measure.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ScriptTcl.o -c src/ScriptTcl.C
 obj/Sequencer.o: \

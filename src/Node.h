@@ -112,6 +112,7 @@ public:
   NamdState *state;
   Output *output;
   IMDOutput *imd;
+  Vector *coords;  // Only exists during measure from Tcl
 
   // Remove these calls?
   int myid() { return CkMyPe(); }

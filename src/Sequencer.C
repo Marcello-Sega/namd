@@ -78,6 +78,9 @@ void Sequencer::algorithm(void)
       case SCRIPT_OUTPUT:
 	submitCollections(FILE_OUTPUT);
 	continue;
+      case SCRIPT_MEASURE:
+	submitCollections(EVAL_MEASURE);
+	continue;
     }
 
     int &step = patch->flags.step;

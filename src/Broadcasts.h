@@ -14,6 +14,7 @@
 #define SCRIPT_END 0
 #define SCRIPT_RUN 1
 #define SCRIPT_OUTPUT 2
+#define SCRIPT_MEASURE 3
 
 // Tags used in common by all users of broadcast system.
 enum {

@@ -19,6 +19,7 @@
 #include "Thread.h"
 #include "ProcessorPrivate.h"
 #include "PatchMgr.h"
+#include "Measure.h"
 #include <stdio.h>
 #include <ctype.h>  // for isspace
 
@@ -272,6 +273,32 @@ int ScriptTcl::Tcl_output(ClientData clientData,
   return TCL_OK;
 }
 
+void ScriptTcl::measure(Vector *c) {
+  Measure::createCommands(interp);
+  Node::Object()->coords = c;
+  Tcl_Eval(interp,measure_command);
+  Node::Object()->coords = 0;
+  Measure::deleteCommands(interp);
+}
+
+int ScriptTcl::Tcl_measure(ClientData clientData,
+        Tcl_Interp *interp, int argc, char *argv[]) {
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  if (! script->runWasCalled) {
+    interp->result = "called before run";
+    return TCL_ERROR;
+  }
+  if (argc != 2) {
+    interp->result = "wrong # args";
+    return TCL_ERROR;
+  }
+  script->measure_command = argv[1];
+
+  script->runController(SCRIPT_MEASURE);
+
+  return TCL_OK;
+}
+
 int ScriptTcl::Tcl_callback(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
@@ -354,6 +381,8 @@ void ScriptTcl::algorithm() {
   Tcl_CreateCommand(interp, "move", Tcl_move,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "output", Tcl_output,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "measure", Tcl_measure,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "callback", Tcl_callback,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);

@@ -103,6 +103,10 @@ void Controller::algorithm(void)
         outputExtendedSystem(FILE_OUTPUT);
         Node::Object()->enableExitScheduler();
         continue;
+      case SCRIPT_MEASURE:
+        enqueueCollections(EVAL_MEASURE);
+        Node::Object()->enableExitScheduler();
+        continue;
     }
 
     int step = simParams->firstTimestep;

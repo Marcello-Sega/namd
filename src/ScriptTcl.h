@@ -27,6 +27,7 @@ public:
   ScriptTcl();
   ~ScriptTcl();
   void run(char *filename, ConfigList *configList);
+  void measure(Vector *);
 private:
   char *scriptFile;
   ConfigList *config;
@@ -49,10 +50,12 @@ private:
   static int Tcl_run(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_move(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_output(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_measure(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_callback(ClientData, Tcl_Interp *, int, char **);
   char *callbackname;
   void doCallback(const char *labels, const char *data);
   int doCallback() { return ! ! callbackname; }
+  char *measure_command;
 #endif
 };
 

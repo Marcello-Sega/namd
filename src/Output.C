@@ -27,6 +27,7 @@
 #include "Communicate.h"
 #include "PatchMap.h"
 #include "PatchMap.inl"
+#include "ScriptTcl.h"
 
 // These make the NAMD 1 names work in NAMD 2
 #define namdMyNode Node::Object()
@@ -99,7 +100,8 @@ int Output::coordinateNeeded(int timestep)
   }
 
   //  Output final coordinates
-  if (timestep == FILE_OUTPUT || timestep == END_OF_RUN)
+  if (timestep == FILE_OUTPUT || timestep == END_OF_RUN ||
+					timestep == EVAL_MEASURE)
   {
     positionsNeeded |= 2;
   }
@@ -138,6 +140,13 @@ void Output::coordinate(int timestep, int n, Vector *coor, FloatVector *fcoor)
       if (imd != NULL) imd->gather_coordinates(timestep, n, fcoor);
     }
 
+  }
+
+  if (timestep == EVAL_MEASURE)
+  {
+#ifdef NAMD_TCL
+    Node::Object()->getScript()->measure(coor);
+#endif
   }
 
   //  Output final coordinates

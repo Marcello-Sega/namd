@@ -19,6 +19,7 @@ class FloatVector;
 // semaphore "steps", must be negative
 #define FILE_OUTPUT -1
 #define END_OF_RUN -2
+#define EVAL_MEASURE -3
 
 class Output 
 {
