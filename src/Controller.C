@@ -75,9 +75,11 @@ Controller::Controller(NamdState *s) :
       AVGXY(langevinPiston_strainRate);
 #undef AVGXY
     }
+    smooth2_avg = 0;
+    temp_avg = 0;
     pressure_avg = 0;
     groupPressure_avg = 0;
-    pressure_avg_count = 0;
+    avg_count = 0;
     checkpoint_stored = 0;
 }
 
@@ -659,15 +661,21 @@ static char *FORMAT(BigReal X)
   const double maxnum = 99999999.9999;
   if ( X > maxnum ) X = maxnum;
   if ( X < -maxnum ) X = -maxnum;
-  sprintf(tmp_string,"%.4f ",X); 
-  NAMD_pad(tmp_string, 12);
-  return  tmp_string;
+  sprintf(tmp_string," %14.4f",X); 
+  return tmp_string;
+}
+
+static char *FORMAT(char *X)
+{
+  static char tmp_string[25];
+  sprintf(tmp_string," %14s",X); 
+  return tmp_string;
 }
 
 static char *ETITLE(int X)
 {
   static char tmp_string[21];
-  sprintf(tmp_string,"ENERGY: %6d ",X); 
+  sprintf(tmp_string,"ENERGY: %7d",X); 
   return  tmp_string;
 }
 
@@ -1055,6 +1063,8 @@ void Controller::printEnergies(int step, int minimize)
 	boundaryEnergy + miscEnergy;
     totalEnergy = potentialEnergy + kineticEnergy;
     smoothEnergy = totalEnergy + 2*( kineticEnergyCentered - kineticEnergy);
+    smooth2_avg *= 0.9375;
+    smooth2_avg -= 0.0625 * 2*( kineticEnergyCentered - kineticEnergy);
 
     if ( simParameters->outputMomenta && ! minimize &&
          ! ( step % simParameters->outputMomenta ) )
@@ -1153,9 +1163,10 @@ void Controller::printEnergies(int step, int minimize)
 #undef CALLBACKDATA
 #endif
 
+    temp_avg += temperature;
     pressure_avg += trace(pressure)/3.;
     groupPressure_avg += trace(groupPressure)/3.;
-    pressure_avg_count += 1;
+    avg_count += 1;
 
     Vector pairVDWForce, pairElectForce;
     if ( simParameters->pairInteractionOn ) {
@@ -1173,25 +1184,34 @@ void Controller::printEnergies(int step, int minimize)
     }
     marginViolations = 0;
 
-    int printAtomicPressure = 1;
-#ifndef DEBUG_PRESSURE
-    // if ( simParams->rigidBonds != RIGID_NONE ) { printAtomicPressure = 0; }
-#endif
-
     if ( (step % (10 * (minimize?1:simParameters->outputEnergies) ) ) == 0 )
     {
-	iout << "ETITLE:     TS    BOND        ANGLE       "
-	     << "DIHED       IMPRP       ELECT       VDW       "
-	     << "BOUNDARY    MISC        KINETIC        TOTAL     TEMP";
-	iout << "    SMOOTH";
+	iout << "ETITLE:      TS";
+	iout << FORMAT("BOND");
+	iout << FORMAT("ANGLE");
+	iout << FORMAT("DIHED");
+	iout << FORMAT("IMPRP");
+        iout << "     ";
+	iout << FORMAT("ELECT");
+	iout << FORMAT("VDW");
+	iout << FORMAT("BOUNDARY");
+	iout << FORMAT("MISC");
+	iout << FORMAT("KINETIC");
+        iout << "     ";
+	iout << FORMAT("TOTAL");
+	iout << FORMAT("TEMP");
+	iout << FORMAT("TOTAL2");
+	iout << FORMAT("TOTAL3");
+	iout << FORMAT("TEMPAVG");
 	if ( volume != 0. ) {
-	  if ( printAtomicPressure ) iout << "     PRESSURE";
-	  iout << "    GPRESSURE";
-	  iout << "    VOLUME";
-	  if ( printAtomicPressure ) iout << "     PRESSAVG";
-	  iout << "    GPRESSAVG";
+          iout << "     ";
+	  iout << FORMAT("PRESSURE");
+	  iout << FORMAT("GPRESSURE");
+	  iout << FORMAT("VOLUME");
+	  iout << FORMAT("PRESSAVG");
+	  iout << FORMAT("GPRESSAVG");
 	}
-	iout << "\n" << endi;
+	iout << "\n\n" << endi;
     }
 
     // N.B.  HP's aCC compiler merges FORMAT calls in the same expression.
@@ -1202,14 +1222,28 @@ void Controller::printEnergies(int step, int minimize)
     iout << FORMAT(angleEnergy);
     iout << FORMAT(dihedralEnergy);
     iout << FORMAT(improperEnergy);
+    iout << "     ";
     iout << FORMAT(electEnergy+electEnergySlow);
     iout << FORMAT(ljEnergy);
     iout << FORMAT(boundaryEnergy);
     iout << FORMAT(miscEnergy);
     iout << FORMAT(kineticEnergy);
+    iout << "     ";
     iout << FORMAT(totalEnergy);
     iout << FORMAT(temperature);
     iout << FORMAT(smoothEnergy);
+    iout << FORMAT(smoothEnergy+smooth2_avg);
+    iout << FORMAT(temp_avg/avg_count);
+    if ( volume != 0. )
+    {
+        iout << "     ";
+	iout << FORMAT(trace(pressure)*PRESSUREFACTOR/3.);
+	iout << FORMAT(trace(groupPressure)*PRESSUREFACTOR/3.);
+	iout << FORMAT(volume);
+	iout << FORMAT(pressure_avg*PRESSUREFACTOR/avg_count);
+	iout << FORMAT(groupPressure_avg*PRESSUREFACTOR/avg_count);
+    }
+    iout << "\n\n" << endi;
 
 #if(CMK_CCS_AVAILABLE && CMK_WEB_MODE)
      char webout[80];
@@ -1218,20 +1252,6 @@ void Controller::printEnergies(int step, int minimize)
 	     (int)kineticEnergy,(int)temperature);
      CApplicationDepositNode0Data(webout);
 #endif
-
-    if ( volume != 0. )
-    {
-	if ( printAtomicPressure ) {
-	  iout << FORMAT(trace(pressure)*PRESSUREFACTOR/3.);
-	}
-	iout << FORMAT(trace(groupPressure)*PRESSUREFACTOR/3.);
-	iout << FORMAT(volume);
-	if ( printAtomicPressure ) {
-	  iout << FORMAT(pressure_avg*PRESSUREFACTOR/pressure_avg_count);
-	}
-	iout << FORMAT(groupPressure_avg*PRESSUREFACTOR/pressure_avg_count);
-    }
-    iout << "\n" << endi;
 
     if (simParameters->pairInteractionOn) {
       iout << "PAIR INTERACTION:";
@@ -1246,9 +1266,10 @@ void Controller::printEnergies(int step, int minimize)
       iout << FORMAT(pairElectForce.z);
       iout << "\n" << endi;
     }
+    temp_avg = 0;
     pressure_avg = 0;
     groupPressure_avg = 0;
-    pressure_avg_count = 0;
+    avg_count = 0;
 
 }
 

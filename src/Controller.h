@@ -46,9 +46,10 @@ protected:
       Tensor controlPressure_slow;
       int nbondFreq;
       int slowFreq;
+      BigReal temp_avg;
       BigReal pressure_avg;
       BigReal groupPressure_avg;
-      int pressure_avg_count;
+      int avg_count;
     void compareChecksums(int);
       int computeChecksum;
       int marginViolations;
@@ -80,6 +81,8 @@ protected:
       BigReal kineticEnergy;
       BigReal kineticEnergyCentered;
       BigReal temperature;
+      BigReal smooth2_avg;
+      BigReal smooth2_avg2;  // avoid internal compiler error
       Tensor pressure;
       Tensor groupPressure;
       int controlNumDegFreedom;
