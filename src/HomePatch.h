@@ -36,7 +36,7 @@ class HomePatch : public Patch {
 private: 
   static char ident[];
   // for PatchMgr to use only
-  HomePatch(PatchID, AtomIDList, PositionList, VelocityList);
+  HomePatch(PatchID, AtomIDList, TransformList, PositionList, VelocityList);
   ScaledPosition min, max, center;
 
 public:
@@ -95,7 +95,7 @@ protected:
 private:
   // Store of Atom-wise variables
   VelocityList  v; 
-  PositionList  pInit;   
+  TransformList t;   
   
   // List of Proxies
   ProxyList     proxy;
@@ -121,12 +121,19 @@ private:
  *
  *	$RCSfile: HomePatch.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1998/03/31 04:55:44 $
+ *	$Revision: 1.1017 $	$Date: 1998/08/11 16:30:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.1017  1998/08/11 16:30:28  jim
+ * Modified output from periodic boundary simulations to return atoms to
+ * internally consistent coordinates.  We store the transformations which
+ * were performed and undo them at the end.  It might be better to do this
+ * by always keeping the original coordinates and only doing the transform
+ * for the nonbonded terms but this works for now.
+ *
  * Revision 1.1016  1998/03/31 04:55:44  jim
  * Added test mode, fixed errors in virial with full electrostatics.
  *

@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/TestSequencer.C,v 1.3 1998/06/18 14:48:05 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/TestSequencer.C,v 1.4 1998/08/11 16:30:32 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -83,7 +83,7 @@ void TestSequencer::algorithm(void)
     addForceToMomentum(0.); // zero velocities of fixed atoms
     rattle2(timestep,step);  // enfore rigid bonds on initial velocities
     submitReductions(step);
-    // submitCollections(step);
+    submitCollections(step);
     rescaleVelocities(step);
     tcoupleVelocities(timestep,step);
     berendsenPressure(step);
@@ -129,7 +129,7 @@ void TestSequencer::algorithm(void)
 	rattle2(timestep,step);
 
 	submitReductions(step);
-	// submitCollections(step);
+	submitCollections(step);
 	rescaleVelocities(step);
 	tcoupleVelocities(timestep,step);
 	berendsenPressure(step);
@@ -161,12 +161,19 @@ void TestSequencer::translatePosition(BigReal dx, BigReal dy, BigReal dz) {
  *
  *      $RCSfile: TestSequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.3 $     $Date: 1998/06/18 14:48:05 $
+ *      $Revision: 1.4 $     $Date: 1998/08/11 16:30:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: TestSequencer.C,v $
+ * Revision 1.4  1998/08/11 16:30:32  jim
+ * Modified output from periodic boundary simulations to return atoms to
+ * internally consistent coordinates.  We store the transformations which
+ * were performed and undo them at the end.  It might be better to do this
+ * by always keeping the original coordinates and only doing the transform
+ * for the nonbonded terms but this works for now.
+ *
  * Revision 1.3  1998/06/18 14:48:05  jim
  * Split virial into NORMAL, NBOND, and SLOW parts to match force classes.
  *

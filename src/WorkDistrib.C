@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1056 1998/08/04 15:56:52 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1057 1998/08/11 16:30:32 jim Exp $";
 
 #include <stdio.h>
 
@@ -179,6 +179,7 @@ void WorkDistrib::createHomePatches(void)
   }
 
   AtomIDList *atomIDs = new AtomIDList[numPatches];
+  TransformList *atomTransforms = new TransformList[numPatches];
   PositionList *atomPositions = new PositionList[numPatches];
   VelocityList *atomVelocities = new VelocityList[numPatches];
 
@@ -236,12 +237,16 @@ void WorkDistrib::createHomePatches(void)
 			  0.5*(patchMap->minY(i)+patchMap->maxY(i)),
 			  0.5*(patchMap->minZ(i)+patchMap->maxZ(i)));
 
+    atomTransforms[i].resize(atomIDs[i].size());
+
     for(int j=0; j < atomIDs[i].size(); j++)
     {
-      atomPositions[i][j] = (lattice.nearest(atomPositions[i][j],center));
+      atomPositions[i][j] = lattice.nearest(
+		atomPositions[i][j], center, &(atomTransforms[i][j]));
     }
 
-    patchMgr->createHomePatch(i,atomIDs[i],atomPositions[i],atomVelocities[i]);
+    patchMgr->createHomePatch(i,atomIDs[i],atomTransforms[i],
+				atomPositions[i],atomVelocities[i]);
   }
 
   delete [] atomIDs;
@@ -1106,12 +1111,19 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1056 $	$Date: 1998/08/04 15:56:52 $
+ *	$Revision: 1.1057 $	$Date: 1998/08/11 16:30:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1057  1998/08/11 16:30:32  jim
+ * Modified output from periodic boundary simulations to return atoms to
+ * internally consistent coordinates.  We store the transformations which
+ * were performed and undo them at the end.  It might be better to do this
+ * by always keeping the original coordinates and only doing the transform
+ * for the nonbonded terms but this works for now.
+ *
  * Revision 1.1056  1998/08/04 15:56:52  jim
  * Fixed bug where no bond/angle/dihedral/etc energies computed.
  * Turns out we were exceeding the preallocated number of compute ID's

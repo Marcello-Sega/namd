@@ -21,6 +21,7 @@ public:
   }
 
   // sets lattice basis vectors and origin (fixed center)
+  // sets lattice basis vectors and origin (fixed center)
   void set(Vector A, Vector B, Vector C, Position Origin)
   {
     a1 = A.x;  b1 = ( a1 ? 1. / a1 : 0 );
@@ -77,6 +78,40 @@ public:
 	( a2 ? ( tmp=b2*(data.y-o.y)-ref.y, o.y+a2*(ref.y+tmp-rint(tmp)) ) : data.y ),
 	( a3 ? ( tmp=b3*(data.z-o.z)-ref.z, o.z+a3*(ref.z+tmp-rint(tmp)) ) : data.z )
     );
+  }
+
+  // transforms a position nearest to a SCALED reference position
+  // adds transform for later reversal
+  Position nearest(Position data, ScaledPosition ref, Transform *t) const
+  {
+    BigReal tmp;
+    BigReal rit;
+    Vector v = data;
+    if ( a1 ) {
+      tmp=b1*(data.x-o.x)-ref.x;
+      rit = rint(tmp);
+      v.x = o.x+a1*(ref.x+tmp-rit);
+      t->i -= rit;
+    }
+    if ( a2 ) {
+      tmp=b2*(data.y-o.y)-ref.y;
+      rit = rint(tmp);
+      v.y = o.y+a2*(ref.y+tmp-rit);
+      t->j -= rit;
+    }
+    if ( a3 ) {
+      tmp=b3*(data.z-o.z)-ref.z;
+      rit = rint(tmp);
+      v.z = o.z+a3*(ref.z+tmp-rit);
+      t->k -= rit;
+    }
+    return v;
+  }
+
+  // reverses cumulative transformations for output
+  Position reverse_transform(Position data, const Transform &t) const
+  {
+    return ( data - Vector(t.i*a1, t.j*a2, t.k*a3) );
   }
 
   // calculates shortest vector from p2 to p1 (equivalent to p1 - p2)
@@ -155,12 +190,19 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1998/04/06 16:34:08 $
+ *	$Revision: 1.1008 $	$Date: 1998/08/11 16:30:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Lattice.h,v $
+ * Revision 1.1008  1998/08/11 16:30:28  jim
+ * Modified output from periodic boundary simulations to return atoms to
+ * internally consistent coordinates.  We store the transformations which
+ * were performed and undo them at the end.  It might be better to do this
+ * by always keeping the original coordinates and only doing the transform
+ * for the nonbonded terms but this works for now.
+ *
  * Revision 1.1007  1998/04/06 16:34:08  jim
  * Added DPME (single processor only), test mode, and momenta printing.
  *

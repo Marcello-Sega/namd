@@ -35,6 +35,14 @@ typedef float Charge;
 
 typedef double Coordinate;
 
+struct Transform
+{
+  int i,j,k;
+  Transform(void) { i=0; j=0; k=0; }
+  int operator==(const Transform &o) const {
+	return ( i==o.i && j==o.j && k==o.k ); }
+};
+
 struct AtomProperties
 {
   AtomID id;
@@ -65,6 +73,7 @@ typedef ResizeArray<Force> ForceList;
 typedef ResizeArrayIter<Force> ForceListIter;
 typedef ResizeArray<AtomProperties> AtomPropertiesList;
 typedef ResizeArrayIter<AtomProperties> AtomPropertiesListIter;
+typedef ResizeArray<Transform> TransformList;
 
 typedef ResizeArray<AtomID> AtomIDList;
 
@@ -106,12 +115,19 @@ typedef int Boolean;
  *
  *	$RCSfile: NamdTypes.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1998/04/14 05:58:25 $
+ *	$Revision: 1.1010 $	$Date: 1998/08/11 16:30:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdTypes.h,v $
+ * Revision 1.1010  1998/08/11 16:30:29  jim
+ * Modified output from periodic boundary simulations to return atoms to
+ * internally consistent coordinates.  We store the transformations which
+ * were performed and undo them at the end.  It might be better to do this
+ * by always keeping the original coordinates and only doing the transform
+ * for the nonbonded terms but this works for now.
+ *
  * Revision 1.1009  1998/04/14 05:58:25  jim
  * Added automatic correction if hgroupCutoff is too small.  No more warnings.
  * However, performance wil degrade if many groups are below cutoff size.

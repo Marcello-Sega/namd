@@ -34,13 +34,15 @@ public:
     NodeID  fromNodeID;
     PatchID pid;
     AtomIDList aid;
+    TransformList t;
     PositionList p;
     VelocityList v;
 
     MovePatchesMsg(void) { ; }
 
-    MovePatchesMsg(PatchID n, AtomIDList a, PositionList pl, VelocityList vl) : 
-      pid(n), aid(a), p(pl), v(vl)
+    MovePatchesMsg(PatchID n, AtomIDList a, TransformList tl,
+				PositionList pl, VelocityList vl) : 
+      pid(n), aid(a), t(tl), p(pl), v(vl)
     {
       fromNodeID = CMyPe();
     }
@@ -98,8 +100,8 @@ public:
   static PatchMgr* Object() { return CpvAccess(PatchMgr_instance); }
   
 
-  void createHomePatch(PatchID pid, AtomIDList aid, PositionList p, 
-     VelocityList v); 
+  void createHomePatch(PatchID pid, AtomIDList aid, TransformList t,
+     PositionList p, VelocityList v); 
 
   void movePatch(PatchID, NodeID);
   void sendMovePatches();
@@ -144,13 +146,20 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMgr.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1998/03/03 23:05:23 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1011 $	$Date: 1998/08/11 16:30:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.h,v $
+ * Revision 1.1011  1998/08/11 16:30:30  jim
+ * Modified output from periodic boundary simulations to return atoms to
+ * internally consistent coordinates.  We store the transformations which
+ * were performed and undo them at the end.  It might be better to do this
+ * by always keeping the original coordinates and only doing the transform
+ * for the nonbonded terms but this works for now.
+ *
  * Revision 1.1010  1998/03/03 23:05:23  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

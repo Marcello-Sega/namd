@@ -3,7 +3,7 @@
 #include "CollectionMaster.top.h"
 #include "CollectionMaster.h"
 
-#define DEBUGM
+//#define DEBUGM
 #include "Debug.h"
 
 CollectionMgr::CollectionMgr(SlaveInitMsg *msg) : master(msg->master)
@@ -22,10 +22,18 @@ CollectionMgr::~CollectionMgr(void)
 }
 
 
-void CollectionMgr::submitPositions(int seq, AtomIDList &i, PositionList &d)
+void CollectionMgr::submitPositions(int seq, AtomIDList &i, PositionList &d,
+						Lattice l, TransformList &t)
 {
+  PositionList d2(d.size());
+  PositionList::iterator d_i,d_e,d2_i;
+  TransformList::iterator t_i = t.begin();
+  d_i = d.begin();  d_e = d.end();  d2_i = d2.begin();
+  for ( ; d_i != d_e ; ++d_i, ++d2_i, ++t_i ) {
+    *d2_i = l.reverse_transform(*d_i,*t_i);
+  }
   CollectVectorInstance *c;
-  if ( c = positions.submitData(seq,i,d) )
+  if ( c = positions.submitData(seq,i,d2) )
   {
     CollectVectorMsg * msg = 
       new (MsgIndex(CollectVectorMsg)) CollectVectorMsg;
@@ -77,12 +85,19 @@ void CollectionMgr::submitForces(int seq, AtomIDList &i, ForceList &d)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1998/02/10 23:30:26 $
+ *	$Revision: 1.1010 $	$Date: 1998/08/11 16:30:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMgr.C,v $
+ * Revision 1.1010  1998/08/11 16:30:25  jim
+ * Modified output from periodic boundary simulations to return atoms to
+ * internally consistent coordinates.  We store the transformations which
+ * were performed and undo them at the end.  It might be better to do this
+ * by always keeping the original coordinates and only doing the transform
+ * for the nonbonded terms but this works for now.
+ *
  * Revision 1.1009  1998/02/10 23:30:26  milind
  * Fixed to reflect the current changes to Charm++ translator.
  *

@@ -37,10 +37,10 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1046 1998/04/14 05:58:24 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1047 1998/08/11 16:30:27 jim Exp $";
 
-HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
-		     VelocityList vl) : Patch(pd,al,pl), v(vl), pInit(&pl)
+HomePatch::HomePatch(PatchID pd, AtomIDList al, TransformList tl,
+      PositionList pl, VelocityList vl) : Patch(pd,al,pl), v(vl), t(tl)
 { 
   DebugM(4, "HomePatch("<<pd<<") at " << this << "\n");
   if (atomIDList.size() != v.size()) {
@@ -99,6 +99,8 @@ HomePatch::readPatchMap() {
 	  mInfo[i][j][k] = NULL;
 	}
 	else {
+	  // Does not work as expected for periodic with only two patches.
+	  // Also need to check which image we want, but OK for now.  -JCP
 	  for (n = 0; n<numNeighbors; n++) {
 	    if (pid == realInfo[n].destPatchID) {
 	      mInfo[i][j][k] = &realInfo[n];
@@ -182,11 +184,6 @@ void HomePatch::positionsReady(int doMigration)
 
   if (doMigration) {
     doAtomMigration();
-    pInit.resize(p.size());
-    PositionList::iterator p_i = p.begin();
-    PositionList::iterator p_e = p.end();
-    PositionList::iterator pInit_i = pInit.begin();
-    for ( ; p_i != p_e; ++p_i, ++pInit_i ) (*pInit_i) = (*p_i);
   } else {
     doMarginCheck();
   }
@@ -556,6 +553,7 @@ HomePatch::doAtomMigration()
   AtomIDList::iterator atomIDList_i = atomIDList.begin();
   AtomIDList::iterator atomIDList_e = atomIDList.end();
   AtomPropertiesList::iterator a_i = a.begin();
+  TransformList::iterator t_i = t.begin();
   PositionList::iterator p_i = p.begin();
   VelocityList::iterator v_i = v.begin();
   ForceList::iterator f_i[Results::maxNumForces];
@@ -599,7 +597,7 @@ HomePatch::doAtomMigration()
        for ( j = 0; j < Results::maxNumForces; ++j ) force[j] = *(f_i[j]);
        DebugM(3,"Migrating atom " << atomIDList_i << " from patch "
 		<< patchID << " with position " << p_i << "\n");
-       mCur->add(MigrationElem(*atomIDList_i, *a_i, *p_i, *p_i, *v_i, force));
+       mCur->add(MigrationElem(*atomIDList_i, *a_i, *t_i, *p_i, *v_i, force));
 
        ++delnum;
 
@@ -608,6 +606,7 @@ HomePatch::doAtomMigration()
        if ( delnum ) {
          *(atomIDList_i-delnum) = *atomIDList_i;
          *(a_i-delnum) = *a_i;
+         *(t_i-delnum) = *t_i;
          *(p_i-delnum) = *p_i;
          *(v_i-delnum) = *v_i;
          for ( j = 0; j < Results::maxNumForces; ++j ) {
@@ -619,6 +618,7 @@ HomePatch::doAtomMigration()
 
      ++atomIDList_i;
      ++a_i;
+     ++t_i;
      ++p_i;
      ++v_i;
      for ( j = 0; j < Results::maxNumForces; ++j ) ++(f_i[j]);
@@ -629,6 +629,7 @@ HomePatch::doAtomMigration()
   DebugM(4,"numAtoms " << numAtoms << " deleted " << delnum << "\n");
   atomIDList.del(delpos,delnum);
   a.del(delpos,delnum);
+  t.del(delpos,delnum);
   p.del(delpos,delnum);
   v.del(delpos,delnum);
   for ( j = 0; j < Results::maxNumForces; ++j ) f[j].del(delpos,delnum);
@@ -685,9 +686,10 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
     for (mi = mi.begin(); mi != mi.end(); mi++) {
       DebugM(1,"Migrating atom " << mi->atomID << " to patch "
 		<< patchID << " with position " << mi->pos << "\n"); 
-      a.add(mi->atomProp);
       atomIDList.add(mi->atomID);
-      p.add(lattice.nearest(mi->pos,center));
+      a.add(mi->atomProp);
+      p.add(lattice.nearest(mi->pos,center,&(mi->trans)));
+      t.add(mi->trans);
       v.add(mi->vel);
       for ( int j = 0; j < Results::maxNumForces; ++j )
         f[j].add(mi-> force[j]);
@@ -721,12 +723,19 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1046 $	$Date: 1998/04/14 05:58:24 $
+ *	$Revision: 1.1047 $	$Date: 1998/08/11 16:30:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1047  1998/08/11 16:30:27  jim
+ * Modified output from periodic boundary simulations to return atoms to
+ * internally consistent coordinates.  We store the transformations which
+ * were performed and undo them at the end.  It might be better to do this
+ * by always keeping the original coordinates and only doing the transform
+ * for the nonbonded terms but this works for now.
+ *
  * Revision 1.1046  1998/04/14 05:58:24  jim
  * Added automatic correction if hgroupCutoff is too small.  No more warnings.
  * However, performance wil degrade if many groups are below cutoff size.

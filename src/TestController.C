@@ -62,7 +62,7 @@ void TestController::algorithm(void)
 
     for ( ; step <= numberOfSteps; ++step )
     {
-        // enqueueCollections(step);
+        enqueueCollections(step);
         trace_user_event(eventEndOfTimeStep);
         printEnergies(step);
         rescaleVelocities(step);
@@ -105,12 +105,19 @@ void TestController::berendsenPressure(int step)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1998/04/06 16:34:12 $
+ *	$Revision: 1.3 $	$Date: 1998/08/11 16:30:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: TestController.C,v $
+ * Revision 1.3  1998/08/11 16:30:31  jim
+ * Modified output from periodic boundary simulations to return atoms to
+ * internally consistent coordinates.  We store the transformations which
+ * were performed and undo them at the end.  It might be better to do this
+ * by always keeping the original coordinates and only doing the transform
+ * for the nonbonded terms but this works for now.
+ *
  * Revision 1.2  1998/04/06 16:34:12  jim
  * Added DPME (single processor only), test mode, and momenta printing.
  *

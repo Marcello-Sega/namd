@@ -10,14 +10,15 @@
 struct MigrationElem {
   AtomID atomID;
   AtomProperties atomProp;
-  Position posInit, pos;
+  Transform trans;
+  Position pos;
   Velocity vel;
   Force force[Results::maxNumForces];
   MigrationElem() {};
-  MigrationElem(AtomID &aid, AtomProperties &ap, Position &pInit,
+  MigrationElem(AtomID &aid, AtomProperties &ap, Transform &t,
 		Position &p, Velocity &v, 
 		Force (&f)[Results::maxNumForces]) : 
-      atomID(aid), atomProp(ap), posInit(pInit), pos(p), vel(v)
+      atomID(aid), atomProp(ap), trans(t), pos(p), vel(v)
   {
     for ( int i = 0; i < Results::maxNumForces; ++i ) force[i] = f[i];
   }
@@ -25,7 +26,7 @@ struct MigrationElem {
   {
     atomID = other.atomID;
     atomProp = other.atomProp;
-    posInit = other.posInit;
+    trans = other.trans;
     pos = other.pos;
     vel = other.vel;
     for ( int i = 0; i < Results::maxNumForces; ++i )
@@ -35,7 +36,7 @@ struct MigrationElem {
   {
     atomID = other.atomID;
     atomProp = other.atomProp;
-    posInit = other.posInit;
+    trans = other.trans;
     pos = other.pos;
     vel = other.vel;
     for ( int i = 0; i < Results::maxNumForces; ++i )
@@ -71,12 +72,19 @@ struct MigrationInfo {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/11/14 04:56:46 $
+ *	$Revision: 1.1005 $	$Date: 1998/08/11 16:30:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Migration.h,v $
+ * Revision 1.1005  1998/08/11 16:30:29  jim
+ * Modified output from periodic boundary simulations to return atoms to
+ * internally consistent coordinates.  We store the transformations which
+ * were performed and undo them at the end.  It might be better to do this
+ * by always keeping the original coordinates and only doing the transform
+ * for the nonbonded terms but this works for now.
+ *
  * Revision 1.1004  1997/11/14 04:56:46  jim
  * Added STL-style iterators, eliminated bad algorithm in doAtomMigration.
  *

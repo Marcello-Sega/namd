@@ -21,7 +21,8 @@ public:
   CollectionMgr(SlaveInitMsg *msg);
   ~CollectionMgr(void);
 
-  void submitPositions(int seq, AtomIDList &i, PositionList &d);
+  void submitPositions(int seq, AtomIDList &i, PositionList &d,
+					Lattice l, TransformList &t);
   void submitVelocities(int seq, AtomIDList &i, VelocityList &d);
   void submitForces(int seq, AtomIDList &i, ForceList &d);
 
@@ -110,12 +111,19 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1998/03/03 23:05:02 $
+ *	$Revision: 1.1008 $	$Date: 1998/08/11 16:30:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMgr.h,v $
+ * Revision 1.1008  1998/08/11 16:30:26  jim
+ * Modified output from periodic boundary simulations to return atoms to
+ * internally consistent coordinates.  We store the transformations which
+ * were performed and undo them at the end.  It might be better to do this
+ * by always keeping the original coordinates and only doing the transform
+ * for the nonbonded terms but this works for now.
+ *
  * Revision 1.1007  1998/03/03 23:05:02  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

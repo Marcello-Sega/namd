@@ -11,7 +11,7 @@
 /*								           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1013 1998/03/03 23:05:22 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1014 1998/08/11 16:30:30 jim Exp $";
 
 #include "charm++.h"
 
@@ -73,9 +73,9 @@ PatchMgr::~PatchMgr()
 
 
 void PatchMgr::createHomePatch(PatchID pid, AtomIDList aid, 
-	PositionList p, VelocityList v) 
+	TransformList t, PositionList p, VelocityList v) 
 {
-    HomePatch *patch = new HomePatch(pid, aid, p, v);
+    HomePatch *patch = new HomePatch(pid, aid, t, p, v);
     homePatches.load(HomePatchElem(pid, patch));
     patchMap->registerPatch(pid, patch);
 }
@@ -102,7 +102,7 @@ void PatchMgr::sendMovePatches()
       patchMap->unregisterPatch(m->pid, p);
 
       MovePatchesMsg *msg = new (MsgIndex(MovePatchesMsg))
-	MovePatchesMsg(m->pid, p->atomIDList, p->p, p->v);
+	MovePatchesMsg(m->pid, p->atomIDList, p->t, p->p, p->v);
 
       // Sending to PatchMgr::recvMovePatches on remote node
       CSendMsgBranch(PatchMgr, recvMovePatches, MovePatchesMsg, msg, thisgroup, m->nodeID);
@@ -118,7 +118,7 @@ void PatchMgr::sendMovePatches()
 
 void PatchMgr::recvMovePatches(MovePatchesMsg *msg) {
     // Make a new HomePatch
-    createHomePatch(msg->pid, msg->aid, msg->p, msg->v);
+    createHomePatch(msg->pid, msg->aid, msg->t, msg->p, msg->v);
     delete msg;
 
     // Tell sending PatchMgr we received MovePatchMsg
@@ -213,6 +213,7 @@ void * MovePatchesMsg::pack (int *length)
     DebugM(1,"MovePatchesMsg::pack() - v.size() = " << v.size() << endl);
     *length = sizeof(NodeID) + sizeof(PatchID) + sizeof(int) +
 		aid.size() * sizeof(AtomID) +
+		t.size() * sizeof(Transform) +
 		p.size() * sizeof(Position) +
 		v.size() * sizeof(Velocity);
     char *buffer = (char*)new_packbuffer(this,*length);
@@ -222,6 +223,7 @@ void * MovePatchesMsg::pack (int *length)
     int size=aid.size(); 
     memcpy(b, &size, sizeof(int)); b += sizeof(int);
     memcpy(b, aid.begin(), size*sizeof(AtomID)); b += size*sizeof(AtomID);     
+    memcpy(b, t.begin(), size*sizeof(Transform)); b += size*sizeof(Transform);
     memcpy(b, p.begin(), size*sizeof(Position)); b += size*sizeof(Position);
     memcpy(b, v.begin(), size*sizeof(Velocity)); b += size*sizeof(Velocity);
     this->~MovePatchesMsg();
@@ -238,6 +240,8 @@ void MovePatchesMsg::unpack (void *in)
     DebugM(1,"MovePatchesMsg::unpack() - size = " << size << endl);
     aid.resize(size);
     memcpy(aid.begin(),b,size*sizeof(AtomID)); b += size*sizeof(AtomID);
+    t.resize(size);
+    memcpy(t.begin(),b,size*sizeof(Transform)); b += size*sizeof(Transform);
     p.resize(size);
     memcpy(p.begin(),b,size*sizeof(Position)); b += size*sizeof(Position);
     v.resize(size);
@@ -250,12 +254,19 @@ void MovePatchesMsg::unpack (void *in)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMgr.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1998/03/03 23:05:22 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1014 $	$Date: 1998/08/11 16:30:30 $
  *
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.C,v $
+ * Revision 1.1014  1998/08/11 16:30:30  jim
+ * Modified output from periodic boundary simulations to return atoms to
+ * internally consistent coordinates.  We store the transformations which
+ * were performed and undo them at the end.  It might be better to do this
+ * by always keeping the original coordinates and only doing the transform
+ * for the nonbonded terms but this works for now.
+ *
  * Revision 1.1013  1998/03/03 23:05:22  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

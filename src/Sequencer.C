@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1045 1998/08/03 15:31:20 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1046 1998/08/11 16:30:31 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -424,7 +424,8 @@ void Sequencer::submitReductions(int step)
 void Sequencer::submitCollections(int step)
 {
   if ( Output::coordinateNeeded(step) )
-    collection->submitPositions(step,patch->atomIDList,patch->p);
+    collection->submitPositions(step,patch->atomIDList,patch->p,
+					patch->lattice,patch->t);
   if ( Output::velocityNeeded(step) )
     collection->submitVelocities(step,patch->atomIDList,patch->v);
 }
@@ -457,12 +458,19 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1045 $     $Date: 1998/08/03 15:31:20 $
+ *      $Revision: 1.1046 $     $Date: 1998/08/11 16:30:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1046  1998/08/11 16:30:31  jim
+ * Modified output from periodic boundary simulations to return atoms to
+ * internally consistent coordinates.  We store the transformations which
+ * were performed and undo them at the end.  It might be better to do this
+ * by always keeping the original coordinates and only doing the transform
+ * for the nonbonded terms but this works for now.
+ *
  * Revision 1.1045  1998/08/03 15:31:20  jim
  * Added temperature reassignment.
  *
