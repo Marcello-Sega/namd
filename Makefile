@@ -47,6 +47,7 @@ OBJS = \
 	$(DSTDIR)/ComputeDPMTA.o \
 	$(DSTDIR)/ComputeFreeEnergy.o \
 	$(DSTDIR)/ComputeFullDirect.o \
+	$(DSTDIR)/ComputeHomePatch.o \
 	$(DSTDIR)/ComputeHomePatches.o \
 	$(DSTDIR)/ComputeImpropers.o \
 	$(DSTDIR)/ComputeGeneral.o \

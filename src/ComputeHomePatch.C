@@ -11,25 +11,26 @@
 #include "charm++.h"
 #include "WorkDistrib.decl.h"
 #include "Node.h"
-#include "ComputePatch.h"
+#include "ComputeHomePatch.h"
 #include "PatchMap.inl"
-#include "Patch.h"
+#include "HomePatch.h"
 
 #define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
 #include "Debug.h"
 
-ComputePatch::ComputePatch(ComputeID c, PatchID p) : Compute(c) {
+ComputeHomePatch::ComputeHomePatch(ComputeID c, PatchID p) : Compute(c) {
     setNumPatches(1);
     patchID = p;
     patch = NULL;
+    homePatch = NULL;
     positionBox = NULL;
     forceBox = NULL;
     atomBox = NULL;
 }
 
-ComputePatch::~ComputePatch() {
-  DebugM(4, "~ComputePatch("<<cid<<") numAtoms("<<patchID<<") = " 
+ComputeHomePatch::~ComputeHomePatch() {
+  DebugM(4, "~ComputeHomePatch("<<cid<<") numAtoms("<<patchID<<") = " 
     << numAtoms << "\n");
     if (positionBox != NULL) {
       PatchMap::Object()->patch(patchID)->unregisterPositionPickup(cid,
@@ -45,13 +46,16 @@ ComputePatch::~ComputePatch() {
     }
 }
 
-void ComputePatch::initialize() {
+void ComputeHomePatch::initialize() {
     // How can we tell if BoxOwner has packed up and left?  Need a mechanism
     // to handle this or do we assume the Boxes have been dumped?
 
 	if (positionBox == NULL) { // We have yet to get boxes
 	    if (!(patch = PatchMap::Object()->patch(patchID))) {
-	      NAMD_die("BUG ALERT: ComputePatch used with unknown patch.");
+	      NAMD_die("BUG ALERT: ComputeHomePatch used with unknown patch.");
+	    }
+            if (!(homePatch = PatchMap::Object()->homePatch(patchID))) {
+	      NAMD_die("BUG ALERT: ComputeHomePatch used with proxy.");
 	    }
 	    DebugM(3, "initialize(" << cid <<")  patchid = "<<patch->getPatchID()<<"\n");
 	    positionBox = patch->registerPositionPickup(cid);
@@ -75,16 +79,17 @@ void ComputePatch::initialize() {
     }
 }
 
-void ComputePatch::atomUpdate() {
+void ComputeHomePatch::atomUpdate() {
     // How can we tell if BoxOwner has packed up and left?  Need a mechanism
     // to handle this or do we assume the Boxes have been dumped?
     numAtoms = patch->getNumAtoms();
 }
 
-void ComputePatch::doWork() {
+void ComputeHomePatch::doWork() {
   Position* p;
   Results* r;
   AtomProperties* a;
+  Transform* t = homePatch->getTransformList().begin();
   int numData;
 
   DebugM(3,patchID << ": doWork() called.\n");
@@ -98,7 +103,7 @@ void ComputePatch::doWork() {
   a = atomBox->open();
 
   // Pass pointers to doForce
-  doForce(p,r,a);
+  doForce(p,r,a,t);
 
   // Close up boxes
   positionBox->close(&p);
@@ -108,7 +113,7 @@ void ComputePatch::doWork() {
   DebugM(2,patchID << ": doWork() completed.\n");
 }
 
-int ComputePatch::sequence(void)
+int ComputeHomePatch::sequence(void)
 {
   return patch->flags.step;
 }

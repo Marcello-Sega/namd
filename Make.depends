@@ -863,6 +863,54 @@ obj/ComputeFullDirect.o: \
 	src/Debug.h \
 	src/ComputeFullDirectBase.h
 	$(CXX) $(CXXTHREADFLAGS) -o obj/ComputeFullDirect.o -c src/ComputeFullDirect.C
+obj/ComputeHomePatch.o: \
+	src/ComputeHomePatch.C \
+	inc/WorkDistrib.decl.h \
+	inc/main.decl.h \
+	inc/ReductionMgr.decl.h \
+	inc/PatchMgr.decl.h \
+	inc/ProxyMgr.decl.h \
+	inc/Node.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/ComputeMgr.decl.h \
+	inc/CollectionMgr.decl.h \
+	inc/CollectionMaster.decl.h \
+	inc/BroadcastMgr.decl.h \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/ResizeArrayPrimIter.h \
+	src/ProcessorPrivate.h \
+	src/ComputeHomePatch.h \
+	src/Compute.h \
+	src/PatchTypes.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/Box.h \
+	src/OwnerBox.h \
+	src/PositionBox.h \
+	src/PositionOwnerBox.h \
+	src/PatchMap.inl \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/AtomMap.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputeHomePatch.o -c src/ComputeHomePatch.C
 obj/ComputeHomePatches.o: \
 	src/ComputeHomePatches.C \
 	src/Namd.h \
@@ -1490,6 +1538,7 @@ obj/ComputeMgr.o: \
 	src/ComputeCylindricalBC.h \
 	src/ComputeRestraints.h \
 	src/ComputeSMD.h \
+	src/ComputeHomePatch.h \
 	src/WorkDistrib.h \
 	inc/ComputeMgr.def.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeMgr.o -c src/ComputeMgr.C
@@ -1755,11 +1804,7 @@ obj/ComputePatch.o: \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/AtomMap.h \
-	src/HomePatch.h \
 	src/Patch.h \
-	src/MigrateAtomsMsg.h \
-	src/Migration.h \
-	src/HomePatchTypes.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputePatch.o -c src/ComputePatch.C
 obj/ComputePatchPair.o: \
@@ -1954,7 +1999,7 @@ obj/ComputeRestraints.o: \
 obj/ComputeSMD.o: \
 	src/ComputeSMD.C \
 	src/ComputeSMD.h \
-	src/ComputePatch.h \
+	src/ComputeHomePatch.h \
 	src/Compute.h \
 	src/main.h \
 	src/BOCgroup.h \

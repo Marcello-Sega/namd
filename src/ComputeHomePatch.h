@@ -8,8 +8,8 @@
    Compute object which deals with a single patch.
 */
 
-#ifndef COMPUTEPATCH_H
-#define COMPUTEPATCH_H
+#ifndef COMPUTEHOMEPATCH_H
+#define COMPUTEHOMEPATCH_H
 
 #include "Compute.h"
 #include "PatchTypes.h"
@@ -20,14 +20,15 @@
 #include "PositionOwnerBox.h"
 
 class Patch;
+class HomePatch;
 class Node;
 class PatchMap;
 
-class ComputePatch : public Compute {
+class ComputeHomePatch : public Compute {
 
 public:
-  ComputePatch(ComputeID c, PatchID pid);
-  virtual ~ComputePatch();
+  ComputeHomePatch(ComputeID c, PatchID pid);
+  virtual ~ComputeHomePatch();
 
   virtual void initialize();
   virtual void atomUpdate();
@@ -36,8 +37,10 @@ public:
 
 protected :
   int numAtoms;
-  virtual void doForce(Position* p, Results* r, AtomProperties* a) = 0;
+  virtual void doForce(Position* p, Results* r, AtomProperties* a,
+	Transform* t) = 0;
   Patch *patch;
+  HomePatch *homePatch;
 
 private:
   PatchID patchID;

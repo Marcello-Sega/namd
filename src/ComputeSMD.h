@@ -7,7 +7,7 @@
 #ifndef COMPUTESMD_H
 #define COMPUTESMD_H
 
-#include "ComputePatch.h"
+#include "ComputeHomePatch.h"
 #include "ReductionMgr.h"
 
 class ComputeSMD : public ComputeHomePatch
