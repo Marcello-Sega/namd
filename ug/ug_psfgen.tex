@@ -1,0 +1,284 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                          %
+%              (C) Copyright 1995 The Board of Trustees of the             %
+%                          University of Illinois                          %
+%                           All Rights Reserved                            %
+%								 	   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% RCS INFORMATION:
+%
+%       $RCSfile: ug_psfgen.tex,v $
+%       $Author: jim $        $Locker:  $                $State: Exp $
+%       $Revision: 1.1 $      $Date: 2001/02/23 02:03:04 $
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% DESCRIPTION:
+%	This section is part of the NAMD Users Guide and describes the
+%	use of psfgen to create PSF input files.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Creating PSF Structure Files}
+\label{section:psfgen}
+
+The \verb#psfgen# structure building tool consists of a portable library
+of structure and file manipulation routines with a Tcl interface.
+Current capabilities include
+\begin{itemize}
+\item reading CHARMM topology files
+\item extracting sequence data from single segment PDB files
+\item generating a full molecular structure from sequence data
+\item applying patches to modify or link different segments
+\item writing NAMD and VMD compatible PSF structure files
+\item extracting coordinate data from single segment PDB files
+\item constructing (guessing) missing atomic coordinates
+\item writing NAMD and VMD compatible PDB coordinate files
+\end{itemize}
+
+We are currently refining the interface of \verb#psfgen# and adding
+features to create a complete molecular building solution.  In the
+meantime, documentation is provided by the following commented example.
+We welcome your feedback on this new tool.
+
+\subsection{BPTI Example}
+
+To actually run this demo requires
+\begin{itemize}
+\item the program \verb#psfgen# from any \NAMD\ distribution,
+\item the CHARMM topology and parameter files \verb#top_all22_prot.inp# and
+\verb#par_all22_prot.inp# from 
+{\tt https://rxsecure.umaryland.edu/research/amackere/research.html}, and
+\item the BPTI PDB file \verb#6PTI.pdb# available from the Protein Data Bank at
+{\tt http://www.pdb.org/} by searching for \verb#6PTI# and downloading
+the complete structure file in PDB format.
+\end{itemize}
+
+In this demo, we create the files \verb#bpti.psf# and \verb#bpti.pdb# in the output directory
+which can then be used for a simple NAMD simulation.
+
+Create the working directory.  Nothing outside of the directory \verb#output# is modified.
+
+\begin{verbatim}
+mkdir output
+\end{verbatim}
+
+\paragraph*{Splitting input PDB file into segments.}
+
+6PTI.pdb is the original file from the Protein Data Bank.  It contains
+a single chain of protein and some PO4 and H2O HETATM records.  Since
+each segment must have a separate input file, we remove all non-protein
+atom records using grep.  If there were multiple chains we would have
+to split the file by hand.
+\begin{verbatim}
+grep -v '^HETATM' 6PTI.pdb > output/6PTI_protein.pdb
+\end{verbatim}
+
+Create a second file containing only waters.
+\begin{verbatim}
+grep 'HOH' 6PTI.pdb > output/6PTI_water.pdb
+\end{verbatim}
+
+
+Run the psfgen program, taking everything until "ENDMOL" as input.
+You may run psfgen interactively as well.  Since psfgen is built on
+a Tcl interpreter, you may use loops, variables, etc., but you must
+use \verb#$$# for variables when inside a shell script.  If you
+want, run psfgen and enter the following commands manually.
+
+\begin{verbatim}
+psfgen << ENDMOL
+\end{verbatim}
+
+\paragraph*{Reading topology file.}
+
+Read in the topology definitions for the residues we will create.
+This must match the parameter file used for the simulation as well.
+Multiple topology files may be read in since psfgen and NAMD use atom
+type names rather than numbers in psf files.
+
+\begin{verbatim}
+topology toppar/top_all22_prot.inp
+\end{verbatim}
+
+\paragraph*{Building segment BPTI.}
+
+
+Actually build a segment, calling it BPTI and reading the sequence
+of residues from the stripped pdb file created above.  In addition to
+the pdb command, we could specify residues explicitly.  Both angles
+and dihedrals are generated automatically unless "auto none" is added
+(which is required to build residues of water).  The commands "first"
+and "last" may be used to change the default patches for the ends of
+the chain.  The structure is built when the closing \} is encountered,
+and some errors regarding the first and last residue are normal.
+
+\begin{verbatim}
+segment BPTI {
+ pdb output/6PTI_protein.pdb
+}
+\end{verbatim}
+
+\paragraph*{Adding patches.}
+
+
+Some patch residues (those not used to begin or end a chain) are
+applied after the segment is built.  These contain all angle and
+dihedral terms explicitly since they were already generated.  In this
+case we apply the patch for a disulfide link three separate times.
+
+\begin{verbatim}
+patch DISU BPTI:5 BPTI:55
+patch DISU BPTI:14 BPTI:38
+patch DISU BPTI:30 BPTI:51
+\end{verbatim}
+
+\paragraph*{Writing psf structure file.}
+
+
+Now that all of the atoms and bonds have been created, we can write
+out the psf structure file for the system.
+
+\begin{verbatim}
+writepsf output/bpti.psf
+\end{verbatim}
+
+\paragraph*{Reading coordinates from pdf file.}
+
+
+The same file used to generate the sequence is now read to extract
+coordinates.  In the residue ILE, the atom CD is called CD1 in the
+pdb file, so we use "alias atom" to define the correct name.  Segment
+names in the pdb file are ignored so we specify that the coordinates
+should be applied to the segment BPTI.
+
+\begin{verbatim}
+alias atom ILE CD1 CD
+coordpdb output/6PTI_protein.pdb BPTI
+\end{verbatim}
+
+\paragraph*{Guessing missing coordinates.}
+
+
+The tolopogy file contains default internal coordinates which can be
+used to guess the locations of many atoms, hydrogens in particular.
+In the output pdb file, the occupancy field of guessed atoms will be
+set to 1, atoms which are known are set to 0, and atoms which could
+not be guessed are set to -1.  Some atoms are "poorly guessed" if
+needed bond lengths and angles were missing from the topology file.
+
+\begin{verbatim}
+guesscoord
+\end{verbatim}
+
+\paragraph*{Writing pdb coordinate file.}
+
+
+This ends the matching coordinate pdb file.  The psf and pdb files
+are a matched set with identical atom ordering as needed by NAMD.
+
+\begin{verbatim}
+writepdb output/bpti.pdb
+\end{verbatim}
+
+\paragraph*{Adding a segment of water.}
+
+
+Build a segment for the crystal waters.  The residue type for water
+depends on the model, so here we alias HOH to TIP3.  Because CHARMM
+uses an additional H-H bond we must disable generation of angles and
+dihedrals for segments containing water.  Then read the pdb file.
+
+\begin{verbatim}
+alias residue HOH TIP3
+segment SOLV {
+ auto none
+ pdb output/6PTI_water.pdb
+}
+\end{verbatim}
+
+\paragraph*{Reading water coordinates.}
+
+
+Alias the atom type for water oxygen as well and read coordinates from
+the file to the segment SOLV.  Hydrogen doesn't show up in crystal
+structures so it is missing from this pdb file.
+
+\begin{verbatim}
+alias atom HOH O OH2
+coordpdb output/6PTI_water.pdb SOLV
+\end{verbatim}
+
+\paragraph*{Trying to guess water coordinates is not possible.}
+
+
+Try to guess coordinates again, but hydrogens are not guessed for water
+because all three atoms are needed to orient the molecules.
+
+\begin{verbatim}
+guesscoord
+\end{verbatim}
+
+
+Don't write out the structure with water since coordinates are missing.
+
+\begin{verbatim}
+ENDMOL
+\end{verbatim}
+
+
+The files bpti.pdb and bpti.psf can now be used with \NAMD, but the
+initial coordinates require minimization first.
+The following is an example \NAMD\ configuration file for the BPTI example.
+
+\newpage
+\begin{verbatim}
+# NAMD configuration file for BPTI
+
+# molecular system
+structure	output/bpti.psf
+
+# force field
+paratypecharmm	on
+parameters	toppar/par_all22_prot.inp
+exclude		scaled1-4
+1-4scaling	1.0
+
+# approximations
+switching	on
+switchdist	8
+cutoff		12
+pairlistdist	13.5
+margin		0
+stepspercycle	20
+
+#integrator
+timestep 1.0
+
+#output
+outputenergies	10
+outputtiming	100
+binaryoutput	no
+
+# molecular system
+coordinates	output/bpti.pdb
+
+#output
+outputname	output/bpti
+dcdfreq		1000
+
+#protocol
+temperature	0
+reassignFreq	1000
+reassignTemp	25
+reassignIncr	25
+reassignHold	300
+
+#script
+
+minimize 1000
+
+run 20000
+\end{verbatim}
+
