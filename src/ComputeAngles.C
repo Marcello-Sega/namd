@@ -73,7 +73,7 @@ void AngleElem::computeForce(BigReal *reduction)
 
   // compute vectors between atoms and their distances
   r12 = pos1-pos2;
-  r32 = pos3-pos1;
+  r32 = pos3-pos2;
 
   d12 = r12.length();
   d32 = r32.length();
