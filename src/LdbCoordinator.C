@@ -653,11 +653,11 @@ int LdbCoordinator::buildData(void)
 	p1 = p0;
 
       const int cid = msg->cid[j];
-      computeArray[cid].Id = cid;
-      computeArray[cid].oldProcessor = msg->proc;
-      computeArray[cid].patch1 = p0;
-      computeArray[cid].patch2 = p1;
-      computeArray[cid].load = msg->computeTime[j];
+      computeArray[nMoveableComputes].Id = cid;
+      computeArray[nMoveableComputes].oldProcessor = msg->proc;
+      computeArray[nMoveableComputes].patch1 = p0;
+      computeArray[nMoveableComputes].patch2 = p1;
+      computeArray[nMoveableComputes].load = msg->computeTime[j];
       nMoveableComputes++;
     }
     CPrintf("PE %d nComputes = %d\n",msg->proc,j);
