@@ -32,7 +32,7 @@ ComputeAngles::ComputeAngles(ComputeID c) : Compute(c) {
   CPrintf("ComputeAngles::ComputeAngles(%d) -- done\n",(int)c);
 }
 
-void ComputeAngles::mapAtoms() {
+void ComputeAngles::mapReady() {
 
   // AnglePatchList contribution for proxies should be
   // gathered here.
@@ -55,22 +55,32 @@ void ComputeAngles::mapAtoms() {
 
 
   // Gather all home patches
+  CPrintf("ComputeAtoms::mapReady() - Starting Up\n");
   HomePatchList *a = patchMap->homePatchList();
   ResizeArrayIter<HomePatchElem> ai(*a);
 
   anglePatchList.resize(0);
+  CPrintf("ComputeAtoms::mapReady() - Size of the anglePatchList %d\n",
+	anglePatchList.size());
 
   for ( ai = ai.begin(); ai != ai.end(); ai++ ) {
     anglePatchList.add(AnglePatchElem((*ai).p, HOME, cid));
+    CPrintf("ComputeAtoms::mapReady() - adding Patch %d to list\n",
+      (*ai).p->getPatchID() );
   }
 
   /* cycle through each patch */
+  CPrintf("ComputeAtoms::mapReady() - iterating over patches to get atoms\n");
   for ( ai = ai.begin(); ai != ai.end(); ai++ )
   {
     Patch *p = (*ai).p;
+    CPrintf("ComputeAtoms::mapReady() - looking at patch %d\n", 
+      (*ai).p->getPatchID() );
     AtomIDList &atomID = p->getAtomIDList();
 
     /* cycle through each angle in the patch */
+    CPrintf("ComputeAtoms::mapReady() - patch has %d atoms\n", 
+      p->getNumAtoms() );
     for (int i=0; i < p->getNumAtoms(); i++)
     {
       /* get list of all angles for the atom */

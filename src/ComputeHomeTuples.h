@@ -186,7 +186,7 @@ public:
     delete [] dummy;
   }
 
-  void mapAtoms();
+  void mapReady();
   void doWork();
 };
 
@@ -195,13 +195,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeHomeTuples.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/11/04 20:06:17 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.5 $	$Date: 1996/11/18 21:28:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.h,v $
+ * Revision 1.5  1996/11/18 21:28:48  ari
+ * *** empty log message ***
+ *
  * Revision 1.4  1996/11/04 20:06:17  nealk
  * Now it compiles :-)
  *
