@@ -1,4 +1,6 @@
 include .rootdir/arch/Linux-ia64-ecc.arch
 
-CHARMARCH = mpi-linux-ia64-gm
+CHARMARCH = mpi-linux-ia64
+
+CHARMOPTS = -memory os
 

@@ -266,6 +266,7 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(TCLLIB) \
 	$(FFTLIB) \
 	$(PLUGINLIB) \
+	$(CHARMOPTS) \
 	-lm -o namd2
 
 charmrun: $(CHARM)/bin/charmrun # XXX
@@ -282,6 +283,7 @@ namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(TCLLIB) \
 	$(FFTLIB) \
 	$(PLUGINLIB) \
+	$(CHARMOPTS) \
 	-o namd2
 
 charmd.exe:
@@ -331,6 +333,7 @@ projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(TCLLIB) \
 	$(FFTLIB) \
 	$(PLUGINLIB) \
+	$(CHARMOPTS) \
 	-lm -o namd2
 
 summary:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
@@ -346,6 +349,7 @@ summary:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(TCLLIB) \
 	$(FFTLIB) \
 	$(PLUGINLIB) \
+	$(CHARMOPTS) \
 	-lm -o namd2
 
 $(DPMTADIR)/mpole/libmpole.a: $(DPMTADIR)/src/libdpmta2.a
