@@ -826,20 +826,21 @@ int write_dcdheader(int fd, char *filename, int N, int NFILE, int NPRIV,
 	pad(title_string, 80);
 	NAMD_write(fd, title_string, 80);
 
-#ifndef WIN32
+        char username[100];
+#ifdef WIN32
+	sprintf(username,"Win32");
+#else
 	user_id= (int) getuid();
 	pwbuf=getpwuid(user_id);
+        if ( pwbuf ) sprintf(username,"%s",pwbuf->pw_name);
+	else sprintf(username,"%d",user_id);
 #endif
 	cur_time=time(NULL);
 	tmbuf=localtime(&cur_time);
 	strftime(time_str, 10, "%m/%d/%y", tmbuf);
 
 	sprintf(title_string, "REMARKS DATE: %s CREATED BY USER: %s",
-#ifdef WIN32
-	   time_str, "Win32");
-#else
-	   time_str, pwbuf->pw_name);
-#endif
+	   time_str, username);
 	pad(title_string, 80);
 	NAMD_write(fd, title_string, 80);
 	out_integer = 164;
