@@ -11,7 +11,7 @@
 %
 %       $RCSfile: ug_intro.tex,v $
 %       $Author: jim $        $Locker:  $                $State: Exp $
-%       $Revision: 1.15 $      $Date: 2001/02/23 02:03:04 $
+%       $Revision: 1.16 $      $Date: 2001/08/02 14:36:40 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -21,6 +21,9 @@
 % REVISION HISTORY:
 %
 % $Log: ug_intro.tex,v $
+% Revision 1.16  2001/08/02 14:36:40  jim
+% Added AMBER file compatibility to list of new features.
+%
 % Revision 1.15  2001/02/23 02:03:04  jim
 % Added documentation on psfgen.
 %
@@ -152,6 +155,12 @@ system, which provides a single system image for PC clusters.
 A new tool, \verb#psfgen#, has been added, which uses CHARMM topology
 files and PDB coordinate files to generate PSF structure files
 suitable for use with NAMD.
+
+\subsubsection*{AMBER Input File Compatibility}
+
+NAMD can read AMBER parm (combined structure and parameter) and
+coordinate files as input.  Output file formats are still limited
+to PDB and CHARMM DCD trajectory files.
 
 
 \subsection{\NAMD\ and molecular dynamics simulations}
