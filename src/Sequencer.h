@@ -60,6 +60,8 @@ protected:
     void langevinPiston(int);
       int slowFreq;
     void langevinVelocities(BigReal);
+    void langevinVelocitiesBBK1(BigReal);
+    void langevinVelocitiesBBK2(BigReal);
 
     void terminate(void);
     SimParameters *const simParams;	// for convenience
@@ -86,12 +88,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1021 $	$Date: 1999/03/19 23:03:02 $
+ *	$Revision: 1.1022 $	$Date: 1999/04/27 23:43:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.h,v $
+ * Revision 1.1022  1999/04/27 23:43:03  jim
+ * Switched Langevin dynamics integrator to a two-part version of BBK.
+ *
  * Revision 1.1021  1999/03/19 23:03:02  jim
  * Fixed bugs in constant pressure code.
  *

@@ -209,13 +209,14 @@ void Sequencer::algorithm(void)
 
     for ( ++step; step <= numberOfSteps; ++step )
     {
-	langevinVelocities(0.5*timestep);
+	// langevinVelocities(0.5*timestep);
 
 	addForceToMomentum(0.5*timestep);
 	if (doNonbonded)
 		addForceToMomentum(0.5*nbondstep,Results::nbond);
 	if (doFullElectrostatics)
 		addForceToMomentum(0.5*slowstep,Results::slow);
+	langevinVelocitiesBBK1(timestep);
 
 	minimizationMaximumMove(timestep);
 	addVelocityToPosition(0.5*timestep);
@@ -234,13 +235,14 @@ void Sequencer::algorithm(void)
 	// Migrate Atoms on stepsPerCycle
 	runComputeObjects(!(step%stepsPerCycle));
 
+	langevinVelocitiesBBK2(timestep);
 	addForceToMomentum(0.5*timestep);
 	if (doNonbonded)
 		addForceToMomentum(0.5*nbondstep,Results::nbond);
 	if (doFullElectrostatics)
 		addForceToMomentum(0.5*slowstep,Results::slow);
 
-	langevinVelocities(0.5*timestep);
+	// langevinVelocities(0.5*timestep);
 	reassignVelocities(step);
 
 	rattle2(timestep,step);
@@ -280,6 +282,45 @@ void Sequencer::langevinVelocities(BigReal dt_fs)
 
       patch->v[i] *= f1;
       patch->v[i] += f2 * gaussian_random_vector();
+    }
+  }
+}
+
+void Sequencer::langevinVelocitiesBBK1(BigReal dt_fs)
+{
+  if ( simParams->langevinOn )
+  {
+    Molecule *molecule = Node::Object()->molecule;
+    BigReal dt = dt_fs * 0.001;  // convert to ps
+    BigReal kbT = BOLTZMAN*(simParams->langevinTemp);
+    for ( int i = 0; i < patch->numAtoms; ++i )
+    {
+      int aid = patch->atomIDList[i];
+      BigReal dt_gamma = dt * molecule->langevin_param(aid);
+
+      patch->v[i] += gaussian_random_vector() *
+             sqrt( dt_gamma * kbT / patch->a[i].mass );
+      patch->v[i] /= ( 1. + 0.5 * dt_gamma );
+    }
+  }
+}
+
+
+void Sequencer::langevinVelocitiesBBK2(BigReal dt_fs)
+{
+  if ( simParams->langevinOn )
+  {
+    Molecule *molecule = Node::Object()->molecule;
+    BigReal dt = dt_fs * 0.001;  // convert to ps
+    BigReal kbT = BOLTZMAN*(simParams->langevinTemp);
+    for ( int i = 0; i < patch->numAtoms; ++i )
+    {
+      int aid = patch->atomIDList[i];
+      BigReal dt_gamma = dt * molecule->langevin_param(aid);
+
+      patch->v[i] *= ( 1. - 0.5 * dt_gamma );
+      patch->v[i] += gaussian_random_vector() *
+             sqrt( dt_gamma * kbT / patch->a[i].mass );
     }
   }
 }
@@ -646,12 +687,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1058 $     $Date: 1999/03/19 23:03:02 $
+ *      $Revision: 1.1059 $     $Date: 1999/04/27 23:43:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1059  1999/04/27 23:43:03  jim
+ * Switched Langevin dynamics integrator to a two-part version of BBK.
+ *
  * Revision 1.1058  1999/03/19 23:03:02  jim
  * Fixed bugs in constant pressure code.
  *
