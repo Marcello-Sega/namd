@@ -244,7 +244,7 @@ void SMDData::recvData(SMDDataMsg *msg) {
 // send the SMD data from Node 0
 void SMDData::send_SMDData(Communicate *com_obj) {
    //  Message to send to clients
-  MOStream *msg=com_obj->newOutputStream(ALLBUTME, MOLECULETAG, BUFSIZE);
+  MOStream *msg=com_obj->newOutputStream(ALLBUTME, SMDDATATAG, BUFSIZE);
   
   if ( msg == NULL )
   {
@@ -257,6 +257,9 @@ void SMDData::send_SMDData(Communicate *com_obj) {
   msg->put(&atomPosVmin);
   msg->put(&atomPosVmax);
 
+  // Broadcast the message to the other nodes
+  msg->end();
+  delete msg;
 
 }  
 
