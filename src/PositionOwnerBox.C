@@ -7,6 +7,7 @@
 #include "c++interface.h"
 #include "Lattice.h"
 
+#undef MIN_DEBUG_LEVEL
 #define MIN_DEBUG_LEVEL 4
 #define DEBUGM
 #include "Debug.h"
@@ -94,12 +95,18 @@ template <class Owner>
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/19 11:54:50 $
+ *	$Revision: 1.1003 $	$Date: 1997/04/04 23:34:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PositionOwnerBox.C,v $
+ * Revision 1.1003  1997/04/04 23:34:25  milind
+ * Got NAMD2 to run on Origin2000.
+ * Included definitions of class static variables in C files.
+ * Fixed alignment bugs by using memcpy instead of assignment in
+ * pack and unpack.
+ *
  * Revision 1.1002  1997/03/19 11:54:50  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

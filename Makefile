@@ -2,6 +2,7 @@
 #####
 ## Define your architecture
 #####
+# ARCH = Origin2000
 ARCH = HPUX9
 # ARCH = HPUX10
 # ARCH = g++
@@ -54,7 +55,7 @@ PVM=-I$(PVMDIR)
 
 # CXX is platform dependent
 INCLUDE = $(CHARM)/include
-CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(PVM) $(CXXOPTS) $(NOWARN)
+CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(SRCDIR)/Templates -I$(INCDIR) $(DPMTA) $(PVM) $(CXXOPTS) $(NOWARN)
 GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(PVM) $(NOWARN)
 
 .SUFFIXES: 	.ci
@@ -152,7 +153,7 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES) $(LIBS)
 	cd $(PVMDIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
 	cd $(DPMTADIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
 	$(CHARMC) -verbose -ld++-option \
-	"-I $(INCLUDE) -I $(SRCDIR) $(CXXOPTS) " \
+	"-I$(INCLUDE) -I$(SRCDIR) -I$(SRCDIR)/Templates $(CXXOPTS) " \
 	-language charm++ \
 	-o namd2 $(OBJS) \
 	$(DPMTALIB) \
@@ -203,13 +204,13 @@ Make.depends:
 
 include	$(DEPENDFILE)
 
-$(INTERFACES:.ci=.top.h):	$(INCDIR) $$(@:.top.h=.ci)
-	$(CHARMXI) $?
-	$(MOVE) $(SRCDIR)/*.top.h $(INCDIR)
+#$(INTERFACES:.ci=.top.h):	$(INCDIR) $$(@:.top.h=.ci)
+#	$(CHARMXI) $?
+#	$(MOVE) $(SRCDIR)/*.top.h $(INCDIR)
 
-$(INTERFACES:.ci=.bot.h):	$(INCDIR) $$(@:.bot.h=.ci)
-	$(CHARMXI) $?
-	$(MOVE) $(SRCDIR)/*.bot.h $(INCDIR)
+#$(INTERFACES:.ci=.bot.h):	$(INCDIR) $$(@:.bot.h=.ci)
+#	$(CHARMXI) $?
+#	$(MOVE) $(SRCDIR)/*.bot.h $(INCDIR)
 
 $(DSTDIR):
 	mkdir $(DSTDIR)

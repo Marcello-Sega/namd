@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1010 1997/03/27 20:25:40 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1011 1997/04/04 23:34:17 milind Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -63,7 +63,7 @@ ComputeMap::~ComputeMap(void)
 
 
 #undef PACK
-#define PACK(type,data) { *((type*)b) = data; b += sizeof(type); }
+#define PACK(type,data) { memcpy(b, &data, sizeof(type)); b += sizeof(type); }
 
 void * ComputeMap::pack (int *length)
 {
@@ -100,7 +100,7 @@ void * ComputeMap::pack (int *length)
 }
 
 #undef UNPACK
-#define UNPACK(type,data) { data = *((type*)b); b += sizeof(type); }
+#define UNPACK(type,data) { memcpy(&data, b, sizeof(type)); b += sizeof(type); }
 
 void ComputeMap::unpack (void *in)
 {
@@ -306,13 +306,19 @@ void ComputeMap::printComputeMap(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/03/27 20:25:40 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1011 $	$Date: 1997/04/04 23:34:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.C,v $
+ * Revision 1.1011  1997/04/04 23:34:17  milind
+ * Got NAMD2 to run on Origin2000.
+ * Included definitions of class static variables in C files.
+ * Fixed alignment bugs by using memcpy instead of assignment in
+ * pack and unpack.
+ *
  * Revision 1.1010  1997/03/27 20:25:40  brunner
  * Changes for LdbCoordinator, the load balance control BOC
  *

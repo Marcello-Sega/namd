@@ -6,8 +6,8 @@
 /*                           All Rights Reserved                           */
 /*									   */
 /***************************************************************************/
-/* DESCRIPTION:
-/*
+/* DESCRIPTION:                                                            */
+/*                                                                         */
 /***************************************************************************/
 #ifndef LJTABLE_H
 #define LJTABLE_H
@@ -114,13 +114,19 @@ return;
  * RCS INFORMATION:
  *
  *	$RCSfile: LJTable.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:36 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/04/04 23:34:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LJTable.h,v $
+ * Revision 1.1001  1997/04/04 23:34:19  milind
+ * Got NAMD2 to run on Origin2000.
+ * Included definitions of class static variables in C files.
+ * Fixed alignment bugs by using memcpy instead of assignment in
+ * pack and unpack.
+ *
  * Revision 1.1000  1997/02/06 15:58:36  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

@@ -18,6 +18,40 @@
 #include "LJTable.h"
 #include "ReductionMgr.h"
 
+void (*ComputeNonbondedUtil::calcPair)(Position*[2],Force*[2],
+        AtomProperties*[2],int[2],BigReal*);
+void (*ComputeNonbondedUtil::calcSelf)(Position*,Force*,
+        AtomProperties*,int,BigReal*);
+void (*ComputeNonbondedUtil::calcExcl)(const Position &,
+	Force &, Force &,
+	const AtomProperties &, const AtomProperties &,
+	int, BigReal*);
+
+void (*ComputeNonbondedUtil::calcFullPair)(Position*[2],Force*[2],
+        Force*[2],AtomProperties*[2],int[2],BigReal*);
+void (*ComputeNonbondedUtil::calcFullSelf)(Position*,Force*,Force*,
+        AtomProperties*,int,BigReal*);
+void (*ComputeNonbondedUtil::calcFullExcl)(const Position &,
+	Force &, Force &, Force &, Force &,
+	const AtomProperties &, const AtomProperties &,
+	int, BigReal*);
+
+Real            ComputeNonbondedUtil::cutoff;
+BigReal         ComputeNonbondedUtil::cutoff2;
+BigReal         ComputeNonbondedUtil::dielectric_1;
+const LJTable*  ComputeNonbondedUtil::ljTable;
+const Molecule* ComputeNonbondedUtil::mol;
+BigReal         ComputeNonbondedUtil::scale14;
+Real            ComputeNonbondedUtil::switchOn;
+BigReal         ComputeNonbondedUtil::switchOn_1;
+BigReal         ComputeNonbondedUtil::switchOn2;
+BigReal         ComputeNonbondedUtil::c0;
+BigReal         ComputeNonbondedUtil::c1;
+BigReal         ComputeNonbondedUtil::c3;
+BigReal         ComputeNonbondedUtil::c5;
+BigReal         ComputeNonbondedUtil::c6;
+BigReal         ComputeNonbondedUtil::d0;
+
 
 void ComputeNonbondedUtil::registerReductionData(ReductionMgr *reduction)
 {
@@ -342,13 +376,19 @@ void ComputeNonbondedUtil::select(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/03/20 23:53:43 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1007 $	$Date: 1997/04/04 23:34:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1007  1997/04/04 23:34:18  milind
+ * Got NAMD2 to run on Origin2000.
+ * Included definitions of class static variables in C files.
+ * Fixed alignment bugs by using memcpy instead of assignment in
+ * pack and unpack.
+ *
  * Revision 1.1006  1997/03/20 23:53:43  ari
  * Some changes for comments. Copyright date additions.
  * Hooks for base level update of Compute objects from ComputeMap

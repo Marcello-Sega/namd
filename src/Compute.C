@@ -30,6 +30,9 @@
 #define DEBUGM
 #include "Debug.h"
 
+Node *Compute::node=0;
+PatchMap *Compute::patchMap=0;
+
 Compute::Compute(ComputeID c) : cid(c) { 
   doAtomUpdate = false;
 }
@@ -87,13 +90,19 @@ int Compute::priority(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: Compute.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/04/03 23:22:16 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1997/04/04 23:34:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.C,v $
+ * Revision 1.1008  1997/04/04 23:34:14  milind
+ * Got NAMD2 to run on Origin2000.
+ * Included definitions of class static variables in C files.
+ * Fixed alignment bugs by using memcpy instead of assignment in
+ * pack and unpack.
+ *
  * Revision 1.1007  1997/04/03 23:22:16  jim
  * Added basic priority() method to Compute.  Only distinguishes between
  * local and nonlocal computations for now.

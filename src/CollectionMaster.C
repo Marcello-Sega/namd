@@ -7,6 +7,8 @@
 // #define DEBUGM
 #include "Debug.h"
 
+CollectionMaster *CollectionMaster::_instance=0;
+
 CollectionMaster::CollectionMaster(InitMsg *msg)
 {
   delete msg;
@@ -132,12 +134,16 @@ void * CollectVectorMsg::pack(int *length)
 		data.size() * sizeof(Vector);
   char *buffer = (char*)new_packbuffer(this,*length);
   char *b = buffer;
-  *((int*)b) = seq; b += sizeof(int);
-  *((int*)b) = aid.size(); b += sizeof(int);
+  // *((int*)b) = seq; b += sizeof(int);
+  // *((int*)b) = aid.size(); b += sizeof(int);
+  memcpy(b, &seq, sizeof(int)); b += sizeof(int);
+  int size = aid.size(); memcpy(b, &size, sizeof(int)); b += sizeof(int);
   for ( int i = 0; i < aid.size(); i++ )
   {
-    *((AtomID*)b) = aid[i]; b += sizeof(AtomID);
-    *((Vector*)b) = data[i]; b += sizeof(Vector);
+    // *((AtomID*)b) = aid[i]; b += sizeof(AtomID);
+    // *((Vector*)b) = data[i]; b += sizeof(Vector);
+    memcpy(b, &aid[i], sizeof(AtomID)); b += sizeof(AtomID);
+    memcpy(b, &data[i], sizeof(Vector)); b += sizeof(Vector);
   }
   this->~CollectVectorMsg();
   return buffer;
@@ -148,14 +154,18 @@ void CollectVectorMsg::unpack(void *in)
 {
   new((void*)this) CollectVectorMsg;
   char *b = (char*)in;
-  seq = *((int*)b); b += sizeof(int);
-  int size = *((int*)b); b += sizeof(int);
+  // seq = *((int*)b); b += sizeof(int);
+  // int size = *((int*)b); b += sizeof(int);
+  memcpy(&seq, b, sizeof(int)); b += sizeof(int);
+  int size; memcpy(&size, b, sizeof(int)); b += sizeof(int);
   aid.resize(size);
   data.resize(size);
   for ( int i = 0; i < size; i++ )
   {
-    aid[i] = *((AtomID*)b); b += sizeof(AtomID);
-    data[i] = *((Vector*)b); b += sizeof(Vector);
+    // aid[i] = *((AtomID*)b); b += sizeof(AtomID);
+    // data[i] = *((Vector*)b); b += sizeof(Vector);
+    memcpy(&aid[i], b, sizeof(AtomID)); b += sizeof(AtomID);
+    memcpy(&data[i], b, sizeof(Vector)); b += sizeof(Vector);
   }
 }
 
@@ -168,12 +178,18 @@ void CollectVectorMsg::unpack(void *in)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/03/19 11:53:56 $
+ *	$Revision: 1.1008 $	$Date: 1997/04/04 23:34:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMaster.C,v $
+ * Revision 1.1008  1997/04/04 23:34:13  milind
+ * Got NAMD2 to run on Origin2000.
+ * Included definitions of class static variables in C files.
+ * Fixed alignment bugs by using memcpy instead of assignment in
+ * pack and unpack.
+ *
  * Revision 1.1007  1997/03/19 11:53:56  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

@@ -5,7 +5,7 @@
 /*                           All Rights Reserved                           */
 /*								   	   */
 /***************************************************************************/
-/***************************************************************************
+/***************************************************************************/
 /***************************************************************************
  * DESCRIPTION:
  * This object outputs the data collected on the master  node
@@ -203,13 +203,19 @@ public :
  * RCS INFORMATION:
  *
  *	$RCSfile: Output.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1997/03/19 11:54:38 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.4 $	$Date: 1997/04/04 23:34:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Output.h,v $
+ * Revision 1.4  1997/04/04 23:34:23  milind
+ * Got NAMD2 to run on Origin2000.
+ * Included definitions of class static variables in C files.
+ * Fixed alignment bugs by using memcpy instead of assignment in
+ * pack and unpack.
+ *
  * Revision 1.3  1997/03/19 11:54:38  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

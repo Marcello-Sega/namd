@@ -23,6 +23,8 @@
 //#define DEBUGM
 #include "Debug.h"
 
+BroadcastMgr *BroadcastMgr::_instance=0;
+
 BroadcastMgr::~BroadcastMgr(void) {
   UniqueSetIter<BOID> boidIter(boid);
   for (boidIter = boidIter.begin(); boidIter != boidIter.end(); boidIter++) {
@@ -125,12 +127,18 @@ BroadcastMgr::recvBroadcast(BroadcastMsg *msg) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1997/03/19 11:53:52 $
+ *	$Revision: 1.2 $	$Date: 1997/04/04 23:34:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: BroadcastMgr.C,v $
+ * Revision 1.2  1997/04/04 23:34:11  milind
+ * Got NAMD2 to run on Origin2000.
+ * Included definitions of class static variables in C files.
+ * Fixed alignment bugs by using memcpy instead of assignment in
+ * pack and unpack.
+ *
  * Revision 1.1  1997/03/19 11:53:52  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

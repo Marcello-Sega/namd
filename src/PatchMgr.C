@@ -11,7 +11,7 @@
 /*								           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1005 1997/03/06 22:06:08 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1006 1997/04/04 23:34:25 milind Exp $";
 
 
 #include "ckdefs.h"
@@ -163,14 +163,20 @@ void * MovePatchesMsg::pack (int *length)
 		v.size() * sizeof(Velocity);
     char *buffer = (char*)new_packbuffer(this,*length);
     char *b = buffer;
-    *((NodeID*)b) = fromNodeID; b += sizeof(NodeID);
-    *((PatchID*)b) = pid; b += sizeof(PatchID);
-    *((int*)b) = aid.size(); b += sizeof(int);
+    // *((NodeID*)b) = fromNodeID; b += sizeof(NodeID);
+    // *((PatchID*)b) = pid; b += sizeof(PatchID);
+    // *((int*)b) = aid.size(); b += sizeof(int);
+    memcpy(b, &fromNodeID, sizeof(NodeID)); b += sizeof(NodeID);
+    memcpy(b, &pid, sizeof(PatchID)); b += sizeof(PatchID);
+    int dummy=aid.size(); memcpy(b, &dummy, sizeof(int)); b += sizeof(int);
     for ( int i = 0; i < aid.size(); i++ )
     {
-      *((AtomID*)b) = aid[i]; b += sizeof(AtomID);
-      *((Position*)b) = p[i]; b += sizeof(Position);
-      *((Velocity*)b) = v[i]; b += sizeof(Velocity);
+      // *((AtomID*)b) = aid[i]; b += sizeof(AtomID);
+      // *((Position*)b) = p[i]; b += sizeof(Position);
+      // *((Velocity*)b) = v[i]; b += sizeof(Velocity);
+      memcpy(b, &aid[i], sizeof(AtomID)); b += sizeof(AtomID);
+      memcpy(b, &p[i], sizeof(Position)); b += sizeof(Position);
+      memcpy(b, &v[i], sizeof(Velocity)); b += sizeof(Velocity);
     }
     this->~MovePatchesMsg();
     return buffer;
@@ -180,18 +186,24 @@ void MovePatchesMsg::unpack (void *in)
   {
     new((void*)this) MovePatchesMsg;
     char *b = (char*)in;
-    fromNodeID = *((NodeID*)b); b += sizeof(NodeID);
-    pid = *((PatchID*)b); b += sizeof(PatchID);
-    int size = *((int*)b); b += sizeof(int);
+    //fromNodeID = *((NodeID*)b); b += sizeof(NodeID);
+    //pid = *((PatchID*)b); b += sizeof(PatchID);
+    //int size = *((int*)b); b += sizeof(int);
+    memcpy(&fromNodeID, b, sizeof(NodeID)); b += sizeof(NodeID);
+    memcpy(&pid,b, sizeof(PatchID)); b += sizeof(PatchID);
+    int size; memcpy(&size, b, sizeof(int)); b += sizeof(int);
     DebugM(1,"MovePatchesMsg::unpack() - size = " << size << endl);
     aid.resize(size);
     p.resize(size);
     v.resize(size);
     for ( int i = 0; i < size; i++ )
     {
-      aid[i] = *((AtomID*)b); b += sizeof(AtomID);
-      p[i] = *((Position*)b); b += sizeof(Position);
-      v[i] = *((Velocity*)b); b += sizeof(Velocity);
+      //aid[i] = *((AtomID*)b); b += sizeof(AtomID);
+      //p[i] = *((Position*)b); b += sizeof(Position);
+      //v[i] = *((Velocity*)b); b += sizeof(Velocity);
+      memcpy(&aid[i],b, sizeof(AtomID)); b += sizeof(AtomID);
+      memcpy(&p[i], b, sizeof(Position)); b += sizeof(Position);
+      memcpy(&v[i], b, sizeof(Velocity)); b += sizeof(Velocity);
     }
   }
 
@@ -201,12 +213,18 @@ void MovePatchesMsg::unpack (void *in)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMgr.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/06 22:06:08 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1006 $	$Date: 1997/04/04 23:34:25 $
  *
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.C,v $
+ * Revision 1.1006  1997/04/04 23:34:25  milind
+ * Got NAMD2 to run on Origin2000.
+ * Included definitions of class static variables in C files.
+ * Fixed alignment bugs by using memcpy instead of assignment in
+ * pack and unpack.
+ *
  * Revision 1.1005  1997/03/06 22:06:08  ari
  * Removed Compute.ci
  * Comments added - more code cleaning

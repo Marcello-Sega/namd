@@ -32,7 +32,7 @@ extern "C" long int lrand48(void);
 /*	fname - Filename to read coordinates from			*/
 /*	pdbobj - PDB object to place coordinates into			*/
 /*	This function reads initial coordinates from a binary 		*/
-/*	restart file							*
+/*	restart file							*/
 /************************************************************************/
 
 void read_binary_coors(char *fname, PDB *pdbobj) {
@@ -314,13 +314,19 @@ void remove_com_motion(Vector *vel, Molecule *structure, int n)
 * RCS INFORMATION:
 *
 *	$RCSfile: NamdOneTools.C,v $
-*	$Author: nealk $	$Locker:  $		$State: Exp $
-*	$Revision: 1.4 $	$Date: 1997/04/03 19:59:06 $
+*	$Author: milind $	$Locker:  $		$State: Exp $
+*	$Revision: 1.5 $	$Date: 1997/04/04 23:34:21 $
 *
 ***************************************************************************
 * REVISION HISTORY:
 *
 * $Log: NamdOneTools.C,v $
+* Revision 1.5  1997/04/04 23:34:21  milind
+* Got NAMD2 to run on Origin2000.
+* Included definitions of class static variables in C files.
+* Fixed alignment bugs by using memcpy instead of assignment in
+* pack and unpack.
+*
 * Revision 1.4  1997/04/03 19:59:06  nealk
 * 1) New Fopen() which handles .Z and .gz files.
 * 2) localWaters and localNonWaters lists on each patch.
@@ -339,4 +345,4 @@ void remove_com_motion(Vector *vel, Molecule *structure, int n)
 *
 ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdOneTools.C,v 1.4 1997/04/03 19:59:06 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdOneTools.C,v 1.5 1997/04/04 23:34:21 milind Exp $";

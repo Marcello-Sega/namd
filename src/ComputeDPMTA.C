@@ -178,8 +178,9 @@ void ComputeDPMTA::initialize()
     DebugM(2,"waiting for Init go-ahead\n");
     do
     {
+      int dummy1=-1, dummy2=DPMTATAG;
       // get next DPMTATAG from node 0
-      conv_msg = comm->receive(-1,DPMTATAG);
+      conv_msg = comm->receive(dummy1,dummy2);
     } while (conv_msg == NULL);
     delete conv_msg;
     DebugM(2,"got Init go-ahead\n");
@@ -270,8 +271,9 @@ void ComputeDPMTA::initialize()
   DebugM(2,"Init go-ahead\n");
   do
   {
+    int dummy1=-1, dummy2=DPMTATAG;
     // get next DPMTATAG from node 0
-    conv_msg = comm->receive(-1,DPMTATAG);
+    conv_msg = comm->receive(dummy1,dummy2);
   } while (conv_msg == NULL);
   delete conv_msg;
   DebugM(2,"got Init go-ahead\n");
@@ -467,12 +469,18 @@ void ComputeDPMTA::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1042 $	$Date: 1997/03/27 17:08:30 $
+ *	$Revision: 1.1043 $	$Date: 1997/04/04 23:34:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.C,v $
+ * Revision 1.1043  1997/04/04 23:34:15  milind
+ * Got NAMD2 to run on Origin2000.
+ * Included definitions of class static variables in C files.
+ * Fixed alignment bugs by using memcpy instead of assignment in
+ * pack and unpack.
+ *
  * Revision 1.1042  1997/03/27 17:08:30  nealk
  * Added hydrogen groupings.  Now configuration parameter "splitPatch" determines
  * atom-into-patch distribution.

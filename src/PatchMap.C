@@ -28,6 +28,7 @@
 
 // static initialization
 PatchMap *PatchMap::_instance = 0;
+PatchMgr *PatchMap::patchMgr;
 
 // Safe singleton creation
 PatchMap *PatchMap::Instance() {
@@ -65,7 +66,7 @@ PatchMap::~PatchMap(void)
 }
 
 #undef PACK
-#define PACK(type,data) { *((type*)b) = data; b += sizeof(type); }
+#define PACK(type,data) { memcpy(b, &data,sizeof(type)); b += sizeof(type); }
 
 void * PatchMap::pack (int *length)
 {
@@ -89,7 +90,7 @@ void * PatchMap::pack (int *length)
   char *b = buffer;
   PACK(int,curPatch);
   PACK(int,nPatches);
-  DebugM(4,"nPatches = " << nPatches << endl);
+  DebugM(3,"nPatches = " << nPatches << endl);
   PACK(int,xDim); PACK(int,yDim); PACK(int,zDim);
   PACK(int,xPeriodic); PACK(int,yPeriodic); PACK(int,zPeriodic);
   PACK(BigReal,xOrigin); PACK(BigReal,yOrigin); PACK(BigReal,zOrigin);
@@ -108,7 +109,7 @@ void * PatchMap::pack (int *length)
 }
 
 #undef UNPACK
-#define UNPACK(type,data) { data = *((type*)b); b += sizeof(type); }
+#define UNPACK(type,data) { memcpy(&data, b, sizeof(type)); b += sizeof(type); }
 
 void PatchMap::unpack (void *in)
 {
@@ -117,7 +118,7 @@ void PatchMap::unpack (void *in)
   char *b = (char*)in;
   UNPACK(int,curPatch);
   UNPACK(int,nPatches);
-  DebugM(4,"nPatches = " << nPatches << endl);
+  DebugM(3,"nPatches = " << nPatches << endl);
   UNPACK(int,xDim); UNPACK(int,yDim); UNPACK(int,zDim);
   UNPACK(int,xPeriodic); UNPACK(int,yPeriodic); UNPACK(int,zPeriodic);
   UNPACK(BigReal,xOrigin); UNPACK(BigReal,yOrigin); UNPACK(BigReal,zOrigin);
@@ -565,13 +566,19 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/03/27 08:04:20 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1009 $	$Date: 1997/04/04 23:34:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.1009  1997/04/04 23:34:24  milind
+ * Got NAMD2 to run on Origin2000.
+ * Included definitions of class static variables in C files.
+ * Fixed alignment bugs by using memcpy instead of assignment in
+ * pack and unpack.
+ *
  * Revision 1.1008  1997/03/27 08:04:20  jim
  * Reworked Lattice to keep center of cell fixed during rescaling.
  *

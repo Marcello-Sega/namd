@@ -1,0 +1,33 @@
+##########################################
+##########################################
+# Makefile architecture template
+##########################################
+##########################################
+
+#####
+## Choose your favorite Compiler options
+####
+CXX = CC -64 
+CXXOPTS = -O -DGLOBALS -OPT:Olimit=5000
+#CXXOPTS = -g -DGLOBALS -INLINE:=OFF
+
+#####
+# Flags
+#####
+# uncomment for no warnings during compile
+#NOWARN=-w
+# uncomment for purify during compile
+# PURIFY=-purify
+
+#####
+# definitions for Charm routines
+#####
+CHARM =/u/ac/milind/charm/origin2000
+
+#####
+# Unix commands
+#####
+ECHO = echo
+MOVE = mv
+COPY = cp
+

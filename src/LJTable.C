@@ -5,11 +5,11 @@
 /*                           All Rights Reserved                           */
 /*                                                                         */
 /***************************************************************************/
-/* DESCRIPTION:
-/*
+/* DESCRIPTION:                                                            */
+/*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/LJTable.C,v 1.1003 1997/03/19 11:54:23 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/LJTable.C,v 1.1004 1997/04/04 23:34:19 milind Exp $";
 #include "LJTable.h"
 #include "Node.h"
 #include "Parameters.h"
@@ -121,13 +121,19 @@ void LJTable::compute_vdw_params(int i, int j,
  * RCS INFORMATION:
  *
  *	$RCSfile: LJTable.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/19 11:54:23 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/04/04 23:34:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LJTable.C,v $
+ * Revision 1.1004  1997/04/04 23:34:19  milind
+ * Got NAMD2 to run on Origin2000.
+ * Included definitions of class static variables in C files.
+ * Fixed alignment bugs by using memcpy instead of assignment in
+ * pack and unpack.
+ *
  * Revision 1.1003  1997/03/19 11:54:23  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

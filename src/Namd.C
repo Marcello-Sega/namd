@@ -9,7 +9,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.1004 1997/03/27 20:25:48 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.1005 1997/04/04 23:34:20 milind Exp $";
 
 #include "unistd.h"
 
@@ -46,6 +46,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.
 #include "LdbCoordinator.top.h"
 #include "LdbCoordinator.h"
 
+float Namd::cmiWallStart;
+float Namd::cmiCpuStart;
 
 // Namd(void ) is the constructor for the startup node.  It needs to
 // read in file data,
@@ -129,13 +131,19 @@ void Namd::startup(char *confFile)
  * RCS INFORMATION:
  *
  *	$RCSfile: Namd.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/27 20:25:48 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/04/04 23:34:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Namd.C,v $
+ * Revision 1.1005  1997/04/04 23:34:20  milind
+ * Got NAMD2 to run on Origin2000.
+ * Included definitions of class static variables in C files.
+ * Fixed alignment bugs by using memcpy instead of assignment in
+ * pack and unpack.
+ *
  * Revision 1.1004  1997/03/27 20:25:48  brunner
  * Changes for LdbCoordinator, the load balance control BOC
  *

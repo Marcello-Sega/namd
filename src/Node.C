@@ -9,7 +9,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1013 1997/04/04 22:28:54 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1014 1997/04/04 23:34:22 milind Exp $";
 
 #include <unistd.h>
 #include "ckdefs.h"
@@ -51,8 +51,9 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "Inform.h"
 #include "LdbCoordinator.h"
 
-extern "C" int gethostname(char *, size_t);
 extern Communicate *comm;
+
+BOCgroup BOCclass::group;
 
 //======================================================================
 // Public Functions
@@ -442,13 +443,19 @@ void Node::saveMolDataPointers(NamdState *state)
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1997/04/04 22:28:54 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1014 $	$Date: 1997/04/04 23:34:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1014  1997/04/04 23:34:22  milind
+ * Got NAMD2 to run on Origin2000.
+ * Included definitions of class static variables in C files.
+ * Fixed alignment bugs by using memcpy instead of assignment in
+ * pack and unpack.
+ *
  * Revision 1.1013  1997/04/04 22:28:54  ari
  * Removed quiescence detection after the initial startup phase.
  *

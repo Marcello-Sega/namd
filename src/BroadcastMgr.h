@@ -80,7 +80,7 @@ public:
 
   BroadcastClient *broadcastClient;
 
-  int hash() const { return (int)broadcastClient; }
+  size_t hash() const { return (size_t)broadcastClient; }
   int operator==(const BroadcastClientElem &b) const { 
     return broadcastClient == b.broadcastClient; 
   }
@@ -143,12 +143,18 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1997/03/19 11:53:54 $
+ *	$Revision: 1.2 $	$Date: 1997/04/04 23:34:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: BroadcastMgr.h,v $
+ * Revision 1.2  1997/04/04 23:34:12  milind
+ * Got NAMD2 to run on Origin2000.
+ * Included definitions of class static variables in C files.
+ * Fixed alignment bugs by using memcpy instead of assignment in
+ * pack and unpack.
+ *
  * Revision 1.1  1997/03/19 11:53:54  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

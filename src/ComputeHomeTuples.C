@@ -23,6 +23,7 @@
 #include "Templates/UniqueSetIter.h"
 
 #define DEBUGM
+#undef MIN_DEBUG_LEVEL
 #define MIN_DEBUG_LEVEL 3
 #include "Debug.h"
 
@@ -216,13 +217,19 @@ void ComputeHomeTuples<T>::doWork() {
  * RCS INFORMATION:
  *
  *      $RCSfile: ComputeHomeTuples.C,v $
- *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1009 $     $Date: 1997/03/18 21:35:25 $
+ *      $Author: milind $  $Locker:  $             $State: Exp $
+ *      $Revision: 1.1010 $     $Date: 1997/04/04 23:34:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.C,v $
+ * Revision 1.1010  1997/04/04 23:34:16  milind
+ * Got NAMD2 to run on Origin2000.
+ * Included definitions of class static variables in C files.
+ * Fixed alignment bugs by using memcpy instead of assignment in
+ * pack and unpack.
+ *
  * Revision 1.1009  1997/03/18 21:35:25  jim
  * Eliminated fake_seq.  Reductions now use Patch::flags.seq.
  *
