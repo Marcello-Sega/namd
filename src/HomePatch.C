@@ -714,18 +714,24 @@ void HomePatch::doGroupSizeCheck()
 void HomePatch::doMarginCheck()
 {
   SimParameters *simParams = Node::Object()->simParameters;
-  Position Min = lattice.unscale(min);
-  Position Max = lattice.unscale(max);
+
+  BigReal sysdima = lattice.a_r().unit() * lattice.a();
+  BigReal sysdimb = lattice.b_r().unit() * lattice.b();
+  BigReal sysdimc = lattice.c_r().unit() * lattice.c();
+
   BigReal cutoff = simParams->cutoff;
-  BigReal marginx = 0.5 * ( Max.x - Min.x - cutoff );
-  BigReal marginy = 0.5 * ( Max.y - Min.y - cutoff );
-  BigReal marginz = 0.5 * ( Max.z - Min.z - cutoff );
-  BigReal minx = Min.x - marginx;
-  BigReal miny = Min.y - marginy;
-  BigReal minz = Min.z - marginz;
-  BigReal maxx = Max.x + marginx;
-  BigReal maxy = Max.y + marginy;
-  BigReal maxz = Max.z + marginz;
+
+  BigReal margina = 0.5 * ( max.x - min.x - cutoff / sysdima );
+  BigReal marginb = 0.5 * ( max.y - min.y - cutoff / sysdimb );
+  BigReal marginc = 0.5 * ( max.z - min.z - cutoff / sysdimc );
+
+  BigReal minx = min.x - margina;
+  BigReal miny = min.y - marginb;
+  BigReal minz = min.z - marginc;
+  BigReal maxx = max.x + margina;
+  BigReal maxy = max.y + marginb;
+  BigReal maxz = max.z + marginc;
+
   int xdev, ydev, zdev;
   int problemCount = 0;
 
@@ -733,21 +739,22 @@ void HomePatch::doMarginCheck()
   FullAtomList::iterator p_e = atom.end();
   for ( ; p_i != p_e; ++p_i ) {
 
-    // check if atom should is within bounds
-    if (p_i->position.x < minx) xdev = 0;
-    else if (maxx <= p_i->position.x) xdev = 2; 
+    ScaledPosition s = lattice.scale(p_i->position);
+
+    // check if atom is within bounds
+    if (s.x < minx) xdev = 0;
+    else if (maxx <= s.x) xdev = 2; 
     else xdev = 1;
 
-    if (p_i->position.y < miny) ydev = 0;
-    else if (maxy <= p_i->position.y) ydev = 2; 
+    if (s.y < miny) ydev = 0;
+    else if (maxy <= s.y) ydev = 2; 
     else ydev = 1;
 
-    if (p_i->position.z < minz) zdev = 0;
-    else if (maxz <= p_i->position.z) zdev = 2; 
+    if (s.z < minz) zdev = 0;
+    else if (maxz <= s.z) zdev = 2; 
     else zdev = 1;
 
-    if (mInfo[xdev][ydev][zdev]) { // process atom for migration
-                                   // Don't migrate if destination is myself
+    if (mInfo[xdev][ydev][zdev]) { // somewhere else to be
 	++problemCount;
     }
 
@@ -764,18 +771,8 @@ void HomePatch::doMarginCheck()
 void
 HomePatch::doAtomMigration()
 {
-  int i,j;
-  int xdev=1, ydev=1, zdev=1;
+  int i;
 
-  // Drain the migration message buffer
-  //for (i=0; i<numMlBuf; i++) {
-  //   DebugM(3, "Draining migration buffer ("<<i<<","<<numMlBuf<<")\n");
-  //   depositMigration(srcID[i], mlBuf[i]);
-  //}
-  //numMlBuf = 0;
-     
-  // realInfo points to migration lists for neighbors we actually have. 
-  //    element of mInfo[3][3][3] points to an element of realInfo
   for (i=0; i<numNeighbors; i++) {
     realInfo[i].mList.resize(0);
   }
@@ -784,48 +781,57 @@ HomePatch::doAtomMigration()
   AtomMap::Object()->unregisterIDs(patchID,p.begin(),p.end());
 
   // Determine atoms that need to migrate
+
+  BigReal minx = min.x;
+  BigReal miny = min.y;
+  BigReal minz = min.z;
+  BigReal maxx = max.x;
+  BigReal maxy = max.y;
+  BigReal maxz = max.z;
+
+  int xdev, ydev, zdev;
+  int delnum = 0;
+
   FullAtomList::iterator atom_i = atom.begin();
   FullAtomList::iterator atom_e = atom.end();
-  int delnum = 0;
-  Position Min = lattice.unscale(min);
-  Position Max = lattice.unscale(max);
+  while ( atom_i != atom_e ) {
+    if ( atom_i->hydrogenGroupSize ) {
 
-  while ( atom_i != atom_e )
-  {
-      if ( atom_i->hydrogenGroupSize )
-	  {
-	  // check if atom should is within bounds
-	  if (atom_i->position.x < Min.x) xdev = 0;
-	  else if (Max.x <= atom_i->position.x) xdev = 2; 
-	  else xdev = 1;
+      ScaledPosition s = lattice.scale(atom_i->position);
 
-	  if (atom_i->position.y < Min.y) ydev = 0;
-	  else if (Max.y <= atom_i->position.y) ydev = 2; 
-	  else ydev = 1;
+      // check if atom is within bounds
+      if (s.x < minx) xdev = 0;
+      else if (maxx <= s.x) xdev = 2;
+      else xdev = 1;
 
-	  if (atom_i->position.z < Min.z) zdev = 0;
-	  else if (Max.z <= atom_i->position.z) zdev = 2; 
-	  else zdev = 1;
-	  }
+      if (s.y < miny) ydev = 0;
+      else if (maxy <= s.y) ydev = 2;
+      else ydev = 1;
 
-     if (mInfo[xdev][ydev][zdev]) { // process atom for migration
+      if (s.z < minz) zdev = 0;
+      else if (maxz <= s.z) zdev = 2;
+      else zdev = 1;
+
+    }
+
+    if (mInfo[xdev][ydev][zdev]) { // process atom for migration
                                     // Don't migrate if destination is myself
 
-       // See if we have a migration list already
-       MigrationList &mCur = mInfo[xdev][ydev][zdev]->mList;
-       DebugM(3,"Migrating atom " << atomIDList_i << " from patch "
+      // See if we have a migration list already
+      MigrationList &mCur = mInfo[xdev][ydev][zdev]->mList;
+      DebugM(3,"Migrating atom " << atomIDList_i << " from patch "
 		<< patchID << " with position " << p_i << "\n");
-       mCur.add(*atom_i);
+      mCur.add(*atom_i);
 
-       ++delnum;
+      ++delnum;
 
-     } else {
+    } else {
 
-       if ( delnum ) { *(atom_i-delnum) = *atom_i; }
+      if ( delnum ) { *(atom_i-delnum) = *atom_i; }
 
-     }
+    }
 
-     ++atom_i;
+    ++atom_i;
 
   }
 
