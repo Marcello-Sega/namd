@@ -34,15 +34,18 @@ protected:
   void printLoads();
   void computeAverage();
   double computeMax();
+  
+  void InitProxyUsage();
 
 
 public:
   double overLoad;
   char *strategyName;
   Rebalancer() {}
+  ~Rebalancer();
   Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
-	     processorInfo *processorArray,
-	     int nComps, int nPatches, int nPes);
+             processorInfo *processorArray,
+             int nComps, int nPatches, int nPes);
 };
 
 
