@@ -29,12 +29,6 @@
      Keywords are case INsensitive
 */
 
-#include <iostream.h>
-#if !defined (WIN32) || defined(__CYGWIN__)
-#include <strstream.h>
-#else
-#include <strstrea.h>
-#endif
 #include <string.h> // for strncpy, strcasecmp
 #include <ctype.h>   // for isspace
 #include <stdio.h>   // Yes, I do use stdio

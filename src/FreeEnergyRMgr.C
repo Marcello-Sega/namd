@@ -9,12 +9,6 @@
 #include <memory.h>
 #include <string.h>
 // #include <iomanip.h>
-#include <iostream.h>
-#ifndef WIN32
-#include <strstream.h>
-#else
-#include <strstrea.h>
-#endif
 #include "InfoStream.h"
 #include "FreeEnergyEnums.h"
 #include "FreeEnergyAssert.h"

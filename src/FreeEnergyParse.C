@@ -9,12 +9,6 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
-#include <iostream.h>
-#ifndef WIN32
-#include <strstream.h>
-#else
-#include <strstrea.h>
-#endif
 #include "common.h"
 #include "InfoStream.h"
 #include "FreeEnergyEnums.h"
