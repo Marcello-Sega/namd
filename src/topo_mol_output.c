@@ -25,10 +25,10 @@ int topo_mol_write_pdb(topo_mol *mol, FILE *file,
         ++atomid;
         switch ( atom->xyz_state ) {
         case TOPO_MOL_XYZ_SET:
-          x = atom->x;  y = atom->y;  z = atom->z;  o = 0.0;
+          x = atom->x;  y = atom->y;  z = atom->z;  o = 1.0;
           break;
         case TOPO_MOL_XYZ_GUESS:
-          x = atom->x;  y = atom->y;  z = atom->z;  o = 1.0;
+          x = atom->x;  y = atom->y;  z = atom->z;  o = 0.0;
           break;
         case TOPO_MOL_XYZ_VOID:
           x = y = z = 0.0;  o = -1.0;
