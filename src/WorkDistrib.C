@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.6 1996/08/19 21:37:02 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.7 1996/08/19 21:41:31 brunner Exp $";
 
 #include <stdio.h>
 
@@ -115,6 +115,10 @@ void WorkDistrib::mapPatches(void)
   /*
    *  pdb->find_extremes(&xmin,&xmax);
    */
+
+  xmax.x = xmax.y = xmax.z = 20.;
+  xmin.x = xmin.y = xmin.z = 0.;
+
   sysDim.x = xmax.x - xmin.x;
   sysDim.y = xmax.y - xmin.y;
   sysDim.z = xmax.z - xmin.z;
@@ -265,12 +269,15 @@ void WorkDistrib::mapElectComputes(void)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/08/19 21:37:02 $
+ *	$Revision: 1.7 $	$Date: 1996/08/19 21:41:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.7  1996/08/19 21:41:31  brunner
+ * *** empty log message ***
+ *
  * Revision 1.6  1996/08/19 21:37:02  brunner
  * Create Patches from PDB data
  *
