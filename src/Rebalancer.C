@@ -446,9 +446,10 @@ int Rebalancer::refine()
    int done = 0;
    while (!done)
    {
-      double bestSize0, bestSize1, bestSize2;
-      computeInfo *bestCompute0, *bestCompute1, *bestCompute2;
-      processorInfo *bestP,*bestP0,*bestP1,*bestP2;
+      processorInfo* goodP[3][3];  // goodP[# of real patches][# of proxies]
+      computeInfo* goodCompute[3][3];
+      double goodSize[3][3];
+      processorInfo* bestP;
     
       processorInfo *donor = (processorInfo *) heavyProcessors->deleteMax();
       /* Keep selecting new donors, until we find one with some compute to
@@ -473,9 +474,14 @@ int Rebalancer::refine()
       Iterator nextProcessor;
       processorInfo *p = (processorInfo *) 
       lightProcessors->iterator((Iterator *) &nextProcessor);
-      bestSize0 = bestSize1 = bestSize2 = 0;
-      bestP0 = bestP1 = bestP2 = 0;
-      bestCompute0 = bestCompute1 = bestCompute2 = 0;
+
+      int i,j;
+      for(i=0; i < 3; i++)
+	for(j=0; j<3; j++) {
+	  goodP[i][j] = 0;
+	  goodCompute[i][j] = 0;
+	  goodSize[i][j] = 0.;
+	}
 
       // iout << iINFO << "Finding receiver for processor " << donor->Id << "\n" << endi;
       while (p)
@@ -489,67 +495,58 @@ int Rebalancer::refine()
          {
             if ( c->load + p->load < thresholdLoad) 
             {
-               int n= numAvailable(c,p);
-               // iout << iINFO << "Considering Compute : " << c->Id << " with load " 
-               //      << c->load << "\n" << endi;
-               switch(n)
-               {
-                  case 0: 
-                     if(c->load > bestSize0 && (!bestP0 || p->load<bestP0->load)) 
-                     {
-                        bestSize0 = c->load;
-                        bestCompute0 = c;
-                        bestP0 = p;
-                     }
-                     break;
-                  case 1: 
-                     if(c->load > bestSize1 && (!bestP1 || p->load<bestP1->load))
-                     {
-                        bestSize1 = c->load;
-                        bestCompute1 = c;
-                        bestP1 = p;
-                     }
-                     break;
-                  case 2: 
-                     if(c->load > bestSize2 && (!bestP2 || p->load<bestP2->load))
-                     {
-                        bestSize2 = c->load;
-                        bestCompute2 = c;
-                        bestP2 = p;
-                     }
-                     break;
-                  default:
-                     iout << iINFO <<  "Error. Illegal number of proxies.\n" << "\n";    
-               }
-            }
+               int nPatches = numPatchesAvail(c,p);
+	       int nProxies = numProxiesAvail(c,p);
+	       
+	       if (nPatches < 0 || nPatches > 2)
+		 iout << iERROR << "Too many patches: " << nPatches 
+		      << "\n" << endi;
+	       if (nProxies < 0 || nProxies > 2)
+		 iout << iERROR << "Too many proxies: " << nProxies 
+		      << "\n" << endi;
+
+	       if ((c->load > goodSize[nPatches][nProxies]) 
+		   && (!goodP[nPatches][nProxies] 
+		       || p->load < goodP[nPatches][nProxies]->load) ) {
+		 goodSize[nPatches][nProxies] = c->load;
+		 goodCompute[nPatches][nProxies] = c;
+		 goodP[nPatches][nProxies] = p;
+	       }
+	    }
             nextCompute.id++;
-            c = (computeInfo *) donor->computeSet->next((Iterator *)&nextCompute);
+            c = (computeInfo *) donor->computeSet->
+	      next((Iterator *)&nextCompute);
          }
          p = (processorInfo *) 
-         lightProcessors->next((Iterator *) &nextProcessor);
+	   lightProcessors->next((Iterator *) &nextProcessor);
       }
 
-      //we have narrowed the choice to 3 candidates.
-      if (bestCompute2)
-      {
-         deAssign(bestCompute2, donor);      
-         assign(bestCompute2, bestP2);
-         bestP = bestP2;
-      }
-      else if (bestCompute1)
-      {
-         deAssign(bestCompute1, donor);
-         assign(bestCompute1, bestP1);
-         bestP = bestP1;
-      }
-      else if (bestCompute0)
-      {
-         deAssign(bestCompute0, donor);
-         assign(bestCompute0, bestP0);
-         bestP = bestP0;
-      }
-      else 
-      {
+      //we have narrowed the choice to 6 candidates.
+      if (goodCompute[2][0]) {
+         deAssign(goodCompute[2][0], donor);      
+         assign(goodCompute[2][0], goodP[2][0]);
+         bestP = goodP[2][0];
+      } else if (goodCompute[1][1]) {
+         deAssign(goodCompute[1][1], donor);      
+         assign(goodCompute[1][1], goodP[1][1]);
+         bestP = goodP[1][1];
+      } else if (goodCompute[0][2]) {
+         deAssign(goodCompute[0][2], donor);      
+         assign(goodCompute[0][2], goodP[0][2]);
+         bestP = goodP[0][2];
+      } else if (goodCompute[1][0]) {
+         deAssign(goodCompute[1][0], donor);      
+         assign(goodCompute[1][0], goodP[1][0]);
+         bestP = goodP[1][0];
+      } else if (goodCompute[0][1]) {
+         deAssign(goodCompute[0][1], donor);      
+         assign(goodCompute[0][1], goodP[0][1]);
+         bestP = goodP[0][1];
+      } else if (goodCompute[0][0]) {
+         deAssign(goodCompute[0][0], donor);      
+         assign(goodCompute[0][0], goodP[0][0]);
+         bestP = goodP[0][0];
+      } else {
          // iout << iINFO << "Refine: No receiver found" << "\n" << endl;
          finish = 0;
          break;
@@ -721,6 +718,53 @@ int Rebalancer::numAvailable(computeInfo *c, processorInfo *p)
       count++;
    if (isAvailableOn((patchInfo *)&(patches[p2]), p))
       count++;
+   return count;   
+}
+
+int Rebalancer::numProxiesAvail(computeInfo *c, processorInfo *p)
+{
+   //return the number of proxy/home patches available on p for c (0,1,2)
+   int p1, p2;
+   p1 = c->patch1;
+   p2 = c->patch2;
+   int count = 0;
+   if (isAvailableOn((patchInfo *)&(patches[p1]), p) 
+       && patches[p1].processor != p->Id ) {
+      count++;
+      //iout << iINFO << "Patch " << patches[p1].Id << " has a proxy on " 
+      //     << p->Id << "\n" << endi;
+   }
+   if (isAvailableOn((patchInfo *)&(patches[p2]), p)
+       && patches[p2].processor != p->Id ) {
+      count++;
+      //iout << iINFO << "Patch " << patches[p2].Id << " has a proxy on " 
+      //   << p->Id << "\n" << endi;
+   }
+
+   //iout << iINFO << "Returning " << count << " proxies\n" << endi;
+   return count;   
+}
+
+int Rebalancer::numPatchesAvail(computeInfo *c, processorInfo *p)
+{
+   //return the number of proxy/home patches available on p for c (0,1,2)
+   const int p1 = c->patch1;
+   const int p2 = c->patch2;
+
+   int count = 0;
+
+   if (patches[p1].processor == p->Id) {
+     count++;
+     //iout << iINFO << "Patch " << patches[p1].Id << " is on " 
+     //  << patches[p1].processor << "\n" << endi;
+   }
+   if (patches[p2].processor == p->Id) {
+     count++;
+     //iout << iINFO << "Patch " << patches[p2].Id << " is on " 
+     //  << patches[p2].processor << "\n" << endi;
+   }
+     
+   //iout << iINFO << "Returning " << count << " patches\n" << endi;
    return count;   
 }
 

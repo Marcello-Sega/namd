@@ -74,6 +74,12 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
     } else {
       iout << iINFO << "Load balance cycle " << step()
         << " using RefineOnly\n" << endi;
+      // To save the data to a file, uncomment the following lines -RKB
+      //      if (step() == 1) {
+      //	iout << iINFO << "Dumping data\n" << endi;
+      //	dumpDataASCII("refinedata", numProcessors, numPatches,
+      //		      nMoveableComputes);
+      //      }
       rebalancer = new RefineOnly(computeArray,patchArray,processorArray,
                                   nMoveableComputes, numPatches,
                                   numProcessors);
@@ -174,6 +180,64 @@ void NamdCentLB::dumpData(char *file, int numProcessors, int numPatches, int num
   }
 
   close(fd);
+}
+
+void NamdCentLB::dumpDataASCII(char *file, int numProcessors,
+			       int numPatches, int numComputes)
+{
+  FILE* fp = fopen(file,"w");
+  if (fp == NULL){
+     perror("dumpLDStats");
+     return;
+  }
+  CkPrintf("***** DUMP data to file: %s ***** \n", file);
+  fprintf(fp,"%d %d %d\n",numProcessors,numPatches,numComputes);
+
+  int i;
+  for(i=0;i<numProcessors;i++) {
+    processorInfo* p = processorArray + i;
+    fprintf(fp,"%d %e %e %e\n",p->Id,p->load,p->backgroundLoad,p->computeLoad);
+  }
+
+  for(i=0;i < numPatches; i++) {
+    patchInfo* p = patchArray + i;
+    fprintf(fp,"%d %e %d %d\n",p->Id,p->load,p->processor,p->numAtoms);
+  }
+    
+  for(i=0; i < numComputes; i++) {
+    computeInfo* c = computeArray + i;
+    fprintf(fp,"%d %e %d %d %d %d\n",c->Id,c->load,c->patch1,c->patch2,
+	    c->processor,c->oldProcessor);
+  }
+
+  // dump patchSet
+  for (i=0; i< numProcessors; i++) {
+      int num = processorArray[i].proxies->numElements();
+      fprintf(fp,"%d\n",num);
+      Iterator nextProxy;
+      patchInfo *p = (patchInfo *)processorArray[i].proxies->
+	iterator((Iterator *)&nextProxy);
+      while (p) {
+          fprintf(fp,"%d\n",p->Id);
+          p = (patchInfo *)processorArray[i].proxies->
+	    next((Iterator*)&nextProxy);
+      }
+  }
+  // dump proxiesOn
+  for (i=0; i<numPatches; i++)  {
+    int num = patchArray[i].proxiesOn->numElements();
+    fprintf(fp,"%d\n",num);
+      Iterator nextProc;
+      processorInfo *p = (processorInfo *)patchArray[i].proxiesOn->
+	iterator((Iterator *)&nextProc);
+      while (p) {
+	fprintf(fp,"%d\n",p->Id);
+	p = (processorInfo *)patchArray[i].proxiesOn->
+	  next((Iterator*)&nextProc);
+      }
+  }
+
+  fclose(fp);
 }
 
 void NamdCentLB::loadData(char *file, int &numProcessors, int &numPatches, int &numComputes)

@@ -26,8 +26,9 @@ void Alg7::strategy()
   // double bestSize0, bestSize1, bestSize2;
   computeInfo *c;
   int numAssigned;
-  processorInfo *bestP, *bestP0, *bestP1, *bestP2;
-  bestP0 = bestP1 = bestP2 = (processorInfo *)0;
+  processorInfo* goodP[3][3];  // goodP[# of real patches][# of proxies]
+
+  int i,j;
   //   iout << iINFO  << "calling makeHeaps. \n";
   makeHeaps();
   computeAverage();
@@ -45,7 +46,6 @@ void Alg7::strategy()
 
   //   for (int i=0; i<numPatches; i++)
   //     { cout << "(" << patches[i].Id << "," << patches[i].processor ;}
-  int i;
   overLoad = 1.2;
   for (i=0; i<numComputes; i++) {
     c = (computeInfo *) computesHeap->deleteMax();
@@ -53,85 +53,83 @@ void Alg7::strategy()
     heapIterator nextProcessor;
     processorInfo *p = (processorInfo *) 
       pes->iterator((heapIterator *) &nextProcessor);
-    // bestSize0 = bestSize1 = bestSize2 = 0;
-    bestP0 = bestP1 = bestP2 = (processorInfo *)0;
+    for(i=0;i<3;i++)
+      for(j=0;j<3;j++)
+	goodP[i][j]=0;
     while (p) {
-      int n=0;
-      n = numAvailable(c,p);
-      switch(n){
-      case 0:
-	if (!bestP0) {
-	    bestP0 = p;
-	} else {
-	  if ( ( c->load + p->load < overLoad*averageLoad) && 
-	       (p->load<bestP0->load))
-	    bestP0 = p;
-	}
-	break;
-      case 1:
-	if (!bestP1) {
-	  if (c->load + p->load < overLoad*averageLoad)
-	    bestP1 = p;
-	} else {
-	  if (( c->load + p->load < overLoad*averageLoad) &&
-	      (p->load < bestP1->load))
-	    bestP1 = p;
-	}
-	break;
-      case 2: 
-	if (!bestP2) {
-	  if (c->load + p->load < overLoad*averageLoad)
-	    bestP2 = p;
-	} else {
-	  if (( c->load + p->load < overLoad*averageLoad) &&
-	      (p->load < bestP2->load))
-	    bestP2 = p;
-	}
-	break;
-      default:
-	iout << iINFO  << "Error. Illegal number of proxies.\n" << endi;    
+      int nPatches = numPatchesAvail(c,p);
+      int nProxies = numProxiesAvail(c,p);
+      if (nPatches < 0 || nPatches > 2)
+	iout << iERROR << "Too many patches: " << nPatches << "\n" << endi;
+      if (nProxies < 0 || nProxies > 2)
+	iout << iERROR << "Too many proxies: " << nProxies << "\n" << endi;
+
+      if (!goodP[nPatches][nProxies]) {
+	if (nPatches == 0 && nProxies == 0)
+	  goodP[0][0] = p;
+	else if (c->load + p->load < overLoad*averageLoad)
+	  goodP[nPatches][nProxies] = p;
+      } else {
+	if (( c->load + p->load < overLoad*averageLoad) &&
+	    (p->load < goodP[nPatches][nProxies]->load))
+	  goodP[nPatches][nProxies] = p;
       }
       p = (processorInfo *) pes->next(&nextProcessor);
     }
 
-    if (numAssigned >= 0) {
-      if (bestP2) {
-	assign(c, bestP2);
-	numAssigned++;
-	numAssignedP2++;
-      } else if (bestP1) {
-	assign(c, bestP1);
-	numAssigned++;
-	numAssignedP1++;
-      } else if (bestP0) {
-        assign(c, bestP0);
-        numAssigned++;
-        numAssignedP0++;
-      } else { 
-        iout << iERROR  << "*** Alg 7 No receiver found 1 ***" << "\n" <<endi;
-        break;
-      }
-    } else {
-      // At start, load is most important, rather than communications
-      int *numAssignedptr = &numAssignedP2;
-      bestP = bestP2;
-      if (!bestP || (bestP1 && (bestP1->load < 0.8 * bestP->load)) ) {
-	bestP=bestP1;
-	numAssignedptr = &numAssignedP1;
-      }
-      if (!bestP || (bestP0 && (bestP0->load < 0.75 * bestP->load))) {
-	bestP=bestP0;
-	numAssignedptr = &numAssignedP0;
-      }
-      if (!bestP) {
-	iout << iERROR  << "*** Alg7 No receiver found 2 ***" << "\n" <<endi;
-	break;
-      }
-      assign(c,bestP);
-      (*numAssignedptr)++;
+    //    if (numAssigned >= 0) {  Else is commented out below
+
+    processorInfo* selectedP;
+    if (goodP[2][0]) {
+      // Two home, no proxies
+      assign(c, goodP[2][0]);
       numAssigned++;
-      numAssignedP4++;
+    } else if (goodP[1][1]) {
+      // One home, one proxy
+      assign(c, goodP[1][1]);
+      numAssigned++;
+    } else if (goodP[0][2]) {
+      // No home, two proxies
+      assign(c, goodP[0][2]);
+      numAssigned++;
+    } else if (goodP[1][0]) {
+      // One home, no proxies
+      assign(c, goodP[1][0]);
+      numAssigned++;
+    } else if (goodP[0][1]) {
+      // No home, one proxy
+      assign(c, goodP[0][1]);
+      numAssigned++;
+    } else if (goodP[0][0]) {
+      // No home, no proxies
+      assign(c, goodP[0][0]);
+      numAssigned++;
+    } else {
+      iout << iERROR  << "*** Alg 7 No receiver found 1 ***" << "\n" <<endi;
+      break;
     }
+
+//     } else {
+//       // At start, load is most important, rather than communications
+//       int *numAssignedptr = &numAssignedP2;
+//       bestP = bestP2;
+//       if (!bestP || (bestP1 && (bestP1->load < 0.8 * bestP->load)) ) {
+// 	bestP=bestP1;
+// 	numAssignedptr = &numAssignedP1;
+//       }
+//       if (!bestP || (bestP0 && (bestP0->load < 0.75 * bestP->load))) {
+// 	bestP=bestP0;
+// 	numAssignedptr = &numAssignedP0;
+//       }
+//       if (!bestP) {
+// 	iout << iERROR  << "*** Alg7 No receiver found 2 ***" << "\n" <<endi;
+// 	break;
+//       }
+//       assign(c,bestP);
+//       (*numAssignedptr)++;
+//       numAssigned++;
+//       numAssignedP4++;
+//     }
   }
 
 #ifdef DEBUG

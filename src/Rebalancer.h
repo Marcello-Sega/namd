@@ -29,6 +29,8 @@ protected:
   double averageLoad;
   int isAvailableOn(patchInfo *patch, processorInfo *p);
   int numAvailable(computeInfo *c, processorInfo *p);
+  int numPatchesAvail(computeInfo *c, processorInfo *p);
+  int numProxiesAvail(computeInfo *c, processorInfo *p);
 
   void strategy();
   void makeHeaps();
