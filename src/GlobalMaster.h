@@ -78,22 +78,22 @@ class GlobalMaster {
 
   /* These return pointers to the lists of atom ids and positions, as
      they were last passed to processData (see below) */
-  const AtomIDList::iterator getAtomIdBegin();
-  const AtomIDList::iterator getAtomIdEnd();
-  const PositionList::iterator getAtomPositionBegin();
-  const PositionList::iterator getGroupPositionBegin();
-  const PositionList::iterator getGroupPositionEnd();
+  AtomIDList::const_iterator getAtomIdBegin();
+  AtomIDList::const_iterator getAtomIdEnd();
+  PositionList::const_iterator getAtomPositionBegin();
+  PositionList::const_iterator getGroupPositionBegin();
+  PositionList::const_iterator getGroupPositionEnd();
   
   /* these give you all the global forces being applied by masters */
   /* again, here we only need one end iterator */
-  const AtomIDList::iterator getLastAtomsForcedBegin();
-  const AtomIDList::iterator getLastAtomsForcedEnd();
-  const ForceList::iterator getLastForcesBegin();
+  AtomIDList::const_iterator getLastAtomsForcedBegin();
+  AtomIDList::const_iterator getLastAtomsForcedEnd();
+  ForceList::const_iterator getLastForcesBegin();
   
   /* This helpful function returns an array with the masses of each of
      the groups whose positions we have.  */
-  const ResizeArray<BigReal>::iterator getGroupMassBegin();
-  const ResizeArray<BigReal>::iterator getGroupMassEnd();
+  ResizeArray<BigReal>::const_iterator getGroupMassBegin();
+  ResizeArray<BigReal>::const_iterator getGroupMassEnd();
 
  private:
   /* These store the pointers to lists of atom ids and atom positions.

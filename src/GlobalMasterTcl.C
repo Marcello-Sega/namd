@@ -165,9 +165,9 @@ int GlobalMasterTcl::Tcl_loadforces(ClientData clientData,
   Tcl_Obj * const force_array_name = objv[1];
   
   GlobalMasterTcl *self = (GlobalMasterTcl *)clientData;
-  AtomIDList::iterator forced_ids_i = self->getLastAtomsForcedBegin();
-  AtomIDList::iterator forced_ids_e = self->getLastAtomsForcedEnd();
-  ForceList::iterator forces_i = self->getLastForcesBegin();
+  AtomIDList::const_iterator forced_ids_i = self->getLastAtomsForcedBegin();
+  AtomIDList::const_iterator forced_ids_e = self->getLastAtomsForcedEnd();
+  ForceList::const_iterator forces_i = self->getLastForcesBegin();
 
   // now make a Tcl array containing all of the requested atoms and
   // their forces
@@ -209,9 +209,9 @@ int GlobalMasterTcl::Tcl_loadcoords(ClientData clientData,
   }
   Tcl_Obj * const vname = objv[1];
   GlobalMasterTcl *self = (GlobalMasterTcl *)clientData;
-  AtomIDList::iterator a_i = self->getAtomIdBegin();
-  AtomIDList::iterator a_e = self->getAtomIdEnd();
-  PositionList::iterator p_i = self->getAtomPositionBegin();
+  AtomIDList::const_iterator a_i = self->getAtomIdBegin();
+  AtomIDList::const_iterator a_e = self->getAtomIdEnd();
+  PositionList::const_iterator p_i = self->getAtomPositionBegin();
   for ( ; a_i != a_e; ++a_i, ++p_i ) {
     Tcl_Obj *newlist = Tcl_NewListObj(0, NULL);
     Tcl_Obj *arrkey = Tcl_NewIntObj((int)((*a_i)+1));
@@ -231,8 +231,8 @@ int GlobalMasterTcl::Tcl_loadcoords(ClientData clientData,
   }
 
   /* do the group stuff */
-  PositionList::iterator c_i = self->getGroupPositionBegin();
-  PositionList::iterator c_e = self->getGroupPositionEnd();
+  PositionList::const_iterator c_i = self->getGroupPositionBegin();
+  PositionList::const_iterator c_e = self->getGroupPositionEnd();
   int gcount = 1;
   for ( ; c_i != c_e; ++c_i, ++gcount ) {
     Tcl_Obj *newlist = Tcl_NewListObj(0, NULL);
@@ -266,8 +266,8 @@ int GlobalMasterTcl::Tcl_loadmasses(ClientData clientData,
   Tcl_Obj * const vname = objv[1];
   GlobalMasterTcl *self = (GlobalMasterTcl *)clientData;
   Molecule *mol = Node::Object()->molecule;
-  AtomIDList::iterator a_i = self->getAtomIdBegin();
-  AtomIDList::iterator a_e = self->getAtomIdEnd();
+  AtomIDList::const_iterator a_i = self->getAtomIdBegin();
+  AtomIDList::const_iterator a_e = self->getAtomIdEnd();
   for ( ; a_i != a_e; ++a_i) {
     Tcl_Obj *arrkey = Tcl_NewIntObj((int)((*a_i)+1));
     if (!Tcl_ObjSetVar2(interp, vname, arrkey,

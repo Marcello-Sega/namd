@@ -154,9 +154,9 @@ int GlobalMasterFreeEnergy::requestAtom(int atomid)
 
 int GlobalMasterFreeEnergy::getPosition(int atomid, Position &position)
 {
-  AtomIDList::iterator a_i = getAtomIdBegin();
-  AtomIDList::iterator a_e = getAtomIdEnd();
-  PositionList::iterator p_i = getAtomPositionBegin();
+  AtomIDList::const_iterator a_i = getAtomIdBegin();
+  AtomIDList::const_iterator a_e = getAtomIdEnd();
+  PositionList::const_iterator p_i = getAtomPositionBegin();
   for ( ; a_i != a_e; ++a_i, ++p_i ) {
     if ( *a_i == atomid ) {
       position = *p_i;

@@ -144,43 +144,43 @@ ResizeArray<AtomIDList> &GlobalMaster::modifyRequestedGroups() {
   return reqGroups;
 }
 
-const AtomIDList::iterator GlobalMaster::getAtomIdBegin() {
+AtomIDList::const_iterator GlobalMaster::getAtomIdBegin() {
   return atomIdBegin;
 }
 
-const AtomIDList::iterator GlobalMaster::getAtomIdEnd() {
+AtomIDList::const_iterator GlobalMaster::getAtomIdEnd() {
   return atomIdEnd;
 }
 
-const PositionList::iterator GlobalMaster::getAtomPositionBegin() {
+PositionList::const_iterator GlobalMaster::getAtomPositionBegin() {
   return atomPositionBegin;
 }
 
-const PositionList::iterator GlobalMaster::getGroupPositionBegin() {
+PositionList::const_iterator GlobalMaster::getGroupPositionBegin() {
   return groupPositionBegin;
 }
 
-const PositionList::iterator GlobalMaster::getGroupPositionEnd() {
+PositionList::const_iterator GlobalMaster::getGroupPositionEnd() {
   return groupPositionEnd;
 }
 
-const ResizeArray<BigReal>::iterator GlobalMaster::getGroupMassBegin()
+ResizeArray<BigReal>::const_iterator GlobalMaster::getGroupMassBegin()
 {
   return groupMasses.begin();
 }
 
-const ResizeArray<BigReal>::iterator GlobalMaster::getGroupMassEnd() {
+ResizeArray<BigReal>::const_iterator GlobalMaster::getGroupMassEnd() {
   return groupMasses.end();
 }
 
-const AtomIDList::iterator GlobalMaster::getLastAtomsForcedBegin() {
+AtomIDList::const_iterator GlobalMaster::getLastAtomsForcedBegin() {
   return lastAtomsForcedBegin;
 }
 
-const AtomIDList::iterator GlobalMaster::getLastAtomsForcedEnd() {
+AtomIDList::const_iterator GlobalMaster::getLastAtomsForcedEnd() {
   return lastAtomsForcedEnd;
 }
 
-const ForceList::iterator GlobalMaster::getLastForcesBegin() {
+ForceList::const_iterator GlobalMaster::getLastForcesBegin() {
   return lastForcesBegin;
 }
