@@ -538,19 +538,19 @@ static int get_lattice_from_ts(Lattice *lattice, const molfile_timestep_t *ts)
   // A will lie along the positive x axis.
   // B will lie in the x-y plane
   // The origin will be (0,0,0).
-  Vector A(0), B(0), C(0);
+  Vector A(0), B(0), vecC(0);
   A.x = ts->A;
   B.x = ts->B*cosAB;
   B.y = ts->B*sinAB;
   if (fabs(B.x) < UNITCELLSLOP) B.x = 0;
   if (fabs(B.y) < UNITCELLSLOP) B.y = 0;
-  C.x = ts->C * cosAC;
-  C.y = (ts->B*ts->C*cosBC - B.x*C.x)/B.y;
-  C.z = sqrt(ts->C*ts->C - C.x*C.x - C.y+C.y);
-  if (fabs(C.x) < UNITCELLSLOP) C.x = 0;
-  if (fabs(C.y) < UNITCELLSLOP) C.y = 0;
-  if (fabs(C.z) < UNITCELLSLOP) C.z = 0;
-  lattice->set(A, B, C, Vector(0));
+  vecC.x = ts->C * cosAC;
+  vecC.y = (ts->B*ts->C*cosBC - B.x*vecC.x)/B.y;
+  vecC.z = sqrt(ts->C*ts->C - vecC.x*vecC.x - vecC.y+vecC.y);
+  if (fabs(vecC.x) < UNITCELLSLOP) vecC.x = 0;
+  if (fabs(vecC.y) < UNITCELLSLOP) vecC.y = 0;
+  if (fabs(vecC.z) < UNITCELLSLOP) vecC.z = 0;
+  lattice->set(A, B, vecC, Vector(0));
   return 1;
 }
 
