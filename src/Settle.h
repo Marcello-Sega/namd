@@ -39,7 +39,7 @@ ra, rb, rc: canonical positions of water atoms; see above diagram
 
 extern int settle1(const Vector *ref, BigReal mO, BigReal mH,
                   Vector *pos, Vector *vel, 
-                  BigReal dt, BigReal ohdist, BigReal hhdist);
+                  BigReal dt, BigReal hhdist, BigReal ohdist);
 
 extern int settle2(BigReal mO, BigReal mH, const Vector *pos,
                   Vector *vel, BigReal dt, Tensor *virial); 
