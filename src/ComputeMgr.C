@@ -390,7 +390,7 @@ ComputeMgr::createComputes(ComputeMap *map)
     DebugM(4,"Mgr running on Node "<<CkMyPe()<<"\n");
     /* create a master server to allow multiple masters */
     masterServerObject = new GlobalMasterServer(this,
-    Node::Object()->workDistrib->getNumComputeGlobals());
+		PatchMap::Object()->numNodesWithPatches());
 
     /* create the individual global masters */
     // masterServerObject->addClient(new GlobalMasterTest());
