@@ -601,7 +601,8 @@ int LdbCoordinator::buildData(void)
   for (i=0; i < nStatsMessagesReceived; i++)
   {
     const LdbStatsMsg *msg = statsMsgs[i];
-    for (int j=0; j<msg->nPatches; j++)
+    int j;
+    for (j=0; j<msg->nPatches; j++)
     {
       const int pid = msg->pid[j];
       int neighborNodes[PatchMap::MaxOneAway + PatchMap::MaxTwoAway];

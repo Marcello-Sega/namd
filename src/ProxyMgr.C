@@ -134,7 +134,8 @@ void ProxyAllMsg:: unpack (void *in)
 void * ProxyResultMsg:: pack (int *length)
   {
     *length = ( 4 + Results::maxNumForces ) * sizeof(int);
-    for ( int j = 0; j < Results::maxNumForces; ++j )
+    int j;
+    for ( j = 0; j < Results::maxNumForces; ++j )
     {
       *length += sizeof(Force) * forceList[j].size();
     }
@@ -349,13 +350,16 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1022 $	$Date: 1998/03/03 23:05:24 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1023 $	$Date: 1998/03/26 23:28:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.1023  1998/03/26 23:28:33  jim
+ * Small changes for KCC port.  Altered use of strstream in ComputeFreeEnergy.
+ *
  * Revision 1.1022  1998/03/03 23:05:24  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

@@ -36,7 +36,7 @@ private:
   ComputeGlobalResultsMsg *resultsMsg;
   Molecule *molecule;
   SimParameters *simParams;
-  strstream config;
+  istrstream *config;
 protected:
   // These all return -1 on error.
   int getAtomID(const char *segid, int resid, const char *aname);
@@ -51,12 +51,15 @@ protected:
  *
  *	$RCSfile: ComputeFreeEnergy.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1998/02/13 22:02:40 $
+ *	$Revision: 1.5 $	$Date: 1998/03/26 23:28:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFreeEnergy.h,v $
+ * Revision 1.5  1998/03/26 23:28:27  jim
+ * Small changes for KCC port.  Altered use of strstream in ComputeFreeEnergy.
+ *
  * Revision 1.4  1998/02/13 22:02:40  jim
  * Added script reading from config file and used streams in free energy.
  *

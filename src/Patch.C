@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1018 1998/03/03 23:05:21 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1019 1998/03/26 23:28:32 jim Exp $";
 
 #include "charm++.h"
 
@@ -73,7 +73,8 @@ void Patch::loadAtomProperties(void)
     int splitPatch = (Node::Object()->simParameters->splitPatch == SPLIT_PATCH_HYDROGEN);
     a.resize(0);
     // localIndex.resize(0);  NEVER USED -JCP
-    for ( register int i=0; i<numAtoms; i++)
+    register int i;
+    for ( i=0; i<numAtoms; i++)
     {
       // localIndex.load(LocalAtomID(atomIDList[i], i));  NEVER USED -JCP
       AtomProperties ap;
@@ -294,13 +295,16 @@ void Patch::positionsReady(int doneMigration)
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1998/03/03 23:05:21 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1019 $	$Date: 1998/03/26 23:28:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.1019  1998/03/26 23:28:32  jim
+ * Small changes for KCC port.  Altered use of strstream in ComputeFreeEnergy.
+ *
  * Revision 1.1018  1998/03/03 23:05:21  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

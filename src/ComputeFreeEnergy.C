@@ -18,9 +18,7 @@
 #include "ComputeMgr.h"
 #include "ComputeMgr.top.h"
 #include <stdio.h>
-#ifdef GCC
 #include <fstream.h>
-#endif
 
 // #define DEBUGM
 #define MIN_DEBUG_LEVEL 4
@@ -31,7 +29,7 @@ void ComputeFreeEnergy::user_initialize()
 {
   iout << iDEBUG << "Initializing free energy.\n"; 
   iout << iDEBUG << "***********************************\n"; 
-  iout << config.str(); 
+  config->get(*iout.rdbuf(),'\0');
   iout << iDEBUG << "***********************************\n" << endi; 
 }
 
@@ -84,11 +82,12 @@ ComputeFreeEnergy::ComputeFreeEnergy(ComputeGlobal *h) : ComputeGlobalMaster(h) 
   DebugM(3,"Constructing ComputeFreeEnergy\n");
   molecule = Node::Object()->molecule;
   simParams = Node::Object()->simParameters;
-  configMsg = 0;  resultsMsg = 0;
+  configMsg = 0;  resultsMsg = 0;  config = 0;
 }
 
 ComputeFreeEnergy::~ComputeFreeEnergy() {
   DebugM(3,"Destructing ComputeFreeEnergy\n");
+  delete config;
 }
 
 
@@ -100,12 +99,14 @@ void ComputeFreeEnergy::initialize() {
   // Get our script
   StringList *script = Node::Object()->configList->find("freeEnergyConfig");
 
+  ostrstream oconfig;
+
   for ( ; script; script = script->next) {
     if ( script->data[0] == '{' ) {  // this is a flag, no } at end
-      config << script->data + 1;    // so skip it at beginning
+      oconfig << script->data + 1;    // so skip it at beginning
     } else {
       ifstream infile(script->data);
-      if ( infile ) infile.get(*config.rdbuf(),'\0');
+      if ( infile ) infile.get(*oconfig.rdbuf(),'\0');
       if ( ! infile ) {
 	char errmsg[100];
 	sprintf(errmsg,"Error trying to read file %s!\n",script->data);
@@ -113,7 +114,9 @@ void ComputeFreeEnergy::initialize() {
       }
     }
   }
-  config.flush();
+  oconfig.flush();
+  char *configstr = oconfig.str();
+  config = new istrstream(configstr);
 
   iout << iDEBUG << "Free energy perturbation - initialize()\n" << endi; 
   user_initialize();
@@ -148,12 +151,15 @@ void ComputeFreeEnergy::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1998/03/09 17:06:02 $
+ *	$Revision: 1.7 $	$Date: 1998/03/26 23:28:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFreeEnergy.C,v $
+ * Revision 1.7  1998/03/26 23:28:26  jim
+ * Small changes for KCC port.  Altered use of strstream in ComputeFreeEnergy.
+ *
  * Revision 1.6  1998/03/09 17:06:02  milind
  * Included fstream.h for GCC.
  *

@@ -5,6 +5,8 @@
 #include "NamdTypes.h"
 #include <math.h>
 
+#define rint(X) floor((X)+0.5)
+
 typedef Vector ScaledPosition;
 
 class Lattice
@@ -152,12 +154,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/27 08:04:18 $
+ *	$Revision: 1.1005 $	$Date: 1998/03/26 23:28:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Lattice.h,v $
+ * Revision 1.1005  1998/03/26 23:28:29  jim
+ * Small changes for KCC port.  Altered use of strstream in ComputeFreeEnergy.
+ *
  * Revision 1.1004  1997/03/27 08:04:18  jim
  * Reworked Lattice to keep center of cell fixed during rescaling.
  *

@@ -81,8 +81,8 @@ private:
     // delete matched with new
     void operator delete(void* ptr) { ::operator delete(ptr); }		
 
-    operator<(ComputeElem e) { return (cid < e.cid); }
-    operator==(ComputeElem e) { return (cid == e.cid); }
+    int operator<(ComputeElem e) { return (cid < e.cid); }
+    int operator==(ComputeElem e) { return (cid == e.cid); }
 
     ComputeElem(ComputeID id=-1, Compute *compute=NULL) : 
       cid(id), c(compute) {};
@@ -114,13 +114,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1998/03/03 23:05:11 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1012 $	$Date: 1998/03/26 23:28:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.h,v $
+ * Revision 1.1012  1998/03/26 23:28:27  jim
+ * Small changes for KCC port.  Altered use of strstream in ComputeFreeEnergy.
+ *
  * Revision 1.1011  1998/03/03 23:05:11  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

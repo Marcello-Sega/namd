@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1043 1998/03/03 23:05:30 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1044 1998/03/26 23:28:36 jim Exp $";
 
 #include <stdio.h>
 
@@ -81,7 +81,8 @@ void WorkDistrib::saveComputeMapChanges(int ep, int chareID)
 
   ComputeMap *computeMap = ComputeMap::Object();
 
-  for (int i=0; i<computeMap->numComputes(); i++) {
+  int i;
+  for (i=0; i<computeMap->numComputes(); i++) {
     DebugM(3, "ComputeMap (" << i << ") node = " << computeMap->node(i) << " newNode = " << computeMap->newNode(i) << "\n");
   }
   
@@ -98,7 +99,8 @@ void WorkDistrib::saveComputeMapChanges(int ep, int chareID)
 void WorkDistrib::recvComputeMapChanges(ComputeMapChangeMsg *msg) {
   
   ComputeMap *computeMap = ComputeMap::Object();
-  for(int i=0; i<computeMap->numComputes(); i++)
+  int i;
+  for(i=0; i<computeMap->numComputes(); i++)
     computeMap->setNewNode(i,msg->newNodes[i]);
 
   delete msg;
@@ -496,7 +498,7 @@ void WorkDistrib::assignPatchesToLowestLoadNode()
   // Assign patch to node with least atoms assigned.
   for(pid=0; pid < patchMap->numPatches(); pid++) {
     assignedNode = 0;
-    for (i=1; i < node->numNodes(); i++) {
+    for (int i=1; i < node->numNodes(); i++) {
       if (numAtoms[i] < numAtoms[assignedNode]) assignedNode = i;
     }
     patchMap->assignNode(pid, assignedNode);
@@ -1036,13 +1038,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1043 $	$Date: 1998/03/03 23:05:30 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1044 $	$Date: 1998/03/26 23:28:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1044  1998/03/26 23:28:36  jim
+ * Small changes for KCC port.  Altered use of strstream in ComputeFreeEnergy.
+ *
  * Revision 1.1043  1998/03/03 23:05:30  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

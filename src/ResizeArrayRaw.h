@@ -20,7 +20,6 @@
 #define RESIZEARRAYRAW_H
 
 #include <new.h>
-#include <stream.h>
 #include <string.h>
 #include "charm++.h"
 

@@ -12,7 +12,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PDBData.C,v 1.1002 1997/08/12 22:18:43 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PDBData.C,v 1.1003 1998/03/26 23:28:31 jim Exp $";
 
 
 // Here are the routines to manupulate a PDB ATOM record
@@ -464,7 +464,8 @@ void PDBAtom:: segmentname( const char *newsegmentname)
 // size or outstr must be >= 80!
 void PDBAtom::sprint_columns( char *outstr)
 { 
-  for (int i=0; i<79; i++)   // dump spaces in outstr -- must be length > 80!!
+  int i;
+  for (i=0; i<79; i++)   // dump spaces in outstr -- must be length > 80!!
     outstr[i] = 32;
   outstr[i] = 0;             // and terminate
 
@@ -704,13 +705,16 @@ main()
  * RCS INFORMATION:
  *
  *	$RCSfile: PDBData.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/08/12 22:18:43 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1998/03/26 23:28:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PDBData.C,v $
+ * Revision 1.1003  1998/03/26 23:28:31  jim
+ * Small changes for KCC port.  Altered use of strstream in ComputeFreeEnergy.
+ *
  * Revision 1.1002  1997/08/12 22:18:43  milind
  * Made NAMD2 to link on Solaris machines.
  *

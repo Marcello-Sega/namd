@@ -27,7 +27,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1024 1998/03/03 23:05:26 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1025 1998/03/26 23:28:34 jim Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -80,7 +80,8 @@ ReductionMgr::ReductionMgr(InitMsg *msg)
       myParent = (CMyPe()-1)/MAX_CHILDREN;
     }
     numChildren = 0;
-    for(int i=0; i<MAX_CHILDREN; i++) {
+    int i;
+    for(i=0; i<MAX_CHILDREN; i++) {
       myChildren[i] = CMyPe()*MAX_CHILDREN+i+1;
       if(myChildren[i] < CNumPes())
         numChildren++;
@@ -245,7 +246,8 @@ void	ReductionMgr::recvReductionData	(ReductionDataMsg *msg)
 {
   int seq = msg->seq;
   ReductionMgrData *current=find(seq);
-  for(int tag=0;tag<REDUCTION_MAX_RESERVED;tag++) {
+  int tag;
+  for(tag=0;tag<REDUCTION_MAX_RESERVED;tag++) {
     current->tagData[tag] += msg->data[tag];
     current->numData[tag]++;
     current->numEvents++;
@@ -481,12 +483,15 @@ void	ReductionMgr::unsubscribe(ReductionTag tag)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1024 $	$Date: 1998/03/03 23:05:26 $
+ *	$Revision: 1.1025 $	$Date: 1998/03/26 23:28:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.C,v $
+ * Revision 1.1025  1998/03/26 23:28:34  jim
+ * Small changes for KCC port.  Altered use of strstream in ComputeFreeEnergy.
+ *
  * Revision 1.1024  1998/03/03 23:05:26  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

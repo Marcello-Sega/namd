@@ -37,7 +37,7 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1044 1998/03/03 23:05:13 brunner Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1045 1998/03/26 23:28:29 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
 		     VelocityList vl) : Patch(pd,al,pl), v(vl), pInit(&pl)
@@ -78,7 +78,8 @@ HomePatch::readPatchMap() {
   patchMigrationCounter = numNeighbors 
     = PatchMap::Object()->oneAwayNeighbors(patchID, nnPatchID);
   DebugM( 1, "NumNeighbors for pid " <<patchID<<" is "<< numNeighbors << "\n");
-  for (int n=0; n<numNeighbors; n++) {
+  int n;
+  for (n=0; n<numNeighbors; n++) {
     realInfo[n].destNodeID = p->node(realInfo[n].destPatchID = nnPatchID[n]);
      DebugM( 1, " nnPatchID=" <<nnPatchID[n]<<" nnNodeID="<< realInfo[n].destNodeID<< "\n");
     realInfo[n].mList = NULL;
@@ -718,13 +719,16 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1044 $	$Date: 1998/03/03 23:05:13 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1045 $	$Date: 1998/03/26 23:28:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1045  1998/03/26 23:28:29  jim
+ * Small changes for KCC port.  Altered use of strstream in ComputeFreeEnergy.
+ *
  * Revision 1.1044  1998/03/03 23:05:13  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

@@ -110,7 +110,7 @@ class Patch
      OwnerBox<Patch,AtomProperties>    atomBox;
      ComputeIDList              atomComputeList;
 
-     virtual void boxClosed(int box) { box = 0; }
+     virtual void boxClosed(int /* box */) = 0;
      int boxesOpen;
 
      void loadAtomProperties(void);
@@ -130,13 +130,16 @@ class Patch
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.h,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/12/26 23:10:55 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1011 $	$Date: 1998/03/26 23:28:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.h,v $
+ * Revision 1.1011  1998/03/26 23:28:32  jim
+ * Small changes for KCC port.  Altered use of strstream in ComputeFreeEnergy.
+ *
  * Revision 1.1010  1997/12/26 23:10:55  milind
  * Made namd2 to compile, link and run under linux. Merged Templates and src
  * directoriies, and removed separate definition and declaration files for

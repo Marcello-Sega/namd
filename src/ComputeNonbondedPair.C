@@ -47,7 +47,8 @@ int ComputeNonbondedPair::noWork() {
     // fake out patches and reduction system
 
     BigReal reductionData[reductionDataSize];
-    for ( int i = 0; i < reductionDataSize; ++i ) reductionData[i] = 0;
+    int i;
+    for ( i = 0; i < reductionDataSize; ++i ) reductionData[i] = 0;
 
     Position* p[2];
     Results* r[2];
@@ -150,12 +151,15 @@ void ComputeNonbondedPair::doForce(Position* p[2],
  *
  *	$RCSfile: ComputeNonbondedPair.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1997/08/26 16:26:13 $
+ *	$Revision: 1.1016 $	$Date: 1998/03/26 23:28:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.C,v $
+ * Revision 1.1016  1998/03/26 23:28:28  jim
+ * Small changes for KCC port.  Altered use of strstream in ComputeFreeEnergy.
+ *
  * Revision 1.1015  1997/08/26 16:26:13  jim
  * Revamped prioritites for petter performance and easier changes.
  *
