@@ -1,4 +1,4 @@
 include .rootdir/arch/Linux-i686-g++.arch
 
-CHARMARCH = net-linux-clustermatic-smp
+CHARMARCH = net-linux-clustermatic
 
