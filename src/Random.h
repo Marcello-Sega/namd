@@ -20,42 +20,36 @@
 #ifndef RANDOM_H
 #define RANDOM_H
 
-#include <math.h>
 #include "common.h"
+#include "Vector.h"
 
-#define	RAND48_SEED_0	(0x330e)
-#define	RAND48_SEED_1	(0xabcd)
-#define	RAND48_SEED_2	(0x1234)
-#define	RAND48_MULT_0	(0xe66d)
-#define	RAND48_MULT_1	(0xdeec)
-#define	RAND48_MULT_2	(0x0005)
-#define	RAND48_ADD_0	(0x000b)
-#define	RAND48_ADD_1	(0x0000)
-#define	RAND48_ADD_2	(0x0000)
+#ifdef _MSC_VER
+#define INT64_LITERAL(X) X ## i64
+#else
+#define INT64_LITERAL(X) X ## LL
+#endif
+
+#define	RAND48_SEED   INT64_LITERAL(0x00001234abcd330e)
+#define	RAND48_MULT   INT64_LITERAL(0x00000005deece66d)
+#define	RAND48_ADD    INT64_LITERAL(0x000000000000000b)
+#define RAND48_MASK   INT64_LITERAL(0x0000ffffffffffff)
 
 class Random {
 
 private:
 
   double second_gaussian;
-  unsigned short second_gaussian_waiting;
-  unsigned short rand48_seed_0;
-  unsigned short rand48_seed_1;
-  unsigned short rand48_seed_2;
-  unsigned short rand48_mult_0;
-  unsigned short rand48_mult_1;
-  unsigned short rand48_mult_2;
-  unsigned short rand48_add_0;
-  unsigned short rand48_add_1;
-  unsigned short rand48_add_2;
+  int64 second_gaussian_waiting;
+  int64 rand48_seed;
+  int64 rand48_mult;
+  int64 rand48_add;
 
 public:
 
   // default constructor
   Random(void) {
     init(0);
-    rand48_seed_1 = RAND48_SEED_1;
-    rand48_seed_2 = RAND48_SEED_2;
+    rand48_seed = RAND48_SEED;
   }
 
   // constructor with seed
@@ -67,67 +61,16 @@ public:
   void init(unsigned long seed) {
     second_gaussian = 0;
     second_gaussian_waiting = 0;
-    rand48_seed_0 = RAND48_SEED_0;
-    rand48_seed_1 = (unsigned short) (seed & 0xffffu);
-    rand48_seed_2 = (unsigned short) ((seed >> 16) & 0xffffu);
-    rand48_mult_0 = RAND48_MULT_0;
-    rand48_mult_1 = RAND48_MULT_1;
-    rand48_mult_2 = RAND48_MULT_2;
-    rand48_add_0  = RAND48_ADD_0;
-    rand48_add_1  = RAND48_ADD_1;
-    rand48_add_2  = RAND48_ADD_2;
+    rand48_seed = seed & INT64_LITERAL(0x00000000ffffffff);
+    rand48_seed = rand48_seed << 16;
+    rand48_seed |= RAND48_SEED & INT64_LITERAL(0x0000ffff);
+    rand48_mult = RAND48_MULT;
+    rand48_add = RAND48_ADD;
   }
 
   // advance generator by one (seed = seed * mult + add, to 48 bits)
   void skip(void) {
-    unsigned long seed_0 = rand48_seed_0;
-    unsigned long seed_1 = rand48_seed_1;
-    unsigned long seed_2 = rand48_seed_2;
-    unsigned long mult_0 = rand48_mult_0;
-    unsigned long mult_1 = rand48_mult_1;
-    unsigned long mult_2 = rand48_mult_2;
-    unsigned long add_0 = rand48_add_0;
-    unsigned long add_1 = rand48_add_1;
-    unsigned long add_2 = rand48_add_2;
-    const unsigned long screen = 0xffffu;
-
-    unsigned long accu;
-    unsigned long tmp_0, tmp_1, tmp_2;
-
-    // tmp = mult_0 * seed
-    tmp_0 = (accu = mult_0 * seed_0) & screen;
-    accu >>= 16;  accu &= screen;
-    tmp_1 = (accu += mult_0 * seed_1) & screen;
-    accu >>= 16;  accu &= screen;
-    tmp_2 = (accu += mult_0 * seed_2) & screen;
-
-    // add += tmp
-    add_0 = (accu = add_0 + tmp_0) & screen;
-    accu >>= 16;  accu &= screen;
-    add_1 = (accu += add_1 + tmp_1) & screen;
-    accu >>= 16;  accu &= screen;
-    add_2 = (accu += add_2 + tmp_2) & screen;
-
-    // tmp = 0x10000 * mult_1 * seed
-    tmp_1 = (accu = mult_1 * seed_0) & screen;
-    accu >>= 16;  accu &= screen;
-    tmp_2 = (accu += mult_1 * seed_1) & screen;
-
-    // add += tmp
-    add_1 = (accu = add_1 + tmp_1) & screen;
-    accu >>= 16;  accu &= screen;
-    add_2 = (accu += add_2 + tmp_2) & screen;
-
-    // tmp = 0x100000000 * mult_2 * seed
-    tmp_2 = (mult_2 * seed_0) & screen;
-
-    // add += tmp
-    add_2 = (add_2 + tmp_2) & screen;
-
-    rand48_seed_0 = add_0;
-    rand48_seed_1 = add_1;
-    rand48_seed_2 = add_2;
-
+    rand48_seed = ( rand48_seed * rand48_mult + rand48_add ) & RAND48_MASK;
   }
 
   // split into numStreams different steams and take stream iStream
@@ -142,35 +85,21 @@ public:
     for ( i = 0; i < iStream; ++i ) skip();
 
     // save seed and add so we can use skip() for our calculations
-    unsigned short save_seed_0 = rand48_seed_0;
-    unsigned short save_seed_1 = rand48_seed_1;
-    unsigned short save_seed_2 = rand48_seed_2;
+    int64 save_seed = rand48_seed;
 
     // calculate c *= ( 1 + a + ... + a^(numStreams-1) )
-    rand48_seed_0 = rand48_add_0;
-    rand48_seed_1 = rand48_add_1;
-    rand48_seed_2 = rand48_add_2;
+    rand48_seed = rand48_add;
     for ( i = 1; i < numStreams; ++i ) skip();
-    unsigned short new_add_0 = rand48_seed_0;
-    unsigned short new_add_1 = rand48_seed_1;
-    unsigned short new_add_2 = rand48_seed_2;
+    int64 new_add = rand48_seed;
 
     // calculate a = a^numStreams
-    rand48_seed_0 = rand48_mult_0;
-    rand48_seed_1 = rand48_mult_1;
-    rand48_seed_2 = rand48_mult_2;
-    rand48_add_0  = 0; rand48_add_1  = 0; rand48_add_2  = 0;
+    rand48_seed = rand48_mult;
+    rand48_add  = 0;
     for ( i = 1; i < numStreams; ++i ) skip();
-    rand48_mult_0 = rand48_seed_0;
-    rand48_mult_1 = rand48_seed_1;
-    rand48_mult_2 = rand48_seed_2;
+    rand48_mult = rand48_seed;
 
-    rand48_add_0  = new_add_0;
-    rand48_add_1  = new_add_1;
-    rand48_add_2  = new_add_2;
-    rand48_seed_0 = save_seed_0;
-    rand48_seed_1 = save_seed_1;
-    rand48_seed_2 = save_seed_2;
+    rand48_add  = new_add;
+    rand48_seed = save_seed;
 
     second_gaussian = 0;
     second_gaussian_waiting = 0;
@@ -179,9 +108,8 @@ public:
   // return a number uniformly distributed between 0 and 1
   BigReal uniform(void) {
     skip();
-    return ldexp((double) rand48_seed_0, -48) +
-           ldexp((double) rand48_seed_1, -32) +
-           ldexp((double) rand48_seed_2, -16);
+    const double exp48 = ( 1.0 / (double)(INT64_LITERAL(1) << 48) );
+    return ( (double) rand48_seed * exp48 );
   }
 
   // return a number from a standard gaussian distribution
@@ -215,7 +143,7 @@ public:
   // return a random long
   long integer(void) {
     skip();
-    return ((long) rand48_seed_2 << 15) + ((long) rand48_seed_1 >> 1);
+    return ( ( rand48_seed >> 17 ) & INT64_LITERAL(0x000000007fffffff) );
   }
 
   // randomly order an array of whatever
