@@ -12,7 +12,7 @@ typedef ARestraint* pRestr;
 const int kNumToStart = 1024;
 const int kMultiplier = 4;
 
-extern class ComputeFreeEnergy;
+class ComputeFreeEnergy;
 
 class ARestraintManager {
 private:

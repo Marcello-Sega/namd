@@ -3,7 +3,7 @@
 #if !defined(RESTRAINT_HPP)
   #define RESTRAINT_HPP
 
-extern class ComputeFreeEnergy;
+class ComputeFreeEnergy;
 
 //****************************************************************************
 //  ARestraint:
