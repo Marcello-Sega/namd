@@ -65,6 +65,7 @@ HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
 		    // to make sure it is really valid
   inMigration = false;
   numMlBuf = 0;
+  flags.sequence = -1;
 
   numAtoms = atom.size();
 }
@@ -181,6 +182,8 @@ void HomePatch::receiveResults(ProxyResultMsg *msg)
 
 void HomePatch::positionsReady(int doMigration)
 {
+  flags.sequence++;
+
   if (!patchMapRead) { readPatchMap(); }
       
   if (numNeighbors) {

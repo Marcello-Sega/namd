@@ -79,9 +79,9 @@ void Sync::registerComp(PatchID pid, ComputeIDListIter cid, int doneMigration)
   clist[slot].cid = cid;
   clist[slot].pid = pid;
   clist[slot].doneMigration  = doneMigration;
-  clist[slot].step = PatchMap::Object()->patch(pid)->flags.step;
+  clist[slot].step = PatchMap::Object()->patch(pid)->flags.sequence;
 
-//  CkPrintf("REG[%d]: patch:%d step:%d-%d slot:%d\n", CkMyPe(), pid, patchMap->patch(pid)->flags.step, step, slot);
+//  CkPrintf("REG[%d]: patch:%d step:%d-%d slot:%d\n", CkMyPe(), pid, patchMap->patch(pid)->flags.sequence, step, slot);
 
   if (clist[slot].step == step) {
       nPatcheReady++;
@@ -118,7 +118,7 @@ void Sync::triggerCompute()
          }
 	 //         CkPrintf(" %d-%d-%d ",
 	 //	 clist[i].pid, clist[i].step,
-	 //      patchMap->patch(pid)->flags.step);
+	 //      patchMap->patch(pid)->flags.sequence);
 
          ComputeIDListIter cid = clist[i].cid;
 

@@ -15,6 +15,8 @@ class Flags
 public:
   int step;			// timestep number reported to user
   				// Same number may appear multiple times!
+  int sequence;			// sequence number of compute call
+				// changes by 1 every time!
   int doNonbonded;
   int doFullElectrostatics;
   int doMolly;
