@@ -114,6 +114,7 @@ class Patch
      int boxesOpen;
 
      void loadAtomProperties(void);
+     void doGroupSizeCheck(void);
 
      void indexAtoms();
      int _hasNewAtoms;
@@ -131,12 +132,16 @@ class Patch
  *
  *	$RCSfile: Patch.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1998/03/26 23:28:32 $
+ *	$Revision: 1.1012 $	$Date: 1998/04/14 05:58:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.h,v $
+ * Revision 1.1012  1998/04/14 05:58:26  jim
+ * Added automatic correction if hgroupCutoff is too small.  No more warnings.
+ * However, performance wil degrade if many groups are below cutoff size.
+ *
  * Revision 1.1011  1998/03/26 23:28:32  jim
  * Small changes for KCC port.  Altered use of strstream in ComputeFreeEnergy.
  *

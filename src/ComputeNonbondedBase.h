@@ -238,14 +238,14 @@ NOEXCL
 
   HGROUPING
   (
-  if (a_i.hydrogenGroupSize) // if hydrogen group parent
+  if (a_i.nonbondedGroupSize) // if hydrogen group parent
     {
     pairlistindex = 0;	// initialize with 0 elements
     pairlistoffset=0;
     const int groupfixed = ( a_i.flags & GROUP_FIXED );
 
     // If patch divisions are not made by hydrogen groups, then
-    // hydrogenGroupSize is set to 1 for all atoms.  Thus we can
+    // nonbondedGroupSize is set to 1 for all atoms.  Thus we can
     // carry on as if we did have groups - only less efficiently.
     // An optimization in this case is to not rebuild the temporary
     // pairlist but to include every atom in it.  This should be a
@@ -258,7 +258,7 @@ NOEXCL
     SELF
       (
       // add all child hydrogens of i
-      for( j=i+1; (j<j_upper) && (a_1[j].hydrogenGroupSize == 0); j++)
+      for( j=i+1; (j<j_upper) && (a_1[j].nonbondedGroupSize == 0); j++)
 	{
 	pairlist[pairlistindex++] = j;
 	p_j++;
@@ -272,7 +272,7 @@ NOEXCL
     if ( groupfixed ) { // tuned assuming most atoms fixed
       while ( j < j_upper )
 	{
-	register int hgs = pa_j->hydrogenGroupSize;
+	register int hgs = pa_j->nonbondedGroupSize;
 	if ( ! (pa_j->flags & GROUP_FIXED) )
 	{
 	  p_j = p_1 + j;
@@ -297,7 +297,7 @@ NOEXCL
       register BigReal p_j_z = p_j->z;
       while ( j < j_upper )
 	{
-	register int hgs = pa_j->hydrogenGroupSize;
+	register int hgs = pa_j->nonbondedGroupSize;
 	p_j += ( ( j + hgs < j_upper ) ? hgs : 0 );
 	r2 = p_i_x - p_j_x;
 	r2 *= r2;
@@ -707,12 +707,16 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1033 $	$Date: 1998/04/06 16:34:05 $
+ *	$Revision: 1.1034 $	$Date: 1998/04/14 05:58:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1034  1998/04/14 05:58:24  jim
+ * Added automatic correction if hgroupCutoff is too small.  No more warnings.
+ * However, performance wil degrade if many groups are below cutoff size.
+ *
  * Revision 1.1033  1998/04/06 16:34:05  jim
  * Added DPME (single processor only), test mode, and momenta printing.
  *

@@ -43,9 +43,10 @@ struct AtomProperties
   Charge charge;
 
   // other data information
-  int hydrogenGroupSize;	// 0 from group members, !0 for group parents
+  char hydrogenGroupSize;	// 0 from group members, !0 for group parents
+  char nonbondedGroupSize;	// same, but variable with strict size limits
   // Bool water;	// TRUE if water atom (O or H)  NEVER USED -JCP
-  unsigned int flags;	// for fixed atoms, etc. - use with & operator
+  unsigned char flags;	// for fixed atoms, etc. - use with & operator
 
   int operator==(const AtomProperties& a) {
     return( id == a.id );
@@ -104,13 +105,17 @@ typedef int Boolean;
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdTypes.h,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/12/26 23:10:53 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1009 $	$Date: 1998/04/14 05:58:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdTypes.h,v $
+ * Revision 1.1009  1998/04/14 05:58:25  jim
+ * Added automatic correction if hgroupCutoff is too small.  No more warnings.
+ * However, performance wil degrade if many groups are below cutoff size.
+ *
  * Revision 1.1008  1997/12/26 23:10:53  milind
  * Made namd2 to compile, link and run under linux. Merged Templates and src
  * directoriies, and removed separate definition and declaration files for

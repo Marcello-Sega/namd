@@ -37,7 +37,7 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1045 1998/03/26 23:28:29 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1046 1998/04/14 05:58:24 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
 		     VelocityList vl) : Patch(pd,al,pl), v(vl), pInit(&pl)
@@ -191,7 +191,8 @@ void HomePatch::positionsReady(int doMigration)
     doMarginCheck();
   }
 
-  doGroupSizeCheck();
+  // Workaround for oversize groups now handled by Patch.
+  // doGroupSizeCheck();
 
   // Must Add Proxy Changes when migration completed!
   ProxyListIter pli(proxy);
@@ -720,12 +721,16 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1045 $	$Date: 1998/03/26 23:28:29 $
+ *	$Revision: 1.1046 $	$Date: 1998/04/14 05:58:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1046  1998/04/14 05:58:24  jim
+ * Added automatic correction if hgroupCutoff is too small.  No more warnings.
+ * However, performance wil degrade if many groups are below cutoff size.
+ *
  * Revision 1.1045  1998/03/26 23:28:29  jim
  * Small changes for KCC port.  Altered use of strstream in ComputeFreeEnergy.
  *
