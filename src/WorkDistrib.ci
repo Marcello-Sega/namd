@@ -1,0 +1,6 @@
+extern message InitMsg;
+
+group WorkDistrib
+{
+  entry WorkDistrib(InitMsg *);
+} ;

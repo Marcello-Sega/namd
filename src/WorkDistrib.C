@@ -1,0 +1,247 @@
+/***************************************************************************/
+/*                                                                         */
+/*              (C) Copyright 1996 The Board of Trustees of the            */
+/*                          University of Illinois                         */
+/*                           All Rights Reserved                           */
+/*                                                                         */
+/***************************************************************************/
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile: WorkDistrib.C,v $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1 $	$Date: 1996/08/16 20:34:23 $
+ *
+ ***************************************************************************
+ * DESCRIPTION:
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: WorkDistrib.C,v $
+ * Revision 1.1  1996/08/16 20:34:23  brunner
+ * Initial revision
+ *
+ * Revision 1.6  1996/08/03 20:08:09  brunner
+ * *** empty log message ***
+ *
+ * Revision 1.5  1996/07/01 16:25:30  brunner
+ * *** empty log message ***
+ *
+ * Revision 1.4  1996/06/14 18:39:00  brunner
+ * *** empty log message ***
+ *
+ * Revision 1.3  1996/06/11 22:36:23  brunner
+ * *** empty log message ***
+ *
+ * Revision 1.2  1996/06/04 16:12:18  brunner
+ * Create dummy patches
+ *
+ * Revision 1.1  1996/05/30 20:16:09  brunner
+ * Initial revision
+ *
+ * Revision 1.1  1996/05/30 20:11:09  brunner
+ * Initial revision
+ *
+ ***************************************************************************/
+
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1 1996/08/16 20:34:23 brunner Exp $";
+
+#include "ckdefs.h"
+#include "chare.h"
+#include "c++interface.h"
+
+#include "WorkDistrib.top.h"
+#include "WorkDistrib.h"
+
+#include "main.h"
+#include "main.top.h"
+#include "Node.h"
+#include "PatchMap.h"
+#include "ComputeMap.h"
+
+//======================================================================
+// Public functions
+//----------------------------------------------------------------------
+WorkDistrib::WorkDistrib(InitMsg *msg)
+{
+}
+
+//----------------------------------------------------------------------
+WorkDistrib::~WorkDistrib(void)
+{
+  node = NULL;
+}
+
+//----------------------------------------------------------------------
+WorkDistrib::parentNode(Node *inode)
+{
+  node = inode;
+}
+
+//----------------------------------------------------------------------
+void WorkDistrib::buildMapsFromScratch()
+{
+  CPrintf("Building maps\n");
+  mapPatches();
+  mapComputes();
+  node->patchMap->printPatchMap();
+  node->computeMap->printComputeMap();
+  CharmExit();
+}
+
+//======================================================================
+// Private functions
+//----------------------------------------------------------------------
+void WorkDistrib::mapPatches(void)
+{
+  PatchMap *patchMap = node->patchMap;
+  int xdim, ydim, zdim;
+  int xi, yi, zi, pid;
+  int i;
+
+  CPrintf("Mapping patches\n");
+  xdim = (int)((float)sysDimX / patchSize);
+  if ((xdim * patchSize) < sysDimX)
+    xdim++;
+
+  ydim = (int)((float)sysDimY / patchSize);
+  if ((ydim * patchSize) < sysDimY)
+    ydim++;
+
+  zdim = (int)((float)sysDimZ / patchSize);
+  if ((zdim * patchSize) < sysDimZ)
+    zdim++;
+
+  patchMap->allocatePids(xdim, ydim, zdim);
+
+  int assignedNode=0;
+  for(i=0; i < patchMap->numPatches(); i++)
+  {
+    pid=patchMap->requestPid(&xi,&yi,&zi);
+    patchMap->storePatch(pid,assignedNode,250, 
+			 (xi*sysDimX)/patchSize,
+			 (yi*sysDimY)/patchSize,
+			 (zi*sysDimZ)/patchSize,
+			 ((xi+1)*sysDimX)/patchSize,
+			 ((yi+1)*sysDimY)/patchSize,
+			 ((zi+1)*sysDimZ)/patchSize);
+
+    assignedNode++;
+    if (node->numNodes()==assignedNode)
+      assignedNode=0;
+  }
+}
+
+//----------------------------------------------------------------------
+void WorkDistrib::mapComputes(void)
+{
+  int i;
+  int xi, yi, zi;
+  PatchMap *patchMap = node->patchMap;
+  ComputeMap *computeMap = node->computeMap;
+
+  CPrintf("Mapping computes\n");
+
+  // We need to allocate computes for self, 1 and 2 away pairs for
+  // electrostatics, and 1 angleForce for each node.  Then I might
+  // throw in a few extras, in case I forget some.
+
+  int numPotentialCids = 
+    (patchMap->numPatches() * 125 + 1) / 2  + node->numNodes();
+
+  computeMap->allocateCids(numPotentialCids);
+
+  mapAngleComputes();
+
+  mapElectComputes();
+}
+
+//----------------------------------------------------------------------
+void WorkDistrib::mapAngleComputes()
+{
+  int i;
+  PatchMap *patchMap = node->patchMap;
+  ComputeMap *computeMap = node->computeMap;
+
+  // Figure out where to put the angleForce objects, and hook up the
+  // dependencies.
+
+  ComputeID cid[node->numNodes()];
+
+  for(i=0; i<node->numNodes(); i++)
+  {
+    cid[i]=computeMap->storeCompute(i,patchMap->numPatches(),
+				    angleForceType);
+  }
+
+  PatchID j;
+
+  for(j=0;j<patchMap->numPatches();j++)
+  {
+    patchMap->newCid(j,cid[patchMap->node(j)]);
+    computeMap->newPid(cid[patchMap->node(j)],j);
+  }    
+}
+
+//----------------------------------------------------------------------
+void WorkDistrib::mapElectComputes(void)
+{
+  // For each patch, create 1 electrostatic object for self-interaction.
+  // Then create 1 for each 1-away and 2-away neighbor which has a larger
+  // pid.
+
+  PatchMap *patchMap = node->patchMap;
+  ComputeMap *computeMap = node->computeMap;
+
+  PatchID oneAway[PatchMap::MaxOneAway];
+  PatchID twoAway[PatchMap::MaxTwoAway];
+
+  PatchID i;
+  ComputeID cid;
+  int numNeighbors;
+  int j;
+
+  for(i=0; i<patchMap->numPatches(); i++)
+  {
+    // self-interaction
+    cid=computeMap->storeCompute(patchMap->node(i),1,electForceType);
+    computeMap->newPid(cid,i);
+    patchMap->newCid(i,cid);
+
+    // one-away neighbors
+    numNeighbors=patchMap->oneAwayNeighbors(i,oneAway);
+    for(j=0;j<numNeighbors;j++)
+    {
+      if (i < oneAway[j])
+      {
+	cid=computeMap->storeCompute(patchMap->node(i),2,
+				     electForceType);
+	computeMap->newPid(cid,i);
+	computeMap->newPid(cid,oneAway[j]);
+	patchMap->newCid(i,cid);
+	patchMap->newCid(oneAway[j],cid);
+      }
+    }
+
+    // two-away neighbors
+    numNeighbors=patchMap->twoAwayNeighbors(i,oneAway);
+    for(j=0;j<numNeighbors;j++)
+    {
+      if (i < oneAway[j])
+      {
+	cid=computeMap->storeCompute(patchMap->node(i),2,
+				     electForceType);
+	computeMap->newPid(cid,i);
+	computeMap->newPid(cid,oneAway[j]);
+	patchMap->newCid(i,cid);
+	patchMap->newCid(oneAway[j],cid);
+      }
+    }
+  }
+}
+
+#include "WorkDistrib.bot.h"
+
+
