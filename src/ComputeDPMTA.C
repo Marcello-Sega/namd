@@ -27,7 +27,7 @@
 #include "pvmc.h"
 
 #define MIN_DEBUG_LEVEL 1
-// #define DEBUGM
+#define DEBUGM
 #include "Debug.h"
 
 extern Communicate *comm;
@@ -54,18 +54,24 @@ void ComputeDPMTA::get_FMA_cube()
 
 #else
 
+  DebugM(1,"getting patch info for FMA box\n");
+
   // determine boxSize from the PBC lattice
   // lattice is the same on all patches, so choose first patch
   ResizeArrayIter<PatchElem> ap(patchList);
+  DebugM(1,"getting first patch info for FMA box\n");
   ap = ap.begin();
   Lattice lattice = (*ap).p->lattice;
+  DebugM(1,"getting patch dimension for FMA box\n");
   boxSize = lattice.dimension();
+  DebugM(1,"boxSize is " << boxSize << "\n");
 
 #endif
 
   // don't bother checking if the center has moved since it depends on the size.
   if (boxsize != boxSize)
 	{
+	DebugM(1,"resetting FMA box\n");
 	// reset the size and center
 	boxsize = boxSize;
 	boxcenter = patchMap->Origin();
@@ -81,9 +87,11 @@ void ComputeDPMTA::get_FMA_cube()
 	size.x = boxsize.x;
 	size.y = boxsize.y;
 	size.z = boxsize.z;
+	DebugM(1,"calling PMTAresize()\n");
 	PMTAresize(&size,&center);
+	DebugM(1,"called PMTAresize()\n");
 	}
-  DebugM(2,"cube center: " << (*boxcenter) << " size=" << (*boxSize) << "\n");
+  DebugM(2,"cube center: " << boxcenter << " size=" << boxSize << "\n");
 }
 
 ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
@@ -99,8 +107,8 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   totalAtoms = 0;
   fmaResults = NULL;
   ljResults = NULL;
-  boxcenter = 0;	// zero the array
-  boxsize = 0;	// zero the array
+  boxcenter = 1;	// reset the array (no divide by zero)
+  boxsize = 1;	// reset the array (no divide by zero)
 
   reduction->Register(REDUCTION_ELECT_ENERGY);
 
