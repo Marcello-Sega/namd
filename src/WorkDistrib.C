@@ -608,6 +608,7 @@ void WorkDistrib::mapComputes(void)
   // throw in a few extras, in case I forget some.
 
 #define MAX_SELF_PARTITIONS 100
+#define MAX_PAIR_PARTITIONS 10
 
   int numPotentialCids =
 	patchMap->numPatches() * (26/2 + 10 + MAX_SELF_PARTITIONS) +
@@ -745,7 +746,6 @@ void WorkDistrib::mapComputeNonbonded(void)
   ComputeID cid;
   int numNeighbors;
   int j;
-  int numAtoms /*, numAtoms1, numAtoms2*/;
 
   double *pairWork = new double[node->numNodes()];
   for (j=0; j<node->numNodes(); j++) {
@@ -759,7 +759,7 @@ void WorkDistrib::mapComputeNonbonded(void)
 
   for(i=0; i<patchMap->numPatches(); i++) // do the self 
   {
-    numAtoms = patchMap->patch(i)->getNumAtoms();
+    int numAtoms = patchMap->patch(i)->getNumAtoms();
     int numPartitions = 1 + (numAtoms > 50) + (numAtoms*numAtoms)/50000;
     if ( numPartitions > MAX_SELF_PARTITIONS )
 			numPartitions = MAX_SELF_PARTITIONS;
@@ -789,9 +789,9 @@ void WorkDistrib::mapComputeNonbonded(void)
 //         numAtoms1 = patchMap->patch(i)->getNumAtoms();
 //         numAtoms2 = patchMap->patch(oneAway[j])->getNumAtoms();
 // 	const int distance = 
-// 	  abs(patchMap->xIndex(i)-patchMap->xIndex(oneAway[j])) 
-// 	  + abs(patchMap->yIndex(i)-patchMap->yIndex(oneAway[j])) 
-// 	  + abs(patchMap->zIndex(i)-patchMap->zIndex(oneAway[j]));
+// 	  abs(patchMap->index_a(i)-patchMap->index_a(oneAway[j])) 
+// 	  + abs(patchMap->index_b(i)-patchMap->index_b(oneAway[j])) 
+// 	  + abs(patchMap->index_c(i)-patchMap->index_c(oneAway[j]));
 
 //         double weight;
 //         if(distance==1) {
@@ -829,14 +829,27 @@ void WorkDistrib::mapComputeNonbonded(void)
       if (p1 < oneAway[j])
       {
 	int p2 = oneAway[j];
-
-	cid=computeMap->storeCompute(
+	int numAtoms1 = patchMap->patch(p1)->getNumAtoms();
+	int numAtoms2 = patchMap->patch(p2)->getNumAtoms();
+	const int distance =
+ 	  ( patchMap->index_a(p1) == patchMap->index_a(p2) ? 0 : 1 ) +
+ 	  ( patchMap->index_b(p1) == patchMap->index_b(p2) ? 0 : 1 ) +
+ 	  ( patchMap->index_c(p1) == patchMap->index_c(p2) ? 0 : 1 );
+        int numPartitions = 1 + (numAtoms1*numAtoms2 > 2500) + (numAtoms1*numAtoms2)/100000;
+        if ( numPartitions > MAX_PAIR_PARTITIONS )
+			numPartitions = MAX_PAIR_PARTITIONS;
+        if ( distance > 1 ) numPartitions = 1;
+	if ( numPartitions > 1 ) iout << "Mapping " << numPartitions << " ComputeNonbondedPair objects for patches " << p1 << " and " << p2 << "\n" << endi;
+	for(int partition=0; partition < numPartitions; partition++)
+	{
+	  cid=computeMap->storeCompute(
 		patchMap->node(patchMap->downstream(p1,p2)),
-		2,computeNonbondedPairType);
-	computeMap->newPid(cid,p1);
-	computeMap->newPid(cid,p2,oneAwayTrans[j]);
-	patchMap->newCid(p1,cid);
-	patchMap->newCid(p2,cid);
+		2,computeNonbondedPairType,partition,numPartitions);
+	  computeMap->newPid(cid,p1);
+	  computeMap->newPid(cid,p2,oneAwayTrans[j]);
+	  patchMap->newCid(p1,cid);
+	  patchMap->newCid(p2,cid);
+        }
 
       }
 	 

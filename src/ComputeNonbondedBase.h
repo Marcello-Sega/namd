@@ -219,9 +219,10 @@ NOEXCL
     Force *fullf_1 = params->fullf[1];
   )
 
-  SELF
+  NOEXCL
   (
-  int pairCount = ( (i_upper-1) * j_upper ) / 2;
+  SELF ( int pairCount = ( (i_upper-1) * j_upper ) / 2; )
+  PAIR ( int pairCount = i_upper * j_upper; )
   int minPairCount = ( pairCount * params->minPart ) / params->numParts;
   int maxPairCount = ( pairCount * params->maxPart ) / params->numParts;
   pairCount = 0;
@@ -243,13 +244,20 @@ NOEXCL
 
   if (p_i.nonbondedGroupSize) // if hydrogen group parent
     {
-    SELF
+    NOEXCL
     (
     if ( p_i.hydrogenGroupSize ) {
       int opc = pairCount;
       int hgs = p_i.hydrogenGroupSize;
+      SELF
+      (
       pairCount += hgs * ( i_upper - 1 - i );
       pairCount -= hgs * ( hgs - 1 ) / 2;
+      )
+      PAIR
+      (
+      pairCount += hgs * j_upper;
+      )
       if ( opc < minPairCount || opc >= maxPairCount ) {
         i += hgs - 1;
         continue;

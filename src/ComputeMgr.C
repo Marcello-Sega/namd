@@ -186,7 +186,9 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	trans2[0] = map->computeData[i].pids[0].trans;
 	pid2[1] = map->computeData[i].pids[1].pid;
 	trans2[1] = map->computeData[i].pids[1].trans;
-	c = new ComputeNonbondedPair(i,pid2,trans2); // unknown delete
+	c = new ComputeNonbondedPair(i,pid2,trans2,
+				     map->partition(i),map->partition(i)+1,
+				     map->numPartitions(i)); // unknown delete
 	++numNonbondedPair;
 	map->registerCompute(i,c);
 	c->initialize();

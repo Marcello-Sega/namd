@@ -13,7 +13,8 @@
 class ComputeNonbondedPair : public ComputePatchPair, private ComputeNonbondedUtil {
 
 public:
-  ComputeNonbondedPair(ComputeID c, PatchID pid[], int trans[]);
+  ComputeNonbondedPair(ComputeID c, PatchID pid[], int trans[],
+	int minPartition = 0, int maxPartition = 1, int numPartitions = 1);
   ~ComputeNonbondedPair();
 
 protected :
@@ -24,6 +25,8 @@ protected :
   PositionBox<Patch> *avgPositionBox[2];
 
   SubmitReduction *reduction;
+
+  int minPart, maxPart, numParts;
 
 };
 
