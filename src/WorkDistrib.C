@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.12 1996/10/16 08:22:39 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.13 1996/10/29 17:18:20 brunner Exp $";
 
 #include <stdio.h>
 
@@ -37,6 +37,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib
 //----------------------------------------------------------------------
 WorkDistrib::WorkDistrib(InitMsg *msg)
 {
+  mapsArrived = false;
+  awaitingMaps = false;
 }
 
 //----------------------------------------------------------------------
@@ -71,12 +73,14 @@ void WorkDistrib::sendMaps(void)
   MapDistribMsg *mapMsg = new (MsgIndex(MapDistribMsg)) MapDistribMsg ;
 
   CBroadcastMsgBranch(WorkDistrib, saveMaps, mapMsg, thisgroup);
+  mapsArrived = true;
 }
 
 //----------------------------------------------------------------------
 void WorkDistrib::createComputes(void)
 {
   CPrintf("I don't know how to create computes yet\n");
+  CharmExit();
 }
 
 //----------------------------------------------------------------------
@@ -136,9 +140,25 @@ void WorkDistrib::saveMaps(MapDistribMsg *msg)
   {
     CPrintf("Node 0 patch map built\n");
   }
-  createPatches();
-  createComputes();
-  CharmExit();
+
+  mapsArrived = true;
+  if (awaitingMaps)
+  {
+    awaitingMaps = false;
+    CthResume(awaitingMapsTh);
+  }
+}
+
+//----------------------------------------------------------------------
+// awaitMaps() is called when node needs to wait for the map message
+void WorkDistrib::awaitMaps()
+{
+  if (!mapsArrived)
+  {
+    awaitingMapsTh = CthSelf();
+    awaitingMaps = true;
+    CthSuspend();
+  }
 }
 
 
@@ -318,13 +338,16 @@ void WorkDistrib::enqueueWork(LocalWorkMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.12 $	$Date: 1996/10/16 08:22:39 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.13 $	$Date: 1996/10/29 17:18:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.13  1996/10/29 17:18:20  brunner
+ * Added initial thread stuff, but it only works on 1 processor
+ *
  * Revision 1.12  1996/10/16 08:22:39  ari
  * *** empty log message ***
  *
