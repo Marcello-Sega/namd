@@ -519,10 +519,6 @@ obj/ComputeFreeEnergy.o: \
 	src/ConfigList.h \
 	src/Communicate.h \
 	src/MStream.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
-	src/PatchMap.inl \
-	src/AtomMap.h \
 	src/ComputeFreeEnergy.h \
 	src/ComputeGlobalMaster.h \
 	src/ComputeHomePatches.h \
@@ -535,11 +531,6 @@ obj/ComputeFreeEnergy.o: \
 	src/PatchTypes.h \
 	src/ComputeGlobal.h \
 	src/ComputeGlobalMsgs.h \
-	src/PatchMgr.h \
-	src/HomePatch.h \
-	src/MigrateAtomsMsg.h \
-	src/Migration.h \
-	src/HomePatchTypes.h \
 	src/Molecule.h \
 	src/IntList.h \
 	src/LintList.h \
@@ -551,7 +542,6 @@ obj/ComputeFreeEnergy.o: \
 	src/ReductionMgr.h \
 	src/ComputeMgr.h \
 	inc/ComputeMgr.top.h \
-	src/TclCommands.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeFreeEnergy.o -c src/ComputeFreeEnergy.C
 obj/ComputeFullDirect.o: \
@@ -1384,10 +1374,6 @@ obj/ComputeTcl.o: \
 	src/ConfigList.h \
 	src/Communicate.h \
 	src/MStream.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
-	src/PatchMap.inl \
-	src/AtomMap.h \
 	src/ComputeTcl.h \
 	src/ComputeGlobalMaster.h \
 	src/ComputeHomePatches.h \
@@ -1400,11 +1386,6 @@ obj/ComputeTcl.o: \
 	src/PatchTypes.h \
 	src/ComputeGlobal.h \
 	src/ComputeGlobalMsgs.h \
-	src/PatchMgr.h \
-	src/HomePatch.h \
-	src/MigrateAtomsMsg.h \
-	src/Migration.h \
-	src/HomePatchTypes.h \
 	src/Molecule.h \
 	src/IntList.h \
 	src/LintList.h \
