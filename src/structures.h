@@ -95,8 +95,7 @@ public:
 		return
 		(
 		  ( atom1 < o.atom1 ) ||
-		  ( atom1 == o.atom1 && atom2 < o.atom2 ) ||
-		  ( atom1 == o.atom1 && atom2 == o.atom2 )
+		  ( atom1 == o.atom1 && atom2 < o.atom2 )
 		);
 	}
 };
