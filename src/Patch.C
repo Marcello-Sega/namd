@@ -17,6 +17,8 @@
 #include "SimParameters.h"
 #include "ResizeArrayPrimIter.h"
 
+#include "Sync.h"
+
 typedef ResizeArrayPrimIter<ComputeID> ComputeIDListIter;
 
 //#define  DEBUGM
@@ -144,10 +146,16 @@ void Patch::positionsReady(int doneMigration)
 
    // Iterate over compute objects that need to be informed we are ready
    ComputeIDListIter cid(positionComputeList);
-   for(cid = cid.begin(); cid != cid.end(); cid++)
-   {
-     computeMap->compute(*cid)->patchReady(patchID,doneMigration);
-   } 
+   // gzheng
+   if (useSync) {
+     Sync::Object()->registerComp(patchID, cid, doneMigration);
+   }
+   else {
+     for(cid = cid.begin(); cid != cid.end(); cid++)
+     {
+	 computeMap->compute(*cid)->patchReady(patchID,doneMigration);
+     }
+   }
 }
 
 

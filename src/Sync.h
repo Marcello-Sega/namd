@@ -18,17 +18,35 @@
 
 #include "ProcessorPrivate.h"
 #include "Sync.decl.h"
+#include "ResizeArrayPrimIter.h"
 
 extern int useSync;
+
+typedef ResizeArrayPrimIter<ComputeID> ComputeIDListIter;
 
 class Sync : public BOCclass
 {
 private:
+    struct _clist {
+    int pid;
+    int step;
+    ComputeIDListIter cid;
+    int doneMigration;
+    } *clist;
+    int capacity;
+
+    int step;
     int counter;
+    int cnum;
+    int nPatcheReady;
+    int numPatches;
+
+    void triggerCompute();
 public:
     Sync(void);
     inline static Sync *Object() { return CpvAccess(Sync_instance); }
-    void openSync();
+    void openSync(); 
+    void registerComp(PatchID pid, ComputeIDListIter cid, int doneMigration);
     void PatchReady(void);
 };
 

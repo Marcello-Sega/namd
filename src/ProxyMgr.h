@@ -114,6 +114,7 @@ public:
 
   static ProxyMgr *Object() { return CpvAccess(ProxyMgr_instance); }
   
+  int numProxies() { return proxySet.size(); }
 private:
 
   ProxySet proxySet;
