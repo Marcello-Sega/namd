@@ -8,7 +8,8 @@ include ../Makearch
 MAKE   = make
 SHELL  = /bin/sh
 # CC     = gcc # -Wall  sun :,sgi: cc -fullwarn -g3 
-CC     = CC
+CC     = $(CXX)
+CFLAGS = $(COPTS)
 AR     = ar
 RM     = rm -f
 
@@ -22,7 +23,7 @@ RM     = rm -f
 #don't forget to change the LIBS
 
 #PVM_HOME = $(HOME)/pvm3
-PVM_ARCH = HPUX
+#PVM_ARCH = HPUX
 PVM_HOME = ../pvm3
 
 # Specify compile time flags
@@ -47,7 +48,7 @@ IFLAGS = -I$(PVM_HOME) -I../src -I../dpmta2 -I/Projects/l1/namd.2.0/charm/includ
 # library flags - set the flags to point to the directories
 #   containing the PVM 
 #
-LDIR = -L$(PVM_HOME)/lib/$(PVM_ARCH) -L. -L/Projects/l1/namd.2.0/charm/lib
+LDIR = -L. -L$(PVMDIR)
 
 #  tell the linker where to which libraries to link in.
 #  this will vary by operating system
