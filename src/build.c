@@ -264,7 +264,7 @@ int tcl_auto(ClientData data, Tcl_Interp *interp,
 
   if ( dihedrals ) handle_msg("enabling dihedral autogeneration");
   else handle_msg("disabling dihedral autogeneration");
-  if ( topo_mol_segment_auto_angles(psf->mol,dihedrals) ) {
+  if ( topo_mol_segment_auto_dihedrals(psf->mol,dihedrals) ) {
     Tcl_SetResult(interp,"ERROR: failed setting dihedral autogen",TCL_VOLATILE);
     return TCL_ERROR;
   }
