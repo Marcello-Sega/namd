@@ -29,6 +29,8 @@
 // #define DEBUGM
 #include "Debug.h"
 
+// #define DUMP_DPMTA
+
 extern Communicate *comm;
 
 void ComputeDPMTA::get_FMA_cube(int resize)
@@ -258,6 +260,13 @@ void ComputeDPMTA::initialize()
     pmta_data.cellctr.z = 0.;
   }
 
+#ifdef DUMP_DPMTA
+  FILE *fp;
+  fp = fopen("DUMP_DPMTA.init","w");
+  fwrite(&pmta_data,sizeof(PmtaInitData),1,fp);
+  fclose(fp);
+#endif
+
   DebugM(2,"DPMTA calling PMTAinit.\n");
   if (PMTAinit(&pmta_data,slavetids) >= 0)
   {
@@ -412,7 +421,25 @@ void ComputeDPMTA::doWork()
     (*ap).positionBox->close(&x);
   } 
 
+  if (i != totalAtoms)
+  {
+    iout << iERRORF << iPE << " totalAtoms=" << totalAtoms
+         << " but " << i << " atoms are seen!\n" << endi;
+    NAMD_die("FMA: atom counts unequal!");
+  }
+
   DebugM(2,"DPMTA doWork() there are " << totalAtoms << " atoms in this node.\n");
+
+#ifdef DUMP_DPMTA
+  FILE *fp;
+  char dump_file[32];
+  sprintf(dump_file,"DUMP_DPMTA.%d",(int)CMyPe());
+  fp = fopen(dump_file,"w");
+  int32 n32 = i;
+  fwrite(&n32,sizeof(int32),1,fp);
+  fwrite(particle_list,sizeof(PmtaParticle),i,fp);
+  fclose(fp);
+#endif
 
   // 3. (run DPMTA) compute the forces
   if ( PMTAforce(i, particle_list, fmaResults, NULL) < 0 )
@@ -474,12 +501,15 @@ void ComputeDPMTA::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1044 $	$Date: 1997/09/12 23:05:51 $
+ *	$Revision: 1.1045 $	$Date: 1997/09/18 22:49:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.C,v $
+ * Revision 1.1045  1997/09/18 22:49:41  jim
+ * Added code to dump DPMTA input to files.  Define DUMP_DPMTA to enable.
+ *
  * Revision 1.1044  1997/09/12 23:05:51  jim
  * Changes to work with DPMTA-2.6
  *
