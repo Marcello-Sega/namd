@@ -52,3 +52,4 @@ $(INTERFACES:.ci=.bot.h):	$$(@:.bot.h=.ci)
 
 clean:
 	rm -rf *.o
+	rm -f *.top.h *.bot.h *.depends
