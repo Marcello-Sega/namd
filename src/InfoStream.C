@@ -66,22 +66,22 @@ infostream& infostream::operator<<(infostream& (*f)(infostream&)) { return f(*th
 #define LOCALMOD(type) infostream& infostream::operator<<(type x) \
 		{ (ostream&)(*this) << x; return(*this); }
 /** << characters **/
-LOCALMOD(char);
-LOCALMOD(unsigned char);
-LOCALMOD(const char *);
+LOCALMOD(char)
+LOCALMOD(unsigned char)
+LOCALMOD(const char *)
 /** << integers **/
-LOCALMOD(int);
-LOCALMOD(long);
-LOCALMOD(short);
-LOCALMOD(unsigned int);
-LOCALMOD(unsigned long);
-LOCALMOD(unsigned short);
+LOCALMOD(int)
+LOCALMOD(long)
+LOCALMOD(short)
+LOCALMOD(unsigned int)
+LOCALMOD(unsigned long)
+LOCALMOD(unsigned short)
 /** << floats **/
-LOCALMOD(float);
-LOCALMOD(double);
+LOCALMOD(float)
+LOCALMOD(double)
 /** << pointers **/
-LOCALMOD(void *);
-LOCALMOD(streambuf *);
+LOCALMOD(void *)
+LOCALMOD(streambuf *)
 #undef LOCALMOD
 
 /** common messages **/

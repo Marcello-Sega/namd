@@ -37,7 +37,7 @@ class infostream : public ostrstream
   /** infostream<<infostream (how to handle class modifiers) **/
   infostream& operator<<(infostream& (*f)(infostream&));
 
-  #define LOCALMOD(type) infostream& operator<<(type x);
+  #define LOCALMOD(type) infostream& operator<<(type x)
   /** << characters **/
   LOCALMOD(char);
   LOCALMOD(unsigned char);
