@@ -247,11 +247,11 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     recipPeDest[node] = 0;
   }
 
-  // make sure that we don't get ahead of ourselves on this node
-  if ( CkMyPe() < numPatches && myRecipPe >= 0 ) {
-    source_flags[CkMyPe()] = 1;
-    recipPeDest[myRecipPe] = 1;
-  }
+  // // make sure that we don't get ahead of ourselves on this node
+  // if ( CkMyPe() < numPatches && myRecipPe >= 0 ) {
+  //   source_flags[CkMyPe()] = 1;
+  //   recipPeDest[myRecipPe] = 1;
+  // }
 
   for ( int pid=0; pid < numPatches; ++pid ) {
     int pnode = patchMap->node(pid);
@@ -295,6 +295,8 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
       ++c;
     }
   }
+
+  delete [] source_flags;
 
   // CkPrintf("PME on node %d has %d sources and %d destinations (first=%d)\n",
   //           CkMyPe(), numSources, numDestRecipPes,firstDestRecipPe);
@@ -820,10 +822,9 @@ void ComputePme::doWork()
 
     for(int i=0; i<numAtoms; ++i)
     {
-      Vector tmp = lattice.delta(x[i].position);
-      data_ptr->x = tmp.x;
-      data_ptr->y = tmp.y;
-      data_ptr->z = tmp.z;
+      data_ptr->x = x[i].position.x;
+      data_ptr->y = x[i].position.y;
+      data_ptr->z = x[i].position.z;
       data_ptr->cg = coloumb_sqrt * x[i].charge;
       ++data_ptr;
     }
@@ -879,6 +880,8 @@ void ComputePme::sendData(int numRecipPes, int firstDestRecipPe,
 
   resultsRemaining = numRecipPes;
 
+  int errcount = 0;
+
   CProxy_ComputePmeMgr pmeProxy(CpvAccess(BOCclass_group).computePmeMgr);
   for (int j=0; j<numRecipPes; j++) {
     int pe = ( j + firstDestRecipPe ) % numRecipPes;  // different order
@@ -898,7 +901,18 @@ void ComputePme::sendData(int numRecipPes, int firstDestRecipPe,
     // CkPrintf("count(%d -> %d) = %d\n",CkMyPe(),pe,fcount);
 
     if ( ! recipPeDest[pe] ) {
-      if ( fcount ) NAMD_bug("Stray PME grid charges detected.");
+      if ( fcount ) {
+        ++errcount;
+        iout << iERROR << CkMyPe() << " sending to " << recipPeMap[pe] << ":";
+        int iz = -1;
+        for ( i=0; i<flen; ++i ) {
+          if ( f[i] ) {
+            int jz = (i+fstart)/myGrid.K2;
+            if ( iz != jz ) { iout << " " << jz;  iz = jz; }
+          }
+        }
+        iout << "\n" << endi;
+      }
       continue;
     }
 
@@ -924,6 +938,8 @@ void ComputePme::sendData(int numRecipPes, int firstDestRecipPe,
     pmeProxy.recvGrid(msg,recipPeMap[pe]);
 #endif
   }
+
+  if ( errcount ) NAMD_bug("Stray PME grid charges detected.");
 
 }
 
