@@ -11,7 +11,7 @@
 %
 %       $RCSfile: ug_runit.tex,v $
 %       $Author: jim $        $Locker:  $                $State: Exp $
-%       $Revision: 1.5 $      $Date: 2001/02/23 00:52:00 $
+%       $Revision: 1.6 $      $Date: 2003/08/07 15:19:06 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -22,6 +22,9 @@
 % REVISION HISTORY:
 %
 % $Log: ug_runit.tex,v $
+% Revision 1.6  2003/08/07 15:19:06  jim
+% Fixed missing namd2 in command.
+%
 % Revision 1.5  2001/02/23 00:52:00  jim
 % Many updates and cleanups for 2.3.
 %
@@ -215,7 +218,7 @@ jobs are run using the \verb#prun# command.  (The standard MPI charmrun is
 wrong on this platform.)  The syntax for this command is:
 
 \begin{verbatim}
-  prun -n <procs> <configfile>
+  prun -n <procs> namd2 <configfile>
 \end{verbatim}
 
 There are additional options.  Consult your local documentation.
