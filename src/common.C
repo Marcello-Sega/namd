@@ -20,12 +20,27 @@
 #include "Node.h"
 #include "Inform.h"
 
+#ifdef USESTDIOSTUBS
+
+// On the ASCI-Red, these functions have prototypes that don't match
+// the standard, so I'll override them
+
+int write(int fd, const void* buf, int count) 
+{ 
+  return write(fd,(void*)buf,(size_t)count);
+}
+
+int stat(const char* fn, struct stat* buf)
+{
+  return stat((char*)fn, buf);
+}
+
+#endif
 
 Inform namdErr("ERROR");
 Inform namdWarn("Warning");
 Inform namdInfo("Info");
 Inform namdDebug("** DEBUG **");
-
 
 // print out title
 void NAMD_title(void)
@@ -187,11 +202,12 @@ FILE *Fopen	(const char *filename, const char *mode)
 {
   struct stat buf;
   // check if basic filename exists (and not a directory)
+
   if (!stat(filename,&buf))
-	{
-	if (!S_ISDIR(buf.st_mode))
-		return(fopen(filename,mode));
-	}
+    {
+      if (!S_ISDIR(buf.st_mode))
+	return(fopen(filename,mode));
+    }
 #if !defined(NOCOMPRESSED)
   // check for a compressed file
   char *realfilename;
@@ -252,9 +268,9 @@ FILE *Fopen	(const char *filename, const char *mode)
 		return(fout);
 		}
 	}
+  free(command);
 #endif /* !defined(NOCOMPRESSED) */
 
-  free(command);
   return(NULL);
 } /* Fopen() */
 
@@ -274,4 +290,5 @@ int	Fclose	(FILE *fout)
     }
   return rc;
 } /* Fclose() */
+
 
