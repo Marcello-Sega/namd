@@ -11,7 +11,7 @@
 %
 %       $RCSfile: ug_runit.tex,v $
 %       $Author: jim $        $Locker:  $                $State: Exp $
-%       $Revision: 1.3 $      $Date: 1999/03/18 02:16:49 $
+%       $Revision: 1.4 $      $Date: 2000/09/29 20:41:15 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -22,6 +22,9 @@
 % REVISION HISTORY:
 %
 % $Log: ug_runit.tex,v $
+% Revision 1.4  2000/09/29 20:41:15  jim
+% Updated many things for 2.2.
+%
 % Revision 1.3  1999/03/18 02:16:49  jim
 % Spelling fixes.
 %
@@ -62,79 +65,140 @@
 \section{Running \NAMD}
 \label{section:run}
 
-\NAMD\ currently runs on network of HP, Sun, SGI, and Linux workstations, as
-well as Cray T3E, IBM SP3, and SGI-CRAY Origin 2000 machines. On network
-of workstations, a ``host program'' (called {\tt conv-host}) is needed to
-launch \NAMD\ on individual workstations in the network. This host program
-is included with the distribution. The general command line syntax for
-invoking \NAMD\ on each of these platforms is:\\
-\noindent {\tt <hostprog> namd2 <config-file> +p{\em N}}\\
-Where {\tt <config-file>} is the name of the configuration file. 
-And {\tt{\em N}} is the number of processors to be used for execution.
+\NAMD\ runs on a variety of platforms.  Details of running on each
+specific platform are given below.
 
-\subsection{Platform-Specific Notes}
+\subsection{Workstation Networks}
 
-The following subsections explain in detail the steps involved in running
-\NAMD\ on particular platforms.
+Workstation networks require two files, the namd2 executable and the
+conv-host program.  The conv-host program starts namd2 on the desired
+hosts, and handles console I/O for the node programs.
 
-\subsubsection{Network of Workstations}
+To specify what machines namd2 will run on, the user creates a file
+called "nodelist".  Below is an example nodelist file:
 
-In order to run \NAMD\ on network of workstations, a host program (called
-{\tt conv-host}) is needed in order to launch \NAMD\ on individual 
-workstations. This program is bundled with the binary distribution.
-The names of individual workstations as well as other control information
-such as how many processes to create on those workstations (should they
-happen to be multiprocessor workstations) is specified to the host program
-through a file named {\tt .nodelist} in the user's home directory or can
-be superseded by the {\tt nodelist} file in the current directory. Details
-about the syntax of {\tt nodelist} file can be found in {\em Converse
-Installation and Usage Manual} at {\tt http://charm.cs.uiuc.edu/}.
+\begin{verbatim}
+group main
+ host brutus
+ host romeo
+\end{verbatim}
 
-\subsubsection{IBM SP3}
+The "group main" line defines the default machine list.  Hosts brutus
+and romeo are the two machines on which to run the simulation.  Note
+that conv-host may run on one of those machines, or conv-host may run
+on a third machine.
 
-On IBM SP3, you would have to use the scheduler available on the front end
-of the SP system in order to run \NAMD. Below, we give the description of
-the commands we use at Argonne National Laboratory's IBM SP3 installation.
-Consult the system documentation or your local system administrator about the
-details at your site. We use the command {\tt spsubmit} to submit \NAMD\
-runs to the SP scheduler at Argonne National Laboratory.\\
-\noindent {\tt spsubmit -np {\em N} -maxtime {\em mins} namd2 <config-file>}\\
-{\em N} is the number of processors we request \NAMD\ to run on, and
-{\em mins} i the maximum time we expect \NAMD\ to take during this run.
+The "rsh" command ("remsh" on HPUX) is used to start namd2 on each node
+specified in the nodelist file.  If NAMD fails without printing any
+output, check to make sure that "rsh" works on your machine, by seeing
+if "rsh hostname ls" works for each host in the nodelist.  If you want
+or need to use "ssh" instead, then add "setenv CONV\_RSH ssh" to your
+login or batch script and try "ssh hostname ls" to each host first to
+ensure that the machine is in your .ssh/known\_hosts file.
 
-\subsubsection{CRAY T3E}
+Some automounters use a temporary mount directory which is prepended
+to the path returned by the pwd command.  To run on multiple machines
+you must place a "pathfix" line in your nodelist file before any
+"host" lines.  For example:
 
-{\tt mpprun} is the name of the command used to run parallel jobs on CRAY
-T3E. This command can be used as:\\
-\noindent {\tt mpprun namd2 <config-file> +p{\em N}}\\
-where {\em N} is the number of requested processors. However, this can be
-used only when the number of requested processors is less than or equal
-to 32. For jobs larger than this, one has to use queuing facility provided
-at the site of installation. Description of the queuing facilities is out
-of this document's scope, and we leave that up to you to explore.
+\begin{verbatim}
+group main
+ pathfix /tmp_mnt
+ host alpha1
+ host alpha2
+\end{verbatim}
 
-\subsubsection{Origin2000}
+A number of parameters may be passed to conv-host.  The most important
+is the "+pX" option, where X specifies the number of processors.  If X
+is less than the number of hosts in the nodelist, machines are
+selected from top to bottom.  If X is greater than the number of
+hosts, conv-host will start multiple processes on the machines,
+starting from the top.  To run multiple processes on members of a SMP
+workstation cluster, you may either just use the +p option to go
+through the list the right number of times, or list each machine
+several times, once for each processor.  The default is +p1.
 
-Origin2000 version of \NAMD\ is a shared memory version, and does not need
-any particular {\em host} program to launch \NAMD. Thus, in order to run
-\NAMD\ on Origin2000, we use the following command:\\
-{\tt namd2 <config-file> +p{\em N}}\\
-where, {\em N} is the number of processes we plan to use. However, note that
-depending on the load and the queuing strategy employed by the system some of
-the processes may be interleaved on some processors, thus causing the
-performance to suffer. Some installations of Origin2000 employ an external
-queuing facility to avoid this problem. You are strongly encouraged to
-consult your local documentation for queuing facility used.
+You may specify the nodelist file with the "++nodelist" option and the
+group (which defaults to "main") with the "++nodegroup" option.  If
+you do not use "++nodelist" conv-host will first look for "nodelist"
+in your current directory and then ".nodelist" in your home directory.
 
-\subsection{Interactive modeling with MDScope}
+If you always want to run on the machine you are logged in to you may
+use "localhost" in place of the hostname in your nodelist file, but
+only if there are no other machines.  You will not need "pathfix".
+For example, ".nodelist" in your home directory could read:
 
-Interactive molecular modeling can be performed using the MDScope
-environment.  MDScope consists of \NAMD; \VMD, a program for
-interactive visualization of biopolymers; and MDComm, a communications
-library for efficient network transfer of molecular dynamics
-information.  \VMD\ allows the user to view intermediate results of the
-simulation being performed by \NAMD\ while the simulation is still 
-proceeding.  For more information regarding 
-the installation or use of MDScope, 
-consult the \VMD\ documentation.  
+\begin{verbatim}
+group main
+ host localhost
+\end{verbatim}
+
+Once the nodelist file is set up, and you have your configuration file
+prepared (alanin.conf, in this example), run NAMD as follows:
+
+\begin{verbatim}
+conv-host +pX namd2 alanin.conf
+\end{verbatim}
+
+Intel and Alpha processors produce binary files (restart and DCD
+files) which must be "byte-swapped" to be read on other platforms.
+The flipbinpdb and flipdcd programs will perform this conversion.
+NAMD and VMD now handle this conversion automatically for most files.
+
+\subsection{Windows Workstation Networks}
+
+Windows is the same as other workstation networks described above,
+except that rsh is not available on this platform.  Instead, you must
+run the provided daemon (daemon.exe) on every node listed in the
+nodelist file, even if you are only running on one machine.  Using
+daemon\_background rather than daemon will eliminate consoles for the
+daemon and node processes.
+
+\subsection{IBM RS/6000 SP}
+
+Run NAMD as you would any POE program.  The options and environment
+variables for poe are various and arcane, so you should consult your
+local documentation for recommended settings.  As an example, to run
+interactively on Blue Horizon one would specify:
+
+\begin{verbatim}
+poe namd2 alanin.conf -nodes n -tasks_per_node m -rmpool 1
+\end{verbatim}
+
+\subsection{Cray T3E}
+
+The T3E version has been tested on the Pittsburgh Supercomputer Center
+T3E.  To run on X processors, use the mpprun command:
+
+mpprun -n X namd2 alanin.conf
+
+\subsection{Origin 2000}
+
+For small numbers of processors (1-8) use the non-MPI version of namd2.
+If your stack size limit is unlimited, which DQS may do, you will need
+to set it with "limit stacksize 64M" to run on multiple processors.
+To run on X processors call the binary directly with the +p option:
+
+\begin{verbatim}
+namd2 +pX alanin.conf
+\end{verbatim}
+
+For better performance on larger numbers of processors we recommend
+that you use the MPI version of NAMD.  To run this version, you must
+have MPI installed.  Furthermore, you must set two environment
+variables to tell MPI how to allocate certain internal buffers.  Put
+the following commands in your .cshrc or .profile file, or in your
+job file if you are running under a queuing system:
+
+\begin{verbatim}
+setenv MPI_REQUEST_MAX 10240
+setenv MPI_TYPE_MAX 10240
+\end{verbatim}
+
+Then run NAMD with the following command:
+
+\begin{verbatim}
+mpirun -np X namd2 alanin.conf
+\end{verbatim}
+
 

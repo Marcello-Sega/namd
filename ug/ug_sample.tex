@@ -8,101 +8,118 @@ It performs basic dynamics
 with no output files or special features.
 
 \begin{verbatim}
+# protocol params
+numsteps        1000
 
-timestep        0.5
-numsteps        10000
+# initial config
+coordinates     alanin.pdb
+temperature     300K
+seed            12345
 
-cwd             /scratch              #  Specify a working directory 
+# output params
+outputname      /tmp/alanin
+binaryoutput    no
 
+# integrator params
+timestep        1.0
+
+# force field params
 structure       alanin.psf
 parameters      alanin.params
-coordinates     alanin.pdb
-
 exclude         scaled1-4
-1-4scaling      0.4
-outputname      output
-margin          1.0
-stepspercycle   10
-temperature     300.0
-
+1-4scaling      1.0
 switching       on
-switchdist      7.0
-cutoff          8.0
-pairlistdist    9.0
-
+switchdist      8.0
+cutoff          12.0
+pairlistdist    13.5
+stepspercycle   20
 \end{verbatim}
 
 \newpage
 This file is again for alanin, 
 but shows a slightly more complicated configuration.  
-A coordinate trajectory file and a set of restart files 
-are produced every ten timesteps.  
-Langevin dynamics are also active in this configuration.  
+The system is periodic, a coordinate trajectory file
+and a set of restart files are produced.
 
 \begin{verbatim}
-timestep        0.5
+# protocol params
+numsteps        1000
 
-numsteps        10000
+# initial config
+coordinates     alanin.pdb
+temperature     300K
+seed            12345
 
+# periodic cell
+cellBasisVector1   33.0 0 0
+cellBasisVector2   0 32.0 0
+cellBasisVector3   0 0 32.5
+
+# output params
+outputname      /tmp/alanin
+binaryoutput    no
+DCDfreq         10
+restartfreq     100
+
+# integrator params
+timestep        1.0
+
+# force field params
 structure       alanin.psf
 parameters      alanin.params
-coordinates     alanin.pdb
 exclude         scaled1-4
-1-4scaling      0.4
-outputname      output
-margin          1.0
-stepspercycle   10
-temperature     300.0
-
+1-4scaling      1.0
 switching       on
-switchdist      7.0
-cutoff          8.0
-pairlistdist    9.0
-
-DCDfile         alanin.dcd
-DCDfreq         10
-
-restartname     alanin.restart
-restartfreq     10
-
-langevin        on
-langevinTemp    300.0
-langevinCol     O
+switchdist      8.0
+cutoff          12.0
+pairlistdist    13.5
+stepspercycle   20
 \end{verbatim}
 
 \newpage
 This file shows another simple configuration file for alanin, 
-but this time with full electrostatics using DPMTA.  
+but this time with full electrostatics using PME and 
+multiple timestepping.
 
 \begin{verbatim}
+# protocol params
+numsteps        1000
 
-timestep        0.5
-numsteps        10000
+# initial config
+coordinates     alanin.pdb
+temperature     300K
+seed            12345
 
-cwd             /scratch        #  Specify a working directory 
+# periodic cell
+cellBasisVector1   33.0 0 0
+cellBasisVector2   0 32.0 0
+cellBasisVector3   0 0 32.5
 
+# output params
+outputname      /tmp/alanin
+binaryoutput    no
+DCDfreq         10
+restartfreq     100
+
+# integrator params
+timestep        1.0
+fullElectFrequency  4
+
+# force field params
 structure       alanin.psf
 parameters      alanin.params
-coordinates     alanin.pdb
-
 exclude         scaled1-4
-1-4scaling      0.4
-outputname      output
-margin          1.0
-stepspercycle   10
-temperature     300.0
-
+1-4scaling      1.0
 switching       on
-switchdist      7.0
-cutoff          8.0
-pairlistdist    9.0
+switchdist      8.0
+cutoff          12.0
+pairlistdist    13.5
+stepspercycle   20
 
-# DPMTA parameters
-FMA             on
-FMAMp           8
-FMALevels       3
-FMAFFT          on
-FMAFFTBlock     4
-
+# full electrostatics
+PME             on
+PMEGridSizeX    32
+PMEGridSizeY    32
+PMEGridSizeZ    32
 \end{verbatim}
 \newpage

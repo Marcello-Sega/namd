@@ -11,7 +11,7 @@
 %
 %       $RCSfile: ug_avail.tex,v $
 %       $Author: jim $        $Locker:  $                $State: Exp $
-%       $Revision: 1.4 $      $Date: 1999/03/18 02:16:49 $
+%       $Revision: 1.5 $      $Date: 2000/09/29 20:41:15 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -22,6 +22,9 @@
 % REVISION HISTORY:
 %
 % $Log: ug_avail.tex,v $
+% Revision 1.5  2000/09/29 20:41:15  jim
+% Updated many things for 2.2.
+%
 % Revision 1.4  1999/03/18 02:16:49  jim
 % Spelling fixes.
 %
@@ -89,69 +92,39 @@ This section describes how to obtain and install \NAMD\ \NAMDVER.
 \NAMD\ may be downloaded from {\tt http://www.ks.uiuc.edu/Research/namd/}.
 You will be required to provide minimal registration information and
 agree to a license before receiving access to the software.
-Pre-compiled binaries are available for most architectures to which
-\NAMD\ has been ported.
+Both source and binary distributions are available.
 
 \subsection{Platforms on which \NAMD\ will currently run}
-\NAMD\ \NAMDVER\ should be portable to any parallel platform with a
+\NAMD\ should be portable to any parallel platform with a
 modern C++ compiler to which Charm and Converse have been ported.
-Some minor tuning of system parameters or compiler flags 
-may be required.
-\NAMD\ \NAMDVER\ has been compiled and tested on the following platforms:  
+Precompiled \NAMD\ \NAMDVER\ binaries are available for the following platforms:  
 \begin{itemize}
-\item Intel PC's (Linux)
-\item HP PA-RISC workstations
-\item Sun UltraSparc workstations
-\item ACSI Red
-\item IBM SP3
-\item Cray T3D and T3E
-\item SGI Origin 2000, Origin 200, and Onyx 2
+\item Windows (NT, etc.) on Intel processors 
+\item AIX on RS/6000 processors 
+\item HP-UX on PA-RISC processors 
+\item Linux on Intel and Alpha processors 
+\item Solaris on Sparc processors 
+\item Tru64 Unix on Alpha processors 
+\item Cray T3E 
+\item IBM RS/6000 SP 
+\item SGI Origin 2000 (with and without MPI) 
 \end{itemize}
 
 \subsection{Compiling \NAMD}
 
-To compile \NAMD\ for a particular machine, follow these steps:  
+We provide complete and optimized binaries for all
+platforms to which NAMD has been ported.
+It should not be necessary for you to compile
+NAMD unless you wish to add or modify features.
 
-\begin{enumerate}
-\item
-Obtain the latest release of Charm from {\tt http://charm.cs.uiuc.edu/}
-and compile it for the platforms you wish to use.
-\item
-Edit {\tt Make.charm} so that the {\tt CHARMBASE} variable
-points to the top directory of your Charm installation.
-\item 
-The {\tt arch} directory contains files of the form {\tt Makearch.<architecture>}.
-Find the file which is closest to the platform you wish to compile for and
-edit it.  You may need to alter some of the following:
-\begin{itemize}
-\item {\tt CXX} - C++ compiler
-\item {\tt CXXOPTS} - C++ compiler options
-\item {\tt CC} - C compiler
-\item {\tt COPTS} - C compiler options
-\item {\tt CHARMARCH} - Charm architecture name
-\item {\tt TCL...} - definitions for Tcl installation (optional)
-\item {\tt MDCOMM...} - definitions for MDComm installation (very optional)
-\end{itemize}
-\item
-In the main directory run {\tt ../config <architecture>}
-which will create a new build subdirectory {\tt <architecture>}.
-You only need to repeat this step if you add new source files.
-\item 
-Change to this new directory and type {\tt make}.
-\end{enumerate}
+Directions for compiling NAMD are contained in the release notes,
+which are available from the NAMD web site
+{\tt http://www.ks.uiuc.edu/Research/namd/}
+and are included in all distributions.
 
 \subsection{Documentation}
 
 All available \NAMD\ documentation is available for download without
 registration via the \NAMD\ web site
 {\tt http://www.ks.uiuc.edu/Research/namd/}.
-
-%The directory {\tt doc} contains three documents:
-%\begin{itemize}
-%\item the \UG\ ({\tt ug.ps}, this document) describes how to use \NAMD, 
-%\item the \PG\ ({\tt pg.ps}) provides a complete description of \NAMD\ and 
-%  its implementation, 
-%\item {\tt configsheet.ps} provides a one page summary of the 
-%  configuration options for \NAMD.  
-%\end{itemize}
 
