@@ -224,8 +224,10 @@ void ComputeNonbondedUtil :: NAME
 
   int grouplist_std[1005];
   int fixglist_std[1005];  // list of non-fixed groups if fixedAtomsOn
+  int goodglist_std[1005];
   int *const grouplist = (j_upper < 1000 ? grouplist_std : new int[j_upper+5]);
   int *const fixglist = (j_upper < 1000 ? fixglist_std : new int[j_upper+5]);
+  int *const goodglist = (j_upper < 1000 ? goodglist_std : new int[j_upper+5]);
 
   register int g = 0;
   for ( j = 0; j < j_upper; ++j ) {
@@ -256,6 +258,7 @@ void ComputeNonbondedUtil :: NAME
     if ( all_fixed ) {
       if (grouplist != grouplist_std) delete [] grouplist;
       if (fixglist != fixglist_std) delete [] fixglist;
+      if (goodglist != goodglist_std) delete [] goodglist;
       return;
     }
   }
@@ -358,6 +361,7 @@ void ComputeNonbondedUtil :: NAME
     register int *pli = pairlist + pairlistindex;
 
     {
+      register int *gli = goodglist;
       const int *glist = ( groupfixed ? fixglist : grouplist );
       SELF( const int gl = ( groupfixed ? fixg_lower : g_lower ); )
       const int gu = ( groupfixed ? fixg_upper : g_upper );
@@ -367,7 +371,6 @@ void ComputeNonbondedUtil :: NAME
        BigReal p_j_x = p_1[j2].position.x;
        BigReal p_j_y = p_1[j2].position.y;
        BigReal p_j_z = p_1[j2].position.z;
-       int pli_incr = 0;
        while ( g < gu ) {
         j = j2;
         j2 = glist[++g];
@@ -381,18 +384,21 @@ void ComputeNonbondedUtil :: NAME
 	r2 += t2 * t2;
         p_j_z = p_1[j2].position.z;
 	// use a slightly large cutoff to include hydrogens
-	pli += pli_incr;
-	pli_incr = 0;
-	if ( r2 <= groupcutoff2 ) {
-          pli_incr = ( p_1[j].nonbondedGroupIsAtom ? 1 :
+	if ( r2 <= groupcutoff2 ) { *gli = j; ++gli; }
+       }
+
+       int hu = gli - goodglist;
+       for ( int h=0; h<hu; ++h ) {
+          int j = goodglist[h];
+          int hgs = ( p_1[j].nonbondedGroupIsAtom ? 1 :
 					p_1[j].hydrogenGroupSize );
 	  pli[0] = j;   // copy over the next four in any case
 	  pli[1] = j+1;
 	  pli[2] = j+2;
 	  pli[3] = j+3; // assume hgs <= 4
-	}
+          pli += hgs;
        }
-       pli += pli_incr;
+
       }
     }
 
@@ -717,6 +723,7 @@ void ComputeNonbondedUtil :: NAME
   } // for i
   if (grouplist != grouplist_std) delete [] grouplist;
   if (fixglist != fixglist_std) delete [] fixglist;
+  if (goodglist != goodglist_std) delete [] goodglist;
   if (pairlist != pairlist_std) delete [] pairlist;
   if (pairlist2 != pairlist2_std) delete [] pairlist2;
 
