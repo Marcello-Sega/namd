@@ -1,0 +1,8 @@
+extern message NodeInitMsg;
+extern message InitMsg;
+
+group Node
+{
+  entry Node(NodeInitMsg *);
+  entry startup(InitMsg *);
+} ;
