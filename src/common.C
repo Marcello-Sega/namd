@@ -106,6 +106,9 @@ void NAMD_backup_file(const char *filename, const char *extension)
   char *backup = new char[strlen(filename)+strlen(extension)+1];
   strcpy(backup, filename);
   strcat(backup, extension);
+#ifdef WIN32
+  remove(backup);
+#endif
   rename(filename,backup);
   delete [] backup;
 }

@@ -624,11 +624,14 @@ int open_dcd_write(char *dcdname)
              return DCD_OPENFAILED;
            strcpy(newdcdname, dcdname);
            strcat(newdcdname, ".BAK");
+#ifdef WIN32
+	   remove(newdcdname);
+#endif
 	   if(rename(dcdname, newdcdname))
 		return(DCD_OPENFAILED);
 	   delete [] newdcdname;
 	} 
-#if WIN32
+#ifdef WIN32
 	if ( (dcdfd = _open(dcdname, O_RDWR|O_CREAT|O_EXCL|O_BINARY,
 				_S_IREAD|_S_IWRITE)) < 0)
 #else

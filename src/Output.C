@@ -297,6 +297,9 @@ void Output::output_restart_coordinates(Vector *coor, int n, int timestep)
 
     first=FALSE;
   }
+#ifdef WIN32
+  remove(restart_bak);
+#endif
   rename(restart_name, restart_bak);
 
   //  Check to see if we should generate a binary or PDB file
@@ -361,6 +364,9 @@ void Output::output_restart_velocities(int timestep, int n, Vector *vel)
 
     first=FALSE;
   }
+#ifdef WIN32
+  remove(restart_bak);
+#endif
   rename(restart_name, restart_bak);
 
   //  Check to see if we should write out a PDB or a binary file
@@ -528,6 +534,9 @@ void Output::output_final_coordinates(Vector *coor, int n, int timestep)
   char bfname[140];
   strcpy(bfname,output_name);
   strcat(bfname,".BAK");
+#ifdef WIN32
+  remove(bfname);
+#endif
   rename(output_name,bfname);
 
   //  Check to see if we should write out a binary file or a
@@ -574,6 +583,9 @@ void Output::output_final_velocities(int timestep, int n, Vector *vel)
   char bfname[140];
   strcpy(bfname,output_name);
   strcat(bfname,".BAK");
+#ifdef WIN32
+  remove(bfname);
+#endif
   rename(output_name,bfname);
 
   //  Check to see if we should write a PDB or binary file
