@@ -448,19 +448,21 @@ int HomePatch::rattle1(const BigReal timestep)
     }
     if ( consFailure ) {
       if ( dieOnError ) {
-	iout << iERROR <<
-	  "Constraint failure in RATTLE algorithm!\n" << endi;
+	iout << iERROR << "Constraint failure in RATTLE algorithm for atom "
+			<< (atom[ig].id + 1) << "!\n" << endi;
 	return -1;  // triggers early exit
       } else {
-	iout << iWARN <<
-	  "Constraint failure in RATTLE algorithm!\n" << endi;
+	iout << iWARN << "Constraint failure in RATTLE algorithm for atom "
+			<< (atom[ig].id + 1) << "!\n" << endi;
       }
     } else if ( ! done ) {
       if ( dieOnError ) {
-	NAMD_die("Exceeded maximum number of iterations in rattle1().");
+	iout << iERROR << "Exceeded RATTLE iteration limit for atom "
+			<< (atom[ig].id + 1) << "!\n" << endi;
+	return -1;  // triggers early exit
       } else {
-	iout << iWARN <<
-	  "Exceeded maximum number of iterations in rattle1().\n" << endi;
+	iout << iWARN << "Exceeded RATTLE iteration limit for atom "
+			<< (atom[ig].id + 1) << "!\n" << endi;
       }
     }
     // store data back to patch

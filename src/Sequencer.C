@@ -590,6 +590,13 @@ void Sequencer::maximumMove(BigReal timestep)
       killme = killme || ( a[i].velocity.length2() > maxvel2 );
     }
     if ( killme ) {
+      for ( int i=0; i<numAtoms; ++i ) {
+        if ( a[i].velocity.length2() > maxvel2 ) {
+          iout << iERROR << "Atom " << (a[i].id + 1) << " velocity is "
+            << ( PDBVELFACTOR * a[i].velocity ) << " (limit is "
+            << ( PDBVELFACTOR * maxvel ) << ")\n" << endi;
+        }
+      }
       iout << iERROR << 
         "Atoms moving too fast; simulation has become unstable.\n" << endi;
       Node::Object()->enableEarlyExit();
