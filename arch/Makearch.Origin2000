@@ -32,12 +32,21 @@ CHARM = $(CHARMBASE)/$(CHARMARCH)
 ######
 ## definitions for TCL interface
 ######
-#
-#TCLDIR=/usr/local
-#TCLINCL=-I$(TCLDIR)/include
-#TCLLIB=-L$(TCLDIR)/lib -ltclx -ltcl
-#TCLFLAGS=-DNAMD_TCL
-#TCL=$(TCLINCL) $(TCLFLAGS)
+
+TCLDIR=/Projects/namd2/tcl/origin
+TCLINCL=-I$(TCLDIR)/include
+TCLLIB=-L$(TCLDIR)/lib -ltcl
+TCLFLAGS=-DNAMD_TCL
+TCL=$(TCLINCL) $(TCLFLAGS)
+
+######
+## definitions for FFT (used by PME)
+######
+FFTDIR=/Projects/namd2/fftw/origin
+FFTINCL=-I$(FFTDIR)/include
+FFTLIB=-L$(FFTDIR)/lib -lfftw -lrfftw
+FFTFLAGS=-DNAMD_FFTW
+FFT=$(FFTINCL) $(FFTFLAGS)
 
 ######
 ## definitions for MDCOMM interface

@@ -7,7 +7,7 @@
 #####
 ## Choose your favorite Compiler options
 ####
-CC = gcc
+CC = cc
 CXX = g++
 CXXOPTS = -O3 -DGLOBALS -DGCC -ffast-math
 COPTS = -O3 -DGCC -ffast-math
@@ -30,11 +30,20 @@ CHARM = $(CHARMBASE)/$(CHARMARCH)
 ######
 ## definitions for TCL interface
 ######
-#TCLDIR=/usr/local
-#TCLINCL=-I$(TCLDIR)/include
-#TCLLIB=-L$(TCLDIR)/lib -ltclx -ltcl
-#TCLFLAGS=-DNAMD_TCL
-#TCL=$(TCLINCL) $(TCLFLAGS)
+TCLDIR=/Projects/namd2/tcl/alpha
+TCLINCL=-I$(TCLDIR)/include
+TCLLIB=-L$(TCLDIR)/lib -ltcl
+TCLFLAGS=-DNAMD_TCL
+TCL=$(TCLINCL) $(TCLFLAGS)
+
+######
+## definitions for FFT (used by PME)
+######
+FFTDIR=/Projects/namd2/fftw/alpha
+FFTINCL=-I$(FFTDIR)/include
+FFTLIB=-L$(FFTDIR)/lib -lfftw -lrfftw
+FFTFLAGS=-DNAMD_FFTW
+FFT=$(FFTINCL) $(FFTFLAGS)
 
 #####
 # Unix commands
