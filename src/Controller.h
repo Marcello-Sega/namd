@@ -28,7 +28,9 @@ public:
     void awaken(void) { CthAwaken(thread); };
 
 protected:
-    virtual void algorithm(void);	// subclasses redefine this method
+    friend class ScriptTcl;
+    int scriptSeq;
+    virtual void algorithm(int task);	// subclasses redefine this method
 
     void receivePressure(int);
       Tensor pressure_normal;

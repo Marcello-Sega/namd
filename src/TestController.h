@@ -16,7 +16,7 @@ public:
     ~TestController(void);
 
 protected:
-    virtual void algorithm(void);	// subclasses redefine this method
+    virtual void algorithm(int task);	// subclasses redefine this method
     void berendsenPressure(int);
 
 };

@@ -41,7 +41,7 @@ TestController::~TestController(void)
 
 extern int eventEndOfTimeStep;
 
-void TestController::algorithm(void)
+void TestController::algorithm(int)
 {
     int step = simParams->firstTimestep;
 

@@ -14,6 +14,7 @@
 #include "strlib.h"
 #include "BroadcastObject.h"
 #include "NamdState.h"
+#include "ScriptTcl.h"
 #include "Broadcasts.h"
 #include "LdbCoordinator.h"
 #include "Thread.h"
@@ -43,6 +44,7 @@ Controller::Controller(NamdState *s) :
 	computeChecksum(0),
 	simParams(Node::Object()->simParameters),
 	state(s),
+	scriptSeq(0),
 	collection(CollectionMaster::Object()),
         startCTime(0),
         startWTime(0),
@@ -71,38 +73,52 @@ Controller::~Controller(void)
 
 void Controller::threadRun(Controller* arg)
 {
-    arg->algorithm();
+    arg->algorithm(0);
 }
 
 void Controller::run(void)
 {
     // create a Thread and invoke it
     DebugM(4, "Starting thread in controller on this=" << this << "\n");
+#ifdef NAMD_TCL
+    thread = Node::Object()->getScript()->thread;
+#else
     thread = CthCreate((CthVoidFn)&(threadRun),(void*)(this),CTRL_STK_SZ);
     CthSetStrategyDefault(thread);
+#endif
     awaken();
 }
 
 extern int eventEndOfTimeStep;
 
-void Controller::algorithm(void)
+void Controller::algorithm(int task)
 {
+/*
   int scriptTask = 1;
   int scriptSeq = 0;
   if (simParams->tclOn) Node::Object()->enableScriptBarrier();
   while ( (! simParams->tclOn) ||
 	(scriptTask = broadcast->scriptBarrier.get(scriptSeq++)) ) {
-    switch ( scriptTask ) {
+*/
+
+    if (simParams->tclOn) broadcast->scriptBarrier.publish(scriptSeq++,task);
+
+    switch ( task ) {
+      case 0:
+        if ( simParams->tclOn ) {
+          enqueueCollections(0);
+          return;
+        }
       case 1:
         break;
       case 2:
 	collection->enqueuePositions(0);
-	Node::Object()->enableScriptBarrier();
-	continue;
+	// Node::Object()->enableScriptBarrier();
+	return;
       case 3:
 	collection->enqueueVelocities(0);
-	Node::Object()->enableScriptBarrier();
-	continue;
+	// Node::Object()->enableScriptBarrier();
+	return;
     }
 
     int step = simParams->firstTimestep;
@@ -144,12 +160,10 @@ void Controller::algorithm(void)
 	}
     }
 
-    if (simParams->tclOn) Node::Object()->enableScriptBarrier();
-    else break;
+  if ( ! task ) {
+    enqueueCollections(0);
+    terminate();
   }
-
-  enqueueCollections(0);
-  terminate();
 }
 
 void Controller::berendsenPressure(int step)

@@ -40,6 +40,7 @@ class NamdState {
     ~NamdState() {}
     int configFileInit(char *);
 #ifdef NAMD_TCL
+    friend class ScriptTcl;
     int configFileInitCont(void);
 #endif
     int status();

@@ -12,6 +12,8 @@
 #include "Broadcasts.h"
 #include "ConfigList.h"
 #include "Node.h"
+#include "NamdState.h"
+#include "Controller.h"
 #include "SimParameters.h"
 #include "Thread.h"
 #include "ProcessorPrivate.h"
@@ -26,6 +28,32 @@
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 4
 #include "Debug.h"
+
+void ScriptTcl::barrier() {
+  Node::Object()->enableScriptBarrier();
+  suspend();
+}
+
+void ScriptTcl::runController(int task) {
+  Node::Object()->state->controller->algorithm(task);
+  barrier();
+}
+
+void ScriptTcl::setParameter(const char* param, const char* value) {
+  ScriptParamMsg *msg = new ScriptParamMsg;
+  strncpy(msg->param,param,MAX_SCRIPT_PARAM_SIZE);
+  strncpy(msg->value,value,MAX_SCRIPT_PARAM_SIZE);
+  CProxy_Node(CpvAccess(BOCclass_group).node).scriptParam(msg);
+  barrier();
+}
+
+void ScriptTcl::setParameter(const char* param, int value) {
+  ScriptParamMsg *msg = new ScriptParamMsg;
+  strncpy(msg->param,param,MAX_SCRIPT_PARAM_SIZE);
+  sprintf(msg->value,"%d",value);
+  CProxy_Node(CpvAccess(BOCclass_group).node).scriptParam(msg);
+  barrier();
+}
 
 #ifdef NAMD_TCL
 
@@ -87,14 +115,9 @@ int ScriptTcl::Tcl_param(ClientData clientData,
 
   iout << "TCL: Setting parameter " << param << " to " << value << "\n" << endi;
 
-  ScriptParamMsg *msg = new ScriptParamMsg;
-  strncpy(msg->param,param,MAX_SCRIPT_PARAM_SIZE);
-  strncpy(msg->value,value,MAX_SCRIPT_PARAM_SIZE);
-  CProxy_Node(CpvAccess(BOCclass_group).node).scriptParam(msg);
-
-  Node::Object()->enableScriptBarrier();
   ScriptTcl *script = (ScriptTcl *)clientData;
-  script->suspend();
+  script->setParameter(param,value);
+
   return TCL_OK;
 }
 
@@ -130,22 +153,11 @@ int ScriptTcl::Tcl_run(ClientData clientData,
   }
   iout << "TCL: Running for " << numsteps << " steps\n" << endi;
 
-  ScriptParamMsg *msg = new ScriptParamMsg;
-  sprintf(msg->param,"numsteps");
-  sprintf(msg->value,"%d",simParams->firstTimestep + numsteps);
-  CProxy_Node(CpvAccess(BOCclass_group).node).scriptParam(msg);
-  Node::Object()->enableScriptBarrier();
-  script->suspend();
+  script->setParameter("numsteps",simParams->firstTimestep + numsteps);
 
-  script->scriptBarrier.publish(script->barrierStep++,1);
-  script->suspend();
+  script->runController(1);
 
-  msg = new ScriptParamMsg;
-  sprintf(msg->param,"firsttimestep");
-  sprintf(msg->value,"%d",simParams->N);
-  CProxy_Node(CpvAccess(BOCclass_group).node).scriptParam(msg);
-  Node::Object()->enableScriptBarrier();
-  script->suspend();
+  script->setParameter("firsttimestep",simParams->N);
 
   return TCL_OK;
 }
@@ -193,8 +205,8 @@ int ScriptTcl::Tcl_move(ClientData clientData,
   msg->moveto = moveto;
   msg->coord = Vector(x,y,z);
   CProxy_PatchMgr(CpvAccess(BOCclass_group).patchMgr).moveAtom(msg);
-  Node::Object()->enableScriptBarrier();
-  script->suspend();
+
+  script->barrier();
 
   return TCL_OK;
 }
@@ -216,29 +228,20 @@ int ScriptTcl::Tcl_output(ClientData clientData,
   }
 
   SimParameters *simParams = Node::Object()->simParameters;
+
   char oldname[MAX_SCRIPT_PARAM_SIZE+1];
   strncpy(oldname,simParams->outputFilename,MAX_SCRIPT_PARAM_SIZE);
 
-  ScriptParamMsg *msg = new ScriptParamMsg;
-  strncpy(msg->param,"outputname",MAX_SCRIPT_PARAM_SIZE);
-  strncpy(msg->value,argv[1],MAX_SCRIPT_PARAM_SIZE);
-  CProxy_Node(CpvAccess(BOCclass_group).node).scriptParam(msg);
+  script->setParameter("outputname",argv[1]);
 
+  iout << "TCL: Writing to files with basename " <<
+		simParams->outputFilename << ".\n" << endi;
+
+  Node::Object()->state->controller->algorithm(2);
   Node::Object()->enableScriptBarrier();
   script->suspend();
 
-  iout << "TCL: Triggering file output.\n" << endi;
-
-  script->scriptBarrier.publish(script->barrierStep++,2);
-  script->suspend();
-
-  msg = new ScriptParamMsg;
-  strncpy(msg->param,"outputname",MAX_SCRIPT_PARAM_SIZE);
-  strncpy(msg->value,oldname,MAX_SCRIPT_PARAM_SIZE);
-  CProxy_Node(CpvAccess(BOCclass_group).node).scriptParam(msg);
-
-  Node::Object()->enableScriptBarrier();
-  script->suspend();
+  script->setParameter("outputname",oldname);
 
   return TCL_OK;
 }
@@ -246,7 +249,7 @@ int ScriptTcl::Tcl_output(ClientData clientData,
 #endif  // NAMD_TCL
 
 
-ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
+ScriptTcl::ScriptTcl() {
   DebugM(3,"Constructing ScriptTcl\n");
 #ifdef NAMD_TCL
   interp = 0;
@@ -282,8 +285,6 @@ void ScriptTcl::run(char *filename, ConfigList *configList)
 
 void ScriptTcl::algorithm() {
   DebugM(4,"Running ScriptTcl\n");
-
-  barrierStep = 0;
 
 #ifdef NAMD_TCL
   // Create interpreter
@@ -323,8 +324,10 @@ void ScriptTcl::algorithm() {
   if (code != TCL_OK) NAMD_die("TCL error in script!");
   if (runWasCalled == 0) {
     CkPrintf("TCL: Exiting after processing config file.\n");
-    CthFree(thread); CthSuspend();
-    return;
+    Tcl_DeleteInterp(interp);
+    interp = 0;
+    CthSuspend();
+    Node::Object()->state->controller->algorithm(0);
   }
 
 #else
@@ -333,8 +336,8 @@ void ScriptTcl::algorithm() {
 
 #endif
 
-  scriptBarrier.publish(barrierStep++,0);  // terminate sequencers
-  suspend();
+  Node::Object()->state->controller->algorithm(0);
+  Node::Object()->state->controller->terminate();
 
 }
 

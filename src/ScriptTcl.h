@@ -34,10 +34,13 @@ private:
   static void threadRun(ScriptTcl*);
   void suspend(void) { CthSuspend(); }
   void algorithm();
-  SimpleBroadcastObject<int> scriptBarrier;
-  int barrierStep;
   int runWasCalled;
+  void barrier();
+  void runController(int task);
+  void setParameter(const char* param, const char* value);
+  void setParameter(const char* param, int value);
 #ifdef NAMD_TCL
+  friend class Controller;
   Tcl_Interp *interp;
   static int Tcl_print(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_config(ClientData, Tcl_Interp *, int, char **);
