@@ -67,14 +67,16 @@ NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
       const LDObjData this_obj = thisLDStats.objData[j];
       // filter out non-NAMD managed objects (like PME array)
       if (this_obj.omID.id != 1) continue;
+      if (this_obj.id.id[1] == -2) continue;
       if (this_obj.migratable)  nMoveableComputes++;
     }
   }
 
   // these sizes should never change
-  if ( ! processorArray ) processorArray = new processorInfo[numProcessors];
+  processorArray = new processorInfo[numProcessors];
   if ( ! patchArray ) patchArray = new patchInfo[numPatches];
-  if ( ! computeArray ) computeArray = new computeInfo[nMoveableComputes];
+//  if ( ! computeArray ) computeArray = new computeInfo[nMoveableComputes];
+  computeArray = new computeInfo[nMoveableComputes];
 
   nMoveableComputes = buildData(stats,count);
 
@@ -163,6 +165,12 @@ NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
     delete item;
     migrateInfo[i] = 0;
   }
+
+  delete [] computeArray;
+  for(i=0; i<P; i++)
+      delete [] processors[i].proxyUsage;
+  delete [] processorArray;
+
   return msg;
 #else
   return NULL;
@@ -216,7 +224,6 @@ int NamdNborLB::buildData(NborBaseLB::LDStats* stats, int count)
 	  }
 	}
   }
-  // TODO: myStats need to fill
   for (i=0; i < count+1; i++) {
     int j;
     LDStats &thisLDStats = (i==count)?myStats:stats[i];
