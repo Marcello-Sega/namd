@@ -62,7 +62,6 @@ OBJS = \
 	$(DSTDIR)/ComputeMap.o \
 	$(DSTDIR)/ComputeMisc.o \
 	$(DSTDIR)/ComputeMgr.o \
-	$(DSTDIR)/ComputeNonbondedExcl.o \
 	$(DSTDIR)/ComputeNonbondedSelf.o \
 	$(DSTDIR)/ComputeNonbondedPair.o \
 	$(DSTDIR)/ComputeNonbondedUtil.o \

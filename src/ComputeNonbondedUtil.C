@@ -42,15 +42,12 @@ BigReal		ComputeNonbondedUtil::pi_ewaldcof;
 
 void (*ComputeNonbondedUtil::calcPair)(nonbonded *);
 void (*ComputeNonbondedUtil::calcSelf)(nonbonded *);
-void (*ComputeNonbondedUtil::calcExcl)(nonbonded *);
 
 void (*ComputeNonbondedUtil::calcFullPair)(nonbonded *);
 void (*ComputeNonbondedUtil::calcFullSelf)(nonbonded *);
-void (*ComputeNonbondedUtil::calcFullExcl)(nonbonded *);
 
 void (*ComputeNonbondedUtil::calcSlowPair)(nonbonded *);
 void (*ComputeNonbondedUtil::calcSlowSelf)(nonbonded *);
-void (*ComputeNonbondedUtil::calcSlowExcl)(nonbonded *);
 
 void ComputeNonbondedUtil::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {
@@ -140,10 +137,6 @@ void ComputeNonbondedUtil::select(void)
   	calcFullSelf = 0;
   	calcSlowSelf = 0;
   	calcSelf = calc_self;
-
-  	calcFullExcl = 0;
-  	calcSlowSelf = 0;
-  	calcExcl = calc_excl;
   }
   else switch ( simParams->longSplitting )
   {
@@ -159,12 +152,6 @@ void ComputeNonbondedUtil::select(void)
 	if ( PMEOn ) calcSlowSelf = calc_self_slow_fullelect_pme_xplor;
   	else calcSlowSelf = calc_self_slow_fullelect_xplor;
   	calcSelf = calc_self_xplor;
-
-	if ( PMEOn ) calcFullExcl = calc_excl_fullelect_pme_xplor;
-  	else calcFullExcl = calc_excl_fullelect_xplor;
-	if ( PMEOn ) calcSlowExcl = calc_excl_slow_fullelect_pme_xplor;
-  	else calcSlowExcl = calc_excl_slow_fullelect_xplor;
-  	calcExcl = calc_excl_xplor;
     	break;
 
     case C1:
@@ -179,12 +166,6 @@ void ComputeNonbondedUtil::select(void)
 	if ( PMEOn ) calcSlowSelf = calc_self_slow_fullelect_pme_c1;
   	else calcSlowSelf = calc_self_slow_fullelect_c1;
   	calcSelf = calc_self_c1;
-
-	if ( PMEOn ) calcFullExcl = calc_excl_fullelect_pme_c1;
-  	else calcFullExcl = calc_excl_fullelect_c1;
-	if ( PMEOn ) calcSlowExcl = calc_excl_slow_fullelect_pme_c1;
-  	else calcSlowExcl = calc_excl_slow_fullelect_c1;
-  	calcExcl = calc_excl_c1;
     	break;
 
     case SHARP:
@@ -198,10 +179,9 @@ void ComputeNonbondedUtil::select(void)
 }
 
 // clear all
-// define interaction type (pair, self, or excl)
+// define interaction type (pair or self)
 #define NBPAIR	1
 #define NBSELF	2
-#define NBEXCL	3
 // define electrostatics
 #undef FULLELECT
 #define FULLELECT_NOCORRECTION	1
@@ -214,7 +194,7 @@ void ComputeNonbondedUtil::select(void)
 // (3) BEGIN SPLITTING
 #undef SPLIT_TYPE
 #define SPLIT_TYPE SPLIT_NONE
-//   (2) BEGIN PAIR / SELF / EXCL
+//   (2) BEGIN PAIR / SELF
 #undef  NBTYPE
 #define NBTYPE NBPAIR
 //     (1) BEGIN FULLELECT
@@ -253,30 +233,11 @@ void ComputeNonbondedUtil::select(void)
 #undef FULLELECT
 #include "ComputeNonbondedBase.h"
 //     (1) END FULLELECT
-#undef  NBTYPE
-#define NBTYPE NBEXCL
-//     (1) BEGIN FULLELECT
-#define SLOWONLY
-#define FULLELECT FULLELECT_NOCORRECTION
-#include "ComputeNonbondedBase.h"
-#undef FULLELECT
-#define FULLELECT FULLELECT_PME
-#include "ComputeNonbondedBase.h"
-#undef FULLELECT
-#undef SLOWONLY
-#define FULLELECT FULLELECT_NOCORRECTION
-#include "ComputeNonbondedBase.h"
-#undef FULLELECT
-#define FULLELECT FULLELECT_PME
-#include "ComputeNonbondedBase.h"
-#undef FULLELECT
-#include "ComputeNonbondedBase.h"
-//     (1) END FULLELECT
-//   (2) END PAIR / SELF / EXCL
+//   (2) END PAIR / SELF
 
 #undef SPLIT_TYPE
 #define SPLIT_TYPE SPLIT_XPLOR
-//   (2) BEGIN PAIR / SELF / EXCL
+//   (2) BEGIN PAIR / SELF
 #undef  NBTYPE
 #define NBTYPE NBPAIR
 //     (1) BEGIN FULLELECT
@@ -315,30 +276,11 @@ void ComputeNonbondedUtil::select(void)
 #undef FULLELECT
 #include "ComputeNonbondedBase.h"
 //     (1) END FULLELECT
-#undef  NBTYPE
-#define NBTYPE NBEXCL
-//     (1) BEGIN FULLELECT
-#define SLOWONLY
-#define FULLELECT FULLELECT_NOCORRECTION
-#include "ComputeNonbondedBase.h"
-#undef FULLELECT
-#define FULLELECT FULLELECT_PME
-#include "ComputeNonbondedBase.h"
-#undef FULLELECT
-#undef SLOWONLY
-#define FULLELECT FULLELECT_NOCORRECTION
-#include "ComputeNonbondedBase.h"
-#undef FULLELECT
-#define FULLELECT FULLELECT_PME
-#include "ComputeNonbondedBase.h"
-#undef FULLELECT
-#include "ComputeNonbondedBase.h"
-//     (1) END FULLELECT
-//   (2) END PAIR / SELF / EXCL
+//   (2) END PAIR / SELF
 
 #undef SPLIT_TYPE
 #define SPLIT_TYPE SPLIT_C1
-//   (2) BEGIN PAIR / SELF / EXCL
+//   (2) BEGIN PAIR / SELF
 #undef  NBTYPE
 #define NBTYPE NBPAIR
 //     (1) BEGIN FULLELECT
@@ -377,25 +319,6 @@ void ComputeNonbondedUtil::select(void)
 #undef FULLELECT
 #include "ComputeNonbondedBase.h"
 //     (1) END FULLELECT
-#undef  NBTYPE
-#define NBTYPE NBEXCL
-//     (1) BEGIN FULLELECT
-#define SLOWONLY
-#define FULLELECT FULLELECT_NOCORRECTION
-#include "ComputeNonbondedBase.h"
-#undef FULLELECT
-#define FULLELECT FULLELECT_PME
-#include "ComputeNonbondedBase.h"
-#undef FULLELECT
-#undef SLOWONLY
-#define FULLELECT FULLELECT_NOCORRECTION
-#include "ComputeNonbondedBase.h"
-#undef FULLELECT
-#define FULLELECT FULLELECT_PME
-#include "ComputeNonbondedBase.h"
-#undef FULLELECT
-#include "ComputeNonbondedBase.h"
-//     (1) END FULLELECT
-//   (2) END PAIR / SELF / EXCL
+//   (2) END PAIR / SELF
 // (3) END SPLITTING
 

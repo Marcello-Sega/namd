@@ -35,7 +35,6 @@ class BondElem;
 class AngleElem;
 class DihedralElem;
 class ImproperElem;
-class NonbondedExclElem;
 class ResidueLookupElem;
 template<class Type> class ObjectArena;
 
@@ -60,7 +59,6 @@ friend class BondElem;
 friend class AngleElem;
 friend class DihedralElem;
 friend class ImproperElem;
-friend class NonbondedExclElem;
 
 private:
 	Atom *atoms;		//  Array of atom structures

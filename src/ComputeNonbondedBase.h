@@ -5,7 +5,7 @@
 **/
 
 // Several special cases are defined:
-//   NBTYPE: exclusion method (NBPAIR, NBSELF, NBEXCL -- mutually exclusive)
+//   NBTYPE: exclusion method (NBPAIR, NBSELF -- mutually exclusive)
 //   FULLELECT full electrostatics calculation?
 
 #ifdef DEFINITION // (
@@ -36,18 +36,6 @@
   #define CLASSNAME(X) SLOWONLYNAME( X ## _self )
 #else
   #define SELF(X)
-#endif
-
-#undef EXCL
-#undef NOEXCL
-#if NBTYPE == NBEXCL
-  #define EXCL(X) X
-  #define CLASS ComputeNonbondedExcl
-  #define CLASSNAME(X) SLOWONLYNAME( X ## _excl )
-  #define NOEXCL(X)
-#else
-  #define EXCL(X)
-  #define NOEXCL(X) X
 #endif
 
 #undef SLOWONLYNAME
@@ -90,8 +78,6 @@
 
 // see if things are really messed up
 SELF( PAIR( foo bar ) )
-SELF( EXCL( foo bar ) )
-EXCL( PAIR( foo bar ) )
 
 // ************************************************************
 // function header
@@ -100,27 +86,10 @@ void ComputeNonbondedUtil :: NAME
 
 // function body
 {
-  NOEXCL( if ( ComputeNonbondedUtil::commOnly ) return; )
+  if ( ComputeNonbondedUtil::commOnly ) return;
 
   // speedup variables
   BigReal *reduction = params->reduction;
-  EXCL
-  (
-    Position & p_ij = params->p_ij;
-    const CompAtom & p_i = params->p[0][0];
-    const CompAtom * p_j = params->p[1];
-    FAST
-    (
-    Force & f_i = params->ff[0][0];
-    Force & f_j = params->ff[1][0];
-    )
-    int & m14 = params->m14;
-    FULL
-    (
-    Force & fullf_i = params->fullf[0][0];
-    Force & fullf_j = params->fullf[1][0];
-    )
-  )
 
   // local variables
   BigReal vdwEnergy = 0;
@@ -144,10 +113,8 @@ void ComputeNonbondedUtil :: NAME
   BigReal fullElectVirial_yz = 0;
   BigReal fullElectVirial_zz = 0;
   )
-  NOEXCL
-  (
+
   // Bringing stuff into local namespace for speed.
-  // Probably makes things slower in exclusion mode, though.
 
   register const BigReal cutoff2 = ComputeNonbondedUtil:: cutoff2;
   register const BigReal groupcutoff2 = ComputeNonbondedUtil:: groupcutoff2;
@@ -167,21 +134,10 @@ void ComputeNonbondedUtil :: NAME
   const BigReal c7 = ComputeNonbondedUtil:: c7;
   const BigReal c8 = ComputeNonbondedUtil:: c8;
   // const BigReal d0 = ComputeNonbondedUtil:: d0;
-  )
 
   BigReal kqq;	// initialized later
   BigReal f;	// initialized later
 
-EXCL
-(
-  const BigReal kq_i = COLOUMB * p_i.charge * scaling * dielectric_1;
-  register const BigReal p_ij_x = p_ij.x;
-  register const BigReal p_ij_y = p_ij.y;
-  register const BigReal p_ij_z = p_ij.z;
-)
-
-NOEXCL
-(
   const int i_upper = params->numAtoms[0];
   register const int j_upper = params->numAtoms[1];
   register int j;
@@ -219,14 +175,11 @@ NOEXCL
     Force *fullf_1 = params->fullf[1];
   )
 
-  NOEXCL
-  (
   SELF ( int pairCount = ( (i_upper-1) * j_upper ) / 2; )
   PAIR ( int pairCount = i_upper * j_upper; )
   int minPairCount = ( pairCount * params->minPart ) / params->numParts;
   int maxPairCount = ( pairCount * params->maxPart ) / params->numParts;
   pairCount = 0;
-  )
 
   for ( i = 0; i < (i_upper SELF(- 1)); ++i )
   {
@@ -244,8 +197,6 @@ NOEXCL
 
   if (p_i.nonbondedGroupSize) // if hydrogen group parent
     {
-    NOEXCL
-    (
     if ( p_i.hydrogenGroupSize ) {
       int opc = pairCount;
       int hgs = p_i.hydrogenGroupSize;
@@ -263,7 +214,6 @@ NOEXCL
         continue;
       }
     }
-    )
 
     pairlistindex = 0;	// initialize with 0 elements
     pairlistoffset=0;
@@ -388,41 +338,14 @@ NOEXCL
       register const BigReal p_ij_z = p_i_z - p_j_z;
       p_j_z = pf_j->position.z;					// preload
 
-)
-
       // common code
       register BigReal r2 = square(p_ij_x,p_ij_y,p_ij_z);
 
       if ( r2 > cutoff2 )
       {
-	NOEXCL( continue; )
-	EXCL(
-	  FULL(
-	    // Do a quick fix and get out!
-	    const BigReal r_1 = 1.0/sqrt(r2);
-	    kqq = kq_i * p_j->charge;
-	    f = kqq*r_1;
-	    if ( m14 ) f *= ( 1.0 - scale14 );
-	    fullElectEnergy -= f;
-	    const Vector f_elec = p_ij * ( f * r_1 * r_1 );
-	    fullf_i -= f_elec;
-	    fullf_j += f_elec;
-	    reduction[fullElectEnergyIndex] += fullElectEnergy;
-	    reduction[fullElectVirialIndex_XX] -= f_elec.x * p_ij.x;
-	    reduction[fullElectVirialIndex_XY] -= f_elec.x * p_ij.y;
-	    reduction[fullElectVirialIndex_XZ] -= f_elec.x * p_ij.z;
-	    reduction[fullElectVirialIndex_YX] -= f_elec.y * p_ij.x;
-	    reduction[fullElectVirialIndex_YY] -= f_elec.y * p_ij.y;
-	    reduction[fullElectVirialIndex_YZ] -= f_elec.y * p_ij.z;
-	    reduction[fullElectVirialIndex_ZX] -= f_elec.z * p_ij.x;
-	    reduction[fullElectVirialIndex_ZY] -= f_elec.z * p_ij.y;
-	    reduction[fullElectVirialIndex_ZZ] -= f_elec.z * p_ij.z;
-	  )
-	return; )
+	continue;
       }
 
-NOEXCL
-(
       if ( atomfixed && ( p_j->atomFixed ) ) continue;
 
       BigReal kq_i = kq_i_u;
@@ -467,7 +390,6 @@ NOEXCL
 	  } break;
 	}
       )
-)
 
       register BigReal force_r = 0.0;		//  force / r
       FULL
@@ -475,18 +397,10 @@ NOEXCL
       register BigReal fullforce_r = 0.0;	//  fullforce / r
       )
 
-      NOEXCL(
       const LJTable::TableEntry * lj_pars = 
 		lj_row + 2 * mol->atomvdwtype(p_j->id);
-      )
-      EXCL(
-      const LJTable::TableEntry * lj_pars = ljTable->table_val(
-		mol->atomvdwtype(p_i.id), mol->atomvdwtype(p_j->id));
-      )
 
       {
-	NOEXCL
-	(
 	register char excl_flag;
 	SELF( if ( j < j_hgroup ) { excl_flag = EXCHCK_FULL; } else ) {
            //  We want to search the array of the smaller atom
@@ -530,33 +444,15 @@ NOEXCL
 	    kq_i = kq_i_s;
 	  }
 	}
-	)
-
-        EXCL
-        (
-	  return;
-        )
 
       }
 
-      NOEXCL
-      (
       FAST( Force & f_j = f_1[j]; )
-      )
 
       NOFULL
       (
       const BigReal r = sqrt(r2);
       const BigReal r_1 = 1.0/r;
-      )
-
-      FULL
-      (
-        EXCL
-        (
-            const BigReal r = sqrt(r2);
-            const BigReal r_1 = 1.0/r;
-        )
       )
 
       BigReal switchVal; // used for Lennard-Jones
@@ -625,49 +521,18 @@ NOEXCL
       kqq = kq_i * p_j->charge;
       f = kqq*r_1;
       
-EXCL
-(
-      electEnergy -= f * shiftVal;
-      if ( m14 ) electEnergy += f * shiftVal * scale14;
-)
-NOEXCL
-(
       electEnergy += f * shiftVal;
-)
 
 FULL
 (
-  EXCL
-  (
-      fullElectEnergy += f * ( shiftVal - 1.0 );
-      if ( m14 ) fullElectEnergy -= f * ( shiftVal - 1.0 ) * scale14;
-      BigReal f2 = f * r_1*r_1;
-  )
-  NOEXCL
-  (
       fullElectEnergy -= f * shiftVal;
-  )
 )
       f *= r_1*(r_1*shiftVal - dShiftVal );
 
-      NOEXCL( const ) BigReal f_elec = f;
+      const BigReal f_elec = f;
 
-EXCL
-(
-      force_r -= f_elec;
-      FULL( fullforce_r += ( f - f2 ); )
-      if ( m14 )
-      {
-	f_elec *= scale14;
-	force_r += f_elec;
-	FULL( fullforce_r -= ( ( f - f2 ) * scale14 ); )
-      }
-)
-NOEXCL
-(
       force_r += f_elec;
       FULL( fullforce_r -= f_elec; )
-)
 
       BigReal r_6 = r_1*r_1*r_1; r_6 *= r_6;
       const BigReal r_12 = r_6*r_6;
@@ -677,38 +542,11 @@ NOEXCL
 
       const BigReal AmBterm = (A*r_6 - B) * r_6;
 
-EXCL
-(
-      vdwEnergy -= switchVal * AmBterm;
-
-      if ( m14 )
-      {
-	++lj_pars;  // to get 1-4 values
-	const BigReal A = scaling * lj_pars->A;
-	const BigReal B = scaling * lj_pars->B;
-	const BigReal AmBterm = (A*r_6 - B) * r_6;
-	vdwEnergy += switchVal * AmBterm;
-	force_r += ( ( switchVal * 6.0 * (A*r_12 + AmBterm) *
-			r_1 - AmBterm*dSwitchVal )*r_1 );
-      }
-)
-NOEXCL
-(
       vdwEnergy += switchVal * AmBterm;
-)
 
 
-
-EXCL
-(
-      force_r -= ( switchVal * 6.0 * (A*r_12 + AmBterm) *
-			r_1 - AmBterm*dSwitchVal )*r_1;
-)
-NOEXCL
-(
       force_r += ( switchVal * 6.0 * (A*r_12 + AmBterm) *
 			r_1 - AmBterm*dSwitchVal )*r_1;
-)
 
       FAST
       (
@@ -752,12 +590,9 @@ NOEXCL
       }
       )
 
-NOEXCL
-(
     } // for pairlist
   } // for i
   if (pairlist != pairlist_std) delete [] pairlist;
-)
 
   FAST
   (

@@ -1188,7 +1188,6 @@ obj/ComputeMgr.o: \
 	src/ComputeImpropers.h \
 	src/ComputeBonds.h \
 	src/ComputeBonds.inl \
-	src/ComputeNonbondedExcl.h \
 	src/ComputeFullDirect.h \
 	src/ComputeHomePatches.h \
 	src/ComputeGlobal.h \
@@ -1210,60 +1209,6 @@ obj/ComputeMgr.o: \
 	inc/WorkDistrib.decl.h \
 	inc/ComputeMgr.def.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeMgr.o -c src/ComputeMgr.C
-obj/ComputeNonbondedExcl.o: \
-	src/ComputeNonbondedExcl.C \
-	src/Node.h \
-	src/main.h \
-	src/ProcessorPrivate.h \
-	src/BOCgroup.h \
-	inc/Node.decl.h \
-	src/Molecule.h \
-	src/common.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
-	src/structures.h \
-	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
-	src/Hydrogen.h \
-	src/SortableResizeArray.h \
-	src/Parameters.h \
-	src/strlib.h \
-	src/MStream.h \
-	src/SimParameters.h \
-	src/Communicate.h \
-	src/Lattice.h \
-	src/Tensor.h \
-	src/ComputeNonbondedExcl.h \
-	src/ComputeHomeTuples.h \
-	src/Compute.h \
-	src/HomePatch.h \
-	src/Patch.h \
-	src/OwnerBox.h \
-	src/Box.h \
-	src/PositionOwnerBox.h \
-	src/PositionBox.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/PatchTypes.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
-	src/ResizeArrayIter.h \
-	src/MigrateAtomsMsg.h \
-	src/Migration.h \
-	src/InfoStream.h \
-	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
-	src/PatchMap.inl \
-	src/AtomMap.h \
-	src/PatchMgr.h \
-	src/ReductionMgr.h \
-	src/UniqueSetIter.h \
-	src/ComputeNonbondedUtil.h \
-	src/Debug.h
-	$(CXX) $(CXXFLAGS) -o obj/ComputeNonbondedExcl.o -c src/ComputeNonbondedExcl.C
 obj/ComputeNonbondedSelf.o: \
 	src/ComputeNonbondedSelf.C \
 	src/ComputeNonbondedSelf.h \

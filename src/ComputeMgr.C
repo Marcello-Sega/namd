@@ -31,7 +31,6 @@
 #include "ComputeDihedrals.h"
 #include "ComputeImpropers.h"
 #include "ComputeBonds.h"
-#include "ComputeNonbondedExcl.h"
 #include "ComputeFullDirect.h"
 #include "ComputeGlobal.h"
 #include "ComputeGlobalMsgs.h"
@@ -192,11 +191,6 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 				     map->partition(i),map->partition(i)+1,
 				     map->numPartitions(i)); // unknown delete
 	++numNonbondedPair;
-	map->registerCompute(i,c);
-	c->initialize();
-	break;
-      case computeNonbondedExclType:
-	c = new ComputeNonbondedExcls(i); // unknown delete
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
