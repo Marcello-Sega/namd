@@ -10,11 +10,14 @@
 /*
  * RCS Id:
  *
- * $Id: mpe.h,v 1.3 1997/10/16 21:10:10 brunner Exp $
+ * $Id: mpe.h,v 1.4 1999/04/23 06:25:03 jim Exp $
  *
  * RSC History:
  *
  * $Log: mpe.h,v $
+ * Revision 1.4  1999/04/23 06:25:03  jim
+ * Added prototypes, switched return types to void.
+ *
  * Revision 1.3  1997/10/16 21:10:10  brunner
  * Possible fix for the Origin2000 problem with DPMTA.  I included
  * stdlib.h in dpmta.h and mpe.h, to supply the correct declaration for
@@ -89,12 +92,12 @@ typedef Complex ***MtypeLJ;
  *  prototypes for mpe_mpoleC.c
  */
 
-int AddMultipoleC( Mtype, int, Real, Vector );
+void AddMultipoleC( Mtype, int, Real, Vector );
 int Csize( int );
 int CsizeF( int );
-int ForceM_C( Mtype, int, Real, Vector, Real *, Vector * );
-int Force_C( Mtype, int, Real, Vector, Real *, Vector * );
-int Force_C_Y( Mtype, int, Real, Vector, Real *, Vector * );
+void ForceM_C( Mtype, int, Real, Vector, Real *, Vector * );
+void Force_C( Mtype, int, Real, Vector, Real *, Vector * );
+void Force_C_Y( Mtype, int, Real, Vector, Real *, Vector * );
 int L2L_C( Mtype, Mtype, int, Vector );
 int M2L_C( Mtype, Mtype, int, Vector );
 int M2L_Cshort( Mtype, Mtype, Mtype, int );

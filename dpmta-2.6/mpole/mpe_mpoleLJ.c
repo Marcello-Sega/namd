@@ -9,12 +9,15 @@
  *
  */
 
-static char RcsId[] = "$Id: mpe_mpoleLJ.c,v 1.1 1997/09/05 19:41:33 jim Exp $";
+static char RcsId[] = "$Id: mpe_mpoleLJ.c,v 1.2 1999/04/23 06:25:04 jim Exp $";
 
 /*
  * RCS History:
  *
  * $Log: mpe_mpoleLJ.c,v $
+ * Revision 1.2  1999/04/23 06:25:04  jim
+ * Added prototypes, switched return types to void.
+ *
  * Revision 1.1  1997/09/05 19:41:33  jim
  * Original distribution.
  *
@@ -46,6 +49,7 @@ static char RcsId[] = "$Id: mpe_mpoleLJ.c,v 1.1 1997/09/05 19:41:33 jim Exp $";
 #include <math.h>
 #include "mpe.h"
 
+void Cart2Sph(Vector, SphVector*);
 
 /*
  *  local arrays used in multipole calculations

@@ -11,12 +11,15 @@
  *
  */
 
-static char RCSid[] = "$Id: mpe_fft.c,v 1.1 1997/09/05 19:41:29 jim Exp $";
+static char RCSid[] = "$Id: mpe_fft.c,v 1.2 1999/04/23 06:25:03 jim Exp $";
 
 /*
  *  RCS History:
  *
  * $Log: mpe_fft.c,v $
+ * Revision 1.2  1999/04/23 06:25:03  jim
+ * Added prototypes, switched return types to void.
+ *
  * Revision 1.1  1997/09/05 19:41:29  jim
  * Original distribution.
  *
@@ -33,7 +36,11 @@ static char RCSid[] = "$Id: mpe_fft.c,v 1.1 1997/09/05 19:41:29 jim Exp $";
 #include "mpe.h"
 #include "mpe_fftC.h"
 
-row_fft(row, p)
+void ffth(Real*, int);
+void iffth(Real*, int);
+void fftv(Real*, unsigned long, int, int);
+
+void row_fft(row, p)
 Real *row;
 int p;
 {
@@ -62,7 +69,7 @@ int p;
 } /* row_fft */
  
 
-row_ifft(row, p)
+void row_ifft(row, p)
 Real *row;
 int p;
 {
@@ -90,7 +97,7 @@ int p;
    } /* switch */
 } /* row_ifft */
 
-col_fft(block, p, b)
+void col_fft(block, p, b)
 Real *block;
 int p, b;
 {
@@ -120,7 +127,7 @@ int p, b;
 } /* col_fft */
 
 
-col_ifft(block, p, b)
+void col_ifft(block, p, b)
 Real *block;
 int p, b;
 {
@@ -149,7 +156,7 @@ int p, b;
 
 } /* col_ifft */
 
-col_fftS(block, p, b)
+void col_fftS(block, p, b)
 Real *block;
 int p, b;
 {
@@ -176,7 +183,7 @@ int p, b;
 
 } /* col_fftS */
 
-col_ifftS(block, p, b)
+void col_ifftS(block, p, b)
 Real *block;
 int p, b;
 {
@@ -206,7 +213,7 @@ int p, b;
 
 #define SWAP(a,b) tempr=(a);(a)=(b);(b)=tempr
 
-fftv(data, nn, sc, isign)
+void fftv(data, nn, sc, isign)
 Real *data;
 unsigned long nn;
 int sc, isign;
@@ -255,8 +262,9 @@ int sc, isign;
    }
 }
 
+void four1(Real*, unsigned long, int);
 
-int ffth(row, len)
+void ffth(row, len)
 Real *row;
 int len;
 {
@@ -285,7 +293,7 @@ int len;
 
 } /* ffth */
      
-int iffth(row, len)
+void iffth(row, len)
 Real *row;
 int len;
 {
@@ -313,7 +321,7 @@ int len;
  
 
 
-int four1(data, nn, isign)
+void four1(data, nn, isign)
 Real data[];
 unsigned long nn;
 int isign;

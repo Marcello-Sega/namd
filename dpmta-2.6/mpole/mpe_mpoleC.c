@@ -8,12 +8,15 @@
  *  All Rights Reserved
  */
 
-static char RCSid[] = "$Id: mpe_mpoleC.c,v 1.2 1997/09/29 23:57:46 jim Exp $";
+static char RCSid[] = "$Id: mpe_mpoleC.c,v 1.3 1999/04/23 06:25:03 jim Exp $";
 
 /*
  * RSC History:
  *
  * $Log: mpe_mpoleC.c,v $
+ * Revision 1.3  1999/04/23 06:25:03  jim
+ * Added prototypes, switched return types to void.
+ *
  * Revision 1.2  1997/09/29 23:57:46  jim
  * Incorporated changes from version 2.6.1 of DPMTA.
  *   - fixes for bad handling of empty/invalid multipoles when
@@ -85,6 +88,12 @@ static char RCSid[] = "$Id: mpe_mpoleC.c,v 1.2 1997/09/29 23:57:46 jim Exp $";
 #include "mpe_legendre.h"
 #include "mpe_fftC.h"
 
+void row_fft(Real*,int);
+void row_ifft(Real*,int);
+void col_fft(Real*,int,int);
+void col_ifft(Real*,int,int);
+void col_fftS(Real*,int,int);
+void Cart2Sph(Vector, SphVector*);
 
 /*
  *  local arrays used in multipole calculations
@@ -115,7 +124,7 @@ static Real    **LegPoly;
  *
  */
 
-int AddMultipoleC(
+void AddMultipoleC(
    Mtype  M,
    int    p,
    Real   q,
@@ -682,7 +691,7 @@ int L2L_C(
  *
  */
 
-int Force_C_Y  (
+void Force_C_Y  (
    Mtype   Lin,
    int     p,
    Real    q,
@@ -805,7 +814,7 @@ int Force_C_Y  (
  *
  */
 
-int Force_C(
+void Force_C(
    Mtype   Lin,
    int     p,
    Real    q,
@@ -1031,7 +1040,7 @@ int Force_C(
  *
  */
 
-int ForceM_C(
+void ForceM_C(
    Mtype   Min,
    int     p,
    Real    q,
