@@ -1,4 +1,4 @@
-obj/common.o: \
+obj/common.o: obj \
 	src/common.C \
 	src/common.h \
 	src/InfoStream.h \
@@ -32,13 +32,13 @@ obj/common.o: \
 	inc/BroadcastMgr.decl.h \
 	src/ProcessorPrivate.h
 	$(CXX) $(CXXFLAGS) -o obj/common.o -c src/common.C
-obj/dcdlib.o: \
+obj/dcdlib.o: obj \
 	src/dcdlib.C \
 	src/dcdlib.h \
 	src/common.h \
 	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) -o obj/dcdlib.o -c src/dcdlib.C
-obj/main.o: \
+obj/main.o: obj \
 	src/main.C \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
@@ -71,17 +71,17 @@ obj/main.o: \
 	src/Debug.h \
 	inc/main.def.h
 	$(CXX) $(CXXFLAGS) -o obj/main.o -c src/main.C
-obj/mdcomm.o: \
+obj/mdcomm.o: obj \
 	src/mdcomm.C \
 	src/mdcomm.h
 	$(CXX) $(CXXFLAGS) -o obj/mdcomm.o -c src/mdcomm.C
-obj/strlib.o: \
+obj/strlib.o: obj \
 	src/strlib.C \
 	src/strlib.h \
 	src/common.h \
 	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) -o obj/strlib.o -c src/strlib.C
-obj/AlgSeven.o: \
+obj/AlgSeven.o: obj \
 	src/AlgSeven.C \
 	src/Alg7.h \
 	src/Rebalancer.h \
@@ -89,7 +89,7 @@ obj/AlgSeven.o: \
 	src/Set.h \
 	src/heap.h
 	$(CXX) $(CXXFLAGS) -o obj/AlgSeven.o -c src/AlgSeven.C
-obj/AtomMap.o: \
+obj/AtomMap.o: obj \
 	src/AtomMap.C \
 	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
@@ -107,7 +107,7 @@ obj/AtomMap.o: \
 	src/ResizeArrayPrimIter.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/AtomMap.o -c src/AtomMap.C
-obj/BroadcastMgr.o: \
+obj/BroadcastMgr.o: obj \
 	src/BroadcastMgr.C \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
@@ -143,7 +143,7 @@ obj/BroadcastMgr.o: \
 	src/Debug.h \
 	inc/BroadcastMgr.def.h
 	$(CXX) $(CXXFLAGS) -o obj/BroadcastMgr.o -c src/BroadcastMgr.C
-obj/BroadcastClient.o: \
+obj/BroadcastClient.o: obj \
 	src/BroadcastClient.C \
 	src/BroadcastMgr.h \
 	src/main.h \
@@ -177,7 +177,7 @@ obj/BroadcastClient.o: \
 	src/BroadcastClient.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/BroadcastClient.o -c src/BroadcastClient.C
-obj/CollectionMaster.o: \
+obj/CollectionMaster.o: obj \
 	src/CollectionMaster.C \
 	inc/CollectionMaster.decl.h \
 	src/CollectionMaster.h \
@@ -216,7 +216,7 @@ obj/CollectionMaster.o: \
 	src/Debug.h \
 	inc/CollectionMaster.def.h
 	$(CXX) $(CXXFLAGS) -o obj/CollectionMaster.o -c src/CollectionMaster.C
-obj/CollectionMgr.o: \
+obj/CollectionMgr.o: obj \
 	src/CollectionMgr.C \
 	inc/CollectionMgr.decl.h \
 	inc/main.decl.h \
@@ -266,7 +266,7 @@ obj/CollectionMgr.o: \
 	src/Debug.h \
 	inc/CollectionMgr.def.h
 	$(CXX) $(CXXFLAGS) -o obj/CollectionMgr.o -c src/CollectionMgr.C
-obj/Communicate.o: \
+obj/Communicate.o: obj \
 	src/Communicate.C \
 	src/Communicate.h \
 	src/MStream.h \
@@ -274,7 +274,7 @@ obj/Communicate.o: \
 	src/common.h \
 	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) -o obj/Communicate.o -c src/Communicate.C
-obj/Compute.o: \
+obj/Compute.o: obj \
 	src/Compute.C \
 	src/main.h \
 	src/BOCgroup.h \
@@ -312,7 +312,7 @@ obj/Compute.o: \
 	src/Compute.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/Compute.o -c src/Compute.C
-obj/ComputeAngles.o: \
+obj/ComputeAngles.o: obj \
 	src/ComputeAngles.C \
 	src/ComputeAngles.h \
 	src/ComputeHomeTuples.h \
@@ -383,7 +383,7 @@ obj/ComputeAngles.o: \
 	src/Communicate.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeAngles.o -c src/ComputeAngles.C
-obj/ComputeBonds.o: \
+obj/ComputeBonds.o: obj \
 	src/ComputeBonds.C \
 	src/ComputeBonds.h \
 	src/common.h \
@@ -454,7 +454,7 @@ obj/ComputeBonds.o: \
 	src/Communicate.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeBonds.o -c src/ComputeBonds.C
-obj/ComputeCylindricalBC.o: \
+obj/ComputeCylindricalBC.o: obj \
 	src/ComputeCylindricalBC.C \
 	src/ComputeCylindricalBC.h \
 	src/ComputePatch.h \
@@ -498,7 +498,7 @@ obj/ComputeCylindricalBC.o: \
 	src/MStream.h \
 	src/Patch.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeCylindricalBC.o -c src/ComputeCylindricalBC.C
-obj/ComputeDihedrals.o: \
+obj/ComputeDihedrals.o: obj \
 	src/ComputeDihedrals.C \
 	src/ComputeDihedrals.h \
 	src/ComputeHomeTuples.h \
@@ -569,7 +569,7 @@ obj/ComputeDihedrals.o: \
 	src/Communicate.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeDihedrals.o -c src/ComputeDihedrals.C
-obj/ComputeDPME.o: \
+obj/ComputeDPME.o: obj \
 	src/ComputeDPME.C \
 	src/Namd.h \
 	src/Node.h \
@@ -641,7 +641,7 @@ obj/ComputeDPME.o: \
 	src/ComputeMgr.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeDPME.o -c src/ComputeDPME.C
-obj/ComputeDPMEMsgs.o: \
+obj/ComputeDPMEMsgs.o: obj \
 	src/ComputeDPMEMsgs.C \
 	src/ComputeDPMEMsgs.h \
 	src/NamdTypes.h \
@@ -662,7 +662,7 @@ obj/ComputeDPMEMsgs.o: \
 	dpme2/protype.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeDPMEMsgs.o -c src/ComputeDPMEMsgs.C
-obj/ComputeDPMTA.o: \
+obj/ComputeDPMTA.o: obj \
 	src/ComputeDPMTA.C \
 	src/common.h \
 	src/InfoStream.h \
@@ -729,7 +729,7 @@ obj/ComputeDPMTA.o: \
 	src/ReductionMgr.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeDPMTA.o -c src/ComputeDPMTA.C
-obj/ComputeFreeEnergy.o: \
+obj/ComputeFreeEnergy.o: obj \
 	src/ComputeFreeEnergy.C \
 	src/InfoStream.h \
 	src/FreeEnergyEnums.h \
@@ -796,7 +796,7 @@ obj/ComputeFreeEnergy.o: \
 	src/ComputeMgr.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeFreeEnergy.o -c src/ComputeFreeEnergy.C
-obj/ComputeFullDirect.o: \
+obj/ComputeFullDirect.o: obj \
 	src/ComputeFullDirect.C \
 	src/Namd.h \
 	src/Node.h \
@@ -862,7 +862,7 @@ obj/ComputeFullDirect.o: \
 	src/Debug.h \
 	src/ComputeFullDirectBase.h
 	$(CXX) $(CXXTHREADFLAGS) -o obj/ComputeFullDirect.o -c src/ComputeFullDirect.C
-obj/ComputeHomePatches.o: \
+obj/ComputeHomePatches.o: obj \
 	src/ComputeHomePatches.C \
 	src/Namd.h \
 	src/Node.h \
@@ -919,7 +919,7 @@ obj/ComputeHomePatches.o: \
 	src/ReductionMgr.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeHomePatches.o -c src/ComputeHomePatches.C
-obj/ComputeImpropers.o: \
+obj/ComputeImpropers.o: obj \
 	src/ComputeImpropers.C \
 	src/ComputeImpropers.h \
 	src/ComputeHomeTuples.h \
@@ -989,7 +989,7 @@ obj/ComputeImpropers.o: \
 	src/Communicate.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeImpropers.o -c src/ComputeImpropers.C
-obj/ComputeGeneral.o: \
+obj/ComputeGeneral.o: obj \
 	src/ComputeGeneral.C \
 	src/main.h \
 	src/BOCgroup.h \
@@ -1029,7 +1029,7 @@ obj/ComputeGeneral.o: \
 	src/ComputeGeneral.h \
 	src/Compute.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeGeneral.o -c src/ComputeGeneral.C
-obj/ComputeGlobal.o: \
+obj/ComputeGlobal.o: obj \
 	src/ComputeGlobal.C \
 	src/Namd.h \
 	src/Node.h \
@@ -1109,7 +1109,7 @@ obj/ComputeGlobal.o: \
 	src/MStream.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeGlobal.o -c src/ComputeGlobal.C
-obj/ComputeGlobalEasy.o: \
+obj/ComputeGlobalEasy.o: obj \
 	src/ComputeGlobalEasy.C \
 	src/Namd.h \
 	src/Node.h \
@@ -1177,7 +1177,7 @@ obj/ComputeGlobalEasy.o: \
 	src/ComputeMgr.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeGlobalEasy.o -c src/ComputeGlobalEasy.C
-obj/ComputeGlobalMaster.o: \
+obj/ComputeGlobalMaster.o: obj \
 	src/ComputeGlobalMaster.C \
 	src/Namd.h \
 	src/Node.h \
@@ -1240,7 +1240,7 @@ obj/ComputeGlobalMaster.o: \
 	src/ComputeMgr.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeGlobalMaster.o -c src/ComputeGlobalMaster.C
-obj/ComputeGlobalMsgs.o: \
+obj/ComputeGlobalMsgs.o: obj \
 	src/ComputeGlobalMsgs.C \
 	src/ComputeGlobalMsgs.h \
 	src/NamdTypes.h \
@@ -1257,7 +1257,7 @@ obj/ComputeGlobalMsgs.o: \
 	inc/ComputeMgr.decl.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeGlobalMsgs.o -c src/ComputeGlobalMsgs.C
-obj/ComputeMap.o: \
+obj/ComputeMap.o: obj \
 	src/ComputeMap.C \
 	src/ComputeMap.h \
 	src/NamdTypes.h \
@@ -1288,7 +1288,7 @@ obj/ComputeMap.o: \
 	inc/BroadcastMgr.decl.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeMap.o -c src/ComputeMap.C
-obj/ComputeMisc.o: \
+obj/ComputeMisc.o: obj \
 	src/ComputeMisc.C \
 	src/ComputeMisc.h \
 	src/ComputeHomePatches.h \
@@ -1327,7 +1327,7 @@ obj/ComputeMisc.o: \
 	src/ComputeGlobalEasy.h \
 	src/ComputeGlobalMaster.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeMisc.o -c src/ComputeMisc.C
-obj/ComputeMgr.o: \
+obj/ComputeMgr.o: obj \
 	src/ComputeMgr.C \
 	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
@@ -1427,7 +1427,7 @@ obj/ComputeMgr.o: \
 	src/WorkDistrib.h \
 	inc/ComputeMgr.def.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeMgr.o -c src/ComputeMgr.C
-obj/ComputeMDComm.o: \
+obj/ComputeMDComm.o: obj \
 	src/ComputeMDComm.C \
 	src/Namd.h \
 	src/Node.h \
@@ -1483,7 +1483,7 @@ obj/ComputeMDComm.o: \
 	src/mdcomm.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeMDComm.o -c src/ComputeMDComm.C
-obj/ComputeNonbondedExcl.o: \
+obj/ComputeNonbondedExcl.o: obj \
 	src/ComputeNonbondedExcl.C \
 	src/Namd.h \
 	src/Node.h \
@@ -1556,7 +1556,7 @@ obj/ComputeNonbondedExcl.o: \
 	src/LJTable.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeNonbondedExcl.o -c src/ComputeNonbondedExcl.C
-obj/ComputeNonbondedSelf.o: \
+obj/ComputeNonbondedSelf.o: obj \
 	src/ComputeNonbondedSelf.C \
 	src/ComputeNonbondedSelf.h \
 	src/ComputePatch.h \
@@ -1616,7 +1616,7 @@ obj/ComputeNonbondedSelf.o: \
 	src/MStream.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeNonbondedSelf.o -c src/ComputeNonbondedSelf.C
-obj/ComputeNonbondedPair.o: \
+obj/ComputeNonbondedPair.o: obj \
 	src/ComputeNonbondedPair.C \
 	src/ComputeNonbondedPair.h \
 	src/ComputePatchPair.h \
@@ -1678,7 +1678,7 @@ obj/ComputeNonbondedPair.o: \
 	src/HomePatchList.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeNonbondedPair.o -c src/ComputeNonbondedPair.C
-obj/ComputeNonbondedUtil.o: \
+obj/ComputeNonbondedUtil.o: obj \
 	src/ComputeNonbondedUtil.C \
 	src/ComputeNonbondedUtil.h \
 	src/NamdTypes.h \
@@ -1725,7 +1725,7 @@ obj/ComputeNonbondedUtil.o: \
 	src/ReductionMgr.h \
 	src/ComputeNonbondedBase.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeNonbondedUtil.o -c src/ComputeNonbondedUtil.C
-obj/ComputePatch.o: \
+obj/ComputePatch.o: obj \
 	src/ComputePatch.C \
 	inc/WorkDistrib.decl.h \
 	inc/main.decl.h \
@@ -1768,7 +1768,7 @@ obj/ComputePatch.o: \
 	src/Patch.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputePatch.o -c src/ComputePatch.C
-obj/ComputePatchPair.o: \
+obj/ComputePatchPair.o: obj \
 	src/ComputePatchPair.C \
 	inc/WorkDistrib.decl.h \
 	inc/main.decl.h \
@@ -1811,7 +1811,7 @@ obj/ComputePatchPair.o: \
 	src/Patch.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputePatchPair.o -c src/ComputePatchPair.C
-obj/ComputePme.o: \
+obj/ComputePme.o: obj \
 	src/ComputePme.C \
 	src/Namd.h \
 	src/Node.h \
@@ -1884,7 +1884,7 @@ obj/ComputePme.o: \
 	src/PmeRealSpace.h \
 	src/PmeKSpace.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputePme.o -c src/ComputePme.C
-obj/ComputePmeMsgs.o: \
+obj/ComputePmeMsgs.o: obj \
 	src/ComputePmeMsgs.C \
 	src/ComputePmeMsgs.h \
 	src/NamdTypes.h \
@@ -1902,7 +1902,7 @@ obj/ComputePmeMsgs.o: \
 	src/PmeBase.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputePmeMsgs.o -c src/ComputePmeMsgs.C
-obj/ComputeRestraints.o: \
+obj/ComputeRestraints.o: obj \
 	src/ComputeRestraints.C \
 	src/ComputeRestraints.h \
 	src/ComputePatch.h \
@@ -1957,7 +1957,7 @@ obj/ComputeRestraints.o: \
 	src/PDB.h \
 	src/PDBData.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeRestraints.o -c src/ComputeRestraints.C
-obj/ComputeSMD.o: \
+obj/ComputeSMD.o: obj \
 	src/ComputeSMD.C \
 	src/ComputeSMD.h \
 	src/ComputePatch.h \
@@ -2002,7 +2002,7 @@ obj/ComputeSMD.o: \
 	src/MStream.h \
 	src/Patch.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeSMD.o -c src/ComputeSMD.C
-obj/ComputeSphericalBC.o: \
+obj/ComputeSphericalBC.o: obj \
 	src/ComputeSphericalBC.C \
 	src/ComputeSphericalBC.h \
 	src/ComputePatch.h \
@@ -2046,7 +2046,7 @@ obj/ComputeSphericalBC.o: \
 	src/MStream.h \
 	src/Patch.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeSphericalBC.o -c src/ComputeSphericalBC.C
-obj/ComputeTcl.o: \
+obj/ComputeTcl.o: obj \
 	src/ComputeTcl.C \
 	src/Namd.h \
 	src/Node.h \
@@ -2102,13 +2102,13 @@ obj/ComputeTcl.o: \
 	src/TclCommands.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeTcl.o -c src/ComputeTcl.C
-obj/ConfigList.o: \
+obj/ConfigList.o: obj \
 	src/ConfigList.C \
 	src/InfoStream.h \
 	src/ConfigList.h \
 	src/common.h
 	$(CXX) $(CXXFLAGS) -o obj/ConfigList.o -c src/ConfigList.C
-obj/Controller.o: \
+obj/Controller.o: obj \
 	src/Controller.C \
 	src/Node.h \
 	src/main.h \
@@ -2175,22 +2175,22 @@ obj/Controller.o: \
 	src/PDBData.h \
 	src/Debug.h
 	$(CXX) $(CXXTHREADFLAGS) -o obj/Controller.o -c src/Controller.C
-obj/defmain.o: \
+obj/defmain.o: obj \
 	src/defmain.C \
 	src/ProcessorPrivate.h \
 	src/BOCgroup.h
 	$(CXX) $(CXXFLAGS) -o obj/defmain.o -c src/defmain.C
-obj/FreeEnergyAssert.o: \
+obj/FreeEnergyAssert.o: obj \
 	src/FreeEnergyAssert.C \
 	src/InfoStream.h \
 	src/FreeEnergyAssert.h
 	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyAssert.o -c src/FreeEnergyAssert.C
-obj/FreeEnergyGroup.o: \
+obj/FreeEnergyGroup.o: obj \
 	src/FreeEnergyGroup.C \
 	src/FreeEnergyAssert.h \
 	src/FreeEnergyGroup.h
 	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyGroup.o -c src/FreeEnergyGroup.C
-obj/FreeEnergyLambda.o: \
+obj/FreeEnergyLambda.o: obj \
 	src/FreeEnergyLambda.C \
 	src/InfoStream.h \
 	src/FreeEnergyEnums.h \
@@ -2200,7 +2200,7 @@ obj/FreeEnergyLambda.o: \
 	src/common.h \
 	src/FreeEnergyVector.h
 	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyLambda.o -c src/FreeEnergyLambda.C
-obj/FreeEnergyLambdMgr.o: \
+obj/FreeEnergyLambdMgr.o: obj \
 	src/FreeEnergyLambdMgr.C \
 	src/InfoStream.h \
 	src/FreeEnergyEnums.h \
@@ -2209,7 +2209,7 @@ obj/FreeEnergyLambdMgr.o: \
 	src/FreeEnergyLambdMgr.h \
 	src/FreeEnergyGroup.h
 	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyLambdMgr.o -c src/FreeEnergyLambdMgr.C
-obj/FreeEnergyParse.o: \
+obj/FreeEnergyParse.o: obj \
 	src/FreeEnergyParse.C \
 	src/common.h \
 	src/InfoStream.h \
@@ -2256,7 +2256,7 @@ obj/FreeEnergyParse.o: \
 	src/PatchTypes.h \
 	src/FreeEnergyParse.h
 	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyParse.o -c src/FreeEnergyParse.C
-obj/FreeEnergyRestrain.o: \
+obj/FreeEnergyRestrain.o: obj \
 	src/FreeEnergyRestrain.C \
 	src/common.h \
 	src/InfoStream.h \
@@ -2302,7 +2302,7 @@ obj/FreeEnergyRestrain.o: \
 	src/Lattice.h \
 	src/PatchTypes.h
 	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyRestrain.o -c src/FreeEnergyRestrain.C
-obj/FreeEnergyRMgr.o: \
+obj/FreeEnergyRMgr.o: obj \
 	src/FreeEnergyRMgr.C \
 	src/InfoStream.h \
 	src/FreeEnergyEnums.h \
@@ -2348,7 +2348,7 @@ obj/FreeEnergyRMgr.o: \
 	src/Lattice.h \
 	src/PatchTypes.h
 	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyRMgr.o -c src/FreeEnergyRMgr.C
-obj/FreeEnergyVector.o: \
+obj/FreeEnergyVector.o: obj \
 	src/FreeEnergyVector.C \
 	src/InfoStream.h \
 	src/FreeEnergyEnums.h \
@@ -2357,13 +2357,13 @@ obj/FreeEnergyVector.o: \
 	src/common.h \
 	src/FreeEnergyVector.h
 	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyVector.o -c src/FreeEnergyVector.C
-obj/heap.o: \
+obj/heap.o: obj \
 	src/heap.C \
 	src/heap.h \
 	src/elements.h \
 	src/Set.h
 	$(CXX) $(CXXFLAGS) -o obj/heap.o -c src/heap.C
-obj/HomePatch.o: \
+obj/HomePatch.o: obj \
 	src/HomePatch.C \
 	src/SimParameters.h \
 	src/ConfigList.h \
@@ -2428,7 +2428,7 @@ obj/HomePatch.o: \
 	src/ComputeMgr.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/HomePatch.o -c src/HomePatch.C
-obj/HBondParam.o: \
+obj/HBondParam.o: obj \
 	src/HBondParam.C \
 	src/HBondParam.h \
 	src/HBondPairData.h \
@@ -2454,23 +2454,23 @@ obj/HBondParam.o: \
 	src/ResizeArrayPrimIter.h \
 	src/Inform.h
 	$(CXX) $(CXXFLAGS) -o obj/HBondParam.o -c src/HBondParam.C
-obj/Inform.o: \
+obj/Inform.o: obj \
 	src/Inform.C \
 	src/common.h \
 	src/InfoStream.h \
 	src/Inform.h
 	$(CXX) $(CXXFLAGS) -o obj/Inform.o -c src/Inform.C
-obj/InfoStream.o: \
+obj/InfoStream.o: obj \
 	src/InfoStream.C \
 	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) -o obj/InfoStream.o -c src/InfoStream.C
-obj/IntTree.o: \
+obj/IntTree.o: obj \
 	src/IntTree.C \
 	src/IntTree.h \
 	src/common.h \
 	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) -o obj/IntTree.o -c src/IntTree.C
-obj/LdbCoordinator.o: \
+obj/LdbCoordinator.o: obj \
 	src/LdbCoordinator.C \
 	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
@@ -2523,7 +2523,7 @@ obj/LdbCoordinator.o: \
 	src/Alg7.h \
 	inc/LdbCoordinator.def.h
 	$(CXX) $(CXXFLAGS) -o obj/LdbCoordinator.o -c src/LdbCoordinator.C
-obj/LJTable.o: \
+obj/LJTable.o: obj \
 	src/LJTable.C \
 	src/LJTable.h \
 	src/common.h \
@@ -2565,7 +2565,7 @@ obj/LJTable.o: \
 	src/Lattice.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/LJTable.o -c src/LJTable.C
-obj/MStream.o: \
+obj/MStream.o: obj \
 	src/MStream.C \
 	src/Communicate.h \
 	src/MStream.h \
@@ -2574,7 +2574,7 @@ obj/MStream.o: \
 	src/InfoStream.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/MStream.o -c src/MStream.C
-obj/MigrateAtomsMsg.o: \
+obj/MigrateAtomsMsg.o: obj \
 	src/MigrateAtomsMsg.C \
 	src/Migration.h \
 	src/InfoStream.h \
@@ -2616,7 +2616,7 @@ obj/MigrateAtomsMsg.o: \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h
 	$(CXX) $(CXXFLAGS) -o obj/MigrateAtomsMsg.o -c src/MigrateAtomsMsg.C
-obj/Molecule.o: \
+obj/Molecule.o: obj \
 	src/Molecule.C \
 	src/UniqueSortedArray.h \
 	src/SortedArray.h \
@@ -2652,7 +2652,7 @@ obj/Molecule.o: \
 	src/UniqueSetIter.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/Molecule.o -c src/Molecule.C
-obj/Namd.o: \
+obj/Namd.o: obj \
 	src/Namd.C \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
@@ -2728,7 +2728,7 @@ obj/Namd.o: \
 	src/elements.h \
 	src/Set.h
 	$(CXX) $(CXXFLAGS) -o obj/Namd.o -c src/Namd.C
-obj/NamdState.o: \
+obj/NamdState.o: obj \
 	src/NamdState.C \
 	src/Inform.h \
 	src/common.h \
@@ -2782,7 +2782,7 @@ obj/NamdState.o: \
 	src/SMD.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/NamdState.o -c src/NamdState.C
-obj/NamdOneTools.o: \
+obj/NamdOneTools.o: obj \
 	src/NamdOneTools.C \
 	src/common.h \
 	src/InfoStream.h \
@@ -2809,7 +2809,7 @@ obj/NamdOneTools.o: \
 	src/Hydrogen.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/NamdOneTools.o -c src/NamdOneTools.C
-obj/Node.o: \
+obj/Node.o: obj \
 	src/Node.C \
 	inc/Node.decl.h \
 	inc/main.decl.h \
@@ -2898,7 +2898,7 @@ obj/Node.o: \
 	src/BroadcastClient.h \
 	inc/Node.def.h
 	$(CXX) $(CXXFLAGS) -o obj/Node.o -c src/Node.C
-obj/Output.o: \
+obj/Output.o: obj \
 	src/Output.C \
 	src/Output.h \
 	src/common.h \
@@ -2955,7 +2955,7 @@ obj/Output.o: \
 	src/PatchMap.inl \
 	src/AtomMap.h
 	$(CXX) $(CXXFLAGS) -o obj/Output.o -c src/Output.C
-obj/Parameters.o: \
+obj/Parameters.o: obj \
 	src/Parameters.C \
 	src/Parameters.h \
 	src/common.h \
@@ -2980,7 +2980,7 @@ obj/Parameters.o: \
 	src/ResizeArrayIter.h \
 	src/ResizeArrayPrimIter.h
 	$(CXX) $(CXXFLAGS) -o obj/Parameters.o -c src/Parameters.C
-obj/ParseOptions.o: \
+obj/ParseOptions.o: obj \
 	src/ParseOptions.C \
 	src/ParseOptions.h \
 	src/common.h \
@@ -2988,7 +2988,7 @@ obj/ParseOptions.o: \
 	src/Vector.h \
 	src/ConfigList.h
 	$(CXX) $(CXXFLAGS) -o obj/ParseOptions.o -c src/ParseOptions.C
-obj/Patch.o: \
+obj/Patch.o: obj \
 	src/Patch.C \
 	src/Patch.h \
 	src/NamdTypes.h \
@@ -3041,7 +3041,7 @@ obj/Patch.o: \
 	src/MStream.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/Patch.o -c src/Patch.C
-obj/PatchMgr.o: \
+obj/PatchMgr.o: obj \
 	src/PatchMgr.C \
 	inc/PatchMgr.decl.h \
 	src/PatchMgr.h \
@@ -3087,7 +3087,7 @@ obj/PatchMgr.o: \
 	src/Debug.h \
 	inc/PatchMgr.def.h
 	$(CXX) $(CXXFLAGS) -o obj/PatchMgr.o -c src/PatchMgr.C
-obj/PatchMap.o: \
+obj/PatchMap.o: obj \
 	src/PatchMap.C \
 	src/PatchMgr.h \
 	src/NamdTypes.h \
@@ -3132,7 +3132,7 @@ obj/PatchMap.o: \
 	src/AtomMap.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/PatchMap.o -c src/PatchMap.C
-obj/PDB.o: \
+obj/PDB.o: obj \
 	src/PDB.C \
 	src/common.h \
 	src/InfoStream.h \
@@ -3150,46 +3150,48 @@ obj/PDB.o: \
 	src/ResizeArrayIter.h \
 	src/ResizeArrayPrimIter.h
 	$(CXX) $(CXXFLAGS) -o obj/PDB.o -c src/PDB.C
-obj/PDBData.o: \
+obj/PDBData.o: obj \
 	src/PDBData.C \
 	src/PDBData.h \
 	src/common.h \
 	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) -o obj/PDBData.o -c src/PDBData.C
-obj/PmeBase.o: \
+obj/PmeBase.o: obj \
 	src/PmeBase.C \
 	src/PmeBase.h
 	$(CXX) $(CXXFLAGS) -o obj/PmeBase.o -c src/PmeBase.C
-obj/PmeCoulomb.o: \
+obj/PmeCoulomb.o: obj \
 	src/PmeCoulomb.C \
 	src/PmeCoulomb.h \
 	src/PmeBase.h \
 	src/PmeFFT.h \
 	src/PmeRealSpace.h \
-	src/PmeKSpace.h
+	src/PmeKSpace.h \
+	src/common.h \
+	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) -o obj/PmeCoulomb.o -c src/PmeCoulomb.C
-obj/PmeFFT.o: \
+obj/PmeFFT.o: obj \
 	src/PmeFFT.C \
 	src/PmeFFT.h \
 	src/common.h \
 	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) -o obj/PmeFFT.o -c src/PmeFFT.C
-obj/PmeKSpace.o: \
+obj/PmeKSpace.o: obj \
 	src/PmeKSpace.C \
 	src/PmeKSpace.h \
 	src/PmeBase.h
 	$(CXX) $(CXXFLAGS) -o obj/PmeKSpace.o -c src/PmeKSpace.C
-obj/PmeRealSpace.o: \
+obj/PmeRealSpace.o: obj \
 	src/PmeRealSpace.C \
 	src/PmeRealSpace.h \
 	src/PmeBase.h
 	$(CXX) $(CXXFLAGS) -o obj/PmeRealSpace.o -c src/PmeRealSpace.C
-obj/ProcessorPrivate.o: \
+obj/ProcessorPrivate.o: obj \
 	src/ProcessorPrivate.C \
 	src/ProcessorPrivate.h \
 	src/BOCgroup.h
 	$(CXX) $(CXXFLAGS) -o obj/ProcessorPrivate.o -c src/ProcessorPrivate.C
-obj/ProxyMgr.o: \
+obj/ProxyMgr.o: obj \
 	src/ProxyMgr.C \
 	src/main.h \
 	src/BOCgroup.h \
@@ -3241,7 +3243,7 @@ obj/ProxyMgr.o: \
 	src/Debug.h \
 	inc/ProxyMgr.def.h
 	$(CXX) $(CXXFLAGS) -o obj/ProxyMgr.o -c src/ProxyMgr.C
-obj/ProxyPatch.o: \
+obj/ProxyPatch.o: obj \
 	src/ProxyPatch.C \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
@@ -3283,7 +3285,7 @@ obj/ProxyPatch.o: \
 	src/AtomMap.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ProxyPatch.o -c src/ProxyPatch.C
-obj/Rebalancer.o: \
+obj/Rebalancer.o: obj \
 	src/Rebalancer.C \
 	src/InfoStream.h \
 	src/Rebalancer.h \
@@ -3291,7 +3293,7 @@ obj/Rebalancer.o: \
 	src/Set.h \
 	src/heap.h
 	$(CXX) $(CXXFLAGS) -o obj/Rebalancer.o -c src/Rebalancer.C
-obj/RecBisection.o: \
+obj/RecBisection.o: obj \
 	src/RecBisection.C \
 	src/RecBisection.h \
 	src/PatchMap.inl \
@@ -3319,7 +3321,7 @@ obj/RecBisection.o: \
 	src/PositionBox.h \
 	src/PatchTypes.h
 	$(CXX) $(CXXFLAGS) -o obj/RecBisection.o -c src/RecBisection.C
-obj/ReductionMgr.o: \
+obj/ReductionMgr.o: obj \
 	src/ReductionMgr.C \
 	src/InfoStream.h \
 	src/PatchMap.h \
@@ -3358,7 +3360,7 @@ obj/ReductionMgr.o: \
 	src/Debug.h \
 	inc/ReductionMgr.def.h
 	$(CXX) $(CXXFLAGS) -o obj/ReductionMgr.o -c src/ReductionMgr.C
-obj/RefineOnly.o: \
+obj/RefineOnly.o: obj \
 	src/RefineOnly.C \
 	src/InfoStream.h \
 	src/RefineOnly.h \
@@ -3367,7 +3369,7 @@ obj/RefineOnly.o: \
 	src/Rebalancer.h \
 	src/heap.h
 	$(CXX) $(CXXFLAGS) -o obj/RefineOnly.o -c src/RefineOnly.C
-obj/ScriptTcl.o: \
+obj/ScriptTcl.o: obj \
 	src/ScriptTcl.C \
 	src/ScriptTcl.h \
 	src/NamdTypes.h \
@@ -3411,7 +3413,7 @@ obj/ScriptTcl.o: \
 	src/Thread.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ScriptTcl.o -c src/ScriptTcl.C
-obj/Sequencer.o: \
+obj/Sequencer.o: obj \
 	src/Sequencer.C \
 	src/Node.h \
 	src/main.h \
@@ -3485,12 +3487,12 @@ obj/Sequencer.o: \
 	src/Thread.h \
 	src/Debug.h
 	$(CXX) $(CXXTHREADFLAGS) -o obj/Sequencer.o -c src/Sequencer.C
-obj/Set.o: \
+obj/Set.o: obj \
 	src/Set.C \
 	src/Set.h \
 	src/elements.h
 	$(CXX) $(CXXFLAGS) -o obj/Set.o -c src/Set.C
-obj/SimParameters.o: \
+obj/SimParameters.o: obj \
 	src/SimParameters.C \
 	src/ComputeNonbondedUtil.h \
 	src/NamdTypes.h \
@@ -3524,7 +3526,7 @@ obj/SimParameters.o: \
 	src/ParseOptions.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/SimParameters.o -c src/SimParameters.C
-obj/SMD.o: \
+obj/SMD.o: obj \
 	src/SMD.C \
 	src/common.h \
 	src/InfoStream.h \
@@ -3574,7 +3576,7 @@ obj/SMD.o: \
 	src/SMDMsgs.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/SMD.o -c src/SMD.C
-obj/SMDMsgs.o: \
+obj/SMDMsgs.o: obj \
 	src/SMDMsgs.C \
 	src/SMDMsgs.h \
 	src/NamdTypes.h \
@@ -3601,11 +3603,11 @@ obj/SMDMsgs.o: \
 	inc/BroadcastMgr.decl.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/SMDMsgs.o -c src/SMDMsgs.C
-obj/TclCommands.o: \
+obj/TclCommands.o: obj \
 	src/TclCommands.C \
 	src/TclCommands.h
 	$(CXX) $(CXXFLAGS) -o obj/TclCommands.o -c src/TclCommands.C
-obj/TestController.o: \
+obj/TestController.o: obj \
 	src/TestController.C \
 	src/Node.h \
 	src/main.h \
@@ -3670,7 +3672,7 @@ obj/TestController.o: \
 	src/Thread.h \
 	src/Debug.h
 	$(CXX) $(CXXTHREADFLAGS) -o obj/TestController.o -c src/TestController.C
-obj/TestSequencer.o: \
+obj/TestSequencer.o: obj \
 	src/TestSequencer.C \
 	src/Node.h \
 	src/main.h \
@@ -3745,13 +3747,13 @@ obj/TestSequencer.o: \
 	src/Thread.h \
 	src/Debug.h
 	$(CXX) $(CXXTHREADFLAGS) -o obj/TestSequencer.o -c src/TestSequencer.C
-obj/VoidTree.o: \
+obj/VoidTree.o: obj \
 	src/VoidTree.C \
 	src/VoidTree.h \
 	src/common.h \
 	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) -o obj/VoidTree.o -c src/VoidTree.C
-obj/WorkDistrib.o: \
+obj/WorkDistrib.o: obj \
 	src/WorkDistrib.C \
 	src/ProcessorPrivate.h \
 	src/BOCgroup.h \

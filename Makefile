@@ -270,91 +270,91 @@ pvm3/libpvmc.a:
 
 MOVECIFILES = $(MOVE) *.decl.h *.def.h $(INCDIR)
 
-$(INCDIR)/BroadcastMgr.decl.h:	$(SRCDIR)/BroadcastMgr.ci
+$(INCDIR)/BroadcastMgr.decl.h:	$(INCDIR) $(SRCDIR)/BroadcastMgr.ci
 	$(CHARMXI) $(SRCDIR)/BroadcastMgr.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/BroadcastMgr.def.h:	$(SRCDIR)/BroadcastMgr.ci
+$(INCDIR)/BroadcastMgr.def.h:	$(INCDIR) $(SRCDIR)/BroadcastMgr.ci
 	$(CHARMXI) $(SRCDIR)/BroadcastMgr.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/CollectionMaster.decl.h:	$(SRCDIR)/CollectionMaster.ci
+$(INCDIR)/CollectionMaster.decl.h:	$(INCDIR) $(SRCDIR)/CollectionMaster.ci
 	$(CHARMXI) $(SRCDIR)/CollectionMaster.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/CollectionMaster.def.h:	$(SRCDIR)/CollectionMaster.ci
+$(INCDIR)/CollectionMaster.def.h:	$(INCDIR) $(SRCDIR)/CollectionMaster.ci
 	$(CHARMXI) $(SRCDIR)/CollectionMaster.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/CollectionMgr.decl.h:	$(SRCDIR)/CollectionMgr.ci
+$(INCDIR)/CollectionMgr.decl.h:	$(INCDIR) $(SRCDIR)/CollectionMgr.ci
 	$(CHARMXI) $(SRCDIR)/CollectionMgr.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/CollectionMgr.def.h:	$(SRCDIR)/CollectionMgr.ci
+$(INCDIR)/CollectionMgr.def.h:	$(INCDIR) $(SRCDIR)/CollectionMgr.ci
 	$(CHARMXI) $(SRCDIR)/CollectionMgr.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/ComputeMgr.decl.h:	$(SRCDIR)/ComputeMgr.ci
+$(INCDIR)/ComputeMgr.decl.h:	$(INCDIR) $(SRCDIR)/ComputeMgr.ci
 	$(CHARMXI) $(SRCDIR)/ComputeMgr.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/ComputeMgr.def.h:	$(SRCDIR)/ComputeMgr.ci
+$(INCDIR)/ComputeMgr.def.h:	$(INCDIR) $(SRCDIR)/ComputeMgr.ci
 	$(CHARMXI) $(SRCDIR)/ComputeMgr.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/LdbCoordinator.decl.h:	$(SRCDIR)/LdbCoordinator.ci
+$(INCDIR)/LdbCoordinator.decl.h:	$(INCDIR) $(SRCDIR)/LdbCoordinator.ci
 	$(CHARMXI) $(SRCDIR)/LdbCoordinator.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/LdbCoordinator.def.h:	$(SRCDIR)/LdbCoordinator.ci
+$(INCDIR)/LdbCoordinator.def.h:	$(INCDIR) $(SRCDIR)/LdbCoordinator.ci
 	$(CHARMXI) $(SRCDIR)/LdbCoordinator.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/Node.decl.h:	$(SRCDIR)/Node.ci
+$(INCDIR)/Node.decl.h:	$(INCDIR) $(SRCDIR)/Node.ci
 	$(CHARMXI) $(SRCDIR)/Node.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/Node.def.h:	$(SRCDIR)/Node.ci
+$(INCDIR)/Node.def.h:	$(INCDIR) $(SRCDIR)/Node.ci
 	$(CHARMXI) $(SRCDIR)/Node.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/PatchMgr.decl.h:	$(SRCDIR)/PatchMgr.ci
+$(INCDIR)/PatchMgr.decl.h:	$(INCDIR) $(SRCDIR)/PatchMgr.ci
 	$(CHARMXI) $(SRCDIR)/PatchMgr.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/PatchMgr.def.h:	$(SRCDIR)/PatchMgr.ci
+$(INCDIR)/PatchMgr.def.h:	$(INCDIR) $(SRCDIR)/PatchMgr.ci
 	$(CHARMXI) $(SRCDIR)/PatchMgr.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/ProxyMgr.decl.h:	$(SRCDIR)/ProxyMgr.ci
+$(INCDIR)/ProxyMgr.decl.h:	$(INCDIR) $(SRCDIR)/ProxyMgr.ci
 	$(CHARMXI) $(SRCDIR)/ProxyMgr.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/ProxyMgr.def.h:	$(SRCDIR)/ProxyMgr.ci
+$(INCDIR)/ProxyMgr.def.h:	$(INCDIR) $(SRCDIR)/ProxyMgr.ci
 	$(CHARMXI) $(SRCDIR)/ProxyMgr.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/ReductionMgr.decl.h:	$(SRCDIR)/ReductionMgr.ci
+$(INCDIR)/ReductionMgr.decl.h:	$(INCDIR) $(SRCDIR)/ReductionMgr.ci
 	$(CHARMXI) $(SRCDIR)/ReductionMgr.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/ReductionMgr.def.h:	$(SRCDIR)/ReductionMgr.ci
+$(INCDIR)/ReductionMgr.def.h:	$(INCDIR) $(SRCDIR)/ReductionMgr.ci
 	$(CHARMXI) $(SRCDIR)/ReductionMgr.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/WorkDistrib.decl.h:	$(SRCDIR)/WorkDistrib.ci
+$(INCDIR)/WorkDistrib.decl.h:	$(INCDIR) $(SRCDIR)/WorkDistrib.ci
 	$(CHARMXI) $(SRCDIR)/WorkDistrib.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/WorkDistrib.def.h:	$(SRCDIR)/WorkDistrib.ci
+$(INCDIR)/WorkDistrib.def.h:	$(INCDIR) $(SRCDIR)/WorkDistrib.ci
 	$(CHARMXI) $(SRCDIR)/WorkDistrib.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/main.decl.h:	$(SRCDIR)/main.ci
+$(INCDIR)/main.decl.h:	$(INCDIR) $(SRCDIR)/main.ci
 	$(CHARMXI) $(SRCDIR)/main.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/main.def.h:	$(SRCDIR)/main.ci
+$(INCDIR)/main.def.h:	$(INCDIR) $(SRCDIR)/main.ci
 	$(CHARMXI) $(SRCDIR)/main.ci
 	$(MOVECIFILES)
 
@@ -383,7 +383,7 @@ depends: $(INCDIR) $(CIFILES) $(DSTDIR) $(DEPENDFILE)
 	    -e "/obj\/TestController.o/ s/CXXFLAGS/CXXTHREADFLAGS/" \
 	    -e "/obj\/TestSequencer.o/ s/CXXFLAGS/CXXTHREADFLAGS/" \
 	    -e "/obj\/ComputeFullDirect.o/ s/CXXFLAGS/CXXTHREADFLAGS/" \
-	    $(DEPENDFILE) > $(DEPENDFILE).sed; \
+	    -e "s/\:/\: obj/" $(DEPENDFILE) > $(DEPENDFILE).sed; \
 	$(MOVE) -f $(DEPENDFILE).sed $(DEPENDFILE);
 
 $(DEPENDFILE):
