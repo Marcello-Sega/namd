@@ -145,7 +145,7 @@ inline int LdbCoordinator::balanceNow(int timestep)
   const SimParameters *simParams = node->simParameters;
   const int numberOfSteps = simParams->N;
   int stepno = timestep - simParams->firstTimestep + 1;
-  int firststep = firstLdbStep - simParams->firstTimestep;
+  int firststep = firstLdbStep;
 
   return 
     ( (node->numNodes() != 1) 
@@ -166,12 +166,15 @@ inline int LdbCoordinator::balanceNow(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.19 $	$Date: 1998/03/03 23:05:15 $
+ *	$Revision: 1.20 $	$Date: 1998/03/20 23:14:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LdbCoordinator.h,v $
+ * Revision 1.20  1998/03/20 23:14:25  brunner
+ * Fixed firstldbstep, when used with firsttimestep
+ *
  * Revision 1.19  1998/03/03 23:05:15  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *
