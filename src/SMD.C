@@ -160,32 +160,37 @@ void SMDData::output(int t, const Vector &p, const Vector &f) {
 	 <<  "\n" << endi;
   }
 
+  Vector fpN = f*PNPERKCALMOL;
   iout << "SMD " 
        << t << "    " 
-       << p << "    "
-       << f << "    "
-       << refPos << "    "
-       << direction << "    "
+       << p.x << " " << p.y << " " << p.z << "     "
+       << fpN.x << " " << fpN.y << " " << fpN.z << "    "
+       << refPos.x << " " << refPos.y << " " << refPos.z << "    "
+       << direction.x << " " << direction.y << " " << direction.z << "    "
        << timeStamp << "\n" << endi;
 }
 
 // output info about changed direction and/or refPos
 void SMDData::output_new_refpos(int t, const Vector &p) {
   
-  if (t == simParams->firstTimestep) {
+  static int titledone = 0;
+
+  if (!titledone) {
     iout << "SMDCTITLE: TS          "
 	 << "CURRENT_POSITION                "
 	 << "RESTRAINT_REF_POS               "
 	 << "DIRECTION               "
 	 << "TSTAMP"  
 	 << "\n" << endi;
+    titledone = 1;
   } 
+
   iout << "SMDChange   " 
        << t << "    " 
-       << p << "    "
-       << refPos << "    "
-       << direction << "    "
-       << timeStamp << "\n" << endi;
+       << p.x << " " << p.y << " " << p.z << "     "
+       << refPos.x << " " << refPos.y << " " << refPos.z << "    "
+       << direction.x << " " << direction.y << " " << direction.z << "    "
+       << "\n" << endi;
 }
 
 

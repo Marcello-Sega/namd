@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: sergei $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1028 $  $Date: 1998/01/05 22:07:50 $
+ *  $Revision: 1.1029 $  $Date: 1998/01/06 20:54:07 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1029  1998/01/06 20:54:07  sergei
+ * fixed SMD output
+ *
  * Revision 1.1028  1998/01/05 22:07:50  sergei
  * *** empty log message ***
  *
@@ -414,7 +417,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1028 1998/01/05 22:07:50 sergei Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1029 1998/01/06 20:54:07 sergei Exp $";
 
 
 #include "ckdefs.h"
@@ -821,10 +824,10 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.optionalB("main", "SMD",
       "Do we use SMD option?", 
       &SMDOn, FALSE);
-   opts.require("SMD", "SMDexp", "Exponent for SMD (harmonic) potential",
+   opts.optional("SMD", "SMDexp", "Exponent for SMD (harmonic) potential",
     &SMDExp, 2);
    opts.range("SMDexp", POSITIVE);
-   opts.require("SMD", "SMDk", "SMD restraint force constant",
+   opts.require("SMD", "SMDk", "SMD restraint force constant, kcal/mol/A^2",
      &SMDk);
    opts.range("SMDk", POSITIVE);
    opts.require("SMD", "SMDRefPos", 
@@ -2137,7 +2140,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
      
      iout << iINFO << "SMD FORCE CONSTANT    "
 	  << SMDk << " kcal/mol/A^2 =   " 
-	  << SMDk*69.479 << " pN/A\n";
+	  << SMDk*PNPERKCALMOL << " pN/A\n";
      
      iout << iINFO << "SMD INIT REFERENCE POSITION    "
 	  << SMDRefPos << "\n";
@@ -2812,12 +2815,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1028 $  $Date: 1998/01/05 22:07:50 $
+ *  $Revision: 1.1029 $  $Date: 1998/01/06 20:54:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1029  1998/01/06 20:54:07  sergei
+ * fixed SMD output
+ *
  * Revision 1.1028  1998/01/05 22:07:50  sergei
  * *** empty log message ***
  *
