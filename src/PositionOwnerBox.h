@@ -2,6 +2,10 @@
 #ifndef POSITIONOWNERBOX_H
 #define POSITIONOWNERBOX_H
 
+#ifdef SP2
+#pragma implementation("PositionOwnerBox.C");
+#endif
+
 #include "NamdTypes.h"
 
 class Lattice;
@@ -50,12 +54,16 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/04/10 09:14:08 $
+ *	$Revision: 1.1004 $	$Date: 1997/07/09 21:26:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PositionOwnerBox.h,v $
+ * Revision 1.1004  1997/07/09 21:26:44  milind
+ * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
+ * and #endif's.
+ *
  * Revision 1.1003  1997/04/10 09:14:08  ari
  * Final debugging for compute migration / proxy creation for load balancing.
  * Lots of debug code added, mostly turned off now.

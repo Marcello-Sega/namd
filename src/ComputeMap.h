@@ -116,17 +116,6 @@ public:
 
   friend ComputeMgr;
 
-protected:
-  friend class MapDistribMsg;
-  friend class ComputeMapDistribMsg;
-  void * pack (int *length);
-  void unpack (void *in);
-
-  ComputeMap(void);
-
-private:
-  static ComputeMap *_instance;
-
   struct PatchRec
   {
     PatchID pid;
@@ -151,6 +140,17 @@ private:
     int numPidsAllocated;
     PatchRec *pids;
   };
+protected:
+  friend class MapDistribMsg;
+  friend class ComputeMapDistribMsg;
+  void * pack (int *length);
+  void unpack (void *in);
+
+  ComputeMap(void);
+
+private:
+  static ComputeMap *_instance;
+
 
   int nPatchBased;
   int nAtomBased;
@@ -166,13 +166,17 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/04/22 04:25:56 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1009 $	$Date: 1997/07/09 21:26:40 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.h,v $
+ * Revision 1.1009  1997/07/09 21:26:40  milind
+ * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
+ * and #endif's.
+ *
  * Revision 1.1008  1997/04/22 04:25:56  jim
  * Added atomic restraints (harmonic constraints) via ComputeRestraints class.
  *

@@ -23,7 +23,9 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef SP2
 #include <strings.h>
+#endif
 #include "common.h"
 
 void	NAMD_truncate(char *);		//  Remove trailing spaces from
@@ -41,7 +43,7 @@ void	NAMD_remove_comment(char *);	//  Remove comments at the end of
 					//  a line demarked by !
 
 //  Add definitions for missing library routines in AIX
-#ifdef AIX
+#ifdef SP2
 int strcasecmp(const char s[], const char t[]);
 int strncasecmp(const char s[], const char t[], int n);
 #endif
@@ -51,13 +53,17 @@ int strncasecmp(const char s[], const char t[], int n);
  * RCS INFORMATION:
  *
  *	$RCSfile: strlib.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:55:05 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/07/09 21:26:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: strlib.h,v $
+ * Revision 1.1002  1997/07/09 21:26:46  milind
+ * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
+ * and #endif's.
+ *
  * Revision 1.1001  1997/03/19 11:55:05  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

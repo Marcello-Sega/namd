@@ -14,7 +14,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/strlib.C,v 1.1001 1997/03/19 11:55:04 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/strlib.C,v 1.1002 1997/07/09 21:26:46 milind Exp $";
 
 #include "strlib.h"
 
@@ -392,7 +392,7 @@ void NAMD_pad(char *str, int length)
 //  The implementation is a modified version of the strcmp shown
 //  in the K&R C manual
 
-#ifdef AIX
+#ifdef SP2
 int strcasecmp(const char s[], const char t[])
 
 {
@@ -422,13 +422,17 @@ int strncasecmp(const char s[], const char t[], int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: strlib.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:55:04 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/07/09 21:26:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: strlib.C,v $
+ * Revision 1.1002  1997/07/09 21:26:46  milind
+ * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
+ * and #endif's.
+ *
  * Revision 1.1001  1997/03/19 11:55:04  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

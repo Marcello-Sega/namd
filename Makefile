@@ -2,7 +2,8 @@
 #####
 ## Define your architecture
 #####
-ARCH = Origin2000
+# ARCH = Origin2000
+ARCH = SP3
 # ARCH = HPUX9
 # ARCH = HPUX10
 # ARCH = g++

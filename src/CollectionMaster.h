@@ -31,10 +31,6 @@ public:
   void disposeVelocities(CollectVectorInstance *c);
   void disposeForces(CollectVectorInstance *c);
 
-private:
-
-  static CollectionMaster *_instance;
-
   class CollectVectorInstance
   {
   public:
@@ -135,6 +131,9 @@ private:
     void * operator new(size_t size) { return ::operator new(size); }
     void operator delete(void* ptr) { ::operator delete(ptr); }
   };
+private:
+
+  static CollectionMaster *_instance;
 
   CollectVectorSequence positions;
   CollectVectorSequence velocities;
@@ -168,12 +167,16 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/04/06 22:44:55 $
+ *	$Revision: 1.1007 $	$Date: 1997/07/09 21:26:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMaster.h,v $
+ * Revision 1.1007  1997/07/09 21:26:39  milind
+ * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
+ * and #endif's.
+ *
  * Revision 1.1006  1997/04/06 22:44:55  ari
  * Add priorities to messages.  Mods to help proxies without computes.
  * Added quick enhancement to end of list insertion of ResizeArray(s)

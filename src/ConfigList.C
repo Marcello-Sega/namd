@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: ConfigList.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/04/07 14:54:28 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/07/09 21:26:41 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -41,6 +41,10 @@
  * REVISION HISTORY:
  *
  * $Log: ConfigList.C,v $
+ * Revision 1.1004  1997/07/09 21:26:41  milind
+ * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
+ * and #endif's.
+ *
  * Revision 1.1003  1997/04/07 14:54:28  nealk
  * Changed fclose() to Fclose() (found in common.[Ch]) to use with popen().
  * Also corrected compilation warnings in Set.[Ch].
@@ -114,7 +118,7 @@
  * Initial revision
  *
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ConfigList.C,v 1.1003 1997/04/07 14:54:28 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ConfigList.C,v 1.1004 1997/07/09 21:26:41 milind Exp $";
 
 #include <iostream.h>
 #include <string.h> // for strncpy, strcasecmp
@@ -124,7 +128,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ConfigList.
 #include "ConfigList.h"
 #include "common.h"
 
-#ifdef AIX
+#ifdef SP2
 #include "strlib.h"	// for strncpy, strcasecmp
 #endif
 
@@ -382,12 +386,16 @@ main()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/04/07 14:54:28 $
+ *	$Revision: 1.1004 $	$Date: 1997/07/09 21:26:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ConfigList.C,v $
+ * Revision 1.1004  1997/07/09 21:26:41  milind
+ * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
+ * and #endif's.
+ *
  * Revision 1.1003  1997/04/07 14:54:28  nealk
  * Changed fclose() to Fclose() (found in common.[Ch]) to use with popen().
  * Also corrected compilation warnings in Set.[Ch].

@@ -10,16 +10,18 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ParseOptions.C,v 1.1003 1997/03/19 11:54:44 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ParseOptions.C,v 1.1004 1997/07/09 21:26:42 milind Exp $";
 // set the list of parameters
 #include <libc.h>
 #include <iostream.h>
+#ifndef SP2
 #include <string.h>
+#endif
 #include "ParseOptions.h"
 #include "ConfigList.h"
 #include "InfoStream.h"
 
-#ifdef AIX
+#ifdef SP2
 #include "strlib.h"		//  For strcasecmp and strncasecmp
 #endif
 
@@ -1130,13 +1132,17 @@ Bool ParseOptions::units(const char *name, Units *units) // set
  * RCS INFORMATION:
  *
  *	$RCSfile: ParseOptions.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/19 11:54:44 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/07/09 21:26:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ParseOptions.C,v $
+ * Revision 1.1004  1997/07/09 21:26:42  milind
+ * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
+ * and #endif's.
+ *
  * Revision 1.1003  1997/03/19 11:54:44  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

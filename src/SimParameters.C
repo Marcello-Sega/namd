@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1997/05/29 19:12:11 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1018 $	$Date: 1997/07/09 21:26:44 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,10 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1018  1997/07/09 21:26:44  milind
+ * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
+ * and #endif's.
+ *
  * Revision 1.1017  1997/05/29 19:12:11  nealk
  * Modified so hydrogen grouping margin offset is a user-defined option.
  *
@@ -376,7 +380,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1017 1997/05/29 19:12:11 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1018 1997/07/09 21:26:44 milind Exp $";
 
 
 #include "ckdefs.h"
@@ -393,7 +397,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParamete
 #include <time.h>
 #include <unistd.h>
 
-#ifdef AIX
+#ifdef SP2
 #include "strlib.h"		//  For strcasecmp and strncasecmp
 #endif
 
@@ -2419,12 +2423,16 @@ void SimParameters::receive_SimParameters(Message *msg)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1997/05/29 19:12:11 $
+ *	$Revision: 1.1018 $	$Date: 1997/07/09 21:26:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1018  1997/07/09 21:26:44  milind
+ * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
+ * and #endif's.
+ *
  * Revision 1.1017  1997/05/29 19:12:11  nealk
  * Modified so hydrogen grouping margin offset is a user-defined option.
  *

@@ -15,6 +15,10 @@
 #ifndef COMPUTEHOMETUPLES_H
 #define COMPUTEHOMETUPLES_H
 
+#ifdef SP2
+#pragma implementation("ComputeHomeTuples.C");
+#endif
+
 #include "NamdTypes.h"
 #include "common.h"
 #include "structures.h"
@@ -130,13 +134,17 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeHomeTuples.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/03/18 21:35:26 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1997/07/09 21:26:40 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.h,v $
+ * Revision 1.1008  1997/07/09 21:26:40  milind
+ * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
+ * and #endif's.
+ *
  * Revision 1.1007  1997/03/18 21:35:26  jim
  * Eliminated fake_seq.  Reductions now use Patch::flags.seq.
  *

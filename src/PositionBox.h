@@ -2,6 +2,10 @@
 #ifndef POSITIONBOX_H
 #define POSITIONBOX_H
 
+#ifdef SP2
+#pragma implementation("PositionBox.C");
+#endif
+
 #include "NamdTypes.h"
 
 template <class Owner>
@@ -32,12 +36,16 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/04/10 09:14:07 $
+ *	$Revision: 1.1003 $	$Date: 1997/07/09 21:26:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PositionBox.h,v $
+ * Revision 1.1003  1997/07/09 21:26:43  milind
+ * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
+ * and #endif's.
+ *
  * Revision 1.1002  1997/04/10 09:14:07  ari
  * Final debugging for compute migration / proxy creation for load balancing.
  * Lots of debug code added, mostly turned off now.

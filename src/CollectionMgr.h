@@ -23,12 +23,6 @@ public:
   void submitVelocities(int seq, AtomIDList &i, VelocityList &d);
   void submitForces(int seq, AtomIDList &i, ForceList &d);
 
-private:
-
-  static CollectionMgr *_instance;
-
-  ChareIDType master;
-
   class CollectVectorInstance
   {
   public:
@@ -96,6 +90,12 @@ private:
     void * operator new(size_t, void *ptr) { return ptr; }
     void operator delete(void* ptr) { ::operator delete(ptr); }
   };
+private:
+
+  static CollectionMgr *_instance;
+
+  ChareIDType master;
+
 
   CollectVectorSequence positions;
   CollectVectorSequence velocities;
@@ -110,12 +110,16 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/19 11:53:59 $
+ *	$Revision: 1.1004 $	$Date: 1997/07/09 21:26:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMgr.h,v $
+ * Revision 1.1004  1997/07/09 21:26:39  milind
+ * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
+ * and #endif's.
+ *
  * Revision 1.1003  1997/03/19 11:53:59  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

@@ -24,7 +24,9 @@
 //   the class PDBHetAtm, derived from PDBAtom - contains only HETATM records
 //   the function new_PDBData, which creates the right pdb class given a string
 
+#ifndef SP2
 #include <strings.h>
+#endif
 #include "common.h"
 
 class PDBData {  // at the basic level, a PDB record only knows its type
@@ -249,13 +251,17 @@ PDBData *new_PDBData(const char *data);  // nasty
  * RCS INFORMATION:
  *
  *	$RCSfile: PDBData.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:41 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/07/09 21:26:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PDBData.h,v $
+ * Revision 1.1002  1997/07/09 21:26:42  milind
+ * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
+ * and #endif's.
+ *
  * Revision 1.1001  1997/03/19 11:54:41  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.
