@@ -608,7 +608,8 @@ void WorkDistrib::mapComputes(void)
 #define MAX_PAIR_PARTITIONS 10
 
   int numPotentialCids =
-	patchMap->numPatches() * (26/2 + 10 + MAX_SELF_PARTITIONS) +
+	patchMap->numPatches() *
+		(13 * MAX_PAIR_PARTITIONS + MAX_SELF_PARTITIONS + 10) +
 	node->numNodes() * 20;
 
   computeMap->allocateCids(numPotentialCids);
@@ -824,7 +825,7 @@ void WorkDistrib::mapComputeNonbonded(void)
         if ( numPartitions > MAX_PAIR_PARTITIONS )
 			numPartitions = MAX_PAIR_PARTITIONS;
         if ( distance > 1 ) numPartitions = 1;
-	if ( numPartitions > 1 ) iout << "Mapping " << numPartitions << " ComputeNonbondedPair objects for patches " << p1 << " and " << p2 << "\n" << endi;
+	// if ( numPartitions > 1 ) iout << "Mapping " << numPartitions << " ComputeNonbondedPair objects for patches " << p1 << " and " << p2 << "\n" << endi;
 	for(int partition=0; partition < numPartitions; partition++)
 	{
 	  cid=computeMap->storeCompute(
