@@ -1091,34 +1091,21 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
   BigReal totalMass=0; 	//  Total mass of system
   int i;			//  Loop counter
 
-  mv.x=0.0;
-  mv.y=0.0;
-  mv.z=0.0;
-
   //  Loop through and compute the net momentum
   for (i=0; i<n; i++)
   {
-    mv.x += (structure->atommass(i))*vel[i].x;
-    mv.y += (structure->atommass(i))*vel[i].y;
-    mv.z += (structure->atommass(i))*vel[i].z;
-    totalMass += structure->atommass(i);
+    BigReal mass = structure->atommass(i);
+    mv += mass * vel[i];
+    totalMass += mass;
   }
 
-  mv.x = mv.x/totalMass;
-  mv.y = mv.y/totalMass;
-  mv.z = mv.z/totalMass;
+  mv /= totalMass;
 
-  //  If any of the velocities really need to change, adjust them
-  if ( (fabs(mv.x) > 0.0) || (fabs(mv.y) > 0.0) || (fabs(mv.y) > 0.0) )
-  {
-    iout << iINFO << "REMOVING COM VELOCITY "
+  iout << iINFO << "REMOVING COM VELOCITY "
 	<< ( PDBVELFACTOR * mv ) << "\n" << endi;
 
-    for (i=0; i<n; i++)
-    {
-      vel[i] -= mv;
-    }
-  }
+  for (i=0; i<n; i++) { vel[i] -= mv; }
+
 }
 /*			END OF FUNCTION remove_com_motion		*/
 
@@ -1129,12 +1116,15 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1071 $	$Date: 1999/09/08 16:05:46 $
+ *	$Revision: 1.1072 $	$Date: 1999/09/23 00:14:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1072  1999/09/23 00:14:23  jim
+ * Cleaned up code while looking for alpha bug.
+ *
  * Revision 1.1071  1999/09/08 16:05:46  jim
  * Added internal PUB3DFFT package.
  *
