@@ -102,10 +102,9 @@ unable to use rsh or ssh, then add "setenv CONV_DAEMON" and run charmd
 
 Some automounters use a temporary mount directory which is prepended
 to the path returned by the pwd command.  To run on multiple machines
-you must add a "pathfix" option to your nodelist file.  For example:
+you must add a "++pathfix" option to your nodelist file.  For example:
 
 group main ++pathfix /tmp_mnt /
- pathfix /tmp_mnt
  host alpha1
  host alpha2
 
@@ -126,7 +125,7 @@ in your current directory and then ".nodelist" in your home directory.
 
 If you always want to run on the machine you are logged in to you may
 use "localhost" in place of the hostname in your nodelist file, but
-only if there are no other machines.  You will not need "pathfix".
+only if there are no other machines.  You will not need "++pathfix".
 For example, ".nodelist" in your home directory could read:
 
 group main
