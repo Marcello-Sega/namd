@@ -123,7 +123,10 @@ void HomePatch::readPatchMap() {
 	if (pid < 0) {
 	   DebugM(5, "ERROR, for patchID " << patchID <<" I got neigh pid = " << pid << "\n");
 	}
-	if (pid == patchID) {
+	if (pid == patchID && ! (
+		( (i-1) && p->periodic_a() ) ||
+		( (j-1) && p->periodic_b() ) ||
+		( (k-1) && p->periodic_c() ) )) {
 	  mInfo[i][j][k] = NULL;
 	}
 	else {
@@ -1094,10 +1097,18 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
   {
     MigrationList &migrationList = msg->migrationList;
     MigrationList::iterator mi;
+    Transform mother_transform;
     for (mi = migrationList.begin(); mi != migrationList.end(); mi++) {
       DebugM(1,"Migrating atom " << mi->atomID << " to patch "
 		<< patchID << " with position " << mi->pos << "\n"); 
-      mi->position = lattice.nearest(mi->position,center,&(mi->transform));
+      if ( mi->hydrogenGroupSize ) {
+        mi->position = lattice.nearest(mi->position,center,&(mi->transform));
+        mother_transform = mi->transform;
+      } else {
+        mi->position = lattice.reverse_transform(mi->position,mi->transform);
+        mi->position = lattice.apply_transform(mi->position,mother_transform);
+        mi->transform = mother_transform;
+      }
       atom.add(*mi);
     }
   }
