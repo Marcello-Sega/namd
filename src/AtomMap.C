@@ -63,7 +63,7 @@ int AtomMap::unregisterIDs(PatchID pid, const CompAtom *begin, const CompAtom *e
     return -1;
   else 
   {
-    for(CompAtom *a = begin; a != end; ++a)
+    for(const CompAtom *a = begin; a != end; ++a)
     {
         unsigned int ali = a->id;
 	if (localIDTable[ali].pid == pid) {
@@ -81,7 +81,7 @@ int AtomMap::registerIDs(PatchID pid, const CompAtom *begin, const CompAtom *end
     return -1;
   else 
   {
-    for(CompAtom *a = begin; a != end; ++a)
+    for(const CompAtom *a = begin; a != end; ++a)
     {
         unsigned int ali = a->id;
 	localIDTable[ali].pid = pid;
