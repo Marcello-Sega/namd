@@ -11,7 +11,7 @@
 /*								           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.8 1996/12/16 23:46:01 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.9 1996/12/19 00:37:31 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -36,7 +36,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,
 #include "Node.h"
 
 #define DEBUGM
-#define MIN_DEBUG_LEVEL 2
+#define MIN_DEBUG_LEVEL 4
 #include "Debug.h"
 
 
@@ -182,11 +182,14 @@ void MovePatchesMsg::unpack (void *in)
  *
  *	$RCSfile: PatchMgr.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1996/12/16 23:46:01 $
+ *	$Revision: 1.9 $	$Date: 1996/12/19 00:37:31 $
  *
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.C,v $
+ * Revision 1.9  1996/12/19 00:37:31  jim
+ * increase MIN_DEBUG_LEVEL
+ *
  * Revision 1.8  1996/12/16 23:46:01  jim
  * added placement new and explicit destructor calls to message
  *

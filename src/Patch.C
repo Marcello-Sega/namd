@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.18 1996/12/17 22:12:05 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.19 1996/12/19 00:37:31 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -26,7 +26,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1
 #include "Node.h"
 #include "Molecule.h"
 
-#define MIN_DEBUG_LEVEL 3
+#define MIN_DEBUG_LEVEL 4
 #define  DEBUGM
 #include "Debug.h"
 
@@ -199,12 +199,15 @@ void Patch::positionsReady()
  *
  *	$RCSfile: Patch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.18 $	$Date: 1996/12/17 22:12:05 $
+ *	$Revision: 1.19 $	$Date: 1996/12/19 00:37:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.19  1996/12/19 00:37:31  jim
+ * increase MIN_DEBUG_LEVEL
+ *
  * Revision 1.18  1996/12/17 22:12:05  jim
  * added boxesOpen initializer
  *

@@ -23,7 +23,7 @@
 #include "Patch.h"
 
 #define DEBUGM
-#define MIN_DEBUG_LEVEL 3
+#define MIN_DEBUG_LEVEL 5
 #include "Debug.h"
 
 // static initialization
@@ -447,12 +447,15 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
  *
  *	$RCSfile: PatchMap.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.13 $	$Date: 1996/12/18 21:07:54 $
+ *	$Revision: 1.14 $	$Date: 1996/12/19 00:37:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.14  1996/12/19 00:37:31  jim
+ * increase MIN_DEBUG_LEVEL
+ *
  * Revision 1.13  1996/12/18 21:07:54  jim
  * added oneOrTwoAwayNeighbors()
  *
