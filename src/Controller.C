@@ -107,6 +107,7 @@ void Controller::algorithm(void)
         trace_user_event(eventEndOfTimeStep);
         printEnergies(step);
         rescaleVelocities(step);
+	tcoupleVelocities(step);
 	berendsenPressure(step);
 #ifdef CYCLE_BARRIER
 	if (!((step+1) % stepsPerCycle))
@@ -147,6 +148,17 @@ void Controller::rescaleVelocities(int step)
     broadcast->velocityRescaleFactor.publish(step,factor);
     iout << "RESCALING VELOCITIES AT STEP " << step
          << " TO " << rescaleTemp << " KELVIN.\n" << endi;
+  }
+}
+
+void Controller::tcoupleVelocities(int step)
+{
+  if ( simParams->tCoupleOn )
+  {
+    const BigReal tCoupleTemp = simParams->tCoupleTemp;
+    BigReal coefficient = 1.;
+    if ( temperature > 0. ) coefficient = tCoupleTemp/temperature - 1.;
+    broadcast->tcoupleCoefficient.publish(step,coefficient);
   }
 }
 
@@ -286,12 +298,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1029 $	$Date: 1998/02/18 05:38:29 $
+ *	$Revision: 1.1030 $	$Date: 1998/03/06 20:55:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1030  1998/03/06 20:55:25  jim
+ * Added temperature coupling.
+ *
  * Revision 1.1029  1998/02/18 05:38:29  jim
  * RigidBonds mainly finished.  Now temperature is correct and a form
  * of Langevin dynamics works with constraints.

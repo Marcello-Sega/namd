@@ -39,6 +39,7 @@ protected:
     void printEnergies(int);
     void enqueueCollections(int);
     void rescaleVelocities(int);
+    void tcoupleVelocities(int);
     void berendsenPressure(int);
 
     // void suspend(void) { CthSuspend(); };
@@ -72,12 +73,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/03/21 23:05:35 $
+ *	$Revision: 1.1008 $	$Date: 1998/03/06 20:55:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.h,v $
+ * Revision 1.1008  1998/03/06 20:55:25  jim
+ * Added temperature coupling.
+ *
  * Revision 1.1007  1997/03/21 23:05:35  jim
  * Added Berendsen's pressure coupling method, won't work with MTS yet.
  *

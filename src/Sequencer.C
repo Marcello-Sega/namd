@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1040 1998/03/06 10:25:27 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1041 1998/03/06 20:55:26 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -124,6 +124,7 @@ void Sequencer::algorithm(void)
     submitReductions(step);
     submitCollections(step);
     rescaleVelocities(step);
+    tcoupleVelocities(timestep,step);
     berendsenPressure(step);
 
     for ( ++step; step <= numberOfSteps; ++step )
@@ -164,6 +165,7 @@ void Sequencer::algorithm(void)
 	submitReductions(step);
 	submitCollections(step);
 	rescaleVelocities(step);
+	tcoupleVelocities(timestep,step);
 	berendsenPressure(step);
 #ifdef CYCLE_BARRIER
 	int x;
@@ -222,6 +224,23 @@ void Sequencer::rescaleVelocities(int step)
     for ( int i = 0; i < patch->numAtoms; ++i )
     {
       patch->v[i] *= factor;
+    }
+  }
+}
+
+void Sequencer::tcoupleVelocities(BigReal dt_fs, int step)
+{
+  if ( simParams->tCoupleOn )
+  {
+    BigReal coefficient = broadcast->tcoupleCoefficient.get(step);
+    Molecule *molecule = Node::Object()->molecule;
+    BigReal dt = dt_fs * 0.001;  // convert to ps
+    coefficient *= dt;
+    for ( int i = 0; i < patch->numAtoms; ++i )
+    {
+      int aid = patch->atomIDList[i];
+      BigReal f1 = exp( coefficient * molecule->langevin_param(aid) );
+      patch->v[i] *= f1;
     }
   }
 }
@@ -332,12 +351,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1040 $     $Date: 1998/03/06 10:25:27 $
+ *      $Revision: 1.1041 $     $Date: 1998/03/06 20:55:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1041  1998/03/06 20:55:26  jim
+ * Added temperature coupling.
+ *
  * Revision 1.1040  1998/03/06 10:25:27  jim
  * Added very basic minimizer.
  *

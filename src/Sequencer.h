@@ -53,6 +53,7 @@ protected:
     void minimizationQuenchVelocity(void);
 
     void rescaleVelocities(int);
+    void tcoupleVelocities(BigReal,int);
     void berendsenPressure(int);
     void langevinVelocities(BigReal);
 
@@ -80,12 +81,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1998/03/06 10:25:28 $
+ *	$Revision: 1.1015 $	$Date: 1998/03/06 20:55:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.h,v $
+ * Revision 1.1015  1998/03/06 20:55:26  jim
+ * Added temperature coupling.
+ *
  * Revision 1.1014  1998/03/06 10:25:28  jim
  * Added very basic minimizer.
  *
