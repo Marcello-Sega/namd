@@ -8,7 +8,7 @@ CC = mpicc  -Ae
 COPTS = +O2
 
 # definitions for Charm routines
-CHARMARCH = exemplar-mpi
+CHARMARCH = mpi-exemplar
 CHARM = $(CHARMBASE)/$(CHARMARCH)
 
 # definitions for TCL interface

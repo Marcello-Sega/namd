@@ -29,7 +29,7 @@ important that the same compiler is used for both Charm++ and NAMD.
   * HPUX           HP-UX 10.0 or later with CC   net-hp-cc
   * RED            ASCI Red                      paragon-red
   * SP3            IBM SP Series                 sp3
-  * exemplar       Convex Exemplar               exemplar-mpi
+  * exemplar       Convex Exemplar               mpi-exemplar
 
   * These architectures may fail to build or be unstable.
 
