@@ -1373,11 +1373,16 @@ void Parameters::add_to_charmm_dihedral_list(
         int i;                                      //  Loop counter
         int replace;                          //  replace values?
 
+        // keep track of the last dihedral param read to avoid spurious
+        // error messages.
+        static struct dihedral_params last_dihedral; 
+
         /*  If the list is currently empty, then the new node is the list*/
         if (dihedralp == NULL)
         {
                 dihedralp=new_node;
                 tail=new_node;
+                memcpy(&last_dihedral, new_node, sizeof(dihedral_params));
 
                 return;
         }
@@ -1387,6 +1392,7 @@ void Parameters::add_to_charmm_dihedral_list(
 
         while (ptr != NULL)
         {
+                int same_as_last = 0;
                 if (  ( (strcasecmp(new_node->atom1name, ptr->atom1name) == 0) &&
                        (strcasecmp(new_node->atom2name, ptr->atom2name) == 0) &&
                        (strcasecmp(new_node->atom3name, ptr->atom3name) == 0) &&
@@ -1398,6 +1404,17 @@ void Parameters::add_to_charmm_dihedral_list(
                        )
                 {
                         /*  Found a duplicate                                */
+                        
+                        // check for same_as_last.  Note: don't believe the echoWarn crap; it controls
+                        // not just whether we print warning messages, but whether we actually change
+                        // values or not!  
+
+                        if ( ( !strcmp(ptr->atom1name, last_dihedral.atom1name) && 
+                               !strcmp(ptr->atom2name, last_dihedral.atom2name) &&
+                               !strcmp(ptr->atom3name, last_dihedral.atom3name) &&
+                               !strcmp(ptr->atom4name, last_dihedral.atom4name)))
+                          same_as_last = 1;
+
                         //****** BEGIN CHARMM/XPLOR type changes
                         /* we do not care about identical replacement */
                         int echoWarn=1;  // echo warning messages ?
@@ -1418,27 +1435,33 @@ void Parameters::add_to_charmm_dihedral_list(
                   
                         if (echoWarn)
                         {
-                          iout << "\n" << iWARN << "DUPLICATE DIHEDRAL ENTRY FOR "
-                               << ptr->atom1name << "-"
-                               << ptr->atom2name << "-"
-                               << ptr->atom3name << "-"
-                               << ptr->atom4name
-                               << "\nPREVIOUS VALUES MULTIPLICITY: " << ptr->multiplicity << "\n";
+                          if (!same_as_last) {
+                            iout << "\n" << iWARN << "DUPLICATE DIHEDRAL ENTRY FOR "
+                                 << ptr->atom1name << "-"
+                                 << ptr->atom2name << "-"
+                                 << ptr->atom3name << "-"
+                                 << ptr->atom4name
+                                 << "\nPREVIOUS VALUES MULTIPLICITY: " << ptr->multiplicity << "\n";
+                          }
                           replace=0;
                           
                           for (i=0; i<ptr->multiplicity; i++)
                           {
-                            iout << "  k=" << ptr->values[i].k
-                                 << "  n=" << ptr->values[i].n
-                                 << "  delta=" << ptr->values[i].delta << "\n";
+                            if (!same_as_last) {
+                              iout << "  k=" << ptr->values[i].k
+                                   << "  n=" << ptr->values[i].n
+                                   << "  delta=" << ptr->values[i].delta << "\n";
+                            }
                             if (ptr->values[i].n == new_node->values[0].n)
                             {
-                              iout << iWARN << "IDENTICAL PERIODICITY! REPLACING OLD VALUES BY: \n";
+                              if (!same_as_last)
+                                iout << iWARN << "IDENTICAL PERIODICITY! REPLACING OLD VALUES BY: \n";
                               ptr->values[i].k = new_node->values[0].k;
                               ptr->values[i].delta = new_node->values[0].delta;
-                              iout <<     "  k=" << ptr->values[i].k
-                                       << "  n=" << ptr->values[i].n
-                                       << "  delta=" << ptr->values[i].delta<< "\n";
+                              if (!same_as_last)
+                                iout << "  k=" << ptr->values[i].k
+                                     << "  n=" << ptr->values[i].n
+                                     << "  delta=" << ptr->values[i].delta<< "\n";
                               replace=1;
                               break;
                             }
@@ -1456,22 +1479,25 @@ void Parameters::add_to_charmm_dihedral_list(
                                       ptr->multiplicity, MAX_MULTIPLICITY);
                               NAMD_die(err_msg);
                             }
-                            iout << "INCREASING MULTIPLICITY TO: " << ptr->multiplicity << "\n";
+                            if (!same_as_last) 
+                              iout << "INCREASING MULTIPLICITY TO: " << ptr->multiplicity << "\n";
 
                             i= ptr->multiplicity - 1; 
                             ptr->values[i].k = new_node->values[0].k;
                             ptr->values[i].n = new_node->values[0].n;
                             ptr->values[i].delta = new_node->values[0].delta;
 
-                            iout <<       "  k=" << ptr->values[i].k
-                                       << "  n=" << ptr->values[i].n
-                                       << "  delta=" << ptr->values[i].delta<< "\n";
+                            if (!same_as_last) 
+                              iout << "  k=" << ptr->values[i].k
+                                   << "  n=" << ptr->values[i].n
+                                   << "  delta=" << ptr->values[i].delta<< "\n";
                           }
                         
                           iout << endi;
-                        }
+                        } 
                         //****** END CHARMM/XPLOR type changes
 
+                        memcpy(&last_dihedral, new_node, sizeof(dihedral_params));
                         delete new_node;
 
                         return;
@@ -1496,6 +1522,7 @@ void Parameters::add_to_charmm_dihedral_list(
                 tail->next=new_node;
                 tail=new_node;
 
+                memcpy(&last_dihedral, new_node, sizeof(dihedral_params));
                 return;
         }
         else
@@ -1504,6 +1531,7 @@ void Parameters::add_to_charmm_dihedral_list(
                 new_node->next=dihedralp;
                 dihedralp=new_node;
 
+                memcpy(&last_dihedral, new_node, sizeof(dihedral_params));
                 return;
         }
 
