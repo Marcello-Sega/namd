@@ -4,6 +4,7 @@ module Node {
   extern module main;
 
   message [packed] SMDDataMsg;
+  message ScriptParamMsg;
 
   group Node
   {
@@ -16,6 +17,10 @@ module Node {
 
     // after startup barriers - run simulation
     entry void run(void);
+
+    // used to change parameters in mid-run
+    entry void scriptBarrier(CkQdMsg *);
+    entry void scriptParam(ScriptParamMsg *);
 
     // homeDone counts down homePatch completions
     entry void homeDone(void);
@@ -32,12 +37,15 @@ module Node {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1999/05/11 23:56:38 $
+ *	$Revision: 1.1008 $	$Date: 1999/05/26 22:23:54 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.ci,v $
+ * Revision 1.1008  1999/05/26 22:23:54  jim
+ * Added basic Tcl scripting, fixed bugs in broadcasts.
+ *
  * Revision 1.1007  1999/05/11 23:56:38  brunner
  * Changes for new charm version
  *

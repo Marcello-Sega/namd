@@ -21,8 +21,13 @@
 
 // Tags used in common by all users of broadcast system.
 enum {
-  velocityRescaleFactorTag,	// used in velocity rescaling
-  periodicLatticeTag,	// used in constant pressure to send lattice
+  velocityRescaleFactorTag,
+  positionRescaleFactorTag,
+  tcoupleCoefficientTag,
+#ifdef CYCLE_BARRIER
+  cycleBarrierTag,
+#endif
+  scriptBarrierTag,
   dummyTag
 };
 
@@ -32,10 +37,20 @@ struct ControllerBroadcasts
   SimpleBroadcastObject<BigReal> velocityRescaleFactor;
   SimpleBroadcastObject<Vector> positionRescaleFactor;
   SimpleBroadcastObject<BigReal> tcoupleCoefficient;
-  // SimpleBroadcastObject<Lattice> lattice;
 #ifdef CYCLE_BARRIER
   SimpleBroadcastObject<int> cycleBarrier;
 #endif
+  SimpleBroadcastObject<int> scriptBarrier;
+
+  ControllerBroadcasts() : 
+    velocityRescaleFactor(velocityRescaleFactorTag),
+    positionRescaleFactor(positionRescaleFactorTag),
+    tcoupleCoefficient(tcoupleCoefficientTag),
+#ifdef CYCLE_BARRIER
+    cycleBarrier(cycleBarrierTag),
+#endif
+    scriptBarrier(scriptBarrierTag)
+  { ; }
 };
 
 #endif // BROADCASTS_H
@@ -45,12 +60,15 @@ struct ControllerBroadcasts
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1999/01/06 19:19:19 $
+ *	$Revision: 1.5 $	$Date: 1999/05/26 22:23:53 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Broadcasts.h,v $
+ * Revision 1.5  1999/05/26 22:23:53  jim
+ * Added basic Tcl scripting, fixed bugs in broadcasts.
+ *
  * Revision 1.4  1999/01/06 19:19:19  jim
  * Broadcast and Sequencers understand anisotropic volume rescaling factors.
  *

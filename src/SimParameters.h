@@ -230,6 +230,7 @@ public:
 	Bool globalForcesOn;		//  Are global forces present?
 	Bool tclForcesOn;		//  Are Tcl forces present?
 	Bool freeEnergyOn;		//  Doing free energy perturbation?
+	Bool tclOn;			//  Are Tcl scripts present?
 
 	Bool fixedAtomsOn;		//  Are there fixed atoms?
 
@@ -405,6 +406,8 @@ public:
 					//  Used by the other processors
 					//  to receive the data from the
 					//  master process
+	void scriptSet(const char *, const char *);
+					//  Set parameters at run time
 
 private:
 
@@ -439,12 +442,15 @@ private:
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1034 $	$Date: 1999/05/14 18:47:27 $
+ *	$Revision: 1.1035 $	$Date: 1999/05/26 22:23:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1035  1999/05/26 22:23:57  jim
+ * Added basic Tcl scripting, fixed bugs in broadcasts.
+ *
  * Revision 1.1034  1999/05/14 18:47:27  jim
  * Split up huge functions into several smaller ones to help compilers.
  *

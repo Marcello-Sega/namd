@@ -193,6 +193,7 @@ void Controller::algorithm(void)
 {
     int step = simParams->firstTimestep;
     int first = 1;
+    int scriptRun = 0;
 
     const int numberOfSteps = simParams->N;
     const int nPatches=(PatchMap::Object())->numPatches();
@@ -208,16 +209,24 @@ void Controller::algorithm(void)
 	if (CkNumPes() > nPatches) {
 		reduction->broadcastDoSubmit(step, nPatches);
 	}
+        if ( ! first ) rescaleVelocities(step);
+	if ( ! first ) tcoupleVelocities(step);
+	if ( ! first ) berendsenPressure(step);
         enqueueCollections(step);
         traceUserEvent(eventEndOfTimeStep);
-        reassignVelocities(step);
 	if ( ! first ) langevinPiston1(step);
+	if ( simParams->tclOn && ! scriptRun ) {
+	  Node::Object()->enableScriptBarrier();
+	  scriptRun = broadcast->scriptBarrier.get(step);
+	}
+	--scriptRun;
 	receivePressure(step);
 	if ( ! first ) langevinPiston2(step);
+        reassignVelocities(step);
         printEnergies(step);
-        rescaleVelocities(step);
-	tcoupleVelocities(step);
-	berendsenPressure(step);
+        //rescaleVelocities(step);
+	//tcoupleVelocities(step);
+	//berendsenPressure(step);
 #ifdef CYCLE_BARRIER
 	if (!((step+1) % stepsPerCycle))
 	{
@@ -237,7 +246,7 @@ void Controller::algorithm(void)
 void Controller::berendsenPressure(int step)
 {
   const int freq = simParams->berendsenPressureFreq;
-  if ( simParams->berendsenPressureOn && !(step%freq) )
+  if ( simParams->berendsenPressureOn && !((step-1)%freq) )
   {
     BigReal scalarPressure = controlPressure * Vector(1,1,1) / 3.;
     BigReal factor = scalarPressure - simParams->berendsenPressureTarget;
@@ -892,12 +901,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1066 $	$Date: 1999/05/11 23:56:29 $
+ *	$Revision: 1.1067 $	$Date: 1999/05/26 22:23:53 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1067  1999/05/26 22:23:53  jim
+ * Added basic Tcl scripting, fixed bugs in broadcasts.
+ *
  * Revision 1.1066  1999/05/11 23:56:29  brunner
  * Changes for new charm version
  *

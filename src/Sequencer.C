@@ -166,6 +166,7 @@ void Sequencer::algorithm(void)
 {
     int &step = patch->flags.seq;
     step = simParams->firstTimestep;
+    int scriptRun = 0;
 
     int &maxForceUsed = patch->flags.maxForceUsed;
     int &maxForceMerged = patch->flags.maxForceMerged;
@@ -197,18 +198,25 @@ void Sequencer::algorithm(void)
 
     rattle1(0.);  // enforce rigid bond constraints on initial positions
     minimizationQuenchVelocity();
+    if ( simParams->tclOn && ! scriptRun ) {
+      scriptRun = broadcast->scriptBarrier.get(step);
+    }
+    --scriptRun;
     runComputeObjects();
     addForceToMomentum(0.); // zero velocities of fixed atoms
     reassignVelocities(step);
     rattle2(timestep,step);  // enfore rigid bonds on initial velocities
     submitReductions(step);
     submitCollections(step);
-    rescaleVelocities(step);
-    tcoupleVelocities(timestep,step);
-    berendsenPressure(step);
+    //rescaleVelocities(step);
+    //tcoupleVelocities(timestep,step);
+    //berendsenPressure(step);
 
     for ( ++step; step <= numberOfSteps; ++step )
     {
+	rescaleVelocities(step);
+	tcoupleVelocities(timestep,step);
+	berendsenPressure(step);
 	// langevinVelocities(0.5*timestep);
 
 	addForceToMomentum(0.5*timestep);
@@ -232,6 +240,10 @@ void Sequencer::algorithm(void)
 	if ( doNonbonded ) maxForceUsed = Results::nbond;
 	if ( doFullElectrostatics ) maxForceUsed = Results::slow;
 
+	if ( simParams->tclOn && ! scriptRun ) {
+          scriptRun = broadcast->scriptBarrier.get(step);
+	}
+	--scriptRun;
 	// Migrate Atoms on stepsPerCycle
 	runComputeObjects(!(step%stepsPerCycle));
 
@@ -249,9 +261,9 @@ void Sequencer::algorithm(void)
 
 	submitReductions(step);
 	submitCollections(step);
-	rescaleVelocities(step);
-	tcoupleVelocities(timestep,step);
-	berendsenPressure(step);
+	//rescaleVelocities(step);
+	//tcoupleVelocities(timestep,step);
+	//berendsenPressure(step);
 #ifdef CYCLE_BARRIER
 	int x;
 	if (!((step+1) % stepsPerCycle))
@@ -328,7 +340,7 @@ void Sequencer::langevinVelocitiesBBK2(BigReal dt_fs)
 void Sequencer::berendsenPressure(int step)
 {
   const int freq = simParams->berendsenPressureFreq;
-  if ( simParams->berendsenPressureOn && !(step%freq) )
+  if ( simParams->berendsenPressureOn && !((step-1)%freq) )
   {
    Vector factor = broadcast->positionRescaleFactor.get(step);
    patch->lattice.rescale(factor);
@@ -687,12 +699,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1059 $     $Date: 1999/04/27 23:43:03 $
+ *      $Revision: 1.1060 $     $Date: 1999/05/26 22:23:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1060  1999/05/26 22:23:55  jim
+ * Added basic Tcl scripting, fixed bugs in broadcasts.
+ *
  * Revision 1.1059  1999/04/27 23:43:03  jim
  * Switched Langevin dynamics integrator to a two-part version of BBK.
  *

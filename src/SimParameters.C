@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1065 $  $Date: 1999/05/25 21:48:50 $
+ *  $Revision: 1.1066 $  $Date: 1999/05/26 22:23:55 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1066  1999/05/26 22:23:55  jim
+ * Added basic Tcl scripting, fixed bugs in broadcasts.
+ *
  * Revision 1.1065  1999/05/25 21:48:50  jim
  * Modified DCD code to be compatible with Quanta.
  *
@@ -596,6 +599,26 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    check_config(opts,config,cwd);
 
    print_config(opts,config,cwd);
+
+}
+
+/************************************************************************/
+/*                                                                      */
+/*      FUNCTION scriptSet                                              */
+/*                                                                      */
+/************************************************************************/
+                         
+void SimParameters::scriptSet(const char *param, const char *value) {
+
+#define MAX_SCRIPT_PARAM_SIZE 128
+#define SCRIPT_PARSE_FLOAT(NAME,VAR) { if ( ! strncasecmp(param,(NAME),MAX_SCRIPT_PARAM_SIZE) ) { (VAR) = atof(value); return; } }
+
+  SCRIPT_PARSE_FLOAT("reassignTemp",reassignTemp)
+  SCRIPT_PARSE_FLOAT("rescaleTemp",rescaleTemp)
+  SCRIPT_PARSE_FLOAT("langevinTemp",langevinTemp)
+  char *error = new char[2 * MAX_SCRIPT_PARAM_SIZE + 100];
+  sprintf(error,"Setting parameter %s from script failed!\n",param);
+  NAMD_die(error);
 
 }
 
@@ -1213,6 +1236,12 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
      &freeEnergyOn, FALSE);
    opts.require("freeEnergy", "freeEnergyConfig",
      "Configuration file for free energy perturbation", PARSE_MULTIPLES);
+
+   ////  Tcl Scripting
+   opts.optionalB("main", "tcl", "Is Tcl scripting active?",
+     &tclOn, FALSE);
+   opts.require("tcl", "tclScript",
+     "Tcl script", PARSE_MULTIPLES);
 
 }
 
@@ -1917,6 +1946,11 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    if (tclForcesOn && freeEnergyOn)
    {
       NAMD_die("Sorry, tclForces and freeEnergy cannot be used simultaneously");
+   }
+
+   if (tclOn && freeEnergyOn)
+   {
+      NAMD_die("Sorry, tcl scripting and freeEnergy cannot be used simultaneously");
    }
 
    if (splitPatch == SPLIT_PATCH_POSITION && rigidBonds != RIGID_NONE)
@@ -2903,6 +2937,35 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << endi;
    }
 
+   if (tclOn)
+   {
+     iout << iINFO << "TCL SCRIPTING ACTIVE\n";
+
+     current = config->find("tclScript");
+
+     for ( ; current; current = current->next ) {
+
+     if ( current->data[0] == '{' ) {
+       iout << iINFO << "TCL SCRIPT INLINED IN CONFIG FILE\n";
+       continue;
+     }
+
+     if ( (cwd == NULL) || (current->data[0] == '/') )
+     {
+       strcpy(filename, current->data);
+     }
+     else
+     {
+       strcpy(filename, cwd);
+       strcat(filename, current->data);
+     }
+
+     iout << iINFO << "TCL SCRIPT   " << filename << "\n";
+
+     }
+     iout << endi;
+   }
+
    if (globalOn && ! dihedralOn)
    {
       iout << iINFO << "GLOBAL INTEGRATION TEST MODE ACTIVE\n";
@@ -3681,12 +3744,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1065 $  $Date: 1999/05/25 21:48:50 $
+ *  $Revision: 1.1066 $  $Date: 1999/05/26 22:23:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1066  1999/05/26 22:23:55  jim
+ * Added basic Tcl scripting, fixed bugs in broadcasts.
+ *
  * Revision 1.1065  1999/05/25 21:48:50  jim
  * Modified DCD code to be compatible with Quanta.
  *

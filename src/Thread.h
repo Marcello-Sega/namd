@@ -2,3 +2,5 @@
 
 #define SEQ_STK_SZ	131072
 #define CTRL_STK_SZ	131072
+#define TCL_STK_SZ	131072
+

@@ -20,7 +20,7 @@ template <class T> class SimpleBroadcastObject : public BroadcastClient {
 
   public:
 
-    SimpleBroadcastObject(int id=0) : BroadcastClient(id) { }
+    SimpleBroadcastObject(int id) : BroadcastClient(id) { }
     ~SimpleBroadcastObject() { }
 
     T get(int tag) {

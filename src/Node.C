@@ -54,6 +54,7 @@
 #include "SMDMsgs.h"
 #include "TestController.h"
 #include "TestSequencer.h"
+#include "ScriptTcl.h"
 #include "ComputeMgr.decl.h"
 
 //======================================================================
@@ -93,6 +94,7 @@ Node::Node(GroupInitMsg *msg)
   state = NULL;
   output = NULL;
   smdData = NULL;
+  script = NULL;
 
   Compute::setNode(this);
 
@@ -225,7 +227,6 @@ void Node::startup() {
       CkStartQD(CProxy_Node::ckIdx_startUp((CkQdMsg*)0),&thishandle);
     } else {
       Node::messageRun();
-      // CStartQuiescence(GetEntryPtr(Node,quiescence), thishandle);
     }
   }
 }
@@ -308,6 +309,10 @@ void Node::buildSequencers() {
     if ( simParameters->testOn ) controller = new TestController(state);
     else controller = new Controller(state);
     state->useController(controller);
+
+    if ( simParameters->tclOn ) {
+      script = new ScriptTcl;
+    }
   }
 
   // Assign Sequencer to all HomePatch(es)
@@ -353,6 +358,7 @@ void Node::run()
   // Start Controller (aka scalar Sequencer) on Pe(0)
   if ( ! CkMyPe() ) {
     state->runController();
+    if ( script ) script->run();
   }
 
   DebugM(4, "Starting Sequencers\n");
@@ -365,6 +371,24 @@ void Node::run()
   }
 }
 
+
+//-----------------------------------------------------------------------
+// Node scriptBarrier() - twiddle parameters with simulation halted
+//-----------------------------------------------------------------------
+
+void Node::enableScriptBarrier() {
+  CkStartQD(CProxy_Node::ckIdx_scriptBarrier((CkQdMsg*)0),&thishandle);
+}
+
+void Node::scriptBarrier(CkQdMsg *qmsg) {
+  delete qmsg;
+  script->awaken();
+}
+
+void Node::scriptParam(ScriptParamMsg *msg) {
+  simParameters->scriptSet(msg->param,msg->value);
+  delete msg;
+}
 
 //-----------------------------------------------------------------------
 // Node homeDone() - broadcast to all nodes
@@ -452,13 +476,16 @@ void Node::recvSMDData(SMDDataMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1033 $	$Date: 1999/05/11 23:56:38 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1034 $	$Date: 1999/05/26 22:23:54 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1034  1999/05/26 22:23:54  jim
+ * Added basic Tcl scripting, fixed bugs in broadcasts.
+ *
  * Revision 1.1033  1999/05/11 23:56:38  brunner
  * Changes for new charm version
  *

@@ -43,6 +43,14 @@ class Output;
 class LdbCoordinator;
 class SMDData;
 class SMDDataMsg;
+class ScriptTcl;
+
+#define MAX_SCRIPT_PARAM_SIZE 128
+class ScriptParamMsg : public CMessage_ScriptParamMsg {
+public:
+  char param[MAX_SCRIPT_PARAM_SIZE];
+  char value[MAX_SCRIPT_PARAM_SIZE];
+};
 
 class Node : public BOCclass
 {
@@ -57,6 +65,11 @@ public:
   // Run for the number of steps specified in the sim_parameters
   static void messageRun();
   void run();                  
+
+  // Change parameters in mid-run
+  void enableScriptBarrier();  
+  void scriptBarrier(CkQdMsg *);  
+  void scriptParam(ScriptParamMsg *);
 
   // Signal HomePatch and Node is done
   static void messageHomeDone();
@@ -115,6 +128,7 @@ private:
   PatchMgr *patchMgr;
   ComputeMgr *computeMgr;
   ProxyMgr *proxyMgr;
+  ScriptTcl *script;
 
   // Countdown for Node::startup barrier
   int numNodeStartup;
@@ -136,12 +150,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1999/05/11 23:56:39 $
+ *	$Revision: 1.1013 $	$Date: 1999/05/26 22:23:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.1013  1999/05/26 22:23:55  jim
+ * Added basic Tcl scripting, fixed bugs in broadcasts.
+ *
  * Revision 1.1012  1999/05/11 23:56:39  brunner
  * Changes for new charm version
  *
