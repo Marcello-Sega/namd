@@ -2,6 +2,10 @@
 #include "Communicate.h"
 #include "MStream.h"
 
+#define MIN_DEBUG_LEVEL 2
+//#define DEBUGM
+#include "Debug.h"
+
 MIStream::MIStream(Communicate *c, int p, int t)
 {
   cobj = c;
@@ -28,7 +32,6 @@ MOStream::MOStream(Communicate *c, int p, int t, unsigned int size)
   msgBuf->PE = CmiMyPe();
   msgBuf->tag = tag;
   msgBuf->len = 0;
-  msgBuf->isLast = 0;
   msgBuf->index = 0;
   msgBuf->next = (StreamMessage *)0;
 }
@@ -43,14 +46,31 @@ MIStream *MIStream::Get(char *buf, int len)
 {
   while(len) {
     if(msg==0) {
+      if ( early && (early->index < currentIndex) ) {
+          DebugM(3,"Duplicate message " << early->index <<
+            " from Pe(" << msg->PE << ")" <<
+            " on stack while waiting for " << currentIndex <<
+            " from Pe(" << PE << ").\n");
+          NAMD_die("BUG ALERT: MIStream::Get - duplicate message on stack!");
+      }
       if ( early && (early->index == currentIndex) ) {
+        DebugM(2,"Popping message " << currentIndex << " from stack.\n");
         msg = early;
         early = early->next;
         msg->next = (StreamMessage *)0;
       } else {
+        DebugM(1,"Receiving message.\n");
         msg = (StreamMessage *) cobj->getMessage(PE, tag);
       }
       while ( msg->index != currentIndex ) {
+        if ( msg->index < currentIndex ) {
+          DebugM(3,"Duplicate message " << msg->index <<
+            " from Pe(" << msg->PE << ")" <<
+            " received while waiting for " << currentIndex <<
+            " from Pe(" << PE << ").\n");
+          NAMD_die("BUG ALERT: MIStream::Get - duplicate message received!");
+        }
+        DebugM(2,"Pushing message " << msg->index << " on stack.\n");
         if ( (! early) || (early->index > msg->index) ) {
           msg->next = early;
           early = msg;
@@ -62,6 +82,7 @@ MIStream *MIStream::Get(char *buf, int len)
           msg->next = cur->next;
           cur->next = msg;
         }
+        DebugM(1,"Receiving message again.\n");
         msg = (StreamMessage *) cobj->getMessage(PE, tag);
       }
       currentPos = 0;
@@ -97,9 +118,11 @@ MOStream *MOStream::Put(char *buf, size_t len)
       int b = bufLen - msgBuf->len;
       memcpy(&(msgBuf->data[msgBuf->len]), buf, b);
       msgBuf->len = bufLen;
+      if ( msgBuf->index && ! ((msgBuf->index) % 100) ) {
+        DebugM(3,"Sending message " << msgBuf->index << ".\n");
+      }
       cobj->sendMessage(PE, (void *)msgBuf, bufLen+sizeof(StreamMessage));
       msgBuf->len = 0;
-      msgBuf->isLast = 0;
       msgBuf->index += 1;
       len -= b;
       buf += b;
@@ -110,10 +133,12 @@ MOStream *MOStream::Put(char *buf, size_t len)
 
 void MOStream::end(void)
 {
-  msgBuf->isLast = 1;
+  if ( msgBuf->len == 0 ) return; // don't send empty message
+  if ( msgBuf->index && ! ((msgBuf->index) % 100) ) {
+    DebugM(3,"Sending message " << msgBuf->index << ".\n");
+  }
   cobj->sendMessage(PE,(void*)msgBuf,msgBuf->len+sizeof(StreamMessage));
   msgBuf->len = 0;
-  msgBuf->isLast = 0;
   msgBuf->index += 1;
 }
 
