@@ -962,22 +962,22 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
 
    // Maximum Partition options
    opts.optional("main", "maxSelfPart", 
-     "maximum number of self partitions in one patch", &maxSelfPart, 100);
+     "maximum number of self partitions in one patch", &maxSelfPart, 50);
    opts.range("maxSelfPart",POSITIVE);
    opts.optional("main", "maxPairPart", 
-     "maximum number of pair partitions in one patch", &maxPairPart, 10);
+     "maximum number of pair partitions in one patch", &maxPairPart, 20);
    opts.range("maxPairPart",POSITIVE);
    opts.optional("main", "numAtomsSelf", 
                "maximum number of atoms in one self compute distribution", 
-               &numAtomsSelf, 0);
+               &numAtomsSelf, 125);
    opts.range("numAtomsSelf",NOT_NEGATIVE);
    opts.optional("main", "numAtomsPair", 
                "maximum number of atoms in one pair compute distribution", 
-               &numAtomsPair, 0);
+               &numAtomsPair, 200);
    opts.range("numAtomsPair",NOT_NEGATIVE);
    opts.optional("main", "numAtomsPair2", 
                "maximum number of atoms in one pair compute distribution", 
-               &numAtomsPair2, 0);
+               &numAtomsPair2, 400);
    opts.range("numAtomsPair2",NOT_NEGATIVE);
 }
 
@@ -1944,8 +1944,6 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    iout << iINFO << "TIMESTEP               " << dt << "\n" << endi;
    iout << iINFO << "NUMBER OF STEPS        " << N << "\n";
    iout << iINFO << "STEPS PER CYCLE        " << stepsPerCycle << "\n";
-   iout << iINFO << "MAX SELF PARTITIONS    " << maxSelfPart << "\n"
-        << iINFO << "MAX PAIR PARTITIONS    " << maxPairPart << "\n";
    iout << endi;
 
    if ( lattice.a_p() || lattice.b_p() || lattice.c_p() ) {
@@ -1980,6 +1978,13 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << iINFO << "FIRST LDB TIMESTEP     " << firstLdbStep 
     << "\n" << endi;
    }
+
+   iout << iINFO << "MAX SELF PARTITIONS    " << maxSelfPart << "\n"
+        << iINFO << "MAX PAIR PARTITIONS    " << maxPairPart << "\n"
+        << iINFO << "SELF PARTITION ATOMS   " << numAtomsSelf << "\n"
+        << iINFO << "PAIR PARTITION ATOMS   " << numAtomsPair << "\n"
+        << iINFO << "PAIR2 PARTITION ATOMS  " << numAtomsPair2 << "\n"
+        << endi;
    
    if (initialTemp < 0)
    {

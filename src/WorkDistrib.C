@@ -809,12 +809,8 @@ void WorkDistrib::mapComputeNonbonded(void)
 	int divide = 0;
         if (distance <= 1) {
 	  divide = node->simParameters->numAtomsPair;
-	}
-	else if (distance == 2) {
+	} else {
 	  divide = node->simParameters->numAtomsPair2;
-	}
-	else {
-	  divide = 0;
 	}
 	if (divide == 0) {
           numPartitions = 1 + (numAtoms1*numAtoms2 > 2500) + (numAtoms1*numAtoms2)/100000;
