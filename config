@@ -4,7 +4,8 @@ syntax:
   echo ''
   echo 'Usage: config [debug] [tcl] [fftw] [<build_dir>/]<arch> '
   echo ''
-  echo 'arch: ' `( cd arch ; ls -1 *.arch |sed -e 's/\.arch//' | egrep -v 'template' )`
+  echo '<arch>: ' 
+  ( cd arch ; ls -1 *.arch |sed -e 's/\.arch//' | egrep -v 'template' | pr -4t)
   echo ''
   exit 1
 
