@@ -25,6 +25,7 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
    pes = NULL;
    computesHeap = NULL;
    overLoad = 0.;
+   numPesAvailable = 0;
    int i;
    for (i=0; i<P; i++)
    {
@@ -33,6 +34,9 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
       // End of test section
       processors[i].load = processors[i].backgroundLoad;
       processors[i].computeLoad = 0;
+      if (processors[i].available) {
+        numPesAvailable += 1;
+      }
    }
 
    for (i=0; i<nPatches; i++)
@@ -113,6 +117,7 @@ Rebalancer::~Rebalancer()
 void Rebalancer::InitProxyUsage()
 {
    int i;
+   numProxies = 0;
 
    for(i=0; i<P; i++) {
       processors[i].proxyUsage = new int[numPatches];
@@ -146,6 +151,7 @@ void Rebalancer::InitProxyUsage()
 
   for (i=0; i<numPatches; i++)
   {
+      numProxies += ( patches[i].proxiesOn.numElements() - 1 );
       Iterator nextProc;
       processorInfo *p = (processorInfo *)patches[i].proxiesOn.iterator((Iterator *)&nextProc);
       while (p) {
@@ -153,6 +159,8 @@ void Rebalancer::InitProxyUsage()
           p = (processorInfo *)patches[i].proxiesOn.next((Iterator*)&nextProc);
       }
   }
+
+  iout << iINFO << "Total of " << numProxies << " proxies exist.\n" << endi;
 
 }
 
@@ -192,10 +200,10 @@ void Rebalancer::assign(computeInfo *c, processorInfo *p)
    patchInfo* patch2 = (patchInfo *) &(patches[c->patch2]);
 
    if (!p->proxies.find(patch1))   p->proxies.insert(patch1); 
-   if (!patch1->proxiesOn.find(p)) patch1->proxiesOn.insert(p);
+   if (!patch1->proxiesOn.find(p)) {patch1->proxiesOn.insert(p); numProxies++;}
 
    if (!p->proxies.find(patch2))   p->proxies.insert(patch2); 
-   if (!patch2->proxiesOn.find(p)) patch2->proxiesOn.insert(p);
+   if (!patch2->proxiesOn.find(p)) {patch2->proxiesOn.insert(p); numProxies++;}
    
    // 4-29-98: Added the following code to keep track of how many proxies
    // on each processor are being used by a compute on that processor
@@ -239,6 +247,7 @@ void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
       patchInfo* patch1 = (patchInfo *) &(patches[c->patch1]);
       p->proxies.remove(patch1);
       patch1->proxiesOn.remove(p);
+      numProxies--;
    }
    if(p->proxyUsage[c->patch2] <= 0 && p->Id != patches[c->patch2].processor)
    {
@@ -249,6 +258,7 @@ void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
       patchInfo* patch2 = (patchInfo *) &(patches[c->patch2]);
       p->proxies.remove(patch2);
       patch2->proxiesOn.remove(p);
+      numProxies--;
    }
 }
 
@@ -272,11 +282,24 @@ void Rebalancer::refine_togrid(pcgrid &grid, double thresholdLoad,
 	      << ") + proxies (" << nProxies << ")\n" << endi;
 
     pcpair *pair = &grid[nPatches][nProxies];
-    if ( ( ! pair->c || c->load >= pair->c->load )
-	 && ( ! pair->p || p->load <= pair->p->load ) ) {
+
+    if (! pair->c) {
+      if (p->proxies.numElements() <
+                ((double)numProxies / (double)numPesAvailable + 2) ) {
 	 pair->c = c;
 	 pair->p = p;
+      }
+    } else if (p->load <= pair->p->load && c->load >= pair->c->load) {
+      if ( nPatches + nProxies == 2 ) {
+	 pair->c = c;
+	 pair->p = p;
+      } else if (p->proxies.numElements() <
+                ((double)numProxies / (double)numPesAvailable + 2) ) {
+	 pair->c = c;
+	 pair->p = p;
+      }
     }
+
   }
 }
 
@@ -551,6 +574,7 @@ void Rebalancer::printLoads()
 
    iout.setf(ios::right | ios::fixed);
    iout.precision(3);
+   int maxproxies = 0;
    for (i=0; i<P; i++)
    {
 #if 0
@@ -572,6 +596,10 @@ void Rebalancer::printLoads()
       //      << processors[i].proxies->numElements() - 
       //         processors[i].patchSet->numElements();
 #endif
+
+      int nproxies = processors[i].proxies.numElements() - 
+			processors[i].patchSet.numElements();
+      if ( nproxies > maxproxies ) maxproxies = nproxies;
 
       Iterator p;
       int count = 0;
@@ -596,6 +624,7 @@ void Rebalancer::printLoads()
    max = computeMax();
 
    iout << iINFO << "\n" << endi;
+   iout << iINFO << "numProxies = " << numProxies << "\n";
    iout << iINFO << "------------------------------------------------------------\n" << endi; 
    iout << iINFO << "          LOAD SUMMARY FOR STRATEGY \"" << strategyName << "\"\n\n" << endi;
    iout << iINFO << "Processors = " << setw(5) << P << "\t"
@@ -604,8 +633,8 @@ void Rebalancer::printLoads()
         << "  Avg load = " ; setw(7); iout << averageLoad << "\n";
    iout << iINFO << "Computes   = " << setw(5) << numComputes << "\t"
         << "  Max load = " ; setw(7); iout << max << "\n";
-   iout << iINFO << "# messages = " << setw(5) << total << "\t"
-        << "  Msg size = " << numBytes << " bytes" << "\n" << "\n";
+   iout << iINFO << "Messages   = " << setw(5) << total << "\t"
+        << "  Max msgs = " << maxproxies << "\n" << "\n";
    iout << iINFO <<"============================================================\n"
        << "\n" << endi;
    iout.unsetf(ios::right);
@@ -646,18 +675,16 @@ double Rebalancer::computeAverage()
 {
    int i;
    double total = 0;
-   int availPes = 0;
    for (i=0; i<numComputes; i++)
       total += computes[i].load;
 
    for (i=0; i<P; i++) {
       if (processors[i].available) {
         total += processors[i].backgroundLoad;
-        availPes++;
       }
    }
   
-   averageLoad = total/availPes;
+   averageLoad = total/numPesAvailable;
    return averageLoad;
 }
 

@@ -36,6 +36,8 @@ protected:
   int P;
   int numPatches;
   int numComputes;
+  int numProxies;
+  int numPesAvailable;
   double averageLoad;
   int isAvailableOn(patchInfo *patch, processorInfo *p);
   int numAvailable(computeInfo *c, processorInfo *p);
