@@ -284,10 +284,10 @@ Section \ref{section:electdesc}.}
 %of this configuration value.}
 
 \item
-\NAMDCONF{cutoff}%
+\NAMDCONF{cutoff}
 {local interaction distance common to both electrostatic 
-and van der Waals calculations (\AA)}%
-{positive decimal}%
+and van der Waals calculations (\AA)}
+{positive decimal}
 {%This value can substitute for either \verb!eleccutoff!
 %or \verb!vdwcutoff! if either of those is undefined.
 See Section \ref{section:electdesc} for more information.}
@@ -341,10 +341,10 @@ Section \ref{section:electdesc}.  If \verb!switching! is set to
 %}
 
 \item
-\NAMDCONF{switchdist}%
+\NAMDCONF{switchdist}
 {distance at which to activate switching function 
-for electrostatic and van der Waals calculations (\AA)}%
-{positive decimal $\leq$ \verb!cutoff!}%
+for electrostatic and van der Waals calculations (\AA)}
+{positive decimal $\leq$ \verb!cutoff!}
 {Distance at which the switching function
 should begin to take effect.  
 This parameter only has meaning if \verb!switching! is 
@@ -356,11 +356,11 @@ For a complete description of the non-bonded force parameters see
 Section \ref{section:electdesc}.}
 
 \item
-\NAMDCONFWDEF{pairlistdist}%
-{distance between pairs for inclusion in pair lists (\AA)}%
-{positive decimal $\geq$ \verb!cutoff!}%
-{\verb!cutoff!}%
-{%
+\NAMDCONFWDEF{pairlistdist}
+{distance between pairs for inclusion in pair lists (\AA)}
+{positive decimal $\geq$ \verb!cutoff!}
+{\verb!cutoff!}
+{
 A pair list is generated each cycle, 
 containing pairs of atoms for which 
 electrostatics and van der Waals interactions will be calculated.
@@ -381,26 +381,26 @@ is recommended.
 }
 
 \item
-\NAMDCONFWDEF{splitPatch}%
-{how to assign atoms to patches}%
-{\verb!position! or \verb!hydrogen!}%
-{\verb!hydrogen!}%
-{%
+\NAMDCONFWDEF{splitPatch}
+{how to assign atoms to patches}
+{\verb!position! or \verb!hydrogen!}
+{\verb!hydrogen!}
+{
 When set to \verb!hydrogen!, hydrogen atoms are kept on the same patch as their parents, allowing faster distance checking and rigid bonds.
 }
 
 \item
-\NAMDCONFWDEF{hgroupCutoff (\AA)}%
-{used for group-based distance testing}%
-{positive decimal}%
-{2.5}%
-{%
+\NAMDCONFWDEF{hgroupCutoff (\AA)}
+{used for group-based distance testing}
+{positive decimal}
+{2.5}
+{
 This should be set to twice the largest distance which will ever occur between a hydrogen atom and its mother.  Warnings will be printed if this is not the case.  This value is also added to the margin.
 }
 
 \item
-\NAMDCONFWDEF{margin}%
-{extra length in patch dimension (\AA)}{positive decimal}{1.0}%
+\NAMDCONFWDEF{margin}
+{extra length in patch dimension (\AA)}{positive decimal}{1.0}
 {An internal tuning parameter used in determining the size of the cubes 
 of space with which \NAMD\ uses to partition the system.  The value of 
 this parameter will not change the physical results of the simulation.  
@@ -423,9 +423,9 @@ possible performance, just leave this value at the default.}
 
 \begin{itemize}
 \item
-\NAMDCONF{exclude}%
-{exclusion policy to use}%
-{\verb!none!, \verb!1-2!, \verb!1-3!, \verb!1-4!, or \verb!scaled1-4!}%
+\NAMDCONF{exclude}
+{exclusion policy to use}
+{\verb!none!, \verb!1-2!, \verb!1-3!, \verb!1-4!, or \verb!scaled1-4!}
 {\label{param:exclude}
 %% This parameter is {\it required\/} for every simulation.
 This parameter specifies which pairs of bonded atoms should
@@ -462,7 +462,7 @@ option must be defined to determine an initial set of velocities.
 Both options cannot be used together.}
 
 \item
-\NAMDCONFWDEF{COMmotion}{allow center of mass motion?}%
+\NAMDCONFWDEF{COMmotion}{allow center of mass motion?}
 {\verb!yes! or \verb!no!}{\verb!no!}
 {
 Specifies whether or not motion of 
@@ -474,14 +474,14 @@ external forces such as random noise in Langevin dynamics, boundary
 potentials, and harmonic restraints.}
 
 \item
-\NAMDCONFWDEF{dielectric}{dielectric constant for system}%
+\NAMDCONFWDEF{dielectric}{dielectric constant for system}
 {decimal $\geq$ 1.0}{1.0}
 {Dielectric constant for the system.  A value of 1.0 implies no modification
 of the electrostatic interactions.  Any larger value will lessen the
 electrostatic forces acting in the system.}
 
 \item
-\NAMDCONFWDEF{1-4scaling}{scaling factor for 1-4 interactions}%
+\NAMDCONFWDEF{1-4scaling}{scaling factor for 1-4 interactions}
 {0 $\leq$ decimal $\leq$ 1}{1.0}
 {Scaling factor for 1-4 interactions.  This factor is only used when the
 \verb!exclude! parameter is set to \verb!scaled1-4!.  In this case, this
@@ -490,8 +490,8 @@ pairs.  If the \verb!exclude! parameter is set to anything but
 \verb!scaled1-4!, this parameter has no effect regardless of its value.}
 
 \item
-\NAMDCONFWDEF{seed}{random number seed}{positive integer}%
-{pseudo-random value based on current UNIX clock time}%
+\NAMDCONFWDEF{seed}{random number seed}{positive integer}
+{pseudo-random value based on current UNIX clock time}
 {Number used to seed the random number generator 
 if {\tt temperature} or {\tt langevin} is selected.  This can be
 used so that consecutive simulations produce the same results.
@@ -515,15 +515,15 @@ For the default case \verb!none!, no lengths are constrained.
 }
 
 \item
-\NAMDCONFWDEF{rigidTolerance}{allowable bond-length error for ShakeH (\AA)}%
-{positive decimal}{0.00001}%
+\NAMDCONFWDEF{rigidTolerance}{allowable bond-length error for ShakeH (\AA)}
+{positive decimal}{0.00001}
 {
 The ShakeH algorithm is assumed to have converged when all constrained
 bonds differ from the nominal bond length by less than this amount.
 }
 
 \item
-\NAMDCONFWDEF{rigidIterations}{maximum ShakeH iterations}{positive integer}{100}%
+\NAMDCONFWDEF{rigidIterations}{maximum ShakeH iterations}{positive integer}{100}
 {
 The maximum number of iterations ShakeH will perform before giving up
 on constraining the bond lengths.  If the bond lengths do not

@@ -11,7 +11,7 @@
 %
 %       $RCSfile: ug_macros.tex,v $
 %       $Author: jim $        $Locker:  $                $State: Exp $
-%       $Revision: 1.2 $      $Date: 1999/02/23 02:16:20 $
+%       $Revision: 1.3 $      $Date: 1999/02/26 06:57:17 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -20,6 +20,9 @@
 % REVISION HISTORY:
 %
 % $Log: ug_macros.tex,v $
+% Revision 1.3  1999/02/26 06:57:17  jim
+% Changes to make latex2html work.
+%
 % Revision 1.2  1999/02/23 02:16:20  jim
 % Switched verb to tt in macros to please latex2html.
 %
@@ -43,8 +46,8 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\renewcommand{\DOCTITLE} {User's Guide}
-\renewcommand{\DOCDESC} {%
+\newcommand{\DOCTITLE} {User's Guide}
+\newcommand{\DOCDESC} {%
 The \NAMD\ {\em\DOCTITLE\/} describes how to run and use the 
 various features of the molecular dynamics program \NAMD.  
 This guide includes the capabilities of the program, how 
@@ -62,14 +65,14 @@ machines and in parallel.}
 \newcommand{\ie}{{\it i.e.\/}}
 
 \newcommand{\NAMDCONF}[4]{%
-  \addcontentsline{toc}{subparagraph}{#1}%
+%  \addcontentsline{toc}{subparagraph}{#1}%
   {\bf \tt #1 } $<$ #2 $>$ \\%
   {\bf Acceptable Values: } #3 \\%
   {\bf Description: } #4%
 }
 
 \newcommand{\NAMDCONFWDEF}[5]{%
-  \addcontentsline{toc}{subparagraph}{#1}%
+%  \addcontentsline{toc}{subparagraph}{#1}%
   {\bf \tt #1 } $<$ #2 $>$ \\%
   {\bf Acceptable Values: } #3 \\%
   {\bf Default Value: } #4 \\%
