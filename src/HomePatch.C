@@ -205,24 +205,28 @@ void HomePatch::positionsReady(int doMigration)
 
   // Must Add Proxy Changes when migration completed!
   ProxyListIter pli(proxy);
+  int *pids = new int[proxy.size()];
+  int *pidi = pids;
   for ( pli = pli.begin(); pli != pli.end(); ++pli )
   {
-    if (doMigration) {
+    *(pidi++) = pli->node;
+  }
+  if (doMigration) {
       ProxyAllMsg *allmsg = new ProxyAllMsg;
       allmsg->patch = patchID;
       allmsg->flags = flags;
       allmsg->positionList = p;
       if (flags.doMolly) allmsg->avgPositionList = p_avg;
-      ProxyMgr::Object()->sendProxyAll(allmsg,pli->node);
-    } else {
+      ProxyMgr::Object()->sendProxyAll(allmsg,proxy.size(),pids);
+  } else {
       ProxyDataMsg *nmsg = new ProxyDataMsg;
       nmsg->patch = patchID;
       nmsg->flags = flags;
       nmsg->positionList = p;
       if (flags.doMolly) nmsg->avgPositionList = p_avg;
-      ProxyMgr::Object()->sendProxyData(nmsg,pli->node);
-    }   
-  }
+      ProxyMgr::Object()->sendProxyData(nmsg,proxy.size(),pids);
+  }   
+  delete [] pids;
   DebugM(4, "patchID("<<patchID<<") doing positions Ready\n");
   Patch::positionsReady(doMigration);
 

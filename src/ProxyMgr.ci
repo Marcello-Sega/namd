@@ -19,7 +19,6 @@ module ProxyMgr {
     entry ProxyMgr(void);
     entry void recvRegisterProxy(RegisterProxyMsg *);
     entry void recvProxyData(ProxyDataMsg *);
-    entry void recvProxyAtoms(ProxyAtomsMsg *);
     entry void recvProxyAll(ProxyAllMsg *);
     entry void recvResults(ProxyResultMsg *);
   };

@@ -277,9 +277,9 @@ ProxyMgr::recvResults(ProxyResultMsg *msg) {
 }
 
 void
-ProxyMgr::sendProxyData(ProxyDataMsg *msg, NodeID node) {
+ProxyMgr::sendProxyData(ProxyDataMsg *msg, int pcnt, int *pids) {
   CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
-  cp.recvProxyData(msg,node);
+  cp.recvProxyData(msg,pcnt,pids);
 }
 
 void
@@ -289,21 +289,9 @@ ProxyMgr::recvProxyData(ProxyDataMsg *msg) {
 }
 
 void
-ProxyMgr::sendProxyAtoms(ProxyAtomsMsg *msg, NodeID node) {
+ProxyMgr::sendProxyAll(ProxyAllMsg *msg, int pcnt, int *pids) {
   CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
-  cp.recvProxyAtoms(msg,node);
-}
-
-void
-ProxyMgr::recvProxyAtoms(ProxyAtomsMsg *msg) {
-  ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
-  proxy->receiveAtoms(msg); // deleted in ProxyPatch::receiveAtoms()
-}
-
-void
-ProxyMgr::sendProxyAll(ProxyAllMsg *msg, NodeID node) {
-  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
-  cp.recvProxyAll(msg,node);
+  cp.recvProxyAll(msg,pcnt,pids);
 }
 
 void

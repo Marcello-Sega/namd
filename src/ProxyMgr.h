@@ -103,13 +103,10 @@ public:
   void sendResults(ProxyResultMsg *);
   void recvResults(ProxyResultMsg *);
 
-  void sendProxyData(ProxyDataMsg *, NodeID);
+  void sendProxyData(ProxyDataMsg *, int, int*);
   void recvProxyData(ProxyDataMsg *);
 
-  void sendProxyAtoms(ProxyAtomsMsg *, NodeID);
-  void recvProxyAtoms(ProxyAtomsMsg *);
-
-  void sendProxyAll(ProxyAllMsg *, NodeID);
+  void sendProxyAll(ProxyAllMsg *, int, int*);
   void recvProxyAll(ProxyAllMsg *);
 
   static ProxyMgr *Object() { return CpvAccess(ProxyMgr_instance); }
