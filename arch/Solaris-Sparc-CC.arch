@@ -2,7 +2,7 @@ NAMD_ARCH = Solaris-Sparc
 CHARMARCH = net-sol-cc
 
 CXX = CC -DSOLARIS
-CXXOPTS = -fast -xO5 -native -xarch=v8plusa -fsimple=2
+CXXOPTS = -fast -xO5 -native -xarch=v8plusa -fsimple=2 -lmalloc
 CXXTHREADOPTS = -fns -ftrap=%none -xlibmil -xlibmopt -xO5 -native -xarch=v8plusa -fsimple=2
 CC = cc -DSOLARIS
 COPTS = -fast -xO5 -native -xarch=v8plusa
