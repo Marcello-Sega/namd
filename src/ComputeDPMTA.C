@@ -31,7 +31,7 @@
 
 extern Communicate *comm;
 
-void ComputeDPMTA::get_FMA_cube(BigReal *boxsize, Vector *boxcenter)
+void ComputeDPMTA::get_FMA_cube(Vector *boxsize, Vector *boxcenter)
 {
   int max_dim;
   int dim_x,dim_y,dim_z;
@@ -51,11 +51,13 @@ void ComputeDPMTA::get_FMA_cube(BigReal *boxsize, Vector *boxcenter)
   if (dim_y>max_dim)	max_dim = dim_y;
   if (dim_z>max_dim)	max_dim = dim_z;
 
-  *boxsize = max_dim*simParams->patchDimension;
+  boxsize->x = dim_x*simParams->patchDimension;
+  boxsize->y = dim_y*simParams->patchDimension;
+  boxsize->z = dim_z*simParams->patchDimension;
   *boxcenter = patchMap->Origin();
-  boxcenter->x += *boxsize/2.0 - simParams->patchDimension;
-  boxcenter->y += *boxsize/2.0 - simParams->patchDimension;
-  boxcenter->z += *boxsize/2.0 - simParams->patchDimension;
+  boxcenter->x += boxsize->x/2.0;
+  boxcenter->y += boxsize->y/2.0;
+  boxcenter->z += boxsize->z/2.0;
 
   DebugM(2,"cube center: " << (*boxcenter) << " size=" << (*boxsize) << "\n");
 }
@@ -70,10 +72,6 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   }
 
   //  Set everything to 0
-  patchData = NULL;
-  patchTail = NULL;
-  numPatches = 0;
-  numDistributed = 0;
   totalAtoms = 0;
   fmaResults = NULL;
   ljResults = NULL;
@@ -88,7 +86,7 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
 
   int numProcs = CNumPes();
   PmtaInitData pmta_data;
-  BigReal boxsize;	// Dimension of FMA cube
+  Vector boxsize;	// Dimension of FMA cube
   Vector boxcenter;	// Center for FMA cube
 
   if (CMyPe() != 0)
@@ -135,9 +133,9 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   pmta_data.kterm = 0;
   pmta_data.theta = simParams->fmaTheta;
   //  2.5 will allow non-cubical box
-  pmta_data.cubelen.x = boxsize;
-  pmta_data.cubelen.y = boxsize;
-  pmta_data.cubelen.z = boxsize;
+  pmta_data.cubelen.x = boxsize.x;
+  pmta_data.cubelen.y = boxsize.y;
+  pmta_data.cubelen.z = boxsize.z;
   pmta_data.cubectr.x = boxcenter.x;
   pmta_data.cubectr.y = boxcenter.y;
   pmta_data.cubectr.z = boxcenter.z;
@@ -169,20 +167,6 @@ ComputeDPMTA::~ComputeDPMTA()
   DebugM(1,"DPMTA exiting\n");
   //  If this is the master node, then call PMTAexit()
   if (CMyPe() == 0)	PMTAexit();
-
-  //  If there is a list of patch data hanging around, walk down the
-  //  list and delete each node
-  PatchInfo *ptr, *next;
-  if (patchData != NULL)
-  {
-      ptr = patchData;
-      while (ptr != NULL)
-      {
-         next = ptr->next;
-         delete ptr;
-         ptr = next;
-      }
-  }
 
   if (fmaResults)
 	{

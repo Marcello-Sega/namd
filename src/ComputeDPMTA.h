@@ -22,28 +22,14 @@ extern "C"
   }
 #include "ComputeHomePatches.h"
 
-typedef struct patch_info
-{
-   int pid;                     //  Patch ID number
-   int num;                     //  Number of atoms in this patch
-   int *indexes;                //  Global indexes for these atoms
-   Vector *pos;                 //  Positions for this patch
-   struct patch_info *next;     //  Pointer to next link in list
-} PatchInfo;
-
 class ComputeDPMTA : public ComputeHomePatches {
 private:
   int *slavetids;	//  PID for slave processes
-  PatchInfo *patchData;	//  List containing data from patches
-  PatchInfo *patchTail;	//  Tail of patch data list
-  int numPatches;	//  Number of patches being dealt with
-  int numDistributed;	//  Number of patches that we have
-			//  distributed forces back to
   int totalAtoms;	//  Total number of atoms being dealt with
   PmtaPartInfo *fmaResults;	//  Results from the PMTA code
   PmtaPartInfo *ljResults;	//  Results from the PMTA code
 
-  void get_FMA_cube(BigReal *boxsize, Vector *boxcenter);
+  void get_FMA_cube(Vector *boxsize, Vector *boxcenter);
 
 public:
   ComputeDPMTA(ComputeID c);
@@ -58,12 +44,15 @@ public:
  *
  *	$RCSfile: ComputeDPMTA.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/02/28 20:39:45 $
+ *	$Revision: 1.1008 $	$Date: 1997/03/04 15:52:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.h,v $
+ * Revision 1.1008  1997/03/04 15:52:37  nealk
+ * Modified get_FMA_cube to allow for a rectanglar region.
+ *
  * Revision 1.1007  1997/02/28 20:39:45  nealk
  * Removed local_timestep.  Jim says multiple timestepping is not implemented
  * yet.
