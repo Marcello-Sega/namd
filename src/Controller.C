@@ -108,7 +108,11 @@ void Controller::algorithm(void)
 	berendsenPressure(step);
 #ifdef CYCLE_BARRIER
 	if (!((step+1) % stepsPerCycle))
+	{
 	  broadcast->cycleBarrier.publish(step,1);
+	  CPrintf("Cycle time at sync Wall: %f CPU %f\n",
+		  CmiWallTimer(),CmiTimer());
+	}
 #endif
     }
 
@@ -261,12 +265,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1024 $	$Date: 1997/08/22 19:54:42 $
+ *	$Revision: 1.1025 $	$Date: 1997/08/26 16:40:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1025  1997/08/26 16:40:22  brunner
+ * Added a message to the CYCLE_BARRIER sync
+ *
  * Revision 1.1024  1997/08/22 19:54:42  milind
  * Added user event EndOfTimeStep.
  *
