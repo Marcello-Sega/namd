@@ -347,6 +347,19 @@ void GlobalMasterTcl::initialize() {
   DebugM(1,"here\n");
   Tcl_DeleteCommand(interp, "addatom");
   Tcl_DeleteCommand(interp, "addgroup");
+
+  Tcl_CreateObjCommand(interp, (char *)"loadcoords", Tcl_loadcoords,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateObjCommand(interp, (char *)"loadmasses", Tcl_loadmasses,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateObjCommand(interp, (char *)"addforce", Tcl_addforce,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, (char *)"reconfig", Tcl_reconfig,
+      (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, (char *)"addatom", Tcl_addatom,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, (char *)"addgroup", Tcl_addgroup,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
 #else
 
   NAMD_die("Sorry, tclForces is not available; built without TCL.");
@@ -366,18 +379,6 @@ void GlobalMasterTcl::calculate() {
 
 #ifdef NAMD_TCL
   // Call interpreter to calculate forces
-  Tcl_CreateObjCommand(interp, (char *)"loadcoords", Tcl_loadcoords,
-    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateObjCommand(interp, (char *)"loadmasses", Tcl_loadmasses,
-    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateObjCommand(interp, (char *)"addforce", Tcl_addforce,
-    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, (char *)"reconfig", Tcl_reconfig,
-      (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, (char *)"addatom", Tcl_addatom,
-    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, (char *)"addgroup", Tcl_addgroup,
-    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
 
   char cmd[129];  int code;
   strcpy(cmd,"calcforces");  code = Tcl_Eval(interp,cmd);
@@ -387,13 +388,6 @@ void GlobalMasterTcl::calculate() {
     char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
     NAMD_die(errorInfo);
   }
-
-  Tcl_DeleteCommand(interp, "loadcoords");
-  Tcl_DeleteCommand(interp, "loadmasses");
-  Tcl_DeleteCommand(interp, "addforce");
-  Tcl_DeleteCommand(interp, "reconfig");
-  Tcl_DeleteCommand(interp, "addatom");
-  Tcl_DeleteCommand(interp, "addgroup");
 #endif
 
 }
