@@ -94,7 +94,11 @@ void PatchMgr::sendMovePatches()
 
       // Sending to PatchMgr::recvMovePatches on remote node
       CProxy_PatchMgr cp(thisgroup);
+#if CHARM_VERSION > 050402
+      cp[m->nodeID].recvMovePatches(msg);
+#else
       cp.recvMovePatches(msg, m->nodeID);
+#endif
 
       // Deleting the HomePatchElem will call a destructor for clean up
       // but the msg elements are safe since they use a container template
@@ -131,7 +135,11 @@ void PatchMgr::recvMovePatches(MovePatchesMsg *msg) {
 void PatchMgr::sendMigrationMsg(PatchID src, MigrationInfo m) {
   MigrateAtomsMsg *msg = new MigrateAtomsMsg(src,m.destPatchID,m.mList);
   CProxy_PatchMgr cp(thisgroup);
+#if CHARM_VERSION > 050402
+  cp[m.destNodeID].recvMigrateAtoms(msg);
+#else
   cp.recvMigrateAtoms(msg, m.destNodeID);
+#endif
 }
 
 // Called by HomePatch to migrate atoms off to new patches
@@ -175,7 +183,11 @@ void PatchMgr::sendMigrationMsgs(PatchID src, MigrationInfo *m, int numMsgs) {
       {
 	DebugM(3,"Sending MigrateAtomsCombinedMsg to node " << destNodeID << "\n");
         CProxy_PatchMgr cp(thisgroup);
+#if CHARM_VERSION > 050402
+        cp[destNodeID].recvMigrateAtomsCombined(combineMigrationMsgs[destNodeID]);
+#else
         cp.recvMigrateAtomsCombined(combineMigrationMsgs[destNodeID],destNodeID);
+#endif
       }
   }
 }
