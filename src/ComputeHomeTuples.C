@@ -102,8 +102,13 @@ void ComputeHomeTuples<T,S>::loadTuples() {
 		&numTuples, &tuplesByAtom, &tupleStructs);
 
   char *tupleFlag = new char[numTuples];
-  register char *cmax = tupleFlag + numTuples;
-  for (register char *c = tupleFlag; c < cmax; *c++ = 0);
+  int *tupleStack = new int[numTuples];
+  int *nextTuple = tupleStack;
+
+//  register char *cmax = tupleFlag + numTuples;
+//  for (register char *c = tupleFlag; c < cmax; *c++ = 0);
+
+  memset((void *)tupleFlag, 0, numTuples*sizeof(char));
 
   // cycle through each patch and gather all tuples
   TuplePatchListIter ai(tuplePatchList);
@@ -123,14 +128,20 @@ void ComputeHomeTuples<T,S>::loadTuples() {
        /* cycle through each tuple */
        register int t;
        while((t = *tuples) != -1) {
-	 ++tuples;
-         tupleFlag[t] = 1;
+	 if (!tupleFlag[t])
+         {
+	   *nextTuple = t;
+	   nextTuple++;
+           tupleFlag[t] = 1;
+         }
+	 tuples++;
        }
     }
   }
 
-/*
+  delete [] tupleFlag;
 
+#if 0
   tupleList.clear();
 
   if ( node->simParameters->fixedAtomsOn ) {
@@ -160,13 +171,14 @@ void ComputeHomeTuples<T,S>::loadTuples() {
   UniqueSetIter<T> al(tupleList);
   UniqueSet<T> tupleList2;
 
-*/
 
   tupleList.clear();
 
   int al;
   LocalID aid[T::size];
   for (al = 0; al < numTuples; al++ ) {
+//    if (!tupleFlag[al])
+//      continue;
     T t(&tupleStructs[al]);
     register int i;
     aid[0] = atomMap->localID(t.atomID[0]);
@@ -192,8 +204,39 @@ void ComputeHomeTuples<T,S>::loadTuples() {
     }
   }
 
-  delete [] tupleFlag;
+#endif
 
+  tupleList.clear();
+
+  int *curTuple;
+  LocalID aid[T::size];
+  for (curTuple = tupleStack; curTuple != nextTuple; curTuple++ ) {
+    register int al = *curTuple;
+    T t(&tupleStructs[al]);
+    register int i;
+    aid[0] = atomMap->localID(t.atomID[0]);
+    int homepatch = aid[0].pid;
+    for (i=1; i < T::size; i++) {
+	aid[i] = atomMap->localID(t.atomID[i]);
+	homepatch = patchMap->downstream(homepatch,aid[i].pid);
+    }
+    if ( homepatch != notUsed && patchMap->node(homepatch) == CMyPe() ) {
+      for (i=0; i < T::size; i++) {
+	t.p[i] = tuplePatchList.find(TuplePatchElem(aid[i].pid));
+	/*
+        if ( ! (al->p)[i] ) {
+ 	  iout << iERROR << "ComputeHomeTuples couldn't find patch " 
+ 	    << aid[i].pid << " for atom " << al->atomID[i] 
+ 	    << ", aborting.\n" << endi;
+ 	  Namd::die();
+        }
+	*/
+	t.localIndex[i] = aid[i].index;
+      }
+      tupleList.load(t);
+    }
+  }
+  delete [] tupleStack;
 }
 
 
@@ -247,13 +290,17 @@ void ComputeHomeTuples<T,S>::doWork() {
  * RCS INFORMATION:
  *
  *      $RCSfile: ComputeHomeTuples.C,v $
- *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1020 $     $Date: 1997/10/17 20:26:31 $
+ *      $Author: brunner $  $Locker:  $             $State: Exp $
+ *      $Revision: 1.1021 $     $Date: 1997/11/13 00:21:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.C,v $
+ * Revision 1.1021  1997/11/13 00:21:01  brunner
+ * Revised the tuple-generation procedure.  It now uses an array of tuples
+ * to be checked, and flags to prevent duplicate tuples.
+ *
  * Revision 1.1020  1997/10/17 20:26:31  jim
  * Sped up tuples, but slowed down fixed atom code.
  * There is a much more efficient way of doing fixed atoms that can
