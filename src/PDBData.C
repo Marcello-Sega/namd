@@ -599,8 +599,8 @@ void PDBAtom::sprint( char *outstr, PDBFormatStyle usestyle)
 //****************** The wrapper for all of the functions ************///
 PDBData *new_PDBData(const char *data)  // nasty
 {
-  char temps1[100];
-  char temps2[100];
+  char temps1[160];
+  char temps2[160];
   char *temps;
   sscanf(data, "%s %s ", temps1, temps2);
   if (temps1[0] == '#')
@@ -704,12 +704,15 @@ main()
  *
  *	$RCSfile: PDBData.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1999/07/09 21:05:49 $
+ *	$Revision: 1.1007 $	$Date: 1999/08/04 20:42:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PDBData.C,v $
+ * Revision 1.1007  1999/08/04 20:42:32  jim
+ * Eliminated seg fault for binary pdb file read in as text.
+ *
  * Revision 1.1006  1999/07/09 21:05:49  jim
  * Eliminated compiler warnings.
  *

@@ -43,7 +43,7 @@ PDB::PDB( const char *pdbfilename) {
    *s = 0;
    if ( s == (buf + 149) ) {
      char s[500];
-     sprintf( s, "Input line too long in pdbfile %s.\n", pdbfilename);
+     sprintf( s, "Line too long in pdbfile %s:\n%s\n", pdbfilename, buf);
      NAMD_die(s);
    }
    *(s+1) = 0;  // just to be on the safe side
@@ -417,12 +417,15 @@ main()
  *
  *	$RCSfile: PDB.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1999/03/10 23:03:14 $
+ *	$Revision: 1.1008 $	$Date: 1999/08/04 20:42:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PDB.C,v $
+ * Revision 1.1008  1999/08/04 20:42:31  jim
+ * Eliminated seg fault for binary pdb file read in as text.
+ *
  * Revision 1.1007  1999/03/10 23:03:14  jim
  * Eliminated warnings sent to stderr.
  *
