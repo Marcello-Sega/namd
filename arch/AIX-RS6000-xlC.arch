@@ -1,10 +1,10 @@
 NAMD_ARCH = AIX-RS6000
 CHARMARCH = net-rs6k
 
-CXX = xlC -w -DSOCKLEN_T=socklen_t
-CXXOPTS = -O3
+CXX = xlC -w -DSOCKLEN_T=size_t
+CXXOPTS = -O3 -qstrict -Q -qarch=com -qtune=pwr3 -qfloat=rsqrt:fltint
 CXXTHREADOPTS = $(CXXOPTS)
 CXXSIMPARAMOPTS = $(CXXOPTS)
 CC = xlc -w
-COPTS = -O3
+COPTS = -O4 -qinlglue -qarch=com -qtune=pwr3
 
