@@ -28,16 +28,14 @@ CHARMXI = /Projects/l1/namd.2.0/charm/bin/charmc $(PURIFY)
 #####
 DPMTADIR=dpmta
 #PMTAINCL=-I$(DPMTADIR)
-#PMTALIBDIR=-L$(DPMTADIR)
-#PMTALIB=-ldpmta
+#PMTALIB=-L$(DPMTADIR) -ldpmta
 #PMTAFLAGS=-DDPMTA
 #DPMTA=$(PMTAINCL) $(PMTAFLAGS)
 ######
 ## definitions for PVM routines
 ######
 #PVMDIR=/usr/local/shared/pvm/pvm3/lib/HPPA
-#PVMLIBDIR=-L$(PVMDIR)
-#PVMLIB=-lpvm3
+#PVMLIB=-L$(PVMDIR) -lpvm3
 
 # CXXOPTS = -O
 CXXOPTS = -g
@@ -133,8 +131,8 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES)
 	"-I $(INCLUDE) -I $(SRCDIR) $(CXXOPTS) " \
 	-language charm++ \
 	-o namd2 $(OBJS) \
-	$(PMTALIBDIR) $(PMTALIB) \
-	$(PVMLIBDIR) $(PVMLIB)
+	$(PMTALIB) \
+	$(PVMLIB)
 
 cifiles:	$(INCDIR) $(DSTDIR)
 	for i in $(INTERFACES); do \
