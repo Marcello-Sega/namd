@@ -46,6 +46,7 @@ void   ::operator delete (void *);
 #define PRESSUREFACTOR 6.95E4
 #define PDBVELFACTOR 20.45482706
 #define PDBVELINVFACTOR (1.0/PDBVELFACTOR)
+#define PNPERKCALMOL 69.479
 
 #ifndef PI
 #define PI	3.141592653589793
@@ -259,13 +260,16 @@ int  Fclose(FILE *fout);
  * RCS INFORMATION:
  *
  *	$RCSfile: common.h,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/12/26 23:11:07 $
+ *	$Author: sergei $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1013 $	$Date: 1998/01/06 20:52:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.h,v $
+ * Revision 1.1013  1998/01/06 20:52:48  sergei
+ * added PNPERKCALMOL
+ *
  * Revision 1.1012  1997/12/26 23:11:07  milind
  * Made namd2 to compile, link and run under linux. Merged Templates and src
  * directoriies, and removed separate definition and declaration files for
