@@ -55,7 +55,7 @@ void CollectionMaster::disposePositions(CollectVectorInstance *c)
     }
     delete c;
     Node::Object()->output->coordinate(seq,size,data);
-    delete data;
+    delete [] data;
 }
 
 
@@ -179,12 +179,16 @@ void CollectVectorMsg::unpack(void *in)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/12/02 22:04:00 $
+ *	$Revision: 1.1011 $	$Date: 1997/12/10 17:53:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMaster.C,v $
+ * Revision 1.1011  1997/12/10 17:53:33  milind
+ * Removed the dcd file already exists error. Now, if a dcd file already exists,
+ * it is moved to a .bak before writing new dcd file.
+ *
  * Revision 1.1010  1997/12/02 22:04:00  milind
  * Fixed a silly bug that accessed memory after it was freed.
  *

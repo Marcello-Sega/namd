@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/dcdlib.C,v 1.3 1997/09/19 16:38:37 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/dcdlib.C,v 1.4 1997/12/10 17:53:36 milind Exp $";
 
 #include "dcdlib.h"
 #include "common.h" // for int32 definition
@@ -590,7 +590,7 @@ int read_dcdstep(int fd, int N, float *X, float *Y, float *Z, int num_fixed,
 /*   the filename to open as its only argument.	 It will return a    */
 /*   valid file descriptor if successful or DCD_OPENFAILED if the    */
 /*   open fails for some reason.  If the file specifed already       */
-/*   exists, DCD_FILEEXISTS is returned.			     */
+/*   exists, it is renamed by appending .bak to it.		     */
 /*								     */
 /*********************************************************************/
 
@@ -599,18 +599,23 @@ int open_dcd_write(char *dcdname)
 {
 	struct stat sbuf;
 	int dcdfd;
+        char *newdcdname = 0;
 
 	if (stat(dcdname, &sbuf) == 0) 
 	{
-		return(DCD_FILEEXISTS);
+           newdcdname = new char[strlen(dcdname)+5];
+           if(newdcdname == (char *) 0)
+             return DCD_OPENFAILED;
+           strcpy(newdcdname, dcdname);
+           strcat(newdcdname, ".bak");
+	   if(rename(dcdname, newdcdname))
+		return(DCD_OPENFAILED);
+	   delete [] newdcdname;
 	} 
-	else
+	if ( (dcdfd = open(dcdname, O_WRONLY|O_CREAT|O_EXCL,
+				S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0)
 	{
-		if ( (dcdfd = open(dcdname, O_WRONLY|O_CREAT|O_EXCL,
-					S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0)
-		{
-			return(DCD_OPENFAILED);
-		}
+		return(DCD_OPENFAILED);
 	}
 
 	return(dcdfd);
@@ -803,13 +808,17 @@ void close_dcd_write(int fd)
  * RCS INFORMATION:
  *
  *	$RCSfile: dcdlib.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1997/09/19 16:38:37 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.4 $	$Date: 1997/12/10 17:53:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: dcdlib.C,v $
+ * Revision 1.4  1997/12/10 17:53:36  milind
+ * Removed the dcd file already exists error. Now, if a dcd file already exists,
+ * it is moved to a .bak before writing new dcd file.
+ *
  * Revision 1.3  1997/09/19 16:38:37  jim
  * Switched from int to int32 (defined in common.h) for 64-bit machines.
  *

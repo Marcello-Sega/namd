@@ -49,7 +49,7 @@ void * ProxyAtomsMsg::pack (int *length) {
     *length = mylength;
     char *buffer = (char*)new_packbuffer(this,*length);
     memcpy(buffer, mybuffer, mylength);
-    delete mybuffer;
+    delete [] mybuffer;
 
     this->~ProxyAtomsMsg();
     return buffer;
@@ -354,12 +354,16 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
  *
  *	$RCSfile: ProxyMgr.C,v $
  *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1997/11/07 20:17:46 $
+ *	$Revision: 1.1018 $	$Date: 1997/12/10 17:53:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.1018  1997/12/10 17:53:35  milind
+ * Removed the dcd file already exists error. Now, if a dcd file already exists,
+ * it is moved to a .bak before writing new dcd file.
+ *
  * Revision 1.1017  1997/11/07 20:17:46  milind
  * Made NAMD to run on shared memory machines.
  *

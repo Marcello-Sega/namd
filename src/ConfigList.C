@@ -11,7 +11,7 @@
  *
  *	$RCSfile: ConfigList.C,v $
  *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/07/09 21:26:41 $
+ *	$Revision: 1.1005 $	$Date: 1997/12/10 17:53:34 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -41,6 +41,10 @@
  * REVISION HISTORY:
  *
  * $Log: ConfigList.C,v $
+ * Revision 1.1005  1997/12/10 17:53:34  milind
+ * Removed the dcd file already exists error. Now, if a dcd file already exists,
+ * it is moved to a .bak before writing new dcd file.
+ *
  * Revision 1.1004  1997/07/09 21:26:41  milind
  * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
  * and #endif's.
@@ -118,7 +122,7 @@
  * Initial revision
  *
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ConfigList.C,v 1.1004 1997/07/09 21:26:41 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ConfigList.C,v 1.1005 1997/12/10 17:53:34 milind Exp $";
 
 #include <iostream.h>
 #include <string.h> // for strncpy, strcasecmp
@@ -199,7 +203,7 @@ void ConfigList::add_element( char *s1, int len1, char *s2, int len2)
       tmpStrList -> next = newStrList;            // and stick it on the tail
     }
     
-    delete temps;
+    delete [] temps;
 }
 
 // open, read, parse, and close the file
@@ -386,12 +390,16 @@ main()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/07/09 21:26:41 $
+ *	$Revision: 1.1005 $	$Date: 1997/12/10 17:53:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ConfigList.C,v $
+ * Revision 1.1005  1997/12/10 17:53:34  milind
+ * Removed the dcd file already exists error. Now, if a dcd file already exists,
+ * it is moved to a .bak before writing new dcd file.
+ *
  * Revision 1.1004  1997/07/09 21:26:41  milind
  * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
  * and #endif's.
