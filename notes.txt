@@ -398,11 +398,14 @@ Your feedback will help us improve NAMD.
     to reproduce your problem. 
  4. Run once, redirecting output to a file. 
  5. Tar everything up (but not the namd2 or charmrun binaries) and
-    compress it. 
+    compress it, e.g., "tar cf mydir.tar mydir; gzip mydir.tar"
+    Please do not attach your files individually to your email message
+    as this is error prone and tedious to extract.  The only exception
+    may be the log of your run showing any error messages.
  6. Email namd@ks.uiuc.edu with: 
-    - A synopsis of the problem as the subject. 
-    - The NAMD version number the problem occurs with. 
-    - The platform and number of CPU's the problem occurs with. 
+    - A synopsis of the problem as the subject (not "HELP" or "URGENT").
+    - The NAMD version, platform and number of CPUs the problem occurs
+      with (to be very complete just copy the first 20 lines of output).
     - A description of the problematic behavior and any error messages. 
     - If the problem is consistent or random. 
     - The compressed tar file as an attachment (or a URL if it is too big). 
@@ -439,9 +442,12 @@ Unpack NAMD and matching Charm++ source code and enter directory:
   tar xf charm.tar
   cd charm
 
-Build the Charm++/Converse library:
+Build and test the Charm++/Converse library:
   ./build charm++ net-linux -O -DCMK_OPTIMIZE=1
-  cd ..
+  cd net-linux/pgms/charm++/megatest/
+  make pgm
+  ./charmrun ++local +p4 ./pgm    (also try running on multiple nodes)
+  cd ../../../../..
 
 Edit various configuration files:
   vi Make.charm  (set CHARMBASE to .rootdir/charm or full path to charm)
@@ -510,6 +516,20 @@ compiler flags or commands in the Charm++ src/arch directory.  The
 file charm/src/arch/mpi-linux/conv-mach.sh contains the definitions
 that select the mpiCC compiler for mpi-linux, while other compiler
 choices are defined by files in charm/src/arch/common/.
+
+Run make in charm/CHARMARCH/pgms/charm++/megatest/ and run the
+resulting binary "pgm" as you would run NAMD on your platform.  You
+should try running on several processors if possible.  For example:
+
+  cd net-linux-clustermatic-tcp-icc/pgms/charm++/megatest/
+  make pgm
+  ./charmrun +p16 ./pgm
+
+If any of the tests fail then you will probably have problems with
+NAMD as well.  You can continue and try building NAMD if you want,
+but when reporting problems please mention prominently that megatest
+failed, include the megatest output, and copy the Charm++ developers
+at ppl@cs.uiuc.edu on your email.
 
 Now you can run the NAMD config script to set up a build directory:
 
