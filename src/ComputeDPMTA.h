@@ -33,6 +33,7 @@ typedef struct patch_info
 
 class ComputeDPMTA : public ComputeHomePatches {
 private:
+  int local_timestep;		//  local FMA timestep
   int *slavetids;	//  PID for slave processes
   PatchInfo *patchData;	//  List containing data from patches
   PatchInfo *patchTail;	//  Tail of patch data list
@@ -57,13 +58,19 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeDPMTA.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/02/28 06:57:46 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1006 $	$Date: 1997/02/28 17:47:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.h,v $
+ * Revision 1.1006  1997/02/28 17:47:08  nealk
+ * More debugging code.
+ * Re-added "local_timestep" since "fake_seq" is some weird, nearly random
+ * number.
+ * Move some uninitialized variables to where they become initialized.
+ *
  * Revision 1.1005  1997/02/28 06:57:46  jim
  * DPMTA is now working, except for one little thing.
  * On multiple nodes, the reported energy is wrong, but the

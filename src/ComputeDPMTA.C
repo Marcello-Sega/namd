@@ -69,6 +69,18 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
     NAMD_die("Communication protocol (Converse, PVM, etc.) not initialized.");
   }
 
+  //  Set everything to 0
+  patchData = NULL;
+  patchTail = NULL;
+  numPatches = 0;
+  numDistributed = 0;
+  totalAtoms = 0;
+  fmaResults = NULL;
+  ljResults = NULL;
+  local_timestep = 0;
+
+  reduction->Register(REDUCTION_ELECT_ENERGY);
+
   //  NOTE that the theta value is hardwired to the value of 0.715
   //  as per the recommendation of the Duke developers
 
@@ -92,7 +104,8 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   }
   DebugM(1,"DPMTA configuring\n");
 
-  // only the master (node 0) needs to do this.
+  // *****************************************
+  // ONLY THE MASTER (NODE 0) NEEDS TO DO THIS:
 
   slavetids = new int[numProcs];
   if (slavetids == NULL)
@@ -149,17 +162,7 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   }
   DebugM(1,"DPMTA done PMTAinit.\n");
 
-  //  Set everything to 0
-  patchData = NULL;
-  patchTail = NULL;
-  numPatches = 0;
-  numDistributed = 0;
-  totalAtoms = 0;
-  fmaResults = NULL;
-  ljResults = NULL;
   DebugM(1,"DPMTA configured\n");
-
-  reduction->Register(REDUCTION_ELECT_ENERGY);
 }
 
 ComputeDPMTA::~ComputeDPMTA()
@@ -203,7 +206,13 @@ void ComputeDPMTA::doWork()
 
   // 0. only run when necessary
   // Skip computations if nothing to do.
-  if ( ! patchList[0].p->flags.doFullElectrostatics )
+  local_timestep++;
+  DebugM(2,"fake_seq=" << fake_seq
+	<< " timestep=" << local_timestep
+	<< " fmaFrequency=" << simParameters->fmaFrequency
+	<< "\n");
+  if ((!patchList[0].p->flags.doFullElectrostatics)
+	|| (local_timestep % simParameters->fmaFrequency != 1))
   {
     for (ap = ap.begin(); ap != ap.end(); ap++) {
       Position *x = (*ap).positionBox->open();
@@ -234,9 +243,8 @@ void ComputeDPMTA::doWork()
 	NAMD_die("DPMTA Failed to allocate memory.");
 	}
 
-  i=0;
   BigReal unitFactor = sqrt(COLOUMB * ComputeNonbondedUtil::dielectric_1);
-  for (ap = ap.begin(); ap != ap.end(); ap++)
+  for (i=0, ap = ap.begin(); ap != ap.end(); ap++)
   {
     (*ap).x = (*ap).positionBox->open();
     (*ap).a = (*ap).atomBox->open();
@@ -261,6 +269,8 @@ void ComputeDPMTA::doWork()
     (*ap).positionBox->close(&(*ap).x);
     (*ap).atomBox->close(&(*ap).a);
   } 
+
+  DebugM(1,"DPMTA doWork() there are " << i << " atoms in this node.\n");
 
   // 3. (run DPMTA) compute the forces
   if ( PMTAforce(i, particle_list, fmaResults, NULL) < 0 )
