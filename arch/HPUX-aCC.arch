@@ -2,9 +2,9 @@ NAMD_ARCH = HPUX
 CHARMARCH = net-hp-acc
 
 CXX = aCC
-CXXOPTS = -O +DAportable
+CXXOPTS = -O +Oaggressive +DAportable
 CXXTHREADOPTS = $(CXXOPTS)
 CXXSIMPARAMOPTS = $(CXXOPTS)
 CC = cc -Aa -Wp,-H16000 -D_HPUX_SOURCE
-COPTS = -O +DAportable
+COPTS = -O +Oaggressive +DAportable
 
