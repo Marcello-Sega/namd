@@ -6,110 +6,6 @@
 %								  	   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% RCS INFORMATION:
-%
-%       $RCSfile: ug_intro.tex,v $
-%       $Author: jim $        $Locker:  $                $State: Exp $
-%       $Revision: 1.19 $      $Date: 2002/04/16 22:56:11 $
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% DESCRIPTION:
-%	This is the introduction to the namd users guide
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% REVISION HISTORY:
-%
-% $Log: ug_intro.tex,v $
-% Revision 1.19  2002/04/16 22:56:11  jim
-% Updated version to 2.5b1.
-%
-% Revision 1.18  2002/02/22 16:12:45  jim
-% Added new features.
-%
-% Revision 1.17  2002/01/23 19:45:04  jim
-% Changes for version 2.4b1.  Only need to change version in one place now.
-%
-% Revision 1.16  2001/08/02 14:36:40  jim
-% Added AMBER file compatibility to list of new features.
-%
-% Revision 1.15  2001/02/23 02:03:04  jim
-% Added documentation on psfgen.
-%
-% Revision 1.14  2001/02/23 00:52:00  jim
-% Many updates and cleanups for 2.3.
-%
-% Revision 1.13  2000/09/29 20:41:15  jim
-% Updated many things for 2.2.
-%
-% Revision 1.12  2000/09/18 19:52:27  jim
-% updated
-%
-% Revision 1.11  2000/09/05 19:40:48  jim
-% Updated for 2.2b1.
-%
-% Revision 1.10  1999/10/06 21:06:00  jim
-% Various doc updates for 2.1.
-%
-% Revision 1.9  1999/03/18 02:16:49  jim
-% Spelling fixes.
-%
-% Revision 1.8  1999/03/18 01:49:51  jim
-% Many changes, now mostly ready for 2.0 release.
-%
-% Revision 1.7  1999/03/09 20:58:47  jim
-% Changed verb to tt in most places to help out latex2html.
-%
-% Revision 1.6  1999/02/23 02:01:13  jim
-% Small tweaks.
-%
-% Revision 1.5  1999/02/03 20:44:59  jim
-% Fixed several configuration options.
-%
-% Revision 1.4  1998/03/06 21:06:31  jim
-% Put temperature couple back in.
-%
-% Revision 1.3  1998/03/06 11:03:29  jim
-% Added nonbondedFreq parameter.
-%
-% Revision 1.2  1998/03/06 09:08:10  jim
-% Documented new features in 2.0.  Added authors.  Still needs converse docs.
-%
-% Revision 1.1  1998/01/05 21:12:32  dhardy
-% user guide, first draft
-%
-% Revision 1.10  1997/08/07 15:54:32  dhardy
-% edit presentation style
-%
-% Revision 1.9  1997/06/19 19:26:12  nealk
-% Minor text corrections.
-%
-% Revision 1.8  1996/06/06 18:02:01  dalke
-% fixed typos for 1.4 release
-%
-% Revision 1.7  1996/05/15  19:21:07  jean
-% ready (I hope) for 1.4 beta release
-%
-% Revision 1.6  1996/02/04 20:34:02  jean
-% Various grammer, spelling, punctuation fixes.
-%
-% Revision 1.5  1995/06/30 15:42:44  gursoy
-% fixed references
-%
-% Revision 1.4  95/06/28  23:55:15  23:55:15  gursoy (Attila Gursoy)
-% worked on teh format a little bit
-% 
-% Revision 1.3  95/06/26  15:52:31  15:52:31  gursoy (Attila Gursoy)
-%  load balancing paragraph still needs some work
-% 
-% Revision 1.2  95/06/22  17:09:02  17:09:02  gursoy (Attila Gursoy)
-% First attempt for introduction. still working on it.
-% 
-% Revision 1.1  95/06/21  16:28:13  16:28:13  nelson (Mark T. Nelson)
-% Initial revision
-% 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 
 \section{Introduction}
 \label{section:intro}
@@ -140,25 +36,37 @@ at {\tt namd@ks.uiuc.edu}.
 
 \subsection{New features in version \NAMDVER}
 
+\subsubsection*{Improved Parallel Scaling and Serial Performance}
+
+Load balancer and communication library improvements that allow
+NAMD to scale to 1000 or more processors on PSC's Lemieux are
+included in this release.  For more modest Linux clusters we now
+provide TCP versions that outperform traditional UDP for gigabit
+ethernet and all released Linux binaries are built with the Intel
+compiler for better performance on Pentium 4 and Xeon processors
+and no penalty for Pentium III or Athlon processors.  Finally,
+the inner loop has been optimized to incorporate pairlists that
+are saved between steps and automatically adjusted.  Pairlists
+can be disabled to save memory via the pairlistMinProcs option.
+
+\subsubsection*{Trajectory Reading and Interaction Energy Analysis}
+
+A new ``coorfile'' command allows Tcl scripts to read coordinates
+from DCD files, allowing energies and forces to be evaluated for
+a saved trajectory.  This is most usefully combined with the new
+pair interaction feature, allowing the isolation of forces between
+two specified groups of atoms, or within a single group.
+
 \subsubsection*{Improved Constant Pressure Simulation and Coordinate Wrapping}
 
 Average pressure is calculated for steps between energy outputs.
 Berendsen method uses average rather then instantaneous pressure.
+Pressure contributions due to steering forces handled consistently.
 Ratio of first two basis vectors can be fixed for flexible cells.
-Any contiguous fragment can be wrapped to the periodic cell on
+Any connected fragment can be wrapped to the periodic cell on
 output, rather than only wrapping water molecules.  Coordinates
 can be wrapped to the true nearest image for hexagonal or similar
-shaped periodic cells.
-
-\subsubsection*{Additional Parameters Can Be Changed During a Simulation Script}
-
-Fixed atoms can be turned off during a run.  Most pressure and
-temperature control parameters can now be changed as well.
-
-\subsubsection*{Fixes to AMBER parm File Reader for AMBER 7 or Large Molecules}
-
-Fixed problems reading parm files containing more than 33,333 atoms.
-Also added changes to read new format parm files from AMBER 7.
+highly faceted periodic cells.
 
 
 \subsection{\NAMD\ and molecular dynamics simulations}

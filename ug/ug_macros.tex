@@ -6,49 +6,6 @@
 %								  	   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% RCS INFORMATION:
-%
-%       $RCSfile: ug_macros.tex,v $
-%       $Author: jim $        $Locker:  $                $State: Exp $
-%       $Revision: 1.4 $      $Date: 2001/05/08 20:57:31 $
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% DESCRIPTION:
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% REVISION HISTORY:
-%
-% $Log: ug_macros.tex,v $
-% Revision 1.4  2001/05/08 20:57:31  jim
-% More documentation for psfgen.
-%
-% Revision 1.3  1999/02/26 06:57:17  jim
-% Changes to make latex2html work.
-%
-% Revision 1.2  1999/02/23 02:16:20  jim
-% Switched verb to tt in macros to please latex2html.
-%
-% Revision 1.1  1998/01/05 21:12:34  dhardy
-% user guide, first draft
-%
-% Revision 1.5  1997/08/07 15:54:32  dhardy
-% change title references to User Guide and Programmer's Guide
-%
-% Revision 1.4  1996/05/15 19:21:07  jean
-% ready (I hope) for 1.4 beta release
-%
-% Revision 1.3  1996/03/24 21:38:50  jean
-% fix tex syntax error
-%
-% Revision 1.2  1996/03/10 20:50:40  jean
-% Users -> Users' (possessive)
-%
-% Revision 1.1  1995/06/19 16:08:16  nelson
-% Initial revision
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 \newcommand{\DOCTITLE} {User's Guide}
 \newcommand{\DOCDESC} {%
 The \NAMD\ {\em\DOCTITLE\/} describes how to run and use the 
@@ -79,6 +36,7 @@ machines and in parallel.}
 \newcommand{\NAMDCONF}[4]{%
 %  \addcontentsline{toc}{subparagraph}{#1}%
   {\bf \tt #1 } $<$ #2 $>$ \\%
+  \index{#1}
   {\bf Acceptable Values: } #3 \\%
   {\bf Description: } #4%
 }
@@ -86,6 +44,7 @@ machines and in parallel.}
 \newcommand{\NAMDCONFWDEF}[5]{%
 %  \addcontentsline{toc}{subparagraph}{#1}%
   {\bf \tt #1 } $<$ #2 $>$ \\%
+  \index{#1}
   {\bf Acceptable Values: } #3 \\%
   {\bf Default Value: } #4 \\%
   {\bf Description: } #5%

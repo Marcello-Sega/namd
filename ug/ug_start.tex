@@ -96,25 +96,25 @@ When compiled with Tcl (all released binaries) the config file
 is parsed by Tcl in a fully backwards compatible manner with the
 added bonus that any Tcl command may also be used.  This alone allows:
 \begin{itemize}
- \item the "source" command to include other files (works w/o Tcl too!),
- \item the "print" command to display messages ("puts" is broken, sorry),
- \item environment variables through the env array ("\$env(USER)"), and
- \item user-defined variables ("set base sim23", "dcdfile \${base}.dcd").
+ \item the ``source'' command to include other files (works w/o Tcl too!),
+ \item the ``print'' command to display messages (``puts'' is broken, sorry),
+ \item environment variables through the env array (``\$env(USER)''), and
+ \item user-defined variables (``set base sim23'', ``dcdfile \${base}.dcd'').
 \end{itemize}
 
 Additional features include:
 \begin{itemize}
- \item The "callback" command takes a 2-parameter Tcl procedure which
+ \item The ``callback'' command takes a 2-parameter Tcl procedure which
     is then called with a list of labels and a list of values during
     every timestep, allowing analysis, formatting, whatever.
- \item The "run" command takes a number of steps to run (overriding the
+ \item The ``run'' command takes a number of steps to run (overriding the
     now optional numsteps parameter, which defaults to 0) and can be
-    called repeatedly.  You can "run 0" just to get energies.
- \item The "minimize" command is similar to "run" and performs
+    called repeatedly.  You can ``run 0'' just to get energies.
+ \item The ``minimize'' command is similar to ``run'' and performs
     minimization for the specified number of force evaluations.
- \item The "output" command takes an output file basename and causes
+ \item The ``output'' command takes an output file basename and causes
     .coor, .vel, and .xsc files to be written with that name.
- \item Between "run" commands the reassignTemp, rescaleTemp, and
+ \item Between ``run'' commands the reassignTemp, rescaleTemp, and
     langevinTemp parameters can be changed to allow simulated
     annealing protocols within a single config file.
     The useGroupPressure, useFlexibleCell, useConstantArea, useConstantRatio,
@@ -127,25 +127,25 @@ Additional features include:
     preserve macromolecular conformation during minimization and
     equilibration (fixedAtoms may only be disabled, and requires that
     fixedAtomsForces is enabled to do this).
- \item The "checkpoint" and "revert" commands (no arguments) allow
+ \item The ``checkpoint'' and ``revert'' commands (no arguments) allow
     a scripted simulation to save and restore to a prior state.
- \item The "reinitvels" command reinitializes velocities to a
+ \item The ``reinitvels'' command reinitializes velocities to a
     random distribution based on the given temperature.
- \item The "rescalevels" command rescales velocities by
+ \item The ``rescalevels'' command rescales velocities by
     the given factor.
- \item The "measure" command allows user-programmed calculations to
+ \item The ``measure'' command allows user-programmed calculations to
     be executed in order to facilitate automated methods.  (For
     example, to revert or change a parameter.)  A number of measure
     commands are included in the NAMD binary; the module has been designed
     to make it easy for users to add additional measure commands.  
- \item The ``coorfile" command allows NAMD to perform force and energy
-    analysis on trajectory files.  ``coorfile open dcd {\tt filename}" opens
-    the specified DCD file for reading.  ``coorfile read" reads the next
+ \item The ``coorfile'' command allows NAMD to perform force and energy
+    analysis on trajectory files.  ``coorfile open dcd {\tt filename}'' opens
+    the specified DCD file for reading.  ``coorfile read'' reads the next
     frame in the opened DCD file, replacing NAMD's atom coordinates with the
     coordinates in the frame, and returns 0 if successful or -1 if  
-    end-of-file was reached.  ``coorfile skip" skips past one frame in the
+    end-of-file was reached.  ``coorfile skip'' skips past one frame in the
     DCD file; this is significantly faster than reading coordinates and 
-    throwing them away.  ``coorfile close" closes the file.   
+    throwing them away.  ``coorfile close'' closes the file.   
 
     Force and energy analysis are especially useful in the context of 
     pair interaction calculations; see Sec.~\ref{section:pairinteraction}
@@ -156,11 +156,11 @@ Please note that while NAMD has traditionally allowed comments to be
 started by a \# appearing anywhere on a line, Tcl only allows comments
 to appear where a new statement could begin.  With Tcl config file
 parsing enabled (all shipped binaries) both NAMD and Tcl comments are
-allowed before the first "run" command.  At this point only pure Tcl
-syntax is allowed.  In addition, the ";\#" idiom for Tcl comments will
+allowed before the first ``run'' command.  At this point only pure Tcl
+syntax is allowed.  In addition, the ``;\#'' idiom for Tcl comments will
 only work with Tcl enabled.  NAMD has also traditionally allowed
-parameters to be specified as "param=value".  This is supported, but
-only before the first "run" command.  Some examples:
+parameters to be specified as ``param=value''.  This is supported, but
+only before the first ``run'' command.  Some examples:
 
 \begin{verbatim}
 # this is my config file                            <- OK
@@ -171,8 +171,8 @@ reassignTemp 40 ; # temp to reset velocities to     <- ";" is required
 \end{verbatim}
 
 NAMD has also traditionally allowed parameters to be specified as
-"param=value" as well as "param value".  This is supported, but only
-before the first "run" command.  For an easy life, use "param value".
+``param=value'' as well as ``param value''.  This is supported, but only
+before the first ``run'' command.  For an easy life, use ``param value''.
 
 \subsubsection{Required \NAMD\ configuration parameters}
 \label{section:requiredparams}
