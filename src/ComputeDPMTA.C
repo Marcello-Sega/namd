@@ -345,7 +345,6 @@ void ComputeDPMTA::doWork()
     rescaleFactor.x = initLattice.x / newLattice.x;
     rescaleFactor.y = initLattice.y / newLattice.y;
     rescaleFactor.z = initLattice.z / newLattice.z;
-    iout << iINFO << "FMA rescale factor " << rescaleFactor << "\n" << endi;
     DebugM(2,"Rescale factor = " << initLattice << "/" << newLattice
 		<< " = " << rescaleFactor << "\n");
     DebugM(2,"boxcenter = " << boxcenter << "\n");
@@ -468,12 +467,16 @@ void ComputeDPMTA::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1041 $	$Date: 1997/03/27 16:04:49 $
+ *	$Revision: 1.1042 $	$Date: 1997/03/27 17:08:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.C,v $
+ * Revision 1.1042  1997/03/27 17:08:30  nealk
+ * Added hydrogen groupings.  Now configuration parameter "splitPatch" determines
+ * atom-into-patch distribution.
+ *
  * Revision 1.1041  1997/03/27 16:04:49  nealk
  * Removed init() -- no longer necessary.  Thanks Jim!
  * Turned off debugging.

@@ -60,7 +60,10 @@ typedef int  MTSChoices;
 #define LDBSTRAT_RBISEC  3
 #define LDBSTRAT_OTHER  99
 
-
+// The following definitions are used to distinguish between patch-splitting
+// strategies
+#define SPLIT_PATCH_POSITION	0	// atom position determines patch
+#define SPLIT_PATCH_HYDROGEN	1	// hydrogen groups are not broken up
 
 // The following definitions are use to distinguish the range of rigid
 // bond calculations: none, all bonds to hydrogen, or only water
@@ -237,6 +240,8 @@ public:
 	int longSplitting;		//  What electrostatic splitting 	
 					//  to use
 
+	int splitPatch;			// How are patches determined?
+
         int rigidBonds;                 // what type of rigid bonds to hydrogens
                                         // none, all, or only water
 
@@ -298,13 +303,17 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/03/27 08:04:26 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1007 $	$Date: 1997/03/27 17:08:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1007  1997/03/27 17:08:32  nealk
+ * Added hydrogen groupings.  Now configuration parameter "splitPatch" determines
+ * atom-into-patch distribution.
+ *
  * Revision 1.1006  1997/03/27 08:04:26  jim
  * Reworked Lattice to keep center of cell fixed during rescaling.
  *

@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/03/27 08:04:24 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1010 $	$Date: 1997/03/27 17:08:31 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,10 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1010  1997/03/27 17:08:31  nealk
+ * Added hydrogen groupings.  Now configuration parameter "splitPatch" determines
+ * atom-into-patch distribution.
+ *
  * Revision 1.1009  1997/03/27 08:04:24  jim
  * Reworked Lattice to keep center of cell fixed during rescaling.
  *
@@ -344,7 +348,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1009 1997/03/27 08:04:24 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1010 1997/03/27 17:08:31 nealk Exp $";
 
 
 #include "ckdefs.h"
@@ -506,6 +510,9 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 		PARSE_STRING);
 
    opts.optional("main", "longSplitting", "Long range force splitting option",
+		PARSE_STRING);
+
+   opts.optional("main", "splitPatch", "Atom into patch splitting option",
 		PARSE_STRING);
 
    opts.optional("main", "cellBasisVector1", "Basis vector for periodic cell",
@@ -1076,6 +1083,28 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 	}
    }
 
+   //  Get the atom-into-patch splitting specification
+   if (!opts.defined("splitPatch"))
+   {
+	splitPatch = SPLIT_PATCH_POSITION;
+   }
+   else
+   {
+	opts.get("splitPatch", s);
+	if (!strcasecmp(s, "position"))
+		splitPatch = SPLIT_PATCH_POSITION;
+	else if (!strcasecmp(s,"hydrogen"))
+		splitPatch = SPLIT_PATCH_HYDROGEN;
+	else
+	{
+		char err_msg[129];
+		sprintf(err_msg, 
+		   "Illegal value '%s' for 'splitPatch' in configuration file", 
+		   s);
+		NAMD_die(err_msg);
+	}
+   }
+
    //  Get the long range force splitting specification
    if (!opts.defined("longSplitting"))
    {
@@ -1085,17 +1114,11 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    {
 	opts.get("longSplitting", s);
 	if (!strcasecmp(s, "sharp"))
-	{
 		longSplitting = SHARP;
-	}
 	else if (!strcasecmp(s, "xplor"))
-	{
 		longSplitting = XPLOR;
-	}
 	else if (!strcasecmp(s, "c1"))
-	{
 		longSplitting = C1;
-	}
 	else
 	{
 		char err_msg[129];
@@ -2003,17 +2026,16 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    }
 
    if (longSplitting == SHARP)
-   {
 	iout << iINFO << "SHARP SPLITTING OF LONG RANGE ELECTROSTATICS\n";
-   }
    else if (longSplitting == XPLOR)
-   {
 	iout << iINFO << "XPLOR SPLITTING OF LONG RANGE ELECTROSTATICS\n";
-   }
    else if (longSplitting == C1)
-   {
 	iout << iINFO << "C1 SPLITTING OF LONG RANGE ELECTROSTATICS\n";
-   }
+
+   if (splitPatch == SPLIT_PATCH_POSITION)
+	iout << iINFO << "PLACING ATOMS IN PATCHES BY POSITION\n";
+   else if (splitPatch == SPLIT_PATCH_HYDROGEN)
+	iout << iINFO << "PLACING ATOMS IN PATCHES BY HYDROGEN GROUPS\n";
 
    if (rigidBonds == RIGID_ALL)
    {
@@ -2185,6 +2207,7 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
 	msg->put(allForceDcdFilename).put(allForceDcdFrequency);
 	msg->put(MTSAlgorithm).put(sphericalCenterCOM).put(&sphericalCenter);
 	msg->put(longSplitting).put(tCoupleOn).put(tCoupleTemp);
+	msg->put(splitPatch);
 	msg->put(fmaFrequency).put(fmaTheta);
         msg->put(rigidBonds);
         msg->put(rigidTol);
@@ -2307,6 +2330,7 @@ void SimParameters::receive_SimParameters(Message *msg)
 	msg->get(longSplitting);
 	msg->get(tCoupleOn);
 	msg->get(tCoupleTemp);
+	msg->get(splitPatch);
 	msg->get(fmaFrequency);
 	msg->get(fmaTheta);
 	msg->get(rigidBonds);
@@ -2365,12 +2389,16 @@ void SimParameters::receive_SimParameters(Message *msg)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/03/27 08:04:24 $
+ *	$Revision: 1.1010 $	$Date: 1997/03/27 17:08:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1010  1997/03/27 17:08:31  nealk
+ * Added hydrogen groupings.  Now configuration parameter "splitPatch" determines
+ * atom-into-patch distribution.
+ *
  * Revision 1.1009  1997/03/27 08:04:24  jim
  * Reworked Lattice to keep center of cell fixed during rescaling.
  *

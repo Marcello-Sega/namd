@@ -50,7 +50,6 @@ private:
 	Atom *atoms;		//  Array of atom structures
 	AtomNameInfo *atomNames;//  Array of atom name info.  Only maintained
 				//  on node 0 for VMD interface
-	HydrogenGroup hydrogenGroup;	// indexes of "atoms" sorted by hydrogen groups
 	Bond *bonds;		//  Array of bond structures
 	Angle *angles;		//  Array of angle structures
 	Dihedral *dihedrals;	//  Array of dihedral structures
@@ -135,6 +134,8 @@ public:
 	int numMultipleDihedrals; 
 	//  Number of impropers with multiple periodicity
 	int numMultipleImpropers; 
+	// indexes of "atoms" sorted by hydrogen groups
+	HydrogenGroup hydrogenGroup;
 
 	Molecule(SimParameters *, Parameters *param=NULL, char *filename=NULL);
 	~Molecule();		//  Destructor
@@ -339,12 +340,16 @@ public:
  *
  *	$RCSfile: Molecule.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/03/19 18:10:15 $
+ *	$Revision: 1.1008 $	$Date: 1997/03/27 17:08:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.1008  1997/03/27 17:08:30  nealk
+ * Added hydrogen groupings.  Now configuration parameter "splitPatch" determines
+ * atom-into-patch distribution.
+ *
  * Revision 1.1007  1997/03/19 18:10:15  nealk
  * Added sorted hydrogen group list to molecule.
  *

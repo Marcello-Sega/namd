@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1017 1997/03/27 08:04:27 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1018 1997/03/27 17:08:33 nealk Exp $";
 
 #include <stdio.h>
 
@@ -129,15 +129,43 @@ void WorkDistrib::createHomePatches(void)
 
   Lattice lattice = params->lattice;
 
-  for(i=0; i < numAtoms; i++) {
-    if ( ! ( i % 1000 ) ) {
-      DebugM(4,"Assigned " << i << " atoms to patches so far.\n");
+  if (params->splitPatch == SPLIT_PATCH_HYDROGEN)
+    {
+    // split atoms into patched based on helix-group and position
+    int aid, pid;
+    for(i=0; i < numAtoms; i++)
+      {
+      if ( ! ( i % 1000 ) )
+	{
+        DebugM(4,"Assigned " << i << " atoms to patches so far.\n");
+        }
+      // Assign atoms to patches without splitting hydrogen groups.
+      // We know that the hydrogenGroup array is sorted with group parents
+      // listed first.  Thus, only change the pid if an atom is a group parent.
+      aid = molecule->hydrogenGroup[i].atomID;
+      if (molecule->hydrogenGroup[i].isGP)
+	pid = patchMap->assignToPatch(positions[aid]);
+      // else: don't change pid
+      atomIDs[pid].add(aid);
+      atomPositions[pid].add(positions[aid]);
+      atomVelocities[pid].add(velocities[aid]);
+      }
     }
-    int pid = patchMap->assignToPatch(positions[i]);
-    atomIDs[pid].add(i);
-    atomPositions[pid].add(positions[i]);
-    atomVelocities[pid].add(velocities[i]);
-  }
+  else
+    {
+    // split atoms into patched based on position
+    for(i=0; i < numAtoms; i++)
+      {
+      if ( ! ( i % 1000 ) )
+	{
+	DebugM(4,"Assigned " << i << " atoms to patches so far.\n");
+	}
+      int pid = patchMap->assignToPatch(positions[i]);
+      atomIDs[pid].add(i);
+      atomPositions[pid].add(positions[i]);
+      atomVelocities[pid].add(velocities[i]);
+      }
+    }
 
   delete [] positions;
   delete [] velocities;
@@ -774,13 +802,17 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1997/03/27 08:04:27 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1018 $	$Date: 1997/03/27 17:08:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1018  1997/03/27 17:08:33  nealk
+ * Added hydrogen groupings.  Now configuration parameter "splitPatch" determines
+ * atom-into-patch distribution.
+ *
  * Revision 1.1017  1997/03/27 08:04:27  jim
  * Reworked Lattice to keep center of cell fixed during rescaling.
  *
