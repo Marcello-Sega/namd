@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: ConfigList.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/06 20:38:38 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1996/11/11 19:54:09 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -41,6 +41,9 @@
  * REVISION HISTORY:
  *
  * $Log: ConfigList.C,v $
+ * Revision 1.2  1996/11/11 19:54:09  nealk
+ * Modified to use InfoStream instead of Inform.
+ *
  * Revision 1.1  1996/08/06 20:38:38  ari
  * Initial revision
  *
@@ -85,13 +88,13 @@
  * Initial revision
  *
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ConfigList.C,v 1.1 1996/08/06 20:38:38 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ConfigList.C,v 1.2 1996/11/11 19:54:09 nealk Exp $";
 
 #include <iostream.h>
 #include <string.h> // for strncpy, strcasecmp
 #include <ctype.h>   // for isspace
 #include <stdio.h>   // Yes, I do use stdio
-#include "Inform.h"
+#include "InfoStream.h"
 #include "ConfigList.h"
 #include "common.h"
 
@@ -195,8 +198,8 @@ ConfigList::ConfigList(const char *filename)
     infile = stdin;
   } else {
     if ( (infile = fopen(filename, "r")) == NULL ) {
-        namdWarn << "Unable to open configuration file '" 
-                 << filename << "'.";
+        iout << iWARN << "Unable to open configuration file '" 
+                 << filename << "'." << endi;
         isokay = FALSE;
         return;
     }
@@ -234,9 +237,9 @@ ConfigList::ConfigList(const char *filename)
       *s = 0;
      else
       if (*s != '#') {       // then there was an overflow
-        namdWarn << "Line " << linenumber << " of configuration file "
+        iout << iWARN << "Line " << linenumber << " of configuration file "
                  << filename << " contains more than 999 characters."
-                 << "  Excess characters will be ignored.";
+                 << "  Excess characters will be ignored." << endi;
       } else {
         *s = 0;  // delete the '#' character
       }
@@ -246,9 +249,9 @@ ConfigList::ConfigList(const char *filename)
 //   line, then I will say that there is a problem.
     if (!namestart || !nameend || !datastart || !dataend) {
       if (!namestart && datastart || namestart && !datastart) {// was some data
-        namdWarn << "Couldn't parse line " << linenumber << " in "
+        iout << iWARN << "Couldn't parse line " << linenumber << " in "
                  << "configuration file " << filename << ".  The line was: "
-                 << buf;
+                 << buf << endi;
       }
       continue;  // which ever the case, go to the next line
     }

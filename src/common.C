@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: common.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/08/15 20:32:14 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.3 $	$Date: 1996/11/11 19:54:09 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -22,6 +22,9 @@
  * REVISION HISTORY:
  *
  * $Log: common.C,v $
+ * Revision 1.3  1996/11/11 19:54:09  nealk
+ * Modified to use InfoStream instead of Inform.
+ *
  * Revision 1.2  1996/08/15 20:32:14  brunner
  * Made NamdDIE use CPrintf
  *
@@ -92,7 +95,7 @@
  * Removed NAMD_warn; using Inform objects now to report information.
  * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.2 1996/08/15 20:32:14 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.3 1996/11/11 19:54:09 nealk Exp $";
 
 #include "chare.h"
 #include "ckdefs.h"
@@ -100,7 +103,6 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 
 
 #include "common.h"
 #include "Communicate.h"
-#include "Inform.h"
 #include "SimParameters.h"
 
 //  Provide alternate new and delete operators if the MTS fast allocator is being

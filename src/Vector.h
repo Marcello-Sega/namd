@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Vector.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/11/04 19:44:42 $
+ *	$Revision: 1.3 $	$Date: 1996/11/11 19:54:09 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: Vector.h,v $
+ * Revision 1.3  1996/11/11 19:54:09  nealk
+ * Modified to use InfoStream instead of Inform.
+ *
  * Revision 1.2  1996/11/04 19:44:42  nealk
  * Replaced old vector.h with new one.
  *
@@ -85,7 +88,7 @@
 #include <math.h>
 #include <stdio.h>
 #include "common.h"
-#include "Inform.h"
+#include "InfoStream.h"
 
 class Vector {
    public:
@@ -245,8 +248,8 @@ class Vector {
        return strm;
      }
 
-     // print out to Inform object
-     friend Inform& operator<<(Inform& strm, const Vector &v1) {
+     // print out to infostream object
+     friend infostream& operator<<(infostream& strm, const Vector &v1) {
        strm << "( "<< v1.x << ", " << v1.y << ", " << v1.z << ")";
        return strm;
      }

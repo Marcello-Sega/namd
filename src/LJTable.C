@@ -9,11 +9,11 @@
 /*
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/LJTable.C,v 1.3 1996/11/05 04:59:56 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/LJTable.C,v 1.4 1996/11/11 19:54:09 nealk Exp $";
 #include "LJTable.h"
 #include "Node.h"
 #include "Parameters.h"
-#include "Inform.h"
+#include "InfoStream.h"
 
 LJTable *LJTable::_instance = 0;
 
@@ -30,7 +30,7 @@ LJTable::LJTable()
   table_dim = Node::Object()->parameters->get_num_vdw_params();
   half_table_sz = table_dim * table_dim;
 
-  namdInfo << "Allocating LJ Table: size = " << table_dim << "\n" << sendmsg;
+  iout << iINFO << "Allocating LJ Table: size = " << table_dim << "\n" << endi;
   
   table = new TableEntry[half_table_sz * 2];
 
@@ -45,7 +45,7 @@ LJTable::LJTable()
       *curji = *curij;
       *(curji + half_table_sz) = *(curij + half_table_sz);
     }
-  namdInfo << "LJ Table done\n" << sendmsg;
+  iout << iINFO << "LJ Table done\n" << endi;
 }
 
 //----------------------------------------------------------------------  
@@ -119,13 +119,16 @@ void LJTable::compute_vdw_params(int i, int j,
  * RCS INFORMATION:
  *
  *	$RCSfile: LJTable.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/11/05 04:59:56 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.4 $	$Date: 1996/11/11 19:54:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LJTable.C,v $
+ * Revision 1.4  1996/11/11 19:54:09  nealk
+ * Modified to use InfoStream instead of Inform.
+ *
  * Revision 1.3  1996/11/05 04:59:56  jim
  * Added exclcut2 to table.
  *

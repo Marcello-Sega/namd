@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: Parameters.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/10/31 20:42:40 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.5 $	$Date: 1996/11/11 19:54:09 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -25,6 +25,9 @@
  * REVISION HISTORY:
  *
  * $Log: Parameters.C,v $
+ * Revision 1.5  1996/11/11 19:54:09  nealk
+ * Modified to use InfoStream instead of Inform.
+ *
  * Revision 1.4  1996/10/31 20:42:40  jim
  * small changes to support LJTable
  *
@@ -85,14 +88,14 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Parameters.C,v 1.4 1996/10/31 20:42:40 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Parameters.C,v 1.5 1996/11/11 19:54:09 nealk Exp $";
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 #include "Parameters.h"
-#include "Inform.h"
+#include "InfoStream.h"
 #include "Communicate.h"
 
 typedef Real *RealPtr;
@@ -549,14 +552,14 @@ struct bond_params *Parameters::add_to_bond_tree(struct bond_params *new_node,
 			/*  We have a duplicate.  So print out a warning*/
 			/*  message.  Then assign the new values to the */
 			/*  tree and free the new_node			*/
-			namdWarn << "DUPLICATE BOND ENTRY FOR "
+			iout << iWARN << "DUPLICATE BOND ENTRY FOR "
 			  << new_node->atom1name << "-"
 			  << new_node->atom2name
 			  << "\nPREVIOUS VALUES  k=" << tree->forceconstant
 			  << "  x0=" << tree->distance
 			  << "\n   USING VALUES  k=" << new_node->forceconstant
 			  << "  x0=" << new_node->distance
-			  << sendmsg;
+			  << endi;
 
 			tree->forceconstant=new_node->forceconstant;
 			tree->distance=new_node->distance;
@@ -724,7 +727,7 @@ struct angle_params *Parameters::add_to_angle_tree(struct angle_params *new_node
 				/*  is a duplicate.  Print a warning    */
 				/*  message, replace the current values,*/
 				/*  and free the new node		*/
-				namdWarn << "DUPLICATE ANGLE ENTRY FOR "
+				iout << iWARN << "DUPLICATE ANGLE ENTRY FOR "
 				  << new_node->atom1name << "-"
 				  << new_node->atom2name << "-"
 				  << new_node->atom3name
@@ -738,7 +741,7 @@ struct angle_params *Parameters::add_to_angle_tree(struct angle_params *new_node
 				  << new_node->angle
 				  << new_node->angle << " k_ub="
 				  << new_node->k_ub << " r_ub="
-				  << sendmsg;
+				  << endi;
 
 				tree->forceconstant=new_node->forceconstant;
 				tree->angle=new_node->angle;
@@ -961,7 +964,7 @@ void Parameters::add_to_dihedral_list(
 		       (strcasecmp(new_node->atom1name, ptr->atom4name) == 0) ) )
 		{
 			/*  Found a duplicate				*/
-			namdWarn << "DUPLICATE DIHEDRAL ENTRY FOR "
+			iout << iWARN << "DUPLICATE DIHEDRAL ENTRY FOR "
 			  << ptr->atom1name << "-"
 			  << ptr->atom2name << "-"
 			  << ptr->atom3name << "-"
@@ -970,21 +973,21 @@ void Parameters::add_to_dihedral_list(
 			  
 			for (i=0; i<ptr->multiplicity; i++)
 			{
-			  namdWarn << " k=" << ptr->values[i].k
+			  iout << iWARN << " k=" << ptr->values[i].k
 			           << "  n=" << ptr->values[i].n
 			           << "  delta=" << ptr->values[i].delta;
 			}
 
-			namdWarn << "\nUSING VALUES MULTIPLICITY " << new_node->multiplicity << "\n";
+			iout << iWARN << "\nUSING VALUES MULTIPLICITY " << new_node->multiplicity << "\n";
 
 			for (i=0; i<new_node->multiplicity; i++)
 			{
-			  namdWarn << " k=" << new_node->values[i].k
+			  iout << iWARN << " k=" << new_node->values[i].k
 			           << "  n=" << new_node->values[i].n
 			           << "  delta=" << new_node->values[i].delta;
 			}
 
-			namdWarn << sendmsg;
+			iout << iWARN << endi;
 
 			ptr->multiplicity = new_node->multiplicity;
 
@@ -1224,7 +1227,7 @@ void Parameters::add_to_improper_list(struct improper_params *new_node)
 		       (strcasecmp(new_node->atom1name, ptr->atom4name) == 0) ) )
 		{
 			/*  Found a duplicate				*/
-			namdWarn << "DUPLICATE IMPROPER DIHEDRAL ENTRY FOR "
+			iout << iWARN << "DUPLICATE IMPROPER DIHEDRAL ENTRY FOR "
 			  << ptr->atom1name << "-"
 			  << ptr->atom2name << "-"
 			  << ptr->atom3name << "-"
@@ -1233,21 +1236,21 @@ void Parameters::add_to_improper_list(struct improper_params *new_node)
 			  
 			for (i=0; i<ptr->multiplicity; i++)
 			{
-			  namdWarn << " k=" << ptr->values[i].k
+			  iout << iWARN << " k=" << ptr->values[i].k
 			           << "  n=" << ptr->values[i].n
 			           << "  delta=" << ptr->values[i].delta;
 			}
 
-			namdWarn << "\nUSING VALUES MULTIPLICITY " << new_node->multiplicity << "\n";
+			iout << iWARN << "\nUSING VALUES MULTIPLICITY " << new_node->multiplicity << "\n";
 
 			for (i=0; i<new_node->multiplicity; i++)
 			{
-			  namdWarn << " k=" << new_node->values[i].k
+			  iout << iWARN << " k=" << new_node->values[i].k
 			           << "  n=" << new_node->values[i].n
 			           << "  delta=" << new_node->values[i].delta;
 			}
 
-			namdWarn << sendmsg;
+			iout << iWARN << endi;
 
 			ptr->multiplicity = new_node->multiplicity;
 
@@ -1390,7 +1393,7 @@ struct vdw_params *Parameters::add_to_vdw_tree(struct vdw_params *new_node,
 		/*  We have a duplicate.  So print out a warning 	*/
 		/*  message, copy the new values into the current node  */
 		/*  of the tree, and then free the new_node		*/
-		namdWarn << "DUPLICATE vdW ENTRY FOR " << tree->atomname
+		iout << iWARN << "DUPLICATE vdW ENTRY FOR " << tree->atomname
 		  << "\nPREVIOUS VALUES  sigma=" << tree->sigma
 		  << " epsilon=" << tree->epsilon
 		  << " sigma14=" << tree->sigma14
@@ -1399,7 +1402,7 @@ struct vdw_params *Parameters::add_to_vdw_tree(struct vdw_params *new_node,
 		  << " epsilon=" << new_node->epsilon
 		  << " sigma14=" << new_node->sigma14
 		  << " epsilon14" << new_node->epsilon14
-		  << sendmsg;
+		  << endi;
 
 		tree->sigma=new_node->sigma;
 		tree->epsilon=new_node->epsilon;
@@ -1536,7 +1539,7 @@ void Parameters::add_to_vdw_pair_list(struct vdw_pair_params *new_node)
 			/*  Found a duplicate.  Print out a warning 	*/
 			/*  message, assign the values to the current   */
 			/*  node in the tree, and then free the new_node*/
-			namdWarn << "DUPLICATE vdW PAIR ENTRY FOR "
+			iout << iWARN << "DUPLICATE vdW PAIR ENTRY FOR "
 			  << new_node->atom1name << "-"
 			  << new_node->atom2name
 			  << "\nPREVIOUS VALUES  A=" << ptr->A
@@ -1547,7 +1550,7 @@ void Parameters::add_to_vdw_pair_list(struct vdw_pair_params *new_node)
 			  << " B=" << new_node->B
 			  << " A14=" << new_node->A14
 			  << " B14" << new_node->B14
-			  << sendmsg;
+			  << endi;
 
 			ptr->A=new_node->A;
 			ptr->B=new_node->B;
@@ -1926,8 +1929,8 @@ Index Parameters::index_vdw(struct vdw_params *tree, Index index)
 	strncpy(nameloc, tree->atomname, MAX_ATOMTYPE_CHARS);
 	nameloc[MAX_ATOMTYPE_CHARS] = '\0';
 
-//	namdWarn << "Parameters: Stored name for type " << index << ": '";
-//      namdWarn << nameloc << "'" << sendmsg;
+//	iout << iWARN << "Parameters: Stored name for type " << index << ": '";
+//      iout << iWARN << nameloc << "'" << endi;
 
 	index++;
 
@@ -2752,7 +2755,7 @@ void Parameters::traverse_bond_params(struct bond_params *tree)
 
 	DEBUG_MSG("BOND " <<  tree->atom1name << "  " << tree->atom2name \
 		  << " index=" << tree->index << " k=" << tree->forceconstant \
-		  << " x0=" << tree->distance << sendmsg);
+		  << " x0=" << tree->distance << endi);
 
 	if (tree->right != NULL)
 	{
@@ -2788,7 +2791,7 @@ void Parameters::traverse_angle_params(struct angle_params *tree)
 	DEBUG_MSG("ANGLE " << tree->atom1name << "  " << tree->atom2name \
 		  << "  " << tree->atom3name << " index=" << tree->index \
 		  << " k=" << tree->forceconstant << " theta0=" << tree->angle \
-		  << sendmsg);
+		  << endi);
 
 	if (tree->right != NULL)
 	{
@@ -2827,7 +2830,7 @@ void Parameters::traverse_dihedral_params(struct dihedral_params *list)
 		{
 		  DEBUG_MSG("k=" << list->values[i].k \
 			    << " n=" << list->values[i].n  \
-			    << " delta=" << list->values[i].delta << sendmsg);
+			    << " delta=" << list->values[i].delta << endi);
 		}
 
 		list=list->next;
@@ -2865,7 +2868,7 @@ void Parameters::traverse_improper_params(struct improper_params *list)
 		{
 		   DEBUG_MSG("k=" << list->values[i].k \
 			     << " n=" << list->values[i].n \
-			     << " delta=" << list->values[i].delta << sendmsg);
+			     << " delta=" << list->values[i].delta << endi);
 		}
 
 		list=list->next;
@@ -2901,7 +2904,7 @@ void Parameters::traverse_vdw_params(struct vdw_params *tree)
 	DEBUG_MSG("vdW " << tree->atomname << " index=" << tree->index \
 		  << " sigma=" << tree->sigma << " epsilon=" << \
 		  tree->epsilon << " sigma 1-4=" << tree->sigma14 \
-		  << " epsilon 1-4=" << tree->epsilon14 << sendmsg);
+		  << " epsilon 1-4=" << tree->epsilon14 << endi);
 
 	if (tree->right != NULL)
 	{
@@ -2932,7 +2935,7 @@ void Parameters::traverse_vdw_pair_params(struct vdw_pair_params *list)
 		  << list->atom2name << " A=" << list->A \
 		  << " B=" << list->B << " A 1-4=" \
 		  << list->A14 << " B 1-4=" << list->B14 \
-		  << sendmsg);
+		  << endi);
 
 	traverse_vdw_pair_params(list->next);
 }
@@ -2951,7 +2954,7 @@ void Parameters::print_bond_params()
 {
 	DEBUG_MSG(NumBondParams << " BOND PARAMETERS\n" \
 		  << "*****************************************"  \
-		  << sendmsg);
+		  << endi);
 
 	traverse_bond_params(bondp);
 }
@@ -2969,7 +2972,7 @@ void Parameters::print_angle_params()
 {
 	DEBUG_MSG(NumAngleParams << " ANGLE PARAMETERS\n"
 		  << "*****************************************" 
-		  << sendmsg);
+		  << endi);
 
 	traverse_angle_params(anglep);
 }
@@ -2987,7 +2990,7 @@ void Parameters::print_dihedral_params()
 {
 	DEBUG_MSG(NumDihedralParams << " DIHEDRAL PARAMETERS\n" \
 		  << "*****************************************"  \
-		  << sendmsg);
+		  << endi);
 
 	traverse_dihedral_params(dihedralp);
 }
@@ -3005,7 +3008,7 @@ void Parameters::print_improper_params()
 {
 	DEBUG_MSG(NumImproperParams << " IMPROPER PARAMETERS\n" \
 		  << "*****************************************"  \
-		  << sendmsg);
+		  << endi);
 
 	traverse_improper_params(improperp);
 }
@@ -3023,7 +3026,7 @@ void Parameters::print_vdw_params()
 {
 	DEBUG_MSG(NumVdwParams << " vdW PARAMETERS\n" \
 		  << "*****************************************" \
-		  << sendmsg);
+		  << endi);
 
 	traverse_vdw_params(vdwp);
 }
@@ -3041,7 +3044,7 @@ void Parameters::print_vdw_pair_params()
 {
 	DEBUG_MSG(NumVdwPairParams << " vdW PAIR PARAMETERS\n" \
 		  << "*****************************************"  \
-		  << sendmsg);
+		  << endi);
 
 	traverse_vdw_pair_params(vdw_pairp);
 }
@@ -3057,14 +3060,14 @@ void Parameters::print_vdw_pair_params()
 
 void Parameters::print_param_summary()
 {
-	namdInfo << "SUMMARY OF PARAMETERS:\n" 
+	iout << iINFO << "SUMMARY OF PARAMETERS:\n" 
 		 << NumBondParams << " BONDS\n" 
 	         << NumAngleParams << " ANGLES\n"
 	         << NumDihedralParams << " DIHEDRAL\n"
 	         << NumImproperParams << " IMPROPER\n"
 	         << NumVdwParams << " VDW\n"
 	         << NumVdwPairParams << " VDW_PAIRS\n"
-		/* << hbondParams.num() << " HBOND_PAIRS\n" */ << sendmsg;
+		/* << hbondParams.num() << " HBOND_PAIRS\n" */ << endi;
 }
 
 

@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: IntList.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/06 20:38:38 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1996/11/11 19:54:09 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -22,6 +22,9 @@
  * REVISION HISTORY:
  *
  * $Log: IntList.h,v $
+ * Revision 1.2  1996/11/11 19:54:09  nealk
+ * Modified to use InfoStream instead of Inform.
+ *
  * Revision 1.1  1996/08/06 20:38:38  ari
  * Initial revision
  *
@@ -85,7 +88,7 @@
 //    the class IntList
 
 #include "common.h"
-#include "Inform.h"
+#include "InfoStream.h"
 #include <stddef.h>  // for NULL
 #include <stdlib.h>  // for qsort and bsearch
 
@@ -312,7 +315,7 @@ class IntList
    }
 
    //  Writes out the elements of the list.
-   friend Inform& operator<<(Inform& o, const IntList& il)
+   friend infostream& operator<<(infostream& o, const IntList& il)
    {
 	for ( int i=0; i<il.num(); ++i)
 		o << " " << il[i];

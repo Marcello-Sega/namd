@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/06 20:38:38 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1996/11/11 19:54:09 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.2  1996/11/11 19:54:09  nealk
+ * Modified to use InfoStream instead of Inform.
+ *
  * Revision 1.1  1996/08/06 20:38:38  ari
  * Initial revision
  *
@@ -265,7 +268,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1 1996/08/06 20:38:38 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.2 1996/11/11 19:54:09 nealk Exp $";
 
 #include "ConfigList.h"
 #include "SimParameters.h"
@@ -274,7 +277,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParamete
 #include "Communicate.h"
 #include "Message.h"
 #include <stdio.h>
-#include "Inform.h"
+#include "InfoStream.h"
 #include <time.h>
 
 #ifdef AIX
@@ -812,8 +815,8 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    if (opts.defined("1-4scaling") &&
        exclude != SCALED14)
    {
-      namdWarn << "Value given for '1-4scaling', but 1-4 scaling "
-	      << "not in effect.\n This value will be ignored!" << sendmsg;
+      iout << iWARN << "Value given for '1-4scaling', but 1-4 scaling "
+	      << "not in effect.\n This value will be ignored!" << endi;
    }
 
    //  Get multiple timestep integration scheme
@@ -909,8 +912,8 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
       if (!opts.defined("rigidTolerance"))
       {
          rigidTol = 0.00001;
-         namdWarn << "rigidBonds is on but rigidTol is not provided:" ;
-         namdWarn << " using default value" << sendmsg;
+         iout << iWARN << "rigidBonds is on but rigidTol is not provided:" ;
+         iout << iWARN << " using default value" << endi;
       }
    }
    
@@ -920,18 +923,18 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
      if (opts.defined("cutoff") && opts.defined("eleccutoff") &&
 	 opts.defined("vdwcutoff")) {
-       namdWarn
+       iout << iWARN
 	 << "PARAMETERS cutoff, eleccutoff, and vdwcutoff\n"
 	 << "all defined -- cutoff ignored\n" 
-	 << sendmsg;
+	 << endi;
      }
 
      if (opts.defined("switchDist") && opts.defined("elecswitchDist") &&
 	 opts.defined("vdwswitchDist")) {
-       namdWarn
+       iout << iWARN
 	 << "PARAMETERS switchDist, elecswitchDist, and vdwswitchDist\n"
 	 << "all defined -- switchDist ignored\n" 
-	 << sendmsg;
+	 << endi;
      }
 
      // Check if enough things are defined
@@ -1363,28 +1366,28 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
    //  Now that we have read everything, print it out so that
    //  the user knows what is going on
-   namdInfo << "SIMULATION PARAMETERS:\n";
-   namdInfo << "TIMESTEP               " << dt << sendmsg;
-   namdInfo << "NUMBER OF STEPS        " << N << "\n";
-   namdInfo << "STEPS PER CYCLE        " << stepsPerCycle << "\n";
+   iout << iINFO << "SIMULATION PARAMETERS:\n";
+   iout << iINFO << "TIMESTEP               " << dt << endi;
+   iout << iINFO << "NUMBER OF STEPS        " << N << "\n";
+   iout << iINFO << "STEPS PER CYCLE        " << stepsPerCycle << "\n";
    if (ldbStrategy==LDBSTRAT_NONE)  {
-     namdInfo << "LOAD BALANCE STRATEGY  none\n";
+     iout << iINFO << "LOAD BALANCE STRATEGY  none\n";
    } else if (ldbStrategy==LDBSTRAT_RANDOM)  {
-     namdInfo << "LOAD BALANCE STRATEGY  random\n";
-     namdInfo << "STEPS PER LDB CYCLE    " << ldbStepsPerCycle << "\n";
-     namdInfo << "SEND LDB TIMESTEP      " << ldbSendStep << sendmsg;
+     iout << iINFO << "LOAD BALANCE STRATEGY  random\n";
+     iout << iINFO << "STEPS PER LDB CYCLE    " << ldbStepsPerCycle << "\n";
+     iout << iINFO << "SEND LDB TIMESTEP      " << ldbSendStep << endi;
    } else if (ldbStrategy==LDBSTRAT_NOLOCAL)  {
-     namdInfo << "LOAD BALANCE STRATEGY  nolocality\n";
-     namdInfo << "STEPS PER LDB CYCLE    " << ldbStepsPerCycle << "\n";
-     namdInfo << "SEND LDB TIMESTEP      " << ldbSendStep << sendmsg;
+     iout << iINFO << "LOAD BALANCE STRATEGY  nolocality\n";
+     iout << iINFO << "STEPS PER LDB CYCLE    " << ldbStepsPerCycle << "\n";
+     iout << iINFO << "SEND LDB TIMESTEP      " << ldbSendStep << endi;
    } else if (ldbStrategy==LDBSTRAT_RBISEC)  {
-     namdInfo << "LOAD BALANCE STRATEGY  bisection\n";
-     namdInfo << "STEPS PER LDB CYCLE    " << ldbStepsPerCycle << "\n";
-     namdInfo << "SEND LDB TIMESTEP      " << ldbSendStep << "\n";
+     iout << iINFO << "LOAD BALANCE STRATEGY  bisection\n";
+     iout << iINFO << "STEPS PER LDB CYCLE    " << ldbStepsPerCycle << "\n";
+     iout << iINFO << "SEND LDB TIMESTEP      " << ldbSendStep << "\n";
    } else if (ldbStrategy==LDBSTRAT_OTHER)  {
-     namdInfo << "LOAD BALANCE STRATEGY  other\n";
-     namdInfo << "STEPS PER LDB CYCLE    " << ldbStepsPerCycle << "\n";
-     namdInfo << "SEND LDB TIMESTEP      " << ldbSendStep << sendmsg;
+     iout << iINFO << "LOAD BALANCE STRATEGY  other\n";
+     iout << iINFO << "STEPS PER LDB CYCLE    " << ldbStepsPerCycle << "\n";
+     iout << iINFO << "SEND LDB TIMESTEP      " << ldbSendStep << endi;
    }
 
    if (initialTemp < 0)
@@ -1406,368 +1409,368 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 		strcat(filename, current->data);
 	}
 
-	namdInfo << "VELOCITY FILE          " << filename << sendmsg;
+	iout << iINFO << "VELOCITY FILE          " << filename << endi;
    }
    else
    {
-	namdInfo << "INITIAL TEMPERATURE    " 
+	iout << iINFO << "INITIAL TEMPERATURE    " 
 		 << initialTemp << "\n";
    }
 
-   namdInfo << "CENTER OF MASS MOVING? ";
+   iout << iINFO << "CENTER OF MASS MOVING? ";
 
    if (comMove)
    {
-   	namdInfo << "YES\n";
+   	iout << iINFO << "YES\n";
    }
    else
    {
-   	namdInfo << "NO\n";
+   	iout << iINFO << "NO\n";
    }
 
-   namdInfo << "DIELECTRIC             " 
+   iout << iINFO << "DIELECTRIC             " 
    	 << dielectric << "\n";
 
-   namdInfo << "EXCLUDE                ";
+   iout << iINFO << "EXCLUDE                ";
 
    switch (exclude)
    {
    	case NONE:
-   		namdInfo << "NONE\n";
+   		iout << iINFO << "NONE\n";
    		break;
    	case ONETWO:
-   		namdInfo << "ONETWO\n";
+   		iout << iINFO << "ONETWO\n";
    		break;
    	case ONETHREE:
-   		namdInfo << "ONETHREE\n";
+   		iout << iINFO << "ONETHREE\n";
    		break;
    	case ONEFOUR:
-   		namdInfo << "ONE-FOUR\n";
+   		iout << iINFO << "ONE-FOUR\n";
    		break;
    	default:
-   		namdInfo << "SCALED ONE-FOUR\n";
+   		iout << iINFO << "SCALED ONE-FOUR\n";
    		break;
    }
 
    if (exclude == SCALED14)
    {
-   	namdInfo << "1-4 SCALE FACTOR       " 
-   		 << scale14 << sendmsg;
+   	iout << iINFO << "1-4 SCALE FACTOR       " 
+   		 << scale14 << endi;
    }
 
    if (dcdFrequency > 0)
    {
-   	namdInfo << "DCD FILENAME           " 
+   	iout << iINFO << "DCD FILENAME           " 
    		 << dcdFilename << "\n";
-   	namdInfo << "DCD FREQUENCY          " 
+   	iout << iINFO << "DCD FREQUENCY          " 
    		 << dcdFrequency << "\n";
    }
    else
    {
-   	namdInfo << "NO DCD TRAJECTORY OUTPUT\n";
+   	iout << iINFO << "NO DCD TRAJECTORY OUTPUT\n";
    }
    
    if (velDcdFrequency > 0)
    {
-   	namdInfo << "VELOCITY DCD FILENAME  " 
+   	iout << iINFO << "VELOCITY DCD FILENAME  " 
    		 << velDcdFilename << "\n";
-   	namdInfo << "VELOCITY DCD FREQUENCY " 
+   	iout << iINFO << "VELOCITY DCD FREQUENCY " 
    		 << velDcdFrequency << "\n";
    }
    else
    {
-   	namdInfo << "NO VELOCITY DCD OUTPUT\n";
+   	iout << iINFO << "NO VELOCITY DCD OUTPUT\n";
    }
    
    if (electForceDcdFrequency > 0)
    {
-   	namdInfo << "ELECT FORCE DCD NAME   " 
+   	iout << iINFO << "ELECT FORCE DCD NAME   " 
    		 << electForceDcdFilename << "\n";
-   	namdInfo << "ELECT FORCE DCD FREQ   " 
-   		 << electForceDcdFrequency << sendmsg;
+   	iout << iINFO << "ELECT FORCE DCD FREQ   " 
+   		 << electForceDcdFrequency << endi;
    }
 
    if (allForceDcdFrequency > 0)
    {
-   	namdInfo << "TOTAL FORCE DCD NAME   " 
+   	iout << iINFO << "TOTAL FORCE DCD NAME   " 
    		 << allForceDcdFilename << "\n";
-   	namdInfo << "TOTAL FORCE DCD FREQ   " 
+   	iout << iINFO << "TOTAL FORCE DCD FREQ   " 
    		 << allForceDcdFrequency << "\n";
    }
    	
-   namdInfo << "OUTPUT FILENAME        " 
+   iout << iINFO << "OUTPUT FILENAME        " 
    	 << outputFilename << "\n";
 
    if (restartFrequency == -1)
    {
-   	namdInfo << "NO RESTART FILE\n";
+   	iout << iINFO << "NO RESTART FILE\n";
    }
    else
    {
-   	namdInfo << "RESTART FILENAME       "
+   	iout << iINFO << "RESTART FILENAME       "
    		 << restartFilename << "\n";
-   	namdInfo << "RESTART FREQUENCY      " 
+   	iout << iINFO << "RESTART FREQUENCY      " 
    		 << restartFrequency << "\n";
 
 	if (binaryRestart)
 	{
-		namdInfo << "BINARY RESTART FILES WILL BE USED\n";
+		iout << iINFO << "BINARY RESTART FILES WILL BE USED\n";
 	}
    }
    
    if (switchingActive)
    {
-      namdInfo << "SWITCHING ACTIVE\n";
-      namdInfo << "SWITCHING ON           "
+      iout << iINFO << "SWITCHING ACTIVE\n";
+      iout << iINFO << "SWITCHING ON           "
                << switchingDist << "\n";
-      namdInfo << "SWITCHING OFF          "
+      iout << iINFO << "SWITCHING OFF          "
          	    << cutoff << "\n";
-      namdInfo << "E-SWITCHING ON         "
+      iout << iINFO << "E-SWITCHING ON         "
                << elecswitchDist << "\n";
-      namdInfo << "E-SWITCHING OFF        "
+      iout << iINFO << "E-SWITCHING OFF        "
                << eleccutoff << "\n";
-      namdInfo << "VDW-SWITCHING ON       "
+      iout << iINFO << "VDW-SWITCHING ON       "
                << vdwswitchDist << "\n";
-      namdInfo << "VDW-SWITCHING OFF      "
+      iout << iINFO << "VDW-SWITCHING OFF      "
                << vdwcutoff << "\n";
-      namdInfo << "PAIRLIST DISTANCE      "
+      iout << iINFO << "PAIRLIST DISTANCE      "
                << pairlistDist << "\n";
    }
    else
    {
-      namdInfo << "CUTOFF                 " 
+      iout << iINFO << "CUTOFF                 " 
    	    << cutoff << "\n";
    }
 
    if (plMarginCheckOn)
-     namdInfo << "PAIRLIST CHECK ON\n";
+     iout << iINFO << "PAIRLIST CHECK ON\n";
    else 
-     namdInfo << "PAIRLIST CHECK OFF\n";
+     iout << iINFO << "PAIRLIST CHECK OFF\n";
             
-   namdInfo << "MARGIN                 " 
+   iout << iINFO << "MARGIN                 " 
    	 << margin << "\n";
    
-   namdInfo << "PATCH DIMENSION        "
+   iout << iINFO << "PATCH DIMENSION        "
             << patchDimension << "\n";
 
    if (outputEnergies != 1)
    {
-      namdInfo << "ENERGY OUTPUT STEPS    "
+      iout << iINFO << "ENERGY OUTPUT STEPS    "
    	    << outputEnergies << "\n";
    }
    
    if (constraintsOn)
    {
-      namdInfo << "HARMONIC CONSTRAINTS ACTIVE\n";
+      iout << iINFO << "HARMONIC CONSTRAINTS ACTIVE\n";
 
-      namdInfo << "HARMONIC CONS EXP      "
+      iout << iINFO << "HARMONIC CONS EXP      "
    	    << constraintExp << "\n";
    }
 
    if (globalOn && ! dihedralOn)
    {
-      namdInfo << "GLOBAL INTEGRATION TEST MODE ACTIVE\n";
+      iout << iINFO << "GLOBAL INTEGRATION TEST MODE ACTIVE\n";
    }
 
    if (dihedralOn)
    {
-      namdInfo << "DIHEDRAL ANGLE DYNAMICS ACTIVE\n";
+      iout << iINFO << "DIHEDRAL ANGLE DYNAMICS ACTIVE\n";
       if (!COLDOn)
       {
-         namdInfo << "*** DIHEDRAL ANGLE DYNAMICS IS HIGHLY EXPERIMENTAL ***\n";
-         namdInfo << "PLEASE CONSIDER USING THE COLD OPTION AS WELL\n";
+         iout << iINFO << "*** DIHEDRAL ANGLE DYNAMICS IS HIGHLY EXPERIMENTAL ***\n";
+         iout << iINFO << "PLEASE CONSIDER USING THE COLD OPTION AS WELL\n";
       }
    }
 
    if (COLDOn)
    {
-      namdInfo << "COLD (CONSTRAINED OVERDAMPED LANGEVIN DYNAMICS) ACTIVE\n";
+      iout << iINFO << "COLD (CONSTRAINED OVERDAMPED LANGEVIN DYNAMICS) ACTIVE\n";
 
-      namdInfo << "COLD TARGET TEMP       "
+      iout << iINFO << "COLD TARGET TEMP       "
    	    << COLDTemp << "\n";
 
-      namdInfo << "COLD COLLISION RATE    "
+      iout << iINFO << "COLD COLLISION RATE    "
    	    << COLDRate << "\n";
    }
 
    if (sphericalBCOn)
    {
-      namdInfo << "SPHERICAL BOUNDARY CONDITIONS ACTIVE\n";
+      iout << iINFO << "SPHERICAL BOUNDARY CONDITIONS ACTIVE\n";
 
-      namdInfo << "RADIUS #1              "
+      iout << iINFO << "RADIUS #1              "
    	    << sphericalBCr1 << "\n";
-      namdInfo << "FORCE CONSTANT #1      "
+      iout << iINFO << "FORCE CONSTANT #1      "
    	    << sphericalBCk1 << "\n";
-      namdInfo << "EXPONENT #1            "
+      iout << iINFO << "EXPONENT #1            "
    	    << sphericalBCexp1 << "\n";
 
       if (sphericalBCr2 > 0)
       {
-      	namdInfo << "RADIUS #2              "
+      	iout << iINFO << "RADIUS #2              "
    	         << sphericalBCr2 << "\n";
-      	namdInfo << "FORCE CONSTANT #2      "
+      	iout << iINFO << "FORCE CONSTANT #2      "
    	    	 << sphericalBCk2 << "\n";
-      	namdInfo << "EXPONENT #2            "
+      	iout << iINFO << "EXPONENT #2            "
    		 << sphericalBCexp2 << "\n";
       }
 
       if (sphericalCenterCOM)
       {
-	namdInfo << "SPHERICAL BOUNDARIES CENTERED AROUND COM\n";
+	iout << iINFO << "SPHERICAL BOUNDARIES CENTERED AROUND COM\n";
       }
       else
       {
-	namdInfo << "SPHERE BOUNDARY CENTER(" << sphericalCenter.x << ", "
+	iout << iINFO << "SPHERE BOUNDARY CENTER(" << sphericalCenter.x << ", "
 		 << sphericalCenter.y << ", " << sphericalCenter.z << ")\n";
       }
    }
    
    if (eFieldOn)
    {
-      namdInfo << "ELECTRIC FIELD ACTIVE\n";
+      iout << iINFO << "ELECTRIC FIELD ACTIVE\n";
       
-      namdInfo << "E-FIELD VECTOR         ("
+      iout << iINFO << "E-FIELD VECTOR         ("
 	       << eField.x << ", " << eField.y
 	       << ", " << eField.z << ")\n";
    }
 
    if (langevinOn)
    {
-      namdInfo << "LANGEVIN DYNAMICS ACTIVE\n";
-      namdInfo << "LANGEVIN TEMPERATURE   "
+      iout << iINFO << "LANGEVIN DYNAMICS ACTIVE\n";
+      iout << iINFO << "LANGEVIN TEMPERATURE   "
    	    << langevinTemp << "\n";
    }
 
    if (tCoupleOn)
    {
-      namdInfo << "TEMPERATURE COUPLING ACTIVE\n";
-      namdInfo << "COUPLING TEMPERATURE   "
+      iout << iINFO << "TEMPERATURE COUPLING ACTIVE\n";
+      iout << iINFO << "COUPLING TEMPERATURE   "
    	    << tCoupleTemp << "\n";
    }
 
    if (minimizeOn)
    {
-      namdInfo << "MINIMIZATION ACTIVE\n";
+      iout << iINFO << "MINIMIZATION ACTIVE\n";
 
-      namdInfo << "MAXIMUM MOVEMENT       "
+      iout << iINFO << "MAXIMUM MOVEMENT       "
    	    << maximumMove << "\n";
    }
 
    if (rescaleFreq > 0)
    {
-   	namdInfo << "VELOCITY RESCALE FREQ  "
+   	iout << iINFO << "VELOCITY RESCALE FREQ  "
    		 << rescaleFreq << "\n";
-   	namdInfo << "VELOCITY RESCALE TEMP  "
+   	iout << iINFO << "VELOCITY RESCALE TEMP  "
    		 << rescaleTemp << "\n";
    }
 
    if (vmdFrequency > 0)
    {
-   	namdInfo << "VMD INTERFACE ON\n"
+   	iout << iINFO << "VMD INTERFACE ON\n"
    		 << "VMD FRREQUENCY    "
    		 << vmdFrequency << "\n";
    }
 
    if (FMAOn)
    {
-   	namdInfo << "FMA ACTIVE\n";
-   	namdInfo << "FMA EXECUTION FREQ     "
+   	iout << iINFO << "FMA ACTIVE\n";
+   	iout << iINFO << "FMA EXECUTION FREQ     "
    		 << fmaFrequency << "\n";
-   	namdInfo << "FMA THETA              "
+   	iout << iINFO << "FMA THETA              "
    		 << fmaTheta << "\n";
    }
 
    if (fullDirectOn)
    {
-	namdInfo << "DIRECT FULL ELECTROSTATIC CALCULATIONS ACTIVE\n";
+	iout << iINFO << "DIRECT FULL ELECTROSTATIC CALCULATIONS ACTIVE\n";
    }
 
    if (MTSAlgorithm != NAIVE)
    {
 	if (MTSAlgorithm == VERLETI)
 	{
-		namdInfo << "VERLET I MTS SCHEME\n";
+		iout << iINFO << "VERLET I MTS SCHEME\n";
 	}
 	else if (MTSAlgorithm == VERLETII )
         {
-		namdInfo << "VERLET II MTS SCHEME\n";
+		iout << iINFO << "VERLET II MTS SCHEME\n";
         }
         else
 	{
-		namdInfo << "VERLET X MTS SCHEME\n";
+		iout << iINFO << "VERLET X MTS SCHEME\n";
 	}
    }
 
    if (longSplitting == SHARP)
    {
-	namdInfo << "SHARP SPLITTING OF LONG RANGE ELECTROSTATICS\n";
+	iout << iINFO << "SHARP SPLITTING OF LONG RANGE ELECTROSTATICS\n";
    }
    else if (longSplitting == XPLOR)
    {
-	namdInfo << "XPLOR SPLITTING OF LONG RANGE ELECTROSTATICS\n";
+	iout << iINFO << "XPLOR SPLITTING OF LONG RANGE ELECTROSTATICS\n";
    }
    else if (longSplitting == C1)
    {
-	namdInfo << "C1 SPLITTING OF LONG RANGE ELECTROSTATICS\n";
+	iout << iINFO << "C1 SPLITTING OF LONG RANGE ELECTROSTATICS\n";
    }
 
    if (rigidBonds == RIGID_ALL)
    {
-     namdInfo <<"RIGID BONDS TO HYDROGEN : ALL, TOLERANCE=" << rigidTol << "\n";
+     iout << iINFO <<"RIGID BONDS TO HYDROGEN : ALL, TOLERANCE=" << rigidTol << "\n";
    }
    else if (rigidBonds == RIGID_WATER)
    {
-    namdInfo<<"RIGID BONDS TO HYDROGEN :  WATER, TOLERANCE="<< rigidTol << "\n";
+    iout << iINFO<<"RIGID BONDS TO HYDROGEN :  WATER, TOLERANCE="<< rigidTol << "\n";
    }
    
 
-   namdInfo << "RANDOM NUMBER SEED     "
+   iout << iINFO << "RANDOM NUMBER SEED     "
    	 << randomSeed << "\n";
 
 
-   namdInfo << "USE HYDROGEN BONDS?    ";
+   iout << iINFO << "USE HYDROGEN BONDS?    ";
    if (HydrogenBonds)
    {
-	namdInfo << "YES" << sendmsg;
-	namdInfo << "USE ANTECEDENT ATOMS?  ";
-	namdInfo << (useAntecedent ? "YES" : "NO");
-        namdInfo << "\nHB DIST CUT, ON, OFF   ";
-	namdInfo << daCutoffDist << " , " << daOnDist << " , " << daOffDist;
-        namdInfo << "\nHB ANGLE CUT, ON, OFF  ";
-	namdInfo << dhaCutoffAngle << " , " << dhaOnAngle << " , ";
-	namdInfo << dhaOffAngle;
-        namdInfo << "\nHB ATT, REP exponents  ";
-	namdInfo << distAttExp << " , " << distRepExp;
-        namdInfo << "\nHB AA, HA exponents    ";
-	namdInfo << aaAngleExp << " , " << haAngleExp;
-	namdInfo << sendmsg;
+	iout << iINFO << "YES" << endi;
+	iout << iINFO << "USE ANTECEDENT ATOMS?  ";
+	iout << iINFO << (useAntecedent ? "YES" : "NO");
+        iout << iINFO << "\nHB DIST CUT, ON, OFF   ";
+	iout << iINFO << daCutoffDist << " , " << daOnDist << " , " << daOffDist;
+        iout << iINFO << "\nHB ANGLE CUT, ON, OFF  ";
+	iout << iINFO << dhaCutoffAngle << " , " << dhaOnAngle << " , ";
+	iout << iINFO << dhaOffAngle;
+        iout << iINFO << "\nHB ATT, REP exponents  ";
+	iout << iINFO << distAttExp << " , " << distRepExp;
+        iout << iINFO << "\nHB AA, HA exponents    ";
+	iout << iINFO << aaAngleExp << " , " << haAngleExp;
+	iout << iINFO << endi;
    }
    else
    {
-	namdInfo << "NO" << sendmsg;
+	iout << iINFO << "NO" << endi;
    }
 
 
-   namdInfo << "Here we go config->find " << sendmsg;
+   iout << iINFO << "Here we go config->find " << endi;
    current = config->find("coordinates");
-   namdInfo << "Here done config->find " << sendmsg;
+   iout << iINFO << "Here done config->find " << endi;
 
    if ( (cwd == NULL) || (current->data[0] == '/') )
    {
-        namdInfo << "Here cwd==NULL and current is "
-	<< current->data << sendmsg;
+        iout << iINFO << "Here cwd==NULL and current is "
+	<< current->data << endi;
    	strcpy(filename, current->data);
    }
    else
    {
-        namdInfo << "cwd != NULL and not abs" << sendmsg;
+        iout << iINFO << "cwd != NULL and not abs" << endi;
    	strcpy(filename, cwd);
    	strcat(filename, current->data);
    }
 
 
-   namdInfo << "COORDINATE PDB         " 
-   	 << filename << sendmsg;
+   iout << iINFO << "COORDINATE PDB         " 
+   	 << filename << endi;
 
    if (opts.defined("bincoordinates"))
    {
@@ -1783,7 +1786,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    		strcat(filename, current->data);
    	}
 
-   	namdInfo << "BINARY COORDINATES     " 
+   	iout << iINFO << "BINARY COORDINATES     " 
    	         << filename << "\n";
    }
 
@@ -1799,8 +1802,8 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    	strcat(filename, current->data);
    }
 
-   namdInfo << "STRUCTURE FILE         " 
-   	 << filename << sendmsg;
+   iout << iINFO << "STRUCTURE FILE         " 
+   	 << filename << endi;
 
    current = config->find("parameters");
 
@@ -1816,15 +1819,15 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    		strcat(filename, current->data);
    	}
 
-   	namdInfo << "PARAMETERS             " 
-   		 << filename << sendmsg;
+   	iout << iINFO << "PARAMETERS             " 
+   		 << filename << endi;
    	current = current->next;
    }
 
    if (firstTimestep)
    {
-	namdInfo << "FIRST TIMESTEP         "
-		 << firstTimestep << sendmsg;
+	iout << iINFO << "FIRST TIMESTEP         "
+		 << firstTimestep << endi;
    }
 
 

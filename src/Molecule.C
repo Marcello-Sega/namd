@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: Molecule.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/08/16 04:39:46 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.3 $	$Date: 1996/11/11 19:54:09 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.3  1996/11/11 19:54:09  nealk
+ * Modified to use InfoStream instead of Inform.
+ *
  * Revision 1.2  1996/08/16 04:39:46  ari
  * *** empty log message ***
  *
@@ -128,7 +131,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.2 1996/08/16 04:39:46 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.3 1996/11/11 19:54:09 nealk Exp $";
 
 #include "Molecule.h"
 #include <stdio.h>
@@ -136,7 +139,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,
 #include <stdlib.h>
 #include <ctype.h>
 #include "strlib.h"
-#include "Inform.h"
+#include "InfoStream.h"
 #include "IntList.h"
 #include "Message.h"
 // #include "Node.h"
@@ -1402,7 +1405,7 @@ void Molecule::print_atoms(Parameters *params)
 	DEBUG_MSG("ATOM LIST\n" \
 		  << "******************************************\n" \
                   << "NUM  NAME TYPE RES  MASS    CHARGE SIGMA   EPSILON SIGMA14 EPSILON14\n" \
-pp		  << sendmsg);
+pp		  << endi);
 
 	for (i=0; i<numAtoms; i++)
 	{
@@ -1415,7 +1418,7 @@ pp		  << sendmsg);
 			  << " " << atoms[i].charge << " " << sigma \
 			  << " " << epsilon << " " << sigma14 \
 			  << " " << epsilon14 \
-			  << sendmsg);
+			  << endi);
 	}
 }
 /*			END OF FUNCTION print_atoms			*/
@@ -1438,7 +1441,7 @@ void Molecule::print_bonds(Parameters *params)
 
 	DEBUG_MSG("BOND LIST\n" << "********************************\n" \
 		  << "ATOM1 ATOM2 TYPE1 TYPE2      k        x0" \
-		  << sendmsg);
+		  << endi);
 
 	for (i=0; i<numBonds; i++)
 	{
@@ -1448,7 +1451,7 @@ void Molecule::print_bonds(Parameters *params)
 		   << bonds[i].atom2+1 << " "   \
 		   << atomNames[bonds[i].atom1].atomtype << " "  \
 		   << atomNames[bonds[i].atom2].atomtype << " " << k \
-		   << " " << x0 << sendmsg);
+		   << " " << x0 << endi);
 	}
 }
 /*			END OF FUNCTION print_bonds			*/
@@ -1469,12 +1472,12 @@ void Molecule::print_exclusions()
 	DEBUG_MSG("EXPLICIT EXCLUSION LIST\n" \
 		  << "********************************\n" \
 	          << "ATOM1 ATOM2 " \
-		  << sendmsg);
+		  << endi);
 
 	for (i=0; i<numExclusions; i++)
 	{
 		DEBUG_MSG(exclusions[i].atom1+1 << "  " \
-		   << exclusions[i].atom2+1 << sendmsg);
+		   << exclusions[i].atom2+1 << endi);
 	}
 }
 /*			END OF FUNCTION print_exclusions		*/
@@ -2731,7 +2734,7 @@ void Molecule::build_constraint_params(StringList *consref,
    if (current_index == 0)
    {
       //  Constraints were turned on, but there weren't really any constrained
-      namdWarn << "NO CONSTRAINED ATOMS WERE FOUND, BUT CONSTRAINTS ARE ON . . . " << sendmsg;
+      iout << iWARN << "NO CONSTRAINED ATOMS WERE FOUND, BUT CONSTRAINTS ARE ON . . . " << endi;
    }
    else
    {
