@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1060 1998/08/17 21:04:31 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1061 1998/09/01 23:10:34 brunner Exp $";
 
 #include <stdio.h>
 
@@ -936,9 +936,9 @@ void WorkDistrib::velocities_from_PDB(char *filename,
 
   for (i=0; i<totalAtoms; i++)
   {
-    v[i].x *= 0.05;
-    v[i].y *= 0.05;
-    v[i].z *= 0.05;
+    v[i].x *= PDBVELINVFACTOR;
+    v[i].y *= PDBVELINVFACTOR;
+    v[i].z *= PDBVELINVFACTOR;
   }
 
   delete v_pdb;
@@ -1115,13 +1115,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1060 $	$Date: 1998/08/17 21:04:31 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1061 $	$Date: 1998/09/01 23:10:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1061  1998/09/01 23:10:34  brunner
+ * Fixed PDB velocity input conversion problem: PDBVELINVFACTOR
+ *
  * Revision 1.1060  1998/08/17 21:04:31  jim
  * Added checks for short binary input files.
  *

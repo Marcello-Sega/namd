@@ -121,9 +121,9 @@ void velocities_from_PDB(char *filename, Vector *v, int totalAtoms)
 
 	for (i=0; i<totalAtoms; i++)
 	{
-		v[i].x *= 0.05;
-		v[i].y *= 0.05;
-		v[i].z *= 0.05;
+		v[i].x *= PDBVELINVFACTOR;
+		v[i].y *= PDBVELINVFACTOR;
+		v[i].z *= PDBVELINVFACTOR;
 	}
 
 	delete v_pdb;
@@ -368,13 +368,16 @@ void remove_com_motion(Vector *vel, Molecule *structure, int n)
 * RCS INFORMATION:
 *
 *	$RCSfile: NamdOneTools.C,v $
-*	$Author: jim $	$Locker:  $		$State: Exp $
-*	$Revision: 1.13 $	$Date: 1998/08/17 21:04:33 $
+*	$Author: brunner $	$Locker:  $		$State: Exp $
+*	$Revision: 1.14 $	$Date: 1998/09/01 23:10:34 $
 *
 ***************************************************************************
 * REVISION HISTORY:
 *
 * $Log: NamdOneTools.C,v $
+* Revision 1.14  1998/09/01 23:10:34  brunner
+* Fixed PDB velocity input conversion problem: PDBVELINVFACTOR
+*
 * Revision 1.13  1998/08/17 21:04:33  jim
 * Added checks for short binary input files.
 *
@@ -427,4 +430,4 @@ void remove_com_motion(Vector *vel, Molecule *structure, int n)
 *
 ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdOneTools.C,v 1.13 1998/08/17 21:04:33 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdOneTools.C,v 1.14 1998/09/01 23:10:34 brunner Exp $";
