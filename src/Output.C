@@ -278,12 +278,7 @@ void Output::output_restart_coordinates(Vector *coor, int n, int timestep)
 
     first=FALSE;
   }
-  else
-  {
-    //  This is not the first invocation, so move the current version
-    //  of the file to the backup filename
-    rename(restart_name, restart_bak);
-  }
+  rename(restart_name, restart_bak);
 
   //  Check to see if we should generate a binary or PDB file
   if (!namdMyNode->simParams->binaryRestart)
@@ -347,13 +342,7 @@ void Output::output_restart_velocities(int timestep, int n, Vector *vel)
 
     first=FALSE;
   }
-  else
-  {
-    //  This is *not* the first call, so move the current version
-    //  of the restart file to the backup file before we write out
-    //  the new restart file
-    rename(restart_name, restart_bak);
-  }
+  rename(restart_name, restart_bak);
 
   //  Check to see if we should write out a PDB or a binary file
   if (!namdMyNode->simParams->binaryRestart)
@@ -502,12 +491,17 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor)
 void Output::output_final_coordinates(Vector *coor, int n, int timestep)
 
 {
-  static char output_name[140];  //  Output filename
+  char output_name[140];  //  Output filename
   char comment[128];    //  comment for PDB header
 
   //  Built the output filename
   strcpy(output_name, namdMyNode->simParams->outputFilename);
   strcat(output_name, ".coor");
+
+  char bfname[140];
+  strcpy(bfname,output_name);
+  strcat(bfname,".BAK");
+  rename(output_name,bfname);
 
   //  Check to see if we should write out a binary file or a
   //  PDB file
@@ -543,12 +537,17 @@ void Output::output_final_coordinates(Vector *coor, int n, int timestep)
 void Output::output_final_velocities(int timestep, int n, Vector *vel)
 
 {
-  static char output_name[140];  //  Output filename
+  char output_name[140];  //  Output filename
   char comment[128];    //  Comment for PDB header
 
   //  Build the output filename
   strcpy(output_name, namdMyNode->simParams->outputFilename);
   strcat(output_name, ".vel");
+
+  char bfname[140];
+  strcpy(bfname,output_name);
+  strcat(bfname,".BAK");
+  rename(output_name,bfname);
 
   //  Check to see if we should write a PDB or binary file
   if (!(namdMyNode->simParams->binaryOutput))

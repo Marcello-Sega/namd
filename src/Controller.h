@@ -74,6 +74,9 @@ protected:
     CollectionMaster *const collection;
     ControllerBroadcasts * broadcast;
     ofstream xstFile;
+    void outputExtendedSystem(int step);
+    void writeExtendedSystemLabels(ofstream &file);
+    void writeExtendedSystemData(int step, ofstream &file);
 
 private:
     CthThread thread;

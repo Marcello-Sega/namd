@@ -93,32 +93,22 @@ extern int eventEndOfTimeStep;
 
 void Controller::algorithm(int task)
 {
-/*
-  int scriptTask = 1;
-  int scriptSeq = 0;
-  if (simParams->tclOn) Node::Object()->enableScriptBarrier();
-  while ( (! simParams->tclOn) ||
-	(scriptTask = broadcast->scriptBarrier.get(scriptSeq++)) ) {
-*/
+  if (simParams->tclOn) broadcast->scriptBarrier.publish(scriptSeq++,task);
 
-    if (simParams->tclOn) broadcast->scriptBarrier.publish(scriptSeq++,task);
-
-    switch ( task ) {
-      case 0:
-        if ( simParams->tclOn ) {
-          enqueueCollections(0);
-          return;
-        }
-      case 1:
-        break;
-      case 2:
-	collection->enqueuePositions(0);
-	// Node::Object()->enableScriptBarrier();
-	return;
-      case 3:
-	collection->enqueueVelocities(0);
-	// Node::Object()->enableScriptBarrier();
-	return;
+  switch ( task ) {
+    case 0:
+      if ( simParams->tclOn ) {
+        enqueueCollections(0);
+        outputExtendedSystem(-1);
+        return;
+      }
+    case 1:
+      break;
+    case 2:
+      collection->enqueuePositions(0);
+      collection->enqueueVelocities(0);
+      outputExtendedSystem(-1);
+      return;
     }
 
     int step = simParams->firstTimestep;
@@ -144,6 +134,7 @@ void Controller::algorithm(int task)
 	if ( ! first ) langevinPiston2(step);
         reassignVelocities(step);
         printEnergies(step);
+        outputExtendedSystem(step);
         //rescaleVelocities(step);
 	//tcoupleVelocities(step);
 	//berendsenPressure(step);
@@ -162,6 +153,7 @@ void Controller::algorithm(int task)
 
   if ( ! task ) {
     enqueueCollections(0);
+    outputExtendedSystem(-1);
     terminate();
   }
 }
@@ -642,111 +634,6 @@ void Controller::printEnergies(int step)
       Node::Object()->imd->gather_energies(step, &energies);
     }
   
-    // Write out eXtended System Trajectory (XST) file
-    if ( simParameters->xstFrequency != -1 && step == simParams->firstTimestep )
-    {
-      xstFile.open(simParameters->xstFilename);
-      xstFile << "# NAMD extended system trajectory file" << endl;
-      xstFile << "#$LABELS step a_x a_y a_z b_x b_y b_z c_x c_y c_z o_x o_y o_z";
-      if ( simParameters->langevinPistonOn ) {
-        xstFile << " s_x s_y s_z s_u s_v s_w";
-      }
-      xstFile << endl;
-    }
-    if ( simParameters->xstFrequency != -1 &&
-         ! ( step % simParameters->xstFrequency ) )
-    {
-      xstFile << step
-        << " " << lattice.a().x << " " << lattice.a().y << " " << lattice.a().z
-        << " " << lattice.b().x << " " << lattice.b().y << " " << lattice.b().z
-        << " " << lattice.c().x << " " << lattice.c().y << " " << lattice.c().z
-        << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
-      if ( simParameters->langevinPistonOn ) {
-	Vector strainRate = diagonal(langevinPiston_strainRate);
-	Vector strainRate2 = off_diagonal(langevinPiston_strainRate);
-	xstFile << " " << strainRate.x;
-	xstFile << " " << strainRate.y;
-	xstFile << " " << strainRate.z;
-	xstFile << " " << strainRate2.x;
-	xstFile << " " << strainRate2.y;
-	xstFile << " " << strainRate2.z;
-      }
-      xstFile << endl;
-      xstFile.flush();
-    }
-    if ( simParameters->xstFrequency != -1 && step == simParams->N )
-    {
-      xstFile.close();
-    }
-
-    // Write out eXtended System Configuration (XSC) files
-    //  Output a restart file
-    if ( (simParams->restartFrequency != -1) &&
-         ((step % simParams->restartFrequency) == 0) &&
-         (step != simParams->firstTimestep) )
-    {
-      char fname[140];
-      strcpy(fname, simParams->restartFilename);
-      strcat(fname, ".xsc");
-      char bfname[140];
-      strcpy(bfname, simParams->restartFilename);
-      strcat(bfname, ".xsc.BAK");
-      rename(fname,bfname);
-      ofstream xscFile(fname);
-      xscFile << "# NAMD extended system configuration file" << endl;
-      xscFile << "#$LABELS step a_x a_y a_z b_x b_y b_z c_x c_y c_z o_x o_y o_z";
-      if ( simParameters->langevinPistonOn ) {
-        xscFile << " s_x s_y s_z s_u s_v s_w";
-      }
-      xscFile << endl;
-      xscFile << step
-        << " " << lattice.a().x << " " << lattice.a().y << " " << lattice.a().z
-        << " " << lattice.b().x << " " << lattice.b().y << " " << lattice.b().z
-        << " " << lattice.c().x << " " << lattice.c().y << " " << lattice.c().z
-        << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
-      if ( simParameters->langevinPistonOn ) {
-	Vector strainRate = diagonal(langevinPiston_strainRate);
-	Vector strainRate2 = off_diagonal(langevinPiston_strainRate);
-	xscFile << " " << strainRate.x;
-	xscFile << " " << strainRate.y;
-	xscFile << " " << strainRate.z;
-	xscFile << " " << strainRate2.x;
-	xscFile << " " << strainRate2.y;
-	xscFile << " " << strainRate2.z;
-      }
-      xscFile << endl;
-    }
-    //  Output final coordinates
-    if (step == simParams->N)
-    {
-      static char fname[140];
-      strcpy(fname, simParams->outputFilename);
-      strcat(fname, ".xsc");
-      ofstream xscFile(fname);
-      xscFile << "# NAMD extended system configuration file" << endl;
-      xscFile << "#$LABELS step a_x a_y a_z b_x b_y b_z c_x c_y c_z o_x o_y o_z";
-      if ( simParameters->langevinPistonOn ) {
-        xscFile << " s_x s_y s_z s_u s_v s_w";
-      }
-      xscFile << endl;
-      xscFile << step
-        << " " << lattice.a().x << " " << lattice.a().y << " " << lattice.a().z
-        << " " << lattice.b().x << " " << lattice.b().y << " " << lattice.b().z
-        << " " << lattice.c().x << " " << lattice.c().y << " " << lattice.c().z
-        << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
-      if ( simParameters->langevinPistonOn ) {
-	Vector strainRate = diagonal(langevinPiston_strainRate);
-	Vector strainRate2 = off_diagonal(langevinPiston_strainRate);
-	xscFile << " " << strainRate.x;
-	xscFile << " " << strainRate.y;
-	xscFile << " " << strainRate.z;
-	xscFile << " " << strainRate2.x;
-	xscFile << " " << strainRate2.y;
-	xscFile << " " << strainRate2.z;
-      }
-      xscFile << endl;
-    }
-
     int stepInRun = step - simParams->firstTimestep;
     int benchPhase;
     if ( stepInRun % simParams->firstLdbStep == 0 )
@@ -900,12 +787,104 @@ void Controller::printEnergies(int step)
     iout << "\n" << endi;
 }
 
+void Controller::writeExtendedSystemLabels(ofstream &file) {
+  file << "#$LABELS step a_x a_y a_z b_x b_y b_z c_x c_y c_z o_x o_y o_z";
+  if ( simParams->langevinPistonOn ) {
+    file << " s_x s_y s_z s_u s_v s_w";
+  }
+  file << endl;
+}
+
+void Controller::writeExtendedSystemData(int step, ofstream &file) {
+  Lattice &lattice = state->lattice;
+  file << step
+    << " " << lattice.a().x << " " << lattice.a().y << " " << lattice.a().z
+    << " " << lattice.b().x << " " << lattice.b().y << " " << lattice.b().z
+    << " " << lattice.c().x << " " << lattice.c().y << " " << lattice.c().z
+    << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
+  if ( simParams->langevinPistonOn ) {
+    Vector strainRate = diagonal(langevinPiston_strainRate);
+    Vector strainRate2 = off_diagonal(langevinPiston_strainRate);
+    file << " " << strainRate.x;
+    file << " " << strainRate.y;
+    file << " " << strainRate.z;
+    file << " " << strainRate2.x;
+    file << " " << strainRate2.y;
+    file << " " << strainRate2.z;
+  }
+  file << endl;
+}
+
 void Controller::enqueueCollections(int timestep)
 {
   if ( Output::coordinateNeeded(timestep) )
     collection->enqueuePositions(timestep);
   if ( Output::velocityNeeded(timestep) )
     collection->enqueueVelocities(timestep);
+}
+
+void Controller::outputExtendedSystem(int step)
+{
+    // Write out eXtended System Trajectory (XST) file
+    if ( step != -1 && simParams->xstFrequency != -1 &&
+         ! ( step % simParams->xstFrequency ) )
+    {
+      if ( step == simParams->firstTimestep )
+      {
+        char bfname[140];
+        strcpy(bfname, simParams->xstFilename);
+        strcat(bfname, ".BAK");
+        rename(simParams->xstFilename,bfname);
+        xstFile.open(simParams->xstFilename);
+        xstFile << "# NAMD extended system trajectory file" << endl;
+        writeExtendedSystemLabels(xstFile);
+      }
+      writeExtendedSystemData(step,xstFile);
+      xstFile.flush();
+      if ( simParams->xstFrequency != -1 && step == simParams->N )
+      {
+        xstFile.close();
+      }
+    }
+
+    // Write out eXtended System Configuration (XSC) files
+    //  Output a restart file
+    if ( step != -1 && (simParams->restartFrequency != -1) &&
+         ((step % simParams->restartFrequency) == 0) &&
+         (step != simParams->firstTimestep) )
+    {
+      char fname[140];
+      strcpy(fname, simParams->restartFilename);
+      strcat(fname, ".xsc");
+      char bfname[140];
+      strcpy(bfname, simParams->restartFilename);
+      strcat(bfname, ".xsc.BAK");
+      rename(fname,bfname);
+      ofstream xscFile(fname);
+      iout << "WRITING EXTENDED SYSTEM TO RESTART FILE AT STEP "
+		<< step << "\n" << endi;
+      xscFile << "# NAMD extended system configuration restart file" << endl;
+      writeExtendedSystemLabels(xscFile);
+      writeExtendedSystemData(step,xscFile);
+    }
+
+    //  Output final coordinates
+    if (step == -1)
+    {
+      static char fname[140];
+      strcpy(fname, simParams->outputFilename);
+      strcat(fname, ".xsc");
+      char bfname[140];
+      strcpy(bfname, simParams->outputFilename);
+      strcat(bfname, ".xsc.BAK");
+      rename(fname,bfname);
+      ofstream xscFile(fname);
+      iout << "WRITING EXTENDED SYSTEM TO OUTPUT FILE AT STEP "
+		<< simParams->N << "\n" << endi;
+      xscFile << "# NAMD extended system configuration output file" << endl;
+      writeExtendedSystemLabels(xscFile);
+      writeExtendedSystemData(simParams->N,xscFile);
+    }
 }
 
 void Controller::terminate(void) {

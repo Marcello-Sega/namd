@@ -589,7 +589,7 @@ int read_dcdstep(int fd, int N, float *X, float *Y, float *Z, int num_fixed,
 /*   the filename to open as its only argument.	 It will return a    */
 /*   valid file descriptor if successful or DCD_OPENFAILED if the    */
 /*   open fails for some reason.  If the file specifed already       */
-/*   exists, it is renamed by appending .bak to it.		     */
+/*   exists, it is renamed by appending .BAK to it.		     */
 /*								     */
 /*********************************************************************/
 
@@ -606,7 +606,7 @@ int open_dcd_write(char *dcdname)
            if(newdcdname == (char *) 0)
              return DCD_OPENFAILED;
            strcpy(newdcdname, dcdname);
-           strcat(newdcdname, ".bak");
+           strcat(newdcdname, ".BAK");
 	   if(rename(dcdname, newdcdname))
 		return(DCD_OPENFAILED);
 	   delete [] newdcdname;

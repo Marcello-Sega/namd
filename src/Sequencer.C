@@ -77,8 +77,6 @@ void Sequencer::algorithm(void)
       case 2:
 	collection->submitPositions(0,patch->atomIDList,patch->p,
 					patch->lattice,patch->t,2);
-	continue;
-      case 3:
 	collection->submitVelocities(0,patch->atomIDList,patch->v);
 	continue;
     }
