@@ -655,8 +655,8 @@ ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
   barrierStep = 0;
 
 #ifdef NAMD_PLUGINS
-  dcdplugin_init();
-  dcdplugin_register(NULL, register_cb);
+  molfile_dcdplugin_init();
+  molfile_dcdplugin_register(NULL, register_cb);
 #endif
 
   runWasCalled = 0;
@@ -759,7 +759,7 @@ ScriptTcl::~ScriptTcl() {
 #endif
 
 #ifdef NAMD_PLUGINS
-  dcdplugin_fini();
+  molfile_dcdplugin_fini();
 #endif
 }
 
