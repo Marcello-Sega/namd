@@ -1,5 +1,5 @@
 
-FFTDIR=/usr/local
+FFTDIR=$(HOME)/fftw
 FFTINCL=-I$(FFTDIR)/include -Ifftw
 FFTLIB=-L$(FFTDIR)/lib -lrfftw -lfftw -Lfftw -lfftw_ampi
 FFTFLAGS=-DNAMD_FFTW
