@@ -11,7 +11,7 @@
 %
 %       $RCSfile: ug_intro.tex,v $
 %       $Author: jim $        $Locker:  $                $State: Exp $
-%       $Revision: 1.2 $      $Date: 1998/03/06 09:08:10 $
+%       $Revision: 1.3 $      $Date: 1998/03/06 11:03:29 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -21,6 +21,9 @@
 % REVISION HISTORY:
 %
 % $Log: ug_intro.tex,v $
+% Revision 1.3  1998/03/06 11:03:29  jim
+% Added nonbondedFreq parameter.
+%
 % Revision 1.2  1998/03/06 09:08:10  jim
 % Documented new features in 2.0.  Added authors.  Still needs converse docs.
 %
@@ -95,6 +98,7 @@ The most noticable change to the end user is the switch from PVM to the Converse
 \NAMD\ \NAMDVER\ has also been ported to several new platforms.
 
 New features in \NAMD\ \NAMDVER\ include periodic boundary conditions, the Berendsen constant pressure simulation method, fixed atoms, several boundary conditions, triple timestepping, full electrostatic evaluation independent of cycle length, and the ability to do on-the-fly analysis and apply forces to the system via Tcl scripts.
+The new multiple timestepping parameter \verb!nonbondedFreq! allows nonbonded interactions to be evaluated less frequently, leaving only bonded interactions to be calculated every timestep.
 The new spatial partitioning parameters \verb!splitPatch! and \verb!hgroupCutoff! have been added due to a change from pairlists to group-based distance checking.
 The Langevin dynamics algorithm has been altered to be more suitable for temperature control with small damping coefficients.
 
@@ -104,7 +108,7 @@ Margin checking is performed at every timestep.
 There are not separate switching and cutoff parameters for van der Waals and electrostatic potentials.
 
 Planned features which are not in this beta release include conjugate-gradient minimization, particle-mesh Ewald electrostatic evaluation, and Nos{\'e}-Hoover NPT simulation methods.
-Also unimplemented are lesser-used features such as an applied electric field, force DCD files, and interactive simulation.
+Also unimplemented are less-used features such as an applied electric field, force DCD files, and interactive simulation.
 
 \subsection{\NAMD\ and molecular dynamics simulations}
 

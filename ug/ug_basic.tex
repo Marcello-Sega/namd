@@ -242,6 +242,11 @@ For more details
 on non-bonded force evaluation and pairlist generation, see
 Section \ref{section:electdesc}.}
 
+\item
+\NAMDCONFWDEF{nonbondedFreq}{timesteps between nonbonded evaluation}{positive integer factor of \verb!fmaFrequency!}{1}
+{This parameter specifies how often short-range nonbonded interactions should be calculated.  Setting \verb!nonbondedFreq! between 1 and \verb!fmaFrequency! allows triple timestepping where, for example, one could evaluate bonded forces every 1 fs, short-range nonbonded forces every 2 fs, and long-range electrostatics every 4 fs.} 
+
+
 \end{itemize}
 
 \paragraph{Simulation space partitioning}
