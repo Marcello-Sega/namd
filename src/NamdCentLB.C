@@ -6,7 +6,6 @@
 
 #include <charm++.h>
 
-#include <CkLists.h>
 #include "NamdCentLB.h"
 #include "NamdCentLB.def.h"
 #include "Node.h"
@@ -112,7 +111,7 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
   }
   delete [] computeCount;
   
-  CkVector migrateInfo;
+  CkVec<MigrateInfo *> migrateInfo;
   for(i=0;i<nMoveableComputes;i++) {
     if (computeArray[i].processor != computeArray[i].oldProcessor) {
       //      CkPrintf("[%d] Obj %d migrating from %d to %d\n",
@@ -122,16 +121,16 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
       migrateMe->obj = computeArray[i].handle;
       migrateMe->from_pe = computeArray[i].oldProcessor;
       migrateMe->to_pe = computeArray[i].processor;
-      migrateInfo.push_back((void*)migrateMe);
+      migrateInfo.insertAtEnd(migrateMe);
     }
   }
   
-  int migrate_count=migrateInfo.size();
+  int migrate_count=migrateInfo.length();
   // CkPrintf("NamdCentLB migrating %d elements\n",migrate_count);
   CLBMigrateMsg* msg = new(&migrate_count,1) CLBMigrateMsg;
   msg->n_moves = migrate_count;
   for(i=0; i < migrate_count; i++) {
-    MigrateInfo* item = (MigrateInfo*) migrateInfo[i];
+    MigrateInfo* item = migrateInfo[i];
     msg->moves[i] = *item;
     delete item;
     migrateInfo[i] = 0;
