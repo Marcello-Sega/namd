@@ -91,7 +91,9 @@ Atoms may be held fixed during a simulation.  \NAMD\ avoids calculating most int
 
 \item
 \NAMDCONFWDEF{fixedAtomsForces}{are forces between fixed atoms calculated?}{{\tt on} or {\tt off}}{{\tt off}}
-{Specifies whether or not forces between fixed atoms are calculated.  This option is required for constant pressure or to turn fixed atoms off in the middle of a simulation.}
+{Specifies whether or not forces between fixed atoms are calculated.  This option is required to turn fixed atoms off in the middle of a simulation.
+These forces will affect the pressure calculation, and you should leave this option off when using constant pressure if the coordinates of the fixed atoms have not been minimized.
+The use of constant pressure with significant numbers of fixed atoms is not recommended.}
 
 \item
 \NAMDCONFWDEF{fixedAtomsFile}{PDB file containing fixed atom parameters}
