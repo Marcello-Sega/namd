@@ -76,9 +76,8 @@ public:
   // methods for mollified impluse (MOLLY)
   void mollyAverage();
   void mollyMollify(Vector *virial);
-  Bool average(Vector qtilde[],const Vector q[],BigReal lambda[],const int n,const int m, const BigReal imass[], const BigReal length2[], const int ial[], const int ilb[], const Vector qji[], const BigReal tolf, const int ntrial);
-  void G_q(const Vector refab[],Vector gqij[], const int n, const int m, const int ial[],const int ibl[]);
-  void mollify(Vector qtilde[],const Vector q0[],const BigReal lambda[], Vector force[],const int n, const int m, const BigReal imass[],const int ial[],const int ibl[],const Vector refab[]); 
+//  Bool average(Vector qtilde[],const Vector q[],BigReal lambda[],const int n,const int m, const BigReal imass[], const BigReal length2[], const int ial[], const int ilb[], const Vector qji[], const BigReal tolf, const int ntrial);
+//  void mollify(Vector qtilde[],const Vector q0[],const BigReal lambda[], Vector force[],const int n, const int m, const BigReal imass[],const int ial[],const int ibl[],const Vector refab[]); 
 
   // patch-wise calculations
   BigReal calcKineticEnergy();
@@ -129,12 +128,15 @@ private:
  *
  *	$RCSfile: HomePatch.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1020 $	$Date: 1999/08/20 19:11:12 $
+ *	$Revision: 1.1021 $	$Date: 1999/08/27 16:40:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.1021  1999/08/27 16:40:20  jim
+ * Eliminated memory allocation and 1-based indexing from MOLLY code.
+ *
  * Revision 1.1020  1999/08/20 19:11:12  jim
  * Added MOLLY - mollified impluse method.
  *

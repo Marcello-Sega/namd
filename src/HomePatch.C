@@ -38,8 +38,19 @@
 //#define DEBUGM
 #include "Debug.h"
 
+typedef int HGArrayInt[MAXHGS];
+typedef BigReal HGArrayBigReal[MAXHGS];
+typedef Vector HGArrayVector[MAXHGS];
+typedef BigReal HGMatrixBigReal[MAXHGS][MAXHGS];
+typedef Vector HGMatrixVector[MAXHGS][MAXHGS];
+
+int average(Vector *qtilde,const HGArrayVector &q,BigReal *lambda,const int n,const int m, const HGArrayBigReal &imass, const HGArrayBigReal &length2, const HGArrayInt &ial, const HGArrayInt &ibl, const HGArrayVector &refab, const BigReal tolf, const int ntrial);
+
+void mollify(Vector *qtilde,const HGArrayVector &q0,const BigReal *lambda, HGArrayVector &force,const int n, const int m, const HGArrayBigReal &imass,const HGArrayInt &ial,const HGArrayInt &ibl,const HGArrayVector &refab);
+
+
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1057 1999/08/25 18:38:21 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1058 1999/08/27 16:40:19 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, TransformList tl,
       PositionList pl, VelocityList vl) : Patch(pd,al,pl), v(vl), t(tl)
@@ -439,16 +450,17 @@ void HomePatch::mollyAverage()
   BigReal tol = simParams->mollyTol;
   int maxiter = simParams->mollyIter;
   int i, iter;
-  BigReal dsq[MAXHGS], tmp;
-  int ial[MAXHGS], ibl[MAXHGS];
-  Vector ref[MAXHGS];  // reference position
-  Vector refab[MAXHGS];  // reference vector
-  BigReal rmass[MAXHGS];  // 1 / mass
-  BigReal redmass[MAXHGS];  // reduced mass
+  HGArrayBigReal dsq;
+  BigReal tmp;
+  HGArrayInt ial, ibl;
+  HGArrayVector ref;  // reference position
+  HGArrayVector refab;  // reference vector
+  HGArrayBigReal rmass;  // 1 / mass
+  HGArrayBigReal redmass;  // reduced mass
   BigReal *lambda;  // Lagrange multipliers
   Vector *avg;  // averaged position
   int numLambdas = 0;
-  int fixed[MAXHGS];  // is atom fixed?
+  HGArrayInt fixed;  // is atom fixed?
 
   //  iout<<iINFO << "mollyAverage: "<<endl<<endi;
   p_avg.resize(numAtoms);
@@ -508,17 +520,18 @@ void HomePatch::mollyMollify(Vector *virial)
   BigReal tol = simParams->mollyTol;
   int maxiter = simParams->mollyIter;
   int i, iter;
-  BigReal dsq[MAXHGS], tmp;
-  int ial[MAXHGS], ibl[MAXHGS];
-  Vector ref[MAXHGS];  // reference position
+  HGArrayBigReal dsq;
+  BigReal tmp;
+  HGArrayInt ial, ibl;
+  HGArrayVector ref;  // reference position
   Vector *avg;  // averaged position
-  Vector refab[MAXHGS];  // reference vector
-  Vector force[MAXHGS];  // new force
-  BigReal rmass[MAXHGS];  // 1 / mass
-  BigReal redmass[MAXHGS];  // reduced mass
+  HGArrayVector refab;  // reference vector
+  HGArrayVector force;  // new force
+  HGArrayBigReal rmass;  // 1 / mass
+  HGArrayBigReal redmass;  // reduced mass
   BigReal *lambda;  // Lagrange multipliers
   int numLambdas = 0;
-  int fixed[MAXHGS];  // is atom fixed?
+  HGArrayInt fixed;  // is atom fixed?
 
   for ( int ig = 0; ig < numAtoms; ig += a[ig].hydrogenGroupSize ) {
     int hgs = a[ig].hydrogenGroupSize;
@@ -879,8 +892,92 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
   }
 }
 
+inline void lubksb(HGMatrixBigReal &a, int n, HGArrayInt &indx,
+                                              HGArrayBigReal &b)
+{
+	int i,ii=-1,ip,j;
+	double sum;
+
+	for (i=0;i<n;i++) {
+		ip=indx[i];
+		sum=b[ip];
+		b[ip]=b[i];
+		if (ii >= 0)
+			for (j=ii;j<i;j++) sum -= a[i][j]*b[j];
+		else if (sum) ii=i;
+		b[i]=sum;
+	}
+	for (i=n-1;i>=0;i--) {
+		sum=b[i];
+		for (j=i+1;j<n;j++) sum -= a[i][j]*b[j];
+		b[i]=sum/a[i][i];
+	}
+}
+
+
+inline void ludcmp(HGMatrixBigReal &a, int n, HGArrayInt &indx, BigReal *d)
+{
+
+	int i,imax,j,k;
+	double big,dum,sum,temp;
+	HGArrayBigReal vv;
+	*d=1.0;
+	for (i=0;i<n;i++) {
+		big=0.0;
+		for (j=0;j<n;j++)
+			if ((temp=fabs(a[i][j])) > big) big=temp;
+		if (big == 0.0) NAMD_die("Singular matrix in routine ludcmp\n");
+		vv[i]=1.0/big;
+	}
+	for (j=0;j<n;j++) {
+		for (i=0;i<j;i++) {
+			sum=a[i][j];
+			for (k=0;k<i;k++) sum -= a[i][k]*a[k][j];
+			a[i][j]=sum;
+		}
+		big=0.0;
+		for (i=j;i<n;i++) {
+			sum=a[i][j];
+			for (k=0;k<j;k++)
+				sum -= a[i][k]*a[k][j];
+			a[i][j]=sum;
+			if ( (dum=vv[i]*fabs(sum)) >= big) {
+				big=dum;
+				imax=i;
+			}
+		}
+		if (j != imax) {
+			for (k=0;k<n;k++) {
+				dum=a[imax][k];
+				a[imax][k]=a[j][k];
+				a[j][k]=dum;
+			}
+			*d = -(*d);
+			vv[imax]=vv[j];
+		}
+		indx[j]=imax;
+		if (a[j][j] == 0.0) a[j][j]=TINY;
+		if (j != n-1) {
+			dum=1.0/(a[j][j]);
+			for (i=j+1;i<n;i++) a[i][j] *= dum;
+		}
+	}
+}
+
+
+inline void G_q(const HGArrayVector &refab, HGMatrixVector &gqij,
+     const int n, const int m, const HGArrayInt &ial, const HGArrayInt &ibl) {
+  int i,j; 
+  // step through the rows of the matrix
+  for(i=0;i<m;i++) {
+    gqij[i][ial[i]]=2.0*refab[i];
+    gqij[i][ibl[i]]=-gqij[i][ial[i]];
+  }
+};
+
+
 // c-ji code for MOLLY 7-31-99
-int HomePatch::average(Vector qtilde[],const Vector q[],BigReal lambda[],const int n,const int m, const BigReal imass[], const BigReal length2[], const int ial[], const int ibl[], const Vector refab[], const BigReal tolf, const int ntrial) {
+int average(Vector *qtilde,const HGArrayVector &q,BigReal *lambda,const int n,const int m, const HGArrayBigReal &imass, const HGArrayBigReal &length2, const HGArrayInt &ial, const HGArrayInt &ibl, const HGArrayVector &refab, const BigReal tolf, const int ntrial) {
   //  input:  n = length of hydrogen group to be averaged (shaked)
   //          q[n] = vector array of original positions
   //          m = number of constraints
@@ -895,34 +992,21 @@ int HomePatch::average(Vector qtilde[],const Vector q[],BigReal lambda[],const i
   //          qtilde[n] = vector array of averaged (shaked) positions
   Bool  flag;
 
-  void lubksb(BigReal **a, int n, int *indx, BigReal b[]);
-  void ludcmp(BigReal **a, int n, int *indx, BigReal *d);
   int k,k1,i,j;
-  BigReal errx,errf,d,**fjac,tolx;
+  BigReal errx,errf,d,tolx;
 
-  int indx[MAXHGS+1]; 
-  double p[MAXHGS+1];
-  double fvec[MAXHGS+1];
-  fjac = new double*[m];
-  fjac[0] = new double[m*m];
-  Vector avgab[MAXHGS]; 
-  Vector grhs[MAXHGS*MAXHGS]; 
-  Vector auxrhs[MAXHGS*MAXHGS]; 
-  Vector glhs[MAXHGS*MAXHGS]; 
+  HGArrayInt indx;
+  HGArrayBigReal p;
+  HGArrayBigReal fvec;
+  HGMatrixBigReal fjac;
+  HGArrayVector avgab;
+  HGMatrixVector grhs;
+  HGMatrixVector auxrhs;
+  HGMatrixVector glhs;
 
   //  iout <<iINFO << "average: n="<<n<<" m="<<m<<endl<<endi;
   tolx=tolf; 
-  // make pointers work with NR linear solver
   
-  for(i=1;i<m;i++) {
-    fjac[i] = fjac[0]+m*i-1;
-  }
-  fjac[0]--;
-  fjac--;
-//   p--;
-//   fvec--;
-//   indx--;
-
   // initialize lambda, globalGrhs
 
   for (i=0;i<m;i++) {
@@ -936,24 +1020,23 @@ int HomePatch::average(Vector qtilde[],const Vector q[],BigReal lambda[],const i
   G_q(refab,grhs,n,m,ial,ibl);
   for (k=1;k<=ntrial;k++) {
     //    usrfun(qtilde,q0,lambda,fvec,fjac,n,water); 
-    BigReal gij[MAXHGS];
+    HGArrayBigReal gij;
     // this used to be main loop of usrfun
     // compute qtilde given q0, lambda, IMASSes
     {
       BigReal multiplier;
-      //      Vector* tmp = new Vector[n];
-      Vector tmp[MAXHGS];
+      HGArrayVector tmp;
       for (i=0;i<m;i++) {
 	multiplier = lambda[i];
 	// auxrhs = M^{-1}grhs^{T}
 	for (j=0;j<n;j++) {
-	  auxrhs[i*n+j]=multiplier*imass[j]*grhs[i*n+j];
+	  auxrhs[i][j]=multiplier*imass[j]*grhs[i][j];
 	}
       }
       for (j=0;j<n;j++) {
 	//      tmp[j]=0.0;      
 	for (i=0;i<m;i++) {
-	  tmp[j]+=auxrhs[i*n+j];
+	  tmp[j]+=auxrhs[i][j];
 	}
       }
  
@@ -973,10 +1056,7 @@ int HomePatch::average(Vector qtilde[],const Vector q[],BigReal lambda[],const i
       int ierr;
       //  Vector glhs[3*n+3];
 
-      Vector grhs2[MAXHGS*MAXHGS];
-
-      //      grhs2 = new Vector[m*n];
-
+      HGMatrixVector grhs2;
 
       G_q(avgab,glhs,n,m,ial,ibl);
 #ifdef DEBUG0
@@ -989,17 +1069,17 @@ int HomePatch::average(Vector qtilde[],const Vector q[],BigReal lambda[],const i
       // update with the masses
       for (j=0; j<n; j++) { // number of atoms
 	for (i=0; i<m;i++) { // number of constraints
-	  grhs2[i*n+j] = grhs[i*n+j]*imass[j];
+	  grhs2[i][j] = grhs[i][j]*imass[j];
 	}
       }
 
       // G_q(qtilde) * M^-1 G_q'(q0) =
       // G_q(qtilde) * grhs'
-      for (i=1;i<=m;i++) { // number of constraints
-	for (j=1;j<=m;j++) { // number of constraints
+      for (i=0;i<m;i++) { // number of constraints
+	for (j=0;j<m;j++) { // number of constraints
 	  fjac[i][j] = 0; 
 	  for (k1=0;k1<n;k1++) {
-	    fjac[i][j] += glhs[(i-1)*n+k1]*grhs2[(j-1)*n+k1]; 
+	    fjac[i][j] += glhs[i][k1]*grhs2[j][k1]; 
 	  }
 	}
       }
@@ -1019,8 +1099,8 @@ int HomePatch::average(Vector qtilde[],const Vector q[],BigReal lambda[],const i
     // end of Jac calculation
 #ifdef DEBUG0
     iout<<iINFO << "Jac" << endl<<endi;
-    for (i=1;i<=m;i++) 
-      for (j=1;j<=m;j++)
+    for (i=0;i<m;i++) 
+      for (j=0;j<m;j++)
 	iout<<iINFO << fjac[i][j] << " "<<endi;
     iout<< endl<<endi;
 #endif
@@ -1039,13 +1119,13 @@ int HomePatch::average(Vector qtilde[],const Vector q[],BigReal lambda[],const i
 #endif
     // fill the return vector
     for(i=0;i<m;i++) {
-      fvec[i+1] = gij[i];
+      fvec[i] = gij[i];
     }
     // free up the constraints
     //    delete[] gij;
     // continue Newton's iteration    
     errf=0.0;
-    for (i=1;i<=m;i++) errf += fabs(fvec[i]);
+    for (i=0;i<m;i++) errf += fabs(fvec[i]);
 #ifdef DEBUG0
     iout<<iINFO << "errf: " << errf << endl<<endi;
 #endif
@@ -1053,17 +1133,17 @@ int HomePatch::average(Vector qtilde[],const Vector q[],BigReal lambda[],const i
       flag=1; // convergence!
       break;
     }
-    for (i=1;i<=m;i++) p[i] = -fvec[i];
+    for (i=0;i<m;i++) p[i] = -fvec[i];
     //    iout<<iINFO << "Doing dcmp in average " << endl<<endi;
     ludcmp(fjac,m,indx,&d);
     lubksb(fjac,m,indx,p);
 
     errx=0.0;
-    for (i=1;i<=m;i++) {
+    for (i=0;i<m;i++) {
       errx += fabs(p[i]);
     }
     for (i=0;i<m;i++)  
-      lambda[i] += p[i+1];
+      lambda[i] += p[i];
 
 #ifdef DEBUG0
     iout<<iINFO << "lambda:" << lambda[0] 
@@ -1081,8 +1161,8 @@ int HomePatch::average(Vector qtilde[],const Vector q[],BigReal lambda[],const i
 #endif
   // restore NR vector, matrix pointers to C++ pointers
   //  indx++;p++;fvec++;
-  fjac++;
-  fjac[0]++;
+//   fjac++;
+//   fjac[0]++;
 //   delete[] glhs;
 //   glhs = NULL;
 //   delete [] auxrhs;
@@ -1091,10 +1171,10 @@ int HomePatch::average(Vector qtilde[],const Vector q[],BigReal lambda[],const i
 //   grhs = NULL;
 //   delete [] avgab;
 //   avgab = NULL;
-  delete [] fjac[0];
-  fjac[0] = NULL;
-  delete [] fjac;
-  fjac = NULL;
+//   delete [] fjac[0];
+//   fjac[0] = NULL;
+//   delete [] fjac;
+//   fjac = NULL;
 //   delete [] fvec;
 //   fvec = NULL;
 //   delete [] p;
@@ -1105,51 +1185,28 @@ int HomePatch::average(Vector qtilde[],const Vector q[],BigReal lambda[],const i
   return k; // 
 }
 
-void HomePatch::G_q(const Vector refab[],Vector gqij[], const int n, const int m, const int ial[],const int ibl[]) {
-  int i,j; 
-  // step through the rows of the matrix
-  for(i=0;i<m;i++) {
-    gqij[i*n+ial[i]]=2.0*refab[i];
-    gqij[i*n+ibl[i]]=-gqij[i*n+ial[i]];
-  }
-};
-
-void HomePatch::mollify(Vector qtilde[],const Vector q0[],const BigReal lambda[], Vector force[],const int n, const int m, const BigReal imass[],const int ial[],const int ibl[],const Vector refab[]) {
+void mollify(Vector *qtilde,const HGArrayVector &q0,const BigReal *lambda, HGArrayVector &force,const int n, const int m, const HGArrayBigReal &imass,const HGArrayInt &ial,const HGArrayInt &ibl,const HGArrayVector &refab) {
   int i,j,k;
   // for now,  ignore water and masses parameters
   //  const int n = 3;
-  BigReal d,*fvec,**fjac;
-  int *indx;
+  BigReal d;
+  HGMatrixBigReal fjac;
   Vector zero(0.0,0.0,0.0);
   
-  double **fjacinv;
-  void lubksb(BigReal **a, int n, int *indx, BigReal b[]);
-  void ludcmp(BigReal **a, int n, int *indx, BigReal *d);
-  Vector tmpforce[MAXHGS]; 
-  Vector tmpforce2[MAXHGS];
-  Vector y[MAXHGS]; 
-  Vector gqij[MAXHGS*MAXHGS];
-  Vector grhs[MAXHGS*MAXHGS];
-  Vector glhs[MAXHGS*MAXHGS];
+  HGMatrixBigReal fjacinv;
+  HGArrayVector tmpforce;
+  HGArrayVector tmpforce2;
+  HGArrayVector y;
+  HGMatrixVector gqij;
+  HGMatrixVector grhs;
+  HGMatrixVector glhs;
 
-  BigReal aux[MAXHGS];
-  BigReal aux2[MAXHGS];
+  HGArrayBigReal aux;
+  HGArrayBigReal aux2;
 
-  indx = new int[n];
-  fvec=new double[m];
-  //  int indx[MAXHGS+1];
-  //  double fvec[MAXHGS];
-  fjac= new double*[m];
-  fjac[0] = new double[m*m];
-  fjacinv= new double*[m];
-  fjacinv[0] = new double[m*m];
-  for(i=1;i<m;i++) {
-    fjac[i] = fjac[0]+m*i-1;
-    fjacinv[i] = fjacinv[0]+m*i-1;
-  }
-  fjac[0]--;
-  fjacinv[0]--;
-  indx--;fvec--;fjac--;fjacinv--;
+  HGArrayInt indx;
+  HGArrayBigReal fvec;
+//  indx--;fvec--;fjac--;fjacinv--;
 
   for(i=0;i<n;i++) {
     tmpforce[i]=imass[i]*force[i];
@@ -1161,8 +1218,8 @@ void HomePatch::mollify(Vector qtilde[],const Vector q0[],const BigReal lambda[]
       int ierr;
       //  Vector glhs[3*n+3];
 
-      Vector grhs2[MAXHGS*MAXHGS];
-      Vector avgab[MAXHGS*MAXHGS];
+      HGMatrixVector grhs2;
+      HGArrayVector avgab;
 
       for ( i = 0; i < m; i++ ) {
 	avgab[i] = qtilde[ial[i]] - qtilde[ibl[i]];
@@ -1173,17 +1230,17 @@ void HomePatch::mollify(Vector qtilde[],const Vector q0[],const BigReal lambda[]
       // update with the masses
       for (j=0; j<n; j++) { // number of atoms
 	for (i=0; i<m;i++) { // number of constraints
-	  grhs2[i*n+j] = grhs[i*n+j]*imass[j];
+	  grhs2[i][j] = grhs[i][j]*imass[j];
 	}
       }
 
       // G_q(qtilde) * M^-1 G_q'(q0) =
       // G_q(qtilde) * grhs'
-      for (i=1;i<=m;i++) { // number of constraints
-	for (j=1;j<=m;j++) { // number of constraints
+      for (i=0;i<m;i++) { // number of constraints
+	for (j=0;j<m;j++) { // number of constraints
 	  fjac[i][j] = 0; 
 	  for (k=0;k<n;k++) {
-	    fjac[i][j] += glhs[(i-1)*n+k]*grhs2[(j-1)*n+k]; 
+	    fjac[i][j] += glhs[i][k]*grhs2[j][k]; 
 	  }
 	}
       }
@@ -1193,18 +1250,18 @@ void HomePatch::mollify(Vector qtilde[],const Vector q0[],const BigReal lambda[]
     }
     // end of Jac calculation
 
-  for (i=1;i<=m;i++) {
-    for (j=1;j<=m;j++) {
+  for (i=0;i<m;i++) {
+    for (j=0;j<m;j++) {
       fjacinv[i][j]=0.0;
     }
   }
 
-  for(i=1;i<=m;i++) {
+  for(i=0;i<m;i++) {
     fjacinv[i][i]=1.0;
   }
   
   ludcmp(fjac,m,indx,&d);
-  for(i=1;i<=m;i++) {
+  for(i=0;i<m;i++) {
     lubksb(fjac,m,indx,fjacinv[i]);
   }
   // aux=gqij*tmpforce
@@ -1213,7 +1270,7 @@ void HomePatch::mollify(Vector qtilde[],const Vector q0[],const BigReal lambda[]
   for(i=0;i<m;i++) {
     aux[i]=0.0;
     for(j=0;j<n;j++) {
-      aux[i]+=grhs[i*n+j]*tmpforce[j];
+      aux[i]+=grhs[i][j]*tmpforce[j];
     }
   }
 
@@ -1221,14 +1278,14 @@ void HomePatch::mollify(Vector qtilde[],const Vector q0[],const BigReal lambda[]
   for(i=0;i<m;i++) {
     aux2[i]=0.0;
     for(j=0;j<m;j++) {
-      aux2[i]+=fjacinv[i+1][j+1]*aux[j];
+      aux2[i]+=fjacinv[i][j]*aux[j];
     }
   }
   // y=gq(qtilde)'*aux
   //  G_q(qtilde,gqij,n,water);
   for(i=0;i<m;i++) {
     for(j=0;j<n;j++) {
-      gqij[i*n+j] = aux2[i]*glhs[i*n+j];
+      gqij[i][j] = aux2[i]*glhs[i][j];
     }
   }
   // are these indices right? NO!!!
@@ -1242,7 +1299,7 @@ void HomePatch::mollify(Vector qtilde[],const Vector q0[],const BigReal lambda[]
   for(j=0;j<n;j++) {
     y[j] = zero;
     for(i=0;i<m;i++) {
-      y[j] += gqij[i*n+j];
+      y[j] += gqij[i][j];
       //iout<<iINFO << i << ", " << n << ", " << j << endl<<endi;
     }
   }
@@ -1279,12 +1336,12 @@ void HomePatch::mollify(Vector qtilde[],const Vector q0[],const BigReal lambda[]
   //end partial
 //  delete[] gqij;
   
-  indx++;fvec++;fjac++;fjacinv++;
-  fjac[0]++; fjacinv[0]++;
-  delete [] fjacinv[0];
-  delete [] fjacinv;
-  delete [] fjac[0];
-  delete [] fjac;
+//  indx++;fvec++;fjac++;fjacinv++;
+//  fjac[0]++; fjacinv[0]++;
+//   delete [] fjacinv[0];
+//   delete [] fjacinv;
+//   delete [] fjac[0];
+//   delete [] fjac;
 //   delete [] fvec;
 //   delete [] indx;
 //   delete [] aux2;
@@ -1297,112 +1354,21 @@ void HomePatch::mollify(Vector qtilde[],const Vector q0[],const BigReal lambda[]
 //   delete [] tmpforce;
 }
 
-void lubksb(double **a, int n, int *indx, double b[])
-{
-	int i,ii=0,ip,j;
-	double sum;
-
-	for (i=1;i<=n;i++) {
-		ip=indx[i];
-		sum=b[ip];
-		b[ip]=b[i];
-		if (ii)
-			for (j=ii;j<=i-1;j++) sum -= a[i][j]*b[j];
-		else if (sum) ii=i;
-		b[i]=sum;
-	}
-	for (i=n;i>=1;i--) {
-		sum=b[i];
-		for (j=i+1;j<=n;j++) sum -= a[i][j]*b[j];
-		b[i]=sum/a[i][i];
-	}
-}
-
-
-void ludcmp(double **a, int n, int *indx, double *d)
-{
-
-	int i,imax,j,k;
-	double big,dum,sum,temp;
-	double *vv;
-	double *dvector(long nl, long nh);
-	void free_dvector(double *v, long nl, long nh);
-	//	iout<<iINFO<<"ludcmp: n="<<n<<endl<<endi;
-	vv=dvector(1,n);
-	*d=1.0;
-	for (i=1;i<=n;i++) {
-		big=0.0;
-		for (j=1;j<=n;j++)
-			if ((temp=fabs(a[i][j])) > big) big=temp;
-		if (big == 0.0) NAMD_die("Singular matrix in routine ludcmp\n");
-		vv[i]=1.0/big;
-	}
-	for (j=1;j<=n;j++) {
-		for (i=1;i<j;i++) {
-			sum=a[i][j];
-			for (k=1;k<i;k++) sum -= a[i][k]*a[k][j];
-			a[i][j]=sum;
-		}
-		big=0.0;
-		for (i=j;i<=n;i++) {
-			sum=a[i][j];
-			for (k=1;k<j;k++)
-				sum -= a[i][k]*a[k][j];
-			a[i][j]=sum;
-			if ( (dum=vv[i]*fabs(sum)) >= big) {
-				big=dum;
-				imax=i;
-			}
-		}
-		if (j != imax) {
-			for (k=1;k<=n;k++) {
-				dum=a[imax][k];
-				a[imax][k]=a[j][k];
-				a[j][k]=dum;
-			}
-			*d = -(*d);
-			vv[imax]=vv[j];
-		}
-		indx[j]=imax;
-		if (a[j][j] == 0.0) a[j][j]=TINY;
-		if (j != n) {
-			dum=1.0/(a[j][j]);
-			for (i=j+1;i<=n;i++) a[i][j] *= dum;
-		}
-	}
-	free_dvector(vv,1,n);
-}
-
-// c-ji this should be changed to code as what I have above ASAP
-// 8-2-99
-double *dvector(long nl, long nh)
-/* allocate a double vector with subscript range v[nl..nh] */
-{
-	double *v;
-
-	v=(double *)malloc((size_t) ((nh-nl+2)*sizeof(double)));
-	if (!v) NAMD_die("allocation failure in dvector()\n");
-	return v-nl+1;
-}
-
-void free_dvector(double *v, long nl, long nh)
-/* free a double vector allocated with dvector() */
-{
-	free((char *) (v+nl-1));
-}
-
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1057 $	$Date: 1999/08/25 18:38:21 $
+ *	$Revision: 1.1058 $	$Date: 1999/08/27 16:40:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1058  1999/08/27 16:40:19  jim
+ * Eliminated memory allocation and 1-based indexing from MOLLY code.
+ *
  * Revision 1.1057  1999/08/25 18:38:21  jim
  * Fixed bug in divide-by-zero bug fix.
  *
