@@ -50,7 +50,7 @@ class ComputeAngles : public ComputeHomeTuples<AngleElem,Angle,AngleValue>
 {
 public:
 
-  ComputeAngles(ComputeID c) : ComputeHomeTuples<AngleElem,Angle,AngleValue>(c) { ; }
+  ComputeAngles(ComputeID c, PatchIDList p) : ComputeHomeTuples<AngleElem,Angle,AngleValue>(c,p) { ; }
 
 };
 

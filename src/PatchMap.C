@@ -255,6 +255,18 @@ HomePatchList *PatchMap::homePatchList() {
 }
 
 //----------------------------------------------------------------------
+PatchIDList PatchMap::homePatchIDList() {
+  PatchIDList pids;
+  int i;
+  for ( i=0; i<nPatches; ++i ) {
+    if ( patchData[i].node == CkMyPe() ) {
+      pids.add(i);
+    }
+  }
+  return pids;
+}
+
+//----------------------------------------------------------------------
 void PatchMap::assignNode(PatchID pid, NodeID node) {
   patchData[pid].node=node;
 }

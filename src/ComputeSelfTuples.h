@@ -93,7 +93,7 @@ template <class T, class S, class P> class ComputeSelfTuples :
     // initialize() - Method is invoked only the first time
     // atom maps, patchmaps etc are ready and we are about to start computations
     //======================================================================
-    void initialize(void) {
+    virtual void initialize(void) {
     
       // Start with empty list
       tuplePatchList.clear();

@@ -52,7 +52,7 @@ class ComputeBonds : public ComputeHomeTuples<BondElem,Bond,BondValue>
 {
 public:
 
-  ComputeBonds(ComputeID c) : ComputeHomeTuples<BondElem,Bond,BondValue>(c) { ; }
+  ComputeBonds(ComputeID c, PatchIDList p) : ComputeHomeTuples<BondElem,Bond,BondValue>(c,p) { ; }
 
 };
 

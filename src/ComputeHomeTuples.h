@@ -135,7 +135,7 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
              for (i=1; i < T::size; i++) {
 	         homepatch = patchMap->downstream(homepatch,aid[i].pid);
              }
-             if ( homepatch != notUsed && patchMap->node(homepatch) == CkMyPe() ) {
+             if ( homepatch != notUsed && isBasePatch[homepatch] ) {
                for (i=0; i < T::size; i++) {
 	         TuplePatchElem *p;
 	         t.p[i] = p = tuplePatchList.find(TuplePatchElem(aid[i].pid));
@@ -168,45 +168,60 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
     PatchMap *patchMap;
     AtomMap *atomMap;
     SubmitReduction *reduction;
-  
-  public:
+    char *isBasePatch;
   
     ComputeHomeTuples(ComputeID c) : Compute(c) {
       patchMap = PatchMap::Object();
       atomMap = AtomMap::Object();
       reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
       doLoadTuples = false;
+      isBasePatch = 0;
     }
 
+    ComputeHomeTuples(ComputeID c, PatchIDList pids) : Compute(c) {
+      patchMap = PatchMap::Object();
+      atomMap = AtomMap::Object();
+      reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+      doLoadTuples = false;
+      int nPatches = patchMap->numPatches();
+      isBasePatch = new char[nPatches];
+      int i;
+      for (i=0; i<nPatches; ++i) { isBasePatch[i] = 0; }
+      for (i=0; i<pids.size(); ++i) { isBasePatch[pids[i]] = 1; }
+    }
+
+  public:
+  
     virtual ~ComputeHomeTuples() {
       delete reduction;
+      delete [] isBasePatch;
     }
 
     //======================================================================
     // initialize() - Method is invoked only the first time
     // atom maps, patchmaps etc are ready and we are about to start computations
     //======================================================================
-    void initialize(void) {
-    
-      // Gather all HomePatches
-      HomePatchList *a = patchMap->homePatchList();
-      ResizeArrayIter<HomePatchElem> ai(*a);
+    virtual void initialize(void) {
     
       // Start with empty list
       tuplePatchList.clear();
     
-      for ( ai = ai.begin(); ai != ai.end(); ai++ ) {
-        tuplePatchList.add(TuplePatchElem((*ai).patch, cid));
+      int nPatches = patchMap->numPatches();
+      int pid;
+      for (pid=0; pid<nPatches; ++pid) {
+        if ( isBasePatch[pid] ) {
+          Patch *patch = patchMap->patch(pid);
+	  tuplePatchList.add(TuplePatchElem(patch, cid));
+        }
       }
     
       // Gather all proxy patches (neighbors, that is)
       PatchID neighbors[PatchMap::MaxOneOrTwoAway];
     
-      for ( ai = ai.begin(); ai != ai.end(); ai++ ) {
-        int numNeighbors = patchMap->upstreamNeighbors((*ai).pid,neighbors);
+      for (pid=0; pid<nPatches; ++pid) if ( isBasePatch[pid] ) {
+        int numNeighbors = patchMap->upstreamNeighbors(pid,neighbors);
         for ( int i = 0; i < numNeighbors; ++i ) {
-          if ( patchMap->node(neighbors[i]) != CkMyPe() &&
-	       ! tuplePatchList.find(TuplePatchElem(neighbors[i])) ) {
+          if ( ! tuplePatchList.find(TuplePatchElem(neighbors[i])) ) {
             Patch *patch = patchMap->patch(neighbors[i]);
 	    tuplePatchList.add(TuplePatchElem(patch, cid));
           }
