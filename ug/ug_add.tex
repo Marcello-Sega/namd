@@ -1215,4 +1215,38 @@ and should therefore be excluded from analysis.  When increasing
 reset to that of another image to avoid any bad initial contacts and
 the resulting instability in the simulation.
 
+\subsection{Pair Interaction Calculations}
+\NAMD supportes the calculation of nonbonded interaction energies between 
+two groups of atoms.  When enabled, the reported VDW and ELECT energies will
+correspond to the interaction energy of the two groups.  The recommended
+way to use this set of options is to use the NAMD Tcl scripting 
+interface as described in Sec.~\ref{section:tclscripting} to run for
+0 steps, so that NAMD prints the energy without performing any dynamics.
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{pairInteraction}{is pair interaction calculation active?}
+{{\tt on} or {\tt off}}{{\tt off}}
+{Specifies whether pair interaction calculation is active.}
+
+\item
+\NAMDCONFWDEF{pairInteractionFile}{PDB file containing pair interaction flags}
+{UNIX filename}{{\tt coordinates}}
+{PDB file to specify atoms to use for pair interaction calculations.  If 
+this parameter is not specified, then the PDB file containing initial 
+coordinates specified by {\tt coordinates} is used.}
+
+\item
+\NAMDCONFWDEF{pairInteractionCol}{column of PDB file containing pair 
+interaction flags}{{\tt X}, {\tt Y}, {\tt Z}, {\tt O}, or {\tt B}}{{\tt B}}
+{
+Column of the PDB file to specify which atoms to use for pair interaction
+calculations.  This parameter may specify any of the floating point
+fields of the PDB file, either X, Y, Z, occupancy, or beta-coupling
+(temperature-coupling).  A value of zero in this column indicates the atom
+is not involved in pair interaction calculations; a value of -1 indicates it
+belongs to group 1; a value of 2 indicates it belongs to group 2.
+}
+
 

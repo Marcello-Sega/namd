@@ -1720,7 +1720,7 @@ void Molecule::send_Molecule(Communicate *com_obj)
 
 //fepb
       // send fep atom info
-      if (simParams->fepOn || simParams->lesOn) {
+      if (simParams->fepOn || simParams->lesOn || simParams->pairInteractionOn) {
         msg->put(numFepInitial);
         msg->put(numFepFinal);
         msg->put(numAtoms*sizeof(char), (char*)fepAtomFlags);
@@ -1910,7 +1910,7 @@ void Molecule::receive_Molecule(MIStream *msg)
 
 //fepb
       //receive fep atom info
-      if (simParams->fepOn || simParams->lesOn) {
+      if (simParams->fepOn || simParams->lesOn || simParams->pairInteractionOn) {
         delete [] fepAtomFlags;
         fepAtomFlags = new unsigned char[numAtoms];
 
@@ -3619,16 +3619,18 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
       } else {
         fepAtomFlags[i] = 0;
       }
-    } else {
-    if (bval == 1.0) {
-      fepAtomFlags[i] = 1;
-      numFepFinal++;
-    } else if (bval == -1.0) {
-      fepAtomFlags[i] = 2;
-      numFepInitial++;
-    } else {
-      fepAtomFlags[i] = 0;
-    }
+    } else if (simParams->pairInteractionOn || simParams->fepOn) {
+      if (bval == 1.0) {
+        cout << "got bval = 1.0 at atom " << i << endl;
+        fepAtomFlags[i] = 1;
+        numFepFinal++;
+      } else if (bval == -1.0) {
+        cout << "got bval = -1.0 at atom " << i << endl;
+        fepAtomFlags[i] = 2;
+        numFepInitial++;
+      } else {
+        fepAtomFlags[i] = 0;
+      }
     }
 
   }

@@ -425,6 +425,13 @@ void ComputeNonbondedUtil :: NAME
       int jfep_type = p_j->partition;
       BigReal lambda_pair = 1.0;
       BigReal d_lambda_pair = 1.0;
+      // for pair interactions, we want lambda = d_lambda = 1 for 
+      // pairs containing one atom from each group; otherwise skip it.
+      if (pairInteractionOn) {
+        if (!ifep_type || !jfep_type || ifep_type == jfep_type) continue;
+        //iout << iINFO << "Doing interaction for atoms " << p_i.id << " " 
+             //<< p_j->id << "\n" << endi;
+      } else {
       if (ifep_type || jfep_type) {
         if (ifep_type && jfep_type && ifep_type != jfep_type) {
 	  lambda_pair = 0.0;
@@ -443,6 +450,7 @@ void ComputeNonbondedUtil :: NAME
 	  d_lambda_pair = 0.0;
         }
       }
+      } // if (pairInteractionOn)
       )
 
       FAST

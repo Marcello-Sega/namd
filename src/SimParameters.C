@@ -628,6 +628,16 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    opts.optional("les", "lesCol", "Column in the lesFile with the "
      "enhancement flag", PARSE_STRING);
 
+   // Pair interaction calculations
+    opts.optionalB("main", "pairInteraction", 
+	"Are pair interactions calculated?", &pairInteractionOn, FALSE);
+    opts.optional("pairInteraction", "pairInteractionFile", 
+	"PDB files with interaction flags " "default is the input PDB file", 
+	PARSE_STRING);
+    opts.optional("pairInteraction", "pairInteractionCol", 
+	"Column in the pairInteractionFile with the interaction flags",
+	PARSE_STRING);
+
    //  Dihedral angle dynamics
    opts.optionalB("main", "globalTest", "Should global integration (for development) be used?",
     &globalOn, FALSE);
@@ -1798,6 +1808,8 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    if ( lesOn && ( lesFactor < 1 || lesFactor > 15 ) ) {
      NAMD_die("lesFactor must be positive and less than 16");
    }
+   if ((pairInteractionOn && fepOn) || (pairInteractionOn && lesOn)) 
+     NAMD_die("Sorry, pair interactions may not be calculated when LES or FEP is enabled.");
 
    //  Set up load balancing variables
    if (opts.defined("ldbStrategy"))
@@ -1957,6 +1969,9 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    }
    if ( fepOn && ( FMAOn || useDPME || fullDirectOn ) ) {
      NAMD_die("Sorry, FEP is only implemented for PME full electrostatics.");
+   }
+   if ( pairInteractionOn && ( PMEOn || FMAOn || useDPME || fullDirectOn ) ) {
+     NAMD_die("Sorry, pairInteraction not implemented for full electrostatics.");
    }
 
    if ( ! fixedAtomsOn ) {
@@ -2524,6 +2539,10 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << iINFO << "LOCALLY ENHANCED SAMPLING ACTIVE\n";
      iout << iINFO << "LOCAL ENHANCEMENT FACTOR IS "
           << lesFactor << "\n";
+   }
+   
+   if ( pairInteractionOn ) {
+     iout << iINFO << "PAIR INTERACTION CALCULATIONS ACTIVE\n";
    }
 
    if (consForceOn)

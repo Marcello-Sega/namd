@@ -239,6 +239,10 @@ int NamdState::configListInit(ConfigList *cfgList) {
            molecule->build_fep_flags(configList->find("lesfile"),
                 configList->find("lescol"), pdb, NULL);
         }
+        if (simParameters->pairInteractionOn) {
+           molecule->build_fep_flags(configList->find("pairInteractionFile"),
+                configList->find("pairInteractionCol"), pdb, NULL);
+        }      
 
 	iout << iINFO << "****************************\n";
 	iout << iINFO << "STRUCTURE SUMMARY:\n";
@@ -310,6 +314,14 @@ int NamdState::configListInit(ConfigList *cfgList) {
            iout << iINFO << molecule->numFepInitial <<
                " LOCALLY ENHANCED ATOMS ENABLED\n";
         }
+       
+        if (simParameters->pairInteractionOn) {
+           iout << iINFO << "PAIR INTERACTION GROUP 1 CONTAINS "
+                <<  molecule->numFepInitial << " ATOMS\n";
+           iout << iINFO << "PAIR INTERACTION GROUP 2 CONTAINS "
+                <<  molecule->numFepFinal << " ATOMS\n";
+        }
+           
 
 	{
 	  // Copied from Controller::printEnergies()

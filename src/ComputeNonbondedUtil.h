@@ -99,6 +99,8 @@ public:
   static int lesFactor;
   static BigReal lesScaling;
 
+  static Bool pairInteractionOn;
+
   // for particle mesh Ewald
   static BigReal ewaldcof;
   static BigReal pi_ewaldcof;
