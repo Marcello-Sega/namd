@@ -441,6 +441,16 @@ void GlobalMasterTcl::initialize() {
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "vecscale", proc_vecscale,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "getbond", proc_getbond,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "getangle", proc_getangle,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "getdihedral", proc_getdihedral,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "anglegrad", proc_anglegrad,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "dihedralgrad", proc_dihedralgrad,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 
   DebugM(1,"here\n");
   // Call interpreter to determine requested atoms
