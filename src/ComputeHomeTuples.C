@@ -11,6 +11,7 @@
  *
  ***************************************************************************/
 
+#include "Namd.h"
 #include "Node.h"
 #include "PatchMap.h"
 #include "AtomMap.h"
@@ -49,18 +50,18 @@ void ComputeHomeTuples<T>::mapReady() {
   }
 
   // Gather all proxy patches (neighbors, that is)
-  PatchID oneaway[PatchMap::MaxOneAway];
+  PatchID neighbors[PatchMap::MaxOneOrTwoAway];
   maxProxyAtoms = 0;
   delete[] dummy;
 
   for ( ai = ai.begin(); ai != ai.end(); ai++ ) {
-    int numOneAway = patchMap->oneAwayNeighbors((*ai).pid, oneaway);
-    for ( int i = 0; i < numOneAway; ++i )
+    int numNeighbors = patchMap->oneOrTwoAwayNeighbors((*ai).pid,neighbors);
+    for ( int i = 0; i < numNeighbors; ++i )
     {
-      if ( patchMap->node(oneaway[i]) != CMyPe() &&
-	   ! tuplePatchList.find(TuplePatchElem(oneaway[i])) )
+      if ( patchMap->node(neighbors[i]) != CMyPe() &&
+	   ! tuplePatchList.find(TuplePatchElem(neighbors[i])) )
       {
-        Patch *patch = patchMap->patch(oneaway[i]);
+        Patch *patch = patchMap->patch(neighbors[i]);
 	DebugM( 1, "ComputeHomeTuples::mapReady() - adding (Proxy)Patch " <<
 		patch->getPatchID() << " to list" << endl );
 	tuplePatchList.add(TuplePatchElem(patch, PROXY, cid));
@@ -77,13 +78,11 @@ void ComputeHomeTuples<T>::mapReady() {
 
   dummy = new Force[maxProxyAtoms];
 
-  ResizeArrayIter<TuplePatchElem> tpi(tuplePatchList);
-
-  /* cycle through each patch */
-  DebugM(1, "ComputeHomeTuples::mapReady() - iterating over patches to get atoms" << endl);
-  for ( tpi = tpi.begin(); tpi != tpi.end(); tpi++ )
+  /* cycle through each home patch */
+  DebugM(1, "ComputeHomeTuples::mapReady() - iterating over home patches to get tuples" << endl);
+  for ( ai = ai.begin(); ai != ai.end(); ai++ )
   {
-    Patch *p = (*tpi).p;
+    Patch *p = (*ai).p;
     DebugM(1, "ComputeHomeTuples::mapReady() - looking at patch " <<
 	p->getPatchID() << " with " << p->getNumAtoms() << " atoms" << endl );
     AtomIDList atomID = p->getAtomIDList();
@@ -106,6 +105,11 @@ void ComputeHomeTuples<T>::mapReady() {
     for (int i=0; i < T::size; i++) {
 	LocalID aid = atomMap->localID((*al).atomID[i]);
 	(*al).p[i] = tuplePatchList.find(TuplePatchElem(aid.pid));
+	if ( ! (*al).p[i] )
+	{
+	  iout << iERROR << "ComputeHomeTuples couldn't find patch " << aid.pid << " for atom " << (*al).atomID[i] << ", aborting.\n" << endi;
+	  Namd::die();
+	}
 	(*al).localIndex[i] = aid.index;
     }
   }
