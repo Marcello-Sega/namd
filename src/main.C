@@ -60,7 +60,9 @@ int tbsoft_sendusage(const char *program,
                      const char *miscinfo) {
 
 #ifndef NOHOSTNAME
-  iout << iINFO << "Sending usage information to NAMD developers via UDP.\n" << endi;
+  iout << iINFO <<
+     "Sending usage information to NAMD developers via UDP.  Sent data is:\n"
+     << endi;
 
   char sendbuf[TBSOFT_TRACK_MAXLEN];
   char host[128];
@@ -79,7 +81,7 @@ int tbsoft_sendusage(const char *program,
 
   sprintf(sendbuf, "1 %s  %s  %s  %s  %s  %s  %s", 
     program, versionnum, platform, numcpus, miscinfo, host, user);
-  iout << iINFO << "Sent data is: " << sendbuf << "\n" << endi;
+  iout << iINFO << sendbuf << "\n" << endi;
   send_dgram(TBSOFT_TRACK_HOST, TBSOFT_TRACK_PORT, sendbuf, strlen(sendbuf));
 
 #endif
@@ -139,6 +141,9 @@ public:
 << iINFO << "\n"
          << endi;
 
+    iout << iINFO << "Based on Charm++/Converse "
+         << oct << showbase << CHARM_VERSION << dec
+         << " for " << CMK_MACHINE_NAME << "\n" << endi;
 #ifndef WIN32
     iout << iINFO << "Built " << namd_build_date << " by "
          << namd_build_user << " on " << namd_build_machine << "\n"
