@@ -3032,6 +3032,7 @@ obj/imd.o: \
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/imd.o $(COPTC) src/imd.C
 obj/build.o: \
 	src/build.c \
+	src/psfgen.h \
 	src/charmm_parse_topo_defs.h \
 	src/topo_defs.h \
 	src/topo_mol.h \
