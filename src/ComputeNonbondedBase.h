@@ -64,9 +64,14 @@ DECL( ; )
 #endif
 #ifdef DEFINITION
 {
-  BigReal electEnergy = 0;
-  BigReal fullElectEnergy = 0;
   BigReal vdwEnergy = 0;
+  BigReal electEnergy = 0;
+  BigReal virial = 0;
+FULL
+(
+  BigReal fullElectEnergy = 0;
+  BigReal fullElectVirial = 0;
+)
 
 NOEXCL
 (
@@ -148,10 +153,12 @@ EXCL
 	BigReal f = kqq*r_1;
 	if ( m14 ) f *= ( 1. - scale14 );
 	fullElectEnergy -= f;
+	fullElectVirial -= f;
 	const Vector f_elec = p_ij * ( f * r_1 * r_1 );
 	fullf_i -= f_elec;
 	fullf_j += f_elec;
 	reduction[fullElectEnergyIndex] += fullElectEnergy;
+	reduction[fullElectVirialIndex] += fullElectVirial;
 	) return; )
       }
 
@@ -186,6 +193,7 @@ NOEXCL
 	  (
 	    // Do a quick fix and get out!
 	    fullElectEnergy -= f;
+	    fullElectVirial -= f;
 	    fullforce_r = -f * r_1 * r_1;
 	    register BigReal tmp;
 	    tmp = fullforce_r * p_ij_x;
@@ -410,6 +418,8 @@ NOEXCL
       f_i.z += tmp;
       f_j.z -= tmp;
 
+      virial += force_r * r2;
+
 FULL
 (
       tmp = fullforce_r * p_ij_x;
@@ -421,6 +431,8 @@ FULL
       tmp = fullforce_r * p_ij_z;
       fullf_i.z += tmp;
       fullf_j.z -= tmp;
+
+      fullElectVirial += fullforce_r * r2;
 )
 
 NOEXCL
@@ -429,9 +441,14 @@ NOEXCL
   }
 )
 
-  reduction[electEnergyIndex] += electEnergy;
-  reduction[fullElectEnergyIndex] += fullElectEnergy;
   reduction[vdwEnergyIndex] += vdwEnergy;
+  reduction[electEnergyIndex] += electEnergy;
+  reduction[virialIndex] += virial;
+FULL
+(
+  reduction[fullElectEnergyIndex] += fullElectEnergy;
+  reduction[fullElectVirialIndex] += fullElectVirial;
+)
 
 }
 #endif
@@ -441,12 +458,15 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/03/17 02:52:13 $
+ *	$Revision: 1.1009 $	$Date: 1997/03/17 03:15:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1009  1997/03/17 03:15:01  jim
+ * Added virial calculation.
+ *
  * Revision 1.1008  1997/03/17 02:52:13  jim
  * Did cleanups and speedups in preparation for virial calculation.
  * Fixed minor bug which resulted in incorrect energies for excluded
