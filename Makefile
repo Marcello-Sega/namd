@@ -382,6 +382,7 @@ release: all
 	   $(ECHO) "group main" > $(RELEASE_DIR_NAME)/nodelist; \
 	   $(ECHO) " host localhost" >> $(RELEASE_DIR_NAME)/nodelist; \
 	fi
+	chmod -R a+rX $(RELEASE_DIR_NAME)
 	tar cf $(RELEASE_DIR_NAME).tar $(RELEASE_DIR_NAME)
 	gzip $(RELEASE_DIR_NAME).tar
 
