@@ -333,20 +333,25 @@ void WorkDistrib::sendMaps(void)
   PatchMap::Object()->pack(mapMsg->patchMapData);
   ComputeMap::Object()->pack(mapMsg->computeMapData);
 
-  CProxy_WorkDistrib(thisgroup).saveMaps(mapMsg,1);
+  CProxy_WorkDistrib(thisgroup).saveMaps(mapMsg,0);
 }
 
 // saveMaps() is called when the map message is received
 void WorkDistrib::saveMaps(MapDistribMsg *msg)
 {
-  PatchMap::Object()->unpack(msg->patchMapData);
-  ComputeMap::Object()->unpack(msg->computeMapData);
+  if ( CkMyPe() ) {
+    PatchMap::Object()->unpack(msg->patchMapData);
+    ComputeMap::Object()->unpack(msg->computeMapData);
+    mapsArrived = true;
+  }
 
-  mapsArrived = true;
-
-  int nextPe = CkMyPe() + 1;
-  if ( CkNumPes() == nextPe ) delete msg;
-  else CProxy_WorkDistrib(thisgroup).saveMaps(msg,nextPe);
+  int pids[2];
+  int basePe = 2 * CkMyPe() + 1;
+  int npid = 0;
+  if ( (basePe+npid) < CkNumPes() ) { pids[npid] = basePe + npid; ++npid; }
+  if ( (basePe+npid) < CkNumPes() ) { pids[npid] = basePe + npid; ++npid; }
+  if ( npid ) CProxy_WorkDistrib(thisgroup).saveMaps(msg,npid,pids);
+  else delete msg;
 }
 
 
