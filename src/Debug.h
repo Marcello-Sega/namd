@@ -10,7 +10,8 @@
  * DESCRIPTION:
  *
  ***************************************************************************/
-   
+#include "InfoStream.h"
+
 #ifndef DEBUG_H
 #define DEBUG_H
 
@@ -50,14 +51,13 @@
   #define Debug(x) (x)
   #define DebugM(level,format) \
 	{ \
+	  infostream Dout; \
+	  Dout << iFILE; \
 	  if ((level >= MIN_DEBUG_LEVEL) && (level <= MAX_DEBUG_LEVEL)) \
 	  { \
-	    if (level >= STDERR_LEVEL)	CPrintf("ERROR (%d): ",level); \
-	    else if (level > 0) CPrintf("Debug (%d): ",level); \
-	    char debugBuf[512]; \
-	    ostrstream dout(debugBuf,sizeof(debugBuf)); \
-	    dout << format << ends; \
-	    CPrintf("%s %d: %s",__FILE__,__LINE__,debugBuf); \
+	    if (level >= STDERR_LEVEL)	Dout << "ERROR (" << level << "): "; \
+	    else if (level > 0) Dout << "Debug (" << level << "): "; \
+	    Dout << format << endi; \
 	  } \
 	}
 
