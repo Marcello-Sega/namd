@@ -1,0 +1,9 @@
+NAMD_ARCH = CRAY-X1
+CHARMARCH = mpi-crayx1
+
+# compiler options
+CXX = CC -h ssp
+CXXOPTS = -O2
+CXXSIMPARAMOPTS = 
+CC = cc -h ssp
+COPTS = -O2
