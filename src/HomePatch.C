@@ -581,7 +581,7 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
       if (ppreduction) {
         if (!i) {
           BigReal z = pos[i].z;
-          int slab = (int)floor((z-zmin)*idz);
+          slab = (int)floor((z-zmin)*idz);
           if (slab < 0) slab += nslabs;
           else if (slab >= nslabs) slab -= nslabs;
         }
