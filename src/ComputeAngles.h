@@ -23,7 +23,7 @@ public:
     void computeForce(BigReal*);
     // The following is evil, but the compiler chokes otherwise. (JCP)
     static void loadTuplesForAtom(void*, AtomID, Molecule*);
-    static void getMoleculePointers(Molecule*, int*, int***, Angle**);
+    static void getMoleculePointers(Molecule*, int*, int32***, Angle**);
     static void getParameterPointers(Parameters*, const AngleValue**);
 
     // Internal data

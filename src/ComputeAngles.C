@@ -47,7 +47,7 @@ void AngleElem::loadTuplesForAtom
 #endif
 
 void AngleElem::getMoleculePointers
-    (Molecule* mol, int* count, int*** byatom, Angle** structarray)
+    (Molecule* mol, int* count, int32*** byatom, Angle** structarray)
 {
   *count = mol->numAngles;
   *byatom = mol->anglesByAtom;

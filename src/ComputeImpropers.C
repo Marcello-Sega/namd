@@ -40,7 +40,7 @@ void ImproperElem::loadTuplesForAtom
 #endif
 
 void ImproperElem::getMoleculePointers
-    (Molecule* mol, int* count, int*** byatom, Improper** structarray)
+    (Molecule* mol, int* count, int32*** byatom, Improper** structarray)
 {
   *count = mol->numImpropers;
   *byatom = mol->impropersByAtom;

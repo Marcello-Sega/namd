@@ -40,7 +40,7 @@ void DihedralElem::loadTuplesForAtom
 #endif
 
 void DihedralElem::getMoleculePointers
-    (Molecule* mol, int* count, int*** byatom, Dihedral** structarray)
+    (Molecule* mol, int* count, int32*** byatom, Dihedral** structarray)
 {
   *count = mol->numDihedrals;
   *byatom = mol->dihedralsByAtom;

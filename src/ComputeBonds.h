@@ -27,7 +27,7 @@ public:
     void computeForce(BigReal*);
     // The following is evil, but the compiler chokes otherwise. (JCP)
     static void loadTuplesForAtom(void*, AtomID, Molecule*);
-    static void getMoleculePointers(Molecule*, int*, int***, Bond**);
+    static void getMoleculePointers(Molecule*, int*, int32***, Bond**);
     static void getParameterPointers(Parameters*, const BondValue**);
 
     int hash() const { return 0x7FFFFFFF & ( (atomID[0]<<16) + (atomID[1])); }

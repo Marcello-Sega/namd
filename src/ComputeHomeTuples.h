@@ -93,7 +93,7 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
   
     virtual void loadTuples(void) {
       int numTuples;
-      int **tuplesByAtom;
+      int32 **tuplesByAtom;
       /* const (need to propagate const) */ S *tupleStructs;
       const P *tupleValues;
     
@@ -118,7 +118,7 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
         for (int j=0; j < numAtoms; j++)
         {
            /* get list of all tuples for the atom */
-           int *curTuple = tuplesByAtom[atom[j].id];
+           int32 *curTuple = tuplesByAtom[atom[j].id];
     
            /* cycle through each tuple */
            for( ; *curTuple != -1; ++curTuple) {

@@ -40,7 +40,7 @@ void BondElem::loadTuplesForAtom
 #endif
 
 void BondElem::getMoleculePointers
-    (Molecule* mol, int* count, int*** byatom, Bond** structarray)
+    (Molecule* mol, int* count, int32*** byatom, Bond** structarray)
 {
   *count = mol->numBonds;
   *byatom = mol->bondsByAtom;

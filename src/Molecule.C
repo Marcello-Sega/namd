@@ -152,6 +152,7 @@ int Molecule::get_atom_from_index_in_residue(
 
 Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
 {
+  if ( sizeof(int32) != 4 ) { NAMD_bug("sizeof(int32) != 4"); }
   this->simParams = simParams;
   this->params = param;
   /*  Initialize array pointers to NULL  */
