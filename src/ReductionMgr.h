@@ -67,6 +67,8 @@ public:
 class ReductionMgr : public BOCclass
 {
 private:
+  static ReductionMgr *_instance;
+
   #if PANIC > 0
   int panicMode;
   #endif
@@ -80,13 +82,15 @@ private:
 
 public:
 
+  // Singleton Access method
+  inline static ReductionMgr *Object() {return _instance;}
+
   // Vector and Tensor operations can eventually be defined
   // in terms of scalar operations (I hope).
   // For example, reserve the first two tags after a vector
   // and the first eight after a tensor to allow storage.  -JCP
 
-  ReductionMgr();
-  ReductionMgr(InitMsg *)	{ReductionMgr();}
+  ReductionMgr(InitMsg *);
   ~ReductionMgr();
 
   // (un)register to submit data for reduction

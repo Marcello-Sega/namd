@@ -28,7 +28,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.5 1996/12/27 22:22:33 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.6 1997/01/09 21:49:44 jim Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -56,11 +56,18 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMg
 /*******************************************
  ReductionMgr::ReductionMgr(): init object
  *******************************************/
-ReductionMgr::ReductionMgr()
+ReductionMgr::ReductionMgr(InitMsg *msg)
 {
     #if PANIC > 0
     panicMode = 0;
     #endif
+    delete msg;
+    if (_instance == 0) {
+      _instance = this;
+    } else {
+      DebugM(1, "ReductionMgr::ReductionMgr() - another instance exists!\n");
+    }
+
     data = NULL;
     for(int i=0; i<REDUCTION_MAX_RESERVED; i++)
     {

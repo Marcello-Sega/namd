@@ -15,6 +15,7 @@
 #define CONTROLLER_H
 
 #include "converse.h"
+#include "ReductionMgr.h"
 
 class NamdState;
 class SimParameters;
@@ -36,6 +37,7 @@ protected:
     int numberOfCycles;			// stores argument to run()
     int stepsPerCycle;			// stores info from run()
     NamdState *const state;		// access data in state
+    ReductionMgr *const reduction;
 
 private:
     CthThread thread;

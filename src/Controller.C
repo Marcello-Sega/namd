@@ -21,7 +21,8 @@
 
 Controller::Controller(NamdState *s) :
 	state(s),
-	simParams(Node::Object()->simParameters)
+	simParams(Node::Object()->simParameters),
+	reduction(ReductionMgr::Object())
 {
   ;
 }
