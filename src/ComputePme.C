@@ -235,6 +235,7 @@ private:
   int *recipPeDest;
   int *gridPeOrder;
   int *transPeOrder;
+  char *isPmeFlag;
   int grid_count;
   int trans_count;
   int untrans_count;
@@ -255,11 +256,7 @@ int isPmeProcessor(int p){
 }
 
 int ComputePmeMgr::isPmeProcessor(int p){ 
-  for(int count = 0; count < numGridPes; count ++){
-    if(gridPeMap[count] == p)
-      return 1;
-  }
-  return 0;
+  return isPmeFlag[p];
 }
 
 ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), pmeProxyDir(thisgroup), pmeCompute(0) {
@@ -277,6 +274,7 @@ ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), pmeProxyDir(thisgroup), pm
   recipPeDest = new int[CkNumPes()];
   gridPeOrder = new int[CkNumPes()];
   transPeOrder = new int[CkNumPes()];
+  isPmeFlag = new char[CkNumPes()];
   qgrid = 0;
   kgrid = 0;
   work = 0;
@@ -378,11 +376,17 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 
   myGridPe = -1;
   int i = 0;
-  for ( i=0; i<numGridPes; ++i ) 
+  for ( i=0; i<CkNumPes(); ++i )
+    isPmeFlag[i] = 0;
+  for ( i=0; i<numGridPes; ++i ) {
     if ( gridPeMap[i] == CkMyPe() ) myGridPe = i;
+    isPmeFlag[i] |= 1;
+  }
   myTransPe = -1;
-  for ( i=0; i<numTransPes; ++i ) 
+  for ( i=0; i<numTransPes; ++i ) {
     if ( transPeMap[i] == CkMyPe() ) myTransPe = i;
+    isPmeFlag[i] |= 2;
+  }
   
   if ( ! CkMyPe() ) {
     iout << iINFO << "PME GRID LOCATIONS:";
@@ -571,6 +575,7 @@ ComputePmeMgr::~ComputePmeMgr() {
   delete [] recipPeDest;
   delete [] gridPeOrder;
   delete [] transPeOrder;
+  delete [] isPmeFlag;
   delete [] qgrid;
   if ( kgrid != qgrid ) delete [] kgrid;
   delete [] work;
