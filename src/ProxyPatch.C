@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1014 1997/08/22 20:12:04 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1015 1997/08/26 16:26:16 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -114,7 +114,7 @@ void ProxyPatch::sendResults(void)
   register int i;
   for ( i = 0; i < Results::maxNumForces; ++i ) 
     msg->forceList[i] = f[i];
-  *CPriorityPtr(msg) = (unsigned int)Priorities::urgent;
+  *CPriorityPtr(msg) = (unsigned int)Priorities::comm_high;
   //CSetQueueing(msg, C_QUEUEING_IFIFO);
   ProxyMgr::Object()->sendResults(msg);
 }
@@ -123,13 +123,16 @@ void ProxyPatch::sendResults(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyPatch.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1997/08/22 20:12:04 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1015 $	$Date: 1997/08/26 16:26:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.1015  1997/08/26 16:26:16  jim
+ * Revamped prioritites for petter performance and easier changes.
+ *
  * Revision 1.1014  1997/08/22 20:12:04  milind
  * Turned on Priorities.
  *

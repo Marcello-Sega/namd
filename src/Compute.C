@@ -35,7 +35,7 @@ PatchMap *Compute::patchMap=0;
 
 int Compute::totalComputes = 0;
 
-Compute::Compute(ComputeID c) : cid(c) { 
+Compute::Compute(ComputeID c) : cid(c), myPriority(Priorities::comp_default) { 
   totalComputes++;
   doAtomUpdate = false;
 }
@@ -85,11 +85,6 @@ void Compute::doWork() {
     << endi;
 }
 
-int Compute::priority(void)
-{
-  return Priorities::low;
-}
-
 int Compute::sequence(void)
 {
   return -1;
@@ -100,12 +95,15 @@ int Compute::sequence(void)
  *
  *	$RCSfile: Compute.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/08/20 23:27:36 $
+ *	$Revision: 1.1013 $	$Date: 1997/08/26 16:26:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.C,v $
+ * Revision 1.1013  1997/08/26 16:26:11  jim
+ * Revamped prioritites for petter performance and easier changes.
+ *
  * Revision 1.1012  1997/08/20 23:27:36  jim
  * Created multiple enqueueWork entry points to aid analysis.
  *

@@ -38,6 +38,7 @@ protected:
   static PatchMap *patchMap;
 
   void enqueueWork();
+  int myPriority; // execution priority for this work
 
 public:
   const ComputeID cid;
@@ -61,8 +62,8 @@ public:
   virtual void patchReady(PatchID, int);
   virtual int noWork(); // cleans up and returns 1 if no work to do
   virtual void doWork(); // actually does the work if noWork() returns 0
-  virtual int priority(void); // returns execution priority for this work
   virtual int sequence(void); // returns sequence number for analysis
+  int priority(void) { return myPriority; }
 };
 
 #endif
@@ -71,12 +72,15 @@ public:
  *
  *	$RCSfile: Compute.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/08/20 23:27:37 $
+ *	$Revision: 1.1008 $	$Date: 1997/08/26 16:26:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.h,v $
+ * Revision 1.1008  1997/08/26 16:26:11  jim
+ * Revamped prioritites for petter performance and easier changes.
+ *
  * Revision 1.1007  1997/08/20 23:27:37  jim
  * Created multiple enqueueWork entry points to aid analysis.
  *

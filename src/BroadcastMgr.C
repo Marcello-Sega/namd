@@ -19,6 +19,7 @@
 #include "BroadcastMgr.h"
 #include "BroadcastClient.h"
 #include "BroadcastObject.h"
+#include "Priorities.h"
 #define MIN_DEBUG_LEVEL 3
 //#define DEBUGM
 #include "Debug.h"
@@ -61,12 +62,14 @@ BroadcastMgr::getbuf(BroadcastClient &b, int tag) {
 
 void 
 BroadcastMgr::send(BroadcastClient &b, int tag, void *buf, size_t size) {
-  BroadcastMsg* msg = new (MsgIndex(BroadcastMsg)) BroadcastMsg;
+  BroadcastMsg* msg =
+    new (MsgIndex(BroadcastMsg)) BroadcastMsg;
   msg->msg = buf;
   msg->size = (int)size;
   msg->tag = tag;
   msg->id = b.id;
   msg->node = CMyPe();
+  //*CPriorityPtr(msg) = Priorities::comm_urgent;
   CBroadcastMsgBranch(BroadcastMgr, recvBroadcast, msg, thisgroup);
 }
 
@@ -127,12 +130,15 @@ BroadcastMgr::recvBroadcast(BroadcastMsg *msg) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1997/04/04 23:34:11 $
+ *	$Revision: 1.3 $	$Date: 1997/08/26 16:26:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: BroadcastMgr.C,v $
+ * Revision 1.3  1997/08/26 16:26:10  jim
+ * Revamped prioritites for petter performance and easier changes.
+ *
  * Revision 1.2  1997/04/04 23:34:11  milind
  * Got NAMD2 to run on Origin2000.
  * Included definitions of class static variables in C files.

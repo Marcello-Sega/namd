@@ -28,7 +28,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1018 1997/08/22 20:12:04 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1019 1997/08/26 16:26:17 jim Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -566,7 +566,7 @@ void	ReductionMgr::submit(int seq, ReductionTag tag, BigReal data,
       m->seq = seq;
       m->tag = tag;
       m->data = current->tagData[tag];
-      *CPriorityPtr(m) = Priorities::high;
+      *CPriorityPtr(m) = Priorities::comm_urgent;
       //CSetQueueing(m, C_QUEUEING_IFIFO);
       DebugM(4,"Sending seq=" << seq
 		 << " tag=" << tag
@@ -631,7 +631,7 @@ void	ReductionMgr::submit(int seq, ReductionTag tag)
       m->seq = seq;
       m->tag = tag;
       m->data = current->tagData[tag];
-      *CPriorityPtr(m) = Priorities::high;
+      *CPriorityPtr(m) = Priorities::comm_urgent;
       //CSetQueueing(m, C_QUEUEING_IFIFO);
       CSendMsgBranch(ReductionMgr, recvReductionData, m, thisgroup, 0);
       gotAllData(current);
@@ -779,12 +779,15 @@ void	ReductionMgr::unsubscribe(ReductionTag tag)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1997/08/22 20:12:04 $
+ *	$Revision: 1.1019 $	$Date: 1997/08/26 16:26:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.C,v $
+ * Revision 1.1019  1997/08/26 16:26:17  jim
+ * Revamped prioritites for petter performance and easier changes.
+ *
  * Revision 1.1018  1997/08/22 20:12:04  milind
  * Turned on Priorities.
  *

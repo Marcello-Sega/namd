@@ -16,6 +16,7 @@
 #include "ComputePatchPair.h"
 #include "PatchMap.h"
 #include "Patch.h"
+#include "Priorities.h"
 
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 4
@@ -82,6 +83,24 @@ void ComputePatchPair::initialize() {
     << " numAtoms(" <<patchID[1]<<") = " << numAtoms[1] << "\n" );
 
     Compute::initialize();
+
+    int myNode = CMyPe();
+    if ( PatchMap::Object()->node(patchID[0]) != myNode )
+    {
+      int p0 = patchID[0] % Priorities::comp_nonlocal_range;
+      myPriority = Priorities::comp_nonlocal_base + p0;
+    }
+    else if ( PatchMap::Object()->node(patchID[1]) != myNode )
+    {
+      int p1 = patchID[1] % Priorities::comp_nonlocal_range;
+      myPriority = Priorities::comp_nonlocal_base + p1;
+    }
+    else
+    {
+      int p0 = patchID[0] % Priorities::comp_local_range;
+      int p1 = patchID[1] % Priorities::comp_local_range;
+      myPriority = Priorities::comp_local_base + ((p0<p1)?p0:p1);
+    }
 }
 
 void ComputePatchPair::atomUpdate() {
@@ -152,12 +171,15 @@ int ComputePatchPair::sequence(void)
  *
  *	$RCSfile: ComputePatchPair.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/08/20 23:27:39 $
+ *	$Revision: 1.1012 $	$Date: 1997/08/26 16:26:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatchPair.C,v $
+ * Revision 1.1012  1997/08/26 16:26:15  jim
+ * Revamped prioritites for petter performance and easier changes.
+ *
  * Revision 1.1011  1997/08/20 23:27:39  jim
  * Created multiple enqueueWork entry points to aid analysis.
  *

@@ -15,7 +15,6 @@
 #include "ReductionMgr.h"
 #include "Patch.h"
 #include "LdbCoordinator.h"
-#include "Priorities.h"
 #include "PatchMap.h"
 
 #define MIN_DEBUG_LEVEL 4
@@ -34,23 +33,6 @@ ComputeNonbondedPair::~ComputeNonbondedPair()
 {
   unregisterReductionData(reduction);
 }
-
-
-int ComputeNonbondedPair::priority(void)
-{
-  PatchMap *patchMap = PatchMap::Object();
-  int myNode = CMyPe();
-  if ( patchMap->node(patchID[0]) != myNode ||
-       patchMap->node(patchID[1]) != myNode )
-  {
-    return Priorities::nonlocal;
-  }
-  else
-  {
-    return Priorities::base;
-  }
-}
-
 
 int ComputeNonbondedPair::noWork() {
 
@@ -167,13 +149,16 @@ void ComputeNonbondedPair::doForce(Position* p[2],
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedPair.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1997/07/08 15:48:07 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1015 $	$Date: 1997/08/26 16:26:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.C,v $
+ * Revision 1.1015  1997/08/26 16:26:13  jim
+ * Revamped prioritites for petter performance and easier changes.
+ *
  * Revision 1.1014  1997/07/08 15:48:07  milind
  * Made namd2 to work with Origin2000: Again...
  *

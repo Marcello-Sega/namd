@@ -39,7 +39,7 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1032 1997/08/22 20:12:03 milind Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1033 1997/08/26 16:26:15 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
 		     VelocityList vl) : Patch(pd,al,pl), v(vl) 
@@ -197,7 +197,7 @@ void HomePatch::positionsReady(int doMigration)
       allmsg->flags = flags;
       allmsg->positionList = p;
       allmsg->atomIDList = atomIDList;
-      *CPriorityPtr(allmsg) = Priorities::urgent;
+      *CPriorityPtr(allmsg) = Priorities::comm_high;
       //CSetQueueing(allmsg, C_QUEUEING_IFIFO);
       DebugM(1, "atomIDList.size() = " << atomIDList.size() << " p.size() = " << p.size() << "\n" );
       ProxyMgr::Object()->sendProxyAll(allmsg,pli->node);
@@ -208,7 +208,7 @@ void HomePatch::positionsReady(int doMigration)
       nmsg->patch = patchID;
       nmsg->flags = flags;
       nmsg->positionList = p;
-      *CPriorityPtr(nmsg) = Priorities::urgent;
+      *CPriorityPtr(nmsg) = Priorities::comm_high;
       //CSetQueueing(nmsg, C_QUEUEING_IFIFO);
       ProxyMgr::Object()->sendProxyData(nmsg,pli->node);
     }   
@@ -455,13 +455,16 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1032 $	$Date: 1997/08/22 20:12:03 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1033 $	$Date: 1997/08/26 16:26:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1033  1997/08/26 16:26:15  jim
+ * Revamped prioritites for petter performance and easier changes.
+ *
  * Revision 1.1032  1997/08/22 20:12:03  milind
  * Turned on Priorities.
  *

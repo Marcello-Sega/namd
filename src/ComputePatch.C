@@ -16,6 +16,7 @@
 #include "ComputePatch.h"
 #include "PatchMap.h"
 #include "Patch.h"
+#include "Priorities.h"
 
 #define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
@@ -66,6 +67,18 @@ void ComputePatch::initialize() {
   DebugM(3, "initialize("<<cid<<") numAtoms("<<patchID<<") = " 
     << numAtoms  << " patchAddr=" << patch << "\n");
     Compute::initialize();
+
+    int myNode = CMyPe();
+    if ( PatchMap::Object()->node(patchID) != myNode )
+    {
+      int p0 = patchID % Priorities::comp_nonlocal_range;
+      myPriority = Priorities::comp_nonlocal_base + p0;
+    }
+    else
+    {
+      int p0 = patchID % Priorities::comp_local_range;
+      myPriority = Priorities::comp_local_base + p0;
+    }
 }
 
 void ComputePatch::atomUpdate() {
@@ -133,12 +146,15 @@ int ComputePatch::sequence(void)
  *
  *	$RCSfile: ComputePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/08/20 23:27:38 $
+ *	$Revision: 1.1009 $	$Date: 1997/08/26 16:26:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatch.C,v $
+ * Revision 1.1009  1997/08/26 16:26:14  jim
+ * Revamped prioritites for petter performance and easier changes.
+ *
  * Revision 1.1008  1997/08/20 23:27:38  jim
  * Created multiple enqueueWork entry points to aid analysis.
  *

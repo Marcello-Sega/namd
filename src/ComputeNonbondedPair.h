@@ -23,7 +23,6 @@ class ComputeNonbondedPair : public ComputePatchPair, private ComputeNonbondedUt
 public:
   ComputeNonbondedPair(ComputeID c, PatchID pid[], int trans[]);
   ~ComputeNonbondedPair();
-  virtual int priority(void);
 
 protected :
   // virtual void initialize() { ComputePatchPair::initialize(); }
@@ -39,13 +38,16 @@ protected :
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedPair.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/04/08 07:08:23 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1007 $	$Date: 1997/08/26 16:26:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.h,v $
+ * Revision 1.1007  1997/08/26 16:26:13  jim
+ * Revamped prioritites for petter performance and easier changes.
+ *
  * Revision 1.1006  1997/04/08 07:08:23  ari
  * Modification for dynamic loadbalancing - moving computes
  * Still bug in new computes or usage of proxies/homepatches.

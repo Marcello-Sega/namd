@@ -15,7 +15,6 @@
 #ifndef COMPUTENONBONDEDSELF_H
 #define COMPUTENONBONDEDSELF_H
 
-#include "Priorities.h"
 #include "ComputePatch.h"
 #include "ComputeNonbondedUtil.h"
 
@@ -24,7 +23,6 @@ class ComputeNonbondedSelf : public ComputePatch, private ComputeNonbondedUtil {
 public:
   ComputeNonbondedSelf(ComputeID c, PatchID pid);
   virtual ~ComputeNonbondedSelf();
-  virtual int priority(void) { return Priorities::low; }
 
 protected :
   // virtual void initialize() { ComputePatch::initialize(); }
@@ -39,13 +37,16 @@ protected :
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedSelf.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/04/06 22:45:03 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/08/26 16:26:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.h,v $
+ * Revision 1.1005  1997/08/26 16:26:14  jim
+ * Revamped prioritites for petter performance and easier changes.
+ *
  * Revision 1.1004  1997/04/06 22:45:03  ari
  * Add priorities to messages.  Mods to help proxies without computes.
  * Added quick enhancement to end of list insertion of ResizeArray(s)

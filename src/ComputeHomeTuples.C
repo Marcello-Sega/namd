@@ -18,6 +18,7 @@
 #include "HomePatchList.h"
 #include "Molecule.h"
 #include "ReductionMgr.h"
+#include "Priorities.h"
 #include "Inform.h"
 #include "Templates/UniqueSet.h"
 #include "Templates/UniqueSetIter.h"
@@ -32,6 +33,7 @@ ComputeHomeTuples<T>::ComputeHomeTuples(ComputeID c) : Compute(c) {
   patchMap = PatchMap::Object();
   atomMap = AtomMap::Object();
   reduction = ReductionMgr::Object();
+  myPriority = Priorities::comp_local_large;
 
   maxProxyAtoms = 0;
   dummyForce = NULL;	// initialized to NULL -- won't harm reallocating deletes.
@@ -217,13 +219,16 @@ void ComputeHomeTuples<T>::doWork() {
  * RCS INFORMATION:
  *
  *      $RCSfile: ComputeHomeTuples.C,v $
- *      $Author: ari $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1011 $     $Date: 1997/04/06 22:44:58 $
+ *      $Author: jim $  $Locker:  $             $State: Exp $
+ *      $Revision: 1.1012 $     $Date: 1997/08/26 16:26:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.C,v $
+ * Revision 1.1012  1997/08/26 16:26:12  jim
+ * Revamped prioritites for petter performance and easier changes.
+ *
  * Revision 1.1011  1997/04/06 22:44:58  ari
  * Add priorities to messages.  Mods to help proxies without computes.
  * Added quick enhancement to end of list insertion of ResizeArray(s)

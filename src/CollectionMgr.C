@@ -36,7 +36,7 @@ void CollectionMgr::submitPositions(int seq, AtomIDList &i, PositionList &d)
     msg->seq = c->seq;
     msg->aid = c->aid;
     msg->data = c->data;
-    *CPriorityPtr(msg) = Priorities::low;
+    *CPriorityPtr(msg) = Priorities::comm_low;
     //CSetQueueing(msg, C_QUEUEING_IFIFO);
     CSendMsg(CollectionMaster,receivePositions,msg,&master);
     delete c;
@@ -49,13 +49,13 @@ void CollectionMgr::submitVelocities(int seq, AtomIDList &i, VelocityList &d)
   CollectVectorInstance *c;
   if ( c = velocities.submitData(seq,i,d) )
   {
-    CollectVectorMsg * msg 
-      //= new (MsgIndex(CollectVectorMsg),Priorities::numBits) CollectVectorMsg;
-      = new (MsgIndex(CollectVectorMsg)) CollectVectorMsg;
+    CollectVectorMsg * msg =
+      new (MsgIndex(CollectVectorMsg),Priorities::numBits) CollectVectorMsg;
+      // new (MsgIndex(CollectVectorMsg)) CollectVectorMsg;
     msg->seq = c->seq;
     msg->aid = c->aid;
     msg->data = c->data;
-    //*CPriorityPtr(msg) = Priorities::low;
+    *CPriorityPtr(msg) = Priorities::comm_low;
     //CSetQueueing(msg, C_QUEUEING_IFIFO);
     CSendMsg(CollectionMaster,receiveVelocities,msg,&master);
     delete c;
@@ -68,13 +68,13 @@ void CollectionMgr::submitForces(int seq, AtomIDList &i, ForceList &d)
   CollectVectorInstance *c;
   if ( c = forces.submitData(seq,i,d) )
   {
-    CollectVectorMsg * msg 
-    // = new (MsgIndex(CollectVectorMsg), Priorities::numBits) CollectVectorMsg;
-    = new (MsgIndex(CollectVectorMsg)) CollectVectorMsg;
+    CollectVectorMsg * msg =
+      new (MsgIndex(CollectVectorMsg), Priorities::numBits) CollectVectorMsg;
+      // new (MsgIndex(CollectVectorMsg)) CollectVectorMsg;
     msg->seq = c->seq;
     msg->aid = c->aid;
     msg->data = c->data;
-    //*CPriorityPtr(msg) = Priorities::low;
+    *CPriorityPtr(msg) = Priorities::comm_low;
     //CSetQueueing(msg, C_QUEUEING_IFIFO);
     CSendMsg(CollectionMaster,receiveForces,msg,&master);
     delete c;
@@ -89,12 +89,15 @@ void CollectionMgr::submitForces(int seq, AtomIDList &i, ForceList &d)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/08/22 20:12:03 $
+ *	$Revision: 1.1006 $	$Date: 1997/08/26 16:26:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMgr.C,v $
+ * Revision 1.1006  1997/08/26 16:26:10  jim
+ * Revamped prioritites for petter performance and easier changes.
+ *
  * Revision 1.1005  1997/08/22 20:12:03  milind
  * Turned on Priorities.
  *
