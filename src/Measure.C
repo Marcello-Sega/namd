@@ -38,7 +38,7 @@ static int Tcl_centerOfNumber(ClientData, Tcl_Interp *interp, int argc, char *ar
   int numAtoms = molecule->numAtoms;
 
   int number = 0;
-  Vector center;
+  Vector center = 0;
   for( int i = 0; i < numAtoms; ++i ) {
     number += 1;
     center += coordinates[i];
@@ -60,7 +60,7 @@ static int Tcl_centerOfMass(ClientData, Tcl_Interp *interp, int argc, char *argv
   Vector *coordinates = node->coords;
   int numAtoms = molecule->numAtoms;
 
-  Vector center;
+  Vector center = 0;
   BigReal totalMass = 0;
   for( int i = 0; i < numAtoms; ++i ) {
     BigReal mass = molecule->atommass(i);
@@ -84,7 +84,7 @@ static int Tcl_radiusOfGyration(ClientData, Tcl_Interp *interp, int argc, char *
   Vector *coordinates = node->coords;
   int numAtoms = molecule->numAtoms;
 
-  Vector center;
+  Vector center = 0;
   BigReal totalMass = 0;
   int i;
   for( i = 0; i < numAtoms; ++i ) {
