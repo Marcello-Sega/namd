@@ -46,6 +46,9 @@ ComputeIMD::ComputeIMD(ComputeGlobal *h)
   int port = simparams->IMDport;
   IMDwait = simparams->IMDwait;
 
+  if ( vmdsock_init() ) {
+    NAMD_die("Unable to initialize socket interface for IMD.\n");
+  }
   sock = vmdsock_create();
   clientsock = NULL;
   port = find_free_port(sock, port);

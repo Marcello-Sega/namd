@@ -4,10 +4,11 @@
 ***  All rights reserved.
 **/
 
-#if ( defined(DUMMY_VMDSOCK) || defined(WIN32) )
+#if ( defined(DUMMY_VMDSOCK) )
 
 #include "vmdsock.h"
 
+int vmdsock_init(void) { return -1; }
 void * vmdsock_create(void) { return 0; }
 int  vmdsock_connect(void *v, const char *host, int port) { return 0; }
 int vmdsock_bind(void * v, int port) { return 0; }
@@ -27,18 +28,41 @@ int vmdsock_selwrite(void *v, int sec) { return 0; }
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef _AIX
+
+#if defined(WIN32)
+#include <winsock.h>
+#else
 #include <strings.h>
-#endif
 #include <arpa/inet.h>
 #include <fcntl.h>
 
 #include <unistd.h>   /* for Linux */
 #include <sys/socket.h>
 #include <netdb.h>
+#endif
+
 #include <errno.h>
 
 #include "vmdsock.h"
+
+int vmdsock_init(void) {
+#if defined(WIN32)
+  int rc = 0;
+  static int initialized=0;
+
+  if (!initialized) {
+    WSADATA wsdata;
+    rc = WSAStartup(MAKEWORD(1,1), &wsdata);
+    if (rc == 0)
+      initialized = 1;
+  }
+
+  return rc;
+#else   
+  return 0;
+#endif
+}
+
 
 void * vmdsock_create(void) {
   vmdsocket * s;
@@ -95,7 +119,6 @@ int vmdsock_listen(void * v) {
 void *vmdsock_accept(void * v) {
   int rc;
   vmdsocket *new_s = NULL, *s = (vmdsocket *) v;
-
 #ifdef SOCKLEN_T
   SOCKLEN_T len;
 #else
@@ -116,12 +139,21 @@ void *vmdsock_accept(void * v) {
 
 int  vmdsock_write(void * v, const void *buf, int len) {
   vmdsocket *s = (vmdsocket *) v;
+#if defined(WIN32)
+  return send(s->sd, (const char*) buf, len, 0);  // windows lacks the write() call
+#else
   return write(s->sd, buf, len);
+#endif
 }
 
 int  vmdsock_read(void * v, void *buf, int len) {
   vmdsocket *s = (vmdsocket *) v;
+#if defined(WIN32)
+  return recv(s->sd, (char*) buf, len, 0); // windows lacks the read() call
+#else
   return read(s->sd, buf, len);
+#endif
+
 }
 
 void vmdsock_destroy(void * v) {
@@ -129,13 +161,16 @@ void vmdsock_destroy(void * v) {
   if (s == NULL)
     return;
 
+#if defined(WIN32)
+  closesocket(s->sd);
+#else
   close(s->sd);
+#endif
   free(s);  
 }
 
 int vmdsock_selread(void *v, int sec) {
   vmdsocket *s = (vmdsocket *)v;
-  // struct fd_set rfd;
   fd_set rfd;
   struct timeval tv;
   int rc;
@@ -153,7 +188,6 @@ int vmdsock_selread(void *v, int sec) {
   
 int vmdsock_selwrite(void *v, int sec) {
   vmdsocket *s = (vmdsocket *)v;
-  // struct fd_set wfd;
   fd_set wfd;
   struct timeval tv;
   int rc;
@@ -169,3 +203,4 @@ int vmdsock_selwrite(void *v, int sec) {
 }
 
 #endif
+

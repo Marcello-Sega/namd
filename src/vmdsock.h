@@ -4,18 +4,16 @@
 ***  All rights reserved.
 **/
 
-// #if !(defined(_MSC_VER) || defined(WIN32))
-
-/* For Unix systems */
-
 #if defined(VMDSOCKINTERNAL)
 
+#ifndef WIN32
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <netinet/in.h>
 #include <sys/file.h>
+#endif
 
 typedef struct {
   struct sockaddr_in addr; /* address of socket provided by bind() */
@@ -25,6 +23,7 @@ typedef struct {
 
 #endif /* VMDSOCKINTERNAL */
 
+int   vmdsock_init(void);
 void *vmdsock_create(void);
 int   vmdsock_bind(void *, int);
 int   vmdsock_listen(void *);
@@ -35,8 +34,4 @@ int   vmdsock_read(void *, void *, int);
 int   vmdsock_selread(void *, int);
 int   vmdsock_selwrite(void *, int);
 void  vmdsock_destroy(void *);
-
-// #endif /* Not Windows */
-
-
 
