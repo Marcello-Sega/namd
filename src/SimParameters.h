@@ -233,6 +233,7 @@ public:
 	Bool excludeFromPressure;	//  Flag TRUE-> some atoms not rescaled
  
 	Bool useFlexibleCell;		//  Use anisotropic cell fluctuations
+	Bool useConstantArea;		//  x,y dimensions fixed.
 
 	Bool berendsenPressureOn;	//  Berendsen pressure bath
 	BigReal berendsenPressureTarget;

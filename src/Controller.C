@@ -418,8 +418,12 @@ void Controller::langevinPiston1(int step)
     {
       // We only use on-diagonal terms (for now)
       Tensor factor;
-      factor.xx = exp( dt_long * strainRate.xx );
-      factor.yy = exp( dt_long * strainRate.yy );
+      if ( !simParams->useConstantArea ) {
+        factor.xx = exp( dt_long * strainRate.xx );
+        factor.yy = exp( dt_long * strainRate.yy );
+      } else {
+        factor.xx = factor.yy = 1;
+      }
       factor.zz = exp( dt_long * strainRate.zz );
       broadcast->positionRescaleFactor.publish(step,factor);
       state->lattice.rescale(factor);

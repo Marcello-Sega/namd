@@ -607,6 +607,11 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
       "Use anisotropic cell fluctuation for pressure control?",
       &useFlexibleCell, FALSE);
 
+   ////  Constant area and normal pressure conditions
+   opts.optionalB("main", "useConstantArea",
+      "Use constant area for pressure control?",
+      &useConstantArea, FALSE);
+
    //// Exclude atoms from pressure
    opts.optionalB("main", "excludeFromPressure",
 	"Should some atoms be excluded from pressure rescaling?",
@@ -2536,6 +2541,12 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    if (excludeFromPressure) {
      iout << iINFO << "EXCLUDE FROM PRESSURE ACTIVE\n";
    }
+   if (useConstantArea && surfaceTensionTarget) {
+     NAMD_die("surfaceTensionTarget and useConstantArea are mutually exclusive.\n");
+   }
+   if (useConstantArea && !useFlexibleCell) {
+     NAMD_die("useConstantArea requires useFlexibleCell.\n");
+   }
 
    if (berendsenPressureOn || langevinPistonOn) {
      if (rigidBonds != RIGID_NONE && useGroupPressure == FALSE) {
@@ -2585,7 +2596,9 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << iINFO << "      PRESSURE CONTROL IS "
 	<< (useGroupPressure?"GROUP":"ATOM") << "-BASED\n";
      iout << iINFO << "      CELL FLUCTUATION IS "
-	<< (useFlexibleCell?"AN":"") << "ISOTROPIC\n";
+	    << (useFlexibleCell?"AN":"") << "ISOTROPIC\n";
+     if (useConstantArea) 
+       iout << iINFO << "      CONSTANT AREA PRESSURE CONTROL ACTIVE\n";
      iout << iINFO << "   INITIAL STRAIN RATE IS "
         << strainRate << "\n";
      iout << endi;
