@@ -22,6 +22,7 @@
 #include "PatchMgr.h"
 #include "Molecule.h"
 #include "ReductionMgr.h"
+#include "Lattice.h"
 #include "Communicate.h"
 #include "pvmc.h"
 
@@ -33,7 +34,6 @@ extern Communicate *comm;
 
 void ComputeDPMTA::get_FMA_cube(Vector *boxsize, Vector *boxcenter)
 {
-  int max_dim;
   int dim_x,dim_y,dim_z;
 
   PatchMap *patchMap = PatchMap::Object();
@@ -46,10 +46,6 @@ void ComputeDPMTA::get_FMA_cube(Vector *boxsize, Vector *boxcenter)
   dim_x = patchMap->xDimension() + 2;
   dim_y = patchMap->yDimension() + 2;
   dim_z = patchMap->zDimension() + 2;
-
-  max_dim = dim_x;
-  if (dim_y>max_dim)	max_dim = dim_y;
-  if (dim_z>max_dim)	max_dim = dim_z;
 
   boxsize->x = dim_x*simParams->patchDimension;
   boxsize->y = dim_y*simParams->patchDimension;
@@ -86,8 +82,6 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
 
   int numProcs = CNumPes();
   PmtaInitData pmta_data;
-  Vector boxsize;	// Dimension of FMA cube
-  Vector boxcenter;	// Center for FMA cube
 
   if (CMyPe() != 0)
   {
@@ -186,6 +180,7 @@ void ComputeDPMTA::doWork()
   ResizeArrayIter<PatchElem> ap(patchList);
   PmtaParticle *particle_list = NULL;
   SimParameters *simParameters = Node::Object()->simParameters;
+  Lattice lattice;
 
   // 0. only run when necessary
   // Skip computations if nothing to do.
@@ -228,14 +223,19 @@ void ComputeDPMTA::doWork()
   {
     (*ap).x = (*ap).positionBox->open();
     (*ap).a = (*ap).atomBox->open();
+    lattice = (*ap).p->lattice;
 
     // store each atom in the particle_list
-     for(j=0; j<(*ap).p->getNumAtoms(); j++)
-     {
+    Vector pos;
+    for(j=0; j<(*ap).p->getNumAtoms(); j++)
+    {
+      // for periodic boundary condition (PBC)
+      pos = lattice.nearest((*ap).x[j],boxcenter);
+
       // explicitly copy -- two different data structures
-      particle_list[i].p.x = (*ap).x[j].x;
-      particle_list[i].p.y = (*ap).x[j].y;
-      particle_list[i].p.z = (*ap).x[j].z;
+      particle_list[i].p.x = pos.x;
+      particle_list[i].p.y = pos.y;
+      particle_list[i].p.z = pos.z;
       particle_list[i].q = (*ap).a[j].charge * unitFactor;
       i++;
       if (i > totalAtoms)
@@ -244,7 +244,7 @@ void ComputeDPMTA::doWork()
 	     << " but " << i << " atoms are seen!\n" << endi;
 	NAMD_die("FMA: atom counts unequal!");
 	}
-     }
+    }
 
     (*ap).positionBox->close(&(*ap).x);
     (*ap).atomBox->close(&(*ap).a);
@@ -265,14 +265,14 @@ void ComputeDPMTA::doWork()
     (*ap).f = (*ap).forceBox->open();
 
     // deposit here
-     for(j=0; j<(*ap).p->getNumAtoms(); j++)
-     {
+    for(j=0; j<(*ap).p->getNumAtoms(); j++)
+    {
       (*ap).f[j].x += fmaResults[i].f.x;
       (*ap).f[j].y += fmaResults[i].f.y;
       (*ap).f[j].z += fmaResults[i].f.z;
       potential += fmaResults[i].v;
       i++;
-     }
+    }
 
     (*ap).forceBox->close(&(*ap).f);
   }
