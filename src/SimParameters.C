@@ -1947,10 +1947,17 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 //SD & CC, CNRS - LCTN, Nancy
 
    if (fepOn) {
+     if	     (rescaleFreq > 0) 	fepTemp = rescaleTemp;
+     else if (reassignFreq > 0)	fepTemp = reassignTemp;
+     else if (langevinOn) 	fepTemp = langevinTemp;
+     else if (tCoupleOn) 	fepTemp = tCoupleTemp;
+     else NAMD_die("Alchemical FEP can be performed only in constant temperature simulations");
+
+     if (reassignFreq > 0 && reassignIncr != 0)
+	NAMD_die("reassignIncr cannot be used in alchemical FEP runs");
+
      if (lambda < 0.0 || lambda > 1.0 || lambda2 < 0.0 || lambda2 > 1.0)
-     {
         NAMD_die("lambda values should be in the range [0.0, 1.0]");
-     }
   
      if (!opts.defined("fepoutfile")) {
        strcpy(fepOutFile, outputFilename);
@@ -2766,12 +2773,12 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    
 //Modifications for alchemical fep
 //SD & CC, CNRS - LCTN, Nancy
-//  Chemical FEP status
+//  Alchemical FEP status
 
-   current = config->find("fepOutFile");
+//   current = config->find("fepOutFile");
    if (fepOn)
    {
-     iout << iINFO << "CHEMICAL FEP ON\n";
+     iout << iINFO << "ALCHEMICAL FEP ON\n";
      iout << iINFO << "CURRENT LAMBDA VALUE     "
           << lambda << "\n";
      iout << iINFO << "COMPARISON LAMBDA VALUE  "

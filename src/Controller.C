@@ -662,11 +662,14 @@ void Controller::printFepMessage(int step)
   if (simParams->fepOn) {
     const BigReal lambda = simParams->lambda;
     const BigReal lambda2 = simParams->lambda2;
+    const BigReal fepTemp = simParams->fepTemp;
     const int fepEquilSteps = simParams->fepEquilSteps;
     iout << "FEP: RESETTING FOR NEW FEP WINDOW "
          << "LAMBDA SET TO " << lambda << " LAMBDA2 " << lambda2
          << "\nFEP: WINDOW TO HAVE " << fepEquilSteps
-         << " STEPS OF EQUILIBRATION PRIOR TO FEP DATA COLLECTION.\n" << endi;
+         << " STEPS OF EQUILIBRATION PRIOR TO FEP DATA COLLECTION.\n"
+         << "FEP: USING CONSTANT TEMPERATURE OF " << fepTemp 
+         << " K FOR FEP CALCULATION\n" << endi;
   }
 } 
 //fepe
@@ -1481,7 +1484,7 @@ void Controller::enqueueCollections(int timestep)
 static char *FEPTITLE(int X)
 { 
   static char tmp_string[21];
-  sprintf(tmp_string, "FepEnergy:%6d   ",X);
+  sprintf(tmp_string, "FepEnergy: %6d ",X);
   return tmp_string;
 }
 
@@ -1501,19 +1504,26 @@ void Controller::outputFepEnergy(int step) {
             << "LAMBDA " << simParams->lambda << " COMPLETED\n"
             << "#STARTING COLLECTION OF ENSEMBLE AVERAGE" << endl;
   }
-  if (simParams->fepOutFreq && ((step%simParams->fepOutFreq)==0)) {
+  BigReal dE = electEnergy_f + electEnergySlow_f + ljEnergy_f
+		- (electEnergy + electEnergySlow + ljEnergy);
+  BigReal RT = BOLTZMAN * simParams->fepTemp;
+  FepNo++;
+  exp_dE_ByRT += exp(-dE/RT);
+  net_dE += dE;
+ 
+ if (simParams->fepOutFreq && ((step%simParams->fepOutFreq)==0)) {
     if (!fepFile.rdbuf()->is_open()) {
       fepSum = 0.0;
       NAMD_backup_file(simParams->fepOutFile);
       fepFile.open(simParams->fepOutFile);
       iout << "OPENING FEP ENERGY OUTPUT FILE\n" << endi;
-      fepFile << "#           STEP           Elec          "
-              << "           vdW              dE        dE_avg        Temp        dG\n"
-              << "#                    l         l+dl   "
-              << "       l          l+dl      E(l+dl)-E(l)" << endl;
+      fepFile << "#            STEP                 Elec                            "
+              << "vdW                    dE           dE_avg         Temp             dG\n"
+              << "#                           l             l+dl      "
+              << "       l            l+dl         E(l+dl)-E(l)" << endl;
     }
     if (stepInRun == 0) {
-      fepFile << "#RESCALED CHARGE FOR NEW FEP WINDOW "
+      fepFile << "#NEW FEP WINDOW: "
               << "LAMBDA SET TO " << lambda << " LAMBDA2 " << lambda2 << endl;
     }
     writeFepEnergyData(step, fepFile);
@@ -1521,7 +1531,8 @@ void Controller::outputFepEnergy(int step) {
   }
   if (step == simParams->N) {
     fepSum = fepSum + dG;
-    fepFile << "#Net free energy change at end of lambda@"<<lambda <<" is " << fepSum << endl;
+    fepFile << "#Free energy change for lambda window [ " << lambda
+	    << " " << lambda2 << " ] is " << dG << " ; net change until now is " << fepSum << endl;
   }
  }
 }
@@ -1530,10 +1541,7 @@ void Controller::writeFepEnergyData(int step, ofstream &file) {
   BigReal eeng = electEnergy+electEnergySlow;
   BigReal eeng_f = electEnergy_f + electEnergySlow_f;
   BigReal dE = eeng_f + ljEnergy_f - eeng - ljEnergy;
-  BigReal RT = BOLTZMAN *temperature;
-  FepNo++;
-  exp_dE_ByRT += exp(-dE/RT);
-  net_dE += dE;
+  BigReal RT = BOLTZMAN * simParams->fepTemp;
   dG = -(RT * log(exp_dE_ByRT/FepNo));
   BigReal dE_avg = net_dE/FepNo;
   fepFile << FEPTITLE(step);

@@ -246,6 +246,7 @@ public:
 	Bool fepOn;			//  Doing alchemical FEP?
 	BigReal lambda;			//  lambda for dynamics
 	BigReal lambda2;		//  lambda for comparison
+        BigReal fepTemp;                //  temperature for fep calculation
 	int fepOutFreq;			//  freq of fep output
 	char fepOutFile[128];		//  fep output filename
 	int fepEquilSteps;		//  no of eqlb steps in the window
