@@ -1133,8 +1133,119 @@ For example, ``\verb!addforce $groupid { 1. 0. 2. }!''.
 
 \end{itemize}
 
-Several vector routines from the VMD Tcl interface are also defined.
+With the commands above and the functionality of the Tcl language,
+one should be able to perform any on-the-fly analysis and
+manipulation. To make it easier to perform certain tasks,
+some Tcl routines are provided below.
 
+Several vector routines ({\tt vecadd}, {\tt vecsub}, {\tt vecscale})
+from the VMD Tcl interface are defined. Please refer to VMD
+manual for their usage.
+
+The following routines take atom coordinates as input, and return
+some geometry parameters (bond, angle, dihedral).
+
+\begin{itemize}
+
+\item
+{\tt getbond <coor1> <coor2>} \\
+Returns the length of the bond between the two atoms. Actually
+the return value is simply the distance between the two
+coordinates. ``coor1'' and ``coor2'' are coordinates of the atoms.
+
+\item
+{\tt getangle <coor1> <coor2> <coor3>} \\
+Returns the angle (from 0 to 180) defined by the
+three atoms. ``coor1'', ``coor2'' and ``coor3'' are coordinates of
+the atoms.
+
+\item
+{\tt getdihedral <coor1> <coor2> <coor3> <coor4>} \\
+Returns the dihedral (from -180 to 180) defined by the
+four atoms. ``coor1'', ``coor2'', ``coor3'' and ``coor4'' are
+coordinates of the atoms.
+
+\end{itemize}
+
+The following routines calculate the derivatives (gradients) of
+some geometry parameters (angle, dihedral).
+
+\begin{itemize}
+
+\item
+{\tt anglegrad <coor1> <coor2> <coor3>} \\
+An angle defined by three atoms is a function of their
+coordinates:
+$\theta\left(\vec{r_1},\vec{r_2},\vec{r_3}\right)$ (in radian).
+This command takes the coordinates of the three atoms as input,
+and returns a list of \{$\frac{\partial\theta}{\partial\vec{r_1}}$
+$\frac{\partial\theta}{\partial\vec{r_2}}$
+$\frac{\partial\theta}{\partial\vec{r_3}}$\}. Each element of the
+list is a 3-D vector in the form of a Tcl list.
+
+\item
+{\tt dihedralgrad <coor1> <coor2> <coor3> <coor4>} \\
+A dihedral defined by four atoms is a function of their
+coordinates:
+$\phi\left(\vec{r_1},\vec{r_2},\vec{r_3},\vec{r_4}\right)$ (in
+radian). This command takes the coordinates of the four atoms as
+input, and returns a list of
+\{$\frac{\partial\phi}{\partial\vec{r_1}}$
+$\frac{\partial\phi}{\partial\vec{r_2}}$
+$\frac{\partial\phi}{\partial\vec{r_3}}$
+$\frac{\partial\phi}{\partial\vec{r_4}}$\}. Each element of the
+list is a 3-D vector in the form of a Tcl list.
+
+\end{itemize}
+
+As an example, here's a script which applies a harmonic
+constraint (reference position being 0) to a dihedral:
+
+\begin{verbatim}
+tclForcesScript {
+
+  # The IDs of the four atoms defining the dihedral
+  set aid1 112
+  set aid2 123
+  set aid3 117
+  set aid4 115
+  
+  # The "spring constant" for the harmonic constraint
+  set k 3.0
+  
+  addatom $aid1
+  addatom $aid2
+  addatom $aid3
+  addatom $aid4
+  
+  set PI 3.1416
+  
+  proc calcforces {} {
+  
+    global aid1 aid2 aid3 aid4 k PI
+    
+    loadcoords p
+    
+    # Calculate the current dihedral
+    set phi [getdihedral $p($aid1) $p($aid2) $p($aid3) $p($aid4)]
+    # Change to radian
+    set phi [expr $phi*$PI/180]
+    
+    # Calculate the "force" along the dihedral according to the harmonic constraint
+    set force [expr -$k*$phi]
+    
+    # Calculate the gradients
+    foreach {g1 g2 g3 g4} [dihedralgrad $p($aid1) $p($aid2) $p($aid3) $p($aid4)] {}
+    
+    # The force to be applied on each atom is proportional to its
+    # corresponding gradient
+    addforce $aid1 [vecscale $g1 $force]
+    addforce $aid2 [vecscale $g2 $force]
+    addforce $aid3 [vecscale $g3 $force]
+    addforce $aid4 [vecscale $g4 $force]
+  }
+}
+\end{verbatim}
 
 \subsection{Free Energy of Conformational Change Calculations}
 \label{section:fenergy}
