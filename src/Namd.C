@@ -6,7 +6,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.4 1996/08/16 21:19:34 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.5 1996/08/19 22:05:31 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -23,6 +23,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.
 #include "Node.h"
 #include "WorkDistrib.top.h"
 #include "WorkDistrib.h"
+#include "PatchMgr.top.h"
+#include "PatchMgr.h"
 
 // Namd(void ) is the constructor for the startup node.  It needs to
 // read in file data,
@@ -32,9 +34,12 @@ Namd::Namd(void)
   NodeInitMsg *node_msg = new (MsgIndex(NodeInitMsg)) NodeInitMsg;
   
   // Create WorkDistrib and send it an empty message
-  //
   initmsg = new (MsgIndex(InitMsg)) InitMsg;
   node_msg->workDistribGroup = new_group(WorkDistrib, initmsg);
+
+  // Create PatchMgr and send it an empty message
+  initmsg = new (MsgIndex(InitMsg)) InitMsg;
+  node_msg->patchMgrGroup = new_group(PatchMgr, initmsg);
 
   // Create the Node object and send it the IDs of all the other
   // parallel objects.
@@ -80,7 +85,7 @@ void Namd::run(void)
  *
  *	$RCSfile: Namd.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/08/16 21:19:34 $
+ *	$Revision: 1.5 $	$Date: 1996/08/19 22:05:31 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -89,6 +94,9 @@ void Namd::run(void)
  * REVISION HISTORY:
  *
  * $Log: Namd.C,v $
+ * Revision 1.5  1996/08/19 22:05:31  ari
+ * *** empty log message ***
+ *
  * Revision 1.4  1996/08/16 21:19:34  ari
  * *** empty log message ***
  *

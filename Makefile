@@ -2,7 +2,8 @@ CHARMC = /Projects/l1/namd.2.0/charm/bin/charmc
 CHARMXI = /Projects/l1/namd.2.0/charm/bin/charmc
 
 CXX = CC -Aa -D_HPUX_SOURCE
-CXXFLAGS = -I/Projects/l1/namd.2.0/charm/include $(CXXOPTS)
+INCLUDE = /Projects/l1/namd.2.0/charm/include
+CXXFLAGS = -I$(INCLUDE) $(CXXOPTS)
 
 .SUFFIXES: 	.ci
 
@@ -14,14 +15,15 @@ OBJS = \
 	main.o Message.o Molecule.o PDB.o PDBData.o \
 	ConfigList.o Inform.o Parameters.o common.o \
 	strlib.o SimParameters.o ParseOptions.o Namd.o \
-	NamdState.o WorkDistrib.o Node.o PatchMap.o ComputeMap.o
+	NamdState.o WorkDistrib.o Node.o PatchMap.o ComputeMap.o \
+	PatchMgr.o Patch.o HomePatch.o
 
 CXXFILES = $(OBJS:.o=.C)
 
-INTERFACES = main.ci Node.ci WorkDistrib.ci
+INTERFACES = main.ci Node.ci WorkDistrib.ci PatchMgr.ci
 
 namd2:	$(OBJS)
-	$(CHARMC) -g -language charm++ -o namd2 $(OBJS)
+	$(CHARMC) -ld++-option "-I $(INCLUDE)" -g -language charm++ -o namd2 $(OBJS)
 
 cifiles:
 	for i in $(INTERFACES); do \

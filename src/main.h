@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: main.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/08/16 20:52:30 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.3 $	$Date: 1996/08/19 22:05:31 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -20,6 +20,9 @@
  * REVISION HISTORY:
  *
  * $Log: main.h,v $
+ * Revision 1.3  1996/08/19 22:05:31  ari
+ * *** empty log message ***
+ *
  * Revision 1.2  1996/08/16 20:52:30  brunner
  * *** empty log message ***
  *
@@ -45,6 +48,7 @@ class NodeInitMsg : public comm_object
 {
 public:
   int workDistribGroup;
+  int patchMgrGroup;
 };
 
 #endif /* MAIN_H */

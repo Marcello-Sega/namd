@@ -5,7 +5,7 @@
 /*                           All Rights Reserved                           */
 /*                                                                         */
 /***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.2 1996/08/16 21:42:29 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.3 1996/08/19 22:05:31 ari Exp $";
 
 #include <stdio.h>
 
@@ -18,7 +18,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "Node.top.h"
 #include "Node.h"
 #include "WorkDistrib.h"
-//#include "PatchMgr.h"
+#include "PatchMgr.h"
 //#include "ProxyMgr.h"
 //#include "MessageComm.h"
 //#include "PatchMap.h"
@@ -34,6 +34,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 Node::Node(NodeInitMsg *msg)
 {
   workDistrib = CLocalBranch(WorkDistrib,msg->workDistribGroup);
+  patchMgr = CLocalBranch(PatchMgr,msg->patchMgrGroup);
 }
 
 //----------------------------------------------------------------------
@@ -85,8 +86,8 @@ int Node::myid(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/08/16 21:42:29 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.3 $	$Date: 1996/08/19 22:05:31 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -95,6 +96,9 @@ int Node::myid(void)
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.3  1996/08/19 22:05:31  ari
+ * *** empty log message ***
+ *
  * Revision 1.2  1996/08/16 21:42:29  brunner
  * *** empty log message ***
  *

@@ -27,6 +27,7 @@ class Parameters;
 class SimParameters;
 class ConfigList;
 class WorkDistrib;
+class PatchMgr;
 
 
 
@@ -39,6 +40,7 @@ private:
   ConfigList *configList;
 
   WorkDistrib *workDistrib;
+  PatchMgr *patchMgr;
 
 public:
   PatchMap patchMap;
@@ -65,12 +67,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/08/19 17:57:47 $
+ *	$Revision: 1.5 $	$Date: 1996/08/19 22:05:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.5  1996/08/19 22:05:31  ari
+ * *** empty log message ***
+ *
  * Revision 1.4  1996/08/19 17:57:47  ari
  * *** empty log message ***
  *
