@@ -11,7 +11,7 @@
  *
  *  $RCSfile: Molecule.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1030 $  $Date: 1998/09/14 16:11:36 $
+ *  $Revision: 1.1031 $  $Date: 1998/10/14 20:40:54 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1031  1998/10/14 20:40:54  jim
+ * Removed moving constraints changes from single atom pulling.
+ *
  * Revision 1.1030  1998/09/14 16:11:36  jim
  * Changes to reduce node 0 memory use.  Fixed bug in ResizeArray::item().
  *
@@ -276,7 +279,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1030 1998/09/14 16:11:36 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1031 1998/10/14 20:40:54 jim Exp $";
 
 #include "UniqueSortedArray.h"
 #include "Molecule.h"
@@ -3386,20 +3389,6 @@ void Molecule::receive_Molecule(MIStream *msg)
     delete kPDB;
        }
 
-       //****** BEGIN moving constraints changes 
-       if (simParams->movingConstraintsOn
-	   && consIndexes[simParams->movingConsAtom] == -1) {
-	 sprintf(err_msg, "Atom %d (%d in PDB file) indicated for the "
-		 "moving constraint option is not constrained. "
-		 "Check the input files.\n", 
-		 simParams->movingConsAtom, simParams->movingConsAtom+1);
-	 NAMD_die(err_msg);
-       }
-
-       //****** END moving constraints changes 
-
-
-
     }
     /*      END OF FUNCTION build_constraint_params    */
 
@@ -4010,12 +3999,15 @@ void Molecule::receive_Molecule(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1030 $  $Date: 1998/09/14 16:11:36 $
+ *  $Revision: 1.1031 $  $Date: 1998/10/14 20:40:54 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1031  1998/10/14 20:40:54  jim
+ * Removed moving constraints changes from single atom pulling.
+ *
  * Revision 1.1030  1998/09/14 16:11:36  jim
  * Changes to reduce node 0 memory use.  Fixed bug in ResizeArray::item().
  *
