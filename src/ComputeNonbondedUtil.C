@@ -58,6 +58,7 @@ int             ComputeNonbondedUtil::lesFactor;
 BigReal         ComputeNonbondedUtil::lesScaling;
 
 Bool            ComputeNonbondedUtil::pairInteractionOn;
+Bool            ComputeNonbondedUtil::pairInteractionOnly;
 
 BigReal		ComputeNonbondedUtil::ewaldcof;
 BigReal		ComputeNonbondedUtil::pi_ewaldcof;
@@ -117,6 +118,7 @@ void ComputeNonbondedUtil::select(void)
   lesScaling = lesFactor = 0;
 
   pairInteractionOn = simParams->pairInteractionOn;
+  pairInteractionOnly = simParams->pairInteractionOnly;
 
   if ( fepOn || lesOn || pairInteractionOn ) {
     if ( fepOn ) lambda = simParams->lambda;

@@ -226,6 +226,7 @@ public:
         char extForceFilename[129];
 
 	Bool pairInteractionOn;		//  Calculate pair interactions?
+        Bool pairInteractionOnly; 	//  Compute no other interactions?
      
 	Bool globalForcesOn;		//  Are global forces present?
 	Bool tclForcesOn;		//  Are Tcl forces present?

@@ -100,6 +100,7 @@ public:
   static BigReal lesScaling;
 
   static Bool pairInteractionOn;
+  static Bool pairInteractionOnly;
 
   // for particle mesh Ewald
   static BigReal ewaldcof;

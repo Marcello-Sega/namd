@@ -1178,6 +1178,9 @@ void Controller::printEnergies(int step, int minimize)
 	  if ( printAtomicPressure ) iout << "     PRESSAVG";
 	  iout << "    GPRESSAVG";
 	}
+        if ( simParameters->pairInteractionOn ) {
+           iout << "    PAIR_VDW     PAIR_ELECT";
+        }
 	iout << "\n" << endi;
     }
 
@@ -1218,6 +1221,10 @@ void Controller::printEnergies(int step, int minimize)
 	iout << FORMAT(groupPressure_avg*PRESSUREFACTOR/pressure_avg_count);
     }
 
+    if (simParameters->pairInteractionOn) {
+      iout << FORMAT(ljEnergy_f);
+      iout << FORMAT(electEnergy_f + electEnergySlow_f);
+    }
     iout << "\n" << endi;
 
     pressure_avg = 0;

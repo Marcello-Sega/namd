@@ -721,8 +721,9 @@ void WorkDistrib::mapComputes(void)
   mapComputeNonbonded();
 
   // pair interaction calculations aren't implemented for
-  // bonded interactions, so don't compute them.
-  if ( !node->simParameters->pairInteractionOn ) {
+  // bonded interactions, so if pairInteractionOnly is true,
+  // don't compute them.
+  if ( !node->simParameters->pairInteractionOnly ) {
     mapComputeHomePatches(computeBondsType);
     mapComputeHomePatches(computeAnglesType);
     mapComputeHomePatches(computeDihedralsType);

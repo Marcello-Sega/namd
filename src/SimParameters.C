@@ -637,6 +637,9 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
     opts.optional("pairInteraction", "pairInteractionCol", 
 	"Column in the pairInteractionFile with the interaction flags",
 	PARSE_STRING);
+    opts.optionalB("pairInteraction", "pairInteractionOnly",
+        "Should only defined pair interactions be calculated?", 
+        &pairInteractionOnly, FALSE);
 
    //  Dihedral angle dynamics
    opts.optionalB("main", "globalTest", "Should global integration (for development) be used?",
@@ -2543,6 +2546,9 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    
    if ( pairInteractionOn ) {
      iout << iINFO << "PAIR INTERACTION CALCULATIONS ACTIVE\n";
+     if ( pairInteractionOnly ) {
+       iout << iINFO << "ONLY PAIR INTERACTION CALCULATIONS WILL BE PERFORMED\n";
+     }
    }
 
    if (consForceOn)
