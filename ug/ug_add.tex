@@ -1173,14 +1173,12 @@ the PDB file containing initial coordinates specified by
 {\tt coordinates} is used.}
 
 \item
-\NAMDCONFWDEF{lesCol}{column of PDB file containing LES flags}{{\tt X}, {\tt Y}, {\tt Z}, {\tt O}, or {\tt B}}{{\tt O}}
+\NAMDCONFWDEF{lesCol}{column of PDB file containing LES flags}{{\tt X}, {\tt Y}, {\tt Z}, {\tt O}, or {\tt B}}{{\tt B}}
 {Column of the PDB file to specify the LES image number of each atom.
 This parameter may specify any of the floating point fields of the PDB file, 
 either X, Y, Z, occupancy, or beta-coupling (temperature-coupling).  
 A value of 0 in this column indicates that the atom is not enhanced.
-Any other value should be a positive integer less than 16.
-{\em Note that the default column is O, while \PSFGEN\ writes this value
-in column B, so this parameter is normally required.}}
+Any other value should be a positive integer less than 16.}
 
 \end{itemize}
 

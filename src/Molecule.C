@@ -3466,7 +3466,7 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
          char *cwd)
    {
      PDB *bPDB;  //Pointer to PDB object to use
-     int bcol = 4;  //Column that the data is in
+     int bcol = 5;  //Column that the data is in
      Real bval = 0; //flag from PDB file
      int i;         // loop counter
      char filename[129]; // filename
@@ -3504,7 +3504,7 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
     // floating point fields in the PDB ie X, Y, X, O or B.
     // The default is 4th field ie the occupancy field
     if (fepcol == NULL) {
-      bcol = 4;
+      bcol = 5;
     }
     else {
       if (fepcol->next != NULL) {
