@@ -124,7 +124,7 @@ void ComputeHomeTuples<T>::doWork() {
   } 
 
   // take triplet and pass with tuple info to force eval
-  DebugM(2, "ComputeHomeTuples::doWork() - size of tuple list = " << tupleList.size() << endl );
+  DebugM(3, "ComputeHomeTuples::doWork() - size of tuple list = " << tupleList.size() << endl );
   ResizeArrayIter<T> al(tupleList);
   for (al = al.begin(); al != al.end(); al++ ) {
     // computeForce returns (BigReal)change in energy.  This must be used.
