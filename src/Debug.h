@@ -48,15 +48,11 @@
  *****************************************************************/
  #ifdef DEBUGM
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
-
   #define Debug(x) (x)
   #define DebugM(level,format) \
 	{ \
 	  infostream Dout; \
-	  Dout << iFILE << "Pe(" << CMyPe() << ") "; \
+	  Dout << iFILE << iPE << ' '; \
 	  if ((level >= MIN_DEBUG_LEVEL) && (level <= MAX_DEBUG_LEVEL)) \
 	  { \
 	    if (level >= STDERR_LEVEL)	Dout << "ERROR (" << level << "): "; \
