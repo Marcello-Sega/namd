@@ -19,10 +19,16 @@
 #include "ComputeNonbondedHack.h"
 
 #ifdef DEFINITION
+
 #include "Node.h"
 #include "LJTable.h"
 #include "SimParameters.h"
 #include "Molecule.h"
+
+#define MIN_DEBUG_LEVEL 3
+#define DEBUGM
+#include "Debug.h"
+
 #endif
 
 #if defined DECLARATION || defined DEFINITION
@@ -160,6 +166,9 @@ SW
       f_j -= f_vdw;
     }
   }
+
+  DebugM(3, "Nonbonded computation results: electEnergy = " 
+    << electEnergy << " vdwEnergy = " << vdwEnergy << endl);
 }
 #endif
 
@@ -168,12 +177,15 @@ SW
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/11/20 23:16:39 $
+ *	$Revision: 1.6 $	$Date: 1996/11/23 23:00:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.6  1996/11/23 23:00:30  jim
+ * added debug message - energy output
+ *
  * Revision 1.5  1996/11/20 23:16:39  jim
  * first compiling version of generic nonbonded function
  *
