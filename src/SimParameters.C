@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *  $RCSfile: SimParameters.C,v $
- *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1046 $  $Date: 1998/09/14 22:02:41 $
+ *  $Author: sergei $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1047 $  $Date: 1998/10/01 00:31:29 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,11 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1047  1998/10/01 00:31:29  sergei
+ * added rotating restraints feature;
+ * changed the moving restraints from only moving one atom to moving all
+ * atoms that are restrained. One-atom pulling is available in SMD feature.
+ *
  * Revision 1.1046  1998/09/14 22:02:41  jim
  * Altered load balancer defaults.
  *
@@ -475,7 +480,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1046 1998/09/14 22:02:41 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1047 1998/10/01 00:31:29 sergei Exp $";
 
 
 #include "charm++.h"
@@ -945,11 +950,21 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
       &movingConstraintsOn, FALSE);
    opts.require("movingConstraints", "movingConsVel",
     "Velocity of the movement, A/timestep", &movingConsVel);
-   opts.require("movingConstraints", "movingConsAtom",
-    "Index of the atom to move", 
-    &movingConsAtom);
-   opts.range("movingConsAtom", POSITIVE);
    //****** END moving constraints changes 
+
+   // BEGIN rotating constraints changes
+   opts.optionalB("constraints", "rotConstraints",
+      "Are the constraints rotating?", 
+      &rotConstraintsOn, FALSE);
+   opts.require("rotConstraints", "rotConsAxis",
+    "Axis of rotation", &rotConsAxis);
+   opts.require("rotConstraints", "rotConsPivot",
+    "Pivot point of rotation", 
+    &rotConsPivot);
+   opts.require("rotConstraints", "rotConsVel",
+    "Velocity of rotation, deg/timestep", &rotConsVel);
+
+   // END rotating constraints changes
 
    //****** BEGIN SMD constraints changes 
 
@@ -2033,13 +2048,27 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    {
      constraintExp = 0;     
 
-    //****** BEGIN moving constraints changes 
+     //****** BEGIN moving constraints changes 
      movingConstraintsOn = FALSE;
-    //****** END moving constraints changes 
+     //****** END moving constraints changes 
+     //****** BEGIN rotating constraints changes 
+     rotConstraintsOn = FALSE;
+    //****** END rotating constraints changes 
+   } 
+   //****** BEGIN rotating constraints changes 
+   else {
+     if (rotConstraintsOn) {
+       rotConsAxis = rotConsAxis.unit();
+     }
    }
+   if(opts.defined("rotConstraints") 
+      && opts.defined("movingConstraints")) {
+     NAMD_die("Rotating and moving constraints are mutually exclusive!");
+   }
+   //****** END rotating constraints changes 
 
 
-    //****** BEGIN SMD constraints changes 
+   //****** BEGIN SMD constraints changes 
    
    if (!opts.defined("SMD")) {     
      SMDOn = FALSE;
@@ -2470,11 +2499,27 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 	iout << iINFO << "MOVING CONSTRAINT VELOCITY    "
 	     << movingConsVel << " ANGSTROM/TIMESTEP\n";
 	
-	iout << iINFO << "MOVING CONSTRAINT ATOM NUMBER IN PDB FILE    "
-	     << movingConsAtom << "\n";
+	iout << iINFO << "ALL CONSTRAINED ATOMS WILL MOVE\n"
       }
       //****** END moving constraints changes 
       iout << endi;
+
+      //****** BEGIN rotating constraints changes 
+
+      if (rotConstraintsOn) {
+	iout << iINFO << "ROTATING HARMONIC CONSTRAINTS ACTIVE\n";
+
+	iout << iINFO << "AXIS OF ROTATION    "
+	     << rotConsAxis << "\n";
+	
+	iout << iINFO << "PIVOT OF ROTATION   "
+	     << rotConsPivot << "\n";
+
+	iout << iINFO << "ROTATING CONSTRAINT VELOCITY    "
+	     << rotConsVel << " DEGREES/TIMESTEP\n";
+      }
+      iout << endi;
+      //****** END rotating constraints changes 
    }
 
    //****** BEGIN SMD constraints changes 
@@ -3026,8 +3071,12 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
   msg->put(pairlistDist)->put(plMarginCheckOn)->put(constraintsOn);
   msg->put(constraintExp);
   //****** BEGIN moving constraints changes 
-  msg->put(movingConstraintsOn)->put(movingConsAtom)->put(&movingConsVel);
+  msg->put(movingConstraintsOn)->put(&movingConsVel);
   //****** END moving constraints changes 
+  //****** BEGIN rotating constraints changes 
+  msg->put(rotConstraintsOn)->put(&rotConsAxis)->put(&rotConsPivot);
+  msg->put(rotConsVel);
+  //****** END rotating constraints changes 
   //****** BEGIN SMD constraints changes 
   msg->put(SMDOn)->put(SMDAtom)->put(SMDVel);
   msg->put(SMDExp)->put(SMDk)->put(&SMDRefPos);
@@ -3160,8 +3209,13 @@ void SimParameters::receive_SimParameters(MIStream *msg)
   msg->get(constraintExp);
   //****** BEGIN moving constraints changes 
   msg->get(movingConstraintsOn);
-  msg->get(movingConsAtom);
   msg->get(&movingConsVel);
+  //****** BEGIN rotating constraints changes 
+  msg->get(rotConstraintsOn);
+  msg->get(&rotConsAxis);
+  msg->get(&rotConsPivot);
+  msg->get(rotConsVel);
+  //****** END rotating constraints changes 
   //****** END moving constraints changes 
   //****** BEGIN SMD constraints changes 
   msg->get(SMDOn);
@@ -3311,12 +3365,17 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1046 $  $Date: 1998/09/14 22:02:41 $
+ *  $Revision: 1.1047 $  $Date: 1998/10/01 00:31:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1047  1998/10/01 00:31:29  sergei
+ * added rotating restraints feature;
+ * changed the moving restraints from only moving one atom to moving all
+ * atoms that are restrained. One-atom pulling is available in SMD feature.
+ *
  * Revision 1.1046  1998/09/14 22:02:41  jim
  * Altered load balancer defaults.
  *

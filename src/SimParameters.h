@@ -176,8 +176,14 @@ public:
         Bool movingConstraintsOn;       //  Flag TRUE-> moving constraints 
                                         //  active
         Vector movingConsVel;           //  Velocity of the movement, A/timestep
-        int movingConsAtom;             //  Index of the atom to be moved
         //****** END moving constraints changes 
+        //****** BEGIN rotating constraints changes 
+        Bool rotConstraintsOn;          //  Flag TRUE-> rotating constraints 
+                                        //  active
+        Vector rotConsAxis;             //  Axis of rotation
+        Vector rotConsPivot;            //  Pivot point of rotation
+        BigReal rotConsVel;             //  Velocity of rotation, Deg/timestep
+        //****** END rotating constraints changes 
         //****** BEGIN SMD constraints changes   
         Bool SMDOn;                     //  Flag TRUE-> SMD constraints 
                                         //  active
@@ -381,13 +387,18 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1024 $	$Date: 1998/09/13 21:06:15 $
+ *	$Author: sergei $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1025 $	$Date: 1998/10/01 00:31:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1025  1998/10/01 00:31:30  sergei
+ * added rotating restraints feature;
+ * changed the moving restraints from only moving one atom to moving all
+ * atoms that are restrained. One-atom pulling is available in SMD feature.
+ *
  * Revision 1.1024  1998/09/13 21:06:15  jim
  * Cleaned up output, defaults, etc.
  *

@@ -23,9 +23,18 @@ class ComputeRestraints : public ComputePatch
 {
 private:
 	int consExp;		//  Exponent for energy function from SimParameters
-	Bool consMoveOn;        //  Are the cmoving constraints on?
-	int moveAtom;           //  Index of the atom to move
+	//****** BEGIN moving constraints changes 
+	Bool consMoveOn;        //  Are the moving constraints on?
         Vector moveVel;         // velocity of the constraint movement (A/timestep).
+	//****** END moving constraints changes 
+	//****** BEGIN rotating constraints changes 
+	// rotating constraints. 
+	// Ref. pos. of all the atoms that are constrained will rotate
+	Bool consRotOn;         // Are the rotating constraints on?
+	Vector rotAxis;         // Axis of rotation
+        Vector rotPivot;        // Pivot point of rotation
+        BigReal rotVel;         // Rotation velocity (deg/timestep);
+	//****** END rotating constraints changes 
 
 public:
 	ComputeRestraints(ComputeID c, PatchID pid); 	//  Constructor
@@ -44,12 +53,17 @@ public:
  *
  *	$RCSfile: ComputeRestraints.h,v $
  *	$Author: sergei $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1997/08/18 20:16:06 $
+ *	$Revision: 1.3 $	$Date: 1998/10/01 00:31:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeRestraints.h,v $
+ * Revision 1.3  1998/10/01 00:31:31  sergei
+ * added rotating restraints feature;
+ * changed the moving restraints from only moving one atom to moving all
+ * atoms that are restrained. One-atom pulling is available in SMD feature.
+ *
  * Revision 1.2  1997/08/18 20:16:06  sergei
  * added moving restraint capability with input from config file
  * one atom only

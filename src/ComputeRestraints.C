@@ -11,6 +11,7 @@
 #include "Molecule.h"
 #include "SimParameters.h"
 #include "Patch.h"
+#include "NamdOneTools.h"
 
 /************************************************************************/
 /*									*/
@@ -33,9 +34,16 @@ ComputeRestraints::ComputeRestraints(ComputeID c, PatchID pid)
 	consMoveOn = simParams->movingConstraintsOn;
 	if (consMoveOn) {
 	  moveVel = simParams->movingConsVel;
-	  moveAtom = simParams->movingConsAtom;
 	}
 	//****** END moving constraints changes 
+	//****** BEGIN rotating constraints changes 
+	consRotOn = simParams->rotConstraintsOn;
+	if (consRotOn) {
+	  rotVel = simParams->rotConsVel;
+	  rotAxis = simParams->rotConsAxis;
+	  rotPivot = simParams->rotConsPivot;
+	}
+	//****** END rotating constraints changes 
 
 }
 /*			END OF FUNCTION ComputeRestraints		*/
@@ -75,38 +83,41 @@ void ComputeRestraints::doForce(Position* p, Results* res, AtomProperties* a)
 	// aliases to work with old code
 	Force *f = res->f[Results::normal];
 	BigReal energy = 0;
+	BigReal m[9];
 
-	// BEGIN moving constraint changes ****************************
+	// BEGIN moving and rotating constraint changes ******
 
-	// This version only allows one atom to be moved
+	// This version only allows one atom to be moved 
+	// and only ALL ref positions to be rotated
 
 	int currentTime = patch->flags.seq;
+	if (consRotOn) {
+	  vec_rotation_matrix(rotVel * currentTime, rotAxis, m);
+	}
 
-	// END moving constraint changes ****************************
+	// END moving and rotating constraint changes ******
 
-
+	  
 	for (int localID=0; localID<numAtoms; ++localID)
 	{
 	  if (molecule->is_atom_constrained(a[localID].id))
 	  {
 	    molecule->get_cons_params(k, refPos, a[localID].id);
 
-	    // BEGIN moving constraint changes ****************************
+	    // BEGIN moving and rotating constraint changes ******
 	    
 	    if (consMoveOn) {
-	      if (a[localID].id == moveAtom) { 
-
-		Rij = refPos + currentTime * moveVel  - p[localID];
-	      }
-	      else { // the default case
-		Rij = refPos - p[localID];
-	      }
+	      Rij = refPos + currentTime * moveVel  - p[localID];
 	    }
-	    else {
+	    else if(consRotOn) {
+	      Rij = mat_multiply_vec(refPos - rotPivot, m) + rotPivot 
+		- p[localID];
+	    }
+	    else { // the default case
 	     Rij = refPos - p[localID];
 	    } 
 
-	    // END moving constraint changes ****************************
+	    // END moving and rotating constraint changes *******
 	    
 	    //  Calculate the distance and the distance squared
 	    r2 = Rij.length2();
@@ -153,12 +164,17 @@ void ComputeRestraints::doForce(Position* p, Results* res, AtomProperties* a)
  *
  *	$RCSfile: ComputeRestraints.C,v $
  *	$Author: sergei $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1998/01/05 20:19:04 $
+ *	$Revision: 1.4 $	$Date: 1998/10/01 00:31:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeRestraints.C,v $
+ * Revision 1.4  1998/10/01 00:31:31  sergei
+ * added rotating restraints feature;
+ * changed the moving restraints from only moving one atom to moving all
+ * atoms that are restrained. One-atom pulling is available in SMD feature.
+ *
  * Revision 1.3  1998/01/05 20:19:04  sergei
  * removed cycling over an array of constrained atoms for moving
  * restraints. Now it's just clean one-atom case.
