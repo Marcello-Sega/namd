@@ -20,9 +20,7 @@
 
 #ifdef DEFINITION
 
-#include "Node.h"
 #include "LJTable.h"
-#include "SimParameters.h"
 #include "Molecule.h"
 
 #define MIN_DEBUG_LEVEL 5
@@ -51,27 +49,26 @@ DECL( ; )
   BigReal electEnergy = 0;
   BigReal vdwEnergy = 0;
 
-  const Real cutoff = Node::Object()->simParameters->cutoff;
-  const BigReal cutoff2 = cutoff*cutoff;
-  const BigReal dielectric_1 = 1/Node::Object()->simParameters->dielectric;
+  const BigReal cutoff2 = ComputeNonbondedUtil:: cutoff2;
+  const BigReal dielectric_1 = ComputeNonbondedUtil:: dielectric_1;
 
-  const LJTable* const ljTable = LJTable::Instance();
-  const Molecule* const mol = Node::Object()->molecule;
+  const LJTable* const ljTable = ComputeNonbondedUtil:: ljTable;
+  const Molecule* const mol = ComputeNonbondedUtil:: mol;
 
 M14
 (
-  const BigReal scale14 = Node::Object()->simParameters->scale14;
+  const BigReal scale14 = ComputeNonbondedUtil:: scale14;
 )
 
 SW
 (
-  const Real switchOn = Node::Object()->simParameters->switchingDist;
-  const BigReal switchOn2 = switchOn*switchOn;
-  const BigReal c0 = 1/(cutoff2-switchOn2);
-  const BigReal c1 = c0*c0*c0;
-  const BigReal c3 = c1 * 4;
-  const BigReal c5 = 1/cutoff2;
-  const BigReal c6 = -4 * c5;
+  const Real switchOn = ComputeNonbondedUtil:: switchOn;
+  const BigReal switchOn2 = ComputeNonbondedUtil:: switchOn2;
+  const BigReal c0 = ComputeNonbondedUtil:: c0;
+  const BigReal c1 = ComputeNonbondedUtil:: c1;
+  const BigReal c3 = ComputeNonbondedUtil:: c3;
+  const BigReal c5 = ComputeNonbondedUtil:: c5;
+  const BigReal c6 = ComputeNonbondedUtil:: c6;
 )
 
 NOEXCL
@@ -271,12 +268,15 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1996/12/03 21:05:09 $
+ *	$Revision: 1.9 $	$Date: 1996/12/04 17:16:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.9  1996/12/04 17:16:32  jim
+ * ComputeNonbondedUtil::select() now caches simulation parameters
+ *
  * Revision 1.8  1996/12/03 21:05:09  jim
  * added support for exclusion correction computes
  *

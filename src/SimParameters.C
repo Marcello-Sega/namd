@@ -11,7 +11,7 @@
  *
  *	$RCSfile: SimParameters.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/11/21 01:00:49 $
+ *	$Revision: 1.6 $	$Date: 1996/12/04 17:16:32 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.6  1996/12/04 17:16:32  jim
+ * ComputeNonbondedUtil::select() now caches simulation parameters
+ *
  * Revision 1.5  1996/11/21 01:00:49  jim
  * added calls to ComputeNonbondedUtil::select()
  *
@@ -277,7 +280,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.5 1996/11/21 01:00:49 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.6 1996/12/04 17:16:32 jim Exp $";
 
 #include "ConfigList.h"
 #include "SimParameters.h"
@@ -288,7 +291,6 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParamete
 #include <stdio.h>
 #include "InfoStream.h"
 #include <time.h>
-#include "ComputeNonbondedUtil.h"
 
 #ifdef AIX
 #include "strlib.h"		//  For strcasecmp and strncasecmp
@@ -1838,9 +1840,6 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 		 << firstTimestep << "\n" << endi;
    }
 
-	//  Make the nonbonded system happy
-	ComputeNonbondedUtil::select();
-
 }
 /*		END OF FUNCTION initialize_config_data		*/
 
@@ -2013,8 +2012,6 @@ void SimParameters::receive_SimParameters(Message *msg)
 	//  Free the message
 	delete msg;
 
-	//  Make the nonbonded system happy
-	ComputeNonbondedUtil::select();
 }
 /*			END OF FUNCTION receive_SimParameters	*/
 

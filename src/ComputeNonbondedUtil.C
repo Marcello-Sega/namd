@@ -14,9 +14,26 @@
 #include "ComputeNonbondedUtil.h"
 #include "SimParameters.h"
 #include "Node.h"
+#include "Molecule.h"
+#include "LJTable.h"
 
 void ComputeNonbondedUtil::select(void)
 {
+
+  cutoff = Node::Object()->simParameters->cutoff;
+  cutoff2 = cutoff*cutoff;
+  dielectric_1 = 1/Node::Object()->simParameters->dielectric;
+  ljTable = LJTable::Instance();
+  mol = Node::Object()->molecule;
+  scale14 = Node::Object()->simParameters->scale14;
+  switchOn = Node::Object()->simParameters->switchingDist;
+  switchOn2 = switchOn*switchOn;
+  c0 = 1/(cutoff2-switchOn2);
+  c1 = c0*c0*c0;
+  c3 = c1 * 4;
+  c5 = 1/cutoff2;
+  c6 = -4 * c5;
+
 #undef DECLARATION
 #undef DEFINITION
 
@@ -177,12 +194,15 @@ void ComputeNonbondedUtil::select(void)
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/12/03 21:05:09 $
+ *	$Revision: 1.5 $	$Date: 1996/12/04 17:16:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.5  1996/12/04 17:16:32  jim
+ * ComputeNonbondedUtil::select() now caches simulation parameters
+ *
  * Revision 1.4  1996/12/03 21:05:09  jim
  * added support for exclusion correction computes
  *

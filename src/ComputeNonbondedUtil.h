@@ -15,6 +15,8 @@
 #define COMPUTENONBONDEDUTIL_H
 
 #include "NamdTypes.h"
+class LJTable;
+class Molecule;
 
 class ComputeNonbondedUtil {
 
@@ -27,6 +29,20 @@ public:
 		Force &, Force &,
 		const AtomProperties &, const AtomProperties &,
 		int);
+
+  static Real cutoff;
+  static BigReal cutoff2;
+  static BigReal dielectric_1;
+  static const LJTable* ljTable;
+  static const Molecule* mol;
+  static BigReal scale14;
+  static Real switchOn;
+  static BigReal switchOn2;
+  static BigReal c0;
+  static BigReal c1;
+  static BigReal c3;
+  static BigReal c5;
+  static BigReal c6;
 
 #define DECLARATION
 #undef DEFINITON
@@ -102,12 +118,15 @@ public:
  *
  *	$RCSfile: ComputeNonbondedUtil.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/12/03 21:05:09 $
+ *	$Revision: 1.6 $	$Date: 1996/12/04 17:16:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.h,v $
+ * Revision 1.6  1996/12/04 17:16:32  jim
+ * ComputeNonbondedUtil::select() now caches simulation parameters
+ *
  * Revision 1.5  1996/12/03 21:05:09  jim
  * added support for exclusion correction computes
  *

@@ -20,7 +20,7 @@
 #include "ComputeMgr.h"
 
 #include "Node.h"
-#include "LJTable.h"
+#include "ComputeNonbondedUtil.h"
 #include "ComputeNonbondedSelf.h"
 #include "ComputeNonbondedPair.h"
 #include "ComputeAngles.h"
@@ -133,7 +133,8 @@ void ComputeMgr:: createComputes(ComputeMap *map)
   DebugM(4, numNonbondedPair << " ComputeNonbondedPair created\n");
 
   // This doesn't really have to be here, but the output makes more sense.
-  LJTable::Instance();
+  // It does have to happen after the molecule has been created.
+  ComputeNonbondedUtil::select();
 
 }
 
@@ -148,8 +149,8 @@ void ComputeMgr:: enqueueWork(Compute *compute)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/12/03 14:53:42 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.7 $	$Date: 1996/12/04 17:16:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
