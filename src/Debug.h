@@ -27,6 +27,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <strstream.h>	// for ostrstream
 #include "ckdefs.h"	// for CPrintf
 
 /*****************************************************************
@@ -46,28 +47,23 @@
  *****************************************************************/
  #ifdef DEBUGM
 
-  inline void DebugM(const int level, const char *format, ... )
-  {
-	if ((level >= MIN_DEBUG_LEVEL) && (level <= MAX_DEBUG_LEVEL))
-	{
-	  if (level >= STDERR_LEVEL)
-	    CPrintf("ERROR: ");
-	  CPrintf("%s %d: ",__FILE__,__LINE__);
-	  va_list args;
-	  va_start(args, format);
-	  /* S should be an object or variable size, but I don't think
-	     vsprintf will like it.  This should be checked. */
-	  char S[256];
-	  vsprintf(S,format,args);
-	  CPrintf(S);
-	  va_end(args);
+#define DebugM(level,format) \
+	{ \
+	  if ((level >= MIN_DEBUG_LEVEL) && (level <= MAX_DEBUG_LEVEL)) \
+	  { \
+	    if (level >= STDERR_LEVEL)	CPrintf("ERROR (%d): ",level); \
+	    else if (level > 0) CPrintf("Debug (%d): ",level); \
+	    char debugBuf[256]; \
+	    ostrstream dout(debugBuf,sizeof(debugBuf)); \
+	    dout << format << ends; \
+	    CPrintf("%s %d: %s",__FILE__,__LINE__,debugBuf); \
+	  } \
 	}
-  }
 
  #else
-  /* make a void function.  Even dumb compilers will remove this as long
-     as the parameters do not have side effects and are not functions. */
-  inline void DebugM(...) {;}
+  /* make a void function. */
+  /* parameters with side effects will be removed! */
+  #define DebugM(x,y)	;
 
  #endif /* DEBUGM */
 
