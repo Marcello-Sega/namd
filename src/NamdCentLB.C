@@ -440,9 +440,9 @@ int NamdCentLB::requiredProxies(PatchID id, int neighborNodes[])
   if ( numNodes > 1.25 * numPatches ) {  // avoid marginal cases
     int emptyNodes = numNodes - numPatches;
     int nodesPerPatch = 3 + (emptyNodes-1) / numPatches;
-    int baseNode = (emptyNodes * id) / numPatches;
+    int baseNode = (numNodes * id) / numPatches;
     for ( i = 0; i < nodesPerPatch; ++i ) {
-      int proxyNode = numPatches + ((baseNode+i) % emptyNodes);
+      int proxyNode = (baseNode+i) % numNodes;
       if (proxyNode != myNode && proxyNodes[proxyNode] == No) {
 	proxyNodes[proxyNode] = Yes;
 	neighborNodes[nProxyNodes] = proxyNode;

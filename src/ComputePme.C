@@ -214,10 +214,48 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
       " processors for FFT and reciprocal sum.\n" << endi;
   }
 
-  myRecipPe = -1;
-  for ( int i=0; i<numRecipPes; ++i ) {
-    recipPeMap[i] = CkNumPes() - numRecipPes + i;
-    if ( recipPeMap[i] == CkMyPe() ) myRecipPe = i;
+  {  // decide which pes to use by bit reversal
+    int ncpus = CkNumPes();
+
+    // find next highest power of two
+    int npow2 = 1;  int nbits = 0;
+    while ( npow2 < ncpus ) { npow2 *= 2; nbits += 1; }
+
+    // build bit reversal sequence
+    SortableResizeArray<int> seq(ncpus);
+    int i = 0;
+    for ( int icpu=0; icpu<ncpus; ++icpu ) {
+      int ri;
+      for ( ri = ncpus; ri >= ncpus; ++i ) {
+        ri = 0;
+        int pow2 = 1;
+        int rpow2 = npow2 / 2;
+        for ( int j=0; j<nbits; ++j ) {
+          ri += rpow2 * ( ( i / pow2 ) % 2 );
+          pow2 *= 2;  rpow2 /= 2;
+        }
+      }
+      seq[icpu] = ri;
+    }
+
+    // extract and sort PME locations
+    for ( int i=0; i<numRecipPes; ++i ) {
+      seq[i] = seq[ncpus - numRecipPes + i];
+    }
+    seq.resize(numRecipPes);
+    seq.sort();
+
+    myRecipPe = -1;
+    for ( int i=0; i<numRecipPes; ++i ) {
+      recipPeMap[i] = seq[i];
+      if ( recipPeMap[i] == CkMyPe() ) myRecipPe = i;
+    }
+  }
+
+  if ( ! CkMyPe() ) {
+    iout << iINFO << "PME LOCATIONS:";
+    for ( int i=0; i<numRecipPes; ++i ) { iout << " " << recipPeMap[i]; }
+    iout << "\n" << endi;
   }
 
   myGrid.K1 = simParams->PMEGridSizeX;

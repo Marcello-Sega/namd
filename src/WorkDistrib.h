@@ -74,6 +74,7 @@ private:
   void assignPatchesToLowestLoadNode(void);
   void assignPatchesRecursiveBisection(void);
   void assignPatchesRoundRobin(void);
+  void assignPatchesBitReversal(void);
   void velocities_from_PDB(char *filename, 
 			   Vector *v, int totalAtoms);
   void velocities_from_binfile(char *fname, Vector *vels, int n);

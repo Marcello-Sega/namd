@@ -420,8 +420,7 @@ void WorkDistrib::assignNodeToPatch()
   PatchMap *patchMap = PatchMap::Object();
   int nNodes = Node::Object()->numNodes();
   if (nNodes > patchMap->numPatches())
-    //NAMD_die("Man, Tiny Elvis, WorkDistrib::assignNodeToPatch not enough patches!");
-    assignPatchesRoundRobin();
+    assignPatchesBitReversal();
   else if (nNodes == patchMap->numPatches())
     assignPatchesRoundRobin();
   else if (method==1)
@@ -526,6 +525,52 @@ void WorkDistrib::assignPatchesToLowestLoadNode()
   }
 
   delete[] load;
+}
+
+//----------------------------------------------------------------------
+void WorkDistrib::assignPatchesBitReversal() 
+{
+  int pid; 
+  PatchMap *patchMap = PatchMap::Object();
+  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  Node *node = nd.ckLocalBranch();
+
+  int ncpus = node->numNodes();
+  int npatches = patchMap->numPatches();
+  if ( ncpus < npatches )
+    NAMD_bug("WorkDistrib::assignPatchesBitReversal called improperly");
+
+  // find next highest power of two
+  int npow2 = 1;  int nbits = 0;
+  while ( npow2 < ncpus ) { npow2 *= 2; nbits += 1; }
+
+  // build bit reversal sequence
+  SortableResizeArray<int> seq(ncpus);
+  int i = 0;
+  for ( int icpu=0; icpu<ncpus; ++icpu ) {
+    int ri;
+    for ( ri = ncpus; ri >= ncpus; ++i ) {
+      ri = 0;
+      int pow2 = 1;
+      int rpow2 = npow2 / 2;
+      for ( int j=0; j<nbits; ++j ) {
+        ri += rpow2 * ( ( i / pow2 ) % 2 );
+        pow2 *= 2;  rpow2 /= 2;
+      }
+    }
+    seq[icpu] = ri;
+  }
+
+  // extract and sort patch locations
+  seq.resize(npatches);
+  seq.sort();
+  iout << iINFO << "PATCH LOCATIONS:";
+  for ( pid=0; pid<npatches; ++pid ) { iout << " " << seq[pid]; }
+  iout << "\n" << endi;
+
+  for ( pid=0; pid<npatches; ++pid ) {
+    patchMap->assignNode(pid, seq[pid]);
+  }
 }
 
 //----------------------------------------------------------------------
@@ -645,21 +690,24 @@ void WorkDistrib::mapComputeHomePatches(ComputeType type)
   CProxy_Node nd(CpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
 
-  int i;
-
   int numNodes = node->numNodes();
-
-  if (numNodes > patchMap->numPatches()) numNodes=patchMap->numPatches();
+  int numPatches = patchMap->numPatches();
   ComputeID *cid = new ComputeID[numNodes];
 
-  for(i=0; i<numNodes; i++)
-  {
-    cid[i]=computeMap->storeCompute(i,patchMap->numPatches(),type);
+  if (numNodes > numPatches) {
+    for ( int pid=0; pid<numPatches; ++pid ) {
+      int i = patchMap->node(pid);
+      cid[i]=computeMap->storeCompute(i,numPatches,type);
+    }
+  } else {
+    for(int i=0; i<numNodes; i++) {
+      cid[i]=computeMap->storeCompute(i,numPatches,type);
+    }
   }
 
   PatchID j;
 
-  for(j=0;j<patchMap->numPatches();j++)
+  for(j=0;j<numPatches;j++)
   {
     patchMap->newCid(j,cid[patchMap->node(j)]);
     computeMap->newPid(cid[patchMap->node(j)],j);
