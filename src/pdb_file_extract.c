@@ -69,7 +69,7 @@ int pdb_file_extract_coordinates(topo_mol *mol, FILE *file,
         target.segid = segname;
       }
       if ( topo_mol_set_xyz(mol,&target,x,y,z) ) {
-        sprintf(msg,"ERROR: failed to set coordinate for atom %s in residue %s:%s of segment %s",name,resname,resid,segid);
+        sprintf(msg,"ERROR: failed to set coordinate for atom %s in residue %s:%s of segment %s",name,resname,resid,segid ? segid : segname);
         print_msg(msg);
       }
     }
