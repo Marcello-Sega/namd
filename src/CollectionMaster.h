@@ -48,7 +48,7 @@ private:
     operator<(const CollectVectorInstance &o) { return (seq < o.seq); }
     operator==(const CollectVectorInstance &o) { return (seq == o.seq); }
     void * operator new(size_t size) { return ::operator new(size); }
-    void * operator new(size_t size, void * ptr) { return ptr; }
+    void * operator new(size_t, void * ptr) { return ptr; }
     void operator delete(void* ptr) { ::operator delete(ptr); }
 
     class VectorData
@@ -58,8 +58,8 @@ private:
       VectorData(AtomID a, Vector d) : aid(a), data(d) { ; }
       AtomID aid;
       Vector data;
-      // operator<(const VectorData &o) { return (aid < o.aid); }
-      // operator==(const VectorData &o) { return (aid == o.aid); }
+      operator<(const VectorData &o) { return (aid < o.aid); }
+      operator==(const VectorData &o) { return (aid == o.aid); }
       void * operator new(size_t size) { return ::operator new(size); }
       void * operator new(size_t, void * ptr) { return ptr; }
       void operator delete(void* ptr) { ::operator delete(ptr); }
