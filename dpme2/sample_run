@@ -1,0 +1,438 @@
+***************************************************************************
+***************************************************************************
+***************************************************************************
+Note that the reported times in these sample run cannot be used to deduce
+any speedup information because the Network of PEs used here is hetrogenous,
+and was loaded at the time of these runs
+Note also that VERBOSE option in the Makefile add a lot of I/O  overhead.
+***************************************************************************
+***************************************************************************
+***************************************************************************
+	Example 1 ( VERBOSE , TIMEME and VIRIAL are turned on )		
+ 			Run 1 timestep	
+***************************************************************************
+***************************************************************************
+***************************************************************************
+
+dpme2_test -c9 -t1e-6 -o5 -n32 -m1 -s0
+
+ * NODE 0 :  instant is 1835112 
+Particle Sytem size= 2568 ..... Ewald coefficient = 0.348832
+Box_dim[30.485000,30.485000,30.485000] .... cutoff = 9.000000 ..... tol=0.000001
+ calling setup_parallel()... 
+ You are using Link_cell Method
+ The UPDATE_TIME=2
+npdim=(1,1,1) total procs=1 
+setupatom:borders -15.242500 15.242500 -15.242500 15.242500 -15.242500 15.242500 
+ NOTE: ALL COORDS ARE SCALED from  -L/2 -> L/2
+Num of particle I own=2568 
+ ****** RE-Nieghboring at time-step 1  ******
+ calling exchange()... 
+ calling borders()... 
+ calling neighbors1()... 
+
+At t=1..........direct_energy2= -123660.640427 
+~~~~~~~~~~~~~~~~~RCP SUM wall time[secs]~~~~~~~~~~~~~~~~~~~~~
+rcv bcast =0.000002, bspline-cofs2 =0.036950 
+fill_grd =0.192783, FFT-bk=0.265496  
+scalar_sum=0.167512, FFT-fwd=0.287028 , grad_sum=0.230740
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ At t=1..........recip_energy=293.388129
+ The adjust_dir_energy=116706.991135 
+ The adjust_recip_energy =57254.499121 
+ The self_energy=-58385.939012 
+ collecting virials ....
+  dir_vir[0]=2988.622680  rcp_vir[0]=253.883330  adj_vir[0]=-808.905497  
+  dir_vir[1]=-41.167760  rcp_vir[1]=-31.006301  adj_vir[1]=52.111046  
+  dir_vir[2]=-112.677672  rcp_vir[2]=-9.617571  adj_vir[2]=-1.007025  
+  dir_vir[3]=3916.415141  rcp_vir[3]=145.366274  adj_vir[3]=-753.272969  
+  dir_vir[4]=188.175858  rcp_vir[4]=-8.569027  adj_vir[4]=34.191126  
+  dir_vir[5]=2607.237668  rcp_vir[5]=224.825170  adj_vir[5]=-782.735021  
+calling update_coordinates()...
+*********  Results at last time step **********
+* Adjusted_direct_energy =       -6953.649292
+* Recip_energy =                 293.388129
+* Adjust_energy =                57254.499121
+* Self_energy =                  -58385.939012 
+***********************************************
+Wall time in communicate or exchange= 0.000320 
+Wall time in borders = 0.000384 
+Wall time in build_verlet/lc = 11.702840 
+Wall time in adj/slf/vir = 0.204473 
++++++++++++++++++++++++++++++++++++++++++++++++++++
+Total Wall/User  time = 18.384428 / 17.290001 [secs]
+DIR_SUM total time on 1 PE=5.096274 [sec]
+RCP_SUM total time on 1 PE=1.226582 [sec]
+
+
+
+
+***************************************************************************
+***************************************************************************
+***************************************************************************
+	Example 2 ( VERBOSE , TIMEME and VIRIAL are turned on )
+   Run 10 timesteps with updating Neighbor list every 2 timesteps.
+***************************************************************************
+***************************************************************************
+***************************************************************************
+
+dpme2_test -c9 -t1e-6 -o5 -n32 -m10 -s0
+
+ * NODE 0 :  instant is 1835113 
+Particle Sytem size= 2568 ..... Ewald coefficient = 0.348832
+Box_dim[30.485000,30.485000,30.485000] .... cutoff = 9.000000 ..... tol=0.000001
+ calling setup_parallel()... 
+ You are using Link_cell Method
+ The UPDATE_TIME=2
+npdim=(1,1,1) total procs=1 
+setupatom:borders -15.242500 15.242500 -15.242500 15.242500 -15.242500 15.242500 
+ NOTE: ALL COORDS ARE SCALED from  -L/2 -> L/2
+Num of particle I own=2568 
+ ****** RE-Nieghboring at time-step 1  ******
+ calling exchange()... 
+ calling borders()... 
+ calling neighbors1()... 
+
+At t=1..........direct_energy2= -123660.640427 
+~~~~~~~~~~~~~~~~~RCP SUM wall time[secs]~~~~~~~~~~~~~~~~~~~~~
+rcv bcast =0.000002, bspline-cofs2 =0.037288 
+fill_grd =0.176443, FFT-bk=0.264588  
+scalar_sum=0.144008, FFT-fwd=0.255747 , grad_sum=0.221864
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ At t=1..........recip_energy=293.388129
+ The adjust_dir_energy=116706.991135 
+ The adjust_recip_energy =57254.499121 
+ The self_energy=-58385.939012 
+ collecting virials ....
+  dir_vir[0]=2988.622680  rcp_vir[0]=253.883330  adj_vir[0]=-808.905497  
+  dir_vir[1]=-41.167760  rcp_vir[1]=-31.006301  adj_vir[1]=52.111046  
+  dir_vir[2]=-112.677672  rcp_vir[2]=-9.617571  adj_vir[2]=-1.007025  
+  dir_vir[3]=3916.415141  rcp_vir[3]=145.366274  adj_vir[3]=-753.272969  
+  dir_vir[4]=188.175858  rcp_vir[4]=-8.569027  adj_vir[4]=34.191126  
+  dir_vir[5]=2607.237668  rcp_vir[5]=224.825170  adj_vir[5]=-782.735021  
+calling update_coordinates()...
+ ****** COMMUNICATE at time-step 2 ********
+
+At t=2..........direct_energy2= -123660.640427 
+~~~~~~~~~~~~~~~~~RCP SUM wall time[secs]~~~~~~~~~~~~~~~~~~~~~
+rcv bcast =0.000002, bspline-cofs2 =0.030250 
+fill_grd =0.171048, FFT-bk=0.261222  
+scalar_sum=0.142760, FFT-fwd=0.264966 , grad_sum=0.221631
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ At t=2..........recip_energy=293.388120
+ The adjust_dir_energy=116706.991135 
+ The adjust_recip_energy =57254.499121 
+ The self_energy=-58385.939012 
+ collecting virials ....
+  dir_vir[0]=2988.622680  rcp_vir[0]=253.882992  adj_vir[0]=-808.905497  
+  dir_vir[1]=-41.167760  rcp_vir[1]=-31.006238  adj_vir[1]=52.111046  
+  dir_vir[2]=-112.677672  rcp_vir[2]=-9.617677  adj_vir[2]=-1.007025  
+  dir_vir[3]=3916.415141  rcp_vir[3]=145.366438  adj_vir[3]=-753.272969  
+  dir_vir[4]=188.175858  rcp_vir[4]=-8.569038  adj_vir[4]=34.191126  
+  dir_vir[5]=2607.237668  rcp_vir[5]=224.824814  adj_vir[5]=-782.735021  
+calling update_coordinates()...
+ ****** RE-Nieghboring at time-step 3  ******
+ calling exchange()... 
+ calling borders()... 
+ calling neighbors1()... 
+
+At t=3..........direct_energy2= -123660.640427 
+~~~~~~~~~~~~~~~~~RCP SUM wall time[secs]~~~~~~~~~~~~~~~~~~~~~
+rcv bcast =0.000002, bspline-cofs2 =0.029926 
+fill_grd =0.167477, FFT-bk=0.261922  
+scalar_sum=0.162249, FFT-fwd=0.268562 , grad_sum=0.246058
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ At t=3..........recip_energy=293.388111
+ The adjust_dir_energy=116706.991135 
+ The adjust_recip_energy =57254.499121 
+ The self_energy=-58385.939012 
+ collecting virials ....
+  dir_vir[0]=2988.622680  rcp_vir[0]=253.882659  adj_vir[0]=-808.905497  
+  dir_vir[1]=-41.167760  rcp_vir[1]=-31.006173  adj_vir[1]=52.111046  
+  dir_vir[2]=-112.677672  rcp_vir[2]=-9.617784  adj_vir[2]=-1.007025  
+  dir_vir[3]=3916.415141  rcp_vir[3]=145.366603  adj_vir[3]=-753.272969  
+  dir_vir[4]=188.175858  rcp_vir[4]=-8.569049  adj_vir[4]=34.191126  
+  dir_vir[5]=2607.237668  rcp_vir[5]=224.824454  adj_vir[5]=-782.735021  
+calling update_coordinates()...
+ ****** COMMUNICATE at time-step 4 ********
+
+At t=4..........direct_energy2= -123660.640427 
+~~~~~~~~~~~~~~~~~RCP SUM wall time[secs]~~~~~~~~~~~~~~~~~~~~~
+rcv bcast =0.000002, bspline-cofs2 =0.029777 
+fill_grd =0.187558, FFT-bk=0.263626  
+scalar_sum=0.142503, FFT-fwd=0.253256 , grad_sum=0.223465
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ At t=4..........recip_energy=293.388101
+ The adjust_dir_energy=116706.991135 
+ The adjust_recip_energy =57254.499121 
+ The self_energy=-58385.939012 
+ collecting virials ....
+  dir_vir[0]=2988.622680  rcp_vir[0]=253.882329  adj_vir[0]=-808.905497  
+  dir_vir[1]=-41.167760  rcp_vir[1]=-31.006108  adj_vir[1]=52.111046  
+  dir_vir[2]=-112.677672  rcp_vir[2]=-9.617892  adj_vir[2]=-1.007025  
+  dir_vir[3]=3916.415141  rcp_vir[3]=145.366767  adj_vir[3]=-753.272969  
+  dir_vir[4]=188.175858  rcp_vir[4]=-8.569062  adj_vir[4]=34.191126  
+  dir_vir[5]=2607.237668  rcp_vir[5]=224.824090  adj_vir[5]=-782.735021  
+calling update_coordinates()...
+ ****** RE-Nieghboring at time-step 5  ******
+ calling exchange()... 
+ calling borders()... 
+ calling neighbors1()... 
+
+At t=5..........direct_energy2= -123660.640427 
+~~~~~~~~~~~~~~~~~RCP SUM wall time[secs]~~~~~~~~~~~~~~~~~~~~~
+rcv bcast =0.000002, bspline-cofs2 =0.029563 
+fill_grd =0.172358, FFT-bk=0.256163  
+scalar_sum=0.155756, FFT-fwd=0.266416 , grad_sum=0.220990
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ At t=5..........recip_energy=293.388091
+ The adjust_dir_energy=116706.991135 
+ The adjust_recip_energy =57254.499121 
+ The self_energy=-58385.939012 
+ collecting virials ....
+  dir_vir[0]=2988.622680  rcp_vir[0]=253.882004  adj_vir[0]=-808.905497  
+  dir_vir[1]=-41.167760  rcp_vir[1]=-31.006042  adj_vir[1]=52.111046  
+  dir_vir[2]=-112.677672  rcp_vir[2]=-9.618002  adj_vir[2]=-1.007025  
+  dir_vir[3]=3916.415141  rcp_vir[3]=145.366932  adj_vir[3]=-753.272969  
+  dir_vir[4]=188.175858  rcp_vir[4]=-8.569074  adj_vir[4]=34.191126  
+  dir_vir[5]=2607.237668  rcp_vir[5]=224.823722  adj_vir[5]=-782.735021  
+calling update_coordinates()...
+CORRECTING atom-z1 2504.000000 out of box 
+CORRECTING atom-z1 1625.000000 out of box 
+ ****** COMMUNICATE at time-step 6 ********
+
+At t=6..........direct_energy2= -123660.640427 
+~~~~~~~~~~~~~~~~~RCP SUM wall time[secs]~~~~~~~~~~~~~~~~~~~~~
+rcv bcast =0.000002, bspline-cofs2 =0.031970 
+fill_grd =0.167272, FFT-bk=0.260652  
+scalar_sum=0.143993, FFT-fwd=0.285728 , grad_sum=0.227787
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ At t=6..........recip_energy=293.388081
+ The adjust_dir_energy=116706.991135 
+ The adjust_recip_energy =57212.324340 
+ The self_energy=-58385.939012 
+ collecting virials ....
+  dir_vir[0]=2988.622680  rcp_vir[0]=253.881682  adj_vir[0]=-808.987355  
+  dir_vir[1]=-41.167760  rcp_vir[1]=-31.005975  adj_vir[1]=51.509709  
+  dir_vir[2]=-112.677672  rcp_vir[2]=-9.618113  adj_vir[2]=-0.853776  
+  dir_vir[3]=3916.415141  rcp_vir[3]=145.367097  adj_vir[3]=-757.672646  
+  dir_vir[4]=188.175858  rcp_vir[4]=-8.569087  adj_vir[4]=35.043244  
+  dir_vir[5]=2607.237668  rcp_vir[5]=224.823350  adj_vir[5]=-783.025129  
+calling update_coordinates()...
+ ****** RE-Nieghboring at time-step 7  ******
+ calling exchange()... 
+ calling borders()... 
+ calling neighbors1()... 
+
+At t=7..........direct_energy2= -123660.640427 
+~~~~~~~~~~~~~~~~~RCP SUM wall time[secs]~~~~~~~~~~~~~~~~~~~~~
+rcv bcast =0.000002, bspline-cofs2 =0.029690 
+fill_grd =0.167542, FFT-bk=0.261268  
+scalar_sum=0.147623, FFT-fwd=0.267051 , grad_sum=0.240273
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ At t=7..........recip_energy=293.388071
+ The adjust_dir_energy=116706.991135 
+ The adjust_recip_energy =57212.324340 
+ The self_energy=-58385.939012 
+ collecting virials ....
+  dir_vir[0]=2988.622680  rcp_vir[0]=253.881365  adj_vir[0]=-808.987355  
+  dir_vir[1]=-41.167760  rcp_vir[1]=-31.005907  adj_vir[1]=51.509709  
+  dir_vir[2]=-112.677672  rcp_vir[2]=-9.618226  adj_vir[2]=-0.853776  
+  dir_vir[3]=3916.415141  rcp_vir[3]=145.367262  adj_vir[3]=-757.672646  
+  dir_vir[4]=188.175858  rcp_vir[4]=-8.569101  adj_vir[4]=35.043244  
+  dir_vir[5]=2607.237668  rcp_vir[5]=224.822975  adj_vir[5]=-783.025129  
+calling update_coordinates()...
+ ****** COMMUNICATE at time-step 8 ********
+
+At t=8..........direct_energy2= -123660.640427 
+~~~~~~~~~~~~~~~~~RCP SUM wall time[secs]~~~~~~~~~~~~~~~~~~~~~
+rcv bcast =0.000002, bspline-cofs2 =0.029839 
+fill_grd =0.167729, FFT-bk=0.271107  
+scalar_sum=0.143442, FFT-fwd=0.263386 , grad_sum=0.230760
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ At t=8..........recip_energy=293.388060
+ The adjust_dir_energy=116706.991135 
+ The adjust_recip_energy =57212.324340 
+ The self_energy=-58385.939012 
+ collecting virials ....
+  dir_vir[0]=2988.622680  rcp_vir[0]=253.881052  adj_vir[0]=-808.987355  
+  dir_vir[1]=-41.167760  rcp_vir[1]=-31.005838  adj_vir[1]=51.509709  
+  dir_vir[2]=-112.677672  rcp_vir[2]=-9.618340  adj_vir[2]=-0.853776  
+  dir_vir[3]=3916.415141  rcp_vir[3]=145.367427  adj_vir[3]=-757.672646  
+  dir_vir[4]=188.175858  rcp_vir[4]=-8.569115  adj_vir[4]=35.043244  
+  dir_vir[5]=2607.237668  rcp_vir[5]=224.822596  adj_vir[5]=-783.025129  
+calling update_coordinates()...
+ ****** RE-Nieghboring at time-step 9  ******
+ calling exchange()... 
+ calling borders()... 
+ calling neighbors1()... 
+
+At t=9..........direct_energy2= -123660.640427 
+~~~~~~~~~~~~~~~~~RCP SUM wall time[secs]~~~~~~~~~~~~~~~~~~~~~
+rcv bcast =0.000002, bspline-cofs2 =0.029729 
+fill_grd =0.167342, FFT-bk=0.270204  
+scalar_sum=0.143931, FFT-fwd=0.265626 , grad_sum=0.221777
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ At t=9..........recip_energy=293.388048
+ The adjust_dir_energy=116706.991135 
+ The adjust_recip_energy =57212.324340 
+ The self_energy=-58385.939012 
+ collecting virials ....
+  dir_vir[0]=2988.622680  rcp_vir[0]=253.880743  adj_vir[0]=-808.987355  
+  dir_vir[1]=-41.167760  rcp_vir[1]=-31.005768  adj_vir[1]=51.509709  
+  dir_vir[2]=-112.677672  rcp_vir[2]=-9.618455  adj_vir[2]=-0.853776  
+  dir_vir[3]=3916.415141  rcp_vir[3]=145.367593  adj_vir[3]=-757.672646  
+  dir_vir[4]=188.175858  rcp_vir[4]=-8.569129  adj_vir[4]=35.043244  
+  dir_vir[5]=2607.237668  rcp_vir[5]=224.822212  adj_vir[5]=-783.025129  
+calling update_coordinates()...
+ ****** COMMUNICATE at time-step 10 ********
+
+At t=10..........direct_energy2= -123660.640427 
+~~~~~~~~~~~~~~~~~RCP SUM wall time[secs]~~~~~~~~~~~~~~~~~~~~~
+rcv bcast =0.000002, bspline-cofs2 =0.029332 
+fill_grd =0.166569, FFT-bk=0.257602  
+scalar_sum=0.142647, FFT-fwd=0.262013 , grad_sum=0.220927
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ At t=10..........recip_energy=293.388037
+ The adjust_dir_energy=116706.991135 
+ The adjust_recip_energy =57212.324340 
+ The self_energy=-58385.939012 
+ collecting virials ....
+  dir_vir[0]=2988.622680  rcp_vir[0]=253.880438  adj_vir[0]=-808.987355  
+  dir_vir[1]=-41.167760  rcp_vir[1]=-31.005698  adj_vir[1]=51.509709  
+  dir_vir[2]=-112.677672  rcp_vir[2]=-9.618572  adj_vir[2]=-0.853776  
+  dir_vir[3]=3916.415141  rcp_vir[3]=145.367758  adj_vir[3]=-757.672646  
+  dir_vir[4]=188.175858  rcp_vir[4]=-8.569145  adj_vir[4]=35.043244  
+  dir_vir[5]=2607.237668  rcp_vir[5]=224.821825  adj_vir[5]=-783.025129  
+calling update_coordinates()...
+*********  Results at last time step **********
+* Adjusted_direct_energy =       -6953.649292
+* Recip_energy =                 293.388037
+* Adjust_energy =                57212.324340
+* Self_energy =                  -58385.939012 
+***********************************************
+Wall time in communicate or exchange= 0.000017 
+Wall time in borders = 0.000017 
+Wall time in build_verlet/lc = 11.253202 
+Wall time in adj/slf/vir = 0.187329 
++++++++++++++++++++++++++++++++++++++++++++++++++++
+Total Wall/User  time = 117.290162 / 115.290001 [secs]
+DIR_SUM total time on 1 PE=47.760675 [sec]
+RCP_SUM total time on 1 PE=11.319030 [sec]
+
+
+
+
+
+
+
+
+
+***************************************************************************
+***************************************************************************
+***************************************************************************
+	Example 3 ( TIMEME and VIRIAL are turned on, VERBOSE is OFF )
+  Run 1 timestep on 3 PE's with this FFT grid 32, 34, 36 with PE grid 3x1x1	
+***************************************************************************
+***************************************************************************
+***************************************************************************
+
+ dpme2_test -c9 -t1e-6 -o5 -nx32 -ny34 -nz36 -m1 -s2 -x3 -y1 -z1 
+
+ /home/scicomp0/ayt/pvm3/bin/SUN4SOL2/PPME/LJS/dpme2_test  
+
+****** RE-Nieghboring at time-step 1  ******
+  dir_vir[0]=2988.622680  rcp_vir[0]=253.890965  adj_vir[0]=-808.905497  
+  dir_vir[1]=-41.167760  rcp_vir[1]=-31.027004  adj_vir[1]=52.111046  
+  dir_vir[2]=-112.677672  rcp_vir[2]=-9.640667  adj_vir[2]=-1.007025  
+  dir_vir[3]=3916.415141  rcp_vir[3]=145.222394  adj_vir[3]=-753.272969  
+  dir_vir[4]=188.175858  rcp_vir[4]=-8.592301  adj_vir[4]=34.191126  
+  dir_vir[5]=2607.237668  rcp_vir[5]=224.550604  adj_vir[5]=-782.735021  
+*********  Results at last time step **********
+* Partial Adj_direct_energy =          -6953.649292
+* Total Recip_energy =                 293.339629
+* Total Adjust_energy =                57254.499121
+* Partial Self_energy =                -58385.939012 
+***********************************************
+Total Wall/User  time = 38.192026 / 9.320000 [secs]
+Total DIR_SUM walltime on 1 PE=23.677635 [sec]
+Total RCP_SUM walltime on 1 PE=1.650648 [sec]
+
+
+
+
+
+
+
+***************************************************************************
+***************************************************************************
+***************************************************************************
+	Example 4 ( VERBOSE , TIMEME and VIRIAL are turned on )
+	Run 1 timestep on a total of 6 PE's configured as a 3x2x1 grid.		
+***************************************************************************
+***************************************************************************
+***************************************************************************
+
+ dpme2_test -c9 -t1e-6 -o5 -n32 -m1 -s5 -x3 -y2 -z1
+
+ * NODE 0 :  instant is 262154 
+ /home/scicomp0/ayt/pvm3/bin/SUN4SOL2/PPME/LJS/dpme2_test 
+Particle Sytem size= 2568 ..... Ewald coefficient = 0.348832
+Box_dim[30.485000,30.485000,30.485000] .... cutoff = 9.000000 ..... tol=0.000001
+ calling setup_parallel()... 
+ You are using Link_cell Method
+ The UPDATE_TIME=2
+npdim=(3,2,1) total procs=6 
+setupatom:borders -15.242500 -5.080833 -15.242500 0.000000 -15.242500 15.242500 
+ NOTE: ALL COORDS ARE SCALED from  -L/2 -> L/2
+Num of particle I own=436 
+ ****** RE-Nieghboring at time-step 1  ******
+ calling exchange()... 
+ calling borders()... 
+ calling neighbors1()... 
+
+At t=1..........direct_energy2= -123660.640427 
+~~~~~~~~~~~~~~~~~RCP SUM wall time[secs]~~~~~~~~~~~~~~~~~~~~~
+rcv bcast =0.001026, bspline-cofs2 =0.039768 
+fill_grd =0.494898, FFT-bk=0.450190  
+scalar_sum=0.202923, FFT-fwd=0.370027 , grad_sum=0.041108
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ At t=1..........recip_energy=293.388129
+ The adjust_dir_energy=116706.991135 
+ The adjust_recip_energy =57254.499121 
+ The self_energy=-58385.939012 
+ collecting virials ....
+  dir_vir[0]=2988.622680  rcp_vir[0]=253.883330  adj_vir[0]=-808.905497  
+  dir_vir[1]=-41.167760  rcp_vir[1]=-31.006301  adj_vir[1]=52.111046  
+  dir_vir[2]=-112.677672  rcp_vir[2]=-9.617571  adj_vir[2]=-1.007025  
+  dir_vir[3]=3916.415141  rcp_vir[3]=145.366274  adj_vir[3]=-753.272969  
+  dir_vir[4]=188.175858  rcp_vir[4]=-8.569027  adj_vir[4]=34.191126  
+  dir_vir[5]=2607.237668  rcp_vir[5]=224.825170  adj_vir[5]=-782.735021  
+calling update_coordinates()...
+*********  Results at last time step **********
+* Total Adj_direct_energy =          -6953.649292
+* Total Recip_energy =                 293.388129
+* Total Adjust_energy =                57254.499121
+* Total Self_energy =                -58385.939012 
+***********************************************
+===================Last step breakdown timings=======================
+Wall time in communicate or exchange= 0.044888 
+Wall time in borders = 0.286196 
+Wall time in build_verlet/lc = 11.327719 
+Wall time in adj/slf/vir = 0.141209 
++++++++++++++++++++++++++++++++++++++++++++++++++++
+Total Wall/User  time = 19.944231 / 5.650000 [secs]
+Total DIR_SUM walltime on 1 PE=5.055576 [sec]
+Total RCP_SUM walltime on 1 PE=2.272373 [sec]

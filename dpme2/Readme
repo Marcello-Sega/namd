@@ -1,0 +1,306 @@
+***************************************************************************
+*              		  DPME release 2.0 	                          *
+***************************************************************************
+Written by A. (Nour) Toukmaji (Duke University, ECE Dept.) 
+with contributions from Tom Darden (NIEHS-RTP, NC) and 
+S. Plimpton (Sandia National Labs).
+This is release 2.0 of Distributed Particle Mesh Ewald (DPME) method, an 
+algorithm that  implements Ewald summation in O(N log N) in parallel - 
+for details of the method see e.g. T. Darden et al. J. Chem Phys. 
+98(12) June 1993 pp. 11089. 
+***************************************************************************
+			  What's New in DPME 2.0
+***************************************************************************
+This new release of DPME will support the following features:
+1- Rectangular systems (still orthogonal) where all 3 dimensions can be different.
+
+2- All-Peer parallel model: There is no master/slave, all Processing Elements (PE)
+   perform the same tasks. Only exception is when doing a global reduction operation
+   where one PE accumulates the global value.
+
+3- The reciprocal-sum is partially parallelized. In fact, all PEs compute the 
+   recip_sum energy.
+ 
+***************************************************************************
+			  Introduction
+***************************************************************************
+This release includes a driver program (dpme2_test), utility routines (dpme2_utility),
+parallel execution routines (dpme2_paralibs), the reciprocal-sum driver 
+(dpme2_recip_sum), and 2 archive libraries:
+
+1- pubbfft/libpubfft.a: contains the fft routines used in evaluating the 
+   recip_space sum.
+2- pme_recip/pme_recip.a: contains recip_space sum routines.
+
+The driver program (dpme2_test.c) is provided as an example of the essential
+calls and runs under PVM in single program environment (SPMD). This means
+that are no masterxxx.c and slavexxx.c programs but one source code that 
+combines the master and slave source together. 
+
+***************************************************************************
+	                 	 User Input/Output
+***************************************************************************
+There are several parameters that the user must specify that affect the accuracy
+and performance of the program. These parameters are 
+
+c: an int that specifies the cutoff radius(Angstrom), typically between (8-12 Angs).
+   Note that cutoff radius must be less than half the unit_box length.
+
+t: a double that affects the value of Ewald coefficient and the overall accuracy
+   of the results, typically 1e-6.
+
+o: an int that determines the  order of spline interpolation, value of 4 is 
+   typical(cubic interpolation), higher accuracy is around o=6.
+
+n [nx ny nz]: an int, specifies the number of grid points per dimension, choose 
+   such that you have one point per Angstrom. Since FFT is used on the grid, 
+   it is best to choose n to be a multiple of 2 , else 3 or 5.
+   * Example for a cubic box length of 15 Angs. choose n=16.
+   If your system is rectangular, you need to specify the grid dimension for each
+   of the 3 dimensions.
+   * Example, a box size of 15 x 30 x 39 A, choose -nx16 -ny30 -nz40
+
+
+Note: you can increase the interpolation order (o) at the expense of reducing the 
+      grid size (n) while maintaining the accuracy but improving performance 
+      (should experiment to find a tradeoff).
+
+m: an int, specifies the total number of time-steps for the simulation.
+   Relevant to this , is a variable (UPDATE_TIME) that determines the rate of which 
+   the Neighbor or Link_cell list is re-evaluated , currently the list is rebuilt every
+   10 time-steps.
+
+Note: there is no time integrator in this code.
+
+s: an int, specify the number of extra processors that will be used (i.e. it
+   is the total number of PEs-1)
+
+[x y z]: 3 integers that specify the processors configuration grid,
+	such that  x * y * z = Total PE.
+	For the best performance the grid should be as cubical as possible,
+	which is the case when the total number of PEs is a power of 2. 
+	In such case the program will configure grid by itself and the user
+	does not need to specify the grid. Only when the total PEs are not
+	a power of 2 that the user need to specify the grid keeping in
+	mind that the grid should as compact as possible.
+	* Examples: a system with 3 PE's : -x3 -y1 -z1 (or -x1 -y3 -z1)
+		    a system with 6 PE's : -x1 -y2 -z3 (or -x6 -y1 -z1 not good) 
+
+An input file (small2.pdb) carries the box dimensions, number of atoms and
+the coordinates of each atom. Since our test system is water, ( only two unique
+charges) the charges are specified in the test program rather than the 
+data file.
+
+***************************************************************************
+		              Program Flow
+***************************************************************************
+The section illustrates the sequence of events for each the master and worker.
+(0)- Have the PVM deamon and group server running on your cluster.
+
+(1)- Once the dpme2_test is started, the process registers itself with PVM and 
+with the group as group_member 0, then it spawn NSLAVES processes on the cluster.
+Each of the processors registers with PVM and the group.
+
+(2)- Each process opens the coordinates file, reads in the coordinates and 
+initializes its own data structure. Each processor performs spatial decomposition
+(every UPDATE_TIME) and prepares to swap its border atoms with neighbor PEs.
+
+(3)- The first swap of border atoms takes place West/East direction, followed
+by the North/South and Up/Down if necessary.
+
+(4) Each PE broadcasts its atoms' fractional coordinates in preperation
+for the reciprocal-sum.
+
+(5) Each PE  evaluates the direct-sum, while waiting for the broadcast of (4)
+to be received.
+
+(6) Now all PE receive the broadcast, perform the recip-sum.
+
+(7) Each PE performs the self sum on its particles as well as 
+bonded force corrections.
+
+(8) Each PE updates its particles' coordinates.
+
+(9) Back to (3), the cycle continues until the system is simulated TSTEPS time steps.
+
+***************************************************************************
+                	Main Data Structures
+***************************************************************************
+I tried to consolidate data structures to resemble those of DPMTA (ECE, Duke U.)
+for compatibility reasons. The two major data structures of interest to the user
+are the particles data and the forces data, these are defined in dpmedef.h
+
+1- Particles are of type pmeparticle (see below)
+
+typedef struct newpmeparticle {
+   double x;               /* particle positions */
+   double y;
+   double z;
+   double cg;                   /* particle charge */
+   double id;              /* particle number */
+   } Pme2Particle;
+
+2- particle forces are the type pmevector:
+
+typedef struct pmevector {
+   double x;       
+   double y;
+   double z;
+   }  PmeVector;
+
+NOTE:	That the direct_sum forces (directF) that result from dir_force() routine
+	are not corrected. The direct_sum forces are corrected when passed  to 
+	the routine  adjust_dir_recip().
+	Also, the reciprocal-sum forces (recipF) resulting from eval_recip_sum()
+	are not corrected, but can be corrected when they are added to the 
+	adjustF forces (which are passed in the adjust_dir_recip() routine.
+		
+	* The total system energy = 
+		direct_ene_uncorrected (namely direct_energy) +
+		direct_ene_correction (adj_dir_ene) + 
+	       	pme_recip_ene (uncorrected) (recip_energy) + 
+		recip_energy_correction (adj_recip_ene) +
+		self_energy (self_ene) 
+ ***************************************************************************
+			   Major Ewald Summation Subroutines
+ ***************************************************************************
+ The Ewald sum consists of three sums which also translate to three routines
+ in this release:
+
+ A- Direct-space (real-space) Sum: this is implemented in parallel using
+    the routine dir_force():
+
+   The direct_space sum is based on spatial-decomposition of the simulation box.
+   There are two levels of spatial decomposition: 1- the simulation box is divided
+   into equal domains between PEs. Within each PE, each domain is divided 
+   into sub-boxes (subcells). A variation of the Link_cell method (Allen and 
+  Tildesley) is used to keep track of the particles and their subcells assignment.
+  It's also possible to use Neighbor-list approach within a domain. (Actually, if
+  the number of atoms are < 1000 the program chooses Verlet-like approach)
+  The direct-space sum is evaluated within a cutoff supplied by the user (-c flag).
+  
+B-   double eval_recip_sum ():
+   The recip-space sum is based on the PME method (similar in concept to particle-mesh
+   method) where charged particles are interpolated on a grid, the dimension of the grid
+   in specified by the user (-n flag). Interpolation to the grid is achieved using 
+   spline-interpolation the order of which is user specified (-o flag).
+
+
+C-  self()
+   Computes the Self-term, this affects the energy/potential but not the forces.
+
+***************************************************************************
+	                  Other Important Subroutines
+***************************************************************************
+The above routines assume that all particles are non-bonded, however, the system
+tested in this release is a system of water (TIP3) and thus there are bindings
+between O-H1 O-H2 and H1-H2 that are subtracted back in this routine:
+
+adj_dir_recip():
+to subtract the bounded interactions out of the direct-space sum, and
+recip-space sum.
+
+Note: the above routine is system specific and thus it is the responsibility of the 
+application programmer to correct the bounded interactions. The routines mentioned
+in this section are given by way of example and can be modified to satisfy other
+particle systems.
+***************************************************************************
+	                 	Making the Program
+***************************************************************************
+
+This release consists of this directory and two subdirectories (pubfft and pme_recip).
+There is a Makefile in each directory. One needs to make in pubfft and pme_recip
+first before making in this directory.
+
+			  ***********
+NOTE: In dpme2_pvm.h make sure that the vars DATADIR and WORKINGDIR are set properly.
+      DATADIR ( is directory that has the data file small2.pdb) and 
+      WORKINGDIR ( is directory that has the dpme2_test executable)
+			***************
+You may need to change some of the optimization flags depending on your
+hardware.
+
+* current dir: has the test program, and the utilities for direct_sum and for
+	recip-sum.
+
+* pubfft: when made, generates an archive file libpubfft.a that basically performs FFT
+	routines. It can be created  by simply calling make within this directory.
+	Also available is a  FORTAN formulation of this library in (InFortran) directroy
+	for efficiency. In order to use the fortran version, you must make the file
+	seperatly in the InFortran directory and then copy the libpubfft.a file over
+	one level up (ie cp libpubfft.a ../.)
+	
+* pme_recip: includes utility routines used in evaluating the reciprocal-sum.
+	  One can create this library  by calling make from within this directory 
+	  resulting in pme_recip.a (or use MakeAll).
+
+The above archive files (*.a) must be linked in to any driver code.
+
+
+* There are three vars that can be defined in Makefile depending on usage:
+
+VIRIAL: calculates the virial for the system 
+
+TIMEME:  which turns on some timing code within the recip_sum.
+
+VERBOSE: prints various msgs about the program's execution.
+
+DPME_DEBUG/2/3: prints extensive info about parallel communication, 
+	    and many program parameters.
+***************************************************************************
+			Header Files
+***************************************************************************
+There 4 main header files:
+	dpme2.h : main header file and includes all *.h , contains macros  
+        dpme2_pvm.h : contains msg-id's and some data sizes 
+        dpme2def.h : data-strcts defs and other defs
+	prototype.h: has function declarations.
+***************************************************************************
+	                 	Testing the Program
+***************************************************************************
+Once the test program and subsequent archive libraries are made, one can
+run the code by typing for example:
+dpme2_test -c9 -t1e-6 -o4 -n64 -m1 -s3
+The program will read in the small2.pdb file which contains about 2568 
+particles (water system), runs the simulation for 1 time step.
+
+Read the file "sample_run" for examples of running DPME2.
+
+***************************************************************************
+			  Features and Limitations
+***************************************************************************
+-  N0 time integrator, particles' coordinates are moved in fixed manner
+  (see update_coordinates() ).
+
+- The driver (dpme2_test.c) contains procedures that may be specific to the water-system
+  (the example used) and the application has to modify these procedures, namely
+        i- correcting the bonded interactions (adjust_recip, and adjust_direct)
+        ii- reading in the data file ( currently its a generic pdb'ish file)
+        iii- other I/O specific such (DumpAll), and timing.
+
+-All particles are assumed to be non-bonded , it is the application's
+responsibility to correct for this assumption - see test program.
+I do the correction assuming water system by way of example.
+
+-Impeded in this release is a feature that provides the total virial 
+when enabled (defining the VIRIAL flag, see Making the Program).  
+The virial should equal (within some accuracy) -1* total energy sum
+
+-Many arrays are still statically allocated with dimensions specified in 
+dpme2def.h; I will be moving towards a fully dynamic memory allocation
+in future updates.   
+***************************************************************************
+	                 	   Questions 
+***************************************************************************
+I have tested this release extensively. However, nothing is perfect :-) !
+Please direct all questions / undocumented features (bugs!) / requests to:
+
+	Nour Toukmaji
+
+	ECE Dept. Duke University.
+	Box 90291
+	Durham N.C. 27708-0291
+
+	email: ayt@ee.duke.edu
+
+***************************************************************************

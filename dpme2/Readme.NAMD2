@@ -1,0 +1,12 @@
+March 7, 1997
+The original distribution had many compilation problems.
+These included:
+  _ shifting with ambiguous + or -.  (Compiler warning)
+  _ unused variables
+  _ no make definition for needed libraries in subdirectories
+
+These warnings have been fixed and the 2 libraries and many .o files
+have been merged into 1 library: libdpme2.a
+
+					-Neal
+
