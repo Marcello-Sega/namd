@@ -202,6 +202,8 @@ public:
         //****** END SMD constraints changes 
 
 	Bool globalForcesOn;		//  Are global forces present?
+	Bool tclForcesOn;		//  Are Tcl forces present?
+	Bool freeEnergyOn;		//  Doing free energy perturbation?
 
 	Bool fixedAtomsOn;		//  Are there fixed atoms?
 
@@ -350,13 +352,18 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.h,v $
- *	$Author: sergei $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1998/01/05 20:28:20 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1017 $	$Date: 1998/02/10 05:35:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1017  1998/02/10 05:35:06  jim
+ * Split ComputeGlobal into different classes and files.
+ * Switched globalForces and globalForcesTcl to tclForces and tclForcesScript.
+ * Added (soon to be used) freeEnergy and freeEnergyConfig.
+ *
  * Revision 1.1016  1998/01/05 20:28:20  sergei
  * Introduced SMD parameters.
  *

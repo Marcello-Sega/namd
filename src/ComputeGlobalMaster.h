@@ -8,8 +8,8 @@
  *
  ***************************************************************************/
 
-#ifndef COMPUTEGLOBAL_H
-#define COMPUTEGLOBAL_H
+#ifndef COMPUTEGLOBALMASTER_H
+#define COMPUTEGLOBALMASTER_H
 
 #include "ComputeHomePatches.h"
 #include "NamdTypes.h"
@@ -20,47 +20,40 @@ class ComputeGlobalResultsMsg;
 class ComputeGlobalMaster;
 class ComputeMgr;
 
-class ComputeGlobal : public ComputeHomePatches {
-public:
-  ComputeGlobal(ComputeID, ComputeMgr*);
-  virtual ~ComputeGlobal();
-  void doWork();
-  void recvConfig(ComputeGlobalConfigMsg *);
+class ComputeGlobalMaster {
+protected:
+  friend class ComputeGlobal;
+  ComputeGlobal *host;
+  ComputeGlobalMaster(ComputeGlobal *);
+  ~ComputeGlobalMaster();
   void recvData(ComputeGlobalDataMsg *);
-  void recvResults(ComputeGlobalResultsMsg *);
-
-  ComputeMgr *comm;
-
-private:
-  ComputeGlobalMaster *master;
-
-  void sendData();
-  int configured;
+  int msgcount;
+  virtual void initialize();
+  int initialized;
+  void storedata(ComputeGlobalDataMsg *);
+  void cleardata();
   AtomIDList aid;
+  PositionList p;
+  virtual void calculate();
 };
 
 #endif
 /***************************************************************************
  * RCS INFORMATION:
  *
- *	$RCSfile: ComputeGlobal.h,v $
+ *	$RCSfile: ComputeGlobalMaster.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1998/02/10 05:35:02 $
+ *	$Revision: 1.1 $	$Date: 1998/02/10 05:35:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
- * $Log: ComputeGlobal.h,v $
- * Revision 1.3  1998/02/10 05:35:02  jim
+ * $Log: ComputeGlobalMaster.h,v $
+ * Revision 1.1  1998/02/10 05:35:04  jim
  * Split ComputeGlobal into different classes and files.
  * Switched globalForces and globalForcesTcl to tclForces and tclForcesScript.
  * Added (soon to be used) freeEnergy and freeEnergyConfig.
  *
- * Revision 1.2  1998/01/15 04:58:46  jim
- * Corrected "friend foo" to "friend class foo".
- *
- * Revision 1.1  1997/12/19 23:48:46  jim
- * Added Tcl interface for calculating forces.
  *
  *
  ***************************************************************************/

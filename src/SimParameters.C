@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *  $RCSfile: SimParameters.C,v $
- *  $Author: sergei $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1031 $  $Date: 1998/01/14 19:11:18 $
+ *  $Author: jim $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1032 $  $Date: 1998/02/10 05:35:06 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,11 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1032  1998/02/10 05:35:06  jim
+ * Split ComputeGlobal into different classes and files.
+ * Switched globalForces and globalForcesTcl to tclForces and tclForcesScript.
+ * Added (soon to be used) freeEnergy and freeEnergyConfig.
+ *
  * Revision 1.1031  1998/01/14 19:11:18  sergei
  * added checking for SMDAtom defined
  *
@@ -424,7 +429,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1031 1998/01/14 19:11:18 sergei Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1032 1998/02/10 05:35:06 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -906,10 +911,16 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
 
    ////  Global Forces / Tcl
-   opts.optionalB("main", "globalForces", "Are Tcl global forces active?",
-     &globalForcesOn, FALSE);
-   opts.require("globalForces", "globalForcesTcl",
+   opts.optionalB("main", "tclForces", "Are Tcl global forces active?",
+     &tclForcesOn, FALSE);
+   opts.require("tclForces", "tclForcesScript",
      "Tcl script for global forces", PARSE_STRING);
+
+   ////  Free Energy Perturbation
+   opts.optionalB("main", "freeEnergy", "Perform free energy perturbation?",
+     &freeEnergyOn, FALSE);
+   opts.require("freeEnergy", "freeEnergyConfig",
+     "Configuration file for free energy perturbation", PARSE_STRING);
 
    //// Spherical Boundary Conditions
    opts.optionalB("main", "sphericalBC", "Are spherical boundary counditions "
@@ -1522,6 +1533,11 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    if (COLDOn && opts.defined("rescaleFreq"))
    {
       NAMD_die("COLD and velocity rescaling are mutually exclusive dynamics modes");
+   }
+
+   if (tclForcesOn && freeEnergyOn)
+   {
+      NAMD_die("Sorry, tclForces and freeEnergy cannot be used simultaneously");
    }
 
    //  Set the default value for the maximum movement parameter
@@ -2206,13 +2222,15 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    
    //****** END SMD constraints changes 
    
-   
-   
-   if (globalForcesOn)
-   {
-     iout << iINFO << "GLOBAL FORCES ACTIVE\n";
+   // Global forces configuration
 
-     current = config->find("globalForcesTcl");
+   globalForcesOn = ( tclForcesOn || freeEnergyOn );
+   
+   if (tclForcesOn)
+   {
+     iout << iINFO << "TCL GLOBAL FORCES ACTIVE\n";
+
+     current = config->find("tclForcesScript");
 
      if ( (cwd == NULL) || (current->data[0] == '/') )
      {
@@ -2224,7 +2242,26 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
        strcat(filename, current->data);
      }
 
-     iout << iINFO << "GLOBAL FORCES SCRIPT   " << filename << "\n";
+     iout << iINFO << "TCL GLOBAL FORCES SCRIPT   " << filename << "\n";
+   }
+
+   if (freeEnergyOn)
+   {
+     iout << iINFO << "FREE ENERGY PERTURBATION ACTIVE\n";
+
+     current = config->find("freeEnergyConfig");
+
+     if ( (cwd == NULL) || (current->data[0] == '/') )
+     {
+       strcpy(filename, current->data);
+     }
+     else
+     {
+       strcpy(filename, cwd);
+       strcat(filename, current->data);
+     }
+
+     iout << iINFO << "FREE ENERGY PERTURBATION SCRIPT   " << filename << "\n";
    }
 
    if (globalOn && ! dihedralOn)
@@ -2585,7 +2622,7 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
   msg->put(SMDChForceOn)->put(SMDVmax);
   msg->put(SMDVmaxTave)->put(SMDFmin);
   //****** END SMD constraints changes 
-  msg->put(globalForcesOn);
+  msg->put(globalForcesOn)->put(tclForcesOn)->put(freeEnergyOn);
   msg->put(FMAOn)->put(FMALevels)->put(FMAMp);
   msg->put(FMAFFTOn)->put(FMAFFTBlock)->put(minimizeOn);
   msg->put(maximumMove)->put(totalAtoms)->put(randomSeed);
@@ -2718,6 +2755,8 @@ void SimParameters::receive_SimParameters(MIStream *msg)
   msg->get(SMDFmin);
   //****** END SMD constraints changes 
   msg->get(globalForcesOn);
+  msg->get(tclForcesOn);
+  msg->get(freeEnergyOn);
   msg->get(FMAOn);
   msg->get(FMALevels);
   msg->get(FMAMp);
@@ -2823,12 +2862,17 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1031 $  $Date: 1998/01/14 19:11:18 $
+ *  $Revision: 1.1032 $  $Date: 1998/02/10 05:35:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1032  1998/02/10 05:35:06  jim
+ * Split ComputeGlobal into different classes and files.
+ * Switched globalForces and globalForcesTcl to tclForces and tclForcesScript.
+ * Added (soon to be used) freeEnergy and freeEnergyConfig.
+ *
  * Revision 1.1031  1998/01/14 19:11:18  sergei
  * added checking for SMDAtom defined
  *

@@ -14,322 +14,20 @@
 #include "PatchMap.inl"
 #include "AtomMap.h"
 #include "ComputeGlobal.h"
+#include "ComputeGlobalMaster.h"
 #include "ComputeGlobalMsgs.h"
+#include "ComputeTcl.h"
 #include "PatchMgr.h"
 #include "Molecule.h"
 #include "ReductionMgr.h"
 #include "ComputeMgr.h"
 #include "ComputeMgr.top.h"
+#include "SimParameters.h"
 #include <stdio.h>
-
-#ifdef NAMD_TCL
-#include <tcl.h>
-#include <tclExtend.h>
-#include "TclCommands.h"
-#endif
 
 // #define DEBUGM
 #define MIN_DEBUG_LEVEL 4
 #include "Debug.h"
-
-// MASTER
-
-class ComputeGlobalMaster {
-private:
-  friend class ComputeGlobal;
-  ComputeGlobal *host;
-  ComputeGlobalMaster(ComputeGlobal *);
-  ~ComputeGlobalMaster();
-  void recvData(ComputeGlobalDataMsg *);
-  int msgcount;
-  void initialize();
-  int initialized;
-  void storedata(ComputeGlobalDataMsg *);
-  void cleardata();
-  AtomIDList aid;
-  PositionList p;
-  void calculate();
-#ifdef NAMD_TCL
-  Tcl_Interp *interp;
-  static int Tcl_print(ClientData, Tcl_Interp *, int, char **);
-  static int Tcl_addatom(ClientData, Tcl_Interp *, int, char **);
-  static int Tcl_reconfig(ClientData, Tcl_Interp *, int, char **);
-  static int Tcl_loadcoords(ClientData, Tcl_Interp *, int, char **);
-  static int Tcl_loadmasses(ClientData, Tcl_Interp *, int, char **);
-  static int Tcl_addforce(ClientData, Tcl_Interp *, int, char **);
-#endif
-};
-
-
-#ifdef NAMD_TCL
-int ComputeGlobalMaster::Tcl_print(ClientData,
-	Tcl_Interp *, int argc, char *argv[]) {
-  char *msg = Tcl_Merge(argc-1,argv+1);
-  CPrintf("TCL: %s\n",msg);
-  free(msg);
-  return TCL_OK;
-}
-
-
-int ComputeGlobalMaster::Tcl_addatom(ClientData clientData,
-	Tcl_Interp *interp, int argc, char *argv[]) {
-  if (argc != 2) {
-    interp->result = "wrong # args";
-    return TCL_ERROR;
-  }
-  int atomid;
-  if (Tcl_GetInt(interp,argv[1],&atomid) != TCL_OK) {
-    return TCL_ERROR;
-  }
-  AtomIDList *aid = (AtomIDList *)clientData;
-  aid->add(atomid-1);
-  DebugM(4,"Atom ID " << atomid << " added to config list\n");
-  return TCL_OK;
-}
-
-
-int ComputeGlobalMaster::Tcl_reconfig(ClientData clientData,
-	Tcl_Interp *interp, int argc, char **) {
-  if (argc != 1) {
-    interp->result = "wrong # args";
-    return TCL_ERROR;
-  }
-  int *reconfig = (int *)clientData;
-  *reconfig = 1;
-  DebugM(4,"Reconfiguration turned on\n");
-  return TCL_OK;
-}
-
-
-int ComputeGlobalMaster::Tcl_loadcoords(ClientData clientData,
-	Tcl_Interp *interp, int argc, char *argv[]) {
-  if (argc != 2) {
-    interp->result = "wrong # args";
-    return TCL_ERROR;
-  }
-  char *vname = argv[1];
-  ComputeGlobalMaster *self = (ComputeGlobalMaster *)clientData;
-  char cmd[129];  int code;
-  AtomIDList::iterator a_i = self->aid.begin();
-  AtomIDList::iterator a_e = self->aid.end();
-  PositionList::iterator p_i = self->p.begin();
-  for ( ; a_i != a_e; ++a_i, ++p_i ) {
-    sprintf(cmd, "set %s(%d) { %lg %lg %lg }", vname, (int)((*a_i)+1),
-      (double)((*p_i).x),(double)((*p_i).y),(double)((*p_i).z));
-    code = Tcl_Eval(interp,cmd);
-    if (code != TCL_OK) {
-      NAMD_die("TCL error in global force calculation!");
-      return TCL_ERROR;
-    }
-  }
-  return TCL_OK;
-}
-
-
-int ComputeGlobalMaster::Tcl_loadmasses(ClientData clientData,
-	Tcl_Interp *interp, int argc, char *argv[]) {
-  if (argc != 2) {
-    interp->result = "wrong # args";
-    return TCL_ERROR;
-  }
-  char *vname = argv[1];
-  ComputeGlobalMaster *self = (ComputeGlobalMaster *)clientData;
-  char cmd[129];  int code;
-  Molecule *mol = Node::Object()->molecule;
-  AtomIDList::iterator a_i = self->aid.begin();
-  AtomIDList::iterator a_e = self->aid.end();
-  for ( ; a_i != a_e; ++a_i) {
-    sprintf(cmd, "set %s(%d) %lg", vname, (int)((*a_i)+1),
-      (double)(mol->atommass(*a_i)) );
-    code = Tcl_Eval(interp,cmd);
-    if (code != TCL_OK) {
-      NAMD_die("TCL error in global force calculation!");
-      return TCL_ERROR;
-    }
-  }
-  return TCL_OK;
-}
-
-
-int ComputeGlobalMaster::Tcl_addforce(ClientData clientData,
-	Tcl_Interp *interp, int argc, char *argv[]) {
-  if (argc != 3) {
-    interp->result = "wrong # args";
-    return TCL_ERROR;
-  }
-  char **fstring;  int fnum;  int atomid;  double x, y, z;
-  if (Tcl_GetInt(interp,argv[1],&atomid) != TCL_OK) {
-    return TCL_ERROR;
-  }
-  if (Tcl_SplitList(interp, argv[2], &fnum, &fstring) != TCL_OK) {
-    return TCL_ERROR;
-  }
-  if ( (fnum != 3) ||
-       (Tcl_GetDouble(interp, fstring[0],&x) != TCL_OK) ||
-       (Tcl_GetDouble(interp, fstring[1],&y) != TCL_OK) ||
-       (Tcl_GetDouble(interp, fstring[2],&z) != TCL_OK) ) {
-    interp->result = "force not a vector";
-    free(fstring);
-    return TCL_ERROR;
-  }
-  free(fstring);
-  ComputeGlobalResultsMsg *msg = (ComputeGlobalResultsMsg *)clientData;
-  msg->aid.add(atomid-1);
-  msg->f.add(Vector(x,y,z));
-  DebugM(4,"Atom ID " << atomid << " added to force list\n");
-  return TCL_OK;
-}
-#endif
-
-
-ComputeGlobalMaster::ComputeGlobalMaster(ComputeGlobal *h) {
-  DebugM(3,"Constructing master\n");
-  host = h;
-  initialized = 0;
-  msgcount = 0;
-#ifdef NAMD_TCL
-  interp = 0;
-#endif
-}
-
-ComputeGlobalMaster::~ComputeGlobalMaster() {
-  DebugM(3,"Destructing master\n");
-#ifdef NAMD_TCL
-  if ( interp ) Tcl_DeleteInterp(interp);
-#endif
-}
-
-void ComputeGlobalMaster::recvData(ComputeGlobalDataMsg *msg) {
-  DebugM(3,"Receiving data on master\n");
-  // Check initialization and number of messages received
-  if ( ! initialized )
-  {
-    delete msg;
-    if ( ++msgcount == CNumPes() ) {
-       msgcount = 0;
-       initialize();
-       initialized = 1;
-    }
-  }
-  else {
-    storedata(msg);
-    if ( ++msgcount == CNumPes() ) {
-       msgcount = 0;
-       calculate();
-       cleardata();
-    }
-  }
-}
-
-void ComputeGlobalMaster::initialize() {
-  DebugM(4,"Initializing master\n");
-
-  ComputeGlobalConfigMsg *msg =
-	new (MsgIndex(ComputeGlobalConfigMsg)) ComputeGlobalConfigMsg;
-
-#ifdef NAMD_TCL
-  // Create interpreter
-  interp = Tcl_CreateInterp();
-  if (Tcl_Init(interp) == TCL_ERROR) {
-    CPrintf("Tcl startup error: %\n", interp->result);
-    }
-  if (Tclx_Init(interp) == TCL_ERROR) {
-    CPrintf("Tcl-X startup error: %s\n", interp->result);
-    } else {
-      Tcl_StaticPackage(interp, "Tclx", Tclx_Init, Tclx_SafeInit);
-    }
-  Tcl_CreateCommand(interp, "print", Tcl_print,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "vecadd", proc_vecadd,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "vecsub", proc_vecsub,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "vecscale", proc_vecscale,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-/*
-  Tcl_CreateCommand(interp, "transoffset", proc_transoffset,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "transmult", proc_transmult,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "vectrans", proc_vectrans,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-*/
-
-  // Get the path for our script
-  char *filename = Node::Object()->configList->find("globalForcesTcl")->data;
-
-  // Call interpreter to determine requested atoms
-  Tcl_CreateCommand(interp, "addatom", Tcl_addatom,
-    (ClientData) &(msg->aid), (Tcl_CmdDeleteProc *) NULL);
-
-  int code;
-  code = Tcl_EvalFile(interp,filename);
-  if (*interp->result != 0) CPrintf("TCL: %s\n",interp->result);
-  if (code != TCL_OK) NAMD_die("TCL error in global force initialization!");
-
-  Tcl_DeleteCommand(interp, "addatom");
-#endif
-
-  // Send config to clients
-  host->comm->sendComputeGlobalConfig(msg);
-}
-
-void ComputeGlobalMaster::storedata(ComputeGlobalDataMsg *msg) {
-  DebugM(3,"Storing data (" << msg->aid.size() << " positions) on master\n");
-  AtomIDList::iterator a_i = msg->aid.begin();
-  AtomIDList::iterator a_e = msg->aid.end();
-  PositionList::iterator p_i = msg->p.begin();
-  for ( ; a_i != a_e; ++a_i, ++p_i ) {
-    aid.add(*a_i);
-    p.add(*p_i);
-  }
-  delete msg;
-}
-
-void ComputeGlobalMaster::cleardata() {
-  aid.resize(0);
-  p.resize(0);
-}
-
-void ComputeGlobalMaster::calculate() {
-  DebugM(4,"Calculating forces on master\n");
-
-  ComputeGlobalResultsMsg *msg =
-	new (MsgIndex(ComputeGlobalResultsMsg)) ComputeGlobalResultsMsg;
-
-#ifdef NAMD_TCL
-  // Call interpreter to calculate forces
-  Tcl_CreateCommand(interp, "loadcoords", Tcl_loadcoords,
-    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "loadmasses", Tcl_loadmasses,
-    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "addforce", Tcl_addforce,
-    (ClientData) msg, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "reconfig", Tcl_reconfig,
-    (ClientData) &(msg->reconfig), (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "addatom", Tcl_addatom,
-    (ClientData) &(msg->newaid), (Tcl_CmdDeleteProc *) NULL);
-
-  char cmd[129];  int code;
-  strcpy(cmd,"calcforces");  code = Tcl_Eval(interp,cmd);
-  if (*interp->result != 0) CPrintf("TCL: %s\n",interp->result);
-  if (code != TCL_OK) NAMD_die("TCL error in global force calculation!");
-
-  Tcl_DeleteCommand(interp, "loadcoords");
-  Tcl_DeleteCommand(interp, "loadmasses");
-  Tcl_DeleteCommand(interp, "addforce");
-  Tcl_DeleteCommand(interp, "reconfig");
-  Tcl_DeleteCommand(interp, "addatom");
-#endif
-
-  // Send results to clients
-  DebugM(3,"Sending results (" << msg->aid.size() << " forces) on master\n");
-  if ( msg->reconfig ) {
-    DebugM(4,"Sending new configuration (" <<
-			msg->newaid.size() << " atoms) on master\n");
-  }
-  host->comm->sendComputeGlobalResults(msg);
-}
 
 
 // PASS-THROUGH
@@ -348,7 +46,13 @@ ComputeGlobal::ComputeGlobal(ComputeID c, ComputeMgr *m)
 	: ComputeHomePatches(c)
 {
   DebugM(3,"Constructing client\n");
-  master = ( CMyPe() ? 0 : new ComputeGlobalMaster(this) );
+  if ( CMyPe() ) master = 0;
+  else {
+    SimParameters * simParams = Node::Object()->simParameters;
+    if ( simParams->tclForcesOn ) master = new ComputeTcl(this);
+//    else if ( simParams->freeEnergyOn ) master = new ComputeFreeEnergy(this);
+    else NAMD_die("Internal error in ComputeGlobal::ComputeGlobal");
+  }
   comm = m;
   configured = 0;
 }
@@ -460,12 +164,17 @@ void ComputeGlobal::sendData()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1998/01/15 04:58:45 $
+ *	$Revision: 1.6 $	$Date: 1998/02/10 05:35:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGlobal.C,v $
+ * Revision 1.6  1998/02/10 05:35:02  jim
+ * Split ComputeGlobal into different classes and files.
+ * Switched globalForces and globalForcesTcl to tclForces and tclForcesScript.
+ * Added (soon to be used) freeEnergy and freeEnergyConfig.
+ *
  * Revision 1.5  1998/01/15 04:58:45  jim
  * Corrected "friend foo" to "friend class foo".
  *
