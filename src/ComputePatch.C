@@ -15,6 +15,10 @@
 #include "Node.h"
 #include "ComputePatch.h"
 
+#define MIN_DEBUG_LEVEL 4
+#define DEBUGM
+#include "Debug.h"
+
 ComputePatch::ComputePatch(ComputeID c, PatchID p) : Compute(c) {
     setNumPatches(1);
     patchID = p;
@@ -68,6 +72,8 @@ void ComputePatch::doWork() {
   AtomProperties* a;
   int i;
 
+  DebugM(3,patchID << ": doWork() called.\n");
+
   // Open up positionBox, forceBox, and atomBox
       p = positionBox->open();
       f = forceBox->open();
@@ -77,9 +83,15 @@ void ComputePatch::doWork() {
   doForce(p,f,a);
 
   // Close up boxes
+      DebugM(1,patchID << ": closing positionBox.\n");
       positionBox->close(&p);
+      DebugM(1,patchID << ": closing forceBox.\n");
       forceBox->close(&f);
+      DebugM(1,patchID << ": closing atomBox.\n");
       atomBox->close(&a);
+
+  DebugM(2,patchID << ": doWork() completed.\n");
+
 }
 
 
@@ -88,12 +100,15 @@ void ComputePatch::doWork() {
  *
  *	$RCSfile: ComputePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/10/31 22:05:55 $
+ *	$Revision: 1.6 $	$Date: 1996/12/01 02:39:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatch.C,v $
+ * Revision 1.6  1996/12/01 02:39:58  jim
+ * added debugging
+ *
  * Revision 1.5  1996/10/31 22:05:55  jim
  * first incarnation as ComputePatch
  *
