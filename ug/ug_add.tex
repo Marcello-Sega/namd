@@ -536,9 +536,7 @@ This should be set equal to the target temperature for the chosen method of temp
 
 \subsection{Applied Forces and Analysis}
 
-\subsubsection{Steered Molecular Dynamics in \NAMD}
-
-Currently, there are two ways to run SMD simulations with \NAMD. One
+Currently, there are two ways to steer simulations with \NAMD. One
 is called ``moving constraints'' and is based on the harmonic
 constraints feature. The other is a stand-alone feature called
 ``SMD''. In both cases the user specifies a reference position 
@@ -563,7 +561,7 @@ point), given by
 \label{eq:smdrefpos}
 \end{equation}
 
-\paragraph*{Moving Constraints}
+\subsubsection{Moving Constraints}
 
 Moving constraints feature works in conjunction with the Harmonic
 Constraints (see an appropriate section of the User's guide).  In
@@ -589,10 +587,40 @@ specifies some value for the force constant $k$ in the PDB file,
 effectively, the force constant is $2 k$ in calculations. This caveat
 was removed in SMD feature.
 
+The following parameters describe the parameters for the
+moving harmonic constraint feature of \NAMD.
+This feature allows a harmonic restraining force to be applied
+to any ONE atom in the simulation and the restraining reference
+position to be moved.
 
-\paragraph*{Steered Molecular Dynamics (SMD)}
+\begin{itemize}
 
-SMD feature is independent from the harmonic constraints, although it
+\item
+\NAMDCONFWDEF{movingConstraints}{Are moving constraints active}
+{\verb!on! or \verb!off!}{\verb!off!}                                           {Should moving restraints be applied to the system. If set
+to \verb!on!, then  \verb!movingConsVel! and \verb!movingConsAtom!              must be defined.}
+
+\item
+\NAMDCONF{movingConsVel}{Velocity of the reference position movement}
+{vector in \AA/timestep}
+{The velocity of the reference position movement. Gives both absolute
+value and direction}
+                                                                                \item
+\NAMDCONF{movingConsAtom}{Index (0-based) of the atom constrained to
+the moving reference position}
+{non-negative integer}
+{The index of the atom constrained to the moving reference position.
+If the atom is numbered $N$ in the PDB file, $N-1$ must be specified.
+\NAMD\ will crash if the atom is not constrained in the
+\verb!conskfile!.
+}
+
+\end{itemize}
+
+
+\subsubsection{Steered Molecular Dynamics (SMD)}
+
+The SMD feature is independent from the harmonic constraints, although it
 follows the same ideas. One has to specify the force constant $k$
 ({\tt SMDk}), the number (1-based indexing) of the atom ({\tt
 SMDAtom}), which is restrained to the moving reference position, the
@@ -732,43 +760,8 @@ new direction of the reference position movement. The current timestep
 becomes the time stamp for the following simulation until the next
 change occurs.
 
+\paragraph*{Parameters}
 
-\paragraph*{Moving Constraints}
-The following parameters describe the parameters for the 
-moving harmonic constraint feature of \NAMD.  
-This feature allows a harmonic restraining force to be applied
-to any ONE atom in the simulation and the restraining reference
-position to be moved.
-
-
-\begin{itemize}
-
-\item 
-\NAMDCONFWDEF{movingConstraints}{Are moving constraints active}
-{\verb!on! or \verb!off!}{\verb!off!}
-{Should moving restraints be applied to the system. If set 
-to \verb!on!, then  \verb!movingConsVel! and \verb!movingConsAtom!
-must be defined.}
-
-\item
-\NAMDCONF{movingConsVel}{Velocity of the reference position movement}
-{vector in \AA/timestep}
-{The velocity of the reference position movement. Gives both absolute
-value and direction}
-
-\item
-\NAMDCONF{movingConsAtom}{Index (0-based) of the atom constrained to
-the moving reference position}
-{non-negative integer}
-{The index of the atom constrained to the moving reference position. 
-If the atom is numbered $N$ in the PDB file, $N-1$ must be specified.
-\NAMD\ will crash if the atom is not constrained in the
-\verb!conskfile!.
-}
-
-\end{itemize}
-
-\paragraph*{Steered Molecular Dynamics (SMD)}
 The following parameters describe the parameters for the 
 SMD feature of \NAMD.
 This feature allows a harmonic restraining force to be applied
@@ -926,7 +919,7 @@ average velocity to
 \verb!SMDVmax!.}
 \end{itemize}
 
-\subsubsection{\NAMD\ Tcl interface}
+\subsubsection{Tcl interface}
 
 \NAMD\ provides a limited Tcl scripting interface designed for applying forces and performing on-the-fly analysis.
 This interface is efficient if only a few coordinates, either of individual atoms or centers of mass of groups of atoms, are needed.
@@ -1011,8 +1004,4 @@ For example, ``\verb!addforce $groupid { 1. 0. 2. }!''.
 \end{itemize}
 
 Several vector routines from the VMD Tcl interface are also defined.
-
-\subsubsection{Free energy of conformational change parameters}
-
-\NAMD\ provides for the calculation of free energy differences between conformational substates of a molecule.
 
