@@ -64,8 +64,12 @@ Controller::Controller(NamdState *s) :
     if (simParams->pressureProfileOn) {
       pressureProfileReduction = 
         ReductionMgr::Object()->willRequire(REDUCTIONS_USER1);
+      pressureProfileAverage = new BigReal[3*simParams->pressureProfileSlabs];
+      memset(pressureProfileAverage, 0, 
+          3*simParams->pressureProfileSlabs*sizeof(BigReal));
     } else {
       pressureProfileReduction = NULL;
+      pressureProfileAverage = NULL;
     }
     random = new Random(simParams->randomSeed);
     random->split(0,PatchMap::Object()->numPatches()+1);
@@ -97,6 +101,7 @@ Controller::~Controller(void)
     delete broadcast;
     delete reduction;
     delete pressureProfileReduction;
+    delete [] pressureProfileAverage;
     delete random;
 }
 
@@ -907,11 +912,30 @@ void Controller::receivePressure(int step, int minimize)
       controlPressure_nbond << " + " << controlPressure_slow << "\n" << endi;
 #endif
 
-  if (pressureProfileReduction && !(step % simParameters->pressureProfileFreq)) {
-    iout << "PRESSUREPROFILE: " << step << " ";
-    for (int i=0; i<3*simParameters->pressureProfileSlabs; i++) 
-      iout << pressureProfileReduction->item(i) << " ";
-    iout << "\n" << endi; 
+  if (pressureProfileReduction) {
+    int i;
+    // accumulate the pressure profile computed for this step into the average.
+    for (i=0; i<3*simParameters->pressureProfileSlabs; i++)
+      pressureProfileAverage[i] += pressureProfileReduction->item(i);
+    if (!(step % simParameters->pressureProfileFreq)) {
+      // output pressure profile for this step
+      iout << "PRESSUREPROFILE: " << step << " ";
+      for (i=0; i<3*simParameters->pressureProfileSlabs; i++) 
+        iout << pressureProfileReduction->item(i) << " ";
+      iout << "\n" << endi; 
+
+      if (step != simParameters->firstTimestep) {
+        // output pressure profile averaged over the last Freq steps.
+        iout << "PRESSUREPROFILEAVG: " << step << " ";
+        BigReal avgscale = 1.0/simParameters->pressureProfileFreq;
+        for (i=0; i<3*simParameters->pressureProfileSlabs; i++) 
+          iout << pressureProfileAverage[i]*avgscale << " ";
+        iout << "\n" << endi; 
+      }
+      // Clear the average for the next block
+      memset(pressureProfileAverage, 0, 
+          3*simParameters->pressureProfileSlabs*sizeof(BigReal));
+    }
   }
 }
 

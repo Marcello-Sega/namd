@@ -114,6 +114,7 @@ protected:
     NamdState *const state;		// access data in state
     RequireReduction *reduction;
     RequireReduction *pressureProfileReduction;
+    BigReal *pressureProfileAverage;  // cumulative average
     CollectionMaster *const collection;
     ControllerBroadcasts * broadcast;
     ofstream xstFile;
