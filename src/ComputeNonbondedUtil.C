@@ -38,6 +38,8 @@ BigReal*	ComputeNonbondedUtil::scor_table;
 BigReal*	ComputeNonbondedUtil::slow_table;
 BigReal*	ComputeNonbondedUtil::corr_table;
 BigReal*	ComputeNonbondedUtil::full_table;
+BigReal*	ComputeNonbondedUtil::vdwa_table;
+BigReal*	ComputeNonbondedUtil::vdwb_table;
 BigReal         ComputeNonbondedUtil::scaling;
 BigReal         ComputeNonbondedUtil::scale14;
 Real            ComputeNonbondedUtil::switchOn;
@@ -69,16 +71,24 @@ BigReal		ComputeNonbondedUtil::ewaldcof;
 BigReal		ComputeNonbondedUtil::pi_ewaldcof;
 
 void (*ComputeNonbondedUtil::calcPair)(nonbonded *);
+void (*ComputeNonbondedUtil::calcPairEnergy)(nonbonded *);
 void (*ComputeNonbondedUtil::calcSelf)(nonbonded *);
+void (*ComputeNonbondedUtil::calcSelfEnergy)(nonbonded *);
 
 void (*ComputeNonbondedUtil::calcFullPair)(nonbonded *);
+void (*ComputeNonbondedUtil::calcFullPairEnergy)(nonbonded *);
 void (*ComputeNonbondedUtil::calcFullSelf)(nonbonded *);
+void (*ComputeNonbondedUtil::calcFullSelfEnergy)(nonbonded *);
 
 void (*ComputeNonbondedUtil::calcMergePair)(nonbonded *);
+void (*ComputeNonbondedUtil::calcMergePairEnergy)(nonbonded *);
 void (*ComputeNonbondedUtil::calcMergeSelf)(nonbonded *);
+void (*ComputeNonbondedUtil::calcMergeSelfEnergy)(nonbonded *);
 
 void (*ComputeNonbondedUtil::calcSlowPair)(nonbonded *);
+void (*ComputeNonbondedUtil::calcSlowPairEnergy)(nonbonded *);
 void (*ComputeNonbondedUtil::calcSlowSelf)(nonbonded *);
+void (*ComputeNonbondedUtil::calcSlowSelfEnergy)(nonbonded *);
 
 // define splitting function
 #define SPLIT_NONE	1
@@ -159,14 +169,14 @@ void ComputeNonbondedUtil::select(void)
         lambda_table[2*(3*ip+jp)+1] = d_lambda_pair;
       }
     }
-    ComputeNonbondedUtil::calcPair = calc_pair_fep;
-    ComputeNonbondedUtil::calcSelf = calc_self_fep;
-    ComputeNonbondedUtil::calcFullPair = calc_pair_fullelect_fep;
-    ComputeNonbondedUtil::calcFullSelf = calc_self_fullelect_fep;
-    ComputeNonbondedUtil::calcMergePair = calc_pair_merge_fullelect_fep;
-    ComputeNonbondedUtil::calcMergeSelf = calc_self_merge_fullelect_fep;
-    ComputeNonbondedUtil::calcSlowPair = calc_pair_slow_fullelect_fep;
-    ComputeNonbondedUtil::calcSlowSelf = calc_self_slow_fullelect_fep;
+    ComputeNonbondedUtil::calcPairEnergy = calc_pair_energy_fep;
+    ComputeNonbondedUtil::calcSelfEnergy = calc_self_energy_fep;
+    ComputeNonbondedUtil::calcFullPairEnergy = calc_pair_energy_fullelect_fep;
+    ComputeNonbondedUtil::calcFullSelfEnergy = calc_self_energy_fullelect_fep;
+    ComputeNonbondedUtil::calcMergePairEnergy = calc_pair_energy_merge_fullelect_fep;
+    ComputeNonbondedUtil::calcMergeSelfEnergy = calc_self_energy_merge_fullelect_fep;
+    ComputeNonbondedUtil::calcSlowPairEnergy = calc_pair_energy_slow_fullelect_fep;
+    ComputeNonbondedUtil::calcSlowSelfEnergy = calc_self_energy_slow_fullelect_fep;
   } else if ( lesOn ) {
     lesFactor = simParams->lesFactor;
     lesScaling = 1.0 / (double)lesFactor;
@@ -185,25 +195,41 @@ void ComputeNonbondedUtil::select(void)
       }
     }
     ComputeNonbondedUtil::calcPair = calc_pair_les;
+    ComputeNonbondedUtil::calcPairEnergy = calc_pair_energy_les;
     ComputeNonbondedUtil::calcSelf = calc_self_les;
+    ComputeNonbondedUtil::calcSelfEnergy = calc_self_energy_les;
     ComputeNonbondedUtil::calcFullPair = calc_pair_fullelect_les;
+    ComputeNonbondedUtil::calcFullPairEnergy = calc_pair_energy_fullelect_les;
     ComputeNonbondedUtil::calcFullSelf = calc_self_fullelect_les;
+    ComputeNonbondedUtil::calcFullSelfEnergy = calc_self_energy_fullelect_les;
     ComputeNonbondedUtil::calcMergePair = calc_pair_merge_fullelect_les;
+    ComputeNonbondedUtil::calcMergePairEnergy = calc_pair_energy_merge_fullelect_les;
     ComputeNonbondedUtil::calcMergeSelf = calc_self_merge_fullelect_les;
+    ComputeNonbondedUtil::calcMergeSelfEnergy = calc_self_energy_merge_fullelect_les;
     ComputeNonbondedUtil::calcSlowPair = calc_pair_slow_fullelect_les;
+    ComputeNonbondedUtil::calcSlowPairEnergy = calc_pair_energy_slow_fullelect_les;
     ComputeNonbondedUtil::calcSlowSelf = calc_self_slow_fullelect_les;
+    ComputeNonbondedUtil::calcSlowSelfEnergy = calc_self_energy_slow_fullelect_les;
   } else if ( pairInteractionOn ) {
-    ComputeNonbondedUtil::calcPair = calc_pair_int;
-    ComputeNonbondedUtil::calcSelf = calc_self_int;
+    ComputeNonbondedUtil::calcPairEnergy = calc_pair_energy_int;
+    ComputeNonbondedUtil::calcSelfEnergy = calc_self_energy_int;
   } else {
     ComputeNonbondedUtil::calcPair = calc_pair;
+    ComputeNonbondedUtil::calcPairEnergy = calc_pair_energy;
     ComputeNonbondedUtil::calcSelf = calc_self;
+    ComputeNonbondedUtil::calcSelfEnergy = calc_self_energy;
     ComputeNonbondedUtil::calcFullPair = calc_pair_fullelect;
+    ComputeNonbondedUtil::calcFullPairEnergy = calc_pair_energy_fullelect;
     ComputeNonbondedUtil::calcFullSelf = calc_self_fullelect;
+    ComputeNonbondedUtil::calcFullSelfEnergy = calc_self_energy_fullelect;
     ComputeNonbondedUtil::calcMergePair = calc_pair_merge_fullelect;
+    ComputeNonbondedUtil::calcMergePairEnergy = calc_pair_energy_merge_fullelect;
     ComputeNonbondedUtil::calcMergeSelf = calc_self_merge_fullelect;
+    ComputeNonbondedUtil::calcMergeSelfEnergy = calc_self_energy_merge_fullelect;
     ComputeNonbondedUtil::calcSlowPair = calc_pair_slow_fullelect;
+    ComputeNonbondedUtil::calcSlowPairEnergy = calc_pair_energy_slow_fullelect;
     ComputeNonbondedUtil::calcSlowSelf = calc_self_slow_fullelect;
+    ComputeNonbondedUtil::calcSlowSelfEnergy = calc_self_energy_slow_fullelect;
   }
 
 //fepe
@@ -242,11 +268,11 @@ void ComputeNonbondedUtil::select(void)
     c0 = 0.;  // avoid division by zero
   }
   c1 = c0*c0*c0;
-  c3 = c1 * 4.0;
-  c5 = 1/cutoff2;
-  c6 = -4 * c5;
-  c7 = 0.5 / ( cutoff * cutoff2 );
-  c8 = 1.5 / cutoff;
+  c3 = 3.0 * (cutoff2 - switchOn2);
+  c5 = 0;
+  c6 = 0;
+  c7 = 0;
+  c8 = 0;
 
   const int PMEOn = simParams->PMEOn;
 
@@ -303,7 +329,7 @@ void ComputeNonbondedUtil::select(void)
   }
 
   if ( table_alloc ) delete [] table_alloc;
-  table_alloc = new BigReal[20*n+40];
+  table_alloc = new BigReal[28*n+40];
   BigReal *table_align = table_alloc;
   while ( ((long)table_align) % 32 ) ++table_align;
   fast_table = table_align;
@@ -311,9 +337,13 @@ void ComputeNonbondedUtil::select(void)
   slow_table = table_align + 8*n;
   corr_table = table_align + 12*n;
   full_table = table_align + 16*n;
+  vdwa_table = table_align + 20*n;
+  vdwb_table = table_align + 24*n;
   BigReal *fast_i = fast_table;
   BigReal *scor_i = scor_table;
   BigReal *slow_i = slow_table;
+  BigReal *vdwa_i = vdwa_table;
+  BigReal *vdwb_i = vdwb_table;
 
   // fill in the rest of the table
   for ( i=0; i<n; ++i ) {
@@ -324,6 +354,7 @@ void ComputeNonbondedUtil::select(void)
 
     const BigReal r = sqrt(r2);
     const BigReal r_1 = 1.0/r;
+    const BigReal r_2 = 1.0/r2;
 
     // fast_ is defined as (full_ - slow_)
     // corr_ and fast_ are both zero at the cutoff, full_ is not
@@ -392,6 +423,27 @@ void ComputeNonbondedUtil::select(void)
     // add scor_ - modf * slow_ to slow terms and
     // add fast_ - modf * fast_ to fast terms.
 
+    BigReal vdwa_energy, vdwa_gradient;
+    BigReal vdwb_energy, vdwb_gradient;
+
+    const BigReal r_6 = r_2*r_2*r_2;
+    const BigReal r_12 = r_6*r_6;
+
+    // Lennard-Jones switching function
+    const BigReal c2 = cutoff2-r2;
+    const BigReal c4 = c2*(c3-2.0*c2);
+    const BigReal switchVal =         // used for Lennard-Jones
+                        ( r2 > switchOn2 ? c2*c4*c1 : 1.0 );
+    const BigReal dSwitchVal =        // d switchVal / d r2
+                        ( r2 > switchOn2 ? 2*c1*(c2*c2-c4) : 0.0 );
+
+    vdwa_energy = switchVal * r_12;
+    vdwb_energy = switchVal * r_6;
+
+    vdwa_gradient = switchVal * ( dSwitchVal - 6.0 * switchVal * r_2 ) * r_12;
+    vdwb_gradient = switchVal * ( dSwitchVal - 3.0 * switchVal * r_2 ) * r_6;
+
+
     *(fast_i++) = fast_energy;
     *(fast_i++) = fast_gradient;
     *(fast_i++) = 0;
@@ -404,6 +456,14 @@ void ComputeNonbondedUtil::select(void)
     *(slow_i++) = slow_gradient;
     *(slow_i++) = 0;
     *(slow_i++) = 0;
+    *(vdwa_i++) = vdwa_energy;
+    *(vdwa_i++) = vdwa_gradient;
+    *(vdwa_i++) = 0;
+    *(vdwa_i++) = 0;
+    *(vdwb_i++) = vdwb_energy;
+    *(vdwb_i++) = vdwb_gradient;
+    *(vdwb_i++) = 0;
+    *(vdwb_i++) = 0;
 
   }
 
@@ -424,7 +484,7 @@ void ComputeNonbondedUtil::select(void)
 */
 
   int j;
-  for ( j=0; j<3; ++j ) {
+  for ( j=0; j<5; ++j ) {
     BigReal *t0 = 0;
     switch (j) {
       case 0: 
@@ -435,6 +495,12 @@ void ComputeNonbondedUtil::select(void)
       break;
       case 2: 
         t0 = slow_table;
+      break;
+      case 3: 
+        t0 = vdwa_table;
+      break;
+      case 4: 
+        t0 = vdwb_table;
       break;
     }
     BigReal *t;
@@ -517,31 +583,56 @@ void ComputeNonbondedUtil::select(void)
 
 #define NBTYPE NBPAIR
 #include "ComputeNonbondedBase.h"
+#define CALCENERGY
+#include "ComputeNonbondedBase.h"
+#undef CALCENERGY
 #define FULLELECT
 #include "ComputeNonbondedBase.h"
+#define CALCENERGY
+#include "ComputeNonbondedBase.h"
+#undef CALCENERGY
 #define MERGEELECT
 #include "ComputeNonbondedBase.h"
+#define CALCENERGY
+#include "ComputeNonbondedBase.h"
+#undef CALCENERGY
 #undef MERGEELECT
 #define SLOWONLY
 #include "ComputeNonbondedBase.h"
+#define CALCENERGY
+#include "ComputeNonbondedBase.h"
+#undef CALCENERGY
 #undef SLOWONLY
 #undef FULLELECT
 #undef  NBTYPE
 
 #define NBTYPE NBSELF
 #include "ComputeNonbondedBase.h"
+#define CALCENERGY
+#include "ComputeNonbondedBase.h"
+#undef CALCENERGY
 #define FULLELECT
 #include "ComputeNonbondedBase.h"
+#define CALCENERGY
+#include "ComputeNonbondedBase.h"
+#undef CALCENERGY
 #define MERGEELECT
 #include "ComputeNonbondedBase.h"
+#define CALCENERGY
+#include "ComputeNonbondedBase.h"
+#undef CALCENERGY
 #undef MERGEELECT
 #define SLOWONLY
 #include "ComputeNonbondedBase.h"
+#define CALCENERGY
+#include "ComputeNonbondedBase.h"
+#undef CALCENERGY
 #undef SLOWONLY
 #undef FULLELECT
 #undef  NBTYPE
 
 #define FEPFLAG
+#define CALCENERGY
 
 #define NBTYPE NBPAIR
 #include "ComputeNonbondedBase.h"
@@ -569,32 +660,57 @@ void ComputeNonbondedUtil::select(void)
 #undef FULLELECT
 #undef  NBTYPE
 
+#undef CALCENERGY
 #undef FEPFLAG
 
 #define LESFLAG
 
 #define NBTYPE NBPAIR
 #include "ComputeNonbondedBase.h"
+#define CALCENERGY
+#include "ComputeNonbondedBase.h"
+#undef CALCENERGY
 #define FULLELECT
 #include "ComputeNonbondedBase.h"
+#define CALCENERGY
+#include "ComputeNonbondedBase.h"
+#undef CALCENERGY
 #define MERGEELECT
 #include "ComputeNonbondedBase.h"
+#define CALCENERGY
+#include "ComputeNonbondedBase.h"
+#undef CALCENERGY
 #undef MERGEELECT
 #define SLOWONLY
 #include "ComputeNonbondedBase.h"
+#define CALCENERGY
+#include "ComputeNonbondedBase.h"
+#undef CALCENERGY
 #undef SLOWONLY
 #undef FULLELECT
 #undef  NBTYPE
 
 #define NBTYPE NBSELF
 #include "ComputeNonbondedBase.h"
+#define CALCENERGY
+#include "ComputeNonbondedBase.h"
+#undef CALCENERGY
 #define FULLELECT
 #include "ComputeNonbondedBase.h"
+#define CALCENERGY
+#include "ComputeNonbondedBase.h"
+#undef CALCENERGY
 #define MERGEELECT
 #include "ComputeNonbondedBase.h"
+#define CALCENERGY
+#include "ComputeNonbondedBase.h"
+#undef CALCENERGY
 #undef MERGEELECT
 #define SLOWONLY
 #include "ComputeNonbondedBase.h"
+#define CALCENERGY
+#include "ComputeNonbondedBase.h"
+#undef CALCENERGY
 #undef SLOWONLY
 #undef FULLELECT
 #undef  NBTYPE
@@ -602,6 +718,7 @@ void ComputeNonbondedUtil::select(void)
 #undef LESFLAG
 
 #define INTFLAG
+#define CALCENERGY
 
 #define NBTYPE NBPAIR
 #include "ComputeNonbondedBase.h"
@@ -611,5 +728,6 @@ void ComputeNonbondedUtil::select(void)
 #include "ComputeNonbondedBase.h"
 #undef  NBTYPE
 
+#undef CALCENERGY
 #undef INTFLAG
 

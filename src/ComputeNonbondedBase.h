@@ -24,7 +24,7 @@
 #if NBTYPE == NBPAIR
   #define PAIR(X) X
   #define CLASS ComputeNonbondedPair
-  #define CLASSNAME(X) SLOWONLYNAME( X ## _pair )
+  #define CLASSNAME(X) ENERGYNAME( X ## _pair )
 #else
   #define PAIR(X)
 #endif
@@ -33,9 +33,22 @@
 #if NBTYPE == NBSELF
   #define SELF(X) X
   #define CLASS ComputeNonbondedSelf
-  #define CLASSNAME(X) SLOWONLYNAME( X ## _self )
+  #define CLASSNAME(X) ENERGYNAME( X ## _self )
 #else
   #define SELF(X)
+#endif
+
+#undef ENERGYNAME
+#undef ENERGY
+#undef NOENERGY
+#ifdef CALCENERGY
+  #define ENERGY(X) X
+  #define NOENERGY(X)
+  #define ENERGYNAME(X) SLOWONLYNAME( X ## _energy )
+#else
+  #define ENERGY(X)
+  #define NOENERGY(X) X
+  #define ENERGYNAME(X) SLOWONLYNAME( X )
 #endif
 
 #undef SLOWONLYNAME
@@ -115,6 +128,8 @@ LES( FEP( foo bar ) )
 LES( INT( foo bar ) )
 FEP( INT( foo bar ) )
 LAM( INT( foo bar ) )
+FEP( NOENERGY( foo bar ) )
+ENERGY( NOENERGY( foo bar ) )
 
 // ************************************************************
 // function header
@@ -134,18 +149,18 @@ void ComputeNonbondedUtil :: NAME
   int exclChecksum = 0;
   FAST
   (
-  BigReal vdwEnergy = 0;
+  ENERGY( BigReal vdwEnergy = 0; )
   SHORT
   (
-  BigReal electEnergy = 0;
+  ENERGY( BigReal electEnergy = 0; )
   )
 
   FEP
   (
-  BigReal vdwEnergy_s = 0;
+  ENERGY( BigReal vdwEnergy_s = 0; )
   SHORT
   (
-  BigReal electEnergy_s = 0;
+  ENERGY( BigReal electEnergy_s = 0; )
   )
   )
   
@@ -161,10 +176,10 @@ void ComputeNonbondedUtil :: NAME
   )
   FULL
   (
-  BigReal fullElectEnergy = 0;
+  ENERGY( BigReal fullElectEnergy = 0; )
   FEP
   (
-  BigReal fullElectEnergy_s = 0;
+  ENERGY( BigReal fullElectEnergy_s = 0; )
   )
   BigReal fullElectVirial_xx = 0;
   BigReal fullElectVirial_xy = 0;
@@ -185,6 +200,8 @@ void ComputeNonbondedUtil :: NAME
   const Molecule* const mol = ComputeNonbondedUtil:: mol;
   FAST
   (
+  const BigReal* const vdwa_table = ComputeNonbondedUtil:: vdwa_table;
+  const BigReal* const vdwb_table = ComputeNonbondedUtil:: vdwb_table;
   SHORT
   (
   const BigReal* const fast_table = ComputeNonbondedUtil:: fast_table;
@@ -275,8 +292,14 @@ void ComputeNonbondedUtil :: NAME
   int pairlistoffset=0;
   int pairlist_std[1005];  // pad 1 + 4 for nonbonded group runover
   int pairlist2_std[1005];  // pad 1 + 4 for nonbonded group runover
+  int pairlistn_std[1005];  // pad 1 + 4 for nonbonded group runover
+  int pairlistx_std[1005];  // pad 1 + 4 for nonbonded group runover
+  int pairlistm_std[1005];  // pad 1 + 4 for nonbonded group runover
   int *const pairlist = (j_upper < 1000 ? pairlist_std : new int[j_upper+5]);
   int *const pairlist2 = (j_upper < 1000 ? pairlist2_std : new int[j_upper+5]);
+  int *const pairlistn = (j_upper < 1000 ? pairlistn_std : new int[j_upper+5]);
+  int *const pairlistx = (j_upper < 1000 ? pairlistx_std : new int[j_upper+5]);
+  int *const pairlistm = (j_upper < 1000 ? pairlistm_std : new int[j_upper+5]);
 
   SHORT
   (
@@ -304,7 +327,7 @@ void ComputeNonbondedUtil :: NAME
     const ExclusionCheck *exclcheck = mol->get_excl_check_for_atom(p_i.id);
     const int excl_min = exclcheck->min;
     const int excl_max = exclcheck->max;
-    const char * const excl_flags = exclcheck->flags;
+    const char * const excl_flags = exclcheck->flags - excl_min;
     register const BigReal p_i_x = p_i.position.x;
     register const BigReal p_i_y = p_i.position.y;
     register const BigReal p_i_z = p_i.position.z;
@@ -432,6 +455,7 @@ void ComputeNonbondedUtil :: NAME
 		ljTable->table_row(mol->atomvdwtype(p_i.id));
 
     register int *pli = pairlist2;
+    register int *plin = pairlistn;
 
     INT(
     if ( 1 ) {
@@ -502,6 +526,7 @@ void ComputeNonbondedUtil :: NAME
        BigReal p_j_x = p_1[j2].position.x;
        BigReal p_j_y = p_1[j2].position.y;
        BigReal p_j_z = p_1[j2].position.z;
+       int atom2 = p_1[j2].id;
        while ( k < ku ) {
         j = j2;
         j2 = pairlist[++k];
@@ -515,232 +540,111 @@ void ComputeNonbondedUtil :: NAME
 	r2 += t2 * t2;
         p_j_z = p_1[j2].position.z;
 	if ( (r2 <= cutoff2) && ! ((r2 <= r2_delta) && ++exclChecksum) ) {
-          *(pli++) = j;
+          if ( atom2 >= excl_min && atom2 <= excl_max ) *(pli++) = j;
+          else *(plin++) = j;
         }
+        atom2 = p_1[j2].id;
        }
       }
     }
     int npair2 = pli - pairlist2;
+    if ( npair2 ) pairlist2[npair2] = pairlist2[npair2-1];
 
-    for (int k=0; k<npair2; ++k) {
-
-      const int j = pairlist2[k];
-      register const CompAtom *p_j = p_1 + j;
-
-      register const BigReal p_ij_x = p_i_x - p_j->position.x;
-      register BigReal r2 = p_ij_x * p_ij_x;
-      register const BigReal p_ij_y = p_i_y - p_j->position.y;
-      r2 += p_ij_y * p_ij_y;
-      register const BigReal p_ij_z = p_i_z - p_j->position.z;
-      r2 += p_ij_z * p_ij_z;
-
-      float r2f = r2;
-      const int table_i = ((*((int32 *)&r2f)) >> 17) + r2_delta_expc;
-
-      FAST(
-      const BigReal r_2 = 1.0 / r2;
-      )
-
-      const LJTable::TableEntry * lj_pars = 
-		lj_row + 2 * mol->atomvdwtype(p_j->id);
-
-      FAST(
-      SHORT(
-      const BigReal* const fast_i = fast_table + 4*table_i;
-      BigReal fast_a = fast_i[0];
-      )
-      )
-      FULL(
-      const BigReal* const scor_i = scor_table + 4*table_i;
-      BigReal slow_a = scor_i[0]; 
-      )
-
-      *((int32 *)&r2f) &= 0xfffe0000;
-
-      BigReal modf = 0.0;
-      int atom2 = p_j->id;
-      register char excl_flag = ( (atom2 >= excl_min && atom2 <= excl_max) ?
-					excl_flags[atom2-excl_min] : 0 );
-      if ( excl_flag ) { ++exclChecksum; }
-      SELF( if ( j < j_hgroup ) { excl_flag = EXCHCK_FULL; } )
-      if ( excl_flag ) {
-	if ( excl_flag == EXCHCK_FULL ) {
-	  lj_pars = lj_null_pars;
-	  modf = 1.0;
-	} else {
-	  ++lj_pars;
-	  modf = modf_mod;
-	}
+    int *plix = pairlistx;
+    int *plim = pairlistm;
+    int *pln = pairlistn;
+    int k=0;
+    SELF(
+    for (; pln < plin && *pln < j_hgroup; ++pln) {
+      *(plix++) = *pln;  --exclChecksum;
+    }
+    for (; k < npair2 && pairlist2[k] < j_hgroup; ++k) {
+      *(plix++) = pairlist2[k];  --exclChecksum;
+    }
+    )
+    for (; k < npair2; ++k ) {
+      int j = pairlist2[k];
+      int atom2 = p_1[j].id;
+      int excl_flag = excl_flags[atom2];
+      switch ( excl_flag ) {
+      case 0:  *(plin++) = j;  break;
+      case 1:  *(plix++) = j;  break;
+      case 2:  *(plim++) = j;  break;
       }
+    }
+    exclChecksum += (plix - pairlistx);
+    exclChecksum += (plim - pairlistm);
 
-      BigReal kqq = kq_i * p_j->charge;
-      const BigReal diffa = r2 - r2f;
+    int npairi;
+    int *pairlisti;
 
-      FEP(
-      int jfep_type = p_j->partition;
-      BigReal lambda_pair = lambda_table_i[2*jfep_type];
-      BigReal d_lambda_pair = lambda_table_i[2*jfep_type+1];
-      )
+    npairi = plin - pln;
+    pairlisti = pln;
 
-      LES( BigReal lambda_pair = lambda_table_i[p_j->partition]; )
+#define NORMAL(X) X
+#define EXCLUDED(X)
+#define MODIFIED(X)
+#include  "ComputeNonbondedBase2.h"
+#undef NORMAL
+#undef EXCLUDED
+#undef MODIFIED
 
-      FAST
-      (
-      const BigReal A = scaling * lj_pars->A;
-      const BigReal B = scaling * lj_pars->B;
+    npairi = plim - pairlistm;
+    pairlisti = pairlistm;
 
-      const BigReal r_6 = r_2*r_2*r_2;
-      const BigReal r_12 = r_6*r_6;
+#define NORMAL(X)
+#define EXCLUDED(X)
+#define MODIFIED(X) X
+#include  "ComputeNonbondedBase2.h"
+#undef NORMAL
+#undef EXCLUDED
+#undef MODIFIED
 
-      // Lennard-Jones switching function
-      const BigReal c2 = cutoff2-r2;
-      const BigReal c4 = c2*(cutoff2+2.0*r2-3.0*switchOn2);
-      const BigReal switchVal =		// used for Lennard-Jones
-			( r2 > switchOn2 ? c2*c4*c1 : 1.0 );
-      const BigReal dSwitchVal =	// d switchVal / d r2
-			( r2 > switchOn2 ? 0.5*c3*(c2*c2-c4) : 0.0 );
+#ifdef FULLELECT
+    npairi = plix - pairlistx;
+    pairlisti = pairlistx;
 
-      const BigReal AmBterm = (A*r_6 - B) * r_6;
+#undef FAST
+#define FAST(X)
+#define NORMAL(X)
+#define EXCLUDED(X) X
+#define MODIFIED(X)
+#include  "ComputeNonbondedBase2.h"
+#undef FAST
+#ifdef SLOWONLY
+  #define FAST(X)
+#else
+  #define FAST(X) X
+#endif
+#undef NORMAL
+#undef EXCLUDED
+#undef MODIFIED
+#endif
 
-      vdwEnergy += LAM(lambda_pair *) switchVal * AmBterm;
-      BigReal force_r = LAM(lambda_pair *)
-        ( switchVal * 3.0 * (A*r_12 + AmBterm) * r_2 - AmBterm * dSwitchVal );
-
-      FEP( vdwEnergy_s += d_lambda_pair * switchVal * AmBterm; )
-      
-      INT( 
-      reduction[pairVDWForceIndex_X] += 2.0 * force_r * p_ij_x;
-      reduction[pairVDWForceIndex_Y] += 2.0 * force_r * p_ij_y;
-      reduction[pairVDWForceIndex_Z] += 2.0 * force_r * p_ij_z;
-      )
-
-      SHORT(
-      BigReal modfc = 1.0 - modf;
-      fast_a *= modfc;
-      BigReal fast_d = modfc * fast_i[3];
-      BigReal fast_c = modfc * fast_i[2];
-      BigReal fast_b = modfc * fast_i[1];
-
-      {
-      register BigReal fast_val =
-	( ( diffa * fast_d + fast_c ) * diffa + fast_b ) * diffa + fast_a;
-      register BigReal fast_dir =
-	( 3.0 * diffa * fast_d + 2.0 * fast_c ) * diffa + fast_b;
-
-      electEnergy += LAM(lambda_pair *) kqq * fast_val;
-      force_r -= LAM(lambda_pair *) kqq * fast_dir;
-
-      FEP( electEnergy_s += d_lambda_pair * kqq * fast_val; )
-
-      INT(
-      reduction[pairElectForceIndex_X] -= 2.0 * kqq * fast_dir * p_ij_x;
-      reduction[pairElectForceIndex_Y] -= 2.0 * kqq * fast_dir * p_ij_y;
-      reduction[pairElectForceIndex_Z] -= 2.0 * kqq * fast_dir * p_ij_z;
-      )
-/*
-      // JCP ERROR CHECKING CODE
-      if ( abs(fast_val) > 1.0e4 || abs(fast_dir) > 1.0e4 ) {
-        iout << iERROR << "atom " << p_i.id << " pos " << p_i.position << "\n";
-        iout << iERROR << "atom " << p_j->id << " pos " << p_j->position << "\n";
-        iout << iERROR << "r2 " << r2 << " h " << r2_delta << " i " << table_i << " d " << diffa << "\n";
-        iout << iERROR << "fast " << fast_a << " " << fast_b << " " << fast_c << " " << fast_d  << "\n";
-        iout << iERROR << "val " << fast_val << " dir " << fast_dir << " kqq " << kqq << "\n";
-        iout << endi;
-      }
-*/
-      }
-
-      force_r *= 2.0;
-      Force & f_j = f_1[j];
-      register BigReal tmp_x = force_r * p_ij_x;
-      virial_xx += tmp_x * p_ij_x;
-      virial_xy += tmp_x * p_ij_y;
-      virial_xz += tmp_x * p_ij_z;
-      f_i.x += tmp_x;
-      f_j.x -= tmp_x;
-      register BigReal tmp_y = force_r * p_ij_y;
-      virial_yy += tmp_y * p_ij_y;
-      virial_yz += tmp_y * p_ij_z;
-      f_i.y += tmp_y;
-      f_j.y -= tmp_y;
-      register BigReal tmp_z = force_r * p_ij_z;
-      virial_zz += tmp_z * p_ij_z;
-      f_i.z += tmp_z;
-      f_j.z -= tmp_z;
-
-      )
-      )
-
-      FULL(
-      const BigReal* const slow_i = ( modf ? slow_table + 4*table_i : scor_i );
-      slow_a -= modf * slow_i[0];
-      BigReal slow_b = scor_i[1] - modf * slow_i[1];
-      BigReal slow_c = scor_i[2] - modf * slow_i[2];
-      BigReal slow_d = scor_i[3] - modf * slow_i[3];
-
-      register BigReal slow_val =
-	( ( diffa * slow_d + slow_c ) * diffa + slow_b ) * diffa + slow_a;
-      register BigReal slow_dir =
-	( 3.0 * diffa * slow_d + 2.0 * slow_c ) * diffa + slow_b;
-
-      fullElectEnergy += LAM(lambda_pair *) kqq * slow_val;
-      BigReal fullforce_r = -1.0 * kqq * slow_dir LAM(* lambda_pair);
-      
-      FEP( fullElectEnergy_s += d_lambda_pair * kqq * slow_val; )
-
-      INT(
-      reduction[pairElectForceIndex_X] -= 2.0 * kqq * slow_dir * p_ij_x;
-      reduction[pairElectForceIndex_Y] -= 2.0 * kqq * slow_dir * p_ij_y;
-      reduction[pairElectForceIndex_Z] -= 2.0 * kqq * slow_dir * p_ij_z;
-      )
-
-      {
-      NOSHORT(
-      fullforce_r += force_r;
-      )
-      fullforce_r *= 2.0;
-      Force & fullf_j = fullf_1[j];
-      register BigReal tmp_x = fullforce_r * p_ij_x;
-      fullElectVirial_xx += tmp_x * p_ij_x;
-      fullElectVirial_xy += tmp_x * p_ij_y;
-      fullElectVirial_xz += tmp_x * p_ij_z;
-      fullf_i.x += tmp_x;
-      fullf_j.x -= tmp_x;
-      register BigReal tmp_y = fullforce_r * p_ij_y;
-      fullElectVirial_yy += tmp_y * p_ij_y;
-      fullElectVirial_yz += tmp_y * p_ij_z;
-      fullf_i.y += tmp_y;
-      fullf_j.y -= tmp_y;
-      register BigReal tmp_z = fullforce_r * p_ij_z;
-      fullElectVirial_zz += tmp_z * p_ij_z;
-      fullf_i.z += tmp_z;
-      fullf_j.z -= tmp_z;
-
-      }
-      )
-
-    } // for pairlist
   } // for i
   if (grouplist != grouplist_std) delete [] grouplist;
   if (fixglist != fixglist_std) delete [] fixglist;
   if (goodglist != goodglist_std) delete [] goodglist;
   if (pairlist != pairlist_std) delete [] pairlist;
   if (pairlist2 != pairlist2_std) delete [] pairlist2;
+  if (pairlistn != pairlistn_std) delete [] pairlistn;
+  if (pairlistx != pairlistx_std) delete [] pairlistx;
+  if (pairlistm != pairlistm_std) delete [] pairlistm;
 
   reduction[exclChecksumIndex] += exclChecksum;
   FAST
   (
-  reduction[vdwEnergyIndex] += vdwEnergy;
+  ENERGY( reduction[vdwEnergyIndex] += vdwEnergy; )
   SHORT
   (
-  reduction[electEnergyIndex] += electEnergy;
+  ENERGY( reduction[electEnergyIndex] += electEnergy; )
   )
   FEP
   (
-  reduction[vdwEnergyIndex_s] += vdwEnergy_s;
+  ENERGY( reduction[vdwEnergyIndex_s] += vdwEnergy_s; )
   SHORT
   (
-  reduction[electEnergyIndex_s] += electEnergy_s;
+  ENERGY( reduction[electEnergyIndex_s] += electEnergy_s; )
   )
   )
   SHORT
@@ -758,10 +662,10 @@ void ComputeNonbondedUtil :: NAME
   )
   FULL
   (
-  reduction[fullElectEnergyIndex] += fullElectEnergy;
+  ENERGY( reduction[fullElectEnergyIndex] += fullElectEnergy; )
   FEP
   (
-  reduction[fullElectEnergyIndex_s] += fullElectEnergy_s;
+  ENERGY( reduction[fullElectEnergyIndex_s] += fullElectEnergy_s; )
   )
   reduction[fullElectVirialIndex_XX] += fullElectVirial_xx;
   reduction[fullElectVirialIndex_XY] += fullElectVirial_xy;

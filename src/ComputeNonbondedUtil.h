@@ -47,16 +47,24 @@ public:
   static void select(void);
 
   static void (*calcPair)(nonbonded *);
+  static void (*calcPairEnergy)(nonbonded *);
   static void (*calcSelf)(nonbonded *);
+  static void (*calcSelfEnergy)(nonbonded *);
 
   static void (*calcFullPair)(nonbonded *);
+  static void (*calcFullPairEnergy)(nonbonded *);
   static void (*calcFullSelf)(nonbonded *);
+  static void (*calcFullSelfEnergy)(nonbonded *);
 
   static void (*calcMergePair)(nonbonded *);
+  static void (*calcMergePairEnergy)(nonbonded *);
   static void (*calcMergeSelf)(nonbonded *);
+  static void (*calcMergeSelfEnergy)(nonbonded *);
 
   static void (*calcSlowPair)(nonbonded *);
+  static void (*calcSlowPairEnergy)(nonbonded *);
   static void (*calcSlowSelf)(nonbonded *);
+  static void (*calcSlowSelfEnergy)(nonbonded *);
 
   enum { exclChecksumIndex,
 	 electEnergyIndex, fullElectEnergyIndex, vdwEnergyIndex,
@@ -84,6 +92,8 @@ public:
   static BigReal *slow_table;
   static BigReal *corr_table;
   static BigReal *full_table;
+  static BigReal *vdwa_table;
+  static BigReal *vdwb_table;
   static BigReal scaling;
   static BigReal scale14;
   static Real switchOn;
@@ -124,38 +134,54 @@ public:
 	}
 
   static void calc_pair(nonbonded *);
+  static void calc_pair_energy(nonbonded *);
   static void calc_pair_fullelect(nonbonded *);
+  static void calc_pair_energy_fullelect(nonbonded *);
   static void calc_pair_merge_fullelect(nonbonded *);
+  static void calc_pair_energy_merge_fullelect(nonbonded *);
   static void calc_pair_slow_fullelect(nonbonded *);
+  static void calc_pair_energy_slow_fullelect(nonbonded *);
 
   static void calc_self(nonbonded *);
+  static void calc_self_energy(nonbonded *);
   static void calc_self_fullelect(nonbonded *);
+  static void calc_self_energy_fullelect(nonbonded *);
   static void calc_self_merge_fullelect(nonbonded *);
+  static void calc_self_energy_merge_fullelect(nonbonded *);
   static void calc_self_slow_fullelect(nonbonded *);
+  static void calc_self_energy_slow_fullelect(nonbonded *);
 
 //alchemical fep calcualtion
-  static void calc_pair_fep(nonbonded *);
-  static void calc_pair_fullelect_fep (nonbonded *);
-  static void calc_pair_merge_fullelect_fep (nonbonded *);
-  static void calc_pair_slow_fullelect_fep (nonbonded *);
-  static void calc_self_fep (nonbonded *);
-  static void calc_self_fullelect_fep (nonbonded *);
-  static void calc_self_merge_fullelect_fep (nonbonded *);
-  static void calc_self_slow_fullelect_fep (nonbonded *);
+  static void calc_pair_energy_fep(nonbonded *);
+  static void calc_pair_energy_fullelect_fep (nonbonded *);
+  static void calc_pair_energy_merge_fullelect_fep (nonbonded *);
+  static void calc_pair_energy_slow_fullelect_fep (nonbonded *);
+  static void calc_self_energy_fep (nonbonded *);
+  static void calc_self_energy_fullelect_fep (nonbonded *);
+  static void calc_self_energy_merge_fullelect_fep (nonbonded *);
+  static void calc_self_energy_slow_fullelect_fep (nonbonded *);
 
 //locally enhanced sampling calcualtion
   static void calc_pair_les(nonbonded *);
+  static void calc_pair_energy_les(nonbonded *);
   static void calc_pair_fullelect_les (nonbonded *);
+  static void calc_pair_energy_fullelect_les (nonbonded *);
   static void calc_pair_merge_fullelect_les (nonbonded *);
+  static void calc_pair_energy_merge_fullelect_les (nonbonded *);
   static void calc_pair_slow_fullelect_les (nonbonded *);
+  static void calc_pair_energy_slow_fullelect_les (nonbonded *);
   static void calc_self_les (nonbonded *);
+  static void calc_self_energy_les (nonbonded *);
   static void calc_self_fullelect_les (nonbonded *);
+  static void calc_self_energy_fullelect_les (nonbonded *);
   static void calc_self_merge_fullelect_les (nonbonded *);
+  static void calc_self_energy_merge_fullelect_les (nonbonded *);
   static void calc_self_slow_fullelect_les (nonbonded *);
+  static void calc_self_energy_slow_fullelect_les (nonbonded *);
 
 //pair interaction calcualtion
-  static void calc_pair_int(nonbonded *);
-  static void calc_self_int (nonbonded *);
+  static void calc_pair_energy_int(nonbonded *);
+  static void calc_self_energy_int (nonbonded *);
 
 };
 

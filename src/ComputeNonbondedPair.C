@@ -109,69 +109,42 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2],
     params.numParts = numParts;
 
     // swap to place more atoms in inner loop (second patch)
-    if ( numAtoms[0] > numAtoms[1] )
-    {
-      params.p[0] = p[1];
-      params.p[1] = p[0];
-      params.ff[0] = r[1]->f[Results::nbond];
-      params.ff[1] = r[0]->f[Results::nbond];
-      params.numAtoms[0] = numAtoms[1];
-      params.numAtoms[1] = numAtoms[0];
-      DebugM(3, "NUMATOMSxNUMATOMS = " << numAtoms[0]*numAtoms[1] << "\n" );
+    int a = 0;  int b = 1;
+    if ( numAtoms[0] > numAtoms[1] ) { a = 1; b = 0; }
+    int doEnergy = patch[0]->flags.doEnergy;
+      params.p[0] = p[a];
+      params.p[1] = p[b];
+      params.ff[0] = r[a]->f[Results::nbond];
+      params.ff[1] = r[b]->f[Results::nbond];
+      params.numAtoms[0] = numAtoms[a];
+      params.numAtoms[1] = numAtoms[b];
       if ( patch[0]->flags.doFullElectrostatics )
       {
-	params.fullf[0] = r[1]->f[Results::slow];
-	params.fullf[1] = r[0]->f[Results::slow];
+	params.fullf[0] = r[a]->f[Results::slow];
+	params.fullf[1] = r[b]->f[Results::slow];
 	if ( patch[0]->flags.doMolly ) {
-          calcPair(&params);
+          if ( doEnergy ) calcPairEnergy(&params);
+	  else calcPair(&params);
 	  CompAtom *p_avg[2];
 	  p_avg[0] = avgPositionBox[0]->open();
 	  p_avg[1] = avgPositionBox[1]->open();
-	  params.p[0] = p_avg[1];
-	  params.p[1] = p_avg[0];
-	  calcSlowPair(&params);
+	  params.p[0] = p_avg[a];
+	  params.p[1] = p_avg[b];
+	  if ( doEnergy ) calcSlowPairEnergy(&params);
+	  else calcSlowPair(&params);
 	  avgPositionBox[0]->close(&p_avg[0]);
 	  avgPositionBox[1]->close(&p_avg[1]);
         } else if ( patch[0]->flags.maxForceMerged == Results::slow ) {
-          calcMergePair(&params);
+          if ( doEnergy ) calcMergePairEnergy(&params);
+	  else calcMergePair(&params);
 	} else {
-	  calcFullPair(&params);
+	  if ( doEnergy ) calcFullPairEnergy(&params);
+	  else calcFullPair(&params);
 	}
       }
       else
-        calcPair(&params);
-    }
-    else
-    {
-      params.p[0] = p[0];
-      params.p[1] = p[1];
-      params.numAtoms[0] = numAtoms[0];
-      params.numAtoms[1] = numAtoms[1];
-      params.ff[0] = r[0]->f[Results::nbond];
-      params.ff[1] = r[1]->f[Results::nbond];
-      if ( patch[0]->flags.doFullElectrostatics )
-      {
-        params.fullf[0] = r[0]->f[Results::slow];
-        params.fullf[1] = r[1]->f[Results::slow];
-	if ( patch[0]->flags.doMolly ) {
-          calcPair(&params);
-	  CompAtom *p_avg[2];
-	  p_avg[0] = avgPositionBox[0]->open();
-	  p_avg[1] = avgPositionBox[1]->open();
-	  params.p[0] = p_avg[0];
-	  params.p[1] = p_avg[1];
-	  calcSlowPair(&params);
-	  avgPositionBox[0]->close(&p_avg[0]);
-	  avgPositionBox[1]->close(&p_avg[1]);
-        } else if ( patch[0]->flags.maxForceMerged == Results::slow ) {
-          calcMergePair(&params);
-	} else {
-	  calcFullPair(&params);
-	}
-      }
-      else
-        calcPair(&params);
-    }
+        if ( doEnergy ) calcPairEnergy(&params);
+        else calcPair(&params);
   }
 
   submitReductionData(reductionData,reduction);

@@ -148,7 +148,12 @@ void Sequencer::integrate() {
     int &doMolly = patch->flags.doMolly;
     doMolly = simParams->mollyOn && doFullElectrostatics;
 
+    // Bother to calculate energies?
+    int &doEnergy = patch->flags.doEnergy;
+    int energyFrequency = simParams->outputEnergies;
+
     rattle1(0.,0);  // enforce rigid bond constraints on initial positions
+    doEnergy = ! ( step % energyFrequency );
     runComputeObjects(1); // must migrate here!
     if ( staleForces ) {
       if ( doNonbonded ) saveForce(Results::nbond);
@@ -216,6 +221,7 @@ void Sequencer::integrate() {
 	if ( doFullElectrostatics ) maxForceUsed = Results::slow;
 
 	// Migrate Atoms on stepsPerCycle
+        doEnergy = ! ( step % energyFrequency );
 	runComputeObjects(!(step%stepsPerCycle));
 	if ( staleForces ) {
 	  if ( doNonbonded ) saveForce(Results::nbond);
@@ -334,6 +340,8 @@ void Sequencer::minimize() {
   }
   int &doMolly = patch->flags.doMolly;
   doMolly = simParams->mollyOn && doFullElectrostatics;
+  int &doEnergy = patch->flags.doEnergy;
+  doEnergy = 1;
 
   runComputeObjects(1); // must migrate here!
 

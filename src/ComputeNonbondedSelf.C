@@ -51,6 +51,7 @@ void ComputeNonbondedSelf::doForce(CompAtom* p,
 
   if ( patch->flags.doNonbonded )
   {
+    int doEnergy = patch->flags.doEnergy;
     nonbonded params;
     params.p[0] = p;
     params.p[1] = p;
@@ -69,20 +70,25 @@ void ComputeNonbondedSelf::doForce(CompAtom* p,
       params.fullf[0] = r->f[Results::slow];
       params.fullf[1] = r->f[Results::slow];
       if ( patch->flags.doMolly ) {
-        calcSelf(&params);
+        if ( doEnergy ) calcSelfEnergy(&params);
+	else calcSelf(&params);
         CompAtom *p_avg = avgPositionBox->open();
         params.p[0] = p_avg;
         params.p[1] = p_avg;
-        calcSlowSelf(&params);
+        if ( doEnergy ) calcSlowSelfEnergy(&params);
+	else calcSlowSelf(&params);
         avgPositionBox->close(&p_avg);
       } else if ( patch->flags.maxForceMerged == Results::slow ) {
-        calcMergeSelf(&params);
+        if ( doEnergy ) calcMergeSelfEnergy(&params);
+	else calcMergeSelf(&params);
       } else {
-        calcFullSelf(&params);
+        if ( doEnergy ) calcFullSelfEnergy(&params);
+	else calcFullSelf(&params);
       }
     }
     else
-      calcSelf(&params);
+      if ( doEnergy ) calcSelfEnergy(&params);
+      else calcSelf(&params);
   }
 
   submitReductionData(reductionData,reduction);

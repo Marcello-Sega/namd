@@ -76,6 +76,11 @@ obj/AlgSeven.o: \
 	src/AlgSeven.C \
 	src/common.h \
 	src/InfoStream.h \
+	src/Node.h \
+	src/main.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/Node.decl.h \
 	src/Alg7.h \
 	src/Rebalancer.h \
 	src/elements.h \
@@ -204,6 +209,8 @@ obj/CollectionMaster.o: \
 	src/common.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
+	src/Lattice.h \
+	src/Tensor.h \
 	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
 	src/PatchMap.h \
@@ -211,8 +218,6 @@ obj/CollectionMaster.o: \
 	src/SortedArray.h \
 	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/Lattice.h \
-	src/Tensor.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/InfoStream.h \
@@ -1216,7 +1221,8 @@ obj/ComputeNonbondedUtil.o: \
 	src/GromacsTopFile.h \
 	src/LJTable.h \
 	src/InfoStream.h \
-	src/ComputeNonbondedBase.h
+	src/ComputeNonbondedBase.h \
+	src/ComputeNonbondedBase2.h
 	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedUtil.o $(COPTC) src/ComputeNonbondedUtil.C
 obj/ComputePatch.o: \
 	src/ComputePatch.C \
@@ -1350,6 +1356,7 @@ obj/ComputePme.o: \
 	src/ComputeMap.h \
 	inc/WorkDistrib.decl.h \
 	src/varsizemsg.h \
+	src/Random.h \
 	inc/ComputePmeMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputePme.o $(COPTC) src/ComputePme.C
 obj/ComputeRestraints.o: \
@@ -1428,18 +1435,22 @@ obj/ComputeSphericalBC.o: \
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeSphericalBC.o $(COPTC) src/ComputeSphericalBC.C
 obj/ComputeConsForce.o: \
 	src/ComputeConsForce.C \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/common.h \
+	src/Communicate.h \
+	src/MStream.h \
+	src/Vector.h \
+	src/Lattice.h \
+	src/NamdTypes.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/Tensor.h \
 	src/ComputeConsForce.h \
 	src/ComputePatch.h \
 	src/Compute.h \
 	src/main.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/common.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
 	src/PatchTypes.h \
-	src/Lattice.h \
-	src/Tensor.h \
 	src/Box.h \
 	src/OwnerBox.h \
 	src/PositionBox.h \
@@ -1447,7 +1458,6 @@ obj/ComputeConsForce.o: \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
-	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
@@ -1456,7 +1466,19 @@ obj/ComputeConsForce.o: \
 	src/Node.h \
 	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
-	inc/Node.decl.h
+	inc/Node.decl.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/InfoStream.h \
+	inc/PatchMgr.decl.h \
+	src/HomePatchTypes.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeConsForce.o $(COPTC) src/ComputeConsForce.C
 obj/ConfigList.o: \
 	src/ConfigList.C \
@@ -1991,10 +2013,10 @@ obj/HomePatch.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
+	src/Settle.h \
 	src/Sync.h \
 	inc/Sync.decl.h \
 	src/ResizeArrayPrimIter.h \
-	src/Settle.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/HomePatch.o $(COPTC) src/HomePatch.C
 obj/IMDOutput.o: \
@@ -2071,6 +2093,18 @@ obj/LdbCoordinator.o: \
 	src/NamdNborLB.h \
 	inc/NamdNborLB.decl.h \
 	src/AlgNbor.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/HomePatchTypes.h \
 	inc/LdbCoordinator.decl.h \
 	src/LdbCoordinator.h \
 	src/PatchMap.inl \
@@ -2079,7 +2113,6 @@ obj/LdbCoordinator.o: \
 	src/Debug.h \
 	src/Controller.h \
 	src/Sequencer.h \
-	src/PatchTypes.h \
 	src/ComputeMgr.h \
 	src/GlobalMaster.h \
 	src/GlobalMasterServer.h \
@@ -2142,7 +2175,8 @@ obj/Measure.o: \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
-	src/SortableResizeArray.h
+	src/SortableResizeArray.h \
+	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Measure.o $(COPTC) src/Measure.C
 obj/MStream.o: \
 	src/MStream.C \
@@ -2798,6 +2832,11 @@ obj/ProxyPatch.o: \
 obj/Rebalancer.o: \
 	src/Rebalancer.C \
 	src/InfoStream.h \
+	src/Node.h \
+	src/main.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/Node.decl.h \
 	src/Rebalancer.h \
 	src/elements.h \
 	src/Set.h \
@@ -2893,6 +2932,13 @@ obj/ScriptTcl.o: \
 	src/ConfigList.h \
 	src/Node.h \
 	inc/Node.decl.h \
+	src/PDB.h \
+	src/parm.h \
+	src/GromacsTopFile.h \
+	src/PDBData.h \
+	src/WorkDistrib.h \
+	src/ComputeMap.h \
+	inc/WorkDistrib.decl.h \
 	src/NamdState.h \
 	src/Controller.h \
 	src/SimParameters.h \
@@ -2998,8 +3044,9 @@ obj/Settle.o: \
 	src/Settle.C \
 	src/Settle.h \
 	src/Vector.h \
+	src/common.h \
 	src/Tensor.h \
-	src/common.h
+	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Settle.o $(COPTC) src/Settle.C
 obj/SimParameters.o: \
 	src/SimParameters.C \
