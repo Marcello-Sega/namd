@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Molecule.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/11/11 19:54:09 $
+ *	$Revision: 1.4 $	$Date: 1996/12/03 17:57:37 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.4  1996/12/03 17:57:37  nealk
+ * It compiles with Nonbonded Excl.  Still must make list and forces.
+ *
  * Revision 1.3  1996/11/11 19:54:09  nealk
  * Modified to use InfoStream instead of Inform.
  *
@@ -131,7 +134,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.3 1996/11/11 19:54:09 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.4 1996/12/03 17:57:37 nealk Exp $";
 
 #include "Molecule.h"
 #include <stdio.h>
@@ -169,6 +172,7 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
 	angles=NULL;
 	dihedrals=NULL;
 	impropers=NULL;
+	nonbondedexcls=NULL;
 	donors=NULL;
 	acceptors=NULL;
 	exclusions=NULL;
@@ -190,6 +194,7 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
 	numAngles=0;
 	numDihedrals=0;
 	numImpropers=0;
+	numNonbondedExcls=0;
 	numDonors=0;
 	numAcceptors=0;
 	numExclusions=0;
@@ -241,6 +246,9 @@ Molecule::~Molecule()
 	if (impropers != NULL)
 		delete [] impropers;
 
+	if (nonbondedexcls != NULL)
+		delete [] nonbondedexcls;
+
 	if (donors != NULL)
 		delete [] donors;
 
@@ -262,6 +270,9 @@ Molecule::~Molecule()
 	if (impropersByAtom != NULL)
 	   	delete [] impropersByAtom;
 	
+	if (nonbondedexclsByAtom != NULL)
+	   	delete [] nonbondedexclsByAtom;
+
 	if (all_exclusions != NULL)
 	   	delete [] all_exclusions;
 	
