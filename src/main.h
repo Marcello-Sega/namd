@@ -28,6 +28,12 @@ public:
   BOCgroup group;
 };
 
+class SlaveInitMsg : public GroupInitMsg
+{
+public:
+  ChareIDType master;
+};
+
 class EmptyMsg : public comm_object {
   int dummy;
 };
@@ -59,12 +65,15 @@ public:
  *
  *	$RCSfile: main.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.19 $	$Date: 1996/12/17 17:07:41 $
+ *	$Revision: 1.20 $	$Date: 1997/01/13 19:18:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: main.h,v $
+ * Revision 1.20  1997/01/13 19:18:37  jim
+ * added init message for slave/master pattern
+ *
  * Revision 1.19  1996/12/17 17:07:41  jim
  * moved messages from main to ProxyMgr
  *

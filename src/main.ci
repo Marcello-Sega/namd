@@ -1,4 +1,5 @@
 message GroupInitMsg;
+message SlaveInitMsg;
 message InitMsg;
 message ReadyMsg;
 message RunMsg;
@@ -7,4 +8,4 @@ message LocalWorkMsg;
 
 chare main {
   entry main();
-} ;
+};
