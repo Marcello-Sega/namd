@@ -1,9 +1,9 @@
-extern message GroupInitMsg;
+extern message InitMsg;
 packmessage BroadcastMsg;
 
 group BroadcastMgr
 {
-  entry BroadcastMgr(GroupInitMsg *);
+  entry BroadcastMgr(InitMsg *);
   entry recvBroadcast(BroadcastMsg *);
 } ;
 
@@ -12,12 +12,15 @@ group BroadcastMgr
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1997/03/19 11:53:53 $
+ *	$Revision: 1.2 $	$Date: 1998/02/10 23:43:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: BroadcastMgr.ci,v $
+ * Revision 1.2  1998/02/10 23:43:02  milind
+ * Fixed to reflect changes to Charm++ translator.
+ *
  * Revision 1.1  1997/03/19 11:53:53  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

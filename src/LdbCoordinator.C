@@ -341,7 +341,7 @@ int LdbCoordinator::checkAndGoToBarrier(void)
   {
     
     LdbResumeMsg *msg = new (MsgIndex(LdbResumeMsg)) LdbResumeMsg;
-    CSendMsgBranch(LdbCoordinator, nodeDone, msg, thisgroup,0);
+    CSendMsgBranch(LdbCoordinator, nodeDone, LdbResumeMsg, msg, thisgroup,0);
     return 1;
   }
   else return 0;
@@ -353,7 +353,7 @@ void LdbCoordinator::nodeDone(LdbResumeMsg *msg)
   if (nodesDone==Node::Object()->numNodes())
   {
     nodesDone=0;
-    CBroadcastMsgBranch(LdbCoordinator, sendStats, msg, thisgroup);
+    CBroadcastMsgBranch(LdbCoordinator, sendStats, LdbResumeMsg, msg, thisgroup);
   }
   else delete msg;
 }
@@ -438,7 +438,7 @@ void LdbCoordinator::sendStats(LdbResumeMsg *inMsg)
   for(i=0;i<msg->nComputes;i++)
     msg->procLoad -= msg->computeTime[i];
   
-  CSendMsgBranch(LdbCoordinator, analyze, msg, thisgroup,0);
+  CSendMsgBranch(LdbCoordinator, analyze, LdbStatsMsg, msg, thisgroup,0);
   return;
 }
 
@@ -548,7 +548,7 @@ void LdbCoordinator::processStatistics(void)
   // here and with proxies before anyone can start up
 
   ComputeMgr *computeMgr = CLocalBranch(ComputeMgr, CpvAccess(BOCclass_group).computeMgr);
-  computeMgr->updateComputes(GetEntryPtr(LdbCoordinator,updateComputesReady),thisgroup);
+  computeMgr->updateComputes(GetEntryPtr(LdbCoordinator,updateComputesReady,DoneMsg),thisgroup);
   //  CPrintf("LDB: Done processing statistics at %f, %f\n",
   //	  CmiTimer(),CmiWallTimer());
 }
@@ -557,7 +557,7 @@ void LdbCoordinator::updateComputesReady(DoneMsg *msg) {
   delete msg;
 
   LdbResumeMsg *sendmsg = new (MsgIndex(LdbResumeMsg)) LdbResumeMsg;
-  CBroadcastMsgBranch(LdbCoordinator, resume, sendmsg, thisgroup);
+  CBroadcastMsgBranch(LdbCoordinator, resume, LdbResumeMsg, sendmsg, thisgroup);
 }
 
 void LdbCoordinator::resume(LdbResumeMsg *msg)

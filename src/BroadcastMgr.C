@@ -66,7 +66,7 @@ BroadcastMgr::send(BroadcastClient &b, int tag, void *buf, size_t size) {
   msg->tag = tag;
   msg->id = b.id;
   msg->node = CMyPe();
-  CBroadcastMsgBranch(BroadcastMgr, recvBroadcast, msg, thisgroup);
+  CBroadcastMsgBranch(BroadcastMgr, recvBroadcast, BroadcastMsg, msg, thisgroup);
 }
 
 void 
@@ -126,12 +126,15 @@ BroadcastMgr::recvBroadcast(BroadcastMsg *msg) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1997/12/26 23:10:39 $
+ *	$Revision: 1.7 $	$Date: 1998/02/10 23:43:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: BroadcastMgr.C,v $
+ * Revision 1.7  1998/02/10 23:43:01  milind
+ * Fixed to reflect changes to Charm++ translator.
+ *
  * Revision 1.6  1997/12/26 23:10:39  milind
  * Made namd2 to compile, link and run under linux. Merged Templates and src
  * directoriies, and removed separate definition and declaration files for

@@ -124,7 +124,7 @@ public:
 class BroadcastMgr : public BOCclass
 {
 public:
-  BroadcastMgr(GroupInitMsg *msg) { 
+  BroadcastMgr(InitMsg *msg) { 
     delete msg; 
     CpvAccess(BroadcastMgr_instance) = this; 
   }
@@ -151,12 +151,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1997/12/26 23:10:39 $
+ *	$Revision: 1.6 $	$Date: 1998/02/10 23:43:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: BroadcastMgr.h,v $
+ * Revision 1.6  1998/02/10 23:43:03  milind
+ * Fixed to reflect changes to Charm++ translator.
+ *
  * Revision 1.5  1997/12/26 23:10:39  milind
  * Made namd2 to compile, link and run under linux. Merged Templates and src
  * directoriies, and removed separate definition and declaration files for
