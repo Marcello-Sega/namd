@@ -101,11 +101,12 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 {
   PatchMap* patchMap = PatchMap::Object();
   ComputeMap* computeMap = ComputeMap::Object();
+  double bg_weight = 1.0;
 
   int i;
   for (i=0; i<count; i++) {
     processorArray[i].Id = i;
-    processorArray[i].backgroundLoad = stats[i].bg_walltime;
+    processorArray[i].backgroundLoad = bg_weight * stats[i].bg_walltime;
     processorArray[i].proxies = new Set();
   }
 
