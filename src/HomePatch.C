@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.7 1996/11/30 00:35:51 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.8 1996/12/01 02:35:47 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -45,12 +45,12 @@ void HomePatch::boxClosed(int)
 {
   if ( ! --boxesOpen )
   {
-    DebugM(2,"Trying to awaken sequencer.\n");
+    DebugM(2,patchID << ": " << "Trying to awaken sequencer.\n");
     sequencer->awaken();
   }
   else
   {
-    DebugM(2,boxesOpen << " boxes left to close.\n");
+    DebugM(2,patchID << ": " << boxesOpen << " boxes left to close.\n");
   }
 }
 
@@ -247,12 +247,15 @@ void HomePatch::dispose(char *&data)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/11/30 00:35:51 $
+ *	$Revision: 1.8 $	$Date: 1996/12/01 02:35:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.8  1996/12/01 02:35:47  jim
+ * added patchID reporting
+ *
  * Revision 1.7  1996/11/30 00:35:51  jim
  * implemented boxClosed(), useSequencer(), runSequencer()
  *
