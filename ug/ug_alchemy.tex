@@ -27,14 +27,14 @@ $a$ and $b$, is expressed by:
 
 \begin{equation}
 \Delta A_{a \rightarrow b} = -k_B T \ \ln
-\left< \exp\left[-\frac{\cal H_b({\bf r}, {\bf p}) - 
-                         \cal H_a({\bf r}, {\bf p})}
+\left< \exp\left[-\frac{{\cal H}_b({\bf r}, {\bf p}) - 
+                         {\cal H}_a({\bf r}, {\bf p})}
                         {k_B T}\right]
 \right>_a
 \end{equation}
 
 wherein $k_B$ is the Boltzmann constant, $T$ is the kinetic temperature,
-and $\cal H_a({\bf r}, {\bf p})$ and $\cal H_b({\bf r}, {\bf p})$
+and ${\cal H}_a({\bf r}, {\bf p})$ and ${\cal H}_b({\bf r}, {\bf p})$
 are the Hamiltonians characteristic of states $a$ and $b$, respectively.
 $\left< \cdots \right>_a$ denotes an ensemble average over configurations
 representative of the initial state, $a$.
@@ -48,8 +48,8 @@ a continuous function of this parameter between $a$ and $b$:
 
 \begin{equation}
 \Delta A_{a \rightarrow b} = -k_B T \ \sum_{k = 1}^N \ln
-\left< \exp\left[-\frac{\cal H({\bf r}, {\bf p}; \lambda_{k+1}) - 
-                         \cal H({\bf r}, {\bf p}; \lambda_k)}
+\left< \exp\left[-\frac{{\cal H}({\bf r}, {\bf p}; \lambda_{k+1}) - 
+                         {\cal H}({\bf r}, {\bf p}; \lambda_k)}
                         {k_B T}\right]
 \right>_k
 \end{equation}
@@ -79,13 +79,13 @@ coupling parameter $\lambda$, that smoothly connects state $a$
 to state $b$, is calculated as:
 
 \begin{equation}
-\cal H(\lambda) = \cal H_0 + \lambda \cal H_a + (1-\lambda) \cal H_b
+{\cal H}(\lambda) = {\cal H}_0 + \lambda {\cal H}_a + (1-\lambda) {\cal H}_b
 \end{equation}
 
-where $\cal H_a$ is the Hamiltonian of the group of atoms representative
-of the initial state, $a$, and $\cal H_b$ characterizes the final state,
+where ${\cal H}_a$ is the Hamiltonian of the group of atoms representative
+of the initial state, $a$, and ${\cal H}_b$ characterizes the final state,
 $b$. 
-$\cal H_0$ is the Hamiltonian for those atoms that do not undergo any 
+${\cal H}_0$ is the Hamiltonian for those atoms that do not undergo any 
 transformation during the {\sc md} simulation.
 
 
