@@ -54,6 +54,12 @@ typedef ResizeArrayIter<ComputeID> ComputeIDListIter;
 typedef ResizeArray<Compute *> ComputeList;
 typedef ResizeArrayIter<Compute *> ComputeListIter;
 
+struct LocalID
+{
+  PatchID pid;
+  int index;
+};
+
 enum ComputeType
 {
   electForceType,
@@ -75,13 +81,16 @@ enum Boolean
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdTypes.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1996/10/16 08:22:39 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.9 $	$Date: 1996/10/24 18:51:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdTypes.h,v $
+ * Revision 1.9  1996/10/24 18:51:09  brunner
+ * Added LocalID
+ *
  * Revision 1.8  1996/10/16 08:22:39  ari
  * *** empty log message ***
  *
