@@ -432,6 +432,7 @@ obj/ComputeDPMTA.o: \
 	src/Templates/UniqueSetRaw.h \
 	src/Templates/ObjectArena.h \
 	src/Hydrogen.h \
+	src/PatchMap.inl \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/AtomMap.h \
@@ -781,6 +782,7 @@ obj/ComputeNonbondedExcl.o: \
 	src/ComputeNonbondedSplitting.h \
 	src/LJTable.h \
 	src/AtomMap.h \
+	src/PatchMap.inl \
 	src/Debug.h \
 	src/Inform.h \
 	src/Templates/UniqueSetIter.h
@@ -1708,6 +1710,7 @@ obj/PatchMap.o: \
 	src/HomePatchTypes.h \
 	src/main.h \
 	src/BOCgroup.h \
+	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/PatchMap.o -c src/PatchMap.C
@@ -2009,6 +2012,8 @@ obj/WorkDistrib.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/HomePatchTypes.h \
+	src/PatchMap.inl \
+	src/AtomMap.h \
 	src/PDB.h \
 	src/IntList.h \
 	src/PDBData.h \
