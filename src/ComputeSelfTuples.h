@@ -29,7 +29,8 @@ template <class T, class S, class P> class ComputeSelfTuples :
 
       LocalID aid[T::size];
 
-      Real invLesFactor = node->simParameters->lesOn ?
+      const int lesOn = node->simParameters->lesOn;
+      Real invLesFactor = lesOn ?
                           1.0/node->simParameters->lesFactor :
                           1.0;
 
@@ -57,11 +58,11 @@ template <class T, class S, class P> class ComputeSelfTuples :
              aid[0] = atomMap->localID(t.atomID[0]);
              int homepatch = aid[0].pid;
              int samepatch = 1;
-             int has_les = node->molecule->get_fep_type(t.atomID[0]);
+             int has_les = lesOn && node->molecule->get_fep_type(t.atomID[0]);
              for (i=1; i < T::size; i++) {
 	         aid[i] = atomMap->localID(t.atomID[i]);
 	         samepatch = samepatch && ( homepatch == aid[i].pid );
-                 has_les |= node->molecule->get_fep_type(t.atomID[i]);
+                 has_les |= lesOn && node->molecule->get_fep_type(t.atomID[i]);
              }
              if ( samepatch ) {
                t.scale = has_les ? invLesFactor : 1;
