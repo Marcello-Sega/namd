@@ -17,10 +17,9 @@
 #include "ComputeHomeTuples.h"
 #include "PatchMgr.h"
 #include "Molecule.h"
-#include "Parameters.h"
 
 template <class T>
-ComputeHomeTuples::ComputeHomeTuples(ComputeID c) : Compute(c) {
+ComputeHomeTuples<T>::ComputeHomeTuples(ComputeID c) : Compute(c) {
   CPrintf("ComputeHomeTuples::ComputeHomeTuples(%d) -- starting\n",(int)c);
   patchMap = PatchMap::Object();
   atomMap = AtomMap::Object();
@@ -31,7 +30,7 @@ ComputeHomeTuples::ComputeHomeTuples(ComputeID c) : Compute(c) {
 }
 
 template <class T>
-void ComputeHomeTuples::mapReady() {
+void ComputeHomeTuples<T>::mapReady() {
 
   // ComputeHomeTuples contribution for proxies should be
   // gathered here.
@@ -82,18 +81,7 @@ void ComputeHomeTuples::mapReady() {
       p->getNumAtoms() );
     for (int i=0; i < p->getNumAtoms(); i++)
     {
-//      /* get list of all angles for the atom */
-//      LintList *angles = node->molecule->get_angles_for_atom(atomID[i]);
-//
-//      /* cycle through each angle */
-//      int angleNum = angles->head();
-//      while(angleNum != LIST_EMPTY)
-//      {
-//        /* store angle in the list */
-//        angleList.add(AngleElem(node->molecule->get_angle(angleNum)));
-//        angleNum = angles->next();
-//      }
-      T::addTuplesForAtom(&tupleList,atomID[i],node->molecule);
+      T::addTuplesForAtom((void*)&tupleList,atomID[i],node->molecule);
     }
   }
 
@@ -101,7 +89,7 @@ void ComputeHomeTuples::mapReady() {
   ResizeArrayIter<T> al(tupleList);
 
   for (al = al.begin(); al != al.end(); al++ ) {
-    for (int i=0; i < 3; i++) {
+    for (int i=0; i < T::size; i++) {
 	LocalID aid = atomMap->localID((*al).atomID[i]);
 	(*al).p[i] = tuplePatchList.find(TuplePatchElem(aid.pid));
 	(*al).localIndex[i] = aid.index;
@@ -111,7 +99,7 @@ void ComputeHomeTuples::mapReady() {
 
 
 template <class T>
-void ComputeHomeTuples::doWork() {
+void ComputeHomeTuples<T>::doWork() {
   CPrintf("ComputeHomeTuples::doWork() -- started\n");
   // Open Boxes
   ResizeArrayIter<TuplePatchElem> ap(tuplePatchList);
@@ -123,15 +111,8 @@ void ComputeHomeTuples::doWork() {
   // take triplet and pass with tuple info to force eval
   ResizeArrayIter<T> al(tupleList);
   for (al = al.begin(); al != al.end(); al++ ) {
-    T::computeForce(&(*al));
-    // angleForce returns (BigReal)change in energy.  This must be used.
-//    angleForce((*al).p[0]->x[(*al).localIndex[0]],
-//	       (*al).p[1]->x[(*al).localIndex[1]],
-//	       (*al).p[2]->x[(*al).localIndex[2]],
-//	       (*al).p[0]->f+(*al).localIndex[0],
-//	       (*al).p[1]->f+(*al).localIndex[1],
-//	       (*al).p[2]->f+(*al).localIndex[2],
-//	       (*al).angleType);
+    // computeForce returns (BigReal)change in energy.  This must be used.
+    (*al).computeForce();
   }
 
   for (ap = ap.begin(); ap != ap.end(); ap++) {

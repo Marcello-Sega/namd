@@ -11,133 +11,45 @@
  *
  ***************************************************************************/
 
-#include "common.h"
-#include "structures.h"
-#include "NamdTypes.h"
-#include "Node.h"
-#include "PatchMap.h"
-#include "AtomMap.h"
 #include "ComputeAngles.h"
-#include "PatchMgr.h"
 #include "Molecule.h"
 #include "Parameters.h"
+#include "Node.h"
 
-ComputeAngles::ComputeAngles(ComputeID c) : Compute(c) {
-  CPrintf("ComputeAngles::ComputeAngles(%d) -- starting\n",(int)c);
-  patchMap = PatchMap::Object();
-  atomMap = AtomMap::Object();
+void AngleElem::addTuplesForAtom
+  (void *voidlist, AtomID atomID, Molecule *molecule)
+{
+      UniqueSortedArray<AngleElem> &angleList =
+                  *( (UniqueSortedArray<AngleElem>*) voidlist );
 
-  maxProxyAtoms = 0;
-  dummy = NULL;
-  CPrintf("ComputeAngles::ComputeAngles(%d) -- done\n",(int)c);
-}
-
-void ComputeAngles::mapReady() {
-
-  // AnglePatchList contribution for proxies should be
-  // gathered here.
-  // Gather all home patches
-  /*
-  ProxyPatchList *pp = patchMap->proxyPatchList();
-  ProxyPatchListIter ppi(*pp);
-
-  maxProxyAtoms = 0;
-  delete[] dummy;
-
-  for ( ppi = ppi.begin(); ppi != ppi.end(); ppi++ ) {
-    anglePatchList.add(AnglePatchElem((*ppi).patch, HOME, cid));
-    if ((*ppi).patch->getNumAtoms() > maxProxyAtoms) {
-      maxProxyAtoms = (*ppi).patch->getNumAtoms();
-    }
-  }
-  dummy = new Force[maxProxyAtoms];
-  */
-
-
-  // Gather all home patches
-  CPrintf("ComputeAtoms::mapReady() - Starting Up\n");
-  HomePatchList *a = patchMap->homePatchList();
-  ResizeArrayIter<HomePatchElem> ai(*a);
-
-  anglePatchList.resize(0);
-  CPrintf("ComputeAtoms::mapReady() - Size of the anglePatchList %d\n",
-	anglePatchList.size());
-
-  for ( ai = ai.begin(); ai != ai.end(); ai++ ) {
-    anglePatchList.add(AnglePatchElem((*ai).p, HOME, cid));
-    CPrintf("ComputeAtoms::mapReady() - adding Patch %d to list\n",
-      (*ai).p->getPatchID() );
-  }
-
-  /* cycle through each patch */
-  CPrintf("ComputeAtoms::mapReady() - iterating over patches to get atoms\n");
-  for ( ai = ai.begin(); ai != ai.end(); ai++ )
-  {
-    Patch *p = (*ai).p;
-    CPrintf("ComputeAtoms::mapReady() - looking at patch %d\n", 
-      (*ai).p->getPatchID() );
-    AtomIDList &atomID = p->getAtomIDList();
-
-    /* cycle through each angle in the patch */
-    CPrintf("ComputeAtoms::mapReady() - patch has %d atoms\n", 
-      p->getNumAtoms() );
-    for (int i=0; i < p->getNumAtoms(); i++)
-    {
       /* get list of all angles for the atom */
-      LintList *angles = node->molecule->get_angles_for_atom(atomID[i]);
+      LintList *angles = molecule->get_angles_for_atom(atomID);
 
       /* cycle through each angle */
       int angleNum = angles->head();
       while(angleNum != LIST_EMPTY)
       {
         /* store angle in the list */
-        angleList.add(AngleElem(node->molecule->get_angle(angleNum)));
+        angleList.add(AngleElem(molecule->get_angle(angleNum)));
         angleNum = angles->next();
       }
-    }
-  }
-
-  // Resolve all atoms in angleList to correct PatchList element and index
-  ResizeArrayIter<AngleElem> al(angleList);
-
-  for (al = al.begin(); al != al.end(); al++ ) {
-    for (int i=0; i < 3; i++) {
-	LocalID aid = atomMap->localID((*al).atomID[i]);
-	(*al).p[i] = anglePatchList.find(AnglePatchElem(aid.pid));
-	(*al).localIndex[i] = aid.index;
-    }
-  }
 }
 
+BigReal angleForce (
+		const Position pos1, const Position pos2, const Position pos3,
+		Force *force1, Force *force2, Force *force3,
+		const Index angleType);
 
-void ComputeAngles::doWork() {
-  CPrintf("ComputeAngles::doWork() -- started\n");
-  // Open Boxes
-  ResizeArrayIter<AnglePatchElem> ap(anglePatchList);
-  for (ap = ap.begin(); ap != ap.end(); ap++) {
-    (*ap).x = (*ap).positionBox->open();
-    (*ap).f = (*ap).forceBox->open();
-  } 
-
-  // take triplet and pass with angle info to force eval
-  ResizeArrayIter<AngleElem> al(angleList);
-  for (al = al.begin(); al != al.end(); al++ ) {
-    // angleForce returns (BigReal)change in energy.  This must be used.
-    // can we optimize this by passing (*al) only?
-    angleForce((*al).p[0]->x[(*al).localIndex[0]],
-	       (*al).p[1]->x[(*al).localIndex[1]],
-	       (*al).p[2]->x[(*al).localIndex[2]],
-	       (*al).p[0]->f+(*al).localIndex[0],
-	       (*al).p[1]->f+(*al).localIndex[1],
-	       (*al).p[2]->f+(*al).localIndex[2],
-	       (*al).angleType);
-  }
-
-  for (ap = ap.begin(); ap != ap.end(); ap++) {
-    (*ap).positionBox->close(&(*ap).x);
-    (*ap).forceBox->close(&(*ap).f);
-  }
-  CPrintf("ComputeAngles::doWork() -- done\n");
+BigReal AngleElem::computeForce(void)
+{
+    return
+    angleForce(p[0]->x[localIndex[0]],
+	       p[1]->x[localIndex[1]],
+	       p[2]->x[localIndex[2]],
+	       p[0]->f+localIndex[0],
+	       p[1]->f+localIndex[1],
+	       p[2]->f+localIndex[2],
+	       angleType);
 }
 
 
@@ -156,7 +68,7 @@ void ComputeAngles::doWork() {
 /*	returns - energy from the angle					*/
 /*									*/
 /************************************************************************/
-BigReal ComputeAngles::angleForce	(
+BigReal angleForce (
 		const Position pos1, const Position pos2, const Position pos3,
 		Force *force1, Force *force2, Force *force3,
 		const Index angleType)

@@ -11,8 +11,8 @@
  *
  ***************************************************************************/
 
-#ifndef COMPUTEANGLE_H
-#define COMPUTEANGLE_H
+#ifndef COMPUTEHOMETUPLES_H
+#define COMPUTEHOMETUPLES_H
 
 #include "NamdTypes.h"
 #include "common.h"
@@ -101,12 +101,15 @@ public:
  *
  *	$RCSfile: ComputeHomeTuples.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/11/19 04:24:24 $
+ *	$Revision: 1.7 $	$Date: 1996/11/19 06:58:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.h,v $
+ * Revision 1.7  1996/11/19 06:58:37  jim
+ * first compiling templated version, needed ugly void* hack
+ *
  * Revision 1.6  1996/11/19 04:24:24  jim
  * first templated version as ComputeHomeTuples<T>
  *

@@ -14,63 +14,21 @@
 #ifndef COMPUTEANGLE_H
 #define COMPUTEANGLE_H
 
-/*
-
-from class Parameters
-void get_angle_params(Real *k, Real *theta0, Real *k_ub, Real *r_ub,
-			      Index index)
-{
-  *k = angle_array[index].k;
-  *theta0 = angle_array[index].theta0;
-  *k_ub = angle_array[index].k_ub;
-  *r_ub = angle_array[index].r_ub;
-}
-
-from structures.h
-
-typedef struct angle
-{
-    int atom1;
-    int atom2;
-    int atom3;
-    Index angle_type;
-} Angle;
-
-from Molecule.h
-    LintList *get_angles_for_atom(int anum)
-		{return (&(anglesByAtom[anum]));}
-
-
-   #include "LintList.h"
-   method in LintList
-   int head()
-   check for LIST_EMPTY
-   int next()
-   returns integer value stored
-*/
-
-
-#include "main.h"
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
-
-#include "NamdTypes.h"
-#include "common.h"
-#include "structures.h"
-#include "Compute.h"
-#include "Patch.h"
-
-#include "Templates/Box.h"
-#include "Templates/OwnerBox.h"
-
-class AnglePatchElem;
+#include "ComputeHomeTuples.h"
+class Molecule;
 
 class AngleElem {
 public:
-    AtomID atomID[3];
-    int    localIndex[3];
-    AnglePatchElem *p[3];
+    // ComputeHomeTuples interface
+    enum { size = 3 };
+    AtomID atomID[size];
+    int    localIndex[size];
+    TuplePatchElem *p[size];
+    BigReal computeForce(void);
+    // The following is evil, but the compiler chokes otherwise. (JCP)
+    static void addTuplesForAtom(void*, AtomID, Molecule*);
+
+    // Internal data
     Index angleType;
 
 
@@ -113,81 +71,10 @@ public:
   }
 };
 
-typedef UniqueSortedArray<AngleElem> AngleList;
-
-enum PatchType {HOME,PROXY};
-
-class AnglePatchElem {
-  public:
-    PatchID patchID;
-    Patch *p;
-    PatchType patchType;
-    Box<Patch,Position> *positionBox;
-    Box<Patch,Force> *forceBox;
-    Position *x;
-    Force *f;
-
-  AnglePatchElem() {
-    patchID = -1;
-    p = NULL;
-    positionBox = NULL;
-    forceBox = NULL;
-    x = NULL;
-    f = NULL;
-  }
-
-  AnglePatchElem(PatchID p) {
-    patchID = p;
-  }
-
-  AnglePatchElem(Patch *p, PatchType pt, ComputeID cid) {
-    patchID = p->getPatchID();
-    this->p = p;
-    patchType = pt;
-    positionBox = p->registerPositionPickup(cid);
-    forceBox = p->registerForceDeposit(cid);
-    x = NULL;
-    f = NULL;
-  }
-    
-  ~AnglePatchElem() {};
-
-  int operator==(const AnglePatchElem &a) const {
-    return (a.patchID == patchID);
-  }
-
-  int operator<(const AnglePatchElem &a) const {
-    return (patchID < a.patchID);
-  }
-};
-
-typedef UniqueSortedArray<AnglePatchElem> AnglePatchList;
-
-class AtomMap;
-
-class ComputeAngles : public Compute {
-private:
-  AngleList angleList;
-  AnglePatchList anglePatchList;
-
-  PatchMap *patchMap;
-  AtomMap *atomMap;
-
-  int maxProxyAtoms;
-  Force *dummy;
-  
-  BigReal angleForce(const Position p1, const Position p2, const Position p3,
-		  Force *f1, Force *f2, Force *f3,
-		    const Index angleType);
-
+class ComputeAngles : public ComputeHomeTuples<AngleElem>
+{
 public:
-  ComputeAngles(ComputeID c);
-  virtual ~ComputeAngles() {
-    delete [] dummy;
-  }
-
-  void mapReady();
-  void doWork();
+  ComputeAngles(ComputeID c) : ComputeHomeTuples<AngleElem>(c) { ; }
 };
 
 #endif
@@ -195,13 +82,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeAngles.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/11/18 21:28:48 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.6 $	$Date: 1996/11/19 06:58:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.h,v $
+ * Revision 1.6  1996/11/19 06:58:37  jim
+ * first compiling templated version, needed ugly void* hack
+ *
  * Revision 1.5  1996/11/18 21:28:48  ari
  * *** empty log message ***
  *
