@@ -25,7 +25,7 @@
 #include "pvmc.h"
 
 #define MIN_DEBUG_LEVEL 1
-// #define DEBUGM
+#define DEBUGM
 #include "Debug.h"
 
 extern Communicate *comm;
@@ -78,6 +78,8 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   PmtaInitData pmta_data;
   BigReal boxsize;	// Dimension of FMA cube
   Vector boxcenter;	// Center for FMA cube
+
+  timestep = 0;
 
   if (CMyPe() != 0)
   {
@@ -195,8 +197,15 @@ void ComputeDPMTA::doWork()
   ResizeArrayIter<PatchElem> ap(patchList);
   PmtaParticle *particle_list = NULL;
   BigReal patchEnergy=0;
+  SimParameters *simParameters = Node::Object()->simParameters;
+  int runFlag;	// determine whether it should really run
 
-  DebugM(1,"DPMTA doWork() started\n");
+  // 0. only run when necessary
+  runFlag = (timestep == 0);
+  timestep = (timestep+1) % simParameters->fmaFrequency;
+
+  DebugM(1,"DPMTA doWork() started at timestep "
+	<< (int)(simParameters->dt) << "\n");
 
   // setup
   // 1. get totalAtoms
@@ -218,8 +227,9 @@ void ComputeDPMTA::doWork()
     (*ap).a = (*ap).atomBox->open();
 
     // store each atom in the particle_list
-    for(j=0; j<(*ap).p->getNumAtoms(); j++)
-    {
+    if (runFlag)
+     for(j=0; j<(*ap).p->getNumAtoms(); j++)
+     {
       // explicitly copy -- two different data structures
       particle_list[i].p.x = (*ap).x[j].x;
       particle_list[i].p.y = (*ap).x[j].y;
@@ -232,14 +242,14 @@ void ComputeDPMTA::doWork()
 	     << " but " << i << " atoms are seen!\n" << endi;
 	NAMD_die("FMA: atom counts unequal!");
 	}
-    }
+     }
 
     (*ap).positionBox->close(&(*ap).x);
     (*ap).atomBox->close(&(*ap).a);
   } 
 
   // 3. (run DPMTA) compute the forces
-  if (PMTAforce(i, particle_list, fmaResults, NULL) <0)
+  if (runFlag && (PMTAforce(i, particle_list, fmaResults, NULL) <0))
     {
       NAMD_die("PMTAforce failed!!");
     }
@@ -251,14 +261,15 @@ void ComputeDPMTA::doWork()
 
     // deposit here
     i=0;
-    for(j=0; j<(*ap).p->getNumAtoms(); j++)
-    {
+    if (runFlag)
+     for(j=0; j<(*ap).p->getNumAtoms(); j++)
+     {
       (*ap).f[j].x += fmaResults[i].f.x;
       (*ap).f[j].y += fmaResults[i].f.y;
       (*ap).f[j].z += fmaResults[i].f.z;
       patchEnergy += fmaResults[i].v;
       i++;
-    }
+     }
 
     (*ap).forceBox->close(&(*ap).f);
   }

@@ -43,6 +43,8 @@ private:
   PmtaPartInfo *fmaResults;	//  Results from the PMTA code
   PmtaPartInfo *ljResults;	//  Results from the PMTA code
 
+  int timestep;		// local counter to determine when it should run
+
   void get_FMA_cube(BigReal *boxsize, Vector *boxcenter);
 
 public:
@@ -57,13 +59,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeDPMTA.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/02/21 20:45:11 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/02/27 20:01:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.h,v $
+ * Revision 1.1004  1997/02/27 20:01:43  nealk
+ * DPMTA no longer runs every timestep.
+ *
  * Revision 1.1003  1997/02/21 20:45:11  jim
  * Eliminated multiple function for switching and modified 1-4 interactions.
  * Now assumes a switching function, but parameters are such that nothing
