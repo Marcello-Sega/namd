@@ -11,7 +11,7 @@
  *
  *	$RCSfile: ComputeMap.h,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/16 20:43:53 $
+ *	$Revision: 1.2 $	$Date: 1996/08/16 21:41:11 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -20,6 +20,9 @@
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.h,v $
+ * Revision 1.2  1996/08/16 21:41:11  brunner
+ * *** empty log message ***
+ *
  * Revision 1.1  1996/08/16 20:43:53  brunner
  * Initial revision
  *
@@ -43,7 +46,7 @@ private:
   struct ComputeData
   {
     int node;
-    int patchBased;
+    Boolean patchBased;
     int numPids;
     int numPidsAllocated;
     PatchID *pids;

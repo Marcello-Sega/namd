@@ -25,6 +25,8 @@ class Parameters;
 class SimParameters;
 class ConfigList;
 class WorkDistrib;
+class PatchMap;
+class ComputeMap;
 
 class Node : public groupmember
 {
@@ -34,14 +36,18 @@ private:
   SimParameters *simParameters;
   ConfigList *configList;
 
-  WorkDistrib *workDistrb;
+  WorkDistrib *workDistrib;
 
 public:
+  PatchMap *patchMap;
+  ComputeMap *computeMap;
+
   // Charm Entry point - distributed contructor
   Node(NodeInitMsg *msg);
   ~Node(void);
 
   int myid(void);		   
+  int numNodes(void);		   
   
   // Charm Entry point - Read in system data, get all ready to simulate
   void startup(InitMsg *initmsg);  
@@ -57,12 +63,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/16 21:19:34 $
+ *	$Revision: 1.2 $	$Date: 1996/08/16 21:42:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.2  1996/08/16 21:42:58  brunner
+ * *** empty log message ***
+ *
  * Revision 1.1  1996/08/16 21:19:34  ari
  * Initial revision
  *

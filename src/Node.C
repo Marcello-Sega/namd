@@ -5,7 +5,13 @@
 /*                           All Rights Reserved                           */
 /*                                                                         */
 /***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1 1996/08/16 21:19:34 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.2 1996/08/16 21:42:29 brunner Exp $";
+
+#include <stdio.h>
+
+#include "ckdefs.h"
+#include "chare.h"
+#include "c++interface.h"
 
 #include "main.h"
 #include "main.top.h"
@@ -27,7 +33,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 
 Node::Node(NodeInitMsg *msg)
 {
-  workDistrib = CLocalBranch(WorkDistrib,msg->workdistrib_group);
+  workDistrib = CLocalBranch(WorkDistrib,msg->workDistribGroup);
 }
 
 //----------------------------------------------------------------------
@@ -48,7 +54,7 @@ void Node::startup(InitMsg *msg)
   CPrintf("Node %d startup\n",myid());
 
   workDistrib->parentNode(this);
-  workDistrib->doInitialDistrib();
+  workDistrib->buildMapsFromScratch();
 }
 
 
@@ -59,9 +65,14 @@ void Node::run(void)
   CPrintf("Node::run() - invoked\n");
 }
 
+int Node::numNodes(void)
+{
+  return CNumPes();
+}
+
 int Node::myid(void)
 {
-  return CmiMyPe();
+  return CMyPe();
 }
 
 //======================================================================
@@ -74,8 +85,8 @@ int Node::myid(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/16 21:19:34 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1996/08/16 21:42:29 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -84,6 +95,9 @@ int Node::myid(void)
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.2  1996/08/16 21:42:29  brunner
+ * *** empty log message ***
+ *
  * Revision 1.1  1996/08/16 21:19:34  ari
  * Initial revision
  *

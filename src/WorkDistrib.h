@@ -43,7 +43,7 @@ public:
   WorkDistrib(InitMsg *msg);
   ~WorkDistrib(void);
 
-  parentNode(Node *inode);
+  void parentNode(Node *inode);
 
   void buildMapsFromScratch(void); 
 };
@@ -54,13 +54,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/08/16 21:16:04 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.3 $	$Date: 1996/08/16 21:41:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.3  1996/08/16 21:41:11  brunner
+ * *** empty log message ***
+ *
  * Revision 1.2  1996/08/16 21:16:04  ari
  * *** empty log message ***
  *

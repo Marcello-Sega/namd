@@ -11,7 +11,9 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.2 1996/08/16 21:16:04 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.3 1996/08/16 21:41:11 brunner Exp $";
+
+#include <stdio.h>
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -40,7 +42,7 @@ WorkDistrib::~WorkDistrib(void)
 }
 
 //----------------------------------------------------------------------
-WorkDistrib::parentNode(Node *inode)
+void WorkDistrib::parentNode(Node *inode)
 {
   node = inode;
 }
@@ -102,8 +104,6 @@ void WorkDistrib::mapPatches(void)
 //----------------------------------------------------------------------
 void WorkDistrib::mapComputes(void)
 {
-  int i;
-  int xi, yi, zi;
   PatchMap *patchMap = node->patchMap;
   ComputeMap *computeMap = node->computeMap;
 
@@ -129,11 +129,12 @@ void WorkDistrib::mapAngleComputes()
   int i;
   PatchMap *patchMap = node->patchMap;
   ComputeMap *computeMap = node->computeMap;
+  int numNodes = node->numNodes();
 
   // Figure out where to put the angleForce objects, and hook up the
   // dependencies.
 
-  ComputeID cid[node->numNodes()];
+  ComputeID *cid = new ComputeID[numNodes];
 
   for(i=0; i<node->numNodes(); i++)
   {
@@ -147,7 +148,9 @@ void WorkDistrib::mapAngleComputes()
   {
     patchMap->newCid(j,cid[patchMap->node(j)]);
     computeMap->newPid(cid[patchMap->node(j)],j);
-  }    
+  }
+
+  delete cid;
 }
 
 //----------------------------------------------------------------------
@@ -213,13 +216,16 @@ void WorkDistrib::mapElectComputes(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/08/16 21:16:04 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.3 $	$Date: 1996/08/16 21:41:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.3  1996/08/16 21:41:11  brunner
+ * *** empty log message ***
+ *
  * Revision 1.2  1996/08/16 21:16:04  ari
  * *** empty log message ***
  *

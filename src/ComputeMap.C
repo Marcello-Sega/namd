@@ -11,7 +11,7 @@
  *
  *	$RCSfile: ComputeMap.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/16 20:43:53 $
+ *	$Revision: 1.2 $	$Date: 1996/08/16 21:41:11 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -20,6 +20,9 @@
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.C,v $
+ * Revision 1.2  1996/08/16 21:41:11  brunner
+ * *** empty log message ***
+ *
  * Revision 1.1  1996/08/16 20:43:53  brunner
  * Initial revision
  *
@@ -28,9 +31,11 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1 1996/08/16 20:43:53 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.2 1996/08/16 21:41:11 brunner Exp $";
 
 #include <stdlib.h>
+#include <stdio.h>
+
 #include "chare.h"
 #include "ckdefs.h"
 #include "c++interface.h"
@@ -91,6 +96,7 @@ int ComputeMap::isPatchBased(ComputeID cid)
 {
   if (computeData != NULL)
     return computeData[cid].patchBased;
+  else return -1;
 }
 
 //----------------------------------------------------------------------
@@ -98,6 +104,7 @@ int ComputeMap::isAtomBased(ComputeID cid)
 {
   if (computeData != NULL)
     return !computeData[cid].patchBased;
+  else return -1;
 }
 
 //----------------------------------------------------------------------
@@ -105,6 +112,7 @@ int ComputeMap::node(ComputeID cid)
 {
   if (computeData != NULL)
     return computeData[cid].node;
+  else return -1;
 }
 
 //----------------------------------------------------------------------
@@ -112,6 +120,7 @@ int ComputeMap::numPids(ComputeID cid)
 {
   if (computeData != NULL)
     return computeData[cid].numPids;
+  else return -1;
 }
 
 //----------------------------------------------------------------------
@@ -119,10 +128,11 @@ int ComputeMap::pid(ComputeID cid,int i)
 {
   if ((computeData != NULL) && (i < computeData[cid].numPids))
     return computeData[cid].pids[i];
+  else return -1;
 }
 
 //----------------------------------------------------------------------
-ComputeMap::allocateCids(int n)
+int ComputeMap::allocateCids(int n)
 {
   int i;
 
@@ -152,6 +162,7 @@ ComputeMap::allocateCids(int n)
     computeData[i].numPids=0;
     computeData[i].pids=NULL;
   }
+  return 0;
 }
 
 //----------------------------------------------------------------------
