@@ -17,7 +17,7 @@
 #include "ReductionMgr.h"
 
 #define MIN_DEBUG_LEVEL 4
-#define DEBUGM
+//#define DEBUGM
 #include "Debug.h"
 
 Controller::Controller(NamdState *s) :
@@ -66,7 +66,8 @@ void Controller::algorithm(void)
     const int numberOfCycles = this->numberOfCycles;
     const int stepsPerCycle = this->stepsPerCycle;
     const BigReal timestep = simParams->dt;
-    int step, cycle;
+    // int step;
+    int cycle;
     int seq = 0;
     BigReal bondEnergy;
     BigReal angleEnergy;
@@ -76,7 +77,7 @@ void Controller::algorithm(void)
     BigReal ljEnergy;
     BigReal kineticEnergy;
     BigReal totalEnergy;
-iout << "Starting...\n" << endi;
+    iout << iINFO << "Starting Controller...\n" << endi;
     reduction->require(seq, REDUCTION_BOND_ENERGY, bondEnergy);
     reduction->require(seq, REDUCTION_ANGLE_ENERGY, angleEnergy);
     reduction->require(seq, REDUCTION_DIHEDRAL_ENERGY, dihedralEnergy);

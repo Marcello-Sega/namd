@@ -6,7 +6,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.1001 1997/02/26 16:53:21 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.1002 1997/03/04 22:37:20 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -21,7 +21,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.
 #include "Inform.h"
 
 // Needed for namd.1.X components
-Communicate *comm = NULL;
+Communicate *comm = NULL; // Should be initialized in Node::node()
+
 Inform namdErr("ERROR");
 Inform namdWarn("Warning");
 Inform namdInfo("Info");
@@ -55,7 +56,7 @@ public:
  *
  *	$RCSfile: main.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/26 16:53:21 $
+ *	$Revision: 1.1002 $	$Date: 1997/03/04 22:37:20 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -64,6 +65,11 @@ public:
  * REVISION HISTORY:
  *
  * $Log: main.C,v $
+ * Revision 1.1002  1997/03/04 22:37:20  ari
+ * Clean up of code.  Debug statements removal, dead code removal.
+ * Minor fixes, output fixes.
+ * Commented some code from the top->down.  Mainly reworked Namd, Node, main.
+ *
  * Revision 1.1001  1997/02/26 16:53:21  ari
  * Cleaning and debuging for memory leaks.
  * Adding comments.

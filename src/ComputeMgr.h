@@ -19,6 +19,7 @@
 #include "chare.h"
 #include "c++interface.h"
 #include "main.h"
+#include "new.h"
 
 #include "NamdTypes.h"
 #include "BOCgroup.h"
@@ -41,8 +42,13 @@ private:
     ComputeID   cid;
     Compute *c;
 
-    void * operator new(size_t size) { return ::operator new(size); }	// new matched with delete
-    void operator delete(void* ptr) { ::operator delete(ptr); }		// delete matched with new
+    // new matched with delete
+    void * operator new(size_t size) { return ::operator new(size); }	
+    // placement new for use within containers
+    void * operator new(size_t size, void * ptr) { return ptr; }
+
+    // delete matched with new
+    void operator delete(void* ptr) { ::operator delete(ptr); }		
 
     operator<(ComputeElem e) { return (cid < e.cid); }
     operator==(ComputeElem e) { return (cid == e.cid); }
@@ -77,13 +83,18 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/14 19:07:31 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/03/04 22:37:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.h,v $
+ * Revision 1.1003  1997/03/04 22:37:09  ari
+ * Clean up of code.  Debug statements removal, dead code removal.
+ * Minor fixes, output fixes.
+ * Commented some code from the top->down.  Mainly reworked Namd, Node, main.
+ *
  * Revision 1.1002  1997/02/14 19:07:31  nealk
  * Added new/delete comments.
  * Played with DPMTA.

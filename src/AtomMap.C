@@ -7,7 +7,7 @@
 /***************************************************************************/
 
 /***************************************************************************
- * DESCRIPTION: Maps Atoms on node.  Singleton
+ * DESCRIPTION: Tracks location of Atoms on node.  Singleton.
  *
  ***************************************************************************/
 
@@ -22,8 +22,10 @@
 #include "Debug.h"
 
 
+// Singleton implementation
 AtomMap *AtomMap::_instance = 0;
 
+// Singleton method
 AtomMap *AtomMap::Instance() {
   if (_instance == 0) {
     _instance = new AtomMap;	// this is never deleted!
@@ -45,6 +47,7 @@ AtomMap::~AtomMap(void)
 }
 
 //----------------------------------------------------------------------
+// Creates fixed size table
 void AtomMap::allocateMap(int nAtomIds)
 {
   localIDTable = new LocalID[nAtomIds];
@@ -97,6 +100,7 @@ int AtomMap::registerIDs(PatchID pid, AtomIDList al)
 }
 
 //----------------------------------------------------------------------
+// resets map to notUsed condition
 void AtomMap::clearMap(void)
 {
   if (!cleared && localIDTable != NULL)
@@ -120,13 +124,18 @@ void AtomMap::print()
  * RCS INFORMATION:
  *
  *	$RCSfile: AtomMap.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/02/14 19:07:27 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1006 $	$Date: 1997/03/04 22:37:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: AtomMap.C,v $
+ * Revision 1.1006  1997/03/04 22:37:03  ari
+ * Clean up of code.  Debug statements removal, dead code removal.
+ * Minor fixes, output fixes.
+ * Commented some code from the top->down.  Mainly reworked Namd, Node, main.
+ *
  * Revision 1.1005  1997/02/14 19:07:27  nealk
  * Added new/delete comments.
  * Played with DPMTA.

@@ -50,7 +50,8 @@ private:
 };
 
 //----------------------------------------------------------------------
-
+// LocalID contains patch pid and local patch atom index
+// for a given global atom number
 inline LocalID AtomMap::localID(AtomID id)
 {
   return localIDTable[id];
@@ -63,12 +64,17 @@ inline LocalID AtomMap::localID(AtomID id)
  *
  *	$RCSfile: AtomMap.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/13 16:17:10 $
+ *	$Revision: 1.1003 $	$Date: 1997/03/04 22:37:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: AtomMap.h,v $
+ * Revision 1.1003  1997/03/04 22:37:03  ari
+ * Clean up of code.  Debug statements removal, dead code removal.
+ * Minor fixes, output fixes.
+ * Commented some code from the top->down.  Mainly reworked Namd, Node, main.
+ *
  * Revision 1.1002  1997/02/13 16:17:10  ari
  * Intermediate debuging commit - working to fix deep bug in migration?
  *

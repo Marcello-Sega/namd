@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1006 1997/02/28 16:13:52 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1007 1997/03/04 22:37:07 ari Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -26,8 +26,10 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.
 // #define DEBUGM 1
 #include "Debug.h"
 
+// Singleton implementation
 ComputeMap *ComputeMap::_instance = 0;
 
+// Singleton method
 ComputeMap *ComputeMap::Instance() {
   if (_instance == 0) {
     _instance = new ComputeMap;	// this is never deleted
@@ -292,13 +294,18 @@ void ComputeMap::printComputeMap(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/02/28 16:13:52 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1007 $	$Date: 1997/03/04 22:37:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.C,v $
+ * Revision 1.1007  1997/03/04 22:37:07  ari
+ * Clean up of code.  Debug statements removal, dead code removal.
+ * Minor fixes, output fixes.
+ * Commented some code from the top->down.  Mainly reworked Namd, Node, main.
+ *
  * Revision 1.1006  1997/02/28 16:13:52  nealk
  * Turned off debugging code.
  *

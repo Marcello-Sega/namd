@@ -1,12 +1,15 @@
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1996 The Board of Trustees of the            */
+/*              (C) Copyright 1996,1997 The Board of Trustees of the       */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*                                                                         */
 /***************************************************************************/
+/***************************************************************************
+ * DESCRIPTION: Namd() - launches BOC's Node, WorkDistrib, PatchMgr, ProxyMgr
+ *		ReductionMgr, CollectionMgr
+ *
+ ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.1000 1997/02/06 15:58:46 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.1001 1997/03/04 22:37:10 ari Exp $";
 
 #include "unistd.h"
 
@@ -100,13 +103,11 @@ void Namd::startup(char *confFile)
     CharmExit();
   }
 
-  // Give node[0] pointers to the data objects, so it can use them,
+  // Give our node[PE = 0] pointers to the data objects, so it can use them,
   // or send them on as messages elsewhere.
-  Node::Object()->saveMolDataPointers(namdState.molecule,namdState.parameters,
-			    namdState.simParameters,namdState.configList,
-			    namdState.pdb,&namdState);
+  Node::Object()->saveMolDataPointers(&namdState);
 
-  Node::messageStartup();
+  Node::messageStartup(); // tell all nodes to startup
 }
 
 
@@ -116,15 +117,17 @@ void Namd::startup(char *confFile)
  *
  *	$RCSfile: Namd.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:46 $
- *
- ***************************************************************************
- * DESCRIPTION:
+ *	$Revision: 1.1001 $	$Date: 1997/03/04 22:37:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Namd.C,v $
+ * Revision 1.1001  1997/03/04 22:37:10  ari
+ * Clean up of code.  Debug statements removal, dead code removal.
+ * Minor fixes, output fixes.
+ * Commented some code from the top->down.  Mainly reworked Namd, Node, main.
+ *
  * Revision 1.1000  1997/02/06 15:58:46  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

@@ -6,6 +6,10 @@
 /*                           All Rights Reserved                           */
 /*									   */
 /***************************************************************************/
+/***************************************************************************
+ * DESCRIPTION:
+ *
+ ***************************************************************************/
 
 #ifndef _NAMDSTATE_H
 #define _NAMDSTATE_H
@@ -23,6 +27,7 @@ class PDB;
 // I hope it encapsulates a namd state.  
 class NamdState {
   friend class Namd; 
+  friend class Node;
   private:
     Molecule *molecule;
     Parameters *parameters;
@@ -47,15 +52,17 @@ class NamdState {
  *
  *	$RCSfile: NamdState.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/11 18:51:49 $
- *
- ***************************************************************************
- * DESCRIPTION:
+ *	$Revision: 1.1002 $	$Date: 1997/03/04 22:37:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdState.h,v $
+ * Revision 1.1002  1997/03/04 22:37:13  ari
+ * Clean up of code.  Debug statements removal, dead code removal.
+ * Minor fixes, output fixes.
+ * Commented some code from the top->down.  Mainly reworked Namd, Node, main.
+ *
  * Revision 1.1001  1997/02/11 18:51:49  ari
  * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
  * fixed non-buffering of migration msgs

@@ -11,7 +11,7 @@
  *
  *	$RCSfile: SimParameters.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:59:20 $
+ *	$Revision: 1.1001 $	$Date: 1997/03/04 22:37:18 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,11 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1001  1997/03/04 22:37:18  ari
+ * Clean up of code.  Debug statements removal, dead code removal.
+ * Minor fixes, output fixes.
+ * Commented some code from the top->down.  Mainly reworked Namd, Node, main.
+ *
  * Revision 1.1000  1997/02/06 15:59:20  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
@@ -312,7 +317,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1000 1997/02/06 15:59:20 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1001 1997/03/04 22:37:18 ari Exp $";
 
 
 #include "ckdefs.h"
@@ -372,8 +377,6 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    daOnDist = 5.5;
    daOffDist = 6.5;
    
-iout << "called initialize config-data\n" << endi;
-
    //  So first we set up the ParseOptions objects so that it will check
    //  all of the logical rules that the configuration file must follow.
 

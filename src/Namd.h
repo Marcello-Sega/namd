@@ -1,11 +1,13 @@
 //-*-c++-*-
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1996 The Board of Trustees of the            */
+/*              (C) Copyright 1996,1997 The Board of Trustees of the       */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*									   */
 /***************************************************************************/
+/***************************************************************************
+ * DESCRIPTION: Used with single instance owned by main()
+ *
+ ***************************************************************************/
 
 #ifndef _NAMD_H
 #define _NAMD_H
@@ -18,22 +20,26 @@
 
 class Node;
 
-class Namd
-{
-
+class Namd {
 public:
-    // Constructor for startup node
+  // Constructor for startup node
   Namd(void);             
-    // Shut down slaves and clean up
+
+  // Shut down slaves and clean up
   ~Namd();                
-    // read in various input files by invoking
-    // proper classes (parameters, molecule etc)
+
+  // read in various input files by invoking
+  // proper classes (parameters, molecule etc)
   void startup(char *);   
+
+  // last call of system
   static void finishup(void) { 
-    CPrintf("We're Outta Here\n"); 
+    CPrintf("==========================================\n");
     CPrintf("WallClock : %f  CPUTime : %f \n", CmiWallTimer(), CmiCpuTimer());
     CharmExit(); 
   }
+
+  // Emergency bailout 
   static void die() { abort(); CharmExit(); }
 
 private:
@@ -52,15 +58,17 @@ private:
  *
  *	$RCSfile: Namd.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/13 23:17:18 $
- *
- ***************************************************************************
- * DESCRIPTION:
+ *	$Revision: 1.1003 $	$Date: 1997/03/04 22:37:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Namd.h,v $
+ * Revision 1.1003  1997/03/04 22:37:11  ari
+ * Clean up of code.  Debug statements removal, dead code removal.
+ * Minor fixes, output fixes.
+ * Commented some code from the top->down.  Mainly reworked Namd, Node, main.
+ *
  * Revision 1.1002  1997/02/13 23:17:18  ari
  * Fixed a final bug in AtomMigration - numatoms in ComputePatchPair.C not
  * set correctly in atomUpdate()

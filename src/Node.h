@@ -1,17 +1,14 @@
 //-*-c++-*-
-//-*-c++-*-
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1996 The Board of Trustees of the            */
+/*              (C) Copyright 1996,1997 The Board of Trustees of the       */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*									   */
 /***************************************************************************/
-
-/***************************************************************************/
-/* DESCRIPTION:							           */	
-/*									   */
-/***************************************************************************/
+/***************************************************************************
+ * DESCRIPTION: Master BOC.  coordinates startup, close down of each PE
+ *		Also owns pointers to common objects needed by system		
+ *		Many utility static methods are owned by Node.
+ ***************************************************************************/
 
 #ifndef _NODE_H
 #define _NODE_H
@@ -81,9 +78,7 @@ public:
   void awaitBOCCheckIn();
 
   // Utility for storing away simulation data for Node
-  void saveMolDataPointers(Molecule *, Parameters *,
-			   SimParameters *, ConfigList *,
-			   PDB *, NamdState *);
+  void saveMolDataPointers(NamdState *);
 
 
   // NAMD 1.X molecule database objects - must be public for now
@@ -98,14 +93,6 @@ public:
   // Remove these calls?
   int myid() { return CMyPe(); }
   int numNodes() { return CNumPes(); }
-
-  // Debugging
-  void throwSequencer() {
-    if (!--numSequencer) { 
-      numSequencer = numHomePatchesRunning;
-      CPrintf("###### Sequencer throw caught on %d expecting %d\n", CMyPe(), numHomePatchesRunning);
-    }
-  }
 
 protected:
   // Map Databases - they have a singleton this access method ::Object()
@@ -129,9 +116,6 @@ private:
 
   // Countdown for Node::nodeDone termination
   int numNodesRunning;
-
-  // Countdown for Node::throwSequencer
-  int numSequencer;
 };
 
 #endif /* _NODE_H */
@@ -141,12 +125,17 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/13 16:17:17 $
+ *	$Revision: 1.1003 $	$Date: 1997/03/04 22:37:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.1003  1997/03/04 22:37:15  ari
+ * Clean up of code.  Debug statements removal, dead code removal.
+ * Minor fixes, output fixes.
+ * Commented some code from the top->down.  Mainly reworked Namd, Node, main.
+ *
  * Revision 1.1002  1997/02/13 16:17:17  ari
  * Intermediate debuging commit - working to fix deep bug in migration?
  *

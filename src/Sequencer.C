@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1009 1997/02/28 04:47:13 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1010 1997/03/04 22:37:17 ari Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -23,8 +23,6 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C
 #define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
 #include "Debug.h"
-
-#define MIGRATION 1
 
 Sequencer::Sequencer(HomePatch *p) :
 	patch(p),
@@ -41,37 +39,48 @@ Sequencer::~Sequencer(void)
     reduction->unRegister(REDUCTION_KINETIC_ENERGY);
 }
 
+// Invoked by thread
 void Sequencer::threadRun(Sequencer* arg)
 {
     arg->algorithm();
 }
 
+// Invoked by Node::run() via HomePatch::runSequencer()
 void Sequencer::run(int numberOfCycles)
 {
     stepsPerCycle = simParams->stepsPerCycle;
     threadStatus = SUSPENDED;
-    if ( numberOfCycles ) this->numberOfCycles = numberOfCycles;
-    else this->numberOfCycles = simParams->N; // / stepsPerCycle;
+    if ( numberOfCycles ) 
+      this->numberOfCycles = numberOfCycles;
+    else 
+      this->numberOfCycles = simParams->N; // / stepsPerCycle;
+
+    // create a Thread and invoke it
     thread = CthCreate((CthVoidFn)&(threadRun),(void*)(this),0);
     CthSetStrategyDefault(thread);
     awaken();
 }
 
+// Defines sequence of operations on a patch.  e.g. when
+// to push out information for Compute objects to consume
+// when to migrate atoms, when to add forces to velocity update.
 void Sequencer::algorithm(void)
 {
-    patch->flags.doFullElectrostatics =
-	( simParams->fullDirectOn || simParams->FMAOn );
+    int step, cycle=-1;	// cycle is unused!
+    int seq = 0; // internal timestep
+
     const int numberOfCycles = this->numberOfCycles;
     const int stepsPerCycle = this->stepsPerCycle;
     const BigReal timestep = simParams->dt;
-    int step, cycle=-1;	// cycle is unused!
-    int seq = 0;
-    // threadStatus = NOTSUSPENDED;
+
+    // Do we do full electrostatics?
+    patch->flags.doFullElectrostatics =
+	( simParams->fullDirectOn || simParams->FMAOn );
+
+    // Push out inital positions
     patch->positionsReady();
-    // if (threadStatus != AWAKENED)
-//	{
-	suspend();
-//	}
+    suspend(); // until all deposit boxes close
+
     DebugM(4,"Submit seq=" << seq << " Patch=" << patch->getPatchID() << "\n");
     reduction->submit(seq,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
     collection->submitPositions(seq,patch->atomIDList,patch->p);
@@ -79,41 +88,24 @@ void Sequencer::algorithm(void)
     ++seq;
     for ( step = 0; step < numberOfCycles; ++step )
     {
-	// DebugM(4,"Cycle #" << step << "\n");
-        // for ( step = 0; step < stepsPerCycle; ++step )
-        // {
-            patch->addForceToMomentum(0.5*timestep);
-            patch->addVelocityToPosition(timestep);
-	    DebugM(4, patch->getPatchID()
-		<< ": (" << cycle << "," << step << ") "
-		<< "Sending positionsReady().\n");
-	    threadStatus = NOTSUSPENDED;
-#if MIGRATION	// defined at the top of the file
-            patch->positionsReady(!(step%stepsPerCycle));
-#else
-            patch->positionsReady(0);
-#endif
-            //Node::Object()->throwSequencer();
-	    DebugM(4, patch->getPatchID()
-		<< ": (" << cycle << "," << step << ") "
-		<< "Suspending " << CthSelf() << " @" << CmiTimer() << "\n");
-//	    if (threadStatus != AWAKENED)
-//		{
-		suspend();
-//		}
-	    DebugM(4, patch->getPatchID()
-		<< ": (" << cycle << "," << step << ") "
-		<< "Awakened!\n");
-            patch->addForceToMomentum(0.5*timestep);
-	    DebugM(4,"Submit seq=" << seq << " Patch=" << patch->getPatchID() << "\n");
-	    reduction->submit(seq, REDUCTION_KINETIC_ENERGY,
-		patch->calcKineticEnergy());
-	    collection->submitPositions(seq,patch->atomIDList,patch->p);
-	    collection->submitVelocities(seq,patch->atomIDList,patch->v);
-	    ++seq;
-        // }
+	patch->addForceToMomentum(0.5*timestep);
+	patch->addVelocityToPosition(timestep);
+	threadStatus = NOTSUSPENDED;
+
+	// Migrate Atoms on stepsPerCycle
+	patch->positionsReady(!(step%stepsPerCycle));
+	suspend(); // until all Force deposit boxes close
+
+	patch->addForceToMomentum(0.5*timestep);
+
+	// Pass up information from this Patch
+	DebugM(4,"Submit seq=" <<seq<<" Patch="<<patch->getPatchID()<<"\n");
+	reduction->submit(seq, REDUCTION_KINETIC_ENERGY,
+	    patch->calcKineticEnergy());
+	collection->submitPositions(seq,patch->atomIDList,patch->p);
+	collection->submitVelocities(seq,patch->atomIDList,patch->v);
+	++seq;
     }
-    DebugM(4, patch->getPatchID() << ": Exiting.\n");
     terminate();
 }
 
@@ -128,13 +120,18 @@ Sequencer::terminate() {
  * RCS INFORMATION:
  *
  *      $RCSfile: Sequencer.C,v $
- *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1009 $     $Date: 1997/02/28 04:47:13 $
+ *      $Author: ari $  $Locker:  $             $State: Exp $
+ *      $Revision: 1.1010 $     $Date: 1997/03/04 22:37:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1010  1997/03/04 22:37:17  ari
+ * Clean up of code.  Debug statements removal, dead code removal.
+ * Minor fixes, output fixes.
+ * Commented some code from the top->down.  Mainly reworked Namd, Node, main.
+ *
  * Revision 1.1009  1997/02/28 04:47:13  jim
  * Full electrostatics now works with fulldirect on one node.
  *

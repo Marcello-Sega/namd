@@ -11,7 +11,7 @@
  *
  *	$RCSfile: ParseOptions.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/11 18:51:51 $
+ *	$Revision: 1.1002 $	$Date: 1997/03/04 22:37:16 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -22,6 +22,11 @@
  * REVISION HISTORY:
  *
  * $Log: ParseOptions.C,v $
+ * Revision 1.1002  1997/03/04 22:37:16  ari
+ * Clean up of code.  Debug statements removal, dead code removal.
+ * Minor fixes, output fixes.
+ * Commented some code from the top->down.  Mainly reworked Namd, Node, main.
+ *
  * Revision 1.1001  1997/02/11 18:51:51  ari
  * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
  * fixed non-buffering of migration msgs
@@ -75,7 +80,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ParseOptions.C,v 1.1001 1997/02/11 18:51:51 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ParseOptions.C,v 1.1002 1997/03/04 22:37:16 ari Exp $";
 // set the list of parameters
 #include <libc.h>
 #include <iostream.h>
@@ -341,7 +346,7 @@ int ParseOptions::fctnname(const char *parent, const char *newname,   \
    DataElement *tmp = new DataElement(newname, parent, optional, msg, \
 				      ptr, defalt);                   \
    if (!make_dependencies(tmp)) {                                     \
-      iout << iERROR << "ParseOption '" << newname << "' already exists" << endi; \
+      iout << iERROR << "ParseOption '" << newname << "' already exists" << "\n" << endi; \
       return FALSE;                                                   \
    }                                                                  \
    add_element(tmp);                                                  \
@@ -355,7 +360,7 @@ int ParseOptions::fctnname(const char *parent, const char *newname,   \
    DataElement *tmp = new DataElement(newname, parent, optional, msg, \
 				      ptr);                           \
    if (!make_dependencies(tmp)) {                                     \
-      iout << iERROR << "ParseOption '" << newname << "' already exists" << endi; \
+      iout << iERROR << "ParseOption '" << newname << "' already exists" << "\n" << endi; \
       return FALSE;                                                   \
    }                                                                  \
    add_element(tmp);                                                  \
@@ -395,7 +400,7 @@ int ParseOptions::fctn(const char *parent, const char *newname, \
    DataElement *tmp = new DataElement(newname, parent, xxx, msg,             \
 				      ptr, many_allowed);                    \
    if (!make_dependencies(tmp)) {                                            \
-      iout << iERROR << "ParseOption '" << newname << "' already exists" << endi;\
+      iout << iERROR << "ParseOption '" << newname << "' already exists" << "\n" << endi;\
       return FALSE;                                                          \
    }                                                                         \
    add_element(tmp);                                                         \
@@ -436,9 +441,9 @@ Bool ParseOptions::check_consistancy(void) {
 	 if (!data_array[i]->parent_ptr) {
 	    // missing a parent
 	    iout << iERROR << "Configuration element '" << data_array[i]->name
-		    << "' defined, but the parent element" << endi;
+		    << "' defined, but the parent element" << "\n" << endi;
 	    iout << iERROR << "  '" << data_array[i]->parent << "' is nowhere "
-		    << "to be found" << endi;
+		    << "to be found" << "\n" << endi;
 	    has_error = TRUE;
 	 }
       }
@@ -452,7 +457,7 @@ Bool ParseOptions::check_consistancy(void) {
    }
    if (!check_children(0, arr)) {
       // a loop was found
-      iout << iERROR << "Loop found in ParseOptions data" << endi;
+      iout << iERROR << "Loop found in ParseOptions data" << "\n" << endi;
       delete [] arr;
       return 0;
    }
@@ -464,13 +469,15 @@ Bool ParseOptions::check_consistancy(void) {
 	 if (arr[i] == 0) {
 	    // found an inaccesible element
 	    if (has_error == FALSE) { // first time, so print message
-	       iout << iERROR << "Found data in ParseOptions which are inaccessible "
-		       << "to" << endi;
-	       iout << iERROR << "the main data heirarchy.  Errors in:" << endi;
+	       iout << iERROR 
+		   << "Found data in ParseOptions which are inaccessible "
+		   << "to" << "\n" << endi;
+	       iout << iERROR 
+		  << "the main data heirarchy.  Errors in:" << "\n" << endi;
 	       has_error = TRUE;
 	    }
 	    iout << iERROR << "   '" << data_array[i]->name << "' depends on '"
-		    << data_array[i]->parent << "'" << endi;
+		    << data_array[i]->parent << "'" << "\n" << endi;
 	 }
       }
       if (has_error) {
@@ -531,14 +538,14 @@ Bool ParseOptions::scan_float(DataElement *data, const char *s)
       if (u == UNITS_UNDEFINED) {
 	 iout << iERROR << "Could not understand units '" << units_str
 		 << "' in option '" << data->name << " = " << s
-                 << endi;
+                 << "\n" << endi;
 	 return FALSE;
       }
       BigReal scale = convert(data->units, u);
       if (scale == 0) {
 	 iout << iERROR << "Could not translate from units '" << string(u) 
 	         << "' to '" << string(data->units) << "' for option '"
-                 << data->name << "'" << endi;
+                 << data->name << "'" << "\n" << endi;
 	 return FALSE;
       }
 //      cout << "fval == " << fval << "  scale == " << scale << endl;
@@ -547,12 +554,12 @@ Bool ParseOptions::scan_float(DataElement *data, const char *s)
    }
    if (count <=0) {  // not enough
       iout << iERROR << "Expecting value and optional units for option '"
-              << data->name << "'" << endi;
+              << data->name << "'" << "\n" << endi;
    }
    if (count > 2) {  // too many
       iout << iERROR << "Too much information given to '" << data -> name 
-      << " = " <<  s << "'" << endi;
-      iout << iERROR << "  - expecting a value and optional units" << endi;
+      << " = " <<  s << "'" << "\n" << endi;
+      iout << iERROR << "  - expecting a value and optional units" << "\n" << endi;
    }
    return FALSE;
 }
@@ -562,9 +569,9 @@ Bool ParseOptions::scan_vector(DataElement *data, const char *s)
 {
    Vector v;
    if (!v.set(s)) {
-      iout << iERROR << "Could not translate the value '" << s << "'" << endi;
+      iout << iERROR << "Could not translate the value '" << s << "'" << "\n" << endi;
       iout << iERROR << "  into a Vector for the option '" << data->name << "'"
-              << endi;
+              << "\n" << endi;
       return FALSE;
    }
    data->vdata = v;
@@ -584,7 +591,7 @@ Bool ParseOptions::scan_int(DataElement *data, const char *s)
       return TRUE;
    }
    iout << iERROR << "Expecting only a number for '" << data->name
-	   << "' input, got: " << s << endi;
+	   << "' input, got: " << s << "\n" << endi;
    return FALSE;
 }
 
@@ -601,7 +608,7 @@ Bool ParseOptions::scan_uint(DataElement *data, const char *s)
       return TRUE;
    }
    iout << iERROR << "Expecting only a number for '" << data->name
-	   << "' input, got: " << s << endi;
+	   << "' input, got: " << s << "\n" << endi;
    return FALSE;
 }
    
@@ -612,8 +619,8 @@ Bool ParseOptions::scan_bool(DataElement *data, const char *s)
    if (tmp == -1) 
    {
   	iout << iERROR << "ParseOptions can't understand '" << s << "' for the "
-	        << endi;
-  	iout << iERROR << " Boolean variable '" << data->name << "'"  << endi;
+	        << "\n" << endi;
+  	iout << iERROR << " Boolean variable '" << data->name << "'"  << "\n" << endi;
 
   	data->idata = FALSE;
 
@@ -640,7 +647,7 @@ int ParseOptions::set_##type(DataElement *el)            \
    }                                                     \
    iout << iERROR << "'" << el->name << "' was set to " << el->field << " but it " \
 	   << "should be " << string(el->range)          \
-	   << endi;      \
+	   << "\n" << endi;      \
    return 0;                \
 }
 set_macro(float, fdata, fptr);
@@ -716,8 +723,8 @@ Bool ParseOptions::set(const ConfigList& clist)
 	       // multiple strings)
 	       if (!data->many_allowed && slptr->next != NULL) 
 	       {
-		  iout << iERROR << "Multiple definitions of '" << data->name << "'" << endi;
-  		  iout << iERROR << "  in the configuration file are not allowed" << endi;
+		  iout << iERROR << "Multiple definitions of '" << data->name << "'" << "\n" << endi;
+  		  iout << iERROR << "  in the configuration file are not allowed" << "\n" << endi;
   		  has_error = TRUE;
                }
 
@@ -757,7 +764,7 @@ Bool ParseOptions::set(const ConfigList& clist)
 	       else 
 	       {
 		  iout << iERROR << "Unknown ParseOption data type " << data->type << " for "
-			  << "variable " << data->name << endi;
+			  << "variable " << data->name << "\n" << endi;
 	       }
 	    } 
 	    else 
@@ -786,7 +793,7 @@ Bool ParseOptions::set(const ConfigList& clist)
 		  else 
 		  {
    			iout << iERROR << "Unknown ParseOption data type " << data->type << " for "
-				<< "variable " << data->name << endi;
+				<< "variable " << data->name << "\n" << endi;
 		  }
 	       }
 	    }
@@ -799,15 +806,15 @@ Bool ParseOptions::set(const ConfigList& clist)
 	       if (!data->is_optional) 
 	       { // it is it required
 		  has_error = TRUE;
-		  iout << iERROR << "'" << data->name << "' is a required configuration option" << endi;
+		  iout << iERROR << "'" << data->name << "' is a required configuration option" << "\n" << endi;
 
   		  // print some helpful information if this isn't a "main" option
                   if (data->parent_ptr != data_array[0]) 
 		  {
-			iout << iERROR << "  when '" << data->parent_ptr -> name << "' is set" << endi;
+			iout << iERROR << "  when '" << data->parent_ptr -> name << "' is set" << "\n" << endi;
                   }  // printed parent info
 
-  		  iout << iERROR << data->name << " defines:   " << data->error_message << endi;
+  		  iout << iERROR << data->name << " defines:   " << data->error_message << "\n" << endi;
 
 	       }  // printed error message
 	    }  
@@ -876,10 +883,13 @@ Bool ParseOptions::set(const ConfigList& clist)
 	    if (clist.find(data->name)) {
 	       if (flg == 0) {
 		  flg = 1;
- iout << iWARN << "Following are the variables which were set in the " << endi;
- iout << iWARN << "configuation file but were not needed" << endi;
+                  iout << iWARN 
+		    << "Following are the variables which were set in the " 
+		    << "\n" << endi; 
+		  iout << iWARN 
+		    << "configuation file but were not needed" << "\n" << endi;
 	       }
-	       iout << iWARN << "   " << data->name << endi;
+	       iout << iWARN << "   " << data->name << "\n" << endi;
 	    }
 	 }
       }
@@ -893,11 +903,13 @@ Bool ParseOptions::set(const ConfigList& clist)
 	 if (!exists(ptr -> name)) {
 	    if (flg == 0) {
 	       flg = 1;
- iout << iWARN << "Following are the variables which were set in the "
-	  << endi;
- iout << iWARN << "configuration file but which are NOT VALID" << endi;
+               iout << iWARN 
+		  << "Following are the variables which were set in the\n"
+	          << endi;
+               iout << iWARN 
+		  << "configuration file but which are NOT VALID\n" << endi;
 	    }
-	    iout << iWARN << "   " << ptr -> name << endi;
+	    iout << iWARN << "   " << ptr -> name << "\n" << endi;
 	 }
       }
    }
@@ -950,8 +962,9 @@ Bool ParseOptions::get(const char* name, int *val) {
    }
    switch (el->type) {
     case DataElement::FLOAT :
-      iout << iWARN << "ParseOptions doing a conversion from float to int for '"
-	       << name << "'" << endi;
+      iout << iWARN 
+	 << "ParseOptions doing a conversion from float to int for '"
+	 << name << "'" << "\n" << endi;
       *val = (int) el->fdata;
       return TRUE;
     case DataElement::INT:
@@ -960,17 +973,20 @@ Bool ParseOptions::get(const char* name, int *val) {
       return TRUE;
     case DataElement::STRINGLIST :
     case DataElement::STRING :
-      iout << iWARN << "ParseOptions doing a conversion from StringList[0] to int "
-	       << "for '" << name << "'" << endi;
+      iout << iWARN 
+	 << "ParseOptions doing a conversion from StringList[0] to int "
+	 << "for '" << name << "'" << "\n" << endi;
       *val = atoi(el->sldata->data);
       return TRUE;
     case DataElement::VECTOR :
-       iout << iERROR << "ParseOptions cannot convert from Vector to int for '"
-               << name << "'" << endi;
+       iout << iERROR 
+	  << "ParseOptions cannot convert from Vector to int for '"
+          << name << "'" << "\n" << endi;
        return FALSE;
     default:
-      iout << iERROR << "Unknown data type " << el->type << " for '" << name << "'"
-	      << endi;
+      iout << iERROR 
+	 << "Unknown data type " << el->type << " for '" << name << "'"
+	 << "\n" << endi;
    }
    return FALSE;
 }
@@ -986,28 +1002,33 @@ Bool ParseOptions::get(const char* name, BigReal *val) {
       *val =  el->fdata;
       return TRUE;
     case DataElement::INT:
-      iout << iWARN << "ParseOptions doing a conversion from int to float '"
-	       << name << "'" << endi;
+      iout << iWARN 
+	 << "ParseOptions doing a conversion from int to float '"
+	 << name << "'" << "\n" << endi;
       *val = (BigReal) el->idata;
       return TRUE;
     case DataElement::BOOL:
-      iout << iWARN << "ParseOptions doing a conversion from boolean to float for '"
-	       << name << "'" << endi;
+      iout << iWARN 
+	 << "ParseOptions doing a conversion from boolean to float for '"
+	 << name << "'" << "\n" << endi;
       *val = (BigReal) el->idata;
       return TRUE;
     case DataElement::STRING:
     case DataElement::STRINGLIST:
-     iout << iWARN << "ParseOptions doing a conversion from StringList[0] to float "
-	       << "for '" << name << "'" << endi;
+     iout << iWARN 
+	<< "ParseOptions doing a conversion from StringList[0] to float "
+        << "for '" << name << "'" << "\n" << endi;
       *val = atof(el->sldata->data);
       return TRUE;
     case DataElement::VECTOR :
-       iout << iERROR << "ParseOptions cannot convert from Vector to float for '"
-               << name << "'" << endi;
+       iout << iERROR 
+	  << "ParseOptions cannot convert from Vector to float for '"
+          << name << "'" << "\n" << endi;
        return FALSE;
     default:
-      iout << iERROR << "Unknown data type " << el->type << " for '" << name << "'"
-	      << endi;
+      iout << iERROR 
+	 << "Unknown data type " << el->type << " for '" << name << "'"
+	 << "\n" << endi;
    }
    return FALSE;
 }
@@ -1019,21 +1040,25 @@ Bool ParseOptions::get(const char *name, Vector *val) {
    }
    switch (el -> type) {
     case DataElement::FLOAT:
-      iout << iERROR << "ParseOptions cannot convert from float to Vector for '"
-              << name << "'" << endi;
+      iout << iERROR 
+	 << "ParseOptions cannot convert from float to Vector for '"
+         << name << "'" << "\n" << endi;
       return FALSE;
     case DataElement::INT:
-      iout << iERROR << "ParseOptions cannot convert from int to Vector for '"
-              << name << "'" << endi;
+      iout << iERROR 
+	 << "ParseOptions cannot convert from int to Vector for '"
+         << name << "'" << "\n" << endi;
       return FALSE;
     case DataElement::STRING:
     case DataElement::STRINGLIST:{
-      iout << iWARN << "ParseOptions doing a conversion from StringList[0] to "
-               << "Vector for '" << name << "'" << endi;
+      iout << iWARN 
+	 << "ParseOptions doing a conversion from StringList[0] to "
+         << "Vector for '" << name << "'" << "\n" << endi;
       Vector v;
       if (!v.set(el->sldata->data)) {
-	 iout << iERROR << "Could not convert '" << el->sldata->data
-	         << "' to a Vector";
+	 iout << iERROR 
+	    << "Could not convert '" << el->sldata->data
+	    << "' to a Vector";
          return FALSE;
       }
       *val = v;
@@ -1043,8 +1068,9 @@ Bool ParseOptions::get(const char *name, Vector *val) {
       *val = el->vdata;
       return TRUE;
     default:
-      iout << iERROR << "Unknown data type " << el->type << " for '" << name << "'"
-	      << endi;
+      iout << iERROR 
+	 << "Unknown data type " << el->type << " for '" << name << "'"
+	 << "\n" << endi;
 
    }
    return FALSE;
@@ -1108,8 +1134,9 @@ void ParseOptions::range(const char *name, Range newrange)
 {
    DataElement *el = internal_find(name);
    if (!el) {
-      iout << iERROR << "Trying to set the range of undefined variable '"
-	      << name << "'" << endi;
+      iout << iERROR 
+	 << "Trying to set the range of undefined variable '"
+	 << name << "'" << "\n" << endi;
       return;
    }
    el->range = newrange;
@@ -1119,8 +1146,9 @@ Range ParseOptions::range(const char *name)
 {
    DataElement *el = internal_find(name);
    if (!el) {
-      iout << iERROR << "Trying to get the range of undefined variable '"
-	      << name << "'" << endi;
+      iout << iERROR 
+	 << "Trying to get the range of undefined variable '"
+	 << name << "'" << "\n" << endi;
       return FREE_RANGE;
    }
    return el->range;
@@ -1131,14 +1159,16 @@ Bool ParseOptions::units(const char *name, Units units)  // get
 {
   DataElement *tmp = internal_find(name);
   if (!tmp) {
-     iout << iERROR << name << " not found so units not set" << endi;
+     iout << iERROR 
+	<< name << " not found so units not set" << "\n" << endi;
      return FALSE;
   }
   if ((tmp -> type == DataElement::INT && units != UNIT) ||
       (tmp -> type != DataElement::INT && 
        tmp -> type != DataElement::FLOAT)) {
-     iout << iERROR << "Cannot set units '" << string(units) << "' for option '"
-     << name << "'; wrong data type" << endi;
+     iout << iERROR 
+	<< "Cannot set units '" << string(units) << "' for option '"
+        << name << "'; wrong data type" << "\n" << endi;
      return FALSE;
   }
   tmp -> units = units;
@@ -1150,14 +1180,16 @@ Bool ParseOptions::units(const char *name, Units *units) // set
    DataElement *tmp = internal_find(name);
    *units = UNIT;
    if (!tmp) {
-      iout << iERROR << "'" << name << "' doesn't exist so cannot get its units"
-               << endi;
+      iout << iERROR 
+	 << "'" << name << "' doesn't exist so cannot get its units"
+         << "\n" << endi;
       return FALSE;
    }
    if (tmp -> type != DataElement::INT && 
        tmp -> type != DataElement::FLOAT) {
-      iout << iERROR << "Can only get units for FLOAT and INT variables, and '"
-	      << name << "' isn't one of those" << endi;
+      iout << iERROR 
+	 << "Can only get units for FLOAT and INT variables, and '"
+	 << name << "' isn't one of those" << "\n" << endi;
       return FALSE;
    }
    *units = tmp->units;

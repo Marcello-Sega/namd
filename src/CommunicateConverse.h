@@ -8,13 +8,6 @@
 /***************************************************************************/
 
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: CommunicateConverse.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:57:38 $
- *
- ***************************************************************************
  * DESCRIPTION:
  *
  * CommunicateConverse - Converse version of the Communicate object.  Allows
@@ -76,3 +69,12 @@ public:
 };
 
 #endif
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile: CommunicateConverse.h,v $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/03/04 22:37:06 $
+ *
+ ***************************************************************************/
+

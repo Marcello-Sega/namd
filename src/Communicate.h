@@ -8,13 +8,6 @@
 /***************************************************************************/
 
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: Communicate.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:57:36 $
- *
- ***************************************************************************
  * DESCRIPTION:
  *
  * Communicate - base communications object.  Allows user to establish id's
@@ -25,78 +18,6 @@
  * a message, one calls Message *receive(node, tag), which returns a message
  * if available, or NULL otherwise.
  *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: Communicate.h,v $
- * Revision 1.1000  1997/02/06 15:57:36  ari
- * Resetting CVS to merge branches back into the main trunk.
- * We will stick to main trunk development as suggested by CVS manual.
- * We will set up tags to track fixed points of development/release
- * as suggested by CVS manual - all praise the CVS manual.
- *
- * Revision 1.778  1997/01/28 00:29:54  ari
- * internal release uplevel to 1.778
- *
- * Revision 1.777.2.1  1997/01/27 22:44:53  ari
- * Basic Atom Migration Code added.
- * Added correct magic first line to .h files for xemacs to go to C++ mode.
- * Compiles and runs without migration turned on.
- *
- * Revision 1.777  1997/01/17 19:35:27  ari
- * Internal CVS leveling release.  Start development code work
- * at 1.777.1.1.
- *
- * Revision 1.4  1996/12/06 19:52:20  ari
- * *** empty log message ***
- *
- * Revision 1.14  1996/01/28 21:50:08  jean
- * Attempting to make stable RCS without Mark Nelson's
- * fma/pairlist decoupling
- *
- * Revision 1.15  1995/12/04 20:46:19  brunner
- *  More communication stats - message sizes
- *
- * Revision 1.14  1995/11/22 12:07:06  brunner
- * Added print_comm_stats(), and variables to store message traffic
- * information.  Activated by -DCHEAP_PERFORMANCE
- *
- * Revision 1.13  95/10/06  17:53:51  17:53:51  hazen (Brett Hazen)
- * Memory Allocation error-checking added
- * 
- * Revision 1.12  1995/03/20  11:44:27  nelson
- * Made minor modification to send_method for 1 node case
- *
- * Revision 1.11  95/03/20  09:26:27  09:26:27  nelson (Mark T. Nelson)
- * Added single node checks for send_all
- * 
- * Revision 1.10  95/03/18  02:41:50  02:41:50  nelson (Mark T. Nelson)
- * Reworked extensively to improve performance
- * 
- * Revision 1.9  95/03/08  14:37:41  14:37:41  nelson (Mark T. Nelson)
- * Added copyright
- * 
- * Revision 1.8  94/12/14  16:12:38  16:12:38  nelson (Mark T. Nelson)
- * Added get_tids virtual function
- * 
- * Revision 1.7  94/10/24  09:25:07  09:25:07  nelson (Mark T. Nelson)
- * Added MessageManagers to make looking for received messages much
- * more efficient
- * 
- * Revision 1.6  94/07/26  16:52:24  16:52:24  billh (Bill Humphrey)
- * (Hopefully) fixed problem with broadcast ... now just loops through nodes
- * and sends copy of message to each node, instead of having specific
- * broadcast routine in child class.
- * 
- * Revision 1.5  94/07/03  01:22:53  01:22:53  billh (Bill Humphrey)
- * Made Communicate enum's and MsgItem struct public members of
- * Communicate, instead of global.
- * 
- * Revision 1.4  94/07/03  00:14:14  00:14:14  billh (Bill Humphrey)
- * New format ... user creates a Message object, and given that to a
- * Communicate object; these can be kept in a list to be all sent at once
- * or sent as soon as requested.
- * 
  ***************************************************************************/
 
 #ifndef COMMUNICATE_OBJ_H
@@ -289,3 +210,88 @@ public:
 };
 
 #endif
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile: Communicate.h,v $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/03/04 22:37:06 $
+ */
+/***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: Communicate.h,v $
+ * Revision 1.1001  1997/03/04 22:37:06  ari
+ * Clean up of code.  Debug statements removal, dead code removal.
+ * Minor fixes, output fixes.
+ * Commented some code from the top->down.  Mainly reworked Namd, Node, main.
+ *
+ * Revision 1.1000  1997/02/06 15:57:36  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
+ * Revision 1.778  1997/01/28 00:29:54  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.1  1997/01/27 22:44:53  ari
+ * Basic Atom Migration Code added.
+ * Added correct magic first line to .h files for xemacs to go to C++ mode.
+ * Compiles and runs without migration turned on.
+ *
+ * Revision 1.777  1997/01/17 19:35:27  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
+ * Revision 1.4  1996/12/06 19:52:20  ari
+ * *** empty log message ***
+ *
+ * Revision 1.14  1996/01/28 21:50:08  jean
+ * Attempting to make stable RCS without Mark Nelson's
+ * fma/pairlist decoupling
+ *
+ * Revision 1.15  1995/12/04 20:46:19  brunner
+ *  More communication stats - message sizes
+ *
+ * Revision 1.14  1995/11/22 12:07:06  brunner
+ * Added print_comm_stats(), and variables to store message traffic
+ * information.  Activated by -DCHEAP_PERFORMANCE
+ *
+ * Revision 1.13  95/10/06  17:53:51  17:53:51  hazen (Brett Hazen)
+ * Memory Allocation error-checking added
+ * 
+ * Revision 1.12  1995/03/20  11:44:27  nelson
+ * Made minor modification to send_method for 1 node case
+ *
+ * Revision 1.11  95/03/20  09:26:27  09:26:27  nelson (Mark T. Nelson)
+ * Added single node checks for send_all
+ * 
+ * Revision 1.10  95/03/18  02:41:50  02:41:50  nelson (Mark T. Nelson)
+ * Reworked extensively to improve performance
+ * 
+ * Revision 1.9  95/03/08  14:37:41  14:37:41  nelson (Mark T. Nelson)
+ * Added copyright
+ * 
+ * Revision 1.8  94/12/14  16:12:38  16:12:38  nelson (Mark T. Nelson)
+ * Added get_tids virtual function
+ * 
+ * Revision 1.7  94/10/24  09:25:07  09:25:07  nelson (Mark T. Nelson)
+ * Added MessageManagers to make looking for received messages much
+ * more efficient
+ * 
+ * Revision 1.6  94/07/26  16:52:24  16:52:24  billh (Bill Humphrey)
+ * (Hopefully) fixed problem with broadcast ... now just loops through nodes
+ * and sends copy of message to each node, instead of having specific
+ * broadcast routine in child class.
+ * 
+ * Revision 1.5  94/07/03  01:22:53  01:22:53  billh (Bill Humphrey)
+ * Made Communicate enum's and MsgItem struct public members of
+ * Communicate, instead of global.
+ * 
+ * Revision 1.4  94/07/03  00:14:14  00:14:14  billh (Bill Humphrey)
+ * New format ... user creates a Message object, and given that to a
+ * Communicate object; these can be kept in a list to be all sent at once
+ * or sent as soon as requested.
+ * 
+ ***************************************************************************/

@@ -15,6 +15,10 @@
 #include "chare.h"
 #include "c++interface.h"
 
+#define MIN_DEBUG_LEVEL 4
+//#define DEBUGM
+#include "Debug.h"
+
 #include "BOCgroup.h"
 #include "ComputeMgr.top.h"
 #include "ComputeMgr.h"
@@ -30,9 +34,6 @@
 #include "ComputeNonbondedExcl.h"
 #include "ComputeFullDirect.h"
 #include "ComputeDPMTA.h"
-#define MIN_DEBUG_LEVEL 4
-#define DEBUGM
-#include "Debug.h"
 
 ComputeMgr::ComputeMgr(InitMsg *msg)
 {
@@ -183,8 +184,8 @@ void ComputeMgr:: createComputes(ComputeMap *map)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/02/14 19:18:38 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/03/04 22:37:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
