@@ -16,7 +16,7 @@ PmeFFT::PmeFFT(int K1, int K2, int K3) {
 		FFTW_MEASURE | FFTW_IN_PLACE);
 #elif defined(NAMD_SGI_COMPLIB_FFT)
   iout << iINFO << "PME using FFT from SGI complib.\n" << endi;
-  sgi_complib_fft_coeff = dfft3di(K3, K2, K1, NULL);
+  sgi_complib_fft_coeff = dzfft3dui(K3, K2, K1, NULL);
 #else
   iout << iINFO << "PME using PUB3DFFT, for better performance recompile with FFTW.\n" << endi;
   if ( K3 & 1 ) {
