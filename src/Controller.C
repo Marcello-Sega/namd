@@ -88,6 +88,9 @@ void Controller::run(int numberOfCycles)
     awaken();
 }
 
+extern int eventEndOfTimeStep;
+extern "C" void trace_user_event(int event);
+
 void Controller::algorithm(void)
 {
     int step = simParams->firstTimestep;
@@ -99,6 +102,7 @@ void Controller::algorithm(void)
     for ( ; step <= numberOfSteps; ++step )
     {
         enqueueCollections(step);
+        trace_user_event(eventEndOfTimeStep);
         printEnergies(step);
         rescaleVelocities(step);
 	berendsenPressure(step);
@@ -257,12 +261,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1023 $	$Date: 1997/08/22 19:27:36 $
+ *	$Revision: 1.1024 $	$Date: 1997/08/22 19:54:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1024  1997/08/22 19:54:42  milind
+ * Added user event EndOfTimeStep.
+ *
  * Revision 1.1023  1997/08/22 19:27:36  brunner
  * Added cycle barrier, enabled by compiling with -DCYCLE_BARRIER
  *

@@ -9,7 +9,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1015 1997/04/06 22:45:06 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1016 1997/08/22 19:54:42 milind Exp $";
 
 #include <unistd.h>
 #include "ckdefs.h"
@@ -62,12 +62,16 @@ BOCgroup BOCclass::group;
 // Singleton implementation
 Node *Node::_instance = 0;
 
+int eventEndOfTimeStep;
+extern "C" int registerEvent(char *);
+
 //----------------------------------------------------------------------
 // BOC constructor
 Node::Node(GroupInitMsg *msg)
 {
   if (_instance == 0) {
     _instance = this;
+    eventEndOfTimeStep = registerEvent("EndOfTimeStep");
   } else {
     iout << iERRORF << "Node::Node() - another instance of Node exists!\n"
       << endi;
@@ -443,13 +447,16 @@ void Node::saveMolDataPointers(NamdState *state)
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1997/04/06 22:45:06 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1016 $	$Date: 1997/08/22 19:54:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1016  1997/08/22 19:54:42  milind
+ * Added user event EndOfTimeStep.
+ *
  * Revision 1.1015  1997/04/06 22:45:06  ari
  * Add priorities to messages.  Mods to help proxies without computes.
  * Added quick enhancement to end of list insertion of ResizeArray(s)
