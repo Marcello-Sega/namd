@@ -130,7 +130,7 @@ TEMPLATES = \
 	$(SRCDIR)/Templates/SortedArray.C \
 	$(SRCDIR)/Templates/UniqueSortedArray.C
 
-namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES)
+namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES) $(LIBS)
 	cd $(PVMDIR) ; $(MAKE) ; cd ..
 	cd $(DPMTADIR) ; $(MAKE) ; cd ..
 	$(CHARMC) -verbose -ld++-option \
@@ -140,6 +140,15 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES)
 	$(DPMTALIB) \
 	$(PVMLIB) \
 	# Now sit back, have a coke, and relax.
+
+dpmta2/mpole/libmpole.a:
+	cd $(DPMTADIR) ; $(MAKE) ; cd ..
+
+dpmta2/src/libdpmta2.a:
+	cd $(DPMTADIR) ; $(MAKE) ; cd ..
+
+pvm3/libpvmc.a:
+	cd $(PVMDIR) ; $(MAKE) ; cd ..
 
 cifiles:	$(INCDIR) $(DSTDIR)
 	for i in $(INTERFACES); do \
