@@ -22,6 +22,7 @@ ProxyPatch::ProxyPatch(PatchID pd) :
 {
   DebugM(4, "ProxyPatch(" << pd << ") at " << this << "\n");
   ProxyMgr::Object()->registerProxy(patchID);
+  numAtoms = -1;
 }
 
 void ProxyPatch::boxClosed(int box)
@@ -63,10 +64,14 @@ void ProxyPatch::receiveData(ProxyDataMsg *msg)
   msgBuffer = NULL;
   flags = msg->flags;
   p = msg->positionList;
-  numAtoms = p.size();  // for new proxies since receiveAtoms is not called
   p_avg = msg->avgPositionList;
   delete msg;
-  positionsReady(0);
+  if ( numAtoms == -1 ) { // for new proxies since receiveAtoms is not called
+    numAtoms = p.size();
+    positionsReady(1);
+  } else {
+    positionsReady(0);
+  }
 }
 
 void ProxyPatch::receiveAll(ProxyAllMsg *msg)
