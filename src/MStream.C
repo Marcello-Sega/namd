@@ -1,6 +1,6 @@
+#include <string.h>
 #include "Communicate.h"
 #include "MStream.h"
-#include <string.h>
 
 MIStream::MIStream(Communicate *c, int p, int t)
 {
