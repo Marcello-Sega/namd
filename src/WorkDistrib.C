@@ -320,9 +320,10 @@ VARSIZE_MSG(MapDistribMsg,
 
 void WorkDistrib::sendMaps(void)
 {
-  mapsArrived = true;
-
-  if ( CkNumPes() == 1 ) return;
+  if ( CkNumPes() == 1 ) {
+    mapsArrived = true;
+    return;
+  }
 
   int sizes[2];
   sizes[0] = PatchMap::Object()->packSize();
@@ -339,19 +340,30 @@ void WorkDistrib::sendMaps(void)
 // saveMaps() is called when the map message is received
 void WorkDistrib::saveMaps(MapDistribMsg *msg)
 {
-  if ( CkMyPe() ) {
+  // Use a resend to forward messages before processing.  Otherwise the
+  // map distribution is slow on many CPUs.  We need to use a tree
+  // rather than a broadcast because some implementations of broadcast
+  // generate a copy of the message on the sender for each recipient.
+  // This is because MPI doesn't allow re-use of an outstanding buffer.
+
+  if ( mapsArrived && CkMyPe() ) {
     PatchMap::Object()->unpack(msg->patchMapData);
     ComputeMap::Object()->unpack(msg->computeMapData);
-    mapsArrived = true;
+  }
+  if ( mapsArrived ) {
+    delete msg;
+    return;
   }
 
-  int pids[2];
+  mapsArrived = true;
+
+  int pids[3];
   int basePe = 2 * CkMyPe() + 1;
   int npid = 0;
   if ( (basePe+npid) < CkNumPes() ) { pids[npid] = basePe + npid; ++npid; }
   if ( (basePe+npid) < CkNumPes() ) { pids[npid] = basePe + npid; ++npid; }
-  if ( npid ) CProxy_WorkDistrib(thisgroup).saveMaps(msg,npid,pids);
-  else delete msg;
+  pids[npid] = CkMyPe(); ++npid;  // always send the message to ourselves
+  CProxy_WorkDistrib(thisgroup).saveMaps(msg,npid,pids);
 }
 
 
