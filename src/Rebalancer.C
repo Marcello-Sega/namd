@@ -1,4 +1,5 @@
 #include <iostream.h>
+#include "InfoStream.h"
 #include "Rebalancer.h"
 
 Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
@@ -225,9 +226,8 @@ int i, total = 0, numBytes = 0;
 double max;
 
   for (i=0; i<P; i++){
-    cout << "load on "<< i << " is :" << processors[i].load 
-	 << "[ " << processors[i].backgroundLoad << "," <<
-	 processors[i].computeLoad << "]. ";
+    CPrintf("load on %d is : %f [%f,%f]\n",i,processors[i].load,
+	    processors[i].backgroundLoad,processors[i].computeLoad);
     cout << "# Messages received: " << 
       processors[i].proxies->numElements() - processors[i].patchSet->numElements();
     Iterator p;
@@ -247,9 +247,9 @@ double max;
   }
   computeAverage();
   max = computeMax();
-  cout << "Summary: (" << strategyName << ": " << P << "," << numPatches << "," << numComputes <<
-    ") avg = " << averageLoad << " max = " << max << 
-    " messages = " << total << "[" << numBytes << " bytes]\n";
+  CPrintf("Summary: (%s: %d,%d,%d),avg=%lf max=%lf messages = %d [%d bytes]\n",
+	  strategyName,P,numPatches,numComputes,
+	  averageLoad,max,total,numBytes);
 }
 
 void Rebalancer::computeAverage()

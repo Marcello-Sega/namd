@@ -13,10 +13,10 @@
 #include "Debug.h"
 #include "Sequencer.h"
 #include "RefineOnly.h"
+#include "Alg7.h"
 //#include "Alg0.h"
 //#include "Alg1.h"
 //#include "Alg4.h"
-//#include "Alg7.h"
 
 #include "elements.h"
 #include "RefineOnly.h"
@@ -66,6 +66,9 @@ LdbCoordinator::LdbCoordinator(InitMsg *msg)
     statsMsgs = new (LdbStatsMsg *[CNumPes()]);
   else statsMsgs = NULL;
   ldbStatsFP = NULL;
+  computeArray = NULL;
+  patchArray = NULL;
+  processorArray = NULL;
 
   delete msg;
 
@@ -81,9 +84,15 @@ LdbCoordinator::~LdbCoordinator(void)
   delete [] computeStartTime;
   delete [] computeTotalTime;
   if (CMyPe() == 0)
+  {
     delete [] statsMsgs;
+    delete [] computeArray;
+    delete [] patchArray;
+    delete [] processorArray;
+  }
   if (ldbStatsFP)
     fclose(ldbStatsFP);
+
 }
 
 void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap)
@@ -158,9 +167,20 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap)
     first_ldbcycle = FALSE;
   }
 
+  if (CMyPe() == 0)
+  {
+    if (computeArray == NULL)
+      computeArray = new computeInfo[computeMap->numComputes()];
+    if (patchArray == NULL)
+      patchArray = new patchInfo[patchMap->numPatches()];
+    if (processorArray == NULL)
+      processorArray = new processorInfo[Node::Object()->numNodes()];
+  }
+    
+
   // Start idle-time recording
   idleTime = 0;
-  //CsdStartNotifyIdle();
+  //  CsdStartNotifyIdle();
   totalStartTime = TIMER_FNC();
 }
 
@@ -324,17 +344,18 @@ void LdbCoordinator::processStatistics(void)
 
   buildData();
   
-  char *algChoice = "RefineOnly"; 
+  char *algChoice = "Alg7"; 
 
-  if (algChoice == "RefineOnly")
+  if (strcmp(algChoice,"RefineOnly") == 0)
   {
     new RefineOnly(computeArray,patchArray,processorArray,
 		   numComputes, numPatches, numProcessors);
-    
+  } 
+  else if (strcmp(algChoice,"Alg7") == 0)
+  {
+    new Alg7(computeArray,patchArray,processorArray,
+	     numComputes, numPatches, numProcessors);
   }
-//   else if (algChoice == "Alg0")
-//     Alg0::Alg0(computeArray,patchArray,processorArray,
-//       numComputes, numPatches, numProcessors);
 //   else if (algChoice == "Alg1")
 //     Alg1::Alg1(computeArray,patchArray,processorArray,
 //       numComputes, numPatches, numProcessors);
@@ -346,13 +367,25 @@ void LdbCoordinator::processStatistics(void)
 //       numComputes, numPatches, numProcessors);
 
   // 0) Rebuild ComputeMap using computeMap->newNode()
+  int i;
+  for(i=0; i < numComputes; i++)
+  {
+    if ( (computeArray[i].processor != computeArray[i].oldProcessor)
+	 && (computeArray[i].processor != -1) )
+    {
+
+      //    CPrintf("Assigning compute %d from %d to %d\n",
+      //    i,computeArray[i].oldProcessor,computeArray[i].processor);
+      computeMap->setNewNode(computeArray[i].Id,computeArray[i].processor);
+    }
+  }
 
   // 1) Print out statistics in test format
   printLdbReport();
 
   // 2) delete messages
-
-  for (int i=0; i < nStatsMessagesReceived; i++)
+  cleanUpData();
+  for (i=0; i < nStatsMessagesReceived; i++)
     delete statsMsgs[i];
 
   // computeMgr->updateComputes() call only on Node(0) i.e. right here
@@ -392,25 +425,30 @@ void LdbCoordinator::buildData(void)
   const int numProcessors = Node::Object()->numNodes();
   const int numPatches = patchMap->numPatches();
   const int numComputes = computeMap->numComputes();
-
-  for (int i=0; i<nStatsMessagesReceived; i++)
+  
+  int i;
+  for (i=0; i<nStatsMessagesReceived; i++)
   {
     const LdbStatsMsg *msg = statsMsgs[i];
     processorArray[i].Id = msg->proc;
     processorArray[i].backgroundLoad = 0;
                              // should be = statsMsgs[i]->procLoad;
     processorArray[i].proxies = new Set();
+  }
 
+  for (i=0; i < nStatsMessagesReceived; i++)
+  {
+    const LdbStatsMsg *msg = statsMsgs[i];
     for (int j=0; j<msg->nPatches; j++)
     {
       const int pid = msg->pid[j];
       int neighborNodes[PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
 
-      patchArray[i].Id = pid;
-      patchArray[i].numAtoms = msg->nAtoms[j];
-      patchArray[i].processor = patchMap->node(pid);
+      patchArray[pid].Id = pid;
+      patchArray[pid].numAtoms = msg->nAtoms[j];
+      patchArray[pid].processor = patchMap->node(pid);
       const int numProxies = requiredProxies(pid,neighborNodes);
-      patchArray[i].proxiesOn = new Set();
+      patchArray[pid].proxiesOn = new Set();
 
       for (int k=0; k<numProxies; k++)
       {
@@ -431,13 +469,26 @@ void LdbCoordinator::buildData(void)
 	p1 = p0;
 
       const int cid = msg->cid[j];
-      computeArray[i].Id = cid;
-      computeArray[i].oldProcessor = msg->proc;
-      computeArray[i].patch1 = p0;
-      computeArray[i].patch2 = p1;
-      computeArray[i].load = msg->computeTime[j];
+      computeArray[cid].Id = cid;
+      computeArray[cid].oldProcessor = msg->proc;
+      computeArray[cid].patch1 = p0;
+      computeArray[cid].patch2 = p1;
+      computeArray[cid].load = msg->computeTime[j];
     }
   }
+}
+
+void LdbCoordinator::cleanUpData(void)
+{
+  const int numPatches = patchMap->numPatches();
+  
+  int i;
+  for (i=0; i<nStatsMessagesReceived; i++)
+    delete processorArray[i].proxies;
+
+  for (i=0; i < numPatches; i++)
+    delete patchArray[i].proxiesOn;
+
 }
 
 // Figure out which proxies we will definitely create on other

@@ -1,4 +1,5 @@
 #include <iostream.h>
+#include "InfoStream.h"
 #include "RefineOnly.h"
 
 RefineOnly::RefineOnly(computeInfo *computeArray, patchInfo *patchArray, 
@@ -31,12 +32,3 @@ void RefineOnly::strategy()
   cout << "Average Load is " << averageLoad << "\n";
   cout << "Maximum Load is " << max << "\n";
 }
-
-
-
-
-
-
-
-
-

@@ -30,11 +30,11 @@ class ComputeMap;
 class Sequencer;
 class InitMsg;
 
-enum {LDB_PATCHES = 1024};
-enum {LDB_COMPUTES = 8192};
-enum {COMPUTEMAX = 10000};
-enum {PATCHMAX = 1000};
-enum {PROCESSORMAX = 1000};
+enum {LDB_PATCHES = 2048};
+enum {LDB_COMPUTES = 50000};
+enum {COMPUTEMAX = 50000};
+enum {PATCHMAX = 5000};
+enum {PROCESSORMAX = 1024};
 
 
 struct LdbStatsMsg : public comm_object
@@ -79,6 +79,7 @@ private:
   void awakenSequencers(void);
   int requiredProxies(PatchID id, int []);
   void buildData(void);
+  void cleanUpData(void);
   void printRequiredProxies(PatchID id, FILE *fp);
   void printLocalLdbReport(void);
   void printLdbReport(void);
@@ -105,9 +106,9 @@ private:
   FILE *ldbStatsFP;
   double totalStartTime;
   double totalTime;
-  computeInfo computeArray[COMPUTEMAX];
-  patchInfo patchArray[PATCHMAX];
-  processorInfo processorArray[PROCESSORMAX];
+  computeInfo *computeArray;
+  patchInfo *patchArray;
+  processorInfo *processorArray;
 };
 
 #endif // LDBCOORDINATOR_H
@@ -118,12 +119,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1997/04/05 04:53:11 $
+ *	$Revision: 1.6 $	$Date: 1997/04/07 00:04:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LdbCoordinator.h,v $
+ * Revision 1.6  1997/04/07 00:04:07  brunner
+ * LDB Alg7 added and computeMap modified on node 0
+ *
  * Revision 1.5  1997/04/05 04:53:11  brunner
  * Rebalancer code linked in.  It is called, but the results are not currently
  * used.
