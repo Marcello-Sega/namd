@@ -31,6 +31,62 @@
 
 extern Communicate *comm;
 
+// init(): called by doWork when the object still needs some initialization
+void ComputeDPMTA::init()
+{
+  // determine boxSize from the PBC lattice
+  // lattice is the same on all patches, so choose first patch
+    {
+    ResizeArrayIter<PatchElem> ap(patchList);
+    DebugM(2,"init() getting first patch info for FMA box\n");
+    ap = ap.begin();
+    DebugM(2,"init() getting lattice from patch for FMA box\n");
+    initLattice = (*ap).p->lattice.dimension();
+    DebugM(2,"init() initLattice is " << initLattice << "\n");
+
+    // node 0 should configure DPMTA
+    // then tell all nodes that it is OK to continue
+    if (CMyPe() == 0)
+    {
+      if (usePBC && boxsize != initLattice)
+        {
+        // set DPMTA cube
+        PmtaVector center,size;
+        boxcenter = patchMap->Origin();
+        boxsize = initLattice;
+        center.x = boxcenter.x;
+        center.y = boxcenter.y;
+        center.z = boxcenter.z;
+        size.x = boxsize.x;
+        size.y = boxsize.y;
+        size.z = boxsize.z;
+	DebugM(2,"init() calling PMTAresize()\n");
+        PMTAresize(&size,&center);
+        DebugM(2,"init() called PMTAresize()\n");
+	}
+
+      Message *msg = new Message;
+      // don't actually put in data...  Nodes just need it as a flag.
+      msg->put(TRUE);
+      comm->broadcast_all(msg,DPMTATAG);
+      DebugM(2,"Init go-ahead\n");
+    }
+
+    // all nodes should initialize at the same time (lock-step)
+    DebugM(2,"init() waiting for Init go-ahead\n");
+    Message *conv_msg;
+    do
+    {
+        // get next DPMTATAG from node 0
+        conv_msg = comm->receive(-1,DPMTATAG);
+    } while (conv_msg == NULL);
+    delete conv_msg;
+    DebugM(2,"init() got go-ahead\n");
+  } /* end if(usePBC) */
+
+  initDPMTA = TRUE;
+}
+
 void ComputeDPMTA::get_FMA_cube(int resize)
 {
   Vector boxSize,boxCenter;	// used to see if things change
@@ -135,8 +191,10 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   boxsize = 1;	// reset the array (no divide by zero)
   usePBC = FALSE;	// assume not...
 
+  // all nodes should init
   reduction->Register(REDUCTION_ELECT_ENERGY);
   reduction->Register(REDUCTION_VIRIAL);
+  initDPMTA = 0;	// still needs some init when method is done
 
   //  NOTE that the theta value is hardwired to the value of 0.715
   //  as per the recommendation of the Duke developers
@@ -195,6 +253,7 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
     iout << iERROR << "DPMTA (FMA) does not support " << usePBC
 	 << "-dimension PBC.\n" << endi;
   }
+  DebugM(2,"Use PBC = " << usePBC << "\n");
   usePBC = (usePBC == 3);	// either PBC "3D" or no PBC
 
   // reduce function calling time
@@ -223,13 +282,13 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   pmta_data.calling_tids = slavetids;
 
   iout << iINFO << "DPMTA parameters are:\n";
-  iout << iINFO << "LEVELS = " << pmta_data.nlevels << "\n";
-  iout << iINFO << "NUMBER OF MULTIPOLE TERMS = " << pmta_data.mp << "\n";
-  iout << iINFO << "FFT FLAG = " << pmta_data.fft << "\n";
-  iout << iINFO << "FFT BLOCKING FACTOR = " << pmta_data.fftblock << "\n";
-  iout << iINFO << "BOX DIMENSIONS = (" << pmta_data.cubelen.x << ","
+  iout << iINFO << "  LEVELS = " << pmta_data.nlevels << "\n";
+  iout << iINFO << "  NUMBER OF MULTIPOLE TERMS = " << pmta_data.mp << "\n";
+  iout << iINFO << "  FFT FLAG = " << pmta_data.fft << "\n";
+  iout << iINFO << "  FFT BLOCKING FACTOR = " << pmta_data.fftblock << "\n";
+  iout << iINFO << "  BOX DIMENSIONS = (" << pmta_data.cubelen.x << ","
 	<< pmta_data.cubelen.y << "," << pmta_data.cubelen.z << ")\n";
-  iout << iINFO << "BOX CENTER = (" << pmta_data.cubectr.x << ","
+  iout << iINFO << "  BOX CENTER = (" << pmta_data.cubectr.x << ","
 	<< pmta_data.cubectr.y << "," << pmta_data.cubectr.z << ")\n";
   iout << endi;
 
@@ -263,7 +322,6 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
 	NAMD_die("PMTARegister failed!!");
   }
   DebugM(2,"DPMTA done PMTAinit.\n");
-
   DebugM(2,"DPMTA configured\n");
 }
 
@@ -292,7 +350,6 @@ void ComputeDPMTA::doWork()
   ResizeArrayIter<PatchElem> ap(patchList);
   PmtaParticle *particle_list = NULL;
   SimParameters *simParameters = Node::Object()->simParameters;
-  Lattice lattice;
 
   // 0. only run when necessary
   // Skip computations if nothing to do.
@@ -311,6 +368,7 @@ void ComputeDPMTA::doWork()
     return;
   }
 
+  if (!initDPMTA)	init();	// any final inits required
   DebugM(2,"DPMTA doWork() started at timestep " << patchList[0].p->flags.seq << "\n");
 
   // setup
@@ -318,27 +376,26 @@ void ComputeDPMTA::doWork()
   for (totalAtoms=0, ap = ap.begin(); ap != ap.end(); ap++)
      totalAtoms += (*ap).p->getNumAtoms();
 
-  // 1b. resize cube if necessary
-  if (CMyPe() == 0)
-  {
-    // check if box has changes for PBC
-    DebugM(2,"Node resizing FMA\n");
-    get_FMA_cube(TRUE);
-    DebugM(2,"Node resized FMA\n");
-    // tell all nodes that it's ok to continue
-    // *** Using the Communicate::broadcast_all function will be removed later,
-    // *** after the new broadcast function has been build.  Since it currently
-    // *** doesn't exist, we are using the old code.
-    Message *msg = new Message;
-    // don't actually put in data...  Nodes just need it as a flag.
-    msg->put(TRUE);
-    comm->broadcast_all(msg,DPMTATAG);
-    DebugM(2,"FMA go-ahead\n");
-  }
+  Vector newLattice;
+  Vector rescaleFactor;
+  if (usePBC)
+    {
+    ap = ap.begin();
+    Lattice lattice = (*ap).p->lattice;
+    newLattice = lattice.dimension();
+    rescaleFactor.x = initLattice.x / newLattice.x;
+    rescaleFactor.y = initLattice.y / newLattice.y;
+    rescaleFactor.z = initLattice.z / newLattice.z;
+    iout << iINFO << "FMA rescale factor " << rescaleFactor << "\n" << endi;
+    DebugM(2,"Rescale factor = " << initLattice << "/" << newLattice
+		<< " = " << rescaleFactor << "\n");
+    }
   else
-  {
-    DebugM(2,"Node *not* resizing FMA\n");
-  }
+    {
+    rescaleFactor.x = 1;
+    rescaleFactor.y = 1;
+    rescaleFactor.z = 1;
+    }
 
   // 2. setup atom list
   int i,j;
@@ -361,9 +418,18 @@ void ComputeDPMTA::doWork()
     for(j=0; j<(*ap).p->getNumAtoms(); j++)
     {
       // explicitly copy -- two different data structures
-      particle_list[i].p.x = x[j].x;
-      particle_list[i].p.y = x[j].y;
-      particle_list[i].p.z = x[j].z;
+      if (usePBC)
+	{
+	particle_list[i].p.x = rescaleFactor.x * x[j].x;
+	particle_list[i].p.y = rescaleFactor.y * x[j].y;
+	particle_list[i].p.z = rescaleFactor.z * x[j].z;
+	}
+      else
+	{
+	particle_list[i].p.x = x[j].x;
+	particle_list[i].p.y = x[j].y;
+	particle_list[i].p.z = x[j].z;
+	}
       particle_list[i].q = a[j].charge * unitFactor;
       DebugM(1,"atom[" << i << "]=" << x[j] << " "
 	      << a[j].charge*unitFactor << "\n");
@@ -379,20 +445,6 @@ void ComputeDPMTA::doWork()
     (*ap).atomBox->close(&a);
     (*ap).positionBox->close(&x);
   } 
-
-  // wait until node 0 says "go ahead"
-  // *** Using the Communicate::receive function will be removed later,
-  // *** after the new broadcast function has been build.  Since it currently
-  // *** doesn't exist, we are using the old code.
-  Message *conv_msg;
-  DebugM(2,"waiting for FMA go-ahead\n");
-  do
-  {
-    // get next DPMTATAG from node 0
-    conv_msg = comm->receive(-1,DPMTATAG);
-  } while (conv_msg == NULL);
-  delete conv_msg;
-  DebugM(2,"got FMA go-ahead\n");
 
   DebugM(2,"DPMTA doWork() there are " << totalAtoms << " atoms in this node.\n");
 
@@ -413,10 +465,20 @@ void ComputeDPMTA::doWork()
     // deposit here
     for(j=0; j<(*ap).p->getNumAtoms(); j++)
     {
-      f[j].x += fmaResults[i].f.x;
-      f[j].y += fmaResults[i].f.y;
-      f[j].z += fmaResults[i].f.z;
-      potential += fmaResults[i].v;
+      if (usePBC)
+	{
+	f[j].x += fmaResults[i].f.x * rescaleFactor.x * rescaleFactor.x;
+	f[j].y += fmaResults[i].f.y * rescaleFactor.y * rescaleFactor.y;
+	f[j].z += fmaResults[i].f.z * rescaleFactor.z * rescaleFactor.z;
+	potential += fmaResults[i].v * rescaleFactor.x;
+	}
+      else
+	{
+	f[j].x += fmaResults[i].f.x;
+	f[j].y += fmaResults[i].f.y;
+	f[j].z += fmaResults[i].f.z;
+	potential += fmaResults[i].v;
+	}
       i++;
     }
 
@@ -446,12 +508,16 @@ void ComputeDPMTA::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1037 $	$Date: 1997/03/20 23:53:33 $
+ *	$Revision: 1.1038 $	$Date: 1997/03/25 16:57:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.C,v $
+ * Revision 1.1038  1997/03/25 16:57:47  nealk
+ * Added PBC scaling to DPMTA.
+ * Turned off debugging code in Controller.C.
+ *
  * Revision 1.1037  1997/03/20 23:53:33  ari
  * Some changes for comments. Copyright date additions.
  * Hooks for base level update of Compute objects from ComputeMap

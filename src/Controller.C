@@ -24,6 +24,11 @@
 #include "Broadcasts.h"
 #include <math.h>
 
+#ifndef cbrt
+  // cbrt() not in math.h on goneril
+  #define cbrt(x)  pow(x,(double)(1.0/3.0))
+#endif
+
 #define MIN_DEBUG_LEVEL 3
 //#define DEBUGM
 #include "Debug.h"
@@ -222,12 +227,16 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/03/21 23:05:33 $
+ *	$Revision: 1.1013 $	$Date: 1997/03/25 16:57:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1013  1997/03/25 16:57:49  nealk
+ * Added PBC scaling to DPMTA.
+ * Turned off debugging code in Controller.C.
+ *
  * Revision 1.1012  1997/03/21 23:05:33  jim
  * Added Berendsen's pressure coupling method, won't work with MTS yet.
  *

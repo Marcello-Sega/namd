@@ -28,8 +28,11 @@ private:
   Vector boxsize;	// FMA box size, set by get_FMA_cube()
   Vector boxcenter;	// FMA box center, set by get_FMA_cube()
   int usePBC;		// flag for PBC
+  Vector initLattice;	// initial system lattice dimensions
+  int initDPMTA;	// mark DPMTA object as initialized
 
   void get_FMA_cube(int resize);
+  void init	();
 
 public:
   ComputeDPMTA(ComputeID c);
@@ -43,13 +46,17 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeDPMTA.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1997/03/20 23:53:34 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1015 $	$Date: 1997/03/25 16:57:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.h,v $
+ * Revision 1.1015  1997/03/25 16:57:48  nealk
+ * Added PBC scaling to DPMTA.
+ * Turned off debugging code in Controller.C.
+ *
  * Revision 1.1014  1997/03/20 23:53:34  ari
  * Some changes for comments. Copyright date additions.
  * Hooks for base level update of Compute objects from ComputeMap
