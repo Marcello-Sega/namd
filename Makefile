@@ -8,6 +8,8 @@ SRCDIR = src
 DSTDIR = obj
 # temp include directory for cifiles
 INCDIR = inc
+# Libraries we may have changed
+LIBS = dpmta2/mpole/libmpole.a dpmta2/src/libdpmta2.a pvm3/libpvmc.a
 
 #####
 # Flags
@@ -40,7 +42,7 @@ PVM=-I$(PVMDIR)
 
 # CXXOPTS = -O
 #CXXOPTS = -g
-CXXOPTS = -O -G
+CXXOPTS = -O 
 # CXXOPTS = -O +DAK460 +DSK460
 CXX = CC -Aa -D_HPUX_SOURCE
 INCLUDE = /Projects/l1/namd.2.0/charm/include
@@ -128,7 +130,7 @@ TEMPLATES = \
 	$(SRCDIR)/Templates/SortedArray.C \
 	$(SRCDIR)/Templates/UniqueSortedArray.C
 
-namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES)
+namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES) $(LIBS)
 	cd $(DPMTADIR) ; $(MAKE) ; cd ..
 	cd $(PVMDIR) ; $(MAKE) ; cd ..
 	$(CHARMC) -verbose -ld++-option \
