@@ -24,7 +24,8 @@ OBJS = \
 	ComputeAngles.o ComputeDihedrals.o ComputeImpropers.o \
 	ComputeBonds.o ComputeNonbondedExcl.o ComputeMgr.o \
 	ProxyMgr.o ProxyPatch.o CommunicateConverse.o \
-	Communicate.o IntTree.o MessageQueue.o MessageManager.o
+	Communicate.o IntTree.o MessageQueue.o MessageManager.o \
+	ReductionMgr.o
 
 CXXFILES = $(OBJS:.o=.C)
 
