@@ -31,19 +31,15 @@ public:
 private:
   ComputeMgr *comm;
 
-  void sendData(int tag);
-  void configure(int tag, AtomIDList newaid, AtomIDList newgdef);
+  void sendData();
+  void configure(AtomIDList newaid, AtomIDList newgdef);
 
-  class MasterConfig {
-  public:
-    MasterConfig() { master = 0; configured = 0; }
-    ComputeGlobalMaster *master;
-    AtomIDList aid;
-    AtomIDList gdef;  // definitions of groups
-    ResizeArray<BigReal> gmass;  // masses of groups
-    int configured;
-  }; 
-  ResizeArray<MasterConfig>masterlist;
+  ComputeGlobalMaster *master;
+  AtomIDList aid;
+  AtomIDList gdef;  // definitions of groups
+  ResizeArray<BigReal> gmass;  // masses of groups
+
+  int firsttime;
 };
 
 #endif

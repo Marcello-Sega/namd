@@ -161,7 +161,6 @@ void GlobalMasterServer::callClients() {
        step. */
     DebugM(1,"first time.\n");
     ComputeGlobalResultsMsg *msg = new ComputeGlobalResultsMsg;
-    msg->tag = 0;
     resetAtomList(msg->newaid); // add any atom IDs made in constructors
     resetForceList(msg->aid,msg->f,msg->gforce); // same for forces
     resetGroupList(msg->newgdef,&totalGroupsRequested);
@@ -242,7 +241,6 @@ void GlobalMasterServer::callClients() {
   
   /* make a new message */
   ComputeGlobalResultsMsg *msg = new ComputeGlobalResultsMsg;
-  msg->tag = 0;
 
   /* build an atom list, if necessary */
   if(requested_atoms_changed || requested_groups_changed) {

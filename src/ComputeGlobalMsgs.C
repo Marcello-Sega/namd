@@ -16,14 +16,13 @@
 
 // CONFIG MESSAGE
 
-ComputeGlobalConfigMsg::ComputeGlobalConfigMsg(void) : tag(-1) { 
+ComputeGlobalConfigMsg::ComputeGlobalConfigMsg(void) { 
 }
 
 ComputeGlobalConfigMsg::~ComputeGlobalConfigMsg(void) { 
 }
 
 PACK_MSG(ComputeGlobalConfigMsg,
-  PACK(tag);
   PACK_RESIZE(aid);
   PACK_RESIZE(gdef);
 )
@@ -31,14 +30,13 @@ PACK_MSG(ComputeGlobalConfigMsg,
 
 // DATA MESSAGE
 
-ComputeGlobalDataMsg::ComputeGlobalDataMsg(void) : tag(-1) { 
+ComputeGlobalDataMsg::ComputeGlobalDataMsg(void) { 
 }
 
 ComputeGlobalDataMsg::~ComputeGlobalDataMsg(void) { 
 }
 
 PACK_MSG(ComputeGlobalDataMsg,
-  PACK(tag);
   PACK_RESIZE(aid);
   PACK_RESIZE(p);
   PACK_RESIZE(gcom);
@@ -47,7 +45,7 @@ PACK_MSG(ComputeGlobalDataMsg,
 
 // RESULTS MESSAGE
 
-ComputeGlobalResultsMsg::ComputeGlobalResultsMsg(void) : tag(-1) { 
+ComputeGlobalResultsMsg::ComputeGlobalResultsMsg(void) { 
   reconfig = 0;
   resendCoordinates = 0;
 }
@@ -56,7 +54,6 @@ ComputeGlobalResultsMsg::~ComputeGlobalResultsMsg(void) {
 }
 
 PACK_MSG(ComputeGlobalResultsMsg,
-  PACK(tag);
   PACK_RESIZE(aid);
   PACK_RESIZE(f);
   PACK_RESIZE(gforce);

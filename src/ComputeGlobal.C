@@ -32,63 +32,48 @@ ComputeGlobal::ComputeGlobal(ComputeID c, ComputeMgr *m)
 	: ComputeHomePatches(c)
 {
   DebugM(3,"Constructing client\n");
-    
-  ComputeGlobalMaster *master;
-  master = 0;
-  masterlist.item(0).master = master; 
+  aid.resize(0);
+  gdef.resize(0);
   comm = m;
+  firsttime = 1;
 }
 
 ComputeGlobal::~ComputeGlobal()
 {
 }
 
-void ComputeGlobal::configure(int tag, AtomIDList newaid, AtomIDList newgdef) {
+void ComputeGlobal::configure(AtomIDList newaid, AtomIDList newgdef) {
   DebugM(4,"Receiving configuration (" << newaid.size() <<
 	" atoms and " << newgdef.size() << " atoms/groups) on client\n");
 
-  MasterConfig &mc = masterlist[tag]; 
-
   // store data
-  mc.aid = newaid;
-  mc.gdef = newgdef;
+  aid = newaid;
+  gdef = newgdef;
 
   // calculate group masses
   Molecule *mol = Node::Object()->molecule;
-  mc.gmass.resize(0);
+  gmass.resize(0);
   AtomIDList::iterator g_i, g_e;
-  g_i = mc.gdef.begin(); g_e = mc.gdef.end();
+  g_i = gdef.begin(); g_e = gdef.end();
   for ( ; g_i != g_e; ++g_i ) {
     BigReal mass = 0;
     for ( ; *g_i != -1; ++g_i ) {
       mass += mol->atommass(*g_i);
     }
-    mc.gmass.add(mass);
+    gmass.add(mass);
   }
-
-  mc.configured = 1;
 }
 
 void ComputeGlobal::recvConfig(ComputeGlobalConfigMsg *msg) {
   DebugM(3,"Receiving configure on client\n");
-  int tag = msg->tag;
-  if (tag >= 0 && tag < masterlist.size()) { 
-    configure(tag, msg->aid,msg->gdef);
-    delete msg;
-    sendData(tag);
-  } else {
-    NAMD_die("ComputeGlobal: received ConfigMsg for nonexistent master!");
-  }
+  configure(msg->aid,msg->gdef);
+  delete msg;
+  sendData();
 }
 
 void ComputeGlobal::recvResults(ComputeGlobalResultsMsg *msg) {
   DebugM(3,"Receiving results (" << msg->aid.size() << " forces, "
 	 << msg->newgdef.size() << " new group atoms) on client\n");
-
-  if (msg->tag < 0 || msg->tag >= masterlist.size()) {
-    NAMD_die("ComputeGlobal: got ResultsMsg for nonexistent master!");
-  }
-  MasterConfig &mc = masterlist[msg->tag];
 
   // set the forces only if we aren't going to resend the data
   int setForces = !msg->resendCoordinates;
@@ -122,8 +107,8 @@ void ComputeGlobal::recvResults(ComputeGlobalResultsMsg *msg) {
   // calculate forces for atoms in groups
     Molecule *mol = Node::Object()->molecule;
     AtomIDList::iterator g_i, g_e;
-    g_i = mc.gdef.begin(); g_e = mc.gdef.end();
-    ResizeArray<BigReal>::iterator gm_i = mc.gmass.begin();
+    g_i = gdef.begin(); g_e = gdef.end();
+    ResizeArray<BigReal>::iterator gm_i = gmass.begin();
     ForceList::iterator gf_i = msg->gforce.begin();
     //iout << iDEBUG << "recvResults\n" << endi;
     for ( ; g_i != g_e; ++g_i, ++gm_i, ++gf_i ) {
@@ -147,17 +132,13 @@ void ComputeGlobal::recvResults(ComputeGlobalResultsMsg *msg) {
   // done setting the forces
 
   // Get reconfiguration if present
-  if ( msg->reconfig ) configure(msg->tag, msg->newaid, msg->newgdef);
+  if ( msg->reconfig ) configure(msg->newaid, msg->newgdef);
 
   // send another round of data if requested
 
   if(msg->resendCoordinates) {
-    // XXX is this NAMD_die necessary?  Why should it be?
-    if(!masterlist[msg->tag].configured)
-      NAMD_die("Master requested data before sending reconfig.");
-
     DebugM(3,"Sending requested data right away\n");
-    sendData(msg->tag);
+    sendData();
   }
 
   delete msg;
@@ -167,20 +148,16 @@ void ComputeGlobal::recvResults(ComputeGlobalResultsMsg *msg) {
 void ComputeGlobal::doWork()
 {
   DebugM(2,"doWork\n");
-  for (int i=0; i<masterlist.size(); i++) {
-    if (masterlist[i].configured) {
-      sendData(i);
-    } else {
-      // send message to check in
-      ComputeGlobalDataMsg *msg = new ComputeGlobalDataMsg;
-      msg->tag = i;
-      comm->sendComputeGlobalData(msg);
-    }
+  if(!firsttime) sendData();
+  else {
+    ComputeGlobalDataMsg *msg = new ComputeGlobalDataMsg;
+    comm->sendComputeGlobalData(msg);
+    firsttime = 0;
   }
   DebugM(2,"done with doWork\n");
 }
 
-void ComputeGlobal::sendData(int tag)
+void ComputeGlobal::sendData()
 {
   DebugM(2,"sendData\n");
   // Get positions from patches
@@ -199,12 +176,9 @@ void ComputeGlobal::sendData(int tag)
   }
 
   ComputeGlobalDataMsg *msg = new  ComputeGlobalDataMsg;
-  msg->tag = tag;
 
-  MasterConfig &mc = masterlist[tag];
-
-  AtomIDList::iterator a = mc.aid.begin();
-  AtomIDList::iterator a_e = mc.aid.end();
+  AtomIDList::iterator a = aid.begin();
+  AtomIDList::iterator a_e = aid.end();
   for ( ; a != a_e; ++a ) {
     LocalID localID = atomMap->localID(*a);
     if ( localID.pid == notUsed || ! x[localID.pid] ) continue;
@@ -217,8 +191,8 @@ void ComputeGlobal::sendData(int tag)
   // calculate group centers of mass
   Molecule *mol = Node::Object()->molecule;
   AtomIDList::iterator g_i, g_e;
-  g_i = mc.gdef.begin(); g_e = mc.gdef.end();
-  ResizeArray<BigReal>::iterator gm_i = mc.gmass.begin();
+  g_i = gdef.begin(); g_e = gdef.end();
+  ResizeArray<BigReal>::iterator gm_i = gmass.begin();
   for ( ; g_i != g_e; ++g_i, ++gm_i ) {
     Vector com(0,0,0);
     for ( ; *g_i != -1; ++g_i ) {
