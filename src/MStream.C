@@ -75,6 +75,7 @@ static int checkSum(StreamMessage *msg)
           " vs " << ((int)(msg->checksum)) <<"\n");
     NAMD_bug("MStream checksums do not agree!");
   }
+  return 1;
 }
 
 MIStream *MIStream::Get(char *buf, int len)
