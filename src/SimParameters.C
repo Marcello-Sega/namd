@@ -52,6 +52,8 @@ extern "C" {
 // #define DEBUGM
 #include "Debug.h"
 
+#define XXXBIGREAL 1.0e32
+
 /************************************************************************/
 /*                  */
 /*      FUNCTION initialize_config_data      */
@@ -330,7 +332,7 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
      &dielectric, 1.0);
    opts.range("dielectric", POSITIVE); // Hmmm, dielectric < 1 ...
 
-   opts.optional("main", "margin", "Patch width margin", &margin, 0.0);
+   opts.optional("main", "margin", "Patch width margin", &margin, XXXBIGREAL);
    opts.range("margin", NOT_NEGATIVE);
    opts.units("margin", N_ANGSTROM);
 
@@ -1549,12 +1551,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
       iout << iWARN << "Exclude is not scaled1-4; 1-4scaling ignored.\n" << endi;
    }
 
-   if ( splitPatch == SPLIT_PATCH_HYDROGEN )
-   {
-     // increase margin by hgroupCutoff
-     margin += hgroupCutoff;
-   }
-
    //  Get multiple timestep integration scheme
    if (!opts.defined("MTSAlgorithm"))
    {
@@ -1746,7 +1742,26 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
   NAMD_die("pairlistDist must be >= cutoff distance");
    }
 
-   patchDimension = pairlistDist + margin;
+   patchDimension = pairlistDist;
+
+   if ( splitPatch == SPLIT_PATCH_HYDROGEN ) {
+     patchDimension += hgroupCutoff;
+   }
+
+   BigReal defaultMargin = 0.0;
+   if (berendsenPressureOn || langevinPistonOn) {
+      defaultMargin = ( useFlexibleCell ? 0.06 : 0.03 ) * patchDimension;
+   }
+   if ( margin == XXXBIGREAL ) {
+     margin = defaultMargin;
+   }
+   if ( defaultMargin != 0.0 && margin == 0.0 ) {
+     margin = defaultMargin;
+     iout << iWARN << "ALWAYS USE NON-ZERO MARGIN WITH CONSTANT PRESSURE!\n";
+     iout << iWARN << "CHANGING MARGIN FROM 0 to " << margin << "\n" << endi;
+   }
+
+   patchDimension += margin;
 
    //  Turn on global integration if not explicitly specified
 
@@ -2536,14 +2551,10 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    iout << iINFO << "PAIRLISTS " << ( usePairlists ? "ENABLED" : "DISABLED" )
 							<< "\n" << endi;
 
-   iout << iINFO << "MARGIN                 ";
+   iout << iINFO << "MARGIN                 " << margin << "\n";
 
    if ( splitPatch == SPLIT_PATCH_HYDROGEN ) {
-     iout << ( margin - hgroupCutoff ) << "\n"
-          << iINFO << "HYDROGEN GROUP CUTOFF  "
-      << hgroupCutoff << "\n";
-   } else {
-     iout << margin << "\n";
+      iout << iINFO << "HYDROGEN GROUP CUTOFF  " << hgroupCutoff << "\n";
    }
    
    iout << iINFO << "PATCH DIMENSION        "

@@ -937,11 +937,29 @@ void HomePatch::doMarginCheck()
   BigReal sysdimb = lattice.b_r().unit() * lattice.b();
   BigReal sysdimc = lattice.c_r().unit() * lattice.c();
 
+  BigReal minSize = simParams->patchDimension - simParams->margin;
+
+  if ( ( (max.x - min.x)*aAway*sysdima < minSize ) ||
+       ( (max.y - min.y)*bAway*sysdimb < minSize ) ||
+       ( (max.z - min.z)*cAway*sysdimc < minSize ) ) {
+
+    NAMD_die("Periodic cell has become too small for original patch grid!\n"
+      "Possible solutions are to restart from a recent checkpoint,\n"
+      "increase margin, or disable useFlexibleCell for liquid simulation.");
+  }
+
   BigReal cutoff = simParams->cutoff;
 
   BigReal margina = 0.5 * ( (max.x - min.x) * aAway - cutoff / sysdima );
   BigReal marginb = 0.5 * ( (max.y - min.y) * bAway - cutoff / sysdimb );
   BigReal marginc = 0.5 * ( (max.z - min.z) * cAway - cutoff / sysdimc );
+
+  if ( (margina < 0) || (marginb < 0) || (marginc < 0) ) {
+    NAMD_die("Periodic cell has become too small for original patch grid!\n"
+      "There are probably many margin violations already reported.\n"
+      "Possible solutions are to restart from a recent checkpoint,\n"
+      "increase margin, or disable useFlexibleCell for liquid simulation.");
+  }
 
   BigReal minx = min.x - margina;
   BigReal miny = min.y - marginb;
