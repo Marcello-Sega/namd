@@ -44,6 +44,7 @@
 #include "Output.h"
 #include "ProxyMgr.h"
 #include "PatchMap.h"
+#include "PatchMap.inl"
 #include "Parameters.h"
 #include "SimParameters.h"
 #include "Communicate.h"
@@ -340,7 +341,12 @@ void Node::run(RunMsg *msg)
   if (CMyPe() == 0) {
     numHomePatchesRunning++; //Take into account controller on node 0
   } 
-  numNodesRunning = numNodes();
+
+  //Check if the number of patches is less than the number of nodes
+  if (numNodes() > patchMap->numPatches())
+	numNodesRunning=patchMap->numPatches();
+  else 
+  	numNodesRunning = numNodes();
 
   Namd::startTimer();  // We count timings from this point on
 
@@ -450,13 +456,16 @@ void Node::recvSMDData(SMDDataMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1030 $	$Date: 1998/11/29 21:49:54 $
+ *	$Author: krishnan $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1031 $	$Date: 1998/11/30 04:11:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1031  1998/11/30 04:11:41  krishnan
+ * Fixed the numNode > nPatches bug.
+ *
  * Revision 1.1030  1998/11/29 21:49:54  jim
  * Added startup diagnostics.
  *
