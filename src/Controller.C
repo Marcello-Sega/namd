@@ -1112,9 +1112,12 @@ void Controller::printEnergies(int step, int minimize)
     totalEnergy = potentialEnergy + kineticEnergy;
     smoothEnergy = totalEnergy +
         (4.0/3.0)*( kineticEnergyCentered - kineticEnergyHalfstep);
-    smooth2_avg *= 0.9375;
-    smooth2_avg -= 0.0625 *
+    if ( !(step%slowFreq) ) {
+      // only adjust based on most accurate energies
+      smooth2_avg *= 0.9375;
+      smooth2_avg -= 0.0625 *
         (4.0/3.0)*( kineticEnergyCentered - kineticEnergyHalfstep);
+    }
 
     if ( simParameters->outputMomenta && ! minimize &&
          ! ( step % simParameters->outputMomenta ) )
