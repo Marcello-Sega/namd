@@ -101,6 +101,8 @@ public:
 
   // type(cid) returns the compute type of the given ComputeID
   ComputeType type(ComputeID cid);
+  int partition(ComputeID cid);
+  int numPartitions(ComputeID cid);
 
   // allocate_cids(n) tells the ComputeMap to set aside
   // room for n compute objects.  I need not use them all.
@@ -109,7 +111,8 @@ public:
   // storeCompute(cid,node,maxPids) tells the ComputeMap to store
   // information about the indicated patch, and allocate space
   // for up to maxPids dependents
-  ComputeID storeCompute(int node,int maxPids,ComputeType type);
+  ComputeID storeCompute(int node,int maxPids,ComputeType type,
+			 int partition=0, int numPartitions=1);
 
   // newPid(cid,pid) stores the n patch ids associated with
   // compute id cid.
@@ -140,6 +143,8 @@ public:
     int node;
     int moveToNode;
     ComputeType type;
+    int partition;
+    int numPartitions;
     Boolean patchBased;
     int numPids;
     int numPidsAllocated;
@@ -168,13 +173,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1998/04/06 16:34:04 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1015 $	$Date: 1998/07/03 20:09:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.h,v $
+ * Revision 1.1015  1998/07/03 20:09:52  brunner
+ * Self-compute spliting creation changes.  I hope this works.
+ *
  * Revision 1.1014  1998/04/06 16:34:04  jim
  * Added DPME (single processor only), test mode, and momenta printing.
  *

@@ -35,6 +35,7 @@ int Compute::totalComputes = 0;
 Compute::Compute(ComputeID c) : cid(c), basePriority(DEFPRIO){ 
   totalComputes++;
   doAtomUpdate = false;
+  computeType = ComputeMap::Object()->type(c);
 }
 
 void Compute::enqueueWork() {
@@ -92,12 +93,15 @@ int Compute::sequence(void)
  *
  *	$RCSfile: Compute.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1998/03/03 23:05:03 $
+ *	$Revision: 1.1017 $	$Date: 1998/07/03 20:09:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.C,v $
+ * Revision 1.1017  1998/07/03 20:09:48  brunner
+ * Self-compute spliting creation changes.  I hope this works.
+ *
  * Revision 1.1016  1998/03/03 23:05:03  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

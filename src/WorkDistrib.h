@@ -45,6 +45,8 @@ public:
 
   static void messageEnqueueWork(Compute *);
   void enqueueWork(LocalWorkMsg *msg);
+  void enqueueSelfA(LocalWorkMsg *msg);
+  void enqueueSelfB(LocalWorkMsg *msg);
   void enqueueWorkA(LocalWorkMsg *msg);
   void enqueueWorkB(LocalWorkMsg *msg);
   void enqueueWorkC(LocalWorkMsg *msg);
@@ -183,12 +185,15 @@ public:
  *
  *	$RCSfile: WorkDistrib.h,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1998/07/02 21:00:03 $
+ *	$Revision: 1.1014 $	$Date: 1998/07/03 20:09:56 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.1014  1998/07/03 20:09:56  brunner
+ * Self-compute spliting creation changes.  I hope this works.
+ *
  * Revision 1.1013  1998/07/02 21:00:03  brunner
  * Changed initial patch distribution, should work on more PES
  *

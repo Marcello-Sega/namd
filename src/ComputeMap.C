@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1015 1998/03/03 23:05:06 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1016 1998/07/03 20:09:51 brunner Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -236,6 +236,21 @@ ComputeType ComputeMap::type(ComputeID cid)
 }
 
 //----------------------------------------------------------------------
+int ComputeMap::partition(ComputeID cid)
+{
+  if (computeData != NULL)
+    return computeData[cid].partition;
+  else return computeErrorType;
+}
+//----------------------------------------------------------------------
+int ComputeMap::numPartitions(ComputeID cid)
+{
+  if (computeData != NULL)
+    return computeData[cid].numPartitions;
+  else return computeErrorType;
+}
+
+//----------------------------------------------------------------------
 int ComputeMap::allocateCids(int n)
 {
   if (computeData != NULL)
@@ -263,7 +278,9 @@ int ComputeMap::allocateCids(int n)
 }
 
 //----------------------------------------------------------------------
-ComputeID ComputeMap::storeCompute(int inode, int maxPids, ComputeType type)
+ComputeID ComputeMap::storeCompute(int inode, int maxPids, 
+				   ComputeType type, 
+				   int partition,int numPartitions)
 {
   int cid;
 
@@ -279,6 +296,8 @@ ComputeID ComputeMap::storeCompute(int inode, int maxPids, ComputeType type)
   computeData[cid].node=inode;
 
   computeData[cid].type = type;
+  computeData[cid].partition = partition;
+  computeData[cid].partition = numPartitions;
 
   computeData[cid].patchBased = true;
   nPatchBased++;
@@ -341,12 +360,15 @@ void ComputeMap::printComputeMap(void)
  *
  *	$RCSfile: ComputeMap.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1998/03/03 23:05:06 $
+ *	$Revision: 1.1016 $	$Date: 1998/07/03 20:09:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.C,v $
+ * Revision 1.1016  1998/07/03 20:09:51  brunner
+ * Self-compute spliting creation changes.  I hope this works.
+ *
  * Revision 1.1015  1998/03/03 23:05:06  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

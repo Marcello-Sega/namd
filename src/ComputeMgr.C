@@ -189,7 +189,9 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
     switch ( map->type(i) )
     {
       case computeNonbondedSelfType:
-	c = new ComputeNonbondedSelf(i,map->computeData[i].pids[0].pid); // unknown delete
+	c = new ComputeNonbondedSelf(i,map->computeData[i].pids[0].pid,
+				     map->partition(i),map->partition(i)+1,
+				     map->numPartitions(i)); // unknown delete
 	++numNonbondedSelf;
 	map->registerCompute(i,c);
 	c->initialize();
@@ -406,13 +408,16 @@ void ComputeMgr:: recvComputeDPMEResults(ComputeDPMEResultsMsg *msg)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1023 $	$Date: 1998/04/15 22:21:36 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1024 $	$Date: 1998/07/03 20:09:53 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.C,v $
+ * Revision 1.1024  1998/07/03 20:09:53  brunner
+ * Self-compute spliting creation changes.  I hope this works.
+ *
  * Revision 1.1023  1998/04/15 22:21:36  jim
  * Make depend should give same result regardless of DPMTA or DPME.
  *

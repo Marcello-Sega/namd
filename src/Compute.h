@@ -30,17 +30,20 @@ private:
   int patchReadyCounter;
   int numPatches;
   int doAtomUpdate;
+  int computeType;
 
 protected:
   static Node* node;
   static PatchMap *patchMap;
   unsigned int basePriority;
   void enqueueWork();
+
 public:
   const ComputeID cid;
   static int totalComputes;
-
   Compute(ComputeID);
+  int type() { return computeType; };
+
   virtual ~Compute() { totalComputes--; }
 
   static void setNode(Node *n) { node = n; }
@@ -68,12 +71,15 @@ public:
  *
  *	$RCSfile: Compute.h,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1998/03/03 23:05:03 $
+ *	$Revision: 1.1011 $	$Date: 1998/07/03 20:09:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.h,v $
+ * Revision 1.1011  1998/07/03 20:09:50  brunner
+ * Self-compute spliting creation changes.  I hope this works.
+ *
  * Revision 1.1010  1998/03/03 23:05:03  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

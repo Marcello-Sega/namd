@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1050 1998/07/02 21:00:02 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1051 1998/07/03 20:09:55 brunner Exp $";
 
 #include <stdio.h>
 
@@ -437,11 +437,11 @@ void WorkDistrib::assignNodeToPatch()
 
   for(i=0; i < patchMap->numPatches(); i++)
   {
-    iout << iINFO << "Patch " << i << " has " 
-	 << patchMap->patch(i)->getNumAtoms() << " atoms and "
-	 << patchMap->patch(i)->getNumAtoms() * 
-            patchMap->patch(i)->getNumAtoms() 
-	 << " pairs.\n" << endi;
+    //    iout << iINFO << "Patch " << i << " has " 
+    //	 << patchMap->patch(i)->getNumAtoms() << " atoms and "
+    //	 << patchMap->patch(i)->getNumAtoms() * 
+    //            patchMap->patch(i)->getNumAtoms() 
+    //	 << " pairs.\n" << endi;
 
     if (patchMap->patch(i)) {
       numAtoms += patchMap->patch(i)->getNumAtoms();
@@ -687,14 +687,20 @@ void WorkDistrib::mapComputeNonbonded(void)
 
   for(i=0; i<patchMap->numPatches(); i++) // do the self 
   {
-    // self-interaction
-    cid=computeMap->storeCompute(patchMap->node(i),1,computeNonbondedSelfType);
     numAtoms = patchMap->patch(i)->getNumAtoms();
-    // pairWork[patchMap->node(i)] += 
+    int numPartitions = 2 + numAtoms/150;
+    // self-interaction
+    for(int partition=0; i < numPartitions; i++)
+    {
+      cid=computeMap->storeCompute(patchMap->node(i),1,
+				   computeNonbondedSelfType,
+				   partition,numPartitions);
+      // pairWork[patchMap->node(i)] += 
       // weight * ((numAtoms*numAtoms)/2. - numAtoms);
-    pairWork[patchMap->node(i)] += (numAtoms*numAtoms);
-    computeMap->newPid(cid,i);
-    patchMap->newCid(i,cid);
+      pairWork[patchMap->node(i)] += (numAtoms*numAtoms) / numPartitions;
+      computeMap->newPid(cid,i);
+      patchMap->newCid(i,cid);
+    }
   }
 
 //   for(i=0; i<patchMap->numPatches(); i++) // do the pairs
@@ -806,10 +812,27 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
 
   msg->compute = compute; // pointer is valid since send is to local Pe
 
-  if ( seq < 0 ) {
-   CSendMsgBranch(WorkDistrib, enqueueWork, LocalWorkMsg, msg, CpvAccess(BOCclass_group).workDistrib, CMyPe() );
+  if ( seq < 0 ) 
+  {
+    CSendMsgBranch(WorkDistrib, enqueueWork, LocalWorkMsg,
+		   msg, CpvAccess(BOCclass_group).workDistrib, CMyPe() );
+  } 
+  else if (compute->type() == computeNonbondedSelfType)  {
+    switch ( seq % 2 ) {
+    case 0:
+      CSendMsgBranch(WorkDistrib, enqueueSelfA, LocalWorkMsg, 
+ 		     msg, CpvAccess(BOCclass_group).workDistrib, CMyPe() );
+      break;
+    case 1:
+      CSendMsgBranch(WorkDistrib, enqueueSelfB, LocalWorkMsg,
+ 		     msg, CpvAccess(BOCclass_group).workDistrib, CMyPe() );
+      break;
+    default:
+      NAMD_die("WorkDistrib::messageEnqueueSelf case statement error!");
+      delete msg;
+    }
   }
-  else switch ( seq % 3 ) {
+  else switch ( seq % 2 ) {
   case 0:
    CSendMsgBranch(WorkDistrib, enqueueWorkA, LocalWorkMsg, msg, CpvAccess(BOCclass_group).workDistrib, CMyPe() );
    break;
@@ -826,6 +849,16 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
 }
 
 void WorkDistrib::enqueueWork(LocalWorkMsg *msg) {
+  msg->compute->doWork();
+  delete msg;
+}
+
+void WorkDistrib::enqueueSelfA(LocalWorkMsg *msg) {
+  msg->compute->doWork();
+  delete msg;
+}
+
+void WorkDistrib::enqueueSelfB(LocalWorkMsg *msg) {
   msg->compute->doWork();
   delete msg;
 }
@@ -1067,12 +1100,15 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1050 $	$Date: 1998/07/02 21:00:02 $
+ *	$Revision: 1.1051 $	$Date: 1998/07/03 20:09:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1051  1998/07/03 20:09:55  brunner
+ * Self-compute spliting creation changes.  I hope this works.
+ *
  * Revision 1.1050  1998/07/02 21:00:02  brunner
  * Changed initial patch distribution, should work on more PES
  *
