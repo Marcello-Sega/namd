@@ -1012,6 +1012,13 @@ void Controller::compareChecksums(int step, int forgiving) {
         " computes during timestep " << step << ".\n" << endi;
     }
     if ( simParams->outputPairlists )  pairlistWarnings += (int)checksum;
+
+    checksum = reduction->item(REDUCTION_STRAY_CHARGE_ERRORS);
+    if ( checksum ) {
+      if ( forgiving )
+        iout << iWARN << "Stray PME grid charges ignored!\n" << endi;
+      else NAMD_bug("Stray PME grid charges detected!\n");
+    }
 }
 
 void Controller::printTiming(int step) {

@@ -39,6 +39,7 @@ public:
   char *fz_arr;
   PmeReduction evir[PME_MAX_EVALS];
   SubmitReduction *reduction;
+  int strayChargeErrors;
   int resultsRemaining;
   PmeRealSpace *myRealSpace[PME_MAX_EVALS];
   int numLocalAtoms;

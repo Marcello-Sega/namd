@@ -1221,7 +1221,7 @@ void ComputePme::sendData(int numRecipPes, int *recipPeOrder,
 
   resultsRemaining = numRecipPes;
 
-  int errcount = 0;
+  strayChargeErrors = 0;
 
   CProxy_ComputePmeMgr pmeProxy(CpvAccess(BOCclass_group).computePmeMgr);
   for (int j=0; j<numRecipPes; j++) {
@@ -1246,8 +1246,9 @@ void ComputePme::sendData(int numRecipPes, int *recipPeOrder,
       fcount += fcount_g;
       if ( ! recipPeDest[pe] ) {
         if ( fcount_g ) {
-          ++errcount;
-          iout << iERROR << CkMyPe() << " sending to " << gridPeMap[pe] << ":";
+          ++strayChargeErrors;
+          iout << iERROR << "Stray PME grid charges detected: "
+		<< CkMyPe() << " sending to " << gridPeMap[pe] << " for planes";
           int iz = -1;
           for ( i=0; i<flen; ++i ) {
             if ( f[i] ) {
@@ -1299,8 +1300,6 @@ void ComputePme::sendData(int numRecipPes, int *recipPeOrder,
     pmeProxy.recvGrid(msg,gridPeMap[pe]);
 #endif
   }
-
-  if ( errcount ) NAMD_bug("Stray PME grid charges detected.");
 
   for (int i=0; i<fsize; ++i) {
     if ( q_arr[i] ) {
@@ -1382,12 +1381,13 @@ void ComputePme::ungridForces() {
       Force *f = r->f[Results::slow];
       int numAtoms = (*ap).p->getNumAtoms();
 
-      for(int i=0; i<numAtoms; ++i)
-        {
-        f[i].x += results_ptr->x;
-        f[i].y += results_ptr->y;
-        f[i].z += results_ptr->z;
-        ++results_ptr;
+      if ( ! strayChargeErrors ) {
+        for(int i=0; i<numAtoms; ++i) {
+          f[i].x += results_ptr->x;
+          f[i].y += results_ptr->y;
+          f[i].z += results_ptr->z;
+          ++results_ptr;
+        }
       }
   
       (*ap).forceBox->close(&r);
@@ -1419,6 +1419,7 @@ void ComputePme::ungridForces() {
       else if ( fepOn && g == 1 ) scale2 = 1. - simParams->lambda2;
       reduction->item(REDUCTION_ELECT_ENERGY_SLOW_F) += evir[g][0] * scale2;
     }
+    reduction->item(REDUCTION_STRAY_CHARGE_ERRORS) += strayChargeErrors;
     reduction->submit();
 
 }
