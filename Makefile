@@ -216,6 +216,16 @@ projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(TCLLIB) \
 	$(FFTLIB)
 
+summary:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
+	$(CHARMC) -verbose -ld++-option \
+	"-I$(INCLUDE) -I$(INCDIR) -I$(SRCDIR) $(CXXOPTS)" \
+	-language charm++ -tracemode summary \
+	-o namd2 $(OBJS) \
+	$(DPMTALIB) \
+	$(DPMELIB) \
+	$(TCLLIB) \
+	$(FFTLIB)
+
 $(DPMTADIR)/mpole/libmpole.a:
 	cd $(DPMTADIR) ; $(MAKE) ; cd ..
 
