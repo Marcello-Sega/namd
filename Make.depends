@@ -159,6 +159,11 @@ obj/CollectionMaster.o: \
 	src/ResizeArrayIter.h \
 	src/ResizeArrayPrimIter.h \
 	src/ProcessorPrivate.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/Lattice.h \
+	src/PatchMap.inl \
+	src/AtomMap.h \
 	src/Node.h \
 	src/Output.h \
 	src/mdcomm.h \
@@ -188,6 +193,8 @@ obj/CollectionMgr.o: \
 	src/ProcessorPrivate.h \
 	inc/CollectionMaster.top.h \
 	src/CollectionMaster.h \
+	src/PatchMap.inl \
+	src/AtomMap.h \
 	src/Node.h \
 	src/Molecule.h \
 	src/IntList.h \
@@ -324,10 +331,12 @@ obj/ComputeBonds.o: \
 	src/UniqueSetRaw.h \
 	src/ObjectArena.h \
 	src/Hydrogen.h \
-	src/ComputeHomeTuples.h \
-	src/Compute.h \
+	src/ReductionMgr.h \
 	src/main.h \
 	src/BOCgroup.h \
+	src/ProcessorPrivate.h \
+	src/ComputeHomeTuples.h \
+	src/Compute.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
@@ -338,7 +347,6 @@ obj/ComputeBonds.o: \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
-	src/ProcessorPrivate.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/HomePatchTypes.h \
@@ -351,7 +359,6 @@ obj/ComputeBonds.o: \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/PatchMgr.h \
-	src/ReductionMgr.h \
 	src/Inform.h \
 	src/UniqueSetIter.h \
 	src/ComputeBonds.inl \
@@ -482,6 +489,7 @@ obj/ComputeDPME.o: \
 	src/MStream.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/ComputeDPME.h \
 	src/ComputeHomePatches.h \
@@ -680,6 +688,7 @@ obj/ComputeFullDirect.o: \
 	src/MStream.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/ComputeFullDirect.h \
 	src/ComputeHomePatches.h \
@@ -1040,6 +1049,10 @@ obj/ComputeMgr.o: \
 	src/UniqueSetIter.h \
 	src/Node.h \
 	src/ComputeMap.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/PatchMap.inl \
+	src/AtomMap.h \
 	src/Compute.h \
 	src/ComputeNonbondedUtil.h \
 	src/ComputeNonbondedSplitting.h \
@@ -1063,8 +1076,6 @@ obj/ComputeMgr.o: \
 	src/ComputeHomeTuples.h \
 	src/HomePatch.h \
 	src/Patch.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/HomePatchTypes.h \
@@ -1073,8 +1084,6 @@ obj/ComputeMgr.o: \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/MStream.h \
-	src/PatchMap.inl \
-	src/AtomMap.h \
 	src/PatchMgr.h \
 	src/ReductionMgr.h \
 	src/Inform.h \
@@ -1458,7 +1467,10 @@ obj/ComputeRestraints.o: \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/MStream.h \
-	src/Patch.h
+	src/Patch.h \
+	src/NamdOneTools.h \
+	src/PDB.h \
+	src/PDBData.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeRestraints.o -c src/ComputeRestraints.C
 obj/ComputeSMD.o: \
 	src/ComputeSMD.C \
@@ -1616,6 +1628,10 @@ obj/Controller.o: \
 	src/Controller.h \
 	src/ReductionMgr.h \
 	src/CollectionMaster.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/PatchMap.inl \
+	src/AtomMap.h \
 	src/Output.h \
 	src/mdcomm.h \
 	src/strlib.h \
@@ -1857,6 +1873,18 @@ obj/HBondParam.o: \
 	src/strlib.h \
 	src/MStream.h \
 	src/Vector.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/Lattice.h \
+	src/NamdTypes.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/ResizeArrayPrimIter.h \
 	src/Inform.h
 	$(CXX) $(CXXFLAGS) -o obj/HBondParam.o -c src/HBondParam.C
 obj/Inform.o: \
@@ -1944,6 +1972,10 @@ obj/LJTable.o: \
 	src/HBondParam.h \
 	src/HBondPairData.h \
 	src/VoidTree.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/Lattice.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/LJTable.o -c src/LJTable.C
 obj/MStream.o: \
@@ -2015,10 +2047,10 @@ obj/Molecule.o: \
 	src/HBondParam.h \
 	src/HBondPairData.h \
 	src/VoidTree.h \
+	src/SimParameters.h \
+	src/Lattice.h \
 	src/PDB.h \
 	src/PDBData.h \
-	src/Lattice.h \
-	src/SimParameters.h \
 	src/UniqueSetIter.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/Molecule.o -c src/Molecule.C
@@ -2089,6 +2121,8 @@ obj/Namd.o: \
 	src/CollectionMgr.h \
 	inc/CollectionMaster.top.h \
 	src/CollectionMaster.h \
+	src/PatchMap.inl \
+	src/AtomMap.h \
 	inc/BroadcastMgr.top.h \
 	src/BroadcastMgr.h \
 	inc/LdbCoordinator.top.h \
@@ -2225,6 +2259,7 @@ obj/Node.o: \
 	src/mdcomm.h \
 	src/ProxyMgr.h \
 	src/UniqueSetIter.h \
+	src/PatchMap.inl \
 	src/Parameters.h \
 	src/strlib.h \
 	src/HBondParam.h \
@@ -2276,11 +2311,11 @@ obj/Output.o: \
 	src/HBondParam.h \
 	src/HBondPairData.h \
 	src/VoidTree.h \
-	src/PDB.h \
-	src/PDBData.h \
-	src/Lattice.h \
 	src/SimParameters.h \
 	src/Communicate.h \
+	src/Lattice.h \
+	src/PDB.h \
+	src/PDBData.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/PatchMap.inl \
@@ -2298,8 +2333,18 @@ obj/Parameters.o: \
 	src/HBondParam.h \
 	src/HBondPairData.h \
 	src/VoidTree.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
 	src/Communicate.h \
-	src/ConfigList.h
+	src/Lattice.h \
+	src/NamdTypes.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/ResizeArrayPrimIter.h
 	$(CXX) $(CXXFLAGS) -o obj/Parameters.o -c src/Parameters.C
 obj/ParseOptions.o: \
 	src/ParseOptions.C \
@@ -2791,6 +2836,10 @@ obj/TestController.o: \
 	src/Controller.h \
 	src/ReductionMgr.h \
 	src/CollectionMaster.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/PatchMap.inl \
+	src/AtomMap.h \
 	src/Output.h \
 	src/mdcomm.h \
 	src/strlib.h \
