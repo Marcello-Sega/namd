@@ -7,19 +7,15 @@
 #ifndef IMD_OUTPUT_H__
 #define IMD_OUTPUT_H__
 
-#include "common.h"
 #include "imd.h"
 class FloatVector;
+class GlobalMasterIMD;
 
 // IMDOutput
-// An object that sits in Node and does all the outputting of coordinates,
-// energies, etc.  Its socket connection gets initialized by ComputeIMD. 
-// If there's anything that needs to be updated periodically by converse,
-// it'll be here.
-
-extern "C" {
-  void IMDupdate(void*);
-}
+// This object's only reason for existence is to forward energies and 
+// coordinates to GlobalMasterIMD for export to connected IMD connections.
+// If Controller could access GlobalMasterIMD directly we wouldn't need
+// need this.
 
 class IMDOutput {
 
@@ -27,27 +23,22 @@ public:
   IMDOutput();   
   ~IMDOutput();
 
-  int connect(void *);  // pass socket handle
-  void disconnect();
+  // The GlobalMasterIMD instance passes itself to this object so it can
+  // receive energies and coordinates.
+  void use_imd(GlobalMasterIMD *);
 
+  // gather_* are called by Controller with the current timesteps and
+  // energies.
   void gather_energies(IMDEnergies *energies); 
   void gather_coordinates(int timestep, int N, FloatVector *coords);
 
+  // called by GlobalMasterIMD to set the transfer rate.  Should probably
+  // be handled internally by GlobalMasterIMD instead.
   void set_transrate(int newrate) {transrate = newrate; }
-  void update();
 
 private:
-  void *sock;
-  void *serversock;  // for IMDignore only
-
-  int curstep;   
+  GlobalMasterIMD *imd;
   int transrate;
-  int haveEnergies;
-  int haveCoords;
-  float *coordtmp;
-  int coordtmpsize;
-
-  void manage_sockets();
 };
 
 #endif

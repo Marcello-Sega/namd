@@ -2728,7 +2728,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    // Global forces configuration
 
    globalForcesOn = ( tclForcesOn || freeEnergyOn || miscForcesOn ||
-                      (IMDon && ! IMDignore) || SMDOn);
+                      (IMDon) || SMDOn);
 
    if (tclForcesOn)
    {

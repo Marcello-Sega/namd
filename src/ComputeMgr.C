@@ -390,7 +390,7 @@ ComputeMgr::createComputes(ComputeMap *map)
     // masterServerObject->addClient(new GlobalMasterTest());
     if(simParams->tclForcesOn)
       masterServerObject->addClient(new GlobalMasterTcl());
-    if(simParams->IMDon && !simParams->IMDignore)
+    if(simParams->IMDon)
       masterServerObject->addClient(new GlobalMasterIMD());
 
     if(simParams->SMDOn)

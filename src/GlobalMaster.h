@@ -24,6 +24,8 @@
 #ifndef GLOBALMASTER_H
 #define GLOBALMASTER_H
 
+#include "NamdTypes.h"
+
 class GlobalMaster {
  public:
 

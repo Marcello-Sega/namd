@@ -12,7 +12,7 @@
 #include "UniqueSortedArray.h"
 #include "GlobalMaster.h"
 #include "GlobalMasterIMD.h"
-
+#include "Vector.h"
 #include "InfoStream.h"
 
 #include <errno.h>
@@ -51,6 +51,9 @@ GlobalMasterIMD::GlobalMasterIMD() {
   SimParameters *simparams = Node::Object()->simParameters;
   int port = simparams->IMDport;
   IMDwait = simparams->IMDwait;
+  IMDignore = simparams->IMDignore;
+  coordtmp = NULL;
+  coordtmpsize = 0;
 
   if ( vmdsock_init() ) {
     NAMD_die("Unable to initialize socket interface for IMD.\n");
@@ -66,12 +69,12 @@ GlobalMasterIMD::GlobalMasterIMD() {
     vmdsock_destroy(sock);
     NAMD_die("Interactive MD failed to find free port.\n");
   }
-  if (newport != port) {
-    iout << iWARN << "Interactive MD listening on port "
-                  << newport << ".\n" << endi;
-  }
   vmdsock_listen(sock); 
+  iout << iINFO << "Interactive MD listening on port "
+                  << newport << ".\n" << endi;
   DebugM(2,"Done constructing ("<<requestedGroups().size()<<" initial groups)\n");
+
+  Node::Object()->imd->use_imd(this);
 }
 
 GlobalMasterIMD::~GlobalMasterIMD() {
@@ -79,13 +82,34 @@ GlobalMasterIMD::~GlobalMasterIMD() {
     vmdsock_destroy(sock);
   if (clientsock)
     vmdsock_destroy(clientsock);
+  delete [] coordtmp;
+}
+
+static int my_imd_connect(void *s) {
+  if (imd_handshake(s)) {
+    iout << iWARN << "IMD handshake failed\n" << endi;
+    return 0;
+  }
+
+  // Wait a second, then see if VMD has responded.
+  double t = CmiWallTimer();
+  while (CmiWallTimer()-t < 1.0);
+  int32 length;
+  if (vmdsock_selread(s,0) != 1 || imd_recv_header(s, &length) != IMD_GO) {
+    iout << iWARN << "Incompatible Interactive MD, use VMD v1.4b2 or higher\n"
+         << endi;
+    return 0;
+  }
+  return 1;
 }
 
 void GlobalMasterIMD::calculate() {
   /* clear out the requested forces first! */
-  modifyAppliedForces().resize(0);
-  modifyForcedAtoms().resize(0);
-  modifyGroupForces().resize(0);
+  if (!IMDignore) {
+    modifyAppliedForces().resize(0);
+    modifyForcedAtoms().resize(0);
+    modifyGroupForces().resize(0);
+  }
 
   if (!clientsock) {
     // check for incoming connection
@@ -101,10 +125,13 @@ void GlobalMasterIMD::calculate() {
       if (!clientsock) {
         iout << iWARN << "GlobalMasterIMD: Accept failed\n" << endi;
       } else {
-        if (!Node::Object()->imd->connect(clientsock)) {
+        if (!my_imd_connect(clientsock)) {
           iout << iWARN << "GlobalMasterIMD: IMD handshake failed\n" << endi;
           vmdsock_destroy(clientsock);
           clientsock = NULL;
+        } else {
+          // success 
+          Node::Object()->imd->set_transrate(1);
         }
       }
     }
@@ -129,23 +156,24 @@ void GlobalMasterIMD::calculate() {
 
   DebugM(2,"Setting " << num << " forces.\n");
   
-  modifyForcedAtoms().resize(num);
-  modifyAppliedForces().resize(num);
-
-  int i;
-  UniqueSortedArray<vmdforce>::iterator v_i = vmdforces.begin();
-  for ( i = 0; i < num; ++i, ++v_i) {
-    modifyForcedAtoms().item(i) = v_i->index;
-    modifyAppliedForces().item(i) = v_i->force;
+  if (!IMDignore) {
+    modifyForcedAtoms().resize(num);
+    modifyAppliedForces().resize(num);
+  
+    int i;
+    UniqueSortedArray<vmdforce>::iterator v_i = vmdforces.begin();
+    for ( i = 0; i < num; ++i, ++v_i) {
+      modifyForcedAtoms().item(i) = v_i->index;
+      modifyAppliedForces().item(i) = v_i->force;
+    }
   }
 }
 
-int GlobalMasterIMD::get_vmd_forces() {
+void GlobalMasterIMD::get_vmd_forces() {
   IMDType type;
   int32 length;
   int32 *vmd_atoms;
   float *vmd_forces;
-  int retval = 0;
   int paused = 0;
   vmdforce *vtest, vnew;
 
@@ -162,32 +190,35 @@ int GlobalMasterIMD::get_vmd_forces() {
         if (imd_recv_mdcomm(clientsock, length, vmd_atoms, vmd_forces)) {
           NAMD_die("Error reading MDComm forces\n");
         } 
-        for (i=0; i<length; i++) {
-          vnew.index = vmd_atoms[i];
-          if ( (vtest=vmdforces.find(vnew)) != NULL) {
-            // find was successful, so overwrite the old force values
-            if (vmd_forces[3*i] != 0.0f || vmd_forces[3*i+1] != 0.0f
-                || vmd_forces[3*i+2] != 0.0f) {
-              vtest->force.x = vmd_forces[3*i];
-              vtest->force.y = vmd_forces[3*i+1];
-              vtest->force.z = vmd_forces[3*i+2];
-            } else {
-              // or delete it from the list if the new force is ZERO
-              vmdforces.del(vnew);
+        if (IMDignore) {
+          iout << iWARN << "Ignoring IMD forces due to IMDignore\n" << endi;
+        } else {
+          for (i=0; i<length; i++) {
+            vnew.index = vmd_atoms[i];
+            if ( (vtest=vmdforces.find(vnew)) != NULL) {
+              // find was successful, so overwrite the old force values
+              if (vmd_forces[3*i] != 0.0f || vmd_forces[3*i+1] != 0.0f
+                  || vmd_forces[3*i+2] != 0.0f) {
+                vtest->force.x = vmd_forces[3*i];
+                vtest->force.y = vmd_forces[3*i+1];
+                vtest->force.z = vmd_forces[3*i+2];
+              } else {
+                // or delete it from the list if the new force is ZERO
+                vmdforces.del(vnew);
+              }
             }
-          }
-          else {
-            // Create a new entry in the table if the new force isn't ZERO
-            if (vmd_forces[3*i] != 0.0f || vmd_forces[3*i+1] != 0.0f
-                || vmd_forces[3*i+2] != 0.0f) {
-              vnew.force.x = vmd_forces[3*i];
-              vnew.force.y = vmd_forces[3*i+1];
-              vnew.force.z = vmd_forces[3*i+2];
-              vmdforces.add(vnew);
+            else {
+              // Create a new entry in the table if the new force isn't ZERO
+              if (vmd_forces[3*i] != 0.0f || vmd_forces[3*i+1] != 0.0f
+                  || vmd_forces[3*i+2] != 0.0f) {
+                vnew.force.x = vmd_forces[3*i];
+                vnew.force.y = vmd_forces[3*i+1];
+                vnew.force.z = vmd_forces[3*i+2];
+                vmdforces.add(vnew);
+              }
             }
-          }
-        } 
-        retval = 1;
+          } 
+        }
         delete [] vmd_atoms;
         delete [] vmd_forces;
         break;
@@ -196,6 +227,10 @@ int GlobalMasterIMD::get_vmd_forces() {
         Node::Object()->imd->set_transrate(length);
         break;
       case IMD_PAUSE:
+        if (IMDignore) {
+          iout << iWARN << "Ignoring IMD pause due to IMDignore\n" << endi;
+          break;
+        }
         if ( paused ) {
           iout << iINFO << "Resuming IMD\n" << endi;
           IMDwait = Node::Object()->simParameters->IMDwait;
@@ -212,9 +247,12 @@ int GlobalMasterIMD::get_vmd_forces() {
         iout<<iDEBUG<<"Detaching simulation from remote connection\n" << endi;
         vmdsock_destroy(clientsock);
         clientsock = 0;
-        Node::Object()->imd->disconnect();
         goto vmdEnd;
       case IMD_KILL:
+        if (IMDignore) {
+          iout << iWARN << "Ignoring IMD kill due to IMDignore\n" << endi;
+          break;
+        }
         NAMD_quit(1);
         break;
       case IMD_ENERGIES:
@@ -229,6 +267,29 @@ int GlobalMasterIMD::get_vmd_forces() {
       default: ;
     }
   }
-vmdEnd:
-  return retval;
+vmdEnd: ;
+}
+
+void GlobalMasterIMD::send_energies(IMDEnergies *energies) {
+  if (!clientsock || !vmdsock_selwrite(clientsock,0)) return;
+  imd_send_energies(clientsock, energies);
+}
+
+void GlobalMasterIMD::send_fcoords(int N, FloatVector *coords) {
+  if (!clientsock || !vmdsock_selwrite(clientsock,0)) return;
+  if (sizeof(FloatVector) == 3*sizeof(float)) {
+    imd_send_fcoords(clientsock, N, (float *)coords);
+  } else {
+    if (coordtmpsize < N) {
+      delete [] coordtmp;
+      coordtmp = new float[3*N];
+      coordtmpsize = N;
+    }
+    for (int i=0; i<N; i++) {
+      coordtmp[3*i] = coords[i].x; 
+      coordtmp[3*i+1] = coords[i].y; 
+      coordtmp[3*i+2] = coords[i].z; 
+    } 
+    imd_send_fcoords(clientsock, N, coordtmp);
+  }
 }

@@ -7,25 +7,42 @@
 #ifndef GLOBALMASTERIMD_H
 #define GLOBALMASTERIMD_H
 
+#include "GlobalMaster.h"
+
+class IMDEnergies;
+class FloatVector;
+
 class GlobalMasterIMD : public GlobalMaster {
  public: 
   /* initializes this according to the simulation parameters */
   GlobalMasterIMD();
   ~GlobalMasterIMD();
 
+  void send_energies(IMDEnergies *);
+  void send_fcoords(int, FloatVector *);
+
  protected:
 
   virtual void calculate();
 
   // Simple function for getting MDComm-style forces from VMD
-  int get_vmd_forces();
+  void get_vmd_forces();
 
   // flag for whether to proceed with simulation when there are no connections
   int IMDwait;
 
-  // My socket handle
+  // flag for whether to ignore forces
+  int IMDignore;
+
+  // My server socket handle
   void *sock;
+
+  // Connected socket 
   void *clientsock;
+
+  // temporaries in case 3*sizeof(float) != sizeof(FloatVector)
+  float *coordtmp;
+  int coordtmpsize;
 };
 
 #endif
