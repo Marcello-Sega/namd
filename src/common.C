@@ -10,9 +10,10 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1012 1998/03/09 17:06:46 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1013 1998/05/25 21:10:36 jim Exp $";
 
 #include "charm++.h"
+#include "converse.h"
 
 #include <sys/stat.h>
 #include <ctype.h>
@@ -72,8 +73,8 @@ void NAMD_check_messages(void)
 void NAMD_quit(Bool die_hard)
 
 {
-   cout << "Something called NAMD_quit: die_hard = " << die_hard << endl;
-   abort();
+   if ( die_hard ) CmiAbort("NAMD ABORTING DUE TO HARD NAMD_quit().\n");
+   else CmiAbort("NAMD ABORTING DUE TO SOFT NAMD_quit().\n");
 }
 
 
@@ -81,8 +82,7 @@ void NAMD_quit(Bool die_hard)
 void NAMD_die(char *err_msg)
 
 {
-    CPrintf("%s\n",err_msg);
-    abort(); CharmExit();
+   CmiAbort(err_msg);
 }
 
 
@@ -297,13 +297,16 @@ int	Fclose	(FILE *fout)
  * RCS INFORMATION:
  *
  *	$RCSfile: common.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1998/03/09 17:06:46 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1013 $	$Date: 1998/05/25 21:10:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.C,v $
+ * Revision 1.1013  1998/05/25 21:10:36  jim
+ * Started using CmiAbort().
+ *
  * Revision 1.1012  1998/03/09 17:06:46  milind
  * Changed prototype of ::new for GCC only.
  *

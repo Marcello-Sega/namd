@@ -4,7 +4,7 @@
 /*                           All Rights Reserved                           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.1007 1998/03/03 23:05:32 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.1008 1998/05/25 21:10:35 jim Exp $";
 
 #include "charm++.h"
 
@@ -38,7 +38,7 @@ public:
 	namd->startup(argv[argc-1]);
     }
     else {
-       CPrintf("main::main() no arguments, exiting\n");
+       NAMD_die("main::main() no arguments, exiting\n");
     }
     DebugM(1, "main() - leaving - Charm should queue up messages now!\n");
   }
@@ -49,8 +49,8 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: main.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1998/03/03 23:05:32 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1998/05/25 21:10:35 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -59,6 +59,9 @@ public:
  * REVISION HISTORY:
  *
  * $Log: main.C,v $
+ * Revision 1.1008  1998/05/25 21:10:35  jim
+ * Started using CmiAbort().
+ *
  * Revision 1.1007  1998/03/03 23:05:32  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

@@ -13,6 +13,7 @@
 #define _NAMD_H
 
 #include "charm++.h"
+#include "converse.h"
 
 #include <stdlib.h>
 
@@ -53,7 +54,7 @@ public:
   }
 
   // Emergency bailout 
-  static void die() { abort(); CharmExit(); }
+  static void die() { CmiAbort("NAMD ABORTING DUE TO Namd::die().\n"); }
   static void startTimer() {
 	cmiWallStart = CmiWallTimer(); 
 	cmiCpuStart = CmiCpuTimer();
@@ -88,12 +89,15 @@ private:
  *
  *	$RCSfile: Namd.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1998/05/22 00:33:59 $
+ *	$Revision: 1.1011 $	$Date: 1998/05/25 21:10:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Namd.h,v $
+ * Revision 1.1011  1998/05/25 21:10:36  jim
+ * Started using CmiAbort().
+ *
  * Revision 1.1010  1998/05/22 00:33:59  jim
  * Fixed final timing when load balancing is used.
  *
