@@ -38,7 +38,7 @@ void PmeRealSpace::fill_b_spline(PmeParticle p[]) {
   }
 }
 
-void PmeRealSpace::fill_charges(double **q_arr, char *f_arr, PmeParticle p[]) {
+void PmeRealSpace::fill_charges(double **q_arr, char *f_arr, char *fz_arr, PmeParticle p[]) {
   
   int i, j, k, l;
   int stride;
@@ -87,6 +87,10 @@ void PmeRealSpace::fill_charges(double **q_arr, char *f_arr, PmeParticle p[]) {
       }
     }
     Mi += stride;
+    u3 = (int)(p[i].z) - order + 1;
+    for (l=0; l<order; l++) {
+      fz_arr[u3+l + ((u3+l) < 0 ? K3 : 0)] = 1;
+    }
   }
 }
 

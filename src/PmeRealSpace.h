@@ -16,7 +16,7 @@ public:
   PmeRealSpace(PmeGrid grid, int natoms);
   ~PmeRealSpace();
 
-  void fill_charges(double **q_arr, char *f_arr, PmeParticle p[]); 
+  void fill_charges(double **q_arr, char *f_arr, char *fz_arr, PmeParticle p[]); 
   void compute_forces(const double * const *q_arr, const PmeParticle p[], 
                       Vector f[]);
 

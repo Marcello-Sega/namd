@@ -30,6 +30,7 @@ public:
   int qsize, fsize, bsize;
   double **q_arr;
   char *f_arr;
+  char *fz_arr;
   double energy;
   double virial[6];
   SubmitReduction *reduction;

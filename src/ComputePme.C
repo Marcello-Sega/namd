@@ -44,6 +44,8 @@ public:
   double virial[6];
   int start;
   int len;
+  int zlistlen;
+  int *zlist;
   char *fgrid;
   double *qgrid;
 };
@@ -393,16 +395,17 @@ void ComputePmeMgr::recvGrid(PmeGridMsg *msg) {
 
   char *f = msg->fgrid;
   int zdim = myGrid.dim3;
+  int zlistlen = msg->zlistlen;
+  int *zlist = msg->zlist;
   double *q = qgrid;
   double *qmsg = msg->qgrid;
   for ( int i=0; i<fgrid_len; ++i ) {
     if ( f[i] ) {
-      for ( int j=0; j<zdim; ++j ) {
-        *(q++) += *(qmsg++);
+      for ( int k=0; k<zlistlen; ++k ) {
+        q[zlist[k]] += *(qmsg++);
       }
-    } else {
-      q += zdim;
     }
+    q += zdim;
   }
 
   gridmsg_reuse[numSources-grid_count] = msg;
@@ -668,13 +671,16 @@ void ComputePmeMgr::sendUngrid(void) {
     int zdim = myGrid.dim3;
     int flen = newmsg->len;
     int fstart = newmsg->start;
+    int zlistlen = newmsg->zlistlen;
+    int *zlist = newmsg->zlist;
     char *f = newmsg->fgrid;
     double *qmsg = newmsg->qgrid;
     double *q = qgrid + (fstart-fgrid_start) * zdim;
     for ( int i=0; i<flen; ++i ) {
       if ( f[i] ) {
-        memcpy((void*)(qmsg),(void*)(q),zdim*sizeof(double));
-        qmsg += zdim;
+        for ( int k=0; k<zlistlen; ++k ) {
+          *(qmsg++) = q[zlist[k]];
+        }
       }
       q += zdim;
     }
@@ -806,6 +812,7 @@ ComputePme::ComputePme(ComputeID c) :
   q_arr = new double*[fsize];
   memset( (void*) q_arr, 0, fsize * sizeof(double*) );
   f_arr = new char[fsize];
+  fz_arr = new char[myGrid.K3];
 }
 
 ComputePme::~ComputePme()
@@ -817,6 +824,7 @@ ComputePme::~ComputePme()
   }
   delete [] q_arr;
   delete [] f_arr;
+  delete [] fz_arr;
 }
 
 void ComputePme::doWork()
@@ -896,9 +904,10 @@ void ComputePme::doWork()
     }
   }
   memset( (void*) f_arr, 0, fsize * sizeof(char) );
+  memset( (void*) fz_arr, 0, myGrid.K3 * sizeof(char) );
   myRealSpace = new PmeRealSpace(myGrid,numLocalAtoms);
   scale_coordinates(localData, numLocalAtoms, lattice, myGrid);
-  myRealSpace->fill_charges(q_arr, f_arr, localData);
+  myRealSpace->fill_charges(q_arr, f_arr, fz_arr, localData);
 
   CProxy_ComputePmeMgr pmeProxy(CpvAccess(BOCclass_group).computePmeMgr);
 #if CHARM_VERSION > 050402
@@ -957,19 +966,31 @@ void ComputePme::sendData(int numRecipPes, int firstDestRecipPe,
       continue;
     }
 
-    PmeGridMsg *msg = new (flen, fcount*zdim, 0) PmeGridMsg;
+    int zlistlen = 0;
+    for ( i=0; i<myGrid.K3; ++i ) {
+      if ( fz_arr[i] ) ++zlistlen;
+    }
+
+    PmeGridMsg *msg = new (zlistlen, flen, fcount*zlistlen, 0) PmeGridMsg;
     msg->sourceNode = CkMyPe();
     msg->lattice = lattice;
     msg->start = fstart;
     msg->len = flen;
+    msg->zlistlen = zlistlen;
+    int *zlist = msg->zlist;
+    zlistlen = 0;
+    for ( i=0; i<myGrid.K3; ++i ) {
+      if ( fz_arr[i] ) zlist[zlistlen++] = i;
+    }
     memcpy((void*)(msg->fgrid),(void*)(f),flen*sizeof(char));
 
     double **q = q_arr + fstart;
     double *qmsg = msg->qgrid;
     for ( i=0; i<flen; ++i ) {
       if ( f[i] ) {
-        memcpy((void*)(qmsg),(void*)(q[i]),zdim*sizeof(double));
-        qmsg += zdim;
+        for ( int k=0; k<zlistlen; ++k ) {
+          *(qmsg++) = q[i][zlist[k]];
+        }
       }
     }
 
@@ -994,12 +1015,15 @@ void ComputePme::copyResults(PmeGridMsg *msg) {
   int flen = msg->len;
   int fstart = msg->start;
   char *f = msg->fgrid;
+  int zlistlen = msg->zlistlen;
+  int *zlist = msg->zlist;
   double *qmsg = msg->qgrid;
   double **q = q_arr + fstart;
   for ( int i=0; i<flen; ++i ) {
     if ( f[i] ) {
-      memcpy((void*)(q[i]),(void*)(qmsg),zdim*sizeof(double));
-      qmsg += zdim;
+      for ( int k=0; k<zlistlen; ++k ) {
+        q[i][zlist[k]] = *(qmsg++);
+      }
     }
   }
 }
