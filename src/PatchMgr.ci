@@ -4,6 +4,7 @@ module PatchMgr {
   message [packed] MovePatchesMsg;
   message [packed] MigrateAtomsMsg;
   message [packed] MigrateAtomsCombinedMsg;
+  message MoveAtomMsg;
 
   group PatchMgr
   {
@@ -11,6 +12,7 @@ module PatchMgr {
     entry void recvMovePatches(MovePatchesMsg *);
     entry void recvMigrateAtoms(MigrateAtomsMsg *);
     entry void recvMigrateAtomsCombined(MigrateAtomsCombinedMsg *);
+    entry void moveAtom(MoveAtomMsg *);
   } ;
 }
 
@@ -19,12 +21,15 @@ module PatchMgr {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1999/05/11 23:56:44 $
+ *	$Revision: 1.1006 $	$Date: 1999/08/11 16:53:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.ci,v $
+ * Revision 1.1006  1999/08/11 16:53:09  jim
+ * Added move command to TCL scripting.
+ *
  * Revision 1.1005  1999/05/11 23:56:44  brunner
  * Changes for new charm version
  *

@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1073 $  $Date: 1999/06/21 16:15:38 $
+ *  $Revision: 1.1074 $  $Date: 1999/08/11 16:53:12 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1074  1999/08/11 16:53:12  jim
+ * Added move command to TCL scripting.
+ *
  * Revision 1.1073  1999/06/21 16:15:38  jim
  * Improved scripting, run now ends and generates output.
  *
@@ -697,7 +700,7 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
    ////// basic options
    opts.require("main", "timestep", "size of the timestep, in fs",
     &dt, 1.0);
-   opts.range("timestep", POSITIVE);
+   opts.range("timestep", NOT_NEGATIVE);
    opts.units("timestep", N_FSEC);
 
    opts.require("main", "numsteps", "number of timesteps to perform",
@@ -3529,12 +3532,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1073 $  $Date: 1999/06/21 16:15:38 $
+ *  $Revision: 1.1074 $  $Date: 1999/08/11 16:53:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1074  1999/08/11 16:53:12  jim
+ * Added move command to TCL scripting.
+ *
  * Revision 1.1073  1999/06/21 16:15:38  jim
  * Improved scripting, run now ends and generates output.
  *

@@ -15,6 +15,7 @@
 #include "SimParameters.h"
 #include "Thread.h"
 #include "ProcessorPrivate.h"
+#include "PatchMgr.h"
 #include <stdio.h>
 
 #ifdef NAMD_TCL
@@ -57,7 +58,6 @@ int ScriptTcl::Tcl_param(ClientData clientData,
   return TCL_OK;
 }
 
-
 int ScriptTcl::Tcl_run(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
   if (argc != 2) {
@@ -94,6 +94,51 @@ int ScriptTcl::Tcl_run(ClientData clientData,
   sprintf(msg->param,"firsttimestep");
   sprintf(msg->value,"%d",simParams->N);
   CProxy_Node(CpvAccess(BOCclass_group).node).scriptParam(msg);
+  Node::Object()->enableScriptBarrier();
+  script->suspend();
+
+  return TCL_OK;
+}
+
+int ScriptTcl::Tcl_move(ClientData clientData,
+	Tcl_Interp *interp, int argc, char *argv[]) {
+  if (argc != 4) {
+    interp->result = "wrong # args";
+    return TCL_ERROR;
+  }
+  char **fstring;  int fnum;  int atomid;  int moveto;  double x, y, z;
+  if (Tcl_GetInt(interp,argv[1],&atomid) != TCL_OK) return TCL_ERROR;
+  if (argv[2][0]=='t' && argv[2][1]=='o' && argv[2][2]==0) moveto = 1;
+  else if (argv[2][0]=='b' && argv[2][1]=='y' && argv[2][2]==0) moveto = 0;
+  else {
+    interp->result = "syntax is 'move <id> to|by {<x> <y> <z>}'";
+    return TCL_ERROR;
+  }
+  if (Tcl_SplitList(interp, argv[3], &fnum, &fstring) != TCL_OK) {
+    return TCL_ERROR;
+  }
+  if ( (fnum != 3) ||
+       (Tcl_GetDouble(interp, fstring[0],&x) != TCL_OK) ||
+       (Tcl_GetDouble(interp, fstring[1],&y) != TCL_OK) ||
+       (Tcl_GetDouble(interp, fstring[2],&z) != TCL_OK) ) {
+    interp->result = "third argument not a vector";
+    free(fstring);
+    return TCL_ERROR;
+  }
+  free(fstring);
+
+  SimParameters *simParams = Node::Object()->simParameters;
+  ScriptTcl *script = (ScriptTcl *)clientData;
+
+  iout << "TCL: Moving atom " << atomid << " ";
+  if ( moveto ) iout << "to"; else iout << "by";
+  iout << " " << Vector(x,y,z) << ".\n" << endi;
+
+  MoveAtomMsg *msg = new MoveAtomMsg;
+  msg->atomid = atomid - 1;
+  msg->moveto = moveto;
+  msg->coord = Vector(x,y,z);
+  CProxy_PatchMgr(CpvAccess(BOCclass_group).patchMgr).moveAtom(msg);
   Node::Object()->enableScriptBarrier();
   script->suspend();
 
@@ -162,6 +207,8 @@ void ScriptTcl::algorithm() {
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "run", Tcl_run,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "move", Tcl_move,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "output", Tcl_output,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
 
@@ -189,12 +236,15 @@ void ScriptTcl::algorithm() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1999/06/21 16:15:36 $
+ *	$Revision: 1.3 $	$Date: 1999/08/11 16:53:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ScriptTcl.C,v $
+ * Revision 1.3  1999/08/11 16:53:10  jim
+ * Added move command to TCL scripting.
+ *
  * Revision 1.2  1999/06/21 16:15:36  jim
  * Improved scripting, run now ends and generates output.
  *

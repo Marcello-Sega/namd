@@ -52,6 +52,13 @@ public:
   static MovePatchesMsg* unpack(void *ptr);
 };
 
+class MoveAtomMsg : public CMessage_MoveAtomMsg {
+public:
+  int atomid;
+  int moveto;
+  Vector coord;
+};
+
 // PatchMgr creates and manages homepatches. There exist one instance of 
 // PatchMgr on each node (derived from Charm++ Group).  // That is, when a new operator causes creation of one instance on each node. 
 // In addition to creation of homepatches, it handles the atom redistribution
@@ -105,6 +112,8 @@ public:
   void recvMigrateAtoms(MigrateAtomsMsg *);
   void recvMigrateAtomsCombined(MigrateAtomsCombinedMsg *);
   static void setGroup(BOCgroup g);
+
+  void moveAtom(MoveAtomMsg *msg);
  
 private:
 
@@ -133,13 +142,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMgr.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1999/05/11 23:56:44 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1013 $	$Date: 1999/08/11 16:53:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.h,v $
+ * Revision 1.1013  1999/08/11 16:53:09  jim
+ * Added move command to TCL scripting.
+ *
  * Revision 1.1012  1999/05/11 23:56:44  brunner
  * Changes for new charm version
  *

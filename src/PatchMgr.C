@@ -20,6 +20,7 @@
 //#include "Compute.h"
 #include "HomePatch.h"
 #include "PatchMap.h"
+#include "AtomMap.h"
 
 #include "main.decl.h"
 #include "main.h"
@@ -203,6 +204,18 @@ void PatchMgr::recvMigrateAtomsCombined (MigrateAtomsCombinedMsg *msg)
   delete msg;
 }
 
+void PatchMgr::moveAtom(MoveAtomMsg *msg) {
+  LocalID lid = AtomMap::Object()->localID(msg->atomid);
+  if ( lid.pid != notUsed ) {
+    HomePatch *hp = patchMap->homePatch(lid.pid);
+    if ( hp ) {
+      if ( msg->moveto ) { hp->p[lid.index] = msg->coord; }
+      else { hp->p[lid.index] += msg->coord; }
+    }
+  }
+  delete msg;
+}
+
 void * MovePatchesMsg::pack (MovePatchesMsg *m)
   {
     DebugM(1,"MovePatchesMsg::pack() - aid.size() = " << m->aid.size() << endl);
@@ -254,12 +267,15 @@ MovePatchesMsg* MovePatchesMsg::unpack (void *ptr)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMgr.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1999/05/11 23:56:43 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1018 $	$Date: 1999/08/11 16:53:07 $
  *
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.C,v $
+ * Revision 1.1018  1999/08/11 16:53:07  jim
+ * Added move command to TCL scripting.
+ *
  * Revision 1.1017  1999/05/11 23:56:43  brunner
  * Changes for new charm version
  *
