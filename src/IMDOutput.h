@@ -27,7 +27,7 @@ public:
   IMDOutput(void *);   // Initialize with socket handle
   ~IMDOutput();
 
-  void gather_energies(int timestep, IMDEnergies *energies); 
+  void gather_energies(IMDEnergies *energies); 
   void gather_coordinates(int timestep, int N, FloatVector *coords);
 
   void set_transrate(int newrate) {transrate = newrate; }

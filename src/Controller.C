@@ -625,6 +625,7 @@ void Controller::printEnergies(int step)
 
     if (node->simParameters->IMDon && !(step % node->simParameters->IMDfreq)) {
       IMDEnergies energies;
+      energies.tstep = step;
       energies.T = temperature;
       energies.Etot = totalEnergy;
       energies.Epot = totalEnergy - kineticEnergy;
@@ -634,7 +635,7 @@ void Controller::printEnergies(int step)
       energies.Eangle = angleEnergy;
       energies.Edihe = dihedralEnergy;
       energies.Eimpr = improperEnergy;
-      Node::Object()->imd->gather_energies(step, &energies);
+      Node::Object()->imd->gather_energies(&energies);
     }
   
     int stepInRun = step - simParams->firstTimestep;

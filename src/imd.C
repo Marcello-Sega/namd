@@ -1,70 +1,51 @@
-/**
-***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
-***  The Board of Trustees of the University of Illinois.
-***  All rights reserved.
-**/
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
+
 #include "imd.h"
 #include "vmdsock.h"
+#include <string.h>
+#include <errno.h>
+#include <stdlib.h>
 
-static void imd_setheader(IMDHeader *header, IMDHeaderType type, 
-                          int length, int sz) {
-  sprintf(header->length, "%d", length);
-  sprintf(header->size, "%d", sz);
-  switch (type) {
-    case IMD_ENERGIES : strcpy(header->type, "NRGS"); break;
-    case IMD_ERROR    : strcpy(header->type, "XXXX"); break;
-    case IMD_EXIT     : strcpy(header->type, "EXIT"); break;
-    case IMD_FCOORDS  : strcpy(header->type, "FCOO"); break;
-    case IMD_HANDSHAKE: strcpy(header->type, "HAND"); break;
-    case IMD_KILL     : strcpy(header->type, "KILL"); break;
-    case IMD_MDCOMM   : strcpy(header->type, "MDCO"); break;
-    case IMD_PAUSE    : strcpy(header->type, "PAUS"); break;
-    case IMD_TEXT     : strcpy(header->type, "TEXT"); break;
-    case IMD_TRATE    : strcpy(header->type, "TRTE"); break;
-    default           : strcpy(header->type, "XXXX");
-  }
+typedef struct {
+  int32 type;
+  int32 length;
+} IMDheader;
+
+#define HEADERSIZE 8
+
+static int32 imd_htonl(int32 h) {
+  int32 n;
+  ((char *)&n)[0] = (h >> 24) & 0x0FF;
+  ((char *)&n)[1] = (h >> 16) & 0x0FF;
+  ((char *)&n)[2] = (h >> 8) & 0x0FF;
+  ((char *)&n)[3] = h & 0x0FF;
+  return n;
 }
 
-static void imd_getheader(const IMDHeader *header, IMDHeaderType *type, 
-                          int *length, int *sz) {
-  *length=atoi(header->length);
-  *sz = atoi(header->size); 
-  if      (!strncmp(header->type, "NRGS", 4)) *type = IMD_ENERGIES; 
-  else if (!strncmp(header->type, "EXIT", 4)) *type = IMD_EXIT; 
-  else if (!strncmp(header->type, "FCOO", 4)) *type = IMD_FCOORDS; 
-  else if (!strncmp(header->type, "HAND", 4)) *type = IMD_HANDSHAKE;
-  else if (!strncmp(header->type, "KILL", 4)) *type = IMD_KILL; 
-  else if (!strncmp(header->type, "MDCO", 4)) *type = IMD_MDCOMM; 
-  else if (!strncmp(header->type, "PAUS", 4)) *type = IMD_PAUSE; 
-  else if (!strncmp(header->type, "TEXT", 4)) *type = IMD_TEXT; 
-  else if (!strncmp(header->type, "TRTE", 4)) *type = IMD_TRATE; 
-  else
-    *type = IMD_ERROR; 
-}  
-
-int imd_sendheader(void *s, IMDHeaderType type, int length, int size) {
-  IMDHeader header;
-  imd_setheader(&header, type, length, size);
-  return imd_writen(s, (char *)&header, sizeof(IMDHeader));
+static int32 imd_ntohl(int32 n) {
+  int32 h = 0;
+  h |= (int32)(((char *)&n)[0]) << 24;
+  h |= (int32)(((char *)&n)[1]) << 16;
+  h |= (int32)(((char *)&n)[2]) << 8;
+  h |= (int32)(((char *)&n)[3]);
+  return h;
 }
 
-int imd_readheader(void * s, IMDHeaderType *type, int *length, int *size) {
-  IMDHeader header;
-  int rc = imd_readn(s, (char *)&header, sizeof(IMDHeader));
-  if (rc < sizeof(IMDHeader)) return -1;
-  imd_getheader(&header, type, length, size);
-  return rc;
+
+static void fill_header(IMDheader *header, IMDType type, int32 length) {
+  header->type = imd_htonl((int32)type);
+  header->length = imd_htonl(length);
 }
 
-ssize_t imd_readn(void *s, char *ptr, size_t n) {
-  size_t nleft;
-  ssize_t nread;
-  
+static void swap_header(IMDheader *header) {
+  header->type = imd_ntohl(header->type);
+  header->length= imd_ntohl(header->length);
+}
+
+static int32 imd_readn(void *s, char *ptr, int32 n) {
+  int32 nleft;
+  int32 nread;
+ 
   nleft = n;
   while (nleft > 0) {
     if ((nread = vmdsock_read(s, ptr, nleft)) < 0) {
@@ -80,10 +61,10 @@ ssize_t imd_readn(void *s, char *ptr, size_t n) {
   return n-nleft;
 }
 
-ssize_t imd_writen(void *s, const char *ptr, size_t n) {
-  size_t nleft;
-  ssize_t nwritten;
-  
+static int32 imd_writen(void *s, const char *ptr, int32 n) {
+  int32 nleft;
+  int32 nwritten;
+
   nleft = n;
   while (nleft > 0) {
     if ((nwritten = vmdsock_write(s, ptr, nleft)) <= 0) {
@@ -97,3 +78,95 @@ ssize_t imd_writen(void *s, const char *ptr, size_t n) {
   }
   return n;
 }
+ 
+
+int imd_disconnect(void *s) {
+  IMDheader header;
+  fill_header(&header, IMD_DISCONNECT, 0);
+  return (imd_writen(s, (char *)&header, HEADERSIZE) != HEADERSIZE);
+}
+
+int imd_pause(void *s) {
+  IMDheader header;
+  fill_header(&header, IMD_PAUSE, 0);
+  return (imd_writen(s, (char *)&header, HEADERSIZE) != HEADERSIZE);
+}
+
+int imd_kill(void *s) {
+  IMDheader header;
+  fill_header(&header, IMD_KILL, 0);
+  return (imd_writen(s, (char *)&header, HEADERSIZE) != HEADERSIZE);
+}
+
+int imd_handshake(void *s) {
+  IMDheader header;
+  fill_header(&header, IMD_HANDSHAKE, 1);
+  header.length = 1;   // Not byteswapped!
+  return (imd_writen(s, (char *)&header, HEADERSIZE) != HEADERSIZE);
+}
+
+int imd_trate(void *s, int32 rate) {
+  IMDheader header;
+  fill_header(&header, IMD_TRATE, rate);
+  return (imd_writen(s, (char *)&header, HEADERSIZE) != HEADERSIZE);
+}
+
+// Data methods
+
+int imd_send_mdcomm(void *s,int32 n,const int32 *indices,const float *forces) {
+  int32 size = HEADERSIZE+16*n;
+  char *buf = new char[size]; 
+  fill_header((IMDheader *)buf, IMD_MDCOMM, n);
+  memcpy((void *)(buf+HEADERSIZE), (const void *)indices, 4*n);
+  memcpy((void *)(buf+HEADERSIZE+4*n), (const void *)forces, 12*n);
+  int rc = (imd_writen(s, buf, size) != size);
+  delete [] buf;
+  return rc;
+}
+
+int imd_send_energies(void *s, const IMDEnergies *energies) {
+  int32 size = HEADERSIZE+sizeof(IMDEnergies);
+  char *buf = new char[size];
+  fill_header((IMDheader *)buf, IMD_ENERGIES, 1);
+  memcpy((void *)(buf+HEADERSIZE), (void *)energies, sizeof(IMDEnergies));
+  int rc = (imd_writen(s, buf, size) != size);
+  delete [] buf;
+  return rc;
+}
+
+int imd_send_fcoords(void *s, int32 n, const float *coords) {
+  int32 size = HEADERSIZE+12*n;
+  char *buf = new char[size];
+  fill_header((IMDheader *)buf, IMD_FCOORDS, n);
+  memcpy((void *)(buf+HEADERSIZE), (void *)coords, 12*n);
+  int rc = (imd_writen(s, buf, size) != size);
+  delete [] buf;
+  return rc;
+}
+
+// The IMD receive functions
+
+IMDType imd_recv_header(void *s, int32 *length) {
+  IMDheader header;
+  if (imd_readn(s, (char *)&header, HEADERSIZE) != HEADERSIZE)
+    return IMD_IOERROR;
+  swap_header(&header);
+  *length = header.length;
+  return IMDType(header.type); 
+}
+
+int imd_recv_mdcomm(void *s, int32 n, int32 *indices, float *forces) {
+  if (imd_readn(s, (char *)indices, 4*n) != 4*n) return 1;
+  if (imd_readn(s, (char *)forces, 12*n) != 12*n) return 1;
+  return 0;
+}
+
+int imd_recv_energies(void *s, IMDEnergies *energies) {
+  return (imd_readn(s, (char *)energies, sizeof(IMDEnergies))
+          != sizeof(IMDEnergies));
+}
+
+int imd_recv_fcoords(void *s, int32 n, float *coords) {
+  return (imd_readn(s, (char *)coords, 12*n) != 12*n);
+}
+

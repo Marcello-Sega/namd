@@ -1,55 +1,29 @@
-/**
-***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
-***  The Board of Trustees of the University of Illinois.
-***  All rights reserved.
-**/
 
-/* 
-   IMDHeader: The idea behind the messages is that first you send a header 
-   message consisting of a fixed number of chars; that message tells you what
-   kinf of message you're getting next, including the all the type information
-   needed to byteswap, sort into structs, allocate memory, etc.
-*/
+#ifndef IMD_H__
+#define IMD_H__
 
-#ifndef IMD_HEADER_H__
-#define IMD_HEADER_H__
+#include <limits.h>
 
-#include <sys/types.h>  /* For types size_t, ssize_t, etc.  */
+#if ( INT_MAX == 2147483647 )
+typedef int     int32;
+#else
+typedef short   int32;
+#endif
 
-typedef struct {
-  char type[8];      /* Type of message  */
-  char length[8];    /* Some length parameter, not necessarily the number  */
-                     /* of bytes in the data message.  */
-  char size[8];      /* The number of bytes in the following data message  */
-} IMDHeader;
-
-enum IMDHeaderType {
-  IMD_ENERGIES,  /* NRGS */
-  IMD_ERROR,     /* XXXX */
-  IMD_EXIT,      /* EXIT */
-  IMD_FCOORDS,   /* FCOO */
-  IMD_HANDSHAKE, /* HAND */
-  IMD_KILL,      /* KILL */
-  IMD_MDCOMM,    /* MDCO */
-  IMD_PAUSE,     /* PAUS */
-  IMD_TEXT,      /* TEXT */
-  IMD_TRATE      /* TRTE */
+enum IMDType {
+  IMD_DISCONNECT,
+  IMD_ENERGIES, 
+  IMD_FCOORDS,   
+  IMD_HANDSHAKE, 
+  IMD_KILL,      
+  IMD_MDCOMM,    
+  IMD_PAUSE,
+  IMD_TRATE,
+  IMD_IOERROR
 };
-typedef enum IMDHeaderType IMDHeaderType;
- 
-extern int  imd_sendheader(void *, IMDHeaderType,int, int);
-extern int  imd_readheader(void *, IMDHeaderType *, int *, int *);
-
-/* readn and writen take from Stevens 2nd ed., p. 78. */
-extern ssize_t imd_readn(void *, char *, size_t);
-extern ssize_t imd_writen(void *, const char *, size_t);
- 
-/*
- * Data structures sent by NAMD to VMD
- *
- */
 
 typedef struct {
+  int32 tstep;
   float T;
   float Etot;
   float Epot;
@@ -61,5 +35,23 @@ typedef struct {
   float Eimpr;
 } IMDEnergies;
 
+// Send simple messages - these consist of a header with no subsequent data
+extern int   imd_disconnect(void *);
+extern int   imd_pause(void *);
+extern int   imd_kill(void *);
+extern int   imd_handshake(void *);
+extern int   imd_trate(void *, int32);
+
+// Send data
+extern int   imd_send_mdcomm(void *, int32, const int32 *, const float *);
+extern int   imd_send_energies(void *, const IMDEnergies *);
+extern int   imd_send_fcoords(void *, int32, const float *);
+
+/// Receive header and data 
+extern IMDType imd_recv_header(void *, int32 *);
+extern int imd_recv_mdcomm(void *, int32, int32 *, float *);
+extern int imd_recv_energies(void *, IMDEnergies *);
+extern int imd_recv_fcoords(void *, int32, float *);
+ 
 #endif
 

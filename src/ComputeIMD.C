@@ -121,42 +121,27 @@ void ComputeIMD::calculate() {
 
 int ComputeIMD::get_vmd_forces() {
   char *buf;
-  IMDHeaderType htype;
-  int hlength;
-  int hsize; 
-  int retval = 0;
-  int rc;
+  IMDType type;
+  int32 length;
+  int32 *vmd_atoms;
+  float *vmd_forces;
+  int retval; 
+  vmdforce *vtest, vnew;
+
   while (vmdsock_selread(sock,0))  {     // Drain the socket
-    rc = imd_readheader(sock, &htype, &hlength, &hsize); 
-    if (rc != sizeof(IMDHeader)) {
-      iout << iDEBUG << "header: " << strerror(errno) << '\n' << endi;
-      NAMD_die("Error reading header\n"); 
-    }
-    // interpret header
-    vmdforce *vtest, vnew;
+    type = imd_recv_header(sock, &length);
     int i;
-    int vmd_atoms[100];
-    float vmd_forces[300];
-    switch (htype) {
+    switch (type) {
       case IMD_MDCOMM:
         // Expect the msglength to give number of indicies, and the data
         // message to consist of first the indicies, then the coordinates
         // in xyz1 xyz2... format.
-        rc  = imd_readn(sock,(char *)vmd_atoms,hlength* sizeof(int));
-        if (rc != hlength*sizeof(int)) {
-          iout << iDEBUG << "read indices returned " << rc 
-               << ", should have returned " << hlength*sizeof(int)
-               << '\n' << endi; 
-          NAMD_die("Error reading indices\n");
-        }
-        rc = imd_readn(sock,(char *)vmd_forces,hlength*3*sizeof(float));
-        if (rc != hlength*3*sizeof(float)) {
-          iout << iDEBUG << "read forces returned " << rc 
-               << ", should have returned " << hlength*3*sizeof(float)
-               << '\n' << endi; 
-          NAMD_die("Error reading forces\n");
-  	}
-        for (i=0; i<hlength; i++) {
+        vmd_atoms = new int32[length];
+        vmd_forces = new float[3*length];
+        if (imd_recv_mdcomm(sock, length, vmd_atoms, vmd_forces)) {
+          NAMD_die("Error reading MDComm forces\n");
+        } 
+        for (i=0; i<length; i++) {
           vnew.index = vmd_atoms[i];
           if ( (vtest=vmdforces.find(vnew)) != NULL) {
             // find was successful, so overwrite the old force values
@@ -173,12 +158,14 @@ int ComputeIMD::get_vmd_forces() {
           }
         } 
         retval = 1;
+        delete [] vmd_atoms;
+        delete [] vmd_forces;
         break;
       case IMD_TRATE:
-        iout << iINFO << "Setting transfer rate to " << hlength<<'\n'<<endi;	
-        Node::Object()->imd->set_transrate(hlength);
+        iout << iINFO << "Setting transfer rate to " << length<<'\n'<<endi;	
+        Node::Object()->imd->set_transrate(length);
         break;
-      case IMD_EXIT:
+      case IMD_DISCONNECT:
         iout<<iDEBUG<<"Detaching simulation from remote connection\n" << endi;
         vmdsock_destroy(sock);
         sock = 0;
@@ -187,14 +174,16 @@ int ComputeIMD::get_vmd_forces() {
       case IMD_KILL:
         NAMD_quit(1);
         break;
-      default:
-        iout << iWARN << "ComputeIMD: Unsupported header received \n "<<endi;
-        buf = new char[hsize];
-        rc = imd_readn(sock,buf,hsize);
-        delete [] buf; 
-        if (rc != hsize) {
-          NAMD_die("Unable to read full message from VMD\n"); 
-        }
+      case IMD_ENERGIES:
+        IMDEnergies junk;
+        imd_recv_energies(sock, &junk);
+        break;
+      case IMD_FCOORDS:
+        vmd_forces = new float[3*length];
+        imd_recv_fcoords(sock, length, vmd_forces);
+        delete [] vmd_forces;
+        break;
+      default: ;
     }
   }
 vmdEnd:
