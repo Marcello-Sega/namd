@@ -401,6 +401,24 @@ int GlobalMasterTcl::Tcl_addforce(ClientData clientData,
   DebugM(4,"Atom ID " << atomid << " added to force list\n");
   return TCL_OK;
 }
+
+
+int GlobalMasterTcl::Tcl_addenergy(ClientData clientData,
+	Tcl_Interp *interp, int argc, char *argv[])
+{
+  double energy;
+  
+  if (argc != 2)
+    return TCL_ERROR;
+  if (Tcl_GetDouble(interp,argv[1],&energy) != TCL_OK)
+    return TCL_ERROR;
+  
+  GlobalMasterTcl *self = (GlobalMasterTcl *)clientData;
+  self->reduction->item(REDUCTION_MISC_ENERGY) += energy;
+  self->reduction->submit();
+  
+  return TCL_OK;
+}
 #endif
 
 
@@ -409,6 +427,7 @@ GlobalMasterTcl::GlobalMasterTcl() {
 #ifdef NAMD_TCL
   interp = 0;
 #endif
+  reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
   initialize();
   DebugM(2,"Done constructing ("<<requestedGroups().size()<<" initial groups)\n");
 }
@@ -420,6 +439,7 @@ GlobalMasterTcl::~GlobalMasterTcl() {
   if ( interp ) Tcl_DeleteInterp(interp);
 */
 #endif
+  delete reduction;
 }
 
 
@@ -495,6 +515,8 @@ void GlobalMasterTcl::initialize() {
   Tcl_CreateObjCommand(interp, (char *)"loadmasses", Tcl_loadmasses,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateObjCommand(interp, (char *)"addforce", Tcl_addforce,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, (char *)"addenergy", Tcl_addenergy,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, (char *)"reconfig", Tcl_reconfig,
       (ClientData) this, (Tcl_CmdDeleteProc *) NULL);

@@ -22,6 +22,7 @@ class GlobalMasterTcl : public GlobalMaster {
  protected:
   virtual void calculate();
  private:
+  SubmitReduction *reduction;
   /* sets up the initial list of requested atoms */
   void initialize();
 #ifdef NAMD_TCL
@@ -37,6 +38,7 @@ class GlobalMasterTcl : public GlobalMaster {
   static int Tcl_loadforces(ClientData, Tcl_Interp *, int, Tcl_Obj * const []);
   static int Tcl_loadtotalforces(ClientData, Tcl_Interp *, int, Tcl_Obj * const []);
   static int Tcl_addforce(ClientData, Tcl_Interp *, int, Tcl_Obj * const []); 
+  static int Tcl_addenergy(ClientData, Tcl_Interp *, int, char **);
 #endif
 };
 
