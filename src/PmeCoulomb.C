@@ -1,9 +1,13 @@
 
 #include "PmeCoulomb.h"
+#include "common.h"
 
 PmeCoulomb::PmeCoulomb(PmeGrid grid, int natoms) 
   : myGrid(grid), N(natoms) {
   int qsize;
+  if (grid.K3 & 1)  // If K3 is odd, DIE.
+    NAMD_die("Sorry, PmeGridSizeZ must be even.");
+
   myFFT = new PmeFFT(myGrid.K1, myGrid.K2, myGrid.K3);
   myFFT->getdims(&(myGrid.dim2), &(myGrid.dim3));
   myRealSpace = new PmeRealSpace(myGrid, natoms);
