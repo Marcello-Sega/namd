@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1080 $  $Date: 1999/09/08 16:05:46 $
+ *  $Revision: 1.1081 $  $Date: 1999/09/23 20:33:40 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1081  1999/09/23 20:33:40  jim
+ * Eliminated COM centering from docs and params.
+ *
  * Revision 1.1080  1999/09/08 16:05:46  jim
  * Added internal PUB3DFFT package.
  *
@@ -1332,6 +1335,8 @@ void SimParameters::config_parser_boundary(ParseOptions &opts) {
    //// Spherical Boundary Conditions
    opts.optionalB("main", "sphericalBC", "Are spherical boundary counditions "
       "active?", &sphericalBCOn, FALSE);
+   opts.require("sphericalBC", "sphericalBCCenter",
+     "Center of spherical boundaries", &sphericalCenter);
    opts.require("sphericalBC", "sphericalBCr1", "Radius for first sphere "
      "potential", &sphericalBCr1);
    opts.range("sphericalBCr1", POSITIVE);
@@ -1355,8 +1360,6 @@ void SimParameters::config_parser_boundary(ParseOptions &opts) {
    opts.optional("sphericalBCr2", "sphericalBCexp2", "Exponent for second "
     "sphere potential", &sphericalBCexp2, 2);
    opts.range("sphericalBCexp2", POSITIVE);
-   opts.optional("sphericalBC", "sphericalBCCenter", "Center of spherical boundaries",
-    &sphericalCenter);
 
    /////////////// Cylindrical Boundary Conditions
    opts.optionalB("main", "cylindricalBC", "Are cylindrical boundary counditions "
@@ -1377,6 +1380,8 @@ void SimParameters::config_parser_boundary(ParseOptions &opts) {
 // additions beyond those already found in spherical parameters    JJU
    opts.optional("cylindricalBC", "cylindricalBCAxis", "Cylinder axis (defaults to x)",
     PARSE_STRING);
+   opts.require("cylindricalBC", "cylindricalBCCenter",
+     "Center of cylindrical boundaries", &cylindricalCenter);
    opts.require ("cylindricalBC", "cylindricalBCl1", "Length of first cylinder",
                  &cylindricalBCl1);
    opts.range("cylindricalBCl1", POSITIVE);
@@ -1398,7 +1403,6 @@ void SimParameters::config_parser_boundary(ParseOptions &opts) {
    opts.optional("cylindricalBCr2", "cylindricalBCexp2", "Exponent for second "
                 "cylinder potential", &cylindricalBCexp2, 2);
    opts.range("cylindricalBCexp2", POSITIVE);
-   opts.optional("cylindricalBC", "cylindricalBCCenter", "Center of cylindrical boundaries", &cylindricalCenter);
 
    ///////////////  Electric field options
    opts.optionalB("main", "eFieldOn", "Should and electric field be applied",
@@ -2486,19 +2490,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
       sphericalBCexp2 = 0;
    }
 
-
-   if (opts.defined("sphericalBCCenter"))
-   {
-  sphericalCenterCOM = FALSE;
-   }
-   else
-   {
-  sphericalCenterCOM = TRUE;
-  sphericalCenter.x = 0.0;
-  sphericalCenter.y = 0.0;
-  sphericalCenter.z = 0.0;
-   }
-
    if (!cylindricalBCOn)
    {
     cylindricalBCr1 = 0.0;
@@ -2516,17 +2507,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
     cylindricalBCk2 = 0.0;
     cylindricalBCexp2 = 0;
     cylindricalBCl2 = 0.0;
-   }
-   if (opts.defined ("cylindricalBCCenter"))
-   {
-    cylindricalCenterCOM = FALSE;
-   }
-   else
-   {
-    cylindricalCenterCOM = TRUE;
-    cylindricalCenter.x = 0.0;
-    cylindricalCenter.y = 0.0;
-    cylindricalCenter.z = 0.0;
    }
 
    if (!eFieldOn)
@@ -3137,15 +3117,8 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << iINFO << "EXPONENT #2             " << cylindricalBCexp2 << "\n";
      iout << iINFO << "LENGTH #2               " << cylindricalBCl2 << "\n";
     }
-    if (cylindricalCenterCOM)
-    {
-      iout << iINFO << "CYLINDRICAL BOUNDARIES CENTERED AROUND COM\n";
-    }
-    else
-    {
     iout << iINFO << "CYLINDER BOUNDARY CENTER(" << cylindricalCenter.x << ", "
              << cylindricalCenter.y << ", " << cylindricalCenter.z << ")\n";
-    }
     iout << endi;
   }
 
@@ -3170,15 +3143,8 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
         << sphericalBCexp2 << "\n";
       }
 
-      if (sphericalCenterCOM)
-      {
-  iout << iINFO << "SPHERICAL BOUNDARIES CENTERED AROUND COM\n";
-      }
-      else
-      {
-  iout << iINFO << "SPHERE BOUNDARY CENTER(" << sphericalCenter.x << ", "
-     << sphericalCenter.y << ", " << sphericalCenter.z << ")\n";
-      }
+      iout << iINFO << "SPHERE BOUNDARY CENTER(" << sphericalCenter.x << ", "
+               << sphericalCenter.y << ", " << sphericalCenter.z << ")\n";
       iout << endi;
    }
    
@@ -3573,12 +3539,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1080 $  $Date: 1999/09/08 16:05:46 $
+ *  $Revision: 1.1081 $  $Date: 1999/09/23 20:33:40 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1081  1999/09/23 20:33:40  jim
+ * Eliminated COM centering from docs and params.
+ *
  * Revision 1.1080  1999/09/08 16:05:46  jim
  * Added internal PUB3DFFT package.
  *

@@ -56,19 +56,7 @@ ComputeCylindricalBC::ComputeCylindricalBC(ComputeID c, PatchID pid)
 		twoForces = FALSE;
 	}
 
-	//  Get the center of the cylinder, either the center of mass or
-	//  a user-defined center
-						/* I will want to have
-						   a user defined center */
-	if (simParams->cylindricalCenterCOM)
-	{
-		NAMD_die("Sorry, can't center about center of mass yet.\n");
-		// center = namdMyNode->com;
-	}
-	else
-	{
-		center = simParams->cylindricalCenter;
-	}
+	center = simParams->cylindricalCenter;
 
 }
 /*			END OF FUNCTION ComputeCylindricalBC		*/
@@ -346,12 +334,15 @@ void ComputeCylindricalBC::doForce(Position* p, Results* r, AtomProperties* a)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1999/06/17 15:46:01 $
+ *	$Revision: 1.8 $	$Date: 1999/09/23 20:33:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeCylindricalBC.C,v $
+ * Revision 1.8  1999/09/23 20:33:39  jim
+ * Eliminated COM centering from docs and params.
+ *
  * Revision 1.7  1999/06/17 15:46:01  jim
  * Completely rewrote reduction system to eliminate need for sequence numbers.
  *

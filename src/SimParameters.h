@@ -306,6 +306,7 @@ public:
 
 	Bool sphericalBCOn;		//  Flag TRUE-> spherical boundary 
 					//  conditions are active
+	Vector sphericalCenter;		//  Center specified by user
 	BigReal sphericalBCk1;		//  First force constant for 
 					//  spherical BC
 	BigReal sphericalBCk2;		//  Second force constant for 
@@ -314,14 +315,10 @@ public:
 	BigReal sphericalBCr2;		//  Second radius for spherical BC
 	int sphericalBCexp1;		//  First radius for spherical BC
 	int sphericalBCexp2;		//  Second radius for spherical BC
-	Bool sphericalCenterCOM;	//  Are the spherical boundaries centered
-					//  around the center of mass?
-	Vector sphericalCenter;		//  Center specified by user
 
-        Bool cylindricalCenterCOM;
-        Vector cylindricalCenter;
         Bool cylindricalBCOn;           //  Flag TRUE->cylindrical boundary
                                         //  conditions are active
+        Vector cylindricalCenter;
 	char cylindricalBCAxis;		//  'x', 'y', or 'z'
         BigReal cylindricalBCr1;
         BigReal cylindricalBCr2;
@@ -455,12 +452,15 @@ private:
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1044 $	$Date: 1999/09/03 20:46:28 $
+ *	$Revision: 1.1045 $	$Date: 1999/09/23 20:33:40 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1045  1999/09/23 20:33:40  jim
+ * Eliminated COM centering from docs and params.
+ *
  * Revision 1.1044  1999/09/03 20:46:28  jim
  * Support for non-orthogonal periodic boundary conditions.
  *

@@ -305,21 +305,25 @@ The following parameters are used to define these boundary conditions.
 \NAMDCONFWDEF{sphericalBC}{use spherical boundary conditions?}{{\tt on} or {\tt off}}{{\tt off}}
 {Specifies whether or not spherical boundary conditions 
 are to be applied to the system.  If 
-set to {\tt on}, then {\tt sphericalBCr1} and {\tt sphericalBCk1} 
+set to {\tt on}, then {\tt sphericalBCCenter}, {\tt sphericalBCr1} and {\tt sphericalBCk1} 
 must be defined, and {\tt sphericalBCexp1}, {\tt sphericalBCr2}, 
 {\tt sphericalBCk2}, and {\tt sphericalBCexp2} can optionally be 
 defined.}
 
 \item
+\NAMDCONF{sphericalBCCenter}{center of sphere (\AA)}{position}
+{Location around which sphere is centered.}
+
+\item
 \NAMDCONF{sphericalBCr1}{radius for first boundary condition (\AA)}{positive decimal}
 {Distance at which the first potential of the boundary conditions takes
-effect.  This distance is a radius from the center of mass.}
+effect.  This distance is a radius from the center.}
 
 \item
 \NAMDCONF{sphericalBCk1}{force constant for first potential}{non-zero decimal}
 {Force constant for the first harmonic potential.  A positive
-value will push atoms toward the center of mass, and a negative
-value will pull atoms away from the center of mass.}
+value will push atoms toward the center, and a negative
+value will pull atoms away from the center.}
 
 \item
 \NAMDCONFWDEF{sphericalBCexp1}{exponent for first potential}{positive, even integer}{2}
@@ -329,15 +333,15 @@ use are 2 and 4.}
 \item
 \NAMDCONF{sphericalBCr2}{radius for second boundary condition (\AA)}{positive decimal}
 {Distance at which the second potential of the boundary conditions takes
-effect.  This distance is a radius from the center of mass.
+effect.  This distance is a radius from the center.
 If this parameter is defined, then {\tt spericalBCk2} must also
 be defined.}
 
 \item
 \NAMDCONF{sphericalBCk2}{force constant for second potential}{non-zero decimal}
 {Force constant for the second harmonic potential.  A positive
-value will push atoms toward the center of mass, and a negative
-value will pull atoms away from the center of mass.}
+value will push atoms toward the center, and a negative
+value will pull atoms away from the center.}
 
 \item
 \NAMDCONFWDEF{sphericalBCexp2}{exponent for second potential}{positive, even integer}{2}
@@ -359,14 +363,14 @@ The following parameters are used to define these boundary conditions.
 \NAMDCONFWDEF{cylindricalBC}{use cylindrical boundary conditions?}{{\tt on} or {\tt off}}{{\tt off}}
 {Specifies whether or not cylindrical boundary conditions 
 are to be applied to the system.  If 
-set to {\tt on}, then {\tt cylindricalBCr1}, {\tt cylindricalBCl1} and {\tt cylindricalBCk1} 
-must be defined, and {\tt cylindricalBCAxis}, {\tt cylindricalBCCenter}, {\tt cylindricalBCexp1}, {\tt cylindricalBCr2}, {\tt cylindricalBCl2},
+set to {\tt on}, then {\tt cylindricalBCCenter}, {\tt cylindricalBCr1}, {\tt cylindricalBCl1} and {\tt cylindricalBCk1} 
+must be defined, and {\tt cylindricalBCAxis}, {\tt cylindricalBCexp1}, {\tt cylindricalBCr2}, {\tt cylindricalBCl2},
 {\tt cylindricalBCk2}, and {\tt cylindricalBCexp2} can optionally be 
 defined.}
 
 \item
 \NAMDCONF{cylindricalBCCenter}{center of  cylinder (\AA)}{position}
-{Location around which cylinder is centered.  If not specified, center of mass is used.}
+{Location around which cylinder is centered.}
 
 \item
 \NAMDCONF{cylindricalBCAxis}{axis of  cylinder (\AA)}{{\tt x}, {\tt y}, or {\tt z}}

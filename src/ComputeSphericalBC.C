@@ -51,17 +51,7 @@ ComputeSphericalBC::ComputeSphericalBC(ComputeID c, PatchID pid)
 		twoForces = FALSE;
 	}
 
-	//  Get the center of the sphere, either the center of mass or
-	//  a user-defined center
-	if (simParams->sphericalCenterCOM)
-	{
-		NAMD_die("Sorry, can't center about center of mass yet.\n");
-		// center = namdMyNode->com;
-	}
-	else
-	{
-		center = simParams->sphericalCenter;
-	}
+	center = simParams->sphericalCenter;
 
 }
 /*			END OF FUNCTION ComputeSphericalBC		*/
