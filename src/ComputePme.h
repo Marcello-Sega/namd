@@ -17,7 +17,7 @@ class ComputeMgr;
 class SubmitReduction;
 class PmeGridMsg;
 #define PME_MAX_EVALS 15 
-typedef MathArray<double,7*PME_MAX_EVALS> PmeReduction;
+typedef MathArray<double,7> PmeReduction;
 
 class ComputePme : public ComputeHomePatches {
 public:
@@ -35,7 +35,7 @@ public:
   double **q_arr;
   char *f_arr;
   char *fz_arr;
-  PmeReduction evir;
+  PmeReduction evir[PME_MAX_EVALS];
   SubmitReduction *reduction;
   int resultsRemaining;
   PmeRealSpace *myRealSpace[PME_MAX_EVALS];

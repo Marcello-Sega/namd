@@ -41,7 +41,7 @@ public:
 
   int sourceNode;
   Lattice lattice;
-  PmeReduction evir;
+  PmeReduction *evir;
   int start;
   int len;
   int zlistlen;
@@ -65,7 +65,7 @@ class PmeUntransMsg : public CMessage_PmeUntransMsg {
 public:
 
   int sourceNode;
-  PmeReduction evir;
+  PmeReduction *evir;
   int y_start;
   int ny;
   float *qgrid;
@@ -142,8 +142,8 @@ private:
   int untrans_count;
   int ungrid_count;
   PmeGridMsg **gridmsg_reuse;
-  PmeReduction recip_evir;
-  PmeReduction recip_evir2;
+  PmeReduction recip_evir[PME_MAX_EVALS];
+  PmeReduction recip_evir2[PME_MAX_EVALS];
 };
 
 ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), pmeCompute(0) {
@@ -600,9 +600,9 @@ void ComputePmeMgr::gridCalc2(void) {
 
     // reciprocal space portion of PME
     BigReal ewaldcof = ComputeNonbondedUtil::ewaldcof;
-    recip_evir2[7*g] = myKSpace->compute_energy(kgrid+qgrid_size*g,
-			lattice, ewaldcof, &(recip_evir2[7*g+1]));
-    // CkPrintf("Ewald reciprocal energy = %f\n", recip_evir2[7*g]);
+    recip_evir2[g][0] = myKSpace->compute_energy(kgrid+qgrid_size*g,
+			lattice, ewaldcof, &(recip_evir2[g][1]));
+    // CkPrintf("Ewald reciprocal energy = %f\n", recip_evir2[g][0]);
 
     // start backward FFT (x dimension)
 #ifdef NAMD_FFTW
@@ -630,16 +630,16 @@ void ComputePmeMgr::sendUntrans(void) {
     LocalPmeInfo &li = localInfo[pe];
     int x_start =li.x_start;
     int nx = li.nx;
-    PmeUntransMsg *newmsg = new (nx*ny*zdim*numGrids,0) PmeUntransMsg;
+    PmeUntransMsg *newmsg = new (nx*ny*zdim*numGrids,numGrids,0) PmeUntransMsg;
     newmsg->sourceNode = myTransPe;
-    if ( j == 0 ) {  // only need these once
-      newmsg->evir = recip_evir2;
-    } else {
-      newmsg->evir = 0.;
-    }
     newmsg->y_start = y_start;
     newmsg->ny = ny;
     for ( int g=0; g<numGrids; ++g ) {
+      if ( j == 0 ) {  // only need these once
+        newmsg->evir[g] = recip_evir2[g];
+      } else {
+        newmsg->evir[g] = 0.;
+      }
       memcpy((void*)(newmsg->qgrid+nx*ny*zdim*g),
 		(void*)(kgrid + qgrid_size*g + x_start*ny*zdim),
 		nx*ny*zdim*sizeof(float));
@@ -657,10 +657,14 @@ void ComputePmeMgr::sendUntrans(void) {
 void ComputePmeMgr::recvUntrans(PmeUntransMsg *msg) {
   // CkPrintf("recvUntrans on Pe(%d)\n",CkMyPe());
   if ( untrans_count == numTransPes ) {
-    recip_evir = 0.;
+    for ( int g=0; g<numGrids; ++g ) {
+      recip_evir[g] = 0.;
+    }
   }
 
-  recip_evir += msg->evir;
+  for ( int g=0; g<numGrids; ++g ) {
+    recip_evir[g] += msg->evir[g];
+  }
 
   int zdim = myGrid.dim3;
   // int x_start = localInfo[myGridPe].x_start;
@@ -717,9 +721,13 @@ void ComputePmeMgr::sendUngrid(void) {
     PmeGridMsg *newmsg = gridmsg_reuse[j];
     int pe = newmsg->sourceNode;
     if ( j == 0 ) {  // only need these once
-      newmsg->evir = recip_evir;
+      for ( int g=0; g<numGrids; ++g ) {
+        newmsg->evir[g] = recip_evir[g];
+      }
     } else {
-      newmsg->evir = 0.;
+      for ( int g=0; g<numGrids; ++g ) {
+        newmsg->evir[g] = 0.;
+      }
     }
     int zdim = myGrid.dim3;
     int flen = newmsg->len;
@@ -972,12 +980,12 @@ void ComputePme::doWork()
     numGridAtoms[0] = numLocalAtoms;
   }
 
-  evir = 0;
   memset( (void*) fz_arr, 0, myGrid.K3 * sizeof(char) );
 
   // calculate self energy
   BigReal ewaldcof = ComputeNonbondedUtil::ewaldcof;
   for ( g=0; g<numGrids; ++g ) {
+    evir[g] = 0;
     BigReal selfEnergy = 0;
     data_ptr = localGridData[g];
     int i;
@@ -987,7 +995,7 @@ void ComputePme::doWork()
       ++data_ptr;
     }
     selfEnergy *= -1. * ewaldcof / SQRT_PI;
-    evir[7*g] += selfEnergy;
+    evir[g][0] += selfEnergy;
 
     double **q = q_arr + g*fsize;
     for (i=0; i<fsize; ++i) {
@@ -1070,7 +1078,8 @@ void ComputePme::sendData(int numRecipPes, int *recipPeOrder,
       if ( fz_arr[i] ) ++zlistlen;
     }
 
-    PmeGridMsg *msg = new (zlistlen, flen*numGrids, fcount*zlistlen, 0) PmeGridMsg;
+    PmeGridMsg *msg = new (zlistlen, flen*numGrids, fcount*zlistlen,
+	numGrids, 0) PmeGridMsg;
     msg->sourceNode = CkMyPe();
     msg->lattice = lattice;
     msg->start = fstart;
@@ -1114,7 +1123,6 @@ void ComputePme::sendData(int numRecipPes, int *recipPeOrder,
 
 void ComputePme::copyResults(PmeGridMsg *msg) {
 
-  evir += msg->evir;
   int zdim = myGrid.dim3;
   int flen = msg->len;
   int fstart = msg->start;
@@ -1123,6 +1131,7 @@ void ComputePme::copyResults(PmeGridMsg *msg) {
   float *qmsg = msg->qgrid;
   int g;
   for ( g=0; g<numGrids; ++g ) {
+    evir[g] += msg->evir[g];
     char *f = msg->fgrid + g*flen;
     double **q = q_arr + fstart + g*fsize;
     for ( int i=0; i<flen; ++i ) {
@@ -1205,21 +1214,21 @@ void ComputePme::ungridForces() {
       } else if ( lesOn ) {
         scale = 1.0 / (double)lesFactor;
       }
-      reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += evir[0+7*g] * scale;
-      reduction->item(REDUCTION_VIRIAL_SLOW_XX) += evir[1+7*g] * scale;
-      reduction->item(REDUCTION_VIRIAL_SLOW_XY) += evir[2+7*g] * scale;
-      reduction->item(REDUCTION_VIRIAL_SLOW_XZ) += evir[3+7*g] * scale;
-      reduction->item(REDUCTION_VIRIAL_SLOW_YX) += evir[2+7*g] * scale;
-      reduction->item(REDUCTION_VIRIAL_SLOW_YY) += evir[4+7*g] * scale;
-      reduction->item(REDUCTION_VIRIAL_SLOW_YZ) += evir[5+7*g] * scale;
-      reduction->item(REDUCTION_VIRIAL_SLOW_ZX) += evir[3+7*g] * scale;
-      reduction->item(REDUCTION_VIRIAL_SLOW_ZY) += evir[5+7*g] * scale;
-      reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += evir[6+7*g] * scale;
+      reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += evir[g][0] * scale;
+      reduction->item(REDUCTION_VIRIAL_SLOW_XX) += evir[g][1] * scale;
+      reduction->item(REDUCTION_VIRIAL_SLOW_XY) += evir[g][2] * scale;
+      reduction->item(REDUCTION_VIRIAL_SLOW_XZ) += evir[g][3] * scale;
+      reduction->item(REDUCTION_VIRIAL_SLOW_YX) += evir[g][2] * scale;
+      reduction->item(REDUCTION_VIRIAL_SLOW_YY) += evir[g][4] * scale;
+      reduction->item(REDUCTION_VIRIAL_SLOW_YZ) += evir[g][5] * scale;
+      reduction->item(REDUCTION_VIRIAL_SLOW_ZX) += evir[g][3] * scale;
+      reduction->item(REDUCTION_VIRIAL_SLOW_ZY) += evir[g][5] * scale;
+      reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += evir[g][6] * scale;
 
       double scale2 = 0.;
       if ( fepOn && g == 0 ) scale2 = simParams->lambda2;
       else if ( fepOn && g == 1 ) scale2 = 1. - simParams->lambda2;
-      reduction->item(REDUCTION_ELECT_ENERGY_SLOW_F) += evir[0+7*g] * scale2;
+      reduction->item(REDUCTION_ELECT_ENERGY_SLOW_F) += evir[g][0] * scale2;
     }
     reduction->submit();
 

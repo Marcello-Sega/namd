@@ -10,12 +10,14 @@ module ComputePmeMgr {
     int zlist[];
     char fgrid[];
     float qgrid[];
+    PmeReduction evir[];
   };
   message PmeTransMsg {
     float qgrid[];
   };
   message PmeUntransMsg{
     float qgrid[];
+    PmeReduction evir[];
   };
 
   group ComputePmeMgr {
