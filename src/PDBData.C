@@ -15,7 +15,9 @@
 // It can be created by hand or with a string in the PDB format
 
 #include <stdio.h>    // sprintf and sscanf
+#ifndef WIN32
 #include <strings.h>  // strncpy
+#endif
 #include <stdlib.h>   // atoi and atof
 #include "InfoStream.h"
 #include "PDBData.h"

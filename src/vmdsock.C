@@ -4,7 +4,7 @@
 ***  All rights reserved.
 **/
 
-#if defined(DUMMY_VMDSOCK)
+#if ( defined(DUMMY_VMDSOCK) || defined(WIN32) )
 
 #include "vmdsock.h"
 

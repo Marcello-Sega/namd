@@ -12,7 +12,9 @@
 */
 
 #include <stdio.h>
+#ifndef WIN32
 #include <strings.h>
+#endif
 #include "common.h"
 #include "PDB.h"
 #include "SortableResizeArray.h"

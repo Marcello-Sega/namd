@@ -30,7 +30,11 @@
 */
 
 #include <iostream.h>
+#ifndef WIN32
 #include <strstream.h>
+#else
+#include <strstrea.h>
+#endif
 #include <string.h> // for strncpy, strcasecmp
 #include <ctype.h>   // for isspace
 #include <stdio.h>   // Yes, I do use stdio

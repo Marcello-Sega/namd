@@ -10,7 +10,9 @@
    one Node per Pe (processor element).
 */
 
+#ifndef WIN32
 #include <unistd.h>
+#endif
 #include <charm++.h>
 #include "Sync.decl.h"
 #include "Sync.h"
@@ -26,7 +28,6 @@
 #include <stdio.h>
 #include <converse.h>
 
-#include "unistd.h"
 #include "InfoStream.h"
 
 int useSync = 0;

@@ -11,7 +11,13 @@
 
 #include "NamdState.h"
 #include "Node.h"
+#ifdef WIN32
+#include <direct.h>
+#define CHDIR _chdir
+#else
 #include <unistd.h>
+#define CHDIR chdir
+#endif
 #include <sys/stat.h>
 #include "ConfigList.h"
 #include "ScriptTcl.h"
@@ -31,11 +37,11 @@ int main(int argc, char **argv) {
   if ( tmp != confFile )
   {
     *tmp = 0; confFile = tmp + 1;
-    if ( chdir(currentdir) ) NAMD_die("chdir() failed!");
+    if ( CHDIR(currentdir) ) NAMD_die("chdir() failed!");
     iout << iINFO << "Changed directory to " << currentdir << "\n" << endi;
   }
   else if ( *tmp == '/' ) // config file in / is odd, but it might happen
-    if ( chdir("/") ) NAMD_die("chdir() failed!");
+    if ( CHDIR("/") ) NAMD_die("chdir() failed!");
   currentdir = NULL;
 
   iout << iINFO << "Configuration file is " << confFile << "\n" << endi;

@@ -11,13 +11,20 @@
 #include "charm++.h"
 #include "converse.h"
 
+#ifndef WIN32
 #include <unistd.h>
+#endif
 #include <errno.h>
 #include <sys/stat.h>
 #include <ctype.h>
 
 #include "common.h"
 #include "InfoStream.h"
+
+#ifdef WIN32
+#include <io.h>
+#define NOCOMPRESSED
+#endif
 
 #ifdef USESTDIOSTUBS
 
@@ -107,7 +114,11 @@ void NAMD_backup_file(const char *filename, const char *extension)
 void NAMD_write(int fd, const void *buf, size_t count)
 
 {
+#ifdef WIN32
+   if ( _write(fd,buf,count) < 0 ) {
+#else
    if ( write(fd,buf,count) < 0 ) {
+#endif
      // NAMD_die("NAMD_write - write to file descriptor failed.");
      NAMD_die(strerror(errno));
    }
@@ -130,12 +141,17 @@ FILE *Fopen	(const char *filename, const char *mode)
   struct stat buf;
   // check if basic filename exists (and not a directory)
 
+#if defined(NOCOMPRESSED)
+  if (!stat(filename,&buf))
+    {
+      return(fopen(filename,mode));
+    }
+#else
   if (!stat(filename,&buf))
     {
       if (!S_ISDIR(buf.st_mode))
 	return(fopen(filename,mode));
     }
-#if !defined(NOCOMPRESSED)
   // check for a compressed file
   char *realfilename;
   char *command;

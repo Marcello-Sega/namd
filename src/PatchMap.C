@@ -5,7 +5,9 @@
 **/
 
 #include <stddef.h>
+#ifndef WIN32
 #include <unistd.h>
+#endif
 #include <stdio.h>
 
 #include "charm++.h"

@@ -22,7 +22,11 @@
 #include <stdio.h>
 #include "InfoStream.h"
 #include <time.h>
+#ifdef WIN32
+#include <direct.h>
+#else
 #include <unistd.h>
+#endif
 #include <fstream.h>
 extern "C" {
   extern double erfc(double);
@@ -853,7 +857,11 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
     len = strlen(current->data);
 
+#ifdef WIN32
+    if ( _chdir(current->data) )
+#else
     if ( chdir(current->data) )
+#endif
     {
       NAMD_die("chdir() to given cwd failed!");
     } else {

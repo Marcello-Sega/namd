@@ -13,7 +13,8 @@
 
 class Vector;
 
-struct FloatVector {
+class FloatVector {
+ public:
   float x,y,z;
   inline FloatVector(void) { ; }
   inline FloatVector(const Vector &v);

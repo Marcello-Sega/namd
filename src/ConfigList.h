@@ -43,7 +43,8 @@
 #include "common.h"
 #include <string.h>
 
-typedef struct StringList {
+class StringList {
+ public:
   char *data;
   StringList *next;
   StringList(char *newdata) {  // take a string, and copy it
@@ -60,7 +61,7 @@ typedef struct StringList {
     data = NULL;
     next = NULL;
   }
-} StringList;
+};
 
 class ConfigList {
   public:

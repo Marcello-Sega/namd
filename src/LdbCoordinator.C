@@ -7,7 +7,7 @@
 #include <iostream.h>
 #include <stdlib.h>
 #include <charm++.h>
-#include <NamdCentLB.h>
+#include "NamdCentLB.h"
 
 #include "ProcessorPrivate.h"
 #include "InfoStream.h"

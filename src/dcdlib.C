@@ -15,13 +15,20 @@
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
+#ifndef WIN32
 #include <unistd.h>
+#endif
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <errno.h>
+#ifndef WIN32
 #include <pwd.h>
+#endif
 #include <time.h>
+#ifdef WIN32
+#include <io.h>
+#endif
 
 /************************************************************************/
 /*									*/
@@ -117,7 +124,11 @@ int open_dcd_read(char *filename)
 	}
 
 	/*  Try and open the file				*/
+#ifdef WIN32
+	dcdfd=_open(filename, O_RDONLY);
+#else
 	dcdfd=open(filename, O_RDONLY);
+#endif
 
 	if (dcdfd == -1)
 	{
@@ -151,6 +162,7 @@ int open_dcd_read(char *filename)
 /*								*/
 /****************************************************************/
 
+#if 0
 int read_dcdheader(int fd, int *N, int *NSET, int *ISTART, 
 		   int *NSAVC, double *DELTA, int *NAMNF, 
 		   int **FREEINDEXES)
@@ -573,6 +585,7 @@ int read_dcdstep(int fd, int N, float *X, float *Y, float *Z, int num_fixed,
 
 	return(0);
 }
+#endif
 
 #define NFILE_POS 8L
 #define NPRIV_POS 12L
@@ -615,8 +628,13 @@ int open_dcd_write(char *dcdname)
 		return(DCD_OPENFAILED);
 	   delete [] newdcdname;
 	} 
+#if WIN32
+	if ( (dcdfd = _open(dcdname, O_RDWR|O_CREAT|O_EXCL,
+				_S_IREAD|_S_IWRITE)) < 0)
+#else
 	if ( (dcdfd = open(dcdname, O_RDWR|O_CREAT|O_EXCL,
 				S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0)
+#endif
 	{
 		return(DCD_OPENFAILED);
 	}
@@ -660,20 +678,30 @@ int write_dcdstep(int fd, int N, float *X, float *Y, float *Z)
 	NAMD_write(fd, (char *) Z, out_integer);
 	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
 
+#ifdef WIN32
+#define LSEEK _lseek
+#define READ _read
+#define WRITE _write
+#else
+#define LSEEK lseek
+#define READ read
+#define WRITE write
+#endif
+
 	/* don't update header until after write succeeds */
-	lseek(fd,NSAVC_POS,SEEK_SET);
-	read(fd,(void*) &NSAVC,sizeof(int32));
-	lseek(fd,NSTEP_POS,SEEK_SET);
-	read(fd,(void*) &NSTEP,sizeof(int32));
-	lseek(fd,NFILE_POS,SEEK_SET);
-	read(fd,(void*) &NFILE,sizeof(int32));
+	LSEEK(fd,NSAVC_POS,SEEK_SET);
+	READ(fd,(void*) &NSAVC,sizeof(int32));
+	LSEEK(fd,NSTEP_POS,SEEK_SET);
+	READ(fd,(void*) &NSTEP,sizeof(int32));
+	LSEEK(fd,NFILE_POS,SEEK_SET);
+	READ(fd,(void*) &NFILE,sizeof(int32));
 	NSTEP += NSAVC;
 	NFILE += 1;
-	lseek(fd,NSTEP_POS,SEEK_SET);
-	write(fd,(void*) &NSTEP,sizeof(int32));
-	lseek(fd,NFILE_POS,SEEK_SET);
-	write(fd,(void*) &NFILE,sizeof(int32));
-	lseek(fd,0,SEEK_END);
+	LSEEK(fd,NSTEP_POS,SEEK_SET);
+	WRITE(fd,(void*) &NSTEP,sizeof(int32));
+	LSEEK(fd,NFILE_POS,SEEK_SET);
+	WRITE(fd,(void*) &NFILE,sizeof(int32));
+	LSEEK(fd,0,SEEK_END);
 
 	return(0);
 }
@@ -708,7 +736,9 @@ int write_dcdheader(int fd, char *filename, int N, int NFILE, int NPRIV,
 	float   out_float;
 	char	title_string[200];
 	int	user_id;
+#ifndef WIN32
 	struct  passwd *pwbuf;
+#endif
 	time_t 	cur_time;
 	struct  tm *tmbuf;
 	char    time_str[11];
@@ -758,14 +788,20 @@ int write_dcdheader(int fd, char *filename, int N, int NFILE, int NPRIV,
 	pad(title_string, 80);
 	NAMD_write(fd, title_string, 80);
 
+#ifndef WIN32
 	user_id= (int) getuid();
 	pwbuf=getpwuid(user_id);
+#endif
 	cur_time=time(NULL);
 	tmbuf=localtime(&cur_time);
 	strftime(time_str, 10, "%m/%d/%y", tmbuf);
 
 	sprintf(title_string, "REMARKS DATE: %s CREATED BY USER: %s",
+#ifdef WIN32
+	   time_str, "Win32");
+#else
 	   time_str, pwbuf->pw_name);
+#endif
 	pad(title_string, 80);
 	NAMD_write(fd, title_string, 80);
 	out_integer = 164;
@@ -802,7 +838,11 @@ int write_dcdheader(int fd, char *filename, int N, int NFILE, int NPRIV,
 void close_dcd_read(int fd, int num_fixed, int *indexes)
 
 {
+#ifdef WIN32
+	_close(fd);
+#else
 	close(fd);
+#endif
 
 	if (num_fixed)
 	{
@@ -828,6 +868,10 @@ void close_dcd_read(int fd, int num_fixed, int *indexes)
 void close_dcd_write(int fd)
 
 {
+#ifdef WIN32
+	_close(fd);
+#else
 	close(fd);
+#endif
 }
 

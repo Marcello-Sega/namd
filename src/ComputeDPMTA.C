@@ -16,7 +16,6 @@
 #include "ReductionMgr.h"
 #include "Lattice.h"
 #include "Communicate.h"
-#include "pvmc.h"
 #include "InfoStream.h"
 #include "ProcessorPrivate.h"
 
@@ -25,6 +24,8 @@
 #include "Debug.h"
 
 #ifdef DPMTA
+
+#include <pvmc.h>
 
 // #define DUMP_DPMTA
 

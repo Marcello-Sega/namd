@@ -700,10 +700,12 @@ void WorkDistrib::mapComputePatch(ComputeType type)
 
 }
 
+#ifndef WIN32
 static inline int max(int x1,int x2)
 {
   return (x1 > x2) ? x1 : x2;
 }
+#endif
 
 //----------------------------------------------------------------------
 void WorkDistrib::mapComputeNonbonded(void)

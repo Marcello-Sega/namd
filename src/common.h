@@ -11,7 +11,9 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#ifndef WIN32
 #include <unistd.h>
+#endif
 #include <stdio.h>
 #include <limits.h>
 

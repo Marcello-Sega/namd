@@ -17,7 +17,9 @@
 #if CMK_TIMER_USE_TIMES
 #include <sys/times.h>
 #include <limits.h>
+#ifndef WIN32
 #include <unistd.h>
+#endif
 #endif
 
 #if CMK_TIMER_USE_GETRUSAGE

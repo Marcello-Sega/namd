@@ -10,7 +10,11 @@
 //#include <iomanip.h>
 #include <math.h>
 #include <iostream.h>
+#ifndef WIN32
 #include <strstream.h>
+#else
+#include <strstrea.h>
+#endif
 #include "common.h"
 #include "InfoStream.h"
 #include "FreeEnergyAssert.h"

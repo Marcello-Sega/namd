@@ -8,7 +8,11 @@
 
 #include <string.h>
 #include <iostream.h>
+#ifndef WIN32
 #include <strstream.h>
+#else
+#include <strstrea.h>
+#endif
 #include "FreeEnergyEnums.h"
 #include "FreeEnergyAssert.h"
 #include "FreeEnergyGroup.h"

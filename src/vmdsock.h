@@ -4,7 +4,7 @@
 ***  All rights reserved.
 **/
 
-#if !(defined(_MSC_VER) || defined(WIN32))
+// #if !(defined(_MSC_VER) || defined(WIN32))
 
 /* For Unix systems */
 
@@ -36,7 +36,7 @@ int   vmdsock_selread(void *, int);
 int   vmdsock_selwrite(void *, int);
 void  vmdsock_destroy(void *);
 
-#endif /* Not Windows */
+// #endif /* Not Windows */
 
 
 

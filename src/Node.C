@@ -9,11 +9,15 @@
    one Node per Pe (processor element).
 */
 
+#ifndef WIN32
 #include <unistd.h>
+#endif
 #include <charm++.h>
 #include "Node.decl.h"
 #include "Node.h"
-#include "pvm3.h"
+#ifdef DPMTA
+#include <pvm3.h>
+#endif
 
 #include "ProcessorPrivate.h"
 
@@ -23,8 +27,6 @@
 
 #include <stdio.h>
 #include <converse.h>
-
-#include "unistd.h"
 
 #include "IMDOutput.h"
 #include "main.decl.h"

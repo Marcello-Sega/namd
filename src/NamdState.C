@@ -20,7 +20,9 @@
 #include "NamdState.h"
 #include "Controller.h"
 #include "ScriptTcl.h"
+#ifndef WIN32
 #include <unistd.h>
+#endif
 #include <sys/stat.h>
 
 //#define DEBUGM

@@ -11,7 +11,11 @@
 #ifndef INFOSTREAM_H
 #define INFOSTREAM_H
 
+#ifndef WIN32
 #include <strstream.h>
+#else
+#include <strstrea.h>
+#endif
 class Vector;
 class Tensor;
 

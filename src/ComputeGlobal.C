@@ -19,7 +19,11 @@
 #include "ComputeTcl.h"
 //---these include files are needed for ComputeFreeEnergy---
 #include <string.h>
+#ifndef WIN32
 #include <strstream.h>
+#else
+#include <strstrea.h>
+#endif
 #include "InfoStream.h"
 #include "FreeEnergyEnums.h"
 #include "FreeEnergyAssert.h"

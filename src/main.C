@@ -10,6 +10,7 @@
 #include "main.decl.h"
 #include "main.h"
 
+#ifndef WIN32
 
 #define TBSOFT_TRACK_HOST   "130.126.120.106" /* www.ks.uiuc.edu */
 #define TBSOFT_TRACK_PORT   3141              /* UDP port 3141   */
@@ -75,6 +76,7 @@ int tbsoft_sendusage(const char *program,
   return 0;
 }
 
+#endif
 
 class main : public Chare
 {
@@ -97,11 +99,13 @@ public:
          << iINFO << "and send feedback or bug reports to namd@ks.uiuc.edu\n"
          << endi;
 
+#ifndef WIN32
     iout << iINFO
       << "Reporting usage information via UDP to NAMD developers.\n" << endi;
     char numcpus[512];
     sprintf(numcpus,"%d",CmiNumPes());
     tbsoft_sendusage("NAMD",NAMD_VERSION,NAMD_PLATFORM,numcpus,"");
+#endif
   }
 
 };
