@@ -43,8 +43,6 @@ class ImproperElem;
 class NonbondedExclElem;
 class ResidueLookupElem;
 
-typedef int* intPtr;
-
 // List maintaining the global atom indicies sorted by helix groups.
 class Molecule
 {
@@ -397,12 +395,15 @@ public:
  *
  *	$RCSfile: Molecule.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1022 $	$Date: 1998/09/14 16:11:39 $
+ *	$Revision: 1.1023 $	$Date: 1998/12/28 22:42:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.1023  1998/12/28 22:42:14  jim
+ * Eliminated unnecessary intPtr and RealPtr typedefs.
+ *
  * Revision 1.1022  1998/09/14 16:11:39  jim
  * Changes to reduce node 0 memory use.  Fixed bug in ResizeArray::item().
  *
