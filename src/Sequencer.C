@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1033 1997/09/19 08:55:36 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1034 1997/09/19 09:39:06 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -100,6 +100,7 @@ void Sequencer::algorithm(void)
     doNonbonded = !(step%nonbondedFrequency);
 
     runComputeObjects();
+    addForceToMomentum(0.); // zero velocities of fixed atoms
     submitReductions(step);
     submitCollections(step);
     rescaleVelocities(step);
@@ -257,12 +258,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1033 $     $Date: 1997/09/19 08:55:36 $
+ *      $Revision: 1.1034 $     $Date: 1997/09/19 09:39:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1034  1997/09/19 09:39:06  jim
+ * Small tweaks for fixed atoms.
+ *
  * Revision 1.1033  1997/09/19 08:55:36  jim
  * Added rudimentary but relatively efficient fixed atoms.  New options
  * are fixedatoms, fixedatomsfile, and fixedatomscol (nonzero means fixed).

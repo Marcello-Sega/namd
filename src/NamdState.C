@@ -7,7 +7,7 @@
  * DESCRIPTION: Holds pointers to large molecule data structure, simulation
  *		Parameters...
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1008 1997/09/19 08:55:34 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1009 1997/09/19 09:39:05 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -200,6 +200,11 @@ NamdState::configFileInit(char *confFile)
 	   iout << iINFO << molecule->numConstraints << " CONSTRAINTS\n";
 	}
 
+	if (simParameters->fixedAtomsOn)
+	{
+	   iout << iINFO << molecule->numFixedAtoms << " FIXED ATOMS\n";
+	}
+
 	iout << iINFO << "*****************************\n";
 	iout << endi;
 
@@ -224,12 +229,15 @@ NamdState::configFileInit(char *confFile)
  *
  *	$RCSfile: NamdState.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/09/19 08:55:34 $
+ *	$Revision: 1.1009 $	$Date: 1997/09/19 09:39:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdState.C,v $
+ * Revision 1.1009  1997/09/19 09:39:05  jim
+ * Small tweaks for fixed atoms.
+ *
  * Revision 1.1008  1997/09/19 08:55:34  jim
  * Added rudimentary but relatively efficient fixed atoms.  New options
  * are fixedatoms, fixedatomsfile, and fixedatomscol (nonzero means fixed).

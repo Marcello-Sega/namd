@@ -170,7 +170,9 @@ void Controller::printEnergies(int seq)
 
     int numAtoms = node->molecule->numAtoms;
     int numDegFreedom = 3 * numAtoms;
-    if ( ! node->simParameters->comMove ) numDegFreedom -= 3;
+    int numFixedAtoms = node->molecule->numFixedAtoms;
+    if ( numFixedAtoms ) numDegFreedom -= 3 * numFixedAtoms;
+    else if ( ! node->simParameters->comMove ) numDegFreedom -= 3;
 
     BigReal bondEnergy;
     BigReal angleEnergy;
@@ -265,12 +267,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1025 $	$Date: 1997/08/26 16:40:22 $
+ *	$Revision: 1.1026 $	$Date: 1997/09/19 09:39:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1026  1997/09/19 09:39:04  jim
+ * Small tweaks for fixed atoms.
+ *
  * Revision 1.1025  1997/08/26 16:40:22  brunner
  * Added a message to the CYCLE_BARRIER sync
  *
