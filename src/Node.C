@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.26 1996/12/16 19:06:30 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.27 1996/12/19 02:26:30 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -167,9 +167,19 @@ void Node::startup(InitMsg *msg)
   DebugM(1, "workDistrib->sendMaps() Pe=" << CMyPe() << "\n");
     workDistrib->sendMaps();
   }
+
+  if ( ! CMyPe() )
+	CStartQuiescence(GetEntryPtr(Node,messageStartup2), thishandle);
 }
 
-void Node::startup2(void)
+void Node::messageStartup2(QuiescenceMessage * qm) {
+  DebugM(1,"In messageStartup2() on node " << CMyPe() << endl);
+  delete qm;
+  InitMsg *msg = new (MsgIndex(InitMsg)) InitMsg;
+  CBroadcastMsgBranch(Node, startup2, msg, group.node);
+}
+
+void Node::startup2(InitMsg *msg)
 {
   DebugM(1,"In startup2() on node " << CMyPe() << endl);
   ComputeMap::Object()->printComputeMap();
@@ -316,13 +326,16 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.26 $	$Date: 1996/12/16 19:06:30 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.27 $	$Date: 1996/12/19 02:26:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.27  1996/12/19 02:26:30  jim
+ * Node::startup2 is now triggered by quiescence
+ *
  * Revision 1.26  1996/12/16 19:06:30  nealk
  * Debugging a core dump when it registers force functions.
  *

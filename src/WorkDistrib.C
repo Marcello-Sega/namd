@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.26 1996/12/13 08:54:10 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.27 1996/12/19 02:26:30 jim Exp $";
 
 #include <stdio.h>
 
@@ -157,7 +157,6 @@ void WorkDistrib::saveMaps(MapDistribMsg *msg)
   }
 
   mapsArrived = true;
-  node->startup2();
 }
 
 //----------------------------------------------------------------------
@@ -375,12 +374,15 @@ void WorkDistrib::movePatchDone(DoneMsg *msg) {
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.26 $	$Date: 1996/12/13 08:54:10 $
+ *	$Revision: 1.27 $	$Date: 1996/12/19 02:26:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.27  1996/12/19 02:26:30  jim
+ * Node::startup2 is now triggered by quiescence
+ *
  * Revision 1.26  1996/12/13 08:54:10  jim
  * now moves patches
  *

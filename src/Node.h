@@ -55,7 +55,8 @@ public:
   // Charm Entry point - Read in system data, get all ready to simulate
   static void messageStartup();
   void startup(InitMsg *);  
-  void startup2(void);  
+  void messageStartup2(QuiescenceMessage *);
+  void startup2(InitMsg *);  
   void messageStartup3(QuiescenceMessage *);
   void startup3(InitMsg *);  
   void messageStartup4(QuiescenceMessage *);
@@ -112,12 +113,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.15 $	$Date: 1996/12/13 08:52:37 $
+ *	$Revision: 1.16 $	$Date: 1996/12/19 02:26:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.16  1996/12/19 02:26:30  jim
+ * Node::startup2 is now triggered by quiescence
+ *
  * Revision 1.15  1996/12/13 08:52:37  jim
  * staged startup implemented
  *
