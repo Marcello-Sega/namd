@@ -29,15 +29,12 @@ public:
  *
  *	$RCSfile: ComputeDPMTA.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 01:00:33 $
+ *	$Revision: 1.2 $	$Date: 1997/01/28 01:00:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.h,v $
- * Revision 1.778  1997/01/28 01:00:33  ari
- * uplevel
- *
  * Revision 1.2  1997/01/28 01:00:11  ari
  * Adding This again
  *
