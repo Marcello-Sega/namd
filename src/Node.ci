@@ -3,6 +3,7 @@ extern message InitMsg;
 extern message ReadyMsg;
 extern message DoneMsg;
 extern message RunMsg;
+message QuiescenceMessage;
 
 group Node
 {
@@ -10,4 +11,5 @@ group Node
   entry startup(InitMsg *);
   entry startupDone(DoneMsg *);
   entry run(RunMsg *);
+  entry quiescence(QuiescenceMessage *);
 } ;
