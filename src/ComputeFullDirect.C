@@ -4,7 +4,6 @@
 ***  All rights reserved.
 **/
 
-#include "Namd.h"
 #include "Node.h"
 #include "PatchMap.h"
 #include "PatchMap.inl"

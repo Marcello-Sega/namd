@@ -9,7 +9,6 @@
    Overload of loadTuples() specific for non-bonded exclusions
 */
 
-#include "Namd.h"
 #include "Node.h"
 #include "Molecule.h"
 #include "Parameters.h"

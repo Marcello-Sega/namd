@@ -12,8 +12,8 @@
 
 #include "LdbCoordinator.decl.h"
 #include "LdbCoordinator.h"
+#include "NamdTypes.h"
 #include "Node.h"
-#include "Namd.h"
 #include "SimParameters.h"
 #include "PatchMap.inl"
 #include "ComputeMap.h"
@@ -580,7 +580,7 @@ void LdbCoordinator::resumeReady(CkQdMsg *msg) {
   DebugM(3,"resumeReady()\n");
   delete msg;
 
-  Namd::startTimer();
+  // Namd::startTimer();
   LdbResumeMsg *sendmsg = new LdbResumeMsg;
   CProxy_LdbCoordinator(thisgroup).resume2(sendmsg);
 }

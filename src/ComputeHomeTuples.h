@@ -19,7 +19,6 @@
 #include "PositionOwnerBox.h"
 #include "UniqueSet.h"
 
-#include "Namd.h"
 #include "Node.h"
 #include "PatchMap.inl"
 #include "AtomMap.h"

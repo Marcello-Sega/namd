@@ -15,10 +15,9 @@ public:
   static void init(int argc, char **argv);  // Must call at program startup
   static void exit(void);  // Must call at program shutdown
 
-
-protected:
-  static void BackEnd::enableReturn(void);
-
+  static void suspend(void);  // Let message code run...
+  static void awaken(void);  // ...then return
+  static void barrier(void);  // Let message code run, then return
 
 };
 

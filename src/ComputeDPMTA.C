@@ -5,7 +5,6 @@
 **/
 
 #include "common.h"
-#include "Namd.h"
 #include "Node.h"
 #include "SimParameters.h"
 #include "ComputeNonbondedUtil.h"

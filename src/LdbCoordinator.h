@@ -13,17 +13,16 @@
 
 #include "converse.h"
 #include "NamdTypes.h"
-#include "elements.h"
-#include "ComputeMgr.h"
 #include "BOCgroup.h"
-#include "Node.h"
-#include "SimParameters.h"
 #include "LdbCoordinator.decl.h"
 
 class PatchMap;
 class ComputeMap;
 class Controller;
 class Sequencer;
+class computeInfo;
+class patchInfo;
+class processorInfo;
 
 enum {LDB_PATCHES = 4096};
 enum {LDB_COMPUTES = 16384};
@@ -80,7 +79,7 @@ public:
   void resume(LdbResumeMsg *msg);
   void resumeReady(CkQdMsg *msg);
   void resume2(LdbResumeMsg *msg);
-  inline int balanceNow(int timestep);
+  int steps(void) { return nLdbSteps; }
 
   // Public variables accessed by the idle-event functions
   double idleStart;
@@ -128,26 +127,6 @@ private:
   patchInfo *patchArray;
   processorInfo *processorArray;
 };
-
-
-inline int LdbCoordinator::balanceNow(int timestep)
-{
-  Node *node = Node::Object();
-  const SimParameters *simParams = node->simParameters;
-  const int numberOfSteps = simParams->N - simParams->firstTimestep;
-  int stepno = timestep - simParams->firstTimestep + 1;
-  int firststep = firstLdbStep;
-
-  return 
-    ( (node->numNodes() != 1) 
-      && (simParams->ldbStrategy != LDBSTRAT_NONE) 
-      && (stepno <= numberOfSteps)
-      && (stepno >= firststep)
-      && (
-	  (stepno == firststep)
-	  || (((stepno - 2*firststep) % simParams->ldbPeriod) == 0))
-         );
-}
 
 #endif // LDBCOORDINATOR_H
 

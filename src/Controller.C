@@ -48,7 +48,8 @@ Controller::Controller(NamdState *s) :
 	collection(CollectionMaster::Object()),
         startCTime(0),
         startWTime(0),
-        startBenchTime(0)
+        startBenchTime(0),
+	ldbSteps(0)
 
 {
     broadcast = new ControllerBroadcasts;
@@ -73,43 +74,35 @@ Controller::~Controller(void)
 
 void Controller::threadRun(Controller* arg)
 {
-    arg->algorithm(SCRIPT_END);
+    arg->algorithm();
 }
 
 void Controller::run(void)
 {
     // create a Thread and invoke it
     DebugM(4, "Starting thread in controller on this=" << this << "\n");
-#ifdef NAMD_TCL
-    thread = Node::Object()->getScript()->thread;
-#else
     thread = CthCreate((CthVoidFn)&(threadRun),(void*)(this),CTRL_STK_SZ);
     CthSetStrategyDefault(thread);
-#endif
     awaken();
 }
 
 extern int eventEndOfTimeStep;
 
-void Controller::algorithm(int task)
+void Controller::algorithm(void)
 {
-  if (simParams->tclOn) broadcast->scriptBarrier.publish(scriptSeq++,task);
-
-  switch ( task ) {
-    case SCRIPT_END: // also if no script
-      if ( simParams->tclOn ) { // so only if script
-        enqueueCollections(END_OF_RUN);
-        outputExtendedSystem(END_OF_RUN);
-        return;
-      }
-    case SCRIPT_RUN:
-      break;
-    case SCRIPT_OUTPUT:
-      enqueueCollections(FILE_OUTPUT);
-//      collection->enqueuePositions(FILE_OUTPUT);
-//      collection->enqueueVelocities(FILE_OUTPUT);
-      outputExtendedSystem(FILE_OUTPUT);
-      return;
+  int scriptTask = SCRIPT_END;
+  int scriptSeq = 0;
+  if ( simParams->tclOn ) { Node::Object()->enableExitScheduler(); }
+  while ( (! simParams->tclOn) ||
+    (scriptTask = broadcast->scriptBarrier.get(scriptSeq++)) != SCRIPT_END) {
+    switch ( scriptTask ) {
+      case SCRIPT_RUN:
+        break;
+      case SCRIPT_OUTPUT:
+        enqueueCollections(FILE_OUTPUT);
+        outputExtendedSystem(FILE_OUTPUT);
+        Node::Object()->enableExitScheduler();
+        continue;
     }
 
     int step = simParams->firstTimestep;
@@ -128,6 +121,7 @@ void Controller::algorithm(int task)
     printEnergies(step);
     traceUserEvent(eventEndOfTimeStep);
     outputExtendedSystem(step);
+    rebalanceLoad(step);
 
     for ( ++step ; step <= numberOfSteps; ++step )
     {
@@ -146,11 +140,12 @@ void Controller::algorithm(int task)
         rebalanceLoad(step);
     }
 
-  if ( task == SCRIPT_END ) { // also if no script
-    enqueueCollections(END_OF_RUN);
-    outputExtendedSystem(END_OF_RUN);
-    terminate();
+    if (! simParams->tclOn) break;
+    Node::Object()->enableExitScheduler();
   }
+  enqueueCollections(END_OF_RUN);
+  outputExtendedSystem(END_OF_RUN);
+  terminate();
 }
 
 void Controller::berendsenPressure(int step)
@@ -688,7 +683,7 @@ void Controller::printEnergies(int step)
     }
 
     // callback to Tcl with whatever we can
-#ifdef NAMD_TCL
+#ifdef NAMD_TCL_JCP_FIX_THIS
 #define CALLBACKDATA(LABEL,VALUE) \
 		labels << (LABEL) << " "; values << (VALUE) << " ";
 #define CALLBACKLIST(LABEL,VALUE) \
@@ -891,9 +886,12 @@ void Controller::outputExtendedSystem(int step)
 
 }
 
-void Controller::rebalanceLoad(int timestep)
+void Controller::rebalanceLoad(int)
 {
-  if ( LdbCoordinator::Object()->balanceNow(timestep) ) {
+  if ( ! ldbSteps ) { 
+    ldbSteps = LdbCoordinator::Object()->steps();
+  }
+  if ( ! --ldbSteps ) {
     LdbCoordinator::Object()->rebalance(this);
   }
 }

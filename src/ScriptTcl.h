@@ -20,22 +20,23 @@
 #endif
 
 class ConfigList;
+class NamdState;
 
 class ScriptTcl {
 public:
   ScriptTcl();
   ~ScriptTcl();
-  void awaken(void) { CthAwaken(thread); }
   void run(char *filename, ConfigList *configList);
 private:
   char *scriptFile;
   ConfigList *config;
-  CthThread thread;
-  static void threadRun(ScriptTcl*);
-  void suspend(void) { CthSuspend(); }
+  NamdState *state;
+  void suspend(void);
   void algorithm();
   int runWasCalled;
   void barrier();
+  SimpleBroadcastObject<int> scriptBarrier;
+  int barrierStep;
   void runController(int task);
   void setParameter(const char* param, const char* value);
   void setParameter(const char* param, int value);

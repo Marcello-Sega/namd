@@ -66,6 +66,7 @@ protected:
     CollectionMgr *const collection;
     ControllerBroadcasts * broadcast;
 
+    int ldbSteps;
     void rebalanceLoad(int timestep);
 
 private:

@@ -65,7 +65,6 @@ public:
   void startupCont(CkQdMsg *);
 #ifdef NAMD_TCL
   void enableStartupCont(Namd *);
-  ScriptTcl *getScript(void) { return script; }
 #endif
 
   // Run for the number of steps specified in the sim_parameters
@@ -136,7 +135,6 @@ private:
   PatchMgr *patchMgr;
   ComputeMgr *computeMgr;
   ProxyMgr *proxyMgr;
-  ScriptTcl *script;
 #ifdef NAMD_TCL
   Namd *namd;
 #endif

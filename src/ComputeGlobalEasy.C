@@ -8,7 +8,6 @@
    Forwards atoms to master node for force evaluation.
 */
 
-#include "Namd.h"
 #include "Node.h"
 #include "PatchMap.h"
 #include "PatchMap.inl"

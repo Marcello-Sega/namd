@@ -22,7 +22,6 @@
 #include "ComputeFreeEnergy.h"
 #include "FreeEnergyParse.h"
 
-#include "Namd.h"
 #include "Node.h"
 #include "ComputeGlobal.h"
 #include "ComputeGlobalMsgs.h"

@@ -10,7 +10,6 @@
 #include "BOCgroup.h"
 #include "ProxyMgr.decl.h"
 #include "ProxyMgr.h"
-#include "Namd.h"
 #include "PatchMap.inl"
 #include "ProxyPatch.h"
 #include "ComputeMap.h"
@@ -58,7 +57,7 @@ PACK_MSG(ProxyResultMsg,
 
 ProxyMgr::ProxyMgr() { 
   if (CpvAccess(ProxyMgr_instance)) {
-    Namd::die();
+    NAMD_bug("Tried to create ProxyMgr twice.");
   }
   CpvAccess(ProxyMgr_instance) = this;
 }

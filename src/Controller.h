@@ -30,7 +30,7 @@ public:
 protected:
     friend class ScriptTcl;
     int scriptSeq;
-    virtual void algorithm(int task);	// subclasses redefine this method
+    virtual void algorithm(void);	// subclasses redefine this method
 
     void receivePressure(int);
       Tensor pressure_normal;
@@ -67,6 +67,7 @@ protected:
     void langevinPiston2(int);
       Tensor langevinPiston_strainRate;
 
+    int ldbSteps;
     void rebalanceLoad(int);
     void cycleBarrier(int,int);
 

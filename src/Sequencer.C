@@ -28,7 +28,8 @@
 Sequencer::Sequencer(HomePatch *p) :
 	simParams(Node::Object()->simParameters),
 	patch(p),
-	collection(CollectionMgr::Object())
+	collection(CollectionMgr::Object()),
+	ldbSteps(0)
 {
     broadcast = new ControllerBroadcasts;
     reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
@@ -76,10 +77,6 @@ void Sequencer::algorithm(void)
 	break;
       case SCRIPT_OUTPUT:
 	submitCollections(FILE_OUTPUT);
-//	collection->submitPositions(FILE_OUTPUT,
-//		patch->atomIDList,patch->p, patch->lattice,patch->t,2);
-//	collection->submitVelocities(FILE_OUTPUT,
-//		patch->atomIDList,patch->v);
 	continue;
     }
 
@@ -124,6 +121,7 @@ void Sequencer::algorithm(void)
     reassignVelocities(step);
     rattle2(timestep,step);  // enforce rigid bonds on initial velocities
     submitReductions(step);
+    rebalanceLoad(step);
 
     for ( ++step; step <= numberOfSteps; ++step )
     {
@@ -567,9 +565,10 @@ void Sequencer::runComputeObjects(int migration)
 }
 
 void Sequencer::rebalanceLoad(int timestep) {
-  if ( ldbCoordinator->balanceNow(timestep) )
-  {
-    DebugM(4, "Running ldb!\n");
+  if ( ! ldbSteps ) {
+    ldbSteps = LdbCoordinator::Object()->steps();
+  }
+  if ( ! --ldbSteps ) {
     patch->submitLoadStats(timestep);
     ldbCoordinator->rebalance(this,patch->getPatchID());
   }

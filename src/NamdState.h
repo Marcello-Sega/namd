@@ -32,15 +32,13 @@ class NamdState {
     PDB *pdb;
     Controller *controller;
     Lattice lattice;
-    char *currentdir;
+    //char *currentdir;
   public:
     NamdState(void);
     ~NamdState() {}
     int configFileInit(char *);
     friend class ScriptTcl;
-#ifdef NAMD_TCL
-    int configFileInitCont(void);
-#endif
+    int configListInit(ConfigList *);
     int status();
     void useController(Controller *controllerPtr);
     void runController(void);

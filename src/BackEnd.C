@@ -27,6 +27,9 @@
 
 extern void _initCharm(int, char**);
 
+float cpuTime_start;
+float wallTime_start;
+
 // called on all procs by namd_init()
 void slave_init(int argc, char **argv)
 {
@@ -38,6 +41,8 @@ void slave_init(int argc, char **argv)
 // called on all procs by front end
 void BackEnd::init(int argc, char **argv) {
   ConverseInit(argc, argv, slave_init, 1, 1);
+  cpuTime_start = CmiCpuTimer();
+  wallTime_start = CmiWallTimer();
   if ( CmiMyPe() ) {
     slave_init(argc, argv);  // for procs that call main
     ConverseExit();  // should never return
@@ -67,12 +72,30 @@ void BackEnd::init(int argc, char **argv) {
 
 // called on proc 0 by front end
 void BackEnd::exit(void) {
-  ConverseExit();
+  float cpuTime = CmiCpuTimer() - cpuTime_start;
+  float wallTime = CmiWallTimer() - wallTime_start;
+  char endmsg[1024];
+  sprintf(endmsg,"==========================================\n"
+  	"WallClock : %f  CPUTime : %f \n",wallTime,cpuTime);
+  // ConverseExit();  // Only kills this node.
+  // CkExit(); CsdScheduler(-1);  // Kills everything?
+  // CmiAbort("Exiting normally.\n");  // Actually works.
+  CmiAbort(endmsg);
+}
+
+// start scheduler
+void BackEnd::suspend(void) {
+  CsdScheduler(-1);
 }
 
 // start quiescence detection to return to front end
-void BackEnd::enableReturn(void) {
+void BackEnd::awaken(void) {
   Node::Object()->enableExitScheduler();
 }
 
+// start QD and scheduler
+void BackEnd::barrier(void) {
+  awaken();
+  suspend();
+}
 

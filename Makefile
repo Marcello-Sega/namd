@@ -94,7 +94,6 @@ OBJS = \
 	$(DSTDIR)/MStream.o \
 	$(DSTDIR)/MigrateAtomsMsg.o \
 	$(DSTDIR)/Molecule.o \
-	$(DSTDIR)/Namd.o \
 	$(DSTDIR)/NamdState.o \
 	$(DSTDIR)/NamdOneTools.o \
 	$(DSTDIR)/Node.o \

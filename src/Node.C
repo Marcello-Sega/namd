@@ -13,7 +13,6 @@
 #include "charm++.h"
 #include "Node.decl.h"
 #include "Node.h"
-#include "Namd.h"
 #include "pvm3.h"
 
 #include "ProcessorPrivate.h"
@@ -79,9 +78,7 @@ Node::Node(GroupInitMsg *msg)
     CpvAccess(Node_instance) = this;
     eventEndOfTimeStep = traceRegisterUserEvent("EndOfTimeStep");
   } else {
-    iout << iERRORF << "Node::Node() - another instance of Node exists!\n"
-      << endi;
-    Namd::die();
+    NAMD_bug("Node::Node() - another instance of Node exists!");
   }
 
   CpvAccess(BOCclass_group) = msg->group;
@@ -99,10 +96,6 @@ Node::Node(GroupInitMsg *msg)
   pdb = NULL;
   state = NULL;
   output = NULL;
-  script = NULL;
-#ifdef NAMD_TCL
-  script = new ScriptTcl;
-#endif
   imd = NULL;
 
   Compute::setNode(this);
@@ -156,7 +149,7 @@ void Node::enableStartupCont(Namd *n) {
 
 void Node::startupCont(CkQdMsg *) {
   // CkPrintf("Startup thread suspended, continuing with startup.\n");
-  namd->startupCont();
+  //namd->startupCont();
 }
 #else
 void Node::startupCont(CkQdMsg *) { ; }
@@ -241,8 +234,7 @@ void Node::startup() {
   break;
 
   default:
-    iout << iERRORF << iPE << "Startup Phase has a bug - check case statement\n" << endi;
-    Namd::die();
+    NAMD_bug("Startup Phase has a bug - check case statement");
   break;
 
   }
@@ -315,10 +307,7 @@ void Node::threadInit() {
   if (CthImplemented()) {
     CthSetStrategyDefault(CthSelf());
   } else {
-    iout << iERRORF 
-      << "Node::startup() Oh no, tiny elvis, threads not implemented\n"
-      << endi;
-    Namd::die();
+    NAMD_bug("Node::startup() Oh no, tiny elvis, threads not implemented");
   }
 }
 
@@ -373,8 +362,6 @@ void Node::run()
   else 
   	numNodesRunning = numNodes();
 
-  Namd::startTimer();  // We count timings from this point on
-
   // Start Controller (aka scalar Sequencer) on Pe(0)
   if ( ! CkMyPe() ) {
     state->runController();
@@ -401,7 +388,7 @@ void Node::enableScriptBarrier() {
 
 void Node::scriptBarrier(CkQdMsg *qmsg) {
   delete qmsg;
-  script->awaken();
+  //script->awaken();
 }
 
 void Node::scriptParam(ScriptParamMsg *msg) {
@@ -415,12 +402,13 @@ void Node::scriptParam(ScriptParamMsg *msg) {
 //-----------------------------------------------------------------------
 
 void Node::enableHaltBarrier() {
-  CkStartQD(CProxy_Node::ckIdx_haltBarrier((CkQdMsg*)0),&thishandle);
+  //CkStartQD(CProxy_Node::ckIdx_haltBarrier((CkQdMsg*)0),&thishandle);
+  enableExitScheduler();
 }
 
 void Node::haltBarrier(CkQdMsg *qmsg) {
   delete qmsg;
-  Namd::namdDone();
+  //Namd::namdDone();
 }
 
 

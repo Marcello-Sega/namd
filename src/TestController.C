@@ -70,9 +70,11 @@ void TestController::algorithm(int)
 		  CmiWallTimer(),CmiTimer());
 	}
 #endif
+/*
 	if ( LdbCoordinator::Object()->balanceNow(step) ) {
 	  LdbCoordinator::Object()->rebalance(this);
 	}
+*/
 
     }
 

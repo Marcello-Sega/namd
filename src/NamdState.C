@@ -18,7 +18,6 @@
 #include "SimParameters.h"
 #include "ConfigList.h"
 #include "PDB.h"
-#include "Namd.h"
 #include "NamdState.h"
 #include "Controller.h"
 #include "ScriptTcl.h"
@@ -80,6 +79,7 @@ void NamdState:: runController(void)
 
 extern void read_binary_coors(char *fname, PDB *pdbobj);
 
+#if 0
 int
 NamdState::configFileInit(char *confFile)
 {
@@ -110,16 +110,22 @@ NamdState::configFileInit(char *confFile)
   ScriptTcl *script = Node::Object()->getScript();
   script->run(confFile,configList);
 
+/*
   return 0;
 }
 
 int NamdState::configFileInitCont(void) {
+*/
 
 #else
   if ( NULL == confFile || NULL == (configList = new ConfigList(confFile)) ) {
     NAMD_die("Simulation config file is empty.");
   }
 #endif
+#endif
+
+int NamdState::configListInit(ConfigList *cfgList) {
+  configList = cfgList;
   if (!configList->okay()) {
     NAMD_die("Simulation config file is incomplete or contains errors.");
   }
@@ -128,6 +134,7 @@ int NamdState::configFileInitCont(void) {
   StringList *moleculeFilename = configList->find("structure");
   StringList *parameterFilename = configList->find("parameters");
   StringList *coordinateFilename = configList->find("coordinates");
+  char *currentdir = 0;
   simParameters =  new SimParameters(configList,currentdir);
   lattice = simParameters->lattice;
   //****** BEGIN CHARMM/XPLOR type changes

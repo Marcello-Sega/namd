@@ -8,6 +8,7 @@
    Modifies SimParameters settings during run.
 */
 
+#include "BackEnd.h"
 #include "ScriptTcl.h"
 #include "Broadcasts.h"
 #include "ConfigList.h"
@@ -29,14 +30,17 @@
 #define MIN_DEBUG_LEVEL 4
 #include "Debug.h"
 
+void ScriptTcl::suspend() {
+  BackEnd::suspend();
+}
+
 void ScriptTcl::barrier() {
-  Node::Object()->enableScriptBarrier();
-  suspend();
+  BackEnd::barrier();
 }
 
 void ScriptTcl::runController(int task) {
-  Node::Object()->state->controller->algorithm(task);
-  barrier();
+  scriptBarrier.publish(barrierStep++,task);
+  suspend();
 }
 
 void ScriptTcl::setParameter(const char* param, const char* value) {
@@ -147,6 +151,10 @@ int ScriptTcl::Tcl_run(ClientData clientData,
       (ClientData) script, (Tcl_CmdDeleteProc *) NULL);
     script->config->add_element("tcl",3,"on",2);
     script->runWasCalled = 1;
+
+    script->state->configListInit(script->config);
+    Node::Object()->saveMolDataPointers(script->state);
+    Node::messageStartUp();
     script->suspend();
   }
   if (argc != 2) {
@@ -295,12 +303,14 @@ void ScriptTcl::doCallback(const char *labels, const char *data) {
 #endif  // NAMD_TCL
 
 
-ScriptTcl::ScriptTcl() {
+ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
   DebugM(3,"Constructing ScriptTcl\n");
 #ifdef NAMD_TCL
   interp = 0;
   callbackname = 0;
 #endif
+  state = new NamdState;
+  barrierStep = 0;
 }
 
 ScriptTcl::~ScriptTcl() {
@@ -311,24 +321,12 @@ ScriptTcl::~ScriptTcl() {
 #endif
 }
 
-// Invoked by thread
-void ScriptTcl::threadRun(ScriptTcl* arg)
-{
-    arg->algorithm();
-}
-
-// Invoked by Node::run()
 void ScriptTcl::run(char *filename, ConfigList *configList)
 {
     scriptFile = filename;
     config = configList;
 
-    // create a Thread and invoke it
-    DebugM(4, "::run() - this = " << this << "\n" );
-    thread = CthCreate((CthVoidFn)&(threadRun),(void*)(this),TCL_STK_SZ);
-    CthSetStrategyDefault(thread);
-    CthAwaken(thread);
-    // awaken(); // triggered by sequencers
+    algorithm();
 }
 
 void ScriptTcl::algorithm() {
@@ -378,8 +376,13 @@ void ScriptTcl::algorithm() {
       Tcl_DeleteInterp(interp);
       interp = 0;
     }
-    CthSuspend();
-    Node::Object()->state->controller->algorithm(SCRIPT_END);
+    state->configListInit(config);
+    Node::Object()->saveMolDataPointers(state);
+    Node::messageStartUp();
+    suspend();
+    return;
+  } else {
+    runController(SCRIPT_END);
   }
 
 #else
@@ -387,9 +390,6 @@ void ScriptTcl::algorithm() {
   NAMD_die("Sorry, TCL scripting not available; built without TCL.");
 
 #endif
-
-  Node::Object()->state->controller->algorithm(SCRIPT_END);
-  Node::Object()->state->controller->terminate();
 
 }
 
