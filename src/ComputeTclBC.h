@@ -14,6 +14,7 @@
 #include "ComputeHomePatches.h"
 #include "ReductionMgr.h"
 #include "Tensor.h"
+#include <strings.h>
 
 class ComputeMgr;
 
@@ -25,6 +26,11 @@ public:
   void doWork();
 
 private:
+  ResizeArray<char> drops;
+  void cleardrops() {
+    memset((void*)drops.begin(), 0, drops.size()*sizeof(char));
+  }
+
   ResizeArrayIter<PatchElem> ap;
   int i_atom, n_atom;
   CompAtom *atoms;
@@ -36,6 +42,8 @@ private:
 #ifdef NAMD_TCL
   Tcl_Interp *interp;
   static int Tcl_print(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_cleardrops(ClientData, Tcl_Interp *, int, Tcl_Obj * const []);
+  static int Tcl_dropatom(ClientData, Tcl_Interp *, int, Tcl_Obj * const []);
   static int Tcl_nextatom(ClientData, Tcl_Interp *, int, Tcl_Obj * const []);
   static int Tcl_getcoord(ClientData, Tcl_Interp *, int, Tcl_Obj * const []);
   static int Tcl_getmass(ClientData, Tcl_Interp *, int, Tcl_Obj * const []);

@@ -8,6 +8,7 @@
 #include "Node.h"
 #include "SimParameters.h"
 #include "Patch.h"
+#include "Molecule.h"
 
 #ifdef NAMD_TCL
 #include <tcl.h>
@@ -21,10 +22,15 @@ ComputeTclBC::ComputeTclBC(ComputeID c)
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
   SimParameters *simParams = Node::Object()->simParameters;
 
+  drops.resize(Node::Object()->molecule->numAtoms);
+  cleardrops();
+
 #ifdef NAMD_TCL
   interp = Tcl_CreateInterp();
   Tcl_CreateCommand(interp, "print", Tcl_print,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateObjCommand(interp, "cleardrops", Tcl_cleardrops,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "vecadd", proc_vecadd,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "vecsub", proc_vecsub,
@@ -54,6 +60,8 @@ ComputeTclBC::ComputeTclBC(ComputeID c)
   } else NAMD_bug("tclBCScript pointer was NULL");
 
   // don't want these available until calcforces call
+  Tcl_CreateObjCommand(interp, "dropatom", Tcl_dropatom,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateObjCommand(interp, "nextatom", Tcl_nextatom,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateObjCommand(interp, "getcoord", Tcl_getcoord,
@@ -128,6 +136,36 @@ int ComputeTclBC::Tcl_print(ClientData,
   return TCL_OK;
 }
 
+int ComputeTclBC::Tcl_cleardrops(ClientData clientData,
+        Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+  if (objc != 1) {
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  ComputeTclBC *self = (ComputeTclBC *)clientData;
+
+  self->cleardrops();
+
+  return TCL_OK;
+}
+
+int ComputeTclBC::Tcl_dropatom(ClientData clientData,
+        Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+  if (objc != 1) {
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  ComputeTclBC *self = (ComputeTclBC *)clientData;
+  if ( self->n_atom <= 0 ) {
+    Tcl_SetResult(interp,"no atom available",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+
+  self->drops[self->atoms[self->i_atom].id] = 1;
+
+  return TCL_OK;
+}
+
 int ComputeTclBC::Tcl_nextatom(ClientData clientData,
         Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
   if (objc != 1) {
@@ -143,7 +181,7 @@ int ComputeTclBC::Tcl_nextatom(ClientData clientData,
   }
 
   // assume n_atom = -1 before first call
-  while ( self->n_atom < 0 || ++self->i_atom >= self->n_atom ) {
+  do while ( self->n_atom < 0 || ++self->i_atom >= self->n_atom ) {
     if ( self->n_atom < 0 ) {  // first call
       self->ap = self->ap.begin();
     } else {
@@ -162,7 +200,7 @@ int ComputeTclBC::Tcl_nextatom(ClientData clientData,
     self->atoms = (*(self->ap)).positionBox->open();
     (*(self->ap)).r = (*(self->ap)).forceBox->open();
     self->forces = (*(self->ap)).r->f[Results::normal];
-  }
+  } while ( self->drops[self->atoms[self->i_atom].id] );
 
   Tcl_SetObjResult(interp, Tcl_NewIntObj((long)(1)));
   return TCL_OK;
@@ -240,7 +278,7 @@ int ComputeTclBC::Tcl_getid(ClientData clientData,
   }
 
   int i = self->i_atom;
-  Tcl_SetObjResult(interp, Tcl_NewIntObj((long)(self->atoms[i].id)));
+  Tcl_SetObjResult(interp, Tcl_NewIntObj((long)(self->atoms[i].id + 1)));
   return TCL_OK;
 }
 
