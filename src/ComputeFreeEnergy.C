@@ -178,7 +178,8 @@ int ComputeFreeEnergy::addForce(int atomid, Force force)
 }
 
 
-ComputeFreeEnergy::ComputeFreeEnergy(ComputeMgr *c) : ComputeGlobalMaster(c) {
+ComputeFreeEnergy::ComputeFreeEnergy(ComputeMgr *c) 
+: ComputeGlobalMaster(c) {
   DebugM(3,"Constructing ComputeFreeEnergy\n");
   molecule = Node::Object()->molecule;
   simParams = Node::Object()->simParameters;
@@ -195,6 +196,7 @@ void ComputeFreeEnergy::initialize() {
   DebugM(4,"Initializing master\n");
 
   configMsg = new ComputeGlobalConfigMsg;
+  configMsg->tag = tag;
 
   // Get our script
   StringList *script = Node::Object()->configList->find("freeEnergyConfig");
@@ -253,6 +255,7 @@ void ComputeFreeEnergy::calculate() {
   DebugM(4,"Calculating forces on master\n");
 
   resultsMsg = new ComputeGlobalResultsMsg;
+  resultsMsg->tag = tag;
   resultsMsg->gforce.resize(gmass.size());
   resultsMsg->gforce.setall(Vector(0,0,0));
 

@@ -26,8 +26,10 @@ public:
   ComputeGlobalMaster(ComputeMgr *);
   virtual ~ComputeGlobalMaster();
   void recvData(ComputeGlobalDataMsg *);
+  void set_tag(int);
 
 protected:
+  int tag;
   ComputeMgr *comm;
   int numWorkingPes;
   int msgcount;

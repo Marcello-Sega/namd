@@ -14,6 +14,9 @@
 
 class ComputeGlobalConfigMsg : public CMessage_ComputeGlobalConfigMsg {
 public:
+  // tag to route message to the right master
+  int tag;
+
   // data members
   AtomIDList aid;
   AtomIDList gdef;  // group definitions
@@ -30,6 +33,9 @@ public:
 
 class ComputeGlobalDataMsg : public CMessage_ComputeGlobalDataMsg {
 public:
+  // tag to route message to the right master
+  int tag;
+
   // data members
   AtomIDList aid;
   PositionList p;
@@ -47,6 +53,9 @@ public:
 
 class ComputeGlobalResultsMsg : public CMessage_ComputeGlobalResultsMsg {
 public:
+  // tag to route message to the right master
+  int tag;
+
   // data members
   AtomIDList aid;
   ForceList f;

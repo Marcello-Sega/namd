@@ -33,6 +33,7 @@ ComputeSMD::ComputeSMD(ComputeMgr *c)
 
   char *file = simParams->SMDFile;
   configMsg = new ComputeGlobalConfigMsg;
+  configMsg->tag = tag;
   parse_atoms(file);  
   iout << iINFO << "SMD ATOMS:  ";
   for (int i=0; i<configMsg->gdef.size()-1; i++)
@@ -78,6 +79,7 @@ void ComputeSMD::initialize() {
 void ComputeSMD::calculate() {
 
   ComputeGlobalResultsMsg *resultsMsg = new ComputeGlobalResultsMsg;
+  resultsMsg->tag = tag;
   resultsMsg->gforce.resize(gmass.size());
   resultsMsg->gforce.setall(Vector(0,0,0));
 

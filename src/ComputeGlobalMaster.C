@@ -29,6 +29,7 @@
 
 ComputeGlobalMaster::ComputeGlobalMaster(ComputeMgr *c) {
   DebugM(3,"Constructing master\n");
+  tag = -1;  // initialize to invalid value
   comm = c; 
   initialized = 0;
   msgcount = 0;
@@ -45,6 +46,10 @@ ComputeGlobalMaster::~ComputeGlobalMaster() {
 
 void ComputeGlobalMaster::recvData(ComputeGlobalDataMsg *msg) {
   DebugM(3,"Receiving data on master\n");
+  if (msg->tag != tag) {
+    NAMD_die("master got misdirected DataMsg!");
+  }
+
   // Check initialization and number of messages received
   if ( ! initialized )
   {
@@ -65,10 +70,15 @@ void ComputeGlobalMaster::recvData(ComputeGlobalDataMsg *msg) {
   }
 }
 
+void ComputeGlobalMaster::set_tag(int t) {
+  tag = t;
+}
+
 void ComputeGlobalMaster::initialize() {
   DebugM(4,"Initializing master\n");
 
   ComputeGlobalConfigMsg *msg = new ComputeGlobalConfigMsg;
+  msg->tag = tag;
 
   // Build config here
 
@@ -126,6 +136,7 @@ void ComputeGlobalMaster::calculate() {
   DebugM(4,"Calculating forces on master\n");
 
   ComputeGlobalResultsMsg *msg = new ComputeGlobalResultsMsg;
+  msg->tag = tag;
   msg->gforce.resize(gmass.size());
   msg->gforce.setall(Vector(0,0,0));
 

@@ -30,15 +30,21 @@ public:
   void recvResults(ComputeGlobalResultsMsg *);
 
 private:
-  ComputeGlobalMaster *master;
   ComputeMgr *comm;
 
-  void sendData();
-  int configured;
-  void configure(AtomIDList newaid, AtomIDList newgdef);
-  AtomIDList aid;
-  AtomIDList gdef;  // definitions of groups
-  ResizeArray<BigReal> gmass;  // masses of groups
+  void sendData(int tag);
+  void configure(int tag, AtomIDList newaid, AtomIDList newgdef);
+
+  class MasterConfig {
+  public:
+    MasterConfig() { master = 0; configured = 0; }
+    ComputeGlobalMaster *master;
+    AtomIDList aid;
+    AtomIDList gdef;  // definitions of groups
+    ResizeArray<BigReal> gmass;  // masses of groups
+    int configured;
+  }; 
+  ResizeArray<MasterConfig>masterlist;
 };
 
 #endif

@@ -68,6 +68,7 @@ ComputeIMD::~ComputeIMD() {
 
 void ComputeIMD::initialize() {
   configMsg = new ComputeGlobalConfigMsg;
+  configMsg->tag = tag;
   comm->sendComputeGlobalConfig(configMsg);
   configMsg = 0;
 }
@@ -102,6 +103,7 @@ void ComputeIMD::calculate() {
   // parameters. 
 
   resultsMsg = new ComputeGlobalResultsMsg;
+  resultsMsg->tag = tag;
   resultsMsg->gforce.resize(gmass.size());
   resultsMsg->gforce.setall(Vector(0,0,0));
 

@@ -268,8 +268,9 @@ ComputeTcl::~ComputeTcl() {
 void ComputeTcl::initialize() {
   DebugM(4,"Initializing master\n");
 
-  ComputeGlobalConfigMsg *msg =
-	new ComputeGlobalConfigMsg;
+  ComputeGlobalConfigMsg *msg = new ComputeGlobalConfigMsg;
+  msg->tag = tag;
+   
 
 #ifdef NAMD_TCL
   interp = Node::Object()->getScript()->interp;
@@ -324,8 +325,8 @@ void ComputeTcl::initialize() {
 void ComputeTcl::calculate() {
   DebugM(4,"Calculating forces on master\n");
 
-  ComputeGlobalResultsMsg *msg =
-	new ComputeGlobalResultsMsg;
+  ComputeGlobalResultsMsg *msg = new ComputeGlobalResultsMsg;
+  msg->tag = tag;
   msg->gforce.resize(gmass.size());
   msg->gforce.setall(Vector(0,0,0));
 

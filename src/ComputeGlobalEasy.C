@@ -111,6 +111,7 @@ void ComputeGlobalEasy::initialize() {
   DebugM(4,"Initializing master\n");
 
   configMsg = new ComputeGlobalConfigMsg;
+  configMsg->tag = tag;
 
   // Get the script for subclasses
   StringList *script = Node::Object()->configList->find(configName);
@@ -169,6 +170,7 @@ void ComputeGlobalEasy::initialize() {
 void ComputeGlobalEasy::calculate() {
 
   resultsMsg = new ComputeGlobalResultsMsg;
+  resultsMsg->tag = tag;
   resultsMsg->gforce.resize(gmass.size());
   resultsMsg->gforce.setall(Vector(0,0,0));
   energy = 0.0;
