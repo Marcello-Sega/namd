@@ -116,8 +116,17 @@ Additional features include:
     .coor, .vel, and .xsc files to be written with that name.
  \item Between "run" commands the reassignTemp, rescaleTemp, and
     langevinTemp parameters can be changed to allow simulated
-    annealing protocols within a single config file.  (Many more
-    parameters of this type will be enabled in future versions.)
+    annealing protocols within a single config file.
+    The useGroupPressure, useFlexibleCell, useConstantArea, useConstantRatio,
+    LangevinPiston, LangevinPistonTarget, LangevinPistonPeriod,
+    LangevinPistonDecay, LangevinPistonTemp, SurfaceTensionTarget,
+    BerendsenPressure, BerendsenPressureTarget,
+    BerendsenPressureCompressibility, and BerendsenPressureRelaxationTime
+    parameters may be changed to allow pressure equilibration.
+    The fixedAtoms and constraintScaling parameters may be changed to
+    preserve macromolecular conformation during minimization and
+    equilibration (fixedAtoms may only be disabled, and requires that
+    fixedAtomsForces is enabled to do this).
  \item The "checkpoint" and "revert" commands (no arguments) allow
     a scripted simulation to save and restore to a prior state.
  \item The "reinitvels" command reinitializes velocities to a

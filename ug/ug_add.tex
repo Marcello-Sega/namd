@@ -81,13 +81,17 @@ that atom's restraining potential.}
 
 \subsubsection{Fixed atoms parameters}
 
-Atoms may be held fixed during a simulation.  \NAMD\ avoids calculating most interactions in which all affected atoms are fixed.
+Atoms may be held fixed during a simulation.  \NAMD\ avoids calculating most interactions in which all affected atoms are fixed unless {\tt fixedAtomsForces} is specified.
 
 \begin{itemize}
 
 \item
 \NAMDCONFWDEF{fixedAtoms}{are there fixed atoms?}{{\tt on} or {\tt off}}{{\tt off}}
 {Specifies whether or not fixed atoms are present.} 
+
+\item
+\NAMDCONFWDEF{fixedAtomsForces}{are forces between fixed atoms calculated?}{{\tt on} or {\tt off}}{{\tt off}}
+{Specifies whether or not forces between fixed atoms are calculated.  This option is required for constant pressure or to turn fixed atoms off in the middle of a simulation.}
 
 \item
 \NAMDCONFWDEF{fixedAtomsFile}{PDB file containing fixed atom parameters}
@@ -494,7 +498,15 @@ The following parameters are used to define these boundary conditions.
 
 \item
 \NAMDCONFWDEF{wrapWater}{wrap water coordinates around periodic boundaries?}{on or off}{off}
-{Coordinates are normally output relative to the way they were read in.  Hence, if part of a molecule crosses a periodic boundary it is not translated to the other side of the cell.  This option alters this behavior for water molecules only.}
+{Coordinates are normally output relative to the way they were read in.  Hence, if part of a molecule crosses a periodic boundary it is not translated to the other side of the cell on output.  This option alters this behavior for water molecules only.}
+
+\item
+\NAMDCONFWDEF{wrapAll}{wrap all coordinates around periodic boundaries?}{on or off}{off}
+{Coordinates are normally output relative to the way they were read in.  Hence, if part of a molecule crosses a periodic boundary it is not translated to the other side of the cell on output.  This option alters this behavior for all contiguous clusters of bonded atoms.}
+
+\item
+\NAMDCONFWDEF{wrapNearest}{use nearest image to cell origin when wrapping coordinates?}{on or off}{off}
+{Coordinates are normally wrapped to the diagonal unit cell centered on the origin.  This option, combined with {\tt wrapWater} or {\tt wrapAll}, wraps coordinates to the nearest image to the origin, providing hexagonal or other cell shapes.}
 
 \end{itemize}
 
@@ -516,8 +528,13 @@ required in conjunction with rigidBonds (SHAKE).}
 \NAMDCONFWDEF{useFlexibleCell}{anisotropic cell fluctuations}
 {{\tt yes} or {\tt no}}{{\tt no}}
 {\NAMD\ allows the three orthogonal dimensions of the periodic cell
-to fluctuate independently when this option is enabled.
-This is not currently implemented in Berendsen's method.}
+to fluctuate independently when this option is enabled.}
+
+\item
+\NAMDCONFWDEF{useConstantRatio}{constant shape in first two cell dimensions}
+{{\tt yes} or {\tt no}}{{\tt no}}
+{When enabled, \NAMD\ keeps the ratio of the unit cell in the x-y plane 
+constant while allowing fluctuations along all axes.  The {\tt useFlexibleCell} option is required for this option.}
 
 \item
 \NAMDCONFWDEF{useConstantArea}{constant area and normal pressure conditions}
