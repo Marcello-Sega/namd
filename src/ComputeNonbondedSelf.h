@@ -24,7 +24,7 @@ public:
 
 protected :
   // virtual void mapReady() { ComputePatchPair::mapReady(); }
-  virtual void doForce(PositionArray p[2], ForceArray f[2]);
+  virtual void doForce(Position* p[2], Force* f[2]);
 
 };
 
@@ -34,12 +34,15 @@ protected :
  *
  *	$RCSfile: ComputeNonbondedSelf.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/10/29 23:55:54 $
+ *	$Revision: 1.2 $	$Date: 1996/10/30 00:16:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.h,v $
+ * Revision 1.2  1996/10/30 00:16:16  jim
+ * Removed PositionArray usage.
+ *
  * Revision 1.1  1996/10/29 23:55:54  jim
  * Initial revision
  *

@@ -35,7 +35,7 @@ protected :
   int numAtoms[2];
   virtual void mapReady();
   // void depositAllForces();
-  virtual void doForce(PositionArray p[2], ForceArray f[2]);
+  virtual void doForce(Position* p[2], Force* f[2]);
 
 private:
   PatchID patchID[2];
@@ -51,12 +51,15 @@ private:
  *
  *	$RCSfile: ComputePatch.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/10/29 23:53:58 $
+ *	$Revision: 1.3 $	$Date: 1996/10/30 00:16:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatch.h,v $
+ * Revision 1.3  1996/10/30 00:16:16  jim
+ * Removed PositionArray usage.
+ *
  * Revision 1.2  1996/10/29 23:53:58  jim
  * cleaned up, now only compile blocks are PatchMap, Patch, Compute.
  *

@@ -64,14 +64,14 @@ void ComputePatchPair::depositAllForces() {
 }
 */
 
-void ComputePatchPair::doForce(PositionArray p[2], ForceArray f[2]) {
+void ComputePatchPair::doForce(Position* p[2], Force* f[2]) {
     CPrintf("ComputePatchPair::doForce() - Dummy eval was sent\n");
     CPrintf(" %d patch 1 atoms and %d patch 2 atoms\n", numAtoms[0], numAtoms[1] );
 }
 
 void ComputePatchPair::doWork() {
-  Position *p[2];
-  Force *f[2];
+  Position* p[2];
+  Force* f[2];
   int i;
 
   // Open up positionBox and forceBox
@@ -97,12 +97,15 @@ void ComputePatchPair::doWork() {
  *
  *	$RCSfile: ComputePatchPair.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/10/29 23:53:58 $
+ *	$Revision: 1.3 $	$Date: 1996/10/30 00:16:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatchPair.C,v $
+ * Revision 1.3  1996/10/30 00:16:16  jim
+ * Removed PositionArray usage.
+ *
  * Revision 1.2  1996/10/29 23:53:58  jim
  * cleaned up, now only compile blocks are PatchMap, Patch, Compute.
  *
