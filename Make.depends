@@ -1417,6 +1417,9 @@ obj/ComputeMgr.o: \
 	dpme2/dpme2_pvm.h \
 	dpme2/dpme2def.h \
 	dpme2/protype.h \
+	src/ComputePme.h \
+	src/ComputePmeMsgs.h \
+	src/PmeBase.h \
 	src/ComputeSphericalBC.h \
 	src/ComputeCylindricalBC.h \
 	src/ComputeRestraints.h \
@@ -1808,6 +1811,98 @@ obj/ComputePatchPair.o: \
 	src/Patch.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputePatchPair.o -c src/ComputePatchPair.C
+obj/ComputePme.o: \
+	src/ComputePme.C \
+	src/Namd.h \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/ResizeArrayPrimIter.h \
+	inc/main.decl.h \
+	inc/WorkDistrib.decl.h \
+	inc/ReductionMgr.decl.h \
+	inc/PatchMgr.decl.h \
+	inc/ProxyMgr.decl.h \
+	inc/Node.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/ComputeMgr.decl.h \
+	inc/CollectionMgr.decl.h \
+	inc/CollectionMaster.decl.h \
+	inc/BroadcastMgr.decl.h \
+	src/ProcessorPrivate.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/Lattice.h \
+	src/PatchMap.inl \
+	src/AtomMap.h \
+	src/ComputePme.h \
+	src/ComputeHomePatches.h \
+	src/Compute.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/PatchTypes.h \
+	src/ComputePmeMsgs.h \
+	src/PmeBase.h \
+	src/ComputeNonbondedUtil.h \
+	src/ComputeNonbondedSplitting.h \
+	src/LJTable.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/ObjectArena.h \
+	src/Hydrogen.h \
+	src/PatchMgr.h \
+	src/HomePatch.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
+	src/ReductionMgr.h \
+	src/ComputeMgr.h \
+	src/Debug.h \
+	src/SimParameters.h \
+	src/Communicate.h \
+	src/MStream.h \
+	src/PmeCoulomb.h \
+	src/PmeFFT.h \
+	/home/jim/tmp/fftw/include/rfftw.h \
+	src/PmeRealSpace.h \
+	src/PmeKSpace.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputePme.o -c src/ComputePme.C
+obj/ComputePmeMsgs.o: \
+	src/ComputePmeMsgs.C \
+	src/ComputePmeMsgs.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/ResizeArrayPrimIter.h \
+	inc/ComputeMgr.decl.h \
+	src/PmeBase.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputePmeMsgs.o -c src/ComputePmeMsgs.C
 obj/ComputeRestraints.o: \
 	src/ComputeRestraints.C \
 	src/ComputeRestraints.h \
@@ -3062,6 +3157,34 @@ obj/PDBData.o: \
 	src/common.h \
 	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) -o obj/PDBData.o -c src/PDBData.C
+obj/PmeBase.o: \
+	src/PmeBase.C \
+	src/PmeBase.h
+	$(CXX) $(CXXFLAGS) -o obj/PmeBase.o -c src/PmeBase.C
+obj/PmeCoulomb.o: \
+	src/PmeCoulomb.C \
+	src/PmeCoulomb.h \
+	src/PmeBase.h \
+	src/PmeFFT.h \
+	/home/jim/tmp/fftw/include/rfftw.h \
+	src/PmeRealSpace.h \
+	src/PmeKSpace.h
+	$(CXX) $(CXXFLAGS) -o obj/PmeCoulomb.o -c src/PmeCoulomb.C
+obj/PmeFFT.o: \
+	src/PmeFFT.C \
+	src/PmeFFT.h \
+	/home/jim/tmp/fftw/include/rfftw.h
+	$(CXX) $(CXXFLAGS) -o obj/PmeFFT.o -c src/PmeFFT.C
+obj/PmeKSpace.o: \
+	src/PmeKSpace.C \
+	src/PmeKSpace.h \
+	src/PmeBase.h
+	$(CXX) $(CXXFLAGS) -o obj/PmeKSpace.o -c src/PmeKSpace.C
+obj/PmeRealSpace.o: \
+	src/PmeRealSpace.C \
+	src/PmeRealSpace.h \
+	src/PmeBase.h
+	$(CXX) $(CXXFLAGS) -o obj/PmeRealSpace.o -c src/PmeRealSpace.C
 obj/ProcessorPrivate.o: \
 	src/ProcessorPrivate.C \
 	src/ProcessorPrivate.h \

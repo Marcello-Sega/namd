@@ -36,6 +36,15 @@ TCLLIB=-L$(TCLDIR)/lib -ltclx -ltcl -ldl
 TCLFLAGS=-DNAMD_TCL
 TCL=$(TCLINCL) $(TCLFLAGS)
 
+######
+## definitions for FFT (used by PME)
+######
+FFTDIR=/home/jim/tmp/fftw
+FFTINCL=-I$(FFTDIR)/include
+FFTLIB=-L$(FFTDIR)/lib -lfftw -lrfftw
+FFTFLAGS=-DNAMD_FFTW
+FFT=$(FFTINCL) $(FFTFLAGS)
+
 #####
 # Unix commands
 #####

@@ -91,6 +91,7 @@ typedef struct boxvector { /* only to specify box */
 /********************************************************/
 /*            OLD_Data_Structures (DPME)                */
 /********************************************************/
+#define DPME_DEFINES_PMEVECTOR
 typedef struct pmevector {
    double x;
    double y;

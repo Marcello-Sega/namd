@@ -3,6 +3,9 @@ module ComputeMgr {
   message [packed] ComputeGlobalDataMsg;
   message [packed] ComputeGlobalResultsMsg;
 
+  message [packed] ComputePmeDataMsg;
+  message [packed] ComputePmeResultsMsg;
+
   message [packed] ComputeDPMEDataMsg;
   message [packed] ComputeDPMEResultsMsg;
 
@@ -22,6 +25,9 @@ module ComputeMgr {
 
     entry void recvComputeDPMEData(ComputeDPMEDataMsg *);
     entry void recvComputeDPMEResults(ComputeDPMEResultsMsg *);
+
+    entry void recvComputePmeData(ComputePmeDataMsg *);
+    entry void recvComputePmeResults(ComputePmeResultsMsg *);
   } ;
 }
 
@@ -31,12 +37,15 @@ module ComputeMgr {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1999/05/11 23:56:26 $
+ *	$Revision: 1.1007 $	$Date: 1999/06/08 14:52:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.ci,v $
+ * Revision 1.1007  1999/06/08 14:52:06  jim
+ * Incorporated Justin's faster PME code along side DPME.
+ *
  * Revision 1.1006  1999/05/11 23:56:26  brunner
  * Changes for new charm version
  *

@@ -64,9 +64,9 @@ LIBS = $(DPMTALIBS) $(PVMLIBS) $(DPMELIBS)
 
 # CXX is platform dependent
 INCLUDE = $(CHARM)/include
-CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(MDCOMM) $(TCL) $(CXXOPTS) $(NOWARN) $(NAMDFLAGS)
-CXXTHREADFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(MDCOMM) $(TCL) $(CXXTHREADOPTS) $(NOWARN) $(NAMDFLAGS)
-GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(MDCOMM) $(TCL) $(NOWARN) $(NAMDFLAGS)
+CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(MDCOMM) $(TCL) $(FFT) $(CXXOPTS) $(NOWARN) $(NAMDFLAGS)
+CXXTHREADFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(MDCOMM) $(TCL) $(FFT) $(CXXTHREADOPTS) $(NOWARN) $(NAMDFLAGS)
+GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(MDCOMM) $(TCL) $(FFT) $(NOWARN) $(NAMDFLAGS)
 
 DEPENDFILE = Make.depends
 
@@ -112,6 +112,8 @@ OBJS = \
 	$(DSTDIR)/ComputeNonbondedUtil.o \
 	$(DSTDIR)/ComputePatch.o \
 	$(DSTDIR)/ComputePatchPair.o \
+	$(DSTDIR)/ComputePme.o \
+	$(DSTDIR)/ComputePmeMsgs.o \
 	$(DSTDIR)/ComputeRestraints.o \
 	$(DSTDIR)/ComputeSMD.o \
 	$(DSTDIR)/ComputeSphericalBC.o \
@@ -150,6 +152,11 @@ OBJS = \
 	$(DSTDIR)/PatchMap.o \
 	$(DSTDIR)/PDB.o \
 	$(DSTDIR)/PDBData.o \
+	$(DSTDIR)/PmeBase.o \
+	$(DSTDIR)/PmeCoulomb.o \
+	$(DSTDIR)/PmeFFT.o \
+	$(DSTDIR)/PmeKSpace.o \
+	$(DSTDIR)/PmeRealSpace.o \
 	$(DSTDIR)/ProcessorPrivate.o \
 	$(DSTDIR)/ProxyMgr.o \
 	$(DSTDIR)/ProxyPatch.o \

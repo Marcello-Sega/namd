@@ -37,6 +37,10 @@ class ComputeDPME;
 class ComputeDPMEDataMsg;
 class ComputeDPMEResultsMsg;
 
+class ComputePme;
+class ComputePmeDataMsg;
+class ComputePmeResultsMsg;
+
 class ComputeMgr : public BOCclass
 {
 public:
@@ -64,6 +68,11 @@ public:
   void sendComputeDPMEResults(ComputeDPMEResultsMsg *, int);
   void recvComputeDPMEResults(ComputeDPMEResultsMsg *);
 
+  void sendComputePmeData(ComputePmeDataMsg *);
+  void recvComputePmeData(ComputePmeDataMsg *);
+  void sendComputePmeResults(ComputePmeResultsMsg *, int);
+  void recvComputePmeResults(ComputePmeResultsMsg *);
+
 private:
   void createCompute(ComputeID, ComputeMap *);
   int numNonbondedSelf;
@@ -71,6 +80,7 @@ private:
 
   ComputeGlobal *computeGlobalObject;
   ComputeDPME *computeDPMEObject;
+  ComputePme *computePmeObject;
 
   int updateComputesCount;
   int updateComputesReturnEP;
@@ -125,13 +135,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1999/05/11 23:56:26 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1016 $	$Date: 1999/06/08 14:52:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.h,v $
+ * Revision 1.1016  1999/06/08 14:52:06  jim
+ * Incorporated Justin's faster PME code along side DPME.
+ *
  * Revision 1.1015  1999/05/11 23:56:26  brunner
  * Changes for new charm version
  *

@@ -297,6 +297,8 @@ public:
 	int PMEGridSizeY;		//  No. of grid points in y dim
 	int PMEGridSizeZ;		//  No. of grid points in z dim
 
+	Bool useDPME;			//  Flag TRUE -> old DPME code
+
 	Bool minimizeOn;		//  Flag TRUE-> minimization active
 	BigReal maximumMove;		//  Maximum movement per timestep 
 					//  during minimization
@@ -445,12 +447,15 @@ private:
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1038 $	$Date: 1999/06/03 16:50:11 $
+ *	$Revision: 1.1039 $	$Date: 1999/06/08 14:52:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1039  1999/06/08 14:52:10  jim
+ * Incorporated Justin's faster PME code along side DPME.
+ *
  * Revision 1.1038  1999/06/03 16:50:11  jim
  * Added simplified interface to ComputeGlobal mechanism.
  *

@@ -36,6 +36,7 @@ enum ComputeType
 #ifdef DPME
   computeDPMEType,
 #endif
+  computePmeType,
   computeFullDirectType,
   computeGlobalType,
   computeSphericalBCType,
@@ -174,13 +175,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1999/05/11 23:56:25 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1017 $	$Date: 1999/06/08 14:52:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.h,v $
+ * Revision 1.1017  1999/06/08 14:52:05  jim
+ * Incorporated Justin's faster PME code along side DPME.
+ *
  * Revision 1.1016  1999/05/11 23:56:25  brunner
  * Changes for new charm version
  *

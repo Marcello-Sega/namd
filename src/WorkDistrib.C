@@ -591,9 +591,16 @@ void WorkDistrib::mapComputes(void)
   if ( node->simParameters->FMAOn )
     mapComputeHomePatches(computeDPMTAType);
 #endif
-#ifdef DPME
   if ( node->simParameters->PMEOn )
-    mapComputeHomePatches(computeDPMEType);
+#ifdef DPME
+  {
+    if ( node->simParameters->useDPME )
+      mapComputeHomePatches(computeDPMEType);
+    else
+      mapComputeHomePatches(computePmeType);
+  }
+#else
+    mapComputeHomePatches(computePmeType);
 #endif
 
   if ( node->simParameters->globalForcesOn )
@@ -1117,13 +1124,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1066 $	$Date: 1999/05/11 23:56:52 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1067 $	$Date: 1999/06/08 14:52:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1067  1999/06/08 14:52:10  jim
+ * Incorporated Justin's faster PME code along side DPME.
+ *
  * Revision 1.1066  1999/05/11 23:56:52  brunner
  * Changes for new charm version
  *

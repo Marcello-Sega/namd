@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1070 $  $Date: 1999/06/03 16:50:09 $
+ *  $Revision: 1.1071 $  $Date: 1999/06/08 14:52:08 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1071  1999/06/08 14:52:08  jim
+ * Incorporated Justin's faster PME code along side DPME.
+ *
  * Revision 1.1070  1999/06/03 16:50:09  jim
  * Added simplified interface to ComputeGlobal mechanism.
  *
@@ -957,6 +960,8 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
 	&PMEGridSizeY);
    opts.require("PME", "PMEGridSizeZ", "PME grid in z dimension",
 	&PMEGridSizeZ);
+
+   opts.optionalB("PME", "useDPME", "Use old DPME code?", &useDPME, FALSE);
 
 }
 
@@ -3279,6 +3284,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 	<< PMEGridSizeX << " "
 	<< PMEGridSizeY << " "
 	<< PMEGridSizeZ << "\n";
+     if ( useDPME ) iout << iINFO << "USING OLD DPME CODE\n";
      iout << endi;
    }
 
@@ -3538,6 +3544,7 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
   msg->put(firstTimestep)->put(fullDirectOn);
   msg->put(PMEOn)->put(PMETolerance)->put(PMEInterpOrder);
   msg->put(PMEGridSizeX)->put(PMEGridSizeY)->put(PMEGridSizeZ);
+  msg->put(useDPME);
   msg->put(eFieldOn)->put(&eField)->put(binaryRestart)->put(binaryOutput);
   msg->put(electForceDcdFilename)->put(electForceDcdFrequency);
   msg->put(allForceDcdFilename)->put(allForceDcdFrequency);
@@ -3730,6 +3737,7 @@ void SimParameters::receive_SimParameters(MIStream *msg)
   msg->get(PMEGridSizeX);
   msg->get(PMEGridSizeY);
   msg->get(PMEGridSizeZ);
+  msg->get(useDPME);
   msg->get(eFieldOn);
   msg->get(&eField);
   msg->get(binaryRestart);
@@ -3820,12 +3828,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1070 $  $Date: 1999/06/03 16:50:09 $
+ *  $Revision: 1.1071 $  $Date: 1999/06/08 14:52:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1071  1999/06/08 14:52:08  jim
+ * Incorporated Justin's faster PME code along side DPME.
+ *
  * Revision 1.1070  1999/06/03 16:50:09  jim
  * Added simplified interface to ComputeGlobal mechanism.
  *

@@ -45,6 +45,8 @@
 #include "ComputeDPMTA.h"
 #include "ComputeDPME.h"
 #include "ComputeDPMEMsgs.h"
+#include "ComputePme.h"
+#include "ComputePmeMsgs.h"
 #include "ComputeSphericalBC.h"
 #include "ComputeCylindricalBC.h"
 #include "ComputeRestraints.h"
@@ -56,6 +58,7 @@ ComputeMgr::ComputeMgr()
   CpvAccess(BOCclass_group).computeMgr = thisgroup;
   computeGlobalObject = 0;
   computeDPMEObject = 0;
+  computePmeObject = 0;
 }
 
 ComputeMgr::~ComputeMgr(void)
@@ -234,6 +237,11 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	c->initialize();
 	break;
 #endif
+      case computePmeType:
+	c = computePmeObject = new ComputePme(i,this); // unknown delete
+	map->registerCompute(i,c);
+	c->initialize();
+	break;
       case computeFullDirectType:
 	c = new ComputeFullDirect(i); // unknown delete
 	map->registerCompute(i,c);
@@ -279,6 +287,7 @@ ComputeMgr::createComputes(ComputeMap *map)
 
   numNonbondedSelf = 0;
   numNonbondedPair = 0;
+  ComputeNonbondedUtil::select();
 
   for(int i=0; i < map->nComputes; i++)
   {
@@ -307,9 +316,6 @@ ComputeMgr::createComputes(ComputeMap *map)
 
   DebugM(4, "createComputes - total computes = "<<Compute::totalComputes<<"\n");
 
-  // This doesn't really have to be here, but the output makes more sense.
-  // It does have to happen after the molecule has been created.
-  ComputeNonbondedUtil::select();
 
 }
 
@@ -392,6 +398,41 @@ void ComputeMgr:: recvComputeDPMEResults(ComputeDPMEResultsMsg *msg)
   else NAMD_die("ComputeMgr::computeDPMEObject is NULL!");
 }
 
+void ComputeMgr:: sendComputePmeData(ComputePmeDataMsg *msg)
+{
+  if ( computePmeObject ) {
+    int node = computePmeObject->getMasterNode();
+    CProxy_ComputeMgr cm(CpvAccess(BOCclass_group).computeMgr);
+    cm.recvComputePmeData(msg,node);
+  }
+  else if ( CkMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
+  else NAMD_die("ComputeMgr::computePmeObject is NULL!");
+}
+
+void ComputeMgr:: recvComputePmeData(ComputePmeDataMsg *msg)
+{
+  if ( computePmeObject ) {
+    computePmeObject->recvData(msg);
+  }
+  else if ( CkMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
+  else NAMD_die("ComputeMgr::computePmeObject is NULL!");
+}
+
+void ComputeMgr:: sendComputePmeResults(ComputePmeResultsMsg *msg, int node)
+{
+  CProxy_ComputeMgr cm(CpvAccess(BOCclass_group).computeMgr);
+  cm.recvComputePmeResults(msg, node);
+}
+
+void ComputeMgr:: recvComputePmeResults(ComputePmeResultsMsg *msg)
+{
+  if ( computePmeObject ) {
+    computePmeObject->recvResults(msg);
+  }
+  else if ( CkMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
+  else NAMD_die("ComputeMgr::computePmeObject is NULL!");
+}
+
 #include "ComputeMgr.def.h"
 
 
@@ -399,13 +440,16 @@ void ComputeMgr:: recvComputeDPMEResults(ComputeDPMEResultsMsg *msg)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1027 $	$Date: 1999/05/11 23:56:25 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1028 $	$Date: 1999/06/08 14:52:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.C,v $
+ * Revision 1.1028  1999/06/08 14:52:06  jim
+ * Incorporated Justin's faster PME code along side DPME.
+ *
  * Revision 1.1027  1999/05/11 23:56:25  brunner
  * Changes for new charm version
  *
