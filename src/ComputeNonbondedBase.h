@@ -160,12 +160,6 @@ void ComputeNonbondedUtil :: NAME
 
   BigReal kqq;	// initialized later
   BigReal f;	// initialized later
-  register BigReal r2;
-
-  // for speedup
-  register BigReal tmp_x;
-  register BigReal tmp_y;
-  register BigReal tmp_z;
 
 EXCL
 (
@@ -344,7 +338,7 @@ NOEXCL
 	{
 	register int hgs = pa_j->nonbondedGroupSize;
 	p_j += ( ( j + hgs < j_upper ) ? hgs : 0 );
-	r2 = p_i_x - p_j_x;
+	register BigReal r2 = p_i_x - p_j_x;
 	r2 *= r2;
 	p_j_x = p_j->x;					// preload
 	register BigReal t2 = p_i_y - p_j_y;
@@ -431,7 +425,7 @@ NOEXCL
 )
 
       // common code
-      r2 = square(p_ij_x,p_ij_y,p_ij_z);
+      register BigReal r2 = square(p_ij_x,p_ij_y,p_ij_z);
 
       if ( r2 > cutoff2 )
       {
@@ -479,23 +473,24 @@ NOEXCL
 
 	switch ( FULLELECT ) {  // compiler should optimize this away
 	  case FULLELECT_PME: {
-	    tmp_x = r * ewaldcof;
-	    tmp_y = erfc(tmp_x);
-	    tmp_z = pi_ewaldcof*exp(-(tmp_x*tmp_x))*r_1 + tmp_y*r_1*r_1;
-	    register BigReal tmp_f = tmp_z * f;
-	    fullElectEnergy += tmp_y * f;
-	    tmp_x = tmp_f * p_ij_x;
+	    register BigReal tmp_a = r * ewaldcof;
+	    register BigReal tmp_b = erfc(tmp_a);
+	    register BigReal tmp_c =
+		pi_ewaldcof*exp(-(tmp_a*tmp_a))*r_1 + tmp_b*r_1*r_1;
+	    register BigReal tmp_f = tmp_c * f;
+	    fullElectEnergy += tmp_b * f;
+	    register BigReal tmp_x = tmp_f * p_ij_x;
+	    fullElectVirial_x += tmp_x * p_ij_x;
 	    fullf_i.x += tmp_x;
 	    fullf_j.x -= tmp_x;
-	    fullElectVirial_x += tmp_x * p_ij_x;
-	    tmp_y = tmp_f * p_ij_y;
+	    register BigReal tmp_y = tmp_f * p_ij_y;
+	    fullElectVirial_y += tmp_y * p_ij_y;
 	    fullf_i.y += tmp_y;
 	    fullf_j.y -= tmp_y;
-	    fullElectVirial_y += tmp_y * p_ij_y;
-	    tmp_z = tmp_f * p_ij_z;
+	    register BigReal tmp_z = tmp_f * p_ij_z;
+	    fullElectVirial_z += tmp_z * p_ij_z;
 	    fullf_i.z += tmp_z;
 	    fullf_j.z -= tmp_z;
-	    fullElectVirial_z += tmp_z * p_ij_z;
 	  } break;
 	}
       )
@@ -521,18 +516,18 @@ NOEXCL
 	    // Do a quick fix and get out!
 	    fullElectEnergy -= f;
 	    fullforce_r = -f * r_1*r_1;
-	    tmp_x = fullforce_r * p_ij_x;
+	    register BigReal tmp_x = fullforce_r * p_ij_x;
+	    fullElectVirial_x += tmp_x * p_ij_x;
 	    fullf_i.x += tmp_x;
 	    fullf_j.x -= tmp_x;
-	    fullElectVirial_x += tmp_x * p_ij_x;
-	    tmp_y = fullforce_r * p_ij_y;
+	    register BigReal tmp_y = fullforce_r * p_ij_y;
+	    fullElectVirial_y += tmp_y * p_ij_y;
 	    fullf_i.y += tmp_y;
 	    fullf_j.y -= tmp_y;
-	    fullElectVirial_y += tmp_y * p_ij_y;
-	    tmp_z = fullforce_r * p_ij_z;
+	    register BigReal tmp_z = fullforce_r * p_ij_z;
+	    fullElectVirial_z += tmp_z * p_ij_z;
 	    fullf_i.z += tmp_z;
 	    fullf_j.z -= tmp_z;
-	    fullElectVirial_z += tmp_z * p_ij_z;
 	  )
 	  continue;  // Must have stored force by now.
 	}
@@ -709,33 +704,37 @@ NOEXCL
 			r_1 - AmBterm*dSwitchVal )*r_1;
 )
 
-      tmp_x = force_r * p_ij_x;
+      {
+      register BigReal tmp_x = force_r * p_ij_x;
+      virial_x += tmp_x * p_ij_x;
       f_i.x += tmp_x;
       f_j.x -= tmp_x;
-      virial_x += tmp_x * p_ij_x;
-      tmp_y = force_r * p_ij_y;
+      register BigReal tmp_y = force_r * p_ij_y;
+      virial_y += tmp_y * p_ij_y;
       f_i.y += tmp_y;
       f_j.y -= tmp_y;
-      virial_y += tmp_y * p_ij_y;
-      tmp_z = force_r * p_ij_z;
+      register BigReal tmp_z = force_r * p_ij_z;
+      virial_z += tmp_z * p_ij_z;
       f_i.z += tmp_z;
       f_j.z -= tmp_z;
-      virial_z += tmp_z * p_ij_z;
+      }
 
       FULL
       (
-      tmp_x = fullforce_r * p_ij_x;
+      {
+      register BigReal tmp_x = fullforce_r * p_ij_x;
+      fullElectVirial_x += tmp_x * p_ij_x;
       fullf_i.x += tmp_x;
       fullf_j.x -= tmp_x;
-      fullElectVirial_x += tmp_x * p_ij_x;
-      tmp_y = fullforce_r * p_ij_y;
+      register BigReal tmp_y = fullforce_r * p_ij_y;
+      fullElectVirial_y += tmp_y * p_ij_y;
       fullf_i.y += tmp_y;
       fullf_j.y -= tmp_y;
-      fullElectVirial_y += tmp_y * p_ij_y;
-      tmp_z = fullforce_r * p_ij_z;
+      register BigReal tmp_z = fullforce_r * p_ij_z;
+      fullElectVirial_z += tmp_z * p_ij_z;
       fullf_i.z += tmp_z;
       fullf_j.z -= tmp_z;
-      fullElectVirial_z += tmp_z * p_ij_z;
+      }
       )
 
 NOEXCL
@@ -764,12 +763,15 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1042 $	$Date: 1999/01/06 00:56:22 $
+ *	$Revision: 1.1043 $	$Date: 1999/01/07 01:18:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1043  1999/01/07 01:18:29  jim
+ * Speed hacks to inner electrostatics loop.
+ *
  * Revision 1.1042  1999/01/06 00:56:22  jim
  * All compute objects except DPMTA now return diagonal of virial tensor.
  *
