@@ -43,7 +43,7 @@ public:
     
   static BroadcastMsg* unpack(void *ptr) {
     void *_ptr = CkAllocBuffer(ptr, sizeof(BroadcastMsg));
-    BroadcastMsg *m = new (ptr) BroadcastMsg;
+    BroadcastMsg *m = new (_ptr) BroadcastMsg;
     char *b = (char *)ptr;
     memcpy((void *)&(m->size), b, sizeof(int)); b += sizeof(int);
     memcpy((void *)&(m->id), b, sizeof(int)); b += sizeof(int);
@@ -140,12 +140,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1999/05/11 23:56:13 $
+ *	$Revision: 1.11 $	$Date: 1999/05/25 01:20:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: BroadcastMgr.h,v $
+ * Revision 1.11  1999/05/25 01:20:52  jim
+ * Fixed typo bug introduced with syntax changes.
+ *
  * Revision 1.10  1999/05/11 23:56:13  brunner
  * Changes for new charm version
  *
