@@ -9,7 +9,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1012 1997/03/27 20:25:49 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1013 1997/04/04 22:28:54 ari Exp $";
 
 #include <unistd.h>
 #include "ckdefs.h"
@@ -20,7 +20,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "Namd.h"
 
 #define MIN_DEBUG_LEVEL 3
-// #define DEBUGM
+#define DEBUGM
 #include "Debug.h"
 
 #include <stdio.h>
@@ -236,7 +236,7 @@ void Node::startup(InitMsg *msg) {
       CStartQuiescence(GetEntryPtr(Node,startUp), thishandle);
     } else {
       Node::messageRun();
-      CStartQuiescence(GetEntryPtr(Node,quiescence), thishandle);
+      // CStartQuiescence(GetEntryPtr(Node,quiescence), thishandle);
     }
   }
 }
@@ -260,30 +260,39 @@ void Node::namdOneRecv() {
   parameters = new Parameters;
   molecule = new Molecule(simParameters);
 
+  DebugM(4, "Getting SimParameters\n");
   do{
     tag=SIMPARAMSTAG;
     conv_msg = comm->receive(zero,tag);
   } while (conv_msg == NULL);
   simParameters->receive_SimParameters(conv_msg);
 
+  DebugM(4, "Getting Parameters\n");
   do{
     tag=STATICPARAMSTAG;
     conv_msg = comm->receive(zero,tag);
   } while (conv_msg == NULL);
   parameters->receive_Parameters(conv_msg);
 
+  DebugM(4, "Getting Molecule\n");
   do{
     tag=MOLECULETAG;
     conv_msg = comm->receive(zero,tag);
   } while (conv_msg == NULL);
   molecule->receive_Molecule(conv_msg);
+
+  DebugM(4, "Done Receiving\n");
 }
 
 void Node::namdOneSend() {
   // I'm Pe(0) so I send what I know
+  DebugM(4, "Sending SimParameters\n");
   simParameters->send_SimParameters(comm);
+  DebugM(4, "Sending Parameters\n");
   parameters->send_Parameters(comm);
+  DebugM(4, "Sending Molecule\n");
   molecule->send_Molecule(comm);
+  DebugM(4, "Done Sending\n");
 }
 
 // Initial thread setup
@@ -433,13 +442,16 @@ void Node::saveMolDataPointers(NamdState *state)
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/03/27 20:25:49 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1013 $	$Date: 1997/04/04 22:28:54 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1013  1997/04/04 22:28:54  ari
+ * Removed quiescence detection after the initial startup phase.
+ *
  * Revision 1.1012  1997/03/27 20:25:49  brunner
  * Changes for LdbCoordinator, the load balance control BOC
  *
