@@ -351,23 +351,26 @@ void Controller::printEnergies(int seq)
 	iout << "\n" << endi;
     }
 
-    iout << ETITLE(seq)
-	 << FORMAT(bondEnergy)
-	 << FORMAT(angleEnergy)
-	 << FORMAT(dihedralEnergy)
-	 << FORMAT(improperEnergy)
-	 << FORMAT(electEnergy)
-	 << FORMAT(ljEnergy)
-	 << FORMAT(boundaryEnergy)
-	 << FORMAT(kineticEnergy)
-	 << FORMAT(totalEnergy)
-	 << FORMAT(temperature);
+    // N.B.  HP's aCC compiler merges FORMAT calls in the same expression.
+    //       Need separate statements because data returned in static array.
+
+    iout << ETITLE(seq);
+    iout << FORMAT(bondEnergy);
+    iout << FORMAT(angleEnergy);
+    iout << FORMAT(dihedralEnergy);
+    iout << FORMAT(improperEnergy);
+    iout << FORMAT(electEnergy);
+    iout << FORMAT(ljEnergy);
+    iout << FORMAT(boundaryEnergy);
+    iout << FORMAT(kineticEnergy);
+    iout << FORMAT(totalEnergy);
+    iout << FORMAT(temperature);
 
     if ( volume != 0. )
     {
-	iout << FORMAT(pressure*PRESSUREFACTOR)
-	     << FORMAT(groupPressure*PRESSUREFACTOR)
-	     << FORMAT(volume);
+	iout << FORMAT(pressure*PRESSUREFACTOR);
+	iout << FORMAT(groupPressure*PRESSUREFACTOR);
+	iout << FORMAT(volume);
     }
 
     if (simParams->SMDOn) {
@@ -394,12 +397,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1034 $	$Date: 1998/06/18 14:48:03 $
+ *	$Revision: 1.1035 $	$Date: 1998/06/18 15:25:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1035  1998/06/18 15:25:22  jim
+ * Workaround for aCC - put FORMAT()'s on separate lines.
+ *
  * Revision 1.1034  1998/06/18 14:48:03  jim
  * Split virial into NORMAL, NBOND, and SLOW parts to match force classes.
  *
