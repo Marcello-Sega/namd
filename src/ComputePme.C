@@ -182,17 +182,6 @@ void ComputePmeMgr::initialize() {
   myGrid.block1 = ( myGrid.K1 + CkNumPes() - 1 ) / CkNumPes();
   myGrid.block2 = ( myGrid.K2 + CkNumPes() - 1 ) / CkNumPes();
 
-  int n[3]; n[0] = myGrid.K1; n[1] = myGrid.K2; n[2] = myGrid.K3;
-  forward_plan_x = fftw_create_plan(n[0], FFTW_REAL_TO_COMPLEX,
-					FFTW_MEASURE | FFTW_IN_PLACE);
-  forward_plan_yz = rfftwnd_create_plan(2, n+1, FFTW_REAL_TO_COMPLEX,
-					FFTW_MEASURE | FFTW_IN_PLACE);
-  backward_plan_x = fftw_create_plan(n[0], FFTW_COMPLEX_TO_REAL,
-					FFTW_MEASURE | FFTW_IN_PLACE);
-  backward_plan_yz = rfftwnd_create_plan(2, n+1, FFTW_COMPLEX_TO_REAL,
-					FFTW_MEASURE | FFTW_IN_PLACE);
-  work = new fftw_complex[n[0]];
-
   localInfo = new LocalPmeInfo[CkNumPes()];
 
   int nx = 0;
@@ -222,6 +211,20 @@ void ComputePmeMgr::initialize() {
   qgrid_len = localInfo[CkMyPe()].nx * myGrid.K2 * myGrid.dim3;
   fgrid_start = localInfo[CkMyPe()].x_start * myGrid.K2;
   fgrid_len = localInfo[CkMyPe()].nx * myGrid.K2;
+
+  int n[3]; n[0] = myGrid.K1; n[1] = myGrid.K2; n[2] = myGrid.K3;
+  work = new fftw_complex[n[0]];
+
+  forward_plan_yz = rfftwnd_create_plan_specific(2, n+1, FFTW_REAL_TO_COMPLEX,
+	FFTW_MEASURE | FFTW_IN_PLACE, qgrid, 1, 0, 0);
+  forward_plan_x = fftw_create_plan_specific(n[0], FFTW_REAL_TO_COMPLEX,
+	FFTW_MEASURE | FFTW_IN_PLACE, (fftw_complex *) qgrid,
+	localInfo[CkMyPe()].ny_after_transpose * myGrid.dim3 / 2, work, 1);
+  backward_plan_x = fftw_create_plan_specific(n[0], FFTW_COMPLEX_TO_REAL,
+	FFTW_MEASURE | FFTW_IN_PLACE, (fftw_complex *) qgrid,
+	localInfo[CkMyPe()].ny_after_transpose * myGrid.dim3 / 2, work, 1);
+  backward_plan_yz = rfftwnd_create_plan_specific(2, n+1, FFTW_COMPLEX_TO_REAL,
+	FFTW_MEASURE | FFTW_IN_PLACE, qgrid, 1, 0, 0);
 
   numSources = CkNumPes();
   int npatches = (PatchMap::Object())->numPatches();
