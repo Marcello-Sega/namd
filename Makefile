@@ -235,7 +235,7 @@ all:	$(BINARIES)
 namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
-	-language charm++ \
+	-module NeighborLB -language charm++ \
 	$(OBJS) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
