@@ -22,6 +22,8 @@ private:
   CLBMigrateMsg* Strategy(CentralLB::LDStats* stats, int count);
   int buildData(CentralLB::LDStats* stats, int count);
   int requiredProxies(PatchID id, int neighborNodes[]);
+  void dumpData(char *file, int numProcessors, int numPatches, int numComputes);
+  void loadData(char *file, int &numProcessors, int &numPatches, int &numComputes);
 
   computeInfo *computeArray;
   patchInfo *patchArray;

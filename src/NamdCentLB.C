@@ -1,3 +1,6 @@
+#include <unistd.h>
+#include <fcntl.h>
+
 #include <charm++.h>
 
 #include <CkLists.h>
@@ -41,6 +44,10 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
   computeArray = new computeInfo[numComputes];
 
   const int nMoveableComputes = buildData(stats,count);
+  // gzheng debug
+  dumpData("data", numProcessors, numPatches, nMoveableComputes);
+  // loadData("data", numProcessors, numPatches, nMoveableComputes);
+  // end of debug section
 
   Rebalancer* rebalancer = 0;
 
@@ -96,6 +103,106 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
   }
   return msg;
 };
+
+void NamdCentLB::dumpData(char *file, int numProcessors, int numPatches, int numComputes)
+{
+  int fd = open(file, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+  if (fd == -1){
+     perror("dumpLDStats");
+     return;
+  }
+  write(fd, &numProcessors, sizeof(int));
+  write(fd, &numPatches, sizeof(int));
+  write(fd, &numComputes, sizeof(int));
+  write(fd, processorArray, sizeof(processorInfo)*numProcessors);
+  write(fd, patchArray, sizeof(patchInfo)*numPatches);
+  write(fd, computeArray, sizeof(computeInfo)*numComputes);
+  int i;
+  // dump patchSet
+  for (i=0; i< numProcessors; i++)
+  {
+      int num = processorArray[i].proxies->numElements();
+      write(fd, &num, sizeof(int));
+CkPrintf("**** Proc:%d num:%d \n", i, num);
+      Iterator nextProxy;
+//      nextProxy.id = 0;
+      patchInfo *p = (patchInfo *)processorArray[i].proxies->iterator((Iterator *)&nextProxy);
+      while (p) 
+      {
+          write(fd, &p->Id, sizeof(int));
+          p = (patchInfo *)processorArray[i].proxies->next((Iterator*)&nextProxy);
+      }
+  }
+  // dump proxiesOn
+  for (i=0; i<numPatches; i++)
+  {
+      int num = patchArray[i].proxiesOn->numElements();
+      write(fd, &num, sizeof(int));
+// CkPrintf("**** Patch:%d num:%d \n", i, num);
+      Iterator nextProc;
+//      nextProc.id = 0;
+      processorInfo *p = (processorInfo *)patchArray[i].proxiesOn->iterator((Iterator *)&nextProc);
+      while (p) 
+      {
+          write(fd, &p->Id, sizeof(int));
+          p = (processorInfo *)patchArray[i].proxiesOn->next((Iterator*)&nextProc);
+      }
+  }
+
+  close(fd);
+}
+
+void NamdCentLB::loadData(char *file, int &numProcessors, int &numPatches, int &numComputes)
+{
+  int fd = open(file, O_RDONLY);
+  if (fd == -1){
+     perror("loadData");
+     return;
+  }
+
+  read(fd, &numProcessors, sizeof(int));
+  read(fd, &numPatches, sizeof(int));
+  read(fd, &numComputes, sizeof(int));
+
+  printf("numProcs: %d numPatches: %d numComputes: %d\n", numProcessors,numPatches, numComputes);
+  processorInfo *processorArray = new processorInfo[numProcessors];
+  computeInfo *computeArray = new computeInfo[numComputes];
+  patchInfo *patchArray = new patchInfo [numPatches];
+
+  read(fd, processorArray, sizeof(processorInfo)*numProcessors);
+  read(fd, patchArray, sizeof(patchInfo)*numPatches);
+  read(fd, computeArray, sizeof(computeInfo)*numComputes);
+
+  int i;
+  for (i=0; i<numProcessors; i++)
+  {
+      int num;
+      read(fd, &num, sizeof(int));
+      printf("proc: %d proxies:%d \n", i, num);
+      processorArray[i].proxies = new Set();
+      for (int j=0; j<num; j++) {
+          int id;
+          read(fd, &id, sizeof(int));
+	  printf("%d ", id);
+          processorArray[i].proxies->insert(&patchArray[id]);
+      }
+      printf("\n");
+  }
+  for (i=0; i<numPatches; i++)
+  {
+      int num;
+      read(fd, &num, sizeof(int));
+//      printf("patch: %d proxiesOn:%d \n", i, num);
+      patchArray[i].proxiesOn = new Set();
+      for (int j=0; j<num; j++) {
+          int id;
+          read(fd, &id, sizeof(int));
+          patchArray[i].proxiesOn->insert(&processorArray[id]);
+      }
+  }
+
+  close(fd);
+}
 
 int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 {
