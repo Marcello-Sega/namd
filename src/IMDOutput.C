@@ -19,22 +19,33 @@ void IMDupdate(void *v) {
 
 IMDOutput::IMDOutput(void *s) {
   sock = s;
-  imd_handshake(sock);
+  if (imd_handshake(sock)) {
+    vmdsock_destroy(sock);
+    NAMD_die("IMD handshake failed\n");
+  }
+
+  // Wait a second, then see if VMD has responded.
+  double t = CmiWallTimer();
+  while (CmiWallTimer()-t < 1.0);
+  int32 length;
+  if (vmdsock_selread(sock,0) != 1 || imd_recv_header(s, &length) != IMD_GO) {
+    vmdsock_destroy(sock);
+    NAMD_die("Incompatible Interactive MD, use VMD v1.4b2 or higher\n");
+  }
   transrate = 1;
 }
 
-IMDOutput::~IMDOutput() { 
-  //delete [] fcoords;
-}
+IMDOutput::~IMDOutput() {}
 
 void IMDOutput::gather_energies(IMDEnergies *energies) { 
-  if (!sock) return; 
+  if (!vmdsock_selwrite(sock,0)) 
+    return; 
   if (energies->tstep % transrate) return;
   imd_send_energies(sock, energies);
 }
 
 void IMDOutput::gather_coordinates(int timestep, int N, FloatVector *coords) {
-  if (!sock) return;
+  if (!vmdsock_selwrite(sock,0)) return;
   if (timestep % transrate) return;
   imd_send_fcoords(sock, N, (float *)coords);
 }

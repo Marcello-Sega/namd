@@ -120,7 +120,6 @@ void ComputeIMD::calculate() {
 }
 
 int ComputeIMD::get_vmd_forces() {
-  char *buf;
   IMDType type;
   int32 length;
   int32 *vmd_atoms;
@@ -128,7 +127,7 @@ int ComputeIMD::get_vmd_forces() {
   int retval; 
   vmdforce *vtest, vnew;
 
-  while (vmdsock_selread(sock,0))  {     // Drain the socket
+  while (vmdsock_selread(sock,0) > 0)  {     // Drain the socket
     type = imd_recv_header(sock, &length);
     int i;
     switch (type) {
@@ -183,6 +182,10 @@ int ComputeIMD::get_vmd_forces() {
         imd_recv_fcoords(sock, length, vmd_forces);
         delete [] vmd_forces;
         break;
+      case IMD_IOERROR:
+        vmdsock_destroy(sock);
+        NAMD_die("IMD connection lost\n");
+        break;    
       default: ;
     }
   }
