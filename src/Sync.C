@@ -196,11 +196,13 @@ void Sync::triggerCompute()
 }
 
 
+#if 0
 // hack for SUN MPCC
 // force compiler to instantiate ArrayElementT
 void *frightenCompilerIntoInstantiatingHack(void) {
   return new ArrayElementT<int>;
 }
+#endif
 
 
 #include "Sync.def.h"
