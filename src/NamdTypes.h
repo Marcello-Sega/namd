@@ -26,6 +26,9 @@ typedef Vector Position;
 typedef Vector Velocity;
 typedef Vector Force;
 typedef int AtomID;
+typedef int AtomType;
+typedef float Mass;
+typedef float Charge;
 
 typedef double Coordinate;
 
@@ -60,6 +63,14 @@ struct LocalID
   int index;
 };
 
+struct AtomProperties
+{
+  AtomID id;
+  AtomType type;
+  Mass mass;
+  Charge charge;
+};
+
 enum ComputeType
 {
   electForceType,
@@ -81,13 +92,16 @@ enum Boolean
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdTypes.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1996/10/24 18:51:09 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.10 $	$Date: 1996/10/30 00:32:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdTypes.h,v $
+ * Revision 1.10  1996/10/30 00:32:18  jim
+ * added AtomProperties definition
+ *
  * Revision 1.9  1996/10/24 18:51:09  brunner
  * Added LocalID
  *
