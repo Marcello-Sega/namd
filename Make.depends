@@ -204,6 +204,10 @@ obj/CollectionMaster.o: \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/Output.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/MStream.h \
 	src/packmsg.h \
 	src/Debug.h \
 	inc/CollectionMaster.def.h
@@ -1779,6 +1783,28 @@ obj/ccsinterface.o: \
 	src/ccsinterface.C \
 	src/ccsinterface.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ccsinterface.o $(COPTC) src/ccsinterface.C
+obj/DataStream.o: \
+	src/DataStream.C \
+	src/DataStream.h \
+	src/InfoStream.h \
+	src/CollectionMgr.h \
+	src/main.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/BOCgroup.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/ProcessorPrivate.h \
+	inc/CollectionMgr.decl.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/DataStream.o $(COPTC) src/DataStream.C
 obj/FreeEnergyAssert.o: \
 	src/FreeEnergyAssert.C \
 	src/InfoStream.h \

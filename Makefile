@@ -94,6 +94,7 @@ OBJS = \
 	$(DSTDIR)/ConfigList.o \
 	$(DSTDIR)/Controller.o \
 	$(DSTDIR)/ccsinterface.o \
+	$(DSTDIR)/DataStream.o \
         $(DSTDIR)/FreeEnergyAssert.o \
         $(DSTDIR)/FreeEnergyGroup.o \
         $(DSTDIR)/FreeEnergyLambda.o \
