@@ -1550,10 +1550,6 @@ L115:
 } /* cfftf_ */
 
 
-/* Builtin functions */
-  double cos(double);
-  double sin(double);
-
 /* Subroutine */ int cffti1(int *n, double *wa, int *ifac)
 {
     /* Initialized data */

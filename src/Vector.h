@@ -29,17 +29,11 @@ class Vector {
      inline Vector(void) {         // default is to create a 0 vector
        x = y = z = 0.0;
      }
-     inline Vector( const Vector &v2) { // Vector x = another_vector
-       x = v2.x;
-       y = v2.y;
-       z = v2.z;
-     }
+
      inline Vector( BigReal newx, BigReal newy, BigReal newz) {
        x = newx;
        y = newy;
        z = newz;
-     }
-     ~Vector( void) {
      }
 
      inline BigReal &operator[](int i) {
@@ -47,15 +41,6 @@ class Vector {
              :i==1 ? y
              :i==2 ? z
              :(NAMD_die("Vector reference out of bounds."), x);
-
-     }
-
-     //  v1 = v2;
-     inline Vector& operator=(const Vector &v2) {
-       x = v2.x;
-       y = v2.y;
-       z = v2.z;
-       return *this;
      }
 
      //  v1 = const;
@@ -299,13 +284,16 @@ main()
  * RCS INFORMATION:
  *
  *	$RCSfile: Vector.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/19 11:54:58 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1999/09/11 20:44:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Vector.h,v $
+ * Revision 1.1003  1999/09/11 20:44:11  jim
+ * Small changes for better performance.
+ *
  * Revision 1.1002  1997/03/19 11:54:58  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.
