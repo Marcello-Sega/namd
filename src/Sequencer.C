@@ -467,7 +467,6 @@ void Sequencer::langevinVelocitiesBBK1(BigReal dt_fs)
     int numAtoms = patch->numAtoms;
     Molecule *molecule = Node::Object()->molecule;
     BigReal dt = dt_fs * 0.001;  // convert to ps
-    BigReal kbT = BOLTZMAN*(simParams->langevinTemp);
     for ( int i = 0; i < numAtoms; ++i )
     {
       int aid = a[i].id;
@@ -475,8 +474,6 @@ void Sequencer::langevinVelocitiesBBK1(BigReal dt_fs)
       if ( ! dt_gamma ) continue;
 
       a[i].velocity *= ( 1. - 0.5 * dt_gamma );
-      a[i].velocity += random->gaussian_vector() *
-             sqrt( 2 * dt_gamma * kbT / a[i].mass );
     }
   }
 }
@@ -492,13 +489,15 @@ void Sequencer::langevinVelocitiesBBK2(BigReal dt_fs)
     int numAtoms = patch->numAtoms;
     Molecule *molecule = Node::Object()->molecule;
     BigReal dt = dt_fs * 0.001;  // convert to ps
-    // BigReal kbT = BOLTZMAN*(simParams->langevinTemp);
+    BigReal kbT = BOLTZMAN*(simParams->langevinTemp);
     for ( int i = 0; i < numAtoms; ++i )
     {
       int aid = a[i].id;
       BigReal dt_gamma = dt * molecule->langevin_param(aid);
       if ( ! dt_gamma ) continue;
 
+      a[i].velocity += random->gaussian_vector() *
+             sqrt( 2 * dt_gamma * kbT / a[i].mass );
       a[i].velocity /= ( 1. + 0.5 * dt_gamma );
     }
   }
