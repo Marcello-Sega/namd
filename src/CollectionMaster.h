@@ -48,14 +48,14 @@ public:
 		}
 
     // true -> send it and delete it!
-    int append(AtomIDList &a, ResizeArray<Vector> &d)
+    void append(AtomIDList &a, ResizeArray<Vector> &d)
     {
       int size = a.size();
       for( int i = 0; i < size; ++i )
       {
 	data.item(a[i]) = d[i];
       }
-      return ( ! --remaining );
+      --remaining;
     }
 
     int ready(void) { return ( ! remaining ); }
@@ -80,7 +80,7 @@ public:
   {
   public:
 
-    CollectVectorInstance* submitData(
+    void submitData(
 	int seq, AtomIDList &i, ResizeArray<Vector> &d)
     {
       CollectVectorInstance *c = data.find(CollectVectorInstance(seq));
@@ -89,34 +89,26 @@ public:
 	data.add(CollectVectorInstance(seq));
 	c = data.find(CollectVectorInstance(seq));
       }
-      if ( c->append(i,d) && queue.size() && queue[0] == seq )
-      {
-	c = new CollectVectorInstance(*c);
-	data.del(CollectVectorInstance(seq));
-	queue.del(0,1);
-	return c;
-      }
-      else
-      {
-        return 0;
-      }
+      c->append(i,d);
     }
 
-    CollectVectorInstance* enqueue(int seq)
+    void enqueue(int seq) { queue.add(seq); }
+
+    CollectVectorInstance* removeReady(void)
     {
-      queue.add(seq);
-      if ( queue[0] == seq )
+      CollectVectorInstance *o = 0;
+      if ( queue.size() )
       {
+        int seq = queue[0];
         CollectVectorInstance *c = data.find(CollectVectorInstance(seq));
         if ( c && c->ready() )
         {
-	  c = new CollectVectorInstance(*c);
-	  data.del(CollectVectorInstance(seq));
+	  o = new CollectVectorInstance(*c);
+	  data.del(*c);
 	  queue.del(0,1);
-	  return c;
         }
       }
-      return 0;
+      return o;
     }
 
     ResizeArray<CollectVectorInstance> data;
@@ -154,12 +146,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1999/05/11 23:56:15 $
+ *	$Revision: 1.1015 $	$Date: 1999/05/14 21:32:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMaster.h,v $
+ * Revision 1.1015  1999/05/14 21:32:47  jim
+ * Fixed bugs which could stall output queue.
+ *
  * Revision 1.1014  1999/05/11 23:56:15  brunner
  * Changes for new charm version
  *
