@@ -48,6 +48,8 @@ void Sequencer::algorithm(void)
     const int stepsPerCycle = this->stepsPerCycle;
     const BigReal timestep = simParams->dt;
     int step, cycle;
+    patch->positionsReady();
+    suspend();
     for ( cycle = 0; cycle < numberOfCycles; ++cycle )
     {
         for ( step = 0; step < stepsPerCycle; ++step )
