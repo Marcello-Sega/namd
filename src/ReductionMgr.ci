@@ -3,11 +3,13 @@
 
 extern message InitMsg;
 message ReductionDataMsg;
+message CheckForPatchMsg;
 
 group ReductionMgr
 {
   entry ReductionMgr(InitMsg *);
   entry recvReductionData(ReductionDataMsg *);
+  entry doDummySubmit(CheckForPatchMsg *);
 };
 
 
@@ -16,12 +18,15 @@ group ReductionMgr
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/19 11:54:53 $
+ *	$Revision: 1.1003 $	$Date: 1998/11/30 04:16:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.ci,v $
+ * Revision 1.1003  1998/11/30 04:16:42  krishnan
+ * Added CheckForPatchMsg and the entry point doDummySubmit().
+ *
  * Revision 1.1002  1997/03/19 11:54:53  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.
