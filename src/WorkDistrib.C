@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1021 1997/04/07 14:54:37 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1022 1997/04/07 21:09:58 brunner Exp $";
 
 #include <stdio.h>
 
@@ -35,6 +35,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib
 #include "NamdOneTools.h"
 #include "Compute.h"
 #include "Priorities.h"
+#include "RecBisection.h"
 
 #define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
@@ -352,9 +353,21 @@ lattice.scale( Vector(	((float)(xi+1)/(float)xdim)*sysDim.x+sysMin.x,
   }
 }
 
-//
 //----------------------------------------------------------------------
-void WorkDistrib::assignNodeToPatch() {
+void WorkDistrib::assignNodeToPatch()
+{
+  int method=1;
+
+  if (method==1)
+    assignPatchesRecursiveBisection();
+  else
+    assignPatchesToLowestLoadNode();
+  //  PatchMap::Object()->printPatchMap();
+}
+
+//----------------------------------------------------------------------
+void WorkDistrib::assignPatchesToLowestLoadNode() 
+{
   int pid; 
   int assignedNode = 0;
   PatchMap *patchMap = PatchMap::Object();
@@ -383,6 +396,18 @@ void WorkDistrib::assignNodeToPatch() {
   }
 
   delete[] numAtoms;
+}
+
+//----------------------------------------------------------------------
+void WorkDistrib::assignPatchesRecursiveBisection() 
+{
+  RecBisection recBisec(Node::Object()->numNodes(),PatchMap::Object());
+  if ( !recBisec.partition((int *)NULL) ) {
+    iout << iWARN 
+	 << "WorkDistrib: Recursive bisection fails,"
+	 << "invoking least-load algorithm\n";
+    assignPatchesToLowestLoadNode();
+  }
 }
 
 //----------------------------------------------------------------------
@@ -809,13 +834,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1021 $	$Date: 1997/04/07 14:54:37 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1022 $	$Date: 1997/04/07 21:09:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1022  1997/04/07 21:09:58  brunner
+ * Added RecBisection for initial patch distrib
+ *
  * Revision 1.1021  1997/04/07 14:54:37  nealk
  * Changed fclose() to Fclose() (found in common.[Ch]) to use with popen().
  * Also corrected compilation warnings in Set.[Ch].

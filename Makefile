@@ -67,8 +67,8 @@ OBJS = \
 	$(DSTDIR)/dcdlib.o \
 	$(DSTDIR)/main.o \
 	$(DSTDIR)/strlib.o \
-	$(DSTDIR)/AtomMap.o \
 	$(DSTDIR)/AlgSeven.o \
+	$(DSTDIR)/AtomMap.o \
 	$(DSTDIR)/BroadcastMgr.o \
 	$(DSTDIR)/BroadcastClient.o \
 	$(DSTDIR)/CollectionMaster.o \
@@ -125,6 +125,7 @@ OBJS = \
 	$(DSTDIR)/ProxyMgr.o \
 	$(DSTDIR)/ProxyPatch.o \
 	$(DSTDIR)/Rebalancer.o \
+	$(DSTDIR)/RecBisection.o \
 	$(DSTDIR)/ReductionMgr.o \
 	$(DSTDIR)/RefineOnly.o \
 	$(DSTDIR)/Sequencer.o \

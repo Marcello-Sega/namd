@@ -58,6 +58,8 @@ private:
   void mapComputeNonbonded(void);
   void mapComputeHomePatches(ComputeType);
   void mapComputePatch(ComputeType);
+  void assignPatchesToLowestLoadNode(void);
+  void assignPatchesRecursiveBisection(void);
   void velocities_from_PDB(char *filename, 
 			   Vector *v, int totalAtoms);
   void velocities_from_binfile(char *fname, Vector *vels, int n);
@@ -129,13 +131,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/03/19 05:50:16 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1997/04/07 21:09:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.1008  1997/04/07 21:09:59  brunner
+ * Added RecBisection for initial patch distrib
+ *
  * Revision 1.1007  1997/03/19 05:50:16  jim
  * Added ComputeSphericalBC, cleaned up make dependencies.
  *

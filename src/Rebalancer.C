@@ -37,17 +37,17 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
   }
 
   for (i=0; i <P; i++) {
-    //    cout << "\n proxies on proc. " << i << " are for patches:";
+    //    iout << iINFO << "\n proxies on proc. " << i << " are for patches:";
     //    processorArray[i].proxies->print();
   }
-  cout <<"\n";
+  iout << iINFO <<"\n";
 
   //strategy();
 
 }
 
 void Rebalancer::strategy(){
-  cout << "Strategy not implemented for the base class.\n";
+  iout << iINFO << "Strategy not implemented for the base class.\n";
 }
 
 void Rebalancer::makeHeaps()
@@ -80,7 +80,7 @@ void Rebalancer::makeHeaps()
 
 void Rebalancer::assign(computeInfo *c, processorInfo *p)
 {
-  // cout << "assigning " << c->Id << "with work = "
+  // iout << iINFO << "assigning " << c->Id << "with work = "
   //   << c->load << "to processor " << p->processorNum << "\n";
   c->processor = p->Id;
   p->computeSet->insert((InfoRecord *) c);
@@ -119,9 +119,9 @@ int Rebalancer::refine()
   int i;
   for (i=0; i<P; i++){
     
-    cout << "\n Computes on processor " << i << " ";
+    iout << iINFO << "\n Computes on processor " << i << " ";
     processors[i].computeSet->print();
-    cout << "\n";
+    iout << iINFO << "\n";
     if (processors[i].load > overLoad*averageLoad)
       heavyProcessors->insert((InfoRecord *) &(processors[i]));
     else
@@ -142,16 +142,16 @@ int Rebalancer::refine()
       lightProcessors->iterator((Iterator *) &nextProcessor);
     bestSize0 = bestSize1 = bestSize2 = 0;
     bestCompute0 = bestCompute1 = bestCompute2 = 0;
-    cout << "Finding receiver for processor " << donor->Id << "\n";
+    iout << iINFO << "Finding receiver for processor " << donor->Id << "\n";
     while (p){
       Iterator nextCompute;
       nextCompute.id = 0;
       computeInfo *c = (computeInfo *) donor->computeSet->iterator((Iterator *)&nextCompute);
-      cout << "Considering Procsessor : " << p->Id << "\n";
+      iout << iINFO << "Considering Procsessor : " << p->Id << "\n";
       while (c){
 	int n=0;
 	n = numAvailable(c,p);
-	cout << "Considering Compute : " << c->Id << " with load " << c->load << "\n";
+	iout << iINFO << "Considering Compute : " << c->Id << " with load " << c->load << "\n";
 	switch(n){
 	case 0: if (( c->load + p->load < overLoad*averageLoad) &&
 		    (c->load > bestSize0)) {
@@ -174,7 +174,7 @@ int Rebalancer::refine()
 	  bestP = p;
 	}
 	break;
-	default: cout << "Error. Illegal number of proxies.\n";    
+	default: iout << iINFO << "Error. Illegal number of proxies.\n";    
 	}
 	nextCompute.id++;
 	c = (computeInfo *) donor->computeSet->next((Iterator *)&nextCompute);
@@ -196,7 +196,7 @@ int Rebalancer::refine()
       assign(bestCompute0, bestP);
     }
     else { 
-      cout << "No receiver found" << "\n";
+      iout << iINFO << "No receiver found" << "\n";
       finish = 0;
       break;
     }
@@ -216,7 +216,7 @@ int Rebalancer::refine()
 
 void Rebalancer::printResults()
 {
-  cout << "ready to print result \n";
+  iout << iINFO << "ready to print result \n";
 }
 
 
@@ -226,9 +226,12 @@ int i, total = 0, numBytes = 0;
 double max;
 
   for (i=0; i<P; i++){
-    CPrintf("load on %d is : %f [%f,%f]\n",i,processors[i].load,
-	    processors[i].backgroundLoad,processors[i].computeLoad);
-    cout << "# Messages received: " << 
+    iout << iINFO << "load on "<< i << " is :" << processors[i].load 
+	 << "[ " << processors[i].backgroundLoad << "," <<
+	 processors[i].computeLoad << "]. ";
+    //    CPrintf("load on %d is : %f [%f,%f]\n",i,processors[i].load,
+    //    processors[i].backgroundLoad,processors[i].computeLoad);
+    iout << iINFO << "# Messages received: " << 
       processors[i].proxies->numElements() - processors[i].patchSet->numElements();
     Iterator p;
     int count = 0;
@@ -242,14 +245,19 @@ double max;
       patch = (patchInfo *)processors[i].patchSet->next(&p);
    
     }
-    cout << " # Messages sent: " << count << "\n";
+    iout << iINFO << " # Messages sent: " << count << "\n";
     total += count;
   }
   computeAverage();
   max = computeMax();
-  CPrintf("Summary: (%s: %d,%d,%d),avg=%lf max=%lf messages = %d [%d bytes]\n",
-	  strategyName,P,numPatches,numComputes,
-	  averageLoad,max,total,numBytes);
+  cout << "Summary: (" << strategyName << ": " << P << "," 
+       << numPatches << "," << numComputes << ") avg = " 
+       << averageLoad << " max = " << max << " messages = " 
+       << total << "[" << numBytes << " bytes]\n";
+
+//   CPrintf("Summary: (%s: %d,%d,%d),avg=%lf max=%lf messages = %d [%d bytes]\n",
+// 	  strategyName,P,numPatches,numComputes,
+// 	  averageLoad,max,total,numBytes);
 }
 
 void Rebalancer::computeAverage()
