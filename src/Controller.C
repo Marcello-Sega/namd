@@ -719,8 +719,8 @@ void Controller::printEnergies(int step)
       labels << "PERIODIC"; values << "{" << lattice.a_p() << " "
 		<< lattice.b_p() << " " << lattice.c_p() << "}";
 
-      const char *labelstr = labels.str();
-      const char *valuestr = values.str();
+      char *labelstr = labels.str();
+      char *valuestr = values.str();
       node->getScript()->doCallback(labelstr,valuestr);
       delete [] labelstr;
       delete [] valuestr;
