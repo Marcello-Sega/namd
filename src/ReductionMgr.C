@@ -28,7 +28,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1005 1997/02/11 19:55:45 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1006 1997/02/11 20:25:47 jim Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -289,6 +289,7 @@ void	ReductionMgr::remove(int seq)
   // }
 
   DebugM(5,"remove()! seq=" << seq << "\n");
+#if PANIC > 0
   for(i=0; i < REDUCTION_MAX_RESERVED; i++)
   {
     iout << "Remove " << iPE
@@ -296,6 +297,7 @@ void	ReductionMgr::remove(int seq)
 	 << " " << currentdata->numData[i] << "/" << maxData[i]
 	 << "\n" << endi;
   }
+#endif
 
   // delete data
   if (!previousdata)
