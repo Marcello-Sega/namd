@@ -203,7 +203,7 @@ CFLAGS = $(COPTI)$(SRCDIR) $(TCL) $(COPTS) $(RELEASE)
 
 # Add new executables here.
 
-BINARIES = namd2 psfgen flipdcd flipbinpdb
+BINARIES = namd2 psfgen charmrun flipdcd flipbinpdb
 
 all:	$(BINARIES)
 
@@ -211,13 +211,17 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
 	-language charm++ \
-	-o namd2 $(OBJS) \
+	$(OBJS) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
 	$(TCLLIB) \
-	$(FFTLIB)
+	$(FFTLIB) \
+	-lm -o namd2
 
-win32binaries: namd2.exe psfgen.exe daemon.exe daemon_background.exe conv-host.exe
+charmrun:
+	$(COPY) $(CHARM)/bin/charmrun $@
+
+win32binaries: namd2.exe psfgen.exe charmd.exe charmd_faceless.exe charmrun.exe
 
 namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(LINK) $(LINKOPTS) /out:namd2.exe \
@@ -233,14 +237,14 @@ namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(TCLLIB) \
 	$(FFTLIB)
 
-daemon.exe:
-	$(COPY) $(CHARM)\bin\daemon.exe daemon.exe
+charmd.exe:
+	$(COPY) $(CHARM)\bin\charmd.exe charmd.exe
 
-daemon_background.exe:
-	$(COPY) $(CHARM)\bin\daemon_background.exe daemon_background.exe
+charmd_faceless.exe:
+	$(COPY) $(CHARM)\bin\charmd_faceless.exe charmd_faceless.exe
 
-conv-host.exe:
-	$(COPY) $(CHARM)\bin\conv-host.exe conv-host.exe
+charmrun.exe:
+	$(COPY) $(CHARM)\bin\charmrun.exe charmrun.exe
 
 psfgen:	$(DSTDIR) $(SBOBJS)
 	$(CC) $(CFLAGS) -o psfgen $(SBOBJS) -lm
@@ -464,18 +468,19 @@ DOC_FILES = .rootdir/README.txt \
 	.rootdir/license.txt \
 	.rootdir/notes.txt
 
-RELEASE_FILES = $(DOC_FILES) namd2 flipdcd flipbinpdb
+RELEASE_FILES = $(DOC_FILES) namd2 psfgen charmrun flipdcd flipbinpdb
 
-WIN32_RELEASE_FILES = $(DOC_FILES) namd2.exe conv-host.exe daemon.exe daemon_background.exe $(TCLDLL)
+WIN32_RELEASE_FILES = $(DOC_FILES) namd2.exe psfgen.exe charmrun.exe charmd.exe charmd_faceless.exe $(TCLDLL)
 
 release: all
 	$(ECHO) Creating release $(RELEASE_DIR_NAME)
 	mkdir $(RELEASE_DIR_NAME)
 	cp $(RELEASE_FILES) $(RELEASE_DIR_NAME)
-	if [ -r conv-host ]; then \
-	   $(COPY) conv-host $(RELEASE_DIR_NAME); \
-	   $(ECHO) "group main" > $(RELEASE_DIR_NAME)/nodelist; \
-	   $(ECHO) " host localhost" >> $(RELEASE_DIR_NAME)/nodelist; \
+	if [ -r $(CHARM)/bin/charmd ]; then \
+	  $(COPY) $(CHARM)/bin/charmd $(RELEASE_DIR_NAME); \
+	fi
+	if [ -r $(CHARM)/bin/charmd_faceless ]; then \
+	  $(COPY) $(CHARM)/bin/charmd_faceless $(RELEASE_DIR_NAME); \
 	fi
 	chmod -R a+rX $(RELEASE_DIR_NAME)
 	tar cf $(RELEASE_DIR_NAME).tar $(RELEASE_DIR_NAME)
@@ -485,8 +490,6 @@ winrelease: winall
 	$(ECHO) Creating release $(RELEASE_DIR_NAME)
 	mkdir $(RELEASE_DIR_NAME)
 	cp $(WIN32_RELEASE_FILES) $(RELEASE_DIR_NAME)
-	$(ECHO) "group main" > $(RELEASE_DIR_NAME)/nodelist; \
-	$(ECHO) " host localhost" >> $(RELEASE_DIR_NAME)/nodelist; \
 	chmod -R a+rX $(RELEASE_DIR_NAME)
 	zip -r $(RELEASE_DIR_NAME).zip $(RELEASE_DIR_NAME)
 
