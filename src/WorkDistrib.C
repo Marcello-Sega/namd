@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1022 1997/04/07 21:09:58 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1023 1997/04/07 21:34:26 brunner Exp $";
 
 #include <stdio.h>
 
@@ -362,6 +362,29 @@ void WorkDistrib::assignNodeToPatch()
     assignPatchesRecursiveBisection();
   else
     assignPatchesToLowestLoadNode();
+
+  PatchMap *patchMap = PatchMap::Object();
+  int nNodes = Node::Object()->numNodes();
+  int *nAtoms = new int[nNodes];
+  int numAtoms=0;
+  int i;
+  for(i=0; i < nNodes; i++)
+    nAtoms[i] = 0;
+
+  for(i=0; i < patchMap->numPatches(); i++)
+  {
+    numAtoms += patchMap->patch(i)->getNumAtoms();
+    nAtoms[patchMap->node(i)] += patchMap->patch(i)->getNumAtoms();
+  }
+
+  for(i=0; i < nNodes; i++)
+    iout << iINFO 
+	 << nAtoms[i] << " atoms assigned to processor " << i << endl;
+  iout << iINFO 
+       << "Simulation has " << numAtoms << " atoms." << endl;
+
+  delete [] nAtoms;
+ 
   //  PatchMap::Object()->printPatchMap();
 }
 
@@ -835,12 +858,15 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1022 $	$Date: 1997/04/07 21:09:58 $
+ *	$Revision: 1.1023 $	$Date: 1997/04/07 21:34:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1023  1997/04/07 21:34:26  brunner
+ * Added some information printout about atom distribution.
+ *
  * Revision 1.1022  1997/04/07 21:09:58  brunner
  * Added RecBisection for initial patch distrib
  *

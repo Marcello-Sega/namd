@@ -227,12 +227,14 @@ double max;
 
   for (i=0; i<P; i++){
     iout << iINFO << "load on "<< i << " is :" << processors[i].load 
-	 << "[ " << processors[i].backgroundLoad << "," <<
-	 processors[i].computeLoad << "]. ";
+	 << "[ " << processors[i].backgroundLoad << "," 
+	 << processors[i].computeLoad << "]. " << endl;
+
     //    CPrintf("load on %d is : %f [%f,%f]\n",i,processors[i].load,
     //    processors[i].backgroundLoad,processors[i].computeLoad);
-    iout << iINFO << "# Messages received: " << 
-      processors[i].proxies->numElements() - processors[i].patchSet->numElements();
+    iout << iINFO << "# Messages received: "
+	 << processors[i].proxies->numElements() - processors[i].patchSet->numElements() 
+	 << endl;
     Iterator p;
     int count = 0;
     
