@@ -141,7 +141,7 @@ MIStream *MIStream::Get(char *buf, int len)
 MOStream *MOStream::Put(char *buf, size_t len)
 {
   while(len) {
-    if(msgBuf->len + len < bufLen) {
+    if(msgBuf->len + len <= bufLen) {
       memcpy(&(msgBuf->data[msgBuf->len]), buf, len);
       msgBuf->len += len;
       len = 0;
@@ -156,7 +156,7 @@ MOStream *MOStream::Put(char *buf, size_t len)
       for ( int i=0; i < msgBuf->len; i++ ) {
         msgBuf->checksum += (unsigned char) msgBuf->data[i];
       }
-      cobj->sendMessage(PE, (void *)msgBuf, bufLen+sizeof(StreamMessage));
+      cobj->sendMessage(PE, (void *)msgBuf, bufLen+sizeof(StreamMessage)-1);
       msgBuf->len = 0;
       msgBuf->index += 1;
       len -= b;
@@ -176,7 +176,7 @@ void MOStream::end(void)
   for ( int i=0; i < msgBuf->len; i++ ) {
     msgBuf->checksum += (unsigned char) msgBuf->data[i];
   }
-  cobj->sendMessage(PE,(void*)msgBuf,msgBuf->len+sizeof(StreamMessage));
+  cobj->sendMessage(PE,(void*)msgBuf,msgBuf->len+sizeof(StreamMessage)-1);
   msgBuf->len = 0;
   msgBuf->index += 1;
 }
