@@ -1431,8 +1431,19 @@ void Molecule::read_exclusions(FILE *fd)
         /*  The first one is our position in    */
         /*  the list, the second is based on    */
         /*  the pointer into the index list     */
-        exclusions[insert_index].atom1=num_read;
-        exclusions[insert_index].atom2=exclusion_atoms[insert_index];
+        int a1 = num_read;
+        int a2 = exclusion_atoms[insert_index];
+        if ( a1 < a2 ) {
+          exclusions[insert_index].atom1 = a1;
+          exclusions[insert_index].atom2 = a2;
+        } else if ( a2 < a1 ) {
+          exclusions[insert_index].atom1 = a2;
+          exclusions[insert_index].atom2 = a1;
+        } else {
+          char err_msg[128];
+          sprintf(err_msg, "ATOM %d EXCLUDED FROM ITSELF IN PSF FILE\n", a1+1);
+          NAMD_die(err_msg);
+        }
       }
 
       last_index=current_index;
