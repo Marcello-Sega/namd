@@ -178,12 +178,15 @@ void ComputeGlobal::sendData()
   PatchMap *patchMap = PatchMap::Object();
   int numPatches = patchMap->numPatches();
   AtomMap *atomMap = AtomMap::Object();
+  const Lattice & lattice = patchList[0].p->lattice;
   ResizeArrayIter<PatchElem> ap(patchList);
   Position **x = new Position*[numPatches];
-  for ( int i = 0; i < numPatches; ++i ) x[i] = 0;
+  Transform **t = new Transform*[numPatches];
+  for ( int i = 0; i < numPatches; ++i ) { x[i] = 0; t[i] = 0; }
 
   for (ap = ap.begin(); ap != ap.end(); ap++) {
     x[(*ap).patchID] = (*ap).positionBox->open();
+    t[(*ap).patchID] = (*ap).p->getTransformList().begin();
     AtomProperties *a = (*ap).atomBox->open();
     (*ap).atomBox->close(&a);
   }
@@ -196,7 +199,9 @@ void ComputeGlobal::sendData()
     LocalID localID = atomMap->localID(*a);
     if ( localID.pid == notUsed || ! x[localID.pid] ) continue;
     msg->aid.add(*a);
-    msg->p.add(x[localID.pid][localID.index]);
+    Position x_orig = x[localID.pid][localID.index];
+    Transform trans = t[localID.pid][localID.index];
+    msg->p.add(lattice.reverse_transform(x_orig,trans));
   }
 
   // calculate group centers of mass
@@ -209,7 +214,9 @@ void ComputeGlobal::sendData()
     for ( ; *g_i != -1; ++g_i ) {
       LocalID localID = atomMap->localID(*g_i);
       if ( localID.pid == notUsed || ! x[localID.pid] ) continue;
-      com += x[localID.pid][localID.index] * mol->atommass(*g_i);
+      Position x_orig = x[localID.pid][localID.index];
+      Transform trans = t[localID.pid][localID.index];
+      com += lattice.reverse_transform(x_orig,trans) * mol->atommass(*g_i);
     }
     com /= *gm_i;
     msg->gcom.add(com);
@@ -219,6 +226,7 @@ void ComputeGlobal::sendData()
     (*ap).positionBox->close(&(x[(*ap).patchID]));
   }
   delete [] x;
+  delete [] t;
 
   DebugM(3,"Sending data (" << msg->aid.size() << " positions) on client\n");
 

@@ -86,6 +86,9 @@ public:
   // load-balancing trigger
   void submitLoadStats(int timestep);
 
+  // for ComputeHomePatches
+  TransformList &getTransformList() { return (t); }
+
 protected:
   virtual void boxClosed(int);
 

@@ -10,7 +10,7 @@
 #include "NamdTypes.h"
 #include "common.h"
 #include "Compute.h"
-#include "Patch.h"
+#include "HomePatch.h"
 
 #include "Box.h"
 #include "OwnerBox.h"
@@ -20,7 +20,7 @@
 class PatchElem {
   public:
     PatchID patchID;
-    Patch *p;
+    HomePatch *p;
     PositionBox<Patch> *positionBox;
     PositionBox<Patch> *avgPositionBox;
     Box<Patch,Results> *forceBox;
@@ -47,7 +47,7 @@ class PatchElem {
     patchID = p_param;
   }
 
-  PatchElem(Patch *p_param, ComputeID cid, int useAvgPos) {
+  PatchElem(HomePatch *p_param, ComputeID cid, int useAvgPos) {
     patchID = p_param->getPatchID();
     p = p_param;
     positionBox = p_param->registerPositionPickup(cid);
