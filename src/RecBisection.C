@@ -188,7 +188,7 @@ void RecBisection::rec_divide(int n, const Partition &p)
     }
 
     // always divide along x or y if possible
-    // if ( p.origin.x != p.corner.x ) mindir = XDIR;
+    if ( p.origin.x != p.corner.x ) mindir = XDIR;
     // else if ( p.origin.y != p.corner.y ) mindir = YDIR;
 
     // divide along mindir
