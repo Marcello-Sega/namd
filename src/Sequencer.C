@@ -828,7 +828,7 @@ void Sequencer::submitHalfstep(int step)
     // gets called twice per timestep.
     int hgs;
     for (int i=0; i<numAtoms; i += hgs) {
-      int j;
+      int j, slab;
       hgs = a[i].hydrogenGroupSize;
       BigReal m_cm = 0;
       Velocity v_cm(0,0,0);
@@ -839,10 +839,12 @@ void Sequencer::submitHalfstep(int step)
       v_cm /= m_cm;
       for (j=i; j < i+hgs; ++j) {
         BigReal mass = a[j].mass;
-        BigReal z = a[j].position.z;
-        int slab = (int)floor((z-zmin)*idz);
-        if (slab < 0) slab += nslabs;
-        else if (slab >= nslabs) slab -= nslabs;
+        if (! (useGroupPressure && j != i)) {
+          BigReal z = a[j].position.z;
+          slab = (int)floor((z-zmin)*idz);
+          if (slab < 0) slab += nslabs;
+          else if (slab >= nslabs) slab -= nslabs;
+        }
         BigReal wxx, wyy, wzz;
         if (useGroupPressure) {
           wxx = 0.5*mass * a[j].velocity.x * v_cm.x;
@@ -971,13 +973,14 @@ void Sequencer::submitReductions(int step)
         x_cm += a[j].mass * a[j].position;
       }
       x_cm /= m_cm;
+      
+      BigReal z = a[i].position.z;
+      int slab = (int)floor((z-zmin)*idz);
+      if (slab < 0) slab += nslabs;
+      else if (slab >= nslabs) slab -= nslabs;
       for (j=i; j < i+hgs; ++j) {
         BigReal mass = a[j].mass;
         Vector dx = a[j].position - x_cm;
-        BigReal z = a[j].position.z;
-        int slab = (int)floor((z-zmin)*idz);
-        if (slab < 0) slab += nslabs;
-        else if (slab >= nslabs) slab -= nslabs;
         const Vector &fnormal = patch->f[Results::normal][j];
         const Vector &fnbond  = patch->f[Results::nbond][j];
         const Vector &fslow   = patch->f[Results::slow][j];
