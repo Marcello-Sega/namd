@@ -15,6 +15,7 @@
 #include <unistd.h>
 #endif
 #include <errno.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <ctype.h>
 
@@ -80,6 +81,20 @@ void NAMD_die(const char *err_msg)
 {
    char *new_err_msg = new char[strlen(err_msg) + 20];
    sprintf(new_err_msg,"FATAL ERROR: %s\n",err_msg);
+   CkPrintf(new_err_msg);
+   CmiAbort(new_err_msg);
+   delete [] new_err_msg;
+}
+
+
+// signal all nodes, it's time to quit
+void NAMD_err(const char *err_msg)
+
+{
+   char *sys_err_msg = strerror(errno);
+   if ( ! sys_err_msg ) sys_err_msg = "(unknown error)";
+   char *new_err_msg = new char[strlen(err_msg) + 20 + strlen(sys_err_msg)];
+   sprintf(new_err_msg,"FATAL ERROR: %s: %s\n",err_msg, sys_err_msg);
    CkPrintf(new_err_msg);
    CmiAbort(new_err_msg);
    delete [] new_err_msg;

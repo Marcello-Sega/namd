@@ -421,7 +421,7 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor)
 
     if ( (x==NULL) || (y==NULL) || (z==NULL) )
     {
-      NAMD_die("memory allocation failed in Output::output_dcdfile");
+      NAMD_err("memory allocation failed in Output::output_dcdfile");
     }
 
     //  Open the DCD file
@@ -436,7 +436,7 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor)
       sprintf(err_msg, "DCD file %s already exists!!",
         simParams->dcdFilename);
 
-      NAMD_die(err_msg);
+      NAMD_err(err_msg);
     }
     else if (fileid < 0)
     {
@@ -445,7 +445,7 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor)
       sprintf(err_msg, "Couldn't open DCD file %s",
         simParams->dcdFilename);
 
-      NAMD_die(err_msg);
+      NAMD_err(err_msg);
     }
 
     int NSAVC, NFILE, NPRIV, NSTEP;
@@ -464,7 +464,7 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor)
 
     if (ret_code<0)
     {
-      NAMD_die("Writing of DCD header failed!!");
+      NAMD_err("Writing of DCD header failed!!");
     }
 
     first = FALSE;
@@ -485,7 +485,7 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor)
 
   if (ret_code < 0)
   {
-    NAMD_die("Writing of DCD step failed!!");
+    NAMD_err("Writing of DCD step failed!!");
   }
 
 }
@@ -641,7 +641,7 @@ void Output::output_veldcdfile(int timestep, int n, Vector *vel)
 
     if ( (x==NULL) || (y==NULL) || (z==NULL) )
     {
-      NAMD_die("memory allocation failed in Output::output_veldcdfile");
+      NAMD_err("memory allocation failed in Output::output_veldcdfile");
     }
 
     //  Open the DCD file
@@ -656,7 +656,7 @@ void Output::output_veldcdfile(int timestep, int n, Vector *vel)
       sprintf(err_msg, "Velocity DCD file %s already exists!!",
         namdMyNode->simParams->velDcdFilename);
 
-      NAMD_die(err_msg);
+      NAMD_err(err_msg);
     }
     else if (fileid < 0)
     {
@@ -665,7 +665,7 @@ void Output::output_veldcdfile(int timestep, int n, Vector *vel)
       sprintf(err_msg, "Couldn't open velocity DCD file %s",
         namdMyNode->simParams->velDcdFilename);
 
-      NAMD_die(err_msg);
+      NAMD_err(err_msg);
     }
 
     int NSAVC, NFILE, NPRIV, NSTEP;
@@ -684,7 +684,7 @@ void Output::output_veldcdfile(int timestep, int n, Vector *vel)
 
     if (ret_code<0)
     {
-      NAMD_die("Writing of velocity DCD header failed!!");
+      NAMD_err("Writing of velocity DCD header failed!!");
     }
 
     first = FALSE;
@@ -705,7 +705,7 @@ void Output::output_veldcdfile(int timestep, int n, Vector *vel)
 
   if (ret_code < 0)
   {
-    NAMD_die("Writing of velocity DCD step failed!!");
+    NAMD_err("Writing of velocity DCD step failed!!");
   }
 
 }
@@ -737,7 +737,7 @@ void Output::write_binary_file(char *fname, int n, Vector *vecs)
     char errmsg[256];
 
     sprintf(errmsg, "Unable to open binary file %s", fname);
-    NAMD_die(errmsg);
+    NAMD_err(errmsg);
   }
 
   //  Write out the number of atoms and the vectors
@@ -749,7 +749,7 @@ void Output::write_binary_file(char *fname, int n, Vector *vecs)
     char errmsg[256];
 
     sprintf(errmsg, "Error on write to binary file %s", fname);
-    NAMD_die(errmsg);
+    NAMD_err(errmsg);
   }
 }
 /*      END OF FUNCTION write_binary_file    */
