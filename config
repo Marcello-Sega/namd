@@ -58,7 +58,8 @@ begin:
   echo "Creating link: $ROOTDIR to .rootdir"
   ln -s $ROOTDIR .rootdir
   echo "Creating Makearch"
-  echo include .rootdir/arch/$ARCH:t.arch >! Makearch
+  echo include .rootdir/Make.charm >! Makearch
+  echo include .rootdir/arch/$ARCH:t.arch >> Makearch
   echo 'CHARM = $(CHARMBASE)/$(CHARMARCH)' >> Makearch
   if ( $ARCH:t =~ *-MPI* ) then
     echo 'NAMD_PLATFORM = $(NAMD_ARCH)-MPI' >> Makearch

@@ -1,4 +1,3 @@
-include .rootdir/Make.charm
 include Makearch
 
 # pass version/platform information to compile

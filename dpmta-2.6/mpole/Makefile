@@ -6,10 +6,13 @@
 # Copyright (c) 1995 Duke University
 # All rights reserved
 #
-# RCS Info: $Id: Makefile,v 1.6 2000/03/16 16:57:50 jim Exp $
+# RCS Info: $Id: Makefile,v 1.7 2000/03/16 17:07:09 jim Exp $
 #
 # Revision History:
 # $Log: Makefile,v $
+# Revision 1.7  2000/03/16 17:07:09  jim
+# Makearch now includes Make.charm.
+#
 # Revision 1.6  2000/03/16 16:57:50  jim
 # Finds pvm includes again.
 #
@@ -64,7 +67,6 @@
 ################################################################
 
 RM = rm -f
-include .rootdir/Make.charm
 include ../../Makearch
 
 #  for the HPPA machines, add "-Ae" and "-Wp,-H500000" to CFLAGS

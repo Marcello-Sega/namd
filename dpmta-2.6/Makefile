@@ -11,11 +11,10 @@
 # for other platforms.
 #
 #
-# RCS Info: $Id: Makefile,v 1.6 2000/03/16 16:57:46 jim Exp $
+# RCS Info: $Id: Makefile,v 1.7 2000/03/16 17:07:06 jim Exp $
 #
 ################################################################
 
-include .rootdir/Make.charm
 include ../Makearch
 
 # specify PVM envronmental variables.  PVM_HOME is the location
