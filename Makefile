@@ -30,7 +30,7 @@ OBJS = \
 CXXFILES = $(OBJS:.o=.C)
 
 INTERFACES = main.ci Node.ci WorkDistrib.ci PatchMgr.ci Compute.ci \
-		ComputeMgr.ci ProxyMgr.ci
+		ComputeMgr.ci ProxyMgr.ci ReductionMgr.ci
 
 namd2:	$(OBJS)
 	$(CHARMC) -ld++-option "-I $(INCLUDE)" -g -language charm++ -o namd2 $(OBJS)
