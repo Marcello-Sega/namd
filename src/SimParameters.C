@@ -1594,10 +1594,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
   firstLdbStep=5*stepsPerCycle;
    }
 
-   if (firstTimestep > N)
-   {
-  NAMD_die("First timestep is greater than number of steps to perform!!!");
-   }
+   if (N < firstTimestep) { N = firstTimestep; }
 
    if ( (firstTimestep%stepsPerCycle) != 0)
    {
