@@ -392,6 +392,9 @@ public:
         Bool readExclusions; // FLAG TRUE-> Read exclusions from parm file
         BigReal vdwscale14; //  Scaling factor for 1-4 VDW interactions
 
+	// GROMACS options
+	Bool gromacsOn; // FLAG TRUE -> gromacs-style force field is used
+	
 public:
 
 	SimParameters() {};

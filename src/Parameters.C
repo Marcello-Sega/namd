@@ -28,7 +28,7 @@
 //****** END CHARMM/XPLOR type changes
 
 #define MIN_DEBUG_LEVEL 3
-// #define DEBUGM
+//#define DEBUGM
 #include "Debug.h"
 
 
@@ -2028,6 +2028,11 @@ void Parameters::add_vdw_pair_param(char *buf)
     read_count=sscanf(buf, "%s %s %f %f\n", atom1name, 
        atom2name, &A, &B);
     // convert to XPLOR format and use A14, B14 as dummies
+    /* XXX doesn't this just do the following?
+       A = -eps*pow(sig,6.);
+       B = -2*eps*pow(sig,12.);
+       Why do we need to do this in such a complicated way?
+       -pgrayson */
     A14=-A;
     sqrt26=pow(2.,(1./6.));
     B14=B/sqrt26;
@@ -3498,7 +3503,6 @@ void Parameters::traverse_angle_params(struct angle_params *tree)
   {
     traverse_angle_params(tree->left);
   }
-
   DebugM(3,"ANGLE " << tree->atom1name << "  " << tree->atom2name \
       << "  " << tree->atom3name << " index=" << tree->index \
       << " k=" << tree->forceconstant << " theta0=" << tree->angle \
@@ -3683,7 +3687,6 @@ void Parameters::print_angle_params()
 {
   DebugM(3,NumAngleParams << " ANGLE PARAMETERS\n"
       << "*****************************************" );
-
   traverse_angle_params(anglep);
 }
 
@@ -4722,5 +4725,235 @@ void Parameters::read_parm(Ambertoppar *amber_data, BigReal vdw14)
       // Add the node to the binary tree
       vdw_pair_tree = add_to_indexed_vdw_pairs(new_node, vdw_pair_tree);
     }
+}
+/*      END OF FUNCTION read_parm    */
+
+/************************************************************************/
+/*                                                                      */
+/*      FUNCTION Parameters                                             */
+/*                                                                      */
+/*  This is the constructor for reading GROMACS parameter data          */
+/*                                                                      */
+/************************************************************************/
+
+Parameters::Parameters(const GromacsTopFile *gf, Bool min)
+{
+  /*  Set all the pointers to NULL        */
+  atomTypeNames=NULL;
+  bondp=NULL;
+  anglep=NULL;
+  improperp=NULL;
+  dihedralp=NULL;
+  vdwp=NULL;
+  vdw_pairp=NULL;
+  bond_array=NULL;
+  angle_array=NULL;
+  dihedral_array=NULL;
+  improper_array=NULL;
+  vdw_pair_tree=NULL;
+  maxDihedralMults=NULL;
+  maxImproperMults=NULL;
+
+  /*  Set all the counts to 0          */
+  NumBondParams=0;
+  NumAngleParams=0;
+  NumDihedralParams=0;
+  NumImproperParams=0;
+  NumVdwParams=0;
+  NumVdwPairParams=0;
+
+  // Read in parm parameters
+  read_parm(gf,min);
+}
+/*      END OF FUNCTION Parameters      */
+
+
+/************************************************************************/
+/*                                                                      */
+/*      FUNCTION read_parm                                              */
+/*                                                                      */
+/*   INPUTS:                                                            */
+/*  gf - GROMACS topology file                                          */
+/*                                                                      */
+/* This function copys GROMACS parameter data to the corresponding data */
+/*   structures                                                         */
+/*                                                                      */
+/************************************************************************/
+
+void Parameters::read_parm(const GromacsTopFile *gf, Bool min)
+{ 
+  int numtype;
+  IndexedVdwPair *new_node;
+  int i,j,funct;
+  Real test1,test2;
+
+  // Allocate space for all of the arrays first
+  NumBondParams = gf->getNumBondParams();
+  NumAngleParams = gf->getNumAngleParams();
+  NumDihedralParams = gf->getNumDihedralParams();
+  if (NumBondParams) {
+    bond_array = new BondValue[NumBondParams];
+    if (bond_array == NULL)
+      NAMD_die("memory allocation of bond_array failed!");
+  }
+  if (NumDihedralParams) {
+    dihedral_array = new DihedralValue[NumDihedralParams];
+    if (dihedral_array == NULL)
+      NAMD_die("memory allocation of dihedral_array failed!");
+  }
+  if (NumAngleParams) {
+    angle_array = new AngleValue[NumAngleParams];
+    if (angle_array == NULL)
+      NAMD_die("memory allocation of angle_array failed!");
+  }
+
+  // Copy bond parameters
+  // XXX Warning: we are discarding the GROMACS function type - since
+  // NAMD does not let us choose between different spring models.
+  for (i=0;i<NumBondParams;i++) {
+    Real x0,k;
+    gf->getBondParams(i,
+		      &x0, // the bond length
+		      &k,  // the spring constant
+		      &funct);           // discarded
+    bond_array[i].x0 = x0;
+    bond_array[i].k = k;
+  }
+
+  // Copy angle parameters
+  // XXX Warning: we are discarding the GROMACS function type here
+  // too.
+  for (i=0;i<NumAngleParams;i++) {
+    Real theta0,k;
+    gf->getAngleParams(i,
+		       &theta0, // the angle size
+		       &k,      // the spring constant
+		       &funct);                // discarded
+    angle_array[i].theta0 = theta0*PI/180;
+    angle_array[i].k = k;
+    // Gromacs has no Urey-Bradley angle parameters, so they're set to 0
+    angle_array[i].k_ub = angle_array[i].r_ub = 0;
+  }
+
+  // Copy dihedral parameters
+  // Here we use the function type (carefully)
+  for (i=0; i<NumDihedralParams; ++i) { // iterate over all dihedral angles
+    Real c[6];
+    int num_periods; // number of periods in one full rotation
+    int funct;
+
+    gf->getDihedralParams(i,c,&num_periods,&funct); // get the parameters
+    
+    switch(funct) {
+    case 1: ////////// it is a proper dihedral
+      dihedral_array[i].values[0].delta = c[0]*PI/180; // the phase shift
+      dihedral_array[i].values[0].k = c[1]; // the spring constant
+      dihedral_array[i].values[0].n = num_periods; // the periodicity
+      dihedral_array[i].multiplicity = 1;
+      break;
+    case 2: ////////// it is an improper dihedral
+      dihedral_array[i].values[0].delta = c[0]*PI/180; // the phase shift
+      dihedral_array[i].values[0].k = c[1]; // the spring constant
+      dihedral_array[i].values[0].n = 0; // 'periodicity'=0 for impropers
+      dihedral_array[i].multiplicity = 1;
+      break;
+    case 3: ////////// it is a Ryckaert-Bellemans dihedral
+
+      // first a quick check to make sure this is legal
+      if(MAX_MULTIPLICITY < 5)
+	NAMD_die("I can't do RB dihedrals with MAX_MULTIPLICITY < 5");
+      dihedral_array[i].multiplicity = 5;
+
+      // Next we negate every other term, since GROMACS does this
+      // silly thing with psi = 180 - phi:
+      for(j=0;j<6;j++) {
+	if(j%2 == 1) c[j] = -c[j];
+      }
+
+      // Now fill up all the terms.  Each is k(1 + cos(n*x - delta))
+      // so we first let delta = 0 and let n range from 1-6:
+      for(j=0;j<5;j++) dihedral_array[i].values[j].delta = 0;
+      for(j=0;j<5;j++) dihedral_array[i].values[j].n = j+1;
+
+      // and now we have a sum of kn(1+cos(nx))
+      // Gromacs RB gives you a sum of cn(cos(x))^n, so we have to
+      // use trigonometry to compute the kn:
+      dihedral_array[i].values[0].k =    1*c[1] + 3/4.*c[3] + 10/16.*c[5];
+      dihedral_array[i].values[1].k =       1/2.*c[2] + 4/8.*c[4]        ;
+      dihedral_array[i].values[2].k =             1/4.*c[3] +  5/16.*c[5];
+      dihedral_array[i].values[3].k =                   1/8.*c[4]        ;
+      dihedral_array[i].values[4].k =                          1/16.*c[5];
+
+      // That was a lot of math, so we had better check it:
+      // The constant term (which is missing) is c0 + 1/2 c2 + 3/8 c4
+      test1 = 0;
+      for(j=5;j>=0;j--) { // sum (..(c5 cos x + c4) cos x + c3)..) + c1
+	test1 *= cos(0.5);
+	test1 += c[j];
+      }
+
+      test2 = c[0]+1/2.*c[2]+3/8.*c[4];
+      for(j=0;j<5;j++) { // sum k1 cos x + k2 cos 2x + ... 
+	test2 += dihedral_array[i].values[j].k * cos((j+1)*0.5);
+      }
+
+      if(fabs(test1-test2) > 0.0001)
+	NAMD_die("Internal error: failed to handle RB dihedrals");
+      
+      // Turn this on to have a look at the values if you *still*
+      // don't believe that they are right!
+
+      /*      iout << iINFO << "k: ";
+	      for(j=0;j<5;j++)
+	      iout  << dihedral_array[i].values[j].k << " ";
+	      iout << "\n" << endi;
+	      
+	      iout << iINFO << "c: ";
+	      for(j=0;j<6;j++)
+	      iout  << c[j] << " ";
+	      iout << "\n" << endi;*/
+      
+      break;
+    default:
+      NAMD_die("unknown dihedral type found");
+    }
+  }
+
+  // Copy VDW parameters.
+
+  Bool warned=false; // warned the user about extra LJ term yet?
+
+  NumVdwParamsAssigned = numtype = gf->getNumAtomParams(); // # of atom types
+  NumVdwPairParams = numtype * (numtype+1) / 2;
+  for (i=0; i<numtype; i++) {
+    for (j=i; j<numtype; j++) {
+
+      // set up a node to put one set of VDW parameters in
+      new_node = new IndexedVdwPair;
+      if (new_node == NULL)
+        NAMD_die("memory allocation of vdw_pair_tree failed!");
+      new_node->ind1 = i;
+      new_node->ind2 = j;
+      new_node->left = new_node->right = NULL;
+
+      gf->getVDWParams(i,j, &(new_node->B), &(new_node->A),
+		       &(new_node->B14), &(new_node->A14));
+
+      /* If we have any VDW radii equal to zero, atoms can just sit on
+	 each other during minimization.  So, we'll give a minimum of
+	 1.0 kcal*A^12 to the LJ-repulsion when we are minimizing.
+	 But a warning should be displayed to the user... */
+      if(min && ( fabs(new_node->A) < 1.0 )) {
+	new_node->A = 1.0;
+	if(!warned) {
+	  iout << iWARN <<
+	    "Adding small LJ repulsion term to some atoms.\n" << endi;
+	  warned=true;
+	}
+      }
+
+      vdw_pair_tree = add_to_indexed_vdw_pairs(new_node, vdw_pair_tree);
+    }
+  }
 }
 /*      END OF FUNCTION read_parm    */

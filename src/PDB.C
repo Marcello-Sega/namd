@@ -293,7 +293,7 @@ PDB::PDB( const char *filename, Ambertoppar *amber_data)
   char buf[13],resname[5],atomname[5];
   FILE *infile;
   PDBAtom *pdb;
-  
+
   if ((infile=Fopen(filename, "r")) == NULL)
     NAMD_die("Can't open AMBER coordinate file!");
 
@@ -338,6 +338,63 @@ PDB::PDB( const char *filename, Ambertoppar *amber_data)
     pdb->serialnumber(i+1);
     pdb->residueseq(amber_data->AtomRes[i]+1);
     pdb->coordinates(coor);
+    atomArray[i] = pdb;  // Include the new record into the array
+  }
+}
+
+#define LINESIZE 100
+
+/* This constructor initializes the PDB data using a Gromacs
+   coordinate file, generating an error message if the file
+   can't be parsed or if its contents don't jive with what is in
+   the topo file <topology>. */
+PDB::PDB(const char *filename, const GromacsTopFile *topology) {
+  int i;
+  char buf[LINESIZE];
+  FILE *infile;
+  
+  /* open up the coordinate file */
+  infile=Fopen(filename, "r");
+  if (infile == NULL)
+    NAMD_die("Can't open GROMACS coordinate file!");
+
+  fgets(buf,LINESIZE-1,infile); // get the title
+  if(strcmp(buf,topology->getSystemName()) != 0)
+    NAMD_die("System names in topology and coordinate files differ.");
+
+  fgets(buf,LINESIZE-1,infile); // get the number of atoms
+  sscanf(buf,"%d",&atomCount);
+  if (atomCount != topology->getNumAtoms())
+    NAMD_die("Num of atoms in coordinate file is different from that in topology file!");
+
+  /* read in the atoms */
+  atomArray = new PDBAtomPtr[atomCount];
+  if ( atomArray == NULL )
+    NAMD_die("memory allocation failed in PDB::PDB");
+
+  for (i=0;i<atomCount;i++) {
+    char *buf2, resname[11], atomname[11], atmtype[11];
+    int resnum, typenum;
+    Real charge,mass,coor[3];
+    PDBAtom *pdb = new PDBAtomRecord("");  
+    
+    fgets(buf,LINESIZE-1,infile); // get a line
+    buf2 = buf+20; // skip three fields to get to the coordinates
+    if(3 != sscanf(buf2,"%f%f%f",
+		   &coor[0],&coor[1],&coor[2]))
+      NAMD_die("Couldn't get three coordinates from file.");
+    topology->getAtom(i,&resnum,resname,
+		      atomname,atmtype,&typenum,&charge,&mass);
+    coor[0] *= 10; // convert to angstroms from nanometers
+    coor[1] *= 10;
+    coor[2] *= 10;
+    
+    pdb->name(atomname);
+    pdb->residuename(resname);
+    pdb->serialnumber(i+1);
+    pdb->residueseq(resnum+1);
+    pdb->coordinates(coor);
+    
     atomArray[i] = pdb;  // Include the new record into the array
   }
 }

@@ -26,6 +26,7 @@
 #include "Vector.h"
 #include "UniqueSet.h"
 #include "Hydrogen.h"
+#include "GromacsTopFile.h"
 
 class SimParameters;
 class Parameters;
@@ -138,6 +139,8 @@ private:
 	SimParameters *simParams;
 	Parameters *params;
 
+	void read_parm(const GromacsTopFile *);
+
 public:
 	int numAtoms;		//  Number of atoms 
 	int numBonds;		//  Number of bonds
@@ -179,7 +182,9 @@ public:
 	
 	Molecule(SimParameters *, Parameters *, Ambertoppar *);
 	void read_parm(Ambertoppar *);
-	
+
+	Molecule(SimParameters *, Parameters *, const GromacsTopFile *);
+
 	~Molecule();		//  Destructor
 
 	void read_psf_file(char *, Parameters *);

@@ -420,6 +420,15 @@ void SimParameters::config_parser_fileio(ParseOptions &opts) {
        &vdwscale14, 2.0);
    opts.require("amber", "parmfile", "AMBER parm file", PARSE_STRING);
    opts.optional("amber", "ambercoor", "AMBER coordinate file", PARSE_STRING);
+
+   /* GROMACS options */
+   opts.optionalB("main", "gromacs", "Use GROMACS-like force field?",
+       &gromacsOn, FALSE);
+   opts.require("gromacs", "grotopfile", "GROMACS topology file",
+		PARSE_STRING);
+   opts.optional("gromacs", "grocoorfile","GROMACS coordinate file",
+		 PARSE_STRING);
+
 }
 
 
@@ -986,9 +995,9 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
       strcat(cwd, PATHSEPSTR);
    }
 
-   // If it's not AMBER, then "coordinates", "structure"
+   // If it's not AMBER||GROMACS, then "coordinates", "structure"
    // and "parameters" must be specified.
-   if (!amberOn)
+   if (!amberOn && !gromacsOn)
    { if (!opts.defined("coordinates"))
        NAMD_die("coordinates not found in the configuration file!");
      if (!opts.defined("structure"))
@@ -1001,7 +1010,8 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    // "ambercoor", but not both
    if (opts.defined("coordinates") && opts.defined("ambercoor"))
      NAMD_die("Cannot specify both coordinates and ambercoor!");
-   if (!opts.defined("coordinates") && !opts.defined("ambercoor"))
+   if (!opts.defined("coordinates") && !opts.defined("ambercoor")
+       && !opts.defined("grocoorfile"))
      NAMD_die("Coordinate file not found!");
 
    //  Make sure that both a temperature and a velocity PDB were
@@ -2698,10 +2708,30 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
        iout << iINFO << "Exclusions in PARM file will be ignored!\n";
      iout << iINFO << "SCNB (VDW SCALING)     " << vdwscale14 << "\n" << endi;
    }
-   else
+   else if(gromacsOn)
    {
-     current = config->find("coordinates");
+     iout << iINFO << "Using GROMACS format force field!\n";
 
+     current = config->find("grotopfile");
+     // it should be defined, but, just in case...
+     if (current == NULL)
+       NAMD_die("no GROMACS topology file defined!?");
+     iout << iINFO << "GROMACS TOPO FILE        " << current->data << '\n';
+
+     // XXX handle the two types of coordinates more gracefully
+     current = config->find("grocoorfile");
+     if (current == NULL) {
+       current = config->find("coordinates");
+       if (current == NULL) {
+	 NAMD_die("no coordinate file defined!?");
+       }
+     }
+     iout << iINFO << "GROMACS COOR FILE        " << current->data << '\n' 
+	  << endi;
+
+   }
+   else {
+     current = config->find("coordinates");
      iout << iINFO << "COORDINATE PDB         " << current->data << '\n' << endi;
 
      current = config->find("structure");

@@ -3630,6 +3630,7 @@ void Molecule::read_parm(Ambertoppar *amber_data)
     atoms[i].charge = amber_data->Charges[i] / 18.2223;
     atoms[i].vdw_type = amber_data->Iac[i] - 1;
     /*  Determine the type of the atom (H or O) */
+    atoms[i].status = UnknownAtom; // the default
     if (atoms[i].mass <=3.5) {
       atoms[i].status |= HydrogenAtom;
     } else if ((atomNames[i].atomname[0] == 'O') && 
@@ -3863,6 +3864,321 @@ void Molecule::read_parm(Ambertoppar *amber_data)
   }
   
   //  analyze the data and find the status of each atom
+  build_atom_status();
+
+}
+/*      END OF FUNCTION read_parm    */
+
+
+/************************************************************************/
+/*                                                                      */
+/*      FUNCTION Molecule                                               */
+/*                                                                      */
+/*  This is the constructor for reading GROMACS topology data           */
+/*                                                                      */
+/************************************************************************/
+
+Molecule::Molecule(SimParameters *simParams, Parameters *param,
+		   const GromacsTopFile *gromacsTopFile)
+{
+  /* why is this check here of all places? */
+  if ( sizeof(int32) != 4 ) { NAMD_bug("sizeof(int32) != 4"); }
+  this->simParams = simParams;
+  this->params = param;
+
+  /* XXX all of the following initializers should be in one member
+     function, so that they aren't copied three times - assuming that
+     they are in fact exactly the same */
+
+  /*  Initialize array pointers to NULL  */
+  atoms=NULL;
+  atomNames=NULL;
+  resLookup=NULL;
+  bonds=NULL;
+  angles=NULL;
+  dihedrals=NULL;
+  impropers=NULL;
+  donors=NULL;
+  acceptors=NULL;
+  exclusions=NULL;
+  tmpArena=NULL;
+  bondsWithAtom=NULL;
+  bondsByAtom=NULL;
+  anglesByAtom=NULL;
+  dihedralsByAtom=NULL;
+  impropersByAtom=NULL;
+  exclusionsByAtom=NULL;
+  all_exclusions=NULL;
+  langevinParams=NULL;
+  langForceVals=NULL;
+  fixedAtomFlags=NULL;
+  rigidBondLengths=NULL;
+  consIndexes=NULL;
+  consParams=NULL;
+  consForceIndexes=NULL;
+  consForce=NULL;
+  nameArena = new ObjectArena<char>;
+  // nameArena->setAlignment(8);
+  arena = new ObjectArena<int32>;
+  // arena->setAlignment(32);
+  exclArena = new ObjectArena<char>;
+  // exclArena->setAlignment(32);
+
+  /*  Initialize counts to 0 */
+  numAtoms=0;
+  numBonds=0;
+  numAngles=0;
+  numDihedrals=0;
+  numImpropers=0;
+  numDonors=0;
+  numAcceptors=0;
+  numExclusions=0;
+  numConstraints=0;
+  numConsForce=0;
+  numFixedAtoms=0;
+  numRigidBonds=0;
+  numFixedRigidBonds=0;
+  numMultipleDihedrals=0;
+  numMultipleImpropers=0;
+  numCalcBonds=0;
+  numCalcAngles=0;
+  numCalcDihedrals=0;
+  numCalcImpropers=0;
+  numCalcExclusions=0;
+  // Read in parm structure
+  read_parm(gromacsTopFile);
+}
+/*      END OF FUNCTION Molecule      */
+
+/************************************************************************/
+/*                                                                      */
+/*      FUNCTION read_parm                                              */
+/*                                                                      */
+/*   INPUTS:                                                            */
+/*  amber_data - AMBER data structure                                   */
+/*                                                                      */
+/*  This function copys AMBER topology data to the corresponding data   */
+/*   structures                                                         */
+/*                                                                      */
+/************************************************************************/
+
+void Molecule::read_parm(const GromacsTopFile *gf) {
+  /*  int i,j,ntheth,nphih,current_index,a1,a2,
+      max,min,index,found;*/
+  int i;
+  
+  // Initializes the atom array
+  numAtoms = gf->getNumAtoms();
+  atoms = new Atom[numAtoms];
+  atomNames = new AtomNameInfo[numAtoms];
+  if (atoms == NULL || atomNames == NULL )
+    NAMD_die("memory allocation failed when reading atom information");
+
+  // Copy the individual atoms over
+  for (i=0; i<numAtoms; ++i) {
+    char *resname = nameArena->getNewArray(11);
+    char *atomname = nameArena->getNewArray(11);
+    char *atomtype = nameArena->getNewArray(11);
+    int resnum,typenum;
+    Real charge,mass;
+
+    if (resname == NULL || atomname == NULL || atomtype == NULL)
+      NAMD_die("memory allocation failed when reading atom information");
+
+    // get the data out of the GROMACS file
+    gf->getAtom(i,&resnum,resname,atomname,atomtype,&typenum,
+		&charge,&mass);
+
+    atomNames[i].resname = resname;
+    atomNames[i].atomname = atomname;
+    atomNames[i].atomtype = atomtype;
+    atoms[i].mass = mass;
+    atoms[i].charge = charge;
+    atoms[i].vdw_type = typenum;
+
+    /*  Determine the type of the atom (H or O) */
+    // XXX this cannot be done this way in GROMACS
+    // For example, in dppc LO2 appears to be an oxygen.
+    // And how do the hydrogens in CH3 etc factor in to this?
+    atoms[i].status = UnknownAtom; // the default
+    if (atoms[i].mass <=3.5) {
+      atoms[i].status |= HydrogenAtom;
+    } else if ((atomNames[i].atomname[0] == 'O') && 
+         (atoms[i].mass >= 14.0) && 
+         (atoms[i].mass <= 18.0)) {
+      atoms[i].status |= OxygenAtom;
+    }
+  }
+
+  // Copy bond information
+  numBonds = gf->getNumBonds();
+  bonds = new Bond[numBonds];
+  if (bonds == NULL)
+    NAMD_die("memory allocation failed when reading bond information");
+  for(i=0;i<numBonds;i++) {
+    int type; // to convert the type correctly
+    int atom1,atom2;
+    gf->getBond(i,&atom1,&atom2,&type);
+    bonds[i].atom1 = atom1;
+    bonds[i].atom2 = atom2;
+    bonds[i].bond_type = (Index)type;
+  }
+
+  // Copy angle information
+  numAngles = gf->getNumAngles();
+  angles = new Angle[numAngles];
+  if (angles == NULL)
+    NAMD_die("memory allocation failed when reading angle information");
+  for(i=0;i<numAngles;i++) {
+    int type; // to convert the type correctly
+    int atom1,atom2,atom3;
+    gf->getAngle(i,&atom1,&atom2,&atom3,&type);
+
+    angles[i].atom1 = atom1;
+    angles[i].atom2 = atom2;
+    angles[i].atom3 = atom3;
+
+    angles[i].angle_type=type;
+  }
+
+  numExclusions =  0;
+  exclusions = new Exclusion[numExclusions];
+
+  /*
+  // If readExclusions is TRUE, then we copy exclusions from parm
+  // file; otherwise we skip the exclusions here and generate
+  // them later in build_exclusions()
+  if (simParams->readExclusions)
+  { // Copy exclusion information
+    // In Amber data structure, Iblo[] is the number of exclusions
+    // for each atom; ExclAt[] is the atom index for the excluded atoms.
+    exclusions = new Exclusion[amber_data->Nnb];
+    if (exclusions == NULL &&  amber_data->Nnb > 0)
+      NAMD_die("memory allocation failed when reading exclusion information");
+    current_index = 0;
+    for (i=0; i<numAtoms; ++i)
+      for (j=0; j<amber_data->Iblo[i]; ++j)
+      { if (current_index >= amber_data->Nnb)
+        { char err_msg[128];
+          sprintf(err_msg, "EXCLUSION INDEX EXCEEDS NUMBER OF EXLCUSIONS %d IN AMBER FILE, AT ATOM #%d\n",
+            amber_data->Nnb, i+1);
+          NAMD_die(err_msg);
+        }
+        // There's some 0 in the ExclAt[] list, which is strange
+        // and redundant. In this case, I simply ignore such entries.
+        if (amber_data->ExclAt[current_index] != 0)
+        { // Subtract 1 to convert the index from the 1 to NumAtoms
+          // used in the file to the 0 to NumAtoms-1 that we need
+          a2 = amber_data->ExclAt[current_index] - 1;
+          if (a2 < i)
+          { // I assume the latter index be larger than the former
+            // one, so that the same exclusion won't be double-counted;
+            // if not, give error
+            char err_msg[128];
+            sprintf(err_msg, "Atom #%d has exclusion with atom #%d, in reverse order.", i+1, a2+1);
+            NAMD_die(err_msg);
+          }
+          else if (a2 == i)
+          { char err_msg[128];
+            sprintf(err_msg, "ATOM %d EXCLUDED FROM ITSELF IN AMBER FILE\n", i+1);
+              NAMD_die(err_msg);
+          }
+          else if (a2 >= numAtoms)
+          {  char err_msg[128];
+             sprintf(err_msg, "EXCLUSION INDEX %d GREATER THAN NATOM %d IN EXCLUSION # %d IN AMBER FILE",
+               a2+1, numAtoms, current_index+1);
+             NAMD_die(err_msg);
+          }
+          exclusions[numExclusions].atom1 = i;
+          exclusions[numExclusions].atom2 = a2;
+          ++numExclusions;
+        }
+        ++current_index;
+      }
+    if (current_index < amber_data->Nnb)
+    { char err_msg[128];
+      sprintf(err_msg, "Num of exclusions recorded (%d) is smaller than what it's supposed to be (%d)",
+        current_index,amber_data->Nnb);
+      NAMD_die(err_msg);
+    }
+  }
+  */
+
+  // Copy dihedral information
+  numDihedrals = gf->getNumDihedrals();
+  dihedrals = new Dihedral[numDihedrals];
+  if (dihedrals == NULL)
+    NAMD_die("memory allocation failed when reading dihedral information");
+  for(i=0;i<numDihedrals;i++) {
+    int type; // to convert the type correctly
+    int atom1,atom2,atom3,atom4;
+    gf->getDihedral(i,&atom1,&atom2,&atom3,&atom4,&type);
+    dihedrals[i].atom1 = atom1;
+    dihedrals[i].atom2 = atom2;
+    dihedrals[i].atom3 = atom3;
+    dihedrals[i].atom4 = atom4;
+    dihedrals[i].dihedral_type = type;
+  }
+
+  /*
+  // In AMBER parm file, dihedrals contain 1-4 exclusion infomation:
+  // the 1st and 4th atoms have 1-4 nonbond interation. So we should
+  // find them in the exclusion array and change their exclusion to
+  // 1-4 type. However, there're two exceptions --
+  // 1.If the third atom is negative, it means the end group
+  //   interactions are to be ignored;
+  // 2.If the fourth atom is negative, it means this is an improper.
+  // For the above two cases, the actual atom index is the absolute
+  // value of the atom number read; and there's no 1-4 interation
+  // for these dihedrals.
+  // If readExclusions is not TRUE, then we don't worry about
+  // exclusions here.
+  for (i=0; i<numDihedrals; ++i)
+  { if (dihedrals[i].atom3 < 0 || dihedrals[i].atom4 < 0)
+    { dihedrals[i].atom3 = abs(dihedrals[i].atom3);
+      dihedrals[i].atom4 = abs(dihedrals[i].atom4);
+    }
+    else if (simParams->readExclusions)
+    { if (dihedrals[i].atom1 < dihedrals[i].atom4)
+        a1=dihedrals[i].atom1, a2=dihedrals[i].atom4;
+      else
+        a1=dihedrals[i].atom4, a2=dihedrals[i].atom1;
+      // Since in the exclusion array, atom1 is guaranteed to be
+      // ordered, we can do a binary serch to find it first.
+      found = 0;
+      min=0, max=numExclusions-1;
+      while (!found && min<=max)
+      { index = (min+max)/2;
+        if (exclusions[index].atom1 == a1)
+          found = 1;
+        else if (exclusions[index].atom1 < a1)
+          min = index+1;
+        else
+          max = index-1;
+      }
+      if (!found)
+        NAMD_die("1-4 interaction in dihedral not found in exclusion list!");
+      // After finding atom1, we do a linear serch to find atom2,
+      // in both directions.
+      for (j=index-1; j>=0 && exclusions[j].atom2!=a2 && exclusions[j].atom1==a1; --j);
+      if (j<0 || exclusions[j].atom1!=a1)
+        for (j=index; j<numExclusions && exclusions[j].atom2!=a2 && exclusions[j].atom1==a1; ++j);
+      if (j<numExclusions && exclusions[j].atom1==a1)
+        exclusions[j].modified = 1;  // Change the exclusion type to 1-4
+      else
+        NAMD_die("1-4 interaction in dihedral not found in exclusion list!");
+    }
+    if (dihedrals[i].atom1>=numAtoms || dihedrals[i].atom2>=numAtoms ||
+        dihedrals[i].atom3>=numAtoms || dihedrals[i].atom4>=numAtoms ||
+        dihedrals[i].dihedral_type>=amber_data->Nptra)
+    { char err_msg[128];
+      sprintf(err_msg, "DIHEDRAL # %d OVERFLOW IN PARM FILE", i+1);
+      NAMD_die(err_msg);
+    }
+  }
+  */
+  //  analyze the data and find the status of each atom
+
   build_atom_status();
 
 }

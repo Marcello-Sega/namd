@@ -24,6 +24,8 @@
 #include "SimParameters.h"
 //****** END CHARMM/XPLOR type changes
 
+#include "GromacsTopFile.h"
+
 class Communicate;
 class StringList;
 
@@ -242,6 +244,9 @@ private:
 	void free_vdw_pair_tree(IndexedVdwPair *);
 	void free_vdw_pair_list();
 
+	/* does the actual initialization, once the variables have all
+	   been given default values.  See Parameters() below */
+        void read_parm(const GromacsTopFile *, Bool min);
 public:
         //****** BEGIN CHARMM/XPLOR type changes
         //// added SimParameters to argument list
@@ -250,6 +255,13 @@ public:
         
         Parameters(Ambertoppar *, BigReal);
         void read_parm(Ambertoppar *, BigReal);
+
+        /* initializes this to hold the set of parameters in the
+	   GROMACS topology file <gf>.  If the parameter <min> is on,
+	   this assumes that we are going to do minimization and
+	   therefore can't have atoms with zero VDW - it will add a
+	   small repulsive term to these. */
+        Parameters(const GromacsTopFile *gf, Bool min);
         
 	~Parameters();				//  Destructor
 

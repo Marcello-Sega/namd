@@ -93,6 +93,7 @@ int NamdState::configListInit(ConfigList *cfgList) {
   lattice = simParameters->lattice;
   
   // If it's AMBER force field, read the AMBER style files;
+  // if it's GROMACS, read the GROMACS files;
   // Otherwise read the CHARMM style files
 
   if (simParameters->amberOn)
@@ -114,6 +115,29 @@ int NamdState::configListInit(ConfigList *cfgList) {
       NAMD_die("Failed to read AMBER parm file!");
     parameters->print_param_summary();
   }
+  else if (simParameters->gromacsOn) {
+    StringList *topFilename = configList->find("grotopfile");
+    StringList *coorFilename = configList->find("grocoorfile");
+    // "gromacsFile" is a temporary data structure, which records all
+    // the data from the topology file. After copying it into the
+    // molecule and parameter and pdb, it will be deleted.
+    GromacsTopFile *gromacsFile;
+    gromacsFile = new GromacsTopFile(topFilename->data);
+    parameters = new Parameters(gromacsFile,simParameters->minimizeCGOn);
+    if (coorFilename != NULL)
+      pdb = new PDB(coorFilename->data,gromacsFile);
+
+    molecule = new Molecule(simParameters, parameters, gromacsFile);
+    // XXX does Molecule(needAll,these,arguments)?
+
+    delete gromacsFile; // XXX unimplemented
+
+    // XXX add error handling when the file doesn't exist
+    // XXX make sure the right things happen when the parameters are
+    // not even specified.
+    // NAMD_die("Failed to read AMBER parm file!");
+    parameters->print_param_summary();
+  }
   else
   { StringList *moleculeFilename = configList->find("structure");
     StringList *parameterFilename = configList->find("parameters");
@@ -125,6 +149,7 @@ int NamdState::configListInit(ConfigList *cfgList) {
 
     molecule = new Molecule(simParameters, parameters, moleculeFilename->data);
   }
+
   
   StringList *coordinateFilename = configList->find("coordinates");
   if (coordinateFilename != NULL)
