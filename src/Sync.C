@@ -52,7 +52,7 @@ Sync::Sync()
 void Sync::openSync(void)
 {
    if (useSync && PatchMap::Object()->numHomePatches() == 0) {
-       CkPrintf("********* Local Sync is removed on node %d ******** \n", CkMyPe());
+       // CkPrintf("********* Local Sync is removed on node %d ******** \n", CkMyPe());
        useSync = 0;
    }
 }    
