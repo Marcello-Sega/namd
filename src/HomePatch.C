@@ -38,7 +38,7 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1037 1997/10/06 00:12:31 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1038 1997/11/14 04:56:45 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
 		     VelocityList vl) : Patch(pd,al,pl), v(vl) 
@@ -273,7 +273,7 @@ void HomePatch::submitLoadStats(int timestep)
 void
 HomePatch::doAtomMigration()
 {
-  int i;
+  int i,j;
   int xdev, ydev, zdev;
   MigrationList *mCur;
 
@@ -294,42 +294,36 @@ HomePatch::doAtomMigration()
   AtomMap::Object()->unregisterIDs(patchID,atomIDList);
 
   // Determine atoms that need to migrate
-  i = 0;
   SimParameters *simParams = Node::Object()->simParameters;
   Molecule *mol = Node::Object()->molecule;
-  while ( i < atomIDList.size() )
+  AtomIDList::iterator atomIDList_i = atomIDList.begin();
+  AtomIDList::iterator atomIDList_e = atomIDList.end();
+  AtomPropertiesList::iterator a_i = a.begin();
+  PositionList::iterator p_i = p.begin();
+  VelocityList::iterator v_i = v.begin();
+  ForceList::iterator f_i[Results::maxNumForces];
+  for ( j = 0; j < Results::maxNumForces; ++j ) f_i[j] = f[j].begin();
+  int delnum = 0;
+  Position Min = lattice.unscale(min);
+  Position Max = lattice.unscale(max);
+
+  while ( atomIDList_i != atomIDList_e )
   {
-     Position Min = lattice.unscale(min);
-     Position Max = lattice.unscale(max);
+      DebugM(4, atomIDList_e - atomIDList_i << " iterations remaining\n");
 
-/*
-     if (simParams->splitPatch == SPLIT_PATCH_HYDROGEN)
-	{
-	// All atoms are always in hydrogen-group order.  Thus, if it's
-	// a group member, then it is always moved *after* the group parent.
-	// So, we only determine where to move if it's a group parent.
-
-	// group members have their group parent ID
-	// group parents have their own ID
-	// ...do this in stages so it's easier to read
-	j = mol->is_hydrogenGroupParent(atomIDList[i]);	// j is parent flag
-	}
-      else j=1;	// check all atoms
-*/
-
-      if ( a[i].hydrogenGroupSize )
+      if ( a_i->hydrogenGroupSize )
 	  {
 	  // check if atom should is within bounds
-	  if (p[i].x < Min.x) xdev = 0;
-	  else if (Max.x <= p[i].x) xdev = 2; 
+	  if (p_i->x < Min.x) xdev = 0;
+	  else if (Max.x <= p_i->x) xdev = 2; 
 	  else xdev = 1;
 
-	  if (p[i].y < Min.y) ydev = 0;
-	  else if (Max.y <= p[i].y) ydev = 2; 
+	  if (p_i->y < Min.y) ydev = 0;
+	  else if (Max.y <= p_i->y) ydev = 2; 
 	  else ydev = 1;
 
-	  if (p[i].z < Min.z) zdev = 0;
-	  else if (Max.z <= p[i].z) zdev = 2; 
+	  if (p_i->z < Min.z) zdev = 0;
+	  else if (Max.z <= p_i->z) zdev = 2; 
 	  else zdev = 1;
 	  }
 
@@ -345,25 +339,43 @@ HomePatch::doAtomMigration()
 	 mCur = mInfo[xdev][ydev][zdev]->mList = new MigrationList;
        }
        Force force[Results::maxNumForces];
-       for ( int j = 0; j < Results::maxNumForces; ++j ) force[j] = f[j][i];
-       DebugM(3,"Migrating atom " << atomIDList[i] << " from patch "
-		<< patchID << " with position " << p[i] << "\n");
-       mCur->add(MigrationElem(atomIDList[i], a[i], p[i], p[i], v[i], force)
-       );
-       a.del(i);
-       atomIDList.del(i,1);
-       p.del(i);
-       // pInit.del(i);
-       v.del(i);
-       for ( j = 0; j < Results::maxNumForces; ++j ) f[j].del(i);
-       // f_short.del(i);
-       // f_long.del(i);
+       for ( j = 0; j < Results::maxNumForces; ++j ) force[j] = *(f_i[j]);
+       DebugM(3,"Migrating atom " << atomIDList_i << " from patch "
+		<< patchID << " with position " << p_i << "\n");
+       mCur->add(MigrationElem(*atomIDList_i, *a_i, *p_i, *p_i, *v_i, force));
+
+       ++delnum;
+
+     } else {
+
+       if ( delnum ) {
+         *(atomIDList_i-delnum) = *atomIDList_i;
+         *(a_i-delnum) = *a_i;
+         *(p_i-delnum) = *p_i;
+         *(v_i-delnum) = *v_i;
+         for ( j = 0; j < Results::maxNumForces; ++j ) {
+           *(f_i[j]-delnum) = *(f_i[j]);
+         }
+       }
+
      }
-     else
-     {
-       ++i;
-     }
+
+     ++atomIDList_i;
+     ++a_i;
+     ++p_i;
+     ++v_i;
+     for ( j = 0; j < Results::maxNumForces; ++j ) ++(f_i[j]);
+
   }
+
+  int delpos = numAtoms - delnum;
+  DebugM(4,"numAtoms " << numAtoms << " deleted " << delnum << "\n");
+  atomIDList.del(delpos,delnum);
+  a.del(delpos,delnum);
+  p.del(delpos,delnum);
+  v.del(delpos,delnum);
+  for ( j = 0; j < Results::maxNumForces; ++j ) f[j].del(delpos,delnum);
+
   numAtoms = atomIDList.size();
 
   PatchMgr::Object()->sendMigrationMsgs(patchID, realInfo, numNeighbors);
@@ -452,12 +464,15 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1037 $	$Date: 1997/10/06 00:12:31 $
+ *	$Revision: 1.1038 $	$Date: 1997/11/14 04:56:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1038  1997/11/14 04:56:45  jim
+ * Added STL-style iterators, eliminated bad algorithm in doAtomMigration.
+ *
  * Revision 1.1037  1997/10/06 00:12:31  jim
  * Added PatchMap.inl, sped up cycle-boundary tuple code.
  *

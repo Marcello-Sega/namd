@@ -14,9 +14,9 @@ struct MigrationElem {
   Velocity vel;
   Force force[Results::maxNumForces];
   MigrationElem() {};
-  MigrationElem(AtomID aid, AtomProperties ap, Position pInit,
-		Position p, Velocity v, 
-		Force f[Results::maxNumForces]) : 
+  MigrationElem(AtomID &aid, AtomProperties &ap, Position &pInit,
+		Position &p, Velocity &v, 
+		Force (&f)[Results::maxNumForces]) : 
       atomID(aid), atomProp(ap), posInit(pInit), pos(p), vel(v)
   {
     for ( int i = 0; i < Results::maxNumForces; ++i ) force[i] = f[i];
@@ -71,12 +71,15 @@ struct MigrationInfo {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/19 11:54:31 $
+ *	$Revision: 1.1004 $	$Date: 1997/11/14 04:56:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Migration.h,v $
+ * Revision 1.1004  1997/11/14 04:56:46  jim
+ * Added STL-style iterators, eliminated bad algorithm in doAtomMigration.
+ *
  * Revision 1.1003  1997/03/19 11:54:31  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.
