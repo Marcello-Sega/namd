@@ -726,6 +726,65 @@ obj/ComputeGlobal.o: \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/PatchTypes.h \
+	src/ComputeGlobalMaster.h \
+	src/ComputeGlobalMsgs.h \
+	src/ComputeTcl.h \
+	src/PatchMgr.h \
+	src/HomePatch.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/ObjectArena.h \
+	src/Hydrogen.h \
+	src/ReductionMgr.h \
+	src/ComputeMgr.h \
+	inc/ComputeMgr.top.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputeGlobal.o -c src/ComputeGlobal.C
+obj/ComputeGlobalMaster.o: \
+	src/ComputeGlobalMaster.C \
+	src/Namd.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/ResizeArrayPrimIter.h \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/ProcessorPrivate.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/MStream.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/PatchMap.inl \
+	src/AtomMap.h \
+	src/ComputeGlobal.h \
+	src/ComputeHomePatches.h \
+	src/Compute.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/PatchTypes.h \
+	src/ComputeGlobalMaster.h \
 	src/ComputeGlobalMsgs.h \
 	src/PatchMgr.h \
 	src/HomePatch.h \
@@ -743,9 +802,8 @@ obj/ComputeGlobal.o: \
 	src/ReductionMgr.h \
 	src/ComputeMgr.h \
 	inc/ComputeMgr.top.h \
-	src/TclCommands.h \
 	src/Debug.h
-	$(CXX) $(CXXFLAGS) -o obj/ComputeGlobal.o -c src/ComputeGlobal.C
+	$(CXX) $(CXXFLAGS) -o obj/ComputeGlobalMaster.o -c src/ComputeGlobalMaster.C
 obj/ComputeGlobalMsgs.o: \
 	src/ComputeGlobalMsgs.C \
 	src/ComputeGlobalMsgs.h \
@@ -1242,6 +1300,63 @@ obj/ComputeSphericalBC.o: \
 	src/MStream.h \
 	src/Patch.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeSphericalBC.o -c src/ComputeSphericalBC.C
+obj/ComputeTcl.o: \
+	src/ComputeTcl.C \
+	src/Namd.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/ResizeArrayPrimIter.h \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/ProcessorPrivate.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/MStream.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/PatchMap.inl \
+	src/AtomMap.h \
+	src/ComputeGlobal.h \
+	src/ComputeHomePatches.h \
+	src/Compute.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/PatchTypes.h \
+	src/ComputeGlobalMsgs.h \
+	src/PatchMgr.h \
+	src/HomePatch.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/ObjectArena.h \
+	src/Hydrogen.h \
+	src/ReductionMgr.h \
+	src/ComputeMgr.h \
+	inc/ComputeMgr.top.h \
+	src/TclCommands.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputeTcl.o -c src/ComputeTcl.C
 obj/ConfigList.o: \
 	src/ConfigList.C \
 	src/InfoStream.h \
@@ -1648,6 +1763,7 @@ obj/NamdState.o: \
 	src/main.h \
 	src/BOCgroup.h \
 	src/ProcessorPrivate.h \
+	src/SMD.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/NamdState.o -c src/NamdState.C
 obj/NamdOneTools.o: \

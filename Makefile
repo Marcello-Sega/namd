@@ -107,6 +107,7 @@ OBJS = \
 	$(DSTDIR)/ComputeImpropers.o \
 	$(DSTDIR)/ComputeGeneral.o \
 	$(DSTDIR)/ComputeGlobal.o \
+	$(DSTDIR)/ComputeGlobalMaster.o \
 	$(DSTDIR)/ComputeGlobalMsgs.o \
 	$(DSTDIR)/ComputeMap.o \
 	$(DSTDIR)/ComputeMgr.o \
@@ -119,6 +120,7 @@ OBJS = \
 	$(DSTDIR)/ComputeRestraints.o \
 	$(DSTDIR)/ComputeSMD.o \
 	$(DSTDIR)/ComputeSphericalBC.o \
+	$(DSTDIR)/ComputeTcl.o \
 	$(DSTDIR)/ConfigList.o \
 	$(DSTDIR)/Controller.o \
         $(DSTDIR)/defmain.o \
