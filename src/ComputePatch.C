@@ -68,36 +68,33 @@ void ComputePatch::doForce(Position* p,
                                Force* f,
                                AtomProperties* a)
 {
-    CPrintf("ComputePatchPair::doForce() - Dummy eval was sent\n");
-    CPrintf(" %d patch 1 atoms\n", numAtoms );
+    DebugM(1, "ComputePatchPair::doForce() - Dummy eval was sent\n");
+    if (p && f && a) {
+      p[0] = Position(0.0,0.0,0.0);
+    }
 }
 
 void ComputePatch::doWork() {
   Position* p;
   Force* f;
   AtomProperties* a;
-  int i;
 
   DebugM(3,patchID << ": doWork() called.\n");
 
   // Open up positionBox, forceBox, and atomBox
-      p = positionBox->open();
-      f = forceBox->open();
-      a = atomBox->open();
+  p = positionBox->open();
+  f = forceBox->open();
+  a = atomBox->open();
 
   // Pass pointers to doForce
   doForce(p,f,a);
 
   // Close up boxes
-      DebugM(1,patchID << ": closing positionBox.\n");
-      positionBox->close(&p);
-      DebugM(1,patchID << ": closing forceBox.\n");
-      forceBox->close(&f);
-      DebugM(1,patchID << ": closing atomBox.\n");
-      atomBox->close(&a);
+  positionBox->close(&p);
+  forceBox->close(&f);
+  atomBox->close(&a);
 
   DebugM(2,patchID << ": doWork() completed.\n");
-
 }
 
 
@@ -106,12 +103,17 @@ void ComputePatch::doWork() {
  *
  *	$RCSfile: ComputePatch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:15 $
+ *	$Revision: 1.1001 $	$Date: 1997/02/11 18:51:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatch.C,v $
+ * Revision 1.1001  1997/02/11 18:51:44  ari
+ * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
+ * fixed non-buffering of migration msgs
+ * Migration works on multiple processors
+ *
  * Revision 1.1000  1997/02/06 15:58:15  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

@@ -85,8 +85,10 @@ enum ComputeType
   computeAnglesType,
   computeDihedralsType,
   computeImpropersType,
+#ifdef DPMTA
   computeDPMTAType,
   computeDPMEType,
+#endif
   computeFullDirectType
 };
 
@@ -103,12 +105,17 @@ enum Boolean
  *
  *	$RCSfile: NamdTypes.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:49 $
+ *	$Revision: 1.1001 $	$Date: 1997/02/11 18:51:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdTypes.h,v $
+ * Revision 1.1001  1997/02/11 18:51:49  ari
+ * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
+ * fixed non-buffering of migration msgs
+ * Migration works on multiple processors
+ *
  * Revision 1.1000  1997/02/06 15:58:49  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

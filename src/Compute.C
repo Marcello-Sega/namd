@@ -44,12 +44,12 @@ void Compute::patchReady(PatchID patchID, int doneMigration) {
   }
 
   if (numPatches <= 0) {
-    DebugM(10,"Compute::patchReady()-call not valid!\n");
+    DebugM(10,"Compute::patchReady("<<patchID<<")-call not valid!\n");
   } else {
     DebugM(2,"patchReadyCounter = " << patchReadyCounter << endl);
     if (! --patchReadyCounter) {
       patchReadyCounter = numPatches;
-      DebugM(3,"Compute::patchReady() - enqueue()!\n");
+      DebugM(3,"Compute::patchReady("<<patchID<<") - enqueue()!\n");
       if (doAtomUpdate) {
 	atomUpdate();
 	doAtomUpdate = false;
@@ -72,12 +72,17 @@ void Compute::doWork() {
  *
  *	$RCSfile: Compute.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:57:41 $
+ *	$Revision: 1.1001 $	$Date: 1997/02/11 18:51:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.C,v $
+ * Revision 1.1001  1997/02/11 18:51:39  ari
+ * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
+ * fixed non-buffering of migration msgs
+ * Migration works on multiple processors
+ *
  * Revision 1.1000  1997/02/06 15:57:41  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

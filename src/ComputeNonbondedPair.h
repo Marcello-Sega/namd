@@ -18,7 +18,7 @@
 #include "ComputePatchPair.h"
 #include "ComputeNonbondedUtil.h"
 
-class ComputeNonbondedPair : public ComputePatchPair, ComputeNonbondedUtil {
+class ComputeNonbondedPair : public ComputePatchPair, private ComputeNonbondedUtil {
 
 public:
   ComputeNonbondedPair(ComputeID c, PatchID pid[], int trans[]);
@@ -40,12 +40,17 @@ protected :
  *
  *	$RCSfile: ComputeNonbondedPair.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:11 $
+ *	$Revision: 1.1001 $	$Date: 1997/02/11 18:51:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.h,v $
+ * Revision 1.1001  1997/02/11 18:51:44  ari
+ * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
+ * fixed non-buffering of migration msgs
+ * Migration works on multiple processors
+ *
  * Revision 1.1000  1997/02/06 15:58:11  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

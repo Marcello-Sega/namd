@@ -140,6 +140,7 @@ void ComputeMgr:: createComputes(ComputeMap *map)
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
+#ifdef DPMTA
       case computeDPMTAType:
 	c = new ComputeDPMTA(i);
 	DebugM(4,"ComputeDPMTA created.\n");
@@ -152,6 +153,7 @@ void ComputeMgr:: createComputes(ComputeMap *map)
 	// map->registerCompute(i,c);
 	// c->initialize();
 	break;
+#endif
       case computeFullDirectType:
 	c = new ComputeFullDirect(i);
 	DebugM(4,"ComputeFullDirect created.\n");
@@ -182,7 +184,7 @@ void ComputeMgr:: createComputes(ComputeMap *map)
  *
  *	$RCSfile: ComputeMgr.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/07 17:39:36 $
+ *	$Revision: 1.1003 $	$Date: 1997/02/11 18:51:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:

@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1001 1997/02/07 17:39:42 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1002 1997/02/11 18:51:58 ari Exp $";
 
 #include <stdio.h>
 
@@ -89,7 +89,7 @@ void WorkDistrib::createComputes(void)
 //----------------------------------------------------------------------
 void WorkDistrib::createPatches(void)
 {
-  int i,j;
+  int i;
 
   PatchMap *patchMap = PatchMap::Object();
   Node *node = CLocalBranch(Node,group.node);
@@ -152,7 +152,7 @@ void WorkDistrib::createPatches(void)
   {
     if (patchMap->node(i) != node->myid() )
     {
-      DebugM(3,"patchMgr->movePatch("
+      DebugM(1,"patchMgr->movePatch("
 	<< i << "," << patchMap->node(i) << ")\n");
       patchMgr->movePatch(i,patchMap->node(i));
     }
@@ -242,7 +242,7 @@ void WorkDistrib::mapPatches(void)
   {
     yper = 1;
     sysDim.y = params->cellBasisVector2.y;
-    ydim = (int)(sysDim.y / patchSize);
+    ydim = (int)((float)sysDim.y / patchSize);
     if ( ydim < 2 ) ydim = 2;
   }
   else
@@ -259,7 +259,7 @@ void WorkDistrib::mapPatches(void)
   {
     zper = 1;
     sysDim.z = params->cellBasisVector3.z;
-    zdim = (sysDim.z / patchSize);
+    zdim = (int)((float)sysDim.z / patchSize);
     if ( zdim < 2 ) zdim = 2;
   }
   else
@@ -314,8 +314,10 @@ void WorkDistrib::mapComputes(void)
   // Handle full electrostatics
   if ( node->simParameters->fullDirectOn )
     mapComputeHomePatches(computeFullDirectType);
+#ifdef DPMTA
   if ( node->simParameters->FMAOn )
     mapComputeHomePatches(computeDPMTAType);
+#endif
 
   mapComputeNonbonded();
   mapComputeHomePatches(computeNonbondedExclType);
@@ -444,12 +446,17 @@ void WorkDistrib::movePatchDone(DoneMsg *msg) {
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/07 17:39:42 $
+ *	$Revision: 1.1002 $	$Date: 1997/02/11 18:51:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1002  1997/02/11 18:51:58  ari
+ * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
+ * fixed non-buffering of migration msgs
+ * Migration works on multiple processors
+ *
  * Revision 1.1001  1997/02/07 17:39:42  ari
  * More debugging for atomMigration.
  * Using -w on CC got us some minor fixes

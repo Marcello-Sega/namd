@@ -11,7 +11,7 @@
  *
  *	$RCSfile: common.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:59:33 $
+ *	$Revision: 1.1001 $	$Date: 1997/02/11 18:52:00 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -22,6 +22,11 @@
  * REVISION HISTORY:
  *
  * $Log: common.C,v $
+ * Revision 1.1001  1997/02/11 18:52:00  ari
+ * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
+ * fixed non-buffering of migration msgs
+ * Migration works on multiple processors
+ *
  * Revision 1.1000  1997/02/06 15:59:33  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
@@ -114,7 +119,7 @@
  * Removed NAMD_warn; using Inform objects now to report information.
  * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1000 1997/02/06 15:59:33 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1001 1997/02/11 18:52:00 ari Exp $";
 
 #include "chare.h"
 #include "ckdefs.h"
@@ -166,7 +171,7 @@ void NAMD_check_messages(void)
 void NAMD_quit(Bool die_hard)
 
 {
-   cout << "Something called NAMD_quit" << endl;
+   cout << "Something called NAMD_quit: die_hard = " << die_hard << endl;
    abort();
 }
 

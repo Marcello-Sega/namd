@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1001 1997/02/07 22:52:14 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1002 1997/02/11 18:51:41 ari Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -51,18 +51,11 @@ ComputeMap::~ComputeMap(void)
 {
   if (computeData != NULL)
   {
-    int i;
-    for(i=0; i<nComputes; i++)
+    for(int i=0; i<nComputes; i++)
     {
-      if (computeData[i].pids != NULL)
-      {
-	delete computeData[i].pids;
-	computeData[i].pids=0;
-      }
-      delete computeData;
-
-      computeData = NULL;
+	delete[] computeData[i].pids;
     }
+    delete[] computeData;
   }    
 }
 
@@ -299,13 +292,18 @@ void ComputeMap::printComputeMap(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/07 22:52:14 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/02/11 18:51:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.C,v $
+ * Revision 1.1002  1997/02/11 18:51:41  ari
+ * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
+ * fixed non-buffering of migration msgs
+ * Migration works on multiple processors
+ *
  * Revision 1.1001  1997/02/07 22:52:14  jim
  * Eliminated use of nAtomBased and uninitialized memory reads.
  *

@@ -11,7 +11,7 @@
  *
  *	$RCSfile: ParseOptions.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:59:00 $
+ *	$Revision: 1.1001 $	$Date: 1997/02/11 18:51:51 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -22,6 +22,11 @@
  * REVISION HISTORY:
  *
  * $Log: ParseOptions.C,v $
+ * Revision 1.1001  1997/02/11 18:51:51  ari
+ * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
+ * fixed non-buffering of migration msgs
+ * Migration works on multiple processors
+ *
  * Revision 1.1000  1997/02/06 15:59:00  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
@@ -70,7 +75,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ParseOptions.C,v 1.1000 1997/02/06 15:59:00 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ParseOptions.C,v 1.1001 1997/02/11 18:51:51 ari Exp $";
 // set the list of parameters
 #include <libc.h>
 #include <iostream.h>
@@ -474,6 +479,7 @@ Bool ParseOptions::check_consistancy(void) {
       }
    }
    // looks like everything went well
+   delete [] arr;
    return 1;
 }
 

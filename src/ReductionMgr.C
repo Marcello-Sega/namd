@@ -28,7 +28,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1003 1997/02/10 19:44:30 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1004 1997/02/11 18:51:57 ari Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -362,6 +362,7 @@ void	ReductionMgr::recvReductionData	(ReductionDataMsg *msg)
 	<< " thread=" << current->threadNum[tag]
 	<< "\n");
       CthAwaken(current->threadNum[tag]);
+      return;
     }
     gotAllData(current);
   }
@@ -552,6 +553,7 @@ void	ReductionMgr::submit(int seq, ReductionTag tag, BigReal data, int more)
 	{
 	  current->suspendFlag[tag] = 0;
 	  CthAwaken(current->threadNum[tag]);
+	  return;
 	}
       }
     }

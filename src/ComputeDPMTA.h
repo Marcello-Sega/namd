@@ -14,6 +14,8 @@
 #ifndef COMPUTEDPMTA_H
 #define COMPUTEDPMTA_H
 
+#ifdef DPMTA
+
 extern "C"
   {
   #include "dpmta.h"
@@ -50,17 +52,23 @@ public:
 };
 
 #endif
+#endif
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeDPMTA.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/10 19:36:37 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/02/11 18:51:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.h,v $
+ * Revision 1.1002  1997/02/11 18:51:41  ari
+ * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
+ * fixed non-buffering of migration msgs
+ * Migration works on multiple processors
+ *
  * Revision 1.1001  1997/02/10 19:36:37  nealk
  * Added DPMTA stuff.
  *

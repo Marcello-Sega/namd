@@ -83,7 +83,7 @@ public:
   friend ComputeMgr;
 
 protected:
-  friend MapDistribMsg;
+  friend class MapDistribMsg;
   void * pack (int *length);
   void unpack (void *in);
 
@@ -125,13 +125,18 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/07 22:52:15 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/02/11 18:51:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.h,v $
+ * Revision 1.1002  1997/02/11 18:51:42  ari
+ * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
+ * fixed non-buffering of migration msgs
+ * Migration works on multiple processors
+ *
  * Revision 1.1001  1997/02/07 22:52:15  jim
  * Eliminated use of nAtomBased and uninitialized memory reads.
  *

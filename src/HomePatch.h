@@ -67,6 +67,12 @@ public:
 protected:
   virtual void boxClosed(int);
   void doAtomMigration();
+  int inMigration;
+  int numMlBuf;
+  PatchID srcID[PatchMap::MaxOneAway];
+  MigrationList *mlBuf[PatchMap::MaxOneAway];
+
+
   
 private:
 
@@ -96,13 +102,18 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/10 08:17:30 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/02/11 18:51:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.1002  1997/02/11 18:51:47  ari
+ * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
+ * fixed non-buffering of migration msgs
+ * Migration works on multiple processors
+ *
  * Revision 1.1001  1997/02/10 08:17:30  jim
  * Commented out sending and allocation of unused data.
  *

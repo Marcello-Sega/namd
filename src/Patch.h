@@ -104,7 +104,7 @@ class Patch
      OwnerBox<Patch,AtomProperties>    atomBox;
      ComputeIDList              atomComputeList;
 
-     virtual void boxClosed(int);
+     virtual void boxClosed(int box) { box = 0; }
      int boxesOpen;
 
      void loadAtomProperties(void);
@@ -125,12 +125,17 @@ class Patch
  *
  *	$RCSfile: Patch.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/07 05:42:31 $
+ *	$Revision: 1.1002 $	$Date: 1997/02/11 18:51:54 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.h,v $
+ * Revision 1.1002  1997/02/11 18:51:54  ari
+ * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
+ * fixed non-buffering of migration msgs
+ * Migration works on multiple processors
+ *
  * Revision 1.1001  1997/02/07 05:42:31  ari
  * Some bug fixing - atom migration on one node works
  * Atom migration on multiple nodes gets SIGSEGV

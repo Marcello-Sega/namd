@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1005 1997/02/07 16:49:28 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1006 1997/02/11 18:51:52 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -175,10 +175,7 @@ void Patch::atomBoxClosed(void)
    this->boxClosed(2);
 }
 
-void Patch::boxClosed(int box)
-{
-   ;
-}
+// void Patch::boxClosed(int box) is virtual
 
 void Patch::positionsReady(int doneMigration)
 {
@@ -218,13 +215,18 @@ void Patch::positionsReady(int doneMigration)
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/02/07 16:49:28 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1006 $	$Date: 1997/02/11 18:51:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.1006  1997/02/11 18:51:52  ari
+ * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
+ * fixed non-buffering of migration msgs
+ * Migration works on multiple processors
+ *
  * Revision 1.1005  1997/02/07 16:49:28  jim
  * Fixing bugs that affect parallel atom migration.
  *

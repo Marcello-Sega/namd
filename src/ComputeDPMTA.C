@@ -23,6 +23,8 @@
 #define MIN_DEBUG_LEVEL 3
 #include "Debug.h"
 
+
+#ifdef DPMTA
 void ComputeDPMTA::get_FMA_cube(BigReal *boxsize, Vector *boxcenter)
 {
   int max_dim;
@@ -230,4 +232,6 @@ void ComputeDPMTA::doWork()
     free(particle_list);
   }
 }
+
+#endif
 

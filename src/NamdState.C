@@ -128,9 +128,13 @@ NamdState::configFileInit(char *confFile)
     return(1);
   }
 
+  DebugM(4, "::configFileInit() - printing Molecule Information\n");
+
   molecule->print_atoms(parameters);
   molecule->print_bonds(parameters);
   molecule->print_exclusions();
+
+  DebugM(4, "::configFileInit() - done printing Molecule Information\n");
 
 
   DebugM(1, "::configFileInit() - done\n");
@@ -143,7 +147,7 @@ NamdState::configFileInit(char *confFile)
  *
  *	$RCSfile: NamdState.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:48 $
+ *	$Revision: 1.1001 $	$Date: 1997/02/11 18:51:48 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -152,6 +156,11 @@ NamdState::configFileInit(char *confFile)
  * REVISION HISTORY:
  *
  * $Log: NamdState.C,v $
+ * Revision 1.1001  1997/02/11 18:51:48  ari
+ * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
+ * fixed non-buffering of migration msgs
+ * Migration works on multiple processors
+ *
  * Revision 1.1000  1997/02/06 15:58:48  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
@@ -195,4 +204,4 @@ NamdState::configFileInit(char *confFile)
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1000 1997/02/06 15:58:48 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1001 1997/02/11 18:51:48 ari Exp $";

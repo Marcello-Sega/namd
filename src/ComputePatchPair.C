@@ -70,9 +70,6 @@ void ComputePatchPair::atomUpdate() {
     // to handle this or do we assume the Boxes have been dumped?
 
     // DebugM(4,"atomUpdate() - positionBox[0] is " << positionBox[0] << "\n");
-    for (int i=0; i<2; i++) {
-	numAtoms[i] = patch[i]->getNumAtoms();
-    }
 
     Compute::initialize();
 }
@@ -116,13 +113,18 @@ void ComputePatchPair::doWork() {
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputePatchPair.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/07 07:50:23 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/02/11 18:51:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatchPair.C,v $
+ * Revision 1.1002  1997/02/11 18:51:45  ari
+ * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
+ * fixed non-buffering of migration msgs
+ * Migration works on multiple processors
+ *
  * Revision 1.1001  1997/02/07 07:50:23  jim
  * Removed debug messages.
  *

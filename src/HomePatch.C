@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1009 1997/02/11 16:31:48 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1010 1997/02/11 18:51:46 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -27,7 +27,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C
 #include "PatchMgr.h"
 
 #define MIN_DEBUG_LEVEL 4
-// #define DEBUGM
+#define DEBUGM
 #include "Debug.h"
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
@@ -48,6 +48,8 @@ HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl,
   allMigrationIn = false;
   patchMapRead = 0; // We delay read of PatchMap data
 		    // to make sure it is really valid
+  inMigration = false;
+  numMlBuf = 0;
 }
 
 void
@@ -57,10 +59,10 @@ HomePatch::readPatchMap() {
 
   patchMigrationCounter = numNeighbors 
     = PatchMap::Object()->oneAwayNeighbors(patchID, nnPatchID);
-  DebugM( 4, "NumNeighbors for pid " <<patchID<<" is "<< numNeighbors << "\n");
+  DebugM( 1, "NumNeighbors for pid " <<patchID<<" is "<< numNeighbors << "\n");
   for (int n=0; n<numNeighbors; n++) {
     realInfo[n].destNodeID = p->node(realInfo[n].destPatchID = nnPatchID[n]);
-     DebugM( 4, " nnPatchID=" <<nnPatchID[n]<<" nnNodeID="<< realInfo[n].destNodeID<< "\n");
+     DebugM( 1, " nnPatchID=" <<nnPatchID[n]<<" nnNodeID="<< realInfo[n].destNodeID<< "\n");
     realInfo[n].mList = NULL;
   }
 
@@ -87,7 +89,7 @@ HomePatch::readPatchMap() {
 	}
       }
 
-  DebugM(4,"Patch("<<patchID<<") # of neighbors = " << numNeighbors << "\n");
+  DebugM(1,"Patch("<<patchID<<") # of neighbors = " << numNeighbors << "\n");
 }
 
 HomePatch::~HomePatch()
@@ -99,14 +101,15 @@ void HomePatch::boxClosed(int)
 {
   if ( ! --boxesOpen )
   {
-    DebugM(4,patchID << ": " << CthSelf() << " awakening sequencer "
+    DebugM(1,patchID << ": " << CthSelf() << " awakening sequencer "
 	<< sequencer->thread << "(" << patchID << ") @" << CmiTimer() << "\n");
     // only awaken suspended threads.  Then say it is suspended.
     sequencer->awaken();
+    return;
   }
   else
   {
-    DebugM(2,patchID << ": " << boxesOpen << " boxes left to close.\n");
+    DebugM(1,patchID << ": " << boxesOpen << " boxes left to close.\n");
   }
 }
 
@@ -142,6 +145,7 @@ void HomePatch::positionsReady(int doMigration)
     readPatchMap();
     patchMapRead = 1;
   }
+      
   if (doMigration) {
     doAtomMigration();
   }
@@ -155,6 +159,7 @@ void HomePatch::positionsReady(int doMigration)
       allmsg->patch = patchID;
       allmsg->positionList = p;
       allmsg->atomIDList = atomIDList;
+      DebugM(1, "atomIDList.size() = " << atomIDList.size() << " p.size() = " << p.size() << "\n" );
       ProxyMgr::Object()->sendProxyAll(allmsg,pli->node);
     } else {
       ProxyDataMsg *nmsg = new (MsgIndex(ProxyDataMsg)) ProxyDataMsg;
@@ -164,6 +169,7 @@ void HomePatch::positionsReady(int doMigration)
     }   
   }
   Patch::positionsReady(doMigration);
+
 }
 
 
@@ -223,7 +229,18 @@ HomePatch::doAtomMigration()
   int xdev, ydev, zdev;
   MigrationList *mCur;
 
-  // Null pointers to migration lists.
+  // signal depositMigration() that we are inMigration mode
+  inMigration = true;
+
+  // Drain the migration message buffer
+  for (i=0; i<numMlBuf; i++) {
+     DebugM(4, "Draining migration buffer ("<<i<<","<<numMlBuf<<")\n");
+     depositMigration(srcID[i], mlBuf[i]);
+  }
+  numMlBuf = 0;
+     
+  // realInfo points to migration lists for neighbors we actually have. 
+  //    element of mInfo[3][3][3] points to an element of realInfo
   for (i=0; i<numNeighbors; i++) {
     realInfo[i].mList = NULL;
   }
@@ -282,7 +299,7 @@ HomePatch::doAtomMigration()
   }
 
   if (!allMigrationIn) {
-    DebugM(3,"All Migrations NOT in, we are suspending patch "<<patchID<<"\n");
+    DebugM(4,"All Migrations NOT in, we are suspending patch "<<patchID<<"\n");
     migrationSuspended = true;
     sequencer->suspend();
     migrationSuspended = false;
@@ -292,16 +309,25 @@ HomePatch::doAtomMigration()
 
   // reload the AtomMap
   AtomMap::Object()->registerIDs(patchID,atomIDList);
+
+  inMigration = false;
 }
 
 void 
 HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
 {
-  DebugM(3,"depositMigration from "<<srcPatchID<<" on "<<patchID<<"\n");
+  if (!inMigration) { // We have to buffer changes due to migration
+		      // until our patch is in migration mode
+    DebugM(4,"depositMigration buffered from patch "<<srcPatchID<<"\n");
+    srcID[numMlBuf] = srcPatchID;
+    mlBuf[numMlBuf++] = migrationList;
+    return;
+  } 
+  DebugM(4,"depositMigration from "<<srcPatchID<<" on "<<patchID<<"\n");
   if (migrationList) {
     MigrationListIter mi(*migrationList);
     for (mi = mi.begin(); mi != mi.end(); mi++) {
-      DebugM(3,"Migrating atom " << mi->atomID << " to patch "
+      DebugM(1,"Migrating atom " << mi->atomID << " to patch "
 		<< patchID << " with position " << mi->pos << "\n"); 
       a.add(mi->atomProp);
       atomIDList.add(mi->atomID);
@@ -324,6 +350,7 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
       DebugM(4,"patch "<<patchID<<" is being awakened\n");
       migrationSuspended = false;
       sequencer->awaken();
+      return;
     }
     else DebugM(4,"patch "<<patchID<<" was not suspended\n");
   }
@@ -334,13 +361,18 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/02/11 16:31:48 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1010 $	$Date: 1997/02/11 18:51:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1010  1997/02/11 18:51:46  ari
+ * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
+ * fixed non-buffering of migration msgs
+ * Migration works on multiple processors
+ *
  * Revision 1.1009  1997/02/11 16:31:48  nealk
  * Using a flag to determine suspend/awaken in sequencer.
  * Migration turned off (for now).

@@ -166,6 +166,7 @@ ProxyMgr::ProxyMgr(InitMsg *) : numProxies(0), proxyList(NULL) {
 }
 
 ProxyMgr::~ProxyMgr() { 
+  removeProxies();
   _instance = NULL;
 }
 
@@ -231,6 +232,7 @@ void ProxyMgr::createProxies(void)
     proxyList[numProxies++] = proxy;
     patchMap->registerPatch(i, proxy);
   }
+  delete[] pflags;
 }
 
 void
@@ -318,12 +320,17 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
  *
  *	$RCSfile: ProxyMgr.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/07 17:39:40 $
+ *	$Revision: 1.1003 $	$Date: 1997/02/11 18:51:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.1003  1997/02/11 18:51:55  ari
+ * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
+ * fixed non-buffering of migration msgs
+ * Migration works on multiple processors
+ *
  * Revision 1.1002  1997/02/07 17:39:40  ari
  * More debugging for atomMigration.
  * Using -w on CC got us some minor fixes
