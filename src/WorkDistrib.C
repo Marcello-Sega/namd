@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1057 1998/08/11 16:30:32 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1058 1998/08/11 22:29:03 brunner Exp $";
 
 #include <stdio.h>
 
@@ -427,7 +427,9 @@ void WorkDistrib::assignNodeToPatch()
 
   PatchMap *patchMap = PatchMap::Object();
   int nNodes = Node::Object()->numNodes();
-  if (nNodes >= patchMap->numPatches())
+  if (nNodes < patchMap->numPatches())
+    NAMD_die("WorkDistrib::assignNodeToPatch not enough patches!");
+  else if (nNodes == patchMap->numPatches())
     assignPatchesRoundRobin();
   else if (method==1)
     assignPatchesRecursiveBisection();
@@ -1110,13 +1112,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1057 $	$Date: 1998/08/11 16:30:32 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1058 $	$Date: 1998/08/11 22:29:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1058  1998/08/11 22:29:03  brunner
+ * Added not-enough-patches error.
+ *
  * Revision 1.1057  1998/08/11 16:30:32  jim
  * Modified output from periodic boundary simulations to return atoms to
  * internally consistent coordinates.  We store the transformations which
