@@ -5,8 +5,8 @@
 **/
 
 #ifdef NAMD_FFTW
-#include <fftw.h>
-#include <rfftw.h>
+#include <sfftw.h>
+#include <srfftw.h>
 #endif
 
 #include "Node.h"
@@ -57,7 +57,7 @@ public:
   Lattice lattice;
   int x_start;
   int nx;
-  double *qgrid;
+  float *qgrid;
 };
 
 
@@ -68,7 +68,7 @@ public:
   PmeReduction evir;
   int y_start;
   int ny;
-  double *qgrid;
+  float *qgrid;
 
 };
 
@@ -106,15 +106,15 @@ private:
   PmeGrid myGrid;
   Lattice lattice;
   PmeKSpace *myKSpace;
-  double *qgrid;
-  double *kgrid;
+  float *qgrid;
+  float *kgrid;
 
 #ifdef NAMD_FFTW
   fftw_plan forward_plan_x, backward_plan_x;
   rfftwnd_plan forward_plan_yz, backward_plan_yz;
   fftw_complex *work;
 #else
-  double *work;
+  float *work;
 #endif
 
   int fepOn, lesOn, lesFactor, numGrids;
@@ -394,9 +394,9 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   int local_size = myGrid.block1 * myGrid.K2 * myGrid.dim3;
   int local_size_2 = myGrid.block2 * myGrid.K1 * myGrid.dim3;
   if ( local_size < local_size_2 ) local_size = local_size_2;
-  qgrid = new double[local_size*numGrids];
+  qgrid = new float[local_size*numGrids];
   if ( numGridPes > 1 || numTransPes > 1 ) {
-    kgrid = new double[local_size*numGrids];
+    kgrid = new float[local_size*numGrids];
   } else {
     kgrid = qgrid;
   }
@@ -444,7 +444,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   if ( myGridPe >= 0 && numSources == 0 )
 		NAMD_bug("PME grid elements exist without sources.");
   grid_count = numSources;
-  memset( (void*) qgrid, 0, qgrid_size * numGrids * sizeof(double) );
+  memset( (void*) qgrid, 0, qgrid_size * numGrids * sizeof(float) );
   trans_count = numGridPes;
 }
 
@@ -481,7 +481,7 @@ void ComputePmeMgr::recvGrid(PmeGridMsg *msg) {
   float *qmsg = msg->qgrid;
   for ( int g=0; g<numGrids; ++g ) {
     char *f = msg->fgrid + fgrid_len * g;
-    double *q = qgrid + qgrid_size * g;
+    float *q = qgrid + qgrid_size * g;
     for ( int i=0; i<fgrid_len; ++i ) {
       if ( f[i] ) {
         for ( int k=0; k<zlistlen; ++k ) {
@@ -538,10 +538,10 @@ void ComputePmeMgr::sendTrans(void) {
     newmsg->x_start = x_start;
     newmsg->nx = nx;
     for ( int g=0; g<numGrids; ++g ) {
-      double *q = qgrid + qgrid_size * g + li.y_start_after_transpose * zdim;
-      double *qmsg = newmsg->qgrid + nx * cpylen * g;
+      float *q = qgrid + qgrid_size * g + li.y_start_after_transpose * zdim;
+      float *qmsg = newmsg->qgrid + nx * cpylen * g;
       for ( int x = 0; x < nx; ++x ) {
-        memcpy((void*)qmsg, (void*)q, cpylen*sizeof(double));
+        memcpy((void*)qmsg, (void*)q, cpylen*sizeof(float));
         q += slicelen;
         qmsg += cpylen;
       }
@@ -569,7 +569,7 @@ void ComputePmeMgr::recvTrans(PmeTransMsg *msg) {
   int nx = msg->nx;
   for ( int g=0; g<numGrids; ++g ) {
     memcpy((void*)(kgrid + qgrid_size * g + x_start*ny*zdim),
-	(void*)(msg->qgrid + nx*ny*zdim*g), nx*ny*zdim*sizeof(double));
+	(void*)(msg->qgrid + nx*ny*zdim*g), nx*ny*zdim*sizeof(float));
   }
 
   delete msg;
@@ -642,7 +642,7 @@ void ComputePmeMgr::sendUntrans(void) {
     for ( int g=0; g<numGrids; ++g ) {
       memcpy((void*)(newmsg->qgrid+nx*ny*zdim*g),
 		(void*)(kgrid + qgrid_size*g + x_start*ny*zdim),
-		nx*ny*zdim*sizeof(double));
+		nx*ny*zdim*sizeof(float));
     }
 #if CHARM_VERSION > 050402
     pmeProxy[gridPeMap[pe]].recvUntrans(newmsg);
@@ -670,10 +670,10 @@ void ComputePmeMgr::recvUntrans(PmeUntransMsg *msg) {
   int slicelen = myGrid.K2 * zdim;
   int cpylen = ny * zdim;
   for ( int g=0; g<numGrids; ++g ) {
-    double *q = qgrid + qgrid_size * g + y_start * zdim;
-    double *qmsg = msg->qgrid + nx * cpylen * g;
+    float *q = qgrid + qgrid_size * g + y_start * zdim;
+    float *qmsg = msg->qgrid + nx * cpylen * g;
     for ( int x = 0; x < nx; ++x ) {
-      memcpy((void*)q, (void*)qmsg, cpylen*sizeof(double));
+      memcpy((void*)q, (void*)qmsg, cpylen*sizeof(float));
       q += slicelen;
       qmsg += cpylen;
     }
@@ -729,7 +729,7 @@ void ComputePmeMgr::sendUngrid(void) {
     float *qmsg = newmsg->qgrid;
     for ( int g=0; g<numGrids; ++g ) {
       char *f = newmsg->fgrid + fgrid_len * g;
-      double *q = qgrid + qgrid_size * g + (fstart-fgrid_start) * zdim;
+      float *q = qgrid + qgrid_size * g + (fstart-fgrid_start) * zdim;
       for ( int i=0; i<flen; ++i ) {
         if ( f[i] ) {
           for ( int k=0; k<zlistlen; ++k ) {
@@ -748,7 +748,7 @@ void ComputePmeMgr::sendUngrid(void) {
 #endif
   }
   grid_count = numSources;
-  memset( (void*) qgrid, 0, qgrid_size * numGrids * sizeof(double) );
+  memset( (void*) qgrid, 0, qgrid_size * numGrids * sizeof(float) );
 }
 
 void ComputePmeMgr::recvUngrid(PmeGridMsg *msg) {

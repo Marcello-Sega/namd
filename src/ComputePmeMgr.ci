@@ -12,10 +12,10 @@ module ComputePmeMgr {
     float qgrid[];
   };
   message PmeTransMsg {
-    double qgrid[];
+    float qgrid[];
   };
   message PmeUntransMsg{
-    double qgrid[];
+    float qgrid[];
   };
 
   group ComputePmeMgr {
