@@ -21,6 +21,9 @@
 #include "strlib.h"
 #include "MStream.h"
 #include "HBondParam.h"
+//****** BEGIN CHARMM/XPLOR type changes
+#include "SimParameters.h"
+//****** END CHARMM/XPLOR type changes
 
 class Communicate;
 class StringList;
@@ -60,6 +63,13 @@ class StringList;
 
 //  Number of characters maximum allowed for storing atom type names
 #define MAX_ATOMTYPE_CHARS      6
+
+//****** BEGIN CHARMM/XPLOR type changes
+//  Define the numbers associated with each possible parameter-file 
+//  type (format) NAMD can handle.
+#define paraXplor               0
+#define paraCharmm              1
+//****** END CHARMM/XPLOR type changes
 
 
 typedef struct bond_val
@@ -144,6 +154,9 @@ private:
 						//  have been read in and
 						//  the arrays have been
 						//  created.
+//****** BEGIN CHARMM/XPLOR type changes
+        int paramType;                          //  Type (format) of parameter-file
+//****** END CHARMM/XPLOR type changes
 	struct bond_params *bondp;		//  Binary tree of bond params
 	struct angle_params *anglep;		//  Binary tree of angle params
 	struct improper_params *improperp;	//  Linked list of improper par.
@@ -181,6 +194,7 @@ private:
 
 	void add_dihedral_param(char *, FILE *); //  Add a dihedral parameter
 	void add_to_dihedral_list(struct dihedral_params *);
+	void add_to_charmm_dihedral_list(struct dihedral_params *);
 
 	void add_improper_param(char *, FILE *); //  Add an improper parameter
 	void add_to_improper_list(struct improper_params *);
@@ -229,7 +243,10 @@ private:
 	void free_vdw_pair_list();
 
 public:
-	Parameters(StringList *f=NULL);
+        //****** BEGIN CHARMM/XPLOR type changes
+        //// added SimParameters to argument list
+	Parameters(SimParameters *, StringList *f=NULL);
+        //****** END CHARMM/XPLOR type changes
 	~Parameters();				//  Destructor
 
         // return a string for the Nth atom type.  This can only be
@@ -242,6 +259,10 @@ public:
 
 	//  Read a parameter file
 	void read_parameter_file(char *);
+
+        //****** BEGIN CHARMM/XPLOR type changes
+	void read_charmm_parameter_file(char *);
+        //****** END CHARMM/XPLOR type changes
 
 	//  Signal the parameter object that all of
 	//  the parameter files have been read in
@@ -364,13 +385,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: Parameters.h,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/10/01 16:47:01 $
+ *	$Author: ferenc $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1999/02/02 08:02:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Parameters.h,v $
+ * Revision 1.1003  1999/02/02 08:02:35  ferenc
+ * Added support for CHARMM parameter format in parameter files.
+ *
  * Revision 1.1002  1997/10/01 16:47:01  milind
  * Removed old NAMD1 messaging and replaced it with new Message Streams library.
  *

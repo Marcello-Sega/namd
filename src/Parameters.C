@@ -21,6 +21,9 @@
 #include "InfoStream.h"
 #include "Communicate.h"
 #include "ConfigList.h"
+//****** BEGIN CHARMM/XPLOR type changes
+#include "SimParameters.h"
+//****** END CHARMM/XPLOR type changes
 
 //  struct bond_params is used to form a binary tree of bond parameters.
 //  The two atom names are used to determine the order of the nodes in the
@@ -128,13 +131,17 @@ struct vdw_pair_params
 /*  This is the constructor for the class.  It simlpy sets the      */
 /*  pointers to the list and trees to NULL and the count of all the     */
 /*  parameters to 0.              */
+/*  The type (format) of the input parameters (Xplor,Charmm) is set here. */
 /*                  */
 /************************************************************************/
 
-Parameters::Parameters(StringList *f)
+//****** BEGIN CHARMM/XPLOR type changes
+//// added SimParameters to argument list
+Parameters::Parameters(SimParameters *simParams, StringList *f)
 {
+//****** END CHARMM/XPLOR type changes
   /*  Set all the pointers to NULL        */
-        atomTypeNames=NULL;
+  atomTypeNames=NULL;
   bondp=NULL;
   anglep=NULL;
   improperp=NULL;
@@ -157,19 +164,43 @@ Parameters::Parameters(StringList *f)
   NumVdwParams=0;
   NumVdwPairParams=0;
 
+  //****** BEGIN CHARMM/XPLOR type changes
+  //// get current parameter format
+  if (simParams->paraTypeXplorOn)
+  {
+    paramType = paraXplor;
+  }
+  else if (simParams->paraTypeCharmmOn)
+  {
+    paramType = paraCharmm;
+  }
+  //****** END CHARMM/XPLOR type changes
+
   /* Set up AllFilesRead flag to FALSE.  Once all of the files    */
   /* have been read in, then this will be set to true and the     */
   /* arrays of parameters will be set up        */
   AllFilesRead = FALSE;
 
-  if (NULL != f) {
-       do
+  if (NULL != f) 
+  {
+    do
+    {
+      //****** BEGIN CHARMM/XPLOR type changes
+      if (paramType == paraXplor)
       {
-    read_parameter_file(f->data);
-    f = f->next;
-      } while ( f != NULL );
-      done_reading_files();
+        read_parameter_file(f->data);
+      }
+      else if (paramType == paraCharmm)
+      {
+        read_charmm_parameter_file(f->data);
+      }
+      //****** END CHARMM/XPLOR type changes
+      f = f->next;
+    } while ( f != NULL );
+
+    done_reading_files();
   }
+
 }
 /*      END OF FUNCTION Parameters      */
 
@@ -267,7 +298,7 @@ void Parameters::read_parameter_file(char *fname)
   {
     char err_msg[256];
 
-    sprintf(err_msg, "UNABLE TO OPEN PARAMETER FILE %s\n", fname);
+    sprintf(err_msg, "UNABLE TO OPEN XPLOR PARAMETER FILE %s\n", fname);
     NAMD_die(err_msg);
   }
 
@@ -325,12 +356,12 @@ void Parameters::read_parameter_file(char *fname)
       else if (strncasecmp(first_word, "nonb", 4)==0)
       {
         add_vdw_param(buffer);
-        NumVdwParams++;
+        NumVdwParams++; 
       }
       else if (strncasecmp(first_word, "nbfi", 4)==0)
       {
         add_vdw_pair_param(buffer);
-        NumVdwPairParams++;
+        NumVdwPairParams++; 
       }
       else if (strncasecmp(first_word, "hbon", 4)==0)
       {
@@ -342,7 +373,7 @@ void Parameters::read_parameter_file(char *fname)
         /*  This is BAD        */
         char err_msg[512];
 
-        sprintf(err_msg, "UNKNOWN PARAMETER IN PARAMETER FILE %s\nLINE=*%s*",
+        sprintf(err_msg, "UNKNOWN PARAMETER IN XPLOR PARAMETER FILE %s\nLINE=*%s*",
            fname, buffer);
         NAMD_die(err_msg);
       }
@@ -355,6 +386,206 @@ void Parameters::read_parameter_file(char *fname)
   return;
 }
 /*      END OF FUNCTION read_paramter_file    */
+
+//****** BEGIN CHARMM/XPLOR type changes
+/************************************************************************/
+/*									*/
+/*			FUNCTION read_charmm_paramter_file		*/
+/*									*/
+/*   INPUTS:								*/
+/*	fname - name of the parameter file to read			*/
+/*									*/
+/*	This function reads in a CAHRMM parameter file and adds the     */ 
+/*   parameters from this file to the current group of parameters.      */
+/*   The basic logic of the routine is to first find out what type of   */
+/*   parameter we have in the file. Then look at each line in turn      */
+/*   and call the appropriate routine to add the parameters until we hit*/
+/*   a new type of parameter or EOF.                                    */
+/*									*/
+/************************************************************************/
+
+void Parameters::read_charmm_parameter_file(char *fname)
+
+{
+  int  par_type=0;         //  What type of parameter are we currently
+                           //  dealing with? (vide infra)
+  int  skipline;           //  skip this line?
+  char buffer[512];	   //  Buffer to store each line of the file
+  char first_word[512];	   //  First word of the current line
+  FILE *pfile;		   //  File descriptor for the parameter file
+
+  /*  Check to make sure that we haven't previously been told     */
+  /*  that all the files were read				*/
+  if (AllFilesRead)
+  {
+    NAMD_die("Tried to read another parameter file after being told that all files were read!");
+  }
+
+  /*  Try and open the file					*/
+  if ( (pfile = fopen(fname, "r")) == NULL)
+  {
+    char err_msg[256];
+
+    sprintf(err_msg, "UNABLE TO OPEN CHARMM PARAMETER FILE %s\n", fname);
+    NAMD_die(err_msg);
+  }
+
+  /*  Keep reading in lines until we hit the EOF			*/
+  while (NAMD_read_line(pfile, buffer) != -1)
+  {
+    /*  Get the first word of the line			*/
+    NAMD_find_first_word(buffer, first_word);
+    skipline=0;
+
+    /*  First, screen out things that we ignore.                   */   
+    /*  blank lines, lines that start with '!' or '*', lines that  */
+    /*  start with "END".                                          */
+    if (!NAMD_blank_string(buffer) &&
+	(strncmp(first_word, "!", 1) != 0) &&
+ 	(strncmp(first_word, "*", 1) != 0) &&
+        (strncasecmp(first_word, "END", 3) != 0))
+    {
+      /*  Now, determine the apropriate parameter type.   */
+      if (strncasecmp(first_word, "bond", 4)==0)
+      {
+        par_type=1; skipline=1;
+      }
+      else if (strncasecmp(first_word, "angl", 4)==0)
+      {
+        par_type=2; skipline=1;
+      }
+      else if (strncasecmp(first_word, "dihe", 4)==0)
+      {
+              par_type=3; skipline=1;
+      }
+      else if (strncasecmp(first_word, "impr", 4)==0)
+      {
+        par_type=4; skipline=1;
+      }
+      else if (strncasecmp(first_word, "nonb", 4)==0)
+      {
+        par_type=5; skipline=1;
+      }
+      else if (strncasecmp(first_word, "nbfi", 4)==0)
+      {
+        par_type=6; skipline=1;
+      }
+      else if (strncasecmp(first_word, "hbon", 4)==0)
+      {
+        par_type=7; skipline=1;
+      }
+      else if ((strncasecmp(first_word, "nbxm", 4) == 0) ||
+               (strncasecmp(first_word, "grou", 4) == 0) ||
+               (strncasecmp(first_word, "cdie", 4) == 0) ||
+               (strncasecmp(first_word, "shif", 4) == 0) ||
+               (strncasecmp(first_word, "vgro", 4) == 0) ||
+               (strncasecmp(first_word, "vdis", 4) == 0) ||
+               (strncasecmp(first_word, "vswi", 4) == 0) ||
+               (strncasecmp(first_word, "cutn", 4) == 0) ||
+               (strncasecmp(first_word, "ctof", 4) == 0) ||
+               (strncasecmp(first_word, "cton", 4) == 0) ||
+               (strncasecmp(first_word, "eps", 3) == 0) ||
+               (strncasecmp(first_word, "e14f", 4) == 0) ||
+               (strncasecmp(first_word, "wmin", 4) == 0) ||
+               (strncasecmp(first_word, "aexp", 4) == 0) ||
+               (strncasecmp(first_word, "rexp", 4) == 0) ||
+               (strncasecmp(first_word, "haex", 4) == 0) ||
+               (strncasecmp(first_word, "aaex", 4) == 0) ||
+               (strncasecmp(first_word, "noac", 4) == 0) ||
+               (strncasecmp(first_word, "hbno", 4) == 0) ||
+               (strncasecmp(first_word, "cuth", 4) == 0) ||
+               (strncasecmp(first_word, "ctof", 4) == 0) ||
+               (strncasecmp(first_word, "cton", 4) == 0) ||
+               (strncasecmp(first_word, "cuth", 4) == 0) ||
+               (strncasecmp(first_word, "ctof", 4) == 0) ||
+               (strncasecmp(first_word, "cton", 4) == 0) ) 
+      {
+        if ((par_type != 5) && (par_type != 6) && (par_type != 7))
+	{
+	  char err_msg[512];
+
+	  sprintf(err_msg, "ERROR IN CHARMM PARAMETER FILE %s\nLINE=*%s*",fname, buffer);
+	  NAMD_die(err_msg);
+        }
+        else 
+        {
+          skipline = 1;
+        }
+      }        
+      else if (par_type == 0)
+      {
+	/*  This is an unknown paramter.        */
+	/*  This is BAD				*/
+	char err_msg[512];
+
+	sprintf(err_msg, "UNKNOWN PARAMETER IN CHARMM PARAMETER FILE %s\nLINE=*%s*",fname, buffer);
+	NAMD_die(err_msg);
+      }
+    }
+    else
+    {
+      skipline=1;
+    }
+
+    if ( (par_type != 0) && (!skipline) )
+    {
+      /*  Now, call the appropriate function based    */
+      /*  on the type of parameter we have		*/
+      /*  I know, this should really be a switch ...  */
+      if (par_type == 1)
+      {
+        add_bond_param(buffer);
+        NumBondParams++;
+      }
+      else if (par_type == 2)
+      {
+        add_angle_param(buffer);
+        NumAngleParams++;
+      }
+      else if (par_type == 3)
+      {
+        add_dihedral_param(buffer, pfile);
+        NumDihedralParams++;
+      }
+      else if (par_type == 4)
+      {
+        add_improper_param(buffer, pfile);
+        NumImproperParams++;
+      }
+      else if (par_type == 5)
+      {
+        add_vdw_param(buffer);
+        NumVdwParams++;
+      }
+      else if (par_type == 6)
+      {
+        add_vdw_pair_param(buffer);
+        NumVdwPairParams++; 
+      }
+      else if (par_type == 7)
+      {
+        add_hb_pair_param(buffer);		  
+      }
+      else
+      {
+        /*  This really should not occour!      */
+        /*  This is an internal error.          */
+        /*  This is VERY BAD			*/
+        char err_msg[512];
+
+        sprintf(err_msg, "INTERNAL ERROR IN CHARMM PARAMETER FILE %s\nLINE=*%s*",fname, buffer);
+        NAMD_die(err_msg);
+      }
+    }
+  }
+
+  /*  Close the file						*/
+  fclose(pfile);
+
+  return;
+}
+/*			END OF FUNCTION read_charmm_paramter_file		*/
+//****** END CHARMM/XPLOR type changes
 
 /************************************************************************/
 /*                  */
@@ -379,16 +610,35 @@ void Parameters::add_bond_param(char *buf)
   int read_count;      //  Count from sscanf
   struct bond_params *new_node;  //  New node in tree
 
+  //****** BEGIN CHARMM/XPLOR type changes
   /*  Use sscanf to parse up the input line      */
-  read_count=sscanf(buf, "%*s %s %s %f %f\n", atom1name, atom2name, 
-     &forceconstant, &distance);
+  if (paramType == paraXplor)
+  {
+    /* read XPLOR format */
+    read_count=sscanf(buf, "%*s %s %s %f %f\n", atom1name, atom2name, 
+       &forceconstant, &distance);
+  }
+  else if (paramType == paraCharmm)
+  {
+    /* read CHARMM format */
+    read_count=sscanf(buf, "%s %s %f %f\n", atom1name, atom2name, 
+       &forceconstant, &distance);
+  }
+  //****** END CHARMM/XPLOR type changes
 
   /*  Check to make sure we found everything we expeceted    */
   if (read_count != 4)
   {
     char err_msg[512];
 
-    sprintf(err_msg, "BAD BOND FORMAT IN PARAMETER FILE\nLINE=*%s*\n", buf);
+    if (paramType == paraXplor)
+    {
+      sprintf(err_msg, "BAD BOND FORMAT IN XPLOR PARAMETER FILE\nLINE=*%s*\n", buf);
+    }
+    else if (paramType == paraCharmm)
+    {
+      sprintf(err_msg, "BAD BOND FORMAT IN CHARMM PARAMETER FILE\nLINE=*%s*\n", buf);
+    }
     NAMD_die(err_msg);
   }
 
@@ -476,17 +726,24 @@ struct bond_params *Parameters::add_to_bond_tree(struct bond_params *new_node,
       /*  We have a duplicate.  So print out a warning*/
       /*  message.  Then assign the new values to the */
       /*  tree and free the new_node      */
-      iout << iWARN << "DUPLICATE BOND ENTRY FOR "
-        << new_node->atom1name << "-"
-        << new_node->atom2name
-        << "\nPREVIOUS VALUES  k=" << tree->forceconstant
-        << "  x0=" << tree->distance
-        << "\n   USING VALUES  k=" << new_node->forceconstant
-        << "  x0=" << new_node->distance
-        << "\n" << endi;
+      //****** BEGIN CHARMM/XPLOR type changes
+      /* we do not care about identical replacement */
+      if ((tree->forceconstant != new_node->forceconstant) || 
+          (tree->distance != new_node->distance))
+      {
+        iout << "\n" << iWARN << "DUPLICATE BOND ENTRY FOR "
+          << new_node->atom1name << "-"
+          << new_node->atom2name
+          << "\nPREVIOUS VALUES  k=" << tree->forceconstant
+          << "  x0=" << tree->distance
+          << "\n   USING VALUES  k=" << new_node->forceconstant
+          << "  x0=" << new_node->distance
+          << "\n" << endi;
 
-      tree->forceconstant=new_node->forceconstant;
-      tree->distance=new_node->distance;
+        tree->forceconstant=new_node->forceconstant;
+        tree->distance=new_node->distance;
+      }
+      //****** END CHARMM/XPLOR type changes
 
       delete new_node;
 
@@ -536,18 +793,37 @@ void Parameters::add_angle_param(char *buf)
   int read_count;      // count from sscanf
   struct angle_params *new_node;  // new node in tree
 
+  //****** BEGIN CHARMM/XPLOR type changes
   /*  parse up the input line with sscanf        */
-  read_count=sscanf(buf, "%*s %s %s %s %f %f UB %f %f\n", 
-     atom1name, atom2name, atom3name, &forceconstant, &angle,
-     &k_ub, &r_ub);
+  if (paramType == paraXplor)
+  {
+    /* read XPLOR format */
+    read_count=sscanf(buf, "%*s %s %s %s %f %f UB %f %f\n", 
+       atom1name, atom2name, atom3name, &forceconstant, &angle,
+       &k_ub, &r_ub);
+  }
+  else if (paramType == paraCharmm)
+  {
+    /* read CHARMM format */
+    read_count=sscanf(buf, "%s %s %s %f %f %f %f\n", 
+       atom1name, atom2name, atom3name, &forceconstant, &angle,
+       &k_ub, &r_ub);
+  }
+  //****** END CHARMM/XPLOR type changes
 
   /*  Check to make sure we got what we expected      */
   if ( (read_count != 5) && (read_count != 7) )
   {
     char err_msg[512];
 
-    sprintf(err_msg, "BAD ANGLE FORMAT IN PARAMETER FILE\nLINE=*%s*\n",
-       buf);
+    if (paramType == paraXplor)
+    {
+      sprintf(err_msg, "BAD ANGLE FORMAT IN XPLOR PARAMETER FILE\nLINE=*%s*\n", buf);
+    }
+    else if (paramType == paraCharmm)
+    {
+      sprintf(err_msg, "BAD ANGLE FORMAT IN CHARMM PARAMETER FILE\nLINE=*%s*\n", buf);
+    }
     NAMD_die(err_msg);
   }
 
@@ -651,26 +927,34 @@ struct angle_params *Parameters::add_to_angle_tree(struct angle_params *new_node
         /*  is a duplicate.  Print a warning    */
         /*  message, replace the current values,*/
         /*  and free the new node    */
-        iout << iWARN << "DUPLICATE ANGLE ENTRY FOR "
-          << new_node->atom1name << "-"
-          << new_node->atom2name << "-"
-          << new_node->atom3name
-          << "\nPREVIOUS VALUES  k="
-          << tree->forceconstant << "  theta0="
-          << tree->angle << " k_ub="
-          << tree->k_ub << " r_ub="
-          << tree->r_ub
-          << "\n   USING VALUES  k="
-          << new_node->forceconstant << "  theta0="
-          << new_node->angle
-          << new_node->angle << " k_ub="
-          << new_node->k_ub << " r_ub="
-          << "\n" << endi;
+        //****** BEGIN CHARMM/XPLOR type changes
+        /* we do not care about identical replacement */
+        if ((tree->forceconstant != new_node->forceconstant) ||
+            (tree->angle != new_node->angle) ||
+            (tree->k_ub != new_node->k_ub) ||
+            (tree->r_ub != new_node->r_ub))
+	{
+          iout << "\n" << iWARN << "DUPLICATE ANGLE ENTRY FOR "
+            << new_node->atom1name << "-"
+            << new_node->atom2name << "-"
+            << new_node->atom3name
+            << "\nPREVIOUS VALUES  k="
+            << tree->forceconstant << "  theta0="
+            << tree->angle << " k_ub="
+            << tree->k_ub << " r_ub="
+            << tree->r_ub
+            << "\n   USING VALUES  k="
+            << new_node->forceconstant << "  theta0="
+            << new_node->angle << " k_ub="
+	    << new_node->k_ub << " r_ub=" << new_node->r_ub 
+            << "\n" << endi;
 
-        tree->forceconstant=new_node->forceconstant;
-        tree->angle=new_node->angle;
-        tree->k_ub=new_node->k_ub;
-        tree->r_ub=new_node->r_ub;
+          tree->forceconstant=new_node->forceconstant;
+          tree->angle=new_node->angle;
+          tree->k_ub=new_node->k_ub;
+          tree->r_ub=new_node->r_ub;
+        }
+        //****** END CHARMM/XPLOR type changes
 
         delete new_node;
 
@@ -725,20 +1009,41 @@ void Parameters::add_dihedral_param(char *buf, FILE *fd)
   char buffer[513];       //  Buffer for new line
   int ret_code;         //  Return code
 
+  //****** BEGIN CHARMM/XPLOR type changes
   /*  Parse up the input line using sscanf      */
-  read_count=sscanf(buf, "%*s %s %s %s %s MULTIPLE= %d %f %d %f\n", 
-     atom1name, atom2name, atom3name, atom4name, &multiplicity,
-     &forceconstant, &periodicity, &phase_shift);
+  if (paramType == paraXplor)
+  {
+    /* read XPLOR format */
+    read_count=sscanf(buf, "%*s %s %s %s %s MULTIPLE= %d %f %d %f\n", 
+       atom1name, atom2name, atom3name, atom4name, &multiplicity,
+       &forceconstant, &periodicity, &phase_shift);
+  }
+  else if (paramType == paraCharmm)
+  {
+    /* read CHARMM format */
+    read_count=sscanf(buf, "%s %s %s %s %f %d %f\n", 
+       atom1name, atom2name, atom3name, atom4name,
+       &forceconstant, &periodicity, &phase_shift);
+    multiplicity=1; 
+  }
 
-  if ( (read_count != 4) && (read_count != 8) )
+  if ( (read_count != 4) && (read_count != 8) && (paramType == paraXplor) )
   {
     char err_msg[512];
 
-    sprintf(err_msg, "BAD DIHEDRAL FORMAT IN PARAMETER FILE\nLINE=*%s*\n", buf);
+    sprintf(err_msg, "BAD DIHEDRAL FORMAT IN XPLOR PARAMETER FILE\nLINE=*%s*\n", buf);
+    NAMD_die(err_msg);
+  }
+  else if ( (read_count != 7) && (paramType == paraCharmm) )
+  {
+    char err_msg[512];
+
+    sprintf(err_msg, "BAD DIHEDRAL FORMAT IN CHARMM PARAMETER FILE\nLINE=*%s*\n", buf);
     NAMD_die(err_msg);
   }
 
-  if (read_count == 4)
+  if ( (read_count == 4) && (paramType == paraXplor) )
+  //****** END CHARMM/XPLOR type changes
   {
     read_count=sscanf(buf, "%*s %*s %*s %*s %*s %f %d %f\n", 
           &forceconstant, &periodicity, &phase_shift);
@@ -748,7 +1053,7 @@ void Parameters::add_dihedral_param(char *buf, FILE *fd)
     {
       char err_msg[512];
 
-      sprintf(err_msg, "BAD DIHEDRAL FORMAT IN PARAMETER FILE\nLINE=*%s*\n", buf);
+      sprintf(err_msg, "BAD DIHEDRAL FORMAT IN XPLOR PARAMETER FILE\nLINE=*%s*\n", buf);
       NAMD_die(err_msg);
     }
 
@@ -818,7 +1123,7 @@ void Parameters::add_dihedral_param(char *buf, FILE *fd)
       {
         char err_msg[512];
 
-        sprintf(err_msg, "BAD MULTIPLE FORMAT IN PARAMETER FILE\nLINE=*%s*\n", buffer);
+        sprintf(err_msg, "BAD MULTIPLE FORMAT IN XPLOR PARAMETER FILE\nLINE=*%s*\n", buffer);
         NAMD_die(err_msg);
       }
 
@@ -828,8 +1133,17 @@ void Parameters::add_dihedral_param(char *buf, FILE *fd)
     }
   }
 
+  //****** BEGIN CHARMM/XPLOR type changes
   /*  Add this node to the list          */
-  add_to_dihedral_list(new_node);
+  if (paramType == paraXplor)
+  {
+    add_to_dihedral_list(new_node); // XPLOR
+  }
+  else if (paramType == paraCharmm)
+  {
+    add_to_charmm_dihedral_list(new_node); // CHARMM
+  }
+ //****** END CHARMM/XPLOR type changes
 
   return;
 }
@@ -888,39 +1202,60 @@ void Parameters::add_to_dihedral_list(
            (strcasecmp(new_node->atom1name, ptr->atom4name) == 0) ) )
     {
       /*  Found a duplicate        */
-      iout << iWARN << "DUPLICATE DIHEDRAL ENTRY FOR "
-        << ptr->atom1name << "-"
-        << ptr->atom2name << "-"
-        << ptr->atom3name << "-"
-        << ptr->atom4name
-        << "\nPREVIOUS VALUES MULTIPLICITY " << ptr->multiplicity << "\n";
+      //****** BEGIN CHARMM/XPLOR type changes
+      /* we do not care about identical replacement */
+      int echoWarn=0;  // echo warning messages ?
+
+      if (ptr->multiplicity != new_node->multiplicity) {echoWarn=1;}
+      
+      if (!echoWarn)
+      {
+        for (i=0; i<ptr->multiplicity; i++)
+        {
+          if (ptr->values[i].k != new_node->values[i].k) {echoWarn=1; break;}
+          if (ptr->values[i].n != new_node->values[i].n) {echoWarn=1; break;}
+          if (ptr->values[i].delta != new_node->values[i].delta) {echoWarn=1; break;}
+        }
+      }
+
+      if (echoWarn)
+      {
+        iout << "\n" << iWARN << "DUPLICATE DIHEDRAL ENTRY FOR "
+          << ptr->atom1name << "-"
+          << ptr->atom2name << "-"
+          << ptr->atom3name << "-"
+          << ptr->atom4name
+          << "\nPREVIOUS VALUES MULTIPLICITY " << ptr->multiplicity << "\n";
         
-      for (i=0; i<ptr->multiplicity; i++)
-      {
-        iout << iWARN << " k=" << ptr->values[i].k
-                 << "  n=" << ptr->values[i].n
-                 << "  delta=" << ptr->values[i].delta;
+        for (i=0; i<ptr->multiplicity; i++)
+        {
+          iout     << "  k=" << ptr->values[i].k
+                   << "  n=" << ptr->values[i].n
+                   << "  delta=" << ptr->values[i].delta;
+        }
+
+        iout << "\nUSING VALUES MULTIPLICITY " << new_node->multiplicity << "\n";
+
+        for (i=0; i<new_node->multiplicity; i++)
+        {
+          iout <<     "  k=" << new_node->values[i].k
+                   << "  n=" << new_node->values[i].n
+                   << "  delta=" << new_node->values[i].delta;
+        }
+
+        iout << endi;
+
+        ptr->multiplicity = new_node->multiplicity;
+
+        for (i=0; i<new_node->multiplicity; i++)
+        {
+          ptr->values[i].k = new_node->values[i].k;
+          ptr->values[i].n = new_node->values[i].n;
+          ptr->values[i].delta = new_node->values[i].delta;
+        }
+
       }
-
-      iout << iWARN << "\nUSING VALUES MULTIPLICITY " << new_node->multiplicity << "\n";
-
-      for (i=0; i<new_node->multiplicity; i++)
-      {
-        iout << iWARN << " k=" << new_node->values[i].k
-                 << "  n=" << new_node->values[i].n
-                 << "  delta=" << new_node->values[i].delta;
-      }
-
-      iout << iWARN << endi;
-
-      ptr->multiplicity = new_node->multiplicity;
-
-      for (i=0; i<new_node->multiplicity; i++)
-      {
-        ptr->values[i].k = new_node->values[i].k;
-        ptr->values[i].n = new_node->values[i].n;
-        ptr->values[i].delta = new_node->values[i].delta;
-      }
+      //****** END CHARMM/XPLOR type changes
 
       delete new_node;
 
@@ -959,6 +1294,178 @@ void Parameters::add_to_dihedral_list(
 }
 /*    END OF FUNCTION add_to_dihedral_list      */
 
+//****** BEGIN CHARMM/XPLOR type changes
+/************************************************************************/
+/*									*/
+/*			FUNCTION add_to_charmm_dihedral_list		*/
+/*									*/
+/*   INPUTS:								*/
+/*	new_node - node that is to be added to dihedral_list		*/
+/*									*/
+/*	this function adds a new dihedral parameter to the linked list  */
+/*   of dihedral parameters in CHARMM format.                           */
+/*   First, it checks for duplicates.  If a duplicate is found, a       */
+/*   warning message is printed. If the periodicity is the same as of   */
+/*   a previous dihedral the old values are replaced with the new       */
+/*   values, otherwise, the dihedral is added and the multiplicity is   */
+/*   increased.                                                         */
+/*   Otherwise, the node is added to the list.  This list is arranged   */
+/*   so that bonds with wildcards are placed at the tail of the list.   */
+/*   This will guarantee that if we just do a linear search, we will    */
+/*   always find an exact match before a wildcard match.		*/
+/*									*/
+/************************************************************************/
+
+void Parameters::add_to_charmm_dihedral_list(
+				struct dihedral_params *new_node)
+
+{
+	static struct dihedral_params *ptr;   //  position within list
+	static struct dihedral_params *tail;  //  Pointer to the end of 
+					      //  the list so we can add
+					      //  entries to the end of the
+					      //  list in constant time
+	int i;				      //  Loop counter
+        int replace;                          //  replace values?
+
+	/*  If the list is currently empty, then the new node is the list*/
+	if (dihedralp == NULL)
+	{
+		dihedralp=new_node;
+		tail=new_node;
+
+		return;
+	}
+
+	/*  The list isn't empty, so check for a duplicate		*/
+	ptr=dihedralp;
+
+	while (ptr != NULL)
+	{
+		if (  ( (strcasecmp(new_node->atom1name, ptr->atom1name) == 0) &&
+		       (strcasecmp(new_node->atom2name, ptr->atom2name) == 0) &&
+		       (strcasecmp(new_node->atom3name, ptr->atom3name) == 0) &&
+		       (strcasecmp(new_node->atom4name, ptr->atom4name) == 0) ) ||
+		     ( (strcasecmp(new_node->atom4name, ptr->atom1name) == 0) &&
+		       (strcasecmp(new_node->atom3name, ptr->atom2name) == 0) &&
+		       (strcasecmp(new_node->atom2name, ptr->atom3name) == 0) &&
+		       (strcasecmp(new_node->atom1name, ptr->atom4name) == 0) )
+		       )
+		{
+			/*  Found a duplicate				*/
+                        //****** BEGIN CHARMM/XPLOR type changes
+                        /* we do not care about identical replacement */
+                        int echoWarn=1;  // echo warning messages ?
+
+                        // ptr->multiplicity will always be >= new_node->multiplicity
+                        for (i=0; i<ptr->multiplicity; i++)
+                        {
+                          if ((ptr->values[i].k == new_node->values[0].k) && 
+                              (ptr->values[i].n == new_node->values[0].n) &&
+                              (ptr->values[i].delta == new_node->values[0].delta)) 
+                          {
+			    // found an identical replacement
+                            echoWarn=0; 
+                            break;
+                          }
+
+                        }
+                  
+                        if (echoWarn)
+                        {
+			  iout << "\n" << iWARN << "DUPLICATE DIHEDRAL ENTRY FOR "
+			       << ptr->atom1name << "-"
+			       << ptr->atom2name << "-"
+			       << ptr->atom3name << "-"
+			       << ptr->atom4name
+			       << "\nPREVIOUS VALUES MULTIPLICITY: " << ptr->multiplicity << "\n";
+                          replace=0;
+			  
+			  for (i=0; i<ptr->multiplicity; i++)
+			  {
+			    iout << "  k=" << ptr->values[i].k
+			         << "  n=" << ptr->values[i].n
+			         << "  delta=" << ptr->values[i].delta << "\n";
+                            if (ptr->values[i].n == new_node->values[0].n)
+			    {
+			      iout << iWARN << "IDENTICAL PERIODICITY! REPLACING OLD VALUES BY: \n";
+                              ptr->values[i].k = new_node->values[0].k;
+			      ptr->values[i].delta = new_node->values[0].delta;
+			      iout <<     "  k=" << ptr->values[i].k
+			               << "  n=" << ptr->values[i].n
+			               << "  delta=" << ptr->values[i].delta<< "\n";
+                              replace=1;
+                              break;
+                            }
+			  }
+
+                          if (!replace)
+			  {
+                            ptr->multiplicity += 1;
+
+                            if (ptr->multiplicity > MAX_MULTIPLICITY)
+                            {
+                              char err_msg[181];
+
+                              sprintf(err_msg, "Multiple dihedral with multiplicity of %d greater than max of %d",
+                                      ptr->multiplicity, MAX_MULTIPLICITY);
+                              NAMD_die(err_msg);
+                            }
+			    iout << "INCREASING MULTIPLICITY TO: " << ptr->multiplicity << "\n";
+
+			    i= ptr->multiplicity - 1; 
+			    ptr->values[i].k = new_node->values[0].k;
+			    ptr->values[i].n = new_node->values[0].n;
+			    ptr->values[i].delta = new_node->values[0].delta;
+
+			    iout <<       "  k=" << ptr->values[i].k
+			               << "  n=" << ptr->values[i].n
+			               << "  delta=" << ptr->values[i].delta<< "\n";
+		          }
+                        
+			  iout << endi;
+                        }
+                        //****** END CHARMM/XPLOR type changes
+
+			delete new_node;
+
+			return;
+		}
+
+		ptr=ptr->next;
+	}
+
+        /*  CHARMM and XPLOR wildcards for dihedrals are luckily the same */
+	/*  Check to see if we have any wildcards.  Since specific	*/
+	/*  entries are to take precedence, we'll put anything without  */
+	/*  wildcards at the begining of the list and anything with     */
+	/*  wildcards at the end of the list.  Then, we can just do a   */
+	/*  linear search for a bond and be guaranteed to have specific */
+	/*  entries take precendence over over wildcards	        */
+	if ( (strcasecmp(new_node->atom1name, "X") == 0) ||
+	     (strcasecmp(new_node->atom2name, "X") == 0) ||
+	     (strcasecmp(new_node->atom3name, "X") == 0) ||
+	     (strcasecmp(new_node->atom4name, "X") == 0) )
+	{
+		/*  add to the end of the list				*/
+		tail->next=new_node;
+		tail=new_node;
+
+		return;
+	}
+	else
+	{
+		/*  add to the head of the list				*/
+		new_node->next=dihedralp;
+		dihedralp=new_node;
+
+		return;
+	}
+
+}
+/*		END OF FUNCTION add_to_charmm_dihedral_list		*/
+//****** END CHARMM/XPLOR type changes
+
 /************************************************************************/
 /*                  */
 /*      FUNCTION add_improper_param      */
@@ -989,20 +1496,41 @@ void Parameters::add_improper_param(char *buf, FILE *fd)
   char buffer[513];       //  Buffer for new line
   int ret_code;         //  Return code
 
-  /*  Parse up the line with sscanf        */
-  read_count=sscanf(buf, "%*s %s %s %s %s MULTIPLE= %d %f %d %f\n", 
-     atom1name, atom2name, atom3name, atom4name, &multiplicity, 
-     &forceconstant, &periodicity, &phase_shift);
+  //****** BEGIN CHARMM/XPLOR type changes
+  /*  Parse up the line with sscanf				*/
+  if (paramType == paraXplor)
+  {
+    /* read XPLOR format */
+    read_count=sscanf(buf, "%*s %s %s %s %s MULTIPLE= %d %f %d %f\n", 
+       atom1name, atom2name, atom3name, atom4name, &multiplicity, 
+       &forceconstant, &periodicity, &phase_shift);
+  }
+  else if (paramType == paraCharmm)
+  {
+    /* read CHARMM format */
+    read_count=sscanf(buf, "%s %s %s %s %f %d %f\n", 
+       atom1name, atom2name, atom3name, atom4name,  
+       &forceconstant, &periodicity, &phase_shift); 
+    multiplicity=1;      
+  }
 
-  if ( (read_count != 4) && (read_count != 8) )
+  if ( (read_count != 4) && (read_count != 8) && (paramType == paraXplor) )
   {
     char err_msg[512];
 
-    sprintf(err_msg, "BAD IMPROPER FORMAT IN PARAMETER FILE\nLINE=*%s*", buf);
+    sprintf(err_msg, "BAD IMPROPER FORMAT IN XPLOR PARAMETER FILE\nLINE=*%s*", buf);
+    NAMD_die(err_msg);
+  }
+  else if ( (read_count != 7) && (paramType == paraCharmm) )
+  {
+    char err_msg[512];
+
+    sprintf(err_msg, "BAD IMPROPER FORMAT IN CHARMM PARAMETER FILE\nLINE=*%s*", buf);
     NAMD_die(err_msg);
   }
 
-  if (read_count == 4)
+  if ( (read_count == 4) && (paramType == paraXplor) )
+  //****** END CHARMM/XPLOR type changes
   {
     read_count=sscanf(buf, "%*s %*s %*s %*s %*s %f %d %f\n", 
           &forceconstant, &periodicity, &phase_shift);
@@ -1012,7 +1540,7 @@ void Parameters::add_improper_param(char *buf, FILE *fd)
     {
       char err_msg[512];
 
-      sprintf(err_msg, "BAD IMPROPER FORMAT IN PARAMETER FILE\nLINE=*%s*\n", buf);
+      sprintf(err_msg, "BAD IMPROPER FORMAT IN XPLOR PARAMETER FILE\nLINE=*%s*\n", buf);
       NAMD_die(err_msg);
     }
 
@@ -1082,7 +1610,7 @@ void Parameters::add_improper_param(char *buf, FILE *fd)
       {
         char err_msg[512];
 
-        sprintf(err_msg, "BAD MULTIPLE FORMAT IN PARAMETER FILE\nLINE=*%s*\n", buffer);
+        sprintf(err_msg, "BAD MULTIPLE FORMAT IN XPLOR PARAMETER FILE\nLINE=*%s*\n", buffer);
         NAMD_die(err_msg);
       }
 
@@ -1093,7 +1621,7 @@ void Parameters::add_improper_param(char *buf, FILE *fd)
   }
 
   /*  Add the paramter to the list        */
-  add_to_improper_list(new_node);
+  add_to_improper_list(new_node);  // works for both XPLOR & CHARMM
 
   return;
 }
@@ -1151,40 +1679,59 @@ void Parameters::add_to_improper_list(struct improper_params *new_node)
            (strcasecmp(new_node->atom1name, ptr->atom4name) == 0) ) )
     {
       /*  Found a duplicate        */
-      iout << iWARN << "DUPLICATE IMPROPER DIHEDRAL ENTRY FOR "
-        << ptr->atom1name << "-"
-        << ptr->atom2name << "-"
-        << ptr->atom3name << "-"
-        << ptr->atom4name
-        << "\nPREVIOUS VALUES MULTIPLICITY " << ptr->multiplicity << "\n";
+      //****** BEGIN CHARMM/XPLOR type changes
+      /* we do not care about identical replacement */
+      int echoWarn=0;  // echo warning messages ?
+
+      if (ptr->multiplicity != new_node->multiplicity) {echoWarn=1;}
+      
+      if (!echoWarn)
+      {
+        for (i=0; i<ptr->multiplicity; i++)
+        {
+          if (ptr->values[i].k != new_node->values[i].k) {echoWarn=1; break;}
+          if (ptr->values[i].n != new_node->values[i].n) {echoWarn=1; break;}
+          if (ptr->values[i].delta != new_node->values[i].delta) {echoWarn=1; break;}
+        }
+      }
+
+      if (echoWarn)
+      {
+        iout << "\n" << iWARN << "DUPLICATE IMPROPER DIHEDRAL ENTRY FOR "
+          << ptr->atom1name << "-"
+          << ptr->atom2name << "-"
+          << ptr->atom3name << "-"
+          << ptr->atom4name
+          << "\nPREVIOUS VALUES MULTIPLICITY " << ptr->multiplicity << "\n";
         
-      for (i=0; i<ptr->multiplicity; i++)
-      {
-        iout << iWARN << " k=" << ptr->values[i].k
-                 << "  n=" << ptr->values[i].n
-                 << "  delta=" << ptr->values[i].delta;
+        for (i=0; i<ptr->multiplicity; i++)
+        {
+          iout <<     "  k=" << ptr->values[i].k
+                   << "  n=" << ptr->values[i].n
+                   << "  delta=" << ptr->values[i].delta;
+        }
+
+        iout << "\n" << "USING VALUES MULTIPLICITY " << new_node->multiplicity << "\n";
+
+        for (i=0; i<new_node->multiplicity; i++)
+        {
+          iout <<     "  k=" << new_node->values[i].k
+                   << "  n=" << new_node->values[i].n
+                   << "  delta=" << new_node->values[i].delta;
+        }
+
+        iout << endi;
+
+        ptr->multiplicity = new_node->multiplicity;
+
+        for (i=0; i<new_node->multiplicity; i++)
+        {
+          ptr->values[i].k = new_node->values[i].k;
+          ptr->values[i].n = new_node->values[i].n;
+          ptr->values[i].delta = new_node->values[i].delta;
+        }
       }
-
-      iout << iWARN << "\nUSING VALUES MULTIPLICITY " << new_node->multiplicity << "\n";
-
-      for (i=0; i<new_node->multiplicity; i++)
-      {
-        iout << iWARN << " k=" << new_node->values[i].k
-                 << "  n=" << new_node->values[i].n
-                 << "  delta=" << new_node->values[i].delta;
-      }
-
-      iout << iWARN << endi;
-
-      ptr->multiplicity = new_node->multiplicity;
-
-      for (i=0; i<new_node->multiplicity; i++)
-      {
-        ptr->values[i].k = new_node->values[i].k;
-        ptr->values[i].n = new_node->values[i].n;
-        ptr->values[i].delta = new_node->values[i].delta;
-      }
-
+      //****** END CHARMM/XPLOR type changes
 
       delete new_node;
 
@@ -1242,21 +1789,60 @@ void Parameters::add_vdw_param(char *buf)
   Real epsilon;      //  epsilon value for this atom
   Real sigma14;      //  sigma value for 1-4 interactions
   Real epsilon14;      //  epsilon value for 1-4 interactions
+  Real sqrt26;         //  2^(1/6)
   int read_count;      //  count returned by sscanf
   struct vdw_params *new_node;  //  new node for tree
 
+  //****** BEGIN CHARMM/XPLOR type changes
   /*  Parse up the line with sscanf        */
-  read_count=sscanf(buf, "%*s %s %f %f %f %f\n", atomname, 
-     &epsilon, &sigma, &epsilon14, &sigma14);
+  if (paramType == paraXplor)
+  {
+    /* read XPLOR format */
+    read_count=sscanf(buf, "%*s %s %f %f %f %f\n", atomname, 
+       &epsilon, &sigma, &epsilon14, &sigma14);
+  }
+  else if (paramType == paraCharmm)
+  {
+    /* read CHARMM format */
+    read_count=sscanf(buf, "%s %*f %f %f %*f %f %f\n", atomname, 
+       &epsilon, &sigma, &epsilon14, &sigma14);
+  }
 
   /*  Check to make sure we got what we expected      */
-  if (read_count != 5)
+  if ((read_count != 5) && (paramType == paraXplor))
   {
     char err_msg[512];
 
-    sprintf(err_msg, "BAD vdW FORMAT IN PARAMETER FILE\nLINE=*%s*\n", buf);
+    sprintf(err_msg, "BAD vdW FORMAT IN XPLOR PARAMETER FILE\nLINE=*%s*\n", buf);
     NAMD_die(err_msg);
   }
+  else if ( ((read_count != 5) && (read_count != 3)) && (paramType == paraCharmm))
+  {
+    char err_msg[512];
+
+    sprintf(err_msg, "BAD vdW FORMAT IN CHARMM PARAMETER FILE\nLINE=*%s*\n", buf);
+    NAMD_die(err_msg);
+  }
+
+  if (paramType == paraCharmm)
+  {
+    // convert CHARMM to XPLOR format
+    epsilon*=-1.;
+    sqrt26=pow(2.,(1./6.));
+    sigma=2.*sigma/sqrt26; 
+
+    if (read_count == 3)
+    {
+      epsilon14=epsilon;
+      sigma14=sigma;
+    }
+    else
+    {
+      epsilon14*=-1.;
+      sigma14=2.*sigma14/sqrt26; 
+    }
+  }
+  //****** END CHARMM/XPLOR type changes
 
   /*  Allocate a new node            */
   new_node = new vdw_params;
@@ -1317,21 +1903,27 @@ struct vdw_params *Parameters::add_to_vdw_tree(struct vdw_params *new_node,
     /*  We have a duplicate.  So print out a warning   */
     /*  message, copy the new values into the current node  */
     /*  of the tree, and then free the new_node    */
-    iout << iWARN << "DUPLICATE vdW ENTRY FOR " << tree->atomname
-      << "\nPREVIOUS VALUES  sigma=" << tree->sigma
-      << " epsilon=" << tree->epsilon
-      << " sigma14=" << tree->sigma14
-      << " epsilon14" << tree->epsilon14
-      << "\n   USING VALUES  sigma=" << new_node->sigma
-      << " epsilon=" << new_node->epsilon
-      << " sigma14=" << new_node->sigma14
-      << " epsilon14" << new_node->epsilon14
-      << "\n" << endi;
+    if ((tree->sigma != new_node->sigma) || 
+        (tree->epsilon != new_node->epsilon) ||
+        (tree->sigma14 != new_node->sigma14) ||
+        (tree->epsilon14 != new_node->epsilon14))
+    {
+      iout << iWARN << "DUPLICATE vdW ENTRY FOR " << tree->atomname
+        << "\nPREVIOUS VALUES  sigma=" << tree->sigma
+        << " epsilon=" << tree->epsilon
+        << " sigma14=" << tree->sigma14
+        << " epsilon14=" << tree->epsilon14
+        << "\n   USING VALUES  sigma=" << new_node->sigma
+        << " epsilon=" << new_node->epsilon
+        << " sigma14=" << new_node->sigma14
+        << " epsilon14=" << new_node->epsilon14
+        << "\n" << endi;
 
-    tree->sigma=new_node->sigma;
-    tree->epsilon=new_node->epsilon;
-    tree->sigma14=new_node->sigma14;
-    tree->epsilon14=new_node->epsilon14;
+      tree->sigma=new_node->sigma;
+      tree->epsilon=new_node->epsilon;
+      tree->sigma14=new_node->sigma14;
+      tree->epsilon14=new_node->epsilon14;
+    }
 
     delete new_node;
 
@@ -1375,21 +1967,50 @@ void Parameters::add_vdw_pair_param(char *buf)
   Real B;          //  B value for pair
   Real A14;        //  A value for 1-4 ints
   Real B14;        //  B value for 1-4 ints
+  Real sqrt26;     //  2^(1/6)
   int read_count;        //  count from sscanf
   struct vdw_pair_params *new_node;  //  new node
 
   /*  Parse up the input line using sscanf      */
-  read_count=sscanf(buf, "%*s %s %s %f %f %f %f\n", atom1name, 
-     atom2name, &A, &B, &A14, &B14);
+  if (paramType == paraXplor)
+  {
+    /* read XPLOR format */
+    read_count=sscanf(buf, "%*s %s %s %f %f %f %f\n", atom1name, 
+       atom2name, &A, &B, &A14, &B14);
+  }
+  else if (paramType == paraCharmm)
+  {
+    /* read CHARMM format */
+    read_count=sscanf(buf, "%s %s %f %f\n", atom1name, 
+       atom2name, &A, &B);
+    // convert to XPLOR format and use A14, B14 as dummies
+    A14=-A;
+    sqrt26=pow(2.,(1./6.));
+    B14=B/sqrt26;
+    A=pow(B14,12.);
+    A=A*4.*A14;
+    B=pow(B14,6.);
+    B=B*4.*A14;
+    A14=A;
+    B14=B;
+  }
 
   /*  Check to make sure we got what we expected      */
-  if (read_count != 6)
+  if ((read_count != 6) && (paramType == paraXplor))
   {
     char err_msg[512];
 
-    sprintf(err_msg, "BAD vdW PAIR FORMAT IN PARAMETER FILE\nLINE=*%s*", buf);
+    sprintf(err_msg, "BAD vdW PAIR FORMAT IN XPLOR PARAMETER FILE\nLINE=*%s*", buf);
     NAMD_die(err_msg);
   }
+  if ((read_count != 4) && (paramType == paraCharmm))
+  {
+    char err_msg[512];
+
+    sprintf(err_msg, "BAD vdW PAIR FORMAT IN CHARMM PARAMETER FILE\nLINE=*%s*", buf);
+    NAMD_die(err_msg);
+  }
+
 
   /*  Allocate a new node            */
   new_node = new vdw_pair_params;
@@ -1436,17 +2057,26 @@ void Parameters::add_hb_pair_param(char *buf)
   char a2n[11];      //  Atom 2 name
   Real A, B;      //  A, B value for pair
 
+  //****** BEGIN CHARMM/XPLOR type changes
+  //// luckily the format and units are the same CHARMM is just missing the HBON marker
   /*  Parse up the input line using sscanf      */
-  if (sscanf(buf, "%*s %s %s %f %f\n", a1n, a2n, &A, &B) != 4)
+  if ((sscanf(buf, "%*s %s %s %f %f\n", a1n, a2n, &A, &B) != 4) && (paramType == paraXplor)) /* read XPLOR format */
   {
     char err_msg[512];
-    sprintf(err_msg, "BAD HBOND PAIR FORMAT IN PARAMETER FILE\nLINE=*%s*", buf);
+    sprintf(err_msg, "BAD HBOND PAIR FORMAT IN XPLOR PARAMETER FILE\nLINE=*%s*", buf);
     NAMD_die(err_msg);
   }
+  else if ((sscanf(buf, "%s %s %f %f\n", a1n, a2n, &A, &B) != 4) && (paramType == paraCharmm)) /* read CHARMM format */
+  {
+    char err_msg[512];
+    sprintf(err_msg, "BAD HBOND PAIR FORMAT IN CHARMM PARAMETER FILE\nLINE=*%s*", buf);
+    NAMD_die(err_msg);
+  }
+  //****** END CHARMM/XPLOR type changes
 
   /*  add data */
   if (hbondParams.add_hbond_pair(a1n, a2n, A, B) == FALSE) {
-    iout << iWARN << "Duplicate HBOND parameters for types " << a1n
+    iout << "\n" << iWARN << "Duplicate HBOND parameters for types " << a1n
     << " and " << a2n << " found; using latest values." << "\n" << endi;
   }
 }
@@ -1497,23 +2127,29 @@ void Parameters::add_to_vdw_pair_list(struct vdw_pair_params *new_node)
       /*  Found a duplicate.  Print out a warning   */
       /*  message, assign the values to the current   */
       /*  node in the tree, and then free the new_node*/
-      iout << iWARN << "DUPLICATE vdW PAIR ENTRY FOR "
-        << new_node->atom1name << "-"
-        << new_node->atom2name
-        << "\nPREVIOUS VALUES  A=" << ptr->A
-        << " B=" << ptr->B
-        << " A14=" << ptr->A14
-        << " B14" << ptr->B14
-        << "\n   USING VALUES  A=" << new_node->A
-        << " B=" << new_node->B
-        << " A14=" << new_node->A14
-        << " B14" << new_node->B14
-        << "\n" << endi;
+      if ((ptr->A != new_node->A) ||
+          (ptr->B != new_node->B) ||
+          (ptr->A14 != new_node->A14) ||
+          (ptr->B14 != new_node->B14))
+      {
+        iout << iWARN << "DUPLICATE vdW PAIR ENTRY FOR "
+          << new_node->atom1name << "-"
+          << new_node->atom2name
+          << "\nPREVIOUS VALUES  A=" << ptr->A
+          << " B=" << ptr->B
+          << " A14=" << ptr->A14
+          << " B14" << ptr->B14
+          << "\n   USING VALUES  A=" << new_node->A
+          << " B=" << new_node->B
+          << " A14=" << new_node->A14
+          << " B14" << new_node->B14
+          << "\n" << endi;
 
-      ptr->A=new_node->A;
-      ptr->B=new_node->B;
-      ptr->A14=new_node->A14;
-      ptr->B14=new_node->B14;
+        ptr->A=new_node->A;
+        ptr->B=new_node->B;
+        ptr->A14=new_node->A14;
+        ptr->B14=new_node->B14;
+      }
 
       delete new_node;
 
@@ -1739,6 +2375,7 @@ void Parameters::index_dihedrals()
   //  parameters than we really have, and we also need to track
   //  how many times the bond appears in the psf file so that
   //  we can decide how many parameters to actually use.
+  //  This is different for CHARMM parameter files as stated below!
   maxDihedralMults = new int[NumDihedralParams];
 
   if (maxDihedralMults == NULL)
@@ -1756,9 +2393,22 @@ void Parameters::index_dihedrals()
     //  Save the multiplicity in another array
     maxDihedralMults[index] = ptr->multiplicity;
 
-    //  Assign the multiplicity in the actual structure a bogus value
-    //  that we will update in assign_dihedral_index
-    dihedral_array[index].multiplicity = -1;
+
+    //****** BEGIN CHARMM/XPLOR type changes
+    if (paramType == paraXplor)
+    {
+      //  Assign the multiplicity in the actual structure a bogus value
+      //  that we will update in assign_dihedral_index
+      dihedral_array[index].multiplicity = -1;
+    }
+    else if (paramType == paraCharmm)
+    {
+      // In a CHARMM psf file each dihedral will be only listed once
+      // even if it has multiple terms. There is no point in comparing
+      // to the psf information
+      dihedral_array[index].multiplicity = ptr->multiplicity;
+    } 
+    //****** END CHARMM/XPLOR type changes
 
     for (i=0; i<ptr->multiplicity; i++)
     {
@@ -1962,6 +2612,58 @@ void Parameters::assign_vdw_index(char *atomtype, Atom *atom_ptr)
       ptr=ptr->right;
     }
   }
+
+  //****** BEGIN CHARMM/XPLOR type changes
+  if (!found)
+  {
+    // since CHARMM allows wildcards "*" in vdw typenames
+    // we have to look again if necessary, this way, if
+    // we already had an exact match, this is never executed
+    int windx;                      //  wildcard index
+
+    /*  Start again at the top				*/
+    ptr=vdwp;
+  
+     while (!found && (ptr!=NULL))
+     {
+  
+       // get index of wildcard wildcard, get index
+       windx= strcspn(ptr->atomname,"*"); 
+       if (windx == strlen(ptr->atomname))
+       {
+         // there is no wildcard here
+         comp_code = strcasecmp(atomtype, ptr->atomname);   
+       }
+       else
+       {
+         comp_code = strncasecmp(atomtype, ptr->atomname, windx); 
+       }  
+
+       if (comp_code == 0)
+       {
+         /*  Found a match!				*/
+         atom_ptr->vdw_type=ptr->index;
+         found=1;
+         iout << "\n" << iWARN << " WARNING! VDW TYPE NAME " << atomtype 
+              << " MATCHES PARAMETER TYPE NAME " << ptr->atomname 
+              << "\n" << endi; 
+
+       }
+       else if (comp_code < 0)
+       {
+ 	 /*  Go to the left				*/
+		ptr=ptr->left;
+       }
+       else
+       {
+	 /*  Go to the right				*/
+		ptr=ptr->right;
+       }
+     
+     }
+	        
+  }
+  //****** END CHARMM/XPLOR type changes
 
   /*  Make sure we found it          */
   if (!found)
@@ -3813,13 +4515,16 @@ int Parameters::vdw_pair_to_arrays(int *ind1_array, int *ind2_array,
  * RCS INFORMATION:
  *
  *  $RCSfile: Parameters.C,v $
- *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1008 $  $Date: 1998/12/28 22:42:15 $
+ *  $Author: ferenc $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1009 $  $Date: 1999/02/02 08:02:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Parameters.C,v $
+ * Revision 1.1009  1999/02/02 08:02:34  ferenc
+ * Added support for CHARMM parameter format in parameter files.
+ *
  * Revision 1.1008  1998/12/28 22:42:15  jim
  * Eliminated unnecessary intPtr and RealPtr typedefs.
  *

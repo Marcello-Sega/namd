@@ -1,5 +1,5 @@
 /***************************************************************************/
-/*          (C) Copyright 1996,1997 The Board of Trustees of the           */
+/*          (C247) Copyright 1996,1997 The Board of Trustees of the           */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
 /***************************************************************************/
@@ -244,7 +244,9 @@ void Node::namdOneRecv() {
 
   // Receive molecule and simulation parameter information
   simParameters = new SimParameters;
-  parameters = new Parameters;
+  //****** BEGIN CHARMM/XPLOR type changes
+  parameters = new Parameters(simParameters);
+  //****** END CHARMM/XPLOR type changes
   molecule = new Molecule(simParameters,parameters);
   smdData = new SMDData(simParameters);
 
@@ -456,13 +458,16 @@ void Node::recvSMDData(SMDDataMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: krishnan $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1031 $	$Date: 1998/11/30 04:11:41 $
+ *	$Author: ferenc $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1032 $	$Date: 1999/02/02 08:02:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1032  1999/02/02 08:02:32  ferenc
+ * Added support for CHARMM parameter format in parameter files.
+ *
  * Revision 1.1031  1998/11/30 04:11:41  krishnan
  * Fixed the numNode > nPatches bug.
  *

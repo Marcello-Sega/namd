@@ -182,6 +182,11 @@ public:
                                         //  component to restrain
         //****** END selective restraints (X,Y,Z) changes 
 
+        //****** BEGIN CHARMM/XPLOR type changes
+        Bool paraTypeXplorOn;           //  FLAG TRUE-> parametrs are XPLOR format (default)
+        Bool paraTypeCharmmOn;          //  FLAG TRUE-> parametrs are CHARMM format
+        //****** END CHARMM/XPLOR type changes
+
         //****** BEGIN moving constraints changes 
         Bool movingConstraintsOn;       //  Flag TRUE-> moving constraints 
                                         //  active
@@ -404,12 +409,15 @@ public:
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: ferenc $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1029 $	$Date: 1999/01/08 23:24:54 $
+ *	$Revision: 1.1030 $	$Date: 1999/02/02 08:02:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1030  1999/02/02 08:02:37  ferenc
+ * Added support for CHARMM parameter format in parameter files.
+ *
  * Revision 1.1029  1999/01/08 23:24:54  ferenc
  * added selective position restraints for specific Cartesian components
  *

@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: ferenc $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1054 $  $Date: 1999/01/08 23:24:49 $
+ *  $Revision: 1.1055 $  $Date: 1999/02/02 08:02:36 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1055  1999/02/02 08:02:36  ferenc
+ * Added support for CHARMM parameter format in parameter files.
+ *
  * Revision 1.1054  1999/01/08 23:24:49  ferenc
  * added selective position restraints for specific Cartesian components
  *
@@ -726,6 +729,12 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.require("main", "parameters",
 "CHARMm 19 or CHARMm 22 compatable force field file (multiple "
 "inputs allowed)", PARSE_MULTIPLES);
+
+   //****** BEGIN CHARMM/XPLOR type changes
+   //// enable XPLOR as well as CHARMM input files for parameters
+   opts.optionalB("parameters", "paraTypeXplor", "Parameter file in Xplor format?", &paraTypeXplorOn, FALSE);
+   opts.optionalB("parameters", "paraTypeCharmm", "Parameter file in Charmm format?", &paraTypeCharmmOn, FALSE); 
+   //****** END CHARMM/XPLOR type changes
    
    opts.require("main", "outputname",
     "prefix for the final PDB position and velocity filenames", 
@@ -1340,6 +1349,21 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    {
   allForceDcdFilename[0] = STRINGNULL;
    }
+
+
+   //****** BEGIN CHARMM/XPLOR type changes
+   //// set default
+   if (!paraTypeXplorOn && !paraTypeCharmmOn) 
+   {
+     paraTypeXplorOn = TRUE;
+   }
+   //// make sure that there is just one type of input parameters specified
+   if (paraTypeXplorOn && paraTypeCharmmOn) 
+   {
+     NAMD_die("Please specify either XPLOR or CHARMM format for parameters!");
+   }
+   //****** END CHARMM/XPLOR type changes
+
    
    //  If minimization isn't on, must have a temp or velocity
    if (!minimizeOn && !opts.defined("temperature") && 
@@ -3116,6 +3140,17 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    iout << iINFO << "STRUCTURE FILE         " 
       << filename << "\n" << endi;
 
+   //****** BEGIN CHARMM/XPLOR type changes
+   if (paraTypeXplorOn)
+   {
+     iout << iINFO << "PARAMETER file: XPLOR format! (default) \n" << endi;
+   }
+   else if (paraTypeCharmmOn)
+   {
+     iout << iINFO << "PARAMETER file: CHARMM format! \n" << endi;
+   }
+   //****** END CHARMM/XPLOR type changes
+
    current = config->find("parameters");
 
    while (current != NULL)
@@ -3134,6 +3169,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
         << filename << "\n" << endi;
      current = current->next;
    }
+
 
    if (firstTimestep)
    {
@@ -3180,6 +3216,9 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
   msg->put(switchingDist)->put(elecswitchDist)->put(vdwswitchDist);
   msg->put(pairlistDist)->put(plMarginCheckOn)->put(constraintsOn);
   msg->put(constraintExp);
+  //****** BEGIN CHARMM/XPLOR type changes
+  msg->put(paraTypeXplorOn)->put(paraTypeCharmmOn);
+  //****** END CHARMM/XPLOR type changes
   //****** BEGIN selective restraints (X,Y,Z) changes 
   msg->put(selectConstraintsOn)->put(constrXOn)->put(constrYOn)->put(constrZOn);
   //****** END selective restraints (X,Y,Z) changes 
@@ -3321,6 +3360,10 @@ void SimParameters::receive_SimParameters(MIStream *msg)
   msg->get(plMarginCheckOn);
   msg->get(constraintsOn);
   msg->get(constraintExp);
+  //****** BEGIN CHARMM/XPLOR type changes
+  msg->get(paraTypeXplorOn);
+  msg->get(paraTypeCharmmOn);
+  //****** END CHARMM/XPLOR type changes
   //****** BEGIN selective restraints (X,Y,Z) changes 
   msg->get(selectConstraintsOn);
   msg->get(constrXOn);
@@ -3487,12 +3530,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1054 $  $Date: 1999/01/08 23:24:49 $
+ *  $Revision: 1.1055 $  $Date: 1999/02/02 08:02:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1055  1999/02/02 08:02:36  ferenc
+ * Added support for CHARMM parameter format in parameter files.
+ *
  * Revision 1.1054  1999/01/08 23:24:49  ferenc
  * added selective position restraints for specific Cartesian components
  *
