@@ -557,24 +557,28 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   if ( ! CkMyPe() ) iout << iINFO << "Optimizing 4 FFT steps.  1..." << endi;
   if ( myGridPe >= 0 ) {
   forward_plan_yz = rfftwnd_create_plan_specific(2, n+1, FFTW_REAL_TO_COMPLEX,
-	FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM, qgrid, 1, 0, 0);
+	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
+	| FFTW_IN_PLACE | FFTW_USE_WISDOM, qgrid, 1, 0, 0);
   }
   if ( ! CkMyPe() ) iout << " 2..." << endi;
   if ( myTransPe >= 0 ) {
   forward_plan_x = fftw_create_plan_specific(n[0], FFTW_REAL_TO_COMPLEX,
-	FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) kgrid,
+	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
+	| FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) kgrid,
 	localInfo[myTransPe].ny_after_transpose * myGrid.dim3 / 2, work, 1);
   }
   if ( ! CkMyPe() ) iout << " 3..." << endi;
   if ( myTransPe >= 0 ) {
   backward_plan_x = fftw_create_plan_specific(n[0], FFTW_COMPLEX_TO_REAL,
-	FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) kgrid,
+	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
+	| FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) kgrid,
 	localInfo[myTransPe].ny_after_transpose * myGrid.dim3 / 2, work, 1);
   }
   if ( ! CkMyPe() ) iout << " 4..." << endi;
   if ( myGridPe >= 0 ) {
   backward_plan_yz = rfftwnd_create_plan_specific(2, n+1, FFTW_COMPLEX_TO_REAL,
-	FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM, qgrid, 1, 0, 0);
+	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
+	| FFTW_IN_PLACE | FFTW_USE_WISDOM, qgrid, 1, 0, 0);
   }
   if ( ! CkMyPe() ) iout << "   Done.\n" << endi;
 
