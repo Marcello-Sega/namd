@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1058 1998/08/11 22:29:03 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1059 1998/08/11 22:44:13 jim Exp $";
 
 #include <stdio.h>
 
@@ -427,8 +427,8 @@ void WorkDistrib::assignNodeToPatch()
 
   PatchMap *patchMap = PatchMap::Object();
   int nNodes = Node::Object()->numNodes();
-  if (nNodes < patchMap->numPatches())
-    NAMD_die("WorkDistrib::assignNodeToPatch not enough patches!");
+  if (nNodes > patchMap->numPatches())
+    NAMD_die("Man, Tiny Elvis, WorkDistrib::assignNodeToPatch not enough patches!");
   else if (nNodes == patchMap->numPatches())
     assignPatchesRoundRobin();
   else if (method==1)
@@ -1112,13 +1112,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1058 $	$Date: 1998/08/11 22:29:03 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1059 $	$Date: 1998/08/11 22:44:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1059  1998/08/11 22:44:13  jim
+ * Fixed numPatches < numNodes error, added "Tiny Elvis" for Rob.
+ *
  * Revision 1.1058  1998/08/11 22:29:03  brunner
  * Added not-enough-patches error.
  *
