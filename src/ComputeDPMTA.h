@@ -30,8 +30,9 @@ private:
   PmtaPartInfo *ljResults;	//  Results from the PMTA code
   Vector boxsize;	// FMA box size, set by get_FMA_cube()
   Vector boxcenter;	// FMA box center, set by get_FMA_cube()
+  int usePBC;		// flag for PBC
 
-  void get_FMA_cube(int usePBC);
+  void get_FMA_cube();
 
 public:
   ComputeDPMTA(ComputeID c);
@@ -46,12 +47,15 @@ public:
  *
  *	$RCSfile: ComputeDPMTA.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/03/10 15:42:16 $
+ *	$Revision: 1.1011 $	$Date: 1997/03/10 17:35:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.h,v $
+ * Revision 1.1011  1997/03/10 17:35:57  nealk
+ * More PBC
+ *
  * Revision 1.1010  1997/03/10 15:42:16  nealk
  * Updating once more.
  *

@@ -27,30 +27,39 @@
 #include "pvmc.h"
 
 #define MIN_DEBUG_LEVEL 1
-#define DEBUGM
+// #define DEBUGM
 #include "Debug.h"
 
 extern Communicate *comm;
 
-void ComputeDPMTA::get_FMA_cube(int usePBC)
+void ComputeDPMTA::get_FMA_cube()
 {
-  Vector boxSize;	// used to see if things change
+  Vector boxSize,boxCenter;	// used to see if things change
   PatchMap *patchMap = PatchMap::Object();
 
   if (usePBC == FALSE)
   {
     //  From these extremes, figure out how many patches we will
     //  have to have in each direction
-    //  And add the skirt of empty patches by adding 2 patches
-    //  in every direction
     SimParameters *simParams = Node::Object()->simParameters;
-    int dim_x = patchMap->xDimension() + 2;
-    int dim_y = patchMap->yDimension() + 2;
-    int dim_z = patchMap->zDimension() + 2;
+    int dim_x = patchMap->xDimension();
+    int dim_y = patchMap->yDimension();
+    int dim_z = patchMap->zDimension();
 
     boxSize.x = dim_x*simParams->patchDimension;
     boxSize.y = dim_y*simParams->patchDimension;
     boxSize.z = dim_z*simParams->patchDimension;
+
+    boxCenter = patchMap->Origin();
+    boxCenter.x += boxsize.x/2.0;
+    boxCenter.y += boxsize.y/2.0;
+    boxCenter.z += boxsize.z/2.0;
+
+    //  add the skirt of empty patches by adding 2 patches in every direction
+    BigReal tmp=2*simParams->patchDimension;
+    boxSize.x += tmp;
+    boxSize.y += tmp;
+    boxSize.z += tmp;
   }
   else
   {
@@ -66,6 +75,11 @@ void ComputeDPMTA::get_FMA_cube(int usePBC)
     DebugM(1,"getting patch dimension for FMA box\n");
     boxSize = lattice.dimension();
     DebugM(1,"boxSize is " << boxSize << "\n");
+
+    boxCenter = patchMap->Origin();
+    boxCenter.x += boxSize.x/2.0;
+    boxCenter.y += boxSize.y/2.0;
+    boxCenter.z += boxSize.z/2.0;
   }
 
   // don't bother checking if the center has moved since it depends on the size.
@@ -74,10 +88,7 @@ void ComputeDPMTA::get_FMA_cube(int usePBC)
 	DebugM(1,"resetting FMA box\n");
 	// reset the size and center
 	boxsize = boxSize;
-	boxcenter = patchMap->Origin();
-	boxcenter.x += boxsize.x/2.0;
-	boxcenter.y += boxsize.y/2.0;
-	boxcenter.z += boxsize.z/2.0;
+	boxcenter = boxCenter;
 
 	// reset DPMTA
 	PmtaVector center,size;
@@ -109,6 +120,7 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   ljResults = NULL;
   boxcenter = 1;	// reset the array (no divide by zero)
   boxsize = 1;	// reset the array (no divide by zero)
+  usePBC = FALSE;	// assume not...
 
   reduction->Register(REDUCTION_ELECT_ENERGY);
 
@@ -147,8 +159,21 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
 
   //  Get the size of the FMA cube
   DebugM(1,"DPMTA getting FMA cube\n");
-  get_FMA_cube(FALSE);	// PBC lattice not yet defined
+  get_FMA_cube();
   DebugM(1,"DPMTA got FMA cube\n");
+
+  // check for PBC
+  // We set usePBC after get_FMA_cube() since the lattice (entire patch!) is
+  // not yet defined.
+  usePBC = patchMap->xIsPeriodic()
+	 + patchMap->yIsPeriodic()
+	 + patchMap->zIsPeriodic();
+  if ((usePBC != 0) && (usePBC != 3))
+  {
+    iout << iERROR << "DPMTA (FMA) does not support " << usePBC
+	 << "-dimension PBC.\n" << endi;
+  }
+  usePBC = (usePBC == 3);	// either PBC "3D" or no PBC
 
   // reduce function calling time
   SimParameters *simParams = Node::Object()->simParameters;
@@ -160,7 +185,7 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   pmta_data.mp_lj = 4;
   pmta_data.fft = simParams->FMAFFTOn;
   pmta_data.fftblock = simParams->FMAFFTBlock;
-  pmta_data.pbc = 1;	// use Periodic boundary condition
+  pmta_data.pbc = usePBC;	// use Periodic boundary condition
   pmta_data.kterm = 0;
   pmta_data.theta = simParams->fmaTheta;
   //  2.5 will allow non-cubical box
@@ -248,7 +273,7 @@ void ComputeDPMTA::doWork()
   if (CMyPe() == 0)
   {
     // check if box has changes for PBC
-    get_FMA_cube(TRUE);	// PBC lattice should be defined
+    get_FMA_cube();
   }
   else
   {
