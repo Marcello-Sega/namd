@@ -160,6 +160,11 @@ public:
 	Bool constraintsOn;		//  Flag TRUE-> harmonic constraints 
 					//  active
 	int constraintExp;		//  Exponent for harmonic constraints
+        Bool movingConstraintsOn;       //  Flag TRUE-> moving constraints 
+                                        //  active
+        Vector movingConsVel;           //  Velocity of the movement, A/timestep
+        int movingConsAtom;             //  Index of the atom to be moved
+
 	Bool langevinOn;		//  Flag TRUE-> langevin dynamics active
 	BigReal langevinTemp;		//  Temperature for Langevin dynamics
 
@@ -305,13 +310,17 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/05/29 19:13:16 $
+ *	$Author: sergei $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1012 $	$Date: 1997/08/18 17:45:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1012  1997/08/18 17:45:11  sergei
+ * added moving restraint capability with input from config file
+ * (for one atom only)
+ *
  * Revision 1.1011  1997/05/29 19:13:16  nealk
  * Added hgroupCutoff
  *

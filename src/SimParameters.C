@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1019 $	$Date: 1997/07/11 02:19:59 $
+ *	$Author: sergei $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1020 $	$Date: 1997/08/18 17:45:09 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,10 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1020  1997/08/18 17:45:09  sergei
+ * added moving restraint capability with input from config file
+ * (for one atom only)
+ *
  * Revision 1.1019  1997/07/11 02:19:59  jim
  * Fixed hgroupCutoff not propagated to all nodes bug.
  *
@@ -383,7 +387,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1019 1997/07/11 02:19:59 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1020 1997/08/18 17:45:09 sergei Exp $";
 
 
 #include "ckdefs.h"
@@ -754,6 +758,17 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 		"consref)", PARSE_STRING);
    opts.require("constraints", "conskcol", "Column of conskfile to use "
 		"for the force constants (defaults to O)", PARSE_STRING);
+
+   //// Moving Harmonic Constraints
+   opts.optionalB("constraints", "movingConstraints",
+		  "Are some of the constraints moving?", 
+		  &movingConstraintsOn, FALSE);
+   opts.require("movingConstraints", "movingConsVel",
+		"Velocity of the movement, A/timestep", &movingConsVel);
+   opts.require("movingConstraints", "movingConsAtom",
+		"Index of the atom to move", 
+		&movingConsAtom);
+   opts.range("movingConsAtom", NOT_NEGATIVE);
 
    //// Spherical Boundary Conditions
    opts.optionalB("main", "sphericalBC", "Are spherical boundary counditions "
@@ -2227,7 +2242,9 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
 	msg->put(margin).put(patchDimension).put(switchingActive);
 	msg->put(switchingDist).put(elecswitchDist).put(vdwswitchDist);
 	msg->put(pairlistDist).put(plMarginCheckOn).put(constraintsOn);
-	msg->put(constraintExp).put(FMAOn).put(FMALevels).put(FMAMp);
+	msg->put(constraintExp);
+	msg->put(movingConstraintsOn).put(movingConsAtom).put(&movingConsVel);
+	msg->put(FMAOn).put(FMALevels).put(FMAMp);
 	msg->put(FMAFFTOn).put(FMAFFTBlock).put(minimizeOn);
 	msg->put(maximumMove).put(totalAtoms).put(randomSeed);
 	msg->put(langevinOn).put(langevinTemp).put(globalOn);
@@ -2326,6 +2343,9 @@ void SimParameters::receive_SimParameters(Message *msg)
 	msg->get(plMarginCheckOn);
 	msg->get(constraintsOn);
 	msg->get(constraintExp);
+	msg->get(movingConstraintsOn);
+	msg->get(movingConsAtom);
+	msg->get(&movingConsVel);
 	msg->get(FMAOn);
 	msg->get(FMALevels);
 	msg->get(FMAMp);
@@ -2427,12 +2447,16 @@ void SimParameters::receive_SimParameters(Message *msg)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1019 $	$Date: 1997/07/11 02:19:59 $
+ *	$Revision: 1.1020 $	$Date: 1997/08/18 17:45:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1020  1997/08/18 17:45:09  sergei
+ * added moving restraint capability with input from config file
+ * (for one atom only)
+ *
  * Revision 1.1019  1997/07/11 02:19:59  jim
  * Fixed hgroupCutoff not propagated to all nodes bug.
  *
