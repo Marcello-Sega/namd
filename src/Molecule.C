@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: Molecule.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:44 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/02/10 08:14:37 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,12 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1001  1997/02/10 08:14:37  jim
+ * Fixed problem with exclusions where both modified and unmodified
+ * versions of the same exclusion could be placed in the list, causing
+ * one to be selected more or less randomly.  Also caused different
+ * results on different numbers of processors.
+ *
  * Revision 1.1000  1997/02/06 15:58:44  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
@@ -159,7 +165,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1000 1997/02/06 15:58:44 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1001 1997/02/10 08:14:37 jim Exp $";
 
 #include "Molecule.h"
 #include <stdio.h>
@@ -2272,6 +2278,22 @@ void Molecule::build_lists_by_atom()
    if (exclusions != NULL)
    	delete [] exclusions;
 
+   // Now, eliminate 1-4 exclusions which are also fully excluded
+   exclusionList.sort();
+   int numOriginalExclusions = exclusionList.size();
+   for(i=1; i<numOriginalExclusions; ++i)
+   {
+     if ( exclusionList[i].atom1 == exclusionList[i-1].atom1 &&
+	  exclusionList[i].atom2 == exclusionList[i-1].atom2 )
+     {
+       // modified == 0 < modified == 1 so assign first to second
+       // this can't do any harm if they are the same but will
+       // make the modified one unmodified (full)
+       exclusionList[i].modified = exclusionList[i-1].modified;
+     }
+   }
+   exclusionList.uniq();
+
    DebugM(3,"Building exclusion lists.\n");
       
    int numTotalExclusions = exclusionList.size();
@@ -2281,6 +2303,9 @@ void Molecule::build_lists_by_atom()
       exclusionsByAtom[exclusions[i].atom1].add(i);
       exclusionsByAtom[exclusions[i].atom2].add(i);
    }
+
+   DebugM(4,numOriginalExclusions << " exclusions, " <<
+	    numTotalExclusions << " unique\n");
 
 }
 /*		END OF FUNCTION build_lists_by_atom		*/

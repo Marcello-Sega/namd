@@ -11,8 +11,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: Molecule.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:45 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/02/10 08:14:36 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -26,6 +26,12 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.1001  1997/02/10 08:14:36  jim
+ * Fixed problem with exclusions where both modified and unmodified
+ * versions of the same exclusion could be placed in the list, causing
+ * one to be selected more or less randomly.  Also caused different
+ * results on different numbers of processors.
+ *
  * Revision 1.1000  1997/02/06 15:58:45  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
@@ -145,7 +151,7 @@
 #include "structures.h"
 #include "ConfigList.h"
 #include "Vector.h"
-#include "Templates/ResizeArray.h"
+#include "Templates/SortableResizeArray.h"
 
 class SimParameters;
 class Parameters;
@@ -171,7 +177,7 @@ private:
 	Bond *donors;	        //  Array of hydrogen bond donor structures
 	Bond *acceptors;	//  Array of hydrogen bond acceptor
 	Exclusion *exclusions;	//  Array of exclusion structures
-	ResizeArray<Exclusion> exclusionList;  //  Used for building
+	SortableResizeArray<Exclusion> exclusionList;  //  Used for building
 	int *consIndexes;	//  Constraint indexes for each atom
 	ConstraintParams *consParams;
 				//  Parameters for each atom constrained
