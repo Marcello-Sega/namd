@@ -165,6 +165,7 @@ void ComputeNonbondedUtil::select(void)
 
   int i;
   int n = (int)(cutoff2 / r2_delta) + 4;
+  n += ( (n % 2) ? 0 : 1 );  // ensure that n is odd
 
   if ( table_alloc ) delete [] table_alloc;
   table_alloc = new BigReal[12*n+40];
