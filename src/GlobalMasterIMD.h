@@ -8,8 +8,8 @@
 #define GLOBALMASTERIMD_H
 
 #include "GlobalMaster.h"
+#include "imd.h"
 
-class IMDEnergies;
 class FloatVector;
 
 class GlobalMasterIMD : public GlobalMaster {
