@@ -384,6 +384,11 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
         map->registerCompute(i,c);
         c->initialize();
         break;
+      case computeConsTorqueType:
+        c = new ComputeConsTorque(i,map->computeData[i].pids[0].pid);
+        map->registerCompute(i,c);
+        c->initialize();
+        break;
       default:
 	break;
     }

@@ -211,6 +211,7 @@ void SimParameters::config_parser(ParseOptions &opts) {
    config_parser_constraints(opts);
    config_parser_movdrag(opts);
    config_parser_rotdrag(opts);
+   config_parser_constorque(opts);
    config_parser_boundary(opts);
    config_parser_misc(opts);
 
@@ -952,6 +953,26 @@ void SimParameters::config_parser_rotdrag(ParseOptions &opts) {
       "Rotating drag angular velocity file", rotDragVelFile);
    opts.require("rotDragOn", "rotDragVelCol",
       "Rotating drag angular velocity column", PARSE_STRING);
+}
+
+void SimParameters::config_parser_constorque(ParseOptions &opts) {
+   //// "constant" torque
+   opts.optionalB("main", "consTorqueOn", "Do we apply \"constant\" torque?",
+      &consTorqueOn, FALSE);
+   opts.require("consTorqueOn", "consTorqueFile",
+      "Main \"constant\" torque PDB file", consTorqueFile);
+   opts.require("consTorqueOn", "consTorqueCol",
+      "Main \"constant\" torque PDB column", PARSE_STRING);
+   opts.require("consTorqueOn", "consTorqueAxisFile",
+      "\"Constant\" torque axis file", consTorqueAxisFile);
+   opts.require("consTorqueOn", "consTorquePivotFile",
+      "\"Constant\" torque pivot point file", consTorquePivotFile);
+   opts.require("consTorqueOn", "consTorqueGlobVal",
+      "Global \"constant\" torque value (Kcal/(mol*A^2))", &consTorqueGlobVal);
+   opts.require("consTorqueOn", "consTorqueValFile",
+      "\"constant\" torque factors file", consTorqueValFile);
+   opts.require("consTorqueOn", "consTorqueValCol",
+      "\"constant\" torque factors column", PARSE_STRING);
 }
 
 void SimParameters::config_parser_boundary(ParseOptions &opts) {
@@ -2504,6 +2525,29 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      
      iout << iINFO << "ROTATING DRAG ANGULAR VELOCITY FILE " 
 	  << rotDragVelFile << "\n";
+     
+     iout << endi;
+   }
+   
+
+   // "constant" torque
+   if (consTorqueOn) {
+     iout << iINFO << "\"CONSTANT\" TORQUE ACTIVE.\n";
+     
+     iout << iINFO << "\"CONSTANT\" TORQUE MAIN PDB FILE "
+	  << consTorqueFile << "\n";
+     
+     iout << iINFO << "\"CONSTANT\" TORQUE AXIS FILE " 
+	  << consTorqueAxisFile << "\n";
+     
+     iout << iINFO << "\"CONSTANT\" TORQUE PIVOT POINT FILE " 
+	  << consTorquePivotFile << "\n";
+     
+     iout << iINFO << "\"CONSTANT\" TORQUE GLOBAL VALUE (Kcal/(mol*A^2)) "
+	  << consTorqueGlobVal << "\n";
+     
+     iout << iINFO << "\"CONSTANT\" TORQUE DACTORS FILE " 
+	  << consTorqueValFile << "\n";
      
      iout << endi;
    }

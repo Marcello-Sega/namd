@@ -193,7 +193,7 @@ public:
 	char movDragVelFile[128];     //  PDB file; XYZ scale moving drag
                                       //  velocity for each atom
         //****** END moving drag changes
-        //****** BEGIN rotatingdrag changes
+        //****** BEGIN rotating drag changes
         Bool rotDragOn;               //  Flag TRUE-> rotating drag active
         char rotDragFile[128];        //  PDB file defining dragged atoms
                                       //  by non-zero value in the column
@@ -203,6 +203,16 @@ public:
 	char rotDragVelFile[128];     //  PDB file; B or O scales angular
                                       //  velocity for each atom
         //****** END rotating drag changes
+        //****** BEGIN "constant" torque changes
+        Bool consTorqueOn;            //  Flag TRUE-> "constant" torque active
+        char consTorqueFile[128];     //  PDB file defining torqued atoms
+                                      //  by non-zero value in the column
+	char consTorqueAxisFile[128]; //  PDB file; XYZ define axes for atoms;
+	char consTorquePivotFile[128];//  PDB file; XYZ define pivots for atoms
+	BigReal consTorqueGlobVal;    //  global "torque" (Kcal/(mol*A^2))
+	char consTorqueValFile[128];  //  PDB file; B or O scales "torque"
+                                      //  for each atom
+        //****** END "constant" torque changes
 
         //****** BEGIN SMD constraints changes   
         Bool SMDOn;                     //  Flag TRUE-> SMD constraints active
@@ -481,6 +491,7 @@ private:
 	void config_parser_constraints(ParseOptions &opts);
 	void config_parser_movdrag(ParseOptions &opts);
 	void config_parser_rotdrag(ParseOptions &opts);
+	void config_parser_constorque(ParseOptions &opts);
 	void config_parser_boundary(ParseOptions &opts);
 	void config_parser_misc(ParseOptions &opts);
 

@@ -70,6 +70,13 @@ typedef struct rotdrag_params
    Vector p;            //  Rotation pivot point
 } RotDragParams;
 
+typedef struct constorque_params
+{
+   Real v;              //  "Torque" value (Kcal/(mol*A^2))
+   Vector a;            //  Rotation axis
+   Vector p;            //  Rotation pivot point
+} ConsTorqueParams;
+
 friend class BondElem;
 friend class AngleElem;
 friend class DihedralElem;
@@ -180,6 +187,7 @@ public:
 	int numConstraints;	//  Number of atoms constrained
 	int numMovDrag;	        //  Number of atoms moving-dragged
 	int numRotDrag;	        //  Number of atoms rotating-dragged
+	int numConsTorque;	//  Number of atoms "constant"-torqued
 	int numFixedAtoms;	//  Number of fixed atoms
 	int numExPressureAtoms; //  Number of atoms excluded from pressure
 	int numHydrogenGroups;	//  Number of hydrogen groups
@@ -194,6 +202,10 @@ public:
 	int numConsForce;	//  Number of atoms that have constant force applied
 	int32 *consForceIndexes;//  Constant force indexes for each atom
 	Vector *consForce;	//  Constant force array
+
+	int32 *consTorqueIndexes; //  "Constant" torque indexes for each atom
+	ConsTorqueParams *consTorqueParams;
+                                //  Parameters for each atom "constant"-torqued
 
 	// The following are needed for error checking because we
 	// eliminate bonds, etc. which involve only fixed atoms
@@ -245,6 +257,11 @@ public:
 				  StringList *, StringList *, StringList *,
 				  PDB *, char *);
 				//  Build the set of rotating drag pars
+
+	void build_constorque_params(StringList *, StringList *, StringList *,
+				     StringList *, StringList *, StringList *,
+				     PDB *, char *);
+				//  Build the set of "constant" torque pars
 
 
 	void build_constant_forces(char *);
@@ -402,6 +419,22 @@ public:
 		}
 	}
 
+	//  Return true or false based on whether the specified atom
+	//  is "constant"-torqued or not.
+	Bool is_atom_constorqued(int atomnum) const
+	{
+		if (numConsTorque)
+		{
+			//  Check the index to see if it is constrained
+			return(consTorqueIndexes[atomnum] != -1);
+		}
+		else
+		{
+			//  No constraints at all, so just return FALSE
+			return(FALSE);
+		}
+	}
+
 	//  Get the harmonic constraints for a specific atom
 	void get_cons_params(Real &k, Vector &refPos, int atomnum) const
 	{
@@ -420,13 +453,22 @@ public:
 		v = movDragParams[movDragIndexes[atomnum]].v;
 	}
 
-	//  Get the rotating drag factor for a specific atom
+	//  Get the rotating drag pars for a specific atom
 	void get_rotdrag_params(BigReal &v, Vector &a, Vector &p, 
 				int atomnum) const
 	{
 		v = rotDragParams[rotDragIndexes[atomnum]].v;
 		a = rotDragParams[rotDragIndexes[atomnum]].a;
 		p = rotDragParams[rotDragIndexes[atomnum]].p;
+	}
+
+	//  Get the "constant" torque pars for a specific atom
+	void get_constorque_params(BigReal &v, Vector &a, Vector &p, 
+				int atomnum) const
+	{
+		v = consTorqueParams[consTorqueIndexes[atomnum]].v;
+		a = consTorqueParams[consTorqueIndexes[atomnum]].a;
+		p = consTorqueParams[consTorqueIndexes[atomnum]].p;
 	}
 
 	Real langevin_force_val(int atomnum) const

@@ -745,6 +745,8 @@ void WorkDistrib::mapComputes(void)
     mapComputePatch(computeRestraintsType);
   if ( node->simParameters->consForceOn )
     mapComputePatch(computeConsForceType);
+  if ( node->simParameters->consTorqueOn )
+    mapComputePatch(computeConsTorqueType);
 }
 
 //----------------------------------------------------------------------

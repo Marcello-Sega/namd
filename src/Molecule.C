@@ -190,6 +190,8 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   movDragParams=NULL;
   rotDragIndexes=NULL;
   rotDragParams=NULL;
+  consTorqueIndexes=NULL;
+  consTorqueParams=NULL;
   consForceIndexes=NULL;
   consForce=NULL;
 //fepb
@@ -215,6 +217,7 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   numConstraints=0;
   numMovDrag=0;
   numRotDrag=0;
+  numConsTorque=0;
   numConsForce=0;
   numFixedAtoms=0;
   numFixedGroups=0;
@@ -1725,6 +1728,16 @@ void Molecule::send_Molecule(Communicate *com_obj)
          }
       }
       
+      //  Send the "constant" torque information, if used
+      if (simParams->consTorqueOn) {
+         msg->put(numConsTorque);
+         msg->put(numAtoms, consTorqueIndexes);
+         if (numConsTorque)
+         {
+           msg->put(numConsTorque*sizeof(ConsTorqueParams), (char*)consTorqueParams);
+         }
+      }
+      
       // Send the constant force information, if used
       if (simParams->consForceOn)
       { msg->put(numConsForce);
@@ -1912,6 +1925,20 @@ void Molecule::receive_Molecule(MIStream *msg)
            delete [] rotDragParams;
            rotDragParams = new RotDragParams[numRotDrag];
            msg->get(numRotDrag*sizeof(RotDragParams), (char*)rotDragParams);
+         }
+      }
+      
+      //  Get the "constant" torque information, if it is active
+      if (simParams->consTorqueOn) {
+         msg->get(numConsTorque);
+         delete [] consTorqueIndexes;
+         consTorqueIndexes = new int32[numAtoms];
+         msg->get(numAtoms, consTorqueIndexes);
+         if (numConsTorque)
+         {
+           delete [] consTorqueParams;
+           consTorqueParams = new ConsTorqueParams[numConsTorque];
+           msg->get(numConsTorque*sizeof(ConsTorqueParams), (char*)consTorqueParams);
          }
       }
       
@@ -3382,7 +3409,6 @@ void Molecule::build_rotdrag_params(StringList *rotDragFile,
       rotDragParams[rotDragIndexes[i]].a[0] = (aPDB->atom(i))->xcoor();
       rotDragParams[rotDragIndexes[i]].a[1] = (aPDB->atom(i))->ycoor();
       rotDragParams[rotDragIndexes[i]].a[2] = (aPDB->atom(i))->zcoor();
-      // the following line DID cause segfault
       rotDragParams[rotDragIndexes[i]].p[0] = (pPDB->atom(i))->xcoor();
       rotDragParams[rotDragIndexes[i]].p[1] = (pPDB->atom(i))->ycoor();
       rotDragParams[rotDragIndexes[i]].p[2] = (pPDB->atom(i))->zcoor();
@@ -3412,6 +3438,340 @@ void Molecule::build_rotdrag_params(StringList *rotDragFile,
   if (rotDragVelFile != NULL) delete vPDB;
 }
 /*      END OF FUNCTION build_rotdrag_params    */
+
+
+/************************************************************************/
+/*                  */
+/*      FUNCTION build_constorque_params  */
+/*                  */
+/*   INPUTS:        */
+/*  consTorqueFile - value of consTorqueFile from the config file */
+/*  consTorqueCol - value of consTorqueCol from the config file */
+/*  consTorqueAxisFile - value of consTorqueAxisFile from the config file */
+/*  consTorquePivotFile - value of consTorquePivotFile from the config file */
+/*  consTorqueValFile - value of consTorqueValFile from the config file */
+/*  consTorqueValCol - value of consTorqueValCol from the config file */
+/*  initial_pdb - PDB object that contains initial positions  */
+/*  cwd - Current working directory          */
+/*                  */
+/*  This function builds all the parameters that are necessary  */
+/*  to do "constant" torque. This involves looking through one or more    */
+/*  PDB objects to determine which atoms are torqued,  and what the */
+/*  torque parameters for each atom are. This information is then stored */
+/*  in the arrays consTorqueIndexes and consTorqueParams. */
+/*                  */
+/************************************************************************/
+
+void Molecule::build_constorque_params(StringList *consTorqueFile, 
+				    StringList *consTorqueCol, 
+				    StringList *consTorqueAxisFile, 
+				    StringList *consTorquePivotFile, 
+				    StringList *consTorqueValFile, 
+				    StringList *consTorqueValCol, 
+				    PDB *initial_pdb,
+				    char *cwd)
+  
+{
+  PDB *tPDB, *aPDB, *pPDB, *vPDB; //  Pointers to other PDB file(s)
+  register int i;          //  Loop counter
+  int current_index=0;     //  Index into values used
+  int dtcol = 4;           //  Column to look for torque tag in
+  Real dtval = 0;          //  Torque tag value retreived
+  int dvcol = 4;           //  Column to look for angular velocity in
+  Real dvval = 0;          //  Angular velocity value retreived
+  char mainfilename[129];  //  main "constant" torque PDB filename
+  char axisfilename[129];  //  "constant" torque axis PDB filename
+  char pivotfilename[129]; //  "constant" torque pivot point PDB filename
+  char velfilename[129];   //  "constant" torque angular velocity PDB filename
+  
+  //  Get the PDB to read the "constant" torque tags from. Again, if the
+  //  user gave us another file name, open that one.  Otherwise, just
+  //  use the PDB with the initial coordinates
+  if (consTorqueFile == NULL) {
+    tPDB = initial_pdb;
+    
+  } else {
+
+    if (consTorqueFile->next != NULL) {
+      NAMD_die("Multiple definitions of \"constant\" torque tag file in configuration file");
+    }
+    
+    if ( (cwd == NULL) || (consTorqueFile->data[0] == '/') ) {
+      strcpy(mainfilename, consTorqueFile->data);
+    } else {
+      strcpy(mainfilename, cwd);
+      strcat(mainfilename, consTorqueFile->data);
+      }
+    
+    tPDB = new PDB(mainfilename);
+    if ( tPDB == NULL ) {
+      NAMD_die("Memory allocation failed in Molecule::build_constorque_params");
+    }
+    
+    if (tPDB->num_atoms() != numAtoms) {
+      NAMD_die("Number of atoms in \"constant\" torque tag PDB doesn't match coordinate PDB");
+    }
+  }
+  
+  // Get the PDB to read atom rotation axes. If no name given, use
+  // consTorqueFile if both it AND consTorquePivotFile are defined. Can NOT
+  // use the PDB coordinate file, nor consTorquePivotFile!
+
+  if (consTorqueAxisFile == NULL) {
+    if (consTorqueFile == NULL) {
+      NAMD_die("\"Constant\" torque axis file can not be same as coordinate PDB file");
+    } else {
+      if (consTorqueAxisFile->next != NULL) {
+	NAMD_die("Multiple definitions of \"constant\" torque axis file in configuration file");
+      };
+      if (consTorquePivotFile == NULL) {
+	NAMD_die("Need to specify at least one of consTorqueAxisFile and consTorquePivotFile; they can not be same");
+      };
+      aPDB = tPDB;
+    };
+
+  } else {
+
+    if ( (cwd == NULL) || (consTorqueAxisFile->data[0] == '/') ) {
+      strcpy(axisfilename, consTorqueAxisFile->data);
+    } else {
+      strcpy(axisfilename, cwd);
+      strcat(axisfilename, consTorqueAxisFile->data);
+    }
+    
+    aPDB = new PDB(axisfilename);
+    if ( aPDB == NULL ) {
+      NAMD_die("Memory allocation failed in Molecule::build_constorque_params");
+    }
+    
+    if (aPDB->num_atoms() != numAtoms) {
+      NAMD_die("Number of atoms in \"constant\" torque axis PDB doesn't match coordinate PDB");
+    }
+  };
+  
+  // Get the PDB to read atom rotation pivot points. If no name given,
+  // use consTorqueFile if both it AND consTorqueAxisFile are defined. Can
+  // NOT use the PDB coordinate file, nor consTorqueAxisFile!
+
+  if (consTorquePivotFile == NULL) {
+    if (consTorqueFile == NULL) {
+      NAMD_die("\"Constant\" torque pivot point file can not be same as coordinate PDB file");
+    } else {
+      if (consTorquePivotFile->next != NULL) {
+	NAMD_die("Multiple definitions of \"constant\" torque pivot point file in configuration file");
+      };
+      if (consTorqueAxisFile == NULL) {
+	NAMD_die("Need to specify at least one of consTorqueAxisFile and consTorquePivotFile; they can not be same");
+      };
+      pPDB = tPDB;
+    };
+
+  } else {
+
+    if ( (cwd == NULL) || (consTorquePivotFile->data[0] == '/') ) {
+      strcpy(pivotfilename, consTorquePivotFile->data);
+    } else {
+      strcpy(pivotfilename, cwd);
+      strcat(pivotfilename, consTorquePivotFile->data);
+    }
+    
+    pPDB = new PDB(pivotfilename);
+    if ( pPDB == NULL ) {
+      NAMD_die("Memory allocation failed in Molecule::build_constorque_params");
+    }
+    
+    if (pPDB->num_atoms() != numAtoms) {
+      NAMD_die("Number of atoms in \"constant\" torque pivot point PDB doesn't match coordinate PDB");
+    }
+  };
+  
+  
+  // Get the PDB to read atom angular velocities. If no name given,
+  // use consTorqueFile (or the coordinate PDB file if consTorqueFile is not
+  // defined).
+
+  if (consTorqueValFile == NULL) {
+    vPDB = tPDB;
+  } else {
+    if (consTorqueValFile->next != NULL) {
+      NAMD_die("Multiple definitions of \"constant\" torque velocity file in configuration file");
+    };
+    
+    if ( (cwd == NULL) || (consTorqueValFile->data[0] == '/') ) {
+      strcpy(velfilename, consTorqueValFile->data);
+    } else {
+      strcpy(velfilename, cwd);
+      strcat(velfilename, consTorqueValFile->data);
+    }
+    
+    vPDB = new PDB(velfilename);
+    if ( vPDB == NULL ) {
+      NAMD_die("Memory allocation failed in Molecule::build_constorque_params");
+    }
+    
+    if (vPDB->num_atoms() != numAtoms) {
+      NAMD_die("Number of atoms in \"constant\" torque velocity PDB doesn't match coordinate PDB");
+    }
+  };
+  
+  //  Get the column that the torque tag is going to be in. If
+  //  consTorqueFile is defined, it can be in any of the 5 floating point
+  //  fields in the PDB (X, Y, Z, O, or B) which correspond to the
+  //  1st, 2nd, ... 5th floating point fields. If consTorqueFile is NOT
+  //  defined, it can only be O or B fileds. The default is the O
+  //  (4th) field, which is the occupancy.
+
+  if (consTorqueCol == NULL) {
+    dtcol = 4;
+  } else {
+    if (consTorqueCol->next != NULL) {
+      NAMD_die("Multiple definitions of torque tag column in config file");
+    };
+    
+    if ( consTorqueFile == NULL
+	 && (!strcasecmp(consTorqueCol->data, "X")
+	     || !strcasecmp(consTorqueCol->data, "Y")
+	     || !strcasecmp(consTorqueCol->data, "Z"))) {
+      NAMD_die("Can not read \"constant\" torque tags from X, Y, or Z column of the PDB coordinate file");
+    };
+    if (!strcasecmp(consTorqueCol->data, "X")) {
+      dtcol=1;
+    } else if (!strcasecmp(consTorqueCol->data, "Y")) {
+      dtcol=2;
+    } else if (!strcasecmp(consTorqueCol->data, "Z")) {
+      dtcol=3;
+    } else if (!strcasecmp(consTorqueCol->data, "O")) {
+      dtcol=4;
+    } else if (!strcasecmp(consTorqueCol->data, "B")) {
+      dtcol=5;
+    }
+    else {
+      NAMD_die("consTorqueCol must have value of X, Y, Z, O, or B");
+    };
+  };
+  
+  //  Get the column that the torque value is going to be
+  //  in. If consTorqueValFile is defined, it can be in any of the 5
+  //  floating point fields in the PDB (X, Y, Z, O, or B) which
+  //  correspond to the 1st, 2nd, ... 5th floating point fields. If
+  //  NEITHER of consTorqueValFile OR consTorqueFile is defined, it can
+  //  only be O or B fileds. The default is the O (4th) field, which
+  //  is the occupancy.
+
+  if (consTorqueValCol == NULL) {
+    dvcol = 4;
+  } else {
+    if (consTorqueValCol->next != NULL) {
+      NAMD_die("Multiple definitions of torque value column in config file");
+    };
+    
+    if (consTorqueValFile == NULL
+	&& consTorqueFile == NULL
+	&& strcasecmp(consTorqueCol->data, "B")
+	&& strcasecmp(consTorqueCol->data, "O")) {
+      NAMD_die("Can not read \"constant\" torque values from X, Y, or Z column of the PDB coordinate file");
+    };
+    if (!strcasecmp(consTorqueValCol->data, "X")) {
+      dvcol=1;
+    } else if (!strcasecmp(consTorqueValCol->data, "Y")) {
+      dvcol=2;
+    } else if (!strcasecmp(consTorqueValCol->data, "Z")) {
+      dvcol=3;
+    } else if (!strcasecmp(consTorqueValCol->data, "O")) {
+      dvcol=4;
+    } else if (!strcasecmp(consTorqueValCol->data, "B")) {
+      dvcol=5;
+    }
+    else {
+      NAMD_die("consTorqueValCol must have value of X, Y, Z, O, or B");
+    };
+  };
+  
+  //  Allocate an array that will store an index into the torque
+  //  parameters for each atom.  If the atom is not torqued, its
+  //  value will be set to -1 in this array.
+  consTorqueIndexes = new int32[numAtoms];
+  if (consTorqueIndexes == NULL) {
+      NAMD_die("memory allocation failed in Molecule::build_constorque_params()");
+  };
+  
+  //  Loop through all the atoms and find out which ones are torqued
+  for (i=0; i<numAtoms; i++) {
+    switch (dtcol) {
+    case 1:
+      dtval = (tPDB->atom(i))->xcoor();
+      break;
+    case 2:
+      dtval = (tPDB->atom(i))->ycoor();
+      break;
+    case 3:
+      dtval = (tPDB->atom(i))->zcoor();
+      break;
+    case 4:
+      dtval = (tPDB->atom(i))->occupancy();
+      break;
+    case 5:
+      dtval = (tPDB->atom(i))->temperaturefactor();
+      break;
+    }
+    
+    if (dtval != 0.0) {
+      //  This atom is torqued
+      consTorqueIndexes[i] = current_index;
+      current_index++;
+    } else {
+      //  This atom is not torqued
+      consTorqueIndexes[i] = -1;
+    }
+  }
+  
+  if (current_index == 0) {
+    iout << iWARN << "NO TORQUED ATOMS WERE FOUND, BUT \"CONSTANT\" TORQUE IS ON . . . " << endi;
+  } else {
+    consTorqueParams = new ConsTorqueParams[current_index];
+    if (consTorqueParams == NULL) {
+      NAMD_die("memory allocation failed in Molecule::build_constorque_params");
+    }
+  };
+  
+  numConsTorque = current_index;
+  
+  //  Loop through all the atoms and assign the parameters for those
+  //  that are torqued
+  for (i=0; i<numAtoms; i++) {
+    if (consTorqueIndexes[i] != -1) {
+      consTorqueParams[consTorqueIndexes[i]].a[0] = (aPDB->atom(i))->xcoor();
+      consTorqueParams[consTorqueIndexes[i]].a[1] = (aPDB->atom(i))->ycoor();
+      consTorqueParams[consTorqueIndexes[i]].a[2] = (aPDB->atom(i))->zcoor();
+      consTorqueParams[consTorqueIndexes[i]].p[0] = (pPDB->atom(i))->xcoor();
+      consTorqueParams[consTorqueIndexes[i]].p[1] = (pPDB->atom(i))->ycoor();
+      consTorqueParams[consTorqueIndexes[i]].p[2] = (pPDB->atom(i))->zcoor();
+      switch (dvcol) {
+      case 1:
+	consTorqueParams[consTorqueIndexes[i]].v = (vPDB->atom(i))->xcoor();
+	break;
+      case 2:
+	consTorqueParams[consTorqueIndexes[i]].v = (vPDB->atom(i))->ycoor();
+	break;
+      case 3:
+	consTorqueParams[consTorqueIndexes[i]].v = (vPDB->atom(i))->zcoor();
+	break;
+      case 4:
+	consTorqueParams[consTorqueIndexes[i]].v = (vPDB->atom(i))->occupancy();
+	break;
+      case 5:
+	consTorqueParams[consTorqueIndexes[i]].v = (vPDB->atom(i))->temperaturefactor();
+	break;
+      };
+    };
+  };
+      
+  if (consTorqueFile != NULL) delete tPDB;
+  if (consTorqueAxisFile != NULL) delete aPDB;
+  if (consTorquePivotFile != NULL) delete pPDB;
+  if (consTorqueValFile != NULL) delete vPDB;
+}
+/*      END OF FUNCTION build_constorque_params    */
 
 
 /************************************************************************/

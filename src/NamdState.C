@@ -215,6 +215,18 @@ int NamdState::configListInit(ConfigList *cfgList) {
 					 NULL);
 	}
 
+	// If "constant" torque is active, build the parameters necessary
+	if (simParameters->consTorqueOn) {
+	  molecule->build_constorque_params(configList->find("consTorqueFile"),
+				       configList->find("consTorqueCol"),
+				       configList->find("consTorqueAxisFile"),
+				       configList->find("consTorquePivotFile"),
+				       configList->find("consTorqueValFile"),
+				       configList->find("consTorqueValCol"),
+				       pdb,
+				       NULL);
+	}
+
 	//  If langevin dynamics or temperature coupling are active, build 
 	//  the parameters necessary
 	if (simParameters->langevinOn)

@@ -11,3 +11,17 @@ public:
 };
 
 #endif
+
+#ifndef COMPUTECONSTORQUE_H
+#define COMPUTECONSTORQUE_H
+
+#include "ComputePatch.h"
+
+class ComputeConsTorque : public ComputePatch
+{
+public:
+  ComputeConsTorque(ComputeID, PatchID);
+  virtual void doForce(CompAtom*, Results*);
+};
+
+#endif

@@ -251,8 +251,7 @@ void Sequencer::addRotDragToPosition(BigReal timestep) {
   const BigReal rotDragGlobVel = simParams->rotDragGlobVel;
   const BigReal dt = timestep / TIMEFACTOR;   // MUST be as in the integrator!
   BigReal rotDragVel, dAngle;
-  Vector atomRadius, atomTangent, atomNormal;
-  Vector rotDragUnit;
+  Vector atomRadius;
   Vector rotDragAxis, rotDragPivot, dragIncrement;
   for ( int i = 0; i < numAtoms; ++i )
   {
@@ -261,11 +260,9 @@ void Sequencer::addRotDragToPosition(BigReal timestep) {
 	 || !(molecule->is_atom_rotdragged(atom[i].id)) ) continue;
     molecule->get_rotdrag_params(rotDragVel, rotDragAxis, rotDragPivot, atom[i].id);
     dAngle = rotDragGlobVel * rotDragVel * dt;
-    rotDragUnit = rotDragAxis / rotDragAxis.length();
+    rotDragAxis /= rotDragAxis.length();
     atomRadius = atom[i].position - rotDragPivot;
-    atomTangent = rotDragUnit * (atomRadius * rotDragUnit) / atomRadius.length();
-    atomNormal = atomRadius - atomTangent;
-    dragIncrement = cross(rotDragUnit, atomNormal) * dAngle;
+    dragIncrement = cross(rotDragAxis, atomRadius) * dAngle;
     atom[i].position += dragIncrement;
   }
 }
