@@ -56,16 +56,27 @@ void BackEnd::ExitSchedOn(int pe)
   CmiSyncSendAndFree(pe,CmiMsgHeaderSizeBytes,msg);
 }
 
+#ifdef WIN32
+int NAMD_new_handler(size_t) {
+#else
 void NAMD_new_handler() {
+#endif
   char tmp[100];
   sprintf(tmp,"Memory allocation failed on processor %d.",CmiMyPe());
   NAMD_die(tmp);
+#ifdef WIN32
+  return 0;
+#endif
 }
 
 // called on all procs
 void all_init(int argc, char **argv)
 {
+#ifdef WIN32
+  _set_new_handler(NAMD_new_handler);
+#else
   set_new_handler(NAMD_new_handler);
+#endif
   ProcessorPrivateInit();
   register_exit_sched();
   _initCharm(argc, argv);  // message main Chare
