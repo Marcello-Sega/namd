@@ -534,6 +534,18 @@ file charm/src/arch/mpi-linux/conv-mach.sh contains the definitions
 that select the mpiCC compiler for mpi-linux, while other compiler
 choices are defined by files in charm/src/arch/common/.
 
+If you want to run NAMD on Myrinet one option is to build a Myrinet 
+GM library network version by specifying the "gm" option as in:
+
+  ./build charm++ net-linux gm icc -O -DCMK_OPTIMIZE=1
+
+You would then change "net-linux-icc" to "net-linux-gm-icc" in your
+namd2/arch/Linux-i686-icc.arch file (or create a new .arch file).
+Alternatively you could use a Myrinet-aware MPI library.  If you want
+to use MPICH-GM, you must disable memory registration by specifying
+"--with-device=ch_gm:-disable-registration" when configuring MPICH-GM
+(at least according to the Myrinet FAQ at www.myri.com).
+
 Run make in charm/CHARMARCH/pgms/charm++/megatest/ and run the
 resulting binary "pgm" as you would run NAMD on your platform.  You
 should try running on several processors if possible.  For example:
