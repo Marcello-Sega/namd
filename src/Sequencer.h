@@ -49,7 +49,7 @@ protected:
     void rattle1(BigReal);
     void rattle2(BigReal,int);
 
-    void minimizationMaximumMove(BigReal);
+    void maximumMove(BigReal);
     void minimizationQuenchVelocity(void);
 
     void rescaleVelocities(int);
@@ -88,12 +88,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1022 $	$Date: 1999/04/27 23:43:03 $
+ *	$Revision: 1.1023 $	$Date: 1999/06/02 14:23:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.h,v $
+ * Revision 1.1023  1999/06/02 14:23:22  jim
+ * Generalized maximumMove to work with any dynamics mode.
+ *
  * Revision 1.1022  1999/04/27 23:43:03  jim
  * Switched Langevin dynamics integrator to a two-part version of BBK.
  *

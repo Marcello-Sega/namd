@@ -226,7 +226,7 @@ void Sequencer::algorithm(void)
 		addForceToMomentum(0.5*slowstep,Results::slow);
 	langevinVelocitiesBBK1(timestep);
 
-	minimizationMaximumMove(timestep);
+	maximumMove(timestep);
 	addVelocityToPosition(0.5*timestep);
 	langevinPiston(step);
 	addVelocityToPosition(0.5*timestep);
@@ -515,9 +515,9 @@ void Sequencer::rattle2(BigReal dt, int step)
   }
 }
 
-void Sequencer::minimizationMaximumMove(BigReal timestep)
+void Sequencer::maximumMove(BigReal timestep)
 {
-  if ( simParams->minimizeOn ) {
+  if ( simParams->maximumMove ) {
     const BigReal dt = timestep / TIMEFACTOR;
     const BigReal maxvel = simParams->maximumMove / dt;
     const BigReal maxvel2 = maxvel * maxvel;
@@ -699,12 +699,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1060 $     $Date: 1999/05/26 22:23:55 $
+ *      $Revision: 1.1061 $     $Date: 1999/06/02 14:23:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1061  1999/06/02 14:23:21  jim
+ * Generalized maximumMove to work with any dynamics mode.
+ *
  * Revision 1.1060  1999/05/26 22:23:55  jim
  * Added basic Tcl scripting, fixed bugs in broadcasts.
  *

@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1068 $  $Date: 1999/05/28 20:23:01 $
+ *  $Revision: 1.1069 $  $Date: 1999/06/02 14:23:22 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1069  1999/06/02 14:23:22  jim
+ * Generalized maximumMove to work with any dynamics mode.
+ *
  * Revision 1.1068  1999/05/28 20:23:01  jim
  * Added constraintScaling parameter.
  *
@@ -959,9 +962,8 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    /////////// Special Dynamics Methods
    opts.optionalB("main", "minimization", "Should minimization be performed?",
       &minimizeOn, FALSE);
-   opts.optional("minimization", "maximumMove", "Maximum atom movement per step "
-     "during minimization", &maximumMove);
-   opts.range("maximumMove", POSITIVE);
+   opts.optional("main", "maximumMove", "Maximum atom movement per step", &maximumMove, 0.0);
+   opts.range("maximumMove", NOT_NEGATIVE);
    opts.units("maximumMove", N_ANGSTROM);
 
    opts.optionalB("main", "Langevin", "Should Langevin dynamics be performed?",
@@ -1985,11 +1987,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    if (opts.defined("minimization") && !opts.defined("maximumMove")) 
    {
       maximumMove = 0.75 * pairlistDist/stepsPerCycle;
-   }
-
-   if (!opts.defined("minimization"))
-   {
-  maximumMove = 0;
    }
 
    if (opts.defined("rescaleFreq"))
@@ -3124,7 +3121,11 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    if (minimizeOn)
    {
       iout << iINFO << "MINIMIZATION ACTIVE\n";
+      iout << endi;
+   }
 
+   if (maximumMove)
+   {
       iout << iINFO << "MAXIMUM MOVEMENT       "
          << maximumMove << "\n";
       iout << endi;
@@ -3780,12 +3781,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1068 $  $Date: 1999/05/28 20:23:01 $
+ *  $Revision: 1.1069 $  $Date: 1999/06/02 14:23:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1069  1999/06/02 14:23:22  jim
+ * Generalized maximumMove to work with any dynamics mode.
+ *
  * Revision 1.1068  1999/05/28 20:23:01  jim
  * Added constraintScaling parameter.
  *

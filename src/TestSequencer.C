@@ -98,7 +98,7 @@ void TestSequencer::algorithm(void)
 		addForceToMomentum(0.5*slowstep,Results::slow);
 	*/
 
-	minimizationMaximumMove(timestep);
+	maximumMove(timestep);
 	// addVelocityToPosition(timestep);
 	translatePosition(0.2,0.2,0.2);
 	rattle1(timestep);
@@ -159,12 +159,15 @@ void TestSequencer::translatePosition(BigReal dx, BigReal dy, BigReal dz) {
  *
  *      $RCSfile: TestSequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.6 $     $Date: 1999/03/17 21:26:34 $
+ *      $Revision: 1.7 $     $Date: 1999/06/02 14:23:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: TestSequencer.C,v $
+ * Revision 1.7  1999/06/02 14:23:23  jim
+ * Generalized maximumMove to work with any dynamics mode.
+ *
  * Revision 1.6  1999/03/17 21:26:34  jim
  * Switching internal nomenclature from fmaFrequency to fullElectFrequency.
  *
