@@ -27,14 +27,16 @@ strategy();
 
 void AlgRecBisection::rec_divide(int n, Partition &p)
 {
-  int i,j,k;
+  int i;
   int midpos;
   int n1, n2;
   double load1, currentload;
   int maxdir, count;
   Partition p1, p2;
 
+#ifdef DEBUG
   CmiPrintf("rec_divide: partition n:%d count:%d load:%f (%d %d %d, %d %d %d)\n", n, p.count, p.load, p.origin[0], p.origin[1], p.origin[2], p.corner[0], p.corner[1], p.corner[2]);
+#endif
 
   if (n==1) {
     partitions[currentp++] = p;
@@ -93,6 +95,16 @@ void AlgRecBisection::rec_divide(int n, Partition &p)
 	midpos = computeLoad[cid].v[maxdir];
       }
       else {	// or the next partition
+/*
+	double c = currentload + computeLoad[cid].load;
+	if (c - load1 < load1 - currentload) {
+	  computeLoad[cid].refno = p1.refno;
+	  currentload = c;
+	  count ++;
+	  midpos = computeLoad[cid].v[maxdir];
+	}
+	else
+*/
 	computeLoad[cid].refno = p2.refno;
       }
     }
@@ -110,26 +122,19 @@ void AlgRecBisection::rec_divide(int n, Partition &p)
   p1.count = count;
   p2.load = p.load - p1.load;
   p2.count = p.count - p1.count;
+#ifdef DEBUG
   CmiPrintf("p1: n:%d count:%d load:%f\n", n1, p1.count, p1.load);
   CmiPrintf("p2: n:%d count:%d load:%f\n", n2, p2.count, p2.load);
+#endif
   rec_divide(n1, p1);
   rec_divide(n2, p2);
 }
-
-#if 0
-int comp(const void *a, const void *b)
-{
-  AlgRecBisection::VecArray *va = (AlgRecBisection::VecArray *)a;
-  AlgRecBisection::VecArray *vb = (AlgRecBisection::VecArray *)b;
-  return va->v - vb->v;
-}
-#endif
 
 void AlgRecBisection::setVal(int x, int y, int z)
 {
   int i;
   for (i=0; i<numComputes; i++) {
-    computeLoad[i].tv = 100000*computeLoad[i].v[x]+
+    computeLoad[i].tv = 1000000*computeLoad[i].v[x]+
 			1000*computeLoad[i].v[y]+
 			computeLoad[i].v[z];
   }
@@ -153,7 +158,9 @@ int AlgRecBisection::sort_partition(int x, int p, int r)
       if (computeLoad[vArray[x][i].id].tv == computeLoad[vArray[x][j].id].tv)
       {
 	if (computeLoad[vArray[x][i].id].tv != mid) NAMD_die("my god!\n");
-	i++; continue;
+	if (i-p < r-j) i++;
+	else j--;
+	continue;
       }
       VecArray tmp = vArray[x][i];
       vArray[x][i] = vArray[x][j];
@@ -189,9 +196,64 @@ void AlgRecBisection::quicksort(int x)
 #endif
 }
 
+void AlgRecBisection::mapPartitionsToNodes()
+{
+  int i,j,k;
+#if 0
+  for (i=0; i<P; i++) partitions[i].node = i;
+#else
+  PatchMap *patchMap = PatchMap::Object();
+
+  int **pool = new int *[P];
+  for (i=0; i<P; i++) pool[i] = new int[P];
+  for (i=0; i<P; i++) for (j=0; j<P; j++) pool[i][j] = 0;
+
+  // sum up the number of nodes that patches of computes are on
+  for (i=0; i<numComputes; i++)
+  {
+    for (j=0; j<P; j++)
+      if (computeLoad[i].refno == partitions[j].refno) 
+      {
+	int node1 = patchMap->node(computes[i].patch1);
+	int node2 = patchMap->node(computes[i].patch2);
+	pool[j][node1]++;
+	pool[j][node2]++;
+      }
+  }
+#ifdef DEBUG
+  for (i=0; i<P; i++) {
+    for (j=0; j<P; j++) CmiPrintf("%d ", pool[i][j]);
+    CmiPrintf("\n");
+  }
+#endif
+  while (1)
+  {
+    int index=-1, node=0, eager=-1;
+    for (j=0; j<P; j++) {
+      if (partitions[j].node != -1) continue;
+      int wantmost=-1, maxnodes=-1;
+      for (k=0; k<P; k++) if (pool[j][k] > maxnodes && !partitions[k].mapped) {wantmost=k; maxnodes = pool[j][k];}
+      if (maxnodes > eager) {
+	index = j; node = wantmost; eager = maxnodes;
+      }
+    }
+    if (eager == -1) break;
+    partitions[index].node = node;
+    partitions[node].mapped = 1;
+  }
+
+  for (i=0; i<P; i++) delete [] pool[i];
+  delete [] pool;
+#endif
+
+  CmiPrintf("partitions to nodes mapping: ");
+  for (i=0; i<P; i++) CmiPrintf("%d ", partitions[i].node);
+  CmiPrintf("\n");
+}
+
 void AlgRecBisection::strategy()
 {
-  int i,j;
+  int i,j,k;
 
   PatchMap *patchMap = PatchMap::Object();
 
@@ -218,22 +280,11 @@ void AlgRecBisection::strategy()
       vArray[j][i].id = i;
       vArray[j][i].v = computeLoad[i].v[j];
     }
-/*
-    vArray[XDIR][i].id = vArray[YDIR][i].id = vArray[ZDIR][i].id = i;
-    vArray[XDIR][i].v = computeLoad[i].v[0];
-    vArray[YDIR][i].v = computeLoad[i].v[1];
-    vArray[ZDIR][i].v = computeLoad[i].v[2];
-*/
   }
 //  CmiPrintf("\n");
 
   double t = CmiWallTimer();
 
-/*
-  qsort(vArray[XDIR], numComputes, sizeof(VecArray), comp);
-  qsort(vArray[YDIR], numComputes, sizeof(VecArray), comp);
-  qsort(vArray[ZDIR], numComputes, sizeof(VecArray), comp);
-*/
   quicksort(XDIR);
   quicksort(YDIR);
   quicksort(ZDIR);
@@ -261,12 +312,14 @@ void AlgRecBisection::strategy()
   rec_divide(npartition, top_partition);
 
   CmiPrintf("After partitioning: \n");
-  // debug
   for (i=0; i<P; i++) {
     CmiPrintf("[%d] (%d,%d,%d) (%d,%d,%d) load:%f count:%d\n", i, partitions[i].origin[0], partitions[i].origin[1], partitions[i].origin[2], partitions[i].corner[0], partitions[i].corner[1], partitions[i].corner[2], partitions[i].load, partitions[i].count);
   }
 
   for (i=0; i<numComputes; i++) computes[i].processor=-1;
+
+  // mapping partitions to nodes
+  mapPartitionsToNodes();
 
   // this is for debugging
   int *num = new int[P];
@@ -276,7 +329,7 @@ void AlgRecBisection::strategy()
   {
     for (j=0; j<P; j++)
       if (computeLoad[i].refno == partitions[j].refno) 
-        { computes[computeLoad[i].id].processor = j; num[j]++; break; }
+        { computes[computeLoad[i].id].processor = partitions[j].node; num[j]++; break; }
   }
 
   for (i=0; i<P; i++)
@@ -299,10 +352,13 @@ void AlgRecBisection::strategy()
     assign((computeInfo *) &(computes[i]),
 	   (processorInfo *) &(processors[computes[i].processor]));
 	 
+#if 0
   multirefine();
+#else
+  printSummary();
+#endif
 
-  CmiPrintf("AlgRecBisection finished\n");
-  CmiPrintf("AlgRecBisection finish time: %f\n", CmiWallTimer() - t);
+  CmiPrintf("AlgRecBisection finished time: %f\n", CmiWallTimer() - t);
 
   // printLoads();
 }
