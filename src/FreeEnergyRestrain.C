@@ -148,19 +148,29 @@ double ARestraint::GetDihe(AVector& A, AVector& B, AVector& C, AVector& D) {
   AVector BC(C - B);
   AVector BA(A - B);
   AVector CDxCB, BCxBA;
-  double  top, bot, u;
+  double  top, bot, cos_u, sin_u, Angle;
+  AVector topVec;
 
   CDxCB = CD.cross(CB);
   BCxBA = BC.cross(BA);
 
   top = CDxCB.dot(BCxBA);
   bot = CDxCB.Dist() * BCxBA.Dist();
-  u = top/bot;
+  cos_u = top/bot;
 
   // protect against acos(<-1.0) and acos(>1.0)
-  if (u < -1.0) {u = -1.0;}
-  if (u >  1.0) {u =  1.0;}
-  return(acos(u));
+  if (cos_u < -1.0) {cos_u = -1.0;}
+  if (cos_u >  1.0) {cos_u =  1.0;}
+
+  topVec = CDxCB.cross(BCxBA);
+  sin_u = (topVec/bot).dot(BC/BC.Dist());
+
+  // protect against asin(<-1.0) and asin(>1.0)
+  if (sin_u < -1.0) {sin_u = -1.0;}
+  if (sin_u >  1.0) {sin_u =  1.0;}
+
+  Angle = atan2(sin_u, cos_u);
+  return(Angle);
 }
 
 
@@ -555,7 +565,9 @@ AVector ADiheRestraint::GetGrad(int WhichGroup,
   // protect against acos(<-1.0), acos(>1.0), sqrt(<0), and divide by 0
   if (u < kAlmostMinusOne) {u = kAlmostMinusOne;}
   if (u > kAlmostOne)      {u = kAlmostOne;}
-  phi = acos(u);
+
+  // get dihedral using atan
+  phi = GetDihe(A,B,C,D);
 
   AVector dP1, dP2, dP3;
   AVector dP4, dP5, dP6;
@@ -578,8 +590,13 @@ AVector ADiheRestraint::GetGrad(int WhichGroup,
   }
 
   Vec = gradU(CDxCB, BCxBA, dP1, dP2, dP3, dP4, dP5, dP6);
-
   Vec *= (Const/2.0) * sin(phi-RefAngle) * (-1.0/sqrt(1.0 - u*u));
+
+  // flip gradient for negative angles
+  if (phi < 0) {
+    Vec *= -1.0;
+  }
+  
   return(Vec);
 }
 
@@ -988,3 +1005,21 @@ double AForcingDiheRestraint::Get_dU_dLambda() {
   RefDihe = m_StopAngle*m_LambdaRef + m_StartAngle*(1.0-m_LambdaRef);
   return((m_Kf/2)*m_LambdaKf * sin(Dihe-RefDihe) * (m_StartAngle-m_StopAngle));
 }
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker $		$State $
+ *	$Revision $	$Date $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: FreeEnergyRestrain.C,v $
+ * Revision 1.2  1998/05/29 22:31:18  hurwitz
+ * made corrections so dihedral restraints work with negative angles
+ * (i.e. a full 360 degrees -- from -pi to +pi)
+ *
+ *
+ ***************************************************************************/
