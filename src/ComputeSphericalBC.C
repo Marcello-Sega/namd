@@ -121,7 +121,7 @@ void ComputeSphericalBC::doForce(CompAtom* p, Results* r)
 			dist = sqrt(dist_2);
 
 			//  Normalize the direction vector
-			diff.div(dist);
+			diff /= dist;
 
 			//  Check to see if we are outside radius 1
 			if (dist > r1)
@@ -156,7 +156,7 @@ void ComputeSphericalBC::doForce(CompAtom* p, Results* r)
 				//  Multiply the force magnitude to the
 				//  unit direction vector to get the
 				//  resulting force
-				f.mult(fval);
+				f *= fval;
 
 				//  Add the force to the force vectors
 				forces[i].x += f.x;
@@ -198,7 +198,7 @@ void ComputeSphericalBC::doForce(CompAtom* p, Results* r)
 				//  Multiply the force magnitude to the
 				//  unit direction vector to get the
 				//  resulting force
-				f.mult(fval);
+				f *= fval;
 
 				//  Add the force to the force vectors
 				forces[i].x += f.x;

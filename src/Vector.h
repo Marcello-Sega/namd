@@ -160,25 +160,6 @@ class Vector {
                       k*(v1.x*v2.y-v2.x*v1.y) );
      }
 
-     // add a vector to this vector
-     void add(const Vector &v1) {
-       x+=v1.x; y+=v1.y; z+=v1.z;
-     }
-
-     // subtract the vector from this one
-     void sub(const Vector &v1) {
-       x-=v1.x; y-=v1.y; z-=v1.z;
-     }
-
-     // add a constant factor to each element of a vector
-     void add_const(BigReal c)
-     {
-	x+=c;
-	y+=c;
-	z+=c;
-     }
-
-
      // A = A x B  -- why do you want this function, anyway?
      void cross(const Vector &v2) {
        BigReal xx =  y*v2.z-v2.y*z;
@@ -187,15 +168,6 @@ class Vector {
        z =  x*v2.y-v2.x*y;
        y=yy;
        x=xx;
-     }
-     // rescale everything by a scalar -- V = a*V
-     void mult(BigReal f) {
-       x*=f; y*=f; z*=f;
-     }
-
-     // divide each element by a scalar
-     void div(BigReal f) {
-       x/=f; y/=f; z/=f;
      }
 
      // returns (*this) * V2
@@ -270,8 +242,8 @@ main()
     cout << v2 << '\n';
     cout << v2.dot(v1) << '\n';
     cout << v1.length() << '\n';
-    v1.mult(-1);
-    v1.add(v2*14);
+    v1 *= -1;
+    v1 += v2*14;
     cout << v1 << '\n';
   }
 }

@@ -169,7 +169,7 @@ void ComputeRestraints::doForce(CompAtom* p, Results* res)
 	      value *= consExp;
 	      value /= r2;
       
-	      Rij.mult(value);
+	      Rij *= value;
               //iout << iINFO << "restraining force" << Rij        << "\n"; 
 
 	      f[localID] += Rij;
