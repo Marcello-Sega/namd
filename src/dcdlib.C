@@ -11,9 +11,10 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/dcdlib.C,v 1.2 1997/03/19 11:55:01 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/dcdlib.C,v 1.3 1997/09/19 16:38:37 jim Exp $";
 
 #include "dcdlib.h"
+#include "common.h" // for int32 definition
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
@@ -163,11 +164,11 @@ int read_dcdheader(int fd, int *N, int *NSET, int *ISTART,
 	int ret_val;		/*  Return value from read	*/
 	int i;			/*  Loop counter		*/
 	char HDR[5];		/*  Header = "CORD"		*/
-	int I;
-	int NTITLE;
+	int32 I;
+	int32 NTITLE;
 
 	/*  First thing in the file should be an 84		*/
-	ret_val = read(fd, &input_integer, sizeof(int));
+	ret_val = read(fd, &input_integer, sizeof(int32));
 
 	CHECK_FREAD(ret_val, "reading first int from dcd file");
 	CHECK_FEOF(ret_val, "reading first int from dcd file");
@@ -191,20 +192,23 @@ int read_dcdheader(int fd, int *N, int *NSET, int *ISTART,
 	}
 
 	/*  Read in the number of Sets of coordinates, NSET  */
-	ret_val = read(fd, NSET, sizeof(int));
+	ret_val = read(fd, &input_integer, sizeof(int32));
+	*NSET = input_integer;
 
 	CHECK_FREAD(ret_val, "reading NSET");
 	CHECK_FEOF(ret_val, "reading NSET");
 
 	/*  Read in ISTART, the starting timestep	     */
-	ret_val = read(fd, ISTART, sizeof(int));
+	ret_val = read(fd, &input_integer, sizeof(int32));
+	*ISTART = input_integer;
 
 	CHECK_FREAD(ret_val, "reading ISTART");
 	CHECK_FEOF(ret_val, "reading ISTART");
 
 	/*  Read in NSAVC, the number of timesteps between   */
 	/*  dcd saves					     */
-	ret_val = read(fd, NSAVC, sizeof(int));
+	ret_val = read(fd, &input_integer, sizeof(int32));
+	*NSAVC = input_integer;
 
 	CHECK_FREAD(ret_val, "reading NSAVC");
 	CHECK_FEOF(ret_val, "reading NSAVC");
@@ -213,14 +217,15 @@ int read_dcdheader(int fd, int *N, int *NSET, int *ISTART,
 	/*  Skip blank integers				     */
 	for (i=0; i<5; i++)
 	{
-		ret_val = read(fd, &input_integer, sizeof(int));
+		ret_val = read(fd, &input_integer, sizeof(int32));
 
 		CHECK_FREAD(ret_val, "reading I");
 		CHECK_FEOF(ret_val, "reading I");
 	}
 
 	/*  Read NAMNF, the number of free atoms	     */
-	ret_val = read(fd, NAMNF, sizeof(int));
+	ret_val = read(fd, &input_integer, sizeof(int32));
+	*NAMNF = input_integer;
 
 	CHECK_FREAD(ret_val, "reading NAMNF");
 	CHECK_FEOF(ret_val, "reading NAMNF");
@@ -234,14 +239,14 @@ int read_dcdheader(int fd, int *N, int *NSET, int *ISTART,
 	/*  Skip blank integers					*/
 	for (i=0; i<9; i++)
 	{
-		ret_val = read(fd, &I, sizeof(int));
+		ret_val = read(fd, &I, sizeof(int32));
 
 		CHECK_FREAD(ret_val, "reading I");
 		CHECK_FEOF(ret_val, "reading I");
 	}
 
 	/*  Get the end size of the first block			*/
-	ret_val = read(fd, &input_integer, sizeof(int));
+	ret_val = read(fd, &input_integer, sizeof(int32));
 
 	CHECK_FREAD(ret_val, "reading second 84 from dcd file");
 	CHECK_FEOF(ret_val, "reading second 84 from dcd file");
@@ -252,7 +257,7 @@ int read_dcdheader(int fd, int *N, int *NSET, int *ISTART,
 	}
 
 	/*  Read in the size of the next block			*/
-	ret_val = read(fd, &input_integer, sizeof(int));
+	ret_val = read(fd, &input_integer, sizeof(int32));
 
 	CHECK_FREAD(ret_val, "reading size of title block");
 	CHECK_FEOF(ret_val, "reading size of title block");
@@ -261,7 +266,7 @@ int read_dcdheader(int fd, int *N, int *NSET, int *ISTART,
 	{
 		/*  Read NTITLE, the number of 80 characeter    */
 		/*  title strings there are			*/
-		ret_val = read(fd, &NTITLE, sizeof(int));
+		ret_val = read(fd, &NTITLE, sizeof(int32));
 
 		CHECK_FREAD(ret_val, "reading NTITLE");
 		CHECK_FEOF(ret_val, "reading NTITLE");
@@ -275,7 +280,7 @@ int read_dcdheader(int fd, int *N, int *NSET, int *ISTART,
 		}
 
 		/*  Get the ending size for this block		*/
-		ret_val = read(fd, &input_integer, sizeof(int));
+		ret_val = read(fd, &input_integer, sizeof(int32));
 
 		CHECK_FREAD(ret_val, "reading size of title block");
 		CHECK_FEOF(ret_val, "reading size of title block");
@@ -286,7 +291,7 @@ int read_dcdheader(int fd, int *N, int *NSET, int *ISTART,
 	}
 
 	/*  Read in an 4				*/
-	ret_val = read(fd, &input_integer, sizeof(int));
+	ret_val = read(fd, &input_integer, sizeof(int32));
 
 	CHECK_FREAD(ret_val, "reading an 4");
 	CHECK_FEOF(ret_val, "reading an 4");
@@ -297,13 +302,14 @@ int read_dcdheader(int fd, int *N, int *NSET, int *ISTART,
 	}
 
 	/*  Read in the number of atoms			*/
-	ret_val = read(fd, N, sizeof(int));
+	ret_val = read(fd, &input_integer, sizeof(int32));
+	*N = input_integer;
 
 	CHECK_FREAD(ret_val, "reading number of atoms");
 	CHECK_FEOF(ret_val, "reading number of atoms");
 
 	/*  Read in an 4				*/
-	ret_val = read(fd, &input_integer, sizeof(int));
+	ret_val = read(fd, &input_integer, sizeof(int32));
 
 	CHECK_FREAD(ret_val, "reading an 4");
 	CHECK_FEOF(ret_val, "reading an 4");
@@ -316,12 +322,13 @@ int read_dcdheader(int fd, int *N, int *NSET, int *ISTART,
 	if (*NAMNF != 0)
 	{
 		(*FREEINDEXES) = new int[(*N)-(*NAMNF)];
+		int32 *freeindexes32 = new int32[(*N)-(*NAMNF)];
 
-		if (*FREEINDEXES == NULL)
+		if (*FREEINDEXES == NULL || freeindexes32 == NULL)
 			return(DCD_BADMALLOC);
 	
 		/*  Read in an size				*/
-		ret_val = read(fd, &input_integer, sizeof(int));
+		ret_val = read(fd, &input_integer, sizeof(int32));
 
 		CHECK_FREAD(ret_val, "reading size of index array");
 		CHECK_FEOF(ret_val, "reading size of index array");
@@ -331,12 +338,17 @@ int read_dcdheader(int fd, int *N, int *NSET, int *ISTART,
 			return(DCD_BADFORMAT);
 		}
 		
-		ret_val = read(fd, (*FREEINDEXES), ((*N)-(*NAMNF))*sizeof(int));
+		ret_val = read(fd, freeindexes32, ((*N)-(*NAMNF))*sizeof(int32));
 
 		CHECK_FREAD(ret_val, "reading size of index array");
 		CHECK_FEOF(ret_val, "reading size of index array");
 
-		ret_val = read(fd, &input_integer, sizeof(int));
+		for (i=0; i<((*N)-(*NAMNF)); ++i)
+			(*FREEINDEXES)[i] = freeindexes32[i];
+
+		delete [] freeindexes32;
+
+		ret_val = read(fd, &input_integer, sizeof(int32));
 
 		CHECK_FREAD(ret_val, "reading size of index array");
 		CHECK_FEOF(ret_val, "reading size of index array");
@@ -379,7 +391,7 @@ int read_dcdstep(int fd, int N, float *X, float *Y, float *Z, int num_fixed,
 
 {
 	int ret_val;		/*  Return value from read		*/
-	int input_integer;	/*  Integer buffer space		*/
+	int32 input_integer;	/*  Integer buffer space		*/
 	int i;			/*  Loop counter			*/
 	static float *tmpX;
 
@@ -394,7 +406,7 @@ int read_dcdstep(int fd, int N, float *X, float *Y, float *Z, int num_fixed,
 	}
 
 	/*  Get the first size from the file				*/
-	ret_val = read(fd, &input_integer, sizeof(int));
+	ret_val = read(fd, &input_integer, sizeof(int32));
 
 	CHECK_FREAD(ret_val, "reading number of atoms at begining of step");
 
@@ -418,7 +430,7 @@ int read_dcdstep(int fd, int N, float *X, float *Y, float *Z, int num_fixed,
 		CHECK_FREAD(ret_val, "reading X array");
 		CHECK_FEOF(ret_val, "reading X array");
 
-		ret_val = read(fd, &input_integer, sizeof(int));
+		ret_val = read(fd, &input_integer, sizeof(int32));
 
 		CHECK_FREAD(ret_val, "reading number of atoms after X array");
 		CHECK_FEOF(ret_val, "reading number of atoms after X array");
@@ -428,7 +440,7 @@ int read_dcdstep(int fd, int N, float *X, float *Y, float *Z, int num_fixed,
 			return(DCD_BADFORMAT);
 		}
 
-		ret_val = read(fd, &input_integer, sizeof(int));
+		ret_val = read(fd, &input_integer, sizeof(int32));
 
 		CHECK_FREAD(ret_val, "reading number of atoms after X array");
 		CHECK_FEOF(ret_val, "reading number of atoms after X array");
@@ -443,7 +455,7 @@ int read_dcdstep(int fd, int N, float *X, float *Y, float *Z, int num_fixed,
 		CHECK_FREAD(ret_val, "reading Y array");
 		CHECK_FEOF(ret_val, "reading Y array");
 
-		ret_val = read(fd, &input_integer, sizeof(int));
+		ret_val = read(fd, &input_integer, sizeof(int32));
 
 		CHECK_FREAD(ret_val, "reading number of atoms after Y array");
 		CHECK_FEOF(ret_val, "reading number of atoms after Y array");
@@ -453,7 +465,7 @@ int read_dcdstep(int fd, int N, float *X, float *Y, float *Z, int num_fixed,
 			return(DCD_BADFORMAT);
 		}
 
-		ret_val = read(fd, &input_integer, sizeof(int));
+		ret_val = read(fd, &input_integer, sizeof(int32));
 
 		CHECK_FREAD(ret_val, "reading number of atoms after Y array");
 		CHECK_FEOF(ret_val, "reading number of atoms after Y array");
@@ -468,7 +480,7 @@ int read_dcdstep(int fd, int N, float *X, float *Y, float *Z, int num_fixed,
 		CHECK_FREAD(ret_val, "reading Z array");
 		CHECK_FEOF(ret_val, "reading Z array");
 
-		ret_val = read(fd, &input_integer, sizeof(int));
+		ret_val = read(fd, &input_integer, sizeof(int32));
 
 		CHECK_FREAD(ret_val, "reading number of atoms after Z array");
 		CHECK_FEOF(ret_val, "reading number of atoms after Z array");
@@ -495,7 +507,7 @@ int read_dcdstep(int fd, int N, float *X, float *Y, float *Z, int num_fixed,
 			X[indexes[i]-1]=tmpX[i];
 		}
 
-		ret_val = read(fd, &input_integer, sizeof(int));
+		ret_val = read(fd, &input_integer, sizeof(int32));
 
 		CHECK_FREAD(ret_val, "reading number of atoms after X array");
 		CHECK_FEOF(ret_val, "reading number of atoms after X array");
@@ -505,7 +517,7 @@ int read_dcdstep(int fd, int N, float *X, float *Y, float *Z, int num_fixed,
 			return(DCD_BADFORMAT);
 		}
 
-		ret_val = read(fd, &input_integer, sizeof(int));
+		ret_val = read(fd, &input_integer, sizeof(int32));
 
 		if (input_integer != 4*(N-num_fixed))
 		{
@@ -522,7 +534,7 @@ int read_dcdstep(int fd, int N, float *X, float *Y, float *Z, int num_fixed,
 			Y[indexes[i]-1]=tmpX[i];
 		}
 
-		ret_val = read(fd, &input_integer, sizeof(int));
+		ret_val = read(fd, &input_integer, sizeof(int32));
 
 		CHECK_FREAD(ret_val, "reading number of atoms after Y array");
 		CHECK_FEOF(ret_val, "reading number of atoms after Y array");
@@ -532,7 +544,7 @@ int read_dcdstep(int fd, int N, float *X, float *Y, float *Z, int num_fixed,
 			return(DCD_BADFORMAT);
 		}
 
-		ret_val = read(fd, &input_integer, sizeof(int));
+		ret_val = read(fd, &input_integer, sizeof(int32));
 
 		if (input_integer != 4*(N-num_fixed))
 		{
@@ -549,7 +561,7 @@ int read_dcdstep(int fd, int N, float *X, float *Y, float *Z, int num_fixed,
 			Z[indexes[i]-1]=tmpX[i];
 		}
 
-		ret_val = read(fd, &input_integer, sizeof(int));
+		ret_val = read(fd, &input_integer, sizeof(int32));
 
 		CHECK_FREAD(ret_val, "reading number of atoms after Z array");
 		CHECK_FEOF(ret_val, "reading number of atoms after Z array");
@@ -626,18 +638,18 @@ int open_dcd_write(char *dcdname)
 int write_dcdstep(int fd, int N, float *X, float *Y, float *Z)
 
 {
-	int out_integer;
+	int32 out_integer;
 
 	out_integer = N*4;
-	write(fd, (char *) &out_integer, sizeof(int));
+	write(fd, (char *) &out_integer, sizeof(int32));
 	write(fd, (char *) X, out_integer);
-	write(fd, (char *) &out_integer, sizeof(int));
-	write(fd, (char *) &out_integer, sizeof(int));
+	write(fd, (char *) &out_integer, sizeof(int32));
+	write(fd, (char *) &out_integer, sizeof(int32));
 	write(fd, (char *) Y, out_integer);
-	write(fd, (char *) &out_integer, sizeof(int));
-	write(fd, (char *) &out_integer, sizeof(int));
+	write(fd, (char *) &out_integer, sizeof(int32));
+	write(fd, (char *) &out_integer, sizeof(int32));
 	write(fd, (char *) Z, out_integer);
-	write(fd, (char *) &out_integer, sizeof(int));
+	write(fd, (char *) &out_integer, sizeof(int32));
 
 	return(0);
 }
@@ -667,7 +679,7 @@ int write_dcdstep(int fd, int N, float *X, float *Y, float *Z)
 int write_dcdheader(int fd, char *filename, int N, int NSET, int ISTART, 
 		   int NSAVC, double DELTA)
 {
-	int	out_integer;
+	int32	out_integer;
 	char	title_string[200];
 	int	user_id;
 	struct  passwd *pwbuf;
@@ -676,36 +688,39 @@ int write_dcdheader(int fd, char *filename, int N, int NSET, int ISTART,
 	char    time_str[11];
 
 	out_integer = 84;
-	write(fd, (char *) & out_integer, sizeof(int));
+	write(fd, (char *) & out_integer, sizeof(int32));
 	strcpy(title_string, "CORD");
 	write(fd, title_string, 4);
-	write(fd, (char *) &NSET, sizeof(int));
-	write(fd, (char *) &ISTART, sizeof(int));
-	write(fd, (char *) &NSAVC, sizeof(int));
+	out_integer = NSET;
+	write(fd, (char *) & out_integer, sizeof(int32));
+	out_integer = ISTART;
+	write(fd, (char *) & out_integer, sizeof(int32));
+	out_integer = NSAVC;
+	write(fd, (char *) & out_integer, sizeof(int32));
 	out_integer=0;
-	write(fd, (char *) &out_integer, sizeof(int));
-	write(fd, (char *) &out_integer, sizeof(int));
-	write(fd, (char *) &out_integer, sizeof(int));
-	write(fd, (char *) &out_integer, sizeof(int));
-	write(fd, (char *) &out_integer, sizeof(int));
-	write(fd, (char *) &out_integer, sizeof(int));
+	write(fd, (char *) &out_integer, sizeof(int32));
+	write(fd, (char *) &out_integer, sizeof(int32));
+	write(fd, (char *) &out_integer, sizeof(int32));
+	write(fd, (char *) &out_integer, sizeof(int32));
+	write(fd, (char *) &out_integer, sizeof(int32));
+	write(fd, (char *) &out_integer, sizeof(int32));
 	write(fd, (char *) &DELTA, sizeof(double));
-	write(fd, (char *) &out_integer, sizeof(int));
-	write(fd, (char *) &out_integer, sizeof(int));
-	write(fd, (char *) &out_integer, sizeof(int));
-	write(fd, (char *) &out_integer, sizeof(int));
-	write(fd, (char *) &out_integer, sizeof(int));
-	write(fd, (char *) &out_integer, sizeof(int));
-	write(fd, (char *) &out_integer, sizeof(int));
-	write(fd, (char *) &out_integer, sizeof(int));
-	write(fd, (char *) &out_integer, sizeof(int));
+	write(fd, (char *) &out_integer, sizeof(int32));
+	write(fd, (char *) &out_integer, sizeof(int32));
+	write(fd, (char *) &out_integer, sizeof(int32));
+	write(fd, (char *) &out_integer, sizeof(int32));
+	write(fd, (char *) &out_integer, sizeof(int32));
+	write(fd, (char *) &out_integer, sizeof(int32));
+	write(fd, (char *) &out_integer, sizeof(int32));
+	write(fd, (char *) &out_integer, sizeof(int32));
+	write(fd, (char *) &out_integer, sizeof(int32));
 	out_integer = 84;
-	write(fd, (char *) & out_integer, sizeof(int));
+	write(fd, (char *) & out_integer, sizeof(int32));
 
 	out_integer = 164;
-	write(fd, (char *) & out_integer, sizeof(int));
+	write(fd, (char *) & out_integer, sizeof(int32));
 	out_integer = 2;
-	write(fd, (char *) & out_integer, sizeof(int));
+	write(fd, (char *) & out_integer, sizeof(int32));
 
 	sprintf(title_string, "REMARKS FILENAME=%s CREATED BY NAMD", filename);
 	pad(title_string, 80);
@@ -722,13 +737,13 @@ int write_dcdheader(int fd, char *filename, int N, int NSET, int ISTART,
 	pad(title_string, 80);
 	write(fd, title_string, 80);
 	out_integer = 164;
-	write(fd, (char *) & out_integer, sizeof(int));
+	write(fd, (char *) & out_integer, sizeof(int32));
 	out_integer = 4;
-	write(fd, (char *) & out_integer, sizeof(int));
+	write(fd, (char *) & out_integer, sizeof(int32));
 	out_integer = N;
-	write(fd, (char *) & out_integer, sizeof(int));
+	write(fd, (char *) & out_integer, sizeof(int32));
 	out_integer = 4;
-	write(fd, (char *) & out_integer, sizeof(int));
+	write(fd, (char *) & out_integer, sizeof(int32));
 
 	return(0);
 }
@@ -788,13 +803,16 @@ void close_dcd_write(int fd)
  * RCS INFORMATION:
  *
  *	$RCSfile: dcdlib.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1997/03/19 11:55:01 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.3 $	$Date: 1997/09/19 16:38:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: dcdlib.C,v $
+ * Revision 1.3  1997/09/19 16:38:37  jim
+ * Switched from int to int32 (defined in common.h) for 64-bit machines.
+ *
  * Revision 1.2  1997/03/19 11:55:01  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.
