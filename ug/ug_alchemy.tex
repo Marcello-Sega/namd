@@ -69,10 +69,9 @@ during the simulation --- \eg the environment,
 the atoms describing the initial state, $a$, of the system, and, last, the 
 atoms that correspond to the final state, $b$, at the end of the 
 alchemical transformation. 
-The excluded pairs are defined in the {\tt psf} file, so that 
-the atoms representative of state $a$
+The atoms representative of state $a$
 do not interact with those of state $b$ throughout the 
-entire molecular dynamics ({\sc md}) simulation. 
+entire molecular dynamics simulation. 
 Such a setup, in which atoms of both the initial and the
 final states of the system are present in the molecular topology file --- \ie 
 the {\tt psf} file --- is characterisitic of the so--called ``dual topology'' 
@@ -89,7 +88,7 @@ where ${\cal H}_a$ is the Hamiltonian of the group of atoms representative
 of the initial state, $a$, and ${\cal H}_b$ characterizes the final state,
 $b$. 
 ${\cal H}_0$ is the Hamiltonian for those atoms that do not undergo any 
-transformation during the {\sc md} simulation.
+transformation during the MD simulation.
 
 
 In the present implementation of \FEP\ in \NAMD, we employ a hamiltonian
@@ -141,8 +140,8 @@ For intermediate values of $\lambda$, both the alanine and the glycine
 side chains participate in non--bonded interactions with the rest 
 of the protein, scaled on the basis of the current value of $\lambda$.
 It should be emphasized that these side chains, however,
-do not interact with themselves. Explicit care should be taken while
-preparing the {\tt psf} file to exclude those atoms that are created
+do not interact with themselves.
+It is not necessary to explicitly exclude those atoms that are created
 from those that will be annihilated in the course of the
 \FEP\ calculation.
 
@@ -170,7 +169,7 @@ energy calculations that split the $\lambda$
 reaction path into a number of non--physical,
 intermediate states, or ``windows''. Seperate simulations 
 can be started for each window.
-Alternatively, the {\sc Tcl} scripting ability of 
+Alternatively, the Tcl scripting ability of 
 \NAMD\ can be employed advantageously
 to perform the complete simulation in a single run.
 An example making use of such script is supplied at the end 
@@ -183,7 +182,7 @@ energy calculations.
 \begin{itemize}
 
 \item
-\NAMDCONFWDEF{fepOn}{ Is alchemical \FEP\ to be performed? }
+\NAMDCONFWDEF{fep}{ Is alchemical \FEP\ to be performed? }
 {{\tt on} or {\tt off}}
 {{\tt off}}
 {Turns on parameter scaling and ensemble averaging for alchemical \FEP.}
@@ -193,34 +192,36 @@ energy calculations.
 {positive decimal between 0.0 and 1.0}
 {The coupling parameter value determining the progress of the
 perturbation. The non--bonded parameters of the atoms vanishing
-in the course of the {\sc md} simulation are scaled by {\tt lambda}, whilst
+in the course of the MD simulation are scaled by {\tt lambda}, while
 the parameters of those atoms grown are scaled by (1-{\tt lambda}).}
 
 \item
-\NAMDCONF{dLambda}{Coupling parameter step}
+\NAMDCONF{lambda2}{Coupling parameter comparison value}
 {positive decimal between 0.0 and 1.0}
-{The {\tt dLambda} value corresponds to the magnitude of the change in
-the coupling parameter, $\lambda$, that defines the spacing between
-adjacent windows.}
+{The {\tt lambda2} value corresponds to the coupling parameter to be
+used for sampling in the next window.  The free energy difference
+between {\tt lambda2} and {\tt lambda} is calculated.  Through simulations
+at progressive values of {\tt lambda} and {\tt lambda2} the total free
+energy difference may be determined.}
 
 \item
-\NAMDCONFWDEF{numFepEqlb}{Number of equilibration steps in the window, 
+\NAMDCONFWDEF{fepEquilSteps}{Number of equilibration steps in the window, 
 before data collection}
 {positive integer less than {\tt numSteps} or {\tt run}}
 {0}
-{In each window {\tt numFepEqlb} steps of equilibration can be
+{In each window {\tt fepEquilSteps} steps of equilibration can be
 performed before ensemble averaging is initiated. The output also contains
 the data gathered during equilibration and is meant for analysis of
 convergence properties of the \FEP\ calculation.}
 
 \item
-\NAMDCONFWDEF{fepFile}{{\sc pdb} file with perturbation flags}
-{{\sc Unix} filename}
+\NAMDCONFWDEF{fepFile}{pdb file with perturbation flags}
+{filename}
 {coordinates}
-{{\sc pdb} file to be used for indicating the \FEP\ status for each of
+{pdb file to be used for indicating the \FEP\ status for each of
 the atoms pertaining to the system. 
 If this parameter is not declared specifically, then the
-{\sc pdb} file containing the initial coordinates specified by
+pdb file containing the initial coordinates specified by
 {\tt coordinates} is utilized for this information.}
 
 \item
@@ -228,7 +229,7 @@ If this parameter is not declared specifically, then the
                       the perturbation flag}
 {X, Y, Z, O or B}
 {O}
-{Column of the {\sc pdb} file to use for retrieving the \FEP\ status 
+{Column of the pdb file to use for retrieving the \FEP\ status 
 of each atom, \ie a flag that indicates which atom will be perturbed
 in the course of the simulation.
 A value of {\tt -1} in the specified column indicates the atom will
@@ -239,7 +240,7 @@ indicates that the atom would grow.}
 \NAMDCONFWDEF{fepOutFreq}{Frequency of \FEP\ energy output in time--steps}
 {positive integer}
 {5}
-{Every {\tt fepOutFreq} number of {\sc md} steps, the output file
+{Every {\tt fepOutFreq} number of MD steps, the output file
 {\tt fepOutFile} is updated by dumping energies that are
 used for ensemble averaging.
 This variable could be set to {\tt 1} to include all the 
@@ -255,108 +256,94 @@ to avoid large correlation between consecutive configurations.}
 {An output file named {\tt fepOutFile}.fep, generated by \NAMD,
 contains the \FEP\ energies, dumped every {\tt fepOutFreq} steps.}
 
-\item
-\NAMDCONFWDEF{scaleH}{Perform Hamiltonian scaling }
-{{\tt on} or {\tt off}}
-{{\tt on}}
-{Presently NAMD can perform Hamiltonian scaling based FEP simulation.
-Amber (xleap) generated perturbation prmtop file is not supported
-and parameter scaling based calculation cannot be performed with this
-version.}
-
 \end{itemize}
 
 
 \subsubsection{Examples of input files for running FEP alchemical calculations}
 
 
-The first example illustrates the use of {\sc Tcl} scripting for running
+The first example illustrates the use of Tcl scripting for running
 the alchemical \FEP\ feature of \NAMD: 
 
 \begin{verbatim}
-fepOn		on  
+fep		on  
 fepfile		ion.fep
 fepCol		X
-fepoutfile	ion.fepout
+fepOutfile	ion.fepout
 fepOutFreq	5
-numFepEqlb	5000
+fepEquilSteps	5000
 
 set step 0.0
 set dstep 0.1
 
 while {$step <= 0.9} {
- firsttimestep	0
  lambda $step
- dlambda $dstep
+ lambda2 [expr $step+$dstep]
  run  10000
  set step [expr $step+$dstep]
 }
 \end{verbatim}
 
-Here, the {\sc pdb} file read by \NAMD\ to retrieve the information
+Here, the pdb file read by \NAMD\ to retrieve the information
 about perturbed atoms is {\tt biotin.fep}. The pertinent information 
 is present in the {\tt X} column. The output file of the free energy
 calculation is {\tt biotinr.fepout}, in which energies are written
-every {\tt 5} steps. No electrostatic decoupling is employed. 
+every {\tt 5} steps.
 $\delta \lambda$, the width of the windows, is set to {\tt 0.1}.
-{\tt 5000} {\sc md} steps are performed in each window to
+{\tt 5000} MD steps are performed in each window to
 equilibrate the system. In this particular instance, 
 the current value of $\lambda$
 is controlled by the syntax {\tt set step}. 
 The \FEP\ calculation is run until $\lambda$ reaches the
-value {\tt 0.9}. In every window, {\tt 10000} {\sc md} steps
-are being performed. At each value of $\lambda$, the first 
-{\sc md} step is reset to {\tt 0} by means of the command
- {\tt firsttimestep}.
+value {\tt 0.9}. In every window, {\tt 10000} MD steps
+are being performed.
 
 
 In the second example, each $\lambda$--state is declared
-explicitly, avoiding the use of {\sc Tcl} scripting:
+explicitly, avoiding the use of Tcl scripting:
 
 \begin{verbatim}
-fepOn		on  
+fep		on  
 fepfile		ion.fep
 fepCol		X
-fepoutfile	ion.fepout
+fepOutfile	ion.fepout
 fepOutFreq	5
-dLambda		0.1
-numFepEqlb	5000
+fepEquilSteps	5000
 
-Lambda		0.0
+lambda		0.0
+lambda2		0.1
 run		10000
 
 lambda		0.1
-firsttimestep	0
+lambda2		0.2
 run		10000
 \end{verbatim}
 $\vdots$
 \begin{verbatim}
 lambda		0.8
-firsttimestep	0
+lambda2		0.9
 run		10000
 
 lambda		0.9
-firsttimestep	0
+lambda2		1.0
 run		10000
 \end{verbatim}
 
 The \FEP\ calculation is carried out from $\lambda$ = {\tt 0.0} to
-{\tt 0.9}. In each new window, {\tt 10000} {\sc md} steps are
-performed, and the number of steps is being reinitialized using
-the {\tt firsttimestep} keyword.
+{\tt 0.9}. In each new window, {\tt 10000} MD steps are performed.
 
 
 
 \subsubsection{Description of \FEP\ simulation output }
 
 The {\tt fepOutFile} contains electrostatic and van der Waals energy
-data calculated for $\lambda$ and $\delta\lambda$, written every
+data calculated for $\lambda$ and $lambda2$, written every
 {\tt fepOutFreq} steps. The column {\tt dE} is the energy
 difference of the single configuration, {\tt dE\_avg} and {\tt dG}
 are the instantaneous ensemble average of the energy and the calculated
 free energy at the time step specified in column 2, respectively.
 The temperature is specified in the penultimate column. On completion
-of {\tt numFepEqlb} steps, the calculation of {\tt dE\_avg} and 
+of {\tt fepEquilSteps} steps, the calculation of {\tt dE\_avg} and 
 {\tt dG} is restarted. The accumulated net free energy change is output
 and the end of the simulation at each lambda value. The cummulative
 average energy {\tt dE\_avg} value may be summed using the 
