@@ -364,8 +364,11 @@ int Rebalancer::refine()
 	  p = &processors[patches[c->patch1].processor];
 	  refine_togrid(grid, thresholdLoad, p, c);
 
+	  if (c->patch1 != c->patch2)
+	  {
 	  p = &processors[patches[c->patch2].processor];
 	  refine_togrid(grid, thresholdLoad, p, c);
+	  }
 
 	  p = (processorInfo *)patches[c->patch1].
 				proxiesOn.iterator((Iterator *)&nextProc);
@@ -375,6 +378,8 @@ int Rebalancer::refine()
 				proxiesOn.next((Iterator*)&nextProc);
           }
 
+	  if (c->patch1 != c->patch2) 
+	  {
 	  p = (processorInfo *)patches[c->patch2].
 				proxiesOn.iterator((Iterator *)&nextProc);
           while (p) {
@@ -382,6 +387,7 @@ int Rebalancer::refine()
             p = (processorInfo *)patches[c->patch2].
 				proxiesOn.next((Iterator*)&nextProc);
           }
+	  }
 
           nextCompute.id++;
           c = (computeInfo *) donor->computeSet.
@@ -430,7 +436,7 @@ int Rebalancer::refine()
 
       //we have narrowed the choice to 6 candidates.
       {
-        processorInfo* bestP;
+        processorInfo* bestP = 0;
 	REASSIGN(grid[2][0])
 	else REASSIGN(grid[1][1])
 	else REASSIGN(grid[0][2])
