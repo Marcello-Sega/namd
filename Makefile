@@ -23,7 +23,7 @@ OBJS = \
 	ComputeNonbondedSelf.o ComputeNonbondedPair.o \
 	ComputeAngles.o ComputeDihedrals.o ComputeImpropers.o \
 	ComputeBonds.o ComputeNonbondedExcl.o ComputeMgr.o \
-	ProxyMgr.o
+	ProxyMgr.o ProxyPatch.o
 
 CXXFILES = $(OBJS:.o=.C)
 
