@@ -1,5 +1,5 @@
 NAMD_ARCH = Linux-amd64
-CHARMARCH = mpi-linux-opteron
+CHARMARCH = mpi-linux-amd64
 
 CXX = g++ -DSOCKLEN_T=socklen_t -DNO_STRSTREAM_H
 CXXOPTS = -O3 -m64 -fexpensive-optimizations -ffast-math 
