@@ -526,10 +526,11 @@ void Sequencer::submitReductions(int step)
       x_cm /= m_cm;
       v_cm /= m_cm;
       for ( j = i; j < (i+hgs); ++j ) {
-        Vector dv = patch->v[j] - v_cm;
-        intKineticEnergy += patch->a[j].mass * (patch->v[j] * dv);
- // JCP FIX THIS:  IS THIS ORDER RIGHT???  DOES IT MATTER???
-        intVirialNormal += patch->a[j].mass * outer(patch->v[j],dv);
+        BigReal mass = patch->a[j].mass;
+        Vector v = patch->v[j];
+        Vector dv = v - v_cm;
+        intKineticEnergy += mass * (v * dv);
+        intVirialNormal += mass * outer(v,dv);
         Vector dx = patch->p[j] - x_cm;
         intVirialNormal += outer(patch->f[Results::normal][j],dx);
         intVirialNbond += outer(patch->f[Results::nbond][j],dx);
