@@ -251,6 +251,181 @@ void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
    }
 }
 
+int Rebalancer::oldrefine()
+{
+   int finish = 1;
+   maxHeap *heavyProcessors = new maxHeap(P);
+
+   Set *lightProcessors = new Set();
+   int i;
+   int overloaded = 0;
+   int underloaded = 0;
+   double thresholdLoad = overLoad * averageLoad;
+   for (i=0; i<P; i++) {
+      // iout << iINFO << "\n Computes on processor " << i << " ";
+      // processors[i].computeSet->print();
+      // iout << iINFO << "\n" << endi;
+     if (processors[i].load >= thresholdLoad ) {
+       heavyProcessors->insert((InfoRecord *) &(processors[i]));
+       overloaded++;
+     } else {
+       lightProcessors->insert((InfoRecord *) &(processors[i]));
+       underloaded++;
+     }
+   }
+   iout << iINFO << overloaded << " overloaded and " 
+	<< underloaded << " underloaded processors\n" << endi;
+
+   int done = 0;
+   while (!done)
+   {
+      computeInfo *bestCompute0, *bestCompute1, *bestCompute2;
+      processorInfo *bestP0,*bestP1,*bestP2;
+    
+      processorInfo *donor = (processorInfo *) heavyProcessors->deleteMax();
+      if (!donor) break;
+
+      //find the best pair (c,receiver)
+      //      iout << iINFO << "Finding receiver for processor " << donor->Id 
+      //	   << "\n" << endi;
+      selectComputeCandidates(lightProcessors, donor, thresholdLoad,
+			      &bestCompute2, &bestP2,
+			      &bestCompute1, &bestP1,
+			      &bestCompute0, &bestP0);
+
+      //we have narrowed the choice to 3 candidates.
+      processorInfo* bestP;
+
+      if (bestCompute2) {
+         deAssign(bestCompute2, donor);      
+         assign(bestCompute2, bestP2);
+         bestP = bestP2;
+      } else if (bestCompute1) {
+         deAssign(bestCompute1, donor);
+         assign(bestCompute1, bestP1);
+         bestP = bestP1;
+      } else if (bestCompute0) {
+         deAssign(bestCompute0, donor);
+         assign(bestCompute0, bestP0);
+         bestP = bestP0;
+      } else {
+         // iout << iINFO << "Refine: No receiver found" << "\n" << endl;
+         finish = 0;
+         break;
+      }
+
+      if (bestP->load > thresholdLoad) {
+         lightProcessors->remove(bestP);
+	 heavyProcessors->insert((InfoRecord*) bestP);
+      }
+    
+      if (donor->load > thresholdLoad)
+         heavyProcessors->insert((InfoRecord *) donor);
+      else lightProcessors->insert((InfoRecord *) donor);
+   }
+  
+#if 0
+   // After refining, compute min, max and avg processor load
+   double total = processors[0].load;
+   double min = processors[0].load;
+   int min_proc = 0;
+   double max = processors[0].load;
+   int max_proc = 0;
+   for (i=1; i<P; i++) {
+     total += processors[i].load;
+     if (processors[i].load < min) {
+       min = processors[i].load;
+       min_proc = i;
+     }
+     if (processors[i].load > max) {
+       max = processors[i].load;
+       max_proc = i;
+     }
+   }
+   iout << iINFO << "Refinement at overLoad=" << overLoad << "\n";
+   iout << iINFO << "  min = " << min << " processor " << min_proc << "\n";
+   iout << iINFO << "  max = " << max << " processor " << max_proc << "\n";
+   iout << iINFO << "  total = " << total << " average = " << total/P << "\n"
+	<< endi;
+   
+   if (!finish) {
+     iout << iINFO << "Refine: No solution found for overLoad = " 
+	  << overLoad << "\n" << endi;
+   }
+#endif
+
+   return finish;
+}
+
+void 
+Rebalancer::selectComputeCandidates(Set* lightProcessors,
+				    processorInfo* donor,
+				    double thresholdLoad, 
+				    computeInfo** bestCompute2,
+				    processorInfo** bestP2,
+				    computeInfo** bestCompute1,
+				    processorInfo** bestP1,
+				    computeInfo** bestCompute0,
+				    processorInfo** bestP0)
+{
+  Iterator nextProcessor;
+  processorInfo *p = (processorInfo *)lightProcessors->
+    iterator((Iterator *) &nextProcessor);
+  double bestSize0=0;
+  double bestSize1=0;
+  double bestSize2=0;
+  *bestP0 = *bestP1 = *bestP2 = 0;
+  *bestCompute0 = *bestCompute1 = *bestCompute2 = 0;
+
+
+  //  iout << iINFO << "Starting with processor " << (int)p << endi;
+  while (p) {
+    Iterator nextCompute;
+    nextCompute.id = 0;
+    computeInfo *c = (computeInfo *) donor->computeSet->
+      iterator((Iterator *)&nextCompute);
+    //    iout << iINFO << "Considering Procsessor : " << p->Id << "\n" << endi;
+    while (c) {
+      if ( c->load + p->load < donor->load - p->load)  {
+	int n= numAvailable(c,p);
+	//	iout << iINFO << "Considering Compute : " << c->Id << " with load " 
+	//	     << c->load << "\n" << endi;
+	switch(n) {
+	case 0: 
+	  if(c->load > bestSize0 
+	     && (!(*bestP0) || p->load<(*bestP0)->load)) {
+	    bestSize0 = c->load;
+	    *bestCompute0 = c;
+	    *bestP0 = p;
+	  }
+	  break;
+	case 1: 
+	  if(c->load > bestSize1 
+	     && (!(*bestP1) || p->load< (*bestP1)->load)) {
+	    bestSize1 = c->load;
+	    *bestCompute1 = c;
+	    *bestP1 = p;
+	  }
+	  break;
+	case 2: 
+	  if(c->load > bestSize2 
+	     && (!(*bestP2) || p->load<(*bestP2)->load)) {
+	    bestSize2 = c->load;
+	    *bestCompute2 = c;
+	    *bestP2 = p;
+	  }
+	  break;
+	default:
+	  iout << iINFO <<  "Error. Illegal number of proxies.\n" << "\n";    
+	}
+      }
+      nextCompute.id++;
+      c = (computeInfo *) donor->computeSet->next((Iterator *)&nextCompute);
+    }
+    p = (processorInfo *) lightProcessors->next((Iterator *)&nextProcessor);
+  }
+}
+
 int Rebalancer::refine()
 {
    int finish = 1;
@@ -258,15 +433,15 @@ int Rebalancer::refine()
 
    Set *lightProcessors = new Set();
    int i;
+   double thresholdLoad = overLoad * averageLoad;
    for (i=0; i<P; i++)
    {
       // iout << iINFO << "\n Computes on processor " << i << " ";
       // processors[i].computeSet->print();
       // iout << iINFO << "\n" << endi;
-      if (processors[i].load >= overLoad*averageLoad)
+      if (processors[i].load > thresholdLoad)
          heavyProcessors->insert((InfoRecord *) &(processors[i]));
-      else if (processors[i].load < overLoad * averageLoad)
-	      lightProcessors->insert((InfoRecord *) &(processors[i]));
+      else lightProcessors->insert((InfoRecord *) &(processors[i]));
    }
    int done = 0;
    while (!done)
@@ -276,7 +451,23 @@ int Rebalancer::refine()
       processorInfo *bestP,*bestP0,*bestP1,*bestP2;
     
       processorInfo *donor = (processorInfo *) heavyProcessors->deleteMax();
-      if (!donor) break;
+      /* Keep selecting new donors, until we find one with some compute to
+       * migrate
+       */
+      computeInfo* c=0;
+      while (donor && !c) {
+        Iterator nextCompute;
+        nextCompute.id = 0;
+        c = (computeInfo *) donor->
+            computeSet->iterator((Iterator *)&nextCompute);
+        if (!c) {
+          iout << iINFO << "Ignoring donor " << donor->Id
+               << " because no computes\n" << endi;
+	  donor = (processorInfo*)heavyProcessors->deleteMax();
+        }
+      };
+  
+      if (!donor) break;  // No donors found at all! Give up 
 
       //find the best pair (c,receiver)
       Iterator nextProcessor;
@@ -296,7 +487,7 @@ int Rebalancer::refine()
          // iout << iINFO << "Considering Procsessor : " << p->Id << "\n" << endi;
          while (c)
          {
-            if ( c->load + p->load < overLoad*averageLoad) 
+            if ( c->load + p->load < thresholdLoad) 
             {
                int n= numAvailable(c,p);
                // iout << iINFO << "Considering Compute : " << c->Id << " with load " 
@@ -367,12 +558,11 @@ int Rebalancer::refine()
       if (bestP->load > averageLoad)
          lightProcessors->remove(bestP);
     
-      if (donor->load > overLoad*averageLoad)
+      if (donor->load > thresholdLoad)
          heavyProcessors->insert((InfoRecord *) donor);
-      else if (donor->load < averageLoad)
-         lightProcessors->insert((InfoRecord *) donor);
+      else lightProcessors->insert((InfoRecord *) donor);
    }  
-#if 0
+#if 1
    // After refining, compute min, max and avg processor load
    double total = processors[0].load;
    double min = processors[0].load;
@@ -401,6 +591,9 @@ int Rebalancer::refine()
 	  << overLoad << "\n" << endi;
    }
 #endif
+
+   delete heavyProcessors;
+   delete lightProcessors;
 
    return finish;
 }

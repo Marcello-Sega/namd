@@ -36,6 +36,16 @@ protected:
   void assign(computeInfo *c, int p);
   void deAssign(computeInfo *c, processorInfo *pRec);
   int refine();
+  void selectComputeCandidates(Set* lightProcessors,
+			       processorInfo* donor,
+			       double thresholdLoad, 
+			       computeInfo** bestCompute2,
+			       processorInfo** bestP2,
+			       computeInfo** bestCompute1,
+			       processorInfo** bestP1,
+			       computeInfo** bestCompute0,
+			       processorInfo** bestP0);
+  int oldrefine();
   void printResults();
   void printLoads();
   void computeAverage();
