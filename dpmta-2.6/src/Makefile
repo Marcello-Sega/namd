@@ -11,10 +11,13 @@
 # for other platforms.
 #
 #
-# RCS Info: $Id: Makefile,v 1.3 1997/09/29 23:58:33 jim Exp $
+# RCS Info: $Id: Makefile,v 1.4 1998/08/23 20:59:28 jim Exp $
 #
 # Revision History:
 # $Log: Makefile,v $
+# Revision 1.4  1998/08/23 20:59:28  jim
+# Fixed compile option passing.
+#
 # Revision 1.3  1997/09/29 23:58:33  jim
 # Incorporated changes from version 2.6.1 of DPMTA.
 #   - fixes for bad handling of empty/invalid multipoles when
@@ -292,7 +295,7 @@ SLIBS = -lpvm3 -lgpvm3 -lmpole -lm $(OSLIBS)
 #
 ################################################################
 
-CFLAGS = -O3 -D$(PVM_ARCH) $(DFLAGS) $(IFLAGS)
+CFLAGS = $(COPTS) -D$(PVM_ARCH) $(DFLAGS) $(IFLAGS)
 
 MLFLAGS = 
 SLFLAGS = $(SLDIR)

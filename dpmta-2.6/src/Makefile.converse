@@ -10,10 +10,13 @@
 # for compilation on generic workstation networks should use the default
 # makefile
 #
-# RCS Info: $Id: Makefile.converse,v 1.4 1997/12/17 15:22:28 milind Exp $
+# RCS Info: $Id: Makefile.converse,v 1.5 1998/08/23 20:59:29 jim Exp $
 #
 # Revision History:
 # $Log: Makefile.converse,v $
+# Revision 1.5  1998/08/23 20:59:29  jim
+# Fixed compile option passing.
+#
 # Revision 1.4  1997/12/17 15:22:28  milind
 # Fixed a makefile bug to take care of PVM_ARCH.
 #
@@ -123,7 +126,7 @@ LDIR =  -L. -L../mpole -L$(PVM_LDIR)
 #
 ################################################################
 
-CFLAGS = -D$(PVM_ARCH) -DEMBEDDED $(DFLAGS) $(IDIR)
+CFLAGS = $(COPTS) -D$(PVM_ARCH) -DEMBEDDED $(DFLAGS) $(IDIR)
 LDLIBS= -ldpmta2 -lmpole -lpvm3 -lm $(OSLIBS)
 LDFLAGS = $(LDIR)
 
