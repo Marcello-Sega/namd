@@ -11,7 +11,7 @@
  *
  *	$RCSfile: SimParameters.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1021 $	$Date: 1997/09/05 20:14:28 $
+ *	$Revision: 1.1022 $	$Date: 1997/09/19 07:23:36 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,10 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1022  1997/09/19 07:23:36  jim
+ * Fixed bug where margin was not extended when user did not specify
+ * a patch splitting method - now adds hGroupCutoff to margin.
+ *
  * Revision 1.1021  1997/09/05 20:14:28  jim
  * Small fixes.
  *
@@ -390,7 +394,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1021 1997/09/05 20:14:28 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1022 1997/09/19 07:23:36 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -1157,11 +1161,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 	if (!strcasecmp(s, "position"))
 		splitPatch = SPLIT_PATCH_POSITION;
 	else if (!strcasecmp(s,"hydrogen"))
-		{
 		splitPatch = SPLIT_PATCH_HYDROGEN;
-		// increase margin by 1 hydrogen bond length
-		margin += hgroupCutoff;	// assume no greater than 2 angstroms
-		}
 	else
 	{
 		char err_msg[129];
@@ -1170,6 +1170,11 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 		   s);
 		NAMD_die(err_msg);
 	}
+   }
+   if ( splitPatch == SPLIT_PATCH_HYDROGEN )
+   {
+	// increase margin by hgroupCutoff
+	margin += hgroupCutoff;
    }
 
    //  Get the long range force splitting specification
@@ -2450,12 +2455,16 @@ void SimParameters::receive_SimParameters(Message *msg)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1021 $	$Date: 1997/09/05 20:14:28 $
+ *	$Revision: 1.1022 $	$Date: 1997/09/19 07:23:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1022  1997/09/19 07:23:36  jim
+ * Fixed bug where margin was not extended when user did not specify
+ * a patch splitting method - now adds hGroupCutoff to margin.
+ *
  * Revision 1.1021  1997/09/05 20:14:28  jim
  * Small fixes.
  *
