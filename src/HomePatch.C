@@ -30,6 +30,8 @@
 #include "Sequencer.h"
 #include "LdbCoordinator.h"
 
+#include "Sync.h"
+
 #define TINY 1.0e-20;
 #define MAXHGS 10
 #define MIN_DEBUG_LEVEL 4
@@ -225,6 +227,12 @@ void HomePatch::positionsReady(int doMigration)
   Patch::positionsReady(doMigration);
 
   patchMapRead = 1;
+
+  // gzheng
+  if (useSync) {
+     Sync *sync = Sync::Object();
+     sync->PatchReady();
+  }
 }
 
 

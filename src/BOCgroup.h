@@ -19,6 +19,7 @@ public:
   int collectionMgr;
   int broadcastMgr;
   int ldbCoordinator;
+  int sync;
   int node;
 };
 

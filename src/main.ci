@@ -20,5 +20,6 @@ mainmodule main {
   extern module CollectionMgr;
   extern module CollectionMaster;
   extern module BroadcastMgr;
+  extern module Sync;
 }
 

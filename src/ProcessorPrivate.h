@@ -24,6 +24,7 @@ class PatchMgr;
 class ProxyMgr;
 class ReductionMgr;
 class Communicate;
+class Sync;
 
 // Instance Variables that maintain singletonness of classes
 
@@ -39,6 +40,7 @@ CpvExtern(PatchMap*, PatchMap_instance);
 CpvExtern(PatchMgr*, PatchMgr_instance);
 CpvExtern(ProxyMgr*, ProxyMgr_instance);
 CpvExtern(ReductionMgr*, ReductionMgr_instance);
+CpvExtern(Sync*, Sync_instance);
 
 // Other static Variables
 

@@ -30,6 +30,7 @@ CpvDeclare(ReductionMgr*, ReductionMgr_instance);
 CpvDeclare(PatchMgr*, PatchMap_patchMgr);
 CpvDeclare(BOCgroup, BOCclass_group);
 CpvDeclare(Communicate*, comm);
+CpvDeclare(Sync*, Sync_instance);
 
 /*
  * Initialization Function to be called on every processor
@@ -66,5 +67,7 @@ void ProcessorPrivateInit(void)
   CpvInitialize(BOCgroup, BOCclass_group);
   CpvInitialize(Communicate*, comm);
   CpvAccess(comm) = 0;
+  CpvInitialize(Sync*, Sync_instance);
+  CpvAccess(Sync_instance) = 0;
 }
 

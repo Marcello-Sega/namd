@@ -23,6 +23,8 @@
 #include "Node.h"
 #include "Compute.h"
 
+#include "Sync.h"
+
 #define MIN_DEBUG_LEVEL 4
 // #define DEBUGM
 #include "Debug.h"
@@ -65,7 +67,9 @@ void Compute::patchReady(PatchID patchID, int doneMigration) {
   if (numPatches <= 0) {
       DebugM(5,"Compute::patchReady("<<patchID<<")-call not valid!\n");
   } else {
-    if (! --patchReadyCounter) {
+//  gzheng
+//    if (! --patchReadyCounter) {
+    if ( --patchReadyCounter == (useSync?-1:0) ) {
       patchReadyCounter = numPatches;
       if (doAtomUpdate) {
 	atomUpdate();

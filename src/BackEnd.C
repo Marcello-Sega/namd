@@ -26,6 +26,7 @@
 #include "CollectionMgr.h"
 #include "BroadcastMgr.decl.h"
 #include "LdbCoordinator.decl.h"
+#include "Sync.decl.h"
 
 extern void _initCharm(int, char**);
 
@@ -82,6 +83,8 @@ void BackEnd::init(int argc, char **argv) {
   group.patchMgr = CProxy_PatchMgr::ckNew();
   group.computeMgr = CProxy_ComputeMgr::ckNew();
   group.reductionMgr = CProxy_ReductionMgr::ckNew();
+  // gzheng
+  group.sync = CProxy_Sync::ckNew();
   CProxy_CollectionMaster coll(0);
   CkChareID collectionMaster = coll.ckGetChareId();
   SlaveInitMsg *initmsg7 = new SlaveInitMsg;
