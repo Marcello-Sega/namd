@@ -12,6 +12,7 @@
 
 #define _LARGEFILE_SOURCE
 #define _FILE_OFFSET_BITS 64
+#define _LARGE_FILE
 
 #include "dcdlib.h"
 #include "common.h" // for int32 definition
