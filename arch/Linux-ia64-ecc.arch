@@ -4,6 +4,6 @@ CHARMARCH = net-linux-ia64-icc
 CXX = ecpc -D_IA64 -I/usr/local/gnu/include -DSOCKLEN_T=socklen_t
 CXXOPTS = -O2 -DCMK_OPTIMIZE
 
-CC = /usr/local/gnu/bin/gcc  -I/usr/local/gnu/include -static
+CC = ecc
 COPTS = -O3 -ffast-math
 
