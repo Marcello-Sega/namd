@@ -20,6 +20,7 @@
 #include "LdbCoordinator.h"
 #include "Thread.h"
 #include <math.h>
+#include <signal.h>
 #include "NamdOneTools.h"
 #include "PatchMap.h"
 #include "PatchMap.inl"
@@ -166,6 +167,15 @@ void Controller::algorithm(void)
 
 extern int eventEndOfTimeStep;
 
+// Handle SIGINT so that restart files get written completely.
+static int gotsigint = 0;
+static void my_sigint_handler(int sig) {
+  if (sig == SIGINT) gotsigint = 1;
+}
+extern "C" {
+  typedef void (*namd_sighandler_t)(int);
+}
+
 void Controller::integrate() {
 
     int step = simParams->firstTimestep;
@@ -189,8 +199,11 @@ void Controller::integrate() {
     outputExtendedSystem(step);
     rebalanceLoad(step);
 
+    namd_sighandler_t oldhandler = signal(SIGINT, 
+        (namd_sighandler_t)my_sigint_handler);
     for ( ++step ; step <= numberOfSteps; ++step )
     {
+
         rescaleVelocities(step);
 	tcoupleVelocities(step);
 	berendsenPressure(step);
@@ -202,6 +215,10 @@ void Controller::integrate() {
         printDynamicsEnergies(step);
         outputFepEnergy(step);
         traceUserEvent(eventEndOfTimeStep);
+  if (gotsigint) {
+    iout << iINFO << "Received SIGINT; shutting down.\n" << endi;
+    NAMD_quit();
+  }
         outputExtendedSystem(step);
 #if CYCLE_BARRIER
         cycleBarrier(!((step+1) % stepsPerCycle),step);
@@ -215,6 +232,7 @@ void Controller::integrate() {
         cycleBarrier(dofull && !((step+1)%slowFreq),step);   // step before PME
 #endif
     }
+    signal(SIGINT, oldhandler);
 }
 
 
