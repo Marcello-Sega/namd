@@ -1706,16 +1706,16 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 //Modifications for alchemical fep
 //SD & CC, CNRS - LCTN, Nancy
 
-   if (lambda < 0.0 || lambda > 1.0 || lambda2 < 0.0 || lambda2 > 1.0)
-   {
-      NAMD_die("lambda values should be in the range [0.0, 1.0]");
-   }
-
    if (fepOn) {
-      if (!opts.defined("fepoutfile")) {
-        strcpy(fepOutFile, outputFilename);
-        strcat(fepOutFile, ".fep");
-      }
+     if (lambda < 0.0 || lambda > 1.0 || lambda2 < 0.0 || lambda2 > 1.0)
+     {
+        NAMD_die("lambda values should be in the range [0.0, 1.0]");
+     }
+  
+     if (!opts.defined("fepoutfile")) {
+       strcpy(fepOutFile, outputFilename);
+       strcat(fepOutFile, ".fep");
+     }
    } else {
      fepOutFile[0] = STRINGNULL;
    }
