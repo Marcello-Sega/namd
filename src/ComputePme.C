@@ -273,16 +273,21 @@ void ComputePmeMgr::initialize() {
 #ifdef NAMD_FFTW
   work = new fftw_complex[n[0]];
 
+  iout << iINFO << "Optimizing 4 FFT steps.  1..." << endi;
   forward_plan_yz = rfftwnd_create_plan_specific(2, n+1, FFTW_REAL_TO_COMPLEX,
 	FFTW_MEASURE | FFTW_IN_PLACE, qgrid, 1, 0, 0);
+  iout << "2..." << endi;
   forward_plan_x = fftw_create_plan_specific(n[0], FFTW_REAL_TO_COMPLEX,
 	FFTW_MEASURE | FFTW_IN_PLACE, (fftw_complex *) qgrid,
 	localInfo[myRecipPe].ny_after_transpose * myGrid.dim3 / 2, work, 1);
+  iout << "3..." << endi;
   backward_plan_x = fftw_create_plan_specific(n[0], FFTW_COMPLEX_TO_REAL,
 	FFTW_MEASURE | FFTW_IN_PLACE, (fftw_complex *) qgrid,
 	localInfo[myRecipPe].ny_after_transpose * myGrid.dim3 / 2, work, 1);
+  iout << " 4..." << endi;
   backward_plan_yz = rfftwnd_create_plan_specific(2, n+1, FFTW_COMPLEX_TO_REAL,
 	FFTW_MEASURE | FFTW_IN_PLACE, qgrid, 1, 0, 0);
+  iout << "   Done.\n" << endi;
 #else
   NAMD_die("Sorry, FFTW must be compiled in to use PME.");
 #endif
