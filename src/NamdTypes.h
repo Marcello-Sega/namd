@@ -38,6 +38,10 @@ struct AtomProperties
   AtomType type;
   Mass mass;
   Charge charge;
+
+  int operator==(const AtomProperties& a) {
+    return( id == a.id );
+  }
 };
 
 typedef ResizeArray<Position> PositionList;
@@ -96,13 +100,16 @@ enum Boolean
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdTypes.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.12 $	$Date: 1996/11/30 01:27:34 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.13 $	$Date: 1996/12/05 01:47:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdTypes.h,v $
+ * Revision 1.13  1996/12/05 01:47:07  ari
+ * added == to AtomProperties definition
+ *
  * Revision 1.12  1996/11/30 01:27:34  jim
  * switched to realistic ComputeType definitions
  *
