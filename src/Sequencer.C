@@ -96,6 +96,7 @@ void Sequencer::algorithm(void)
       case SCRIPT_REVERT:
         patch->revert();
         berendsenPressure_count = checkpoint_berendsenPressure_count;
+        pairlistsAreValid = 0;
 	break;
       case SCRIPT_MINIMIZE:
 	minimize();
