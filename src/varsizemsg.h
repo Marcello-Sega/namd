@@ -57,7 +57,7 @@ void *MSGTYPE::alloc(int varsizemsg_msgnum, int varsizemsg_size, \
 } \
  \
 void *MSGTYPE::pack(MSGTYPE *varsizemsg_msg) { \
-  int *varsizemsg_array, varsizemsg_arraycount, varsizemsg_totalsize; \
+  int *varsizemsg_array=0, varsizemsg_arraycount=0, varsizemsg_totalsize=0; \
   { \
     const int varsizemsg_pass = 2; \
     MSGDATA \
@@ -66,7 +66,7 @@ void *MSGTYPE::pack(MSGTYPE *varsizemsg_msg) { \
 } \
  \
 MSGTYPE *MSGTYPE::unpack(void *varsizemsg_buf) { \
-  int *varsizemsg_array, varsizemsg_arraycount, varsizemsg_totalsize; \
+  int *varsizemsg_array=0, varsizemsg_arraycount=0, varsizemsg_totalsize=0; \
   MSGTYPE *varsizemsg_msg = (MSGTYPE *) varsizemsg_buf; \
   { \
     const int varsizemsg_pass = 3; \
