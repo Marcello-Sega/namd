@@ -7,7 +7,7 @@
 This file includes directions for running and compiling NAMD,
 an explanation of the automated usage reporting mechanism,
 advice for dealing with endian issues when switching platforms,
-a list of know deficiencies, and advice for reporting bugs.
+tips on limiting memory usage, and advice for reporting bugs.
 
 ----------------------------------------------------------------------
 
@@ -290,6 +290,24 @@ files.  We provide the programs flipdcd and flipbinpdb for switching the
 endianness of DCD and binary restart files, respectively.  These programs
 use mmap to alter the file in-place and may therefore appear to consume
 an amount of memory equal to the size of the file.
+
+----------------------------------------------------------------------
+
+Memory Usage
+
+NAMD has traditionally used less than 100MB of memory even for systems
+of 100,000 atoms.  With the reintroduction of pairlists in NAMD 2.5,
+however, memory usage for a 100,000 atom system with a 12A cutoff can
+approach 300MB, and will grow with the cube of the cutoff.  This extra
+memory is distributed across processors during a parallel run, but a
+single workstation may run out of physical memory with a large system.
+
+To avoid this, NAMD now provides a pairlistMinProcs config file option
+that specifies the minimum number of processors that a run must use
+before pairlists will be enabled (on fewer processors small local
+pairlists are generated and recycled rather than being saved, the
+default is "pairlistMinProcs 1").  This is a per-simulation rather than
+a compile time option because memory usage is molecule-dependent.
 
 ----------------------------------------------------------------------
 
