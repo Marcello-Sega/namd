@@ -5,7 +5,7 @@
 /*                           All Rights Reserved                           */
 /*                                                                         */
 /***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.7 1996/10/16 08:22:39 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.8 1996/10/29 17:18:34 brunner Exp $";
 
 #include <stdio.h>
 
@@ -70,9 +70,22 @@ void Node::startup(InitMsg *msg)
 
   CPrintf("Node %d startup\n",myid());
 
+  if (CthImplemented())
+  {
+    CthSetStrategyDefault(CthSelf());
+  }
+  else
+  {
+    CPrintf("Oh no, tiny elvis, threads not implemented here...\n");
+    CharmExit();
+  }
+
   workDistrib->parentNode(this);
   workDistrib->buildMaps();
   workDistrib->sendMaps();
+  workDistrib->awaitMaps();
+  workDistrib->createPatches();
+  workDistrib->createComputes();
 }
 
 
@@ -116,8 +129,8 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/10/16 08:22:39 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.8 $	$Date: 1996/10/29 17:18:34 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -126,6 +139,9 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.8  1996/10/29 17:18:34  brunner
+ * Changed workDistrib calls
+ *
  * Revision 1.7  1996/10/16 08:22:39  ari
  * *** empty log message ***
  *
