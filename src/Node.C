@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.29 1996/12/23 17:37:26 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.30 1996/12/26 22:26:54 nealk Exp $";
 
 
 #include "ckdefs.h"
@@ -64,6 +64,9 @@ Node::Node(GroupInitMsg *msg)
   group = msg->group;
   group.node = thisgroup;
   delete msg;
+  extern Communicate *comm;
+
+  if (comm == NULL) comm = new CommunicateConverse(0,0);
 
   molecule = NULL;
   parameters = NULL;
@@ -93,11 +96,12 @@ Node::Node(GroupInitMsg *msg)
 
   Message *conv_msg=NULL;
   conv_msg = new Message;
+  comm->send_method(Communicate::NOW);
   conv_msg->put(1);
   if (CMyPe()) {
-    DebugM(1,"Sending checkin to node 0 from node " << iPE << "\n");
-    comm->send(conv_msg,0,DISTRIBTAG);
-    DebugM(1,"Sent checkin to node 0 from node " << iPE << "\n");
+    DebugM(1,"Sending checkin to node 0\n");
+    int rc = comm->send(conv_msg,0,DISTRIBTAG);
+    DebugM(1,"Sent checkin to node 0, rc=" << rc << "\n");
   }
 }
 
@@ -128,12 +132,12 @@ void Node::messageStartup() {
 void Node::startup(InitMsg *msg)
 {
   char **argvdummy;
-  extern Communicate *comm;
+  // extern Communicate *comm;
   Message *conv_msg=NULL;
   
   delete msg;
 
-  comm = new CommunicateConverse(0,0);
+  // comm = new CommunicateConverse(0,0);
 
   if ( CMyPe() ) {
      simParameters = new SimParameters;
@@ -379,12 +383,16 @@ void Node::saveMolDataPointers(Molecule *molecule,
  *
  *	$RCSfile: Node.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.29 $	$Date: 1996/12/23 17:37:26 $
+ *	$Revision: 1.30 $	$Date: 1996/12/26 22:26:54 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.30  1996/12/26 22:26:54  nealk
+ * Corrected one of the communications bugs for +p2 -- comm wasn't initialized
+ * at the right time.
+ *
  * Revision 1.29  1996/12/23 17:37:26  nealk
  * Mode debug code...
  *

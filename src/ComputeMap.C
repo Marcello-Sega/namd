@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.11 1996/12/12 08:57:17 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.12 1996/12/26 22:26:54 nealk Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -124,6 +124,7 @@ void ComputeMap::unpack (void *in)
     for(j=0;j<computeData[i].numPidsAllocated;++j)
       UNPACK(PatchID,computeData[i].pids[j]);
   }
+  DebugM(4,"Done Unpacking ComputeMap\n");
 }
 
 
@@ -305,13 +306,17 @@ void ComputeMap::printComputeMap(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.11 $	$Date: 1996/12/12 08:57:17 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.12 $	$Date: 1996/12/26 22:26:54 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.C,v $
+ * Revision 1.12  1996/12/26 22:26:54  nealk
+ * Corrected one of the communications bugs for +p2 -- comm wasn't initialized
+ * at the right time.
+ *
  * Revision 1.11  1996/12/12 08:57:17  jim
  * added MapDistribMsg packing / unpacking routines
  *
