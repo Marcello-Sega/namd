@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1053 1998/07/03 23:48:28 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1054 1998/07/06 19:17:01 brunner Exp $";
 
 #include <stdio.h>
 
@@ -688,7 +688,7 @@ void WorkDistrib::mapComputeNonbonded(void)
   for(i=0; i<patchMap->numPatches(); i++) // do the self 
   {
     numAtoms = patchMap->patch(i)->getNumAtoms();
-    int numPartitions = 1 + (numAtoms > 0) + (numAtoms*numAtoms)/30000;
+    int numPartitions = 1 + (numAtoms > 50) + (numAtoms*numAtoms)/50000;
     // self-interaction
     for(int partition=0; partition < numPartitions; partition++)
     {
@@ -1100,12 +1100,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1053 $	$Date: 1998/07/03 23:48:28 $
+ *	$Revision: 1.1054 $	$Date: 1998/07/06 19:17:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1054  1998/07/06 19:17:01  brunner
+ * Changed path info in Makearch.T3E, changed patch partition equation,
+ * and added timing prints to Controller
+ *
  * Revision 1.1053  1998/07/03 23:48:28  brunner
  * Changed Self compute granularity to 30000
  *

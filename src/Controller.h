@@ -62,6 +62,10 @@ private:
 
     BigReal temperature;
     BigReal pressure;
+    double startCTime;
+    double startWTime;
+    double startBenchTime;
+
 };
 
 #endif // SEQUENCER_H
@@ -72,12 +76,16 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1998/03/31 04:55:44 $
+ *	$Revision: 1.1010 $	$Date: 1998/07/06 19:17:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.h,v $
+ * Revision 1.1010  1998/07/06 19:17:01  brunner
+ * Changed path info in Makearch.T3E, changed patch partition equation,
+ * and added timing prints to Controller
+ *
  * Revision 1.1009  1998/03/31 04:55:44  jim
  * Added test mode, fixed errors in virial with full electrostatics.
  *

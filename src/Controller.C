@@ -337,9 +337,30 @@ void Controller::printEnergies(int seq)
     if ( seq % node->simParameters->outputEnergies ) return;
     // ONLY OUTPUT SHOULD OCCUR BELOW THIS LINE!!!
 
+    const double endWTime = CmiWallTimer();
+    const double endCTime = CmiTimer();
+
+    if (seq == 32)
+	startBenchTime = endWTime;
+    else if (seq == 64)
+	iout << iINFO << "Benchmark time: "
+	     << (endWTime - startBenchTime) / 32. << "\n" << endi;
+
+    const double elapsedW = 
+	(endWTime - startWTime) / node->simParameters->outputEnergies;
+    const double elapsedC = 
+	(endCTime - startCTime) / node->simParameters->outputEnergies;
+
+    startWTime = endWTime;
+    startCTime = endCTime;
+
     iout << iINFO
-    	 << "CPU time = " << CmiTimer() << " Wall Time = " 
-    	 << CmiWallTimer() << "\n" << endi;
+    	 << "Elapsed time CPU: " << endCTime << " Wall: " 
+    	 << endWTime << "\n" << endi;
+
+    iout << iINFO
+    	 << "Time per step CPU: " << elapsedC << " Wall: " 
+    	 << elapsedW << "\n" << endi;
 
     if ( (seq % (10 * node->simParameters->outputEnergies) ) == 0 )
     {
@@ -397,12 +418,16 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1035 $	$Date: 1998/06/18 15:25:22 $
+ *	$Revision: 1.1036 $	$Date: 1998/07/06 19:16:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1036  1998/07/06 19:16:59  brunner
+ * Changed path info in Makearch.T3E, changed patch partition equation,
+ * and added timing prints to Controller
+ *
  * Revision 1.1035  1998/06/18 15:25:22  jim
  * Workaround for aCC - put FORMAT()'s on separate lines.
  *
