@@ -17,6 +17,7 @@
 ComputeHomePatches::ComputeHomePatches(ComputeID c) : Compute(c) {
   patchMap = PatchMap::Object();
   useAvgPositions = 0;
+  hasPatchZero = 0;
 }
 
 ComputeHomePatches::~ComputeHomePatches()
@@ -33,6 +34,7 @@ void ComputeHomePatches::initialize()
 
   for ( ai = ai.begin(); ai != ai.end(); ai++ ) {
     patchList.add(PatchElem((*ai).patch, cid, useAvgPositions));
+    if ( (*ai).patch->getPatchID() == 0 ) hasPatchZero = 1;
   }
 
   setNumPatches(patchList.size());
