@@ -112,12 +112,16 @@ public:
   ComputePmeMgr();
   ~ComputePmeMgr();
 
+  void sendGrid(PmeNullMsg *);
   void recvGrid(PmeGridMsg *);
   void gridCalc1(PmeNullMsg *);
+  void sendTrans(PmeNullMsg *);
   void recvTrans(PmeTransMsg *);
   void gridCalc2(PmeNullMsg *);
+  void sendUntrans(PmeNullMsg *);
   void recvUntrans(PmeUntransMsg *);
   void gridCalc3(PmeNullMsg *);
+  void sendUngrid(PmeNullMsg *);
   void recvUngrid(PmeUngridMsg *);
   void ungridCalc(PmeNullMsg *);
 
@@ -151,6 +155,8 @@ private:
   int trans_buf_len;
   PmeUntransMsg **untrans_buf;
   int untrans_buf_len;
+  double recipEnergy;
+  double recip_vir[6];
 };
 
 ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), pmeCompute(0),
@@ -230,6 +236,7 @@ void ComputePmeMgr::initialize() {
   if ( numSources > npatches ) numSources = npatches;
 
   grid_count = numSources;
+  memset( (void*) qgrid, 0, qgrid_len * sizeof(double) );
   ungrid_count = CkNumPes();
 }
 
@@ -242,6 +249,11 @@ ComputePmeMgr::~ComputePmeMgr() {
   delete [] untrans_buf;
 }
 
+void ComputePmeMgr::sendGrid(PmeNullMsg *msg) {
+  delete msg;
+  pmeCompute->sendData();
+}
+
 void ComputePmeMgr::recvGrid(PmeGridMsg *msg) {
   initialize();
   // CkPrintf("recvGrid on Pe(%d)\n",CkMyPe());
@@ -249,11 +261,6 @@ void ComputePmeMgr::recvGrid(PmeGridMsg *msg) {
     NAMD_bug("Message order failure in ComputePmeMgr::recvGrid\n");
   }
   if ( grid_count == numSources ) {
-    int local_size = myGrid.block1 * myGrid.K2 * myGrid.dim3;
-    double *q = qgrid;
-    for ( int i=0; i<local_size; ++i ) {
-      *(q++) = 0;
-    }
     lattice = msg->lattice;
   }
 
@@ -276,6 +283,12 @@ void ComputePmeMgr::gridCalc1(PmeNullMsg *msg) {
 
   rfftwnd_real_to_complex(forward_plan_yz, localInfo[CkMyPe()].nx,
 	qgrid, 1, myGrid.dim2 * myGrid.dim3, 0, 0, 0);
+
+  pmeProxy.sendTrans(new PmeNullMsg, CkMyPe());
+}
+
+void ComputePmeMgr::sendTrans(PmeNullMsg *msg) {
+  delete msg;
 
   // send data for transpose
   int zdim = myGrid.dim3;
@@ -346,8 +359,6 @@ void ComputePmeMgr::gridCalc2(PmeNullMsg *msg) {
 	ny * zdim / 2, 1, work, 1, 0);
 
   // reciprocal space portion of PME
-  double recipEnergy;
-  double recip_vir[6];
   BigReal ewaldcof = ComputeNonbondedUtil::ewaldcof;
   recipEnergy = myKSpace->compute_energy(qgrid, lattice, ewaldcof, recip_vir);
   // CkPrintf("Ewald reciprocal energy = %f\n", recipEnergy);
@@ -355,6 +366,16 @@ void ComputePmeMgr::gridCalc2(PmeNullMsg *msg) {
   // start backward FFT (x dimension)
   fftw(backward_plan_x, ny * zdim / 2, (fftw_complex *) qgrid,
 	ny * zdim / 2, 1, work, 1, 0);
+
+  pmeProxy.sendUntrans(new PmeNullMsg, CkMyPe());
+}
+
+void ComputePmeMgr::sendUntrans(PmeNullMsg *msg) {
+  delete msg;
+
+  int zdim = myGrid.dim3;
+  int y_start = localInfo[CkMyPe()].y_start_after_transpose;
+  int ny = localInfo[CkMyPe()].ny_after_transpose;
 
   // send data for reverse transpose
   for ( int pe=0; pe<CkNumPes(); ++pe ) {
@@ -427,6 +448,12 @@ void ComputePmeMgr::gridCalc3(PmeNullMsg *msg) {
   rfftwnd_complex_to_real(backward_plan_yz, localInfo[CkMyPe()].nx,
 	(fftw_complex *) qgrid, 1, myGrid.dim2 * myGrid.dim3 / 2, 0, 0, 0);
 
+  pmeProxy.sendUngrid(new PmeNullMsg, CkMyPe());
+}
+
+void ComputePmeMgr::sendUngrid(PmeNullMsg *msg) {
+  delete msg;
+
   for ( int pe=0; pe<numSources; ++pe ) {
     int msglen = qgrid_len;
     PmeUngridMsg *newmsg = new (&msglen,0) PmeUngridMsg;
@@ -437,6 +464,7 @@ void ComputePmeMgr::gridCalc3(PmeNullMsg *msg) {
     pmeProxy.recvUngrid(newmsg,pe);
   }
   grid_count = numSources;
+  memset( (void*) qgrid, 0, qgrid_len * sizeof(double) );
 }
 
 void ComputePmeMgr::recvUngrid(PmeUngridMsg *msg) {
@@ -788,7 +816,15 @@ void ComputePme::doWork()
   scale_coordinates(localData, numLocalAtoms, lattice, myGrid);
   myRealSpace->fill_charges(q_arr, localData);
 
+  CProxy_ComputePmeMgr pmeProxy(CpvAccess(BOCclass_group).computePmeMgr);
+  pmeProxy.sendGrid(new PmeNullMsg, CkMyPe());
+}
+
+void ComputePme::sendData() {
+
   // iout << "Sending charge grid for " << numLocalAtoms << " atoms to FFT on " << iPE << ".\n" << endi;
+
+  Lattice lattice = patchList[0].p->flags.lattice;
 
   resultsRemaining = CkNumPes();
 

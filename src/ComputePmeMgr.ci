@@ -16,12 +16,16 @@ module ComputePmeMgr {
 
     entry ComputePmeMgr(void);
 
+    entry void sendGrid(PmeNullMsg *);
     entry void recvGrid(PmeGridMsg *);
     entry void gridCalc1(PmeNullMsg *);
+    entry void sendTrans(PmeNullMsg *);
     entry void recvTrans(PmeTransMsg *);
     entry void gridCalc2(PmeNullMsg *);
+    entry void sendUntrans(PmeNullMsg *);
     entry void recvUntrans(PmeUntransMsg *);
     entry void gridCalc3(PmeNullMsg *);
+    entry void sendUngrid(PmeNullMsg *);
     entry void recvUngrid(PmeUngridMsg *);
     entry void ungridCalc(PmeNullMsg *);
 

@@ -25,6 +25,7 @@ public:
   ComputePme(ComputeID c, ComputeMgr *m);
   virtual ~ComputePme();
   void doWork();
+  void sendData();
   void recvData(ComputePmeDataMsg *);
   void recvResults(ComputePmeResultsMsg *);
   void ComputePme::copyEnergy(PmeUntransMsg *);
