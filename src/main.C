@@ -30,9 +30,13 @@ public:
   {
     // print banner
     iout << iINFO << "NAMD 2.0b3\n"
+#if 1
+         << iWARN << "          ***  UNRELEASED EXPERIMENTAL VERSION  ***\n"
+#else
          << iINFO << "Please complete the registration form at\n"
-         << iINFO << "http://www.ks.uiuc.edu/Research/namd/namd2feedback.html\n"
+         << iINFO << "http://www.ks.uiuc.edu/Research/namd/download.html\n"
          << iINFO << "and send feedback or bug reports to namd@ks.uiuc.edu\n"
+#endif
          << endi;
 
     // Namd object is only on Pe(0)
@@ -54,7 +58,7 @@ public:
  *
  *	$RCSfile: main.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1999/02/19 04:46:05 $
+ *	$Revision: 1.1013 $	$Date: 1999/03/08 23:02:47 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -63,6 +67,9 @@ public:
  * REVISION HISTORY:
  *
  * $Log: main.C,v $
+ * Revision 1.1013  1999/03/08 23:02:47  jim
+ * Modified startup message for experimental versions.
+ *
  * Revision 1.1012  1999/02/19 04:46:05  jim
  * Changed version number to 2.0b3.
  *
