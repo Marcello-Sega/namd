@@ -91,7 +91,7 @@ Atoms may be held fixed during a simulation.  \NAMD\ avoids calculating most int
 {Specifies whether or not fixed atoms are present.} 
 
 \item
-\NAMDCONFWDEF{fixedAtomsFile}{PDB file containing fixed atom parameters}%
+\NAMDCONFWDEF{fixedAtomsFile}{PDB file containing fixed atom parameters}
 {UNIX filename}{\verb!coordinates!}
 {PDB file to use for the fixed atom flags for each atom.  
 If this parameter is not specified, then 
@@ -125,8 +125,8 @@ to specify the maximum movement of any atom.
 {Turns energy minimization \verb!on! or \verb!off!.}
 
 \item
-\NAMDCONFWDEF{maximumMove}{maximum distance an atom can move during each step (\AA)}%
-{positive decimal}%
+\NAMDCONFWDEF{maximumMove}{maximum distance an atom can move during each step (\AA)}
+{positive decimal}
 {$0.75\times\mbox{\verb!cutoff!}/\mbox{\verb!stepsPerCycle!}$}
 {Maximum distance that an atom can move during any single timestep of
 minimization.  This is to insure that atoms do not go flying off into
@@ -162,7 +162,7 @@ This temperature will be roughly maintained across the affected atoms
 through the addition of friction and random forces.}
 
 \item
-\NAMDCONFWDEF{langevinFile}{PDB file containing Langevin parameters}%
+\NAMDCONFWDEF{langevinFile}{PDB file containing Langevin parameters}
 {UNIX filename}{\verb!coordinates!}
 {PDB file to use for the Langevin coupling coefficients for each atom.  
 If this parameter is not specified, then 
@@ -204,8 +204,8 @@ This temperature will be roughly maintained across the affected atoms
 through the addition of forces.}
 
 \item
-\NAMDCONFWDEF{tCoupleFile}{PDB file with tCouple parameters}%
-{UNIX filename}{\verb!coordinates!}%
+\NAMDCONFWDEF{tCoupleFile}{PDB file with tCouple parameters}
+{UNIX filename}{\verb!coordinates!}
 {PDB file to use for the temperature coupling coefficient for each atom.  
 If this parameter is not specified, then 
 the PDB file specified by \verb!coordinates! is used.} 
