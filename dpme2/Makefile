@@ -88,5 +88,5 @@ dpme_test:    $(objects)  $(testobjects)
 	$(CC) $(CFLAGS) -o dpme2_test $(objects) $(testobjects) $(LDLIBS) $(LFLAGS)
 
 clean:
-	-rm *.o *.a
+	rm -f *.o *.a
 
