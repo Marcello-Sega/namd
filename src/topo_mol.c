@@ -48,6 +48,7 @@ void topo_mol_error_handler(topo_mol *mol, void (*print_msg)(const char *)) {
 
 const char * topo_mol_errors(topo_mol *mol) {
   if ( mol ) return mol->errors;
+  return 0;
 }
 
 /* internal method */
