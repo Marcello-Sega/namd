@@ -15,10 +15,10 @@
 #define CONTROLLER_H
 
 #include "converse.h"
-#include "ReductionMgr.h"
 
 class NamdState;
 class SimParameters;
+class ReductionMgr;
 
 class Controller
 {
