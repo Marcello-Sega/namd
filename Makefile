@@ -82,6 +82,7 @@ OBJS = \
 	$(DSTDIR)/ComputeNonbondedSelf.o \
 	$(DSTDIR)/ComputeNonbondedPair.o \
 	$(DSTDIR)/ComputeNonbondedUtil.o \
+	$(DSTDIR)/ComputeNonbondedBase.o \
 	$(DSTDIR)/ComputePatch.o \
 	$(DSTDIR)/ComputePatchPair.o \
 	$(DSTDIR)/ComputePme.o \
@@ -503,7 +504,7 @@ depends: $(INCDIR) $(CIFILES) $(DSTDIR) $(DEPENDFILE)
 	    -e "/obj\/ComputeFullDirect.o/ s/CXXFLAGS/CXXTHREADFLAGS/" \
 	    -e "/obj\/ReductionMgr.o/ s/CXXFLAGS/CXXTHREADFLAGS/" \
 	    -e "/obj\/SimParameters.o/ s/CXXFLAGS/CXXSIMPARAMFLAGS/" \
-	    -e "/obj\/ComputeNonbondedUtil.o/ s/CXXFLAGS/CXXNOALIASFLAGS/" \
+	    -e "/obj\/ComputeNonbondedBase.o/ s/CXXFLAGS/CXXNOALIASFLAGS/" \
 	    $(DEPENDFILE) > $(DEPENDFILE).sed; \
 	$(MOVE) -f $(DEPENDFILE).sed $(DEPENDFILE);
 
