@@ -205,6 +205,10 @@ void ReductionMgr::delSet(int setID) {
 // register local submit
 SubmitReduction* ReductionMgr::willSubmit(int setID) {
   ReductionSet *set = getSet(setID);
+  if ( set->dataQueue ) {
+    NAMD_die("ReductionMgr::willSubmit called while reductions outstanding!");
+  }
+
   set->eventsRegistered++;
 
   SubmitReduction *handle = new SubmitReduction;
@@ -219,6 +223,9 @@ SubmitReduction* ReductionMgr::willSubmit(int setID) {
 void ReductionMgr::remove(SubmitReduction* handle) {
   int setID = handle->reductionSetID;
   ReductionSet *set = reductionSets[setID];
+  if ( set->dataQueue ) {
+    NAMD_die("SubmitReduction deleted while reductions outstanding!");
+  }
 
   set->eventsRegistered--;
 
@@ -241,6 +248,9 @@ void ReductionMgr::remoteRegister(ReductionRegisterMsg *msg) {
 
   int setID = msg->reductionSetID;
   ReductionSet *set = getSet(setID);
+  if ( set->dataQueue ) {
+    NAMD_die("ReductionMgr::willSubmit called while reductions outstanding on parent!");
+  }
 
   set->eventsRegistered++;
   set->addToRemoteSequenceNumber[msg->sourceNode - firstChild]
@@ -253,6 +263,9 @@ void ReductionMgr::remoteUnregister(ReductionRegisterMsg *msg) {
 
   int setID = msg->reductionSetID;
   ReductionSet *set = reductionSets[setID];
+  if ( set->dataQueue ) {
+    NAMD_die("SubmitReduction deleted while reductions outstanding on parent!");
+  }
 
   set->eventsRegistered--;
 
@@ -319,6 +332,9 @@ RequireReduction* ReductionMgr::willRequire(int setID) {
   ReductionSet *set = getSet(setID);
   set->eventsRegistered++;
   set->requireRegistered++;
+  if ( set->dataQueue ) {
+    NAMD_die("ReductionMgr::willRequire called while reductions outstanding!");
+  }
 
   RequireReduction *handle = new RequireReduction;
   handle->reductionSetID = setID;
@@ -332,6 +348,9 @@ RequireReduction* ReductionMgr::willRequire(int setID) {
 void ReductionMgr::remove(RequireReduction* handle) {
   int setID = handle->reductionSetID;
   ReductionSet *set = reductionSets[setID];
+  if ( set->dataQueue ) {
+    NAMD_die("RequireReduction deleted while reductions outstanding!");
+  }
 
   set->eventsRegistered--;
   set->requireRegistered--;
@@ -376,12 +395,15 @@ void ReductionMgr::require(RequireReduction* handle) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1033 $	$Date: 1999/06/17 15:46:16 $
+ *	$Revision: 1.1034 $	$Date: 1999/06/17 16:02:54 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.C,v $
+ * Revision 1.1034  1999/06/17 16:02:54  jim
+ * Added error checking for barrier violations.
+ *
  * Revision 1.1033  1999/06/17 15:46:16  jim
  * Completely rewrote reduction system to eliminate need for sequence numbers.
  *
