@@ -13,7 +13,7 @@
 #include "Node.h"
 #include "ComputePatch.h"
 #include "PatchMap.inl"
-#include "Patch.h"
+#include "HomePatch.h"
 
 #define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
@@ -26,6 +26,11 @@ ComputePatch::ComputePatch(ComputeID c, PatchID p) : Compute(c) {
     positionBox = NULL;
     forceBox = NULL;
     atomBox = NULL;
+}
+
+ComputeHomePatch::ComputeHomePatch(ComputeID c, PatchID p)
+  : ComputePatch(c,p) {
+    homePatch = NULL;
 }
 
 ComputePatch::~ComputePatch() {
@@ -76,6 +81,11 @@ void ComputePatch::initialize() {
     }
 }
 
+void ComputeHomePatch::initialize() {
+    ComputePatch::initialize();
+    homePatch = PatchMap::Object()->homePatch(patchID);
+}
+
 void ComputePatch::atomUpdate() {
     // How can we tell if BoxOwner has packed up and left?  Need a mechanism
     // to handle this or do we assume the Boxes have been dumped?
@@ -86,8 +96,19 @@ void ComputePatch::doForce(Position* p,
                                Results* r,
                                AtomProperties* a)
 {
-    DebugM(1, "ComputePatchPair::doForce() - Dummy eval was sent\n");
+    DebugM(1, "ComputePatch::doForce() - Dummy eval was sent\n");
     if (p && r && a) {
+      p[0] = Position(0.0,0.0,0.0);
+    }
+}
+
+void ComputeHomePatch::doForce(Position* p,
+                               Results* r,
+                               AtomProperties* a,
+                               Transform *t)
+{
+    DebugM(1, "ComputeHomePatch::doForce() - Dummy eval was sent\n");
+    if (p && r && a && t) {
       p[0] = Position(0.0,0.0,0.0);
     }
 }
@@ -121,6 +142,45 @@ void ComputePatch::doWork() {
 
   // Pass pointers to doForce
   doForce(p,r,a);
+
+  // Close up boxes
+  positionBox->close(&p);
+  forceBox->close(&r);
+  atomBox->close(&a);
+
+  DebugM(2,patchID << ": doWork() completed.\n");
+}
+
+void ComputeHomePatch::doWork() {
+  Position* p;
+  Results* r;
+  AtomProperties* a;
+  Transform* t = homePatch->getTransformList().begin();
+  int numData;
+
+  DebugM(3,patchID << ": doWork() called.\n");
+
+  // Open up positionBox, forceBox, and atomBox
+  p = positionBox->open(&numData);
+  if (numData != numAtoms) {
+    iout << iPE << iERRORF 
+      << "Interesting, doWork has opened a position box with wrong # atoms ("
+      <<numData<<" vs " << numAtoms << "\n" 
+      << endi;
+  }
+  r = forceBox->open();
+  a = atomBox->open();
+
+  /*
+  if (!p || !r || !a) {
+    iout << iPE << iERRORF
+     << "Data Pointer is NULL! on open on patchID(" << patchID
+     << ")\n" << endi;
+  }
+  */
+
+  // Pass pointers to doForce
+  doForce(p,r,a,t);
 
   // Close up boxes
   positionBox->close(&p);

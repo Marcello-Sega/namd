@@ -20,6 +20,7 @@
 #include "PositionOwnerBox.h"
 
 class Patch;
+class HomePatch;
 class Node;
 class PatchMap;
 
@@ -44,6 +45,21 @@ private:
   PositionBox<Patch> *positionBox;
   Box<Patch,Results> *forceBox;
   Box<Patch,AtomProperties> *atomBox;
+
+friend class ComputeHomePatch;
+
+};
+
+class ComputeHomePatch : public ComputePatch {
+
+public:
+  ComputeHomePatch(ComputeID c, PatchID pid);
+  virtual void initialize();
+  virtual void doWork();
+
+protected:
+  HomePatch *homePatch;
+  virtual void doForce(Position* p, Results* r, AtomProperties* a, Transform* t);
 
 };
 

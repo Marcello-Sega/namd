@@ -10,7 +10,7 @@
 #include "ComputePatch.h"
 #include "ReductionMgr.h"
 
-class ComputeSMD : public ComputePatch
+class ComputeSMD : public ComputeHomePatch
 {
 private:
 	int consExp;		//  Exponent for energy function from SimParameters
@@ -28,7 +28,7 @@ public:
 	ComputeSMD(ComputeID c, PatchID pid); 	//  Constructor
 	virtual ~ComputeSMD();			//  Destructor
 
-	virtual void doForce(Position* p, Results* r, AtomProperties* a);
+	virtual void doForce(Position* p, Results* r, AtomProperties* a, Transform* t);
 
 	SubmitReduction *reduction;
 

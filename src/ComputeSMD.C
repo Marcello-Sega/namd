@@ -17,7 +17,7 @@
 /************************************************************************/
 
 ComputeSMD::ComputeSMD(ComputeID c, PatchID pid)
-  : ComputePatch(c,pid)
+  : ComputeHomePatch(c,pid)
 {
 	reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 
@@ -58,10 +58,11 @@ ComputeSMD::~ComputeSMD()
 /*									*/
 /************************************************************************/
 
-void ComputeSMD::doForce(Position* p, Results* res, AtomProperties* a)
+void ComputeSMD::doForce(Position* p, Results* res, AtomProperties* a, Transform* t)
 
 {
 	SMDData *smdData = Node::Object()->smdData;
+	Lattice &lattice = patch->lattice;
 	Vector refPos;		//  Reference position
 	BigReal r, r2; 	//  r=distance between atom position and the
 			//  reference position, r2 = r^2
@@ -78,13 +79,15 @@ void ComputeSMD::doForce(Position* p, Results* res, AtomProperties* a)
 
 	for (int localID=0; localID<numAtoms; ++localID) {	  
 	  if (a[localID].id == moveAtom) { 
+	    Position atomPos = lattice.reverse_transform(p[localID],t[localID]);
+
 	    // this call will do all the necessary changes
-	    smdData->update(currentTime, p[localID]);
+	    smdData->update(currentTime, atomPos);
 
 	    // now calculate the force and energy
 	    smdData->get_smd_params(timeStamp, moveDir, refPos);
 	    Rij = refPos + (currentTime - timeStamp) * moveVel * moveDir
-	      - p[localID];
+	      - atomPos;
 
 	    //  Calculate the distance and the distance squared
             if (projectForce) {
@@ -128,7 +131,7 @@ void ComputeSMD::doForce(Position* p, Results* res, AtomProperties* a)
 	    f[localID] += smdForce;
  
 	    if (currentTime % outputFreq == 0) {
-	      smdData->output(currentTime, p[localID], smdForce);
+	      smdData->output(currentTime, atomPos, smdForce);
 	    }
 	    
 	    break;  // change this when there are many atoms restrained.
