@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-#include "ComputeNonbonedExcl.h"
+#include "ComputeNonbondedExcl.h"
 #include "Molecule.h"
 #include "Parameters.h"
 #include "Node.h"
@@ -48,7 +48,13 @@ BigReal NonbondedExclElem::computeForce(void)
   DebugM(1, "::computeForce() localIndex = " << localIndex[0] << " "
                << localIndex[1] << endl);
 
-  DebugM(3, "::computeForce() -- ending with delta energy " << energy << endl);
-  return(energy);
+  ComputeNonbondedUtil::calcExcl(
+	p[0]->x[localIndex[0]], p[1]->x[localIndex[1]],
+	p[0]->f[localIndex[0]], p[1]->f[localIndex[1]],
+	p[0]->a[localIndex[0]], p[1]->a[localIndex[1]],
+	nonbondedexclType);
+
+  DebugM(3, "::computeForce() -- ending" << endl);
+  return(0.);
 }
 
