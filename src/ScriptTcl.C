@@ -1,0 +1,165 @@
+/***************************************************************************/
+/*       (C) Copyright 1996,1997 The Board of Trustees of the              */
+/*                          University of Illinois                         */
+/*                           All Rights Reserved                           */
+/***************************************************************************/
+/***************************************************************************
+ * DESCRIPTION:  Modifies SimParameters settings during run.
+ *
+ ***************************************************************************/
+
+#include "ScriptTcl.h"
+#include "Broadcasts.h"
+#include "ConfigList.h"
+#include "Node.h"
+#include "SimParameters.h"
+#include "Thread.h"
+#include "ProcessorPrivate.h"
+#include <stdio.h>
+
+#ifdef NAMD_TCL
+#include <tcl.h>
+#endif
+
+//#define DEBUGM
+#define MIN_DEBUG_LEVEL 4
+#include "Debug.h"
+
+#ifdef NAMD_TCL
+
+int ScriptTcl::Tcl_print(ClientData,
+	Tcl_Interp *, int argc, char *argv[]) {
+  char *msg = Tcl_Merge(argc-1,argv+1);
+  CkPrintf("TCL: %s\n",msg);
+  free(msg);
+  return TCL_OK;
+}
+
+int ScriptTcl::Tcl_param(ClientData clientData,
+        Tcl_Interp *interp, int argc, char *argv[]) {
+  if (argc != 3) {
+    interp->result = "wrong # args";
+    return TCL_ERROR;
+  }
+  char *param = argv[1];
+  char *value = argv[2];
+
+  iout << "TCL: Setting parameter " << param << " to " << value << "\n" << endi;
+
+  ScriptParamMsg *msg = new ScriptParamMsg;
+  strncpy(msg->param,param,MAX_SCRIPT_PARAM_SIZE);
+  strncpy(msg->value,value,MAX_SCRIPT_PARAM_SIZE);
+  CProxy_Node(CpvAccess(BOCclass_group).node).scriptParam(msg);
+
+  Node::Object()->enableScriptBarrier();
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  script->suspend();
+  return TCL_OK;
+}
+
+
+int ScriptTcl::Tcl_run(ClientData clientData,
+	Tcl_Interp *interp, int argc, char *argv[]) {
+  if (argc != 2) {
+    interp->result = "wrong # args";
+    return TCL_ERROR;
+  }
+  int numsteps;
+  if (Tcl_GetInt(interp,argv[1],&numsteps) != TCL_OK) {
+    return TCL_ERROR;
+  }
+  if (numsteps <= 0) {
+    interp->result = "must run for at least 1 step";
+    return TCL_ERROR;
+  }
+  iout << "TCL: Running for " << numsteps << " steps\n" << endi;
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  script->scriptBarrier.publish(script->barrierStep,numsteps);
+  script->barrierStep += numsteps;
+  script->suspend();
+  return TCL_OK;
+}
+
+#endif  // NAMD_TCL
+
+
+ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
+  DebugM(3,"Constructing ScriptTcl\n");
+#ifdef NAMD_TCL
+  interp = 0;
+#endif
+}
+
+ScriptTcl::~ScriptTcl() {
+  DebugM(3,"Destructing ScriptTcl\n");
+#ifdef NAMD_TCL
+  if ( interp ) Tcl_DeleteInterp(interp);
+#endif
+}
+
+// Invoked by thread
+void ScriptTcl::threadRun(ScriptTcl* arg)
+{
+    arg->algorithm();
+}
+
+// Invoked by Node::run()
+void ScriptTcl::run()
+{
+    // create a Thread and invoke it
+    DebugM(4, "::run() - this = " << this << "\n" );
+    thread = CthCreate((CthVoidFn)&(threadRun),(void*)(this),TCL_STK_SZ);
+    CthSetStrategyDefault(thread);
+    // awaken(); // triggered by sequencers
+}
+
+void ScriptTcl::algorithm() {
+  DebugM(4,"Running ScriptTcl\n");
+
+  barrierStep = Node::Object()->simParameters->firstTimestep;
+
+#ifdef NAMD_TCL
+  // Create interpreter
+  interp = Tcl_CreateInterp();
+  if (Tcl_Init(interp) == TCL_ERROR) {
+    CkPrintf("Tcl startup error: %\n", interp->result);
+  }
+  Tcl_CreateCommand(interp, "print", Tcl_print,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "param", Tcl_param,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "run", Tcl_run,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+
+  // Get the script
+  StringList *script = Node::Object()->configList->find("tclScript");
+
+  for ( ; script; script = script->next ) {
+    int code;
+    if ( script->data[0] == '{' ) code = Tcl_Eval(interp,script->data+1);
+    else code = Tcl_EvalFile(interp,script->data);
+    if (*interp->result != 0) CkPrintf("TCL: %s\n",interp->result);
+    if (code != TCL_OK) NAMD_die("TCL error in script!");
+  }
+
+#endif
+}
+
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1 $	$Date: 1999/05/27 18:38:58 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: ScriptTcl.C,v $
+ * Revision 1.1  1999/05/27 18:38:58  jim
+ * Files to implement general Tcl scripting.
+ *
+ *
+ *
+ ***************************************************************************/
