@@ -12,7 +12,7 @@
  *
  *	$RCSfile: Molecule.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/11 04:07:55 $
+ *	$Revision: 1.1003 $	$Date: 1997/03/11 06:29:14 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -26,6 +26,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.1003  1997/03/11 06:29:14  jim
+ * Modified exclusion lookup to use fixed arrays and linear searches.
+ *
  * Revision 1.1002  1997/03/11 04:07:55  jim
  * Eliminated use of LintList for by-atom lists.
  * Now uses little arrays managed by ObjectArena<int>.
@@ -201,12 +204,12 @@ private:
 	int **exclusionsByAtom;
 				//  List of exclusions by atom
 
-	IntList *all_exclusions;
+	int **all_exclusions;
 				//  List of all exclusions, including
 				//  explicit exclusions and those calculated
 				//  from the bonded structure based on the
 				//  exclusion policy
-	IntList *onefour_exclusions;
+	int **onefour_exclusions;
 				//  List of 1-4 interactions.  This list is
 				//  used only if the exclusion policy is 
 				//  scaled1-4 to track 1-4 interactions that
@@ -233,9 +236,9 @@ private:
 	void read_exclusions(FILE *);
 				//  Read in exclusion info from .psf
 
-	void build12excl(IntList *);
-	void build13excl(IntList *);
-	void build14excl(IntList *, int);
+	void build12excl(void);
+	void build13excl(void);
+	void build14excl(int);
 	void build_exclusions();
 
 	// analyze the atoms, and determine which are oxygen, hb donors, etc.
@@ -378,14 +381,13 @@ public:
 	   }
 
 	   //  Do the search and return the correct value
-	   if (all_exclusions[check_int].find(other_int) == INTLIST_NOTFOUND)
+	   int *list = all_exclusions[check_int];
+	   check_int = *list;
+	   while( check_int != other_int && check_int != -1 )
 	   {
-		return(FALSE);
+	      check_int = *(++list);
 	   }
-	   else
-	   {
-		return(TRUE);
-	   }
+	   return ( check_int != -1 );
         }
 	
 	//  Check for 1-4 exclusions.  This is only valid when the
@@ -393,9 +395,10 @@ public:
 	//  since it will be called so often
 	Bool check14excl(int atom1, int atom2) const
         {
-	   int check_int;
-	   int other_int;
+	   int check_int;	//  atom whose array we will search
+	   int other_int;	//  atom we are looking for
 
+	   //  We want to search the array of the smaller atom
 	   if (atom1<atom2)
 	   {
 		check_int = atom1;
@@ -407,14 +410,14 @@ public:
 		other_int = atom1;
 	   }
 
-	   if (onefour_exclusions[check_int].find(other_int) == INTLIST_NOTFOUND)
+	   //  Do the search and return the correct value
+	   int *list = onefour_exclusions[check_int];
+	   check_int = *list;
+	   while( check_int != other_int && check_int != -1 )
 	   {
-		return(FALSE);
+	      check_int = *(++list);
 	   }
-	   else
-	   {
-		return(TRUE);
-	   }
+	   return ( check_int != -1 );
 	}
 
 	//  Return true or false based on whether the specified atom

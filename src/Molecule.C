@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Molecule.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/11 04:07:54 $
+ *	$Revision: 1.1004 $	$Date: 1997/03/11 06:29:13 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1004  1997/03/11 06:29:13  jim
+ * Modified exclusion lookup to use fixed arrays and linear searches.
+ *
  * Revision 1.1003  1997/03/11 04:07:54  jim
  * Eliminated use of LintList for by-atom lists.
  * Now uses little arrays managed by ObjectArena<int>.
@@ -172,7 +175,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1003 1997/03/11 04:07:54 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1004 1997/03/11 06:29:13 jim Exp $";
 
 #include "Molecule.h"
 #include <stdio.h>
@@ -2397,6 +2400,69 @@ void Molecule::build_lists_by_atom()
       exclusionsByAtom[a2][byAtomSize[a2]++] = i;
    }
 
+   //  Allocate an array of intPtr's to hold the exclusions for
+   //  each atom
+   all_exclusions = new intPtr[numAtoms];
+
+   for (i=0; i<numAtoms; i++)
+   {
+      byAtomSize[i] = 0;
+   }
+   for (i=0; i<numTotalExclusions; i++)
+   {
+      // first atom should alway have lower number!
+      if ( ! exclusions[i].modified )
+         byAtomSize[exclusions[i].atom1]++;
+   }
+   for (i=0; i<numAtoms; i++)
+   {
+      all_exclusions[i] = arena.getNewArray(byAtomSize[i]+1);
+      all_exclusions[i][byAtomSize[i]] = -1;
+      byAtomSize[i] = 0;
+   }
+   for (i=0; i<numTotalExclusions; i++)
+   {
+      if ( ! exclusions[i].modified )
+      {
+         int a1 = exclusions[i].atom1;
+         int a2 = exclusions[i].atom2;
+         all_exclusions[a1][byAtomSize[a1]++] = a2;
+      }
+   }
+
+   //  If the exclusion policy is scaled 1-4, then allocate
+   //  an array of intPtr's to hold the 1-4 interactions
+   if (simParams->exclude == SCALED14)
+   { 
+      onefour_exclusions = new intPtr[numAtoms];
+
+      for (i=0; i<numAtoms; i++)
+      {
+         byAtomSize[i] = 0;
+      }
+      for (i=0; i<numTotalExclusions; i++)
+      {
+         // first atom should alway have lower number!
+         if ( exclusions[i].modified )
+            byAtomSize[exclusions[i].atom1]++;
+      }
+      for (i=0; i<numAtoms; i++)
+      {
+         onefour_exclusions[i] = arena.getNewArray(byAtomSize[i]+1);
+         onefour_exclusions[i][byAtomSize[i]] = -1;
+         byAtomSize[i] = 0;
+      }
+      for (i=0; i<numTotalExclusions; i++)
+      {
+         if ( exclusions[i].modified )
+         {
+            int a1 = exclusions[i].atom1;
+            int a2 = exclusions[i].atom2;
+            onefour_exclusions[a1][byAtomSize[a1]++] = a2;
+         }
+      }
+   }
+
    delete [] byAtomSize;
 
 }
@@ -2411,8 +2477,8 @@ void Molecule::build_lists_by_atom()
 /*  exclusions that are calculated based on the bonded structure*/
 /*  and the exclusion flag.  For each pair of atoms that are    */
 /*  excluded, the larger of the 2 atom indexes is stored in the */
-/*  array of the smaller index.  All the arrays are then sorted.*/
-/*  Then to determine if two atoms have an exclusion, a binary  */
+/*  array of the smaller index.  All the arrays are not sorted. */
+/*  Then to determine if two atoms have an exclusion, a linear  */
 /*  search is done on the array of the atom with the smaller    */
 /*  index for the larger index.					*/
 /*	If the exclusion policy is set to scaled1-4, there are  */
@@ -2429,40 +2495,11 @@ void Molecule::build_exclusions()
 	int i;					//  Loop counter
 	ExclusionSettings exclude_flag;		//  Exclusion policy
 
-	//  Allocate an array of intlists to hold the exclusions for
-	//  each atom
-	all_exclusions = new IntList[numAtoms];
-
-	if (all_exclusions == NULL)
-	{
-		NAMD_die("Memory allocation died in Molecule::build_exclusions()");
-	}
-
 	exclude_flag = simParams->exclude;
-
-	//  If the exclusion policy is scaled 1-4, then allocate
-	//  an array of IntList's to hold the 1-4 interactions
-	if (exclude_flag == SCALED14)
-	{ 
-		onefour_exclusions = new IntList[numAtoms];
-
-		if (onefour_exclusions == NULL)
-		{
-			NAMD_die("Memory allocation died in Molecule::build_exclusions()");
-		}
-	}
 
 	//  Go through the explicit exclusions and add them to the arrays
 	for (i=0; i<numExclusions; i++)
 	{
-		if (exclusions[i].atom1 < exclusions[i].atom2)
-		{
-			all_exclusions[exclusions[i].atom1].add(exclusions[i].atom2);
-		}
-		else
-		{
-			all_exclusions[exclusions[i].atom2].add(exclusions[i].atom1);
-		}
 		exclusionSet.add(exclusions[i]);
 	}
 
@@ -2472,34 +2509,24 @@ void Molecule::build_exclusions()
 		case NONE:
 			break;
 		case ONETWO:
-			build12excl(all_exclusions);
+			build12excl();
 			break;
 		case ONETHREE:
-			build12excl(all_exclusions);
-			build13excl(all_exclusions);
+			build12excl();
+			build13excl();
 			break;
 		case ONEFOUR:
-			build12excl(all_exclusions);
-			build13excl(all_exclusions);
-			build14excl(all_exclusions,0);
+			build12excl();
+			build13excl();
+			build14excl(0);
 			break;
 		case SCALED14:
-			build12excl(all_exclusions);
-			build13excl(all_exclusions);
-			build14excl(onefour_exclusions,1);
+			build12excl();
+			build13excl();
+			build14excl(1);
 			break;
 	}
 
-	//  Sort all the arrays so that we can search them using a binary search
-	for (i=0; i<numAtoms; i++)
-	{
-		all_exclusions[i].sort();
-
-		if (exclude_flag == SCALED14)
-		{
-			onefour_exclusions[i].sort();
-		}
-	}
 }
 /*			END OF FUNCTION build_exclusions		*/
 
@@ -2516,7 +2543,7 @@ void Molecule::build_exclusions()
 /*									*/
 /************************************************************************/
 
-void Molecule::build12excl(IntList *lists)
+void Molecule::build12excl(void)
    
 {
    int *current_val;	//  Current value to check
@@ -2534,7 +2561,6 @@ void Molecule::build12excl(IntList *lists)
 	   {
 	      if (i<bonds[*current_val].atom2)
 	      {
-		 lists[i].add(bonds[*current_val].atom2);
 		 exclusionSet.add(Exclusion(i,bonds[*current_val].atom2));
 	      }
 	   }
@@ -2542,7 +2568,6 @@ void Molecule::build12excl(IntList *lists)
 	   {
 	      if (i<bonds[*current_val].atom1)
 	      {
-		 lists[i].add(bonds[*current_val].atom1);
 		 exclusionSet.add(Exclusion(i,bonds[*current_val].atom1));
 	      }
 	   }
@@ -2566,7 +2591,7 @@ void Molecule::build12excl(IntList *lists)
 /*									*/
 /************************************************************************/
 
-void Molecule::build13excl(IntList *lists)
+void Molecule::build13excl(void)
    
 {
    int *bond1, *bond2;	//  The two bonds being checked
@@ -2601,7 +2626,6 @@ void Molecule::build13excl(IntList *lists)
 			{
 				if (i < bonds[*bond2].atom2)
 				{
-					lists[i].add(bonds[*bond2].atom2);
 					exclusionSet.add(Exclusion(i,bonds[*bond2].atom2));
 				}
 			}
@@ -2609,7 +2633,6 @@ void Molecule::build13excl(IntList *lists)
 			{
 				if (i < bonds[*bond2].atom1)
 				{
-					lists[i].add(bonds[*bond2].atom1);
 					exclusionSet.add(Exclusion(i,bonds[*bond2].atom1));
 				}
 			}
@@ -2638,7 +2661,7 @@ void Molecule::build13excl(IntList *lists)
 /************************************************************************/
 
 
-void Molecule::build14excl(IntList *lists, int modified)
+void Molecule::build14excl(int modified)
    
 {
    int *bond1, *bond2, *bond3;	//  The two bonds being checked
@@ -2699,7 +2722,6 @@ void Molecule::build14excl(IntList *lists, int modified)
 					if (bonds[*bond3].atom2 != mid1)
 					if (i<bonds[*bond3].atom2)
 					{
-					   lists[i].add(bonds[*bond3].atom2);
 					   exclusionSet.add(Exclusion(i,bonds[*bond3].atom2,modified));
 					}
 				}
@@ -2712,7 +2734,6 @@ void Molecule::build14excl(IntList *lists, int modified)
 					if (bonds[*bond3].atom1 != mid1)
 				   	if (i<bonds[*bond3].atom1)
 					{
-					   lists[i].add(bonds[*bond3].atom1);
 					   exclusionSet.add(Exclusion(i,bonds[*bond3].atom1,modified));
 					}
 				}
