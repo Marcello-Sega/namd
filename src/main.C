@@ -32,14 +32,15 @@ public:
     char **argv = msg->argv;
 
     // print banner
-    iout << iINFO << "NAMD 2.0\n"
-#if 1
+    iout << iINFO << "NAMD 2.1b1\n"
+#if 0
+         << iWARN << "\n"
          << iWARN << "          ***  UNRELEASED EXPERIMENTAL VERSION  ***\n"
-#else
+         << iWARN << "\n"
+#endif
          << iINFO << "Please complete the registration form at\n"
          << iINFO << "http://www.ks.uiuc.edu/Research/namd/download.html\n"
          << iINFO << "and send feedback or bug reports to namd@ks.uiuc.edu\n"
-#endif
          << endi;
 
     // Namd object is only on Pe(0)
@@ -60,8 +61,8 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: main.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1999/05/11 23:56:56 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1017 $	$Date: 1999/09/15 22:07:14 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -70,6 +71,9 @@ public:
  * REVISION HISTORY:
  *
  * $Log: main.C,v $
+ * Revision 1.1017  1999/09/15 22:07:14  jim
+ * Updated version number to 2.1b1
+ *
  * Revision 1.1016  1999/05/11 23:56:56  brunner
  * Changes for new charm version
  *
