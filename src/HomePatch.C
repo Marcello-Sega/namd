@@ -206,11 +206,17 @@ void HomePatch::positionsReady(int doMigration)
 
   // Must Add Proxy Changes when migration completed!
   ProxyListIter pli(proxy);
+  int nPatches = PatchMap::Object()->numPatches();
   int *pids = new int[proxy.size()];
   int *pidi = pids;
+  int *pide = pids + proxy.size();
   for ( pli = pli.begin(); pli != pli.end(); ++pli )
   {
-    *(pidi++) = pli->node;
+    if ( pli->node < nPatches ) {
+      *(--pide) = pli->node;
+    } else {
+      *(pidi++) = pli->node;
+    }
   }
   if (doMigration) {
       ProxyAllMsg *allmsg = new ProxyAllMsg;
