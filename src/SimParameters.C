@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *  $RCSfile: SimParameters.C,v $
- *  $Author: milind $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1024 $  $Date: 1997/10/01 16:47:02 $
+ *  $Author: brunner $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1025 $  $Date: 1997/10/15 22:03:24 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1025  1997/10/15 22:03:24  brunner
+ * Bug fix:  Fixed atoms parameter not propagated to other nodes.
+ *
  * Revision 1.1024  1997/10/01 16:47:02  milind
  * Removed old NAMD1 messaging and replaced it with new Message Streams library.
  *
@@ -402,7 +405,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1024 1997/10/01 16:47:02 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1025 1997/10/15 22:03:24 brunner Exp $";
 
 
 #include "ckdefs.h"
@@ -2326,6 +2329,8 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
   msg->put(berendsenPressureRelaxationTime);
   msg->put(berendsenPressureFreq);
 
+  // Send fixed-atoms parameters
+  msg->put(fixedAtomsOn);
   msg->end();
 }
 /*    END OF FUNCITON send_SimParameters    */
@@ -2474,6 +2479,8 @@ void SimParameters::receive_SimParameters(MIStream *msg)
   msg->get(berendsenPressureRelaxationTime);
   msg->get(berendsenPressureFreq);
 
+  // Fixed atom parameters
+  msg->get(fixedAtomsOn);
   //  Free the message
   delete msg;
 
@@ -2486,12 +2493,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1024 $  $Date: 1997/10/01 16:47:02 $
+ *  $Revision: 1.1025 $  $Date: 1997/10/15 22:03:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1025  1997/10/15 22:03:24  brunner
+ * Bug fix:  Fixed atoms parameter not propagated to other nodes.
+ *
  * Revision 1.1024  1997/10/01 16:47:02  milind
  * Removed old NAMD1 messaging and replaced it with new Message Streams library.
  *
