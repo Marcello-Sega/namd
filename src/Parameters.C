@@ -77,6 +77,10 @@ struct dihedral_params
   char atom2name[11];
   char atom3name[11];
   char atom4name[11];
+  char atom1wild;
+  char atom2wild;
+  char atom3wild;
+  char atom4wild;
   int multiplicity;
   FourBodyConsts values[4];
   Index index;
@@ -1113,6 +1117,10 @@ void Parameters::add_dihedral_param(char *buf, FILE *fd)
   strcpy(new_node->atom2name, atom2name);
   strcpy(new_node->atom3name, atom3name);
   strcpy(new_node->atom4name, atom4name);
+  new_node->atom1wild = ! strcasecmp(atom1name, "X");
+  new_node->atom2wild = ! strcasecmp(atom2name, "X");
+  new_node->atom3wild = ! strcasecmp(atom3name, "X");
+  new_node->atom4wild = ! strcasecmp(atom4name, "X");
   new_node->multiplicity = multiplicity;
   new_node->values[0].k = forceconstant;
   new_node->values[0].n = periodicity;
@@ -1299,10 +1307,10 @@ void Parameters::add_to_dihedral_list(
   /*  wildcards at the end of the list.  Then, we can just do a   */
   /*  linear search for a bond and be guaranteed to have specific */
   /*  entries take precendence over over wildcards          */
-  if ( (strcasecmp(new_node->atom1name, "X") == 0) ||
-       (strcasecmp(new_node->atom2name, "X") == 0) ||
-       (strcasecmp(new_node->atom3name, "X") == 0) ||
-       (strcasecmp(new_node->atom4name, "X") == 0) )
+  if ( new_node->atom1wild ||
+       new_node->atom2wild ||
+       new_node->atom3wild ||
+       new_node->atom4wild )
   {
     /*  add to the end of the list        */
     tail->next=new_node;
@@ -1470,10 +1478,10 @@ void Parameters::add_to_charmm_dihedral_list(
 	/*  wildcards at the end of the list.  Then, we can just do a   */
 	/*  linear search for a bond and be guaranteed to have specific */
 	/*  entries take precendence over over wildcards	        */
-	if ( (strcasecmp(new_node->atom1name, "X") == 0) ||
-	     (strcasecmp(new_node->atom2name, "X") == 0) ||
-	     (strcasecmp(new_node->atom3name, "X") == 0) ||
-	     (strcasecmp(new_node->atom4name, "X") == 0) )
+	if ( new_node->atom1wild ||
+	     new_node->atom2wild ||
+	     new_node->atom3wild ||
+	     new_node->atom4wild )
 	{
 		/*  add to the end of the list				*/
 		tail->next=new_node;
@@ -3041,26 +3049,18 @@ void Parameters::assign_dihedral_index(char *atom1, char *atom2, char *atom3,
     /*  Also, we must check for an exact match, and a match */
     /*  in reverse, since they are really the same          */
     /*  physically.            */
-    if ( ( (strcasecmp(ptr->atom1name, atom1)==0) || 
-           (strcasecmp(ptr->atom1name, "X")==0) ) &&
-       ( (strcasecmp(ptr->atom2name, atom2)==0) || 
-           (strcasecmp(ptr->atom2name, "X")==0) ) &&
-       ( (strcasecmp(ptr->atom3name, atom3)==0) || 
-           (strcasecmp(ptr->atom3name, "X")==0) ) &&
-       ( (strcasecmp(ptr->atom4name, atom4)==0) || 
-           (strcasecmp(ptr->atom4name, "X")==0) ) )
+    if ( ( ptr->atom1wild || (strcasecmp(ptr->atom1name, atom1)==0) ) && 
+         ( ptr->atom2wild || (strcasecmp(ptr->atom2name, atom2)==0) ) &&
+         ( ptr->atom3wild || (strcasecmp(ptr->atom3name, atom3)==0) ) &&
+         ( ptr->atom4wild || (strcasecmp(ptr->atom4name, atom4)==0) ) ) 
     {
       /*  Found an exact match      */
       found=1;
     }
-    else if ( ( (strcasecmp(ptr->atom4name, atom1)==0) || 
-           (strcasecmp(ptr->atom4name, "X")==0) ) &&
-       ( (strcasecmp(ptr->atom3name, atom2)==0) || 
-           (strcasecmp(ptr->atom3name, "X")==0) ) &&
-       ( (strcasecmp(ptr->atom2name, atom3)==0) || 
-           (strcasecmp(ptr->atom2name, "X")==0) ) &&
-       ( (strcasecmp(ptr->atom1name, atom4)==0) || 
-           (strcasecmp(ptr->atom1name, "X")==0) ) )
+    else if ( ( ptr->atom4wild || (strcasecmp(ptr->atom4name, atom1)==0) ) &&
+              ( ptr->atom3wild || (strcasecmp(ptr->atom3name, atom2)==0) ) &&
+              ( ptr->atom2wild || (strcasecmp(ptr->atom2name, atom3)==0) ) &&
+              ( ptr->atom1wild || (strcasecmp(ptr->atom1name, atom4)==0) ) )
     {
       /*  Found a reverse match      */
       found=1;
