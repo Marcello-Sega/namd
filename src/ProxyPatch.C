@@ -16,6 +16,7 @@
 #include "ProxyMgr.decl.h"
 #include "ProxyMgr.h"
 #include "AtomMap.h"
+#include "PatchMap.h"
 
 #define MIN_DEBUG_LEVEL 4
 //#define  DEBUGM
@@ -29,6 +30,11 @@ ProxyPatch::ProxyPatch(PatchID pd) :
   numAtoms = -1;
   parent = -1;
   nChild = 0;
+
+#if CMK_PERSISTENT_COMM
+  localphs = 0;
+  localphs = CmiCreatePersistent(PatchMap::Object()->node(patchID), 300000);
+#endif
 }
 
 ProxyPatch::~ProxyPatch()
@@ -36,6 +42,10 @@ ProxyPatch::~ProxyPatch()
   DebugM(4, "ProxyPatch(" << pd << ") deleted at " << this << "\n");
   ProxyMgr::Object()->unregisterProxy(patchID);
   AtomMap::Object()->unregisterIDs(patchID,p.begin(),p.end());
+#if CMK_PERSISTENT_COMM
+  CmiDestoryPersistent(localphs);
+  localphs = 0;
+#endif
 }
 
 void ProxyPatch::boxClosed(int box)
@@ -122,6 +132,10 @@ void ProxyPatch::sendResults(void)
   }
   for ( i = flags.maxForceUsed + 1; i < Results::maxNumForces; ++i )
     f[i].resize(0);
+
+#if CMK_PERSISTENT_COMM
+//  CmiUsePersistentHandle(&localphs, 1);
+#endif
   if (proxyRecvSpanning == 0) {
     ProxyResultMsg *msg = new (sizeof(int)*8) ProxyResultMsg;
     CkSetQueueing(msg, CK_QUEUEING_IFIFO);
@@ -144,6 +158,9 @@ void ProxyPatch::sendResults(void)
       msg->forceList[i] = f[i];
     ProxyMgr::Object()->sendResults(msg);
   }
+#if CMK_PERSISTENT_COMM
+  CmiUsePersistentHandle(NULL, 0);
+#endif
 }
 
 void ProxyPatch::setSpanningTree(int p, int *c, int n) { 
@@ -183,3 +200,4 @@ ProxyCombinedResultMsg *ProxyPatch::depositCombinedResultMsg(ProxyCombinedResult
   }
   return NULL;
 }
+

@@ -28,6 +28,11 @@ class ProxyPatch : public Patch
      int  getSpanningTreeParent() { return parent; }
      int  getSpanningTreeChild(int *);
      ProxyCombinedResultMsg *depositCombinedResultMsg(ProxyCombinedResultMsg *);
+
+#if CMK_PERSISTENT_COMM
+  private:
+     PersistentHandle localphs;
+#endif
   protected:
 
      virtual void boxClosed(int);

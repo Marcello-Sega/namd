@@ -151,8 +151,10 @@ private:
 
 #if CMK_PERSISTENT_COMM
   PersistentHandle *localphs;
+  int nphs;
 public:
   int phsReady;
+  void destoryPersistComm();
 #endif
 };
 

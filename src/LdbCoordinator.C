@@ -81,6 +81,18 @@ void LdbCoordinator::staticResumeFromSync(void* data)
 void LdbCoordinator::ResumeFromSync()
 {
   theLbdb->DoneRegisteringObjects(myHandle);
+#if CMK_PERSISTENT_COMM
+  if (takingLdbData) {
+//CmiPrintf("[%d] CmiDestoryPersistent\n", CkMyPe());
+
+    HomePatchList *hpl = PatchMap::Object()->homePatchList();
+    ResizeArrayIter<HomePatchElem> ai(*hpl);
+    for (ai=ai.begin(); ai != ai.end(); ai++) {
+      HomePatch *patch = (*ai).patch;
+      patch->destoryPersistComm();
+    }
+  }
+#endif
   CProxy_LdbCoordinator cl(thisgroup);
 #if CHARM_VERSION > 050402
   cl[0].nodeDone();
@@ -448,10 +460,6 @@ void LdbCoordinator::ExecuteMigrations(void)
     migrations = next;
   }
  
-#if CMK_PERSISTENT_COMM
-  CmiDestoryAllPersistent();
-#endif
-
  // computeMgr->updateComputes() call only on Node(0) i.e. right here
   // This will barrier for all Nodes - (i.e. Computes must be
   // here and with proxies before anyone can start up
@@ -549,17 +557,6 @@ void LdbCoordinator::resumeReady(CkQdMsg *msg) {
 void LdbCoordinator::resume2(void)
 {
   DebugM(3,"resume2()\n");
-
-#if CMK_PERSISTENT_COMM
-  HomePatchList *hpl = PatchMap::Object()->homePatchList();
-  ResizeArrayIter<HomePatchElem> ai(*hpl);
-
-  for (ai=ai.begin(); ai != ai.end(); ai++) {
-    HomePatch *patch = (*ai).patch;
-// CmiPrintf("%d set phsReady to 0\n");
-    patch->phsReady = 0;
-  }
-#endif
 
   awakenSequencers();
 }

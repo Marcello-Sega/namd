@@ -79,6 +79,7 @@ HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
   nChild = 0;	// number of proxy spanning tree children
 #if CMK_PERSISTENT_COMM
   phsReady = 0;
+  nphs = 0;
   localphs = new PersistentHandle[CkNumPes()];
   for (int i=0; i<CkNumPes(); i++) localphs[i] = 0;
 #endif
@@ -321,6 +322,7 @@ void HomePatch::positionsReady(int doMigration)
      for (int i=0; i<npid; i++) {
        localphs[i] = CmiCreatePersistent(pids[i], 300000);
      }
+     nphs = npid;
      phsReady = 1;
     }
 #endif
@@ -1438,3 +1440,12 @@ void mollify(CompAtom *qtilde,const HGArrayVector &q0,const BigReal *lambda, HGA
 
 }
 
+#if CMK_PERSISTENT_COMM
+void HomePatch::destoryPersistComm()
+{
+     for (int i=0; i<nphs; i++) {
+       CmiDestoryPersistent(localphs[i]);
+     }
+     phsReady = 0;
+}
+#endif
