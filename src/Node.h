@@ -31,6 +31,7 @@ class ConfigList;
 class PDB;
 class WorkDistrib;
 class PatchMgr;
+class ComputeMgr;
 
 class Node : public BOCclass
 {
@@ -45,6 +46,9 @@ public:
   // Run for the number of steps specified in the sim_parameters
   static void messageRun();
   void run(RunMsg *);                  
+
+  // Deal with quiescence
+  void quiescence(QuiescenceMessage *);
 
   // Charm Entry point - Read in system data, get all ready to simulate
   static void messageStartup();
@@ -86,6 +90,7 @@ private:
 
   WorkDistrib *workDistrib;
   PatchMgr *patchMgr;
+  ComputeMgr *computeMgr;
 
   // Countdown for Node::startup barrier
   int numNodeStartup;
@@ -99,12 +104,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.11 $	$Date: 1996/11/22 00:18:51 $
+ *	$Revision: 1.12 $	$Date: 1996/11/30 00:44:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.12  1996/11/30 00:44:24  jim
+ * added sequencer use, ComputeMgr use, and quiescence detection
+ *
  * Revision 1.11  1996/11/22 00:18:51  ari
  * *** empty log message ***
  *

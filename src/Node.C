@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.15 1996/11/26 16:33:35 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.16 1996/11/30 00:44:24 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -36,8 +36,10 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "ComputeImpropers.h"
 #include "ComputeNonbondedSelf.h"
 #include "ComputeMap.h"
+#include "ComputeMgr.h"
 #include "Molecule.h"
 #include "AtomMap.h"
+#include "Sequencer.h"
 //#include "ProxyMgr.h"
 //#include "MessageComm.h"
 //#include "PatchMap.h"
@@ -129,8 +131,15 @@ void Node::startup(InitMsg *msg)
   workDistrib->buildMaps();
   workDistrib->sendMaps();
   workDistrib->awaitMaps();
+
+  ComputeMap::Object()->printComputeMap();
+
   workDistrib->createPatches();
-  workDistrib->createComputes();
+  // workDistrib->createComputes();
+
+  computeMgr = CLocalBranch(ComputeMgr,group.computeMgr);
+  DebugM(3, "Trying to create computes.\n");
+  computeMgr->createComputes(ComputeMap::Object());
 
   patchMgr = CLocalBranch(PatchMgr,group.patchMgr);
 
@@ -154,6 +163,7 @@ void Node::startupDone(DoneMsg *msg) {
     if (!--numNodeStartup) {
       DebugM(1, "Node::startupDone() - triggered run() \n");
       Node::messageRun();
+      CStartQuiescence(GetEntryPtr(Node,quiescence), thishandle);
     }
   } else {
     DebugM(1, "Node::startupDone() - message sent to wrong Pe!\n");
@@ -176,42 +186,29 @@ void Node::run(RunMsg *msg)
   delete msg;
 
   // This is testbed code!
-  DebugM(1, "Node::run() - invoked\n");
-
-  ComputeAngles *angles = new ComputeAngles(1);
-  ComputeMap::Instance()->registerCompute(1,angles);
-  DebugM(1, "Node::run() - creat ComputeAngles(1) signaling mapReady()\n");
-  angles->mapReady();
-
-  ComputeDihedrals *dihedrals = new ComputeDihedrals(1);
-  ComputeMap::Instance()->registerCompute(1,dihedrals);
-  DebugM(1, "Node::run() - creat ComputeDihedrals(1) signaling mapReady()\n");
-  dihedrals->mapReady();
-
-  ComputeImpropers *impropers = new ComputeImpropers(1);
-  ComputeMap::Instance()->registerCompute(1,impropers);
-  DebugM(1, "Node::run() - creat ComputeImpropers(1) signaling mapReady()\n");
-  impropers->mapReady();
+  DebugM(4, "Node::run() - invoked\n");
 
   HomePatchList *hpl = PatchMap::Object()->homePatchList();
   ResizeArrayIter<HomePatchElem> ai(*hpl);
-  int cid = 2;
 
-  DebugM(1, "Node::run() - iterating over home patches!\n");
+  DebugM(4, "Node::run() - iterating over home patches!\n");
   for (ai=ai.begin(); ai != ai.end(); ai++) {
-    DebugM(1, "Node::run() - creating ComputeNonbondedSelf on " << (*ai).p->getPatchID() << endl);
-    ComputeNonbondedSelf *nonbonded = new 
-               ComputeNonbondedSelf(cid,(*ai).p->getPatchID());
-    ComputeMap::Instance()->registerCompute(cid, nonbonded);
-    nonbonded->mapReady();
-    ++cid;
+    HomePatch *p = (*ai).p;
+    DebugM(1, "Node::run() - signaling patch "<< p->getPatchID() << endl);
+    Sequencer *sequencer = new Sequencer(p);
+    p->useSequencer(sequencer);
+    p->runSequencer(1);
   }
+}
 
-  DebugM(1, "Node::run() - iterating over home patches!\n");
-  for (ai=ai.begin(); ai != ai.end(); ai++) {
-    DebugM(1, "Node::run() - signaling patch "<< (*ai).p->getPatchID() << endl);
-    (*ai).p->positionsReady();
-  }
+
+// Deal with quiescence - this terminates the program (for now)
+void Node::quiescence(QuiescenceMessage * msg)
+{
+  delete msg;
+
+  DebugM(4, "Quiescence detected, exiting Charm.\n");
+  CharmExit();
 }
 
 
@@ -241,13 +238,16 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.15 $	$Date: 1996/11/26 16:33:35 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.16 $	$Date: 1996/11/30 00:44:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.16  1996/11/30 00:44:24  jim
+ * added sequencer use, ComputeMgr use, and quiescence detection
+ *
  * Revision 1.15  1996/11/26 16:33:35  nealk
  * Added ComputeDihedrals and ComputeImpropers.
  *
