@@ -1395,6 +1395,10 @@ void Controller::outputExtendedSystem(int step)
       strcat(fname, ".xsc");
       NAMD_backup_file(fname,".old");
       ofstream xscFile(fname);
+      if (!xscFile) {
+        iout << iERROR << "Error in writing " << fname << "\n" << endi;
+        NAMD_die("Abort");
+      } 
       iout << "WRITING EXTENDED SYSTEM TO RESTART FILE AT STEP "
 		<< step << "\n" << endi;
       xscFile << "# NAMD extended system configuration restart file" << endl;
@@ -1412,6 +1416,10 @@ void Controller::outputExtendedSystem(int step)
     strcat(fname, ".xsc");
     NAMD_backup_file(fname);
     ofstream xscFile(fname);
+    if (!xscFile) {
+      iout << iERROR << "Error in writing " << fname << "\n" << endi;
+      NAMD_die("Abort");
+    } 
     iout << "WRITING EXTENDED SYSTEM TO OUTPUT FILE AT STEP "
 		<< simParams->N << "\n" << endi;
     xscFile << "# NAMD extended system configuration output file" << endl;
