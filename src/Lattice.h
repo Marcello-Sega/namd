@@ -183,29 +183,26 @@ public:
   Vector wrap_nearest_delta(Position pos1) const
   {
     Vector diff = pos1 - o;
+    Vector result0(0.,0.,0.);
+    if ( p1 ) result0 -= a1*rint(b1*diff);
+    if ( p2 ) result0 -= a2*rint(b2*diff);
+    if ( p3 ) result0 -= a3*rint(b3*diff);
+    diff += result0;
+    BigReal dist = diff.length2();
     Vector result(0.,0.,0.);
-    if ( p1 ) result -= a1*rint(b1*diff);
-    if ( p2 ) result -= a2*rint(b2*diff);
-    if ( p3 ) result -= a3*rint(b3*diff);
-    diff += result;
-    BigReal newdist = diff.length2();
-    Vector newresult = result;
-    if ( p1 ) {
-      int s = ( b1*diff < 0. ? 1 : -1 );
-      BigReal dist = (diff+s*a1).length2();
-      if ( dist < newdist ) { newdist = dist; newresult = result+s*a1; }
+    for ( int i1=-p1; i1<=p1; ++i1 ) {
+      for ( int i2 =-p2; i2<=p2; ++i2 ) {
+        for ( int i3 =-p3; i3<=p3; ++i3 ) {
+          Vector newresult = i1*a1+i2*a2+i3*a3;
+          BigReal newdist = (diff+newresult).length2();
+          if ( newdist < dist ) {
+            dist = newdist;
+            result = newresult;
+          }
+        }
+      }
     }
-    if ( p2 ) {
-      int s = ( b2*diff < 0. ? 1 : -1 );
-      BigReal dist = (diff+s*a2).length2();
-      if ( dist < newdist ) { newdist = dist; newresult = result+s*a2; }
-    }
-    if ( p3 ) {
-      int s = ( b3*diff < 0. ? 1 : -1 );
-      BigReal dist = (diff+s*a3).length2();
-      if ( dist < newdist ) { newdist = dist; newresult = result+s*a3; }
-    }
-    return newresult;
+    return result0 + result;
   }
 
   CompAtom* create(CompAtom *d, int n, int i) const
