@@ -735,13 +735,11 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
 
    //****** END SMD constraints changes 
 
-#ifdef NAMD_TCL
    ////  Global Forces / Tcl
    opts.optionalB("main", "tclForces", "Are Tcl global forces active?",
      &tclForcesOn, FALSE);
    opts.require("tclForces", "tclForcesScript",
      "Tcl script for global forces", PARSE_MULTIPLES);
-#endif
 
    ////  Global Forces / Misc
    opts.optionalB("main", "miscForces", "Are misc global forces active?",
@@ -755,15 +753,9 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
    opts.require("freeEnergy", "freeEnergyConfig",
      "Configuration file for free energy perturbation", PARSE_MULTIPLES);
 
-#ifdef NAMD_TCL
    ////  Tcl Scripting
    opts.optionalB("main", "tcl", "Is Tcl scripting active?",
      &tclOn, FALSE);
-/*
-   opts.require("tcl", "tclScript",
-     "Tcl script", PARSE_MULTIPLES);
-*/
-#endif
 
 }
 
