@@ -11,6 +11,7 @@
 #include <unistd.h>   /* for Linux */
 #include <sys/socket.h>
 #include <netdb.h>
+#include <errno.h>
 
 #include "vmdsock.h"
 
@@ -49,14 +50,7 @@ int  vmdsock_connect(void *v, const char *host, int port) {
   s->addr.sin_addr.s_addr = inet_addr(address);
   s->addr.sin_port = htons(port);  
 
-  if (connect(s->sd, (struct sockaddr *) &s->addr, sizeof(s->addr)) < 0) 
-    return -1;
-
-  /* set socket to be nonblocking */
-/*
-  fcntl(s->sd, F_SETFL, FNDELAY);  
-*/
-  return 0;
+  return connect(s->sd, (struct sockaddr *) &s->addr, sizeof(s->addr)); 
 }
 
 int vmdsock_bind(void * v, int port) {
@@ -74,6 +68,7 @@ int vmdsock_listen(void * v) {
 }
 
 int  vmdsock_accept(void * v) {
+  int rc;
   vmdsocket *s = (vmdsocket *) v;
 #ifdef __linux__
   socklen_t len;
@@ -81,7 +76,9 @@ int  vmdsock_accept(void * v) {
   int len;
 #endif
   len = sizeof(s->addr);
-  return s->sd = accept(s->sd, (struct sockaddr *) &s->addr, &len);
+  rc = accept(s->sd, (struct sockaddr *) &s->addr, &len);
+  if (rc >= 0) s->sd = rc;
+  return rc;
 }
 
 int  vmdsock_write(void * v, const void *buf, int len) {
@@ -113,8 +110,11 @@ int vmdsock_selread(void *v) {
   FD_ZERO(&rfd);
   FD_SET(s->sd, &rfd);
   memset((void *)&tv, 0, sizeof(struct timeval));
-  rc = select(s->sd+1, &rfd, NULL, NULL, &tv);
+  do {
+    rc = select(s->sd+1, &rfd, NULL, NULL, &tv);
+  } while (rc < 0 && errno == EINTR);
   return rc;
+
 }
   
 int vmdsock_selwrite(void *v) {
@@ -127,6 +127,8 @@ int vmdsock_selwrite(void *v) {
   FD_ZERO(&wfd);
   FD_SET(s->sd, &wfd);
   memset((void *)&tv, 0, sizeof(struct timeval));
-  rc = select(s->sd + 1, NULL, &wfd, NULL, &tv);
+  do {
+    rc = select(s->sd + 1, NULL, &wfd, NULL, &tv);
+  } while (rc < 0 && errno == EINTR);
   return rc;
 }

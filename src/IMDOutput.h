@@ -30,6 +30,7 @@ public:
 private:
   void *sock;
 
+  float *fcoords;
   int curstep;   
   int haveEnergies;
   int haveCoords;

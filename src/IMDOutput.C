@@ -1,6 +1,7 @@
-
 #include "IMDOutput.h"
 #include "imd.h"
+#include "Molecule.h"
+#include "Node.h"
 #include "Vector.h"
 #include "vmdsock.h"
 
@@ -11,9 +12,16 @@ void IMDupdate(void *v) {
 
 IMDOutput::IMDOutput(void *s) {
   sock = s;
+  int numatoms = Node::Object()->molecule->numAtoms;
+  imd_sendheader(sock, IMD_HANDSHAKE, numatoms, sizeof(int));
+  int one = 1;
+  imd_writen(sock, (char *)&one, sizeof(int));
+  fcoords = new float[3*numatoms]; 
 }
 
-IMDOutput::~IMDOutput() { }
+IMDOutput::~IMDOutput() { 
+  delete [] fcoords;
+}
 
 void IMDOutput::gather_energies(int timestep, BigReal *energies, BigReal T, 
                        BigReal totalEnergy) {
@@ -35,17 +43,14 @@ void IMDOutput::gather_energies(int timestep, BigReal *energies, BigReal T,
 }
 
 void IMDOutput::gather_coordinates(int timestep, int N, Vector *coords) {
-  float *fcoords = new float[3*N];
   for (int i=0; i<N; i++) {
     fcoords[3*i] = coords[i].x;     // If only these coordinates were pointers
     fcoords[3*i+1] = coords[i].y;
     fcoords[3*i+2] = coords[i].z;
   }
-  
   size_t msize = 3*N*sizeof(float); 
   imd_sendheader(sock, IMD_FCOORDS, N, msize);
   int rc = imd_writen(sock, (char *)fcoords, msize);
-  delete [] fcoords; 
   if (rc != msize) 
     iout << iWARN << "Error sending coordinates to VMD\n" << endi; 
 }

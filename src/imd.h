@@ -1,4 +1,3 @@
-
 /* 
  *
  * IMDHeader: The idea behind the messages is that first you send a header 
@@ -6,10 +5,6 @@
  * kinf of message you're getting next, including the all the type information
  * needed to byteswap, sort into structs, allocate memory, etc.
  */
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #include <sys/types.h>  /* For types size_t, ssize_t, etc.  */
 
@@ -25,17 +20,15 @@ enum IMDHeaderType {
   IMD_ERROR,     /* XXXX */
   IMD_EXIT,      /* EXIT */
   IMD_FCOORDS,   /* FCOO */
+  IMD_HANDSHAKE, /* HAND */
   IMD_KILL,      /* KILL */
   IMD_MDCOMM,    /* MDCO */
   IMD_PAUSE,     /* PAUS */
   IMD_TEXT,      /* TEXT */
-  IMD_TRATE,     /* TRTE */
-  IMD_XXXX       /* XXXX */
+  IMD_TRATE      /* TRTE */
 };
 typedef enum IMDHeaderType IMDHeaderType;
  
-extern void imd_setheader(IMDHeader *, IMDHeaderType, int length, int size);
-extern void imd_getheader(const IMDHeader *,IMDHeaderType *, int *, int *);
 extern int  imd_sendheader(void *, IMDHeaderType,int, int);
 extern int  imd_readheader(void *, IMDHeaderType *, int *, int *);
 
@@ -59,8 +52,4 @@ typedef struct {
   float Edihe;
   float Eimpr;
 } IMDEnergies;
-
-#ifdef __cplusplus
-}
-#endif
 

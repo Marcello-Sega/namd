@@ -6,46 +6,40 @@
 #include "imd.h"
 #include "vmdsock.h"
 
-static const char *headers[] = {
-  "NRGS",  
-  "EXIT",
-  "FCOO",
-  "KILL",
-  "MDCO",
-  "PAUS",
-  "TEXT",
-  "TRTE",
-  "XXXX"
-};
-
-void imd_setheader(IMDHeader *header, IMDHeaderType type, int length, int sz) {
+static void imd_setheader(IMDHeader *header, IMDHeaderType type, 
+                          int length, int sz) {
   sprintf(header->length, "%d", length);
   sprintf(header->size, "%d", sz);
-  strcpy(header->type, headers[type]); 
+  switch (type) {
+    case IMD_ENERGIES : strcpy(header->type, "NRGS"); break;
+    case IMD_ERROR    : strcpy(header->type, "XXXX"); break;
+    case IMD_EXIT     : strcpy(header->type, "EXIT"); break;
+    case IMD_FCOORDS  : strcpy(header->type, "FCOO"); break;
+    case IMD_HANDSHAKE: strcpy(header->type, "HAND"); break;
+    case IMD_KILL     : strcpy(header->type, "KILL"); break;
+    case IMD_MDCOMM   : strcpy(header->type, "MDCO"); break;
+    case IMD_PAUSE    : strcpy(header->type, "PAUS"); break;
+    case IMD_TEXT     : strcpy(header->type, "TEXT"); break;
+    case IMD_TRATE    : strcpy(header->type, "TRTE"); break;
+    default           : strcpy(header->type, "XXXX");
+  }
 }
 
-void imd_getheader(const IMDHeader *header, IMDHeaderType *type, int *length,
-                   int *sz) {
+static void imd_getheader(const IMDHeader *header, IMDHeaderType *type, 
+                          int *length, int *sz) {
   *length=atoi(header->length);
   *sz = atoi(header->size); 
-  if (!strncmp(header->type, headers[IMD_ENERGIES], 4)) 
-    *type = IMD_ENERGIES; 
-  else if (!strncmp(header->type, headers[IMD_EXIT], 4)) 
-    *type = IMD_EXIT; 
-  else if (!strncmp(header->type, headers[IMD_FCOORDS], 4)) 
-    *type = IMD_FCOORDS; 
-  else if (!strncmp(header->type, headers[IMD_KILL], 4)) 
-    *type = IMD_KILL; 
-  else if (!strncmp(header->type, headers[IMD_MDCOMM], 4)) 
-    *type = IMD_MDCOMM; 
-  else if (!strncmp(header->type, headers[IMD_PAUSE], 4)) 
-    *type = IMD_PAUSE; 
-  else if (!strncmp(header->type, headers[IMD_TEXT], 4)) 
-    *type = IMD_TEXT; 
-  else if (!strncmp(header->type, headers[IMD_TRATE], 4)) 
-    *type = IMD_TRATE; 
+  if      (!strncmp(header->type, "NRGS", 4)) *type = IMD_ENERGIES; 
+  else if (!strncmp(header->type, "EXIT", 4)) *type = IMD_EXIT; 
+  else if (!strncmp(header->type, "FCOO", 4)) *type = IMD_FCOORDS; 
+  else if (!strncmp(header->type, "HAND", 4)) *type = IMD_HANDSHAKE;
+  else if (!strncmp(header->type, "KILL", 4)) *type = IMD_KILL; 
+  else if (!strncmp(header->type, "MDCO", 4)) *type = IMD_MDCOMM; 
+  else if (!strncmp(header->type, "PAUS", 4)) *type = IMD_PAUSE; 
+  else if (!strncmp(header->type, "TEXT", 4)) *type = IMD_TEXT; 
+  else if (!strncmp(header->type, "TRTE", 4)) *type = IMD_TRATE; 
   else
-    *type = IMD_XXXX; 
+    *type = IMD_ERROR; 
 }  
 
 int imd_sendheader(void *s, IMDHeaderType type, int length, int size) {
@@ -98,4 +92,3 @@ ssize_t imd_writen(void *s, const char *ptr, size_t n) {
   }
   return n;
 }
-
