@@ -16,6 +16,7 @@
 
 #include "NamdTypes.h"
 class LJTable;
+class ReductionMgr;
 class Molecule;
 
 class ComputeNonbondedUtil {
@@ -23,12 +24,17 @@ class ComputeNonbondedUtil {
 public:
 
   static void select(void);
-  static void (*calcPair)(Position*[2],Force*[2],AtomProperties*[2],int[2]);
-  static void (*calcSelf)(Position*,Force*,AtomProperties*,int);
+  static void (*calcPair)(Position*[2],Force*[2],AtomProperties*[2],int[2],BigReal*);
+  static void (*calcSelf)(Position*,Force*,AtomProperties*,int,BigReal*);
   static void (*calcExcl)(const Position &, const Position &,
 		Force &, Force &,
 		const AtomProperties &, const AtomProperties &,
-		int);
+		int, BigReal*);
+
+  enum { electEnergyIndex, vdwEnergyIndex, reductionDataSize };
+  static void registerReductionData(ReductionMgr*);
+  static void submitReductionData(BigReal*,ReductionMgr*,int);
+  static void unregisterReductionData(ReductionMgr*);
 
   static Real cutoff;
   static BigReal cutoff2;
@@ -118,12 +124,16 @@ public:
  *
  *	$RCSfile: ComputeNonbondedUtil.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/12/04 17:16:32 $
+ *	$Revision: 1.7 $	$Date: 1997/01/16 20:00:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.h,v $
+ * Revision 1.7  1997/01/16 20:00:25  jim
+ * Added reduction calls to ComputeNonbondedSelf and ...Pair.
+ * Also moved some code from ...Excl to ...Util.
+ *
  * Revision 1.6  1996/12/04 17:16:32  jim
  * ComputeNonbondedUtil::select() now caches simulation parameters
  *

@@ -15,16 +15,21 @@
 #define COMPUTENONBONDEDPAIR_H
 
 #include "ComputePatchPair.h"
+#include "ComputeNonbondedUtil.h"
 
-class ComputeNonbondedPair : public ComputePatchPair {
+class ComputeNonbondedPair : public ComputePatchPair, ComputeNonbondedUtil {
 
 public:
-  ComputeNonbondedPair(ComputeID c, PatchID pid[]) : ComputePatchPair(c,pid) { ; }
-  // virtual ~ComputeNonbondedPair();
+  ComputeNonbondedPair(ComputeID c, PatchID pid[]);
+  virtual ~ComputeNonbondedPair();
 
 protected :
   // virtual void mapReady() { ComputePatchPair::mapReady(); }
   virtual void doForce(Position* p[2], Force* f[2], AtomProperties* a[2]);
+
+  ReductionMgr *reduction;
+
+  int fake_seq;
 
 };
 
@@ -34,12 +39,16 @@ protected :
  *
  *	$RCSfile: ComputeNonbondedPair.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/11/05 22:40:05 $
+ *	$Revision: 1.6 $	$Date: 1997/01/16 20:00:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.h,v $
+ * Revision 1.6  1997/01/16 20:00:11  jim
+ * Added reduction calls to ComputeNonbondedSelf and ...Pair.
+ * Also moved some code from ...Excl to ...Util.
+ *
  * Revision 1.5  1996/11/05 22:40:05  jim
  * commented out undefined virtual destructor
  *

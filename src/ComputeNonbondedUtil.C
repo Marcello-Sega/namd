@@ -16,6 +16,27 @@
 #include "Node.h"
 #include "Molecule.h"
 #include "LJTable.h"
+#include "ReductionMgr.h"
+
+
+void ComputeNonbondedUtil::registerReductionData(ReductionMgr *reduction)
+{
+  reduction->Register(REDUCTION_ELECT_ENERGY);
+  reduction->Register(REDUCTION_LJ_ENERGY);
+}
+
+void ComputeNonbondedUtil::submitReductionData(BigReal *data, ReductionMgr *reduction, int seq)
+{
+  reduction->submit(seq, REDUCTION_ELECT_ENERGY, data[electEnergyIndex]);
+  reduction->submit(seq, REDUCTION_LJ_ENERGY, data[vdwEnergyIndex]);
+}
+
+void ComputeNonbondedUtil::unregisterReductionData(ReductionMgr *reduction)
+{
+  reduction->unRegister(REDUCTION_ELECT_ENERGY);
+  reduction->unRegister(REDUCTION_LJ_ENERGY);
+}
+
 
 void ComputeNonbondedUtil::select(void)
 {
@@ -194,12 +215,16 @@ void ComputeNonbondedUtil::select(void)
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/12/04 17:16:32 $
+ *	$Revision: 1.6 $	$Date: 1997/01/16 20:00:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.6  1997/01/16 20:00:23  jim
+ * Added reduction calls to ComputeNonbondedSelf and ...Pair.
+ * Also moved some code from ...Excl to ...Util.
+ *
  * Revision 1.5  1996/12/04 17:16:32  jim
  * ComputeNonbondedUtil::select() now caches simulation parameters
  *

@@ -15,10 +15,10 @@
 #define COMPUTENONBONDEDEXCL_H
 
 #include "ComputeHomeTuples.h"
-class ReductionMgr;
+#include "ComputeNonbondedUtil.h"
 class Molecule;
 
-class NonbondedExclElem {
+class NonbondedExclElem : public ComputeNonbondedUtil {
 public:
     // ComputeHomeTuples interface
     enum { size = 2 };
@@ -31,11 +31,6 @@ public:
 
     // Internal data
     Index modified;
-
-  enum { electEnergyIndex, vdwEnergyIndex, reductionDataSize };
-  static void registerReductionData(ReductionMgr*);
-  static void submitReductionData(BigReal*,ReductionMgr*,int);
-  static void unregisterReductionData(ReductionMgr*);
 
   NonbondedExclElem() {
     atomID[0] = -1;
@@ -83,12 +78,16 @@ public:
  *
  *	$RCSfile: ComputeNonbondedExcl.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1997/01/16 00:56:01 $
+ *	$Revision: 1.4 $	$Date: 1997/01/16 20:00:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedExcl.h,v $
+ * Revision 1.4  1997/01/16 20:00:03  jim
+ * Added reduction calls to ComputeNonbondedSelf and ...Pair.
+ * Also moved some code from ...Excl to ...Util.
+ *
  * Revision 1.3  1997/01/16 00:56:01  jim
  * Added reduction of energies from ComputeHomeTuples objects, except
  * for ComputeNonbondedExcl which only reports 0 energy.

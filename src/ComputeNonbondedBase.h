@@ -33,14 +33,15 @@
 DECL( static ) void NODECL( ComputeNonbondedUtil :: ) NAME
 NOEXCL
 (
-(Position* p PLEN, Force* f PLEN, AtomProperties* a PLEN, int numAtoms PLEN)
+(Position* p PLEN, Force* f PLEN, AtomProperties* a PLEN,
+ int numAtoms PLEN, BigReal *reduction)
 )
 EXCL
 (
 (const Position & p_i, const Position & p_j,
  Force & f_i, Force & f_j,
  const AtomProperties & a_i, const AtomProperties & a_j,
- int m14)
+ int m14, BigReal *reduction)
 )
 DECL( ; )
 #endif
@@ -252,6 +253,9 @@ NOEXCL
       f_j -= f_vdw;
 )
 
+      reduction[electEnergyIndex] += electEnergy;
+      reduction[vdwEnergyIndex] += vdwEnergy;
+
 NOEXCL
 (
     }
@@ -268,12 +272,16 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1996/12/04 17:16:32 $
+ *	$Revision: 1.10 $	$Date: 1997/01/16 19:59:56 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.10  1997/01/16 19:59:56  jim
+ * Added reduction calls to ComputeNonbondedSelf and ...Pair.
+ * Also moved some code from ...Excl to ...Util.
+ *
  * Revision 1.9  1996/12/04 17:16:32  jim
  * ComputeNonbondedUtil::select() now caches simulation parameters
  *

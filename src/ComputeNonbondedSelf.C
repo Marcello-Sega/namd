@@ -12,20 +12,41 @@
  ***************************************************************************/
 
 #include "ComputeNonbondedSelf.h"
-#include "ComputeNonbondedUtil.h"
+#include "ReductionMgr.h"
 
 #define MIN_DEBUG_LEVEL 5
 #define DEBUGM
 #include "Debug.h"
 
+ComputeNonbondedSelf::ComputeNonbondedSelf(ComputeID c, PatchID pid)
+  : ComputePatch(c,pid)
+{
+  reduction = ReductionMgr::Object();
+  registerReductionData(reduction);
+  fake_seq = 0;
+}
+
+
+ComputeNonbondedSelf::~ComputeNonbondedSelf()
+{
+  unregisterReductionData(reduction);
+}
+
+
 void ComputeNonbondedSelf::doForce(Position* p,
                                Force* f,
                                AtomProperties* a)
 {
-    DebugM(2,"doForce() called.\n");
-    DebugM(1,numAtoms << " patch 1 atoms\n");
+  DebugM(2,"doForce() called.\n");
+  DebugM(1,numAtoms << " patch 1 atoms\n");
 
-    ComputeNonbondedUtil::calcSelf(p,f,a,numAtoms);
+  BigReal reductionData[reductionDataSize];
+  for ( int i = 0; i < reductionDataSize; ++i ) reductionData[i] = 0;
+
+  ComputeNonbondedUtil::calcSelf(p,f,a,numAtoms,reductionData);
+
+  submitReductionData(reductionData,reduction,fake_seq);
+  ++fake_seq;
 }
 
 /***************************************************************************
@@ -33,12 +54,16 @@ void ComputeNonbondedSelf::doForce(Position* p,
  *
  *	$RCSfile: ComputeNonbondedSelf.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1996/11/30 21:09:15 $
+ *	$Revision: 1.10 $	$Date: 1997/01/16 20:00:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.C,v $
+ * Revision 1.10  1997/01/16 20:00:16  jim
+ * Added reduction calls to ComputeNonbondedSelf and ...Pair.
+ * Also moved some code from ...Excl to ...Util.
+ *
  * Revision 1.9  1996/11/30 21:09:15  jim
  * cleaned up debug messages
  *
