@@ -25,6 +25,7 @@
 #include "HomePatchList.h"
 #include "BOCgroup.h"
 #include "Migration.h"
+#include "MigrateAtomsMsg.h"
 
 
 class InitMsg;
@@ -63,34 +64,6 @@ public:
    ~AckMovePatchesMsg() {};
 };
 
-class MigrateAtomsMsg : public comm_object {
-public:
-    NodeID  fromNodeID;
-    PatchID srcPatchID;
-    PatchID destPatchID;
-    MigrationList *migrationList;
-
-    MigrateAtomsMsg(void) { migrationList = NULL; }
-    ~MigrateAtomsMsg(void) { 
-      // delete migrationList; NOW DELETED on pack() and by HomePatch on use!
-    }
-
-    MigrateAtomsMsg(PatchID source, PatchID destination, MigrationList *m) : 
-      srcPatchID(source), destPatchID(destination), migrationList(m)
-    {
-      fromNodeID = CMyPe();
-    }
-
-  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
-  void * operator new(size_t s) { return comm_object::operator new(s); }
-  void * operator new(size_t, void *ptr) { return ptr; }
-
-  // pack and unpack functions
-  void * pack (int *length);
-  void unpack (void *in);
-};
-
-
 
 // PatchMgr creates and manages homepatches. There exist one instance of 
 // PatchMgr on each node (derived from Charm++ groupmember).
@@ -98,8 +71,6 @@ public:
 // In addition to creation of homepatches, it handles the atom redistribution
 // at the end of each cycle (i.e., atoms can move from patch to patch at the
 // cycle boundaries).
-
-
 struct MovePatch 
 {
     MovePatch(PatchID p=-1, NodeID n=-1) : nodeID(n), pid(p) {};
@@ -173,13 +144,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMgr.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/13 04:43:13 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/02/17 23:47:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.h,v $
+ * Revision 1.1002  1997/02/17 23:47:04  ari
+ * Added files for cleaning up atom migration code
+ *
  * Revision 1.1001  1997/02/13 04:43:13  jim
  * Fixed initial hanging (bug in PatchMap, but it still shouldn't have
  * happened) and saved migration messages in the buffer from being

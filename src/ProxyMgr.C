@@ -25,8 +25,8 @@
 #include "ComputeMap.h"
 #include "HomePatch.h"
 
-// #define DEBUGM
-#define MIN_DEBUG_LEVEL 4
+#define DEBUGM
+#define MIN_DEBUG_LEVEL 5
 #include "Debug.h"
 
 void * ProxyAtomsMsg::pack (int *length)
@@ -115,6 +115,10 @@ void ProxyAllMsg:: unpack (void *in)
     patch = *((int*)buffer);
     int size = *((int*)(buffer+sizeof(int)));
     positionList.resize(size);
+    DebugM(5, "POSITION STATUS\n");
+#ifdef DEBUGM    
+    positionList.status();
+#endif
     Position *data = (Position*)(buffer+2*sizeof(int));
     for ( i = 0; i < size; ++i )
       positionList[i] = data[i];
@@ -338,12 +342,15 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
  *
  *	$RCSfile: ProxyMgr.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/02/13 23:17:19 $
+ *	$Revision: 1.1007 $	$Date: 1997/02/17 23:47:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.1007  1997/02/17 23:47:05  ari
+ * Added files for cleaning up atom migration code
+ *
  * Revision 1.1006  1997/02/13 23:17:19  ari
  * Fixed a final bug in AtomMigration - numatoms in ComputePatchPair.C not
  * set correctly in atomUpdate()

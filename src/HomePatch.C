@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1014 1997/02/13 23:17:17 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1015 1997/02/17 23:46:59 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -276,6 +276,10 @@ HomePatch::doAtomMigration()
 
        // See if we have a migration list already
        if (NULL == (mCur = mInfo[xdev][ydev][zdev]->mList)) {
+	 // new: all mList pointers are actually in realInfo[].mList
+	 //one of the following below sendMigrationMsg() does delete
+	 // [1] in pack of MigrateAtomsMsg (PatchMgr.C)
+	 // [2] in recvMigrateAtoms (PatchMgr.C)
 	 mCur = mInfo[xdev][ydev][zdev]->mList = new MigrationList;
        }
        DebugM(3,"Migrating atom " << atomIDList[i] << " from patch "
@@ -311,7 +315,7 @@ HomePatch::doAtomMigration()
   // Drain the migration message buffer
   for (i=0; i<numMlBuf; i++) {
      DebugM(1, "Draining migration buffer ("<<i<<","<<numMlBuf<<")\n");
-     depositMigration(srcID[i], mlBuf[i]);
+     depositMigration(msgbuf[i]);
   }
   numMlBuf = 0;
      
@@ -331,16 +335,20 @@ HomePatch::doAtomMigration()
 }
 
 void 
-HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
+HomePatch::depositMigration(MigrateAtomsMsg *msg)
 {
+  PatchID srcPatchID;
+  MigrationList *migrationList;
+
   if (!inMigration) { // We have to buffer changes due to migration
 		      // until our patch is in migration mode
-    DebugM(3,"depositMigration buffered from patch "<<srcPatchID<<"\n");
-    srcID[numMlBuf] = srcPatchID;
-    mlBuf[numMlBuf++] = migrationList;
+    msgbuf[numMlBuf++] = msg;
     return;
   } 
-  DebugM(3,"depositMigration from "<<srcPatchID<<" on "<<patchID<<"\n");
+
+  srcPatchID = msg->srcPatchID;
+  migrationList = msg->migrationList;
+
   if (migrationList) {
     MigrationListIter mi(*migrationList);
     for (mi = mi.begin(); mi != mi.end(); mi++) {
@@ -349,15 +357,14 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
       a.add(mi->atomProp);
       atomIDList.add(mi->atomID);
       p.add(mi->pos);
-      // pInit.add(mi->posInit);
       v.add(mi->vel);
       f.add(mi->force);
-      // f_short.add(mi->forceShort);
-      // f_long.add(mi->forceLong);
     }
     delete migrationList;
+    migrationList = NULL;
   }
   numAtoms = atomIDList.size();
+  delete msg;
 
   DebugM(3,"Counter on " << patchID << " = " << patchMigrationCounter << "\n");
   if (!--patchMigrationCounter) {
@@ -382,12 +389,15 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1997/02/13 23:17:17 $
+ *	$Revision: 1.1015 $	$Date: 1997/02/17 23:46:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1015  1997/02/17 23:46:59  ari
+ * Added files for cleaning up atom migration code
+ *
  * Revision 1.1014  1997/02/13 23:17:17  ari
  * Fixed a final bug in AtomMigration - numatoms in ComputePatchPair.C not
  * set correctly in atomUpdate()

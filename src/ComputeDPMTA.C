@@ -11,6 +11,7 @@
  *
  ***************************************************************************/
 
+#ifdef DPMTA
 #include "Namd.h"
 #include "Node.h"
 #include "SimParameters.h"
@@ -29,7 +30,6 @@
 
 extern Communicate *comm;
 
-#ifdef DPMTA
 void ComputeDPMTA::get_FMA_cube(BigReal *boxsize, Vector *boxcenter)
 {
   int max_dim;

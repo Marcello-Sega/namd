@@ -53,6 +53,13 @@ class TuplePatchElem {
 
   TuplePatchElem(PatchID p) {
     patchID = p;
+    p = NULL;
+    positionBox = NULL;
+    forceBox = NULL;
+    atomBox = NULL;
+    x = NULL;
+    f = NULL;
+    a = NULL;
   }
 
   TuplePatchElem(Patch *p, PatchType pt, ComputeID cid) {
@@ -116,12 +123,15 @@ public:
  *
  *	$RCSfile: ComputeHomeTuples.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:00 $
+ *	$Revision: 1.1001 $	$Date: 1997/02/17 23:46:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.h,v $
+ * Revision 1.1001  1997/02/17 23:46:58  ari
+ * Added files for cleaning up atom migration code
+ *
  * Revision 1.1000  1997/02/06 15:58:00  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

@@ -25,6 +25,7 @@
 
 #include "Sequencer.h"
 
+#include "MigrateAtomsMsg.h"
 #include "HomePatchTypes.h"
 #include "main.h"
 #include "Migration.h"
@@ -55,7 +56,7 @@ public:
   // methods for Sequencer to use
   void positionsReady(int doMigration=0);
 
-  void depositMigration(PatchID, MigrationList *);
+  void depositMigration(MigrateAtomsMsg *);
   
   void addForceToMomentum(const BigReal);
   void addVelocityToPosition(const BigReal);
@@ -69,10 +70,7 @@ protected:
   void doAtomMigration();
   int inMigration;
   int numMlBuf;
-  PatchID srcID[PatchMap::MaxOneAway];
-  MigrationList *mlBuf[PatchMap::MaxOneAway];
-
-
+  MigrateAtomsMsg *msgbuf[PatchMap::MaxOneAway];
   
 private:
 
@@ -103,12 +101,15 @@ private:
  *
  *	$RCSfile: HomePatch.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/11 18:51:47 $
+ *	$Revision: 1.1003 $	$Date: 1997/02/17 23:47:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.1003  1997/02/17 23:47:00  ari
+ * Added files for cleaning up atom migration code
+ *
  * Revision 1.1002  1997/02/11 18:51:47  ari
  * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
  * fixed non-buffering of migration msgs

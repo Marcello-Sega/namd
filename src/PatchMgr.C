@@ -11,7 +11,7 @@
 /*								           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1002 1997/02/13 04:43:12 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1003 1997/02/17 23:47:03 ari Exp $";
 
 
 #include "ckdefs.h"
@@ -131,16 +131,11 @@ void PatchMgr::ackMovePatches(AckMovePatchesMsg *msg)
 }
 
 void PatchMgr::recvMigrateAtoms (MigrateAtomsMsg *msg) {
-  DebugM(4, "Received Migration Msg from node " << msg->fromNodeID << "\n");
-  DebugM(4, "         Migration Msg from patch " << msg->srcPatchID << "\n");
-  DebugM(4, "         Migration Msg to patch " << msg->destPatchID << "\n");
-  PatchMap::Object()->homePatch(msg->destPatchID)->depositMigration(msg->srcPatchID,
-    msg->migrationList);
-  delete msg;
+  //  msg must be deleted by HomePatch::depositMigrationMsg();
+  PatchMap::Object()->homePatch(msg->destPatchID)->depositMigration(msg);
 }
 
 void PatchMgr::sendMigrationMsg(PatchID src, MigrationInfo m) {
-  DebugM(3, "Received Migration List from " << src << " size = " << m->size() << "\n" );
   
   MigrateAtomsMsg *msg = new (MsgIndex(MigrateAtomsMsg)) 
      MigrateAtomsMsg(src,m.destPatchID,m.mList);
@@ -195,76 +190,21 @@ void MovePatchesMsg::unpack (void *in)
     }
   }
 
-
-
-void * MigrateAtomsMsg::pack (int *length) {
-    if (migrationList != NULL) {
-      DebugM(4,"MigrateAtomsMsg::pack() - migrationList->size() = " << migrationList->size() << "\n" );
-      *length = sizeof(NodeID) + sizeof(PatchID) + sizeof(PatchID)
-	      + sizeof(int) + migrationList->size() * sizeof(MigrationElem);
-    } else {
-      DebugM(4,"MigrateAtomsMsg::pack() NULL message\n" );
-      *length = sizeof(NodeID) + sizeof(PatchID) + sizeof(PatchID)
-	      +	sizeof(int);
-    }
-    char *buffer = (char*)new_packbuffer(this,*length);
-    char *b = buffer;
-    *((NodeID*)b) = fromNodeID; b += sizeof(NodeID);
-    *((PatchID*)b) = srcPatchID; b += sizeof(PatchID);
-    *((PatchID*)b) = destPatchID; b += sizeof(PatchID);
-
-    if (migrationList != NULL) {
-      *((int*)b) = migrationList->size(); b += sizeof(int);
-      for ( int i = 0; i < migrationList->size(); i++ )
-      {
-	*((MigrationElem*)b) = (*migrationList)[i]; b += sizeof(MigrationElem);
-      }
-    }
-    else {
-      *((int*)b) = 0; b += sizeof(int);
-    }
-    delete migrationList;
-    this->~MigrateAtomsMsg();
-    return buffer;
-}
-
-void MigrateAtomsMsg::unpack (void *in) {
-  new((void*)this) MigrateAtomsMsg;
-  char *b = (char*)in;
-  fromNodeID = *((NodeID*)b); b += sizeof(NodeID);
-  srcPatchID = *((PatchID*)b); b += sizeof(PatchID);
-  destPatchID = *((PatchID*)b); b += sizeof(PatchID);
-  int size = *((int*)b); b += sizeof(int);
-  DebugM(4,"MigrateAtomsMsg::unpack() - from node = " << fromNodeID << endl);
-  DebugM(4,"MigrateAtomsMsg::unpack() - from patch = " << srcPatchID << endl);
-  DebugM(4,"MigrateAtomsMsg::unpack() - to patch = " << destPatchID << endl);
-  DebugM(4,"MigrateAtomsMsg::unpack() - size = " << size << endl);
-  if (size != 0) {
-    migrationList = new MigrationList();
-    migrationList->resize(size);
-    for ( int i = 0; i < size; i++ )
-    {
-      (*migrationList)[i] = *((MigrationElem*)b); b += sizeof(MigrationElem);
-    }
-  }
-  else {
-    migrationList = NULL;
-  }
-}
-
-
 #include "PatchMgr.bot.h"
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMgr.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/13 04:43:12 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/02/17 23:47:03 $
  *
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.C,v $
+ * Revision 1.1003  1997/02/17 23:47:03  ari
+ * Added files for cleaning up atom migration code
+ *
  * Revision 1.1002  1997/02/13 04:43:12  jim
  * Fixed initial hanging (bug in PatchMap, but it still shouldn't have
  * happened) and saved migration messages in the buffer from being
