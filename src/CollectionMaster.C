@@ -4,6 +4,9 @@
 ***  All rights reserved.
 **/
 
+#define _LARGEFILE_SOURCE
+#define _FILE_OFFSET_BITS 64
+
 #include "charm++.h"
 #include "CollectionMaster.decl.h"
 #include "CollectionMaster.h"
