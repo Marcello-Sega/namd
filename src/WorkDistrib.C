@@ -759,7 +759,7 @@ void WorkDistrib::mapComputeNonbonded(void)
     }
     else {
       numPartitions =
-        numAtoms / (double)node->simParameters->numAtomsSelf + 0.5;
+        numAtoms*numAtoms / (double)(node->simParameters->numAtomsSelf*node->simParameters->numAtomsSelf) + 0.5;
       if (numPartitions < 1) numPartitions = 1;
     }
     if ( numPartitions > node->simParameters->maxSelfPart )
@@ -838,16 +838,25 @@ void WorkDistrib::mapComputeNonbonded(void)
  	  ( patchMap->index_b(p1) == patchMap->index_b(p2) ? 0 : 1 ) +
  	  ( patchMap->index_c(p1) == patchMap->index_c(p2) ? 0 : 1 );
         int numPartitions;
-	if (node->simParameters->numAtomsPair == 0) {
+	int divide = 0;
+        if (distance <= 1) {
+	  divide = node->simParameters->numAtomsPair;
+	}
+	else if (distance == 2) {
+	  divide = node->simParameters->numAtomsPair2;
+	}
+	else {
+	  divide = 0;
+	}
+	if (divide == 0) {
           numPartitions = 1 + (numAtoms1*numAtoms2 > 2500) + (numAtoms1*numAtoms2)/100000;
 	}
 	else {
-          numPartitions = numAtoms1*numAtoms2/(double)(node->simParameters->numAtomsPair*node->simParameters->numAtomsPair) + 0.5;
+          numPartitions = numAtoms1*numAtoms2/(double)(divide*divide) + 0.5;
           if ( numPartitions < 1 ) numPartitions = 1;
 	}
         if ( numPartitions > node->simParameters->maxPairPart )
 			numPartitions = node->simParameters->maxPairPart;
-        if ( distance > 1 ) numPartitions = 1;
 //	if ( numPartitions > 1 ) iout << "Mapping " << numPartitions << " ComputeNonbondedPair objects for patches " << p1 << "(" << numAtoms1 << ") and " << p2 << "(" << numAtoms2 << ")\n" << endi;
 	for(int partition=0; partition < numPartitions; partition++)
 	{
