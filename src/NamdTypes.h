@@ -10,7 +10,6 @@
 
 #include "Vector.h"
 #include "ResizeArray.h"
-#include "ResizeArrayIter.h"
 
 class Patch;
 class Compute;
@@ -56,13 +55,9 @@ struct AtomProperties
 #define GROUP_FIXED	0x0002
 
 typedef ResizeArray<Position> PositionList;
-typedef ResizeArrayIter<Position> PositionListIter;
 typedef ResizeArray<Velocity> VelocityList;
-typedef ResizeArrayIter<Velocity> VelocityListIter;
 typedef ResizeArray<Force> ForceList;
-typedef ResizeArrayIter<Force> ForceListIter;
 typedef ResizeArray<AtomProperties> AtomPropertiesList;
-typedef ResizeArrayIter<AtomProperties> AtomPropertiesListIter;
 typedef ResizeArray<Transform> TransformList;
 
 typedef ResizeArray<AtomID> AtomIDList;
