@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1007 1997/02/13 16:17:20 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1008 1997/02/14 05:53:04 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -73,6 +73,7 @@ void Sequencer::algorithm(void)
     DebugM(4,"Submit seq=" << seq << " Patch=" << patch->getPatchID() << "\n");
     reduction->submit(seq,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
     collection->submitPositions(seq,patch->atomIDList,patch->p);
+    collection->submitVelocities(seq,patch->atomIDList,patch->v);
     ++seq;
     for ( step = 0; step < numberOfCycles; ++step )
     {
@@ -106,6 +107,7 @@ void Sequencer::algorithm(void)
 	    reduction->submit(seq, REDUCTION_KINETIC_ENERGY,
 		patch->calcKineticEnergy());
 	    collection->submitPositions(seq,patch->atomIDList,patch->p);
+	    collection->submitVelocities(seq,patch->atomIDList,patch->v);
 	    ++seq;
         // }
     }
@@ -124,13 +126,16 @@ Sequencer::terminate() {
  * RCS INFORMATION:
  *
  *      $RCSfile: Sequencer.C,v $
- *      $Author: ari $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1007 $     $Date: 1997/02/13 16:17:20 $
+ *      $Author: jim $  $Locker:  $             $State: Exp $
+ *      $Revision: 1.1008 $     $Date: 1997/02/14 05:53:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1008  1997/02/14 05:53:04  jim
+ * Position and velocity output should now work.
+ *
  * Revision 1.1007  1997/02/13 16:17:20  ari
  * Intermediate debuging commit - working to fix deep bug in migration?
  *

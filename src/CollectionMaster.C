@@ -33,10 +33,10 @@ void CollectionMaster::receivePositions(CollectVectorMsg *msg)
       data[i] = c->data[i].data;
       // iout << c->data[i].aid << "  " << c->data[i].data << "\n" << endi;
     }
+    delete c;
     // iout << "\n" << endi;
     Node::Object()->output->coordinate(msg->seq,size,data);
     delete data;
-    delete c;
   }
   delete msg;
 }
@@ -48,15 +48,19 @@ void CollectionMaster::receiveVelocities(CollectVectorMsg *msg)
   if ( c = velocities.submitData(msg->seq,msg->aid,msg->data) )
   {
     DebugM(3,"Collected velocities at " << c->seq << endl);
-    iout << "\n\n********** VELOCITIES " << c->seq << " **********\n\n";
     c->data.sort();
     int size = c->data.size();
+    // iout << "\n\n********** VELOCITIES " << c->seq << " **********\n\n";
+    Vector *data = new Vector[size];
     for ( int i = 0; i < size; ++i )
     {
-      iout << c->data[i].aid << "  " << c->data[i].data << "\n" << endi;
+      data[i] = c->data[i].data;
+      // iout << c->data[i].aid << "  " << c->data[i].data << "\n" << endi;
     }
-    iout << "\n" << endi;
     delete c;
+    // iout << "\n" << endi;
+    Node::Object()->output->velocity(msg->seq,size,data);
+    delete data;
   }
   delete msg;
 }
@@ -68,15 +72,19 @@ void CollectionMaster::receiveForces(CollectVectorMsg *msg)
   if ( c = forces.submitData(msg->seq,msg->aid,msg->data) )
   {
     DebugM(3,"Collected forces at " << c->seq << endl);
-    iout << "\n\n********** FORCES " << c->seq << " **********\n\n";
     c->data.sort();
     int size = c->data.size();
+    // iout << "\n\n********** FORCES " << c->seq << " **********\n\n";
+    Vector *data = new Vector[size];
     for ( int i = 0; i < size; ++i )
     {
-      iout << c->data[i].aid << "  " << c->data[i].data << "\n" << endi;
+      data[i] = c->data[i].data;
+      // iout << c->data[i].aid << "  " << c->data[i].data << "\n" << endi;
     }
-    iout << "\n" << endi;
     delete c;
+    // iout << "\n" << endi;
+    Node::Object()->output->all_force(msg->seq,size,data);
+    delete data;
   }
   delete msg;
 }
