@@ -73,7 +73,7 @@ void Alg7::strategy()
   computeAverage();
   //   iout << iINFO
   //	<< "Before assignment\n" << endi;
-     printLoads();
+  //   printLoads();
 	      
   numAssigned = 0;
 
@@ -174,7 +174,7 @@ void Alg7::strategy()
   multirefine();
   printLoads();
 
-  CmiPrintf("Alg7 finish time: %f.\n", CmiWallTimer()-startTime);
+  // CmiPrintf("Alg7 finish time: %f.\n", CmiWallTimer()-startTime);
 }
 
 

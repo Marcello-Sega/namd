@@ -86,13 +86,13 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
                           nMoveableComputes, numPatches, numProcessors);
   } else if (simParams->ldbStrategy == LDBSTRAT_ALGORB) {
     if (step() == 0) {
-      iout << iINFO << "Load balance cycle " << step()
-        << " using RecBisection\n" << endi;
+      // iout << iINFO << "Load balance cycle " << step()
+      //   << " using RecBisection\n" << endi;
       AlgRecBisection(computeArray,patchArray,processorArray,
                             nMoveableComputes, numPatches, numProcessors);
     } else {
-      iout << iINFO << "Load balance cycle " << step()
-        << " using RefineOnly\n" << endi;
+      // iout << iINFO << "Load balance cycle " << step()
+      //   << " using RefineOnly\n" << endi;
       RefineOnly(computeArray,patchArray,processorArray,
                                   nMoveableComputes, numPatches,
                                   numProcessors);
@@ -100,13 +100,13 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
   } else if (simParams->ldbStrategy == LDBSTRAT_OTHER) {
     // if (step() == 0) {
     if (step() < 2) {
-      iout << iINFO << "Load balance cycle " << step()
-        << " using Alg7\n" << endi;
+      // iout << iINFO << "Load balance cycle " << step()
+      //   << " using Alg7\n" << endi;
       Alg7(computeArray,patchArray,processorArray,
                             nMoveableComputes, numPatches, numProcessors);
     } else {
-      iout << iINFO << "Load balance cycle " << step()
-        << " using RefineOnly\n" << endi;
+      // iout << iINFO << "Load balance cycle " << step()
+      //   << " using RefineOnly\n" << endi;
       // To save the data to a file, uncomment the following lines -RKB
       //      if (step() == 1) {
       //	iout << iINFO << "Dumping data\n" << endi;
@@ -122,6 +122,7 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
   // For error checking:
   // Count up computes, to see if somebody doesn't have any computes
   int i;
+#if 0
   int* computeCount = new int[numProcessors];
   for(i=0; i<numProcessors; i++)
     computeCount[i]=0;
@@ -133,6 +134,7 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
 	   << " has NO moveable computes.\n" << endi;
   }
   delete [] computeCount;
+#endif
   
   CkVec<MigrateInfo *> migrateInfo;
   for(i=0;i<nMoveableComputes;i++) {

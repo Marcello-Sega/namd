@@ -15,7 +15,7 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
       processorInfo *processorArray, int nComps, int nPatches, int nPes)
 {
    bytesPerAtom = 32;
-   strategyName = "dummy";
+   strategyName = "None";
    computes = computeArray;
    patches =  patchArray;
    processors =  processorArray;
@@ -159,8 +159,6 @@ void Rebalancer::InitProxyUsage()
           p = (processorInfo *)patches[i].proxiesOn.next((Iterator*)&nextProc);
       }
   }
-
-  iout << iINFO << "Total of " << numProxies << " proxies exist.\n" << endi;
 
 }
 
@@ -340,8 +338,8 @@ int Rebalancer::refine()
 */
       while (donor) {
 	if (donor->computeSet.numElements()) break;
-        iout << iINFO << "Ignoring donor " << donor->Id
-              << " because no computes\n" << endi;
+        // iout << iINFO << "Ignoring donor " << donor->Id
+        //       << " because no computes\n" << endi;
 	 donor = (processorInfo*)heavyProcessors->deleteMax();
       }
   
@@ -449,7 +447,7 @@ int Rebalancer::refine()
       }
 
    }  
-#if 1
+#if 0
    // After refining, compute min, max and avg processor load
    double total = processors[0].load;
    double min = processors[0].load;
@@ -505,11 +503,13 @@ void Rebalancer::multirefine()
   double dMinOverload = minOverload * overloadStep + overloadStart;
   double dMaxOverload = maxOverload * overloadStep + overloadStart;
 
+#if 0
   iout << iINFO
        << "Balancing from " << minOverload << " = " << dMinOverload 
        << " to " << maxOverload << "=" << dMaxOverload 
        << " dCurOverload=" << dCurOverload << " max=" << max << " avg=" << avg
        << "\n" << endi;
+#endif
 
   int curOverload;
   int refineDone = 0;
@@ -569,8 +569,10 @@ void Rebalancer::printLoads()
    iout << "\n" << endi;
 #endif
 
+#if 0
    iout.setf(ios::right | ios::fixed);
    iout.precision(3);
+#endif
    int maxproxies = 0;
    int maxpatchproxies = 0;
    for (i=0; i<P; i++)
@@ -617,26 +619,29 @@ void Rebalancer::printLoads()
       // iout << iINFO << " # Messages sent: " << count << "\n" << endi;
    }
 
-   iout << "\n" << endi;
-
    computeAverage();
    max = computeMax();
 
-   iout << iINFO << "\n" << endi;
-   iout << iINFO << "numProxies = " << numProxies << "\n";
-   iout << iINFO << "------------------------------------------------------------\n" << endi; 
-   iout << iINFO << "          LOAD SUMMARY FOR STRATEGY \"" << strategyName << "\"\n\n" << endi;
-   iout << iINFO << "Processors = " << setw(5) << P << "\t"
-        << "  Overload = " ; setw(7); iout << overLoad << "\n";
+#if 0
+   // iout << iINFO << "------------------------------------------------------------\n" << endi; 
+   iout << iINFO << "          LOAD SUMMARY FOR STRATEGY \"" << strategyName << "\"\n" << endi;
+   // iout << iINFO << "Processors = " << setw(5) << P << "\t"
+   //      << "  Overload = " ; setw(7); iout << overLoad << "\n";
    iout << iINFO << "Patches    = " << setw(5) << numPatches << "\t"
         << "  Avg load = " ; setw(7); iout << averageLoad << "\n";
    iout << iINFO << "Computes   = " << setw(5) << numComputes << "\t"
         << "  Max load = " ; setw(7); iout << max << "\n";
    iout << iINFO << "Messages   = " << setw(5) << total << "\t"
         << "  Max msgs = " << maxproxies << ", " << maxpatchproxies << "\n";
-   iout << iINFO <<"============================================================\n"
-       << "\n" << endi;
+   // iout << iINFO << "------------------------------------------------------------\n" << endi; 
+   iout << endi;
    iout.unsetf(ios::right);
+#else
+   iout << "LDB:  LOAD: AVG " << averageLoad << " MAX " << max
+     << "  MSGS: TOTAL " << total
+     << " MAXC " << maxproxies << " MAXP " << maxpatchproxies
+     << "  " << strategyName << "\n" << endi;
+#endif
 
 #endif
 

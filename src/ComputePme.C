@@ -487,6 +487,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     if ( recipPeDest[node] ) ++numDestRecipPes;
   }
 
+#if 0
   if ( numSources ) {
     iout << iINFO << "PME " << CkMyPe() << " sources:";
     for ( node=0; node<numNodes; ++node ) {
@@ -494,6 +495,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     }
     iout << "\n" << endi;
   }
+#endif
 
   delete [] source_flags;
 
