@@ -185,7 +185,7 @@ void ComputePmeMgr::initialize() {
     int nrp = 1;
 
     // rules based on work available
-    int minslices = 2;
+    int minslices = 1;
     int nrpx = ( simParams->PMEGridSizeX + minslices - 1 ) / minslices;
     if ( nrpx > nrp ) nrp = nrpx;
     int nrpy = ( simParams->PMEGridSizeY + minslices - 1 ) / minslices;
@@ -193,7 +193,7 @@ void ComputePmeMgr::initialize() {
 
     // rules based on processors available
     int nrpp = CkNumPes();
-    if ( nrpp > 32 ) nrpp = 32;  // cap to limit messages
+    // if ( nrpp > 32 ) nrpp = 32;  // cap to limit messages
     if ( nrpp < nrp ) nrp = nrpp;
 
     // user override
