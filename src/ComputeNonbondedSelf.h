@@ -24,7 +24,7 @@ public:
 
 protected :
   // virtual void mapReady() { ComputePatchPair::mapReady(); }
-  virtual void doForce(Position* p[2], Force* f[2]);
+  virtual void doForce(Position* p[2], Force* f[2], AtomProperties* a[2]);
 
 };
 
@@ -34,12 +34,15 @@ protected :
  *
  *	$RCSfile: ComputeNonbondedSelf.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/10/30 00:16:16 $
+ *	$Revision: 1.3 $	$Date: 1996/10/30 01:16:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.h,v $
+ * Revision 1.3  1996/10/30 01:16:32  jim
+ * added AtomProperties structure in Patch plus boxes, passing, etc.
+ *
  * Revision 1.2  1996/10/30 00:16:16  jim
  * Removed PositionArray usage.
  *

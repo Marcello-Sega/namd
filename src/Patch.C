@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.5 1996/10/29 23:35:27 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.6 1996/10/30 01:16:32 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -26,10 +26,11 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1
 #include "Node.h"
 
 Patch::Patch(PatchID pd, AtomIDList al, PositionList pl) :
-   positionPtr(0), forcePtr(0),
+   positionPtr(0), forcePtr(0), atomPtr(0),
    patchID(pd), atomIDList(al), p(pl),
    positionBox(this,&(Patch::positionBoxClosed)),
-   forceBox(this,&(Patch::forceBoxClosed))
+   forceBox(this,&(Patch::forceBoxClosed)),
+   atomBox(this,&(Patch::atomBoxClosed))
 {
     if (atomIDList.size() != p.size())
     {
@@ -73,6 +74,19 @@ void Patch::unregisterForceDeposit(ComputeID cid, Box<Patch,Force> **const box)
    *box = 0;
 }
 
+Box<Patch,AtomProperties>* Patch::registerAtomPickup(ComputeID cid)
+{
+   if (atomComputeList.add(cid) < 0) return NULL;
+   return atomBox.checkOut();
+}
+
+void Patch::unregisterAtomPickup(ComputeID cid, Box<Patch, AtomProperties> **const box)
+{
+   atomComputeList.del(cid);
+   atomBox.checkIn(*box);
+   *box = 0;
+}
+
 void Patch::positionBoxClosed(void)
 {
    p.encap(&positionPtr,numAtoms);
@@ -83,6 +97,12 @@ void Patch::forceBoxClosed(void)
 {
    f.encap(&forcePtr,numAtoms);
    this->boxClosed(1);
+}
+
+void Patch::atomBoxClosed(void)
+{
+   a.encap(&atomPtr,numAtoms);
+   this->boxClosed(2);
 }
 
 void Patch::boxClosed(int box)
@@ -102,6 +122,10 @@ void Patch::positionsReady()
    forcePtr = f.unencap();
    forceBox.open(forcePtr);
 
+   // Give all atom properties pickup boxes access to atom properties
+   atomPtr = a.unencap();
+   atomBox.open(atomPtr);
+
    // Iterate over compute objects that need to be informed we are ready
    ComputeIDListIter cid(positionComputeList);
    for(cid = cid.begin(); cid != cid.end(); cid++)
@@ -115,13 +139,16 @@ void Patch::positionsReady()
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/10/29 23:35:27 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.6 $	$Date: 1996/10/30 01:16:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.6  1996/10/30 01:16:32  jim
+ * added AtomProperties structure in Patch plus boxes, passing, etc.
+ *
  * Revision 1.5  1996/10/29 23:35:27  ari
  * *** empty log message ***
  *

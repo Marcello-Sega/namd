@@ -22,6 +22,7 @@ ComputePatchPair::ComputePatchPair(ComputeID c, PatchID p[2]) : Compute(c) {
       patch[i] = NULL;
       positionBox[i] = NULL;
       forceBox[i] = NULL;
+      atomBox[i] = NULL;
   }
 }
 
@@ -31,9 +32,13 @@ ComputePatchPair::~ComputePatchPair() {
       PatchMap::Object()->patch(patchID[i])->unregisterPositionPickup(cid,
 	 &positionBox[i]);
     }
-    if (positionBox[i] != NULL) {
+    if (forceBox[i] != NULL) {
       PatchMap::Object()->patch(patchID[i])->unregisterForceDeposit(cid,
 		&forceBox[i]);
+    }
+    if (atomBox[i] != NULL) {
+      PatchMap::Object()->patch(patchID[i])->unregisterAtomPickup(cid,
+		&atomBox[i]);
     }
   }
 
@@ -48,6 +53,7 @@ void ComputePatchPair::mapReady() {
 	    patch[i] = PatchMap::Object()->patch(patchID[i]);
 	    positionBox[i] = patch[i]->registerPositionPickup(cid);
 	    forceBox[i] = patch[i]->registerForceDeposit(cid);
+	    atomBox[i] = patch[i]->registerAtomPickup(cid);
 	}
 	numAtoms[i] = patch[i]->getNumAtoms();
     }
@@ -55,16 +61,10 @@ void ComputePatchPair::mapReady() {
     Compute::mapReady();
 }
 
-/*
-void ComputePatchPair::depositAllForces() {
-  for (int i=0; i<2; i++) {
-      positionBox[i]->close();
-      forceBox[i]->close();
-  }
-}
-*/
-
-void ComputePatchPair::doForce(Position* p[2], Force* f[2]) {
+void ComputePatchPair::doForce(Position* p[2],
+                               Force* f[2],
+                               AtomProperties* a[2])
+{
     CPrintf("ComputePatchPair::doForce() - Dummy eval was sent\n");
     CPrintf(" %d patch 1 atoms and %d patch 2 atoms\n", numAtoms[0], numAtoms[1] );
 }
@@ -72,22 +72,24 @@ void ComputePatchPair::doForce(Position* p[2], Force* f[2]) {
 void ComputePatchPair::doWork() {
   Position* p[2];
   Force* f[2];
+  AtomProperties* a[2];
   int i;
 
-  // Open up positionBox and forceBox
+  // Open up positionBox, forceBox, and atomBox
   for (i=0; i<2; i++) {
       p[i] = positionBox[i]->open();
       f[i] = forceBox[i]->open();
+      a[i] = atomBox[i]->open();
   }
 
   // Pass pointers to doForce
-  doForce(p,f);
+  doForce(p,f,a);
 
   // Close up boxes
-  // Open up positionBox and forceBox
   for (i=0; i<2; i++) {
       positionBox[i]->close(&p[i]);
       forceBox[i]->close(&f[i]);
+      atomBox[i]->close(&a[i]);
   }
 }
 
@@ -97,12 +99,15 @@ void ComputePatchPair::doWork() {
  *
  *	$RCSfile: ComputePatchPair.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/10/30 00:16:16 $
+ *	$Revision: 1.4 $	$Date: 1996/10/30 01:16:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatchPair.C,v $
+ * Revision 1.4  1996/10/30 01:16:32  jim
+ * added AtomProperties structure in Patch plus boxes, passing, etc.
+ *
  * Revision 1.3  1996/10/30 00:16:16  jim
  * Removed PositionArray usage.
  *

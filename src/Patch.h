@@ -59,6 +59,8 @@ class Patch
      void unregisterPositionPickup(ComputeID cid, Box<Patch,Position> **const box);
      Box<Patch,Force>* registerForceDeposit(ComputeID cid);
      void unregisterForceDeposit(ComputeID cid, Box<Patch,Force> **const box);
+     Box<Patch,AtomProperties>* registerAtomPickup(ComputeID cid);
+     void unregisterAtomPickup(ComputeID cid, Box<Patch,AtomProperties> **const box);
 
      // methods for use by Sequencer or ProxyManager
      void positionsReady(void);
@@ -66,6 +68,7 @@ class Patch
      // methods for Box callbacks
      void positionBoxClosed(void);
      void forceBoxClosed(void);
+     void atomBoxClosed(void);
 
      static void setNode(Node * n) { node = n; }
      int getNumAtoms() { return numAtoms; }
@@ -81,14 +84,17 @@ class Patch
      LocalIndex    localIndex;
      PositionList  p;
      Position      *positionPtr;
-
      ForceList     f;
      Force         *forcePtr;
+     AtomPropertiesList		a;
+     AtomProperties		*atomPtr;
 
      OwnerBox<Patch,Position> positionBox;
      ComputeIDList              positionComputeList;
      OwnerBox<Patch,Force>    forceBox;
      ComputeIDList              forceComputeList;
+     OwnerBox<Patch,AtomProperties>    atomBox;
+     ComputeIDList              atomComputeList;
 
      virtual void boxClosed(int);
 
@@ -103,13 +109,16 @@ class Patch
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/10/29 23:35:27 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.6 $	$Date: 1996/10/30 01:16:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.h,v $
+ * Revision 1.6  1996/10/30 01:16:32  jim
+ * added AtomProperties structure in Patch plus boxes, passing, etc.
+ *
  * Revision 1.5  1996/10/29 23:35:27  ari
  * *** empty log message ***
  *

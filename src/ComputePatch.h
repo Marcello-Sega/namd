@@ -34,14 +34,14 @@ public:
 protected :
   int numAtoms[2];
   virtual void mapReady();
-  // void depositAllForces();
-  virtual void doForce(Position* p[2], Force* f[2]);
+  virtual void doForce(Position* p[2], Force* f[2], AtomProperties* a[2]);
 
 private:
   PatchID patchID[2];
   Patch *patch[2];
   Box<Patch,Position> *positionBox[2];
   Box<Patch,Force> *forceBox[2];
+  Box<Patch,AtomProperties> *atomBox[2];
 
 };
 
@@ -51,12 +51,15 @@ private:
  *
  *	$RCSfile: ComputePatch.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/10/30 00:16:16 $
+ *	$Revision: 1.4 $	$Date: 1996/10/30 01:16:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatch.h,v $
+ * Revision 1.4  1996/10/30 01:16:32  jim
+ * added AtomProperties structure in Patch plus boxes, passing, etc.
+ *
  * Revision 1.3  1996/10/30 00:16:16  jim
  * Removed PositionArray usage.
  *
