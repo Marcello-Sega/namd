@@ -1,0 +1,7 @@
+
+TCLDIR=/Projects/namd2/tcl/solx86
+TCLINCL=-I$(TCLDIR)/include
+TCLLIB=-L$(TCLDIR)/lib -ltcl
+TCLFLAGS=-DNAMD_TCL
+TCL=$(TCLINCL) $(TCLFLAGS)
+
