@@ -1,29 +1,11 @@
 
 #####
-## Choose your favorite Compiler options
-####
-CXXOPTS = -O -DGLOBALS
-#CXXOPTS = +O2
-#CXXOPTS = +O3
-#CXXOPTS = +O3 +DAK220 +DSK220 -G +Oinlinebudget=500 +Olibcalls
-#CXXOPTS = +O3 +DAK220 +DSK220 -G
-#CXXOPTS = +O3 +DAK460 +DSK460
-# this one below leads to numerical changes!
-#CXXOPTS = +O3 -G -z -ptn +Oentrysched +Ofastaccess +Onofltacc +Oregionsched
-#CXXOPTS = +O3 -G -z -ptn +Oentrysched
-#CXXOPTS = +O3 -G
-#CXXOPTS = +O3 -z
-#CXXOPTS = -g -v -z -G
-#CXXOPTS = -g -v
-#CXXOPTS = -g 
-
+## Define your architecture
 #####
-# Flags
-#####
-# uncomment for no warnings during compile
-#NOWARN=-w
-# uncomment for purify during compile
-# PURIFY=-purify
+ARCH = HPUX9
+# ARCH = HPUX10
+# ARCH = g++
+include Makearch.$(ARCH)
 
 #####
 # Directories
@@ -41,8 +23,7 @@ LIBS = dpmta2/mpole/libmpole.a dpmta2/src/libdpmta2.a pvm3/libpvmc.a dpme2/libdp
 #####
 # definitions for Charm routines
 #####
-CHARM = /Projects/l1/namd.2.0/charm
-# CHARM = /Home/p1/milind/charm/net-hp
+# CHARM is platform dependent
 CHARMC = $(CHARM)/bin/charmc $(PURIFY)
 CHARMXI = $(CHARM)/bin/charmc $(PURIFY)
 
@@ -70,8 +51,7 @@ PVMLIB=-L$(PVMDIR) -lpvmc
 PVM=-I$(PVMDIR)
 
 
-CXX = CC -Aa -D_HPUX_SOURCE
-# CXX = g++ -D_HPUX_SOURCE
+# CXX is platform dependent
 INCLUDE = $(CHARM)/include
 CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(PVM) $(CXXOPTS) $(NOWARN)
 GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(PVM) $(NOWARN)
@@ -79,9 +59,6 @@ GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(PVM) $(NOWARN)
 .SUFFIXES: 	.ci
 
 DEPENDFILE = Make.depends
-ECHO = echo
-MOVE = mv
-COPY = cp
 
 OBJS = \
 	$(DSTDIR)/common.o \
