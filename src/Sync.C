@@ -67,9 +67,15 @@ void Sync::openSync(void)
 {
   if (useSync) {
     // if use proxy spanning tree, proxy sync is forced
-    if (!useProxySync && (proxySendSpanning || proxyRecvSpanning)) useProxySync = 1;
+    if (!useProxySync && (proxySendSpanning || proxyRecvSpanning)) {
+      CmiPrintf("[%d] useProxySync is turned on. \n", CmiMyPe());
+      useProxySync = 1;
+    }
     // no proxies on this node, no need to use proxy sync.
-    if (useProxySync && ProxyMgr::Object()->numProxies() == 0) useProxySync = 0;
+    if (useProxySync && ProxyMgr::Object()->numProxies() == 0) {
+      CmiPrintf("[%d] useProxySync is turned off because no proxy. \n", CmiMyPe());
+      useProxySync = 0;
+    }
     // if no proxy sync and no home patch, then disable home patch sync as well
     if (!useProxySync && PatchMap::Object()->numHomePatches() == 0) useSync = 0;
   }
@@ -171,11 +177,9 @@ void Sync::triggerCompute()
 
 //  CkPrintf("SYNC[%d]: PATCHREADY:%d %d patches:%d %d\n", CkMyPe(), counter, PatchMap::Object()->numHomePatches(), nPatcheReady, numPatches);
 
-  if (!useProxySync) {
-    if (homeReady == 0 && counter == patchMap->numHomePatches()) {
-      homeReady = 1;
-      releaseComputes();
-    }
+  if (homeReady == 0 && counter == patchMap->numHomePatches()) {
+    homeReady = 1;
+    if (!useProxySync)  releaseComputes();
   }
 
   if (homeReady && nPatcheReady == numPatches)
