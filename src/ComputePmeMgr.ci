@@ -15,6 +15,7 @@ module ComputePmeMgr {
 
     entry ComputePmeMgr(void);
 
+    entry void initialize(CkQdMsg *);
     entry void sendGrid(PmeNullMsg *);
     entry void recvGrid(PmeGridMsg *);
     entry void gridCalc1(PmeNullMsg *);

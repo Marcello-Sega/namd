@@ -53,6 +53,7 @@
 #include "LdbCoordinator.h"
 #include "ScriptTcl.h"
 #include "ComputeMgr.decl.h"
+#include "ComputePmeMgr.decl.h"
 #include "Sync.h"
 #include "BackEnd.h"
 
@@ -195,17 +196,24 @@ void Node::startup() {
   break;
 
   case 4:
+    if ( simParameters->PMEOn ) {
+      CProxy_ComputePmeMgr pme(CpvAccess(BOCclass_group).computePmeMgr);
+      pme.initialize(new CkQdMsg, CkMyPe());
+    }
+  break;
+
+  case 5:
     if (!CkMyPe()) {
       workDistrib->distributeHomePatches();
     }
   break;
 
-  case 5: 
+  case 6: 
     Sync::Object()->openSync();  // decide if to open local Sync 
     proxyMgr->createProxies();  // need Home patches before this
   break;
 
-  case 6:
+  case 7:
     if (!CkMyPe()) {
       ComputeMap::Object()->printComputeMap();
     }
@@ -219,7 +227,7 @@ void Node::startup() {
     LdbCoordinator::Object()->initialize(patchMap,computeMap);
   break;
 
-  case 7:
+  case 8:
     gotoRun = true;
   break;
 

@@ -98,6 +98,8 @@ public:
   ComputePmeMgr();
   ~ComputePmeMgr();
 
+  void initialize(CkQdMsg*);
+
   void sendGrid(PmeNullMsg *);
   void recvGrid(PmeGridMsg *);
   void gridCalc1(PmeNullMsg *);
@@ -114,9 +116,6 @@ public:
   void setCompute(ComputePme *c) { pmeCompute = c; }
 
 private:
-  int initialized;
-  void initialize();
-
   CProxy_ComputePmeMgr pmeProxy;
   ComputePme *pmeCompute;
   PmeGrid myGrid;
@@ -155,8 +154,7 @@ private:
   double recip_vir[6];
 };
 
-ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), pmeCompute(0),
-						initialized(0) {
+ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), pmeCompute(0) {
   CpvAccess(BOCclass_group).computePmeMgr = thisgroup;
   myKSpace = 0;
   localInfo = new LocalPmeInfo[CkNumPes()];
@@ -174,12 +172,10 @@ ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), pmeCompute(0),
   gridmsg_reuse= new PmeGridMsg*[CkNumPes()];
 }
 
-void ComputePmeMgr::initialize() {
-  if ( initialized ) { return; }
-  initialized = 1;
+void ComputePmeMgr::initialize(CkQdMsg *msg) {
+  delete msg;
 
   SimParameters *simParams = Node::Object()->simParameters;
-  WorkDistrib *workDistrib = Node::Object()->workDistrib;
 
   {  // decide how many pes to use for reciprocal sum
     int nrp = 1;
@@ -313,12 +309,10 @@ ComputePmeMgr::~ComputePmeMgr() {
 
 void ComputePmeMgr::sendGrid(PmeNullMsg *msg) {
   delete msg;
-  initialize();
   pmeCompute->sendData(numRecipPes,recipPeMap);
 }
 
 void ComputePmeMgr::recvGrid(PmeGridMsg *msg) {
-  initialize();
   // CkPrintf("recvGrid from %d on Pe(%d)\n",msg->sourceNode,CkMyPe());
   if ( grid_count == 0 ) {
     NAMD_bug("Message order failure in ComputePmeMgr::recvGrid\n");
