@@ -304,7 +304,10 @@ void ComputeTcl::initialize() {
 
   for ( ; script; script = script->next ) {
     int code;
-    if ( script->data[0] == '{' ) code = Tcl_Eval(interp,script->data+1);
+    if ( script->data[0] == '{' ) {
+       script->data[strlen(script->data)-1] = 0;
+       code = Tcl_Eval(interp,script->data+1);
+    }
     else code = Tcl_EvalFile(interp,script->data);
     if (*interp->result != 0) CkPrintf("TCL: %s\n",interp->result);
     if (code != TCL_OK) NAMD_die("TCL error in global force initialization!");

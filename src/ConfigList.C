@@ -257,7 +257,7 @@ ConfigList::ConfigList(const char *filename)
      
    } else if (datastart[0] == '{') {
      // check if the data begins with a '{'
-     // note that initial '{' will be intact (for a flag), but final '}' will be removed
+     // will leave initial '{' as a flag and final '}' to match Tcl.
      ostrstream alldata;
      char newdata[1000];
      int found_end = 0;
@@ -284,7 +284,6 @@ ConfigList::ConfigList(const char *filename)
 	 }
 	 if (newline[i] == '}' && ! escape_next) {
 	   if ( ( found_end = ! --open_brace_count ) ) {
-	     newline[i] = '\n';
 	     newline[i+1] = 0;
 	     break;
 	   }

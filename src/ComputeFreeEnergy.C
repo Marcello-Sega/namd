@@ -205,6 +205,7 @@ void ComputeFreeEnergy::initialize() {
 
   for ( ; script; script = script->next) {
     if ( script->data[0] == '{' ) {
+      script->data[strlen(script->data)-1] = 0;
       // this is a flag, no '}' at end so skip it at beginning
       size_t add_len = strlen(script->data + 1);
       size_t config_len = 0;
