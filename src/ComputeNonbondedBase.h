@@ -247,14 +247,13 @@ NOEXCL
 
   SELF
   (
-  // N.B.  i_upper is numAtoms - 1, j_upper is numAtoms
-  int pairCount = ( i_upper * j_upper ) / 2;
+  int pairCount = ( (i_upper-1) * j_upper ) / 2;
   int minPairCount = ( pairCount * params->minPart ) / params->numParts;
   int maxPairCount = ( pairCount * params->maxPart ) / params->numParts;
   pairCount = 0;
   )
 
-  for ( i = 0; i < i_upper; ++i )
+  for ( i = 0; i < (i_upper SELF(- 1)); ++i )
   {
     const AtomProperties &a_i = a_0[i];
     const Position &p_i = p_0[i];
@@ -271,7 +270,7 @@ NOEXCL
   (
   {
     int opc = pairCount;
-    pairCount += i_upper - i;
+    pairCount += i_upper - 1 - i;
     if ( opc < minPairCount || opc >= maxPairCount ) continue;
   }
   )
@@ -286,7 +285,7 @@ NOEXCL
     if ( a_i.hydrogenGroupSize ) {
       int opc = pairCount;
       int hgs = a_i.hydrogenGroupSize;
-      pairCount += hgs * ( i_upper - i );
+      pairCount += hgs * ( i_upper - 1 - i );
       pairCount -= hgs * ( hgs - 1 ) / 2;
       if ( opc < minPairCount || opc >= maxPairCount ) {
         i += hgs - 1;

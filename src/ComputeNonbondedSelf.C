@@ -59,7 +59,7 @@ void ComputeNonbondedSelf::doForce(Position* p,
     params.ff[1] = r->f[Results::nbond];
     params.a[0] = a;
     params.a[1] = a;
-    params.numAtoms[0] = numAtoms-1;
+    params.numAtoms[0] = numAtoms;
     params.numAtoms[1] = numAtoms;
     params.reduction = reductionData;
 
