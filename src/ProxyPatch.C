@@ -12,13 +12,15 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1 1996/12/05 01:44:16 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.2 1996/12/05 21:11:06 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
 #include "c++interface.h"
 
+#include "main.h"
 #include "ProxyPatch.h"
+#include "ProxyMgr.h"
 
 #define MIN_DEBUG_LEVEL 3
 #define  DEBUGM
@@ -26,7 +28,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.
 
 ProxyPatch::ProxyPatch(PatchID pd) : Patch(pd)
 {
-  ;
+  ProxyMgr::Object()->registerProxy(pd);
 }
 
 void ProxyPatch::boxClosed(int box)
@@ -48,7 +50,7 @@ void ProxyPatch::boxClosed(int box)
 
 void ProxyPatch::receiveAtoms(ProxyAtomsMsg *msg)
 {
-  //loadAtoms(msg->atomIDList);
+  loadAtoms(msg->atomIDList);
   delete msg;
 }
 
@@ -57,14 +59,20 @@ void ProxyPatch::receiveData(ProxyDataMsg *msg)
   if ( boxesOpen )
   {
     // store message in queue
+    DebugM(4,"Proxy data arrived 
+    msgBuffer.append(msg);
     return;
   }
+  p = msg->positionList;
   delete msg;
 }
 
 void ProxyPatch::sendResults(void)
 {
-  
+  ProxyResultMsg *msg = new (MsgIndex(ProxyResultMsg)) ProxyResultMsg;
+  msg->patch = pd;
+  msg->forceList = f;
+  ProxyMgr::Object->sendResults(msg);
 }
 
 
@@ -72,13 +80,16 @@ void ProxyPatch::sendResults(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyPatch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/12/05 01:44:16 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1996/12/05 21:11:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.2  1996/12/05 21:11:06  jim
+ * filled out message functions
+ *
  * Revision 1.1  1996/12/05 01:44:16  ari
  * Initial revision
  *
