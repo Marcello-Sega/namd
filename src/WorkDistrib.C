@@ -107,7 +107,7 @@ void WorkDistrib::recvComputeMapChanges(ComputeMapChangeMsg *msg) {
 
 #if CHARM_VERSION > 050402
   CProxy_WorkDistrib workProxy(thisgroup);
-  workProxy.doneSaveComputeMap();
+  workProxy[0].doneSaveComputeMap();
 #else
   CProxy_WorkDistrib(thisgroup).doneSaveComputeMap(0);
 #endif
@@ -342,7 +342,7 @@ void WorkDistrib::sendMaps(void)
 #if CHARM_VERSION > 050402
   CProxy_WorkDistrib workProxy(thisgroup);
   workProxy[0].saveMaps(mapMsg);
-#ele
+#else
   CProxy_WorkDistrib(thisgroup).saveMaps(mapMsg,0);
 #endif
 }
