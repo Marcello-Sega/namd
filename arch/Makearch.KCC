@@ -28,9 +28,7 @@ PVM_ARCH=linux
 #####
 # definitions for Charm routines
 #####
-# CHARM = /Projects/l1/namd.2.0/charm
-# CHARM = /Home/p1/milind/charm/net-linux
-CHARM = /Projects/namd2/Programmers/jim/charm/net-linux-KCC
+CHARM = /Projects/namd2/charm/net-linux-kcc
 
 ######
 ## definitions for TCL interface
