@@ -20,6 +20,8 @@ module ComputeMgr {
     entry void updateLocalComputes(void);
     entry void updateLocalComputes2(CkQdMsg *);
     entry void updateLocalComputes3(void);
+    entry void updateLocalComputes4(CkQdMsg *);
+    entry void updateLocalComputes5(void);
     entry void doneUpdateLocalComputes(void);
 
     entry void recvComputeGlobalConfig(ComputeGlobalConfigMsg *);

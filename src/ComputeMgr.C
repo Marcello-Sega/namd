@@ -149,9 +149,25 @@ ComputeMgr::updateLocalComputes3() {
   PatchMap::Object()->checkMap();
 
   if (!CkMyPe()) {
-    CkStartQD(CProxy_ComputeMgr::ckIdx_doneUpdateLocalComputes(), &thishandle);
+    CkStartQD(CProxy_ComputeMgr::ckIdx_updateLocalComputes4((CkQdMsg*)0), &thishandle);
+// added a new phase to build spanning tree after load balance
+// was
+//    CkStartQD(CProxy_ComputeMgr::ckIdx_doneUpdateLocalComputes(), &thishandle);
   }
   //CSendMsgBranch(ComputeMgr, doneUpdateLocalComputes, thisgroup, 0);
+}
+
+void
+ComputeMgr::updateLocalComputes4(CkQdMsg *msg) {
+  delete msg;
+  CProxy_ComputeMgr(thisgroup).updateLocalComputes5();
+}
+
+void
+ComputeMgr::updateLocalComputes5() {
+  ProxyMgr::Object()->buildProxySpanningTree();
+  if (!CkMyPe()) 
+    CkStartQD(CProxy_ComputeMgr::ckIdx_doneUpdateLocalComputes(), &thishandle);
 }
 
 void ComputeMgr::doneUpdateLocalComputes() {

@@ -42,6 +42,8 @@ public:
   void updateLocalComputes();
   void updateLocalComputes2(CkQdMsg *);
   void updateLocalComputes3();
+  void updateLocalComputes4(CkQdMsg *);
+  void updateLocalComputes5();
   void doneUpdateLocalComputes();
 
   void sendComputeGlobalConfig(ComputeGlobalConfigMsg *);
