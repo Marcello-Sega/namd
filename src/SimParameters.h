@@ -184,6 +184,7 @@ public:
              constrZOn;                 //  Flag TRUE-> select which Cartesian 
                                         //  component to restrain
         //****** END selective restraints (X,Y,Z) changes 
+	BigReal constraintScaling;	//  Scaling factor for constraint forces
 
         //****** BEGIN CHARMM/XPLOR type changes
         Bool paraTypeXplorOn;           //  FLAG TRUE-> parametrs are XPLOR format (default)
@@ -443,12 +444,15 @@ private:
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1036 $	$Date: 1999/05/27 19:00:46 $
+ *	$Revision: 1.1037 $	$Date: 1999/05/28 20:23:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1037  1999/05/28 20:23:06  jim
+ * Added constraintScaling parameter.
+ *
  * Revision 1.1036  1999/05/27 19:00:46  jim
  * Added nonbondedScaling parameter and fixed Tcl scripting bug.
  *

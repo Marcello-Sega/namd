@@ -83,6 +83,7 @@ void ComputeRestraints::doForce(Position* p, Results* res, AtomProperties* a)
 {
 	Molecule *molecule = Node::Object()->molecule;
 	Real k;			//  Force constant
+	BigReal scaling = Node::Object()->simParameters->constraintScaling;
 	Vector refPos;		//  Reference position
 	BigReal r, r2; 	//  r=distance between atom position and the
 			//  reference position, r2 = r^2
@@ -112,6 +113,8 @@ void ComputeRestraints::doForce(Position* p, Results* res, AtomProperties* a)
 	  if (molecule->is_atom_constrained(a[localID].id))
 	  {
 	    molecule->get_cons_params(k, refPos, a[localID].id);
+
+	    k *= scaling;
 
 	    // BEGIN moving and rotating constraint changes ******
 	    
@@ -182,13 +185,16 @@ void ComputeRestraints::doForce(Position* p, Results* res, AtomProperties* a)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeRestraints.C,v $
- *	$Author: ferenc $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1999/01/08 23:24:26 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.6 $	$Date: 1999/05/28 20:22:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeRestraints.C,v $
+ * Revision 1.6  1999/05/28 20:22:58  jim
+ * Added constraintScaling parameter.
+ *
  * Revision 1.5  1999/01/08 23:24:26  ferenc
  * added selective position restraints for specific Cartesian components
  *

@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1067 $  $Date: 1999/05/27 19:00:45 $
+ *  $Revision: 1.1068 $  $Date: 1999/05/28 20:23:01 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1068  1999/05/28 20:23:01  jim
+ * Added constraintScaling parameter.
+ *
  * Revision 1.1067  1999/05/27 19:00:45  jim
  * Added nonbondedScaling parameter and fixed Tcl scripting bug.
  *
@@ -620,6 +623,7 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_FLOAT("reassignTemp",reassignTemp)
   SCRIPT_PARSE_FLOAT("rescaleTemp",rescaleTemp)
   SCRIPT_PARSE_FLOAT("langevinTemp",langevinTemp)
+  SCRIPT_PARSE_FLOAT("constraintScaling",constraintScaling)
   if ( ! strncasecmp(param,"nonbondedScaling",MAX_SCRIPT_PARAM_SIZE) ) {
     nonbondedScaling = atof(value);
     ComputeNonbondedUtil::select();
@@ -1118,6 +1122,10 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
     "consref)", PARSE_STRING);
    opts.require("constraints", "conskcol", "Column of conskfile to use "
     "for the force constants (defaults to O)", PARSE_STRING);
+   opts.require("constraints", "constraintScaling", "constraint scaling factor",
+     &constraintScaling, 1.0);
+   opts.range("nonbondedScaling", POSITIVE);
+
 
 
    //****** BEGIN selective restraints (X,Y,Z) changes
@@ -2292,6 +2300,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    if (!opts.defined("constraints"))
    {
      constraintExp = 0;     
+     constraintScaling = 1.0;     
 
      //****** BEGIN selective restraints (X,Y,Z) changes
      selectConstraintsOn = FALSE;
@@ -2772,6 +2781,11 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 
       iout << iINFO << "HARMONIC CONS EXP      "
          << constraintExp << "\n";
+
+      if (constraintScaling != 1.0) {
+        iout << iINFO << "HARMONIC CONS SCALING  "
+         << constraintScaling << "\n";
+      }
 
       //****** BEGIN selective restraints (X,Y,Z) changes 
 
@@ -3446,7 +3460,7 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
   msg->put(margin)->put(patchDimension)->put(switchingActive);
   msg->put(switchingDist)->put(elecswitchDist)->put(vdwswitchDist);
   msg->put(pairlistDist)->put(plMarginCheckOn)->put(constraintsOn);
-  msg->put(constraintExp);
+  msg->put(constraintExp)->put(constraintScaling);
   //****** BEGIN CHARMM/XPLOR type changes
   msg->put(paraTypeXplorOn)->put(paraTypeCharmmOn);
   //****** END CHARMM/XPLOR type changes
@@ -3593,6 +3607,7 @@ void SimParameters::receive_SimParameters(MIStream *msg)
   msg->get(plMarginCheckOn);
   msg->get(constraintsOn);
   msg->get(constraintExp);
+  msg->get(constraintScaling);
   //****** BEGIN CHARMM/XPLOR type changes
   msg->get(paraTypeXplorOn);
   msg->get(paraTypeCharmmOn);
@@ -3765,12 +3780,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1067 $  $Date: 1999/05/27 19:00:45 $
+ *  $Revision: 1.1068 $  $Date: 1999/05/28 20:23:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1068  1999/05/28 20:23:01  jim
+ * Added constraintScaling parameter.
+ *
  * Revision 1.1067  1999/05/27 19:00:45  jim
  * Added nonbondedScaling parameter and fixed Tcl scripting bug.
  *
