@@ -406,8 +406,6 @@ $(INCDIR)/main.decl.h: $(SRCDIR)/main.ci
 
 DEPENDFILE = .rootdir/Make.depends
 
-# make depends is ugly!  The problem: we have obj/file.o and want src/file.C.
-# Solution: heavy use of basename and awk.
 # This is a CPU killer...  Don't make depends if you don't need to.
 depends: $(INCDIR) $(CIFILES) $(DSTDIR) $(DEPENDFILE)
 	$(ECHO) "Creating " $(DEPENDFILE) " ..."; \
@@ -416,7 +414,7 @@ depends: $(INCDIR) $(CIFILES) $(DSTDIR) $(DEPENDFILE)
 	fi; \
 	touch $(DEPENDFILE); \
 	for i in $(OBJS) ; do \
-	      SRCFILE=$(SRCDIR)/`basename $$i | awk -F. '{print $$1".C"}'` ; \
+	      SRCFILE=$(SRCDIR)/`basename $$i .o`.C ; \
 	      $(ECHO) "checking dependencies for $$SRCFILE" ; \
 	      g++ -MM $(GXXFLAGS) $$SRCFILE | \
 	      perl $(SRCDIR)/dc.pl $(CHARMINC) /usr/include /usr/local >> $(DEPENDFILE); \
@@ -424,7 +422,7 @@ depends: $(INCDIR) $(CIFILES) $(DSTDIR) $(DEPENDFILE)
 		$$SRCFILE >> $(DEPENDFILE) ; \
 	done; \
 	for i in $(SBOBJS) ; do \
-	      SRCFILE=$(SRCDIR)/`basename $$i | awk -F. '{print $$1".c"}'` ; \
+	      SRCFILE=$(SRCDIR)/`basename $$i .o`.c ; \
 	      $(ECHO) "checking dependencies for $$SRCFILE" ; \
 	      gcc -MM $(GCCFLAGS) $$SRCFILE | \
 	      perl $(SRCDIR)/dc.pl $(CHARMINC) /usr/include /usr/local >> $(DEPENDFILE); \
