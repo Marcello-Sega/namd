@@ -1134,28 +1134,28 @@ int topo_mol_patch(topo_mol *mol, const topo_mol_ident_t *targets,
   for ( angldef = resdef->angles; angldef; angldef = angldef->next ) {
     if ( angldef->del ) topo_mol_del_angle(mol,targets,ntargets,angldef);
     else if ( topo_mol_add_angle(mol,targets,ntargets,angldef) ) {
-      sprintf(errmsg,"add angle failed in patch %s",res->name);
+      sprintf(errmsg,"add angle failed in patch %s",rname);
       topo_mol_log_error(mol,errmsg);
     }
   }
   for ( dihedef = resdef->dihedrals; dihedef; dihedef = dihedef->next ) {
     if ( dihedef->del ) topo_mol_del_dihedral(mol,targets,ntargets,dihedef);
     else if ( topo_mol_add_dihedral(mol,targets,ntargets,dihedef) ) {
-      sprintf(errmsg,"add dihedral failed in patch %s",res->name);
+      sprintf(errmsg,"add dihedral failed in patch %s",rname);
         topo_mol_log_error(mol,errmsg);
       }
   }
   for ( imprdef = resdef->impropers; imprdef; imprdef = imprdef->next ) {
     if ( imprdef->del ) topo_mol_del_improper(mol,targets,ntargets,imprdef);
     else if ( topo_mol_add_improper(mol,targets,ntargets,imprdef) ) {
-      sprintf(errmsg,"add improper failed in patch %s",res->name);
+      sprintf(errmsg,"add improper failed in patch %s",rname);
       topo_mol_log_error(mol,errmsg);
     }
   }
   for ( confdef = resdef->conformations; confdef; confdef = confdef->next ) {
     if ( confdef->del ) topo_mol_del_conformation(mol,targets,ntargets,confdef);
     else if ( topo_mol_add_conformation(mol,targets,ntargets,confdef) ) {
-      sprintf(errmsg,"add conformation failed in patch %s",res->name);
+      sprintf(errmsg,"add conformation failed in patch %s",rname);
       topo_mol_log_error(mol,errmsg);
     }
   }
