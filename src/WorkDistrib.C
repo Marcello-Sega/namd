@@ -294,12 +294,6 @@ FullAtomList *WorkDistrib::createAtomLists(void)
 
     }
 
-    for(j=0; j < n; j++)
-    {
-      int aid = a[j].id;
-    }
-
-
     int size, allfixed, k;
     for(j=0; j < n; j+=size) {
       size = a[j].hydrogenGroupSize;
@@ -313,6 +307,23 @@ FullAtomList *WorkDistrib::createAtomLists(void)
       for ( k = 0; k < size; ++k ) {
         a[j+k].groupFixed = allfixed ? 1 : 0;
       }
+    }
+
+    if ( params->outputPatchDetails ) {
+      int patchId = i;
+      int numAtomsInPatch = n;
+      int numFixedAtomsInPatch = 0;
+      int numAtomsInFixedGroupsInPatch = 0;
+      for(j=0; j < n; j++) {
+        numFixedAtomsInPatch += ( a[j].atomFixed ? 1 : 0 );
+        numAtomsInFixedGroupsInPatch += ( a[j].groupFixed ? 1 : 0 );
+      }
+      iout << "PATCH_DETAILS:"
+           << " patch " << patchId
+           << " atoms " << numAtomsInPatch
+           << " fixed_atoms " << numFixedAtomsInPatch
+           << " fixed_groups " << numAtomsInFixedGroupsInPatch
+           << "\n" << endi;
     }
 
   }

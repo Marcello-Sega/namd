@@ -424,6 +424,8 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
     &nonbondedFrequency, 1);
    opts.range("nonbondedFreq", POSITIVE);
 
+   opts.optionalB("main", "outputPatchDetails", "print number of atoms in each patch",
+      &outputPatchDetails, FALSE);
 }
 
 void SimParameters::config_parser_fileio(ParseOptions &opts) {

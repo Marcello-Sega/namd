@@ -464,6 +464,7 @@ public:
                                         // pair-compute 
 	int maxExclusionFlags;		// maximum size of exclusion check list
 					// for any given atom
+	Bool outputPatchDetails;	// print number of atoms per patch
 
 	//
         // hydrogen bond simulation parameters
