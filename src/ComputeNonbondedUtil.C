@@ -563,9 +563,11 @@ void ComputeNonbondedUtil::select(void)
 
 #define NBTYPE NBPAIR
 #include "ComputeNonbondedBase.h"
+#undef  NBTYPE
 
 #define NBTYPE NBSELF
 #include "ComputeNonbondedBase.h"
+#undef  NBTYPE
 
 #undef INTFLAG
 
