@@ -141,9 +141,13 @@ public:
 << iINFO << "\n"
          << endi;
 
-    iout << iINFO << "Based on Charm++/Converse "
-         << oct << showbase << CHARM_VERSION << dec
+    // CHARM_VERSION macro starts with 0, interpreted as octal
+    // using sprintf because manipulations were hard to make work
+    char charm_version[64];
+    sprintf(charm_version,"0%o",CHARM_VERSION);
+    iout << iINFO << "Based on Charm++/Converse " << charm_version
          << " for " << CMK_MACHINE_NAME << "\n" << endi;
+
 #ifndef WIN32
     iout << iINFO << "Built " << namd_build_date << " by "
          << namd_build_user << " on " << namd_build_machine << "\n"
