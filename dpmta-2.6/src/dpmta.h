@@ -9,11 +9,18 @@
 *
 */
 
-/* $Id: dpmta.h,v 1.1 1997/09/05 19:41:50 jim Exp $
+/* $Id: dpmta.h,v 1.2 1997/10/16 21:10:37 brunner Exp $
  *
  * revision history:
  *
  * $Log: dpmta.h,v $
+ * Revision 1.2  1997/10/16 21:10:37  brunner
+ * Possible fix for the Origin2000 problem with DPMTA.  I included
+ * stdlib.h in dpmta.h and mpe.h, to supply the correct declaration for
+ * malloc, realloc, etc.  Initial tests indicate that it works on the
+ * Origin 2000, so since these are harmless changes, I'm checking them
+ * in.
+ *
  * Revision 1.1  1997/09/05 19:41:50  jim
  * Original distribution.
  *
@@ -80,6 +87,8 @@
  *
  *
 */
+
+#include <stdlib.h>
 
 /* in case we're interfacing with C++ */
 #ifdef __cplusplus

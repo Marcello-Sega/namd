@@ -10,11 +10,18 @@
 /*
  * RCS Id:
  *
- * $Id: mpe.h,v 1.2 1997/09/29 23:57:45 jim Exp $
+ * $Id: mpe.h,v 1.3 1997/10/16 21:10:10 brunner Exp $
  *
  * RSC History:
  *
  * $Log: mpe.h,v $
+ * Revision 1.3  1997/10/16 21:10:10  brunner
+ * Possible fix for the Origin2000 problem with DPMTA.  I included
+ * stdlib.h in dpmta.h and mpe.h, to supply the correct declaration for
+ * malloc, realloc, etc.  Initial tests indicate that it works on the
+ * Origin 2000, so since these are harmless changes, I'm checking them
+ * in.
+ *
  * Revision 1.2  1997/09/29 23:57:45  jim
  * Incorporated changes from version 2.6.1 of DPMTA.
  *   - fixes for bad handling of empty/invalid multipoles when
@@ -48,6 +55,7 @@
  *
  */
 
+#include <stdlib.h>
 
 #ifndef TRUE
    #define TRUE 1
