@@ -33,7 +33,7 @@
 
 #include "InfoStream.h"
 
-int useSync = 0;
+int useSync = 1;
 
 Sync::Sync()
 {
@@ -88,7 +88,7 @@ void Sync::registerComp(PatchID pid, ComputeIDListIter cid, int doneMigration)
 
 //  CkPrintf("REG[%d]: patch:%d step:%d-%d slot:%d\n", CkMyPe(), pid, patchMap->patch(pid)->flags.step, step, slot);
 
-  triggerCompute();
+  if (clist[i].step == step) triggerCompute();
 }
 
 void Sync::PatchReady(void)
@@ -111,16 +111,16 @@ void Sync::triggerCompute()
       if (clist[i].step == step) nPatcheReady++;
   }
 
-  CkPrintf("SYNC[%d]: PATCHREADY:%d %d patches:%d %d\n", CkMyPe(), counter, PatchMap::Object()->numHomePatches(), nPatcheReady, numPatches);
+//  CkPrintf("SYNC[%d]: PATCHREADY:%d %d patches:%d %d\n", CkMyPe(), counter, PatchMap::Object()->numHomePatches(), nPatcheReady, numPatches);
   if (counter == patchMap->numHomePatches() && nPatcheReady == numPatches)
   {
-       CkPrintf("TRIGGERED[%d]\n", CkMyPe());
+//       CkPrintf("TRIGGERED[%d]\n", CkMyPe());
        ComputeMap *computeMap = ComputeMap::Object();
        for (int i= 0; i<cnum; i++) {
          int &pid = clist[i].pid;
 	 if (pid == -1) continue;
 	 if (clist[i].step != step) continue;
-         CkPrintf(" %d-%d-%d ", clist[i].pid, clist[i].step, patchMap->patch(pid)->flags.step);
+//         CkPrintf(" %d-%d-%d ", clist[i].pid, clist[i].step, patchMap->patch(pid)->flags.step);
          ComputeIDListIter cid = clist[i].cid;
          for(cid = cid.begin(); cid != cid.end(); cid++)
          {
@@ -128,7 +128,7 @@ void Sync::triggerCompute()
          }
 	 pid = -1;
        }
-       CkPrintf("\n");
+//       CkPrintf("\n");
 
        // reset counter
        counter = 0;
