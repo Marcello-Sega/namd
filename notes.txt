@@ -388,28 +388,45 @@ an amount of memory equal to the size of the file.
 
 Problems?  Found a bug?
 
-For problems or questions, send email to namd@ks.uiuc.edu.  If you
-think you have found a bug, please follow the steps outlined below.
-Your feedback will help us improve NAMD.
-
  1. Download and test the latest version of NAMD. 
- 2. Please check the FAQ, known bugs and problem reports. 
+
+ 2. Please check NamdWiki, NAMD-L, and the rest of the NAMD web site
+    resources at http://www.ks.uiuc.edu/Research/namd/.
+
  3. Gather, in a single directory, all input and config files needed
     to reproduce your problem. 
- 4. Run once, redirecting output to a file. 
+
+ 4. Run once, redirecting output to a file (if the problem occurs
+    randomly do a short run and include additional log files showing
+    the error). 
+
  5. Tar everything up (but not the namd2 or charmrun binaries) and
     compress it, e.g., "tar cf mydir.tar mydir; gzip mydir.tar"
     Please do not attach your files individually to your email message
     as this is error prone and tedious to extract.  The only exception
     may be the log of your run showing any error messages.
- 6. Email namd@ks.uiuc.edu with: 
+
+ 6. For problems concerning compiling or using NAMD please consider
+    subscribing to NAMD-L and posting your question there, and
+    summarizing the resolution of your problem on NamdWiki so that
+    others may benefit from your experience.  Please avoid sending large
+    attachments to NAMD-L by posting any related files on your web site
+    or on BioCoRE (http://www.ks.uiuc.edu/Research/BioCoRE/, in BioFS for
+    the NAMD public project) and including the location in your message.
+
+ 7. For bug reports, mail namd@ks.uiuc.edu with: 
     - A synopsis of the problem as the subject (not "HELP" or "URGENT").
     - The NAMD version, platform and number of CPUs the problem occurs
       with (to be very complete just copy the first 20 lines of output).
     - A description of the problematic behavior and any error messages. 
     - If the problem is consistent or random. 
     - The compressed tar file as an attachment (or a URL if it is too big). 
- 7. We'll get back to you with further questions or suggestions.
+
+ 8. We'll get back to you with further questions or suggestions.  While
+    we try to treat all of our users equally and respond to emails in a
+    timely manner, other demands occasionally prevent us from doing so.
+    Please understand that we must give our highest priority to crashes
+    or incorrect results from the most recently released NAMD binaries.
 
 ----------------------------------------------------------------------
 
