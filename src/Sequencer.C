@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1029 1997/04/08 21:08:47 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1030 1997/04/10 09:14:12 ari Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -26,6 +26,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C
 #include "Molecule.h"
 #include "NamdOneTools.h"
 #include "LdbCoordinator.h"
+#include "Thread.h"
 
 #define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
@@ -69,7 +70,7 @@ void Sequencer::run(int numberOfCycles)
 
     // create a Thread and invoke it
     DebugM(4, "::run() - this = " << this << "\n" );
-    thread = CthCreate((CthVoidFn)&(threadRun),(void*)(this),0);
+    thread = CthCreate((CthVoidFn)&(threadRun),(void*)(this),SEQ_STK_SZ);
     CthSetStrategyDefault(thread);
     awaken();
 }
@@ -249,13 +250,20 @@ Sequencer::terminate() {
  * RCS INFORMATION:
  *
  *      $RCSfile: Sequencer.C,v $
- *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1029 $     $Date: 1997/04/08 21:08:47 $
+ *      $Author: ari $  $Locker:  $             $State: Exp $
+ *      $Revision: 1.1030 $     $Date: 1997/04/10 09:14:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1030  1997/04/10 09:14:12  ari
+ * Final debugging for compute migration / proxy creation for load balancing.
+ * Lots of debug code added, mostly turned off now.
+ * Fixed bug in PositionBox when Patch had no dependencies.
+ * Eliminated use of cout and misuse of iout in numerous places.
+ *                                            Ari & Jim
+ *
  * Revision 1.1029  1997/04/08 21:08:47  jim
  * Contant pressure now correct on multiple nodes, should work with MTS.
  *

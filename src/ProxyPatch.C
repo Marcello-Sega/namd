@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1011 1997/04/08 07:08:58 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1012 1997/04/10 09:14:10 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -27,12 +27,13 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.
 #include "Priorities.h"
 
 #define MIN_DEBUG_LEVEL 4
-// #define  DEBUGM
+//#define  DEBUGM
 #include "Debug.h"
 
 ProxyPatch::ProxyPatch(PatchID pd) : 
   Patch(pd), msgBuffer(NULL), msgAllBuffer(NULL)
 {
+  DebugM(4, "ProxyPatch(" << pd << ") at " << this << "\n");
   ProxyMgr::Object()->registerProxy(patchID);
 }
 
@@ -44,20 +45,21 @@ void ProxyPatch::boxClosed(int box)
   if ( ! --boxesOpen ) {
     DebugM(2,patchID << ": " << "Checking message buffer.\n");
     if ( msgBuffer ) {
-      DebugM(4,"Patch " << patchID << " processing buffered proxy data.\n");
+      DebugM(3,"Patch " << patchID << " processing buffered proxy data.\n");
       receiveData(msgBuffer);
     } else if (msgAllBuffer ) {
-      DebugM(4,"Patch " << patchID << " processing buffered proxy ALL data.\n");
+      DebugM(3,"Patch " << patchID << " processing buffered proxy ALL data.\n");
       receiveAll(msgAllBuffer);
     }
   }
   else {
-    DebugM(4,"ProxyPatch " << patchID << ": " << boxesOpen << " boxes left to close.\n");
+    DebugM(3,"ProxyPatch " << patchID << ": " << boxesOpen << " boxes left to close.\n");
   }
 }
 
 void ProxyPatch::receiveAtoms(ProxyAtomsMsg *msg)
 {
+  DebugM(3, "receiveAtoms(" << patchID << ")\n");
   loadAtoms(msg->atomIDList);
   AtomMap::Object()->registerIDs(patchID,msg->atomIDList);
   delete msg;
@@ -65,14 +67,13 @@ void ProxyPatch::receiveAtoms(ProxyAtomsMsg *msg)
 
 void ProxyPatch::receiveData(ProxyDataMsg *msg)
 {
+  DebugM(3, "receiveData(" << patchID << ")\n");
   if ( boxesOpen )
   {
     // store message in queue (only need one element, though)
-    DebugM(4,"Patch " << patchID << " proxy data arrived early, storing in buffer.\n");
     msgBuffer = msg;
     return;
   }
-  DebugM(3,"Processing proxy data.\n");
   msgBuffer = NULL;
   flags = msg->flags;
   p = msg->positionList;
@@ -82,22 +83,20 @@ void ProxyPatch::receiveData(ProxyDataMsg *msg)
 
 void ProxyPatch::receiveAll(ProxyAllMsg *msg)
 {
+  DebugM(3, "receiveData(" << patchID << ")\n");
   if ( boxesOpen )
   {
     // store message in queue (only need one element, though)
-    DebugM(4,"Patch " << patchID << " proxy ALL data arrived early, storing in buffer.\n");
     msgAllBuffer = msg;
     return;
   }
   msgAllBuffer = NULL;
-  DebugM(4,"Processing proxy ALL msg.\n");
 
   AtomMap::Object()->unregisterIDs(patchID,atomIDList);
   loadAtoms(msg->atomIDList);
   AtomMap::Object()->registerIDs(patchID,msg->atomIDList);
   flags = msg->flags;
   p = msg->positionList;
-  DebugM(4,"  ProxyAll received atomIDList.size = " << atomIDList.size() << " positionList.size = " << p.size() << "\n");
 
   delete msg;
 
@@ -106,6 +105,7 @@ void ProxyPatch::receiveAll(ProxyAllMsg *msg)
 
 void ProxyPatch::sendResults(void)
 {
+  DebugM(3, "sendResults(" << patchID << ")\n");
   ProxyResultMsg *msg 
     = new (MsgIndex(ProxyResultMsg),Priorities::numBits) ProxyResultMsg;
   msg->node = CMyPe();
@@ -123,12 +123,19 @@ void ProxyPatch::sendResults(void)
  *
  *	$RCSfile: ProxyPatch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/04/08 07:08:58 $
+ *	$Revision: 1.1012 $	$Date: 1997/04/10 09:14:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.1012  1997/04/10 09:14:10  ari
+ * Final debugging for compute migration / proxy creation for load balancing.
+ * Lots of debug code added, mostly turned off now.
+ * Fixed bug in PositionBox when Patch had no dependencies.
+ * Eliminated use of cout and misuse of iout in numerous places.
+ *                                            Ari & Jim
+ *
  * Revision 1.1011  1997/04/08 07:08:58  ari
  * Modification for dynamic loadbalancing - moving computes
  * Still bug in new computes or usage of proxies/homepatches.

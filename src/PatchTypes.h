@@ -36,7 +36,7 @@ private:
 class Results
 {
 public:
-  enum { normal, nbond, slow, maxNumForces };
+  enum { normal=0, nbond=1, slow=2, maxNumForces=3 };
   Force *f[maxNumForces];
 };
 
@@ -48,12 +48,19 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1997/04/08 21:08:45 $
+ *	$Revision: 1.8 $	$Date: 1997/04/10 09:14:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchTypes.h,v $
+ * Revision 1.8  1997/04/10 09:14:05  ari
+ * Final debugging for compute migration / proxy creation for load balancing.
+ * Lots of debug code added, mostly turned off now.
+ * Fixed bug in PositionBox when Patch had no dependencies.
+ * Eliminated use of cout and misuse of iout in numerous places.
+ *                                            Ari & Jim
+ *
  * Revision 1.7  1997/04/08 21:08:45  jim
  * Contant pressure now correct on multiple nodes, should work with MTS.
  *

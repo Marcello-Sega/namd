@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1012 1997/04/08 07:08:12 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1013 1997/04/10 09:13:49 ari Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -21,9 +21,10 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.
 #include "c++interface.h"
 
 #include "ComputeMap.h"
+#include "Compute.h"
 
-#define MIN_DEBUG_LEVEL 3
-// #define DEBUGM
+#define MIN_DEBUG_LEVEL 4
+//#define DEBUGM
 #include "Debug.h"
 
 // Singleton implementation
@@ -61,6 +62,21 @@ ComputeMap::~ComputeMap(void)
   }    
 }
 
+void
+ComputeMap::checkMap(void)
+{
+  int computeCount = nComputes;
+  for (int i=0; i<nComputes; i++) {
+    if (computeData[i].compute) {
+      computeCount++;
+      if (! (computeData[i].compute->cid == i)) {
+	DebugM(4, "ComputeID("<<computeData[i].compute->cid<<") != ComputeID("
+	  << i <<")\n");
+      }
+    }
+  }
+  DebugM(4, "Compute Count = " << computeCount << "\n");
+}
 
 #undef PACK
 #define PACK(type,data) { memcpy(b, &data, sizeof(type)); b += sizeof(type); }
@@ -300,28 +316,28 @@ int ComputeMap::newPid(ComputeID cid, PatchID pid, int trans)
 //----------------------------------------------------------------------
 void ComputeMap::printComputeMap(void)
 {
-  DebugM(4,"---------------------------------------");
-  DebugM(4,"---------------------------------------\n");
+  DebugM(2,"---------------------------------------");
+  DebugM(2,"---------------------------------------\n");
 
-  DebugM(4,"nComputes = " << nComputes << '\n');
-  DebugM(4,"nPatchBased = " << nPatchBased << '\n');
-  DebugM(4,"nAtomBased = " << nAtomBased << '\n');
-  DebugM(4,"nAllocated = " << nComputes << '\n');
+  DebugM(2,"nComputes = " << nComputes << '\n');
+  DebugM(2,"nPatchBased = " << nPatchBased << '\n');
+  DebugM(2,"nAtomBased = " << nAtomBased << '\n');
+  DebugM(2,"nAllocated = " << nComputes << '\n');
   for(int i=0; i < nComputes; i++)
   {
-    DebugM(4,"Compute " << i << '\n');
-    DebugM(4,"  node = " << computeData[i].node << '\n');
-    DebugM(4,"  patchBased = " << computeData[i].patchBased << '\n');
-    DebugM(4,"  numPids = " << computeData[i].numPids << '\n');
-    DebugM(4,"  numPidsAllocated = " << computeData[i].numPidsAllocated << '\n');
+    DebugM(2,"Compute " << i << '\n');
+    DebugM(2,"  node = " << computeData[i].node << '\n');
+    DebugM(2,"  patchBased = " << computeData[i].patchBased << '\n');
+    DebugM(2,"  numPids = " << computeData[i].numPids << '\n');
+    DebugM(2,"  numPidsAllocated = " << computeData[i].numPidsAllocated << '\n');
     for(int j=0; j < computeData[i].numPids; j++)
     {
-      DebugM(4,computeData[i].pids[j].pid);
+      DebugM(2,computeData[i].pids[j].pid);
       if (!((j+1) % 6))
-	DebugM(4,'\n');
+	DebugM(2,'\n');
     }
-    DebugM(4,"\n---------------------------------------");
-    DebugM(4,"---------------------------------------\n");
+    DebugM(2,"\n---------------------------------------");
+    DebugM(2,"---------------------------------------\n");
 
   }
 }
@@ -330,12 +346,19 @@ void ComputeMap::printComputeMap(void)
  *
  *	$RCSfile: ComputeMap.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/04/08 07:08:12 $
+ *	$Revision: 1.1013 $	$Date: 1997/04/10 09:13:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.C,v $
+ * Revision 1.1013  1997/04/10 09:13:49  ari
+ * Final debugging for compute migration / proxy creation for load balancing.
+ * Lots of debug code added, mostly turned off now.
+ * Fixed bug in PositionBox when Patch had no dependencies.
+ * Eliminated use of cout and misuse of iout in numerous places.
+ *                                            Ari & Jim
+ *
  * Revision 1.1012  1997/04/08 07:08:12  ari
  * Modification for dynamic loadbalancing - moving computes
  * Still bug in new computes or usage of proxies/homepatches.

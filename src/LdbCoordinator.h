@@ -32,11 +32,11 @@ class ComputeMap;
 class Sequencer;
 class InitMsg;
 
-enum {LDB_PATCHES = 2048};
-enum {LDB_COMPUTES = 50000};
-enum {COMPUTEMAX = 50000};
-enum {PATCHMAX = 5000};
-enum {PROCESSORMAX = 1024};
+enum {LDB_PATCHES = 1024};
+enum {LDB_COMPUTES = 25000};
+enum {COMPUTEMAX = 25000};
+enum {PATCHMAX = 2400};
+enum {PROCESSORMAX = 256};
 
 
 struct LdbStatsMsg : public comm_object
@@ -122,12 +122,19 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1997/04/08 23:00:01 $
+ *	$Revision: 1.9 $	$Date: 1997/04/10 09:14:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LdbCoordinator.h,v $
+ * Revision 1.9  1997/04/10 09:14:00  ari
+ * Final debugging for compute migration / proxy creation for load balancing.
+ * Lots of debug code added, mostly turned off now.
+ * Fixed bug in PositionBox when Patch had no dependencies.
+ * Eliminated use of cout and misuse of iout in numerous places.
+ *                                            Ari & Jim
+ *
  * Revision 1.8  1997/04/08 23:00:01  brunner
  * Fixed problem with numComputes not equal to number of moveable computes
  *

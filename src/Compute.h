@@ -41,9 +41,10 @@ protected:
 
 public:
   const ComputeID cid;
+  static int totalComputes;
 
   Compute(ComputeID);
-  virtual ~Compute() {};
+  virtual ~Compute() { totalComputes--; }
 
   static void setNode(Node *n) { node = n; }
 
@@ -69,12 +70,19 @@ public:
  *
  *	$RCSfile: Compute.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/04/08 07:08:10 $
+ *	$Revision: 1.1006 $	$Date: 1997/04/10 09:13:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.h,v $
+ * Revision 1.1006  1997/04/10 09:13:48  ari
+ * Final debugging for compute migration / proxy creation for load balancing.
+ * Lots of debug code added, mostly turned off now.
+ * Fixed bug in PositionBox when Patch had no dependencies.
+ * Eliminated use of cout and misuse of iout in numerous places.
+ *                                            Ari & Jim
+ *
  * Revision 1.1005  1997/04/08 07:08:10  ari
  * Modification for dynamic loadbalancing - moving computes
  * Still bug in new computes or usage of proxies/homepatches.

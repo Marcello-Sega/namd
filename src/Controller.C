@@ -22,6 +22,7 @@
 #include "BroadcastObject.h"
 #include "NamdState.h"
 #include "Broadcasts.h"
+#include "Thread.h"
 #include <math.h>
 
 #ifndef cbrt
@@ -82,7 +83,7 @@ void Controller::run(int numberOfCycles)
 
     // create a Thread and invoke it
     DebugM(4, "Starting thread in controller on this=" << this << "\n");
-    thread = CthCreate((CthVoidFn)&(threadRun),(void*)(this),0);
+    thread = CthCreate((CthVoidFn)&(threadRun),(void*)(this),CTRL_STK_SZ);
     CthSetStrategyDefault(thread);
     awaken();
 }
@@ -236,12 +237,19 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1997/04/08 21:08:40 $
+ *	$Revision: 1.1016 $	$Date: 1997/04/10 09:13:56 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1016  1997/04/10 09:13:56  ari
+ * Final debugging for compute migration / proxy creation for load balancing.
+ * Lots of debug code added, mostly turned off now.
+ * Fixed bug in PositionBox when Patch had no dependencies.
+ * Eliminated use of cout and misuse of iout in numerous places.
+ *                                            Ari & Jim
+ *
  * Revision 1.1015  1997/04/08 21:08:40  jim
  * Contant pressure now correct on multiple nodes, should work with MTS.
  *

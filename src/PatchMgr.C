@@ -11,7 +11,7 @@
 /*								           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1006 1997/04/04 23:34:25 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1007 1997/04/10 09:14:03 ari Exp $";
 
 
 #include "ckdefs.h"
@@ -169,6 +169,7 @@ void * MovePatchesMsg::pack (int *length)
     memcpy(b, &fromNodeID, sizeof(NodeID)); b += sizeof(NodeID);
     memcpy(b, &pid, sizeof(PatchID)); b += sizeof(PatchID);
     int dummy=aid.size(); memcpy(b, &dummy, sizeof(int)); b += sizeof(int);
+    // rewrite using unencap (AS)
     for ( int i = 0; i < aid.size(); i++ )
     {
       // *((AtomID*)b) = aid[i]; b += sizeof(AtomID);
@@ -196,6 +197,7 @@ void MovePatchesMsg::unpack (void *in)
     aid.resize(size);
     p.resize(size);
     v.resize(size);
+    // rewrite using encap (AS)
     for ( int i = 0; i < size; i++ )
     {
       //aid[i] = *((AtomID*)b); b += sizeof(AtomID);
@@ -213,12 +215,19 @@ void MovePatchesMsg::unpack (void *in)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMgr.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/04/04 23:34:25 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1007 $	$Date: 1997/04/10 09:14:03 $
  *
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.C,v $
+ * Revision 1.1007  1997/04/10 09:14:03  ari
+ * Final debugging for compute migration / proxy creation for load balancing.
+ * Lots of debug code added, mostly turned off now.
+ * Fixed bug in PositionBox when Patch had no dependencies.
+ * Eliminated use of cout and misuse of iout in numerous places.
+ *                                            Ari & Jim
+ *
  * Revision 1.1006  1997/04/04 23:34:25  milind
  * Got NAMD2 to run on Origin2000.
  * Included definitions of class static variables in C files.

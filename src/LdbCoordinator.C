@@ -11,6 +11,7 @@
 #include "PatchMap.h"
 #include "ComputeMap.h"
 #define DEBUGM
+#define MIN_DEBUG_LEVEL 4
 #include "Debug.h"
 #include "Sequencer.h"
 #include "RefineOnly.h"
@@ -21,13 +22,12 @@
 //#include "Alg4.h"
 
 #include "elements.h"
-#include "RefineOnly.h"
 
 
 class manheap;
 class maxheap;
 
-#define DEBUG_LEVEL 3
+#define DEBUG_LEVEL 4
 #define TIMER_FNC()   CmiTimer()
 
 // static initialization
@@ -205,7 +205,7 @@ void LdbCoordinator::startWork(ComputeID id, int /* timestep */ )
 
   if (computeStartTime[id] == -1.)
   {
-    DebugM(4, "::startWork() Unexpected compute reporting in\n");
+    DebugM(4, "::startWork() Unexpected compute("<<id<<") reporting in\n");
   } else if (computeStartTime[id] > 0.)
   {
     DebugM(4, "::startWork() Attempting to start already-running timer\n");
@@ -223,7 +223,7 @@ void LdbCoordinator::endWork(ComputeID id, int /* timestep */)
 
   if (computeStartTime[id] == -1.)
   {
-    DebugM(4, "::endWork() Unexpected compute reporting in\n");
+    DebugM(4, "::endWork() Unexpected compute("<<id<<") reporting in\n");
   } else if (computeStartTime[id] == 0)
   {
     DebugM(4, "::endwork() Attempting to save non-running timer\n");
@@ -377,8 +377,26 @@ void LdbCoordinator::processStatistics(void)
       // CPrintf("Assigning compute %d from %d to %d\n",
       //    i,computeArray[i].oldProcessor,computeArray[i].processor);
       computeMap->setNewNode(computeArray[i].Id,computeArray[i].processor);
+      DebugM(2, "setting("<<computeArray[i].Id<<") newNode - curnode="
+	<<computeMap->node(computeArray[i].Id) 
+	<<" newnode="<<computeMap->newNode(computeArray[i].Id) << "\n" );
+    } else {
+      DebugM(2, "current setup - curnode="<<computeMap->node(computeArray[i].Id)
+	<<" newnode="<<computeMap->newNode(computeArray[i].Id) << "\n" );
     }
   }
+  /*
+  if (computeMap->node(71) == 0) {
+      iout << iPE << iERRORF << " moving computeID(71) by hand to node 2\n" << endi;
+      computeMap->setNewNode(71, 2);
+  }
+  computeMap->setNewNode(72, (computeMap->node(72)+1)%3);
+  computeMap->setNewNode(73, (computeMap->node(72)+1)%3);
+  computeMap->setNewNode(74, (computeMap->node(72)+1)%3);
+  computeMap->setNewNode(75, (computeMap->node(72)+2)%3);
+  computeMap->setNewNode(76, (computeMap->node(72)+2)%3);
+  computeMap->setNewNode(77, (computeMap->node(72)+2)%3);
+  */
 
   // 1) Print out statistics in test format
   printLdbReport(nMoveableComputes);

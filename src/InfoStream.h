@@ -22,7 +22,7 @@
 class infostream : public ostrstream
 {
   private:
-  char iBuffer[1024];
+  char iBuffer[16384];
 
   public:
   infostream() : ostrstream(iBuffer,sizeof(iBuffer)) {;}
@@ -103,12 +103,19 @@ extern infostream iout;
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:19 $
+ *	$Revision: 1.1002 $	$Date: 1997/04/10 09:13:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: InfoStream.h,v $
+ * Revision 1.1002  1997/04/10 09:13:58  ari
+ * Final debugging for compute migration / proxy creation for load balancing.
+ * Lots of debug code added, mostly turned off now.
+ * Fixed bug in PositionBox when Patch had no dependencies.
+ * Eliminated use of cout and misuse of iout in numerous places.
+ *                                            Ari & Jim
+ *
  * Revision 1.1001  1997/03/19 11:54:19  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1025 1997/04/08 07:09:02 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1026 1997/04/10 09:14:14 ari Exp $";
 
 #include <stdio.h>
 
@@ -80,7 +80,6 @@ void WorkDistrib::saveComputeMap(int ep, int chareID)
   saveComputeMapReturnChareID = chareID;
   saveComputeMapCount = CNumPes();
 
-  DebugM(4, "ComputeMap before send!\n");
   ComputeMap *computeMap = ComputeMap::Object();
 
   for (int i=0; i<computeMap->numComputes(); i++) {
@@ -419,8 +418,10 @@ void WorkDistrib::assignNodeToPatch()
 
   for(i=0; i < patchMap->numPatches(); i++)
   {
-    numAtoms += patchMap->patch(i)->getNumAtoms();
-    nAtoms[patchMap->node(i)] += patchMap->patch(i)->getNumAtoms();
+    if (patchMap->patch(i)) {
+      numAtoms += patchMap->patch(i)->getNumAtoms();
+      nAtoms[patchMap->node(i)] += patchMap->patch(i)->getNumAtoms();
+    }
   }
 
   for(i=0; i < nNodes; i++)
@@ -918,12 +919,19 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1025 $	$Date: 1997/04/08 07:09:02 $
+ *	$Revision: 1.1026 $	$Date: 1997/04/10 09:14:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1026  1997/04/10 09:14:14  ari
+ * Final debugging for compute migration / proxy creation for load balancing.
+ * Lots of debug code added, mostly turned off now.
+ * Fixed bug in PositionBox when Patch had no dependencies.
+ * Eliminated use of cout and misuse of iout in numerous places.
+ *                                            Ari & Jim
+ *
  * Revision 1.1025  1997/04/08 07:09:02  ari
  * Modification for dynamic loadbalancing - moving computes
  * Still bug in new computes or usage of proxies/homepatches.

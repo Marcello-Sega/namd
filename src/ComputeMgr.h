@@ -38,8 +38,8 @@ public:
   ~ComputeMgr();
   void createComputes(ComputeMap *map);
   void updateComputes(int,int);
-  void updateComputes2(DoneMsg *);
-  void updateComputes3(QuiescenceMessage *);
+  void updateComputes2(QuiescenceMessage *);
+  void updateComputes3(DoneMsg *);
   void updateLocalComputes(RunMsg *);
   void updateLocalComputes2(QuiescenceMessage *);
   void updateLocalComputes3(RunMsg *);
@@ -103,12 +103,19 @@ private:
  *
  *	$RCSfile: ComputeMgr.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/04/08 07:08:20 $
+ *	$Revision: 1.1007 $	$Date: 1997/04/10 09:13:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.h,v $
+ * Revision 1.1007  1997/04/10 09:13:52  ari
+ * Final debugging for compute migration / proxy creation for load balancing.
+ * Lots of debug code added, mostly turned off now.
+ * Fixed bug in PositionBox when Patch had no dependencies.
+ * Eliminated use of cout and misuse of iout in numerous places.
+ *                                            Ari & Jim
+ *
  * Revision 1.1006  1997/04/08 07:08:20  ari
  * Modification for dynamic loadbalancing - moving computes
  * Still bug in new computes or usage of proxies/homepatches.

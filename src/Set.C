@@ -1,6 +1,6 @@
 #include "Set.h"
 #include "elements.h"
-#include <iostream.h>
+#include "InfoStream.h"
 
 
 Set::Set() 
@@ -100,8 +100,10 @@ int n;
 void Set::print() 
 {
   listNode *p = head;
+  int i = 0;
   while (p){
-    cout << p->info->Id << " ";
+    if ( ! ( i = (i+1)%10 ) ) { iout << "\n" << endi << "     "; }
+    iout << p->info->Id << " ";
     p = p->next;
   }
 }

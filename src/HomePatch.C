@@ -35,15 +35,16 @@
 #include "Priorities.h"
 
 #define MIN_DEBUG_LEVEL 4
-// #define DEBUGM
+//#define DEBUGM
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1027 1997/04/08 07:08:35 ari Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1028 1997/04/10 09:13:57 ari Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
 		     VelocityList vl) : Patch(pd,al,pl), v(vl) 
 { 
+  DebugM(4, "HomePatch("<<pd<<") at " << this << "\n");
   if (atomIDList.size() != v.size()) {
     CPrintf("HomePatch::HomePatch(...) : size mismatch-Velocities and IDs!\n");
   }
@@ -136,6 +137,7 @@ void HomePatch::boxClosed(int)
 }
 
 void HomePatch::registerProxy(RegisterProxyMsg *msg) {
+  DebugM(4, "registerProxy("<<patchID<<") - adding node " <<msg->node<<"\n");
   proxy.add(ProxyListElem(msg->node,forceBox.checkOut()));
   ProxyAtomsMsg *nmsg = new (MsgIndex(ProxyAtomsMsg)) ProxyAtomsMsg;
   nmsg->patch = patchID;
@@ -154,12 +156,13 @@ void HomePatch::unregisterProxy(UnregisterProxyMsg *msg) {
 
 void HomePatch::receiveResults(ProxyResultMsg *msg)
 {
+  DebugM(4, "patchID("<<patchID<<") receiveRes() nodeID("<<msg->node<<")\n");
   int i = proxy.findIndex(ProxyListElem(msg->node));
   Results *r = proxy[i].forceBox->open();
   for ( int k = 0; k < Results::maxNumForces; ++k )
   {
     Force *f = r->f[k];
-    for ( int j = 0; j < numAtoms; ++j )
+    for ( register int j = 0; j < numAtoms; ++j )
     {
       f[j] += msg->forceList[k][j];
     }
@@ -206,6 +209,7 @@ void HomePatch::positionsReady(int doMigration)
       ProxyMgr::Object()->sendProxyData(nmsg,pli->node);
     }   
   }
+  DebugM(4, "patchID("<<patchID<<") doing positions Ready\n");
   Patch::positionsReady(doMigration);
 
 }
@@ -447,12 +451,19 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1027 $	$Date: 1997/04/08 07:08:35 $
+ *	$Revision: 1.1028 $	$Date: 1997/04/10 09:13:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1028  1997/04/10 09:13:57  ari
+ * Final debugging for compute migration / proxy creation for load balancing.
+ * Lots of debug code added, mostly turned off now.
+ * Fixed bug in PositionBox when Patch had no dependencies.
+ * Eliminated use of cout and misuse of iout in numerous places.
+ *                                            Ari & Jim
+ *
  * Revision 1.1027  1997/04/08 07:08:35  ari
  * Modification for dynamic loadbalancing - moving computes
  * Still bug in new computes or usage of proxies/homepatches.

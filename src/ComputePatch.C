@@ -56,14 +56,15 @@ void ComputePatch::initialize() {
 	      iout << iERRORF << iPE << "invalid patch! during initialize\n" 
 		   << endi;
 	    }
+	    DebugM(3, "initialize(" << cid <<")  patchid = "<<patch->getPatchID()<<"\n");
 	    positionBox = patch->registerPositionPickup(cid);
 	    forceBox = patch->registerForceDeposit(cid);
 	    atomBox = patch->registerAtomPickup(cid);
 	}
 	numAtoms = patch->getNumAtoms();
 
-  DebugM(4, "initialize("<<cid<<") numAtoms("<<patchID<<") = " 
-    << numAtoms  << "\n");
+  DebugM(3, "initialize("<<cid<<") numAtoms("<<patchID<<") = " 
+    << numAtoms  << " patchAddr=" << patch << "\n");
     Compute::initialize();
 }
 
@@ -87,13 +88,28 @@ void ComputePatch::doWork() {
   Position* p;
   Results* r;
   AtomProperties* a;
+  int numData;
 
   DebugM(3,patchID << ": doWork() called.\n");
 
   // Open up positionBox, forceBox, and atomBox
-  p = positionBox->open();
+  p = positionBox->open(&numData);
+  if (numData != numAtoms) {
+    iout << iPE << iERRORF 
+      << "Interesting, doWork has opened a position box with wrong # atoms ("
+      <<numData<<" vs " << numAtoms << "\n" 
+      << endi;
+  }
   r = forceBox->open();
   a = atomBox->open();
+
+  /*
+  if (!p || !r || !a) {
+    iout << iPE << iERRORF
+     << "Data Pointer is NULL! on open on patchID(" << patchID
+     << ")\n" << endi;
+  }
+  */
 
   // Pass pointers to doForce
   doForce(p,r,a);
@@ -112,12 +128,19 @@ void ComputePatch::doWork() {
  *
  *	$RCSfile: ComputePatch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/04/08 07:08:30 $
+ *	$Revision: 1.1007 $	$Date: 1997/04/10 09:13:54 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatch.C,v $
+ * Revision 1.1007  1997/04/10 09:13:54  ari
+ * Final debugging for compute migration / proxy creation for load balancing.
+ * Lots of debug code added, mostly turned off now.
+ * Fixed bug in PositionBox when Patch had no dependencies.
+ * Eliminated use of cout and misuse of iout in numerous places.
+ *                                            Ari & Jim
+ *
  * Revision 1.1006  1997/04/08 07:08:30  ari
  * Modification for dynamic loadbalancing - moving computes
  * Still bug in new computes or usage of proxies/homepatches.

@@ -25,6 +25,7 @@ public:
   static AtomMap *Instance();
   inline static AtomMap *Object() {return _instance;}
   ~AtomMap(void);
+  void checkMap();
 
   void allocateMap(int nAtomIDs);
 
@@ -64,12 +65,19 @@ inline LocalID AtomMap::localID(AtomID id)
  *
  *	$RCSfile: AtomMap.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/04 22:37:03 $
+ *	$Revision: 1.1004 $	$Date: 1997/04/10 09:13:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: AtomMap.h,v $
+ * Revision 1.1004  1997/04/10 09:13:47  ari
+ * Final debugging for compute migration / proxy creation for load balancing.
+ * Lots of debug code added, mostly turned off now.
+ * Fixed bug in PositionBox when Patch had no dependencies.
+ * Eliminated use of cout and misuse of iout in numerous places.
+ *                                            Ari & Jim
+ *
  * Revision 1.1003  1997/03/04 22:37:03  ari
  * Clean up of code.  Debug statements removal, dead code removal.
  * Minor fixes, output fixes.

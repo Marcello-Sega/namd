@@ -1,4 +1,4 @@
-#include <iostream.h>
+#include "InfoStream.h"
 #include "Alg7.h"
 
 Alg7::Alg7(computeInfo *computeArray, patchInfo *patchArray, 
@@ -64,7 +64,7 @@ void Alg7::strategy()
 		    (p->load < bestP2->load))
 	 bestP2 = p;
        break;
-       default: cout << "Error. Illegal number of proxies.\n";    
+       default: iout << "Error. Illegal number of proxies.\n" << endi;    
        }
      p = (processorInfo *) pes->next(&nextProcessor);
     }
@@ -79,16 +79,16 @@ void Alg7::strategy()
      assign(c, bestP0);
     }
     else { 
-      cout << "No receiver found" << "\n";
+      iout << "No receiver found" << "\n" << endi;
       break;
     }
 
   }
   printLoads();
   overLoad = 1.01;
-  cout << "Starting overLoad = " << overLoad << endl;
+  iout << "Starting overLoad = " << overLoad << endl << endi;
   for (; !refine(); overLoad += .01);
-  cout << "Ending overLoad = " << overLoad << endl;
+  iout << "Ending overLoad = " << overLoad << endl << endi;
   printLoads();
 }
 

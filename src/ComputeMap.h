@@ -45,6 +45,8 @@ public:
   static ComputeMap *Instance();
   inline static ComputeMap *Object() { return _instance; }
 
+  void checkMap();
+
   ~ComputeMap(void);
 
   void registerCompute(ComputeID cid, Compute *c) {
@@ -164,12 +166,19 @@ private:
  *
  *	$RCSfile: ComputeMap.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/04/08 07:08:14 $
+ *	$Revision: 1.1007 $	$Date: 1997/04/10 09:13:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.h,v $
+ * Revision 1.1007  1997/04/10 09:13:50  ari
+ * Final debugging for compute migration / proxy creation for load balancing.
+ * Lots of debug code added, mostly turned off now.
+ * Fixed bug in PositionBox when Patch had no dependencies.
+ * Eliminated use of cout and misuse of iout in numerous places.
+ *                                            Ari & Jim
+ *
  * Revision 1.1006  1997/04/08 07:08:14  ari
  * Modification for dynamic loadbalancing - moving computes
  * Still bug in new computes or usage of proxies/homepatches.

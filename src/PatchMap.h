@@ -29,6 +29,8 @@ public:
   static PatchMap *Instance();
   inline static PatchMap *Object() { return _instance; }
 
+  void checkMap();
+
 
   ~PatchMap(void);
 
@@ -220,13 +222,20 @@ inline HomePatch *PatchMap::homePatch(PatchID pid)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/27 08:04:21 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/04/10 09:14:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.h,v $
+ * Revision 1.1005  1997/04/10 09:14:02  ari
+ * Final debugging for compute migration / proxy creation for load balancing.
+ * Lots of debug code added, mostly turned off now.
+ * Fixed bug in PositionBox when Patch had no dependencies.
+ * Eliminated use of cout and misuse of iout in numerous places.
+ *                                            Ari & Jim
+ *
  * Revision 1.1004  1997/03/27 08:04:21  jim
  * Reworked Lattice to keep center of cell fixed during rescaling.
  *

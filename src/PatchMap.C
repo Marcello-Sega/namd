@@ -47,6 +47,24 @@ PatchMap::PatchMap(void)
   xPeriodic = yPeriodic = zPeriodic = 0;
 }
 
+void
+PatchMap::checkMap(void)
+{
+  int patchCount=0;
+  for (int i=0; i<nPatches; i++) {
+    if (patchData[i].myPatch) {
+      patchCount++;
+      if ( patchData[i].myPatch->getPatchID() != i) {
+	DebugM(4, "patchID("<<patchData[i].myPatch->getPatchID()
+	  <<") != patchID(" 
+	  <<i<<")\n");
+      }
+    }
+  }
+  DebugM(4, "Patch Count = " <<patchCount<<"\n");
+}
+  
+
 PatchMap::~PatchMap(void)
 {
   if (patchData)
@@ -127,6 +145,9 @@ void PatchMap::unpack (void *in)
   for(i=0;i<nPatches;++i)
   {
     UNPACK(PatchData,patchData[i]);
+    if (CMyPe()) {
+      patchData[i].myPatch = 0;
+    }
     DebugM(3,"Unpacking Patch " << i << " is on node " << patchData[i].node << 
 	" with " << patchData[i].numCidsAllocated << " allocated.\n");
     patchData[i].cids = new ComputeID[patchData[i].numCidsAllocated];
@@ -550,14 +571,20 @@ void PatchMap::printPatchMap(void)
 //----------------------------------------------------------------------
 void PatchMap::registerPatch(PatchID pid, Patch *pptr)
 {
+  if (patchData[pid].myPatch != 0) {
+    iout << iPE << iERRORF 
+      << "patchID("<<pid<<") is being re-registered!\n" << endi;
+  }
   patchData[pid].myPatch = pptr;
 }
 
 //----------------------------------------------------------------------
 void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
 {
-  if (pptr == patchData[pid].myPatch)
+  if (pptr == patchData[pid].myPatch) {
+      DebugM(4, "UnregisterPatch("<<pid<<") at " << pptr << "\n");
       patchData[pid].myPatch = NULL;
+  }
 }
 
 
@@ -567,12 +594,19 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
  *
  *	$RCSfile: PatchMap.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/04/06 22:45:08 $
+ *	$Revision: 1.1011 $	$Date: 1997/04/10 09:14:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.1011  1997/04/10 09:14:01  ari
+ * Final debugging for compute migration / proxy creation for load balancing.
+ * Lots of debug code added, mostly turned off now.
+ * Fixed bug in PositionBox when Patch had no dependencies.
+ * Eliminated use of cout and misuse of iout in numerous places.
+ *                                            Ari & Jim
+ *
  * Revision 1.1010  1997/04/06 22:45:08  ari
  * Add priorities to messages.  Mods to help proxies without computes.
  * Added quick enhancement to end of list insertion of ResizeArray(s)

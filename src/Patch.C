@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1012 1997/04/08 21:08:41 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1013 1997/04/10 09:14:00 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -139,6 +139,7 @@ Patch::indexAtoms()
 
 PositionBox<Patch>* Patch::registerPositionPickup(ComputeID cid, int trans)
 {
+   //DebugM(4, "registerPositionPickupa("<<patchID<<") from " << cid << "\n");
    if (positionComputeList.add(cid) < 0)
    {
      DebugM(7, "registerPositionPickup() failed for cid " << cid << endl);
@@ -149,9 +150,8 @@ PositionBox<Patch>* Patch::registerPositionPickup(ComputeID cid, int trans)
 
 void Patch::unregisterPositionPickup(ComputeID cid, PositionBox<Patch> **const box)
 {
-   DebugM(4, "Unregister for Position pickup from " << cid << "\n");
+   DebugM(4, "UnregisterPositionPickup from " << cid << "\n");
    positionComputeList.del(cid);
-   DebugM(4, "unreg list size = " << positionComputeList.size() << "\n");
    positionBox.checkIn(*box);
    *box = 0;
 }
@@ -169,6 +169,7 @@ Box<Patch,Results>* Patch::registerForceDeposit(ComputeID cid)
 
 void Patch::unregisterForceDeposit(ComputeID cid, Box<Patch,Results> **const box)
 {
+   DebugM(4, "unregisterForceDeposit() computeID("<<cid<<")"<<endl);
    forceComputeList.del(cid);
    forceBox.checkIn(*box);
    *box = 0;
@@ -200,7 +201,8 @@ void Patch::positionBoxClosed(void)
 
 void Patch::forceBoxClosed(void)
 {
-   for ( register int j = 0; j < Results::maxNumForces; ++j )
+   DebugM(4, "patchID("<<patchID<<") forceBoxClosed! call\n");
+   for (int j = 0; j < Results::maxNumForces; ++j )
    {
      f[j].encap(&(results.f[j]),numAtoms);
    }
@@ -217,7 +219,7 @@ void Patch::atomBoxClosed(void)
 
 void Patch::positionsReady(int doneMigration)
 {
-   DebugM(4,"Patch::positionsReady() - patchID " << patchID << endl );
+   DebugM(4,"Patch::positionsReady() - patchID(" << patchID <<")"<<endl );
    ComputeMap *computeMap = ComputeMap::Object();
 
    boxesOpen = 3;
@@ -229,7 +231,7 @@ void Patch::positionsReady(int doneMigration)
 
    // Give all force deposit boxes access to forces
    Force *forcePtr;
-   for ( register int j = 0; j < Results::maxNumForces; ++j )
+   for ( int j = 0; j < Results::maxNumForces; ++j )
    {
       f[j].resize(numAtoms);
       forcePtr = f[j].unencap();
@@ -244,19 +246,16 @@ void Patch::positionsReady(int doneMigration)
 
    // process computes or immediately close up boxes
    if (!positionComputeList.size()) {
-     DebugM(4,"Patch::positionsReady() closing early!\n" );
-     for (int i=0; i<3; i++) {
-       positionBoxClosed();
-       forceBoxClosed();
-       atomBoxClosed();
-     }
-   } 
+   //   iout << "patchID("<<patchID<<") has no computes dependent\n" << endi;
+   }
+   //    positionBoxClosed();
+   //    forceBoxClosed();
+   //    atomBoxClosed();
    else {
      // Iterate over compute objects that need to be informed we are ready
      ComputeIDListIter cid(positionComputeList);
      for(cid = cid.begin(); cid != cid.end(); cid++)
      {
-       DebugM(4,"Patch::positionsReady() - cid = " << *cid << "\n" );
        computeMap->compute(*cid)->patchReady(patchID,doneMigration);
      } 
   }
@@ -267,13 +266,20 @@ void Patch::positionsReady(int doneMigration)
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/04/08 21:08:41 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1013 $	$Date: 1997/04/10 09:14:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.1013  1997/04/10 09:14:00  ari
+ * Final debugging for compute migration / proxy creation for load balancing.
+ * Lots of debug code added, mostly turned off now.
+ * Fixed bug in PositionBox when Patch had no dependencies.
+ * Eliminated use of cout and misuse of iout in numerous places.
+ *                                            Ari & Jim
+ *
  * Revision 1.1012  1997/04/08 21:08:41  jim
  * Contant pressure now correct on multiple nodes, should work with MTS.
  *

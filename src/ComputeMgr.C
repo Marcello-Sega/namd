@@ -28,6 +28,7 @@
 #include "Node.h"
 #include "ComputeMap.h"
 
+#include "Compute.h"
 #include "ComputeNonbondedUtil.h"
 #include "ComputeNonbondedSelf.h"
 #include "ComputeNonbondedPair.h"
@@ -58,28 +59,26 @@ void ComputeMgr::updateComputes(int ep, int chareID) {
   updateComputesReturnChareID = chareID;
   updateComputesCount = CNumPes();
 
-  if (CMyPe()) { iout << iPE << iERRORF << 
-    "updateComputes signaled on wrong Pe!\n" << endi;
+  if (CMyPe()) { 
+    iout << iPE << iERRORF << "updateComputes signaled on wrong Pe!\n" << endi;
     CharmExit();
     return;
   }
+  CStartQuiescence(GetEntryPtr(ComputeMgr,updateComputes2),thishandle);
+}
+
+void ComputeMgr::updateComputes2(QuiescenceMessage *msg) {
+  delete msg;
   WorkDistrib  *workDistrib = CLocalBranch(WorkDistrib, group.workDistrib);
   workDistrib->saveComputeMap(
-    GetEntryPtr(ComputeMgr, updateComputes2), thisgroup
+    GetEntryPtr(ComputeMgr, updateComputes3), thisgroup
   );
 }
 
-void ComputeMgr::updateComputes2(DoneMsg *msg) {
+void ComputeMgr::updateComputes3(DoneMsg *msg) {
   delete msg;
-  CStartQuiescence(GetEntryPtr(ComputeMgr,updateComputes3),thishandle);
-}
-
-void ComputeMgr::updateComputes3(QuiescenceMessage *msg) {
-  delete msg;
-  DebugM(4, "Quiescence detected\n");
   RunMsg *runmsg = new (MsgIndex(RunMsg)) RunMsg;
   CBroadcastMsgBranch(ComputeMgr, updateLocalComputes, runmsg, thisgroup); 
-  DebugM(4, "Broadcasting out to updateLocalComputes\n");
 }
 
 void ComputeMgr::updateLocalComputes(RunMsg *msg) {
@@ -90,15 +89,13 @@ void ComputeMgr::updateLocalComputes(RunMsg *msg) {
 
   computeFlag = new int[computeMap->numComputes()];
 
-  DebugM(4, "updateLocalComputes() running\n");
-
   for (int i=0; i<computeMap->numComputes(); i++) {
+    DebugM(3, "updateLocalComputes("<<i<<") curnode="<<computeMap->node(i)
+      <<" newnode="<<computeMap->newNode(i)<<"\n");
     computeFlag[i] = 0;
-    DebugM(4, " Compute#" << i << " node=" << computeMap->node(i) 
-      << " newNode=" << computeMap->newNode(i) << "\n" );
       
     if (computeMap->newNode(i) == CMyPe() && computeMap->node(i) != CMyPe()) {
-      DebugM(4, " Compute#" << i << " Add compute\n");
+      DebugM(4, "updateLocal - creating new computeID("<<i<<")\n");
       computeFlag[i] = 1;
       computeMap->setNode(i,computeMap->newNode(i));
       for (int n=0; n < computeMap->numPids(i); n++) {
@@ -107,23 +104,25 @@ void ComputeMgr::updateLocalComputes(RunMsg *msg) {
     } 
     else if (computeMap->node(i) == CMyPe() && 
 	(computeMap->newNode(i) != -1 && computeMap->newNode(i) != CMyPe() )) {
-      DebugM(4, " Compute#" << i << " Delete compute\n");
+      DebugM(4, "updateLocal - deleting computeID("<<i<<")\n");
       computeFlag[i] = -1;
+      computeMap->setNode(i,computeMap->newNode(i));
+    } else if (computeMap->newNode(i) != -1) {
       computeMap->setNode(i,computeMap->newNode(i));
     }
     computeMap->setNewNode(i,-1);
   }
  
+  DebugM(4, "updateComputes - totalComputes = "<<Compute::totalComputes<<"\n");
   if (!CMyPe()) {
-      CStartQuiescence(GetEntryPtr(ComputeMgr,updateLocalComputes2),thishandle);  }
-  DebugM(4, "updateLocalComputes() first phase done\n");
+      CStartQuiescence(GetEntryPtr(ComputeMgr,updateLocalComputes2),thishandle);  
+  }
 }
 
 void
 ComputeMgr::updateLocalComputes2(QuiescenceMessage *msg) {
   delete msg;
 
-  DebugM(4, "updateLocalComputes2() quiescence detected\n");
   RunMsg *runmsg = new (MsgIndex(RunMsg)) RunMsg;
   CBroadcastMsgBranch(ComputeMgr, updateLocalComputes3, runmsg, thisgroup);
 }
@@ -131,40 +130,46 @@ ComputeMgr::updateLocalComputes2(QuiescenceMessage *msg) {
 void
 ComputeMgr::updateLocalComputes3(RunMsg *msg) {
   delete msg;
-  DebugM(4, "updateLocalComputes3() running\n");
 
   ComputeMap *computeMap = ComputeMap::Object();
 
   for (int i=0; i<computeMap->numComputes(); i++) {
     if (1 == computeFlag[i]) {
-      DebugM(4, "trying to create compute #" << i << "\n");
+      DebugM(4, "updateLocalCompute3() - create computeID(" << i << ")\n");
       createCompute(i, computeMap);
     }
     else if (-1 == computeFlag[i]) {
       // remove this compute
-      DebugM(4, "Removing compute #" << i 
-	<< " Type=" << computeMap->type(i) << "\n");
+      DebugM(4, "updateLocalCompute3() - delete computeID(" << i << ")\n");
       delete computeMap->compute(i);
       computeMap->registerCompute(i,NULL);
     }
   }
   delete[] computeFlag;
 
-  DoneMsg *donemsg = new (MsgIndex(DoneMsg)) DoneMsg;
-  CSendMsgBranch(ComputeMgr, doneUpdateLocalComputes, donemsg, thisgroup, 0);
+  DebugM(4, "msg to doneUpdateLocalComputes on Pe("<<CMyPe()<<")\n");
+  ComputeMap::Object()->checkMap();
+  PatchMap::Object()->checkMap();
+
+  if (!CMyPe()) {
+    CStartQuiescence(GetEntryPtr(ComputeMgr,doneUpdateLocalComputes),
+		      thishandle);
+  }
+  //DoneMsg *donemsg = new (MsgIndex(DoneMsg)) DoneMsg;
+  //CSendMsgBranch(ComputeMgr, doneUpdateLocalComputes, donemsg, thisgroup, 0);
 }
 
 void ComputeMgr::doneUpdateLocalComputes(DoneMsg *msg) {
   delete msg;
+  
 
-  DebugM(4, "doneUpdateLocalComputes() started\n");
-  if (!--updateComputesCount) {
+//  if (!--updateComputesCount) {
+    DebugM(4, "doneUpdateLocalComputes on Pe("<<CMyPe()<<")\n");
     DoneMsg *donemsg = new (MsgIndex(DoneMsg)) DoneMsg;
     GeneralSendMsgBranch(updateComputesReturnEP, donemsg, 
       0, -1, updateComputesReturnChareID);
-  }
+//  }
 }
-
 
 //
 void
@@ -174,12 +179,10 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
     PatchID pid2[2];
     int trans2[2];
 
-  DebugM(2,"createComputes 2: looping " << i << "on type: " << map->computeData[i].type << "\n");
     switch ( map->type(i) )
     {
       case computeNonbondedSelfType:
 	c = new ComputeNonbondedSelf(i,map->computeData[i].pids[0].pid); // unknown delete
-	DebugM(4,"ComputeNonbondedSelf created.\n");
 	++numNonbondedSelf;
 	map->registerCompute(i,c);
 	c->initialize();
@@ -190,77 +193,64 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	pid2[1] = map->computeData[i].pids[1].pid;
 	trans2[1] = map->computeData[i].pids[1].trans;
 	c = new ComputeNonbondedPair(i,pid2,trans2); // unknown delete
-	DebugM(4,"ComputeNonbondedPair created.\n");
 	++numNonbondedPair;
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
       case computeNonbondedExclType:
 	c = new ComputeNonbondedExcls(i); // unknown delete
-	DebugM(4,"ComputeNonbondedExcls created.\n");
 	map->registerCompute(i,c);
-	DebugM(3,"ComputeNonbondedExcls registered.\n");
 	c->initialize();
-	DebugM(3,"ComputeNonbondedExcls ready.\n");
 	break;
       case computeBondsType:
 	c = new ComputeBonds(i); // unknown delete
-	DebugM(4,"ComputeBonds created.\n");
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
       case computeAnglesType:
 	c = new ComputeAngles(i); // unknown delete
-	DebugM(4,"ComputeAngles created.\n");
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
       case computeDihedralsType:
 	c = new ComputeDihedrals(i); // unknown delete
-	DebugM(4,"ComputeDihedrals created.\n");
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
       case computeImpropersType:
 	c = new ComputeImpropers(i); // unknown delete
-	DebugM(4,"ComputeImpropers created.\n");
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
 #ifdef DPMTA
       case computeDPMTAType:
 	c = new ComputeDPMTA(i); // unknown delete
-	DebugM(4,"ComputeDPMTA created.\n");
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
       case computeDPMEType:
 	// c = new ComputeDPME(i); // unknown delete
-	DebugM(4,"ComputeDPME *NOT* created.\n");
 	// map->registerCompute(i,c);
 	// c->initialize();
 	break;
 #endif
       case computeFullDirectType:
 	c = new ComputeFullDirect(i); // unknown delete
-	DebugM(4,"ComputeFullDirect created.\n");
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
       case computeSphericalBCType:
 	c = new ComputeSphericalBC(i,map->computeData[i].pids[0].pid); // unknown delete
-	DebugM(4,"ComputeSphericalBC created.\n");
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
       case computeCylindricalBCType:
 	c = new ComputeCylindricalBC(i,map->computeData[i].pids[0].pid); // unknown delete
-	DebugM(4,"ComputeCylindricalBC created.\n");
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
       default:
-	DebugM(10,"Unknown compute type not created!\n");
+	break;
     }
 }
 
@@ -268,26 +258,16 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 void 
 ComputeMgr::createComputes(ComputeMap *map)
 {
-  DebugM(2,"createComputes 0\n");
   Node *node = Node::Object();
   int myNode = node->myid();
 
   numNonbondedSelf = 0;
   numNonbondedPair = 0;
 
-  DebugM(1,"---------------------------------------\n");
-  DebugM(1,"---------------------------------------\n");
-
-  DebugM(3,"nComputes = " << map->nComputes << '\n');
-  DebugM(3,"nPatchBased = " << map->nPatchBased << '\n');
-  DebugM(3,"nAtomBased = " << map->nAtomBased << '\n');
-  DebugM(3,"nAllocated = " << map->nComputes << '\n');
-  DebugM(2,"createComputes 1: looping " << map->nComputes << "\n");
   for(int i=0; i < map->nComputes; i++)
   {
     if ( ! ( i % 100 ) )
     {
-      DebugM(4,"Created " << i << " compute objects so far.\n");
     }
     if ( map->computeData[i].node != myNode ) continue;
     DebugM(1,"Compute " << i << '\n');
@@ -308,9 +288,8 @@ ComputeMgr::createComputes(ComputeMap *map)
     createCompute(i, map);
 
   }
-  DebugM(2,"createComputes 5: done looping\n");
-  DebugM(4, numNonbondedSelf << " ComputeNonbondedSelf created\n");
-  DebugM(4, numNonbondedPair << " ComputeNonbondedPair created\n");
+
+  DebugM(4, "createComputes - total computes = "<<Compute::totalComputes<<"\n");
 
   // This doesn't really have to be here, but the output makes more sense.
   // It does have to happen after the molecule has been created.
@@ -327,12 +306,19 @@ ComputeMgr::createComputes(ComputeMap *map)
  *
  *	$RCSfile: ComputeMgr.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/04/08 07:08:16 $
+ *	$Revision: 1.1012 $	$Date: 1997/04/10 09:13:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.C,v $
+ * Revision 1.1012  1997/04/10 09:13:51  ari
+ * Final debugging for compute migration / proxy creation for load balancing.
+ * Lots of debug code added, mostly turned off now.
+ * Fixed bug in PositionBox when Patch had no dependencies.
+ * Eliminated use of cout and misuse of iout in numerous places.
+ *                                            Ari & Jim
+ *
  * Revision 1.1011  1997/04/08 07:08:16  ari
  * Modification for dynamic loadbalancing - moving computes
  * Still bug in new computes or usage of proxies/homepatches.

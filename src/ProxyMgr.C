@@ -25,7 +25,7 @@
 #include "ComputeMap.h"
 #include "HomePatch.h"
 
-#define DEBUGM
+//#define DEBUGM
 #define MIN_DEBUG_LEVEL 4
 #include "Debug.h"
 
@@ -226,7 +226,6 @@ void ProxyMgr::createProxies(void)
     {
       if ( ! patchFlag[neighbors[j]] ) {
 	patchFlag[neighbors[j]] = NeedProxy;
-	DebugM(3,"Proxy for " << neighbors[j] << " needed for neighbor.\n");
       }
     }
   }
@@ -244,7 +243,6 @@ void ProxyMgr::createProxies(void)
       int pid = computeMap->pid(i,j);
       if ( ! patchFlag[pid] ) {
 	patchFlag[pid] = NeedProxy;
-	DebugM(3,"Proxy for " << pid << " needed for compute " << i << ".\n");
       }
     }
   }
@@ -265,11 +263,15 @@ void
 ProxyMgr::createProxy(PatchID pid) {
   Patch *p = PatchMap::Object()->patch(pid);
   if (!p) {
-     DebugM(4, "creatingProxy(" << pid << ")\n");
+     DebugM(4,"createProxy("<<pid<<")\n");
      ProxyPatch *proxy = new ProxyPatch(pid);
      proxySet.add(ProxyElem(pid,proxy));
      PatchMap::Object()->registerPatch(pid,proxy);
   }
+  else {
+     DebugM(4,"createProxy("<<pid<<") found " << p->getPatchID() << "\n");
+  }
+    
 }
 
 void
@@ -291,14 +293,11 @@ ProxyMgr::registerProxy(PatchID pid) {
   msg->node=CMyPe();
   msg->patch = pid;
 
-  DebugM(1,"For patch " << pid << " registering proxy on node " << CMyPe() << " with home patch on node " << node << endl);
-
   CSendMsgBranch(ProxyMgr, recvRegisterProxy, msg, group.proxyMgr, node);
 }
 
 void
 ProxyMgr::recvRegisterProxy(RegisterProxyMsg *msg) {
-  DebugM(1,"For patch " << msg->patch << " registering proxy on node " << msg->node << " with home patch on node " << CMyPe() << endl);
   HomePatch *homePatch = (HomePatch *)PatchMap::Object()->patch(msg->patch);
   homePatch->registerProxy(msg); // message deleted in registerProxy()
 }
@@ -306,52 +305,44 @@ ProxyMgr::recvRegisterProxy(RegisterProxyMsg *msg) {
 void
 ProxyMgr::sendResults(ProxyResultMsg *msg) {
   NodeID node = PatchMap::Object()->node(msg->patch);
-  DebugM(1,"For patch " << msg->patch << " sending results from proxy on node " << CMyPe() << " to home patch on node " << node << endl);
   CSendMsgBranch(ProxyMgr, recvResults, msg, group.proxyMgr, node);
 }
 
 void
 ProxyMgr::recvResults(ProxyResultMsg *msg) {
-  DebugM(1,"For patch " << msg->patch << " received results from proxy on node " << msg->node << endl);
   HomePatch *home = (HomePatch *) PatchMap::Object()->patch(msg->patch);
   home->receiveResults(msg); // delete done in HomePatch::receiveResults()
 }
 
 void
 ProxyMgr::sendProxyData(ProxyDataMsg *msg, NodeID node) {
-  DebugM(1,"For patch " << msg->patch << " sending data for proxy on node " << node << " from home patch on node " << CMyPe() << endl);
   CSendMsgBranch(ProxyMgr, recvProxyData, msg, group.proxyMgr, node);
 }
 
 void
 ProxyMgr::recvProxyData(ProxyDataMsg *msg) {
-  DebugM(1,"For patch " << msg->patch << " received data for proxy on node " << CMyPe() << endl);
   ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
   proxy->receiveData(msg); // deleted in ProxyPatch::receiveAtoms()
 }
 
 void
 ProxyMgr::sendProxyAtoms(ProxyAtomsMsg *msg, NodeID node) {
-  DebugM(1,"For patch " << msg->patch << " sending atoms for proxy on node " << node << " from home patch on node " << CMyPe() << endl);
   CSendMsgBranch(ProxyMgr, recvProxyAtoms, msg, group.proxyMgr, node);
 }
 
 void
 ProxyMgr::recvProxyAtoms(ProxyAtomsMsg *msg) {
-  DebugM(1,"For patch " << msg->patch << " received atoms for proxy on node " << CMyPe() << endl);
   ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
   proxy->receiveAtoms(msg); // deleted in ProxyPatch::receiveAtoms()
 }
 
 void
 ProxyMgr::sendProxyAll(ProxyAllMsg *msg, NodeID node) {
-  DebugM(1,"For patch " << msg->patch << " sending data for proxy on node " << node << " from home patch on node " << CMyPe() << endl);
   CSendMsgBranch(ProxyMgr, recvProxyAll, msg, group.proxyMgr, node);
 }
 
 void
 ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
-  DebugM(1,"For patch " << msg->patch << " received data for proxy on node " << CMyPe() << endl);
   ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
   proxy->receiveAll(msg); // delete done in ProxyPatch::receiveAll()
 }
@@ -364,12 +355,19 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
  *
  *	$RCSfile: ProxyMgr.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1997/04/08 07:08:55 $
+ *	$Revision: 1.1014 $	$Date: 1997/04/10 09:14:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.1014  1997/04/10 09:14:09  ari
+ * Final debugging for compute migration / proxy creation for load balancing.
+ * Lots of debug code added, mostly turned off now.
+ * Fixed bug in PositionBox when Patch had no dependencies.
+ * Eliminated use of cout and misuse of iout in numerous places.
+ *                                            Ari & Jim
+ *
  * Revision 1.1013  1997/04/08 07:08:55  ari
  * Modification for dynamic loadbalancing - moving computes
  * Still bug in new computes or usage of proxies/homepatches.

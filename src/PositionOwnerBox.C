@@ -34,6 +34,7 @@ PositionOwnerBox<Owner>::~PositionOwnerBox() {
       
 template <class Owner>
 void PositionOwnerBox<Owner>::open(Position* d, int n, Lattice *l) {
+      numData = n;
       closeCount = openCount = numberUsers;
       data = d;
       lattice = l;
@@ -48,6 +49,7 @@ void PositionOwnerBox<Owner>::open(Position* d, int n, Lattice *l) {
 	<<transNeeded[18]<<","<<transNeeded[19]<<","<<transNeeded[20]<<","
 	<<transNeeded[21]<<","<<transNeeded[22]<<","<<transNeeded[23]<<","
 	<<transNeeded[24]<<","<<transNeeded[25]<<","<<transNeeded[26]<<"\n");
+      if ( ! closeCount ) close();
   }
 
 template <class Owner>
@@ -95,12 +97,19 @@ template <class Owner>
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/04/06 22:45:09 $
+ *	$Revision: 1.1005 $	$Date: 1997/04/10 09:14:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PositionOwnerBox.C,v $
+ * Revision 1.1005  1997/04/10 09:14:08  ari
+ * Final debugging for compute migration / proxy creation for load balancing.
+ * Lots of debug code added, mostly turned off now.
+ * Fixed bug in PositionBox when Patch had no dependencies.
+ * Eliminated use of cout and misuse of iout in numerous places.
+ *                                            Ari & Jim
+ *
  * Revision 1.1004  1997/04/06 22:45:09  ari
  * Add priorities to messages.  Mods to help proxies without computes.
  * Added quick enhancement to end of list insertion of ResizeArray(s)

@@ -40,14 +40,14 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
     //    iout << iINFO << "\n proxies on proc. " << i << " are for patches:";
     //    processorArray[i].proxies->print();
   }
-  iout << iINFO <<"\n";
+  iout << iINFO <<"\n" << endi;
 
   //strategy();
 
 }
 
 void Rebalancer::strategy(){
-  iout << iINFO << "Strategy not implemented for the base class.\n";
+  iout << iINFO << "Strategy not implemented for the base class.\n" << endi;
 }
 
 void Rebalancer::makeHeaps()
@@ -81,7 +81,7 @@ void Rebalancer::makeHeaps()
 void Rebalancer::assign(computeInfo *c, processorInfo *p)
 {
   // iout << iINFO << "assigning " << c->Id << "with work = "
-  //   << c->load << "to processor " << p->processorNum << "\n";
+  //   << c->load << "to processor " << p->processorNum << "\n" << endi;
   c->processor = p->Id;
   p->computeSet->insert((InfoRecord *) c);
   p->computeLoad += c->load;
@@ -121,7 +121,7 @@ int Rebalancer::refine()
     
     iout << iINFO << "\n Computes on processor " << i << " ";
     processors[i].computeSet->print();
-    iout << iINFO << "\n";
+    iout << iINFO << "\n" << endi;
     if (processors[i].load > overLoad*averageLoad)
       heavyProcessors->insert((InfoRecord *) &(processors[i]));
     else
@@ -142,16 +142,16 @@ int Rebalancer::refine()
       lightProcessors->iterator((Iterator *) &nextProcessor);
     bestSize0 = bestSize1 = bestSize2 = 0;
     bestCompute0 = bestCompute1 = bestCompute2 = 0;
-    iout << iINFO << "Finding receiver for processor " << donor->Id << "\n";
+    iout << iINFO << "Finding receiver for processor " << donor->Id << "\n" << endi;
     while (p){
       Iterator nextCompute;
       nextCompute.id = 0;
       computeInfo *c = (computeInfo *) donor->computeSet->iterator((Iterator *)&nextCompute);
-      iout << iINFO << "Considering Procsessor : " << p->Id << "\n";
+      iout << iINFO << "Considering Procsessor : " << p->Id << "\n" << endi;
       while (c){
 	int n=0;
 	n = numAvailable(c,p);
-	iout << iINFO << "Considering Compute : " << c->Id << " with load " << c->load << "\n";
+	iout << iINFO << "Considering Compute : " << c->Id << " with load " << c->load << "\n" << endi;
 	switch(n){
 	case 0: if (( c->load + p->load < overLoad*averageLoad) &&
 		    (c->load > bestSize0)) {
@@ -174,7 +174,7 @@ int Rebalancer::refine()
 	  bestP = p;
 	}
 	break;
-	default: iout << iINFO << "Error. Illegal number of proxies.\n";    
+	default: iout << iINFO << "Error. Illegal number of proxies.\n" << endi;    
 	}
 	nextCompute.id++;
 	c = (computeInfo *) donor->computeSet->next((Iterator *)&nextCompute);
@@ -196,7 +196,7 @@ int Rebalancer::refine()
       assign(bestCompute0, bestP);
     }
     else { 
-      iout << iINFO << "No receiver found" << "\n";
+      iout << iINFO << "No receiver found" << "\n" << endi;
       finish = 0;
       break;
     }
@@ -216,7 +216,7 @@ int Rebalancer::refine()
 
 void Rebalancer::printResults()
 {
-  iout << iINFO << "ready to print result \n";
+  iout << iINFO << "ready to print result \n" << endi;
 }
 
 
@@ -228,13 +228,13 @@ double max;
   for (i=0; i<P; i++){
     iout << iINFO << "load on "<< i << " is :" << processors[i].load 
 	 << "[ " << processors[i].backgroundLoad << "," 
-	 << processors[i].computeLoad << "]. " << endl;
+	 << processors[i].computeLoad << "]. " << endl << endi;
 
     //    CPrintf("load on %d is : %f [%f,%f]\n",i,processors[i].load,
     //    processors[i].backgroundLoad,processors[i].computeLoad);
     iout << iINFO << "# Messages received: "
 	 << processors[i].proxies->numElements() - processors[i].patchSet->numElements() 
-	 << endl;
+	 << endl << endi;
     Iterator p;
     int count = 0;
     
@@ -247,15 +247,15 @@ double max;
       patch = (patchInfo *)processors[i].patchSet->next(&p);
    
     }
-    iout << iINFO << " # Messages sent: " << count << "\n";
+    iout << iINFO << " # Messages sent: " << count << "\n" << endi;
     total += count;
   }
   computeAverage();
   max = computeMax();
-  cout << "Summary: (" << strategyName << ": " << P << "," 
+  iout << "Summary: (" << strategyName << ": " << P << "," 
        << numPatches << "," << numComputes << ") avg = " 
        << averageLoad << " max = " << max << " messages = " 
-       << total << "[" << numBytes << " bytes]\n";
+       << total << "[" << numBytes << " bytes]\n" << endi;
 
 //   CPrintf("Summary: (%s: %d,%d,%d),avg=%lf max=%lf messages = %d [%d bytes]\n",
 // 	  strategyName,P,numPatches,numComputes,

@@ -40,6 +40,9 @@ ComputePatchPair::~ComputePatchPair() {
   DebugM(4, "~ComputePatchPair("<<cid<<") numAtoms("<<patchID[0]<<") = " 
     << numAtoms[0] 
     << " numAtoms("<<patchID[1]<<") = " << numAtoms[1] << "\n" );
+  DebugM(4, "~ComputePatchPair("<<cid<<") addr("<<patchID[0]<<") = " 
+    << PatchMap::Object()->patch(patchID[0]) << " addr("<<patchID[1]<<") = "
+    << PatchMap::Object()->patch(patchID[1]) << "\n");
   for (int i=0; i<2; i++) {
     if (positionBox[i] != NULL) {
       PatchMap::Object()->patch(patchID[i])->unregisterPositionPickup(cid,
@@ -112,10 +115,17 @@ void ComputePatchPair::doWork() {
   Results* r[2];
   AtomProperties* a[2];
   int i;
+  int numData;
 
   // Open up positionBox, forceBox, and atomBox
   for (i=0; i<2; i++) {
-      p[i] = positionBox[i]->open();
+      p[i] = positionBox[i]->open(&numData);
+      if (numData != numAtoms[i]) {
+	iout << iPE << iERRORF 
+	  << "Interesting, doWork has opened a position box with wrong # atoms ("
+	  <<numData<<" vs " << numAtoms << "\n" 
+	  << endi;
+      }
       r[i] = forceBox[i]->open();
       a[i] = atomBox[i]->open();
   }
@@ -137,12 +147,19 @@ void ComputePatchPair::doWork() {
  *
  *	$RCSfile: ComputePatchPair.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/04/08 07:08:32 $
+ *	$Revision: 1.1010 $	$Date: 1997/04/10 09:13:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatchPair.C,v $
+ * Revision 1.1010  1997/04/10 09:13:55  ari
+ * Final debugging for compute migration / proxy creation for load balancing.
+ * Lots of debug code added, mostly turned off now.
+ * Fixed bug in PositionBox when Patch had no dependencies.
+ * Eliminated use of cout and misuse of iout in numerous places.
+ *                                            Ari & Jim
+ *
  * Revision 1.1009  1997/04/08 07:08:32  ari
  * Modification for dynamic loadbalancing - moving computes
  * Still bug in new computes or usage of proxies/homepatches.

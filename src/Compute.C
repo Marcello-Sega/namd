@@ -33,11 +33,15 @@
 Node *Compute::node=0;
 PatchMap *Compute::patchMap=0;
 
+int Compute::totalComputes = 0;
+
 Compute::Compute(ComputeID c) : cid(c) { 
+  totalComputes++;
   doAtomUpdate = false;
 }
 
 void Compute::enqueueWork() {
+  if (!this) { iout << iPE << iERRORF << "This Compute is NULL!!!\n" << endi; }
   if ( ! noWork() )
   {
     WorkDistrib::messageEnqueueWork(this);  // should be in ComputeMgr?
@@ -91,12 +95,19 @@ int Compute::priority(void)
  *
  *	$RCSfile: Compute.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/04/08 07:08:08 $
+ *	$Revision: 1.1011 $	$Date: 1997/04/10 09:13:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.C,v $
+ * Revision 1.1011  1997/04/10 09:13:47  ari
+ * Final debugging for compute migration / proxy creation for load balancing.
+ * Lots of debug code added, mostly turned off now.
+ * Fixed bug in PositionBox when Patch had no dependencies.
+ * Eliminated use of cout and misuse of iout in numerous places.
+ *                                            Ari & Jim
+ *
  * Revision 1.1010  1997/04/08 07:08:08  ari
  * Modification for dynamic loadbalancing - moving computes
  * Still bug in new computes or usage of proxies/homepatches.

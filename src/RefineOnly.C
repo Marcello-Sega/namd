@@ -1,4 +1,3 @@
-#include <iostream.h>
 #include "InfoStream.h"
 #include "RefineOnly.h"
 
@@ -23,12 +22,12 @@ void RefineOnly::strategy()
   computeAverage();
   printLoads();
   double max = computeMax();
-  cout << "Average Load is " << averageLoad << "\n";
-  cout << "Maximum Load is " << max << "\n";
+  iout << "Average Load is " << averageLoad << "\n";
+  iout << "Maximum Load is " << max << "\n" << endi;
   refine();
   computeAverage();
   printLoads();
   max = computeMax();
-  cout << "Average Load is " << averageLoad << "\n";
-  cout << "Maximum Load is " << max << "\n";
+  iout << "Average Load is " << averageLoad << "\n";
+  iout << "Maximum Load is " << max << "\n" << endi;
 }

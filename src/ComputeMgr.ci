@@ -6,8 +6,8 @@ extern message DoneMsg;
 group ComputeMgr
 {
   entry ComputeMgr(InitMsg *);
-  entry updateComputes2(DoneMsg *);
-  entry updateComputes3(QuiescenceMessage *);
+  entry updateComputes2(QuiescenceMessage *);
+  entry updateComputes3(DoneMsg *);
   entry updateLocalComputes(RunMsg *);
   entry updateLocalComputes2(QuiescenceMessage *);
   entry updateLocalComputes3(RunMsg *);
@@ -20,12 +20,19 @@ group ComputeMgr
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/04/08 07:08:18 $
+ *	$Revision: 1.1003 $	$Date: 1997/04/10 09:13:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.ci,v $
+ * Revision 1.1003  1997/04/10 09:13:52  ari
+ * Final debugging for compute migration / proxy creation for load balancing.
+ * Lots of debug code added, mostly turned off now.
+ * Fixed bug in PositionBox when Patch had no dependencies.
+ * Eliminated use of cout and misuse of iout in numerous places.
+ *                                            Ari & Jim
+ *
  * Revision 1.1002  1997/04/08 07:08:18  ari
  * Modification for dynamic loadbalancing - moving computes
  * Still bug in new computes or usage of proxies/homepatches.

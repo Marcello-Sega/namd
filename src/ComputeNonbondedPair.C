@@ -54,6 +54,7 @@ int ComputeNonbondedPair::priority(void)
 
 int ComputeNonbondedPair::noWork() {
 
+  // return 0;  // for testing
   if ( numAtoms[0] && numAtoms[1] && patch[0]->flags.doNonbonded )
   {
     return 0;  // work to do, enqueue as usual
@@ -162,12 +163,19 @@ void ComputeNonbondedPair::doForce(Position* p[2],
  *
  *	$RCSfile: ComputeNonbondedPair.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/04/08 07:08:21 $
+ *	$Revision: 1.1012 $	$Date: 1997/04/10 09:13:53 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.C,v $
+ * Revision 1.1012  1997/04/10 09:13:53  ari
+ * Final debugging for compute migration / proxy creation for load balancing.
+ * Lots of debug code added, mostly turned off now.
+ * Fixed bug in PositionBox when Patch had no dependencies.
+ * Eliminated use of cout and misuse of iout in numerous places.
+ *                                            Ari & Jim
+ *
  * Revision 1.1011  1997/04/08 07:08:21  ari
  * Modification for dynamic loadbalancing - moving computes
  * Still bug in new computes or usage of proxies/homepatches.

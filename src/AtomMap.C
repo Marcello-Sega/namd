@@ -40,6 +40,11 @@ AtomMap::AtomMap(void)
   cleared = false;
 }
 
+void
+AtomMap::checkMap(void)
+{ }
+  
+
 //----------------------------------------------------------------------
 AtomMap::~AtomMap(void)
 {
@@ -125,12 +130,19 @@ void AtomMap::print()
  *
  *	$RCSfile: AtomMap.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/03/04 22:37:03 $
+ *	$Revision: 1.1007 $	$Date: 1997/04/10 09:13:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: AtomMap.C,v $
+ * Revision 1.1007  1997/04/10 09:13:46  ari
+ * Final debugging for compute migration / proxy creation for load balancing.
+ * Lots of debug code added, mostly turned off now.
+ * Fixed bug in PositionBox when Patch had no dependencies.
+ * Eliminated use of cout and misuse of iout in numerous places.
+ *                                            Ari & Jim
+ *
  * Revision 1.1006  1997/03/04 22:37:03  ari
  * Clean up of code.  Debug statements removal, dead code removal.
  * Minor fixes, output fixes.
