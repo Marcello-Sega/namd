@@ -115,6 +115,7 @@ OBJS = \
 	$(DSTDIR)/ComputePatch.o \
 	$(DSTDIR)/ComputePatchPair.o \
 	$(DSTDIR)/ComputeRestraints.o \
+	$(DSTDIR)/ComputeSMD.o \
 	$(DSTDIR)/ComputeSphericalBC.o \
 	$(DSTDIR)/ConfigList.o \
 	$(DSTDIR)/Controller.o \
@@ -152,6 +153,8 @@ OBJS = \
 	$(DSTDIR)/Sequencer.o \
 	$(DSTDIR)/Set.o \
 	$(DSTDIR)/SimParameters.o \
+	$(DSTDIR)/SMD.o \
+	$(DSTDIR)/SMDMsgs.o \
 	$(DSTDIR)/TclCommands.o \
 	$(DSTDIR)/VoidTree.o \
 	$(DSTDIR)/WorkDistrib.o
