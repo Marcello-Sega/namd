@@ -2177,6 +2177,10 @@ obj/Controller.o: \
 	src/Random.h \
 	src/Debug.h
 	$(CXX) $(CXXTHREADFLAGS) -o obj/Controller.o -c src/Controller.C
+obj/ccsinterface.o: \
+	src/ccsinterface.C \
+	src/ccsinterface.h
+	$(CXX) $(CXXFLAGS) -o obj/ccsinterface.o -c src/ccsinterface.C
 obj/defmain.o: \
 	src/defmain.C \
 	src/ProcessorPrivate.h \
@@ -3086,6 +3090,7 @@ obj/PatchMgr.o: \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
+	src/AtomMap.h \
 	src/WorkDistrib.h \
 	src/ComputeMap.h \
 	src/Debug.h \
@@ -3415,6 +3420,19 @@ obj/ScriptTcl.o: \
 	src/Communicate.h \
 	src/MStream.h \
 	src/Thread.h \
+	src/PatchMgr.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ScriptTcl.o -c src/ScriptTcl.C
 obj/Sequencer.o: \
@@ -3490,6 +3508,8 @@ obj/Sequencer.o: \
 	src/ComputeMgr.h \
 	src/Thread.h \
 	src/Random.h \
+	src/PatchMap.inl \
+	src/AtomMap.h \
 	src/Debug.h
 	$(CXX) $(CXXTHREADFLAGS) -o obj/Sequencer.o -c src/Sequencer.C
 obj/Set.o: \
