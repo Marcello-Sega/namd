@@ -99,6 +99,9 @@ void Controller::algorithm(void)
     switch ( scriptTask ) {
       case SCRIPT_RUN:
         break;
+      case SCRIPT_MINIMIZE:
+        minimize();
+        continue;
       case SCRIPT_OUTPUT:
         enqueueCollections(FILE_OUTPUT);
         outputExtendedSystem(FILE_OUTPUT);
@@ -171,6 +174,93 @@ void Controller::algorithm(void)
   outputExtendedSystem(END_OF_RUN);
   terminate();
 }
+
+#define CALCULATE \
+  printMinimizeEnergies(step); \
+  rebalanceLoad(step); \
+  if ( step == numberOfSteps ) { \
+    Node::Object()->enableExitScheduler(); \
+    return; \
+  } else ++step;
+
+#define MOVETO(X) \
+  if ( (X)-last.x ) { \
+    if ( 0 ) { iout << "LINE MINIMIZER: MOVING FROM " << last.x << " TO " << (X) << "\n" << endi; } \
+    broadcast->minimizeCoefficient.publish(minSeq++,(X)-last.x); \
+    last.x = (X); \
+    CALCULATE \
+    last.u = min_energy; \
+    last.dudx = -1. * min_f_dot_v; \
+  }
+
+struct minpoint {
+  BigReal x, u, dudx;
+  minpoint() : x(0), u(0), dudx(0) { ; }
+};
+
+void Controller::minimize() {
+  iout << "Controller::minimize() called.\n" << endi;
+
+  const int numberOfSteps = simParams->N;
+  int step = simParams->firstTimestep;
+
+  CALCULATE
+
+  int minSeq = 0;
+  BigReal old_f_dot_f = min_f_dot_f;
+  broadcast->minimizeCoefficient.publish(minSeq++,0.);
+  broadcast->minimizeCoefficient.publish(minSeq++,0.); // v = f
+  min_f_dot_v = min_f_dot_f;
+  min_v_dot_v = min_f_dot_f;
+  int newDir = 1;
+  while ( 1 ) {
+    // line minimization
+    // bracket minimum on line
+    int bracket = 0;
+    minpoint lo,hi,mid,last;
+    BigReal x = last.x = 0;
+    lo.x = x;
+    lo.u = min_energy;
+    lo.dudx = -1. * min_f_dot_v;
+    mid = lo;
+    BigReal tol = fabs( 1.0e-4 * min_f_dot_v );
+    iout << "GRADIENT TOLERANCE: " << tol << "\n" << endi;
+    x = 1.0e-3 * sqrt( min_f_dot_f / min_v_dot_v ); MOVETO(x)
+    // bracket minimum on line
+    while ( last.u < mid.u ) {
+      lo = mid; mid = last;
+      x *= 2.0; MOVETO(x)
+    }
+    hi = last;
+    iout << "BRACKET: " << (hi.x-lo.x) << " " << ((hi.u>lo.u?hi.u:lo.u)-mid.u) << " " << lo.dudx << " " << mid.dudx << " " << hi.dudx << " \n" << endi;
+    // converge on minimum on line
+    int itcnt = 0;
+    while ( fabs(last.dudx) > tol && itcnt < 30 ) {
+      // select new position
+      if ( mid.dudx > 0. ) {
+        x = 0.5 * ( lo.x + mid.x ); if (x-last.x) { MOVETO(x) } else break;
+        if ( last.u <= mid.u ) { hi = mid; mid = last; } else { lo = last; }
+      } else {
+        x = 0.5 * ( mid.x + hi.x ); if (x-last.x) { MOVETO(x) } else break;
+        if ( last.u <= mid.u ) { lo = mid; mid = last; } else { hi = last; }
+      }
+      iout << "BRACKET: " << (hi.x-lo.x) << " " << ((hi.u>lo.u?hi.u:lo.u)-mid.u) << " " << lo.dudx << " " << mid.dudx << " " << hi.dudx << " \n" << endi;
+    }
+    // new direction
+    broadcast->minimizeCoefficient.publish(minSeq++,0.);
+    BigReal c = min_f_dot_f / old_f_dot_f;
+    iout << "NEW SEARCH DIRECTION " << c << "\n" << endi;
+    c = ( c > 1.5 ? 1.5 : c );
+    broadcast->minimizeCoefficient.publish(minSeq++,c); // v = c*v+f
+    old_f_dot_f = min_f_dot_f;
+    min_f_dot_v = c * min_f_dot_v + min_f_dot_f;
+    min_v_dot_v = c*c*min_v_dot_v + 2*c*min_f_dot_v + min_f_dot_f;
+  }
+
+}
+
+#undef MOVETO
+#undef CALCULATE
 
 void Controller::berendsenPressure(int step)
 {
@@ -536,12 +626,9 @@ void Controller::receivePressure(int step)
 
 }
 
-void Controller::printEnergies(int step)
-{
+void Controller::compareChecksums(int step) {
     Node *node = Node::Object();
     Molecule *molecule = node->molecule;
-    SimParameters *simParameters = node->simParameters;
-    Lattice &lattice = state->lattice;
 
     // Some basic correctness checking
     BigReal checksum;
@@ -581,6 +668,49 @@ void Controller::printEnergies(int step)
     checksum = reduction->item(REDUCTION_MARGIN_VIOLATIONS);
     if ( ((int)checksum) ) iout << iWARN << ((int)checksum) <<
         " margin violations detected during timestep " << step << ".\n" << endi;
+}
+
+void Controller::printMinimizeEnergies(int step) {
+    reduction->require();
+    compareChecksums(step);
+
+    BigReal bondEnergy;
+    BigReal angleEnergy;
+    BigReal dihedralEnergy;
+    BigReal improperEnergy;
+    BigReal boundaryEnergy;
+    BigReal miscEnergy;
+    BigReal totalEnergy;
+
+    bondEnergy = reduction->item(REDUCTION_BOND_ENERGY);
+    angleEnergy = reduction->item(REDUCTION_ANGLE_ENERGY);
+    dihedralEnergy = reduction->item(REDUCTION_DIHEDRAL_ENERGY);
+    improperEnergy = reduction->item(REDUCTION_IMPROPER_ENERGY);
+    boundaryEnergy = reduction->item(REDUCTION_BC_ENERGY);
+    miscEnergy = reduction->item(REDUCTION_MISC_ENERGY);
+    electEnergy = reduction->item(REDUCTION_ELECT_ENERGY);
+    ljEnergy = reduction->item(REDUCTION_LJ_ENERGY);
+    electEnergySlow = reduction->item(REDUCTION_ELECT_ENERGY_SLOW);
+
+    totalEnergy = bondEnergy + angleEnergy + dihedralEnergy + improperEnergy +
+	electEnergy + electEnergySlow + ljEnergy + boundaryEnergy + miscEnergy;
+
+    iout << "STEP " << step << " ENERGY IS " << totalEnergy << "\n" << endi;
+
+    min_energy = totalEnergy;
+    min_f_dot_f = reduction->item(REDUCTION_MIN_F_DOT_F);
+    min_f_dot_v = reduction->item(REDUCTION_MIN_F_DOT_V);
+    min_v_dot_v = reduction->item(REDUCTION_MIN_V_DOT_V);
+}
+
+void Controller::printEnergies(int step)
+{
+    Node *node = Node::Object();
+    Molecule *molecule = node->molecule;
+    SimParameters *simParameters = node->simParameters;
+    Lattice &lattice = state->lattice;
+
+    compareChecksums(step);
 
     BigReal bondEnergy;
     BigReal angleEnergy;

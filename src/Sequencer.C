@@ -75,6 +75,9 @@ void Sequencer::algorithm(void)
     switch ( scriptTask ) {
       case SCRIPT_RUN:
 	break;
+      case SCRIPT_MINIMIZE:
+	minimize();
+	continue;
       case SCRIPT_OUTPUT:
 	submitCollections(FILE_OUTPUT);
 	continue;
@@ -208,6 +211,81 @@ void Sequencer::algorithm(void)
   // only reach here on SCRIPT_END or no script
   submitCollections(END_OF_RUN);
   terminate();
+}
+
+void Sequencer::minimize() {
+  const int numberOfSteps = simParams->N;
+  int &step = patch->flags.step;
+  step = simParams->firstTimestep;
+
+  int &maxForceUsed = patch->flags.maxForceUsed;
+  int &maxForceMerged = patch->flags.maxForceMerged;
+  maxForceUsed = Results::normal;
+  maxForceMerged = Results::normal;
+  int &doNonbonded = patch->flags.doNonbonded;
+  doNonbonded = 1;
+  maxForceUsed = Results::nbond;
+  maxForceMerged = Results::nbond;
+  const int dofull = ( simParams->fullDirectOn ||
+			simParams->FMAOn || simParams->PMEOn );
+  int &doFullElectrostatics = patch->flags.doFullElectrostatics;
+  doFullElectrostatics = dofull;
+  if ( dofull ) {
+    maxForceMerged = Results::slow;
+    maxForceUsed = Results::slow;
+  }
+  int &doMolly = patch->flags.doMolly;
+  doMolly = simParams->mollyOn && doFullElectrostatics;
+
+  rattle1(0.);  // enforce rigid bond constraints on initial positions
+  runComputeObjects(1); // must migrate here!
+
+  // addForceToMomentum(0.); // zero velocities of fixed atoms
+  submitMinimizeReductions(step);
+  rebalanceLoad(step);
+
+  int minSeq = 0;
+  for ( ++step; step <= numberOfSteps; ++step ) {
+    BigReal c = broadcast->minimizeCoefficient.get(minSeq++);
+    if ( ! c ) {  // new direction
+      patch->checkpoint();  // checkpoint current minimum
+      c = broadcast->minimizeCoefficient.get(minSeq++);
+      newMinimizeDirection(c);  // v = c * v + f
+      c = broadcast->minimizeCoefficient.get(minSeq++);
+    }  // same direction
+    newMinimizePosition(c);  // x = x + c * v
+
+    rattle1(0.);
+    runComputeObjects(1);
+    submitMinimizeReductions(step);
+    submitCollections(step);
+    rebalanceLoad(step);
+  }
+  patch->revert();  // go to last known minimum
+}
+
+// v = c * v + f
+void Sequencer::newMinimizeDirection(BigReal c) {
+  FullAtom *a = patch->atom.begin();
+  Force *f1 = patch->f[Results::normal].begin();
+  Force *f2 = patch->f[Results::nbond].begin();
+  Force *f3 = patch->f[Results::slow].begin();
+  int numAtoms = patch->numAtoms;
+
+  for ( int i = 0; i < numAtoms; ++i ) {
+    a[i].velocity *= c;
+    a[i].velocity += f1[i] + f2[i] + f3[i];
+  }
+}
+
+// x = x + c * v
+void Sequencer::newMinimizePosition(BigReal c) {
+  FullAtom *a = patch->atom.begin();
+  int numAtoms = patch->numAtoms;
+
+  for ( int i = 0; i < numAtoms; ++i ) {
+    a[i].position += c * a[i].velocity;
+  }
 }
 
 void Sequencer::langevinVelocities(BigReal dt_fs)
@@ -604,6 +682,33 @@ void Sequencer::submitReductions(int step)
   reduction->item(REDUCTION_ANGULAR_MOMENTUM_X) += angularMomentum.x;  
   reduction->item(REDUCTION_ANGULAR_MOMENTUM_Y) += angularMomentum.y;  
   reduction->item(REDUCTION_ANGULAR_MOMENTUM_Z) += angularMomentum.z;  
+
+  reduction->submit();
+}
+
+void Sequencer::submitMinimizeReductions(int step)
+{
+  FullAtom *a = patch->atom.begin();
+  Force *f1 = patch->f[Results::normal].begin();
+  Force *f2 = patch->f[Results::nbond].begin();
+  Force *f3 = patch->f[Results::slow].begin();
+  int numAtoms = patch->numAtoms;
+
+  reduction->item(REDUCTION_ATOM_CHECKSUM) += numAtoms;
+
+  BigReal fdotf = 0;
+  BigReal fdotv = 0;
+  BigReal vdotv = 0;
+  for ( int i = 0; i < numAtoms; ++i ) {
+    Force f = f1[i] + f2[i] + f3[i];
+    fdotf += f * f;
+    fdotv += f * a[i].velocity;
+    vdotv += a[i].velocity * a[i].velocity;
+  }
+
+  reduction->item(REDUCTION_MIN_F_DOT_F) += fdotf;
+  reduction->item(REDUCTION_MIN_F_DOT_V) += fdotv;
+  reduction->item(REDUCTION_MIN_V_DOT_V) += vdotv;
 
   reduction->submit();
 }

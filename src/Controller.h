@@ -32,6 +32,8 @@ protected:
     int scriptSeq;
     virtual void algorithm(void);	// subclasses redefine this method
 
+    void minimize(); // CG minimizer
+
     void receivePressure(int);
       Tensor pressure_normal;
       Tensor pressure_nbond;
@@ -44,8 +46,14 @@ protected:
       Tensor controlPressure_slow;
       int nbondFreq;
       int slowFreq;
-    void printEnergies(int);
+    void compareChecksums(int);
       int computeChecksum;
+    void printMinimizeEnergies(int);
+      BigReal min_energy;
+      BigReal min_f_dot_f;
+      BigReal min_f_dot_v;
+      BigReal min_v_dot_v;
+    void printEnergies(int);
       int numDegFreedom;
       BigReal electEnergy;
       BigReal electEnergySlow;

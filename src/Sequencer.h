@@ -31,15 +31,21 @@ public:
 protected:
     virtual void algorithm(void);	// subclasses redefine this method
 
+    void minimize(); // CG minimizer
+
     void runComputeObjects(int migration = 0);
 
     void submitReductions(int);
+    void submitMinimizeReductions(int);
     void submitCollections(int);
 
     void saveForce(const int ftag = Results::normal);
     void addForceToMomentum(BigReal, const int ftag = Results::normal,
 						const int useSaved = 0);
     void addVelocityToPosition(BigReal);
+
+    void newMinimizeDirection(BigReal);
+    void newMinimizePosition(BigReal);
 
     void rattle1(BigReal);
     void rattle2(BigReal,int);

@@ -211,6 +211,51 @@ int ScriptTcl::Tcl_run(ClientData clientData,
   return TCL_OK;
 }
 
+int ScriptTcl::Tcl_minimize(ClientData clientData,
+	Tcl_Interp *interp, int argc, char *argv[]) {
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  if ( script->runWasCalled == 0 ) {
+    CkPrintf("TCL: Minimize called, suspending until startup complete.\n");
+    Tcl_CreateCommand(interp, "param", Tcl_param,
+      (ClientData) script, (Tcl_CmdDeleteProc *) NULL);
+    Tcl_CreateCommand(interp, "unknown", Tcl_param,
+      (ClientData) script, (Tcl_CmdDeleteProc *) NULL);
+    script->config->add_element("tcl",3,"on",2);
+    script->runWasCalled = 1;
+
+    script->state->configListInit(script->config);
+    Node::Object()->saveMolDataPointers(script->state);
+    Node::messageStartUp();
+    script->suspend();
+  }
+  if (argc != 2) {
+    interp->result = "wrong # args";
+    return TCL_ERROR;
+  }
+  int numsteps;
+  if (Tcl_GetInt(interp,argv[1],&numsteps) != TCL_OK) {
+    return TCL_ERROR;
+  }
+  if (numsteps < 0) {
+    interp->result = "number of steps must be non-negative";
+    return TCL_ERROR;
+  }
+  SimParameters *simParams = Node::Object()->simParameters;
+  if (numsteps % simParams->stepsPerCycle) {
+    interp->result = "number of steps must be a multiple of stepsPerCycle";
+    return TCL_ERROR;
+  }
+  iout << "TCL: Minimizing for " << numsteps << " steps\n" << endi;
+
+  script->setParameter("numsteps",simParams->firstTimestep + numsteps);
+
+  script->runController(SCRIPT_MINIMIZE);
+
+  script->setParameter("firsttimestep",simParams->N);
+
+  return TCL_OK;
+}
+
 int ScriptTcl::Tcl_move(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
@@ -431,6 +476,8 @@ void ScriptTcl::algorithm() {
   Tcl_CreateCommand(interp, "param", Tcl_config,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "run", Tcl_run,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "minimize", Tcl_minimize,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "move", Tcl_move,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
