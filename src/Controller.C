@@ -529,9 +529,11 @@ void Controller::receivePressure(int step)
     Tensor virial_normal;
     Tensor virial_nbond;
     Tensor virial_slow;
+#ifdef ALTVIRIAL
     Tensor altVirial_normal;
     Tensor altVirial_nbond;
     Tensor altVirial_slow;
+#endif
     Tensor intVirial;
     Tensor intVirial_normal;
     Tensor intVirial_nbond;
@@ -557,9 +559,11 @@ void Controller::receivePressure(int step)
     GET_TENSOR(virial_nbond,reduction,REDUCTION_VIRIAL_NBOND);
     GET_TENSOR(virial_slow,reduction,REDUCTION_VIRIAL_SLOW);
 
+#ifdef ALTVIRIAL
     GET_TENSOR(altVirial_normal,reduction,REDUCTION_ALT_VIRIAL_NORMAL);
     GET_TENSOR(altVirial_nbond,reduction,REDUCTION_ALT_VIRIAL_NBOND);
     GET_TENSOR(altVirial_slow,reduction,REDUCTION_ALT_VIRIAL_SLOW);
+#endif
 
     GET_TENSOR(intVirial_normal,reduction,REDUCTION_INT_VIRIAL_NORMAL);
     GET_TENSOR(intVirial_nbond,reduction,REDUCTION_INT_VIRIAL_NBOND);

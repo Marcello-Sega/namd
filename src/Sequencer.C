@@ -608,6 +608,7 @@ void Sequencer::submitReductions(int step)
       virial += ( a[i].mass * outer(a[i].velocity,a[i].velocity) );
     }
     ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,virial);
+#ifdef ALTVIRIAL
     ADD_TENSOR_OBJECT(reduction,REDUCTION_ALT_VIRIAL_NORMAL,virial);
   }
   {
@@ -630,6 +631,7 @@ void Sequencer::submitReductions(int step)
       altVirial += outer(patch->f[Results::slow][i],a[i].position);
     }
     ADD_TENSOR_OBJECT(reduction,REDUCTION_ALT_VIRIAL_SLOW,altVirial);
+#endif
   }
 
   {
