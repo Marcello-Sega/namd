@@ -48,12 +48,14 @@ public:
 		}
 
     // true -> send it and delete it!
-    void append(AtomIDList &a, ResizeArray<Vector> &d)
+    void append(AtomIDList &a, ResizeArray<Vector> &d, ResizeArray<FloatVector> &fd)
     {
       int size = a.size();
-      for( int i = 0; i < size; ++i )
-      {
-	data.item(a[i]) = d[i];
+      if ( d.size() ) {
+	for( int i = 0; i < size; ++i ) { data.item(a[i]) = d[i]; }
+      }
+      if ( fd.size() ) {
+	for( int i = 0; i < size; ++i ) { fdata.item(a[i]) = fd[i]; }
       }
       --remaining;
     }
@@ -66,6 +68,7 @@ public:
     int operator==(const CollectVectorInstance &o) { return (seq == o.seq); }
 
     ResizeArray<Vector> data;
+    ResizeArray<FloatVector> fdata;
 
   private:
     int remaining;
@@ -77,7 +80,7 @@ public:
   public:
 
     void submitData(
-	int seq, AtomIDList &i, ResizeArray<Vector> &d)
+	int seq, AtomIDList &i, ResizeArray<Vector> &d, ResizeArray<FloatVector> &fd)
     {
       CollectVectorInstance *c = data.find(CollectVectorInstance(seq));
       if ( ! c )
@@ -85,7 +88,7 @@ public:
 	data.add(CollectVectorInstance(seq));
 	c = data.find(CollectVectorInstance(seq));
       }
-      c->append(i,d);
+      c->append(i,d,fd);
     }
 
     void enqueue(int seq) { queue.add(seq); }
@@ -127,6 +130,7 @@ public:
   int seq;
   AtomIDList aid;
   ResizeArray<Vector> data;
+  ResizeArray<FloatVector> fdata;
 
   static void* pack(CollectVectorMsg* msg);
   static CollectVectorMsg* unpack(void *ptr);
@@ -140,12 +144,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1999/07/06 20:32:40 $
+ *	$Revision: 1.1017 $	$Date: 1999/09/12 19:33:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMaster.h,v $
+ * Revision 1.1017  1999/09/12 19:33:14  jim
+ * Collections now use floats when possible.
+ *
  * Revision 1.1016  1999/07/06 20:32:40  jim
  * Eliminated warnings from new generation of picky compilers.
  *

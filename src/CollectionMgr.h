@@ -23,7 +23,7 @@ public:
   ~CollectionMgr(void);
 
   void submitPositions(int seq, AtomIDList &i, PositionList &d,
-					Lattice l, TransformList &t);
+				Lattice l, TransformList &t, int prec);
   void submitVelocities(int seq, AtomIDList &i, VelocityList &d);
   void submitForces(int seq, AtomIDList &i, ForceList &d);
 
@@ -33,8 +33,10 @@ public:
 
     CollectVectorInstance(void) : seq(-1) { ; }
 
-    CollectVectorInstance(int s) :
-      seq(s), remaining(PatchMap::Object()->numHomePatches()) { ; }
+    CollectVectorInstance(int s) : seq(s) { ; }
+
+    CollectVectorInstance(int s, int p) : seq(s), precisions(p),
+      remaining(PatchMap::Object()->numHomePatches()) { ; }
 
     // true -> send it and delete it!
     int append(AtomIDList &a, ResizeArray<Vector> &d)
@@ -43,14 +45,17 @@ public:
       for( int i = 0; i < size; ++i )
       {
 	aid.add(a[i]);
-	data.add(d[i]);
+	if ( precisions & 2 ) data.add(d[i]);
+	if ( precisions & 1 ) fdata.add(d[i]);
       }
       return ( ! --remaining );
     }
 
     int seq;
     AtomIDList aid;
+    int precisions;
     ResizeArray<Vector> data;
+    ResizeArray<FloatVector> fdata;
 
     int operator<(const CollectVectorInstance &o) { return (seq < o.seq); }
     int operator==(const CollectVectorInstance &o) { return (seq == o.seq); }
@@ -65,12 +70,12 @@ public:
   public:
 
     CollectVectorInstance* submitData(
-	int seq, AtomIDList &i, ResizeArray<Vector> &d)
+	int seq, AtomIDList &i, ResizeArray<Vector> &d, int prec=2)
     {
       CollectVectorInstance *c = data.find(CollectVectorInstance(seq));
       if ( ! c )
       {
-	data.add(CollectVectorInstance(seq));
+	data.add(CollectVectorInstance(seq,prec));
 	c = data.find(CollectVectorInstance(seq));
       }
       if ( c->append(i,d) )
@@ -106,12 +111,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1999/07/06 20:32:40 $
+ *	$Revision: 1.1012 $	$Date: 1999/09/12 19:33:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMgr.h,v $
+ * Revision 1.1012  1999/09/12 19:33:16  jim
+ * Collections now use floats when possible.
+ *
  * Revision 1.1011  1999/07/06 20:32:40  jim
  * Eliminated warnings from new generation of picky compilers.
  *

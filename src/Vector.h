@@ -22,6 +22,15 @@
 #include "common.h"
 #include "InfoStream.h"
 
+class Vector;
+
+struct FloatVector {
+  float x,y,z;
+  inline FloatVector(void) { x = y = z = 0.0; }
+  inline FloatVector(const Vector &v);
+};
+
+
 class Vector {
    public:
      BigReal x,y,z;
@@ -36,11 +45,14 @@ class Vector {
        z = newz;
      }
 
+     inline Vector(const FloatVector &v) { x=v.x; y=v.y; z=v.z; }
+
      inline BigReal &operator[](int i) {
        return i==0 ? x
              :i==1 ? y
              :i==2 ? z
              :(NAMD_die("Vector reference out of bounds."), x);
+
      }
 
      //  v1 = const;
@@ -245,6 +257,9 @@ class Vector {
        return FALSE;
      }
 };
+
+inline FloatVector::FloatVector(const Vector &v) { x=v.x; y=v.y; z=v.z; }
+
 //#define TEST_VECTOR_CLASS
 #ifdef TEST_VECTOR_CLASS
 main()
@@ -285,12 +300,15 @@ main()
  *
  *	$RCSfile: Vector.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1999/09/11 20:44:11 $
+ *	$Revision: 1.1004 $	$Date: 1999/09/12 19:33:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Vector.h,v $
+ * Revision 1.1004  1999/09/12 19:33:20  jim
+ * Collections now use floats when possible.
+ *
  * Revision 1.1003  1999/09/11 20:44:11  jim
  * Small changes for better performance.
  *

@@ -17,12 +17,12 @@ IMDOutput::IMDOutput(void *s) {
   imd_sendheader(sock, IMD_HANDSHAKE, numatoms, sizeof(int));
   int one = 1;
   imd_writen(sock, (char *)&one, sizeof(int));
-  fcoords = new float[3*numatoms]; 
+  //fcoords = new float[3*numatoms]; 
   transrate = 1;
 }
 
 IMDOutput::~IMDOutput() { 
-  delete [] fcoords;
+  //delete [] fcoords;
 }
 
 void IMDOutput::gather_energies(int timestep, IMDEnergies *energies) { 
@@ -35,17 +35,20 @@ void IMDOutput::gather_energies(int timestep, IMDEnergies *energies) {
     iout << iWARN << "Error sending energies to VMD\n" << endi; 
 }
 
-void IMDOutput::gather_coordinates(int timestep, int N, Vector *coords) {
+void IMDOutput::gather_coordinates(int timestep, int N, FloatVector *coords) {
   if (!sock) return;
   if (timestep % transrate) return;
+/*
   for (int i=0; i<N; i++) {
     fcoords[3*i] = coords[i].x;     // If only these coordinates were floats 
     fcoords[3*i+1] = coords[i].y;
     fcoords[3*i+2] = coords[i].z;
   }
+*/
   size_t msize = 3*N*sizeof(float); 
   imd_sendheader(sock, IMD_FCOORDS, N, msize);
-  int rc = imd_writen(sock, (char *)fcoords, msize);
+  //int rc = imd_writen(sock, (char *)fcoords, msize);
+  int rc = imd_writen(sock, (char *)coords, msize);
 }
 
 void IMDOutput::update() { }

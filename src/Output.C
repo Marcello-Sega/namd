@@ -83,7 +83,7 @@ int Output::coordinateNeeded(int timestep)
        ((timestep % simParams->dcdFrequency) == 0) &&
        (timestep != simParams->firstTimestep) )
   {
-    positionsNeeded = 1;
+    positionsNeeded |= 1;
   }
 
   //  Output a restart file
@@ -91,24 +91,24 @@ int Output::coordinateNeeded(int timestep)
        ((timestep % simParams->restartFrequency) == 0) &&
        (timestep != simParams->firstTimestep) )
   {
-    positionsNeeded = 1;
+    positionsNeeded |= 2;
   }
 
   //  Output final coordinates
   if (timestep == 0)
   {
-    positionsNeeded = 1;
+    positionsNeeded |= 2;
   }
 
   if (simParams->IMDon) 
     if (( (timestep % simParams->IMDfreq)== 0) ||
         ( timestep == simParams->firstTimestep)) 
-      positionsNeeded = 1;
+      positionsNeeded |= 1;
  
   return positionsNeeded;
 }
 
-void Output::coordinate(int timestep, int n, Vector *coor)
+void Output::coordinate(int timestep, int n, Vector *coor, FloatVector *fcoor)
 {
   SimParameters *simParams = Node::Object()->simParameters;
 
@@ -119,7 +119,7 @@ void Output::coordinate(int timestep, int n, Vector *coor)
   {
     iout << "WRITING COORDINATES TO DCD FILE AT STEP "
 				<< timestep << "\n" << endi;
-    output_dcdfile(timestep, n, coor);
+    output_dcdfile(timestep, n, fcoor);
   }
 
   //  Output a restart file
@@ -145,7 +145,7 @@ void Output::coordinate(int timestep, int n, Vector *coor)
         ( timestep == simParams->firstTimestep)) {
       IMDOutput *imd = Node::Object()->imd;
       if (imd != NULL)
-        imd->gather_coordinates(timestep, n, coor);
+        imd->gather_coordinates(timestep, n, fcoor);
       }
   }
 
@@ -179,7 +179,7 @@ int Output::velocityNeeded(int timestep)
        ((timestep % simParams->velDcdFrequency) == 0) &&
        (timestep != simParams->firstTimestep) )
   {
-    velocitiesNeeded = 1;
+    velocitiesNeeded |= 1;
   }
 
   //  Output a restart file
@@ -187,13 +187,13 @@ int Output::velocityNeeded(int timestep)
        ((timestep % simParams->restartFrequency) == 0) &&
        (timestep != simParams->firstTimestep) )
   {
-    velocitiesNeeded = 1;
+    velocitiesNeeded |= 2;
   }
 
   //  Output final velocities
   if (timestep == 0)
   {
-    velocitiesNeeded = 1;
+    velocitiesNeeded |= 2;
   }
 
   return velocitiesNeeded;
@@ -389,7 +389,7 @@ void Output::output_restart_velocities(int timestep, int n, Vector *vel)
 /*                  */
 /************************************************************************/
 
-void Output::output_dcdfile(int timestep, int n, Vector *coor)
+void Output::output_dcdfile(int timestep, int n, FloatVector *coor)
 
 {
   static Bool first=TRUE;  //  Flag indicating first call
@@ -1149,13 +1149,16 @@ void Output::output_allforcedcdfile(int timestep, int n, Vector *forces)
  * RCS INFORMATION:
  *
  *  $RCSfile: Output.C,v $
- *  $Author: justin $  $Locker:  $    $State: Exp $
- *  $Revision: 1.23 $  $Date: 1999/09/02 23:04:50 $
+ *  $Author: jim $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.24 $  $Date: 1999/09/12 19:33:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Output.C,v $
+ * Revision 1.24  1999/09/12 19:33:18  jim
+ * Collections now use floats when possible.
+ *
  * Revision 1.23  1999/09/02 23:04:50  justin
  * Eliminated MDComm from all files and Makefiles
  *

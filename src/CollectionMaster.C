@@ -26,7 +26,7 @@ CollectionMaster::~CollectionMaster(void)
 
 void CollectionMaster::receivePositions(CollectVectorMsg *msg)
 {
-  positions.submitData(msg->seq,msg->aid,msg->data);
+  positions.submitData(msg->seq,msg->aid,msg->data,msg->fdata);
   delete msg;
 
   CollectVectorInstance *c;
@@ -46,15 +46,17 @@ void CollectionMaster::disposePositions(CollectVectorInstance *c)
     DebugM(3,"Collected positions at " << c->seq << endl);
     int seq = c->seq;
     int size = c->data.size();
+    if ( ! size ) size = c->fdata.size();
     Vector *data = c->data.begin();
-    Node::Object()->output->coordinate(seq,size,data);
+    FloatVector *fdata = c->fdata.begin();
+    Node::Object()->output->coordinate(seq,size,data,fdata);
     delete c;
 }
 
 
 void CollectionMaster::receiveVelocities(CollectVectorMsg *msg)
 {
-  velocities.submitData(msg->seq,msg->aid,msg->data);
+  velocities.submitData(msg->seq,msg->aid,msg->data,msg->fdata);
   delete msg;
 
   CollectVectorInstance *c;
@@ -82,7 +84,7 @@ void CollectionMaster::disposeVelocities(CollectVectorInstance *c)
 
 void CollectionMaster::receiveForces(CollectVectorMsg *msg)
 {
-  forces.submitData(msg->seq,msg->aid,msg->data);
+  forces.submitData(msg->seq,msg->aid,msg->data,msg->fdata);
   delete msg;
 
   CollectVectorInstance *c;
@@ -110,15 +112,19 @@ void CollectionMaster::disposeForces(CollectVectorInstance *c)
 
 void * CollectVectorMsg::pack(CollectVectorMsg *msg)
 {
-  int length = sizeof(int) + sizeof(int) +
-		msg->aid.size() * sizeof(AtomID) +
-		msg->data.size() * sizeof(Vector);
+  int length = sizeof(int) +
+		sizeof(int) + msg->aid.size() * sizeof(AtomID) +
+		sizeof(int) + msg->data.size() * sizeof(Vector) +
+		sizeof(int) + msg->fdata.size() * sizeof(FloatVector);
   char *buffer = (char*)CkAllocBuffer(msg,length);
   char *b = buffer;
   memcpy(b, &(msg->seq), sizeof(int)); b += sizeof(int);
   int size = msg->aid.size(); memcpy(b, &size, sizeof(int)); b += sizeof(int);
   memcpy(b, msg->aid.begin(), size*sizeof(AtomID)); b += size*sizeof(AtomID);
+  size = msg->data.size(); memcpy(b, &size, sizeof(int)); b += sizeof(int);
   memcpy(b, msg->data.begin(), size*sizeof(Vector)); b += size*sizeof(Vector);
+  size = msg->fdata.size(); memcpy(b, &size, sizeof(int)); b += sizeof(int);
+  memcpy(b, msg->fdata.begin(), size*sizeof(FloatVector)); b += size*sizeof(FloatVector);
   delete msg;
   return buffer;
 }
@@ -133,8 +139,12 @@ CollectVectorMsg* CollectVectorMsg::unpack(void *ptr)
   int size; memcpy(&size, b, sizeof(int)); b += sizeof(int);
   m->aid.resize(size);
   memcpy(m->aid.begin(), b, size*sizeof(AtomID)); b += size*sizeof(AtomID);
+  memcpy(&size, b, sizeof(int)); b += sizeof(int);
   m->data.resize(size);
   memcpy(m->data.begin(), b, size*sizeof(Vector)); b += size*sizeof(Vector);
+  memcpy(&size, b, sizeof(int)); b += sizeof(int);
+  m->fdata.resize(size);
+  memcpy(m->fdata.begin(), b, size*sizeof(FloatVector)); b += size*sizeof(FloatVector);
   CkFreeMsg(ptr);
   return m;
 }
@@ -148,12 +158,15 @@ CollectVectorMsg* CollectVectorMsg::unpack(void *ptr)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1019 $	$Date: 1999/07/06 20:32:39 $
+ *	$Revision: 1.1020 $	$Date: 1999/09/12 19:33:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMaster.C,v $
+ * Revision 1.1020  1999/09/12 19:33:13  jim
+ * Collections now use floats when possible.
+ *
  * Revision 1.1019  1999/07/06 20:32:39  jim
  * Eliminated warnings from new generation of picky compilers.
  *

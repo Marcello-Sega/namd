@@ -27,7 +27,7 @@ CollectionMgr::~CollectionMgr(void)
 
 
 void CollectionMgr::submitPositions(int seq, AtomIDList &i, PositionList &d,
-						Lattice l, TransformList &t)
+				Lattice l, TransformList &t, int prec)
 {
   int wrapWater = Node::Object()->simParameters->wrapWater;
   Molecule *mol = Node::Object()->molecule;
@@ -44,12 +44,13 @@ void CollectionMgr::submitPositions(int seq, AtomIDList &i, PositionList &d,
     }
   }
   CollectVectorInstance *c;
-  if ( ( c = positions.submitData(seq,i,d2) ) )
+  if ( ( c = positions.submitData(seq,i,d2,prec) ) )
   {
     CollectVectorMsg * msg = new CollectVectorMsg;
     msg->seq = c->seq;
     msg->aid = c->aid;
     msg->data = c->data;
+    msg->fdata = c->fdata;
     CProxy_CollectionMaster cm(master);
     cm.receivePositions(msg);
     delete c;
@@ -96,12 +97,15 @@ void CollectionMgr::submitForces(int seq, AtomIDList &i, ForceList &d)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1999/05/11 23:56:15 $
+ *	$Revision: 1.1015 $	$Date: 1999/09/12 19:33:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMgr.C,v $
+ * Revision 1.1015  1999/09/12 19:33:15  jim
+ * Collections now use floats when possible.
+ *
  * Revision 1.1014  1999/05/11 23:56:15  brunner
  * Changes for new charm version
  *

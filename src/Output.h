@@ -17,12 +17,13 @@
 #include "common.h"
 
 class Vector;
+class FloatVector;
 
 class Output 
 {
 
 private:
-   void output_dcdfile(int, int, Vector *);  	//  output coords to dcd file
+   void output_dcdfile(int, int, FloatVector *);  //  output coords to dcd file
    void output_veldcdfile(int, int, Vector *); 	//  output velocities to
 						//  dcd file
    void output_longforcedcdfile(int, int, Vector *); // output long range elect force 
@@ -49,7 +50,8 @@ public :
    void energy(int, BigReal *);			//  Output energies
 
    static int coordinateNeeded(int);
-   void coordinate(int, int, Vector *);		//  Produce appropriate 
+   void coordinate(int, int, Vector *, FloatVector *);
+						//  Produce appropriate 
 						//  coordinate output for 
 						//  the current timestep
    static int velocityNeeded(int);
@@ -69,13 +71,16 @@ public :
  * RCS INFORMATION:
  *
  *	$RCSfile: Output.h,v $
- *	$Author: justin $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1999/09/02 23:04:51 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.8 $	$Date: 1999/09/12 19:33:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Output.h,v $
+ * Revision 1.8  1999/09/12 19:33:19  jim
+ * Collections now use floats when possible.
+ *
  * Revision 1.7  1999/09/02 23:04:51  justin
  * Eliminated MDComm from all files and Makefiles
  *

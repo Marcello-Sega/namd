@@ -83,7 +83,7 @@ void Sequencer::algorithm(void)
 	break;
       case 2:
 	collection->submitPositions(0,patch->atomIDList,patch->p,
-					patch->lattice,patch->t);
+					patch->lattice,patch->t,2);
 	continue;
       case 3:
 	collection->submitVelocities(0,patch->atomIDList,patch->v);
@@ -600,9 +600,9 @@ void Sequencer::submitReductions(int step)
 
 void Sequencer::submitCollections(int step)
 {
-  if ( Output::coordinateNeeded(step) )
+  if ( int prec = Output::coordinateNeeded(step) )
     collection->submitPositions(step,patch->atomIDList,patch->p,
-					patch->lattice,patch->t);
+				patch->lattice,patch->t,prec);
   if ( Output::velocityNeeded(step) )
     collection->submitVelocities(step,patch->atomIDList,patch->v);
 }
@@ -647,12 +647,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1072 $     $Date: 1999/09/03 20:46:26 $
+ *      $Revision: 1.1073 $     $Date: 1999/09/12 19:33:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1073  1999/09/12 19:33:20  jim
+ * Collections now use floats when possible.
+ *
  * Revision 1.1072  1999/09/03 20:46:26  jim
  * Support for non-orthogonal periodic boundary conditions.
  *

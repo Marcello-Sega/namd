@@ -4,7 +4,7 @@
 
 #include "common.h"
 #include "imd.h"
-class Vector;
+class FloatVector;
 
 // IMDOutput
 // An object that sits in Node and does all the outputting of coordinates,
@@ -23,7 +23,7 @@ public:
   ~IMDOutput();
 
   void gather_energies(int timestep, IMDEnergies *energies); 
-  void gather_coordinates(int timestep, int N, Vector *coords);
+  void gather_coordinates(int timestep, int N, FloatVector *coords);
 
   void set_transrate(int newrate) {transrate = newrate; }
   void update();
@@ -32,7 +32,7 @@ public:
 private:
   void *sock;
 
-  float *fcoords;
+  //float *fcoords;
   int curstep;   
   int transrate;
   int haveEnergies;
