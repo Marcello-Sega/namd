@@ -28,7 +28,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1011 1997/03/19 11:54:53 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1012 1997/04/02 21:29:41 jim Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -39,6 +39,9 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMg
 
 #include "InfoStream.h"
 #include "PatchMap.h"	// for patchMap
+
+#include "Node.h"
+#include "SimParameters.h"
 
 // determine whether PANIC sequence checking is performed (debugging)
 // #define PANIC 2
@@ -89,8 +92,8 @@ ReductionMgr::ReductionMgr(InitMsg *msg)
       DebugM(1, "ReductionMgr::ReductionMgr() - another instance exists!\n");
     }
 
-    nextSequence = 0;
-    data = createdata();
+    nextSequence = -1; // checked later and changed to firstTimeStep
+    // data = createdata();
 
     /* node 0 received data from each remove node */
     if (CMyPe() == 0)
@@ -169,6 +172,11 @@ void ReductionMgr::displayData(ReductionMgrData *current)
  *******************************************/
 ReductionMgrData *ReductionMgr::createdata()
 {
+  if ( nextSequence < 0 )
+  {
+    nextSequence = Node::Object()->simParameters->firstTimestep;
+  }
+
   ReductionMgrData *data;
   data = new ReductionMgrData;
   data->sequenceNum = nextSequence;
@@ -760,12 +768,15 @@ void	ReductionMgr::unsubscribe(ReductionTag tag)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/03/19 11:54:53 $
+ *	$Revision: 1.1012 $	$Date: 1997/04/02 21:29:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.C,v $
+ * Revision 1.1012  1997/04/02 21:29:41  jim
+ * Fixed bad assumption about first sequence number being 0.
+ *
  * Revision 1.1011  1997/03/19 11:54:53  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.
