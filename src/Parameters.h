@@ -56,7 +56,7 @@ class StringList;
 
 //  Define the number of Multiples that a Dihedral or Improper
 //  bond can have with the Charm22 parameter set
-#define MAX_MULTIPLICITY	4
+#define MAX_MULTIPLICITY	6
 
 //  Number of characters maximum allowed for storing atom type names
 #define MAX_ATOMTYPE_CHARS      6
