@@ -1647,6 +1647,11 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
     NAMD_die("FMAMp: multipole term must be multiple of block length (FMAFFTBlock)");
     }
 
+   if ( (nonbondedFrequency > stepsPerCycle) || ( (stepsPerCycle % nonbondedFrequency) != 0) )
+   {
+     NAMD_die("stepsPerCycle must be a multiple of nonbondedFreq");
+   }
+
    if (!FMAOn && !PMEOn && !fullDirectOn)
    {
      fullElectFrequency = 0;
@@ -1659,7 +1664,8 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
          iout << iWARN << "The parameter fmaFrequency has been renamed fullElectFrequency.\n" << endi;
          fullElectFrequency = fmaFrequency;
        } else {
-         fullElectFrequency = stepsPerCycle;
+         iout << iWARN << "The parameter fullElectFrequency now defaults to nonbondedFreq (" << nonbondedFrequency << ") rather than stepsPerCycle.\n" << endi;
+         fullElectFrequency = nonbondedFrequency;
        }
      }
      else
@@ -1672,6 +1678,12 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
          NAMD_die("stepsPerCycle must be a multiple of fullElectFrequency");
        }
      }
+
+     if ( (nonbondedFrequency > fullElectFrequency) || ( (fullElectFrequency % nonbondedFrequency) != 0) )
+     {
+       NAMD_die("fullElectFrequency must be a multiple of nonbondedFreq");
+     }
+
 
      if (!opts.defined("fmaTheta"))
      fmaTheta=0.715;  /* Suggested by Duke developers */
