@@ -38,7 +38,7 @@ ug_xplor.tex ug_fenergy.tex
 	bibtex $(MAIN_UG_FILE); \
 	latex $(MAIN_UG_FILE); \
 	latex $(MAIN_UG_FILE); \
-	dvips -o ug.ps ug.dvi
+	dvips -t letter -o ug.ps ug.dvi
 
 
 clean:

@@ -11,7 +11,7 @@
 %
 %       $RCSfile: ug_intro.tex,v $
 %       $Author: jim $        $Locker:  $                $State: Exp $
-%       $Revision: 1.9 $      $Date: 1999/03/18 02:16:49 $
+%       $Revision: 1.10 $      $Date: 1999/10/06 21:06:00 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -21,6 +21,9 @@
 % REVISION HISTORY:
 %
 % $Log: ug_intro.tex,v $
+% Revision 1.10  1999/10/06 21:06:00  jim
+% Various doc updates for 2.1.
+%
 % Revision 1.9  1999/03/18 02:16:49  jim
 % Spelling fixes.
 %
@@ -109,24 +112,33 @@ at the end of this section.
 
 \subsection{New features in version \NAMDVER}
 
-There are many structural differences between versions 1.X and 2.X of \NAMD.
-Major portions of the code have been completely rewritten, resulting in a program which is significantly faster and uses less memory than earlier versions.
-This new architecture also provides support for more sophisticated algorithms and is the base for future efficient support of clusters of symmetric multiprocessor workstations.
-The most noticeable change to the end user is the switch from PVM to the Converse parallel message-passing system.
-\NAMD\ \NAMDVER\ has also been ported to several new platforms.
+\subsubsection*{Mollified impulse method (MOLLY)}
 
-New features in \NAMD\ \NAMDVER\ include periodic boundary conditions, particle-mesh Ewald electrostatic evaluation, Berendsen and Langevin Nos{\'e}-Hoover constant pressure simulation methods, fixed atoms, several boundary conditions, triple timestepping, full electrostatic evaluation independent of cycle length, and the ability to do on-the-fly analysis and apply forces to the system via Tcl scripts.
-The new multiple timestepping parameter {\tt nonbondedFreq} allows nonbonded interactions to be evaluated less frequently, leaving only bonded interactions to be calculated every timestep.
-The new spatial partitioning parameters {\tt splitPatch} and {\tt hgroupCutoff} have been added due to a change from pairlists to group-based distance checking.
-The Langevin dynamics and temperature coupling algorithms has been altered to be more suitable for temperature control with small damping coefficients.
-Finally, \NAMD\ \NAMDVER\ can now read CHARMM as well as X-PLOR formatted 
-parameter files.
+This method eliminates the components of the long range electrostatic
+forces which contribute to resonance along bonds to hydrogen atoms,
+allowing a fullElectFrequency of 6 (vs.\ 4) with a 1~fs timestep
+without using ``rigidBonds all''.  You may use ``rigidBonds water'' but
+using ``rigidBonds all'' with MOLLY makes no sense since the degrees of
+freedom which MOLLY protects from resonance are already frozen.
 
-Several options have been removed in this release.
-Multiple timestepping is currently limited to impulse methods.
-Margin checking is performed at every timestep.
-There are not separate switching and cutoff parameters for van der Waals and electrostatic potentials.
-Less-used features such as an applied electric field and force DCD files are unimplemented.
+\subsubsection*{Non-orthogonal periodic cells}
+
+The parameters (cellBasisVector[123] and cellOrigin) have not changed,
+but the basis vectors may now be in any direction.
+
+\subsubsection*{Interactive molecular dynamics}
+
+NAMD now works directly with VMD ({\tt http://www.ks.uiuc.edu/Research/vmd/})
+to allow you to view and interactively steer your simulation.  NAMD will
+wait for VMD to connect on startup.
+
+\subsubsection*{Faster particle mesh Ewald}
+
+If for some reason you wish to use the slower DPME implementation
+of the particle mesh Ewald method add ``useDPME yes''.  If you set
+cellOrigin to something other than (0,0,0) the energy may differ
+slightly between the old and new implementations.  For even better
+performance get the NAMD source code and compile with FFTW.
 
 \subsection{\NAMD\ and molecular dynamics simulations}
 
@@ -232,13 +244,10 @@ detail to allow additions of such
 new algorithms.
 
 \item{\bf Interactive MD simulations}\\
-\NAMD\ is one component of \ALLNAMES, a computational environment for
-structural biology.  The two other components of \ALLNAMES\ are \VMD,
-a molecular visualization program, and \MDCOMM, a communications package.
-When combined, a system undergoing simulation in \NAMD\ may be viewed and
+A system undergoing simulation in \NAMD\ may be viewed and
 altered with \VMD; for instance, forces can be applied to a set of atoms
 to alter or rearrange part of the molecular structure.  For more information
-on \ALLNAMES, see {\tt http://www.ks.uiuc.edu/Research/mdscope/}.  
+on \VMD, see {\tt http://www.ks.uiuc.edu/Research/vmd/}.  
 
 \item{\bf Load Balancing}\\
 An important factor in parallel applications is the equal distribution

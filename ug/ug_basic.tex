@@ -602,9 +602,9 @@ for most applications.}
 
 \end{itemize}
 
-\subsubsection{DPME parameters}
+\subsubsection{PME parameters}
 
-DPME stands for Distributed Particle Mesh Ewald and is an efficient
+PME stands for Particle Mesh Ewald and is an efficient
 full electrostatics method for use with periodic boundary conditions.
 None of the parameters should affect energy conservation, although they may affect the accuracy of the results and momentum conservation.
 
@@ -612,7 +612,7 @@ None of the parameters should affect energy conservation, although they may affe
 
 \item
 \NAMDCONFWDEF{PME}{Use particle mesh Ewald for electrostatics?}{{\tt yes} or {\tt no}}{{\tt no}}
-{Turns on DPME.}
+{Turns on particle mesh Ewald.}
 
 \item
 \NAMDCONFWDEF{PMETolerance}{PME direct space tolerance}{positive decimal}{$10^{-6}$}
@@ -624,18 +624,27 @@ None of the parameters should affect energy conservation, although they may affe
 
 \item
 \NAMDCONF{PMEGridSizeX}{PME grid in x dimension}{positive integer}
-{The grid size partially determines the accuracy and efficiency of DPME.
+{The grid size partially determines the accuracy and efficiency of PME.
 For speed, {\tt PMEGridSizeX} should have only small integer factors (2, 3 and 5).}
 
 \item
 \NAMDCONF{PMEGridSizeY}{PME grid in y dimension}{positive integer}
-{The grid size partially determines the accuracy and efficiency of DPME.
+{The grid size partially determines the accuracy and efficiency of PME.
 For speed, {\tt PMEGridSizeY} should have only small integer factors (2, 3 and 5).}
 
 \item
 \NAMDCONF{PMEGridSizeZ}{PME grid in z dimension}{positive integer}
-{The grid size partially determines the accuracy and efficiency of DPME.
+{The grid size partially determines the accuracy and efficiency of PME.
 For speed, {\tt PMEGridSizeZ} should have only small integer factors (2, 3 and 5).}
+
+\item
+\NAMDCONFWDEF{useDPME}{Use old DPME code?}{{\tt yes} or {\tt no}}{{\tt no}}
+{Switches to old DPME implementation of particle mesh Ewald.
+The new code is faster and allows non-orthogonal cells so you
+probably just want to leave this option turned off.  If you set
+{\tt cellOrigin} to something other than $(0,0,0)$ the energy may differ
+slightly between the old and new implementations.
+}
 
 \end{itemize}
 
@@ -647,7 +656,7 @@ real calculations, but rather as a testing or
 comparison measure.  Because of the ${\mathcal O}(N^2)$ 
 computational complexity for performing 
 direct calculations, this is {\it much} 
-slower than using DPMTA or DPME to compute full 
+slower than using DPMTA or PME to compute full 
 electrostatics for large systems.
 In the case of periodic boundary conditions,
 the nearest image convention is used rather than a
@@ -666,10 +675,14 @@ full electrostatics should be performed.}
 
 One of the areas of current research being studied using \NAMD\ is the
 exploration of better methods for performing multiple timestep integration.
-The parameters in this Section are part of this exploration.  These parameters
-are still rather experimental and are not fully documented yet, but the
-brave at heart may try them.  By default, the naive scheme described
-in the \PG\ is used.
+Currently the only available method is the impulse-based Verlet-I or r-RESPA
+method which is stable for timesteps up to 4~fs for long-range electrostatic
+forces, 2~fs for short-range nonbonded forces, and 1~fs for bonded forces
+Setting {\tt rigid all} (i.e., using SHAKE) increases these timesteps to
+6~fs, 2~fs, and 2~fs respectively but eliminates bond motion for hydrogen.
+The mollified impulse method (MOLLY) reduces the resonance which limits
+the timesteps and thus increases these timesteps to 6~fs, 2~fs, and 1~fs
+while retaining all bond motion.
 
 \begin{itemize}
 
@@ -678,7 +691,7 @@ in the \PG\ is used.
 {This parameter specifies the number of timesteps between each full electrostatics evaluation.
 It is recommended that {\tt fullElectFrequency} be chosen so that 
 the product of {\tt fullElectFrequency} and {\tt timestep} does 
-not exceed $4.0$ unless {\tt rigidBonds all} is specified, 
+not exceed $4.0$ unless {\tt rigidBonds all} or {\tt molly on} is specified, 
 in which case the upper limit is perhaps doubled.}
 
 \item
@@ -704,9 +717,9 @@ $SW(r_{ij}) = 0$ if $|{{\vec{r}}_{ij}}| > R_{\mathit off}$
 \item
 $SW(r_{ij}) = 1$ if $|{{\vec{r}}_{ij}}| \leq R_{\mathit on}$
 \item
-$SW(r_{ij}) = \frac{ {\left({R_{\mathit off}}^2 - {r_{ij}}^2\right)}^2
-\left({R_{\mathit off}}^2 + 2{r_{ij}}^2 - 3{R_{\mathit on}}^2\right)}
-{{\left({R_{\mathit off}}^2 - {R_{\mathit on}}^2\right)}^3}$
+% $SW(r_{ij}) = \frac{ {\left({R_{\mathit off}}^2 - {r_{ij}}^2\right)}^2
+% \left({R_{\mathit off}}^2 + 2{r_{ij}}^2 - 3{R_{\mathit on}}^2\right)}
+% {{\left({R_{\mathit off}}^2 - {R_{\mathit on}}^2\right)}^3}$
 if $R_{\mathit off} > |{{\vec{r}}_{ij}}| \geq R_{\mathit on}$
 \end{list}
 }
@@ -718,6 +731,31 @@ $R_{\mathit on}$ is a constant defined using the configuration value
 \item
 $R_{\mathit off}$ is specified using the configuration value {\tt cutoff}
 \end{list}
+
+\item
+\NAMDCONFWDEF{molly}{use mollified impulse method (MOLLY)?}
+{{\tt on} or {\tt off}}{{\tt off}}
+{
+This method eliminates the components of the long range electrostatic
+forces which contribute to resonance along bonds to hydrogen atoms,
+allowing a fullElectFrequency of 6 (vs.\ 4) with a 1~fs timestep
+without using {\tt rigidBonds all}.  You may use {\tt rigidBonds water} but
+using {\tt rigidBonds all} with MOLLY makes no sense since the degrees of
+freedom which MOLLY protects from resonance are already frozen.
+}
+
+\item
+\NAMDCONFWDEF{mollyTolerance}{allowable error for MOLLY}
+{positive decimal}{0.00001}
+{
+Convergence criterion for MOLLY algorithm.
+}
+
+\item
+\NAMDCONFWDEF{mollyIterations}{maximum MOLLY iterations}{positive integer}{100}
+{
+Maximum number of iterations for MOLLY algorithm.
+}
 
 \end{itemize}
 

@@ -444,26 +444,21 @@ use are 2 and 4.}
 \subsubsection{Periodic boundary conditions}
 
 \NAMD\ provides periodic boundary conditions in 1, 2 or 3 dimensions.
-The basis vectors of the periodic cell must be along the x, y, and z axes.  
-This restriction will be eliminated in future versions of \NAMD.
 The following parameters are used to define these boundary conditions.  
 
 \begin{itemize}
 
 \item
-\NAMDCONFWDEF{cellBasisVector1}{basis vector for periodic boundaries (\AA)}{vector along x axis}{0 0 0}
-{Specifies whether or not periodic boundary conditions 
-are to be applied to the system in the x direction.}
+\NAMDCONFWDEF{cellBasisVector1}{basis vector for periodic boundaries (\AA)}{vector}{0 0 0}
+{Specifies a basis vector for periodic boundary conditions.}
 
 \item
-\NAMDCONFWDEF{cellBasisVector2}{basis vector for periodic boundaries (\AA)}{vector along y axis}{0 0 0}
-{Specifies whether or not periodic boundary conditions 
-are to be applied to the system in the y direction.}
+\NAMDCONFWDEF{cellBasisVector2}{basis vector for periodic boundaries (\AA)}{vector}{0 0 0}
+{Specifies a basis vector for periodic boundary conditions.}
 
 \item
-\NAMDCONFWDEF{cellBasisVector3}{basis vector for periodic boundaries (\AA)}{vector along z axis}{0 0 0}
-{Specifies whether or not periodic boundary conditions 
-are to be applied to the system in the z direction.}
+\NAMDCONFWDEF{cellBasisVector3}{basis vector for periodic boundaries (\AA)}{vector}{0 0 0}
+{Specifies a basis vector for periodic boundary conditions.}
 
 \item
 \NAMDCONFWDEF{cellOrigin}{center of periodic cell (\AA)}{position}{0 0 0}
@@ -1068,6 +1063,32 @@ the average velocity of the restrained atom and for comparison of this
 average velocity to
 {\tt SMDVmax}.}
 \end{itemize}
+
+
+\subsubsection{Interactive Molecular Dynamics (IMD)}
+
+\NAMD\ now works directly with \VMD\ to allow you to view and interactively
+steer your simulation.  \NAMD\ will wait for \VMD\ to connect on startup.
+
+\begin{itemize}
+\item
+\NAMDCONFWDEF{IMDon}{is IMD active?}{{\tt on} or {\tt off}}{{\tt off}}
+{Specifies whether or not to expect and wait for a connection.}
+
+\item
+\NAMDCONF{IMDport}{port number to expect a connection on}
+{positive integer}
+{This is a free port number on the machine that node 0 is running on.
+\NAMD\ will wait for a connection on this port.
+This number will have to be entered into \VMD.}
+
+\item
+\NAMDCONF{IMDfreq}{timesteps between sending coordinates}
+{positive integer}
+{This allows coordinates to be sent less often, which may increase
+\NAMD\ performance or be necessary due to a slow network.}
+\end{itemize}
+
 
 \subsubsection{Tcl interface}
 
