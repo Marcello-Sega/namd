@@ -266,13 +266,13 @@ void Sequencer::integrate() {
        }
 
        if ( ! commOnly ) {
-	langevinVelocitiesBBK2(timestep);
+	langevinVelocitiesBBK1(timestep);
 	addForceToMomentum(timestep);
 	if (staleForces || doNonbonded)
 		addForceToMomentum(nbondstep,Results::nbond,staleForces);
 	if (staleForces || doFullElectrostatics)
 		addForceToMomentum(slowstep,Results::slow,staleForces);
-	langevinVelocitiesBBK1(timestep);
+	langevinVelocitiesBBK2(timestep);
        }
 
         // add drag to each atom's positions
@@ -474,9 +474,9 @@ void Sequencer::langevinVelocitiesBBK1(BigReal dt_fs)
       BigReal dt_gamma = dt * molecule->langevin_param(aid);
       if ( ! dt_gamma ) continue;
 
+      a[i].velocity *= ( 1. - 0.5 * dt_gamma );
       a[i].velocity += random->gaussian_vector() *
              sqrt( 2 * dt_gamma * kbT / a[i].mass );
-      a[i].velocity /= ( 1. + 0.5 * dt_gamma );
     }
   }
 }
@@ -486,6 +486,8 @@ void Sequencer::langevinVelocitiesBBK2(BigReal dt_fs)
 {
   if ( simParams->langevinOn )
   {
+    rattle1(dt_fs,1);  // conserve momentum if gammas differ
+
     FullAtom *a = patch->atom.begin();
     int numAtoms = patch->numAtoms;
     Molecule *molecule = Node::Object()->molecule;
@@ -497,9 +499,7 @@ void Sequencer::langevinVelocitiesBBK2(BigReal dt_fs)
       BigReal dt_gamma = dt * molecule->langevin_param(aid);
       if ( ! dt_gamma ) continue;
 
-      a[i].velocity *= ( 1. - 0.5 * dt_gamma );
-      // a[i].velocity += random->gaussian_vector() *
-      //        sqrt( dt_gamma * kbT / a[i].mass );
+      a[i].velocity /= ( 1. + 0.5 * dt_gamma );
     }
   }
 }
