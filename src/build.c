@@ -598,7 +598,7 @@ int tcl_patch(ClientData data, Tcl_Interp *interp,
       return TCL_ERROR;
     }
   }
-  if ( topo_mol_patch(psf->mol,targets,2,argv[1],0) ) {
+  if ( topo_mol_patch(psf->mol,targets,(argc-2),argv[1],0) ) {
     Tcl_SetResult(interp,"ERROR: failed to apply patch",TCL_VOLATILE);
     return TCL_ERROR;
   }
