@@ -2,7 +2,7 @@ NAMD_ARCH = Tru64-Alpha
 CHARMARCH = net-axp-cxx
 
 CXX = cxx
-CXXOPTS = -fast -O4 -nocleanup -use_non_shared_libcxx
+CXXOPTS = -fast -O4 -nocleanup -non_shared
 CC = cc
 COPTS = -fast -O4
 

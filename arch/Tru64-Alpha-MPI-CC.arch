@@ -1,4 +1,6 @@
 include .rootdir/arch/Tru64-Alpha-CC.arch
 
+CXXOPTS = -fast -O4 -nocleanup -use_non_shared_libcxx
+
 CHARMARCH = mpi-axp-cxx
 
