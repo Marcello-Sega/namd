@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.6 1996/11/07 17:55:29 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.7 1996/11/07 18:06:56 nealk Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -214,27 +214,27 @@ int ComputeMap::newPid(ComputeID cid, PatchID pid)
 void ComputeMap::printComputeMap(void)
 {
   DebugM(1,"---------------------------------------");
-  DebugM(1,"---------------------------------------" << endl);
+  DebugM(1,"---------------------------------------\n");
 
-  DebugM(1,"nComputes = " << nComputes << endl);
-  DebugM(1,"nPatchBased = " << nPatchBased << endl);
-  DebugM(1,"nAtomBased = " << nAtomBased << endl);
-  DebugM(1,"nAllocated = " << nComputes << endl);
+  DebugM(1,"nComputes = " << nComputes << '\n');
+  DebugM(1,"nPatchBased = " << nPatchBased << '\n');
+  DebugM(1,"nAtomBased = " << nAtomBased << '\n');
+  DebugM(1,"nAllocated = " << nComputes << '\n');
   for(int i=0; i < nComputes; i++)
   {
-    DebugM(1,"Compute " << i << endl);
-    DebugM(1,"  node = " << computeData[i].node << endl);
-    DebugM(1,"  patchBased = " << computeData[i].patchBased << endl);
-    DebugM(1,"  numPids = " << computeData[i].numPids << endl);
-    DebugM(1,"  numPidsAllocated = " << computeData[i].numPidsAllocated << endl);
+    DebugM(1,"Compute " << i << '\n');
+    DebugM(1,"  node = " << computeData[i].node << '\n');
+    DebugM(1,"  patchBased = " << computeData[i].patchBased << '\n');
+    DebugM(1,"  numPids = " << computeData[i].numPids << '\n');
+    DebugM(1,"  numPidsAllocated = " << computeData[i].numPidsAllocated << '\n');
     for(int j=0; j < computeData[i].numPids; j++)
     {
       DebugM(1,computeData[i].pids[j]);
       if (!((j+1) % 6))
-	DebugM(1,endl);
+	DebugM(1,'\n');
     }
-    DebugM(1,endl << "---------------------------------------");
-    DebugM(1,"---------------------------------------" << endl);
+    DebugM(1,"\n---------------------------------------");
+    DebugM(1,"---------------------------------------\n");
 
   }
 }
@@ -243,12 +243,15 @@ void ComputeMap::printComputeMap(void)
  *
  *	$RCSfile: ComputeMap.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/11/07 17:55:29 $
+ *	$Revision: 1.7 $	$Date: 1996/11/07 18:06:56 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.C,v $
+ * Revision 1.7  1996/11/07 18:06:56  nealk
+ * Changed endl to \n
+ *
  * Revision 1.6  1996/11/07 17:55:29  nealk
  * Modified use of DebugM
  *
