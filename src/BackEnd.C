@@ -10,6 +10,7 @@
 #include "ProcessorPrivate.h"
 #include "common.h"
 #include "Node.h"
+#include "memusage.h"
 
 #include <new.h>
 #include <charm++.h>
@@ -117,15 +118,8 @@ void BackEnd::exit(void) {
   float cpuTime = CmiCpuTimer() - cpuTime_start;
   float wallTime = CmiWallTimer() - wallTime_start;
   CmiPrintf("==========================================\n"
-  	"WallClock : %f  CPUTime : %f \n",wallTime,cpuTime);
-  // char endmsg[1024];
-  // sprintf(endmsg,"==========================================\n"
-  // 	"WallClock : %f  CPUTime : %f \n",wallTime,cpuTime);
-  // ConverseExit();  // Only kills this node.
-  // CkExit(); CsdScheduler(-1);  // Kills everything?
-  // CmiAbort("Exiting normally.\n");  // Actually works. 
-  //                                     (Well, only on workstations -RKB)
-  // 
+  	"WallClock: %f  CPUTime: %f  Memory: %d kB\n",
+	wallTime,cpuTime,memusage()/1024);
   int i;
   for(i=1; i < CmiNumPes(); i++)
     ExitSchedOn(i);

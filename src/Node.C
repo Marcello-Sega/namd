@@ -27,7 +27,7 @@
 
 #include <stdio.h>
 #include <converse.h>
-
+#include "memusage.h"
 #include "IMDOutput.h"
 #include "main.decl.h"
 #include "main.h"
@@ -169,7 +169,8 @@ void Node::startup() {
   int gotoRun = false;
 
   if (!CkMyPe()) {
-     iout << iINFO << "Entering startup phase " << startupPhase << "\n" << endi;
+     iout << iINFO << "Entering startup phase " << startupPhase << " with " <<
+	(memusage()/1024) << " kB of memory in use.\n" << endi;
   }
   
   switch (startupPhase) {
@@ -368,6 +369,12 @@ void Node::run()
     HomePatch *patch = (*ai).patch;
     patch->runSequencer();
   }
+
+  if (!CkMyPe()) {
+     iout << iINFO << "Finished startup with " <<
+	(memusage()/1024) << " kB of memory in use.\n" << endi;
+  }
+  
 }
 
 

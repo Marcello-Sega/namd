@@ -4,6 +4,7 @@
 ***  All rights reserved.
 **/
 
+#include "memusage.h"
 #include "Node.h"
 #include "Molecule.h"
 #include "SimParameters.h"
@@ -875,8 +876,8 @@ void Controller::printEnergies(int step)
 	BigReal ns = simParams->dt / 1000000.0;
 	BigReal days = 1.0 / (24.0 * 60.0 * 60.0);
 	BigReal daysPerNano = wallPerStep * days / ns;
-	iout << wallPerStep << " s/step "
-		<< daysPerNano << " days/ns\n" << endi;
+	iout << wallPerStep << " s/step " << daysPerNano << " days/ns ";
+        iout << (memusage()/1024) << " kB of memory in use.\n" << endi;
       }
       break;
     }
@@ -901,7 +902,9 @@ void Controller::printEnergies(int step)
         iout << "TIMING: " << step
              << "  CPU: " << endCTime << ", " << elapsedC << "/step"
              << "  Wall: " << endWTime << ", " << elapsedW << "/step"
-             << ", " << remainingW_hours << " hours remaining\n" << endi;
+             << ", " << remainingW_hours << " hours remaining"
+             << ", " << (memusage()/1024) << " kB of memory in use"
+             << ".\n" << endi;
       }
     }
 

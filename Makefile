@@ -32,6 +32,7 @@ OBJS = \
 	$(DSTDIR)/dcdlib.o \
 	$(DSTDIR)/main.o \
 	$(DSTDIR)/mainfunc.o \
+	$(DSTDIR)/memusage.o \
 	$(DSTDIR)/strlib.o \
 	$(DSTDIR)/AlgSeven.o \
 	$(DSTDIR)/AtomMap.o \

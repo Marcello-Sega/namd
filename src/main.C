@@ -6,6 +6,7 @@
 
 #include "charm++.h"
 #include "InfoStream.h"
+#include "memusage.h"
 
 #include "main.decl.h"
 #include "main.h"
@@ -102,6 +103,9 @@ public:
     sprintf(numcpus,"%d",CmiNumPes());
     tbsoft_sendusage("NAMD",NAMD_VERSION,NAMD_PLATFORM,numcpus,"");
 #endif
+
+    iout << iINFO << (memusage()/1024) << " kB of memory in use.\n" << endi;
+
   }
 
 };

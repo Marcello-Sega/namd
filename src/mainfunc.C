@@ -4,6 +4,7 @@
 ***  All rights reserved.
 **/
 
+#include "memusage.h"
 #include "converse.h"
 #include "common.h"
 #include "BackEnd.h"
