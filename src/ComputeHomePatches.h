@@ -74,6 +74,7 @@ class ReductionMgr;
 class ComputeHomePatches : public Compute {
 protected:
   int useAvgPositions;
+  int hasPatchZero;  // used for calculations/data needed only once
 
   ComputeHomePatchList patchList;
 
