@@ -181,11 +181,11 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
   consIndexes=NULL;
   consParams=NULL;
   nameArena = new ObjectArena<char>;
-  nameArena->setAlignment(8);
+  // nameArena->setAlignment(8);
   arena = new ObjectArena<int32>;
-  arena->setAlignment(32);
+  // arena->setAlignment(32);
   exclArena = new ObjectArena<char>;
-  exclArena->setAlignment(32);
+  // exclArena->setAlignment(32);
 
   /*  Initialize counts to 0 */
   numAtoms=0;
