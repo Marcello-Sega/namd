@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Molecule.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/12/04 17:49:28 $
+ *	$Revision: 1.6 $	$Date: 1996/12/04 18:14:49 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.6  1996/12/04 18:14:49  nealk
+ * *** empty log message ***
+ *
  * Revision 1.5  1996/12/04 17:49:28  nealk
  * Revised Nonbonded Excl to init.
  *
@@ -137,7 +140,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.5 1996/12/04 17:49:28 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.6 1996/12/04 18:14:49 nealk Exp $";
 
 #include "Molecule.h"
 #include <stdio.h>
@@ -2442,7 +2445,7 @@ void Molecule::build13excl(IntList *lists, LintList *llists)
 				{
 					lists[i].add(bonds[bond2].atom2);
 					llists[i].add(bonds[bond2].atom2);
-		 DebugM(2,"Adding 13excl: " << i << " " << bonds[bond2].atom2 << "\n");
+					DebugM(2,"Adding 13excl: " << i << " " << bonds[bond2].atom2 << "\n");
 				}
 			}
 			else
@@ -2451,7 +2454,7 @@ void Molecule::build13excl(IntList *lists, LintList *llists)
 				{
 					lists[i].add(bonds[bond2].atom1);
 					llists[i].add(bonds[bond2].atom1);
-		 DebugM(2,"Adding 13excl: " << i << " " << bonds[bond2].atom1 << "\n");
+		 			DebugM(2,"Adding 13excl: " << i << " " << bonds[bond2].atom1 << "\n");
 				}
 			}
 
@@ -2538,7 +2541,7 @@ void Molecule::build14excl(IntList *lists, LintList *llists)
 					{
 					   lists[i].add(bonds[bond3].atom2);
 					   llists[i].add(bonds[bond3].atom2);
-		 DebugM(2,"Adding 14excl: " << i << " " << bonds[bond3].atom2 << "\n");
+		 			   DebugM(2,"Adding 14excl: " << i << " " << bonds[bond3].atom2 << "\n");
 					}
 				}
 				else
@@ -2547,7 +2550,7 @@ void Molecule::build14excl(IntList *lists, LintList *llists)
 					{
 					   lists[i].add(bonds[bond3].atom1);
 					   llists[i].add(bonds[bond3].atom1);
-		 DebugM(2,"Adding 14excl: " << i << " " << bonds[bond3].atom1 << "\n");
+		 			   DebugM(2,"Adding 14excl: " << i << " " << bonds[bond3].atom1 << "\n");
 					}
 				}
 
