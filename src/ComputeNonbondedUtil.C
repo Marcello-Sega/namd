@@ -316,8 +316,8 @@ void ComputeNonbondedUtil::select(void)
       BigReal x = r2_delta;
       BigReal dv = ( ( t[3] * x + t[2] ) * x + t[1] ) * x + t[0] - t[4];
       BigReal dg = ( 3.0 * t[3] * x + 2.0 * t[2] ) * x + t[1] - t[5];
-      if ( abs(dv) > dvmax ) dvmax = abs(dv);
-      if ( abs(dg) > dgmax ) dgmax = abs(dg);
+      if ( fabs(dv) > dvmax ) dvmax = fabs(dv);
+      if ( fabs(dg) > dgmax ) dgmax = fabs(dg);
       // if ( dv != 0.0 ) CkPrintf("TABLE %d ENERGY ERROR %g AT %g\n",j,dv,x*i);
       // if ( dg != 0.0 ) CkPrintf("TABLE %d FORCE ERROR %g AT %g\n",j,dg,x*i);
     }
