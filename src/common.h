@@ -26,10 +26,12 @@ typedef	short	int32;
 typedef	int	int32;
 #endif
 
+#ifndef GCC
 #ifdef GLOBALS
 void * operator new (size_t, void *);
 #else
 void * ::operator new (size_t, void *);
+#endif
 #endif
 
 #if 0
@@ -271,12 +273,15 @@ int  Fclose(FILE *fout);
  *
  *	$RCSfile: common.h,v $
  *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1998/02/27 00:14:31 $
+ *	$Revision: 1.1016 $	$Date: 1998/03/09 17:06:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.h,v $
+ * Revision 1.1016  1998/03/09 17:06:47  milind
+ * Changed prototype of ::new for GCC only.
+ *
  * Revision 1.1015  1998/02/27 00:14:31  milind
  * Reduced memory requirements further by using CmiAlloc and CmiFree only
  * for messages and not for all new and deletes.

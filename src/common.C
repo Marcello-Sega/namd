@@ -10,7 +10,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1011 1998/03/03 23:05:31 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1012 1998/03/09 17:06:46 milind Exp $";
 
 #include "charm++.h"
 
@@ -22,11 +22,13 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 
 #include "SimParameters.h"
 #include "Node.h"
 
+#ifndef GCC
 #ifdef GLOBALS
 void * operator new (size_t, void *p) { return p; }
 #else
 void * ::operator new (size_t, void *p) { return p; }
 #endif // GLOBALS
+#endif
 
 #if 0
 #ifdef GLOBALS
@@ -295,13 +297,16 @@ int	Fclose	(FILE *fout)
  * RCS INFORMATION:
  *
  *	$RCSfile: common.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1998/03/03 23:05:31 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1012 $	$Date: 1998/03/09 17:06:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.C,v $
+ * Revision 1.1012  1998/03/09 17:06:46  milind
+ * Changed prototype of ::new for GCC only.
+ *
  * Revision 1.1011  1998/03/03 23:05:31  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *
