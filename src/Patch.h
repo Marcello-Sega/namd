@@ -107,12 +107,13 @@ class Patch
      virtual void boxClosed(int);
      int boxesOpen;
 
+     void loadAtomProperties(void);
+
      void indexAtoms();
      int _hasNewAtoms;
 
   private:
   
-    void loadAtomProperties(void);
 
 };
 
@@ -124,12 +125,16 @@ class Patch
  *
  *	$RCSfile: Patch.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:59:02 $
+ *	$Revision: 1.1001 $	$Date: 1997/02/07 05:42:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.h,v $
+ * Revision 1.1001  1997/02/07 05:42:31  ari
+ * Some bug fixing - atom migration on one node works
+ * Atom migration on multiple nodes gets SIGSEGV
+ *
  * Revision 1.1000  1997/02/06 15:59:02  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

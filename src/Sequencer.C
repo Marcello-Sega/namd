@@ -74,8 +74,8 @@ void Sequencer::algorithm(void)
 	    DebugM(4, patch->getPatchID()
 		<< ": (" << cycle << "," << step << ") "
 		<< "Sending positionsReady().\n");
-            // patch->positionsReady(!(step%stepsPerCycle));
-            patch->positionsReady(0);
+            patch->positionsReady(!(step%stepsPerCycle));
+            // patch->positionsReady(0);
 	    DebugM(4, patch->getPatchID()
 		<< ": (" << cycle << "," << step << ") "
 		<< "Suspending.\n");

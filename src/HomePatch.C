@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1003 1997/02/06 23:25:07 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1004 1997/02/07 05:42:30 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -225,9 +225,12 @@ HomePatch::doAtomMigration()
     realInfo[i].mList = NULL;
   }
 
+  // Purge the AtomMap
+  AtomMap::Object()->unregisterIDs(patchID,atomIDList);
+
   // Determine atoms that need to migrate
-  numAtoms = atomIDList.size();
-  for (i=0; i<numAtoms; ++i) {
+  i = 0;
+  while (i<atomIDList.size()) { // use while - we might not advance i
      if (p[i].x < min.x) xdev = 0;
      else if (max.x <= p[i].x) xdev = 2; 
      else xdev = 1;
@@ -240,8 +243,8 @@ HomePatch::doAtomMigration()
      else if (max.z <= p[i].z) zdev = 2; 
      else zdev = 1;
 
-     // Don't migrate if destination is myself
-     if (mInfo[xdev][ydev][zdev]) {
+     if (mInfo[xdev][ydev][zdev]) { // process atom for migration
+                                    // Don't migrate if destination is myself
 
        // See if we have a migration list already
        if (NULL == (mCur = mInfo[xdev][ydev][zdev]->mList)) {
@@ -259,7 +262,12 @@ HomePatch::doAtomMigration()
        f_short.del(i);
        f_long.del(i);
      }
+     else { // look to next atom
+	 i++;
+     }
   }
+  numAtoms = atomIDList.size();
+
   for (i=0; i < numNeighbors; i++) {
     PatchMgr::Object()->sendMigrationMsg(patchID, realInfo[i]);
   }
@@ -272,6 +280,8 @@ HomePatch::doAtomMigration()
   }
   allMigrationIn = false;
   indexAtoms();
+
+  // reload the AtomMap
   AtomMap::Object()->registerIDs(patchID,atomIDList);
 }
 
@@ -292,6 +302,8 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
       f_long.add(mi->forceLong);
     }
   }
+  numAtoms = atomIDList.size();
+
   DebugM(4,"Counter on " << patchID << " = " << patchMigrationCounter << "\n");
   if (!--patchMigrationCounter) {
     DebugM(4,"All Migrations are in for patch "<<patchID<<"\n");
@@ -310,13 +322,17 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/02/06 23:25:07 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/02/07 05:42:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1004  1997/02/07 05:42:30  ari
+ * Some bug fixing - atom migration on one node works
+ * Atom migration on multiple nodes gets SIGSEGV
+ *
  * Revision 1.1003  1997/02/06 23:25:07  jim
  * Fixed bugs.
  *

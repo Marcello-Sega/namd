@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1003 1997/02/06 23:25:06 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1004 1997/02/07 05:42:30 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -198,7 +198,7 @@ void Patch::positionsReady(int doneMigration)
    ComputeMap *computeMap = ComputeMap::Object();
 
    boxesOpen = 3;
-   _hasNewAtoms = (doneMigration > 0);
+   _hasNewAtoms = (doneMigration != 0);
 
    // Give all position pickup boxes access to positions
    positionPtr = p.unencap();
@@ -230,13 +230,17 @@ void Patch::positionsReady(int doneMigration)
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/02/06 23:25:06 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/02/07 05:42:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.1004  1997/02/07 05:42:30  ari
+ * Some bug fixing - atom migration on one node works
+ * Atom migration on multiple nodes gets SIGSEGV
+ *
  * Revision 1.1003  1997/02/06 23:25:06  jim
  * Fixed bugs.
  *

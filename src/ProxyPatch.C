@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1000 1997/02/06 15:59:13 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1001 1997/02/07 05:42:32 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -26,7 +26,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.
 #include "AtomMap.h"
 
 #define MIN_DEBUG_LEVEL 4
-// #define  DEBUGM
+#define  DEBUGM
 #include "Debug.h"
 
 ProxyPatch::ProxyPatch(PatchID pd) : Patch(pd), msgBuffer(NULL)
@@ -47,7 +47,7 @@ void ProxyPatch::boxClosed(int box)
       DebugM(4,"Patch " << patchID << " processing buffered proxy data.\n");
       receiveData(msgBuffer);
     } else if (msgAllBuffer ) {
-      DebugM(4,"Patch " << patchID << " processing buffered proxy data.\n");
+      DebugM(4,"Patch " << patchID << " processing buffered proxy ALL data.\n");
       receiveAll(msgAllBuffer);
     }
   }
@@ -59,6 +59,7 @@ void ProxyPatch::boxClosed(int box)
 void ProxyPatch::receiveAtoms(ProxyAtomsMsg *msg)
 {
   loadAtoms(msg->atomIDList);
+  loadAtomProperties();
   AtomMap::Object()->registerIDs(patchID,msg->atomIDList);
   delete msg;
 }
@@ -91,8 +92,11 @@ void ProxyPatch::receiveAll(ProxyAllMsg *msg)
   msgAllBuffer = NULL;
   DebugM(4,"Processing proxy ALL msg.\n");
 
+  AtomMap::Object()->unregisterIDs(patchID,atomIDList);
   loadAtoms(msg->atomIDList);
+  loadAtomProperties();
   AtomMap::Object()->registerIDs(patchID,msg->atomIDList);
+  DebugM(4,"Processing proxy ALL msg.\n");
   p = msg->positionList;
 
   delete msg;
@@ -114,12 +118,16 @@ void ProxyPatch::sendResults(void)
  *
  *	$RCSfile: ProxyPatch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:59:13 $
+ *	$Revision: 1.1001 $	$Date: 1997/02/07 05:42:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.1001  1997/02/07 05:42:32  ari
+ * Some bug fixing - atom migration on one node works
+ * Atom migration on multiple nodes gets SIGSEGV
+ *
  * Revision 1.1000  1997/02/06 15:59:13  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

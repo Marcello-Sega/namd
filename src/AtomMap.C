@@ -45,6 +45,25 @@ void AtomMap::allocateMap(int nAtomIds)
   cleared = true;
 }
 
+//
+int AtomMap::unregisterIDs(PatchID pid, AtomIDList al)
+{
+  if (localIDTable == NULL)
+    return -1;
+  else 
+  {
+    int ali;
+
+    for(int i = 0; i < al.size(); ++i)
+    {
+	if (localIDTable[ali = al[i]].pid = pid) {
+	    localIDTable[ali].pid = -1;
+	    localIDTable[ali].index = -1;
+	}
+    }
+    return 0;
+  }
+}
 //----------------------------------------------------------------------
 int AtomMap::registerIDs(PatchID pid, AtomIDList al)
 {
@@ -78,12 +97,16 @@ void AtomMap::clearMap(void)
  *
  *	$RCSfile: AtomMap.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:57:27 $
+ *	$Revision: 1.1001 $	$Date: 1997/02/07 05:42:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: AtomMap.C,v $
+ * Revision 1.1001  1997/02/07 05:42:28  ari
+ * Some bug fixing - atom migration on one node works
+ * Atom migration on multiple nodes gets SIGSEGV
+ *
  * Revision 1.1000  1997/02/06 15:57:27  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
