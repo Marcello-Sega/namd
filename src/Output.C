@@ -8,7 +8,7 @@
  * This object outputs the data collected on the master node
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Output.C,v 1.8 1997/09/18 21:05:12 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Output.C,v 1.9 1997/09/18 22:22:21 jim Exp $";
 
 #include <string.h>
 #include <stdlib.h>
@@ -311,15 +311,16 @@ int Output::coordinateNeeded(int timestep)
 
 	//  Output a DCD trajectory 
 	if ( (simParams->dcdFrequency != -1) &&
-	     ( ((timestep % simParams->dcdFrequency) == 0) ||
-	       (timestep == 0) ) )
+	     ((timestep % simParams->dcdFrequency) == 0) &&
+	     ((timestep != simParams->firstTimestep)||(timestep == 0)) )
 	{
 		positionsNeeded = 1;
 	}
 
 	//  Output a restart file
 	if ( (simParams->restartFrequency != -1) &&
-	     ((timestep % simParams->restartFrequency) == 0) )
+	     ((timestep % simParams->restartFrequency) == 0) &&
+	     (timestep != simParams->firstTimestep) )
 	{
 		positionsNeeded = 1;
 	}
@@ -336,7 +337,7 @@ int Output::coordinateNeeded(int timestep)
 	//  the coordinates to VMD as well
         if ( (simParams->vmdFrequency != -1) && 
 	   ( ( (timestep % simParams->vmdFrequency) == 0) ||
-	     (timestep == 0) ) )
+	     (timestep == simParams->firstTimestep) ) )
         {
 		positionsNeeded = 1;
         }
@@ -347,26 +348,26 @@ int Output::coordinateNeeded(int timestep)
 
 void Output::coordinate(int timestep, int n, Vector *coor)
 {
+	SimParameters *simParams = Node::Object()->simParameters;
+
 	//  Output a DCD trajectory 
-	if ( (namdMyNode->simParams->dcdFrequency != -1) &&
-	     ( ((timestep % namdMyNode->simParams->dcdFrequency) == 0) ||
-	       (timestep == 0) ) 
-	     && !((namdMyNode->simParams->firstTimestep !=0) 
-		  && (timestep == namdMyNode->simParams->firstTimestep)
-		 ))
+	if ( (simParams->dcdFrequency != -1) &&
+	     ((timestep % simParams->dcdFrequency) == 0) &&
+	     ((timestep != simParams->firstTimestep)||(timestep == 0)) )
 	{
 		output_dcdfile(timestep, n, coor);
 	}
 
 	//  Output a restart file
-	if ( (namdMyNode->simParams->restartFrequency != -1) &&
-	     ((timestep % namdMyNode->simParams->restartFrequency) == 0) )
+	if ( (simParams->restartFrequency != -1) &&
+	     ((timestep % simParams->restartFrequency) == 0) &&
+	     (timestep != simParams->firstTimestep) )
 	{
 		output_restart_coordinates(coor, n, timestep);
 	}
 
 	//  Output final coordinates
-	if (timestep == namdMyNode->simParams->N)
+	if (timestep == simParams->N)
 	{
 		output_final_coordinates(coor, n, timestep);
 	}
@@ -375,9 +376,9 @@ void Output::coordinate(int timestep, int n, Vector *coor)
 	//  If there is an active VMD connection and it is either the
 	//  0th timestep or a mutiple of the vmdFrequency, then send
 	//  the coordinates to VMD as well
-        if ( (namdMyNode->simParams->vmdFrequency != -1) && 
-	   ( ( (timestep % namdMyNode->simParams->vmdFrequency) == 0) ||
-	     (timestep == 0) ) )
+        if ( (simParams->vmdFrequency != -1) && 
+	   ( ( (timestep % simParams->vmdFrequency) == 0) ||
+	     (timestep == simParams->firstTimestep) ) )
         {
 		gather_vmd_coords(timestep, n, coor);
         }
@@ -407,19 +408,18 @@ int Output::velocityNeeded(int timestep)
 
 	int velocitiesNeeded = 0;
 
-	if ( (simParams->restartFrequency != -1) &&
-	     ((timestep % simParams->restartFrequency) == 0) )
+	//  Output a velocity DCD trajectory
+	if ( (simParams->velDcdFrequency != -1) &&
+	     ((timestep % simParams->velDcdFrequency) == 0) &&
+	     ((timestep != simParams->firstTimestep)||(timestep == 0)) )
 	{
 		velocitiesNeeded = 1;
 	}
 
-	//  Output velocity DCD trajectory
-	if ( (simParams->velDcdFrequency != -1) &&
-	     ( ((timestep % simParams->velDcdFrequency) == 0) ||
-	       (timestep == 0) ) 
-	     && !((simParams->firstTimestep !=0) 
-		  && (timestep == simParams->firstTimestep)
-		 ))
+	//  Output a restart file
+	if ( (simParams->restartFrequency != -1) &&
+	     ((timestep % simParams->restartFrequency) == 0) &&
+	     (timestep != simParams->firstTimestep) )
 	{
 		velocitiesNeeded = 1;
 	}
@@ -435,26 +435,26 @@ int Output::velocityNeeded(int timestep)
 
 void Output::velocity(int timestep, int n, Vector *vel)
 {
-	//  Output restart file
-	if ( (namdMyNode->simParams->restartFrequency != -1) &&
-	     ((timestep % namdMyNode->simParams->restartFrequency) == 0) )
-	{
-		output_restart_velocities(timestep, n, vel);
-	}
+	SimParameters *simParams = Node::Object()->simParameters;
 
 	//  Output velocity DCD trajectory
-	if ( (namdMyNode->simParams->velDcdFrequency != -1) &&
-	     ( ((timestep % namdMyNode->simParams->velDcdFrequency) == 0) ||
-	       (timestep == 0) ) 
-	     && !((namdMyNode->simParams->firstTimestep !=0) 
-		  && (timestep == namdMyNode->simParams->firstTimestep)
-		 ))
+	if ( (simParams->velDcdFrequency != -1) &&
+	     ((timestep % simParams->velDcdFrequency) == 0) &&
+	     ((timestep != simParams->firstTimestep)||(timestep == 0)) )
 	{
 		output_veldcdfile(timestep, n, vel);
 	}
 
+	//  Output restart file
+	if ( (simParams->restartFrequency != -1) &&
+	     ((timestep % simParams->restartFrequency) == 0) &&
+	     (timestep != simParams->firstTimestep) )
+	{
+		output_restart_velocities(timestep, n, vel);
+	}
+
 	//  Output final velocities
-	if (timestep == namdMyNode->simParams->N)
+	if (timestep == simParams->N)
 	{
 		output_final_velocities(timestep, n, vel);
 	}
@@ -2514,13 +2514,17 @@ void Output::output_allforcedcdfile(int timestep, int n, Vector *forces)
  * RCS INFORMATION:
  *
  *	$RCSfile: Output.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1997/09/18 21:05:12 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.9 $	$Date: 1997/09/18 22:22:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Output.C,v $
+ * Revision 1.9  1997/09/18 22:22:21  jim
+ * Cleaned up coordinate ane velocity output code a little.
+ * Won't create restart file on first time step.
+ *
  * Revision 1.8  1997/09/18 21:05:12  brunner
  * Made DCD files no update on first timestep, if firstTimestep
  * is non-zero.
