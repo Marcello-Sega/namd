@@ -336,6 +336,11 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 
 	for (int k=0; k<numProxies; k++) {
 	  processorArray[neighborNodes[k]].proxies.insert(&patchArray[pid]);
+#if 1
+          // too many proxies on this node, weight the background load
+	  if (processorArray[neighborNodes[k]].proxies.numElements() > 20)
+		processorArray[neighborNodes[k]].backgroundLoad *= 1.5;
+#endif
 	  patchArray[pid].proxiesOn.insert(&processorArray[neighborNodes[k]]);
 	}
       } else if (this_obj.migratable) { // Its a compute
