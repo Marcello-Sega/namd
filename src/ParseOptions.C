@@ -10,7 +10,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ParseOptions.C,v 1.1005 1997/12/26 23:10:55 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ParseOptions.C,v 1.1006 1998/01/13 17:07:03 milind Exp $";
 // set the list of parameters
 #ifndef GCC
 #include <libc.h>
@@ -40,7 +40,7 @@ const char *string(Range r)
    }
 }
    
-static char *unit_string_array[UNITS_UNDEFINED+1] =  {
+static char *unit_string_array[N_UNITS_UNDEFINED+1] =  {
   "", "fs", "ns", "sec", "min", "hr", "A", "nm", "m", 
   "kcal", "kJ", "eV", "K", "undefined units"
 };
@@ -53,39 +53,39 @@ const char *string(Units u)
 // static, so it never leaves the .C
 Units static next(Units u) {
   switch (u) {
-   case UNIT: return FSEC;
-   case FSEC: return NSEC;
-   case NSEC: return SEC;
-   case SEC: return MIN;
-   case MIN: return HOUR;
-   case HOUR:  return ANGSTROM;
-   case ANGSTROM: return NANOMETER;
-   case NANOMETER: return METER;
-   case METER: return KCAL;
-   case KCAL: return KJOULE;
-   case KJOULE: return EV;
-   case EV: return KELVIN;
-   case KELVIN: return UNITS_UNDEFINED;
-   default: return UNITS_UNDEFINED;
+   case N_UNIT: return N_FSEC;
+   case N_FSEC: return N_NSEC;
+   case N_NSEC: return N_SEC;
+   case N_SEC: return N_MIN;
+   case N_MIN: return N_HOUR;
+   case N_HOUR:  return N_ANGSTROM;
+   case N_ANGSTROM: return N_NANOMETER;
+   case N_NANOMETER: return N_METER;
+   case N_METER: return N_KCAL;
+   case N_KCAL: return N_KJOULE;
+   case N_KJOULE: return N_EV;
+   case N_EV: return N_KELVIN;
+   case N_KELVIN: return N_UNITS_UNDEFINED;
+   default: return N_UNITS_UNDEFINED;
   }
 }
 
 // convert from a string to Units
 Units ParseOptions::atoUnits(const char *s) {
    Units u;
-   for (u=UNIT; u!=UNITS_UNDEFINED; u = next(u)) {
+   for (u=N_UNIT; u!=N_UNITS_UNDEFINED; u = next(u)) {
       if (!strcasecmp(unit_string_array[u], s)) return u;
    }
-   if (!strcasecmp(s, "Angstrom")) return ANGSTROM;
-   if (!strcasecmp(s, "kcal/mol")) return KCAL;
-   if (!strcasecmp(s, "kJ/mol")) return KJOULE;
-   return UNITS_UNDEFINED;
+   if (!strcasecmp(s, "Angstrom")) return N_ANGSTROM;
+   if (!strcasecmp(s, "kcal/mol")) return N_KCAL;
+   if (!strcasecmp(s, "kJ/mol")) return N_KJOULE;
+   return N_UNITS_UNDEFINED;
 }
 
 
 // returns the scaling factor "sf" such that from*sf == to
 // returns 0 if there is no conversion (like from METER to SEC)
-static BigReal scaling_factors[UNITS_UNDEFINED+1] = {
+static BigReal scaling_factors[N_UNITS_UNDEFINED+1] = {
    1, 1, 1000, 1E15, 60E15, 3600E15, 1, 10, 1E10, 1, 1/4.1855, 1/23.052,
    1, 0
 };
@@ -96,22 +96,22 @@ BigReal convert(Units to, Units from)
 {
 // cout << "Converting from " << string(from) << " to " << string(to) << endl;
 // cout << scaling_factors[from] << " <--> " << scaling_factors[to] << endl;
-   if (from == UNIT && to == UNIT) { return 1.0; }
-   if ((from == NSEC || from == FSEC || from == SEC || from == MIN || 
-        from == HOUR) &&
-       (to   == NSEC || to   == FSEC || to   == SEC || to   == MIN || 
-        to   == HOUR)) {
+   if (from == N_UNIT && to == N_UNIT) { return 1.0; }
+   if ((from == N_NSEC || from == N_FSEC || from == N_SEC || from == N_MIN || 
+        from == N_HOUR) &&
+       (to   == N_NSEC || to   == N_FSEC || to   == N_SEC || to   == N_MIN || 
+        to   == N_HOUR)) {
       return scaling_factors[from]/scaling_factors[to];
    }
-   if ((from == METER || from == NANOMETER || from == ANGSTROM) &&
-       (to   == METER || to   == NANOMETER || to   == ANGSTROM)) {
+   if ((from == N_METER || from == N_NANOMETER || from == N_ANGSTROM) &&
+       (to   == N_METER || to   == N_NANOMETER || to   == N_ANGSTROM)) {
       return scaling_factors[from]/scaling_factors[to];
    }
-   if ((from == KCAL || from == KJOULE || from == EV) &&
-       (to   == KCAL || to   == KJOULE || to   == EV)) {
+   if ((from == N_KCAL || from == N_KJOULE || from == N_EV) &&
+       (to   == N_KCAL || to   == N_KJOULE || to   == N_EV)) {
       return scaling_factors[from]/scaling_factors[to];
    }
-   if (from == KELVIN && to == KELVIN) {
+   if (from == N_KELVIN && to == N_KELVIN) {
       return scaling_factors[from]/scaling_factors[to];
    }
    return 0.0;
@@ -140,7 +140,7 @@ void ParseOptions::DataElement::init(const char *newname,
    idef = 0;
    iptr = NULL;
    range = FREE_RANGE;
-   units = UNIT;
+   units = N_UNIT;
 }
 
 #define dataelement_cons_macro_default(Mtype, MType, Mptr, Mdef) \
@@ -469,7 +469,7 @@ Bool ParseOptions::scan_float(DataElement *data, const char *s)
    }
    if (count == 2) {     // number and units
       Units u = atoUnits(units_str);
-      if (u == UNITS_UNDEFINED) {
+      if (u == N_UNITS_UNDEFINED) {
 	 iout << iERROR << "Could not understand units '" << units_str
 		 << "' in option '" << data->name << " = " << s
                  << "\n" << endi;
@@ -1097,7 +1097,7 @@ Bool ParseOptions::units(const char *name, Units units)  // get
 	<< name << " not found so units not set" << "\n" << endi;
      return FALSE;
   }
-  if ((tmp -> type == DataElement::INT && units != UNIT) ||
+  if ((tmp -> type == DataElement::INT && units != N_UNIT) ||
       (tmp -> type != DataElement::INT && 
        tmp -> type != DataElement::FLOAT)) {
      iout << iERROR 
@@ -1112,7 +1112,7 @@ Bool ParseOptions::units(const char *name, Units units)  // get
 Bool ParseOptions::units(const char *name, Units *units) // set
 {
    DataElement *tmp = internal_find(name);
-   *units = UNIT;
+   *units = N_UNIT;
    if (!tmp) {
       iout << iERROR 
 	 << "'" << name << "' doesn't exist so cannot get its units"
@@ -1135,12 +1135,16 @@ Bool ParseOptions::units(const char *name, Units *units) // set
  *
  *	$RCSfile: ParseOptions.C,v $
  *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/12/26 23:10:55 $
+ *	$Revision: 1.1006 $	$Date: 1998/01/13 17:07:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ParseOptions.C,v $
+ * Revision 1.1006  1998/01/13 17:07:03  milind
+ * added a prefix to the names of the units because they clashed with names
+ * of some predifined constants in Solaris include files.
+ *
  * Revision 1.1005  1997/12/26 23:10:55  milind
  * Made namd2 to compile, link and run under linux. Merged Templates and src
  * directoriies, and removed separate definition and declaration files for

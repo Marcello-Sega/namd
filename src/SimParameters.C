@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *  $RCSfile: SimParameters.C,v $
- *  $Author: sergei $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1029 $  $Date: 1998/01/06 20:54:07 $
+ *  $Author: milind $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1030 $  $Date: 1998/01/13 17:07:05 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,10 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1030  1998/01/13 17:07:05  milind
+ * added a prefix to the names of the units because they clashed with names
+ * of some predifined constants in Solaris include files.
+ *
  * Revision 1.1029  1998/01/06 20:54:07  sergei
  * fixed SMD output
  *
@@ -417,7 +421,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1029 1998/01/06 20:54:07 sergei Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1030 1998/01/13 17:07:05 milind Exp $";
 
 
 #include "ckdefs.h"
@@ -492,7 +496,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.require("main", "timestep", "size of the timestep, in fs",
     &dt, 1.0);
    opts.range("timestep", POSITIVE);
-   opts.units("timestep", FSEC);
+   opts.units("timestep", N_FSEC);
 
    opts.require("main", "numsteps", "number of timesteps to perform",
     &N);
@@ -506,7 +510,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.optional("main", "cutoff", "local electrostatic and Vdw distance", 
       &cutoff);
    opts.range("cutoff", POSITIVE);
-   opts.units("cutoff", ANGSTROM);
+   opts.units("cutoff", N_ANGSTROM);
    
    opts.require("main", "exclude", "Electrostatic exclusion policy",
     PARSE_STRING);
@@ -522,36 +526,36 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
      "Distance for switching function activation",
      &switchingDist);
    opts.range("switchdist", POSITIVE);
-   opts.units("switchdist", ANGSTROM);
+   opts.units("switchdist", N_ANGSTROM);
 
    opts.optional("switching", "elecswitchdist",
      "Distance for electrostatic switching function activation",
      &elecswitchDist);
    opts.range("elecswitchdist", POSITIVE);
-   opts.units("elecswitchdist", ANGSTROM);
+   opts.units("elecswitchdist", N_ANGSTROM);
 
    opts.optional("switching", "eleccutoff",
      "Distance for electrostatic cutoff",
      &eleccutoff);
    opts.range("eleccutoff", POSITIVE);
-   opts.units("eleccutoff", ANGSTROM);
+   opts.units("eleccutoff", N_ANGSTROM);
 
    opts.optional("switching", "vdwswitchdist",
      "Distance for vdw switching function activation",
      &vdwswitchDist);
    opts.range("vdwswitchdist", POSITIVE);
-   opts.units("vdwswitchdist", ANGSTROM);
+   opts.units("vdwswitchdist", N_ANGSTROM);
 
    opts.optional("switching", "vdwcutoff",
      "Distance for vdw cutoff",
      &vdwcutoff);
    opts.range("vdwcutoff", POSITIVE);
-   opts.units("vdwcutoff", ANGSTROM);
+   opts.units("vdwcutoff", N_ANGSTROM);
 
    opts.optional("switching", "pairlistdist",  "Pairlist inclusion distance",
      &pairlistDist);
    opts.range("pairlistdist", POSITIVE);
-   opts.units("pairlistdist", ANGSTROM);
+   opts.units("pairlistdist", N_ANGSTROM);
 
    opts.optionalB("main", "plMarginCheck", 
       "Check atom movement since pairlist made?",
@@ -560,7 +564,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.optional("main", "temperature", "initial temperature",
      &initialTemp);
    opts.range("temperature", NOT_NEGATIVE);
-   opts.units("temperature", KELVIN);
+   opts.units("temperature", N_KELVIN);
 
    opts.optionalB("main", "COMmotion", "should the center of mass move?",
       &comMove, FALSE);
@@ -571,7 +575,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
    opts.optional("main", "margin", "Patch width margin", &margin, 1.0);
    opts.range("margin", NOT_NEGATIVE);
-   opts.units("margin", ANGSTROM);
+   opts.units("margin", N_ANGSTROM);
 
    opts.optional("main", "seed", "Initial random number seed", &randomSeed);
    opts.range("seed", POSITIVE);
@@ -703,14 +707,14 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.optional("minimization", "maximumMove", "Maximum atom movement per step "
      "during minimization", &maximumMove);
    opts.range("maximumMove", POSITIVE);
-   opts.units("maximumMove", ANGSTROM);
+   opts.units("maximumMove", N_ANGSTROM);
 
    opts.optionalB("main", "Langevin", "Should Langevin dynamics be performed?",
       &langevinOn, FALSE);
    opts.require("Langevin", "langevinTemp", "Temperature for heat bath in Langevin "
      "dynamics", &langevinTemp);
    opts.range("langevinTemp", NOT_NEGATIVE);
-   opts.units("langevinTemp", KELVIN);
+   opts.units("langevinTemp", N_KELVIN);
    opts.optional("Langevin", "langevinFile", "PDB file with temperature "
      "coupling terms (B(i)) (default is the PDB input file)",
      PARSE_STRING);
@@ -729,7 +733,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.require("COLD", "COLDTemp", "Temperature for heat bath in COLD",
     &COLDTemp);
    opts.range("COLDTemp", NOT_NEGATIVE);
-   opts.units("COLDTemp", KELVIN);
+   opts.units("COLDTemp", N_KELVIN);
    opts.require("COLD", "COLDRate", "Damping rate for COLD",
     &COLDRate, 3000.0);
    opts.range("COLDRate", NOT_NEGATIVE);
@@ -741,7 +745,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.require("tcouple", "tCoupleTemp", 
     "Temperature for temperature coupling", &tCoupleTemp);
    opts.range("tCoupleTemp", NOT_NEGATIVE);
-   opts.units("tCoupleTemp", KELVIN);
+   opts.units("tCoupleTemp", N_KELVIN);
    opts.optional("tCouple", "tCoupleFile", "PDB file with temperature "
      "coupling terms (B(i)) (default is the PDB input file)",
      PARSE_STRING);
@@ -755,7 +759,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.optional("main", "rescaleTemp", "Target temperature for velocity rescaling",
     &rescaleTemp);
    opts.range("rescaleTemp", NOT_NEGATIVE);
-   opts.units("rescaleTemp", KELVIN);
+   opts.units("rescaleTemp", N_KELVIN);
 
    ////  Berendsen pressure bath coupling
    opts.optionalB("main", "BerendsenPressure", 
@@ -773,7 +777,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
     "Relaxation time for pressure coupling",
     &berendsenPressureRelaxationTime);
    opts.range("BerendsenPressureRelaxationTime", POSITIVE);
-   opts.units("BerendsenPressureRelaxationTime", FSEC);
+   opts.units("BerendsenPressureRelaxationTime", N_FSEC);
    opts.optional("BerendsenPressure", "BerendsenPressureFreq",
     "Number of steps between volume rescaling",
     &berendsenPressureFreq, 1);
@@ -910,11 +914,11 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.require("sphericalBC", "sphericalBCr1", "Radius for first sphere "
      "potential", &sphericalBCr1);
    opts.range("sphericalBCr1", POSITIVE);
-   opts.units("sphericalBCr1", ANGSTROM);
+   opts.units("sphericalBCr1", N_ANGSTROM);
    opts.require("sphericalBC", "sphericalBCk1", "Force constant for first "
     "sphere potential (+ is an inward force, - outward)",
     &sphericalBCk1);
-   opts.units("sphericalBCk1", KCAL);
+   opts.units("sphericalBCk1", N_KCAL);
    opts.optional("sphericalBC", "sphericalBCexp1", "Exponent for first "
     "sphere potential", &sphericalBCexp1, 2);
    opts.range("sphericalBCexp1", POSITIVE);
@@ -922,11 +926,11 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.optional("sphericalBCr1", "sphericalBCr2", "Radius for second sphere "
      "potential", &sphericalBCr2);
    opts.range("sphericalBCr2", POSITIVE);
-   opts.units("sphericalBCr2", ANGSTROM);
+   opts.units("sphericalBCr2", N_ANGSTROM);
    opts.require("sphericalBCr2", "sphericalBCk2", "Force constant for second "
     "sphere potential (+ is an inward force, - outward)",
     &sphericalBCk2);
-   opts.units("sphericalBCk2", KCAL);
+   opts.units("sphericalBCk2", N_KCAL);
    opts.optional("sphericalBCr2", "sphericalBCexp2", "Exponent for second "
     "sphere potential", &sphericalBCexp2, 2);
    opts.range("sphericalBCexp2", POSITIVE);
@@ -939,11 +943,11 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.require("cylindricalBC", "cylindricalBCr1", "Radius for first cylinder "
                  "potential", &cylindricalBCr1);
    opts.range("cylindricalBCr1", POSITIVE);
-   opts.units("cylindricalBCr1", ANGSTROM);
+   opts.units("cylindricalBCr1", N_ANGSTROM);
    opts.require("cylindricalBC", "cylindricalBCk1", "Force constant for first "
                 "cylinder potential (+ is an inward force, - outward)",
                 &cylindricalBCk1);
-   opts.units("cylindricalBCk1", KCAL);
+   opts.units("cylindricalBCk1", N_KCAL);
    opts.optional("cylindricalBC", "cylindricalBCexp1", "Exponent for first "
                 "cylinder potential", &cylindricalBCexp1, 2);
    opts.range("cylindricalBCexp1", POSITIVE);
@@ -955,21 +959,21 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.require ("cylindricalBC", "cylindricalBCl1", "Length of first cylinder",
                  &cylindricalBCl1);
    opts.range("cylindricalBCl1", POSITIVE);
-   opts.units("cylindricalBCl1", ANGSTROM);
+   opts.units("cylindricalBCl1", N_ANGSTROM);
    opts.optional ("cylindricalBCl1", "cylindricalBCl2", "Length of second cylinder",
                   &cylindricalBCl2);
    opts.range ("cylindricalBCl2", POSITIVE);
-   opts.units ("cylindricalBCl2", ANGSTROM);
+   opts.units ("cylindricalBCl2", N_ANGSTROM);
 // end  additions
 
    opts.optional("cylindricalBCr1", "cylindricalBCr2", "Radius for second cylinder "
                  "potential", &cylindricalBCr2);
    opts.range("cylindricalBCr2", POSITIVE);
-   opts.units("cylindricalBCr2", ANGSTROM);
+   opts.units("cylindricalBCr2", N_ANGSTROM);
    opts.require("cylindricalBCr2", "cylindricalBCk2", "Force constant for second "
                 "cylinder potential (+ is an inward force, - outward)",
                 &cylindricalBCk2);
-   opts.units("cylindricalBCk2", KCAL);
+   opts.units("cylindricalBCk2", N_KCAL);
    opts.optional("cylindricalBCr2", "cylindricalBCexp2", "Exponent for second "
                 "cylinder potential", &cylindricalBCexp2, 2);
    opts.range("cylindricalBCexp2", POSITIVE);
@@ -1034,15 +1038,15 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.optional("hbonds","hbCutoffDist","Hbond A-D cutoff distance",
                  &daCutoffDist, 7.5);
    opts.range("hbCutoffDist", POSITIVE);
-   opts.units("hbCutoffDist", ANGSTROM);
+   opts.units("hbCutoffDist", N_ANGSTROM);
    opts.optional("hbonds","hbOnDist","Hbond A-D switch function on distance",
                  &daOnDist, 5.5);
    opts.range("hbOnDist", POSITIVE);
-   opts.units("hbOnDist", ANGSTROM);
+   opts.units("hbOnDist", N_ANGSTROM);
    opts.optional("hbonds","hbOffDist","Hbond A-D switch function off distance",
                  &daOffDist, 6.5);
    opts.range("hbOffDist", POSITIVE);
-   opts.units("hbOffDist", ANGSTROM);
+   opts.units("hbOffDist", N_ANGSTROM);
 
 
    ///////////////////////////////// check the internal consistancy
@@ -2815,12 +2819,16 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1029 $  $Date: 1998/01/06 20:54:07 $
+ *  $Revision: 1.1030 $  $Date: 1998/01/13 17:07:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1030  1998/01/13 17:07:05  milind
+ * added a prefix to the names of the units because they clashed with names
+ * of some predifined constants in Solaris include files.
+ *
  * Revision 1.1029  1998/01/06 20:54:07  sergei
  * fixed SMD output
  *

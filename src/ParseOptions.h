@@ -26,8 +26,8 @@ class ConfigList;
 
 enum Range { FREE_RANGE, POSITIVE, NOT_NEGATIVE , NEGATIVE, NOT_POSITIVE };
 const char *string(Range r); // for printing the range
-enum Units { UNIT, FSEC, NSEC, SEC, MIN, HOUR, ANGSTROM, NANOMETER, METER, 
-             KCAL, KJOULE, EV, KELVIN, UNITS_UNDEFINED};
+enum Units { N_UNIT, N_FSEC, N_NSEC, N_SEC, N_MIN, N_HOUR, N_ANGSTROM, N_NANOMETER, N_METER, 
+             N_KCAL, N_KJOULE, N_EV, N_KELVIN, N_UNITS_UNDEFINED};
 const char *string(Units u); // for printing the units
 BigReal convert(Units to, Units from);//return 0 if stupid (like METER to SEC)
 
@@ -263,13 +263,17 @@ class ParseOptions {
  * RCS INFORMATION:
  *
  *	$RCSfile: ParseOptions.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:45 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1998/01/13 17:07:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ParseOptions.h,v $
+ * Revision 1.1002  1998/01/13 17:07:04  milind
+ * added a prefix to the names of the units because they clashed with names
+ * of some predifined constants in Solaris include files.
+ *
  * Revision 1.1001  1997/03/19 11:54:45  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.
