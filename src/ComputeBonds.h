@@ -31,7 +31,7 @@ public:
     // Internal data
     Index bondType;
 
-  enum { bondEnergyIndex, virialXIndex, virialYIndex, virialZIndex, reductionDataSize };
+  enum { bondEnergyIndex, TENSOR(virialIndex), reductionDataSize };
   enum { reductionChecksumLabel = REDUCTION_BOND_CHECKSUM };
   static void submitReductionData(BigReal*,SubmitReduction*);
 

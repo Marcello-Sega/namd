@@ -15,9 +15,12 @@
   BigReal *rp1 = results1;
   int j_begin = 0;
   register BigReal electEnergy = 0.;
-  register BigReal virial_x = 0.;
-  register BigReal virial_y = 0.;
-  register BigReal virial_z = 0.;
+  register BigReal virial_xx = 0.;
+  register BigReal virial_xy = 0.;
+  register BigReal virial_xz = 0.;
+  register BigReal virial_yy = 0.;
+  register BigReal virial_yz = 0.;
+  register BigReal virial_zz = 0.;
 
 #ifdef FULLDIRECT_PERIODIC
   Vector a1 = lattice->a();
@@ -64,11 +67,14 @@
       register BigReal f = *(dp2++) * kq_i * r_1;
       electEnergy += f;
       f *= r_1*r_1;
-      virial_x += f * p_ij_x * p_ij_x;
+      virial_xx += f * p_ij_x * p_ij_x;
+      virial_xy += f * p_ij_x * p_ij_y;
+      virial_xz += f * p_ij_x * p_ij_z;
       p_ij_x *= f;
-      virial_y += f * p_ij_y * p_ij_y;
+      virial_yy += f * p_ij_y * p_ij_y;
+      virial_yz += f * p_ij_y * p_ij_z;
       p_ij_y *= f;
-      virial_z += f * p_ij_z * p_ij_z;
+      virial_zz += f * p_ij_z * p_ij_z;
       p_ij_z *= f;
       f_i_x += p_ij_x;
       f_i_y += p_ij_y;
@@ -82,9 +88,15 @@
     *(rp1++) += f_i_z;
   }
 
-  virial.x += virial_x;
-  virial.y += virial_y;
-  virial.z += virial_z;
+  virial.xx += virial_xx;
+  virial.xy += virial_xy;
+  virial.xz += virial_xz;
+  virial.yx += virial_xy;
+  virial.yy += virial_yy;
+  virial.yz += virial_yz;
+  virial.zx += virial_xz;
+  virial.zy += virial_yz;
+  virial.zz += virial_zz;
   return electEnergy;
 }
 

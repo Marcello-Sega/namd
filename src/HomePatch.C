@@ -344,12 +344,12 @@ void HomePatch::rattle1(const BigReal timestep)
 }
 
 //  RATTLE algorithm from Allen & Tildesley
-void HomePatch::rattle2(const BigReal timestep, Vector *virial)
+void HomePatch::rattle2(const BigReal timestep, Tensor *virial)
 {
   Molecule *mol = Node::Object()->molecule;
   SimParameters *simParams = Node::Object()->simParameters;
   const BigReal dt = timestep / TIMEFACTOR;
-  Vector wc(0.,0.,0.);  // constraint virial
+  Tensor wc;  // constraint virial
   BigReal tol = simParams->rigidTol;
   int maxiter = simParams->rigidIter;
   int i, iter;
@@ -411,9 +411,15 @@ void HomePatch::rattle2(const BigReal timestep, Vector *virial)
 	BigReal rvab = rab.x*vab.x + rab.y*vab.y + rab.z*vab.z;
 	if ( (fabs(rvab) * dt * rabsqi) > tol ) {
 	  Vector dp = rab * (-rvab * redmass[i] * rabsqi);
-	  wc.x += dp.x * rab.x;
-	  wc.y += dp.y * rab.y;
-	  wc.z += dp.z * rab.z;
+	  wc.xx += dp.x * rab.x;
+	  wc.xy += dp.x * rab.y;
+	  wc.xz += dp.x * rab.z;
+	  wc.yx += dp.y * rab.x;
+	  wc.yy += dp.y * rab.y;
+	  wc.yz += dp.y * rab.z;
+	  wc.zx += dp.z * rab.x;
+	  wc.zy += dp.z * rab.y;
+	  wc.zz += dp.z * rab.z;
 	  vel[a] += rmass[a] * dp;
 	  vel[b] -= rmass[b] * dp;
 	  done = 0;
@@ -503,11 +509,11 @@ void HomePatch::mollyAverage()
 
 
 //  MOLLY algorithm part 2
-void HomePatch::mollyMollify(Vector *virial)
+void HomePatch::mollyMollify(Tensor *virial)
 {
   Molecule *mol = Node::Object()->molecule;
   SimParameters *simParams = Node::Object()->simParameters;
-  Vector wc(0.,0.,0.);  // constraint virial
+  Tensor wc;  // constraint virial
   int i;
   HGArrayInt ial, ibl;
   HGArrayVector ref;  // reference position

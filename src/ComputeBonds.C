@@ -83,17 +83,21 @@ void BondElem::computeForce(BigReal *reduction)
 
   DebugM(3, "::computeForce() -- ending with delta energy " << energy << endl);
   reduction[bondEnergyIndex] += energy;
-  reduction[virialXIndex] += r12.x * f12.x;
-  reduction[virialYIndex] += r12.y * f12.y;
-  reduction[virialZIndex] += r12.z * f12.z;
+  reduction[virialIndex_XX] += f12.x * r12.x;
+  reduction[virialIndex_XY] += f12.x * r12.y;
+  reduction[virialIndex_XZ] += f12.x * r12.z;
+  reduction[virialIndex_YX] += f12.y * r12.x;
+  reduction[virialIndex_YY] += f12.y * r12.y;
+  reduction[virialIndex_YZ] += f12.y * r12.z;
+  reduction[virialIndex_ZX] += f12.z * r12.x;
+  reduction[virialIndex_ZY] += f12.z * r12.y;
+  reduction[virialIndex_ZZ] += f12.z * r12.z;
 }
 
 
 void BondElem::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {
   reduction->item(REDUCTION_BOND_ENERGY) += data[bondEnergyIndex];
-  reduction->item(REDUCTION_VIRIAL_NORMAL_X) += data[virialXIndex];
-  reduction->item(REDUCTION_VIRIAL_NORMAL_Y) += data[virialYIndex];
-  reduction->item(REDUCTION_VIRIAL_NORMAL_Z) += data[virialZIndex];
+  ADD_TENSOR(reduction,REDUCTION_VIRIAL_NORMAL,data,virialIndex);
 }
 

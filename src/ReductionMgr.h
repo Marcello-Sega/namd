@@ -15,6 +15,54 @@
 #include "ProcessorPrivate.h"
 #include "ReductionMgr.decl.h"
 
+#define VECTOR(A) A ## _X, A ## _Y, A ## _Z
+#define TENSOR(A) A ## _XX, A ## _XY, A ## _XZ, \
+                  A ## _YX, A ## _YY, A ## _YZ, \
+                  A ## _ZX, A ## _ZY, A ## _ZZ
+
+#define ADD_VECTOR(R,RL,D,DL) \
+  R->item( RL ## _X ) += D[ DL ## _X ]; \
+  R->item( RL ## _Y ) += D[ DL ## _Y ]; \
+  R->item( RL ## _Z ) += D[ DL ## _Z ]
+
+#define ADD_TENSOR(R,RL,D,DL) \
+  R->item( RL ## _XX) += D[ DL ## _XX ]; \
+  R->item( RL ## _XY) += D[ DL ## _XY ]; \
+  R->item( RL ## _XZ) += D[ DL ## _XZ ]; \
+  R->item( RL ## _YX) += D[ DL ## _YX ]; \
+  R->item( RL ## _YY) += D[ DL ## _YY ]; \
+  R->item( RL ## _YZ) += D[ DL ## _YZ ]; \
+  R->item( RL ## _ZX) += D[ DL ## _ZX ]; \
+  R->item( RL ## _ZY) += D[ DL ## _ZY ]; \
+  R->item( RL ## _ZZ) += D[ DL ## _ZZ ]
+
+#define ADD_TENSOR_OBJECT(R,RL,D) \
+  R->item( RL ## _XX) += D.xx; \
+  R->item( RL ## _XY) += D.xy; \
+  R->item( RL ## _XZ) += D.xz; \
+  R->item( RL ## _YX) += D.yx; \
+  R->item( RL ## _YY) += D.yy; \
+  R->item( RL ## _YZ) += D.yz; \
+  R->item( RL ## _ZX) += D.zx; \
+  R->item( RL ## _ZY) += D.zy; \
+  R->item( RL ## _ZZ) += D.zz
+
+#define GET_VECTOR(O,R,A) \
+  O.x = R->item( A ## _X ); \
+  O.y = R->item( A ## _Y ); \
+  O.z = R->item( A ## _Z )
+
+#define GET_TENSOR(O,R,A) \
+  O.xx = R->item( A ## _XX); \
+  O.xy = R->item( A ## _XY); \
+  O.xz = R->item( A ## _XZ); \
+  O.yx = R->item( A ## _YX); \
+  O.yy = R->item( A ## _YY); \
+  O.yz = R->item( A ## _YZ); \
+  O.zx = R->item( A ## _ZX); \
+  O.zy = R->item( A ## _ZY); \
+  O.zz = R->item( A ## _ZZ)
+
 typedef enum
 {
  // energy
@@ -31,40 +79,18 @@ typedef enum
   REDUCTION_SMD_ENERGY,
   REDUCTION_MISC_ENERGY,
  // pressure
-  REDUCTION_VIRIAL_NORMAL_X,
-  REDUCTION_VIRIAL_NORMAL_Y,
-  REDUCTION_VIRIAL_NORMAL_Z,
-  REDUCTION_VIRIAL_NBOND_X,
-  REDUCTION_VIRIAL_NBOND_Y,
-  REDUCTION_VIRIAL_NBOND_Z,
-  REDUCTION_VIRIAL_SLOW_X,
-  REDUCTION_VIRIAL_SLOW_Y,
-  REDUCTION_VIRIAL_SLOW_Z,
-  REDUCTION_ALT_VIRIAL_NORMAL_X,
-  REDUCTION_ALT_VIRIAL_NORMAL_Y,
-  REDUCTION_ALT_VIRIAL_NORMAL_Z,
-  REDUCTION_ALT_VIRIAL_NBOND_X,
-  REDUCTION_ALT_VIRIAL_NBOND_Y,
-  REDUCTION_ALT_VIRIAL_NBOND_Z,
-  REDUCTION_ALT_VIRIAL_SLOW_X,
-  REDUCTION_ALT_VIRIAL_SLOW_Y,
-  REDUCTION_ALT_VIRIAL_SLOW_Z,
-  REDUCTION_INT_VIRIAL_NORMAL_X,
-  REDUCTION_INT_VIRIAL_NORMAL_Y,
-  REDUCTION_INT_VIRIAL_NORMAL_Z,
-  REDUCTION_INT_VIRIAL_NBOND_X,
-  REDUCTION_INT_VIRIAL_NBOND_Y,
-  REDUCTION_INT_VIRIAL_NBOND_Z,
-  REDUCTION_INT_VIRIAL_SLOW_X,
-  REDUCTION_INT_VIRIAL_SLOW_Y,
-  REDUCTION_INT_VIRIAL_SLOW_Z,
+  TENSOR(REDUCTION_VIRIAL_NORMAL),
+  TENSOR(REDUCTION_VIRIAL_NBOND),
+  TENSOR(REDUCTION_VIRIAL_SLOW),
+  TENSOR(REDUCTION_ALT_VIRIAL_NORMAL),
+  TENSOR(REDUCTION_ALT_VIRIAL_NBOND),
+  TENSOR(REDUCTION_ALT_VIRIAL_SLOW),
+  TENSOR(REDUCTION_INT_VIRIAL_NORMAL),
+  TENSOR(REDUCTION_INT_VIRIAL_NBOND),
+  TENSOR(REDUCTION_INT_VIRIAL_SLOW),
  // momentum
-  REDUCTION_MOMENTUM_X,
-  REDUCTION_MOMENTUM_Y,
-  REDUCTION_MOMENTUM_Z,
-  REDUCTION_ANGULAR_MOMENTUM_X,
-  REDUCTION_ANGULAR_MOMENTUM_Y,
-  REDUCTION_ANGULAR_MOMENTUM_Z,
+  VECTOR(REDUCTION_MOMENTUM),
+  VECTOR(REDUCTION_ANGULAR_MOMENTUM),
  // checksum
   REDUCTION_ATOM_CHECKSUM,
   REDUCTION_COMPUTE_CHECKSUM,

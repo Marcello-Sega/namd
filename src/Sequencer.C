@@ -418,17 +418,12 @@ void Sequencer::rattle1(BigReal dt)
 void Sequencer::rattle2(BigReal dt, int step)
 {
   if ( simParams->rigidBonds != RIGID_NONE ) {
-    Vector virial(0.,0.,0.);
+    Tensor virial;
     patch->rattle2(dt, &virial);
-    reduction->item(REDUCTION_VIRIAL_NORMAL_X) += virial.x;
-    reduction->item(REDUCTION_VIRIAL_NORMAL_Y) += virial.y;
-    reduction->item(REDUCTION_VIRIAL_NORMAL_Z) += virial.z;
-    reduction->item(REDUCTION_ALT_VIRIAL_NORMAL_X) += virial.x;
-    reduction->item(REDUCTION_ALT_VIRIAL_NORMAL_Y) += virial.y;
-    reduction->item(REDUCTION_ALT_VIRIAL_NORMAL_Z) += virial.z;
-    reduction->item(REDUCTION_INT_VIRIAL_NORMAL_X) += virial.x;
-    reduction->item(REDUCTION_INT_VIRIAL_NORMAL_Y) += virial.y;
-    reduction->item(REDUCTION_INT_VIRIAL_NORMAL_Z) += virial.z;
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,virial);
+    // we need to add to alt and int virial because not included in forces
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_ALT_VIRIAL_NORMAL,virial);
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_INT_VIRIAL_NORMAL,virial);
   }
 }
 
@@ -478,58 +473,40 @@ void Sequencer::submitReductions(int step)
   reduction->item(REDUCTION_KINETIC_ENERGY) += patch->calcKineticEnergy();
 
   {
-    Vector virial(0.,0.,0.);
+    Tensor virial;
     for ( int i = 0; i < patch->numAtoms; ++i ) {
-      virial.x += ( patch->a[i].mass * patch->v[i].x * patch->v[i].x );
-      virial.y += ( patch->a[i].mass * patch->v[i].y * patch->v[i].y );
-      virial.z += ( patch->a[i].mass * patch->v[i].z * patch->v[i].z );
+      virial += ( patch->a[i].mass * outer(patch->v[i],patch->v[i]) );
     }
-    reduction->item(REDUCTION_VIRIAL_NORMAL_X) += virial.x;
-    reduction->item(REDUCTION_VIRIAL_NORMAL_Y) += virial.y;
-    reduction->item(REDUCTION_VIRIAL_NORMAL_Z) += virial.z;
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,virial);
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_ALT_VIRIAL_NORMAL,virial);
   }
   {
-    Vector altVirial(0.,0.,0.);
+    Tensor altVirial;
     for ( int i = 0; i < patch->numAtoms; ++i ) {
-      altVirial.x += ( patch->f[Results::normal][i].x * patch->p[i].x );
-      altVirial.y += ( patch->f[Results::normal][i].y * patch->p[i].y );
-      altVirial.z += ( patch->f[Results::normal][i].z * patch->p[i].z );
-      altVirial.x += ( patch->a[i].mass * patch->v[i].x * patch->v[i].x );
-      altVirial.y += ( patch->a[i].mass * patch->v[i].y * patch->v[i].y );
-      altVirial.z += ( patch->a[i].mass * patch->v[i].z * patch->v[i].z );
+      altVirial += outer(patch->f[Results::normal][i],patch->p[i]);
     }
-    reduction->item(REDUCTION_ALT_VIRIAL_NORMAL_X) += altVirial.x;
-    reduction->item(REDUCTION_ALT_VIRIAL_NORMAL_Y) += altVirial.y;
-    reduction->item(REDUCTION_ALT_VIRIAL_NORMAL_Z) += altVirial.z;
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_ALT_VIRIAL_NORMAL,altVirial);
   }
   {
-    Vector altVirial(0.,0.,0.);
+    Tensor altVirial;
     for ( int i = 0; i < patch->numAtoms; ++i ) {
-      altVirial.x += ( patch->f[Results::nbond][i].x * patch->p[i].x );
-      altVirial.y += ( patch->f[Results::nbond][i].y * patch->p[i].y );
-      altVirial.z += ( patch->f[Results::nbond][i].z * patch->p[i].z );
+      altVirial += outer(patch->f[Results::nbond][i],patch->p[i]);
     }
-    reduction->item(REDUCTION_ALT_VIRIAL_NBOND_X) += altVirial.x;
-    reduction->item(REDUCTION_ALT_VIRIAL_NBOND_Y) += altVirial.y;
-    reduction->item(REDUCTION_ALT_VIRIAL_NBOND_Z) += altVirial.z;
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_ALT_VIRIAL_NBOND,altVirial);
   }
   {
-    Vector altVirial(0.,0.,0.);
+    Tensor altVirial;
     for ( int i = 0; i < patch->numAtoms; ++i ) {
-      altVirial.x += ( patch->f[Results::slow][i].x * patch->p[i].x );
-      altVirial.y += ( patch->f[Results::slow][i].y * patch->p[i].y );
-      altVirial.z += ( patch->f[Results::slow][i].z * patch->p[i].z );
+      altVirial += outer(patch->f[Results::slow][i],patch->p[i]);
     }
-    reduction->item(REDUCTION_ALT_VIRIAL_SLOW_X) += altVirial.x;
-    reduction->item(REDUCTION_ALT_VIRIAL_SLOW_Y) += altVirial.y;
-    reduction->item(REDUCTION_ALT_VIRIAL_SLOW_Z) += altVirial.z;
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_ALT_VIRIAL_SLOW,altVirial);
   }
 
   {
     BigReal intKineticEnergy = 0;
-    Vector intVirialNormal(0.,0.,0.);
-    Vector intVirialNbond(0.,0.,0.);
-    Vector intVirialSlow(0.,0.,0.);
+    Tensor intVirialNormal;
+    Tensor intVirialNbond;
+    Tensor intVirialSlow;
 
     int hgs;
     for ( int i = 0; i < patch->numAtoms; i += hgs ) {
@@ -548,34 +525,21 @@ void Sequencer::submitReductions(int step)
       for ( j = i; j < (i+hgs); ++j ) {
         Vector dv = patch->v[j] - v_cm;
         intKineticEnergy += patch->a[j].mass * (patch->v[j] * dv);
-        intVirialNormal.x += patch->a[j].mass * (patch->v[j].x * dv.x);
-        intVirialNormal.y += patch->a[j].mass * (patch->v[j].y * dv.y);
-        intVirialNormal.z += patch->a[j].mass * (patch->v[j].z * dv.z);
+ // JCP FIX THIS:  IS THIS ORDER RIGHT???  DOES IT MATTER???
+        intVirialNormal += patch->a[j].mass * outer(patch->v[j],dv);
         Vector dx = patch->p[j] - x_cm;
-        intVirialNormal.x += patch->f[Results::normal][j].x * dx.x;
-        intVirialNormal.y += patch->f[Results::normal][j].y * dx.y;
-        intVirialNormal.z += patch->f[Results::normal][j].z * dx.z;
-        intVirialNbond.x += patch->f[Results::nbond][j].x * dx.x;
-        intVirialNbond.y += patch->f[Results::nbond][j].y * dx.y;
-        intVirialNbond.z += patch->f[Results::nbond][j].z * dx.z;
-        intVirialSlow.x += patch->f[Results::slow][j].x * dx.x;
-        intVirialSlow.y += patch->f[Results::slow][j].y * dx.y;
-        intVirialSlow.z += patch->f[Results::slow][j].z * dx.z;
+        intVirialNormal += outer(patch->f[Results::normal][j],dx);
+        intVirialNbond += outer(patch->f[Results::nbond][j],dx);
+        intVirialSlow += outer(patch->f[Results::slow][j],dx);
       }
     }
 
     intKineticEnergy *= 0.5;
 
     reduction->item(REDUCTION_INT_KINETIC_ENERGY) += intKineticEnergy;
-    reduction->item(REDUCTION_INT_VIRIAL_NORMAL_X) += intVirialNormal.x;
-    reduction->item(REDUCTION_INT_VIRIAL_NORMAL_Y) += intVirialNormal.y;
-    reduction->item(REDUCTION_INT_VIRIAL_NORMAL_Z) += intVirialNormal.z;
-    reduction->item(REDUCTION_INT_VIRIAL_NBOND_X) += intVirialNbond.x;
-    reduction->item(REDUCTION_INT_VIRIAL_NBOND_Y) += intVirialNbond.y;
-    reduction->item(REDUCTION_INT_VIRIAL_NBOND_Z) += intVirialNbond.z;
-    reduction->item(REDUCTION_INT_VIRIAL_SLOW_X) += intVirialSlow.x;
-    reduction->item(REDUCTION_INT_VIRIAL_SLOW_Y) += intVirialSlow.y;
-    reduction->item(REDUCTION_INT_VIRIAL_SLOW_Z) += intVirialSlow.z;
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_INT_VIRIAL_NORMAL,intVirialNormal);
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_INT_VIRIAL_NBOND,intVirialNbond);
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_INT_VIRIAL_SLOW,intVirialSlow);
   }
 
   Vector momentum = patch->calcMomentum();
@@ -605,17 +569,9 @@ void Sequencer::runComputeObjects(int migration)
   patch->positionsReady(migration);
   suspend(); // until all deposit boxes close
   if ( patch->flags.doMolly ) {
-    Vector virial(0.,0.,0.);
+    Tensor virial;
     patch->mollyMollify(&virial);
-    reduction->item(REDUCTION_VIRIAL_SLOW_X) += virial.x;
-    reduction->item(REDUCTION_VIRIAL_SLOW_Y) += virial.y;
-    reduction->item(REDUCTION_VIRIAL_SLOW_Z) += virial.z;
-    reduction->item(REDUCTION_ALT_VIRIAL_SLOW_X) += virial.x;
-    reduction->item(REDUCTION_ALT_VIRIAL_SLOW_Y) += virial.y;
-    reduction->item(REDUCTION_ALT_VIRIAL_SLOW_Z) += virial.z;
-    reduction->item(REDUCTION_INT_VIRIAL_SLOW_X) += virial.x;
-    reduction->item(REDUCTION_INT_VIRIAL_SLOW_Y) += virial.y;
-    reduction->item(REDUCTION_INT_VIRIAL_SLOW_Z) += virial.z;
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_SLOW,virial);
   }
 }
 

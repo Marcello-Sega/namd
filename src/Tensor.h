@@ -30,9 +30,33 @@ class Tensor {
        zx = t2.zx; zy = t2.zy; zz = t2.zz;
      }
 
-     static inline Tensor identity(void) {
+     static inline Tensor identity(BigReal v1 = 1.0) {
        Tensor tmp;
-       tmp.xx = tmp.yy = tmp.zz = 1.0;
+       tmp.xx = tmp.yy = tmp.zz = v1;
+       return tmp;
+     }
+
+     static inline Tensor diagonal(const Vector &v1) {
+       Tensor tmp;
+       tmp.xx = v1.x; tmp.xy = 0; tmp.xz = 0;
+       tmp.yx = 0; tmp.yy = v1.y; tmp.yz = 0;
+       tmp.zx = 0; tmp.zy = 0; tmp.zz = v1.z;
+       return tmp;
+     }
+
+     static inline Tensor symmetric(const Vector &v1, const Vector &v2) {
+       Tensor tmp;
+       tmp.xx = v1.x; tmp.xy = v2.x; tmp.xz = v2.y;
+       tmp.yx = v2.x; tmp.yy = v1.y; tmp.yz = v2.z;
+       tmp.zx = v2.y; tmp.zy = v2.z; tmp.zz = v1.z;
+       return tmp;
+     }
+
+     static inline Tensor triangular(const Vector &v1, const Vector &v2) {
+       Tensor tmp;
+       tmp.xx = v1.x; tmp.xy = v2.x; tmp.xz = v2.y;
+       tmp.yx = 0; tmp.yy = v1.y; tmp.yz = v2.z;
+       tmp.zx = 0; tmp.zy = 0; tmp.zz = v1.z;
        return tmp;
      }
 
@@ -141,6 +165,20 @@ class Tensor {
        return tmp;
      }
 
+     inline friend Tensor outer(const Vector &v1, const Vector &v2) {
+       Tensor tmp;
+       tmp.xx = v1.x * v2.x;
+       tmp.xy = v1.x * v2.y;
+       tmp.xz = v1.x * v2.z;
+       tmp.yx = v1.y * v2.x;
+       tmp.yy = v1.y * v2.y;
+       tmp.yz = v1.y * v2.z;
+       tmp.zx = v1.z * v2.x;
+       tmp.zy = v1.z * v2.y;
+       tmp.zz = v1.z * v2.z;
+       return tmp;
+     }
+
      inline friend Tensor transpose(const Tensor &t1) {
        Tensor tmp;
        tmp.xx = t1.xx; tmp.yx = t1.xy; tmp.zx = t1.xz;
@@ -153,19 +191,41 @@ class Tensor {
        return (0.5 * (t1 + transpose(t1)));
      }
 
-/*
+     inline friend Tensor triangular(const Tensor &t1) {
+       Tensor tmp = (0.5 * (t1 + transpose(t1)));
+       tmp.yx = tmp.zx = tmp.zy = 0;
+       return tmp;
+     }
+
+     inline friend Vector diagonal(const Tensor &t1) {
+       return Vector(t1.xx,t1.yy,t1.zz);
+     }
+
+     inline friend Vector off_diagonal(const Tensor &t1) {
+       return Vector(t1.xy,t1.xz,t1.yz);
+     }
+
+     inline friend BigReal trace(const Tensor &t1) {
+       return (t1.xx + t1.yy + t1.zz);
+     }
+
      // print out
-     friend ostream& operator<<(ostream& strm, const Vector &v1) {
-       strm << "( "<< v1.x << ", " << v1.y << ", " << v1.z << ')';
+     friend ostream& operator<<(ostream& strm, const Tensor &t1) {
+       strm << t1.xx << " " << t1.xy << " " << t1.xz
+            << t1.yx << " " << t1.yy << " " << t1.yz
+            << t1.zx << " " << t1.zy << " " << t1.zz;
        return strm;
      }
 
      // print out to infostream object
-     friend infostream& operator<<(infostream& strm, const Vector &v1) {
-       strm << "( "<< v1.x << ", " << v1.y << ", " << v1.z << ")";
+     friend infostream& operator<<(infostream& strm, const Tensor &t1) {
+       strm << t1.xx << " " << t1.xy << " " << t1.xz << " "
+            << t1.yx << " " << t1.yy << " " << t1.yz << " "
+            << t1.zx << " " << t1.zy << " " << t1.zz;
        return strm;
      }
 
+/*
      // set the vector based on a string.  If bad, return FALSE
      // the string can be in the form "x y z" or "x, y, z"
      Bool set(const char *s) {

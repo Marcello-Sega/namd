@@ -241,9 +241,15 @@ void ComputePmeMaster::recvData(ComputePmeDataMsg *msg)
 	recip_vir[1] << " " << recip_vir[2] << " " << recip_vir[3] << " " <<
 	recip_vir[4] << " " << recip_vir[5] << "\n");
   reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += electEnergy;
-  reduction->item(REDUCTION_VIRIAL_SLOW_X) += (BigReal)(recip_vir[0]);
-  reduction->item(REDUCTION_VIRIAL_SLOW_Y) += (BigReal)(recip_vir[3]);
-  reduction->item(REDUCTION_VIRIAL_SLOW_Z) += (BigReal)(recip_vir[5]);
+  reduction->item(REDUCTION_VIRIAL_SLOW_XX) += (BigReal)(recip_vir[0]);
+  reduction->item(REDUCTION_VIRIAL_SLOW_XY) += (BigReal)(recip_vir[1]);
+  reduction->item(REDUCTION_VIRIAL_SLOW_XZ) += (BigReal)(recip_vir[2]);
+  reduction->item(REDUCTION_VIRIAL_SLOW_YX) += (BigReal)(recip_vir[1]);
+  reduction->item(REDUCTION_VIRIAL_SLOW_YY) += (BigReal)(recip_vir[3]);
+  reduction->item(REDUCTION_VIRIAL_SLOW_YZ) += (BigReal)(recip_vir[4]);
+  reduction->item(REDUCTION_VIRIAL_SLOW_ZX) += (BigReal)(recip_vir[2]);
+  reduction->item(REDUCTION_VIRIAL_SLOW_ZY) += (BigReal)(recip_vir[4]);
+  reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += (BigReal)(recip_vir[5]);
   reduction->submit();
 
   Vector *results_ptr;

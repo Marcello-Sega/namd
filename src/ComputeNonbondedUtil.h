@@ -12,8 +12,8 @@
 #define COMPUTENONBONDEDUTIL_H
 
 #include "NamdTypes.h"
+#include "ReductionMgr.h"
 class LJTable;
-class SubmitReduction;
 class Molecule;
 
 // function arguments
@@ -61,8 +61,7 @@ public:
   static void (*calcSlowExcl)(nonbonded *);
 
   enum { electEnergyIndex, fullElectEnergyIndex, vdwEnergyIndex,
-	 virialXIndex, virialYIndex, virialZIndex,
-	 fullElectVirialXIndex, fullElectVirialYIndex, fullElectVirialZIndex,
+	 TENSOR(virialIndex), TENSOR(fullElectVirialIndex),
 	 reductionDataSize };
   static void submitReductionData(BigReal*,SubmitReduction*);
 

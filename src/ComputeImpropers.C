@@ -216,16 +216,20 @@ void ImproperElem::computeForce(BigReal *reduction)
 
   DebugM(3, "::computeForce() -- ending with delta energy " << energy << endl);
   reduction[improperEnergyIndex] += energy;
-  reduction[virialXIndex] += ( f1.x * r12.x + f2.x * r23.x + f3.x * r34.x );
-  reduction[virialYIndex] += ( f1.y * r12.y + f2.y * r23.y + f3.y * r34.y );
-  reduction[virialZIndex] += ( f1.z * r12.z + f2.z * r23.z + f3.z * r34.z );
+  reduction[virialIndex_XX] += ( f1.x * r12.x + f2.x * r23.x + f3.x * r34.x );
+  reduction[virialIndex_XY] += ( f1.x * r12.y + f2.x * r23.y + f3.x * r34.y );
+  reduction[virialIndex_XZ] += ( f1.x * r12.z + f2.x * r23.z + f3.x * r34.z );
+  reduction[virialIndex_YX] += ( f1.y * r12.x + f2.y * r23.x + f3.y * r34.x );
+  reduction[virialIndex_YY] += ( f1.y * r12.y + f2.y * r23.y + f3.y * r34.y );
+  reduction[virialIndex_YZ] += ( f1.y * r12.z + f2.y * r23.z + f3.y * r34.z );
+  reduction[virialIndex_ZX] += ( f1.z * r12.x + f2.z * r23.x + f3.z * r34.x );
+  reduction[virialIndex_ZY] += ( f1.z * r12.y + f2.z * r23.y + f3.z * r34.y );
+  reduction[virialIndex_ZZ] += ( f1.z * r12.z + f2.z * r23.z + f3.z * r34.z );
 }
 
 void ImproperElem::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {
   reduction->item(REDUCTION_IMPROPER_ENERGY) += data[improperEnergyIndex];
-  reduction->item(REDUCTION_VIRIAL_NORMAL_X) += data[virialXIndex];
-  reduction->item(REDUCTION_VIRIAL_NORMAL_Y) += data[virialYIndex];
-  reduction->item(REDUCTION_VIRIAL_NORMAL_Z) += data[virialZIndex];
+  ADD_TENSOR(reduction,REDUCTION_VIRIAL_NORMAL,data,virialIndex);
 }
 

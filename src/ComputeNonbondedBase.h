@@ -135,16 +135,22 @@ void ComputeNonbondedUtil :: NAME
   BigReal electEnergy = 0;
   FAST
   (
-  BigReal virial_x = 0;
-  BigReal virial_y = 0;
-  BigReal virial_z = 0;
+  BigReal virial_xx = 0;
+  BigReal virial_xy = 0;
+  BigReal virial_xz = 0;
+  BigReal virial_yy = 0;
+  BigReal virial_yz = 0;
+  BigReal virial_zz = 0;
   )
   FULL
   (
   BigReal fullElectEnergy = 0;
-  BigReal fullElectVirial_x = 0;
-  BigReal fullElectVirial_y = 0;
-  BigReal fullElectVirial_z = 0;
+  BigReal fullElectVirial_xx = 0;
+  BigReal fullElectVirial_xy = 0;
+  BigReal fullElectVirial_xz = 0;
+  BigReal fullElectVirial_yy = 0;
+  BigReal fullElectVirial_yz = 0;
+  BigReal fullElectVirial_zz = 0;
   )
   NOEXCL
   (
@@ -460,9 +466,15 @@ NOEXCL
 	    fullf_i -= f_elec;
 	    fullf_j += f_elec;
 	    reduction[fullElectEnergyIndex] += fullElectEnergy;
-	    reduction[fullElectVirialXIndex] -= p_ij.x * f_elec.x;
-	    reduction[fullElectVirialYIndex] -= p_ij.y * f_elec.y;
-	    reduction[fullElectVirialZIndex] -= p_ij.z * f_elec.z;
+	    reduction[fullElectVirialIndex_XX] -= f_elec.x * p_ij.x;
+	    reduction[fullElectVirialIndex_XY] -= f_elec.x * p_ij.y;
+	    reduction[fullElectVirialIndex_XZ] -= f_elec.x * p_ij.z;
+	    reduction[fullElectVirialIndex_YX] -= f_elec.y * p_ij.x;
+	    reduction[fullElectVirialIndex_YY] -= f_elec.y * p_ij.y;
+	    reduction[fullElectVirialIndex_YZ] -= f_elec.y * p_ij.z;
+	    reduction[fullElectVirialIndex_ZX] -= f_elec.z * p_ij.x;
+	    reduction[fullElectVirialIndex_ZY] -= f_elec.z * p_ij.y;
+	    reduction[fullElectVirialIndex_ZZ] -= f_elec.z * p_ij.z;
 	  )
 	return; )
       }
@@ -498,15 +510,18 @@ NOEXCL
 	    register BigReal tmp_f = tmp_c * f;
 	    fullElectEnergy += tmp_b * f;
 	    register BigReal tmp_x = tmp_f * p_ij_x;
-	    fullElectVirial_x += tmp_x * p_ij_x;
+	    fullElectVirial_xx += tmp_x * p_ij_x;
+	    fullElectVirial_xy += tmp_x * p_ij_y;
+	    fullElectVirial_xz += tmp_x * p_ij_z;
 	    fullf_i.x += tmp_x;
 	    fullf_j.x -= tmp_x;
 	    register BigReal tmp_y = tmp_f * p_ij_y;
-	    fullElectVirial_y += tmp_y * p_ij_y;
+	    fullElectVirial_yy += tmp_y * p_ij_y;
+	    fullElectVirial_yz += tmp_y * p_ij_z;
 	    fullf_i.y += tmp_y;
 	    fullf_j.y -= tmp_y;
 	    register BigReal tmp_z = tmp_f * p_ij_z;
-	    fullElectVirial_z += tmp_z * p_ij_z;
+	    fullElectVirial_zz += tmp_z * p_ij_z;
 	    fullf_i.z += tmp_z;
 	    fullf_j.z -= tmp_z;
 	  } break;
@@ -535,15 +550,18 @@ NOEXCL
 	    fullElectEnergy -= f;
 	    fullforce_r = -f * r_1*r_1;
 	    register BigReal tmp_x = fullforce_r * p_ij_x;
-	    fullElectVirial_x += tmp_x * p_ij_x;
+	    fullElectVirial_xx += tmp_x * p_ij_x;
+	    fullElectVirial_xy += tmp_x * p_ij_y;
+	    fullElectVirial_xz += tmp_x * p_ij_z;
 	    fullf_i.x += tmp_x;
 	    fullf_j.x -= tmp_x;
 	    register BigReal tmp_y = fullforce_r * p_ij_y;
-	    fullElectVirial_y += tmp_y * p_ij_y;
+	    fullElectVirial_yy += tmp_y * p_ij_y;
+	    fullElectVirial_yz += tmp_y * p_ij_z;
 	    fullf_i.y += tmp_y;
 	    fullf_j.y -= tmp_y;
 	    register BigReal tmp_z = fullforce_r * p_ij_z;
-	    fullElectVirial_z += tmp_z * p_ij_z;
+	    fullElectVirial_zz += tmp_z * p_ij_z;
 	    fullf_i.z += tmp_z;
 	    fullf_j.z -= tmp_z;
 	  )
@@ -745,15 +763,18 @@ NOEXCL
       (
       {
       register BigReal tmp_x = force_r * p_ij_x;
-      virial_x += tmp_x * p_ij_x;
+      virial_xx += tmp_x * p_ij_x;
+      virial_xy += tmp_x * p_ij_y;
+      virial_xz += tmp_x * p_ij_z;
       f_i.x += tmp_x;
       f_j.x -= tmp_x;
       register BigReal tmp_y = force_r * p_ij_y;
-      virial_y += tmp_y * p_ij_y;
+      virial_yy += tmp_y * p_ij_y;
+      virial_yz += tmp_y * p_ij_z;
       f_i.y += tmp_y;
       f_j.y -= tmp_y;
       register BigReal tmp_z = force_r * p_ij_z;
-      virial_z += tmp_z * p_ij_z;
+      virial_zz += tmp_z * p_ij_z;
       f_i.z += tmp_z;
       f_j.z -= tmp_z;
       }
@@ -763,15 +784,18 @@ NOEXCL
       (
       {
       register BigReal tmp_x = fullforce_r * p_ij_x;
-      fullElectVirial_x += tmp_x * p_ij_x;
+      fullElectVirial_xx += tmp_x * p_ij_x;
+      fullElectVirial_xy += tmp_x * p_ij_y;
+      fullElectVirial_xz += tmp_x * p_ij_z;
       fullf_i.x += tmp_x;
       fullf_j.x -= tmp_x;
       register BigReal tmp_y = fullforce_r * p_ij_y;
-      fullElectVirial_y += tmp_y * p_ij_y;
+      fullElectVirial_yy += tmp_y * p_ij_y;
+      fullElectVirial_yz += tmp_y * p_ij_z;
       fullf_i.y += tmp_y;
       fullf_j.y -= tmp_y;
       register BigReal tmp_z = fullforce_r * p_ij_z;
-      fullElectVirial_z += tmp_z * p_ij_z;
+      fullElectVirial_zz += tmp_z * p_ij_z;
       fullf_i.z += tmp_z;
       fullf_j.z -= tmp_z;
       }
@@ -788,16 +812,28 @@ NOEXCL
   (
   reduction[vdwEnergyIndex] += vdwEnergy;
   reduction[electEnergyIndex] += electEnergy;
-  reduction[virialXIndex] += virial_x;
-  reduction[virialYIndex] += virial_y;
-  reduction[virialZIndex] += virial_z;
+  reduction[virialIndex_XX] += virial_xx;
+  reduction[virialIndex_XY] += virial_xy;
+  reduction[virialIndex_XZ] += virial_xz;
+  reduction[virialIndex_YX] += virial_xy;
+  reduction[virialIndex_YY] += virial_yy;
+  reduction[virialIndex_YZ] += virial_yz;
+  reduction[virialIndex_ZX] += virial_xz;
+  reduction[virialIndex_ZY] += virial_yz;
+  reduction[virialIndex_ZZ] += virial_zz;
   )
   FULL
   (
   reduction[fullElectEnergyIndex] += fullElectEnergy;
-  reduction[fullElectVirialXIndex] += fullElectVirial_x;
-  reduction[fullElectVirialYIndex] += fullElectVirial_y;
-  reduction[fullElectVirialZIndex] += fullElectVirial_z;
+  reduction[fullElectVirialIndex_XX] += fullElectVirial_xx;
+  reduction[fullElectVirialIndex_XY] += fullElectVirial_xy;
+  reduction[fullElectVirialIndex_XZ] += fullElectVirial_xz;
+  reduction[fullElectVirialIndex_YX] += fullElectVirial_xy;
+  reduction[fullElectVirialIndex_YY] += fullElectVirial_yy;
+  reduction[fullElectVirialIndex_YZ] += fullElectVirial_yz;
+  reduction[fullElectVirialIndex_ZX] += fullElectVirial_xz;
+  reduction[fullElectVirialIndex_ZY] += fullElectVirial_yz;
+  reduction[fullElectVirialIndex_ZZ] += fullElectVirial_zz;
   )
 }
 

@@ -33,7 +33,7 @@ ComputeFullDirect::~ComputeFullDirect()
 
 BigReal calc_fulldirect(BigReal *data1, BigReal *results1, int n1,
                         BigReal *data2, BigReal *results2, int n2,
-			int selfmode, Lattice *lattice, Vector &virial)
+			int selfmode, Lattice *lattice, Tensor &virial)
 {
   if ( lattice->a_p() || lattice->b_p() || lattice->c_p() ) {
     #define FULLDIRECT_PERIODIC
@@ -124,7 +124,7 @@ void ComputeFullDirect::doWork()
 
   // perform calculations
   BigReal electEnergy = 0;
-  Vector virial(0.,0.,0.);
+  Tensor virial;
 
 #define PEMOD(N) (((N)+numWorkingPes)%numWorkingPes)
 
@@ -249,9 +249,15 @@ void ComputeFullDirect::doWork()
   // send out reductions
   DebugM(4,"Full-electrostatics energy: " << electEnergy << "\n");
   reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += electEnergy;
-  reduction->item(REDUCTION_VIRIAL_SLOW_X) += virial.x;
-  reduction->item(REDUCTION_VIRIAL_SLOW_Y) += virial.y;
-  reduction->item(REDUCTION_VIRIAL_SLOW_Z) += virial.z;
+  reduction->item(REDUCTION_VIRIAL_SLOW_XX) += virial.xx;
+  reduction->item(REDUCTION_VIRIAL_SLOW_XY) += virial.xy;
+  reduction->item(REDUCTION_VIRIAL_SLOW_XZ) += virial.xz;
+  reduction->item(REDUCTION_VIRIAL_SLOW_YX) += virial.yx;
+  reduction->item(REDUCTION_VIRIAL_SLOW_YY) += virial.yy;
+  reduction->item(REDUCTION_VIRIAL_SLOW_YZ) += virial.yz;
+  reduction->item(REDUCTION_VIRIAL_SLOW_ZX) += virial.zx;
+  reduction->item(REDUCTION_VIRIAL_SLOW_ZY) += virial.zy;
+  reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += virial.zz;
   reduction->submit();
 
   // add in forces

@@ -31,15 +31,15 @@ protected:
     virtual void algorithm(void);	// subclasses redefine this method
 
     void receivePressure(int);
-      Vector pressure_normal;
-      Vector pressure_nbond;
-      Vector pressure_slow;
-      Vector groupPressure_normal;
-      Vector groupPressure_nbond;
-      Vector groupPressure_slow;
-      Vector controlPressure_normal;
-      Vector controlPressure_nbond;
-      Vector controlPressure_slow;
+      Tensor pressure_normal;
+      Tensor pressure_nbond;
+      Tensor pressure_slow;
+      Tensor groupPressure_normal;
+      Tensor groupPressure_nbond;
+      Tensor groupPressure_slow;
+      Tensor controlPressure_normal;
+      Tensor controlPressure_nbond;
+      Tensor controlPressure_slow;
       int nbondFreq;
       int slowFreq;
     void printEnergies(int);
@@ -47,10 +47,10 @@ protected:
       int numDegFreedom;
       BigReal kineticEnergy;
       BigReal temperature;
-      Vector pressure;
-      Vector groupPressure;
+      Tensor pressure;
+      Tensor groupPressure;
       int controlNumDegFreedom;
-      Vector controlPressure;
+      Tensor controlPressure;
     void enqueueCollections(int);
     void rescaleVelocities(int);
       BigReal rescaleVelocities_sumTemps;
@@ -60,7 +60,7 @@ protected:
     void berendsenPressure(int);
     void langevinPiston1(int);
     void langevinPiston2(int);
-      Vector langevinPiston_strainRate;
+      Tensor langevinPiston_strainRate;
 
     // void suspend(void) { CthSuspend(); };
     void terminate(void);

@@ -56,12 +56,8 @@ void ComputeNonbondedUtil::submitReductionData(BigReal *data, SubmitReduction *r
   reduction->item(REDUCTION_ELECT_ENERGY) += data[electEnergyIndex];
   reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += data[fullElectEnergyIndex];
   reduction->item(REDUCTION_LJ_ENERGY) += data[vdwEnergyIndex];
-  reduction->item(REDUCTION_VIRIAL_NBOND_X) += data[virialXIndex];
-  reduction->item(REDUCTION_VIRIAL_NBOND_Y) += data[virialYIndex];
-  reduction->item(REDUCTION_VIRIAL_NBOND_Z) += data[virialZIndex];
-  reduction->item(REDUCTION_VIRIAL_SLOW_X) += data[fullElectVirialXIndex];
-  reduction->item(REDUCTION_VIRIAL_SLOW_Y) += data[fullElectVirialYIndex];
-  reduction->item(REDUCTION_VIRIAL_SLOW_Z) += data[fullElectVirialZIndex];
+  ADD_TENSOR(reduction,REDUCTION_VIRIAL_NBOND,data,virialIndex);
+  ADD_TENSOR(reduction,REDUCTION_VIRIAL_SLOW,data,fullElectVirialIndex);
   reduction->item(REDUCTION_COMPUTE_CHECKSUM) += 1.;
 }
 

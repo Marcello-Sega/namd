@@ -55,10 +55,10 @@ Controller::Controller(NamdState *s) :
     random->split(0,PatchMap::Object()->numPatches()+1);
 
     rescaleVelocities_sumTemps = 0;  rescaleVelocities_numTemps = 0;
-    langevinPiston_strainRate = simParams->strainRate;
+    langevinPiston_strainRate = Tensor::diagonal(simParams->strainRate);
     if ( ! simParams->useFlexibleCell ) {
-      BigReal avg = (langevinPiston_strainRate * Vector(1,1,1)) / 3.;
-      langevinPiston_strainRate = Vector(avg,avg,avg);
+      BigReal avg = trace(langevinPiston_strainRate) / 3.;
+      langevinPiston_strainRate = Tensor::identity(avg);
     }
 }
 
@@ -157,7 +157,7 @@ void Controller::berendsenPressure(int step)
   const int freq = simParams->berendsenPressureFreq;
   if ( simParams->berendsenPressureOn && !((step-1)%freq) )
   {
-    BigReal scalarPressure = controlPressure * Vector(1,1,1) / 3.;
+    BigReal scalarPressure = trace(controlPressure) / 3.;
     BigReal factor = scalarPressure - simParams->berendsenPressureTarget;
     factor *= simParams->berendsenPressureCompressibility;
     factor *= ( simParams->dt * freq );
@@ -185,7 +185,7 @@ void Controller::langevinPiston1(int step)
 {
   if ( simParams->langevinPistonOn )
   {
-    Vector &strainRate = langevinPiston_strainRate;
+    Tensor &strainRate = langevinPiston_strainRate;
     int cellDims = simParams->useFlexibleCell ? 1 : 3;
     BigReal dt = simParams->dt;
     BigReal dt_long = slowFreq * dt;
@@ -204,16 +204,16 @@ void Controller::langevinPiston1(int step)
       BigReal f2 = sqrt( ( 1. - f1*f1 ) * kT / mass );
       strainRate *= f1;
       if ( simParams->useFlexibleCell )
-	strainRate += f2 * random->gaussian_vector();
+	strainRate += f2 * Tensor::diagonal(random->gaussian_vector());
       else
-	strainRate += f2 * random->gaussian() * Vector(1,1,1);
+	strainRate += f2 * Tensor::identity(random->gaussian());
 #ifdef DEBUG_PRESSURE
       iout << iINFO << "applying langevin, strain rate: " << strainRate << "\n";
 #endif
     }
 
     strainRate += ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
-	( controlPressure - Vector(1,1,1)*simParams->langevinPistonTarget );
+	( controlPressure - Tensor::identity(simParams->langevinPistonTarget) );
 
 #ifdef DEBUG_PRESSURE
     iout << iINFO << "integrating half step, strain rate: " << strainRate << "\n";
@@ -221,10 +221,11 @@ void Controller::langevinPiston1(int step)
 
     if ( ! ( (step-1-slowFreq/2) % slowFreq ) )
     {
+      // JCP FIX THIS:  NOT JUST ELEMENT-WISE EXP.  WHY NOT LINEAR?
       Tensor factor;
-      factor.xx = exp( dt_long * strainRate.x );
-      factor.yy = exp( dt_long * strainRate.y );
-      factor.zz = exp( dt_long * strainRate.z );
+      factor.xx = exp( dt_long * strainRate.xx );
+      factor.yy = exp( dt_long * strainRate.yy );
+      factor.zz = exp( dt_long * strainRate.zz );
       broadcast->positionRescaleFactor.publish(step,factor);
       state->lattice.rescale(factor);
 #ifdef DEBUG_PRESSURE
@@ -263,7 +264,7 @@ void Controller::langevinPiston2(int step)
 {
   if ( simParams->langevinPistonOn )
   {
-    Vector &strainRate = langevinPiston_strainRate;
+    Tensor &strainRate = langevinPiston_strainRate;
     int cellDims = simParams->useFlexibleCell ? 1 : 3;
     BigReal dt = simParams->dt;
     BigReal dt_long = slowFreq * dt;
@@ -296,7 +297,7 @@ void Controller::langevinPiston2(int step)
     }
 
     strainRate += ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
-	( controlPressure - Vector(1,1,1)*simParams->langevinPistonTarget );
+	( controlPressure - Tensor::identity(simParams->langevinPistonTarget) );
 
 #ifdef DEBUG_PRESSURE
     iout << iINFO << "integrating half step, strain rate: " << strainRate << "\n";
@@ -309,9 +310,9 @@ void Controller::langevinPiston2(int step)
       BigReal f2 = sqrt( ( 1. - f1*f1 ) * kT / mass );
       strainRate *= f1;
       if ( simParams->useFlexibleCell )
-	strainRate += f2 * random->gaussian_vector();
+	strainRate += f2 * Tensor::diagonal(random->gaussian_vector());
       else
-	strainRate += f2 * random->gaussian() * Vector(1,1,1);
+	strainRate += f2 * Tensor::identity(random->gaussian());
 #ifdef DEBUG_PRESSURE
       iout << iINFO << "applying langevin, strain rate: " << strainRate << "\n";
 #endif
@@ -395,17 +396,17 @@ void Controller::receivePressure(int step)
     reduction->require();
 
     // BigReal intKineticEnergy;
-    Vector virial;
-    Vector virial_normal;
-    Vector virial_nbond;
-    Vector virial_slow;
-    Vector altVirial_normal;
-    Vector altVirial_nbond;
-    Vector altVirial_slow;
-    Vector intVirial;
-    Vector intVirial_normal;
-    Vector intVirial_nbond;
-    Vector intVirial_slow;
+    Tensor virial;
+    Tensor virial_normal;
+    Tensor virial_nbond;
+    Tensor virial_slow;
+    Tensor altVirial_normal;
+    Tensor altVirial_nbond;
+    Tensor altVirial_slow;
+    Tensor intVirial;
+    Tensor intVirial_normal;
+    Tensor intVirial_nbond;
+    Tensor intVirial_slow;
     BigReal volume;
 
     int numAtoms = molecule->numAtoms;
@@ -423,35 +424,17 @@ void Controller::receivePressure(int step)
     kineticEnergy = reduction->item(REDUCTION_KINETIC_ENERGY);
     // intKineticEnergy = reduction->item(REDUCTION_INT_KINETIC_ENERGY);
 
-    virial_normal.x = reduction->item(REDUCTION_VIRIAL_NORMAL_X);
-    virial_normal.y = reduction->item(REDUCTION_VIRIAL_NORMAL_Y);
-    virial_normal.z = reduction->item(REDUCTION_VIRIAL_NORMAL_Z);
-    virial_nbond.x = reduction->item(REDUCTION_VIRIAL_NBOND_X);
-    virial_nbond.y = reduction->item(REDUCTION_VIRIAL_NBOND_Y);
-    virial_nbond.z = reduction->item(REDUCTION_VIRIAL_NBOND_Z);
-    virial_slow.x = reduction->item(REDUCTION_VIRIAL_SLOW_X);
-    virial_slow.y = reduction->item(REDUCTION_VIRIAL_SLOW_Y);
-    virial_slow.z = reduction->item(REDUCTION_VIRIAL_SLOW_Z);
+    GET_TENSOR(virial_normal,reduction,REDUCTION_VIRIAL_NORMAL);
+    GET_TENSOR(virial_nbond,reduction,REDUCTION_VIRIAL_NBOND);
+    GET_TENSOR(virial_slow,reduction,REDUCTION_VIRIAL_SLOW);
 
-    altVirial_normal.x = reduction->item(REDUCTION_ALT_VIRIAL_NORMAL_X);
-    altVirial_normal.y = reduction->item(REDUCTION_ALT_VIRIAL_NORMAL_Y);
-    altVirial_normal.z = reduction->item(REDUCTION_ALT_VIRIAL_NORMAL_Z);
-    altVirial_nbond.x = reduction->item(REDUCTION_ALT_VIRIAL_NBOND_X);
-    altVirial_nbond.y = reduction->item(REDUCTION_ALT_VIRIAL_NBOND_Y);
-    altVirial_nbond.z = reduction->item(REDUCTION_ALT_VIRIAL_NBOND_Z);
-    altVirial_slow.x = reduction->item(REDUCTION_ALT_VIRIAL_SLOW_X);
-    altVirial_slow.y = reduction->item(REDUCTION_ALT_VIRIAL_SLOW_Y);
-    altVirial_slow.z = reduction->item(REDUCTION_ALT_VIRIAL_SLOW_Z);
+    GET_TENSOR(altVirial_normal,reduction,REDUCTION_ALT_VIRIAL_NORMAL);
+    GET_TENSOR(altVirial_nbond,reduction,REDUCTION_ALT_VIRIAL_NBOND);
+    GET_TENSOR(altVirial_slow,reduction,REDUCTION_ALT_VIRIAL_SLOW);
 
-    intVirial_normal.x = reduction->item(REDUCTION_INT_VIRIAL_NORMAL_X);
-    intVirial_normal.y = reduction->item(REDUCTION_INT_VIRIAL_NORMAL_Y);
-    intVirial_normal.z = reduction->item(REDUCTION_INT_VIRIAL_NORMAL_Z);
-    intVirial_nbond.x = reduction->item(REDUCTION_INT_VIRIAL_NBOND_X);
-    intVirial_nbond.y = reduction->item(REDUCTION_INT_VIRIAL_NBOND_Y);
-    intVirial_nbond.z = reduction->item(REDUCTION_INT_VIRIAL_NBOND_Z);
-    intVirial_slow.x = reduction->item(REDUCTION_INT_VIRIAL_SLOW_X);
-    intVirial_slow.y = reduction->item(REDUCTION_INT_VIRIAL_SLOW_Y);
-    intVirial_slow.z = reduction->item(REDUCTION_INT_VIRIAL_SLOW_Z);
+    GET_TENSOR(intVirial_normal,reduction,REDUCTION_INT_VIRIAL_NORMAL);
+    GET_TENSOR(intVirial_nbond,reduction,REDUCTION_INT_VIRIAL_NBOND);
+    GET_TENSOR(intVirial_slow,reduction,REDUCTION_INT_VIRIAL_SLOW);
 
     temperature = 2.0 * kineticEnergy / ( numDegFreedom * BOLTZMAN );
 
@@ -486,8 +469,8 @@ void Controller::receivePressure(int step)
     }
     else
     {
-      pressure = Vector(0.,0.,0.);
-      groupPressure = Vector(0.,0.,0.);
+      pressure = Tensor();
+      groupPressure = Tensor();
     }
 
     if ( simParameters->useGroupPressure )
@@ -512,14 +495,14 @@ void Controller::receivePressure(int step)
     }
 
     if ( ! simParameters->useFlexibleCell ) {
-      controlPressure_normal = ( controlPressure_normal *
-	Vector(1,1,1) / 3. ) * Vector(1,1,1);
-      controlPressure_nbond = ( controlPressure_nbond *
-	Vector(1,1,1) / 3. ) * Vector(1,1,1);
-      controlPressure_slow = ( controlPressure_slow *
-	Vector(1,1,1) / 3. ) * Vector(1,1,1);
-      controlPressure = ( controlPressure *
-	Vector(1,1,1) / 3. ) * Vector(1,1,1);
+      controlPressure_normal =
+		Tensor::identity(trace(controlPressure_normal)/3.);
+      controlPressure_nbond =
+		Tensor::identity(trace(controlPressure_nbond)/3.);
+      controlPressure_slow =
+		Tensor::identity(trace(controlPressure_slow)/3.);
+      controlPressure =
+		Tensor::identity(trace(controlPressure)/3.);
     }
 
 #ifdef DEBUG_PRESSURE
@@ -652,7 +635,7 @@ void Controller::printEnergies(int step)
       xstFile << "# NAMD extended system trajectory file" << endl;
       xstFile << "#$LABELS step a_x b_y c_z o_x o_y o_z";
       if ( simParameters->langevinPistonOn ) {
-        xstFile << " s_x s_y s_z";
+        xstFile << " s_x s_y s_z s_u s_v s_w";
       }
       xstFile << endl;
     }
@@ -662,9 +645,14 @@ void Controller::printEnergies(int step)
       xstFile << step;
       xstFile << " " << lattice.a() << " " << lattice.b() << " " << lattice.c() << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
       if ( simParameters->langevinPistonOn ) {
-	xstFile << " " << langevinPiston_strainRate.x;
-	xstFile << " " << langevinPiston_strainRate.y;
-	xstFile << " " << langevinPiston_strainRate.z;
+	Vector strainRate = diagonal(langevinPiston_strainRate);
+	Vector strainRate2 = off_diagonal(langevinPiston_strainRate);
+	xstFile << " " << strainRate.x;
+	xstFile << " " << strainRate.y;
+	xstFile << " " << strainRate.z;
+	xstFile << " " << strainRate2.x;
+	xstFile << " " << strainRate2.y;
+	xstFile << " " << strainRate2.z;
       }
       xstFile << endl;
       xstFile.flush();
@@ -691,15 +679,20 @@ void Controller::printEnergies(int step)
       xscFile << "# NAMD extended system configuration file" << endl;
       xscFile << "#$LABELS step a_x b_y c_z o_x o_y o_z";
       if ( simParameters->langevinPistonOn ) {
-	xscFile << " s_x s_y s_z";
+        xscFile << " s_x s_y s_z s_u s_v s_w";
       }
       xscFile << endl;
       xscFile << step;
       xscFile << " " << lattice.a() << " " << lattice.b() << " " << lattice.c() << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
       if ( simParameters->langevinPistonOn ) {
-	xscFile << " " << langevinPiston_strainRate.x;
-	xscFile << " " << langevinPiston_strainRate.y;
-	xscFile << " " << langevinPiston_strainRate.z;
+	Vector strainRate = diagonal(langevinPiston_strainRate);
+	Vector strainRate2 = off_diagonal(langevinPiston_strainRate);
+	xscFile << " " << strainRate.x;
+	xscFile << " " << strainRate.y;
+	xscFile << " " << strainRate.z;
+	xscFile << " " << strainRate2.x;
+	xscFile << " " << strainRate2.y;
+	xscFile << " " << strainRate2.z;
       }
       xscFile << endl;
     }
@@ -713,15 +706,20 @@ void Controller::printEnergies(int step)
       xscFile << "# NAMD extended system configuration file" << endl;
       xscFile << "#$LABELS step a_x b_y c_z o_x o_y o_z";
       if ( simParameters->langevinPistonOn ) {
-	xscFile << " s_x s_y s_z";
+        xscFile << " s_x s_y s_z s_u s_v s_w";
       }
       xscFile << endl;
       xscFile << step;
       xscFile << " " << lattice.a() << " " << lattice.b() << " " << lattice.c() << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
       if ( simParameters->langevinPistonOn ) {
-	xscFile << " " << langevinPiston_strainRate.x;
-	xscFile << " " << langevinPiston_strainRate.y;
-	xscFile << " " << langevinPiston_strainRate.z;
+	Vector strainRate = diagonal(langevinPiston_strainRate);
+	Vector strainRate2 = off_diagonal(langevinPiston_strainRate);
+	xscFile << " " << strainRate.x;
+	xscFile << " " << strainRate.y;
+	xscFile << " " << strainRate.z;
+	xscFile << " " << strainRate2.x;
+	xscFile << " " << strainRate2.y;
+	xscFile << " " << strainRate2.z;
       }
       xscFile << endl;
     }
@@ -807,9 +805,9 @@ void Controller::printEnergies(int step)
     if ( volume != 0. )
     {
 	if ( printAtomicPressure ) {
-	  iout << FORMAT(pressure*Vector(1,1,1)*PRESSUREFACTOR/3.);
+	  iout << FORMAT(trace(pressure)*PRESSUREFACTOR/3.);
 	}
-	iout << FORMAT(groupPressure*Vector(1,1,1)*PRESSUREFACTOR/3.);
+	iout << FORMAT(trace(groupPressure)*PRESSUREFACTOR/3.);
 	iout << FORMAT(volume);
     }
 

@@ -31,7 +31,7 @@ public:
     return 0x7FFFFFFF & ((atomID[0]<<22) + (atomID[1]<<11) + (atomID[2])); 
   }
 
-  enum { angleEnergyIndex, virialXIndex, virialYIndex, virialZIndex, reductionDataSize };
+  enum { angleEnergyIndex, TENSOR(virialIndex), reductionDataSize };
   enum { reductionChecksumLabel = REDUCTION_ANGLE_CHECKSUM };
   static void submitReductionData(BigReal*,SubmitReduction*);
 

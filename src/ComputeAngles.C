@@ -149,17 +149,21 @@ void AngleElem::computeForce(BigReal *reduction)
 
   DebugM(3, "::computeForce() -- ending with delta energy " << energy << endl);
   reduction[angleEnergyIndex] += energy;
-  reduction[virialXIndex] += ( r12.x * force1.x + r32.x * force3.x );
-  reduction[virialYIndex] += ( r12.y * force1.y + r32.y * force3.y );
-  reduction[virialZIndex] += ( r12.z * force1.z + r32.z * force3.z );
+  reduction[virialIndex_XX] += ( force1.x * r12.x + force3.x * r32.x );
+  reduction[virialIndex_XY] += ( force1.x * r12.y + force3.x * r32.y );
+  reduction[virialIndex_XZ] += ( force1.x * r12.z + force3.x * r32.z );
+  reduction[virialIndex_YX] += ( force1.y * r12.x + force3.y * r32.x );
+  reduction[virialIndex_YY] += ( force1.y * r12.y + force3.y * r32.y );
+  reduction[virialIndex_YZ] += ( force1.y * r12.z + force3.y * r32.z );
+  reduction[virialIndex_ZX] += ( force1.z * r12.x + force3.z * r32.x );
+  reduction[virialIndex_ZY] += ( force1.z * r12.y + force3.z * r32.y );
+  reduction[virialIndex_ZZ] += ( force1.z * r12.z + force3.z * r32.z );
 }
 
 
 void AngleElem::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {
   reduction->item(REDUCTION_ANGLE_ENERGY) += data[angleEnergyIndex];
-  reduction->item(REDUCTION_VIRIAL_NORMAL_X) += data[virialXIndex];
-  reduction->item(REDUCTION_VIRIAL_NORMAL_Y) += data[virialYIndex];
-  reduction->item(REDUCTION_VIRIAL_NORMAL_Z) += data[virialZIndex];
+  ADD_TENSOR(reduction,REDUCTION_VIRIAL_NORMAL,data,virialIndex);
 }
 
