@@ -377,6 +377,9 @@ void SimParameters::config_parser_fileio(ParseOptions &opts) {
     "prefix for the final PDB position and velocity filenames", 
     outputFilename);
 
+   opts.optional("main", "auxFile", "Filename for data stream output",
+     auxFilename);
+
    opts.optional("main", "DCDfreq", "Frequency of DCD trajectory output, in "
     "timesteps", &dcdFrequency, 0);
    opts.range("DCDfreq", NOT_NEGATIVE);
@@ -1007,6 +1010,11 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
        (opts.defined("velocities") || opts.defined("binvelocities")) ) 
    {
       NAMD_die("Cannot specify both an initial temperature and a velocity file");
+   }
+
+   if (! opts.defined("auxFile")) {
+     strcpy(auxFilename,outputFilename);
+     strcat(auxFilename,".aux");
    }
 
    //  Check for frequencies

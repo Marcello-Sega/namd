@@ -109,6 +109,7 @@ public:
 					//  a velocity DCD file be updated
 	int xstFrequency;		//  How often (in timesteps) should
 					//  a XST trajectory file be updated
+	char auxFilename[129];		//  auxilary output filename
 	char dcdFilename[129];		//  DCD filename
 	char velDcdFilename[129];       //  Velocity DCD filename
 	char xstFilename[129];		//  Extended system trajectory filename

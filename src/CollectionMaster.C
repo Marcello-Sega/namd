@@ -14,6 +14,7 @@
 #include "Node.h"
 #include "Output.h"
 #include "ProcessorPrivate.h"
+#include "SimParameters.h"
 #include "packmsg.h"
 #include <stdio.h>
 
@@ -95,10 +96,21 @@ void CollectionMaster::disposeVelocities(CollectVectorInstance *c)
 
 
 void CollectionMaster::receiveDataStream(DataStreamMsg *msg) {
-    CkPrintf(msg->data.begin());
     if ( ! dataStreamFile ) {
-      dataStreamFile = fopen("aux_data.txt","w");
-      if ( ! dataStreamFile ) NAMD_die("Can't open data stream file!");
+      char *fname = Node::Object()->simParameters->auxFilename;
+      iout << iINFO << "OPENING AUXILIARY DATA STREAM FILE "
+					<< fname << "\n" << endi;
+      char *bfname = new char[strlen(fname)+10];
+      strcpy(bfname,fname);
+      strcat(bfname,".BAK");
+#if defined(WIN32) && !defined(__CYGWIN__)
+      remove(bfname);
+#endif
+      rename(fname,bfname);
+      delete [] bfname;
+      dataStreamFile = fopen(fname,"w");
+      if ( ! dataStreamFile )
+		NAMD_die("Can't open auxiliary data stream file!");
     }
     fprintf(dataStreamFile,"%s",msg->data.begin());
     fflush(dataStreamFile);
