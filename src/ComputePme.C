@@ -320,7 +320,11 @@ void ComputePmeMgr::recvGrid(PmeGridMsg *msg) {
   --grid_count;
 
   if ( grid_count == 0 ) {
+#if CHARM_VERSION > 050402
+    pmeProxy[CkMyPe()].gridCalc1();
+#else
     pmeProxy.gridCalc1(CkMyPe());
+#endif
   }
 }
 
@@ -332,7 +336,11 @@ void ComputePmeMgr::gridCalc1(void) {
 	qgrid, 1, myGrid.dim2 * myGrid.dim3, 0, 0, 0);
 #endif
 
+#if CHARM_VERSION > 050402
+  pmeProxy[CkMyPe()].sendTrans();
+#else
   pmeProxy.sendTrans(CkMyPe());
+#endif
 }
 
 void ComputePmeMgr::sendTrans(void) {
@@ -356,14 +364,22 @@ void ComputePmeMgr::sendTrans(void) {
       q += slicelen;
       qmsg += cpylen;
     }
+#if CHARM_VERSION > 050402
+    pmeProxy[recipPeMap[pe]].recvTrans(newmsg);
+#else
     pmeProxy.recvTrans(newmsg,recipPeMap[pe]);
+#endif
   }
 
   trans_count = numRecipPes;
   if ( trans_buf_len ) {
     // CkPrintf("resending %d recvTrans on Pe(%d)\n",trans_buf_len,CkMyPe());
     for ( int m=0; m<trans_buf_len; ++m ) {
+#if CHARM_VERSION > 050402
+      pmeProxy[CkMyPe()].recvTrans(trans_buf[m]);
+#else
       pmeProxy.recvTrans(trans_buf[m],CkMyPe());
+#endif
     }
     trans_buf_len = 0;
   }
@@ -388,7 +404,11 @@ void ComputePmeMgr::recvTrans(PmeTransMsg *msg) {
   --trans_count;
 
   if ( trans_count == 0 ) {
+#if CHARM_VERSION > 050402
+    pmeProxy[CkMyPe()].gridCalc2();
+#else
     pmeProxy.gridCalc2(CkMyPe());
+#endif
   }
 }
 
@@ -416,7 +436,11 @@ void ComputePmeMgr::gridCalc2(void) {
 	ny * zdim / 2, 1, work, 1, 0);
 #endif
 
+#if CHARM_VERSION > 050402
+  pmeProxy[CkMyPe()].sendUntrans();
+#else
   pmeProxy.sendUntrans(CkMyPe());
+#endif
 }
 
 void ComputePmeMgr::sendUntrans(void) {
@@ -436,14 +460,22 @@ void ComputePmeMgr::sendUntrans(void) {
     newmsg->ny = ny;
     memcpy((void*)(newmsg->qgrid), (void*)(qgrid + x_start*ny*zdim),
 				nx*ny*zdim*sizeof(double));
+#if CHARM_VERSION > 050402
+    pmeProxy[recipPeMap[pe]].recvUntrans(newmsg);
+#else
     pmeProxy.recvUntrans(newmsg,recipPeMap[pe]);
+#endif
   }
 
   untrans_count = numRecipPes;
   if ( untrans_buf_len ) {
     // CkPrintf("resending %d recvUntrans on Pe(%d)\n",untrans_buf_len,CkMyPe());
     for ( int m=0; m<untrans_buf_len; ++m ) {
+#if CHARM_VERSION > 050402
+      pmeProxy[CkMyPe()].recvUntrans(untrans_buf[m]);
+#else
       pmeProxy.recvUntrans(untrans_buf[m],CkMyPe());
+#endif
     }
     untrans_buf_len = 0;
   }
@@ -475,7 +507,11 @@ void ComputePmeMgr::recvUntrans(PmeUntransMsg *msg) {
   --untrans_count;
 
   if ( untrans_count == 0 ) {
+#if CHARM_VERSION > 050402
+    pmeProxy[CkMyPe()].gridCalc3();
+#else
     pmeProxy.gridCalc3(CkMyPe());
+#endif
   }
 }
 
@@ -488,7 +524,11 @@ void ComputePmeMgr::gridCalc3(void) {
 	(fftw_complex *) qgrid, 1, myGrid.dim2 * myGrid.dim3 / 2, 0, 0, 0);
 #endif
 
+#if CHARM_VERSION > 050402
+  pmeProxy[CkMyPe()].sendUngrid();
+#else
   pmeProxy.sendUngrid(CkMyPe());
+#endif
 }
 
 void ComputePmeMgr::sendUngrid(void) {
@@ -517,7 +557,11 @@ void ComputePmeMgr::sendUngrid(void) {
     }
     newmsg->sourceNode = myRecipPe;
 
+#if CHARM_VERSION > 050402
+    pmeProxy[pe].recvUngrid(newmsg);
+#else
     pmeProxy.recvUngrid(newmsg,pe);
+#endif
   }
   grid_count = numSources;
   memset( (void*) qgrid, 0, qgrid_len * sizeof(double) );
@@ -534,7 +578,11 @@ void ComputePmeMgr::recvUngrid(PmeGridMsg *msg) {
   --ungrid_count;
 
   if ( ungrid_count == 0 ) {
+#if CHARM_VERSION > 050402
+    pmeProxy[CkMyPe()].ungridCalc();
+#else
     pmeProxy.ungridCalc(CkMyPe());
+#endif
   }
 }
 
@@ -731,7 +779,11 @@ void ComputePme::doWork()
   myRealSpace->fill_charges(q_arr, f_arr, localData);
 
   CProxy_ComputePmeMgr pmeProxy(CpvAccess(BOCclass_group).computePmeMgr);
+#if CHARM_VERSION > 050402
+  pmeProxy[CkMyPe()].sendGrid();
+#else
   pmeProxy.sendGrid(CkMyPe());
+#endif
 }
 
 void ComputePme::sendData(int numRecipPes, int *recipPeMap) {
@@ -779,7 +831,11 @@ void ComputePme::sendData(int numRecipPes, int *recipPeMap) {
       }
     }
 
+#if CHARM_VERSION > 050402
+    pmeProxy[recipPeMap[pe]].recvGrid(msg);
+#else
     pmeProxy.recvGrid(msg,recipPeMap[pe]);
+#endif
   }
 
 }
