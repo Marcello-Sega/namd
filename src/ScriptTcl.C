@@ -447,23 +447,14 @@ void ScriptTcl::algorithm() {
   Tcl_CreateCommand(interp, "callback", Tcl_callback,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
 
-/*
-  // Get the script
-  StringList *script = Node::Object()->configList->find("tclScript");
-
-  for ( ; script; script = script->next ) {
-    int code;
-    if ( script->data[0] == '{' ) code = Tcl_Eval(interp,script->data+1);
-    else code = Tcl_EvalFile(interp,script->data);
-    if (*interp->result != 0) CkPrintf("TCL: %s\n",interp->result);
-    if (code != TCL_OK) NAMD_die("TCL error in script!");
-  }
-*/
-
   runWasCalled = 0;
   int code = Tcl_EvalFile(interp,scriptFile);
-  if (*interp->result != 0) CkPrintf("TCL: %s\n",interp->result);
-  if (code != TCL_OK) NAMD_die("TCL error in script!");
+  char *result = Tcl_GetStringResult(interp);
+  if (*result != 0) CkPrintf("TCL: %s\n",result);
+  if (code != TCL_OK) {
+    char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
+    NAMD_die(errorInfo);
+  }
   if (runWasCalled == 0) {
     if (callbackname == 0) {
       CkPrintf("TCL: Exiting after processing config file.\n");
