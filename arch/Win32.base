@@ -1,9 +1,9 @@
 
-CHARM = $(CHARMBASE)\$(CHARMARCH)
-CHARMXI = $(CHARM)\bin\charmxi.exe -ansi
+#CHARM = $(CHARMBASE)\$(CHARMARCH)
+#CHARMXI = $(CHARM)\bin\charmxi.exe -ansi
 
-MOVE = move
-COPY = copy
+#MOVE = move
+#COPY = copy
 COPTI = /I
 COPTC = /c
 COPTD = /D

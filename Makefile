@@ -242,13 +242,13 @@ namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(FFTLIB)
 
 charmd.exe:
-	$(COPY) $(CHARM)\bin\charmd.exe charmd.exe
+	$(COPY) $(CHARM)/bin/charmd.exe charmd.exe
 
 charmd_faceless.exe:
-	$(COPY) $(CHARM)\bin\charmd_faceless.exe charmd_faceless.exe
+	$(COPY) $(CHARM)/bin/charmd_faceless.exe charmd_faceless.exe
 
 charmrun.exe:
-	$(COPY) $(CHARM)\bin\charmrun.exe charmrun.exe
+	$(COPY) $(CHARM)/bin/charmrun.exe charmrun.exe
 
 psfgen:	$(DSTDIR) $(SBOBJS)
 	$(CC) $(CFLAGS) -o psfgen $(SBOBJS) $(TCLLIB) $(TCLAPPLIB) -lm

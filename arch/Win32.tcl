@@ -1,12 +1,12 @@
 
-TCLDIR = $(HOME)\tcl
-TCLINCL = /I$(TCLDIR)\include
-TCLLIB = $(TCLDIR)\lib\tcl80.lib
+TCLDIR = C:/cygwin$(HOME)/tcl
+TCLINCL = /I$(TCLDIR)/include
+TCLLIB = $(TCLDIR)/lib/tcl80.lib
 TCLDLL = tcl80.dll
 TCLFLAGS = /DNAMD_TCL
 TCL = $(TCLINCL) $(TCLFLAGS)
 
 $(TCLSENTINEL)$(TCLDLL):
-	$(COPY) $(TCLDIR)\lib\$(TCLDLL) $(TCLDLL)
+	$(COPY) $(TCLDIR)/lib/$(TCLDLL) $(TCLDLL)
 TCLSENTINEL = not_$(TCLSENTIEL)
 
