@@ -108,6 +108,8 @@ void ComputeNonbondedUtil :: NAME
   register const BigReal groupcutoff2 = ComputeNonbondedUtil:: groupcutoff2;
   const BigReal dielectric_1 = ComputeNonbondedUtil:: dielectric_1;
   const LJTable* const ljTable = ComputeNonbondedUtil:: ljTable;
+  LJTable::TableEntry ljNull;  ljNull.A = 0; ljNull.B = 0;
+  const LJTable::TableEntry* const lj_null_pars = &ljNull;
   const Molecule* const mol = ComputeNonbondedUtil:: mol;
   const BigReal* const fast_table = ComputeNonbondedUtil:: fast_table;
   FULL
@@ -319,10 +321,8 @@ void ComputeNonbondedUtil :: NAME
       // common code
       register BigReal r2 = square(p_ij_x,p_ij_y,p_ij_z);
 
-      if ( r2 > cutoff2 ) { continue; }
-      if ( r2 == 0 ) { ++exclChecksum; continue; }
-
-      if ( atomfixed && ( p_j->atomFixed ) ) continue;
+      if ( (r2 > cutoff2) || (atomfixed && p_j->atomFixed) ||
+			((r2 == 0) && ++exclChecksum) ) { continue; }
 
       int table_i = (int) ( r2_delta_1 * r2 );
       FAST(
@@ -338,23 +338,20 @@ void ComputeNonbondedUtil :: NAME
 		lj_row + 2 * mol->atomvdwtype(p_j->id);
 
       BigReal modf = 0.0;
-	register char excl_flag;
-	SELF( if ( j < j_hgroup ) { excl_flag = EXCHCK_FULL; } else ) {
-           //  We want to search the array of the smaller atom
-	  int atom2 = p_j->id;
-	  if ( atom2 < excl_min || atom2 > excl_max ) excl_flag = 0;
-	  else excl_flag = excl_flags[atom2-excl_min];
-	  if ( excl_flag ) { ++exclChecksum; }
-	}
+      int atom2 = p_j->id;
+      register char excl_flag = ( (atom2 >= excl_min && atom2 <= excl_max) ?
+					excl_flags[atom2-excl_min] : 0 );
+      if ( excl_flag ) { ++exclChecksum; }
+      SELF( if ( j < j_hgroup ) { excl_flag = EXCHCK_FULL; } )
+      if ( excl_flag ) {
 	if ( excl_flag == EXCHCK_FULL ) {
-	  NOFULL( continue; )
+	  lj_pars = lj_null_pars;
 	  modf = 1.0;
 	} else {
-          if ( excl_flag == EXCHCK_MOD ) {
-	    ++lj_pars;
-	    modf = modf_mod;
-	  }
+	  ++lj_pars;
+	  modf = modf_mod;
 	}
+      }
 
       BigReal kqq = kq_i * p_j->charge;
       BigReal diffa = r2 - r2_delta * table_i;
@@ -364,23 +361,17 @@ void ComputeNonbondedUtil :: NAME
       const BigReal A = scaling * lj_pars->A;
       const BigReal B = scaling * lj_pars->B;
 
-      if ( excl_flag != EXCHCK_FULL ) {
-
       const BigReal r_2 = 1.0 / r2;
       const BigReal r_6 = r_2*r_2*r_2;
       const BigReal r_12 = r_6*r_6;
 
-      BigReal switchVal = 1;  // used for Lennard-Jones
-      BigReal dSwitchVal = 0;  // d switchVal / d r2
-
       // Lennard-Jones switching function
-      if (r2 > switchOn2)
-      {
-	const BigReal c2 = cutoff2-r2;
-	const BigReal c4 = c2*(cutoff2+2.0*r2-3.0*switchOn2);
-	switchVal = c2*c4*c1;
-	dSwitchVal = 0.5*c3*(c2*c2-c4);
-      }
+      const BigReal c2 = cutoff2-r2;
+      const BigReal c4 = c2*(cutoff2+2.0*r2-3.0*switchOn2);
+      const BigReal switchVal =		// used for Lennard-Jones
+			( r2 > switchOn2 ? c2*c4*c1 : 1.0 );
+      const BigReal dSwitchVal =	// d switchVal / d r2
+			( r2 > switchOn2 ? 0.5*c3*(c2*c2-c4) : 0.0 );
 
       const BigReal AmBterm = (A*r_6 - B) * r_6;
 
@@ -422,20 +413,14 @@ void ComputeNonbondedUtil :: NAME
       virial_zz += tmp_z * p_ij_z;
       f_i.z += tmp_z;
       f_j.z -= tmp_z;
-      }
       )
 
       FULL(
-      BigReal slow_b = scor_i[1]; 
-      BigReal slow_c = scor_i[2]; 
-      BigReal slow_d = scor_i[3]; 
-      if ( modf ) {
-        const BigReal* const slow_i = slow_table + 4*table_i;
-        slow_a -= modf * slow_i[0];
-        slow_b -= modf * slow_i[1];
-        slow_c -= modf * slow_i[2];
-        slow_d -= modf * slow_i[3];
-      }
+      const BigReal* const slow_i = ( modf ? slow_table + 4*table_i : scor_i );
+      slow_a -= modf * slow_i[0];
+      BigReal slow_b = scor_i[1] - modf * slow_i[1];
+      BigReal slow_c = scor_i[2] - modf * slow_i[2];
+      BigReal slow_d = scor_i[3] - modf * slow_i[3];
 
       register BigReal slow_val =
 	( ( diffa * slow_d + slow_c ) * diffa + slow_b ) * diffa + slow_a;
