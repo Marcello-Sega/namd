@@ -827,7 +827,7 @@ void Controller::outputExtendedSystem(int step)
   if ( step >= 0 ) {
 
     // Write out eXtended System Trajectory (XST) file
-    if ( (simParams->xstFrequency != -1) &&
+    if ( simParams->xstFrequency &&
          ((step % simParams->xstFrequency) == 0) )
     {
       if ( ! xstFile.rdbuf()->is_open() )
@@ -844,7 +844,7 @@ void Controller::outputExtendedSystem(int step)
 
     // Write out eXtended System Configuration (XSC) files
     //  Output a restart file
-    if ( (simParams->restartFrequency != -1) &&
+    if ( simParams->restartFrequency &&
          ((step % simParams->restartFrequency) == 0) &&
          (step != simParams->firstTimestep) )
     {

@@ -115,20 +115,11 @@ public:
 					//  a DCD trajectory file be updated
 	int velDcdFrequency;		//  How often (in timesteps) should
 					//  a velocity DCD file be updated
-	int electForceDcdFrequency;	//  How often (in timesteps) should
-					//  long and short range electrostatic
-					//  force DCD files be updated
-	int allForceDcdFrequency;	//  How often (in timesteps) should
-					//  DCD file with total force be updated
 	int xstFrequency;		//  How often (in timesteps) should
 					//  a XST trajectory file be updated
 	char dcdFilename[129];		//  DCD filename
 	char velDcdFilename[129];       //  Velocity DCD filename
 	char xstFilename[129];		//  Extended system trajectory filename
-	char electForceDcdFilename[129];//  long and short range elect force 
-					//  DCD filename
-	char allForceDcdFilename[129];  //  File name for DCD file containing
-					//  total forces
 	char outputFilename[129];	//  Output file name.  This name will
 					//  have .coor appended to it 
 					//  for the coordinates and 

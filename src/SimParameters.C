@@ -334,43 +334,33 @@ void SimParameters::config_parser_fileio(ParseOptions &opts) {
     "prefix for the final PDB position and velocity filenames", 
     outputFilename);
 
-   opts.optional("main", "DCDfile", "DCD trajectory output file name",
+   opts.optional("main", "DCDfreq", "Frequency of DCD trajectory output, in "
+    "timesteps", &dcdFrequency, 0);
+   opts.range("DCDfreq", NOT_NEGATIVE);
+   opts.optional("DCDfreq", "DCDfile", "DCD trajectory output file name",
      dcdFilename);
-   opts.require("DCDfile", "DCDfreq", "Frequency of DCD trajectory output, in "
-    "timesteps", &dcdFrequency);
-   opts.range("DCDfreq", POSITIVE);
 
-   opts.optional("main", "velDCDfile", "velocity DCD output file name",
+   opts.optional("main", "velDCDfreq", "Frequency of velocity "
+    "DCD output, in timesteps", &velDcdFrequency, 0);
+   opts.range("velDCDfreq", NOT_NEGATIVE);
+   opts.optional("velDCDfreq", "velDCDfile", "velocity DCD output file name",
      velDcdFilename);
-   opts.require("velDCDfile", "velDCDfreq", "Frequency of velocity "
-    "DCD output, in timesteps", &velDcdFrequency);
-   opts.range("velDCDfreq", POSITIVE);
    
-   opts.optional("main", "electForceDCDfile", "Electrostatic force DCD output file name",
-     electForceDcdFilename);
-   opts.require("electForceDCDfile", "electForceDCDfreq", "Frequency of electorstatic force "
-    "DCD output, in timesteps", &electForceDcdFrequency);
-   opts.range("electForceDCDfreq", POSITIVE);
-   
-   opts.optional("main", "allForceDCDfile", "Total force DCD output file name",
-     allForceDcdFilename);
-   opts.require("allForceDCDfile", "allForceDCDfreq", "Frequency of total force "
-    "DCD output, in timesteps", &allForceDcdFrequency);
-   opts.range("allForceDCDfreq", POSITIVE);
-   
-   opts.optional("main", "XSTfile", "Extended sytem trajectory output file name",
-     xstFilename);
-   opts.require("XSTfile", "XSTfreq", "Frequency of XST trajectory output, in "
-    "timesteps", &xstFrequency);
-   opts.range("XSTfreq", POSITIVE);
+   opts.optional("main", "XSTfreq", "Frequency of XST trajectory output, in "
+    "timesteps", &xstFrequency, 0);
+   opts.range("XSTfreq", NOT_NEGATIVE);
+   opts.optional("XSTfreq", "XSTfile", "Extended sytem trajectory output "
+    "file name", xstFilename);
 
-   opts.optional("main", "restartname", "Prefix for the position and velocity "
-     "PDB files used for restarting", restartFilename);
-   opts.require("restartname", "restartfreq", "Frequency of restart file "
-    "generation", &restartFrequency);
-   opts.range("restartfreq", POSITIVE);
-   opts.optionalB("restartname", "binaryrestart", "Specify use of binary restart files ", 
+   opts.optional("main", "restartfreq", "Frequency of restart file "
+    "generation", &restartFrequency, 0);
+   opts.range("restartfreq", NOT_NEGATIVE);
+   opts.optional("restartfreq", "restartname", "Prefix for the position and "
+     "velocity PDB files used for restarting", restartFilename);
+
+   opts.optionalB("restartfreq", "binaryrestart", "Specify use of binary restart files ", 
        &binaryRestart, TRUE);
+
    opts.optionalB("outputname", "binaryoutput", "Specify use of binary output files ", 
        &binaryOutput, TRUE);
    
@@ -915,6 +905,30 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    StringList *current; //  Pointer to config option list
    char filename[129];  //  Temporary file name
 
+   //  Take care of cwd processing
+   if (opts.defined("cwd"))
+   {
+    //  First allocate and get the cwd value
+    current = config->find("cwd");
+
+    len = strlen(current->data);
+
+    if ( chdir(current->data) )
+     {
+      NAMD_die("chdir() to given cwd failed!");
+    }
+
+    if (current->data[len-1] != '/')
+      len++;
+
+    cwd = new char[len+1];
+
+    strcpy(cwd, current->data);
+
+    if (current->data[strlen(current->data)-1] != '/')
+      strcat(cwd, "/");
+   }
+
    //  Make sure that both a temperature and a velocity PDB were
    //  specified
    if (opts.defined("temperature") &&
@@ -924,66 +938,41 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    }
 
    //  Check for frequencies
-   if (!opts.defined("dcdfreq"))
-   {
-  dcdFrequency = -1;
+   if (dcdFrequency) {
+     if (! opts.defined("dcdfile")) {
+       strcpy(dcdFilename,outputFilename);
+       strcat(dcdFilename,".dcd");
+     }
+   } else {
+     dcdFilename[0] = STRINGNULL;
    }
 
-   if (!opts.defined("veldcdfreq"))
-   {
-  velDcdFrequency = -1;
+   if (velDcdFrequency) {
+     if (! opts.defined("veldcdfile")) {
+       strcpy(velDcdFilename,outputFilename);
+       strcat(velDcdFilename,".veldcd");
+     }
+   } else {
+     velDcdFilename[0] = STRINGNULL;
    }
    
-   if (!opts.defined("electforcedcdfreq"))
-   {
-        electForceDcdFrequency = -1;
+   if (xstFrequency) {
+     if (! opts.defined("xstfile")) {
+       strcpy(xstFilename,outputFilename);
+       strcat(xstFilename,".xst");
+     }
+   } else {
+     xstFilename[0] = STRINGNULL;
    }
 
-   if (!opts.defined("allforcedcdfreq"))
-   {
-        allForceDcdFrequency = -1;
-   }
-
-   if (!opts.defined("xstfreq"))
-   {
-  xstFrequency = -1;
-   }
-
-   if (!opts.defined("restartname"))
-   {
-  restartFrequency = -1;
-  binaryRestart = FALSE;
-   }
-
-   //  Take care of filenames
-   if (!opts.defined("dcdfile"))
-   {
-  dcdFilename[0] = STRINGNULL;
-   }
-
-   if (!opts.defined("xstfile"))
-   {
-  xstFilename[0] = STRINGNULL;
-   }
-
-   if (!opts.defined("veldcdfile"))
-   {
-  velDcdFilename[0] = STRINGNULL;
-   }
-
-   if (!opts.defined("restartname"))
-   {
-  restartFilename[0] = STRINGNULL;
-   }
-
-   if (!opts.defined("electForceDCDfile"))
-   {
-  electForceDcdFilename[0] = STRINGNULL;
-   }
-
-   if (!opts.defined("allForceDCDfile"))
-   {
-  allForceDcdFilename[0] = STRINGNULL;
+   if (restartFrequency) {
+     if (! opts.defined("restartname")) {
+       strcpy(restartFilename,outputFilename);
+       strcat(restartFilename,".restart");
+     }
+   } else {
+     restartFilename[0] = STRINGNULL;
+     binaryRestart = FALSE;
    }
 
 
@@ -1570,84 +1559,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
       randomSeed = (unsigned int) time(NULL);
    }
 
-   //  Now take care of cwd processing
-   if (opts.defined("cwd"))
-   {
-  //  First allocate and get the cwd value
-  current = config->find("cwd");
-
-  len = strlen(current->data);
-
-  if ( chdir(current->data) )
-   {
-    NAMD_die("chdir() to given cwd failed!");
-  }
-
-  if (current->data[len-1] != '/')
-    len++;
-
-  cwd = new char[len+1];
-
-  if (cwd == NULL)
-  {
-     NAMD_die("memory allocation failed in SimParameters::initialize_config_data");
-  }
-
-  strcpy(cwd, current->data);
-
-  if (current->data[strlen(current->data)-1] != '/')
-    strcat(cwd, "/");
-
-  //  The following checks and prepends should be unnecessary
-  //  if we just change directories to "cwd"!
-
-  //  Now check the file names given and see if we should
-  //  prepend the cwd value
-
-  if (opts.defined("dcdfile") && (dcdFilename[0] != '/') )
-  {
-    sprintf(tmpstr, "%s%s", cwd, dcdFilename);
-    strcpy(dcdFilename, tmpstr);
-  }
-
-  if (opts.defined("xstfile") && (xstFilename[0] != '/') )
-  {
-    sprintf(tmpstr, "%s%s", cwd, xstFilename);
-    strcpy(xstFilename, tmpstr);
-  }
-
-  if (opts.defined("veldcdfile") && (velDcdFilename[0] != '/') )
-  {
-    sprintf(tmpstr, "%s%s", cwd, velDcdFilename);
-    strcpy(velDcdFilename, tmpstr);
-  }
-  
-  if (opts.defined("electforcedcdfile") && (electForceDcdFilename[0] != '/') )
-  {
-    sprintf(tmpstr, "%s%s", cwd, electForceDcdFilename);
-    strcpy(electForceDcdFilename, tmpstr);
-  }
-
-  if (opts.defined("allforcedcdfile") && (allForceDcdFilename[0] != '/') )
-  {
-    sprintf(tmpstr, "%s%s", cwd, allForceDcdFilename);
-    strcpy(allForceDcdFilename, tmpstr);
-  }
-
-  if (opts.defined("restartname") && (restartFilename[0] != '/') )
-  {
-    sprintf(tmpstr, "%s%s", cwd, restartFilename);
-    strcpy(restartFilename, tmpstr);
-  }
-
-  //  output name must ALWAYS be given, so don't need to check if it
-  //  is defined or not
-  if (outputFilename[0] != '/')
-  {
-    sprintf(tmpstr, "%s%s", cwd, outputFilename);
-    strcpy(outputFilename, tmpstr);
-  }
-   }
 
    //  Set up load balancing variables
    if (opts.defined("ldbStrategy"))
@@ -2125,22 +2036,6 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    }
    iout << endi;
    
-   if (electForceDcdFrequency > 0)
-   {
-     iout << iINFO << "ELECT FORCE DCD NAME   " 
-        << electForceDcdFilename << "\n";
-     iout << iINFO << "ELECT FORCE DCD FREQ   " 
-        << electForceDcdFrequency << "\n" << endi;
-   }
-
-   if (allForceDcdFrequency > 0)
-   {
-     iout << iINFO << "TOTAL FORCE DCD NAME   " 
-        << allForceDcdFilename << "\n";
-     iout << iINFO << "TOTAL FORCE DCD FREQ   " 
-        << allForceDcdFrequency << "\n" << endi;
-   }
-     
    iout << iINFO << "OUTPUT FILENAME        " 
       << outputFilename << "\n" << endi;
    if (binaryOutput)
@@ -2148,7 +2043,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << iINFO << "BINARY OUTPUT FILES WILL BE USED\n" << endi;
    }
 
-   if (restartFrequency == -1)
+   if (! restartFrequency)
    {
      iout << iINFO << "NO RESTART FILE\n";
    }

@@ -81,12 +81,12 @@ int Output::coordinateNeeded(int timestep)
   if ( timestep >= 0 ) {
 
     //  Output a DCD trajectory 
-    if ( (simParams->dcdFrequency != -1) &&
+    if ( simParams->dcdFrequency &&
        ((timestep % simParams->dcdFrequency) == 0) )
     { positionsNeeded |= 1; }
 
     //  Output a restart file
-    if ( (simParams->restartFrequency != -1) &&
+    if ( simParams->restartFrequency &&
        ((timestep % simParams->restartFrequency) == 0) )
     { positionsNeeded |= 2; }
 
@@ -114,14 +114,14 @@ void Output::coordinate(int timestep, int n, Vector *coor, FloatVector *fcoor)
   if ( timestep >= 0 ) {
 
     //  Output a DCD trajectory 
-    if ( (simParams->dcdFrequency != -1) &&
+    if ( simParams->dcdFrequency &&
        ((timestep % simParams->dcdFrequency) == 0) )
     {
       output_dcdfile(timestep, n, fcoor);
     }
 
     //  Output a restart file
-    if ( (simParams->restartFrequency != -1) &&
+    if ( simParams->restartFrequency &&
        ((timestep % simParams->restartFrequency) == 0) )
     {
       iout << "WRITING COORDINATES TO RESTART FILE AT STEP "
@@ -151,7 +151,7 @@ void Output::coordinate(int timestep, int n, Vector *coor, FloatVector *fcoor)
   //  Close trajectory files
   if (timestep == END_OF_RUN)
   {
-    if (simParams->dcdFrequency != -1) output_dcdfile(END_OF_RUN,0,0);
+    if (simParams->dcdFrequency) output_dcdfile(END_OF_RUN,0,0);
   }
 
 }
@@ -182,12 +182,12 @@ int Output::velocityNeeded(int timestep)
   if ( timestep >= 0 ) {
 
     //  Output a velocity DCD trajectory
-    if ( (simParams->velDcdFrequency != -1) &&
+    if ( simParams->velDcdFrequency &&
        ((timestep % simParams->velDcdFrequency) == 0) )
       { velocitiesNeeded |= 1; }
 
     //  Output a restart file
-    if ( (simParams->restartFrequency != -1) &&
+    if ( simParams->restartFrequency &&
        ((timestep % simParams->restartFrequency) == 0) )
       { velocitiesNeeded |= 2; }
 
@@ -209,14 +209,14 @@ void Output::velocity(int timestep, int n, Vector *vel)
   if ( timestep >= 0 ) {
 
     //  Output velocity DCD trajectory
-    if ( (simParams->velDcdFrequency != -1) &&
+    if ( simParams->velDcdFrequency &&
        ((timestep % simParams->velDcdFrequency) == 0) )
     {
       output_veldcdfile(timestep, n, vel);
     }
 
   //  Output restart file
-    if ( (simParams->restartFrequency != -1) &&
+    if ( simParams->restartFrequency &&
        ((timestep % simParams->restartFrequency) == 0) )
     {
       iout << "WRITING VELOCITIES TO RESTART FILE AT STEP "
@@ -237,7 +237,7 @@ void Output::velocity(int timestep, int n, Vector *vel)
   //  Close trajectory files
   if (timestep == END_OF_RUN)
   {
-    if (simParams->velDcdFrequency != -1) output_veldcdfile(END_OF_RUN,0,0);
+    if (simParams->velDcdFrequency) output_veldcdfile(END_OF_RUN,0,0);
   }
 
 }
