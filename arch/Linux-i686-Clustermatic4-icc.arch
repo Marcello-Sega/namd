@@ -1,5 +1,4 @@
 include .rootdir/arch/Linux-i686-icc.arch
 
 CHARMARCH = net-linux-clustermatic4-iccstatic
-NAMD_SUBARCH = -redhat9
 
