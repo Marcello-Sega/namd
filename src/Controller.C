@@ -380,9 +380,9 @@ void Controller::berendsenPressure(int step)
          if ( VAR < (MIN) ) { VAR = (MIN); FLAG = 1; } \
          if ( VAR > (MAX) ) { VAR = (MAX); FLAG = 1; } }
     int limited = 0;
-    LIMIT_SCALING(factor.xx,0.97,1.03,limited)
-    LIMIT_SCALING(factor.yy,0.97,1.03,limited)
-    LIMIT_SCALING(factor.zz,0.97,1.03,limited)
+    LIMIT_SCALING(factor.xx,1./1.03,1.03,limited)
+    LIMIT_SCALING(factor.yy,1./1.03,1.03,limited)
+    LIMIT_SCALING(factor.zz,1./1.03,1.03,limited)
 #undef LIMIT_SCALING
     if ( limited ) {
       iout << iERROR << "Step " << step <<
