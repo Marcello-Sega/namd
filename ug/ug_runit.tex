@@ -10,8 +10,8 @@
 % RCS INFORMATION:
 %
 %       $RCSfile: ug_runit.tex,v $
-%       $Author: dhardy $        $Locker:  $                $State: Exp $
-%       $Revision: 1.1 $      $Date: 1998/01/05 21:12:34 $
+%       $Author: milind $        $Locker:  $                $State: Exp $
+%       $Revision: 1.2 $      $Date: 1998/03/09 23:42:15 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -22,6 +22,10 @@
 % REVISION HISTORY:
 %
 % $Log: ug_runit.tex,v $
+% Revision 1.2  1998/03/09 23:42:15  milind
+% Rewrote the entire section removing the PVM parts, and adding the converse
+% details.
+%
 % Revision 1.1  1998/01/05 21:12:34  dhardy
 % user guide, first draft
 %
@@ -55,145 +59,69 @@
 \section{Running \NAMD}
 \label{section:run}
 
-\subsection{Single node execution}
+\NAMD\ currently runs on network of HP, Sun, SGI, and Linux workstations, as
+well as Cray T3E, IBM SP3, and SGI-CRAY Origin 2000 machines. On network
+of workstations, a ``host program'' (called {\tt conv-host}) is needed to
+launch \NAMD\ on individual workstations in the network. This host program
+is included with the distribution. The general command line syntax for
+invoking \NAMD\ on each of these platforms is:\\
+\noindent {\tt <hostprog> namd2 <config-file> +p{\em N}}\\
+Where {\tt <config-file>} is the name of the configuration file. 
+And {\tt{\em N}} is the number of processors to be used for execution.
 
-To run \NAMD\ on a single node, type {\tt namd config-file}, where
-{\tt config-file} is the configuration file described in Section
-\ref{section:config}.
+\subsection{Platform-Specific Notes}
 
-\subsection{Parallel execution with PVM}
+The following subsections explain in detail the steps involved in running
+\NAMD\ on particular platforms.
 
-Parallel execution using PVM requires that PVM version 3.x be
-installed on each machine you intend to use.  Consult the PVM
-documentation and your system administrator to determine if this is
-the case.
-\prettypar
-The command to run \NAMD\ is the same for the PVM version as for
-single-node execution.  One of the first things \NAMD\ does is call a
-PVM function to determine how many nodes are available.  If this
-function fails, the program knows it is running on a single machine,
-and runs in single-processor mode.  Otherwise it runs in parallel
-mode, using all available nodes, except for the FMA calculations,
-which use only the greatest power of two number of processors not
-greater than the total number of processors.
+\subsubsection{Network of Workstations}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%  Maybe we need to leave this out for the time being.  RKB
-%
-%\subsection{Parallel execution with Charm++}
-%
-%Need Charm++
-%
-%Running varies according to machine.  See Charm++ docs for info.
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+In order to run \NAMD\ on network of workstations, a host program (called
+{\tt conv-host}) is needed in order to launch \NAMD\ on individual 
+workstations. This program is bundled with the binary distribution.
+The names of individual workstations as well as other control information
+such as how many processes to create on those workstations (should they
+hapen to be multiprocessor workstations) is specified to the host program
+through a file named {\tt .nodelist} in the user's home directory or can
+be superceded by the {\tt nodelist} file in the current directory. Details
+about the syntax of {\tt nodelist} file can be found in {\em Converse
+Installation and Usage Manual} at {\tt http://charm.cs.uiuc.edu/}.
 
-\subsection{Platform specific notes}
+\subsubsection{IBM SP3}
 
-\subsubsection{Cluster of workstations}
+On IBM SP3, you would have to use the scheduler available on the front end
+of the SP system in order to run \NAMD. Below, we give the description of
+the commands we use at Argonne National Laboratory's IBM SP3 installation.
+Consult the system documentation or your local system administrator about the
+details at your site. We use the command {\tt spsubmit} to submit \NAMD\
+runs to the SP scheduler at Argonne National Laboratory.\\
+\noindent {\tt spsubmit -np {\em N} -maxtime {\em mins} namd2 <config-file>}\\
+{\em N} is the number of processors we request \NAMD\ to run on, and
+{\em mins} i the maximum time we expect \NAMD\ to take during this run.
 
-Before using \NAMD\ with PVM for the first time, you must:
-\begin{itemize}
-  \item Make sure that {\tt pvmd} is running on each machine you plan
-to use.
+\subsubsection{CRAY T3E}
 
-  \item Have a directory called {\tt pvm3} in your home
-directory on each machine you plan to use.  If not, consult the PVM
-documentation for information on creating this directory.
+{\tt mpprun} is the name of the command used to run parallel jobs on CRAY
+T3E. This command can be used as:\\
+\noindent {\tt mpprun namd2 <config-file> +p{\em N}}\\
+where {\em N} is the number of requested processors. However, this can be
+used only when the number of requested processors is less than or equal
+to 32. For jobs larger than this, one has to use queuing facility provided
+at the site of installation. Description of the queuing facilities is out
+of this document's scope, and we leave that up to you to explore.
 
-  \item Create a symbolic link to the {\tt namd} executable file in
-every {\tt pvm3/bin/MACHINE-TYPE} directory corresponding to the
-machine types you plan to use.  You will also need links to {\tt
-dpmta-slave} if you wish to use FMA.
+\subsubsection{Origin2000}
 
-  \item Set any required environment variables.
-The {\tt PVM\_ARCH} environment variable defines the type of operating system.
-The {\tt PVM\_ROOT} environment variable is the location of the PVM directory.
-We will assume the PVM root directory is {\tt /home/pvm3}.
-The {\tt PVMBUFSIZE} environment variable overrides the default PVM buffer size.
-  \begin{itemize}
-    {
-    \item for HP 735's: \\
-      {\tt setenv PVM\_ARCH HPPA} \\
-      {\tt setenv PVM\_ROOT /home/pvm3}
-
-    \item for HP K-machines: \\
-      {\tt setenv PVM\_ARCH HPPAMP} \\
-      {\tt setenv PVM\_ROOT /home/pvm3} \\
-      {\tt setenv PVMBUFSIZE 16777216} \\
-      Note: PVMBUFSIZE is a variable which determines how big messages
-      can be on the HPPAMP machines.  On a 36,000 atom system, 1MB (the
-      default) was too small, so we suggest 16MB.  If your system fails
-      shortly after NAMD starts, you might try increasing the value.
-    }
-  \end{itemize}
-
-\end{itemize}
-
-To run \NAMD, you must first use the {\tt pvm} command to select which
-machines to use.  Then run {\tt namd config-file} as you would for a
-single-machine run.  When \NAMD\ is done, run {\tt pvm} again to clean
-up.  The following is an example of how to run \NAMD\ on four
-processors.
-\begin{verbatim}
-caliban(233) pvm
-pvm> add ophelia
-1 successful
-                    HOST     DTID
-                 ophelia    80000
-pvm> add romeo
-1 successful
-                    HOST     DTID
-                   romeo    c0000
-pvm> add juliet
-1 successful
-                    HOST     DTID
-                  juliet   100000
-pvm> conf
-4 hosts, 1 data format
-                    HOST     DTID     ARCH   SPEED
-                 caliban    40000     HPPA    1000
-                 ophelia    80000     HPPA    1000
-                   romeo    c0000     HPPA    1000
-                  juliet   100000     HPPA    1000
-pvm> quit
-
-pvmd still running.
-\end{verbatim}
-
-The user is logged in to caliban.  He runs {\tt pvm}, and uses the
-{\tt add machine} to select machines ophelia, romeo, and juliet in
-addition to caliban.  The command {\tt conf} shows what machines have
-been selected.
-
-\begin{verbatim}
-caliban(234) namd alanin
-[...namd output deleted...]
-Node 0:Info> TOTAL RUN TIME 24.0511
-Node 0:Info> TOTAL CPU TIME 11.78
-Node 0:Info> namd exiting
-caliban(235) pvm
-pvmd already running.
-pvm> halt
-caliban(236) 
-\end{verbatim}
-
-The user runs \NAMD\ using the configuration file {\tt alanin}.  When
-the simulation is complete, the user runs {\tt pvm} again, and issues
-the {\tt halt} command to tell PVM to free the four processors for
-another run.
-
-\subsubsection{Cray T3D}
-
-The Cray T3D implementation uses the T3D PVM library, so program
-execution is similar to running in the workstation cluster
-environment.  The main difference is that the number of processors is
-set up through environment variables and the T3D process queuing
-system, so the steps described above involving the {\tt pvm} control
-program are not necessary.  Instead, the user must set up certain
-variables as described in the Cray T3D user's manual.
-
-%\subsubsection{Convex Exemplar}
+Origin2000 version of \NAMD\ is a shared memory version, and does not need
+any particular {\em host} program to launch \NAMD. Thus, in order to run
+\NAMD\ on Origin2000, we use the following command:\\
+{\tt namd2 <config-file> +p{\em N}}\\
+where, {\em N} is the number of processes we plan to use. However, note that
+depending on the load and the queuing strategy employed by the system some of
+the processes may be interleaved on some processors, thus causing the
+performance to suffer. Some installations of Origin2000 employ an external
+queuing facility to avoid this problem. You are strongly encouraged to
+consult your local documentation for queuing facility used.
 
 \subsection{Interactive modeling with MDScope}
 
