@@ -1596,11 +1596,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
            rigidBonds = RIGID_NONE;
       }
    }
-   if (useSettle) {
-     if (rigidBonds != RIGID_ALL && rigidBonds != RIGID_WATER) {
-       NAMD_die("useSettle option requires rigid waters");
-     }
-   }
    
    //  Take care of switching stuff
    if (switchingActive)
@@ -2960,17 +2955,6 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
        useGroupPressure = TRUE;
        iout << iWARN << "Option useGroupPressure is being enabled "
             << "due to pressure control with rigidBonds.\n" << endi;
-     }
-   }
-   if (useSettle) {
-     if (berendsenPressureOn || langevinPistonOn) {
-       iout << iWARN << 
-        "Settle does not compute atom-based pressure.\n" << endi;
-       iout << iWARN << "PRESSURE (but not GPRESSURE) output will be wrong!\n" 
-            << endi;
-       if (useGroupPressure == FALSE) {
-         NAMD_die("useSettle requires useGroupPressure.\n");
-       }
      }
    }
 
