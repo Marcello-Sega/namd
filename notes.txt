@@ -13,6 +13,9 @@ a list of know deficiencies, and advice for reporting bugs.
 
 Compiling NAMD
 
+ ***  If you have downloaded a precompiled version of NAMD,  ***
+ ***  please skip down to the next section, "Running NAMD".  ***
+
 You must first download and install NAMD's communications library,
 Charm++/Converse 5.0, from http://charm.cs.uiuc.edu/.  The following
 table shows the version needed for each NAMD architecture.  It is
@@ -101,11 +104,15 @@ group main
 The "group main" line defines the default machine list.  Hosts brutus
 and romeo are the two machines on which to run the simulation.  Note
 that conv-host may run on one of those machines, or conv-host may run
-on a third machine.  The "rsh" command ("remsh" on HPUX) is used to
-start namd2 on each of the nodes specified in the nodelist file.  If
-NAMD fails without printing any output, check to make sure that "rsh"
-works on your machine, by seeing if "rsh hostname ls" works for each
-host in the nodelist.
+on a third machine.
+
+The "rsh" command ("remsh" on HPUX) is used to start namd2 on each node
+specified in the nodelist file.  If NAMD fails without printing any
+output, check to make sure that "rsh" works on your machine, by seeing
+if "rsh hostname ls" works for each host in the nodelist.  If you want
+or need to use "ssh" instead, then add "setenv CONV_RSH ssh" to your
+login or batch script and try "ssh hostname ls" to each host first to
+ensure that the machine is in your .ssh/known_hosts file.
 
 Some automounters use a temporary mount directory which is prepended
 to the path returned by the pwd command.  To run on multiple machines
