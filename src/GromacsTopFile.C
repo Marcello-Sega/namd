@@ -2,9 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include "common.h"
 #include "ResizeArray.h"
 #include "GromacsTopFile.h"
 
+#undef PI
 #define PI 3.14159
 
 /* A GromacsTopFile represents the information stored in a GROMACS
@@ -48,9 +50,8 @@ GromacsTopFile::GromacsTopFile(char *filename) {
   char modename[20];
   int mode;
   if(f==NULL) {
-    snprintf(buf,LINESIZE,"Error opening file '%s'",filename);
-    perror(buf);
-    exit(1);
+    sprintf(buf,"Error opening file '%s'",filename);
+    NAMD_die(buf);
   }
 
   /* really bad parser XXX probably just works on the files we

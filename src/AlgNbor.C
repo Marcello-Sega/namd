@@ -26,10 +26,11 @@ strategy();
 
 void AlgNbor::strategy()
 {
+  int i;
   double startTime = CmiWallTimer();
 
   // make initial assignment as it is now
-  for (int i=0; i<numComputes; i++) {
+  for (i=0; i<numComputes; i++) {
         assign((computeInfo *) &(computes[i]),
 		 (processorInfo *) &(processors[computes[i].oldProcessor]));
   }
@@ -37,7 +38,6 @@ void AlgNbor::strategy()
   // calculate avarage load for neighbors
   double myload = processors[mype].load;
   double avgload = 0.0;
-  int i;
   for (i=0; i<P; i++) {
     if (processors[i].Id >= 0) {
 CmiPrintf("[%d] %d:%f\n", CmiMyPe(), i, processors[i].load);

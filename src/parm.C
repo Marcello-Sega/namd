@@ -102,7 +102,7 @@ char *Ambertoppar::get(int size)
 	if ((ptr = (char *) malloc((unsigned)size)) == NULL) {
 		printf("malloc %d", size);
 		fflush(stdout);
-		perror("malloc err:");
+		NAMD_die("Memory allocation error in Ambertoppar::get()");
 		exit(1);
 	}
 	return(ptr);
