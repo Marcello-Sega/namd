@@ -245,6 +245,18 @@ void Controller::berendsenPressure(int step)
     factor *= ( simParams->dt * freq );
     factor /= simParams->berendsenPressureRelaxationTime;
     factor += 1.0;
+    if ( factor < 0.9 ) {
+      iout << iERROR << "Step " << step <<
+	" volume rescaling factor limited to " <<
+	0.9 << " from " << factor << "\n" << endi;
+      factor = 0.9;
+    }
+    if ( factor > 1.1 ) {
+      iout << iERROR << "Step " << step <<
+	" volume rescaling factor limited to " <<
+	1.1 << " from " << factor << "\n" << endi;
+      factor = 1.1;
+    }
     factor = cbrt(factor);
     broadcast->positionRescaleFactor.publish(step,Vector(1,1,1)*factor);
     state->lattice.rescale(Vector(1,1,1)*factor);
@@ -826,12 +838,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1055 $	$Date: 1999/01/06 22:50:30 $
+ *	$Revision: 1.1056 $	$Date: 1999/02/17 20:00:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1056  1999/02/17 20:00:43  jim
+ * Added error checking to keep Berendsen pressure from blowing up.
+ *
  * Revision 1.1055  1999/01/06 22:50:30  jim
  * Anisotropic (flexible cell) Langevin Piston pressure control finished.
  *
