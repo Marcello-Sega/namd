@@ -43,6 +43,7 @@ private:
   void setParameter(const char* param, int value);
 #ifdef NAMD_TCL
   friend class Controller;
+  friend class ComputeTcl;
   Tcl_Interp *interp;
   static int Tcl_print(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_config(ClientData, Tcl_Interp *, int, char **);

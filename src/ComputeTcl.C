@@ -16,6 +16,7 @@
 #include "ReductionMgr.h"
 #include "ComputeMgr.h"
 #include "ComputeMgr.decl.h"
+#include "ScriptTcl.h"
 #include <stdio.h>
 
 #ifdef NAMD_TCL
@@ -257,7 +258,9 @@ ComputeTcl::ComputeTcl(ComputeGlobal *h) : ComputeGlobalMaster(h) {
 ComputeTcl::~ComputeTcl() {
   DebugM(3,"Destructing ComputeTcl\n");
 #ifdef NAMD_TCL
+/*
   if ( interp ) Tcl_DeleteInterp(interp);
+*/
 #endif
 }
 
@@ -269,6 +272,8 @@ void ComputeTcl::initialize() {
 	new ComputeGlobalConfigMsg;
 
 #ifdef NAMD_TCL
+  interp = Node::Object()->getScript()->interp;
+/*
   // Create interpreter
   interp = Tcl_CreateInterp();
 //  if (Tcl_Init(interp) == TCL_ERROR) {
@@ -276,6 +281,7 @@ void ComputeTcl::initialize() {
 //  }
   Tcl_CreateCommand(interp, "print", Tcl_print,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+*/
   Tcl_CreateCommand(interp, "atomid", Tcl_atomid,
     (ClientData) (Node::Object()->molecule), (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "vecadd", proc_vecadd,

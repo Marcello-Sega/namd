@@ -456,11 +456,6 @@ void ScriptTcl::algorithm() {
     NAMD_die(errorInfo);
   }
   if (runWasCalled == 0) {
-    if (callbackname == 0) {
-      CkPrintf("TCL: Exiting after processing config file.\n");
-      Tcl_DeleteInterp(interp);
-      interp = 0;
-    }
     state->configListInit(config);
     Node::Object()->saveMolDataPointers(state);
     Node::messageStartUp();
