@@ -112,6 +112,16 @@ void Controller::algorithm(void)
           << " TO " << simParams->initialTemp << " KELVIN.\n" << endi;
         Node::Object()->enableExitScheduler();
         continue;
+      case SCRIPT_CHECKPOINT:
+        iout << "CHECKPOINTING POSITIONS AT STEP " << simParams->firstTimestep
+          << "\n" << endi;
+        Node::Object()->enableExitScheduler();
+        continue;
+      case SCRIPT_REVERT:
+        iout << "REVERTING POSITIONS AT STEP " << simParams->firstTimestep
+          << "\n" << endi;
+        Node::Object()->enableExitScheduler();
+        continue;
     }
 
     int step = simParams->firstTimestep;

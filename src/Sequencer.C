@@ -84,6 +84,12 @@ void Sequencer::algorithm(void)
       case SCRIPT_REINITVELS:
 	reinitVelocities();
 	continue;
+      case SCRIPT_CHECKPOINT:
+        patch->checkpoint();
+	continue;
+      case SCRIPT_REVERT:
+        patch->revert();
+	continue;
     }
 
     int &step = patch->flags.step;

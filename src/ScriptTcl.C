@@ -319,6 +319,40 @@ int ScriptTcl::Tcl_measure(ClientData clientData,
   return TCL_OK;
 }
 
+int ScriptTcl::Tcl_checkpoint(ClientData clientData,
+        Tcl_Interp *interp, int argc, char *argv[]) {
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  if (! script->runWasCalled) {
+    interp->result = "called before run";
+    return TCL_ERROR;
+  }
+  if (argc != 1) {
+    interp->result = "wrong # args";
+    return TCL_ERROR;
+  }
+
+  script->runController(SCRIPT_CHECKPOINT);
+
+  return TCL_OK;
+}
+
+int ScriptTcl::Tcl_revert(ClientData clientData,
+        Tcl_Interp *interp, int argc, char *argv[]) {
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  if (! script->runWasCalled) {
+    interp->result = "called before run";
+    return TCL_ERROR;
+  }
+  if (argc != 1) {
+    interp->result = "wrong # args";
+    return TCL_ERROR;
+  }
+
+  script->runController(SCRIPT_REVERT);
+
+  return TCL_OK;
+}
+
 int ScriptTcl::Tcl_callback(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
@@ -403,6 +437,10 @@ void ScriptTcl::algorithm() {
   Tcl_CreateCommand(interp, "output", Tcl_output,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "measure", Tcl_measure,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "checkpoint", Tcl_checkpoint,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "revert", Tcl_revert,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "reinitvels", Tcl_reinitvels,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);

@@ -16,13 +16,14 @@ struct MigrationElem {
   AtomProperties atomProp;
   Transform trans;
   Position pos;
+  Position pos_checkpoint;
   Velocity vel;
   Force force[Results::maxNumForces];
   MigrationElem() {};
   MigrationElem(AtomID &aid, AtomProperties &ap, Transform &t,
-		Position &p, Velocity &v, 
+		Position &p, Position &p_c, Velocity &v, 
 		Force (&f)[Results::maxNumForces]) : 
-      atomID(aid), atomProp(ap), trans(t), pos(p), vel(v)
+      atomID(aid), atomProp(ap), trans(t), pos(p), pos_checkpoint(p_c), vel(v)
   {
     for ( int i = 0; i < Results::maxNumForces; ++i ) force[i] = f[i];
   }
@@ -32,6 +33,7 @@ struct MigrationElem {
     atomProp = other.atomProp;
     trans = other.trans;
     pos = other.pos;
+    pos_checkpoint = other.pos_checkpoint;
     vel = other.vel;
     for ( int i = 0; i < Results::maxNumForces; ++i )
       force[i] = other.force[i];
@@ -42,6 +44,7 @@ struct MigrationElem {
     atomProp = other.atomProp;
     trans = other.trans;
     pos = other.pos;
+    pos_checkpoint = other.pos_checkpoint;
     vel = other.vel;
     for ( int i = 0; i < Results::maxNumForces; ++i )
       force[i] = other.force[i];

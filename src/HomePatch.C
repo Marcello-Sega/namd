@@ -48,7 +48,8 @@ void mollify(Vector *qtilde,const HGArrayVector &q0,const BigReal *lambda, HGArr
 
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, TransformList tl,
-      PositionList pl, VelocityList vl) : Patch(pd,al,pl), v(vl), t(tl)
+      PositionList pl, VelocityList vl) : Patch(pd,al,pl), v(vl), t(tl),
+      p_checkpoint(&pl)
 { 
   DebugM(4, "HomePatch("<<pd<<") at " << this << "\n");
   if (atomIDList.size() != v.size()) {
@@ -589,6 +590,18 @@ void HomePatch::mollyMollify(Tensor *virial)
   p_avg.resize(0);
 }
 
+void HomePatch::checkpoint(void) {
+  for ( int i = 0; i < numAtoms; ++i ) {
+    p_checkpoint[i] = p[i];
+  }
+}
+
+void HomePatch::revert(void) {
+  for ( int i = 0; i < numAtoms; ++i ) {
+    p[i] = p_checkpoint[i];
+  }
+}
+
 BigReal HomePatch::calcKineticEnergy()
 {
   BigReal total = 0;
@@ -737,6 +750,7 @@ HomePatch::doAtomMigration()
   AtomPropertiesList::iterator a_i = a.begin();
   TransformList::iterator t_i = t.begin();
   PositionList::iterator p_i = p.begin();
+  PositionList::iterator p_c_i = p_checkpoint.begin();
   VelocityList::iterator v_i = v.begin();
   ForceList::iterator f_i[Results::maxNumForces];
   for ( j = 0; j < Results::maxNumForces; ++j ) f_i[j] = f[j].begin();
@@ -773,7 +787,7 @@ HomePatch::doAtomMigration()
        for ( j = 0; j < Results::maxNumForces; ++j ) force[j] = *(f_i[j]);
        DebugM(3,"Migrating atom " << atomIDList_i << " from patch "
 		<< patchID << " with position " << p_i << "\n");
-       mCur.add(MigrationElem(*atomIDList_i, *a_i, *t_i, *p_i, *v_i, force));
+       mCur.add(MigrationElem(*atomIDList_i, *a_i, *t_i, *p_i, *p_c_i, *v_i, force));
 
        ++delnum;
 
@@ -784,6 +798,7 @@ HomePatch::doAtomMigration()
          *(a_i-delnum) = *a_i;
          *(t_i-delnum) = *t_i;
          *(p_i-delnum) = *p_i;
+         *(p_c_i-delnum) = *p_c_i;
          *(v_i-delnum) = *v_i;
          for ( j = 0; j < Results::maxNumForces; ++j ) {
            *(f_i[j]-delnum) = *(f_i[j]);
@@ -796,6 +811,7 @@ HomePatch::doAtomMigration()
      ++a_i;
      ++t_i;
      ++p_i;
+     ++p_c_i;
      ++v_i;
      for ( j = 0; j < Results::maxNumForces; ++j ) ++(f_i[j]);
 
@@ -807,6 +823,7 @@ HomePatch::doAtomMigration()
   a.del(delpos,delnum);
   t.del(delpos,delnum);
   p.del(delpos,delnum);
+  p_checkpoint.del(delpos,delnum);
   v.del(delpos,delnum);
   for ( j = 0; j < Results::maxNumForces; ++j ) f[j].del(delpos,delnum);
 
@@ -861,6 +878,8 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
       atomIDList.add(mi->atomID);
       a.add(mi->atomProp);
       p.add(lattice.nearest(mi->pos,center,&(mi->trans)));
+      // JCP FIX THIS!!!
+      p_checkpoint.add(mi->pos_checkpoint);
       t.add(mi->trans);
       v.add(mi->vel);
       for ( int j = 0; j < Results::maxNumForces; ++j )

@@ -52,6 +52,8 @@ private:
   static int Tcl_move(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_output(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_measure(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_checkpoint(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_revert(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_callback(ClientData, Tcl_Interp *, int, char **);
   char *callbackname;
   void doCallback(const char *labels, const char *data);

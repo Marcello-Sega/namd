@@ -16,6 +16,8 @@
 #define SCRIPT_OUTPUT 2
 #define SCRIPT_MEASURE 3
 #define SCRIPT_REINITVELS 4
+#define SCRIPT_CHECKPOINT 5
+#define SCRIPT_REVERT 6
 
 // Tags used in common by all users of broadcast system.
 enum {
