@@ -242,6 +242,7 @@ namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(CHARMLIB)/libconv-cplus-y.a \
 	$(CHARMLIB)/libck.a \
 	$(CHARMLIB)/libconv-util.a \
+	$(CHARMLIB)/libmemory-default.o \
 	$(OBJS) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
