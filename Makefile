@@ -10,11 +10,11 @@
 # this one below leads to numerical changes!
 #CXXOPTS = +O3 -G -z -ptn +Oentrysched +Ofastaccess +Onofltacc +Oregionsched
 #CXXOPTS = +O3 -G -z -ptn +Oentrysched
-CXXOPTS = +O3 -G
+#CXXOPTS = +O3 -G
 #CXXOPTS = +O3 -z
 #CXXOPTS = -g -v -z -G
 #CXXOPTS = -g -v
-#CXXOPTS = -g 
+CXXOPTS = -g 
 
 #####
 # Flags
@@ -118,6 +118,7 @@ OBJS = \
 	$(DSTDIR)/Inform.o \
 	$(DSTDIR)/InfoStream.o \
 	$(DSTDIR)/IntTree.o \
+	$(DSTDIR)/LdbCoordinator.o \
 	$(DSTDIR)/LJTable.o \
 	$(DSTDIR)/Message.o \
 	$(DSTDIR)/MessageManager.o \
@@ -148,7 +149,8 @@ OBJS = \
 
 INTERFACES = main.ci Node.ci WorkDistrib.ci PatchMgr.ci \
 		ComputeMgr.ci ProxyMgr.ci ReductionMgr.ci \
-		CollectionMgr.ci CollectionMaster.ci BroadcastMgr.ci
+		CollectionMgr.ci CollectionMaster.ci BroadcastMgr.ci \
+		LdbCoordinator.ci
 
 TEMPLATES = \
 	$(SRCDIR)/ComputeHomeTuples.C \
