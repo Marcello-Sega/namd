@@ -10,8 +10,8 @@
 % RCS INFORMATION:
 %
 %       $RCSfile: ug_macros.tex,v $
-%       $Author: dhardy $        $Locker:  $                $State: Exp $
-%       $Revision: 1.1 $      $Date: 1998/01/05 21:12:34 $
+%       $Author: jim $        $Locker:  $                $State: Exp $
+%       $Revision: 1.2 $      $Date: 1999/02/23 02:16:20 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -20,6 +20,9 @@
 % REVISION HISTORY:
 %
 % $Log: ug_macros.tex,v $
+% Revision 1.2  1999/02/23 02:16:20  jim
+% Switched verb to tt in macros to please latex2html.
+%
 % Revision 1.1  1998/01/05 21:12:34  dhardy
 % user guide, first draft
 %
@@ -60,22 +63,22 @@ machines and in parallel.}
 
 \newcommand{\NAMDCONF}[4]{%
   \addcontentsline{toc}{subparagraph}{#1}%
-  {\bf \verb!#1! } $<$ #2 $>$ \\%
+  {\bf \tt #1 } $<$ #2 $>$ \\%
   {\bf Acceptable Values: } #3 \\%
   {\bf Description: } #4%
 }
 
 \newcommand{\NAMDCONFWDEF}[5]{%
   \addcontentsline{toc}{subparagraph}{#1}%
-  {\bf \verb!#1! } $<$ #2 $>$ \\%
+  {\bf \tt #1 } $<$ #2 $>$ \\%
   {\bf Acceptable Values: } #3 \\%
   {\bf Default Value: } #4 \\%
   {\bf Description: } #5%
 }
 
 \newcommand{\XNCOMP}[3]{%
-  {\bf \NAMD\ Parameter: } \verb!#1! \\%
-  {\bf X-PLOR Parameter: } \verb!#2! \\%
+  {\bf \NAMD\ Parameter: \tt #1 } \\%
+  {\bf X-PLOR Parameter: \tt #2 } \\%
   #3%
 }
 
