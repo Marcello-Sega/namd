@@ -79,6 +79,4 @@ begin:
   sh temp.m
   sh temp.l
   rm -f temp.d temp.f temp.m temp.l
-  echo "Translating cifiles"
-  make cifiles
   echo "You are ready to do a make in directory $ARCH now."

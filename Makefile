@@ -8,7 +8,7 @@ include Makearch
 SRCDIR = src
 # destination directory (binaries) -- currently, MUST be .
 DSTDIR = obj
-# temp include directory for cifiles
+# temp include directory for .top.h and .bot.h files
 INCDIR = inc
 
 #####
@@ -30,7 +30,6 @@ DPMTALIB=-L$(DPMTADIR)/mpole -L$(DPMTADIR)/src -ldpmta2 -lmpole
 DPMTAFLAGS=-DDPMTA
 DPMTA=$(DPMTAINCL) $(DPMTAFLAGS)
 DPMTALIBS=$(DPMTADIR)/mpole/libmpole.a $(DPMTADIR)/src/libdpmta2.a
-
 
 
 #####
@@ -68,9 +67,9 @@ CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(MDCOMM
 CXXTHREADFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(MDCOMM) $(TCL) $(CXXTHREADOPTS) $(NOWARN) $(NAMDFLAGS)
 GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(MDCOMM) $(TCL) $(NOWARN) $(NAMDFLAGS)
 
-.SUFFIXES: 	.ci
-
 DEPENDFILE = Make.depends
+
+# Add new source files here.
 
 OBJS = \
 	$(DSTDIR)/common.o \
@@ -166,12 +165,37 @@ OBJS = \
 	$(DSTDIR)/VoidTree.o \
 	$(DSTDIR)/WorkDistrib.o
 
-#Compute.ci - nolonger necessary(?)
+# Add new modules here and also define explicit rule below.
 
-INTERFACES = main.ci Node.ci WorkDistrib.ci PatchMgr.ci \
-		ComputeMgr.ci ProxyMgr.ci ReductionMgr.ci \
-		CollectionMgr.ci CollectionMaster.ci BroadcastMgr.ci \
-		LdbCoordinator.ci
+CIFILES = 	\
+		$(INCDIR)/BroadcastMgr.top.h \
+		$(INCDIR)/BroadcastMgr.bot.h \
+		$(INCDIR)/CollectionMaster.top.h \
+		$(INCDIR)/CollectionMaster.bot.h \
+		$(INCDIR)/CollectionMgr.top.h \
+		$(INCDIR)/CollectionMgr.bot.h \
+		$(INCDIR)/ComputeMgr.top.h \
+		$(INCDIR)/ComputeMgr.bot.h \
+		$(INCDIR)/LdbCoordinator.top.h \
+		$(INCDIR)/LdbCoordinator.bot.h \
+		$(INCDIR)/Node.top.h \
+		$(INCDIR)/Node.bot.h \
+		$(INCDIR)/PatchMgr.top.h \
+		$(INCDIR)/PatchMgr.bot.h \
+		$(INCDIR)/ProxyMgr.top.h \
+		$(INCDIR)/ProxyMgr.bot.h \
+		$(INCDIR)/ReductionMgr.top.h \
+		$(INCDIR)/ReductionMgr.bot.h \
+		$(INCDIR)/WorkDistrib.top.h \
+		$(INCDIR)/WorkDistrib.bot.h \
+		$(INCDIR)/main.top.h \
+		$(INCDIR)/main.bot.h
+
+# Add new executables here.
+
+BINARIES = namd2 flipdcd flipbinpdb
+
+all:	$(BINARIES)
 
 namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(CHARMC) -verbose -ld++-option \
@@ -183,6 +207,12 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(PVMLIB) \
 	$(MDCOMMLIB) \
 	$(TCLLIB)
+
+flipdcd:	$(SRCDIR)/flipdcd.c
+	$(CC) -o flipdcd $(SRCDIR)/flipdcd.c
+
+flipbinpdb:	$(SRCDIR)/flipbinpdb.c
+	$(CC) -o flipbinpdb $(SRCDIR)/flipbinpdb.c
 
 # Now sit back, have a coke, and relax.
 
@@ -214,17 +244,102 @@ $(DPMEDIR)/libdpme.a:
 pvm3/libpvmc.a:
 	cd $(PVMDIR) ; $(MAKE) ; cd ..
 
-cifiles:	$(INCDIR) $(DSTDIR)
-	for i in $(INTERFACES); do \
-	   $(CHARMXI) $(SRCDIR)/$$i; \
-	done;
-	$(MOVE) $(SRCDIR)/*.top.h $(INCDIR)
-	$(MOVE) $(SRCDIR)/*.bot.h $(INCDIR)
+# Explicit rules for modules.
+
+MOVECIFILES = $(MOVE) $(SRCDIR)/*.top.h $(SRCDIR)/*.bot.h $(INCDIR)
+
+$(INCDIR)/BroadcastMgr.top.h:	$(SRCDIR)/BroadcastMgr.ci
+	$(CHARMXI) $(SRCDIR)/BroadcastMgr.ci
+	$(MOVECIFILES)
+
+$(INCDIR)/BroadcastMgr.bot.h:	$(SRCDIR)/BroadcastMgr.ci
+	$(CHARMXI) $(SRCDIR)/BroadcastMgr.ci
+	$(MOVECIFILES)
+
+$(INCDIR)/CollectionMaster.top.h:	$(SRCDIR)/CollectionMaster.ci
+	$(CHARMXI) $(SRCDIR)/CollectionMaster.ci
+	$(MOVECIFILES)
+
+$(INCDIR)/CollectionMaster.bot.h:	$(SRCDIR)/CollectionMaster.ci
+	$(CHARMXI) $(SRCDIR)/CollectionMaster.ci
+	$(MOVECIFILES)
+
+$(INCDIR)/CollectionMgr.top.h:	$(SRCDIR)/CollectionMgr.ci
+	$(CHARMXI) $(SRCDIR)/CollectionMgr.ci
+	$(MOVECIFILES)
+
+$(INCDIR)/CollectionMgr.bot.h:	$(SRCDIR)/CollectionMgr.ci
+	$(CHARMXI) $(SRCDIR)/CollectionMgr.ci
+	$(MOVECIFILES)
+
+$(INCDIR)/ComputeMgr.top.h:	$(SRCDIR)/ComputeMgr.ci
+	$(CHARMXI) $(SRCDIR)/ComputeMgr.ci
+	$(MOVECIFILES)
+
+$(INCDIR)/ComputeMgr.bot.h:	$(SRCDIR)/ComputeMgr.ci
+	$(CHARMXI) $(SRCDIR)/ComputeMgr.ci
+	$(MOVECIFILES)
+
+$(INCDIR)/LdbCoordinator.top.h:	$(SRCDIR)/LdbCoordinator.ci
+	$(CHARMXI) $(SRCDIR)/LdbCoordinator.ci
+	$(MOVECIFILES)
+
+$(INCDIR)/LdbCoordinator.bot.h:	$(SRCDIR)/LdbCoordinator.ci
+	$(CHARMXI) $(SRCDIR)/LdbCoordinator.ci
+	$(MOVECIFILES)
+
+$(INCDIR)/Node.top.h:	$(SRCDIR)/Node.ci
+	$(CHARMXI) $(SRCDIR)/Node.ci
+	$(MOVECIFILES)
+
+$(INCDIR)/Node.bot.h:	$(SRCDIR)/Node.ci
+	$(CHARMXI) $(SRCDIR)/Node.ci
+	$(MOVECIFILES)
+
+$(INCDIR)/PatchMgr.top.h:	$(SRCDIR)/PatchMgr.ci
+	$(CHARMXI) $(SRCDIR)/PatchMgr.ci
+	$(MOVECIFILES)
+
+$(INCDIR)/PatchMgr.bot.h:	$(SRCDIR)/PatchMgr.ci
+	$(CHARMXI) $(SRCDIR)/PatchMgr.ci
+	$(MOVECIFILES)
+
+$(INCDIR)/ProxyMgr.top.h:	$(SRCDIR)/ProxyMgr.ci
+	$(CHARMXI) $(SRCDIR)/ProxyMgr.ci
+	$(MOVECIFILES)
+
+$(INCDIR)/ProxyMgr.bot.h:	$(SRCDIR)/ProxyMgr.ci
+	$(CHARMXI) $(SRCDIR)/ProxyMgr.ci
+	$(MOVECIFILES)
+
+$(INCDIR)/ReductionMgr.top.h:	$(SRCDIR)/ReductionMgr.ci
+	$(CHARMXI) $(SRCDIR)/ReductionMgr.ci
+	$(MOVECIFILES)
+
+$(INCDIR)/ReductionMgr.bot.h:	$(SRCDIR)/ReductionMgr.ci
+	$(CHARMXI) $(SRCDIR)/ReductionMgr.ci
+	$(MOVECIFILES)
+
+$(INCDIR)/WorkDistrib.top.h:	$(SRCDIR)/WorkDistrib.ci
+	$(CHARMXI) $(SRCDIR)/WorkDistrib.ci
+	$(MOVECIFILES)
+
+$(INCDIR)/WorkDistrib.bot.h:	$(SRCDIR)/WorkDistrib.ci
+	$(CHARMXI) $(SRCDIR)/WorkDistrib.ci
+	$(MOVECIFILES)
+
+$(INCDIR)/main.top.h:	$(SRCDIR)/main.ci
+	$(CHARMXI) $(SRCDIR)/main.ci
+	$(MOVECIFILES)
+
+$(INCDIR)/main.bot.h:	$(SRCDIR)/main.ci
+	$(CHARMXI) $(SRCDIR)/main.ci
+	$(MOVECIFILES)
 
 # make depends is ugly!  The problem: we have obj/file.o and want src/file.C.
 # Solution: heavy use of basename and awk.
 # This is a CPU killer...  Don't make depends if you don't need to.
-depends: cifiles $(DSTDIR) $(DEPENDSFILE)
+depends: $(INCDIR) $(CIFILES) $(DSTDIR) $(DEPENDFILE)
 	$(ECHO) "Creating " $(DEPENDFILE) " ..."; \
 	if [ -f $(DEPENDFILE) ]; then \
 	   $(MOVE) -f $(DEPENDFILE) $(DEPENDFILE).old; \
@@ -248,18 +363,10 @@ depends: cifiles $(DSTDIR) $(DEPENDSFILE)
 	    $(DEPENDFILE) > $(DEPENDFILE).sed; \
 	$(MOVE) -f $(DEPENDFILE).sed $(DEPENDFILE);
 
-Make.depends:
-	touch $(DEPENDSFILE)
+$(DEPENDFILE):
+	touch $(DEPENDFILE)
 
 include	$(DEPENDFILE)
-
-#$(INTERFACES:.ci=.top.h):	$(INCDIR) $$(@:.top.h=.ci)
-#	$(CHARMXI) $?
-#	$(MOVE) $(SRCDIR)/*.top.h $(INCDIR)
-
-#$(INTERFACES:.ci=.bot.h):	$(INCDIR) $$(@:.bot.h=.ci)
-#	$(CHARMXI) $?
-#	$(MOVE) $(SRCDIR)/*.bot.h $(INCDIR)
 
 $(DSTDIR):
 	mkdir $(DSTDIR)
@@ -268,18 +375,13 @@ $(INCDIR):
 	mkdir $(INCDIR)
 
 clean:
-	rm -rf ptrepository
-	rm -rf $(DSTDIR)
-	rm -f namd2
+	rm -rf ptrepository Templates.DB $(DSTDIR) $(INCDIR)
 	cd $(DPMTADIR) ; $(MAKE) clean ; cd ..
 	cd $(PVMDIR) ; $(MAKE) clean ; cd ..
 	cd $(DPMEDIR) ; $(MAKE) clean ; cd ..
 
 veryclean:	clean
-	rm -rf $(INCDIR)
-	rm -f *.depends
-	# allow for the makefile to continue to work
-	touch $(DEPENDFILE)
+	rm -f $(BINARIES)
 
 accesslist:
 	cvs admin -aari,brunner,jim,milind,nealk .
