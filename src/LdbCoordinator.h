@@ -125,7 +125,7 @@ private:
   Sequencer **sequencerThreads;
   double *computeStartTime;
   double *computeTotalTime;
-  Boolean ldbCycleNum;
+  int ldbCycleNum;
   int nLdbSteps;
   int firstLdbStep;
   int nodesDone;
@@ -167,12 +167,16 @@ inline int LdbCoordinator::balanceNow(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.16 $	$Date: 1997/09/23 20:07:57 $
+ *	$Revision: 1.17 $	$Date: 1997/09/25 22:52:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LdbCoordinator.h,v $
+ * Revision 1.17  1997/09/25 22:52:48  brunner
+ * I put in a 2-stage load balancing, so first Alg7 is done, then RefineOnly.
+ * I also temporarily made the prints occur at every energy output.
+ *
  * Revision 1.16  1997/09/23 20:07:57  brunner
  * Added Load balance message packing
  *

@@ -8,7 +8,7 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
 {
   bytesPerAtom = 32;
   strategyName = "dummy";
-  overLoad = 1.1;
+  overLoad = 1.01;
   computes = computeArray;
   patches =  patchArray;
   processors =  processorArray;

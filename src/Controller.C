@@ -218,12 +218,12 @@ void Controller::printEnergies(int seq)
     if ( seq % node->simParameters->outputEnergies ) return;
     // ONLY OUTPUT SHOULD OCCUR BELOW THIS LINE!!!
 
-    if ( (seq % (10 * node->simParameters->outputEnergies) ) == 0 )
-    {
-        iout << iINFO
+    iout << iINFO
     	 << "CPU time = " << CmiTimer() << " Wall Time = " 
     	 << CmiWallTimer() << "\n" << endi;
 
+    if ( (seq % (10 * node->simParameters->outputEnergies) ) == 0 )
+    {
 	iout << "ETITLE:     TS    BOND        ANGLE       "
 	     << "DIHED       IMPRP       ELECT       VDW       "
 	     << "BOUNDARY    KINETIC        TOTAL     TEMP";
@@ -267,12 +267,16 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1026 $	$Date: 1997/09/19 09:39:04 $
+ *	$Revision: 1.1027 $	$Date: 1997/09/25 22:52:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1027  1997/09/25 22:52:45  brunner
+ * I put in a 2-stage load balancing, so first Alg7 is done, then RefineOnly.
+ * I also temporarily made the prints occur at every energy output.
+ *
  * Revision 1.1026  1997/09/19 09:39:04  jim
  * Small tweaks for fixed atoms.
  *

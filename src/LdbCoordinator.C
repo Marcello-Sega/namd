@@ -247,12 +247,10 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap)
   if ((ldbCycleNum==1) || (ldbCycleNum == 2))
   {
     nLdbSteps = firstLdbStep;
-    ldbCycleNum++;
   }
   else 
   {
     nLdbSteps = stepsPerLdbCycle;
-    ldbCycleNum++;
   }
 
   nPatchesReported = 0;
@@ -485,6 +483,25 @@ void LdbCoordinator::processStatistics(void)
     rebalancer = new Alg7(computeArray,patchArray,processorArray,
 			  nMoveableComputes, numPatches, numProcessors);
   }
+  else if (simParams->ldbStrategy == LDBSTRAT_OTHER)
+  {
+    if (ldbCycleNum == 1)
+    {
+      CPrintf("Cycle %d Performing Alg7\n",ldbCycleNum);
+      rebalancer = new Alg7(computeArray,patchArray,processorArray,
+			    nMoveableComputes, numPatches, numProcessors);
+    } else {
+      CPrintf("Cycle %d Performing RefineOnly\n",ldbCycleNum);
+      rebalancer = new RefineOnly(computeArray,patchArray,processorArray,
+				  nMoveableComputes, numPatches,
+				  numProcessors);
+    }
+  }
+
+
+      
+    
+      
   delete rebalancer;
 
   // 0) Rebuild ComputeMap using computeMap->setNewNode()
@@ -548,6 +565,7 @@ void LdbCoordinator::resume(LdbResumeMsg *msg)
 {
   //  printLocalLdbReport();
 
+  ldbCycleNum++;
   if(CMyPe()==0)
     Namd::startTimer();
   awakenSequencers();
