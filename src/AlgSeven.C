@@ -30,8 +30,8 @@ void Alg7::strategy()
    //   printLoads();
 	      
    numAssigned = 0;
-   int numAssigned1 = 0;
-   int numAssigned2 = 0;
+   // int numAssigned1 = 0;
+   // int numAssigned2 = 0;
    int numAssignedP2 = 0;
    int numAssignedP1 = 0;
    int numAssignedP0 = 0;

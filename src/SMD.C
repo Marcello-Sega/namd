@@ -219,7 +219,6 @@ void SMDData::sendData(int t) {
   msg->atomPosVmin = atomPosVmin;
   msg->atomPosVmax = atomPosVmax;
   
-  int pe = CMyPe();
   Node::Object()->sendSMDData(msg);
 }
 
@@ -233,8 +232,6 @@ void SMDData::recvData(SMDDataMsg *msg) {
   refPos = msg->refPos;
   atomPosVmin = msg->atomPosVmin;
   atomPosVmax = msg->atomPosVmax;
-
-  int pe = CMyPe();
 
   delete msg;
 }

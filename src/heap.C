@@ -40,6 +40,7 @@ int minHeap::insert(InfoRecord *x)
       else
 	break;
     }
+  return 0;
 }
 
 InfoRecord *minHeap::deleteMin()
@@ -130,6 +131,7 @@ int maxHeap::insert(InfoRecord *x)
       else
 	break;
     }
+  return 0;
 }
 
 InfoRecord *maxHeap::deleteMax()

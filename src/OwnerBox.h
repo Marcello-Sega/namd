@@ -12,8 +12,8 @@ template <class Owner, class Data> class OwnerBox {
   public:
 
     OwnerBox(Owner *o, void (Owner::*fn)() ) :
-      owner(o), callback(fn), numberUsers(0), 
-      closeCount(0), openCount(0), data(0) {};
+      owner(o), callback(fn), data(0),
+      numberUsers(0), openCount(0), closeCount(0) {};
 
     ~OwnerBox(void) {
       if (numberUsers) {

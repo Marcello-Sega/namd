@@ -10,7 +10,6 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ParseOptions.C,v 1.1007 1998/02/26 01:51:24 milind Exp $";
 // set the list of parameters
 #ifndef GCC
 #include <libc.h>
@@ -273,7 +272,33 @@ int ParseOptions::make_dependencies(DataElement *el) {
    
 
 /// routines to add dependencies to the array
-#define parse_input_macro_default(fctnname, type, optional, extra)    \
+#define parse_input_macro_default(fctnname, type, optional)           \
+int ParseOptions::fctnname(const char *parent, const char *newname,   \
+			  const char *msg, type *ptr, type defalt)    \
+{                                                                     \
+   DataElement *tmp = new DataElement(newname, parent, optional, msg, \
+				      ptr, defalt);                   \
+   if (!make_dependencies(tmp)) {                                     \
+      iout << iERROR << "ParseOption '" << newname << "' already exists" << "\n" << endi; \
+      return FALSE;                                                   \
+   }                                                                  \
+   add_element(tmp);                                                  \
+   return TRUE;                                                       \
+}
+#define parse_input_macro(fctnname, type, optional)                   \
+int ParseOptions::fctnname(const char *parent, const char *newname,   \
+			  const char *msg, type *ptr)                 \
+{                                                                     \
+   DataElement *tmp = new DataElement(newname, parent, optional, msg, \
+				      ptr);                           \
+   if (!make_dependencies(tmp)) {                                     \
+      iout << iERROR << "ParseOption '" << newname << "' already exists" << "\n" << endi; \
+      return FALSE;                                                   \
+   }                                                                  \
+   add_element(tmp);                                                  \
+   return TRUE;                                                       \
+}
+#define parse_input_macro_default_b(fctnname, type, optional, extra)  \
 int ParseOptions::fctnname(const char *parent, const char *newname,   \
 			  const char *msg, type *ptr, type defalt)    \
 {                                                                     \
@@ -287,7 +312,7 @@ int ParseOptions::fctnname(const char *parent, const char *newname,   \
    extra;                                                             \
    return TRUE;                                                       \
 }
-#define parse_input_macro(fctnname, type, optional, extra)            \
+#define parse_input_macro_b(fctnname, type, optional, extra)                 \
 int ParseOptions::fctnname(const char *parent, const char *newname,   \
 			  const char *msg, type *ptr)                 \
 {                                                                     \
@@ -302,30 +327,31 @@ int ParseOptions::fctnname(const char *parent, const char *newname,   \
    return TRUE;                                                       \
 }
 
-parse_input_macro(require, BigReal, FALSE,1);  // the ; is there to look pretty
-parse_input_macro(require, Vector, FALSE,1);
-parse_input_macro(require, int, FALSE,1);
-parse_input_macro(require, unsigned int, FALSE,1);
-parse_input_macro(requireB, int, FALSE, tmp->type = DataElement::BOOL);
-parse_input_macro(require, char, FALSE,1);
+parse_input_macro(require, BigReal, FALSE);  // the ; is there to look pretty
+parse_input_macro(require, Vector, FALSE);
+parse_input_macro(require, int, FALSE);
+parse_input_macro(require, unsigned int, FALSE);
+parse_input_macro_b(requireB, int, FALSE, tmp->type = DataElement::BOOL);
+parse_input_macro(require, char, FALSE);
 
-parse_input_macro(optional, BigReal, TRUE,1);
-parse_input_macro(optional, Vector, TRUE,1);
-parse_input_macro(optional, int, TRUE,1);
-parse_input_macro(optional, unsigned int, TRUE,1);
-parse_input_macro(optionalB, int, TRUE,  tmp->type = DataElement::BOOL);
-parse_input_macro(optional, char, TRUE,1);
+parse_input_macro(optional, BigReal, TRUE);
+parse_input_macro(optional, Vector, TRUE);
+parse_input_macro(optional, int, TRUE);
+parse_input_macro(optional, unsigned int, TRUE);
+parse_input_macro_b(optionalB, int, TRUE, tmp->type = DataElement::BOOL);
+parse_input_macro(optional, char, TRUE);
 
-parse_input_macro_default(require, BigReal, FALSE,1);
-parse_input_macro_default(require, Vector, FALSE,1);
-parse_input_macro_default(require, int, FALSE,1);
-parse_input_macro_default(require, unsigned int, FALSE,1);
-parse_input_macro_default(requireB, int, FALSE, tmp->type = DataElement::BOOL);
-parse_input_macro_default(optional, BigReal, TRUE,1);
-parse_input_macro_default(optional, Vector, TRUE,1);
-parse_input_macro_default(optional, int, TRUE,1);
-parse_input_macro_default(optional, unsigned int, TRUE,1);
-parse_input_macro_default(optionalB, int, TRUE, tmp->type = DataElement::BOOL);
+parse_input_macro_default(require, BigReal, FALSE);
+parse_input_macro_default(require, Vector, FALSE);
+parse_input_macro_default(require, int, FALSE);
+parse_input_macro_default(require, unsigned int, FALSE);
+parse_input_macro_default_b(requireB, int, FALSE, tmp->type=DataElement::BOOL);
+
+parse_input_macro_default(optional, BigReal, TRUE);
+parse_input_macro_default(optional, Vector, TRUE);
+parse_input_macro_default(optional, int, TRUE);
+parse_input_macro_default(optional, unsigned int, TRUE);
+parse_input_macro_default_b(optionalB, int, TRUE, tmp->type=DataElement::BOOL);
 
 #define parse_stringlist_macro(fctn, xxx) \
 int ParseOptions::fctn(const char *parent, const char *newname, \
@@ -1134,13 +1160,16 @@ Bool ParseOptions::units(const char *name, Units *units) // set
  * RCS INFORMATION:
  *
  *	$RCSfile: ParseOptions.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1998/02/26 01:51:24 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1998/10/24 19:57:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ParseOptions.C,v $
+ * Revision 1.1008  1998/10/24 19:57:50  jim
+ * Eliminated warnings generated by g++ -Wall.
+ *
  * Revision 1.1007  1998/02/26 01:51:24  milind
  * Fixed bugs in CollectionMaster and ReductionManager that were causing
  * crash on Origin2000.

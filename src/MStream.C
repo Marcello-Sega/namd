@@ -61,7 +61,7 @@ MIStream *MIStream::Get(char *buf, int len)
   return this;
 }
 
-MOStream *MOStream::Put(char *buf, int len)
+MOStream *MOStream::Put(char *buf, size_t len)
 {
   while(len) {
     if(msgBuf->len + len <= bufLen) {

@@ -99,7 +99,7 @@ class MOStream {
     unsigned int bufLen;
     StreamMessage *msgBuf;
     Communicate *cobj;
-    MOStream *Put(char *buf, int len);  // put len bytes from buf into message
+    MOStream *Put(char *buf, size_t len); // put len bytes from buf into message
   public:
     MOStream(Communicate *c, int pe, int tag, unsigned int bufSize);
     ~MOStream();

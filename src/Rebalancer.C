@@ -114,8 +114,8 @@ void Rebalancer::InitProxyUsage()
 
       while(c)
       {
-         int n1 = processors[i].proxyUsage[c->patch1]++;
-         int n2 = processors[i].proxyUsage[c->patch2]++;
+         /* int n1 = */ processors[i].proxyUsage[c->patch1]++;
+         /* int n2 = */ processors[i].proxyUsage[c->patch2]++;
 
          // iout << iINFO  
          // << "Assigning compute " << c->Id << " with work = " << c->load 
@@ -155,8 +155,8 @@ void Rebalancer::makeHeaps()
       for (j=0; j<numComputes; j++) 
       {
          int count = 0;
-         if (patches[computes[j].patch1].processor = i) count ++;
-         if (patches[computes[j].patch2].processor = i) count ++;
+         if ( (patches[computes[j].patch1].processor = i) ) count ++;
+         if ( (patches[computes[j].patch2].processor = i) ) count ++;
 
          // if (count ==2) processors[i].computesWithBoth->
          //    insert( (InfoRecord *) &(computes[j]));
@@ -192,8 +192,8 @@ void Rebalancer::assign(computeInfo *c, processorInfo *p)
    
    // 4-29-98: Added the following code to keep track of how many proxies
    // on each processor are being used by a compute on that processor
-   int n1 = p->proxyUsage[c->patch1]++;
-   int n2 = p->proxyUsage[c->patch2]++;
+   /* int n1 = */ p->proxyUsage[c->patch1]++;
+   /* int n2 = */ p->proxyUsage[c->patch2]++;
 
    // iout << iINFO  
    // << "Assigning compute " << c->Id << " with work = " << c->load 
@@ -214,8 +214,8 @@ void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
    // on each processor are being used by a compute on that processor.
    // If no computes are using the proxy, it should be removed if it is not
    // on the processor that its patch is on.
-   int n1 = p->proxyUsage[c->patch1]--;
-   int n2 = p->proxyUsage[c->patch2]--;
+   /* int n1 = */ p->proxyUsage[c->patch1]--;
+   /* int n2 = */ p->proxyUsage[c->patch2]--;
 
    // iout << iINFO
    // << "De-assigning compute " << c->Id << " from processor " << p->Id << "\n"

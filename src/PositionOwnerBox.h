@@ -58,8 +58,8 @@ template <class Owner> class PositionOwnerBox {
 
 template <class Owner>
 PositionOwnerBox<Owner>::PositionOwnerBox(Owner *o, void (Owner::*fn)() ) : 
-  owner(o), callback(fn), numberUsers(0), 
-  closeCount(0), openCount(0), data(0) {
+  owner(o), callback(fn), data(0),
+  numberUsers(0), openCount(0), closeCount(0) {
   for( int i=0; i < 27; i++ ) {
     transNeeded[i] = 0;
     transData[i] = 0;

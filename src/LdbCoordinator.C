@@ -488,7 +488,7 @@ void LdbCoordinator::processStatistics(void)
 
   const int nMoveableComputes = buildData();
   
-  Rebalancer *rebalancer;
+  Rebalancer *rebalancer = 0;
 
   if (simParams->ldbStrategy == LDBSTRAT_REFINEONLY)
   {
@@ -612,9 +612,6 @@ void LdbCoordinator::awakenSequencers()
 
 int LdbCoordinator::buildData(void)
 {
-  const int numProcessors = Node::Object()->numNodes();
-  const int numPatches = patchMap->numPatches();
-  
   int i;
   for (i=0; i<nStatsMessagesReceived; i++)
   {
@@ -693,7 +690,6 @@ void LdbCoordinator::cleanUpData(void)
 
 int LdbCoordinator::requiredProxies(PatchID id, int neighborNodes[])
 {
-  int numPatches = patchMap->numPatches();
   enum proxyHere { No, Yes };
   int numNodes = CNumPes();
   proxyHere *proxyNodes = new proxyHere[numNodes];
@@ -762,7 +758,7 @@ void LdbCoordinator::printLocalLdbReport(void)
   {
     if (computeTotalTime[i] != -1)
     {
-      curLoc += sprintf(curLoc,"%5d: %4lf ",i,computeTotalTime[i]);
+      curLoc += sprintf(curLoc,"%5d: %4f ",i,computeTotalTime[i]);
       j++;
     } 
     if (((j % 4) == 0) && j)

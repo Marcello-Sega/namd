@@ -386,7 +386,7 @@ template <class Elem> class UniqueSetRaw {
 
 template <class  Elem>
 UniqueSetRaw<Elem>::UniqueSetRaw(int size) : 
-  numElem(0), tableLength(0), table(0), growable(1) {
+  table(0), tableLength(0), numElem(0), growable(1) {
   const int minGlobSize = 32;
   static const int hashThing[] 
     = {11,31,101,307,1009,3001,10007,30011,100003,300007,1000003};

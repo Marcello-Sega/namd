@@ -54,8 +54,8 @@ class TuplePatchElem {
 
     int hash() const { return patchID; }
 
-  TuplePatchElem(PatchID p = -1) {
-    patchID = p;
+  TuplePatchElem(PatchID pid = -1) {
+    patchID = pid;
     p = NULL;
     positionBox = NULL;
     forceBox = NULL;
