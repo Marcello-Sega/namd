@@ -38,7 +38,7 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1040 1998/01/13 23:10:57 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1041 1998/01/14 00:40:57 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
 		     VelocityList vl) : Patch(pd,al,pl), v(vl), pInit(&pl)
@@ -191,6 +191,8 @@ void HomePatch::positionsReady(int doMigration)
     doMarginCheck();
   }
 
+  doGroupSizeCheck();
+
   // Must Add Proxy Changes when migration completed!
   ProxyListIter pli(proxy);
   for ( pli = pli.begin(); pli != pli.end(); ++pli )
@@ -274,6 +276,38 @@ Vector HomePatch::calcAngularMomentum()
 void HomePatch::submitLoadStats(int timestep)
 {
   LdbCoordinator::Object()->patchLoad(patchID,numAtoms,timestep);
+}
+
+
+void HomePatch::doGroupSizeCheck()
+{
+  SimParameters *simParams = Node::Object()->simParameters;
+  if ( simParams->splitPatch != SPLIT_PATCH_HYDROGEN ) return;
+  BigReal hgcut = 0.5 * simParams->hgroupCutoff;  hgcut *= hgcut;
+
+  AtomPropertiesList::iterator a_i = a.begin();
+  PositionList::iterator p_i = p.begin();
+  PositionList::iterator p_e = p.end();
+  BigReal x,y,z;
+  int problemCount = 0;
+
+  while ( p_i != p_e ) {
+    if ( a_i->hydrogenGroupSize ) {  // group parent
+      x = p_i->x; y = p_i->y; z = p_i->z;
+    } else {  // child atom
+      BigReal dx = p_i->x - x;
+      BigReal dy = p_i->y - y;
+      BigReal dz = p_i->z - z;
+      BigReal r2 = dx * dx + dy * dy + dz * dz;
+      if ( r2 > hgcut ) ++problemCount;
+    }
+    ++p_i; ++ a_i;
+  }
+
+  if ( problemCount ) {
+      iout << iERROR <<
+	"Found " << problemCount << " H-group size violations!\n" << endi;
+  }
 }
 
 
@@ -521,12 +555,15 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1040 $	$Date: 1998/01/13 23:10:57 $
+ *	$Revision: 1.1041 $	$Date: 1998/01/14 00:40:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1041  1998/01/14 00:40:57  jim
+ * Added hydrogen group size checking (vs. hgroupcutoff parameter).
+ *
  * Revision 1.1040  1998/01/13 23:10:57  jim
  * Added margin checking - prelude to automatic migration.
  *

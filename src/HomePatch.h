@@ -82,6 +82,7 @@ protected:
   virtual void boxClosed(int);
 
   // Internal Atom Migration methods and data
+  void doGroupSizeCheck();
   void doMarginCheck();
   void doAtomMigration();
   int inMigration;
@@ -117,12 +118,15 @@ private:
  *
  *	$RCSfile: HomePatch.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1998/01/13 23:10:58 $
+ *	$Revision: 1.1012 $	$Date: 1998/01/14 00:40:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.1012  1998/01/14 00:40:57  jim
+ * Added hydrogen group size checking (vs. hgroupcutoff parameter).
+ *
  * Revision 1.1011  1998/01/13 23:10:58  jim
  * Added margin checking - prelude to automatic migration.
  *
