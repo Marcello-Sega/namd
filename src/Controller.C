@@ -1033,12 +1033,18 @@ void Controller::printTiming(int step) {
       startCTime = endCTime;
 
       if ( step >= (simParams->firstTimestep + simParams->outputTiming) ) {
+	CmiPrintf("TIMING: %d  CPU: %g, %g/step  Wall: %g, %g/step"
+		  ", %g hours remaining, %d kB of memory in use.\n",
+		  step, endCTime, elapsedC, endWTime, elapsedW,
+		  remainingW_hours, (memusage()/1024));
+#if 0
         iout << "TIMING: " << step
              << "  CPU: " << endCTime << ", " << elapsedC << "/step"
              << "  Wall: " << endWTime << ", " << elapsedW << "/step"
              << ", " << remainingW_hours << " hours remaining"
              << ", " << (memusage()/1024) << " kB of memory in use"
              << ".\n" << endi;
+#endif
       }
     }
 }
