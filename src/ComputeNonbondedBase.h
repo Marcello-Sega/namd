@@ -266,10 +266,6 @@ void ComputeNonbondedUtil :: NAME
   plint *pairlistm_save;  int npairm;
   plint *pairlisti = ( j_upper >= 1000 ? new plint[j_upper+5] : pairlisti_std );
 
-  float_int_union_t r2f_std[1005];
-  float_int_union_t *r2f = ( j_upper < 1000 ? r2f_std :
-			new float_int_union_t[j_upper+5] );
-
   int fixg_upper = 0;
   int g_upper = 0;
 
@@ -717,7 +713,6 @@ void ComputeNonbondedUtil :: NAME
   if (grouplist != grouplist_std) delete [] grouplist;
   if (fixglist != fixglist_std) delete [] fixglist;
   if (goodglist != goodglist_std) delete [] goodglist;
-  if (r2f != r2f_std) delete [] r2f;
   if (pairlist != pairlist_std) delete [] pairlist;
   if (pairlist2 != pairlist2_std) delete [] pairlist2;
   if (pairlistx != pairlistx_std) delete [] pairlistx;

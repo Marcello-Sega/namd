@@ -19,8 +19,6 @@
 #include "LJTable.h"
 #include "ReductionMgr.h"
 
-typedef union { float f; int32 i; } float_int_union_t;
-
 #include "PressureProfile.h"
 
 inline int pairlist_from_pairlist(BigReal cutoff2,
