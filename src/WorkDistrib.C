@@ -651,7 +651,7 @@ void WorkDistrib::mapComputeHomePatches(ComputeType type)
     computeMap->newPid(cid[patchMap->node(j)],j);
   }
 
-  delete cid;
+  delete [] cid;
 }
 
 //----------------------------------------------------------------------
