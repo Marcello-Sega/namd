@@ -39,11 +39,10 @@
 // same as write, only does error checking internally
 void NAMD_write(int fd, const char *buf, size_t count) {
   while ( count ) {
-    ssize_t retval =
 #if defined(WIN32) && !defined(__CYGWIN__)
-   	_write(fd,buf,count);
+    long retval = _write(fd,buf,count);
 #else
-   	write(fd,buf,count);
+    ssize_t retval = write(fd,buf,count);
 #endif
     if ( retval < 0 ) NAMD_die(strerror(errno));
     if ( retval > count ) NAMD_bug("extra bytes written in NAMD_write64()");
