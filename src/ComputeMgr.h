@@ -41,6 +41,9 @@ private:
     ComputeID   cid;
     Compute *c;
 
+    void * operator new(size_t size) { return ::operator new(size); }
+    void operator delete(void* ptr) { ::operator delete(ptr); }
+
     operator<(ComputeElem e) { return (cid < e.cid); }
     operator==(ComputeElem e) { return (cid == e.cid); }
 
@@ -75,12 +78,15 @@ private:
  *
  *	$RCSfile: ComputeMgr.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/11/30 00:34:05 $
+ *	$Revision: 1.3 $	$Date: 1996/12/16 23:16:56 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.h,v $
+ * Revision 1.3  1996/12/16 23:16:56  jim
+ * eliminated warning about multiple new's
+ *
  * Revision 1.2  1996/11/30 00:34:05  jim
  * added some includes, now uses InitMsg
  *
