@@ -224,6 +224,7 @@ void ComputeDPMTA::doWork()
       particle_list[i].p.x = (*ap).x[j].x;
       particle_list[i].p.y = (*ap).x[j].y;
       particle_list[i].p.z = (*ap).x[j].z;
+      particle_list[i].q = (*ap).a[j].charge;
       i++;
       if (i > totalAtoms)
 	{
@@ -238,7 +239,7 @@ void ComputeDPMTA::doWork()
   } 
 
   // 3. (run DPMTA) compute the forces
-  if (PMTAforce(totalAtoms, particle_list, fmaResults, NULL) <0)
+  if (PMTAforce(i, particle_list, fmaResults, NULL) <0)
     {
       NAMD_die("PMTAforce failed!!");
     }
