@@ -465,8 +465,8 @@ encountered in PARM file, NAMD will terminate.
 
 \noindent 3. NAMD has several exclusion policy options, defined
 by {\tt exclude}. The way AMBER dealing with exclusions
-corresponds to the "scaled1-4" in NAMD. So for simulations using
-AMBER force field, one would specify "exclude scaled1-4" in the
+corresponds to the ``scaled1-4'' in NAMD. So for simulations using
+AMBER force field, one would specify ``exclude scaled1-4'' in the
 configuration file, and set {\tt 1-4scaling} to the inverse value
 of SCEE as would be used in AMBER.
 
@@ -478,9 +478,9 @@ configuration file.
 the non-bond interactions within the cutoff distance,
 which helps to improve energy conservation, while AMBER does not
 use switching functions so it simply
-truncates the interactions at cutoff. However, if "authentic"
+truncates the interactions at cutoff. However, if ``authentic''
 AMBER cutoff simulations are desired, the switching functions
-could be turned off by specifying "switching off" in NAMD
+could be turned off by specifying ``switching off'' in NAMD
 configuration file.
 
 \noindent 6. When SHAKE is applied to water molecules, NAMD
@@ -570,3 +570,64 @@ using SHAKE algorithm
                   exclude        scaled1-4
                   1-4scaling     0.833333  # =1/1.2, default is 1.0
 \end{verbatim}
+
+\subsection{GROMACS force field paramets}
+
+\NAMD\ has the ability to load GROMACS ASCII topology (.top) and
+coordinate (.gro) files, which allows you to run most GROMACS
+simulations in \NAMD.  All simulation output will still be in the
+traditional \NAMD\ formats.
+
+\begin{itemize}
+\item
+\NAMDCONFWDEF{gromacs}{use GROMACS format force field?}{on or off}{off}
+{
+If {\tt gromacs} is set to on, then {\tt grotopfile} must be defined,
+and {\tt structure} and {\tt parameters} should not be defined.
+}
+\item
+\NAMDCONF{grotopfile}{GROMACS format topology/parameter file}{UNIX filename}
+{
+This file contains complete topology and parameter information of
+the system.
+}
+
+\item
+\NAMDCONF{grocoorfile}{GROMACS format coordinate file}{UNIX filename}
+{
+This file contains the coordinates of all the atoms. Note that
+{\tt coordinates} can also be used for PDB format coordinate
+file. When {\tt gromacs} is set to {\tt on}, either {\tt grocoorfile}
+or {\tt coordinates} must be defined, but not both.
+}
+\end{itemize}
+
+\noindent However, \NAMD\ does not have support for many GROMACS-specific
+options:
+
+\begin{itemize}
+
+\item Dummies (fake atoms with positions generated from the positions
+of real atoms) are not supported.
+\item The GROMACS \verb^pairs^ section, where explicit 1--4 parameters
+are given between pairs of atoms, is not supported, since \NAMD\
+calculates its 1--4~interactions exclusively by type.
+\item Similarly, \verb^exclusions^ are not supported.  The biggest
+problem here is that GROMACS RB dihedrals are supposed to imply
+exclusions, but \NAMD\ does not support this.
+\item Constraints, restraints, and \verb^settles^ are not
+implemented in \NAMD.
+\item In some cases, it may not work to override some but not all of
+the parameters for a bond, atom, etc.  In this case, NAMD will
+generate an error and stop.  The parser will sometimes not tolerate
+correct GROMACS files or fail to detect errors in badly formatted
+files.
+\item \NAMD\ does not support all the types of bond potentials that
+exist in GROMACS, but approximates them with harmonic or sinusoidal
+potentials.
+\item \NAMD\ does not read periodic box lengths in the
+coordinate file. They must be explicitly specified in the \NAMD\
+configuration file.
+
+\end{itemize}
+
