@@ -25,6 +25,7 @@
 #include "LdbCoordinator.h"
 #include "Thread.h"
 #include <math.h>
+#include "NamdOneTools.h"
 
 #ifndef cbrt
   // cbrt() not in math.h on goneril
@@ -74,6 +75,7 @@ Controller::Controller(NamdState *s) :
     reduction->subscribe(REDUCTION_ANGULAR_MOMENTUM_Z);
 
     rescaleVelocities_sumTemps = 0;  rescaleVelocities_numTemps = 0;
+    langevinPiston_strainRate = 0;
 }
 
 Controller::~Controller(void)
@@ -141,6 +143,9 @@ void Controller::algorithm(void)
         enqueueCollections(step);
         trace_user_event(eventEndOfTimeStep);
         reassignVelocities(step);
+	langevinPiston1(step);
+	receivePressure(step);
+	langevinPiston2(step);
         printEnergies(step);
         rescaleVelocities(step);
 	tcoupleVelocities(step);
@@ -174,6 +179,52 @@ void Controller::berendsenPressure(int step)
     factor = cbrt(factor);
     broadcast->positionRescaleFactor.publish(step,factor);
     state->lattice.rescale(factor);
+  }
+}
+
+void Controller::langevinPiston1(int step)
+{
+  if ( simParams->langevinPistonOn )
+  {
+    BigReal &strainRate = langevinPiston_strainRate;
+    BigReal dt = simParams->dt;
+    BigReal kT = BOLTZMAN * simParams->langevinPistonTemp;
+    BigReal tau = simParams->langevinPistonPeriod;
+    BigReal gamma = 1 / simParams->langevinPistonDecay;
+    BigReal mass = numDegFreedom * kT * tau * tau;
+    BigReal f1 = exp( -0.5 * dt * gamma );
+    BigReal f2 = sqrt( ( 1. - f1*f1 ) * kT / mass );
+
+    strainRate *= f1;
+    strainRate += f2 * gaussian_random_number();
+
+    strainRate += ( 0.5 * dt * 3 * state->lattice.volume() / mass ) *
+		( pressure - simParams->langevinPistonTarget );
+
+    BigReal factor = exp( dt * strainRate );
+    broadcast->positionRescaleFactor.publish(step,factor);
+    state->lattice.rescale(factor);
+  }
+}
+
+void Controller::langevinPiston2(int step)
+{
+  if ( simParams->langevinPistonOn )
+  {
+    BigReal &strainRate = langevinPiston_strainRate;
+    BigReal dt = simParams->dt;
+    BigReal kT = BOLTZMAN * simParams->langevinPistonTemp;
+    BigReal tau = simParams->langevinPistonPeriod;
+    BigReal gamma = 1 / simParams->langevinPistonDecay;
+    BigReal mass = numDegFreedom * kT * tau * tau;
+    BigReal f1 = exp( -0.5 * dt * gamma );
+    BigReal f2 = sqrt( ( 1. - f1*f1 ) * kT / mass );
+
+    strainRate += ( 0.5 * dt * 3 * state->lattice.volume() / mass ) *
+		( pressure - simParams->langevinPistonTarget );
+
+    strainRate *= f1;
+    strainRate += f2 * gaussian_random_number();
   }
 }
 
@@ -233,15 +284,22 @@ static char *ETITLE(int X)
   return  tmp_string;
 }
 
-void Controller::printEnergies(int seq)
+void Controller::receivePressure(int seq)
 {
     Node *node = Node::Object();
     Molecule *molecule = node->molecule;
     SimParameters *simParameters = node->simParameters;
     Lattice &lattice = state->lattice;
 
+    BigReal intKineticEnergy;
+    BigReal tmpVirial;
+    BigReal virial;
+    BigReal altVirial;
+    BigReal intVirial;
+    BigReal volume;
+
     int numAtoms = molecule->numAtoms;
-    int numDegFreedom = 3 * numAtoms;
+    numDegFreedom = 3 * numAtoms;
     int numFixedAtoms = molecule->numFixedAtoms;
     if ( numFixedAtoms ) numDegFreedom -= 3 * numFixedAtoms;
     if ( ! ( numFixedAtoms || molecule->numConstraints
@@ -252,35 +310,9 @@ void Controller::printEnergies(int seq)
     int numFixedRigidBonds = molecule->numFixedRigidBonds;
     numDegFreedom -= ( numRigidBonds - numFixedRigidBonds );
 
-    BigReal bondEnergy;
-    BigReal angleEnergy;
-    BigReal dihedralEnergy;
-    BigReal improperEnergy;
-    BigReal electEnergy;
-    BigReal ljEnergy;
-    BigReal kineticEnergy;
-    BigReal intKineticEnergy;
-    BigReal boundaryEnergy;
-    BigReal tmpVirial;
-    BigReal virial;
-    BigReal altVirial;
-    BigReal intVirial;
-    BigReal smdEnergy;
-    BigReal totalEnergy;
-    BigReal volume;
-    Vector momentum;
-    Vector angularMomentum;
-
-    reduction->require(seq, REDUCTION_BOND_ENERGY, bondEnergy);
-    reduction->require(seq, REDUCTION_ANGLE_ENERGY, angleEnergy);
-    reduction->require(seq, REDUCTION_DIHEDRAL_ENERGY, dihedralEnergy);
-    reduction->require(seq, REDUCTION_IMPROPER_ENERGY, improperEnergy);
-    reduction->require(seq, REDUCTION_ELECT_ENERGY, electEnergy);
-    reduction->require(seq, REDUCTION_LJ_ENERGY, ljEnergy);
     reduction->require(seq, REDUCTION_KINETIC_ENERGY, kineticEnergy);
     reduction->require(seq, REDUCTION_INT_KINETIC_ENERGY, intKineticEnergy);
-    reduction->require(seq, REDUCTION_BC_ENERGY, boundaryEnergy);
-    reduction->require(seq, REDUCTION_SMD_ENERGY, smdEnergy);
+
     virial = 0;
     reduction->require(seq, REDUCTION_VIRIAL_NORMAL, tmpVirial);
     virial += tmpVirial;
@@ -306,16 +338,8 @@ void Controller::printEnergies(int seq)
     intVirial += tmpVirial;
     intVirial /= 3.;  // virial submitted is wrong by factor of 3
 
-    reduction->require(seq, REDUCTION_MOMENTUM_X, momentum.x);
-    reduction->require(seq, REDUCTION_MOMENTUM_Y, momentum.y);
-    reduction->require(seq, REDUCTION_MOMENTUM_Z, momentum.z);
-    reduction->require(seq, REDUCTION_ANGULAR_MOMENTUM_X, angularMomentum.x);
-    reduction->require(seq, REDUCTION_ANGULAR_MOMENTUM_Y, angularMomentum.y);
-    reduction->require(seq, REDUCTION_ANGULAR_MOMENTUM_Z, angularMomentum.z);
-
     temperature = 2.0 * kineticEnergy / ( numDegFreedom * BOLTZMAN );
 
-    BigReal groupPressure;
     if ( (volume=lattice.volume()) != 0. )
     {
       pressure = ( numAtoms * BOLTZMAN * temperature + virial ) / volume;
@@ -327,6 +351,44 @@ void Controller::printEnergies(int seq)
       pressure = 0.;
       groupPressure = 0.;
     }
+
+}
+
+void Controller::printEnergies(int seq)
+{
+    Node *node = Node::Object();
+    Molecule *molecule = node->molecule;
+    SimParameters *simParameters = node->simParameters;
+    Lattice &lattice = state->lattice;
+
+    BigReal bondEnergy;
+    BigReal angleEnergy;
+    BigReal dihedralEnergy;
+    BigReal improperEnergy;
+    BigReal electEnergy;
+    BigReal ljEnergy;
+    BigReal boundaryEnergy;
+    BigReal smdEnergy;
+    BigReal totalEnergy;
+    Vector momentum;
+    Vector angularMomentum;
+    BigReal volume = lattice.volume();
+
+    reduction->require(seq, REDUCTION_BOND_ENERGY, bondEnergy);
+    reduction->require(seq, REDUCTION_ANGLE_ENERGY, angleEnergy);
+    reduction->require(seq, REDUCTION_DIHEDRAL_ENERGY, dihedralEnergy);
+    reduction->require(seq, REDUCTION_IMPROPER_ENERGY, improperEnergy);
+    reduction->require(seq, REDUCTION_ELECT_ENERGY, electEnergy);
+    reduction->require(seq, REDUCTION_LJ_ENERGY, ljEnergy);
+    reduction->require(seq, REDUCTION_BC_ENERGY, boundaryEnergy);
+    reduction->require(seq, REDUCTION_SMD_ENERGY, smdEnergy);
+
+    reduction->require(seq, REDUCTION_MOMENTUM_X, momentum.x);
+    reduction->require(seq, REDUCTION_MOMENTUM_Y, momentum.y);
+    reduction->require(seq, REDUCTION_MOMENTUM_Z, momentum.z);
+    reduction->require(seq, REDUCTION_ANGULAR_MOMENTUM_X, angularMomentum.x);
+    reduction->require(seq, REDUCTION_ANGULAR_MOMENTUM_Y, angularMomentum.y);
+    reduction->require(seq, REDUCTION_ANGULAR_MOMENTUM_Z, angularMomentum.z);
 
     totalEnergy = bondEnergy + angleEnergy + dihedralEnergy + improperEnergy +
 	 electEnergy + ljEnergy + kineticEnergy + boundaryEnergy + smdEnergy;
@@ -358,18 +420,30 @@ void Controller::printEnergies(int seq)
 #endif  // MDCOMM
 
     // Write out eXtended System Trajectory (XST) file
-    if ( node->simParameters->xstFrequency != -1 &&
-         ! ( seq % node->simParameters->xstFrequency ) )
+    if ( simParameters->xstFrequency != -1 && seq == simParams->firstTimestep )
     {
-      if ( ! xstFile ) {
-	xstFile.open(node->simParameters->xstFilename);
-	xstFile << "# NAMD extended system trajectory file" << endl;
-	xstFile << "#$LABELS step a_x b_y c_z o_x o_y o_z";
-	xstFile << endl;
+      xstFile.open(simParameters->xstFilename);
+      xstFile << "# NAMD extended system trajectory file" << endl;
+      xstFile << "#$LABELS step a_x b_y c_z o_x o_y o_z";
+      if ( simParameters->langevinPistonOn ) {
+        xstFile << " strainRate";
       }
+      xstFile << endl;
+    }
+    if ( simParameters->xstFrequency != -1 &&
+         ! ( seq % simParameters->xstFrequency ) )
+    {
       xstFile << seq;
       xstFile << " " << lattice.a() << " " << lattice.b() << " " << lattice.c() << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
+      if ( simParameters->langevinPistonOn ) {
+	xstFile << " " << langevinPiston_strainRate;
+      }
       xstFile << endl;
+      xstFile.flush();
+    }
+    if ( simParameters->xstFrequency != -1 && seq == simParams->N )
+    {
+      xstFile.close();
     }
 
     // Write out eXtended System Configuration (XSC) files
@@ -388,9 +462,15 @@ void Controller::printEnergies(int seq)
       ofstream xscFile(fname);
       xscFile << "# NAMD extended system configuration file" << endl;
       xscFile << "#$LABELS step a_x b_y c_z o_x o_y o_z";
+      if ( simParameters->langevinPistonOn ) {
+	xstFile << " strainRate";
+      }
       xscFile << endl;
       xscFile << seq;
       xscFile << " " << lattice.a() << " " << lattice.b() << " " << lattice.c() << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
+      if ( simParameters->langevinPistonOn ) {
+	xstFile << " " << langevinPiston_strainRate;
+      }
       xscFile << endl;
     }
     //  Output final coordinates
@@ -493,12 +573,16 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1040 $	$Date: 1998/08/04 04:07:21 $
+ *	$Revision: 1.1041 $	$Date: 1998/08/18 23:27:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1041  1998/08/18 23:27:43  jim
+ * First implementation of constant pressure.
+ * Isotropic only, incompatible with multiple timestepping or SHAKE.
+ *
  * Revision 1.1040  1998/08/04 04:07:21  jim
  * Added extended system file support and fixed lack of endi in SimParameters.
  *

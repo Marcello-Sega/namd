@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1046 1998/08/11 16:30:31 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1047 1998/08/18 23:27:44 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -164,7 +164,9 @@ void Sequencer::algorithm(void)
 		addForceToMomentum(0.5*slowstep,Results::slow);
 
 	minimizationMaximumMove(timestep);
-	addVelocityToPosition(timestep);
+	addVelocityToPosition(0.5*timestep);
+	langevinPiston(step);
+	addVelocityToPosition(0.5*timestep);
 	rattle1(timestep);
 	minimizationQuenchVelocity();
 
@@ -238,6 +240,21 @@ void Sequencer::berendsenPressure(int step)
     for ( int i = 0; i < patch->numAtoms; ++i )
     {
       patch->lattice.rescale(patch->p[i],factor);
+    }
+  }
+}
+
+void Sequencer::langevinPiston(int step)
+{
+  if ( simParams->langevinPistonOn )
+  {
+    BigReal factor = broadcast->positionRescaleFactor.get(step);
+    BigReal velFactor = 1 / factor;
+    patch->lattice.rescale(factor);
+    for ( int i = 0; i < patch->numAtoms; ++i )
+    {
+      patch->lattice.rescale(patch->p[i],factor);
+      patch->v[i] *= velFactor;
     }
   }
 }
@@ -458,12 +475,16 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1046 $     $Date: 1998/08/11 16:30:31 $
+ *      $Revision: 1.1047 $     $Date: 1998/08/18 23:27:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1047  1998/08/18 23:27:44  jim
+ * First implementation of constant pressure.
+ * Isotropic only, incompatible with multiple timestepping or SHAKE.
+ *
  * Revision 1.1046  1998/08/11 16:30:31  jim
  * Modified output from periodic boundary simulations to return atoms to
  * internally consistent coordinates.  We store the transformations which

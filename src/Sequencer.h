@@ -57,6 +57,7 @@ protected:
     void reassignVelocities(int);
     void tcoupleVelocities(BigReal,int);
     void berendsenPressure(int);
+    void langevinPiston(int);
     void langevinVelocities(BigReal);
 
     void terminate(void);
@@ -84,12 +85,16 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1998/08/03 15:31:20 $
+ *	$Revision: 1.1019 $	$Date: 1998/08/18 23:27:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.h,v $
+ * Revision 1.1019  1998/08/18 23:27:45  jim
+ * First implementation of constant pressure.
+ * Isotropic only, incompatible with multiple timestepping or SHAKE.
+ *
  * Revision 1.1018  1998/08/03 15:31:20  jim
  * Added temperature reassignment.
  *
