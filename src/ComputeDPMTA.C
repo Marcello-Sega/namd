@@ -88,21 +88,21 @@ void ComputeDPMTA::get_FMA_cube(int resize)
 	// reset DPMTA (only reset it after it has been initialized!)
 	if (resize && usePBC)
 	{
-	  PmtaVector center,size;
+	  PmtaVector center,v1,v2,v3;
 	  center.x = boxcenter.x;
 	  center.y = boxcenter.y;
 	  center.z = boxcenter.z;
-	  size.x = boxsize.x;
-	  size.y = boxsize.y;
-	  size.z = boxsize.z;
+	  v1.x = boxsize.x;
+	  v2.y = boxsize.y;
+	  v3.z = boxsize.z;
 	  iout << iINFO << "DPMTA box resized:\n";
-	  iout << iINFO << "BOX DIMENSIONS = (" << size.x << ","
-		<< size.y << "," << size.z << ")\n";
+	  iout << iINFO << "BOX DIMENSIONS = (" << v1.x << ","
+		<< v2.y << "," << v3.z << ")\n";
 	  iout << iINFO << "BOX CENTER = (" << center.x << ","
 		<< center.y << "," << center.z << ")\n";
 	  iout << endi;
 	  DebugM(2,"calling PMTAresize()\n");
-	  PMTAresize(&size,&center);
+	  PMTAresize(&v1,&v2,&v3,&center);
 	  DebugM(2,"called PMTAresize()\n");
 	}
   }
@@ -224,13 +224,18 @@ void ComputeDPMTA::initialize()
   pmta_data.pbc = usePBC;	// use Periodic boundary condition
   pmta_data.kterm = 0;
   pmta_data.theta = simParams->fmaTheta;
-  //  2.5 will allow non-cubical box
-  pmta_data.cubelen.x = boxsize.x;
-  pmta_data.cubelen.y = boxsize.y;
-  pmta_data.cubelen.z = boxsize.z;
-  pmta_data.cubectr.x = boxcenter.x;
-  pmta_data.cubectr.y = boxcenter.y;
-  pmta_data.cubectr.z = boxcenter.z;
+  pmta_data.v1.x = boxsize.x;
+  pmta_data.v1.y = 0.;
+  pmta_data.v1.z = 0.;
+  pmta_data.v2.x = 0.;
+  pmta_data.v2.y = boxsize.y;
+  pmta_data.v2.z = 0.;
+  pmta_data.v3.x = 0.;
+  pmta_data.v3.y = 0.;
+  pmta_data.v3.z = boxsize.z;
+  pmta_data.cellctr.x = boxcenter.x;
+  pmta_data.cellctr.y = boxcenter.y;
+  pmta_data.cellctr.z = boxcenter.z;
   pmta_data.calling_num = pmta_data.nprocs;
   pmta_data.calling_tids = slavetids;
 
@@ -240,17 +245,17 @@ void ComputeDPMTA::initialize()
   iout << iINFO << "  FFT FLAG = " << pmta_data.fft << "\n";
   iout << iINFO << "  FFT BLOCKING FACTOR = " << pmta_data.fftblock << "\n";
   if ( usePBC ) iout << iINFO << "  SYSTEM IS PERIODIC\n" << endi;
-  iout << iINFO << "  BOX DIMENSIONS = (" << pmta_data.cubelen.x << ","
-	<< pmta_data.cubelen.y << "," << pmta_data.cubelen.z << ")\n";
-  iout << iINFO << "  BOX CENTER = (" << pmta_data.cubectr.x << ","
-	<< pmta_data.cubectr.y << "," << pmta_data.cubectr.z << ")\n";
+  iout << iINFO << "  BOX DIMENSIONS = (" << pmta_data.v1.x << ","
+	<< pmta_data.v2.y << "," << pmta_data.v3.z << ")\n";
+  iout << iINFO << "  BOX CENTER = (" << pmta_data.cellctr.x << ","
+	<< pmta_data.cellctr.y << "," << pmta_data.cellctr.z << ")\n";
   iout << endi;
 
   if ( usePBC )
   {
-    pmta_data.cubectr.x = 0.;
-    pmta_data.cubectr.y = 0.;
-    pmta_data.cubectr.z = 0.;
+    pmta_data.cellctr.x = 0.;
+    pmta_data.cellctr.y = 0.;
+    pmta_data.cellctr.z = 0.;
   }
 
   DebugM(2,"DPMTA calling PMTAinit.\n");
@@ -469,12 +474,15 @@ void ComputeDPMTA::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1043 $	$Date: 1997/04/04 23:34:15 $
+ *	$Revision: 1.1044 $	$Date: 1997/09/12 23:05:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.C,v $
+ * Revision 1.1044  1997/09/12 23:05:51  jim
+ * Changes to work with DPMTA-2.6
+ *
  * Revision 1.1043  1997/04/04 23:34:15  milind
  * Got NAMD2 to run on Origin2000.
  * Included definitions of class static variables in C files.

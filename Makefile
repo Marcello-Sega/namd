@@ -10,9 +10,6 @@ SRCDIR = src
 DSTDIR = obj
 # temp include directory for cifiles
 INCDIR = inc
-# Libraries we may have changed
-LIBS = dpmta2/mpole/libmpole.a dpmta2/src/libdpmta2.a pvm3/libpvmc.a
-# dpme2/libdpme2.a
 
 
 #####
@@ -28,9 +25,9 @@ CHARMXI = $(CHARM)/bin/charmc $(PURIFY)
 # definitions for (D)PMTA routines
 #####
 
-DPMTADIR=dpmta2
-DPMTAINCL=-I$(DPMTADIR)/include
-DPMTALIB=-L$(DPMTADIR) -ldpmta2 -lmpole
+DPMTADIR=dpmta-2.6
+DPMTAINCL=-I$(DPMTADIR)/mpole -I$(DPMTADIR)/src
+DPMTALIB=-L$(DPMTADIR)/mpole -L$(DPMTADIR)/src -ldpmta2 -lmpole
 DPMTAFLAGS=-DDPMTA
 DPMTA=$(DPMTAINCL) $(DPMTAFLAGS)
 
@@ -53,6 +50,14 @@ DPME=$(DPMEINCL) $(DPMEFLAGS)
 PVMDIR=pvm3
 PVMLIB=-L$(PVMDIR) -lpvmc
 PVM=-I$(PVMDIR)
+
+
+######
+## Libraries we may have changed
+######
+
+LIBS = $(DPMTADIR)/mpole/libmpole.a $(DPMTADIR)/src/libdpmta2.a pvm3/libpvmc.a
+# dpme2/libdpme2.a
 
 
 # CXX is platform dependent
@@ -170,10 +175,10 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES) $(LIBS)
 	$(PVMLIB) \
 	# Now sit back, have a coke, and relax.
 
-dpmta2/mpole/libmpole.a:
+$(DPMTADIR)/mpole/libmpole.a:
 	cd $(DPMTADIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
 
-dpmta2/src/libdpmta2.a:
+$(DPMTADIR)/src/libdpmta2.a:
 	cd $(DPMTADIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
 
 dpme2/libdpme2.a:
@@ -204,7 +209,7 @@ depends: cifiles $(DSTDIR) $(DEPENDSFILE)
 	      g++ -MM $(GXXFLAGS) \
 	        $(SRCDIR)/`basename $$i | awk -F. '{print $$1".C"}'` | \
 	      perl $(SRCDIR)/dc.pl $(INCLUDE) /usr/include /usr/local >> $(DEPENDFILE); \
-	      $(ECHO) "	$$(CXX) $$(CXXFLAGS)" -o $$i -c \
+	      $(ECHO) '	$$(CXX) $$(CXXFLAGS)' -o $$i -c \
 	        $(SRCDIR)/`basename $$i | awk -F. '{print $$1".C"}'` \
 		>> $(DEPENDFILE) ; \
 	done;

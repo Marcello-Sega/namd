@@ -107,6 +107,7 @@ obj/BroadcastMgr.o: \
 	src/Templates/ResizeArrayPrimIter.h \
 	src/BroadcastClient.h \
 	src/BroadcastObject.h \
+	src/Priorities.h \
 	src/Debug.h \
 	inc/BroadcastMgr.bot.h
 	$(CXX) $(CXXFLAGS) -o obj/BroadcastMgr.o -c src/BroadcastMgr.C
@@ -200,8 +201,6 @@ obj/CommunicateConverse.o: \
 	src/IntTree.h \
 	src/MessageQueue.h \
 	src/MessageManager.h \
-	pvm3/pvmc.h \
-	pvm3/pvm3.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/CommunicateConverse.o -c src/CommunicateConverse.C
 obj/Compute.o: \
@@ -457,7 +456,7 @@ obj/ComputeDPMTA.o: \
 	src/HomePatchList.h \
 	src/AtomMap.h \
 	src/ComputeDPMTA.h \
-	dpmta2/include/dpmta.h \
+	dpmta-2.6/src/dpmta.h \
 	src/ComputeHomePatches.h \
 	src/Compute.h \
 	src/Patch.h \
@@ -472,8 +471,6 @@ obj/ComputeDPMTA.o: \
 	src/Migration.h \
 	src/HomePatchTypes.h \
 	src/ReductionMgr.h \
-	pvm3/pvmc.h \
-	pvm3/pvm3.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeDPMTA.o -c src/ComputeDPMTA.C
 obj/ComputeFullDirect.o: \
@@ -579,6 +576,7 @@ obj/ComputeHomePatches.o: \
 	src/Templates/ObjectArena.h \
 	src/Hydrogen.h \
 	src/ReductionMgr.h \
+	src/Priorities.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeHomePatches.o -c src/ComputeHomePatches.C
 obj/ComputeImpropers.o: \
@@ -717,7 +715,6 @@ obj/ComputeMgr.o: \
 	src/Templates/ObjectArena.h \
 	src/Hydrogen.h \
 	src/ComputeNonbondedSelf.h \
-	src/Priorities.h \
 	src/ComputePatch.h \
 	src/Templates/Box.h \
 	src/Templates/OwnerBox.h \
@@ -744,7 +741,7 @@ obj/ComputeMgr.o: \
 	src/ComputeFullDirect.h \
 	src/ComputeHomePatches.h \
 	src/ComputeDPMTA.h \
-	dpmta2/include/dpmta.h \
+	dpmta-2.6/src/dpmta.h \
 	src/ComputeSphericalBC.h \
 	src/ReductionMgr.h \
 	src/ComputeCylindricalBC.h \
@@ -815,7 +812,6 @@ obj/ComputeNonbondedExcl.o: \
 obj/ComputeNonbondedSelf.o: \
 	src/ComputeNonbondedSelf.C \
 	src/ComputeNonbondedSelf.h \
-	src/Priorities.h \
 	src/ComputePatch.h \
 	src/Compute.h \
 	src/main.h \
@@ -909,7 +905,6 @@ obj/ComputeNonbondedPair.o: \
 	src/Communicate.h \
 	src/Message.h \
 	src/IntTree.h \
-	src/Priorities.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/Debug.h
@@ -978,6 +973,7 @@ obj/ComputePatch.o: \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/Patch.h \
+	src/Priorities.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputePatch.o -c src/ComputePatch.C
 obj/ComputePatchPair.o: \
@@ -1008,6 +1004,7 @@ obj/ComputePatchPair.o: \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/Patch.h \
+	src/Priorities.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputePatchPair.o -c src/ComputePatchPair.C
 obj/ComputeRestraints.o: \
