@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1023 1997/04/07 21:34:26 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1024 1997/04/07 22:23:31 brunner Exp $";
 
 #include <stdio.h>
 
@@ -548,17 +548,23 @@ void WorkDistrib::mapComputeNonbonded(void)
   int j;
   int numAtoms, numAtoms1, numAtoms2;
 
-  int *pairWork = new int[node->numNodes()];
+  double *pairWork = new double[node->numNodes()];
   for (j=0; j<node->numNodes(); j++) {
-    pairWork[j] = 0;
+    pairWork[j] = 0.;
   }
+
+  const double inspectCost = 0.25;  // Constant cost for checking atoms
+  const double computeCost = 1. - inspectCost;
+                                    // Cost for actually computing force
+  const double weight = inspectCost + computeCost;
 
   for(i=0; i<patchMap->numPatches(); i++) // do the self 
   {
     // self-interaction
     cid=computeMap->storeCompute(patchMap->node(i),1,computeNonbondedSelfType);
     numAtoms = patchMap->patch(i)->getNumAtoms();
-    pairWork[patchMap->node(i)] += (numAtoms*numAtoms)/2 - numAtoms;
+    pairWork[patchMap->node(i)] += 
+      weight * ((numAtoms*numAtoms)/2. - numAtoms);
     computeMap->newPid(cid,i);
     patchMap->newCid(i,cid);
   }
@@ -573,15 +579,22 @@ void WorkDistrib::mapComputeNonbonded(void)
       {
         numAtoms1 = patchMap->patch(i)->getNumAtoms();
         numAtoms2 = patchMap->patch(oneAway[j])->getNumAtoms();
+	const int distance = 
+	  abs(patchMap->xIndex(i)-patchMap->xIndex(oneAway[j])) 
+	  + abs(patchMap->yIndex(i)-patchMap->yIndex(oneAway[j])) 
+	  + abs(patchMap->zIndex(i)-patchMap->zIndex(oneAway[j]));
+
+	const double weight = 
+	  inspectCost + computeCost / (double) (1 << (2 * distance));
 
 	if (pairWork[patchMap->node(i)]<pairWork[patchMap->node(oneAway[j])]) {
 	    cid=computeMap->storeCompute(patchMap->node(i),2,
 				     computeNonbondedPairType);
-	    pairWork[patchMap->node(i)] += numAtoms1*numAtoms2/2;
+	    pairWork[patchMap->node(i)] += weight * numAtoms1*numAtoms2/2;
 	} else {
 	    cid=computeMap->storeCompute(patchMap->node(oneAway[j]),2,
 				     computeNonbondedPairType);
-	    pairWork[patchMap->node(oneAway[j])] += numAtoms1*numAtoms2/2;
+	    pairWork[patchMap->node(oneAway[j])] += weight * numAtoms1*numAtoms2/2;
 	}
 	 
 	computeMap->newPid(cid,i);
@@ -858,12 +871,17 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1023 $	$Date: 1997/04/07 21:34:26 $
+ *	$Revision: 1.1024 $	$Date: 1997/04/07 22:23:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1024  1997/04/07 22:23:31  brunner
+ * Changed RB constants so patch distrib equalizes number of atoms, and
+ * added weights for initial compute distrib based on self, face neighbor,
+ * edge neighbor, or corner neighbor.
+ *
  * Revision 1.1023  1997/04/07 21:34:26  brunner
  * Added some information printout about atom distribution.
  *

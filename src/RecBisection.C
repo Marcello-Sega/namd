@@ -33,12 +33,19 @@ RecBisection::RecBisection(int numpartitions, PatchMap *thePatchMap)
     // the cost coeffiencients that is used to compute the load introduced
     // to the processor by a patch
 
-    c_local0    = 0.1;
-    c_local1    = 0.015;
-    c_edge0     = 0.001;
-    c_edge1     = 0.001;
-    c_icompute0 = 0.001;
-    c_icompute1 = 0.000035;
+    //    c_local0    = 0.1;
+    //    c_local1    = 0.015;
+    //    c_edge0     = 0.001;
+    //    c_edge1     = 0.001;
+    //    c_icompute0 = 0.001;
+    //    c_icompute1 = 0.000035;
+
+    c_local0    = 0.;
+    c_local1    = 1.0;
+    c_edge0     = 0.;
+    c_edge1     = 0.;
+    c_icompute0 = 0.;
+    c_icompute1 = 0.;
 }
 
 
@@ -383,7 +390,7 @@ int RecBisection::prev_better(float prev, float current, float load1)
  *
  *	$RCSfile: RecBisection.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1997/04/07 21:09:56 $
+ *	$Revision: 1.2 $	$Date: 1997/04/07 22:23:30 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -392,10 +399,15 @@ int RecBisection::prev_better(float prev, float current, float load1)
  * REVISION HISTORY:
  *
  * $Log: RecBisection.C,v $
+ * Revision 1.2  1997/04/07 22:23:30  brunner
+ * Changed RB constants so patch distrib equalizes number of atoms, and
+ * added weights for initial compute distrib based on self, face neighbor,
+ * edge neighbor, or corner neighbor.
+ *
  * Revision 1.1  1997/04/07 21:09:56  brunner
  * Added RecBisection for initial patch distrib
  *
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/RecBisection.C,v 1.1 1997/04/07 21:09:56 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/RecBisection.C,v 1.2 1997/04/07 22:23:30 brunner Exp $";
