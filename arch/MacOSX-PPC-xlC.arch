@@ -1,0 +1,9 @@
+NAMD_ARCH = MacOSX-PPC
+CHARMARCH = net-ppc-darwin-xlc
+
+CXX = xlC_r  -qstaticinline -D_NO_MALLOC_H  -DNO_STRSTREAM_H
+CXXOPTS = -O3
+CXXTHREADOPTS = 
+CC = cc
+COPTS = -O
+
