@@ -1428,9 +1428,9 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
       NAMD_die("COLD and velocity rescaling are mutually exclusive dynamics modes");
    }
 
-   if (tclForcesOn && freeEnergyOn)
+   if ( (!!IMDon + !!tclForcesOn + !!miscForcesOn + !!freeEnergyOn) > 1)
    {
-      NAMD_die("Sorry, tclForces and freeEnergy cannot be used simultaneously");
+      NAMD_die("Sorry, only one of IMD, TclForces, MiscForces, and FreeEnergy may be used at a time.");
    }
 
    if (tclOn && freeEnergyOn)
