@@ -34,7 +34,7 @@ int ComputeTcl::Tcl_print(ClientData,
 	Tcl_Interp *, int argc, char *argv[]) {
   char *msg = Tcl_Merge(argc-1,argv+1);
   CkPrintf("TCL: %s\n",msg);
-  free(msg);
+  Tcl_Free(msg);
   return TCL_OK;
 }
 
@@ -107,13 +107,13 @@ int ComputeTcl::Tcl_addgroup(ClientData clientData,
     int atomid;
     if (Tcl_GetInt(interp,listv[i],&atomid) != TCL_OK) {
       gdef->add(-1);  // sentinel - this should use a delete instead
-      free((char*) listv);
+      Tcl_Free((char*) listv);
       return TCL_ERROR;
     }
     gdef->add(atomid-1);
   }
   gdef->add(-1);  // sentinel
-  free((char*) listv);
+  Tcl_Free((char*) listv);
 
   char s[10];  sprintf(s,"g%d",gcount);
   Tcl_SetResult(interp,s,TCL_VOLATILE);
@@ -231,10 +231,10 @@ int ComputeTcl::Tcl_addforce(ClientData clientData,
        (Tcl_GetDouble(interp, fstring[1],&y) != TCL_OK) ||
        (Tcl_GetDouble(interp, fstring[2],&z) != TCL_OK) ) {
     Tcl_SetResult(interp,"force not a vector",TCL_VOLATILE);
-    free(fstring);
+    Tcl_Free((char*) fstring);
     return TCL_ERROR;
   }
-  free(fstring);
+  Tcl_Free((char*) fstring);
   ComputeGlobalResultsMsg *msg = (ComputeGlobalResultsMsg *)clientData;
   if ( isgroup ) {
     msg->gforce.item(atomid-1) += Vector(x,y,z);

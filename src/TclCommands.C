@@ -48,11 +48,11 @@ int proc_vecadd(ClientData, Tcl_Interp *interp, int argc,
   for (i=0; i<num; i++) {
     if (Tcl_GetDouble(interp, data[i], sum+i) != TCL_OK) {
       delete [] sum;
-      free(data);
+      Tcl_Free((char*) data);
       return TCL_ERROR;
     }
   }
-  free(data);
+  Tcl_Free((char*) data);
   // do the sums on the rest
   int num2;
   for (int term=2; term < argc; term++) {
@@ -63,14 +63,14 @@ int proc_vecadd(ClientData, Tcl_Interp *interp, int argc,
     if (num != num2) {
       Tcl_SetResult(interp,"vecadd: two vectors don't have the same size",TCL_VOLATILE);
       delete [] sum;
-      free(data);
+      Tcl_Free((char*) data);
       return TCL_ERROR;
     }
     for (i=0; i<num; i++) {
       double df;
       if (Tcl_GetDouble(interp, data[i], &df) != TCL_OK) {
 	delete [] sum;
-	free(data);
+	Tcl_Free((char*) data);
 	return TCL_ERROR;
       }
       sum[i] += df;
@@ -83,7 +83,7 @@ int proc_vecadd(ClientData, Tcl_Interp *interp, int argc,
     Tcl_PrintDouble(interp, sum[i], s);
     Tcl_AppendElement(interp, s);
   }
-  free(data);
+  Tcl_Free((char*) data);
   delete [] sum;
   return TCL_OK;
 }
@@ -151,7 +151,7 @@ int proc_vecscale(ClientData, Tcl_Interp *interp, int argc,
     return TCL_ERROR;
   }
   if (Tcl_SplitList(interp, argv[2], &num2, &data2) != TCL_OK) {
-    free(data1);
+    Tcl_Free((char*) data1);
     return TCL_ERROR;
   }
   int result = TCL_OK;
@@ -189,118 +189,11 @@ int proc_vecscale(ClientData, Tcl_Interp *interp, int argc,
       }
     }
   }
-  free(data1);
-  free(data2);
+  Tcl_Free((char*) data1);
+  Tcl_Free((char*) data2);
   return result;
 }
 
-/*
-
-//  Function: transoffset
-//   Returns: the transformation correspoding to a vector offset
-int proc_transoffset(ClientData, Tcl_Interp *interp, int argc, 
-		     char *argv[])
-{
-  if (argc != 2) {
-    Tcl_SetResult(interp,"transoffset: takes one parameter, an offset vector",TCL_VOLATILE);
-    return TCL_ERROR;
-  }
-  // get the vector
-  int num;
-  float *data;
-  if (tcl_get_vector("transoffset: ", interp, argv[1], &num, &data) != 
-      TCL_OK) {
-    return TCL_ERROR;
-  }
-  // don't check the size (the script version doesn't)
-  Matrix4 t;
-  switch (num) {
-  case 3: t.mat[3][2] = data[2];  // YES, these fall through!
-  case 2: t.mat[3][1] = data[1];
-  case 1: t.mat[3][0] = data[0];
-  case 0: break;
-  }
-  delete [] data;
-  tcl_append_matrix(interp, t);
-  return TCL_OK;
-  
-}
-
-/// Given a string with a matrix in it, return the matrix
-// returns TCL_OK if good
-// If bad, returns TCL_ERROR and sets the result to the error message
-// The name of the function should be passed in 'fctn' so the error message
-// can be constructed correctly
-int tcl_get_matrix(char *fctn, Tcl_Interp *interp, 
-			  char *s, Matrix4 *mat)
-{ 
-  int num_rows;
-  char **data_rows;
-  if (Tcl_SplitList(interp, s, &num_rows, &data_rows) != TCL_OK) {
-    Tcl_SetResultFoo(interp,"badly formed matrix",TCL_VOLATILE);
-    return TCL_ERROR;
-  }
-  if (num_rows != 4) {
-    free(data_rows);
-    Tcl_SetResultFoo(interp,"need a 4x4 matrix",TCL_VOLATILE);
-    return TCL_ERROR;
-  }
-  int num_row[4];
-  char **data_row[4];
-  data_row[0] = data_row[1] = data_row[2] = data_row[3] = NULL;
-  if (Tcl_SplitList(interp, data_rows[0], num_row+0, data_row+0) != TCL_OK ||
-      num_row[0] != 4 ||
-      Tcl_SplitList(interp, data_rows[1], num_row+1, data_row+1) != TCL_OK ||
-      num_row[1] != 4 ||
-      Tcl_SplitList(interp, data_rows[2], num_row+2, data_row+2) != TCL_OK ||
-      num_row[2] != 4 ||
-      Tcl_SplitList(interp, data_rows[3], num_row+3, data_row+3) != TCL_OK ||
-      num_row[3] != 4) {
-    free(data_rows);
-    if (data_row[0]) free(data_row[0]);
-    if (data_row[1]) free(data_row[1]);
-    if (data_row[2]) free(data_row[2]);
-    if (data_row[3]) free(data_row[3]);
-    Tcl_AppendResult(interp, fctn, ": poorly formed matrix", NULL);
-    return TCL_ERROR;
-  }
-  free(data_rows);
-  // now get the numbers
-  double tmp;
-  int ret_val = TCL_OK;
-  for (int i=0; i<4; i++) {
-    for (int j=0; j<4; j++) {
-      if (Tcl_GetDouble(interp, data_row[i][j], &tmp) != TCL_OK) {
-	ret_val = TCL_ERROR;
-	Tcl_SetResultFoo(interp,"non-numeric in matrix",TCL_VOLATILE);
-      } else {
-	mat -> mat[j][i] = tmp;  // Matrix4 is transpose to Tcl's matrix
-      }
-    }
-  }
-  free(data_row[0]);
-  free(data_row[1]);
-  free(data_row[2]);
-  free(data_row[3]);
-  return ret_val;
-}
-
-// append the matrix into the -> result field of the interp
-void tcl_append_matrix(Tcl_Interp *interp, const Matrix4 &mat)
-{
-  char s[TCL_DOUBLE_SPACE];
-
-  for (int i=0; i<4; i++) {
-    Tcl_AppendResult(interp, "{", NULL);
-    for (int j=0; j<4; j++) {
-      Tcl_PrintDouble(interp, mat.mat[j][i], s);
-      Tcl_AppendResult(interp, s, (j != 3 ? " " : ""), NULL);
-    }
-    Tcl_AppendResult(interp, (i != 3 ? "} " : "}"), NULL);
-  }
-}
-
-*/
 
 // Given a string with a vector in it, get the vector
 // YOU must delete [] the vector (in "result") when finished
@@ -329,128 +222,12 @@ int tcl_get_vector(char *fctn, Tcl_Interp *interp,
       (*result)[i] = tmp;
     }
   }
-  free(data);
+  Tcl_Free((char*) data);
   if (ret_val == TCL_ERROR) {
     delete [] (*result);
     *result = NULL;
   }
   return ret_val;
 }
-
-/*
-
-// speed up the matrix * vector routines -- DIFFERENT ERROR MESSAGES
-// THAN THE TCL VERSION
-// speedup is nearly 25 fold
-int proc_vectrans(ClientData, Tcl_Interp *interp, int argc, 
-		  char *argv[])
-{
-  if (argc == 1) {
-    Tcl_AppendResult(interp, "no value given for parameter \"m\" to \"",
-		     argv[0], "\"", NULL);
-    return TCL_ERROR;
-  }
-  if (argc == 2) {
-    Tcl_AppendResult(interp, "no value given for parameter \"v\" to \"",
-		     argv[0], "\"", NULL);
-    return TCL_ERROR;
-  }
-  if (argc > 3) {
-    Tcl_AppendResult(interp, "called \"", argv[0], 
-		     "\" with too many arguments", NULL);
-    return TCL_ERROR;
-  }
-
-  // get the matrix data
-  Matrix4 mat;
-  if (tcl_get_matrix(argv[0], interp, argv[1], &mat) != TCL_OK) {
-    return TCL_ERROR;
-  }
-  // for the vector
-  float *vec;
-  int vec_size;
-  if (tcl_get_vector(argv[0], interp, argv[2], &vec_size, 
-		     &vec) != TCL_OK) {
-    return TCL_ERROR;
-  }
-  float vec_data[4];
-  if (vec_size == 3) {
-    memcpy(vec_data, vec, 3*sizeof(float));
-    if (!strcmp(argv[0], "coordtrans")) {
-      vec_data[3] = 1;
-    } else {
-      vec_data[3] = 0;
-    }
-  } else {
-    if (vec_size == 4) {
-      memcpy(vec_data, vec, 4*sizeof(float));
-    } else {
-      Tcl_AppendResult(interp, argv[0], ": vector must be of size 3 or 4");
-      delete [] vec;
-      return TCL_ERROR;
-    }
-  }
-  delete [] vec;
-
-  // vector data is in vec_data
-  float result[4];
-  mat.multpoint4d(vec_data, result);
-  // return it
-  if (vec_size == 3) {
-    char s[TCL_DOUBLE_SPACE];
-    Tcl_PrintDouble(interp, result[0], s);
-    Tcl_AppendElement(interp, s);
-    Tcl_PrintDouble(interp, result[1], s);
-    Tcl_AppendElement(interp, s);
-    Tcl_PrintDouble(interp, result[2], s);
-    Tcl_AppendElement(interp, s);
-  } else {
-    char s[TCL_DOUBLE_SPACE];
-    Tcl_PrintDouble(interp, result[0], s);
-    Tcl_AppendElement(interp, s);
-    Tcl_PrintDouble(interp, result[1], s);
-    Tcl_AppendElement(interp, s);
-    Tcl_PrintDouble(interp, result[2], s);
-    Tcl_AppendElement(interp, s);
-    Tcl_PrintDouble(interp, result[3], s);
-    Tcl_AppendElement(interp, s);
-  }
-  return TCL_OK;
-}
-
-// Function: transmult m1 m2 ... mn
-//  Returns: the product of the matricies
-// speedup is 136347 / 1316 = factor of 104
-int proc_transmult(ClientData, Tcl_Interp *interp, int argc, 
-		   char *argv[])
-{
-  // make there there are at least two values
-  if (argc <= 1) {
-    Tcl_SetResult(interp,"no value given for parameter \"mx\" to \"transmult\"",TCL_VOLATILE);
-    return TCL_ERROR;
-  }
-  if (argc == 2) {
-    Tcl_SetResult(interp,"no value given for parameter \"my\" to \"transmult\"",TCL_VOLATILE);
-    return TCL_ERROR;
-  }
-  // Get the first matrix
-  Matrix4 mult;
-  if (tcl_get_matrix("transmult: ", interp, argv[1], &mult) != TCL_OK) {
-    return TCL_ERROR;
-  }
-  int i = 2;
-  Matrix4 tmp;
-  while (i < argc) {
-    if (tcl_get_matrix("transmult: ", interp, argv[i], &tmp) != TCL_OK) {
-      return TCL_ERROR;
-    }
-    mult.multmatrix(tmp);
-    i++;
-  }
-  tcl_append_matrix(interp, mult);
-  return TCL_OK;
-}
-
-*/
 
 #endif
