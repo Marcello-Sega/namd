@@ -93,6 +93,7 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   {
     NAMD_die("Memory allocation failed in FMAInterface::FMAInterface");
   }
+
   // pvm_spawn is a dummy function under Converse.  Just the array is required.
   pvm_spawn(NULL,NULL,0,NULL,CNumPes(),slavetids);
   DebugM(1,"DPMTA slavetids allocated\n");

@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *  $RCSfile: CommunicateConverse.C,v $
- *  $Author: ari $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1000 $  $Date: 1997/02/06 15:57:37 $
+ *  $Author: brunner $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1001 $  $Date: 1997/02/19 23:19:35 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -21,7 +21,7 @@
  * send/receive data.
  * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/CommunicateConverse.C,v 1.1000 1997/02/06 15:57:37 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/CommunicateConverse.C,v 1.1001 1997/02/19 23:19:35 brunner Exp $";
 
 #include <iostream.h>
 #include <string.h>
@@ -30,6 +30,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Commu
 #include "common.h"
 #include "MessageQueue.h"
 #include "MessageManager.h"
+#include "pvmc.h"
 
 #define MemCopy memcpy
 
@@ -483,6 +484,10 @@ CommunicateConverse::CommunicateConverse(int argc, char *argv[], int dbg)
   CsmHandlerIndex = CmiRegisterHandler((CmiHandler) CsmHandler);
   CpvInitialize(CmmTable, CsmMessages);
   CpvAccess(CsmMessages) = CmmNew();
+
+  // Initialize PVM-converse library
+  pvmc_init_bufs();
+  pvmc_init_comm();
 
   // initialize superclass
   TotalNodes = CmiNumPes();
