@@ -186,6 +186,7 @@ void ARestraint::DistributeForce(int WhichGroup, AVector Force,
 //----------------------------------------------------------------------
   int     i, AtomID, NumAtoms, RetVal;
   double  Mass, TotalMass=0;
+  AVector SmallForce;
   Vector  NAMD_Vector;
 
   ASSERT( (WhichGroup>=0) && (WhichGroup<m_NumGroups) );
@@ -204,9 +205,9 @@ void ARestraint::DistributeForce(int WhichGroup, AVector Force,
     AtomID = m_pGroups[WhichGroup][i];
     Mass = CFE.getMass(AtomID);
     if (Mass < 0) {EarlyExit("Negative Mass", AtomID);}
-    Force *= (Mass/TotalMass);
-    // cast Force to a NAMD-type vector (addForce uses Vector class)
-    SetEqual(NAMD_Vector, Force);
+    SmallForce = Force * (Mass/TotalMass);
+    // cast SmallForce to a NAMD-type vector (addForce uses Vector class)
+    SetEqual(NAMD_Vector, SmallForce);
     RetVal = CFE.addForce(AtomID, NAMD_Vector);
     if (RetVal < 0) {EarlyExit("Can't add Force", AtomID);}
   }
@@ -1017,6 +1018,10 @@ double AForcingDiheRestraint::Get_dU_dLambda() {
  * REVISION HISTORY:
  *
  * $Log: FreeEnergyRestrain.C,v $
+ * Revision 1.3  1998/06/02 20:39:04  hurwitz
+ * corrected bug concerning distribution of force from center-of-mass out to
+ * component atoms
+ *
  * Revision 1.2  1998/05/29 22:31:18  hurwitz
  * made corrections so dihedral restraints work with negative angles
  * (i.e. a full 360 degrees -- from -pi to +pi)
