@@ -70,10 +70,6 @@ class Patch
      void forceBoxClosed(void);
      void atomBoxClosed(void);
 
-     // methods for collecting forces
-     void addForceToMomentum(const BigReal);
-     void addVelocityToPosition(const BigReal);
-
      int getNumAtoms() { return numAtoms; }
      AtomIDList &getAtomIDList() { return (atomIDList); }
 
@@ -91,10 +87,6 @@ class Patch
      Position      *positionPtr;
      ForceList     f;
      Force         *forcePtr;
-     ForceList     m;
-     Force	   *momentumPtr;
-     ForceList     v;
-     Force	   *velocityPtr;
      AtomPropertiesList		a;
      AtomProperties		*atomPtr;
 
@@ -121,13 +113,16 @@ class Patch
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1996/12/11 18:45:51 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.11 $	$Date: 1996/12/12 02:58:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.h,v $
+ * Revision 1.11  1996/12/12 02:58:49  jim
+ * cleaned stuff up, move integration routines to HomePatch
+ *
  * Revision 1.10  1996/12/11 18:45:51  nealk
  * Added stubs for addForceToMomentum and addVelocityToPosition.
  *
