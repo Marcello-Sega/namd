@@ -368,7 +368,8 @@ void Controller::minimize() {
         BigReal altxhi = 0.1 * lo.x + 0.9 * mid.x;
         BigReal altxlo = 0.9 * lo.x + 0.1 * mid.x;
         x = mid.dudx*(mid.x*mid.x-lo.x*lo.x) + 2*mid.x*(lo.u-mid.u);
-        x /= 2*(mid.dudx*(mid.x-lo.x)+(lo.u-mid.u));
+        BigReal xdiv = 2*(mid.dudx*(mid.x-lo.x)+(lo.u-mid.u));
+        if ( xdiv ) x /= xdiv; else x = last.x;
         if ( x > altxhi ) x = altxhi;
         if ( x < altxlo ) x = altxlo;
         if ( x-last.x == 0 ) break;
@@ -382,7 +383,8 @@ void Controller::minimize() {
         BigReal altxlo = 0.1 * hi.x + 0.9 * mid.x;
         BigReal altxhi = 0.9 * hi.x + 0.1 * mid.x;
         x = mid.dudx*(mid.x*mid.x-hi.x*hi.x) + 2*mid.x*(hi.u-mid.u);
-        x /= 2*(mid.dudx*(mid.x-hi.x)+(hi.u-mid.u));
+        BigReal xdiv = 2*(mid.dudx*(mid.x-hi.x)+(hi.u-mid.u));
+        if ( xdiv ) x /= xdiv; else x = last.x;
         if ( x < altxlo ) x = altxlo;
         if ( x > altxhi ) x = altxhi;
         if ( x-last.x == 0 ) break;
