@@ -56,6 +56,9 @@ used in these files, see the X-PLOR User's Manual
 X-PLOR and CHARMM.  
 The DCD files are single precision binary FORTRAN files, 
 so are transportable between computer architectures.  
+They are not, unfortunately, transportable between big-endian (most
+workstations) and little endian (Intel) architectures.
+(This same caveat applies to binary velocity and coordinate files.)
 The exact format of these files is very ugly but supported by 
 a wide range of analysis and display programs.  
 
@@ -160,7 +163,8 @@ For example, if \verb!cwd! is set to \verb!/scr!, then a
 filename of \verb!outfile! would be modified to \verb!/scr/outfile!
 while a filename of \verb!/tmp/outfile! would remain unchanged.
 If no value for \verb!cwd! is specified, than all filenames are 
-left unchanged.}
+left unchanged {\em but are assumed to be relative to the directory
+which contains the configuration file given on the command line}.}
 
 \end{itemize}
 

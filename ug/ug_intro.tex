@@ -10,8 +10,8 @@
 % RCS INFORMATION:
 %
 %       $RCSfile: ug_intro.tex,v $
-%       $Author: dhardy $        $Locker:  $                $State: Exp $
-%       $Revision: 1.1 $      $Date: 1998/01/05 21:12:32 $
+%       $Author: jim $        $Locker:  $                $State: Exp $
+%       $Revision: 1.2 $      $Date: 1998/03/06 09:08:10 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -21,6 +21,9 @@
 % REVISION HISTORY:
 %
 % $Log: ug_intro.tex,v $
+% Revision 1.2  1998/03/06 09:08:10  jim
+% Documented new features in 2.0.  Added authors.  Still needs converse docs.
+%
 % Revision 1.1  1998/01/05 21:12:32  dhardy
 % user guide, first draft
 %
@@ -66,10 +69,15 @@ simulations in structural biology.  This document describes how to use
 \NAMD, its features, and the platforms on which it runs.
 The document is divided into several sections:
 \begin{description}
-\item[Section 1] gives an overview of \NAMD. 
-\item[Section 2] describes the input and output files and simulation options. 
-\item[Section 3] shows how to run \NAMD\ on various platforms.
-\item[Section 4] explains how to get \NAMD, compile and install it.
+\item[Section \ref{section:intro}] gives an overview of \NAMD.
+\item[Section \ref{section:start}] lists the basics for getting started.
+\item[Section \ref{section:files}] describes \NAMD\ file formats.
+\item[Section \ref{section:basic}] lists basic simulation options.
+\item[Section \ref{section:add}] lists additional simulation options.
+\item[Section \ref{section:xplorequiv}] provides hints for X-PLOR users.
+\item[Section \ref{section:sample}] provides sample configuration files.
+\item[Section \ref{section:run}] gives details on running \NAMD.
+\item[Section \ref{section:avail}] gives details on installing \NAMD.
 \end{description}
 
 We have attempted to make this document and the \PG\ both
@@ -80,22 +88,23 @@ at the end of this section.
 
 \subsection{New features in version \NAMDVER}
 
-In addition to bug fixes, there are two new features in \NAMD\ version
-\NAMDVER:  a safety margin violation check and a new switching function.
-\prettypar
-\NAMD\ now checks for safety margin violations
-at each timestep.  Each atom's position is
-compared to its position at the beginning of the current
-cycle, and if the atom has moved a distance which
-exceeds half of the safety margin, then a report is made.
-This new feature alerts the user of a possible degradation in accuracy.
-It can be enabled or disabled with
-the configuration parameter \verb!plMarginCheck!
-(page \pageref{param:margincheck}).  The default is to have checking disabled.
-\prettypar
-The new switching function is obtained by setting the configuration
-parameter \verb!longSplitting! to \verb!c1!.  It implements the
-switching method described in \mycite{Humphreys \ETAL}{HUMP94}.
+There are many structural differences between versions 1.X and 2.X of \NAMD.
+Major portions of the code have been completely rewritten, resulting in a program which is significantly faster and uses less memory than earlier versions.
+This new architecture also provides support for more sophisticated algorithms and is the base for future efficient support of clusters of symmetric multiprocessor workstations.
+The most noticable change to the end user is the switch from PVM to the Converse parallel message-passing system.
+\NAMD\ \NAMDVER\ has also been ported to several new platforms.
+
+New features in \NAMD\ \NAMDVER\ include periodic boundary conditions, the Berendsen constant pressure simulation method, fixed atoms, several boundary conditions, triple timestepping, full electrostatic evaluation independent of cycle length, and the ability to do on-the-fly analysis and apply forces to the system via Tcl scripts.
+The new spatial partitioning parameters \verb!splitPatch! and \verb!hgroupCutoff! have been added due to a change from pairlists to group-based distance checking.
+The Langevin dynamics algorithm has been altered to be more suitable for temperature control with small damping coefficients.
+
+Several options have been removed in this release.
+Multiple timestepping is currently limited to impulse methods.
+Margin checking is performed at every timestep.
+There are not separate switching and cutoff parameters for van der Waals and electrostatic potentials.
+
+Planned features which are not in this beta release include conjugate-gradient minimization, particle-mesh Ewald electrostatic evaluation, and Nos{\'e}-Hoover NPT simulation methods.
+Also unimplemented are lesser-used features such as an applied electric field, force DCD files, and interactive simulation.
 
 \subsection{\NAMD\ and molecular dynamics simulations}
 
@@ -116,6 +125,8 @@ years, distributed memory parallel computers have been offering
 cost-effective computational power.  \NAMD\ was designed to run efficiently
 on such parallel 
 machines for simulating large molecules. 
+\NAMD\ is particularly well suited to the increasingly popular Beowulf-class PC clusters, which are quite similar to the workstation clusters for which is was originally designed.
+Future versions of \NAMD\ will also make efficient use of clusters of multi-processor workstations or PCs.
 \prettypar
 \NAMD\ has several important features: 
 
@@ -142,16 +153,13 @@ is used to advance the positions and velocities of the atoms in time.
 To further reduce the cost of the evaluation of 
 long-range electrostatic forces, 
 a multiple time step scheme is combined with the DPMTA method.  The local
-interactions (bonded interactions and electrostatic interactions within a
+interactions (bonded, van der Waals and electrostatic interactions within a
 specified distance) are calculated at each time step.  The longer range
 interactions (electrostatic interactions beyond the specified distance) are
 only computed every $k$ steps, with each set of $k$ steps called a {\em cycle}.
-This
-amortizes the cost of computing the electrostatic forces over the $k$ steps in
-the cycle.  For appropriate values of $k$, the error due to holding the long-range
-forces
-constant for a few steps is modest compared to the errors incurred from using
-a finite time step for the other forces.
+This amortizes the cost of computing the electrostatic forces over the $k$ steps in the cycle.
+A smooth splitting function is used to separate a quickly varying short-range portion of the electrostatic interaction from a more slowly varying long-range component.
+It is also possible to employ an intermediate timestep for the short-range non-bonded interactions, performing only bonded interactions every timestep.
 
 
 \item{\bf Input and Output Compatibility}\\
@@ -169,11 +177,16 @@ MD simulations may be carried out using several options, including
 \begin{itemize}
   \item NVE ensemble dynamics,
   \item NVT ensemble dynamics,
+  \item Periodic boundary conditions,
+  \item NPT ensemble dynamics (Berendsen's method),
   \item Velocity rescaling,
   \item Langevin dynamics,
   \item Energy minimization,
+  \item Fixed atoms,
+  \item Rigid waters,
+  \item Rigid bonds to hydrogen,
   \item Harmonic restraints,
-  \item Spherical boundary conditions.
+  \item Spherical or cylindrical boundary restraints.
 \end{itemize}
 
 \item{\bf Easy to Modify and Extend}\\

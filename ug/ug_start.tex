@@ -72,6 +72,18 @@ or may be at the beginning of a line:
 \begin{verbatim}
 #  This entire line is a comment . . . 
 \end{verbatim}
+Some keywords require several lines of data.
+These are generally implemented to either allow the data to be read from a file:
+\begin{verbatim}
+keyword            filename
+\end{verbatim}
+or to be included inline using Tcl-style braces:
+\begin{verbatim}
+keyword {
+  lots of data
+}
+\end{verbatim}
+
 The specification of the keywords is case insensitive 
 so that any combination of 
 upper and lower case letters will have the same meaning.  

@@ -1,6 +1,7 @@
 \section{Additional Simulation Parameters}
 \label{section:add}
 
+
 \subsection{\NAMD\ configuration parameters}
 \label{section:config_add}
 
@@ -61,6 +62,33 @@ that atom's restraining potential.}
 
 \end{itemize}
 
+\paragraph{Fixed atoms parameters}
+
+Atoms may be held fixed during a simulation.  \NAMD\ avoids calculating most interactions in which all affected atoms are fixed.
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{fixedAtoms}{are there fixed atoms?}{\verb!on! or \verb!off!}{\verb!off!}
+{Specifies whether or not fixed atoms are present.} 
+
+\item
+\NAMDCONFWDEF{fixedAtomsFile}{PDB file containing fixed atom parameters}%
+{UNIX filename}{\verb!coordinates!}
+{PDB file to use for the fixed atom flags for each atom.  
+If this parameter is not specified, then 
+the PDB file specified by \verb!coordinates! is used.}
+
+\item
+\NAMDCONFWDEF{fixedAtomsCol}{column of PDB containing fixed atom parameters}
+{\verb!X!, \verb!Y!, \verb!Z!, \verb!O!, or \verb!B!}{\verb!O!} 
+{Column of the PDB file to use for the containing fixed atom parameters for 
+each atom.  The coefficients can be read from any 
+floating point column of the PDB file.  
+A value of 0 indicates that the atom is not fixed.}
+
+\end{itemize}
+
 \paragraph{Energy minimization parameters}
 
 As described in the \PG, \NAMD\ has the capability
@@ -93,7 +121,8 @@ As described in the \PG, \NAMD\ is capable
 of performing Langevin dynamics, where additional damping and
 random forces are introduced to the system.  This capability
 is based on that implemented in X-PLOR which is detailed
-in the X-PLOR {\it User's Manual} \mycite{(Br\"unger, 1992)}{BRUN92b}.
+in the X-PLOR {\it User's Manual} \mycite{(Br\"unger, 1992)}{BRUN92b},
+although a different integrator is used.
 
 \begin{itemize}
 
@@ -127,76 +156,47 @@ A value of 0 indicates that the atom will remain unaffected.}
 
 \end{itemize}
 
-%% \newpage
-%% \paragraph{Dihedral angle dynamics parameters}
-%% 
-%% \begin{itemize}
-%% 
-%% \item
-%% \NAMDCONFWDEF{dihedral}{Should dihedral angle dynamics be calculated?}{\verb!yes! or \verb!no!}{\verb!no!}
-%% {This parameter determines whether or not dihedral angle dynamics
-%% are calculated.  If set to \verb!yes!, then the optional parameters
-%% \verb!COLD!, \verb!COLDTemp!, and \verb!COLDRate!
-%% may be specified.}
-%% 
-%% \item
-%% \NAMDCONFWDEF{COLD}{Should overdamped Langevin dynamics be performed?}{\verb!yes! or \verb!no!}{\verb!no!}
-%% {This parameter determines whether or not overdamped dynamics calculations
-%% are made.  If set to \verb!yes!, then the additional parameters
-%% \verb!COLDTemp! and \verb!COLDRate! are required.}
-%% 
-%% \item
-%% \NAMDCONF{COLDTemp}{Temperature for heat bath used in COLD calculations (K)}{Positive decimal}
-%% {This parameter must be specified if \verb!COLD! is set to \verb!yes!.}
-%% 
-%% \item
-%% \NAMDCONFWDEF{COLDRate}{Damping rate for COLD calculations}{Non-negative decimal}{\verb!3000.0!}
-%% {This parameter is required if \verb!COLD! is set to \verb!yes!. If no
-%% value is specified, 3000 is assumed.}
-%% 
-%% \end{itemize}
-
-\paragraph{Temperature coupling parameters}
-
-As described in the \PG, \NAMD\ is capable
-of performing temperature coupling, in which forces are added or 
-reduced to simulate the coupling of the system to a heat bath 
-of a specified temperature.  
-This capability is based on that implemented in X-PLOR which is detailed
-in the X-PLOR {\it User's Manual} \mycite{(Br\"unger, 1992)}{BRUN92b}.
-
-\begin{itemize}
-
-\item
-\NAMDCONFWDEF{tCouple}{perform temperature coupling?}{\verb!on! or \verb!off!}{\verb!off!}
-{Specifies whether or not temperature coupling is active.  
-If set to \verb!on!, then the parameter \verb!tCoupleTemp! must be set and 
-the parameters \verb!tCoupleFile! and \verb!tCoupleCol! can 
-optionally be set to control the behavior of this feature.} 
-
-\item
-\NAMDCONF{tCoupleTemp}{temperature for heat bath (K)}{positive decimal}
-{Temperature to which atoms affected 
-by temperature coupling will be adjusted.  
-This temperature will be roughly maintained across the affected atoms 
-through the addition of forces.}
-
-\item
-\NAMDCONFWDEF{tCoupleFile}{PDB file with tCouple parameters}%
-{UNIX filename}{\verb!coordinates!}%
-{PDB file to use for the temperature coupling coefficient for each atom.  
-If this parameter is not specified, then 
-the PDB file specified by \verb!coordinates! is used.} 
-
-\item
-\NAMDCONFWDEF{tCoupleCol}{column of PDB from which to read coefficients}
-{\verb!X!, \verb!Y!, \verb!Z!, \verb!O!, or \verb!B!}{\verb!O!} 
-{Column of the PDB file to use for the temperature coupling coefficient for 
-each atom.  This value can be read from any 
-floating point column of the PDB file.  
-A value of $0$ indicates that the atom will remain unaffected.}
-
-\end{itemize}
+%\paragraph{Temperature coupling parameters}
+%
+%As described in the \PG, \NAMD\ is capable
+%of performing temperature coupling, in which forces are added or 
+%reduced to simulate the coupling of the system to a heat bath 
+%of a specified temperature.  
+%This capability is based on that implemented in X-PLOR which is detailed
+%in the X-PLOR {\it User's Manual} \mycite{(Br\"unger, 1992)}{BRUN92b}.
+%
+%\begin{itemize}
+%
+%\item
+%\NAMDCONFWDEF{tCouple}{perform temperature coupling?}{\verb!on! or %\verb!off!}{\verb!off!}
+%{Specifies whether or not temperature coupling is active.  
+%If set to \verb!on!, then the parameter \verb!tCoupleTemp! must be set and 
+%the parameters \verb!tCoupleFile! and \verb!tCoupleCol! can 
+%optionally be set to control the behavior of this feature.} 
+%
+%\item
+%\NAMDCONF{tCoupleTemp}{temperature for heat bath (K)}{positive decimal}
+%{Temperature to which atoms affected 
+%by temperature coupling will be adjusted.  
+%This temperature will be roughly maintained across the affected atoms 
+%through the addition of forces.}
+%
+%\item
+%\NAMDCONFWDEF{tCoupleFile}{PDB file with tCouple parameters}%
+%{UNIX filename}{\verb!coordinates!}%
+%{PDB file to use for the temperature coupling coefficient for each atom.  
+%If this parameter is not specified, then 
+%the PDB file specified by \verb!coordinates! is used.} 
+%
+%\item
+%\NAMDCONFWDEF{tCoupleCol}{column of PDB from which to read coefficients}
+%{\verb!X!, \verb!Y!, \verb!Z!, \verb!O!, or \verb!B!}{\verb!O!} 
+%{Column of the PDB file to use for the temperature coupling coefficient for 
+%each atom.  This value can be read from any 
+%floating point column of the PDB file.  
+%A value of $0$ indicates that the atom will remain unaffected.}
+%
+%\end{itemize}
 
 \paragraph{Temperature rescaling parameters}
 
@@ -277,20 +277,243 @@ use are 2 and 4.}
 
 \end{itemize}
 
-\paragraph{Applied electric field}
+\paragraph{Cylindrical harmonic boundary conditions}
 
-\NAMD\ provides the ability to apply a constant electric field to the molecular
-system being simulated.  There are two parameters that control this feature.
+\NAMD\ provides cylindrical harmonic boundary conditions.  These 
+boundary conditions can consist of a single potential or a 
+combination of two potentials as described in the \PG.  
+The following parameters are used to define these boundary conditions.  
 
 \begin{itemize}
 
 \item
-\NAMDCONFWDEF{eFieldOn}{apply electric field?}{\verb!yes! or \verb!no!}{\verb!no!}
-{Specifies whether or not an electric field is applied.}
+\NAMDCONFWDEF{cylindricalBC}{use cylindrical boundary conditions?}{\verb!on! or \verb!off!}{\verb!off!}
+{Specifies whether or not cylindrical boundary conditions 
+are to be applied to the system.  If 
+set to \verb!on!, then \verb!cylindricalBCr1!, \verb!cylindricalBCl1! and \verb!cylindricalBCk1! 
+must be defined, and \verb!cylindricalBCAxis!, \verb!cylindricalBCCenter!, \verb!cylindricalBCexp1!, \verb!cylindricalBCr2!, \verb!cylindricalBCl2!,
+\verb!cylindricalBCk2!, and \verb!cylindricalBCexp2! can optionally be 
+defined.}
 
 \item
-\NAMDCONF{eField}{electric field vector}{vector of decimals}
-{Vector which describes the electric field to be applied.}
+\NAMDCONF{cylindricalBCCenter}{center of  cylinder (\AA)}{position}
+{Location around which cylinder is centered.  If not specified, center of mass is used.}
+
+\item
+\NAMDCONF{cylindricalBCAxis}{axis of  cylinder (\AA)}{\verb!x!, \verb!y!, or \verb!z!}
+{Axis along which cylinder is aligned.}
+
+\item
+\NAMDCONF{cylindricalBCr1}{radius for first boundary condition (\AA)}{positive decimal}
+{Distance at which the first potential of the boundary conditions takes
+effect along the non-axis plane of the cylinder.}
+
+\item
+\NAMDCONF{cylindricalBCl1}{distance along cylinder axis for first boundary condition (\AA)}{positive decimal}
+{Distance at which the first potential of the boundary conditions takes
+effect along the cylinder axis.}
+
+\item
+\NAMDCONF{cylindricalBCk1}{force constant for first potential}{non-zero decimal}
+{Force constant for the first harmonic potential.  A positive
+value will push atoms toward the center, and a negative
+value will pull atoms away from the center.}
+
+\item
+\NAMDCONFWDEF{cylindricalBCexp1}{exponent for first potential}{positive, even integer}{2}
+{Exponent for first boundary potential.  The only likely values to
+use are 2 and 4.}
+
+\item
+\NAMDCONF{cylindricalBCr2}{radius for second boundary condition (\AA)}{positive decimal}
+{Distance at which the second potential of the boundary conditions takes
+effect along the non-axis plane of the cylinder.
+If this parameter is defined, then \verb!cylindricalBCl2! and \verb!spericalBCk2! must also
+be defined.}
+
+\item
+\NAMDCONF{cylindricalBCl2}{radius for second boundary condition (\AA)}{positive decimal}
+{Distance at which the second potential of the boundary conditions takes
+effect along the cylinder axis.
+If this parameter is defined, then \verb!cylindricalBCr2! and \verb!spericalBCk2! must also
+be defined.}
+
+\item
+\NAMDCONF{cylindricalBCk2}{force constant for second potential}{non-zero decimal}
+{Force constant for the second harmonic potential.  A positive
+value will push atoms toward the center, and a negative
+value will pull atoms away from the center.}
+
+\item
+\NAMDCONFWDEF{cylindricalBCexp2}{exponent for second potential}{positive, even integer}{2}
+{Exponent for second boundary potential.  The only likely values to
+use are 2 and 4.}
 
 \end{itemize}
+
+%\paragraph{Applied electric field}
+%
+%\NAMD\ provides the ability to apply a constant electric field to the molecular
+%system being simulated.  There are two parameters that control this feature.
+%
+%\begin{itemize}
+%
+%\item
+%\NAMDCONFWDEF{eFieldOn}{apply electric field?}{\verb!yes! or %\verb!no!}{\verb!no!}
+%{Specifies whether or not an electric field is applied.}
+%
+%\item
+%\NAMDCONF{eField}{electric field vector}{vector of decimals}
+%{Vector which describes the electric field to be applied.}
+%
+%\end{itemize}
+
+\paragraph{Periodic boundary conditions}
+
+\NAMD\ provides periodic boundary conditions in 1, 2 or 3 dimensions.
+The basis vectors of the periodic cell must be along the x, y, and z axes.  
+The following parameters are used to define these boundary conditions.  
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{cellBasisVector1}{basis vector for periodic boundaries (\AA)}{vector along x axis}{0 0 0}
+{Specifies whether or not periodic boundary conditions 
+are to be applied to the system in the x direction.}
+
+\item
+\NAMDCONFWDEF{cellBasisVector2}{basis vector for periodic boundaries (\AA)}{vector along y axis}{0 0 0}
+{Specifies whether or not periodic boundary conditions 
+are to be applied to the system in the y direction.}
+
+\item
+\NAMDCONFWDEF{cellBasisVector3}{basis vector for periodic boundaries (\AA)}{vector along z axis}{0 0 0}
+{Specifies whether or not periodic boundary conditions 
+are to be applied to the system in the z direction.}
+
+\item
+\NAMDCONFWDEF{cellOrigin}{center of periodic cell (\AA)}{0 0 0}
+{When position rescaling is used to control pressure, this location will remain constant.  Also used as the center of the cell for output coordinates.}
+
+\end{itemize}
+
+\paragraph{Berendsen pressure bath coupling}
+
+\NAMD\ provides constant pressure simulation using Berendsen's method.  
+The following parameters are used to define the algorithm.  
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{BerendsenPressure}{use Berendsen pressure bath coupling?}{\verb!on! or \verb!off!}{\verb!off!}
+{Specifies whether or not Berendsen pressure bath coupling is active.  
+If set to \verb!on!, then the parameters \verb!BerendsenPressureTarget!, \verb!BerendsenPressureCompressibility! and \verb!BerendsenPressureRelaxationTime! must be set 
+and the parameter \verb!BerendsenPressureFreq! can
+optionally be set to control the behavior of this feature.} 
+
+\item
+\NAMDCONF{BerendsenPressureTarget}{target pressure (bar)}{positive decimal}
+{Specifies target pressure for Berendsen's method.}
+
+\item
+\NAMDCONF{BerendsenPressureCompressibility}{compressibility (bar$^{-1}$)}{positive decimal}
+{Specifies compressibility for Berendsen's method.}
+
+\item
+\NAMDCONF{BerendsenPressureRelaxationTime}{relaxation time (fs)}{positive decimal}
+{Specifies relaxation time for Berendsen's method.}
+
+\item
+\NAMDCONFWDEF{BerendsenPressureFreq}{how often to rescale positions}{positive integer}{1}
+{Specifies number of timesteps between position rescalings for Berendsen's method.}
+
+\end{itemize}
+
+
+\subsection{\NAMD\ Tcl interface}
+
+\NAMD\ provides a limited Tcl scripting interface designed for applying forces and performing on-the-fly analysis.
+This interface is efficient if only a few coordinates, either of individual atoms or centers of mass of groups of atoms, are needed.
+In addition, information must be requested one timestep in advance.
+The following configuration parameters are used to enable the Tcl interface:
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{tclForces}{is Tcl interface active?}{\verb!on! or \verb!off!}{\verb!off!}
+{Specifies whether or not Tcl interface is active.  If it 
+is set to \verb!off!, then no Tcl code is executed.  
+If it is set to \verb!on!, then Tcl code specified in
+\verb!tclForcesScript! parameters is executed.}
+
+\item
+\NAMDCONF{tclForcesScript}{input for Tcl interface}{file or \{script\}}
+{Must contain either the name of a Tcl script file or the script 
+itself between \{ and \} (may include multiple lines).
+This parameter may occur multiple times and scripts will be executed
+in order of appearance.
+The script(s) should perform any required initialization on the Tcl interpreter, including requesting data needed during the first timestep, and define a procedure \verb!calcforces \{ \}! to be called every timestep.
+}
+
+\end{itemize}
+
+At this point only low-level commands are defined.
+In the future this list will be expanded.  Current commands are:
+
+\begin{itemize}
+
+\item
+\verb!print <anything>! \\
+This command should be used instead of \verb!puts! to display output.
+For example, ``\verb&print Hello World&''.
+
+\item
+\verb!atomid <molname> <resid> <atomname>! \\
+Determines atomid of an atom from its molecule, residue, and name.
+For example, ``\verb!atomid br 2 N!''.
+
+\item
+\verb!addatom <atomid>! \\
+Request coordinates of this atom for next force evaluation.
+Request remains in effect until \verb!reconfig! is called.
+For example, ``\verb!addatom 4!'' or ``\verb!addatom [atomid br 2 N]!''.
+
+\item
+\verb!addgroup <atomid list>! \\
+Request center of mass coordinates of this group for next force evaluation.
+Returns a group ID which is of the form \verb!gN! where \verb!N! is a small integer.
+This group ID may then be used to find coordinates and apply forces just like a regular atom ID.
+Aggregate forces may then be applied to the group as whole.
+Request remains in effect until \verb!reconfig! is called.
+For example, ``\verb!set groupid [addgroup { 14 10 12 }]!''.
+
+\item
+\verb!reconfig! \\
+Signals that new atoms are being requested.
+\verb!addatom! and \verb!addgroup! calls during \verb!calcforces! will be ignored unless \verb!reconfig! is called.
+Old configuration is replaced by new configuration.
+\verb!reconfig! should only be called from within the \verb!calcforces! procedure.
+
+\item
+\verb!loadcoords <varname>! \\
+Loads requested atom and group coordinates (in \AA) into a local array.
+\verb!loadcoords! should only be called from within the \verb!calcforces! procedure.
+For example, ``\verb!loadcoords p!'' and ``\verb!print p(4)!''.
+
+\item
+\verb!loadmasses <varname>! \\
+Loads requested atom and group masses (in amu) into a local array.
+\verb!loadmasses! should only be called from within the \verb!calcforces! procedure.
+For example, ``\verb!loadcoords m!'' and ``\verb!print m(4)!''.
+
+\item
+\verb!addforce <atomid|groupid> <force vector>! \\
+Applies force (in kcal mol$^{-1}$ \AA$^{-1}$) to atom or group.
+\verb!addforce! should only be called from within the \verb!calcforces! procedure.
+For example, ``\verb!addforce $groupid { 1. 0. 2. }!''.
+
+\end{itemize}
+
+Several vector routines from the VMD Tcl interface are also defined.
+
 
