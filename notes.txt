@@ -446,7 +446,7 @@ Build the Charm++/Converse library:
 Edit various configuration files:
   vi Make.charm  (set CHARMBASE to .rootdir/charm or full path to charm)
   vi arch/Linux-i686.fftw     (fix library name and path to files)
-  vi arch/Linux-i686.plugins  (fix library name and path to files)
+  vi arch/All-Unix.plugins    (fix path to files)
   vi arch/Linux-i686.tcl      (fix library version and path to TCL files)
 
 Set up build directory and compile:
@@ -481,12 +481,12 @@ which have names like Linux-i686-Clustermatic-TCP-icc.  Each build or
 most generic name for a platform, like Linux-i686.  The options are
 things like Scyld, TCP, SMP, or Elan.
 
-Edit arch/BASEARCH.fftw, arch/BASEARCH.plugins, and arch/BASEARCH.tcl
-to point to the libraries you downloaded.  View arch/ARCH.arch and
-look for a line like "CHARMARCH = net-linux-clustermatic-tcp-icc" to
-find out what Charm++ platform you need to build.  The CHARMARCH name
-is of the format comm-OS-cpu-options-compiler.  It is very important
-that Charm++ and NAMD be built with the same C++ compiler.
+Edit arch/BASEARCH.fftw, arch/All-Unix.plugins or arch/Win32.plugins,
+and arch/BASEARCH.tcl to point to the libraries you downloaded.  Find
+a line something like "CHARMARCH = net-linux-clustermatic-tcp-icc" in
+arch/ARCH.arch find out what Charm++ platform you need to build.  The
+CHARMARCH name is of the format comm-OS-cpu-options-compiler.  It is
+important that Charm++ and NAMD be built with the same C++ compiler.
 
 Enter the charm directory and run the build script without options
 to see a list of available platforms.  Only the comm-OS-cpu part will
