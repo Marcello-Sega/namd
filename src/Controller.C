@@ -188,6 +188,7 @@ void Controller::algorithm(void)
     if ( 0 ) { iout << "LINE MINIMIZER: MOVING FROM " << last.x << " TO " << (X) << "\n" << endi; } \
     broadcast->minimizeCoefficient.publish(minSeq++,(X)-last.x); \
     last.x = (X); \
+    enqueueCollections(step); \
     CALCULATE \
     last.u = min_energy; \
     last.dudx = -1. * min_f_dot_v; \
@@ -226,7 +227,7 @@ void Controller::minimize() {
     mid = lo;
     BigReal tol = fabs( 1.0e-4 * min_f_dot_v );
     iout << "GRADIENT TOLERANCE: " << tol << "\n" << endi;
-    x = 1.0e-3; if ( atStart ) { x = 1.0e-6; --atStart; }
+    x = 1.0e-2; if ( atStart ) { x = 1.0e-6; }
     x *= sqrt( min_f_dot_f / min_v_dot_v ); MOVETO(x)
     // bracket minimum on line
     while ( last.u < mid.u ) {
@@ -261,6 +262,11 @@ void Controller::minimize() {
     BigReal c = min_f_dot_f / old_f_dot_f;
     iout << "NEW SEARCH DIRECTION " << c << "\n" << endi;
     c = ( c > 1.5 ? 1.5 : c );
+    if ( atStart ) { c = 0; --atStart; }
+    if ( c*c*min_v_dot_v > 100*min_f_dot_f ) {
+      iout << "RESTARTING CONJUGATE GRADIENT ALGORITHM.\n" << endi;
+      c = 0;
+    }
     broadcast->minimizeCoefficient.publish(minSeq++,c); // v = c*v+f
     old_f_dot_f = min_f_dot_f;
     min_f_dot_v = c * min_f_dot_v + min_f_dot_f;

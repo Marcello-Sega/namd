@@ -695,13 +695,23 @@ void Sequencer::submitMinimizeReductions(int step)
   int numAtoms = patch->numAtoms;
 
   reduction->item(REDUCTION_ATOM_CHECKSUM) += numAtoms;
+  const BigReal fmax = 100. * TIMEFACTOR * TIMEFACTOR;
+  const BigReal fmax2 = fmax * fmax;
 
   BigReal fdotf = 0;
   BigReal fdotv = 0;
   BigReal vdotv = 0;
   for ( int i = 0; i < numAtoms; ++i ) {
     Force f = f1[i] + f2[i] + f3[i];
-    fdotf += f * f;
+    BigReal ff = f * f;
+    if ( ff > fmax2 ) {
+      BigReal fmult = sqrt(fmax2/ff);
+      f *= fmult;  ff = f * f;
+      f1[i] *= fmult;
+      f2[i] *= fmult;
+      f3[i] *= fmult;
+    }
+    fdotf += ff;
     fdotv += f * a[i].velocity;
     vdotv += a[i].velocity * a[i].velocity;
   }
