@@ -1,0 +1,10 @@
+NAMD_ARCH = Linux-ia64
+CHARMARCH = net-linux-ia64
+
+CXX = /usr/local/gnu/bin/g++ -D_IA64 -I/usr/local/gnu/include -DSOCKLEN_T=socklen_t
+CXXOPTS = -O3 -Wall -ffast-math
+CXXTHREADOPTS = $(CXXOPTS)
+CXXSIMPARAMOPTS = $(CXXOPTS)
+CC = /usr/local/gnu/bin/gcc  -I/usr/local/gnu/include -static
+COPTS = -O3 -ffast-math
+
