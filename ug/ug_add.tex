@@ -584,10 +584,36 @@ If set to {\tt on}, then the parameters {\tt LangevinPistonTarget}, {\tt Langevi
 This should be set equal to the target temperature for the chosen method of temperature control.}
 
 \item
+\NAMDCONFWDEF{SurfaceTensionTarget}{Surface tension target (dyn/cm)}
+{decimal}{0.0}{Specifies surface tension target.  Must be used with 
+{\tt useFlexibleCell} and periodic boundary conditions.  The pressure 
+specified in {\tt LangevinPistonTarget} becomes the pressure along the z
+axis, and surface tension is applied in the x-y plane.}
+
+\item
 \NAMDCONFWDEF{StrainRate}{initial strain rate}{decimal triple (x y z)}
 {0. 0. 0.}
 {Optionally specifies the initial strain rate for pressure control.
 Is overridden by value read from file specified with {\tt extendedSystem}.}
+
+\item
+\NAMDCONFWDEF{ExcludeFromPressure}{Should some atoms be excluded from pressure
+rescaling?}{{\tt on} or {\tt off}}{{\tt off}}
+{Specifies whether or not to exclude some atoms from pressure rescaling.  The
+coordinates and velocites of such atoms are not rescaled during constant
+pressure simulations, though they do contribute to the virial calculation. 
+May be useful for membrane protein simulation.  EXPERIMENTAL.}
+
+\item
+\NAMDCONFWDEF{ExcludeFromPressureFile}{File specifying excluded atoms}
+{PDB file}{coordinates file}
+{PDB file with one column specifying which atoms to exclude from pressure
+rescaling.  Specify 1 for excluded and 0 for not excluded.}
+
+\item
+\NAMDCONFWDEF{ExcludeFromPressureCol}{Column in PDB file for specifying
+excluded atoms}{O, B, X, Y, or Z}{O}
+{Specifies which column of the pdb file to check for excluded atoms.}
 
 \end{itemize}
 
