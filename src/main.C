@@ -29,8 +29,8 @@ public:
   main(int argc, char **argv)
   {
     // print banner
-    iout << iINFO << "NAMD 2.0b3\n"
-#if 1
+    iout << iINFO << "NAMD 2.0\n"
+#if 0
          << iWARN << "          ***  UNRELEASED EXPERIMENTAL VERSION  ***\n"
 #else
          << iINFO << "Please complete the registration form at\n"
@@ -58,7 +58,7 @@ public:
  *
  *	$RCSfile: main.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1999/03/08 23:02:47 $
+ *	$Revision: 1.1014 $	$Date: 1999/03/22 05:54:21 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -67,6 +67,9 @@ public:
  * REVISION HISTORY:
  *
  * $Log: main.C,v $
+ * Revision 1.1014  1999/03/22 05:54:21  jim
+ * Changed message to release 2.0 version.
+ *
  * Revision 1.1013  1999/03/08 23:02:47  jim
  * Modified startup message for experimental versions.
  *
