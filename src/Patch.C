@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1006 1997/02/11 18:51:52 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1007 1997/03/12 22:06:43 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -33,7 +33,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1
 
 Patch::Patch(PatchID pd) :
    patchID(pd),
-   positionPtr(0), forcePtr(0), atomPtr(0),
+   positionPtr(0), atomPtr(0),
    positionBox(this,&(Patch::positionBoxClosed)),
    forceBox(this,&(Patch::forceBoxClosed)),
    atomBox(this,&(Patch::atomBoxClosed)),
@@ -45,7 +45,7 @@ Patch::Patch(PatchID pd) :
 
 Patch::Patch(PatchID pd, AtomIDList al, PositionList pl) :
    patchID(pd), atomIDList(al), p(pl),
-   positionPtr(0), forcePtr(0), atomPtr(0),
+   positionPtr(0), atomPtr(0),
    positionBox(this,&(Patch::positionBoxClosed)),
    forceBox(this,&(Patch::forceBoxClosed)),
    atomBox(this,&(Patch::atomBoxClosed)),
@@ -121,7 +121,7 @@ void Patch::unregisterPositionPickup(ComputeID cid, PositionBox<Patch> **const b
    *box = 0;
 }
 
-Box<Patch,Force>* Patch::registerForceDeposit(ComputeID cid)
+Box<Patch,Results>* Patch::registerForceDeposit(ComputeID cid)
 {
    if (forceComputeList.add(cid) < 0)
    {
@@ -132,7 +132,7 @@ Box<Patch,Force>* Patch::registerForceDeposit(ComputeID cid)
    return forceBox.checkOut();
 }
 
-void Patch::unregisterForceDeposit(ComputeID cid, Box<Patch,Force> **const box)
+void Patch::unregisterForceDeposit(ComputeID cid, Box<Patch,Results> **const box)
 {
    forceComputeList.del(cid);
    forceBox.checkIn(*box);
@@ -165,7 +165,10 @@ void Patch::positionBoxClosed(void)
 
 void Patch::forceBoxClosed(void)
 {
-   f.encap(&forcePtr,numAtoms);
+   for ( int j = 0; j < Results::maxNumForces; ++j )
+   {
+     f[j].encap(&(results.f[j]),numAtoms);
+   }
    this->boxClosed(1);
 }
 
@@ -190,10 +193,15 @@ void Patch::positionsReady(int doneMigration)
    positionBox.open(positionPtr,numAtoms,&lattice);
 
    // Give all force deposit boxes access to forces
-   f.resize(numAtoms);
-   forcePtr = f.unencap();
-   for(int i=0; i<numAtoms; i++) forcePtr[i] = 0.;
-   forceBox.open(forcePtr);
+   Force *forcePtr;
+   for ( int j = 0; j < Results::maxNumForces; ++j )
+   {
+      f[j].resize(numAtoms);
+      forcePtr = f[j].unencap();
+      for(int i=0; i<numAtoms; i++) forcePtr[i] = 0.;
+      results.f[j] = forcePtr;
+   }
+   forceBox.open(&results);
 
    // Give all atom properties pickup boxes access to atom properties
    atomPtr = a.unencap();
@@ -215,13 +223,16 @@ void Patch::positionsReady(int doneMigration)
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/02/11 18:51:52 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1007 $	$Date: 1997/03/12 22:06:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.1007  1997/03/12 22:06:43  jim
+ * First step towards multiple force returns and multiple time stepping.
+ *
  * Revision 1.1006  1997/02/11 18:51:52  ari
  * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
  * fixed non-buffering of migration msgs

@@ -96,6 +96,7 @@ void ComputePatchPair::doForce(Position* p[2],
 //---------------------------------------------------------------------
 void ComputePatchPair::doWork() {
   Position* p[2];
+  Results* r[2];
   Force* f[2];
   AtomProperties* a[2];
   int i;
@@ -103,7 +104,8 @@ void ComputePatchPair::doWork() {
   // Open up positionBox, forceBox, and atomBox
   for (i=0; i<2; i++) {
       p[i] = positionBox[i]->open();
-      f[i] = forceBox[i]->open();
+      r[i] = forceBox[i]->open();
+      f[i] = r[i]->f[Results::normal];
       a[i] = atomBox[i]->open();
   }
 
@@ -113,7 +115,7 @@ void ComputePatchPair::doWork() {
   // Close up boxes
   for (i=0; i<2; i++) {
       positionBox[i]->close(&p[i]);
-      forceBox[i]->close(&f[i]);
+      forceBox[i]->close(&r[i]);
       atomBox[i]->close(&a[i]);
   }
 }
@@ -123,13 +125,16 @@ void ComputePatchPair::doWork() {
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputePatchPair.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/06 22:06:00 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/03/12 22:06:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatchPair.C,v $
+ * Revision 1.1005  1997/03/12 22:06:38  jim
+ * First step towards multiple force returns and multiple time stepping.
+ *
  * Revision 1.1004  1997/03/06 22:06:00  ari
  * Removed Compute.ci
  * Comments added - more code cleaning

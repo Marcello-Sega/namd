@@ -139,15 +139,18 @@ void ProxyAllMsg:: unpack (void *in)
 
 void * ProxyResultMsg:: pack (int *length)
   {
-    int size = forceList.size();
-    *length = 4 * sizeof(int) + size * sizeof(Force);
+    int size = forceList[0].size();
+    *length = 4 * sizeof(int) + size * sizeof(Force) * Results::maxNumForces;
     char *buffer = (char*)new_packbuffer(this,*length);
     *((int*)buffer) = node;
     *((int*)(buffer+sizeof(int))) = patch;
     *((int*)(buffer+2*sizeof(int))) = size;
-    Force *data = (Force*)(buffer+4*sizeof(int));
-    for ( int i = 0; i < size; ++i )
-      data[i] = forceList[i];
+    for ( int j = 0; j < Results::maxNumForces; ++j )
+    {
+      Force *data = (Force*)(buffer+4*sizeof(int)+size*sizeof(Force)*j);
+      for ( int i = 0; i < size; ++i )
+        data[i] = forceList[j][i];
+    }
     this->~ProxyResultMsg();
     return buffer;
   }
@@ -159,10 +162,13 @@ void ProxyResultMsg:: unpack (void *in)
     node = *((int*)buffer);
     patch = *((int*)(buffer+sizeof(int)));
     int size = *((int*)(buffer+2*sizeof(int)));
-    forceList.resize(size);
-    Force *data = (Force*)(buffer+4*sizeof(int));
-    for ( int i = 0; i < size; ++i )
-      forceList[i] = data[i];
+    for ( int j = 0; j < Results::maxNumForces; ++j )
+    {
+      forceList[j].resize(size);
+      Force *data = (Force*)(buffer+4*sizeof(int)+size*sizeof(Force)*j);
+      for ( int i = 0; i < size; ++i )
+        forceList[j][i] = data[i];
+    }
   }
 
 ProxyMgr *ProxyMgr::_instance = 0;
@@ -351,12 +357,15 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
  *
  *	$RCSfile: ProxyMgr.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/02/28 04:47:11 $
+ *	$Revision: 1.1011 $	$Date: 1997/03/12 22:06:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.1011  1997/03/12 22:06:46  jim
+ * First step towards multiple force returns and multiple time stepping.
+ *
  * Revision 1.1010  1997/02/28 04:47:11  jim
  * Full electrostatics now works with fulldirect on one node.
  *

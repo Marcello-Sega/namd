@@ -21,6 +21,7 @@
 #include "c++interface.h"
 
 #include "NamdTypes.h"
+#include "PatchTypes.h"
 #include "Compute.h"
 
 #include "Templates/Box.h"
@@ -35,9 +36,9 @@ class PatchMap;
 class PatchDeposit {
 public:
    PatchID pid;
-   Box<Patch,Force> *box;
+   Box<Patch,Results> *box;
    Patch *p;
-   Force *f;
+   Results *r;
 
    PatchDeposit(PatchID p) : pid(p) {};
    PatchDeposit() : pid(-1) {};
@@ -98,13 +99,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeGeneral.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:57:56 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/03/12 22:06:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGeneral.h,v $
+ * Revision 1.1001  1997/03/12 22:06:34  jim
+ * First step towards multiple force returns and multiple time stepping.
+ *
  * Revision 1.1000  1997/02/06 15:57:56  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

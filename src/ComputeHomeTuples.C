@@ -182,9 +182,14 @@ void ComputeHomeTuples<T>::doWork() {
     ap->a = ap->atomBox->open();
     // We only deposit real forces for HomePatch atoms on our Node
     if ( ap->patchType == HOME ) 
-      ap->f = ap->forceBox->open();
+    {
+      ap->r = ap->forceBox->open();
+      ap->f = ap->r->f[Results::normal];
+    }
     else 
+    {
       ap->f = dummy;
+    }
   } 
 
   BigReal reductionData[T::reductionDataSize];
@@ -206,7 +211,7 @@ void ComputeHomeTuples<T>::doWork() {
     ap->atomBox->close(&(ap->a));
 
     if ( ap->patchType == HOME ) 
-      ap->forceBox->close(&(ap->f));
+      ap->forceBox->close(&(ap->r));
   }
   DebugM(1, "ComputeHomeTuples::doWork() -- done" << endl);
 }
@@ -216,13 +221,16 @@ void ComputeHomeTuples<T>::doWork() {
  * RCS INFORMATION:
  *
  *      $RCSfile: ComputeHomeTuples.C,v $
- *      $Author: ari $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1006 $     $Date: 1997/03/11 23:46:26 $
+ *      $Author: jim $  $Locker:  $             $State: Exp $
+ *      $Revision: 1.1007 $     $Date: 1997/03/12 22:06:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.C,v $
+ * Revision 1.1007  1997/03/12 22:06:35  jim
+ * First step towards multiple force returns and multiple time stepping.
+ *
  * Revision 1.1006  1997/03/11 23:46:26  ari
  * Improved ComputeNonbondedExcl loadTuples() by overloading the default
  * template method from ComputeHomeTuples and used the checklist suggested

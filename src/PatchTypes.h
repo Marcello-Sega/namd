@@ -15,6 +15,8 @@
 #ifndef PATCHTYPES_H
 #define PATCHTYPES_H
 
+#include "NamdTypes.h"
+
 class Flags
 {
 public:
@@ -22,6 +24,13 @@ public:
 
 private:
   int spacer;  // Use this to keep byte-aligned for now.  -JCP
+};
+
+class Results
+{
+public:
+  enum { normal, slow, maxNumForces };
+  Force *f[maxNumForces];
 };
 
 #endif

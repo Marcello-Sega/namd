@@ -15,6 +15,7 @@
 #define COMPUTEPPAIR_H
 
 #include "Compute.h"
+#include "PatchTypes.h"
 
 #include "Templates/Box.h"
 #include "Templates/OwnerBox.h"
@@ -45,7 +46,7 @@ private:
   int trans[2];
   PositionBox<Patch> *positionBox[2];
   Box<Patch,AtomProperties> *atomBox[2];
-  Box<Patch,Force> *forceBox[2];
+  Box<Patch,Results> *forceBox[2];
 };
 
 #endif
@@ -53,13 +54,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputePatchPair.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/06 22:06:01 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/03/12 22:06:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatchPair.h,v $
+ * Revision 1.1003  1997/03/12 22:06:39  jim
+ * First step towards multiple force returns and multiple time stepping.
+ *
  * Revision 1.1002  1997/03/06 22:06:01  ari
  * Removed Compute.ci
  * Comments added - more code cleaning

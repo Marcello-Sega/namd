@@ -76,6 +76,7 @@ void ComputePatch::doForce(Position* p,
 
 void ComputePatch::doWork() {
   Position* p;
+  Results* r;
   Force* f;
   AtomProperties* a;
 
@@ -83,7 +84,8 @@ void ComputePatch::doWork() {
 
   // Open up positionBox, forceBox, and atomBox
   p = positionBox->open();
-  f = forceBox->open();
+  r = forceBox->open();
+  f = r->f[Results::normal];
   a = atomBox->open();
 
   // Pass pointers to doForce
@@ -91,7 +93,7 @@ void ComputePatch::doWork() {
 
   // Close up boxes
   positionBox->close(&p);
-  forceBox->close(&f);
+  forceBox->close(&r);
   atomBox->close(&a);
 
   DebugM(2,patchID << ": doWork() completed.\n");
@@ -102,13 +104,16 @@ void ComputePatch::doWork() {
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputePatch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/11 18:51:44 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/03/12 22:06:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatch.C,v $
+ * Revision 1.1002  1997/03/12 22:06:37  jim
+ * First step towards multiple force returns and multiple time stepping.
+ *
  * Revision 1.1001  1997/02/11 18:51:44  ari
  * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
  * fixed non-buffering of migration msgs

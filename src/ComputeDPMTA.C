@@ -257,10 +257,11 @@ void ComputeDPMTA::doWork()
     for (ap = ap.begin(); ap != ap.end(); ap++) {
       Position *x = (*ap).positionBox->open();
       AtomProperties *a = (*ap).atomBox->open();
-      Force *f = (*ap).forceBox->open();
+      Results *r = (*ap).forceBox->open();
+      Force *f = r->f[Results::normal];
       reduction->submit(fake_seq, REDUCTION_ELECT_ENERGY, 0.0);
       ++fake_seq;
-      (*ap).forceBox->close(&f);
+      (*ap).forceBox->close(&r);
       (*ap).atomBox->close(&a);
       (*ap).positionBox->close(&x);
     }
@@ -332,7 +333,8 @@ void ComputeDPMTA::doWork()
   BigReal potential=0;
   for (i=0, ap = ap.begin(); ap != ap.end(); ap++)
   {
-    (*ap).f = (*ap).forceBox->open();
+    (*ap).r = (*ap).forceBox->open();
+    (*ap).f = (*ap).r->f[Results::normal];
 
     // deposit here
     for(j=0; j<(*ap).p->getNumAtoms(); j++)
@@ -344,7 +346,7 @@ void ComputeDPMTA::doWork()
       i++;
     }
 
-    (*ap).forceBox->close(&(*ap).f);
+    (*ap).forceBox->close(&(*ap).r);
   }
 
   potential *= 0.5;

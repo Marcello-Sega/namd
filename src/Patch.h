@@ -64,8 +64,8 @@ class Patch
      PositionBox<Patch>* registerPositionPickup(ComputeID cid, int trans = 13);
      void unregisterPositionPickup(ComputeID cid,
 				   PositionBox<Patch>**const box);
-     Box<Patch,Force>* registerForceDeposit(ComputeID cid);
-     void unregisterForceDeposit(ComputeID cid, Box<Patch,Force> **const box);
+     Box<Patch,Results>* registerForceDeposit(ComputeID cid);
+     void unregisterForceDeposit(ComputeID cid, Box<Patch,Results> **const box);
      Box<Patch,AtomProperties>* registerAtomPickup(ComputeID cid);
      void unregisterAtomPickup(ComputeID cid,
 			       Box<Patch,AtomProperties> **const box);
@@ -96,14 +96,14 @@ class Patch
      LocalIndex    localIndex;
      PositionList  p;
      Position      *positionPtr;
-     ForceList     f;
-     Force         *forcePtr;
+     ForceList     f[Results::maxNumForces];
+     Results	   results;
      AtomPropertiesList		a;
      AtomProperties		*atomPtr;
 
      PositionOwnerBox<Patch> positionBox;
      ComputeIDList              positionComputeList;
-     OwnerBox<Patch,Force>    forceBox;
+     OwnerBox<Patch,Results>    forceBox;
      ComputeIDList              forceComputeList;
      OwnerBox<Patch,AtomProperties>    atomBox;
      ComputeIDList              atomComputeList;
@@ -129,12 +129,15 @@ class Patch
  *
  *	$RCSfile: Patch.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/02/28 04:47:09 $
+ *	$Revision: 1.1005 $	$Date: 1997/03/12 22:06:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.h,v $
+ * Revision 1.1005  1997/03/12 22:06:44  jim
+ * First step towards multiple force returns and multiple time stepping.
+ *
  * Revision 1.1004  1997/02/28 04:47:09  jim
  * Full electrostatics now works with fulldirect on one node.
  *

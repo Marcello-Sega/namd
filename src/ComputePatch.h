@@ -16,6 +16,7 @@
 #define COMPUTEPATCH_H
 
 #include "Compute.h"
+#include "PatchTypes.h"
 
 #include "Templates/Box.h"
 #include "Templates/OwnerBox.h"
@@ -44,7 +45,7 @@ protected :
 private:
   PatchID patchID;
   PositionBox<Patch> *positionBox;
-  Box<Patch,Force> *forceBox;
+  Box<Patch,Results> *forceBox;
   Box<Patch,AtomProperties> *atomBox;
 
 };
@@ -55,12 +56,15 @@ private:
  *
  *	$RCSfile: ComputePatch.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/28 04:47:07 $
+ *	$Revision: 1.1002 $	$Date: 1997/03/12 22:06:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatch.h,v $
+ * Revision 1.1002  1997/03/12 22:06:38  jim
+ * First step towards multiple force returns and multiple time stepping.
+ *
  * Revision 1.1001  1997/02/28 04:47:07  jim
  * Full electrostatics now works with fulldirect on one node.
  *

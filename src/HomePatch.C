@@ -33,7 +33,7 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1020 1997/03/10 17:40:11 ari Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1021 1997/03/12 22:06:40 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
 		     VelocityList vl) : Patch(pd,al,pl), v(vl) 
@@ -142,12 +142,16 @@ void HomePatch::unregisterProxy(UnregisterProxyMsg *msg) {
 void HomePatch::receiveResults(ProxyResultMsg *msg)
 {
   int i = proxy.findIndex(ProxyListElem(msg->node));
-  Force* f = proxy[i].forceBox->open();
-  for ( int j = 0; j < numAtoms; ++j )
+  Results *r = proxy[i].forceBox->open();
+  for ( int k = 0; k < Results::maxNumForces; ++k )
   {
-    f[j] += msg->forceList[j];
+    Force *f = r->f[k];
+    for ( int j = 0; j < numAtoms; ++j )
+    {
+      f[j] += msg->forceList[k][j];
+    }
   }
-  proxy[i].forceBox->close(&f);
+  proxy[i].forceBox->close(&r);
   delete msg;
 }
 
@@ -188,7 +192,7 @@ void HomePatch::positionsReady(int doMigration)
 }
 
 
-void HomePatch::addForceToMomentum(const BigReal timestep)
+void HomePatch::addForceToMomentum(const BigReal timestep, const int ftag)
 {
   const BigReal dt = timestep / TIMEFACTOR;
   //if (v.check() == NULL || f.check() == NULL || a.check() == NULL) {
@@ -196,7 +200,7 @@ void HomePatch::addForceToMomentum(const BigReal timestep)
   //}
   for ( int i = 0; i < numAtoms; ++i )
   {
-    v[i] += f[i] * ( dt / a[i].mass );
+    v[i] += f[ftag][i] * ( dt / a[i].mass );
   }
 }
 
@@ -291,19 +295,19 @@ HomePatch::doAtomMigration()
 	 // [2] in recvMigrateAtoms (PatchMgr.C)
 	 mCur = mInfo[xdev][ydev][zdev]->mList = new MigrationList;
        }
+       Force force[Results::maxNumForces];
+       for ( int j = 0; j < Results::maxNumForces; ++j ) force[j] = f[j][i];
        DebugM(3,"Migrating atom " << atomIDList[i] << " from patch "
 		<< patchID << " with position " << p[i] << "\n");
        mCur->add(MigrationElem(atomIDList[i], a[i], p[i],
-         p[i], v[i], f[i], f[i], f[i])
-       // mCur->add(MigrationElem(atomIDList[i], a[i], pInit[i],
-         // p[i], v[i], f[i], f_short[i], f_long[i])
+         p[i], v[i], force)
        );
        a.del(i);
        atomIDList.del(i,1);
        p.del(i);
        // pInit.del(i);
        v.del(i);
-       f.del(i);
+       for ( j = 0; j < Results::maxNumForces; ++j ) f[j].del(i);
        // f_short.del(i);
        // f_long.del(i);
      }
@@ -367,7 +371,8 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
       atomIDList.add(mi->atomID);
       p.add(lattice.nearest(mi->pos,center));
       v.add(mi->vel);
-      f.add(mi->force);
+      for ( int j = 0; j < Results::maxNumForces; ++j )
+        f[j].add(mi-> force[j]);
     }
     delete migrationList;
     migrationList = NULL;
@@ -397,13 +402,16 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1020 $	$Date: 1997/03/10 17:40:11 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1021 $	$Date: 1997/03/12 22:06:40 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1021  1997/03/12 22:06:40  jim
+ * First step towards multiple force returns and multiple time stepping.
+ *
  * Revision 1.1020  1997/03/10 17:40:11  ari
  * UniqueSet changes - some more commenting and cleanup
  *

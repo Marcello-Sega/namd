@@ -29,9 +29,10 @@ class PatchElem {
     PatchID patchID;
     Patch *p;
     PositionBox<Patch> *positionBox;
-    Box<Patch,Force> *forceBox;
+    Box<Patch,Results> *forceBox;
     Box<Patch,AtomProperties> *atomBox;
     Position *x;
+    Results *r;
     Force *f;
     AtomProperties *a;
 
@@ -42,6 +43,7 @@ class PatchElem {
     forceBox = NULL;
     atomBox = NULL;
     x = NULL;
+    r = NULL;
     f = NULL;
     a = NULL;
   }
@@ -57,6 +59,7 @@ class PatchElem {
     forceBox = p->registerForceDeposit(cid);
     atomBox = p->registerAtomPickup(cid);
     x = NULL;
+    r = NULL;
     f = NULL;
     a = NULL;
   }
@@ -97,13 +100,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeHomePatches.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:57:58 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/03/12 22:06:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomePatches.h,v $
+ * Revision 1.1001  1997/03/12 22:06:35  jim
+ * First step towards multiple force returns and multiple time stepping.
+ *
  * Revision 1.1000  1997/02/06 15:57:58  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1008 1997/02/28 04:47:12 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1009 1997/03/12 22:06:48 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -108,7 +108,7 @@ void ProxyPatch::sendResults(void)
   ProxyResultMsg *msg = new (MsgIndex(ProxyResultMsg)) ProxyResultMsg;
   msg->node = CMyPe();
   msg->patch = patchID;
-  msg->forceList = f;
+  for ( int i = 0; i < Results::maxNumForces; ++i ) msg->forceList[i] = f[i];
   ProxyMgr::Object()->sendResults(msg);
 }
 
@@ -117,12 +117,15 @@ void ProxyPatch::sendResults(void)
  *
  *	$RCSfile: ProxyPatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/02/28 04:47:12 $
+ *	$Revision: 1.1009 $	$Date: 1997/03/12 22:06:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.1009  1997/03/12 22:06:48  jim
+ * First step towards multiple force returns and multiple time stepping.
+ *
  * Revision 1.1008  1997/02/28 04:47:12  jim
  * Full electrostatics now works with fulldirect on one node.
  *

@@ -28,7 +28,7 @@
 void ComputeGeneral::depositAllForces() {
   PatchDepositListIter pd(patchDepositList);
   for (pd = pd.begin(); pd != pd.end(); pd++) {
-    (*pd).box->close(&((*pd).f));
+    (*pd).box->close(&((*pd).r));
   }
 
   PatchPickupListIter pp(patchPickupList);
@@ -98,13 +98,16 @@ void ComputeGeneral::doWork() {
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeGeneral.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:57:55 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/03/12 22:06:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGeneral.C,v $
+ * Revision 1.1001  1997/03/12 22:06:33  jim
+ * First step towards multiple force returns and multiple time stepping.
+ *
  * Revision 1.1000  1997/02/06 15:57:55  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

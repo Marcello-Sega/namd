@@ -68,7 +68,7 @@ public:
   void positionsReady(int doMigration=0);
 
   // methods to implement integration
-  void addForceToMomentum(const BigReal);
+  void addForceToMomentum(const BigReal, const int ftag = Results::normal);
   void addVelocityToPosition(const BigReal);
   
   // patch-wise calculations
@@ -90,8 +90,6 @@ private:
   VelocityList  v; 
   /*
   PositionList  pInit;   
-  ForceList     f_short;
-  ForceList     f_long;
   */
   
   // List of Proxies
@@ -117,13 +115,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/03/10 17:40:12 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1007 $	$Date: 1997/03/12 22:06:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.1007  1997/03/12 22:06:41  jim
+ * First step towards multiple force returns and multiple time stepping.
+ *
  * Revision 1.1006  1997/03/10 17:40:12  ari
  * UniqueSet changes - some more commenting and cleanup
  *

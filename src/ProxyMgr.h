@@ -80,7 +80,7 @@ class ProxyResultMsg : public comm_object {
 public:
   NodeID node;
   PatchID patch;
-  ForceList forceList;
+  ForceList forceList[Results::maxNumForces];
   void * pack (int *length);
   void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
   void * operator new(size_t size) { return comm_object::operator new(size); }
@@ -132,12 +132,15 @@ private:
  *
  *	$RCSfile: ProxyMgr.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/02/28 04:47:11 $
+ *	$Revision: 1.1004 $	$Date: 1997/03/12 22:06:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.h,v $
+ * Revision 1.1004  1997/03/12 22:06:47  jim
+ * First step towards multiple force returns and multiple time stepping.
+ *
  * Revision 1.1003  1997/02/28 04:47:11  jim
  * Full electrostatics now works with fulldirect on one node.
  *

@@ -35,9 +35,10 @@ class TuplePatchElem {
     Patch *p;
     PatchType patchType;
     PositionBox<Patch> *positionBox;
-    Box<Patch,Force> *forceBox;
+    Box<Patch,Results> *forceBox;
     Box<Patch,AtomProperties> *atomBox;
     Position *x;
+    Results *r;
     Force *f;
     AtomProperties *a;
 
@@ -50,6 +51,7 @@ class TuplePatchElem {
     forceBox = NULL;
     atomBox = NULL;
     x = NULL;
+    r = NULL;
     f = NULL;
     a = NULL;
   }
@@ -61,6 +63,7 @@ class TuplePatchElem {
     forceBox = NULL;
     atomBox = NULL;
     x = NULL;
+    r = NULL;
     f = NULL;
     a = NULL;
   }
@@ -74,6 +77,7 @@ class TuplePatchElem {
     else forceBox =  NULL;
     atomBox = p->registerAtomPickup(cid);
     x = NULL;
+    r = NULL;
     f = NULL;
     a = NULL;
   }
@@ -127,13 +131,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeHomeTuples.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/11 23:46:27 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/03/12 22:06:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.h,v $
+ * Revision 1.1004  1997/03/12 22:06:36  jim
+ * First step towards multiple force returns and multiple time stepping.
+ *
  * Revision 1.1003  1997/03/11 23:46:27  ari
  * Improved ComputeNonbondedExcl loadTuples() by overloading the default
  * template method from ComputeHomeTuples and used the checklist suggested

@@ -12,14 +12,14 @@
  *
  ***************************************************************************/
 
-#include "NamdTypes.h"
+#include "PatchTypes.h"
 #include "Templates/Box.h"
 
 class ProxyListElem {
 public:
   ProxyListElem() {};
   ProxyListElem(NodeID n) : node(n), forceBox(0) {};
-  ProxyListElem(NodeID n, Box<Patch,Force> *f ) : node(n), forceBox(f) {};
+  ProxyListElem(NodeID n, Box<Patch,Results> *f ) : node(n), forceBox(f) {};
   ~ProxyListElem() {};
 
   int operator==(const ProxyListElem &p) {
@@ -27,7 +27,7 @@ public:
   }
 
   NodeID node;
-  Box<Patch,Force> *forceBox;
+  Box<Patch,Results> *forceBox;
 };
 
 typedef ResizeArray<ProxyListElem> ProxyList;
