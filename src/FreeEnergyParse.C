@@ -826,7 +826,7 @@ restr_t ReadNextRestraintType(char* Str, int& NumChars) {
 
   // skip to the end of the white space following this word
 GotIt:
-  Str += 4;
+  Str += 3;
   Str += ReadAlphaNum(Str);
   Str += ReadWhite(Str);
 
@@ -1507,3 +1507,20 @@ void ToLower(char* Str) {
     Str[i] = (char)tolower(Str[i]);
   }
 }
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker $		$State $
+ *	$Revision $	$Date $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: FreeEnergyParse.C,v $
+ * Revision 1.2  1998/05/29 22:29:15  hurwitz
+ * corrected v.small bug reading position restraints
+ *
+ *
+ ***************************************************************************/
