@@ -6,7 +6,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.2 1996/08/16 04:39:46 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.3 1996/08/16 20:33:09 brunner Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -23,6 +23,17 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.
 // read in file data,
 Namd::Namd(void)
 {
+  InitMsg *initmsg;
+  NodeInitMsg *node_msg = new (MsgIndex(NodeInitMsg)) NodeInitMsg;
+  
+  // Create WorkDistrib and send it an empty message
+  //
+  initmsg = new (MsgIndex(InitMsg)) InitMsg;
+  node_msg->workdistrib_group = new_group(WorkDistrib, initmsg);
+
+  // Create the Node object and send it the IDs of all the other
+  // parallel objects.
+  node = new_group(Node, node_msg);
 }
 
 
@@ -35,12 +46,18 @@ Namd::~Namd(void)
 // startup(char *) 
 void Namd::startup(char *confFile)
 {
+  InitMsg *initmsg;
+
   namdState.configFileInit(confFile);
   if (namdState.status()) {
     CPrintf("Namd::startup() - could not initialize namdState from %s\n", 
       confFile);
     CharmExit();
   }
+
+  // Tell Node to do any startup work
+  initmsg = new (MsgIndex(InitMsg)) InitMsg;
+  CSendMsgBranch(Node, startup, initmsg, node, CMyPeNum());
 }
 
 
@@ -56,8 +73,8 @@ void Namd::run(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: Namd.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/08/16 04:39:46 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.3 $	$Date: 1996/08/16 20:33:09 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -66,6 +83,9 @@ void Namd::run(void)
  * REVISION HISTORY:
  *
  * $Log: Namd.C,v $
+ * Revision 1.3  1996/08/16 20:33:09  brunner
+ * Not Working
+ *
  * Revision 1.2  1996/08/16 04:39:46  ari
  * *** empty log message ***
  *
