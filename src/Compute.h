@@ -1,3 +1,4 @@
+//-*-c++-*-
 /***************************************************************************/
 /*                                                                         */
 /*              (C) Copyright 1996 The Board of Trustees of the            */
@@ -32,6 +33,7 @@ class Compute {
 private:
   int patchReadyCounter;
   int numPatches;
+  int doMapReady;
 
 protected:
   static Node* node;
@@ -43,7 +45,10 @@ protected:
 public:
   const ComputeID cid;
 
-  Compute(ComputeID c) : cid(c) { computeMap = ComputeMap::Object(); }
+  Compute(ComputeID c) : cid(c) { 
+    doMapReady = 0;
+    computeMap = ComputeMap::Object(); 
+  }
   virtual ~Compute() {}
 
   static void setNode(Node *n) { node = n; }
@@ -52,8 +57,9 @@ public:
   int getNumPatches() { return (numPatches); };
 
   virtual void mapReady() {};
-  virtual void patchReady(void);
-  virtual void patchReady(PatchID pid) { if (pid > -1) patchReady(); }
+  // virtual void patchReady(void);
+  virtual void patchReady(PatchID pid) { if (pid > -1) patchReady(pid,0); }
+  virtual void patchReady(PatchID, int);
   virtual void doWork();
 };
 
@@ -63,12 +69,28 @@ public:
  *
  *	$RCSfile: Compute.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:33 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.h,v $
+ * Revision 1.778  1997/01/28 00:30:00  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.3  1997/01/27 22:44:56  ari
+ * Basic Atom Migration Code added.
+ * Added correct magic first line to .h files for xemacs to go to C++ mode.
+ * Compiles and runs without migration turned on.
+ *
+ * Revision 1.777.2.2  1997/01/27 16:52:01  nealk
+ * Removed the hundreds of warnings about an unused variable.
+ *
+ * Revision 1.777.2.1  1997/01/21 23:04:43  ari
+ * Basic framework for atom migration placed into code.  - Non
+ * functional since it is not called.  Works currently without
+ * atom migration.
+ *
  * Revision 1.777  1997/01/17 19:35:33  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.

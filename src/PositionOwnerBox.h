@@ -1,7 +1,10 @@
+//-*-c++-*-
 #ifndef POSITIONOWNERBOX_H
 #define POSITIONOWNERBOX_H
 
-#include "Lattice.h"
+#include "NamdTypes.h"
+
+class Lattice;
 
 template <class Owner>
 class PositionBox;
@@ -17,9 +20,9 @@ public:
 
   void close(); 
 
-  PositionBox<Owner> *checkOut(LatticeTransform t);
+  PositionBox<Owner> *checkOut(int i);
 
-  void checkIn(Box<Owner,Data> * box); 
+  void checkIn(PositionBox<Owner> * box); 
 
   int isOpen() { return (openCount); };
 
@@ -32,8 +35,6 @@ private:
   Position* transData[27];
   int transNeeded[27];
   Lattice *lattice;
-
-  void callback(void);
 
   int numberUsers, openCount, closeCount;
 };

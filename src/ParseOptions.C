@@ -11,7 +11,7 @@
  *
  *	$RCSfile: ParseOptions.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:43 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:07 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -22,6 +22,9 @@
  * REVISION HISTORY:
  *
  * $Log: ParseOptions.C,v $
+ * Revision 1.778  1997/01/28 00:31:07  ari
+ * internal release uplevel to 1.778
+ *
  * Revision 1.777  1997/01/17 19:36:43  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.
@@ -61,7 +64,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ParseOptions.C,v 1.777 1997/01/17 19:36:43 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ParseOptions.C,v 1.778 1997/01/28 00:31:07 ari Exp $";
 // set the list of parameters
 #include <libc.h>
 #include <iostream.h>

@@ -1,3 +1,4 @@
+//-*-c++-*-
 /***************************************************************************/
 /*                                                                         */
 /*              (C) Copyright 1996 The Board of Trustees of the            */
@@ -22,6 +23,7 @@
 #include "Templates/SortedArray.h"
 #include "HomePatch.h"
 #include "BOCgroup.h"
+#include "Migration.h"
 
 class InitMsg;
 class HomePatch;
@@ -58,6 +60,32 @@ public:
    AckMovePatchesMsg() {};
    ~AckMovePatchesMsg() {};
 };
+
+class MigrateAtomsMsg : public comm_object {
+public:
+    NodeID  fromNodeID;
+    PatchID srcPatchID;
+    PatchID destPatchID;
+    MigrationList *migrationList;
+
+    MigrateAtomsMsg(void) { migrationList = NULL; }
+    ~MigrateAtomsMsg(void) { delete migrationList; }
+
+    MigrateAtomsMsg(PatchID source, PatchID destination, MigrationList *m) : 
+      srcPatchID(source), destPatchID(destination), migrationList(m)
+    {
+      fromNodeID = CMyPe();
+    }
+
+  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
+  void * operator new(size_t s) { return comm_object::operator new(s); }
+  void * operator new(size_t, void *ptr) { return ptr; }
+
+  // pack and unpack functions
+  void * pack (int *length);
+  void unpack (void *in);
+};
+
 
 
 // PatchMgr creates and manages homepatches. There exist one instance of 
@@ -117,6 +145,8 @@ class PatchMgr : public BOCclass
 public:
   PatchMgr(InitMsg *);
   ~PatchMgr();
+
+  static PatchMgr* Object() { return _instance; }
   
   void recvMovePatches(MovePatchesMsg *msg);
 
@@ -127,11 +157,15 @@ public:
   void ackMovePatches(AckMovePatchesMsg *msg);
   HomePatch *homePatch(PatchID pid) {
      return homePatches.find(HomePatchElem(pid))->p;
-  }
+  } 
 
+  void migrate(PatchID,MigrationList);
+  void recvMigrateAtoms(MigrateAtomsMsg *);
   static void setGroup(BOCgroup g);
-
+ 
 private:
+  static PatchMgr* _instance;
+
   friend PatchMap;
   PatchMap *patchMap;
 
@@ -149,26 +183,7 @@ private:
   int ackMovePending;
 };
 
-  // this is a list of immediate neighbor nodes (that is neighbor nodes
-  // that has an immediate neighbor patch. We will wait for an
-  // atom redistribution message from each node in this list per cycle.
-  // And also we send an atom redistribution message to each of these nodes
-  // even if no atoms moves there. Basically, these nodes must be in sync
-  // as far as atom redist is concerned.
-  // IntList   *neighborNodes;
-  // void build_neighborlist();
 
-  // check if atoms moved to another patch
-  // handle the ones moved internally,
-  // if an atom moved to a remote patch, send a msg to the node
-  // this function is
-  // void redistribute_atom();
-
-  // receive messages from other nodes about atoms moving into patches 
-  // void recv_atom_redist(AtomRedistMsg *msg);
-  // each patch invokes this method to initiate atom redistribution
-  // at the end of the cyle
-  // void redist_my_atoms(int patchid);
 
 #endif /* PATCHMGR_H */
 /***************************************************************************
@@ -176,12 +191,25 @@ private:
  *
  *	$RCSfile: PatchMgr.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:50 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.h,v $
+ * Revision 1.778  1997/01/28 00:31:14  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.2  1997/01/27 22:45:34  ari
+ * Basic Atom Migration Code added.
+ * Added correct magic first line to .h files for xemacs to go to C++ mode.
+ * Compiles and runs without migration turned on.
+ *
+ * Revision 1.777.2.1  1997/01/21 23:04:51  ari
+ * Basic framework for atom migration placed into code.  - Non
+ * functional since it is not called.  Works currently without
+ * atom migration.
+ *
  * Revision 1.777  1997/01/17 19:36:50  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.

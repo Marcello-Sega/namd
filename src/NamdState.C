@@ -100,7 +100,7 @@ NamdState::configFileInit(char *confFile)
 
   simParameters =  new SimParameters(configList,currentdir);
 
-  parameters = new Parameters(parameterFilename->data);
+  parameters = new Parameters(parameterFilename);
   parameters->print_param_summary();
 
   molecule = new Molecule(simParameters, parameters, moleculeFilename->data);
@@ -130,7 +130,7 @@ NamdState::configFileInit(char *confFile)
  *
  *	$RCSfile: NamdState.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:31 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:56 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -139,6 +139,13 @@ NamdState::configFileInit(char *confFile)
  * REVISION HISTORY:
  *
  * $Log: NamdState.C,v $
+ * Revision 1.778  1997/01/28 00:30:56  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.1  1997/01/24 02:29:52  jim
+ * Fixed bug where only first parameter file was read!
+ * Added files for hydrogen bond parameter reading.
+ *
  * Revision 1.777  1997/01/17 19:36:31  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.
@@ -160,4 +167,4 @@ NamdState::configFileInit(char *confFile)
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.777 1997/01/17 19:36:31 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.778 1997/01/28 00:30:56 ari Exp $";

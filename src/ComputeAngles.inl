@@ -66,12 +66,15 @@ inline int AngleElem::operator<(const AngleElem &a) const
  *
  *	$RCSfile: ComputeAngles.inl,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:36 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.inl,v $
+ * Revision 1.778  1997/01/28 00:30:03  ari
+ * internal release uplevel to 1.778
+ *
  * Revision 1.777  1997/01/17 19:35:36  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.

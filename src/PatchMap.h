@@ -1,3 +1,4 @@
+//-*-c++-*-
 /***************************************************************************/
 /*                                                                         */
 /*              (C) Copyright 1996 The Board of Trustees of the            */
@@ -143,6 +144,7 @@ public:
   void printPatchMap(void);
 
   inline Patch *patch(PatchID pid);
+  inline HomePatch *homePatch(PatchID pid);
 
   void registerPatch(PatchID pid, Patch *pptr);
   void unregisterPatch(PatchID pid, Patch *pptr);
@@ -152,13 +154,13 @@ protected:
   friend MapDistribMsg;
   void * pack (int *length);
   void unpack (void *in);
-
+  
   PatchMap(void);
-
+  
 private:
   static PatchMap *_instance;
   static PatchMgr *patchMgr;
-
+  
   struct PatchData
   {
     int node;
@@ -184,6 +186,11 @@ inline Patch *PatchMap::patch(PatchID pid)
   return patchData[pid].myPatch;
 }
 
+inline HomePatch *PatchMap::homePatch(PatchID pid)
+{
+  return (HomePatch *)patchData[pid].myPatch;
+}
+
 #endif /* PATCHMAP_H */
 
 
@@ -192,12 +199,25 @@ inline Patch *PatchMap::patch(PatchID pid)
  *
  *	$RCSfile: PatchMap.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:47 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.h,v $
+ * Revision 1.778  1997/01/28 00:31:11  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.2  1997/01/27 22:45:33  ari
+ * Basic Atom Migration Code added.
+ * Added correct magic first line to .h files for xemacs to go to C++ mode.
+ * Compiles and runs without migration turned on.
+ *
+ * Revision 1.777.2.1  1997/01/21 23:04:48  ari
+ * Basic framework for atom migration placed into code.  - Non
+ * functional since it is not called.  Works currently without
+ * atom migration.
+ *
  * Revision 1.777  1997/01/17 19:36:47  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.

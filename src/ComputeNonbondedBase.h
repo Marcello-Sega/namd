@@ -1,3 +1,4 @@
+//-*-c++-*-
 /***************************************************************************/
 /*                                                                         */
 /*              (C) Copyright 1996 The Board of Trustees of the            */
@@ -50,7 +51,7 @@ DECL( ; )
   BigReal electEnergy = 0;
   BigReal vdwEnergy = 0;
 
-  const BigReal cutoff2 = ComputeNonbondedUtil:: cutoff2;
+  register const BigReal cutoff2 = ComputeNonbondedUtil:: cutoff2;
   const BigReal dielectric_1 = ComputeNonbondedUtil:: dielectric_1;
 
   const LJTable* const ljTable = ComputeNonbondedUtil:: ljTable;
@@ -74,10 +75,16 @@ SW
 
 NOEXCL
 (
-  for ( int i = I_LOWER; i < I_UPPER; ++i )
+  const int i_upper = I_UPPER;
+  register const int j_upper = J_UPPER;
+
+  for ( int i = I_LOWER; i < i_upper; ++i )
   {
-    const Position & p_i = p[I_SUB];
-    const AtomProperties & a_i = a[I_SUB];
+    const Position p_i = p[I_SUB];
+    register const BigReal p_i_x = p_i.x;
+    register const BigReal p_i_y = p_i.y;
+    register const BigReal p_i_z = p_i.z;
+    const AtomProperties a_i = a[I_SUB];
 
     Force & f_i = f[I_SUB];
 )
@@ -89,15 +96,28 @@ NOEXCL
 (
     M14( const BigReal kq_i_s = kq_i_u * scale14; )
 
-    for ( int j = J_LOWER; j < J_UPPER; ++j )
+    register Position *p_j = PAIR( p[1] ) SELF( p+i+1 ) ;
+    register BigReal p_j_x = p_j->x;
+    register BigReal p_j_y = p_j->y;
+    register BigReal p_j_z = p_j->z;
+
+    for ( register int j = J_LOWER; j < j_upper; ++j )
     {
-      const Position & p_j = p[J_SUB];
+      p_j += ( j + 1 < j_upper );
+      register const BigReal p_ij_x = p_i_x - p_j_x;
+      p_j_x = p_j->x;
+      register const BigReal p_ij_y = p_i_y - p_j_y;
+      p_j_y = p_j->y;
+      register const BigReal p_ij_z = p_i_z - p_j_z;
+      p_j_z = p_j->z;
+      register const BigReal
+		r2 = p_ij_x * p_ij_x + p_ij_y * p_ij_y + p_ij_z * p_ij_z;
 )
-
+EXCL
+(
       Vector f_vdw = p_i - p_j;
-
-      const BigReal r2 = f_vdw.length2();
-
+      register const BigReal r2 = f_vdw.length2();
+)
       if ( r2 > cutoff2 ) NOEXCL( continue ) EXCL( return );
 
 NOEXCL
@@ -134,6 +154,7 @@ EXCL
 
 NOEXCL
 (
+      Vector f_vdw(p_ij_x,p_ij_y,p_ij_z);
       Force & f_j = f[J_SUB];
 )
 
@@ -222,10 +243,10 @@ M14
       if ( m14 )
       {
 	lj_pars = ljTable->table_val(a_i.type, a_j.type, 1);
-	const BigReal Ax = lj_pars->A;
-	const BigReal Bx = lj_pars->B;
-	const BigReal AmBtermx = (A*r_6 - B) * r_6;
-	vdwEnergy += SW( switchVal * ) AmBtermx;
+	const BigReal A = lj_pars->A;
+	const BigReal B = lj_pars->B;
+	const BigReal AmBterm = (A*r_6 - B) * r_6;
+	vdwEnergy += SW( switchVal * ) AmBterm;
 	const Vector f_vdwx = f_vdw * ( ( SW( switchVal * ) 6 * (A*r_12 + AmBterm) *
 			r_1 SW( - AmBterm*dSwitchVal ) )*r_1 );
 	f_i += f_vdwx;
@@ -272,12 +293,32 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:52 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.778  1997/01/28 00:30:18  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.5  1997/01/27 22:45:04  ari
+ * Basic Atom Migration Code added.
+ * Added correct magic first line to .h files for xemacs to go to C++ mode.
+ * Compiles and runs without migration turned on.
+ *
+ * Revision 1.777.2.4  1997/01/23 05:13:14  jim
+ * Added pre-fetching of positions for cutoff check loop.
+ *
+ * Revision 1.777.2.3  1997/01/23 04:20:50  jim
+ * Converted cutoff check to use register variables.
+ *
+ * Revision 1.777.2.2  1997/01/22 21:42:11  jim
+ * Larger patches, no two-away computes, small tweak to inner loop.
+ *
+ * Revision 1.777.2.1  1997/01/17 20:48:01  jim
+ * Fixed Lennard-Jones error, now runs with identical energies for e timesteps.
+ *
  * Revision 1.777  1997/01/17 19:35:52  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.

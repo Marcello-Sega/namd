@@ -11,7 +11,7 @@
 /*								           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.777 1997/01/17 19:36:48 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.778 1997/01/28 00:31:12 ari Exp $";
 
 
 #include "ckdefs.h"
@@ -44,6 +44,7 @@ PatchMgr::PatchMgr(InitMsg *msg)
 {
     delete msg;
 
+    _instance = this;
     patchMap = PatchMap::Instance();
     patchMap->registerPatchMgr(this);
 }
@@ -130,6 +131,49 @@ void PatchMgr::ackMovePatches(AckMovePatchesMsg *msg)
 	WorkDistrib::messageMovePatchDone();
 }
 
+void PatchMgr::recvMigrateAtoms (MigrateAtomsMsg *msg) {
+  DebugM(3, "Received Migration Msg from " << msg->fromNodeID << "\n");
+  PatchMap::Object()->homePatch(msg->destPatchID)->depositMigration(msg->srcPatchID,
+    msg->migrationList);
+}
+
+void PatchMgr::migrate(PatchID src, MigrationList m) {
+  DebugM(3, "Received Migration List from " << src 
+	 << " size = " << m.size() << "\n" );
+  
+  int i,j,k;
+
+  MigrationList *mList[3][3][3], *mCur;
+  PatchID pid[3][3][3];
+  NodeID  nid[3][3][3];
+  PatchMap *p = PatchMap::Object();
+
+  for (i=0; i<3; i++)
+    for (j=0; j<3; j++)
+      for (k=0; k<3; k++)
+	mList[i][j][k] = NULL;
+
+  MigrationListIter mi(m);
+  for (mi = mi.begin(); mi != mi.end(); mi++) {
+    if ( (mCur = mList[mi->xdev+1][mi->ydev+1][mi->zdev+1]) == NULL) {
+      mCur = mList[mi->xdev+1][mi->ydev+1][mi->zdev+1] = new MigrationList;
+      int pidtmp = pid[mi->xdev+1][mi->ydev+1][mi->zdev+1] = 
+	p->pid(p->xIndex(src)+mi->xdev,
+	       p->yIndex(src)+mi->ydev,
+	       p->zIndex(src)+mi->zdev);
+      nid[mi->xdev+1][mi->ydev+1][mi->zdev+1] = 
+	p->node( pidtmp );
+    }
+    mCur->add(*mi);
+  }
+  for (i=0; i<3; i++)
+    for (j=0; j<3; j++)
+      for (k=0; k<3; k++) {
+	MigrateAtomsMsg *msg = new (MsgIndex(MigrateAtomsMsg)) 
+		 MigrateAtomsMsg(src,pid[i][j][k],mList[i][j][k]);
+	CSendMsgBranch(PatchMgr,recvMigrateAtoms,msg,thisgroup,nid[i][j][k]);
+      }
+}
 
 void * MovePatchesMsg::pack (int *length)
   {
@@ -175,6 +219,60 @@ void MovePatchesMsg::unpack (void *in)
   }
 
 
+
+void * MigrateAtomsMsg::pack (int *length) {
+    if (migrationList != NULL) {
+      DebugM(1,"MigrateAtomsMsg::pack() - migrationList->size() = " 
+	        << migrationList->size() << endl);
+      *length = sizeof(NodeID) + sizeof(PatchID) + sizeof(PatchID)
+	      + sizeof(int) + migrationList->size() * sizeof(MigrationElem);
+    } else {
+      *length = sizeof(NodeID) + sizeof(PatchID)
+	      +	sizeof(int);
+    }
+    char *buffer = (char*)new_packbuffer(this,*length);
+    char *b = buffer;
+    *((NodeID*)b) = fromNodeID; b += sizeof(NodeID);
+    *((PatchID*)b) = srcPatchID; b += sizeof(PatchID);
+    *((PatchID*)b) = destPatchID; b += sizeof(PatchID);
+
+    if (migrationList != NULL) {
+      *((int*)b) = migrationList->size(); b += sizeof(int);
+      for ( int i = 0; i < migrationList->size(); i++ )
+      {
+	*((MigrationElem*)b) = (*migrationList)[i]; b += sizeof(MigrationElem);
+      }
+    } 
+    else {
+      *((int*)b) = 0; b += sizeof(int);
+    }
+
+    this->~MigrateAtomsMsg();
+    return buffer;
+}
+
+void MigrateAtomsMsg::unpack (void *in) {
+  new((void*)this) MigrateAtomsMsg;
+  char *b = (char*)in;
+  fromNodeID = *((NodeID*)b); b += sizeof(NodeID);
+  srcPatchID = *((PatchID*)b); b += sizeof(PatchID);
+  destPatchID = *((PatchID*)b); b += sizeof(PatchID);
+  int size = *((int*)b); b += sizeof(int);
+  DebugM(1,"MigrateAtomsMsg::unpack() - size = " << size << endl);
+  if (size != 0) {
+    migrationList = new MigrationList();
+    migrationList->resize(size);
+    for ( int i = 0; i < size; i++ )
+    {
+      (*migrationList)[i] = *((MigrationElem*)b); b += sizeof(MigrationElem);
+    }
+  }
+  else {
+    migrationList = NULL;
+  }
+}  
+
+
 #include "PatchMgr.bot.h"
 
 /***************************************************************************
@@ -182,11 +280,19 @@ void MovePatchesMsg::unpack (void *in)
  *
  *	$RCSfile: PatchMgr.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:48 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:12 $
  *
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.C,v $
+ * Revision 1.778  1997/01/28 00:31:12  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.1  1997/01/21 23:04:49  ari
+ * Basic framework for atom migration placed into code.  - Non
+ * functional since it is not called.  Works currently without
+ * atom migration.
+ *
  * Revision 1.777  1997/01/17 19:36:48  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.

@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Molecule.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:28 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:53 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.778  1997/01/28 00:30:53  ari
+ * internal release uplevel to 1.778
+ *
  * Revision 1.777  1997/01/17 19:36:28  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.
@@ -138,7 +141,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.777 1997/01/17 19:36:28 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.778 1997/01/28 00:30:53 ari Exp $";
 
 #include "Molecule.h"
 #include <stdio.h>

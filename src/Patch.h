@@ -1,3 +1,4 @@
+//-*-c++-*-
 /***************************************************************************/
 /*                                                                         */
 /*              (C) Copyright 1996 The Board of Trustees of the            */
@@ -17,7 +18,10 @@
 #include "NamdTypes.h"
 #include "Templates/OwnerBox.h"
 #include "Templates/Box.h"
+#include "PositionOwnerBox.h"
+#include "PositionBox.h"
 #include "Templates/UniqueSortedArray.h"
+#include "Lattice.h"
 
 class Compute;
 class Sequencer;
@@ -55,15 +59,16 @@ class Patch
      virtual ~Patch(void) { };
 
      // methods for use by Compute objects
-     Box<Patch,Position>* registerPositionPickup(ComputeID cid);
-     void unregisterPositionPickup(ComputeID cid, Box<Patch,Position> **const box);
+     PositionBox<Patch>* registerPositionPickup(ComputeID cid, int trans = 13);
+     void unregisterPositionPickup(ComputeID cid, PositionBox<Patch> **const box);
      Box<Patch,Force>* registerForceDeposit(ComputeID cid);
      void unregisterForceDeposit(ComputeID cid, Box<Patch,Force> **const box);
      Box<Patch,AtomProperties>* registerAtomPickup(ComputeID cid);
      void unregisterAtomPickup(ComputeID cid, Box<Patch,AtomProperties> **const box);
 
      // methods for use by Sequencer or ProxyManager
-     void positionsReady(void);
+     void positionsReady(void) { positionsReady(0); }
+     void positionsReady(int);
 
      // methods for Box callbacks
      void positionBoxClosed(void);
@@ -75,6 +80,7 @@ class Patch
 
      PatchID getPatchID() { return patchID; }
 
+     Lattice lattice;
 
   protected:
      static PatchMap *patchMap;
@@ -90,7 +96,7 @@ class Patch
      AtomPropertiesList		a;
      AtomProperties		*atomPtr;
 
-     OwnerBox<Patch,Position> positionBox;
+     PositionOwnerBox<Patch> positionBox;
      ComputeIDList              positionComputeList;
      OwnerBox<Patch,Force>    forceBox;
      ComputeIDList              forceComputeList;
@@ -99,6 +105,8 @@ class Patch
 
      virtual void boxClosed(int);
      int boxesOpen;
+
+     void indexAtoms();
 
   private:
   
@@ -114,12 +122,28 @@ class Patch
  *
  *	$RCSfile: Patch.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:46 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.h,v $
+ * Revision 1.778  1997/01/28 00:31:10  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.3  1997/01/27 22:45:32  ari
+ * Basic Atom Migration Code added.
+ * Added correct magic first line to .h files for xemacs to go to C++ mode.
+ * Compiles and runs without migration turned on.
+ *
+ * Revision 1.777.2.2  1997/01/24 22:00:35  jim
+ * Changes for periodic boundary conditions.
+ *
+ * Revision 1.777.2.1  1997/01/21 23:04:47  ari
+ * Basic framework for atom migration placed into code.  - Non
+ * functional since it is not called.  Works currently without
+ * atom migration.
+ *
  * Revision 1.777  1997/01/17 19:36:46  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.

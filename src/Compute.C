@@ -38,14 +38,22 @@ void Compute::enqueueWork() {
 // Signal from patch or proxy that data is ready.
 // When all Patches and Proxies needed by this Compute object
 // have checked-in, we are ready to enqueueWork()
-void Compute::patchReady(void) { 
-  if (numPatches <= 0 ) {
+void Compute::patchReady(PatchID patchID, int doneMigration) { 
+  if (doneMigration) { // If any patch has done migration - we must remap
+    doMapReady = 1; 
+  }
+
+  if (numPatches <= 0) {
     DebugM(10,"Compute::patchReady()-call not valid!\n");
   } else {
     DebugM(2,"patchReadyCounter = " << patchReadyCounter << endl);
     if (! --patchReadyCounter) {
       patchReadyCounter = numPatches;
       DebugM(3,"Compute::patchReady() - enqueue()!\n");
+      if (doMapReady) {
+	mapReady();
+	doMapReady = 0;
+      }
       enqueueWork();
     }
   }
@@ -64,12 +72,20 @@ void Compute::doWork() {
  *
  *	$RCSfile: Compute.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:32 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:29:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.C,v $
+ * Revision 1.778  1997/01/28 00:29:59  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.1  1997/01/27 22:44:55  ari
+ * Basic Atom Migration Code added.
+ * Added correct magic first line to .h files for xemacs to go to C++ mode.
+ * Compiles and runs without migration turned on.
+ *
  * Revision 1.777  1997/01/17 19:35:32  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.

@@ -4,14 +4,16 @@ CHARMXI = /Projects/l1/namd.2.0/charm/bin/charmc
 # source directory
 SRCDIR = src
 # destination directory (binaries) -- currently, MUST be .
-DSTDIR = .
+DSTDIR = obj
 # temp include directory for cifiles
 INCDIR = inc
 
-CXXOPTS = -g
+CXXOPTS = -O
+# CXXOPTS = -O +DAK460 +DSK460
 CXX = CC -Aa -D_HPUX_SOURCE
 INCLUDE = /Projects/l1/namd.2.0/charm/include
 CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(CXXOPTS)  -w
+GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) -w
 
 .SUFFIXES: 	.ci
 
@@ -20,42 +22,66 @@ ECHO = echo
 MOVE = mv
 
 OBJS = \
-	main.o \
-	AtomMap.o \
-	common.o strlib.o \
-	CollectionMaster.o CollectionMgr.o \
-	Communicate.o CommunicateConverse.o \
-	Compute.o \
-	ComputeAngles.o ComputeBonds.o ComputeDihedrals.o ComputeImpropers.o \
-	ComputeGeneral.o ComputeMap.o ComputeMgr.o \
-	ComputeNonbondedExcl.o ComputeNonbondedSelf.o \
-	ComputeNonbondedPair.o ComputeNonbondedUtil.o \
-	ComputePatch.o ComputePatchPair.o \
-	ConfigList.o \
-	Controller.o \
-	HomePatch.o \
-	Inform.o InfoStream.o IntTree.o \
-	LJTable.o \
-	Message.o MessageManager.o MessageQueue.o \
-	Molecule.o \
-	Namd.o NamdState.o \
-	Node.o \
-	ParseOptions.o Parameters.o \
-	SimParameters.o PDB.o PDBData.o \
-	Patch.o PatchMgr.o PatchMap.o \
-	ProxyMgr.o ProxyPatch.o \
-	ReductionMgr.o \
-	Sequencer.o \
-	WorkDistrib.o
-
-CXXFILES = $(OBJS:.o=.C)
+	$(DSTDIR)/common.o \
+	$(DSTDIR)/main.o \
+	$(DSTDIR)/strlib.o \
+	$(DSTDIR)/AtomMap.o \
+	$(DSTDIR)/CollectionMaster.o \
+	$(DSTDIR)/CollectionMgr.o \
+	$(DSTDIR)/Communicate.o \
+	$(DSTDIR)/CommunicateConverse.o \
+	$(DSTDIR)/Compute.o \
+	$(DSTDIR)/ComputeAngles.o \
+	$(DSTDIR)/ComputeBonds.o \
+	$(DSTDIR)/ComputeDihedrals.o \
+	$(DSTDIR)/ComputeDPMTA.o \
+	$(DSTDIR)/ComputeHomePatches.o \
+	$(DSTDIR)/ComputeImpropers.o \
+	$(DSTDIR)/ComputeGeneral.o \
+	$(DSTDIR)/ComputeMap.o \
+	$(DSTDIR)/ComputeMgr.o \
+	$(DSTDIR)/ComputeNonbondedExcl.o \
+	$(DSTDIR)/ComputeNonbondedSelf.o \
+	$(DSTDIR)/ComputeNonbondedPair.o \
+	$(DSTDIR)/ComputeNonbondedUtil.o \
+	$(DSTDIR)/ComputePatch.o \
+	$(DSTDIR)/ComputePatchPair.o \
+	$(DSTDIR)/ConfigList.o \
+	$(DSTDIR)/Controller.o \
+	$(DSTDIR)/HomePatch.o \
+	$(DSTDIR)/HBondParam.o \
+	$(DSTDIR)/Inform.o \
+	$(DSTDIR)/InfoStream.o \
+	$(DSTDIR)/IntTree.o \
+	$(DSTDIR)/LJTable.o \
+	$(DSTDIR)/Message.o \
+	$(DSTDIR)/MessageManager.o \
+	$(DSTDIR)/MessageQueue.o \
+	$(DSTDIR)/Molecule.o \
+	$(DSTDIR)/Namd.o \
+	$(DSTDIR)/NamdState.o \
+	$(DSTDIR)/Node.o \
+	$(DSTDIR)/Parameters.o \
+	$(DSTDIR)/ParseOptions.o \
+	$(DSTDIR)/Patch.o \
+	$(DSTDIR)/PatchMgr.o \
+	$(DSTDIR)/PatchMap.o \
+	$(DSTDIR)/PDB.o \
+	$(DSTDIR)/PDBData.o \
+	$(DSTDIR)/ProxyMgr.o \
+	$(DSTDIR)/ProxyPatch.o \
+	$(DSTDIR)/ReductionMgr.o \
+	$(DSTDIR)/Sequencer.o \
+	$(DSTDIR)/SimParameters.o \
+	$(DSTDIR)/VoidTree.o \
+	$(DSTDIR)/WorkDistrib.o
 
 INTERFACES = main.ci Node.ci WorkDistrib.ci PatchMgr.ci Compute.ci \
 		ComputeMgr.ci ProxyMgr.ci ReductionMgr.ci \
 		CollectionMgr.ci CollectionMaster.ci
 
 namd2:	$(INCDIR) $(DSTDIR) $(OBJS)
-	$(CHARMC) -ld++-option "-I $(INCLUDE) -I $(SRCDIR)" -g -language charm++ -o namd2 $(OBJS)
+	$(CHARMC) -ld++-option "-I $(INCLUDE) -I $(SRCDIR) $(CXXOPTS)" -language charm++ -o namd2 $(OBJS)
 
 cifiles:	$(INCDIR) $(DSTDIR)
 	for i in $(INTERFACES); do \
@@ -64,18 +90,24 @@ cifiles:	$(INCDIR) $(DSTDIR)
 	$(MOVE) $(SRCDIR)/*.top.h $(INCDIR)
 	$(MOVE) $(SRCDIR)/*.bot.h $(INCDIR)
 
-depends: $(DEPENDSFILE)
+# make depends is ugly!  The problem: we have obj/file.o and want src/file.C.
+# Solution: heavy use of basename and awk.
+# This is a CPU killer...  Don't make depends if you don't need to.
+depends: cifiles $(DSTDIR) $(DEPENDSFILE)
 	$(ECHO) "Creating " $(DEPENDFILE) " ..."; \
 	if [ -f $(DEPENDFILE) ]; then \
 	   $(MOVE) -f $(DEPENDFILE) $(DEPENDFILE).old; \
 	fi; \
 	touch $(DEPENDFILE); \
-	for i in ZZZ $(CXXFILES) ; do \
-	   if [ "$$i" != "ZZZ" -a -f $(SRCDIR)/$$i ]; then \
-	      $(ECHO) "checking dependencies for $$i ..."; \
-	      g++ -MM $(CXXFLAGS) $(SRCDIR)/$$i |  \
-	      $(SRCDIR)/dc.pl $(INCLUDE) /usr/include >> $(DEPENDFILE);\
-	   fi; \
+	for i in $(OBJS) ; do \
+	      $(ECHO) "checking dependencies for" \
+	        `basename $$i | awk -F. '{print $$1".C"}'` ; \
+	      g++ -MM $(GXXFLAGS) \
+	        $(SRCDIR)/`basename $$i | awk -F. '{print $$1".C"}'` | \
+	      $(SRCDIR)/dc.pl $(INCLUDE) /usr/include /usr/local >> $(DEPENDFILE); \
+	      $(ECHO) "\t$$(CXX) $$(CXXFLAGS) -o "$$i" -c" \
+	        "$$(SRCDIR)/"`basename $$i | awk -F. '{print $$1".C"}'` \
+		>> $(DEPENDFILE) ; \
 	done;
 
 Make.depends:
@@ -98,9 +130,13 @@ $(INCDIR):
 	mkdir $(INCDIR)
 
 clean:
-	rm -f *.o
 	rm -rf ptrepository
+	rm -rf $(DSTDIR)
+	rm -f namd2
 
 veryclean:	clean
-	rm -f $(INCDIR)/*.top.h $(INCDIR)/*.bot.h *.depends
+	rm -rf $(INCDIR)
+	rm -f *.depends
+	# allow for the makefile to continue to work
+	touch $(DEPENDFILE)
 

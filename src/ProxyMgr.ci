@@ -3,6 +3,7 @@ message RegisterProxyMsg;
 message UnregisterProxyMsg;
 packmessage ProxyAtomsMsg;
 packmessage ProxyDataMsg;
+packmessage ProxyAllMsg;
 packmessage ProxyResultMsg;
 
 group ProxyMgr
@@ -11,6 +12,7 @@ group ProxyMgr
   entry recvRegisterProxy(RegisterProxyMsg *);
   entry recvProxyData(ProxyDataMsg *);
   entry recvProxyAtoms(ProxyAtomsMsg *);
+  entry recvProxyAll(ProxyAllMsg *);
   entry recvResults(ProxyResultMsg *);
 };
 

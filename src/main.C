@@ -6,7 +6,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.777 1997/01/17 19:37:13 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.778 1997/01/28 00:31:37 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -50,7 +50,7 @@ public:
  *
  *	$RCSfile: main.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:37:13 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:37 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -59,6 +59,9 @@ public:
  * REVISION HISTORY:
  *
  * $Log: main.C,v $
+ * Revision 1.778  1997/01/28 00:31:37  ari
+ * internal release uplevel to 1.778
+ *
  * Revision 1.777  1997/01/17 19:37:13  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.

@@ -1,3 +1,4 @@
+//-*-c++-*-
 /***************************************************************************/
 /*                                                                         */
 /*              (C) Copyright 1996 The Board of Trustees of the            */
@@ -39,12 +40,20 @@ protected :
  *
  *	$RCSfile: ComputeNonbondedSelf.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:59 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.h,v $
+ * Revision 1.778  1997/01/28 00:30:24  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.1  1997/01/27 22:45:07  ari
+ * Basic Atom Migration Code added.
+ * Added correct magic first line to .h files for xemacs to go to C++ mode.
+ * Compiles and runs without migration turned on.
+ *
  * Revision 1.777  1997/01/17 19:35:59  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.

@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Parameters.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:40 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:05 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -25,6 +25,13 @@
  * REVISION HISTORY:
  *
  * $Log: Parameters.C,v $
+ * Revision 1.778  1997/01/28 00:31:05  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.1  1997/01/24 02:29:53  jim
+ * Fixed bug where only first parameter file was read!
+ * Added files for hydrogen bond parameter reading.
+ *
  * Revision 1.777  1997/01/17 19:36:40  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.
@@ -92,7 +99,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Parameters.C,v 1.777 1997/01/17 19:36:40 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Parameters.C,v 1.778 1997/01/28 00:31:05 ari Exp $";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -101,6 +108,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Parameters.
 #include "Parameters.h"
 #include "InfoStream.h"
 #include "Communicate.h"
+#include "ConfigList.h"
 
 typedef Real *RealPtr;
 typedef int  *intPtr;
@@ -214,7 +222,7 @@ struct vdw_pair_params
 /*									*/
 /************************************************************************/
 
-Parameters::Parameters(char *f)
+Parameters::Parameters(StringList *f)
 {
 	/*  Set all the pointers to NULL				*/
         atomTypeNames=NULL;
@@ -246,7 +254,11 @@ Parameters::Parameters(char *f)
 	AllFilesRead = FALSE;
 
 	if (NULL != f) {
-	    read_parameter_file(f);
+ 	    do
+	    {
+		read_parameter_file(f->data);
+		f = f->next;
+	    } while ( f != NULL );
 	    done_reading_files();
 	}
 }
@@ -411,11 +423,10 @@ void Parameters::read_parameter_file(char *fname)
 				add_vdw_pair_param(buffer);
 				NumVdwPairParams++;
 			}
-			/* else if (strncasecmp(first_word, "hbon", 4)==0)
+			else if (strncasecmp(first_word, "hbon", 4)==0)
 			{
 				add_hb_pair_param(buffer);
 			}
-			*/
 			else
 			{
 				/*  This is an unknown paramter.        */
@@ -1497,6 +1508,40 @@ void Parameters::add_vdw_pair_param(char *buf)
 }
 /*			END OF FUNCTION add_vdw_par_param		*/
 
+/************************************************************************/
+/*									*/
+/*			FUNCTION add_hb_pair_param			*/
+/*									*/
+/*   INPUTS:								*/
+/*	buf - line containing the hydrogen bond information		*/
+/*									*/
+/*	this function adds data for a hydrogen bond interaction pair    */
+/*   to the hbondParams object.                                         */
+/*									*/
+/************************************************************************/
+
+void Parameters::add_hb_pair_param(char *buf)
+
+{
+	char a1n[11];			//  Atom 1 name
+	char a2n[11];			//  Atom 2 name
+	Real A, B;			//  A, B value for pair
+
+	/*  Parse up the input line using sscanf			*/
+	if (sscanf(buf, "%*s %s %s %f %f\n", a1n, a2n, &A, &B) != 4)
+	{
+		char err_msg[512];
+		sprintf(err_msg, "BAD HBOND PAIR FORMAT IN PARAMETER FILE\nLINE=*%s*", buf);
+		NAMD_die(err_msg);
+	}
+
+	/*  add data */
+	if (hbondParams.add_hbond_pair(a1n, a2n, A, B) == FALSE) {
+	  iout << iWARN << "Duplicate HBOND parameters for types " << a1n
+		<< " and " << a2n << " found; using latest values." << endi;
+	}
+}
+/*			END OF FUNCTION add_hb_par_param		*/
 
 /************************************************************************/
 /*									*/
@@ -3071,7 +3116,7 @@ void Parameters::print_param_summary()
 	         << NumImproperParams << " IMPROPER\n"
 	         << NumVdwParams << " VDW\n"
 	         << NumVdwPairParams << " VDW_PAIRS\n"
-		/* << hbondParams.num() << " HBOND_PAIRS\n" */ << endi;
+		 << hbondParams.num() << " HBOND_PAIRS\n" << endi;
 }
 
 
@@ -3391,7 +3436,7 @@ void Parameters::send_Parameters(Communicate *comm_obj)
 	}
 
 	// send the hydrogen bond parameters
-	// hbondParams.create_message(msg);
+	hbondParams.create_message(msg);
 
 	//  Broadcast the message now that its built
 	comm_obj->broadcast_others(msg, STATICPARAMSTAG);
@@ -3706,7 +3751,7 @@ void Parameters::receive_Parameters(Message *msg)
 	}
 	
 	// receive the hydrogen bond parameters
-	// hbondParams.receive_message(msg);
+	hbondParams.receive_message(msg);
 
 	AllFilesRead = TRUE;
 

@@ -81,6 +81,43 @@ void ProxyDataMsg:: unpack (void *in)
       positionList[i] = data[i];
   }
 
+void * ProxyAllMsg:: pack (int *length)
+  {
+    int i;
+
+    int size = positionList.size();
+    *length = 2 * sizeof(int) + size * sizeof(Position) + size * sizeof(AtomID);
+    char *buffer = (char*)new_packbuffer(this,*length);
+    *((int*)buffer) = patch;
+    *((int*)(buffer+sizeof(int))) = size;
+    Position *data = (Position*)(buffer+2*sizeof(int));
+    for ( i = 0; i < size; ++i )
+      data[i] = positionList[i];
+    AtomID *data2 = (AtomID*)(buffer+2*sizeof(int)+size*sizeof(Position));
+    for ( i = 0; i < size; ++i )
+      data2[i] = atomIDList[i];
+    this->~ProxyAllMsg();
+    return buffer;
+  }
+
+void ProxyAllMsg:: unpack (void *in)
+  {
+    int i;
+
+    new((void*)this) ProxyDataMsg;
+    char *buffer = (char*)in;
+    patch = *((int*)buffer);
+    int size = *((int*)(buffer+sizeof(int)));
+    positionList.resize(size);
+    Position *data = (Position*)(buffer+2*sizeof(int));
+    for ( i = 0; i < size; ++i )
+      positionList[i] = data[i];
+    atomIDList.resize(size);
+    AtomID *data2 = (AtomID*)(buffer+2*sizeof(int)+size*sizeof(Position));
+    for ( i = 0; i < size; ++i )
+      atomIDList[i] = data2[i];
+  }
+
 void * ProxyResultMsg:: pack (int *length)
   {
     int size = forceList.size();
@@ -253,6 +290,19 @@ ProxyMgr::recvProxyAtoms(ProxyAtomsMsg *msg) {
   proxy->receiveAtoms(msg);
 }
 
+void
+ProxyMgr::sendProxyAll(ProxyAllMsg *msg, NodeID node) {
+  DebugM(1,"For patch " << msg->patch << " sending data for proxy on node " << node << " from home patch on node " << CMyPe() << endl);
+  CSendMsgBranch(ProxyMgr, recvProxyAll, msg, group.proxyMgr, node);
+}
+
+void
+ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
+  DebugM(1,"For patch " << msg->patch << " received data for proxy on node " << CMyPe() << endl);
+  ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
+  proxy->receiveAll(msg);
+}
+
 #include "ProxyMgr.bot.h"
 
 
@@ -261,12 +311,20 @@ ProxyMgr::recvProxyAtoms(ProxyAtomsMsg *msg) {
  *
  *	$RCSfile: ProxyMgr.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:52 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.778  1997/01/28 00:31:17  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.1  1997/01/27 22:45:36  ari
+ * Basic Atom Migration Code added.
+ * Added correct magic first line to .h files for xemacs to go to C++ mode.
+ * Compiles and runs without migration turned on.
+ *
  * Revision 1.777  1997/01/17 19:36:52  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.

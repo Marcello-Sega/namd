@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.777 1997/01/17 19:36:10 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.778 1997/01/28 00:30:35 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -23,19 +23,26 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C
 #include "main.h"
 #include "ProxyMgr.top.h"
 #include "ProxyMgr.h"
+#include "Migration.h"
+#include "PatchMgr.h"
 
 #define MIN_DEBUG_LEVEL 3
 #define DEBUGM
 #include "Debug.h"
 
-HomePatch::HomePatch(PatchID pd, AtomIDList al, 
-  PositionList pl, VelocityList vl)
-  : Patch(pd,al,pl), pInit(pl), v(vl) {
-    if (atomIDList.size() != v.size()) {
-      CPrintf(
-      "HomePatch::HomePatch(...) : Different numbers of Velocities and IDs!\n");
-    }
-    AtomMap::Object()->registerIDs(pd,al);
+HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
+		     VelocityList vl) : Patch(pd,al,pl), pInit(pl), v(vl) 
+{ 
+  if (atomIDList.size() != v.size()) {
+    CPrintf("HomePatch::HomePatch(...) : size mismatch-Velocities and IDs!\n");
+  }
+  AtomMap::Object()->registerIDs(pd,al);  
+  min.x = PatchMap::Object()->minX(patchID);
+  min.y = PatchMap::Object()->minY(patchID);
+  min.z = PatchMap::Object()->minZ(patchID);
+  min.x = PatchMap::Object()->maxX(patchID);
+  min.y = PatchMap::Object()->maxY(patchID);
+  min.z = PatchMap::Object()->maxZ(patchID);
 }
 
 
@@ -90,18 +97,27 @@ void HomePatch::positionsReady() {
 void HomePatch::positionsReady(int doMigration)
 {
   if (doMigration) {
-    // migrateAtoms();
+    doAtomMigration();
   }
+
+  // Must Add Proxy Changes when migration completed!
   ProxyListIter pli(proxy);
   for ( pli = pli.begin(); pli != pli.end(); ++pli )
   {
-    ProxyDataMsg *nmsg = new (MsgIndex(ProxyDataMsg)) ProxyDataMsg;
-    nmsg->patch = patchID;
-    nmsg->positionList = p;
-    ProxyMgr::Object()->sendProxyData(nmsg,(*pli).node);
+    if (doMigration) {
+      ProxyAllMsg *allmsg = new (MsgIndex(ProxyAllMsg)) ProxyAllMsg;
+      allmsg->patch = patchID;
+      allmsg->positionList = p;
+      allmsg->atomIDList = atomIDList;
+      ProxyMgr::Object()->sendProxyAll(allmsg,(*pli).node);
+    } else {
+      ProxyDataMsg *nmsg = new (MsgIndex(ProxyDataMsg)) ProxyDataMsg;
+      nmsg->patch = patchID;
+      nmsg->positionList = p;
+      ProxyMgr::Object()->sendProxyData(nmsg,(*pli).node);
+    }   
   }
-
-  Patch::positionsReady();
+  Patch::positionsReady(doMigration);
 }
 
 
@@ -154,45 +170,36 @@ Vector HomePatch::calcAngularMomentum()
 }
 
 
-/*
-
-void doMigration()
+void
+HomePatch::doAtomMigration()
 {
   int xdev, ydev, zdev;
   MigrationList migrationList;
 
-  int xmin = PatchMap::Object()->minX(patchID);
-  int ymin = PatchMap::Object()->minY(patchID);
-  int zmin = PatchMap::Object()->minZ(patchID);
-  int xmax = PatchMap::Object()->maxX(patchID);
-  int ymax = PatchMap::Object()->maxY(patchID);
-  int zmax = PatchMap::Object()->maxZ(patchID);
-
   // Determine atoms that need to migrate
-  i = 0;
+  int i = 0;
   while (i < numAtoms) {
-     if (p[i].x < xmin) xdev = -1;
-     else if (xmax <= p[i].x) xdev = 1; 
+     if (p[i].x < min.x) xdev = -1;
+     else if (max.x <= p[i].x) xdev = 1; 
      else xdev = 0;
 
-     if (p[i].y < ymin) ydev = -1;
-     else if (ymax <= p[i].y) ydev = 1; 
+     if (p[i].y < min.y) ydev = -1;
+     else if (min.y <= p[i].y) ydev = 1; 
      else ydev = 0;
 
-     if (p[i].z < zmin) zdev = -1;
-     else if (zmax <= p[i].z) zdev = 1; 
+     if (p[i].z < min.z) zdev = -1;
+     else if (max.z <= p[i].z) zdev = 1; 
      else zdev = 0;
 
      if (xdev || ydev || zdev) {
        // This is not very clean
        // We should regularize these lists into a more compact
        // form.
-       MigrationList.add(MigrationElem(atomIDList[i], a[i], pInit[i], p[i],
-				       v[i], f[i], f_short[i], f_long[i],
-				       xdev, ydev, zdev)
-			 );
+       migrationList.add(MigrationElem(atomIDList[i], a[i], pInit[i],
+         p[i], v[i], f[i], f_short[i], f_long[i], xdev, ydev, zdev)
+       );
        a.del(i);
-       atomIDList.del(i);
+       atomIDList.del(i,1);
        p.del(i);
        pInit.del(i);
        v.del(i);
@@ -209,27 +216,31 @@ void doMigration()
     migrationSuspended = false;
   }
   allMigrationIn = false;
-  // reconstruct local id list
-  
+  indexAtoms();
+  AtomMap::Object()->registerIDs(patchID,atomIDList);
 }
 
-void depositMigration(MigrationList migrationList)
+void 
+HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
 {
-  for (i=0; i<migrationList.size(); i++) {
-    MigrationElem m = migrationList[i];
-    a.add(m.atomProp);
-    atomIDList.add(m.atomID);
-    p.add(m.p);
-    pInit.add(m.pInit);
-    v.add(m.v);
-    f.add(m.f);
-    f_short.add(m.f_short);
-    f_long.add(m.f_long);
+  if (migrationList) {
+    MigrationListIter mi(*migrationList);
+    for (mi = mi.begin(); mi != mi.end(); mi++) {
+      a.add(mi->atomProp);
+      atomIDList.add(mi->atomID);
+      p.add(mi->pos);
+      pInit.add(mi->posInit);
+      v.add(mi->vel);
+      f.add(mi->force);
+      f_short.add(mi->forceShort);
+      f_long.add(mi->forceLong);
+    }
   }
   PatchID pid[PatchMap::MaxOneAway];
   if (!--patchMigrationCounter) {
     allMigrationIn = true;
-    patchMigrationCounter = PatchMap::Object()->oneAwayNeighbors(pid);
+    patchMigrationCounter = PatchMap::Object()->oneAwayNeighbors(patchID,pid);
+    AtomMap::Object()->registerIDs(patchID,atomIDList);  
     if (migrationSuspended) {
       migrationSuspended = false;
       sequencer->awaken();
@@ -237,207 +248,31 @@ void depositMigration(MigrationList migrationList)
   }
 }
 
-*/
-
-    // direct local calculations
-
-/*
-void HomePatch::update_f_at_cycle_begin()
-{
-     // f = a[0] * f_long + f_short
-}
-
-
-
-void HomePatch::update_f_at_cycle_end()
-{
-     // f = f + b*f_long 
-}
-
-
-
-void HomePatch::update_f_at_step(int k)
-{
-    // f = a[k] * f_long + f_short
-}
-
-
-
-void HomePatch::advance_x()
-{
-     // integrate();
-     // shake();
-
-     // positions changed.
-     // proxies must be updated
-     // inform proxy communicator
-}
-
-
-
-void HomePatch::update_v()
-{
-     // v = (v+0.5*dt*f/m)/(1+0.5dt*b) 
-}
-
-
-
-
-
-// callback sequencer when the concurrent computations are done
-
-void HomePatch::f_short_done()
-{
-    // f_short = f_bonded + f_elshort
-    CthAwaken(sequencer); 
-}
-
-
-
-void HomePatch::f_long_done()
-{
-    // f_long = f_elfull - f_elshort
-    CthAwaken(sequencer); 
-}
-
-
-
-
-// trigger concurrent computations
-
-void HomePatch::compute_f_short()
-{
-     // inform bonded force objects;
-
-     inform_bondedForce(); 
-
-     // inform short_range electrostatic force object
-     inform_elShortForce();
-     CthSuspend(); 
-
-}
-
-
-void HomePatch::compute_f_long()
-{
-     // inform full-electrostatic object
-     inform_elFullForce();
-
-     // inform short_range electrostatic force object if not informed
-     inform_bondedForce();
-     CthSuspend(); 
-}
-
-
-
-
-
-
-// misc bookeeping methods that require romote information
-// such as atom redistribution at the end of teh cycle
-
-void HomePatch::prepare_for_next_cycle()
-{
-     // atom redistribution
-
-     // initiate atom redistribution
-
-     // figure out atoms movoing out
-
-     // wait for confirmation from PatchManager
-     CthSuspend();
-}
-
-
-
-
-// this function is invoked to inform the patch that atom redistribution
-// phase is complete with new atoms moving in (if any)
-void HomePatch::atom_redist_data(int n, int *newAtoms )
-{
-   // adjust internal data structure
-
-
-   // call back the sequencer object so that the next cycle resumes
-   CthAwaken(sequencer); 
-}
-
-
-
-
-void HomePatch::prepare_for_next_step(void)
-{
-   CthSuspend();
-   CthAwaken(sequencer);
-}
-
-
-*/
-
-
-/* ************************************************************************ */
-/* unpack the patch data that is sent to this patch                         */
-/* "data" points the beginning of incoming data.                            */
-/* return the adjusted pointer (which points to the next data block)        */
-/*                                                                          */
-/* a home patch receives forces back                                        */
-/* ************************************************************************ */
-
-/*
-void HomePatch::updateData(char *&data)
-{
-}
-*/
-
-
-
-
-
-/* ************************************************************************ */
-/* pack the patch data that is gonna be sent to the proxy of this home patch*/
-/* at the beginning of a cycle (that is include atom list                   */
-/* "data" points the beginning of area where patch data to be put.          */
-/* a home patch sends atom list, x, and xbegin                              */
-/* ************************************************************************ */
-
-/*
-void HomePatch::packInitData(char *data)
-{
-}
-*/
-
-
-
-/* ************************************************************************ */
-/* pack the patch data that is gonna be sent to the proxy of this home patch*/
-/* in the mid cycle (that is dont sent atom list           j                */
-/* a home patch sends only x at mid cycle x                                 */
-/* ************************************************************************ */
-/*
-void HomePatch::packData(char *&data)
-{
-}
-*/
-
-
-
-/*
-void HomePatch::dispose(char *&data)
-{
-}
-*/
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:10 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.778  1997/01/28 00:30:35  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.2  1997/01/27 22:45:14  ari
+ * Basic Atom Migration Code added.
+ * Added correct magic first line to .h files for xemacs to go to C++ mode.
+ * Compiles and runs without migration turned on.
+ *
+ * Revision 1.777.2.1  1997/01/21 23:04:44  ari
+ * Basic framework for atom migration placed into code.  - Non
+ * functional since it is not called.  Works currently without
+ * atom migration.
+ *
  * Revision 1.777  1997/01/17 19:36:10  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.

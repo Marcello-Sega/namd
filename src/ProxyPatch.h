@@ -1,3 +1,4 @@
+//-*-c++-*-
 /***************************************************************************/
 /*                                                                         */
 /*              (C) Copyright 1996 The Board of Trustees of the            */
@@ -18,6 +19,7 @@
 
 class ProxyDataMsg;
 class ProxyAtomsMsg;
+class ProxyAllMsg;
 
 class ProxyPatch : public Patch
 {
@@ -28,6 +30,7 @@ class ProxyPatch : public Patch
 
      void receiveAtoms(ProxyAtomsMsg*);
      void receiveData(ProxyDataMsg*);
+     void receiveAll(ProxyAllMsg*);
 
   protected:
 
@@ -37,6 +40,7 @@ class ProxyPatch : public Patch
 
      void sendResults(void);
      ProxyDataMsg* msgBuffer;
+     ProxyAllMsg* msgAllBuffer;
 
 };
 
@@ -48,12 +52,20 @@ class ProxyPatch : public Patch
  *
  *	$RCSfile: ProxyPatch.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:55 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.h,v $
+ * Revision 1.778  1997/01/28 00:31:20  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.1  1997/01/27 22:45:40  ari
+ * Basic Atom Migration Code added.
+ * Added correct magic first line to .h files for xemacs to go to C++ mode.
+ * Compiles and runs without migration turned on.
+ *
  * Revision 1.777  1997/01/17 19:36:55  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.

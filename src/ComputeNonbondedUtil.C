@@ -215,12 +215,15 @@ void ComputeNonbondedUtil::select(void)
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:59 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.778  1997/01/28 00:30:25  ari
+ * internal release uplevel to 1.778
+ *
  * Revision 1.777  1997/01/17 19:35:59  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.

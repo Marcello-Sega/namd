@@ -1,3 +1,4 @@
+//-*-c++-*-
 /***************************************************************************/
 /*                                                                         */
 /*              (C) Copyright 1996 The Board of Trustees of the            */
@@ -55,6 +56,18 @@ public:
   void unpack (void *in);
 };
 
+class ProxyAllMsg : public comm_object {
+public:
+  PatchID patch;
+  AtomIDList atomIDList;
+  PositionList positionList;
+  void * pack (int *length);
+  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
+  void * operator new(size_t s) { return comm_object::operator new(s); }
+  void * operator new(size_t, void *ptr) { return ptr; }
+  void unpack (void *in);
+};
+
 class ProxyResultMsg : public comm_object {
 public:
   NodeID node;
@@ -92,6 +105,9 @@ public:
   void sendProxyAtoms(ProxyAtomsMsg *, NodeID);
   void recvProxyAtoms(ProxyAtomsMsg *);
 
+  void sendProxyAll(ProxyAllMsg *, NodeID);
+  void recvProxyAll(ProxyAllMsg *);
+
   static ProxyMgr *Object() { return _instance; }
   
 private:
@@ -110,12 +126,20 @@ private:
  *
  *	$RCSfile: ProxyMgr.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:53 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.h,v $
+ * Revision 1.778  1997/01/28 00:31:18  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.1  1997/01/27 22:45:38  ari
+ * Basic Atom Migration Code added.
+ * Added correct magic first line to .h files for xemacs to go to C++ mode.
+ * Compiles and runs without migration turned on.
+ *
  * Revision 1.777  1997/01/17 19:36:53  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.

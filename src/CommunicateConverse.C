@@ -11,7 +11,7 @@
  *
  *  $RCSfile: CommunicateConverse.C,v $
  *  $Author: ari $  $Locker:  $    $State: Exp $
- *  $Revision: 1.777 $  $Date: 1997/01/17 19:35:28 $
+ *  $Revision: 1.778 $  $Date: 1997/01/28 00:29:55 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -21,7 +21,7 @@
  * send/receive data.
  * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/CommunicateConverse.C,v 1.777 1997/01/17 19:35:28 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/CommunicateConverse.C,v 1.778 1997/01/28 00:29:55 ari Exp $";
 
 #include <iostream.h>
 #include <string.h>

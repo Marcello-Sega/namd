@@ -9,7 +9,7 @@
 /*
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/LJTable.C,v 1.777 1997/01/17 19:36:18 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/LJTable.C,v 1.778 1997/01/28 00:30:43 ari Exp $";
 #include "LJTable.h"
 #include "Node.h"
 #include "Parameters.h"
@@ -120,12 +120,15 @@ void LJTable::compute_vdw_params(int i, int j,
  *
  *	$RCSfile: LJTable.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:18 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LJTable.C,v $
+ * Revision 1.778  1997/01/28 00:30:43  ari
+ * internal release uplevel to 1.778
+ *
  * Revision 1.777  1997/01/17 19:36:18  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.

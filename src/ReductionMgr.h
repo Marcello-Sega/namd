@@ -1,3 +1,4 @@
+//-*-c++-*-
 #ifndef REDUCTIONMGR_H
 #define REDUCTIONMGR_H
 
@@ -9,7 +10,8 @@
 #include "BOCgroup.h"
 
 // debug code to determine if I should panic
-#define PANIC	1
+// 1 means PANIC checking is enabled.  0 means no checking.
+#define PANIC	0
 
 // typedef Vector[3] Tensor;
 
@@ -22,7 +24,7 @@ typedef enum
   REDUCTION_IMPROPER_ENERGY,
   REDUCTION_KINETIC_ENERGY,
   REDUCTION_LJ_ENERGY,
-  REDUCTION_LONG_RANGE_ENERGY,
+  // REDUCTION_LONG_RANGE_ENERGY,
   REDUCTION_MAX_RESERVED
 } ReductionTag;
 
@@ -74,11 +76,12 @@ private:
   char tagString[REDUCTION_MAX_RESERVED+1][40];
   #endif
 
+  int nextSequence;
   int numSubscribed[REDUCTION_MAX_RESERVED];
-  ReductionMgrData *data;
+  ReductionMgrData *data;	// sequence queue
   int maxData[REDUCTION_MAX_RESERVED];	// number of data to expect
 
-  ReductionMgrData *createdata(int seq);	// make new data
+  ReductionMgrData *createdata();		// make new data
   void remove(int seq);				// delete (remove) a sequence
   ReductionMgrData *find(int seq);		// find the data
   void gotAllData(ReductionMgrData *current);	// done collecting data

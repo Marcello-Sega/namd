@@ -1,3 +1,4 @@
+//-*-c++-*-
 /***************************************************************************/
 /*                                                                         */
 /*              (C) Copyright 1996 The Board of Trustees of the            */
@@ -24,6 +25,8 @@
 
 #include "Templates/Box.h"
 #include "Templates/OwnerBox.h"
+#include "PositionBox.h"
+#include "PositionOwnerBox.h"
 
 class Patch;
 class Node;
@@ -50,7 +53,7 @@ public:
 class PatchPickup {
 public:
    PatchID pid;
-   Box<Patch,Position> *box;
+   PositionBox<Patch> *box;
    Patch *p;
    Position *x;
 
@@ -96,12 +99,23 @@ public:
  *
  *	$RCSfile: ComputeGeneral.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:42 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGeneral.h,v $
+ * Revision 1.778  1997/01/28 00:30:09  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.2  1997/01/27 22:44:59  ari
+ * Basic Atom Migration Code added.
+ * Added correct magic first line to .h files for xemacs to go to C++ mode.
+ * Compiles and runs without migration turned on.
+ *
+ * Revision 1.777.2.1  1997/01/24 22:00:26  jim
+ * Changes for periodic boundary conditions.
+ *
  * Revision 1.777  1997/01/17 19:35:42  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.

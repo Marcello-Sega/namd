@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.777 1997/01/17 19:37:04 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.778 1997/01/28 00:31:29 ari Exp $";
 
 #include <stdio.h>
 
@@ -329,6 +329,7 @@ void WorkDistrib::mapComputeNonbonded(void)
       }
     }
 
+/*
     // two-away neighbors
     numNeighbors=patchMap->twoAwayNeighbors(i,twoAway);
     for(j=0;j<numNeighbors;j++)
@@ -343,6 +344,7 @@ void WorkDistrib::mapComputeNonbonded(void)
 	patchMap->newCid(twoAway[j],cid);
       }
     }
+*/
   }
 }
 
@@ -376,12 +378,18 @@ void WorkDistrib::movePatchDone(DoneMsg *msg) {
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:37:04 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.778  1997/01/28 00:31:29  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.1  1997/01/22 21:42:13  jim
+ * Larger patches, no two-away computes, small tweak to inner loop.
+ *
  * Revision 1.777  1997/01/17 19:37:04  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.

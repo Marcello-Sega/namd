@@ -1,3 +1,4 @@
+//-*-c++-*-
 /***************************************************************************/
 /*                                                                         */
 /*              (C) Copyright 1995 The Board of Trustees of the            */
@@ -11,7 +12,7 @@
  *
  *	$RCSfile: Parameters.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:42 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:06 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +25,18 @@
  * REVISION HISTORY:
  *
  * $Log: Parameters.h,v $
+ * Revision 1.778  1997/01/28 00:31:06  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.2  1997/01/27 22:45:31  ari
+ * Basic Atom Migration Code added.
+ * Added correct magic first line to .h files for xemacs to go to C++ mode.
+ * Compiles and runs without migration turned on.
+ *
+ * Revision 1.777.2.1  1997/01/24 02:29:55  jim
+ * Fixed bug where only first parameter file was read!
+ * Added files for hydrogen bond parameter reading.
+ *
  * Revision 1.777  1997/01/17 19:36:42  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.
@@ -80,6 +93,7 @@
 #include "HBondParam.h"
 
 class Communicate;
+class StringList;
 
 //  The class Parameters is used to store and query the parameters for
 //  bonds and atoms.  If the Parameter object resides on the master
@@ -225,7 +239,7 @@ private:
 	int *maxImproperMults;			//  Max multiplicity for
 						//  improper bonds
 
-//	HBondParam hbondParams;                //  stores hydrogen bond params
+	HBondParam hbondParams;                //  stores hydrogen bond params
 
 	void add_bond_param(char *);		//  Add a bond parameter
 	struct bond_params *add_to_bond_tree(struct bond_params * , 
@@ -285,7 +299,7 @@ private:
 	void free_vdw_pair_list();
 
 public:
-	Parameters(char *f=NULL);
+	Parameters(StringList *f=NULL);
 	~Parameters();				//  Destructor
 
         // return a string for the Nth atom type.  This can only be
@@ -400,7 +414,7 @@ public:
 	int get_vdw_pair_params(Index ind1, Index ind2, Real *, Real *, Real *, Real *);
 						//  Find a vwd_pair parameter
 
-//	HBondParam &get_hbond_params(void) { return hbondParams; }
+	HBondParam &get_hbond_params(void) { return hbondParams; }
 
         int get_num_vdw_params(void) { return NumVdwParamsAssigned; }
 

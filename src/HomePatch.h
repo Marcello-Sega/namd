@@ -1,3 +1,4 @@
+//-*-c++-*-
 /***************************************************************************/
 /*                                                                         */
 /*              (C) Copyright 1996 The Board of Trustees of the            */
@@ -25,90 +26,98 @@
 
 #include "HomePatchTypes.h"
 #include "main.h"
+#include "Migration.h"
 
 class RegisterProxyMsg;
 class UnregisterProxyMsg;
 class ProxyResultMsg;
 
 class HomePatch : public Patch {
-   friend PatchMgr;
-   friend Sequencer;
-   private: // for PatchMgr to use only!!
-      HomePatch(PatchID, AtomIDList, PositionList, VelocityList);
+  friend PatchMgr;
+  friend Sequencer;
+private: // for PatchMgr to use only!!
+  HomePatch(PatchID, AtomIDList, PositionList, VelocityList);
+  Vector min, max;
 
-   public:
+public:
 
-      ~HomePatch();
+  ~HomePatch();
 
-      void registerProxy(RegisterProxyMsg *);
-      void unregisterProxy(UnregisterProxyMsg *);
-      void receiveResults(ProxyResultMsg *msg);
-      void useSequencer(Sequencer *sequencerPtr) {sequencer=sequencerPtr;}
-      void runSequencer(int numberOfCycles = 0)
-		{ sequencer->run(numberOfCycles); }
+  void registerProxy(RegisterProxyMsg *);
+  void unregisterProxy(UnregisterProxyMsg *);
+  void receiveResults(ProxyResultMsg *msg);
+  void useSequencer(Sequencer *sequencerPtr) {sequencer=sequencerPtr;}
+  void runSequencer(int numberOfCycles = 0) { 
+    sequencer->run(numberOfCycles); 
+  }
+  
+  // methods for Sequencer to use
+  void positionsReady(void);
+  void positionsReady(int);
 
-     // methods for Sequencer to use
-     void positionsReady(void);
-     void positionsReady(int);
+  void depositMigration(PatchID, MigrationList *);
+  
+  void addForceToMomentum(const BigReal);
+  void addVelocityToPosition(const BigReal);
+  
+  BigReal calcKineticEnergy();
+  Vector calcMomentum();
+  Vector calcAngularMomentum();
+  
+protected:
+  virtual void boxClosed(int);
+  void doAtomMigration();
+  
+private:
 
-     void addForceToMomentum(const BigReal);
-     void addVelocityToPosition(const BigReal);
-
-     BigReal calcKineticEnergy();
-     Vector calcMomentum();
-     Vector calcAngularMomentum();
-
-   protected:
-      virtual void boxClosed(int);
-      doMigration();
-
-   private:
-
-      PositionList  pInit;
-      VelocityList  v; 
-      ForceList     f_short;
-      ForceList     f_long;
-
-      ProxyList	    proxy;
-
-      Sequencer  *sequencer;
-
-
-
-      // 
-      /*
-      void prepare_for_next_cycle();
-      void prepare_for_next_step();
-      */
-      
-      // calculations that depends on remote data
-      /*
-      void compute_f_long();
-      void compute_f_short();
-      */
-
-
-      // local calculations
-      /*
-      void update_f_at_cycle_begin();
-      void update_f_at_step(int);
-      void advance_x();
-      void update_f_at_cycle_end();
-      void update_v();
-      void output();
-      void f_short_done();
-      void f_long_done();
-      void atom_redist_data(int, int *);
-      */
-
-      // pack and unpack functions
-
-      /*
-      void dispose(char *&);
-      void updateData(char *&);
-      void packInitData(char *&);
-      void packData(char *&);
-      */
+  PositionList  pInit;   
+  VelocityList  v; 
+  ForceList     f_short;
+  ForceList     f_long;
+  
+  ProxyList     proxy;
+  
+  Sequencer  *sequencer;
+  int allMigrationIn;
+  int migrationSuspended;
+  int patchMigrationCounter;
+  
+  
+  
+  // 
+  /*
+    void prepare_for_next_cycle();
+    void prepare_for_next_step();
+    */
+  
+  // calculations that depends on remote data
+  /*
+    void compute_f_long();
+    void compute_f_short();
+    */
+  
+  
+  // local calculations
+  /*
+    void update_f_at_cycle_begin();
+    void update_f_at_step(int);
+    void advance_x();
+    void update_f_at_cycle_end();
+    void update_v();
+    void output();
+    void f_short_done();
+    void f_long_done();
+    void atom_redist_data(int, int *);
+    */
+  
+  // pack and unpack functions
+  
+  /*
+    void dispose(char *&);
+    void updateData(char *&);
+    void packInitData(char *&);
+    void packData(char *&);
+    */
 };
 
 #endif
@@ -117,12 +126,25 @@ class HomePatch : public Patch {
  *
  *	$RCSfile: HomePatch.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:10 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.778  1997/01/28 00:30:36  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.2  1997/01/27 22:45:15  ari
+ * Basic Atom Migration Code added.
+ * Added correct magic first line to .h files for xemacs to go to C++ mode.
+ * Compiles and runs without migration turned on.
+ *
+ * Revision 1.777.2.1  1997/01/21 23:04:45  ari
+ * Basic framework for atom migration placed into code.  - Non
+ * functional since it is not called.  Works currently without
+ * atom migration.
+ *
  * Revision 1.777  1997/01/17 19:36:10  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.

@@ -1,3 +1,4 @@
+//-*-c++-*-
 /***************************************************************************/
 /*                                                                         */
 /*              (C) Copyright 1996 The Board of Trustees of the            */
@@ -18,6 +19,8 @@
 
 #include "Templates/Box.h"
 #include "Templates/OwnerBox.h"
+#include "PositionBox.h"
+#include "PositionOwnerBox.h"
 
 class Patch;
 class Node;
@@ -39,7 +42,7 @@ protected :
 private:
   PatchID patchID;
   Patch *patch;
-  Box<Patch,Position> *positionBox;
+  PositionBox<Patch> *positionBox;
   Box<Patch,Force> *forceBox;
   Box<Patch,AtomProperties> *atomBox;
 
@@ -51,12 +54,23 @@ private:
  *
  *	$RCSfile: ComputePatch.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:02 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatch.h,v $
+ * Revision 1.778  1997/01/28 00:30:28  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.2  1997/01/27 22:45:09  ari
+ * Basic Atom Migration Code added.
+ * Added correct magic first line to .h files for xemacs to go to C++ mode.
+ * Compiles and runs without migration turned on.
+ *
+ * Revision 1.777.2.1  1997/01/24 22:00:29  jim
+ * Changes for periodic boundary conditions.
+ *
  * Revision 1.777  1997/01/17 19:36:02  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.

@@ -1,3 +1,4 @@
+//-*-c++-*-
 #ifndef INFORMCHARM_H
 #define INFORMCHARM_H
 

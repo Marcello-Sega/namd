@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.777 1997/01/17 19:36:45 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.778 1997/01/28 00:31:09 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -49,12 +49,11 @@ Patch::Patch(PatchID pd, AtomIDList al, PositionList pl) :
    atomBox(this,&(Patch::atomBoxClosed)),
    numAtoms(al.size()), boxesOpen(0)
 {
-    if (atomIDList.size() != p.size())
-    {
-      DebugM( 10, 
-         "Patch::Patch(...) : Different numbers of Coordinates and IDs!\n");
-    }
-    loadAtomProperties();
+  if (atomIDList.size() != p.size()) {
+    DebugM( 10, 
+	    "Patch::Patch(...) : Different numbers of Coordinates and IDs!\n");
+  }
+  loadAtomProperties();
 }
 
 void Patch::loadAtoms(AtomIDList al)
@@ -63,7 +62,7 @@ void Patch::loadAtoms(AtomIDList al)
   numAtoms = atomIDList.size();
   loadAtomProperties();
   DebugM(3,"Loading " << numAtoms << " atoms into patch " << patchID <<
-	" on node " << CMyPe() << endl);
+	 " on node " << CMyPe() << endl);
 }
 
 void Patch::loadAtomProperties(void)
@@ -97,17 +96,31 @@ void Patch::loadAtomProperties(void)
     localIndex.uniq();
 }
 
-Box<Patch,Position>* Patch::registerPositionPickup(ComputeID cid)
+void
+Patch::indexAtoms()
+{
+    for ( int i=0; i<atomIDList.size(); i++)
+    {
+      localIndex.load(LocalAtomID(atomIDList[i], i));
+    }
+    localIndex.sort();
+    localIndex.uniq();
+}
+
+
+
+
+PositionBox<Patch>* Patch::registerPositionPickup(ComputeID cid, int trans)
 {
    if (positionComputeList.add(cid) < 0)
    {
      DebugM(7, "registerPositionPickup() failed for cid " << cid << endl);
      return NULL;
    }
-   return positionBox.checkOut();
+   return positionBox.checkOut(trans);
 }
 
-void Patch::unregisterPositionPickup(ComputeID cid, Box<Patch,Position> **const box)
+void Patch::unregisterPositionPickup(ComputeID cid, PositionBox<Patch> **const box)
 {
    positionComputeList.del(cid);
    positionBox.checkIn(*box);
@@ -171,7 +184,7 @@ void Patch::boxClosed(int box)
    ;
 }
 
-void Patch::positionsReady()
+void Patch::positionsReady(int doneMigration)
 {
    DebugM(1,"Patch::positionsReady() - patchID " << patchID << endl );
    ComputeMap *computeMap = ComputeMap::Object();
@@ -180,7 +193,7 @@ void Patch::positionsReady()
 
    // Give all position pickup boxes access to positions
    positionPtr = p.unencap();
-   positionBox.open(positionPtr);
+   positionBox.open(positionPtr,numAtoms,&lattice);
 
    // Give all force deposit boxes access to forces
    f.resize(numAtoms);
@@ -199,7 +212,7 @@ void Patch::positionsReady()
    for(cid = cid.begin(); cid != cid.end(); cid++)
    {
      DebugM(1,"Patch::positionsReady() - cid = " << *cid << "\n" );
-     computeMap->compute(*cid)->patchReady(patchID);
+     computeMap->compute(*cid)->patchReady(patchID,doneMigration);
    } 
 }
 
@@ -209,12 +222,23 @@ void Patch::positionsReady()
  *
  *	$RCSfile: Patch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:45 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.778  1997/01/28 00:31:09  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.2  1997/01/24 22:00:34  jim
+ * Changes for periodic boundary conditions.
+ *
+ * Revision 1.777.2.1  1997/01/21 23:04:47  ari
+ * Basic framework for atom migration placed into code.  - Non
+ * functional since it is not called.  Works currently without
+ * atom migration.
+ *
  * Revision 1.777  1997/01/17 19:36:45  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.

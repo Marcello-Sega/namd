@@ -1,3 +1,4 @@
+//-*-c++-*-
 #ifndef COLLECTIONMGR_H
 #define COLLECTIONMGR_H
 

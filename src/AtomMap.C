@@ -7,7 +7,7 @@
 /***************************************************************************/
 
 /***************************************************************************
- * DESCRIPTION:
+ * DESCRIPTION: Maps Atoms on node.  Singleton
  *
  ***************************************************************************/
 
@@ -78,12 +78,21 @@ void AtomMap::clearMap(void)
  *
  *	$RCSfile: AtomMap.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:17 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:29:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: AtomMap.C,v $
+ * Revision 1.778  1997/01/28 00:29:46  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.2  1997/01/17 19:56:26  ari
+ * Another Test
+ *
+ * Revision 1.777.2.1  1997/01/17 19:54:47  ari
+ * Test for development-0-1 branch cvs commit
+ *
  * Revision 1.777  1997/01/17 19:35:17  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.

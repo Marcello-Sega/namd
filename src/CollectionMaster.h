@@ -1,3 +1,4 @@
+//-*-c++-*-
 #ifndef COLLECTIONMASTER_H
 #define COLLECTIONMASTER_H
 

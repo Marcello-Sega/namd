@@ -11,7 +11,7 @@
  *
  *	$RCSfile: SimParameters.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:37:01 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:26 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.778  1997/01/28 00:31:26  ari
+ * internal release uplevel to 1.778
+ *
  * Revision 1.777  1997/01/17 19:37:01  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.
@@ -290,7 +293,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.777 1997/01/17 19:37:01 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.778 1997/01/28 00:31:26 ari Exp $";
 
 
 #include "ckdefs.h"

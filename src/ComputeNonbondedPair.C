@@ -44,7 +44,30 @@ void ComputeNonbondedPair::doForce(Position* p[2],
   BigReal reductionData[reductionDataSize];
   for ( int i = 0; i < reductionDataSize; ++i ) reductionData[i] = 0;
 
-  ComputeNonbondedUtil::calcPair(p,f,a,numAtoms,reductionData);
+  if ( numAtoms[0] && numAtoms[1] )
+  {
+    // swap to place more atoms in inner loop (second patch)
+    if ( numAtoms[0] > numAtoms[1] )
+    {
+      Position* p_r[2];
+      p_r[0] = p[1];
+      p_r[1] = p[0];
+      Force* f_r[2];
+      f_r[0] = f[1];
+      f_r[1] = f[0];
+      AtomProperties* a_r[2];
+      a_r[0] = a[1];
+      a_r[1] = a[0];
+      int numAtoms_r[2];
+      numAtoms_r[0] = numAtoms[1];
+      numAtoms_r[1] = numAtoms[0];
+      ComputeNonbondedUtil::calcPair(p_r,f_r,a_r,numAtoms_r,reductionData);
+    }
+    else
+    {
+      ComputeNonbondedUtil::calcPair(p,f,a,numAtoms,reductionData);
+    }
+  }
 
   submitReductionData(reductionData,reduction,fake_seq);
   ++fake_seq;
@@ -55,12 +78,18 @@ void ComputeNonbondedPair::doForce(Position* p[2],
  *
  *	$RCSfile: ComputeNonbondedPair.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:56 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.C,v $
+ * Revision 1.778  1997/01/28 00:30:22  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.1  1997/01/23 06:17:34  jim
+ * Check for empty patches and swap so larger patch is second.
+ *
  * Revision 1.777  1997/01/17 19:35:56  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.

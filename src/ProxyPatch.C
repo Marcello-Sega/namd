@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.777 1997/01/17 19:36:54 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.778 1997/01/28 00:31:19 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -26,31 +26,32 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.
 #include "AtomMap.h"
 
 #define MIN_DEBUG_LEVEL 4
-#define  DEBUGM
+// #define  DEBUGM
 #include "Debug.h"
 
 ProxyPatch::ProxyPatch(PatchID pd) : Patch(pd), msgBuffer(NULL)
 {
+  msgBuffer = NULL;
+  msgAllBuffer = NULL;
   ProxyMgr::Object()->registerProxy(patchID);
 }
 
 void ProxyPatch::boxClosed(int box)
 {
-  if ( box == 1 )
-  {
+  if ( box == 1 ) {
     sendResults();
   }
-  if ( ! --boxesOpen )
-  {
+  if ( ! --boxesOpen ) {
     DebugM(2,patchID << ": " << "Checking message buffer.\n");
-    if ( msgBuffer )
-    {
+    if ( msgBuffer ) {
       DebugM(4,"Patch " << patchID << " processing buffered proxy data.\n");
       receiveData(msgBuffer);
+    } else if (msgAllBuffer ) {
+      DebugM(4,"Patch " << patchID << " processing buffered proxy data.\n");
+      receiveAll(msgAllBuffer);
     }
   }
-  else
-  {
+  else {
     DebugM(2,patchID << ": " << boxesOpen << " boxes left to close.\n");
   }
 }
@@ -75,7 +76,28 @@ void ProxyPatch::receiveData(ProxyDataMsg *msg)
   msgBuffer = NULL;
   p = msg->positionList;
   delete msg;
-  positionsReady();
+  positionsReady(0);
+}
+
+void ProxyPatch::receiveAll(ProxyAllMsg *msg)
+{
+  if ( boxesOpen )
+  {
+    // store message in queue (only need one element, though)
+    DebugM(4,"Patch " << patchID << " proxy ALL data arrived early, storing in buffer.\n");
+    msgAllBuffer = msg;
+    return;
+  }
+  msgAllBuffer = NULL;
+  DebugM(3,"Processing proxy ALL msg.\n");
+
+  loadAtoms(msg->atomIDList);
+  AtomMap::Object()->registerIDs(patchID,msg->atomIDList);
+  p = msg->positionList;
+
+  delete msg;
+
+  positionsReady(1);
 }
 
 void ProxyPatch::sendResults(void)
@@ -92,12 +114,23 @@ void ProxyPatch::sendResults(void)
  *
  *	$RCSfile: ProxyPatch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:54 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.778  1997/01/28 00:31:19  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.2  1997/01/27 22:45:39  ari
+ * Basic Atom Migration Code added.
+ * Added correct magic first line to .h files for xemacs to go to C++ mode.
+ * Compiles and runs without migration turned on.
+ *
+ * Revision 1.777.2.1  1997/01/22 20:25:52  nealk
+ * Disabled debugging.
+ *
  * Revision 1.777  1997/01/17 19:36:54  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.

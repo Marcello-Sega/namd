@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Communicate.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:26 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:29:54 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -28,6 +28,9 @@
  * REVISION HISTORY:
  *
  * $Log: Communicate.C,v $
+ * Revision 1.778  1997/01/28 00:29:54  ari
+ * internal release uplevel to 1.778
+ *
  * Revision 1.777  1997/01/17 19:35:26  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.
@@ -77,7 +80,7 @@
  * Initial revision
  * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Communicate.C,v 1.777 1997/01/17 19:35:26 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Communicate.C,v 1.778 1997/01/28 00:29:54 ari Exp $";
 
 #include "Communicate.h"
 #include "Message.h"

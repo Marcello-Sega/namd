@@ -11,7 +11,7 @@
  *
  *	$RCSfile: PDB.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:36 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:01 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: PDB.C,v $
+ * Revision 1.778  1997/01/28 00:31:01  ari
+ * internal release uplevel to 1.778
+ *
  * Revision 1.777  1997/01/17 19:36:36  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.
@@ -77,7 +80,7 @@
  * Initial revision
  * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PDB.C,v 1.777 1997/01/17 19:36:36 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PDB.C,v 1.778 1997/01/28 00:31:01 ari Exp $";
 
 #include <stdio.h>
 #include <strings.h>

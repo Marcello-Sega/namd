@@ -11,7 +11,7 @@
  *
  *	$RCSfile: CommunicatePVM.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:30 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:29:57 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -28,6 +28,9 @@
  * REVISION HISTORY:
  *
  * $Log: CommunicatePVM.C,v $
+ * Revision 1.778  1997/01/28 00:29:57  ari
+ * internal release uplevel to 1.778
+ *
  * Revision 1.777  1997/01/17 19:35:30  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.
@@ -122,7 +125,7 @@
  * or sent as soon as requested.
  * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/CommunicatePVM.C,v 1.777 1997/01/17 19:35:30 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/CommunicatePVM.C,v 1.778 1997/01/28 00:29:57 ari Exp $";
 
 #include <iostream.h>
 #include <string.h>
