@@ -130,10 +130,10 @@ private:
   int numTransPes;
   int numRecipPes;
   int numDestRecipPes;
-  int firstDestRecipPe;
   int myRecipPe;
   int *recipPeMap;
   int *recipPeDest;
+  int *recipPeOrder;
   int *gridPeOrder;
   int *transPeOrder;
   int grid_count;
@@ -155,6 +155,7 @@ ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), pmeCompute(0) {
   localInfo = new LocalPmeInfo[CkNumPes()];
   recipPeMap = new int[CkNumPes()];
   recipPeDest = new int[CkNumPes()];
+  recipPeOrder = new int[CkNumPes()];
   gridPeOrder = new int[CkNumPes()];
   transPeOrder = new int[CkNumPes()];
   qgrid = 0;
@@ -227,10 +228,12 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   }
   { // generate random orderings for grid and trans messages
     for ( int i = 0; i < numRecipPes; ++i ) {
+      recipPeOrder[i] = i;
       gridPeOrder[i] = i;
       transPeOrder[i] = i;
     }
     Random rand(CkMyPe());
+    rand.reorder(recipPeOrder,numRecipPes);
     rand.reorder(gridPeOrder,numGridPes);
     rand.reorder(transPeOrder,numTransPes);
   }
@@ -356,25 +359,10 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     if ( recipPeDest[node] ) ++numDestRecipPes;
   }
 
-  firstDestRecipPe = 0;
-  if ( numDestRecipPes ) {
-    firstDestRecipPe = CkMyPe() % numDestRecipPes;
-    int c = 0;
-    for ( node=0; node<numNodes ; ++node ) {
-      if ( recipPeDest[node] ) {
-        if ( c == firstDestRecipPe ) {
-          firstDestRecipPe = node;
-          break;
-        }
-        ++c;
-      }
-    }
-  }
-
   delete [] source_flags;
 
-  // CkPrintf("PME on node %d has %d sources and %d destinations (first=%d)\n",
-  //           CkMyPe(), numSources, numDestRecipPes,firstDestRecipPe);
+  // CkPrintf("PME on node %d has %d sources and %d destinations\n",
+  //           CkMyPe(), numSources, numDestRecipPes);
 
   }  // decide how many pes this node exchanges charges with (end)
 
@@ -434,6 +422,7 @@ ComputePmeMgr::~ComputePmeMgr() {
   delete [] localInfo;
   delete [] recipPeMap;
   delete [] recipPeDest;
+  delete [] recipPeOrder;
   delete [] gridPeOrder;
   delete [] transPeOrder;
   delete [] qgrid;
@@ -444,7 +433,7 @@ ComputePmeMgr::~ComputePmeMgr() {
 }
 
 void ComputePmeMgr::sendGrid(void) {
-  pmeCompute->sendData(numRecipPes,firstDestRecipPe,recipPeDest,recipPeMap);
+  pmeCompute->sendData(numRecipPes,recipPeOrder,recipPeDest,recipPeMap);
 }
 
 void ComputePmeMgr::recvGrid(PmeGridMsg *msg) {
@@ -1024,7 +1013,7 @@ void ComputePme::doWork()
 #endif
 }
 
-void ComputePme::sendData(int numRecipPes, int firstDestRecipPe,
+void ComputePme::sendData(int numRecipPes, int *recipPeOrder,
 				int *recipPeDest, int *recipPeMap) {
 
   // iout << "Sending charge grid for " << numLocalAtoms << " atoms to FFT on " << iPE << ".\n" << endi;
@@ -1041,7 +1030,7 @@ void ComputePme::sendData(int numRecipPes, int firstDestRecipPe,
 
   CProxy_ComputePmeMgr pmeProxy(CpvAccess(BOCclass_group).computePmeMgr);
   for (int j=0; j<numRecipPes; j++) {
-    int pe = ( j + firstDestRecipPe ) % numRecipPes;  // different order
+    int pe = recipPeOrder[j];  // different order
     int start = pe * bsize;
     int len = bsize;
     if ( start >= qsize ) { start = 0; len = 0; }
