@@ -14,7 +14,7 @@ set base=$1
 
 echo Importing from $base to $dest
 
-foreach dir ( doc scripts src )
+foreach dir ( doc src )
   foreach f ( $base/$dir/* )
     if ( -f $f ) then
       echo $f

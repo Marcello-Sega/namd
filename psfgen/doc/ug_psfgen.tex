@@ -150,6 +150,18 @@ aliases are left intact.}
 {}
 {After one or more segments have been built.}
 
+\item \COMMAND{\KEY{psfcontext}
+\OARG{context} \OKEY{new} \OARG{\KEY{delete}} }
+{Switches between complete contexts, including structure, topology definitions,
+and aliases.  If no arguments are provided, the current context is returned.
+If \ARG{context} or \KEY{new} is specified, a new context is entered and
+the old context is returned.  If \KEY{delete} is also specified, the old
+context is destroyed and ``deleted \ARG{old context}'' is returned.  An error is
+returned if the specified context does not exist or if \KEY{delete} was
+specified and the specified context is the same as the current context.}
+{\ARGDEF{context}{Context ID returned by psfcontext.}}
+{At any time.}
+
 \item \COMMAND{\KEY{writepsf} \OKEY{charmm} \OKEY{x-plor} \ARG{file name}}
 {Write out structure information as PSF file.}
 { \KEYDEF{charmm}{Use CHARMM format (numbers for atom types).}\\

@@ -14,15 +14,6 @@
 
 #include <tcl.h>
 
-/* This function gets called if/when the Tcl interpreter is deleted. */
-static void psfgen_deleteproc(ClientData cd, Tcl_Interp *interp) {
-  psfgen_data *data = (psfgen_data *)cd;
-  topo_mol_destroy(data->mol);
-  topo_defs_destroy(data->defs);
-  stringhash_destroy(data->aliases);
-  free(data);
-}
-
 /* 
  * Provide user feedback and warnings beyond result values.
  * If we are running interactively, Tcl_Main will take care of echoing results
@@ -39,6 +30,37 @@ void newhandle_msg(void *v, const char *msg) {
   Tcl_Free(script);
 }
 
+/* This function gets called if/when the Tcl interpreter is deleted. */
+static void psfgen_deleteproc(ClientData cd, Tcl_Interp *interp) {
+  psfgen_data *data = (psfgen_data *)cd;
+  topo_mol_destroy(data->mol);
+  topo_defs_destroy(data->defs);
+  stringhash_destroy(data->aliases);
+  free(data);
+}
+
+void psfgen_data_delete_pointer(ClientData cd, Tcl_Interp *interp) {
+  psfgen_data **dataptr = (psfgen_data **)cd;
+  free(dataptr);
+}
+
+psfgen_data* psfgen_data_create(Tcl_Interp *interp) {
+  char namebuf[128];
+  int id = (int) Tcl_GetAssocData(interp,"Psfgen_count",0);
+  psfgen_data *data = (psfgen_data *)malloc(sizeof(psfgen_data));
+  data->defs = topo_defs_create();
+  topo_defs_error_handler(data->defs,interp,newhandle_msg);
+  data->aliases = stringhash_create();
+  data->mol = topo_mol_create(data->defs);
+  topo_mol_error_handler(data->mol,interp,newhandle_msg);
+  data->id = id;
+  Tcl_SetAssocData(interp,"Psfgen_count",0,(ClientData)(id+1));
+  sprintf(namebuf,"Psfgen_%d",id);
+  Tcl_SetAssocData(interp,namebuf,psfgen_deleteproc,(ClientData)data);
+  return data;
+}
+
+int tcl_psfcontext(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 int tcl_topology(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 int tcl_segment(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 int tcl_residue(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
@@ -59,7 +81,7 @@ int tcl_patch(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 int tcl_resetpsf(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 int tcl_delatom(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 
-#ifdef PSFGENTCLDLL_EXPORTS 
+#if defined(PSFGENTCLDLL_EXPORTS) && defined(_WIN32)
 #  undef TCL_STORAGE_CLASS
 #  define TCL_STORAGE_CLASS DLLEXPORT
 
@@ -74,7 +96,6 @@ BOOL APIENTRY DllMain( HANDLE hModule,
     return TRUE;
 }
 
-
 EXTERN int Psfgen_Init(Tcl_Interp *interp) {
 
 #else
@@ -86,17 +107,15 @@ int Psfgen_Init(Tcl_Interp *interp) {
   /* Create psfgen data structures; keep in interp so that other libraries
    * can access them.
    */
-  psfgen_data *data = (psfgen_data *)malloc(sizeof(psfgen_data));
-  data->defs = topo_defs_create();
-  topo_defs_error_handler(data->defs,interp,newhandle_msg);
-  
-  data->aliases = stringhash_create();
+  psfgen_data **data, *data_0;
+  Tcl_SetAssocData(interp, (char *)"Psfgen_count",0,(ClientData)0);
+  data = (psfgen_data **)malloc(sizeof(psfgen_data *));
+  Tcl_SetAssocData(interp, (char *)"Psfgen_pointer",
+		psfgen_data_delete_pointer,(ClientData)data);
+  *data = data_0 = psfgen_data_create(interp);
 
-  data->mol = topo_mol_create(data->defs);
-  topo_mol_error_handler(data->mol,interp,newhandle_msg);
- 
-  Tcl_SetAssocData(interp, (char *)"Psfgen",psfgen_deleteproc,(ClientData)data);
-
+  Tcl_CreateCommand(interp,"psfcontext",tcl_psfcontext,
+	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
   Tcl_CreateCommand(interp,"topology",tcl_topology,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
   Tcl_CreateCommand(interp,"readpsf",tcl_readpsf,
@@ -136,7 +155,7 @@ int Psfgen_Init(Tcl_Interp *interp) {
   Tcl_CreateCommand(interp,"delatom", tcl_delatom,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
  
-  Tcl_PkgProvide(interp, "psfgen", "1.1");
+  Tcl_PkgProvide(interp, "psfgen", "1.2");
 
   return TCL_OK;
 }
@@ -153,12 +172,82 @@ char* splitcolon(char *s) {
   return s;
 }
 
+int tcl_psfcontext(ClientData data, Tcl_Interp *interp,
+					int argc, char *argv[]) {
+
+  int oldid, newid;
+  int delold = 0;
+  psfgen_data **cur = (psfgen_data **)data;
+  char oldidstr[128];
+  oldid = (*cur)->id;
+  sprintf(oldidstr,"%d",oldid);
+
+  if ( argc == 1 ) {
+    Tcl_SetResult(interp,oldidstr,TCL_VOLATILE);
+    return TCL_OK;
+  }
+
+  if ( argc == 3 ) {
+    if ( strcmp(argv[2],"delete") == 0 ) {
+      delold = 1;
+    } else {
+      Tcl_SetResult(interp,"second argument must be delete",TCL_VOLATILE);
+      return TCL_ERROR;
+    }
+  }
+
+  if ( argc > 3 ) {
+    Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+
+  if (strcmp(argv[1],"new") == 0) {
+    psfgen_data *newdata = psfgen_data_create(interp);
+    *cur = newdata;
+  } else if (Tcl_GetInt(interp,argv[1],&newid) == TCL_OK) {
+    psfgen_data *newdata;
+    char newkey[128];
+    if ( newid == oldid ) {
+      if ( delold ) {
+        Tcl_SetResult(interp,"specified context in use",TCL_VOLATILE);
+        return TCL_ERROR;
+      } else {
+        Tcl_SetResult(interp,oldidstr,TCL_VOLATILE);
+        return TCL_OK;
+      }
+    }
+    sprintf(newkey,"Psfgen_%d",newid);
+    if ( newdata = Tcl_GetAssocData(interp,newkey,0) ) {
+      *cur = newdata;
+    } else {
+      Tcl_SetResult(interp,"specified context does not exist",TCL_VOLATILE);
+      return TCL_ERROR;
+    }
+  } else {
+    Tcl_SetResult(interp,"first argument must be existing context or new",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+
+  if ( delold ) {
+    char oldkey[128];
+    sprintf(oldkey,"Psfgen_%d",oldid);
+    Tcl_DeleteAssocData(interp,oldkey);
+    sprintf(oldkey,"deleted %d",oldid);
+    Tcl_SetResult(interp,oldkey,TCL_VOLATILE);
+    return TCL_OK;
+  } else {
+    Tcl_SetResult(interp,oldidstr,TCL_VOLATILE);
+    return TCL_OK;
+  }
+
+}
+
 int tcl_topology(ClientData data, Tcl_Interp *interp,
 					int argc, char *argv[]) {
   FILE *defs_file;
   char *filename;
   char msg[128];
-  psfgen_data *psf = (psfgen_data *)data;
+  psfgen_data *psf = *(psfgen_data **)data;
 
   if ( argc == 1 ) {
     Tcl_SetResult(interp,"no topology file specified",TCL_VOLATILE);
@@ -188,7 +277,7 @@ int tcl_readpsf(ClientData data, Tcl_Interp *interp,
   int retval;
   char *filename;
   char msg[128];
-  psfgen_data *psf = (psfgen_data *)data;
+  psfgen_data *psf = *(psfgen_data **)data;
 
   if ( argc == 1 ) {
     Tcl_SetResult(interp,"no psf file specified",TCL_VOLATILE);
@@ -217,7 +306,7 @@ int tcl_readpsf(ClientData data, Tcl_Interp *interp,
 int tcl_segment(ClientData data, Tcl_Interp *interp,
 					int argc, char *argv[]) {
   char msg[128];
-  psfgen_data *psf = (psfgen_data *)data;
+  psfgen_data *psf = *(psfgen_data **)data;
 
   if ( argc < 3 ) {
     Tcl_SetResult(interp,"arguments: segname { commmands }",TCL_VOLATILE);
@@ -252,7 +341,7 @@ int tcl_segment(ClientData data, Tcl_Interp *interp,
 
 int tcl_residue(ClientData data, Tcl_Interp *interp,
 					int argc, char *argv[]) {
-  psfgen_data *psf = (psfgen_data *)data;
+  psfgen_data *psf = *(psfgen_data **)data;
 
   if ( argc < 3 ) {
     Tcl_SetResult(interp,"arguments: resid resname",TCL_VOLATILE);
@@ -275,7 +364,7 @@ int tcl_residue(ClientData data, Tcl_Interp *interp,
 
 int tcl_mutate(ClientData data, Tcl_Interp *interp,
 					int argc, char *argv[]) {
-  psfgen_data *psf = (psfgen_data *)data;
+  psfgen_data *psf = *(psfgen_data **)data;
 
   if ( argc < 3 ) {
     Tcl_SetResult(interp,"arguments: resid resname",TCL_VOLATILE);
@@ -301,7 +390,7 @@ int tcl_multiply(ClientData data, Tcl_Interp *interp,
   int i, ncopies, ierr;
   topo_mol_ident_t *targets;
   char msg[128];
-  psfgen_data *psf = (psfgen_data *)data;
+  psfgen_data *psf = *(psfgen_data **)data;
 
   if ( argc<3 || Tcl_GetInt(interp,argv[1],&ncopies) != TCL_OK || ncopies<2 ) {
     Tcl_SetResult(interp,"arguments: ncopies segid?:resid?:atomname? ...",TCL_VOLATILE);
@@ -337,7 +426,7 @@ int tcl_coord(ClientData data, Tcl_Interp *interp,
 					int argc, char *argv[]) {
   double x,y,z;
   topo_mol_ident_t target;
-  psfgen_data *psf = (psfgen_data *)data;
+  psfgen_data *psf = *(psfgen_data **)data;
 
   if ( argc < 5 ) {
     Tcl_SetResult(interp,"arguments: segid resid atomname { x y z }",TCL_VOLATILE);
@@ -370,7 +459,7 @@ int tcl_coord(ClientData data, Tcl_Interp *interp,
 int tcl_auto(ClientData data, Tcl_Interp *interp,
 					int argc, char *argv[]) {
   int i, angles, dihedrals;
-  psfgen_data *psf = (psfgen_data *)data;
+  psfgen_data *psf = *(psfgen_data **)data;
 
   if ( argc < 2 ) {
     Tcl_SetResult(interp,"arguments: ?angles? ?dihedrals? ?none?",TCL_VOLATILE);
@@ -407,7 +496,7 @@ int tcl_auto(ClientData data, Tcl_Interp *interp,
 int tcl_alias(ClientData data, Tcl_Interp *interp,
 					int argc, char *argv[]) {
   char msg[128];
-  psfgen_data *psf = (psfgen_data *)data;
+  psfgen_data *psf = *(psfgen_data **)data;
 
   if ( argc < 2 ) {
     Tcl_SetResult(interp,"arguments: atom | residue ...",TCL_VOLATILE);
@@ -451,7 +540,7 @@ int tcl_pdb(ClientData data, Tcl_Interp *interp,
   FILE *res_file;
   char *filename;
   char msg[128];
-  psfgen_data *psf = (psfgen_data *)data;
+  psfgen_data *psf = *(psfgen_data **)data;
 
   if ( argc == 1 ) {
     Tcl_SetResult(interp,"no pdb file specified",TCL_VOLATILE);
@@ -485,7 +574,7 @@ int tcl_coordpdb(ClientData data, Tcl_Interp *interp,
   FILE *res_file;
   char *filename;
   char msg[128];
-  psfgen_data *psf = (psfgen_data *)data;
+  psfgen_data *psf = *(psfgen_data **)data;
 
   if ( argc < 2 ) {
     Tcl_SetResult(interp,"arguments: pdbfile ?segid?",TCL_VOLATILE);
@@ -528,7 +617,7 @@ int tcl_coordpdb(ClientData data, Tcl_Interp *interp,
 
 int tcl_guesscoord(ClientData data, Tcl_Interp *interp,
 					int argc, char *argv[]) {
-  psfgen_data *psf = (psfgen_data *)data;
+  psfgen_data *psf = *(psfgen_data **)data;
   if ( argc > 1 ) {
     Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
     return TCL_ERROR;
@@ -549,7 +638,7 @@ int tcl_writepsf(ClientData data, Tcl_Interp *interp,
   char *filename;
   int charmmfmt;
   char msg[128];
-  psfgen_data *psf = (psfgen_data *)data;
+  psfgen_data *psf = *(psfgen_data **)data;
 
   if ( argc == 1 ) {
     Tcl_SetResult(interp,"no psf file specified",TCL_VOLATILE);
@@ -593,7 +682,7 @@ int tcl_writepdb(ClientData data, Tcl_Interp *interp,
   FILE *res_file;
   char *filename;
   char msg[128];
-  psfgen_data *psf = (psfgen_data *)data;
+  psfgen_data *psf = *(psfgen_data **)data;
 
   if ( argc == 1 ) {
     Tcl_SetResult(interp,"no pdb file specified",TCL_VOLATILE);
@@ -625,7 +714,7 @@ int tcl_writepdb(ClientData data, Tcl_Interp *interp,
 int tcl_first(ClientData data, Tcl_Interp *interp,
 					int argc, char *argv[]) {
   char msg[128];
-  psfgen_data *psf = (psfgen_data *)data;
+  psfgen_data *psf = *(psfgen_data **)data;
 
   if ( argc != 2 ) {
     Tcl_SetResult(interp,"argument: presname",TCL_VOLATILE);
@@ -646,7 +735,7 @@ int tcl_first(ClientData data, Tcl_Interp *interp,
 int tcl_last(ClientData data, Tcl_Interp *interp,
 					int argc, char *argv[]) {
   char msg[128];
-  psfgen_data *psf = (psfgen_data *)data;
+  psfgen_data *psf = *(psfgen_data **)data;
 
   if ( argc != 2 ) {
     Tcl_SetResult(interp,"argument: presname",TCL_VOLATILE);
@@ -669,7 +758,7 @@ int tcl_patch(ClientData data, Tcl_Interp *interp,
   int i;
   topo_mol_ident_t targets[10];
   char msg[128];
-  psfgen_data *psf = (psfgen_data *)data;
+  psfgen_data *psf = *(psfgen_data **)data;
 
   if ( argc < 3 ) {
     Tcl_SetResult(interp,"arguments: presname segid:resid ...",TCL_VOLATILE);
@@ -703,7 +792,7 @@ int tcl_patch(ClientData data, Tcl_Interp *interp,
 }
 
 int tcl_resetpsf(ClientData data, Tcl_Interp *interp, int argc, char *argv[]) {
-  psfgen_data *psf = (psfgen_data *)data;
+  psfgen_data *psf = *(psfgen_data **)data;
 
   topo_mol_destroy(psf->mol);
   psf->mol = topo_mol_create(psf->defs);
@@ -715,7 +804,7 @@ int tcl_resetpsf(ClientData data, Tcl_Interp *interp, int argc, char *argv[]) {
 int tcl_delatom(ClientData data, Tcl_Interp *interp,
 					int argc, char *argv[]) {
   topo_mol_ident_t target;
-  psfgen_data *psf = (psfgen_data *)data;
+  psfgen_data *psf = *(psfgen_data **)data;
 
   if ( argc < 2 ) {
     Tcl_SetResult(interp,"arguments: segid [ resid? [ aname? ]]", TCL_VOLATILE);

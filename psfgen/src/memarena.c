@@ -15,7 +15,7 @@ struct memarena {
   int size, used;
 };
 
-memarena * memarena_create() {
+memarena * memarena_create(void) {
   memarena * a;
   if ( (a = (memarena*) malloc(sizeof(memarena))) ) {
     a->stack = 0;

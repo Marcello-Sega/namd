@@ -5,7 +5,7 @@
 #include "topo_defs_struct.h"
 
 
-topo_defs * topo_defs_create() {
+topo_defs * topo_defs_create(void) {
   topo_defs *defs;
   if ( (defs = (topo_defs*) malloc(sizeof(topo_defs))) ) {
     defs->newerror_handler_data = 0;

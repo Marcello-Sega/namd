@@ -5,7 +5,7 @@
 struct stringhash;
 typedef struct stringhash stringhash;
 
-stringhash * stringhash_create();
+stringhash * stringhash_create(void);
 void stringhash_destroy(stringhash *h);
 
 const char* stringhash_insert(stringhash *h, const char *key, const char *data);

@@ -5,7 +5,7 @@
 struct topo_defs;
 typedef struct topo_defs topo_defs;
 
-topo_defs * topo_defs_create();
+topo_defs * topo_defs_create(void);
 void topo_defs_destroy(topo_defs *defs);
 
 void topo_defs_error_handler(topo_defs *defs, void *,

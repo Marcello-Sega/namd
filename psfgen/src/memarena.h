@@ -5,7 +5,7 @@
 struct memarena;
 typedef struct memarena memarena;
 
-memarena * memarena_create();
+memarena * memarena_create(void);
 void memarena_destroy(memarena *a);
 
 void memarena_blocksize(memarena *a, int blocksize);

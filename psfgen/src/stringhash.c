@@ -11,7 +11,7 @@ struct stringhash {
   hasharray *ha;
 };
 
-stringhash * stringhash_create() {
+stringhash * stringhash_create(void) {
   stringhash *h;
   if ( (h = (stringhash*) malloc(sizeof(stringhash))) ) {
     if ( ! ( h->datarena = memarena_create() ) ) {
