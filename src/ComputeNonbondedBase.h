@@ -415,7 +415,11 @@ void ComputeNonbondedUtil :: NAME
 
     const int atomfixed = ( fixedAtomsOn && p_i.atomFixed );
 
-  LAM ( const int ifep_type = p_i.partition; )
+    FEP( BigReal *lambda_table_i = lambda_table + 6 * p_i.partition; )
+
+    LES( BigReal *lambda_table_i =
+			lambda_table + (lesFactor+1) * p_i.partition; )
+
 
     const BigReal kq_i = COLOUMB * p_i.charge * scaling * dielectric_1;
     const LJTable::TableEntry * const lj_row =
@@ -426,22 +430,31 @@ void ComputeNonbondedUtil :: NAME
     INT(
     if ( 1 ) {
       const int ifep_type = p_i.partition;
-      if (ifep_type) for (int k=pairlistoffset; k<pairlistindex; k++) {
-        j = pairlist[k];
-        const int jfep_type = p_1[j].partition;
-        if (pairInteractionSelf) {
+      if (pairInteractionSelf) {
+        if (ifep_type != 1) continue;
+        for (int k=pairlistoffset; k<pairlistindex; k++) {
+          j = pairlist[k];
+          const int jfep_type = p_1[j].partition;
           // for pair-self, both atoms must be in group 1.
-          if (ifep_type != 1 || jfep_type != 1) {
-            continue;
-          }
-        } else {
-
-          // for pair, must have one from each group.
-          if (!(ifep_type == 1 && jfep_type == 2) && 
-              !(ifep_type == 2 && jfep_type == 1)) {
-            continue;
+          if (jfep_type == 1) {
+            *(pli++) = j;
           }
         }
+      } else {
+        if (ifep_type != 1 && ifep_type != 2) continue;
+        for (int k=pairlistoffset; k<pairlistindex; k++) {
+          j = pairlist[k];
+          const int jfep_type = p_1[j].partition;
+          // for pair, must have one from each group.
+          if (ifep_type + jfep_type == 3) {
+            *(pli++) = j;
+          }
+        }
+      }
+      int npair2_int = pli - pairlist2;
+      pli = pairlist2;
+      for (int k=0; k<npair2_int; k++) {
+        j = pairlist2[k];
         BigReal p_j_x = p_1[j].position.x;
 	BigReal r2 = p_i_x - p_j_x;
 	r2 *= r2;
@@ -557,39 +570,13 @@ void ComputeNonbondedUtil :: NAME
       BigReal kqq = kq_i * p_j->charge;
       const BigReal diffa = r2 - r2f;
 
-    FEP
-      (
+      FEP(
       int jfep_type = p_j->partition;
-      BigReal lambda_pair = 1.0;
-      BigReal d_lambda_pair = 1.0;
-      if (ifep_type || jfep_type) {
-        if (ifep_type && jfep_type && ifep_type != jfep_type) {
-	  lambda_pair = 0.0;
-	  d_lambda_pair = 0.0;
-        } else {
-          if (ifep_type == 1 || jfep_type == 1) {
-	    lambda_pair = lambda;
-	    d_lambda_pair = lambda2;
-          } else if ( ifep_type == 2 || jfep_type == 2) {
-	    lambda_pair = 1.0 - lambda;
-	    d_lambda_pair = 1.0 - lambda2;
-          }
-        }
-      }
+      BigReal lambda_pair = lambda_table_i[2*jfep_type];
+      BigReal d_lambda_pair = lambda_table_i[2*jfep_type+1];
       )
 
-    LES
-      (
-      int jfep_type = p_j->partition;
-      BigReal lambda_pair = 1.0;
-      if (ifep_type || jfep_type) {
-        if (ifep_type && jfep_type && ifep_type != jfep_type) {
-	  lambda_pair = 0.0;
-        } else {
-          lambda_pair = lesScaling;
-        }
-      }
-      )
+      LES( BigReal lambda_pair = lambda_table_i[p_j->partition]; )
 
       FAST
       (

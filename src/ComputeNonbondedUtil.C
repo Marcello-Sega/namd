@@ -60,6 +60,8 @@ Bool            ComputeNonbondedUtil::lesOn;
 int             ComputeNonbondedUtil::lesFactor;
 BigReal         ComputeNonbondedUtil::lesScaling;
 
+BigReal*	ComputeNonbondedUtil::lambda_table = 0;
+
 Bool            ComputeNonbondedUtil::pairInteractionOn;
 Bool            ComputeNonbondedUtil::pairInteractionSelf;
 
@@ -125,12 +127,38 @@ void ComputeNonbondedUtil::select(void)
   lesOn = simParams->lesOn;
   lesScaling = lesFactor = 0;
 
+  delete [] lambda_table;
+  lambda_table = 0;
+
   pairInteractionOn = simParams->pairInteractionOn;
   pairInteractionSelf = simParams->pairInteractionSelf;
 
   if ( fepOn ) {
     lambda = simParams->lambda;
     lambda2 = simParams->lambda2;
+    lambda_table = new BigReal[2*3*3];
+    for ( int ip=0; ip<3; ++ip ) {
+      for ( int jp=0; jp<3; ++jp ) {
+        BigReal lambda_pair = 1.0;
+        BigReal d_lambda_pair = 1.0;
+        if (ip || jp) {
+          if (ip && jp && ip != jp) {
+            lambda_pair = 0.0;
+            d_lambda_pair = 0.0;
+          } else {
+            if (ip == 1 || jp == 1) {
+              lambda_pair = lambda;
+              d_lambda_pair = lambda2;
+            } else if ( ip == 2 || jp == 2) {
+              lambda_pair = 1.0 - lambda;
+              d_lambda_pair = 1.0 - lambda2;
+            }
+          }
+        }
+        lambda_table[2*(3*ip+jp)] = lambda_pair;
+        lambda_table[2*(3*ip+jp)+1] = d_lambda_pair;
+      }
+    }
     ComputeNonbondedUtil::calcPair = calc_pair_fep;
     ComputeNonbondedUtil::calcSelf = calc_self_fep;
     ComputeNonbondedUtil::calcFullPair = calc_pair_fullelect_fep;
@@ -142,6 +170,20 @@ void ComputeNonbondedUtil::select(void)
   } else if ( lesOn ) {
     lesFactor = simParams->lesFactor;
     lesScaling = 1.0 / (double)lesFactor;
+    lambda_table = new BigReal[(lesFactor+1)*(lesFactor+1)];
+    for ( int ip=0; ip<=lesFactor; ++ip ) {
+      for ( int jp=0; jp<=lesFactor; ++jp ) {
+        BigReal lambda_pair = 1.0;
+        if (ip || jp ) {
+          if (ip && jp && ip != jp) {
+            lambda_pair = 0.0;
+          } else {
+            lambda_pair = lesScaling;
+          }
+        }
+        lambda_table[(lesFactor+1)*ip+jp] = lambda_pair;
+      }
+    }
     ComputeNonbondedUtil::calcPair = calc_pair_les;
     ComputeNonbondedUtil::calcSelf = calc_self_les;
     ComputeNonbondedUtil::calcFullPair = calc_pair_fullelect_les;

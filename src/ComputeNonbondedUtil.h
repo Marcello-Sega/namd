@@ -106,6 +106,8 @@ public:
   static int lesFactor;
   static BigReal lesScaling;
 
+  static BigReal *lambda_table;
+
   static Bool pairInteractionOn;
   static Bool pairInteractionSelf;
 
