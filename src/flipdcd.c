@@ -78,9 +78,7 @@ else {
 
 FLIPFOUR;  /* 84 */
 SKIPFOUR;  /* "CORD" */
-for ( i = 0; i < 9; ++i ) FLIPFOUR;
-FLIPEIGHT;  /* DELTA */
-for ( i = 0; i < 9; ++i ) FLIPFOUR;
+for ( i = 0; i < 20; ++i ) FLIPFOUR;
 FLIPFOUR;  /* 84 */
 FLIPFOUR;  /* TITLE SIZE */
 READINT(itmp); FLIPFOUR;  /* NTITLE */
