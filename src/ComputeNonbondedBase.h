@@ -397,10 +397,10 @@ void ComputeNonbondedUtil :: NAME
       if ( p_i.hydrogenGroupSize ) {
         // exclude child hydrogens of i
         j_hgroup = i + p_i.hydrogenGroupSize;
-        while ( grouplist[g_lower] < j_hgroup ) ++g_lower;
-        if (groupfixed) {
-          while ( fixglist[fixg_lower] < j_hgroup ) ++fixg_lower;
-        }
+        while ( g_lower < g_upper &&
+                grouplist[g_lower] < j_hgroup ) ++g_lower;
+        while ( fixg_lower < fixg_upper &&
+                fixglist[fixg_lower] < j_hgroup ) ++fixg_lower;
       }
       // add all child or sister hydrogens of i
       for ( j = i + 1; j < j_hgroup; ++j ) {
