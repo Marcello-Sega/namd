@@ -3630,7 +3630,7 @@ obj/SimParameters.o: \
 	src/ParseOptions.h \
 	src/structures.h \
 	src/Debug.h
-	$(CXX) $(CXXFLAGS) -o obj/SimParameters.o -c src/SimParameters.C
+	$(CXX) $(CXXSIMPARAMFLAGS) -o obj/SimParameters.o -c src/SimParameters.C
 obj/SMD.o: \
 	src/SMD.C \
 	src/common.h \

@@ -4,6 +4,7 @@
 CXX = CC -DSOLARIS
 CXXOPTS = -fast -xO5 -native -xarch=v8plusa -fsimple=2
 CXXTHREADOPTS = -fns -ftrap=%none -xlibmil -xlibmopt -xO5 -native -xarch=v8plusa -fsimple=2
+CXXSIMPARAMOPTS = $(CXXOPTS)
 CC = cc -DSOLARIS
 COPTS = -fast -xO5 -native -xarch=v8plusa
 

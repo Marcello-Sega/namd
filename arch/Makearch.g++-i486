@@ -4,6 +4,7 @@
 CXX = g++
 CXXOPTS = -O3 -Wall -march=pentiumpro -ffast-math
 CXXTHREADOPTS = $(CXXOPTS)
+CXXSIMPARAMOPTS = $(CXXOPTS)
 CC = egcs
 COPTS = -O3 -march=pentiumpro -ffast-math
 

@@ -170,6 +170,7 @@ LIBS = $(DPMTALIBS) $(DPMELIBS)
 # CXX is platform dependent
 CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CXXOPTS)
 CXXTHREADFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CXXTHREADOPTS)
+CXXSIMPARAMFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CXXSIMPARAMOPTS)
 GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT)
 
 # Add new executables here.
@@ -352,6 +353,7 @@ depends: $(INCDIR) $(CIFILES) $(DSTDIR) $(DEPENDFILE)
 	    -e "/obj\/TestSequencer.o/ s/CXXFLAGS/CXXTHREADFLAGS/" \
 	    -e "/obj\/ComputeFullDirect.o/ s/CXXFLAGS/CXXTHREADFLAGS/" \
 	    -e "/obj\/ReductionMgr.o/ s/CXXFLAGS/CXXTHREADFLAGS/" \
+	    -e "/obj\/SimParameters.o/ s/CXXFLAGS/CXXSIMPARAMFLAGS/" \
 	    $(DEPENDFILE) > $(DEPENDFILE).sed; \
 	$(MOVE) -f $(DEPENDFILE).sed $(DEPENDFILE);
 

@@ -4,6 +4,7 @@
 CXX = cxx
 CXXOPTS = -O4 -arch host -tune host -fp_reorder -nocleanup
 CXXTHREADOPTS = $(CXXOPTS)
+CXXSIMPARAMOPTS = $(CXXOPTS)
 CC = cc
 COPTS = -O4 -arch host -tune host -fp_reorder
 

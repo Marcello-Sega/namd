@@ -4,6 +4,7 @@
 CXX = KCC
 CXXOPTS = -O3 +K3 -Bstatic --backend -march=pentiumpro --backend -ffast-math
 CXXTHREADOPTS = $(CXXOPTS)
+CXXSIMPARAMOPTS = $(CXXOPTS)
 CC = egcs -DGCC
 COPTS = -O3 -march=pentiumpro -ffast-math
 
