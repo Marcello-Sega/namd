@@ -98,6 +98,7 @@ public:
   // pid(cid,i) returns the i-th patch id registered
   // with the patch.  
   int pid(ComputeID cid, int i);
+  int trans(ComputeID cid, int i);
 
   // type(cid) returns the compute type of the given ComputeID
   ComputeType type(ComputeID cid);

@@ -61,7 +61,9 @@ obj/mainfunc.o: \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/ConfigList.h \
-	src/ScriptTcl.h
+	src/ScriptTcl.h \
+	/Projects/namd2/tcl/solaris/include/tcl.h \
+	/Projects/namd2/tcl/solaris/include/tclDecls.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/mainfunc.o $(COPTC) src/mainfunc.C
 obj/memusage.o: \
 	src/memusage.C \
@@ -357,8 +359,8 @@ obj/ComputeAngles.o: \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
 	src/ComputeAngles.inl \
-	src/Debug.h \
-	src/PressureProfile.h
+	src/PressureProfile.h \
+	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeAngles.o $(COPTC) src/ComputeAngles.C
 obj/ComputeBonds.o: \
 	src/ComputeBonds.C \
@@ -419,8 +421,8 @@ obj/ComputeBonds.o: \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
 	src/ComputeBonds.inl \
-	src/Debug.h \
-	src/PressureProfile.h
+	src/PressureProfile.h \
+	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeBonds.o $(COPTC) src/ComputeBonds.C
 obj/ComputeCylindricalBC.o: \
 	src/ComputeCylindricalBC.C \
@@ -513,8 +515,8 @@ obj/ComputeDihedrals.o: \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
 	src/ComputeDihedrals.inl \
-	src/Debug.h \
-	src/PressureProfile.h
+	src/PressureProfile.h \
+	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeDihedrals.o $(COPTC) src/ComputeDihedrals.C
 obj/ComputeDPME.o: \
 	src/ComputeDPME.C \
@@ -929,8 +931,8 @@ obj/ComputeImpropers.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
-	src/Debug.h \
-	src/PressureProfile.h
+	src/PressureProfile.h \
+	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeImpropers.o $(COPTC) src/ComputeImpropers.C
 obj/ComputeGlobal.o: \
 	src/ComputeGlobal.C \
@@ -1121,7 +1123,10 @@ obj/ComputeMgr.o: \
 	src/FreeEnergyLambdMgr.h \
 	src/GlobalMasterTest.h \
 	src/GlobalMasterIMD.h \
+	src/imd.h \
 	src/GlobalMasterTcl.h \
+	/Projects/namd2/tcl/solaris/include/tcl.h \
+	/Projects/namd2/tcl/solaris/include/tclDecls.h \
 	src/GlobalMasterSMD.h \
 	src/GlobalMasterEasy.h \
 	src/GlobalMasterMisc.h \
@@ -1225,9 +1230,9 @@ obj/ComputeNonbondedUtil.o: \
 	src/GromacsTopFile.h \
 	src/LJTable.h \
 	src/InfoStream.h \
+	src/PressureProfile.h \
 	src/ComputeNonbondedBase.h \
-	src/ComputeNonbondedBase2.h \
-	src/PressureProfile.h
+	src/ComputeNonbondedBase2.h
 	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedUtil.o $(COPTC) src/ComputeNonbondedUtil.C
 obj/ComputePatch.o: \
 	src/ComputePatch.C \
@@ -1297,6 +1302,8 @@ obj/ComputePatchPair.o: \
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputePatchPair.o $(COPTC) src/ComputePatchPair.C
 obj/ComputePme.o: \
 	src/ComputePme.C \
+	/Projects/namd2/fftw/solaris/include/sfftw.h \
+	/Projects/namd2/fftw/solaris/include/srfftw.h \
 	src/Node.h \
 	src/main.h \
 	src/ProcessorPrivate.h \
@@ -1538,6 +1545,8 @@ obj/Controller.o: \
 	src/NamdState.h \
 	src/ScriptTcl.h \
 	src/Broadcasts.h \
+	/Projects/namd2/tcl/solaris/include/tcl.h \
+	/Projects/namd2/tcl/solaris/include/tclDecls.h \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
@@ -1579,6 +1588,57 @@ obj/DataStream.o: \
 	src/ProcessorPrivate.h \
 	inc/CollectionMgr.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/DataStream.o $(COPTC) src/DataStream.C
+obj/DumpBench.o: \
+	src/DumpBench.C \
+	src/DumpBench.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/common.h \
+	src/Communicate.h \
+	src/MStream.h \
+	src/Vector.h \
+	src/Lattice.h \
+	src/NamdTypes.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/Tensor.h \
+	src/ComputeNonbondedUtil.h \
+	src/ReductionMgr.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/ProcessorPrivate.h \
+	src/LJTable.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/structures.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
+	src/Node.h \
+	inc/Node.decl.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/ResizeArrayIter.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/InfoStream.h \
+	inc/PatchMgr.decl.h \
+	src/HomePatchTypes.h \
+	src/NamdState.h \
+	src/ComputeMap.h \
+	src/DumpBenchParams.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/DumpBench.o $(COPTC) src/DumpBench.C
 obj/FreeEnergyAssert.o: \
 	src/FreeEnergyAssert.C \
 	src/InfoStream.h \
@@ -1735,10 +1795,10 @@ obj/GlobalMasterIMD.o: \
 	src/BOCgroup.h \
 	inc/Node.decl.h \
 	src/IMDOutput.h \
-	src/common.h \
 	src/imd.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
+	src/common.h \
 	src/Communicate.h \
 	src/MStream.h \
 	src/Vector.h \
@@ -1786,6 +1846,8 @@ obj/GlobalMasterTcl.o: \
 	src/UniqueSetIter.h \
 	inc/BroadcastMgr.decl.h \
 	src/BroadcastClient.h \
+	/Projects/namd2/tcl/solaris/include/tcl.h \
+	/Projects/namd2/tcl/solaris/include/tclDecls.h \
 	src/InfoStream.h \
 	src/GlobalMaster.h \
 	src/GlobalMasterTcl.h \
@@ -2027,33 +2089,14 @@ obj/HomePatch.o: \
 obj/IMDOutput.o: \
 	src/IMDOutput.C \
 	src/IMDOutput.h \
-	src/common.h \
 	src/imd.h \
-	src/InfoStream.h \
-	src/Molecule.h \
-	src/parm.h \
+	src/GlobalMasterIMD.h \
+	src/GlobalMaster.h \
 	src/NamdTypes.h \
 	src/Vector.h \
+	src/common.h \
 	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
-	src/structures.h \
-	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
-	src/Hydrogen.h \
-	src/SortableResizeArray.h \
-	src/GromacsTopFile.h \
-	src/Node.h \
-	src/main.h \
-	src/ProcessorPrivate.h \
-	src/BOCgroup.h \
-	inc/Node.decl.h \
-	src/SimParameters.h \
-	src/Communicate.h \
-	src/MStream.h \
-	src/Lattice.h \
-	src/Tensor.h \
-	src/vmdsock.h
+	src/ResizeArrayRaw.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/IMDOutput.o $(COPTC) src/IMDOutput.C
 obj/InfoStream.o: \
 	src/InfoStream.C \
@@ -2155,6 +2198,8 @@ obj/LJTable.o: \
 obj/Measure.o: \
 	src/Measure.C \
 	src/Measure.h \
+	/Projects/namd2/tcl/solaris/include/tcl.h \
+	/Projects/namd2/tcl/solaris/include/tclDecls.h \
 	src/Node.h \
 	src/main.h \
 	src/ProcessorPrivate.h \
@@ -2370,6 +2415,8 @@ obj/NamdState.o: \
 	src/UniqueSetIter.h \
 	inc/BroadcastMgr.decl.h \
 	src/BroadcastClient.h \
+	/Projects/namd2/tcl/solaris/include/tcl.h \
+	/Projects/namd2/tcl/solaris/include/tclDecls.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdState.o $(COPTC) src/NamdState.C
 obj/NamdOneTools.o: \
@@ -2406,7 +2453,6 @@ obj/Node.o: \
 	src/Debug.h \
 	src/memusage.h \
 	src/IMDOutput.h \
-	src/common.h \
 	src/imd.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
@@ -2426,6 +2472,7 @@ obj/Node.o: \
 	src/WorkDistrib.h \
 	src/NamdTypes.h \
 	src/Vector.h \
+	src/common.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/ComputeMap.h \
@@ -2480,6 +2527,8 @@ obj/Node.o: \
 	src/BroadcastObject.h \
 	src/BroadcastMgr.h \
 	src/BroadcastClient.h \
+	/Projects/namd2/tcl/solaris/include/tcl.h \
+	/Projects/namd2/tcl/solaris/include/tclDecls.h \
 	src/Sync.h \
 	src/ResizeArrayPrimIter.h \
 	src/BackEnd.h \
@@ -2488,9 +2537,9 @@ obj/Node.o: \
 obj/Output.o: \
 	src/Output.C \
 	src/IMDOutput.h \
-	src/common.h \
 	src/imd.h \
 	src/Output.h \
+	src/common.h \
 	src/dcdlib.h \
 	src/strlib.h \
 	src/Molecule.h \
@@ -2532,6 +2581,8 @@ obj/Output.o: \
 	src/UniqueSetIter.h \
 	inc/BroadcastMgr.decl.h \
 	src/BroadcastClient.h \
+	/Projects/namd2/tcl/solaris/include/tcl.h \
+	/Projects/namd2/tcl/solaris/include/tclDecls.h \
 	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Output.o $(COPTC) src/Output.C
 obj/Parameters.o: \
@@ -2832,6 +2883,9 @@ obj/ProxyPatch.o: \
 	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
 	src/AtomMap.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ProxyPatch.o $(COPTC) src/ProxyPatch.C
 obj/Rebalancer.o: \
@@ -2934,6 +2988,8 @@ obj/ScriptTcl.o: \
 	src/BOCgroup.h \
 	inc/BroadcastMgr.decl.h \
 	src/BroadcastClient.h \
+	/Projects/namd2/tcl/solaris/include/tcl.h \
+	/Projects/namd2/tcl/solaris/include/tclDecls.h \
 	src/ConfigList.h \
 	src/Node.h \
 	inc/Node.decl.h \
@@ -2970,6 +3026,7 @@ obj/ScriptTcl.o: \
 	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	src/Measure.h \
+	src/DumpBench.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ScriptTcl.o $(COPTC) src/ScriptTcl.C
 obj/Sequencer.o: \
@@ -3074,6 +3131,8 @@ obj/SimParameters.o: \
 	src/ParseOptions.h \
 	src/structures.h \
 	src/InfoStream.h \
+	/Projects/namd2/fftw/solaris/include/sfftw.h \
+	/Projects/namd2/fftw/solaris/include/srfftw.h \
 	src/Debug.h
 	$(CXX) $(CXXSIMPARAMFLAGS) $(COPTO)obj/SimParameters.o $(COPTC) src/SimParameters.C
 obj/Sync.o: \
@@ -3116,7 +3175,9 @@ obj/Sync.o: \
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Sync.o $(COPTC) src/Sync.C
 obj/TclCommands.o: \
 	src/TclCommands.C \
-	src/TclCommands.h
+	src/TclCommands.h \
+	/Projects/namd2/tcl/solaris/include/tcl.h \
+	/Projects/namd2/tcl/solaris/include/tclDecls.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/TclCommands.o $(COPTC) src/TclCommands.C
 obj/WorkDistrib.o: \
 	src/WorkDistrib.C \
@@ -3210,7 +3271,9 @@ obj/imd.o: \
 	src/vmdsock.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/imd.o $(COPTC) src/imd.C
 obj/tcl_main.o: \
-	sb/src/tcl_main.c
+	sb/src/tcl_main.c \
+	/Projects/namd2/tcl/solaris/include/tcl.h \
+	/Projects/namd2/tcl/solaris/include/tclDecls.h
 	$(CC) $(SBCFLAGS) $(COPTO)obj/tcl_main.o $(COPTC) sb/src/tcl_main.c
 obj/tcl_psfgen.o: \
 	sb/src/tcl_psfgen.c \
@@ -3222,7 +3285,9 @@ obj/tcl_psfgen.o: \
 	sb/src/topo_mol_output.h \
 	sb/src/pdb_file_extract.h \
 	sb/src/psf_file_extract.h \
-	sb/src/extract_alias.h
+	sb/src/extract_alias.h \
+	/Projects/namd2/tcl/solaris/include/tcl.h \
+	/Projects/namd2/tcl/solaris/include/tclDecls.h
 	$(CC) $(SBCFLAGS) $(COPTO)obj/tcl_psfgen.o $(COPTC) sb/src/tcl_psfgen.c
 obj/charmm_file.o: \
 	sb/src/charmm_file.c \

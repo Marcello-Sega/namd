@@ -66,6 +66,7 @@ private:
 #ifdef NAMD_PLUGINS
   static int Tcl_coorfile(ClientData, Tcl_Interp *, int, char **);
 #endif
+  static int Tcl_dumpbench(ClientData, Tcl_Interp *, int, char **);
   char *callbackname;
   void doCallback(const char *labels, const char *data);
   int doCallback() { return ! ! callbackname; }

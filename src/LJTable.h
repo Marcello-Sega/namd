@@ -36,6 +36,9 @@ public:
     return table + 2 * (i * table_dim + j) + 1;
   }
 
+  const TableEntry *get_table() const { return table; }
+  int get_table_dim() const { return table_dim; }
+
 private:
 
   void compute_vdw_params(int i, int j, 

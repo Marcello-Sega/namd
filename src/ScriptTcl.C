@@ -22,6 +22,7 @@
 #include "ProcessorPrivate.h"
 #include "PatchMgr.h"
 #include "Measure.h"
+#include "DumpBench.h"
 #include <stdio.h>
 #include <ctype.h>  // for isspace
 #ifndef WIN32
@@ -639,6 +640,36 @@ int ScriptTcl::Tcl_coorfile(ClientData clientData,
 }
 #endif  // NAMD_PLUGINS
 
+int ScriptTcl::Tcl_dumpbench(ClientData clientData,
+	Tcl_Interp *interp, int argc, char *argv[]) {
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  script->initcheck();
+  if (argc != 2) {
+    Tcl_AppendResult(interp, "usage: dumpbench <filename>", NULL);
+    return TCL_ERROR;
+  }
+
+  if ( CkNumPes() != 1 ) {
+    Tcl_AppendResult(interp, "multiple processors detected; dumpbench only works on serial runs", NULL);
+    return TCL_ERROR;
+  }
+
+  FILE *file = fopen(argv[1],"w");
+  if ( ! file ) {
+    Tcl_AppendResult(interp, "dumpbench: error opening file ", argv[1], NULL);
+    return TCL_ERROR;
+  }
+
+  if ( dumpbench(file) ) {
+    Tcl_AppendResult(interp, "dumpbench: error dumping benchmark data", NULL);
+    return TCL_ERROR;
+  }
+
+  fclose(file);
+
+  Tcl_AppendResult(interp, "benchmark data written to file ", argv[1], NULL);
+  return TCL_OK;
+}
 
 #endif  // NAMD_TCL
 
@@ -701,6 +732,9 @@ ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
   Tcl_CreateCommand(interp, "coorfile", Tcl_coorfile,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
 #endif
+
+  Tcl_CreateCommand(interp, "dumpbench", Tcl_dumpbench,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
 #endif
 
 }

@@ -207,6 +207,13 @@ int ComputeMap::pid(ComputeID cid,int i)
   else return -1;
 }
 
+int ComputeMap::trans(ComputeID cid,int i)
+{
+  if ((nComputes) && (i < computeData[cid].numPids))
+    return computeData[cid].pids[i].trans;
+  else return -1;
+}
+
 //----------------------------------------------------------------------
 ComputeType ComputeMap::type(ComputeID cid)
 {
