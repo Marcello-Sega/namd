@@ -55,4 +55,9 @@ char * endc(infostream& s) { s.endc(); return ""; }
 #define endi endi(iout)
 #define endc endc(iout)
 
+/** define some basic messages **/
+#define iWARN   "Warning"
+#define iERROR  "ERROR"
+#define iInfo   "Info"
+
 #endif

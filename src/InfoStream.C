@@ -15,3 +15,13 @@
 
 infostream iout;
 
+// some suggested usages:
+// Send a warning message to the console:
+//    iout << iWARN << blah << endc;
+// Send running information to the information monitor (CPrintf)
+//    iout << iINFO << blah << endi;
+// Send an error message to the information monitor
+//    iout << iERROR << blah << endi;
+
+// Debug messages should use DebugM()!  not iout.
+
