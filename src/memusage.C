@@ -26,7 +26,11 @@ long memusageinit::memusage_sbrk() {
   return ( newval - memusageinit::sbrkval );
 }
 
-#ifndef WIN32
+#ifdef WIN32
+#define _NO_MALLOC_H
+#endif
+
+#ifndef _NO_MALLOC_H
 
 #include <malloc.h>
 
@@ -40,7 +44,7 @@ long memusage_mallinfo() {
 
 }
 
-#else // ifndef WIN32
+#else // ifndef _NO_MALLOC_H
 
 long memusage_mallinfo() { return 0; }
 
