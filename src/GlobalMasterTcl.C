@@ -78,6 +78,14 @@ int GlobalMasterTcl::Tcl_addatom(ClientData clientData,
   if (Tcl_GetInt(interp,argv[1],&atomid) != TCL_OK) {
     return TCL_ERROR;
   }
+  Molecule *mol = Node::Object()->molecule;
+  int numAtoms = mol->numAtoms;
+  if ( (atomid-1) < 0 || (atomid-1) >= numAtoms ) {
+    char errmsg[128];
+    sprintf(errmsg,"illegal atomid %d",atomid);
+    Tcl_SetResult(interp,errmsg,TCL_VOLATILE);
+    return TCL_ERROR;
+  }
   GlobalMasterTcl *self = (GlobalMasterTcl *)clientData;
   self->modifyRequestedAtoms().add(atomid-1);
   DebugM(4,"Atom ID " << atomid << " added to config list\n");
@@ -108,12 +116,20 @@ int GlobalMasterTcl::Tcl_addgroup(ClientData clientData,
     return TCL_ERROR;
   }
 
+  Molecule *mol = Node::Object()->molecule;
+  int numAtoms = mol->numAtoms;
   /* add each atom to the new group */
   for ( i = 0; i < listc; ++i ) {
     int atomid;
     if (Tcl_GetInt(interp,listv[i],&atomid) != TCL_OK) { // error getting int
       group_list.resize(gcount-1); // remove the group we made
       Tcl_Free((char*) listv);
+      return TCL_ERROR;
+    }
+    if ( (atomid-1) < 0 || (atomid-1) >= numAtoms ) {
+      char errmsg[128];
+      sprintf(errmsg,"illegal atomid %d",atomid);
+      Tcl_SetResult(interp,errmsg,TCL_VOLATILE);
       return TCL_ERROR;
     }
     group_list[gcount-1].add(atomid-1); // add the atom to the group
