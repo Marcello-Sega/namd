@@ -42,17 +42,20 @@ void Sequencer::threadRun(void)
         {
             // patch->addForceToMomentum(0.5*timestep);
             // patch->addVelocityToPosition(timestep);
-	    DebugM(3,"(" << cycle << "," << step << ") "
+	    DebugM(3, patch->getPatchID()
+		<< ": (" << cycle << "," << step << ") "
 		<< "Sending positionsReady().\n");
             patch->positionsReady();
-	    DebugM(2,"(" << cycle << "," << step << ") "
+	    DebugM(2, patch->getPatchID()
+		<< ": (" << cycle << "," << step << ") "
 		<< "Suspending.\n");
             suspend();
-	    DebugM(2,"(" << cycle << "," << step << ") "
+	    DebugM(2, patch->getPatchID()
+		<< ": (" << cycle << "," << step << ") "
 		<< "Awakened!\n");
             // patch->addForceToMomentum(0.5*timestep);
         }
     }
-    DebugM(4,"Exiting.\n");
+    DebugM(4, patch->getPatchID() << ": Exiting.\n");
     terminate();
 }
