@@ -25,7 +25,10 @@ iout << iINFO << "numComputes: " << numComputes << "\n" << endi;
     assign((computeInfo *) &(computes[i]),
 	   (processorInfo *) &(processors[computes[i].oldProcessor]));
 	 
+  // merge refinement code and move to Rebalancer
+  multirefine();
 
+#if 0
   double avg = computeAverage();
   double max = computeMax();
 
@@ -83,6 +86,7 @@ iout << iINFO << "numComputes: " << numComputes << "\n" << endi;
 	minOverload = curOverload;
     }
   }
+#endif
     
   //  while (!refine())
   //    overLoad += .01;
@@ -98,5 +102,5 @@ iout << iINFO << "numComputes: " << numComputes << "\n" << endi;
        << "------------------------------------------------------------\n"
        << endi;
 #endif
-  max = computeMax();
+  double max = computeMax();
 }

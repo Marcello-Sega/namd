@@ -154,60 +154,9 @@ void Alg7::strategy()
 #endif
 
 
-  // The New refinement procedure.  This is identical to the code in
-  // RefineOnly.C, and probably should be merged with that code to form
-  // a binary-search function
+  // binary-search refinement procedure
+  multirefine();
 
-  double avg = computeAverage();
-  double max = computeMax();
-
-  const double overloadStep = 0.01;
-  const double overloadStart = 1.02;
-  double dCurOverload = max / avg;
-
-  int minOverload = 0;
-  int maxOverload = (int)((dCurOverload - overloadStart)/overloadStep + 1);
-  double dMinOverload = minOverload * overloadStep + overloadStart;
-  double dMaxOverload = maxOverload * overloadStep + overloadStart;
-
-  iout << iINFO
-       << "Balancing from " << minOverload << " = " << dMinOverload 
-       << " to " << maxOverload << "=" << dMaxOverload 
-       << " dCurOverload=" << dCurOverload << " max=" << max << " avg=" << avg
-       << "\n" << endi;
-
-  int curOverload;
-  int refineDone = 0;
-
-  overLoad = dMinOverload;
-  if (refine())
-    refineDone = 1;
-  else {
-    overLoad = dMaxOverload;
-    if (!refine()) {
-      iout << iINFO << "ERROR: Could not refine at max overload\n" << endi;
-      refineDone = 1;
-    }
-  }
-
-  // Scan up, until we find a refine that works
-  while (!refineDone) {
-    if (maxOverload - minOverload <= 1)
-      refineDone = 1;
-    else {
-      curOverload = (maxOverload + minOverload ) / 2;
-
-      overLoad = curOverload * overloadStep + overloadStart;
-      iout << iINFO << "Testing curOverload " << curOverload 
-	   << "=" << overLoad << " [min,max]=" 
-	   << minOverload << ", " << maxOverload
-	   << "\n" << endi;
-      if (refine())
-	maxOverload = curOverload;
-      else
-	minOverload = curOverload;
-    }
-  }
 
   //  iout << iINFO  << "num assigned: " << numAssigned << endi;
   //  iout << iINFO  << "Starting overLoad = " << overLoad << endi;

@@ -28,10 +28,10 @@ strategy();
 void AlgRecBisection::rec_divide(int n, Partition &p)
 {
   int i,j,k;
-  int pos[3];
+  int midpos;
   int n1, n2;
   double load1, currentload;
-  int mindir, count;
+  int maxdir, count;
   Partition p1, p2;
 
   CmiPrintf("rec_divide: partition n:%d count:%d load:%f (%d %d %d, %d %d %d)\n", n, p.count, p.load, p.origin[0], p.origin[1], p.origin[2], p.corner[0], p.corner[1], p.corner[2]);
@@ -57,28 +57,29 @@ void AlgRecBisection::rec_divide(int n, Partition &p)
 
   // determine the best division direction
   int maxSpan=-1;
+  maxdir = XDIR;
   for (i=XDIR; i<=ZDIR; i++) {
     int myspan = p.corner[i] - p.origin[i];
     if (myspan > maxSpan) {
-      mindir = i;
+      maxdir = i;
       maxSpan = myspan;
     }
   }
 
   // other two dimensions
-  int dir2 = (mindir+1)%3;
-  int dir3 = (mindir+2)%3;
+  int dir2 = (maxdir+1)%3;
+  int dir3 = (maxdir+2)%3;
 
   currentload = 0.0;
   count = 0;
-  pos[mindir] = p.origin[mindir];
+  midpos = p.origin[maxdir];
   for (i=0; i<numComputes; i++) {
     // not belong to this partition
-    if (computeLoad[vArray[mindir][i].id].refno != p.refno) continue;
-    if (vArray[mindir][i].v<p.origin[mindir]) continue;
-    if (vArray[mindir][i].v>p.corner[mindir]) break;
+    if (computeLoad[vArray[maxdir][i].id].refno != p.refno) continue;
+    if (vArray[maxdir][i].v<p.origin[maxdir]) continue;
+    if (vArray[maxdir][i].v>p.corner[maxdir]) break;
 
-    int cid = vArray[mindir][i].id;	// this compute ID
+    int cid = vArray[maxdir][i].id;	// this compute ID
     // check if this compute is within the partition
     if ( computeLoad[cid].v[dir2] >= p.origin[dir2] &&
 	 computeLoad[cid].v[dir2] <= p.corner[dir2] &&
@@ -89,7 +90,7 @@ void AlgRecBisection::rec_divide(int n, Partition &p)
 	computeLoad[cid].refno = p1.refno;
         currentload += computeLoad[cid].load;
         count ++;
-	pos[mindir] = computeLoad[cid].v[mindir];
+	midpos = computeLoad[cid].v[maxdir];
       }
       else {	// or the next partition
 	computeLoad[cid].refno = p2.refno;
@@ -97,11 +98,13 @@ void AlgRecBisection::rec_divide(int n, Partition &p)
     }
   }
 //  CmiPrintf("X:cur:%d, prev:%d load:%f %f\n", cur, prev, currentload, prevload);
-  CmiPrintf("DIR:%d %d load:%f\n", mindir, pos[mindir], currentload);
+#ifdef DEBUG
+  CmiPrintf("DIR:%d %d load:%f\n", maxdir, midpos, currentload);
+#endif
 
 
-  p1.corner[mindir] = pos[mindir];
-  p2.origin[mindir] = pos[mindir];
+  p1.corner[maxdir] = midpos;
+  p2.origin[maxdir] = midpos;
 
   p1.load = currentload;
   p1.count = count;
@@ -290,6 +293,13 @@ void AlgRecBisection::strategy()
   delete [] computeLoad;
   for (i=0; i<3; i++) delete [] vArray[i];
   delete [] partitions;
+
+  // use refinement
+  for (int i=0; i<numComputes; i++)
+    assign((computeInfo *) &(computes[i]),
+	   (processorInfo *) &(processors[computes[i].processor]));
+	 
+  multirefine();
 
   CmiPrintf("AlgRecBisection finished\n");
   CmiPrintf("AlgRecBisection finish time: %f\n", CmiWallTimer() - t);
