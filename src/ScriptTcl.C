@@ -170,7 +170,7 @@ int ScriptTcl::Tcl_run(ClientData clientData,
 
   script->setParameter("numsteps",simParams->firstTimestep + numsteps);
 
-  script->runController(1);
+  script->runController(SCRIPT_RUN);
 
   script->setParameter("firsttimestep",simParams->N);
 
@@ -252,9 +252,7 @@ int ScriptTcl::Tcl_output(ClientData clientData,
   iout << "TCL: Writing to files with basename " <<
 		simParams->outputFilename << ".\n" << endi;
 
-  Node::Object()->state->controller->algorithm(2);
-  Node::Object()->enableScriptBarrier();
-  script->suspend();
+  script->runController(SCRIPT_OUTPUT);
 
   script->setParameter("outputname",oldname);
 
@@ -381,7 +379,7 @@ void ScriptTcl::algorithm() {
       interp = 0;
     }
     CthSuspend();
-    Node::Object()->state->controller->algorithm(0);
+    Node::Object()->state->controller->algorithm(SCRIPT_END);
   }
 
 #else
@@ -390,7 +388,7 @@ void ScriptTcl::algorithm() {
 
 #endif
 
-  Node::Object()->state->controller->algorithm(0);
+  Node::Object()->state->controller->algorithm(SCRIPT_END);
   Node::Object()->state->controller->terminate();
 
 }

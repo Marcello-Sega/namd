@@ -11,6 +11,10 @@
 #include "Lattice.h"
 #include "BroadcastObject.h"
 
+#define SCRIPT_END 0
+#define SCRIPT_RUN 1
+#define SCRIPT_OUTPUT 2
+
 // Tags used in common by all users of broadcast system.
 enum {
   velocityRescaleFactorTag,

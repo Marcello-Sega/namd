@@ -73,7 +73,7 @@ Controller::~Controller(void)
 
 void Controller::threadRun(Controller* arg)
 {
-    arg->algorithm(0);
+    arg->algorithm(SCRIPT_END);
 }
 
 void Controller::run(void)
@@ -96,15 +96,15 @@ void Controller::algorithm(int task)
   if (simParams->tclOn) broadcast->scriptBarrier.publish(scriptSeq++,task);
 
   switch ( task ) {
-    case 0:
+    case SCRIPT_END:
       if ( simParams->tclOn ) {
         enqueueCollections(0);
         outputExtendedSystem(-1);
         return;
       }
-    case 1:
+    case SCRIPT_RUN:
       break;
-    case 2:
+    case SCRIPT_OUTPUT:
       collection->enqueuePositions(0);
       collection->enqueueVelocities(0);
       outputExtendedSystem(-1);
@@ -151,7 +151,7 @@ void Controller::algorithm(int task)
 	}
     }
 
-  if ( ! task ) {
+  if ( task == SCRIPT_END ) {
     enqueueCollections(0);
     outputExtendedSystem(-1);
     terminate();

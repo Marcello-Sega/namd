@@ -67,14 +67,14 @@ void Sequencer::run(void)
 // when to migrate atoms, when to add forces to velocity update.
 void Sequencer::algorithm(void)
 {
-  int scriptTask = 1;
+  int scriptTask = SCRIPT_RUN;
   int scriptSeq = 0;
   while ( (! simParams->tclOn) ||
-		(scriptTask = broadcast->scriptBarrier.get(scriptSeq++)) ) {
+    (scriptTask = broadcast->scriptBarrier.get(scriptSeq++)) != SCRIPT_END ) {
     switch ( scriptTask ) {
-      case 1:
+      case SCRIPT_RUN:
 	break;
-      case 2:
+      case SCRIPT_OUTPUT:
 	collection->submitPositions(0,patch->atomIDList,patch->p,
 					patch->lattice,patch->t,2);
 	collection->submitVelocities(0,patch->atomIDList,patch->v);
