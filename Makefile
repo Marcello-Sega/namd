@@ -186,12 +186,12 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 
 flipdcd:	$(SRCDIR)/flipdcd.c
 	$(CC) -o $@ $(SRCDIR)/flipdcd.c || \
-	echo "#!/bin/sh\necho unavailable on this platfrom" > $@; \
+	echo "#!/bin/sh\necho unavailable on this platform" > $@; \
 	chmod +x $@
 
 flipbinpdb:	$(SRCDIR)/flipbinpdb.c
 	$(CC) -o $@ $(SRCDIR)/flipbinpdb.c || \
-	echo "#!/bin/sh\necho unavailable on this platfrom" > $@; \
+	echo "#!/bin/sh\necho unavailable on this platform" > $@; \
 	chmod +x $@
 
 fixdcd:	$(SRCDIR)/fixdcd.c
