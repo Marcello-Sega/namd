@@ -100,7 +100,7 @@ LdbCoordinator::LdbCoordinator()
     CkExit();
   }
   
-#if 0
+#if 1
   // Create a load balancer
   if (CkMyPe() == 0) {
     //   CreateCentralLB();
@@ -161,9 +161,10 @@ LdbCoordinator::~LdbCoordinator(void)
 
 void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 {
-  static int lbcreated = 0;
   const SimParameters *simParams = Node::Object()->simParameters;
 
+#if 0
+  static int lbcreated = 0;
   // PE0 first time Create a load balancer
   if (CkMyPe() == 0 && !lbcreated) {
     if (simParams->ldbStrategy == LDBSTRAT_ALGNBOR) 
@@ -174,6 +175,8 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
     }
     lbcreated = 1;
   }
+#endif
+
   //  DebugM(10,"stepsPerLdbCycle initialized\n");
   stepsPerLdbCycle = simParams->ldbPeriod;
   firstLdbStep = simParams->firstLdbStep;
