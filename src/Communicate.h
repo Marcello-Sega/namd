@@ -7,10 +7,6 @@
 #ifndef COMMUNICATE_H
 #define COMMUNICATE_H
 
-extern "C" {
-#include "converse.h"
-}
-
 class MIStream;
 class MOStream;
 

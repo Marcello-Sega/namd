@@ -7,6 +7,7 @@
 #include <string.h>
 #include "Communicate.h"
 #include "MStream.h"
+#include "converse.h"
 
 CpvStaticDeclare(CmmTable, CsmMessages);
 

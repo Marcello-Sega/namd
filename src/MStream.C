@@ -7,10 +7,22 @@
 #include <string.h>
 #include "Communicate.h"
 #include "MStream.h"
+#include "converse.h"
 
 #define MIN_DEBUG_LEVEL 2
 //#define DEBUGM
 #include "Debug.h"
+
+struct StreamMessage {
+  char header[CmiMsgHeaderSizeBytes];
+  int PE;
+  int tag;
+  unsigned short len; // sizeof the data
+  unsigned short index; // index of packet in stream
+  unsigned int checksum;
+  StreamMessage *next; // for linked list of early packets
+  char data[1];
+};
 
 MIStream::MIStream(Communicate *c, int p, int t)
 {

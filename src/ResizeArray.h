@@ -17,7 +17,6 @@
 #define RESIZEARRAY_H
 
 #include "ResizeArrayRaw.h"
-#include "charm++.h"
 
 // Need this juju to use templated friend below
 template <class Type> class ResizeArrayIter;

@@ -18,7 +18,6 @@
 
 #include <new.h>
 #include <string.h>
-#include "charm++.h"
 
 // Undefined if src,dest overlap
 extern "C" void *memcpy(void *, const void *, size_t);

@@ -10,17 +10,7 @@
 #include "Vector.h"
 #include <string.h>
 
-struct StreamMessage {
-  char header[CmiMsgHeaderSizeBytes];
-  int PE;
-  int tag;
-  unsigned short len; // sizeof the data 
-  unsigned short index; // index of packet in stream
-  unsigned int checksum;
-  StreamMessage *next; // for linked list of early packets
-  char data[1];
-};
-
+class StreamMessage;
 class Communicate;
 
 class MIStream {
