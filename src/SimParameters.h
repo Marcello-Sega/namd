@@ -94,7 +94,6 @@ public:
 	Vector cellOrigin;		//  Fixed center of periodic cell
 	Lattice lattice;		//  All data for periodic cell
 	
-
 	int nonbondedFrequency;		//  Number of timesteps between
 					//  nonbonded evaluation
 	int fmaFrequency;		//  Number of timesteps between
@@ -108,6 +107,7 @@ public:
 					//  simulation
 	Bool comMove;     		//  Should the center of mass be 
 					//  able to move
+	Bool wrapWater;			//  Wrap water around on output
 	BigReal dielectric;   		//  Dielectric constant
 	ExclusionSettings exclude;      //  What electrostatic exclusions should
 					//  be made
@@ -236,6 +236,12 @@ public:
 	BigReal berendsenPressureCompressibility;
 	BigReal berendsenPressureRelaxationTime;
 	int berendsenPressureFreq;
+
+	Bool langevinPistonOn;		//  Langevin piston pressure control
+	BigReal langevinPistonTarget;
+	BigReal langevinPistonPeriod;
+	BigReal langevinPistonDecay;
+	BigReal langevinPistonTemp;
 
 	unsigned int randomSeed;	//  Seed for random number generator
 
@@ -373,12 +379,15 @@ public:
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1022 $	$Date: 1998/08/04 04:07:23 $
+ *	$Revision: 1.1023 $	$Date: 1998/08/17 23:34:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1023  1998/08/17 23:34:30  jim
+ * Added options for Langevin piston and wrapWater.
+ *
  * Revision 1.1022  1998/08/04 04:07:23  jim
  * Added extended system file support and fixed lack of endi in SimParameters.
  *

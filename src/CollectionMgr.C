@@ -2,6 +2,9 @@
 #include "CollectionMgr.h"
 #include "CollectionMaster.top.h"
 #include "CollectionMaster.h"
+#include "Node.h"
+#include "Molecule.h"
+#include "SimParameters.h"
 
 //#define DEBUGM
 #include "Debug.h"
@@ -25,12 +28,19 @@ CollectionMgr::~CollectionMgr(void)
 void CollectionMgr::submitPositions(int seq, AtomIDList &i, PositionList &d,
 						Lattice l, TransformList &t)
 {
+  int wrapWater = Node::Object()->simParameters->wrapWater;
+  Molecule *mol = Node::Object()->molecule;
   PositionList d2(d.size());
   PositionList::iterator d_i,d_e,d2_i;
+  AtomIDList::iterator a_i = i.begin();
   TransformList::iterator t_i = t.begin();
   d_i = d.begin();  d_e = d.end();  d2_i = d2.begin();
-  for ( ; d_i != d_e ; ++d_i, ++d2_i, ++t_i ) {
-    *d2_i = l.reverse_transform(*d_i,*t_i);
+  for ( ; d_i != d_e ; ++d_i, ++d2_i, ++a_i, ++t_i ) {
+    if ( wrapWater && mol->is_water(*a_i) ) {
+      *d2_i = *d_i;
+    } else {
+      *d2_i = l.reverse_transform(*d_i,*t_i);
+    }
   }
   CollectVectorInstance *c;
   if ( c = positions.submitData(seq,i,d2) )
@@ -85,12 +95,15 @@ void CollectionMgr::submitForces(int seq, AtomIDList &i, ForceList &d)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1998/08/11 16:30:25 $
+ *	$Revision: 1.1011 $	$Date: 1998/08/17 23:34:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMgr.C,v $
+ * Revision 1.1011  1998/08/17 23:34:30  jim
+ * Added options for Langevin piston and wrapWater.
+ *
  * Revision 1.1010  1998/08/11 16:30:25  jim
  * Modified output from periodic boundary simulations to return atoms to
  * internally consistent coordinates.  We store the transformations which

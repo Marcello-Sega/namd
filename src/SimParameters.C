@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *  $RCSfile: SimParameters.C,v $
- *  $Author: sergei $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1042 $  $Date: 1998/08/15 19:25:59 $
+ *  $Author: jim $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1043 $  $Date: 1998/08/17 23:34:28 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1043  1998/08/17 23:34:28  jim
+ * Added options for Langevin piston and wrapWater.
+ *
  * Revision 1.1042  1998/08/15 19:25:59  sergei
  * Fixed a bug in cylidrical boundary conditions, which
  * was always setting the cylinder center to 0 0 0.
@@ -463,7 +466,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1042 1998/08/15 19:25:59 sergei Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1043 1998/08/17 23:34:28 jim Exp $";
 
 
 #include "charm++.h"
@@ -610,6 +613,9 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
    opts.optionalB("main", "COMmotion", "should the center of mass move?",
       &comMove, FALSE);
+
+   opts.optionalB("main", "wrapWater", "wrap waters around periodic boundaries on output",
+      &wrapWater, FALSE);
 
    opts.optional("main", "dielectric", "dielectric constant",
      &dielectric, 1.0);
@@ -868,6 +874,29 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
     "Number of steps between volume rescaling",
     &berendsenPressureFreq, 1);
    opts.range("BerendsenPressureFreq", POSITIVE);
+
+   ////  Langevin Piston pressure control
+   opts.optionalB("main", "LangevinPiston",
+      "Should Langevin piston pressure control be used?",
+      &langevinPistonOn, FALSE);
+   opts.require("LangevinPiston", "LangevinPistonTarget",
+      "Target pressure for pressure control",
+      &langevinPistonTarget);
+   opts.require("LangevinPiston", "LangevinPistonPeriod",
+      "Oscillation period for pressure control",
+      &langevinPistonPeriod);
+   opts.range("LangevinPistonPeriod", POSITIVE);
+   opts.units("LangevinPistonPeriod", N_FSEC);
+   opts.require("LangevinPiston", "LangevinPistonDecay",
+      "Decay time for pressure control",
+      &langevinPistonDecay);
+   opts.range("LangevinPistonDecay", POSITIVE);
+   opts.units("LangevinPistonDecay", N_FSEC);
+   opts.require("LangevinPiston", "LangevinPistonTemp",
+      "Temperature for pressure control piston",
+      &langevinPistonTemp);
+   opts.range("LangevinPistonTemp", POSITIVE);
+   opts.units("langevinTemp", N_KELVIN);
 
    ////  Fixed Atoms
    opts.optionalB("main", "fixedatoms", "Are there fixed atoms?",
@@ -2177,6 +2206,9 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
    iout << iINFO << "PERIODIC CELL          " << lattice.dimension() << "\n";
    iout << iINFO << "PERIODIC CELL CENTER   " << lattice.origin() << "\n";
+   if (wrapWater) {
+     iout << iINFO << "WRAPPING WATERS AROUND PERIODIC BOUNDARIES ON OUTPUT.\n";
+   }
    iout << endi;
 
    if (ldbStrategy==LDBSTRAT_NONE)  {
@@ -2697,6 +2729,11 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
      iout << endi;
    }
 
+   if (berendsenPressureOn && langevinPistonOn)
+   {
+      NAMD_die("Multiple pressure control algorithms selected!\n");
+   }
+
    if (berendsenPressureOn)
    {
      iout << iINFO << "BERENDSEN PRESSURE COUPLING ACTIVE\n";
@@ -2706,11 +2743,26 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
         << berendsenPressureCompressibility << " BAR^(-1)\n";
      iout << iINFO << "    RELAXATION TIME IS "
         << berendsenPressureRelaxationTime << " FS\n";
-  berendsenPressureTarget /= PRESSUREFACTOR;
-  berendsenPressureCompressibility *= PRESSUREFACTOR;
      iout << iINFO << "    APPLIED EVERY "
         << berendsenPressureFreq << " STEPS\n";
      iout << endi;
+     berendsenPressureTarget /= PRESSUREFACTOR;
+     berendsenPressureCompressibility *= PRESSUREFACTOR;
+   }
+
+   if (langevinPistonOn)
+   {
+     iout << iINFO << "LANGIVIN PISTON PRESSURE CONTROL ACTIVE\n";
+     iout << iINFO << "       TARGET PRESSURE IS "
+        << langevinPistonTarget << " BAR\n";
+     iout << iINFO << "    OSCILLATION PERIOD IS "
+        << langevinPistonPeriod << " FS\n";
+     iout << iINFO << "            DECAY TIME IS "
+        << langevinPistonDecay << " FS\n";
+     iout << iINFO << "    PISTON TEMPERATURE IS "
+        << langevinPistonTemp << " K\n";
+     iout << endi;
+     langevinPistonTarget /= PRESSUREFACTOR;
    }
 
    if (vmdFrequency > 0)
@@ -2936,6 +2988,7 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
   msg->put(dt)->put(N)->put(stepsPerCycle);
   msg->put(ldbStrategy)->put(ldbPeriod)->put(firstLdbStep);
   msg->put(initialTemp)->put(comMove);
+  msg->put(wrapWater);
   msg->put(dielectric)->put(exclude)->put(scale14);
   msg->put(dcdFrequency)->put(velDcdFrequency)->put(vmdFrequency);
   msg->put(dcdFilename);
@@ -3013,6 +3066,11 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
   msg->put(berendsenPressureCompressibility);
   msg->put(berendsenPressureRelaxationTime);
   msg->put(berendsenPressureFreq);
+  msg->put(langevinPistonOn);
+  msg->put(langevinPistonTarget);
+  msg->put(langevinPistonPeriod);
+  msg->put(langevinPistonDecay);
+  msg->put(langevinPistonTemp);
 
   // Send fixed-atoms parameters
   msg->put(fixedAtomsOn);
@@ -3045,6 +3103,7 @@ void SimParameters::receive_SimParameters(MIStream *msg)
   msg->get(firstLdbStep);
   msg->get(initialTemp);
   msg->get(comMove);
+  msg->get(wrapWater);
   msg->get(dielectric);
   msg->get(exclude);
   msg->get(scale14);
@@ -3203,6 +3262,11 @@ void SimParameters::receive_SimParameters(MIStream *msg)
   msg->get(berendsenPressureCompressibility);
   msg->get(berendsenPressureRelaxationTime);
   msg->get(berendsenPressureFreq);
+  msg->get(langevinPistonOn);
+  msg->get(langevinPistonTarget);
+  msg->get(langevinPistonPeriod);
+  msg->get(langevinPistonDecay);
+  msg->get(langevinPistonTemp);
 
   // Fixed atom parameters
   msg->get(fixedAtomsOn);
@@ -3222,12 +3286,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1042 $  $Date: 1998/08/15 19:25:59 $
+ *  $Revision: 1.1043 $  $Date: 1998/08/17 23:34:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1043  1998/08/17 23:34:28  jim
+ * Added options for Langevin piston and wrapWater.
+ *
  * Revision 1.1042  1998/08/15 19:25:59  sergei
  * Fixed a bug in cylidrical boundary conditions, which
  * was always setting the cylinder center to 0 0 0.
