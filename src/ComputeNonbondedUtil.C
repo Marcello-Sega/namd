@@ -13,7 +13,9 @@
 #endif
 
 #ifdef WIN32
-double erfc(double);
+extern "C" {
+  double erfc(double);
+}
 #endif
 
 #include "ComputeNonbondedUtil.h"
