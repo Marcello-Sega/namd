@@ -6,7 +6,12 @@
 
 #include "Set.h"
 #include "elements.h"
+#ifndef NO_STRSTREAM_H
 #include <iostream.h>
+#else
+#include <iostream>
+using namespace std;
+#endif
 
 
 Set::Set() 
