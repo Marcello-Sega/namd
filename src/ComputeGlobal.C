@@ -168,6 +168,7 @@ void ComputeGlobal::recvResults(ComputeGlobalResultsMsg *msg) {
   // Get reconfiguration if present
   if ( msg->reconfig ) configure(msg->newaid, msg->newgdef);
 
+  delete [] f;
   delete msg;
 }
 
