@@ -3322,7 +3322,9 @@ void SimParameters::receive_SimParameters(MIStream *msg)
     msg->get(fftwlen);
     FFTWWisdomString = new char[fftwlen];
     msg->get(fftwlen,FFTWWisdomString);
+#ifdef NAMD_FFTW
     fftw_import_wisdom_from_string(FFTWWisdomString);
+#endif
   }
 
   delete msg;
