@@ -1,3 +1,4 @@
+include Make.charm
 include Makearch
 
 #####
