@@ -26,20 +26,21 @@ CHARMXI = /Projects/l1/namd.2.0/charm/bin/charmc $(PURIFY)
 #####
 # definitions for PMTA routines
 #####
-DPMTADIR=dpmta2
-DPMTAINCL=-I$(DPMTADIR)/include
-DPMTALIB=-L$(DPMTADIR) -ldpmta2 -lmpole
-DPMTAFLAGS=-DDPMTA
-DPMTA=$(DPMTAINCL) $(DPMTAFLAGS)
+#DPMTADIR=dpmta2
+#DPMTAINCL=-I$(DPMTADIR)/include
+#DPMTALIB=-L$(DPMTADIR) -ldpmta2 -lmpole
+#DPMTAFLAGS=-DDPMTA
+#DPMTA=$(DPMTAINCL) $(DPMTAFLAGS)
 ######
 ## definitions for PVM routines
 ######
-PVMDIR=pvm3
-PVMLIB=-L$(PVMDIR) -lpvmc
-PVM=-I$(PVMDIR)
+#PVMDIR=pvm3
+#PVMLIB=-L$(PVMDIR) -lpvmc
+#PVM=-I$(PVMDIR)
 
 # CXXOPTS = -O
-CXXOPTS = -g
+#CXXOPTS = -g
+CXXOPTS = -O -G
 # CXXOPTS = -O +DAK460 +DSK460
 CXX = CC -Aa -D_HPUX_SOURCE
 INCLUDE = /Projects/l1/namd.2.0/charm/include
@@ -91,6 +92,7 @@ OBJS = \
 	$(DSTDIR)/Message.o \
 	$(DSTDIR)/MessageManager.o \
 	$(DSTDIR)/MessageQueue.o \
+	$(DSTDIR)/MigrateAtomsMsg.o \
 	$(DSTDIR)/Molecule.o \
 	$(DSTDIR)/Namd.o \
 	$(DSTDIR)/NamdState.o \
@@ -127,9 +129,9 @@ TEMPLATES = \
 	$(SRCDIR)/Templates/UniqueSortedArray.C
 
 namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES)
-	cd $(DPMTADIR) ; $(MAKE) ; cd ..
-	cd $(PVMDIR) ; $(MAKE) ; cd ..
-	$(CHARMC) -ld++-option \
+#	cd $(DPMTADIR) ; $(MAKE) ; cd ..
+#	cd $(PVMDIR) ; $(MAKE) ; cd ..
+	$(CHARMC) -verbose -ld++-option \
 	"-I $(INCLUDE) -I $(SRCDIR) $(CXXOPTS) " \
 	-language charm++ \
 	-o namd2 $(OBJS) \
@@ -187,7 +189,7 @@ clean:
 	rm -rf ptrepository
 	rm -rf $(DSTDIR)
 	rm -f namd2
-	cd $(DPMTADIR) ; $(MAKE) clean ; cd ..
+#	cd $(DPMTADIR) ; $(MAKE) clean ; cd ..
 
 veryclean:	clean
 	rm -rf $(INCDIR)
