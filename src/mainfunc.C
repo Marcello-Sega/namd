@@ -47,6 +47,7 @@ int main(int argc, char **argv) {
 #else
   char *confFile = argv[argc-1];
 #endif
+#ifndef NO_CHDIR
   char *oldcwd = GETCWD(0,0);
   char *currentdir=confFile;
   char *tmp;
@@ -68,6 +69,7 @@ int main(int argc, char **argv) {
   else if ( *tmp == PATHSEP ) // config file in / is odd, but it might happen
     if ( CHDIR(PATHSEPSTR) ) NAMD_die("chdir() failed!");
   currentdir = NULL;
+#endif
 
   iout << iINFO << "Configuration file is " << confFile << "\n" << endi;
 
@@ -83,8 +85,10 @@ int main(int argc, char **argv) {
   script->run(confFile);
 #endif
 
+#ifndef NO_CHDIR
   CHDIR(oldcwd);
   free(oldcwd);
+#endif
 
 #ifdef NAMD_TCL
 }
