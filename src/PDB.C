@@ -205,7 +205,7 @@ PDBAtom *PDB::atom(int place)
 }
 
 
-// find the lowest and highest bounds for a fraction of the atoms
+// find the lowest and highest bounds based on a fraction of the atoms
 void PDB::find_extremes(BigReal *min, BigReal *max, Vector rec, BigReal frac) const
 {
     SortableResizeArray<Real> coor;
@@ -221,9 +221,11 @@ void PDB::find_extremes(BigReal *min, BigReal *max, Vector rec, BigReal frac) co
     int ilow = (1.0 - frac) * atomCount;
     if ( ilow < 0 ) ilow = 0;
     if ( ilow > atomCount/2 ) ilow = atomCount/2;
-    *min = coor[ilow];
     int ihigh = atomCount - ilow - 1;
-    *max = coor[ihigh];
+    BigReal span = coor[ihigh] - coor[ilow];
+    BigReal extension = (1.0 - frac) * span / (2.0 * frac - 1.0);
+    *max = coor[ihigh] + extension;
+    *min = coor[ilow] - extension;
 }
 
 //#define TEST_PDB_CLASS

@@ -420,9 +420,9 @@ void WorkDistrib::patchMapInit(void)
     node->pdb->find_extremes(&(xmin.z),&(xmax.z),lattice.c_r());
   // Otherwise, this allows a small number of stray atoms.
   } else {
-    node->pdb->find_extremes(&(xmin.x),&(xmax.x),lattice.a_r(),0.99);
-    node->pdb->find_extremes(&(xmin.y),&(xmax.y),lattice.b_r(),0.99);
-    node->pdb->find_extremes(&(xmin.z),&(xmax.z),lattice.c_r(),0.99);
+    node->pdb->find_extremes(&(xmin.x),&(xmax.x),lattice.a_r(),0.9);
+    node->pdb->find_extremes(&(xmin.y),&(xmax.y),lattice.b_r(),0.9);
+    node->pdb->find_extremes(&(xmin.z),&(xmax.z),lattice.c_r(),0.9);
   }
 
   patchMap->initialize(xmin,xmax,lattice,patchSize);
