@@ -82,6 +82,7 @@ protected:
   virtual void boxClosed(int);
 
   // Internal Atom Migration methods and data
+  void doMarginCheck();
   void doAtomMigration();
   int inMigration;
   int numMlBuf;
@@ -90,9 +91,7 @@ protected:
 private:
   // Store of Atom-wise variables
   VelocityList  v; 
-  /*
   PositionList  pInit;   
-  */
   
   // List of Proxies
   ProxyList     proxy;
@@ -117,13 +116,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/03/27 20:25:45 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1011 $	$Date: 1998/01/13 23:10:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.1011  1998/01/13 23:10:58  jim
+ * Added margin checking - prelude to automatic migration.
+ *
  * Revision 1.1010  1997/03/27 20:25:45  brunner
  * Changes for LdbCoordinator, the load balance control BOC
  *

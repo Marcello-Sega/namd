@@ -38,10 +38,10 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1039 1997/12/22 21:29:24 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1040 1998/01/13 23:10:57 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
-		     VelocityList vl) : Patch(pd,al,pl), v(vl) 
+		     VelocityList vl) : Patch(pd,al,pl), v(vl), pInit(&pl)
 { 
   DebugM(4, "HomePatch("<<pd<<") at " << this << "\n");
   if (atomIDList.size() != v.size()) {
@@ -182,6 +182,13 @@ void HomePatch::positionsReady(int doMigration)
 
   if (doMigration) {
     doAtomMigration();
+    pInit.resize(p.size());
+    PositionList::iterator p_i = p.begin();
+    PositionList::iterator p_e = p.end();
+    PositionList::iterator pInit_i = pInit.begin();
+    for ( ; p_i != p_e; ++p_i, ++pInit_i ) (*pInit_i) = (*p_i);
+  } else {
+    doMarginCheck();
   }
 
   // Must Add Proxy Changes when migration completed!
@@ -267,6 +274,56 @@ Vector HomePatch::calcAngularMomentum()
 void HomePatch::submitLoadStats(int timestep)
 {
   LdbCoordinator::Object()->patchLoad(patchID,numAtoms,timestep);
+}
+
+
+void HomePatch::doMarginCheck()
+{
+  SimParameters *simParams = Node::Object()->simParameters;
+  Position Min = lattice.unscale(min);
+  Position Max = lattice.unscale(max);
+  BigReal cutoff = simParams->cutoff;
+  BigReal marginx = 0.5 * ( Max.x - Min.x - cutoff );
+  BigReal marginy = 0.5 * ( Max.y - Min.y - cutoff );
+  BigReal marginz = 0.5 * ( Max.z - Min.z - cutoff );
+  BigReal minx = Min.x - marginx;
+  BigReal miny = Min.y - marginy;
+  BigReal minz = Min.z - marginz;
+  BigReal maxx = Max.x + marginx;
+  BigReal maxy = Max.y + marginy;
+  BigReal maxz = Max.z + marginz;
+  int xdev, ydev, zdev;
+  int problemCount = 0;
+
+  PositionList::iterator p_i = p.begin();
+  PositionList::iterator p_e = p.end();
+  for ( ; p_i != p_e; ++p_i ) {
+
+    // check if atom should is within bounds
+    if (p_i->x < minx) xdev = 0;
+    else if (maxx <= p_i->x) xdev = 2; 
+    else xdev = 1;
+
+    if (p_i->y < miny) ydev = 0;
+    else if (maxy <= p_i->y) ydev = 2; 
+    else ydev = 1;
+
+    if (p_i->z < minz) zdev = 0;
+    else if (maxz <= p_i->z) zdev = 2; 
+    else zdev = 1;
+
+    if (mInfo[xdev][ydev][zdev]) { // process atom for migration
+                                   // Don't migrate if destination is myself
+	++problemCount;
+    }
+
+  }
+
+  if ( problemCount ) {
+      iout << iERROR <<
+	"Found " << problemCount << " margin violations!\n" << endi;
+  } 
+
 }
 
 
@@ -464,12 +521,15 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1039 $	$Date: 1997/12/22 21:29:24 $
+ *	$Revision: 1.1040 $	$Date: 1998/01/13 23:10:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1040  1998/01/13 23:10:57  jim
+ * Added margin checking - prelude to automatic migration.
+ *
  * Revision 1.1039  1997/12/22 21:29:24  jim
  * Proxies no longer send empty arrays back to HomePatch.  Requires some new
  * flags to be set correctly in Sequencer in order to work.  These are:
