@@ -522,6 +522,7 @@ int ScriptTcl::Tcl_reinitatoms(ClientData clientData,
 #define DEG2RAD 3.14159625359/180.0
 #define UNITCELLSLOP 0.0001
 
+#ifdef NAMD_PLUGINS
 static int get_lattice_from_ts(Lattice *lattice, const molfile_timestep_t *ts)
 {
   // Check if valid unit cell data is contained in the timestep.  We don't
@@ -554,7 +555,6 @@ static int get_lattice_from_ts(Lattice *lattice, const molfile_timestep_t *ts)
   return 1;
 }
 
-#ifdef NAMD_PLUGINS
 int ScriptTcl::Tcl_coorfile(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
