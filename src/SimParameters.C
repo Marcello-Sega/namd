@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *  $RCSfile: SimParameters.C,v $
- *  $Author: milind $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1030 $  $Date: 1998/01/13 17:07:05 $
+ *  $Author: sergei $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1031 $  $Date: 1998/01/14 19:11:18 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1031  1998/01/14 19:11:18  sergei
+ * added checking for SMDAtom defined
+ *
  * Revision 1.1030  1998/01/13 17:07:05  milind
  * added a prefix to the names of the units because they clashed with names
  * of some predifined constants in Solaris include files.
@@ -421,7 +424,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1030 1998/01/13 17:07:05 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1031 1998/01/14 19:11:18 sergei Exp $";
 
 
 #include "ckdefs.h"
@@ -1766,6 +1769,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
      SMDOn = FALSE;
      SMDChDirOn = FALSE;
      SMDChForceOn = FALSE;
+     SMDAtom = -1;
    }
 
    if (SMDOn) {
@@ -2156,7 +2160,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 	  << SMDDir << "\n";
 
      iout << iINFO << "SMD ATOM NUMBER IN PDB FILE    "
-	  << SMDAtom << "\n";
+	  << SMDAtom+1 << "\n";
 
      iout << iINFO << "SMD OUTPUT FREQUENCY   "
 	  << SMDOutputFreq << " TIMESTEPS\n";
@@ -2819,12 +2823,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1030 $  $Date: 1998/01/13 17:07:05 $
+ *  $Revision: 1.1031 $  $Date: 1998/01/14 19:11:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1031  1998/01/14 19:11:18  sergei
+ * added checking for SMDAtom defined
+ *
  * Revision 1.1030  1998/01/13 17:07:05  milind
  * added a prefix to the names of the units because they clashed with names
  * of some predifined constants in Solaris include files.

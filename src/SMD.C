@@ -41,6 +41,12 @@ void SMDData::init(PDB *pdb) {
 
   int atomNum = simParams->SMDAtom;
 
+  if (atomNum == -1) { // not defined
+    atomPosVmin = 0;
+    atomPosVmax = 0;
+    return;
+  }
+
   PDBAtom *atom =  pdb->atom(atomNum);
 
   atomPosVmin.x = atomPosVmax.x = atom->xcoor();
