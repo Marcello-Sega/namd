@@ -28,7 +28,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.13 1997/01/17 17:17:52 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.14 1997/01/17 19:22:11 nealk Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -137,7 +137,7 @@ void ReductionMgr::displayData(ReductionMgrData *current)
 {
   if (!current) return;
   if (current->dataToSend)
-	iout << "Unfilled data fields: " << current->dataToSend << "\n" << endi;
+	iout << "Unfilled data fields: "<< current->dataToSend <<"\n" << endi;
   for(int tag=0; tag<REDUCTION_MAX_RESERVED; tag++)
 	displayData(current,(ReductionTag)tag);
 } /* ReductionMgr::displayData() */
@@ -186,7 +186,8 @@ void	ReductionMgr::Register(ReductionTag tag)
   #endif
 
   maxData[tag]++;
-  DebugM(1,"Register tag=" << tag << " maxData=" << maxData[tag] << "\n");
+  DebugM(1,"Register tag=" << tagString[tag]
+			   << " maxData="<< maxData[tag] <<"\n");
 } /* ReductionMgr::Register() */
 
 /*******************************************
@@ -208,7 +209,8 @@ void	ReductionMgr::unRegister(ReductionTag tag)
   #endif
 
   maxData[tag]--;
-  DebugM(1,"unRegister tag=" << tag << " maxData=" << maxData[tag] << "\n");
+  DebugM(1,"unRegister tag=" << tagString[tag]
+	    << " maxData=" << maxData[tag] << "\n");
 } /* ReductionMgr::unRegister() */
 
 /*******************************************
@@ -273,13 +275,13 @@ void	ReductionMgr::recvReductionData	(ReductionDataMsg *msg)
   current->tagData[tag] += msg->data;
   delete msg;
 
-  DebugM(2,"ReductionDataMsg received tag=" << tag << " data="
+  DebugM(2,"ReductionDataMsg received tag=" << tagString[tag] << " data="
          << current->tagData[tag] << "\n"); 
 
   // inform object that new data has been found
   current->numData[tag]--;
 
-  DebugM(1,"recv seq=" << current->sequenceNum << " tag=" << tag
+  DebugM(1,"recv seq=" << current->sequenceNum << " tag=" << tagString[tag]
 	<< " data=" << current->tagData[tag]
 	<< " #" << current->numData[tag] << "/" << maxData[tag] << "\n");
 
@@ -288,14 +290,14 @@ void	ReductionMgr::recvReductionData	(ReductionDataMsg *msg)
   {
     iout << iPE << " " << iERRORF << "Too many receives: seq="
 	 << current->sequenceNum
-	 << " tag=" << tag
+	 << " tag=" << tagString[tag]
 	 << " sum+data=" << current->tagData[tag]
 	 << "\n" << endi;
   }
   else if (current->numData[tag] == 0)
   {
     iout << iPE << " Reduction data for seq=" << current->sequenceNum
-	 << " tag=" << tag
+	 << " tag=" << tagString[tag]
 	 << " is " << current->tagData[tag] << "\n" << endi;
   }
   #endif
@@ -422,20 +424,20 @@ void	ReductionMgr::submit(int seq, ReductionTag tag, BigReal data, int more)
   current->tagData[tag] += data;
   current->numData[tag]--;	/* expect 1 less */
 
-  DebugM(1,"Submit seq=" << seq << " tag=" << tag << " data=" << data
+  DebugM(1,"Submit seq=" << seq << " tag=" << tagString[tag] << " data=" << data
 	<< " #" << current->numData[tag] << "/" << maxData[tag] << "\n");
 
   #if PANIC > 0
   if (current->numData[tag] < 0)
   {
     iout << iPE << " " << iERRORF << "Too many submits: seq=" << seq
-	 << " tag=" << tag
+	 << " tag=" << tagString[tag]
 	 << " data=" << data
 	 << "\n" << endi;
   }
   else if (current->numData[tag] == 0)
   {
-    iout << iPE << " Reduction data for seq=" << seq << " tag=" << tag
+    iout << iPE << " Reduction data for seq=" << seq << " tag=" << tagString[tag]
 	 << " is " << current->tagData[tag] << "\n" << endi;
   }
   #endif
@@ -470,7 +472,7 @@ void	ReductionMgr::submit(int seq, ReductionTag tag, int more)
   }
   panicMode = 1;
   #endif
-  DebugM(1,"Other submit tag=" << tag << "\n");
+  DebugM(1,"Other submit tag=" << tagString[tag] << "\n");
 } /* ReductionMgr::submit() */
 
 /*******************************************
@@ -517,7 +519,7 @@ void	ReductionMgr::require(int seq, ReductionTag tag, BigReal &data)
   // 3. use the data
   data = current->tagData[tag];
   #if PANIC > 0
-  iout << iPE << " Data for sequence=" << seq << " tag=" << tag << " is "
+  iout << iPE << " Data for sequence=" << seq << " tag=" << tagString[tag] << " is "
        << data << "\n" << endi;
   #endif
 
@@ -560,7 +562,7 @@ void	ReductionMgr::unsubscribe(ReductionTag tag)
   if (numSubscribed[tag] < 0)
   {
     iout << iERRORF << "Too many unsubscribed. " << numSubscribed[tag]
-	 << " for tag==" << tag << "\n" << endi;
+	 << " for tag==" << tagString[tag] << "\n" << endi;
     NAMD_die("Too many unsubscribed.");
   }
   #endif
