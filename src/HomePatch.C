@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.10 1996/12/05 23:45:09 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.11 1996/12/11 22:31:41 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -70,6 +70,28 @@ void HomePatch::unregisterProxy(UnregisterProxyMsg *msg) {
   forceBox.checkIn(proxy[i].forceBox);
   proxy.del(i);
 }
+
+void HomePatch::addForceToMomentum(const BigReal timestep)
+{
+  const BigReal dt = TIMEFACTOR * timestep;
+  for ( int i = 0; i < numAtoms; ++i )
+  {
+    v[i] += f[i] * ( dt / a[i].mass );
+  }
+}
+
+void HomePatch::addVelocityToPosition(const BigReal timestep)
+{
+  const BigReal dt = TIMEFACTOR * timestep;
+  for ( int i = 0; i < numAtoms; ++i )
+  {
+    p[i] += v[i] * dt;
+  }
+}
+
+
+
+
 
 
 
@@ -264,13 +286,16 @@ void HomePatch::dispose(char *&data)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1996/12/05 23:45:09 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.11 $	$Date: 1996/12/11 22:31:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.11  1996/12/11 22:31:41  jim
+ * added integration methods for Sequencer
+ *
  * Revision 1.10  1996/12/05 23:45:09  ari
  * *** empty log message ***
  *

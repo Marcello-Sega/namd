@@ -42,6 +42,9 @@ class HomePatch : public Patch {
       void runSequencer(int numberOfCycles = 0)
 		{ sequencer->run(numberOfCycles); }
 
+     // methods for Sequencer to use
+     void addForceToMomentum(const BigReal);
+     void addVelocityToPosition(const BigReal);
 
    protected:
       virtual void boxClosed(int);
@@ -100,13 +103,16 @@ class HomePatch : public Patch {
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1996/12/05 23:45:09 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.10 $	$Date: 1996/12/11 22:31:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.10  1996/12/11 22:31:41  jim
+ * added integration methods for Sequencer
+ *
  * Revision 1.9  1996/12/05 23:45:09  ari
  * *** empty log message ***
  *
