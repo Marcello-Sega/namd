@@ -72,12 +72,12 @@ void ComputeFullDirect::doWork()
   for(i=0; i<numLocalAtoms; ++i)
   {
     register BigReal kq_i = coloumb * localCharges[i];
-    register p_i_x = localPositions[i].x;
-    register p_i_y = localPositions[i].y;
-    register p_i_z = localPositions[i].z;
-    register f_i_x = 0.;
-    register f_i_y = 0.;
-    register f_i_z = 0.;
+    register BigReal p_i_x = localPositions[i].x;
+    register BigReal p_i_y = localPositions[i].y;
+    register BigReal p_i_z = localPositions[i].z;
+    register BigReal f_i_x = 0.;
+    register BigReal f_i_y = 0.;
+    register BigReal f_i_z = 0.;
     for(j=i+1; j<numLocalAtoms; ++j)
     {
       register BigReal p_ij_x = p_i_x - localPositions[j].x;
