@@ -38,6 +38,30 @@ struct CompAtom {
   unsigned int nonbondedGroupSize : 3;
   unsigned int atomFixed : 1;
   unsigned int groupFixed : 1;
+
+  CompAtom() { ; }
+
+  // Needed for IBM's xlC compiler
+  inline CompAtom(const CompAtom &a) :
+    position(a.position), charge(a.charge),
+    id(a.id), hydrogenGroupSize(a.hydrogenGroupSize),
+    nonbondedGroupSize(a.nonbondedGroupSize),
+    atomFixed(a.atomFixed), groupFixed(a.groupFixed) {
+    ;
+  }
+
+  // Needed for IBM's xlC compiler
+  inline CompAtom& operator=(const CompAtom &a) {
+    position = a.position;
+    charge = a.charge;
+    id = a.id;
+    hydrogenGroupSize = a.hydrogenGroupSize;
+    nonbondedGroupSize = a.nonbondedGroupSize;
+    atomFixed = a.atomFixed;
+    groupFixed = a.groupFixed;
+    return *this;
+  }
+
 };
 
 struct FullAtom : CompAtom {
