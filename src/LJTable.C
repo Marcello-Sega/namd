@@ -9,7 +9,7 @@
 /*
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/LJTable.C,v 1.1000 1997/02/06 15:58:35 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/LJTable.C,v 1.1001 1997/02/14 19:07:31 nealk Exp $";
 #include "LJTable.h"
 #include "Node.h"
 #include "Parameters.h"
@@ -19,7 +19,7 @@ LJTable *LJTable::_instance = 0;
 
 LJTable *LJTable::Instance() {
   if (_instance == 0) {
-    _instance = new LJTable;
+    _instance = new LJTable;	// this is never deleted.
   }
   return _instance;
 }
@@ -119,13 +119,17 @@ void LJTable::compute_vdw_params(int i, int j,
  * RCS INFORMATION:
  *
  *	$RCSfile: LJTable.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:35 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/02/14 19:07:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LJTable.C,v $
+ * Revision 1.1001  1997/02/14 19:07:31  nealk
+ * Added new/delete comments.
+ * Played with DPMTA.
+ *
  * Revision 1.1000  1997/02/06 15:58:35  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

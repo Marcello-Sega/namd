@@ -31,7 +31,7 @@ ComputeHomeTuples<T>::ComputeHomeTuples(ComputeID c) : Compute(c) {
   reduction = ReductionMgr::Object();
 
   maxProxyAtoms = 0;
-  dummy = NULL;
+  dummy = NULL;	// initialized to NULL -- won't harm reallocating deletes.
   T::registerReductionData(reduction);
   fake_seq = 0;
 
@@ -41,7 +41,7 @@ ComputeHomeTuples<T>::ComputeHomeTuples(ComputeID c) : Compute(c) {
 template <class T>
 ComputeHomeTuples<T>::~ComputeHomeTuples()
 {
-  delete [] dummy;
+  delete [] dummy;	// allocated during initialize; reallocated in doWork
   T::unregisterReductionData(reduction);
 }
 
@@ -69,7 +69,7 @@ void ComputeHomeTuples<T>::initialize() {
   // Gather all proxy patches (neighbors, that is)
   PatchID neighbors[PatchMap::MaxOneOrTwoAway];
   maxProxyAtoms = 0;
-  delete[] dummy;
+  delete[] dummy;	// deleted, but reallocated soon
 
   for ( ai = ai.begin(); ai != ai.end(); ai++ ) {
     int numNeighbors = patchMap->oneOrTwoAwayNeighbors((*ai).pid,neighbors);
@@ -93,7 +93,7 @@ void ComputeHomeTuples<T>::initialize() {
 
   setNumPatches(tuplePatchList.size());
 
-  dummy = new Force[maxProxyAtoms];
+  dummy = new Force[maxProxyAtoms];	// reallocated
 
   loadTuples();
 
@@ -152,7 +152,7 @@ void ComputeHomeTuples<T>::loadTuples() {
 
 template <class T>
 void ComputeHomeTuples<T>::sizeDummy() {
-  delete[] dummy;
+  delete[] dummy;	// deleted, but reallocated very soon
   maxProxyAtoms = 0;
 
   // find size of largest patch on tuplePatchList, setup dummy force array
@@ -162,7 +162,7 @@ void ComputeHomeTuples<T>::sizeDummy() {
       maxProxyAtoms = tpi->p->getNumAtoms();
     }
   }
-  dummy = new Force[maxProxyAtoms];
+  dummy = new Force[maxProxyAtoms];	// reallocated
 }
 
 

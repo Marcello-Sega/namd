@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1003 1997/02/13 16:17:12 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1004 1997/02/14 19:07:30 nealk Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -30,7 +30,7 @@ ComputeMap *ComputeMap::_instance = 0;
 
 ComputeMap *ComputeMap::Instance() {
   if (_instance == 0) {
-    _instance = new ComputeMap;
+    _instance = new ComputeMap;	// this is never deleted
   }
   return _instance;
 }
@@ -53,9 +53,9 @@ ComputeMap::~ComputeMap(void)
   {
     for(int i=0; i<nComputes; i++)
     {
-	delete[] computeData[i].pids;
+	delete[] computeData[i].pids;	// alloced and realloced above
     }
-    delete[] computeData;
+    delete[] computeData;	// alloced and realloced above
   }    
 }
 
@@ -79,7 +79,7 @@ void * ComputeMap::pack (int *length)
   *length = size;
 
   // allocate needed memory
-  char * const buffer = new char[size];
+  char * const buffer = new char[size];	// deleted in WorkDistrib.h::pack
 
   // fill in the data
   char *b = buffer;
@@ -191,17 +191,17 @@ int ComputeMap::allocateCids(int n)
     {
       if (computeData[i].pids != NULL)
       {
-	delete[] computeData[i].pids;
+	delete [] computeData[i].pids;	// alloc in storeCompute and unpack
 	computeData[i].pids=0;
       }
-      delete computeData;
+      delete [] computeData;	// delete before realloc
 
       computeData = NULL;
     }
   }
   nComputes = nPatchBased = nAtomBased = 0;
 
-  computeData = new ComputeData[n];
+  computeData = new ComputeData[n];	// realloced after delete
   nAllocated = n;
   for(i=0; i<n; i++)
   {
@@ -236,7 +236,7 @@ ComputeID ComputeMap::storeCompute(int inode, int maxPids, ComputeType type)
   nPatchBased++;
 
   computeData[cid].numPids = 0;
-  computeData[cid].pids = new PatchRec[maxPids];
+  computeData[cid].pids = new PatchRec[maxPids]; // delete in allocCids and ~
   computeData[cid].numPidsAllocated = maxPids;
 
   return cid;
@@ -292,13 +292,17 @@ void ComputeMap::printComputeMap(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/02/13 16:17:12 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/02/14 19:07:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.C,v $
+ * Revision 1.1004  1997/02/14 19:07:30  nealk
+ * Added new/delete comments.
+ * Played with DPMTA.
+ *
  * Revision 1.1003  1997/02/13 16:17:12  ari
  * Intermediate debuging commit - working to fix deep bug in migration?
  *

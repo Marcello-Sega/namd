@@ -41,8 +41,8 @@ private:
     ComputeID   cid;
     Compute *c;
 
-    void * operator new(size_t size) { return ::operator new(size); }
-    void operator delete(void* ptr) { ::operator delete(ptr); }
+    void * operator new(size_t size) { return ::operator new(size); }	// new matched with delete
+    void operator delete(void* ptr) { ::operator delete(ptr); }		// delete matched with new
 
     operator<(ComputeElem e) { return (cid < e.cid); }
     operator==(ComputeElem e) { return (cid == e.cid); }
@@ -77,13 +77,17 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/07 17:39:37 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/02/14 19:07:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.h,v $
+ * Revision 1.1002  1997/02/14 19:07:31  nealk
+ * Added new/delete comments.
+ * Played with DPMTA.
+ *
  * Revision 1.1001  1997/02/07 17:39:37  ari
  * More debugging for atomMigration.
  * Using -w on CC got us some minor fixes

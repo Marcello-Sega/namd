@@ -45,9 +45,9 @@ void ComputeFullDirect::doWork()
     numLocalAtoms += (*ap).p->getNumAtoms();
   }
 
-  localPositions = new Position[numLocalAtoms];
-  localCharges = new BigReal[numLocalAtoms];
-  localForces = new Force[numLocalAtoms];
+  localPositions = new Position[numLocalAtoms];	// freed at end of this method
+  localCharges = new BigReal[numLocalAtoms];	// freed at end of this method
+  localForces = new Force[numLocalAtoms];	// freed at end of this method
 
   // get positions and charges
   j = 0;
@@ -118,8 +118,8 @@ void ComputeFullDirect::doWork()
   }
 
   // free storage
-  delete [] localPositions;
-  delete [] localCharges;
-  delete [] localForces;
+  delete [] localPositions;	// allocated at beginning of this method
+  delete [] localCharges;	// allocated at beginning of this method
+  delete [] localForces;	// allocated at beginning of this method
 }
 

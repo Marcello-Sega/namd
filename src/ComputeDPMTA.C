@@ -20,9 +20,13 @@
 #include "PatchMgr.h"
 #include "Molecule.h"
 #include "ReductionMgr.h"
-#define MIN_DEBUG_LEVEL 3
+#include "Communicate.h"
+
+#define MIN_DEBUG_LEVEL 1
+#define DEBUGM
 #include "Debug.h"
 
+extern Communicate *comm;
 
 #ifdef DPMTA
 void ComputeDPMTA::get_FMA_cube(BigReal *boxsize, Vector *boxcenter)
@@ -50,10 +54,19 @@ void ComputeDPMTA::get_FMA_cube(BigReal *boxsize, Vector *boxcenter)
   boxcenter->x += *boxsize/2.0;
   boxcenter->y += *boxsize/2.0;
   boxcenter->z += *boxsize/2.0;
+
+  DebugM(2,"cube center: " << (*boxcenter) << " size=" << (*boxsize) << "\n");
 }
 
 ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
 {
+  // comm should always be initialized by this point...
+  // In the (bug) case that it isn't, then initialize it.
+  if (comm == NULL)
+  {
+    NAMD_die("Communication protocol (Converse, PVM, etc.) not initialized.");
+  }
+
   //  NOTE that the theta value is hardwired to the value of 0.715
   //  as per the recommendation of the Duke developers
 
@@ -67,8 +80,10 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   if (CMyPe() != 0)
   {
     slavetids=NULL;
+    DebugM(1,"DPMTA not configured since not Node 0\n");
     return;
   }
+  DebugM(1,"DPMTA configuring\n");
 
   // only the master (node 0) needs to do this.
 
@@ -77,13 +92,17 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   {
     NAMD_die("Memory allocation failed in FMAInterface::FMAInterface");
   }
+  DebugM(1,"DPMTA slavetids allocated\n");
 
   //  Get the size of the FMA cube
+  DebugM(1,"DPMTA getting FMA cube\n");
   get_FMA_cube(&boxsize, &boxcenter);
+  DebugM(1,"DPMTA got FMA cube\n");
 
   // reduce function calling time
   SimParameters *simParams = Node::Object()->simParameters;
 
+  DebugM(1,"DPMTA filling structure\n");
   //  initialize DPMTA
   pmta_data.nprocs = CNumPes();
   pmta_data.nlevels = simParams->FMALevels;
@@ -102,15 +121,38 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   pmta_data.cubectr.y = boxcenter.y;
   pmta_data.cubectr.z = boxcenter.z;
   pmta_data.calling_num = pmta_data.nprocs;
+  DebugM(1,"DPMTA filling tids\n");
   pmta_data.calling_tids = comm->get_tids();
+  DebugM(1,"DPMTA filled structure.\n");
 
+  DebugM(1,"DPMTA calling PMTAinit.\n");
+#if 1
   if (PMTAinit(&pmta_data,slavetids) >= 0)
+#else
+  if (PMTAinit(
+	pmta_data.nprocs,
+	pmta_data.nlevels,
+	pmta_data.mp,
+	pmta_data.fft,
+	pmta_data.fftblock,
+	pmta_data.theta,
+	pmta_data.cubelen.x,
+	&pmta_data.cubectr,
+	pmta_data.calling_num,
+	pmta_data.calling_tids,
+	slavetids) >= 0)
+#endif
   {
 	iout << "SUCCESSFULLY STARTED DPMTA\n" << endi;
   }
   else
   {
 	iout << "Unable to start DPMTA!\n" << endi;
+	for(int i=0; i<pmta_data.nprocs; i++)
+	{
+	  iout << "  ** tid[" << i << "]"
+	       << "=" << pmta_data.calling_tids[i] << "\n" << endi;
+	}
 	NAMD_die("Unable to start DPMTA!");
   }
 
@@ -119,6 +161,7 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   {
 	NAMD_die("PMTARegister failed!!");
   }
+  DebugM(1,"DPMTA done PMTAinit.\n");
 
   //  Set everything to 0
   patchData = NULL;
@@ -128,10 +171,12 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   totalAtoms = 0;
   fmaResults = NULL;
   ljResults = NULL;
+  DebugM(1,"DPMTA configured\n");
 }
 
 ComputeDPMTA::~ComputeDPMTA()
 {
+  DebugM(1,"DPMTA exiting\n");
   //  If this is the master node, then call PMTAexit()
   if (CMyPe() == 0)	PMTAexit();
 
@@ -156,6 +201,7 @@ ComputeDPMTA::~ComputeDPMTA()
 	}
   delete [] ljResults;
   delete [] slavetids;
+  DebugM(1,"DPMTA exited\n");
 }
 
 
@@ -164,6 +210,8 @@ void ComputeDPMTA::doWork()
   ResizeArrayIter<PatchElem> ap(patchList);
   PmtaParticle *particle_list = NULL;
   BigReal patchEnergy=0;
+
+  DebugM(1,"DPMTA doWork() started\n");
 
   // setup
   // 1. get totalAtoms
@@ -231,6 +279,8 @@ void ComputeDPMTA::doWork()
   {
     free(particle_list);
   }
+
+  DebugM(1,"DPMTA doWork() done\n");
 }
 
 #endif

@@ -26,7 +26,7 @@ AtomMap *AtomMap::_instance = 0;
 
 AtomMap *AtomMap::Instance() {
   if (_instance == 0) {
-    _instance = new AtomMap;
+    _instance = new AtomMap;	// this is never deleted!
   }
   return _instance;
 }
@@ -120,13 +120,17 @@ void AtomMap::print()
  * RCS INFORMATION:
  *
  *	$RCSfile: AtomMap.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/02/13 17:06:19 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/02/14 19:07:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: AtomMap.C,v $
+ * Revision 1.1005  1997/02/14 19:07:27  nealk
+ * Added new/delete comments.
+ * Played with DPMTA.
+ *
  * Revision 1.1004  1997/02/13 17:06:19  jim
  * Turned off debugging.
  *

@@ -80,7 +80,7 @@ public:
   {
     int patchMapSize, computeMapSize;
     char *patchMapData = (char*)patchMap->pack(&patchMapSize);
-    char *computeMapData = (char*)computeMap->pack(&computeMapSize);
+    char *computeMapData = (char*)computeMap->pack(&computeMapSize);	// "new" for data
     *length = sizeof(int) + patchMapSize + sizeof(int) + computeMapSize;
     char *buffer = (char*)new_packbuffer(this,*length);
     char *b = buffer;
@@ -92,7 +92,7 @@ public:
     *((int*)b) = computeMapSize;
     b += sizeof(int);
     memcpy(b,computeMapData,computeMapSize);
-    delete [] computeMapData;
+    delete [] computeMapData;	// allocated in ComputeMap.C::pack
     return buffer;
   }
   void unpack (void *in)
@@ -123,13 +123,17 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:59:28 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/02/14 19:07:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.1001  1997/02/14 19:07:32  nealk
+ * Added new/delete comments.
+ * Played with DPMTA.
+ *
  * Revision 1.1000  1997/02/06 15:59:28  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
