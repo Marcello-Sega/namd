@@ -18,7 +18,6 @@
 #include <stdio.h>	// for CPrintf
 #include "ckdefs.h"	// for CPrintf
 
-
 class infostream : public ostrstream
 {
   private:
@@ -66,7 +65,7 @@ class infostream : public ostrstream
   /** << floats **/
   LOCALMOD(float);
   LOCALMOD(double);
-  /** << pointers */
+  /** << pointers **/
   LOCALMOD(void *);
   LOCALMOD(streambuf *);
   #undef LOCALMOD
@@ -80,15 +79,17 @@ inline infostream& endi(infostream& s)  { s.endi(); return s; }
 /** iINFO, iWARN, iERROR, iDEBUG provide initial headings. **/
 /** iINFOF, iWARNF, iERRORF, iDEBUGF provide initial headings with file name
     and line numbers. **/
-inline ostream& iFILE(ostream& s) {return s <<__FILE__<<'('<<__LINE__<<')';}
 inline ostream& iINFO (ostream& s)  { return s << "Info: "; }
-inline ostream& iINFOF(ostream& s)  { return s << "Info " << iFILE << ": "; }
 inline ostream& iWARN (ostream& s)  { return s << "Warning: "; }
-inline ostream& iWARNF(ostream& s)  { return s << "Warning " << iFILE << ": "; }
 inline ostream& iERROR(ostream& s)  { return s << "ERROR: "; }
-inline ostream& iERRORF(ostream& s) { return s << "ERROR " << iFILE << ": "; }
 inline ostream& iDEBUG(ostream& s)  { return s << "DEBUG: "; }
-inline ostream& iDEBUGF(ostream& s) { return s << "DEBUG " << iFILE << ": "; }
+
+#define iFILE __FILE__<<'('<<__LINE__<<"): "
+#define iINFOF  iINFO << iFILE
+#define iWARNF  iWARN << iFILE
+#define iERRORF  iERROR << iFILE
+#define iDEBUGF  iDEBUG << iFILE
+
 
 extern infostream iout;
 
