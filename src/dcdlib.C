@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/dcdlib.C,v 1.5 1998/09/02 20:38:37 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/dcdlib.C,v 1.6 1998/09/09 00:44:17 sergei Exp $";
 
 #include "dcdlib.h"
 #include "common.h" // for int32 definition
@@ -159,7 +159,7 @@ int read_dcdheader(int fd, int *N, int *NSET, int *ISTART,
 		   int **FREEINDEXES)
 
 {
-	int input_integer;	/*  Integer buffer space	*/
+	int32 input_integer;	/*  Integer buffer space	*/
 	char bigbuf[256];	/*  A large string buffer	*/
 	int ret_val;		/*  Return value from read	*/
 	int i;			/*  Loop counter		*/
@@ -808,13 +808,16 @@ void close_dcd_write(int fd)
  * RCS INFORMATION:
  *
  *	$RCSfile: dcdlib.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1998/09/02 20:38:37 $
+ *	$Author: sergei $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.6 $	$Date: 1998/09/09 00:44:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: dcdlib.C,v $
+ * Revision 1.6  1998/09/09 00:44:17  sergei
+ * Fixed a bug in read_dcdheader: input_integer must be declared as int32
+ *
  * Revision 1.5  1998/09/02 20:38:37  jim
  * Improved error checking on file output.
  *
