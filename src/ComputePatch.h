@@ -14,12 +14,7 @@
 #ifndef COMPUTEPPAIR_H
 #define COMPUTEPPAIR_H
 
-#include "main.h"
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
-
-#include "NamdTypes.h"
+#include "Compute.h"
 
 #include "Templates/Box.h"
 #include "Templates/OwnerBox.h"
@@ -29,23 +24,25 @@ class Node;
 class PatchMap;
 
 class ComputePatchPair : public Compute {
-private:
-  PatchID patchID[2];
-  Patch *patch[2];
-  Box<Patch,Positions> *positionBox[2];
-  Box<Patch,Forces> *forceBox[2];
-
-protected :
-  int numAtoms[2];
-  virtual void mapReady() { Compute::mapReady(); }
-  void depositAllForces();
-  virtual void doForce(Position p[2][], Force f[2][]);
 
 public:
   ComputePatchPair(ComputeID c, PatchID pid[]);
-  ~ComputePatchPair();
+  virtual ~ComputePatchPair();
 
   virtual void doWork();
+
+protected :
+  int numAtoms[2];
+  virtual void mapReady();
+  // void depositAllForces();
+  virtual void doForce(PositionArray p[2], ForceArray f[2]);
+
+private:
+  PatchID patchID[2];
+  Patch *patch[2];
+  Box<Patch,Position> *positionBox[2];
+  Box<Patch,Force> *forceBox[2];
+
 };
 
 #endif
@@ -53,13 +50,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputePatch.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/10/29 22:43:35 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1996/10/29 23:53:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatch.h,v $
+ * Revision 1.2  1996/10/29 23:53:58  jim
+ * cleaned up, now only compile blocks are PatchMap, Patch, Compute.
+ *
  * Revision 1.1  1996/10/29 22:43:35  ari
  * Initial revision
  *
