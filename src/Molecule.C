@@ -5041,6 +5041,49 @@ void Molecule::build_atom_status(void) {
       rigidBondLengths[a2] = 2. * rigidBondLengths[a1] * sin(0.5*t0);
     }
 
+    // fill in H-H lengths for waters that are missing angles
+    int numBondWaters = 0;
+    int numFailedWaters = 0;
+    h_i = hydrogenGroup.begin();  h_e = hydrogenGroup.end();
+    for( ; h_i != h_e; ++h_i ) {
+      if ( h_i->isGP && is_water(h_i->atomID) &&
+                     rigidBondLengths[h_i->atomID] == 0. ) {
+        if ( h_i + 1 == h_e || h_i + 2 == h_e ||
+             h_i[1].isGP || h_i[2].isGP || h_i->atomsInGroup != 3 ) {
+          NAMD_die("Abnormal water detected.");
+        }
+        Bond btmp;
+        btmp.atom1 = h_i[1].atomID;
+        char atom1name[11];
+	strcpy(atom1name,get_atomtype(btmp.atom1));
+        btmp.atom2 = h_i[2].atomID;
+        char atom2name[11];
+	strcpy(atom2name,get_atomtype(btmp.atom2));
+        params->assign_bond_index(atom1name,atom2name,&btmp);
+        Real k, x0;
+	x0 = 0.;
+        params->get_bond_params(&k,&x0,btmp.bond_type);
+	if ( x0 > 0. ) {
+          rigidBondLengths[h_i->atomID] = x0;
+	  numBondWaters++;
+        } else {
+	  numFailedWaters++;
+        }
+      }
+    }
+    if ( numBondWaters + numFailedWaters ) {
+      iout << iWARN << "Missing angles for " <<
+	      ( numBondWaters + numFailedWaters ) << " waters.\n" << endi;
+    }
+    if ( numBondWaters ) {
+      iout << iWARN << "Obtained H-H distance from bond parameters for " <<
+	      numBondWaters << " waters.\n" << endi;
+    }
+    if ( numFailedWaters ) {
+      iout << iERROR << "Failed to obtain H-H distance from angles or bonds for " <<
+	      numFailedWaters << " waters.\n" << endi;
+    }
+
     // in case both molly and rigidBonds are in use make lengths which
     // are molly-only negative and leave lengths which are both alone
     if ( simParams->mollyOn ) {
