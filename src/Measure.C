@@ -75,16 +75,51 @@ int Tcl_centerOfMass(ClientData, Tcl_Interp *interp, int argc, char *argv[]) {
   return TCL_OK;
 }
 
+int Tcl_radiusOfGyration(ClientData, Tcl_Interp *interp, int argc, char *argv[]) {
+
+  Node *node = Node::Object();
+  Molecule *molecule = node->molecule;
+  Parameters *parameters = node->parameters;
+  Vector *coordinates = node->coords;
+  int numAtoms = molecule->numAtoms;
+
+  Vector center;
+  BigReal totalMass = 0;
+  int i;
+  for( i = 0; i < numAtoms; ++i ) {
+    BigReal mass = molecule->atommass(i);
+    totalMass += mass;
+    center += mass * coordinates[i];
+  }
+  center /= totalMass;
+
+  BigReal moment = 0;
+  for( i = 0; i < numAtoms; ++i ) {
+    BigReal mass = molecule->atommass(i);
+    moment += mass * (coordinates[i] - center).length2();
+  }
+  BigReal radius = sqrt(moment/totalMass);
+
+  char s[1024];
+  sprintf(s,"%g", radius);
+  Tcl_SetResult(interp,s,TCL_VOLATILE);
+
+  return TCL_OK;
+}
+
 void Measure::createCommands(Tcl_Interp *interp) {
   Tcl_CreateCommand(interp, "centerOfNumber", Tcl_centerOfNumber,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "centerOfMass", Tcl_centerOfMass,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "radiusOfGyration", Tcl_radiusOfGyration,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 }
 
 void Measure::deleteCommands(Tcl_Interp *interp) {
   Tcl_DeleteCommand(interp, "centerOfNumber");
   Tcl_DeleteCommand(interp, "centerOfMass");
+  Tcl_DeleteCommand(interp, "radiusOfGyration");
 }
 
 #endif
