@@ -11,7 +11,9 @@
 #include <math.h>
 #include "Tensor.h"
 
+#ifdef NO_RINT
 #define rint(X) floor((X)+0.5)
+#endif
 
 typedef Vector ScaledPosition;
 
