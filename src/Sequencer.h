@@ -23,7 +23,8 @@ class Sequencer
 public:
 	Sequencer(HomePatch *p) : patch(p) { };
 	void run(int numberOfCycles);             // spawn thread, etc.
-	void awaken(void){ CthAwaken(thread); };
+	void awaken(void) { CthAwaken(thread); };
+	void suspend(void) { CthSuspend(); };
 
 protected:
 	virtual void threadRun(void);  // subclasses redefine this method

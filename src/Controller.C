@@ -39,7 +39,7 @@ void Sequencer::threadRun(void)
 			// patch->addForceToMomentum(0.5*timestep);
 			// patch->addVelocityToPosition(timestep);
 			// patch->positionsReady();
-			CthSuspend();
+			suspend();
 			// patch->addForceToMomentum(0.5*timestep);
 		}
 	}
