@@ -1015,7 +1015,7 @@ For example, ``{\tt atomid br 2 N}''.
 \item
 {\tt addatom <atomid>} \\
 Request coordinates of this atom for next force evaluation.
-Request remains in effect until {\tt reconfig} is called.
+Request remains in effect until {\tt clearconfig} is called.
 For example, ``{\tt addatom 4}'' or ``{\tt addatom [atomid br 2 N]}''.
 
 \item
@@ -1024,21 +1024,28 @@ Request center of mass coordinates of this group for next force evaluation.
 Returns a group ID which is of the form {\tt gN} where {\tt N} is a small integer.
 This group ID may then be used to find coordinates and apply forces just like a regular atom ID.
 Aggregate forces may then be applied to the group as whole.
-Request remains in effect until {\tt reconfig} is called.
+Request remains in effect until {\tt clearconfig} is called.
 For example, ``{\tt set groupid [addgroup \{ 14 10 12 \}]}''.
 
 \item
-{\tt reconfig} \\
-Signals that new atoms are being requested.
-{\tt addatom} and {\tt addgroup} calls during {\tt calcforces} will be ignored unless {\tt reconfig} is called.
-Old configuration is replaced by new configuration.
-{\tt reconfig} should only be called from within the {\tt calcforces} procedure.
+{\tt clearconfig} \\
+Clears the current list of requested atoms.  After {\tt clearconfig},
+calls to {\tt addatom} and {\tt addgroup} can be used to build a new
+configuration.
 
 \item
 {\tt loadcoords <varname>} \\
 Loads requested atom and group coordinates (in \AA) into a local array.
 {\tt loadcoords} should only be called from within the {\tt calcforces} procedure.
 For example, ``{\tt loadcoords p}'' and ``{\tt print p(4)}''.
+
+\item
+{\tt loadforces <varname>} \\
+Loads the forces applied in the previous timestep (in kcal mol$^{-1}$
+\AA$^{-1}$) into a local array.
+{\tt loadforces} should only be called from within the {\tt
+calcforces} procedure.
+For example, ``{\tt loadforces f}'' and ``{\tt print f(4)}''.
 
 \item
 {\tt loadmasses <varname>} \\
