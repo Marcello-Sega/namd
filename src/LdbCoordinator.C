@@ -452,7 +452,9 @@ void LdbCoordinator::ExecuteMigrations(void)
     migrations = next;
   }
  
+#if CMK_PERSISTENT_COMM
   CmiDestoryAllPersistent();
+#endif
 
  // computeMgr->updateComputes() call only on Node(0) i.e. right here
   // This will barrier for all Nodes - (i.e. Computes must be

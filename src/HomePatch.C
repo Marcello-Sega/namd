@@ -340,9 +340,13 @@ void HomePatch::positionsReady(int doMigration)
         nmsg->flags = flags;
         nmsg->positionList = p;
         if (flags.doMolly) nmsg->avgPositionList = p_avg;
+#if CMK_PERSISTENT_COMM
 //        CmiUsePersistentHandle(localphs, npid);
+#endif
         ProxyMgr::Object()->sendProxyData(nmsg,npid,pids);
+#if CMK_PERSISTENT_COMM
         CmiUsePersistentHandle(NULL, 0);
+#endif
     }   
   }
   delete [] pids;
