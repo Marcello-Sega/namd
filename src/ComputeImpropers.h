@@ -21,6 +21,7 @@ public:
     AtomID atomID[size];
     int    localIndex[size];
     TuplePatchElem *p[size];
+    Real scale;
     void computeForce(BigReal*);
     // The following is evil, but the compiler chokes otherwise. (JCP)
     static void loadTuplesForAtom(void*, AtomID, Molecule*);

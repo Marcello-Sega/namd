@@ -130,7 +130,7 @@ void ImproperElem::computeForce(BigReal *reduction)
   for (int mult_num=0; mult_num<multiplicity; mult_num++)
   {
     /* get angle information */
-    Real k = value->values[mult_num].k;
+    Real k = value->values[mult_num].k * scale;
     Real delta = value->values[mult_num].delta;
     int n = value->values[mult_num].n;
 

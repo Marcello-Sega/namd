@@ -80,7 +80,7 @@ void AngleElem::computeForce(BigReal *reduction)
   // if (cos_theta > 1.0) cos_theta = 1.0;
   // else if (cos_theta < -1.0) cos_theta = -1.0;
 
-  BigReal k = value->k;
+  BigReal k = value->k * scale;
   BigReal theta0 = value->theta0;
 
   //  Get theta

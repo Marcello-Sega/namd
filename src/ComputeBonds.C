@@ -63,7 +63,7 @@ void BondElem::computeForce(BigReal *reduction)
   DebugM(3, "::computeForce() -- starting with bond type " << bondType << endl);
 
   // get the bond information
-  Real k = value->k;
+  Real k = value->k * scale;
   Real x0 = value->x0;
 
   // compute vectors between atoms and their distances
