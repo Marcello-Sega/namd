@@ -6,28 +6,34 @@
 
 module ComputePmeMgr {
 
-  message PmeNullMsg;
-  message [varsize] PmeGridMsg;
-  message [varsize] PmeTransMsg;
-  message [varsize] PmeUntransMsg;
+  message PmeGridMsg {
+    char fgrid[];
+    double qgrid[];
+  };
+  message PmeTransMsg {
+    double qgrid[];
+  };
+  message PmeUntransMsg{
+    double qgrid[];
+  };
 
   group ComputePmeMgr {
 
     entry ComputePmeMgr(void);
 
     entry void initialize(CkQdMsg *);
-    entry void sendGrid(PmeNullMsg *);
+    entry void sendGrid(void);
     entry void recvGrid(PmeGridMsg *);
-    entry void gridCalc1(PmeNullMsg *);
-    entry void sendTrans(PmeNullMsg *);
+    entry void gridCalc1(void);
+    entry void sendTrans(void);
     entry void recvTrans(PmeTransMsg *);
-    entry void gridCalc2(PmeNullMsg *);
-    entry void sendUntrans(PmeNullMsg *);
+    entry void gridCalc2(void);
+    entry void sendUntrans(void);
     entry void recvUntrans(PmeUntransMsg *);
-    entry void gridCalc3(PmeNullMsg *);
-    entry void sendUngrid(PmeNullMsg *);
+    entry void gridCalc3(void);
+    entry void sendUngrid(void);
     entry void recvUngrid(PmeGridMsg *);
-    entry void ungridCalc(PmeNullMsg *);
+    entry void ungridCalc(void);
 
   };
 
