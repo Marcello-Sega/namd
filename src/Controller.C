@@ -165,7 +165,9 @@ void Controller::integrate() {
     const int stepsPerCycle = simParams->stepsPerCycle;
 
     nbondFreq = simParams->nonbondedFrequency;
-    if ( simParams->fullDirectOn || simParams->FMAOn || simParams->PMEOn )
+    const int dofull = ( simParams->fullDirectOn ||
+			simParams->FMAOn || simParams->PMEOn );
+    if (dofull)
       slowFreq = simParams->fullElectFrequency;
     else
       slowFreq = simParams->nonbondedFrequency;
@@ -193,8 +195,17 @@ void Controller::integrate() {
         outputFepEnergy(step);
         traceUserEvent(eventEndOfTimeStep);
         outputExtendedSystem(step);
+#if CYCLE_BARRIER
         cycleBarrier(!((step+1) % stepsPerCycle),step);
+#elif  PME_BARRIER
+        cycleBarrier(dofull && !(step%slowFreq),step);
+#endif
+
         rebalanceLoad(step);
+
+#if  PME_BARRIER
+        cycleBarrier(dofull && !((step+1)%slowFreq),step);   // step before PME
+#endif
     }
 }
 
@@ -1450,7 +1461,7 @@ void Controller::rebalanceLoad(int)
 }
 
 void Controller::cycleBarrier(int doBarrier, int step) {
-#ifdef CYCLE_BARRIER
+#if USE_BARRIER
 	if (doBarrier) {
 	  broadcast->cycleBarrier.publish(step,1);
 	  CkPrintf("Cycle time at sync Wall: %f CPU %f\n",

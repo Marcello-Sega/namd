@@ -219,8 +219,19 @@ void Sequencer::integrate() {
 
 	submitReductions(step);
 	submitCollections(step);
-        cycleBarrier(!((step+1) % stepsPerCycle),step);
+
+#if CYCLE_BARRIER
+        cycleBarrier(!((step+1) % stepsPerCycle), step);
+#elif PME_BARRIER
+        cycleBarrier(doFullElectrostatics, step);
+#endif
+
 	rebalanceLoad(step);
+
+#if PME_BARRIER
+	// a step before PME
+        cycleBarrier(dofull && !((step+1)%fullElectFrequency),step);
+#endif
     }
 }
 
@@ -986,7 +997,7 @@ void Sequencer::rebalanceLoad(int timestep) {
 }
 
 void Sequencer::cycleBarrier(int doBarrier, int step) {
-#ifdef CYCLE_BARRIER
+#if USE_BARRIER
 	if (doBarrier)
 	  broadcast->cycleBarrier.get(step);
 #endif

@@ -115,5 +115,10 @@ int  Fclose(FILE *fout);
 // for proxy spanning tree
 #define PROXY_SPAN_DIM 4
 
+#define CYCLE_BARRIER   0
+#define PME_BARRIER     0
+
+#define USE_BARRIER   (CYCLE_BARRIER || PME_BARRIER)
+
 #endif
 
