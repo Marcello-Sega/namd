@@ -1,0 +1,46 @@
+##########################################
+##########################################
+# Makefile architecture for egcs on Alpha
+##########################################
+##########################################
+
+#####
+## Choose your favorite Compiler options
+####
+CC = gcc
+CXX = g++
+CXXOPTS = -O3 -DGLOBALS -DGCC -ffast-math
+COPTS = -O3 -DGCC -ffast-math
+CXXTHREADOPTS = $(CXXOPTS)
+
+#####
+# Flags
+#####
+# uncomment for no warnings during compile
+#NOWARN=-w
+# uncomment for purify during compile
+# PURIFY=-purify
+
+#####
+# definitions for Charm routines
+#####
+CHARMARCH = net-axp
+CHARM = $(CHARMBASE)/$(CHARMARCH)
+
+######
+## definitions for TCL interface
+######
+#TCLDIR=/usr/local
+#TCLINCL=-I$(TCLDIR)/include
+#TCLLIB=-L$(TCLDIR)/lib -ltclx -ltcl
+#TCLFLAGS=-DNAMD_TCL
+#TCL=$(TCLINCL) $(TCLFLAGS)
+
+#####
+# Unix commands
+#####
+ECHO = echo
+MOVE = mv
+COPY = cp
+RM = rm -f
+AR = ar
