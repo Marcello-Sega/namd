@@ -68,7 +68,7 @@ void NamdNborLB::neighbors(int* _n) {
 #define SEQ(x, y) ((x)*yDim + (y))
 #define WRAP   0
     numNbors = 0;
-    int yDim = sqrt(CkNumPes());
+    int yDim = sqrt((double)CkNumPes());
     int xDim = CkNumPes() / yDim;
     if (CkNumPes() % yDim) xDim++;
     int x = CmiMyPe()/yDim;
