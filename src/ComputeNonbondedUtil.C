@@ -18,6 +18,7 @@
 #include "LJTable.h"
 #include "ReductionMgr.h"
 
+Bool		ComputeNonbondedUtil::fixedAtomsOn;
 Real            ComputeNonbondedUtil::cutoff;
 BigReal         ComputeNonbondedUtil::cutoff2;
 BigReal         ComputeNonbondedUtil::groupcutoff2;
@@ -71,6 +72,8 @@ void ComputeNonbondedUtil::unregisterReductionData(ReductionMgr *reduction)
 void ComputeNonbondedUtil::select(void)
 {
   SimParameters * simParams = Node::Object()->simParameters;
+
+  fixedAtomsOn = simParams->fixedAtomsOn;
 
   cutoff = simParams->cutoff;
   cutoff2 = cutoff*cutoff;
@@ -267,13 +270,16 @@ void ComputeNonbondedUtil::select(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1997/07/08 15:48:08 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1015 $	$Date: 1997/09/22 04:08:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1015  1997/09/22 04:08:04  jim
+ * Sped up fixed atom simulations by checking for all atoms fixed.
+ *
  * Revision 1.1014  1997/07/08 15:48:08  milind
  * Made namd2 to work with Origin2000: Again...
  *

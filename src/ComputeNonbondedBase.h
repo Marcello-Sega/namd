@@ -172,6 +172,21 @@ NOEXCL
   register int j;
   register int i;
 
+  // check for all fixed atoms
+  if ( fixedAtomsOn ) {
+    AtomProperties *a_i = params->a[0];
+    register int all_fixed = 1;
+    for ( i = 0; all_fixed && i < i_upper; ++i, ++a_i)
+      all_fixed = a_i->flags & ATOM_FIXED;
+    PAIR
+    (
+    AtomProperties *a_j = params->a[1];
+    for ( j = 0; all_fixed && j < j_upper; ++j, ++a_j)
+      all_fixed = a_j->flags & ATOM_FIXED;
+    )
+    if ( all_fixed ) return;
+  }
+
   HGROUPING
   (
   int pairlistindex=0;
@@ -638,12 +653,15 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1029 $	$Date: 1997/09/22 03:36:01 $
+ *	$Revision: 1.1030 $	$Date: 1997/09/22 04:08:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1030  1997/09/22 04:08:03  jim
+ * Sped up fixed atom simulations by checking for all atoms fixed.
+ *
  * Revision 1.1029  1997/09/22 03:36:01  jim
  * Sped up simulations involving fixed atoms.
  *

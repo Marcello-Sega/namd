@@ -60,6 +60,7 @@ public:
   static void submitReductionData(BigReal*,ReductionMgr*,int);
   static void unregisterReductionData(ReductionMgr*);
 
+  static Bool fixedAtomsOn;
   static Real cutoff;
   static BigReal cutoff2;
   static BigReal groupcutoff2;
@@ -127,13 +128,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedUtil.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1997/06/05 20:19:46 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1014 $	$Date: 1997/09/22 04:08:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.h,v $
+ * Revision 1.1014  1997/09/22 04:08:05  jim
+ * Sped up fixed atom simulations by checking for all atoms fixed.
+ *
  * Revision 1.1013  1997/06/05 20:19:46  nealk
  * Minor modifications for readability and very minor speedup.
  *
