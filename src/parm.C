@@ -27,7 +27,9 @@
 #include "InfoStream.h"
 #include "parm.h"
 
+#if 0
 extern int 	errno;
+#endif
 
 static int	debug = 0;	/* set it if you want */
 
