@@ -199,7 +199,7 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(TCLLIB) \
 	$(FFTLIB)
 
-win32binaries: namd2.exe daemon.exe conv-host.exe
+win32binaries: namd2.exe daemon.exe daemon_background.exe conv-host.exe
 
 namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(LINK) $(LINKOPTS) /out:namd2.exe \
@@ -208,6 +208,7 @@ namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(CHARMLIB)/libconv-core.lib \
 	$(CHARMLIB)/libconv-cplus-y.lib \
 	$(CHARMLIB)/libck.lib \
+	$(CHARMLIB)/libutil.lib \
 	obj/*.o \
 	$(DPMTALIB) \
 	$(DPMELIB) \
@@ -216,6 +217,9 @@ namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 
 daemon.exe:
 	$(COPY) $(CHARM)\bin\daemon.exe daemon.exe
+
+daemon_background.exe:
+	$(COPY) $(CHARM)\bin\daemon_background.exe daemon_background.exe
 
 conv-host.exe:
 	$(COPY) $(CHARM)\bin\conv-host.exe conv-host.exe
