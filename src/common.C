@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: common.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/13 16:17:22 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/02/13 22:27:05 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -22,6 +22,12 @@
  * REVISION HISTORY:
  *
  * $Log: common.C,v $
+ * Revision 1.1003  1997/02/13 22:27:05  jim
+ * Added inital velocity code from NAMD 1.
+ * Reading velocity pdb file appears to work.
+ * Reading binary velociy file should work but is untested.
+ * Random velocites appears to work but differs from NAMD 1.
+ *
  * Revision 1.1002  1997/02/13 16:17:22  ari
  * Intermediate debuging commit - working to fix deep bug in migration?
  *
@@ -122,7 +128,7 @@
  * Removed NAMD_warn; using Inform objects now to report information.
  * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1002 1997/02/13 16:17:22 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1003 1997/02/13 22:27:05 jim Exp $";
 
 #include "chare.h"
 #include "ckdefs.h"
@@ -131,6 +137,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 
 #include "common.h"
 #include "Communicate.h"
 #include "SimParameters.h"
+#include "Node.h"
 
 //  Provide alternate new and delete operators if the MTS fast allocator is being
 //  used
@@ -186,6 +193,47 @@ void NAMD_die(char *err_msg)
     CPrintf("%s\n",err_msg);
     abort(); CharmExit();
 }
+
+
+//  NAMD_random returns a random number from 0.0 to 1.0.  It is really
+//  just used for portability so porting to machines with different
+//  random number generators is easy.  This is less necessary as
+//  drand48 appears more and more places . . .
+
+BigReal NAMD_random()
+{
+	static int first=1;	//  Flag indicating first call
+
+	//  If this is the first call, seed it
+	if (first)
+	{
+		int i;		//  Loop counter
+
+		//  Seed the random number generator initially.  Add the node
+		//  number to get more randomness
+		srand48(Node::Object()->simParameters->randomSeed+CMyPe());
+
+		//  If this is a client node, now pick off the node-1
+		//  first random numbers and then use the next random number
+		//  to again seed the generator.  This will really insure that
+		//  there is no correlation between random numbers on different
+		//  nodes.
+		if (CMyPe())
+		{
+			for (i=0; i<(CMyPe()-1); i++)
+			{
+				drand48();
+			}
+
+			srand48((long) (drand48()*1073741824));
+		}
+
+		first=0;
+	}
+
+	return(drand48());
+}
+
 
 
 /********************************************************************************/

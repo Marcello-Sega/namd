@@ -11,8 +11,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: common.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:59:33 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/02/13 22:27:05 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -22,6 +22,12 @@
  * REVISION HISTORY:
  *
  * $Log: common.h,v $
+ * Revision 1.1001  1997/02/13 22:27:05  jim
+ * Added inital velocity code from NAMD 1.
+ * Reading velocity pdb file appears to work.
+ * Reading binary velociy file should work but is untested.
+ * Random velocites appears to work but differs from NAMD 1.
+ *
  * Revision 1.1000  1997/02/06 15:59:33  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
@@ -296,8 +302,9 @@ void NAMD_quit(Bool die_hard=FALSE);
 void NAMD_die(char *);
 int NAMD_compare_ints(const void *, const void *);
 char *NAMD_stringdup(const char *);
-int *NAMD_bsearch(int *, int *, int, int, int (*cmpfn) (const void *, const void
-*));
+int *NAMD_bsearch(int *, int *, int, int,
+		int (*cmpfn) (const void *, const void*));
+BigReal NAMD_random();
 
 // message tags
 // NOTE!!!  Do NOT use any tags smaller than 100.  Add tags sequentially

@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1003 1997/02/13 04:43:17 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1004 1997/02/13 22:27:04 jim Exp $";
 
 #include <stdio.h>
 
@@ -34,10 +34,286 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib
 #include "NamdTypes.h"
 #include "PDB.h"
 #include "SimParameters.h"
+#include "Molecule.h"
 
 #define MIN_DEBUG_LEVEL 4
 #define DEBUGM
 #include "Debug.h"
+
+
+/********************************************************************************/
+/*										*/
+/*				FUNCTION read_binary_coors			*/
+/*										*/
+/*   INPUTS:									*/
+/*	fname - Filename to read coordinates from				*/
+/*	pdbobj - PDB object to place coordinates into				*/
+/*										*/
+/*	This function reads initial coordinates from a binary restart file	*/
+/*										*/
+/********************************************************************************/
+
+void read_binary_coors(char *fname, PDB *pdbobj)
+
+{
+	int n;			//  Number of atoms from file
+	Vector *newcoords;	//  Array of vectors to hold coordinates from file
+	FILE *fp;		//  File descriptor
+
+	//  Open the file and die if the open fails
+	if ( (fp = fopen(fname, "r")) == NULL)
+	{
+		char errmsg[256];
+
+		sprintf(errmsg, "Unable to open binary coordinate file %s", fname);
+		NAMD_die(errmsg);
+	}
+
+	//  read the number of coordinates in this file
+	fread(&n, sizeof(int), 1, fp);
+
+	//  Die if this doesn't match the number in the system
+	if (n != pdbobj->num_atoms())
+	{
+		NAMD_die("Number of coordinates in binary coordinate file incorrect");
+	}
+
+	//  Allocate an array to hold the new coordinates
+	newcoords = new Vector[n];
+
+	if (newcoords == NULL)
+	{
+		NAMD_die("Memory allocation of newcoords in Node::read_binary_coors failed");
+	}
+
+	//  Read the coordinate from the file
+	fread(newcoords, sizeof(Vector), n, fp);
+
+	//  Set the coordinates in the PDB object to the new coordinates
+	pdbobj->set_all_positions(newcoords);
+
+	//  Clean up
+	fclose(fp);
+	delete [] newcoords;
+}
+/*			END OF FUNCTION read_binary_coors	*/
+
+/************************************************************************/
+/*									*/
+/*			FUNCTION velocities_from_PDB			*/
+/*									*/
+/*   INPUTS:								*/
+/*	v - Array of vectors to populate				*/
+/*	filename - name of the PDB filename to read in			*/
+/*									*/
+/*	This function reads in a set of initial velocities from a	*/
+/*   PDB file.  It places the velocities into the array of Vectors      */
+/*   passed to it.							*/
+/*									*/
+/************************************************************************/
+
+void velocities_from_PDB(char *filename, Vector *v, int totalAtoms)
+{
+	PDB *v_pdb;		//  PDB info from velocity PDB
+	int i;
+
+	//  Read the PDB
+	v_pdb = new PDB(filename);
+	if ( v_pdb == NULL )
+	{
+	  NAMD_die("memory allocation failed in Node::velocities_from_PDB");
+	}
+
+	//  Make sure the number of velocities read in matches
+	//  the number of atoms we have
+	if (v_pdb->num_atoms() != totalAtoms)
+	{
+		char err_msg[129];
+
+		sprintf(err_msg, "FOUND %d COORDINATES IN VELOCITY PDB!!",
+		   v_pdb->num_atoms());
+
+		NAMD_die(err_msg);
+	}
+
+	//  Get the entire list of atom info and loop through
+	//  them assigning the velocity vector for each one
+	v_pdb->get_all_positions(v);
+
+	for (i=0; i<totalAtoms; i++)
+	{
+		v[i].x *= 0.05;
+		v[i].y *= 0.05;
+		v[i].z *= 0.05;
+	}
+
+	delete v_pdb;
+}
+/*		END OF FUNCTION velocities_from_PDB			*/
+
+/********************************************************************************/
+/*										*/
+/*			FUNCTION velocities_from_binfile			*/
+/*										*/
+/*   INPUTS:									*/
+/*	fname - File name to write velocities to				*/
+/*	n - Number of atoms in system						*/
+/*	vels - Array of velocity vectors					*/
+/*										*/
+/*	This function writes out the velocities in binary format.  This is	*/
+/*   done to preserve accuracy between restarts of namd.			*/
+/*										*/
+/********************************************************************************/
+
+void velocities_from_binfile(char *fname, Vector *vels, int n)
+{
+	int filen;		//  Number of atoms read from file
+	FILE *fp;		//  File descriptor
+
+	//  Open the file and die if the open fails
+	if ( (fp = fopen(fname, "r")) == NULL)
+	{
+		char errmsg[256];
+
+		sprintf(errmsg, "Unable to open binary velocity file %s", fname);
+		NAMD_die(errmsg);
+	}
+
+	//  read the number of coordinates in this file
+	fread(&filen, sizeof(int), 1, fp);
+
+	//  Die if this doesn't match the number in our system
+	if (filen != n)
+	{
+		NAMD_die("Number of coordinates in binary velocity file incorrect");
+	}
+
+	fread(vels, sizeof(Vector), n, fp);
+
+	fclose(fp);
+}
+/*				END OF FUNCTION velocities_from_binfile		*/
+
+/************************************************************************/
+/*									*/
+/*			FUNCTION random_velocities			*/
+/*									*/
+/*   INPUTS:								*/
+/*	v - array of vectors to populate				*/
+/*	Temp - Temperature to acheive					*/
+/*									*/
+/*	This function assigns a random velocity distribution to a       */
+/*   simulation to achieve a desired initial temperature.  The method   */
+/*   used here was stolen from the program X-PLOR.			*/
+/*									*/
+/************************************************************************/
+
+void random_velocities(BigReal Temp,
+			Molecule *structure, Vector *v, int totalAtoms)
+{
+	int i, j;		//  Loop counter
+	BigReal kbT;		//  Boltzman constant * Temp
+	BigReal randnum;	//  Random number from -6.0 to 6.0
+	BigReal kbToverM;	//  sqrt(Kb*Temp/Mass)
+
+	kbT = Temp*BOLTZMAN;
+
+	//  Loop through all the atoms and assign velocities in
+	//  the x, y and z directions for each one
+	for (i=0; i<totalAtoms; i++)
+	{
+		kbToverM = sqrt(kbT/structure->atommass(i));
+
+		//  The following comment was stolen from X-PLOR where
+		//  the following section of code was adapted from.
+
+		//  This section generates a Gaussian random
+		//  deviate of 0.0 mean and standard deviation RFD for
+		//  each of the three spatial dimensions.
+		//  The algorithm is a "sum of uniform deviates algorithm"
+		//  which may be found in Abramowitz and Stegun,
+		//  "Handbook of Mathematical Functions", pg 952.
+		for (randnum=0.0, j=0; j<12; j++)
+		{
+			randnum += NAMD_random();
+		}
+
+		randnum -= 6.0;
+
+		v[i].x = randnum*kbToverM;
+
+		for (randnum=0.0, j=0; j<12; j++)
+		{
+			randnum += NAMD_random();
+		}
+
+		randnum -= 6.0;
+
+		v[i].y = randnum*kbToverM;
+
+		for (randnum=0.0, j=0; j<12; j++)
+		{
+			randnum += NAMD_random();
+		}
+
+		randnum -= 6.0;
+
+		v[i].z = randnum*kbToverM;
+	}
+}
+/*			END OF FUNCTION random_velocities		*/
+
+
+
+/************************************************************************/
+/*									*/
+/*			FUNCTION remove_com_motion			*/
+/*									*/
+/*   INPUTS:								*/
+/*	vel - Array of initial velocity vectors				*/
+/*									*/
+/*	This function removes the center of mass motion from a molecule.*/
+/*									*/
+/************************************************************************/
+
+void remove_com_motion(Vector *vel, Molecule *structure, int n)
+{
+	Vector mv;		//  Sum of (mv)_i
+	BigReal totalMass=0; 	//  Total mass of system
+	int i;			//  Loop counter
+
+	mv.x=0.0;
+	mv.y=0.0;
+	mv.z=0.0;
+
+	//  Loop through and compute the net momentum
+	for (i=0; i<n; i++)
+	{
+		mv.x += (structure->atommass(i))*vel[i].x;
+		mv.y += (structure->atommass(i))*vel[i].y;
+		mv.z += (structure->atommass(i))*vel[i].z;
+		totalMass += structure->atommass(i);
+	}
+
+	mv.x = mv.x/totalMass;
+	mv.y = mv.y/totalMass;
+	mv.z = mv.z/totalMass;
+
+	//  If any of the velocities really need to change, adjust them
+	if ( (fabs(mv.x) > 0.0) || (fabs(mv.y) > 0.0) || (fabs(mv.y) > 0.0) )
+	{
+		iout << "ADJUSTING COM VELOCITY ("
+			 << mv.x << ", " << mv.y << ", " << mv.z  
+			 << ") TO REMOVE MOVEMENT\n" << endi;
+
+		for (i=0; i<n; i++)
+		{
+			vel[i] -= mv;
+		}
+	}
+}
+/*			END OF FUNCTION remove_com_motion		*/
+
 
 //======================================================================
 // Public functions
@@ -87,14 +363,20 @@ void WorkDistrib::createComputes(void)
 }
 
 //----------------------------------------------------------------------
+// This should only be called on node 0.
+//----------------------------------------------------------------------
 void WorkDistrib::createPatches(void)
 {
+	StringList *current;		//  Pointer used to retrieve
+					//  configuration items
+
   int i;
 
   PatchMap *patchMap = PatchMap::Object();
   Node *node = CLocalBranch(Node,group.node);
   PatchMgr *patchMgr = CLocalBranch(PatchMgr,group.patchMgr);
   SimParameters *params = node->simParameters;
+  Molecule *molecule = node->molecule;
   PDB *pdb = node->pdb;
 
   int numPatches = patchMap->numPatches();
@@ -103,12 +385,50 @@ void WorkDistrib::createPatches(void)
   Vector *positions = new Position[numAtoms];
   pdb->get_all_positions(positions);
 
+  Vector *velocities = new Velocity[numAtoms];
+
+  if ( params->initialTemp < 0.0 )
+  {
+    Bool binvels=FALSE;
+
+    //  Reading the veolcities from a PDB
+    current = node->configList->find("velocities");
+
+    if (current == NULL)
+    {
+      current = node->configList->find("binvelocities");
+      binvels = TRUE;
+    }
+
+    if (!binvels)
+    {
+      velocities_from_PDB(current->data, velocities, numAtoms);
+    }
+    else
+    {
+      velocities_from_binfile(current->data, velocities, numAtoms);
+    }
+  }
+  else
+  {
+    // Random velocities for a given temperature
+    random_velocities(params->initialTemp, molecule, velocities, numAtoms);
+  }
+
+  int numDegFreedom = 3*numAtoms;
+
+  //  If COMMotion == no, remove center of mass motion
+  if (!(params->comMove))
+  {
+    remove_com_motion(velocities, molecule, numAtoms);
+    numDegFreedom -= 3;
+  }
+
   AtomIDList *atomIDs = new AtomIDList[numPatches];
   PositionList *atomPositions = new PositionList[numPatches];
   VelocityList *atomVelocities = new VelocityList[numPatches];
 
   Lattice lattice = params->lattice;
-  Velocity vel(0.,0.,0.);
 
   for(i=0; i < numAtoms; i++)
   {
@@ -119,10 +439,11 @@ void WorkDistrib::createPatches(void)
     int pid = patchMap->assignToPatch(positions[i]);
     atomIDs[pid].add(i);
     atomPositions[pid].add(positions[i]);
-    atomVelocities[pid].add(vel);
+    atomVelocities[pid].add(velocities[i]);
   }
 
   delete [] positions;
+  delete [] velocities;
 
   for(i=0; i < numPatches; i++)
   {
@@ -453,12 +774,18 @@ void WorkDistrib::movePatchDone(DoneMsg *msg) {
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/02/13 04:43:17 $
+ *	$Revision: 1.1004 $	$Date: 1997/02/13 22:27:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1004  1997/02/13 22:27:04  jim
+ * Added inital velocity code from NAMD 1.
+ * Reading velocity pdb file appears to work.
+ * Reading binary velociy file should work but is untested.
+ * Random velocites appears to work but differs from NAMD 1.
+ *
  * Revision 1.1003  1997/02/13 04:43:17  jim
  * Fixed initial hanging (bug in PatchMap, but it still shouldn't have
  * happened) and saved migration messages in the buffer from being
