@@ -112,8 +112,11 @@ while ( 1 ) {
 
   // get data from ComputePme on all nodes
   int first = 1;
+  AMPI_Status status;
   for ( j=0; j<numSources; ++j ) {
-    ckTempoRecv(PME_TAG_QARR,(void*)q_buf,lqsize*sizeof(double));
+    //ckTempoRecv(PME_TAG_QARR,(void*)q_buf,lqsize*sizeof(double));
+    AMPI_Recv((void*)q_buf, lqsize*sizeof(double), AMPI_BYTE,
+	AMPI_ANY_SOURCE, PME_TAG_QARR, AMPI_COMM_WORLD, &status);
     if ( first ) {
       // this is needed so that q_arr isn't zeroed before being packed
       // can be eliminated when compressed format is used in future
@@ -130,7 +133,9 @@ while ( 1 ) {
 
   // fill in guts of PME here
   Lattice lattice;
-  ckTempoRecv(PME_TAG_LATTICE,(void*)&lattice,sizeof(Lattice));
+  // ckTempoRecv(PME_TAG_LATTICE,(void*)&lattice,sizeof(Lattice));
+  AMPI_Recv((void*)&lattice, sizeof(Lattice), AMPI_BYTE,
+	AMPI_ANY_SOURCE, PME_TAG_LATTICE, AMPI_COMM_WORLD, &status);
   // iout << "ComputePmeMgr thread " << thisIndex << " received lattice.\n" << endi;
   double recipEnergy;
   double recip_vir[6];
@@ -375,14 +380,16 @@ void ComputePme::doWork()
     int len = bsize;
     if ( start >= qsize ) { start = 0; len = 0; }
     if ( start + len > qsize ) { len = qsize - start; }
-    TempoArray::ckTempoSendElem(PME_TAG_QARR,
+    // TempoArray::ckTempoSendElem(PME_TAG_QARR,
+    ampi::sendraw(PME_TAG_QARR, AMPI_ANY_TAG,
 	(void*)(q_arr+start), len * sizeof(double), pmeAid, pe);
   }
 
   if ( ! CkMyPe() ) {
     // iout << "Sending lattice on " << iPE << ".\n" << endi;
     for (int pe=0; pe<CkNumPes(); pe++) {
-      TempoArray::ckTempoSendElem(PME_TAG_LATTICE,
+      // TempoArray::ckTempoSendElem(PME_TAG_LATTICE,
+      ampi::sendraw(PME_TAG_LATTICE, AMPI_ANY_TAG,
 	(void*)(&lattice), sizeof(lattice), pmeAid, pe);
     }
   }
