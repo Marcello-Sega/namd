@@ -22,6 +22,8 @@ PACK_MSG(MyMsg,
 
 */
 
+#define PACKMSG_CHECKSUM(X) X
+
 template<class T> class ResizeArray;
 
 template<class T> size_t sizeof_element(ResizeArray<T> &) { return sizeof(T); }
@@ -30,29 +32,65 @@ template<class T> T* new_array(T*, int n) { return new T[n]; }
 
 #define PACK_MSG(MSGTYPE,MSGDATA) \
 void *MSGTYPE::pack(MSGTYPE *packmsg_msg) { \
+  PACKMSG_CHECKSUM(unsigned int packmsg_checksum = 0;) \
   int packmsg_size = 0; \
   char *packmsg_cur = 0; \
   { \
     const int packmsg_pass = 0; \
+    PACKMSG_CHECKSUM( \
+      packmsg_size += sizeof(packmsg_checksum); \
+      PACK_MEMORY(&packmsg_size,sizeof(packmsg_size)); \
+    ) \
     MSGDATA \
   } \
   void *packmsg_buf = CkAllocBuffer(packmsg_msg,packmsg_size); \
   packmsg_cur = (char *)packmsg_buf; \
   { \
     const int packmsg_pass = 1; \
+    PACKMSG_CHECKSUM( \
+      packmsg_cur += sizeof(packmsg_checksum); \
+      PACK_MEMORY(&packmsg_size,sizeof(packmsg_size)); \
+    ) \
     MSGDATA \
   } \
+  PACKMSG_CHECKSUM( \
+    packmsg_cur = (char *)packmsg_buf; \
+    for ( int i=sizeof(packmsg_checksum); i < packmsg_size; i++ ) { \
+      packmsg_checksum += (unsigned char) packmsg_cur[i]; \
+    } \
+    memcpy(packmsg_buf,(void *)&packmsg_checksum,sizeof(packmsg_checksum)); \
+  ) \
   delete packmsg_msg; \
   return packmsg_buf; \
 } \
  \
 MSGTYPE *MSGTYPE::unpack(void *packmsg_buf) { \
+  PACKMSG_CHECKSUM( \
+    unsigned int packmsg_checksum = 0; \
+    unsigned int packmsg_checksum_orig = 0; \
+  ) \
   int packmsg_size = 0; \
   void *packmsg_msg_ = CkAllocBuffer(packmsg_buf,sizeof(MSGTYPE)); \
   MSGTYPE *packmsg_msg = new (packmsg_msg_) MSGTYPE; \
   char *packmsg_cur = (char *)packmsg_buf; \
   { \
     const int packmsg_pass = 2; \
+    PACKMSG_CHECKSUM( \
+      memcpy((void *)&packmsg_checksum_orig,(void *)packmsg_cur, \
+				sizeof(packmsg_checksum)); \
+      packmsg_cur += sizeof(packmsg_checksum); \
+      PACK_MEMORY(&packmsg_size,sizeof(packmsg_size)); \
+      char *packmsg_cur2 = (char *)packmsg_buf; \
+      for ( int i=sizeof(packmsg_checksum); i < packmsg_size; i++ ) { \
+        packmsg_checksum += (unsigned char) packmsg_cur2[i]; \
+      } \
+      if ( packmsg_checksum != packmsg_checksum_orig ) { \
+        char errmsg[256]; \
+        sprintf(errmsg,"PACKMSG checksums do not agree!  %s(%d): %d vs %d", \
+	__FILE__, __LINE__, packmsg_checksum, packmsg_checksum_orig); \
+        NAMD_bug(errmsg); \
+      } \
+    ) \
     MSGDATA \
   } \
   CkFreeMsg(packmsg_buf); \
