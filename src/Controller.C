@@ -22,6 +22,7 @@
 #include "BroadcastObject.h"
 #include "NamdState.h"
 #include "Broadcasts.h"
+#include "LdbCoordinator.h"
 #include "Thread.h"
 #include <math.h>
 
@@ -129,6 +130,9 @@ void Controller::algorithm(void)
 		  CmiWallTimer(),CmiTimer());
 	}
 #endif
+	if ( LdbCoordinator::Object()->balanceNow(step) ) {
+	  LdbCoordinator::Object()->rebalance(this);
+	}
     }
 
     terminate();
@@ -345,12 +349,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1032 $	$Date: 1998/04/14 03:19:20 $
+ *	$Revision: 1.1033 $	$Date: 1998/05/15 16:19:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1033  1998/05/15 16:19:03  jim
+ * Made Controller suspend during load balancing (for reduction system).
+ *
  * Revision 1.1032  1998/04/14 03:19:20  jim
  * Fixed up MDCOMM code.
  *

@@ -27,7 +27,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1025 1998/03/26 23:28:34 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1026 1998/05/15 16:19:05 jim Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -162,6 +162,10 @@ ReductionMgrData *ReductionMgr::createdata()
  *******************************************/
 void	ReductionMgr::Register(ReductionTag tag)
 {
+  if ( data ) {
+    NAMD_die("Registered reduction while other reductions outstanding!\n");
+    return;
+  }
   maxData[tag]++;
   maxEvents++;	// expect and event (submit)
   DebugM(1,"Register tag=" << tag << " maxData="<< maxData[tag] <<"\n");
@@ -176,6 +180,10 @@ void	ReductionMgr::Register(ReductionTag tag)
  *******************************************/
 void	ReductionMgr::unRegister(ReductionTag tag)
 {
+  if ( data ) {
+    NAMD_die("unRegistered reduction while other reductions outstanding!\n");
+    return;
+  }
   maxData[tag]--;
   maxEvents--;	// expect 1 less event
   DebugM(1,"unRegister tag=" << tag << " maxData=" << maxData[tag] << "\n");
@@ -483,12 +491,15 @@ void	ReductionMgr::unsubscribe(ReductionTag tag)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1025 $	$Date: 1998/03/26 23:28:34 $
+ *	$Revision: 1.1026 $	$Date: 1998/05/15 16:19:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.C,v $
+ * Revision 1.1026  1998/05/15 16:19:05  jim
+ * Made Controller suspend during load balancing (for reduction system).
+ *
  * Revision 1.1025  1998/03/26 23:28:34  jim
  * Small changes for KCC port.  Altered use of strstream in ComputeFreeEnergy.
  *

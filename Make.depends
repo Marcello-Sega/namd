@@ -1594,6 +1594,10 @@ obj/Controller.o: \
 	src/BroadcastClient.h \
 	src/NamdState.h \
 	src/Broadcasts.h \
+	src/LdbCoordinator.h \
+	src/elements.h \
+	src/Set.h \
+	src/ComputeMgr.h \
 	src/Thread.h \
 	src/Debug.h
 	$(CXX) $(CXXTHREADFLAGS) -o obj/Controller.o -c src/Controller.C
@@ -1728,6 +1732,7 @@ obj/LdbCoordinator.o: \
 	src/AtomMap.h \
 	src/ComputeMap.h \
 	src/Debug.h \
+	src/Controller.h \
 	src/Sequencer.h \
 	src/PatchTypes.h \
 	src/RefineOnly.h \

@@ -29,6 +29,7 @@
 
 class PatchMap;
 class ComputeMap;
+class Controller;
 class Sequencer;
 class InitMsg;
 
@@ -87,6 +88,7 @@ public:
   void startWork(ComputeID id, int timestep);
   void endWork(ComputeID id, int timestep);
   void rebalance(Sequencer *seq, PatchID id);
+  void rebalance(Controller *seq);
   void nodeDone(LdbResumeMsg *msg);
   void sendStats(LdbResumeMsg *msg);
   void analyze(LdbStatsMsg *msg);
@@ -116,11 +118,14 @@ private:
   int nPatchesExpected;
   int nComputesReported;
   int nComputesExpected;
+  int controllerReported;
+  int controllerExpected;
   int nStatsMessagesReceived;
   int nStatsMessagesExpected;
   ComputeMap *computeMap;
   PatchMap *patchMap;
   int *patchNAtoms;
+  Controller *controllerThread;
   Sequencer **sequencerThreads;
   double *computeStartTime;
   double *computeTotalTime;
@@ -166,12 +171,15 @@ inline int LdbCoordinator::balanceNow(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.21 $	$Date: 1998/04/02 23:54:06 $
+ *	$Revision: 1.22 $	$Date: 1998/05/15 16:19:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LdbCoordinator.h,v $
+ * Revision 1.22  1998/05/15 16:19:04  jim
+ * Made Controller suspend during load balancing (for reduction system).
+ *
  * Revision 1.21  1998/04/02 23:54:06  jim
  * Subtracted firstTimeStep from N in balanceNow().
  *

@@ -14,6 +14,7 @@
 #define DEBUGM
 #define MIN_DEBUG_LEVEL 4
 #include "Debug.h"
+#include "Controller.h"
 #include "Sequencer.h"
 #include "RefineOnly.h"
 #include "ComputeMgr.h"
@@ -213,6 +214,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap)
     }
     sequencerThreads[i]=NULL;
   }
+  controllerThread = NULL;
   if (nLocalPatches != pMap->numHomePatches())
     NAMD_die("Disaggreement in patchMap data.\n");
  
@@ -254,6 +256,8 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap)
   nPatchesExpected = nLocalPatches;
   nComputesReported = 0;
   nComputesExpected = nLocalComputes * nLdbSteps;
+  controllerReported = 0;
+  controllerExpected = ! CMyPe();
 
   if (CMyPe() == 0)
   {
@@ -332,10 +336,22 @@ void LdbCoordinator::rebalance(Sequencer *seq, PatchID pid)
   seq->suspend();
 }
 
+void LdbCoordinator::rebalance(Controller *c)
+{
+  if (Node::Object()->simParameters->ldbStrategy == LDBSTRAT_NONE)
+    return;
+
+  controllerReported = 1;
+  controllerThread = c;
+  checkAndGoToBarrier();
+  CthSuspend();
+}
+
 int LdbCoordinator::checkAndGoToBarrier(void)
 {
   if ( (nPatchesReported == nPatchesExpected) 
-       && (nComputesReported == nComputesExpected) )
+       && (nComputesReported == nComputesExpected)
+       && (controllerReported == controllerExpected) )
   {
     
     LdbResumeMsg *msg = new (MsgIndex(LdbResumeMsg)) LdbResumeMsg;
@@ -572,6 +588,11 @@ void LdbCoordinator::resume(LdbResumeMsg *msg)
 
 void LdbCoordinator::awakenSequencers()
 {
+  if (controllerThread)
+  {
+    controllerThread->awaken();
+    controllerThread = NULL;
+  }
   for(int i=0; i < patchMap->numPatches(); i++)
   {
     if (sequencerThreads[i])
