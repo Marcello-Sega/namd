@@ -116,6 +116,7 @@ public:
   void sendMigrationMsg(PatchID, MigrationInfo);
   void sendMigrationMsgs(PatchID, MigrationInfo*, int);
   void recvMigrateAtoms(MigrateAtomsMsg *);
+  void recvMigrateAtomsCombined(MigrateAtomsCombinedMsg *);
   static void setGroup(BOCgroup g);
  
 private:
@@ -134,6 +135,10 @@ private:
   // an array of patches to move off this node
   MovePatchList move;
   int ackMovePending;
+
+  // data for combining migration messages
+  MigrateAtomsCombinedMsg ** combineMigrationMsgs;
+  int migrationCountdown;
 };
 
 
@@ -144,12 +149,15 @@ private:
  *
  *	$RCSfile: PatchMgr.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/04/10 22:29:17 $
+ *	$Revision: 1.1006 $	$Date: 1997/04/11 06:03:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.h,v $
+ * Revision 1.1006  1997/04/11 06:03:29  jim
+ * Message combining implemented for atom migration.
+ *
  * Revision 1.1005  1997/04/10 22:29:17  jim
  * First steps towards combining atom migration messages.
  *

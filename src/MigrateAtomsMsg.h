@@ -65,6 +65,7 @@ public:
   ~MigrateAtomsCombinedMsg(void) { };
 
   void add(PatchID source, PatchID destination, MigrationList *m);
+  void distribute(void);
 
   // Standard new overload for comm_object new
   void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
@@ -84,12 +85,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1997/04/10 22:29:14 $
+ *	$Revision: 1.6 $	$Date: 1997/04/11 06:03:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: MigrateAtomsMsg.h,v $
+ * Revision 1.6  1997/04/11 06:03:24  jim
+ * Message combining implemented for atom migration.
+ *
  * Revision 1.5  1997/04/10 22:29:14  jim
  * First steps towards combining atom migration messages.
  *

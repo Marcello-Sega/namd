@@ -4,12 +4,14 @@
 extern message InitMsg;
 packmessage MovePatchesMsg;
 packmessage MigrateAtomsMsg;
+packmessage MigrateAtomsCombinedMsg;
 
 group PatchMgr
 {
   entry PatchMgr(InitMsg *);
   entry recvMovePatches(MovePatchesMsg *);
   entry recvMigrateAtoms(MigrateAtomsMsg *);
+  entry recvMigrateAtomsCombined(MigrateAtomsCombinedMsg *);
 } ;
 
 /***************************************************************************
@@ -17,12 +19,15 @@ group PatchMgr
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/19 11:54:48 $
+ *	$Revision: 1.1004 $	$Date: 1997/04/11 06:03:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.ci,v $
+ * Revision 1.1004  1997/04/11 06:03:27  jim
+ * Message combining implemented for atom migration.
+ *
  * Revision 1.1003  1997/03/19 11:54:48  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

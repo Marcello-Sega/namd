@@ -11,7 +11,7 @@
 /*								           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1008 1997/04/10 22:29:16 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1009 1997/04/11 06:03:26 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -60,6 +60,10 @@ PatchMgr::PatchMgr(InitMsg *msg)
     // Get PatchMap singleton started
     patchMap = PatchMap::Instance();
     patchMap->registerPatchMgr(this);
+
+    // Message combining initialization
+    migrationCountdown = 0;
+    combineMigrationMsgs = new MigrateAtomsCombinedMsg*[CNumPes()];
 }
 
 PatchMgr::~PatchMgr()
@@ -69,6 +73,7 @@ PatchMgr::~PatchMgr()
       HomePatchElem* elem = homePatches.find(HomePatchElem(hi->pid));
       delete elem->patch;
     }
+    delete [] combineMigrationMsgs;
 }
 
 
@@ -147,17 +152,63 @@ void PatchMgr::sendMigrationMsg(PatchID src, MigrationInfo m) {
 }
 
 // Called by HomePatch to migrate atoms off to new patches
-// Message combining could occur here
+// Message combining occurs here
 void PatchMgr::sendMigrationMsgs(PatchID src, MigrationInfo *m, int numMsgs) {
+/*
   for (int i=0; i < numMsgs; i++) {
     PatchMgr::Object()->sendMigrationMsg(src, m[i]);
   }
+*/
+  if ( ! migrationCountdown )  // (re)initialize
+  {
+    // DebugM(3,"migrationCountdown (re)initialize\n");
+    numHomePatches = patchMap->numHomePatches();
+    migrationCountdown = numHomePatches;
+    int numPes = CNumPes();
+    for ( int i = 0; i < numPes; ++i ) combineMigrationMsgs[i] = 0;
+  }
+  for (int i=0; i < numMsgs; i++) {  // buffer messages
+    int destNodeID = m[i].destNodeID;
+    if ( 1 ) // destNodeID != CMyPe() )
+    {
+      if ( ! combineMigrationMsgs[destNodeID] )
+      {
+        combineMigrationMsgs[destNodeID] =
+	  new (MsgIndex(MigrateAtomsCombinedMsg)) MigrateAtomsCombinedMsg();
+      }
+      combineMigrationMsgs[destNodeID]->add(src,m[i].destPatchID,m[i].mList);
+    }
+    else
+    {
+	// for now buffer local messages too
+    }
+  }
+  migrationCountdown -= 1;
+  // DebugM(3,"migrationCountdown = " << migrationCountdown << "\n");
+  if ( ! migrationCountdown )  // send out combined messages
+  {
+    int numPes = CNumPes();
+    for ( int destNodeID = 0; destNodeID < numPes; ++destNodeID )
+      if ( combineMigrationMsgs[destNodeID] )
+      {
+	DebugM(3,"Sending MigrateAtomsCombinedMsg to node " << destNodeID << "\n");
+        CSendMsgBranch(PatchMgr, recvMigrateAtomsCombined,
+		combineMigrationMsgs[destNodeID], thisgroup, destNodeID);
+      }
+  }
 }
 
-// Receive end of sendMigrateionMsg() above
+// Receive end of sendMigrationMsg() above
 void PatchMgr::recvMigrateAtoms (MigrateAtomsMsg *msg) {
   //  msg must be deleted by HomePatch::depositMigrationMsg();
   PatchMap::Object()->homePatch(msg->destPatchID)->depositMigration(msg);
+}
+
+void PatchMgr::recvMigrateAtomsCombined (MigrateAtomsCombinedMsg *msg)
+{
+  DebugM(3,"Received MigrateAtomsCombinedMsg with " << msg->srcPatchID.size() << " messages.\n");
+  msg->distribute();
+  delete msg;
 }
 
 void * MovePatchesMsg::pack (int *length)
@@ -224,11 +275,14 @@ void MovePatchesMsg::unpack (void *in)
  *
  *	$RCSfile: PatchMgr.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/04/10 22:29:16 $
+ *	$Revision: 1.1009 $	$Date: 1997/04/11 06:03:26 $
  *
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.C,v $
+ * Revision 1.1009  1997/04/11 06:03:26  jim
+ * Message combining implemented for atom migration.
+ *
  * Revision 1.1008  1997/04/10 22:29:16  jim
  * First steps towards combining atom migration messages.
  *

@@ -9,7 +9,7 @@
  *		
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/MigrateAtomsMsg.C,v 1.4 1997/04/10 22:29:12 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/MigrateAtomsMsg.C,v 1.5 1997/04/11 06:03:22 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -20,6 +20,10 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/MigrateAtom
 // #define DEBUGM
 #define MIN_DEBUG_LEVEL 3
 #include "Debug.h"
+
+#include "PatchMgr.top.h"
+#include "PatchMap.h"
+#include "HomePatch.h"
 
 MigrateAtomsMsg::MigrateAtomsMsg(void) { 
     migrationList = NULL; 
@@ -109,6 +113,32 @@ void MigrateAtomsCombinedMsg::
 }
 
 
+void MigrateAtomsCombinedMsg::distribute(void)
+{
+  int n = srcPatchID.size();
+  int m = 0;
+  for ( int i = 0; i < n; ++i )
+  {
+    MigrateAtomsMsg *msg = new (MsgIndex(MigrateAtomsMsg)) MigrateAtomsMsg;
+    msg->fromNodeID = fromNodeID;
+    msg->srcPatchID = srcPatchID[i];
+    msg->destPatchID = destPatchID[i];
+    int l = numAtoms[i];
+    if ( l )
+    {
+      DebugM(3,"Distributing " << l << " atoms to patch " << msg->destPatchID << "\n");
+      msg->migrationList = new MigrationList(l);
+      for ( int j = 0; j < l; ++j ) (*msg->migrationList)[j] = migrationList[m+j];
+      m += l;
+    }
+    else
+    {
+      msg->migrationList = 0;
+    }
+    PatchMap::Object()->homePatch(msg->destPatchID)->depositMigration(msg);
+  }
+}
+
 void * MigrateAtomsCombinedMsg::pack (int *length) {
   int n = srcPatchID.size();
   int l = sizeof(NodeID)			// fromNodeID
@@ -116,6 +146,7 @@ void * MigrateAtomsCombinedMsg::pack (int *length) {
 	+ sizeof(int)				// n
 	+ sizeof(PatchID) * n			// srcPatchID
 	+ sizeof(PatchID) * n			// destPatchID
+	+ sizeof(int) * n			// numAtoms
 	+ sizeof(MigrationElem) * totalAtoms	// migrationList
   ; *length = l;
 
@@ -132,6 +163,9 @@ void * MigrateAtomsCombinedMsg::pack (int *length) {
   memcpy(b,(void*)&destPatchID[0], sizeof(PatchID) * n);
   b += sizeof(PatchID) * n;
 
+  memcpy(b,(void*)&numAtoms[0], sizeof(int) * n);
+  b += sizeof(int) * n;
+
   memcpy(b,(void*)&migrationList[0], sizeof(MigrationElem) * totalAtoms);
   b += sizeof(MigrationElem) * totalAtoms;
 
@@ -147,6 +181,8 @@ void MigrateAtomsCombinedMsg::unpack (void *in) {
   totalAtoms = *((int*)b);	b += sizeof(int);
   int n = *((int*)b);		b += sizeof(int);
 
+  DebugM(3,"Unpacking MigrateAtomsCombinedMsg with " << n << " messages.\n");
+
   srcPatchID.resize(n);
   memcpy((void*)&srcPatchID[0], b, sizeof(PatchID) * n);
   b += sizeof(PatchID) * n;
@@ -155,7 +191,11 @@ void MigrateAtomsCombinedMsg::unpack (void *in) {
   memcpy((void*)&destPatchID[0], b, sizeof(PatchID) * n);
   b += sizeof(PatchID) * n;
 
-  srcPatchID.resize(totalAtoms);
+  numAtoms.resize(n);
+  memcpy((void*)&numAtoms[0], b, sizeof(int) * n);
+  b += sizeof(int) * n;
+
+  migrationList.resize(totalAtoms);
   memcpy((void*)&migrationList[0], b, sizeof(MigrationElem) * totalAtoms);
   b += sizeof(MigrationElem) * totalAtoms;
 
@@ -169,11 +209,14 @@ void MigrateAtomsCombinedMsg::unpack (void *in) {
  *
  *	$RCSfile: MigrateAtomsMsg.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1997/04/10 22:29:12 $
+ *	$Revision: 1.5 $	$Date: 1997/04/11 06:03:22 $
  *
  * REVISION HISTORY:
  *
  * $Log: MigrateAtomsMsg.C,v $
+ * Revision 1.5  1997/04/11 06:03:22  jim
+ * Message combining implemented for atom migration.
+ *
  * Revision 1.4  1997/04/10 22:29:12  jim
  * First steps towards combining atom migration messages.
  *
