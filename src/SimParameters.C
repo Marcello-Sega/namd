@@ -873,13 +873,12 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
     &constraintExp, 2);
    opts.range("consexp", POSITIVE);
    opts.require("constraints", "consref", "PDB file containing reference "
-    "positions (defaults to the initial coordinates)",
+    "positions",
     PARSE_STRING);
    opts.require("constraints", "conskfile", "PDB file containing force "
-    "constaints in one of the columns (defaults to "
-    "consref)", PARSE_STRING);
+    "constaints in one of the columns", PARSE_STRING);
    opts.require("constraints", "conskcol", "Column of conskfile to use "
-    "for the force constants (defaults to O)", PARSE_STRING);
+    "for the force constants", PARSE_STRING);
    opts.require("constraints", "constraintScaling", "constraint scaling factor",
      &constraintScaling, 1.0);
    opts.range("nonbondedScaling", POSITIVE);

@@ -34,23 +34,18 @@ sense.  This parameter is used only if {\tt constraints} is set to
 {\tt on}.}
 
 \item
-\NAMDCONFWDEF{consref}{PDB file containing constraint reference positions}{UNIX file name}{{\tt coordinates}}
+\NAMDCONF{consref}{PDB file containing constraint reference positions}{UNIX file name}
 {PDB file to use for reference positions for harmonic constraints.  
 Each atom that has an active constraint will be constrained about 
-the position specified in this file.  If no value is given and constraints 
-are active, then the same PDB file specified by {\tt coordinates} will be 
-used instead, constraining atoms about their initial positions.}
+the position specified in this file.}
 
 \item
-\NAMDCONFWDEF{conskfile}{PDB file containing force constant values}{UNIX filename} {{\tt coordinates}}
+\NAMDCONF{conskfile}{PDB file containing force constant values}{UNIX filename}
 {PDB file to use for force constants for 
-harmonic constraints.  
-If this parameter is not specified, then 
-the PDB file containing initial coordinates specified by 
-{\tt coordinates} is used.}
+harmonic constraints.}
 
 \item
-\NAMDCONFWDEF{conskcol}{column of PDB file containing force constant}{{\tt X}, {\tt Y}, {\tt Z}, {\tt O}, or {\tt B}}{{\tt O}}
+\NAMDCONF{conskcol}{column of PDB file containing force constant}{{\tt X}, {\tt Y}, {\tt Z}, {\tt O}, or {\tt B}}
 {Column of the PDB file to use for the harmonic constraint force constant.
 This parameter may specify any of the floating point fields of the PDB file, 
 either X, Y, Z, occupancy, or beta-coupling (temperature-coupling).  
