@@ -11,8 +11,8 @@
 #include "SimParameters.h"
 #include "PatchMap.inl"
 #include "ComputeMap.h"
-#define DEBUGM
-#define MIN_DEBUG_LEVEL 4
+//#define DEBUGM
+#define MIN_DEBUG_LEVEL 3
 #include "Debug.h"
 #include "Controller.h"
 #include "Sequencer.h"
@@ -178,7 +178,7 @@ LdbCoordinator::~LdbCoordinator(void)
 
 }
 
-void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap)
+void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 {
   const SimParameters *simParams = Node::Object()->simParameters;
 
@@ -197,8 +197,10 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap)
   delete [] patchNAtoms;  // Depends on delete NULL to do nothing
   patchNAtoms = new int[pMap->numPatches()];
 
-  delete [] sequencerThreads;  // Depends on delete NULL to do nothing
-  sequencerThreads = new (Sequencer *[pMap->numPatches()]);
+  if ( ! reinit ) {
+    delete [] sequencerThreads;  // Depends on delete NULL to do nothing
+    sequencerThreads = new (Sequencer *[pMap->numPatches()]);
+  }
 
   nLocalPatches=0;
 
@@ -212,9 +214,9 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap)
     } else {
       patchNAtoms[i]=-1;
     }
-    sequencerThreads[i]=NULL;
+    if ( ! reinit ) sequencerThreads[i]=NULL;
   }
-  controllerThread = NULL;
+  if ( ! reinit ) controllerThread = NULL;
   if (nLocalPatches != pMap->numHomePatches())
     NAMD_die("Disaggreement in patchMap data.\n");
  
@@ -341,6 +343,7 @@ void LdbCoordinator::rebalance(Controller *c)
   if (Node::Object()->simParameters->ldbStrategy == LDBSTRAT_NONE)
     return;
 
+  DebugM(3, "Controller reached load balance barrier.\n");
   controllerReported = 1;
   controllerThread = c;
   checkAndGoToBarrier();
@@ -349,11 +352,27 @@ void LdbCoordinator::rebalance(Controller *c)
 
 int LdbCoordinator::checkAndGoToBarrier(void)
 {
+  if ( (nPatchesReported > nPatchesExpected) 
+       || (nComputesReported > nComputesExpected)
+       || (controllerReported > controllerExpected) )
+  {
+    DebugM(3, "load balance barrier countdown: "
+         << nPatchesReported << "/" << nPatchesExpected << " patches, "
+         << nComputesReported << "/" << nComputesExpected << " computes, "
+         << controllerReported << "/" << controllerExpected << " controller\n");
+  }
+
+  if (nPatchesReported == nPatchesExpected) 
+  {
+    DebugM(3, "All patches, " << nComputesReported << "/" <<
+	nComputesExpected << " computes reported for load balance barrier.\n");
+  }
+
   if ( (nPatchesReported == nPatchesExpected) 
        && (nComputesReported == nComputesExpected)
        && (controllerReported == controllerExpected) )
   {
-    
+    DebugM(3, "Load balance barrier reached.\n");
     LdbResumeMsg *msg = new (MsgIndex(LdbResumeMsg)) LdbResumeMsg;
     CSendMsgBranch(LdbCoordinator, nodeDone, LdbResumeMsg, msg, thisgroup,0);
     return 1;
@@ -574,21 +593,37 @@ void LdbCoordinator::processStatistics(void)
 }
 
 void LdbCoordinator::updateComputesReady(DoneMsg *msg) {
+  DebugM(3,"updateComputesReady()\n");
   delete msg;
 
   LdbResumeMsg *sendmsg = new (MsgIndex(LdbResumeMsg)) LdbResumeMsg;
   CBroadcastMsgBranch(LdbCoordinator, resume, LdbResumeMsg, sendmsg, thisgroup);
+  CStartQuiescence(GetEntryPtr(LdbCoordinator,resumeReady,QuiescenceMessage),thishandle);
 }
 
 void LdbCoordinator::resume(LdbResumeMsg *msg)
 {
+  DebugM(3,"resume()\n");
   //  printLocalLdbReport();
 
   ldbCycleNum++;
-  if(CMyPe()==0)
-    Namd::startTimer();
+  initialize(PatchMap::Object(),ComputeMap::Object(),1);
+  delete msg;
+}
+
+void LdbCoordinator::resumeReady(QuiescenceMessage *msg) {
+  DebugM(3,"resumeReady()\n");
+  delete msg;
+
+  Namd::startTimer();
+  LdbResumeMsg *sendmsg = new (MsgIndex(LdbResumeMsg)) LdbResumeMsg;
+  CBroadcastMsgBranch(LdbCoordinator, resume2, LdbResumeMsg, sendmsg, thisgroup);
+}
+
+void LdbCoordinator::resume2(LdbResumeMsg *msg)
+{
+  DebugM(3,"resume2()\n");
   awakenSequencers();
-  initialize(PatchMap::Object(),ComputeMap::Object());
   delete msg;
 }
 

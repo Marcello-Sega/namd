@@ -83,7 +83,7 @@ public:
     return CpvAccess(LdbCoordinator_instance); 
   }
 
-  void initialize(PatchMap *pmap, ComputeMap *cmap);
+  void initialize(PatchMap *pmap, ComputeMap *cmap, int reinit=0);
   void patchLoad(PatchID id, int nAtoms, int timestep);
   void startWork(ComputeID id, int timestep);
   void endWork(ComputeID id, int timestep);
@@ -94,6 +94,8 @@ public:
   void analyze(LdbStatsMsg *msg);
   void updateComputesReady(DoneMsg *msg);
   void resume(LdbResumeMsg *msg);
+  void resumeReady(QuiescenceMessage *msg);
+  void resume2(LdbResumeMsg *msg);
   inline int balanceNow(int timestep);
 
   // Public variables accessed by the idle-event functions
@@ -171,12 +173,15 @@ inline int LdbCoordinator::balanceNow(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.22 $	$Date: 1998/05/15 16:19:04 $
+ *	$Revision: 1.23 $	$Date: 1998/11/25 00:11:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LdbCoordinator.h,v $
+ * Revision 1.23  1998/11/25 00:11:30  jim
+ * Fixed load balance barrier hanging bug.
+ *
  * Revision 1.22  1998/05/15 16:19:04  jim
  * Made Controller suspend during load balancing (for reduction system).
  *
