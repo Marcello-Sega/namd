@@ -1,6 +1,6 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                     NAMD 2.1b4 Release Notes                       |
+|                      NAMD 2.1 Release Notes                        |
 |                                                                    |
 +--------------------------------------------------------------------+
 
@@ -33,8 +33,9 @@ important that the same compiler is used for both Charm++ and NAMD.
   * HPUX-CC            HP-UX 10.0 or later with CC   net-hp-cc
   * HPUX-aCC           HP-UX 10.0 or later with aCC  net-hp-acc
     HPUX-g++           HP-UX 10.0 or later with GNU  net-hp
-  * ASCI-Red           ASCI Red                      paragon-red
+    AIX-RS6000-xlC     IBM AIX with xlC              net-rs6k
   * IBM-SP             IBM SP Series                 sp3
+  * ASCI-Red           ASCI Red                      paragon-red
 
   * These architectures may fail to build or be unstable.
 

@@ -357,7 +357,7 @@ clean:
 veryclean:	clean
 	rm -f $(BINARIES)
 
-NAMD_VERSION = 2.1b4
+NAMD_VERSION = 2.1
 RELEASE_DIR_NAME = NAMD_$(NAMD_VERSION)_$(NAMD_PLATFORM)
 RELEASE_FILES = .rootdir/README.txt \
 		.rootdir/announce.txt \
