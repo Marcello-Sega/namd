@@ -85,6 +85,69 @@ are equivalent.  The capitalization in the values, however, may be important.
 Some values indicate file names, in which capitalization is critical.  
 Other values such as {\tt on} or {\tt off} are case insensitive.
 
+\subsubsection{Tcl scripting interface and features}
+\label{section:tclscripting}
+
+When compiled with Tcl (all released binaries) the config file
+is parsed by Tcl in a fully backwards compatible manner with the
+added bonus that any Tcl command may also be used.  This alone allows:
+\begin{itemize}
+ \item the "source" command to include other files (works w/o Tcl too!),
+ \item the "print" command to display messages ("puts" is broken, sorry),
+ \item environment variables through the env array ("\$env(USER)"), and
+ \item user-defined variables ("set base sim23", "dcdfile \${base}.dcd").
+\end{itemize}
+
+Additional features include:
+\begin{itemize}
+ \item The "callback" command takes a 2-parameter Tcl procedure which
+    is then called with a list of labels and a list of values during
+    every timestep, allowing analysis, formatting, whatever.
+ \item The "run" command takes a number of steps to run (overriding the
+    now optional numsteps parameter, which defaults to 0) and can be
+    called repeatedly.  You can "run 0" just to get energies.
+ \item The "minimize" command is similar to "run" and performs
+    minimization for the specified number of force evaluations.
+ \item The "output" command takes an output file basename and causes
+    .coor, .vel, and .xsc files to be written with that name.
+ \item Between "run" commands the reassignTemp, rescaleTemp, and
+    langevinTemp parameters can be changed to allow simulated
+    annealing protocols within a single config file.  (Many more
+    parameters of this type will be enabled in future versions.)
+ \item The "checkpoint" and "revert" commands (no arguments) allow
+    a scripted simulation to save and restore to a prior state.
+    (The minimizer makes use of these commands also - you cannot
+    revert to a checkpoint made before the last minimize call.)
+ \item The "reinitvels" command reinitializes velocities to a
+    random distribution based on the given temperature.
+ \item The "measure" command allows user-programmed calculations to
+    be executed in order to facilitate automated methods.  (For
+    example, to revert or change a parameter.)  You will need to
+    write code and compile NAMD to make use of this feature.
+\end{itemize}
+
+Please note that while NAMD has traditionally allowed comments to be
+started by a \# appearing anywhere on a line, Tcl only allows comments
+to appear where a new statement could begin.  With Tcl config file
+parsing enabled (all shipped binaries) both NAMD and Tcl comments are
+allowed before the first "run" command.  At this point only pure Tcl
+syntax is allowed.  In addition, the ";\#" idiom for Tcl comments will
+only work with Tcl enabled.  NAMD has also traditionally allowed
+parameters to be specified as "param=value".  This is supported, but
+only before the first "run" command.  Some examples:
+
+\begin{verbatim}
+# this is my config file                            <- OK
+reassignFreq 100 ; # how often to reset velocities  <- only w/ Tcl
+reassignTemp 20 # temp to reset velocities to       <- OK before "run"
+run 1000                                            <- now Tcl only
+reassignTemp 40 ; # temp to reset velocities to     <- ";" is required
+\end{verbatim}
+
+NAMD has also traditionally allowed parameters to be specified as
+"param=value" as well as "param value".  This is supported, but only
+before the first "run" command.  For an easy life, use "param value".
+
 \subsubsection{Required \NAMD\ configuration parameters}
 \label{section:requiredparams}
 

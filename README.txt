@@ -1,6 +1,6 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                           NAMD 2.1 README                          |
+|                          NAMD 2.2b1 README                         |
 |                                                                    |
 +--------------------------------------------------------------------+
 
@@ -34,7 +34,7 @@ Bioinformatics, to develop and freely distribute effective tools
 For more information, see:
 	http://www.ks.uiuc.edu/Research/VMD/
 	http://www.ks.uiuc.edu/Research/NAMD/
-	http://www.ks.uiuc.edu/Research/collaboratory/
+	http://www.ks.uiuc.edu/Research/biocore/
 
 The NAMD project is funded by the National Institutes of Health
 (grant number PHS 5 P41 RR05969).

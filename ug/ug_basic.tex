@@ -623,19 +623,25 @@ None of the parameters should affect energy conservation, although they may affe
 {Charges are interpolated onto the grid and forces are interpolated off using this many points, equal to the order of the interpolation function plus one.}
 
 \item
-\NAMDCONF{PMEGridSizeX}{PME grid in x dimension}{positive integer}
+\NAMDCONF{PMEGridSizeX}{number of grid points in x dimension}{positive integer}
 {The grid size partially determines the accuracy and efficiency of PME.
 For speed, {\tt PMEGridSizeX} should have only small integer factors (2, 3 and 5).}
 
 \item
-\NAMDCONF{PMEGridSizeY}{PME grid in y dimension}{positive integer}
+\NAMDCONF{PMEGridSizeY}{number of grid points in y dimension}{positive integer}
 {The grid size partially determines the accuracy and efficiency of PME.
 For speed, {\tt PMEGridSizeY} should have only small integer factors (2, 3 and 5).}
 
 \item
-\NAMDCONF{PMEGridSizeZ}{PME grid in z dimension}{positive integer}
+\NAMDCONF{PMEGridSizeZ}{number of grid points in z dimension}{positive integer}
 {The grid size partially determines the accuracy and efficiency of PME.
 For speed, {\tt PMEGridSizeZ} should have only small integer factors (2, 3 and 5).}
+
+\item
+\NAMDCONFWDEF{PMEProcessors}{processors for FFT and reciprocal sum}{positive integer}{larger of x and y grid sizes up to all available processors}
+{For best performance on some systems and machines, it may be necessary to
+restrict the amount of parallelism used.  Experiment with this parameter if
+your parallel performance is poor when PME is used.}
 
 \item
 \NAMDCONFWDEF{useDPME}{Use old DPME code?}{{\tt yes} or {\tt no}}{{\tt no}}
@@ -699,9 +705,11 @@ in which case the upper limit is perhaps doubled.}
 {This parameter specifies how often short-range nonbonded interactions should be calculated.  Setting {\tt nonbondedFreq} between 1 and {\tt fullElectFrequency} allows triple timestepping where, for example, one could evaluate bonded forces every 1 fs, short-range nonbonded forces every 2 fs, and long-range electrostatics every 4 fs.} 
 
 \item
-\NAMDCONFWDEF{MTSAlgorithm}{MTS algorithm to be used}{{\tt verletI}}{{\tt verletI}}
+\NAMDCONFWDEF{MTSAlgorithm}{MTS algorithm to be used}{{\tt impulse/verletI} or {\tt constant/naive}}{{\tt impulse}}
 {Specifies the multiple timestep algorithm used to integrate the 
-long and short range forces.  {\tt verletI} is the same as r-RESPA.}
+long and short range forces.  {\tt impulse/verletI} is the same as r-RESPA.
+{\tt constant/naive} is the stale force extrapolation method.}
+
 
 \item
 \NAMDCONFWDEF{longSplitting}{how should long and short range forces be split?}{{\tt xplor}, {\tt c1}}{{\tt c1}}

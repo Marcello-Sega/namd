@@ -109,10 +109,43 @@ A value of 0 indicates that the atom is not fixed.}
 
 \subsection{Energy Minimization}
 
+\subsubsection{Conjugate gradient parameters}
+
+The default minimizer uses a sophisticated conjugate gradient and
+line search algorithm with much better performance than the older
+velocity quenching method.
+The method of conjugate gradients is used to select successive search
+directions (starting with the initial gradient) which eliminate
+repeated minimization along the same directions.
+Along each direction, a minimum is first bracketed (rigorously bounded)
+and then converged upon by either a golden section search, or, when
+possible, a quadratically convergent method using gradient information.
+
+For most systems, it just works.
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{minimization}{Perform conjugate gradient energy minimization?}{{\tt on} or {\tt off}}{{\tt off}}
+{Turns efficient energy minimization {\tt on} or {\tt off}.}
+
+\item
+\NAMDCONFWDEF{minTinyStep}{first initial step for line minimizer}{positive decimal}{1.0e-6}
+{If your minimization is immediately unstable, make this smaller.}
+
+\item
+\NAMDCONFWDEF{minBabyStep}{max initial step for line minimizer}{positive decimal}{1.0e-6}
+{If your minimization becomes unstable later, make this smaller.}
+
+\item
+\NAMDCONFWDEF{minLineGoal}{gradient reduction factor for line minimizer}{positive decimal}{1.0e-4}
+{Varying this might improve conjugate gradient performance.}
+
+\end{itemize}
+
 \subsubsection{Velocity quenching parameters}
 
-As described in the \PG, \NAMD\ has the capability
-of performing energy minimization using a simple quenching
+You can perform energy minimization using a simple quenching
 scheme.   While this algorithm is not the most rapidly convergent, it
 is sufficient for most applications.  There are only two parameters
 for minimization:  one to activate minimization and another
@@ -121,8 +154,8 @@ to specify the maximum movement of any atom.
 \begin{itemize}
 
 \item
-\NAMDCONFWDEF{minimization}{Perform energy minimization?}{{\tt on} or {\tt off}}{{\tt off}}
-{Turns energy minimization {\tt on} or {\tt off}.}
+\NAMDCONFWDEF{velocityQuenching}{Perform old-style energy minimization?}{{\tt on} or {\tt off}}{{\tt off}}
+{Turns slow energy minimization {\tt on} or {\tt off}.}
 
 \item
 \NAMDCONFWDEF{maximumMove}{maximum distance an atom can move during each step (\AA)}
