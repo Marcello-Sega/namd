@@ -1,7 +1,7 @@
 
 FFTDIR = C:/cygwin$(HOME)/fftw
 FFTINCL = /I$(FFTDIR)/include
-FFTLIB = -L$(FFTDIR)/lib -lfftw -lrfftw
+FFTLIB = -L$(FFTDIR)/lib -lsfftw -lsrfftw
 FFTFLAGS = /DNAMD_FFTW
 FFT = $(FFTINCL) $(FFTFLAGS)
 

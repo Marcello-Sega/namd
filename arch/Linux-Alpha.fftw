@@ -1,7 +1,7 @@
 
 FFTDIR=/Projects/namd2/fftw/alphalinux
 FFTINCL=-I$(FFTDIR)/include
-FFTLIB=-L$(FFTDIR)/lib -lrfftw -lfftw -lcpml
+FFTLIB=-L$(FFTDIR)/lib -lsrfftw -lsfftw -lcpml
 FFTFLAGS=-DNAMD_FFTW
 FFT=$(FFTINCL) $(FFTFLAGS)
 
