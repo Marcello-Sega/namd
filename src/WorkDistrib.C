@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.22 1996/12/01 21:02:37 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.23 1996/12/12 08:58:58 jim Exp $";
 
 #include <stdio.h>
 
@@ -129,8 +129,11 @@ void WorkDistrib::createPatches(void)
   for(i=0;i < patchMap->numPatches(); i++)
   {
     if (patchMap->node(i) != node->myid() )
+    {
       DebugM(3,"patchMgr->movePatch("
 	<< i << "," << patchMap->node(i) << ")\n");
+      patchMgr->movePatch(i,patchMap->node(i));
+    }
   }
 }
 
@@ -153,7 +156,8 @@ void WorkDistrib::saveMaps(MapDistribMsg *msg)
   if (awaitingMaps)
   {
     awaitingMaps = false;
-    CthResume(awaitingMapsTh);
+    // CthResume(awaitingMapsTh);
+    CthAwaken(awaitingMapsTh);
   }
 }
 
@@ -165,6 +169,7 @@ void WorkDistrib::awaitMaps()
   {
     awaitingMapsTh = CthSelf();
     awaitingMaps = true;
+    DebugM(4,"suspending in awaitMaps(), thread = " << awaitingMapsTh << "\n");
     CthSuspend();
   }
 }
@@ -371,12 +376,15 @@ void WorkDistrib::movePatchDone(DoneMsg *msg) {
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.22 $	$Date: 1996/12/01 21:02:37 $
+ *	$Revision: 1.23 $	$Date: 1996/12/12 08:58:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.23  1996/12/12 08:58:58  jim
+ * added movePatch call, changed CthResume to CthAwaken
+ *
  * Revision 1.22  1996/12/01 21:02:37  jim
  * now adds all existing compute objects to map
  *
