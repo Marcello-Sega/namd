@@ -19,6 +19,7 @@
 #include "ComputeMgr.top.h"
 #include "ComputeMgr.h"
 
+#include "LJTable.h"
 #include "ComputeNonbondedSelf.h"
 #include "ComputeNonbondedPair.h"
 #include "ComputeAngles.h"
@@ -114,6 +115,8 @@ void ComputeMgr:: createComputes(ComputeMap *map)
   DebugM(4, numNonbondedSelf << " ComputeNonbondedSelf created\n");
   DebugM(4, numNonbondedPair << " ComputeNonbondedPair created\n");
 
+  LJTable::Instance();
+
 }
 
 void ComputeMgr:: enqueueWork(Compute *compute)
@@ -128,7 +131,7 @@ void ComputeMgr:: enqueueWork(Compute *compute)
  *
  *	$RCSfile: ComputeMgr.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/11/30 02:02:11 $
+ *	$Revision: 1.4 $	$Date: 1996/12/01 02:32:54 $
  *
  ***************************************************************************
  * REVISION HISTORY:
