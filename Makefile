@@ -54,17 +54,19 @@ PVMLIB=-L$(PVMDIR) -lpvmc
 PVM=-I$(PVMDIR)
 PVMLIBS=pvm3/libpvmc.a
 
-
 ######
 ## definitions for TCL interface
 ######
-
-TCLDIR=/usr/local
-TCLINCL=-I$(TCLDIR)/include
-TCLLIB=-L$(TCLDIR)/lib -ltclx -ltcl
-TCLFLAGS=-DNAMD_TCL
-TCL=$(TCLINCL) $(TCLFLAGS)
-
+##
+## MOVED TO Makearch.* !!!
+##
+######
+##
+#TCLDIR=/usr/local
+#TCLINCL=-I$(TCLDIR)/include
+#TCLLIB=-L$(TCLDIR)/lib -ltclx -ltcl
+#TCLFLAGS=-DNAMD_TCL
+#TCL=$(TCLINCL) $(TCLFLAGS)
 
 ######
 ## Libraries we may have changed

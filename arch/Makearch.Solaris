@@ -20,6 +20,16 @@ NOWARN=-w
 #####
 CHARM = /Home/p1/milind/charm/net-sol-cc
 
+######
+## definitions for TCL interface
+######
+
+TCLDIR=/usr/local
+TCLINCL=-I$(TCLDIR)/include
+TCLLIB=-L$(TCLDIR)/lib -ltclx -ltcl
+TCLFLAGS=-DNAMD_TCL
+TCL=$(TCLINCL) $(TCLFLAGS)
+
 #####
 # Unix commands
 #####

@@ -30,6 +30,16 @@ DFLAGS= -D_SGI_MP_SOURCE -O3 -r10000 -INLINE:all
 #####
 CHARM =/Home/p1/milind/charm/origin2000
 
+######
+## definitions for TCL interface
+######
+
+TCLDIR=/usr/local
+TCLINCL=-I$(TCLDIR)/include
+TCLLIB=-L$(TCLDIR)/lib -ltclx -ltcl
+TCLFLAGS=-DNAMD_TCL
+TCL=$(TCLINCL) $(TCLFLAGS)
+
 #####
 # Unix commands
 #####

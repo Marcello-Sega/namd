@@ -1,6 +1,6 @@
 ##########################################
 ##########################################
-# Makefile architecture HPUX9
+# Makefile architecture T3E
 ##########################################
 ##########################################
 
@@ -26,6 +26,16 @@ CXXOPTS = -O
 # definitions for Charm routines
 #####
 CHARM = /tmp/rbrunner/charm/t3e
+
+######
+## definitions for TCL interface 
+## Doesn't work on T3E!
+######
+#TCLDIR=/usr/local
+#TCLINCL=-I$(TCLDIR)/include
+#TCLLIB=-L$(TCLDIR)/lib -ltclx -ltcl
+#TCLFLAGS=-DNAMD_TCL
+#TCL=$(TCLINCL) $(TCLFLAGS)
 
 #####
 # Unix commands
