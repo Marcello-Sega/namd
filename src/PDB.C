@@ -208,9 +208,9 @@ PDBAtom *PDB::atom(int place)
 // find the lowest and highest bounds based on a fraction of the atoms
 void PDB::find_extremes(BigReal *min, BigReal *max, Vector rec, BigReal frac) const
 {
-    SortableResizeArray<Real> coor;
+    SortableResizeArray<BigReal> coor;
     coor.resize(atomCount);
-    SortableResizeArray<Real>::iterator c_i = coor.begin();
+    SortableResizeArray<BigReal>::iterator c_i = coor.begin();
     PDBAtomPtr *atomptr = atomArray;
     for (int i=0; i<atomCount; ++i, ++atomptr) {
       PDBAtom *atom = *atomptr;
@@ -291,7 +291,7 @@ static int readtoeoln(FILE *f) {
 // read in an AMBER coordinate file and populate the PDB structure
 PDB::PDB( const char *filename, Ambertoppar *amber_data)
 { int i,j,k;
-  Real coor[3];
+  BigReal coor[3];
   char buf[13],resname[5],atomname[5];
   FILE *infile;
   PDBAtom *pdb;
@@ -377,12 +377,13 @@ PDB::PDB(const char *filename, const GromacsTopFile *topology) {
   for (i=0;i<atomCount;i++) {
     char *buf2, resname[11], atomname[11], atmtype[11];
     int resnum, typenum;
-    Real charge,mass,coor[3];
+    Real charge,mass;
+    BigReal coor[3];
     PDBAtom *pdb = new PDBAtomRecord("");  
     
     fgets(buf,LINESIZE-1,infile); // get a line
     buf2 = buf+20; // skip three fields to get to the coordinates
-    if(3 != sscanf(buf2,"%f%f%f",
+    if(3 != sscanf(buf2,"%lf%lf%lf",
 		   &coor[0],&coor[1],&coor[2]))
       NAMD_die("Couldn't get three coordinates from file.");
     topology->getAtom(i,&resnum,resname,

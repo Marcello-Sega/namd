@@ -25,9 +25,9 @@
 //  Define some constants for the class
 const int PDBAtom::default_serial = -1;
 const int PDBAtom::default_residueseq = -1;
-const Real PDBAtom::default_coor = 9999.000; 
-const Real PDBAtom::default_occupancy = 1.00;
-const Real PDBAtom::default_temperaturefactor = 0.00;
+const BigReal PDBAtom::default_coor = 9999.000; 
+const BigReal PDBAtom::default_occupancy = 1.00;
+const BigReal PDBAtom::default_temperaturefactor = 0.00;
 const int PDBAtom::no_footnote = 0;
 
 // write down the names so I won't have to do so again
@@ -93,9 +93,9 @@ void PDBData::scan( const char *data, int length, int start, int size, char *ans
       ans[j++]=ans[i];  // check that a string is empty by looking to see if 
   ans[j]=0;   // [0] == 0 instead of checking to see if all the elements are spaces
 }
-//  Parse the input for a Real
+//  Parse the input for a BigReal
 void PDBData::scan( const char *data, int length, int start, int size,
-                        Real *ans, Real defalt)
+                        BigReal *ans, BigReal defalt)
 {
   char tempbuffer[200];
   if (length < start) {               // check if the string is long enough
@@ -104,7 +104,7 @@ void PDBData::scan( const char *data, int length, int start, int size,
   }
   if (size>199)                       // make sure I won't overflow my array
     size=199;
-  strncpy(tempbuffer, data + start - 1, size);// convert the string to a Real
+  strncpy(tempbuffer, data + start - 1, size);// convert the string to a BigReal
   tempbuffer[size]= 0;
   int flg=0;
   for (int i=strlen(tempbuffer)-1; i>=0; i--) { // see if this is a blank string
@@ -116,7 +116,7 @@ void PDBData::scan( const char *data, int length, int start, int size,
   if (flg != 1) {  // then it was a blank string
     *ans = defalt;
   } else {
-    *ans = atof(tempbuffer);  // WARNING : ASSUMES Real <= double!!!
+    *ans = atof(tempbuffer);  // WARNING : ASSUMES BigReal <= double!!!
   }
 }
 
@@ -172,8 +172,8 @@ void PDBData::sprintcol( char *s, int start, int len, int val)
  sprintf(temps, "%*d", len, val);  // convert the int to a string
  sprintcol( s, start, len, temps); // copy to the output string
 }
-// print a Real
-void PDBData::sprintcol( char *s, int start, int len, int prec, Real val)
+// print a BigReal
+void PDBData::sprintcol( char *s, int start, int len, int prec, BigReal val)
 {
  char temps[100];
  sprintf(temps, "%*.*f", len, prec, val);
@@ -236,7 +236,7 @@ void PDBAtom::parse_column_data( const char *data)
  int len = strlen(data);  // to check that there is info
  char tempstr[100];   
  int tempint;
- Real tempReal;
+ BigReal tempBigReal;
 
      // set the serial number
  scan(data, len, SSERIAL, LSERIAL, &tempint, default_serial);
@@ -294,20 +294,20 @@ void PDBAtom::parse_column_data( const char *data)
  insertioncode( tempstr);
  
      // set the X, Y, and Z coordinates
- scan(data, len, SX, LCOOR, &tempReal, default_coor);
- xcoor( tempReal);
- scan(data, len, SY, LCOOR, &tempReal, default_coor);
- ycoor( tempReal);
- scan(data, len, SZ, LCOOR, &tempReal, default_coor);
- zcoor( tempReal);
+ scan(data, len, SX, LCOOR, &tempBigReal, default_coor);
+ xcoor( tempBigReal);
+ scan(data, len, SY, LCOOR, &tempBigReal, default_coor);
+ ycoor( tempBigReal);
+ scan(data, len, SZ, LCOOR, &tempBigReal, default_coor);
+ zcoor( tempBigReal);
 
      // set the occupancy 
- scan(data, len, SOCC, LOCC, &tempReal, default_occupancy);
- occupancy( tempReal);
+ scan(data, len, SOCC, LOCC, &tempBigReal, default_occupancy);
+ occupancy( tempBigReal);
  
      // set the temperature factor
- scan(data, len, STEMPF, LTEMPF, &tempReal, default_temperaturefactor);
- temperaturefactor( tempReal);
+ scan(data, len, STEMPF, LTEMPF, &tempBigReal, default_temperaturefactor);
+ temperaturefactor( tempBigReal);
  
      // set the footnote
  scan(data, len, SFOOT, LFOOT, &tempint, no_footnote);
@@ -346,17 +346,17 @@ void PDBAtom::parse_field_data( const char *data)
 
   field(data, 10, tempstr);
   xcoor( tempstr[0] != '#' ?
-  	atof( tempstr) : default_coor);  // WARNING: assumes Real <= double
+  	atof( tempstr) : default_coor);  // WARNING: assumes BigReal <= double
   field(data, 11, tempstr);
   ycoor( tempstr[0] != '#' ?
-  	atof( tempstr) : default_coor);  // WARNING: assumes Real <= double
+  	atof( tempstr) : default_coor);  // WARNING: assumes BigReal <= double
   field(data, 12, tempstr);
   zcoor( tempstr[0] != '#' ?
-  	atof( tempstr) : default_coor);  // WARNING: assumes Real <= double
+  	atof( tempstr) : default_coor);  // WARNING: assumes BigReal <= double
 
   field(data, 13, tempstr);
   occupancy( tempstr[0] != '#' ? 
-	atof( tempstr) : default_occupancy );// WARNING: assumes Real <= double
+	atof( tempstr) : default_occupancy );// WARNING: assumes BigReal <= double
 
   field(data, 14, tempstr);
   temperaturefactor( tempstr[0] != '#' ?
@@ -415,34 +415,34 @@ void PDBAtom:: insertioncode( const char *newinsertioncode)
 
   // get/ set the different coordinates
   // either 1 by 1 ...
-Real PDBAtom:: xcoor( void)
+BigReal PDBAtom:: xcoor( void)
 { return mycoor[0]; }
-void PDBAtom:: xcoor( Real newxcoor)
+void PDBAtom:: xcoor( BigReal newxcoor)
 { mycoor[0] = newxcoor; }
-Real PDBAtom:: ycoor( void)
+BigReal PDBAtom:: ycoor( void)
 { return mycoor[1]; }
-void PDBAtom:: ycoor( Real newycoor)
+void PDBAtom:: ycoor( BigReal newycoor)
 { mycoor[1] = newycoor; }
-Real PDBAtom:: zcoor( void)
+BigReal PDBAtom:: zcoor( void)
 { return mycoor[2]; }
-void PDBAtom:: zcoor( Real newzcoor)
+void PDBAtom:: zcoor( BigReal newzcoor)
 { mycoor[2] = newzcoor; }
    // ...or all three at once
-const Real *PDBAtom:: coordinates( void)
+const BigReal *PDBAtom:: coordinates( void)
 { return mycoor; }
-void PDBAtom:: coordinates(const Real *newcoordinates)
+void PDBAtom:: coordinates(const BigReal *newcoordinates)
 { for (int i=0; i<3; i++) mycoor[i] = newcoordinates[i]; }
 
   // get/ set the occupancy
-Real PDBAtom:: occupancy( void)
+BigReal PDBAtom:: occupancy( void)
 { return myoccupancy ;}
-void PDBAtom:: occupancy( Real newoccupancy)
+void PDBAtom:: occupancy( BigReal newoccupancy)
 { myoccupancy = newoccupancy; }
 
   // get/ set the temperature factor
-Real PDBAtom:: temperaturefactor( void)
+BigReal PDBAtom:: temperaturefactor( void)
 { return mytemperaturefactor; }
-void PDBAtom:: temperaturefactor( Real newtemperaturefactor)
+void PDBAtom:: temperaturefactor( BigReal newtemperaturefactor)
 { mytemperaturefactor = newtemperaturefactor; }
 
   // get/ set the footnote

@@ -67,14 +67,14 @@ class PDBData {  // at the basic level, a PDB record only knows its type
     static void scan( const char *data, int len, int start, int size, 
                          int *ans, int defalt);
     static void scan( const char *data, int len, int start, int size,
-                          Real *ans, Real defalt);
+                          BigReal *ans, BigReal defalt);
     static void scan( const char *data, int len, int start, int size,
                          char *ans);
     static void field( const char *data, int fld, char *result);
         // some routine to print to a specific column and width
     static void sprintcol( char *s, int start, int len, const char *val);
     static void sprintcol( char *s, int start, int len, int val);
-    static void sprintcol( char *s, int start, int len, int prec, Real val);
+    static void sprintcol( char *s, int start, int len, int prec, BigReal val);
     
    public:
      PDBData(PDBType newtype) {
@@ -139,9 +139,9 @@ class PDBAtom : public PDBData {
 
     static const int default_serial;         // some default values
     static const int default_residueseq;     // these are set in the .C file
-    static const Real default_coor;
-    static const Real default_occupancy;
-    static const Real default_temperaturefactor;
+    static const BigReal default_coor;
+    static const BigReal default_occupancy;
+    static const BigReal default_temperaturefactor;
     static const int no_footnote;
 
     int myserialnumber;                 // atom serial number
@@ -151,9 +151,9 @@ class PDBAtom : public PDBData {
     char mychain[LCHAIN+1];             // chain indentifier
     int myresidueseq;                   // residue seq. no.
     char myinsertioncode[LINSERT+1];    // code for insertions of residues
-    Real mycoor[3];                     // X, Y, and Z orthogonal A coordinates
-    Real myoccupancy;                   // occupancy
-    Real mytemperaturefactor;           // temperature factor
+    BigReal mycoor[3];                     // X, Y, and Z orthogonal A coordinates
+    BigReal myoccupancy;                   // occupancy
+    BigReal mytemperaturefactor;           // temperature factor
     int myfootnote;                     // footnote number
     char mysegmentname[LSEGNAME+1];     // XPLOR-type segment name
 
@@ -193,21 +193,21 @@ class PDBAtom : public PDBData {
     const char*insertioncode( void);
     void insertioncode( const char *newinsertioncode);
     
-    Real xcoor( void);
-    void xcoor( Real newxcoor);
-    Real ycoor( void);
-    void ycoor( Real newycoor); 
-    Real zcoor( void);
-    void zcoor( Real newzcoor);
+    BigReal xcoor( void);
+    void xcoor( BigReal newxcoor);
+    BigReal ycoor( void);
+    void ycoor( BigReal newycoor); 
+    BigReal zcoor( void);
+    void zcoor( BigReal newzcoor);
     
-    const Real *coordinates( void);
-    void coordinates(const Real *newcoordinates);
+    const BigReal *coordinates( void);
+    void coordinates(const BigReal *newcoordinates);
     
-    Real occupancy( void);
-    void occupancy( Real newoccupancy);
+    BigReal occupancy( void);
+    void occupancy( BigReal newoccupancy);
 
-    Real temperaturefactor( void);
-    void temperaturefactor( Real newtemperaturefactor);
+    BigReal temperaturefactor( void);
+    void temperaturefactor( BigReal newtemperaturefactor);
 
     int footnote( void);
     void footnote( int newfootnote);
