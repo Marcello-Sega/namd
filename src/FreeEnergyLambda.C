@@ -7,7 +7,6 @@
 // written by David Hurwitz, March to May 1998.
 
 #include <string.h>
-#include <iostream.h>
 #include "InfoStream.h"
 #include "FreeEnergyEnums.h"
 #include "FreeEnergyAssert.h"

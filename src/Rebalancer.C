@@ -5,8 +5,6 @@
 **/
 
 #include "InfoStream.h"
-#include <iostream.h>
-#include <iomanip.h>
 #include "Node.h"
 #include "Rebalancer.h"
 

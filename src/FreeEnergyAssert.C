@@ -4,7 +4,6 @@
 ***  All rights reserved.
 **/
 
-#include <iostream.h>
 #include "InfoStream.h"
 #include "FreeEnergyAssert.h"
 

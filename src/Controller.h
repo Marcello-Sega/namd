@@ -10,7 +10,12 @@
 #include "converse.h"
 #include "Node.h"
 #include "common.h"
+#if CMK_STL_USE_DOT_H
 #include <fstream.h>
+#else
+#include <fstream>
+using namespace std;
+#endif
 
 class ControllerBroadcasts;
 class NamdState;

@@ -7,8 +7,7 @@
 // written by David Hurwitz, March to May 1998.
 
 #include <memory.h>
-#include <iostream.h>
-#include <iomanip.h>
+//#include <iomanip.h>
 #include <stdio.h>
 #include "InfoStream.h"
 #include "FreeEnergyEnums.h"

@@ -4,7 +4,6 @@
 ***  All rights reserved.
 **/
 
-#include <iostream.h>
 #include "common.h"
 #include "InfoStream.h"
 #include "AlgRecBisection.h"

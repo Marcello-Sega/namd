@@ -10,7 +10,6 @@
 */
 
 #include <stdlib.h>
-#include <iostream.h>
 #ifndef _AIX
 #include <string.h>
 #endif

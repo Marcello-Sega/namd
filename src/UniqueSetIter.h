@@ -11,7 +11,7 @@
 #ifndef USITER_H
 #define USITER_H
 
-#include "iostream.h"
+#include "InfoStream.h"
 #include "UniqueSetRaw.h"
 #include "UniqueSet.h"
 

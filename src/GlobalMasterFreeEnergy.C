@@ -30,7 +30,6 @@
 #include "SimParameters.h"
 
 #include <stdio.h>
-#include <fstream.h>
 
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 1
