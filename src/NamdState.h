@@ -38,6 +38,7 @@ class NamdState {
     PDB *pdb;
     Controller *controller;
     Lattice lattice;
+    SMDData *smdData;
   public:
     NamdState(void);
     ~NamdState() {}
@@ -53,13 +54,16 @@ class NamdState {
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdState.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/21 23:05:39 $
+ *	$Author: sergei $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1998/01/13 23:31:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdState.h,v $
+ * Revision 1.1005  1998/01/13 23:31:14  sergei
+ * Added member smdData, usage similar to Molecule.
+ *
  * Revision 1.1004  1997/03/21 23:05:39  jim
  * Added Berendsen's pressure coupling method, won't work with MTS yet.
  *

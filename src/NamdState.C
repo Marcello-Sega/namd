@@ -7,7 +7,7 @@
  * DESCRIPTION: Holds pointers to large molecule data structure, simulation
  *		Parameters...
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1010 1997/09/21 21:58:31 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1011 1998/01/13 23:31:12 sergei Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -36,6 +36,7 @@ NamdState::NamdState()
     parameters = NULL;
     molecule = NULL;
     pdb = NULL;
+    smdData = NULL;
 }
 
 int
@@ -63,6 +64,11 @@ NamdState::status()
 
     if (pdb != NULL) {
       DebugM(1,"PDB exists \n");
+    }
+    else ret++;
+    
+    if (smdData != NULL) {
+      DebugM(1, "SMDData exists\n");
     }
     else ret++;
 
@@ -131,6 +137,8 @@ NamdState::configFileInit(char *confFile)
       << "Number of pdb and psf atoms are not the same!" << "\n" << endi;
     return(1);
   }
+  smdData = new SMDData(simParameters);
+  smdData->init(pdb);
 
   StringList *binCoordinateFilename = configList->find("bincoordinates");
   if ( binCoordinateFilename ) {
@@ -230,13 +238,16 @@ NamdState::configFileInit(char *confFile)
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdState.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/09/21 21:58:31 $
+ *	$Author: sergei $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1011 $	$Date: 1998/01/13 23:31:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdState.C,v $
+ * Revision 1.1011  1998/01/13 23:31:12  sergei
+ * Added member smdData, usage similar to Molecule.
+ *
  * Revision 1.1010  1997/09/21 21:58:31  jim
  * Added printing of hydrogen group count.
  *
