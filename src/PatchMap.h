@@ -39,7 +39,7 @@ public:
   }
 
   HomePatchList *homePatchList();
-  
+  int numHomePatches(void);
 
   // numPatches() returns the number of patches being managed 
   // by the map.
@@ -192,12 +192,15 @@ inline Patch *PatchMap::patch(PatchID pid)
  *
  *	$RCSfile: PatchMap.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1996/12/18 21:07:54 $
+ *	$Revision: 1.10 $	$Date: 1997/01/13 21:04:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.h,v $
+ * Revision 1.10  1997/01/13 21:04:19  jim
+ * added numHomePatches()
+ *
  * Revision 1.9  1996/12/18 21:07:54  jim
  * added oneOrTwoAwayNeighbors()
  *

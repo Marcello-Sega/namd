@@ -129,6 +129,11 @@ void PatchMap::unpack (void *in)
 }
 
 
+int PatchMap::numHomePatches(void)
+{
+  return patchMgr->homePatches.size();
+}
+
 
 HomePatchList *PatchMap::homePatchList() {
   return &(patchMgr->homePatches);
@@ -447,12 +452,15 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
  *
  *	$RCSfile: PatchMap.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.14 $	$Date: 1996/12/19 00:37:31 $
+ *	$Revision: 1.15 $	$Date: 1997/01/13 21:04:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.15  1997/01/13 21:04:19  jim
+ * added numHomePatches()
+ *
  * Revision 1.14  1996/12/19 00:37:31  jim
  * increase MIN_DEBUG_LEVEL
  *
