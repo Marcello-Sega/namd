@@ -70,6 +70,8 @@ public:
   void startWork(ComputeID id, int timestep);
   void endWork(ComputeID id, int timestep);
   void rebalance(Sequencer *seq, PatchID id);
+  void nodeDone(LdbResumeMsg *msg);
+  void sendStats(LdbResumeMsg *msg);
   void analyze(LdbStatsMsg *msg);
   void updateComputesReady(DoneMsg *msg);
   void resume(LdbResumeMsg *msg);
@@ -80,7 +82,7 @@ public:
   double idleTime;
 
 private:
-  int checkAndSendStats(void);
+  int checkAndGoToBarrier(void);
   void processStatistics(void);
   void awakenSequencers(void);
   int requiredProxies(PatchID id, int []);
@@ -109,6 +111,7 @@ private:
   Boolean firstLdbCycle;
   int nLdbSteps;
   int firstLdbStep;
+  int nodesDone;
 
   LdbStatsMsg **statsMsgs;
   FILE *ldbStatsFP;
@@ -142,12 +145,15 @@ inline int LdbCoordinator::balanceNow(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.12 $	$Date: 1997/07/08 15:48:10 $
+ *	$Revision: 1.13 $	$Date: 1997/08/27 18:37:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LdbCoordinator.h,v $
+ * Revision 1.13  1997/08/27 18:37:00  brunner
+ * Load balancer end of computation sync added.  AlgSeven modified slightly.
+ *
  * Revision 1.12  1997/07/08 15:48:10  milind
  * Made namd2 to work with Origin2000: Again...
  *

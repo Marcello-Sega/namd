@@ -81,6 +81,7 @@ LdbCoordinator::LdbCoordinator(InitMsg *msg)
   CsdSetNotifyIdle((CmiHandler)notifyIdleStart,(CmiHandler)notifyIdleEnd);
 #endif
   idleTime = 0;
+  nodesDone = 0;
 }
 
 LdbCoordinator::~LdbCoordinator(void)
@@ -205,7 +206,7 @@ void LdbCoordinator::patchLoad(PatchID id, int nAtoms, int /* timestep */)
   } else {
     DebugM(10, "::patchLoad() Unexpected patch reporting in\n");
   }
-  checkAndSendStats();
+  checkAndGoToBarrier();
 }
 
 void LdbCoordinator::startWork(ComputeID id, int /* timestep */ )
@@ -242,7 +243,7 @@ void LdbCoordinator::endWork(ComputeID id, int /* timestep */)
     computeStartTime[id] = 0.;
     nComputesReported++;
   }
-  checkAndSendStats();
+  checkAndGoToBarrier();
 }
 
 void LdbCoordinator::rebalance(Sequencer *seq, PatchID pid)
@@ -254,91 +255,111 @@ void LdbCoordinator::rebalance(Sequencer *seq, PatchID pid)
   seq->suspend();
 }
 
-int LdbCoordinator::checkAndSendStats(void)
+int LdbCoordinator::checkAndGoToBarrier(void)
 {
   if ( (nPatchesReported == nPatchesExpected) 
        && (nComputesReported == nComputesExpected) )
   {
-    if(CMyPe()==0) {
-      CPrintf("WallClock : %f  CPUTime : %f \n", CmiWallTimer()-Namd::cmiWallStart, 
-        CmiCpuTimer()-Namd::cmiCpuStart);
-    }
-    // Turn off idle-time calculation
-#ifndef NO_IDLE_COMPUTATION
-    CsdStopNotifyIdle();
-#endif
-    totalTime = TIMER_FNC() - totalStartTime;
-
-#ifndef NO_IDLE_COMPUTATION
-    if (idleStart!= -1)
-      iout << iPE << "WARNING: idle time still accumulating?\n" << endi;
-
-#endif
-    if (nLocalPatches > LDB_PATCHES)
-    {
-      char die_msg[255];
-      sprintf(die_msg,
-	      "%s(%d): Insufficient memory.  Increase LDB_PATCHES to %d",
-	      __FILE__,__LINE__,nPatchesReported);
-      NAMD_die(die_msg);
-    }
-
-    if (nLocalComputes > LDB_COMPUTES)
-    {
-      char die_msg[255];
-      sprintf(die_msg,
-	      "%s(%d): Insufficient memory.  Increase LDB_COMPUTES to %d",
-	      __FILE__,__LINE__,nComputesReported);
-      NAMD_die(die_msg);
-    }
-
-    LdbStatsMsg *msg = new (MsgIndex(LdbStatsMsg)) LdbStatsMsg;
-
-    if (msg == NULL)
-      NAMD_die("LdbCoordinator::checkAndSendStats: Insufficient memory");
-
-    msg->proc = Node::Object()->myid();
-    msg->procLoad = totalTime - idleTime;
-
-    iout << iINFO << iPE << " Last " << nLdbSteps 
-	 << " steps: processor time = " << totalTime 
-	 << "  time per step = " << totalTime/nLdbSteps 
-	 << "\n" << endi;
-#ifndef NO_IDLE_COMPUTATION
-    CPrintf("[%d] Processor idle time (this ldb cycle)=%5.1f%%\n",
-	    msg->proc,100.*idleTime/totalTime);
-#endif
-
-    int i;
-    msg->nPatches = 0;
-
-    for(i=0;i<patchMap->numPatches();i++)
-    {
-      if (patchNAtoms[i] != -1)
-      {
-	msg->pid[msg->nPatches]=i;
-	msg->nAtoms[msg->nPatches]=patchNAtoms[i];
-	msg->nPatches++;
-      }
-    }
-
-    msg->nComputes = 0;
-    for(i=0;i<computeMap->numComputes();i++)
-    {
-      if (computeStartTime[i] != -1.)
-      {
-	msg->cid[msg->nComputes]=i;
-	msg->computeTime[msg->nComputes]=computeTotalTime[i];
-	msg->nComputes++;
-      }
-    }
-    for(i=0;i<msg->nComputes;i++)
-      msg->procLoad -= msg->computeTime[i];
-
-    CSendMsgBranch(LdbCoordinator, analyze, msg, thisgroup,0);
+    
+    LdbResumeMsg *msg = new (MsgIndex(LdbResumeMsg)) LdbResumeMsg;
+    CSendMsgBranch(LdbCoordinator, nodeDone, msg, thisgroup,0);
     return 1;
   }
   else return 0;
+}
+
+void LdbCoordinator::nodeDone(LdbResumeMsg *msg)
+{
+  nodesDone++;
+  if (nodesDone==Node::Object()->numNodes())
+  {
+    nodesDone=0;
+    CBroadcastMsgBranch(LdbCoordinator, sendStats, msg, thisgroup);
+  }
+  else delete msg;
+}
+void LdbCoordinator::sendStats(LdbResumeMsg *inMsg)
+{
+  delete inMsg;
+  if(CMyPe()==0)
+  {
+    CPrintf("WallClock : %f  CPUTime : %f \n", CmiWallTimer()-Namd::cmiWallStart, 
+	    CmiCpuTimer()-Namd::cmiCpuStart);
+  }
+  // Turn off idle-time calculation
+#ifndef NO_IDLE_COMPUTATION
+  CsdStopNotifyIdle();
+#endif
+  totalTime = TIMER_FNC() - totalStartTime;
+
+#ifndef NO_IDLE_COMPUTATION
+  if (idleStart!= -1)
+    iout << iPE << "WARNING: idle time still accumulating?\n" << endi;
+
+#endif
+  if (nLocalPatches > LDB_PATCHES)
+  {
+    char die_msg[255];
+    sprintf(die_msg,
+	    "%s(%d): Insufficient memory.  Increase LDB_PATCHES to %d",
+	    __FILE__,__LINE__,nPatchesReported);
+    NAMD_die(die_msg);
+  }
+
+  if (nLocalComputes > LDB_COMPUTES)
+  {
+    char die_msg[255];
+    sprintf(die_msg,
+	    "%s(%d): Insufficient memory.  Increase LDB_COMPUTES to %d",
+	    __FILE__,__LINE__,nComputesReported);
+    NAMD_die(die_msg);
+  }
+
+  LdbStatsMsg *msg = new (MsgIndex(LdbStatsMsg)) LdbStatsMsg;
+  
+  if (msg == NULL)
+    NAMD_die("LdbCoordinator::checkAndSendStats: Insufficient memory");
+
+  msg->proc = Node::Object()->myid();
+  msg->procLoad = totalTime - idleTime;
+
+  iout << iINFO << iPE << " Last " << nLdbSteps 
+       << " steps: processor time = " << totalTime 
+       << "  time per step = " << totalTime/nLdbSteps 
+       << "\n" << endi;
+#ifndef NO_IDLE_COMPUTATION
+  CPrintf("[%d] Processor idle time (this ldb cycle)=%5.1f%%\n",
+	  msg->proc,100.*idleTime/totalTime);
+#endif
+
+  int i;
+  msg->nPatches = 0;
+
+  for(i=0;i<patchMap->numPatches();i++)
+  {
+    if (patchNAtoms[i] != -1)
+    {
+      msg->pid[msg->nPatches]=i;
+      msg->nAtoms[msg->nPatches]=patchNAtoms[i];
+      msg->nPatches++;
+    }
+  }
+
+  msg->nComputes = 0;
+  for(i=0;i<computeMap->numComputes();i++)
+  {
+    if (computeStartTime[i] != -1.)
+    {
+      msg->cid[msg->nComputes]=i;
+      msg->computeTime[msg->nComputes]=computeTotalTime[i];
+      msg->nComputes++;
+    }
+  }
+  for(i=0;i<msg->nComputes;i++)
+    msg->procLoad -= msg->computeTime[i];
+  
+  CSendMsgBranch(LdbCoordinator, analyze, msg, thisgroup,0);
+  return;
 }
 
 void LdbCoordinator::analyze(LdbStatsMsg *msg)

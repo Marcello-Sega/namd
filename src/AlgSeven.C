@@ -2,7 +2,7 @@
 #include <InfoStream.h>
 #include "Alg7.h"
 
-#define TINYLOAD 0.0001
+#define TINYLOAD 0.001
 
 Alg7::Alg7(computeInfo *computeArray, patchInfo *patchArray, 
 	   processorInfo *processorArray, int nComps, 
