@@ -275,7 +275,7 @@ psfgen:	$(DSTDIR) $(SBOBJS)
 	$(CC) $(SBCFLAGS) -o psfgen $(SBOBJS) $(TCLLIB) $(TCLAPPLIB) -lm
 
 psfgen.exe:	$(DSTDIR) $(SBOBJS)
-	$(LINK) $(LINKOPTS) /out:psfgen.exe $(SBOBJS) $(TCLLIB) $(TCLAPPLIB)
+	$(LINK) $(LINKOPTS) /out:psfgen.exe $(SBOBJS) $(TCLWINLIB) $(TCLAPPLIB)
 
 flipdcd:	$(SRCDIR)/flipdcd.c
 	$(CC) -o $@ $(SRCDIR)/flipdcd.c || \
