@@ -1,0 +1,22 @@
+<html>
+<head>
+<title>main</title>
+</head>
+<body>
+<h1>main</h1>
+<h2>Messages</h2>
+<dl>
+  <dt> GroupInitMsg <dd>
+  <dt> SlaveInitMsg <dd>
+  <dt> InitMsg <dd>
+  <dt> ReadyMsg <dd>
+  <dt> RunMsg <dd>
+  <dt> DoneMsg <dd>
+  <dt> LocalWorkMsg <dd>
+</dl>
+<h2>Entry Points</h2>
+<dl>
+  <dt> main() <dd> Initial Charm startup entry point, only called on PE 0.  Creates a Namd instance (constructor generates all B.O.C.'s), checks arguments, and calls Namd::startup (initializes NamdState from config file and broadcasts InitMsg to Node::startup via Node::messageStartUp).
+</dl>
+</body>
+</html>

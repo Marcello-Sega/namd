@@ -1,0 +1,22 @@
+<html>
+<head>
+<title>Node</title>
+</head>
+<body>
+<h1>Node</h1>
+<h2>Messages</h2>
+<dl>
+  <dt> QuiescenceMessage <dd>
+</dl>
+<h2>Entry Points</h2>
+<dl>
+  <dt> Node(GroupInitMsg *) <dd> Initialization, binds other B.O.C.'s.
+  <dt> startUp(QuiescenceMessage *) <dd> Broadcasts InitMsg to startup after quiescence.
+  <dt> startup(InitMsg *) <dd> Consists of a case statement and counter to trigger various stages of startup.  Turns on quiescence detection with message targeted at startUp on P.E. 0.  After last stage broadcasts RunMsg to run via messageRun.
+  <dt> quiescence(QuiescenceMessage *) <dd> Terminates program - used for development.
+  <dt> run(RunMsg *) <dd> Runs simulation after startup barriers by starting Controller and Sequencers.
+  <dt> homeDone(DoneMsg *) <dd> Counts down HomePatch completions and sends DoneMsg to nodeDone on P.E. 0 when finished.
+  <dt> nodeDone(DoneMsg *) <dd> Counts down Node completions.  Calls Namd::namdDone when finished.
+</dl>
+</body>
+</html>

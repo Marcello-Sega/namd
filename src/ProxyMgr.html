@@ -1,0 +1,26 @@
+<html>
+<head>
+<title>ProxyMgr</title>
+</head>
+<body>
+<h1>ProxyMgr</h1>
+<h2>Messages</h2>
+<dl>
+  <dt> RegisterProxyMsg <dd>
+  <dt> UnregisterProxyMsg <dd>
+  <dt> ProxyAtomsMsg <dd> (packed)
+  <dt> ProxyDataMsg <dd> (packed)
+  <dt> ProxyAllMsg <dd> (packed)
+  <dt> ProxyResultMsg <dd> (packed)
+</dl>
+<h2>Entry Points</h2>
+<dl>
+  <dt> ProxyMgr(InitMsg *) <dd>
+  <dt> recvRegisterProxy(RegisterProxyMsg *) <dd>
+  <dt> recvProxyData(ProxyDataMsg *) <dd>
+  <dt> recvProxyAtoms(ProxyAtomsMsg *) <dd>
+  <dt> recvProxyAll(ProxyAllMsg *) <dd>
+  <dt> recvResults(ProxyResultMsg *) <dd>
+</dl>
+</body>
+</html>

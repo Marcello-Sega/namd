@@ -1,0 +1,21 @@
+<html>
+<head>
+<title>WorkDistrib</title>
+</head>
+<body>
+<h1>WorkDistrib</h1>
+<h2>Messages</h2>
+<dl>
+  <dt> MapDistribMsg <dd> (packed)  Contains PatchMap and ComputeMap, used at startup.
+  <dt> ComputeMapDistribMsg <dd> (packed)  Only ComputeMap, used for load rebalancing.
+</dl>
+<h2>Entry Points</h2>
+<dl>
+  <dt> WorkDistrib(InitMsg *) <dd> Initialization, no external effects.
+  <dt> saveMaps(MapDistribMsg *) <dd> Curious little function.  The maps actually take care of themselves in their unpack methods so this just initializes the node pointer and sets a flag.
+  <dt> recvComputeMap(ComputeMapDistribMsg *) <dd> ComputeMap unpacks itself, but since this is used for rebalancing it sends a DoneMsg to doneSaveComputeMap on P.E. 0.
+  <dt> doneSaveComputeMap(DoneMsg *) <dd> Counts down nodes, then sends a DoneMsg to the entry point set in saveComputeMap.
+  <dt> enqueueWork(LocalWorkMsg *) <dd> Receives LocalWorkMsg sent in messageEnqueueWork.  Acts as a queueing system and calls doWork on the compute object stored in the message.  enqueueWork[ABC] have been added to aid analysis.
+</dl>
+</body>
+</html>

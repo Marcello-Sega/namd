@@ -1,0 +1,17 @@
+<html>
+<head>
+<title>BroadcastMgr</title>
+</head>
+<body>
+<h1>BroadcastMgr</h1>
+<h2>Messages</h2>
+<dl>
+  <dt> BroadcastMsg <dd> (packed) Holds an array of bytes, a size, a tag, and an id.
+</dl>
+<h2>Entry Points</h2>
+<dl>
+  <dt> BroadcastMgr(GroupInitMsg *) <dd> Initialization only.  Assumes singleton status.
+  <dt> recvBroadcast(BroadcastMsg *) <dd> Receives data broadcast by send, awakens any threads waiting for the received data, and disposes of data if all subscribers are satisfied.
+</dl>
+</body>
+</html>
