@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1026 1997/03/27 20:25:51 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1027 1997/04/01 23:20:17 brunner Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -228,7 +228,8 @@ void Sequencer::runComputeObjects(int migration)
 
 void Sequencer::rebalanceLoad(int timestep)
 {
-  if ( (timestep % simParams->ldbStepsPerCycle) == 0)
+  if ( (simParams->ldbStrategy != LDBSTRAT_NONE)
+       && ((timestep % simParams->ldbStepsPerCycle) == 0))
   {
     patch->submitLoadStats(timestep);
     ldbCoordinator->rebalance(this,patch->getPatchID());
@@ -247,12 +248,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: brunner $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1026 $     $Date: 1997/03/27 20:25:51 $
+ *      $Revision: 1.1027 $     $Date: 1997/04/01 23:20:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1027  1997/04/01 23:20:17  brunner
+ * Collection on node 0 added
+ *
  * Revision 1.1026  1997/03/27 20:25:51  brunner
  * Changes for LdbCoordinator, the load balance control BOC
  *

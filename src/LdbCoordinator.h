@@ -27,14 +27,22 @@ class ComputeMap;
 class Sequencer;
 class InitMsg;
 
-class LdbStatsMsg : public comm_object
+enum {LDB_PATCHES = 1024};
+enum {LDB_COMPUTES = 8192};
+
+struct LdbStatsMsg : public comm_object
 {
-  int node;
+  int proc;
+  int procLoad;
   int nPatches;
+  int pid[LDB_PATCHES];
+  int nAtoms[LDB_PATCHES];
   int nComputes;
+  int cid[LDB_COMPUTES];
+  float computeTime[LDB_COMPUTES];
 };
 
-class LdbResumeMsg : public comm_object
+struct LdbResumeMsg : public comm_object
 {
   int dummy;
 };
@@ -56,8 +64,9 @@ public:
 
 private:
   int checkAndSendStats(void);
-  void printLocalLdbReport(void);
   void awakenSequencers(void);
+  void printLocalLdbReport(void);
+  void printLdbReport(void);
 
   static LdbCoordinator *_instance;
   int stepsPerLdbCycle;
@@ -76,6 +85,8 @@ private:
   double *computeStartTime;
   double *computeTotalTime;
   int first_ldbcycle;
+
+  LdbStatsMsg **statsMsgs;
 };
 
 #endif // LDBCOORDINATOR_H
@@ -86,12 +97,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1997/04/01 18:08:44 $
+ *	$Revision: 1.3 $	$Date: 1997/04/01 23:20:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LdbCoordinator.h,v $
+ * Revision 1.3  1997/04/01 23:20:16  brunner
+ * Collection on node 0 added
+ *
  * Revision 1.2  1997/04/01 18:08:44  brunner
  * Made counts work right for first cycle
  *

@@ -31,6 +31,10 @@ LdbCoordinator::LdbCoordinator(InitMsg *msg)
   computeStartTime = computeTotalTime = (double *)NULL;
   patchNAtoms = (int *) NULL;
   sequencerThreads = (Sequencer **) NULL;
+  if (CMyPe() == 0)
+    statsMsgs = new (LdbStatsMsg *[CNumPes()]);
+  else statsMsgs = NULL;
+
   delete msg;
 }
 
@@ -40,6 +44,8 @@ LdbCoordinator::~LdbCoordinator(void)
   delete [] sequencerThreads;
   delete [] computeStartTime;
   delete [] computeTotalTime;
+  if (CMyPe() == 0)
+    delete [] statsMsgs;
 }
 
 void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap)
@@ -129,6 +135,9 @@ void LdbCoordinator::patchLoad(PatchID id, int nAtoms, int timestep)
 
 void LdbCoordinator::startWork(ComputeID id, int timestep)
 {
+  if (Node::Object()->simParameters->ldbStrategy == LDBSTRAT_NONE)
+    return;
+
   if (computeStartTime[id] == -1.)
   {
     DebugM(4, "::startWork() Unexpected compute reporting in\n");
@@ -143,6 +152,9 @@ void LdbCoordinator::startWork(ComputeID id, int timestep)
 void LdbCoordinator::endWork(ComputeID id, int timestep)
 {
   double endTime = CmiTimer();
+
+  if (Node::Object()->simParameters->ldbStrategy == LDBSTRAT_NONE)
+    return;
 
   if (computeStartTime[id] == -1.)
   {
@@ -160,6 +172,9 @@ void LdbCoordinator::endWork(ComputeID id, int timestep)
 
 void LdbCoordinator::rebalance(Sequencer *seq, PatchID pid)
 {
+  if (Node::Object()->simParameters->ldbStrategy == LDBSTRAT_NONE)
+    return;
+
   sequencerThreads[pid] = seq;
   seq->suspend();
 }
@@ -172,7 +187,56 @@ int LdbCoordinator::checkAndSendStats(void)
     // Here, all the data gets sent to Node 0
     // For now, just send a dummy message to Node 0.
 
+    if (nLocalPatches > LDB_PATCHES)
+    {
+      char die_msg[255];
+      sprintf(die_msg,
+	      "%s(%d): Insufficient memory.  Increase LDB_PATCHES to %d",
+	      __FILE__,__LINE__,nPatchesReported);
+      NAMD_die(die_msg);
+    }
+
+    if (nLocalComputes > LDB_COMPUTES)
+    {
+      char die_msg[255];
+      sprintf(die_msg,
+	      "%s(%d): Insufficient memory.  Increase LDB_COMPUTES to %d",
+	      __FILE__,__LINE__,nComputesReported);
+      NAMD_die(die_msg);
+    }
+
     LdbStatsMsg *msg = new (MsgIndex(LdbStatsMsg)) LdbStatsMsg;
+
+    if (msg == NULL)
+      NAMD_die("LdbCoordinator::checkAndSendStats: Insufficient memory");
+
+    msg->proc = Node::Object()->myid();
+    msg->procLoad = 0;
+
+    msg->nPatches = 0;
+
+    int i;
+    for(i=0;i<patchMap->numPatches();i++)
+    {
+      if (patchNAtoms[i] != -1)
+      {
+	msg->pid[msg->nPatches]=i;
+	msg->nAtoms[msg->nPatches]=patchNAtoms[i];
+	msg->nPatches++;
+      }
+    }
+
+    msg->nComputes = 0;
+    for(i=0;i<computeMap->numComputes();i++)
+    {
+      if (computeStartTime[i] != -1.)
+      {
+	msg->cid[msg->nComputes]=i;
+	msg->computeTime[msg->nComputes]=computeTotalTime[i];
+	msg->nComputes++;
+      }
+    }
+
     CSendMsgBranch(LdbCoordinator, analyze, msg, thisgroup,0);
     return 1;
   }
@@ -189,23 +253,50 @@ void LdbCoordinator::analyze(LdbStatsMsg *msg)
     return;
   }
 
+  statsMsgs[msg->proc] = msg;
   nStatsMessagesReceived++;
+
   if (nStatsMessagesReceived==nStatsMessagesExpected)
   {
+    CPrintf("All statistics received\n");
+    // 1) Print out statistics in test format
+    // 2) Delete messages
+    // 3) Resume operation with a message
+    
+    // 1) Print out statistics in test format
+    printLdbReport();
+
+    // 2) delete messages
+    for (int i=0; i < nStatsMessagesReceived; i++)
+      delete statsMsgs[i];
+
+    // 3) Resume operation with a message
     CPrintf("Node 0 LDB resuming other processors\n",CMyPe());
     LdbResumeMsg *sendmsg = new (MsgIndex(LdbResumeMsg)) LdbResumeMsg;
     CBroadcastMsgBranch(LdbCoordinator, resume, sendmsg, thisgroup);
   }
-  delete msg;
 }
 
 void LdbCoordinator::resume(LdbResumeMsg *msg)
 {
-  printLocalLdbReport();
+  //  printLocalLdbReport();
 
   awakenSequencers();
   initialize(PatchMap::Object(),ComputeMap::Object());
   delete msg;
+}
+
+void LdbCoordinator::awakenSequencers()
+{
+  for(int i=0; i < patchMap->numPatches(); i++)
+  {
+    if (sequencerThreads[i])
+    {
+      //      CPrintf("Awakening thread %d\n",i);
+      sequencerThreads[i]->awaken();
+    }
+    sequencerThreads[i]= NULL;
+  }
 }
 
 void LdbCoordinator::printLocalLdbReport(void)
@@ -253,17 +344,52 @@ void LdbCoordinator::printLocalLdbReport(void)
     
 }
 
-void LdbCoordinator::awakenSequencers()
+void LdbCoordinator::printLdbReport(void)
 {
-  for(int i=0; i < patchMap->numPatches(); i++)
-  {
-    if (sequencerThreads[i])
-    {
-      //      CPrintf("Awakening thread %d\n",i);
-      sequencerThreads[i]->awaken();
-    }
-    sequencerThreads[i]= NULL;
-  }
-}
+  const int nProcs = Node::Object()->numNodes();
+  const int nPatches = patchMap->numPatches();
+  const int nComputes = computeMap->numComputes();
 
+  int i,j;
+
+  CPrintf("*** Load balancer report ***\n");
+
+  CPrintf("%4d %4d %4d\n",nProcs,nPatches,nComputes);
+
+  // Print out processor background load
+  for (i=0;i<nProcs;i++)
+    CPrintf("%4d ",statsMsgs[i]->procLoad);
+  CPrintf("\n\n");
+
+  // Print out info for each patch
+  for (i=0;i<nProcs;i++)
+  {
+    const LdbStatsMsg *msg = statsMsgs[i];
+    for ( j=0; j < msg->nPatches; j++)
+      CPrintf("%4d %4d %4d %4d\n",msg->pid[j],msg->nAtoms[j],msg->proc,0);
+  }
+  CPrintf("\n");
+  
+  // Print out info for each compute
+  for (i=0;i<nProcs;i++)
+  {
+    const LdbStatsMsg *msg = statsMsgs[i];
+    for ( j=0; j < msg->nComputes; j++)
+    {
+      const int p0 = computeMap->pid(msg->cid[j],0);
+
+      // For self-interactions, just return the same pid twice
+      int p1;
+      if (computeMap->numPids(msg->cid[j]) > 1)
+	p1 = computeMap->pid(msg->cid[j],1);
+      else 
+	p1 = p0;
+
+      CPrintf("%4d %4d %4d %4d %8.3f\n",
+	      msg->cid[j],msg->proc,p0,p1,msg->computeTime[j]);
+    }
+  }
+  CPrintf("\n");
+  CPrintf("*** Load balancer report complete ***\n");
+}
 #include "LdbCoordinator.bot.h"
