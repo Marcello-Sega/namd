@@ -23,18 +23,15 @@ template <class Type> class ObjectArena {
     void setBlockSize(int n) { blockSize = n; }
     inline Type* getNewArray(int n) {
       Type *rpos = pos;
-      if ( (pos+n) > end ) {
-        if ( n > (blockSize/2) ) {
-          rpos = new Type[n];
-          blocks.add(rpos);
-        } else {
-          pos = new Type[blockSize];
-          blocks.add(pos);
-          end = pos + blockSize;
-          rpos = pos;
-        }
+      if ( n > (blockSize/2) ) {
+        rpos = new Type[n];
+        blocks.add(rpos);
+      } else if ( ( pos += n ) > end ) {
+        rpos = pos = new Type[blockSize];
+        blocks.add(pos);
+        end = rpos + blockSize;
+        pos += n;
       }
-      pos += n;
       return rpos;
     }
 
