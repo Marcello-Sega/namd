@@ -928,6 +928,9 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
       NAMD_bug("WorkDistrib::messageEnqueueWork case statement error!");
     }
     break;
+  case computePmeType:
+    wdProxy.enqueuePme(msg,CkMyPe());
+    break;
   default:
     wdProxy.enqueueWork(msg,CkMyPe());
   }
@@ -958,6 +961,12 @@ void WorkDistrib::enqueueDihedrals(LocalWorkMsg *msg) {
 }
 
 void WorkDistrib::enqueueImpropers(LocalWorkMsg *msg) {
+  msg->compute->doWork();
+  if ( msg->compute->localWorkMsg != msg )
+    NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
+}
+
+void WorkDistrib::enqueuePme(LocalWorkMsg *msg) {
   msg->compute->doWork();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");

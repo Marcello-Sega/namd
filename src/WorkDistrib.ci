@@ -23,6 +23,7 @@ module WorkDistrib {
     entry void enqueueAngles(LocalWorkMsg *);
     entry void enqueueDihedrals(LocalWorkMsg *);
     entry void enqueueImpropers(LocalWorkMsg *);
+    entry void enqueuePme(LocalWorkMsg *);
     entry void enqueueSelfA(LocalWorkMsg *);
     entry void enqueueSelfB(LocalWorkMsg *);
     entry void enqueueWorkA(LocalWorkMsg *);
