@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Molecule.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/03/19 18:10:13 $
+ *	$Revision: 1.1009 $	$Date: 1997/03/20 16:58:36 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,14 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1009  1997/03/20 16:58:36  nealk
+ * Atoms now sorted by: (1) hydrogen groups, (2) "groups".  The groups are
+ * in the order: non-special, OH (special-1), OHH (special-2).
+ * All waters (OHH) are at the end of the list.
+ * Before them, all hydroxyls (OH) are together.  Although I haven't been
+ * told to do this, it shouldn't hurt anything.  (And it's easier than adding
+ * one more "if" to the sorting.)
+ *
  * Revision 1.1008  1997/03/19 18:10:13  nealk
  * Added sorted hydrogen group list to molecule.
  *
@@ -192,7 +200,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1008 1997/03/19 18:10:13 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1009 1997/03/20 16:58:36 nealk Exp $";
 
 #include "Templates/UniqueSortedArray.h"
 #include "Molecule.h"
@@ -3279,6 +3287,7 @@ void Molecule::build_atom_status(void) {
     hg[i].atomsInGroup = 1;	// currently only 1 in group
     hg[i].isGP = 1;	// assume it is a group parent
     hg[i].GPID = i;	// assume it is a group parent
+    hg[i].sortVal = 0;	// for group sorting
   }
 
   // find which atom each hydrogen is bound to
@@ -3300,6 +3309,8 @@ void Molecule::build_atom_status(void) {
 	hg[a1].atomsInGroup = 0;
 	hg[a1].GPID = a2;
 	hg[a1].isGP = 0;
+	// check for waters (put them in their own groups: OH or OHH)
+	if (is_oxygen(a2))	hg[a2].sortVal++;
 	}
       }
     if (is_hydrogen(a2))
@@ -3309,6 +3320,8 @@ void Molecule::build_atom_status(void) {
       hg[a2].atomsInGroup = 0;
       hg[a2].GPID = a1;
       hg[a2].isGP = 0;
+      // check for waters (put them in their own groups: OH or OHH)
+      if (is_oxygen(a1))	hg[a1].sortVal++;
       }
   }
 
@@ -3347,11 +3360,25 @@ void Molecule::build_atom_status(void) {
   }
 
   // sort the hydrogenGroup list
+  #if 0
+  // debugging code for showing sorted atoms
   for(i=0; i<numAtoms; i++)
   {
+    // make H follow their group parents.
+    if (!hg[i].isGP)	hg[i].sortVal = hg[hg[i].GPID].sortVal;
+    // add to list to sort
     hydrogenGroup.add(hg[i]);
   }
+  #endif
+
   hydrogenGroup.sort();
+  for(i=0; i<numAtoms; i++)
+    iout << i << " atomID=" << hydrogenGroup[i].atomID
+	 << " isGP=" << hydrogenGroup[i].isGP
+	 << " parent=" << hydrogenGroup[i].GPID
+	 << " #" << hydrogenGroup[i].atomsInGroup
+	 << " sortVal=" << hydrogenGroup[i].sortVal
+	 << "\n" << endi;
   delete [] hg;
 }
 
@@ -3360,12 +3387,20 @@ void Molecule::build_atom_status(void) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/03/19 18:10:13 $
+ *	$Revision: 1.1009 $	$Date: 1997/03/20 16:58:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1009  1997/03/20 16:58:36  nealk
+ * Atoms now sorted by: (1) hydrogen groups, (2) "groups".  The groups are
+ * in the order: non-special, OH (special-1), OHH (special-2).
+ * All waters (OHH) are at the end of the list.
+ * Before them, all hydroxyls (OH) are together.  Although I haven't been
+ * told to do this, it shouldn't hurt anything.  (And it's easier than adding
+ * one more "if" to the sorting.)
+ *
  * Revision 1.1008  1997/03/19 18:10:13  nealk
  * Added sorted hydrogen group list to molecule.
  *

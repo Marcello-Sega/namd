@@ -13,6 +13,7 @@ class HydrogenGroupID {
     int isGP;		// flag determining whether this atom is a group parent
     int atomsInGroup;   // positive number means parent of group.
                         // 0 means not in group.
+    int sortVal;	// sort values (for group ordering list)
     // although the Molecule object contains get_mother_atom(), we cannot
     // use it since Molecule.h, Node.h, and structure.h would have cyclical
     // include statements.
@@ -23,7 +24,9 @@ class HydrogenGroupID {
 
     int operator < (const HydrogenGroupID &a) const {
       int rval;
-      if (isGP)
+      // check for overall group ordering
+      if (sortVal != a.sortVal) rval = (sortVal < a.sortVal);
+      else if (isGP)	// same group.  Check for other hydrogen ordering
 	{
 	// case 1: both are group parents
 	if (a.isGP)	rval = (atomID < a.atomID);
@@ -54,13 +57,21 @@ typedef UniqueSortedArray<HydrogenGroupID> HydrogenGroup ;
  * RCS INFORMATION:
  *
  *      $RCSfile: Hydrogen.h,v $
- *      $Author: jim $        $Locker:  $             $State: Exp $
- *      $Revision: 1.4 $     $Date: 1997/03/19 20:49:20 $
+ *      $Author: nealk $        $Locker:  $             $State: Exp $
+ *      $Revision: 1.5 $     $Date: 1997/03/20 16:58:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Hydrogen.h,v $
+ * Revision 1.5  1997/03/20 16:58:35  nealk
+ * Atoms now sorted by: (1) hydrogen groups, (2) "groups".  The groups are
+ * in the order: non-special, OH (special-1), OHH (special-2).
+ * All waters (OHH) are at the end of the list.
+ * Before them, all hydroxyls (OH) are together.  Although I haven't been
+ * told to do this, it shouldn't hurt anything.  (And it's easier than adding
+ * one more "if" to the sorting.)
+ *
  * Revision 1.4  1997/03/19 20:49:20  jim
  * Changes to make inliner happy.
  *
