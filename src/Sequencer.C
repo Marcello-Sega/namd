@@ -447,6 +447,19 @@ void Sequencer::maximumMove(BigReal timestep)
 	*v_i *= ( maxvel / v_i->length() );
       }
     }
+  } else {
+    const BigReal dt = timestep / TIMEFACTOR;
+    const BigReal maxvel = 10.0 / dt;
+    const BigReal maxvel2 = maxvel * maxvel;
+    int killme = 0;
+    VelocityList::iterator v_i, v_e;
+    v_i = patch->v.begin();  v_e = patch->v.end();
+    for ( ; v_i != v_e; ++v_i ) {
+      killme = killme || ( v_i->length2() > maxvel2 );
+    }
+    if ( killme ) {
+      NAMD_die("Atoms moving too fast; simulation has become unstable.");
+    }
   }
 }
 
@@ -616,12 +629,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1069 $     $Date: 1999/08/11 16:49:22 $
+ *      $Revision: 1.1070 $     $Date: 1999/08/11 19:32:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1070  1999/08/11 19:32:19  jim
+ * Now kills unstable simulations with sensible error message.
+ *
  * Revision 1.1069  1999/08/11 16:49:22  jim
  * Turned on printing of atomic pressure with RATTLE.
  *
