@@ -43,8 +43,6 @@ private:
   PmtaPartInfo *fmaResults;	//  Results from the PMTA code
   PmtaPartInfo *ljResults;	//  Results from the PMTA code
 
-  int timestep;		// local counter to determine when it should run
-
   void get_FMA_cube(BigReal *boxsize, Vector *boxcenter);
 
 public:
@@ -59,13 +57,18 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeDPMTA.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/02/27 20:01:43 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/02/28 06:57:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.h,v $
+ * Revision 1.1005  1997/02/28 06:57:46  jim
+ * DPMTA is now working, except for one little thing.
+ * On multiple nodes, the reported energy is wrong, but the
+ * trajectory appears to be dead on.  This is an odd one.
+ *
  * Revision 1.1004  1997/02/27 20:01:43  nealk
  * DPMTA no longer runs every timestep.
  *

@@ -20,7 +20,7 @@
 #include "PatchMgr.h"
 #include "Molecule.h"
 #include "ReductionMgr.h"
-// #define DEBUGM
+#define DEBUGM
 #define MIN_DEBUG_LEVEL 3
 #include "Debug.h"
 

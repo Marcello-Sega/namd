@@ -15,6 +15,7 @@
 #include "Namd.h"
 #include "Node.h"
 #include "SimParameters.h"
+#include "ComputeNonbondedUtil.h"
 #include "PatchMap.h"
 #include "AtomMap.h"
 #include "ComputeDPMTA.h"
@@ -52,9 +53,9 @@ void ComputeDPMTA::get_FMA_cube(BigReal *boxsize, Vector *boxcenter)
 
   *boxsize = max_dim*simParams->patchDimension;
   *boxcenter = patchMap->Origin();
-  boxcenter->x += *boxsize/2.0;
-  boxcenter->y += *boxsize/2.0;
-  boxcenter->z += *boxsize/2.0;
+  boxcenter->x += *boxsize/2.0 - simParams->patchDimension;
+  boxcenter->y += *boxsize/2.0 - simParams->patchDimension;
+  boxcenter->z += *boxsize/2.0 - simParams->patchDimension;
 
   DebugM(2,"cube center: " << (*boxcenter) << " size=" << (*boxsize) << "\n");
 }
@@ -78,8 +79,6 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   PmtaInitData pmta_data;
   BigReal boxsize;	// Dimension of FMA cube
   Vector boxcenter;	// Center for FMA cube
-
-  timestep = 0;
 
   if (CMyPe() != 0)
   {
@@ -159,6 +158,8 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   fmaResults = NULL;
   ljResults = NULL;
   DebugM(1,"DPMTA configured\n");
+
+  reduction->Register(REDUCTION_ELECT_ENERGY);
 }
 
 ComputeDPMTA::~ComputeDPMTA()
@@ -189,6 +190,8 @@ ComputeDPMTA::~ComputeDPMTA()
   delete [] ljResults;
   delete [] slavetids;
   DebugM(1,"DPMTA exited\n");
+
+  reduction->unRegister(REDUCTION_ELECT_ENERGY);
 }
 
 
@@ -196,20 +199,31 @@ void ComputeDPMTA::doWork()
 {
   ResizeArrayIter<PatchElem> ap(patchList);
   PmtaParticle *particle_list = NULL;
-  BigReal patchEnergy=0;
   SimParameters *simParameters = Node::Object()->simParameters;
-  int runFlag;	// determine whether it should really run
 
   // 0. only run when necessary
-  runFlag = (timestep == 0);
-  timestep = (timestep+1) % simParameters->fmaFrequency;
+  // Skip computations if nothing to do.
+  if ( ! patchList[0].p->flags.doFullElectrostatics )
+  {
+    for (ap = ap.begin(); ap != ap.end(); ap++) {
+      Position *x = (*ap).positionBox->open();
+      AtomProperties *a = (*ap).atomBox->open();
+      Force *f = (*ap).forceBox->open();
+      reduction->submit(fake_seq, REDUCTION_ELECT_ENERGY, 0.);
+      ++fake_seq;
+      (*ap).positionBox->close(&x);
+      (*ap).atomBox->close(&a);
+      (*ap).forceBox->close(&f);
+    }
+    return;
+  }
 
-  DebugM(1,"DPMTA doWork() started at timestep "
-	<< (int)(simParameters->dt) << "\n");
+  DebugM(1,"DPMTA doWork() started at timestep " << fake_seq << "\n");
 
   // setup
   // 1. get totalAtoms
   totalAtoms = Node::Object()->molecule->numAtoms;
+  //  NOTE:  THIS IS LARGER THAN NEEDED, IN FUTURE COUNT ATOMS FIRST!  -JCP
 
   // 2. setup atom list
   int i,j;
@@ -221,20 +235,20 @@ void ComputeDPMTA::doWork()
 	}
 
   i=0;
+  BigReal unitFactor = sqrt(COLOUMB * ComputeNonbondedUtil::dielectric_1);
   for (ap = ap.begin(); ap != ap.end(); ap++)
   {
     (*ap).x = (*ap).positionBox->open();
     (*ap).a = (*ap).atomBox->open();
 
     // store each atom in the particle_list
-    if (runFlag)
      for(j=0; j<(*ap).p->getNumAtoms(); j++)
      {
       // explicitly copy -- two different data structures
       particle_list[i].p.x = (*ap).x[j].x;
       particle_list[i].p.y = (*ap).x[j].y;
       particle_list[i].p.z = (*ap).x[j].z;
-      particle_list[i].q = (*ap).a[j].charge;
+      particle_list[i].q = (*ap).a[j].charge * unitFactor;
       i++;
       if (i > totalAtoms)
 	{
@@ -249,30 +263,33 @@ void ComputeDPMTA::doWork()
   } 
 
   // 3. (run DPMTA) compute the forces
-  if (runFlag && (PMTAforce(i, particle_list, fmaResults, NULL) <0))
+  if ( PMTAforce(i, particle_list, fmaResults, NULL) < 0 )
     {
       NAMD_die("PMTAforce failed!!");
     }
 
   // 4. deposit
-  ++fake_seq;
+  i=0;
+  BigReal potential=0;
   for (ap = ap.begin(); ap != ap.end(); ap++) {
     (*ap).f = (*ap).forceBox->open();
 
     // deposit here
-    i=0;
-    if (runFlag)
      for(j=0; j<(*ap).p->getNumAtoms(); j++)
      {
       (*ap).f[j].x += fmaResults[i].f.x;
       (*ap).f[j].y += fmaResults[i].f.y;
       (*ap).f[j].z += fmaResults[i].f.z;
-      patchEnergy += fmaResults[i].v;
+      potential += fmaResults[i].v;
       i++;
      }
 
     (*ap).forceBox->close(&(*ap).f);
   }
+  potential *= 0.5;
+  DebugM(4,"Full-electrostatics energy: " << potential << "\n");
+  reduction->submit(fake_seq, REDUCTION_ELECT_ENERGY, potential);
+  ++fake_seq;
 
   // 5. clean-up
   if (totalAtoms > 0)
