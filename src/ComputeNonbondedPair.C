@@ -40,6 +40,10 @@ void ComputeNonbondedPair::doForce(Position* p[2],
   BigReal electEnergy = 0;
   BigReal vdwEnergy = 0;
 
+  const int excludeFlag  = Node::Object()->simParameters->exclude;
+  const BigReal scale14 = ( excludeFlag == SCALED14 ?
+                   Node::Object()->simParameters->scale14 : 1 );
+
   const Real cutoff = Node::Object()->simParameters->cutoff;
   const BigReal cutoff2 = cutoff*cutoff;
   const Real switchOn = Node::Object()->simParameters->switchingDist;
@@ -67,21 +71,30 @@ void ComputeNonbondedPair::doForce(Position* p[2],
     for ( int j = 0; j < numAtoms[1]; ++j )
     {
       const Position & p_j = p[1][j];
-      const AtomProperties & a_j = a[1][j];
-
-      Force & f_j = f[1][j];
 
       f_vdw = p_i - p_j;
-      r2 = f_vdw.length2();
 
-      const LJTable::TableEntry * const lj_pars = 
+      if ( ( r2 = f_vdw.length2() ) > cutoff2 ) continue;
+
+      const AtomProperties & a_j = a[1][j];
+
+      const LJTable::TableEntry * lj_pars = 
 		ljTable->table_val(a_i.type, a_j.type);
-      const BigReal exclcut2 = lj_pars->exclcut2;
 
-      if
-      (    ( r2 <= exclcut2 && mol->checkexcl(a_i.id,a_j.id) )
-	|| ( r2 > cutoff2 )
-      ) continue;
+      BigReal scaleFactor = 1.;
+
+      if ( r2 <= lj_pars->exclcut2 )
+      {
+	if ( mol->checkexcl(a_i.id,a_j.id) ) continue;
+	else if ( ( excludeFlag == SCALED14 ) &&
+				mol->check14excl(a_i.id,a_j.id) )
+	{
+	  lj_pars = ljTable->table_val(a_i.type, a_j.type, 1);
+	  scaleFactor = scale14;
+	}
+      }
+
+      Force & f_j = f[1][j];
 
       r = sqrt(r2);
       r_1 = 1/r;
@@ -103,7 +116,7 @@ void ComputeNonbondedPair::doForce(Position* p[2],
       dShiftVal = c6*shiftVal*r;
       shiftVal *= shiftVal;
 
-      const BigReal kqq = kq_i * a_j.charge;
+      const BigReal kqq = kq_i * a_j.charge * scaleFactor;
 
       BigReal f = kqq*r_1;
       electEnergy += f*shiftVal;
@@ -138,12 +151,15 @@ void ComputeNonbondedPair::doForce(Position* p[2],
  *
  *	$RCSfile: ComputeNonbondedPair.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/11/05 05:08:56 $
+ *	$Revision: 1.6 $	$Date: 1996/11/05 21:12:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.C,v $
+ * Revision 1.6  1996/11/05 21:12:12  jim
+ * fixed modified pairs
+ *
  * Revision 1.5  1996/11/05 05:08:56  jim
  * added nonbonded compute code for one case ( no ifs )
  *
