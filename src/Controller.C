@@ -69,6 +69,9 @@ Controller::Controller(NamdState *s) :
       BigReal avg = trace(langevinPiston_strainRate) / 3.;
       langevinPiston_strainRate = Tensor::identity(avg);
     }
+    pressure_avg = 0;
+    groupPressure_avg = 0;
+    pressure_avg_count = 0;
 }
 
 Controller::~Controller(void)
@@ -156,7 +159,7 @@ void Controller::integrate() {
     receivePressure(step);
     reassignVelocities(step);
     printFepMessage(step);
-    printEnergies(step);
+    printDynamicsEnergies(step);
     outputFepEnergy(step);
     traceUserEvent(eventEndOfTimeStep);
     outputExtendedSystem(step);
@@ -172,7 +175,7 @@ void Controller::integrate() {
 	receivePressure(step);
 	langevinPiston2(step);
         reassignVelocities(step);
-        printEnergies(step);
+        printDynamicsEnergies(step);
         outputFepEnergy(step);
         traceUserEvent(eventEndOfTimeStep);
         outputExtendedSystem(step);
@@ -618,7 +621,7 @@ static char *ETITLE(int X)
   return  tmp_string;
 }
 
-void Controller::receivePressure(int step)
+void Controller::receivePressure(int step, int minimize)
 {
     Node *node = Node::Object();
     Molecule *molecule = node->molecule;
@@ -698,13 +701,13 @@ void Controller::receivePressure(int step)
       pressure_normal = virial_normal / volume;
       groupPressure_normal = ( virial_normal - intVirial_normal ) / volume;
 
-      if ( ! ( step % nbondFreq ) )
+      if ( minimize || ! ( step % nbondFreq ) )
       {
         pressure_nbond = virial_nbond / volume;
         groupPressure_nbond = ( virial_nbond - intVirial_nbond ) / volume;
       }
 
-      if ( ! ( step % slowFreq ) )
+      if ( minimize || ! ( step % slowFreq ) )
       {
         pressure_slow = virial_slow / volume;
         groupPressure_slow = ( virial_slow - intVirial_slow ) / volume;
@@ -849,9 +852,7 @@ void Controller::printTiming(int step) {
 
 void Controller::printMinimizeEnergies(int step) {
 
-    printTiming(step);
-
-    reduction->require();
+    receivePressure(step,1);
 
     Node *node = Node::Object();
     Molecule *molecule = node->molecule;
@@ -861,6 +862,9 @@ void Controller::printMinimizeEnergies(int step) {
         << "Increasing cutoff during minimization may avoid this.\n" << endi;
     compareChecksums(step);
 
+    printEnergies(step,1);
+
+/*
     BigReal bondEnergy;
     BigReal angleEnergy;
     BigReal dihedralEnergy;
@@ -881,6 +885,7 @@ void Controller::printMinimizeEnergies(int step) {
 
     totalEnergy = bondEnergy + angleEnergy + dihedralEnergy + improperEnergy +
 	electEnergy + electEnergySlow + ljEnergy + boundaryEnergy + miscEnergy;
+*/
 
     min_energy = totalEnergy;
     min_f_dot_f = reduction->item(REDUCTION_MIN_F_DOT_F);
@@ -888,6 +893,7 @@ void Controller::printMinimizeEnergies(int step) {
     min_v_dot_v = reduction->item(REDUCTION_MIN_V_DOT_V);
     min_huge_count = reduction->item(REDUCTION_MIN_HUGE_COUNT);
 
+/*
     if ( ( step % 10 ) == 0 ) {
 	iout << "ETITLE:     TS    BOND        ANGLE       "
 	     << "DIHED       IMPRP       ELECT       VDW       "
@@ -909,10 +915,11 @@ void Controller::printMinimizeEnergies(int step) {
     iout << FORMAT(totalEnergy);
     iout << FORMAT(sqrt(min_f_dot_f));
     iout << "\n" << endi;
+*/
 }
 
-void Controller::printEnergies(int step)
-{
+void Controller::printDynamicsEnergies(int step) {
+
     Node *node = Node::Object();
     Molecule *molecule = node->molecule;
     SimParameters *simParameters = node->simParameters;
@@ -923,13 +930,23 @@ void Controller::printEnergies(int step)
       NAMD_bug("Bad global exclusion count!\n");
     compareChecksums(step);
 
+    printEnergies(step,0);
+}
+
+void Controller::printEnergies(int step, int minimize)
+{
+    Node *node = Node::Object();
+    Molecule *molecule = node->molecule;
+    SimParameters *simParameters = node->simParameters;
+    Lattice &lattice = state->lattice;
+
     BigReal bondEnergy;
     BigReal angleEnergy;
     BigReal dihedralEnergy;
     BigReal improperEnergy;
     BigReal boundaryEnergy;
     BigReal miscEnergy;
-    BigReal totalEnergy;
+    // BigReal totalEnergy;
     Vector momentum;
     Vector angularMomentum;
     BigReal volume = lattice.volume();
@@ -941,7 +958,7 @@ void Controller::printEnergies(int step)
     boundaryEnergy = reduction->item(REDUCTION_BC_ENERGY);
     miscEnergy = reduction->item(REDUCTION_MISC_ENERGY);
 
-    if ( ! ( step % nbondFreq ) )
+    if ( minimize || ! ( step % nbondFreq ) )
     {
       electEnergy = reduction->item(REDUCTION_ELECT_ENERGY);
       ljEnergy = reduction->item(REDUCTION_LJ_ENERGY);
@@ -951,7 +968,7 @@ void Controller::printEnergies(int step)
 //fepe
     }
 
-    if ( ! ( step % slowFreq ) )
+    if ( minimize || ! ( step % slowFreq ) )
     {
       electEnergySlow = reduction->item(REDUCTION_ELECT_ENERGY_SLOW);
 //fepb
@@ -970,7 +987,7 @@ void Controller::printEnergies(int step)
 	electEnergy + electEnergySlow + ljEnergy + kineticEnergy +
 	boundaryEnergy + miscEnergy;
 
-    if ( simParameters->outputMomenta &&
+    if ( simParameters->outputMomenta && ! minimize &&
          ! ( step % simParameters->outputMomenta ) )
     {
       iout << "MOMENTUM: " << step 
@@ -980,7 +997,7 @@ void Controller::printEnergies(int step)
     }
 
     if ( simParameters->outputPressure &&
-         ! ( step % simParameters->outputPressure ) )
+         ( minimize || ! ( step % simParameters->outputPressure ) ) )
     {
       iout << "PRESSURE: " << step << " "
            << PRESSUREFACTOR * pressure << "\n"
@@ -1074,8 +1091,12 @@ void Controller::printEnergies(int step)
 #undef CALLBACKDATA
 #endif
 
+    pressure_avg += trace(pressure)/3.;
+    groupPressure_avg += trace(groupPressure)/3.;
+    pressure_avg_count += 1;
+
     // NO CALCULATIONS OR REDUCTIONS BEYOND THIS POINT!!!
-    if ( step % simParameters->outputEnergies ) return;
+    if ( ! minimize &&  step % simParameters->outputEnergies ) return;
     // ONLY OUTPUT SHOULD OCCUR BELOW THIS LINE!!!
 
     int printAtomicPressure = 1;
@@ -1083,7 +1104,7 @@ void Controller::printEnergies(int step)
     // if ( simParams->rigidBonds != RIGID_NONE ) { printAtomicPressure = 0; }
 #endif
 
-    if ( (step % (10 * simParameters->outputEnergies) ) == 0 )
+    if ( (step % (10 * (minimize?1:simParameters->outputEnergies) ) ) == 0 )
     {
 	iout << "ETITLE:     TS    BOND        ANGLE       "
 	     << "DIHED       IMPRP       ELECT       VDW       "
@@ -1092,6 +1113,8 @@ void Controller::printEnergies(int step)
 	  if ( printAtomicPressure ) iout << "     PRESSURE";
 	  iout << "    GPRESSURE";
 	  iout << "    VOLUME";
+	  if ( printAtomicPressure ) iout << "     PRESSAVG";
+	  iout << "    GPRESSAVG";
 	}
 	iout << "\n" << endi;
     }
@@ -1127,9 +1150,18 @@ void Controller::printEnergies(int step)
 	}
 	iout << FORMAT(trace(groupPressure)*PRESSUREFACTOR/3.);
 	iout << FORMAT(volume);
+	if ( printAtomicPressure ) {
+	  iout << FORMAT(pressure_avg*PRESSUREFACTOR/pressure_avg_count);
+	}
+	iout << FORMAT(groupPressure_avg*PRESSUREFACTOR/pressure_avg_count);
     }
 
     iout << "\n" << endi;
+
+    pressure_avg = 0;
+    groupPressure_avg = 0;
+    pressure_avg_count = 0;
+
 }
 
 void Controller::writeExtendedSystemLabels(ofstream &file) {

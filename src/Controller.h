@@ -34,7 +34,7 @@ protected:
     void integrate(); // Verlet integrator
     void minimize(); // CG minimizer
 
-    void receivePressure(int);
+    void receivePressure(int step, int minimize = 0);
       Tensor pressure_normal;
       Tensor pressure_nbond;
       Tensor pressure_slow;
@@ -46,6 +46,9 @@ protected:
       Tensor controlPressure_slow;
       int nbondFreq;
       int slowFreq;
+      BigReal pressure_avg;
+      BigReal groupPressure_avg;
+      int pressure_avg_count;
     void compareChecksums(int);
       int computeChecksum;
     void printTiming(int);
@@ -55,8 +58,10 @@ protected:
       BigReal min_f_dot_v;
       BigReal min_v_dot_v;
       int min_huge_count;
-    void printEnergies(int);
+    void printDynamicsEnergies(int);
+    void printEnergies(int step, int minimize);
       int numDegFreedom;
+      BigReal totalEnergy;
       BigReal electEnergy;
       BigReal electEnergySlow;
       BigReal ljEnergy;

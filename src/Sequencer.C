@@ -878,6 +878,73 @@ void Sequencer::submitMinimizeReductions(int step)
   reduction->item(REDUCTION_MIN_V_DOT_V) += vdotv;
   reduction->item(REDUCTION_MIN_HUGE_COUNT) += numHuge;
 
+  {
+    Tensor intVirialNormal;
+    Tensor intVirialNbond;
+    Tensor intVirialSlow;
+
+    int hgs;
+    for ( int i = 0; i < numAtoms; i += hgs ) {
+      hgs = a[i].hydrogenGroupSize;
+      int j;
+      BigReal m_cm = 0;
+      Position x_cm(0,0,0);
+      for ( j = i; j < (i+hgs); ++j ) {
+        m_cm += a[j].mass;
+        x_cm += a[j].mass * a[j].position;
+      }
+      x_cm /= m_cm;
+      for ( j = i; j < (i+hgs); ++j ) {
+        BigReal mass = a[j].mass;
+	// net force treated as zero for fixed atoms
+        if ( simParams->fixedAtomsOn && a[j].atomFixed ) continue;
+        Vector dx = a[j].position - x_cm;
+        intVirialNormal += outer(patch->f[Results::normal][j],dx);
+        intVirialNbond += outer(patch->f[Results::nbond][j],dx);
+        intVirialSlow += outer(patch->f[Results::slow][j],dx);
+      }
+    }
+
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_INT_VIRIAL_NORMAL,intVirialNormal);
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_INT_VIRIAL_NBOND,intVirialNbond);
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_INT_VIRIAL_SLOW,intVirialSlow);
+  }
+
+  if ( simParams->fixedAtomsOn ) {
+    Tensor fixVirialNormal;
+    Tensor fixVirialNbond;
+    Tensor fixVirialSlow;
+    Vector fixForceNormal = 0;
+    Vector fixForceNbond = 0;
+    Vector fixForceSlow = 0;
+    Vector fixPosition = 0;
+    int fixCount = 0;
+
+    for ( int j = 0; j < numAtoms; j++ ) {
+      if ( simParams->fixedAtomsOn && a[j].atomFixed ) {
+        Vector dx = a[j].position;
+        // all negative because fixed atoms cancels these forces
+        fixVirialNormal -= outer(patch->f[Results::normal][j],dx);
+        fixVirialNbond -= outer(patch->f[Results::nbond][j],dx);
+        fixVirialSlow -= outer(patch->f[Results::slow][j],dx);
+        fixForceNormal -= patch->f[Results::normal][j];
+        fixForceNbond -= patch->f[Results::nbond][j];
+        fixForceSlow -= patch->f[Results::slow][j];
+        fixPosition += dx;
+        fixCount += 1;
+      }
+    }
+
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,fixVirialNormal);
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NBOND,fixVirialNbond);
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_SLOW,fixVirialSlow);
+    ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_NORMAL,fixForceNormal);
+    ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_NBOND,fixForceNbond);
+    ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_SLOW,fixForceSlow);
+    ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_POSITION,fixPosition);
+    reduction->item(REDUCTION_EXT_COUNT) += fixCount;
+  }
+
   reduction->submit();
 }
 
