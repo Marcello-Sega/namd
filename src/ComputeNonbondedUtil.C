@@ -153,36 +153,40 @@ void ComputeNonbondedUtil::select(void)
   }
 }
 
-#define NBPAIR
-#undef NBSELF
-#undef NBEXCL
+// clear all
+// define interaction type (pair, self, or excl)
+#define NBPAIR	1
+#define NBSELF	2
+#define NBEXCL	3
+// define electrostatics
+#undef FULLELECT
+// define splitting function
+#define SPLIT_NONE	1
+#define SPLIT_C1	2
+#define SPLIT_XPLOR	3
 
 // (3) BEGIN SPLITTING
-#define NOSPLIT
-#undef SPLIT_XPLOR
-#undef SPLIT_C1
+#undef SPLIT_TYPE
+#define SPLIT_TYPE SPLIT_NONE
 //   (2) BEGIN PAIR / SELF / EXCL
-#define NBPAIR
-#undef NBSELF
-#undef NBEXCL
+#undef  NBTYPE
+#define NBTYPE NBPAIR
 //     (1) BEGIN FULLELECT
 #define FULLELECT
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
 #include "ComputeNonbondedBase.h"
 //     (1) END FULLELECT
-#undef NBPAIR
-#define NBSELF
-#undef NBEXCL
+#undef  NBTYPE
+#define NBTYPE NBSELF
 //     (1) BEGIN FULLELECT
 #define FULLELECT
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
 #include "ComputeNonbondedBase.h"
 //     (1) END FULLELECT
-#undef NBPAIR
-#undef NBSELF
-#define NBEXCL
+#undef  NBTYPE
+#define NBTYPE NBEXCL
 //     (1) BEGIN FULLELECT
 #define FULLELECT
 #include "ComputeNonbondedBase.h"
@@ -191,31 +195,27 @@ void ComputeNonbondedUtil::select(void)
 //     (1) END FULLELECT
 //   (2) END PAIR / SELF / EXCL
 
-#undef NOSPLIT
-#define SPLIT_XPLOR
-#undef SPLIT_C1
+#undef SPLIT_TYPE
+#define SPLIT_TYPE SPLIT_XPLOR
 //   (2) BEGIN PAIR / SELF / EXCL
-#define NBPAIR
-#undef NBSELF
-#undef NBEXCL
+#undef  NBTYPE
+#define NBTYPE NBPAIR
 //     (1) BEGIN FULLELECT
 #define FULLELECT
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
 #include "ComputeNonbondedBase.h"
 //     (1) END FULLELECT
-#undef NBPAIR
-#define NBSELF
-#undef NBEXCL
+#undef  NBTYPE
+#define NBTYPE NBSELF
 //     (1) BEGIN FULLELECT
 #define FULLELECT
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
 #include "ComputeNonbondedBase.h"
 //     (1) END FULLELECT
-#undef NBPAIR
-#undef NBSELF
-#define NBEXCL
+#undef  NBTYPE
+#define NBTYPE NBEXCL
 //     (1) BEGIN FULLELECT
 #define FULLELECT
 #include "ComputeNonbondedBase.h"
@@ -224,31 +224,27 @@ void ComputeNonbondedUtil::select(void)
 //     (1) END FULLELECT
 //   (2) END PAIR / SELF / EXCL
 
-#undef NOSPLIT
-#undef SPLIT_XPLOR
-#define SPLIT_C1
+#undef SPLIT_TYPE
+#define SPLIT_TYPE SPLIT_C1
 //   (2) BEGIN PAIR / SELF / EXCL
-#define NBPAIR
-#undef NBSELF
-#undef NBEXCL
+#undef  NBTYPE
+#define NBTYPE NBPAIR
 //     (1) BEGIN FULLELECT
 #define FULLELECT
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
 #include "ComputeNonbondedBase.h"
 //     (1) END FULLELECT
-#undef NBPAIR
-#define NBSELF
-#undef NBEXCL
+#undef  NBTYPE
+#define NBTYPE NBSELF
 //     (1) BEGIN FULLELECT
 #define FULLELECT
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
 #include "ComputeNonbondedBase.h"
 //     (1) END FULLELECT
-#undef NBPAIR
-#undef NBSELF
-#define NBEXCL
+#undef  NBTYPE
+#define NBTYPE NBEXCL
 //     (1) BEGIN FULLELECT
 #define FULLELECT
 #include "ComputeNonbondedBase.h"
@@ -264,12 +260,15 @@ void ComputeNonbondedUtil::select(void)
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/05/29 19:14:05 $
+ *	$Revision: 1.1013 $	$Date: 1997/06/04 20:13:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1013  1997/06/04 20:13:55  nealk
+ * Modified to simplify macros.
+ *
  * Revision 1.1012  1997/05/29 19:14:05  nealk
  * Removed some array indexing for minor speed improvement.
  *

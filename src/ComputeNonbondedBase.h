@@ -13,7 +13,7 @@
  ***************************************************************************/
 
 // Several special cases are defined:
-//   NBPAIR, NBSELF, NBEXCL switch environment (mutually exclusive)
+//   NBTYPE: exclusion method (NBPAIR, NBSELF, NBEXCL -- mutually exclusive)
 //   FULLELECT full electrostatics calculation?
 
 #ifdef DEFINITION // (
@@ -39,7 +39,7 @@
 #define NAME CLASSNAME(calc)
 
 #undef PAIR
-#ifdef NBPAIR
+#if NBTYPE == NBPAIR
   #define PAIR(X) X
   #define CLASS ComputeNonbondedPair
   #define CLASSNAME(X) FULLELECTNAME( X ## _pair )
@@ -48,7 +48,7 @@
 #endif
 
 #undef SELF
-#ifdef NBSELF
+#if NBTYPE == NBSELF
   #define SELF(X) X
   #define CLASS ComputeNonbondedSelf
   #define CLASSNAME(X) FULLELECTNAME( X ## _self )
@@ -58,7 +58,7 @@
 
 #undef EXCL
 #undef NOEXCL
-#ifdef NBEXCL
+#if NBTYPE == NBEXCL
   #define EXCL(X) X
   #define CLASS ComputeNonbondedExcl
   #define CLASSNAME(X) FULLELECTNAME( X ## _excl )
@@ -80,33 +80,14 @@
   #define FULL(X)
   #define NOFULL(X) X
 #endif
+
 #undef SPLITTINGNAME
-
-#undef SHIFTING
-#ifdef NOSPLIT
+#if SPLIT_TYPE == SPLIT_NONE
   #define SPLITTINGNAME(X) LAST( X )
-  #undef SHIFTING
-  #define SHIFTING(X) X
-#else
-  #define SHIFTING(X)
-#endif
-
-#undef XPLORSPLITTING
-#ifdef SPLIT_XPLOR
+#elif SPLIT_TYPE == SPLIT_XPLOR
   #define SPLITTINGNAME(X) LAST( X ## _xplor )
-  #undef XPLORSPLITTING
-  #define XPLORSPLITTING(X) X
-#else
-  #define XPLORSPLITTING(X)
-#endif
-
-#undef C1SPLITTING
-#ifdef SPLIT_C1
+#elif SPLIT_TYPE == SPLIT_C1
   #define SPLITTINGNAME(X) LAST( X ## _c1 )
-  #undef C1SPLITTING
-  #define C1SPLITTING(X) X
-#else
-  #define C1SPLITTING(X)
 #endif
 
 #define LAST(X) X
@@ -483,20 +464,19 @@ NOEXCL
 //  --------------------------------------------------------------------------
 
 
-SHIFTING
-(
+    // compiler should optimize this code easily
+    switch(SPLIT_TYPE)
+      {
+      case SPLIT_NONE:
 	shifting(shiftVal,dShiftVal,r,r2,c5,c6);
-)
-
-XPLORSPLITTING
-(
-	xplorsplitting(shiftVal,dShiftVal, switchVal,dSwitchVal);
-)
-
-C1SPLITTING
-(
+	break;
+      case SPLIT_C1:
 	c1splitting(shiftVal,dShiftVal,r,d0,switchOn);
-)
+	break;
+      case SPLIT_XPLOR:
+	xplorsplitting(shiftVal,dShiftVal, switchVal,dSwitchVal);
+	break;
+      }
 
 //  --------------------------------------------------------------------------
 //  END SHIFTING / SPLITTING FUNCTION DEFINITIONS
@@ -643,12 +623,15 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1020 $	$Date: 1997/05/29 19:14:00 $
+ *	$Revision: 1.1021 $	$Date: 1997/06/04 20:13:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1021  1997/06/04 20:13:50  nealk
+ * Modified to simplify macros.
+ *
  * Revision 1.1020  1997/05/29 19:14:00  nealk
  * Removed some array indexing for minor speed improvement.
  *
