@@ -26,12 +26,15 @@
 #include "elements.h"
 #include "ComputeMgr.h"
 #include "BOCgroup.h"
+#include "Node.h"
+#include "SimParameters.h"
 
 class PatchMap;
 class ComputeMap;
 class Sequencer;
 class InitMsg;
 
+enum {LDB_START_STEP = 4};
 enum {LDB_PATCHES = 1024};
 enum {LDB_COMPUTES = 25000};
 enum {COMPUTEMAX = 25000};
@@ -71,6 +74,7 @@ public:
   void analyze(LdbStatsMsg *msg);
   void updateComputesReady(DoneMsg *msg);
   void resume(LdbResumeMsg *msg);
+  inline int balanceNow(int timestep);
 
   // Public variables accessed by the idle-event functions
   double idleStart;
@@ -104,6 +108,7 @@ private:
   double *computeStartTime;
   double *computeTotalTime;
   int first_ldbcycle;
+  int nLdbSteps;
 
   LdbStatsMsg **statsMsgs;
   FILE *ldbStatsFP;
@@ -114,6 +119,22 @@ private:
   processorInfo *processorArray;
 };
 
+
+inline int LdbCoordinator::balanceNow(int timestep)
+{
+  Node *node = Node::Object();
+  const SimParameters *simParams = node->simParameters;
+  const int numberOfSteps = simParams->N;
+
+  return 
+    ( (node->numNodes() != 1) 
+      && (simParams->ldbStrategy != LDBSTRAT_NONE) 
+      && (timestep < numberOfSteps)
+      && (timestep >= LDB_START_STEP)
+      && (((timestep - LDB_START_STEP) % simParams->ldbStepsPerCycle) == 0));
+  
+
+}
 #endif // LDBCOORDINATOR_H
 
 
@@ -122,12 +143,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1997/04/10 09:14:00 $
+ *	$Revision: 1.10 $	$Date: 1997/04/16 22:12:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LdbCoordinator.h,v $
+ * Revision 1.10  1997/04/16 22:12:17  brunner
+ * Fixed an LdbCoordinator bug, and cleaned up timing and Ldb output some.
+ *
  * Revision 1.9  1997/04/10 09:14:00  ari
  * Final debugging for compute migration / proxy creation for load balancing.
  * Lots of debug code added, mostly turned off now.

@@ -30,6 +30,8 @@ class maxheap;
 #define DEBUG_LEVEL 4
 #define TIMER_FNC()   CmiTimer()
 
+#define NO_IDLE_COMPUTATION
+
 // static initialization
 LdbCoordinator *LdbCoordinator::_instance = 0;
 
@@ -156,18 +158,19 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap)
     }
   }
 
-  nPatchesReported = 0;
-  nPatchesExpected = nLocalPatches;
-
-  nComputesReported = 0;
-  nComputesExpected = nLocalComputes * stepsPerLdbCycle;
   // Fixup to take care of the extra timestep at startup
   // This is pretty ugly here, but it makes the count correct
   if (first_ldbcycle)
   {
-    nComputesExpected += nLocalComputes;
+    nLdbSteps = 1 + LDB_START_STEP;
     first_ldbcycle = FALSE;
   }
+  else nLdbSteps = stepsPerLdbCycle;
+
+  nPatchesReported = 0;
+  nPatchesExpected = nLocalPatches;
+  nComputesReported = 0;
+  nComputesExpected = nLocalComputes * nLdbSteps;
 
   if (CMyPe() == 0)
   {
@@ -252,12 +255,12 @@ int LdbCoordinator::checkAndSendStats(void)
     // Turn off idle-time calculation
     //CsdStopNotifyIdle();
     totalTime = TIMER_FNC() - totalStartTime;
+
+#ifndef NO_IDLE_COMPUTATION
     if (idleStart!= -1)
       iout << iPE << "WARNING: idle time still accumulating?\n" << endi;
 
-    // Here, all the data gets sent to Node 0
-    // For now, just send a dummy message to Node 0.
-
+#endif
     if (nLocalPatches > LDB_PATCHES)
     {
       char die_msg[255];
@@ -283,8 +286,16 @@ int LdbCoordinator::checkAndSendStats(void)
 
     msg->proc = Node::Object()->myid();
     msg->procLoad = totalTime - idleTime;
-    CPrintf("[%d] Processor idle time=%5.1f%%\n",
+
+    iout << iINFO << iPE << " Last " << nLdbSteps 
+	 << " steps: processor time = " << totalTime 
+	 << "  time per step = " << totalTime/nLdbSteps 
+	 << "\n" << endi;
+#ifndef NO_IDLE_COMPUTATION
+    CPrintf("[%d] Processor idle time (this ldb cycle)=%5.1f%%\n",
 	    msg->proc,100.*idleTime/totalTime);
+#endif
+
     int i;
     msg->nPatches = 0;
 
@@ -299,7 +310,7 @@ int LdbCoordinator::checkAndSendStats(void)
     }
 
     msg->nComputes = 0;
-    for(i=0;i<nLocalComputes;i++)
+    for(i=0;i<computeMap->numComputes();i++)
     {
       if (computeStartTime[i] != -1.)
       {
@@ -319,8 +330,6 @@ int LdbCoordinator::checkAndSendStats(void)
 
 void LdbCoordinator::analyze(LdbStatsMsg *msg)
 {
-  CPrintf("Node %d receiving LDB results\n",CMyPe());
-
   if (Node::Object()->myid() != 0)
   {
     CPrintf("Unexpected call to LdbCoordinator::analyze\n");
@@ -338,8 +347,8 @@ void LdbCoordinator::analyze(LdbStatsMsg *msg)
 
 void LdbCoordinator::processStatistics(void)
 {
-  CPrintf("LDB: All statistics received at %f, %f\n",
-	  CmiTimer(),CmiWallTimer());
+  //  CPrintf("LDB: All statistics received at %f, %f\n",
+  //  CmiTimer(),CmiWallTimer());
 
   const int numProcessors = Node::Object()->numNodes();
   const int numPatches = patchMap->numPatches();
@@ -414,8 +423,8 @@ void LdbCoordinator::processStatistics(void)
 
   ComputeMgr *computeMgr = CLocalBranch(ComputeMgr, group.computeMgr);
   computeMgr->updateComputes(GetEntryPtr(LdbCoordinator,updateComputesReady),thisgroup);
-  CPrintf("LDB: Done processing statistics at %f, %f\n",
-	  CmiTimer(),CmiWallTimer());
+  //  CPrintf("LDB: Done processing statistics at %f, %f\n",
+  //	  CmiTimer(),CmiWallTimer());
 }
 
 void LdbCoordinator::updateComputesReady(DoneMsg *msg) {

@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1030 1997/04/10 09:14:12 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1031 1997/04/16 22:12:20 brunner Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -230,8 +230,7 @@ void Sequencer::runComputeObjects(int migration)
 
 void Sequencer::rebalanceLoad(int timestep)
 {
-  if ( (simParams->ldbStrategy != LDBSTRAT_NONE)
-       && ((timestep % simParams->ldbStepsPerCycle) == 0))
+  if ( ldbCoordinator->balanceNow(timestep) )
   {
     DebugM(4, "Running ldb!\n");
     patch->submitLoadStats(timestep);
@@ -250,13 +249,16 @@ Sequencer::terminate() {
  * RCS INFORMATION:
  *
  *      $RCSfile: Sequencer.C,v $
- *      $Author: ari $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1030 $     $Date: 1997/04/10 09:14:12 $
+ *      $Author: brunner $  $Locker:  $             $State: Exp $
+ *      $Revision: 1.1031 $     $Date: 1997/04/16 22:12:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1031  1997/04/16 22:12:20  brunner
+ * Fixed an LdbCoordinator bug, and cleaned up timing and Ldb output some.
+ *
  * Revision 1.1030  1997/04/10 09:14:12  ari
  * Final debugging for compute migration / proxy creation for load balancing.
  * Lots of debug code added, mostly turned off now.

@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1028 1997/04/10 15:49:44 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1029 1997/04/16 22:12:22 brunner Exp $";
 
 #include <stdio.h>
 
@@ -440,6 +440,39 @@ void WorkDistrib::assignNodeToPatch()
  
   //  PatchMap::Object()->printPatchMap();
 }
+
+//----------------------------------------------------------------------
+// void WorkDistrib::assignPatchesSlices() 
+// {
+//   int pid; 
+//   int assignedNode = 0;
+//   PatchMap *patchMap = PatchMap::Object();
+//   Node *node = CLocalBranch(Node, group.node);
+
+//   int *numAtoms = new int[node->numNodes()];
+//   for (int i=0; i<node->numNodes(); i++) {
+//     numAtoms[i] = 0;
+//   }
+
+//   // Assign patch to node with least atoms assigned.
+//   for(pid=0; pid < patchMap->numPatches(); pid++) {
+//     assignedNode = 0;
+//     for (i=1; i < node->numNodes(); i++) {
+//       if (numAtoms[i] < numAtoms[assignedNode]) assignedNode = i;
+//     }
+//     patchMap->assignNode(pid, assignedNode);
+//     numAtoms[assignedNode] += patchMap->patch(pid)->getNumAtoms();
+
+//     /*
+//     iout << iINFO << "Patch (" << pid << ") has " 
+//       << patchMap->patch(pid)->getNumAtoms() 
+//       << " atoms:  Assigned to Node(" << assignedNode << ")\n" 
+//       << endi;
+//     */
+//   }
+
+//   delete[] numAtoms;
+// }
 
 //----------------------------------------------------------------------
 void WorkDistrib::assignPatchesToLowestLoadNode() 
@@ -932,12 +965,15 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1028 $	$Date: 1997/04/10 15:49:44 $
+ *	$Revision: 1.1029 $	$Date: 1997/04/16 22:12:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1029  1997/04/16 22:12:22  brunner
+ * Fixed an LdbCoordinator bug, and cleaned up timing and Ldb output some.
+ *
  * Revision 1.1028  1997/04/10 15:49:44  brunner
  * Added patch array dimension output and RefineOnly load balancer
  *

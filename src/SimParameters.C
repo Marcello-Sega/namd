@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/04/08 21:08:49 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1013 $	$Date: 1997/04/16 22:12:20 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1013  1997/04/16 22:12:20  brunner
+ * Fixed an LdbCoordinator bug, and cleaned up timing and Ldb output some.
+ *
  * Revision 1.1012  1997/04/08 21:08:49  jim
  * Contant pressure now correct on multiple nodes, should work with MTS.
  *
@@ -354,7 +357,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1012 1997/04/08 21:08:49 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1013 1997/04/16 22:12:20 brunner Exp $";
 
 
 #include "ckdefs.h"
@@ -1475,9 +1478,9 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 		NAMD_die("Number of steps per load balance cycle must be a multiple of stepsPerCycle");
 	}
 
-	if (ldbStepsPerCycle/stepsPerCycle < 2)
+	if (ldbStepsPerCycle < stepsPerCycle)
 	{
-		NAMD_die("Number of steps per load balance cycle must be at least 2 * stepsPerCycle");
+		NAMD_die("Number of steps per load balance cycle must be at least stepsPerCycle");
 	}
 
 	if (ldbSendStep >= ldbStepsPerCycle )
@@ -2407,12 +2410,15 @@ void SimParameters::receive_SimParameters(Message *msg)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/04/08 21:08:49 $
+ *	$Revision: 1.1013 $	$Date: 1997/04/16 22:12:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1013  1997/04/16 22:12:20  brunner
+ * Fixed an LdbCoordinator bug, and cleaned up timing and Ldb output some.
+ *
  * Revision 1.1012  1997/04/08 21:08:49  jim
  * Contant pressure now correct on multiple nodes, should work with MTS.
  *

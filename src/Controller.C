@@ -198,9 +198,9 @@ void Controller::printEnergies(int seq)
 	iout << "\n" << endi;
     }
 
-    iout << iINFO
-	 << "CPU time = " << CmiTimer() << " Wall Time = " 
-	 << CmiWallTimer() << "\n" << endi;
+    //    iout << iINFO
+    //	 << "CPU time = " << CmiTimer() << " Wall Time = " 
+    //	 << CmiWallTimer() << "\n" << endi;
 
     iout << ETITLE(seq)
 	 << FORMAT(bondEnergy)
@@ -241,12 +241,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1019 $	$Date: 1997/04/10 22:29:09 $
+ *	$Revision: 1.1020 $	$Date: 1997/04/16 22:12:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1020  1997/04/16 22:12:16  brunner
+ * Fixed an LdbCoordinator bug, and cleaned up timing and Ldb output some.
+ *
  * Revision 1.1019  1997/04/10 22:29:09  jim
  * First steps towards combining atom migration messages.
  *

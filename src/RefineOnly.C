@@ -13,21 +13,29 @@ strategy();
 }
 
 void RefineOnly::strategy()
-{ printLoads();
-   for (int i=0; i<numComputes; i++)
+{ 
+  for (int i=0; i<numComputes; i++)
     assign((computeInfo *) &(computes[i]),
 	   (processorInfo *) &(processors[computes[i].oldProcessor]));
 	 
 
   computeAverage();
+  iout << iINFO
+       << "------------------------------------------------------------\n"
+       << iINFO << "Before load balancing (measured stats):\n" << endi;
   printLoads();
+
   double max = computeMax();
-  iout << "Average Load is " << averageLoad << "\n";
-  iout << "Maximum Load is " << max << "\n" << endi;
   refine();
+
   computeAverage();
+  iout << iINFO
+       << "------------------------------------------------------------\n"
+       << iINFO 
+       << "After load balancing (predicted stats):\n" << endi;
   printLoads();
+  iout << iINFO 
+       << "------------------------------------------------------------\n"
+       << endi;
   max = computeMax();
-  iout << "Average Load is " << averageLoad << "\n";
-  iout << "Maximum Load is " << max << "\n" << endi;
 }

@@ -254,14 +254,16 @@ double max;
   computeAverage();
   max = computeMax();
   iout << iINFO 
-    << "Summary: (" << strategyName << ": " << P << "," 
-    << numPatches << "," << numComputes << ") avg = " 
-    << averageLoad << " max = " << max << " messages = " 
-    << total << "[" << numBytes << " bytes]\n" << endi;
-
-//   CPrintf("Summary: (%s: %d,%d,%d),avg=%lf max=%lf messages = %d [%d bytes]\n",
-// 	  strategyName,P,numPatches,numComputes,
-// 	  averageLoad,max,total,numBytes);
+       << "Load summary for strategy: " << strategyName
+       << "\n" << iINFO 
+       << "Processors = " << P
+       << "\n" << iINFO 
+       << "Patches = " << numPatches << "  Computes = " << numComputes
+       << "\n" << iINFO 
+       << "Average load = " << averageLoad << "  Max load = " << max
+       << "\n" << iINFO 
+       << "# of messages = " << total << "  Message bytes = " << numBytes
+       << "\n" << endi;
 }
 
 void Rebalancer::computeAverage()
