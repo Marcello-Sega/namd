@@ -2800,6 +2800,10 @@ obj/TestController.o: \
 	src/BroadcastClient.h \
 	src/NamdState.h \
 	src/Broadcasts.h \
+	src/LdbCoordinator.h \
+	src/elements.h \
+	src/Set.h \
+	src/ComputeMgr.h \
 	src/Thread.h \
 	src/Debug.h
 	$(CXX) $(CXXTHREADFLAGS) -o obj/TestController.o -c src/TestController.C

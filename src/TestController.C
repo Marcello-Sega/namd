@@ -22,6 +22,7 @@
 #include "BroadcastObject.h"
 #include "NamdState.h"
 #include "Broadcasts.h"
+#include "LdbCoordinator.h"
 #include "Thread.h"
 #include <math.h>
 
@@ -64,6 +65,7 @@ void TestController::algorithm(void)
     {
         enqueueCollections(step);
         trace_user_event(eventEndOfTimeStep);
+        receivePressure(step);
         printEnergies(step);
         rescaleVelocities(step);
 	tcoupleVelocities(step);
@@ -76,6 +78,10 @@ void TestController::algorithm(void)
 		  CmiWallTimer(),CmiTimer());
 	}
 #endif
+	if ( LdbCoordinator::Object()->balanceNow(step) ) {
+	  LdbCoordinator::Object()->rebalance(this);
+	}
+
     }
 
     terminate();
@@ -105,12 +111,15 @@ void TestController::berendsenPressure(int step)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1998/08/11 16:30:31 $
+ *	$Revision: 1.4 $	$Date: 1998/09/15 03:06:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: TestController.C,v $
+ * Revision 1.4  1998/09/15 03:06:00  jim
+ * Fixed test mode.
+ *
  * Revision 1.3  1998/08/11 16:30:31  jim
  * Modified output from periodic boundary simulations to return atoms to
  * internally consistent coordinates.  We store the transformations which
