@@ -64,7 +64,9 @@ public:
   void positionsReady(int doMigration=0);
 
   // methods to implement integration
-  void addForceToMomentum(const BigReal, const int ftag = Results::normal);
+  void saveForce(const int ftag = Results::normal);
+  void addForceToMomentum(const BigReal, const int ftag = Results::normal,
+				const int useSaved = 0);
   void addVelocityToPosition(const BigReal);
 
   // methods for rigidBonds
@@ -106,6 +108,7 @@ protected:
 private:
   // Store of Atom-wise variables
   FullAtomList  atom;
+  ForceList f_saved[Results::maxNumForces];
 
   // checkpointed state
   FullAtomList  checkpoint_atom;

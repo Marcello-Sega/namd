@@ -423,9 +423,15 @@ void Sequencer::tcoupleVelocities(BigReal dt_fs, int step)
   }
 }
 
-void Sequencer::addForceToMomentum(BigReal dt, const int ftag)
+void Sequencer::saveForce(const int ftag)
 {
-  patch->addForceToMomentum(dt,ftag);
+  patch->saveForce(ftag);
+}
+
+void Sequencer::addForceToMomentum(BigReal dt, const int ftag,
+						const int useSaved)
+{
+  patch->addForceToMomentum(dt,ftag,useSaved);
 }
 
 void Sequencer::addVelocityToPosition(BigReal dt)

@@ -235,16 +235,23 @@ void HomePatch::positionsReady(int doMigration)
   }
 }
 
-
-void HomePatch::addForceToMomentum(const BigReal timestep, const int ftag)
+void HomePatch::saveForce(const int ftag)
 {
-  const BigReal dt = timestep / TIMEFACTOR;
-  //if (v.check() == NULL || f.check() == NULL || a.check() == NULL) {
-      //DebugM(5, "NULL found! v="<<v<<" f="<<f<<" a="<<a<<"\n");
-  //}
+  f_saved[ftag].resize(numAtoms);
   for ( int i = 0; i < numAtoms; ++i )
   {
-    atom[i].velocity += f[ftag][i] * ( dt / atom[i].mass );
+    f_saved[ftag][i] = f[ftag][i];
+  }
+}
+
+void HomePatch::addForceToMomentum(const BigReal timestep, const int ftag,
+							const int useSaved)
+{
+  const BigReal dt = timestep / TIMEFACTOR;
+  for ( int i = 0; i < numAtoms; ++i )
+  {
+    if (useSaved) atom[i].velocity += f_saved[ftag][i] * ( dt / atom[i].mass );
+    else atom[i].velocity += f[ftag][i] * ( dt / atom[i].mass );
     if ( atom[i].atomFixed ) atom[i].velocity = 0;
   }
 }

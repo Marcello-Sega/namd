@@ -36,7 +36,9 @@ protected:
     void submitReductions(int);
     void submitCollections(int);
 
-    void addForceToMomentum(BigReal, const int ftag = Results::normal);
+    void saveForce(const int ftag = Results::normal);
+    void addForceToMomentum(BigReal, const int ftag = Results::normal,
+						const int useSaved = 0);
     void addVelocityToPosition(BigReal);
 
     void rattle1(BigReal);
