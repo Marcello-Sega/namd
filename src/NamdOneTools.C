@@ -167,6 +167,34 @@ void velocities_from_binfile(char *fname, Vector *vels, int n)
 }
 /*		END OF FUNCTION velocities_from_binfile		*/
 
+Vector gaussian_random_vector(void)
+{
+	int j;			//  Loop counter
+	BigReal randnum;	//  Random number from -6.0 to 6.0
+	Vector v;		//  Result
+
+	//  This section generates a Gaussian random
+	//  deviate of 0.0 mean and standard deviation RFD for
+	//  each of the three spatial dimensions.
+	//  The algorithm is a "sum of uniform deviates algorithm"
+	//  which may be found in Abramowitz and Stegun,
+	//  "Handbook of Mathematical Functions", pg 952.
+
+	for (randnum = -6.0, j=0; j<12; j++) randnum += NAMD_random();
+
+	v.x = randnum;
+
+	for (randnum = -6.0, j=0; j<12; j++) randnum += NAMD_random();
+
+	v.y = randnum;
+
+	for (randnum = -6.0, j=0; j<12; j++) randnum += NAMD_random();
+
+	v.z = randnum;
+
+	return v;
+}
+
 /************************************************************************/
 /*			FUNCTION random_velocities			*/
 /*   INPUTS:								*/
@@ -286,13 +314,16 @@ void remove_com_motion(Vector *vel, Molecule *structure, int n)
 * RCS INFORMATION:
 *
 *	$RCSfile: NamdOneTools.C,v $
-*	$Author: ari $	$Locker:  $		$State: Exp $
-*	$Revision: 1.2 $	$Date: 1997/03/10 17:40:13 $
+*	$Author: jim $	$Locker:  $		$State: Exp $
+*	$Revision: 1.3 $	$Date: 1997/03/24 01:43:56 $
 *
 ***************************************************************************
 * REVISION HISTORY:
 *
 * $Log: NamdOneTools.C,v $
+* Revision 1.3  1997/03/24 01:43:56  jim
+* Added Langevin dynamics.
+*
 * Revision 1.2  1997/03/10 17:40:13  ari
 * UniqueSet changes - some more commenting and cleanup
 *
@@ -304,4 +335,4 @@ void remove_com_motion(Vector *vel, Molecule *structure, int n)
 *
 ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdOneTools.C,v 1.2 1997/03/10 17:40:13 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdOneTools.C,v 1.3 1997/03/24 01:43:56 jim Exp $";

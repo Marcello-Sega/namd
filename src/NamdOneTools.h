@@ -18,6 +18,9 @@
 
 extern void velocities_from_PDB(char *filename, Vector *v, int totalAtoms);
 extern void velocities_from_binfile(char *fname, Vector *vels, int n);
+
+extern Vector gaussian_random_vector(void);
+
 extern void random_velocities(BigReal Temp,
 			Molecule *structure, Vector *v, int totalAtoms);
 extern void remove_com_motion(Vector *vel, Molecule *structure, int n);
@@ -27,13 +30,16 @@ extern void read_binary_coors(char *fname, PDB *pdbobj);
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdOneTools.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1997/03/10 17:59:59 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1997/03/24 01:43:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdOneTools.h,v $
+ * Revision 1.2  1997/03/24 01:43:58  jim
+ * Added Langevin dynamics.
+ *
  * Revision 1.1  1997/03/10 17:59:59  ari
  * Header for NamdOneTools.C - just externs
  *

@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1020 1997/03/21 23:05:41 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1021 1997/03/24 01:44:01 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -23,6 +23,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C
 #include "Output.h"
 #include "Controller.h"
 #include "Broadcasts.h"
+#include "Molecule.h"
+#include "NamdOneTools.h"
 
 #define MIN_DEBUG_LEVEL 3
 //#define DEBUGM
@@ -95,6 +97,7 @@ void Sequencer::algorithm(void)
     submitCollections(step);
     rescaleVelocities(step);
     berendsenPressure(step);
+    langevinVelocities(step);
 
     for ( ++step; step <= numberOfSteps; ++step )
     {
@@ -119,9 +122,30 @@ void Sequencer::algorithm(void)
 	submitCollections(step);
 	rescaleVelocities(step);
 	berendsenPressure(step);
+	langevinVelocities(step);
     }
 
     terminate();
+}
+
+void Sequencer::langevinVelocities(int step)
+{
+  if ( simParams->langevinOn )
+  {
+    Molecule *molecule = Node::Object()->molecule;
+    BigReal dt = simParams->dt * 0.001;  // convert to ps
+    BigReal kbT = BOLTZMAN*(simParams->langevinTemp);
+    for ( int i = 0; i < patch->numAtoms; ++i )
+    {
+      int aid = patch->atomIDList[i];
+      BigReal f1 = exp( -1. * dt * molecule->langevin_param(aid) );
+      DebugM(1,"At step " << step << " langevin decay is " << f1 << "\n");
+      BigReal f2 = sqrt( ( 1. - f1*f1 ) * kbT / patch->a[i].mass );
+
+      patch->v[i] *= f1;
+      patch->v[i] += f2 * gaussian_random_vector();
+    }
+  }
 }
 
 void Sequencer::berendsenPressure(int step)
@@ -170,12 +194,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1020 $     $Date: 1997/03/21 23:05:41 $
+ *      $Revision: 1.1021 $     $Date: 1997/03/24 01:44:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1021  1997/03/24 01:44:01  jim
+ * Added Langevin dynamics.
+ *
  * Revision 1.1020  1997/03/21 23:05:41  jim
  * Added Berendsen's pressure coupling method, won't work with MTS yet.
  *

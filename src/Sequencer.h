@@ -38,6 +38,7 @@ protected:
     void submitCollections(int);
     void rescaleVelocities(int);
     void berendsenPressure(int);
+    void langevinVelocities(int);
 
     void suspend(void) { CthSuspend(); }
     void terminate(void);
@@ -62,12 +63,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/03/21 23:05:43 $
+ *	$Revision: 1.1008 $	$Date: 1997/03/24 01:44:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.h,v $
+ * Revision 1.1008  1997/03/24 01:44:02  jim
+ * Added Langevin dynamics.
+ *
  * Revision 1.1007  1997/03/21 23:05:43  jim
  * Added Berendsen's pressure coupling method, won't work with MTS yet.
  *

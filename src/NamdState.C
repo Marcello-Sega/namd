@@ -7,7 +7,7 @@
  * DESCRIPTION: Holds pointers to large molecule data structure, simulation
  *		Parameters...
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1006 1997/03/21 23:05:38 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1007 1997/03/24 01:43:59 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -137,6 +137,64 @@ NamdState::configFileInit(char *confFile)
     read_binary_coors(binCoordinateFilename->data, pdb);
   }
 
+	//  If constraints are active, build the parameters necessary
+	if (simParameters->constraintsOn)
+	{
+	   molecule->build_constraint_params(configList->find("consref"),
+					      configList->find("conskfile"),
+					      configList->find("conskcol"),
+					      pdb,
+					      NULL);
+	}
+
+	//  If langevin dynamics or temperature coupling are active, build 
+	//  the parameters necessary
+	if (simParameters->langevinOn)
+	{
+	   molecule->build_langevin_params(configList->find("langevinfile"),
+					    configList->find("langevincol"),
+					    pdb,
+					    NULL);
+	}
+	else if (simParameters->tCoupleOn)
+	{
+	   //  Temperature coupling uses the same parameters, but with different
+	   //  names . . .
+	   molecule->build_langevin_params(configList->find("tcouplefile"),
+					    configList->find("tcouplecol"),
+					    pdb,
+					    NULL);
+	}
+	
+	iout << iINFO << "****************************\n";
+	iout << iINFO << "STRUCTURE SUMMARY:\n";
+	iout << iINFO << molecule->numAtoms << " ATOMS\n";
+	iout << iINFO << molecule->numBonds << " BONDS\n";
+	iout << iINFO << molecule->numAngles << " ANGLES\n";
+	iout << iINFO << molecule->numDihedrals << " DIHEDRALS\n";
+	iout << iINFO << molecule->numImpropers << " IMPROPERS\n";
+	iout << iINFO << molecule->numExclusions << " EXCLUSIONS\n";
+
+	if (molecule->numMultipleDihedrals)
+	{
+		iout << iINFO << molecule->numMultipleDihedrals 
+			 << " DIHEDRALS WITH MULTIPLE PERIODICITY\n";
+	}
+
+	if (molecule->numMultipleImpropers)
+	{
+		iout << iINFO << molecule->numMultipleImpropers 
+			 << " IMPROPERS WITH MULTIPLE PERIODICITY\n";
+	}
+	
+	if (simParameters->constraintsOn)
+	{
+	   iout << iINFO << molecule->numConstraints << " CONSTRAINTS\n";
+	}
+
+	iout << iINFO << "*****************************\n";
+	iout << endi;
+
   DebugM(4, "::configFileInit() - printing Molecule Information\n");
 
   namdDebug.on(1);
@@ -158,12 +216,15 @@ NamdState::configFileInit(char *confFile)
  *
  *	$RCSfile: NamdState.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/03/21 23:05:38 $
+ *	$Revision: 1.1007 $	$Date: 1997/03/24 01:43:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdState.C,v $
+ * Revision 1.1007  1997/03/24 01:43:59  jim
+ * Added Langevin dynamics.
+ *
  * Revision 1.1006  1997/03/21 23:05:38  jim
  * Added Berendsen's pressure coupling method, won't work with MTS yet.
  *
