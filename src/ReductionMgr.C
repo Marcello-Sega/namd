@@ -28,7 +28,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.7 1997/01/10 21:17:26 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.8 1997/01/13 20:38:16 nealk Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -132,6 +132,7 @@ void	ReductionMgr::Register(ReductionTag tag)
   }
   panicMode = 0;
   #endif
+  DebugM(1,"Register tag=" << tag << "\n");
 
   maxData[tag]++;
 } /* ReductionMgr::Register() */
@@ -153,6 +154,7 @@ void	ReductionMgr::unRegister(ReductionTag tag)
   }
   panicMode = 2;
   #endif
+  DebugM(1,"unRegister tag=" << tag << "\n");
 
   maxData[tag]--;
 } /* ReductionMgr::unRegister() */
@@ -213,12 +215,13 @@ void	ReductionMgr::remove(int seq)
  *******************************************/
 void	ReductionMgr::recvReductionData	(ReductionDataMsg *msg)
 {
-  DebugM(2,"ReductionDataMsg received.\n"); 
-
   ReductionMgrData *current=find(msg->seq);
   ReductionTag tag = msg->tag;
   current->tagData[tag] += msg->data;
   delete msg;
+
+  DebugM(2,"ReductionDataMsg received tag=" << tag << " data="
+         << current->tagData[tag] << "\n"); 
 
   // inform object that new data has been found
   current->numData[tag]--;
@@ -292,6 +295,7 @@ void	ReductionMgr::submit(int seq, ReductionTag tag, BigReal data, int more)
   }
   panicMode = 1;
   #endif
+  DebugM(1,"Submit tag=" << tag << " data=" << data << "\n");
 
   ReductionMgrData *current=find(seq);
 
@@ -315,6 +319,7 @@ void	ReductionMgr::submit(int seq, ReductionTag tag, BigReal data, int more)
   if (current->numData[tag] == 0)
   {
     // all done here!
+    DebugM(2,"All data collected for tag=" << tag << "\n");
     // send the data[tag] to main collector
     ReductionDataMsg *m = new (MsgIndex(ReductionDataMsg)) ReductionDataMsg;
     m->seq = seq;
@@ -342,6 +347,7 @@ void	ReductionMgr::submit(int seq, ReductionTag tag, int more)
   }
   panicMode = 1;
   #endif
+  DebugM(1,"Other submit tag=" << tag << "\n");
 } /* ReductionMgr::submit() */
 
 /*******************************************
@@ -442,3 +448,4 @@ void	ReductionMgr::unsubscribe(ReductionTag tag)
 
 #include "ReductionMgr.bot.h"
 // nothing should be placed below here
+

@@ -26,12 +26,12 @@ Sequencer::Sequencer(HomePatch *p) :
 	simParams(Node::Object()->simParameters),
 	reduction(ReductionMgr::Object())
 {
-    //reduction->Register(REDUCTION_KINETIC_ENERGY);
+    reduction->Register(REDUCTION_KINETIC_ENERGY);
 }
 
 Sequencer::~Sequencer(void)
 {
-    //reduction->unRegister(REDUCTION_KINETIC_ENERGY);
+    reduction->unRegister(REDUCTION_KINETIC_ENERGY);
 }
 
 void Sequencer::threadRun(Sequencer* arg)
@@ -57,12 +57,12 @@ void Sequencer::algorithm(void)
     int step, cycle;
     int seq = 0;
     patch->positionsReady();
+    reduction->submit(seq,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
     suspend();
-    //reduction->submit(seq, REDUCTION_KINETIC_ENERGY,
-	//patch->calcKineticEnergy());
     ++seq;
     for ( cycle = 0; cycle < numberOfCycles; ++cycle )
     {
+	DebugM(1,"Cycle #" << cycle << "\n");
         for ( step = 0; step < stepsPerCycle; ++step )
         {
             patch->addForceToMomentum(0.5*timestep);
@@ -79,11 +79,12 @@ void Sequencer::algorithm(void)
 		<< ": (" << cycle << "," << step << ") "
 		<< "Awakened!\n");
             patch->addForceToMomentum(0.5*timestep);
-	    //reduction->submit(seq, REDUCTION_KINETIC_ENERGY,
-		//patch->calcKineticEnergy());
+	    reduction->submit(seq, REDUCTION_KINETIC_ENERGY,
+		patch->calcKineticEnergy());
 	    ++seq;
         }
     }
     DebugM(4, patch->getPatchID() << ": Exiting.\n");
     terminate();
 }
+
