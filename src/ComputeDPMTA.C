@@ -231,8 +231,8 @@ void ComputeDPMTA::doWork()
 
   // setup
   // 1. get totalAtoms
-  totalAtoms = Node::Object()->molecule->numAtoms;
-  //  NOTE:  THIS IS LARGER THAN NEEDED, IN FUTURE COUNT ATOMS FIRST!  -JCP
+  for (totalAtoms=0, ap = ap.begin(); ap != ap.end(); ap++)
+     totalAtoms += (*ap).p->getNumAtoms();
 
   // 2. setup atom list
   int i,j;
@@ -279,9 +279,8 @@ void ComputeDPMTA::doWork()
     }
 
   // 4. deposit
-  i=0;
   BigReal potential=0;
-  for (ap = ap.begin(); ap != ap.end(); ap++)
+  for (i=0, ap = ap.begin(); ap != ap.end(); ap++)
   {
     (*ap).f = (*ap).forceBox->open();
 
