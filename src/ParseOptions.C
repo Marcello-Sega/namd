@@ -11,9 +11,12 @@
  ***************************************************************************/
 
 // set the list of parameters
+/* Sun doesn't like libc.h, so I'm removing it... RKB
 #ifndef GCC
 #include <libc.h>
 #endif
+*/
+
 #include <iostream.h>
 #ifndef SP2
 #include <string.h>
@@ -1160,13 +1163,16 @@ Bool ParseOptions::units(const char *name, Units *units) // set
  * RCS INFORMATION:
  *
  *	$RCSfile: ParseOptions.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1999/03/17 17:59:25 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1010 $	$Date: 1999/07/01 21:01:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ParseOptions.C,v $
+ * Revision 1.1010  1999/07/01 21:01:20  brunner
+ * Removed definitions for default new() for Sun, and got rid of libc.h
+ *
  * Revision 1.1009  1999/03/17 17:59:25  jim
  * Eliminated compiler warnings and errors.
  *

@@ -31,6 +31,8 @@ typedef	int	int32;
 typedef	short	int32;
 #endif
 
+#if !defined(DONT_DECLARE_NEW)
+
 #ifndef GCC
 #ifdef GLOBALS
 void * operator new (size_t, void *);
@@ -38,6 +40,8 @@ void * operator new (size_t, void *);
 void * ::operator new (size_t, void *);
 #endif
 #endif
+
+#endif /* !defined(DONT_DECLARE_NEW) */
 
 #if 0
 #ifdef GLOBALS
@@ -279,12 +283,15 @@ int  Fclose(FILE *fout);
  *
  *	$RCSfile: common.h,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1019 $	$Date: 1999/05/11 23:56:55 $
+ *	$Revision: 1.1020 $	$Date: 1999/07/01 21:01:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.h,v $
+ * Revision 1.1020  1999/07/01 21:01:21  brunner
+ * Removed definitions for default new() for Sun, and got rid of libc.h
+ *
  * Revision 1.1019  1999/05/11 23:56:55  brunner
  * Changes for new charm version
  *
