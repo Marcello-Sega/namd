@@ -14,6 +14,10 @@
 #include "Tensor.h"
 #include <stdio.h>
 
+#ifdef WIN32
+typedef int pos_type;
+#endif
+
 infostream::infostream() : ostrstream(iBuffer,sizeof(iBuffer)) {;}
 
 infostream::~infostream() {;}

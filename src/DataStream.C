@@ -15,6 +15,10 @@
 #include "Tensor.h"
 #include <stdio.h>
 
+#ifdef WIN32
+typedef int pos_type;
+#endif
+
 /* output using CkPrintf() (end by inform) */
 void datastream::endd() {
   *this << ends;
