@@ -110,6 +110,8 @@ typedef enum
   REDUCTION_MIN_F_DOT_V,
   REDUCTION_MIN_V_DOT_V,
   REDUCTION_MIN_HUGE_COUNT,
+ // used for pair interaction calculations
+  VECTOR(REDUCTION_PAIR_FORCE),
  // checksum
   REDUCTION_ATOM_CHECKSUM,
   REDUCTION_COMPUTE_CHECKSUM,

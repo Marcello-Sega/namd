@@ -1151,6 +1151,9 @@ void Controller::printEnergies(int step, int minimize)
     groupPressure_avg += trace(groupPressure)/3.;
     pressure_avg_count += 1;
 
+    Vector pairForce;
+    GET_VECTOR(pairForce,reduction,REDUCTION_PAIR_FORCE);
+    
     // NO CALCULATIONS OR REDUCTIONS BEYOND THIS POINT!!!
     if ( ! minimize &&  step % simParameters->outputEnergies ) return;
     // ONLY OUTPUT SHOULD OCCUR BELOW THIS LINE!!!
@@ -1178,9 +1181,6 @@ void Controller::printEnergies(int step, int minimize)
 	  if ( printAtomicPressure ) iout << "     PRESSAVG";
 	  iout << "    GPRESSAVG";
 	}
-        if ( simParameters->pairInteractionOn ) {
-           iout << "    PAIR_VDW     PAIR_ELECT";
-        }
 	iout << "\n" << endi;
     }
 
@@ -1220,13 +1220,23 @@ void Controller::printEnergies(int step, int minimize)
 	}
 	iout << FORMAT(groupPressure_avg*PRESSUREFACTOR/pressure_avg_count);
     }
-
-    if (simParameters->pairInteractionOn) {
-      iout << FORMAT(ljEnergy_f);
-      iout << FORMAT(electEnergy_f + electEnergySlow_f);
-    }
     iout << "\n" << endi;
 
+    if (simParameters->pairInteractionOn) {
+      iout << "PAIR INTERACTION:";
+      iout << " STEP: " << step;
+      iout << " VDW: " << FORMAT(ljEnergy_f);
+      iout << " ELECT: " << FORMAT(electEnergy_f + electEnergySlow_f);
+      iout << " FORCE: ";
+#if 1
+      iout << FORMAT(pairForce.x);
+      iout << FORMAT(pairForce.y);
+      iout << FORMAT(pairForce.z);
+#else
+      iout << pairForce.x << " " << pairForce.y << " " << pairForce.z;
+#endif
+      iout << "\n" << endi;
+    }
     pressure_avg = 0;
     groupPressure_avg = 0;
     pressure_avg_count = 0;

@@ -533,6 +533,13 @@ void ComputeNonbondedUtil :: NAME
       virial_zz += tmp_z * p_ij_z;
       f_i.z += tmp_z;
       f_j.z -= tmp_z;
+
+      FEP(
+      reduction[pairForceIndex_X] += tmp_x * d_lambda_pair; 
+      reduction[pairForceIndex_Y] += tmp_y * d_lambda_pair; 
+      reduction[pairForceIndex_Z] += tmp_z * d_lambda_pair; 
+      )
+
       )
 
       FULL(
@@ -570,6 +577,13 @@ void ComputeNonbondedUtil :: NAME
       fullElectVirial_zz += tmp_z * p_ij_z;
       fullf_i.z += tmp_z;
       fullf_j.z -= tmp_z;
+
+      FEP(
+      reduction[pairForceIndex_X] += tmp_x * d_lambda_pair; 
+      reduction[pairForceIndex_Y] += tmp_y * d_lambda_pair; 
+      reduction[pairForceIndex_Z] += tmp_z * d_lambda_pair; 
+      )
+
       }
       )
 
