@@ -82,6 +82,15 @@ void NAMD_bug(const char *err_msg)
    delete [] new_err_msg;
 }
 
+// move filename to filename.BAK
+void NAMD_backup_file(const char *filename)
+{
+  char *backup = new char[strlen(filename)+5];
+  strcpy(backup, filename);
+  strcat(backup, ".BAK");
+  rename(filename,backup);
+  delete [] backup;
+}
 
 // same as write, only does error checking internally
 void NAMD_write(int fd, const void *buf, size_t count)
