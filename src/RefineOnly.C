@@ -20,6 +20,7 @@ strategy();
 
 void RefineOnly::strategy()
 { 
+iout << iINFO << "numComputes: " << numComputes << "\n" << endi;
   for (int i=0; i<numComputes; i++)
     assign((computeInfo *) &(computes[i]),
 	   (processorInfo *) &(processors[computes[i].oldProcessor]));
