@@ -37,7 +37,7 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1050 1999/03/19 23:03:01 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1051 1999/04/28 22:50:38 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, TransformList tl,
       PositionList pl, VelocityList vl) : Patch(pd,al,pl), v(vl), t(tl)
@@ -247,12 +247,13 @@ void HomePatch::rattle1(const BigReal timestep)
   Molecule *mol = Node::Object()->molecule;
   SimParameters *simParams = Node::Object()->simParameters;
   const BigReal dt = timestep / TIMEFACTOR;
-  BigReal tol2 = simParams->rigidTol;  tol2 *= tol2;
+  BigReal tol2 = 2.0 * simParams->rigidTol;
   int maxiter = simParams->rigidIter;
   int i, iter;
   BigReal dsq[10], tmp;
   int ial[10], ibl[10];
   Vector ref[10];  // reference position
+  Vector refab[10];  // reference vector
   Vector pos[10];  // new position
   Vector vel[10];  // new velocity
   BigReal rmass[10];  // 1 / mass
@@ -286,6 +287,9 @@ void HomePatch::rattle1(const BigReal timestep)
       }
     }
     if ( icnt == 0 ) continue;  // no constraints
+    for ( i = 0; i < icnt; ++i ) {
+      refab[i] = ref[ial[i]] - ref[ibl[i]];
+    }
     for ( iter = 0; iter < maxiter; ++iter ) {
       int done = 1;
       for ( i = 0; i < icnt; ++i ) {
@@ -295,7 +299,7 @@ void HomePatch::rattle1(const BigReal timestep)
 	BigReal rabsq = dsq[i];
 	BigReal diffsq = rabsq - pabsq;
 	if ( fabs(diffsq) > (rabsq * tol2) ) {
-	  Vector rab = ref[a] - ref[b];
+	  Vector &rab = refab[i];
 	  BigReal rpab = rab.x*pab.x + rab.y*pab.y + rab.z*pab.z;
 	  if ( rpab < ( rabsq * 1.0e-6 ) ) {
 	    NAMD_die("Constraint failure in RATTLE algorithm!\n");
@@ -338,11 +342,13 @@ void HomePatch::rattle2(const BigReal timestep, Vector *virial)
   BigReal tol = simParams->rigidTol;
   int maxiter = simParams->rigidIter;
   int i, iter;
-  BigReal dsq[10], tmp;
+  BigReal dsqi[10], tmp;
   int ial[10], ibl[10];
   Vector ref[10];  // reference position
+  Vector refab[10];  // reference vector
   Vector vel[10];  // new velocity
   BigReal rmass[10];  // 1 / mass
+  BigReal redmass[10];  // reduced mass
   int fixed[10];  // is atom fixed?
   
   for ( int ig = 0; ig < numAtoms; ig += a[ig].hydrogenGroupSize ) {
@@ -361,34 +367,36 @@ void HomePatch::rattle2(const BigReal timestep, Vector *virial)
       if ( hgs != 3 ) {
         NAMD_die("Hydrogen group error caught in rattle2().  It's a bug!\n");
       }
-      dsq[icnt] = tmp * tmp;  ial[icnt] = 1;  ibl[icnt] = 2;  ++icnt;
+      redmass[icnt] = 1. / (rmass[1] + rmass[2]);
+      dsqi[icnt] = 1. / (tmp * tmp);  ial[icnt] = 1;  ibl[icnt] = 2;  ++icnt;
       if ( fixed[1] && fixed[2] ) --icnt;  // both fixed so skip it
     }
     for ( i = 1; i < hgs; ++i ) {  // normal bonds to mother atom
       if ( ( tmp = mol->rigid_bond_length(a[ig+i].id) ) ) {
-        dsq[icnt] = tmp * tmp;  ial[icnt] = 0;  ibl[icnt] = i;  ++icnt;
+        redmass[icnt] = 1. / (rmass[0] + rmass[i]);
+        dsqi[icnt] = 1. / (tmp * tmp);  ial[icnt] = 0;  ibl[icnt] = i;  ++icnt;
         if ( fixed[0] && fixed[i] ) --icnt;  // both fixed so skip it
       }
     }
     if ( icnt == 0 ) continue;  // no constraints
+    for ( i = 0; i < icnt; ++i ) {
+      refab[i] = ref[ial[i]] - ref[ibl[i]];
+    }
     for ( iter = 0; iter < maxiter; ++iter ) {
       int done = 1;
       for ( i = 0; i < icnt; ++i ) {
 	int a = ial[i];  int b = ibl[i];
 	Vector vab = vel[a] - vel[b];
-	Vector rab = ref[a] - ref[b];
+	Vector &rab = refab[i];
+	BigReal rabsqi = dsqi[i];
 	BigReal rvab = rab.x*vab.x + rab.y*vab.y + rab.z*vab.z;
-	BigReal rma = rmass[a];
-	BigReal rmb = rmass[b];
-	BigReal gab = -rvab / ( ( rma + rmb ) * dsq[i] );
-	if ( fabs(gab) > tol ) {
-	  // wc += gab * dsq[i];
-	  Vector dp = rab * gab;
+	if ( (fabs(rvab) * dt * rabsqi) > tol ) {
+	  Vector dp = rab * (-rvab * redmass[i] * rabsqi);
 	  wc.x += dp.x * rab.x;
 	  wc.y += dp.y * rab.y;
 	  wc.z += dp.z * rab.z;
-	  vel[a] += rma * dp;
-	  vel[b] -= rmb * dp;
+	  vel[a] += rmass[a] * dp;
+	  vel[b] -= rmass[b] * dp;
 	  done = 0;
 	}
       }
@@ -724,12 +732,15 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1050 $	$Date: 1999/03/19 23:03:01 $
+ *	$Revision: 1.1051 $	$Date: 1999/04/28 22:50:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1051  1999/04/28 22:50:38  jim
+ * Fixed tolerance and increased speed for SHAKE/RATTLE.
+ *
  * Revision 1.1050  1999/03/19 23:03:01  jim
  * Fixed bugs in constant pressure code.
  *
