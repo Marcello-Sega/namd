@@ -12,18 +12,20 @@
 #include "Sequencer.h"
 
 #define DEBUG_LEVEL 3
+#define TIMER_FNC()   CmiTimer()
+
 // static initialization
 LdbCoordinator *LdbCoordinator::_instance = 0;
 
 CmiHandler notifyIdleStart(void)
 {
-  LdbCoordinator::Object()->idleStart = CmiTimer();
+  LdbCoordinator::Object()->idleStart = TIMER_FNC();
   return 0;
 }
 
 CmiHandler notifyIdleEnd(void)
 {
-  const double idleEndTime = CmiTimer();
+  const double idleEndTime = TIMER_FNC();
   LdbCoordinator::Object()->idleTime +=
     idleEndTime - LdbCoordinator::Object()->idleStart;
   LdbCoordinator::Object()->idleStart = -1;
@@ -145,7 +147,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap)
   // Start idle-time recording
   idleTime = 0;
   CsdStartNotifyIdle();
-  totalStartTime = CmiTimer();
+  totalStartTime = TIMER_FNC();
 }
 
 void LdbCoordinator::patchLoad(PatchID id, int nAtoms, int /* timestep */)
@@ -173,12 +175,12 @@ void LdbCoordinator::startWork(ComputeID id, int /* timestep */ )
     DebugM(4, "::startWork() Attempting to start already-running timer\n");
   }
   else
-    computeStartTime[id] = CmiTimer();
+    computeStartTime[id] = TIMER_FNC();
 }
 
 void LdbCoordinator::endWork(ComputeID id, int /* timestep */)
 {
-  double endTime = CmiTimer();
+  double endTime = TIMER_FNC();
 
   if (Node::Object()->simParameters->ldbStrategy == LDBSTRAT_NONE)
     return;
@@ -213,7 +215,7 @@ int LdbCoordinator::checkAndSendStats(void)
   {
     // Turn off idle-time calculation
     CsdStopNotifyIdle();
-    totalTime = CmiTimer() - totalStartTime;
+    totalTime = TIMER_FNC() - totalStartTime;
     if (idleStart!= -1)
       CPrintf("WARNING: idle time still accumulating?\n");
 
