@@ -409,10 +409,13 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor)
 
   //  If this is the last time we will be writing coordinates,
   //  close the file before exiting
-  if ( timestep == END_OF_RUN && ! first )
-  {
-    iout << "CLOSING COORDINATE DCD FILE\n" << endi;
-    close_dcd_write(fileid);
+  if ( timestep == END_OF_RUN ) {
+    if ( ! first ) {
+      iout << "CLOSING COORDINATE DCD FILE\n" << endi;
+      close_dcd_write(fileid);
+    } else {
+      iout << "COORDINATE DCD FILE WAS NOT CREATED\n" << endi;
+    }
     return;
   }
 
@@ -620,10 +623,13 @@ void Output::output_veldcdfile(int timestep, int n, Vector *vel)
 
   //  If this is the last time we will be writing coordinates,
   //  close the file before exiting
-  if ( timestep == END_OF_RUN && ! first )
-  {
-    iout << "CLOSING VELOCITY DCD FILE\n" << endi;
-    close_dcd_write(fileid);
+  if ( timestep == END_OF_RUN ) {
+    if ( ! first ) {
+      iout << "CLOSING VELOCITY DCD FILE\n" << endi;
+      close_dcd_write(fileid);
+    } else {
+      iout << "VELOCITY DCD FILE WAS NOT CREATED\n" << endi;
+    }
     return;
   }
 
