@@ -31,9 +31,11 @@ template <class Elem> class ResizeArray {
   public:
     // STL style iterators
     typedef Elem* iterator;
-    typedef const Elem* const_iterator;
     iterator begin(void) { return rep->array; }
     iterator end(void) { return rep->array + rep->arraySize; }
+    typedef const Elem* const_iterator;
+    const_iterator const_begin(void) const { return rep->array; }
+    const_iterator const_end(void) const { return rep->array + rep->arraySize; }
 
     // Various Constructors
     ResizeArray(void) {
