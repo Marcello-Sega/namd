@@ -17,6 +17,7 @@
 #include "ckdefs.h"
 #include "chare.h"
 #include "c++interface.h"
+#include <new.h>
 
 #include "BOCgroup.h"
 #include "NamdTypes.h"
@@ -103,10 +104,15 @@ public:
     Position *data = (Position*)(buffer+sizeof(int));
     for ( int i = 0; i < size; ++i )
       data[i] = positionList[i];
+    this->~ProxyDataMsg();
     return buffer;
   }
+  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
+  void * operator new(size_t s) { return comm_object::operator new(s); }
+  void * operator new(size_t, void *ptr) { return ptr; }
   void unpack (void *in)
   {
+    new((void*)this) ProxyDataMsg;
     char *buffer = (char*)in;
     int size = *((int*)buffer);
     positionList.resize(size);
@@ -129,10 +135,15 @@ public:
     Force *data = (Force*)(buffer+sizeof(int));
     for ( int i = 0; i < size; ++i )
       data[i] = forceList[i];
+    this->~ProxyResultMsg();
     return buffer;
   }
+  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
+  void * operator new(size_t size) { return comm_object::operator new(size); }
+  void * operator new(size_t, void *ptr) { return ptr; }
   void unpack (void *in)
   {
+    new((void*)this) ProxyResultMsg;
     char *buffer = (char*)in;
     int size = *((int*)buffer);
     forceList.resize(size);
@@ -157,12 +168,15 @@ public:
  *
  *	$RCSfile: main.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.15 $	$Date: 1996/12/14 00:02:42 $
+ *	$Revision: 1.16 $	$Date: 1996/12/16 22:19:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: main.h,v $
+ * Revision 1.16  1996/12/16 22:19:26  jim
+ * added placement new and destructor to messages
+ *
  * Revision 1.15  1996/12/14 00:02:42  jim
  * debugging ProxyAtomsMsg path to make compute creation work
  *
