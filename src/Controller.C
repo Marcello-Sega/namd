@@ -29,6 +29,8 @@
 #include "PatchMap.h"
 #include "PatchMap.inl"
 #include "Random.h"
+#include "imd.h"
+#include "IMDOutput.h"
 
 #ifdef NAMDCCS
 extern "C" void CApplicationDepositNode0Data(char *);
@@ -644,6 +646,20 @@ void Controller::printEnergies(int step)
     }
 #endif  // MDCOMM
 
+    if (node->simParameters->IMDon && !(step % node->simParameters->IMDfreq)) {
+      IMDEnergies energies;
+      energies.T = temperature;
+      energies.Etot = totalEnergy;
+      energies.Epot = totalEnergy - kineticEnergy;
+      energies.Evdw = ljEnergy;
+      energies.Eelec = electEnergy + electEnergySlow;
+      energies.Ebond = bondEnergy;
+      energies.Eangle = angleEnergy;
+      energies.Edihe = dihedralEnergy;
+      energies.Eimpr = improperEnergy;
+      Node::Object()->imd->gather_energies(step, &energies);
+    }
+  
     // Write out eXtended System Trajectory (XST) file
     if ( simParameters->xstFrequency != -1 && step == simParams->firstTimestep )
     {
@@ -839,12 +855,16 @@ void Controller::terminate(void) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1080 $	$Date: 1999/08/31 15:43:29 $
+ *	$Revision: 1.1081 $	$Date: 1999/08/31 20:59:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1081  1999/08/31 20:59:50  justin
+ * Added ability to set transfer rate of coordinates, to detach or kill the
+ * simulation, and to transfer energies to VMD.
+ *
  * Revision 1.1080  1999/08/31 15:43:29  jim
  * Cleaned up MOLLY code.
  *

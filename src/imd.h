@@ -6,6 +6,9 @@
  * needed to byteswap, sort into structs, allocate memory, etc.
  */
 
+#ifndef IMD_HEADER_H__
+#define IMD_HEADER_H__
+
 #include <sys/types.h>  /* For types size_t, ssize_t, etc.  */
 
 typedef struct {
@@ -52,4 +55,6 @@ typedef struct {
   float Edihe;
   float Eimpr;
 } IMDEnergies;
+
+#endif
 

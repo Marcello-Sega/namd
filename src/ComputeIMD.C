@@ -1,6 +1,7 @@
 
 #include "vmdsock.h"
 #include "Node.h"
+#include "IMDOutput.h"
 #include "imd.h"
 #include "SimParameters.h"
 #include "ComputeGlobal.h"
@@ -73,7 +74,9 @@ void ComputeIMD::calculate() {
   resultsMsg->gforce.resize(gmass.size());
 
   // Check/get new forces from VMD
-  get_vmd_forces();
+  if (sock) {
+    get_vmd_forces();
+  }
 
   // Right now I don't check to see if any new forces were obtained.
   // An optimization would be cache the results message.  However, there
@@ -151,6 +154,19 @@ int ComputeIMD::get_vmd_forces() {
         } 
         retval = 1;
         break;
+      case IMD_TRATE:
+        iout << iINFO << "Setting transfer rate to " << hlength<<'\n'<<endi;	
+        Node::Object()->imd->set_transrate(hlength);
+        break;
+      case IMD_EXIT:
+        iout<<iDEBUG<<"Detaching simulation from remote connection\n" << endi;
+        vmdsock_destroy(sock);
+        sock = 0;
+        Node::Object()->imd->close();
+        goto vmdEnd;
+      case IMD_KILL:
+        NAMD_quit(1);
+        break;
       default:
         iout << iWARN << "ComputeIMD: Unsupported header received \n "<<endi;
         buf = new char[hsize];
@@ -161,6 +177,7 @@ int ComputeIMD::get_vmd_forces() {
         }
     }
   }
+vmdEnd:
   return retval;
 }
 
