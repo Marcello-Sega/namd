@@ -5,36 +5,29 @@
 /*                           All Rights Reserved                           */
 /*                                                                         */
 /***************************************************************************/
+/* DESCRIPTION:
+/*
+/***************************************************************************/
 
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: LJTable.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/10/08 04:49:01 $
- *
- ***************************************************************************
- * DESCRIPTION:
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: LJTable.C,v $
- * Revision 1.1  1996/10/08 04:49:01  brunner
- * Initial revision
- *
- ***************************************************************************/
-
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/LJTable.C,v 1.1 1996/10/08 04:49:01 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/LJTable.C,v 1.2 1996/10/31 22:19:51 jim Exp $";
 #include "LJTable.h"
 #include "Node.h"
 #include "Parameters.h"
 #include "Inform.h"
 
+LJTable *LJTable::_instance = 0;
+
+LJTable *LJTable::Instance() {
+  if (_instance == 0) {
+    _instance = new LJTable;
+  }
+  return _instance;
+}
+
 //----------------------------------------------------------------------  
 LJTable::LJTable()
 {
-  table_dim = namdMyNode->params->get_num_vdw_params();
+  table_dim = Node::Object()->parameters->get_num_vdw_params();
   half_table_sz = table_dim * table_dim;
 
   namdInfo << "Allocating LJ Table: size = " << table_dim << "\n" << sendmsg;
@@ -66,12 +59,13 @@ void LJTable::compute_vdw_params(int i, int j,
 				 LJTable::TableEntry *cur, 
 				 LJTable::TableEntry *cur_scaled)
 {
+  Parameters *params = Node::Object()->parameters;
 
   Real A, B, A14, B14;
   //  We need the A and B parameters for the Van der Waals.  These can
   //  be explicitly be specified for this pair or calculated from the
   //  sigma and epsilon values for the two atom types
-  if (namdMyNode->params->get_vdw_pair_params(i,j, &A, &B, &A14, &B14))
+  if (params->get_vdw_pair_params(i,j, &A, &B, &A14, &B14))
   {
     cur->A = A;
     cur->B = B;
@@ -86,9 +80,9 @@ void LJTable::compute_vdw_params(int i, int j,
     Real sigma_i, sigma_i14, epsilon_i, epsilon_i14;
     Real sigma_j, sigma_j14, epsilon_j, epsilon_j14;
 
-    namdMyNode->params->get_vdw_params(&sigma_i, &epsilon_i, &sigma_i14,
+    params->get_vdw_params(&sigma_i, &epsilon_i, &sigma_i14,
 				       &epsilon_i14,i);
-    namdMyNode->params->get_vdw_params(&sigma_j, &epsilon_j, &sigma_j14, 
+    params->get_vdw_params(&sigma_j, &epsilon_j, &sigma_j14, 
 				       &epsilon_j14,j);
   	
 	    
@@ -112,4 +106,21 @@ void LJTable::compute_vdw_params(int i, int j,
   }
 }
 
-
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile: LJTable.C,v $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1996/10/31 22:19:51 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: LJTable.C,v $
+ * Revision 1.2  1996/10/31 22:19:51  jim
+ * first incarnation in NAMD 2.0, added singleton pattern
+ *
+ * Revision 1.1  1996/10/08 04:49:01  brunner
+ * Initial revision
+ *
+ ***************************************************************************/
