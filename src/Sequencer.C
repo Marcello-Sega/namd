@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1010 1997/03/04 22:37:17 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1011 1997/03/11 04:04:38 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -53,7 +53,7 @@ void Sequencer::run(int numberOfCycles)
     if ( numberOfCycles ) 
       this->numberOfCycles = numberOfCycles;
     else 
-      this->numberOfCycles = simParams->N; // / stepsPerCycle;
+      this->numberOfCycles = simParams->N - simParams->firstTimestep; // / stepsPerCycle;
 
     // create a Thread and invoke it
     thread = CthCreate((CthVoidFn)&(threadRun),(void*)(this),0);
@@ -120,13 +120,16 @@ Sequencer::terminate() {
  * RCS INFORMATION:
  *
  *      $RCSfile: Sequencer.C,v $
- *      $Author: ari $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1010 $     $Date: 1997/03/04 22:37:17 $
+ *      $Author: jim $  $Locker:  $             $State: Exp $
+ *      $Revision: 1.1011 $     $Date: 1997/03/11 04:04:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1011  1997/03/11 04:04:38  jim
+ * Now properly handles firstTimeStep parameter.
+ *
  * Revision 1.1010  1997/03/04 22:37:17  ari
  * Clean up of code.  Debug statements removal, dead code removal.
  * Minor fixes, output fixes.

@@ -56,7 +56,7 @@ void Controller::run(int numberOfCycles)
 {
     stepsPerCycle = simParams->stepsPerCycle;
     if ( numberOfCycles ) this->numberOfCycles = numberOfCycles;
-    else this->numberOfCycles = simParams->N; // / stepsPerCycle;
+    else this->numberOfCycles = simParams->N - simParams->firstTimestep; // / stepsPerCycle;
     thread = CthCreate((CthVoidFn)&(threadRun),(void*)(this),0);
     CthSetStrategyDefault(thread);
     CthAwaken(thread);
@@ -128,7 +128,7 @@ void Controller::printEnergies(int seq)
 	iout << "KINETIC        TOTAL     TEMP\n";
     }
 
-    iout << ETITLE(seq)
+    iout << ETITLE(seq + simParams->firstTimestep)
 	 << FORMAT(bondEnergy)
 	 << FORMAT(angleEnergy)
 	 << FORMAT(dihedralEnergy)
