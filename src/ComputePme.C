@@ -618,10 +618,10 @@ void ComputePmeMgr::recvGrid(PmeGridMsg *msg) {
   if ( grid_count == 0 ) {
 #if CHARM_VERSION > 050402
     pmeProxyDir[CkMyPe()].gridCalc1();
-    pmeProxyDir[0].sendTransBarrier();
+//    pmeProxyDir[0].sendTransBarrier();
 #else
     pmeProxyDir.gridCalc1(CkMyPe());
-    pmeProxyDir.sendTransBarrier(0);
+//    pmeProxyDir.sendTransBarrier(0);
 #endif
   }
 }
@@ -637,11 +637,13 @@ void ComputePmeMgr::gridCalc1(void) {
 #endif
 
 /*
+*/
 #if CHARM_VERSION > 050402
   pmeProxyDir[CkMyPe()].sendTrans();
 #else
   pmeProxyDir.sendTrans(CkMyPe());
 #endif
+/*
 */
 }
 
