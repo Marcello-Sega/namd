@@ -15,9 +15,7 @@
 #ifndef PATCHMGR_H
 #define PATCHMGR_H
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "NamdTypes.h"
 #include "SortedArray.h"
@@ -146,13 +144,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMgr.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1998/01/15 04:58:49 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1010 $	$Date: 1998/03/03 23:05:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.h,v $
+ * Revision 1.1010  1998/03/03 23:05:23  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1009  1998/01/15 04:58:49  jim
  * Corrected "friend foo" to "friend class foo".
  *

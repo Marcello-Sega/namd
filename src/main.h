@@ -15,9 +15,7 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "BOCgroup.h"
 #include "NamdTypes.h"
@@ -72,13 +70,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: main.h,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/12/26 23:11:08 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1998/03/03 23:05:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: main.h,v $
+ * Revision 1.1003  1998/03/03 23:05:32  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1002  1997/12/26 23:11:08  milind
  * Made namd2 to compile, link and run under linux. Merged Templates and src
  * directoriies, and removed separate definition and declaration files for

@@ -16,9 +16,8 @@
  ***************************************************************************/
 
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
+
 #include "SimParameters.h"
 #include "HomePatch.h"
 #include "AtomMap.h"
@@ -38,7 +37,7 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1043 1998/02/19 01:21:13 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1044 1998/03/03 23:05:13 brunner Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
 		     VelocityList vl) : Patch(pd,al,pl), v(vl), pInit(&pl)
@@ -719,13 +718,16 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1043 $	$Date: 1998/02/19 01:21:13 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1044 $	$Date: 1998/03/03 23:05:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1044  1998/03/03 23:05:13  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1043  1998/02/19 01:21:13  jim
  * Small usability changes.
  *

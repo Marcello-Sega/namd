@@ -12,9 +12,7 @@
 #ifndef HOMEPATCH_H
 #define HOMEPATCH_H
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "NamdTypes.h"
 #include "Patch.h"
@@ -121,13 +119,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1998/02/17 06:39:20 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1015 $	$Date: 1998/03/03 23:05:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.1015  1998/03/03 23:05:14  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1014  1998/02/17 06:39:20  jim
  * SHAKE/RATTLE (rigidBonds) appears to work!!!  Still needs langevin,
  * proper startup, and degree of freedom tracking.

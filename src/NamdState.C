@@ -7,11 +7,9 @@
  * DESCRIPTION: Holds pointers to large molecule data structure, simulation
  *		Parameters...
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1013 1998/02/18 05:38:31 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1014 1998/03/03 23:05:18 brunner Exp $";
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "Inform.h"
 #include "common.h"
@@ -266,13 +264,16 @@ NamdState::configFileInit(char *confFile)
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdState.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1998/02/18 05:38:31 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1014 $	$Date: 1998/03/03 23:05:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdState.C,v $
+ * Revision 1.1014  1998/03/03 23:05:18  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1013  1998/02/18 05:38:31  jim
  * RigidBonds mainly finished.  Now temperature is correct and a form
  * of Langevin dynamics works with constraints.

@@ -12,11 +12,9 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1017 1998/01/15 18:39:40 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1018 1998/03/03 23:05:21 brunner Exp $";
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "Patch.h"
 #include "PatchMap.h"
@@ -296,13 +294,16 @@ void Patch::positionsReady(int doneMigration)
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1998/01/15 18:39:40 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1018 $	$Date: 1998/03/03 23:05:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.1018  1998/03/03 23:05:21  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1017  1998/01/15 18:39:40  jim
  * Tweaks for picky aCC compiler.
  *

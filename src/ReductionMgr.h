@@ -2,9 +2,8 @@
 #ifndef REDUCTIONMGR_H
 #define REDUCTIONMGR_H
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
+
 #include "main.h"
 #include "NamdTypes.h"
 #include "BOCgroup.h"
@@ -116,12 +115,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1998/01/05 20:27:16 $
+ *	$Revision: 1.1009 $	$Date: 1998/03/03 23:05:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.h,v $
+ * Revision 1.1009  1998/03/03 23:05:27  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1008  1998/01/05 20:27:16  sergei
  * added REDUCTION_SMD_ENERGY to ReductionTag enum.
  *

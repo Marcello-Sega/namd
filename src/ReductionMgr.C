@@ -27,14 +27,12 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1023 1998/02/26 01:51:25 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1024 1998/03/03 23:05:26 brunner Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "chare.h"
-#include "ckdefs.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "InfoStream.h"
 #include "PatchMap.h"	// for patchMap
@@ -483,12 +481,15 @@ void	ReductionMgr::unsubscribe(ReductionTag tag)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1023 $	$Date: 1998/02/26 01:51:25 $
+ *	$Revision: 1.1024 $	$Date: 1998/03/03 23:05:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.C,v $
+ * Revision 1.1024  1998/03/03 23:05:26  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1023  1998/02/26 01:51:25  milind
  * Fixed bugs in CollectionMaster and ReductionManager that were causing
  * crash on Origin2000.

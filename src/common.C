@@ -10,11 +10,10 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1010 1998/02/27 00:14:30 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1011 1998/03/03 23:05:31 brunner Exp $";
 
-#include "chare.h"
-#include "ckdefs.h"
-#include "c++interface.h"
+#include "charm++.h"
+
 #include <sys/stat.h>
 #include <ctype.h>
 
@@ -296,13 +295,16 @@ int	Fclose	(FILE *fout)
  * RCS INFORMATION:
  *
  *	$RCSfile: common.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1998/02/27 00:14:30 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1011 $	$Date: 1998/03/03 23:05:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.C,v $
+ * Revision 1.1011  1998/03/03 23:05:31  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1010  1998/02/27 00:14:30  milind
  * Reduced memory requirements further by using CmiAlloc and CmiFree only
  * for messages and not for all new and deletes.

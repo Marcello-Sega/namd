@@ -12,9 +12,7 @@
 #ifndef SMDDATAMSGS_H
 #define SMDDATAMSGS_H
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "NamdTypes.h"
 

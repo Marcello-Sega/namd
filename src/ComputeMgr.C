@@ -11,9 +11,7 @@
  *
  ***************************************************************************/
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "ProcessorPrivate.h"
 
@@ -373,13 +371,16 @@ void ComputeMgr:: recvComputeGlobalResults(ComputeGlobalResultsMsg *msg)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1019 $	$Date: 1998/02/10 23:30:28 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1020 $	$Date: 1998/03/03 23:05:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.C,v $
+ * Revision 1.1020  1998/03/03 23:05:10  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1019  1998/02/10 23:30:28  milind
  * Fixed to reflect the current changes to Charm++ translator.
  *

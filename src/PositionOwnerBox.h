@@ -3,7 +3,7 @@
 #define POSITIONOWNERBOX_H
 
 #include "PositionBox.h"
-#include "ckdefs.h"
+#include "charm++.h"
 
 class Lattice;
 

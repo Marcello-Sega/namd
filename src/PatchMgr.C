@@ -11,12 +11,9 @@
 /*								           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1012 1998/02/10 23:30:30 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1013 1998/03/03 23:05:22 brunner Exp $";
 
-
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "PatchMgr.top.h"
 #include "PatchMgr.h"
@@ -253,12 +250,15 @@ void MovePatchesMsg::unpack (void *in)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMgr.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1998/02/10 23:30:30 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1013 $	$Date: 1998/03/03 23:05:22 $
  *
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.C,v $
+ * Revision 1.1013  1998/03/03 23:05:22  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1012  1998/02/10 23:30:30  milind
  * Fixed to reflect the current changes to Charm++ translator.
  *

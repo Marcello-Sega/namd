@@ -11,9 +11,7 @@
  *
  ***************************************************************************/
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "ProcessorPrivate.h"
 
@@ -128,13 +126,16 @@ void AtomMap::print()
  * RCS INFORMATION:
  *
  *	$RCSfile: AtomMap.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/11/07 20:17:30 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1009 $	$Date: 1998/03/03 23:04:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: AtomMap.C,v $
+ * Revision 1.1009  1998/03/03 23:04:59  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1008  1997/11/07 20:17:30  milind
  * Made NAMD to run on shared memory machines.
  *

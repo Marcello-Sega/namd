@@ -4,11 +4,9 @@
 /*                           All Rights Reserved                           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.1006 1997/11/10 16:45:59 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.1007 1998/03/03 23:05:32 brunner Exp $";
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "main.top.h"
 #include "main.h"
@@ -51,8 +49,8 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: main.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/11/10 16:45:59 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1007 $	$Date: 1998/03/03 23:05:32 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -61,6 +59,9 @@ public:
  * REVISION HISTORY:
  *
  * $Log: main.C,v $
+ * Revision 1.1007  1998/03/03 23:05:32  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1006  1997/11/10 16:45:59  milind
  * Made comm a Cpv Variable.
  *

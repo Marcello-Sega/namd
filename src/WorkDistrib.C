@@ -11,13 +11,11 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1042 1998/02/10 23:30:33 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1043 1998/03/03 23:05:30 brunner Exp $";
 
 #include <stdio.h>
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "ProcessorPrivate.h"
 
@@ -1038,13 +1036,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1042 $	$Date: 1998/02/10 23:30:33 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1043 $	$Date: 1998/03/03 23:05:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1043  1998/03/03 23:05:30  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1042  1998/02/10 23:30:33  milind
  * Fixed to reflect the current changes to Charm++ translator.
  *

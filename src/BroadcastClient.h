@@ -10,9 +10,7 @@
  *		run in a thread!)
  ***************************************************************************/
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #ifndef _BCASTCLI_H
 #define _BCASTCLI_H
@@ -41,12 +39,15 @@ protected:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1997/03/19 11:53:51 $
+ *	$Revision: 1.2 $	$Date: 1998/03/03 23:05:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: BroadcastClient.h,v $
+ * Revision 1.2  1998/03/03 23:05:01  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1  1997/03/19 11:53:51  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

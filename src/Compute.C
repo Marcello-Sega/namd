@@ -11,9 +11,7 @@
  ***************************************************************************/
 
 #include "main.h"
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "WorkDistrib.top.h"
 #include "WorkDistrib.h"
@@ -93,13 +91,16 @@ int Compute::sequence(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: Compute.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1997/12/26 23:10:41 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1016 $	$Date: 1998/03/03 23:05:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.C,v $
+ * Revision 1.1016  1998/03/03 23:05:03  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1015  1997/12/26 23:10:41  milind
  * Made namd2 to compile, link and run under linux. Merged Templates and src
  * directoriies, and removed separate definition and declaration files for

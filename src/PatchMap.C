@@ -12,9 +12,7 @@
 #include <unistd.h>
 #include <stdio.h>
 
-#include "chare.h"
-#include "ckdefs.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "PatchMgr.h"
 #include "PatchMap.inl"
@@ -470,13 +468,16 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1997/11/07 20:17:43 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1016 $	$Date: 1998/03/03 23:05:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.1016  1998/03/03 23:05:21  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1015  1997/11/07 20:17:43  milind
  * Made NAMD to run on shared memory machines.
  *

@@ -1,7 +1,7 @@
 #ifndef OWNERBOX_H
 #define OWNERBOX_H
 
-#include "ckdefs.h"
+#include "charm++.h"
 
 template <class Owner, class Data> class Box;
 

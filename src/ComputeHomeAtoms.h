@@ -16,9 +16,7 @@
 #define COMPUTEATOM_H
 
 #include "main.h"
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "NamdTypes.h"
 
@@ -73,13 +71,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeHomeAtoms.h,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/12/26 23:10:44 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1998/03/03 23:05:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeAtoms.h,v $
+ * Revision 1.1002  1998/03/03 23:05:06  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1001  1997/12/26 23:10:44  milind
  * Made namd2 to compile, link and run under linux. Merged Templates and src
  * directoriies, and removed separate definition and declaration files for

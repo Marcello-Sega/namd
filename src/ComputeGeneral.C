@@ -12,9 +12,7 @@
  ***************************************************************************/
 
 #include "main.h"
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "NamdTypes.h"
 #include "Box.h"
@@ -100,13 +98,16 @@ void ComputeGeneral::doWork() {
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeGeneral.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/12/26 23:10:42 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1998/03/03 23:05:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGeneral.C,v $
+ * Revision 1.1005  1998/03/03 23:05:04  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1004  1997/12/26 23:10:42  milind
  * Made namd2 to compile, link and run under linux. Merged Templates and src
  * directoriies, and removed separate definition and declaration files for

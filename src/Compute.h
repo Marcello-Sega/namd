@@ -15,9 +15,7 @@
 #define COMPUTE_H
 
 #include "main.h"
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "NamdTypes.h"
 
@@ -69,13 +67,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: Compute.h,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/09/28 10:19:04 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1010 $	$Date: 1998/03/03 23:05:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.h,v $
+ * Revision 1.1010  1998/03/03 23:05:03  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1009  1997/09/28 10:19:04  milind
  * Fixed priorities, ReductionMgr etc.
  *

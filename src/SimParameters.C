@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *  $RCSfile: SimParameters.C,v $
- *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1035 $  $Date: 1998/02/17 06:39:24 $
+ *  $Author: brunner $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1036 $  $Date: 1998/03/03 23:05:29 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1036  1998/03/03 23:05:29  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1035  1998/02/17 06:39:24  jim
  * SHAKE/RATTLE (rigidBonds) appears to work!!!  Still needs langevin,
  * proper startup, and degree of freedom tracking.
@@ -441,12 +444,11 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1035 1998/02/17 06:39:24 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1036 1998/03/03 23:05:29 brunner Exp $";
 
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
+
 #include "ConfigList.h"
 #include "SimParameters.h"
 #include "ParseOptions.h"
@@ -2909,12 +2911,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1035 $  $Date: 1998/02/17 06:39:24 $
+ *  $Revision: 1.1036 $  $Date: 1998/03/03 23:05:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1036  1998/03/03 23:05:29  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1035  1998/02/17 06:39:24  jim
  * SHAKE/RATTLE (rigidBonds) appears to work!!!  Still needs langevin,
  * proper startup, and degree of freedom tracking.

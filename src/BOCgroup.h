@@ -15,9 +15,7 @@
 #ifndef BOCGROUP_H
 #define BOCGROUP_H
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 class BOCgroup {
 public:
@@ -43,12 +41,15 @@ class BOCclass : public groupmember {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/11/07 20:17:31 $
+ *	$Revision: 1.1004 $	$Date: 1998/03/03 23:05:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: BOCgroup.h,v $
+ * Revision 1.1004  1998/03/03 23:05:00  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1003  1997/11/07 20:17:31  milind
  * Made NAMD to run on shared memory machines.
  *

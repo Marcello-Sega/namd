@@ -15,9 +15,8 @@
 #ifndef _WORKDISTRIB_H
 #define _WORKDISTRIB_H
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
+
 #include "main.h"
 
 #include "NamdTypes.h"
@@ -183,12 +182,15 @@ public:
  *
  *	$RCSfile: WorkDistrib.h,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1998/01/22 20:11:06 $
+ *	$Revision: 1.1012 $	$Date: 1998/03/03 23:05:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.1012  1998/03/03 23:05:31  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1011  1998/01/22 20:11:06  brunner
  * Modified the ComputeMap redistribution to send only new patch assignments.
  *

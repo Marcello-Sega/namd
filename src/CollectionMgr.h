@@ -2,9 +2,8 @@
 #ifndef COLLECTIONMGR_H
 #define COLLECTIONMGR_H
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
+
 #include "main.h"
 #include "NamdTypes.h"
 #include "BOCgroup.h"
@@ -111,12 +110,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1998/01/15 05:40:52 $
+ *	$Revision: 1.1007 $	$Date: 1998/03/03 23:05:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMgr.h,v $
+ * Revision 1.1007  1998/03/03 23:05:02  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1006  1998/01/15 05:40:52  jim
  * Added int return type to comparison operators.
  *

@@ -17,7 +17,7 @@
 #include <iostream.h>	// for cout
 #include <strstream.h>	// for ostrstream
 #include <stdio.h>	// for CPrintf
-#include "ckdefs.h"	// for CPrintf
+#include "charm++.h"	// for CPrintf
 
 class infostream : public ostrstream
 {
@@ -103,12 +103,15 @@ extern infostream iout;
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/04/10 09:13:58 $
+ *	$Revision: 1.1003 $	$Date: 1998/03/03 23:05:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: InfoStream.h,v $
+ * Revision 1.1003  1998/03/03 23:05:14  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1002  1997/04/10 09:13:58  ari
  * Final debugging for compute migration / proxy creation for load balancing.
  * Lots of debug code added, mostly turned off now.

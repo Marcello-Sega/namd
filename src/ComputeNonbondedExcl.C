@@ -64,9 +64,7 @@ void NonbondedExclElem::computeForce(BigReal *reduction)
 
 #if(0)
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 #include "Inform.h"
 #include "Node.h"
 #include "Molecule.h"
@@ -154,13 +152,16 @@ ComputeNonbondedExcls::loadTuples() {
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedExcl.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1020 $	$Date: 1997/12/26 23:10:47 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1021 $	$Date: 1998/03/03 23:05:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedExcl.C,v $
+ * Revision 1.1021  1998/03/03 23:05:11  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1020  1997/12/26 23:10:47  milind
  * Made namd2 to compile, link and run under linux. Merged Templates and src
  * directoriies, and removed separate definition and declaration files for

@@ -13,9 +13,7 @@
 #ifndef _NODE_H
 #define _NODE_H
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "main.h"
 
@@ -137,12 +135,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1998/01/05 20:32:24 $
+ *	$Revision: 1.1011 $	$Date: 1998/03/03 23:05:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.1011  1998/03/03 23:05:19  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1010  1998/01/05 20:32:24  sergei
  * added public member SMDData smdData
  * added functions recvSMDData(), sendSMDData()

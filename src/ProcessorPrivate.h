@@ -1,7 +1,4 @@
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
-
+#include "charm++.h"
 
 #ifndef PROCESSOR_PRIVATE_H
 #define PROCESSOR_PRIVATE_H

@@ -11,14 +11,12 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1014 1997/11/07 20:17:36 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1015 1998/03/03 23:05:06 brunner Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "chare.h"
-#include "ckdefs.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "ComputeMap.h"
 #include "Compute.h"
@@ -342,13 +340,16 @@ void ComputeMap::printComputeMap(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1997/11/07 20:17:36 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1015 $	$Date: 1998/03/03 23:05:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.C,v $
+ * Revision 1.1015  1998/03/03 23:05:06  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1014  1997/11/07 20:17:36  milind
  * Made NAMD to run on shared memory machines.
  *

@@ -9,12 +9,10 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1025 1998/02/17 06:39:22 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1026 1998/03/03 23:05:19 brunner Exp $";
 
 #include <unistd.h>
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 #include "Node.top.h"
 #include "Node.h"
 #include "Namd.h"
@@ -467,13 +465,16 @@ void Node::recvSMDData(SMDDataMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1025 $	$Date: 1998/02/17 06:39:22 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1026 $	$Date: 1998/03/03 23:05:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1026  1998/03/03 23:05:19  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1025  1998/02/17 06:39:22  jim
  * SHAKE/RATTLE (rigidBonds) appears to work!!!  Still needs langevin,
  * proper startup, and degree of freedom tracking.

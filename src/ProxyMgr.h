@@ -15,9 +15,7 @@
 #ifndef PROXYMGR_H
 #define PROXYMGR_H
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "main.h"
 #include "NamdTypes.h"
@@ -153,13 +151,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.h,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/12/26 23:10:59 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1010 $	$Date: 1998/03/03 23:05:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.h,v $
+ * Revision 1.1010  1998/03/03 23:05:25  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1009  1997/12/26 23:10:59  milind
  * Made namd2 to compile, link and run under linux. Merged Templates and src
  * directoriies, and removed separate definition and declaration files for

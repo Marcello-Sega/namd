@@ -11,9 +11,7 @@
  *
  ***************************************************************************/
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "main.h"
 #include "BOCgroup.h"
@@ -351,13 +349,16 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1021 $	$Date: 1998/02/10 23:30:31 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1022 $	$Date: 1998/03/03 23:05:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.1022  1998/03/03 23:05:24  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1021  1998/02/10 23:30:31  milind
  * Fixed to reflect the current changes to Charm++ translator.
  *

@@ -17,9 +17,7 @@
 
 #include <stdio.h>
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "converse.h"
 #include "NamdTypes.h"
@@ -168,12 +166,15 @@ inline int LdbCoordinator::balanceNow(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.18 $	$Date: 1997/11/07 20:17:41 $
+ *	$Revision: 1.19 $	$Date: 1998/03/03 23:05:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LdbCoordinator.h,v $
+ * Revision 1.19  1998/03/03 23:05:15  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.18  1997/11/07 20:17:41  milind
  * Made NAMD to run on shared memory machines.
  *

@@ -12,9 +12,8 @@
 #ifndef _NAMD_H
 #define _NAMD_H
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
+
 #include <stdlib.h>
 
 #include "NamdState.h"
@@ -76,13 +75,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: Namd.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/08/18 23:01:17 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1009 $	$Date: 1998/03/03 23:05:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Namd.h,v $
+ * Revision 1.1009  1998/03/03 23:05:17  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1008  1997/08/18 23:01:17  jim
  * Properly reports "Days per ns" with nonzero firstTimeStep.
  *

@@ -12,11 +12,9 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1017 1997/12/22 21:29:27 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1018 1998/03/03 23:05:25 brunner Exp $";
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "main.top.h"
 #include "main.h"
@@ -128,13 +126,16 @@ void ProxyPatch::sendResults(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyPatch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1997/12/22 21:29:27 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1018 $	$Date: 1998/03/03 23:05:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.1018  1998/03/03 23:05:25  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1017  1997/12/22 21:29:27  jim
  * Proxies no longer send empty arrays back to HomePatch.  Requires some new
  * flags to be set correctly in Sequencer in order to work.  These are:

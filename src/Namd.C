@@ -9,13 +9,11 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.1006 1998/02/10 23:30:29 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.1007 1998/03/03 23:05:17 brunner Exp $";
 
 #include "unistd.h"
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "main.top.h"
 #include "main.h"
@@ -131,13 +129,16 @@ void Namd::startup(char *confFile)
  * RCS INFORMATION:
  *
  *	$RCSfile: Namd.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1998/02/10 23:30:29 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1007 $	$Date: 1998/03/03 23:05:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Namd.C,v $
+ * Revision 1.1007  1998/03/03 23:05:17  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1006  1998/02/10 23:30:29  milind
  * Fixed to reflect the current changes to Charm++ translator.
  *

@@ -17,9 +17,7 @@
 #ifndef MIGRATEATOMSMSG_H
 #define MIGRATEATOMSMSG_H
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "NamdTypes.h"
 #include "SortedArray.h"
@@ -85,12 +83,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1997/12/26 23:10:50 $
+ *	$Revision: 1.8 $	$Date: 1998/03/03 23:05:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: MigrateAtomsMsg.h,v $
+ * Revision 1.8  1998/03/03 23:05:16  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.7  1997/12/26 23:10:50  milind
  * Made namd2 to compile, link and run under linux. Merged Templates and src
  * directoriies, and removed separate definition and declaration files for

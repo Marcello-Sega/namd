@@ -16,9 +16,7 @@
 #define COMPUTEGENERAL_H
 
 #include "main.h"
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "NamdTypes.h"
 #include "PatchTypes.h"
@@ -99,13 +97,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeGeneral.h,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/12/26 23:10:42 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1998/03/03 23:05:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGeneral.h,v $
+ * Revision 1.1003  1998/03/03 23:05:05  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1002  1997/12/26 23:10:42  milind
  * Made namd2 to compile, link and run under linux. Merged Templates and src
  * directoriies, and removed separate definition and declaration files for

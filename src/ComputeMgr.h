@@ -15,9 +15,7 @@
 #ifndef COMPUTEMGR_H
 #define COMPUTEMGR_H
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 #include "main.h"
 #include "new.h"
 
@@ -116,13 +114,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.h,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/12/26 23:10:46 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1011 $	$Date: 1998/03/03 23:05:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.h,v $
+ * Revision 1.1011  1998/03/03 23:05:11  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.1010  1997/12/26 23:10:46  milind
  * Made namd2 to compile, link and run under linux. Merged Templates and src
  * directoriies, and removed separate definition and declaration files for

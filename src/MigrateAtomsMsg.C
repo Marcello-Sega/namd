@@ -9,11 +9,10 @@
  *		
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/MigrateAtomsMsg.C,v 1.6 1997/04/11 16:54:28 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/MigrateAtomsMsg.C,v 1.7 1998/03/03 23:05:16 brunner Exp $";
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
+
 #include "Migration.h"
 #include "MigrateAtomsMsg.h"
 #include "NamdTypes.h"
@@ -208,12 +207,15 @@ void MigrateAtomsCombinedMsg::unpack (void *in) {
  * RCS INFORMATION:
  *
  *	$RCSfile: MigrateAtomsMsg.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1997/04/11 16:54:28 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.7 $	$Date: 1998/03/03 23:05:16 $
  *
  * REVISION HISTORY:
  *
  * $Log: MigrateAtomsMsg.C,v $
+ * Revision 1.7  1998/03/03 23:05:16  brunner
+ * Changed include files for new simplified Charm++ include file structure.
+ *
  * Revision 1.6  1997/04/11 16:54:28  jim
  * Fixed bug calling size() on possibly null pointer.
  *
