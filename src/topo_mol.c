@@ -795,7 +795,9 @@ int topo_mol_end(topo_mol *mol) {
     }
     for ( confdef = resdef->conformations; confdef; confdef = confdef->next ) {
       if ( topo_mol_add_conformation(mol,&target,1,confdef) ) {
-        sprintf(errmsg,"add conformation failed in residue %s:%s",res->name,res->resid);
+        sprintf(errmsg,"add conformation %s-%s-%s-%s failed in residue %s:%s",
+		confdef->atom1,confdef->atom2,confdef->atom3,confdef->atom4,
+		res->name,res->resid);
         topo_mol_log_error(mol,errmsg);
       }
     }
