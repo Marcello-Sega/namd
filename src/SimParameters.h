@@ -85,6 +85,10 @@ class SimParameters
 {
 private:
 public:
+
+//  MAKE SURE THAT THIS CLASS CAN BE BIT COPIED OR YOU WILL HAVE TO
+//  ADD SPECIAL CODE TO send_SimParameters() and receive_SimParameters()
+
   char dummy;
 	BigReal dt;	   		//  Timestep size
 	int N;		   		//  Number of steps to be performed
@@ -447,12 +451,15 @@ private:
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1039 $	$Date: 1999/06/08 14:52:10 $
+ *	$Revision: 1.1040 $	$Date: 1999/06/17 19:03:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1040  1999/06/17 19:03:48  jim
+ * SimParameters is now sent by bit-copy rather than by member.
+ *
  * Revision 1.1039  1999/06/08 14:52:10  jim
  * Incorporated Justin's faster PME code along side DPME.
  *

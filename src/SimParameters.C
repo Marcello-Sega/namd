@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1071 $  $Date: 1999/06/08 14:52:08 $
+ *  $Revision: 1.1072 $  $Date: 1999/06/17 19:03:44 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1072  1999/06/17 19:03:44  jim
+ * SimParameters is now sent by bit-copy rather than by member.
+ *
  * Revision 1.1071  1999/06/08 14:52:08  jim
  * Incorporated Justin's faster PME code along side DPME.
  *
@@ -3490,112 +3493,7 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
     NAMD_die("memory allocation failed in SimParameters::send_SimParameters");
   }
 
-  msg->put(dt)->put(N)->put(stepsPerCycle);
-  msg->put(ldbStrategy)->put(ldbPeriod)->put(firstLdbStep);
-  msg->put(initialTemp)->put(comMove);
-  msg->put(wrapWater);
-  msg->put(dielectric)->put(nonbondedScaling)->put(exclude)->put(scale14);
-  msg->put(dcdFrequency)->put(velDcdFrequency)->put(vmdFrequency);
-  msg->put(dcdFilename);
-  msg->put(velDcdFilename);
-  msg->put(outputFilename);
-  msg->put(restartFilename)->put(restartFrequency)->put(cutoff);
-  msg->put(eleccutoff)->put(vdwcutoff);
-  msg->put(margin)->put(patchDimension)->put(switchingActive);
-  msg->put(switchingDist)->put(elecswitchDist)->put(vdwswitchDist);
-  msg->put(pairlistDist)->put(plMarginCheckOn)->put(constraintsOn);
-  msg->put(constraintExp)->put(constraintScaling);
-  //****** BEGIN CHARMM/XPLOR type changes
-  msg->put(paraTypeXplorOn)->put(paraTypeCharmmOn);
-  //****** END CHARMM/XPLOR type changes
-  //****** BEGIN selective restraints (X,Y,Z) changes 
-  msg->put(selectConstraintsOn)->put(constrXOn)->put(constrYOn)->put(constrZOn);
-  //****** END selective restraints (X,Y,Z) changes 
-  //****** BEGIN moving constraints changes 
-  msg->put(movingConstraintsOn)->put(&movingConsVel);
-  //****** END moving constraints changes 
-  //****** BEGIN rotating constraints changes 
-  msg->put(rotConstraintsOn)->put(&rotConsAxis)->put(&rotConsPivot);
-  msg->put(rotConsVel);
-  //****** END rotating constraints changes 
-  //****** BEGIN SMD constraints changes 
-  msg->put(SMDOn)->put(SMDAtom)->put(SMDVel);
-  msg->put(SMDExp)->put(SMDk)->put(&SMDRefPos);
-  msg->put(&SMDDir)->put(SMDOutputFreq)->put(SMDTStamp);
-  msg->put(SMDChDirOn)->put(SMDVmin)->put(SMDVminTave);
-  msg->put(SMDConeAngle)->put(SMDChDirMethod);
-  msg->put(SMDGaussW);
-  msg->put(SMDChForceOn)->put(SMDVmax);
-  msg->put(SMDVmaxTave)->put(SMDFmin);
-  //****** END SMD constraints changes 
-  msg->put(globalForcesOn)->put(tclForcesOn)->put(miscForcesOn);
-  msg->put(freeEnergyOn)->put(tclOn);
-  msg->put(FMAOn)->put(FMALevels)->put(FMAMp);
-  msg->put(FMAFFTOn)->put(FMAFFTBlock)->put(minimizeOn);
-  msg->put(maximumMove)->put(totalAtoms)->put(randomSeed);
-  msg->put(langevinOn)->put(langevinTemp)->put(globalOn);
-  msg->put(dihedralOn)->put(COLDOn)->put(COLDRate)->put(COLDTemp);
-  msg->put(rescaleFreq)->put(rescaleTemp);
-  msg->put(reassignFreq)->put(reassignTemp);
-  msg->put(reassignIncr)->put(reassignHold);
-  msg->put(sphericalBCOn)->put(sphericalBCr1);
-  msg->put(sphericalBCr2)->put(sphericalBCk1)->put(sphericalBCk2);
-  msg->put(sphericalBCexp1)->put(sphericalBCexp2);
-  msg->put(firstTimestep)->put(fullDirectOn);
-  msg->put(PMEOn)->put(PMETolerance)->put(PMEInterpOrder);
-  msg->put(PMEGridSizeX)->put(PMEGridSizeY)->put(PMEGridSizeZ);
-  msg->put(useDPME);
-  msg->put(eFieldOn)->put(&eField)->put(binaryRestart)->put(binaryOutput);
-  msg->put(electForceDcdFilename)->put(electForceDcdFrequency);
-  msg->put(allForceDcdFilename)->put(allForceDcdFrequency);
-  msg->put(MTSAlgorithm)->put(sphericalCenterCOM)->put(&sphericalCenter);
-  msg->put(longSplitting)->put(tCoupleOn)->put(tCoupleTemp);
-  msg->put(splitPatch)->put(hgroupCutoff);
-  msg->put(fullElectFrequency)->put(fmaTheta);
-  msg->put(rigidBonds);
-  msg->put(rigidTol);
-  msg->put(rigidIter);
-  msg->put(nonbondedFrequency);
-
-  // send hydrogen bond data
-  msg->put(HydrogenBonds)->put(useAntecedent);
-  msg->put(aaAngleExp)->put(haAngleExp)->put(distAttExp)->put(distRepExp);
-  msg->put(dhaCutoffAngle)->put(dhaOnAngle)->put(dhaOffAngle);
-  msg->put(daCutoffDist)->put(daOnDist)->put(daOffDist);
-
-  // send cylindrical boundary conditions data
-        msg->put(cylindricalBCOn)->put(cylindricalBCr1);
-        msg->put(cylindricalBCr2)->put(cylindricalBCk1);
-        msg->put(cylindricalBCk2)->put(cylindricalBCl1);
-        msg->put(cylindricalBCl2);
-        msg->put(&cylindricalCenter);
-        msg->put(cylindricalBCexp1)->put(cylindricalBCexp2);
-        msg->put(cylindricalBCAxis);
-
-  // send periodic box data
-  msg->put(cellBasisVector1.x);
-  msg->put(cellBasisVector2.y);
-  msg->put(cellBasisVector3.z);
-  msg->put(&cellOrigin);
-
-  // send pressure control data
-  msg->put(useGroupPressure);
-  msg->put(berendsenPressureOn);
-  msg->put(berendsenPressureTarget);
-  msg->put(berendsenPressureCompressibility);
-  msg->put(berendsenPressureRelaxationTime);
-  msg->put(berendsenPressureFreq);
-  msg->put(langevinPistonOn);
-  msg->put(langevinPistonTarget);
-  msg->put(langevinPistonPeriod);
-  msg->put(langevinPistonDecay);
-  msg->put(langevinPistonTemp);
-
-  // Send fixed-atoms parameters
-  msg->put(fixedAtomsOn);
-
-  // Send test mode data
-  msg->put(testOn);
+  msg->put(sizeof(SimParameters),(char*)this);
 
   msg->end();
 }
@@ -3613,212 +3511,9 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
 void SimParameters::receive_SimParameters(MIStream *msg)
 
 {
-  //  Get each of the parameters from the message
-  msg->get(dt);
-  msg->get(N);
-  msg->get(stepsPerCycle);
-  msg->get(ldbStrategy);
-  msg->get(ldbPeriod);
-  msg->get(firstLdbStep);
-  msg->get(initialTemp);
-  msg->get(comMove);
-  msg->get(wrapWater);
-  msg->get(dielectric);
-  msg->get(nonbondedScaling);
-  msg->get(exclude);
-  msg->get(scale14);
-  msg->get(dcdFrequency);
-  msg->get(velDcdFrequency);
-  msg->get(vmdFrequency);
-  int nameLength;
-  msg->get(nameLength);
-  msg->get(nameLength, dcdFilename);
-  msg->get(nameLength);
-  msg->get(nameLength, velDcdFilename);
-  msg->get(nameLength);
-  msg->get(nameLength, outputFilename);
-  msg->get(nameLength);
-  msg->get(nameLength, restartFilename);
-  msg->get(restartFrequency);
-  msg->get(cutoff);
-  msg->get(eleccutoff);
-  msg->get(vdwcutoff);
-  msg->get(margin);
-  msg->get(patchDimension);
-  msg->get(switchingActive);
-  msg->get(switchingDist);
-  msg->get(elecswitchDist);
-  msg->get(vdwswitchDist);
-  msg->get(pairlistDist);
-  msg->get(plMarginCheckOn);
-  msg->get(constraintsOn);
-  msg->get(constraintExp);
-  msg->get(constraintScaling);
-  //****** BEGIN CHARMM/XPLOR type changes
-  msg->get(paraTypeXplorOn);
-  msg->get(paraTypeCharmmOn);
-  //****** END CHARMM/XPLOR type changes
-  //****** BEGIN selective restraints (X,Y,Z) changes 
-  msg->get(selectConstraintsOn);
-  msg->get(constrXOn);
-  msg->get(constrYOn);
-  msg->get(constrZOn);
-  //****** END selective restraints (X,Y,Z) changes 
-  //****** BEGIN moving constraints changes 
-  msg->get(movingConstraintsOn);
-  msg->get(&movingConsVel);
-  //****** BEGIN rotating constraints changes 
-  msg->get(rotConstraintsOn);
-  msg->get(&rotConsAxis);
-  msg->get(&rotConsPivot);
-  msg->get(rotConsVel);
-  //****** END rotating constraints changes 
-  //****** END moving constraints changes 
-  //****** BEGIN SMD constraints changes 
-  msg->get(SMDOn);
-  msg->get(SMDAtom);
-  msg->get(SMDVel);
-  msg->get(SMDExp);
-  msg->get(SMDk);
-  msg->get(&SMDRefPos);
-  msg->get(&SMDDir);
-  msg->get(SMDOutputFreq);
-  msg->get(SMDTStamp);
-  msg->get(SMDChDirOn);
-  msg->get(SMDVmin);
-  msg->get(SMDVminTave);
-  msg->get(SMDConeAngle);
-  msg->get(SMDChDirMethod);
-  msg->get(SMDGaussW);
-  msg->get(SMDChForceOn);
-  msg->get(SMDVmax);
-  msg->get(SMDVmaxTave);
-  msg->get(SMDFmin);
-  //****** END SMD constraints changes 
-  msg->get(globalForcesOn);
-  msg->get(tclForcesOn);
-  msg->get(miscForcesOn);
-  msg->get(freeEnergyOn);
-  msg->get(tclOn);
-  msg->get(FMAOn);
-  msg->get(FMALevels);
-  msg->get(FMAMp);
-  msg->get(FMAFFTOn);
-  msg->get(FMAFFTBlock);
-  msg->get(minimizeOn);
-  msg->get(maximumMove);
-  msg->get(totalAtoms);
-  msg->get(randomSeed);
-  msg->get(langevinOn);
-  msg->get(langevinTemp);
-  msg->get(globalOn);
-  msg->get(dihedralOn);
-  msg->get(COLDOn);
-  msg->get(COLDRate);
-  msg->get(COLDTemp);
-  msg->get(rescaleFreq);
-  msg->get(rescaleTemp);
-  msg->get(reassignFreq);
-  msg->get(reassignTemp);
-  msg->get(reassignIncr);
-  msg->get(reassignHold);
-  msg->get(sphericalBCOn);
-  msg->get(sphericalBCr1);
-  msg->get(sphericalBCr2);
-  msg->get(sphericalBCk1);
-  msg->get(sphericalBCk2);
-  msg->get(sphericalBCexp1);
-  msg->get(sphericalBCexp2);
-  msg->get(firstTimestep);
-  msg->get(fullDirectOn);
-  msg->get(PMEOn);
-  msg->get(PMETolerance);
-  msg->get(PMEInterpOrder);
-  msg->get(PMEGridSizeX);
-  msg->get(PMEGridSizeY);
-  msg->get(PMEGridSizeZ);
-  msg->get(useDPME);
-  msg->get(eFieldOn);
-  msg->get(&eField);
-  msg->get(binaryRestart);
-  msg->get(binaryOutput);
-  msg->get(nameLength);
-  msg->get(nameLength, electForceDcdFilename);
-  msg->get(electForceDcdFrequency);
-  msg->get(nameLength);
-  msg->get(nameLength, allForceDcdFilename);
-  msg->get(allForceDcdFrequency);
-  msg->get(MTSAlgorithm);
-  msg->get(sphericalCenterCOM);
-  msg->get(&sphericalCenter);
-  msg->get(longSplitting);
-  msg->get(tCoupleOn);
-  msg->get(tCoupleTemp);
-  msg->get(splitPatch);
-  msg->get(hgroupCutoff);
-  msg->get(fullElectFrequency);
-  msg->get(fmaTheta);
-  msg->get(rigidBonds);
-  msg->get(rigidTol);
-  msg->get(rigidIter);
-  msg->get(nonbondedFrequency);
+  msg->get(sizeof(SimParameters),(char*)this);
 
-  // receive hydrogen bond data
-  msg->get(HydrogenBonds);
-  msg->get(useAntecedent);
-  msg->get(aaAngleExp);
-  msg->get(haAngleExp);
-  msg->get(distAttExp);
-  msg->get(distRepExp);
-  msg->get(dhaCutoffAngle);
-  msg->get(dhaOnAngle);
-  msg->get(dhaOffAngle);
-  msg->get(daCutoffDist);
-  msg->get(daOnDist);
-  msg->get(daOffDist);
-
-  // receive cylindrical boundary conditions data
-        msg->get(cylindricalBCOn);
-        msg->get(cylindricalBCr1);
-        msg->get(cylindricalBCr2);
-        msg->get(cylindricalBCk1);
-        msg->get(cylindricalBCk2);
-        msg->get(cylindricalBCl1);
-        msg->get(cylindricalBCl2);
-        msg->get(&cylindricalCenter);
-        msg->get(cylindricalBCexp1);
-        msg->get(cylindricalBCexp2);
-        msg->get(cylindricalBCAxis);
-
-  // receive periodic box data
-  msg->get(cellBasisVector1.x);
-  msg->get(cellBasisVector2.y);
-  msg->get(cellBasisVector3.z);
-  msg->get(&cellOrigin);
-  lattice.set(cellBasisVector1,cellBasisVector2,cellBasisVector3,cellOrigin);
-
-  // receive pressure control data
-  msg->get(useGroupPressure);
-  msg->get(berendsenPressureOn);
-  msg->get(berendsenPressureTarget);
-  msg->get(berendsenPressureCompressibility);
-  msg->get(berendsenPressureRelaxationTime);
-  msg->get(berendsenPressureFreq);
-  msg->get(langevinPistonOn);
-  msg->get(langevinPistonTarget);
-  msg->get(langevinPistonPeriod);
-  msg->get(langevinPistonDecay);
-  msg->get(langevinPistonTemp);
-
-  // Fixed atom parameters
-  msg->get(fixedAtomsOn);
-
-  // Receive test mode data
-  msg->get(testOn);
-
-  //  Free the message
   delete msg;
-
 }
 /*      END OF FUNCTION receive_SimParameters  */
 
@@ -3828,12 +3523,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1071 $  $Date: 1999/06/08 14:52:08 $
+ *  $Revision: 1.1072 $  $Date: 1999/06/17 19:03:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1072  1999/06/17 19:03:44  jim
+ * SimParameters is now sent by bit-copy rather than by member.
+ *
  * Revision 1.1071  1999/06/08 14:52:08  jim
  * Incorporated Justin's faster PME code along side DPME.
  *
