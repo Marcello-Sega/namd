@@ -8,6 +8,9 @@ obj/dcdlib.o: \
 	src/dcdlib.h \
 	src/common.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/dcdlib.o $(COPTC) src/dcdlib.C
+obj/erf.o: \
+	src/erf.C
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/erf.o $(COPTC) src/erf.C
 obj/main.o: \
 	src/main.C \
 	src/InfoStream.h \

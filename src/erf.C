@@ -112,6 +112,8 @@
 
 #include <math.h>
 
+extern "C" {
+
 /*  assume 32 bit int  */
 
 typedef int int32_t;
@@ -155,11 +157,7 @@ do {                                                            \
 #define __ieee754_exp(X) exp(X)
 
 
-#ifdef __STDC__
 static const double
-#else
-static double
-#endif
 tiny	    = 1e-300,
 half=  5.00000000000000000000e-01, /* 0x3FE00000, 0x00000000 */
 one =  1.00000000000000000000e+00, /* 0x3FF00000, 0x00000000 */
@@ -234,12 +232,7 @@ sb5  =  2.55305040643316442583e+03, /* 0x40A3F219, 0xCEDF3BE6 */
 sb6  =  4.74528541206955367215e+02, /* 0x407DA874, 0xE79FE763 */
 sb7  = -2.24409524465858183362e+01; /* 0xC03670E2, 0x42712D62 */
 
-#ifdef __STDC__
 	double erf(double x) 
-#else
-	double erf(x) 
-	double x;
-#endif
 {
 	int32_t hx,ix,i;
 	double R,S,P,Q,s,y,z,r;
@@ -290,12 +283,7 @@ sb7  = -2.24409524465858183362e+01; /* 0xC03670E2, 0x42712D62 */
 	if(hx>=0) return one-r/x; else return  r/x-one;
 }
 
-#ifdef __STDC__
 	double erfc(double x) 
-#else
-	double erfc(x) 
-	double x;
-#endif
 {
 	int32_t hx,ix;
 	double R,S,P,Q,s,y,z,r;
@@ -354,6 +342,8 @@ sb7  = -2.24409524465858183362e+01; /* 0xC03670E2, 0x42712D62 */
 	} else {
 	    if(hx>0) return tiny*tiny; else return two-tiny;
 	}
+}
+
 }
 
 #else  /* WIN32 */

@@ -40,6 +40,7 @@ include Makearch
 OBJS = \
 	$(DSTDIR)/common.o \
 	$(DSTDIR)/dcdlib.o \
+	$(DSTDIR)/erf.o \
 	$(DSTDIR)/main.o \
 	$(DSTDIR)/mainfunc.o \
 	$(DSTDIR)/memusage.o \

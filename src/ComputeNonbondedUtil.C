@@ -60,16 +60,10 @@ void ComputeNonbondedUtil::submitReductionData(BigReal *data, SubmitReduction *r
   reduction->item(REDUCTION_COMPUTE_CHECKSUM) += 1.;
 }
 
-#ifdef WIN32
-extern "C" {
-  double erfc(double) { return 0.; }
-}
-#else
 //  Not in KCC's math.h
 extern "C" {
   extern double erfc(double);
 }
-#endif
 
 void ComputeNonbondedUtil::select(void)
 {
