@@ -318,6 +318,15 @@ void WorkDistrib::createHomePatches(void)
 
   FullAtomList *atoms = createAtomLists();
 
+  int maxAtoms = -1;
+  int maxPatch = -1;
+  for(i=0; i < numPatches; i++) {
+    int numAtoms = atoms[i].size();
+    if ( numAtoms > maxAtoms ) { maxAtoms = numAtoms; maxPatch = i; }
+  }
+  iout << iINFO << "LARGEST PATCH (" << maxPatch <<
+	") HAS " << maxAtoms << " ATOMS\n" << endi;
+
   for(i=0; i < numPatches; i++)
   {
     if ( ! ( i % 100 ) )
