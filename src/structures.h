@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: structures.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/12/03 17:48:43 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.3 $	$Date: 1996/12/06 06:51:02 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -21,6 +21,9 @@
  * REVISION HISTORY:
  *
  * $Log: structures.h,v $
+ * Revision 1.3  1996/12/06 06:51:02  jim
+ * made Exclusion a class, combined with old nonbondedexcl
+ *
  * Revision 1.2  1996/12/03 17:48:43  nealk
  * Added nonbondedexcl.
  *
@@ -47,6 +50,8 @@
 
 #ifndef STRUCTURES_H
 #define STRUCTURES_H
+
+#include "common.h"
 
 // forward references
 class IntList;
@@ -116,17 +121,17 @@ typedef struct improper
 	Index improper_type;
 } Improper;
 
-typedef struct nonbondedexcl
+class Exclusion
 {
+public:
+	Exclusion(void) : modified(0) {;}
+	Exclusion(int a1, int a2, int mod = 0) :
+		atom1(a1), atom2(a2), modified(mod) {;}
 	int atom1;
 	int atom2;
-	Index nonbondedexcl_type;
-} NonbondedExcl;
-
-typedef struct exclusion
-{
-	int atom1;
-	int atom2;
-} Exclusion;
+	Index modified;
+	int operator==(const Exclusion &o) const
+		{ return atom1 == o.atom1 && atom2 == o.atom2; }
+};
 
 #endif
