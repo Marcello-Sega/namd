@@ -96,23 +96,23 @@ When compiled with Tcl (all released binaries) the config file
 is parsed by Tcl in a fully backwards compatible manner with the
 added bonus that any Tcl command may also be used.  This alone allows:
 \begin{itemize}
- \item the ``source'' command to include other files (works w/o Tcl too!),
- \item the ``print'' command to display messages (``puts'' is broken, sorry),
+ \item the ``\icommand{source}'' command to include other files (works w/o Tcl too!),
+ \item the ``\icommand{print}'' command to display messages (``puts'' is broken, sorry),
  \item environment variables through the env array (``\$env(USER)''), and
  \item user-defined variables (``set base sim23'', ``dcdfile \${base}.dcd'').
 \end{itemize}
 
 Additional features include:
 \begin{itemize}
- \item The ``callback'' command takes a 2-parameter Tcl procedure which
+ \item The ``\icommand{callback}'' command takes a 2-parameter Tcl procedure which
     is then called with a list of labels and a list of values during
     every timestep, allowing analysis, formatting, whatever.
- \item The ``run'' command takes a number of steps to run (overriding the
+ \item The ``\icommand{run}'' command takes a number of steps to run (overriding the
     now optional numsteps parameter, which defaults to 0) and can be
     called repeatedly.  You can ``run 0'' just to get energies.
- \item The ``minimize'' command is similar to ``run'' and performs
+ \item The ``\icommand{minimize}'' command is similar to ``run'' and performs
     minimization for the specified number of force evaluations.
- \item The ``output'' command takes an output file basename and causes
+ \item The ``\icommand{output}'' command takes an output file basename and causes
     .coor, .vel, and .xsc files to be written with that name.
  \item Between ``run'' commands the reassignTemp, rescaleTemp, and
     langevinTemp parameters can be changed to allow simulated
@@ -127,18 +127,18 @@ Additional features include:
     preserve macromolecular conformation during minimization and
     equilibration (fixedAtoms may only be disabled, and requires that
     fixedAtomsForces is enabled to do this).
- \item The ``checkpoint'' and ``revert'' commands (no arguments) allow
+ \item The ``\icommand{checkpoint}'' and ``revert'' commands (no arguments) allow
     a scripted simulation to save and restore to a prior state.
- \item The ``reinitvels'' command reinitializes velocities to a
+ \item The ``\icommand{reinitvels}'' command reinitializes velocities to a
     random distribution based on the given temperature.
- \item The ``rescalevels'' command rescales velocities by
+ \item The ``\icommand{rescalevels}'' command rescales velocities by
     the given factor.
- \item The ``measure'' command allows user-programmed calculations to
+ \item The ``\icommand{measure}'' command allows user-programmed calculations to
     be executed in order to facilitate automated methods.  (For
     example, to revert or change a parameter.)  A number of measure
     commands are included in the NAMD binary; the module has been designed
     to make it easy for users to add additional measure commands.  
- \item The ``coorfile'' command allows NAMD to perform force and energy
+ \item The ``\icommand{coorfile}'' command allows NAMD to perform force and energy
     analysis on trajectory files.  ``coorfile open dcd {\tt filename}'' opens
     the specified DCD file for reading.  ``coorfile read'' reads the next
     frame in the opened DCD file, replacing NAMD's atom coordinates with the
@@ -146,6 +146,7 @@ Additional features include:
     end-of-file was reached.  ``coorfile skip'' skips past one frame in the
     DCD file; this is significantly faster than reading coordinates and 
     throwing them away.  ``coorfile close'' closes the file.   
+    The ``coorfile'' command is not available on the Cray T3E.
 
     Force and energy analysis are especially useful in the context of 
     pair interaction calculations; see Sec.~\ref{section:pairinteraction}
