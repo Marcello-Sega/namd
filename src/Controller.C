@@ -791,7 +791,8 @@ void Controller::compareChecksums(int step) {
       NAMD_bug("Bad global improper count!\n");
 
     checksum = reduction->item(REDUCTION_EXCLUSION_CHECKSUM);
-    if ( ((int)checksum) > molecule->numCalcExclusions )
+    if ( ((int)checksum) > molecule->numCalcExclusions &&
+         ( ! simParams->mollyOn || step % slowFreq ) )
       iout << iWARN << "Not all atoms have unique coordinates.\n" << endi;
 
     checksum = reduction->item(REDUCTION_MARGIN_VIOLATIONS);
