@@ -6,7 +6,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.8 1996/12/06 19:54:12 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.9 1996/12/10 00:13:12 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -32,14 +32,14 @@ class main : public chare_object
 public:
   main(int argc, char **argv)
   {
-    Namd namd;
+    Namd *namd = new Namd;
     CPrintf("main::main() - Namd::Namd() should have been invoked\n");
 
     // Needed for namd.1.X components - comm is global!
     comm = new CommunicateConverse(argc,argv);
 
     if (argc >= 2)
-	namd.startup(argv[argc-1]);
+	namd->startup(argv[argc-1]);
     else
        CPrintf("main::main() no arguments, exiting\n");
     CPrintf("main() - leaving - Charmm should queue up messages now!\n");
@@ -52,7 +52,7 @@ public:
  *
  *	$RCSfile: main.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1996/12/06 19:54:12 $
+ *	$Revision: 1.9 $	$Date: 1996/12/10 00:13:12 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -61,6 +61,9 @@ public:
  * REVISION HISTORY:
  *
  * $Log: main.C,v $
+ * Revision 1.9  1996/12/10 00:13:12  ari
+ * *** empty log message ***
+ *
  * Revision 1.8  1996/12/06 19:54:12  ari
  * *** empty log message ***
  *

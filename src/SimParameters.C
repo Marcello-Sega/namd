@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/12/04 17:16:32 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.7 $	$Date: 1996/12/10 00:13:12 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.7  1996/12/10 00:13:12  ari
+ * *** empty log message ***
+ *
  * Revision 1.6  1996/12/04 17:16:32  jim
  * ComputeNonbondedUtil::select() now caches simulation parameters
  *
@@ -280,8 +283,12 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.6 1996/12/04 17:16:32 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.7 1996/12/10 00:13:12 ari Exp $";
 
+
+#include "ckdefs.h"
+#include "chare.h"
+#include "c++interface.h"
 #include "ConfigList.h"
 #include "SimParameters.h"
 #include "ParseOptions.h"

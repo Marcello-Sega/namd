@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.19 1996/12/06 19:54:12 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.20 1996/12/10 00:13:12 ari Exp $";
 
 
 #include "ckdefs.h"
@@ -46,6 +46,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "Parameters.h"
 #include "SimParameters.h"
 #include "CommunicateConverse.h"
+
+#define DEBUGM
 #include "Debug.h"
 
 //======================================================================
@@ -257,12 +259,15 @@ void Node::saveMolDataPointers(Molecule *molecule,
  *
  *	$RCSfile: Node.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.19 $	$Date: 1996/12/06 19:54:12 $
+ *	$Revision: 1.20 $	$Date: 1996/12/10 00:13:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.20  1996/12/10 00:13:12  ari
+ * *** empty log message ***
+ *
  * Revision 1.19  1996/12/06 19:54:12  ari
  * *** empty log message ***
  *

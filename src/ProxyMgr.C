@@ -24,12 +24,16 @@
 #include "ProxyPatch.h"
 #include "ComputeMap.h"
 
+#define DEBUGM
+#include "Debug.h"
+
 ProxyMgr *ProxyMgr::_instance = 0;
 
 ProxyMgr::ProxyMgr(InitMsg *) { 
+  DebugM(1, "::ProxyMgr() - my pe is " << CMyPe() << endl );
   if (_instance) {
     iout << "More than one ProxyMgr!!!\n" << endi;
-    Namd::die();
+    // Namd::die();
   }
   _instance = this;
 }
@@ -159,13 +163,16 @@ ProxyMgr::recvProxyAtoms(ProxyAtomsMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/12/06 03:39:09 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.5 $	$Date: 1996/12/10 00:13:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.5  1996/12/10 00:13:12  ari
+ * *** empty log message ***
+ *
  * Revision 1.4  1996/12/06 03:39:09  jim
  * creation methods
  *

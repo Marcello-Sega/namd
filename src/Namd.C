@@ -6,7 +6,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.12 1996/12/05 21:37:43 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.13 1996/12/10 00:13:12 ari Exp $";
 
 #include "unistd.h"
 
@@ -38,24 +38,23 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.
 // read in file data,
 Namd::Namd(void)
 {
-  InitMsg *initmsg;
   BOCgroup group;
 
   // Create WorkDistrib and send it an empty message
-  initmsg = new (MsgIndex(InitMsg)) InitMsg;
-  group.workDistrib = new_group(WorkDistrib, initmsg);
+  InitMsg *initmsg1 = new (MsgIndex(InitMsg)) InitMsg;
+  group.workDistrib = new_group(WorkDistrib, initmsg1);
 
   // Create ProxyMgr
-  initmsg = new (MsgIndex(InitMsg)) InitMsg;
-  group.proxyMgr = new_group(ProxyMgr, initmsg);
+  InitMsg *initmsg2 = new (MsgIndex(InitMsg)) InitMsg;
+  group.proxyMgr = new_group(ProxyMgr, initmsg2);
 
   // Create PatchMgr
-  initmsg = new (MsgIndex(InitMsg)) InitMsg;
-  group.patchMgr = new_group(PatchMgr, initmsg);
+  InitMsg *initmsg3 = new (MsgIndex(InitMsg)) InitMsg;
+  group.patchMgr = new_group(PatchMgr, initmsg3);
 
   // Create ComputeMgr
-  initmsg = new (MsgIndex(InitMsg)) InitMsg;
-  group.computeMgr = new_group(ComputeMgr, initmsg);
+  InitMsg *initmsg4 = new (MsgIndex(InitMsg)) InitMsg;
+  group.computeMgr = new_group(ComputeMgr, initmsg4);
 
   // Create the Node object and send it the IDs of all the other
   // parallel objects.
@@ -69,6 +68,7 @@ Namd::Namd(void)
 // ~Namd(void) just needs to tell all the slave nodes to die.
 Namd::~Namd(void)
 {
+  CPrintf("Namd::~Namd() called\n");
 }
 
 
@@ -98,7 +98,7 @@ void Namd::startup(char *confFile)
  *
  *	$RCSfile: Namd.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.12 $	$Date: 1996/12/05 21:37:43 $
+ *	$Revision: 1.13 $	$Date: 1996/12/10 00:13:12 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -107,6 +107,9 @@ void Namd::startup(char *confFile)
  * REVISION HISTORY:
  *
  * $Log: Namd.C,v $
+ * Revision 1.13  1996/12/10 00:13:12  ari
+ * *** empty log message ***
+ *
  * Revision 1.12  1996/12/05 21:37:43  ari
  * *** empty log message ***
  *

@@ -34,31 +34,31 @@ NamdState::status()
     int ret=0;
 
     if (configList != NULL) {
-	cout << "Config List exists" << endl;
+	iout << "Config List exists\n" << endi;
     } else {
 	ret++;
     }
 
     if (simParameters != NULL) {
-	cout << "SimParameters exists" << endl;
+	iout << "SimParameters exists\n" << endi;
     } else {
 	ret++;
     }
 
     if (parameters != NULL) {
-	cout << "Parameters exists" << endl;
+	iout << "Parameters exists\n" << endi;
     } else {
 	ret++;
     }
 
     if (molecule != NULL) {
-	cout << "Molecule exists" << endl;
+	iout << "Molecule exists\n" << endi;
     } else {
 	ret++;
     }
 
     if (pdb != NULL) {
-	cout << "PDB exists" << endl;
+	iout << "PDB exists \n" << endi;
     } else {
 	ret++;
     }
@@ -82,12 +82,21 @@ NamdState::configFileInit(char *confFile)
     return(1);
   }
 
+  CPrintf("NamdState::configFileInit configList okay\n");
+
   StringList *moleculeFilename = configList->find("structure");
+
+  CPrintf("NamdState::configFileInit got moleculeFilename \n");
+
   StringList *parameterFilename = configList->find("parameters");
+
   StringList *coordinateFilename = configList->find("coordinates");
-  cout << "files are : " << moleculeFilename->data << " and "
+
+  CPrintf("NamdState::configFileInit got Coordinates \n");
+
+  iout << "files are : " << moleculeFilename->data << " and "
       << parameterFilename->data << " and " << coordinateFilename->data
-      << endl;
+      << "\n" << endi;
 
   simParameters =  new SimParameters(configList,currentdir);
 
@@ -120,8 +129,8 @@ NamdState::configFileInit(char *confFile)
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdState.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/12/06 17:28:15 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.6 $	$Date: 1996/12/10 00:13:12 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -130,6 +139,9 @@ NamdState::configFileInit(char *confFile)
  * REVISION HISTORY:
  *
  * $Log: NamdState.C,v $
+ * Revision 1.6  1996/12/10 00:13:12  ari
+ * *** empty log message ***
+ *
  * Revision 1.5  1996/12/06 17:28:15  jim
  * put build_lists_by_atom back where it belongs
  *
@@ -144,4 +156,4 @@ NamdState::configFileInit(char *confFile)
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.5 1996/12/06 17:28:15 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.6 1996/12/10 00:13:12 ari Exp $";
