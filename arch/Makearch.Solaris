@@ -12,7 +12,7 @@ CXXTHREADOPTS = $(CXXOPTS)
 # Flags
 #####
 # uncomment for no warnings during compile
-NOWARN=-w
+#NOWARN=-w
 # uncomment for purify during compile
 # PURIFY=-purify
 
