@@ -175,11 +175,22 @@ int ScriptTcl::Tcl_param(ClientData clientData,
     Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
   }
+
   char *param = argv[1];
+  if ( strlen(param) + 1 > MAX_SCRIPT_PARAM_SIZE ) {
+    Tcl_SetResult(interp,"parameter name too long",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+
   char value[MAX_SCRIPT_PARAM_SIZE];
-  if ( argc == 3 ) snprintf(value,MAX_SCRIPT_PARAM_SIZE,"%s",argv[2]);
-  if ( argc == 5 ) snprintf(value,MAX_SCRIPT_PARAM_SIZE,"%s %s %s",
-						argv[2],argv[3],argv[4]);
+  int arglen = strlen(argv[2]) + 1;
+  if ( argc == 5 ) arglen += strlen(argv[3]) + strlen(argv[4]) + 2;
+  if ( arglen > MAX_SCRIPT_PARAM_SIZE ) {
+    Tcl_SetResult(interp,"parameter value too long",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  if ( argc == 3 ) sprintf(value,"%s",argv[2]);
+  if ( argc == 5 ) sprintf(value,"%s %s %s",argv[2],argv[3],argv[4]);
 
   iout << "TCL: Setting parameter " << param << " to " << value << "\n" << endi;
 
