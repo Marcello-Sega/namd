@@ -96,6 +96,7 @@ class Patch
      ComputeIDList              atomComputeList;
 
      virtual void boxClosed(int);
+     int boxesOpen;
 
   private:
 
@@ -108,13 +109,16 @@ class Patch
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/11/01 21:20:45 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.8 $	$Date: 1996/11/30 00:41:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.h,v $
+ * Revision 1.8  1996/11/30 00:41:24  jim
+ * added boxesOpen counting to support HomePatch::boxClosed()
+ *
  * Revision 1.7  1996/11/01 21:20:45  ari
  * *** empty log message ***
  *

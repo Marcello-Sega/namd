@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.11 1996/11/22 01:02:18 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.12 1996/11/30 00:41:24 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -129,16 +129,21 @@ void Patch::positionsReady()
    DebugM(1,"Patch::positionsReady() - patchID " << patchID << endl );
    ComputeMap *computeMap = ComputeMap::Object();
 
+   boxesOpen = 0;
+
    // Give all position pickup boxes access to positions
    positionPtr = p.unencap();
+   ++boxesOpen;
    positionBox.open(positionPtr);
 
    // Give all force deposit boxes access to forces
    forcePtr = f.unencap();
+   ++boxesOpen;
    forceBox.open(forcePtr);
 
    // Give all atom properties pickup boxes access to atom properties
    atomPtr = a.unencap();
+   ++boxesOpen;
    atomBox.open(atomPtr);
 
    DebugM(1,"Patch::positionsReady() - looping over positionComputeList" << endl);
@@ -157,13 +162,16 @@ void Patch::positionsReady()
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.11 $	$Date: 1996/11/22 01:02:18 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.12 $	$Date: 1996/11/30 00:41:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.12  1996/11/30 00:41:24  jim
+ * added boxesOpen counting to support HomePatch::boxClosed()
+ *
  * Revision 1.11  1996/11/22 01:02:18  ari
  * *** empty log message ***
  *
