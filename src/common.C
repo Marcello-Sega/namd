@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: common.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/12/11 00:04:23 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.5 $	$Date: 1996/12/19 17:49:34 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -22,6 +22,9 @@
  * REVISION HISTORY:
  *
  * $Log: common.C,v $
+ * Revision 1.5  1996/12/19 17:49:34  jim
+ * added null-pointer check to ::delete
+ *
  * Revision 1.4  1996/12/11 00:04:23  milind
  * *** empty log message ***
  *
@@ -98,7 +101,7 @@
  * Removed NAMD_warn; using Inform objects now to report information.
  * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.4 1996/12/11 00:04:23 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.5 1996/12/19 17:49:34 jim Exp $";
 
 #include "chare.h"
 #include "ckdefs.h"
@@ -115,7 +118,7 @@ void * ::operator new (size_t t) { return malloc (t); }
 void   ::operator delete (void *p) { free (p); }
 #else
 void * ::operator new (size_t t) { return CmiAlloc (t); }
-void   ::operator delete (void *p) { CmiFree (p); }
+void   ::operator delete (void *p) { if ( p ) CmiFree (p); }
 #endif
 
 // print out title
