@@ -19,6 +19,7 @@
 #ifdef DEFINITION // (
   #include "LJTable.h"
   #include "Molecule.h"
+  #include "ComputeNonbondedUtil.h"
 #endif // )
 
 // only define this when using hydrogen grouping code.
@@ -45,9 +46,7 @@
 // indexing variables
 #undef I_SUB
 #undef I_LOWER
-#undef I_UPPER
 #undef J_SUB
-#undef J_UPPER
 
 // determining class name
 #undef NAME
@@ -59,8 +58,6 @@
 #define I_SUB 0][i
 #define J_SUB 1][j
 #define I_LOWER 0
-#define I_UPPER numAtoms[0]
-#define J_UPPER numAtoms[1]
 // J_LOWER is now a const variable
 
 #undef PAIR
@@ -139,41 +136,26 @@
 
 // function header
 void ComputeNonbondedUtil :: NAME
-NOEXCL
-(
-  FULL(
-  (Position* p [2], Force* ff [2],
-   Force* fullf [2],
-   AtomProperties* a [2],
-   int numAtoms [2], BigReal *reduction)
-  )
-  NOFULL
-  (
-  (Position* p [2], Force* ff [2],
-   AtomProperties* a [2],
-   int numAtoms [2], BigReal *reduction)
-  )
-)
-
-EXCL
-(
-  FULL(
-  (const Position & p_ij,
-   Force & f_i, Force & f_j,
-   Force & fullf_i, Force & fullf_j,
-   const AtomProperties & a_i, const AtomProperties & a_j,
-   int m14, BigReal *reduction)
-  )
-  NOFULL(
-  (const Position & p_ij,
-   Force & f_i, Force & f_j,
-   const AtomProperties & a_i, const AtomProperties & a_j,
-   int m14, BigReal *reduction)
-  )
-)
+  ( nonbonded *params )
 
 // function body
 {
+  // speedup variables
+  BigReal *reduction = params->reduction;
+  EXCL
+  (
+    Position & p_ij = params->p_ij;
+    Force & f_i = params->ff[0][0];
+    Force & f_j = params->ff[1][0];
+    const AtomProperties & a_i = params->a[0][0];
+    const AtomProperties & a_j = params->a[1][0];
+    int & m14 = params->m14;
+    // used by full electrostatics
+    Force & fullf_i = params->fullf[0][0];
+    Force & fullf_j = params->fullf[1][0];
+  )
+
+  // local variables
   BigReal vdwEnergy = 0;
   BigReal electEnergy = 0;
   BigReal virial = 0;
@@ -203,10 +185,18 @@ EXCL
   const BigReal d0 = ComputeNonbondedUtil:: d0;
   )
 
+EXCL
+(
+    const BigReal kq_i = COLOUMB * a_i.charge * dielectric_1;
+    register const BigReal p_ij_x = p_ij.x;
+    register const BigReal p_ij_y = p_ij.y;
+    register const BigReal p_ij_z = p_ij.z;
+)
+
 NOEXCL
 (
-  const int i_upper = I_UPPER;
-  register const int j_upper = J_UPPER;
+  const int i_upper = params->numAtoms[0];
+  register const int j_upper = params->numAtoms[1];
   register int j;
   register int i;
 
@@ -231,18 +221,20 @@ NOEXCL
 	}
   )
 
+
+  PAIR( const int J_LOWER = 0; )
   for ( i = I_LOWER; i < i_upper; ++i )
   {
-    const AtomProperties &a_i = a[I_SUB];
-    const int J_LOWER = PAIR(0) SELF(i+1);
+    const AtomProperties &a_i = params->a[I_SUB];
+    SELF( const int J_LOWER = i+1 );
 
-    const Position p_i = p[I_SUB];
+    const Position p_i = params->p[I_SUB];
     register const BigReal p_i_x = p_i.x;
     register const BigReal p_i_y = p_i.y;
     register const BigReal p_i_z = p_i.z;
 
-    Force & f_i = ff[I_SUB];
-    FULL( Force & fullf_i = fullf[I_SUB]; )
+    Force & f_i = params->ff[I_SUB];
+    FULL( Force & fullf_i = params->fullf[I_SUB]; )
 
   HGROUPING
   (
@@ -257,7 +249,7 @@ NOEXCL
     // first atoms in the list.
     // Also, the end of the list may be missing hydrogen atoms
     {
-    register Position *p_j = p[1];
+    register Position *p_j = params->p[1];
     SELF( p_j += i+1; )
 
     // add all "lost" hydrogens to pairlist
@@ -265,10 +257,11 @@ NOEXCL
     // migrating by hydrogen groups.
 
     j = J_LOWER;
+// iout << "j=" << j << " p_i=" << p_i << " p_j=" << *p_j << "\n" << endi;
     SELF
       (
       // add all child hydrogens of i
-      for( ; (j<j_upper) && (a[J_SUB].hydrogenGroupSize == 0); j++)
+      for( ; (j<j_upper) && (params->a[J_SUB].hydrogenGroupSize == 0); j++)
 	{
 	pairlist[pairlistindex++] = j;
 	p_j++;
@@ -278,7 +271,7 @@ NOEXCL
     // add remaining atoms to pairlist via hydrogen groups
     for ( ; j < j_upper; ++j )
 	{
-	const AtomProperties &pa_j = a[J_SUB];
+	const AtomProperties &pa_j = params->a[J_SUB];
 	if (pa_j.hydrogenGroupSize)
 	  {
 	  register BigReal p_ij_x = p_i_x - p_j->x;
@@ -311,15 +304,11 @@ NOEXCL
     else pairlistoffset++;
     )
   )
-)
 
-    const BigReal NOEXCL( kq_i_u ) EXCL( kq_i ) =
-    			COLOUMB * a_i.charge * dielectric_1;
+  const BigReal kq_i_u = COLOUMB * a_i.charge * dielectric_1;
 
-NOEXCL
-(
     const BigReal kq_i_s = kq_i_u * scale14;
-    register Position *p_j = p[1];
+    register Position *p_j = params->p[1];
     SELF( p_j += i+1; )
 
     HGROUPING
@@ -353,13 +342,8 @@ NOEXCL
       p_j_z = p_j->z;					// preload
 
 )
-EXCL
-(
-      register const BigReal p_ij_x = p_ij.x;
-      register const BigReal p_ij_y = p_ij.y;
-      register const BigReal p_ij_z = p_ij.z;
-)
 
+      // common code
       register const BigReal
 		r2 = p_ij_x * p_ij_x + p_ij_y * p_ij_y + p_ij_z * p_ij_z;
 
@@ -370,7 +354,7 @@ EXCL
 	  FULL(
 	    // Do a quick fix and get out!
 	    const BigReal r = sqrt(r2);
-	    const BigReal r_1 = 1/r;
+	    const BigReal r_1 = 1.0/r;
 	    BigReal kqq = kq_i * a_j.charge;
 	    BigReal f = kqq*r_1;
 	    if ( m14 ) f *= ( 1. - scale14 );
@@ -388,13 +372,13 @@ EXCL
 NOEXCL
 (
       BigReal kq_i = kq_i_u;
-      const AtomProperties & a_j = a[J_SUB];
+      const AtomProperties & a_j = params->a[J_SUB];
 
       FULL
       (
-        Force & fullf_j = fullf[J_SUB];
+        Force & fullf_j = params->fullf[J_SUB];
         const BigReal r = sqrt(r2);
-        const BigReal r_1 = 1/r;
+        const BigReal r_1 = 1.0/r;
         BigReal kqq = kq_i * a_j.charge;
         BigReal f = kqq*r_1;
       )
@@ -411,8 +395,8 @@ NOEXCL
 
       if ( r2 <= lj_pars->exclcut2 )
       {
-NOEXCL
-(
+	NOEXCL
+	(
 	if ( mol->checkexcl(a_i.id,a_j.id) )  // Inline this by hand.
 	{
 	  FULL
@@ -423,12 +407,12 @@ NOEXCL
 	    fullforce_r = -f * r_1 * r_1;
 	    register BigReal tmp_x = fullforce_r * p_ij_x;
 	    fullf_i.x += tmp_x;
+	    fullf_j.x -= tmp_x;
 	    register BigReal tmp_y = fullforce_r * p_ij_y;
 	    fullf_i.y += tmp_y;
+	    fullf_j.y -= tmp_y;
 	    register BigReal tmp_z = fullforce_r * p_ij_z;
 	    fullf_i.z += tmp_z;
-	    fullf_j.x -= tmp_x;
-	    fullf_j.y -= tmp_y;
 	    fullf_j.z -= tmp_z;
 	  )
 	  continue;  // Must have stored force by now.
@@ -445,33 +429,34 @@ NOEXCL
 	  lj_pars = ljTable->table_val(a_i.type, a_j.type, 1);
 	  kq_i = kq_i_s;
 	}
+	)
 
-)
-EXCL
-(
-	return;
-)
+        EXCL
+        (
+	  return;
+        )
+
       }
 
-NOEXCL
-(
-      Force & f_j = ff[J_SUB];
-)
+      NOEXCL
+      (
+      Force & f_j = params->ff[J_SUB];
+      )
 
       NOFULL
       (
       const BigReal r = sqrt(r2);
-      const BigReal r_1 = 1/r;
+      const BigReal r_1 = 1.0/r;
       )
 
-FULL
-(
-  EXCL
-  (
-      const BigReal r = sqrt(r2);
-      const BigReal r_1 = 1/r;
-  )
-)
+      FULL
+      (
+        EXCL
+        (
+            const BigReal r = sqrt(r2);
+            const BigReal r_1 = 1.0/r;
+        )
+      )
 
       BigReal switchVal; // used for Lennard-Jones
       BigReal shiftVal; // used for electrostatics splitting as well
@@ -672,7 +657,6 @@ NOEXCL
   reduction[fullElectEnergyIndex] += fullElectEnergy;
   reduction[fullElectVirialIndex] += fullElectVirial;
   )
-
 }
 
 /***************************************************************************
@@ -680,14 +664,14 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1997/05/15 17:43:47 $
+ *	$Revision: 1.1018 $	$Date: 1997/05/20 15:49:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
- * Revision 1.1017  1997/05/15 17:43:47  nealk
- * Merged Pair and Self to use same headers.
+ * Revision 1.1018  1997/05/20 15:49:08  nealk
+ * Pair, Self, and Excl not use the same parameters!
  *
  * Revision 1.1016  1997/05/13 18:30:45  nealk
  * Removed ComputeNonbondedHack.h!

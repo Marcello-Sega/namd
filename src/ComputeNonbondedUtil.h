@@ -21,14 +21,20 @@ class ReductionMgr;
 class Molecule;
 
 // function arguments
-#define ARGS	Position* p[2], Force* ff[2], \
-		AtomProperties* a[2], \
-		int numAtoms[2], BigReal *reduction
-
-#define FARGS	Position* p[2], Force* ff[2], \
-		Force* fullf [2], \
-		AtomProperties* a[2], \
-		int numAtoms[2], BigReal *reduction
+typedef struct
+  {
+  // used by pair and self
+  Position* p[2];
+  Force* ff[2];
+  AtomProperties* a[2];
+  int numAtoms[2];
+  BigReal *reduction;
+  // for full electrostatics
+  Force* fullf [2];
+  // used by excl
+  Position p_ij;
+  int m14;
+  } nonbonded;
 
 class ComputeNonbondedUtil {
 
@@ -38,19 +44,13 @@ public:
   virtual ~ComputeNonbondedUtil() {}
   static void select(void);
 
-  static void (*calcPair)(ARGS);
-  static void (*calcSelf)(ARGS);
-  static void (*calcExcl)(const Position &,
-		Force &, Force &,
-		const AtomProperties &, const AtomProperties &,
-		int, BigReal*);
+  static void (*calcPair)(nonbonded *);
+  static void (*calcSelf)(nonbonded *);
+  static void (*calcExcl)(nonbonded *);
 
-  static void (*calcFullPair)(FARGS);
-  static void (*calcFullSelf)(FARGS);
-  static void (*calcFullExcl)(const Position &,
-		Force &, Force &, Force &, Force &,
-		const AtomProperties &, const AtomProperties &,
-		int, BigReal*);
+  static void (*calcFullPair)(nonbonded *);
+  static void (*calcFullSelf)(nonbonded *);
+  static void (*calcFullExcl)(nonbonded *);
 
   enum { electEnergyIndex, fullElectEnergyIndex, vdwEnergyIndex,
 	 virialIndex, fullElectVirialIndex, reductionDataSize };
@@ -76,55 +76,28 @@ public:
   static BigReal d0;
 
   // No splitting
-  static void calc_pair (ARGS);
-  static void calc_pair_fullelect (FARGS);
-  static void calc_self (ARGS);
-  static void calc_self_fullelect (FARGS);
-  static void calc_excl (
-			const Position & p_ij,
-			Force & f_i, Force & f_j,
-			const AtomProperties & a_i, const AtomProperties & a_j,
-			int m14, BigReal *reduction);
-  static void calc_excl_fullelect (
-			const Position & p_ij,
-			Force & f_i, Force & f_j,
-			Force & fullf_i, Force & fullf_j,
-			const AtomProperties & a_i, const AtomProperties & a_j,
-			int m14, BigReal *reduction);
+  static void calc_pair (nonbonded *);
+  static void calc_pair_fullelect (nonbonded *);
+  static void calc_self (nonbonded *);
+  static void calc_self_fullelect (nonbonded *);
+  static void calc_excl (nonbonded *);
+  static void calc_excl_fullelect (nonbonded *);
 
   // C1 Splitting
-  static void calc_pair_c1 (ARGS);
-  static void calc_pair_fullelect_c1 (FARGS);
-  static void calc_self_c1 (ARGS);
-  static void calc_self_fullelect_c1 (FARGS);
-  static void calc_excl_c1 (
-			const Position & p_ij,
-			Force & f_i, Force & f_j,
-			const AtomProperties & a_i, const AtomProperties & a_j,
-			int m14, BigReal *reduction);
-  static void calc_excl_fullelect_c1 (
-			const Position & p_ij,
-			Force & f_i, Force & f_j,
-			Force & fullf_i, Force & fullf_j,
-			const AtomProperties & a_i, const AtomProperties & a_j,
-			int m14, BigReal *reduction);
+  static void calc_pair_c1 (nonbonded *);
+  static void calc_pair_fullelect_c1 (nonbonded *);
+  static void calc_self_c1 (nonbonded *);
+  static void calc_self_fullelect_c1 (nonbonded *);
+  static void calc_excl_c1 (nonbonded *);
+  static void calc_excl_fullelect_c1 (nonbonded *);
 
   // XPLOR Splitting
-  static void calc_pair_xplor (ARGS);
-  static void calc_pair_fullelect_xplor (FARGS);
-  static void calc_self_xplor (ARGS);
-  static void calc_self_fullelect_xplor (FARGS);
-  static void calc_excl_xplor (
-			const Position & p_ij,
-			Force & f_i, Force & f_j,
-			const AtomProperties & a_i, const AtomProperties & a_j,
-			int m14, BigReal *reduction);
-  static void calc_excl_fullelect_xplor (
-			const Position & p_ij,
-			Force & f_i, Force & f_j,
-			Force & fullf_i, Force & fullf_j,
-			const AtomProperties & a_i, const AtomProperties & a_j,
-			int m14, BigReal *reduction);
+  static void calc_pair_xplor (nonbonded *);
+  static void calc_pair_fullelect_xplor (nonbonded *);
+  static void calc_self_xplor (nonbonded *);
+  static void calc_self_fullelect_xplor (nonbonded *);
+  static void calc_excl_xplor (nonbonded *);
+  static void calc_excl_fullelect_xplor (nonbonded *);
 
 };
 
@@ -134,12 +107,15 @@ public:
  *
  *	$RCSfile: ComputeNonbondedUtil.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/05/15 17:43:49 $
+ *	$Revision: 1.1011 $	$Date: 1997/05/20 15:49:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.h,v $
+ * Revision 1.1011  1997/05/20 15:49:10  nealk
+ * Pair, Self, and Excl not use the same parameters!
+ *
  * Revision 1.1010  1997/05/15 17:43:49  nealk
  * Merged Pair and Self to use same headers.
  *

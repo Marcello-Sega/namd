@@ -51,26 +51,25 @@ void ComputeNonbondedSelf::doForce(Position* p,
 
   if ( patch->flags.doNonbonded )
   {
-    Position* p_r[2];
-    p_r[0] = p;
-    p_r[1] = p;
-    Force* f_r[2];
-    f_r[0] = r->f[Results::nbond];
-    f_r[1] = r->f[Results::nbond];
-    Force* f2_r[2];
-    f2_r[0] = r->f[Results::slow];
-    f2_r[1] = r->f[Results::slow];
-    AtomProperties* a_r[2];
-    a_r[0] = a;
-    a_r[1] = a;
-    int numAtoms_r[2];
-    numAtoms_r[0] = numAtoms-1;
-    numAtoms_r[1] = numAtoms;
+    nonbonded params;
+    params.p[0] = p;
+    params.p[1] = p;
+    params.ff[0] = r->f[Results::nbond];
+    params.ff[1] = r->f[Results::nbond];
+    params.a[0] = a;
+    params.a[1] = a;
+    params.numAtoms[0] = numAtoms-1;
+    params.numAtoms[1] = numAtoms;
+    params.reduction = reductionData;
 
     if ( patch->flags.doFullElectrostatics )
-      calcFullSelf(p_r,f_r,f2_r,a_r,numAtoms_r,reductionData);
+      {
+      params.fullf[0] = r->f[Results::slow];
+      params.fullf[1] = r->f[Results::slow];
+      calcFullSelf(&params);
+      }
     else
-      calcSelf(p_r,f_r,a_r,numAtoms_r,reductionData);
+      calcSelf(&params);
   }
 
   submitReductionData(reductionData,reduction,patch->flags.seq);
@@ -83,12 +82,15 @@ void ComputeNonbondedSelf::doForce(Position* p,
  *
  *	$RCSfile: ComputeNonbondedSelf.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/05/15 17:43:48 $
+ *	$Revision: 1.1010 $	$Date: 1997/05/20 15:49:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.C,v $
+ * Revision 1.1010  1997/05/20 15:49:10  nealk
+ * Pair, Self, and Excl not use the same parameters!
+ *
  * Revision 1.1009  1997/05/15 17:43:48  nealk
  * Merged Pair and Self to use same headers.
  *

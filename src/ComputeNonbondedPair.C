@@ -110,45 +110,50 @@ void ComputeNonbondedPair::doForce(Position* p[2],
   BigReal reductionData[reductionDataSize];
   for ( int i = 0; i < reductionDataSize; ++i ) reductionData[i] = 0;
 
-  Force *f[2];
-  f[0] = r[0]->f[Results::nbond];
-  f[1] = r[1]->f[Results::nbond];
-  Force *f2[2];
-  f2[0] = r[0]->f[Results::slow];
-  f2[1] = r[1]->f[Results::slow];
-
   if ( numAtoms[0] && numAtoms[1] )
   {
+    nonbonded params;
+    params.reduction = reductionData;
+
     // swap to place more atoms in inner loop (second patch)
     if ( numAtoms[0] > numAtoms[1] )
     {
-      Position* p_r[2];
-      p_r[0] = p[1];
-      p_r[1] = p[0];
-      Force* f_r[2];
-      f_r[0] = f[1];
-      f_r[1] = f[0];
-      Force* f2_r[2];
-      f2_r[0] = f2[1];
-      f2_r[1] = f2[0];
-      AtomProperties* a_r[2];
-      a_r[0] = a[1];
-      a_r[1] = a[0];
-      int numAtoms_r[2];
-      numAtoms_r[0] = numAtoms[1];
-      numAtoms_r[1] = numAtoms[0];
+      params.p[0] = p[1];
+      params.p[1] = p[0];
+      params.ff[0] = r[1]->f[Results::nbond];
+      params.ff[1] = r[0]->f[Results::nbond];
+      params.a[0] = a[1];
+      params.a[1] = a[0];
+      params.numAtoms[0] = numAtoms[1];
+      params.numAtoms[1] = numAtoms[0];
       DebugM(3, "NUMATOMSxNUMATOMS = " << numAtoms_r[0]*numAtoms_r[1] << "\n" );
       if ( patch[0]->flags.doFullElectrostatics )
-        calcFullPair(p_r,f_r,f2_r,a_r,numAtoms_r,reductionData);
+	{
+        params.fullf[0] = r[1]->f[Results::slow];
+        params.fullf[1] = r[0]->f[Results::slow];
+        calcFullPair(&params);
+	}
       else
-        calcPair(p_r,f_r,a_r,numAtoms_r,reductionData);
+        calcPair(&params);
     }
     else
     {
+      params.p[0] = p[0];
+      params.p[1] = p[1];
+      params.a[0] = a[0];
+      params.a[1] = a[1];
+      params.numAtoms[0] = numAtoms[0];
+      params.numAtoms[1] = numAtoms[1];
+      params.ff[0] = r[0]->f[Results::nbond];
+      params.ff[1] = r[1]->f[Results::nbond];
       if ( patch[0]->flags.doFullElectrostatics )
-        calcFullPair(p,f,f2,a,numAtoms,reductionData);
+	{
+        params.fullf[0] = r[0]->f[Results::slow];
+        params.fullf[1] = r[1]->f[Results::slow];
+        calcFullPair(&params);
+	}
       else
-        calcPair(p,f,a,numAtoms,reductionData);
+        calcPair(&params);
     }
   }
 
@@ -162,13 +167,16 @@ void ComputeNonbondedPair::doForce(Position* p[2],
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedPair.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/04/10 09:13:53 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1013 $	$Date: 1997/05/20 15:49:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.C,v $
+ * Revision 1.1013  1997/05/20 15:49:09  nealk
+ * Pair, Self, and Excl not use the same parameters!
+ *
  * Revision 1.1012  1997/04/10 09:13:53  ari
  * Final debugging for compute migration / proxy creation for load balancing.
  * Lots of debug code added, mostly turned off now.

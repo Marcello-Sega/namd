@@ -37,22 +37,23 @@ void NonbondedExclElem::computeForce(BigReal *reduction)
 
     Vector x01(patch->lattice.delta(p0->x[localIndex0], p1->x[localIndex1]));
 
+    nonbonded params;
+    params.p_ij = x01;
+    params.ff[0] = &(p0->r->f[Results::nbond][localIndex0]);
+    params.ff[1] = &(p1->r->f[Results::nbond][localIndex1]);
+    params.a[0] = &(p0->a[localIndex0]);
+    params.a[1] = &(p1->a[localIndex1]);
+    params.m14 = modified;
+    params.reduction = reduction;
+
     if ( patch->flags.doFullElectrostatics )
-      ComputeNonbondedUtil::calcFullExcl(
-	x01,
-	p0->r->f[Results::nbond][localIndex0],
-	p1->r->f[Results::nbond][localIndex1],
-	p0->r->f[Results::slow][localIndex0],
-	p1->r->f[Results::slow][localIndex1],
-	p0->a[localIndex0], p1->a[localIndex1],
-	modified, reduction);
+      {
+      params.fullf[0] = &(p0->r->f[Results::slow][localIndex0]);
+      params.fullf[1] = &(p1->r->f[Results::slow][localIndex1]);
+      ComputeNonbondedUtil::calcFullExcl(&params);
+      }
     else
-      ComputeNonbondedUtil::calcExcl(
-	x01,
-	p0->r->f[Results::nbond][localIndex0],
-	p1->r->f[Results::nbond][localIndex1],
-	p0->a[localIndex0], p1->a[localIndex1],
-	modified, reduction);
+      ComputeNonbondedUtil::calcExcl(&params);
   }
 }
 
@@ -130,13 +131,16 @@ ComputeNonbondedExcls::loadTuples() {
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedExcl.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/04/06 22:44:59 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1013 $	$Date: 1997/05/20 15:49:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedExcl.C,v $
+ * Revision 1.1013  1997/05/20 15:49:09  nealk
+ * Pair, Self, and Excl not use the same parameters!
+ *
  * Revision 1.1012  1997/04/06 22:44:59  ari
  * Add priorities to messages.  Mods to help proxies without computes.
  * Added quick enhancement to end of list insertion of ResizeArray(s)
