@@ -32,16 +32,20 @@ class TuplePatchElem {
     PatchType patchType;
     Box<Patch,Position> *positionBox;
     Box<Patch,Force> *forceBox;
+    Box<Patch,AtomProperties> *atomBox;
     Position *x;
     Force *f;
+    AtomProperties *a;
 
   TuplePatchElem() {
     patchID = -1;
     p = NULL;
     positionBox = NULL;
     forceBox = NULL;
+    atomBox = NULL;
     x = NULL;
     f = NULL;
+    a = NULL;
   }
 
   TuplePatchElem(PatchID p) {
@@ -54,8 +58,10 @@ class TuplePatchElem {
     patchType = pt;
     positionBox = p->registerPositionPickup(cid);
     forceBox = p->registerForceDeposit(cid);
+    atomBox = p->registerAtomPickup(cid);
     x = NULL;
     f = NULL;
+    a = NULL;
   }
     
   ~TuplePatchElem() {};
@@ -101,12 +107,15 @@ public:
  *
  *	$RCSfile: ComputeHomeTuples.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/11/19 06:58:37 $
+ *	$Revision: 1.8 $	$Date: 1996/12/04 18:03:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.h,v $
+ * Revision 1.8  1996/12/04 18:03:12  jim
+ * added AtomProperties checkout
+ *
  * Revision 1.7  1996/11/19 06:58:37  jim
  * first compiling templated version, needed ugly void* hack
  *

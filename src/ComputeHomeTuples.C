@@ -108,6 +108,7 @@ void ComputeHomeTuples<T>::doWork() {
   for (ap = ap.begin(); ap != ap.end(); ap++) {
     (*ap).x = (*ap).positionBox->open();
     (*ap).f = (*ap).forceBox->open();
+    (*ap).a = (*ap).atomBox->open();
   } 
 
   // take triplet and pass with tuple info to force eval
@@ -121,6 +122,7 @@ void ComputeHomeTuples<T>::doWork() {
   for (ap = ap.begin(); ap != ap.end(); ap++) {
     (*ap).positionBox->close(&(*ap).x);
     (*ap).forceBox->close(&(*ap).f);
+    (*ap).atomBox->close(&(*ap).a);
   }
   DebugM(1, "ComputeHomeTuples::doWork() -- done" << endl);
 }
