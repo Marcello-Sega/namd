@@ -4,8 +4,8 @@
 ####
 #CXXOPTS = -O
 #CXXOPTS = +O3
-#CXXOPTS = +O3 +DAK220 +DSK220
-CXXOPTS = +O3 +DAK460 +DSK460
+CXXOPTS = +O3 +DAK220 +DSK220 -G
+#CXXOPTS = +O3 +DAK460 +DSK460
 # this one below leads to numerical changes!
 #CXXOPTS = +O3 -G -z -ptn +Oentrysched +Ofastaccess +Onofltacc +Oregionsched
 #CXXOPTS = +O3 -G -z -ptn +Oentrysched
@@ -13,6 +13,7 @@ CXXOPTS = +O3 +DAK460 +DSK460
 #CXXOPTS = +O3 -z
 #CXXOPTS = -g -v -z -G
 #CXXOPTS = -g -v
+#CXXOPTS = -g 
 
 #####
 # Flags
@@ -84,6 +85,8 @@ OBJS = \
 	$(DSTDIR)/main.o \
 	$(DSTDIR)/strlib.o \
 	$(DSTDIR)/AtomMap.o \
+	$(DSTDIR)/BroadcastMgr.o \
+	$(DSTDIR)/BroadcastClient.o \
 	$(DSTDIR)/CollectionMaster.o \
 	$(DSTDIR)/CollectionMgr.o \
 	$(DSTDIR)/Communicate.o \
@@ -144,12 +147,13 @@ OBJS = \
 
 INTERFACES = main.ci Node.ci WorkDistrib.ci PatchMgr.ci \
 		ComputeMgr.ci ProxyMgr.ci ReductionMgr.ci \
-		CollectionMgr.ci CollectionMaster.ci
+		CollectionMgr.ci CollectionMaster.ci BroadcastMgr.ci
 
 TEMPLATES = \
 	$(SRCDIR)/ComputeHomeTuples.C \
 	$(SRCDIR)/PositionBox.C \
 	$(SRCDIR)/PositionOwnerBox.C \
+	$(SRCDIR)/BroadcastObject.C \
 	$(SRCDIR)/Templates/Box.C \
 	$(SRCDIR)/Templates/ObjectArena.C \
 	$(SRCDIR)/Templates/OwnerBox.C \
