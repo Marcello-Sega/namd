@@ -32,16 +32,14 @@ class PatchMgr;
 
 class Node : public groupmember
 {
-private:
-  WorkDistrib *workDistrib;
-  PatchMgr *patchMgr;
-
 public:
   Molecule *molecule;
   Parameters *parameters;
   SimParameters *simParameters;
   ConfigList *configList;
   PDB *pdb;
+  WorkDistrib *workDistrib;
+  PatchMgr *patchMgr;
 
   PatchMap patchMap;
   ComputeMap computeMap;
@@ -71,12 +69,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/08/21 23:58:25 $
+ *	$Revision: 1.7 $	$Date: 1996/08/23 22:03:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.7  1996/08/23 22:03:52  brunner
+ * Made WorkdDistrib, PatchMgr public members
+ *
  * Revision 1.6  1996/08/21 23:58:25  brunner
  * *** empty log message ***
  *

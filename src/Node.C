@@ -5,7 +5,7 @@
 /*                           All Rights Reserved                           */
 /*                                                                         */
 /***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.4 1996/08/21 23:58:25 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.5 1996/08/23 22:03:52 brunner Exp $";
 
 #include <stdio.h>
 
@@ -61,7 +61,9 @@ void Node::startup(InitMsg *msg)
   CPrintf("Node %d startup\n",myid());
 
   workDistrib->parentNode(this);
-  workDistrib->buildMapsFromScratch();
+  workDistrib->buildMaps();
+  workDistrib->sendMaps();
+  workDistrib->createPatches();
 }
 
 
@@ -106,7 +108,7 @@ void Node::saveMolDataPointers(Molecule *molecule,
  *
  *	$RCSfile: Node.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/08/21 23:58:25 $
+ *	$Revision: 1.5 $	$Date: 1996/08/23 22:03:52 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -115,6 +117,9 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.5  1996/08/23 22:03:52  brunner
+ * Made WorkdDistrib, PatchMgr public members
+ *
  * Revision 1.4  1996/08/21 23:58:25  brunner
  * *** empty log message ***
  *
