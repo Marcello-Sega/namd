@@ -1,13 +1,13 @@
 
 #define VMDSOCKINTERNAL
 
+#include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
 
-#include <sys/types.h>
 #include <unistd.h>   /* for Linux */
 #include <sys/socket.h>
 #include <netdb.h>
