@@ -7,16 +7,16 @@
 # this one below leads to numerical changes!
 #CXXOPTS = +O3 -G -z -ptn +Oentrysched +Ofastaccess +Onofltacc +Oregionsched
 #CXXOPTS = +O3 -G -z -ptn +Oentrysched
-CXXOPTS = +O3 -G 
+CXXOPTS = +O3
 #CXXOPTS = +O3 -z
 #CXXOPTS = -g -v -z -G
-#CXXOPTS = -g
+#CXXOPTS = -g -v
 
 #####
 # Flags
 #####
 # uncomment for no warnings during compile
-NOWARN=-w
+#NOWARN=-w
 # uncomment for purify during compile
 #PURIFY=-purify
 
