@@ -21,6 +21,13 @@ fftwnd_plan backward_plan;
 
 #endif
 
+#ifdef NAMD_SGI_COMPLIB_FFT
+#include <fft.h>
+
+zomplex *sgi_complib_fft_coeff;
+
+#endif
+
 /* this file has been modified to exclude the SGI & CRAY */
 /* optimizatoin stuff, by default we are using the Pubff stuff */
 /* this is necessary for the f2c to work. ayt 6/29/94 */
@@ -87,12 +94,18 @@ fftwnd_plan backward_plan;
 	-1, FFTW_MEASURE | FFTW_IN_PLACE);
 
 #else
+#ifdef NAMD_SGI_COMPLIB_FFT
+
+  sgi_complib_fft_coeff = zfft3di(*nfft1, *nfft2, *nfft3, NULL);
+
+#else
 
 #if VERBOSE       
     printf("using public domain fft code...\n");
 #endif
     pubz3di(nfft1, nfft2, nfft3, fftable, nfftable);
 
+#endif
 #endif
 
     return 0;
@@ -114,12 +127,19 @@ fftwnd_plan backward_plan;
   fftwnd_one(forward_plan,(fftw_complex*)array,(fftw_complex*)array);
 
 #else
+#ifdef NAMD_SGI_COMPLIB_FFT
+
+  zfft3d(1, *nfft1, *nfft2, *nfft3, (zomplex*)array,
+          *nfftdim1, *nfftdim2, sgi_complib_fft_coeff);
+
+#else
 
     /* Function Body */
     isign = 1;
     pubz3d(&isign, nfft1, nfft2, nfft3, array, nfftdim1, nfftdim2,
 	    fftable, nfftable, ffwork, nffwork);
 
+#endif
 #endif
 
     return 0;
@@ -141,11 +161,18 @@ fftwnd_plan backward_plan;
   fftwnd_one(backward_plan,(fftw_complex*)array,(fftw_complex*)array);
 
 #else
+#ifdef NAMD_SGI_COMPLIB_FFT
+
+  zfft3d(-1, *nfft1, *nfft2, *nfft3, (zomplex*)array,
+          *nfftdim1, *nfftdim2, sgi_complib_fft_coeff);
+
+#else
 
   isign = -1;
   pubz3d(&isign, nfft1, nfft2, nfft3, array, nfftdim1, nfftdim2,
 	 fftable, nfftable, ffwork, nffwork);
 
+#endif
 #endif
 
   return 0;
