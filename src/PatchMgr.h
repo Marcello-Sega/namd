@@ -40,8 +40,42 @@ public:
     }
     ~MovePatchesMsg() {};
 
-    pack();
-    unpack();
+  // pack and unpack functions
+  void * pack (int *length)
+  {
+    *length = sizeof(NodeID) + sizeof(PatchID) + sizeof(int) +
+		aid.size() * sizeof(AtomID) +
+		p.size() * sizeof(Position) +
+		v.size() * sizeof(Velocity);
+    char *buffer = (char*)new_packbuffer(this,*length);
+    char *b = buffer;
+    *((NodeID*)b) = fromNodeID; b += sizeof(NodeID);
+    *((PatchID*)b) = pid; b += sizeof(PatchID);
+    *((int*)b) = aid.size(); b += sizeof(int);
+    memcpy(b, &aid[0], aid.size() * sizeof(AtomID));
+    b += aid.size() * sizeof(AtomID);
+    memcpy(b, &p[0], p.size() * sizeof(Position));
+    b += p.size() * sizeof(Position);
+    memcpy(b, &v[0], v.size() * sizeof(Velocity));
+    b += v.size() * sizeof(Velocity);
+    return buffer;
+  }
+  void unpack (void *in)
+  {
+    char *b = (char*)in;
+    fromNodeID = *((NodeID*)b); b += sizeof(NodeID);
+    pid = *((PatchID*)b); b += sizeof(PatchID);
+    int size = *((int*)b); b += sizeof(int);
+    aid.resize(size);
+    memcpy(&aid[0], b, aid.size() * sizeof(AtomID));
+    b += aid.size() * sizeof(AtomID);
+    p.resize(size);
+    memcpy(&p[0], b, p.size() * sizeof(Position));
+    b += p.size() * sizeof(Position);
+    v.resize(size);
+    memcpy(&v[0], b, v.size() * sizeof(Velocity));
+    b += v.size() * sizeof(Velocity);
+  }
 };
 
 class AckMovePatchesMsg : public comm_object {
@@ -168,13 +202,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMgr.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/11/22 00:18:51 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.6 $	$Date: 1996/12/12 21:03:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.h,v $
+ * Revision 1.6  1996/12/12 21:03:15  jim
+ * added pack and unpack for patch movement message
+ *
  * Revision 1.5  1996/11/22 00:18:51  ari
  * *** empty log message ***
  *
