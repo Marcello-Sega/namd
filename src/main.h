@@ -55,6 +55,24 @@ public:
   PatchID patch;
 };
 
+class ProxyAtomsMsg : public comm_object {
+public:
+  PatchID patch;
+  AtomIDList atomIDList;
+};
+
+class ProxyDataMsg : public comm_object {
+public:
+  PatchID patch;
+  PositionList positionList;
+};
+
+class ProxyResultMsg : public comm_object {
+public:
+  PatchID patch;
+  ForceList forceList;
+};
+
 class Compute;
 
 class LocalWorkMsg : public comm_object
@@ -69,13 +87,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: main.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1996/12/05 17:00:05 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.11 $	$Date: 1996/12/05 17:15:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: main.h,v $
+ * Revision 1.11  1996/12/05 17:15:23  jim
+ * added proxy messages
+ *
  * Revision 1.10  1996/12/05 17:00:05  ari
  * *** empty log message ***
  *
