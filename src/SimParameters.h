@@ -500,6 +500,13 @@ public:
 
 	// GROMACS options
 	Bool gromacsOn; // FLAG TRUE -> gromacs-style force field is used
+
+	// ScriptTcl argument passing
+	BigReal scriptArg1;
+	BigReal scriptArg2;
+	BigReal scriptArg3;
+	BigReal scriptArg4;
+	BigReal scriptArg5;
 	
 public:
 

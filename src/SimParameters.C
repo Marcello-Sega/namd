@@ -114,6 +114,11 @@ void SimParameters::scriptSet(const char *param, const char *value) {
 #define SCRIPT_PARSE_VECTOR(NAME,VAR) { if ( ! strncasecmp(param,(NAME),MAX_SCRIPT_PARAM_SIZE) ) { (VAR).set(value); return; } }
 #define SCRIPT_PARSE_STRING(NAME,VAR) { if ( ! strncasecmp(param,(NAME),MAX_SCRIPT_PARAM_SIZE) ) { strcpy(VAR,value); return; } }
 
+  SCRIPT_PARSE_FLOAT("scriptArg1",scriptArg1)
+  SCRIPT_PARSE_FLOAT("scriptArg2",scriptArg2)
+  SCRIPT_PARSE_FLOAT("scriptArg3",scriptArg3)
+  SCRIPT_PARSE_FLOAT("scriptArg4",scriptArg4)
+  SCRIPT_PARSE_FLOAT("scriptArg5",scriptArg5)
   SCRIPT_PARSE_INT("numsteps",N)
   SCRIPT_PARSE_INT("firsttimestep",firstTimestep)
   SCRIPT_PARSE_FLOAT("reassignTemp",reassignTemp)

@@ -53,6 +53,7 @@ private:
   static int Tcl_config(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_param(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_reinitvels(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_rescalevels(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_run(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_minimize(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_move(ClientData, Tcl_Interp *, int, char **);

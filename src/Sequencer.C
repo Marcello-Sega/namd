@@ -89,6 +89,9 @@ void Sequencer::algorithm(void)
       case SCRIPT_REINITVELS:
 	reinitVelocities();
 	break;
+      case SCRIPT_RESCALEVELS:
+	rescaleVelocitiesByFactor(simParams->scriptArg1);
+	break;
       case SCRIPT_CHECKPOINT:
         patch->checkpoint();
         checkpoint_berendsenPressure_count = berendsenPressure_count;
@@ -674,6 +677,16 @@ void Sequencer::reinitVelocities(void)
   {
     a[i].velocity = ( ( simParams->fixedAtomsOn && a[i].atomFixed ) ? Vector(0,0,0) :
       sqrt( kbT / a[i].mass ) * random->gaussian_vector() );
+  }
+}
+
+void Sequencer::rescaleVelocitiesByFactor(BigReal factor)
+{
+  FullAtom *a = patch->atom.begin();
+  int numAtoms = patch->numAtoms;
+  for ( int i = 0; i < numAtoms; ++i )
+  {
+    a[i].velocity *= factor;
   }
 }
 

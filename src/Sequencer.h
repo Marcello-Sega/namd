@@ -64,6 +64,7 @@ protected:
     int rescaleVelocities_numTemps;
     void reassignVelocities(BigReal,int);
     void reinitVelocities(void);
+    void rescaleVelocitiesByFactor(BigReal);
     void tcoupleVelocities(BigReal,int);
     void berendsenPressure(int);
       int berendsenPressure_count;

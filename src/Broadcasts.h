@@ -11,14 +11,18 @@
 #include "Lattice.h"
 #include "BroadcastObject.h"
 
-#define SCRIPT_END 0
-#define SCRIPT_RUN 1
-#define SCRIPT_OUTPUT 2
-#define SCRIPT_MEASURE 3
-#define SCRIPT_REINITVELS 4
-#define SCRIPT_CHECKPOINT 5
-#define SCRIPT_REVERT 6
-#define SCRIPT_MINIMIZE 7
+enum {
+  SCRIPT_END,
+  SCRIPT_RUN,
+  SCRIPT_OUTPUT,
+  SCRIPT_MEASURE,
+  SCRIPT_REINITVELS,
+  SCRIPT_RESCALEVELS,
+  SCRIPT_CHECKPOINT,
+  SCRIPT_REVERT,
+  SCRIPT_MINIMIZE,
+  SCRIPT_DUMMY
+};
 
 // Tags used in common by all users of broadcast system.
 enum {

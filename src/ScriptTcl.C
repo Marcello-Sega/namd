@@ -251,6 +251,23 @@ int ScriptTcl::Tcl_reinitvels(ClientData clientData,
   return TCL_OK;
 }
 
+int ScriptTcl::Tcl_rescalevels(ClientData clientData,
+        Tcl_Interp *interp, int argc, char *argv[]) {
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  script->initcheck();
+  if (argc != 2) {
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  char *factor = argv[1];
+
+  script->setParameter("scriptArg1",factor);
+
+  script->runController(SCRIPT_RESCALEVELS);
+
+  return TCL_OK;
+}
+
 int ScriptTcl::Tcl_run(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
@@ -766,6 +783,8 @@ ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
   Tcl_CreateCommand(interp, "revert", Tcl_revert,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "reinitvels", Tcl_reinitvels,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "rescalevels", Tcl_rescalevels,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "reinitatoms", Tcl_reinitatoms,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);

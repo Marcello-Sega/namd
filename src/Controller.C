@@ -131,6 +131,10 @@ void Controller::algorithm(void)
         iout << "REINITIALIZING VELOCITIES AT STEP " << simParams->firstTimestep
           << " TO " << simParams->initialTemp << " KELVIN.\n" << endi;
         break;
+      case SCRIPT_RESCALEVELS:
+        iout << "RESCALING VELOCITIES AT STEP " << simParams->firstTimestep
+          << " BY " << simParams->scriptArg1 << "\n" << endi;
+        break;
       case SCRIPT_CHECKPOINT:
         iout << "CHECKPOINTING POSITIONS AT STEP " << simParams->firstTimestep
           << "\n" << endi;
