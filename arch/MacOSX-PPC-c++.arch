@@ -1,4 +1,4 @@
-NAMD_ARCH = Darwin-PPC
+NAMD_ARCH = MacOSX-PPC
 CHARMARCH = net-ppc-darwin
 
 CXX = c++ -D_NO_MALLOC_H
