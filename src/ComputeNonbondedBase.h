@@ -98,6 +98,10 @@ NOEXCL
 (
   const int i_upper = I_UPPER;
   register const int j_upper = J_UPPER;
+  int pairlistindex=0;
+  static int pairlist_std[1000];
+  int *pairlist;
+  register int j;
 
   for ( int i = I_LOWER; i < i_upper; ++i )
   {
@@ -106,10 +110,67 @@ NOEXCL
     register const BigReal p_i_y = p_i.y;
     register const BigReal p_i_z = p_i.z;
     const AtomProperties a_i = a[I_SUB];
-
+    AtomProperties *a_j;
 
     Force & f_i = ff[I_SUB];
     FULL( Force & fullf_i = fullf[I_SUB]; )
+
+    // generate mini-pairlist.  Who cares about efficient!
+    if (1000 < j_upper - J_LOWER)
+      pairlist = new int[j_upper - J_LOWER];
+    else pairlist = pairlist_std;
+    pairlistindex = 0;	// initialize with 0 elements
+
+    // If patch divisions are not made by hydrogen groups, then it's
+    // very possibly to have a hydrogen without a parent.  Because of
+    // ordering, when this happens the lost hydrogens will ALWAYS be the
+    // first atoms in the list.
+    // Also, the end of the list may be missing hydrogen atoms
+    {
+    register Position *p_j = PAIR( p[1] ) SELF( p+i+1 ) ;
+    // add all "lost" hydrogens to pairlist
+    // this loop may not be necessary -- it's not necessary when
+    // migrating by hydrogen groups.
+    for(j=J_LOWER; (j<j_upper) && (a[J_SUB].hydrogenGroupSize == 0); j++)
+      {
+      pairlist[pairlistindex++] = j;
+      p_j++;
+      }
+
+    // add remaining atoms to pairlist via hydrogen groups
+    a_j = &(a[J_SUB]);
+    for ( ; j < j_upper; ++j )
+	{
+	if (a_j->hydrogenGroupSize)
+	  {
+/// NAK: Neal's notes:  The cutoff is incorrect.
+/// It's not optimized, and requires hydrogen grouping during migration.
+/// The above "lost hydrogen" loop is necessary when hydrogen group
+/// migration occurs.
+#if 0
+	  register const BigReal p_ij_x = p_i_x - p_j->x;
+	  register const BigReal p_ij_y = p_i_y - p_j->y;
+	  register const BigReal p_ij_z = p_i_z - p_j->z;
+	  register const BigReal
+		r2 = p_ij_x * p_ij_x + p_ij_y * p_ij_y + p_ij_z * p_ij_z;
+	  // use a slightly large cutoff to include hydrogens
+	  if ( r2 <= cutoff2+6 )
+#endif
+		{
+		// be careful, last group may be missing hydrogens
+		for(int l=0; (l<a_j->hydrogenGroupSize) && (l+j<j_upper); l++)
+		  {
+		  pairlist[pairlistindex++] = l+j;
+		  }
+		j   += a_j->hydrogenGroupSize-1;
+		p_j += a_j->hydrogenGroupSize-1;
+		a_j += a_j->hydrogenGroupSize-1;
+		}
+	  }
+	a_j++;
+	p_j++;
+	}
+    }
 )
 
     const BigReal NOEXCL( kq_i_u ) EXCL( kq_i ) =
@@ -119,13 +180,15 @@ NOEXCL
 (
     const BigReal kq_i_s = kq_i_u * scale14;
     register Position *p_j = PAIR( p[1] ) SELF( p+i+1 ) ;
+    if (pairlist[0] != J_LOWER)	p_j += pairlist[0]-J_LOWER;
     register BigReal p_j_x = p_j->x;
     register BigReal p_j_y = p_j->y;
     register BigReal p_j_z = p_j->z;
 
-    for ( register int j = J_LOWER; j < j_upper; ++j )
+    for (int k=0; k<pairlistindex; k++)
     {
-      p_j += ( j + 1 < j_upper );			// preload
+      j = pairlist[k];
+      if (k+1 < pairlistindex) p_j += pairlist[k+1]-pairlist[k]; // preload
       register const BigReal p_ij_x = p_i_x - p_j_x;
       p_j_x = p_j->x;					// preload
       register const BigReal p_ij_y = p_i_y - p_j_y;
@@ -437,6 +500,7 @@ FULL
 NOEXCL
 (
     }
+  if (pairlist != pairlist_std) delete pairlist;
   }
 )
 
@@ -456,13 +520,17 @@ FULL
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/03/17 03:55:23 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1012 $	$Date: 1997/05/05 15:28:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1012  1997/05/05 15:28:24  nealk
+ * Added water-water specific code to NonbondedBase.  The cutoff for the temp
+ * pairlist is currently disabled.
+ *
  * Revision 1.1011  1997/03/17 03:55:23  jim
  * Reordered final force store operations for better work/memory interleaving.
  *

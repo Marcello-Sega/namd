@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1013 1997/04/10 09:14:00 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1014 1997/05/05 15:28:26 nealk Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -72,6 +72,7 @@ void Patch::loadAtoms(AtomIDList al)
 void Patch::loadAtomProperties(void)
 {
     Molecule *mol = Node::Object()->molecule;
+    int splitPatch = (Node::Object()->simParameters->splitPatch == SPLIT_PATCH_HYDROGEN);
     a.resize(0);
     localIndex.resize(0);
     for ( register int i=0; i<numAtoms; i++)
@@ -85,7 +86,8 @@ void Patch::loadAtomProperties(void)
 
       // make water/nonwater hydrogen group lists
       // NOTE: only group parents know the group size.
-      if (mol->is_hydrogenGroupParent(atomIDList[i]))
+      // When no hydrogen-group migration don't use hydrogen groups.
+      if (mol->is_hydrogenGroupParent(atomIDList[i]) && splitPatch)
       	ap.hydrogenGroupSize = mol->get_groupSize(atomIDList[i]);
       else ap.hydrogenGroupSize = 0;
       ap.water = mol->is_water(atomIDList[i]);
@@ -266,13 +268,17 @@ void Patch::positionsReady(int doneMigration)
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1997/04/10 09:14:00 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1014 $	$Date: 1997/05/05 15:28:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.1014  1997/05/05 15:28:26  nealk
+ * Added water-water specific code to NonbondedBase.  The cutoff for the temp
+ * pairlist is currently disabled.
+ *
  * Revision 1.1013  1997/04/10 09:14:00  ari
  * Final debugging for compute migration / proxy creation for load balancing.
  * Lots of debug code added, mostly turned off now.

@@ -128,9 +128,9 @@
 #define PLEN
 #define I_SUB i
 #define I_LOWER 0
-#define I_UPPER numAtoms - 1
+#define I_UPPER (numAtoms - 1)
 #define J_SUB j
-#define J_LOWER i + 1
+#define J_LOWER (i + 1)
 #define J_UPPER numAtoms
 #endif
 
@@ -138,13 +138,17 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedHack.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/04/09 16:15:30 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/05/05 15:28:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedHack.h,v $
+ * Revision 1.1005  1997/05/05 15:28:25  nealk
+ * Added water-water specific code to NonbondedBase.  The cutoff for the temp
+ * pairlist is currently disabled.
+ *
  * Revision 1.1004  1997/04/09 16:15:30  jim
  * Fixed ABR error in purify.
  *
