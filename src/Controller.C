@@ -36,7 +36,7 @@ void Sequencer::run(int numberOfCycles)
 {
     stepsPerCycle = simParams->stepsPerCycle;
     if ( numberOfCycles ) this->numberOfCycles = numberOfCycles;
-    else this->numberOfCycles = simParams->N % stepsPerCycle;
+    else this->numberOfCycles = simParams->N / stepsPerCycle;
     thread = CthCreate((CthVoidFn)&(threadRun),(void*)(this),0);
     CthSetStrategyDefault(thread);
     CthAwaken(thread);
