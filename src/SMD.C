@@ -35,7 +35,7 @@ SMDData::SMDData(SimParameters *simP) {
 // initialize on node 0
 void SMDData::init(PDB *pdb) {
 
-  timeStamp = simParams->firstTimestep;
+  timeStamp = simParams->SMDTStamp;
   direction = simParams->SMDDir;
   refPos = simParams->SMDRefPos;
 
