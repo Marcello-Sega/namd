@@ -114,7 +114,6 @@ char *Ambertoppar::get(int size)
 		printf("malloc %d", size);
 		fflush(stdout);
 		NAMD_die("Memory allocation error in Ambertoppar::get()");
-		exit(1);
 	}
 	return(ptr);
 }
@@ -129,8 +128,8 @@ void Ambertoppar::preadln(FILE *file, const char *name, char *string)
 
 	for (i=0; i<81; i++) {
 		if ((j = getc(file)) == EOF) {
+			NAMD_die("Unexpected EOF in Amber parm file");
 			printf("Error: unexpected EOF in %s\n", name);
-			exit(1);
 		}
 		string[i] = (char) j;
 		if (string[i] == '\n') {
@@ -138,8 +137,8 @@ void Ambertoppar::preadln(FILE *file, const char *name, char *string)
 		}
 	}
 	if (i == 80  &&  string[i] != '\n') {
+		NAMD_die("Line too long in Amber parm file");
 		printf("Error: line too long in %s:\n%.80s", name, string);
-		exit(1);
 	}
 }
 
