@@ -125,9 +125,6 @@ inline int PatchMap::zIndex(int pid)
 //----------------------------------------------------------------------
 inline int PatchMap::downstream(int pid1, int pid2)
 {
-  register int i;
-  register int j;
-  register int k;
   register int ds;
 
   if ( pid1 == pid2 ) { ds = pid1; }
@@ -135,46 +132,25 @@ inline int PatchMap::downstream(int pid1, int pid2)
   else if ( pid1 == notUsed || pid2 == notUsed ) { ds =  notUsed; }
 
   else {
-  register PatchData *pdat1 = &(patchData[pid1]);
-  register PatchData *pdat2 = &(patchData[pid2]);
+    register PatchData *pdat1 = &(patchData[pid1]);
+    register PatchData *pdat2 = &(patchData[pid2]);
 
-  // x
-  {
-    register int i1 = pdat1->xi;
+    // z
+    register int k = pdat1->zi;
+    register int k2 = pdat2->zi;
+    if ( ( k ? k : zMaxIndex ) == k2 + 1 ) k = k2;
+
+    // y
+    register int j = pdat1->yi;
+    register int j2 = pdat2->yi;
+    if ( ( j ? j : yMaxIndex ) == j2 + 1 ) j = j2;
+
+    // x
+    register int i = pdat1->xi;
     register int i2 = pdat2->xi;
-    if ( xPeriodic ) {
-      i = ( ( ( i1 + 1 ) % xDim ) == i2 ) ? i1 : i2;
-    }
-    else {
-      i = ( i1 < i2 ) ? i1 : i2;
-    }
-  }
+    if ( ( i ? i : xMaxIndex ) == i2 + 1 ) i = i2;
 
-  // y
-  {
-    register int i1 = pdat1->yi;
-    register int i2 = pdat2->yi;
-    if ( yPeriodic ) {
-      j = ( ( ( i1 + 1 ) % yDim ) == i2 ) ? i1 : i2;
-    }
-    else {
-      j = ( i1 < i2 ) ? i1 : i2;
-    }
-  }
-
-  // z
-  {
-    register int i1 = pdat1->zi;
-    register int i2 = pdat2->zi;
-    if ( zPeriodic ) {
-      k = ( ( ( i1 + 1 ) % zDim ) == i2 ) ? i1 : i2;
-    }
-    else {
-      k = ( i1 < i2 ) ? i1 : i2;
-    }
-  }
-  
-  ds = ((k*yDim)+j)*xDim + i;
+    ds = ((k*yDim)+j)*xDim + i;
   }
 
   return ds;
@@ -240,12 +216,15 @@ inline int PatchMap::cid(int pid,int i)
  *
  *	$RCSfile: PatchMap.inl,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1997/10/06 00:12:34 $
+ *	$Revision: 1.2 $	$Date: 1998/07/16 18:52:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.inl,v $
+ * Revision 1.2  1998/07/16 18:52:14  jim
+ * Localized common downstream patch optimization.
+ *
  * Revision 1.1  1997/10/06 00:12:34  jim
  * Added PatchMap.inl, sped up cycle-boundary tuple code.
  *

@@ -206,6 +206,7 @@ private:
   PatchData *patchData;
   int xDim, yDim, zDim;
   int xPeriodic, yPeriodic, zPeriodic;
+  int xMaxIndex, yMaxIndex, zMaxIndex;
   BigReal xOrigin, yOrigin, zOrigin;
   BigReal xLength, yLength, zLength;
 
@@ -226,13 +227,16 @@ inline Patch *PatchMap::patch(PatchID pid)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1998/06/24 23:40:33 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1011 $	$Date: 1998/07/16 18:52:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.h,v $
+ * Revision 1.1011  1998/07/16 18:52:13  jim
+ * Localized common downstream patch optimization.
+ *
  * Revision 1.1010  1998/06/24 23:40:33  brunner
  * Added downstreamNeighbors() and LdbCoordinator fixes.  I don't know
  * why Patch.C is different.

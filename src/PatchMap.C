@@ -40,6 +40,7 @@ PatchMap::PatchMap(void)
   patchData = NULL;
   xDim = yDim = zDim = 0;
   xPeriodic = yPeriodic = zPeriodic = 0;
+  xMaxIndex = yMaxIndex = zMaxIndex = 0;
 }
 
 void
@@ -88,7 +89,7 @@ void * PatchMap::pack (int *length)
 
   // calculate memory needed
   int size = 0;
-  size += 8 * sizeof(int) + 6 * sizeof(BigReal);
+  size += 11 * sizeof(int) + 6 * sizeof(BigReal);
   for(i=0;i<nPatches;++i)
   {
     size += sizeof(PatchData);
@@ -106,6 +107,7 @@ void * PatchMap::pack (int *length)
   DebugM(3,"nPatches = " << nPatches << endl);
   PACK(int,xDim); PACK(int,yDim); PACK(int,zDim);
   PACK(int,xPeriodic); PACK(int,yPeriodic); PACK(int,zPeriodic);
+  PACK(int,xMaxIndex); PACK(int,yMaxIndex); PACK(int,zMaxIndex);
   PACK(BigReal,xOrigin); PACK(BigReal,yOrigin); PACK(BigReal,zOrigin);
   PACK(BigReal,xLength); PACK(BigReal,yLength); PACK(BigReal,zLength);
   for(i=0;i<nPatches;++i)
@@ -134,6 +136,7 @@ void PatchMap::unpack (void *in)
   DebugM(3,"nPatches = " << nPatches << endl);
   UNPACK(int,xDim); UNPACK(int,yDim); UNPACK(int,zDim);
   UNPACK(int,xPeriodic); UNPACK(int,yPeriodic); UNPACK(int,zPeriodic);
+  UNPACK(int,xMaxIndex); UNPACK(int,yMaxIndex); UNPACK(int,zMaxIndex);
   UNPACK(BigReal,xOrigin); UNPACK(BigReal,yOrigin); UNPACK(BigReal,zOrigin);
   UNPACK(BigReal,xLength); UNPACK(BigReal,yLength); UNPACK(BigReal,zLength);
   patchData = new PatchData[nPatches];
@@ -193,8 +196,11 @@ PatchMap::ErrCode PatchMap::allocatePids(int ixDim, int iyDim, int izDim)
   }
   curPatch=0;
   xDim = ixDim;
+  xMaxIndex = ( ! xPeriodic || xDim == 2 ) ? 10000 : xDim;
   yDim = iyDim;
+  yMaxIndex = ( ! yPeriodic || yDim == 2 ) ? 10000 : yDim;
   zDim = izDim;
+  zMaxIndex = ( ! zPeriodic || zDim == 2 ) ? 10000 : zDim;
   nPatches=xDim*yDim*zDim;
   patchData = new PatchData[nPatches];
   if (!patchData)
@@ -517,13 +523,16 @@ HomePatch *PatchMap::homePatch(PatchID pid)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1998/06/24 23:40:33 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1019 $	$Date: 1998/07/16 18:52:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.1019  1998/07/16 18:52:12  jim
+ * Localized common downstream patch optimization.
+ *
  * Revision 1.1018  1998/06/24 23:40:33  brunner
  * Added downstreamNeighbors() and LdbCoordinator fixes.  I don't know
  * why Patch.C is different.
