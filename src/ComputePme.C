@@ -186,9 +186,11 @@ void ComputePmeMgr::initialize() {
 
     // rules based on work available
     int minslices = 1;
-    int nrpx = ( simParams->PMEGridSizeX + minslices - 1 ) / minslices;
+    int dimx = simParams->PMEGridSizeX;
+    int nrpx = ( dimx + minslices - 1 ) / minslices;
     if ( nrpx > nrp ) nrp = nrpx;
-    int nrpy = ( simParams->PMEGridSizeY + minslices - 1 ) / minslices;
+    int dimy = simParams->PMEGridSizeY;
+    int nrpy = ( dimy + minslices - 1 ) / minslices;
     if ( nrpy > nrp ) nrp = nrpy;
 
     // rules based on processors available
@@ -200,6 +202,17 @@ void ComputePmeMgr::initialize() {
     int nrps = simParams->PMEProcessors;
     if ( nrps > CkNumPes() ) nrps = CkNumPes();
     if ( nrps > 0 ) nrp = nrps;
+
+    // make sure there aren't any totally empty processors
+    int bx = ( dimx + nrp - 1 ) / nrp;
+    int nrpbx = ( dimx + bx - 1 ) / bx;
+    int by = ( dimy + nrp - 1 ) / nrp;
+    int nrpby = ( dimy + by - 1 ) / by;
+    nrp = ( nrpby > nrpbx ? nrpby : nrpbx );
+    if ( bx != ( dimx + nrp - 1 ) / nrp )
+      NAMD_bug("Error in selecting number of PME processors.");
+    if ( by != ( dimy + nrp - 1 ) / nrp )
+      NAMD_bug("Error in selecting number of PME processors.");
 
     numRecipPes = nrp;
   }
