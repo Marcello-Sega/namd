@@ -12,7 +12,7 @@ void * vmdsock_create(void) { return 0; }
 int  vmdsock_connect(void *v, const char *host, int port) { return 0; }
 int vmdsock_bind(void * v, int port) { return 0; }
 int vmdsock_listen(void * v) { return 0; }
-int  vmdsock_accept(void * v) { return 0; }
+void *vmdsock_accept(void * v) { return 0; }
 int  vmdsock_write(void * v, const void *buf, int len) { return 0; }
 int  vmdsock_read(void * v, void *buf, int len) { return 0; }
 void vmdsock_destroy(void * v) { return; }
@@ -92,9 +92,9 @@ int vmdsock_listen(void * v) {
   return listen(s->sd, 5);
 }
 
-int  vmdsock_accept(void * v) {
+void *vmdsock_accept(void * v) {
   int rc;
-  vmdsocket *s = (vmdsocket *) v;
+  vmdsocket *new_s = NULL, *s = (vmdsocket *) v;
 
 #ifdef SOCKLEN_T
   SOCKLEN_T len;
@@ -104,8 +104,14 @@ int  vmdsock_accept(void * v) {
 
   len = sizeof(s->addr);
   rc = accept(s->sd, (struct sockaddr *) &s->addr, &len);
-  if (rc >= 0) s->sd = rc;
-  return rc;
+  if (rc >= 0) {
+    new_s = (vmdsocket *) malloc(sizeof(vmdsocket));
+    if (new_s != NULL) {
+      *new_s = *s;
+      new_s->sd = rc;
+    }
+  }
+  return (void *)new_s;
 }
 
 int  vmdsock_write(void * v, const void *buf, int len) {

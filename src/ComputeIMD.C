@@ -65,11 +65,13 @@ ComputeIMD::ComputeIMD(ComputeGlobal *h)
     vmdsock_destroy(sock);
     NAMD_die("No connection\n");
   }
-  rc = vmdsock_accept(sock);
-  if (rc < 0) {
+  void *newsock = vmdsock_accept(sock);
+  if (newsock == NULL) {
     iout << iDEBUG << "Accept: " << strerror(errno) << '\n' << endi;
     NAMD_die("Connection error\n");
   } 
+  vmdsock_destroy(sock);
+  sock = newsock;
   Node::Object()->IMDinit(sock);
 
 }

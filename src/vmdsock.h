@@ -28,7 +28,7 @@ typedef struct {
 void *vmdsock_create(void);
 int   vmdsock_bind(void *, int);
 int   vmdsock_listen(void *);
-int   vmdsock_accept(void *);
+void *vmdsock_accept(void *);  /* return new socket */
 int   vmdsock_connect(void *, const char *, int);
 int   vmdsock_write(void *, const void *, int);
 int   vmdsock_read(void *, void *, int);
