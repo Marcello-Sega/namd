@@ -2,6 +2,7 @@ message InitMsg;
 message NodeInitMsg;
 message MovePatchDoneMsg;
 message PatchMgrInitMsg;
+message LocalWorkMsg;
 
 chare main {
   entry main();
