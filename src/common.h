@@ -1,14 +1,12 @@
-//-*-c++-*-
-/***************************************************************************/
-/*    (C) Copyright 1995,1996,1997 The Board of Trustees of the            */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION:
- * common definitions for namd.
- *
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   common definitions for namd.
+*/
 
 #ifndef COMMON_DEF_H
 #define COMMON_DEF_H

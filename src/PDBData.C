@@ -1,16 +1,15 @@
-/***************************************************************************/
-/*     (C) Copyright 1995,1996,1997 The Board of Trustees of the           */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION:
- *   The code to implement the various PDBData classes.  These are:
- *  PDBData (base class), PDBUnknown (for unimplemented records),
- *  and PDBAtom, PDBAtomRecord, and PDBHetAtm, for the various types
- *  of atom records.
- *
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   The code to implement the various PDBData classes.  These are:
+   PDBData (base class), PDBUnknown (for unimplemented records),
+   and PDBAtom, PDBAtomRecord, and PDBHetAtm, for the various types
+   of atom records.
+*/
 
 // Here are the routines to manupulate a PDB ATOM record
 // It can be created by hand or with a string in the PDB format

@@ -1,15 +1,14 @@
-//-*-c++-*-
-/***************************************************************************/
-/*         (C) Copyright 1996,1997 The Board of Trustees of the            */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION: Base class for all Compute objects. Almost an abstract
- *              class except that it does do the basic patchReady()
- *		countdown.
- *
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   Base class for all Compute objects. Almost an abstract
+   class except that it does do the basic patchReady()
+   countdown.
+*/
 
 #ifndef COMPUTE_H
 #define COMPUTE_H

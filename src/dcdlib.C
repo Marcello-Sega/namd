@@ -1,15 +1,14 @@
-/***************************************************************************/
-/*       (C) Copyright 1995,1996,1997 The Board of Trustees of the         */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION:
- *	dcdlib contains C routines for reading and writing binary DCD
- * files.  The output format of these files is based on binary FORTRAN
- * output, so its pretty ugly.  If you are squimish, don't look!
- *
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   dcdlib contains C routines for reading and writing binary DCD
+   files.  The output format of these files is based on binary FORTRAN
+   output, so its pretty ugly.  If you are squimish, don't look!
+*/
 
 #include "dcdlib.h"
 #include "common.h" // for int32 definition

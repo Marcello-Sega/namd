@@ -1,20 +1,16 @@
-//-*-c++-*-
-/***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/*								   	   */
-/***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
 
-/***************************************************************************
- * DESCRIPTION:
- *	VoidTree maintains a binary tree, with two integers as keys. It
- * only stores DISTINCT values.  If a duplicate value is passsed to
- * add_value, the tree remains unchanged.  For each value, there is an
- * associated data item, stored as a void pointer.
- *
- ***************************************************************************/
+/*
+   VoidTree maintains a binary tree, with two integers as keys. It
+   only stores DISTINCT values.  If a duplicate value is passsed to
+   add_value, the tree remains unchanged.  For each value, there is an
+   associated data item, stored as a void pointer.
+*/
+
 #ifndef VOIDTREE_H
 #define VOIDTREE_H
 

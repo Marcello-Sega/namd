@@ -1,19 +1,18 @@
-//-*-c++-*-
-/***************************************************************************/
-/*       (C) Copyright 1995,1996,1997 The Board of Trustees of the         */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION:
- *   Simplifies the interaction with the ConfigList.  This allows you to
- *  define a set of dependencies in the configuration file, along with
- *  default values, ranges, and units.  Then, given the ConfigList, this
- *  checks the list for valid entries and reads those values, warns for
- *  unneeded options, and errors for stuff it couldn't understand, or
- *  were out of range or in the wrong units, ...
- *
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   Simplifies the interaction with the ConfigList.  This allows you to
+   define a set of dependencies in the configuration file, along with
+   default values, ranges, and units.  Then, given the ConfigList, this
+   checks the list for valid entries and reads those values, warns for
+   unneeded options, and errors for stuff it couldn't understand, or
+   were out of range or in the wrong units, ...
+*/
+
 #ifndef PARSEOPTIONS_H
 
 #define PARSEOPTIONS_H

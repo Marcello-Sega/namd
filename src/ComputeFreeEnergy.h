@@ -1,12 +1,12 @@
-/***************************************************************************/
-/*      (C) Copyright 1996,1997 The Board of Trustees of the               */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION:  Forwards atoms to master node for force evaluation.
- *
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   Forwards atoms to master node for force evaluation.
+*/
 
 #if !defined(COMPUTEFREEENERGY_H)
   #define COMPUTEFREEENERGY_H

@@ -1,12 +1,12 @@
-/***************************************************************************/
-/*         (C) Copyright 1996,1997 The Board of Trustees of the            */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION: ObjectArena template - semi-contiguous storage management
- *
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   ObjectArena template - semi-contiguous storage management
+*/
 
 #ifndef OBJECTARENA_H
 #define OBJECTARENA_H

@@ -1,17 +1,13 @@
-/***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/*								   	   */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION:
- *	
- * HBondParam stores parameters needed for hydrogen bond calculations, and
- * provides methods for accessing this data.
- *
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   HBondParam stores parameters needed for hydrogen bond calculations, and
+   provides methods for accessing this data.
+*/
 
 #include "HBondParam.h"
 #include "Parameters.h"

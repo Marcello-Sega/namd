@@ -1,13 +1,13 @@
-/***************************************************************************/
-/*          (C247) Copyright 1996,1997 The Board of Trustees of the           */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION: Toplevel routines for initializing a Node for a simulation
- *              one Node per Pe (processor element).
- *
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   Toplevel routines for initializing a Node for a simulation
+   one Node per Pe (processor element).
+*/
 
 #include <unistd.h>
 #include "charm++.h"

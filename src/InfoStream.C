@@ -1,15 +1,12 @@
-/***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1996 The Board of Trustees of the            */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/*                                                                         */
-/***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
 
-/***************************************************************************
- * DESCRIPTION:
- *  Defines a new stream: iout, for "i"nforming consoles.
- ***************************************************************************/
+/*
+   Defines a new stream: iout, for "i"nforming consoles.
+*/
 
 #include "InfoStream.h"
 

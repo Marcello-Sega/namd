@@ -1,14 +1,13 @@
-/***************************************************************************/
-/*          (C) Copyright 1996,1997 The Board of Trustees of the           */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION: UniqueSetRaw
- * Uses simple hash table type unique elements set 
- * layout allows for faster iteration due to clustering 
- * of data
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   Uses simple hash table type unique elements set 
+   layout allows for faster iteration due to clustering of data
+*/
 
 #ifndef USETRAW_H
 #define USETRAW_H

@@ -1,38 +1,34 @@
-//-*-c++-*-
-/***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/*								   	   */
-/***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
 
-/***************************************************************************
- * DESCRIPTION:
- *   Read in a configuration file of the form:
- *       keyword = information\n
- *-or-   keyword information\n
- *-or-   keyword = {\n line 0\n line 1\n ... line n\n}
- * and produces a database which can return a linked list of strings (char *)
- * to all the information fields associated with that keyword.
- * 
- *    A "word" is a seqeunce of characters that are not white space (see
- * isspace(3C) ).  The equals sign ('=') is optional (though if there is more
- * more than one equals sign, then the 2nd is not ignored).  The "information"
- * field may contain more than one word.  White space is ignored except that
- * white space between multiple words in the information field is maintained.
- * Everything on the line at and beyond a pound sign ('#') is ignored.  Hence
- * a data file can be:
- *   fullname = George   Washington # the first president of the U.S.
- *   fullname = Martha Washington   # his second wife
- * Once that is read in, all data associated with "name" can be retreived as
- *  StringList *strList = configFile.find("fullname");
- *  for (StringList *tmp=strList; tmp!=NULL; tmp = tmp -> next)
- *      cout << tmp->data << '\n';
- * Note:
- *   The returned StringList * is NOT new'ed.  Do NOT free it.
- *   Keywords are case INsensitive
- ***************************************************************************/
+/*
+   Read in a configuration file of the form:
+         keyword = information\n
+   -or-  keyword information\n
+   -or-  keyword = {\n line 0\n line 1\n ... line n\n}
+   and produces a database which can return a linked list of strings (char *)
+   to all the information fields associated with that keyword.
+   
+      A "word" is a seqeunce of characters that are not white space (see
+   isspace(3C) ).  The equals sign ('=') is optional (though if there is more
+   more than one equals sign, then the 2nd is not ignored).  The "information"
+   field may contain more than one word.  White space is ignored except that
+   white space between multiple words in the information field is maintained.
+   Everything on the line at and beyond a pound sign ('#') is ignored.  Hence
+   a data file can be:
+     fullname = George   Washington # the first president of the U.S.
+     fullname = Martha Washington   # his second wife
+   Once that is read in, all data associated with "name" can be retreived as
+    StringList *strList = configFile.find("fullname");
+    for (StringList *tmp=strList; tmp!=NULL; tmp = tmp -> next)
+        cout << tmp->data << '\n';
+   Note:
+     The returned StringList * is NOT new'ed.  Do NOT free it.
+     Keywords are case INsensitive
+*/
 
 // This header introduces two names to the global name space
 // They are:

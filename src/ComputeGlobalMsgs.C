@@ -1,12 +1,8 @@
-/***************************************************************************/
-/*         (C) Copyright 1996,1997 The Board of Trustees of the            */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION:  Messages needed for ComputeGlobal operation.
- *		
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
 
 #include "ComputeGlobalMsgs.h"
 #include "packmsg.h"

@@ -1,10 +1,15 @@
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
 /* 
- *
- * IMDHeader: The idea behind the messages is that first you send a header 
- * message consisting of a fixed number of chars; that message tells you what
- * kinf of message you're getting next, including the all the type information
- * needed to byteswap, sort into structs, allocate memory, etc.
- */
+   IMDHeader: The idea behind the messages is that first you send a header 
+   message consisting of a fixed number of chars; that message tells you what
+   kinf of message you're getting next, including the all the type information
+   needed to byteswap, sort into structs, allocate memory, etc.
+*/
 
 #ifndef IMD_HEADER_H__
 #define IMD_HEADER_H__

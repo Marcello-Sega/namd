@@ -1,18 +1,16 @@
-//-*-c++-*-
-/***************************************************************************/
-/*    (C) Copyright 1995,1996,1997 The Board of Trustees of the            */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION:
- *	This class is used to store all of the structural       
- *   information for a simulation.  It reas in this information 
- *   from a .psf file, cross checks and obtains some information
- *   from the Parameters object that is passed in, and then     
- *   stores all this information for later use.	
- *
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   This class is used to store all of the structural       
+   information for a simulation.  It reas in this information 
+   from a .psf file, cross checks and obtains some information
+   from the Parameters object that is passed in, and then     
+   stores all this information for later use.	
+*/
 
 
 #ifndef MOLECULE_H
@@ -22,7 +20,6 @@
 #include "common.h"
 #include "NamdTypes.h"
 #include "IntList.h"
-#include "LintList.h"
 #include "structures.h"
 #include "ConfigList.h"
 #include "Vector.h"

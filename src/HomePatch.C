@@ -1,19 +1,17 @@
-/***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1996 The Board of Trustees of the            */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/*                                                                         */
-/***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
 
-/***************************************************************************
- * DESCRIPTION: HomePatch owns the actual atoms of a Patch of space
- *		Proxy(s) get messages via ProxyMgr from HomePatch(es)
- *		to update lists of atoms and their coordinates
- *              HomePatch(es) also have a Sequencer bound to them
- *
- * superclass: 	Patch		
- ***************************************************************************/
+/*
+   HomePatch owns the actual atoms of a Patch of space
+   Proxy(s) get messages via ProxyMgr from HomePatch(es)
+   to update lists of atoms and their coordinates
+   HomePatch(es) also have a Sequencer bound to them
+
+   superclass: 	Patch		
+*/
 
 #include <math.h>
 #include "charm++.h"

@@ -1,18 +1,11 @@
-/***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1996 The Board of Trustees of the            */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/*                                                                         */
-/***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
 
-/***************************************************************************
- * DESCRIPTION:
- *
- ***************************************************************************/
-
-/***************************************************************************
- The order of execution is expected to be:
+/*
+   The order of execution is expected to be:
 	    0. instantiate object
    ------------------ (processing barrier)
    (mode 0) 1. register() and subscribe()
@@ -22,10 +15,10 @@
    (mode 2) 3. unregister() and unsubscribe()
    ------------------ (processing barrier)
             4. destroy object
- Doing this out-of-order will cause errors.
+   Doing this out-of-order will cause errors.
 
- Assumes that *only* one thread will require() a specific sequence's data.
- ***************************************************************************/
+   Assumes that *only* one thread will require() a specific sequence's data.
+*/
 
 #include <stdlib.h>
 #include <stdio.h>

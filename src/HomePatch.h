@@ -1,14 +1,14 @@
-//-*-c++-*-
-/***************************************************************************/
-/*          (C) Copyright 1996, 1997 The Board of Trustees of the          */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION: HomePatch is the key distributed source/sink of Atom data
- *		including positions, velocities and forces applied
- *
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   HomePatch is the key distributed source/sink of Atom data
+   including positions, velocities and forces applied
+*/
+
 #ifndef HOMEPATCH_H
 #define HOMEPATCH_H
 

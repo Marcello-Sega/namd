@@ -1,17 +1,15 @@
-//-*-c++-*-
-/***************************************************************************/
-/*      (C) Copyright 1995,1996,1997 The Board of Trustees of the          */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION:
- *
- *	The Parameters class is used to read in and store all of the parameters
- * from the parameter files.  These parameters are stored and used to assign
- * constants to bonds and atoms as they are read in from the psf file
- *
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   The Parameters class is used to read in and store all of the parameters
+   from the parameter files.  These parameters are stored and used to assign
+   constants to bonds and atoms as they are read in from the psf file
+*/
+
 #ifndef PARAM_H
 
 #define PARAM_H

@@ -1,12 +1,12 @@
-/***************************************************************************/
-/*       (C) Copyright 1996,1997 The Board of Trustees of the              */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION:  Function body for calc_fulldirect.
- *
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   Function body for calc_fulldirect.
+*/
 
 {
   const BigReal coloumb = COLOUMB * ComputeNonbondedUtil::scaling

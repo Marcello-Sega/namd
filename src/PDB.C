@@ -1,17 +1,15 @@
-/***************************************************************************/
-/*                                                                         */
-/*     (C) Copyright 1995,1996,1997 The Board of Trustees of the           */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/*								   	   */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION:
- * PDB Class
- *   Code to implement the PDB class.  This reads in a bunch of
- * PDBData records from a file, given the filename.  See PDB.h
- * for a bit more information.
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   PDB Class
+     Code to implement the PDB class.  This reads in a bunch of
+   PDBData records from a file, given the filename.  See PDB.h
+   for a bit more information.
+*/
 
 #include <stdio.h>
 #include <strings.h>

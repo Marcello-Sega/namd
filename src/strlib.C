@@ -1,17 +1,14 @@
-/***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/*								   	   */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION:
- *	strlib contains a bunch of functions that are useful for basic 
- * file input and string manipulation.  See strlib.h for a list and 
- * description of the functions that are available.
- *
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   strlib contains a bunch of functions that are useful for basic 
+   file input and string manipulation.  See strlib.h for a list and 
+   description of the functions that are available.
+*/
 
 #include "strlib.h"
 

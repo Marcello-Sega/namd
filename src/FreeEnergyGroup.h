@@ -1,3 +1,9 @@
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
 //---------------------------------------------------------------
 // AGroup contains a (potentially long) list of integers
 // written by David Hurwitz, March to May 1998.

@@ -1,19 +1,15 @@
-/***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/*                        */
-/***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
 
-/***************************************************************************
- * DESCRIPTION:
- *  The class Molecule is used to hold all of the structural information
- * for a simulation.  This information is read in from a .psf file and
- * cross checked with the Parameters object passed in.  All of the structural
- * information is then stored in arrays for use.
- *
- ***************************************************************************/
+/*
+   The class Molecule is used to hold all of the structural information
+   for a simulation.  This information is read in from a .psf file and
+   cross checked with the Parameters object passed in.  All of the structural
+   information is then stored in arrays for use.
+*/
 
 #include "UniqueSortedArray.h"
 #include "Molecule.h"

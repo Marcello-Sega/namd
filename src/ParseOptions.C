@@ -1,14 +1,13 @@
-/***************************************************************************/
-/*        (C) Copyright 1995,1996,1997 The Board of Trustees of the        */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION:
- *   Defines a set of dependencies, units, ranges, defaults, and info
- * messages which simplify the parsing of a ConfigList
- *
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   Defines a set of dependencies, units, ranges, defaults, and info
+   messages which simplify the parsing of a ConfigList
+*/
 
 #include <iostream.h>
 #ifndef SP2

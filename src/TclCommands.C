@@ -1,17 +1,8 @@
-/***************************************************************************
- *cr                                                                       
- *cr            (C) Copyright 1995 The Board of Trustees of the           
- *cr                        University of Illinois                       
- *cr                         All Rights Reserved                        
- *cr                                                                   
- ***************************************************************************/
-
-/***************************************************************************
- * DESCRIPTION:
- *   Tcl <--> VMD interface commands used for the analysis and 
- * manipulation of structures
- *
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
 
 #include <stdlib.h> 
 #include <malloc.h>

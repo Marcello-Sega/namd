@@ -1,20 +1,17 @@
-/***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1996 The Board of Trustees of the            */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/*									   */
-/***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
 
-/***************************************************************************
- * DESCRIPTION: ResizeArray template
- * Uses simple contingous array allocation in a hidden manner
- * so that array object can have items added without limit
- * Suffers from memory fragmentation during resizing
- * Fast access, safe and efficient passing of encapsulated array thru
- * function arguments.
- *
- ***************************************************************************/
+/*
+   ResizeArray template
+   Uses simple contingous array allocation in a hidden manner
+   so that array object can have items added without limit
+   Suffers from memory fragmentation during resizing
+   Fast access, safe and efficient passing of encapsulated array thru
+   function arguments.
+*/
 
 #ifndef RESIZEARRAY_H
 #define RESIZEARRAY_H

@@ -1,14 +1,9 @@
-//-*-c++-*-
-/***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/*									   */
-/***************************************************************************/
-/* DESCRIPTION:                                                            */
-/*                                                                         */
-/***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
 #ifndef LJTABLE_H
 #define LJTABLE_H
 

@@ -1,14 +1,14 @@
-//-*-c++-*-
-/***************************************************************************/
-/*              (C) Copyright 1996,1997 The Board of Trustees of the       */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION: Master BOC.  coordinates startup, close down of each PE
- *		Also owns pointers to common objects needed by system		
- *		Many utility static methods are owned by Node.
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   Master BOC.  coordinates startup, close down of each PE
+   Also owns pointers to common objects needed by system		
+   Many utility static methods are owned by Node.
+*/
 
 #ifndef _NODE_H
 #define _NODE_H

@@ -1,18 +1,14 @@
-/***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/*                        */
-/***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
 
-/***************************************************************************
- * DESCRIPTION:
- *   SimParameters is just a glorified structure to hold the global
- * static simulation parameters such as timestep size, cutoff, etc. that
- * are read in from the configuration file.
- *
- ***************************************************************************/
+/*
+   SimParameters is just a glorified structure to hold the global
+   static simulation parameters such as timestep size, cutoff, etc. that
+   are read in from the configuration file.
+*/
 
 #include "charm++.h"
 

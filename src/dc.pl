@@ -1,4 +1,3 @@
-
 # input set of strings to match
 @dontprint = @ARGV;
 @ARGV=();

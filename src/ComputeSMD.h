@@ -1,18 +1,8 @@
-//-*-c++-*-
-/***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/*									   */
-/***************************************************************************/
- 
-/***************************************************************************
- * DESCRIPTION:
- *	ComputeSMD provides moving atomic restraints (harmonic constraints).  
- * See the Programmer's Guide for details on the potentials provided.
- *
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
 
 #ifndef COMPUTESMD_H
 #define COMPUTESMD_H

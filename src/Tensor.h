@@ -1,17 +1,8 @@
-//-*-c++-*-
-/***************************************************************************/
-/*      (C) Copyright 1995,1996,1997 The Board of Trustees of the          */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION:
- *   Implement a vector class.  This means we can do vector manipulation
- * with something like v3=v1+v2.  I don't know how fast it is compared
- * to the old fashioned way.  We may have to change things once it gets
- * working.
- *
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
 
 #ifndef TENSOR_H
 #define TENSOR_H

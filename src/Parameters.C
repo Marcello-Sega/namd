@@ -1,17 +1,16 @@
-/***************************************************************************/
-/*      (C) Copyright 1995,1996,1997 The Board of Trustees of the          */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION:
- *  The class Parameters is used to hold all of the parameters read
- * in from the parameter files.  The class provides a routine to read in
- * parameter files (as many parameter files as desired can be read in) and
- * a series of routines that allow the parameters that have been read in
- * to be queried.
- *
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   The class Parameters is used to hold all of the parameters read
+   in from the parameter files.  The class provides a routine to read in
+   parameter files (as many parameter files as desired can be read in) and
+   a series of routines that allow the parameters that have been read in
+   to be queried.
+*/
 
 #include <stdio.h>
 #include <stdlib.h>

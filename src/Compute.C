@@ -1,14 +1,14 @@
-/***************************************************************************/
-/*     (C) Copyright 1996,1997 The Board of Trustees of the                */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION: Top of Compute hierarchy.  
- *	enqueueWork() - delivers Compute object itself to queue up for
- *			doWork()
- *	doWork() - called by work queue
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   Top of Compute hierarchy.  
+   enqueueWork() - delivers Compute object itself to queue up for doWork()
+   doWork() - called by work queue
+*/
 
 #include "main.h"
 #include "charm++.h"

@@ -1,17 +1,13 @@
-//-*-c++-*-
-/***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1996 The Board of Trustees of the            */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/*									   */
-/***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
 
-/***************************************************************************
- * DESCRIPTION: Helper class for PatchMgr to manager HomePatch(es)
- *              It is object contained in the container HomePatchList
- *
- ***************************************************************************/
+/*
+   Helper class for PatchMgr to manager HomePatch(es)
+   It is object contained in the container HomePatchList
+*/
 
 #ifndef HOMEPATCHLIST_H
 #define HOMEPATCHLIST_H

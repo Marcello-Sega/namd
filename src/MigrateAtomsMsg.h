@@ -1,18 +1,17 @@
-//-*-c++-*-
-/***************************************************************************/
-/*         (C) Copyright 1996,1997 The Board of Trustees of the            */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION: Migration messages are sent from HomePatch to HomePatch
- *              with lists of atoms and atom information (if any) that
- *              need to be migrated.  A message must be sent from a
- *              neighbor even if null so that the HomePatch knows
- *              what atoms it will have before commencing a positionsReady()
- *              to its Computes.
- *
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   Migration messages are sent from HomePatch to HomePatch
+   with lists of atoms and atom information (if any) that
+   need to be migrated.  A message must be sent from a
+   neighbor even if null so that the HomePatch knows
+   what atoms it will have before commencing a positionsReady()
+   to its Computes.
+*/
 
 #ifndef MIGRATEATOMSMSG_H
 #define MIGRATEATOMSMSG_H

@@ -1,19 +1,14 @@
-//-*-c++-*-
-/***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/*								   	   */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION:
- *	strlib contains a number of useful routines for doing file I/O
- * and some basic string manipulation.  These routines are used for 
- * reading in the parameter and .psf files
- *
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
 
+/*
+   strlib contains a number of useful routines for doing file I/O
+   and some basic string manipulation.  These routines are used for 
+   reading in the parameter and .psf files
+*/
 
 #ifndef STRLIB_H
 

@@ -1,12 +1,12 @@
-/***************************************************************************/
-/*              (C) Copyright 1996 The Board of Trustees of the            */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION: Holds pointers to large molecule data structure, simulation
- *		Parameters...
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   Holds pointers to large molecule data structure, simulation parameters...
+*/
 
 #include "charm++.h"
 

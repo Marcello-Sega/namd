@@ -1,16 +1,9 @@
-/***************************************************************************
- *cr                                                                       
- *cr            (C) Copyright 1995 The Board of Trustees of the           
- *cr                        University of Illinois                       
- *cr                         All Rights Reserved                        
- *cr                                                                   
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
 
-/***************************************************************************
- * DESCRIPTION:
- *  prototypes for VMD<->Tcl functions
- *
- ***************************************************************************/
 #ifndef TCLCOMMANDS_H
 #define TCLCOMMANDS_H
 

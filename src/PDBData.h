@@ -1,17 +1,16 @@
-//-*-c++-*-
-/***************************************************************************/
-/*      (C) Copyright 1995,1996,1997 The Board of Trustees of the          */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION:
- *   Read and parse a line of data from a PDB record.  There are many
- * different types of PDB records.  This version reads only the ATOM and
- * HETATM records and makes all fields accessible via the appropriate
- * member function.  In NAMD, this will be called only by the PDB class,
- * which reads PDB files, and a PDB writer class.
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   Read and parse a line of data from a PDB record.  There are many
+   different types of PDB records.  This version reads only the ATOM and
+   HETATM records and makes all fields accessible via the appropriate
+   member function.  In NAMD, this will be called only by the PDB class,
+   which reads PDB files, and a PDB writer class.
+*/
 
 #ifndef _PDBREADER_H_
 #define _PDBREADER_H_

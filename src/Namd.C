@@ -1,13 +1,13 @@
-/***************************************************************************/
-/*              (C) Copyright 1996,1997 The Board of Trustees of the       */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION: Namd() - launches BOC's Node, WorkDistrib, PatchMgr, ProxyMgr
- *		ReductionMgr, CollectionMgr
- *
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   Namd() - launches BOC's Node, WorkDistrib, PatchMgr, ProxyMgr
+   ReductionMgr, CollectionMgr
+*/
 
 #include "unistd.h"
 

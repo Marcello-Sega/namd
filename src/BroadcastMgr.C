@@ -1,14 +1,8 @@
-//-*-c++-*-
-/***************************************************************************/
-/*              (C) Copyright 1996,1997 The Board of Trustees of the       */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION: Coordinates broadcast of a data type from a Controller/Seq
- *		to all other Controller/Sequencer type objects (they must
- *		run in a thread!)
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
 
 #include "charm++.h"
 

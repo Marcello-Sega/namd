@@ -1,8 +1,12 @@
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
 
 #include "PmeFFT.h"
 #include "common.h"
 #include "pub3dfft.h"
-
 
 PmeFFT::PmeFFT(int K1, int K2, int K3) {
   k1 = K1; k2 = K2; k3 = K3;

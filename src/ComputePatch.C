@@ -1,15 +1,12 @@
-/***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1996 The Board of Trustees of the            */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/*									   */
-/***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
 
-/***************************************************************************
- * DESCRIPTION: Compute object which deals with a single patch.
- *
- ***************************************************************************/
+/*
+   Compute object which deals with a single patch.
+*/
 
 #include "charm++.h"
 #include "WorkDistrib.decl.h"

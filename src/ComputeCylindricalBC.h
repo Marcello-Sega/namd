@@ -1,14 +1,8 @@
-/***************************************************************************/
-/*    (C) Copyright 1995,1996,1997 The Board of Trustees of the            */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION:
- *	ComputeCylindricalBC provides cylindrical boundary conditions.  See the
- * Programmer's Guide for details on the potentials provided.
- *
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
 
 #ifndef COMPUTECYLINDRICALBC_H
 #define COMPUTECYLINDRICALBC_H

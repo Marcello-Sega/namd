@@ -1,15 +1,13 @@
-//-*-c++-*-
-/***************************************************************************/
-/*          (C) Copyright 1996,1997 The Board of Trustees of the           */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION: Primary class for pairwise force calculations over
- *              pairs of patches.  Takes care of boxes, depositing of
- *              Forces etc.
- *
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   Primary class for pairwise force calculations over pairs of patches.
+   Takes care of boxes, depositing of forces etc.
+*/
 
 #ifndef COMPUTEPPAIR_H
 #define COMPUTEPPAIR_H

@@ -1,13 +1,13 @@
-/***************************************************************************/
-/*         (C) Copyright 1996,1997 The Board of Trustees of the            */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION: Helper for computing non-bonded exclusions 
- *		Overload of loadTuples() specific for non-bonded exclusions
- *
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   Helper for computing non-bonded exclusions 
+   Overload of loadTuples() specific for non-bonded exclusions
+*/
 
 #include "Namd.h"
 #include "Node.h"

@@ -1,24 +1,21 @@
-//-*-c++-*-
-/***************************************************************************/
-/*       (C) Copyright 1995,1996,1997 The Board of Trustees of the         */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION:
- * PDB Class
- *   Given a PDB file name, read in all the data.
- * As of now, you can only search the file for ATOM and 
- * HETATM information.  The return value is an IntList (of new'ed
- * memory so you have to delete it!) containing the list of all
- * fields that match that criterion, indexed by position in the file.
- * (Hence, 0 is the 1st ATOM or HETATM record, 10 is the eleventh,
- * and so on...).  Note that with these searches there is no
- * way to choose ATOM or HETATM; you have to make that distinguishment
- * yourself.
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
 
-
+/*
+   PDB Class
+     Given a PDB file name, read in all the data.
+   As of now, you can only search the file for ATOM and 
+   HETATM information.  The return value is an IntList (of new'ed
+   memory so you have to delete it!) containing the list of all
+   fields that match that criterion, indexed by position in the file.
+   (Hence, 0 is the 1st ATOM or HETATM record, 10 is the eleventh,
+   and so on...).  Note that with these searches there is no
+   way to choose ATOM or HETATM; you have to make that distinguishment
+   yourself.
+*/
 
 #ifndef PDB_H
 #define PDB_H

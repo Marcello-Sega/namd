@@ -1,15 +1,15 @@
-/***************************************************************************/
-/*          (C) Copyright 1996,1997 The Board of Trustees of th            */
-/*                          University of Illinois                         */
-/*                           All Rights Reserved                           */
-/***************************************************************************/
-/***************************************************************************
- * DESCRIPTION: Methods for ComputeAngles.  Main code is for
- *		loading in the AngleElem information and
- *		for computing forces and energies for all angles on node's.
- *		HomePatch(es)
- *
- ***************************************************************************/
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+/*
+   Methods for ComputeAngles.  Main code is for
+   loading in the AngleElem information and
+   for computing forces and energies for all angles on node's.
+   HomePatch(es)
+*/
 
 #include "ComputeAngles.h"
 #include "Molecule.h"
