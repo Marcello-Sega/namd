@@ -16,7 +16,7 @@
 
 #include "converse.h"
 
-extern class HomePatch;
+class HomePatch;
 
 class Sequencer
 {
