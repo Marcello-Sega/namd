@@ -29,7 +29,7 @@
 
 ProxyMgr *ProxyMgr::_instance = 0;
 
-ProxyMgr::ProxyMgr(InitMsg *) { 
+ProxyMgr::ProxyMgr(InitMsg *) : numProxies(0), proxyList(NULL) { 
   DebugM(1, "::ProxyMgr() - my pe is " << CMyPe() << endl );
   if (_instance) {
     iout << "More than one ProxyMgr!!!\n" << endi;
@@ -163,13 +163,16 @@ ProxyMgr::recvProxyAtoms(ProxyAtomsMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/12/10 00:13:12 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.6 $	$Date: 1996/12/13 08:54:53 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.6  1996/12/13 08:54:53  jim
+ * fixed initialization bug
+ *
  * Revision 1.5  1996/12/10 00:13:12  ari
  * *** empty log message ***
  *
