@@ -12,95 +12,16 @@
  ***************************************************************************/
 
 #ifndef OUTPUT_H
-
 #define OUTPUT_H
 
 #include "common.h"
 
-#ifdef MDCOMM
-#include <rapp_app.h>                           // RAPP application defns
-#endif
-#include "mdcomm.h"                             // NAMD-specific RAPP function
-
 class Vector;
-
-#define OUTPUT_TEMPERATURE_WARNING 1000.0  /* warn if temp > this value */
-#define VMD_NAME_LEN	4		   /* Length of name fields for VMD */
-
-#ifdef OLD_VMD
-//  This is all the static data that needs to be transferred to VMD
-typedef struct vmd_static_data
-{
-	int numAtoms;			//  Total number of atoms
-	int numAtomNames;		//  Number of unique atom names
-	int numAtomTypes;		//  Number of unique atom types
-	int numBonds;			//  Number of linear bonds
-	int maxNumPatches;		//  Max number of patches
-	char *atomNames;		//  List of unique atom names
-	int *atomNameIndexes;		//  Indexes for each atom into the
-					//  atomNames array
-	char *atomTypes;		//  List of unique atom types
-	int *atomTypeIndexes;		//  Indexes for each atom into the
-					//  atomTypes array
-	int *bonds;			//  List of bonded atoms
-	char *resIds;			//  Residue ids for each atom
-	char *resNames;			//  Residue names for each atom
-	float *radii;			//  Calculated vdw radii
-	float *charge;			//  Charge for each atom
-	float *mass;			//  Mass for each atom
-	float *occupancy;		//  Occupancy for each atom
-	float *beta;			//  Beta coupling for each atom
-	char *segIds;			//  Segment IDs for each atom
-} VmdStaticData;
-
-// This structure is used to transfer dynamic data to VMD
-typedef struct vmd_dyn_data
-{
-	Bool energiesArrived;	//  Flag TRUE->energies have been set
-	Bool coordsArrived;	//  Flag TRUE->coords have been set
-	int numAtoms;		//  Number of atoms in simulation
-	int timestep;		//  Current timestep
-	float elapsed_time;	//  Total elapsed simulation time
-	float elapsed_cpu;	//  Total elapsed cpu time - CURRENTLY NOT IMPLEMENTED
-	float T;		//  Temperature
-	float Epot;		//  Potential energy
-	float Etot;		//  Total energy
-	float Evdw;		//  Van der Waals energy
-	float Eelec;		//  Electrostatic energy
-	float Ebond;		//  Linear bond energy
-	float Eangle;		//  Angle bond energy
-	float Edihe;		//  Dihedral bond energy
-	float Eimpr;		//  Improper bond energy
-	float *X;		//  Array of X coordinates
-	float *Y;		//  Array of Y coordinates
-	float *Z;		//  Array of Z coordinates
-	int numPatches;		//  Number of patches in simulation
-	float *pXOrigins;	//  Origins of patches
-	float *pYOrigins;	//  Origins of patches
-	float *pZOrigins;	//  Origins of patches
-	float *patchLength;	//  Length of each patch
-	float *patchWidth;	//  Length of each patch
-	float *patchHeight;	//  Length of each patch
-	float *patchAtomNums;	//  Number of atoms on each patch
-	float *patchLoads;	//  Number of atoms on each patch
-	float *patchNode;	//  Number of atoms on each patch
-} VmdDynData;
-#endif // OLD_VMD
 
 class Output 
 {
 
 private:
-   int teTempWarning;                           //  flag for large temp warn.
-
-#ifdef MDCOMM
-   VmdDynData *vmdData;				//  Dynamic data to pass to VMD
-   VmdStaticData *vmdStaticData;                //  Static data to pass to VM
-   rapp_app_handle *vmdHandle;                  //  Structure used to 
-						//  communicate with mdcomm 
-						//  routines
-#endif 
-
    void output_dcdfile(int, int, Vector *);  	//  output coords to dcd file
    void output_veldcdfile(int, int, Vector *); 	//  output velocities to
 						//  dcd file
@@ -122,38 +43,6 @@ private:
    void scale_vels(Vector *, int, Real);	//  scale velocity vectors before output
    void write_binary_file(char *, int, Vector *); // Write a binary restart file with
 						//  coordinates or velocities
-
-#ifdef MDCOMM
-   VmdStaticData *build_vmd_static_data(VmdStaticData *);
-                                                //  Build the static data 
-						//  structures for VMD
-
-   void free_vmd_static_data(VmdStaticData *);	//  Free the static data 
-						//  structures for VMD
-
-   void insert_into_unique_list(const char *, char *, int&); 
-						//  Maintain a unique list of
-						//  strings
-
-   int search_list(const char *, const char *, int);  
-						//  Do a binary search on
-						//  a list of strings
-
-   int name_cmp(const char *, const char *);	//  Do a compare of name strings
-
-   void gather_vmd_coords(int, int, Vector *);
-						//  Collect coordinates for VMD
-
-#ifdef VMD_OLD
-   void vmd_send_ascii_int(mdc_app_arena *, int, int);
-						//  Send an integer value in ascii
-						//  to VMD
-   void vmd_send_ascii_float(mdc_app_arena *, float, int);
-						//  Send a floating point value
-						//  to VMD in ascii
-#endif // VMD_OLD
-#endif
-
 public :
    Output();					//  Constructor
    ~Output();					//  Destructor
@@ -173,29 +62,6 @@ public :
 						//  output for the current timestep
    void all_force(int, int, Vector *);		//  Produce a total force output for 
 						//  the current timestep
-
-#ifdef MDCOMM
-   void initialize_vmd_connection();		//  Startup the VMD connection
-   void close_vmd_connection();			//  Close the VMD connection
-   void vmd_process_events();			//  Process events from VMD
-
-#ifdef VMD_OLD
-   void send_vmd_static(mdc_app_arena *);	//  Send static data to VMD
-   void send_vmd_dyn(mdc_app_arena *);		//  Send dynamic data to VMD
-#endif
-   void send_vmd_static(rapp_active_socket_t *, void *);
-                                                //  Send static data to VMD
-   void send_vmd_dyn(rapp_active_socket_t *, void *, void *);
-                                                //  Send dynamic data to VMD
-
-
-   void print_vmd_static_data();		//  Debugging routine to print
-						//  VMD static info to screen
-   void recv_vmd_patch_loads();			//  Collect Patch load messages
-
-   void gather_vmd_energies(int, BigReal *, BigReal, BigReal);
-						//  Collect energy values for VMD
-#endif /* MDCOMM */
 };
 
 #endif
@@ -203,13 +69,16 @@ public :
  * RCS INFORMATION:
  *
  *	$RCSfile: Output.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1998/04/15 22:13:52 $
+ *	$Author: justin $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.7 $	$Date: 1999/09/02 23:04:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Output.h,v $
+ * Revision 1.7  1999/09/02 23:04:51  justin
+ * Eliminated MDComm from all files and Makefiles
+ *
  * Revision 1.6  1998/04/15 22:13:52  jim
  * Make depends returns same results regardless of DPME, DPMTA, TCL or MDCOMM.
  *

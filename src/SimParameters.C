@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *  $RCSfile: SimParameters.C,v $
- *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1076 $  $Date: 1999/08/20 19:11:15 $
+ *  $Author: justin $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1077 $  $Date: 1999/09/02 23:04:52 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1077  1999/09/02 23:04:52  justin
+ * Eliminated MDComm from all files and Makefiles
+ *
  * Revision 1.1076  1999/08/20 19:11:15  jim
  * Added MOLLY - mollified impluse method.
  *
@@ -1399,18 +1402,6 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
      &firstLdbStep);
    opts.range("firstLdbStep", POSITIVE);
 
-   //////  MDComm options
-#ifdef MDCOMM
-   //  MDComm is included, so really get this value
-   opts.optionalB("main", "mdcomm", "Enable external communication?",
-     PARSE_BOOL);
-   opts.optional("mdcomm", "vmdfreq", "VMD update frequency", &vmdFrequency, 1);
-   opts.range("vmdfreq", POSITIVE);
-#else
-   //  MDComm is NOT included, so just set the vmdFrequency value
-   vmdFrequency = -1;
-#endif
-
    /////  Restart timestep option
    opts.optional("main", "firsttimestep", "Timestep to start simulation at",
      &firstTimestep, 0);
@@ -2246,13 +2237,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
   firstLdbStep=5*stepsPerCycle;
    }
 
-#ifdef MDCOMM
-   if (!opts.defined("mdcomm"))
-   {
-  vmdFrequency = -1;
-   }
-#endif
-
    if (firstTimestep >= N)
    {
   NAMD_die("First timestep must be less than number of steps to perform!!!");
@@ -2945,10 +2929,6 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 
    globalForcesOn = ( tclForcesOn || freeEnergyOn || miscForcesOn || IMDon );
 
-#ifdef MDCOMM
-   if ( vmdFrequency != -1 ) globalForcesOn = 1;
-#endif
-   
    if (tclForcesOn)
    {
      iout << iINFO << "TCL GLOBAL FORCES ACTIVE\n";
@@ -3292,14 +3272,6 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      langevinPistonTarget /= PRESSUREFACTOR;
    }
 
-   if (vmdFrequency > 0)
-   {
-     iout << iINFO << "VMD INTERFACE ON\n"
-        << "VMD FRREQUENCY    "
-        << vmdFrequency << "\n";
-     iout << endi;
-   }
-
    if (FMAOn)
    {
      iout << iINFO << "FMA ACTIVE\n";
@@ -3556,12 +3528,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1076 $  $Date: 1999/08/20 19:11:15 $
+ *  $Revision: 1.1077 $  $Date: 1999/09/02 23:04:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1077  1999/09/02 23:04:52  justin
+ * Eliminated MDComm from all files and Makefiles
+ *
  * Revision 1.1076  1999/08/20 19:11:15  jim
  * Added MOLLY - mollified impluse method.
  *

@@ -37,16 +37,6 @@ TCLLIB=-L$(TCLDIR)/lib -ltclx -ltcl
 TCLFLAGS=-DNAMD_TCL
 TCL=$(TCLINCL) $(TCLFLAGS)
 
-######
-## definitions for MDCOMM interface
-######
-
-#MDCOMMDIR=/home/rkufrin/rapp
-#MDCOMMINCL=-I${MDCOMMDIR}/include
-#MDCOMMLIB=-L$(MDCOMMDIR)/lib/HPPA -lrapp
-#MDCOMMFLAGS=-DMDCOMM
-#MDCOMM=$(MDCOMMINCL) $(MDCOMMFLAGS)
-
 #####
 # Unix commands
 #####

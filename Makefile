@@ -64,9 +64,9 @@ LIBS = $(DPMTALIBS) $(PVMLIBS) $(DPMELIBS)
 
 # CXX is platform dependent
 INCLUDE = $(CHARM)/include
-CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(MDCOMM) $(TCL) $(FFT) $(CXXOPTS) $(NOWARN) $(NAMDFLAGS)
-CXXTHREADFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(MDCOMM) $(TCL) $(FFT) $(CXXTHREADOPTS) $(NOWARN) $(NAMDFLAGS)
-GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(MDCOMM) $(TCL) $(FFT) $(NOWARN) $(NAMDFLAGS)
+CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(TCL) $(FFT) $(CXXOPTS) $(NOWARN) $(NAMDFLAGS)
+CXXTHREADFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(TCL) $(FFT) $(CXXTHREADOPTS) $(NOWARN) $(NAMDFLAGS)
+GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(TCL) $(FFT) $(NOWARN) $(NAMDFLAGS)
 
 DEPENDFILE = Make.depends
 
@@ -76,7 +76,6 @@ OBJS = \
 	$(DSTDIR)/common.o \
 	$(DSTDIR)/dcdlib.o \
 	$(DSTDIR)/main.o \
-	$(DSTDIR)/mdcomm.o \
 	$(DSTDIR)/strlib.o \
 	$(DSTDIR)/AlgSeven.o \
 	$(DSTDIR)/AtomMap.o \
@@ -106,7 +105,6 @@ OBJS = \
 	$(DSTDIR)/ComputeMap.o \
 	$(DSTDIR)/ComputeMisc.o \
 	$(DSTDIR)/ComputeMgr.o \
-	$(DSTDIR)/ComputeMDComm.o \
 	$(DSTDIR)/ComputeNonbondedExcl.o \
 	$(DSTDIR)/ComputeNonbondedSelf.o \
 	$(DSTDIR)/ComputeNonbondedPair.o \
@@ -220,7 +218,6 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(DPMTALIB) \
 	$(DPMELIB) \
 	$(PVMLIB) \
-	$(MDCOMMLIB) \
 	$(TCLLIB) \
 	$(FFTLIB)
 
@@ -252,7 +249,6 @@ projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(DPMTALIB) \
 	$(DPMELIB) \
 	$(PVMLIB) \
-	$(MDCOMMLIB) \
 	$(TCLLIB) \
 	$(FFTLIB)
 

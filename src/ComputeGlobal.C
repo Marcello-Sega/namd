@@ -34,7 +34,6 @@
 #include "ComputeFreeEnergy.h"
 #include "FreeEnergyParse.h"
 //----------------------------------------------------------
-#include "ComputeMDComm.h"
 #include "ComputeIMD.h"
 #include "PatchMgr.h"
 #include "Molecule.h"
@@ -72,9 +71,6 @@ ComputeGlobal::ComputeGlobal(ComputeID c, ComputeMgr *m)
     else if ( simParams->tclForcesOn ) master = new ComputeTcl(this);
     else if ( simParams->miscForcesOn ) master = new ComputeMisc(this);
     else if ( simParams->freeEnergyOn ) master = new ComputeFreeEnergy(this);
-#ifdef MDCOMM
-    else if ( simParams->vmdFrequency != -1 ) master = new ComputeMDComm(this);
-#endif
     else NAMD_die("Internal error in ComputeGlobal::ComputeGlobal");
   }
   comm = m;
@@ -235,12 +231,15 @@ void ComputeGlobal::sendData()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.14 $	$Date: 1999/08/16 22:19:08 $
+ *	$Revision: 1.15 $	$Date: 1999/09/02 23:04:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGlobal.C,v $
+ * Revision 1.15  1999/09/02 23:04:48  justin
+ * Eliminated MDComm from all files and Makefiles
+ *
  * Revision 1.14  1999/08/16 22:19:08  jim
  * Incorporated Justin's interactive MD code.
  *

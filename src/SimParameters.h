@@ -128,8 +128,6 @@ public:
 					//  DCD file with total force be updated
 	int xstFrequency;		//  How often (in timesteps) should
 					//  a XST trajectory file be updated
-	int vmdFrequency;		//  How often (in timesteps) should
-					//  a VMD trajectory to be collected
 	char dcdFilename[129];		//  DCD filename
 	char velDcdFilename[129];       //  Velocity DCD filename
 	char xstFilename[129];		//  Extended system trajectory filename
@@ -454,13 +452,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1042 $	$Date: 1999/08/20 19:11:15 $
+ *	$Author: justin $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1043 $	$Date: 1999/09/02 23:04:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1043  1999/09/02 23:04:52  justin
+ * Eliminated MDComm from all files and Makefiles
+ *
  * Revision 1.1042  1999/08/20 19:11:15  jim
  * Added MOLLY - mollified impluse method.
  *

@@ -61,16 +61,6 @@ FFTLIB=-L$(FFTDIR)/lib -lfftw -lrfftw
 FFTFLAGS=-DNAMD_FFTW
 FFT=$(FFTINCL) $(FFTFLAGS)
 
-######
-## definitions for MDCOMM interface
-######
-
-#MDCOMMDIR=/home/rkufrin/rapp
-#MDCOMMINCL=-I${MDCOMMDIR}/include
-#MDCOMMLIB=-L$(MDCOMMDIR)/lib/HPPA -lrapp
-#MDCOMMFLAGS=-DMDCOMM
-#MDCOMM=$(MDCOMMINCL) $(MDCOMMFLAGS)
-
 #####
 # Unix commands
 #####

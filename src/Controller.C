@@ -629,23 +629,6 @@ void Controller::printEnergies(int step)
            << "\n" << endi;
     }
 
-#ifdef MDCOMM
-    if ( node->simParameters->vmdFrequency != -1 &&
-         ! ( step % node->simParameters->vmdFrequency ) )
-    {
-      BigReal energies[8];
-      energies[0] = bondEnergy;
-      energies[1] = angleEnergy;
-      energies[2] = dihedralEnergy;
-      energies[3] = improperEnergy;
-      energies[4] = electEnergy + electEnergySlow;
-      energies[5] = ljEnergy;
-      energies[7] = kineticEnergy;
-      Node::Object()->output->
-	gather_vmd_energies(step,energies,temperature,totalEnergy);
-    }
-#endif  // MDCOMM
-
     if (node->simParameters->IMDon && !(step % node->simParameters->IMDfreq)) {
       IMDEnergies energies;
       energies.T = temperature;
@@ -855,12 +838,15 @@ void Controller::terminate(void) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1081 $	$Date: 1999/08/31 20:59:50 $
+ *	$Revision: 1.1082 $	$Date: 1999/09/02 23:04:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1082  1999/09/02 23:04:50  justin
+ * Eliminated MDComm from all files and Makefiles
+ *
  * Revision 1.1081  1999/08/31 20:59:50  justin
  * Added ability to set transfer rate of coordinates, to detach or kill the
  * simulation, and to transfer energies to VMD.

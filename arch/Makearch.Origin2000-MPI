@@ -46,16 +46,6 @@ FFTLIB=-lcomplib.sgimath
 FFTFLAGS=-DNAMD_SGI_COMPLIB_FFT
 FFT=$(FFTFLAGS)
 
-######
-## definitions for MDCOMM interface
-######
-
-#MDCOMMDIR=/Projects/namd2/Programmers/jim/rapp
-#MDCOMMINCL=-I${MDCOMMDIR}/include
-#MDCOMMLIB=-L$(MDCOMMDIR)/lib/Origin2000 -lrapp
-#MDCOMMFLAGS=-DMDCOMM
-#MDCOMM=$(MDCOMMINCL) $(MDCOMMFLAGS)
-
 #####
 # Unix commands
 #####
