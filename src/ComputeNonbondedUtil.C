@@ -84,8 +84,10 @@ void ComputeNonbondedUtil::select(void)
 
   cutoff = simParams->cutoff;
   cutoff2 = cutoff*cutoff;
-  groupcutoff2 = (cutoff+2.0)*(cutoff+2.0);
-  dielectric_1 = 1/simParams->dielectric;
+  // we add slightly more than 2 angstroms to get the same numbers.
+  // don't know why...ask jim... :-)
+  groupcutoff2 = (cutoff+2.5)*(cutoff+2.5);
+  dielectric_1 = 1.0/simParams->dielectric;
   ljTable = LJTable::Instance();
   mol = Node::Object()->molecule;
   if ( simParams->exclude == SCALED14 )
@@ -100,9 +102,9 @@ void ComputeNonbondedUtil::select(void)
   {
     switchOn = simParams->switchingDist;
     switchOn_1 = 1.0/switchOn;
-    d0 = 1/(cutoff-switchOn);
+    d0 = 1.0/(cutoff-switchOn);
     switchOn2 = switchOn*switchOn;
-    c0 = 1/(cutoff2-switchOn2);
+    c0 = 1.0/(cutoff2-switchOn2);
   }
   else
   {
@@ -113,7 +115,7 @@ void ComputeNonbondedUtil::select(void)
     c0 = 0.;  // avoid division by zero
   }
   c1 = c0*c0*c0;
-  c3 = c1 * 4;
+  c3 = c1 * 4.0;
   c5 = 1/cutoff2;
   c6 = -4 * c5;
 
@@ -379,12 +381,19 @@ void ComputeNonbondedUtil::select(void)
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/05/05 16:38:59 $
+ *	$Revision: 1.1009 $	$Date: 1997/05/09 18:24:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1009  1997/05/09 18:24:23  nealk
+ * 1. Added hydrogen grouping code to improve performance in ComputeNonbondedBase
+ *    CODE ONLY WORKS WITH HYDROGEN GROUPING!
+ * 2. Increased the hydrogen group cutoff side from 2A to 2.5A -- 2A gave
+ *    fractionally different values after 100 iterations.  2.5A gives same numbers.
+ * 3. Made migration by hydrogen grouping the default in SimParameters.
+ *
  * Revision 1.1008  1997/05/05 16:38:59  nealk
  * Corrected cutoff value used with hydrogen grouping.  (groupcutoff2)
  *

@@ -98,28 +98,47 @@ NOEXCL
 (
   const int i_upper = I_UPPER;
   register const int j_upper = J_UPPER;
-  int pairlistindex=0;
-  static int pairlist_std[1000];
-  int *pairlist;
   register int j;
+  register int i;
 
-  for ( int i = I_LOWER; i < i_upper; ++i )
+#if 1
+#define USINGSPECIALCODE
+  int pairlistindex=0;
+  static int pairlist_std[1001];
+  int pairlistoffset=0;
+  int *pairlist = pairlist_std;
+
+  // generate mini-pairlist.
+  if (1000 < j_upper)
+	{
+	if (pairlist != pairlist_std) delete pairlist;
+	pairlist = new int[j_upper + 1];
+	pairlist[j_upper] = 0;
+	}
+  else
+	{
+	pairlist = pairlist_std;
+	pairlist[1000] = 0;
+	}
+#endif
+
+  for ( i = I_LOWER; i < i_upper; ++i )
   {
+    const AtomProperties &a_i = a[I_SUB];
+
     const Position p_i = p[I_SUB];
     register const BigReal p_i_x = p_i.x;
     register const BigReal p_i_y = p_i.y;
     register const BigReal p_i_z = p_i.z;
-    const AtomProperties a_i = a[I_SUB];
-    AtomProperties *a_j;
 
     Force & f_i = ff[I_SUB];
     FULL( Force & fullf_i = fullf[I_SUB]; )
 
-    // generate mini-pairlist.  Who cares about efficient!
-    if (1000 < j_upper - J_LOWER)
-      pairlist = new int[j_upper - J_LOWER];
-    else pairlist = pairlist_std;
+#ifdef USINGSPECIALCODE
+if (a_i.hydrogenGroupSize)
+{
     pairlistindex = 0;	// initialize with 0 elements
+    pairlistoffset=0;
 
     // If patch divisions are not made by hydrogen groups, then it's
     // very possibly to have a hydrogen without a parent.  Because of
@@ -131,44 +150,54 @@ NOEXCL
     // add all "lost" hydrogens to pairlist
     // this loop may not be necessary -- it's not necessary when
     // migrating by hydrogen groups.
+
+#ifdef NBSELF
+    // add all child hydrogens of i
     for(j=J_LOWER; (j<j_upper) && (a[J_SUB].hydrogenGroupSize == 0); j++)
-      {
-      pairlist[pairlistindex++] = j;
-      p_j++;
-      }
+	{
+	pairlist[pairlistindex++] = j;
+	p_j++;
+	}
+#else
+    j = J_LOWER;
+#endif
 
     // add remaining atoms to pairlist via hydrogen groups
-    a_j = &(a[J_SUB]);
     for ( ; j < j_upper; ++j )
 	{
-	if (a_j->hydrogenGroupSize)
+	const AtomProperties &pa_j = a[J_SUB];
+	if (pa_j.hydrogenGroupSize)
 	  {
-/// NAK: Neal's notes:  The cutoff is incorrect.
-/// It's not optimized, and requires hydrogen grouping during migration.
-/// The above "lost hydrogen" loop is necessary when hydrogen group
-/// migration occurs.
-	  register const BigReal p_ij_x = p_i_x - p_j->x;
-	  register const BigReal p_ij_y = p_i_y - p_j->y;
-	  register const BigReal p_ij_z = p_i_z - p_j->z;
-	  register const BigReal
+	  register BigReal p_ij_x = p_i_x - p_j->x;
+	  register BigReal p_ij_y = p_i_y - p_j->y;
+	  register BigReal p_ij_z = p_i_z - p_j->z;
+	  register BigReal
 		r2 = p_ij_x * p_ij_x + p_ij_y * p_ij_y + p_ij_z * p_ij_z;
 	  // use a slightly large cutoff to include hydrogens
 	  if ( r2 <= groupcutoff2 )
 		{
+		register int l;
 		// be careful, last group may be missing hydrogens
-		for(int l=0; (l<a_j->hydrogenGroupSize) && (l+j<j_upper); l++)
+		for(l=0; (l<pa_j.hydrogenGroupSize); l++)
 		  {
 		  pairlist[pairlistindex++] = l+j;
 		  }
-		j   += a_j->hydrogenGroupSize-1;
-		p_j += a_j->hydrogenGroupSize-1;
-		a_j += a_j->hydrogenGroupSize-1;
+		l--;  // decrease because everything will be incremented later
+		j   += l;
+		p_j += l;
 		}
 	  }
-	a_j++;
 	p_j++;
-	}
+	} // for j
     }
+} // if i is hydrogen group parent
+#ifdef NBSELF
+  // self-comparisions require list to be incremented
+  // pair-comparisions use entire list (pairlistoffset is 0)
+  else pairlistoffset++;
+#endif
+#endif
+
 )
 
     const BigReal NOEXCL( kq_i_u ) EXCL( kq_i ) =
@@ -178,21 +207,32 @@ NOEXCL
 (
     const BigReal kq_i_s = kq_i_u * scale14;
     register Position *p_j = PAIR( p[1] ) SELF( p+i+1 ) ;
-    if (pairlist[0] != J_LOWER)	p_j += pairlist[0]-J_LOWER;
+#ifdef USINGSPECIALCODE
+    if (pairlist[pairlistoffset] != J_LOWER)
+	p_j += pairlist[pairlistoffset]-J_LOWER;
+#endif
     register BigReal p_j_x = p_j->x;
     register BigReal p_j_y = p_j->y;
     register BigReal p_j_z = p_j->z;
 
-    for (int k=0; k<pairlistindex; k++)
+#ifdef USINGSPECIALCODE
+    for (int k=pairlistoffset; k<pairlistindex; k++)
     {
       j = pairlist[k];
-      if (k+1 < pairlistindex) p_j += pairlist[k+1]-pairlist[k]; // preload
+      // don't worry about [k+1] going beyond array since array is 1 too large
+      p_j += pairlist[k+1]-j; // preload
+#else
+    for(j=J_LOWER; j<j_upper; j++)
+    {
+      p_j += ( j + 1 < j_upper );
+#endif
       register const BigReal p_ij_x = p_i_x - p_j_x;
       p_j_x = p_j->x;					// preload
       register const BigReal p_ij_y = p_i_y - p_j_y;
       p_j_y = p_j->y;					// preload
       register const BigReal p_ij_z = p_i_z - p_j_z;
       p_j_z = p_j->z;					// preload
+
 )
 EXCL
 (
@@ -200,6 +240,7 @@ EXCL
       register const BigReal p_ij_y = p_ij.y;
       register const BigReal p_ij_z = p_ij.z;
 )
+
       register const BigReal
 		r2 = p_ij_x * p_ij_x + p_ij_y * p_ij_y + p_ij_z * p_ij_z;
 
@@ -222,7 +263,6 @@ EXCL
 	reduction[fullElectVirialIndex] += fullElectVirial;
 	) return; )
       }
-
 NOEXCL
 (
       BigReal kq_i = kq_i_u;
@@ -497,9 +537,11 @@ FULL
 
 NOEXCL
 (
-    }
+    } // for pairlist
+  } // for i
+#ifdef USINGSPECIALCODE
   if (pairlist != pairlist_std) delete pairlist;
-  }
+#endif
 )
 
   reduction[vdwEnergyIndex] += vdwEnergy;
@@ -519,12 +561,19 @@ FULL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1997/05/05 16:38:57 $
+ *	$Revision: 1.1014 $	$Date: 1997/05/09 18:24:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1014  1997/05/09 18:24:22  nealk
+ * 1. Added hydrogen grouping code to improve performance in ComputeNonbondedBase
+ *    CODE ONLY WORKS WITH HYDROGEN GROUPING!
+ * 2. Increased the hydrogen group cutoff side from 2A to 2.5A -- 2A gave
+ *    fractionally different values after 100 iterations.  2.5A gives same numbers.
+ * 3. Made migration by hydrogen grouping the default in SimParameters.
+ *
  * Revision 1.1013  1997/05/05 16:38:57  nealk
  * Corrected cutoff value used with hydrogen grouping.  (groupcutoff2)
  *
