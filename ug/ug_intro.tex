@@ -11,7 +11,7 @@
 %
 %       $RCSfile: ug_intro.tex,v $
 %       $Author: jim $        $Locker:  $                $State: Exp $
-%       $Revision: 1.18 $      $Date: 2002/02/22 16:12:45 $
+%       $Revision: 1.19 $      $Date: 2002/04/16 22:56:11 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -21,6 +21,9 @@
 % REVISION HISTORY:
 %
 % $Log: ug_intro.tex,v $
+% Revision 1.19  2002/04/16 22:56:11  jim
+% Updated version to 2.5b1.
+%
 % Revision 1.18  2002/02/22 16:12:45  jim
 % Added new features.
 %
@@ -137,28 +140,25 @@ at {\tt namd@ks.uiuc.edu}.
 
 \subsection{New features in version \NAMDVER}
 
-\subsubsection*{Improved Parallel Scaling with Particle Mesh Ewald}
+\subsubsection*{Improved Constant Pressure Simulation and Coordinate Wrapping}
 
-Full electrostatics calculations now transmit less data and take
-better advantage of large clusters of multiprocessors to allow
-efficient use of several hundred processors for large systems.
+Average pressure is calculated for steps between energy outputs.
+Berendsen method uses average rather then instantaneous pressure.
+Ratio of first two basis vectors can be fixed for flexible cells.
+Any contiguous fragment can be wrapped to the periodic cell on
+output, rather than only wrapping water molecules.  Coordinates
+can be wrapped to the true nearest image for hexagonal or similar
+shaped periodic cells.
 
-\subsubsection*{Locally Enhanced Sampling}
+\subsubsection*{Additional Parameters Can Be Changed During a Simulation Script}
 
-Multiple images of a subset of the system with a reduced nonbonded
-potential can be used to increase sampling and transition rates.
+Fixed atoms can be turned off during a run.  Most pressure and
+temperature control parameters can now be changed as well.
 
-\subsubsection*{Alchemical Free Energy Perturbation}
+\subsubsection*{Fixes to AMBER parm File Reader for AMBER 7 or Large Molecules}
 
-A dual topology method allows NAMD to calculate free energy changes
-resulting from chemical mutations, the removal of ligands, etc.
-
-\subsubsection*{GROMACS Input File Compatibility}
-
-NAMD can load GROMACS ASCII topology (.top) and coordinate (.gro)
-files, allowing most GROMACS simulations to be run in NAMD.  There
-are, however, several performance-enabling features of the GROMACS
-force field which NAMD does not (yet) take advantage of.
+Fixed problems reading parm files containing more than 33,333 atoms.
+Also added changes to read new format parm files from AMBER 7.
 
 
 \subsection{\NAMD\ and molecular dynamics simulations}
