@@ -31,6 +31,7 @@ class GlobalMasterTcl : public GlobalMaster {
   static int Tcl_addatom(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_addgroup(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_reconfig(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_clearconfig(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_loadcoords(ClientData, Tcl_Interp *, int, Tcl_Obj * const []);
   static int Tcl_loadmasses(ClientData, Tcl_Interp *, int, Tcl_Obj * const []);
   static int Tcl_loadforces(ClientData, Tcl_Interp *, int, Tcl_Obj * const []);

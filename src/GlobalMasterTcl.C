@@ -133,7 +133,21 @@ int GlobalMasterTcl::Tcl_reconfig(ClientData clientData,
     return TCL_ERROR;
   }
   iout << iWARN << "'reconfig' is obsolete - reconfiguration is now automatic." << endi;
+  iout << iWARN << "Use 'clearconfig' to clear the list of atoms and groups." << endi;
   DebugM(4,"Reconfiguration turned on\n");
+  return TCL_OK;
+}
+
+int GlobalMasterTcl::Tcl_clearconfig(ClientData clientData,
+	Tcl_Interp *interp, int argc, char **) {
+  DebugM(2,"Tcl_reconfig called\n");
+  if (argc != 1) {
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  GlobalMasterTcl *self = (GlobalMasterTcl *)clientData;
+  self->modifyRequestedGroups().resize(0);
+  self->modifyRequestedAtoms().resize(0);
   return TCL_OK;
 }
 
@@ -403,6 +417,8 @@ void GlobalMasterTcl::initialize() {
   Tcl_CreateObjCommand(interp, (char *)"addforce", Tcl_addforce,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, (char *)"reconfig", Tcl_reconfig,
+      (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, (char *)"clearconfig", Tcl_clearconfig,
       (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, (char *)"addatom", Tcl_addatom,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
