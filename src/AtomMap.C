@@ -56,9 +56,9 @@ int AtomMap::unregisterIDs(PatchID pid, AtomIDList al)
 
     for(int i = 0; i < al.size(); ++i)
     {
-	if (localIDTable[ali = al[i]].pid = pid) {
-	    localIDTable[ali].pid = -1;
-	    localIDTable[ali].index = -1;
+	if (localIDTable[ali = al[i]].pid == pid) {
+	    localIDTable[ali].pid = notUsed;
+	    localIDTable[ali].index = notUsed;
 	}
     }
     return 0;
@@ -96,13 +96,16 @@ void AtomMap::clearMap(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: AtomMap.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/07 05:42:28 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/02/07 16:49:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: AtomMap.C,v $
+ * Revision 1.1002  1997/02/07 16:49:26  jim
+ * Fixing bugs that affect parallel atom migration.
+ *
  * Revision 1.1001  1997/02/07 05:42:28  ari
  * Some bug fixing - atom migration on one node works
  * Atom migration on multiple nodes gets SIGSEGV

@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1004 1997/02/07 05:42:30 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1005 1997/02/07 16:49:28 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -72,20 +72,8 @@ void Patch::loadAtoms(AtomIDList al)
 void Patch::loadAtomProperties(void)
 {
     Molecule *mol = Node::Object()->molecule;
-//    AtomIDListIter ai(atomIDList);
+    a.resize(0);
     localIndex.resize(0);
-//    int i = 0;
-//    for ( ai = ai.begin(); ai != ai.end(); ai++ )
-//    {
-//      LocalAtomID la(*ai, i++);
-//      localIndex.load(la);
-//      AtomProperties ap;
-//      ap.id = *ai;
-//      ap.type = mol->atomvdwtype(*ai);
-//      ap.mass = mol->atommass(*ai);
-//      ap.charge = mol->atomcharge(*ai);
-//      a.add(ap);
-//    }
     for ( int i=0; i<numAtoms; i++)
     {
       localIndex.load(LocalAtomID(atomIDList[i], i));
@@ -230,13 +218,16 @@ void Patch::positionsReady(int doneMigration)
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/02/07 05:42:30 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/02/07 16:49:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.1005  1997/02/07 16:49:28  jim
+ * Fixing bugs that affect parallel atom migration.
+ *
  * Revision 1.1004  1997/02/07 05:42:30  ari
  * Some bug fixing - atom migration on one node works
  * Atom migration on multiple nodes gets SIGSEGV

@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1001 1997/02/07 05:42:32 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1002 1997/02/07 16:49:29 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -59,7 +59,7 @@ void ProxyPatch::boxClosed(int box)
 void ProxyPatch::receiveAtoms(ProxyAtomsMsg *msg)
 {
   loadAtoms(msg->atomIDList);
-  loadAtomProperties();
+  // loadAtomProperties();
   AtomMap::Object()->registerIDs(patchID,msg->atomIDList);
   delete msg;
 }
@@ -94,7 +94,7 @@ void ProxyPatch::receiveAll(ProxyAllMsg *msg)
 
   AtomMap::Object()->unregisterIDs(patchID,atomIDList);
   loadAtoms(msg->atomIDList);
-  loadAtomProperties();
+  // loadAtomProperties();
   AtomMap::Object()->registerIDs(patchID,msg->atomIDList);
   DebugM(4,"Processing proxy ALL msg.\n");
   p = msg->positionList;
@@ -117,13 +117,16 @@ void ProxyPatch::sendResults(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyPatch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/07 05:42:32 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/02/07 16:49:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.1002  1997/02/07 16:49:29  jim
+ * Fixing bugs that affect parallel atom migration.
+ *
  * Revision 1.1001  1997/02/07 05:42:32  ari
  * Some bug fixing - atom migration on one node works
  * Atom migration on multiple nodes gets SIGSEGV
