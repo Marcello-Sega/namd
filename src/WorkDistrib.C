@@ -34,10 +34,27 @@
 #include "ComputeMap.h"
 #include "RecBisection.h"
 #include "Random.h"
+#include "varsizemsg.h"
 
 //#define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
 #include "Debug.h"
+
+
+class ComputeMapChangeMsg : public CMessage_ComputeMapChangeMsg
+{
+public:
+
+  int numNewNodes;
+  int *newNodes;
+
+  VARSIZE_DECL(ComputeMapChangeMsg);
+};
+
+VARSIZE_MSG(ComputeMapChangeMsg,
+  VARSIZE_ARRAY(newNodes);
+)
+
 
 //======================================================================
 // Public functions
@@ -80,11 +97,12 @@ void WorkDistrib::saveComputeMapChanges(int ep, int chareID)
     DebugM(3, "ComputeMap (" << i << ") node = " << computeMap->node(i) << " newNode = " << computeMap->newNode(i) << "\n");
   }
   
+  int nnn = computeMap->numComputes();
   ComputeMapChangeMsg *mapMsg 
-    = new ComputeMapChangeMsg ;
+    = new (&nnn,0) ComputeMapChangeMsg ;
 
-  mapMsg->numNewNodes = computeMap->numComputes();
-  for(i=0; i<computeMap->numComputes(); i++)
+  mapMsg->numNewNodes = nnn;
+  for(i=0; i<nnn; i++)
     mapMsg->newNodes[i] = computeMap->newNode(i);
 
   CProxy_WorkDistrib(thisgroup).recvComputeMapChanges(mapMsg);

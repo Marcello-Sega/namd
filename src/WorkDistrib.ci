@@ -8,7 +8,7 @@ module WorkDistrib {
   // WorkDistributor - is a bit of a mishmash
 
   message LocalWorkMsg;
-  message ComputeMapChangeMsg;
+  message [varsize] ComputeMapChangeMsg;
   message [packed] MapDistribMsg;
   message [packed] ComputeMapDistribMsg;
 

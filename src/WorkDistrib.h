@@ -174,13 +174,6 @@ public:
   }
 };
 
-class ComputeMapChangeMsg : public CMessage_ComputeMapChangeMsg
-{
-public:
-  int newNodes[20000];
-  int numNewNodes;
-};
-
 
 #endif /* WORKDISTRIB_H */
 
