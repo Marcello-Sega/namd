@@ -1,10 +1,10 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                  NAMD 2.1b3 Release Announcement                   |
+|                  NAMD 2.1b4 Release Announcement                   |
 |                                                                    |
 +--------------------------------------------------------------------+
 
-                                                   October 25, 1999
+                                                   October 29, 1999
 
 The Theoretical Biophysics Group at the University of Illinois is
 proud to announce the public release of a new version of NAMD, a
@@ -13,7 +13,7 @@ high-performance simulation of large biomolecular systems.  NAMD is
 distributed free of charge and includes source code.  NAMD development
 is supported by the NIH National Center for Research Resources.
 
-NAMD 2.1b3 is more stable than NAMD 2.0 and adds several new features:
+NAMD 2.1b4 is more stable than NAMD 2.0 and adds several new features:
 
 - Tcl scripting language interface and config file parsing.
 

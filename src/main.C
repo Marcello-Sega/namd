@@ -32,7 +32,7 @@ public:
     char **argv = msg->argv;
 
     // print banner
-    iout << iINFO << "NAMD 2.1b3"
+    iout << iINFO << "NAMD 2.1b4"
 #ifdef NAMD_FFTW
          << " (includes FFTW, do not distribute)"
 #endif

@@ -1,6 +1,6 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                     NAMD 2.1b3 Release Notes                       |
+|                     NAMD 2.1b4 Release Notes                       |
 |                                                                    |
 +--------------------------------------------------------------------+
 
@@ -137,6 +137,7 @@ conv-host +pX namd2 alanin.conf
 Intel and Alpha processors produce binary files (restart and DCD
 files) which must be "byte-swapped" to be read on other platforms.
 The flipbinpdb and flipdcd programs will perform this conversion.
+NAMD and VMD now handle this conversion automatically for most files.
 See the section "Endian Issues" below.
 
 -- T3E --
@@ -268,7 +269,7 @@ read on a "small-endian" machine (Intel, Alpha) or vice versa.
 
 NAMD generates DCD trajectory files and binary coordinate and velocity
 files which are "endian-sensitive".  While VMD 1.4b1 can read DCD files
-from any machine, NAMD requires same-endian binary restart files and
+from any machine and NAMD reads most other-endian binary restart files,
 most analysis programs (like CHARMM or X-PLOR) require same-endian DCD
 files.  We provide the programs flipdcd and flipbinpdb for switching the
 endianness of DCD and binary restart files, respectively.  These programs
