@@ -98,9 +98,11 @@ void BackEnd::init(int argc, char **argv) {
 void BackEnd::exit(void) {
   float cpuTime = CmiCpuTimer() - cpuTime_start;
   float wallTime = CmiWallTimer() - wallTime_start;
-  char endmsg[1024];
-  sprintf(endmsg,"==========================================\n"
+  CmiPrintf("==========================================\n"
   	"WallClock : %f  CPUTime : %f \n",wallTime,cpuTime);
+  // char endmsg[1024];
+  // sprintf(endmsg,"==========================================\n"
+  // 	"WallClock : %f  CPUTime : %f \n",wallTime,cpuTime);
   // ConverseExit();  // Only kills this node.
   // CkExit(); CsdScheduler(-1);  // Kills everything?
   // CmiAbort("Exiting normally.\n");  // Actually works. 
