@@ -302,7 +302,7 @@ void Controller::langevinPiston1(int step)
     iout << iINFO << "strain rate: " << strainRate << "\n";
 #endif
 
-    if ( ! ( (step-1+slowFreq/2) % slowFreq ) )
+    if ( ! ( (step-1-slowFreq/2) % slowFreq ) )
     {
       Vector factor;
       factor.x = exp( dt_long * strainRate.x );
@@ -313,10 +313,6 @@ void Controller::langevinPiston1(int step)
 #ifdef DEBUG_PRESSURE
       iout << iINFO << "rescaling by: " << factor << "\n";
 #endif
-    }
-    else
-    {
-      broadcast->positionRescaleFactor.publish(step,Vector(1,1,1));
     }
 
     // corrections to integrator
@@ -824,12 +820,21 @@ void Controller::printEnergies(int seq)
     if ( seq % node->simParameters->outputEnergies ) return;
     // ONLY OUTPUT SHOULD OCCUR BELOW THIS LINE!!!
 
+    int printAtomicPressure = 1;
+#ifndef DEBUG_PRESSURE
+    if ( simParams->rigidBonds != RIGID_NONE ) { printAtomicPressure = 0; }
+#endif
+
     if ( (seq % (10 * node->simParameters->outputEnergies) ) == 0 )
     {
 	iout << "ETITLE:     TS    BOND        ANGLE       "
 	     << "DIHED       IMPRP       ELECT       VDW       "
 	     << "BOUNDARY    KINETIC        TOTAL     TEMP";
-	if ( volume != 0. ) iout << "     PRESSURE    GPRESSURE    VOLUME";
+	if ( volume != 0. ) {
+	  if ( printAtomicPressure ) iout << "     PRESSURE";
+	  iout << "    GPRESSURE";
+	  iout << "    VOLUME";
+	}
 	if (simParams->SMDOn) iout << "     SMD";
 	iout << "\n" << endi;
     }
@@ -851,7 +856,9 @@ void Controller::printEnergies(int seq)
 
     if ( volume != 0. )
     {
-	iout << FORMAT(pressure*Vector(1,1,1)*PRESSUREFACTOR/3.);
+	if ( printAtomicPressure ) {
+	  iout << FORMAT(pressure*Vector(1,1,1)*PRESSUREFACTOR/3.);
+	}
 	iout << FORMAT(groupPressure*Vector(1,1,1)*PRESSUREFACTOR/3.);
 	iout << FORMAT(volume);
     }
@@ -876,12 +883,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1063 $	$Date: 1999/03/18 02:59:11 $
+ *	$Revision: 1.1064 $	$Date: 1999/03/19 23:03:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1064  1999/03/19 23:03:00  jim
+ * Fixed bugs in constant pressure code.
+ *
  * Revision 1.1063  1999/03/18 02:59:11  jim
  * Eliminated pressure debugging outputs.
  *

@@ -71,7 +71,7 @@ public:
 
   // methods for rigidBonds
   void rattle1(const BigReal);
-  void rattle2(const BigReal, BigReal *virial);
+  void rattle2(const BigReal, Vector *virial);
   
   // patch-wise calculations
   BigReal calcKineticEnergy();
@@ -121,12 +121,15 @@ private:
  *
  *	$RCSfile: HomePatch.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1998/08/11 16:30:28 $
+ *	$Revision: 1.1018 $	$Date: 1999/03/19 23:03:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.1018  1999/03/19 23:03:01  jim
+ * Fixed bugs in constant pressure code.
+ *
  * Revision 1.1017  1998/08/11 16:30:28  jim
  * Modified output from periodic boundary simulations to return atoms to
  * internally consistent coordinates.  We store the transformations which

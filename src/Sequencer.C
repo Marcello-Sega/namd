@@ -44,7 +44,17 @@ Sequencer::Sequencer(HomePatch *p) :
     reduction->Register(REDUCTION_BC_ENERGY); // in case not used elsewhere
     reduction->Register(REDUCTION_SMD_ENERGY); // in case not used elsewhere
     if ( simParams->rigidBonds != RIGID_NONE ) {
-	;// reduction->Register(REDUCTION_VIRIAL);
+      ; /*
+      reduction->Register(REDUCTION_VIRIAL_NORMAL_X);
+      reduction->Register(REDUCTION_VIRIAL_NORMAL_Y);
+      reduction->Register(REDUCTION_VIRIAL_NORMAL_Z);
+      reduction->Register(REDUCTION_ALT_VIRIAL_NORMAL_X);
+      reduction->Register(REDUCTION_ALT_VIRIAL_NORMAL_Y);
+      reduction->Register(REDUCTION_ALT_VIRIAL_NORMAL_Z);
+      reduction->Register(REDUCTION_INT_VIRIAL_NORMAL_X);
+      reduction->Register(REDUCTION_INT_VIRIAL_NORMAL_Y);
+      reduction->Register(REDUCTION_INT_VIRIAL_NORMAL_Z);
+      */
     }
     reduction->Register(REDUCTION_VIRIAL_NORMAL_X);
     reduction->Register(REDUCTION_VIRIAL_NORMAL_Y);
@@ -88,7 +98,17 @@ Sequencer::~Sequencer(void)
     reduction->unRegister(REDUCTION_BC_ENERGY); // in case not used elsewhere
     reduction->unRegister(REDUCTION_SMD_ENERGY); // in case not used elsewhere
     if ( simParams->rigidBonds != RIGID_NONE ) {
-	;// reduction->unRegister(REDUCTION_VIRIAL);
+      ; /*
+      reduction->unRegister(REDUCTION_VIRIAL_NORMAL_X);
+      reduction->unRegister(REDUCTION_VIRIAL_NORMAL_Y);
+      reduction->unRegister(REDUCTION_VIRIAL_NORMAL_Z);
+      reduction->unRegister(REDUCTION_ALT_VIRIAL_NORMAL_X);
+      reduction->unRegister(REDUCTION_ALT_VIRIAL_NORMAL_Y);
+      reduction->unRegister(REDUCTION_ALT_VIRIAL_NORMAL_Z);
+      reduction->unRegister(REDUCTION_INT_VIRIAL_NORMAL_X);
+      reduction->unRegister(REDUCTION_INT_VIRIAL_NORMAL_Y);
+      reduction->unRegister(REDUCTION_INT_VIRIAL_NORMAL_Z);
+      */
     }
     reduction->unRegister(REDUCTION_VIRIAL_NORMAL_X);
     reduction->unRegister(REDUCTION_VIRIAL_NORMAL_Y);
@@ -157,6 +177,7 @@ void Sequencer::algorithm(void)
     const BigReal timestep = simParams->dt;
 
     const int nonbondedFrequency = simParams->nonbondedFrequency;
+    slowFreq = nonbondedFrequency;
     const BigReal nbondstep = timestep * nonbondedFrequency;
     int &doNonbonded = patch->flags.doNonbonded;
     doNonbonded = !(step%nonbondedFrequency);
@@ -167,6 +188,7 @@ void Sequencer::algorithm(void)
     const int dofull = ( simParams->fullDirectOn ||
 			simParams->FMAOn || simParams->PMEOn );
     const int fullElectFrequency = simParams->fullElectFrequency;
+    if ( dofull ) slowFreq = fullElectFrequency;
     const BigReal slowstep = timestep * fullElectFrequency;
     int &doFullElectrostatics = patch->flags.doFullElectrostatics;
     doFullElectrostatics = (dofull && !(step%fullElectFrequency));
@@ -302,7 +324,7 @@ void Sequencer::berendsenPressure(int step)
 
 void Sequencer::langevinPiston(int step)
 {
-  if ( simParams->langevinPistonOn )
+  if ( simParams->langevinPistonOn && ! ( (step-1-slowFreq/2) % slowFreq ) )
   {
    Vector factor = broadcast->positionRescaleFactor.get(step);
    Vector velFactor(1/factor.x,1/factor.y,1/factor.z);
@@ -424,9 +446,19 @@ void Sequencer::rattle1(BigReal dt)
 void Sequencer::rattle2(BigReal dt, int step)
 {
   if ( simParams->rigidBonds != RIGID_NONE ) {
-    BigReal virial = 0.;
+    Vector virial(0.,0.,0.);
     patch->rattle2(dt, &virial);
-    // reduction->submit(step, REDUCTION_VIRIAL, virial);
+    /*
+    reduction->submit(step, REDUCTION_VIRIAL_NORMAL_X, virial.x);
+    reduction->submit(step, REDUCTION_VIRIAL_NORMAL_Y, virial.y);
+    reduction->submit(step, REDUCTION_VIRIAL_NORMAL_Z, virial.z);
+    reduction->submit(step, REDUCTION_ALT_VIRIAL_NORMAL_X, virial.x);
+    reduction->submit(step, REDUCTION_ALT_VIRIAL_NORMAL_Y, virial.y);
+    reduction->submit(step, REDUCTION_ALT_VIRIAL_NORMAL_Z, virial.z);
+    reduction->submit(step, REDUCTION_INT_VIRIAL_NORMAL_X, virial.x);
+    reduction->submit(step, REDUCTION_INT_VIRIAL_NORMAL_Y, virial.y);
+    reduction->submit(step, REDUCTION_INT_VIRIAL_NORMAL_Z, virial.z);
+    */
   }
 }
 
@@ -614,12 +646,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1057 $     $Date: 1999/03/17 21:26:33 $
+ *      $Revision: 1.1058 $     $Date: 1999/03/19 23:03:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1058  1999/03/19 23:03:02  jim
+ * Fixed bugs in constant pressure code.
+ *
  * Revision 1.1057  1999/03/17 21:26:33  jim
  * Switching internal nomenclature from fmaFrequency to fullElectFrequency.
  *

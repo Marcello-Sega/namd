@@ -37,7 +37,7 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1049 1999/03/17 17:59:24 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1050 1999/03/19 23:03:01 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, TransformList tl,
       PositionList pl, VelocityList vl) : Patch(pd,al,pl), v(vl), t(tl)
@@ -329,12 +329,12 @@ void HomePatch::rattle1(const BigReal timestep)
 }
 
 //  RATTLE algorithm from Allen & Tildesley
-void HomePatch::rattle2(const BigReal timestep, BigReal *virial)
+void HomePatch::rattle2(const BigReal timestep, Vector *virial)
 {
   Molecule *mol = Node::Object()->molecule;
   SimParameters *simParams = Node::Object()->simParameters;
   const BigReal dt = timestep / TIMEFACTOR;
-  BigReal wc = 0.;  // constraint virial
+  Vector wc(0.,0.,0.);  // constraint virial
   BigReal tol = simParams->rigidTol;
   int maxiter = simParams->rigidIter;
   int i, iter;
@@ -359,7 +359,7 @@ void HomePatch::rattle2(const BigReal timestep, BigReal *virial)
     int icnt = 0;
     if ( ( tmp = mol->rigid_bond_length(a[ig].id) ) ) {  // for water
       if ( hgs != 3 ) {
-        NAMD_die("Hydrogen group error caught in rattle1().  It's a bug!\n");
+        NAMD_die("Hydrogen group error caught in rattle2().  It's a bug!\n");
       }
       dsq[icnt] = tmp * tmp;  ial[icnt] = 1;  ibl[icnt] = 2;  ++icnt;
       if ( fixed[1] && fixed[2] ) --icnt;  // both fixed so skip it
@@ -382,8 +382,11 @@ void HomePatch::rattle2(const BigReal timestep, BigReal *virial)
 	BigReal rmb = rmass[b];
 	BigReal gab = -rvab / ( ( rma + rmb ) * dsq[i] );
 	if ( fabs(gab) > tol ) {
-	  wc += gab * dsq[i];
+	  // wc += gab * dsq[i];
 	  Vector dp = rab * gab;
+	  wc.x += dp.x * rab.x;
+	  wc.y += dp.y * rab.y;
+	  wc.z += dp.z * rab.z;
 	  vel[a] += rma * dp;
 	  vel[b] -= rmb * dp;
 	  done = 0;
@@ -399,7 +402,7 @@ void HomePatch::rattle2(const BigReal timestep, BigReal *virial)
       v[ig+i] = vel[i];
     }
     // check that there isn't a constant needed here!
-    *virial += wc / ( 1.5 * dt );
+    *virial += wc / ( 0.5 * dt );
   }
 
 }
@@ -721,12 +724,15 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1049 $	$Date: 1999/03/17 17:59:24 $
+ *	$Revision: 1.1050 $	$Date: 1999/03/19 23:03:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1050  1999/03/19 23:03:01  jim
+ * Fixed bugs in constant pressure code.
+ *
  * Revision 1.1049  1999/03/17 17:59:24  jim
  * Eliminated compiler warnings and errors.
  *
