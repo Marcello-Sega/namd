@@ -523,7 +523,7 @@ void topo_mol_del_dihedral(topo_mol *mol, const topo_mol_ident_t *targets,
   if ( def->res3 < 0 || def->res3 >= ntargets ) return;
   t3 = targets[def->res3];
   t3.aname = def->atom3;
-  a4 = topo_mol_get_atom(mol,&t4,def->rel4);
+  a3 = topo_mol_get_atom(mol,&t3,def->rel3);
   if ( def->res4 < 0 || def->res4 >= ntargets ) return;
   t4 = targets[def->res4];
   t4.aname = def->atom4;
@@ -600,7 +600,7 @@ void topo_mol_del_improper(topo_mol *mol, const topo_mol_ident_t *targets,
   if ( def->res3 < 0 || def->res3 >= ntargets ) return;
   t3 = targets[def->res3];
   t3.aname = def->atom3;
-  a4 = topo_mol_get_atom(mol,&t4,def->rel4);
+  a3 = topo_mol_get_atom(mol,&t3,def->rel3);
   if ( def->res4 < 0 || def->res4 >= ntargets ) return;
   t4 = targets[def->res4];
   t4.aname = def->atom4;
@@ -683,7 +683,7 @@ void topo_mol_del_conformation(topo_mol *mol, const topo_mol_ident_t *targets,
   if ( def->res3 < 0 || def->res3 >= ntargets ) return;
   t3 = targets[def->res3];
   t3.aname = def->atom3;
-  a4 = topo_mol_get_atom(mol,&t4,def->rel4);
+  a3 = topo_mol_get_atom(mol,&t3,def->rel3);
   if ( def->res4 < 0 || def->res4 >= ntargets ) return;
   t4 = targets[def->res4];
   t4.aname = def->atom4;
