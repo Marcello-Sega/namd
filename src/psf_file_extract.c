@@ -307,9 +307,10 @@ int psf_file_extract(topo_mol *mol, FILE *file,
       /* Add atoms to residue */
       atomtmp = memarena_alloc(mol->arena, sizeof(topo_mol_atom_t));
       atomtmp->bonds = 0;
-      atomtmp->angles= 0;
-      atomtmp->dihedrals= 0;
-      atomtmp->conformations= 0;
+      atomtmp->angles = 0;
+      atomtmp->dihedrals = 0;
+      atomtmp->impropers = 0;
+      atomtmp->conformations = 0;
       strcpy(atomtmp->name, atomlist[i].name);
       strcpy(atomtmp->type, atomlist[i].atype);
       atomtmp->mass = atomlist[i].mass; 
