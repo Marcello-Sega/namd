@@ -32,7 +32,7 @@ private:
   Vector boxcenter;	// FMA box center, set by get_FMA_cube()
   int usePBC;		// flag for PBC
 
-  void get_FMA_cube();
+  void get_FMA_cube(int resize);
 
 public:
   ComputeDPMTA(ComputeID c);
@@ -46,13 +46,17 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeDPMTA.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/03/10 17:40:02 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1013 $	$Date: 1997/03/11 16:37:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.h,v $
+ * Revision 1.1013  1997/03/11 16:37:04  nealk
+ * Difference in ElectForce with FMA and non-FMA not due to FMA.
+ * (I'm finally convinced.)
+ *
  * Revision 1.1012  1997/03/10 17:40:02  ari
  * UniqueSet changes - some more commenting and cleanup
  *

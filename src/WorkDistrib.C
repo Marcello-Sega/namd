@@ -13,7 +13,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1012 1997/03/10 17:40:18 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1013 1997/03/11 16:37:07 nealk Exp $";
 
 #include <stdio.h>
 
@@ -40,7 +40,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib
 #include "NamdOneTools.h"
 
 #define MIN_DEBUG_LEVEL 4
-#define DEBUGM
+// #define DEBUGM
 #include "Debug.h"
 
 extern "C" long int lrand48(void);
@@ -761,13 +761,17 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/03/10 17:40:18 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1013 $	$Date: 1997/03/11 16:37:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1013  1997/03/11 16:37:07  nealk
+ * Difference in ElectForce with FMA and non-FMA not due to FMA.
+ * (I'm finally convinced.)
+ *
  * Revision 1.1012  1997/03/10 17:40:18  ari
  * UniqueSet changes - some more commenting and cleanup
  *

@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: Molecule.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/11 06:29:13 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/03/11 16:37:06 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,10 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1005  1997/03/11 16:37:06  nealk
+ * Difference in ElectForce with FMA and non-FMA not due to FMA.
+ * (I'm finally convinced.)
+ *
  * Revision 1.1004  1997/03/11 06:29:13  jim
  * Modified exclusion lookup to use fixed arrays and linear searches.
  *
@@ -175,7 +179,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1004 1997/03/11 06:29:13 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1005 1997/03/11 16:37:06 nealk Exp $";
 
 #include "Molecule.h"
 #include <stdio.h>
@@ -193,7 +197,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,
 #include "Templates/UniqueSetIter.h"
 
 #define MIN_DEBUG_LEVEL 3
-#define DEBUGM
+// #define DEBUGM
 #include "Debug.h"
 
 /************************************************************************/

@@ -32,7 +32,7 @@
 
 extern Communicate *comm;
 
-void ComputeDPMTA::get_FMA_cube()
+void ComputeDPMTA::get_FMA_cube(int resize)
 {
   Vector boxSize,boxCenter;	// used to see if things change
   PatchMap *patchMap = PatchMap::Object();
@@ -49,6 +49,7 @@ void ComputeDPMTA::get_FMA_cube()
     boxSize.x = dim_x*simParams->patchDimension;
     boxSize.y = dim_y*simParams->patchDimension;
     boxSize.z = dim_z*simParams->patchDimension;
+    BigReal skirt = 2*simParams->patchDimension;
 
     boxCenter = patchMap->Origin();
     boxCenter.x += boxsize.x/2.0;
@@ -56,10 +57,9 @@ void ComputeDPMTA::get_FMA_cube()
     boxCenter.z += boxsize.z/2.0;
 
     //  add the skirt of empty patches by adding 2 patches in every direction
-    BigReal tmp=2*simParams->patchDimension;
-    boxSize.x += tmp;
-    boxSize.y += tmp;
-    boxSize.z += tmp;
+    boxSize.x += skirt;
+    boxSize.y += skirt;
+    boxSize.z += skirt;
   }
   else
   {
@@ -84,24 +84,27 @@ void ComputeDPMTA::get_FMA_cube()
 
   // don't bother checking if the center has moved since it depends on the size.
   if (boxsize != boxSize)
-	{
+  {
 	DebugM(1,"resetting FMA box\n");
 	// reset the size and center
 	boxsize = boxSize;
 	boxcenter = boxCenter;
 
-	// reset DPMTA
-	PmtaVector center,size;
-	center.x = boxcenter.x;
-	center.y = boxcenter.y;
-	center.z = boxcenter.z;
-	size.x = boxsize.x;
-	size.y = boxsize.y;
-	size.z = boxsize.z;
-	DebugM(1,"calling PMTAresize()\n");
-	PMTAresize(&size,&center);
-	DebugM(1,"called PMTAresize()\n");
+	// reset DPMTA (only reset it after it has been initialized!)
+	if (resize)
+	{
+	  PmtaVector center,size;
+	  center.x = boxcenter.x;
+	  center.y = boxcenter.y;
+	  center.z = boxcenter.z;
+	  size.x = boxsize.x;
+	  size.y = boxsize.y;
+	  size.z = boxsize.z;
+	  DebugM(1,"calling PMTAresize()\n");
+	  PMTAresize(&size,&center);
+	  DebugM(1,"called PMTAresize()\n");
 	}
+  }
   DebugM(2,"cube center: " << boxcenter << " size=" << boxsize << "\n");
 }
 
@@ -159,7 +162,7 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
 
   //  Get the size of the FMA cube
   DebugM(1,"DPMTA getting FMA cube\n");
-  get_FMA_cube();
+  get_FMA_cube(FALSE);
   DebugM(1,"DPMTA got FMA cube\n");
 
   // check for PBC
@@ -257,9 +260,9 @@ void ComputeDPMTA::doWork()
       Force *f = (*ap).forceBox->open();
       reduction->submit(fake_seq, REDUCTION_ELECT_ENERGY, 0.0);
       ++fake_seq;
-      (*ap).positionBox->close(&x);
-      (*ap).atomBox->close(&a);
       (*ap).forceBox->close(&f);
+      (*ap).atomBox->close(&a);
+      (*ap).positionBox->close(&x);
     }
     return;
   }
@@ -273,7 +276,7 @@ void ComputeDPMTA::doWork()
   if (CMyPe() == 0)
   {
     // check if box has changes for PBC
-    get_FMA_cube();
+    get_FMA_cube(TRUE);
   }
   else
   {
@@ -313,8 +316,8 @@ void ComputeDPMTA::doWork()
 	}
     }
 
-    (*ap).positionBox->close(&(*ap).x);
     (*ap).atomBox->close(&(*ap).a);
+    (*ap).positionBox->close(&(*ap).x);
   } 
 
   DebugM(1,"DPMTA doWork() there are " << i << " atoms in this node.\n");
