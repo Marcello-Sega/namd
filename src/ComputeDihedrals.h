@@ -32,51 +32,13 @@ public:
     Index dihedralType;
 
 
-  DihedralElem() {
-	atomID[0] = -1;
-	atomID[1] = -1;
-	atomID[2] = -1;
-	atomID[3] = -1;
-	p[0] = NULL;
-	p[1] = NULL;
-	p[2] = NULL;
-	p[3] = NULL;
-  }
-  DihedralElem(const Dihedral *a) {
-    atomID[0] = a->atom1;
-    atomID[1] = a->atom2;
-    atomID[2] = a->atom3;
-    atomID[3] = a->atom4;
-    dihedralType = a->dihedral_type;
-  }
-
-  DihedralElem(AtomID atom0, AtomID atom1, AtomID atom2, AtomID atom3) {
-    if (atom0 > atom3) {  // Swap end atoms so lowest is first!
-      AtomID tmp = atom3; atom3 = atom0; atom0 = tmp; 
-      tmp = atom1; atom1 = atom2; atom2 = tmp;
-    }
-    atomID[0] = atom0;
-    atomID[1] = atom1;
-    atomID[2] = atom2;
-    atomID[3] = atom3;
-  }
+  inline DihedralElem();
+  inline DihedralElem(const Dihedral *a);
+  inline DihedralElem(AtomID atom0, AtomID atom1, AtomID atom2, AtomID atom3);
   ~DihedralElem() {};
 
-  int operator==(const DihedralElem &a) const {
-    return (a.atomID[0] == atomID[0] && a.atomID[1] == atomID[1] &&
-        a.atomID[2] == atomID[2] && a.atomID[3] == atomID[3]);
-  }
-
-  int operator<(const DihedralElem &a) const {
-    return  (atomID[0] < a.atomID[0] ||
-            (atomID[0] == a.atomID[0] &&
-            (atomID[1] < a.atomID[1] ||
-            (atomID[1] == a.atomID[1] &&
-            (atomID[2] < a.atomID[2] ||
-            (atomID[2] == a.atomID[2] &&
-             atomID[3] < a.atomID[3] 
-	     ))))));
-  }
+  inline int operator==(const DihedralElem &a) const;
+  inline int operator<(const DihedralElem &a) const;
 };
 
 class ComputeDihedrals : public ComputeHomeTuples<DihedralElem>
@@ -87,18 +49,23 @@ public:
 
 };
 
+#include "ComputeDihedrals.inl"
+
 #endif
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeDihedrals.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/11/26 16:33:35 $
+ *	$Revision: 1.2 $	$Date: 1997/01/14 15:29:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDihedrals.h,v $
+ * Revision 1.2  1997/01/14 15:29:47  nealk
+ * Moved "inline" functions into .inl file.
+ *
  * Revision 1.1  1996/11/26 16:33:35  nealk
  * Initial revision
  *
