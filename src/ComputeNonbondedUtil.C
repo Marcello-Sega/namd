@@ -167,9 +167,19 @@ void ComputeNonbondedUtil::select(void)
   while ( r2_delta > r2_tol ) r2_delta /= 2.0;
   r2_delta_1 = 1.0 / r2_delta;
 
+  if ( ! CkMyPe() ) {
+    iout << iINFO << "COULOMB TABLE R-SQUARED SPACING: " <<
+				r2_delta << "\n" << endi;
+  }
+
   int i;
   int n = (int)(cutoff2 / r2_delta) + 4;
   n += ( (n % 2) ? 0 : 1 );  // ensure that n is odd
+
+  if ( ! CkMyPe() ) {
+    iout << iINFO << "COULOMB TABLE SIZE: " <<
+				n << " POINTS\n" << endi;
+  }
 
   if ( table_alloc ) delete [] table_alloc;
   table_alloc = new BigReal[12*n+40];
@@ -333,7 +343,7 @@ void ComputeNonbondedUtil::select(void)
       // if ( dg != 0.0 ) CkPrintf("TABLE %d FORCE ERROR %g AT %g\n",j,dg,x*i);
     }
     if ( ( ( dvmax != 0.0 ) || ( dgmax != 0.0 ) ) && ! CkMyPe() ) {
-      iout << iWARN << "NONZERO IMPRECISION IN COULOMB TABLE: " <<
+      iout << iINFO << "NONZERO IMPRECISION IN COULOMB TABLE: " <<
 				dvmax << " " << dgmax << "\n" << endi;
     }
   }
