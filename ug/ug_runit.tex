@@ -297,7 +297,7 @@ For dual processor clusters we have found it that running two separate
 processes per node, each with its own communication thread, is faster
 than using the charmrun ++ppn option to run multiple worker threads.
 However, we have observed that when running on a single hyperthreaded
-processor (i.e., a newer Pentium 4) there is an additional 15% boost
+processor (i.e., a newer Pentium 4) there is an additional 15\% boost
 from running standalone with two threads (namd2 +p2) beyond running
 two processors (charmrun namd2 ++local +p2).  For a cluster of single
 processor hyperthreaded machines an SMP version should provide very
