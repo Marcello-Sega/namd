@@ -27,6 +27,81 @@
 #define DEBUGM
 #include "Debug.h"
 
+void * ProxyAtomsMsg:: pack (int *length)
+  {
+    int size = atomIDList.size();
+    *length = 2 * sizeof(int) + size * sizeof(AtomID);
+    char *buffer = (char*)new_packbuffer(this,*length);
+    *((int*)buffer) = patch;
+    *((int*)(buffer+sizeof(int))) = size;
+    AtomID *data = (AtomID*)(buffer+2*sizeof(int));
+    for ( int i = 0; i < size; ++i )
+      data[i] = atomIDList[i];
+    this->~ProxyAtomsMsg();
+    return buffer;
+  }
+void ProxyAtomsMsg:: unpack (void *in)
+  {
+    new((void*)this) ProxyAtomsMsg;
+    char *buffer = (char*)in;
+    patch = *((int*)buffer);
+    int size = *((int*)(buffer+sizeof(int)));
+    atomIDList.resize(size);
+    AtomID *data = (AtomID*)(buffer+2*sizeof(int));
+    for ( int i = 0; i < size; ++i )
+      atomIDList[i] = data[i];
+  }
+
+void * ProxyDataMsg:: pack (int *length)
+  {
+    int size = positionList.size();
+    *length = 2 * sizeof(int) + size * sizeof(Position);
+    char *buffer = (char*)new_packbuffer(this,*length);
+    *((int*)buffer) = patch;
+    *((int*)(buffer+sizeof(int))) = size;
+    Position *data = (Position*)(buffer+2*sizeof(int));
+    for ( int i = 0; i < size; ++i )
+      data[i] = positionList[i];
+    this->~ProxyDataMsg();
+    return buffer;
+  }
+void ProxyDataMsg:: unpack (void *in)
+  {
+    new((void*)this) ProxyDataMsg;
+    char *buffer = (char*)in;
+    patch = *((int*)buffer);
+    int size = *((int*)(buffer+sizeof(int)));
+    positionList.resize(size);
+    Position *data = (Position*)(buffer+2*sizeof(int));
+    for ( int i = 0; i < size; ++i )
+      positionList[i] = data[i];
+  }
+
+void * ProxyResultMsg:: pack (int *length)
+  {
+    int size = forceList.size();
+    *length = 2 * sizeof(int) + size * sizeof(Force);
+    char *buffer = (char*)new_packbuffer(this,*length);
+    *((int*)buffer) = patch;
+    *((int*)(buffer+sizeof(int))) = size;
+    Force *data = (Force*)(buffer+2*sizeof(int));
+    for ( int i = 0; i < size; ++i )
+      data[i] = forceList[i];
+    this->~ProxyResultMsg();
+    return buffer;
+  }
+void ProxyResultMsg:: unpack (void *in)
+  {
+    new((void*)this) ProxyResultMsg;
+    char *buffer = (char*)in;
+    patch = *((int*)buffer);
+    int size = *((int*)(buffer+sizeof(int)));
+    forceList.resize(size);
+    Force *data = (Force*)(buffer+2*sizeof(int));
+    for ( int i = 0; i < size; ++i )
+      forceList[i] = data[i];
+  }
+
 ProxyMgr *ProxyMgr::_instance = 0;
 
 ProxyMgr::ProxyMgr(InitMsg *) : numProxies(0), proxyList(NULL) { 
@@ -173,12 +248,15 @@ ProxyMgr::recvProxyAtoms(ProxyAtomsMsg *msg) {
  *
  *	$RCSfile: ProxyMgr.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1996/12/17 08:56:38 $
+ *	$Revision: 1.10 $	$Date: 1996/12/17 17:07:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.10  1996/12/17 17:07:41  jim
+ * moved messages from main to ProxyMgr
+ *
  * Revision 1.9  1996/12/17 08:56:38  jim
  * added node argument to sendProxyData and sendProxyAtoms
  *

@@ -3,14 +3,7 @@ message InitMsg;
 message ReadyMsg;
 message RunMsg;
 message DoneMsg;
-message RegisterProxyMsg;
-message UnregisterProxyMsg;
 message LocalWorkMsg;
-
-packmessage ProxyAtomsMsg;
-packmessage ProxyDataMsg;
-packmessage ProxyResultMsg;
-
 
 chare main {
   entry main();

@@ -44,117 +44,6 @@ class ReadyMsg : public EmptyMsg {
 class DoneMsg : public EmptyMsg { 
 };
 
-class RegisterProxyMsg : public comm_object {
-public:
-  NodeID node;
-  PatchID patch;
-};
-
-class UnregisterProxyMsg : public comm_object {
-public:
-  NodeID node;
-  PatchID patch;
-};
-
-class ProxyAtomsMsg : public comm_object {
-public:
-  PatchID patch;
-  AtomIDList atomIDList;
-  void * pack (int *length)
-  {
-    int size = atomIDList.size();
-    *length = 2 * sizeof(int) + size * sizeof(AtomID);
-    char *buffer = (char*)new_packbuffer(this,*length);
-    *((int*)buffer) = patch;
-    *((int*)(buffer+sizeof(int))) = size;
-    AtomID *data = (AtomID*)(buffer+2*sizeof(int));
-    for ( int i = 0; i < size; ++i )
-      data[i] = atomIDList[i];
-    this->~ProxyAtomsMsg();
-    return buffer;
-  }
-  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
-  void * operator new(size_t s) { return comm_object::operator new(s); }
-  void * operator new(size_t, void *ptr) { return ptr; }
-  void unpack (void *in)
-  {
-    new((void*)this) ProxyAtomsMsg;
-    char *buffer = (char*)in;
-    int patch = *((int*)buffer);
-    int size = *((int*)(buffer+sizeof(int)));
-    atomIDList.resize(size);
-    AtomID *data = (AtomID*)(buffer+2*sizeof(int));
-    for ( int i = 0; i < size; ++i )
-      atomIDList[i] = data[i];
-  }
-};
-
-class ProxyDataMsg : public comm_object {
-public:
-  PatchID patch;
-  PositionList positionList;
-  void * pack (int *length)
-  {
-    int size = positionList.size();
-    *length = 2 * sizeof(int) + size * sizeof(Position);
-    char *buffer = (char*)new_packbuffer(this,*length);
-    *((int*)buffer) = patch;
-    *((int*)(buffer+sizeof(int))) = size;
-    Position *data = (Position*)(buffer+2*sizeof(int));
-    for ( int i = 0; i < size; ++i )
-      data[i] = positionList[i];
-    this->~ProxyDataMsg();
-    return buffer;
-  }
-  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
-  void * operator new(size_t s) { return comm_object::operator new(s); }
-  void * operator new(size_t, void *ptr) { return ptr; }
-  void unpack (void *in)
-  {
-    new((void*)this) ProxyDataMsg;
-    char *buffer = (char*)in;
-    int patch = *((int*)buffer);
-    int size = *((int*)(buffer+sizeof(int)));
-    positionList.resize(size);
-    Position *data = (Position*)(buffer+2*sizeof(int));
-    for ( int i = 0; i < size; ++i )
-      positionList[i] = data[i];
-  }
-};
-
-class ProxyResultMsg : public comm_object {
-public:
-  PatchID patch;
-  ForceList forceList;
-  void * pack (int *length)
-  {
-    int size = forceList.size();
-    *length = 2 * sizeof(int) + size * sizeof(Force);
-    char *buffer = (char*)new_packbuffer(this,*length);
-    *((int*)buffer) = patch;
-    *((int*)(buffer+sizeof(int))) = size;
-    Force *data = (Force*)(buffer+2*sizeof(int));
-    for ( int i = 0; i < size; ++i )
-      data[i] = forceList[i];
-    this->~ProxyResultMsg();
-    return buffer;
-  }
-  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
-  void * operator new(size_t size) { return comm_object::operator new(size); }
-  void * operator new(size_t, void *ptr) { return ptr; }
-  void unpack (void *in)
-  {
-    new((void*)this) ProxyResultMsg;
-    char *buffer = (char*)in;
-    int patch = *((int*)buffer);
-    int size = *((int*)(buffer+sizeof(int)));
-    forceList.resize(size);
-    Force *data = (Force*)(buffer+2*sizeof(int));
-    for ( int i = 0; i < size; ++i )
-      forceList[i] = data[i];
-  }
-};
-
 class Compute;
 
 class LocalWorkMsg : public comm_object
@@ -170,12 +59,15 @@ public:
  *
  *	$RCSfile: main.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.18 $	$Date: 1996/12/17 08:54:40 $
+ *	$Revision: 1.19 $	$Date: 1996/12/17 17:07:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: main.h,v $
+ * Revision 1.19  1996/12/17 17:07:41  jim
+ * moved messages from main to ProxyMgr
+ *
  * Revision 1.18  1996/12/17 08:54:40  jim
  * fixed several bugs, including not saving patch
  *

@@ -26,6 +26,8 @@
 #include "HomePatchTypes.h"
 #include "main.h"
 
+class RegisterProxyMsg;
+class UnregisterProxyMsg;
 
 class HomePatch : public Patch {
    friend PatchMgr;
@@ -104,12 +106,15 @@ class HomePatch : public Patch {
  *
  *	$RCSfile: HomePatch.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1996/12/11 22:31:41 $
+ *	$Revision: 1.11 $	$Date: 1996/12/17 17:07:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.11  1996/12/17 17:07:41  jim
+ * moved messages from main to ProxyMgr
+ *
  * Revision 1.10  1996/12/11 22:31:41  jim
  * added integration methods for Sequencer
  *

@@ -21,6 +21,51 @@
 #include "main.h"
 #include "NamdTypes.h"
 
+class RegisterProxyMsg : public comm_object {
+public:
+  NodeID node;
+  PatchID patch;
+};
+
+class UnregisterProxyMsg : public comm_object {
+public:
+  NodeID node;
+  PatchID patch;
+};
+
+class ProxyAtomsMsg : public comm_object {
+public:
+  PatchID patch;
+  AtomIDList atomIDList;
+  void * pack (int *length);
+  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
+  void * operator new(size_t s) { return comm_object::operator new(s); }
+  void * operator new(size_t, void *ptr) { return ptr; }
+  void unpack (void *in);
+};
+
+class ProxyDataMsg : public comm_object {
+public:
+  PatchID patch;
+  PositionList positionList;
+  void * pack (int *length);
+  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
+  void * operator new(size_t s) { return comm_object::operator new(s); }
+  void * operator new(size_t, void *ptr) { return ptr; }
+  void unpack (void *in);
+};
+
+class ProxyResultMsg : public comm_object {
+public:
+  PatchID patch;
+  ForceList forceList;
+  void * pack (int *length);
+  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
+  void * operator new(size_t size) { return comm_object::operator new(size); }
+  void * operator new(size_t, void *ptr) { return ptr; }
+  void unpack (void *in);
+};
+
 class ProxyPatch;
 class PatchMap;
 
@@ -64,12 +109,15 @@ private:
  *
  *	$RCSfile: ProxyMgr.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/12/17 08:56:38 $
+ *	$Revision: 1.5 $	$Date: 1996/12/17 17:07:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.h,v $
+ * Revision 1.5  1996/12/17 17:07:41  jim
+ * moved messages from main to ProxyMgr
+ *
  * Revision 1.4  1996/12/17 08:56:38  jim
  * added node argument to sendProxyData and sendProxyAtoms
  *
