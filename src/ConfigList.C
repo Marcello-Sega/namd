@@ -112,6 +112,14 @@ void ConfigList::add_element( char *s1, int len1, char *s2, int len2)
     delete [] temps;
 }
 
+
+struct FileStack {
+  FILE *file;
+  int linenumber;
+  const char *filename;
+  FileStack *next;
+};
+
 // open, read, parse, and close the file
 // make a linked list of "AssocList"
 // The file is parsed as (I think):
@@ -128,6 +136,7 @@ void ConfigList::add_element( char *s1, int len1, char *s2, int len2)
 //   a line with the first non-blank character as a '}'
 ConfigList::ConfigList(const char *filename)
 {
+  FileStack *fileStack = 0;
   FILE *infile;
   
   isokay = FALSE;
@@ -139,7 +148,7 @@ ConfigList::ConfigList(const char *filename)
   } else {
     if ( (infile = Fopen(filename, "r")) == NULL ) {
         iout << iWARN << "Unable to open configuration file '" 
-                 << filename << "'." << endi;
+                 << filename << "'.\n" << endi;
         isokay = FALSE;
         return;
     }
@@ -151,7 +160,18 @@ ConfigList::ConfigList(const char *filename)
   char *namestart, *nameend, *datastart, *dataend;
   char *s;
   int spacecount;
-  while (fgets(buf, 999, infile)) {
+  int fileok;
+  while ((fileok = ! ! fgets(buf, 999, infile)) || fileStack) {
+    if ( fileStack && ! fileok ) { // done with "source"
+      delete [] filename;
+      filename = fileStack->filename;
+      linenumber = fileStack->linenumber;
+      infile = fileStack->file;
+      FileStack *delStack = fileStack;
+      fileStack = fileStack->next;
+      delete delStack;
+      continue;
+    }
     linenumber ++;        
     namestart = nameend = datastart = dataend = NULL;
     spacecount = 0;
@@ -179,7 +199,7 @@ ConfigList::ConfigList(const char *filename)
       if (*s != '#') {       // then there was an overflow
         iout << iWARN << "Line " << linenumber << " of configuration file "
                  << filename << " contains more than 999 characters."
-                 << "  Excess characters will be ignored." << endi;
+                 << "  Excess characters will be ignored.\n" << endi;
       } else {
         *s = 0;  // delete the '#' character
       }
@@ -191,13 +211,42 @@ ConfigList::ConfigList(const char *filename)
       if (!namestart && datastart || namestart && !datastart) {// was some data
         iout << iWARN << "Couldn't parse line " << linenumber << " in "
                  << "configuration file " << filename << ".  The line was: "
-                 << buf << endi;
+                 << buf << "\n" << endi;
       }
       continue;  // which ever the case, go to the next line
     }
 
-   // check if the data element begins with a '{'
-   if (datastart[0] == '{') {
+   if ( ! strncmp(namestart, "source", nameend-namestart+1) )  {
+     // see if the the name is "source"
+
+     // store the old file data
+     FileStack *newStack = new FileStack;
+     newStack->filename = filename;
+     newStack->linenumber = linenumber;
+     newStack->file = infile;
+     newStack->next = fileStack;
+     fileStack = newStack;
+
+     // copy the filename
+     char *cpychar = new char[dataend-datastart+2];
+     strcpy(cpychar,datastart);
+     filename = cpychar;
+
+     // open the sourced file
+     if ( (infile = Fopen(filename, "r")) == NULL ) {
+        iout << iWARN << "Unable to open file '" 
+                 << filename << "' sourced by '"
+		<< fileStack->filename << "' at line "
+		<< fileStack->linenumber << ".\n" << endi;
+        isokay = FALSE;
+        return;
+     }
+     iout << iINFO << "Sourcing " << filename << "\n" << endi;
+     isokay = TRUE;         // file is now open
+     linenumber = 0;
+     
+   } else if (datastart[0] == '{') {
+     // check if the data begins with a '{'
      // note that initial '{' will be intact (for a flag), but final '}' will be removed
      ostrstream alldata;
      char newdata[1000];
