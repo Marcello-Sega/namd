@@ -1039,7 +1039,8 @@ For example, ``{\tt atomid br 2 N}''.
 
 \item
 {\tt addatom <atomid>} \\
-Request coordinates of this atom for next force evaluation.
+Request coordinates of this atom for next force evaluation, and
+the calculated total force on this atom for current force evaluation.
 Request remains in effect until {\tt clearconfig} is called.
 For example, ``{\tt addatom 4}'' or ``{\tt addatom [atomid br 2 N]}''.
 
@@ -1062,7 +1063,7 @@ configuration.
 {\tt loadcoords <varname>} \\
 Loads requested atom and group coordinates (in \AA) into a local array.
 {\tt loadcoords} should only be called from within the {\tt calcforces} procedure.
-For example, ``{\tt loadcoords p}'' and ``{\tt print p(4)}''.
+For example, ``{\tt loadcoords p}'' and ``{\tt print \$p(4)}''.
 
 \item
 {\tt loadforces <varname>} \\
@@ -1070,13 +1071,23 @@ Loads the forces applied in the previous timestep (in kcal mol$^{-1}$
 \AA$^{-1}$) into a local array.
 {\tt loadforces} should only be called from within the {\tt
 calcforces} procedure.
-For example, ``{\tt loadforces f}'' and ``{\tt print f(4)}''.
+For example, ``{\tt loadforces f}'' and ``{\tt print \$f(4)}''.
+
+\item
+{\tt loadtotalforces <varname>} \\
+Loads the total forces on each requested atom in the previous
+time step (in kcal mol$^{-1}$\AA$^{-1}$) into a local array. The
+total force also includes external forces. Note that the
+``{\tt loadforces}'' command returns external forces applied by
+the user. Therefore, one can subtract the external force on an
+atom from the total force on this atom to get the pure force
+arising from the simulation system.
 
 \item
 {\tt loadmasses <varname>} \\
 Loads requested atom and group masses (in amu) into a local array.
 {\tt loadmasses} should only be called from within the {\tt calcforces} procedure.
-For example, ``{\tt loadcoords m}'' and ``{\tt print m(4)}''.
+For example, ``{\tt loadcoords m}'' and ``{\tt print \$m(4)}''.
 
 \item
 {\tt addforce <atomid|groupid> <force vector>} \\
