@@ -11,7 +11,7 @@
  *
  *  $RCSfile: Molecule.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1027 $  $Date: 1998/07/08 22:23:05 $
+ *  $Revision: 1.1028 $  $Date: 1998/07/16 00:49:21 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,10 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1028  1998/07/16 00:49:21  jim
+ * Removed unnecessary tuple uniqueness code, changed tuplesByAtom
+ * lists to only include tuple on list for first atom rather than all.
+ *
  * Revision 1.1027  1998/07/08 22:23:05  jim
  * Eliminated exclusion checking for atoms within hydrogen group (safely).
  *
@@ -266,7 +270,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1027 1998/07/08 22:23:05 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1028 1998/07/16 00:49:21 jim Exp $";
 
 #include "UniqueSortedArray.h"
 #include "Molecule.h"
@@ -423,6 +427,8 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
   donors=NULL;
   acceptors=NULL;
   exclusions=NULL;
+  tmpArena=NULL;
+  bondsWithAtom=NULL;
   bondsByAtom=NULL;
   anglesByAtom=NULL;
   dihedralsByAtom=NULL;
@@ -2512,6 +2518,8 @@ void Molecule::receive_Molecule(MIStream *msg)
     {
        register int i;      //  Loop counter
        
+       tmpArena = new ObjectArena<int>;
+       bondsWithAtom = new intPtr[numAtoms];
        bondsByAtom = new intPtr[numAtoms];
        anglesByAtom = new intPtr[numAtoms];
        dihedralsByAtom = new intPtr[numAtoms];
@@ -2534,6 +2542,29 @@ void Molecule::receive_Molecule(MIStream *msg)
        }
        for (i=0; i<numAtoms; i++)
        {
+    bondsWithAtom[i] = arena.getNewArray(byAtomSize[i]+1);
+    bondsWithAtom[i][byAtomSize[i]] = -1;
+    byAtomSize[i] = 0;
+       }
+       for (i=0; i<numBonds; i++)
+       {
+    int a1 = bonds[i].atom1;
+    int a2 = bonds[i].atom2;
+    bondsWithAtom[a1][byAtomSize[a1]++] = i;
+    bondsWithAtom[a2][byAtomSize[a2]++] = i;
+       }
+       
+       //  Build the bond lists
+       for (i=0; i<numAtoms; i++)
+       {
+    byAtomSize[i] = 0;
+       }
+       for (i=0; i<numBonds; i++)
+       {
+    byAtomSize[bonds[i].atom1]++;
+       }
+       for (i=0; i<numAtoms; i++)
+       {
     bondsByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
     bondsByAtom[i][byAtomSize[i]] = -1;
     byAtomSize[i] = 0;
@@ -2541,9 +2572,7 @@ void Molecule::receive_Molecule(MIStream *msg)
        for (i=0; i<numBonds; i++)
        {
     int a1 = bonds[i].atom1;
-    int a2 = bonds[i].atom2;
     bondsByAtom[a1][byAtomSize[a1]++] = i;
-    bondsByAtom[a2][byAtomSize[a2]++] = i;
        }
        
        DebugM(3,"Building angle lists.\n");
@@ -2556,8 +2585,6 @@ void Molecule::receive_Molecule(MIStream *msg)
        for (i=0; i<numAngles; i++)
        {
     byAtomSize[angles[i].atom1]++;
-    byAtomSize[angles[i].atom2]++;
-    byAtomSize[angles[i].atom3]++;
        }
        for (i=0; i<numAtoms; i++)
        {
@@ -2568,11 +2595,7 @@ void Molecule::receive_Molecule(MIStream *msg)
        for (i=0; i<numAngles; i++)
        {
     int a1 = angles[i].atom1;
-    int a2 = angles[i].atom2;
-    int a3 = angles[i].atom3;
     anglesByAtom[a1][byAtomSize[a1]++] = i;
-    anglesByAtom[a2][byAtomSize[a2]++] = i;
-    anglesByAtom[a3][byAtomSize[a3]++] = i;
        }
        
        DebugM(3,"Building improper lists.\n");
@@ -2585,9 +2608,6 @@ void Molecule::receive_Molecule(MIStream *msg)
        for (i=0; i<numImpropers; i++)
        {
     byAtomSize[impropers[i].atom1]++;
-    byAtomSize[impropers[i].atom2]++;
-    byAtomSize[impropers[i].atom3]++;
-    byAtomSize[impropers[i].atom4]++;
        }
        for (i=0; i<numAtoms; i++)
        {
@@ -2598,13 +2618,7 @@ void Molecule::receive_Molecule(MIStream *msg)
        for (i=0; i<numImpropers; i++)
        {
     int a1 = impropers[i].atom1;
-    int a2 = impropers[i].atom2;
-    int a3 = impropers[i].atom3;
-    int a4 = impropers[i].atom4;
     impropersByAtom[a1][byAtomSize[a1]++] = i;
-    impropersByAtom[a2][byAtomSize[a2]++] = i;
-    impropersByAtom[a3][byAtomSize[a3]++] = i;
-    impropersByAtom[a4][byAtomSize[a4]++] = i;
        }
        
        DebugM(3,"Building dihedral lists.\n");
@@ -2617,9 +2631,6 @@ void Molecule::receive_Molecule(MIStream *msg)
        for (i=0; i<numDihedrals; i++)
        {
     byAtomSize[dihedrals[i].atom1]++;
-    byAtomSize[dihedrals[i].atom2]++;
-    byAtomSize[dihedrals[i].atom3]++;
-    byAtomSize[dihedrals[i].atom4]++;
        }
        for (i=0; i<numAtoms; i++)
        {
@@ -2630,19 +2641,17 @@ void Molecule::receive_Molecule(MIStream *msg)
        for (i=0; i<numDihedrals; i++)
        {
     int a1 = dihedrals[i].atom1;
-    int a2 = dihedrals[i].atom2;
-    int a3 = dihedrals[i].atom3;
-    int a4 = dihedrals[i].atom4;
     dihedralsByAtom[a1][byAtomSize[a1]++] = i;
-    dihedralsByAtom[a2][byAtomSize[a2]++] = i;
-    dihedralsByAtom[a3][byAtomSize[a3]++] = i;
-    dihedralsByAtom[a4][byAtomSize[a4]++] = i;
        }
     
        DebugM(3,"Building exclusion data.\n");
     
        //  Build the arrays of exclusions for each atom
        build_exclusions();
+
+       //  Remove temporary structures
+       delete [] bondsWithAtom;  bondsWithAtom = 0;
+       delete tmpArena;  tmpArena = 0;
 
        if (exclusions != NULL)
       delete [] exclusions;
@@ -2668,7 +2677,6 @@ void Molecule::receive_Molecule(MIStream *msg)
        for (i=0; i<numTotalExclusions; i++)
        {
     byAtomSize[exclusions[i].atom1]++;
-    byAtomSize[exclusions[i].atom2]++;
        }
        for (i=0; i<numAtoms; i++)
        {
@@ -2679,9 +2687,7 @@ void Molecule::receive_Molecule(MIStream *msg)
        for (i=0; i<numTotalExclusions; i++)
        {
     int a1 = exclusions[i].atom1;
-    int a2 = exclusions[i].atom2;
     exclusionsByAtom[a1][byAtomSize[a1]++] = i;
-    exclusionsByAtom[a2][byAtomSize[a2]++] = i;
        }
 
        //  Allocate an array of intPtr's to hold the exclusions for
@@ -2841,7 +2847,7 @@ void Molecule::receive_Molecule(MIStream *msg)
        //  Loop through all the atoms marking the bonded interactions for each one
        for (i=0; i<numAtoms; i++)
        {
-      current_val = bondsByAtom[i];
+      current_val = bondsWithAtom[i];
        
       //  Loop through all the bonds for this atom
       while (*current_val != -1)
@@ -2891,7 +2897,7 @@ void Molecule::receive_Molecule(MIStream *msg)
        //  for each one
        for (i=0; i<numAtoms; i++)
        {
-       bond1 = bondsByAtom[i];
+       bond1 = bondsWithAtom[i];
        
        //  Loop through all the bonds directly connect to atom i
        while (*bond1 != -1)
@@ -2905,7 +2911,7 @@ void Molecule::receive_Molecule(MIStream *msg)
           middle_atom=bonds[*bond1].atom1;
         }
 
-        bond2 = bondsByAtom[middle_atom];
+        bond2 = bondsWithAtom[middle_atom];
 
         //  Now loop through all the bonds connect to the
         //  middle atom
@@ -2961,7 +2967,7 @@ void Molecule::receive_Molecule(MIStream *msg)
        for (i=0; i<numAtoms; i++)
        {  
       // Get all the bonds connect directly to atom i
-      bond1 = bondsByAtom[i];
+      bond1 = bondsWithAtom[i];
        
       while (*bond1 != -1)
       {
@@ -2974,7 +2980,7 @@ void Molecule::receive_Molecule(MIStream *msg)
           mid1=bonds[*bond1].atom1;
         }
 
-        bond2 = bondsByAtom[mid1];
+        bond2 = bondsWithAtom[mid1];
 
         //  Loop through all the bonds connected to atom mid1
         while (*bond2 != -1)
@@ -2997,7 +3003,7 @@ void Molecule::receive_Molecule(MIStream *msg)
             continue;
           }
 
-          bond3=bondsByAtom[mid2];
+          bond3=bondsWithAtom[mid2];
 
           //  Loop through all the bonds connected to mid2
           while (*bond3 != -1)
@@ -3963,12 +3969,16 @@ void Molecule::receive_Molecule(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1027 $  $Date: 1998/07/08 22:23:05 $
+ *  $Revision: 1.1028 $  $Date: 1998/07/16 00:49:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1028  1998/07/16 00:49:21  jim
+ * Removed unnecessary tuple uniqueness code, changed tuplesByAtom
+ * lists to only include tuple on list for first atom rather than all.
+ *
  * Revision 1.1027  1998/07/08 22:23:05  jim
  * Eliminated exclusion checking for atoms within hydrogen group (safely).
  *

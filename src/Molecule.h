@@ -82,15 +82,15 @@ private:
 	Real *rigidBondLengths;  //  if H, length to parent or 0. or
 				//  if not H, length between children or 0.
 
+	ObjectArena<int> *tmpArena;
+	int **bondsWithAtom;	//  List of bonds involving each atom
+
 	ObjectArena<int> arena;
-	int **bondsByAtom;	//  List of bonds involving each atom
-	int **anglesByAtom;  //  List of angles involving each atom
-	int **dihedralsByAtom;
-				//  List of dihedrals by atom
-	int **impropersByAtom;
-				//  List of impropers by atom
-	int **exclusionsByAtom;
-				//  List of exclusions by atom
+	int **bondsByAtom;	//  List of bonds owned by each atom
+	int **anglesByAtom;     //  List of angles owned by each atom
+	int **dihedralsByAtom;  //  List of dihedrals owned by each atom
+	int **impropersByAtom;  //  List of impropers owned by each atom
+	int **exclusionsByAtom; //  List of exclusions owned by each atom
 
 	int **all_exclusions;
 				//  List of all exclusions, including
@@ -396,12 +396,16 @@ public:
  *
  *	$RCSfile: Molecule.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1020 $	$Date: 1998/07/08 22:23:06 $
+ *	$Revision: 1.1021 $	$Date: 1998/07/16 00:49:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.1021  1998/07/16 00:49:22  jim
+ * Removed unnecessary tuple uniqueness code, changed tuplesByAtom
+ * lists to only include tuple on list for first atom rather than all.
+ *
  * Revision 1.1020  1998/07/08 22:23:06  jim
  * Eliminated exclusion checking for atoms within hydrogen group (safely).
  *

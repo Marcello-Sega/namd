@@ -106,13 +106,11 @@ template <class T, class S> class ComputeHomeTuples : public Compute {
     
       T::getMoleculePointers(node->molecule,
 		    &numTuples, &tuplesByAtom, &tupleStructs);
-    
-      char *tupleFlag = new char[numTuples];
-      int *tupleStack = new int[numTuples];
-      int *nextTuple = tupleStack;
-    
-      memset((void *)tupleFlag, 0, numTuples*sizeof(char));
-    
+
+      tupleList.clear();
+
+      LocalID aid[T::size];
+
       // cycle through each patch and gather all tuples
       TuplePatchListIter ai(tuplePatchList);
     
@@ -123,50 +121,31 @@ template <class T, class S> class ComputeHomeTuples : public Compute {
         int numAtoms = patch->getNumAtoms();
     
         // cycle through each atom in the patch and load up tuples
-        for (int i=0; i < numAtoms; i++)
+        for (int j=0; j < numAtoms; j++)
         {
            /* get list of all tuples for the atom */
-           register int *tuples = tuplesByAtom[atomID[i]];
+           int *curTuple = tuplesByAtom[atomID[j]];
     
            /* cycle through each tuple */
-           register int t;
-           while((t = *tuples) != -1) {
-	     if (!tupleFlag[t])
-             {
-	       *nextTuple = t;
-	       nextTuple++;
-               tupleFlag[t] = 1;
+           for( ; *curTuple != -1; ++curTuple) {
+             T t(&tupleStructs[*curTuple]);
+             register int i;
+             aid[0] = atomMap->localID(t.atomID[0]);
+             int homepatch = aid[0].pid;
+             for (i=1; i < T::size; i++) {
+	         aid[i] = atomMap->localID(t.atomID[i]);
+	         homepatch = patchMap->downstream(homepatch,aid[i].pid);
              }
-	     tuples++;
+             if ( homepatch != notUsed && patchMap->node(homepatch) == CMyPe() ) {
+               for (i=0; i < T::size; i++) {
+	         t.p[i] = tuplePatchList.find(TuplePatchElem(aid[i].pid));
+	         t.localIndex[i] = aid[i].index;
+               }
+               tupleList.load(t);
+             }
            }
         }
       }
-    
-      delete [] tupleFlag;
-    
-      tupleList.clear();
-    
-      int *curTuple;
-      LocalID aid[T::size];
-      for (curTuple = tupleStack; curTuple != nextTuple; curTuple++ ) {
-        register int al = *curTuple;
-        T t(&tupleStructs[al]);
-        register int i;
-        aid[0] = atomMap->localID(t.atomID[0]);
-        int homepatch = aid[0].pid;
-        for (i=1; i < T::size; i++) {
-	    aid[i] = atomMap->localID(t.atomID[i]);
-	    homepatch = patchMap->downstream(homepatch,aid[i].pid);
-        }
-        if ( homepatch != notUsed && patchMap->node(homepatch) == CMyPe() ) {
-          for (i=0; i < T::size; i++) {
-	    t.p[i] = tuplePatchList.find(TuplePatchElem(aid[i].pid));
-	    t.localIndex[i] = aid[i].index;
-          }
-          tupleList.load(t);
-        }
-      }
-      delete [] tupleStack;
     }
 
     int doLoadTuples;
