@@ -10,34 +10,42 @@ DSTDIR = obj
 INCDIR = inc
 
 #####
+# Flags
+#####
+# uncomment for no warnings during compile
+#NOWARN=-w
+# uncomment for purify during compile
+#PURIFY=-purify
+
+#####
 # definitions for Charm routines
 #####
-CHARMC = /Projects/l1/namd.2.0/charm/bin/charmc
-CHARMXI = /Projects/l1/namd.2.0/charm/bin/charmc
+CHARMC = /Projects/l1/namd.2.0/charm/bin/charmc $(PURIFY)
+CHARMXI = /Projects/l1/namd.2.0/charm/bin/charmc $(PURIFY)
 
 #####
 # definitions for PMTA routines
 #####
 DPMTADIR=dpmta
-PMTAINCL=-I$(DPMTADIR)
-PMTALIBDIR=-L$(DPMTADIR)
-PMTALIB=-ldpmta
-PMTAFLAGS=-DDPMTA
-DPMTA=$(PMTAINCL) $(PMTAFLAGS)
-#####
-# definitions for PVM routines
-#####
-PVMDIR=/usr/local/shared/pvm/pvm3/lib/HPPA
-PVMLIBDIR=-L$(PVMDIR)
-PVMLIB=-lpvm3
+#PMTAINCL=-I$(DPMTADIR)
+#PMTALIBDIR=-L$(DPMTADIR)
+#PMTALIB=-ldpmta
+#PMTAFLAGS=-DDPMTA
+#DPMTA=$(PMTAINCL) $(PMTAFLAGS)
+######
+## definitions for PVM routines
+######
+#PVMDIR=/usr/local/shared/pvm/pvm3/lib/HPPA
+#PVMLIBDIR=-L$(PVMDIR)
+#PVMLIB=-lpvm3
 
 # CXXOPTS = -O
 CXXOPTS = -g
 # CXXOPTS = -O +DAK460 +DSK460
 CXX = CC -Aa -D_HPUX_SOURCE
 INCLUDE = /Projects/l1/namd.2.0/charm/include
-CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(CXXOPTS) -w
-GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) -w
+CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(CXXOPTS) $(NOWARN)
+GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(NOWARN)
 
 .SUFFIXES: 	.ci
 
