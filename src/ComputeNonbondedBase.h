@@ -263,12 +263,35 @@ NOEXCL
 
     // add remaining atoms to pairlist via hydrogen groups
     register const AtomProperties *pa_j = a_1 + j;
-    register BigReal p_j_x = p_j->x;
-    register BigReal p_j_y = p_j->y;
-    register BigReal p_j_z = p_j->z;
     register int *pli = pairlist + pairlistindex;
 
-    while ( j < j_upper )
+    if ( groupfixed ) { // tuned assuming most atoms fixed
+      while ( j < j_upper )
+	{
+	register int hgs = pa_j->hydrogenGroupSize;
+	if ( ! (pa_j->flags & GROUP_FIXED) )
+	{
+	  p_j = p_1 + j;
+	  // use a slightly large cutoff to include hydrogens
+	  if ( square(p_j->x-p_i_x,p_j->y-p_i_y,p_j->z-p_i_z) <= groupcutoff2 )
+		{
+		register int l = j;
+		register int lm = j + hgs;
+		for( ; l<lm; ++l)
+		  {
+		  *pli = l;
+		  ++pli;
+		  }
+		}
+	}
+	j += hgs;
+	pa_j += hgs;
+	} // for j
+    } else { // tuned assuming no fixed atoms
+      register BigReal p_j_x = p_j->x;
+      register BigReal p_j_y = p_j->y;
+      register BigReal p_j_z = p_j->z;
+      while ( j < j_upper )
 	{
 	register int hgs = pa_j->hydrogenGroupSize;
 	p_j += ( ( j + hgs < j_upper ) ? hgs : 0 );
@@ -282,8 +305,7 @@ NOEXCL
 	r2 += t2 * t2;
 	p_j_z = p_j->z;					// preload
 	// use a slightly large cutoff to include hydrogens
-	if ( r2 <= groupcutoff2 &&
-		! ( groupfixed && (pa_j->flags & GROUP_FIXED) ) )
+	if ( r2 <= groupcutoff2 )
 		{
 		register int l = j;
 		j += hgs;
@@ -296,6 +318,7 @@ NOEXCL
 	else j += hgs;
 	pa_j += hgs;
 	} // for j
+    }
 
     pairlistindex = pli - pairlist;
     // make sure padded element on pairlist points to real data
@@ -653,12 +676,15 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1030 $	$Date: 1997/09/22 04:08:03 $
+ *	$Revision: 1.1031 $	$Date: 1997/09/22 05:14:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1031  1997/09/22 05:14:03  jim
+ * Sped up fixed atom simulations with tuned group-cutoff loop.
+ *
  * Revision 1.1030  1997/09/22 04:08:03  jim
  * Sped up fixed atom simulations by checking for all atoms fixed.
  *
