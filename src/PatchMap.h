@@ -11,7 +11,7 @@
  *
  *	$RCSfile: PatchMap.h,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/16 20:43:53 $
+ *	$Revision: 1.2 $	$Date: 1996/08/19 21:37:02 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -20,6 +20,9 @@
  * REVISION HISTORY:
  *
  * $Log: PatchMap.h,v $
+ * Revision 1.2  1996/08/19 21:37:02  brunner
+ * Changed Position to Coordinate
+ *
  * Revision 1.1  1996/08/16 20:43:53  brunner
  * Initial revision
  *
@@ -53,7 +56,7 @@ private:
   {
     int node;
     int xi, yi, zi;
-    Position x0, x1, y0, y1, z0, z1;
+    Coordinate x0, x1, y0, y1, z0, z1;
     int numCids;
     int numCidsAllocated;
     ComputeID *cids;
@@ -106,27 +109,27 @@ public:
 
   // minX(pid) returns the minimum x coordinate of the region of
   // space the patch is responsible for.
-  Position minX(int pid);
+  Coordinate minX(int pid);
 
   // maxX(pid) returns the maximum x coordinate of the region of
   // space the patch is responsible for.
-  Position maxX(int pid);
+  Coordinate maxX(int pid);
 
   // minY(pid) returns the minimum y coordinate of the region of
   // space the patch is responsible for.
-  Position minY(int pid);
+  Coordinate minY(int pid);
 
   // maxY(pid) returns the maximum y coordinate of the region of
   // space the patch is responsible for.
-  Position maxY(int pid);
+  Coordinate maxY(int pid);
   
   // minZ(pid) returns the minimum z coordinate of the region of
   // space the patch is responsible for.
-  Position minZ(int pid);
+  Coordinate minZ(int pid);
 
   // maxZ(pid) returns the maximum z coordinate of the region of
   // space the patch is responsible for.
-  Position maxZ(int pid);
+  Coordinate maxZ(int pid);
 
   // numCids(pid) returns the number of compute ids which are registered
   // with the patch.  
@@ -149,8 +152,8 @@ public:
   // stores the info about the patch into the previously requested
   // pid.
   void storePatch(PatchID pid, int node, int max_computes,
-		  Position x0, Position y0, Position z0,
-		  Position x1, Position y1, Position z1);
+		  Coordinate x0, Coordinate y0, Coordinate z0,
+		  Coordinate x1, Coordinate y1, Coordinate z1);
 
   // newCid(pid,cid) stores a compute id associated with
   // patch id pid.  Error returned when there is no room to store

@@ -11,7 +11,7 @@
  *
  *	$RCSfile: PatchMap.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/08/16 21:41:11 $
+ *	$Revision: 1.3 $	$Date: 1996/08/19 21:37:02 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -20,6 +20,9 @@
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.3  1996/08/19 21:37:02  brunner
+ * Changed Position to Coordinate
+ *
  * Revision 1.2  1996/08/16 21:41:11  brunner
  * *** empty log message ***
  *
@@ -135,37 +138,37 @@ int PatchMap::node(int pid)
 }
 
 //----------------------------------------------------------------------
-Position PatchMap::minX(int pid)
+Coordinate PatchMap::minX(int pid)
 {
   return patchData[pid].x0;
 }
 
 //----------------------------------------------------------------------
-Position PatchMap::maxX(int pid)
+Coordinate PatchMap::maxX(int pid)
 {
   return patchData[pid].x1;
 }
 
 //----------------------------------------------------------------------
-Position PatchMap::minY(int pid)
+Coordinate PatchMap::minY(int pid)
 {
   return patchData[pid].y0;
 }
 
 //----------------------------------------------------------------------
-Position PatchMap::maxY(int pid)
+Coordinate PatchMap::maxY(int pid)
 {
   return patchData[pid].y1;
 }
 
 //----------------------------------------------------------------------
-Position PatchMap::minZ(int pid)
+Coordinate PatchMap::minZ(int pid)
 {
   return patchData[pid].z0;
 }
 
 //----------------------------------------------------------------------
-Position PatchMap::maxZ(int pid)
+Coordinate PatchMap::maxZ(int pid)
 {
   return patchData[pid].z1;
 }
@@ -237,8 +240,8 @@ PatchID PatchMap::requestPid(int *xi, int *yi, int *zi)
 
 //----------------------------------------------------------------------
 void PatchMap::storePatch(PatchID pid, int node, int max_computes,
-			  Position x0, Position y0, Position z0,
-			  Position x1, Position y1, Position z1)
+			  Coordinate x0, Coordinate y0, Coordinate z0,
+			  Coordinate x1, Coordinate y1, Coordinate z1)
 {
   patchData[pid].node=node;
   patchData[pid].numCids = 0;
