@@ -389,7 +389,7 @@ release: all
 	$(ECHO) Creating release $(RELEASE_DIR_NAME)
 	mkdir $(RELEASE_DIR_NAME)
 	cp $(RELEASE_FILES) $(RELEASE_DIR_NAME)
-	if [ -e conv-host ]; then \
+	if [ -r conv-host ]; then \
 	   $(COPY) conv-host $(RELEASE_DIR_NAME); \
 	   $(ECHO) "group main" > $(RELEASE_DIR_NAME)/nodelist; \
 	   $(ECHO) " host localhost" >> $(RELEASE_DIR_NAME)/nodelist; \
