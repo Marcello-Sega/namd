@@ -51,8 +51,8 @@ CmiBool NamdNborLB::QueryBalanceNow(int _step)
 NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
 {
 #if CHARM_VERSION > 050403
-  //  CkPrintf("LDB: All statistics received at %f, %f\n",
-  //  CmiTimer(),CmiWallTimer());
+  //  CkPrintf("LDB:[%d] All statistics received at %f, %f\n",
+  //  CmiMyPe(), CmiTimer(),CmiWallTimer());
   int i,j;
 
   const int numProcessors = CmiNumPes();
@@ -62,26 +62,28 @@ NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
 
   int nMoveableComputes = 0;
   for (i=0; i < count+1; i++) {
-    LDStats &thisLDStats = (i==count)?myStats:stats[i];
+    LDStats &thisLDStats = ((i==count)?myStats:stats[i]);
     for (j=0; j < thisLDStats.n_objs; j++) {
       const LDObjData this_obj = thisLDStats.objData[j];
-      // filter out non-NAMD managed objects (like PME array)
       if (this_obj.omID.id != 1) continue;
       if (this_obj.id.id[1] == -2) continue;
       if (this_obj.migratable)  nMoveableComputes++;
     }
   }
+  CmiPrintf("%d nMoveableComputes: %d\n", CmiMyPe(), nMoveableComputes);
 
   // these sizes should never change
   processorArray = new processorInfo[numProcessors];
-  if ( ! patchArray ) patchArray = new patchInfo[numPatches];
+  patchArray = new patchInfo[numPatches];
 //  if ( ! computeArray ) computeArray = new computeInfo[nMoveableComputes];
   computeArray = new computeInfo[nMoveableComputes];
 
   nMoveableComputes = buildData(stats,count);
 
+  //CmiPrintf("AlgNbor begin on %d\n", CmiMyPe());
   AlgNbor(CkMyPe(), computeArray,patchArray,processorArray,
 			nMoveableComputes, numPatches, numProcessors, count);
+  //CmiPrintf("AlgNbor end on %d\n", CmiMyPe());
 /*
   if (simParams->ldbStrategy == LDBSTRAT_REFINEONLY) {
     RefineOnly(computeArray,patchArray,processorArray,
@@ -144,9 +146,9 @@ NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
   for(i=0;i<nMoveableComputes;i++) {
     if (computeArray[i].oldProcessor == CkMyPe())
     if (computeArray[i].processor != computeArray[i].oldProcessor) {
-            CkPrintf("[%d] Obj %d migrating from %d to %d\n",
-                     CkMyPe(),computeArray[i].handle.id.id[0],
-      	       computeArray[i].processor,computeArray[i].oldProcessor);
+      // CkPrintf("[%d] Obj %d migrating from %d to %d\n",
+      //          CkMyPe(),computeArray[i].handle.id.id[0],
+      //       computeArray[i].processor,computeArray[i].oldProcessor);
       MigrateInfo *migrateMe = new MigrateInfo;
       migrateMe->obj = computeArray[i].handle;
       migrateMe->from_pe = computeArray[i].oldProcessor;
@@ -166,6 +168,7 @@ NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
     migrateInfo[i] = 0;
   }
 
+  delete [] patchArray;
   delete [] computeArray;
   for(i=0; i<numProcessors; i++)
       delete [] processorArray[i].proxyUsage;
@@ -187,7 +190,8 @@ int NamdNborLB::buildData(NborBaseLB::LDStats* stats, int count)
 
   int i;
   for (i=0; i<CmiNumPes(); i++) {
-    int peslot = NeighborIndex(i);
+    processorArray[i].load = 0.0;
+    processorArray[i].backgroundLoad = 0.0;
     if (i == CmiMyPe()) {
       processorArray[i].Id = i;
     if (patchMap->numPatches() > 0)
@@ -196,6 +200,7 @@ int NamdNborLB::buildData(NborBaseLB::LDStats* stats, int count)
       processorArray[i].backgroundLoad = myStats.bg_walltime;
       continue;
     }
+    int peslot = NeighborIndex(i);
     if (peslot != -1) {
     processorArray[i].Id = i;
     if (patchMap->numPatches() > 0)
@@ -226,7 +231,7 @@ int NamdNborLB::buildData(NborBaseLB::LDStats* stats, int count)
   }
   for (i=0; i < count+1; i++) {
     int j;
-    LDStats &thisLDStats = (i==count)?myStats:stats[i];
+    LDStats &thisLDStats = ((i==count)?myStats:stats[i]);
     for (j=0; j < thisLDStats.n_objs; j++) {
       const LDObjData this_obj = thisLDStats.objData[j];
       // filter out non-NAMD managed objects (like PME array)

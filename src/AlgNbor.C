@@ -28,6 +28,7 @@ void AlgNbor::strategy()
 {
   int i;
   double startTime = CmiWallTimer();
+  // CmiPrintf("strategy started on %d\n", CmiMyPe());
 
   // make initial assignment as it is now
   for (i=0; i<numComputes; i++) {
@@ -40,13 +41,13 @@ void AlgNbor::strategy()
   double avgload = 0.0;
   for (i=0; i<P; i++) {
     if (processors[i].Id >= 0) {
-CmiPrintf("[%d] %d:%f\n", CmiMyPe(), i, processors[i].load);
+//CmiPrintf("[%d] %d:%f\n", CmiMyPe(), i, processors[i].load);
       avgload += processors[i].load;
     }
   }
   avgload /= (nNbors+1);
 
-  CmiPrintf("Myload: %f, avrage load: %f. \n", myload, avgload);
+  // CmiPrintf("[%d]:Myload: %f, avrage load: %f. \n", mype, myload, avgload);
   if (myload <= avgload) return;
 
   minHeap procs(nNbors+1);
@@ -82,6 +83,7 @@ CmiPrintf("[%d] %d:%f\n", CmiMyPe(), i, processors[i].load);
     if (!objfound) break;
     deAssign(c, &processors[mype]);
     assign(c, p);
+    myload -= c->load;
     procs.insert(p);
   } while (myload > avgload);
 /*
