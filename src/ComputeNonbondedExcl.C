@@ -1,47 +1,22 @@
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1996 The Board of Trustees of the            */
+/*         (C) Copyright 1996,1997 The Board of Trustees of the            */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*									   */
 /***************************************************************************/
-
 /***************************************************************************
- * DESCRIPTION:
+ * DESCRIPTION: Helper for computing non-bonded exclusions 
+ *		Overload of loadTuples() specific for non-bonded exclusions
  *
  ***************************************************************************/
 
-#include "ComputeNonbondedExcl.h"
+#include "Namd.h"
+#include "Node.h"
 #include "Molecule.h"
 #include "Parameters.h"
-#include "Node.h"
+#include "ComputeNonbondedExcl.h"
 
 #undef DEBUGM
 #include "Debug.h"
-
-void NonbondedExclElem::loadTuplesForAtom
-  (void *voidlist, AtomID atomID, Molecule *molecule)
-{
-      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
-      UniqueSet<NonbondedExclElem> &exclList =
-                  *( (UniqueSet<NonbondedExclElem>*) voidlist );
-
-      DebugM(1, "::loadTuplesForAtom - current list size " << exclList.size() << endl );
-
-      /* get list of all bonds for the atom */
-      int *excls = molecule->get_exclusions_for_atom(atomID);
-      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
-
-      /* cycle through each exclusion */
-      int exclNum = *excls;
-      while(exclNum != -1)
-      {
-        /* store exclusion in the list */
-        DebugM(1, "::loadTuplesForAtom - adding excl " << exclNum << endl );
-        exclList.add(NonbondedExclElem(molecule->get_exclusion(exclNum)));
-        exclNum = *(++excls);
-      }
-}
 
 BigReal NonbondedExclElem::reductionDummy[reductionDataSize];
 
@@ -74,4 +49,146 @@ void NonbondedExclElem::computeForce(BigReal *reduction)
 	modified, reduction);
 }
 
+
+#include "ckdefs.h"
+#include "chare.h"
+#include "c++interface.h"
+#include "Inform.h"
+#include "Node.h"
+#include "Molecule.h"
+#include "Parameters.h"
+#include "Node.h"
+#include "Templates/UniqueSet.h"
+#include "Templates/UniqueSetIter.h"
+
+void
+ComputeNonbondedExcls::loadTuples() {
+
+  // cycle through each home patch and gather all tuples
+  HomePatchList *a = patchMap->homePatchList();
+  ResizeArrayIter<HomePatchElem> ai(*a);
+  int i;
+  int numExclusions = node->molecule->numTotalExclusions;
+
+  char *exclFlag = new char[numExclusions];
+  for (register char *c = exclFlag; c < (exclFlag+numExclusions); c++) {
+    *c = 0;
+  }
+
+  tupleList.clear();
+  for ( ai = ai.begin(); ai != ai.end(); ai++ )
+  {
+    Patch *patch = (*ai).patch;
+    AtomIDList atomID = patch->getAtomIDList();
+
+    // cycle through each atom in the patch and load up tuples
+    for (i=0; i < patch->getNumAtoms(); i++)
+    {
+       /* get list of all bonds for the atom */
+       register int *excls = node->molecule->get_exclusions_for_atom(atomID[i]);
+
+       /* cycle through each exclusion */
+       while(*excls != -1) {
+         exclFlag[*excls++] = 1;
+       }
+    }
+  }
+  for (i=0; i<numExclusions; i++) {
+    if (exclFlag[i]) {
+      tupleList.load(NonbondedExclElem(node->molecule->get_exclusion(i)));
+    }
+  }
+  delete[] exclFlag;
+ 
+  // Resolve all atoms in tupleList to correct PatchList element and index
+  UniqueSetIter<NonbondedExclElem> al(tupleList);
+ 
+  for (al = al.begin(); al != al.end(); al++ ) {
+    for (int i=0; i < NonbondedExclElem::size; i++) {
+      LocalID aid = atomMap->localID(al->atomID[i]);
+      al->p[i] = tuplePatchList.find(TuplePatchElem(aid.pid));
+      if ( ! (al->p)[i] ) {
+ 	iout << iERROR << "ComputeHomeTuples couldn't find patch " 
+ 	    << aid.pid << " for atom " << al->atomID[i] 
+ 	    << ", aborting.\n" << endi;
+ 	Namd::die();
+      }
+      al->localIndex[i] = aid.index;
+    }
+  }
+}
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile: ComputeNonbondedExcl.C,v $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1007 $	$Date: 1997/03/11 23:46:28 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: ComputeNonbondedExcl.C,v $
+ * Revision 1.1007  1997/03/11 23:46:28  ari
+ * Improved ComputeNonbondedExcl loadTuples() by overloading the default
+ * template method from ComputeHomeTuples and used the checklist suggested
+ * by Jim.  Good performance gain.
+ *
+ * Revision 1.1002  1997/03/10 17:40:09  ari
+ * UniqueSet changes - some more commenting and cleanup
+ *
+ * Revision 1.1001  1997/03/09 22:28:24  jim
+ * (Hopefully) sped up exclusion calculation (removed gross inefficiencies).
+ *
+ * Revision 1.1000  1997/02/06 15:58:08  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
+ * Revision 1.779  1997/02/06 15:53:04  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.1  1997/02/05 22:18:08  ari
+ * Added migration code - Currently the framework is
+ * there with compiling code.  This version does
+ * crash shortly after migration is complete.
+ * Migration appears to complete, but Patches do
+ * not appear to be left in a correct state.
+ *
+ * Revision 1.778  1997/01/28 00:30:20  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.1  1997/01/27 22:45:05  ari
+ * Basic Atom Migration Code added.
+ * Added correct magic first line to .h files for xemacs to go to C++ mode.
+ * Compiles and runs without migration turned on.
+ *
+ * Revision 1.777  1997/01/17 19:35:54  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
+ * Revision 1.4  1997/01/16 20:00:03  jim
+ * Added reduction calls to ComputeNonbondedSelf and ...Pair.
+ * Also moved some code from ...Excl to ...Util.
+ *
+ * Revision 1.3  1997/01/16 00:56:01  jim
+ * Added reduction of energies from ComputeHomeTuples objects, except
+ * for ComputeNonbondedExcl which only reports 0 energy.
+ * Some problems with ReductionMgr are apparent, but it still runs.
+ *
+ * Revision 1.2  1996/12/06 06:56:11  jim
+ * cleaned up and renamed a bit, now it works
+ *
+ * Revision 1.1  1996/12/03 17:17:03  nealk
+ * Initial revision
+ *
+ * Revision 1.2  1996/12/03 15:15:40  nealk
+ * Removed tons-o-debugging.
+ *
+ * Revision 1.1  1996/12/03 14:53:42  nealk
+ * Initial revision
+ *
+ *
+ ***************************************************************************/
 

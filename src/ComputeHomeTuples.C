@@ -18,13 +18,13 @@
 #include "HomePatchList.h"
 #include "Molecule.h"
 #include "ReductionMgr.h"
+#include "Inform.h"
+#include "Templates/UniqueSet.h"
+#include "Templates/UniqueSetIter.h"
 
 #define DEBUGM
 #define MIN_DEBUG_LEVEL 3
 #include "Debug.h"
-
-#include "Templates/UniqueSet.h"
-#include "Templates/UniqueSetIter.h"
 
 template <class T>
 ComputeHomeTuples<T>::ComputeHomeTuples(ComputeID c) : Compute(c) {
@@ -211,20 +211,23 @@ void ComputeHomeTuples<T>::doWork() {
   DebugM(1, "ComputeHomeTuples::doWork() -- done" << endl);
 }
 
-;
-
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *      $RCSfile: ComputeHomeTuples.C,v $
  *      $Author: ari $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1005 $     $Date: 1997/03/10 17:40:05 $
+ *      $Revision: 1.1006 $     $Date: 1997/03/11 23:46:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.C,v $
+ * Revision 1.1006  1997/03/11 23:46:26  ari
+ * Improved ComputeNonbondedExcl loadTuples() by overloading the default
+ * template method from ComputeHomeTuples and used the checklist suggested
+ * by Jim.  Good performance gain.
+ *
  * Revision 1.1005  1997/03/10 17:40:05  ari
  * UniqueSet changes - some more commenting and cleanup
  *

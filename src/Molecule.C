@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: Molecule.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/11 16:37:06 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1006 $	$Date: 1997/03/11 23:46:29 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,11 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1006  1997/03/11 23:46:29  ari
+ * Improved ComputeNonbondedExcl loadTuples() by overloading the default
+ * template method from ComputeHomeTuples and used the checklist suggested
+ * by Jim.  Good performance gain.
+ *
  * Revision 1.1005  1997/03/11 16:37:06  nealk
  * Difference in ElectForce with FMA and non-FMA not due to FMA.
  * (I'm finally convinced.)
@@ -179,7 +184,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1005 1997/03/11 16:37:06 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1006 1997/03/11 23:46:29 ari Exp $";
 
 #include "Molecule.h"
 #include <stdio.h>
@@ -2368,7 +2373,7 @@ void Molecule::build_lists_by_atom()
    	delete [] exclusions;
 
    // 1-4 exclusions which are also fully excluded were eliminated by hash table
-   int numTotalExclusions = exclusionSet.size();
+   numTotalExclusions = exclusionSet.size();
    exclusions = new Exclusion[numTotalExclusions];
    UniqueSetIter<Exclusion> exclIter(exclusionSet);
    for ( exclIter=exclIter.begin(),i=0; exclIter != exclIter.end(); exclIter++,i++ )

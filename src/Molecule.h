@@ -11,8 +11,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: Molecule.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/11 06:29:14 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/03/11 23:46:31 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -26,6 +26,11 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.1004  1997/03/11 23:46:31  ari
+ * Improved ComputeNonbondedExcl loadTuples() by overloading the default
+ * template method from ComputeHomeTuples and used the checklist suggested
+ * by Jim.  Good performance gain.
+ *
  * Revision 1.1003  1997/03/11 06:29:14  jim
  * Modified exclusion lookup to use fixed arrays and linear searches.
  *
@@ -257,6 +262,7 @@ public:
 	int numDonors;	        //  Number of hydrogen bond donors
 	int numAcceptors;	//  Number of hydrogen bond acceptors
 	int numExclusions;	//  Number of exclusions
+	int numTotalExclusions; //  Real Total Number of Exclusions // hack
 	int numConstraints;	//  Number of atoms constrained
 
 	//  Number of dihedrals with multiple periodicity

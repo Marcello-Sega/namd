@@ -97,7 +97,9 @@ class ReductionMgr;
 template <class T>
 class ComputeHomeTuples : public Compute {
 private:
-  void loadTuples();
+  virtual void loadTuples();
+
+protected:
   void sizeDummy();
 
   UniqueSet<T> tupleList;
@@ -126,12 +128,17 @@ public:
  *
  *	$RCSfile: ComputeHomeTuples.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/10 17:40:05 $
+ *	$Revision: 1.1003 $	$Date: 1997/03/11 23:46:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.h,v $
+ * Revision 1.1003  1997/03/11 23:46:27  ari
+ * Improved ComputeNonbondedExcl loadTuples() by overloading the default
+ * template method from ComputeHomeTuples and used the checklist suggested
+ * by Jim.  Good performance gain.
+ *
  * Revision 1.1002  1997/03/10 17:40:05  ari
  * UniqueSet changes - some more commenting and cleanup
  *

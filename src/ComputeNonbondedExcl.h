@@ -21,20 +21,21 @@ class Molecule;
 
 class NonbondedExclElem : public ComputeNonbondedUtil {
 public:
-    // ComputeHomeTuples interface
-    enum { size = 2 };
-    AtomID atomID[size];
-    int    localIndex[size];
-    TuplePatchElem *p[size];
-    void computeForce(BigReal*);
-    // The following is evil, but the compiler chokes otherwise. (JCP)
-    static void loadTuplesForAtom(void*, AtomID, Molecule*);
+  // ComputeHomeTuples interface
+  enum { size = 2 };
+  AtomID atomID[size];
+  int    localIndex[size];
+  TuplePatchElem *p[size];
+  void computeForce(BigReal*);
+
+  static void loadTuplesForAtom(void*, AtomID, Molecule*) {};
+
   int hash() const {
     return 0x7FFFFFFF & (atomID[1] << 16 + atomID[0]);
   }
 
-    // Internal data
-    Index modified;
+  // Internal data
+  Index modified;
 
   NonbondedExclElem() {
     atomID[0] = -1;
@@ -75,8 +76,10 @@ class ComputeNonbondedExcls : public ComputeHomeTuples<NonbondedExclElem>
 {
 public:
 
-  ComputeNonbondedExcls(ComputeID c) : ComputeHomeTuples<NonbondedExclElem>(c) { ; }
+  ComputeNonbondedExcls(ComputeID c) : ComputeHomeTuples<NonbondedExclElem>(c) 
+  { }
 
+  void loadTuples(); //overload of the template version
 };
 
 #endif
@@ -85,12 +88,17 @@ public:
  *
  *	$RCSfile: ComputeNonbondedExcl.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/10 17:40:09 $
+ *	$Revision: 1.1003 $	$Date: 1997/03/11 23:46:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedExcl.h,v $
+ * Revision 1.1003  1997/03/11 23:46:28  ari
+ * Improved ComputeNonbondedExcl loadTuples() by overloading the default
+ * template method from ComputeHomeTuples and used the checklist suggested
+ * by Jim.  Good performance gain.
+ *
  * Revision 1.1002  1997/03/10 17:40:09  ari
  * UniqueSet changes - some more commenting and cleanup
  *
