@@ -373,7 +373,7 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
    opts.optional("main", "rigidBonds", "Rigid bonds to hydrogen",PARSE_STRING);
    opts.optional("main", "rigidTolerance", 
                  "Error tolerance for rigid bonds to hydrogen",
-                 &rigidTol, 0.00001);
+                 &rigidTol, 1.0e-8);
    opts.optional("main", "rigidIterations", 
 		 "Max number of SHAKE iterations for rigid bonds to hydrogen",
 		 &rigidIter, 100);
@@ -382,7 +382,7 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
 		 &rigidDie, TRUE);
    opts.optionalB("main", "useSettle",
                   "Use the SETTLE algorithm for rigid waters",
-                 &useSettle, FALSE);
+                 &useSettle, TRUE);
 
    opts.optional("main", "nonbondedFreq", "Nonbonded evaluation frequency",
     &nonbondedFrequency, 1);
