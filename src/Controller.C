@@ -207,6 +207,7 @@ void Controller::minimize() {
   CALCULATE
 
   int minSeq = 0;
+  int atStart = 2;
   BigReal old_f_dot_f = min_f_dot_f;
   broadcast->minimizeCoefficient.publish(minSeq++,0.);
   broadcast->minimizeCoefficient.publish(minSeq++,0.); // v = f
@@ -225,7 +226,8 @@ void Controller::minimize() {
     mid = lo;
     BigReal tol = fabs( 1.0e-4 * min_f_dot_v );
     iout << "GRADIENT TOLERANCE: " << tol << "\n" << endi;
-    x = 1.0e-3 * sqrt( min_f_dot_f / min_v_dot_v ); MOVETO(x)
+    x = 1.0e-3; if ( atStart ) { x = 1.0e-6; --atStart; }
+    x *= sqrt( min_f_dot_f / min_v_dot_v ); MOVETO(x)
     // bracket minimum on line
     while ( last.u < mid.u ) {
       lo = mid; mid = last;
@@ -238,10 +240,18 @@ void Controller::minimize() {
     while ( fabs(last.dudx) > tol && itcnt < 30 ) {
       // select new position
       if ( mid.dudx > 0. ) {
-        x = 0.5 * ( lo.x + mid.x ); if (x-last.x) { MOVETO(x) } else break;
+        BigReal altx = 0.1 * lo.x + 0.9 * mid.x;
+        x = mid.dudx*(mid.x*mid.x-lo.x*lo.x) + 2*mid.x*(lo.u-mid.u);
+        x /= 2*(mid.dudx*(mid.x-lo.x)+(lo.u-mid.u));
+        if ( x > altx ) x = altx;
+        if (x-last.x) { MOVETO(x) } else break;
         if ( last.u <= mid.u ) { hi = mid; mid = last; } else { lo = last; }
       } else {
-        x = 0.5 * ( mid.x + hi.x ); if (x-last.x) { MOVETO(x) } else break;
+        BigReal altx = 0.1 * hi.x + 0.9 * mid.x;
+        x = mid.dudx*(mid.x*mid.x-hi.x*hi.x) + 2*mid.x*(hi.u-mid.u);
+        x /= 2*(mid.dudx*(mid.x-hi.x)+(hi.u-mid.u));
+        if ( x < altx ) x = altx;
+        if (x-last.x) { MOVETO(x) } else break;
         if ( last.u <= mid.u ) { lo = mid; mid = last; } else { hi = last; }
       }
       iout << "BRACKET: " << (hi.x-lo.x) << " " << ((hi.u>lo.u?hi.u:lo.u)-mid.u) << " " << lo.dudx << " " << mid.dudx << " " << hi.dudx << " \n" << endi;
