@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.13 1996/11/22 01:44:53 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.14 1996/11/23 23:01:00 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -32,6 +32,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "Patch.h"
 #include "Compute.h"
 #include "ComputeAngles.h"
+#include "ComputeNonbondedSelf.h"
 #include "ComputeMap.h"
 #include "Molecule.h"
 #include "AtomMap.h"
@@ -181,6 +182,18 @@ void Node::run(RunMsg *msg)
 
   HomePatchList *hpl = PatchMap::Object()->homePatchList();
   ResizeArrayIter<HomePatchElem> ai(*hpl);
+  int cid = 2;
+
+  DebugM(1, "Node::run() - iterating over home patches!\n");
+  for (ai=ai.begin(); ai != ai.end(); ai++) {
+    DebugM(1, "Node::run() - creating ComputeNonbondedSelf on " << (*ai).p->getPatchID() << endl);
+    ComputeNonbondedSelf *nonbonded = new 
+               ComputeNonbondedSelf(cid,(*ai).p->getPatchID());
+    ComputeMap::Instance()->registerCompute(cid, nonbonded);
+    nonbonded->mapReady();
+    ++cid;
+  }
+
   DebugM(1, "Node::run() - iterating over home patches!\n");
   for (ai=ai.begin(); ai != ai.end(); ai++) {
     DebugM(1, "Node::run() - signaling patch "<< (*ai).p->getPatchID() << endl);
@@ -216,12 +229,15 @@ void Node::saveMolDataPointers(Molecule *molecule,
  *
  *	$RCSfile: Node.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.13 $	$Date: 1996/11/22 01:44:53 $
+ *	$Revision: 1.14 $	$Date: 1996/11/23 23:01:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.14  1996/11/23 23:01:00  jim
+ * added ComputeNonbondedSelf test code
+ *
  * Revision 1.13  1996/11/22 01:44:53  jim
  * added calls to service AtomMap
  *
