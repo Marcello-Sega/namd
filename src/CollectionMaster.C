@@ -21,17 +21,18 @@ void CollectionMaster::receivePositions(CollectVectorMsg *msg)
   CollectVectorInstance *c;
   if ( c = positions.submitData(msg->seq,msg->aid,msg->data) )
   {
-    DebugM(3,"Collected positions at " << msg->seq << endl);
+    DebugM(3,"Collected positions at " << c->seq << endl);
     iout << "\n\n********** POSITIONS " << c->seq << " **********\n\n";
     c->data.sort();
     int size = c->data.size();
     for ( int i = 0; i < size; ++i )
     {
-      iout << c->data[i].aid << "  " << c->data[i].data << "\n";
+      iout << c->data[i].aid << "  " << c->data[i].data << "\n" << endi;
     }
     iout << "\n" << endi;
     delete c;
   }
+  delete msg;
 }
 
 
@@ -40,17 +41,18 @@ void CollectionMaster::receiveVelocities(CollectVectorMsg *msg)
   CollectVectorInstance *c;
   if ( c = velocities.submitData(msg->seq,msg->aid,msg->data) )
   {
-    DebugM(3,"Collected velocities at " << msg->seq << endl);
+    DebugM(3,"Collected velocities at " << c->seq << endl);
     iout << "\n\n********** VELOCITIES " << c->seq << " **********\n\n";
     c->data.sort();
     int size = c->data.size();
     for ( int i = 0; i < size; ++i )
     {
-      iout << c->data[i].aid << "  " << c->data[i].data << "\n";
+      iout << c->data[i].aid << "  " << c->data[i].data << "\n" << endi;
     }
     iout << "\n" << endi;
     delete c;
   }
+  delete msg;
 }
 
 
@@ -59,17 +61,18 @@ void CollectionMaster::receiveForces(CollectVectorMsg *msg)
   CollectVectorInstance *c;
   if ( c = forces.submitData(msg->seq,msg->aid,msg->data) )
   {
-    DebugM(3,"Collected forces at " << msg->seq << endl);
+    DebugM(3,"Collected forces at " << c->seq << endl);
     iout << "\n\n********** FORCES " << c->seq << " **********\n\n";
     c->data.sort();
     int size = c->data.size();
     for ( int i = 0; i < size; ++i )
     {
-      iout << c->data[i].aid << "  " << c->data[i].data << "\n";
+      iout << c->data[i].aid << "  " << c->data[i].data << "\n" << endi;
     }
     iout << "\n" << endi;
     delete c;
   }
+  delete msg;
 }
 
 
