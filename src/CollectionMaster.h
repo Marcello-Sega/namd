@@ -41,14 +41,15 @@ public:
   {
   public:
 
-    CollectVectorInstance(void) : seq(-1) { ; }
+    CollectVectorInstance(void) : seq(-10) { ; }
 
     CollectVectorInstance(int s) { reset(s); }
 
-    void free() { seq = -1; }
-    int notfree() { return ( seq != -1 ); }
+    void free() { seq = -10; }
+    int notfree() { return ( seq != -10 ); }
 
     void reset(int s) {
+	if ( s == -10 ) NAMD_bug("seq == free in CollectionMaster");
         seq = s;
         remaining = CkNumPes();
 	int npatches=(PatchMap::Object())->numPatches(); 

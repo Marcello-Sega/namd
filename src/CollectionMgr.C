@@ -58,7 +58,7 @@ void CollectionMgr::submitPositions(int seq, FullAtomList &a,
     msg->fdata = c->fdata;
     CProxy_CollectionMaster cm(master);
     cm.receivePositions(msg);
-    delete c;
+    c->free();
   }
 }
 
@@ -81,7 +81,7 @@ void CollectionMgr::submitVelocities(int seq, FullAtomList &a)
     msg->data = c->data;
     CProxy_CollectionMaster cm(master);
     cm.receiveVelocities(msg);
-    delete c;
+    c->free();
   }
 }
 

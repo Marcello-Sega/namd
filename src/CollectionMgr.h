@@ -40,12 +40,20 @@ public:
   {
   public:
 
-    CollectVectorInstance(void) : seq(-1) { ; }
+    CollectVectorInstance(void) : seq(-10) { ; }
 
-    CollectVectorInstance(int s) : seq(s) { ; }
+    void free() { seq = -10; }
+    int notfree() { return ( seq != -10 ); }
 
-    CollectVectorInstance(int s, int p) : seq(s), precisions(p),
-      remaining(PatchMap::Object()->numHomePatches()) { ; }
+    void reset(int s, int p) {
+      if ( s == -10 ) NAMD_bug("seq == free in CollectionMgr");
+      seq = s;
+      precisions = p;
+      remaining = PatchMap::Object()->numHomePatches();
+      aid.resize(0);
+      data.resize(0);
+      fdata.resize(0);
+    }
 
     // true -> send it and delete it!
     int append(AtomIDList &a, ResizeArray<Vector> &d)
@@ -83,14 +91,17 @@ public:
       for( ; c != c_e && (*c)->seq != seq; ++c );
       if ( c == c_e )
       {
-	data.add(new CollectVectorInstance(seq,prec));
+       c = data.begin();
+       for( ; c != c_e && (*c)->notfree(); ++c );
+       if ( c == c_e ) {
+	data.add(new CollectVectorInstance);
 	c = data.end() - 1;
+       }
+       (*c)->reset(seq,prec);
       }
       if ( (*c)->append(i,d) )
       {
-	CollectVectorInstance *i = *c;
-	data.del(c - data.begin());
-        return i;
+        return *c;
       }
       else
       {
