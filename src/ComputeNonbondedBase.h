@@ -92,6 +92,7 @@ void ComputeNonbondedUtil :: NAME
   BigReal *reduction = params->reduction;
 
   // local variables
+  int exclChecksum = 0;
   BigReal vdwEnergy = 0;
   BigReal electEnergy = 0;
   FAST
@@ -341,10 +342,8 @@ void ComputeNonbondedUtil :: NAME
       // common code
       register BigReal r2 = square(p_ij_x,p_ij_y,p_ij_z);
 
-      if ( r2 > cutoff2 || r2 == 0 )
-      {
-	continue;
-      }
+      if ( r2 > cutoff2 ) { continue; }
+      if ( r2 == 0 ) { ++exclChecksum; continue; }
 
       if ( atomfixed && ( p_j->atomFixed ) ) continue;
 
@@ -407,6 +406,7 @@ void ComputeNonbondedUtil :: NAME
 	  int atom2 = p_j->id;
 	  if ( atom2 < excl_min || atom2 > excl_max ) excl_flag = 0;
 	  else excl_flag = excl_flags[atom2-excl_min];
+	  if ( excl_flag ) { ++exclChecksum; }
 	}
 	if ( excl_flag == EXCHCK_FULL ) {
 	  FULL
@@ -594,6 +594,7 @@ FULL
   } // for i
   if (pairlist != pairlist_std) delete [] pairlist;
 
+  reduction[exclChecksumIndex] += exclChecksum;
   FAST
   (
   reduction[vdwEnergyIndex] += vdwEnergy;

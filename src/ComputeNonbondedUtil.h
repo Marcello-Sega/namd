@@ -58,7 +58,8 @@ public:
   static void (*calcSlowSelf)(nonbonded *);
   static void (*calcSlowExcl)(nonbonded *);
 
-  enum { electEnergyIndex, fullElectEnergyIndex, vdwEnergyIndex,
+  enum { exclChecksumIndex,
+	 electEnergyIndex, fullElectEnergyIndex, vdwEnergyIndex,
 	 TENSOR(virialIndex), TENSOR(fullElectVirialIndex),
 	 reductionDataSize };
   static void submitReductionData(BigReal*,SubmitReduction*);

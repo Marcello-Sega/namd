@@ -51,6 +51,7 @@ void (*ComputeNonbondedUtil::calcSlowSelf)(nonbonded *);
 
 void ComputeNonbondedUtil::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {
+  reduction->item(REDUCTION_EXCLUSION_CHECKSUM) += data[exclChecksumIndex];
   reduction->item(REDUCTION_ELECT_ENERGY) += data[electEnergyIndex];
   reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += data[fullElectEnergyIndex];
   reduction->item(REDUCTION_LJ_ENERGY) += data[vdwEnergyIndex];
