@@ -2365,8 +2365,8 @@ void Molecule::receive_Molecule(MIStream *msg)
                             && fixedAtomFlags[a2] ) continue;
          if ( all_exclusions[a1].min > a2 ) all_exclusions[a1].min = a2;
          if ( all_exclusions[a2].min > a1 ) all_exclusions[a2].min = a1;
-         if ( all_exclusions[a1].max < a2 ) all_exclusions[a1].max = a2;
-         if ( all_exclusions[a2].max < a1 ) all_exclusions[a2].max = a1;
+         if ( a2 > all_exclusions[a1].max ) all_exclusions[a1].max = a2;
+         if ( a1 > all_exclusions[a2].max ) all_exclusions[a2].max = a1;
        }
        int exclmem = 0;
        for (i=0; i<numAtoms; i++)
