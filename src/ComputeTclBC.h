@@ -26,6 +26,9 @@ public:
   void doWork();
 
 private:
+  int wrapmode;
+  Lattice *lattice;
+
   ResizeArray<char> drops;
   void cleardrops() {
     memset((void*)drops.begin(), 0, drops.size()*sizeof(char));
@@ -42,10 +45,12 @@ private:
 #ifdef NAMD_TCL
   Tcl_Interp *interp;
   static int Tcl_print(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_wrapmode(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_cleardrops(ClientData, Tcl_Interp *, int, Tcl_Obj * const []);
   static int Tcl_dropatom(ClientData, Tcl_Interp *, int, Tcl_Obj * const []);
   static int Tcl_nextatom(ClientData, Tcl_Interp *, int, Tcl_Obj * const []);
   static int Tcl_getcoord(ClientData, Tcl_Interp *, int, Tcl_Obj * const []);
+  static int Tcl_getcell(ClientData, Tcl_Interp *, int, Tcl_Obj * const []);
   static int Tcl_getmass(ClientData, Tcl_Interp *, int, Tcl_Obj * const []);
   static int Tcl_getcharge(ClientData, Tcl_Interp *, int, Tcl_Obj * const []);
   static int Tcl_getid(ClientData, Tcl_Interp *, int, Tcl_Obj * const []);
