@@ -50,11 +50,15 @@ void NonbondedExclElem::computeForce(BigReal *reduction)
   DebugM(1, "::computeForce() localIndex = " << localIndex[0] << " "
                << localIndex[1] << endl);
 
+  const Lattice & lattice = p[0]->p->lattice;
+
+  // Make this static at some point!  Gets initialized then?
   BigReal dummy[reductionDataSize];
   for ( int i = 0; i < reductionDataSize; ++i ) dummy[i] = 0.;
 
   ComputeNonbondedUtil::calcExcl(
-	p[0]->x[localIndex[0]], p[1]->x[localIndex[1]],
+	lattice.delta(p[0]->x[localIndex[0]],p[1]->x[localIndex[1]]),
+	Vector(0,0,0), // Eliminate this from call!!!
 	p[0]->f[localIndex[0]], p[1]->f[localIndex[1]],
 	p[0]->a[localIndex[0]], p[1]->a[localIndex[1]],
 	modified,

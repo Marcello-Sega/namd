@@ -39,7 +39,7 @@ NOEXCL
 )
 EXCL
 (
-(const Position & p_i, const Position & p_j,
+(const Position & p_ij, const Position &,
  Force & f_i, Force & f_j,
  const AtomProperties & a_i, const AtomProperties & a_j,
  int m14, BigReal *reduction)
@@ -115,7 +115,7 @@ NOEXCL
 )
 EXCL
 (
-      Vector f_vdw = p_i - p_j;
+      Vector f_vdw = p_ij;
       register const BigReal r2 = f_vdw.length2();
 )
       if ( r2 > cutoff2 ) NOEXCL( continue ) EXCL( return );
@@ -292,13 +292,17 @@ NOEXCL
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:06 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/02/10 08:30:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1001  1997/02/10 08:30:28  jim
+ * Now handles periodic boundaries correctly (I forgot this when I was
+ * changing Bonds, Angles, etc.) but a bit of a hack, needs cleaning up.
+ *
  * Revision 1.1000  1997/02/06 15:58:06  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
