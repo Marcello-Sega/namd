@@ -184,10 +184,6 @@ void Sequencer::integrate() {
 	rattle1(timestep);
 	minimizationQuenchVelocity();
 
-        // add drag to each atom's position
-        if ( ! commOnly && movDragOn ) addMovDragToPosition(timestep);
-        if ( ! commOnly && rotDragOn ) addRotDragToPosition(timestep);
-
 	doNonbonded = !(step%nonbondedFrequency);
 	doFullElectrostatics = (dofull && !(step%fullElectFrequency));
 	doMolly = simParams->mollyOn && doFullElectrostatics;
@@ -216,6 +212,10 @@ void Sequencer::integrate() {
 	reassignVelocities(step);
 
 	rattle2(timestep,step);
+
+        // add drag to each atom's positions
+        if ( ! commOnly && movDragOn ) addMovDragToPosition(timestep);
+        if ( ! commOnly && rotDragOn ) addRotDragToPosition(timestep);
 
 	submitReductions(step);
 	submitCollections(step);
