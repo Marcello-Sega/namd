@@ -451,7 +451,10 @@ void Sequencer::maximumMove(BigReal timestep)
       killme = killme || ( v_i->length2() > maxvel2 );
     }
     if ( killme ) {
-      NAMD_die("Atoms moving too fast; simulation has become unstable.");
+      iout << iERROR << 
+        "Atoms moving too fast; simulation has become unstable.\n" << endi;
+      Node::Object()->enableHaltBarrier();
+      terminate();
     }
   }
 }
