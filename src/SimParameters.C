@@ -11,7 +11,7 @@
  *
  *	$RCSfile: SimParameters.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1997/05/09 18:24:24 $
+ *	$Revision: 1.1017 $	$Date: 1997/05/29 19:12:11 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1017  1997/05/29 19:12:11  nealk
+ * Modified so hydrogen grouping margin offset is a user-defined option.
+ *
  * Revision 1.1016  1997/05/09 18:24:24  nealk
  * 1. Added hydrogen grouping code to improve performance in ComputeNonbondedBase
  *    CODE ONLY WORKS WITH HYDROGEN GROUPING!
@@ -373,7 +376,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1016 1997/05/09 18:24:24 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1017 1997/05/29 19:12:11 nealk Exp $";
 
 
 #include "ckdefs.h"
@@ -539,6 +542,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
    opts.optional("main", "splitPatch", "Atom into patch splitting option",
 		PARSE_STRING);
+   opts.optional("main", "hgroupCutoff", "Hydrogen margin", &hgroupCutoff);
 
    opts.optional("main", "cellBasisVector1", "Basis vector for periodic cell",
 		&cellBasisVector1);
@@ -1114,6 +1118,10 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    }
 
    //  Get the atom-into-patch splitting specification
+   if (!opts.defined("hgroupCutoff"))
+   {
+	hgroupCutoff = 2.5;  // add 2.5 angstroms
+   }
    if (!opts.defined("splitPatch"))
    {
 	splitPatch = SPLIT_PATCH_HYDROGEN;
@@ -1127,7 +1135,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 		{
 		splitPatch = SPLIT_PATCH_HYDROGEN;
 		// increase margin by 1 hydrogen bond length
-		margin += 2;	// assume no greater than 2 angstroms
+		margin += hgroupCutoff;	// assume no greater than 2 angstroms
 		}
 	else
 	{
@@ -2411,12 +2419,15 @@ void SimParameters::receive_SimParameters(Message *msg)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1997/05/09 18:24:24 $
+ *	$Revision: 1.1017 $	$Date: 1997/05/29 19:12:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1017  1997/05/29 19:12:11  nealk
+ * Modified so hydrogen grouping margin offset is a user-defined option.
+ *
  * Revision 1.1016  1997/05/09 18:24:24  nealk
  * 1. Added hydrogen grouping code to improve performance in ComputeNonbondedBase
  *    CODE ONLY WORKS WITH HYDROGEN GROUPING!
