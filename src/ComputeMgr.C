@@ -19,10 +19,13 @@
 #include "ComputeMgr.top.h"
 #include "ComputeMgr.h"
 
+#include "Node.h"
 #include "LJTable.h"
 #include "ComputeNonbondedSelf.h"
 #include "ComputeNonbondedPair.h"
 #include "ComputeAngles.h"
+#include "ComputeDihedrals.h"
+#include "ComputeImpropers.h"
 
 #define MIN_DEBUG_LEVEL 4
 #define DEBUGM 1
@@ -40,6 +43,9 @@ ComputeMgr::~ComputeMgr(void)
 
 void ComputeMgr:: createComputes(ComputeMap *map)
 {
+  Node *node = Node::Object();
+  int myNode = node->myid();
+
   int numNonbondedSelf = 0;
   int numNonbondedPair = 0;
 
@@ -52,6 +58,7 @@ void ComputeMgr:: createComputes(ComputeMap *map)
   DebugM(1,"nAllocated = " << map->nComputes << '\n');
   for(int i=0; i < map->nComputes; i++)
   {
+    if ( map->computeData[i].node != myNode ) continue;
     DebugM(1,"Compute " << i << '\n');
     DebugM(1,"  node = " << map->computeData[i].node << '\n');
     DebugM(1,"  type = " << map->computeData[i].type << '\n');
@@ -74,7 +81,7 @@ void ComputeMgr:: createComputes(ComputeMap *map)
     {
       case computeNonbondedSelfType:
 	c = new ComputeNonbondedSelf(i,map->computeData[i].pids[0]);
-	DebugM(3,"ComputeNonbondedSelf created\n");
+	DebugM(3,"ComputeNonbondedSelf created.\n");
 	++numNonbondedSelf;
 	map->registerCompute(i,c);
 	c->mapReady();
@@ -83,28 +90,34 @@ void ComputeMgr:: createComputes(ComputeMap *map)
 	pid2[0] = map->computeData[i].pids[0];
 	pid2[1] = map->computeData[i].pids[1];
 	c = new ComputeNonbondedPair(i,pid2);
-	DebugM(3,"ComputeNonbondedPair created\n");
+	DebugM(3,"ComputeNonbondedPair created.\n");
 	++numNonbondedPair;
 	map->registerCompute(i,c);
 	c->mapReady();
 	break;
       case computeNonbondedExclType:
-	DebugM(2,"ComputeNonbondedExcl would have been created.\n");
+	DebugM(7,"ComputeNonbondedExcl would have been created.\n");
 	break;
       case computeBondsType:
-	DebugM(2,"ComputeBonds would have been created.\n");
+	DebugM(7,"ComputeBonds would have been created.\n");
 	break;
       case computeAnglesType:
 	c = new ComputeAngles(i);
-	DebugM(3,"ComputeAngles created\n");
+	DebugM(3,"ComputeAngles created.\n");
 	map->registerCompute(i,c);
 	c->mapReady();
 	break;
       case computeDihedralsType:
-	DebugM(2,"ComputeDihedrals would have been created.\n");
+	c = new ComputeDihedrals(i);
+	DebugM(3,"ComputeDihedrals created.\n");
+	map->registerCompute(i,c);
+	c->mapReady();
 	break;
       case computeImpropersType:
-	DebugM(2,"ComputeImpropers would have been created.\n");
+	c = new ComputeImpropers(i);
+	DebugM(3,"ComputeImpropers created.\n");
+	map->registerCompute(i,c);
+	c->mapReady();
 	break;
       default:
 	DebugM(10,"Unknown compute type not created!\n");
@@ -115,6 +128,7 @@ void ComputeMgr:: createComputes(ComputeMap *map)
   DebugM(4, numNonbondedSelf << " ComputeNonbondedSelf created\n");
   DebugM(4, numNonbondedPair << " ComputeNonbondedPair created\n");
 
+  // This doesn't really have to be here, but the output makes more sense.
   LJTable::Instance();
 
 }
@@ -131,7 +145,7 @@ void ComputeMgr:: enqueueWork(Compute *compute)
  *
  *	$RCSfile: ComputeMgr.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/12/01 02:32:54 $
+ *	$Revision: 1.5 $	$Date: 1996/12/01 21:03:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
