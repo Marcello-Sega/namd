@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.23 1996/12/12 08:58:58 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.24 1996/12/12 17:24:04 jim Exp $";
 
 #include <stdio.h>
 
@@ -68,6 +68,9 @@ void WorkDistrib::buildMaps(void)
 void WorkDistrib::sendMaps(void)
 {
   MapDistribMsg *mapMsg = new (MsgIndex(MapDistribMsg)) MapDistribMsg ;
+
+  mapMsg->patchMap = PatchMap::Object();
+  mapMsg->computeMap = ComputeMap::Object();
 
   CBroadcastMsgBranch(WorkDistrib, saveMaps, mapMsg, thisgroup);
   mapsArrived = true;
@@ -376,12 +379,15 @@ void WorkDistrib::movePatchDone(DoneMsg *msg) {
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.23 $	$Date: 1996/12/12 08:58:58 $
+ *	$Revision: 1.24 $	$Date: 1996/12/12 17:24:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.24  1996/12/12 17:24:04  jim
+ * forgot to fill in message fields
+ *
  * Revision 1.23  1996/12/12 08:58:58  jim
  * added movePatch call, changed CthResume to CthAwaken
  *
