@@ -58,8 +58,8 @@ public:
 private:
   void mapPatches(void);
   void mapComputes(void);
-  void mapAngleComputes(void);
-  void mapElectComputes(void);
+  void mapComputeNonbonded(void);
+  void mapComputeHomePatches(ComputeType);
 
   Boolean mapsArrived;
   Boolean awaitingMaps;
@@ -72,13 +72,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.12 $	$Date: 1996/11/22 00:18:51 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.13 $	$Date: 1996/12/01 21:02:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.13  1996/12/01 21:02:37  jim
+ * now adds all existing compute objects to map
+ *
  * Revision 1.12  1996/11/22 00:18:51  ari
  * *** empty log message ***
  *

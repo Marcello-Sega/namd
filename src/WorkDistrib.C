@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.21 1996/12/01 02:29:59 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.22 1996/12/01 21:02:37 jim Exp $";
 
 #include <stdio.h>
 
@@ -247,13 +247,16 @@ void WorkDistrib::mapComputes(void)
 
   computeMap->allocateCids(numPotentialCids);
 
-  mapAngleComputes();
-
-  mapElectComputes();
+  mapComputeNonbonded();
+  mapComputeHomePatches(computeNonbondedExclType);
+  mapComputeHomePatches(computeBondsType);
+  mapComputeHomePatches(computeAnglesType);
+  mapComputeHomePatches(computeDihedralsType);
+  mapComputeHomePatches(computeImpropersType);
 }
 
 //----------------------------------------------------------------------
-void WorkDistrib::mapAngleComputes()
+void WorkDistrib::mapComputeHomePatches(ComputeType type)
 {
   PatchMap *patchMap = PatchMap::Object();
   ComputeMap *computeMap = ComputeMap::Object();
@@ -263,15 +266,11 @@ void WorkDistrib::mapAngleComputes()
 
   int numNodes = node->numNodes();
 
-  // Figure out where to put the angleForce objects, and hook up the
-  // dependencies.
-
   ComputeID *cid = new ComputeID[numNodes];
 
   for(i=0; i<node->numNodes(); i++)
   {
-    cid[i]=computeMap->storeCompute(i,patchMap->numPatches(),
-				    computeAnglesType);
+    cid[i]=computeMap->storeCompute(i,patchMap->numPatches(),type);
   }
 
   PatchID j;
@@ -286,7 +285,7 @@ void WorkDistrib::mapAngleComputes()
 }
 
 //----------------------------------------------------------------------
-void WorkDistrib::mapElectComputes(void)
+void WorkDistrib::mapComputeNonbonded(void)
 {
   // For each patch, create 1 electrostatic object for self-interaction.
   // Then create 1 for each 1-away and 2-away neighbor which has a larger
@@ -342,7 +341,7 @@ void WorkDistrib::mapElectComputes(void)
   }
 }
 
-
+//----------------------------------------------------------------------
 void WorkDistrib::messageEnqueueWork(Compute *compute) {
   DebugM(2,"WorkDistrib::messageEnqueueWork() triggered\n");
   LocalWorkMsg *msg = new (MsgIndex(LocalWorkMsg)) LocalWorkMsg;
@@ -372,12 +371,15 @@ void WorkDistrib::movePatchDone(DoneMsg *msg) {
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.21 $	$Date: 1996/12/01 02:29:59 $
+ *	$Revision: 1.22 $	$Date: 1996/12/01 21:02:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.22  1996/12/01 21:02:37  jim
+ * now adds all existing compute objects to map
+ *
  * Revision 1.21  1996/12/01 02:29:59  jim
  * improved number of computes estimate
  *
