@@ -93,6 +93,7 @@ OBJS = \
 	$(DSTDIR)/ComputeNonbondedUtil.o \
 	$(DSTDIR)/ComputePatch.o \
 	$(DSTDIR)/ComputePatchPair.o \
+	$(DSTDIR)/ComputeRestraints.o \
 	$(DSTDIR)/ComputeSphericalBC.o \
 	$(DSTDIR)/ConfigList.o \
 	$(DSTDIR)/Controller.o \
