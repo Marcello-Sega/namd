@@ -190,10 +190,14 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(FFTLIB)
 
 flipdcd:	$(SRCDIR)/flipdcd.c
-	$(CC) -o flipdcd $(SRCDIR)/flipdcd.c
+	$(CC) -o $@ $(SRCDIR)/flipdcd.c || \
+	echo "#!/bin/sh\necho unavailable on this platfrom" > $@; \
+	chmod +x $@
 
 flipbinpdb:	$(SRCDIR)/flipbinpdb.c
-	$(CC) -o flipbinpdb $(SRCDIR)/flipbinpdb.c
+	$(CC) -o $@ $(SRCDIR)/flipbinpdb.c || \
+	echo "#!/bin/sh\necho unavailable on this platfrom" > $@; \
+	chmod +x $@
 
 fixdcd:	$(SRCDIR)/fixdcd.c
 	$(CC) -o fixdcd $(SRCDIR)/fixdcd.c
