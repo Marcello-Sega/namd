@@ -39,10 +39,7 @@ GlobalMasterSMD::GlobalMasterSMD(BigReal spring_constant, BigReal velocity,
   currentTime = first_timestep;
 
   parseAtoms(filename);
-  iout << iINFO << "SMD ATOMS:  ";
-  for (int i=0; i<requestedGroups()[0].size()-1; i++)
-    iout << modifyRequestedGroups()[0][i]+1 << ' ';
-  iout << "\n" << endi;
+  iout << iINFO << requestedGroups()[0].size() << " SMD ATOMS\n" << endi;
   DebugM(1,"done with initialize\n");
 }
 
