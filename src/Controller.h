@@ -11,19 +11,19 @@
  *
  ***************************************************************************/
 
-#ifndef SEQUENCER_H
-#define SEQUENCER_H
+#ifndef CONTROLLER_H
+#define CONTROLLER_H
 
 #include "converse.h"
 
-class HomePatch;
+class NamdState;
 class SimParameters;
 
-class Sequencer
+class Controller
 {
 public:
-    Sequencer(HomePatch *p);
-    ~Sequencer(void) { };
+    Controller(NamdState *s);
+    ~Controller(void) { };
     void run(int numberOfCycles);             // spawn thread, etc.
     void awaken(void) { CthAwaken(thread); };
 
@@ -35,11 +35,11 @@ protected:
     SimParameters *const simParams;	// for convenience
     int numberOfCycles;			// stores argument to run()
     int stepsPerCycle;			// stores info from run()
-    HomePatch *const patch;		// access methods in patch
+    NamdState *const state;		// access data in state
 
 private:
     CthThread thread;
-    static void threadRun(Sequencer*);
+    static void threadRun(Controller*);
 };
 
 #endif // SEQUENCER_H

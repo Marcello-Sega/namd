@@ -13,26 +13,25 @@
 
 #include "Node.h"
 #include "SimParameters.h"
-#include "Sequencer.h"
-#include "HomePatch.h"
+#include "Controller.h"
 
 #define MIN_DEBUG_LEVEL 4
 #define DEBUGM
 #include "Debug.h"
 
-Sequencer::Sequencer(HomePatch *p) :
-	patch(p),
+Controller::Controller(NamdState *s) :
+	state(s),
 	simParams(Node::Object()->simParameters)
 {
   ;
 }
 
-void Sequencer::threadRun(Sequencer* arg)
+void Controller::threadRun(Controller* arg)
 {
     arg->algorithm();
 }
 
-void Sequencer::run(int numberOfCycles)
+void Controller::run(int numberOfCycles)
 {
     stepsPerCycle = simParams->stepsPerCycle;
     if ( numberOfCycles ) this->numberOfCycles = numberOfCycles;
@@ -42,34 +41,22 @@ void Sequencer::run(int numberOfCycles)
     CthAwaken(thread);
 }
 
-void Sequencer::algorithm(void)
+void Controller::algorithm(void)
 {
+    DebugM(4, "Controller algorithm active.\n");
     const int numberOfCycles = this->numberOfCycles;
     const int stepsPerCycle = this->stepsPerCycle;
     const BigReal timestep = simParams->dt;
     int step, cycle;
-    patch->positionsReady();
-    suspend();
     for ( cycle = 0; cycle < numberOfCycles; ++cycle )
     {
         for ( step = 0; step < stepsPerCycle; ++step )
         {
-            patch->addForceToMomentum(0.5*timestep);
-            patch->addVelocityToPosition(timestep);
-	    DebugM(3, patch->getPatchID()
-		<< ": (" << cycle << "," << step << ") "
-		<< "Sending positionsReady().\n");
-            patch->positionsReady();
-	    DebugM(2, patch->getPatchID()
-		<< ": (" << cycle << "," << step << ") "
-		<< "Suspending.\n");
-            suspend();
 	    DebugM(2, patch->getPatchID()
 		<< ": (" << cycle << "," << step << ") "
 		<< "Awakened!\n");
-            patch->addForceToMomentum(0.5*timestep);
         }
     }
-    DebugM(4, patch->getPatchID() << ": Exiting.\n");
+    DebugM(4, "Controller: Exiting.\n");
     terminate();
 }
