@@ -280,6 +280,7 @@ void Controller::minimize() {
     last = mid;
     BigReal tol = fabs( linegoal * min_f_dot_v );
     if ( initstep > babystep ) initstep = babystep;
+    if ( initstep < 1.0e-300 ) initstep = 1.0e-300;
     iout << "INITIAL STEP: " << initstep << "\n" << endi;
     iout << "GRADIENT TOLERANCE: " << tol << "\n" << endi;
     x = initstep;
