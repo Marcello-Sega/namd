@@ -21,6 +21,7 @@ int topo_mol_segment_auto_angles(topo_mol *mol, int autogen);
 int topo_mol_segment_auto_dihedrals(topo_mol *mol, int autogen);
 
 int topo_mol_residue(topo_mol *mol, const char *resid, const char *rname);
+int topo_mol_mutate(topo_mol *mol, const char *resid, const char *rname);
 
 int topo_mol_end(topo_mol *mol);
 
@@ -34,6 +35,9 @@ int topo_mol_patch(topo_mol *mol, const topo_mol_ident_t *targets,
 			int ntargets, const char *rname, int prepend);
 
 void topo_mol_delete_atom(topo_mol *mol, const topo_mol_ident_t *target);
+
+int topo_mol_multiply_atoms(topo_mol *mol, const topo_mol_ident_t *targets,
+					int ntargets, int ncopies);
 
 int topo_mol_set_xyz(topo_mol *mol, const topo_mol_ident_t *target,
 					double x, double y, double z);

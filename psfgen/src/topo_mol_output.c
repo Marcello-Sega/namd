@@ -42,7 +42,7 @@ int topo_mol_write_pdb(topo_mol *mol, FILE *file, void *v,
           x = y = z = 0.0;  o = -1.0;
           break;
         }
-        b = 0.0;
+        b = atom->partition;
         write_pdb_atom(file,atomid,atom->name,res->name,atoi(res->resid),
 		"",(float)x,(float)y,(float)z,(float)o,(float)b,"",seg->segid);
       }

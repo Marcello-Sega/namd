@@ -50,6 +50,7 @@ typedef struct topo_mol_conformation_t {
 
 typedef struct topo_mol_atom_t {
   struct topo_mol_atom_t *next;
+  struct topo_mol_atom_t *copy;
   topo_mol_bond_t *bonds;
   topo_mol_angle_t *angles;
   topo_mol_dihedral_t *dihedrals;
@@ -61,6 +62,7 @@ typedef struct topo_mol_atom_t {
   double charge;
   double x,y,z;
   int xyz_state;
+  int partition;
   int typeid;
   int atomid;
 } topo_mol_atom_t;

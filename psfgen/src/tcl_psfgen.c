@@ -24,22 +24,26 @@ static void psfgen_deleteproc(ClientData cd, Tcl_Interp *interp) {
 }
 
 /* 
+ * Provide user feedback and warnings beyond result values.
  * If we are running interactively, Tcl_Main will take care of echoing results
- * to the console.  If we run a script, we need to output the results 
+ * to the console.  If we run a script, we need to output the results
  * ourselves.
  */
 void newhandle_msg(void *v, const char *msg) {
   Tcl_Interp *interp = (Tcl_Interp *)v;
-  char *var = Tcl_GetVar(interp, "tcl_interactive", TCL_GLOBAL_ONLY);
-  if (var && atoi(var))  
-    Tcl_AppendResult((Tcl_Interp *)v, msg, "\n", NULL);
-  else
-    printf("%s\n", msg); 
+  const char *words[2] = {"puts"};
+  char *script;
+  words[1] = msg;
+  script = Tcl_Merge(2,words);
+  Tcl_Eval(interp,script);
+  Tcl_Free(script);
 }
 
 int tcl_topology(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 int tcl_segment(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 int tcl_residue(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
+int tcl_mutate(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
+int tcl_multiply(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 int tcl_coord(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 int tcl_auto(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 int tcl_alias(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
@@ -101,6 +105,10 @@ int Psfgen_Init(Tcl_Interp *interp) {
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
   Tcl_CreateCommand(interp,"residue",tcl_residue,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
+  Tcl_CreateCommand(interp,"mutate",tcl_mutate,
+	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
+  Tcl_CreateCommand(interp,"multiply",tcl_multiply,
+	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
   Tcl_CreateCommand(interp,"coord",tcl_coord,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
   Tcl_CreateCommand(interp,"auto",tcl_auto,
@@ -138,8 +146,10 @@ void strtoupper(char *s) {
 }
 
 char* splitcolon(char *s) {
-  while ( *s && *s != ':' ) { ++s; }
-  if ( *s ) *(s++) = 0; else s = 0;
+  if ( s ) {
+    while ( *s && *s != ':' ) { ++s; }
+    if ( *s ) *(s++) = 0; else s = 0;
+  }
   return s;
 }
 
@@ -226,7 +236,10 @@ int tcl_segment(ClientData data, Tcl_Interp *interp,
     return TCL_ERROR;
   }
 
-  if ( Tcl_Eval(interp,argv[2]) != TCL_OK ) return TCL_ERROR;
+  if ( Tcl_Eval(interp,argv[2]) != TCL_OK ) {
+    Tcl_AppendResult(interp,"\nERROR: failed while building segment",NULL);
+    return TCL_ERROR;
+  }
 
   newhandle_msg(interp,"generating structure at end of segment");
   if ( topo_mol_end(psf->mol) ) {
@@ -254,6 +267,66 @@ int tcl_residue(ClientData data, Tcl_Interp *interp,
 
   if ( topo_mol_residue(psf->mol,argv[1],argv[2]) ) {
     Tcl_AppendResult(interp,"ERROR: failed on residue",NULL);
+    return TCL_ERROR;
+  }
+
+  return TCL_OK;
+}
+
+int tcl_mutate(ClientData data, Tcl_Interp *interp,
+					int argc, char *argv[]) {
+  psfgen_data *psf = (psfgen_data *)data;
+
+  if ( argc < 3 ) {
+    Tcl_SetResult(interp,"arguments: resid resname",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  if ( argc > 3 ) {
+    Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  strtoupper(argv[1]);
+  strtoupper(argv[2]);
+
+  if ( topo_mol_mutate(psf->mol,argv[1],argv[2]) ) {
+    Tcl_AppendResult(interp,"ERROR: failed on mutate",NULL);
+    return TCL_ERROR;
+  }
+
+  return TCL_OK;
+}
+
+int tcl_multiply(ClientData data, Tcl_Interp *interp,
+                                        int argc, char *argv[]) {
+  int i, ncopies, ierr;
+  topo_mol_ident_t *targets;
+  char msg[128];
+  psfgen_data *psf = (psfgen_data *)data;
+
+  if ( argc<3 || Tcl_GetInt(interp,argv[1],&ncopies) != TCL_OK || ncopies<2 ) {
+    Tcl_SetResult(interp,"arguments: ncopies segid?:resid?:atomname? ...",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+
+  targets = (topo_mol_ident_t *) Tcl_Alloc(argc*sizeof(topo_mol_ident_t));
+  if ( ! targets ) {
+    Tcl_SetResult(interp,"memory allocation failed",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+
+  sprintf(msg,"generating %d copies of selected atoms",ncopies);
+  newhandle_msg(interp,msg);
+  for ( i=2; i<argc; ++i ) {
+    char *ctmp;
+    strtoupper(argv[i]);
+    targets[i-2].segid = ctmp = argv[i];
+    targets[i-2].resid = ctmp = splitcolon(ctmp);
+    targets[i-2].aname = splitcolon(ctmp);
+  }
+  if ( ierr = topo_mol_multiply_atoms(psf->mol,targets,(argc-2),ncopies) ) {
+    sprintf(msg,"ERROR: failed to multiply atoms (error=%d)",ierr);
+    Tcl_SetResult(interp,msg,TCL_VOLATILE);
+    /* Tcl_AppendResult(interp,"ERROR: failed to multiply atoms",NULL); */
     return TCL_ERROR;
   }
 
