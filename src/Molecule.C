@@ -4865,6 +4865,17 @@ void Molecule::build_atom_status(void) {
   register int i;
   int a1, a2, a3;
 
+  // if any atoms have a mass of zero set to 0.001 and warn user
+  int numZeroMassAtoms = 0;
+  for (i=0; i < numAtoms; i++) {
+    if ( atoms[i].mass <= 0. ) {
+      atoms[i].mass = 0.001;
+      ++numZeroMassAtoms;
+    }
+  }
+  iout << iWARN << "FOUND " << numZeroMassAtoms <<
+	" ATOMS WITH ZERO OR NEGATIVE MASSES!  CHANGED TO 0.001\n" << endi;
+
   // initialize information for each atom (note that the status has
   // already been initialized during the read/receive phase)
   hydrogenGroup.resize(numAtoms);
