@@ -55,6 +55,7 @@ private:
   static int Tcl_addatom(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_reconfig(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_loadcoords(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_loadmasses(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_addforce(ClientData, Tcl_Interp *, int, char **);
 #endif
 };
@@ -115,6 +116,31 @@ int ComputeGlobalMaster::Tcl_loadcoords(ClientData clientData,
   for ( ; a_i != a_e; ++a_i, ++p_i ) {
     sprintf(cmd, "set %s(%d) { %lg %lg %lg }", vname, (int)((*a_i)+1),
       (double)((*p_i).x),(double)((*p_i).y),(double)((*p_i).z));
+    code = Tcl_Eval(interp,cmd);
+    if (code != TCL_OK) {
+      NAMD_die("TCL error in global force calculation!");
+      return TCL_ERROR;
+    }
+  }
+  return TCL_OK;
+}
+
+
+int ComputeGlobalMaster::Tcl_loadmasses(ClientData clientData,
+	Tcl_Interp *interp, int argc, char *argv[]) {
+  if (argc != 2) {
+    interp->result = "wrong # args";
+    return TCL_ERROR;
+  }
+  char *vname = argv[1];
+  ComputeGlobalMaster *self = (ComputeGlobalMaster *)clientData;
+  char cmd[129];  int code;
+  Molecule *mol = Node::Object()->molecule;
+  AtomIDList::iterator a_i = self->aid.begin();
+  AtomIDList::iterator a_e = self->aid.end();
+  for ( ; a_i != a_e; ++a_i) {
+    sprintf(cmd, "set %s(%d) %lg", vname, (int)((*a_i)+1),
+      (double)(mol->atommass(*a_i)) );
     code = Tcl_Eval(interp,cmd);
     if (code != TCL_OK) {
       NAMD_die("TCL error in global force calculation!");
@@ -275,6 +301,8 @@ void ComputeGlobalMaster::calculate() {
   // Call interpreter to calculate forces
   Tcl_CreateCommand(interp, "loadcoords", Tcl_loadcoords,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "loadmasses", Tcl_loadmasses,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "addforce", Tcl_addforce,
     (ClientData) msg, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "reconfig", Tcl_reconfig,
@@ -288,6 +316,7 @@ void ComputeGlobalMaster::calculate() {
   if (code != TCL_OK) NAMD_die("TCL error in global force calculation!");
 
   Tcl_DeleteCommand(interp, "loadcoords");
+  Tcl_DeleteCommand(interp, "loadmasses");
   Tcl_DeleteCommand(interp, "addforce");
   Tcl_DeleteCommand(interp, "reconfig");
   Tcl_DeleteCommand(interp, "addatom");
@@ -431,12 +460,15 @@ void ComputeGlobal::sendData()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1998/01/06 05:41:26 $
+ *	$Revision: 1.4 $	$Date: 1998/01/10 23:57:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGlobal.C,v $
+ * Revision 1.4  1998/01/10 23:57:25  jim
+ * Added loadmasses command to TCL.
+ *
  * Revision 1.3  1998/01/06 05:41:26  jim
  * Added tclx library.
  *
