@@ -52,6 +52,10 @@ class HomePatch : public Patch {
      void addForceToMomentum(const BigReal);
      void addVelocityToPosition(const BigReal);
 
+     BigReal calcKineticEnergy();
+     Vector calcMomentum();
+     Vector calcAngularMomentum();
+
    protected:
       virtual void boxClosed(int);
 
@@ -110,12 +114,15 @@ class HomePatch : public Patch {
  *
  *	$RCSfile: HomePatch.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.13 $	$Date: 1996/12/17 23:58:02 $
+ *	$Revision: 1.14 $	$Date: 1997/01/10 22:38:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.14  1997/01/10 22:38:37  jim
+ * kinetic energy reporting
+ *
  * Revision 1.13  1996/12/17 23:58:02  jim
  * proxy result reporting is working
  *

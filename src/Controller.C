@@ -55,11 +55,14 @@ void Controller::algorithm(void)
     const BigReal timestep = simParams->dt;
     int step, cycle;
     int seq = 0;
+    BigReal ke;
+    reduction->require(seq, REDUCTION_KINETIC_ENERGY, ke);
+    DebugM(5, "Step: " << seq << " KE: " << ke << "\n");
+    ++seq;
     for ( cycle = 0; cycle < numberOfCycles; ++cycle )
     {
         for ( step = 0; step < stepsPerCycle; ++step )
         {
-	    BigReal ke;
 	    reduction->require(seq, REDUCTION_KINETIC_ENERGY, ke);
 	    DebugM(5, "Step: " << seq << " KE: " << ke << "\n");
 	    ++seq;

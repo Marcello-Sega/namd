@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.16 1996/12/17 23:58:02 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.17 1997/01/10 22:38:37 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -113,6 +113,36 @@ void HomePatch::addVelocityToPosition(const BigReal timestep)
   {
     p[i] += v[i] * dt;
   }
+}
+
+BigReal HomePatch::calcKineticEnergy()
+{
+  BigReal total = 0;
+  for ( int i = 0; i < numAtoms; ++i )
+  {
+     total += 0.5 * a[i].mass * v[i] * v[i];
+  }
+  return total;
+}
+
+Vector HomePatch::calcMomentum()
+{
+  Vector total;
+  for ( int i = 0; i < numAtoms; ++i )
+  {
+     total += a[i].mass * v[i];
+  }
+  return total;
+}
+
+Vector HomePatch::calcAngularMomentum()
+{
+  Vector total;
+  for ( int i = 0; i < numAtoms; ++i )
+  {
+     total += cross(a[i].mass,p[i],v[i]); // m r % v
+  }
+  return total;
 }
 
 
@@ -313,12 +343,15 @@ void HomePatch::dispose(char *&data)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.16 $	$Date: 1996/12/17 23:58:02 $
+ *	$Revision: 1.17 $	$Date: 1997/01/10 22:38:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.17  1997/01/10 22:38:37  jim
+ * kinetic energy reporting
+ *
  * Revision 1.16  1996/12/17 23:58:02  jim
  * proxy result reporting is working
  *

@@ -58,6 +58,9 @@ void Sequencer::algorithm(void)
     int seq = 0;
     patch->positionsReady();
     suspend();
+    reduction->submit(seq, REDUCTION_KINETIC_ENERGY,
+	patch->calcKineticEnergy());
+    ++seq;
     for ( cycle = 0; cycle < numberOfCycles; ++cycle )
     {
         for ( step = 0; step < stepsPerCycle; ++step )
@@ -76,7 +79,8 @@ void Sequencer::algorithm(void)
 		<< ": (" << cycle << "," << step << ") "
 		<< "Awakened!\n");
             patch->addForceToMomentum(0.5*timestep);
-	    reduction->submit(seq, REDUCTION_KINETIC_ENERGY, 1.0);
+	    reduction->submit(seq, REDUCTION_KINETIC_ENERGY,
+		patch->calcKineticEnergy());
 	    ++seq;
         }
     }
