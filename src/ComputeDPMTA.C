@@ -123,7 +123,7 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   pmta_data.mp_lj = 4;
   pmta_data.fft = simParams->FMAFFTOn;
   pmta_data.fftblock = simParams->FMAFFTBlock;
-  pmta_data.pbc = 0;
+  pmta_data.pbc = 1;	// use Periodic boundary condition
   pmta_data.kterm = 0;
   pmta_data.theta = simParams->fmaTheta;
   //  2.5 will allow non-cubical box
@@ -229,6 +229,7 @@ void ComputeDPMTA::doWork()
     Vector pos;
     for(j=0; j<(*ap).p->getNumAtoms(); j++)
     {
+#if 0
       // for periodic boundary condition (PBC)
       pos = lattice.nearest((*ap).x[j],boxcenter);
 
@@ -236,6 +237,12 @@ void ComputeDPMTA::doWork()
       particle_list[i].p.x = pos.x;
       particle_list[i].p.y = pos.y;
       particle_list[i].p.z = pos.z;
+#else
+      // explicitly copy -- two different data structures
+      particle_list[i].p.x = (*ap).x[j].x;
+      particle_list[i].p.y = (*ap).x[j].y;
+      particle_list[i].p.z = (*ap).x[j].z;
+#endif
       particle_list[i].q = (*ap).a[j].charge * unitFactor;
       i++;
       if (i > totalAtoms)
