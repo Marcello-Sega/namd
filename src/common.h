@@ -27,6 +27,13 @@ typedef	int	int32;
 #endif
 
 #ifdef GLOBALS
+void * operator new (size_t, void *);
+#else
+void * ::operator new (size_t, void *);
+#endif
+
+#if 0
+#ifdef GLOBALS
 void * operator new (size_t);
 void * operator new (size_t, void *);
 void   operator delete (void *);
@@ -34,6 +41,7 @@ void   operator delete (void *);
 void * ::operator new (size_t);
 void * ::operator new (size_t, void *);
 void   ::operator delete (void *);
+#endif
 #endif
 
 #ifndef DEFPRIO
@@ -262,13 +270,17 @@ int  Fclose(FILE *fout);
  * RCS INFORMATION:
  *
  *	$RCSfile: common.h,v $
- *	$Author: sergei $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1998/01/13 23:31:45 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1015 $	$Date: 1998/02/27 00:14:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.h,v $
+ * Revision 1.1015  1998/02/27 00:14:31  milind
+ * Reduced memory requirements further by using CmiAlloc and CmiFree only
+ * for messages and not for all new and deletes.
+ *
  * Revision 1.1014  1998/01/13 23:31:45  sergei
  * Added SMDDATATAG tag
  *

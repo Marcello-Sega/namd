@@ -10,7 +10,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1009 1997/12/26 23:11:06 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1010 1998/02/27 00:14:30 milind Exp $";
 
 #include "chare.h"
 #include "ckdefs.h"
@@ -24,14 +24,20 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 
 #include "Node.h"
 
 #ifdef GLOBALS
-void * operator new (size_t t) { return CmiAlloc (t); }
 void * operator new (size_t, void *p) { return p; }
+#else
+void * ::operator new (size_t, void *p) { return p; }
+#endif // GLOBALS
+
+#if 0
+#ifdef GLOBALS
+void * operator new (size_t t) { return CmiAlloc (t); }
 void   operator delete (void *p) { if ( p ) CmiFree (p); }
 #else
 void * ::operator new (size_t t) { return CmiAlloc (t); }
-void * ::operator new (size_t, void *p) { return p; }
 void   ::operator delete (void *p) { if ( p ) CmiFree (p); }
 #endif // GLOBALS
+#endif
 
 // print out title
 void NAMD_title(void)
@@ -291,12 +297,16 @@ int	Fclose	(FILE *fout)
  *
  *	$RCSfile: common.C,v $
  *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/12/26 23:11:06 $
+ *	$Revision: 1.1010 $	$Date: 1998/02/27 00:14:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.C,v $
+ * Revision 1.1010  1998/02/27 00:14:30  milind
+ * Reduced memory requirements further by using CmiAlloc and CmiFree only
+ * for messages and not for all new and deletes.
+ *
  * Revision 1.1009  1997/12/26 23:11:06  milind
  * Made namd2 to compile, link and run under linux. Merged Templates and src
  * directoriies, and removed separate definition and declaration files for
