@@ -29,7 +29,7 @@ protected :
   // virtual void initialize() { ComputePatch::initialize(); }
   virtual void doForce(Position* p, Results* r, AtomProperties* a);
 
-  ReductionMgr *reduction;
+  SubmitReduction *reduction;
 
   int minPart, maxPart, numParts;
 
@@ -41,12 +41,15 @@ protected :
  *
  *	$RCSfile: ComputeNonbondedSelf.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1998/07/02 21:06:37 $
+ *	$Revision: 1.1007 $	$Date: 1999/06/17 15:46:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.h,v $
+ * Revision 1.1007  1999/06/17 15:46:10  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1006  1998/07/02 21:06:37  jim
  * Added support for splitting ComputeNonbondedSelf into multiple computes.
  *

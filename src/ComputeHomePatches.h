@@ -84,7 +84,6 @@ protected:
   ComputeHomePatchList patchList;
 
   PatchMap *patchMap;
-  ReductionMgr *reduction;
 
 public:
   ComputeHomePatches(ComputeID c);
@@ -100,12 +99,15 @@ public:
  *
  *	$RCSfile: ComputeHomePatches.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1998/04/10 04:15:59 $
+ *	$Revision: 1.1005 $	$Date: 1999/06/17 15:46:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomePatches.h,v $
+ * Revision 1.1005  1999/06/17 15:46:07  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1004  1998/04/10 04:15:59  jim
  * Finished incorporating DPME.
  *

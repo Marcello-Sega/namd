@@ -13,6 +13,8 @@
 
 #include "ComputeHomePatches.h"
 
+class SubmitReduction;
+
 #ifdef DPMTA
 
 extern "C"
@@ -30,6 +32,7 @@ private:
   Vector boxcenter;	// FMA box center, set by get_FMA_cube()
   int usePBC;		// flag for PBC
   Vector initLattice;	// initial system lattice dimensions
+  SubmitReduction *reduction;
 
   void get_FMA_cube(int resize);
 
@@ -47,12 +50,15 @@ public:
  *
  *	$RCSfile: ComputeDPMTA.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1998/04/15 22:13:51 $
+ *	$Revision: 1.1019 $	$Date: 1999/06/17 15:46:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.h,v $
+ * Revision 1.1019  1999/06/17 15:46:04  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1018  1998/04/15 22:13:51  jim
  * Make depends returns same results regardless of DPME, DPMTA, TCL or MDCOMM.
  *

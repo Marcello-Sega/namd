@@ -25,14 +25,13 @@ ComputeNonbondedSelf::ComputeNonbondedSelf(ComputeID c, PatchID pid,
   : ComputePatch(c,pid),
     minPart(minPartition), maxPart(maxPartition), numParts(numPartitions)
 {
-  reduction = ReductionMgr::Object();
-  registerReductionData(reduction);
+  reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 }
 
 
 ComputeNonbondedSelf::~ComputeNonbondedSelf()
 {
-  unregisterReductionData(reduction);
+  delete reduction;
 }
 
 
@@ -79,6 +78,7 @@ void ComputeNonbondedSelf::doForce(Position* p,
   }
 
   submitReductionData(reductionData,reduction,patch->flags.seq);
+  reduction->submit();
   // Inform load balancer
   LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
 }
@@ -88,12 +88,15 @@ void ComputeNonbondedSelf::doForce(Position* p,
  *
  *	$RCSfile: ComputeNonbondedSelf.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1999/03/18 02:41:16 $
+ *	$Revision: 1.1013 $	$Date: 1999/06/17 15:46:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.C,v $
+ * Revision 1.1013  1999/06/17 15:46:10  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1012  1999/03/18 02:41:16  jim
  * Turned off stray DEBUGM code.
  *

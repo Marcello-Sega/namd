@@ -24,14 +24,13 @@
 ComputeNonbondedPair::ComputeNonbondedPair(ComputeID c, PatchID pid[], int trans[])
   : ComputePatchPair(c,pid,trans)
 {
-  reduction = ReductionMgr::Object();
-  registerReductionData(reduction);
+  reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 }
 
 
 ComputeNonbondedPair::~ComputeNonbondedPair()
 {
-  unregisterReductionData(reduction);
+  delete reduction;
 }
 
 int ComputeNonbondedPair::noWork() {
@@ -69,6 +68,7 @@ int ComputeNonbondedPair::noWork() {
     }
 
     submitReductionData(reductionData,reduction,patch[0]->flags.seq);
+    reduction->submit();
 
     // Inform load balancer
     LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
@@ -141,6 +141,7 @@ void ComputeNonbondedPair::doForce(Position* p[2],
   }
 
   submitReductionData(reductionData,reduction,patch[0]->flags.seq);
+  reduction->submit();
 
   // Inform load balancer
   LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
@@ -151,12 +152,15 @@ void ComputeNonbondedPair::doForce(Position* p[2],
  *
  *	$RCSfile: ComputeNonbondedPair.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1999/03/18 02:41:15 $
+ *	$Revision: 1.1018 $	$Date: 1999/06/17 15:46:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.C,v $
+ * Revision 1.1018  1999/06/17 15:46:09  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1017  1999/03/18 02:41:15  jim
  * Turned off stray DEBUGM code.
  *

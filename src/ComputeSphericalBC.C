@@ -27,8 +27,7 @@
 ComputeSphericalBC::ComputeSphericalBC(ComputeID c, PatchID pid)
   : ComputePatch(c,pid)
 {
-	reduction = ReductionMgr::Object();
-	reduction->Register(REDUCTION_BC_ENERGY);
+	reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 
 	SimParameters *simParams = Node::Object()->simParameters;
 
@@ -79,7 +78,7 @@ ComputeSphericalBC::ComputeSphericalBC(ComputeID c, PatchID pid)
 ComputeSphericalBC::~ComputeSphericalBC()
 
 {
-	reduction->unRegister(REDUCTION_BC_ENERGY);
+	delete reduction;
 }
 /*			END OF FUNCTION ~ComputeSphericalBC		*/
 
@@ -221,7 +220,8 @@ void ComputeSphericalBC::doForce(Position* p, Results* r, AtomProperties* a)
 		}
 	}
 
-    reduction->submit(patch->flags.seq, REDUCTION_BC_ENERGY, energy);
+    reduction->item(REDUCTION_BC_ENERGY) += energy;
+    reduction->submit();
 
 }
 /*			END OF FUNCTION force				*/

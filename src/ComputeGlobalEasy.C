@@ -40,13 +40,12 @@ ComputeGlobalEasy::ComputeGlobalEasy(ComputeGlobal *h, const char *cn)
   configName = new char[len+1];
   strcpy(configName,cn);
 
-  reduction = ReductionMgr::Object();
-  reduction->Register(REDUCTION_MISC_ENERGY);
+  reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 }
 
 ComputeGlobalEasy::~ComputeGlobalEasy() {
   delete [] configName;
-  reduction->unRegister(REDUCTION_MISC_ENERGY);
+  delete reduction;
 }
 
 int ComputeGlobalEasy::
@@ -180,7 +179,8 @@ void ComputeGlobalEasy::calculate() {
   // Send results to clients
   host->comm->sendComputeGlobalResults(resultsMsg);
   resultsMsg = 0;
-  reduction->submit(seq,REDUCTION_MISC_ENERGY,energy);
+  reduction->item(REDUCTION_MISC_ENERGY) += energy;
+  reduction->submit();
   ++seq;
 }
 
@@ -198,12 +198,15 @@ void ComputeGlobalEasy::easy_calc() {
  *
  *	$RCSfile: ComputeGlobalEasy.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1999/06/03 16:50:08 $
+ *	$Revision: 1.2 $	$Date: 1999/06/17 15:46:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGlobalEasy.C,v $
+ * Revision 1.2  1999/06/17 15:46:06  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1  1999/06/03 16:50:08  jim
  * Added simplified interface to ComputeGlobal mechanism.
  *

@@ -40,9 +40,7 @@ public:
   }
   enum { improperEnergyIndex, virialXIndex, virialYIndex, virialZIndex, reductionDataSize };
   enum { reductionChecksumLabel = REDUCTION_IMPROPER_CHECKSUM };
-  static void registerReductionData(ReductionMgr*);
-  static void submitReductionData(BigReal*,ReductionMgr*,int);
-  static void unregisterReductionData(ReductionMgr*);
+  static void submitReductionData(BigReal*,SubmitReduction*,int);
 
   ImproperElem() {
 	atomID[0] = -1;
@@ -105,12 +103,15 @@ public:
  *
  *	$RCSfile: ComputeImpropers.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1999/01/06 00:56:22 $
+ *	$Revision: 1.1006 $	$Date: 1999/06/17 15:46:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeImpropers.h,v $
+ * Revision 1.1006  1999/06/17 15:46:09  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1005  1999/01/06 00:56:22  jim
  * All compute objects except DPMTA now return diagonal of virial tensor.
  *

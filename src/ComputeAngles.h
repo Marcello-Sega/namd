@@ -41,9 +41,7 @@ public:
 
   enum { angleEnergyIndex, virialXIndex, virialYIndex, virialZIndex, reductionDataSize };
   enum { reductionChecksumLabel = REDUCTION_ANGLE_CHECKSUM };
-  static void registerReductionData(ReductionMgr*);
-  static void submitReductionData(BigReal*,ReductionMgr*,int);
-  static void unregisterReductionData(ReductionMgr*);
+  static void submitReductionData(BigReal*,SubmitReduction*,int);
 
   inline AngleElem();
   inline AngleElem(const Angle *a);
@@ -70,12 +68,15 @@ public:
  *
  *	$RCSfile: ComputeAngles.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1999/01/06 00:56:20 $
+ *	$Revision: 1.1009 $	$Date: 1999/06/17 15:46:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.h,v $
+ * Revision 1.1009  1999/06/17 15:46:00  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1008  1999/01/06 00:56:20  jim
  * All compute objects except DPMTA now return diagonal of virial tensor.
  *

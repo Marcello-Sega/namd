@@ -33,7 +33,7 @@ class ComputeDPMEMaster {
 private:
   friend class ComputeDPME;
   ComputeDPME *host;
-  ComputeDPMEMaster(ComputeDPME *, ReductionMgr *);
+  ComputeDPMEMaster(ComputeDPME *);
   ~ComputeDPMEMaster();
   void recvData(ComputeDPMEDataMsg *);
   ResizeArray<int> homeNode;
@@ -41,7 +41,7 @@ private:
   int numWorkingPes;
   int numLocalAtoms;
   Pme2Particle *localData;
-  ReductionMgr *reduction;
+  SubmitReduction *reduction;
   int runcount;
 };
 
@@ -58,7 +58,7 @@ ComputeDPME::ComputeDPME(ComputeID c, ComputeMgr *m) :
 
   masterNode = numWorkingPes - 1;
   if ( CkMyPe() == masterNode ) {
-    master = new ComputeDPMEMaster(this,reduction);
+    master = new ComputeDPMEMaster(this);
     master->numWorkingPes = numWorkingPes;
   }
   else master = 0;
@@ -124,10 +124,7 @@ void ComputeDPME::doWork()
       (*ap).forceBox->close(&r);
     }
     if ( master ) {
-      reduction->submit(patchList[0].p->flags.seq, REDUCTION_ELECT_ENERGY, 0.);
-      reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW_X, 0.);
-      reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW_Y, 0.);
-      reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW_Z, 0.);
+      master->reduction->submit();
     }
     return;
   }
@@ -182,25 +179,17 @@ void ComputeDPME::recvData(ComputeDPMEDataMsg *msg)
   else NAMD_die("ComputeDPME::master is NULL!");
 }
 
-ComputeDPMEMaster::ComputeDPMEMaster(ComputeDPME *h, ReductionMgr *r) :
-  host(h), numLocalAtoms(0), reduction(r), runcount(0)
+ComputeDPMEMaster::ComputeDPMEMaster(ComputeDPME *h) :
+  host(h), numLocalAtoms(0), runcount(0)
 {
-  reduction->Register(REDUCTION_ELECT_ENERGY);
-  reduction->Register(REDUCTION_VIRIAL_SLOW_X);
-  reduction->Register(REDUCTION_VIRIAL_SLOW_Y);
-  reduction->Register(REDUCTION_VIRIAL_SLOW_Z);
-
+  reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
   Molecule * molecule = Node::Object()->molecule;
   localData = new Pme2Particle[molecule->numAtoms];
 }
 
 ComputeDPMEMaster::~ComputeDPMEMaster()
 {
-  reduction->unRegister(REDUCTION_ELECT_ENERGY);
-  reduction->unRegister(REDUCTION_VIRIAL_SLOW_X);
-  reduction->unRegister(REDUCTION_VIRIAL_SLOW_Y);
-  reduction->unRegister(REDUCTION_VIRIAL_SLOW_Z);
-
+  delete reduction;
   delete [] localData;
 }
 
@@ -323,10 +312,11 @@ void ComputeDPMEMaster::recvData(ComputeDPMEDataMsg *msg)
   DebugM(4,"Reciprocal sum virial: " << recip_vir[0] << " " <<
 	recip_vir[1] << " " << recip_vir[2] << " " << recip_vir[3] << " " <<
 	recip_vir[4] << " " << recip_vir[5] << "\n");
-  reduction->submit(seq, REDUCTION_ELECT_ENERGY, electEnergy);
-  reduction->submit(seq, REDUCTION_VIRIAL_SLOW_X, (BigReal)(recip_vir[0]));
-  reduction->submit(seq, REDUCTION_VIRIAL_SLOW_Y, (BigReal)(recip_vir[3]));
-  reduction->submit(seq, REDUCTION_VIRIAL_SLOW_Z, (BigReal)(recip_vir[5]));
+  reduction->item(REDUCTION_ELECT_ENERGY) += electEnergy;
+  reduction->item(REDUCTION_VIRIAL_SLOW_X) += (BigReal)(recip_vir[0]);
+  reduction->item(REDUCTION_VIRIAL_SLOW_Y) += (BigReal)(recip_vir[3]);
+  reduction->item(REDUCTION_VIRIAL_SLOW_Z) += (BigReal)(recip_vir[5]);
+  reduction->submit();
 
   PmeVector *results_ptr = localResults + 1;
 
@@ -392,12 +382,15 @@ void ComputeDPME::recvResults(ComputeDPMEResultsMsg *msg)
  *
  *	$RCSfile: ComputeDPME.C,v $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.13 $	$Date: 1999/06/02 15:14:19 $
+ *	$Revision: 1.14 $	$Date: 1999/06/17 15:46:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPME.C,v $
+ * Revision 1.14  1999/06/17 15:46:02  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.13  1999/06/02 15:14:19  jim
  * Now waits for output files to be written before halting.
  *

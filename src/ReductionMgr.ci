@@ -1,14 +1,15 @@
 module ReductionMgr {
   // ReductionMgr on each node
 
-  message ReductionDataMsg;
-  message CheckForPatchMsg;
+  message ReductionRegisterMsg;
+  message ReductionSubmitMsg;
 
   group ReductionMgr
   {
     entry ReductionMgr(void);
-    entry void recvReductionData(ReductionDataMsg *);
-    entry void doDummySubmit(CheckForPatchMsg *);
+    entry void remoteRegister(ReductionRegisterMsg *);
+    entry void remoteUnregister(ReductionRegisterMsg *);
+    entry void remoteSubmit(ReductionSubmitMsg *);
   };
 }
 
@@ -18,12 +19,15 @@ module ReductionMgr {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1999/05/11 23:56:48 $
+ *	$Revision: 1.1005 $	$Date: 1999/06/17 15:46:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.ci,v $
+ * Revision 1.1005  1999/06/17 15:46:17  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1004  1999/05/11 23:56:48  brunner
  * Changes for new charm version
  *

@@ -26,18 +26,12 @@
 
 ComputeFullDirect::ComputeFullDirect(ComputeID c) : ComputeHomePatches(c)
 {
-  reduction->Register(REDUCTION_ELECT_ENERGY);
-  reduction->Register(REDUCTION_VIRIAL_SLOW_X);
-  reduction->Register(REDUCTION_VIRIAL_SLOW_Y);
-  reduction->Register(REDUCTION_VIRIAL_SLOW_Z);
+  reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 }
 
 ComputeFullDirect::~ComputeFullDirect()
 {
-  reduction->unRegister(REDUCTION_ELECT_ENERGY);
-  reduction->unRegister(REDUCTION_VIRIAL_SLOW_X);
-  reduction->unRegister(REDUCTION_VIRIAL_SLOW_Y);
-  reduction->unRegister(REDUCTION_VIRIAL_SLOW_Z);
+  delete reduction;
 }
 
 BigReal calc_fulldirect(BigReal *data1, BigReal *results1, int n1,
@@ -82,10 +76,7 @@ void ComputeFullDirect::doWork()
       (*ap).atomBox->close(&a);
       (*ap).forceBox->close(&r);
     }
-    reduction->submit(patchList[0].p->flags.seq, REDUCTION_ELECT_ENERGY, 0.);
-    reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW_X, 0.);
-    reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW_Y, 0.);
-    reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW_Z, 0.);
+    reduction->submit();
     return;
   }
 
@@ -255,10 +246,11 @@ void ComputeFullDirect::doWork()
 
   // send out reductions
   DebugM(4,"Full-electrostatics energy: " << electEnergy << "\n");
-  reduction->submit(patchList[0].p->flags.seq, REDUCTION_ELECT_ENERGY, electEnergy);
-  reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW_X, virial.x);
-  reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW_Y, virial.y);
-  reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW_Z, virial.z);
+  reduction->item(REDUCTION_ELECT_ENERGY) += electEnergy;
+  reduction->item(REDUCTION_VIRIAL_SLOW_X) += virial.x;
+  reduction->item(REDUCTION_VIRIAL_SLOW_Y) += virial.y;
+  reduction->item(REDUCTION_VIRIAL_SLOW_Z) += virial.z;
+  reduction->submit();
 
   // add in forces
   local_ptr = localResults;
@@ -289,12 +281,15 @@ void ComputeFullDirect::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1020 $	$Date: 1999/05/11 23:56:20 $
+ *	$Revision: 1.1021 $	$Date: 1999/06/17 15:46:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFullDirect.C,v $
+ * Revision 1.1021  1999/06/17 15:46:05  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1020  1999/05/11 23:56:20  brunner
  * Changes for new charm version
  *

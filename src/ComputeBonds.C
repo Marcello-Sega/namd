@@ -93,28 +93,12 @@ void BondElem::computeForce(BigReal *reduction)
 }
 
 
-void BondElem::registerReductionData(ReductionMgr *reduction)
+void BondElem::submitReductionData(BigReal *data, SubmitReduction *reduction, int seq)
 {
-  reduction->Register(REDUCTION_BOND_ENERGY);
-  reduction->Register(REDUCTION_VIRIAL_NORMAL_X);
-  reduction->Register(REDUCTION_VIRIAL_NORMAL_Y);
-  reduction->Register(REDUCTION_VIRIAL_NORMAL_Z);
-}
-
-void BondElem::submitReductionData(BigReal *data, ReductionMgr *reduction, int seq)
-{
-  reduction->submit(seq, REDUCTION_BOND_ENERGY, data[bondEnergyIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL_X, data[virialXIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL_Y, data[virialYIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL_Z, data[virialZIndex]);
-}
-
-void BondElem::unregisterReductionData(ReductionMgr *reduction)
-{
-  reduction->unRegister(REDUCTION_BOND_ENERGY);
-  reduction->unRegister(REDUCTION_VIRIAL_NORMAL_X);
-  reduction->unRegister(REDUCTION_VIRIAL_NORMAL_Y);
-  reduction->unRegister(REDUCTION_VIRIAL_NORMAL_Z);
+  reduction->item(REDUCTION_BOND_ENERGY) += data[bondEnergyIndex];
+  reduction->item(REDUCTION_VIRIAL_NORMAL_X) += data[virialXIndex];
+  reduction->item(REDUCTION_VIRIAL_NORMAL_Y) += data[virialYIndex];
+  reduction->item(REDUCTION_VIRIAL_NORMAL_Z) += data[virialZIndex];
 }
 
 
@@ -123,12 +107,15 @@ void BondElem::unregisterReductionData(ReductionMgr *reduction)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1999/01/06 00:56:20 $
+ *	$Revision: 1.1010 $	$Date: 1999/06/17 15:46:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeBonds.C,v $
+ * Revision 1.1010  1999/06/17 15:46:01  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1009  1999/01/06 00:56:20  jim
  * All compute objects except DPMTA now return diagonal of virial tensor.
  *

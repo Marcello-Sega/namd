@@ -14,7 +14,11 @@
 #include "ComputeHomePatches.h"
 #include "NamdTypes.h"
 
+class SubmitReduction;
+
 class ComputeFullDirect : public ComputeHomePatches {
+private:
+  SubmitReduction *reduction;
 public:
   ComputeFullDirect(ComputeID c);
   virtual ~ComputeFullDirect();
@@ -27,12 +31,15 @@ public:
  *
  *	$RCSfile: ComputeFullDirect.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/12/17 10:28:08 $
+ *	$Revision: 1.1003 $	$Date: 1999/06/17 15:46:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFullDirect.h,v $
+ * Revision 1.1003  1999/06/17 15:46:06  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1002  1997/12/17 10:28:08  jim
  * Full direct electrostatics now works in parallel.
  *

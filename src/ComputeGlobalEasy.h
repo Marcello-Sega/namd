@@ -21,7 +21,7 @@ class ComputeGlobalMaster;
 class ComputeMgr;
 class Molecule;
 class SimParameters;
-class ReductionMgr;
+class SubmitReduction;
 
 class ComputeGlobalEasy : ComputeGlobalMaster {
 protected:
@@ -50,7 +50,7 @@ private:
   ComputeGlobalResultsMsg *resultsMsg;
   Molecule *molecule;
   SimParameters *simParams;
-  ReductionMgr *reduction;
+  SubmitReduction *reduction;
 
   char *configName;
   BigReal energy;
@@ -64,12 +64,15 @@ private:
  *
  *	$RCSfile: ComputeGlobalEasy.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1999/06/03 16:50:08 $
+ *	$Revision: 1.2 $	$Date: 1999/06/17 15:46:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGlobalEasy.h,v $
+ * Revision 1.2  1999/06/17 15:46:07  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1  1999/06/03 16:50:08  jim
  * Added simplified interface to ComputeGlobal mechanism.
  *

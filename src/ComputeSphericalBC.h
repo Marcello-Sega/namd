@@ -40,7 +40,7 @@ public:
 
 	virtual void doForce(Position* p, Results* r, AtomProperties* a);
 
-	ReductionMgr *reduction;
+	SubmitReduction *reduction;
 
 };
 

@@ -47,7 +47,7 @@ public:
 
 	virtual void doForce(Position* p, Results* r, AtomProperties* a);
 
-	ReductionMgr *reduction;
+	SubmitReduction *reduction;
 
 };
 
@@ -57,13 +57,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeRestraints.h,v $
- *	$Author: ferenc $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1999/01/08 23:24:34 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.5 $	$Date: 1999/06/17 15:46:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeRestraints.h,v $
+ * Revision 1.5  1999/06/17 15:46:13  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.4  1999/01/08 23:24:34  ferenc
  * added selective position restraints for specific Cartesian components
  *

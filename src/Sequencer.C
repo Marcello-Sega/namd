@@ -33,56 +33,10 @@
 Sequencer::Sequencer(HomePatch *p) :
 	simParams(Node::Object()->simParameters),
 	patch(p),
-	reduction(ReductionMgr::Object()),
 	collection(CollectionMgr::Object())
 {
     broadcast = new ControllerBroadcasts;
-
-    reduction->Register(REDUCTION_ATOM_CHECKSUM);
-    reduction->Register(REDUCTION_KINETIC_ENERGY);
-    reduction->Register(REDUCTION_INT_KINETIC_ENERGY);
-    reduction->Register(REDUCTION_BC_ENERGY); // in case not used elsewhere
-    reduction->Register(REDUCTION_SMD_ENERGY); // in case not used elsewhere
-    if ( simParams->rigidBonds != RIGID_NONE ) {
-      ; /*
-      reduction->Register(REDUCTION_VIRIAL_NORMAL_X);
-      reduction->Register(REDUCTION_VIRIAL_NORMAL_Y);
-      reduction->Register(REDUCTION_VIRIAL_NORMAL_Z);
-      reduction->Register(REDUCTION_ALT_VIRIAL_NORMAL_X);
-      reduction->Register(REDUCTION_ALT_VIRIAL_NORMAL_Y);
-      reduction->Register(REDUCTION_ALT_VIRIAL_NORMAL_Z);
-      reduction->Register(REDUCTION_INT_VIRIAL_NORMAL_X);
-      reduction->Register(REDUCTION_INT_VIRIAL_NORMAL_Y);
-      reduction->Register(REDUCTION_INT_VIRIAL_NORMAL_Z);
-      */
-    }
-    reduction->Register(REDUCTION_VIRIAL_NORMAL_X);
-    reduction->Register(REDUCTION_VIRIAL_NORMAL_Y);
-    reduction->Register(REDUCTION_VIRIAL_NORMAL_Z);
-    reduction->Register(REDUCTION_ALT_VIRIAL_NORMAL_X);
-    reduction->Register(REDUCTION_ALT_VIRIAL_NORMAL_Y);
-    reduction->Register(REDUCTION_ALT_VIRIAL_NORMAL_Z);
-    reduction->Register(REDUCTION_ALT_VIRIAL_NBOND_X);
-    reduction->Register(REDUCTION_ALT_VIRIAL_NBOND_Y);
-    reduction->Register(REDUCTION_ALT_VIRIAL_NBOND_Z);
-    reduction->Register(REDUCTION_ALT_VIRIAL_SLOW_X);
-    reduction->Register(REDUCTION_ALT_VIRIAL_SLOW_Y);
-    reduction->Register(REDUCTION_ALT_VIRIAL_SLOW_Z);
-    reduction->Register(REDUCTION_INT_VIRIAL_NORMAL_X);
-    reduction->Register(REDUCTION_INT_VIRIAL_NORMAL_Y);
-    reduction->Register(REDUCTION_INT_VIRIAL_NORMAL_Z);
-    reduction->Register(REDUCTION_INT_VIRIAL_NBOND_X);
-    reduction->Register(REDUCTION_INT_VIRIAL_NBOND_Y);
-    reduction->Register(REDUCTION_INT_VIRIAL_NBOND_Z);
-    reduction->Register(REDUCTION_INT_VIRIAL_SLOW_X);
-    reduction->Register(REDUCTION_INT_VIRIAL_SLOW_Y);
-    reduction->Register(REDUCTION_INT_VIRIAL_SLOW_Z);
-    reduction->Register(REDUCTION_MOMENTUM_X);
-    reduction->Register(REDUCTION_MOMENTUM_Y);
-    reduction->Register(REDUCTION_MOMENTUM_Z);
-    reduction->Register(REDUCTION_ANGULAR_MOMENTUM_X);
-    reduction->Register(REDUCTION_ANGULAR_MOMENTUM_Y);
-    reduction->Register(REDUCTION_ANGULAR_MOMENTUM_Z);
+    reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
     ldbCoordinator = (LdbCoordinator::Object());
 
     rescaleVelocities_numTemps = 0;
@@ -91,52 +45,7 @@ Sequencer::Sequencer(HomePatch *p) :
 Sequencer::~Sequencer(void)
 {
     delete broadcast;
-
-    reduction->unRegister(REDUCTION_ATOM_CHECKSUM);
-    reduction->unRegister(REDUCTION_KINETIC_ENERGY);
-    reduction->unRegister(REDUCTION_INT_KINETIC_ENERGY);
-    reduction->unRegister(REDUCTION_BC_ENERGY); // in case not used elsewhere
-    reduction->unRegister(REDUCTION_SMD_ENERGY); // in case not used elsewhere
-    if ( simParams->rigidBonds != RIGID_NONE ) {
-      ; /*
-      reduction->unRegister(REDUCTION_VIRIAL_NORMAL_X);
-      reduction->unRegister(REDUCTION_VIRIAL_NORMAL_Y);
-      reduction->unRegister(REDUCTION_VIRIAL_NORMAL_Z);
-      reduction->unRegister(REDUCTION_ALT_VIRIAL_NORMAL_X);
-      reduction->unRegister(REDUCTION_ALT_VIRIAL_NORMAL_Y);
-      reduction->unRegister(REDUCTION_ALT_VIRIAL_NORMAL_Z);
-      reduction->unRegister(REDUCTION_INT_VIRIAL_NORMAL_X);
-      reduction->unRegister(REDUCTION_INT_VIRIAL_NORMAL_Y);
-      reduction->unRegister(REDUCTION_INT_VIRIAL_NORMAL_Z);
-      */
-    }
-    reduction->unRegister(REDUCTION_VIRIAL_NORMAL_X);
-    reduction->unRegister(REDUCTION_VIRIAL_NORMAL_Y);
-    reduction->unRegister(REDUCTION_VIRIAL_NORMAL_Z);
-    reduction->unRegister(REDUCTION_ALT_VIRIAL_NORMAL_X);
-    reduction->unRegister(REDUCTION_ALT_VIRIAL_NORMAL_Y);
-    reduction->unRegister(REDUCTION_ALT_VIRIAL_NORMAL_Z);
-    reduction->unRegister(REDUCTION_ALT_VIRIAL_NBOND_X);
-    reduction->unRegister(REDUCTION_ALT_VIRIAL_NBOND_Y);
-    reduction->unRegister(REDUCTION_ALT_VIRIAL_NBOND_Z);
-    reduction->unRegister(REDUCTION_ALT_VIRIAL_SLOW_X);
-    reduction->unRegister(REDUCTION_ALT_VIRIAL_SLOW_Y);
-    reduction->unRegister(REDUCTION_ALT_VIRIAL_SLOW_Z);
-    reduction->unRegister(REDUCTION_INT_VIRIAL_NORMAL_X);
-    reduction->unRegister(REDUCTION_INT_VIRIAL_NORMAL_Y);
-    reduction->unRegister(REDUCTION_INT_VIRIAL_NORMAL_Z);
-    reduction->unRegister(REDUCTION_INT_VIRIAL_NBOND_X);
-    reduction->unRegister(REDUCTION_INT_VIRIAL_NBOND_Y);
-    reduction->unRegister(REDUCTION_INT_VIRIAL_NBOND_Z);
-    reduction->unRegister(REDUCTION_INT_VIRIAL_SLOW_X);
-    reduction->unRegister(REDUCTION_INT_VIRIAL_SLOW_Y);
-    reduction->unRegister(REDUCTION_INT_VIRIAL_SLOW_Z);
-    reduction->unRegister(REDUCTION_MOMENTUM_X);
-    reduction->unRegister(REDUCTION_MOMENTUM_Y);
-    reduction->unRegister(REDUCTION_MOMENTUM_Z);
-    reduction->unRegister(REDUCTION_ANGULAR_MOMENTUM_X);
-    reduction->unRegister(REDUCTION_ANGULAR_MOMENTUM_Y);
-    reduction->unRegister(REDUCTION_ANGULAR_MOMENTUM_Z);
+    delete reduction;
 }
 
 // Invoked by thread
@@ -502,15 +411,15 @@ void Sequencer::rattle2(BigReal dt, int step)
     Vector virial(0.,0.,0.);
     patch->rattle2(dt, &virial);
     /*
-    reduction->submit(step, REDUCTION_VIRIAL_NORMAL_X, virial.x);
-    reduction->submit(step, REDUCTION_VIRIAL_NORMAL_Y, virial.y);
-    reduction->submit(step, REDUCTION_VIRIAL_NORMAL_Z, virial.z);
-    reduction->submit(step, REDUCTION_ALT_VIRIAL_NORMAL_X, virial.x);
-    reduction->submit(step, REDUCTION_ALT_VIRIAL_NORMAL_Y, virial.y);
-    reduction->submit(step, REDUCTION_ALT_VIRIAL_NORMAL_Z, virial.z);
-    reduction->submit(step, REDUCTION_INT_VIRIAL_NORMAL_X, virial.x);
-    reduction->submit(step, REDUCTION_INT_VIRIAL_NORMAL_Y, virial.y);
-    reduction->submit(step, REDUCTION_INT_VIRIAL_NORMAL_Z, virial.z);
+    reduction->item(REDUCTION_VIRIAL_NORMAL_X) += virial.x;
+    reduction->item(REDUCTION_VIRIAL_NORMAL_Y) += virial.y;
+    reduction->item(REDUCTION_VIRIAL_NORMAL_Z) += virial.z;
+    reduction->item(REDUCTION_ALT_VIRIAL_NORMAL_X) += virial.x;
+    reduction->item(REDUCTION_ALT_VIRIAL_NORMAL_Y) += virial.y;
+    reduction->item(REDUCTION_ALT_VIRIAL_NORMAL_Z) += virial.z;
+    reduction->item(REDUCTION_INT_VIRIAL_NORMAL_X) += virial.x;
+    reduction->item(REDUCTION_INT_VIRIAL_NORMAL_Y) += virial.y;
+    reduction->item(REDUCTION_INT_VIRIAL_NORMAL_Z) += virial.z;
     */
   }
 }
@@ -544,10 +453,8 @@ void Sequencer::minimizationQuenchVelocity(void)
 
 void Sequencer::submitReductions(int step)
 {
-  reduction->submit(step,REDUCTION_ATOM_CHECKSUM,patch->getNumAtoms());
-  reduction->submit(step,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
-  reduction->submit(step,REDUCTION_BC_ENERGY,0.);
-  reduction->submit(step,REDUCTION_SMD_ENERGY,0.);  
+  reduction->item(REDUCTION_ATOM_CHECKSUM) += patch->getNumAtoms();
+  reduction->item(REDUCTION_KINETIC_ENERGY) += patch->calcKineticEnergy();
 
   {
     Vector virial(0.,0.,0.);
@@ -556,9 +463,9 @@ void Sequencer::submitReductions(int step)
       virial.y += ( patch->a[i].mass * patch->v[i].y * patch->v[i].y );
       virial.z += ( patch->a[i].mass * patch->v[i].z * patch->v[i].z );
     }
-    reduction->submit(step,REDUCTION_VIRIAL_NORMAL_X,virial.x);
-    reduction->submit(step,REDUCTION_VIRIAL_NORMAL_Y,virial.y);
-    reduction->submit(step,REDUCTION_VIRIAL_NORMAL_Z,virial.z);
+    reduction->item(REDUCTION_VIRIAL_NORMAL_X) += virial.x;
+    reduction->item(REDUCTION_VIRIAL_NORMAL_Y) += virial.y;
+    reduction->item(REDUCTION_VIRIAL_NORMAL_Z) += virial.z;
   }
   {
     Vector altVirial(0.,0.,0.);
@@ -570,9 +477,9 @@ void Sequencer::submitReductions(int step)
       altVirial.y += ( patch->a[i].mass * patch->v[i].y * patch->v[i].y );
       altVirial.z += ( patch->a[i].mass * patch->v[i].z * patch->v[i].z );
     }
-    reduction->submit(step,REDUCTION_ALT_VIRIAL_NORMAL_X,altVirial.x);
-    reduction->submit(step,REDUCTION_ALT_VIRIAL_NORMAL_Y,altVirial.y);
-    reduction->submit(step,REDUCTION_ALT_VIRIAL_NORMAL_Z,altVirial.z);
+    reduction->item(REDUCTION_ALT_VIRIAL_NORMAL_X) += altVirial.x;
+    reduction->item(REDUCTION_ALT_VIRIAL_NORMAL_Y) += altVirial.y;
+    reduction->item(REDUCTION_ALT_VIRIAL_NORMAL_Z) += altVirial.z;
   }
   {
     Vector altVirial(0.,0.,0.);
@@ -581,9 +488,9 @@ void Sequencer::submitReductions(int step)
       altVirial.y += ( patch->f[Results::nbond][i].y * patch->p[i].y );
       altVirial.z += ( patch->f[Results::nbond][i].z * patch->p[i].z );
     }
-    reduction->submit(step,REDUCTION_ALT_VIRIAL_NBOND_X,altVirial.x);
-    reduction->submit(step,REDUCTION_ALT_VIRIAL_NBOND_Y,altVirial.y);
-    reduction->submit(step,REDUCTION_ALT_VIRIAL_NBOND_Z,altVirial.z);
+    reduction->item(REDUCTION_ALT_VIRIAL_NBOND_X) += altVirial.x;
+    reduction->item(REDUCTION_ALT_VIRIAL_NBOND_Y) += altVirial.y;
+    reduction->item(REDUCTION_ALT_VIRIAL_NBOND_Z) += altVirial.z;
   }
   {
     Vector altVirial(0.,0.,0.);
@@ -592,9 +499,9 @@ void Sequencer::submitReductions(int step)
       altVirial.y += ( patch->f[Results::slow][i].y * patch->p[i].y );
       altVirial.z += ( patch->f[Results::slow][i].z * patch->p[i].z );
     }
-    reduction->submit(step,REDUCTION_ALT_VIRIAL_SLOW_X,altVirial.x);
-    reduction->submit(step,REDUCTION_ALT_VIRIAL_SLOW_Y,altVirial.y);
-    reduction->submit(step,REDUCTION_ALT_VIRIAL_SLOW_Z,altVirial.z);
+    reduction->item(REDUCTION_ALT_VIRIAL_SLOW_X) += altVirial.x;
+    reduction->item(REDUCTION_ALT_VIRIAL_SLOW_Y) += altVirial.y;
+    reduction->item(REDUCTION_ALT_VIRIAL_SLOW_Z) += altVirial.z;
   }
 
   {
@@ -638,28 +545,29 @@ void Sequencer::submitReductions(int step)
 
     intKineticEnergy *= 0.5;
 
-    reduction->submit(step,REDUCTION_INT_KINETIC_ENERGY,intKineticEnergy);
-    reduction->submit(step,REDUCTION_INT_VIRIAL_NORMAL_X,intVirialNormal.x);
-    reduction->submit(step,REDUCTION_INT_VIRIAL_NORMAL_Y,intVirialNormal.y);
-    reduction->submit(step,REDUCTION_INT_VIRIAL_NORMAL_Z,intVirialNormal.z);
-    reduction->submit(step,REDUCTION_INT_VIRIAL_NBOND_X,intVirialNbond.x);
-    reduction->submit(step,REDUCTION_INT_VIRIAL_NBOND_Y,intVirialNbond.y);
-    reduction->submit(step,REDUCTION_INT_VIRIAL_NBOND_Z,intVirialNbond.z);
-    reduction->submit(step,REDUCTION_INT_VIRIAL_SLOW_X,intVirialSlow.x);
-    reduction->submit(step,REDUCTION_INT_VIRIAL_SLOW_Y,intVirialSlow.y);
-    reduction->submit(step,REDUCTION_INT_VIRIAL_SLOW_Z,intVirialSlow.z);
+    reduction->item(REDUCTION_INT_KINETIC_ENERGY) += intKineticEnergy;
+    reduction->item(REDUCTION_INT_VIRIAL_NORMAL_X) += intVirialNormal.x;
+    reduction->item(REDUCTION_INT_VIRIAL_NORMAL_Y) += intVirialNormal.y;
+    reduction->item(REDUCTION_INT_VIRIAL_NORMAL_Z) += intVirialNormal.z;
+    reduction->item(REDUCTION_INT_VIRIAL_NBOND_X) += intVirialNbond.x;
+    reduction->item(REDUCTION_INT_VIRIAL_NBOND_Y) += intVirialNbond.y;
+    reduction->item(REDUCTION_INT_VIRIAL_NBOND_Z) += intVirialNbond.z;
+    reduction->item(REDUCTION_INT_VIRIAL_SLOW_X) += intVirialSlow.x;
+    reduction->item(REDUCTION_INT_VIRIAL_SLOW_Y) += intVirialSlow.y;
+    reduction->item(REDUCTION_INT_VIRIAL_SLOW_Z) += intVirialSlow.z;
   }
 
   Vector momentum = patch->calcMomentum();
-  reduction->submit(step,REDUCTION_MOMENTUM_X,momentum.x);  
-  reduction->submit(step,REDUCTION_MOMENTUM_Y,momentum.y);  
-  reduction->submit(step,REDUCTION_MOMENTUM_Z,momentum.z);  
+  reduction->item(REDUCTION_MOMENTUM_X) += momentum.x;
+  reduction->item(REDUCTION_MOMENTUM_Y) += momentum.y;
+  reduction->item(REDUCTION_MOMENTUM_Z) += momentum.z;
 
   Vector angularMomentum = patch->calcAngularMomentum();
-  reduction->submit(step,REDUCTION_ANGULAR_MOMENTUM_X,angularMomentum.x);  
-  reduction->submit(step,REDUCTION_ANGULAR_MOMENTUM_Y,angularMomentum.y);  
-  reduction->submit(step,REDUCTION_ANGULAR_MOMENTUM_Z,angularMomentum.z);  
+  reduction->item(REDUCTION_ANGULAR_MOMENTUM_X) += angularMomentum.x;  
+  reduction->item(REDUCTION_ANGULAR_MOMENTUM_Y) += angularMomentum.y;  
+  reduction->item(REDUCTION_ANGULAR_MOMENTUM_Z) += angularMomentum.z;  
 
+  reduction->submit();
 }
 
 void Sequencer::submitCollections(int step)
@@ -698,12 +606,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1062 $     $Date: 1999/06/02 15:14:22 $
+ *      $Revision: 1.1063 $     $Date: 1999/06/17 15:46:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1063  1999/06/17 15:46:18  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1062  1999/06/02 15:14:22  jim
  * Now waits for output files to be written before halting.
  *

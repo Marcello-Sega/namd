@@ -23,7 +23,7 @@
 class ControllerBroadcasts;
 class NamdState;
 class SimParameters;
-class ReductionMgr;
+class RequireReduction;
 class CollectionMaster;
 
 class Controller
@@ -75,7 +75,7 @@ protected:
     SimParameters *const simParams;	// for convenience
     int numberOfCycles;			// stores argument to run()
     NamdState *const state;		// access data in state
-    ReductionMgr *const reduction;
+    RequireReduction *reduction;
     CollectionMaster *const collection;
     ControllerBroadcasts * broadcast;
     ofstream xstFile;
@@ -98,12 +98,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1022 $	$Date: 1999/06/02 15:14:20 $
+ *	$Revision: 1.1023 $	$Date: 1999/06/17 15:46:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.h,v $
+ * Revision 1.1023  1999/06/17 15:46:16  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1022  1999/06/02 15:14:20  jim
  * Now waits for output files to be written before halting.
  *

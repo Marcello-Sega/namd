@@ -41,9 +41,7 @@ public:
 
   enum { dihedralEnergyIndex, virialXIndex, virialYIndex, virialZIndex, reductionDataSize };
   enum { reductionChecksumLabel = REDUCTION_DIHEDRAL_CHECKSUM };
-  static void registerReductionData(ReductionMgr*);
-  static void submitReductionData(BigReal*,ReductionMgr*,int);
-  static void unregisterReductionData(ReductionMgr*);
+  static void submitReductionData(BigReal*,SubmitReduction*,int);
 
   inline DihedralElem();
   inline DihedralElem(const Dihedral *a);
@@ -70,12 +68,15 @@ public:
  *
  *	$RCSfile: ComputeDihedrals.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1999/01/06 00:56:21 $
+ *	$Revision: 1.1006 $	$Date: 1999/06/17 15:46:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDihedrals.h,v $
+ * Revision 1.1006  1999/06/17 15:46:05  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1005  1999/01/06 00:56:21  jim
  * All compute objects except DPMTA now return diagonal of virial tensor.
  *

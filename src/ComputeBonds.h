@@ -38,9 +38,7 @@ public:
 
   enum { bondEnergyIndex, virialXIndex, virialYIndex, virialZIndex, reductionDataSize };
   enum { reductionChecksumLabel = REDUCTION_BOND_CHECKSUM };
-  static void registerReductionData(ReductionMgr*);
-  static void submitReductionData(BigReal*,ReductionMgr*,int);
-  static void unregisterReductionData(ReductionMgr*);
+  static void submitReductionData(BigReal*,SubmitReduction*,int);
 
   inline BondElem();
   inline BondElem(const Bond *a);
@@ -69,12 +67,15 @@ public:
  *
  *	$RCSfile: ComputeBonds.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1999/01/06 00:56:20 $
+ *	$Revision: 1.1007 $	$Date: 1999/06/17 15:46:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeBonds.h,v $
+ * Revision 1.1007  1999/06/17 15:46:01  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1006  1999/01/06 00:56:20  jim
  * All compute objects except DPMTA now return diagonal of virial tensor.
  *

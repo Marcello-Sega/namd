@@ -157,22 +157,19 @@ template <class T, class S> class ComputeHomeTuples : public Compute {
   
     PatchMap *patchMap;
     AtomMap *atomMap;
-    ReductionMgr *reduction;
+    SubmitReduction *reduction;
   
   public:
   
     ComputeHomeTuples(ComputeID c) : Compute(c) {
       patchMap = PatchMap::Object();
       atomMap = AtomMap::Object();
-      reduction = ReductionMgr::Object();
-      T::registerReductionData(reduction);
-      reduction->Register((ReductionTag)T::reductionChecksumLabel);
+      reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
       doLoadTuples = false;
     }
 
     virtual ~ComputeHomeTuples() {
-      T::unregisterReductionData(reduction);
-      reduction->unRegister((ReductionTag)T::reductionChecksumLabel);
+      delete reduction;
     }
 
     //======================================================================
@@ -252,8 +249,8 @@ template <class T, class S> class ComputeHomeTuples : public Compute {
       }
     
       T::submitReductionData(reductionData,reduction,ap.begin()->p->flags.seq);
-      reduction->submit(ap.begin()->p->flags.seq,
-		(ReductionTag)T::reductionChecksumLabel, (BigReal)tupleCount);
+      reduction->item(T::reductionChecksumLabel) += (BigReal)tupleCount;
+      reduction->submit();
     
       // Close boxes - i.e. signal we are done with Positions and
       // AtomProperties and that we are depositing Forces

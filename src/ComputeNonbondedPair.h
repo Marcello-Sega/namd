@@ -29,7 +29,7 @@ protected :
   virtual int noWork();
   virtual void doForce(Position* p[2], Results* r[2], AtomProperties* a[2]);
 
-  ReductionMgr *reduction;
+  SubmitReduction *reduction;
 
 };
 
@@ -39,12 +39,15 @@ protected :
  *
  *	$RCSfile: ComputeNonbondedPair.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/08/26 16:26:13 $
+ *	$Revision: 1.1008 $	$Date: 1999/06/17 15:46:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.h,v $
+ * Revision 1.1008  1999/06/17 15:46:10  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1007  1997/08/26 16:26:13  jim
  * Revamped prioritites for petter performance and easier changes.
  *

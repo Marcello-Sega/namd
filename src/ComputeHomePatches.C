@@ -24,7 +24,6 @@
 
 ComputeHomePatches::ComputeHomePatches(ComputeID c) : Compute(c) {
   patchMap = PatchMap::Object();
-  reduction = ReductionMgr::Object();
 }
 
 ComputeHomePatches::~ComputeHomePatches()
@@ -57,12 +56,15 @@ void ComputeHomePatches::atomUpdate()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/09/28 10:19:04 $
+ *	$Revision: 1.1006 $	$Date: 1999/06/17 15:46:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomePatches.C,v $
+ * Revision 1.1006  1999/06/17 15:46:07  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1005  1997/09/28 10:19:04  milind
  * Fixed priorities, ReductionMgr etc.
  *

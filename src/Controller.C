@@ -43,7 +43,6 @@ Controller::Controller(NamdState *s) :
 	computeChecksum(0),
 	simParams(Node::Object()->simParameters),
 	state(s),
-	reduction(ReductionMgr::Object()),
 	collection(CollectionMaster::Object()),
         startCTime(0),
         startWTime(0),
@@ -51,59 +50,7 @@ Controller::Controller(NamdState *s) :
 
 {
     broadcast = new ControllerBroadcasts;
-
-    reduction->subscribe(REDUCTION_BOND_ENERGY);
-    reduction->subscribe(REDUCTION_ANGLE_ENERGY);
-    reduction->subscribe(REDUCTION_DIHEDRAL_ENERGY);
-    reduction->subscribe(REDUCTION_IMPROPER_ENERGY);
-    reduction->subscribe(REDUCTION_ELECT_ENERGY);
-    reduction->subscribe(REDUCTION_LJ_ENERGY);
-    reduction->subscribe(REDUCTION_KINETIC_ENERGY);
-    reduction->subscribe(REDUCTION_INT_KINETIC_ENERGY);
-    reduction->subscribe(REDUCTION_BC_ENERGY);
-    reduction->subscribe(REDUCTION_MISC_ENERGY);
-    reduction->subscribe(REDUCTION_VIRIAL_NORMAL_X);
-    reduction->subscribe(REDUCTION_VIRIAL_NORMAL_Y);
-    reduction->subscribe(REDUCTION_VIRIAL_NORMAL_Z);
-    reduction->subscribe(REDUCTION_VIRIAL_NBOND_X);
-    reduction->subscribe(REDUCTION_VIRIAL_NBOND_Y);
-    reduction->subscribe(REDUCTION_VIRIAL_NBOND_Z);
-    reduction->subscribe(REDUCTION_VIRIAL_SLOW_X);
-    reduction->subscribe(REDUCTION_VIRIAL_SLOW_Y);
-    reduction->subscribe(REDUCTION_VIRIAL_SLOW_Z);
-    reduction->subscribe(REDUCTION_ALT_VIRIAL_NORMAL_X);
-    reduction->subscribe(REDUCTION_ALT_VIRIAL_NORMAL_Y);
-    reduction->subscribe(REDUCTION_ALT_VIRIAL_NORMAL_Z);
-    reduction->subscribe(REDUCTION_ALT_VIRIAL_NBOND_X);
-    reduction->subscribe(REDUCTION_ALT_VIRIAL_NBOND_Y);
-    reduction->subscribe(REDUCTION_ALT_VIRIAL_NBOND_Z);
-    reduction->subscribe(REDUCTION_ALT_VIRIAL_SLOW_X);
-    reduction->subscribe(REDUCTION_ALT_VIRIAL_SLOW_Y);
-    reduction->subscribe(REDUCTION_ALT_VIRIAL_SLOW_Z);
-    reduction->subscribe(REDUCTION_INT_VIRIAL_NORMAL_X);
-    reduction->subscribe(REDUCTION_INT_VIRIAL_NORMAL_Y);
-    reduction->subscribe(REDUCTION_INT_VIRIAL_NORMAL_Z);
-    reduction->subscribe(REDUCTION_INT_VIRIAL_NBOND_X);
-    reduction->subscribe(REDUCTION_INT_VIRIAL_NBOND_Y);
-    reduction->subscribe(REDUCTION_INT_VIRIAL_NBOND_Z);
-    reduction->subscribe(REDUCTION_INT_VIRIAL_SLOW_X);
-    reduction->subscribe(REDUCTION_INT_VIRIAL_SLOW_Y);
-    reduction->subscribe(REDUCTION_INT_VIRIAL_SLOW_Z);
-    reduction->subscribe(REDUCTION_SMD_ENERGY);
-    reduction->subscribe(REDUCTION_MOMENTUM_X);
-    reduction->subscribe(REDUCTION_MOMENTUM_Y);
-    reduction->subscribe(REDUCTION_MOMENTUM_Z);
-    reduction->subscribe(REDUCTION_ANGULAR_MOMENTUM_X);
-    reduction->subscribe(REDUCTION_ANGULAR_MOMENTUM_Y);
-    reduction->subscribe(REDUCTION_ANGULAR_MOMENTUM_Z);
-    reduction->subscribe(REDUCTION_ATOM_CHECKSUM);
-    reduction->subscribe(REDUCTION_COMPUTE_CHECKSUM);
-    reduction->subscribe(REDUCTION_BOND_CHECKSUM);
-    reduction->subscribe(REDUCTION_ANGLE_CHECKSUM);
-    reduction->subscribe(REDUCTION_DIHEDRAL_CHECKSUM);
-    reduction->subscribe(REDUCTION_IMPROPER_CHECKSUM);
-    reduction->subscribe(REDUCTION_EXCLUSION_CHECKSUM);
-    reduction->subscribe(REDUCTION_MARGIN_VIOLATIONS);
+    reduction = ReductionMgr::Object()->willRequire(REDUCTIONS_BASIC);
 
     rescaleVelocities_sumTemps = 0;  rescaleVelocities_numTemps = 0;
     langevinPiston_strainRate = simParams->strainRate;
@@ -116,59 +63,7 @@ Controller::Controller(NamdState *s) :
 Controller::~Controller(void)
 {
     delete broadcast;
-
-    reduction->unsubscribe(REDUCTION_BOND_ENERGY);
-    reduction->unsubscribe(REDUCTION_ANGLE_ENERGY);
-    reduction->unsubscribe(REDUCTION_DIHEDRAL_ENERGY);
-    reduction->unsubscribe(REDUCTION_IMPROPER_ENERGY);
-    reduction->unsubscribe(REDUCTION_ELECT_ENERGY);
-    reduction->unsubscribe(REDUCTION_LJ_ENERGY);
-    reduction->unsubscribe(REDUCTION_KINETIC_ENERGY);
-    reduction->unsubscribe(REDUCTION_INT_KINETIC_ENERGY);
-    reduction->unsubscribe(REDUCTION_BC_ENERGY);
-    reduction->unsubscribe(REDUCTION_MISC_ENERGY);
-    reduction->unsubscribe(REDUCTION_VIRIAL_NORMAL_X);
-    reduction->unsubscribe(REDUCTION_VIRIAL_NORMAL_Y);
-    reduction->unsubscribe(REDUCTION_VIRIAL_NORMAL_Z);
-    reduction->unsubscribe(REDUCTION_VIRIAL_NBOND_X);
-    reduction->unsubscribe(REDUCTION_VIRIAL_NBOND_Y);
-    reduction->unsubscribe(REDUCTION_VIRIAL_NBOND_Z);
-    reduction->unsubscribe(REDUCTION_VIRIAL_SLOW_X);
-    reduction->unsubscribe(REDUCTION_VIRIAL_SLOW_Y);
-    reduction->unsubscribe(REDUCTION_VIRIAL_SLOW_Z);
-    reduction->unsubscribe(REDUCTION_ALT_VIRIAL_NORMAL_X);
-    reduction->unsubscribe(REDUCTION_ALT_VIRIAL_NORMAL_Y);
-    reduction->unsubscribe(REDUCTION_ALT_VIRIAL_NORMAL_Z);
-    reduction->unsubscribe(REDUCTION_ALT_VIRIAL_NBOND_X);
-    reduction->unsubscribe(REDUCTION_ALT_VIRIAL_NBOND_Y);
-    reduction->unsubscribe(REDUCTION_ALT_VIRIAL_NBOND_Z);
-    reduction->unsubscribe(REDUCTION_ALT_VIRIAL_SLOW_X);
-    reduction->unsubscribe(REDUCTION_ALT_VIRIAL_SLOW_Y);
-    reduction->unsubscribe(REDUCTION_ALT_VIRIAL_SLOW_Z);
-    reduction->unsubscribe(REDUCTION_INT_VIRIAL_NORMAL_X);
-    reduction->unsubscribe(REDUCTION_INT_VIRIAL_NORMAL_Y);
-    reduction->unsubscribe(REDUCTION_INT_VIRIAL_NORMAL_Z);
-    reduction->unsubscribe(REDUCTION_INT_VIRIAL_NBOND_X);
-    reduction->unsubscribe(REDUCTION_INT_VIRIAL_NBOND_Y);
-    reduction->unsubscribe(REDUCTION_INT_VIRIAL_NBOND_Z);
-    reduction->unsubscribe(REDUCTION_INT_VIRIAL_SLOW_X);
-    reduction->unsubscribe(REDUCTION_INT_VIRIAL_SLOW_Y);
-    reduction->unsubscribe(REDUCTION_INT_VIRIAL_SLOW_Z);
-    reduction->unsubscribe(REDUCTION_SMD_ENERGY);
-    reduction->unsubscribe(REDUCTION_MOMENTUM_X);
-    reduction->unsubscribe(REDUCTION_MOMENTUM_Y);
-    reduction->unsubscribe(REDUCTION_MOMENTUM_Z);
-    reduction->unsubscribe(REDUCTION_ANGULAR_MOMENTUM_X);
-    reduction->unsubscribe(REDUCTION_ANGULAR_MOMENTUM_Y);
-    reduction->unsubscribe(REDUCTION_ANGULAR_MOMENTUM_Z);
-    reduction->unsubscribe(REDUCTION_ATOM_CHECKSUM);
-    reduction->unsubscribe(REDUCTION_COMPUTE_CHECKSUM);
-    reduction->unsubscribe(REDUCTION_BOND_CHECKSUM);
-    reduction->unsubscribe(REDUCTION_ANGLE_CHECKSUM);
-    reduction->unsubscribe(REDUCTION_DIHEDRAL_CHECKSUM);
-    reduction->unsubscribe(REDUCTION_IMPROPER_CHECKSUM);
-    reduction->unsubscribe(REDUCTION_EXCLUSION_CHECKSUM);
-    reduction->unsubscribe(REDUCTION_MARGIN_VIOLATIONS);
+    delete reduction;
 }
 
 void Controller::threadRun(Controller* arg)
@@ -208,9 +103,6 @@ void Controller::algorithm(void)
 
     for ( ; step <= numberOfSteps; ++step, first = 0 )
     {
-	if (CkNumPes() > nPatches) {
-		reduction->broadcastDoSubmit(step, nPatches);
-	}
         if ( ! first ) rescaleVelocities(step);
 	if ( ! first ) tcoupleVelocities(step);
 	if ( ! first ) berendsenPressure(step);
@@ -485,6 +377,8 @@ void Controller::receivePressure(int seq)
     SimParameters *simParameters = node->simParameters;
     Lattice &lattice = state->lattice;
 
+    reduction->require();
+
     BigReal intKineticEnergy;
     Vector virial;
     Vector virial_normal;
@@ -511,38 +405,38 @@ void Controller::receivePressure(int seq)
     int numFixedRigidBonds = molecule->numFixedRigidBonds;
     numDegFreedom -= ( numRigidBonds - numFixedRigidBonds );
 
-    reduction->require(seq, REDUCTION_KINETIC_ENERGY, kineticEnergy);
-    reduction->require(seq, REDUCTION_INT_KINETIC_ENERGY, intKineticEnergy);
+    kineticEnergy = reduction->item(REDUCTION_KINETIC_ENERGY);
+    intKineticEnergy = reduction->item(REDUCTION_INT_KINETIC_ENERGY);
 
-    reduction->require(seq, REDUCTION_VIRIAL_NORMAL_X, virial_normal.x);
-    reduction->require(seq, REDUCTION_VIRIAL_NORMAL_Y, virial_normal.y);
-    reduction->require(seq, REDUCTION_VIRIAL_NORMAL_Z, virial_normal.z);
-    reduction->require(seq, REDUCTION_VIRIAL_NBOND_X, virial_nbond.x);
-    reduction->require(seq, REDUCTION_VIRIAL_NBOND_Y, virial_nbond.y);
-    reduction->require(seq, REDUCTION_VIRIAL_NBOND_Z, virial_nbond.z);
-    reduction->require(seq, REDUCTION_VIRIAL_SLOW_X, virial_slow.x);
-    reduction->require(seq, REDUCTION_VIRIAL_SLOW_Y, virial_slow.y);
-    reduction->require(seq, REDUCTION_VIRIAL_SLOW_Z, virial_slow.z);
+    virial_normal.x = reduction->item(REDUCTION_VIRIAL_NORMAL_X);
+    virial_normal.y = reduction->item(REDUCTION_VIRIAL_NORMAL_Y);
+    virial_normal.z = reduction->item(REDUCTION_VIRIAL_NORMAL_Z);
+    virial_nbond.x = reduction->item(REDUCTION_VIRIAL_NBOND_X);
+    virial_nbond.y = reduction->item(REDUCTION_VIRIAL_NBOND_Y);
+    virial_nbond.z = reduction->item(REDUCTION_VIRIAL_NBOND_Z);
+    virial_slow.x = reduction->item(REDUCTION_VIRIAL_SLOW_X);
+    virial_slow.y = reduction->item(REDUCTION_VIRIAL_SLOW_Y);
+    virial_slow.z = reduction->item(REDUCTION_VIRIAL_SLOW_Z);
 
-    reduction->require(seq, REDUCTION_ALT_VIRIAL_NORMAL_X, altVirial_normal.x);
-    reduction->require(seq, REDUCTION_ALT_VIRIAL_NORMAL_Y, altVirial_normal.y);
-    reduction->require(seq, REDUCTION_ALT_VIRIAL_NORMAL_Z, altVirial_normal.z);
-    reduction->require(seq, REDUCTION_ALT_VIRIAL_NBOND_X, altVirial_nbond.x);
-    reduction->require(seq, REDUCTION_ALT_VIRIAL_NBOND_Y, altVirial_nbond.y);
-    reduction->require(seq, REDUCTION_ALT_VIRIAL_NBOND_Z, altVirial_nbond.z);
-    reduction->require(seq, REDUCTION_ALT_VIRIAL_SLOW_X, altVirial_slow.x);
-    reduction->require(seq, REDUCTION_ALT_VIRIAL_SLOW_Y, altVirial_slow.y);
-    reduction->require(seq, REDUCTION_ALT_VIRIAL_SLOW_Z, altVirial_slow.z);
+    altVirial_normal.x = reduction->item(REDUCTION_ALT_VIRIAL_NORMAL_X);
+    altVirial_normal.y = reduction->item(REDUCTION_ALT_VIRIAL_NORMAL_Y);
+    altVirial_normal.z = reduction->item(REDUCTION_ALT_VIRIAL_NORMAL_Z);
+    altVirial_nbond.x = reduction->item(REDUCTION_ALT_VIRIAL_NBOND_X);
+    altVirial_nbond.y = reduction->item(REDUCTION_ALT_VIRIAL_NBOND_Y);
+    altVirial_nbond.z = reduction->item(REDUCTION_ALT_VIRIAL_NBOND_Z);
+    altVirial_slow.x = reduction->item(REDUCTION_ALT_VIRIAL_SLOW_X);
+    altVirial_slow.y = reduction->item(REDUCTION_ALT_VIRIAL_SLOW_Y);
+    altVirial_slow.z = reduction->item(REDUCTION_ALT_VIRIAL_SLOW_Z);
 
-    reduction->require(seq, REDUCTION_INT_VIRIAL_NORMAL_X, intVirial_normal.x);
-    reduction->require(seq, REDUCTION_INT_VIRIAL_NORMAL_Y, intVirial_normal.y);
-    reduction->require(seq, REDUCTION_INT_VIRIAL_NORMAL_Z, intVirial_normal.z);
-    reduction->require(seq, REDUCTION_INT_VIRIAL_NBOND_X, intVirial_nbond.x);
-    reduction->require(seq, REDUCTION_INT_VIRIAL_NBOND_Y, intVirial_nbond.y);
-    reduction->require(seq, REDUCTION_INT_VIRIAL_NBOND_Z, intVirial_nbond.z);
-    reduction->require(seq, REDUCTION_INT_VIRIAL_SLOW_X, intVirial_slow.x);
-    reduction->require(seq, REDUCTION_INT_VIRIAL_SLOW_Y, intVirial_slow.y);
-    reduction->require(seq, REDUCTION_INT_VIRIAL_SLOW_Z, intVirial_slow.z);
+    intVirial_normal.x = reduction->item(REDUCTION_INT_VIRIAL_NORMAL_X);
+    intVirial_normal.y = reduction->item(REDUCTION_INT_VIRIAL_NORMAL_Y);
+    intVirial_normal.z = reduction->item(REDUCTION_INT_VIRIAL_NORMAL_Z);
+    intVirial_nbond.x = reduction->item(REDUCTION_INT_VIRIAL_NBOND_X);
+    intVirial_nbond.y = reduction->item(REDUCTION_INT_VIRIAL_NBOND_Y);
+    intVirial_nbond.z = reduction->item(REDUCTION_INT_VIRIAL_NBOND_Z);
+    intVirial_slow.x = reduction->item(REDUCTION_INT_VIRIAL_SLOW_X);
+    intVirial_slow.y = reduction->item(REDUCTION_INT_VIRIAL_SLOW_Y);
+    intVirial_slow.z = reduction->item(REDUCTION_INT_VIRIAL_SLOW_Z);
 
     temperature = 2.0 * kineticEnergy / ( numDegFreedom * BOLTZMAN );
 
@@ -631,11 +525,11 @@ void Controller::printEnergies(int seq)
     // Some basic correctness checking
     BigReal checksum;
 
-    reduction->require(seq, REDUCTION_ATOM_CHECKSUM, checksum);
+    checksum = reduction->item(REDUCTION_ATOM_CHECKSUM);
     if ( ((int)checksum) != molecule->numAtoms )
       NAMD_die("BUG ALERT: Bad global atom count!\n");
 
-    reduction->require(seq, REDUCTION_COMPUTE_CHECKSUM, checksum);
+    checksum = reduction->item(REDUCTION_COMPUTE_CHECKSUM);
     if ( ((int)checksum) != computeChecksum ) {
       if ( computeChecksum )
         NAMD_die("BUG ALERT: Bad global compute count!\n");
@@ -643,27 +537,27 @@ void Controller::printEnergies(int seq)
         computeChecksum = ((int)checksum);
     }
 
-    reduction->require(seq, REDUCTION_BOND_CHECKSUM, checksum);
+    checksum = reduction->item(REDUCTION_BOND_CHECKSUM);
     if ( ((int)checksum) != molecule->numCalcBonds )
       NAMD_die("BUG ALERT: Bad global bond count!\n");
 
-    reduction->require(seq, REDUCTION_ANGLE_CHECKSUM, checksum);
+    checksum = reduction->item(REDUCTION_ANGLE_CHECKSUM);
     if ( ((int)checksum) != molecule->numCalcAngles )
       NAMD_die("BUG ALERT: Bad global angle count!\n");
 
-    reduction->require(seq, REDUCTION_DIHEDRAL_CHECKSUM, checksum);
+    checksum = reduction->item(REDUCTION_DIHEDRAL_CHECKSUM);
     if ( ((int)checksum) != molecule->numCalcDihedrals )
       NAMD_die("BUG ALERT: Bad global dihedral count!\n");
 
-    reduction->require(seq, REDUCTION_IMPROPER_CHECKSUM, checksum);
+    checksum = reduction->item(REDUCTION_IMPROPER_CHECKSUM);
     if ( ((int)checksum) != molecule->numCalcImpropers )
       NAMD_die("BUG ALERT: Bad global improper count!\n");
 
-    reduction->require(seq, REDUCTION_EXCLUSION_CHECKSUM, checksum);
+    checksum = reduction->item(REDUCTION_EXCLUSION_CHECKSUM);
     if ( ((int)checksum) != molecule->numCalcExclusions )
       NAMD_die("BUG ALERT: Bad global exclusion count!\n");
 
-    reduction->require(seq, REDUCTION_MARGIN_VIOLATIONS, checksum);
+    checksum = reduction->item(REDUCTION_MARGIN_VIOLATIONS);
     if ( ((int)checksum) ) iout << iWARN << ((int)checksum) <<
         " margin violations detected during timestep " << seq << ".\n" << endi;
 
@@ -681,22 +575,22 @@ void Controller::printEnergies(int seq)
     Vector angularMomentum;
     BigReal volume = lattice.volume();
 
-    reduction->require(seq, REDUCTION_BOND_ENERGY, bondEnergy);
-    reduction->require(seq, REDUCTION_ANGLE_ENERGY, angleEnergy);
-    reduction->require(seq, REDUCTION_DIHEDRAL_ENERGY, dihedralEnergy);
-    reduction->require(seq, REDUCTION_IMPROPER_ENERGY, improperEnergy);
-    reduction->require(seq, REDUCTION_ELECT_ENERGY, electEnergy);
-    reduction->require(seq, REDUCTION_LJ_ENERGY, ljEnergy);
-    reduction->require(seq, REDUCTION_BC_ENERGY, boundaryEnergy);
-    reduction->require(seq, REDUCTION_MISC_ENERGY, miscEnergy);
-    reduction->require(seq, REDUCTION_SMD_ENERGY, smdEnergy);
+    bondEnergy = reduction->item(REDUCTION_BOND_ENERGY);
+    angleEnergy = reduction->item(REDUCTION_ANGLE_ENERGY);
+    dihedralEnergy = reduction->item(REDUCTION_DIHEDRAL_ENERGY);
+    improperEnergy = reduction->item(REDUCTION_IMPROPER_ENERGY);
+    electEnergy = reduction->item(REDUCTION_ELECT_ENERGY);
+    ljEnergy = reduction->item(REDUCTION_LJ_ENERGY);
+    boundaryEnergy = reduction->item(REDUCTION_BC_ENERGY);
+    miscEnergy = reduction->item(REDUCTION_MISC_ENERGY);
+    smdEnergy = reduction->item(REDUCTION_SMD_ENERGY);
 
-    reduction->require(seq, REDUCTION_MOMENTUM_X, momentum.x);
-    reduction->require(seq, REDUCTION_MOMENTUM_Y, momentum.y);
-    reduction->require(seq, REDUCTION_MOMENTUM_Z, momentum.z);
-    reduction->require(seq, REDUCTION_ANGULAR_MOMENTUM_X, angularMomentum.x);
-    reduction->require(seq, REDUCTION_ANGULAR_MOMENTUM_Y, angularMomentum.y);
-    reduction->require(seq, REDUCTION_ANGULAR_MOMENTUM_Z, angularMomentum.z);
+    momentum.x = reduction->item(REDUCTION_MOMENTUM_X);
+    momentum.y = reduction->item(REDUCTION_MOMENTUM_Y);
+    momentum.z = reduction->item(REDUCTION_MOMENTUM_Z);
+    angularMomentum.x = reduction->item(REDUCTION_ANGULAR_MOMENTUM_X);
+    angularMomentum.y = reduction->item(REDUCTION_ANGULAR_MOMENTUM_Y);
+    angularMomentum.z = reduction->item(REDUCTION_ANGULAR_MOMENTUM_Z);
 
     totalEnergy = bondEnergy + angleEnergy + dihedralEnergy + improperEnergy +
 	 electEnergy + ljEnergy + kineticEnergy + boundaryEnergy +
@@ -914,12 +808,15 @@ void Controller::terminate(void) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1069 $	$Date: 1999/06/03 16:50:08 $
+ *	$Revision: 1.1070 $	$Date: 1999/06/17 15:46:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1070  1999/06/17 15:46:14  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1069  1999/06/03 16:50:08  jim
  * Added simplified interface to ComputeGlobal mechanism.
  *

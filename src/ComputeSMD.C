@@ -21,8 +21,7 @@
 ComputeSMD::ComputeSMD(ComputeID c, PatchID pid)
   : ComputePatch(c,pid)
 {
-	reduction = ReductionMgr::Object();
-	reduction->Register(REDUCTION_SMD_ENERGY);
+	reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 
 	SimParameters *simParams = Node::Object()->simParameters;
 
@@ -50,7 +49,7 @@ ComputeSMD::ComputeSMD(ComputeID c, PatchID pid)
 ComputeSMD::~ComputeSMD()
 
 {
-  reduction->unRegister(REDUCTION_SMD_ENERGY);
+  delete reduction;
 }
 /*			END OF FUNCTION ~ComputeSMD		       */
 
@@ -130,7 +129,8 @@ void ComputeSMD::doForce(Position* p, Results* res, AtomProperties* a)
 	  } // if found atom
 	} // loop
 
-	reduction->submit(patch->flags.seq, REDUCTION_SMD_ENERGY, energy);
+	reduction->item(REDUCTION_SMD_ENERGY) += energy;
+	reduction->submit();
 
 }
 /*			END OF FUNCTION force				*/

@@ -22,8 +22,7 @@
 ComputeRestraints::ComputeRestraints(ComputeID c, PatchID pid)
   : ComputePatch(c,pid)
 {
-	reduction = ReductionMgr::Object();
-	reduction->Register(REDUCTION_BC_ENERGY);
+	reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 
 	SimParameters *simParams = Node::Object()->simParameters;
 
@@ -68,7 +67,7 @@ ComputeRestraints::ComputeRestraints(ComputeID c, PatchID pid)
 ComputeRestraints::~ComputeRestraints()
 
 {
-	reduction->unRegister(REDUCTION_BC_ENERGY);
+	delete reduction;
 }
 /*			END OF FUNCTION ~ComputeRestraints		*/
 
@@ -176,7 +175,8 @@ void ComputeRestraints::doForce(Position* p, Results* res, AtomProperties* a)
 	  }
 	}
 
-	reduction->submit(patch->flags.seq, REDUCTION_BC_ENERGY, energy);
+	reduction->item(REDUCTION_BC_ENERGY) += energy;
+	reduction->submit();
 
 }
 /*			END OF FUNCTION force				*/
@@ -186,12 +186,15 @@ void ComputeRestraints::doForce(Position* p, Results* res, AtomProperties* a)
  *
  *	$RCSfile: ComputeRestraints.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1999/05/28 20:22:58 $
+ *	$Revision: 1.7 $	$Date: 1999/06/17 15:46:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeRestraints.C,v $
+ * Revision 1.7  1999/06/17 15:46:13  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.6  1999/05/28 20:22:58  jim
  * Added constraintScaling parameter.
  *

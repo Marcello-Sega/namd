@@ -20,7 +20,7 @@
 
 class HomePatch;
 class SimParameters;
-class ReductionMgr;
+class SubmitReduction;
 class CollectionMgr;
 class ControllerBroadcasts;
 class LdbCoordinator;
@@ -67,7 +67,7 @@ protected:
     SimParameters *const simParams;	// for convenience
     int numberOfCycles;			// stores argument to run()
     HomePatch *const patch;		// access methods in patch
-    ReductionMgr *const reduction;
+    SubmitReduction *reduction;
     CollectionMgr *const collection;
     ControllerBroadcasts * broadcast;
 
@@ -88,12 +88,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1023 $	$Date: 1999/06/02 14:23:22 $
+ *	$Revision: 1.1024 $	$Date: 1999/06/17 15:46:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.h,v $
+ * Revision 1.1024  1999/06/17 15:46:20  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1023  1999/06/02 14:23:22  jim
  * Generalized maximumMove to work with any dynamics mode.
  *

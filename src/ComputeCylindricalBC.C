@@ -26,8 +26,7 @@
 ComputeCylindricalBC::ComputeCylindricalBC(ComputeID c, PatchID pid)
   : ComputePatch(c,pid)
 {
-	reduction = ReductionMgr::Object();
-	reduction->Register(REDUCTION_BC_ENERGY);
+	reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 
 	SimParameters *simParams = Node::Object()->simParameters;
 
@@ -86,7 +85,7 @@ ComputeCylindricalBC::ComputeCylindricalBC(ComputeID c, PatchID pid)
 ComputeCylindricalBC::~ComputeCylindricalBC()
 
 {
-	reduction->unRegister(REDUCTION_BC_ENERGY);
+	delete reduction;
 }
 /*			END OF FUNCTION ~ComputeCylindricalBC		*/
 
@@ -335,7 +334,8 @@ void ComputeCylindricalBC::doForce(Position* p, Results* r, AtomProperties* a)
                 }
         }
 
-    reduction->submit(patch->flags.seq, REDUCTION_BC_ENERGY, energy);
+    reduction->item(REDUCTION_BC_ENERGY) += energy;
+    reduction->submit();
 
 }
 /*			END OF FUNCTION force				*/
@@ -346,12 +346,15 @@ void ComputeCylindricalBC::doForce(Position* p, Results* r, AtomProperties* a)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1997/03/20 23:53:31 $
+ *	$Revision: 1.7 $	$Date: 1999/06/17 15:46:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeCylindricalBC.C,v $
+ * Revision 1.7  1999/06/17 15:46:01  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.6  1997/03/20 23:53:31  ari
  * Some changes for comments. Copyright date additions.
  * Hooks for base level update of Compute objects from ComputeMap

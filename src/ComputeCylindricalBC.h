@@ -41,7 +41,7 @@ public:
 
 	virtual void doForce(Position* p, Results* r, AtomProperties* a);
 
-	ReductionMgr *reduction;
+	SubmitReduction *reduction;
 
 };
 
@@ -53,12 +53,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1997/03/20 23:53:32 $
+ *	$Revision: 1.6 $	$Date: 1999/06/17 15:46:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeCylindricalBC.h,v $
+ * Revision 1.6  1999/06/17 15:46:02  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.5  1997/03/20 23:53:32  ari
  * Some changes for comments. Copyright date additions.
  * Hooks for base level update of Compute objects from ComputeMap

@@ -38,493 +38,334 @@
 #include "Node.h"
 #include "SimParameters.h"
 
-
 #include "ReductionMgr.decl.h"
 #include "ReductionMgr.h"
 
 // #define DEBUGM
 #define MIN_DEBUG_LEVEL 4
-#define STDERR_LEVEL 7
 #include "Debug.h"
 
-// *************************** for Charm messages
+// Later this can be dynamic
+#define REDUCTION_MAX_ELEMENTS REDUCTION_MAX_RESERVED
+#define REDUCTION_MAX_CHILDREN 4
 
-/** questions:
- 1. who is responsible for allocating/deleting the charm data from pack/unpack
- 2. how is the thread "awakened"
- 3. who activates the pack/unpack functions
-**/
+// Used to register and unregister reductions to downstream nodes
+class ReductionRegisterMsg : public CMessage_ReductionRegisterMsg {
+public:
+  int reductionSetID;
+  int sourceNode;
+};
 
-/*******************************************
- ReductionMgr::ReductionMgr(): init object
- *******************************************/
-ReductionMgr::ReductionMgr()
-{
+// Used to send reduction data to downstream nodes
+class ReductionSubmitMsg : public CMessage_ReductionSubmitMsg {
+public:
+  int reductionSetID;
+  int sourceNode;
+  int sequenceNumber;
+  int dataSize;
+  BigReal data[REDUCTION_MAX_ELEMENTS];
+};
+
+// Queue element which stores data for a particular sequence number
+struct ReductionSetData {
+  int sequenceNumber;
+  int eventsRemaining;  // includes delivery, NOT suspend
+  int dataSize;
+  BigReal data[REDUCTION_MAX_ELEMENTS];
+  ReductionSetData *next;
+  ReductionSetData(int seqNum, int events) {
+    sequenceNumber = seqNum;
+    eventsRemaining = events;
+    dataSize = 0;
+    next = 0;
+  }
+};
+
+// Stores the submit queue for a particular set of reductions
+struct ReductionSet {
+  int reductionSetID;
+  int nextSequenceNumber;
+  int eventsRegistered;
+  ReductionSetData *dataQueue;
+  ReductionSetData* getData(int seqNum);
+  void delData(int seqNum);
+  int requireRegistered;  // is a thread subscribed on this node?
+  int threadIsWaiting;  // is there a thread waiting on this?
+  int waitingForSequenceNumber;  // sequence number waited for
+  CthThread waitingThread;
+  ReductionSet(int setID) {
+    reductionSetID = setID;
+    nextSequenceNumber = 0;
+    eventsRegistered = 0;
+    dataQueue = 0;
+    requireRegistered = 0;
+    threadIsWaiting = 0;
+  }
+  int addToRemoteSequenceNumber[REDUCTION_MAX_CHILDREN];
+};
+
+// possibly create and return data for a particular seqNum
+ReductionSetData* ReductionSet::getData(int seqNum) {
+
+  ReductionSetData **current = &dataQueue;
+
+  while ( *current ) {
+    if ( (*current)->sequenceNumber == seqNum ) return *current;
+    current = &((*current)->next);
+  }
+
+  nextSequenceNumber++; // should match all clients
+  *current = new ReductionSetData(seqNum, eventsRegistered);
+  return *current;
+}
+
+// possibly delete data for a particular seqNum
+void ReductionSet::delData(int seqNum) {
+
+  ReductionSetData **current = &dataQueue;
+
+  while ( *current ) {
+    if ( (*current)->sequenceNumber == seqNum ) break;
+    current = &((*current)->next);
+  }
+
+  if ( ! *current ) { NAMD_die("ReductionSet::delData on missing seqNum"); }
+
+  if ( (*current)->eventsRemaining == 0 ) {
+    ReductionSetData *todelete = *current;
+    *current = (*current)->next;
+    delete todelete;
+  }
+}
+
+// constructor
+ReductionMgr::ReductionMgr() {
     if (CpvAccess(ReductionMgr_instance) == 0) {
       CpvAccess(ReductionMgr_instance) = this;
     } else {
       DebugM(1, "ReductionMgr::ReductionMgr() - another instance exists!\n");
     }
 
-    nextSequence = -1; // checked later and changed to firstTimeStep
-    data = NULL;
-    // data = createdata();
-
     // fill in the spanning tree fields
     if (CkMyPe() == 0) {
       myParent = -1;
     } else {
-      myParent = (CkMyPe()-1)/MAX_CHILDREN;
+      myParent = (CkMyPe()-1)/REDUCTION_MAX_CHILDREN;
     }
-    numChildren = 0;
-    int i;
-    for(i=0; i<MAX_CHILDREN; i++) {
-      myChildren[i] = CkMyPe()*MAX_CHILDREN+i+1;
-      if(myChildren[i] < CkNumPes())
-        numChildren++;
-    }
+    firstChild = CkMyPe()*REDUCTION_MAX_CHILDREN + 1;
+    if (firstChild > CkNumPes()) firstChild = CkNumPes();
+    lastChild = firstChild + REDUCTION_MAX_CHILDREN;
+    if (lastChild > CkNumPes()) lastChild = CkNumPes();
 
     // initialize data
-    for(i=0; i<REDUCTION_MAX_RESERVED; i++)
-    {
-      numSubscribed[i] = 0;
-      maxData[i] = numChildren;
+    for(int i=0; i<REDUCTION_MAX_SET_ID; i++) {
+      reductionSets[i] = 0;
     }
-
-    maxEvents = (numChildren*REDUCTION_MAX_RESERVED); // num events (submit)
 
     DebugM(1,"ReductionMgr() instantiated.\n");
-} /* ReductionMgr::ReductionMgr() */
-
-/*******************************************
- ReductionMgr::~ReductionMgr(): free object
- *******************************************/
-ReductionMgr::~ReductionMgr()
-{
-    ReductionMgrData *nextdata;
-    while(data != NULL)
-    {
-      nextdata = data->next;
-      delete data;
-      data = nextdata;
-    }
-} /* ReductionMgr::~ReductionMgr() */
-
-/*******************************************
- ReductionMgr::displayData(): dump the data.
- Very useful for debugging.
- *******************************************/
-void ReductionMgr::displayData(ReductionMgrData *current)
-{
-  if (!current) return;
-} /* ReductionMgr::displayData() */
-
-/************************************************
- ReductionMgr::broadcastDoSubmit(int seq, int n): 
- Tells all the nodes to submit dummy reduction.
- However, only the nodes with no patch on it actually
- performs the dummy submit
-Optimization: Use multicast instead of broadcast
-***************************************************/
-
-void ReductionMgr::broadcastDoSubmit(int seq, int n)
-{
-  CheckForPatchMsg *m=new CheckForPatchMsg;
-  m->numPatches=n;
-  m->seq=seq;
-  CProxy_ReductionMgr(thisgroup).doDummySubmit(m);
 }
 
-/******************************************************
- ReductionMgr::doDummySubmit(CheckForPatchMsg *msg):
- Checks if my pe number is > num Patches. If so submits
- a dummy Kinetic energy reduction
-******************************************************/
-void ReductionMgr::doDummySubmit(CheckForPatchMsg *msg)
-{
-  if (CkMyPe() >= msg->numPatches) {  // we are definitely not root node
+// destructor
+ReductionMgr::~ReductionMgr() {
+    for(int i=0; i<REDUCTION_MAX_SET_ID; i++) {
+      delete reductionSets[i];
+    }
 
-    ReductionMgrData *current=find(msg->seq);
+}
 
-    if (current->numEvents >= maxEvents) {
-      ReductionDataMsg *m = new ReductionDataMsg;
-      m->seq = msg->seq;
-      for(int i=0;i<REDUCTION_MAX_RESERVED;i++)
-        m->data[i] = current->tagData[i];
-      (CProxy_ReductionMgr(thisgroup)).recvReductionData(m,myParent);
-
-      //      CSendMsgBranch(ReductionMgr, recvReductionData, 
-      //                     ReductionDataMsg, m, thisgroup, myParent);
-      gotAllData(current);
+// possibly create and return reduction set
+ReductionSet* ReductionMgr::getSet(int setID) {
+  if ( reductionSets[setID] == 0 ) {
+    reductionSets[setID] = new ReductionSet(setID);
+    if ( ! isRoot() ) {
+      ReductionRegisterMsg *msg = new ReductionRegisterMsg;
+      msg->reductionSetID = setID;
+      msg->sourceNode = CkMyPe();
+      CProxy_ReductionMgr(thisgroup).remoteRegister(msg,myParent);
     }
   }
+  return reductionSets[setID];
+}
+
+// possibly delete reduction set
+void ReductionMgr::delSet(int setID) {
+  ReductionSet *set = reductionSets[setID];
+  if ( set && ! set->eventsRegistered ) {
+    if ( ! isRoot() ) {
+      ReductionRegisterMsg *msg = new ReductionRegisterMsg;
+      msg->reductionSetID = setID;
+      msg->sourceNode = CkMyPe();
+      CProxy_ReductionMgr(thisgroup).remoteUnregister(msg,myParent);
+    }
+    delete set;
+    reductionSets[setID] = 0;
+  }
+}
+
+// register local submit
+SubmitReduction* ReductionMgr::willSubmit(int setID) {
+  ReductionSet *set = getSet(setID);
+  set->eventsRegistered++;
+
+  SubmitReduction *handle = new SubmitReduction;
+  handle->reductionSetID = setID;
+  handle->sequenceNumber = set->nextSequenceNumber;
+  handle->master = this;
+
+  return handle;
+}
+
+// unregister local submit
+void ReductionMgr::remove(SubmitReduction* handle) {
+  int setID = handle->reductionSetID;
+  ReductionSet *set = reductionSets[setID];
+
+  set->eventsRegistered--;
+
+  delSet(setID);
+}
+
+// local submit
+void ReductionMgr::submit(SubmitReduction* handle) {
+  int setID = handle->reductionSetID;
+  ReductionSet *set = reductionSets[setID];
+  int seqNum = handle->sequenceNumber;
+  int size = handle->dataSize;
+  BigReal *data = handle->data;
+
+  mergeAndDeliver(set,seqNum,data,size);
+}
+
+// register submit from child
+void ReductionMgr::remoteRegister(ReductionRegisterMsg *msg) {
+
+  int setID = msg->reductionSetID;
+  ReductionSet *set = getSet(setID);
+
+  set->eventsRegistered++;
+  set->addToRemoteSequenceNumber[msg->sourceNode - firstChild]
+					= set->nextSequenceNumber;
   delete msg;
 }
 
+// unregister submit from child
+void ReductionMgr::remoteUnregister(ReductionRegisterMsg *msg) {
 
+  int setID = msg->reductionSetID;
+  ReductionSet *set = reductionSets[setID];
 
-/*******************************************
- ReductionMgr::createdata(): create a blank
- data element.
- *******************************************/
-ReductionMgrData *ReductionMgr::createdata()
-{
-  if ( nextSequence < 0 )
-  {
-    nextSequence = Node::Object()->simParameters->firstTimestep;
-  }
+  set->eventsRegistered--;
 
-  ReductionMgrData *data;
-  data = new ReductionMgrData;
-  data->sequenceNum = nextSequence;
-  data->next = NULL;
-  data->numEvents = 0;
-  for(int i=0; i<REDUCTION_MAX_RESERVED; i++)
-  {
-      data->numData[i] = 0;
-      data->tagData[i] = 0;
-      data->suspendFlag[i] = 0;
-      data->threadNum[i] = 0;
-  }
-  DebugM(4," createdata(" << nextSequence << ")\n");
-  nextSequence++;
-  return(data);
-} /* ReductionMgr::createdata() */
-
-/*******************************************
-  ReductionMgr::Register(): increase counter
-  to a reduction tag.
-  Only registered objects may deposit data.
-
-  ASSUMPTION: this function will only be called
-  before data has been depositied.
-  (un)register to submit data for reduction
-  may cause an error if reductions are active
- *******************************************/
-void	ReductionMgr::Register(ReductionTag tag)
-{
-  if ( data ) {
-    NAMD_die("Registered reduction while other reductions outstanding!\n");
-    return;
-  }
-  maxData[tag]++;
-  maxEvents++;	// expect and event (submit)
-  DebugM(1,"Register tag=" << tag << " maxData="<< maxData[tag] <<"\n");
-} /* ReductionMgr::Register() */
-
-/*******************************************
- ReductionMgr::unRegister(): 
- ASSUMPTION: this function will only be called
- after data has been depositied.
- (un)register to submit data for reduction
- may cause an error if reductions are active
- *******************************************/
-void	ReductionMgr::unRegister(ReductionTag tag)
-{
-  if ( data ) {
-    NAMD_die("unRegistered reduction while other reductions outstanding!\n");
-    return;
-  }
-  maxData[tag]--;
-  maxEvents--;	// expect 1 less event
-  DebugM(1,"unRegister tag=" << tag << " maxData=" << maxData[tag] << "\n");
-} /* ReductionMgr::unRegister() */
-
-/*******************************************
- ReductionMgr::remove(): remove a sequence
- of counters.
- ASSUMPTION: this function will only be called
- after data has been depositied.
- (un)register to submit data for reduction
- may cause an error if reductions are active
-
- Note: there should be a general event flag
- that counts down to zero.  Then it hits 0 it
- should remove the sequence.
-   numEvents = numRequire+numSubmit
- This will cause a minor performance improval.
- Update: Now we count events!
- *******************************************/
-void	ReductionMgr::remove(int seq)
-{
-  if (!data) return;
-  ReductionMgrData *currentdata = data;
-  ReductionMgrData *previousdata = NULL;
-  int i;	// loop variable
-
-  DebugM(5,"remove()? seq=" << seq << "\n");
-
-  // check if data is removable
-  if (currentdata->numEvents < maxEvents)
-	return;	// don't delete it!  still required by someone.
-
-  // find data to remove
-  for(i=data->sequenceNum; i<seq; i++)
-  {
-	previousdata = currentdata;
-	currentdata = currentdata->next;
-  }
-
-  /* don't remove suspended data */
-  // for(i=0; i < REDUCTION_MAX_RESERVED; i++)
-  // {
-  //   if (currentdata->suspendFlag[i]) return;
-  // }
-
-  DebugM(5,"remove()! seq=" << seq << "\n");
-
-  // delete data
-  if (!previousdata)
-    {
-      // head of queue
-      data = currentdata->next;
-    }
-  else
-    {
-      // body of queue
-      previousdata = currentdata->next;
-    }
-  delete currentdata;
-} /* ReductionMgr::remove() */
-
-/*******************************************
- ReductionMgr::recvReductionData(): receive
- and include some data from a BOC.
- *******************************************/
-void	ReductionMgr::recvReductionData	(ReductionDataMsg *msg)
-{
-  int seq = msg->seq;
-  ReductionMgrData *current=find(seq);
-  int tag;
-  for(tag=0;tag<REDUCTION_MAX_RESERVED;tag++) {
-    current->tagData[tag] += msg->data[tag];
-    current->numData[tag]++;
-    current->numEvents++;
-  }
+  delSet(setID);
   delete msg;
+}
 
-  DebugM(2,"ReductionDataMsg received tag=" << tag
-	 << " data=" << current->tagData[tag] << "\n"); 
+// data submitted from child
+void ReductionMgr::remoteSubmit(ReductionSubmitMsg *msg) {
+  int setID = msg->reductionSetID;
+  ReductionSet *set = reductionSets[setID];
+  int seqNum = msg->sequenceNumber
+	+ set->addToRemoteSequenceNumber[msg->sourceNode - firstChild];
+  int size = msg->dataSize;
+  BigReal *data = msg->data;
 
-  // inform object that new data has been found
+  mergeAndDeliver(set,seqNum,data,size);
+  delete msg;
+}
 
-  DebugM(4,"recv seq=" << current->sequenceNum << " tag=" << tag
-	<< " " << current->numData[tag] << "/" << maxData[tag]
-	<< " " << current->numEvents << "/" << maxEvents
-	<< " data=" << current->tagData[tag]
-	<< "\n");
+// common code for submission and delivery
+void ReductionMgr::mergeAndDeliver(
+	ReductionSet *set, int seqNum, const BigReal *newData, int size) {
+  ReductionSetData *data = set->getData(seqNum);
 
-  if (current->numEvents >= maxEvents && !isRoot()) {
-    ReductionDataMsg *m = new ReductionDataMsg;
-    m->seq = seq;
-    for(tag=0;tag<REDUCTION_MAX_RESERVED;tag++)
-      m->data[tag] = current->tagData[tag];
-    CProxy_ReductionMgr rm(thisgroup);
-    rm.recvReductionData(m,myParent);
-    gotAllData(current);
+  // merge in this submission
+  for( ; data->dataSize < size; data->dataSize++ ) { // extend as needed
+    data->data[data->dataSize] = 0;
   }
-  if(isRoot()) {
-    for(tag=0;tag<REDUCTION_MAX_RESERVED;tag++) {
-      // check if someone is waiting for the data
-      // displayData(current,tag);
-      if (current->suspendFlag[tag])
-      {
-          current->suspendFlag[tag] = 0;
-          DebugM(5,"Awaken seq=" << current->sequenceNum << " tag=" << tag
-	    << " thread=" << current->threadNum[tag]
-	    << "\n");
-          CthAwaken(current->threadNum[tag]);
-      }
-      else if (current->numEvents >= maxEvents) {
-	    remove(current->sequenceNum);
-            break;
-      }
-    }
+  for ( int i = 0; i < size; ++i ) {
+    data->data[i] += newData[i];
   }
-} /* ReductionMgr::recvReductionData() */
+  data->eventsRemaining--;
 
-/*******************************************
- ReductionMgr::find(): find data for reduction.
- If sequence does not exist, then create it.
- *******************************************/
-ReductionMgrData *	ReductionMgr::find(int seq)
-{
-  ReductionMgrData *current=NULL;
-  ReductionMgrData *previous=NULL;
-
-  // check for an empty queue
-  if (!data)
-  {
-    data = createdata();
-  }
-  current = data;
-
-  if ( current->sequenceNum > seq ) {
-    NAMD_die("Extra reduction submitted!");
-  } 
-
-  // find the sequence
-  while(current && (current->sequenceNum < seq))
-    {
-      previous = current;
-      DebugM(1,"browsing over seq=" << current->sequenceNum << "\n");
-      current = current->next;
-    }
-
-  // check if sequence needs to be added
-  if (!current)
-  {
-    while(previous->sequenceNum < seq)
-    {
-      previous->next = createdata();
-      previous->next->next = NULL;
-      previous = previous->next;
-    }
-    current = previous;
-  }
-
-  // current now contains the sequence
-
-  return(current);
-} /* ReductionMgr::find() */
-
-/*******************************************
- ReductionMgr::gotAllData(): things to do when
- all data in a sequence is received.
- Currently does:
-   1. prints to terminal
-   2. frees memory
- If not all data has been received, then returns quietly
- *******************************************/
-void	ReductionMgr::gotAllData(ReductionMgrData *current)
-{
-  DebugM(2,"All data collected for seq=" << current->sequenceNum << "\n");
-
-  // one less data to send (delete if all done)
-
-  if (current->numEvents >= maxEvents)
-	remove(current->sequenceNum);
-} /* ReductionMgr::gotAllData() */
-
-/*******************************************
- ReductionMgr::submit(): submit data for reduction.
- more == 1 signals immediate submission of other data
- There should be 1 submit per register.
- *******************************************/
-void	ReductionMgr::submit(int seq, ReductionTag tag, BigReal data)
-{
-  ReductionMgrData *current=find(seq);
-
-  // add to tag
-  current->tagData[tag] += data;
-  current->numData[tag]++;	/* expect 1 less */
-  current->numEvents++;		// got an event (submit)
-
-  DebugM(4,"Submit seq=" << seq
-	<< " tag=" << tag
-	<< " " << current->numData[tag] << "/" << maxData[tag]
-	<< " " << current->numEvents << "/" << maxEvents
-	<< " data=" << data
-	<< "\n");
-
-  if (current->numEvents >= maxEvents && !isRoot()) {
-    ReductionDataMsg *m = new ReductionDataMsg;
-    m->seq = seq;
-    for(int i=0;i<REDUCTION_MAX_RESERVED;i++)
-      m->data[i] = current->tagData[i];
-    CProxy_ReductionMgr(thisgroup).recvReductionData(m,myParent);
-    gotAllData(current);
-  }
-  if (isRoot() && current->numData[tag] == maxData[tag])
-  {
-	// displayData(current,tag);
-	// check if Node 0 (the collector) is suspended
-	if (current->suspendFlag[tag])
-	{
-	  current->suspendFlag[tag] = 0;
-	  CthAwaken(current->threadNum[tag]);
-	  return;
+  // deliver if all submissions are in
+  if ( data->eventsRemaining == set->requireRegistered ) {
+    if ( isRoot() ) {
+      if ( set->requireRegistered ) {
+	if ( set->threadIsWaiting && set->waitingForSequenceNumber == seqNum) {
+	  // awaken the thread so it can take the data
+	  CthAwaken(set->waitingThread);
 	}
-	else gotAllData(current);
-  }
-
-} /* ReductionMgr::submit() */
-
-/*******************************************
- ReductionMgr::submit(): submit data for reduction.
- more == 1 signals immediate submission of other data
- There should be 1 submit per register.
- This function is used when there is NO data to submit.
- *******************************************/
-void	ReductionMgr::submit(int seq, ReductionTag tag)
-{
-  submit(seq,tag,0.0);
-} /* ReductionMgr::submit() */
-
-/*******************************************
- ReductionMgr::require(): get data.
- Note: this suspends until this data is ready
- and should be called only from Sequencer thread
- *******************************************/
-void	ReductionMgr::require(int seq, ReductionTag tag, BigReal &data)
-{
-  // 1. find the correct sequence
-  ReductionMgrData *current = find(seq);
-
-  // 2. check if all the data is present
-  while(current->numData[tag] < maxData[tag])
-  {
-    // suspend thread until numData is 0...
-    current->suspendFlag[tag] = 1;
-    current->threadNum[tag] = CthSelf();
-    DebugM(5,"Suspend seq=" << seq << " tag=" << tag
-	<< " thread=" << current->threadNum[tag]
-	<< " " << current->numData[tag] << "/" << maxData[tag]
-	<< " " << current->numEvents << "/" << maxEvents
-	<< "\n");
-    while(current->suspendFlag[tag] == 1)
-    {
-	current->numEvents--;	// one less event.  Must wait for awaken
-	CthSuspend();
-	current->numEvents++;	// one more event.  Got awaken
+      } else {
+	NAMD_die("ReductionSet::deliver will never deliver data");
+      }
+    } else {
+      // send data to parent
+      ReductionSubmitMsg *msg = new ReductionSubmitMsg;
+      msg->reductionSetID = set->reductionSetID;
+      msg->sourceNode = CkMyPe();
+      msg->sequenceNumber = seqNum;
+      msg->dataSize = data->dataSize;
+      for ( int i = 0; i < msg->dataSize; ++i ) {
+        msg->data[i] = data->data[i];
+      }
+      CProxy_ReductionMgr(thisgroup).remoteSubmit(msg,myParent);
     }
-    // ...then return value
-    DebugM(5,"unSuspend seq=" << seq << " tag=" << tag
-	<< " thread=" << current->threadNum[tag]
-	<< "\n");
+    set->delData(seqNum);
+  }
+}
+
+// register require
+RequireReduction* ReductionMgr::willRequire(int setID) {
+  ReductionSet *set = getSet(setID);
+  set->eventsRegistered++;
+  set->requireRegistered++;
+
+  RequireReduction *handle = new RequireReduction;
+  handle->reductionSetID = setID;
+  handle->sequenceNumber = set->nextSequenceNumber;
+  handle->master = this;
+
+  return handle;
+}
+
+// unregister require
+void ReductionMgr::remove(RequireReduction* handle) {
+  int setID = handle->reductionSetID;
+  ReductionSet *set = reductionSets[setID];
+
+  set->eventsRegistered--;
+  set->requireRegistered--;
+
+  delSet(setID);
+}
+
+// require the data from a thread
+void ReductionMgr::require(RequireReduction* handle) {
+  int setID = handle->reductionSetID;
+  ReductionSet *set = reductionSets[setID];
+  int seqNum = handle->sequenceNumber;
+  ReductionSetData *data = set->getData(seqNum);
+  if ( data->eventsRemaining > set->requireRegistered ) {
+    set->threadIsWaiting = 1;
+    set->waitingForSequenceNumber = seqNum;
+    set->waitingThread = CthSelf();
+    CthSuspend();
+  }
+  set->threadIsWaiting = 0;
+  data->eventsRemaining--;
+
+  if ( handle->dataSize < data->dataSize ) {
+    delete [] handle->data;
+    handle->data = new BigReal[data->dataSize];
+    handle->dataSize = data->dataSize;
+  }
+  for ( int i = 0; i < data->dataSize; ++i ) {
+    handle->data[i] = data->data[i];
   }
 
-  // 3. use the data
-  data = current->tagData[tag];
-  current->numEvents++;		// got an event (require)
+  set->delData(seqNum);
+}
 
-  if (current->numEvents == maxEvents)
-	remove(seq);    // free it.
-} /* ReductionMgr::require() */
-
-/*******************************************
- ReductionMgr::subscribe(): Allow a process to
- require the data.
- A process must subscribe if it requires data.
- *******************************************/
-void	ReductionMgr::subscribe(ReductionTag tag)
-{
-  numSubscribed[tag]++;
-  maxEvents++;
-} /* ReductionMgr::subscribe() */
-
-/*******************************************
- ReductionMgr::unsubscribe(): Allow a process
- to no-longer require the data.
- *******************************************/
-void	ReductionMgr::unsubscribe(ReductionTag tag)
-{
-  numSubscribed[tag]--;
-  maxEvents--;
-} /* ReductionMgr::unsubscribe() */
-
-/*******************************************
- *******************************************/
 
 #include "ReductionMgr.def.h"
 // nothing should be placed below here
@@ -535,12 +376,15 @@ void	ReductionMgr::unsubscribe(ReductionTag tag)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1032 $	$Date: 1999/05/11 23:56:47 $
+ *	$Revision: 1.1033 $	$Date: 1999/06/17 15:46:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.C,v $
+ * Revision 1.1033  1999/06/17 15:46:16  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1032  1999/05/11 23:56:47  brunner
  * Changes for new charm version
  *

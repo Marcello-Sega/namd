@@ -48,44 +48,18 @@ void (*ComputeNonbondedUtil::calcFullPair)(nonbonded *);
 void (*ComputeNonbondedUtil::calcFullSelf)(nonbonded *);
 void (*ComputeNonbondedUtil::calcFullExcl)(nonbonded *);
 
-void ComputeNonbondedUtil::registerReductionData(ReductionMgr *reduction)
+void ComputeNonbondedUtil::submitReductionData(BigReal *data, SubmitReduction *reduction, int seq)
 {
-  reduction->Register(REDUCTION_ELECT_ENERGY);
-  reduction->Register(REDUCTION_LJ_ENERGY);
-  reduction->Register(REDUCTION_VIRIAL_NBOND_X);
-  reduction->Register(REDUCTION_VIRIAL_NBOND_Y);
-  reduction->Register(REDUCTION_VIRIAL_NBOND_Z);
-  reduction->Register(REDUCTION_VIRIAL_SLOW_X);
-  reduction->Register(REDUCTION_VIRIAL_SLOW_Y);
-  reduction->Register(REDUCTION_VIRIAL_SLOW_Z);
-  reduction->Register(REDUCTION_COMPUTE_CHECKSUM);
-}
-
-void ComputeNonbondedUtil::submitReductionData(BigReal *data, ReductionMgr *reduction, int seq)
-{
-  reduction->submit(seq, REDUCTION_ELECT_ENERGY, data[electEnergyIndex]
-					+ data[fullElectEnergyIndex]);
-  reduction->submit(seq, REDUCTION_LJ_ENERGY, data[vdwEnergyIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL_NBOND_X, data[virialXIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL_NBOND_Y, data[virialYIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL_NBOND_Z, data[virialZIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL_SLOW_X, data[fullElectVirialXIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL_SLOW_Y, data[fullElectVirialYIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL_SLOW_Z, data[fullElectVirialZIndex]);
-  reduction->submit(seq, REDUCTION_COMPUTE_CHECKSUM, 1.);
-}
-
-void ComputeNonbondedUtil::unregisterReductionData(ReductionMgr *reduction)
-{
-  reduction->unRegister(REDUCTION_ELECT_ENERGY);
-  reduction->unRegister(REDUCTION_LJ_ENERGY);
-  reduction->unRegister(REDUCTION_VIRIAL_NBOND_X);
-  reduction->unRegister(REDUCTION_VIRIAL_NBOND_Y);
-  reduction->unRegister(REDUCTION_VIRIAL_NBOND_Z);
-  reduction->unRegister(REDUCTION_VIRIAL_SLOW_X);
-  reduction->unRegister(REDUCTION_VIRIAL_SLOW_Y);
-  reduction->unRegister(REDUCTION_VIRIAL_SLOW_Z);
-  reduction->unRegister(REDUCTION_COMPUTE_CHECKSUM);
+  reduction->item(REDUCTION_ELECT_ENERGY) += data[electEnergyIndex]
+					+ data[fullElectEnergyIndex];
+  reduction->item(REDUCTION_LJ_ENERGY) += data[vdwEnergyIndex];
+  reduction->item(REDUCTION_VIRIAL_NBOND_X) += data[virialXIndex];
+  reduction->item(REDUCTION_VIRIAL_NBOND_Y) += data[virialYIndex];
+  reduction->item(REDUCTION_VIRIAL_NBOND_Z) += data[virialZIndex];
+  reduction->item(REDUCTION_VIRIAL_SLOW_X) += data[fullElectVirialXIndex];
+  reduction->item(REDUCTION_VIRIAL_SLOW_Y) += data[fullElectVirialYIndex];
+  reduction->item(REDUCTION_VIRIAL_SLOW_Z) += data[fullElectVirialZIndex];
+  reduction->item(REDUCTION_COMPUTE_CHECKSUM) += 1.;
 }
 
 #ifdef DPME
@@ -354,12 +328,15 @@ void ComputeNonbondedUtil::select(void)
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1023 $	$Date: 1999/05/27 19:00:44 $
+ *	$Revision: 1.1024 $	$Date: 1999/06/17 15:46:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1024  1999/06/17 15:46:11  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1023  1999/05/27 19:00:44  jim
  * Added nonbondedScaling parameter and fixed Tcl scripting bug.
  *

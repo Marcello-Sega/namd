@@ -139,10 +139,7 @@ void ComputeDPMTA::initialize()
   usePBC = FALSE;	// assume not...
 
   // all nodes should init
-  reduction->Register(REDUCTION_ELECT_ENERGY);
-  reduction->Register(REDUCTION_VIRIAL_SLOW_X);
-  reduction->Register(REDUCTION_VIRIAL_SLOW_Y);
-  reduction->Register(REDUCTION_VIRIAL_SLOW_Z);
+  reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 
   // Don't need any more initialization  -JCP
   ResizeArrayIter<PatchElem> ap(patchList);
@@ -319,10 +316,7 @@ ComputeDPMTA::~ComputeDPMTA()
   delete [] slavetids;
   DebugM(2,"DPMTA exited\n");
 
-  reduction->unRegister(REDUCTION_ELECT_ENERGY);
-  reduction->unRegister(REDUCTION_VIRIAL_SLOW_X);
-  reduction->unRegister(REDUCTION_VIRIAL_SLOW_Y);
-  reduction->unRegister(REDUCTION_VIRIAL_SLOW_Z);
+  delete reduction;
 }
 
 
@@ -343,10 +337,7 @@ void ComputeDPMTA::doWork()
       (*ap).atomBox->close(&a);
       (*ap).positionBox->close(&x);
     }
-    reduction->submit(patchList[0].p->flags.seq, REDUCTION_ELECT_ENERGY, 0.0);
-    reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW_X, 0.0);
-    reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW_Y, 0.0);
-    reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW_Z, 0.0);
+    reduction->submit();
     return;
   }
 
@@ -487,11 +478,12 @@ void ComputeDPMTA::doWork()
 
   potential *= 0.5;
   DebugM(4,"Full-electrostatics energy: " << potential << "\n");
-  reduction->submit(patchList[0].p->flags.seq, REDUCTION_ELECT_ENERGY, potential);
+  reduction->item(REDUCTION_ELECT_ENERGY) += potential;
   // DPMTA won't work correctly if scaled anisotropically anyway.  -JCP
-  reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW_X, potential / 3.);
-  reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW_Y, potential / 3.);
-  reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW_Z, potential / 3.);
+  reduction->item(REDUCTION_VIRIAL_SLOW_X) += potential / 3.;
+  reduction->item(REDUCTION_VIRIAL_SLOW_Y) += potential / 3.;
+  reduction->item(REDUCTION_VIRIAL_SLOW_Z) += potential / 3.;
+  reduction->submit();
 
   // 5. clean-up
   if (totalAtoms > 0)
@@ -511,12 +503,15 @@ void ComputeDPMTA::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1056 $	$Date: 1999/05/27 19:00:43 $
+ *	$Revision: 1.1057 $	$Date: 1999/06/17 15:46:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.C,v $
+ * Revision 1.1057  1999/06/17 15:46:03  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1056  1999/05/27 19:00:43  jim
  * Added nonbondedScaling parameter and fixed Tcl scripting bug.
  *

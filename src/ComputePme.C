@@ -36,7 +36,7 @@ class ComputePmeMaster {
 private:
   friend class ComputePme;
   ComputePme *host;
-  ComputePmeMaster(ComputePme *, ReductionMgr *);
+  ComputePmeMaster(ComputePme *);
   ~ComputePmeMaster();
   void recvData(ComputePmeDataMsg *);
   ResizeArray<int> homeNode;
@@ -44,7 +44,7 @@ private:
   int numWorkingPes;
   int numLocalAtoms;
   PmeParticle *localData;
-  ReductionMgr *reduction;
+  SubmitReduction *reduction;
   int runcount;
   PmeCoulomb *myPme;
 };
@@ -62,7 +62,7 @@ ComputePme::ComputePme(ComputeID c, ComputeMgr *m) :
 
   masterNode = numWorkingPes - 1;
   if ( CkMyPe() == masterNode ) {
-    master = new ComputePmeMaster(this,reduction);
+    master = new ComputePmeMaster(this);
     master->numWorkingPes = numWorkingPes;
   }
   else master = 0;
@@ -93,10 +93,7 @@ void ComputePme::doWork()
       (*ap).forceBox->close(&r);
     }
     if ( master ) {
-      reduction->submit(patchList[0].p->flags.seq, REDUCTION_ELECT_ENERGY, 0.);
-      reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW_X, 0.);
-      reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW_Y, 0.);
-      reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW_Z, 0.);
+      master->reduction->submit();
     }
     return;
   }
@@ -151,16 +148,12 @@ void ComputePme::recvData(ComputePmeDataMsg *msg)
   else NAMD_die("ComputePme::master is NULL!");
 }
 
-ComputePmeMaster::ComputePmeMaster(ComputePme *h, ReductionMgr *r) :
-  host(h), numLocalAtoms(0), reduction(r), runcount(0)
+ComputePmeMaster::ComputePmeMaster(ComputePme *h) :
+  host(h), numLocalAtoms(0), runcount(0)
 {
   DebugM(4,"ComputePmeMaster created.\n");
 
-  reduction->Register(REDUCTION_ELECT_ENERGY);
-  reduction->Register(REDUCTION_VIRIAL_SLOW_X);
-  reduction->Register(REDUCTION_VIRIAL_SLOW_Y);
-  reduction->Register(REDUCTION_VIRIAL_SLOW_Z);
-
+  reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
   Molecule * molecule = Node::Object()->molecule;
   localData = new PmeParticle[molecule->numAtoms];
   SimParameters * simParams = Node::Object()->simParameters;
@@ -174,11 +167,7 @@ ComputePmeMaster::ComputePmeMaster(ComputePme *h, ReductionMgr *r) :
 
 ComputePmeMaster::~ComputePmeMaster()
 {
-  reduction->unRegister(REDUCTION_ELECT_ENERGY);
-  reduction->unRegister(REDUCTION_VIRIAL_SLOW_X);
-  reduction->unRegister(REDUCTION_VIRIAL_SLOW_Y);
-  reduction->unRegister(REDUCTION_VIRIAL_SLOW_Z);
-
+  delete reduction;
   delete [] localData;
   delete myPme;
 }
@@ -256,10 +245,11 @@ void ComputePmeMaster::recvData(ComputePmeDataMsg *msg)
   DebugM(4,"Reciprocal sum virial: " << recip_vir[0] << " " <<
 	recip_vir[1] << " " << recip_vir[2] << " " << recip_vir[3] << " " <<
 	recip_vir[4] << " " << recip_vir[5] << "\n");
-  reduction->submit(seq, REDUCTION_ELECT_ENERGY, electEnergy);
-  reduction->submit(seq, REDUCTION_VIRIAL_SLOW_X, (BigReal)(recip_vir[0]));
-  reduction->submit(seq, REDUCTION_VIRIAL_SLOW_Y, (BigReal)(recip_vir[3]));
-  reduction->submit(seq, REDUCTION_VIRIAL_SLOW_Z, (BigReal)(recip_vir[5]));
+  reduction->item(REDUCTION_ELECT_ENERGY) += electEnergy;
+  reduction->item(REDUCTION_VIRIAL_SLOW_X) += (BigReal)(recip_vir[0]);
+  reduction->item(REDUCTION_VIRIAL_SLOW_Y) += (BigReal)(recip_vir[3]);
+  reduction->item(REDUCTION_VIRIAL_SLOW_Z) += (BigReal)(recip_vir[5]);
+  reduction->submit();
 
   PmeVector *results_ptr;
   results_ptr = localResults;
@@ -326,12 +316,15 @@ void ComputePme::recvResults(ComputePmeResultsMsg *msg)
  *
  *	$RCSfile: ComputePme.C,v $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1999/06/09 15:02:07 $
+ *	$Revision: 1.3 $	$Date: 1999/06/17 15:46:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePme.C,v $
+ * Revision 1.3  1999/06/17 15:46:12  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.2  1999/06/09 15:02:07  jim
  * Added nonbondedScaling parameter.
  *

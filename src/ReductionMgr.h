@@ -72,58 +72,48 @@ typedef enum
   REDUCTION_MAX_RESERVED
 } ReductionTag;
 
-struct ReductionMgrData
-{
-  int sequenceNum;
-  int numData[REDUCTION_MAX_RESERVED];	// number of data to expect
-  int numEvents;	// number of events to expect
-  BigReal tagData[REDUCTION_MAX_RESERVED];	// values in tags
-  ReductionMgrData *next;	// a queue! ugly but effective.
-  int eventCounter;	// counts number of uses
-
-  // for "waiting"
-  CthThread threadNum[REDUCTION_MAX_RESERVED];
-  int suspendFlag[REDUCTION_MAX_RESERVED];
+// Later this can be dynamic
+enum {
+  REDUCTIONS_BASIC,
+  REDUCTIONS_USER1,
+  REDUCTIONS_USER2,
+ // semaphore (must be last)
+  REDUCTION_MAX_SET_ID
 };
 
-class CheckForPatchMsg : public CMessage_CheckForPatchMsg {
-public:
-  int seq;
-  int numPatches;
-};
+class ReductionRegisterMsg;
+class ReductionSubmitMsg;
+class ReductionSet;
+class SubmitReduction;
+class RequireReduction;
 
-class ReductionDataMsg : public CMessage_ReductionDataMsg {
-public:
-  int seq;
-  BigReal data[REDUCTION_MAX_RESERVED];
-};
-
-#define MAX_CHILDREN 2
-
-// ***************** for object
+// Top level class
 class ReductionMgr : public BOCclass
 {
 private:
-  int nextSequence;
-  int numSubscribed[REDUCTION_MAX_RESERVED];
-  ReductionMgrData *data;	// sequence queue
-  int maxData[REDUCTION_MAX_RESERVED];	// number of data to expect
-  int maxEvents;	// number of events to expect
+  friend class SubmitReduction;
+  friend class RequireReduction;
 
-  int myParent;
-  int numChildren;
-  int myChildren[MAX_CHILDREN];
+  ReductionSet * (reductionSets[REDUCTION_MAX_SET_ID]);
 
-  int isRoot(void) { return (myParent==(-1))?1:0; }
-  int isLeaf(void) { return (numChildren==0)?1:0; }
+  int myParent;  // parent node or -1 if none
+  int firstChild, lastChild;  // firstChild <= children < lastChild
+  int isMyChild(int nodeID) const {
+    return ( nodeID >= firstChild && nodeID < lastChild );
+  }
+  int isRoot(void) const { return ( myParent == -1 ); }
 
-  ReductionMgrData *createdata();		// make new data
-  void remove(int seq);				// delete (remove) a sequence
-  ReductionMgrData *find(int seq);		// find the data
-  void gotAllData(ReductionMgrData *current);	// done collecting data
-  void displayData(ReductionMgrData *current);	// display collected data
-  void displayData(ReductionMgrData *current, ReductionTag tag);
-						// display collected data
+  ReductionSet* getSet(int setID);
+  void delSet(int setID);
+
+  void mergeAndDeliver(
+	ReductionSet *set, int seqNum, const BigReal *newData, int size);
+
+  void submit(SubmitReduction*);
+  void remove(SubmitReduction*);
+
+  void require(RequireReduction*);
+  void remove(RequireReduction*);
 
 public:
 
@@ -135,34 +125,68 @@ public:
   ReductionMgr();
   ~ReductionMgr();
 
-  // (un)register to submit data for reduction
-  // may cause an error if reductions are active
-  // ASSUMPTION: nobody should register after data has been collected.
-  // (register is a key word)
-  void Register(ReductionTag tag);
-  void unRegister(ReductionTag tag);
+  // client interface
+  SubmitReduction* willSubmit(int setID);
+  RequireReduction* willRequire(int setID);
 
-  // submit data for reduction
-  void submit(int seq, ReductionTag tag, BigReal data);
-  void submit(int seq, ReductionTag tag);
+  // message entry points
+  void remoteRegister(ReductionRegisterMsg *msg);
+  void remoteUnregister(ReductionRegisterMsg *msg);
+  void remoteSubmit(ReductionSubmitMsg *msg);
 
-  // methods for use by global sequencer
-
-  // raises an error if reductions or broadcasts are active
-  void subscribe(ReductionTag tag);
-  void unsubscribe(ReductionTag tag);
-
-  // suspend until this data is ready
-  // should be called only from Sequencer thread
-  void require(int seq, ReductionTag tag, BigReal &data);
-
-  // for receiving data from other ReductionMgr objects
-  void recvReductionData(ReductionDataMsg *msg);
-
-  // check for patches < numNodes 
-  void doDummySubmit(CheckForPatchMsg *m);
-  void broadcastDoSubmit(int seq, int n);
 };
+
+// Client handle for submissions
+class SubmitReduction {
+private:
+  friend class ReductionMgr;
+  int reductionSetID;
+  int sequenceNumber;
+  ReductionMgr *master;
+  int dataSize;
+  BigReal *data;
+  SubmitReduction(void) { dataSize = 0; data = 0; }
+public:
+  BigReal& item(int i) {
+    if ( i >= dataSize ) {
+      int oldSize = dataSize;
+      BigReal *oldData = data;
+      dataSize = i+1;
+      data = new BigReal[dataSize];
+      int j = 0;
+      for ( ; j < oldSize; ++j ) data[j] = oldData[j];
+      for ( ; j < dataSize; ++j ) data[j] = 0.;
+      delete [] oldData;
+    }
+    return data[i];
+  }
+  void submit(void) {
+    master->submit(this);
+    ++sequenceNumber;
+    for ( int i = 0; i < dataSize; ++i ) { data[i] = 0; }
+  }
+  ~SubmitReduction(void) { delete [] data; master->remove(this); }
+};
+
+// Client handle for requires
+class RequireReduction {
+private:
+  friend class ReductionMgr;
+  int reductionSetID;
+  int sequenceNumber;
+  ReductionMgr *master;
+  int dataSize;
+  BigReal *data;
+  RequireReduction(void) { dataSize = 0; data = 0; }
+public:
+  BigReal item(int i) const { return ( i < dataSize ? data[i] : 0 ); }
+  void require(void) {
+    master->require(this);
+    ++sequenceNumber;
+  }
+  ~RequireReduction(void) { delete [] data; master->remove(this); }
+};
+
 
 #endif
 
@@ -172,12 +196,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1999/06/03 16:50:09 $
+ *	$Revision: 1.1017 $	$Date: 1999/06/17 15:46:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.h,v $
+ * Revision 1.1017  1999/06/17 15:46:18  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1016  1999/06/03 16:50:09  jim
  * Added simplified interface to ComputeGlobal mechanism.
  *

@@ -17,7 +17,7 @@
 
 #include "NamdTypes.h"
 class LJTable;
-class ReductionMgr;
+class SubmitReduction;
 class Molecule;
 
 // function arguments
@@ -64,9 +64,7 @@ public:
 	 virialXIndex, virialYIndex, virialZIndex,
 	 fullElectVirialXIndex, fullElectVirialYIndex, fullElectVirialZIndex,
 	 reductionDataSize };
-  static void registerReductionData(ReductionMgr*);
-  static void submitReductionData(BigReal*,ReductionMgr*,int);
-  static void unregisterReductionData(ReductionMgr*);
+  static void submitReductionData(BigReal*,SubmitReduction*,int);
 
   static Bool fixedAtomsOn;
   static Real cutoff;
@@ -151,12 +149,15 @@ public:
  *
  *	$RCSfile: ComputeNonbondedUtil.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1999/05/27 19:00:44 $
+ *	$Revision: 1.1019 $	$Date: 1999/06/17 15:46:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.h,v $
+ * Revision 1.1019  1999/06/17 15:46:11  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1018  1999/05/27 19:00:44  jim
  * Added nonbondedScaling parameter and fixed Tcl scripting bug.
  *

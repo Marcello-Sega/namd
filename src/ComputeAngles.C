@@ -155,41 +155,29 @@ void AngleElem::computeForce(BigReal *reduction)
 }
 
 
-void AngleElem::registerReductionData(ReductionMgr *reduction)
+void AngleElem::submitReductionData(BigReal *data, SubmitReduction *reduction, int seq)
 {
-  reduction->Register(REDUCTION_ANGLE_ENERGY);
-  reduction->Register(REDUCTION_VIRIAL_NORMAL_X);
-  reduction->Register(REDUCTION_VIRIAL_NORMAL_Y);
-  reduction->Register(REDUCTION_VIRIAL_NORMAL_Z);
+  reduction->item(REDUCTION_ANGLE_ENERGY) += data[angleEnergyIndex];
+  reduction->item(REDUCTION_VIRIAL_NORMAL_X) += data[virialXIndex];
+  reduction->item(REDUCTION_VIRIAL_NORMAL_Y) += data[virialYIndex];
+  reduction->item(REDUCTION_VIRIAL_NORMAL_Z) += data[virialZIndex];
 }
 
-void AngleElem::submitReductionData(BigReal *data, ReductionMgr *reduction, int seq)
-{
-  reduction->submit(seq, REDUCTION_ANGLE_ENERGY, data[angleEnergyIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL_X, data[virialXIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL_Y, data[virialYIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL_Z, data[virialZIndex]);
-}
-
-void AngleElem::unregisterReductionData(ReductionMgr *reduction)
-{
-  reduction->unRegister(REDUCTION_ANGLE_ENERGY);
-  reduction->unRegister(REDUCTION_VIRIAL_NORMAL_X);
-  reduction->unRegister(REDUCTION_VIRIAL_NORMAL_Y);
-  reduction->unRegister(REDUCTION_VIRIAL_NORMAL_Z);
-}
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1999/01/06 00:56:19 $
+ *	$Revision: 1.1011 $	$Date: 1999/06/17 15:45:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.C,v $
+ * Revision 1.1011  1999/06/17 15:45:59  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1010  1999/01/06 00:56:19  jim
  * All compute objects except DPMTA now return diagonal of virial tensor.
  *

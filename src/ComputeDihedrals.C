@@ -225,29 +225,14 @@ void DihedralElem::computeForce(BigReal *reduction)
 }
 
 
-void DihedralElem::registerReductionData(ReductionMgr *reduction)
+void DihedralElem::submitReductionData(BigReal *data, SubmitReduction *reduction, int seq)
 {
-  reduction->Register(REDUCTION_DIHEDRAL_ENERGY);
-  reduction->Register(REDUCTION_VIRIAL_NORMAL_X);
-  reduction->Register(REDUCTION_VIRIAL_NORMAL_Y);
-  reduction->Register(REDUCTION_VIRIAL_NORMAL_Z);
+  reduction->item(REDUCTION_DIHEDRAL_ENERGY) += data[dihedralEnergyIndex];
+  reduction->item(REDUCTION_VIRIAL_NORMAL_X) += data[virialXIndex];
+  reduction->item(REDUCTION_VIRIAL_NORMAL_Y) += data[virialYIndex];
+  reduction->item(REDUCTION_VIRIAL_NORMAL_Z) += data[virialZIndex];
 }
 
-void DihedralElem::submitReductionData(BigReal *data, ReductionMgr *reduction, int seq)
-{
-  reduction->submit(seq, REDUCTION_DIHEDRAL_ENERGY, data[dihedralEnergyIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL_X, data[virialXIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL_Y, data[virialYIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL_Z, data[virialZIndex]);
-}
-
-void DihedralElem::unregisterReductionData(ReductionMgr *reduction)
-{
-  reduction->unRegister(REDUCTION_DIHEDRAL_ENERGY);
-  reduction->unRegister(REDUCTION_VIRIAL_NORMAL_X);
-  reduction->unRegister(REDUCTION_VIRIAL_NORMAL_Y);
-  reduction->unRegister(REDUCTION_VIRIAL_NORMAL_Z);
-}
 
 
 /***************************************************************************
@@ -255,12 +240,15 @@ void DihedralElem::unregisterReductionData(ReductionMgr *reduction)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1999/01/06 00:56:21 $
+ *	$Revision: 1.1012 $	$Date: 1999/06/17 15:46:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDihedrals.C,v $
+ * Revision 1.1012  1999/06/17 15:46:04  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1011  1999/01/06 00:56:21  jim
  * All compute objects except DPMTA now return diagonal of virial tensor.
  *

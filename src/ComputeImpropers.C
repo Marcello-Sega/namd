@@ -228,29 +228,12 @@ void ImproperElem::computeForce(BigReal *reduction)
   reduction[virialZIndex] += ( f1.z * r12.z + f2.z * r23.z + f3.z * r34.z );
 }
 
-
-void ImproperElem::registerReductionData(ReductionMgr *reduction)
+void ImproperElem::submitReductionData(BigReal *data, SubmitReduction *reduction, int seq)
 {
-  reduction->Register(REDUCTION_IMPROPER_ENERGY);
-  reduction->Register(REDUCTION_VIRIAL_NORMAL_X);
-  reduction->Register(REDUCTION_VIRIAL_NORMAL_Y);
-  reduction->Register(REDUCTION_VIRIAL_NORMAL_Z);
-}
-
-void ImproperElem::submitReductionData(BigReal *data, ReductionMgr *reduction, int seq)
-{
-  reduction->submit(seq, REDUCTION_IMPROPER_ENERGY, data[improperEnergyIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL_X, data[virialXIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL_Y, data[virialYIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL_Z, data[virialZIndex]);
-}
-
-void ImproperElem::unregisterReductionData(ReductionMgr *reduction)
-{
-  reduction->unRegister(REDUCTION_IMPROPER_ENERGY);
-  reduction->unRegister(REDUCTION_VIRIAL_NORMAL_X);
-  reduction->unRegister(REDUCTION_VIRIAL_NORMAL_Y);
-  reduction->unRegister(REDUCTION_VIRIAL_NORMAL_Z);
+  reduction->item(REDUCTION_IMPROPER_ENERGY) += data[improperEnergyIndex];
+  reduction->item(REDUCTION_VIRIAL_NORMAL_X) += data[virialXIndex];
+  reduction->item(REDUCTION_VIRIAL_NORMAL_Y) += data[virialYIndex];
+  reduction->item(REDUCTION_VIRIAL_NORMAL_Z) += data[virialZIndex];
 }
 
 
@@ -260,12 +243,15 @@ void ImproperElem::unregisterReductionData(ReductionMgr *reduction)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1999/01/06 00:56:22 $
+ *	$Revision: 1.1011 $	$Date: 1999/06/17 15:46:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeImpropers.C,v $
+ * Revision 1.1011  1999/06/17 15:46:08  jim
+ * Completely rewrote reduction system to eliminate need for sequence numbers.
+ *
  * Revision 1.1010  1999/01/06 00:56:22  jim
  * All compute objects except DPMTA now return diagonal of virial tensor.
  *
