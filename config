@@ -79,6 +79,15 @@ begin:
   ln -s .rootdir/Makefile ./Makefile
   echo "Linking src"
   ln -s .rootdir/src ./src
+  echo "Creating fftw and linking files"
+  (cd $DIR/fftw;find . -name CVS -prune -o -type d -print )|sed -e s@.@@> temp.d
+  (cd $DIR/fftw;find . -name CVS -prune -o -type f -print )|sed -e s@.@@> temp.f
+  awk '{print "mkdir fftw"$1;}' < temp.d > temp.m
+  awk '{print "ln -s ../.rootdir fftw"$1;}' < temp.d >> temp.m
+  awk '{print "ln -s .rootdir/fftw"$1" fftw"$1;}' < temp.f > temp.l
+  sh temp.m
+  sh temp.l
+  rm -f temp.d temp.f temp.m temp.l
   echo "Creating dpme2 and linking files"
   (cd $DIR/dpme2;find . -name CVS -prune -o -type d -print )|sed -e s@.@@> temp.d
   (cd $DIR/dpme2;find . -name CVS -prune -o -type f -print )|sed -e s@.@@> temp.f

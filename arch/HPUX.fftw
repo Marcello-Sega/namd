@@ -1,7 +1,7 @@
 
 FFTDIR=/Projects/namd2/fftw/hpux
-FFTINCL=-I$(FFTDIR)/include
-FFTLIB=-L$(FFTDIR)/lib -lrfftw -lfftw
+FFTINCL=-I$(FFTDIR)/include -Ifftw
+FFTLIB=-L$(FFTDIR)/lib -lrfftw -lfftw -Lfftw -lfftw_ampi
 FFTFLAGS=-DNAMD_FFTW
 FFT=$(FFTINCL) $(FFTFLAGS)
 

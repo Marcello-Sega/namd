@@ -164,7 +164,7 @@ CHARMXI = $(CHARM)/bin/charmc
 INCLUDE = $(CHARM)/include
 
 # Libraries we may have changed
-LIBS = $(DPMTALIBS) $(DPMELIBS)
+LIBS = $(DPMTALIBS) $(DPMELIBS) fftw/libfftw_ampi.a
 
 # CXX is platform dependent
 CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXOPTS) $(RELEASE)
@@ -235,6 +235,9 @@ $(DPMTADIR)/src/libdpmta2.a:
 
 $(DPMEDIR)/libdpme.a:
 	cd $(DPMEDIR) ; $(MAKE) ; cd ..
+
+fftw/libfftw_ampi.a:
+	cd fftw ; $(MAKE) ; cd ..
 
 # Unix commands
 
@@ -368,6 +371,7 @@ clean:
 	rm -rf ptrepository Templates.DB SunWS_cache $(DSTDIR) $(INCDIR)
 	cd $(DPMTADIR) ; $(MAKE) clean ; cd ..
 	cd $(DPMEDIR) ; $(MAKE) clean ; cd ..
+	cd fftw ; $(MAKE) clean ; cd ..
 
 veryclean:	clean
 	rm -f $(BINARIES)
