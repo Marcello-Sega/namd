@@ -4,7 +4,7 @@ syntax:
   echo ''
   echo 'Usage: config [build_dir/]<arch> '
   echo ''
-  echo 'arch: ' `( cd arch ; ls -1 |sed -e 's/Makearch\.//' | egrep -v 'template' )`
+  echo 'arch: ' `( cd arch ; ls -1 Makearch.* |sed -e 's/Makearch\.//' | egrep -v 'template' )`
   echo ''
   exit 1
 
