@@ -59,12 +59,17 @@ template <class Elem> class ResizeArrayRaw {
       if ( (size-allocSize) < minSize) 
         size = allocSize+minSize;
 
+#ifndef WIN32
       // align everything to 32-byte boundaries (if possible)
       unsigned char *tmpv = new unsigned char[size*sizeof(Elem)+31];
       Elem *tmpa = (Elem *)((((long)tmpv)+31L)&(-32L));
       // Someday we might need this alternate form.
       // Elem *tmpa = (Elem *)(tmpv+31 - (((long)(tmpv+31))&(31L)));
       memcpy((void *)tmpa, (void *)array, sizeof(Elem)*arraySize);
+#else
+      unsigned char *tmpv = new unsigned char[size*sizeof(Elem)];
+      Elem *tmpa = (Elem *)tmpv;
+#endif
   
       if (allocSize) delete[] varray;
       varray = tmpv;
