@@ -26,9 +26,9 @@ PACK_MSG(MyMsg,
 
 template<class T> class ResizeArray;
 
-template<class T> size_t sizeof_element(ResizeArray<T> &) { return sizeof(T); }
+template<class T> inline size_t sizeof_element(ResizeArray<T> &) { return sizeof(T); }
 
-template<class T> T* new_array(T*, int n) { return new T[n]; }
+template<class T> inline T* new_array(T*, int n) { return new T[n]; }
 
 #define PACK_MSG(MSGTYPE,MSGDATA) \
 void *MSGTYPE::pack(MSGTYPE *packmsg_msg) { \
