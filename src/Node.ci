@@ -10,6 +10,8 @@ extern message DoneMsg;
 extern message RunMsg;
 message QuiescenceMessage;
 
+packmessage SMDDataMsg;
+
 group Node
 {
   entry Node(GroupInitMsg *);
@@ -26,6 +28,8 @@ group Node
   entry homeDone(DoneMsg *);
   // nodeDone counts down node completions
   entry nodeDone(DoneMsg *);
+
+  entry recvSMDData(SMDDataMsg *);
 } ;
 
 
@@ -34,12 +38,15 @@ group Node
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/19 11:54:35 $
+ *	$Revision: 1.1006 $	$Date: 1998/01/05 20:33:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.ci,v $
+ * Revision 1.1006  1998/01/05 20:33:24  sergei
+ * added 'packmessage SMDDataMsg' and an entry recvSMDData.
+ *
  * Revision 1.1005  1997/03/19 11:54:35  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.
