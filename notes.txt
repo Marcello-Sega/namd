@@ -31,7 +31,7 @@ important that the same compiler is used for both Charm++ and NAMD.
   * SP3            IBM SP Series                 sp3
   * exemplar       Convex Exemplar               exemplar-mpi
 
-  * These architectures may fail to built or be unstable.
+  * These architectures may fail to build or be unstable.
 
 Edit Make.charm to point to the directory where Charm++ is installed.
 
