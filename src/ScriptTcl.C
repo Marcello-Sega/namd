@@ -694,8 +694,10 @@ int ScriptTcl::Tcl_dumpbench(ClientData clientData,
 
 #include "ComputeConsForceMsgs.h"
 // consforceconfig <atomids> <forces>
-static int Tcl_consForceConfig(ClientData, Tcl_Interp *interp, int objc,
-    Tcl_Obj *const objv[]) {
+int ScriptTcl::Tcl_consForceConfig(ClientData clientData,
+    Tcl_Interp *interp, int objc, Tcl_Obj *const objv[]) {
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  script->initcheck();
   if (objc != 3) {
     Tcl_WrongNumArgs(interp, 1, objv, (char *)"<atomids> <forces>");
     return TCL_ERROR;
@@ -803,7 +805,7 @@ ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
   Tcl_CreateCommand(interp, "dumpbench", Tcl_dumpbench,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateObjCommand(interp, "consForceConfig", Tcl_consForceConfig, 
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
 #endif
 
 }

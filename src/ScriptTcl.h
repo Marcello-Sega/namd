@@ -68,6 +68,7 @@ private:
   static int Tcl_coorfile(ClientData, Tcl_Interp *, int, char **);
 #endif
   static int Tcl_dumpbench(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_consForceConfig(ClientData, Tcl_Interp *, int, Tcl_Obj *const objv[]);
   char *callbackname;
   void doCallback(const char *labels, const char *data);
   int doCallback() { return ! ! callbackname; }
