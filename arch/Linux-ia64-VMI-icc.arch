@@ -1,0 +1,4 @@
+include .rootdir/arch/Linux-ia64-icc.arch
+
+CHARMARCH = mpi-linux-ia64-vmi-icc
+

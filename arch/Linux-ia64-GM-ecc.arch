@@ -1,4 +1,0 @@
-include .rootdir/arch/Linux-ia64-ecc.arch
-
-CHARMARCH = net-linux-ia64-gm-ecc
-

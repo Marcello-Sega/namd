@@ -1,4 +1,0 @@
-include .rootdir/arch/Linux-i686-Scyld.arch
-
-SCYLDFLAGS = -DSCYLD_NOTICE
-
