@@ -5,7 +5,7 @@
 /*                           All Rights Reserved                           */
 /*                                                                         */
 /***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.5 1996/08/23 22:03:52 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.6 1996/10/04 22:24:15 brunner Exp $";
 
 #include <stdio.h>
 
@@ -55,6 +55,9 @@ Node::~Node(void)
 // and does everything necessary to run the simulation
 //    Ask work_distrib for initial distribution
 //    This must be split-phase, so results can be received from node 0.
+// Receipt of the maps send by sendMaps() triggers the patch and compute
+// object creation
+
 void Node::startup(InitMsg *msg)
 {
 
@@ -63,7 +66,6 @@ void Node::startup(InitMsg *msg)
   workDistrib->parentNode(this);
   workDistrib->buildMaps();
   workDistrib->sendMaps();
-  workDistrib->createPatches();
 }
 
 
@@ -108,7 +110,7 @@ void Node::saveMolDataPointers(Molecule *molecule,
  *
  *	$RCSfile: Node.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/08/23 22:03:52 $
+ *	$Revision: 1.6 $	$Date: 1996/10/04 22:24:15 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -117,6 +119,9 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.6  1996/10/04 22:24:15  brunner
+ * Took out call to createPatches.  Maybe this will have to go back in
+ *
  * Revision 1.5  1996/08/23 22:03:52  brunner
  * Made WorkdDistrib, PatchMgr public members
  *
