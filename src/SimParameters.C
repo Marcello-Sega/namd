@@ -24,8 +24,14 @@
 #include <time.h>
 #ifdef WIN32
 #include <direct.h>
+#define CHDIR _chdir
+#define PATHSEP '\\'
+#define PATHSEPSTR "\\"
 #else
 #include <unistd.h>
+#define CHDIR chdir
+#define PATHSEP '/'
+#define PATHSEPSTR "/"
 #endif
 #include <fstream.h>
 extern "C" {
@@ -895,26 +901,22 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
     len = strlen(current->data);
 
-#ifdef WIN32
-    if ( _chdir(current->data) )
-#else
-    if ( chdir(current->data) )
-#endif
+    if ( CHDIR(current->data) )
     {
       NAMD_die("chdir() to given cwd failed!");
     } else {
       iout << iINFO << "Changed directory to " << current->data << "\n" << endi;
     }
 
-    if (current->data[len-1] != '/')
+    if (current->data[len-1] != PATHSEP)
       len++;
 
     cwd = new char[len+1];
 
     strcpy(cwd, current->data);
 
-    if (current->data[strlen(current->data)-1] != '/')
-      strcat(cwd, "/");
+    if (current->data[strlen(current->data)-1] != PATHSEP)
+      strcat(cwd, PATHSEPSTR);
    }
 
    //  Make sure that both a temperature and a velocity PDB were

@@ -16,9 +16,13 @@
 #ifdef WIN32
 #include <direct.h>
 #define CHDIR _chdir
+#define PATHSEP '\\'
+#define PATHSEPSTR "\\"
 #else
 #include <unistd.h>
 #define CHDIR chdir
+#define PATHSEP '/'
+#define PATHSEPSTR "/"
 #endif
 #include <sys/stat.h>
 #include "ConfigList.h"
@@ -35,15 +39,15 @@ int main(int argc, char **argv) {
   char *currentdir=confFile;
   char *tmp;
   for(tmp=confFile;*tmp;++tmp); // find final null
-  for( ; tmp != confFile && *tmp != '/'; --tmp); // find last '/'
+  for( ; tmp != confFile && *tmp != PATHSEP; --tmp); // find last '/'
   if ( tmp != confFile )
   {
     *tmp = 0; confFile = tmp + 1;
     if ( CHDIR(currentdir) ) NAMD_die("chdir() failed!");
     iout << iINFO << "Changed directory to " << currentdir << "\n" << endi;
   }
-  else if ( *tmp == '/' ) // config file in / is odd, but it might happen
-    if ( CHDIR("/") ) NAMD_die("chdir() failed!");
+  else if ( *tmp == PATHSEP ) // config file in / is odd, but it might happen
+    if ( CHDIR(PATHSEPSTR) ) NAMD_die("chdir() failed!");
   currentdir = NULL;
 
   iout << iINFO << "Configuration file is " << confFile << "\n" << endi;
@@ -75,5 +79,6 @@ int main(int argc, char **argv) {
 #endif
 
   BackEnd::exit();
+  return 0;
 }
 
