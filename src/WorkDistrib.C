@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.3 1996/08/16 21:41:11 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.4 1996/08/16 21:55:56 brunner Exp $";
 
 #include <stdio.h>
 
@@ -53,8 +53,8 @@ void WorkDistrib::buildMapsFromScratch()
   CPrintf("Building maps\n");
   mapPatches();
   mapComputes();
-  node->patchMap->printPatchMap();
-  node->computeMap->printComputeMap();
+  node->patchMap.printPatchMap();
+  node->computeMap.printComputeMap();
   CharmExit();
 }
 
@@ -63,7 +63,7 @@ void WorkDistrib::buildMapsFromScratch()
 //----------------------------------------------------------------------
 void WorkDistrib::mapPatches(void)
 {
-  PatchMap *patchMap = node->patchMap;
+  PatchMap *patchMap = &(node->patchMap);
   int xdim, ydim, zdim;
   int xi, yi, zi, pid;
   int i;
@@ -104,8 +104,8 @@ void WorkDistrib::mapPatches(void)
 //----------------------------------------------------------------------
 void WorkDistrib::mapComputes(void)
 {
-  PatchMap *patchMap = node->patchMap;
-  ComputeMap *computeMap = node->computeMap;
+  PatchMap *patchMap = &(node->patchMap);
+  ComputeMap *computeMap = &(node->computeMap);
 
   CPrintf("Mapping computes\n");
 
@@ -127,8 +127,8 @@ void WorkDistrib::mapComputes(void)
 void WorkDistrib::mapAngleComputes()
 {
   int i;
-  PatchMap *patchMap = node->patchMap;
-  ComputeMap *computeMap = node->computeMap;
+  PatchMap *patchMap = &(node->patchMap);
+  ComputeMap *computeMap = &(node->computeMap);
   int numNodes = node->numNodes();
 
   // Figure out where to put the angleForce objects, and hook up the
@@ -160,8 +160,8 @@ void WorkDistrib::mapElectComputes(void)
   // Then create 1 for each 1-away and 2-away neighbor which has a larger
   // pid.
 
-  PatchMap *patchMap = node->patchMap;
-  ComputeMap *computeMap = node->computeMap;
+  PatchMap *patchMap = &(node->patchMap);
+  ComputeMap *computeMap = &(node->computeMap);
 
   PatchID oneAway[PatchMap::MaxOneAway];
   PatchID twoAway[PatchMap::MaxTwoAway];
@@ -217,12 +217,15 @@ void WorkDistrib::mapElectComputes(void)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/08/16 21:41:11 $
+ *	$Revision: 1.4 $	$Date: 1996/08/16 21:55:56 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.4  1996/08/16 21:55:56  brunner
+ * *** empty log message ***
+ *
  * Revision 1.3  1996/08/16 21:41:11  brunner
  * *** empty log message ***
  *

@@ -39,8 +39,8 @@ private:
   WorkDistrib *workDistrib;
 
 public:
-  PatchMap *patchMap;
-  ComputeMap *computeMap;
+  PatchMap patchMap;
+  ComputeMap computeMap;
 
   // Charm Entry point - distributed contructor
   Node(NodeInitMsg *msg);
@@ -63,12 +63,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/08/16 21:42:58 $
+ *	$Revision: 1.3 $	$Date: 1996/08/16 21:56:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.3  1996/08/16 21:56:17  brunner
+ * *** empty log message ***
+ *
  * Revision 1.2  1996/08/16 21:42:58  brunner
  * *** empty log message ***
  *
