@@ -9,7 +9,7 @@
 ####
 CC = egcs
 CXX = g++
-CXXOPTS = -O3 -DGLOBALS -DGCC -fguiding-decls -static -march=pentiumpro -ffast-math
+CXXOPTS = -O3 -DGLOBALS -DGCC -Wall -march=pentiumpro -ffast-math
 COPTS = -O3 -DGCC -march=pentiumpro -ffast-math
 CXXTHREADOPTS = $(CXXOPTS)
 
@@ -33,11 +33,11 @@ CHARM = $(CHARMBASE)/$(CHARMARCH)
 ######
 ## definitions for TCL interface
 ######
-#TCLDIR=/usr/local
-#TCLINCL=-I$(TCLDIR)/include
-#TCLLIB=-L$(TCLDIR)/lib -ltclx -ltcl
-#TCLFLAGS=-DNAMD_TCL
-#TCL=$(TCLINCL) $(TCLFLAGS)
+TCLDIR=/usr
+TCLINCL=-I$(TCLDIR)/include
+TCLLIB=-L$(TCLDIR)/lib -ltclx -ltcl -ldl
+TCLFLAGS=-DNAMD_TCL
+TCL=$(TCLINCL) $(TCLFLAGS)
 
 #####
 # Unix commands
