@@ -113,7 +113,8 @@ void ComputePme::doWork()
 
   // get positions and charges
   PmeParticle * data_ptr = localData;
-  const BigReal coloumb_sqrt = sqrt( COLOUMB * ComputeNonbondedUtil::dielectric_1 );
+  const BigReal coloumb_sqrt = sqrt( COLOUMB * ComputeNonbondedUtil::scaling
+				* ComputeNonbondedUtil::dielectric_1 );
 
   for (ap = ap.begin(); ap != ap.end(); ap++) {
     Position *x = (*ap).positionBox->open();
@@ -325,12 +326,15 @@ void ComputePme::recvResults(ComputePmeResultsMsg *msg)
  *
  *	$RCSfile: ComputePme.C,v $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1999/06/08 14:52:06 $
+ *	$Revision: 1.2 $	$Date: 1999/06/09 15:02:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePme.C,v $
+ * Revision 1.2  1999/06/09 15:02:07  jim
+ * Added nonbondedScaling parameter.
+ *
  * Revision 1.1  1999/06/08 14:52:06  jim
  * Incorporated Justin's faster PME code along side DPME.
  *
