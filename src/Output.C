@@ -78,33 +78,32 @@ int Output::coordinateNeeded(int timestep)
 
   int positionsNeeded = 0;
 
-  //  Output a DCD trajectory 
-  if ( (simParams->dcdFrequency != -1) &&
-       ((timestep % simParams->dcdFrequency) == 0) &&
-       (timestep > simParams->firstTimestep) )
-  {
-    positionsNeeded |= 1;
-  }
+  if ( timestep >= 0 ) {
 
-  //  Output a restart file
-  if ( (simParams->restartFrequency != -1) &&
-       ((timestep % simParams->restartFrequency) == 0) &&
-       (timestep > simParams->firstTimestep) )
-  {
-    positionsNeeded |= 2;
+    //  Output a DCD trajectory 
+    if ( (simParams->dcdFrequency != -1) &&
+       ((timestep % simParams->dcdFrequency) == 0) )
+    { positionsNeeded |= 1; }
+
+    //  Output a restart file
+    if ( (simParams->restartFrequency != -1) &&
+       ((timestep % simParams->restartFrequency) == 0) )
+    { positionsNeeded |= 2; }
+
+    //  Iteractive MD
+    if ( simParams->IMDon &&
+       ( ((timestep % simParams->IMDfreq) == 0) ||
+         (timestep == simParams->firstTimestep) ) )
+      { positionsNeeded |= 1; }
+
   }
 
   //  Output final coordinates
-  if (timestep == 0)
+  if (timestep == FILE_OUTPUT || timestep == END_OF_RUN)
   {
     positionsNeeded |= 2;
   }
 
-  if (simParams->IMDon) 
-    if (( (timestep % simParams->IMDfreq)== 0) ||
-        ( timestep == simParams->firstTimestep)) 
-      positionsNeeded |= 1;
- 
   return positionsNeeded;
 }
 
@@ -112,41 +111,47 @@ void Output::coordinate(int timestep, int n, Vector *coor, FloatVector *fcoor)
 {
   SimParameters *simParams = Node::Object()->simParameters;
 
-  //  Output a DCD trajectory 
-  if ( (simParams->dcdFrequency != -1) &&
-       ((timestep % simParams->dcdFrequency) == 0) &&
-       (timestep > simParams->firstTimestep) )
-  {
-    iout << "WRITING COORDINATES TO DCD FILE AT STEP "
-				<< timestep << "\n" << endi;
-    output_dcdfile(timestep, n, fcoor);
-  }
+  if ( timestep >= 0 ) {
 
-  //  Output a restart file
-  if ( (simParams->restartFrequency != -1) &&
-       ((timestep % simParams->restartFrequency) == 0) &&
-       (timestep > simParams->firstTimestep) )
-  {
-    iout << "WRITING COORDINATES TO RESTART FILE AT STEP "
+    //  Output a DCD trajectory 
+    if ( (simParams->dcdFrequency != -1) &&
+       ((timestep % simParams->dcdFrequency) == 0) )
+    {
+      output_dcdfile(timestep, n, fcoor);
+    }
+
+    //  Output a restart file
+    if ( (simParams->restartFrequency != -1) &&
+       ((timestep % simParams->restartFrequency) == 0) )
+    {
+      iout << "WRITING COORDINATES TO RESTART FILE AT STEP "
 				<< timestep << "\n" << endi;
-    output_restart_coordinates(coor, n, timestep);
+      output_restart_coordinates(coor, n, timestep);
+    }
+
+    //  Interactive MD
+    if ( simParams->IMDon &&
+       ( ((timestep % simParams->IMDfreq) == 0) ||
+         (timestep == simParams->firstTimestep) ) )
+    {
+      IMDOutput *imd = Node::Object()->imd;
+      if (imd != NULL) imd->gather_coordinates(timestep, n, fcoor);
+    }
+
   }
 
   //  Output final coordinates
-  if (timestep == 0)
+  if (timestep == FILE_OUTPUT || timestep == END_OF_RUN)
   {
     iout << "WRITING COORDINATES TO OUTPUT FILE AT STEP "
 				<< simParams->N << "\n" << endi;
     output_final_coordinates(coor, n, simParams->N);
   }
 
-  if (simParams->IMDon) {
-    if (( (timestep % simParams->IMDfreq)==0) ||
-        ( timestep == simParams->firstTimestep)) {
-      IMDOutput *imd = Node::Object()->imd;
-      if (imd != NULL)
-        imd->gather_coordinates(timestep, n, fcoor);
-      }
+  //  Close trajectory files
+  if (timestep == END_OF_RUN)
+  {
+    if (simParams->dcdFrequency != -1) output_dcdfile(END_OF_RUN,0,0);
   }
 
 }
@@ -174,24 +179,22 @@ int Output::velocityNeeded(int timestep)
 
   int velocitiesNeeded = 0;
 
-  //  Output a velocity DCD trajectory
-  if ( (simParams->velDcdFrequency != -1) &&
-       ((timestep % simParams->velDcdFrequency) == 0) &&
-       (timestep > simParams->firstTimestep) )
-  {
-    velocitiesNeeded |= 1;
-  }
+  if ( timestep >= 0 ) {
 
-  //  Output a restart file
-  if ( (simParams->restartFrequency != -1) &&
-       ((timestep % simParams->restartFrequency) == 0) &&
-       (timestep > simParams->firstTimestep) )
-  {
-    velocitiesNeeded |= 2;
+    //  Output a velocity DCD trajectory
+    if ( (simParams->velDcdFrequency != -1) &&
+       ((timestep % simParams->velDcdFrequency) == 0) )
+      { velocitiesNeeded |= 1; }
+
+    //  Output a restart file
+    if ( (simParams->restartFrequency != -1) &&
+       ((timestep % simParams->restartFrequency) == 0) )
+      { velocitiesNeeded |= 2; }
+
   }
 
   //  Output final velocities
-  if (timestep == 0)
+  if (timestep == FILE_OUTPUT || timestep == END_OF_RUN)
   {
     velocitiesNeeded |= 2;
   }
@@ -203,33 +206,40 @@ void Output::velocity(int timestep, int n, Vector *vel)
 {
   SimParameters *simParams = Node::Object()->simParameters;
 
-  //  Output velocity DCD trajectory
-  if ( (simParams->velDcdFrequency != -1) &&
-       ((timestep % simParams->velDcdFrequency) == 0) &&
-       (timestep > simParams->firstTimestep) )
-  {
-    iout << "WRITING VELOCITIES TO DCD FILE AT STEP "
-				<< timestep << "\n" << endi;
-    output_veldcdfile(timestep, n, vel);
-  }
+  if ( timestep >= 0 ) {
+
+    //  Output velocity DCD trajectory
+    if ( (simParams->velDcdFrequency != -1) &&
+       ((timestep % simParams->velDcdFrequency) == 0) )
+    {
+      output_veldcdfile(timestep, n, vel);
+    }
 
   //  Output restart file
-  if ( (simParams->restartFrequency != -1) &&
-       ((timestep % simParams->restartFrequency) == 0) &&
-       (timestep > simParams->firstTimestep) )
-  {
-    iout << "WRITING VELOCITIES TO RESTART FILE AT STEP "
+    if ( (simParams->restartFrequency != -1) &&
+       ((timestep % simParams->restartFrequency) == 0) )
+    {
+      iout << "WRITING VELOCITIES TO RESTART FILE AT STEP "
 				<< timestep << "\n" << endi;
-    output_restart_velocities(timestep, n, vel);
+      output_restart_velocities(timestep, n, vel);
+    }
+
   }
 
   //  Output final velocities
-  if (timestep == 0)
+  if (timestep == FILE_OUTPUT || timestep == END_OF_RUN)
   {
     iout << "WRITING VELOCITIES TO OUTPUT FILE AT STEP "
 				<< simParams->N << "\n" << endi;
     output_final_velocities(simParams->N, n, vel);
   }
+
+  //  Close trajectory files
+  if (timestep == END_OF_RUN)
+  {
+    if (simParams->velDcdFrequency != -1) output_veldcdfile(END_OF_RUN,0,0);
+  }
+
 }
 /*      END OF FUNCTION velocity      */
 
@@ -388,6 +398,15 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor)
   int ret_code;    //  Return code from DCD calls
   SimParameters *simParams = namdMyNode->simParams;
 
+  //  If this is the last time we will be writing coordinates,
+  //  close the file before exiting
+  if ( timestep == END_OF_RUN && ! first )
+  {
+    iout << "CLOSING COORDINATE DCD FILE\n" << endi;
+    close_dcd_write(fileid);
+    return;
+  }
+
   if (first)
   {
     //  Allocate x, y, and z arrays since the DCD file routines
@@ -403,6 +422,8 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor)
     }
 
     //  Open the DCD file
+    iout << "OPENING COORDINATE DCD FILE\n" << endi;
+
     fileid=open_dcd_write(simParams->dcdFilename);
 
     if (fileid == DCD_FILEEXISTS)
@@ -455,19 +476,13 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor)
   }
 
   //  Write out the values for this timestep
+  iout << "WRITING COORDINATES TO DCD FILE AT STEP "
+	<< timestep << "\n" << endi;
   ret_code = write_dcdstep(fileid, n, x, y, z);
 
   if (ret_code < 0)
   {
     NAMD_die("Writing of DCD step failed!!");
-  }
-
-  //  If this is the last time we will be writing coordinates,
-  //  close the file before exiting
-  if ( (timestep+simParams->dcdFrequency) >
-        simParams->N)
-  {
-    close_dcd_write(fileid);
   }
 
 }
@@ -594,6 +609,15 @@ void Output::output_veldcdfile(int timestep, int n, Vector *vel)
   int ret_code;    //  Return code from DCD calls
   SimParameters *simParams = Node::Object()->simParameters;
 
+  //  If this is the last time we will be writing coordinates,
+  //  close the file before exiting
+  if ( timestep == END_OF_RUN && ! first )
+  {
+    iout << "CLOSING VELOCITY DCD FILE\n" << endi;
+    close_dcd_write(fileid);
+    return;
+  }
+
   if (first)
   {
     //  Allocate x, y, and z arrays since the DCD file routines
@@ -609,6 +633,8 @@ void Output::output_veldcdfile(int timestep, int n, Vector *vel)
     }
 
     //  Open the DCD file
+    iout << "OPENING VELOCITY DCD FILE\n" << endi;
+
     fileid=open_dcd_write(namdMyNode->simParams->velDcdFilename);
 
     if (fileid == DCD_FILEEXISTS)
@@ -661,6 +687,8 @@ void Output::output_veldcdfile(int timestep, int n, Vector *vel)
   }
 
   //  Write out the values for this timestep
+  iout << "WRITING VELOCITIES TO DCD FILE AT STEP "
+	<< timestep << "\n" << endi;
   ret_code = write_dcdstep(fileid, n, x, y, z);
 
   if (ret_code < 0)
@@ -668,13 +696,6 @@ void Output::output_veldcdfile(int timestep, int n, Vector *vel)
     NAMD_die("Writing of velocity DCD step failed!!");
   }
 
-  //  If this is the last time we will be writing coordinates,
-  //  close the file before exiting
-  if ( (timestep+namdMyNode->simParams->velDcdFrequency) >
-        namdMyNode->simParams->N)
-  {
-    close_dcd_write(fileid);
-  }
 }
 /*      END OF FUNCTION output_veldcdfile    */
 

@@ -96,18 +96,19 @@ void Controller::algorithm(int task)
   if (simParams->tclOn) broadcast->scriptBarrier.publish(scriptSeq++,task);
 
   switch ( task ) {
-    case SCRIPT_END:
-      if ( simParams->tclOn ) {
-        enqueueCollections(0);
-        outputExtendedSystem(-1);
+    case SCRIPT_END: // also if no script
+      if ( simParams->tclOn ) { // so only if script
+        enqueueCollections(END_OF_RUN);
+        outputExtendedSystem(END_OF_RUN);
         return;
       }
     case SCRIPT_RUN:
       break;
     case SCRIPT_OUTPUT:
-      collection->enqueuePositions(0);
-      collection->enqueueVelocities(0);
-      outputExtendedSystem(-1);
+      enqueueCollections(FILE_OUTPUT);
+//      collection->enqueuePositions(FILE_OUTPUT);
+//      collection->enqueueVelocities(FILE_OUTPUT);
+      outputExtendedSystem(FILE_OUTPUT);
       return;
     }
 
@@ -145,9 +146,9 @@ void Controller::algorithm(int task)
         rebalanceLoad(step);
     }
 
-  if ( task == SCRIPT_END ) {
-    enqueueCollections(0);
-    outputExtendedSystem(-1);
+  if ( task == SCRIPT_END ) { // also if no script
+    enqueueCollections(END_OF_RUN);
+    outputExtendedSystem(END_OF_RUN);
     terminate();
   }
 }
@@ -819,28 +820,28 @@ void Controller::enqueueCollections(int timestep)
 
 void Controller::outputExtendedSystem(int step)
 {
+
+  if ( step >= 0 ) {
+
     // Write out eXtended System Trajectory (XST) file
-    if ( step != -1 && simParams->xstFrequency != -1 &&
-         ! ( step % simParams->xstFrequency ) )
+    if ( (simParams->xstFrequency != -1) &&
+         ((step % simParams->xstFrequency) == 0) )
     {
-      if ( step == simParams->firstTimestep )
+      if ( ! xstFile.rdbuf()->is_open() )
       {
         NAMD_backup_file(simParams->xstFilename);
         xstFile.open(simParams->xstFilename);
+        iout << "OPENING EXTENDED SYSTEM TRAJECTORY FILE\n" << endi;
         xstFile << "# NAMD extended system trajectory file" << endl;
         writeExtendedSystemLabels(xstFile);
       }
       writeExtendedSystemData(step,xstFile);
       xstFile.flush();
-      if ( simParams->xstFrequency != -1 && step == simParams->N )
-      {
-        xstFile.close();
-      }
     }
 
     // Write out eXtended System Configuration (XSC) files
     //  Output a restart file
-    if ( step != -1 && (simParams->restartFrequency != -1) &&
+    if ( (simParams->restartFrequency != -1) &&
          ((step % simParams->restartFrequency) == 0) &&
          (step != simParams->firstTimestep) )
     {
@@ -856,20 +857,31 @@ void Controller::outputExtendedSystem(int step)
       writeExtendedSystemData(step,xscFile);
     }
 
-    //  Output final coordinates
-    if (step == -1)
-    {
-      static char fname[140];
-      strcpy(fname, simParams->outputFilename);
-      strcat(fname, ".xsc");
-      NAMD_backup_file(fname);
-      ofstream xscFile(fname);
-      iout << "WRITING EXTENDED SYSTEM TO OUTPUT FILE AT STEP "
+  }
+
+  //  Output final coordinates
+  if (step == FILE_OUTPUT || step == END_OF_RUN)
+  {
+    static char fname[140];
+    strcpy(fname, simParams->outputFilename);
+    strcat(fname, ".xsc");
+    NAMD_backup_file(fname);
+    ofstream xscFile(fname);
+    iout << "WRITING EXTENDED SYSTEM TO OUTPUT FILE AT STEP "
 		<< simParams->N << "\n" << endi;
-      xscFile << "# NAMD extended system configuration output file" << endl;
-      writeExtendedSystemLabels(xscFile);
-      writeExtendedSystemData(simParams->N,xscFile);
+    xscFile << "# NAMD extended system configuration output file" << endl;
+    writeExtendedSystemLabels(xscFile);
+    writeExtendedSystemData(simParams->N,xscFile);
+  }
+
+  //  Close trajectory file
+  if (step == END_OF_RUN) {
+    if ( xstFile.rdbuf()->is_open() ) {
+      xstFile.close();
+      iout << "CLOSING EXTENDED SYSTEM TRAJECTORY FILE\n" << endi;
     }
+  }
+
 }
 
 void Controller::rebalanceLoad(int timestep)

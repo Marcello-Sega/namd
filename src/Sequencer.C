@@ -75,9 +75,11 @@ void Sequencer::algorithm(void)
       case SCRIPT_RUN:
 	break;
       case SCRIPT_OUTPUT:
-	collection->submitPositions(0,patch->atomIDList,patch->p,
-					patch->lattice,patch->t,2);
-	collection->submitVelocities(0,patch->atomIDList,patch->v);
+	submitCollections(FILE_OUTPUT);
+//	collection->submitPositions(FILE_OUTPUT,
+//		patch->atomIDList,patch->p, patch->lattice,patch->t,2);
+//	collection->submitVelocities(FILE_OUTPUT,
+//		patch->atomIDList,patch->v);
 	continue;
     }
 
@@ -176,7 +178,8 @@ void Sequencer::algorithm(void)
     if (! simParams->tclOn) break;
   }
 
-  submitCollections(0);
+  // only reach here on SCRIPT_END or no script
+  submitCollections(END_OF_RUN);
   terminate();
 }
 
