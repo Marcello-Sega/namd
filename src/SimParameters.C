@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *  $RCSfile: SimParameters.C,v $
- *  $Author: brunner $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1063 $  $Date: 1999/05/11 23:56:51 $
+ *  $Author: jim $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1064 $  $Date: 1999/05/14 18:47:25 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1064  1999/05/14 18:47:25  jim
+ * Split up huge functions into several smaller ones to help compilers.
+ *
  * Revision 1.1063  1999/05/11 23:56:51  brunner
  * Changes for new charm version
  *
@@ -567,20 +570,39 @@
 void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
 {
+
    ParseOptions opts;   //  Object to check consistency of config file
-   int len;    //  String length
-   char tmpstr[257];  //  Temporary string
-   StringList *current; //  Pointer to config option list
-   char loadStrategy[65];//  Load balancing strategy
-   char filename[129];  //  Temporary file name
 
-   // local use only
-   int fmaFrequency;
+   config_parser(opts);
 
-   //****** BEGIN SMD constraints changes 
-   char chDirMethod[65]; // SMD changing direction method
-   //****** END SMD constraints changes 
-                          
+   ///////////////////////////////// check the internal consistancy
+   if (!opts.check_consistancy()) 
+   {
+      NAMD_die("Internal error in configuration file parser");
+   }
+
+   // Now, feed the object with the actual configuration options through the
+   // ParseOptions file and make sure everything is OK
+   if (!opts.set(*config)) 
+   {
+      NAMD_die("ERROR(S) IN THE CONFIGURATION FILE");
+   }
+
+   //// now do more logic stuff that can't be done by the ParseOptions object
+
+   check_config(opts,config,cwd);
+
+   print_config(opts,config,cwd);
+
+}
+
+/************************************************************************/
+/*                                                                      */
+/*      FUNCTION config_parser                                          */
+/*                                                                      */
+/************************************************************************/
+                         
+void SimParameters::config_parser(ParseOptions &opts) {
 
    //  Set all variable to fallback default values.  This is not really
    //  necessary, as we give default values when we set up the ParseOptions
@@ -598,6 +620,18 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    daCutoffDist = 7.5;
    daOnDist = 5.5;
    daOffDist = 6.5;
+
+   config_parser_basic(opts);
+   config_parser_fileio(opts);
+   config_parser_fullelect(opts);
+   config_parser_methods(opts);
+   config_parser_constraints(opts);
+   config_parser_boundary(opts);
+   config_parser_misc(opts);
+
+}
+
+void SimParameters::config_parser_basic(ParseOptions &opts) {
    
    //  So first we set up the ParseOptions objects so that it will check
    //  all of the logical rules that the configuration file must follow.
@@ -740,6 +774,10 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
     &nonbondedFrequency, 1);
    opts.range("nonbondedFreq", POSITIVE);
 
+}
+
+void SimParameters::config_parser_fileio(ParseOptions &opts) {
+   
    /////////////// file I/O
    opts.optional("main", "cwd", "current working directory", PARSE_STRING);
 
@@ -807,6 +845,10 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.optionalB("outputname", "binaryoutput", "Specify use of binary output files ", 
        &binaryOutput, TRUE);
    
+}
+
+void SimParameters::config_parser_fullelect(ParseOptions &opts) {
+   
    /////////// FMA options
 #ifdef DPMTA
    DebugM(1,"DPMTA setup start\n");
@@ -866,6 +908,10 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.require("PME", "PMEGridSizeZ", "PME grid in z dimension",
 	&PMEGridSizeZ);
 
+}
+
+void SimParameters::config_parser_methods(ParseOptions &opts) {
+   
    /////////// Special Dynamics Methods
    opts.optionalB("main", "minimization", "Should minimization be performed?",
       &minimizeOn, FALSE);
@@ -1004,6 +1050,10 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
       "Initial strain rate for pressure control (x y z)",
       &strainRate);
 
+}
+
+void SimParameters::config_parser_constraints(ParseOptions &opts) {
+   
    ////  Fixed Atoms
    opts.optionalB("main", "fixedatoms", "Are there fixed atoms?",
     &fixedAtomsOn, FALSE);
@@ -1161,6 +1211,10 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.require("freeEnergy", "freeEnergyConfig",
      "Configuration file for free energy perturbation", PARSE_MULTIPLES);
 
+}
+
+void SimParameters::config_parser_boundary(ParseOptions &opts) {
+   
    //// Spherical Boundary Conditions
    opts.optionalB("main", "sphericalBC", "Are spherical boundary counditions "
       "active?", &sphericalBCOn, FALSE);
@@ -1237,6 +1291,10 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
                  &eFieldOn, FALSE);
    opts.require("eFieldOn", "eField", "Electric field vector", &eField);
    
+}
+
+void SimParameters::config_parser_misc(ParseOptions &opts) {
+   
    ///////////////  Load balance options
    opts.optional("main", "ldbStrategy", "Load balancing strategy",
      loadStrategy);
@@ -1304,22 +1362,14 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.range("hbOffDist", POSITIVE);
    opts.units("hbOffDist", N_ANGSTROM);
 
+}
 
-   ///////////////////////////////// check the internal consistancy
-   if (!opts.check_consistancy()) 
-   {
-      NAMD_die("Internal error in configuration file parser");
-   }
-
-   // Now, feed the object with the actual configuration options through the
-   // ParseOptions file and make sure everything is OK
-   if (!opts.set(*config)) 
-   {
-      NAMD_die("ERROR(S) IN THE CONFIGURATION FILE");
-   }
-
-   //// now do more logic stuff that can't be done by the ParseOptions object
-
+void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&cwd) {
+   
+   int len;    //  String length
+   char tmpstr[257];  //  Temporary string
+   StringList *current; //  Pointer to config option list
+   char filename[129];  //  Temporary file name
 
    //  Make sure that both a temperature and a velocity PDB were
    //  specified
@@ -2383,6 +2433,12 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
        NAMD_die("Hydrogen bond cutoff distance must be <= pairlist distance");
    }
 
+}
+
+void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&cwd) {
+
+   StringList *current; //  Pointer to config option list
+   char filename[129];  //  Temporary file name
 
    //  Now that we have read everything, print it out so that
    //  the user knows what is going on
@@ -3616,12 +3672,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1063 $  $Date: 1999/05/11 23:56:51 $
+ *  $Revision: 1.1064 $  $Date: 1999/05/14 18:47:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1064  1999/05/14 18:47:25  jim
+ * Split up huge functions into several smaller ones to help compilers.
+ *
  * Revision 1.1063  1999/05/11 23:56:51  brunner
  * Changes for new charm version
  *

@@ -19,6 +19,8 @@
 #include "Vector.h"
 #include "Lattice.h"
 
+class ParseOptions;
+
 //  The class SimParameters is really just a glorified structure used to
 //  maintain the global simulation parameters.  The only functions
 //  associated with the class are used to get the parameters from the
@@ -403,6 +405,31 @@ public:
 					//  Used by the other processors
 					//  to receive the data from the
 					//  master process
+
+private:
+
+	void config_parser(ParseOptions &opts);
+
+	void config_parser_basic(ParseOptions &opts);
+	void config_parser_fileio(ParseOptions &opts);
+	void config_parser_fullelect(ParseOptions &opts);
+	void config_parser_methods(ParseOptions &opts);
+	void config_parser_constraints(ParseOptions &opts);
+	void config_parser_boundary(ParseOptions &opts);
+	void config_parser_misc(ParseOptions &opts);
+
+	void check_config(ParseOptions &opts, ConfigList *config, char *&cwd);
+
+	void print_config(ParseOptions &opts, ConfigList *config, char *&cwd);
+
+	int fmaFrequency;		//  outdated parameter name
+	char loadStrategy[65];		//  Load balancing strategy
+	//****** BEGIN SMD constraints changes
+	char chDirMethod[65];           // SMD changing direction method
+	//****** END SMD constraints changes
+
+
+
 };
 
 #endif
@@ -412,12 +439,15 @@ public:
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1033 $	$Date: 1999/03/17 21:26:35 $
+ *	$Revision: 1.1034 $	$Date: 1999/05/14 18:47:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1034  1999/05/14 18:47:27  jim
+ * Split up huge functions into several smaller ones to help compilers.
+ *
  * Revision 1.1033  1999/03/17 21:26:35  jim
  * Switching internal nomenclature from fmaFrequency to fullElectFrequency.
  *
