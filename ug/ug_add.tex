@@ -1293,7 +1293,9 @@ by Lindahl and Edholm.  The simulation space is partitioned into slabs, and
 the virial due to the interaction between two particles is distributed across 
 the slabs containing the particles as well as the slabs that lie between the
 particles (taking periodic boundary conditions into account).  The diagonal
-components of the virial for each slab are recorded in the \NAMD\ output file.
+components of the pressure tensor for each slab are recorded in the 
+\NAMD\ output file.  The units of pressure are the same as in the regular 
+\NAMD\ pressure output; i.e., bar.
 
 The total virial contains contributions from three components: kinetic energy,
 bonded interactions, and nonbonded interactions.  The kinetic and bonded 
@@ -1308,15 +1310,23 @@ ensemble due to the way the simulation space is partitioned; this constraint
 may be relaxed in future versions.  Periodic boundary conditions must also
 be enabled.
 
+
 \item
 \NAMDCONFWDEF{pressureProfileOn}{compute pressure profile}{{\tt on} or {\tt off}}{{\tt off}}
 {
 When active, NAMD will compute kinetic and bonded contributions to the 
 pressure profile.  Results will be recorded in the \NAMD\ output file
 in lines with the format
-{\tt PRESSUREPROFILE ts Axx Ayy Azz Bxx Byy Bzz ... }, where {\tt ts} is the
-timestep, followed by the three diagonal components of the virial in the first
+{\tt PRESSUREPROFILE: ts Axx Ayy Azz Bxx Byy Bzz ... }, where {\tt ts} is the
+timestep, followed by the three diagonal components of the pressure tensor 
+in the first
 slab (the slab with lowest {\it z}), then the next lowest slab, and so forth.
+NAMD will also output the pressure profile averaged over all the steps since
+the last output.  The format of this line is 
+{\tt PRESSUREPROFILEAVG: ts Axx Ayy Azz ... }; i.e., exactly as for the
+instantaneous pressure.  It is recommended to use the averaged pressure profile
+instead of the instantaneous value as this will give better statistics and
+may prevent artifacts when using multiple timestepping.
 }
 \item
 \NAMDCONFWDEF{pressureProfileSlabs}{Number of slabs in the spatial partition}{Positive integer}{10}{
@@ -1341,3 +1351,34 @@ interface as described in Sec.~\ref{section:tclscripting} to run for
 dynamics.
 }
 \end{itemize}
+
+Here is an example snippet from a \NAMD\ input that can be used to compute
+the nonbonded component of the pressure profile.  It assumes that the 
+coordinates were saved in three dcd files ({\tt pp01.dcd}, {\tt pp02.dcd},
+and {\tt pp03.dcd}) every 500 timesteps.  The {\tt pressureProfileSlabs}
+must be the same as was used for the calculation of the bonded part of
+the pressure.
+\begin{verbatim}
+cutoff		     18.0
+switching	     on
+switchdist	   16.5	
+pairlistdist	 18.5 
+
+pressureProfile	on
+pressureProfileSlabs 60 
+pressureProfileFreq 100 
+pressureProfileNonbonded on
+
+# Assume that coordinates were written to the dcd files every 500 timesteps.
+set ts 500
+foreach dcd { pp01.dcd pp02.dcd pp03.dcd } {
+  coorfile open dcd $dcd
+  while { [coorfile read] != -1 } {
+    firstTimestep $ts 
+    run 0 
+    incr ts 500
+  }
+  coorfile close
+}
+\end{verbatim}
+
