@@ -40,12 +40,8 @@
 #include "ComputeFullDirect.h"
 #include "ComputeGlobal.h"
 #include "ComputeGlobalMsgs.h"
-#ifdef DPMTA
 #include "ComputeDPMTA.h"
-#endif
-#ifdef DPME
 #include "ComputeDPME.h"
-#endif
 #include "ComputeDPMEMsgs.h"
 #include "ComputeSphericalBC.h"
 #include "ComputeCylindricalBC.h"
@@ -411,12 +407,15 @@ void ComputeMgr:: recvComputeDPMEResults(ComputeDPMEResultsMsg *msg)
  *
  *	$RCSfile: ComputeMgr.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1022 $	$Date: 1998/04/10 04:15:59 $
+ *	$Revision: 1.1023 $	$Date: 1998/04/15 22:21:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.C,v $
+ * Revision 1.1023  1998/04/15 22:21:36  jim
+ * Make depend should give same result regardless of DPMTA or DPME.
+ *
  * Revision 1.1022  1998/04/10 04:15:59  jim
  * Finished incorporating DPME.
  *
