@@ -9,7 +9,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1021 1998/01/13 23:34:44 sergei Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1022 1998/01/13 23:39:56 sergei Exp $";
 
 #include <unistd.h>
 #include "ckdefs.h"
@@ -266,7 +266,7 @@ void Node::namdOneRecv() {
   simParameters = new SimParameters;
   parameters = new Parameters;
   molecule = new Molecule(simParameters);
-  smdData = new SMDData;
+  smdData = new SMDData(simParameters);
 
   DebugM(4, "Getting SimParameters\n");
   conv_msg = CpvAccess(comm)->newInputStream(0, SIMPARAMSTAG);
@@ -467,14 +467,14 @@ void Node::recvSMDData(SMDDataMsg *msg) {
  *
  *	$RCSfile: Node.C,v $
  *	$Author: sergei $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1021 $	$Date: 1998/01/13 23:34:44 $
+ *	$Revision: 1.1022 $	$Date: 1998/01/13 23:39:56 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
- * Revision 1.1021  1998/01/13 23:34:44  sergei
- * Moved smdData initialization to take place together with Molecule.
+ * Revision 1.1022  1998/01/13 23:39:56  sergei
+ * *** empty log message ***
  *
  * Revision 1.1020  1998/01/05 20:33:01  sergei
  * added new SMDData() in phase 2 of startup;
