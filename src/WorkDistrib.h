@@ -22,6 +22,8 @@
 #include "NamdTypes.h"
 #include "BOCgroup.h"
 
+#include "Debug.h"
+
 class Node;
 class DoneMsg;
 class LocalWorkMsg;
@@ -81,13 +83,15 @@ public:
     char *patchMapData = (char*)patchMap->pack(&patchMapSize);
     char *computeMapData = (char*)computeMap->pack(&computeMapSize);
     *length = sizeof(int) + patchMapSize + sizeof(int) + computeMapSize;
+    DebugM(3,iFILE << "Packing patchMapSize=" << patchMapSize <<
+	" computeMapSize=" << computeMapSize << " length=" << *length << "\n");
     char *buffer = (char*)new_packbuffer(this,*length);
     char *b = buffer;
     *((int*)b) = patchMapSize;
     b += sizeof(int);
     memcpy(b,patchMapData,patchMapSize);
     delete [] patchMapData;
-    b += computeMapSize;
+    b += patchMapSize;
     *((int*)b) = computeMapSize;
     b += sizeof(int);
     memcpy(b,computeMapData,computeMapSize);
@@ -106,6 +110,8 @@ public:
     }
     buffer += patchMapSize;
     int computeMapSize = *((int*)buffer);
+    DebugM(3,iFILE << "Unpacking patchMapSize=" << patchMapSize <<
+	" computeMapSize=" << computeMapSize << "\n");
     buffer += sizeof(int);
     computeMap = ComputeMap::Object();
     if ( ! ( computeMap->computeData ) )
@@ -122,13 +128,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.15 $	$Date: 1996/12/13 08:53:49 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.16 $	$Date: 1996/12/13 22:58:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.16  1996/12/13 22:58:01  nealk
+ * Found pack/unpack bug and corrected it.  (wrong offset!)
+ *
  * Revision 1.15  1996/12/13 08:53:49  jim
  * now moves patches
  *

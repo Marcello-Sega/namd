@@ -93,7 +93,8 @@ void * PatchMap::pack (int *length)
   PACK(int,xDim); PACK(int,yDim); PACK(int,zDim);
   for(i=0;i<nPatches;++i)
   {
-    DebugM(3,"Patch " << i << " is on node " << patchData[i].node << endl);
+    DebugM(3,"Packing Patch " << i << " is on node " << patchData[i].node << 
+	" with " << patchData[i].numCidsAllocated << " allocated.\n");
     PACK(PatchData,patchData[i]);
     for(j=0;j<patchData[i].numCidsAllocated;++j)
       PACK(ComputeID,patchData[i].cids[j]);
@@ -119,7 +120,8 @@ void PatchMap::unpack (void *in)
   for(i=0;i<nPatches;++i)
   {
     UNPACK(PatchData,patchData[i]);
-    DebugM(3,"Patch " << i << " is on node " << patchData[i].node << endl);
+    DebugM(3,"Unpacking Patch " << i << " is on node " << patchData[i].node << 
+	" with " << patchData[i].numCidsAllocated << " allocated.\n");
     patchData[i].cids = new ComputeID[patchData[i].numCidsAllocated];
     for(j=0;j<patchData[i].numCidsAllocated;++j)
       UNPACK(ComputeID,patchData[i].cids[j]);
@@ -436,13 +438,16 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.11 $	$Date: 1996/12/13 19:39:55 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.12 $	$Date: 1996/12/13 22:58:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.12  1996/12/13 22:58:01  nealk
+ * Found pack/unpack bug and corrected it.  (wrong offset!)
+ *
  * Revision 1.11  1996/12/13 19:39:55  jim
  * added debugging, looking for error in PatchMap sending
  *
