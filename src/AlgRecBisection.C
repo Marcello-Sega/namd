@@ -295,7 +295,7 @@ void AlgRecBisection::strategy()
   delete [] partitions;
 
   // use refinement
-  for (int i=0; i<numComputes; i++)
+  for (i=0; i<numComputes; i++)
     assign((computeInfo *) &(computes[i]),
 	   (processorInfo *) &(processors[computes[i].processor]));
 	 
