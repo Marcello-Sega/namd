@@ -253,14 +253,14 @@ NOEXCL
       f_j -= f_vdw;
 )
 
-      reduction[electEnergyIndex] += electEnergy;
-      reduction[vdwEnergyIndex] += vdwEnergy;
-
 NOEXCL
 (
     }
   }
 )
+
+  reduction[electEnergyIndex] += electEnergy;
+  reduction[vdwEnergyIndex] += vdwEnergy;
 
   DebugM(3, "Nonbonded computation results: electEnergy = " 
     << electEnergy << " vdwEnergy = " << vdwEnergy << endl);
@@ -272,12 +272,16 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1997/01/16 19:59:56 $
+ *	$Revision: 1.11 $	$Date: 1997/01/17 19:27:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.11  1997/01/17 19:27:00  jim
+ * Now energies are reported correctly, electrostatic energy agrees with
+ * namd 1.X but Lennard-Jones is still off.
+ *
  * Revision 1.10  1997/01/16 19:59:56  jim
  * Added reduction calls to ComputeNonbondedSelf and ...Pair.
  * Also moved some code from ...Excl to ...Util.
