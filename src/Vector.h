@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: Vector.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/06 20:38:38 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1996/11/04 19:44:42 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,8 +24,29 @@
  * REVISION HISTORY:
  *
  * $Log: Vector.h,v $
- * Revision 1.1  1996/08/06 20:38:38  ari
- * Initial revision
+ * Revision 1.2  1996/11/04 19:44:42  nealk
+ * Replaced old vector.h with new one.
+ *
+ * Revision 1.15  1996/10/17 15:17:11  nealk
+ * Removed a negation from all cross pruoduct functions... :-)
+ *
+ * Revision 1.14  1996/10/14 14:02:01  nealk
+ * Added negation "-" to vector class.
+ *
+ * Revision 1.13  1996/10/12 00:11:00  brunner
+ * Made several functions const, since they don't modify the object
+ *
+ * Revision 1.12  1996/09/25 19:20:51  nealk
+ * Added "inline" and it seems to make a small difference.
+ *
+ * Revision 1.11  1996/09/24 14:54:33  nealk
+ * Added cross with scalar since this is a very common use for cross products.
+ *
+ * Revision 1.10  1996/09/17 16:40:19  nealk
+ * Modified +=, *=, and -= to not return a value (void).  This makes them
+ * as efficient as explicit declarations.  Note: they cannot be used to
+ * return values (but the return isn't used in any of the code anyway).
+ * Also added /=.
  *
  * Revision 1.9  1996/04/27 20:42:24  billh
  * Added insertion  operator for Vector, and changed how Vector.h included.
@@ -70,15 +91,15 @@ class Vector {
    public:
      BigReal x,y,z;
      
-     Vector( void) {         // default is to create a 0 vector
+     inline Vector( void) {         // default is to create a 0 vector
        x = y = z = 0.0;
      }
-     Vector( const Vector &v2) { // Vector x = another_vector
+     inline Vector( const Vector &v2) { // Vector x = another_vector
        x = v2.x;
        y = v2.y;
        z = v2.z;
      }
-     Vector( BigReal newx, BigReal newy, BigReal newz) {
+     inline Vector( BigReal newx, BigReal newy, BigReal newz) {
        x = newx;
        y = newy;
        z = newz;
@@ -86,7 +107,7 @@ class Vector {
      ~Vector( void) {
      }
 
-     BigReal &operator[](int i) {
+     inline BigReal &operator[](int i) {
        return i==0 ? x
              :i==1 ? y
              :i==2 ? z
@@ -95,7 +116,7 @@ class Vector {
      }
 
      //  v1 = v2;
-     Vector& operator=(const Vector &v2) {
+     inline Vector& operator=(const Vector &v2) {
        x = v2.x;
        y = v2.y;
        z = v2.z;
@@ -103,7 +124,7 @@ class Vector {
      }
 
      //  v1 = const;
-     Vector& operator=(const BigReal v2) {
+     inline Vector& operator=(const BigReal &v2) {
        x = v2;
        y = v2;
        z = v2;
@@ -111,86 +132,113 @@ class Vector {
      }
 
      //  v1 += v2;
-     Vector& operator+=(const Vector &v2) {
+     inline void operator+=(const Vector &v2) {
        x += v2.x;
        y += v2.y;
        z += v2.z;
-       return *this;
      }
 
      // v1 -= v2;
-     Vector& operator-=(const Vector &v2) {
+     inline void operator-=(const Vector &v2) {
        x -= v2.x;
        y -= v2.y;
        z -= v2.z;
-       return *this;
      }
 
      // v1 *= const
-     Vector& operator*=(const BigReal v2) {
+     inline void operator*=(const BigReal &v2) {
        x *= v2;
        y *= v2;
        z *= v2;
-       return *this;
      }
 
-     friend int operator == (const Vector &v1, const Vector &v2) {
+     // v1 /= const
+     inline void operator/=(const BigReal& v2) {
+       x /= v2;
+       y /= v2;
+       z /= v2;
+     }
+
+     inline friend int operator == (const Vector& v1, const Vector& v2) {
        return v1.x == v2.x && v1.y == v2.y && v1.z == v2.z;
      }
-     friend int operator != (const Vector &v1, const Vector &v2) {
-       return !(v1.x == v2.x && v1.y == v2.y && v1.z == v2.z);
+     inline friend int operator != (const Vector& v1, const Vector& v2) {
+       // return !(v1.x == v2.x && v1.y == v2.y && v1.z == v2.z);
+       return v1.x != v2.x || v1.y != v2.y || v1.z != v2.z;
      }
 
      // addition of two vectors
-     friend Vector operator+(const Vector &v1, const Vector &v2) {
+     inline friend Vector operator+(const Vector& v1, const Vector& v2) {
        return Vector( v1.x+v2.x, v1.y+v2.y, v1.z+v2.z);
      }
 
+     // negation
+     inline friend Vector operator-(const Vector &v1) {
+       return Vector( -v1.x, -v1.y, -v1.z);
+     }
+
      // subtraction
-     friend Vector operator-(const Vector &v1, const Vector &v2) {
+     inline friend Vector operator-(const Vector &v1, const Vector &v2) {
        return Vector( v1.x-v2.x, v1.y-v2.y, v1.z-v2.z);
      }
      // inner ("dot") product
-     friend BigReal operator*(const Vector &v1, const Vector &v2) {
+     inline friend BigReal operator*(const Vector &v1, const Vector &v2) {
        return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
      }
      // scalar product
-     friend Vector operator*(const BigReal &f, const Vector &v1) {
+     inline friend Vector operator*(const BigReal &f, const Vector &v1) {
        return Vector(f*v1.x, f*v1.y, f*v1.z);
      }
      // scalar product
-     friend Vector operator*(const Vector &v1, const BigReal &f) {
+     inline friend Vector operator*(const Vector &v1, const BigReal &f) {
        return Vector(f*v1.x, f*v1.y, f*v1.z);
      }
      // division by a scalar
-     friend Vector operator/(const Vector &v1, const BigReal &f) {
+     inline friend Vector operator/(const Vector &v1, const BigReal &f) {
 //       if (!f)
 //         NAMD_die("Division by 0 on a vector operation.");
        return Vector(v1.x/f, v1.y/f, v1.z/f);
      }
      
      // return the norm
-     BigReal length(void) {
+     inline BigReal length(void) const {
        return sqrt(x*x+y*y+z*z);
      }
      
-     BigReal length2(void) {
+     inline BigReal length2(void) const {
        return (x*x + y*y + z*z);
      }
 
      // return the unit vector in the same direction
-     Vector unit(void) {
+     inline Vector unit(void) const {
        return Vector(x, y, z)/length();
      }
      
      
      // one cross product  v3 = cross(v1, v2)
-     friend Vector cross(const Vector &v1, const Vector &v2) {
+     inline friend Vector cross(const Vector &v1, const Vector &v2) {
        return Vector( v1.y*v2.z-v2.y*v1.z,
-                     -v1.x*v2.z+v2.x*v1.z,
+                     // -v1.x*v2.z+v2.x*v1.z,
+                      v2.x*v1.z-v1.x*v2.z,
                       v1.x*v2.y-v2.x*v1.y  );
      }
-     
+
+     // multiplying a cross product by a scalar is very common
+     // one cross product  v3 = k*cross(v1, v2)
+     inline friend Vector cross(const Real &k, const Vector &v1, const Vector &v2) {
+       return Vector( k*(v1.y*v2.z-v2.y*v1.z),
+                      // k*(-v1.x*v2.z+v2.x*v1.z),
+                      k*(v2.x*v1.z-v1.x*v2.z),
+                      k*(v1.x*v2.y-v2.x*v1.y) );
+     }
+
+     inline friend Vector cross(const BigReal &k, const Vector &v1, const Vector &v2) {
+       return Vector( k*(v1.y*v2.z-v2.y*v1.z),
+                      // k*(-v1.x*v2.z+v2.x*v1.z),
+                      k*(v2.x*v1.z-v1.x*v2.z),
+                      k*(v1.x*v2.y-v2.x*v1.y) );
+     }
+
      // print out
      friend ostream& operator<<(ostream& strm, const Vector &v1) {
        strm << "( "<< v1.x << ", " << v1.y << ", " << v1.z << ')';
@@ -225,7 +273,8 @@ class Vector {
      // A = A x B  -- why do you want this function, anyway?
      void cross(const Vector &v2) {
        BigReal xx =  y*v2.z-v2.y*z;
-       BigReal yy = -x*v2.z+v2.x*z;
+       // BigReal yy = -x*v2.z+v2.x*z;
+       BigReal yy = v2.x*z-x*v2.z;
        z =  x*v2.y-v2.x*y;
        y=yy;
        x=xx;
