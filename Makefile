@@ -139,10 +139,13 @@ TEMPLATES = \
 	$(SRCDIR)/PositionBox.C \
 	$(SRCDIR)/PositionOwnerBox.C \
 	$(SRCDIR)/Templates/Box.C \
+	$(SRCDIR)/Templates/ObjectArena.C \
 	$(SRCDIR)/Templates/OwnerBox.C \
 	$(SRCDIR)/Templates/ResizeArray.C \
+	$(SRCDIR)/Templates/ResizeArrayRaw.C \
 	$(SRCDIR)/Templates/SortableResizeArray.C \
 	$(SRCDIR)/Templates/SortedArray.C \
+	$(SRCDIR)/Templates/UniqueSetRaw.C \
 	$(SRCDIR)/Templates/UniqueSortedArray.C
 
 namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES) $(LIBS)
