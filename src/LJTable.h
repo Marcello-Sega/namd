@@ -16,6 +16,7 @@ class LJTable
 public:
   struct TableEntry
   {
+    BigReal exclcut2;
     BigReal A;
     BigReal B;
   };
@@ -29,6 +30,7 @@ public:
   inline void get_LJ_params(const int index, BigReal *A, BigReal *B) const;
   inline TableEntry *table_val(const int gi, const int gj, 
 			       const int scaled14) const;
+  inline TableEntry *table_val(const int gi, const int gj) const;
 
 protected:
   LJTable(void);
@@ -79,6 +81,19 @@ LJTable::table_val(const int i, const int j, const int scaled14) const
 }
 
 //----------------------------------------------------------------------
+inline LJTable::TableEntry *
+LJTable::table_val(const int i, const int j) const
+{
+#if NAMD_DEBUG
+  if ((i<0) || (i>=table_dim) || (j<0) || (j>table_dim))
+  {
+    NAMD_die("Unexpected LJ table value requested in LJTable::table_val()");
+  }
+#endif
+  return table + i * table_dim + j;
+}
+
+//----------------------------------------------------------------------
 inline void 
 LJTable::get_LJ_params(const int index, BigReal *A, BigReal *B) const
 {
@@ -95,12 +110,15 @@ return;
  *
  *	$RCSfile: LJTable.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/10/31 22:19:51 $
+ *	$Revision: 1.5 $	$Date: 1996/11/05 04:59:56 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LJTable.h,v $
+ * Revision 1.5  1996/11/05 04:59:56  jim
+ * Added exclcut2 to table.
+ *
  * Revision 1.4  1996/10/31 22:19:51  jim
  * first incarnation in NAMD 2.0, added singleton pattern
  *

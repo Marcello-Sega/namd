@@ -9,7 +9,7 @@
 /*
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/LJTable.C,v 1.2 1996/10/31 22:19:51 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/LJTable.C,v 1.3 1996/11/05 04:59:56 jim Exp $";
 #include "LJTable.h"
 #include "Node.h"
 #include "Parameters.h"
@@ -62,6 +62,7 @@ void LJTable::compute_vdw_params(int i, int j,
   Parameters *params = Node::Object()->parameters;
 
   Real A, B, A14, B14;
+  BigReal sigma_max;
   //  We need the A and B parameters for the Van der Waals.  These can
   //  be explicitly be specified for this pair or calculated from the
   //  sigma and epsilon values for the two atom types
@@ -71,6 +72,11 @@ void LJTable::compute_vdw_params(int i, int j,
     cur->B = B;
     cur_scaled->A = A14;
     cur_scaled->B = B14;
+
+    BigReal sigma_ij = pow(A/B,1./6.);
+    BigReal sigma_ij14 = pow(A14/B14,1./6.);
+
+    sigma_max = ( sigma_ij > sigma_ij14 ? sigma_ij : sigma_ij14 );
   }
   else
   {
@@ -85,13 +91,13 @@ void LJTable::compute_vdw_params(int i, int j,
     params->get_vdw_params(&sigma_j, &epsilon_j, &sigma_j14, 
 				       &epsilon_j14,j);
   	
-	    
     BigReal sigma_ij = 0.5 * (sigma_i+sigma_j);
     BigReal epsilon_ij = sqrt(epsilon_i*epsilon_j);
     BigReal sigma_ij14 = 0.5 * (sigma_i14+sigma_j14);
     BigReal epsilon_ij14 = sqrt(epsilon_i14*epsilon_j14);
 
-    
+    sigma_max = ( sigma_ij > sigma_ij14 ? sigma_ij : sigma_ij14 );
+
     //  Calculate sigma^6
     sigma_ij *= sigma_ij*sigma_ij;
     sigma_ij *= sigma_ij;
@@ -104,6 +110,9 @@ void LJTable::compute_vdw_params(int i, int j,
     cur_scaled->B = 4.0 * sigma_ij14 * epsilon_ij14;
     cur_scaled->A = cur_scaled->B * sigma_ij14;
   }
+  //  Calculate exclcut2
+  cur_scaled->exclcut2 = cur->exclcut2 = 0.64 * sigma_max * sigma_max;
+
 }
 
 /***************************************************************************
@@ -111,12 +120,15 @@ void LJTable::compute_vdw_params(int i, int j,
  *
  *	$RCSfile: LJTable.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/10/31 22:19:51 $
+ *	$Revision: 1.3 $	$Date: 1996/11/05 04:59:56 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LJTable.C,v $
+ * Revision 1.3  1996/11/05 04:59:56  jim
+ * Added exclcut2 to table.
+ *
  * Revision 1.2  1996/10/31 22:19:51  jim
  * first incarnation in NAMD 2.0, added singleton pattern
  *
