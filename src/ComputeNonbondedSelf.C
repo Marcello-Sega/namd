@@ -35,9 +35,8 @@ ComputeNonbondedSelf::~ComputeNonbondedSelf()
 }
 
 
-void ComputeNonbondedSelf::doForce(Position* p,
-                               Results* r,
-                               AtomProperties* a)
+void ComputeNonbondedSelf::doForce(CompAtom* p,
+                               Results* r)
 {
   // Inform load balancer. 
   // I assume no threads will suspend until endWork is called
@@ -57,8 +56,6 @@ void ComputeNonbondedSelf::doForce(Position* p,
     params.p[1] = p;
     params.ff[0] = r->f[Results::nbond];
     params.ff[1] = r->f[Results::nbond];
-    params.a[0] = a;
-    params.a[1] = a;
     params.numAtoms[0] = numAtoms;
     params.numAtoms[1] = numAtoms;
     params.reduction = reductionData;
@@ -73,7 +70,7 @@ void ComputeNonbondedSelf::doForce(Position* p,
       params.fullf[1] = r->f[Results::slow];
       if ( patch->flags.doMolly ) {
         calcSelf(&params);
-        Position *p_avg = avgPositionBox->open();
+        CompAtom *p_avg = avgPositionBox->open();
         params.p[0] = p_avg;
         params.p[1] = p_avg;
         calcSlowSelf(&params);

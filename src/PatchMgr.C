@@ -62,10 +62,9 @@ PatchMgr::~PatchMgr()
 }
 
 
-void PatchMgr::createHomePatch(PatchID pid, AtomIDList aid, 
-	TransformList t, PositionList p, VelocityList v) 
+void PatchMgr::createHomePatch(PatchID pid, FullAtomList a) 
 {
-    HomePatch *patch = new HomePatch(pid, aid, t, p, v);
+    HomePatch *patch = new HomePatch(pid, a);
     homePatches.load(HomePatchElem(pid, patch));
     patchMap->registerPatch(pid, patch);
 }
@@ -91,8 +90,7 @@ void PatchMgr::sendMovePatches()
       HomePatch *p = homePatch(m->pid);
       patchMap->unregisterPatch(m->pid, p);
 
-      MovePatchesMsg *msg = new 
-	MovePatchesMsg(m->pid, p->atomIDList, p->t, p->p, p->v);
+      MovePatchesMsg *msg = new MovePatchesMsg(m->pid, p->atom);
 
       // Sending to PatchMgr::recvMovePatches on remote node
       CProxy_PatchMgr cp(thisgroup);
@@ -109,7 +107,7 @@ void PatchMgr::sendMovePatches()
 
 void PatchMgr::recvMovePatches(MovePatchesMsg *msg) {
     // Make a new HomePatch
-    createHomePatch(msg->pid, msg->aid, msg->t, msg->p, msg->v);
+    createHomePatch(msg->pid, msg->atom);
     delete msg;
 
     // Tell sending PatchMgr we received MovePatchMsg
@@ -200,8 +198,8 @@ void PatchMgr::moveAtom(MoveAtomMsg *msg) {
   if ( lid.pid != notUsed ) {
     HomePatch *hp = patchMap->homePatch(lid.pid);
     if ( hp ) {
-      if ( msg->moveto ) { hp->p[lid.index] = msg->coord; }
-      else { hp->p[lid.index] += msg->coord; }
+      if ( msg->moveto ) { hp->atom[lid.index].position = msg->coord; }
+      else { hp->atom[lid.index].position += msg->coord; }
     }
   }
   delete msg;
@@ -211,10 +209,7 @@ void PatchMgr::moveAtom(MoveAtomMsg *msg) {
 PACK_MSG(MovePatchesMsg,
   PACK(fromNodeID);
   PACK(pid);
-  PACK_RESIZE(aid);
-  PACK_RESIZE(t);
-  PACK_RESIZE(p);
-  PACK_RESIZE(v);
+  PACK_RESIZE(atom);
 )
 
 

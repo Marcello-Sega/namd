@@ -32,10 +32,16 @@ PatchMap *Compute::patchMap=0;
 
 int Compute::totalComputes = 0;
 
-Compute::Compute(ComputeID c) : basePriority(DEFPRIO), cid(c) { 
+Compute::Compute(ComputeID c) : basePriority(DEFPRIO), cid(c),
+	localWorkMsg(new (sizeof(int)*8) LocalWorkMsg) { 
   totalComputes++;
   doAtomUpdate = false;
   computeType = ComputeMap::Object()->type(c);
+}
+
+Compute::~Compute() {
+  delete localWorkMsg;
+  totalComputes--;
 }
 
 void Compute::enqueueWork() {

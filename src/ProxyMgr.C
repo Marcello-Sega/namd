@@ -40,7 +40,6 @@ PACK_MSG(ProxyDataMsg,
 PACK_MSG(ProxyAllMsg,
   PACK(patch);
   PACK(flags);
-  PACK_RESIZE(atomIDList);
   PACK_RESIZE(positionList);
   if (packmsg_msg->flags.doMolly) PACK_RESIZE(avgPositionList);
 )

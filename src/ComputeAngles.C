@@ -57,9 +57,9 @@ void AngleElem::computeForce(BigReal *reduction)
   DebugM(3, "::computeForce() localIndex = " << localIndex[0] << " "
                << localIndex[1] << " " << localIndex[2] << endl);
 
-  const Position & pos1 = p[0]->x[localIndex[0]];
-  const Position & pos2 = p[1]->x[localIndex[1]];
-  const Position & pos3 = p[2]->x[localIndex[2]];
+  const Position & pos1 = p[0]->x[localIndex[0]].position;
+  const Position & pos2 = p[1]->x[localIndex[1]].position;
+  const Position & pos3 = p[2]->x[localIndex[2]].position;
   Force force1(0,0,0);
   Force force2(0,0,0);
   Force force3(0,0,0);

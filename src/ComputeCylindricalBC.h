@@ -33,7 +33,7 @@ public:
 	ComputeCylindricalBC(ComputeID c, PatchID pid); 	//  Constructor
 	virtual ~ComputeCylindricalBC();			//  Destructor
 
-	virtual void doForce(Position* p, Results* r, AtomProperties* a);
+	virtual void doForce(CompAtom* p, Results* r);
 
 	SubmitReduction *reduction;
 

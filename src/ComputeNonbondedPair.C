@@ -53,16 +53,14 @@ int ComputeNonbondedPair::noWork() {
     int i;
     for ( i = 0; i < reductionDataSize; ++i ) reductionData[i] = 0;
 
-    Position* p[2];
-    Position* p_avg[2];
+    CompAtom* p[2];
+    CompAtom* p_avg[2];
     Results* r[2];
-    AtomProperties* a[2];
 
     // Open up positionBox, forceBox, and atomBox
     for (i=0; i<2; i++) {
       p[i] = positionBox[i]->open();
       r[i] = forceBox[i]->open();
-      a[i] = atomBox[i]->open();
       if ( patch[0]->flags.doMolly ) p_avg[i] = avgPositionBox[i]->open();
     }
 
@@ -70,7 +68,6 @@ int ComputeNonbondedPair::noWork() {
     for (i=0; i<2; i++) {
       positionBox[i]->close(&p[i]);
       forceBox[i]->close(&r[i]);
-      atomBox[i]->close(&a[i]);
       if ( patch[0]->flags.doMolly ) avgPositionBox[i]->close(&p_avg[i]);
     }
 
@@ -85,9 +82,8 @@ int ComputeNonbondedPair::noWork() {
 }
 
 
-void ComputeNonbondedPair::doForce(Position* p[2],
-                               Results* r[2],
-                               AtomProperties* a[2])
+void ComputeNonbondedPair::doForce(CompAtom* p[2],
+                               Results* r[2])
 {
   // Inform load balancer. 
   // I assume no threads will suspend until endWork is called
@@ -112,8 +108,6 @@ void ComputeNonbondedPair::doForce(Position* p[2],
       params.p[1] = p[0];
       params.ff[0] = r[1]->f[Results::nbond];
       params.ff[1] = r[0]->f[Results::nbond];
-      params.a[0] = a[1];
-      params.a[1] = a[0];
       params.numAtoms[0] = numAtoms[1];
       params.numAtoms[1] = numAtoms[0];
       DebugM(3, "NUMATOMSxNUMATOMS = " << numAtoms[0]*numAtoms[1] << "\n" );
@@ -123,7 +117,7 @@ void ComputeNonbondedPair::doForce(Position* p[2],
 	params.fullf[1] = r[0]->f[Results::slow];
 	if ( patch[0]->flags.doMolly ) {
           calcPair(&params);
-	  Position *p_avg[2];
+	  CompAtom *p_avg[2];
 	  p_avg[0] = avgPositionBox[0]->open();
 	  p_avg[1] = avgPositionBox[1]->open();
 	  params.p[0] = p_avg[1];
@@ -142,8 +136,6 @@ void ComputeNonbondedPair::doForce(Position* p[2],
     {
       params.p[0] = p[0];
       params.p[1] = p[1];
-      params.a[0] = a[0];
-      params.a[1] = a[1];
       params.numAtoms[0] = numAtoms[0];
       params.numAtoms[1] = numAtoms[1];
       params.ff[0] = r[0]->f[Results::nbond];
@@ -154,7 +146,7 @@ void ComputeNonbondedPair::doForce(Position* p[2],
         params.fullf[1] = r[1]->f[Results::slow];
 	if ( patch[0]->flags.doMolly ) {
           calcPair(&params);
-	  Position *p_avg[2];
+	  CompAtom *p_avg[2];
 	  p_avg[0] = avgPositionBox[0]->open();
 	  p_avg[1] = avgPositionBox[1]->open();
 	  params.p[0] = p_avg[0];

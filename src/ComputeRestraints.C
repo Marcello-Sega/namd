@@ -75,7 +75,7 @@ ComputeRestraints::~ComputeRestraints()
 /*									*/
 /************************************************************************/
 
-void ComputeRestraints::doForce(Position* p, Results* res, AtomProperties* a)
+void ComputeRestraints::doForce(CompAtom* p, Results* res)
 
 {
 	Molecule *molecule = Node::Object()->molecule;
@@ -107,9 +107,9 @@ void ComputeRestraints::doForce(Position* p, Results* res, AtomProperties* a)
 	  
 	for (int localID=0; localID<numAtoms; ++localID)
 	{
-	  if (molecule->is_atom_constrained(a[localID].id))
+	  if (molecule->is_atom_constrained(p[localID].id))
 	  {
-	    molecule->get_cons_params(k, refPos, a[localID].id);
+	    molecule->get_cons_params(k, refPos, p[localID].id);
 
 	    k *= scaling;
 
@@ -124,7 +124,7 @@ void ComputeRestraints::doForce(Position* p, Results* res, AtomProperties* a)
 
 	    // END moving and rotating constraint changes *******
 
-	    Rij = patch->lattice.delta(refPos,p[localID]);
+	    Rij = patch->lattice.delta(refPos,p[localID].position);
 
 
 	    //****** BEGIN selective restraints (X,Y,Z) changes 

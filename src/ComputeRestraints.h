@@ -36,7 +36,7 @@ public:
 	ComputeRestraints(ComputeID c, PatchID pid); 	//  Constructor
 	virtual ~ComputeRestraints();			//  Destructor
 
-	virtual void doForce(Position* p, Results* r, AtomProperties* a);
+	virtual void doForce(CompAtom* p, Results* r);
 
 	SubmitReduction *reduction;
 

@@ -170,10 +170,7 @@ void WorkDistrib::createHomePatches(void)
     numDegFreedom -= 3;
   }
 
-  AtomIDList *atomIDs = new AtomIDList[numPatches];
-  TransformList *atomTransforms = new TransformList[numPatches];
-  PositionList *atomPositions = new PositionList[numPatches];
-  VelocityList *atomVelocities = new VelocityList[numPatches];
+  FullAtomList *atoms = new FullAtomList[numPatches];
 
   const Lattice lattice = params->lattice;
 
@@ -194,9 +191,11 @@ void WorkDistrib::createHomePatches(void)
       if (molecule->hydrogenGroup[i].isGP)
 	pid = patchMap->assignToPatch(positions[aid],lattice);
       // else: don't change pid
-      atomIDs[pid].add(aid);
-      atomPositions[pid].add(positions[aid]);
-      atomVelocities[pid].add(velocities[aid]);
+      FullAtom a;
+      a.id = aid;
+      a.position = positions[aid];
+      a.velocity = velocities[aid];
+      atoms[pid].add(a);
       }
     }
   else
@@ -209,9 +208,11 @@ void WorkDistrib::createHomePatches(void)
 	DebugM(3,"Assigned " << i << " atoms to patches so far.\n");
 	}
       int pid = patchMap->assignToPatch(positions[i],lattice);
-      atomIDs[pid].add(i);
-      atomPositions[pid].add(positions[i]);
-      atomVelocities[pid].add(velocities[i]);
+      FullAtom a;
+      a.id = i;
+      a.position = positions[i];
+      a.velocity = velocities[i];
+      atoms[pid].add(a);
       }
     }
 
@@ -229,21 +230,48 @@ void WorkDistrib::createHomePatches(void)
 			  0.5*(patchMap->min_b(i)+patchMap->max_b(i)),
 			  0.5*(patchMap->min_c(i)+patchMap->max_c(i)));
 
-    atomTransforms[i].resize(atomIDs[i].size());
-
-    for(int j=0; j < atomIDs[i].size(); j++)
+    int n = atoms[i].size();
+    FullAtom *a = atoms[i].begin();
+    int j;
+    for(j=0; j < n; j++)
     {
-      atomPositions[i][j] = lattice.nearest(
-		atomPositions[i][j], center, &(atomTransforms[i][j]));
+      int aid = a[j].id;
+      a[j].position = lattice.nearest(
+		a[j].position, center, &(a[j].transform));
+      a[j].mass = molecule->atommass(aid);
+      a[j].charge = molecule->atomcharge(aid);
+      if (params->splitPatch == SPLIT_PATCH_HYDROGEN) {
+        if ( molecule->is_hydrogenGroupParent(aid) ) {
+          a[j].hydrogenGroupSize = molecule->get_groupSize(aid);
+        } else {
+          a[j].hydrogenGroupSize = 0;
+        }
+      } else {
+        a[j].hydrogenGroupSize = 1;
+      }
+      a[j].nonbondedGroupSize = a[j].hydrogenGroupSize;
+      a[j].atomFixed = molecule->is_atom_fixed(aid) ? 1 : 0;
     }
 
-    patchMgr->createHomePatch(i,atomIDs[i],atomTransforms[i],
-				atomPositions[i],atomVelocities[i]);
+    int size, allfixed, k;
+    for(j=0; j < n; j+=size) {
+      size = a[j].hydrogenGroupSize;
+      if ( ! size ) {
+        NAMD_bug("Mother atom with hydrogenGroupSize of 0!");
+      }
+      allfixed = 1;
+      for ( k = 0; k < size; ++k ) {
+        allfixed = ( allfixed && (a[j+k].atomFixed) );
+      }
+      for ( k = 0; k < size; ++k ) {
+        a[j+k].groupFixed = allfixed ? 1 : 0;
+      }
+    }
+
+    patchMgr->createHomePatch(i,atoms[i]);
   }
 
-  delete [] atomIDs;
-  delete [] atomPositions;
-  delete [] atomVelocities;
+  delete [] atoms;
 }
 
 void WorkDistrib::distributeHomePatches() {
@@ -826,8 +854,7 @@ void WorkDistrib::mapComputeNonbonded(void)
 
 //----------------------------------------------------------------------
 void WorkDistrib::messageEnqueueWork(Compute *compute) {
-  LocalWorkMsg *msg 
-    = new (sizeof(int)*8) LocalWorkMsg;
+  LocalWorkMsg *msg = compute->localWorkMsg;
   int seq = compute->sequence();
 
   if ( seq < 0 ) {
@@ -851,8 +878,7 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
       CProxy_WorkDistrib(CpvAccess(BOCclass_group).workDistrib).enqueueSelfB(msg,CkMyPe());
       break;
     default:
-      NAMD_die("WorkDistrib::messageEnqueueSelf case statement error!");
-      delete msg;
+      NAMD_bug("WorkDistrib::messageEnqueueSelf case statement error!");
     }
   }
   else switch ( seq % 2 ) {
@@ -866,39 +892,44 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
       CProxy_WorkDistrib(CpvAccess(BOCclass_group).workDistrib).enqueueWorkC(msg,CkMyPe());
    break;
   default:
-   NAMD_die("WorkDistrib::messageEnqueueWork case statement error!");
-   delete msg;
+   NAMD_bug("WorkDistrib::messageEnqueueWork case statement error!");
   }
 }
 
 void WorkDistrib::enqueueWork(LocalWorkMsg *msg) {
   msg->compute->doWork();
-  delete msg;
+  if ( msg->compute->localWorkMsg != msg )
+    NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 
 void WorkDistrib::enqueueSelfA(LocalWorkMsg *msg) {
   msg->compute->doWork();
-  delete msg;
+  if ( msg->compute->localWorkMsg != msg )
+    NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 
 void WorkDistrib::enqueueSelfB(LocalWorkMsg *msg) {
   msg->compute->doWork();
-  delete msg;
+  if ( msg->compute->localWorkMsg != msg )
+    NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 
 void WorkDistrib::enqueueWorkA(LocalWorkMsg *msg) {
   msg->compute->doWork();
-  delete msg;
+  if ( msg->compute->localWorkMsg != msg )
+    NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 
 void WorkDistrib::enqueueWorkB(LocalWorkMsg *msg) {
   msg->compute->doWork();
-  delete msg;
+  if ( msg->compute->localWorkMsg != msg )
+    NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 
 void WorkDistrib::enqueueWorkC(LocalWorkMsg *msg) {
   msg->compute->doWork();
-  delete msg;
+  if ( msg->compute->localWorkMsg != msg )
+    NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 
 //**********************************************************************

@@ -24,11 +24,9 @@ class PatchElem {
     PositionBox<Patch> *positionBox;
     PositionBox<Patch> *avgPositionBox;
     Box<Patch,Results> *forceBox;
-    Box<Patch,AtomProperties> *atomBox;
-    Position *x;
+    CompAtom *x;
     Results *r;
     Force *f;
-    AtomProperties *a;
 
   PatchElem() {
     patchID = -1;
@@ -36,11 +34,9 @@ class PatchElem {
     positionBox = NULL;
     avgPositionBox = NULL;
     forceBox = NULL;
-    atomBox = NULL;
     x = NULL;
     r = NULL;
     f = NULL;
-    a = NULL;
   }
 
   PatchElem(PatchID p_param) {
@@ -55,11 +51,9 @@ class PatchElem {
       avgPositionBox = p_param->registerAvgPositionPickup(cid);
     }
     forceBox = p_param->registerForceDeposit(cid);
-    atomBox = p_param->registerAtomPickup(cid);
     x = NULL;
     r = NULL;
     f = NULL;
-    a = NULL;
   }
     
   ~PatchElem() {};

@@ -42,20 +42,13 @@ typedef Vector HGArrayVector[MAXHGS];
 typedef BigReal HGMatrixBigReal[MAXHGS][MAXHGS];
 typedef Vector HGMatrixVector[MAXHGS][MAXHGS];
 
-int average(Vector *qtilde,const HGArrayVector &q,BigReal *lambda,const int n,const int m, const HGArrayBigReal &imass, const HGArrayBigReal &length2, const HGArrayInt &ial, const HGArrayInt &ibl, const HGArrayVector &refab, const BigReal tolf, const int ntrial);
+int average(CompAtom *qtilde,const HGArrayVector &q,BigReal *lambda,const int n,const int m, const HGArrayBigReal &imass, const HGArrayBigReal &length2, const HGArrayInt &ial, const HGArrayInt &ibl, const HGArrayVector &refab, const BigReal tolf, const int ntrial);
 
-void mollify(Vector *qtilde,const HGArrayVector &q0,const BigReal *lambda, HGArrayVector &force,const int n, const int m, const HGArrayBigReal &imass,const HGArrayInt &ial,const HGArrayInt &ibl,const HGArrayVector &refab);
+void mollify(CompAtom *qtilde,const HGArrayVector &q0,const BigReal *lambda, HGArrayVector &force,const int n, const int m, const HGArrayBigReal &imass,const HGArrayInt &ial,const HGArrayInt &ibl,const HGArrayVector &refab);
 
 
-HomePatch::HomePatch(PatchID pd, AtomIDList al, TransformList tl,
-      PositionList pl, VelocityList vl) : Patch(pd,al,pl), v(vl), t(tl),
-      p_checkpoint(&pl)
+HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
 { 
-  DebugM(4, "HomePatch("<<pd<<") at " << this << "\n");
-  if (atomIDList.size() != v.size()) {
-    CkPrintf("HomePatch::HomePatch(...) : size mismatch-Velocities and IDs!\n");
-  }
-  AtomMap::Object()->registerIDs(pd,al);  
   min.x = PatchMap::Object()->min_a(patchID);
   min.y = PatchMap::Object()->min_b(patchID);
   min.z = PatchMap::Object()->min_c(patchID);
@@ -70,6 +63,8 @@ HomePatch::HomePatch(PatchID pd, AtomIDList al, TransformList tl,
 		    // to make sure it is really valid
   inMigration = false;
   numMlBuf = 0;
+
+  numAtoms = atom.size();
 }
 
 // Bind a Sequencer to this HomePatch
@@ -149,10 +144,6 @@ void HomePatch::boxClosed(int)
 void HomePatch::registerProxy(RegisterProxyMsg *msg) {
   DebugM(4, "registerProxy("<<patchID<<") - adding node " <<msg->node<<"\n");
   proxy.add(ProxyListElem(msg->node,forceBox.checkOut()));
-  ProxyAtomsMsg *nmsg = new ProxyAtomsMsg;
-  nmsg->patch = patchID;
-  nmsg->atomIDList = AtomIDList(&atomIDList); // copy the array
-  ProxyMgr::Object()->sendProxyAtoms(nmsg,msg->node);
   delete msg;
 }
 
@@ -187,21 +178,26 @@ void HomePatch::receiveResults(ProxyResultMsg *msg)
 
 void HomePatch::positionsReady(int doMigration)
 {
-  if (!patchMapRead) {
-    readPatchMap();
-    patchMapRead = 1;
-  }
+  if (!patchMapRead) { readPatchMap(); }
       
-  doMigration = doMigration && numNeighbors;
-
-  if (doMigration) {
-    doAtomMigration();
-  } else {
-    doMarginCheck();
+  if (numNeighbors) {
+    if (doMigration) {
+      doAtomMigration();
+    } else {
+      doMarginCheck();
+    }
   }
+  doMigration = (doMigration && numNeighbors) || ! patchMapRead;
 
-  // Workaround for oversize groups now handled by Patch.
-  // doGroupSizeCheck();
+  // Workaround for oversize groups
+  doGroupSizeCheck();
+
+  // Copy information needed by computes and proxys to Patch::p.
+  p.resize(numAtoms);
+  CompAtom *p_i = p.begin();
+  FullAtom *a_i = atom.begin();
+  int i; int n = numAtoms;
+  for ( i=0; i<n; ++i ) { p_i[i] = a_i[i]; }
 
   if (flags.doMolly) mollyAverage();
 
@@ -215,8 +211,6 @@ void HomePatch::positionsReady(int doMigration)
       allmsg->flags = flags;
       allmsg->positionList = p;
       if (flags.doMolly) allmsg->avgPositionList = p_avg;
-      allmsg->atomIDList = atomIDList;
-      DebugM(1, "atomIDList.size() = " << atomIDList.size() << " p.size() = " << p.size() << "\n" );
       ProxyMgr::Object()->sendProxyAll(allmsg,pli->node);
     } else {
       ProxyDataMsg *nmsg = new ProxyDataMsg;
@@ -230,6 +224,7 @@ void HomePatch::positionsReady(int doMigration)
   DebugM(4, "patchID("<<patchID<<") doing positions Ready\n");
   Patch::positionsReady(doMigration);
 
+  patchMapRead = 1;
 }
 
 
@@ -241,8 +236,8 @@ void HomePatch::addForceToMomentum(const BigReal timestep, const int ftag)
   //}
   for ( int i = 0; i < numAtoms; ++i )
   {
-    v[i] += f[ftag][i] * ( dt / a[i].mass );
-    if ( a[i].flags & ATOM_FIXED ) v[i] = 0;
+    atom[i].velocity += f[ftag][i] * ( dt / atom[i].mass );
+    if ( atom[i].atomFixed ) atom[i].velocity = 0;
   }
 }
 
@@ -251,7 +246,7 @@ void HomePatch::addVelocityToPosition(const BigReal timestep)
   const BigReal dt = timestep / TIMEFACTOR;
   for ( int i = 0; i < numAtoms; ++i )
   {
-    if ( ! ( a[i].flags & ATOM_FIXED ) ) p[i] += v[i] * dt;
+    if ( ! ( atom[i].atomFixed ) ) atom[i].position += atom[i].velocity * dt;
   }
 }
 
@@ -274,21 +269,21 @@ void HomePatch::rattle1(const BigReal timestep)
   BigReal rmass[10];  // 1 / mass
   int fixed[10];  // is atom fixed?
   
-  for ( int ig = 0; ig < numAtoms; ig += a[ig].hydrogenGroupSize ) {
-    int hgs = a[ig].hydrogenGroupSize;
+  for ( int ig = 0; ig < numAtoms; ig += atom[ig].hydrogenGroupSize ) {
+    int hgs = atom[ig].hydrogenGroupSize;
     if ( hgs == 1 ) continue;  // only one atom in group
     // cache data in local arrays and integrate positions normally
     for ( i = 0; i < hgs; ++i ) {
-      ref[i] = p[ig+i];
-      pos[i] = p[ig+i];
-      vel[i] = v[ig+i];
-      rmass[i] = 1. / a[ig+i].mass;
-      fixed[i] = ( a[ig+i].flags & ATOM_FIXED );
+      ref[i] = atom[ig+i].position;
+      pos[i] = atom[ig+i].position;
+      vel[i] = atom[ig+i].velocity;
+      rmass[i] = 1. / atom[ig+i].mass;
+      fixed[i] = ( atom[ig+i].atomFixed );
       // undo addVelocityToPosition to get proper reference coordinates
       if ( fixed[i] ) rmass[i] = 0.; else ref[i] -= vel[i] * dt;
     }
     int icnt = 0;
-    if ( ( tmp = mol->rigid_bond_length(a[ig].id) ) > 0 ) {  // for water
+    if ( ( tmp = mol->rigid_bond_length(atom[ig].id) ) > 0 ) {  // for water
       if ( hgs != 3 ) {
         NAMD_bug("Hydrogen group error caught in rattle1().");
       }
@@ -297,7 +292,7 @@ void HomePatch::rattle1(const BigReal timestep)
       }
     }
     for ( i = 1; i < hgs; ++i ) {  // normal bonds to mother atom
-      if ( ( tmp = mol->rigid_bond_length(a[ig+i].id) ) > 0 ) {
+      if ( ( tmp = mol->rigid_bond_length(atom[ig+i].id) ) > 0 ) {
 	if ( !(fixed[0] && fixed[i]) ) {
 	  dsq[icnt] = tmp * tmp;  ial[icnt] = 0;  ibl[icnt] = i;  ++icnt;
 	}
@@ -359,8 +354,8 @@ void HomePatch::rattle1(const BigReal timestep)
     }
     // store data back to patch
     for ( i = 0; i < hgs; ++i ) {
-      p[ig+i] = pos[i];
-      v[ig+i] = vel[i];
+      atom[ig+i].position = pos[i];
+      atom[ig+i].velocity = vel[i];
     }
   }
 
@@ -387,20 +382,20 @@ void HomePatch::rattle2(const BigReal timestep, Tensor *virial)
   int fixed[10];  // is atom fixed?
 
   //  CkPrintf("In rattle2!\n");
-  for ( int ig = 0; ig < numAtoms; ig += a[ig].hydrogenGroupSize ) {
+  for ( int ig = 0; ig < numAtoms; ig += atom[ig].hydrogenGroupSize ) {
     //    CkPrintf("ig=%d\n",ig);
-    int hgs = a[ig].hydrogenGroupSize;
+    int hgs = atom[ig].hydrogenGroupSize;
     if ( hgs == 1 ) continue;  // only one atom in group
     // cache data in local arrays and integrate positions normally
     for ( i = 0; i < hgs; ++i ) {
-      ref[i] = p[ig+i];
-      vel[i] = v[ig+i];
-      rmass[i] = 1. / a[ig+i].mass;
-      fixed[i] = ( a[ig+i].flags & ATOM_FIXED );
+      ref[i] = atom[ig+i].position;
+      vel[i] = atom[ig+i].velocity;
+      rmass[i] = 1. / atom[ig+i].mass;
+      fixed[i] = ( atom[ig+i].atomFixed );
       if ( fixed[i] ) rmass[i] = 0.;
     }
     int icnt = 0;
-    if ( ( tmp = mol->rigid_bond_length(a[ig].id) ) > 0 ) {  // for water
+    if ( ( tmp = mol->rigid_bond_length(atom[ig].id) ) > 0 ) {  // for water
       if ( hgs != 3 ) {
         NAMD_bug("Hydrogen group error caught in rattle2().");
       }
@@ -411,7 +406,7 @@ void HomePatch::rattle2(const BigReal timestep, Tensor *virial)
     }
     //    CkPrintf("Loop 2\n");
     for ( i = 1; i < hgs; ++i ) {  // normal bonds to mother atom
-      if ( ( tmp = mol->rigid_bond_length(a[ig+i].id) ) > 0 ) {
+      if ( ( tmp = mol->rigid_bond_length(atom[ig+i].id) ) > 0 ) {
         if ( !(fixed[0] && fixed[i]) ) {
 	  redmass[icnt] = 1. / (rmass[0] + rmass[i]);
 	  dsqi[icnt] = 1. / (tmp * tmp);  ial[icnt] = 0;
@@ -454,7 +449,7 @@ void HomePatch::rattle2(const BigReal timestep, Tensor *virial)
     }
     // store data back to patch
     for ( i = 0; i < hgs; ++i ) {
-      v[ig+i] = vel[i];
+      atom[ig+i].velocity = vel[i];
     }
   }
   //  CkPrintf("Leaving rattle2!\n");
@@ -479,7 +474,7 @@ void HomePatch::mollyAverage()
   HGArrayVector refab;  // reference vector
   HGArrayBigReal rmass;  // 1 / mass
   BigReal *lambda;  // Lagrange multipliers
-  Vector *avg;  // averaged position
+  CompAtom *avg;  // averaged position
   int numLambdas = 0;
   HGArrayInt fixed;  // is atom fixed?
 
@@ -487,19 +482,19 @@ void HomePatch::mollyAverage()
   p_avg.resize(numAtoms);
   for ( i=0; i<numAtoms; ++i ) p_avg[i] = p[i];
 
-  for ( int ig = 0; ig < numAtoms; ig += a[ig].hydrogenGroupSize ) {
-    int hgs = a[ig].hydrogenGroupSize;
+  for ( int ig = 0; ig < numAtoms; ig += atom[ig].hydrogenGroupSize ) {
+    int hgs = atom[ig].hydrogenGroupSize;
     if ( hgs == 1 ) continue;  // only one atom in group
 	for ( i = 0; i < hgs; ++i ) {
-	  ref[i] = p[ig+i];
-	  rmass[i] = 1. / a[ig+i].mass;
-	  fixed[i] = ( a[ig+i].flags & ATOM_FIXED );
+	  ref[i] = atom[ig+i].position;
+	  rmass[i] = 1. / atom[ig+i].mass;
+	  fixed[i] = ( atom[ig+i].atomFixed );
 	  if ( fixed[i] ) rmass[i] = 0.;
 	}
 	avg = &(p_avg[ig]);
 	int icnt = 0;
 
-	if ( ( tmp = mol->rigid_bond_length(a[ig].id) ) ) {  // for water
+	if ( ( tmp = mol->rigid_bond_length(atom[ig].id) ) ) {  // for water
 	  if ( hgs != 3 ) {
 	    NAMD_die("Hydrogen group error caught in mollyAverage().  It's a bug!\n");
 	  }
@@ -508,7 +503,7 @@ void HomePatch::mollyAverage()
 	  }
 	}
 	for ( i = 1; i < hgs; ++i ) {  // normal bonds to mother atom
-	  if ( ( tmp = mol->rigid_bond_length(a[ig+i].id) ) ) {
+	  if ( ( tmp = mol->rigid_bond_length(atom[ig+i].id) ) ) {
 	    if ( !(fixed[0] && fixed[i]) ) {
 	      dsq[icnt] =  tmp * tmp;  ial[icnt] = 0;  ibl[icnt] = i;  ++icnt;
 	    }
@@ -539,7 +534,7 @@ void HomePatch::mollyMollify(Tensor *virial)
   int i;
   HGArrayInt ial, ibl;
   HGArrayVector ref;  // reference position
-  Vector *avg;  // averaged position
+  CompAtom *avg;  // averaged position
   HGArrayVector refab;  // reference vector
   HGArrayVector force;  // new force
   HGArrayBigReal rmass;  // 1 / mass
@@ -547,19 +542,19 @@ void HomePatch::mollyMollify(Tensor *virial)
   int numLambdas = 0;
   HGArrayInt fixed;  // is atom fixed?
 
-  for ( int ig = 0; ig < numAtoms; ig += a[ig].hydrogenGroupSize ) {
-    int hgs = a[ig].hydrogenGroupSize;
+  for ( int ig = 0; ig < numAtoms; ig += atom[ig].hydrogenGroupSize ) {
+    int hgs = atom[ig].hydrogenGroupSize;
     if (hgs == 1 ) continue;  // only one atom in group
 	for ( i = 0; i < hgs; ++i ) {
-	  ref[i] = p[ig+i];
+	  ref[i] = atom[ig+i].position;
 	  force[i] = f[Results::slow][ig+i];
-	  rmass[i] = 1. / a[ig+i].mass;
-	  fixed[i] = ( a[ig+i].flags & ATOM_FIXED );
+	  rmass[i] = 1. / atom[ig+i].mass;
+	  fixed[i] = ( atom[ig+i].atomFixed );
 	  if ( fixed[i] ) rmass[i] = 0.;
 	}
 	int icnt = 0;
 	// c-ji I'm only going to mollify water for now
-	if ( ( mol->rigid_bond_length(a[ig].id) ) ) {  // for water
+	if ( ( mol->rigid_bond_length(atom[ig].id) ) ) {  // for water
 	  if ( hgs != 3 ) {
 	    NAMD_die("Hydrogen group error caught in mollyMollify().  It's a bug!\n");
 	  }
@@ -568,7 +563,7 @@ void HomePatch::mollyMollify(Tensor *virial)
 	  }
 	}
 	for ( i = 1; i < hgs; ++i ) {  // normal bonds to mother atom
-	  if ( ( mol->rigid_bond_length(a[ig+i].id) ) ) {
+	  if ( ( mol->rigid_bond_length(atom[ig+i].id) ) ) {
 	    if ( !(fixed[0] && fixed[i]) ) {
 	      ial[icnt] = 0;  ibl[icnt] = i;  ++icnt;
 	    }
@@ -595,15 +590,14 @@ void HomePatch::mollyMollify(Tensor *virial)
 }
 
 void HomePatch::checkpoint(void) {
-  for ( int i = 0; i < numAtoms; ++i ) {
-    p_checkpoint[i] = p[i];
-  }
+  checkpoint_atom = FullAtomList(&atom);
+  checkpoint_lattice = lattice;
 }
 
 void HomePatch::revert(void) {
-  for ( int i = 0; i < numAtoms; ++i ) {
-    p[i] = p_checkpoint[i];
-  }
+  atom = FullAtomList(&checkpoint_atom);
+  numAtoms = atom.size();
+  lattice = checkpoint_lattice;
 }
 
 BigReal HomePatch::calcKineticEnergy()
@@ -611,7 +605,7 @@ BigReal HomePatch::calcKineticEnergy()
   BigReal total = 0;
   for ( int i = 0; i < numAtoms; ++i )
     {
-      total += 0.5 * a[i].mass * v[i] * v[i];
+      total += 0.5 * atom[i].mass * atom[i].velocity * atom[i].velocity;
     }
   return total;
 }
@@ -621,7 +615,7 @@ Vector HomePatch::calcMomentum()
   Vector total(0,0,0);
   for ( int i = 0; i < numAtoms; ++i )
   {
-     total += a[i].mass * v[i];
+     total += atom[i].mass * atom[i].velocity;
   }
   return total;
 }
@@ -631,7 +625,7 @@ Vector HomePatch::calcAngularMomentum()
   Vector total(0,0,0);
   for ( int i = 0; i < numAtoms; ++i )
   {
-     total += cross(a[i].mass,p[i],v[i]); // m r % v
+     total += cross(atom[i].mass,atom[i].position,atom[i].velocity); // m r % v
   }
   return total;
 }
@@ -641,40 +635,42 @@ void HomePatch::submitLoadStats(int timestep)
   LdbCoordinator::Object()->patchLoad(patchID,numAtoms,timestep);
 }
 
-
 void HomePatch::doGroupSizeCheck()
 {
+  if ( ! flags.doNonbonded ) return;
+
   SimParameters *simParams = Node::Object()->simParameters;
-  if ( simParams->splitPatch != SPLIT_PATCH_HYDROGEN ) return;
   BigReal hgcut = 0.5 * simParams->hgroupCutoff;  hgcut *= hgcut;
 
-  AtomPropertiesList::iterator a_i = a.begin();
-  PositionList::iterator p_i = p.begin();
-  PositionList::iterator p_e = p.end();
-  BigReal x=0,y=0,z=0;
-  int parentID=0;
+  FullAtomList::iterator p_i = atom.begin();
+  FullAtomList::iterator p_e = atom.end();
 
   while ( p_i != p_e ) {
-    if ( a_i->hydrogenGroupSize ) {  // group parent
-      x = p_i->x; y = p_i->y; z = p_i->z; parentID = a_i->id;
-    } else {  // child atom
-      BigReal dx = p_i->x - x;
-      BigReal dy = p_i->y - y;
-      BigReal dz = p_i->z - z;
+    int hgs = p_i->hydrogenGroupSize;
+    p_i->nonbondedGroupSize = hgs;
+    BigReal x = p_i->position.x;
+    BigReal y = p_i->position.y;
+    BigReal z = p_i->position.z;
+    ++p_i;
+    int oversize = 0;
+    for ( int i = 1; i < hgs; ++i ) {
+      p_i->nonbondedGroupSize = 0;
+      BigReal dx = p_i->position.x - x;
+      BigReal dy = p_i->position.y - y;
+      BigReal dz = p_i->position.z - z;
       BigReal r2 = dx * dx + dy * dy + dz * dz;
-      if ( r2 > hgcut ) {
-        iout << iERROR << "H-group size violation between atoms " <<
-		parentID + 1 << " and " << a_i->id + 1 <<
-		" at distance " << sqrt(r2) << "!\n" <<
-		"You may wish to increase the hgroupCutoff parameter " <<
-		"from its current value of " << simParams->hgroupCutoff <<
-		".\n" << endi;
+      ++p_i;
+      if ( r2 > hgcut ) oversize = 1;
+    }
+    if ( oversize ) {
+      p_i -= hgs;
+      for ( int i = 0; i < hgs; ++i ) {
+        p_i->nonbondedGroupSize = 1;
+        ++p_i;
       }
     }
-    ++p_i; ++ a_i;
   }
 }
-
 
 void HomePatch::doMarginCheck()
 {
@@ -694,21 +690,21 @@ void HomePatch::doMarginCheck()
   int xdev, ydev, zdev;
   int problemCount = 0;
 
-  PositionList::iterator p_i = p.begin();
-  PositionList::iterator p_e = p.end();
+  FullAtomList::iterator p_i = atom.begin();
+  FullAtomList::iterator p_e = atom.end();
   for ( ; p_i != p_e; ++p_i ) {
 
     // check if atom should is within bounds
-    if (p_i->x < minx) xdev = 0;
-    else if (maxx <= p_i->x) xdev = 2; 
+    if (p_i->position.x < minx) xdev = 0;
+    else if (maxx <= p_i->position.x) xdev = 2; 
     else xdev = 1;
 
-    if (p_i->y < miny) ydev = 0;
-    else if (maxy <= p_i->y) ydev = 2; 
+    if (p_i->position.y < miny) ydev = 0;
+    else if (maxy <= p_i->position.y) ydev = 2; 
     else ydev = 1;
 
-    if (p_i->z < minz) zdev = 0;
-    else if (maxz <= p_i->z) zdev = 2; 
+    if (p_i->position.z < minz) zdev = 0;
+    else if (maxz <= p_i->position.z) zdev = 2; 
     else zdev = 1;
 
     if (mInfo[xdev][ydev][zdev]) { // process atom for migration
@@ -746,39 +742,30 @@ HomePatch::doAtomMigration()
   }
 
   // Purge the AtomMap
-  AtomMap::Object()->unregisterIDs(patchID,atomIDList);
+  AtomMap::Object()->unregisterIDs(patchID,p);
 
   // Determine atoms that need to migrate
-  AtomIDList::iterator atomIDList_i = atomIDList.begin();
-  AtomIDList::iterator atomIDList_e = atomIDList.end();
-  AtomPropertiesList::iterator a_i = a.begin();
-  TransformList::iterator t_i = t.begin();
-  PositionList::iterator p_i = p.begin();
-  PositionList::iterator p_c_i = p_checkpoint.begin();
-  VelocityList::iterator v_i = v.begin();
-  ForceList::iterator f_i[Results::maxNumForces];
-  for ( j = 0; j < Results::maxNumForces; ++j ) f_i[j] = f[j].begin();
+  FullAtomList::iterator atom_i = atom.begin();
+  FullAtomList::iterator atom_e = atom.end();
   int delnum = 0;
   Position Min = lattice.unscale(min);
   Position Max = lattice.unscale(max);
 
-  while ( atomIDList_i != atomIDList_e )
+  while ( atom_i != atom_e )
   {
-      DebugM(4, atomIDList_e - atomIDList_i << " iterations remaining\n");
-
-      if ( a_i->hydrogenGroupSize )
+      if ( atom_i->hydrogenGroupSize )
 	  {
 	  // check if atom should is within bounds
-	  if (p_i->x < Min.x) xdev = 0;
-	  else if (Max.x <= p_i->x) xdev = 2; 
+	  if (atom_i->position.x < Min.x) xdev = 0;
+	  else if (Max.x <= atom_i->position.x) xdev = 2; 
 	  else xdev = 1;
 
-	  if (p_i->y < Min.y) ydev = 0;
-	  else if (Max.y <= p_i->y) ydev = 2; 
+	  if (atom_i->position.y < Min.y) ydev = 0;
+	  else if (Max.y <= atom_i->position.y) ydev = 2; 
 	  else ydev = 1;
 
-	  if (p_i->z < Min.z) zdev = 0;
-	  else if (Max.z <= p_i->z) zdev = 2; 
+	  if (atom_i->position.z < Min.z) zdev = 0;
+	  else if (Max.z <= atom_i->position.z) zdev = 2; 
 	  else zdev = 1;
 	  }
 
@@ -787,56 +774,29 @@ HomePatch::doAtomMigration()
 
        // See if we have a migration list already
        MigrationList &mCur = mInfo[xdev][ydev][zdev]->mList;
-       Force force[Results::maxNumForces];
-       for ( j = 0; j < Results::maxNumForces; ++j ) force[j] = *(f_i[j]);
        DebugM(3,"Migrating atom " << atomIDList_i << " from patch "
 		<< patchID << " with position " << p_i << "\n");
-       mCur.add(MigrationElem(*atomIDList_i, *a_i, *t_i, *p_i, *p_c_i, *v_i, force));
+       mCur.add(*atom_i);
 
        ++delnum;
 
      } else {
 
-       if ( delnum ) {
-         *(atomIDList_i-delnum) = *atomIDList_i;
-         *(a_i-delnum) = *a_i;
-         *(t_i-delnum) = *t_i;
-         *(p_i-delnum) = *p_i;
-         *(p_c_i-delnum) = *p_c_i;
-         *(v_i-delnum) = *v_i;
-         for ( j = 0; j < Results::maxNumForces; ++j ) {
-           *(f_i[j]-delnum) = *(f_i[j]);
-         }
-       }
+       if ( delnum ) { *(atom_i-delnum) = *atom_i; }
 
      }
 
-     ++atomIDList_i;
-     ++a_i;
-     ++t_i;
-     ++p_i;
-     ++p_c_i;
-     ++v_i;
-     for ( j = 0; j < Results::maxNumForces; ++j ) ++(f_i[j]);
+     ++atom_i;
 
   }
 
   int delpos = numAtoms - delnum;
   DebugM(4,"numAtoms " << numAtoms << " deleted " << delnum << "\n");
-  atomIDList.del(delpos,delnum);
-  a.del(delpos,delnum);
-  t.del(delpos,delnum);
-  p.del(delpos,delnum);
-  p_checkpoint.del(delpos,delnum);
-  v.del(delpos,delnum);
-  for ( j = 0; j < Results::maxNumForces; ++j ) f[j].del(delpos,delnum);
+  atom.del(delpos,delnum);
 
-  numAtoms = atomIDList.size();
+  numAtoms = atom.size();
 
   PatchMgr::Object()->sendMigrationMsgs(patchID, realInfo, numNeighbors);
-  // for (i=0; i < numNeighbors; i++) {
-  //   PatchMgr::Object()->sendMigrationMsg(patchID, realInfo[i]);
-  // }
 
   // signal depositMigration() that we are inMigration mode
   inMigration = true;
@@ -855,10 +815,6 @@ HomePatch::doAtomMigration()
     migrationSuspended = false;
   }
   allMigrationIn = false;
-  // indexAtoms();  NEVER USED -JCP
-
-  // reload the AtomMap
-  AtomMap::Object()->registerIDs(patchID,atomIDList);
 
   inMigration = false;
 }
@@ -879,19 +835,12 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
     for (mi = migrationList.begin(); mi != migrationList.end(); mi++) {
       DebugM(1,"Migrating atom " << mi->atomID << " to patch "
 		<< patchID << " with position " << mi->pos << "\n"); 
-      atomIDList.add(mi->atomID);
-      a.add(mi->atomProp);
-      p.add(lattice.nearest(mi->pos,center,&(mi->trans)));
-      // JCP FIX THIS!!!
-      p_checkpoint.add(mi->pos_checkpoint);
-      t.add(mi->trans);
-      v.add(mi->vel);
-      for ( int j = 0; j < Results::maxNumForces; ++j )
-        f[j].add(mi-> force[j]);
+      mi->position = lattice.nearest(mi->position,center,&(mi->transform));
+      atom.add(*mi);
     }
   }
 
-  numAtoms = atomIDList.size();
+  numAtoms = atom.size();
   delete msg;
 
   DebugM(3,"Counter on " << patchID << " = " << patchMigrationCounter << "\n");
@@ -996,7 +945,7 @@ inline void G_q(const HGArrayVector &refab, HGMatrixVector &gqij,
 
 
 // c-ji code for MOLLY 7-31-99
-int average(Vector *qtilde,const HGArrayVector &q,BigReal *lambda,const int n,const int m, const HGArrayBigReal &imass, const HGArrayBigReal &length2, const HGArrayInt &ial, const HGArrayInt &ibl, const HGArrayVector &refab, const BigReal tolf, const int ntrial) {
+int average(CompAtom *qtilde,const HGArrayVector &q,BigReal *lambda,const int n,const int m, const HGArrayBigReal &imass, const HGArrayBigReal &length2, const HGArrayInt &ial, const HGArrayInt &ibl, const HGArrayVector &refab, const BigReal tolf, const int ntrial) {
   //  input:  n = length of hydrogen group to be averaged (shaked)
   //          q[n] = vector array of original positions
   //          m = number of constraints
@@ -1058,13 +1007,13 @@ int average(Vector *qtilde,const HGArrayVector &q,BigReal *lambda,const int n,co
       }
  
       for (j=0;j<n;j++) {
-	qtilde[j]=q[j]+tmp[j];
+	qtilde[j].position=q[j]+tmp[j];
       }
       //      delete [] tmp;
     }
   
     for ( i = 0; i < m; i++ ) {
-      avgab[i] = qtilde[ial[i]] - qtilde[ibl[i]];
+      avgab[i] = qtilde[ial[i]].position - qtilde[ibl[i]].position;
     }
 
     //  iout<<iINFO << "Calling Jac" << endl<<endi;
@@ -1168,7 +1117,7 @@ int average(Vector *qtilde,const HGArrayVector &q,BigReal *lambda,const int n,co
     if (errx <= tolx) break;
 #ifdef DEBUG0
     iout<<iINFO << "Qtilde:" << endl<<endi;
-    iout<<iINFO << qtilde[0] << " " << qtilde[1] << " " << qtilde[2] << endl<<endi; 
+    iout<<iINFO << qtilde[0].position << " " << qtilde[1].position << " " << qtilde[2].position << endl<<endi; 
 #endif
   }
 #ifdef DEBUG
@@ -1178,7 +1127,7 @@ int average(Vector *qtilde,const HGArrayVector &q,BigReal *lambda,const int n,co
   return k; // 
 }
 
-void mollify(Vector *qtilde,const HGArrayVector &q0,const BigReal *lambda, HGArrayVector &force,const int n, const int m, const HGArrayBigReal &imass,const HGArrayInt &ial,const HGArrayInt &ibl,const HGArrayVector &refab) {
+void mollify(CompAtom *qtilde,const HGArrayVector &q0,const BigReal *lambda, HGArrayVector &force,const int n, const int m, const HGArrayBigReal &imass,const HGArrayInt &ial,const HGArrayInt &ibl,const HGArrayVector &refab) {
   int i,j,k;
   BigReal d;
   HGMatrixBigReal fjac;
@@ -1200,7 +1149,7 @@ void mollify(Vector *qtilde,const HGArrayVector &q0,const BigReal *lambda, HGArr
   HGArrayVector avgab;
 
   for ( i = 0; i < m; i++ ) {
-	avgab[i] = qtilde[ial[i]] - qtilde[ibl[i]];
+	avgab[i] = qtilde[ial[i]].position - qtilde[ibl[i]].position;
   }
 
   G_q(avgab,glhs,n,m,ial,ibl);

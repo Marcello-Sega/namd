@@ -112,11 +112,9 @@ void ComputeDPME::doWork()
   if ( ! patchList[0].p->flags.doFullElectrostatics )
   {
     for (ap = ap.begin(); ap != ap.end(); ap++) {
-      Position *x = (*ap).positionBox->open();
-      AtomProperties *a = (*ap).atomBox->open();
+      CompAtom *x = (*ap).positionBox->open();
       Results *r = (*ap).forceBox->open();
       (*ap).positionBox->close(&x);
-      (*ap).atomBox->close(&a);
       (*ap).forceBox->close(&r);
     }
     if ( master ) {
@@ -140,28 +138,26 @@ void ComputeDPME::doWork()
   const BigReal coloumb_sqrt = sqrt( COLOUMB * ComputeNonbondedUtil::scaling
 				* ComputeNonbondedUtil::dielectric_1 );
   for (ap = ap.begin(); ap != ap.end(); ap++) {
-    Position *x = (*ap).positionBox->open();
+    CompAtom *x = (*ap).positionBox->open();
     if ( patchList[0].p->flags.doMolly ) {
       (*ap).positionBox->close(&x);
       x = (*ap).avgPositionBox->open();
     }
-    AtomProperties *a = (*ap).atomBox->open();
     int numAtoms = (*ap).p->getNumAtoms();
 
     for(int i=0; i<numAtoms; ++i)
     {
-      Vector tmp = lattice.delta(x[i]);
+      Vector tmp = lattice.delta(x[i].position);
       data_ptr->x = tmp.x;
       data_ptr->y = tmp.y;
       data_ptr->z = tmp.z;
-      data_ptr->cg = coloumb_sqrt * a[i].charge;
-      data_ptr->id = a[i].id;
+      data_ptr->cg = coloumb_sqrt * x[i].charge;
+      data_ptr->id = x[i].id;
       ++data_ptr;
     }
 
     if ( patchList[0].p->flags.doMolly ) { (*ap).avgPositionBox->close(&x); }
     else { (*ap).positionBox->close(&x); }
-    (*ap).atomBox->close(&a);
   }
 
   // send data to master

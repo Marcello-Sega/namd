@@ -57,28 +57,25 @@ void AtomMap::allocateMap(int nAtomIds)
 }
 
 //
-int AtomMap::unregisterIDs(PatchID pid, AtomIDList al)
+int AtomMap::unregisterIDs(PatchID pid, CompAtomList al)
 {
   if (localIDTable == NULL)
     return -1;
   else 
   {
-    int ali;
-
     for(int i = 0; i < al.size(); ++i)
     {
-	if (localIDTable[ali = al[i]].pid == pid) {
+        unsigned int ali = al[i].id;
+	if (localIDTable[ali].pid == pid) {
 	    localIDTable[ali].pid = notUsed;
 	    localIDTable[ali].index = notUsed;
-	} else {
-	    DebugM(4, "Avoided overwriting atomID " << ali << "\n");
 	}
     }
     return 0;
   }
 }
 //----------------------------------------------------------------------
-int AtomMap::registerIDs(PatchID pid, AtomIDList al)
+int AtomMap::registerIDs(PatchID pid, CompAtomList al)
 {
   if (localIDTable == NULL)
     return -1;
@@ -86,12 +83,9 @@ int AtomMap::registerIDs(PatchID pid, AtomIDList al)
   {
     for(int i = 0; i < al.size(); ++i)
     {
-	if (localIDTable[al[i]].pid != notUsed) {
-	  DebugM(4, "Overwriting atomID " << al[i] <<" used to be on " 
-	    << localIDTable[al[i]].pid << " now is on " << pid << "\n");
-	}
-	localIDTable[al[i]].pid = pid;
-	localIDTable[al[i]].index = i;
+	unsigned int ali = al[i].id;
+	localIDTable[ali].pid = pid;
+	localIDTable[ali].index = i;
     }
     cleared = false;
     return 0;

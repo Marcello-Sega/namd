@@ -85,6 +85,10 @@ protected:
     void writeExtendedSystemLabels(ofstream &file);
     void writeExtendedSystemData(int step, ofstream &file);
 
+    // for checkpoint/revert
+    Lattice checkpoint_lattice;
+    Tensor checkpoint_langevinPiston_strainRate;
+
 private:
     CthThread thread;
     static void threadRun(Controller*);

@@ -105,13 +105,13 @@ void ComputeNonbondedUtil :: NAME
   EXCL
   (
     Position & p_ij = params->p_ij;
+    const CompAtom & p_i = params->p[0][0];
+    const CompAtom * p_j = params->p[1];
     FAST
     (
     Force & f_i = params->ff[0][0];
     Force & f_j = params->ff[1][0];
     )
-    const AtomProperties & a_i = params->a[0][0];
-    const AtomProperties & a_j = params->a[1][0];
     int & m14 = params->m14;
     FULL
     (
@@ -172,7 +172,7 @@ void ComputeNonbondedUtil :: NAME
 
 EXCL
 (
-  const BigReal kq_i = COLOUMB * a_i.charge * scaling * dielectric_1;
+  const BigReal kq_i = COLOUMB * p_i.charge * scaling * dielectric_1;
   register const BigReal p_ij_x = p_ij.x;
   register const BigReal p_ij_y = p_ij.y;
   register const BigReal p_ij_z = p_ij.z;
@@ -184,46 +184,28 @@ NOEXCL
   register const int j_upper = params->numAtoms[1];
   register int j;
   register int i;
+  const CompAtom *p_0 = params->p[0];
+  const CompAtom *p_1 = params->p[1];
 
   // check for all fixed atoms
   if ( fixedAtomsOn ) {
-    AtomProperties *a_i = params->a[0];
     register int all_fixed = 1;
-    for ( i = 0; all_fixed && i < i_upper; ++i, ++a_i)
-      all_fixed = a_i->flags & ATOM_FIXED;
+    for ( i = 0; all_fixed && i < i_upper; ++i)
+      all_fixed = p_0[i].atomFixed;
     PAIR
     (
-    AtomProperties *a_j = params->a[1];
-    for ( j = 0; all_fixed && j < j_upper; ++j, ++a_j)
-      all_fixed = a_j->flags & ATOM_FIXED;
+    for ( j = 0; all_fixed && j < j_upper; ++j)
+      all_fixed = p_1[j].atomFixed;
     )
     if ( all_fixed ) return;
   }
 
   SELF( int j_hgroup = 0; )
   int pairlistindex=0;
-  static int pairlist_std[1001];
   int pairlistoffset=0;
-  int *pairlist = pairlist_std;
+  int pairlist_std[1001];
+  int *const pairlist = (j_upper < 1000 ? pairlist_std : new int[j_upper+1]);
 
-  // generate mini-pairlist.
-  if (1000 < j_upper)
-	{
-	if (pairlist != pairlist_std) delete [] pairlist;
-	pairlist = new int[j_upper + 1];
-	pairlist[j_upper] = 0;
-	}
-  else
-	{
-	pairlist = pairlist_std;
-	pairlist[1000] = 0;
-	}
-
-  // for speeding up the for-loop
-  const AtomProperties *a_0 = params->a[0];
-  const AtomProperties *a_1 = params->a[1];
-  const Position *p_0 = params->p[0];
-  const Position *p_1 = params->p[1];
   FAST
   (
     Force *f_0 = params->ff[0];
@@ -245,22 +227,21 @@ NOEXCL
 
   for ( i = 0; i < (i_upper SELF(- 1)); ++i )
   {
-    const AtomProperties &a_i = a_0[i];
-    const Position &p_i = p_0[i];
-    register const BigReal p_i_x = p_i.x;
-    register const BigReal p_i_y = p_i.y;
-    register const BigReal p_i_z = p_i.z;
+    const CompAtom &p_i = p_0[i];
+    register const BigReal p_i_x = p_i.position.x;
+    register const BigReal p_i_y = p_i.position.y;
+    register const BigReal p_i_z = p_i.position.z;
 
     FAST( Force & f_i = f_0[i]; )
     FULL( Force & fullf_i = fullf_0[i]; )
 
-  if (a_i.nonbondedGroupSize) // if hydrogen group parent
+  if (p_i.nonbondedGroupSize) // if hydrogen group parent
     {
     SELF
     (
-    if ( a_i.hydrogenGroupSize ) {
+    if ( p_i.hydrogenGroupSize ) {
       int opc = pairCount;
-      int hgs = a_i.hydrogenGroupSize;
+      int hgs = p_i.hydrogenGroupSize;
       pairCount += hgs * ( i_upper - 1 - i );
       pairCount -= hgs * ( hgs - 1 ) / 2;
       if ( opc < minPairCount || opc >= maxPairCount ) {
@@ -272,7 +253,7 @@ NOEXCL
 
     pairlistindex = 0;	// initialize with 0 elements
     pairlistoffset=0;
-    const int groupfixed = ( a_i.flags & GROUP_FIXED );
+    const int groupfixed = ( p_i.groupFixed );
 
     // If patch divisions are not made by hydrogen groups, then
     // nonbondedGroupSize is set to 1 for all atoms.  Thus we can
@@ -281,15 +262,15 @@ NOEXCL
     // pairlist but to include every atom in it.  This should be a
     // a very minor expense.
 
-    register const Position *p_j = p_1;
+    register const CompAtom *p_j = p_1;
     SELF( p_j += i+1; )
 
     PAIR( j = 0; )
     SELF
     (
-      if ( a_i.hydrogenGroupSize ) {
+      if ( p_i.hydrogenGroupSize ) {
         // exclude child hydrogens of i
-        j_hgroup = i + a_i.hydrogenGroupSize;
+        j_hgroup = i + p_i.hydrogenGroupSize;
       }
       // add all child or sister hydrogens of i
       for ( j = i + 1; j < j_hgroup; ++j ) {
@@ -299,18 +280,16 @@ NOEXCL
     )
 
     // add remaining atoms to pairlist via hydrogen groups
-    register const AtomProperties *pa_j = a_1 + j;
     register int *pli = pairlist + pairlistindex;
 
     if ( groupfixed ) { // tuned assuming most atoms fixed
       while ( j < j_upper )
 	{
-	register int hgs = pa_j->nonbondedGroupSize;
-	if ( ! (pa_j->flags & GROUP_FIXED) )
+	register int hgs = p_j->nonbondedGroupSize;
+	if ( ! (p_j->groupFixed) )
 	{
-	  p_j = p_1 + j;
 	  // use a slightly large cutoff to include hydrogens
-	  if ( square(p_j->x-p_i_x,p_j->y-p_i_y,p_j->z-p_i_z) <= groupcutoff2 )
+	  if ( square(p_j->position.x-p_i_x,p_j->position.y-p_i_y,p_j->position.z-p_i_z) <= groupcutoff2 )
 		{
 		register int l = j;
 		register int lm = j + hgs;
@@ -322,25 +301,25 @@ NOEXCL
 		}
 	}
 	j += hgs;
-	pa_j += hgs;
+	p_j += hgs;
 	} // for j
     } else SELF( if ( j < j_upper ) ) { // tuned assuming no fixed atoms
-      register BigReal p_j_x = p_j->x;
-      register BigReal p_j_y = p_j->y;
-      register BigReal p_j_z = p_j->z;
+      register BigReal p_j_x = p_j->position.x;
+      register BigReal p_j_y = p_j->position.y;
+      register BigReal p_j_z = p_j->position.z;
       while ( j < j_upper )
 	{
-	register int hgs = pa_j->nonbondedGroupSize;
+	register int hgs = p_j->nonbondedGroupSize;
 	p_j += ( ( j + hgs < j_upper ) ? hgs : 0 );
 	register BigReal r2 = p_i_x - p_j_x;
 	r2 *= r2;
-	p_j_x = p_j->x;					// preload
+	p_j_x = p_j->position.x;					// preload
 	register BigReal t2 = p_i_y - p_j_y;
 	r2 += t2 * t2;
-	p_j_y = p_j->y;					// preload
+	p_j_y = p_j->position.y;					// preload
 	t2 = p_i_z - p_j_z;
 	r2 += t2 * t2;
-	p_j_z = p_j->z;					// preload
+	p_j_z = p_j->position.z;					// preload
 	// use a slightly large cutoff to include hydrogens
 	if ( r2 <= groupcutoff2 )
 		{
@@ -353,7 +332,6 @@ NOEXCL
 		  }
 		}
 	else j += hgs;
-	pa_j += hgs;
 	} // for j
     }
 
@@ -368,30 +346,33 @@ NOEXCL
     else pairlistoffset++;
     )
 
-    const int atomfixed = ( a_i.flags & ATOM_FIXED );
+    const int atomfixed = ( p_i.atomFixed );
 
-    const BigReal kq_i_u = COLOUMB * a_i.charge * scaling * dielectric_1;
+    const BigReal kq_i_u = COLOUMB * p_i.charge * scaling * dielectric_1;
     const BigReal kq_i_s = kq_i_u * scale14;
+    const LJTable::TableEntry * const lj_row =
+		ljTable->table_row(mol->atomvdwtype(p_i.id));
 
-    register const Position *p_j = p_1;
+    register const CompAtom *pf_j = p_1;
 
-    if ( pairlistoffset < pairlistindex ) p_j += pairlist[pairlistoffset];
+    if ( pairlistoffset < pairlistindex ) pf_j += pairlist[pairlistoffset];
 
-    register BigReal p_j_x = p_j->x;
-    register BigReal p_j_y = p_j->y;
-    register BigReal p_j_z = p_j->z;
+    register BigReal p_j_x = pf_j->position.x;
+    register BigReal p_j_y = pf_j->position.y;
+    register BigReal p_j_z = pf_j->position.z;
 
     for (int k=pairlistoffset; k<pairlistindex; k++)
     {
       j = pairlist[k];
+      register const CompAtom *p_j = p_1 + j;
       // don't worry about [k+1] going beyond array since array is 1 too large
-      p_j += pairlist[k+1]-j; // preload
+      pf_j += pairlist[k+1]-j; // preload
       register const BigReal p_ij_x = p_i_x - p_j_x;
-      p_j_x = p_j->x;					// preload
+      p_j_x = pf_j->position.x;					// preload
       register const BigReal p_ij_y = p_i_y - p_j_y;
-      p_j_y = p_j->y;					// preload
+      p_j_y = pf_j->position.y;					// preload
       register const BigReal p_ij_z = p_i_z - p_j_z;
-      p_j_z = p_j->z;					// preload
+      p_j_z = pf_j->position.z;					// preload
 
 )
 
@@ -405,7 +386,7 @@ NOEXCL
 	  FULL(
 	    // Do a quick fix and get out!
 	    const BigReal r_1 = 1.0/sqrt(r2);
-	    kqq = kq_i * a_j.charge;
+	    kqq = kq_i * p_j->charge;
 	    f = kqq*r_1;
 	    if ( m14 ) f *= ( 1.0 - scale14 );
 	    fullElectEnergy -= f;
@@ -428,9 +409,7 @@ NOEXCL
 
 NOEXCL
 (
-      const AtomProperties & a_j = a_1[j];
-
-      if ( atomfixed && ( a_j.flags & ATOM_FIXED ) ) continue;
+      if ( atomfixed && ( p_j->atomFixed ) ) continue;
 
       BigReal kq_i = kq_i_u;
 
@@ -439,7 +418,7 @@ NOEXCL
         Force & fullf_j = fullf_1[j];
 	const BigReal r = sqrt(r2);
         const BigReal r_1 = 1.0/r;
-        kqq = kq_i * a_j.charge;
+        kqq = kq_i * p_j->charge;
         f = kqq*r_1;
 
 	//  Patch code for full electrostatics algorithms which
@@ -482,8 +461,14 @@ NOEXCL
       register BigReal fullforce_r = 0.0;	//  fullforce / r
       )
 
+      NOEXCL(
       const LJTable::TableEntry * lj_pars = 
-		ljTable->table_val(a_i.type, a_j.type);
+		lj_row + 2 * mol->atomvdwtype(p_j->id);
+      )
+      EXCL(
+      const LJTable::TableEntry * lj_pars = ljTable->table_val(
+		mol->atomvdwtype(p_i.id), mol->atomvdwtype(p_j->id));
+      )
 
       if ( r2 <= lj_pars->exclcut2 SELF( || j < j_hgroup ) )
       {
@@ -493,8 +478,8 @@ NOEXCL
 	register int other_int;
 	SELF( if ( ! ( j < j_hgroup ) ) ) {
            //  We want to search the array of the smaller atom
-	  int atom1 = a_i.id;
-	  int atom2 = a_j.id;
+	  int atom1 = p_i.id;
+	  int atom2 = p_j->id;
 	  list = mol->get_excl_check_for_atom(atom1<atom2?atom1:atom2);
 	  other_int = atom1<atom2?atom2:atom1;
 	  for ( ; *list != other_int && *list != -1; ++list );
@@ -532,7 +517,7 @@ NOEXCL
 	      fullElectEnergy -= f;
 	      fullforce_r -= f * r_1*r_1;
 	    )
-	    lj_pars = ljTable->table_val(a_i.type, a_j.type, 1);
+	    lj_pars = lj_row + 2 * mol->atomvdwtype(p_j->id) + 1;
 	    kq_i = kq_i_s;
 	  }
 	}
@@ -628,7 +613,7 @@ NOEXCL
 //  --------------------------------------------------------------------------
 
 
-      kqq = kq_i * a_j.charge;
+      kqq = kq_i * p_j->charge;
       f = kqq*r_1;
       
 EXCL
@@ -689,7 +674,7 @@ EXCL
 
       if ( m14 )
       {
-	lj_pars = ljTable->table_val(a_i.type, a_j.type, 1);
+	++lj_pars;  // to get 1-4 values
 	const BigReal A = scaling * lj_pars->A;
 	const BigReal B = scaling * lj_pars->B;
 	const BigReal AmBterm = (A*r_6 - B) * r_6;

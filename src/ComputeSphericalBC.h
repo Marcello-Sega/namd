@@ -29,7 +29,7 @@ public:
 	ComputeSphericalBC(ComputeID c, PatchID pid); 	//  Constructor
 	virtual ~ComputeSphericalBC();			//  Destructor
 
-	virtual void doForce(Position* p, Results* r, AtomProperties* a);
+	virtual void doForce(CompAtom* p, Results* r);
 
 	SubmitReduction *reduction;
 

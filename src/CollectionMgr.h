@@ -33,9 +33,8 @@ public:
   CollectionMgr(SlaveInitMsg *msg);
   ~CollectionMgr(void);
 
-  void submitPositions(int seq, AtomIDList &i, PositionList &d,
-				Lattice l, TransformList &t, int prec);
-  void submitVelocities(int seq, AtomIDList &i, VelocityList &d);
+  void submitPositions(int seq, FullAtomList &a, Lattice l, int prec);
+  void submitVelocities(int seq, FullAtomList &a);
 
   class CollectVectorInstance
   {

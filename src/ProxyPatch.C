@@ -47,8 +47,7 @@ void ProxyPatch::boxClosed(int box)
 void ProxyPatch::receiveAtoms(ProxyAtomsMsg *msg)
 {
   DebugM(3, "receiveAtoms(" << patchID << ")\n");
-  loadAtoms(msg->atomIDList);
-  AtomMap::Object()->registerIDs(patchID,msg->atomIDList);
+  numAtoms = msg->atomIDList.size();
   delete msg;
 }
 
@@ -80,11 +79,10 @@ void ProxyPatch::receiveAll(ProxyAllMsg *msg)
   }
   msgAllBuffer = NULL;
 
-  AtomMap::Object()->unregisterIDs(patchID,atomIDList);
-  loadAtoms(msg->atomIDList);
-  AtomMap::Object()->registerIDs(patchID,msg->atomIDList);
+  AtomMap::Object()->unregisterIDs(patchID,p);
   flags = msg->flags;
   p = msg->positionList;
+  numAtoms = p.size();
   p_avg = msg->avgPositionList;
 
   delete msg;

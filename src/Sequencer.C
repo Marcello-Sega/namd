@@ -128,7 +128,7 @@ void Sequencer::algorithm(void)
 
     rattle1(0.);  // enforce rigid bond constraints on initial positions
     minimizationQuenchVelocity();
-    runComputeObjects();
+    runComputeObjects(1); // must migrate here!
     addForceToMomentum(0.); // zero velocities of fixed atoms
     reassignVelocities(step);
     rattle2(timestep,step);  // enforce rigid bonds on initial velocities
@@ -197,17 +197,19 @@ void Sequencer::langevinVelocities(BigReal dt_fs)
 {
   if ( simParams->langevinOn )
   {
+    FullAtom *a = patch->atom.begin();
+    int numAtoms = patch->numAtoms;
     Molecule *molecule = Node::Object()->molecule;
     BigReal dt = dt_fs * 0.001;  // convert to ps
     BigReal kbT = BOLTZMAN*(simParams->langevinTemp);
-    for ( int i = 0; i < patch->numAtoms; ++i )
+    for ( int i = 0; i < numAtoms; ++i )
     {
-      int aid = patch->atomIDList[i];
+      int aid = a[i].id;
       BigReal f1 = exp( -1. * dt * molecule->langevin_param(aid) );
-      BigReal f2 = sqrt( ( 1. - f1*f1 ) * kbT / patch->a[i].mass );
+      BigReal f2 = sqrt( ( 1. - f1*f1 ) * kbT / a[i].mass );
 
-      patch->v[i] *= f1;
-      patch->v[i] += f2 * random->gaussian_vector();
+      a[i].velocity *= f1;
+      a[i].velocity += f2 * random->gaussian_vector();
     }
   }
 }
@@ -216,17 +218,19 @@ void Sequencer::langevinVelocitiesBBK1(BigReal dt_fs)
 {
   if ( simParams->langevinOn )
   {
+    FullAtom *a = patch->atom.begin();
+    int numAtoms = patch->numAtoms;
     Molecule *molecule = Node::Object()->molecule;
     BigReal dt = dt_fs * 0.001;  // convert to ps
     BigReal kbT = BOLTZMAN*(simParams->langevinTemp);
-    for ( int i = 0; i < patch->numAtoms; ++i )
+    for ( int i = 0; i < numAtoms; ++i )
     {
-      int aid = patch->atomIDList[i];
+      int aid = a[i].id;
       BigReal dt_gamma = dt * molecule->langevin_param(aid);
 
-      patch->v[i] += random->gaussian_vector() *
-             sqrt( dt_gamma * kbT / patch->a[i].mass );
-      patch->v[i] /= ( 1. + 0.5 * dt_gamma );
+      a[i].velocity += random->gaussian_vector() *
+             sqrt( dt_gamma * kbT / a[i].mass );
+      a[i].velocity /= ( 1. + 0.5 * dt_gamma );
     }
   }
 }
@@ -236,17 +240,19 @@ void Sequencer::langevinVelocitiesBBK2(BigReal dt_fs)
 {
   if ( simParams->langevinOn )
   {
+    FullAtom *a = patch->atom.begin();
+    int numAtoms = patch->numAtoms;
     Molecule *molecule = Node::Object()->molecule;
     BigReal dt = dt_fs * 0.001;  // convert to ps
     BigReal kbT = BOLTZMAN*(simParams->langevinTemp);
-    for ( int i = 0; i < patch->numAtoms; ++i )
+    for ( int i = 0; i < numAtoms; ++i )
     {
-      int aid = patch->atomIDList[i];
+      int aid = a[i].id;
       BigReal dt_gamma = dt * molecule->langevin_param(aid);
 
-      patch->v[i] *= ( 1. - 0.5 * dt_gamma );
-      patch->v[i] += random->gaussian_vector() *
-             sqrt( dt_gamma * kbT / patch->a[i].mass );
+      a[i].velocity *= ( 1. - 0.5 * dt_gamma );
+      a[i].velocity += random->gaussian_vector() *
+             sqrt( dt_gamma * kbT / a[i].mass );
     }
   }
 }
@@ -256,34 +262,36 @@ void Sequencer::berendsenPressure(int step)
   const int freq = simParams->berendsenPressureFreq;
   if ( simParams->berendsenPressureOn && !((step-1)%freq) )
   {
+   FullAtom *a = patch->atom.begin();
+   int numAtoms = patch->numAtoms;
    Tensor factor = broadcast->positionRescaleFactor.get(step);
    patch->lattice.rescale(factor);
    if ( simParams->useGroupPressure )
    {
     int hgs;
-    for ( int i = 0; i < patch->numAtoms; i += hgs ) {
-      hgs = patch->a[i].hydrogenGroupSize;
+    for ( int i = 0; i < numAtoms; i += hgs ) {
+      hgs = a[i].hydrogenGroupSize;
       int j;
       BigReal m_cm = 0;
       Position x_cm;
       for ( j = i; j < (i+hgs); ++j ) {
-        m_cm += patch->a[j].mass;
-        x_cm += patch->a[j].mass * patch->p[j];
+        m_cm += a[j].mass;
+        x_cm += a[j].mass * a[j].position;
       }
       x_cm /= m_cm;
       Position new_x_cm = x_cm;
       patch->lattice.rescale(new_x_cm,factor);
       Position delta_x_cm = new_x_cm - x_cm;
       for ( j = i; j < (i+hgs); ++j ) {
-        patch->p[j] += delta_x_cm;
+        a[j].position += delta_x_cm;
       }
     }
    }
    else
    {
-    for ( int i = 0; i < patch->numAtoms; ++i )
+    for ( int i = 0; i < numAtoms; ++i )
     {
-      patch->lattice.rescale(patch->p[i],factor);
+      patch->lattice.rescale(a[i].position,factor);
     }
    }
   }
@@ -293,6 +301,8 @@ void Sequencer::langevinPiston(int step)
 {
   if ( simParams->langevinPistonOn && ! ( (step-1-slowFreq/2) % slowFreq ) )
   {
+   FullAtom *a = patch->atom.begin();
+   int numAtoms = patch->numAtoms;
    Tensor factor = broadcast->positionRescaleFactor.get(step);
    // JCP FIX THIS!!!
    Vector velFactor(1/factor.xx,1/factor.yy,1/factor.zz);
@@ -300,16 +310,16 @@ void Sequencer::langevinPiston(int step)
    if ( simParams->useGroupPressure )
    {
     int hgs;
-    for ( int i = 0; i < patch->numAtoms; i += hgs ) {
-      hgs = patch->a[i].hydrogenGroupSize;
+    for ( int i = 0; i < numAtoms; i += hgs ) {
+      hgs = a[i].hydrogenGroupSize;
       int j;
       BigReal m_cm = 0;
       Position x_cm;
       Velocity v_cm;
       for ( j = i; j < (i+hgs); ++j ) {
-        m_cm += patch->a[j].mass;
-        x_cm += patch->a[j].mass * patch->p[j];
-        v_cm += patch->a[j].mass * patch->v[j];
+        m_cm += a[j].mass;
+        x_cm += a[j].mass * a[j].position;
+        v_cm += a[j].mass * a[j].velocity;
       }
       x_cm /= m_cm;
       Position new_x_cm = x_cm;
@@ -321,19 +331,19 @@ void Sequencer::langevinPiston(int step)
       delta_v_cm.y = ( velFactor.y - 1 ) * v_cm.y;
       delta_v_cm.z = ( velFactor.z - 1 ) * v_cm.z;
       for ( j = i; j < (i+hgs); ++j ) {
-        patch->p[j] += delta_x_cm;
-        patch->v[j] += delta_v_cm;
+        a[j].position += delta_x_cm;
+        a[j].velocity += delta_v_cm;
       }
     }
    }
    else
    {
-    for ( int i = 0; i < patch->numAtoms; ++i )
+    for ( int i = 0; i < numAtoms; ++i )
     {
-      patch->lattice.rescale(patch->p[i],factor);
-      patch->v[i].x *= velFactor.x;
-      patch->v[i].y *= velFactor.y;
-      patch->v[i].z *= velFactor.z;
+      patch->lattice.rescale(a[i].position,factor);
+      a[i].velocity.x *= velFactor.x;
+      a[i].velocity.y *= velFactor.y;
+      a[i].velocity.z *= velFactor.z;
     }
    }
   }
@@ -343,12 +353,14 @@ void Sequencer::rescaleVelocities(int step)
 {
   const int rescaleFreq = simParams->rescaleFreq;
   if ( rescaleFreq > 0 ) {
+    FullAtom *a = patch->atom.begin();
+    int numAtoms = patch->numAtoms;
     ++rescaleVelocities_numTemps;
     if ( rescaleVelocities_numTemps == rescaleFreq ) {
       BigReal factor = broadcast->velocityRescaleFactor.get(step);
-      for ( int i = 0; i < patch->numAtoms; ++i )
+      for ( int i = 0; i < numAtoms; ++i )
       {
-        patch->v[i] *= factor;
+        a[i].velocity *= factor;
       }
       rescaleVelocities_numTemps = 0;
     }
@@ -359,6 +371,8 @@ void Sequencer::reassignVelocities(int step)
 {
   const int reassignFreq = simParams->reassignFreq;
   if ( ( reassignFreq > 0 ) && ! ( step % reassignFreq ) ) {
+    FullAtom *a = patch->atom.begin();
+    int numAtoms = patch->numAtoms;
     BigReal newTemp = simParams->reassignTemp;
     newTemp += ( step / reassignFreq ) * simParams->reassignIncr;
     if ( simParams->reassignIncr > 0.0 ) {
@@ -369,22 +383,24 @@ void Sequencer::reassignVelocities(int step)
         newTemp = simParams->reassignHold;
     }
     BigReal kbT = BOLTZMAN * newTemp;
-    for ( int i = 0; i < patch->numAtoms; ++i )
+    for ( int i = 0; i < numAtoms; ++i )
     {
-      patch->v[i] = ( ( patch->a[i].flags & ATOM_FIXED ) ? Vector(0,0,0) :
-        sqrt( kbT / patch->a[i].mass ) * random->gaussian_vector() );
+      a[i].velocity = ( ( a[i].atomFixed ) ? Vector(0,0,0) :
+        sqrt( kbT / a[i].mass ) * random->gaussian_vector() );
     }
   }
 }
 
 void Sequencer::reinitVelocities(void)
 {
+  FullAtom *a = patch->atom.begin();
+  int numAtoms = patch->numAtoms;
   BigReal newTemp = simParams->initialTemp;
   BigReal kbT = BOLTZMAN * newTemp;
-  for ( int i = 0; i < patch->numAtoms; ++i )
+  for ( int i = 0; i < numAtoms; ++i )
   {
-    patch->v[i] = ( ( patch->a[i].flags & ATOM_FIXED ) ? Vector(0,0,0) :
-      sqrt( kbT / patch->a[i].mass ) * random->gaussian_vector() );
+    a[i].velocity = ( ( a[i].atomFixed ) ? Vector(0,0,0) :
+      sqrt( kbT / a[i].mass ) * random->gaussian_vector() );
   }
 }
 
@@ -392,15 +408,17 @@ void Sequencer::tcoupleVelocities(BigReal dt_fs, int step)
 {
   if ( simParams->tCoupleOn )
   {
+    FullAtom *a = patch->atom.begin();
+    int numAtoms = patch->numAtoms;
     BigReal coefficient = broadcast->tcoupleCoefficient.get(step);
     Molecule *molecule = Node::Object()->molecule;
     BigReal dt = dt_fs * 0.001;  // convert to ps
     coefficient *= dt;
-    for ( int i = 0; i < patch->numAtoms; ++i )
+    for ( int i = 0; i < numAtoms; ++i )
     {
-      int aid = patch->atomIDList[i];
+      int aid = a[i].id;
       BigReal f1 = exp( coefficient * molecule->langevin_param(aid) );
-      patch->v[i] *= f1;
+      a[i].velocity *= f1;
     }
   }
 }
@@ -436,15 +454,15 @@ void Sequencer::rattle2(BigReal dt, int step)
 
 void Sequencer::maximumMove(BigReal timestep)
 {
+  FullAtom *a = patch->atom.begin();
+  int numAtoms = patch->numAtoms;
   if ( simParams->maximumMove ) {
     const BigReal dt = timestep / TIMEFACTOR;
     const BigReal maxvel = simParams->maximumMove / dt;
     const BigReal maxvel2 = maxvel * maxvel;
-    VelocityList::iterator v_i, v_e;
-    v_i = patch->v.begin();  v_e = patch->v.end();
-    for ( ; v_i != v_e; ++v_i ) {
-      if ( v_i->length2() > maxvel2 ) {
-	*v_i *= ( maxvel / v_i->length() );
+    for ( int i=0; i<numAtoms; ++i ) {
+      if ( a[i].velocity.length2() > maxvel2 ) {
+	a[i].velocity *= ( maxvel / a[i].velocity.length() );
       }
     }
   } else {
@@ -452,10 +470,8 @@ void Sequencer::maximumMove(BigReal timestep)
     const BigReal maxvel = 10.0 / dt;
     const BigReal maxvel2 = maxvel * maxvel;
     int killme = 0;
-    VelocityList::iterator v_i, v_e;
-    v_i = patch->v.begin();  v_e = patch->v.end();
-    for ( ; v_i != v_e; ++v_i ) {
-      killme = killme || ( v_i->length2() > maxvel2 );
+    for ( int i=0; i<numAtoms; ++i ) {
+      killme = killme || ( a[i].velocity.length2() > maxvel2 );
     }
     if ( killme ) {
       iout << iERROR << 
@@ -469,45 +485,48 @@ void Sequencer::maximumMove(BigReal timestep)
 void Sequencer::minimizationQuenchVelocity(void)
 {
   if ( simParams->minimizeOn ) {
-    VelocityList::iterator v_i, v_e;
-    v_i = patch->v.begin();  v_e = patch->v.end();
-    for ( ; v_i != v_e; ++v_i ) {
-      *v_i = 0.;
+    FullAtom *a = patch->atom.begin();
+    int numAtoms = patch->numAtoms;
+    for ( int i=0; i<numAtoms; ++i ) {
+      a[i].velocity = 0.;
     }
   }
 }
 
 void Sequencer::submitReductions(int step)
 {
-  reduction->item(REDUCTION_ATOM_CHECKSUM) += patch->getNumAtoms();
+  FullAtom *a = patch->atom.begin();
+  int numAtoms = patch->numAtoms;
+
+  reduction->item(REDUCTION_ATOM_CHECKSUM) += numAtoms;
   reduction->item(REDUCTION_KINETIC_ENERGY) += patch->calcKineticEnergy();
 
   {
     Tensor virial;
-    for ( int i = 0; i < patch->numAtoms; ++i ) {
-      virial += ( patch->a[i].mass * outer(patch->v[i],patch->v[i]) );
+    for ( int i = 0; i < numAtoms; ++i ) {
+      virial += ( a[i].mass * outer(a[i].velocity,a[i].velocity) );
     }
     ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,virial);
     ADD_TENSOR_OBJECT(reduction,REDUCTION_ALT_VIRIAL_NORMAL,virial);
   }
   {
     Tensor altVirial;
-    for ( int i = 0; i < patch->numAtoms; ++i ) {
-      altVirial += outer(patch->f[Results::normal][i],patch->p[i]);
+    for ( int i = 0; i < numAtoms; ++i ) {
+      altVirial += outer(patch->f[Results::normal][i],a[i].position);
     }
     ADD_TENSOR_OBJECT(reduction,REDUCTION_ALT_VIRIAL_NORMAL,altVirial);
   }
   {
     Tensor altVirial;
-    for ( int i = 0; i < patch->numAtoms; ++i ) {
-      altVirial += outer(patch->f[Results::nbond][i],patch->p[i]);
+    for ( int i = 0; i < numAtoms; ++i ) {
+      altVirial += outer(patch->f[Results::nbond][i],a[i].position);
     }
     ADD_TENSOR_OBJECT(reduction,REDUCTION_ALT_VIRIAL_NBOND,altVirial);
   }
   {
     Tensor altVirial;
-    for ( int i = 0; i < patch->numAtoms; ++i ) {
-      altVirial += outer(patch->f[Results::slow][i],patch->p[i]);
+    for ( int i = 0; i < numAtoms; ++i ) {
+      altVirial += outer(patch->f[Results::slow][i],a[i].position);
     }
     ADD_TENSOR_OBJECT(reduction,REDUCTION_ALT_VIRIAL_SLOW,altVirial);
   }
@@ -519,26 +538,26 @@ void Sequencer::submitReductions(int step)
     Tensor intVirialSlow;
 
     int hgs;
-    for ( int i = 0; i < patch->numAtoms; i += hgs ) {
-      hgs = patch->a[i].hydrogenGroupSize;
+    for ( int i = 0; i < numAtoms; i += hgs ) {
+      hgs = a[i].hydrogenGroupSize;
       int j;
       BigReal m_cm = 0;
       Position x_cm(0,0,0);
       Velocity v_cm(0,0,0);
       for ( j = i; j < (i+hgs); ++j ) {
-        m_cm += patch->a[j].mass;
-        x_cm += patch->a[j].mass * patch->p[j];
-        v_cm += patch->a[j].mass * patch->v[j];
+        m_cm += a[j].mass;
+        x_cm += a[j].mass * a[j].position;
+        v_cm += a[j].mass * a[j].velocity;
       }
       x_cm /= m_cm;
       v_cm /= m_cm;
       for ( j = i; j < (i+hgs); ++j ) {
-        BigReal mass = patch->a[j].mass;
-        Vector v = patch->v[j];
+        BigReal mass = a[j].mass;
+        Vector v = a[j].velocity;
         Vector dv = v - v_cm;
         intKineticEnergy += mass * (v * dv);
         intVirialNormal += mass * outer(v,dv);
-        Vector dx = patch->p[j] - x_cm;
+        Vector dx = a[j].position - x_cm;
         intVirialNormal += outer(patch->f[Results::normal][j],dx);
         intVirialNbond += outer(patch->f[Results::nbond][j],dx);
         intVirialSlow += outer(patch->f[Results::slow][j],dx);
@@ -570,10 +589,9 @@ void Sequencer::submitCollections(int step)
 {
   int prec = Output::coordinateNeeded(step);
   if ( prec )
-    collection->submitPositions(step,patch->atomIDList,patch->p,
-				patch->lattice,patch->t,prec);
+    collection->submitPositions(step,patch->atom,patch->lattice,prec);
   if ( Output::velocityNeeded(step) )
-    collection->submitVelocities(step,patch->atomIDList,patch->v);
+    collection->submitVelocities(step,patch->atom);
 }
 
 void Sequencer::runComputeObjects(int migration)

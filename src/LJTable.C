@@ -22,24 +22,20 @@ LJTable *LJTable::Instance() {
 LJTable::LJTable()
 {
   table_dim = Node::Object()->parameters->get_num_vdw_params();
-  half_table_sz = table_dim * table_dim;
-
-  DebugM(1,"Allocating LJ Table: size = " << table_dim << "\n");
-  
-  table = new TableEntry[half_table_sz * 2];
+  table = new TableEntry[2 * table_dim * table_dim];
 
   for (register int i=0; i < table_dim; i++)
     for (register int j=i; j < table_dim; j++)
     {
-      TableEntry *curij = &(table[i*table_dim+j]);
-      TableEntry *curji = &(table[j*table_dim+i]);
-      compute_vdw_params(i,j,curij,curij+half_table_sz);
+      TableEntry *curij = &(table[2*(i*table_dim+j)]);
+      TableEntry *curji = &(table[2*(j*table_dim+i)]);
+      compute_vdw_params(i,j,curij,curij+1);
 
       // Copy to transpose entry
       *curji = *curij;
-      *(curji + half_table_sz) = *(curij + half_table_sz);
+      *(curji + 1) = *(curij + 1);
     }
-  DebugM(1,"LJ Table done\n");
+
 }
 
 //----------------------------------------------------------------------  

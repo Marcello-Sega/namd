@@ -154,15 +154,17 @@ public:
     return result;
   }
 
-  Position* create(Position *d, int n, int i) const
+  CompAtom* create(CompAtom *d, int n, int i) const
   {
-    Position *dt;
+    CompAtom *dt;
     if ( i != 13 )
     {
-      dt = new Position[n];
+      dt = new CompAtom[n];
       Vector shift = (i%3-1) * a1 + ((i/3)%3-1) * a2 + (i/9-1) * a3;
-      for( int j = 0; j < n; ++j )
-        dt[j] = d[j] + shift;
+      for( int j = 0; j < n; ++j ) {
+        dt[j] = d[j];
+        dt[j].position += shift;
+      }
     }
     else
     {
@@ -171,7 +173,7 @@ public:
     return dt;
   }
 
-  void destroy(Position **d, int i) const
+  void destroy(CompAtom **d, int i) const
   {
     if ( i != 13 ) delete [] *d;
     *d = NULL;

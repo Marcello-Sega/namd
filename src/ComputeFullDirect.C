@@ -65,11 +65,9 @@ void ComputeFullDirect::doWork()
   if ( ! patchList[0].p->flags.doFullElectrostatics )
   {
     for (ap = ap.begin(); ap != ap.end(); ap++) {
-      Position *x = (*ap).positionBox->open();
-      AtomProperties *a = (*ap).atomBox->open();
+      CompAtom *x = (*ap).positionBox->open();
       Results *r = (*ap).forceBox->open();
       (*ap).positionBox->close(&x);
-      (*ap).atomBox->close(&a);
       (*ap).forceBox->close(&r);
     }
     reduction->submit();
@@ -91,25 +89,23 @@ void ComputeFullDirect::doWork()
   // get positions and charges
   local_ptr = localData;
   for (ap = ap.begin(); ap != ap.end(); ap++) {
-    Position *x = (*ap).positionBox->open();
+    CompAtom *x = (*ap).positionBox->open();
     if ( patchList[0].p->flags.doMolly ) {
       (*ap).positionBox->close(&x);
       x = (*ap).avgPositionBox->open();
     }
-    AtomProperties *a = (*ap).atomBox->open();
     int numAtoms = (*ap).p->getNumAtoms();
 
     for(int i=0; i<numAtoms; ++i)
     {
-      *(local_ptr++) = x[i].x;
-      *(local_ptr++) = x[i].y;
-      *(local_ptr++) = x[i].z;
-      *(local_ptr++) = a[i].charge;
+      *(local_ptr++) = x[i].position.x;
+      *(local_ptr++) = x[i].position.y;
+      *(local_ptr++) = x[i].position.z;
+      *(local_ptr++) = x[i].charge;
     }
 
     if ( patchList[0].p->flags.doMolly ) { (*ap).avgPositionBox->close(&x); }
     else { (*ap).positionBox->close(&x); }
-    (*ap).atomBox->close(&a);
   } 
 
   // zero out forces

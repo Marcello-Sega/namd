@@ -20,6 +20,7 @@
 
 class Node;
 class PatchMap;
+class LocalWorkMsg;
 
 // Base class for various forms of Compute objects
 // for example: <linkto class=ComputeAngles>ComputeAngles</linkto> 
@@ -39,11 +40,12 @@ protected:
 
 public:
   const ComputeID cid;
+  LocalWorkMsg *const localWorkMsg;
   static int totalComputes;
   Compute(ComputeID);
   int type() { return computeType; };
 
-  virtual ~Compute() { totalComputes--; }
+  virtual ~Compute();
 
   static void setNode(Node *n) { node = n; }
 

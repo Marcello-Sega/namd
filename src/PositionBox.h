@@ -28,7 +28,7 @@ template <class Owner> class PositionBox {
 
   public:
 
-    Position* open(void) { 
+    CompAtom* open(void) { 
       if (state != OPEN) {
         state = OPEN; 
         ownerBox->openCount--;
@@ -36,7 +36,7 @@ template <class Owner> class PositionBox {
       return ownerBox->transData[trans];
     }
 
-    Position* open(int *num) { 
+    CompAtom* open(int *num) { 
       *num = ownerBox->numData;
       if (state != OPEN) {
         state = OPEN; 
@@ -46,7 +46,7 @@ template <class Owner> class PositionBox {
     }
 
     // Closed access to the pointer
-    void close(Position ** const t) {
+    void close(CompAtom ** const t) {
       if (state != CLOSED) {
         state = CLOSED;
         *t = 0;

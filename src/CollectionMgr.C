@@ -32,25 +32,24 @@ CollectionMgr::~CollectionMgr(void)
 }
 
 
-void CollectionMgr::submitPositions(int seq, AtomIDList &i, PositionList &d,
-				Lattice l, TransformList &t, int prec)
+void CollectionMgr::submitPositions(int seq, FullAtomList &a,
+				Lattice l, int prec)
 {
   int wrapWater = Node::Object()->simParameters->wrapWater;
   Molecule *mol = Node::Object()->molecule;
-  PositionList d2(d.size());
-  PositionList::iterator d_i,d_e,d2_i;
-  AtomIDList::iterator a_i = i.begin();
-  TransformList::iterator t_i = t.begin();
-  d_i = d.begin();  d_e = d.end();  d2_i = d2.begin();
-  for ( ; d_i != d_e ; ++d_i, ++d2_i, ++a_i, ++t_i ) {
-    if ( wrapWater && mol->is_water(*a_i) ) {
-      *d2_i = *d_i;
+  int numAtoms = a.size();
+  AtomIDList aid(numAtoms);
+  PositionList d(numAtoms);
+  for ( int i=0; i<numAtoms; ++i ) {
+    aid[i] = a[i].id;
+    if ( wrapWater && mol->is_water(a[i].id) ) {
+      d[i] = a[i].position;
     } else {
-      *d2_i = l.reverse_transform(*d_i,*t_i);
+      d[i] = l.reverse_transform(a[i].position,a[i].transform);
     }
   }
   CollectVectorInstance *c;
-  if ( ( c = positions.submitData(seq,i,d2,prec) ) )
+  if ( ( c = positions.submitData(seq,aid,d,prec) ) )
   {
     CollectVectorMsg * msg = new CollectVectorMsg;
     msg->seq = c->seq;
@@ -64,10 +63,17 @@ void CollectionMgr::submitPositions(int seq, AtomIDList &i, PositionList &d,
 }
 
 
-void CollectionMgr::submitVelocities(int seq, AtomIDList &i, VelocityList &d)
+void CollectionMgr::submitVelocities(int seq, FullAtomList &a)
 {
+  int numAtoms = a.size();
+  AtomIDList aid(numAtoms);
+  PositionList d(numAtoms);
+  for ( int i=0; i<numAtoms; ++i ) {
+    aid[i] = a[i].id;
+    d[i] = a[i].velocity;
+  }
   CollectVectorInstance *c;
-  if ( ( c = velocities.submitData(seq,i,d) ) )
+  if ( ( c = velocities.submitData(seq,aid,d) ) )
   {
     CollectVectorMsg * msg = new CollectVectorMsg;
     msg->seq = c->seq;

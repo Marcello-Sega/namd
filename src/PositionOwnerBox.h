@@ -26,7 +26,7 @@ template <class Owner> class PositionOwnerBox {
       }
     }
       
-    void open(Position* d, int n, Lattice *l) {
+    void open(CompAtom* d, int n, Lattice *l) {
       numData = n;
       closeCount = openCount = numberUsers;
       data = d;
@@ -50,10 +50,10 @@ template <class Owner> class PositionOwnerBox {
     Owner *owner;
     void (Owner::*callback)();
   
-    Position* data;
+    CompAtom* data;
     int numData;
   
-    Position* transData[27];
+    CompAtom* transData[27];
     int transNeeded[27];
     Lattice *lattice;
   

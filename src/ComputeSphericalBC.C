@@ -84,7 +84,7 @@ ComputeSphericalBC::~ComputeSphericalBC()
 /*									*/
 /************************************************************************/
 
-void ComputeSphericalBC::doForce(Position* p, Results* r, AtomProperties* a)
+void ComputeSphericalBC::doForce(CompAtom* p, Results* r)
 
 {
 	Vector diff;		//  Distance from atom to center of sphere
@@ -98,7 +98,7 @@ void ComputeSphericalBC::doForce(Position* p, Results* r, AtomProperties* a)
 	BigReal fval;		//  Force magnitude for this atom
 
 	// aliases to work with old code
-	Position *x = p;
+	CompAtom *x = p;
 	Force *forces = r->f[Results::normal];
 	BigReal energy = 0;
 
@@ -107,9 +107,9 @@ void ComputeSphericalBC::doForce(Position* p, Results* r, AtomProperties* a)
 	{
 		//  Calculate the vector from the atom to the center of the
 		//  sphere
-		diff.x = x[i].x - center.x;
-		diff.y = x[i].y - center.y;
-		diff.z = x[i].z - center.z;
+		diff.x = x[i].position.x - center.x;
+		diff.y = x[i].position.y - center.y;
+		diff.z = x[i].position.z - center.z;
 		
 		//  Calculate the distance squared
 		dist_2 = diff.x*diff.x + diff.y*diff.y + diff.z*diff.z;

@@ -185,15 +185,13 @@ void ComputeGlobal::sendData()
   AtomMap *atomMap = AtomMap::Object();
   const Lattice & lattice = patchList[0].p->lattice;
   ResizeArrayIter<PatchElem> ap(patchList);
-  Position **x = new Position*[numPatches];
-  Transform **t = new Transform*[numPatches];
+  CompAtom **x = new CompAtom*[numPatches];
+  FullAtom **t = new FullAtom*[numPatches];
   for ( int i = 0; i < numPatches; ++i ) { x[i] = 0; t[i] = 0; }
 
   for (ap = ap.begin(); ap != ap.end(); ap++) {
     x[(*ap).patchID] = (*ap).positionBox->open();
-    t[(*ap).patchID] = (*ap).p->getTransformList().begin();
-    AtomProperties *a = (*ap).atomBox->open();
-    (*ap).atomBox->close(&a);
+    t[(*ap).patchID] = (*ap).p->getAtomList().begin();
   }
 
   ComputeGlobalDataMsg *msg = new  ComputeGlobalDataMsg;
@@ -204,8 +202,8 @@ void ComputeGlobal::sendData()
     LocalID localID = atomMap->localID(*a);
     if ( localID.pid == notUsed || ! x[localID.pid] ) continue;
     msg->aid.add(*a);
-    Position x_orig = x[localID.pid][localID.index];
-    Transform trans = t[localID.pid][localID.index];
+    Position x_orig = x[localID.pid][localID.index].position;
+    Transform trans = t[localID.pid][localID.index].transform;
     msg->p.add(lattice.reverse_transform(x_orig,trans));
   }
 
@@ -219,8 +217,8 @@ void ComputeGlobal::sendData()
     for ( ; *g_i != -1; ++g_i ) {
       LocalID localID = atomMap->localID(*g_i);
       if ( localID.pid == notUsed || ! x[localID.pid] ) continue;
-      Position x_orig = x[localID.pid][localID.index];
-      Transform trans = t[localID.pid][localID.index];
+      Position x_orig = x[localID.pid][localID.index].position;
+      Transform trans = t[localID.pid][localID.index].transform;
       com += lattice.reverse_transform(x_orig,trans) * mol->atommass(*g_i);
     }
     com /= *gm_i;

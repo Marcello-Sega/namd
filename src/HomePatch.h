@@ -34,7 +34,7 @@ class HomePatch : public Patch {
 
 private: 
   // for PatchMgr to use only
-  HomePatch(PatchID, AtomIDList, TransformList, PositionList, VelocityList);
+  HomePatch(PatchID, FullAtomList);
   ScaledPosition min, max, center;
 
 public:
@@ -90,7 +90,7 @@ public:
   void submitLoadStats(int timestep);
 
   // for ComputeHomePatches
-  TransformList &getTransformList() { return (t); }
+  FullAtomList &getAtomList() { return (atom); }
 
 protected:
   virtual void boxClosed(int);
@@ -105,10 +105,14 @@ protected:
   
 private:
   // Store of Atom-wise variables
-  VelocityList  v; 
-  TransformList t;   
-  ResizeArray<BigReal> molly_lambda;  // used for MOLLY
-  PositionList p_checkpoint;  // used for CONTRA, etc.
+  FullAtomList  atom;
+
+  // checkpointed state
+  FullAtomList  checkpoint_atom;
+  Lattice  checkpoint_lattice;
+
+  // MOLLY data
+  ResizeArray<BigReal> molly_lambda;
   
   // List of Proxies
   ProxyList     proxy;

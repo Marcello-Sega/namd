@@ -331,11 +331,9 @@ void ComputeDPMTA::doWork()
   if (!patchList[0].p->flags.doFullElectrostatics)
   {
     for (ap = ap.begin(); ap != ap.end(); ap++) {
-      Position *x = (*ap).positionBox->open();
-      AtomProperties *a = (*ap).atomBox->open();
+      CompAtom *x = (*ap).positionBox->open();
       Results *r = (*ap).forceBox->open();
       (*ap).forceBox->close(&r);
-      (*ap).atomBox->close(&a);
       (*ap).positionBox->close(&x);
     }
     reduction->submit();
@@ -387,12 +385,11 @@ void ComputeDPMTA::doWork()
   DebugM(2,"Charge unit factor = " << unitFactor << "\n");
   for (i=0, ap = ap.begin(); ap != ap.end(); ap++)
   {
-    Vector *x = (*ap).positionBox->open();
+    CompAtom *x = (*ap).positionBox->open();
     if ( patchList[0].p->flags.doMolly ) {
       (*ap).positionBox->close(&x);
       x = (*ap).avgPositionBox->open();
     }
-    AtomProperties *a = (*ap).atomBox->open();
 
     // store each atom in the particle_list
     Vector pos;
@@ -401,19 +398,19 @@ void ComputeDPMTA::doWork()
       // explicitly copy -- two different data structures
       if (usePBC)
 	{
-	particle_list[i].p.x = rescaleFactor.x * (x[j].x-boxcenter.x);
-	particle_list[i].p.y = rescaleFactor.y * (x[j].y-boxcenter.y);
-	particle_list[i].p.z = rescaleFactor.z * (x[j].z-boxcenter.z);
+	particle_list[i].p.x = rescaleFactor.x * (x[j].position.x-boxcenter.x);
+	particle_list[i].p.y = rescaleFactor.y * (x[j].position.y-boxcenter.y);
+	particle_list[i].p.z = rescaleFactor.z * (x[j].position.z-boxcenter.z);
 	}
       else
 	{
-	particle_list[i].p.x = x[j].x;
-	particle_list[i].p.y = x[j].y;
-	particle_list[i].p.z = x[j].z;
+	particle_list[i].p.x = x[j].position.x;
+	particle_list[i].p.y = x[j].position.y;
+	particle_list[i].p.z = x[j].position.z;
 	}
-      particle_list[i].q = a[j].charge * unitFactor;
+      particle_list[i].q = x[j].charge * unitFactor;
       DebugM(1,"atom[" << i << "]=" << x[j] << " "
-	      << a[j].charge*unitFactor << "\n");
+	      << x[j].charge*unitFactor << "\n");
       i++;
       if (i > totalAtoms)
 	{
@@ -423,7 +420,6 @@ void ComputeDPMTA::doWork()
 	}
     }
 
-    (*ap).atomBox->close(&a);
     if ( patchList[0].p->flags.doMolly ) { (*ap).avgPositionBox->close(&x); }
     else { (*ap).positionBox->close(&x); }
   } 

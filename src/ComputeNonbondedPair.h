@@ -19,7 +19,7 @@ public:
 protected :
   virtual void initialize();
   virtual int noWork();
-  virtual void doForce(Position* p[2], Results* r[2], AtomProperties* a[2]);
+  virtual void doForce(CompAtom* p[2], Results* r[2]);
 
   PositionBox<Patch> *avgPositionBox[2];
 

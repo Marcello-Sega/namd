@@ -116,11 +116,15 @@ void Controller::algorithm(void)
       case SCRIPT_CHECKPOINT:
         iout << "CHECKPOINTING POSITIONS AT STEP " << simParams->firstTimestep
           << "\n" << endi;
+        checkpoint_lattice = state->lattice;
+        checkpoint_langevinPiston_strainRate = langevinPiston_strainRate;
         Node::Object()->enableExitScheduler();
         continue;
       case SCRIPT_REVERT:
         iout << "REVERTING POSITIONS AT STEP " << simParams->firstTimestep
           << "\n" << endi;
+        state->lattice = checkpoint_lattice;
+        langevinPiston_strainRate = checkpoint_langevinPiston_strainRate;
         Node::Object()->enableExitScheduler();
         continue;
     }

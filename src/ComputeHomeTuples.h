@@ -37,12 +37,10 @@ class TuplePatchElem {
     PositionBox<Patch> *positionBox;
     PositionBox<Patch> *avgPositionBox;
     Box<Patch,Results> *forceBox;
-    Box<Patch,AtomProperties> *atomBox;
-    Position *x;
-    Position *x_avg;
+    CompAtom *x;
+    CompAtom *x_avg;
     Results *r;
     Force *f;
-    AtomProperties *a;
 
     int hash() const { return patchID; }
 
@@ -52,12 +50,10 @@ class TuplePatchElem {
     positionBox = NULL;
     avgPositionBox = NULL;
     forceBox = NULL;
-    atomBox = NULL;
     x = NULL;
     x_avg = NULL;
     r = NULL;
     f = NULL;
-    a = NULL;
   }
 
   TuplePatchElem(Patch *p_param, ComputeID cid) {
@@ -66,12 +62,10 @@ class TuplePatchElem {
     positionBox = p_param->registerPositionPickup(cid);
     avgPositionBox = p_param->registerAvgPositionPickup(cid);
     forceBox = p_param->registerForceDeposit(cid);
-    atomBox = p_param->registerAtomPickup(cid);
     x = NULL;
     x_avg = NULL;
     r = NULL;
     f = NULL;
-    a = NULL;
   }
     
   ~TuplePatchElem() {};
@@ -112,15 +106,15 @@ template <class T, class S> class ComputeHomeTuples : public Compute {
     
       for ( ai = ai.begin(); ai != ai.end(); ai++ )
       {
+        CompAtom *atom = (*ai).x;
         Patch *patch = (*ai).p;
-        AtomIDList atomID = patch->getAtomIDList();
         int numAtoms = patch->getNumAtoms();
     
         // cycle through each atom in the patch and load up tuples
         for (int j=0; j < numAtoms; j++)
         {
            /* get list of all tuples for the atom */
-           int *curTuple = tuplesByAtom[atomID[j]];
+           int *curTuple = tuplesByAtom[atom[j].id];
     
            /* cycle through each tuple */
            for( ; *curTuple != -1; ++curTuple) {
@@ -229,21 +223,21 @@ template <class T, class S> class ComputeHomeTuples : public Compute {
 // to get access to atom positions, return forces etc.
 //-------------------------------------------------------------------
     void doWork(void) {
-      if ( doLoadTuples ) {
-        loadTuples();
-        doLoadTuples = false;
-      }
-    
+
       // Open Boxes - register that we are using Positions
       // and will be depositing Forces.
       UniqueSetIter<TuplePatchElem> ap(tuplePatchList);
       for (ap = ap.begin(); ap != ap.end(); ap++) {
         ap->x = ap->positionBox->open();
         if ( ap->p->flags.doMolly ) ap->x_avg = ap->avgPositionBox->open();
-        ap->a = ap->atomBox->open();
         ap->r = ap->forceBox->open();
         ap->f = ap->r->f[Results::normal];
       } 
+    
+      if ( doLoadTuples ) {
+        loadTuples();
+        doLoadTuples = false;
+      }
     
       BigReal reductionData[T::reductionDataSize];
       for ( int i = 0; i < T::reductionDataSize; ++i ) reductionData[i] = 0;
@@ -265,7 +259,6 @@ template <class T, class S> class ComputeHomeTuples : public Compute {
       for (ap = ap.begin(); ap != ap.end(); ap++) {
         ap->positionBox->close(&(ap->x));
         if ( ap->p->flags.doMolly ) ap->avgPositionBox->close(&(ap->x_avg));
-        ap->atomBox->close(&(ap->a));
         ap->forceBox->close(&(ap->r));
       }
     }

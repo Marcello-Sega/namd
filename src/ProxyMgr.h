@@ -41,8 +41,8 @@ class ProxyDataMsg : public CMessage_ProxyDataMsg {
 public:
   PatchID patch;
   Flags flags;
-  PositionList positionList;
-  PositionList avgPositionList;
+  CompAtomList positionList;
+  CompAtomList avgPositionList;
   static void* pack(ProxyDataMsg *msg);
   static ProxyDataMsg* unpack(void *ptr);
 };
@@ -51,9 +51,8 @@ class ProxyAllMsg : public CMessage_ProxyAllMsg {
 public:
   PatchID patch;
   Flags flags;
-  AtomIDList atomIDList;
-  PositionList positionList;
-  PositionList avgPositionList;
+  CompAtomList positionList;
+  CompAtomList avgPositionList;
   static void* pack(ProxyAllMsg *msg);
   static ProxyAllMsg* unpack(void *ptr);
 };

@@ -37,8 +37,7 @@ public:
 
 protected :
   int numAtoms;
-  virtual void doForce(Position* p, Results* r, AtomProperties* a,
-	Transform* t) = 0;
+  virtual void doForce(FullAtom* p, Results* r) = 0;
   Patch *patch;
   HomePatch *homePatch;
 
@@ -46,7 +45,6 @@ private:
   PatchID patchID;
   PositionBox<Patch> *positionBox;
   Box<Patch,Results> *forceBox;
-  Box<Patch,AtomProperties> *atomBox;
 
 };
 

@@ -73,10 +73,10 @@ void DihedralElem::computeForce(BigReal *reduction)
   int multiplicity = Node::Object()->parameters->get_dihedral_multiplicity(dihedralType);
 
   //  Calculate the vectors between atoms
-  const Position & pos0 = p[0]->x[localIndex[0]];
-  const Position & pos1 = p[1]->x[localIndex[1]];
-  const Position & pos2 = p[2]->x[localIndex[2]];
-  const Position & pos3 = p[3]->x[localIndex[3]];
+  const Position & pos0 = p[0]->x[localIndex[0]].position;
+  const Position & pos1 = p[1]->x[localIndex[1]].position;
+  const Position & pos2 = p[2]->x[localIndex[2]].position;
+  const Position & pos3 = p[3]->x[localIndex[3]].position;
   const Lattice & lattice = p[0]->p->lattice;
   const Vector r12 = lattice.delta(pos0,pos1);
   const Vector r23 = lattice.delta(pos1,pos2);

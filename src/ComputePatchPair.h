@@ -37,14 +37,13 @@ public:
 
 protected :
   int numAtoms[2];
-  virtual void doForce(Position* p[2], Results* r[2], AtomProperties* a[2]);
+  virtual void doForce(CompAtom* p[2], Results* r[2]);
   Patch *patch[2];
 
 // private: // hack for ComputeNonbondedPair::noWork()
   PatchID patchID[2];
   int trans[2];
   PositionBox<Patch> *positionBox[2];
-  Box<Patch,AtomProperties> *atomBox[2];
   Box<Patch,Results> *forceBox[2];
 };
 

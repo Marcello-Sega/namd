@@ -26,7 +26,6 @@ ComputeHomePatch::ComputeHomePatch(ComputeID c, PatchID p) : Compute(c) {
     homePatch = NULL;
     positionBox = NULL;
     forceBox = NULL;
-    atomBox = NULL;
 }
 
 ComputeHomePatch::~ComputeHomePatch() {
@@ -39,10 +38,6 @@ ComputeHomePatch::~ComputeHomePatch() {
     if (forceBox != NULL) {
       PatchMap::Object()->patch(patchID)->unregisterForceDeposit(cid,
 		&forceBox);
-    }
-    if (atomBox != NULL) {
-      PatchMap::Object()->patch(patchID)->unregisterAtomPickup(cid,
-		&atomBox);
     }
 }
 
@@ -60,7 +55,6 @@ void ComputeHomePatch::initialize() {
 	    DebugM(3, "initialize(" << cid <<")  patchid = "<<patch->getPatchID()<<"\n");
 	    positionBox = patch->registerPositionPickup(cid);
 	    forceBox = patch->registerForceDeposit(cid);
-	    atomBox = patch->registerAtomPickup(cid);
 	}
 	numAtoms = patch->getNumAtoms();
 
@@ -86,10 +80,9 @@ void ComputeHomePatch::atomUpdate() {
 }
 
 void ComputeHomePatch::doWork() {
-  Position* p;
+  CompAtom* p;
   Results* r;
-  AtomProperties* a;
-  Transform* t = homePatch->getTransformList().begin();
+  FullAtom* a = homePatch->getAtomList().begin();
   int numData;
 
   DebugM(3,patchID << ": doWork() called.\n");
@@ -100,15 +93,13 @@ void ComputeHomePatch::doWork() {
     NAMD_bug("doWork has opened a position box with wrong # atoms.");
   }
   r = forceBox->open();
-  a = atomBox->open();
 
   // Pass pointers to doForce
-  doForce(p,r,a,t);
+  doForce(a,r);
 
   // Close up boxes
   positionBox->close(&p);
   forceBox->close(&r);
-  atomBox->close(&a);
 
   DebugM(2,patchID << ": doWork() completed.\n");
 }

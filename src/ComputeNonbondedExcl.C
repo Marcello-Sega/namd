@@ -40,11 +40,12 @@ void NonbondedExclElem::computeForce(BigReal *reduction)
     register int localIndex1 = localIndex[1];
 
     nonbonded params;
-    params.p_ij = patch->lattice.delta(p0->x[localIndex0], p1->x[localIndex1]);
+    params.p_ij = patch->lattice.delta(p0->x[localIndex0].position,
+						p1->x[localIndex1].position);
     params.ff[0] = &(p0->r->f[Results::nbond][localIndex0]);
     params.ff[1] = &(p1->r->f[Results::nbond][localIndex1]);
-    params.a[0] = &(p0->a[localIndex0]);
-    params.a[1] = &(p1->a[localIndex1]);
+    params.p[0] = &(p0->x[localIndex0]);
+    params.p[1] = &(p1->x[localIndex1]);
     params.m14 = modified;
     params.reduction = reduction;
 
@@ -55,7 +56,8 @@ void NonbondedExclElem::computeForce(BigReal *reduction)
       if ( patch->flags.doMolly ) {
         ComputeNonbondedUtil::calcExcl(&params);
         params.p_ij =
-	  patch->lattice.delta(p0->x_avg[localIndex0], p1->x_avg[localIndex1]);
+	  patch->lattice.delta(p0->x_avg[localIndex0].position,
+				p1->x_avg[localIndex1].position);
         ComputeNonbondedUtil::calcSlowExcl(&params);
       } else {
         ComputeNonbondedUtil::calcFullExcl(&params);

@@ -25,16 +25,11 @@ class MovePatchesMsg : public CMessage_MovePatchesMsg {
 public:
     NodeID  fromNodeID;
     PatchID pid;
-    AtomIDList aid;
-    TransformList t;
-    PositionList p;
-    VelocityList v;
+    FullAtomList atom;
 
     MovePatchesMsg(void) { ; }
 
-    MovePatchesMsg(PatchID n, AtomIDList a, TransformList tl,
-				PositionList pl, VelocityList vl) : 
-      pid(n), aid(a), t(tl), p(pl), v(vl)
+    MovePatchesMsg(PatchID n, FullAtomList a) : pid(n), atom(a)
     {
       fromNodeID = CkMyPe();
     }
@@ -85,9 +80,7 @@ public:
 
   static PatchMgr* Object() { return CpvAccess(PatchMgr_instance); }
   
-
-  void createHomePatch(PatchID pid, AtomIDList aid, TransformList t,
-     PositionList p, VelocityList v); 
+  void createHomePatch(PatchID pid, FullAtomList a);
 
   void movePatch(PatchID, NodeID);
   void sendMovePatches();

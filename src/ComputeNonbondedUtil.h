@@ -17,11 +17,9 @@ class LJTable;
 class Molecule;
 
 // function arguments
-typedef struct
-  {
-  Position* p[2];
+struct nonbonded {
+  CompAtom* p[2];
   Force* ff[2];
-  AtomProperties* a[2];
   // for full electrostatics
   Force* fullf [2];
 
@@ -38,7 +36,7 @@ typedef struct
   int maxPart;
   int numParts;
 
-  } nonbonded;
+};
 
 class ComputeNonbondedUtil {
 

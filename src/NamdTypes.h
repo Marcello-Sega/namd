@@ -26,38 +26,31 @@ typedef double Coordinate;
 
 struct Transform
 {
-  int i,j,k;
+  char i,j,k;
   Transform(void) { i=0; j=0; k=0; }
-//  int operator==(const Transform &o) const {
-//	return ( i==o.i && j==o.j && k==o.k ); }
 };
 
-struct AtomProperties
-{
-  AtomID id;
-  AtomType type;
-  Mass mass;
+struct CompAtom {
+  Position position;
   Charge charge;
-
-  // other data information
-  char hydrogenGroupSize;	// 0 from group members, !0 for group parents
-  char nonbondedGroupSize;	// same, but variable with strict size limits
-  // Bool water;	// TRUE if water atom (O or H)  NEVER USED -JCP
-  unsigned char flags;	// for fixed atoms, etc. - use with & operator
-
-//  int operator==(const AtomProperties& a) {
-//    return( id == a.id );
-//  }
+  unsigned int id : 24;
+  unsigned int hydrogenGroupSize : 3;
+  unsigned int nonbondedGroupSize : 3;
+  unsigned int atomFixed : 1;
+  unsigned int groupFixed : 1;
 };
 
-// Definitions for AtomProperties flags
-#define ATOM_FIXED	0x0001
-#define GROUP_FIXED	0x0002
+struct FullAtom : CompAtom {
+  Velocity velocity;
+  Mass mass;
+  Transform transform;
+};
 
+typedef ResizeArray<CompAtom> CompAtomList;
+typedef ResizeArray<FullAtom> FullAtomList;
 typedef ResizeArray<Position> PositionList;
 typedef ResizeArray<Velocity> VelocityList;
 typedef ResizeArray<Force> ForceList;
-typedef ResizeArray<AtomProperties> AtomPropertiesList;
 typedef ResizeArray<Transform> TransformList;
 
 typedef ResizeArray<AtomID> AtomIDList;

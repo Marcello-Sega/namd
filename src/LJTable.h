@@ -24,12 +24,18 @@ public:
   inline static LJTable *Object(void) {return CpvAccess(LJTable_instance);}
   ~LJTable(void);
 
-  inline TableEntry *table_entry(const int index) const;
-  inline int table_index(const int i,const int j, const int scaled14) const;
-  inline void get_LJ_params(const int index, BigReal *A, BigReal *B) const;
-  inline TableEntry *table_val(const int gi, const int gj, 
-			       const int scaled14) const;
-  inline TableEntry *table_val(const int gi, const int gj) const;
+  const TableEntry *table_row(unsigned int i) const {
+    return table + 2 * (i * table_dim);
+  }
+
+  const TableEntry *table_val(unsigned int i, unsigned int j) const {
+    return table + 2 * (i * table_dim + j);
+  }
+
+  const TableEntry *table_val_scale14(unsigned int i, unsigned int j) const {
+    return table + 2 * (i * table_dim + j) + 1;
+  }
+
 
 protected:
   LJTable(void);
@@ -40,49 +46,9 @@ private:
 			  TableEntry *cur, TableEntry *cur_scaled);
 
   TableEntry *table;
-  int half_table_sz;
-  int table_dim;
+  unsigned int table_dim;
 
 };
-
-//======================================================================
-inline LJTable::TableEntry *LJTable::table_entry(const int index) const
-{
-  return &(table[index]);
-}
-
-//----------------------------------------------------------------------
-inline int 
-LJTable::table_index(const int i, const int j, const int scaled14) const
-{
-  return i * table_dim + j + (scaled14 ? half_table_sz : 0);
-}
-
-//----------------------------------------------------------------------
-inline LJTable::TableEntry *
-LJTable::table_val(const int i, const int j, const int scaled14) const
-{
-  return table + i * table_dim + j + (scaled14 ? half_table_sz : 0);
-}
-
-//----------------------------------------------------------------------
-inline LJTable::TableEntry *
-LJTable::table_val(const int i, const int j) const
-{
-  return table + i * table_dim + j;
-}
-
-//----------------------------------------------------------------------
-inline void 
-LJTable::get_LJ_params(const int index, BigReal *A, BigReal *B) const
-{
-  TableEntry *cur = table + index;
-
-  *A = cur->A;
-  *B = cur->B;
-  
-return;
-}
 
 #endif
 

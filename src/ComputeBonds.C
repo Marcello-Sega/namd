@@ -62,7 +62,8 @@ void BondElem::computeForce(BigReal *reduction)
 
   // compute vectors between atoms and their distances
   const Lattice & lattice = p[0]->p->lattice;
-  const Vector r12 = lattice.delta(p[0]->x[localIndex[0]],p[1]->x[localIndex[1]]);
+  const Vector r12 = lattice.delta(p[0]->x[localIndex[0]].position,
+					p[1]->x[localIndex[1]].position);
   r = r12.length();
 
   //  Compare it to the rest bond

@@ -90,7 +90,7 @@ ComputeCylindricalBC::~ComputeCylindricalBC()
 /*									*/
 /************************************************************************/
 
-void ComputeCylindricalBC::doForce(Position* p, Results* r, AtomProperties* a)
+void ComputeCylindricalBC::doForce(CompAtom* p, Results* r)
 
 {
 	Vector diff;		//  Distance from atom to center of cylinder
@@ -104,7 +104,7 @@ void ComputeCylindricalBC::doForce(Position* p, Results* r, AtomProperties* a)
 	BigReal fval;		//  Force magnitude for this atom
 
 	// aliases to work with old code
-	Position *x = p;
+	CompAtom *x = p;
 	Force *forces = r->f[Results::normal];
 	BigReal energy = 0;
 
@@ -113,9 +113,9 @@ void ComputeCylindricalBC::doForce(Position* p, Results* r, AtomProperties* a)
 	{
 		//  Calculate the vector from the atom to the center of the
 		//  cylinder
-		diff.x = ( axis == 'x' ? 0.0 : x[i].x - center.x );
-		diff.y = ( axis == 'y' ? 0.0 : x[i].y - center.y );
-		diff.z = ( axis == 'z' ? 0.0 : x[i].z - center.z );
+		diff.x = ( axis == 'x' ? 0.0 : x[i].position.x - center.x );
+		diff.y = ( axis == 'y' ? 0.0 : x[i].position.y - center.y );
+		diff.z = ( axis == 'z' ? 0.0 : x[i].position.z - center.z );
 		
 		//  Calculate the distance squared
 		dist_2 = diff.x*diff.x + diff.y*diff.y + diff.z*diff.z;
@@ -218,9 +218,9 @@ void ComputeCylindricalBC::doForce(Position* p, Results* r, AtomProperties* a)
         {
                 //  Calculate the vector from the atom to the center of the
                 //  cylinder
-		diff.x = ( axis != 'x' ? 0.0 : x[i].x - center.x );
-		diff.y = ( axis != 'y' ? 0.0 : x[i].y - center.y );
-		diff.z = ( axis != 'z' ? 0.0 : x[i].z - center.z );
+		diff.x = ( axis != 'x' ? 0.0 : x[i].position.x - center.x );
+		diff.y = ( axis != 'y' ? 0.0 : x[i].position.y - center.y );
+		diff.z = ( axis != 'z' ? 0.0 : x[i].position.z - center.z );
 
                 //  Calculate the distance squared
                 dist_2 = diff.x*diff.x + diff.y*diff.y + diff.z*diff.z;
