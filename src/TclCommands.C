@@ -121,6 +121,8 @@ int proc_vecsub(ClientData, Tcl_Interp *interp, int argc, char *argv[])
     Tcl_PrintDouble(interp, data1[i] - data2[i], s);
     Tcl_AppendElement(interp, s);
   }
+  delete [] data1;
+  delete [] data2;
   return TCL_OK;
 }
 
