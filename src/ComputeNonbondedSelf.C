@@ -75,6 +75,8 @@ void ComputeNonbondedSelf::doForce(CompAtom* p,
         params.p[1] = p_avg;
         calcSlowSelf(&params);
         avgPositionBox->close(&p_avg);
+      } else if ( patch->flags.maxForceMerged == Results::slow ) {
+        calcMergeSelf(&params);
       } else {
         calcFullSelf(&params);
       }

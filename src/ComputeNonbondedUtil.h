@@ -52,6 +52,9 @@ public:
   static void (*calcFullPair)(nonbonded *);
   static void (*calcFullSelf)(nonbonded *);
 
+  static void (*calcMergePair)(nonbonded *);
+  static void (*calcMergeSelf)(nonbonded *);
+
   static void (*calcSlowPair)(nonbonded *);
   static void (*calcSlowSelf)(nonbonded *);
 
@@ -78,6 +81,8 @@ public:
   static BigReal *fast_table;
   static BigReal *scor_table;
   static BigReal *slow_table;
+  static BigReal *corr_table;
+  static BigReal *full_table;
   static BigReal scaling;
   static BigReal scale14;
   static Real switchOn;
@@ -117,18 +122,22 @@ public:
 
   static void calc_pair(nonbonded *);
   static void calc_pair_fullelect(nonbonded *);
+  static void calc_pair_merge_fullelect(nonbonded *);
   static void calc_pair_slow_fullelect(nonbonded *);
 
   static void calc_self(nonbonded *);
   static void calc_self_fullelect(nonbonded *);
+  static void calc_self_merge_fullelect(nonbonded *);
   static void calc_self_slow_fullelect(nonbonded *);
 
 //alchemical fep calcualtion
   static void calc_pair_fep(nonbonded *);
   static void calc_pair_fullelect_fep (nonbonded *);
+  static void calc_pair_merge_fullelect_fep (nonbonded *);
   static void calc_pair_slow_fullelect_fep (nonbonded *);
   static void calc_self_fep (nonbonded *);
   static void calc_self_fullelect_fep (nonbonded *);
+  static void calc_self_merge_fullelect_fep (nonbonded *);
   static void calc_self_slow_fullelect_fep (nonbonded *);
 
 };

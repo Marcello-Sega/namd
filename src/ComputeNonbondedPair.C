@@ -132,6 +132,8 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2],
 	  calcSlowPair(&params);
 	  avgPositionBox[0]->close(&p_avg[0]);
 	  avgPositionBox[1]->close(&p_avg[1]);
+        } else if ( patch[0]->flags.maxForceMerged == Results::slow ) {
+          calcMergePair(&params);
 	} else {
 	  calcFullPair(&params);
 	}
@@ -161,6 +163,8 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2],
 	  calcSlowPair(&params);
 	  avgPositionBox[0]->close(&p_avg[0]);
 	  avgPositionBox[1]->close(&p_avg[1]);
+        } else if ( patch[0]->flags.maxForceMerged == Results::slow ) {
+          calcMergePair(&params);
 	} else {
 	  calcFullPair(&params);
 	}

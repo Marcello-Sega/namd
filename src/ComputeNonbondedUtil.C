@@ -35,6 +35,8 @@ BigReal*	ComputeNonbondedUtil::table_alloc = 0;
 BigReal*	ComputeNonbondedUtil::fast_table;
 BigReal*	ComputeNonbondedUtil::scor_table;
 BigReal*	ComputeNonbondedUtil::slow_table;
+BigReal*	ComputeNonbondedUtil::corr_table;
+BigReal*	ComputeNonbondedUtil::full_table;
 BigReal         ComputeNonbondedUtil::scaling;
 BigReal         ComputeNonbondedUtil::scale14;
 Real            ComputeNonbondedUtil::switchOn;
@@ -68,6 +70,9 @@ void (*ComputeNonbondedUtil::calcSelf)(nonbonded *);
 
 void (*ComputeNonbondedUtil::calcFullPair)(nonbonded *);
 void (*ComputeNonbondedUtil::calcFullSelf)(nonbonded *);
+
+void (*ComputeNonbondedUtil::calcMergePair)(nonbonded *);
+void (*ComputeNonbondedUtil::calcMergeSelf)(nonbonded *);
 
 void (*ComputeNonbondedUtil::calcSlowPair)(nonbonded *);
 void (*ComputeNonbondedUtil::calcSlowSelf)(nonbonded *);
@@ -131,6 +136,8 @@ void ComputeNonbondedUtil::select(void)
     ComputeNonbondedUtil::calcSelf = calc_self_fep;
     ComputeNonbondedUtil::calcFullPair = calc_pair_fullelect_fep;
     ComputeNonbondedUtil::calcFullSelf = calc_self_fullelect_fep;
+    ComputeNonbondedUtil::calcMergePair = calc_pair_merge_fullelect_fep;
+    ComputeNonbondedUtil::calcMergeSelf = calc_self_merge_fullelect_fep;
     ComputeNonbondedUtil::calcSlowPair = calc_pair_slow_fullelect_fep;
     ComputeNonbondedUtil::calcSlowSelf = calc_self_slow_fullelect_fep;
   } else {
@@ -138,6 +145,8 @@ void ComputeNonbondedUtil::select(void)
     ComputeNonbondedUtil::calcSelf = calc_self;
     ComputeNonbondedUtil::calcFullPair = calc_pair_fullelect;
     ComputeNonbondedUtil::calcFullSelf = calc_self_fullelect;
+    ComputeNonbondedUtil::calcMergePair = calc_pair_merge_fullelect;
+    ComputeNonbondedUtil::calcMergeSelf = calc_self_merge_fullelect;
     ComputeNonbondedUtil::calcSlowPair = calc_pair_slow_fullelect;
     ComputeNonbondedUtil::calcSlowSelf = calc_self_slow_fullelect;
   }
@@ -235,12 +244,14 @@ void ComputeNonbondedUtil::select(void)
   }
 
   if ( table_alloc ) delete [] table_alloc;
-  table_alloc = new BigReal[12*n+40];
+  table_alloc = new BigReal[20*n+40];
   BigReal *table_align = table_alloc;
   while ( ((long)table_align) % 32 ) ++table_align;
   fast_table = table_align;
   scor_table = table_align + 4*n;
   slow_table = table_align + 8*n;
+  corr_table = table_align + 12*n;
+  full_table = table_align + 16*n;
   BigReal *fast_i = fast_table + 4;
   BigReal *scor_i = scor_table + 4;
   BigReal *slow_i = slow_table + 4;
@@ -401,6 +412,11 @@ void ComputeNonbondedUtil::select(void)
     }
   }
 
+  for ( i=0; i<4*n; ++i ) {
+    corr_table[i] = fast_table[i] + scor_table[i];
+    full_table[i] = fast_table[i] + slow_table[i];
+  }
+
 #if 0
   char fname[100];
   sprintf(fname,"/tmp/namd.table.pe%d.dat",CkMyPe());
@@ -414,6 +430,10 @@ void ComputeNonbondedUtil::select(void)
     t = scor_table + 4*i;
     fprintf(f," %g %g %g %g", t[0], t[1], t[2], t[3]);
     t = slow_table + 4*i;
+    fprintf(f," %g %g %g %g", t[0], t[1], t[2], t[3]);
+    t = corr_table + 4*i;
+    fprintf(f," %g %g %g %g", t[0], t[1], t[2], t[3]);
+    t = full_table + 4*i;
     fprintf(f," %g %g %g %g", t[0], t[1], t[2], t[3]);
     fprintf(f,"\n");
   }
@@ -431,6 +451,9 @@ void ComputeNonbondedUtil::select(void)
 #include "ComputeNonbondedBase.h"
 #define FULLELECT
 #include "ComputeNonbondedBase.h"
+#define MERGEELECT
+#include "ComputeNonbondedBase.h"
+#undef MERGEELECT
 #define SLOWONLY
 #include "ComputeNonbondedBase.h"
 #undef SLOWONLY
@@ -441,6 +464,9 @@ void ComputeNonbondedUtil::select(void)
 #include "ComputeNonbondedBase.h"
 #define FULLELECT
 #include "ComputeNonbondedBase.h"
+#define MERGEELECT
+#include "ComputeNonbondedBase.h"
+#undef MERGEELECT
 #define SLOWONLY
 #include "ComputeNonbondedBase.h"
 #undef SLOWONLY
@@ -453,6 +479,9 @@ void ComputeNonbondedUtil::select(void)
 #include "ComputeNonbondedBase.h"
 #define FULLELECT
 #include "ComputeNonbondedBase.h"
+#define MERGEELECT
+#include "ComputeNonbondedBase.h"
+#undef MERGEELECT
 #define SLOWONLY
 #include "ComputeNonbondedBase.h"
 #undef SLOWONLY
@@ -463,6 +492,9 @@ void ComputeNonbondedUtil::select(void)
 #include "ComputeNonbondedBase.h"
 #define FULLELECT
 #include "ComputeNonbondedBase.h"
+#define MERGEELECT
+#include "ComputeNonbondedBase.h"
+#undef MERGEELECT
 #define SLOWONLY
 #include "ComputeNonbondedBase.h"
 #undef SLOWONLY

@@ -42,10 +42,23 @@
 #undef FAST
 #ifdef SLOWONLY
   #define FAST(X)
-  #define SLOWONLYNAME(X) FULLELECTNAME( X ## _slow )
+  #define SLOWONLYNAME(X) MERGEELECTNAME( X ## _slow )
 #else
   #define FAST(X) X
-  #define SLOWONLYNAME(X) FULLELECTNAME( X )
+  #define SLOWONLYNAME(X) MERGEELECTNAME( X )
+#endif
+
+#undef MERGEELECTNAME
+#undef SHORT
+#undef NOSHORT
+#ifdef MERGEELECT
+  #define SHORT(X)
+  #define NOSHORT(X) X
+  #define MERGEELECTNAME(X) FULLELECTNAME( X ## _merge )
+#else
+  #define SHORT(X) X
+  #define NOSHORT(X)
+  #define MERGEELECTNAME(X) FULLELECTNAME( X )
 #endif
 
 #undef FULLELECTNAME
@@ -93,12 +106,18 @@ void ComputeNonbondedUtil :: NAME
   FAST
   (
   BigReal vdwEnergy = 0;
+  SHORT
+  (
   BigReal electEnergy = 0;
+  )
 
   FEP
   (
   BigReal vdwEnergy_s = 0;
+  SHORT
+  (
   BigReal electEnergy_s = 0;
+  )
   )
   
   BigReal virial_xx = 0;
@@ -134,12 +153,23 @@ void ComputeNonbondedUtil :: NAME
   const Molecule* const mol = ComputeNonbondedUtil:: mol;
   FAST
   (
+  SHORT
+  (
   const BigReal* const fast_table = ComputeNonbondedUtil:: fast_table;
+  )
   )
   FULL
   (
+  SHORT
+  (
   const BigReal* const scor_table = ComputeNonbondedUtil:: scor_table;
   const BigReal* const slow_table = ComputeNonbondedUtil:: slow_table;
+  )
+  NOSHORT
+  (
+  const BigReal* const scor_table = ComputeNonbondedUtil:: corr_table;
+  const BigReal* const slow_table = ComputeNonbondedUtil:: full_table;
+  )
   )
   const BigReal scaling = ComputeNonbondedUtil:: scaling;
   const BigReal modf_mod = 1.0 - scale14;
@@ -397,8 +427,10 @@ void ComputeNonbondedUtil :: NAME
       int table_i = (int) ( r2_delta_1 * r2 );
       FAST(
       const BigReal r_2 = 1.0 / r2;
+      SHORT(
       const BigReal* const fast_i = fast_table + 4*table_i;
       BigReal fast_a = fast_i[0];
+      )
       )
       FULL(
       const BigReal* const scor_i = scor_table + 4*table_i;
@@ -506,6 +538,7 @@ void ComputeNonbondedUtil :: NAME
       reduction[pairVDWForceIndex_Z] += 2.0 * force_r * p_ij_z;
       )
 
+      SHORT(
       BigReal modfc = 1.0 - modf;
       fast_a *= modfc;
       BigReal fast_d = modfc * fast_i[3];
@@ -560,6 +593,7 @@ void ComputeNonbondedUtil :: NAME
       f_j.z -= tmp_z;
 
       )
+      )
 
       FULL(
       const BigReal* const slow_i = ( modf ? slow_table + 4*table_i : scor_i );
@@ -578,7 +612,16 @@ void ComputeNonbondedUtil :: NAME
       
       FEP( fullElectEnergy_s += d_lambda_pair * kqq * slow_val; )
 
+      FEP(
+      reduction[pairElectForceIndex_X] -= 2.0 * kqq * slow_dir * p_ij_x;
+      reduction[pairElectForceIndex_Y] -= 2.0 * kqq * slow_dir * p_ij_y;
+      reduction[pairElectForceIndex_Z] -= 2.0 * kqq * slow_dir * p_ij_z;
+      )
+
       {
+      NOSHORT(
+      fullforce_r += force_r;
+      )
       fullforce_r *= 2.0;
       Force & fullf_j = fullf_1[j];
       register BigReal tmp_x = fullforce_r * p_ij_x;
@@ -597,12 +640,6 @@ void ComputeNonbondedUtil :: NAME
       fullf_i.z += tmp_z;
       fullf_j.z -= tmp_z;
 
-      FEP(
-      reduction[pairElectForceIndex_X] += tmp_x; 
-      reduction[pairElectForceIndex_Y] += tmp_y; 
-      reduction[pairElectForceIndex_Z] += tmp_z; 
-      )
-
       }
       )
 
@@ -615,12 +652,20 @@ void ComputeNonbondedUtil :: NAME
   FAST
   (
   reduction[vdwEnergyIndex] += vdwEnergy;
+  SHORT
+  (
   reduction[electEnergyIndex] += electEnergy;
+  )
   FEP
   (
   reduction[vdwEnergyIndex_s] += vdwEnergy_s;
+  SHORT
+  (
   reduction[electEnergyIndex_s] += electEnergy_s;
   )
+  )
+  SHORT
+  (
   reduction[virialIndex_XX] += virial_xx;
   reduction[virialIndex_XY] += virial_xy;
   reduction[virialIndex_XZ] += virial_xz;
@@ -630,6 +675,7 @@ void ComputeNonbondedUtil :: NAME
   reduction[virialIndex_ZX] += virial_xz;
   reduction[virialIndex_ZY] += virial_yz;
   reduction[virialIndex_ZZ] += virial_zz;
+  )
   )
   FULL
   (
