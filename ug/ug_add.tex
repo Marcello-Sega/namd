@@ -512,6 +512,47 @@ The following parameters are used to define these boundary conditions.
 
 \subsection{Pressure Control}
 
+Pressure values in NAMD output are in bar.
+PRESSURE is the pressure calculated based on individual atoms, while
+GPRESSURE incorporates hydrogen atoms into the heavier atoms to which
+they are bonded, producing smaller fluctuations.
+The TEMPAVG, PRESSAVG, and GPRESSAVG are the average of temperature and
+pressure values since the previous ENERGY output; for the first step
+in the simulation they will be identical to TEMP, PRESSURE, and GPRESSURE.
+
+The phenomenological pressure of bulk matter reflects averaging in both
+space and time of the sum of a large positive term (the kinetic pressure,
+$nRT/V$), and a large cancelling negative term (the static pressure).
+The instantaneous pressure of a simulation cell as simulated by NAMD
+will have mean square fluctuations (according to David Case quoting
+Section 114 of {\em Statistical Physics} by Landau and Lifshitz)
+of $kT/(V \beta)$, where $\beta$ is the compressibility, which is
+RMS of roughly 100 bar for a 10,000 atom biomolecular system.
+Much larger fluctuations are regularly observed in practice.
+
+The instantaneous pressure for a biomolecular system is well defined for
+``internal'' forces that are based on particular periodic images of the
+interacting atoms, conserve momentum, and are translationally invariant.
+When dealing with externally applied forces such as harmonic constraints,
+fixed atoms, and various steering forces, NAMD bases its pressure calculation
+on the relative positions of the affected atoms in the input coordinates
+and assumes that the net force will average to zero over time.  For time
+periods during with the net force is non-zero, the calculated pressure
+fluctuations will include a term proportional to the distance to the
+affected from the user-defined cell origin.
+A good way to observe these effects and to confirm that pressure for
+external forces is handled reasonably is to run a constant volume cutoff
+simulation in a cell that is larger than the molecular system by at least
+the cutoff distance; the pressure for this isolated system should average
+to zero over time.
+
+Because NAMD's impluse-basd multiple timestepping system alters the
+balance between bonded and non-bonded forces from every timestep to an
+average balance over two steps, the calculated pressure on even and odd
+steps will be different.  The PRESSAVG and GPRESSAVG fields provide the
+average over the non-printed intermediate steps.  If you print energies on
+every timestep you will see the effect clearly in the PRESSURE field.
+
 The following options affect all pressure control methods.
 
 \begin{itemize}
@@ -561,19 +602,41 @@ optionally be set to control the behavior of this feature.}
 
 \item
 \NAMDCONF{BerendsenPressureTarget}{target pressure (bar)}{positive decimal}
-{Specifies target pressure for Berendsen's method.}
+{Specifies target pressure for Berendsen's method.
+A typical value would be 1.01325 bar, atmospheric pressure at sea level.}
 
 \item
 \NAMDCONF{BerendsenPressureCompressibility}{compressibility (bar$^{-1}$)}{positive decimal}
-{Specifies compressibility for Berendsen's method.}
+{Specifies compressibility for Berendsen's method.
+A typical value would be 4.57E-5 bar$^{-1}$, corresponding to liquid water.
+The higher the compressibility, the more volume will be adjusted for a
+given pressure difference.
+The compressibility and the relaxation time appear only as a ratio in the
+dynamics, so a larger compressibility is equivalent to a smaller relaxation
+time.}
 
 \item
 \NAMDCONF{BerendsenPressureRelaxationTime}{relaxation time (fs)}{positive decimal}
-{Specifies relaxation time for Berendsen's method.}
+{Specifies relaxation time for Berendsen's method.
+If the instantaneous pressure did not fluctuate randomly during a simulation
+and the compressibility estimate was exact then
+the inital pressure would decay exponentially to the target pressure with
+this time constant.
+Having a longer relaxation time results in more averaging over pressure
+measurements and hence smaller fluctuations in the cell volume.
+A reasonable choice for relaxation time would be 100 fs.
+The compressibility and the relaxation time appear only as a ratio in the
+dynamics, so a larger compressibility is equivalent to a smaller relaxation
+time.}
 
 \item
 \NAMDCONFWDEF{BerendsenPressureFreq}{how often to rescale positions}{positive multiple of {\tt nonbondedFrequency} and {\tt fullElectFrequency}}{{\tt nonbondedFrequency} or {\tt fullElectFrequency} if used}
-{Specifies number of timesteps between position rescalings for Berendsen's method.}
+{Specifies number of timesteps between position rescalings for Berendsen's method.
+Primarily to deal with multiple timestepping integrators, but also to reduce
+cell volume fluctuations, cell rescalings can occur on a longer interval.
+This could reasonably be between 1 and 20 timesteps, but the relaxation time
+should be at least ten times larger.
+}
 
 \end{itemize}
 
@@ -610,13 +673,6 @@ of the piston, and temperature of the piston.  The compressibility of
 the system is not required.  In addition, the user specifies the
 damping coefficients and temperature of the atoms for Langevin dynamics.
 
-Because NAMD's impluse-basd multiple timestepping system alters the
-balance between bonded and non-bonded forces from every timestep to an
-average balance over two steps, the calculated pressure on even and odd
-steps will be different.  The PRESSAVG and GPRESSAVG fields provide the
-average over the non-printed intermediate steps.  If you print energies on
-every timestep you will see the effect clearly in the PRESSURE field.
-
 The following parameters are used to define the algorithm.  
 
 \begin{itemize}
@@ -628,15 +684,31 @@ If set to {\tt on}, then the parameters {\tt LangevinPistonTarget}, {\tt Langevi
 
 \item
 \NAMDCONF{LangevinPistonTarget}{target pressure (bar)}{positive decimal}
-{Specifies target pressure for Langevin piston method.}
+{Specifies target pressure for Langevin piston method.
+A typical value would be 1.01325 bar, atmospheric pressure at sea level.}
 
 \item
 \NAMDCONF{LangevinPistonPeriod}{oscillation period (fs)}{positive decimal}
-{Specifies barostat oscillation time scale for Langevin piston method.}
+{Specifies barostat oscillation time scale for Langevin piston method.
+If the instantaneous pressure did not fluctuate randomly during a simulation
+and the decay time was infinite (no friction) then the cell volume would
+oscillate with this angular period.
+Having a longer period results in more averaging over pressure measurements
+and hence slower fluctuations in the cell volume.
+A reasonable choice for the piston period would be 200 fs.
+}
 
 \item
 \NAMDCONF{LangevinPistonDecay}{damping time scale (fs)}{positive decimal}
-{Specifies barostat damping time scale for Langevin piston method.}
+{Specifies barostat damping time scale for Langevin piston method.
+A value larger than the piston period would result in underdamped
+dynamics (decaying ringing in the cell volume) while a smaller value
+approaches exponential decay as in Berendsen's method above.
+A smaller value also corresponds to larger random forces with increased
+coupling to the Langevin temperature bath.
+Typically this would be chosen equal to or smaller than the piston period,
+such as 100 fs.
+}
 
 \item
 \NAMDCONF{LangevinPistonTemp}{noise temperature (K)}{positive decimal}
@@ -654,7 +726,8 @@ axis, and surface tension is applied in the x-y plane.}
 \NAMDCONFWDEF{StrainRate}{initial strain rate}{decimal triple (x y z)}
 {0. 0. 0.}
 {Optionally specifies the initial strain rate for pressure control.
-Is overridden by value read from file specified with {\tt extendedSystem}.}
+Is overridden by value read from file specified with {\tt extendedSystem}.
+There is typically no reason to set this parameter.}
 
 \item
 \NAMDCONFWDEF{ExcludeFromPressure}{Should some atoms be excluded from pressure

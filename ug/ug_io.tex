@@ -358,6 +358,31 @@ Angstroms for length, kcal/mol for energy,
 Kelvin for temperature, and bar for pressure.
 Wallclock or CPU times are given in seconds unless otherwise noted.
 
+\index{BOUNDARY energy}
+BOUNDARY energy is from spherical boundary conditions and harmonic restraints,
+\index{MISC energy}
+while MISC energy is from external electric fields and various steering forces.
+TOTAL is the sum of the various potential energies, and the KINETIC energy.
+\index{TOTAL2 energy}
+TOTAL2 uses a slightly different kinetic energy that is better conserved
+during equilibration in a constant energy ensemble.
+\index{TOTAL3 energy}
+TOTAL3 is another variation with much smaller short-time fluctuations that
+is also adjusted to have the same running average as TOTAL2.
+Defects in constant energy simulations are much easier to spot in TOTAL3
+than in TOTAL or TOTAL2.
+
+PRESSURE is the pressure calculated based on individual atoms, while
+\index{GPRESSURE}
+GPRESSURE incorporates hydrogen atoms into the heavier atoms to which
+they are bonded, producing smaller fluctuations.
+\index{TEMPAVG}
+\index{PRESSAVG}
+\index{GPRESSAVG}
+The TEMPAVG, PRESSAVG, and GPRESSAVG are the average of temperature and
+pressure values since the previous ENERGY output; for the first step
+in the simulation they will be identical to TEMP, PRESSURE, and GPRESSURE.
+
 \begin{itemize}
 \item
 \NAMDCONFWDEF{outputEnergies}
