@@ -22,7 +22,7 @@
 // #define DEBUGM
 #include "Debug.h"
 
-#define MIGRATION 1
+#define MIGRATION 0
 
 Sequencer::Sequencer(HomePatch *p) :
 	patch(p),
@@ -31,6 +31,7 @@ Sequencer::Sequencer(HomePatch *p) :
 	collection(CollectionMgr::Object())
 {
     reduction->Register(REDUCTION_KINETIC_ENERGY);
+    threadStatus = NOTSUSPENDED;
 }
 
 Sequencer::~Sequencer(void)
@@ -46,11 +47,12 @@ void Sequencer::threadRun(Sequencer* arg)
 void Sequencer::run(int numberOfCycles)
 {
     stepsPerCycle = simParams->stepsPerCycle;
+    threadStatus = SUSPENDED;
     if ( numberOfCycles ) this->numberOfCycles = numberOfCycles;
     else this->numberOfCycles = simParams->N; // / stepsPerCycle;
     thread = CthCreate((CthVoidFn)&(threadRun),(void*)(this),0);
     CthSetStrategyDefault(thread);
-    CthAwaken(thread);
+    awaken();
 }
 
 void Sequencer::algorithm(void)
@@ -60,8 +62,12 @@ void Sequencer::algorithm(void)
     const BigReal timestep = simParams->dt;
     int step, cycle=-1;	// cycle is unused!
     int seq = 0;
+    threadStatus = NOTSUSPENDED;
     patch->positionsReady();
-    suspend();
+    if (threadStatus != AWAKENED)
+	{
+	suspend();
+	}
     DebugM(4,"Submit seq=" << seq << " Patch=" << patch->getPatchID() << "\n");
     reduction->submit(seq,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
     // collection->submitPositions(seq,patch->atomIDList,patch->p);
@@ -76,7 +82,8 @@ void Sequencer::algorithm(void)
 	    DebugM(4, patch->getPatchID()
 		<< ": (" << cycle << "," << step << ") "
 		<< "Sending positionsReady().\n");
-#if MIGRATION
+	    threadStatus = NOTSUSPENDED;
+#if MIGRATION == 1
             patch->positionsReady(!(step%stepsPerCycle));
 #else
             patch->positionsReady(0);
@@ -84,7 +91,10 @@ void Sequencer::algorithm(void)
 	    DebugM(4, patch->getPatchID()
 		<< ": (" << cycle << "," << step << ") "
 		<< "Suspending " << CthSelf() << " @" << CmiTimer() << "\n");
-            suspend();
+	    if (threadStatus != AWAKENED)
+		{
+		suspend();
+		}
 	    DebugM(4, patch->getPatchID()
 		<< ": (" << cycle << "," << step << ") "
 		<< "Awakened!\n");

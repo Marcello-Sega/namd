@@ -22,6 +22,8 @@ class SimParameters;
 class ReductionMgr;
 class CollectionMgr;
 
+enum ThreadStatus { SUSPENDED, NOTSUSPENDED, AWAKENED };
+
 class Sequencer
 {
     friend HomePatch;
@@ -29,12 +31,20 @@ public:
     Sequencer(HomePatch *p);
     ~Sequencer(void);
     void run(int numberOfCycles);             // spawn thread, etc.
-    void awaken(void) { CthAwaken(thread); };
+    void awaken(void)
+	{
+	  if (threadStatus == SUSPENDED) CthAwaken(thread);
+	  threadStatus = AWAKENED;
+	};
 
 protected:
     virtual void algorithm(void);	// subclasses redefine this method
 
-    void suspend(void) { CthSuspend(); };
+    void suspend(void)
+	{
+	  threadStatus = SUSPENDED;
+	  CthSuspend();
+	};
     void terminate(void) { CthFree(thread); CthSuspend(); };
     SimParameters *const simParams;	// for convenience
     int numberOfCycles;			// stores argument to run()
@@ -44,6 +54,7 @@ protected:
     CollectionMgr *const collection;
 
 private:
+    ThreadStatus threadStatus;
     CthThread thread;
     static void threadRun(Sequencer*);
 };

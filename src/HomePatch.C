@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1008 1997/02/10 19:44:29 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1009 1997/02/11 16:31:48 nealk Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -95,15 +95,13 @@ HomePatch::~HomePatch()
 }
 
 
-#include <unistd.h>
-
 void HomePatch::boxClosed(int)
 {
   if ( ! --boxesOpen )
   {
-sleep(1);
     DebugM(4,patchID << ": " << CthSelf() << " awakening sequencer "
 	<< sequencer->thread << "(" << patchID << ") @" << CmiTimer() << "\n");
+    // only awaken suspended threads.  Then say it is suspended.
     sequencer->awaken();
   }
   else
@@ -337,12 +335,16 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/02/10 19:44:29 $
+ *	$Revision: 1.1009 $	$Date: 1997/02/11 16:31:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1009  1997/02/11 16:31:48  nealk
+ * Using a flag to determine suspend/awaken in sequencer.
+ * Migration turned off (for now).
+ *
  * Revision 1.1008  1997/02/10 19:44:29  nealk
  * More debugging code.  Corrected HomePatch/Sequencer awaken/suspend bug.
  *
