@@ -39,7 +39,7 @@ void ComputeHomePatches::initialize()
 
   setNumPatches(patchList.size());
 
-  basePriority = 0;
+  basePriority = -65;  // higher priority than recvProxyData
 }
 
 void ComputeHomePatches::atomUpdate()
