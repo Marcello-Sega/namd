@@ -30,6 +30,7 @@ public:
     void computeForce(BigReal*);
     // The following is evil, but the compiler chokes otherwise. (JCP)
     static void loadTuplesForAtom(void*, AtomID, Molecule*);
+    static void getMoleculePointers(Molecule*, int*, int***, Angle**);
 
     // Internal data
     Index angleType;
@@ -52,11 +53,11 @@ public:
   inline int operator<(const AngleElem &a) const;
 };
 
-class ComputeAngles : public ComputeHomeTuples<AngleElem>
+class ComputeAngles : public ComputeHomeTuples<AngleElem,Angle>
 {
 public:
 
-  ComputeAngles(ComputeID c) : ComputeHomeTuples<AngleElem>(c) { ; }
+  ComputeAngles(ComputeID c) : ComputeHomeTuples<AngleElem,Angle>(c) { ; }
 
 };
 
@@ -68,12 +69,15 @@ public:
  *
  *	$RCSfile: ComputeAngles.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/16 22:56:20 $
+ *	$Revision: 1.1006 $	$Date: 1997/10/17 17:16:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.h,v $
+ * Revision 1.1006  1997/10/17 17:16:43  jim
+ * Switched from hash tables to checklists, eliminated special exclusion code.
+ *
  * Revision 1.1005  1997/03/16 22:56:20  jim
  * Added virial calculation for all bonded forces.
  *

@@ -41,6 +41,14 @@ void BondElem::loadTuplesForAtom
       }
 }
 
+void BondElem::getMoleculePointers
+    (Molecule* mol, int* count, int*** byatom, Bond** structarray)
+{
+  *count = mol->numBonds;
+  *byatom = mol->bondsByAtom;
+  *structarray = mol->bonds;
+}
+
 void BondElem::computeForce(BigReal *reduction)
 {
   DebugM(1, "::computeForce() localIndex = " << localIndex[0] << " "
@@ -108,12 +116,15 @@ void BondElem::unregisterReductionData(ReductionMgr *reduction)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/09/28 22:36:48 $
+ *	$Revision: 1.1007 $	$Date: 1997/10/17 17:16:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeBonds.C,v $
+ * Revision 1.1007  1997/10/17 17:16:44  jim
+ * Switched from hash tables to checklists, eliminated special exclusion code.
+ *
  * Revision 1.1006  1997/09/28 22:36:48  jim
  * Modified tuple-based computations to not duplicate calculations and
  * only require "upstream" proxies.

@@ -44,6 +44,14 @@ void ImproperElem::loadTuplesForAtom
       }
 }
 
+void ImproperElem::getMoleculePointers
+    (Molecule* mol, int* count, int*** byatom, Improper** structarray)
+{
+  *count = mol->numImpropers;
+  *byatom = mol->impropersByAtom;
+  *structarray = mol->impropers;
+}
+
 void ImproperElem::computeForce(BigReal *reduction)
 {
   DebugM(3, "::computeForce() localIndex = " << localIndex[0] << " "
@@ -244,12 +252,15 @@ void ImproperElem::unregisterReductionData(ReductionMgr *reduction)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/09/28 22:36:50 $
+ *	$Revision: 1.1007 $	$Date: 1997/10/17 17:16:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeImpropers.C,v $
+ * Revision 1.1007  1997/10/17 17:16:47  jim
+ * Switched from hash tables to checklists, eliminated special exclusion code.
+ *
  * Revision 1.1006  1997/09/28 22:36:50  jim
  * Modified tuple-based computations to not duplicate calculations and
  * only require "upstream" proxies.

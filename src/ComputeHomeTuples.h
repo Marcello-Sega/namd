@@ -86,7 +86,7 @@ typedef UniqueSetIter<TuplePatchElem> TuplePatchListIter;
 class AtomMap;
 class ReductionMgr;
 
-template <class T>
+template <class T, class S>
 class ComputeHomeTuples : public Compute {
 private:
   virtual void loadTuples();
@@ -114,12 +114,15 @@ public:
  *
  *	$RCSfile: ComputeHomeTuples.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/10/02 22:01:21 $
+ *	$Revision: 1.1011 $	$Date: 1997/10/17 17:16:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.h,v $
+ * Revision 1.1011  1997/10/17 17:16:47  jim
+ * Switched from hash tables to checklists, eliminated special exclusion code.
+ *
  * Revision 1.1010  1997/10/02 22:01:21  jim
  * Moved loadTuples() out of recvProxyAll entry point and into enqueueWork.
  *

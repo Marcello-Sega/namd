@@ -33,6 +33,7 @@ public:
     void computeForce(BigReal*);
     // The following is evil, but the compiler chokes otherwise. (JCP)
     static void loadTuplesForAtom(void*, AtomID, Molecule*);
+    static void getMoleculePointers(Molecule*, int*, int***, Bond**);
 
     int hash() const { return 0x7FFFFFFF & ( (atomID[0]<<16) + (atomID[1])); }
 
@@ -55,11 +56,11 @@ public:
 
 #include "ComputeHomeTuples.h"
 
-class ComputeBonds : public ComputeHomeTuples<BondElem>
+class ComputeBonds : public ComputeHomeTuples<BondElem,Bond>
 {
 public:
 
-  ComputeBonds(ComputeID c) : ComputeHomeTuples<BondElem>(c) { ; }
+  ComputeBonds(ComputeID c) : ComputeHomeTuples<BondElem,Bond>(c) { ; }
 
 };
 
@@ -70,13 +71,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeBonds.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/20 23:53:30 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/10/17 17:16:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeBonds.h,v $
+ * Revision 1.1004  1997/10/17 17:16:44  jim
+ * Switched from hash tables to checklists, eliminated special exclusion code.
+ *
  * Revision 1.1003  1997/03/20 23:53:30  ari
  * Some changes for comments. Copyright date additions.
  * Hooks for base level update of Compute objects from ComputeMap

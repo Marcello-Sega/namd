@@ -29,6 +29,7 @@ public:
     void computeForce(BigReal*);
     // The following is evil, but the compiler chokes otherwise. (JCP)
     static void loadTuplesForAtom(void*, AtomID, Molecule*);
+    static void getMoleculePointers(Molecule*, int*, int***, Dihedral**);
 
     // Internal data
     Index dihedralType;
@@ -51,11 +52,11 @@ public:
   inline int operator<(const DihedralElem &a) const;
 };
 
-class ComputeDihedrals : public ComputeHomeTuples<DihedralElem>
+class ComputeDihedrals : public ComputeHomeTuples<DihedralElem,Dihedral>
 {
 public:
 
-  ComputeDihedrals(ComputeID c) : ComputeHomeTuples<DihedralElem>(c) { ; }
+  ComputeDihedrals(ComputeID c) : ComputeHomeTuples<DihedralElem,Dihedral>(c) { ; }
 
 };
 
@@ -67,12 +68,15 @@ public:
  *
  *	$RCSfile: ComputeDihedrals.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/16 22:56:25 $
+ *	$Revision: 1.1003 $	$Date: 1997/10/17 17:16:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDihedrals.h,v $
+ * Revision 1.1003  1997/10/17 17:16:45  jim
+ * Switched from hash tables to checklists, eliminated special exclusion code.
+ *
  * Revision 1.1002  1997/03/16 22:56:25  jim
  * Added virial calculation for all bonded forces.
  *

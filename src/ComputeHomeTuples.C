@@ -27,8 +27,8 @@
 #define MIN_DEBUG_LEVEL 3
 #include "Debug.h"
 
-template <class T>
-ComputeHomeTuples<T>::ComputeHomeTuples(ComputeID c) : Compute(c) {
+template <class T, class S>
+ComputeHomeTuples<T,S>::ComputeHomeTuples(ComputeID c) : Compute(c) {
   patchMap = PatchMap::Object();
   atomMap = AtomMap::Object();
   reduction = ReductionMgr::Object();
@@ -36,8 +36,8 @@ ComputeHomeTuples<T>::ComputeHomeTuples(ComputeID c) : Compute(c) {
   doLoadTuples = false;
 }
 
-template <class T>
-ComputeHomeTuples<T>::~ComputeHomeTuples()
+template <class T, class S>
+ComputeHomeTuples<T,S>::~ComputeHomeTuples()
 {
   T::unregisterReductionData(reduction);
 }
@@ -47,8 +47,8 @@ ComputeHomeTuples<T>::~ComputeHomeTuples()
 // initialize() - Method is invoked only the first time
 // atom maps, patchmaps etc are ready and we are about to start computations
 //===========================================================================
-template <class T>
-void ComputeHomeTuples<T>::initialize() {
+template <class T, class S>
+void ComputeHomeTuples<T,S>::initialize() {
 
   // Gather all HomePatches
   HomePatchList *a = patchMap->homePatchList();
@@ -86,45 +86,71 @@ void ComputeHomeTuples<T>::initialize() {
 // atomUpdate() - Method is invoked after anytime that atoms have been
 // changed in patches used by this Compute object.
 //===========================================================================
-template <class T>
-void ComputeHomeTuples<T>::atomUpdate() {
+template <class T, class S>
+void ComputeHomeTuples<T,S>::atomUpdate() {
   doLoadTuples = true;
 }
 
-template <class T>
-void ComputeHomeTuples<T>::loadTuples() {
+template <class T, class S>
+void ComputeHomeTuples<T,S>::loadTuples() {
+
+  int numTuples;
+  int **tuplesByAtom;
+  S *tupleStructs;
+
+  T::getMoleculePointers(node->molecule,
+		&numTuples, &tuplesByAtom, &tupleStructs);
+
+  char *tupleFlag = new char[numTuples];
+  register char *cmax = tupleFlag + numTuples;
+  for (register char *c = tupleFlag; c < cmax; *c++ = 0);
 
   // cycle through each patch and gather all tuples
   TuplePatchListIter ai(tuplePatchList);
 
-  tupleList.clear();
   for ( ai = ai.begin(); ai != ai.end(); ai++ )
   {
     Patch *patch = (*ai).p;
     AtomIDList atomID = patch->getAtomIDList();
+    int numAtoms = patch->getNumAtoms();
 
     // cycle through each atom in the patch and load up tuples
-    for (int i=0; i < patch->getNumAtoms(); i++)
+    for (int i=0; i < numAtoms; i++)
     {
-      T::loadTuplesForAtom((void*)&tupleList,atomID[i],node->molecule);
+       /* get list of all tuples for the atom */
+       register int *tuples = tuplesByAtom[atomID[i]];
+
+       /* cycle through each tuple */
+       register int t;
+       while((t = *tuples) != -1) {
+	 ++tuples;
+         tupleFlag[t] = 1;
+       }
     }
   }
-  tupleList.rehash();
+
+  tupleList.clear();
 
   if ( node->simParameters->fixedAtomsOn ) {
     Molecule *molecule = node->molecule;
-    UniqueSetIter<T> al(tupleList);
-    for (al = al.begin(); al != al.end(); al++ ) {
-      register int i;
-      T &t = *al;
-      register int all_fixed = molecule->is_atom_fixed(t.atomID[0]);
-      for ( i = 1; i < T::size && all_fixed; i++ ) {
-	all_fixed = molecule->is_atom_fixed(t.atomID[i]);
+    for (register int i=0; i<numTuples; i++) {
+      if (tupleFlag[i]) {
+        register int j;
+	T t(&tupleStructs[i]);
+        register int all_fixed = molecule->is_atom_fixed(t.atomID[0]);
+        for ( j = 1; j < T::size && all_fixed; j++ ) {
+	  all_fixed = molecule->is_atom_fixed(t.atomID[j]);
+        }
+        if ( ! all_fixed ) tupleList.load(t);
       }
-      if ( all_fixed ) tupleList.del(t);
     }
-    tupleList.rehash();
+  } else {
+    for (register int i=0; i<numTuples; i++) {
+      if (tupleFlag[i]) tupleList.load(T(&tupleStructs[i]));
+    }
   }
+
+  delete [] tupleFlag;
 
   // Resolve all atoms in tupleList to correct PatchList element and index
   // and eliminate tuples we aren't responsible for
@@ -167,8 +193,8 @@ void ComputeHomeTuples<T>::loadTuples() {
 // actualy Force computation with the apparatus needed
 // to get access to atom positions, return forces etc.
 //-------------------------------------------------------------------
-template <class T>
-void ComputeHomeTuples<T>::doWork() {
+template <class T, class S>
+void ComputeHomeTuples<T,S>::doWork() {
   if ( doLoadTuples ) {
     loadTuples();
     doLoadTuples = false;
@@ -213,12 +239,15 @@ void ComputeHomeTuples<T>::doWork() {
  *
  *      $RCSfile: ComputeHomeTuples.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1018 $     $Date: 1997/10/06 00:12:28 $
+ *      $Revision: 1.1019 $     $Date: 1997/10/17 17:16:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.C,v $
+ * Revision 1.1019  1997/10/17 17:16:46  jim
+ * Switched from hash tables to checklists, eliminated special exclusion code.
+ *
  * Revision 1.1018  1997/10/06 00:12:28  jim
  * Added PatchMap.inl, sped up cycle-boundary tuple code.
  *

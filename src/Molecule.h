@@ -36,6 +36,12 @@ class PDB;
 class MIStream;
 class MOStream;
 
+class BondElem;
+class AngleElem;
+class DihedralElem;
+class ImproperElem;
+class NonbondedExclElem;
+
 typedef int* intPtr;
 
 // List maintaining the global atom indicies sorted by helix groups.
@@ -46,6 +52,12 @@ typedef struct constraint_params
    Real k;		//  Force constant
    Vector refPos;	//  Reference position for restraint
 } ConstraintParams;
+
+friend class BondElem;
+friend class AngleElem;
+friend class DihedralElem;
+friend class ImproperElem;
+friend class NonbondedExclElem;
 
 private:
 	Atom *atoms;		//  Array of atom structures
@@ -359,13 +371,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: Molecule.h,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1997/10/01 16:46:57 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1014 $	$Date: 1997/10/17 17:16:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.1014  1997/10/17 17:16:50  jim
+ * Switched from hash tables to checklists, eliminated special exclusion code.
+ *
  * Revision 1.1013  1997/10/01 16:46:57  milind
  * Removed old NAMD1 messaging and replaced it with new Message Streams library.
  *

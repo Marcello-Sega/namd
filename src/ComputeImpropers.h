@@ -29,6 +29,7 @@ public:
     void computeForce(BigReal*);
     // The following is evil, but the compiler chokes otherwise. (JCP)
     static void loadTuplesForAtom(void*, AtomID, Molecule*);
+    static void getMoleculePointers(Molecule*, int*, int***, Improper**);
 
     // Internal data
     Index improperType;
@@ -88,11 +89,11 @@ public:
   }
 };
 
-class ComputeImpropers : public ComputeHomeTuples<ImproperElem>
+class ComputeImpropers : public ComputeHomeTuples<ImproperElem,Improper>
 {
 public:
 
-  ComputeImpropers(ComputeID c) : ComputeHomeTuples<ImproperElem>(c) { ; }
+  ComputeImpropers(ComputeID c) : ComputeHomeTuples<ImproperElem,Improper>(c) { ; }
 
 };
 
@@ -102,12 +103,15 @@ public:
  *
  *	$RCSfile: ComputeImpropers.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/16 22:56:28 $
+ *	$Revision: 1.1003 $	$Date: 1997/10/17 17:16:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeImpropers.h,v $
+ * Revision 1.1003  1997/10/17 17:16:48  jim
+ * Switched from hash tables to checklists, eliminated special exclusion code.
+ *
  * Revision 1.1002  1997/03/16 22:56:28  jim
  * Added virial calculation for all bonded forces.
  *

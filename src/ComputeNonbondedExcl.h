@@ -29,6 +29,7 @@ public:
   void computeForce(BigReal*);
 
   static void loadTuplesForAtom(void*, AtomID, Molecule*) {};
+  static void getMoleculePointers(Molecule*, int*, int***, Exclusion**);
 
   int hash() const {
     return 0x7FFFFFFF & (atomID[1] << 16 + atomID[0]);
@@ -71,14 +72,14 @@ public:
   private:
 };
 
-class ComputeNonbondedExcls : public ComputeHomeTuples<NonbondedExclElem>
+class ComputeNonbondedExcls : public ComputeHomeTuples<NonbondedExclElem,Exclusion>
 {
 public:
 
-  ComputeNonbondedExcls(ComputeID c) : ComputeHomeTuples<NonbondedExclElem>(c) 
+  ComputeNonbondedExcls(ComputeID c) : ComputeHomeTuples<NonbondedExclElem,Exclusion>(c) 
   { }
 
-  void loadTuples(); //overload of the template version
+  // void loadTuples(); //overload of the template version
 };
 
 #endif
@@ -87,12 +88,15 @@ public:
  *
  *	$RCSfile: ComputeNonbondedExcl.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/09/28 22:36:51 $
+ *	$Revision: 1.1005 $	$Date: 1997/10/17 17:16:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedExcl.h,v $
+ * Revision 1.1005  1997/10/17 17:16:49  jim
+ * Switched from hash tables to checklists, eliminated special exclusion code.
+ *
  * Revision 1.1004  1997/09/28 22:36:51  jim
  * Modified tuple-based computations to not duplicate calculations and
  * only require "upstream" proxies.

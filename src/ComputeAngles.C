@@ -44,6 +44,14 @@ void AngleElem::loadTuplesForAtom
       }
 }
 
+void AngleElem::getMoleculePointers
+    (Molecule* mol, int* count, int*** byatom, Angle** structarray)
+{
+  *count = mol->numAngles;
+  *byatom = mol->anglesByAtom;
+  *structarray = mol->angles;
+}
+
 void AngleElem::computeForce(BigReal *reduction)
 {
   DebugM(3, "::computeForce() localIndex = " << localIndex[0] << " "
@@ -168,12 +176,15 @@ void AngleElem::unregisterReductionData(ReductionMgr *reduction)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/09/28 22:36:47 $
+ *	$Revision: 1.1007 $	$Date: 1997/10/17 17:16:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.C,v $
+ * Revision 1.1007  1997/10/17 17:16:42  jim
+ * Switched from hash tables to checklists, eliminated special exclusion code.
+ *
  * Revision 1.1006  1997/09/28 22:36:47  jim
  * Modified tuple-based computations to not duplicate calculations and
  * only require "upstream" proxies.

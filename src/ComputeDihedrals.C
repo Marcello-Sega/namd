@@ -41,6 +41,14 @@ void DihedralElem::loadTuplesForAtom
       }
 }
 
+void DihedralElem::getMoleculePointers
+    (Molecule* mol, int* count, int*** byatom, Dihedral** structarray)
+{
+  *count = mol->numDihedrals;
+  *byatom = mol->dihedralsByAtom;
+  *structarray = mol->dihedrals;
+}
+
 void DihedralElem::computeForce(BigReal *reduction)
 {
   DebugM(3, "::computeForce() localIndex = " << localIndex[0] << " "
@@ -239,12 +247,15 @@ void DihedralElem::unregisterReductionData(ReductionMgr *reduction)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/09/28 22:36:48 $
+ *	$Revision: 1.1008 $	$Date: 1997/10/17 17:16:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDihedrals.C,v $
+ * Revision 1.1008  1997/10/17 17:16:45  jim
+ * Switched from hash tables to checklists, eliminated special exclusion code.
+ *
  * Revision 1.1007  1997/09/28 22:36:48  jim
  * Modified tuple-based computations to not duplicate calculations and
  * only require "upstream" proxies.

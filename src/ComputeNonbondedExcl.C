@@ -20,6 +20,14 @@
 //#undef DEBUGM
 #include "Debug.h"
 
+void NonbondedExclElem::getMoleculePointers
+    (Molecule* mol, int* count, int*** byatom, Exclusion** structarray)
+{
+  *count = mol->numTotalExclusions;
+  *byatom = mol->exclusionsByAtom;
+  *structarray = mol->exclusions;
+}
+
 void NonbondedExclElem::computeForce(BigReal *reduction)
 {
   register TuplePatchElem *p0 = p[0];
@@ -54,6 +62,7 @@ void NonbondedExclElem::computeForce(BigReal *reduction)
   }
 }
 
+#if(0)
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -139,17 +148,22 @@ ComputeNonbondedExcls::loadTuples() {
 
 }
 
+#endif
+
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedExcl.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1997/10/06 00:12:29 $
+ *	$Revision: 1.1019 $	$Date: 1997/10/17 17:16:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedExcl.C,v $
+ * Revision 1.1019  1997/10/17 17:16:49  jim
+ * Switched from hash tables to checklists, eliminated special exclusion code.
+ *
  * Revision 1.1018  1997/10/06 00:12:29  jim
  * Added PatchMap.inl, sped up cycle-boundary tuple code.
  *
