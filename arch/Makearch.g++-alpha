@@ -1,4 +1,5 @@
 # config for egcs on Alpha
+NAMD_ARCH = Alpha
 
 # compiler options
 CXX = g++

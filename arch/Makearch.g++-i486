@@ -1,4 +1,5 @@
 # config for g++ on i486
+NAMD_ARCH = Linux
 
 # compiler options
 CXX = g++

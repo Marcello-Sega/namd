@@ -1,4 +1,5 @@
 # config for generic machine
+NAMD_ARCH = UNKNOWN
 
 # compiler options
 CXX = CC

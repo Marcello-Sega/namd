@@ -1,4 +1,5 @@
 # config for Origin 2000
+NAMD_ARCH = Origin2000
 
 # compiler options
 CXX = CC -64 -D_SGI_MP_SOURCE -DEBUG:woff=3333

@@ -1,4 +1,5 @@
 # config for KAI C++ on Intel Linux
+NAMD_ARCH = Linux
 
 # compiler options
 CXX = KCC

@@ -1,4 +1,5 @@
 # config for Cray T3E
+NAMD_ARCH = T3E
 
 # compiler options
 CXX = CC 

@@ -1,4 +1,5 @@
 # config for ASCI Red
+NAMD_ARCH = ASCI-Red
 
 # compiler options
 CXX = ciCC -DPLACEMENT_NEW

@@ -1,4 +1,5 @@
 # config for HPUX
+NAMD_ARCH = HP-UX
 
 # compiler options
 CXX = CC -Aa -D_HPUX_SOURCE -DPLACEMENT_NEW_GLOBAL

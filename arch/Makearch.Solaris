@@ -1,4 +1,5 @@
 # config for Solaris
+NAMD_ARCH = Solaris
 
 # compiler options
 CXX = CC -DSOLARIS

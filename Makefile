@@ -377,3 +377,23 @@ clean:
 veryclean:	clean
 	rm -f $(BINARIES)
 
+NAMD_VERSION = 2.1b3
+RELEASE_DIR_NAME = NAMD_$(NAMD_VERSION)_$(NAMD_ARCH)
+RELEASE_FILES = .rootdir/README.txt \
+		.rootdir/announce.txt \
+		.rootdir/license.txt \
+		.rootdir/notes.txt \
+		namd2 flipdcd flipbinpdb
+
+release: all
+	$(ECHO) Creating release $(RELEASE_DIR_NAME)
+	mkdir $(RELEASE_DIR_NAME)
+	cp $(RELEASE_FILES) $(RELEASE_DIR_NAME)
+	if [ -e conv-host ]; then \
+	   $(COPY) conv-host $(RELEASE_DIR_NAME); \
+	   $(ECHO) "group main" > $(RELEASE_DIR_NAME)/nodelist; \
+	   $(ECHO) " host localhost" >> $(RELEASE_DIR_NAME)/nodelist; \
+	fi
+	tar cf $(RELEASE_DIR_NAME).tar $(RELEASE_DIR_NAME)
+	gzip $(RELEASE_DIR_NAME).tar
+

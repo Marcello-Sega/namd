@@ -1,4 +1,5 @@
 # config for alpha
+NAMD_ARCH = Alpha
 
 # compiler options
 CXX = cxx

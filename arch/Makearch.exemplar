@@ -1,4 +1,5 @@
 # config for Exemplar
+NAMD_ARCH = Exemplar
 
 # compiler options
 CXX = mpiCC -Aa -DPLACEMENT_NEW_GLOBAL

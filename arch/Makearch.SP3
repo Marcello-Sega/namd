@@ -1,4 +1,5 @@
 # config for IBM SP
+NAMD_ARCH = IBM-SP
 
 # compiler options
 CXX = mpCC -w -DPLACEMENT_NEW_GLOBAL
