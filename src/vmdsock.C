@@ -4,6 +4,23 @@
 ***  All rights reserved.
 **/
 
+#if defined(DUMMY_VMDSOCK)
+
+#include "vmdsock.h"
+
+void * vmdsock_create(void) { return 0; }
+int  vmdsock_connect(void *v, const char *host, int port) { return 0; }
+int vmdsock_bind(void * v, int port) { return 0; }
+int vmdsock_listen(void * v) { return 0; }
+int  vmdsock_accept(void * v) { return 0; }
+int  vmdsock_write(void * v, const void *buf, int len) { return 0; }
+int  vmdsock_read(void * v, void *buf, int len) { return 0; }
+void vmdsock_destroy(void * v) { return; }
+int vmdsock_selread(void *v, int sec) { return 0; }
+int vmdsock_selwrite(void *v, int sec) { return 0; }
+
+#else
+
 #define VMDSOCKINTERNAL
 
 #include <sys/types.h>
@@ -142,3 +159,5 @@ int vmdsock_selwrite(void *v, int sec) {
   } while (rc < 0 && errno == EINTR);
   return rc;
 }
+
+#endif

@@ -127,10 +127,12 @@ Node::Node(GroupInitMsg *msg)
   CProxy_LdbCoordinator lc(CpvAccess(BOCclass_group).ldbCoordinator);
   ldbCoordinator = lc.ckLocalBranch();
 
+#if !defined(NOHOSTNAME)
   // Where are we?
   char host[1024];
   gethostname(host, 1024);
   iout << iINFO << iPE << " Starting out on host: " << host << "\n" << endi;
+#endif
 }
 
 //----------------------------------------------------------------------

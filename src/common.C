@@ -185,6 +185,7 @@ FILE *Fopen	(const char *filename, const char *mode)
 	if (!S_ISDIR(buf.st_mode))
 		return(fopen(filename,mode));
 	}
+#if !defined(NOCOMPRESSED)
   // check for a compressed file
   char *realfilename;
   char *command;
@@ -244,6 +245,8 @@ FILE *Fopen	(const char *filename, const char *mode)
 		return(fout);
 		}
 	}
+#endif /* !defined(NOCOMPRESSED) */
+
   free(command);
   return(NULL);
 } /* Fopen() */
@@ -254,8 +257,10 @@ FILE *Fopen	(const char *filename, const char *mode)
  ***************************************************************************/
 int	Fclose	(FILE *fout)
 {
-  int rc;
+  int rc = -1;
+#if !defined(NOCOMPRESSED)
   rc = pclose(fout);
+#endif
   if (rc == -1)	// stream not associated with a popen()
     {
     rc = fclose(fout);
