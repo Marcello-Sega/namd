@@ -162,6 +162,7 @@ private:
 	void build13excl(void);
 	void build14excl(int);
 	void stripHGroupExcl(void);
+	void stripFepExcl(void);
 	void build_exclusions();
 
 	// analyze the atoms, and determine which are oxygen, hb donors, etc.

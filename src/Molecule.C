@@ -2404,6 +2404,8 @@ void Molecule::receive_Molecule(MIStream *msg)
       }
       else if (stripHGroupExclFlag && exclude_flag!=NONE && exclude_flag!=ONETWO)
         stripHGroupExcl();
+
+      stripFepExcl();
     }
     /*      END OF FUNCTION build_exclusions    */
 
@@ -2633,6 +2635,35 @@ void Molecule::receive_Molecule(MIStream *msg)
   }
     /*      END OF FUNCTION stripHGroupExcl      */
 
+    /************************************************************************/
+    /*                                                                      */
+    /*        FUNCTION stripFepExcl                                         */
+    /*                                                                      */
+    /************************************************************************/
+
+  void Molecule::stripFepExcl(void)
+  {
+    if ( simParams->fepOn || simParams->lesOn ) {
+
+       UniqueSet<Exclusion> fepExclusionSet;
+       UniqueSetIter<Exclusion> exclIter(exclusionSet);
+       for ( exclIter=exclIter.begin(); exclIter != exclIter.end(); exclIter++ )
+       {
+         int t1 = get_fep_type(exclIter->atom1);
+         int t2 = get_fep_type(exclIter->atom2);
+         if ( t1 && t2 && t1 != t2 ) {
+           fepExclusionSet.add(*exclIter);
+         }
+       }
+       UniqueSetIter<Exclusion> fepIter(fepExclusionSet);
+       for ( fepIter=fepIter.begin(); fepIter != fepIter.end(); fepIter++ )
+       {
+         exclusionSet.del(*fepIter);
+       }
+
+    }
+  }
+    /*      END OF FUNCTION stripFepExcl      */
 
     /************************************************************************/
     /*                  */
