@@ -41,7 +41,7 @@ void read_binary_coors(char *fname, PDB *pdbobj) {
   FILE *fp;		//  File descriptor
 
   //  Open the file and die if the open fails
-  if ( (fp = fopen(fname, "r")) == NULL)
+  if ( (fp = Fopen(fname, "r")) == NULL)
   {
       char errmsg[256];
       sprintf(errmsg, "Unable to open binary coordinate file %s", fname);
@@ -145,7 +145,7 @@ void velocities_from_binfile(char *fname, Vector *vels, int n)
 	FILE *fp;		//  File descriptor
 
 	//  Open the file and die if the open fails
-	if ( (fp = fopen(fname, "r")) == NULL)
+	if ( (fp = Fopen(fname, "r")) == NULL)
 	{
 	  char errmsg[256];
   	  sprintf(errmsg, "Unable to open binary velocity file %s", fname);
@@ -314,13 +314,17 @@ void remove_com_motion(Vector *vel, Molecule *structure, int n)
 * RCS INFORMATION:
 *
 *	$RCSfile: NamdOneTools.C,v $
-*	$Author: jim $	$Locker:  $		$State: Exp $
-*	$Revision: 1.3 $	$Date: 1997/03/24 01:43:56 $
+*	$Author: nealk $	$Locker:  $		$State: Exp $
+*	$Revision: 1.4 $	$Date: 1997/04/03 19:59:06 $
 *
 ***************************************************************************
 * REVISION HISTORY:
 *
 * $Log: NamdOneTools.C,v $
+* Revision 1.4  1997/04/03 19:59:06  nealk
+* 1) New Fopen() which handles .Z and .gz files.
+* 2) localWaters and localNonWaters lists on each patch.
+*
 * Revision 1.3  1997/03/24 01:43:56  jim
 * Added Langevin dynamics.
 *
@@ -335,4 +339,4 @@ void remove_com_motion(Vector *vel, Molecule *structure, int n)
 *
 ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdOneTools.C,v 1.3 1997/03/24 01:43:56 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdOneTools.C,v 1.4 1997/04/03 19:59:06 nealk Exp $";

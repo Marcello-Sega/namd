@@ -21,8 +21,13 @@
 
 //  Redefine new and delete if the MTS fast malloc is being used
 //#ifdef MTS
+#ifdef GLOBALS
+void * operator new (size_t);
+void   operator delete (void *);
+#else
 void * ::operator new (size_t);
 void   ::operator delete (void *);
+#endif
 //#endif
 
 #define COLOUMB 332.0636
@@ -105,6 +110,7 @@ char *NAMD_stringdup(const char *);
 int *NAMD_bsearch(int *, int *, int, int,
 		int (*cmpfn) (const void *, const void*));
 BigReal NAMD_random();
+FILE *Fopen(const char *filename, const char *mode);
 
 // message tags
 // NOTE!!!  Do NOT use any tags smaller than 100.  Add tags sequentially
@@ -241,13 +247,17 @@ BigReal NAMD_random();
  * RCS INFORMATION:
  *
  *	$RCSfile: common.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/21 23:05:49 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/04/03 19:59:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.h,v $
+ * Revision 1.1005  1997/04/03 19:59:15  nealk
+ * 1) New Fopen() which handles .Z and .gz files.
+ * 2) localWaters and localNonWaters lists on each patch.
+ *
  * Revision 1.1004  1997/03/21 23:05:49  jim
  * Added Berendsen's pressure coupling method, won't work with MTS yet.
  *

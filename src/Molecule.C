@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Molecule.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/03/31 16:12:53 $
+ *	$Revision: 1.1012 $	$Date: 1997/04/03 19:59:03 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,10 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1012  1997/04/03 19:59:03  nealk
+ * 1) New Fopen() which handles .Z and .gz files.
+ * 2) localWaters and localNonWaters lists on each patch.
+ *
  * Revision 1.1011  1997/03/31 16:12:53  nealk
  * Atoms now can migrate by hydrogen groups.
  *
@@ -206,7 +210,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1011 1997/03/31 16:12:53 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1012 1997/04/03 19:59:03 nealk Exp $";
 
 #include "Templates/UniqueSortedArray.h"
 #include "Molecule.h"
@@ -384,7 +388,7 @@ void Molecule::read_psf_file(char *fname, Parameters *params)
 	int ret_code;		//  ret_code from NAMD_read_line calls
 
 	/* Try and open the .psf file 					*/
-	if ( (psf_file = fopen(fname, "r")) == NULL)
+	if ( (psf_file = Fopen(fname, "r")) == NULL)
 	{
 		sprintf(err_msg, "UNABLE TO OPEN .psf FILE %s", fname);
 		NAMD_die(err_msg);
@@ -3253,6 +3257,15 @@ void Molecule::send_Molecule(Communicate *com_obj)
 	return (hydrogenGroup[atoms[anum].hydrogenList].isGP);
     }
 
+    Bool Molecule::is_water(int anum)
+    {
+	return (hydrogenGroup[atoms[anum].hydrogenList].sortVal == 2);
+    }
+
+    int Molecule::get_groupSize(int anum)
+    {
+	return (hydrogenGroup[atoms[anum].hydrogenList].atomsInGroup);
+    }
 
     int Molecule::get_mother_atom(int anum)
     {
@@ -3408,12 +3421,16 @@ void Molecule::send_Molecule(Communicate *com_obj)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/03/31 16:12:53 $
+ *	$Revision: 1.1012 $	$Date: 1997/04/03 19:59:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1012  1997/04/03 19:59:03  nealk
+ * 1) New Fopen() which handles .Z and .gz files.
+ * 2) localWaters and localNonWaters lists on each patch.
+ *
  * Revision 1.1011  1997/03/31 16:12:53  nealk
  * Atoms now can migrate by hydrogen groups.
  *

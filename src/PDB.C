@@ -13,7 +13,7 @@
  * for a bit more information.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PDB.C,v 1.1001 1997/03/19 11:54:39 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PDB.C,v 1.1002 1997/04/03 19:59:09 nealk Exp $";
 
 #include <stdio.h>
 #include <strings.h>
@@ -28,7 +28,7 @@ PDB::PDB( const char *pdbfilename) {
 
   atomCount = 0;
   atomListHead = atomListTail = NULL;
-  infile = fopen(pdbfilename, "r");
+  infile = Fopen(pdbfilename, "r");
   if (! infile) {
      char s[500];
      sprintf(s, "Cannot open file '%s' for input in PDB::PDB.", pdbfilename);
@@ -388,13 +388,17 @@ main()
  * RCS INFORMATION:
  *
  *	$RCSfile: PDB.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:39 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/04/03 19:59:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PDB.C,v $
+ * Revision 1.1002  1997/04/03 19:59:09  nealk
+ * 1) New Fopen() which handles .Z and .gz files.
+ * 2) localWaters and localNonWaters lists on each patch.
+ *
  * Revision 1.1001  1997/03/19 11:54:39  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

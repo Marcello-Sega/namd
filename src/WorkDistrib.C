@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1018 1997/03/27 17:08:33 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1019 1997/04/03 19:59:13 nealk Exp $";
 
 #include <stdio.h>
 
@@ -655,7 +655,7 @@ void WorkDistrib::velocities_from_binfile(char *fname, Vector *vels, int n)
   FILE *fp;		//  File descriptor
 
   //  Open the file and die if the open fails
-  if ( (fp = fopen(fname, "r")) == NULL)
+  if ( (fp = Fopen(fname, "r")) == NULL)
   {
     char errmsg[256];
 
@@ -803,12 +803,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1997/03/27 17:08:33 $
+ *	$Revision: 1.1019 $	$Date: 1997/04/03 19:59:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1019  1997/04/03 19:59:13  nealk
+ * 1) New Fopen() which handles .Z and .gz files.
+ * 2) localWaters and localNonWaters lists on each patch.
+ *
  * Revision 1.1018  1997/03/27 17:08:33  nealk
  * Added hydrogen groupings.  Now configuration parameter "splitPatch" determines
  * atom-into-patch distribution.

@@ -44,6 +44,7 @@ public:
 };
 
 typedef UniqueSortedArray<LocalAtomID> LocalIndex ;
+typedef UniqueSortedArray<int> LocalInt ;
 
 // This the base class of homepatches and proxy patches. It maintains
 // common functions of these patches. These include managing dependences
@@ -93,6 +94,8 @@ class Patch
      int           numAtoms;
      AtomIDList    atomIDList;
      LocalIndex    localIndex;
+     LocalInt      localWaters;
+     LocalInt      localNonWaters;
      PositionList  p;
      Position      *positionPtr;
      ForceList     f[Results::maxNumForces];
@@ -128,12 +131,16 @@ class Patch
  *
  *	$RCSfile: Patch.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/03/19 18:10:15 $
+ *	$Revision: 1.1007 $	$Date: 1997/04/03 19:59:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.h,v $
+ * Revision 1.1007  1997/04/03 19:59:12  nealk
+ * 1) New Fopen() which handles .Z and .gz files.
+ * 2) localWaters and localNonWaters lists on each patch.
+ *
  * Revision 1.1006  1997/03/19 18:10:15  nealk
  * Added sorted hydrogen group list to molecule.
  *

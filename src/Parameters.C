@@ -13,7 +13,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Parameters.C,v 1.1002 1997/03/20 15:38:30 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Parameters.C,v 1.1003 1997/04/03 19:59:10 nealk Exp $";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -268,7 +268,7 @@ void Parameters::read_parameter_file(char *fname)
 	}
 
 	/*  Try and open the file					*/
-	if ( (pfile = fopen(fname, "r")) == NULL)
+	if ( (pfile = Fopen(fname, "r")) == NULL)
 	{
 		char err_msg[256];
 
@@ -3828,12 +3828,16 @@ int Parameters::vdw_pair_to_arrays(int *ind1_array, int *ind2_array,
  *
  *	$RCSfile: Parameters.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/20 15:38:30 $
+ *	$Revision: 1.1003 $	$Date: 1997/04/03 19:59:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Parameters.C,v $
+ * Revision 1.1003  1997/04/03 19:59:10  nealk
+ * 1) New Fopen() which handles .Z and .gz files.
+ * 2) localWaters and localNonWaters lists on each patch.
+ *
  * Revision 1.1002  1997/03/20 15:38:30  nealk
  * Added "\n" before endi in iout statements.
  * Removed endi from DebugM() calls.

@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1008 1997/03/19 11:54:46 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1009 1997/04/03 19:59:11 nealk Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -82,10 +82,31 @@ void Patch::loadAtomProperties(void)
       ap.type = mol->atomvdwtype(ap.id);
       ap.mass = mol->atommass(ap.id);
       ap.charge = mol->atomcharge(ap.id);
+
+      // make water/nonwater hydrogen group lists
+      // NOTE: only group parents know the group size.
+      if (mol->is_hydrogenGroupParent(atomIDList[i]))
+      	ap.hydrogenGroupSize = mol->get_groupSize(atomIDList[i]);
+      else ap.hydrogenGroupSize = 0;
+      ap.water = mol->is_water(atomIDList[i]);
+
+      // add the property
       a.add(ap);
     }
     localIndex.sort();
     localIndex.uniq();
+
+    // load water/nonwater lists
+    localWaters.resize(0);
+    localNonWaters.resize(0);
+    for(i=0; i<numAtoms; i++)
+    {
+      if (a[i].hydrogenGroupSize)
+      {
+	if (a[i].water) localWaters.load(i);
+	else localNonWaters.load(i);
+      }
+    }
 }
 
 void
@@ -99,6 +120,18 @@ Patch::indexAtoms()
     }
     localIndex.sort();
     localIndex.uniq();
+
+    // load water/nonwater lists
+    localWaters.resize(0);
+    localNonWaters.resize(0);
+    for(i=0; i<numAtoms; i++)
+    {
+      if (a[i].hydrogenGroupSize)
+      {
+	if (a[i].water) localWaters.load(i);
+	else localNonWaters.load(i);
+      }
+    }
 }
 
 
@@ -223,13 +256,17 @@ void Patch::positionsReady(int doneMigration)
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/03/19 11:54:46 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1009 $	$Date: 1997/04/03 19:59:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.1009  1997/04/03 19:59:11  nealk
+ * 1) New Fopen() which handles .Z and .gz files.
+ * 2) localWaters and localNonWaters lists on each patch.
+ *
  * Revision 1.1008  1997/03/19 11:54:46  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

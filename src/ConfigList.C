@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: ConfigList.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:12 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/04/03 19:59:01 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -41,6 +41,10 @@
  * REVISION HISTORY:
  *
  * $Log: ConfigList.C,v $
+ * Revision 1.1002  1997/04/03 19:59:01  nealk
+ * 1) New Fopen() which handles .Z and .gz files.
+ * 2) localWaters and localNonWaters lists on each patch.
+ *
  * Revision 1.1001  1997/03/19 11:54:12  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.
@@ -106,7 +110,7 @@
  * Initial revision
  *
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ConfigList.C,v 1.1001 1997/03/19 11:54:12 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ConfigList.C,v 1.1002 1997/04/03 19:59:01 nealk Exp $";
 
 #include <iostream.h>
 #include <string.h> // for strncpy, strcasecmp
@@ -215,7 +219,7 @@ ConfigList::ConfigList(const char *filename)
   if (!strcmp(filename,"-")) {  // should the input be from stdin?
     infile = stdin;
   } else {
-    if ( (infile = fopen(filename, "r")) == NULL ) {
+    if ( (infile = Fopen(filename, "r")) == NULL ) {
         iout << iWARN << "Unable to open configuration file '" 
                  << filename << "'." << endi;
         isokay = FALSE;
@@ -374,12 +378,16 @@ main()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:12 $
+ *	$Revision: 1.1002 $	$Date: 1997/04/03 19:59:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ConfigList.C,v $
+ * Revision 1.1002  1997/04/03 19:59:01  nealk
+ * 1) New Fopen() which handles .Z and .gz files.
+ * 2) localWaters and localNonWaters lists on each patch.
+ *
  * Revision 1.1001  1997/03/19 11:54:12  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

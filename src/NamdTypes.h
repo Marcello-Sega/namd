@@ -42,6 +42,10 @@ struct AtomProperties
   Mass mass;
   Charge charge;
 
+  // other data information
+  int hydrogenGroupSize;	// 0 from group members, !0 for group parents
+  Bool water;	// TRUE if water atom (O or H)
+
   int operator==(const AtomProperties& a) {
     return( id == a.id );
   }
@@ -95,13 +99,17 @@ typedef int Boolean;
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdTypes.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/19 05:50:10 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1006 $	$Date: 1997/04/03 19:59:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdTypes.h,v $
+ * Revision 1.1006  1997/04/03 19:59:07  nealk
+ * 1) New Fopen() which handles .Z and .gz files.
+ * 2) localWaters and localNonWaters lists on each patch.
+ *
  * Revision 1.1005  1997/03/19 05:50:10  jim
  * Added ComputeSphericalBC, cleaned up make dependencies.
  *

@@ -10,11 +10,12 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1004 1997/03/19 11:54:59 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1005 1997/04/03 19:59:14 nealk Exp $";
 
 #include "chare.h"
 #include "ckdefs.h"
 #include "c++interface.h"
+#include <sys/stat.h>
 
 #include "common.h"
 #include "Communicate.h"
@@ -185,17 +186,76 @@ int *NAMD_bsearch(int *key, int *base, int n,
 		return done ? base + i : NULL;
 	}
 }
+
+/***************************************************************************
+ Fopen(char *Filename, char *mode):  similar to fopen(filename,mode) except
+ it checks for compressed file names too.
+ For example:  Fopen("config");
+   This will first look for the filename "config" (and return "r" file handle
+   if it is found).
+   Then it will look for "config.Z" (and run "zcat config.Z", returning
+   a file handle to the uncompressed data if found).
+   Then it will look for "config.gz" (and run "gzip -d -c config.gz", returning
+   a file handle to the uncompressed data if found).
+ ***************************************************************************/
+FILE *Fopen	(const char *filename, const char *mode)
+{
+  struct stat buf;
+  // check if basic filename exists (and not a directory)
+  if (!stat(filename,&buf))
+	{
+	if (!S_ISDIR(buf.st_mode))
+		return(fopen(filename,mode));
+	}
+  // check for a compressed file
+  char *realfilename;
+  char *command;
+  FILE *fout;
+  command = (char *)calloc(strlen(filename)+25,1);
+  // check for .Z (unix compress)
+  sprintf(command,"zcat %s.Z",filename);
+  realfilename = command+5;
+  if (!stat(realfilename,&buf))
+	{
+	if (!S_ISDIR(buf.st_mode))
+		{
+		fout = popen(command,mode);
+		free(command);
+		return(fout);
+		}
+	}
+  // check for .gz (gzip)
+  sprintf(command,"gzip -d -c %s.gz",filename);
+  realfilename = command+11;
+  if (!stat(realfilename,&buf))
+	{
+	if (!S_ISDIR(buf.st_mode))
+		{
+		fout = popen(command,mode);
+		free(command);
+		return(fout);
+		}
+	}
+  free(command);
+  return(NULL);
+} /* Fopen() */
+
+
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: common.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/19 11:54:59 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/04/03 19:59:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.C,v $
+ * Revision 1.1005  1997/04/03 19:59:14  nealk
+ * 1) New Fopen() which handles .Z and .gz files.
+ * 2) localWaters and localNonWaters lists on each patch.
+ *
  * Revision 1.1004  1997/03/19 11:54:59  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

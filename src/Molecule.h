@@ -166,8 +166,9 @@ public:
         Bool is_hb_acceptor(int);  // return true if atom is hbond acceptor
         Bool is_hb_antecedent(int);// return true if atom is hbond antecedent
         Bool is_hb_hydrogen(int);  // return true if atom is hbond hydrogen
-	Bool is_hydrogenGroupParent(int);	// return true if atom is group parent
-
+	Bool is_hydrogenGroupParent(int); // return true if atom is group parent
+	Bool is_water(int);        // return true if atom is part of water 
+	int  get_groupSize(int);     // return # atoms in (hydrogen) group
         int get_mother_atom(int);  // return mother atom of a hydrogen
 
 	IntList *get_atom_hb_donors(int);    // return list of Nth atom donors
@@ -342,12 +343,16 @@ public:
  *
  *	$RCSfile: Molecule.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/03/31 16:12:54 $
+ *	$Revision: 1.1010 $	$Date: 1997/04/03 19:59:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.1010  1997/04/03 19:59:05  nealk
+ * 1) New Fopen() which handles .Z and .gz files.
+ * 2) localWaters and localNonWaters lists on each patch.
+ *
  * Revision 1.1009  1997/03/31 16:12:54  nealk
  * Atoms now can migrate by hydrogen groups.
  *
