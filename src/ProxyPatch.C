@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.10 1996/12/17 23:58:02 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.11 1996/12/19 00:33:10 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -43,7 +43,11 @@ void ProxyPatch::boxClosed(int box)
   if ( ! --boxesOpen )
   {
     DebugM(2,patchID << ": " << "Checking message buffer.\n");
-    if ( msgBuffer) receiveData(msgBuffer);
+    if ( msgBuffer )
+    {
+      DebugM(4,"Patch " << patchID << " processing buffered proxy data.\n");
+      receiveData(msgBuffer);
+    }
   }
   else
   {
@@ -63,7 +67,7 @@ void ProxyPatch::receiveData(ProxyDataMsg *msg)
   if ( boxesOpen )
   {
     // store message in queue (only need one element, though)
-    DebugM(4,"Proxy data arrived early, storing in buffer.\n");
+    DebugM(4,"Patch " << patchID << " proxy data arrived early, storing in buffer.\n");
     msgBuffer = msg;
     return;
   }
@@ -88,12 +92,15 @@ void ProxyPatch::sendResults(void)
  *
  *	$RCSfile: ProxyPatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1996/12/17 23:58:02 $
+ *	$Revision: 1.11 $	$Date: 1996/12/19 00:33:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.11  1996/12/19 00:33:10  jim
+ * added message buffering debugging
+ *
  * Revision 1.10  1996/12/17 23:58:02  jim
  * proxy result reporting is working
  *
