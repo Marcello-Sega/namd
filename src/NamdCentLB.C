@@ -20,7 +20,11 @@ void CreateNamdCentLB()
   // CkPrintf("[%d] created NamdCentLB %d\n",CkMyPe(),loadbalancer);
 }
 
+#if CHARM_VERSION > 050610
+NamdCentLB::NamdCentLB(): CentralLB(CkLBOptions(-1))
+#else
 NamdCentLB::NamdCentLB()
+#endif
 {
   //  if (CkMyPe()==0)
   //   CkPrintf("[%d] NamdCentLB created\n",CkMyPe());

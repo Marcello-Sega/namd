@@ -16,11 +16,15 @@
 void CreateNamdNborLB()
 {
   // CkPrintf("[%d] creating NamdNborLB %d\n",CkMyPe(),loadbalancer);
-  nborBaselb = CProxy_NamdNborLB::ckNew();
+  CProxy_NamdNborLB::ckNew();
   // CkPrintf("[%d] created NamdNborLB %d\n",CkMyPe(),loadbalancer);
 }
 
+#if CHARM_VERSION > 050610
+NamdNborLB::NamdNborLB(): NeighborLB(CkLBOptions(-1))
+#else
 NamdNborLB::NamdNborLB()
+#endif
 {
   //  if (CkMyPe()==0)
   //   CkPrintf("[%d] NamdNborLB created\n",CkMyPe());
