@@ -47,7 +47,8 @@
  *****************************************************************/
  #ifdef DEBUGM
 
-#define DebugM(level,format) \
+  #define Debug(x) (x)
+  #define DebugM(level,format) \
 	{ \
 	  if ((level >= MIN_DEBUG_LEVEL) && (level <= MAX_DEBUG_LEVEL)) \
 	  { \
@@ -63,6 +64,7 @@
  #else
   /* make a void function. */
   /* parameters with side effects will be removed! */
+  #define Debug(x) ;
   #define DebugM(x,y)	;
 
  #endif /* DEBUGM */
