@@ -64,6 +64,10 @@ int pdb_file_extract_coordinates(topo_mol *mol, FILE *file,
                    segname, resid, insertion, &x, &y, &z, &o, &b);
       target.resid = resid;
       target.aname = extract_alias_atom_check(h,resname,name);
+      /* Use PDB segid if no segid given */
+      if (!segid) {
+        target.segid = segname;
+      }
       if ( topo_mol_set_xyz(mol,&target,x,y,z) ) {
         sprintf(msg,"ERROR: failed to set coordinate for atom %s in residue %s:%s of segment %s",name,resname,resid,segid);
         print_msg(msg);

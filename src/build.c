@@ -391,8 +391,8 @@ int tcl_coordpdb(ClientData data, Tcl_Interp *interp,
   char msg[128];
   psfgen_data *psf = (psfgen_data *)data;
 
-  if ( argc < 3 ) {
-    Tcl_SetResult(interp,"arguments: pdbfile segid",TCL_VOLATILE);
+  if ( argc < 2 ) {
+    Tcl_SetResult(interp,"arguments: pdbfile ?segid?",TCL_VOLATILE);
     return TCL_ERROR;
   }
   if ( argc > 3 ) {
@@ -405,10 +405,20 @@ int tcl_coordpdb(ClientData data, Tcl_Interp *interp,
     Tcl_SetResult(interp,msg,TCL_VOLATILE);
     return TCL_ERROR;
   } else {
-    strtoupper(argv[2]);
-    sprintf(msg,"reading coordinates from pdb file %s for segment %s",filename,argv[2]);
-    handle_msg(msg);
-    if ( pdb_file_extract_coordinates(psf->mol,res_file,argv[2],psf->aliases,handle_msg) ) {
+    const char *segid;
+    if (argc == 3) {
+      /* Read only coordinates for given segid */
+      strtoupper(argv[2]);
+      sprintf(msg,"reading coordinates from pdb file %s for segment %s",filename,argv[2]);
+      handle_msg(msg);
+      segid = argv[2];
+    } else {
+      /* Read all segid's in pdb file */
+      sprintf(msg,"reading coordinates from pdb file %s",filename);
+      handle_msg(msg);
+      segid = NULL;
+    } 
+    if ( pdb_file_extract_coordinates(psf->mol,res_file,segid,psf->aliases,handle_msg) ) {
       Tcl_SetResult(interp,"ERROR: failed on reading coordinates from pdb file",TCL_VOLATILE);
       fclose(res_file);
       return TCL_ERROR;
