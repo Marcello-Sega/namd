@@ -93,8 +93,6 @@ void ComputeRestraints::doForce(CompAtom* p, Results* res)
 	BigReal m[9];
 	Tensor virial;
 	Vector netForce = 0;
-	Vector consPosition = 0;
-	int consCount = 0;
 
 	// BEGIN moving and rotating constraint changes ******
 
@@ -175,8 +173,6 @@ void ComputeRestraints::doForce(CompAtom* p, Results* res)
 	      f[localID] += Rij;
 	      netForce += Rij;
 	      virial += outer(Rij,vpos);
-	      consPosition += vpos;
-	      consCount++;
 	    }
 	  }
 	}
@@ -184,8 +180,6 @@ void ComputeRestraints::doForce(CompAtom* p, Results* res)
 	reduction->item(REDUCTION_BC_ENERGY) += energy;
 	ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,virial);
 	ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_NORMAL,netForce);
-	ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_POSITION,consPosition);
-	reduction->item(REDUCTION_EXT_COUNT) += consCount;
 	reduction->submit();
 
 }

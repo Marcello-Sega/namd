@@ -912,8 +912,6 @@ void Sequencer::submitReductions(int step)
     Vector fixForceNormal = 0;
     Vector fixForceNbond = 0;
     Vector fixForceSlow = 0;
-    Vector fixPosition = 0;
-    int fixCount = 0;
 
     for ( int j = 0; j < numAtoms; j++ ) {
       if ( simParams->fixedAtomsOn && a[j].atomFixed ) {
@@ -925,8 +923,6 @@ void Sequencer::submitReductions(int step)
         fixForceNormal -= patch->f[Results::normal][j];
         fixForceNbond -= patch->f[Results::nbond][j];
         fixForceSlow -= patch->f[Results::slow][j];
-        fixPosition += dx;
-        fixCount += 1;
       }
     }
 
@@ -936,8 +932,6 @@ void Sequencer::submitReductions(int step)
     ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_NORMAL,fixForceNormal);
     ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_NBOND,fixForceNbond);
     ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_SLOW,fixForceSlow);
-    ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_POSITION,fixPosition);
-    reduction->item(REDUCTION_EXT_COUNT) += fixCount;
   }
 
   Vector momentum = patch->calcMomentum();
@@ -1058,8 +1052,6 @@ void Sequencer::submitMinimizeReductions(int step)
     Vector fixForceNormal = 0;
     Vector fixForceNbond = 0;
     Vector fixForceSlow = 0;
-    Vector fixPosition = 0;
-    int fixCount = 0;
 
     for ( int j = 0; j < numAtoms; j++ ) {
       if ( simParams->fixedAtomsOn && a[j].atomFixed ) {
@@ -1071,8 +1063,6 @@ void Sequencer::submitMinimizeReductions(int step)
         fixForceNormal -= patch->f[Results::normal][j];
         fixForceNbond -= patch->f[Results::nbond][j];
         fixForceSlow -= patch->f[Results::slow][j];
-        fixPosition += dx;
-        fixCount += 1;
       }
     }
 
@@ -1082,8 +1072,6 @@ void Sequencer::submitMinimizeReductions(int step)
     ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_NORMAL,fixForceNormal);
     ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_NBOND,fixForceNbond);
     ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_SLOW,fixForceSlow);
-    ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_POSITION,fixPosition);
-    reduction->item(REDUCTION_EXT_COUNT) += fixCount;
   }
 
   reduction->submit();

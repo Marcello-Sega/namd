@@ -714,8 +714,6 @@ void Controller::receivePressure(int step, int minimize)
     Vector extForce_normal;
     Vector extForce_nbond;
     Vector extForce_slow;
-    Vector extPosition;
-    BigReal extCount;
     BigReal volume;
 
     int numAtoms = molecule->numAtoms;
@@ -753,9 +751,7 @@ void Controller::receivePressure(int step, int minimize)
     GET_VECTOR(extForce_normal,reduction,REDUCTION_EXT_FORCE_NORMAL);
     GET_VECTOR(extForce_nbond,reduction,REDUCTION_EXT_FORCE_NBOND);
     GET_VECTOR(extForce_slow,reduction,REDUCTION_EXT_FORCE_SLOW);
-    GET_VECTOR(extPosition,reduction,REDUCTION_EXT_POSITION);
-    extCount = reduction->item(REDUCTION_EXT_COUNT);
-    if ( extCount != 0. ) extPosition /= extCount;
+    Vector extPosition = lattice.origin();
     virial_normal -= outer(extForce_normal,extPosition);
     virial_nbond -= outer(extForce_nbond,extPosition);
     virial_slow -= outer(extForce_slow,extPosition);

@@ -18,6 +18,7 @@ class ComputeGlobalConfigMsg;
 class ComputeGlobalDataMsg;
 class ComputeGlobalResultsMsg;
 class ComputeMgr;
+class SubmitReduction;
 
 class ComputeGlobal : public ComputeHomePatches {
 public:
@@ -38,6 +39,7 @@ private:
   ResizeArray<BigReal> gmass;  // masses of groups
 
   int firsttime;
+  SubmitReduction *reduction;
 };
 
 #endif

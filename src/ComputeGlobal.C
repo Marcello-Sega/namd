@@ -36,10 +36,12 @@ ComputeGlobal::ComputeGlobal(ComputeID c, ComputeMgr *m)
   gdef.resize(0);
   comm = m;
   firsttime = 1;
+  reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 }
 
 ComputeGlobal::~ComputeGlobal()
 {
+  delete reduction;
 }
 
 void ComputeGlobal::configure(AtomIDList newaid, AtomIDList newgdef) {
@@ -83,13 +85,18 @@ void ComputeGlobal::recvResults(ComputeGlobalResultsMsg *msg) {
     PatchMap *patchMap = PatchMap::Object();
     int numPatches = patchMap->numPatches();
     AtomMap *atomMap = AtomMap::Object();
+    const Lattice & lattice = patchList[0].p->lattice;
     ResizeArrayIter<PatchElem> ap(patchList);
     Force **f = new Force*[numPatches];
-    for ( int i = 0; i < numPatches; ++i ) f[i] = 0;
+    FullAtom **t = new FullAtom*[numPatches];
+    for ( int i = 0; i < numPatches; ++i ) { f[i] = 0; t[i] = 0; }
+    Force extForce = 0.;
+    Tensor extVirial;
 
     for (ap = ap.begin(); ap != ap.end(); ap++) {
       (*ap).r = (*ap).forceBox->open();
       f[(*ap).patchID] = (*ap).r->f[Results::normal];
+      t[(*ap).patchID] = (*ap).p->getAtomList().begin();
     }
 
     AtomIDList::iterator a = msg->aid.begin();
@@ -100,7 +107,13 @@ void ComputeGlobal::recvResults(ComputeGlobalResultsMsg *msg) {
       /* XXX if (*a) is out of bounds here we get a segfault */
       LocalID localID = atomMap->localID(*a);
       if ( localID.pid == notUsed || ! f[localID.pid] ) continue;
-      f[localID.pid][localID.index] += (*f2);
+      Force f_atom = (*f2);
+      f[localID.pid][localID.index] += f_atom;
+      Position x_orig = t[localID.pid][localID.index].position;
+      Transform trans = t[localID.pid][localID.index].transform;
+      Position x_atom = lattice.reverse_transform(x_orig,trans);
+      extForce += f_atom;
+      extVirial += outer(f_atom,x_atom);
     }
     DebugM(1,"done with the loop\n");
 
@@ -118,7 +131,13 @@ void ComputeGlobal::recvResults(ComputeGlobalResultsMsg *msg) {
 	//iout << iDEBUG << *g_i << '\n' << endi;
 	LocalID localID = atomMap->localID(*g_i);
 	if ( localID.pid == notUsed || ! f[localID.pid] ) continue;
-	f[localID.pid][localID.index] += accel * mol->atommass(*g_i);
+	Force f_atom = accel * mol->atommass(*g_i);
+	f[localID.pid][localID.index] += f_atom;
+        Position x_orig = t[localID.pid][localID.index].position;
+        Transform trans = t[localID.pid][localID.index].transform;
+        Position x_atom = lattice.reverse_transform(x_orig,trans);
+        extForce += f_atom;
+        extVirial += outer(f_atom,x_atom);
       }
     }
     DebugM(1,"done with the groups\n");
@@ -128,6 +147,11 @@ void ComputeGlobal::recvResults(ComputeGlobalResultsMsg *msg) {
     }
 
     delete [] f;
+    delete [] t;
+
+    ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_NORMAL,extForce);
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,extVirial);
+    reduction->submit();
   }
   // done setting the forces
 
