@@ -1,5 +1,5 @@
 extern message InitMsg;
-message MovePatchesMsg;
+packmessage MovePatchesMsg;
 message AckMovePatchesMsg;
 
 group PatchMgr
