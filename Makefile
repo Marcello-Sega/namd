@@ -20,18 +20,18 @@ DPMTADIR=dpmta-2.6
 DPMEDIR=dpme2
 
 # comment/uncomment these lines for (D)PMTA routines
-DPMTAINCL=$(COPTI)$(DPMTADIR)/mpole $(COPTI)$(DPMTADIR)/src
-DPMTALIB=-L$(DPMTADIR)/mpole -L$(DPMTADIR)/src -ldpmta2 -lmpole -lpvmc
-DPMTAFLAGS=$(COPTD)DPMTA
-DPMTA=$(DPMTAINCL) $(DPMTAFLAGS)
-DPMTALIBS=$(DPMTADIR)/mpole/libmpole.a $(DPMTADIR)/src/libdpmta2.a
+#DPMTAINCL=$(COPTI)$(DPMTADIR)/mpole $(COPTI)$(DPMTADIR)/src
+#DPMTALIB=-L$(DPMTADIR)/mpole -L$(DPMTADIR)/src -ldpmta2 -lmpole -lpvmc
+#DPMTAFLAGS=$(COPTD)DPMTA
+#DPMTA=$(DPMTAINCL) $(DPMTAFLAGS)
+#DPMTALIBS=$(DPMTADIR)/mpole/libmpole.a $(DPMTADIR)/src/libdpmta2.a
 
 # comment/uncomment these lines for DPME routines
-DPMEINCL=$(COPTI)$(DPMEDIR)
-DPMELIB=-L$(DPMEDIR) -ldpme
-DPMEFLAGS=$(COPTD)DPME
-DPME=$(DPMEINCL) $(DPMEFLAGS)
-DPMELIBS= $(DPMEDIR)/libdpme.a
+#DPMEINCL=$(COPTI)$(DPMEDIR)
+#DPMELIB=-L$(DPMEDIR) -ldpme
+#DPMEFLAGS=$(COPTD)DPME
+#DPME=$(DPMEINCL) $(DPMEFLAGS)
+#DPMELIBS= $(DPMEDIR)/libdpme.a
 
 include Makearch
 
