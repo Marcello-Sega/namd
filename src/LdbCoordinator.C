@@ -26,6 +26,7 @@ LdbCoordinator::LdbCoordinator(InitMsg *msg)
     CharmExit();
   }
 
+  first_ldbcycle = TRUE;
   nLocalComputes = nLocalPatches = 0;
   computeStartTime = computeTotalTime = (double *)NULL;
   patchNAtoms = (int *) NULL;
@@ -105,6 +106,13 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap)
 
   nComputesReported = 0;
   nComputesExpected = nLocalComputes * stepsPerLdbCycle;
+  // Fixup to take care of the extra timestep at startup
+  // This is pretty ugly here, but it makes the count correct
+  if (first_ldbcycle)
+  {
+    nComputesExpected += nLocalComputes;
+    first_ldbcycle = FALSE;
+  }
 }
 
 void LdbCoordinator::patchLoad(PatchID id, int nAtoms, int timestep)
@@ -158,16 +166,11 @@ void LdbCoordinator::rebalance(Sequencer *seq, PatchID pid)
 
 int LdbCoordinator::checkAndSendStats(void)
 {
-  if ( (nPatchesReported >= nPatchesExpected) 
-       && (nComputesReported >= nComputesExpected) )
+  if ( (nPatchesReported == nPatchesExpected) 
+       && (nComputesReported == nComputesExpected) )
   {
-    CPrintf("nPatchesReported = %d, nComputesReported = %d\n",
-	    nPatchesReported-nPatchesExpected, 
-	    nComputesReported-nComputesExpected);
     // Here, all the data gets sent to Node 0
-
-    // For now, no send to Node 0.  Instead just call resume() 
-    // with a dummy message to avoid thread problems.
+    // For now, just send a dummy message to Node 0.
 
     LdbStatsMsg *msg = new (MsgIndex(LdbStatsMsg)) LdbStatsMsg;
     CSendMsgBranch(LdbCoordinator, analyze, msg, thisgroup,0);

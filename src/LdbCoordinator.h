@@ -29,7 +29,9 @@ class InitMsg;
 
 class LdbStatsMsg : public comm_object
 {
-  int dummy;
+  int node;
+  int nPatches;
+  int nComputes;
 };
 
 class LdbResumeMsg : public comm_object
@@ -73,6 +75,7 @@ private:
   Sequencer **sequencerThreads;
   double *computeStartTime;
   double *computeTotalTime;
+  int first_ldbcycle;
 };
 
 #endif // LDBCOORDINATOR_H
@@ -83,12 +86,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1997/03/27 20:25:47 $
+ *	$Revision: 1.2 $	$Date: 1997/04/01 18:08:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LdbCoordinator.h,v $
+ * Revision 1.2  1997/04/01 18:08:44  brunner
+ * Made counts work right for first cycle
+ *
  * Revision 1.1  1997/03/27 20:25:47  brunner
  * Changes for LdbCoordinator, the load balance control BOC
  *
