@@ -51,6 +51,7 @@ void NonbondedExclElem::computeForce(BigReal *reduction)
                << localIndex[1] << endl);
 
   BigReal dummy[reductionDataSize];
+  for ( int i = 0; i < reductionDataSize; ++i ) dummy[i] = 0.;
 
   ComputeNonbondedUtil::calcExcl(
 	p[0]->x[localIndex[0]], p[1]->x[localIndex[1]],
