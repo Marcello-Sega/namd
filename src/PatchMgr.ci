@@ -1,0 +1,6 @@
+extern message InitMsg;
+
+group PatchMgr
+{
+  entry PatchMgr(InitMsg *);
+} ;
