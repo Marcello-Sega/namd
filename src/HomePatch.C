@@ -1016,9 +1016,9 @@ void HomePatch::doMarginCheck()
 
   BigReal minSize = simParams->patchDimension - simParams->margin;
 
-  if ( ( (max.x - min.x)*aAway*sysdima < minSize ) ||
-       ( (max.y - min.y)*bAway*sysdimb < minSize ) ||
-       ( (max.z - min.z)*cAway*sysdimc < minSize ) ) {
+  if ( ( (max.x - min.x)*aAway*sysdima < minSize*0.9999 ) ||
+       ( (max.y - min.y)*bAway*sysdimb < minSize*0.9999 ) ||
+       ( (max.z - min.z)*cAway*sysdimc < minSize*0.9999 ) ) {
 
     NAMD_die("Periodic cell has become too small for original patch grid!\n"
       "Possible solutions are to restart from a recent checkpoint,\n"
@@ -1031,7 +1031,7 @@ void HomePatch::doMarginCheck()
   BigReal marginb = 0.5 * ( (max.y - min.y) * bAway - cutoff / sysdimb );
   BigReal marginc = 0.5 * ( (max.z - min.z) * cAway - cutoff / sysdimc );
 
-  if ( (margina < 0) || (marginb < 0) || (marginc < 0) ) {
+  if ( (margina < -0.0001) || (marginb < -0.0001) || (marginc < -0.0001) ) {
     NAMD_die("Periodic cell has become too small for original patch grid!\n"
       "There are probably many margin violations already reported.\n"
       "Possible solutions are to restart from a recent checkpoint,\n"
