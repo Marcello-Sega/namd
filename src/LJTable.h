@@ -8,6 +8,8 @@
 /* DESCRIPTION:
 /*
 /***************************************************************************/
+#ifndef LJTABLE_H
+#define LJTABLE_H
 
 #include "common.h"
 
@@ -105,17 +107,22 @@ LJTable::get_LJ_params(const int index, BigReal *A, BigReal *B) const
 return;
 }
 
+#endif
+
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: LJTable.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/11/05 04:59:56 $
+ *	$Revision: 1.6 $	$Date: 1996/11/20 23:17:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LJTable.h,v $
+ * Revision 1.6  1996/11/20 23:17:23  jim
+ * added missing #ifndef LJTABLE_H idiom
+ *
  * Revision 1.5  1996/11/05 04:59:56  jim
  * Added exclcut2 to table.
  *
