@@ -283,21 +283,19 @@ NOEXCL
 
     const BigReal kq_i_s = kq_i_u * scale14;
     register const Position *p_j = p_1;
-    SELF( p_j += i+1; )
 
-    HGROUPING
+    NOHGROUPING
     (
     SELF
       (
-      if (pairlist[pairlistoffset] != i+1)
-	p_j += pairlist[pairlistoffset]-(i+1);
-      )
-    PAIR
-      (
-      if (pairlist[pairlistoffset] != 0)
-	p_j += pairlist[pairlistoffset];
+        if ( i + 1 < j_upper ) p_j += i+1;
       )
     )
+    HGROUPING
+    (
+      if ( pairlistoffset < pairlistindex ) p_j += pairlist[pairlistoffset];
+    )
+
     register BigReal p_j_x = p_j->x;
     register BigReal p_j_y = p_j->y;
     register BigReal p_j_z = p_j->z;
@@ -620,12 +618,15 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1023 $	$Date: 1997/07/30 20:51:47 $
+ *	$Revision: 1.1024 $	$Date: 1997/07/30 21:23:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1024  1997/07/30 21:23:22  jim
+ * More possible bugs (memory references).
+ *
  * Revision 1.1023  1997/07/30 20:51:47  jim
  * Probable bug fix - added sentinal to end of parilist.
  *
