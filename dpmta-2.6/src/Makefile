@@ -11,10 +11,13 @@
 # for other platforms.
 #
 #
-# RCS Info: $Id: Makefile,v 1.1 1997/09/05 19:41:47 jim Exp $
+# RCS Info: $Id: Makefile,v 1.2 1997/09/28 10:24:07 milind Exp $
 #
 # Revision History:
 # $Log: Makefile,v $
+# Revision 1.2  1997/09/28 10:24:07  milind
+# Fixed Makefiles to include arch params from a single file.
+#
 # Revision 1.1  1997/09/05 19:41:47  jim
 # Original distribution.
 #
@@ -253,13 +256,7 @@
 #
 ################################################################
 
-
-MAKE   = make
-SHELL  = /bin/sh
-CC     = cc
-AR     = ar
-RM     = rm -f
-
+include ../../Makearch
 
 # tell the compiler where to locate the PVM include
 # files and the mpole include file

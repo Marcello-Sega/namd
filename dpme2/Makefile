@@ -1,3 +1,5 @@
+include ../Makearch
+
 #**************************************************************
 # This is the makefile to build dpme_test and other support libs
 # Nour Toukmaji/Dan Paul - Duke University 1995 Copyright.

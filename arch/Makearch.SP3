@@ -7,6 +7,7 @@
 #####
 ## Choose your favorite Compiler options
 ####
+CC = mpcc -w 
 CXX = mpCC -w 
 CXXOPTS = -O3 -qstrict -Q -qarch=pwr -qtune=pwr -DSP2 -DGLOBALS
 
@@ -29,4 +30,5 @@ CHARM = /ccsthome/bhandark/charm/sp3
 ECHO = echo
 MOVE = mv
 COPY = cp
-
+RM = rm -f
+AR = ar

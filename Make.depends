@@ -23,7 +23,9 @@ obj/common.o: \
 	$(CXX) $(CXXFLAGS) -o obj/common.o -c src/common.C
 obj/dcdlib.o: \
 	src/dcdlib.C \
-	src/dcdlib.h
+	src/dcdlib.h \
+	src/common.h \
+	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) -o obj/dcdlib.o -c src/dcdlib.C
 obj/main.o: \
 	src/main.C \
@@ -107,7 +109,6 @@ obj/BroadcastMgr.o: \
 	src/Templates/ResizeArrayPrimIter.h \
 	src/BroadcastClient.h \
 	src/BroadcastObject.h \
-	src/Priorities.h \
 	src/Debug.h \
 	inc/BroadcastMgr.bot.h
 	$(CXX) $(CXXFLAGS) -o obj/BroadcastMgr.o -c src/BroadcastMgr.C
@@ -177,7 +178,6 @@ obj/CollectionMgr.o: \
 	src/Lattice.h \
 	inc/CollectionMaster.top.h \
 	src/CollectionMaster.h \
-	src/Priorities.h \
 	src/Debug.h \
 	inc/CollectionMgr.bot.h
 	$(CXX) $(CXXFLAGS) -o obj/CollectionMgr.o -c src/CollectionMgr.C
@@ -228,7 +228,6 @@ obj/Compute.o: \
 	src/Templates/OwnerBox.h \
 	src/Node.h \
 	src/Compute.h \
-	src/Priorities.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/Compute.o -c src/Compute.C
 obj/ComputeAngles.o: \
@@ -576,7 +575,6 @@ obj/ComputeHomePatches.o: \
 	src/Templates/ObjectArena.h \
 	src/Hydrogen.h \
 	src/ReductionMgr.h \
-	src/Priorities.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeHomePatches.o -c src/ComputeHomePatches.C
 obj/ComputeImpropers.o: \
@@ -973,7 +971,6 @@ obj/ComputePatch.o: \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/Patch.h \
-	src/Priorities.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputePatch.o -c src/ComputePatch.C
 obj/ComputePatchPair.o: \
@@ -1004,7 +1001,6 @@ obj/ComputePatchPair.o: \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/Patch.h \
-	src/Priorities.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputePatchPair.o -c src/ComputePatchPair.C
 obj/ComputeRestraints.o: \
@@ -1189,7 +1185,6 @@ obj/HomePatch.o: \
 	src/elements.h \
 	src/Set.h \
 	src/ComputeMgr.h \
-	src/Priorities.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/HomePatch.o -c src/HomePatch.C
 obj/HBondParam.o: \
@@ -1792,10 +1787,6 @@ obj/PDBData.o: \
 	src/common.h \
 	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) -o obj/PDBData.o -c src/PDBData.C
-obj/Priorities.o: \
-	src/Priorities.C \
-	src/Priorities.h
-	$(CXX) $(CXXFLAGS) -o obj/Priorities.o -c src/Priorities.C
 obj/ProxyMgr.o: \
 	src/ProxyMgr.C \
 	src/main.h \
@@ -1872,7 +1863,6 @@ obj/ProxyPatch.o: \
 	src/Templates/UniqueSetRaw.h \
 	src/Templates/UniqueSetIter.h \
 	src/AtomMap.h \
-	src/Priorities.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ProxyPatch.o -c src/ProxyPatch.C
 obj/Rebalancer.o: \
@@ -1931,7 +1921,6 @@ obj/ReductionMgr.o: \
 	src/Communicate.h \
 	src/Message.h \
 	src/IntTree.h \
-	src/Priorities.h \
 	inc/ReductionMgr.top.h \
 	src/ReductionMgr.h \
 	src/Debug.h \
@@ -2093,7 +2082,6 @@ obj/WorkDistrib.o: \
 	src/Hydrogen.h \
 	src/NamdOneTools.h \
 	src/Compute.h \
-	src/Priorities.h \
 	src/RecBisection.h \
 	src/Debug.h \
 	inc/WorkDistrib.bot.h

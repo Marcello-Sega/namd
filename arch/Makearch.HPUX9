@@ -7,6 +7,7 @@
 #####
 ## Choose your favorite Compiler options
 ####
+CC = cc -Aa -D_HPUX_SOURCE
 CXX = CC -Aa -D_HPUX_SOURCE
 CXXOPTS = -g
 #CXXOPTS = -O -DGLOBALS
@@ -31,6 +32,9 @@ CXXOPTS = -g
 # uncomment for purify during compile
 #PURIFY=-purify
 
+DFLAGS = -Ae -Wp,-H500000
+PVM_ARCH = HPPA
+
 #####
 # definitions for Charm routines
 #####
@@ -42,4 +46,5 @@ CHARM = /Projects/l1/namd.2.0/charm-96.12.09/charm/net-hp-cc
 ECHO = echo
 MOVE = mv
 COPY = cp
-
+RM = rm -f
+AR = ar

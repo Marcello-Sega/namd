@@ -1,6 +1,7 @@
 #####
 ## Choose your favorite Compiler options
 ####
+CC = cc -DSOLARIS
 CXX = CC -DSOLARIS
 #CXXOPTS = -O -DGLOBALS
 CXXOPTS = -DGLOBALS
@@ -24,4 +25,5 @@ CHARM = /home/kale/milind/charm/net-sol-cc
 ECHO = echo
 MOVE = mv
 COPY = cp
-
+RM = rm -f
+AR = ar

@@ -7,6 +7,7 @@
 #####
 ## Choose your favorite Compiler options
 ####
+CC = cc -DGLOBALS -DT3E -DCYCLE_BARRIER
 CXX = CC -DGLOBALS -DT3E -DCYCLE_BARRIER
 CXXOPTS = -O
 
@@ -29,4 +30,5 @@ CHARM = /tmp/rbrunner/charm/t3e
 ECHO = echo
 MOVE = mv
 COPY = cp
-
+RM = rm -f
+AR = ar

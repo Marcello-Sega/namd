@@ -11,17 +11,11 @@
 # for other platforms.
 #
 #
-# RCS Info: $Id: Makefile,v 1.2 1997/09/12 22:56:10 jim Exp $
+# RCS Info: $Id: Makefile,v 1.3 1997/09/28 10:23:59 milind Exp $
 #
 ################################################################
 
-
-MAKE   = gmake
-SHELL  = /bin/sh
-CC     = cc -O
-AR     = ar
-RM     = rm -f
-
+include ../Makearch
 
 # specify PVM envronmental variables.  PVM_HOME is the location
 # where the executables and libraries will be placed.
@@ -77,11 +71,8 @@ default: converse
 
 converse:
 	echo this is charm $(CHARM)
-	(cd mpole; $(MAKE) libmpole.a CHARM=$(CHARM) \
-	   CC="$(CC)" DFLAGS="-Ae -Wp,-H500000" )
-	(cd src; $(MAKE) -f Makefile.converse libdpmta2.a \
-           CHARM=$(CHARM) PVM_ARCH=HPPA PVM_ROOT=$(PVM_ROOT) PVM_HOME=$(PVM_HOME) \
-           CC="$(CC)" MAKE=gmake DFLAGS="$(DFLAGS) -Ae -Wp,-H500000" OSLIBS="" )
+	(cd mpole; $(MAKE) libmpole.a )
+	(cd src; $(MAKE) -f Makefile.converse libdpmta2.a )
 
 
 solaris:

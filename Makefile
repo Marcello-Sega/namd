@@ -11,7 +11,6 @@ DSTDIR = obj
 # temp include directory for cifiles
 INCDIR = inc
 
-
 #####
 # definitions for Charm routines
 #####
@@ -62,8 +61,8 @@ LIBS = $(DPMTADIR)/mpole/libmpole.a $(DPMTADIR)/src/libdpmta2.a pvm3/libpvmc.a
 
 # CXX is platform dependent
 INCLUDE = $(CHARM)/include
-CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(SRCDIR)/Templates -I$(INCDIR) $(DPMTA) $(PVM) $(CXXOPTS) $(NOWARN)
-GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(PVM) $(NOWARN)
+CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(SRCDIR)/Templates -I$(INCDIR) $(DPMTA) $(PVM) $(CXXOPTS) $(NOWARN) $(NAMDFLAGS)
+GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(PVM) $(NOWARN) $(NAMDFLAGS)
 
 .SUFFIXES: 	.ci
 
@@ -129,7 +128,6 @@ OBJS = \
 	$(DSTDIR)/PatchMap.o \
 	$(DSTDIR)/PDB.o \
 	$(DSTDIR)/PDBData.o \
-	$(DSTDIR)/Priorities.o \
 	$(DSTDIR)/ProxyMgr.o \
 	$(DSTDIR)/ProxyPatch.o \
 	$(DSTDIR)/Rebalancer.o \
@@ -172,20 +170,21 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES) $(LIBS)
 	-language charm++ \
 	-o namd2 $(OBJS) \
 	$(DPMTALIB) \
-	$(PVMLIB) \
-	# Now sit back, have a coke, and relax.
+	$(PVMLIB)
+
+# Now sit back, have a coke, and relax.
 
 $(DPMTADIR)/mpole/libmpole.a:
-	cd $(DPMTADIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
+	cd $(DPMTADIR) ; $(MAKE) ; cd ..
 
 $(DPMTADIR)/src/libdpmta2.a:
-	cd $(DPMTADIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
+	cd $(DPMTADIR) ; $(MAKE) ; cd ..
 
 dpme2/libdpme2.a:
-	cd $(DPMEDIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
+	cd $(DPMEDIR) ; $(MAKE) ; cd ..
 
 pvm3/libpvmc.a:
-	cd $(PVMDIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
+	cd $(PVMDIR) ; $(MAKE) ; cd ..
 
 cifiles:	$(INCDIR) $(DSTDIR)
 	for i in $(INTERFACES); do \

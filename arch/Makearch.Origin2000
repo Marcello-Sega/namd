@@ -8,8 +8,9 @@
 ## Choose your favorite Compiler options
 ####
 CXX = /usr/lib64/cmplrs/CC -64 
-CXXOPTS = -D_SGI_MP_SOURCE -O3 -DGLOBALS 
-#CXXOPTS = -g -DGLOBALS -INLINE:=OFF
+CC = /usr/lib64/cmplrs/cc -64 
+#CXXOPTS = -D_SGI_MP_SOURCE -O3 -DGLOBALS 
+CXXOPTS = -g -DGLOBALS -INLINE:=OFF
 
 #####
 # Flags
@@ -19,10 +20,12 @@ CXXOPTS = -D_SGI_MP_SOURCE -O3 -DGLOBALS
 # uncomment for purify during compile
 # PURIFY=-purify
 
+#DFLAGS=
+
 #####
 # definitions for Charm routines
 #####
-CHARM =/u/ac/milind/charm/origin2000
+CHARM =/Home/p1/milind/charm/origin2000
 
 #####
 # Unix commands
@@ -30,4 +33,6 @@ CHARM =/u/ac/milind/charm/origin2000
 ECHO = echo
 MOVE = mv
 COPY = cp
+RM = rm -f
+AR = ar
 

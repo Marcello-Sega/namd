@@ -6,10 +6,13 @@
 # Copyright (c) 1995 Duke University
 # All rights reserved
 #
-# RCS Info: $Id: Makefile,v 1.2 1997/09/12 22:56:21 jim Exp $
+# RCS Info: $Id: Makefile,v 1.3 1997/09/28 10:24:03 milind Exp $
 #
 # Revision History:
 # $Log: Makefile,v $
+# Revision 1.3  1997/09/28 10:24:03  milind
+# Fixed Makefiles to include arch params from a single file.
+#
 # Revision 1.2  1997/09/12 22:56:21  jim
 # Modifications to work with converse pvm.
 #
@@ -51,13 +54,7 @@
 #
 ################################################################
 
-
-MAKE   = gmake
-SHELL  = /bin/sh
-CC     = cc
-AR     = ar
-RM     = rm -f
-CP     = cp
+include ../../Makearch
 
 #  for the HPPA machines, add "-Ae" and "-Wp,-H500000" to CFLAGS
 #  for the SGI machines, add "-Woff all" to CFLAGS

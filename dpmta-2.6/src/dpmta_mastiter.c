@@ -12,12 +12,15 @@
 *
 */
 
-static char rcsid[]="$Id: dpmta_mastiter.c,v 1.2 1997/09/12 22:56:31 jim Exp $";
+static char rcsid[]="$Id: dpmta_mastiter.c,v 1.3 1997/09/28 10:24:08 milind Exp $";
 
 /*
  * revision history:
  *
  * $Log: dpmta_mastiter.c,v $
+ * Revision 1.3  1997/09/28 10:24:08  milind
+ * Fixed Makefiles to include arch params from a single file.
+ *
  * Revision 1.2  1997/09/12 22:56:31  jim
  * Modifications to work with converse pvm.
  *
@@ -532,7 +535,7 @@ Send_Slave_Particles(
 
       pvm_pkint(&(cells_per_proc),1,1);
       pvm_pkint(&(scell),1,1);
-      // pvm_pkint(&(SendPartCnt[scell]),cells_per_proc,1);
+      /* pvm_pkint(&(SendPartCnt[scell]),cells_per_proc,1); */
       for (j=scell; j<ecell; j++ ) {
         pvm_pkint(&(SendPartCnt[j]),1,1);
       }

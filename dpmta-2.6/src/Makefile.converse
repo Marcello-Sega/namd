@@ -10,10 +10,13 @@
 # for compilation on generic workstation networks should use the default
 # makefile
 #
-# RCS Info: $Id: Makefile.converse,v 1.1 1997/09/12 22:56:28 jim Exp $
+# RCS Info: $Id: Makefile.converse,v 1.2 1997/09/28 10:24:07 milind Exp $
 #
 # Revision History:
 # $Log: Makefile.converse,v $
+# Revision 1.2  1997/09/28 10:24:07  milind
+# Fixed Makefiles to include arch params from a single file.
+#
 # Revision 1.1  1997/09/12 22:56:28  jim
 # Modifications to work with converse pvm.
 #
@@ -82,11 +85,7 @@
 #
 ################################################################
 
-MAKE   = gmake
-SHELL  = /bin/sh
-CC     = cc
-AR     = ar
-
+include ../../Makearch
 
 # tell the compiler where to locate the PVM include
 # files
