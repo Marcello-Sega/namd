@@ -253,7 +253,7 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
      &dielectric, 1.0);
    opts.range("dielectric", POSITIVE); // Hmmm, dielectric < 1 ...
 
-   opts.optional("main", "margin", "Patch width margin", &margin, 1.0);
+   opts.optional("main", "margin", "Patch width margin", &margin, 0.0);
    opts.range("margin", NOT_NEGATIVE);
    opts.units("margin", N_ANGSTROM);
 
