@@ -261,6 +261,7 @@ namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(DPMELIB) \
 	$(TCLLIB) \
 	$(FFTLIB) \
+	$(PLUGINLIB) \
 	-o namd2
 
 charmd.exe:
@@ -301,21 +302,25 @@ projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
 	-module NeighborLB -language charm++ -tracemode all \
-	-o namd2 $(OBJS) \
+	$(OBJS) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
 	$(TCLLIB) \
-	$(FFTLIB)
+	$(FFTLIB) \
+	$(PLUGINLIB) \
+	-lm -o namd2
 
 summary:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
 	-module NeighborLB -language charm++ -tracemode summary \
-	-o namd2 $(OBJS) \
+	$(OBJS) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
 	$(TCLLIB) \
-	$(FFTLIB)
+	$(FFTLIB) \
+	$(PLUGINLIB) \
+	-lm -o namd2
 
 $(DPMTADIR)/mpole/libmpole.a: $(DPMTADIR)/src/libdpmta2.a
 
