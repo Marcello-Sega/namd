@@ -42,6 +42,7 @@
 #include "ComputeSphericalBC.h"
 #include "ComputeCylindricalBC.h"
 #include "ComputeRestraints.h"
+#include "ComputeConsForce.h"
 #include "WorkDistrib.h"
 
 ComputeMgr::ComputeMgr()
@@ -305,6 +306,11 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
+      case computeConsForceType:
+        c = new ComputeConsForce(i,map->computeData[i].pids[0].pid);
+        map->registerCompute(i,c);
+        c->initialize();
+        break;
       default:
 	break;
     }

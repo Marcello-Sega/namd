@@ -301,6 +301,8 @@ public:
 
 	Bool eFieldOn;                  //  Should a electric field be applied
 	zVector eField;                  //  Electric field vector to be applied
+	
+	Bool consForceOn;		//  Should constant force be applied
 
 	int outputEnergies;		//  Number of timesteps between energy
 					//  outputs

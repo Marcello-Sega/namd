@@ -182,6 +182,8 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
   rigidBondLengths=NULL;
   consIndexes=NULL;
   consParams=NULL;
+  consForceIndexes=NULL;
+  consForce=NULL;
   nameArena = new ObjectArena<char>;
   // nameArena->setAlignment(8);
   arena = new ObjectArena<int32>;
@@ -199,6 +201,7 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
   numAcceptors=0;
   numExclusions=0;
   numConstraints=0;
+  numConsForce=0;
   numFixedAtoms=0;
   numExPressureAtoms=0;
   numRigidBonds=0;
@@ -1653,6 +1656,14 @@ void Molecule::send_Molecule(Communicate *com_obj)
            msg->put(numConstraints*sizeof(ConstraintParams), (char*)consParams);
          }
       }
+      
+      // Send the constant force information, if used
+      if (simParams->consForceOn)
+      { msg->put(numConsForce);
+        msg->put(numAtoms, consForceIndexes);
+        if (numConsForce)
+          msg->put(numConsForce*sizeof(Vector), (char*)consForce);
+      }
 
       //  Send the langevin parameters, if active
       if (simParams->langevinOn || simParams->tCoupleOn)
@@ -1799,6 +1810,18 @@ void Molecule::receive_Molecule(MIStream *msg)
          }
       }
       
+      // Get the constant force information, if it's active
+      if (simParams->consForceOn)
+      { msg->get(numConsForce);
+        delete [] consForceIndexes;
+        consForceIndexes = new int32[numAtoms];
+        msg->get(numAtoms, consForceIndexes);
+        if (numConsForce)
+        { delete [] consForce;
+          consForce = new Vector[numConsForce];
+          msg->get(numConsForce*sizeof(Vector), (char*)consForce);
+        }
+      }
 
       //  Get the langevin parameters, if they are active
       if (simParams->langevinOn || simParams->tCoupleOn)
@@ -2699,6 +2722,71 @@ void Molecule::receive_Molecule(MIStream *msg)
     }
     /*      END OF FUNCTION build_constraint_params    */
 
+
+/************************************************************************/
+/*                  */
+/*      FUNCTION build_constant_forces    */
+/*                  */
+/*   INPUTS:                */
+/*  filename - PDB file containing the constant forces    */
+/*                  */
+/*  This function reads the constant forces from the PDB file.  */
+/*   The force vector to be applied on each atom is determined by:    */
+/*     occupancy*(X,Y,Z)   */
+/*   Only non-zero forces are stored   */
+/*                  */
+/************************************************************************/
+
+void Molecule::build_constant_forces(char *filename)
+{ int i, index;
+  PDB *forcePDB;
+  
+  if ((forcePDB=new PDB(filename)) == NULL)
+    NAMD_die("Memory allocation failed in Molecule::build_constant_forces");
+  if (forcePDB->num_atoms() != numAtoms)
+    NAMD_die("Number of atoms in constant force PDB doesn't match coordinate PDB");
+
+  //  Allocate an array that will store an index into the constant force
+  //  array for each atom.  If the atom has no constant force applied, its
+  //  value will be set to -1 in this array.
+  consForceIndexes = new int32[numAtoms];
+  if (consForceIndexes == NULL)
+    NAMD_die("memory allocation failed in Molecule::build_constant_forces()");
+
+  //  Loop through all the atoms and find out which ones have constant force
+  numConsForce = 0;
+  for (i=0; i<numAtoms; i++)
+    if ((forcePDB->atom(i)->xcoor()==0 && forcePDB->atom(i)->ycoor()==0 &&
+         forcePDB->atom(i)->zcoor()==0) || forcePDB->atom(i)->occupancy()==0)
+      //  This atom has no constant force
+      consForceIndexes[i] = -1;
+    else
+      //  This atom has constant force
+      consForceIndexes[i] = numConsForce++;
+
+  if (numConsForce == 0)
+    // Constant force was turned on, but there weren't really any non-zero forces
+    iout << iWARN << "NO NON-ZERO FORCES WERE FOUND, BUT CONSTANT FORCE IS ON . . .\n" << endi;
+  else
+  { // Allocate an array to hold the forces
+    consForce = new Vector[numConsForce];
+    if (consForce == NULL)
+      NAMD_die("memory allocation failed in Molecule::build_constant_forces");
+    // Loop through all the atoms and assign the forces
+    for (i=0; i<numAtoms; i++)
+      if ((index=consForceIndexes[i]) != -1)
+      { //  This atom has constant force on it
+        consForce[index].x = forcePDB->atom(i)->xcoor() * forcePDB->atom(i)->occupancy();
+        consForce[index].y = forcePDB->atom(i)->ycoor() * forcePDB->atom(i)->occupancy();
+        consForce[index].z = forcePDB->atom(i)->zcoor() * forcePDB->atom(i)->occupancy();
+      }
+  }
+
+  delete forcePDB;
+}
+/*      END OF FUNCTION build_constant_forces    */
+
+
 void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
 
   //  Allocate the array to hold all the data
@@ -3463,6 +3551,8 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, Ambertoppar *amb
   rigidBondLengths=NULL;
   consIndexes=NULL;
   consParams=NULL;
+  consForceIndexes=NULL;
+  consForce=NULL;
   nameArena = new ObjectArena<char>;
   // nameArena->setAlignment(8);
   arena = new ObjectArena<int32>;
@@ -3480,6 +3570,7 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, Ambertoppar *amb
   numAcceptors=0;
   numExclusions=0;
   numConstraints=0;
+  numConsForce=0;
   numFixedAtoms=0;
   numRigidBonds=0;
   numFixedRigidBonds=0;

@@ -38,6 +38,7 @@ enum ComputeType
   computeSphericalBCType,
   computeCylindricalBCType,
   computeRestraintsType,
+  computeConsForceType,
   computeErrorType
 };
 

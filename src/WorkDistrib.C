@@ -614,6 +614,8 @@ void WorkDistrib::mapComputes(void)
     mapComputePatch(computeCylindricalBCType);
   if ( node->simParameters->constraintsOn )
     mapComputePatch(computeRestraintsType);
+  if ( node->simParameters->consForceOn )
+    mapComputePatch(computeConsForceType);
 }
 
 //----------------------------------------------------------------------

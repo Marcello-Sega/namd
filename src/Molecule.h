@@ -155,6 +155,10 @@ public:
 	int numRigidBonds;	//  Number of rigid bonds
 	int numFixedRigidBonds; //  Number of rigid bonds between fixed atoms
 
+	int numConsForce;	//  Number of atoms that have constant force applied
+	int32 *consForceIndexes;//  Constant force indexes for each atom
+	Vector *consForce;	//  Constant force array
+
 	// The following are needed for error checking because we
 	// eliminate bonds, etc. which involve only fixed atoms
 	int numCalcBonds;	//  Number of bonds requiring calculation
@@ -193,6 +197,9 @@ public:
 				     PDB *, char *);
 				//  Build the set of harmonic constraint 
 				// parameters
+
+	void build_constant_forces(char *);
+				//  Build the set of constant forces
 
 	void build_langevin_params(BigReal coupling, Bool doHydrogen);
 	void build_langevin_params(StringList *, StringList *, PDB *, char *);

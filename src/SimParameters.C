@@ -775,6 +775,11 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
    opts.require("freeEnergy", "freeEnergyConfig",
      "Configuration file for free energy perturbation", PARSE_MULTIPLES);
 
+   ////  Constant Force
+   opts.optionalB("main", "constantforce", "Apply constant force?",
+     &consForceOn, FALSE);
+   opts.require("constantforce", "consforcefile",
+     "PDB file containing constant forces", PARSE_STRING);
 }
 
 void SimParameters::config_parser_boundary(ParseOptions &opts) {
@@ -2248,6 +2253,9 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    }
    
    //****** END SMD constraints changes 
+   
+   if (consForceOn)
+     iout << iINFO << "CONSTANT FORCE ACTIVE\n";
    
    // Global forces configuration
 
