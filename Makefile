@@ -26,7 +26,7 @@ CHARMC = /Projects/l1/namd.2.0/charm/bin/charmc $(PURIFY)
 CHARMXI = /Projects/l1/namd.2.0/charm/bin/charmc $(PURIFY)
 
 #####
-# definitions for PMTA routines
+# definitions for (D)PMTA routines
 #####
 DPMTADIR=dpmta2
 DPMTAINCL=-I$(DPMTADIR)/include
@@ -130,9 +130,9 @@ TEMPLATES = \
 	$(SRCDIR)/Templates/SortedArray.C \
 	$(SRCDIR)/Templates/UniqueSortedArray.C
 
-namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES) $(LIBS)
-	cd $(DPMTADIR) ; $(MAKE) ; cd ..
+namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES)
 	cd $(PVMDIR) ; $(MAKE) ; cd ..
+	cd $(DPMTADIR) ; $(MAKE) ; cd ..
 	$(CHARMC) -verbose -ld++-option \
 	"-I $(INCLUDE) -I $(SRCDIR) $(CXXOPTS) " \
 	-language charm++ \
