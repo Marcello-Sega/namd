@@ -8,6 +8,7 @@
 ## Choose your favorite Compiler options
 ####
 CC = cc -Aa -D_HPUX_SOURCE
+COPTS = -O
 CXX = CC -Aa -D_HPUX_SOURCE
 CXXOPTS = -g
 #CXXOPTS = -O -DGLOBALS

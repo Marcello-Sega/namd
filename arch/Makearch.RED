@@ -8,7 +8,7 @@
 ## Choose your favorite Compiler options
 ####
 CC = cicc
-CFLAGS = -O
+COPTS = -O
 CXX = ciCC
 CXXOPTS = -O
 CXXTHREADOPTS = $(CXXOPTS)

@@ -8,6 +8,7 @@
 ## Choose your favorite Compiler options
 ####
 CC = cc -DGLOBALS -DT3E
+COPTS = -O
 CXX = CC -DGLOBALS -DT3E
 CXXOPTS = -O2
 #CC = cc -DGLOBALS -DT3E -DCYCLE_BARRIER

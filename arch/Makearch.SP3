@@ -8,6 +8,7 @@
 ## Choose your favorite Compiler options
 ####
 CC = mpcc -w 
+COPTS = -O
 CXX = mpCC -w 
 CXXOPTS = -O3 -qstrict -Q -qarch=pwr -qtune=pwr -DSP2 -DGLOBALS
 CXXTHREADOPTS = $(CXXOPTS)
