@@ -1551,12 +1551,6 @@ void Molecule::print_exclusions()
 /*   structural information to all the client nodes.  It is NEVER called*/
 /*   by the client nodes.              */
 /*                  */
-/*   NOTE:  Because the structures that are being passed here are not   */
-/*        directly recognized by the Message and Communication classes*/
-/*      the data is first copied to arrays of basic types (i.e., int*/
-/*      Real, Index, etc.).  While this is a little inefficient,    */
-/*      this communication is only done once per simulation.  */
-/*                  */
 /************************************************************************/
 
 
@@ -1565,71 +1559,20 @@ void Molecule::send_Molecule(Communicate *com_obj)
 {
   //  Message to send to clients
   MOStream *msg=com_obj->newOutputStream(ALLBUTME, MOLECULETAG, BUFSIZE);
-  Real *a1, *a2;    //  Arrays of reals used to send data
-  Index *ind1;    //  Array of Indexes used to send data
-  int *i1, *i2, *i3, *i4;  //  Array of ints used to send data
-  Vector *v1;    //  Array of vectors used to send data
-  register int i;      //  Loop counter
   if ( msg == NULL )
   {
     NAMD_die("Memory allocation failed in Molecule::send_Molecule");
   }
 
-  //  Send the atom information
-  a1   = new Real[numAtoms];
-  a2   = new Real[numAtoms];
-  ind1 = new Index[numAtoms];
-  i1   = new int[numAtoms];
-
-  if ( (a1==NULL) || (a2==NULL) || (ind1==NULL) || (i1==NULL) )
-  {
-    NAMD_die("memory allocation failed in Molecule::send_Molecule");
-  }
-
-      for (i=0; i<numAtoms; i++)
-      {
-        a1[i]=atoms[i].mass;
-        a2[i]=atoms[i].charge;
-        ind1[i]=atoms[i].vdw_type;
-        i1[i]=atoms[i].status;
-      }
-
       msg->put(numAtoms);
-      msg->put(numAtoms, a1)->put(numAtoms, a2);
-      msg->put(numAtoms, ind1)->put(numAtoms, i1);
-
-      delete [] a1;
-      delete [] a2;
-      delete [] ind1;
-      delete [] i1;
+      msg->put(numAtoms*sizeof(Atom), (char*)atoms);
 
       //  Send the bond information
       msg->put(numBonds);
 
       if (numBonds)
       {
-        i1= new int[numBonds];
-        i2= new int[numBonds];
-        ind1= new Index[numBonds];
-
-        if ( (i1==NULL) || (i2==NULL) || (ind1==NULL) )
-        {
-          NAMD_die("memory allocation failed in Molecule::send_Molecule");
-        }
-
-        for (i=0; i<numBonds; i++)
-        {
-          i1[i]=bonds[i].atom1;
-          i2[i]=bonds[i].atom2;
-          ind1[i]=bonds[i].bond_type;
-        }
-      
-        msg->put(numBonds, i1)->put(numBonds, i2);
-        msg->put(numBonds, ind1);
-      
-        delete [] i1;
-        delete [] i2;
-        delete [] ind1;
+        msg->put(numBonds*sizeof(Bond), (char*)bonds);
       }
 
       //  Send the angle information
@@ -1637,31 +1580,7 @@ void Molecule::send_Molecule(Communicate *com_obj)
 
       if (numAngles)
       {
-        i1= new int[numAngles];
-        i2= new int[numAngles];
-        i3= new int[numAngles];
-        ind1= new Index[numAngles];
-
-        if ( (i1==NULL) || (i2==NULL) || (i3==NULL) || (ind1==NULL) )
-        {
-          NAMD_die("memory allocation failed in Molecule::send_Molecule");
-        }
-
-        for (i=0; i<numAngles; i++)
-        {
-          i1[i]=angles[i].atom1;
-          i2[i]=angles[i].atom2;
-          i3[i]=angles[i].atom3;
-          ind1[i]=angles[i].angle_type;
-        }
-
-        msg->put(numAngles, i1)->put(numAngles, i2);
-        msg->put(numAngles, i3)->put(numAngles, ind1);
-
-        delete [] i1;
-        delete [] i2;
-        delete [] i3;
-        delete [] ind1;
+        msg->put(numAngles*sizeof(Angle), (char*)angles);
       }
 
       //  Send the dihedral information
@@ -1669,36 +1588,7 @@ void Molecule::send_Molecule(Communicate *com_obj)
 
       if (numDihedrals)
       {
-        i1= new int[numDihedrals];
-        i2= new int[numDihedrals];
-        i3= new int[numDihedrals];
-        i4= new int[numDihedrals];
-        ind1= new Index[numDihedrals];
-
-        if ( (i1==NULL) || (i2==NULL) || (i3==NULL) || (i4==NULL) || 
-       (ind1==NULL) )
-        {
-          NAMD_die("memory allocation failed in Molecule::send_Molecule");
-        }
-
-        for (i=0; i<numDihedrals; i++)
-        {
-          i1[i]=dihedrals[i].atom1;
-          i2[i]=dihedrals[i].atom2;
-          i3[i]=dihedrals[i].atom3;
-          i4[i]=dihedrals[i].atom4;
-          ind1[i]=dihedrals[i].dihedral_type;
-        }
-      
-        msg->put(numDihedrals, i1)->put(numDihedrals, i2);
-        msg->put(numDihedrals, i3)->put(numDihedrals, i4);
-        msg->put(numDihedrals, ind1);
-
-        delete [] i1;
-        delete [] i2;
-        delete [] i3;
-        delete [] i4;
-        delete [] ind1;
+        msg->put(numDihedrals*sizeof(Dihedral), (char*)dihedrals);
       }
 
       //  Send the improper information
@@ -1706,36 +1596,7 @@ void Molecule::send_Molecule(Communicate *com_obj)
 
       if (numImpropers)
       {
-        i1= new int[numImpropers];
-        i2= new int[numImpropers];
-        i3= new int[numImpropers];
-        i4= new int[numImpropers];
-        ind1= new Index[numImpropers];
-
-        if ( (i1==NULL) || (i2==NULL) || (i3==NULL) || (i4==NULL) || 
-       (ind1==NULL) )
-        {
-          NAMD_die("memory allocation failed in Molecule::send_Molecule");
-        }
-
-        for (i=0; i<numImpropers; i++)
-        {
-          i1[i]=impropers[i].atom1;
-          i2[i]=impropers[i].atom2;
-          i3[i]=impropers[i].atom3;
-          i4[i]=impropers[i].atom4;
-          ind1[i]=impropers[i].improper_type;
-        }
-
-        msg->put(numImpropers, i1)->put(numImpropers, i2);
-        msg->put(numImpropers, i3)->put(numImpropers, i4);
-        msg->put(numImpropers, ind1);
-
-        delete [] i1;
-        delete [] i2;
-        delete [] i3;
-        delete [] i4;
-        delete [] ind1;
+        msg->put(numImpropers*sizeof(Improper), (char*)impropers);
       }
 
       // send the hydrogen bond donor information
@@ -1743,24 +1604,7 @@ void Molecule::send_Molecule(Communicate *com_obj)
 
       if(numDonors)
       {
-        i1= new int[numDonors];
-        i2= new int[numDonors];
-
-        if ( (i1==NULL) || (i2==NULL) )
-        {
-          NAMD_die("memory allocation failed in Molecule::send_Molecule");
-        }
-
-        for (i=0; i<numDonors; i++)
-        {
-          i1[i]=donors[i].atom1;
-          i2[i]=donors[i].atom2;
-        }
-
-        msg->put(numDonors, i1)->put(numDonors, i2);
-
-        delete [] i1;
-        delete [] i2;
+        msg->put(numDonors*sizeof(Bond), (char*)donors);
       }
 
       // send the hydrogen bond acceptor information
@@ -1768,24 +1612,7 @@ void Molecule::send_Molecule(Communicate *com_obj)
 
       if(numAcceptors)
       {
-        i1= new int[numAcceptors];
-        i2= new int[numAcceptors];
-
-        if ( (i1==NULL) || (i2==NULL) )
-        {
-          NAMD_die("memory allocation failed in Molecule::send_Molecule");
-        }
-
-        for (i=0; i<numAcceptors; i++)
-        {
-          i1[i]=acceptors[i].atom1;
-          i2[i]=acceptors[i].atom2;
-        }
-
-        msg->put(numAcceptors, i1)->put(numAcceptors, i2);
-
-        delete [] i1;
-        delete [] i2;
+        msg->put(numAcceptors*sizeof(Bond), (char*)acceptors);
       }
 
       //  Send the exclusion information
@@ -1793,24 +1620,7 @@ void Molecule::send_Molecule(Communicate *com_obj)
 
       if (numExclusions)
       {
-        i1= new int[numExclusions];
-        i2= new int[numExclusions];
-
-        if ( (i1==NULL) || (i2==NULL) )
-        {
-          NAMD_die("memory allocation failed in Molecule::send_Molecule");
-        }
-
-        for (i=0; i<numExclusions; i++)
-        {
-          i1[i]=exclusions[i].atom1;
-          i2[i]=exclusions[i].atom2;
-        }
-
-        msg->put(numExclusions, i1)->put(numExclusions, i2);
-
-        delete [] i1;
-        delete [] i2;
+        msg->put(numExclusions*sizeof(Exclusion), (char*)exclusions);
       }
       
       //  Send the constraint information, if used
@@ -1822,31 +1632,12 @@ void Molecule::send_Molecule(Communicate *com_obj)
          
          if (numConstraints)
          {
-      a1 = new Real[numConstraints];
-      v1 = new Vector[numConstraints];
-      
-      if ( (a1 == NULL) || (v1 == NULL) )
-      {
-         NAMD_die("Memory allocation failed in Molecule::send_Molecule()");
-      }
-      
-      for (i=0; i<numConstraints; i++)
-      {
-         a1[i] = consParams[i].k;
-         v1[i] = consParams[i].refPos;
-      }
-      
-      msg->put(numConstraints, a1);
-      msg->put(numConstraints, v1);
-      
-      delete [] a1;
-      delete [] v1;
+           msg->put(numConstraints*sizeof(ConstraintParams), (char*)consParams);
          }
       }
 
       //  Send the langevin parameters, if active
-      if (simParams->langevinOn || 
-    simParams->tCoupleOn)
+      if (simParams->langevinOn || simParams->tCoupleOn)
       {
         msg->put(numAtoms, langevinParams);
         msg->put(numAtoms, langForceVals);
@@ -1881,44 +1672,13 @@ void Molecule::send_Molecule(Communicate *com_obj)
 
 void Molecule::receive_Molecule(MIStream *msg)
 {
-      int *i1, *i2, *i3, *i4;    //  Temporary integer arrays
-      Real *a1, *a2;      //  Temporary real arrays
-      Index *ind1;      //  Temporary array of Indexes
-      Vector *v1;      //  Temporary array of Vectors
-      register int i;        //  Loop counter
-
       //  Get the atom information
       msg->get(numAtoms);
 
       delete [] atoms;
       atoms= new Atom[numAtoms];
-      a1   = new Real[numAtoms];
-      a2   = new Real[numAtoms];
-      ind1 = new Index[numAtoms];
-      i1   = new int[numAtoms];
 
-      if (atoms==NULL || a1==NULL || a2==NULL || ind1==NULL || i1==NULL)
-      {
-        NAMD_die("memory allocation failed in Molecule::receive_Molecule");
-      }
-
-      msg->get(numAtoms, a1);
-      msg->get(numAtoms, a2);
-      msg->get(numAtoms, ind1);
-      msg->get(numAtoms, i1);
-
-      for (i=0; i<numAtoms; i++)
-      {
-        atoms[i].mass = a1[i];
-        atoms[i].charge = a2[i];
-        atoms[i].vdw_type = ind1[i];
-        atoms[i].status = i1[i];
-      }
-
-      delete [] a1;
-      delete [] a2;
-      delete [] ind1;
-      delete [] i1;
+      msg->get(numAtoms*sizeof(Atom), (char*)atoms);
 
       //  Get the bond information
       msg->get(numBonds);
@@ -1927,29 +1687,8 @@ void Molecule::receive_Molecule(MIStream *msg)
       {
         delete [] bonds;
         bonds=new Bond[numBonds];
-        i1 = new int[numBonds];
-        i2 = new int[numBonds];
-        ind1 = new Index[numBonds];
 
-        if ( (bonds==NULL) || (i1==NULL) || (i2==NULL) || (ind1==NULL) )
-        {
-          NAMD_die("memory allocation failed in Molecule::receive_Molecule");
-        }
-
-        msg->get(numBonds, i1);
-        msg->get(numBonds, i2);
-        msg->get(numBonds, ind1);
-
-        for (i=0; i<numBonds; i++)
-        {
-          bonds[i].atom1 = i1[i];
-          bonds[i].atom2 = i2[i];
-          bonds[i].bond_type = ind1[i];
-        }
-
-        delete [] i1;
-        delete [] i2;
-        delete [] ind1;
+        msg->get(numBonds*sizeof(Bond), (char*)bonds);
       }
 
       //  Get the angle information
@@ -1959,34 +1698,8 @@ void Molecule::receive_Molecule(MIStream *msg)
       {
         delete [] angles;
         angles=new Angle[numAngles];
-        i1 = new int[numAngles];
-        i2 = new int[numAngles];
-        i3 = new int[numAngles];
-        ind1 = new Index[numAngles];
 
-        if ( (angles==NULL) || (i1==NULL) || (i2==NULL) || (i3==NULL) ||
-       (ind1==NULL) )
-        {
-          NAMD_die("memory allocation failed in Molecule::receive_Molecule");
-        }
-
-        msg->get(numAngles, i1);
-        msg->get(numAngles, i2);
-        msg->get(numAngles, i3);
-        msg->get(numAngles, ind1);
-
-        for (i=0; i<numAngles; i++)
-        {
-          angles[i].atom1 = i1[i];
-          angles[i].atom2 = i2[i];
-          angles[i].atom3 = i3[i];
-          angles[i].angle_type = ind1[i];
-        }
-
-        delete [] i1;
-        delete [] i2;
-        delete [] i3;
-        delete [] ind1;
+        msg->get(numAngles*sizeof(Angle), (char*)angles);
       }
 
       //  Get the dihedral information
@@ -1996,38 +1709,8 @@ void Molecule::receive_Molecule(MIStream *msg)
       {
         delete [] dihedrals;
         dihedrals=new Dihedral[numDihedrals];
-        i1 = new int[numDihedrals];
-        i2 = new int[numDihedrals];
-        i3 = new int[numDihedrals];
-        i4 = new int[numDihedrals];
-        ind1 = new Index[numDihedrals];
 
-        if ( (dihedrals==NULL) || (i1==NULL) || (i2==NULL) || (i3==NULL) ||
-       (i4==NULL) || (ind1==NULL) )
-        {
-          NAMD_die("memory allocation failed in Molecule::receive_Molecule");
-        }
-
-        msg->get(numDihedrals, i1);
-        msg->get(numDihedrals, i2);
-        msg->get(numDihedrals, i3);
-        msg->get(numDihedrals, i4);
-        msg->get(numDihedrals, ind1);
-
-        for (i=0; i<numDihedrals; i++)
-        {
-          dihedrals[i].atom1 = i1[i];
-          dihedrals[i].atom2 = i2[i];
-          dihedrals[i].atom3 = i3[i];
-          dihedrals[i].atom4 = i4[i];
-          dihedrals[i].dihedral_type = ind1[i];
-        }
-
-        delete [] i1;
-        delete [] i2;
-        delete [] i3;
-        delete [] i4;
-        delete [] ind1;
+        msg->get(numDihedrals*sizeof(Dihedral), (char*)dihedrals);
       }
 
       //  Get the improper information
@@ -2037,38 +1720,8 @@ void Molecule::receive_Molecule(MIStream *msg)
       {
         delete [] impropers;
         impropers=new Improper[numImpropers];
-        i1 = new int[numImpropers];
-        i2 = new int[numImpropers];
-        i3 = new int[numImpropers];
-        i4 = new int[numImpropers];
-        ind1 = new Index[numImpropers];
 
-        if ( (impropers==NULL) || (i1==NULL) || (i2==NULL) || (i3==NULL) ||
-       (i4==NULL) || (ind1==NULL) )
-        {
-          NAMD_die("memory allocation failed in Molecule::receive_Molecule");
-        }
-
-        msg->get(numImpropers, i1);
-        msg->get(numImpropers, i2);
-        msg->get(numImpropers, i3);
-        msg->get(numImpropers, i4);
-        msg->get(numImpropers, ind1);
-
-        for (i=0; i<numImpropers; i++)
-        {
-          impropers[i].atom1 = i1[i];
-          impropers[i].atom2 = i2[i];
-          impropers[i].atom3 = i3[i];
-          impropers[i].atom4 = i4[i];
-          impropers[i].improper_type = ind1[i];
-        }
-
-        delete [] i1;
-        delete [] i2;
-        delete [] i3;
-        delete [] i4;
-        delete [] ind1;
+        msg->get(numImpropers*sizeof(Improper), (char*)impropers);
       }
 
       //  Get the hydrogen bond donors
@@ -2078,25 +1731,8 @@ void Molecule::receive_Molecule(MIStream *msg)
       {
         delete [] donors;
         donors=new Bond[numDonors];
-        i1 = new int[numDonors];
-        i2 = new int[numDonors];
 
-        if ( (donors==NULL) || (i1==NULL) || (i2==NULL) )
-        {
-          NAMD_die("memory allocation failed in Molecule::receive_Molecule");
-        }
-
-        msg->get(numDonors, i1);
-        msg->get(numDonors, i2);
-
-        for (i=0; i<numDonors; i++)
-        {
-          donors[i].atom1 = i1[i];
-          donors[i].atom2 = i2[i];
-        }
-
-        delete [] i1;
-        delete [] i2;
+        msg->get(numDonors*sizeof(Bond), (char*)donors);
       }
 
       //  Get the hydrogen bond acceptors
@@ -2106,25 +1742,8 @@ void Molecule::receive_Molecule(MIStream *msg)
       {
         delete [] acceptors;
         acceptors=new Bond[numAcceptors];
-        i1 = new int[numAcceptors];
-        i2 = new int[numAcceptors];
 
-        if ( (acceptors==NULL) || (i1==NULL) || (i2==NULL) )
-        {
-          NAMD_die("memory allocation failed in Molecule::receive_Molecule");
-        }
-
-        msg->get(numAcceptors, i1);
-        msg->get(numAcceptors, i2);
-
-        for (i=0; i<numAcceptors; i++)
-        {
-          acceptors[i].atom1 = i1[i];
-          acceptors[i].atom2 = i2[i];
-        }
-
-        delete [] i1;
-        delete [] i2;
+        msg->get(numAcceptors*sizeof(Bond), (char*)acceptors);
       }
 
       //  Get the exclusion information
@@ -2134,25 +1753,8 @@ void Molecule::receive_Molecule(MIStream *msg)
       {
         delete [] exclusions;
         exclusions=new Exclusion[numExclusions];
-        i1 = new int[numExclusions];
-        i2 = new int[numExclusions];
 
-        if ( (exclusions==NULL) || (i1==NULL) || (i2==NULL) )
-        {
-          NAMD_die("memory allocation failed in Molecule::receive_Molecule");
-        }
-
-        msg->get(numExclusions, i1);
-        msg->get(numExclusions, i2);
-
-        for (i=0; i<numExclusions; i++)
-        {
-          exclusions[i].atom1 = i1[i];
-          exclusions[i].atom2 = i2[i];
-        }
-
-        delete [] i1;
-        delete [] i2;
+        msg->get(numExclusions*sizeof(Exclusion), (char*)exclusions);
       }
       
       //  Get the constraint information, if they are active
@@ -2163,53 +1765,25 @@ void Molecule::receive_Molecule(MIStream *msg)
          delete [] consIndexes;
          consIndexes = new int[numAtoms];
          
-         if (consIndexes == NULL)
-         {
-      NAMD_die("memory allocation failed in Molecule::receive_Molecule");
-         }
-         
          msg->get(numAtoms, consIndexes);
          
          if (numConstraints)
          {
-      delete [] consParams;
-      consParams = new ConstraintParams[numConstraints];
-      a1         = new Real[numConstraints];
-      v1         = new Vector[numConstraints];
+           delete [] consParams;
+           consParams = new ConstraintParams[numConstraints];
       
-      if ( (consParams == NULL) || (a1 == NULL) || (v1 == NULL) )
-      {
-         NAMD_die("memory allocation failed in Molecule::receive_Molecule");
-      }
-      
-      msg->get(numConstraints, a1);
-      msg->get(numConstraints, v1);
-      
-      for (i=0; i<numConstraints; i++)
-      {
-         consParams[i].k = a1[i];
-         consParams[i].refPos = v1[i];
-      }
-      
-      delete [] a1;
-      delete [] v1;
+           msg->get(numConstraints*sizeof(ConstraintParams), (char*)consParams);
          }
       }
       
 
       //  Get the langevin parameters, if they are active
-      if (simParams->langevinOn ||
-    simParams->tCoupleOn)
+      if (simParams->langevinOn || simParams->tCoupleOn)
       {
         delete [] langevinParams;
         delete [] langForceVals;
         langevinParams = new Real[numAtoms];
         langForceVals = new Real[numAtoms];
-
-        if ( (langevinParams == NULL) || (langForceVals == NULL) )
-        {
-          NAMD_die("memory allocation failed in Molecule::receive_Molecule");
-        }
 
         msg->get(numAtoms, langevinParams);
         msg->get(numAtoms, langForceVals);
@@ -2220,11 +1794,6 @@ void Molecule::receive_Molecule(MIStream *msg)
       {
         delete [] fixedAtomFlags;
         fixedAtomFlags = new int[numAtoms];
-
-        if (fixedAtomFlags == NULL)
-        {
-          NAMD_die("memory allocation failed in Molecule::receive_Molecule");
-        }
 
         msg->get(numFixedAtoms);
         msg->get(numAtoms, fixedAtomFlags);
