@@ -623,6 +623,32 @@ There are several ways to apply external forces to simulations with \NAMD.
 These are described below.
 
 
+\subsubsection{Constant Forces}
+
+NAMD provides the ability to apply constant forces to some atoms.
+There are two parameters that control this feature.
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{constantforce}{Apply constant forces?}{yes or no}{no}
+{Specifies whether or not constant forces are applied.}
+
+\item
+\NAMDCONF{consforcefile}{PDB file containing forces to be applied}{UNIX filename}
+{
+The X, Y, Z and occupancy (O) fields of this file are read to
+determine the constant force vector of each atom, which is
+(X,Y,Z)*O, in unit of Kcal/(mol*\AA). The occupancy (O) serves as
+a scaling factor, which could expand the range of the force
+applied. (One may be unable to record very large or very small
+numbers in the data fields of a PDB file due to limited space).
+Zero forces are ignored.
+}
+
+\end{itemize}
+
+
 \subsubsection{External Electric Field}
 
 \NAMD\ provides the ability to apply a constant electric field to the molecular
