@@ -358,8 +358,9 @@ You may enable linking with Tcl by editing arch/BASEARCH.tcl (where
 BASEARCH is ARCH without the -CC, -g++, or -KCC compiler extension)
 and adding "tcl" to the config command line: "./config tcl ARCH"
 Tcl is required for Tcl global forces (tclForces) and for Tcl
-scripting.  Tcl is available from www.scriptics.com.  Tcl is included
-in the release binaries.
+scripting.  Tcl is available from www.scriptics.com.  If the Tcl
+preinstalled on your system has only shared libraries, you may want
+to build Tcl yourself.  Tcl is included in the release binaries.
 
 You may enable linking with FFTW by editing arch/BASEARCH.fftw (where
 BASEARCH is ARCH without the -CC, -g++, or -KCC compiler extension)
