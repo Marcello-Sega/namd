@@ -386,7 +386,7 @@ void Controller::berendsenPressure(int step)
 #undef LIMIT_SCALING
     if ( limited ) {
       iout << iERROR << "Step " << step <<
-	" cell rescaling factor limited." << endi;
+	" cell rescaling factor limited.\n" << endi;
     }
     broadcast->positionRescaleFactor.publish(step,factor);
     state->lattice.rescale(factor);
