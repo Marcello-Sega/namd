@@ -36,6 +36,7 @@ enum ComputeType
   computeFullDirectType,
   computeSphericalBCType,
   computeCylindricalBCType,
+  computeRestraintsType,
   computeErrorType
 };
 
@@ -165,13 +166,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/04/10 09:13:50 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1997/04/22 04:25:56 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.h,v $
+ * Revision 1.1008  1997/04/22 04:25:56  jim
+ * Added atomic restraints (harmonic constraints) via ComputeRestraints class.
+ *
  * Revision 1.1007  1997/04/10 09:13:50  ari
  * Final debugging for compute migration / proxy creation for load balancing.
  * Lots of debug code added, mostly turned off now.

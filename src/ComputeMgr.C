@@ -41,6 +41,7 @@
 #include "ComputeDPMTA.h"
 #include "ComputeSphericalBC.h"
 #include "ComputeCylindricalBC.h"
+#include "ComputeRestraints.h"
 #include "WorkDistrib.h"
 
 ComputeMgr::ComputeMgr(InitMsg *msg)
@@ -249,6 +250,11 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
+      case computeRestraintsType:
+	c = new ComputeRestraints(i,map->computeData[i].pids[0].pid); // unknown delete
+	map->registerCompute(i,c);
+	c->initialize();
+	break;
       default:
 	break;
     }
@@ -305,13 +311,16 @@ ComputeMgr::createComputes(ComputeMap *map)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/04/10 09:13:51 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1013 $	$Date: 1997/04/22 04:25:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.C,v $
+ * Revision 1.1013  1997/04/22 04:25:58  jim
+ * Added atomic restraints (harmonic constraints) via ComputeRestraints class.
+ *
  * Revision 1.1012  1997/04/10 09:13:51  ari
  * Final debugging for compute migration / proxy creation for load balancing.
  * Lots of debug code added, mostly turned off now.

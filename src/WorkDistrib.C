@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1029 1997/04/16 22:12:22 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1030 1997/04/22 04:26:03 jim Exp $";
 
 #include <stdio.h>
 
@@ -564,6 +564,8 @@ void WorkDistrib::mapComputes(void)
     mapComputePatch(computeSphericalBCType);
   if ( node->simParameters->cylindricalBCOn )
     mapComputePatch(computeCylindricalBCType);
+  if ( node->simParameters->constraintsOn )
+    mapComputePatch(computeRestraintsType);
 }
 
 //----------------------------------------------------------------------
@@ -964,13 +966,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1029 $	$Date: 1997/04/16 22:12:22 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1030 $	$Date: 1997/04/22 04:26:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1030  1997/04/22 04:26:03  jim
+ * Added atomic restraints (harmonic constraints) via ComputeRestraints class.
+ *
  * Revision 1.1029  1997/04/16 22:12:22  brunner
  * Fixed an LdbCoordinator bug, and cleaned up timing and Ldb output some.
  *
