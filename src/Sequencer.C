@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1035 1997/12/22 21:29:28 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1036 1998/01/05 20:26:49 sergei Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -42,6 +42,7 @@ Sequencer::Sequencer(HomePatch *p) :
 
     reduction->Register(REDUCTION_KINETIC_ENERGY);
     reduction->Register(REDUCTION_BC_ENERGY); // in case not used elsewhere
+    reduction->Register(REDUCTION_SMD_ENERGY); // in case not used elsewhere
     reduction->Register(REDUCTION_ALT_VIRIAL);
     ldbCoordinator = (LdbCoordinator::Object());
 }
@@ -52,6 +53,7 @@ Sequencer::~Sequencer(void)
 
     reduction->unRegister(REDUCTION_KINETIC_ENERGY);
     reduction->unRegister(REDUCTION_BC_ENERGY); // in case not used elsewhere
+    reduction->unRegister(REDUCTION_SMD_ENERGY); // in case not used elsewhere
     reduction->unRegister(REDUCTION_ALT_VIRIAL);
 }
 
@@ -223,6 +225,7 @@ void Sequencer::submitReductions(int step)
 {
   reduction->submit(step,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
   reduction->submit(step,REDUCTION_BC_ENERGY,0.);
+  reduction->submit(step,REDUCTION_SMD_ENERGY,0.);  
 
   BigReal altVirial = 0.;
   for ( int i = 0; i < patch->numAtoms; ++i )
@@ -270,13 +273,17 @@ Sequencer::terminate() {
  * RCS INFORMATION:
  *
  *      $RCSfile: Sequencer.C,v $
- *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1035 $     $Date: 1997/12/22 21:29:28 $
+ *      $Author: sergei $  $Locker:  $             $State: Exp $
+ *      $Revision: 1.1036 $     $Date: 1998/01/05 20:26:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1036  1998/01/05 20:26:49  sergei
+ * added reduction->(un)Register(REDUCTION_SMD_ENERGY) to (con/de)structor
+ * added reduction->submit(step,REDUCTION_SMD_ENERGY,0.) to submitReductions()
+ *
  * Revision 1.1035  1997/12/22 21:29:28  jim
  * Proxies no longer send empty arrays back to HomePatch.  Requires some new
  * flags to be set correctly in Sequencer in order to work.  These are:
