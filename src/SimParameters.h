@@ -242,6 +242,7 @@ public:
 					//  to use
 
 	int splitPatch;			// How are patches determined?
+	BigReal hgroupCutoff;		// what is the added hydrogen margin?
 
         int rigidBonds;                 // what type of rigid bonds to hydrogens
                                         // none, all, or only water
@@ -304,13 +305,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/04/16 23:44:05 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1011 $	$Date: 1997/05/29 19:13:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1011  1997/05/29 19:13:16  nealk
+ * Added hgroupCutoff
+ *
  * Revision 1.1010  1997/04/16 23:44:05  brunner
  * Put ldbStrategy={none|refineonly|alg7}, ldbPeriod, and firstLdbStep
  * in SimParameters.
