@@ -9,12 +9,19 @@
  *
  */
 
-static char RCSid[] = "$Id: mpe_misc.c,v 1.1 1997/09/05 19:41:31 jim Exp $";
+static char RCSid[] = "$Id: mpe_misc.c,v 1.2 1997/09/29 23:57:45 jim Exp $";
 
 /*
  * RSC History:
  *
  * $Log: mpe_misc.c,v $
+ * Revision 1.2  1997/09/29 23:57:45  jim
+ * Incorporated changes from version 2.6.1 of DPMTA.
+ *   - fixes for bad handling of empty/invalid multipoles when
+ *     using large processor sets.
+ *   - moved functions that provide data mapping to processors.  master
+ *     and slave routines now call the same function in dpmta_distmisc.c
+ *
  * Revision 1.1  1997/09/05 19:41:31  jim
  * Original distribution.
  *
@@ -167,6 +174,32 @@ void MathdumpY_C(
    } /* for n */
    fprintf(fpo, "}\n");
 
+   fclose(fpo);
+
+} /* MathdumpY */
+
+/****************************************************************
+ *
+ *  MDumpRaw_C() - dumps a multipole expansion to a file
+ *    specified in s[].
+ *
+ */
+
+void MDumpRaw_C(
+   Mtype Y,
+   int   p,
+   char  s[] )
+{
+   int             n, m;
+   FILE           *fpo;
+
+   fpo = fopen(s, "w");
+
+   for (n = 0; n < p; n++) {
+      for (m = 0; m <=n; m++) {
+	 fprintf(fpo, "%20.16lg %20.16lg\n", Y[n][m].x, Y[n][m].y);
+      }
+   }
    fclose(fpo);
 
 } /* MathdumpY */

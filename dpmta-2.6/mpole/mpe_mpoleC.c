@@ -8,12 +8,19 @@
  *  All Rights Reserved
  */
 
-static char RCSid[] = "$Id: mpe_mpoleC.c,v 1.1 1997/09/05 19:41:32 jim Exp $";
+static char RCSid[] = "$Id: mpe_mpoleC.c,v 1.2 1997/09/29 23:57:46 jim Exp $";
 
 /*
  * RSC History:
  *
  * $Log: mpe_mpoleC.c,v $
+ * Revision 1.2  1997/09/29 23:57:46  jim
+ * Incorporated changes from version 2.6.1 of DPMTA.
+ *   - fixes for bad handling of empty/invalid multipoles when
+ *     using large processor sets.
+ *   - moved functions that provide data mapping to processors.  master
+ *     and slave routines now call the same function in dpmta_distmisc.c
+ *
  * Revision 1.1  1997/09/05 19:41:32  jim
  * Original distribution.
  *
@@ -787,7 +794,7 @@ int Force_C_Y  (
    fv->y = q * (fr*sinalpha*sinbeta + fa*cosalpha*sinbeta + fb*cosbeta);
    fv->z = q * (fr*cosalpha - fa*sinalpha);
 
-} /* Force_C_Y/
+} /* Force_C_Y */
 
 
 /****************************************************************

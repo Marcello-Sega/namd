@@ -10,11 +10,18 @@
 /*
  * RCS Id:
  *
- * $Id: mpe.h,v 1.1 1997/09/05 19:41:27 jim Exp $
+ * $Id: mpe.h,v 1.2 1997/09/29 23:57:45 jim Exp $
  *
  * RSC History:
  *
  * $Log: mpe.h,v $
+ * Revision 1.2  1997/09/29 23:57:45  jim
+ * Incorporated changes from version 2.6.1 of DPMTA.
+ *   - fixes for bad handling of empty/invalid multipoles when
+ *     using large processor sets.
+ *   - moved functions that provide data mapping to processors.  master
+ *     and slave routines now call the same function in dpmta_distmisc.c
+ *
  * Revision 1.1  1997/09/05 19:41:27  jim
  * Original distribution.
  *
@@ -111,6 +118,7 @@ void CinitF( int, int );
 void CinitFS( int, int );
 void Fourier_C( int, Real );
 void MathdumpY_C( Mtype, int, char * );
+void MDumpRaw_C( Mtype, int, char * );
 void Unwarp_M2L( Mtype, Mtype, int, int );
 void Warp_M2L( Mtype, Mtype, int, int );
 void Warp_Short( Mtype, int, int );
