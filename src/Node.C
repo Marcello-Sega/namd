@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.12 1996/11/22 01:02:18 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.13 1996/11/22 01:44:53 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -33,6 +33,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "Compute.h"
 #include "ComputeAngles.h"
 #include "ComputeMap.h"
+#include "Molecule.h"
+#include "AtomMap.h"
 //#include "ProxyMgr.h"
 //#include "MessageComm.h"
 //#include "PatchMap.h"
@@ -105,6 +107,7 @@ void Node::messageStartup() {
 
 void Node::startup(InitMsg *msg)
 {
+  AtomMap::Object()->allocateMap(molecule->numAtoms);
 
   delete msg;
 
@@ -212,13 +215,16 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.12 $	$Date: 1996/11/22 01:02:18 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.13 $	$Date: 1996/11/22 01:44:53 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.13  1996/11/22 01:44:53  jim
+ * added calls to service AtomMap
+ *
  * Revision 1.12  1996/11/22 01:02:18  ari
  * *** empty log message ***
  *

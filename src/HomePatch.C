@@ -11,13 +11,14 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.5 1996/10/16 08:22:39 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.6 1996/11/22 01:44:53 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
 #include "c++interface.h"
 
 #include "HomePatch.h"
+#include "AtomMap.h"
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, 
   PositionList pl, VelocityList vl)
@@ -26,6 +27,7 @@ HomePatch::HomePatch(PatchID pd, AtomIDList al,
       CPrintf(
       "HomePatch::HomePatch(...) : Different numbers of Velocities and IDs!\n");
     }
+    AtomMap::Object()->registerIDs(pd,al);
 }
 
 
@@ -226,13 +228,16 @@ void HomePatch::dispose(char *&data)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/10/16 08:22:39 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.6 $	$Date: 1996/11/22 01:44:53 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.6  1996/11/22 01:44:53  jim
+ * added calls to service AtomMap
+ *
  * Revision 1.5  1996/10/16 08:22:39  ari
  * *** empty log message ***
  *
