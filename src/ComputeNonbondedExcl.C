@@ -44,35 +44,35 @@ void NonbondedExclElem::loadTuplesForAtom
       }
 }
 
+BigReal NonbondedExclElem::reductionDummy[reductionDataSize];
 
 void NonbondedExclElem::computeForce(BigReal *reduction)
 {
-  DebugM(1, "::computeForce() localIndex = " << localIndex[0] << " "
-               << localIndex[1] << endl);
+  register TuplePatchElem *p0 = p[0];
+  register TuplePatchElem *p1 = p[1];
 
-  const Lattice & lattice = p[0]->p->lattice;
+  if ( p0->patchType != HOME ) reduction = reductionDummy;
 
-  // Make this static at some point!  Gets initialized then?
-  BigReal dummy[reductionDataSize];
-  for ( int i = 0; i < reductionDataSize; ++i ) dummy[i] = 0.;
+  register Patch *patch = p0->p;
 
-  if ( p[0]->p->flags.doFullElectrostatics )
+  register int localIndex0 = localIndex[0];
+  register int localIndex1 = localIndex[1];
+
+  Vector x01(patch->lattice.delta(p0->x[localIndex0], p1->x[localIndex1]));
+
+  if ( patch->flags.doFullElectrostatics )
     ComputeNonbondedUtil::calcFullExcl(
-	lattice.delta(p[0]->x[localIndex[0]],p[1]->x[localIndex[1]]),
-	p[0]->f[localIndex[0]], p[1]->f[localIndex[1]],
-	p[0]->f[localIndex[0]], p[1]->f[localIndex[1]],
-	p[0]->a[localIndex[0]], p[1]->a[localIndex[1]],
-	modified,
-	( p[0]->patchType == HOME ) ? reduction : dummy );
+	x01,
+	p0->f[localIndex0], p1->f[localIndex1],
+	p0->f[localIndex0], p1->f[localIndex1],
+	p0->a[localIndex0], p1->a[localIndex1],
+	modified, reduction);
   else
     ComputeNonbondedUtil::calcExcl(
-	lattice.delta(p[0]->x[localIndex[0]],p[1]->x[localIndex[1]]),
-	p[0]->f[localIndex[0]], p[1]->f[localIndex[1]],
-	p[0]->a[localIndex[0]], p[1]->a[localIndex[1]],
-	modified,
-	( p[0]->patchType == HOME ) ? reduction : dummy );
-
-  DebugM(3, "::computeForce() -- ending" << endl);
+	x01,
+	p0->f[localIndex0], p1->f[localIndex1],
+	p0->a[localIndex0], p1->a[localIndex1],
+	modified, reduction);
 }
 
 

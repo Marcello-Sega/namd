@@ -63,6 +63,9 @@ public:
             (atomID[0] == a.atomID[0] &&
             (atomID[1] < a.atomID[1]) ));
   }
+
+  private:
+    static BigReal reductionDummy[reductionDataSize];
 };
 
 class ComputeNonbondedExcls : public ComputeHomeTuples<NonbondedExclElem>
@@ -78,13 +81,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedExcl.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:08 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/03/09 22:28:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedExcl.h,v $
+ * Revision 1.1001  1997/03/09 22:28:24  jim
+ * (Hopefully) sped up exclusion calculation (removed gross inefficiencies).
+ *
  * Revision 1.1000  1997/02/06 15:58:08  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
