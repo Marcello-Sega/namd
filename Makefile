@@ -99,11 +99,8 @@ $(INCDIR):
 
 clean:
 	rm -f *.o
-	rm -f $(SRCDIR)/*.o
 	rm -rf ptrepository
 
-veryclean:
-	rm -f *.o
-	rm -rf ptrepository
+veryclean:	clean
 	rm -f $(INCDIR)/*.top.h $(INCDIR)/*.bot.h *.depends
 
