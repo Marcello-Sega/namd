@@ -93,12 +93,12 @@ void Alg7::strategy()
      || (p = goodP[1][0])    // One home, no proxies
      || (p = goodP[0][1])    // No home, one proxy
      || (p = goodP[0][0])    // No home, no proxies
-     || (p = poorP[2][0])    // Two home, no proxies
-     || (p = poorP[1][1])    // One home, one proxy
-     || (p = poorP[0][2])    // No home, two proxies
-     || (p = poorP[1][0])    // One home, no proxies
-     || (p = poorP[0][1])    // No home, one proxy
-     || (p = poorP[0][0])    // No home, no proxies
+     || (p = poorP[2][0])    // Two home, no proxies, overload
+     || (p = poorP[1][1])    // One home, one proxy, overload
+     || (p = poorP[0][2])    // No home, two proxies, overload
+     || (p = poorP[1][0])    // One home, no proxies, overload
+     || (p = poorP[0][1])    // No home, one proxy, overload
+     || (p = poorP[0][0])    // No home, no proxies, overload
        ) {
       assign(c,p); numAssigned++;
     } else {
