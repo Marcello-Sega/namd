@@ -29,6 +29,7 @@ OBJS = \
 	$(DSTDIR)/common.o \
 	$(DSTDIR)/dcdlib.o \
 	$(DSTDIR)/main.o \
+	$(DSTDIR)/mainfunc.o \
 	$(DSTDIR)/strlib.o \
 	$(DSTDIR)/AlgSeven.o \
 	$(DSTDIR)/AtomMap.o \
@@ -74,7 +75,6 @@ OBJS = \
 	$(DSTDIR)/ConfigList.o \
 	$(DSTDIR)/Controller.o \
 	$(DSTDIR)/ccsinterface.o \
-        $(DSTDIR)/defmain.o \
         $(DSTDIR)/FreeEnergyAssert.o \
         $(DSTDIR)/FreeEnergyGroup.o \
         $(DSTDIR)/FreeEnergyLambda.o \

@@ -31,7 +31,8 @@ obj/common.o: \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
-	src/ProcessorPrivate.h
+	src/ProcessorPrivate.h \
+	src/Inform.h
 	$(CXX) $(CXXFLAGS) -o obj/common.o -c src/common.C
 obj/dcdlib.o: \
 	src/dcdlib.C \
@@ -65,13 +66,16 @@ obj/main.o: \
 	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
 	src/ResizeArrayPrimIter.h \
-	src/Namd.h \
-	src/Communicate.h \
-	src/MStream.h \
-	src/Inform.h \
-	src/Debug.h \
 	inc/main.def.h
 	$(CXX) $(CXXFLAGS) -o obj/main.o -c src/main.C
+obj/mainfunc.o: \
+	src/mainfunc.C \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/Namd.h
+	$(CXX) $(CXXFLAGS) -o obj/mainfunc.o -c src/mainfunc.C
 obj/strlib.o: \
 	src/strlib.C \
 	src/strlib.h \
@@ -1309,59 +1313,6 @@ obj/ComputeGlobalMsgs.o: \
 	src/packmsg.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeGlobalMsgs.o -c src/ComputeGlobalMsgs.C
-obj/ComputeSMD.o: \
-        src/ComputeSMD.C \
-        src/Node.h \
-        src/main.h \
-        src/BOCgroup.h \
-        src/NamdTypes.h \
-        src/Vector.h \
-        src/common.h \
-        src/InfoStream.h \
-        src/ResizeArray.h \
-        src/ResizeArrayRaw.h \
-        src/SortedArray.h \
-        src/SortableResizeArray.h \
-        src/ResizeArrayIter.h \
-        src/ResizeArrayPrimIter.h \
-        inc/main.decl.h \
-        inc/WorkDistrib.decl.h \
-        inc/ReductionMgr.decl.h \
-        inc/PatchMgr.decl.h \
-        inc/ProxyMgr.decl.h \
-        inc/Node.decl.h \
-        inc/LdbCoordinator.decl.h \
-        inc/ComputeMgr.decl.h \
-        inc/CollectionMgr.decl.h \
-        inc/CollectionMaster.decl.h \
-        inc/BroadcastMgr.decl.h \
-        src/ProcessorPrivate.h \
-        src/SimParameters.h \
-        src/ConfigList.h \
-        src/Communicate.h \
-        src/MStream.h \
-        src/Lattice.h \
-        src/Tensor.h \
-        src/ComputeGlobal.h \
-        src/ComputeHomePatches.h \
-        src/Compute.h \
-        src/HomePatch.h \
-        src/Patch.h \
-        src/OwnerBox.h \
-        src/Box.h \
-        src/PositionOwnerBox.h \
-        src/PositionBox.h \
-        src/PatchTypes.h \
-        src/PatchMap.h \
-        src/HomePatchList.h \
-        src/MigrateAtomsMsg.h \
-        src/Migration.h \
-        src/HomePatchTypes.h \
-        src/ComputeGlobalMsgs.h \
-        src/ComputeSMD.h \
-        src/ComputeGlobalMaster.h \
-        src/ComputeMgr.h
-	$(CXX) $(CXXFLAGS) -o obj/ComputeSMD.o -c src/ComputeSMD.C
 obj/ComputeIMD.o: \
 	src/ComputeIMD.C \
 	src/vmdsock.h \
@@ -1591,7 +1542,6 @@ obj/ComputeMgr.o: \
 	src/ComputeSphericalBC.h \
 	src/ComputeCylindricalBC.h \
 	src/ComputeRestraints.h \
-	src/ComputeHomePatch.h \
 	src/WorkDistrib.h \
 	inc/ComputeMgr.def.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeMgr.o -c src/ComputeMgr.C
@@ -2049,6 +1999,69 @@ obj/ComputeRestraints.o: \
 	src/PDB.h \
 	src/PDBData.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeRestraints.o -c src/ComputeRestraints.C
+obj/ComputeSMD.o: \
+	src/ComputeSMD.C \
+	src/ComputeSMD.h \
+	src/ComputeGlobalMaster.h \
+	src/ComputeHomePatches.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/ResizeArrayPrimIter.h \
+	src/Compute.h \
+	src/main.h \
+	src/BOCgroup.h \
+	inc/main.decl.h \
+	inc/WorkDistrib.decl.h \
+	inc/ReductionMgr.decl.h \
+	inc/PatchMgr.decl.h \
+	inc/ProxyMgr.decl.h \
+	inc/Node.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/ComputeMgr.decl.h \
+	inc/CollectionMgr.decl.h \
+	inc/CollectionMaster.decl.h \
+	inc/BroadcastMgr.decl.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ProcessorPrivate.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
+	src/Node.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/MStream.h \
+	src/ComputeMgr.h \
+	src/ComputeGlobal.h \
+	src/ComputeGlobalMsgs.h \
+	src/PDB.h \
+	src/IntList.h \
+	src/PDBData.h \
+	src/Molecule.h \
+	src/structures.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/ObjectArena.h \
+	src/Hydrogen.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputeSMD.o -c src/ComputeSMD.C
 obj/ComputeSphericalBC.o: \
 	src/ComputeSphericalBC.C \
 	src/ComputeSphericalBC.h \
@@ -2236,11 +2249,6 @@ obj/ccsinterface.o: \
 	src/ccsinterface.C \
 	src/ccsinterface.h
 	$(CXX) $(CXXFLAGS) -o obj/ccsinterface.o -c src/ccsinterface.C
-obj/defmain.o: \
-	src/defmain.C \
-	src/ProcessorPrivate.h \
-	src/BOCgroup.h
-	$(CXX) $(CXXFLAGS) -o obj/defmain.o -c src/defmain.C
 obj/FreeEnergyAssert.o: \
 	src/FreeEnergyAssert.C \
 	src/InfoStream.h \
@@ -2910,7 +2918,6 @@ obj/NamdState.o: \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
 	src/ProcessorPrivate.h \
-	src/Random.h \
 	src/ScriptTcl.h \
 	src/Broadcasts.h \
 	src/BroadcastObject.h \
@@ -2932,6 +2939,7 @@ obj/NamdOneTools.o: \
 	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
 	src/ResizeArrayPrimIter.h \
+	src/NamdOneTools.h \
 	src/PDB.h \
 	src/IntList.h \
 	src/PDBData.h \
@@ -3025,7 +3033,6 @@ obj/Node.o: \
 	src/LdbCoordinator.h \
 	src/elements.h \
 	src/Set.h \
-	src/Random.h \
 	src/TestController.h \
 	src/TestSequencer.h \
 	src/ScriptTcl.h \

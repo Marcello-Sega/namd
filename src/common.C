@@ -18,6 +18,13 @@
 #include "Communicate.h"
 #include "SimParameters.h"
 #include "Node.h"
+#include "Inform.h"
+
+
+Inform namdErr("ERROR");
+Inform namdWarn("Warning");
+Inform namdInfo("Info");
+Inform namdDebug("** DEBUG **");
 
 
 // print out title
