@@ -284,15 +284,18 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     if ( recipPeDest[node] ) ++numDestRecipPes;
   }
 
-  firstDestRecipPe = CkMyPe() % numDestRecipPes;
-  int c = 0;
-  for ( node=0; node<numNodes ; ++node ) {
-    if ( recipPeDest[node] ) {
-      if ( c == firstDestRecipPe ) {
-        firstDestRecipPe = node;
-        break;
+  firstDestRecipPe = 0;
+  if ( numDestRecipPes ) {
+    firstDestRecipPe = CkMyPe() % numDestRecipPes;
+    int c = 0;
+    for ( node=0; node<numNodes ; ++node ) {
+      if ( recipPeDest[node] ) {
+        if ( c == firstDestRecipPe ) {
+          firstDestRecipPe = node;
+          break;
+        }
+        ++c;
       }
-      ++c;
     }
   }
 
