@@ -196,10 +196,10 @@ NOEXCL
 	    fullElectVirial -= f;
 	    fullforce_r = -f * r_1 * r_1;
 	    register BigReal tmp_x = fullforce_r * p_ij_x;
-	    register BigReal tmp_y = fullforce_r * p_ij_y;
-	    register BigReal tmp_z = fullforce_r * p_ij_z;
 	    fullf_i.x += tmp_x;
+	    register BigReal tmp_y = fullforce_r * p_ij_y;
 	    fullf_i.y += tmp_y;
+	    register BigReal tmp_z = fullforce_r * p_ij_z;
 	    fullf_i.z += tmp_z;
 	    fullf_j.x -= tmp_x;
 	    fullf_j.y -= tmp_y;
@@ -408,11 +408,10 @@ NOEXCL
       virial += force_r * r2;
 
       register BigReal tmp_x = force_r * p_ij_x;
-      register BigReal tmp_y = force_r * p_ij_y;
-      register BigReal tmp_z = force_r * p_ij_z;
-
       f_i.x += tmp_x;
+      register BigReal tmp_y = force_r * p_ij_y;
       f_i.y += tmp_y;
+      register BigReal tmp_z = force_r * p_ij_z;
       f_i.z += tmp_z;
 
       f_j.x -= tmp_x;
@@ -424,11 +423,10 @@ FULL
       fullElectVirial += fullforce_r * r2;
 
       tmp_x = fullforce_r * p_ij_x;
-      tmp_y = fullforce_r * p_ij_y;
-      tmp_z = fullforce_r * p_ij_z;
-
       fullf_i.x += tmp_x;
+      tmp_y = fullforce_r * p_ij_y;
       fullf_i.y += tmp_y;
+      tmp_z = fullforce_r * p_ij_z;
       fullf_i.z += tmp_z;
 
       fullf_j.x -= tmp_x;
@@ -459,12 +457,15 @@ FULL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/03/17 03:44:14 $
+ *	$Revision: 1.1011 $	$Date: 1997/03/17 03:55:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1011  1997/03/17 03:55:23  jim
+ * Reordered final force store operations for better work/memory interleaving.
+ *
  * Revision 1.1010  1997/03/17 03:44:14  jim
  * Rearranged final force store for better memory access (I hope).
  *
