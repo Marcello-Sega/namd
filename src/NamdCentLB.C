@@ -326,13 +326,13 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
   int i;
   for (i=0; i<count; i++) {
     processorArray[i].Id = i;
-    if (patchMap->numPatches() > 0)
+    if (patchMap->numPatchesOnNode(i) > 0)
       processorArray[i].backgroundLoad = bg_weight * stats[i].bg_walltime;
     else 
       processorArray[i].backgroundLoad = stats[i].bg_walltime;
   }
   
-#if 0
+#if 1
   //Modification to reduce the coputeload on PME processors
   const SimParameters* simParams = Node::Object()->simParameters;  
   
@@ -341,7 +341,15 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
     for (i=0; i<count; i++) {
       CkPrintf("BG[%d] =  %5.5lf,", i, processorArray[i].backgroundLoad);
       if(isPmeProcessor(i)) {
-	processorArray[i].backgroundLoad *= 10;
+        double oldbgload = processorArray[i].backgroundLoad;
+        if ( processorArray[i].computeLoad > (3*oldbgload) ) {
+          processorArray[i].backgroundLoad += (3*oldbgload);
+          processorArray[i].computeLoad -= (3*oldbgload);
+        } else {
+          processorArray[i].backgroundLoad += processorArray[i].computeLoad;
+          processorArray[i].computeLoad = 0;
+        }
+	processorArray[i].backgroundLoad = 4*oldbgload;
       }
       CkPrintf("%5.5lf;  ", processorArray[i].backgroundLoad);
     }
