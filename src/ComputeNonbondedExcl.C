@@ -17,6 +17,7 @@
 #include "Parameters.h"
 #include "Node.h"
 
+#undef DEBUGM
 #include "Debug.h"
 
 void NonbondedExclElem::addTuplesForAtom
