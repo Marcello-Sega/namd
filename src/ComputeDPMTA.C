@@ -278,7 +278,7 @@ void ComputeDPMTA::initialize()
   }
   else
   {
-	iout << "Unable to start DPMTA!\n" << endi;
+	NAMD_die("Unable to start DPMTA!");
   }
 
   // tell all nodes that it is OK to register
@@ -509,12 +509,15 @@ void ComputeDPMTA::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1053 $	$Date: 1999/02/17 04:09:55 $
+ *	$Revision: 1.1054 $	$Date: 1999/04/23 20:13:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.C,v $
+ * Revision 1.1054  1999/04/23 20:13:52  jim
+ * Dies on startup failure.
+ *
  * Revision 1.1053  1999/02/17 04:09:55  jim
  * Fixes to make optional force modules work with more nodes than patches.
  *
