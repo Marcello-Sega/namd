@@ -31,22 +31,16 @@ begin:
   set ROOTDIR=$DIR
   if ( $ARCH:t == $ARCH ) set ROOTDIR='..'
 
-  echo "Creating link: Makearch.$ARCH:t to Makearch"
-  ln -s $ROOTDIR/arch/Makearch.$ARCH:t ./Makearch
-  echo "Linking Makefiles"
-  ln -s $ROOTDIR/Makefile ./Makefile
-  ln -s $ROOTDIR/Make.depends ./Make.depends
-  ln -s $ROOTDIR/Make.charm ./Make.charm
+  echo "Creating link: $ROOTDIR to .rootdir"
   ln -s $ROOTDIR .rootdir
-  echo "Creating src and linking files"
-  (cd $DIR/src ; find . -name CVS -prune -o -type d -print )|sed -e s@.@@> temp.d
-  (cd $DIR/src ; find . -name CVS -prune -o -type f -print )|sed -e s@.@@> temp.f
-  awk '{print "mkdir src"$1;}' < temp.d > temp.m
-  awk '{print "ln -s ../.rootdir src"$1;}' < temp.d >> temp.m
-  awk '{print "ln -s .rootdir/src"$1" src"$1;}' < temp.f > temp.l
-  sh temp.m
-  sh temp.l
-  rm -f temp.d temp.f temp.m temp.l
+  echo "Creating link: Makearch.$ARCH:t to Makearch"
+  ln -s .rootdir/arch/Makearch.$ARCH:t ./Makearch
+  echo "Linking Makefiles"
+  ln -s .rootdir/Makefile ./Makefile
+  ln -s .rootdir/Make.depends ./Make.depends
+  ln -s .rootdir/Make.charm ./Make.charm
+  echo "Linking src"
+  ln -s .rootdir/src ./src
   echo "Creating dpme2 and linking files"
   (cd $DIR/dpme2;find . -name CVS -prune -o -type d -print )|sed -e s@.@@> temp.d
   (cd $DIR/dpme2;find . -name CVS -prune -o -type f -print )|sed -e s@.@@> temp.f
