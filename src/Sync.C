@@ -30,7 +30,7 @@
 
 #include "InfoStream.h"
 
-int useSync = 0;
+int useSync = 1;
 
 Sync::Sync()
 {
@@ -41,12 +41,13 @@ Sync::Sync()
 	  << "Sync instanced twice on same processor!" << endi;
 	CkExit();
     }
-
+    counter = 0;
 }
 
 void Sync::PatchReady(void)
 {
    counter ++;
+//   CkPrintf("SYNC[%d]: PATCHREADY:%d %d \n", CkMyPe(), counter, PatchMap::Object()->numHomePatches());
    if (counter == PatchMap::Object()->numHomePatches()) 
    {
        counter = 0;
