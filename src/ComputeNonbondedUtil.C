@@ -66,9 +66,12 @@ void ComputeNonbondedUtil::select(void)
 
   cutoff = simParams->cutoff;
   cutoff2 = cutoff*cutoff;
+
   // we add slightly more than 2 angstroms to get the same numbers.
   // don't know why...ask jim... :-)
-  groupcutoff2 = (cutoff+2.5)*(cutoff+2.5);
+  const BigReal &hcutoff = simParams->hgroupCutoff;
+  groupcutoff2 = (cutoff+hcutoff)*(cutoff+hcutoff);
+
   dielectric_1 = 1.0/simParams->dielectric;
   ljTable = LJTable::Instance();
   mol = Node::Object()->molecule;
@@ -261,12 +264,15 @@ void ComputeNonbondedUtil::select(void)
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/05/15 17:43:48 $
+ *	$Revision: 1.1012 $	$Date: 1997/05/29 19:14:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1012  1997/05/29 19:14:05  nealk
+ * Removed some array indexing for minor speed improvement.
+ *
  * Revision 1.1011  1997/05/15 17:43:48  nealk
  * Merged Pair and Self to use same headers.
  *

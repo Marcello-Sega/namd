@@ -23,14 +23,16 @@ class Molecule;
 // function arguments
 typedef struct
   {
-  // used by pair and self
   Position* p[2];
   Force* ff[2];
   AtomProperties* a[2];
-  int numAtoms[2];
-  BigReal *reduction;
   // for full electrostatics
   Force* fullf [2];
+
+  // used by pair and self
+  int numAtoms[2];
+  BigReal *reduction;
+
   // used by excl
   Position p_ij;
   int m14;
@@ -82,6 +84,9 @@ public:
   static void calc_self_fullelect (nonbonded *);
   static void calc_excl (nonbonded *);
   static void calc_excl_fullelect (nonbonded *);
+  inline static void shifting(BigReal &, BigReal &,
+		       const BigReal &, const BigReal &,
+		       const BigReal &, const BigReal &);
 
   // C1 Splitting
   static void calc_pair_c1 (nonbonded *);
@@ -90,6 +95,8 @@ public:
   static void calc_self_fullelect_c1 (nonbonded *);
   static void calc_excl_c1 (nonbonded *);
   static void calc_excl_fullelect_c1 (nonbonded *);
+  inline static void c1splitting(BigReal &, BigReal &,
+ 			  const BigReal &, const BigReal &, const BigReal &);
 
   // XPLOR Splitting
   static void calc_pair_xplor (nonbonded *);
@@ -98,8 +105,13 @@ public:
   static void calc_self_fullelect_xplor (nonbonded *);
   static void calc_excl_xplor (nonbonded *);
   static void calc_excl_fullelect_xplor (nonbonded *);
+  inline static void xplorsplitting(BigReal &, BigReal &,
+			     const BigReal &,const BigReal &);
 
 };
+
+// include inline splitting functions
+#include "ComputeNonbondedSplitting.h"
 
 #endif
 /***************************************************************************
@@ -107,12 +119,15 @@ public:
  *
  *	$RCSfile: ComputeNonbondedUtil.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/05/20 15:49:10 $
+ *	$Revision: 1.1012 $	$Date: 1997/05/29 19:14:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.h,v $
+ * Revision 1.1012  1997/05/29 19:14:08  nealk
+ * Removed some array indexing for minor speed improvement.
+ *
  * Revision 1.1011  1997/05/20 15:49:10  nealk
  * Pair, Self, and Excl not use the same parameters!
  *

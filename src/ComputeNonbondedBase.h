@@ -111,7 +111,7 @@
 
 #define LAST(X) X
 
-
+// ************************************************************
 // function header
 void ComputeNonbondedUtil :: NAME
   ( nonbonded *params )
@@ -168,10 +168,10 @@ void ComputeNonbondedUtil :: NAME
 
 EXCL
 (
-    const BigReal kq_i = COLOUMB * a_i.charge * dielectric_1;
-    register const BigReal p_ij_x = p_ij.x;
-    register const BigReal p_ij_y = p_ij.y;
-    register const BigReal p_ij_z = p_ij.z;
+  const BigReal kq_i = COLOUMB * a_i.charge * dielectric_1;
+  register const BigReal p_ij_x = p_ij.x;
+  register const BigReal p_ij_y = p_ij.y;
+  register const BigReal p_ij_z = p_ij.z;
 )
 
 NOEXCL
@@ -202,18 +202,29 @@ NOEXCL
 	}
   )
 
+  // for speeding up the for-loop
+  const AtomProperties *a_0 = params->a[0];
+  const AtomProperties *a_1 = params->a[1];
+  const Position *p_0 = params->p[0];
+  const Position *p_1 = params->p[1];
+  Force *f_0 = params->ff[0];
+  Force *f_1 = params->ff[1];
+  FULL
+    (
+    Force *fullf_0 = params->fullf[0];
+    Force *fullf_1 = params->fullf[1];
+    )
 
   for ( i = 0; i < i_upper; ++i )
   {
-    const AtomProperties &a_i = params->a[0][i];
-
-    const Position p_i = params->p[0][i];
+    const AtomProperties &a_i = a_0[i];
+    const Position &p_i = p_0[i];
     register const BigReal p_i_x = p_i.x;
     register const BigReal p_i_y = p_i.y;
     register const BigReal p_i_z = p_i.z;
 
-    Force & f_i = params->ff[0][i];
-    FULL( Force & fullf_i = params->fullf[0][i]; )
+    Force & f_i = f_0[i];
+    FULL( Force & fullf_i = fullf_0[i]; )
 
   HGROUPING
   (
@@ -228,7 +239,7 @@ NOEXCL
     // first atoms in the list.
     // Also, the end of the list may be missing hydrogen atoms
     {
-    register Position *p_j = params->p[1];
+    register const Position *p_j = p_1;
     SELF( p_j += i+1; )
 
     // add all "lost" hydrogens to pairlist
@@ -236,11 +247,10 @@ NOEXCL
     // migrating by hydrogen groups.
 
     PAIR( j = 0; )
-// iout << "j=" << j << " p_i=" << p_i << " p_j=" << *p_j << "\n" << endi;
     SELF
       (
       // add all child hydrogens of i
-      for( j=i+1; (j<j_upper) && (params->a[1][j].hydrogenGroupSize == 0); j++)
+      for( j=i+1; (j<j_upper) && (a_1[j].hydrogenGroupSize == 0); j++)
 	{
 	pairlist[pairlistindex++] = j;
 	p_j++;
@@ -250,7 +260,7 @@ NOEXCL
     // add remaining atoms to pairlist via hydrogen groups
     for ( ; j < j_upper; ++j )
 	{
-	const AtomProperties &pa_j = params->a[1][j];
+	const AtomProperties &pa_j = a_1[j];
 	if (pa_j.hydrogenGroupSize)
 	  {
 	  register BigReal p_ij_x = p_i_x - p_j->x;
@@ -287,7 +297,7 @@ NOEXCL
   const BigReal kq_i_u = COLOUMB * a_i.charge * dielectric_1;
 
     const BigReal kq_i_s = kq_i_u * scale14;
-    register Position *p_j = params->p[1];
+    register const Position *p_j = p_1;
     SELF( p_j += i+1; )
 
     HGROUPING
@@ -362,11 +372,11 @@ NOEXCL
 NOEXCL
 (
       BigReal kq_i = kq_i_u;
-      const AtomProperties & a_j = params->a[1][j];
+      const AtomProperties & a_j = a_1[j];
 
       FULL
       (
-        Force & fullf_j = params->fullf[1][j];
+        Force & fullf_j = fullf_1[j];
         const BigReal r = sqrt(r2);
         const BigReal r_1 = 1.0/r;
         kqq = kq_i * a_j.charge;
@@ -430,7 +440,7 @@ NOEXCL
 
       NOEXCL
       (
-      Force & f_j = params->ff[1][j];
+      Force & f_j = f_1[j];
       )
 
       NOFULL
@@ -472,36 +482,20 @@ NOEXCL
 //  BEGIN SHIFTING / SPLITTING FUNCTION DEFINITIONS
 //  --------------------------------------------------------------------------
 
+
 SHIFTING
 (
-      // Basic electrostatics shifting function for cutoff simulations
-      shiftVal = 1.0 - r2*c5;
-      dShiftVal = c6*shiftVal*r;
-      shiftVal *= shiftVal;
+	shifting(shiftVal,dShiftVal,r,r2,c5,c6);
 )
 
 XPLORSPLITTING
 (
-      // X-plor electrostatics splitting function for multiple timestepping
-      // Same as X-plor VdW switching function so copy from above.
-      shiftVal = switchVal;
-      dShiftVal = dSwitchVal;
+	xplorsplitting(shiftVal,dShiftVal, switchVal,dSwitchVal);
 )
 
 C1SPLITTING
 (
-      // C1 electrostatics splitting function for multiple timestepping
-
-      dShiftVal = 0;  // formula only correct for forces
-      if (r > switchOn)
-      {
-	const BigReal d1 = d0*(r-switchOn);
-	shiftVal = 1.0 + d1*d1*(2.0*d1-3.0);
-      }
-      else
-      {
-	shiftVal = 1;
-      }
+	c1splitting(shiftVal,dShiftVal,r,d0,switchOn);
 )
 
 //  --------------------------------------------------------------------------
@@ -649,12 +643,15 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1019 $	$Date: 1997/05/23 19:29:38 $
+ *	$Revision: 1.1020 $	$Date: 1997/05/29 19:14:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1020  1997/05/29 19:14:00  nealk
+ * Removed some array indexing for minor speed improvement.
+ *
  * Revision 1.1019  1997/05/23 19:29:38  nealk
  * Removed more macros.
  *
