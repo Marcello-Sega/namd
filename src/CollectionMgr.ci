@@ -1,0 +1,7 @@
+extern message SlaveInitMsg;
+extern packmessage CollectVectorMsg;
+
+group CollectionMgr
+{
+  entry CollectionMgr(SlaveInitMsg *);
+};

@@ -1,0 +1,8 @@
+packmessage CollectVectorMsg;
+
+chare CollectionMaster
+{
+  entry receivePositions(CollectVectorMsg *);
+  entry receiveVelocities(CollectVectorMsg *);
+  entry receiveForces(CollectVectorMsg *);
+};
