@@ -39,8 +39,8 @@
 
 
 #ifdef NAMD_PLUGINS
-#include "molfile_plugin.h"
-#include "libmolfile_plugin.h"
+#include <molfile_plugin.h>
+#include <libmolfile_plugin.h>
 
 static molfile_plugin_t *dcdplugin;
 static int register_cb(void *v, vmdplugin_t *p) {
