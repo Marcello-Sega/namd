@@ -51,12 +51,12 @@ void ComputeFullDirect::doWork()
       Position *x = (*ap).positionBox->open();
       AtomProperties *a = (*ap).atomBox->open();
       Results *r = (*ap).forceBox->open();
-      reduction->submit(patchList[0].p->flags.seq, REDUCTION_ELECT_ENERGY, 0.);
-      reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL, 0.0);
       (*ap).positionBox->close(&x);
       (*ap).atomBox->close(&a);
       (*ap).forceBox->close(&r);
     }
+    reduction->submit(patchList[0].p->flags.seq, REDUCTION_ELECT_ENERGY, 0.);
+    reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL, 0.0);
     return;
   }
 
