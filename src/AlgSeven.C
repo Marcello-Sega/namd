@@ -61,7 +61,6 @@ void Alg7::strategy()
       switch(n){
       case 0:
 	if (!bestP0) {
-	  if (c->load + p->load < overLoad*averageLoad)
 	    bestP0 = p;
 	} else {
 	  if ( ( c->load + p->load < overLoad*averageLoad) && 
@@ -109,7 +108,7 @@ void Alg7::strategy()
         numAssigned++;
         numAssignedP0++;
       } else { 
-        iout << iINFO  << "Alg 7 No receiver found 1" << "\n" <<endi;
+        iout << iERROR  << "*** Alg 7 No receiver found 1 ***" << "\n" <<endi;
         break;
       }
     } else {
@@ -125,7 +124,7 @@ void Alg7::strategy()
 	numAssignedptr = &numAssignedP0;
       }
       if (!bestP) {
-	iout << iINFO  << "Alg7 No receiver found 2" << "\n" <<endi;
+	iout << iERROR  << "*** Alg7 No receiver found 2 ***" << "\n" <<endi;
 	break;
       }
       assign(c,bestP);
