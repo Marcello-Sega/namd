@@ -22,7 +22,7 @@ OBJS = \
 	ComputePatch.o ComputeNonbondedUtil.o LJTable.o \
 	ComputeNonbondedSelf.o ComputeNonbondedPair.o \
 	ComputeAngles.o ComputeDihedrals.o ComputeImpropers.o \
-	ComputeMgr.o
+	ComputeBonds.o ComputeMgr.o
 
 CXXFILES = $(OBJS:.o=.C)
 
