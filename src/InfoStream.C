@@ -15,13 +15,7 @@
 
 infostream iout;
 
-/* later, endi and endc should become modifiers! */
-#undef endi
-#undef endc
-
-char * endi(infostream& s)	{ s.endi(); return ""; }
-char * endc(infostream& s)	{ s.endc(); return ""; }
-
+// all methods are inlined so far...
 
 // some suggested usages:
 // Send a warning message to the console:
