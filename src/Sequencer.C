@@ -368,7 +368,7 @@ void Sequencer::berendsenPressure(int step)
       hgs = a[i].hydrogenGroupSize;
       int j;
       BigReal m_cm = 0;
-      Position x_cm;
+      Position x_cm(0,0,0);
       for ( j = i; j < (i+hgs); ++j ) {
         m_cm += a[j].mass;
         x_cm += a[j].mass * a[j].position;
@@ -409,8 +409,8 @@ void Sequencer::langevinPiston(int step)
       hgs = a[i].hydrogenGroupSize;
       int j;
       BigReal m_cm = 0;
-      Position x_cm;
-      Velocity v_cm;
+      Position x_cm(0,0,0);
+      Velocity v_cm(0,0,0);
       for ( j = i; j < (i+hgs); ++j ) {
         m_cm += a[j].mass;
         x_cm += a[j].mass * a[j].position;
