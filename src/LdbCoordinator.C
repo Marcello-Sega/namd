@@ -166,9 +166,11 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
   delete [] patchNAtoms;  // Depends on delete NULL to do nothing
   patchNAtoms = new int[pMap->numPatches()];
 
+  typedef Sequencer *seqPtr;
+
   if ( ! reinit ) {
     delete [] sequencerThreads;  // Depends on delete NULL to do nothing
-    sequencerThreads = new (Sequencer *[pMap->numPatches()]);
+    sequencerThreads = new seqPtr[pMap->numPatches()];
   }
 
   nLocalPatches=0;

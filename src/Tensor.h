@@ -163,19 +163,7 @@ class Tensor {
        return tmp;
      }
 
-     inline friend Tensor outer(const Vector &v1, const Vector &v2) {
-       Tensor tmp;
-       tmp.xx = v1.x * v2.x;
-       tmp.xy = v1.x * v2.y;
-       tmp.xz = v1.x * v2.z;
-       tmp.yx = v1.y * v2.x;
-       tmp.yy = v1.y * v2.y;
-       tmp.yz = v1.y * v2.z;
-       tmp.zx = v1.z * v2.x;
-       tmp.zy = v1.z * v2.y;
-       tmp.zz = v1.z * v2.z;
-       return tmp;
-     }
+     inline friend Tensor outer(const Vector &v1, const Vector &v2);
 
      inline friend Tensor transpose(const Tensor &t1) {
        Tensor tmp;
@@ -241,6 +229,20 @@ class Tensor {
 */
 
 };
+
+     inline Tensor outer(const Vector &v1, const Vector &v2) {
+       Tensor tmp;
+       tmp.xx = v1.x * v2.x;
+       tmp.xy = v1.x * v2.y;
+       tmp.xz = v1.x * v2.z;
+       tmp.yx = v1.y * v2.x;
+       tmp.yy = v1.y * v2.y;
+       tmp.yz = v1.y * v2.z;
+       tmp.zx = v1.z * v2.x;
+       tmp.zy = v1.z * v2.y;
+       tmp.zz = v1.z * v2.z;
+       return tmp;
+     }
 
 #endif
 
