@@ -3082,6 +3082,20 @@ obj/pdb_file_extract.o: \
 	src/pdb_file.h \
 	src/extract_alias.h
 	$(CC) $(CFLAGS) $(COPTO)obj/pdb_file_extract.o $(COPTC) src/pdb_file_extract.c
+obj/psf_file.o: \
+	src/psf_file.c \
+	src/psf_file.h 
+	$(CC) $(CFLAGS) $(COPTO)obj/psf_file.o $(COPTC) src/psf_file.c
+obj/psf_file_extract.o: \
+	src/psf_file_extract.c \
+	src/psf_file_extract.h \
+	src/psf_file.h \
+	src/stringhash.h \
+	src/topo_mol.h \
+	src/topo_defs.h \
+	src/pdb_file.h \
+	src/extract_alias.h
+	$(CC) $(CFLAGS) $(COPTO)obj/psf_file_extract.o $(COPTC) src/psf_file_extract.c
 obj/topo_defs.o: \
 	src/topo_defs.c \
 	src/topo_defs_struct.h \

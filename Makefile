@@ -182,6 +182,8 @@ SBOBJS = \
 	$(DSTDIR)/memarena.o \
 	$(DSTDIR)/pdb_file.o \
 	$(DSTDIR)/pdb_file_extract.o \
+	$(DSTDIR)/psf_file.o \
+	$(DSTDIR)/psf_file_extract.o \
 	$(DSTDIR)/topo_defs.o \
 	$(DSTDIR)/topo_mol.o \
 	$(DSTDIR)/topo_mol_output.o \
