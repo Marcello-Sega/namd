@@ -46,11 +46,7 @@ ComputeDPME::ComputeDPME(ComputeID c, ComputeMgr *m) :
   DebugM(4,"ComputeDPME created.\n");
   useAvgPositions = 1;
 
-  int numWorkingPes = CkNumPes();
-  {
-    int npatches=(PatchMap::Object())->numPatches();
-    if ( numWorkingPes > npatches ) numWorkingPes = npatches;
-  }
+  int numWorkingPes = (PatchMap::Object())->numNodesWithPatches();
 
   masterNode = numWorkingPes - 1;
   if ( CkMyPe() == masterNode ) {

@@ -199,11 +199,7 @@ void ComputeDPMTA::initialize()
   // *****************************************
   // ONLY THE MASTER (NODE 0) NEEDS TO DO THIS:
 
-  int numProcs = CkNumPes();
-  {
-    int npatches=(PatchMap::Object())->numPatches();
-    if ( numProcs > npatches ) numProcs = npatches;
-  }
+  int numProcs = (PatchMap::Object())->numNodesWithPatches();
 
   slavetids = new int[numProcs];
   if (slavetids == NULL)

@@ -160,9 +160,7 @@ void ComputeExt::doWork()
 
 void ComputeExtMgr::recvCoord(ExtCoordMsg *msg) {
   if ( ! numSources ) {
-    numSources = CkNumPes();
-    int npatches = (PatchMap::Object())->numPatches();
-    if ( numSources > npatches ) numSources = npatches;
+    numSources = (PatchMap::Object())->numNodesWithPatches();
     coordMsgs = new ExtCoordMsg*[numSources];
     for ( int i=0; i<CkNumPes(); ++i ) { coordMsgs[i] = 0; }
     numArrived = 0;

@@ -185,12 +185,11 @@ void HomePatch::buildSpanningTree(void)
   NodeIDList tree;
   tree.resize(proxy.size()+1);
   tree[0] = CkMyPe();
-  int nPatches = PatchMap::Object()->numPatches();
   int s=1, e=proxy.size()+1;
   ProxyListIter pli(proxy);
   for ( pli = pli.begin(); pli != pli.end(); ++pli )
   {
-    if ( pli->node < nPatches ) {
+    if ( PatchMap::Object()->numPatchesOnNode(pli->node) ) {
       tree[--e] = pli->node;
     } else {
       tree[s++] = pli->node;
@@ -290,10 +289,9 @@ void HomePatch::positionsReady(int doMigration)
     pids = new int[npid];
     int *pidi = pids;
     int *pide = pids + proxy.size();
-    int nPatches = PatchMap::Object()->numPatches();
     for ( pli = pli.begin(); pli != pli.end(); ++pli )
     {
-      if ( pli->node < nPatches ) {
+      if ( PatchMap::Object()->numPatchesOnNode(pli->node) ) {
         *(--pide) = pli->node;
       } else {
         *(pidi++) = pli->node;

@@ -42,6 +42,8 @@ public:
 
   // returns the number of patches being managed 
   inline int numPatches(void) const { return nPatches; }
+  inline int numPatchesOnNode(int node) { return nPatchesOnNode[node]; }
+  inline int numNodesWithPatches(void) { return nNodesWithPatches; }
 
   // returns the number of patches in each dimension
   inline int gridsize_a(void) const { return aDim; }
@@ -151,6 +153,8 @@ private:
     HomePatch *myHomePatch;
   };
   int nPatches;
+  int nNodesWithPatches;
+  int *nPatchesOnNode;
   PatchData *patchData;
   int aDim, bDim, cDim;
   int aPeriodic, bPeriodic, cPeriodic;

@@ -144,15 +144,6 @@ private:
   Namd *namd;
   ScriptTcl *script;
 
-  // Countdown for Node::startup barrier
-  int numNodeStartup;
-
-  // Countdown for Node::homeDone termination 
-  int numHomePatchesRunning;
-
-  // Countdown for Node::nodeDone termination
-  int numNodesRunning;
-
   // Startup phase
   int startupPhase;
 };

@@ -52,12 +52,7 @@ void ComputeFullDirect::doWork()
   register BigReal *local_ptr;
   Lattice *lattice;
 
-  int numWorkingPes = CkNumPes();
-  {
-    int npatches=(PatchMap::Object())->numPatches();
-    if ( numWorkingPes > npatches ) numWorkingPes = npatches;
-  }
-  
+  int numWorkingPes = (PatchMap::Object())->numNodesWithPatches();
 
   ResizeArrayIter<PatchElem> ap(patchList);
 

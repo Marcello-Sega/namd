@@ -35,6 +35,12 @@ PatchMap *PatchMap::Instance() {
 PatchMap::PatchMap(void)
 {
   nPatches = 0;
+  nNodesWithPatches = 0;
+  int npes = CkNumPes();
+  nPatchesOnNode = new int[npes];
+  for ( int i=0; i<npes; ++i ) {
+    nPatchesOnNode[i] = 0;
+  }
   patchData = NULL;
   aDim = bDim = cDim = 0;
   aPeriodic = bPeriodic = cPeriodic = 0;
@@ -169,16 +175,19 @@ PatchMap::~PatchMap(void)
     patchData=NULL;
     nPatches=0;
   }
+  delete [] nPatchesOnNode;
   
 }
 
 #undef PACK
 #define PACK(type,data) { memcpy(b, &data,sizeof(type)); b += sizeof(type); }
+#define PACKN(type,data,cnt) { memcpy(b, data,(cnt)*sizeof(type)); b += (cnt)*sizeof(type); }
 
 int PatchMap::packSize(void)
 {
   int i, size = 0;
   size += 11 * sizeof(int) + 6 * sizeof(BigReal);
+  size += CkNumPes() * sizeof(int);
   for(i=0;i<nPatches;++i)
   {
     size += sizeof(PatchData);
@@ -201,6 +210,8 @@ void PatchMap::pack (char *buffer)
   PACK(int,aMaxIndex); PACK(int,bMaxIndex); PACK(int,cMaxIndex);
   PACK(BigReal,aOrigin); PACK(BigReal,bOrigin); PACK(BigReal,cOrigin);
   PACK(BigReal,aLength); PACK(BigReal,bLength); PACK(BigReal,cLength);
+  PACK(int,nNodesWithPatches);
+  PACKN(int,nPatchesOnNode,CkNumPes());
   for(i=0;i<nPatches;++i)
   {
     DebugM(3,"Packing Patch " << i << " is on node " << patchData[i].node << 
@@ -214,6 +225,7 @@ void PatchMap::pack (char *buffer)
 
 #undef UNPACK
 #define UNPACK(type,data) { memcpy(&data, b, sizeof(type)); b += sizeof(type); }
+#define UNPACKN(type,data,cnt) { memcpy(data, b, (cnt)*sizeof(type)); b += (cnt)*sizeof(type); }
 
 void PatchMap::unpack (char *ptr)
 {
@@ -227,6 +239,8 @@ void PatchMap::unpack (char *ptr)
   UNPACK(int,aMaxIndex); UNPACK(int,bMaxIndex); UNPACK(int,cMaxIndex);
   UNPACK(BigReal,aOrigin); UNPACK(BigReal,bOrigin); UNPACK(BigReal,cOrigin);
   UNPACK(BigReal,aLength); UNPACK(BigReal,bLength); UNPACK(BigReal,cLength);
+  UNPACK(int,nNodesWithPatches);
+  UNPACKN(int,nPatchesOnNode,CkNumPes());
   patchData = new PatchData[nPatches];
   for(i=0;i<nPatches;++i)
   {
@@ -268,6 +282,8 @@ void PatchMap::homePatchIDList(PatchIDList &pids) {
 //----------------------------------------------------------------------
 void PatchMap::assignNode(PatchID pid, NodeID node) {
   patchData[pid].node=node;
+  if ( nPatchesOnNode[node] == 0 ) nNodesWithPatches += 1;
+  nPatchesOnNode[node] += 1;
 }
 
 //----------------------------------------------------------------------

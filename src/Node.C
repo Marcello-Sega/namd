@@ -94,7 +94,6 @@ Node::Node(GroupInitMsg *msg)
   CpvAccess(BOCclass_group).node = thisgroup;
 
   startupPhase = 0;
-  numNodeStartup = CkNumPes();
 
   molecule = NULL;
   parameters = NULL;
@@ -354,18 +353,6 @@ void Node::messageRun() {
 //-----------------------------------------------------------------------
 void Node::run()
 {
-  // iout << iINFO << iPE << " Running\n" << endi;
-  numHomePatchesRunning = patchMap->numHomePatches();
-  if (CkMyPe() == 0) {
-    numHomePatchesRunning++; //Take into account controller on node 0
-  } 
-
-  //Check if the number of patches is less than the number of nodes
-  if (numNodes() > patchMap->numPatches())
-	numNodesRunning=patchMap->numPatches();
-  else 
-  	numNodesRunning = numNodes();
-
   // Start Controller (aka scalar Sequencer) on Pe(0)
   if ( ! CkMyPe() ) {
     state->runController();

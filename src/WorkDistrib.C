@@ -595,7 +595,7 @@ void WorkDistrib::assignPatchesBitReversal()
 
   int ncpus = node->numNodes();
   int npatches = patchMap->numPatches();
-  if ( ncpus < npatches )
+  if ( ncpus <= npatches )
     NAMD_bug("WorkDistrib::assignPatchesBitReversal called improperly");
 
   // find next highest power of two
@@ -604,8 +604,9 @@ void WorkDistrib::assignPatchesBitReversal()
 
   // build bit reversal sequence
   SortableResizeArray<int> seq(ncpus);
-  int i = 0;
-  for ( int icpu=0; icpu<ncpus; ++icpu ) {
+  // avoid using node 0 (reverse of 0 is 0 so start at 1)
+  int i = 1;
+  for ( int icpu=0; icpu<(ncpus-1); ++icpu ) {
     int ri;
     for ( ri = ncpus; ri >= ncpus; ++i ) {
       ri = 0;
@@ -715,8 +716,16 @@ void WorkDistrib::assignPatchesRecursiveBisection()
 {
   PatchMap *patchMap = PatchMap::Object();
   int *assignedNode = new int[patchMap->numPatches()];
-  RecBisection recBisec(Node::Object()->numNodes(),PatchMap::Object());
+  int numNodes = Node::Object()->numNodes();
+  int usedNodes = numNodes;
+  if ( numNodes > 64 ) usedNodes -= 1;
+  RecBisection recBisec(usedNodes,PatchMap::Object());
   if ( recBisec.partition(assignedNode) ) {
+    if ( usedNodes != numNodes ) {
+      for ( int i=0; i<patchMap->numPatches(); ++i ) {
+        assignedNode[i] += 1;
+      }
+    }
     sortNodesAndAssign(assignedNode);
   } else {
     iout << iWARN 
@@ -830,13 +839,8 @@ void WorkDistrib::mapComputeHomePatches(ComputeType type)
   int numPatches = patchMap->numPatches();
   ComputeID *cid = new ComputeID[numNodes];
 
-  if (numNodes > numPatches) {
-    for ( int pid=0; pid<numPatches; ++pid ) {
-      int i = patchMap->node(pid);
-      cid[i]=computeMap->storeCompute(i,numPatches,type);
-    }
-  } else {
-    for(int i=0; i<numNodes; i++) {
+  for(int i=0; i<numNodes; i++) {
+    if ( patchMap->numPatchesOnNode(i) ) {
       cid[i]=computeMap->storeCompute(i,numPatches,type);
     }
   }

@@ -56,9 +56,7 @@ public:
     void reset(int s) {
 	if ( s == -10 ) NAMD_bug("seq == free in CollectionMaster");
         seq = s;
-        remaining = CkNumPes();
-	int npatches=(PatchMap::Object())->numPatches(); 
-	if (remaining > npatches) remaining=npatches; 
+        remaining = (PatchMap::Object())->numNodesWithPatches(); 
 	data.resize(0);
 	fdata.resize(0);
     }
