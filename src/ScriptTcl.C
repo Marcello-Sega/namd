@@ -156,7 +156,7 @@ int ScriptTcl::Tcl_config(ClientData clientData,
     }
 
     if (!namestart || !nameend || !datastart || !dataend) {
-      free(buf);
+      Tcl_Free(buf);
       Tcl_SetResult(interp,"error parsing config file",TCL_VOLATILE);
       return TCL_ERROR;
     }
@@ -165,7 +165,7 @@ int ScriptTcl::Tcl_config(ClientData clientData,
   script->config->add_element( namestart, nameend - namestart + 1,
                                datastart, dataend - datastart + 1 );
 
-  free(buf);
+  Tcl_Free(buf);
   return TCL_OK;
 }
 
@@ -291,10 +291,10 @@ int ScriptTcl::Tcl_move(ClientData clientData,
        (Tcl_GetDouble(interp, fstring[1],&y) != TCL_OK) ||
        (Tcl_GetDouble(interp, fstring[2],&z) != TCL_OK) ) {
     Tcl_SetResult(interp,"third argument not a vector",TCL_VOLATILE);
-    free(fstring);
+    Tcl_Free((char*)fstring);
     return TCL_ERROR;
   }
-  free(fstring);
+  Tcl_Free((char*)fstring);
 
   SimParameters *simParams = Node::Object()->simParameters;
 
