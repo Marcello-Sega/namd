@@ -25,6 +25,7 @@ public:
   int proxyMgr;
   int computeMgr;
   int reductionMgr;
+  int collectionMgr;
   int node;
 };
 
