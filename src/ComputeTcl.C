@@ -21,7 +21,6 @@
 
 #ifdef NAMD_TCL
 #include <tcl.h>
-#include <tclExtend.h>
 #endif
 #include "TclCommands.h"
 
@@ -274,12 +273,7 @@ void ComputeTcl::initialize() {
   interp = Tcl_CreateInterp();
   if (Tcl_Init(interp) == TCL_ERROR) {
     CkPrintf("Tcl startup error: %\n", interp->result);
-    }
-  if (Tclx_Init(interp) == TCL_ERROR) {
-    CkPrintf("Tcl-X startup error: %s\n", interp->result);
-    } else {
-      Tcl_StaticPackage(interp, "Tclx", Tclx_Init, Tclx_SafeInit);
-    }
+  }
   Tcl_CreateCommand(interp, "print", Tcl_print,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "atomid", Tcl_atomid,
@@ -378,12 +372,15 @@ void ComputeTcl::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1999/05/11 23:56:29 $
+ *	$Revision: 1.11 $	$Date: 1999/06/28 19:49:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeTcl.C,v $
+ * Revision 1.11  1999/06/28 19:49:57  jim
+ * Eliminated tclx.
+ *
  * Revision 1.10  1999/05/11 23:56:29  brunner
  * Changes for new charm version
  *

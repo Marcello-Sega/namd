@@ -11,7 +11,7 @@
  *
  *	$RCSfile: TclCommands.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1998/04/15 22:13:53 $
+ *	$Revision: 1.3 $	$Date: 1999/06/28 19:49:58 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,7 +24,6 @@
 #ifdef NAMD_TCL
 
 #include <tcl.h>
-#include <tclExtend.h>
 
 //forward definition
 class Matrix4;
