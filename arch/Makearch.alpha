@@ -9,8 +9,8 @@
 ####
 CC = cc
 CXX = cxx
-CXXOPTS = -O -DDONT_DECLARE_NEW
-COPTS = -O
+CXXOPTS = -O4 -arch host -tune host -fp_reorder -nocleanup -DDONT_DECLARE_NEW
+COPTS = -O4 -arch host -tune host -fp_reorder
 CXXTHREADOPTS = $(CXXOPTS)
 
 #####
