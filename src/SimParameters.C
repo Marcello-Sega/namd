@@ -119,6 +119,7 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_BOOL("useGroupPressure",useGroupPressure)
   SCRIPT_PARSE_BOOL("useFlexibleCell",useFlexibleCell)
   SCRIPT_PARSE_BOOL("useConstantArea",useConstantArea)
+  SCRIPT_PARSE_BOOL("useConstantRatio",useConstantRatio)
   SCRIPT_PARSE_BOOL("LangevinPiston",langevinPistonOn)
   SCRIPT_PARSE_FLOAT("LangevinPistonTarget",langevinPistonTarget)
   SCRIPT_PARSE_FLOAT("LangevinPistonPeriod",langevinPistonPeriod)
@@ -690,6 +691,11 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    opts.optionalB("main", "useFlexibleCell",
       "Use anisotropic cell fluctuation for pressure control?",
       &useFlexibleCell, FALSE);
+
+   ////  Constant dimension ratio in X-Y plane
+   opts.optionalB("main", "useConstantRatio",
+      "Use constant X-Y ratio for pressure control?",
+      &useConstantRatio, FALSE);
 
    ////  Constant area and normal pressure conditions
    opts.optionalB("main", "useConstantArea",
@@ -2776,6 +2782,12 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    if (excludeFromPressure) {
      iout << iINFO << "EXCLUDE FROM PRESSURE ACTIVE\n";
    }
+   if (useConstantArea && useConstantRatio) {
+     NAMD_die("useConstantArea and useConstantRatio are mutually exclusive.\n");
+   }
+   if (useConstantRatio && !useFlexibleCell) {
+     NAMD_die("useConstantRatio requires useFlexibleCell.\n");
+   }
    if (useConstantArea && surfaceTensionTarget) {
      NAMD_die("surfaceTensionTarget and useConstantArea are mutually exclusive.\n");
    }
@@ -2830,14 +2842,19 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
         << langevinPistonTemp << " K\n";
      iout << iINFO << "      PRESSURE CONTROL IS "
 	<< (useGroupPressure?"GROUP":"ATOM") << "-BASED\n";
-     iout << iINFO << "      CELL FLUCTUATION IS "
-	    << (useFlexibleCell?"AN":"") << "ISOTROPIC\n";
-     if (useConstantArea) 
-       iout << iINFO << "      CONSTANT AREA PRESSURE CONTROL ACTIVE\n";
      iout << iINFO << "   INITIAL STRAIN RATE IS "
         << strainRate << "\n";
      iout << endi;
      langevinPistonTarget /= PRESSUREFACTOR;
+   }
+
+   if (berendsenPressureOn || langevinPistonOn) {
+     iout << iINFO << "      CELL FLUCTUATION IS "
+	    << (useFlexibleCell?"AN":"") << "ISOTROPIC\n";
+     if (useConstantRatio) 
+       iout << iINFO << "    SHAPE OF CELL IS CONSTRAINED IN X-Y PLANE\n";
+     if (useConstantArea) 
+       iout << iINFO << "    CONSTANT AREA PRESSURE CONTROL ACTIVE\n";
    }
 
    if (surfaceTensionTarget != 0)

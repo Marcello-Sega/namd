@@ -62,16 +62,23 @@ Controller::Controller(NamdState *s) :
     random->split(0,PatchMap::Object()->numPatches()+1);
 
     rescaleVelocities_sumTemps = 0;  rescaleVelocities_numTemps = 0;
+    berendsenPressure_avg = 0; berendsenPressure_count = 0;
     // strainRate tensor is symmetric to avoid rotation
     langevinPiston_strainRate =
 	Tensor::symmetric(simParams->strainRate,simParams->strainRate2);
     if ( ! simParams->useFlexibleCell ) {
       BigReal avg = trace(langevinPiston_strainRate) / 3.;
       langevinPiston_strainRate = Tensor::identity(avg);
+    } else if ( simParams->useConstantRatio ) {
+#define AVGXY(T) T.xy = T.yx = 0; T.xx = T.yy = 0.5 * ( T.xx + T.yy );\
+		 T.xz = T.zx = T.yz = T.zy = 0.5 * ( T.xz + T.yz );
+      AVGXY(langevinPiston_strainRate);
+#undef AVGXY
     }
     pressure_avg = 0;
     groupPressure_avg = 0;
     pressure_avg_count = 0;
+    checkpoint_stored = 0;
 }
 
 Controller::~Controller(void)
@@ -117,14 +124,21 @@ void Controller::algorithm(void)
       case SCRIPT_CHECKPOINT:
         iout << "CHECKPOINTING POSITIONS AT STEP " << simParams->firstTimestep
           << "\n" << endi;
+        checkpoint_stored = 1;
         checkpoint_lattice = state->lattice;
         checkpoint_langevinPiston_strainRate = langevinPiston_strainRate;
+        checkpoint_berendsenPressure_avg = berendsenPressure_avg;
+        checkpoint_berendsenPressure_count = berendsenPressure_count;
         break;
       case SCRIPT_REVERT:
         iout << "REVERTING POSITIONS AT STEP " << simParams->firstTimestep
           << "\n" << endi;
+        if ( ! checkpoint_stored )
+          NAMD_die("Unable to revert, checkpoint was never called!");
         state->lattice = checkpoint_lattice;
         langevinPiston_strainRate = checkpoint_langevinPiston_strainRate;
+        berendsenPressure_avg = checkpoint_berendsenPressure_avg;
+        berendsenPressure_count = checkpoint_berendsenPressure_count;
         break;
       case SCRIPT_MINIMIZE:
         minimize();
@@ -348,30 +362,38 @@ void Controller::minimize() {
 
 void Controller::berendsenPressure(int step)
 {
-  const int freq = simParams->berendsenPressureFreq;
-  if ( simParams->berendsenPressureOn && !((step-1)%freq) )
-  {
-    BigReal scalarPressure = trace(controlPressure) / 3.;
-    BigReal factor = scalarPressure - simParams->berendsenPressureTarget;
-    factor *= simParams->berendsenPressureCompressibility;
-    factor *= ( simParams->dt * freq );
-    factor /= simParams->berendsenPressureRelaxationTime;
-    factor += 1.0;
-    if ( factor < 0.9 ) {
+  if ( simParams->berendsenPressureOn ) {
+   berendsenPressure_count += 1;
+   berendsenPressure_avg += controlPressure;
+   const int freq = simParams->berendsenPressureFreq;
+   if ( ! (berendsenPressure_count % freq) ) {
+    Tensor factor = berendsenPressure_avg / berendsenPressure_count;
+    berendsenPressure_avg = 0;
+    berendsenPressure_count = 0;
+    // We only use on-diagonal terms (for now)
+    factor = Tensor::diagonal(diagonal(factor));
+    factor -= Tensor::identity(simParams->berendsenPressureTarget);
+    factor *= ( ( simParams->berendsenPressureCompressibility / 3.0 ) *
+       simParams->dt * freq / simParams->berendsenPressureRelaxationTime );
+    factor += Tensor::identity(1.0);
+#define LIMIT_SCALING(VAR,MIN,MAX,FLAG) {\
+         if ( VAR < (MIN) ) { VAR = (MIN); FLAG = 1; } \
+         if ( VAR > (MAX) ) { VAR = (MAX); FLAG = 1; } }
+    int limited = 0;
+    LIMIT_SCALING(factor.xx,0.97,1.03,limited)
+    LIMIT_SCALING(factor.yy,0.97,1.03,limited)
+    LIMIT_SCALING(factor.zz,0.97,1.03,limited)
+#undef LIMIT_SCALING
+    if ( limited ) {
       iout << iERROR << "Step " << step <<
-	" volume rescaling factor limited to " <<
-	0.9 << " from " << factor << "\n" << endi;
-      factor = 0.9;
+	" cell rescaling factor limited." << endi;
     }
-    if ( factor > 1.1 ) {
-      iout << iERROR << "Step " << step <<
-	" volume rescaling factor limited to " <<
-	1.1 << " from " << factor << "\n" << endi;
-      factor = 1.1;
-    }
-    factor = cbrt(factor);
-    broadcast->positionRescaleFactor.publish(step,Tensor::identity()*factor);
-    state->lattice.rescale(Tensor::identity()*factor);
+    broadcast->positionRescaleFactor.publish(step,factor);
+    state->lattice.rescale(factor);
+   }
+  } else {
+    berendsenPressure_avg = 0;
+    berendsenPressure_count = 0;
   }
 }
 
@@ -397,11 +419,19 @@ void Controller::langevinPiston1(int step)
       BigReal f1 = exp( -0.5 * dt_long * gamma );
       BigReal f2 = sqrt( ( 1. - f1*f1 ) * kT / mass );
       strainRate *= f1;
-      if ( simParams->useFlexibleCell )
+      if ( simParams->useFlexibleCell ) {
         // We only use on-diagonal terms (for now)
-	strainRate += f2 * Tensor::diagonal(random->gaussian_vector());
-      else
+        if ( simParams->useConstantRatio ) {
+	  BigReal r = f2 * random->gaussian();
+	  strainRate.xx += r;
+	  strainRate.yy += r;
+	  strainRate.zz += f2 * random->gaussian();
+        } else {
+	  strainRate += f2 * Tensor::diagonal(random->gaussian_vector());
+        }
+      } else {
 	strainRate += f2 * Tensor::identity(random->gaussian());
+      }
 #ifdef DEBUG_PRESSURE
       iout << iINFO << "applying langevin, strain rate: " << strainRate << "\n";
 #endif
@@ -426,6 +456,8 @@ void Controller::langevinPiston1(int step)
     {
       // We only use on-diagonal terms (for now)
       Tensor factor;
+#if 0
+XXX THIS IS JUST FOR TESTING!!!  -JCP
       if ( !simParams->useConstantArea ) {
         factor.xx = exp( dt_long * strainRate.xx );
         factor.yy = exp( dt_long * strainRate.yy );
@@ -433,6 +465,15 @@ void Controller::langevinPiston1(int step)
         factor.xx = factor.yy = 1;
       }
       factor.zz = exp( dt_long * strainRate.zz );
+#else
+      if ( !simParams->useConstantArea ) {
+        factor.xx = 1. + dt_long * strainRate.xx;
+        factor.yy = 1. + dt_long * strainRate.yy;
+      } else {
+        factor.xx = factor.yy = 1;
+      }
+      factor.zz = 1. + dt_long * strainRate.zz;
+#endif
       broadcast->positionRescaleFactor.publish(step,factor);
       state->lattice.rescale(factor);
 #ifdef DEBUG_PRESSURE
@@ -524,11 +565,19 @@ void Controller::langevinPiston2(int step)
       BigReal f1 = exp( -0.5 * dt_long * gamma );
       BigReal f2 = sqrt( ( 1. - f1*f1 ) * kT / mass );
       strainRate *= f1;
-      if ( simParams->useFlexibleCell )
+      if ( simParams->useFlexibleCell ) {
         // We only use on-diagonal terms (for now)
-	strainRate += f2 * Tensor::diagonal(random->gaussian_vector());
-      else
+        if ( simParams->useConstantRatio ) {
+	  BigReal r = f2 * random->gaussian();
+	  strainRate.xx += r;
+	  strainRate.yy += r;
+	  strainRate.zz += f2 * random->gaussian();
+        } else {
+	  strainRate += f2 * Tensor::diagonal(random->gaussian_vector());
+        }
+      } else {
 	strainRate += f2 * Tensor::identity(random->gaussian());
+      }
 #ifdef DEBUG_PRESSURE
       iout << iINFO << "applying langevin, strain rate: " << strainRate << "\n";
 #endif
@@ -753,10 +802,24 @@ void Controller::receivePressure(int step, int minimize)
 
     if ( simParameters->useFlexibleCell ) {
       // use symmetric pressure to control rotation
-      controlPressure_normal = symmetric(controlPressure_normal);
-      controlPressure_nbond = symmetric(controlPressure_nbond);
-      controlPressure_slow = symmetric(controlPressure_slow);
-      controlPressure = symmetric(controlPressure);
+      // controlPressure_normal = symmetric(controlPressure_normal);
+      // controlPressure_nbond = symmetric(controlPressure_nbond);
+      // controlPressure_slow = symmetric(controlPressure_slow);
+      // controlPressure = symmetric(controlPressure);
+      // only use on-diagonal components for now
+      controlPressure_normal = Tensor::diagonal(diagonal(controlPressure_normal));
+      controlPressure_nbond = Tensor::diagonal(diagonal(controlPressure_nbond));
+      controlPressure_slow = Tensor::diagonal(diagonal(controlPressure_slow));
+      controlPressure = Tensor::diagonal(diagonal(controlPressure));
+      if ( simParameters->useConstantRatio ) {
+#define AVGXY(T) T.xy = T.yx = 0; T.xx = T.yy = 0.5 * ( T.xx + T.yy );\
+		 T.xz = T.zx = T.yz = T.zy = 0.5 * ( T.xz + T.yz );
+        AVGXY(controlPressure_normal);
+        AVGXY(controlPressure_nbond);
+        AVGXY(controlPressure_slow);
+        AVGXY(controlPressure);
+#undef AVGXY
+      }
     } else {
       controlPressure_normal =
 		Tensor::identity(trace(controlPressure_normal)/3.);

@@ -264,6 +264,7 @@ public:
  
 	Bool useFlexibleCell;		//  Use anisotropic cell fluctuations
 	Bool useConstantArea;		//  x,y dimensions fixed.
+	Bool useConstantRatio;		//  x,y ratio fixed.
 
 	Bool berendsenPressureOn;	//  Berendsen pressure bath
 	BigReal berendsenPressureTarget;

@@ -89,6 +89,8 @@ protected:
     void reassignVelocities(int);
     void tcoupleVelocities(int);
     void berendsenPressure(int);
+      Tensor berendsenPressure_avg;
+      int berendsenPressure_count;
     void langevinPiston1(int);
     void langevinPiston2(int);
       Tensor langevinPiston_strainRate;
@@ -118,8 +120,11 @@ protected:
 //fepe
 
     // for checkpoint/revert
+    int checkpoint_stored;
     Lattice checkpoint_lattice;
     Tensor checkpoint_langevinPiston_strainRate;
+    Tensor checkpoint_berendsenPressure_avg;
+    int checkpoint_berendsenPressure_count;
 
 private:
     CthThread thread;

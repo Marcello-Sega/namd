@@ -64,6 +64,8 @@ protected:
     void reinitVelocities(void);
     void tcoupleVelocities(BigReal,int);
     void berendsenPressure(int);
+      int berendsenPressure_count;
+      int checkpoint_berendsenPressure_count;
     void langevinPiston(int);
       int slowFreq;
     void langevinVelocities(BigReal);

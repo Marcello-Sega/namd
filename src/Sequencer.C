@@ -38,6 +38,7 @@ Sequencer::Sequencer(HomePatch *p) :
     random->split(patch->getPatchID()+1,PatchMap::Object()->numPatches()+1);
 
     rescaleVelocities_numTemps = 0;
+    berendsenPressure_count = 0;
 }
 
 Sequencer::~Sequencer(void)
@@ -83,9 +84,11 @@ void Sequencer::algorithm(void)
 	break;
       case SCRIPT_CHECKPOINT:
         patch->checkpoint();
+        checkpoint_berendsenPressure_count = berendsenPressure_count;
 	break;
       case SCRIPT_REVERT:
         patch->revert();
+        berendsenPressure_count = checkpoint_berendsenPressure_count;
 	break;
       case SCRIPT_MINIMIZE:
 	minimize();
@@ -444,9 +447,11 @@ void Sequencer::langevinVelocitiesBBK2(BigReal dt_fs)
 
 void Sequencer::berendsenPressure(int step)
 {
+  if ( simParams->berendsenPressureOn ) {
+  berendsenPressure_count += 1;
   const int freq = simParams->berendsenPressureFreq;
-  if ( simParams->berendsenPressureOn && !((step-1)%freq) )
-  {
+  if ( ! (berendsenPressure_count % freq ) ) {
+   berendsenPressure_count = 0;
    FullAtom *a = patch->atom.begin();
    int numAtoms = patch->numAtoms;
    Tensor factor = broadcast->positionRescaleFactor.get(step);
@@ -483,6 +488,9 @@ void Sequencer::berendsenPressure(int step)
       patch->lattice.rescale(a[i].position,factor);
     }
    }
+  }
+  } else {
+    berendsenPressure_count = 0;
   }
 }
 
