@@ -15,7 +15,8 @@
 #include "PDB.h"
 #include "Molecule.h"
 
-extern void read_binary_coors(char *fname, PDB *pdbobj);
-extern void vec_rotation_matrix(BigReal angle, Vector v, BigReal m[]);
-extern Vector mat_multiply_vec(const Vector &v, BigReal m[]);
+void read_binary_coors(char *fname, PDB *pdbobj);
+void read_binary_file(const char *fname, Vector *vels, int n);
+void vec_rotation_matrix(BigReal angle, Vector v, BigReal m[]);
+Vector mat_multiply_vec(const Vector &v, BigReal m[]);
 

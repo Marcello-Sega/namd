@@ -12,6 +12,7 @@
 
 #include "common.h"
 #include "NamdTypes.h"
+#include "NamdOneTools.h"
 #include "Vector.h"
 #include "PDB.h"
 #include "Molecule.h"
@@ -33,47 +34,95 @@ extern "C" long int lrand48(void);
 /************************************************************************/
 
 void read_binary_coors(char *fname, PDB *pdbobj) {
-  int32 n;			//  Number of atoms from file
   Vector *newcoords;	//  Array of vectors to hold coordinates from file
-  FILE *fp;		//  File descriptor
-
-  //  Open the file and die if the open fails
-  if ( (fp = Fopen(fname, "r")) == NULL)
-  {
-      char errmsg[256];
-      sprintf(errmsg, "Unable to open binary coordinate file %s", fname);
-      NAMD_die(errmsg);
-  }
-
-  //  read the number of coordinates in this file
-  fread(&n, sizeof(int32), 1, fp);
-
-  //  Die if this doesn't match the number in the system
-  if (n != pdbobj->num_atoms()) {
-      NAMD_die("Number of coordinates in binary coordinate file incorrect");
-  }
 
   //  Allocate an array to hold the new coordinates
-  newcoords = new Vector[n];
-
-  if (newcoords == NULL) {
-    NAMD_die("Memory alloc of newcoords in read_binary_coors() failed");
-  }
+  newcoords = new Vector[pdbobj->num_atoms()];
 
   //  Read the coordinate from the file
-  if (fread(newcoords, sizeof(Vector), n, fp) != (size_t)n)
-  {
-    NAMD_die("Error reading binary coordinate file");
-  }
-
+  read_binary_file(fname,newcoords,pdbobj->num_atoms());
 
   //  Set the coordinates in the PDB object to the new coordinates
   pdbobj->set_all_positions(newcoords);
 
   //  Clean up
-  Fclose(fp);
   delete [] newcoords;
+
 } // END OF FUNCTION read_binary_coors()
+
+
+void read_binary_file(const char *fname, Vector *data, int n)
+{
+  int32 filen;          //  Number of atoms read from file
+  FILE *fp;             //  File descriptor
+  int needToFlip = 0;
+
+  //  Open the file and die if the open fails
+  if ( (fp = Fopen(fname, "r")) == NULL)
+  {
+    char errmsg[256];
+    sprintf(errmsg, "Unable to open binary file %s", fname);
+    NAMD_die(errmsg);
+  }
+
+  //  read the number of coordinates in this file
+  if (fread(&filen, sizeof(int32), 1, fp) != (size_t)1)
+  {
+    char errmsg[256];
+    sprintf(errmsg, "Error reading binary file %s", fname);
+    NAMD_die(errmsg);
+  }
+
+  //  read the number of coordinates in this file
+  //  check for palindromic number of atoms
+  char lenbuf[4];
+  bcopy((const char *)&filen, lenbuf, 4);
+  char tmpc;
+  tmpc = lenbuf[0]; lenbuf[0] = lenbuf[3]; lenbuf[3] = tmpc;
+  tmpc = lenbuf[1]; lenbuf[1] = lenbuf[2]; lenbuf[2] = tmpc;
+  if ( ! bcmp((const char *)&filen, lenbuf, 4) ) {
+    iout << iWARN << "Number of atoms in binary file " << fname <<
+		" is palindromic, assuming same endian.\n" << endi;
+  }
+
+  //  Die if this doesn't match the number in our system
+  if (filen != n)
+  {
+    needToFlip = 1;
+    bcopy(lenbuf, (char *)&filen, 4);
+  }
+  if (filen != n)
+  {
+    char errmsg[256];
+    sprintf(errmsg, "Incorrect atom count in binary file %s", fname);
+    NAMD_die(errmsg);
+  }
+
+  if (fread(data, sizeof(Vector), n, fp) != (size_t)n)
+  {
+    char errmsg[256];
+    sprintf(errmsg, "Error reading binary file %s", fname);
+    NAMD_die(errmsg);
+  }
+
+  Fclose(fp);
+
+  if (needToFlip) { 
+    iout << iWARN << "Converting binary file " << fname << "\n" << endi;
+    int i;
+    char *cdata = (char *) data;
+    for ( i=0; i<3*n; ++i, cdata+=8 ) {
+      char tmp0, tmp1, tmp2, tmp3;
+      tmp0 = cdata[0]; tmp1 = cdata[1];
+      tmp2 = cdata[2]; tmp3 = cdata[3];
+      cdata[0] = cdata[7]; cdata[1] = cdata[6];
+      cdata[2] = cdata[5]; cdata[3] = cdata[4];
+      cdata[7] = tmp0; cdata[6] = tmp1;
+      cdata[5] = tmp2; cdata[4] = tmp3;
+    }
+  }
+
+}
 
 
 /* 

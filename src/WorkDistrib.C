@@ -973,33 +973,7 @@ void WorkDistrib::velocities_from_PDB(char *filename,
 
 void WorkDistrib::velocities_from_binfile(char *fname, Vector *vels, int n)
 {
-  int32 filen;		//  Number of atoms read from file
-  FILE *fp;		//  File descriptor
-
-  //  Open the file and die if the open fails
-  if ( (fp = Fopen(fname, "r")) == NULL)
-  {
-    char errmsg[256];
-
-    sprintf(errmsg, "Unable to open binary velocity file %s", fname);
-    NAMD_die(errmsg);
-  }
-
-  //  read the number of coordinates in this file
-  fread(&filen, sizeof(int32), 1, fp);
-
-  //  Die if this doesn't match the number in our system
-  if (filen != n)
-  {
-    NAMD_die("Number of coordinates in binary velocity file incorrect");
-  }
-
-  if (fread(vels, sizeof(Vector), n, fp) != (size_t)n)
-  {
-    NAMD_die("Error reading binary velocity file");
-  }
-
-  Fclose(fp);
+  read_binary_file(fname,vels,n);
 }
 //               END OF FUNCTION velocities_from_binfile
 
