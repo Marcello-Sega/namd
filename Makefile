@@ -107,8 +107,6 @@ OBJS = \
 	$(DSTDIR)/PDB.o \
 	$(DSTDIR)/PDBData.o \
 	$(DSTDIR)/PmeBase.o \
-	$(DSTDIR)/PmeCoulomb.o \
-	$(DSTDIR)/PmeFFT.o \
 	$(DSTDIR)/PmeKSpace.o \
 	$(DSTDIR)/PmeRealSpace.o \
 	$(DSTDIR)/ProcessorPrivate.o \
@@ -165,7 +163,7 @@ CHARMXI = $(CHARM)/bin/charmc
 INCLUDE = $(CHARM)/include
 
 # Libraries we may have changed
-LIBS = $(DPMTALIBS) $(DPMELIBS) fftw/libfftw_ampi.a
+LIBS = $(DPMTALIBS) $(DPMELIBS)
 
 # CXX is platform dependent
 CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) -Ifftw $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXOPTS) $(RELEASE)
@@ -182,11 +180,10 @@ all:	$(BINARIES)
 namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(CHARMC) -verbose -ld++-option \
 	"-I$(INCLUDE) -I$(INCDIR) -I$(SRCDIR) $(CXXOPTS)" \
-	-language ampi \
+	-language charm++ \
 	-o namd2 $(OBJS) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
-	-Lfftw -lfftw_ampi \
 	$(TCLLIB) \
 	$(FFTLIB)
 
@@ -212,22 +209,20 @@ loaddcd:	$(SRCDIR)/loaddcd.c
 projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(CHARMC) -verbose -ld++-option \
 	"-I$(INCLUDE) -I$(INCDIR) -I$(SRCDIR) $(CXXOPTS)" \
-	-language ampi -tracemode projections \
+	-language charm++ -tracemode projections \
 	-o namd2 $(OBJS) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
-	-Lfftw -lfftw_ampi \
 	$(TCLLIB) \
 	$(FFTLIB)
 
 summary:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(CHARMC) -verbose -ld++-option \
 	"-I$(INCLUDE) -I$(INCDIR) -I$(SRCDIR) $(CXXOPTS)" \
-	-language ampi -tracemode summary \
+	-language charm++ -tracemode summary \
 	-o namd2 $(OBJS) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
-	-Lfftw -lfftw_ampi \
 	$(TCLLIB) \
 	$(FFTLIB)
 
@@ -238,9 +233,6 @@ $(DPMTADIR)/src/libdpmta2.a:
 
 $(DPMEDIR)/libdpme.a:
 	cd $(DPMEDIR) ; $(MAKE) ; cd ..
-
-fftw/libfftw_ampi.a:
-	cd fftw ; $(MAKE) ; cd ..
 
 # Unix commands
 

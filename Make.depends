@@ -1484,8 +1484,6 @@ obj/ComputePme.o: \
 	src/ComputeMap.h \
 	inc/WorkDistrib.decl.h \
 	src/varsizemsg.h \
-	src/PmeCoulomb.h \
-	src/PmeFFT.h \
 	inc/ComputePmeMgr.def.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputePme.o -c src/ComputePme.C
 obj/ComputeRestraints.o: \
@@ -2576,28 +2574,6 @@ obj/PmeBase.o: \
 	src/PmeBase.C \
 	src/PmeBase.h
 	$(CXX) $(CXXFLAGS) -o obj/PmeBase.o -c src/PmeBase.C
-obj/PmeCoulomb.o: \
-	src/PmeCoulomb.C \
-	src/PmeCoulomb.h \
-	src/PmeBase.h \
-	src/PmeFFT.h \
-	src/PmeRealSpace.h \
-	src/Vector.h \
-	src/common.h \
-	src/PmeKSpace.h \
-	src/Lattice.h \
-	src/NamdTypes.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
-	src/Tensor.h
-	$(CXX) $(CXXFLAGS) -o obj/PmeCoulomb.o -c src/PmeCoulomb.C
-obj/PmeFFT.o: \
-	src/PmeFFT.C \
-	src/PmeFFT.h \
-	src/common.h \
-	src/InfoStream.h \
-	src/pub3dfft.h
-	$(CXX) $(CXXFLAGS) -o obj/PmeFFT.o -c src/PmeFFT.C
 obj/PmeKSpace.o: \
 	src/PmeKSpace.C \
 	src/PmeKSpace.h \

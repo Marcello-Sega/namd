@@ -30,8 +30,6 @@
 #include "WorkDistrib.h"
 #include "varsizemsg.h"
 
-#include "PmeCoulomb.h"
-
 #ifndef SQRT_PI
 #define SQRT_PI 1.7724538509055160273 /* mathematica 15 digits*/
 #endif
