@@ -77,6 +77,7 @@ void ReadInput(char* Str, ARestraintManager& RMgr,
   // read from Str until can't read anymore
   ToLower(Str);
   CheckParentheses(Str);
+  Str += ReadWhite(Str);
   while (OldStr != Str) {
     OldStr = Str;
     // add restraints to restraint manager
@@ -1521,6 +1522,9 @@ void ToLower(char* Str) {
  * REVISION HISTORY:
  *
  * $Log: FreeEnergyParse.C,v $
+ * Revision 1.5  1999/04/06 20:29:37  hurwitz
+ * read white-space at start of restraints file
+ *
  * Revision 1.4  1999/03/17 17:59:24  jim
  * Eliminated compiler warnings and errors.
  *
