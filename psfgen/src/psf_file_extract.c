@@ -1,5 +1,5 @@
 #include <stdlib.h>
-
+#include <string.h>
 #include "psf_file.h"
 #include "psf_file_extract.h"
 #include "topo_mol_struct.h"
@@ -35,13 +35,11 @@ static int extract_bonds(FILE *file, topo_mol *mol, int natoms,
   /* Build bonds */
   nbonds = psf_start_bonds(file);
   if (nbonds < 0) {
-    printf("Couldn't find start of bonds section");
     return -1; 
   }
   bonds = (int *)malloc(2*nbonds*sizeof(int));
 
   if (psf_get_bonds(file, nbonds, bonds)) {
-    printf("Error reading bonds!\n");
     free(bonds);
     return -1;
   }
@@ -54,7 +52,6 @@ static int extract_bonds(FILE *file, topo_mol *mol, int natoms,
     ind1 = bonds[2*i]-1; 
     ind2 = bonds[2*i+1]-1;
     if (ind1 < 0 || ind2 < 0 || ind1 >= natoms || ind2 >= natoms) {
-      printf("Bad bond indices: %d %d\n", ind1, ind2);
       /* Bad indices, abort now */
       free(bonds);
       return -1;
@@ -258,15 +255,18 @@ static topo_mol_residue_t *get_residue(topo_mol_segment_t *seg,
 }
 
 
-int psf_file_extract(topo_mol *mol, FILE *file, 
-                                void (*print_msg)(const char *)) {
+int psf_file_extract(topo_mol *mol, FILE *file, void *v,
+                                void (*print_msg)(void *, const char *)) {
 
   int i, natoms;
   psfatom *atomlist;
   topo_mol_atom_t **molatomlist;
 
   natoms = psf_start_atoms(file);
-  if (natoms < 0) return -1;
+  if (natoms < 0) {
+    print_msg(v,"ERROR: Unable to read psf file");
+    return -1;
+  }
  
   atomlist = (psfatom *)malloc(natoms * sizeof(psfatom));
   molatomlist = (topo_mol_atom_t **)malloc(natoms * sizeof(topo_mol_atom_t *));
@@ -277,7 +277,7 @@ int psf_file_extract(topo_mol *mol, FILE *file,
     if (psf_get_atom(file, atom->name,atom->atype,atom->resname, atom->segname,
                      atom->resid, &atom->charge, &atom->mass)
         < 0) {
-      print_msg("error reading atoms");
+      print_msg(v,"error reading atoms");
       return -1;
     }
   }
@@ -289,18 +289,24 @@ int psf_file_extract(topo_mol *mol, FILE *file,
     topo_mol_atom_t *atomtmp;
     int firstatom, j;
     const char *resid, *segname;
-    seg = get_segment(mol, atomlist[i].segname);
-    if (!seg) { 
-      print_msg("ERROR: unable to get segment!");
-      break;
-    }
-    res = get_residue(seg, atomlist[i].resid);
-    if (!res) {
-      print_msg("Unable to add residue!");
-      break;
-    }
+
     resid = atomlist[i].resid;
     segname = atomlist[i].segname;
+    seg = get_segment(mol, segname);
+    if (!seg) { 
+      print_msg(v,"ERROR: unable to get segment!");
+      break;
+    }
+    res = get_residue(seg, resid);
+    if (!res) {
+      char *buf;
+      int len = strlen(resid) + strlen(segname);
+      buf = (char *)malloc((30 + len)*sizeof(char));
+      sprintf(buf, "Unable to add residue %s:%s", segname, resid);
+      print_msg(v,buf);
+      free(buf);
+      break;
+    }
     strcpy(res->name, atomlist[i].resname);
     res->atoms = 0;
     firstatom = i;
@@ -348,28 +354,28 @@ int psf_file_extract(topo_mol *mol, FILE *file,
   }
     
   if (extract_bonds(file, mol, natoms, molatomlist)) {
-    print_msg("Error processing bonds");
+    print_msg(v,"Error processing bonds");
     free(atomlist);
     free(molatomlist);
     return -1;
   }
  
   if (extract_angles(file, mol, natoms, molatomlist)) {
-    print_msg("Error processing angles");
+    print_msg(v,"Error processing angles");
     free(atomlist);
     free(molatomlist);
     return -1;
   }
 
   if (extract_dihedrals(file, mol, natoms, molatomlist)) {
-    print_msg("Error processing dihedrals");
+    print_msg(v,"Error processing dihedrals");
     free(atomlist);
     free(molatomlist);
     return -1;
   }
 
   if (extract_impropers(file, mol, natoms, molatomlist)) {
-    print_msg("Error processing impropers");
+    print_msg(v,"Error processing impropers");
     free(atomlist);
     free(molatomlist);
     return -1;

@@ -21,6 +21,7 @@ int charmm_get_tokens(char **tok, int toklen,
   char c2[2];
 
   ntok = 0;
+  fullline = 0; /* Make compiler happy */
   while ( ! ntok ) {
     s = fgets(sbuf, sbuflen, stream);
     if ( ! s ) return 0;  /* EOF */

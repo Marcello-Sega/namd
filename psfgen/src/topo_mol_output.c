@@ -1,10 +1,11 @@
 
+#include <stdlib.h>
 #include "topo_mol_output.h"
 #include "topo_mol_struct.h"
 #include "pdb_file.h"
 
-int topo_mol_write_pdb(topo_mol *mol, FILE *file,
-                                void (*print_msg)(const char *)) {
+int topo_mol_write_pdb(topo_mol *mol, FILE *file, void *v, 
+                                void (*print_msg)(void *, const char *)) {
 
   int iseg,nseg,ires,nres,atomid;
   double x,y,z,o,b;
@@ -18,10 +19,13 @@ int topo_mol_write_pdb(topo_mol *mol, FILE *file,
   nseg = hasharray_count(mol->segment_hash);
   for ( iseg=0; iseg<nseg; ++iseg ) {
     seg = mol->segment_array[iseg];
+    if (hasharray_index(mol->segment_hash, seg->segid) == HASHARRAY_FAIL) continue;
     nres = hasharray_count(seg->residue_hash);
     for ( ires=0; ires<nres; ++ires ) {
       res = &(seg->residue_array[ires]);
       for ( atom = res->atoms; atom; atom = atom->next ) {
+        /* Paranoid: make sure x,y,z,o are set. */
+        x = y = z = 0.0; o = -1.0;
         ++atomid;
         switch ( atom->xyz_state ) {
         case TOPO_MOL_XYZ_SET:
@@ -30,13 +34,17 @@ int topo_mol_write_pdb(topo_mol *mol, FILE *file,
         case TOPO_MOL_XYZ_GUESS:
           x = atom->x;  y = atom->y;  z = atom->z;  o = 0.0;
           break;
+        default:
+          print_msg(v,"ERROR: Internal error, atom has invalid state.");
+          print_msg(v,"ERROR: Treating as void.");
+          /* Yes, fall through */
         case TOPO_MOL_XYZ_VOID:
           x = y = z = 0.0;  o = -1.0;
           break;
         }
         b = 0.0;
         write_pdb_atom(file,atomid,atom->name,res->name,atoi(res->resid),
-		"",x,y,z,o,b,"",seg->segid);
+		"",(float)x,(float)y,(float)z,(float)o,(float)b,"",seg->segid);
       }
     }
   }
@@ -46,9 +54,10 @@ int topo_mol_write_pdb(topo_mol *mol, FILE *file,
   return 0;
 }
 
-int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt,
-                                void (*print_msg)(const char *)) {
+int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, void *v, 
+                                void (*print_msg)(void *, const char *)) {
 
+  char buf[128];
   int iseg,nseg,ires,nres,atomid;
   topo_mol_segment_t *seg;
   topo_mol_residue_t *res;
@@ -78,6 +87,7 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt,
   nseg = hasharray_count(mol->segment_hash);
   for ( iseg=0; iseg<nseg; ++iseg ) {
     seg = mol->segment_array[iseg];
+    if (hasharray_index(mol->segment_hash, seg->segid) == HASHARRAY_FAIL) continue;
     nres = hasharray_count(seg->residue_hash);
     for ( ires=0; ires<nres; ++ires ) {
       res = &(seg->residue_array[ires]);
@@ -110,15 +120,21 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt,
       }
     }
   }
-  printf("total of %d atoms\n",atomid);
-  printf("total of %d bonds\n",nbonds);
-  printf("total of %d angles\n",nangls);
-  printf("total of %d dihedrals\n",ndihes);
-  printf("total of %d impropers\n",nimprs);
+  sprintf(buf,"total of %d atoms",atomid);
+  print_msg(v,buf);
+  sprintf(buf,"total of %d bonds",nbonds);
+  print_msg(v,buf);
+  sprintf(buf,"total of %d angles",nangls);
+  print_msg(v,buf);
+  sprintf(buf,"total of %d dihedrals",ndihes);
+  print_msg(v,buf);
+  sprintf(buf,"total of %d impropers",nimprs);
+  print_msg(v,buf);
 
   fprintf(file,"%8d !NATOM\n",atomid);
   for ( iseg=0; iseg<nseg; ++iseg ) {
     seg = mol->segment_array[iseg];
+    if (hasharray_index(mol->segment_hash, seg->segid) == HASHARRAY_FAIL) continue;
     nres = hasharray_count(seg->residue_hash);
     for ( ires=0; ires<nres; ++ires ) {
       res = &(seg->residue_array[ires]);
@@ -139,6 +155,7 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt,
   numinline = 0;
   for ( iseg=0; iseg<nseg; ++iseg ) {
     seg = mol->segment_array[iseg];
+    if (hasharray_index(mol->segment_hash, seg->segid) == HASHARRAY_FAIL) continue;
     nres = hasharray_count(seg->residue_hash);
     for ( ires=0; ires<nres; ++ires ) {
       res = &(seg->residue_array[ires]);
@@ -160,6 +177,7 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt,
   numinline = 0;
   for ( iseg=0; iseg<nseg; ++iseg ) {
     seg = mol->segment_array[iseg];
+    if (hasharray_index(mol->segment_hash, seg->segid) == HASHARRAY_FAIL) continue;
     nres = hasharray_count(seg->residue_hash);
     for ( ires=0; ires<nres; ++ires ) {
       res = &(seg->residue_array[ires]);
@@ -182,6 +200,7 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt,
   numinline = 0;
   for ( iseg=0; iseg<nseg; ++iseg ) {
     seg = mol->segment_array[iseg];
+    if (hasharray_index(mol->segment_hash, seg->segid) == HASHARRAY_FAIL) continue;
     nres = hasharray_count(seg->residue_hash);
     for ( ires=0; ires<nres; ++ires ) {
       res = &(seg->residue_array[ires]);
@@ -205,6 +224,7 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt,
   numinline = 0;
   for ( iseg=0; iseg<nseg; ++iseg ) {
     seg = mol->segment_array[iseg];
+    if (hasharray_index(mol->segment_hash, seg->segid) == HASHARRAY_FAIL) continue;
     nres = hasharray_count(seg->residue_hash);
     for ( ires=0; ires<nres; ++ires ) {
       res = &(seg->residue_array[ires]);

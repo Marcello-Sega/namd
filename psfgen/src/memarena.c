@@ -17,7 +17,7 @@ struct memarena {
 
 memarena * memarena_create() {
   memarena * a;
-  if ( a = (memarena*) malloc(sizeof(memarena)) ) {
+  if ( (a = (memarena*) malloc(sizeof(memarena))) ) {
     a->stack = 0;
     a->newblocksize = 128;
     a->size = 0;

@@ -1,5 +1,6 @@
 
 #include <string.h>
+#include <stdio.h>
 #include "stringhash.h"
 #include "extract_alias.h"
 
@@ -46,7 +47,6 @@ const char * extract_alias_atom_check(stringhash *h,
 			const char *resname, const char *atomname) {
   char resatom[24];
   const char *realatom;
-  const char *realres;
   if ( ! h || ! resname || ! atomname ) return atomname;
   if ( strlen(resname) + strlen(atomname) < 20 ) {
     sprintf(resatom,"%s %s",resname,atomname);

@@ -27,7 +27,7 @@ MAIN_UG_FILE	= $(DOCDIR)/ug
 SRCFILES = namd_begindoc.tex namd_copyright.tex namd_macros.tex \
 namd_title.tex namd_version.tex ug.tex ug_add.tex ug_avail.tex ug_basic.tex \
 ug_intro.tex ug_io.tex ug_macros.tex ug_runit.tex ug_sample.tex ug_start.tex \
-ug_xplor.tex ug_fenergy.tex ug_psfgen.tex
+ug_xplor.tex ug_fenergy.tex ug_psfgen.tex psfgen_macros.tex
 
 PDFFIGS = figures/fmaOn.pdf figures/pairlistdist.pdf \
 figures/shifting.pdf figures/switching.pdf
@@ -79,8 +79,20 @@ namd_version.tex:
 	$(DELETE) namd_version.tex ; \
 	echo '\\newcommand{\\NAMDVER}' "{$(NAMD_VERSION)}" > namd_version.tex
 
+psfgen_macros.tex: ../psfgen/doc/ug_macros.tex
+	$(DELETE) psfgen_macros.tex ; \
+	grep PSFGEN ../psfgen/doc/ug_macros.tex > psfgen_macros.tex
+
+ug_psfgen.tex: ../psfgen/doc/ug_psfgen.tex
+	$(DELETE) ug_psfgen.tex ; \
+	sed -e "20,$$ s/\\subsection{/\\subsubsection{/" \
+	    -e "20,$$ s/\\section{/\\subsection{/" \
+	../psfgen/doc/ug_psfgen.tex > ug_psfgen.tex
+
 clean:
 	$(DELETE) namd_version.tex ; \
+	$(DELETE) psfgen_macros.tex ; \
+	$(DELETE) ug_psfgen.tex ; \
 	$(DELETE) $(DOCDIR)/ug.ps ; \
 	$(DELETE) $(DOCDIR)/ug.aux ; \
 	$(DELETE) $(DOCDIR)/ug.bbl ; \

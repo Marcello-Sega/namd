@@ -8,8 +8,8 @@ typedef struct topo_defs topo_defs;
 topo_defs * topo_defs_create();
 void topo_defs_destroy(topo_defs *defs);
 
-void topo_defs_error_handler(topo_defs *defs, void (*print_msg)(const char *));
-const char * topo_defs_errors(topo_defs *defs);
+void topo_defs_error_handler(topo_defs *defs, void *,
+                             void (*print_msg)(void *, const char *));
 
 void topo_defs_auto_angles(topo_defs *defs, int autogen);
 void topo_defs_auto_dihedrals(topo_defs *defs, int autogen);

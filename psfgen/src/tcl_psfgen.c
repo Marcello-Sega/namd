@@ -1,5 +1,6 @@
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include "psfgen.h"
@@ -7,18 +8,11 @@
 #include "topo_mol_output.h"
 #include "pdb_file_extract.h"
 #include "psf_file_extract.h"
+#include "extract_alias.h"
 
-#ifndef NAMD_TCL
-
-int main(int argc, char **argv) {
-  fprintf(stderr,"%s unavailable on this platform (no Tcl)\n",argv[0]);
-  exit(-1);
-}
-
-#else
+#if defined(NAMD_TCL) || ! defined(NAMD_VERSION)
 
 #include <tcl.h>
-int Tcl_AppInit(Tcl_Interp *interp);
 
 /* This function gets called if/when the Tcl interpreter is deleted. */
 static void psfgen_deleteproc(ClientData cd, Tcl_Interp *interp) {
@@ -29,8 +23,18 @@ static void psfgen_deleteproc(ClientData cd, Tcl_Interp *interp) {
   free(data);
 }
 
-void handle_msg(const char *msg) {
-  printf("%s\n",msg);
+/* 
+ * If we are running interactively, Tcl_Main will take care of echoing results
+ * to the console.  If we run a script, we need to output the results 
+ * ourselves.
+ */
+void newhandle_msg(void *v, const char *msg) {
+  Tcl_Interp *interp = (Tcl_Interp *)v;
+  char *var = Tcl_GetVar(interp, "tcl_interactive", TCL_GLOBAL_ONLY);
+  if (var && atoi(var))  
+    Tcl_AppendResult((Tcl_Interp *)v, msg, "\n", NULL);
+  else
+    printf("%s\n", msg); 
 }
 
 int tcl_topology(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
@@ -48,22 +52,46 @@ int tcl_writepdb(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 int tcl_first(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 int tcl_last(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 int tcl_patch(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
+int tcl_resetpsf(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
+int tcl_delatom(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 
-int Tcl_AppInit(Tcl_Interp *interp) {
+#ifdef PSFGENTCLDLL_EXPORTS 
+#  undef TCL_STORAGE_CLASS
+#  define TCL_STORAGE_CLASS DLLEXPORT
+
+#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Window s headers
+#include <windows.h>
+
+BOOL APIENTRY DllMain( HANDLE hModule, 
+                       DWORD  ul_reason_for_call, 
+                       LPVOID lpReserved
+                                         )
+{
+    return TRUE;
+}
+
+
+EXTERN int Psfgen_Init(Tcl_Interp *interp) {
+
+#else
+
+int Psfgen_Init(Tcl_Interp *interp) {
+
+#endif
 
   /* Create psfgen data structures; keep in interp so that other libraries
    * can access them.
    */
   psfgen_data *data = (psfgen_data *)malloc(sizeof(psfgen_data));
   data->defs = topo_defs_create();
-  topo_defs_error_handler(data->defs,handle_msg);
+  topo_defs_error_handler(data->defs,interp,newhandle_msg);
   
   data->aliases = stringhash_create();
 
   data->mol = topo_mol_create(data->defs);
-  topo_mol_error_handler(data->mol,handle_msg);
+  topo_mol_error_handler(data->mol,interp,newhandle_msg);
  
-  Tcl_SetAssocData(interp, (char *)"Psfgen", psfgen_deleteproc, data);
+  Tcl_SetAssocData(interp, (char *)"Psfgen",psfgen_deleteproc,(ClientData)data);
 
   Tcl_CreateCommand(interp,"topology",tcl_topology,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
@@ -95,15 +123,14 @@ int Tcl_AppInit(Tcl_Interp *interp) {
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
   Tcl_CreateCommand(interp,"patch",tcl_patch,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
+  Tcl_CreateCommand(interp,"resetpsf", tcl_resetpsf,
+	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
+  Tcl_CreateCommand(interp,"delatom", tcl_delatom,
+	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
+ 
+  Tcl_PkgProvide(interp, "psfgen", "1.1");
 
   return TCL_OK;
-}
-
-int main(int argc, char **argv) {
-  printf("PSFGEN from NAMD %s for %s\n",NAMD_VERSION,NAMD_PLATFORM);
-  Tcl_Main(argc,argv,Tcl_AppInit);
-  /* Never gets here; Tcl_Main evaluates 'exit' in the interpreter */
-  exit(0);
 }
 
 void strtoupper(char *s) {
@@ -138,8 +165,8 @@ int tcl_topology(ClientData data, Tcl_Interp *interp,
     return TCL_ERROR;
   } else {
     sprintf(msg,"reading topology file %s\n",filename);
-    handle_msg(msg);
-    charmm_parse_topo_defs(psf->defs,defs_file,handle_msg);
+    newhandle_msg(interp,msg);
+    charmm_parse_topo_defs(psf->defs,defs_file,interp,newhandle_msg);
     fclose(defs_file);
   }
   return TCL_OK;
@@ -168,8 +195,8 @@ int tcl_readpsf(ClientData data, Tcl_Interp *interp,
     return TCL_ERROR;
   } else {
     sprintf(msg,"reading structure from psf file %s\n",filename);
-    handle_msg(msg);
-    retval = psf_file_extract(psf->mol, psf_file, handle_msg);
+    newhandle_msg(interp,msg);
+    retval = psf_file_extract(psf->mol, psf_file, interp, newhandle_msg);
     fclose(psf_file);
   }
   if (retval) 
@@ -193,17 +220,17 @@ int tcl_segment(ClientData data, Tcl_Interp *interp,
   strtoupper(argv[1]);
 
   sprintf(msg,"building segment %s",argv[1]);
-  handle_msg(msg);
+  newhandle_msg(interp,msg);
   if ( topo_mol_segment(psf->mol,argv[1]) ) {
-    Tcl_SetResult(interp,"ERROR: failed on segment",TCL_VOLATILE);
+    Tcl_AppendResult(interp,"ERROR: failed on segment",NULL);
     return TCL_ERROR;
   }
 
   if ( Tcl_Eval(interp,argv[2]) != TCL_OK ) return TCL_ERROR;
 
-  handle_msg("generating structure at end of segment");
+  newhandle_msg(interp,"generating structure at end of segment");
   if ( topo_mol_end(psf->mol) ) {
-    Tcl_SetResult(interp,"ERROR: failed on end of segment",TCL_VOLATILE);
+    Tcl_AppendResult(interp,"ERROR: failed on end of segment",NULL);
     return TCL_ERROR;
   }
 
@@ -212,7 +239,6 @@ int tcl_segment(ClientData data, Tcl_Interp *interp,
 
 int tcl_residue(ClientData data, Tcl_Interp *interp,
 					int argc, char *argv[]) {
-  char msg[128];
   psfgen_data *psf = (psfgen_data *)data;
 
   if ( argc < 3 ) {
@@ -226,10 +252,8 @@ int tcl_residue(ClientData data, Tcl_Interp *interp,
   strtoupper(argv[1]);
   strtoupper(argv[2]);
 
-  sprintf(msg,"adding residue %s:%s",argv[2],argv[1]);
-  handle_msg(msg);
   if ( topo_mol_residue(psf->mol,argv[1],argv[2]) ) {
-    Tcl_SetResult(interp,"ERROR: failed on residue",TCL_VOLATILE);
+    Tcl_AppendResult(interp,"ERROR: failed on residue",NULL);
     return TCL_ERROR;
   }
 
@@ -238,7 +262,6 @@ int tcl_residue(ClientData data, Tcl_Interp *interp,
 
 int tcl_coord(ClientData data, Tcl_Interp *interp,
 					int argc, char *argv[]) {
-  char msg[128];
   double x,y,z;
   topo_mol_ident_t target;
   psfgen_data *psf = (psfgen_data *)data;
@@ -263,7 +286,7 @@ int tcl_coord(ClientData data, Tcl_Interp *interp,
   target.resid = argv[2];
   target.aname = argv[3];
   if ( topo_mol_set_xyz(psf->mol,&target,x,y,z) ) {
-    Tcl_SetResult(interp,"ERROR: failed on coord",TCL_VOLATILE);
+    Tcl_AppendResult(interp,"ERROR: failed on coord",NULL);
     return TCL_ERROR;
   }
 
@@ -273,7 +296,6 @@ int tcl_coord(ClientData data, Tcl_Interp *interp,
 
 int tcl_auto(ClientData data, Tcl_Interp *interp,
 					int argc, char *argv[]) {
-  char msg[128];
   int i, angles, dihedrals;
   psfgen_data *psf = (psfgen_data *)data;
 
@@ -292,17 +314,17 @@ int tcl_auto(ClientData data, Tcl_Interp *interp,
     }
   }
 
-  if ( angles ) handle_msg("enabling angle autogeneration");
-  else handle_msg("disabling angle autogeneration");
+  if ( angles ) newhandle_msg(interp,"enabling angle autogeneration");
+  else newhandle_msg(interp,"disabling angle autogeneration");
   if ( topo_mol_segment_auto_angles(psf->mol,angles) ) {
-    Tcl_SetResult(interp,"ERROR: failed setting angle autogen",TCL_VOLATILE);
+    Tcl_AppendResult(interp,"ERROR: failed setting angle autogen",NULL);
     return TCL_ERROR;
   }
 
-  if ( dihedrals ) handle_msg("enabling dihedral autogeneration");
-  else handle_msg("disabling dihedral autogeneration");
+  if ( dihedrals ) newhandle_msg(interp,"enabling dihedral autogeneration");
+  else newhandle_msg(interp,"disabling dihedral autogeneration");
   if ( topo_mol_segment_auto_dihedrals(psf->mol,dihedrals) ) {
-    Tcl_SetResult(interp,"ERROR: failed setting dihedral autogen",TCL_VOLATILE);
+    Tcl_AppendResult(interp,"ERROR: failed setting dihedral autogen",NULL);
     return TCL_ERROR;
   }
 
@@ -327,9 +349,9 @@ int tcl_alias(ClientData data, Tcl_Interp *interp,
     strtoupper(argv[2]);
     strtoupper(argv[3]);
     sprintf(msg,"aliasing residue %s to %s",argv[2],argv[3]);
-    handle_msg(msg);
+    newhandle_msg(interp,msg);
     if ( extract_alias_residue_define(psf->aliases,argv[2],argv[3]) ) {
-      Tcl_SetResult(interp,"ERROR: failed on residue alias",TCL_VOLATILE);
+      Tcl_AppendResult(interp,"ERROR: failed on residue alias",NULL);
       return TCL_ERROR;
     }
   } else if ( ! strcmp(argv[1],"atom") ) {
@@ -341,9 +363,9 @@ int tcl_alias(ClientData data, Tcl_Interp *interp,
     strtoupper(argv[3]);
     strtoupper(argv[4]);
     sprintf(msg,"aliasing residue %s atom %s to %s",argv[2],argv[3],argv[4]);
-    handle_msg(msg);
+    newhandle_msg(interp,msg);
     if ( extract_alias_atom_define(psf->aliases,argv[2],argv[3],argv[4]) ) {
-      Tcl_SetResult(interp,"ERROR: failed on atom alias",TCL_VOLATILE);
+      Tcl_AppendResult(interp,"ERROR: failed on atom alias",NULL);
       return TCL_ERROR;
     }
   }
@@ -373,9 +395,9 @@ int tcl_pdb(ClientData data, Tcl_Interp *interp,
     return TCL_ERROR;
   } else {
     sprintf(msg,"reading residues from pdb file %s",filename);
-    handle_msg(msg);
-    if ( pdb_file_extract_residues(psf->mol,res_file,psf->aliases,handle_msg) ) {
-      Tcl_SetResult(interp,"ERROR: failed on reading residues from pdb file",TCL_VOLATILE);
+    newhandle_msg(interp,msg);
+    if ( pdb_file_extract_residues(psf->mol,res_file,psf->aliases,interp,newhandle_msg) ) {
+      Tcl_AppendResult(interp,"ERROR: failed on reading residues from pdb file",NULL);
       fclose(res_file);
       return TCL_ERROR;
     }
@@ -411,16 +433,16 @@ int tcl_coordpdb(ClientData data, Tcl_Interp *interp,
       /* Read only coordinates for given segid */
       strtoupper(argv[2]);
       sprintf(msg,"reading coordinates from pdb file %s for segment %s",filename,argv[2]);
-      handle_msg(msg);
+      newhandle_msg(interp,msg);
       segid = argv[2];
     } else {
       /* Read all segid's in pdb file */
       sprintf(msg,"reading coordinates from pdb file %s",filename);
-      handle_msg(msg);
+      newhandle_msg(interp,msg);
       segid = NULL;
     } 
-    if ( pdb_file_extract_coordinates(psf->mol,res_file,segid,psf->aliases,handle_msg) ) {
-      Tcl_SetResult(interp,"ERROR: failed on reading coordinates from pdb file",TCL_VOLATILE);
+    if ( pdb_file_extract_coordinates(psf->mol,res_file,segid,psf->aliases,interp,newhandle_msg) ) {
+      Tcl_AppendResult(interp,"ERROR: failed on reading coordinates from pdb file",NULL);
       fclose(res_file);
       return TCL_ERROR;
     }
@@ -439,9 +461,9 @@ int tcl_guesscoord(ClientData data, Tcl_Interp *interp,
     return TCL_ERROR;
   }
 
-  handle_msg("guessing coordinates based on topology file");
+  newhandle_msg(interp,"guessing coordinates based on topology file");
   if ( topo_mol_guess_xyz(psf->mol) ) {
-    Tcl_SetResult(interp,"ERROR: failed on guessing coordinates",TCL_VOLATILE);
+    Tcl_AppendResult(interp,"ERROR: failed on guessing coordinates",NULL);
     return TCL_ERROR;
   }
 
@@ -482,9 +504,9 @@ int tcl_writepsf(ClientData data, Tcl_Interp *interp,
     return TCL_ERROR;
   }
   sprintf(msg,"writing psf file %s",filename);
-  handle_msg(msg);
-  if ( topo_mol_write_psf(psf->mol,res_file,charmmfmt,handle_msg) ) {
-    Tcl_SetResult(interp,"ERROR: failed on writing structure to psf file",TCL_VOLATILE);
+  newhandle_msg(interp,msg);
+  if ( topo_mol_write_psf(psf->mol,res_file,charmmfmt,interp,newhandle_msg) ) {
+    Tcl_AppendResult(interp,"ERROR: failed on writing structure to psf file",NULL);
     fclose(res_file);
     return TCL_ERROR;
   }
@@ -516,9 +538,9 @@ int tcl_writepdb(ClientData data, Tcl_Interp *interp,
     return TCL_ERROR;
   }
   sprintf(msg,"writing pdb file %s",filename);
-  handle_msg(msg);
-  if ( topo_mol_write_pdb(psf->mol,res_file,handle_msg) ) {
-    Tcl_SetResult(interp,"ERROR: failed on writing coordinates to pdb file",TCL_VOLATILE);
+  newhandle_msg(interp,msg);
+  if ( topo_mol_write_pdb(psf->mol,res_file,interp,newhandle_msg) ) {
+    Tcl_AppendResult(interp,"ERROR: failed on writing coordinates to pdb file",NULL);
     fclose(res_file);
     return TCL_ERROR;
   }
@@ -539,9 +561,9 @@ int tcl_first(ClientData data, Tcl_Interp *interp,
   strtoupper(argv[1]);
 
   sprintf(msg,"setting patch for first residue to %s",argv[1]);
-  handle_msg(msg);
+  newhandle_msg(interp,msg);
   if ( topo_mol_segment_first(psf->mol,argv[1]) ) {
-    Tcl_SetResult(interp,"ERROR: failed to set patch for first residue",TCL_VOLATILE);
+    Tcl_AppendResult(interp,"ERROR: failed to set patch for first residue",NULL);
     return TCL_ERROR;
   }
 
@@ -560,9 +582,9 @@ int tcl_last(ClientData data, Tcl_Interp *interp,
   strtoupper(argv[1]);
 
   sprintf(msg,"setting patch for last residue to %s",argv[1]);
-  handle_msg(msg);
+  newhandle_msg(interp,msg);
   if ( topo_mol_segment_last(psf->mol,argv[1]) ) {
-    Tcl_SetResult(interp,"ERROR: failed to set patch for last residue",TCL_VOLATILE);
+    Tcl_AppendResult(interp,"ERROR: failed to set patch for last residue",NULL);
     return TCL_ERROR;
   }
 
@@ -587,7 +609,7 @@ int tcl_patch(ClientData data, Tcl_Interp *interp,
 
   strtoupper(argv[1]);
   sprintf(msg,"applying patch %s to %d residues",argv[1],(argc-2));
-  handle_msg(msg);
+  newhandle_msg(interp,msg);
   for ( i=2; i<argc; ++i ) {
     strtoupper(argv[i]);
     targets[i-2].segid = argv[i];
@@ -600,12 +622,41 @@ int tcl_patch(ClientData data, Tcl_Interp *interp,
     }
   }
   if ( topo_mol_patch(psf->mol,targets,(argc-2),argv[1],0) ) {
-    Tcl_SetResult(interp,"ERROR: failed to apply patch",TCL_VOLATILE);
+    Tcl_AppendResult(interp,"ERROR: failed to apply patch",NULL);
     return TCL_ERROR;
   }
 
   return TCL_OK;
 }
 
-#endif  /* NAMD_TCL */
+int tcl_resetpsf(ClientData data, Tcl_Interp *interp, int argc, char *argv[]) {
+  psfgen_data *psf = (psfgen_data *)data;
+
+  topo_mol_destroy(psf->mol);
+  psf->mol = topo_mol_create(psf->defs);
+  topo_mol_error_handler(psf->mol,interp,newhandle_msg);
+
+  return TCL_OK;
+}
+
+int tcl_delatom(ClientData data, Tcl_Interp *interp,
+					int argc, char *argv[]) {
+  topo_mol_ident_t target;
+  psfgen_data *psf = (psfgen_data *)data;
+
+  if ( argc < 2 ) {
+    Tcl_SetResult(interp,"arguments: segid [ resid? [ aname? ]]", TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+
+  target.segid = argv[1];
+  target.resid = argc > 2 ? argv[2] : 0;
+  target.aname = argc > 3 ? argv[3] : 0;
+
+  topo_mol_delete_atom(psf->mol, &target);
+ 
+  return TCL_OK;
+}
+ 
+#endif
 

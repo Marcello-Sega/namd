@@ -1,5 +1,6 @@
 
 #include <string.h>
+#include <stdlib.h>
 #include "memarena.h"
 #include "hasharray.h"
 #include "stringhash.h"
@@ -12,7 +13,7 @@ struct stringhash {
 
 stringhash * stringhash_create() {
   stringhash *h;
-  if ( h = (stringhash*) malloc(sizeof(stringhash)) ) {
+  if ( (h = (stringhash*) malloc(sizeof(stringhash))) ) {
     if ( ! ( h->datarena = memarena_create() ) ) {
       free((void*)h);
       return 0;

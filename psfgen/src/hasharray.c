@@ -16,7 +16,7 @@ struct hasharray {
 
 hasharray * hasharray_create(void **itemarray, int itemsize) {
   hasharray * a;
-  if ( a = (hasharray*) malloc(sizeof(hasharray)) ) {
+  if ( (a = (hasharray*) malloc(sizeof(hasharray))) ) {
     a->count = 0;
     a->alloc = 0;
     a->itemsize = itemsize;
@@ -67,6 +67,11 @@ int hasharray_insert(hasharray *a, const char *key) {
   strcpy(s,key);
   hash_insert(&(a->hash),s,i);
   return i;
+}
+
+int hasharray_delete(hasharray *a, const char *key) {
+  if (!a) return HASHARRAY_FAIL; /* I think this should be assert(a) */
+  return hash_delete(&(a->hash), key);
 }
 
 int hasharray_index(hasharray *a, const char *key) {

@@ -18,6 +18,7 @@ DSTDIR = obj
 INCDIR = inc
 DPMTADIR=dpmta-2.6
 DPMEDIR=dpme2
+SBSRCDIR = sb/src
 
 # comment/uncomment these lines for (D)PMTA routines
 #DPMTAINCL=$(COPTI)$(DPMTADIR)/mpole $(COPTI)$(DPMTADIR)/src
@@ -193,7 +194,8 @@ CIFILES = 	\
 # Add new source files here.
 
 SBOBJS = \
-	$(DSTDIR)/build.o \
+	$(DSTDIR)/tcl_main.o \
+	$(DSTDIR)/tcl_psfgen.o \
 	$(DSTDIR)/charmm_file.o \
 	$(DSTDIR)/charmm_parse_topo_defs.o \
 	$(DSTDIR)/extract_alias.o \
@@ -225,6 +227,8 @@ CXXSIMPARAMFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPM
 CXXNOALIASFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXNOALIASOPTS) $(RELEASE) $(NEWMASTER)
 GXXFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(RELEASE) $(NEWMASTER)
 CFLAGS = $(COPTI)$(SRCDIR) $(TCL) $(COPTS) $(RELEASE)
+SBCFLAGS = $(COPTI)$(SBSRCDIR) $(TCL) $(COPTS) $(RELEASE)
+SBGCCFLAGS = $(COPTI)$(SBSRCDIR) $(TCL) $(RELEASE)
 
 # Add new executables here.
 
@@ -278,7 +282,7 @@ charmrun.exe:
 	$(COPY) $(CHARM)/bin/charmrun.exe charmrun.exe
 
 psfgen:	$(DSTDIR) $(SBOBJS)
-	$(CC) $(CFLAGS) -o psfgen $(SBOBJS) $(TCLLIB) $(TCLAPPLIB) -lm
+	$(CC) $(SBCFLAGS) -o psfgen $(SBOBJS) $(TCLLIB) $(TCLAPPLIB) -lm
 
 psfgen.exe:	$(DSTDIR) $(SBOBJS)
 	$(LINK) $(LINKOPTS) /out:psfgen.exe $(SBOBJS) $(TCLLIB) $(TCLAPPLIB)
@@ -471,11 +475,11 @@ depends: $(INCDIR) $(CIFILES) $(DSTDIR) $(DEPENDFILE)
 		$$SRCFILE >> $(DEPENDFILE) ; \
 	done; \
 	for i in $(SBOBJS) ; do \
-	      SRCFILE=$(SRCDIR)/`basename $$i .o`.c ; \
+	      SRCFILE=$(SBSRCDIR)/`basename $$i .o`.c ; \
 	      $(ECHO) "checking dependencies for $$SRCFILE" ; \
-	      gcc -MM $(GCCFLAGS) $$SRCFILE | \
+	      gcc -MM $(SBGCCFLAGS) $$SRCFILE | \
 	      perl $(SRCDIR)/dc.pl $(CHARMINC) /usr/include /usr/local >> $(DEPENDFILE); \
-	      $(ECHO) '	$$(CC) $$(CFLAGS) $$(COPTO)'$$i '$$(COPTC)' \
+	      $(ECHO) '	$$(CC) $$(SBCFLAGS) $$(COPTO)'$$i '$$(COPTC)' \
 		$$SRCFILE >> $(DEPENDFILE) ; \
 	done; \
 	$(RM) $(DEPENDFILE).sed; \

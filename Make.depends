@@ -3149,103 +3149,107 @@ obj/imd.o: \
 	src/imd.h \
 	src/vmdsock.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/imd.o $(COPTC) src/imd.C
-obj/build.o: \
-	src/build.c \
-	src/psfgen.h \
-	src/topo_defs.h \
-	src/topo_mol.h \
-	src/stringhash.h \
-	src/charmm_parse_topo_defs.h \
-	src/topo_mol_output.h \
-	src/pdb_file_extract.h \
-	src/psf_file_extract.h
-	$(CC) $(CFLAGS) $(COPTO)obj/build.o $(COPTC) src/build.c
+obj/tcl_main.o: \
+	sb/src/tcl_main.c
+	$(CC) $(SBCFLAGS) $(COPTO)obj/tcl_main.o $(COPTC) sb/src/tcl_main.c
+obj/tcl_psfgen.o: \
+	sb/src/tcl_psfgen.c \
+	sb/src/psfgen.h \
+	sb/src/topo_defs.h \
+	sb/src/topo_mol.h \
+	sb/src/stringhash.h \
+	sb/src/charmm_parse_topo_defs.h \
+	sb/src/topo_mol_output.h \
+	sb/src/pdb_file_extract.h \
+	sb/src/psf_file_extract.h \
+	sb/src/extract_alias.h
+	$(CC) $(SBCFLAGS) $(COPTO)obj/tcl_psfgen.o $(COPTC) sb/src/tcl_psfgen.c
 obj/charmm_file.o: \
-	src/charmm_file.c \
-	src/charmm_file.h
-	$(CC) $(CFLAGS) $(COPTO)obj/charmm_file.o $(COPTC) src/charmm_file.c
+	sb/src/charmm_file.c \
+	sb/src/charmm_file.h
+	$(CC) $(SBCFLAGS) $(COPTO)obj/charmm_file.o $(COPTC) sb/src/charmm_file.c
 obj/charmm_parse_topo_defs.o: \
-	src/charmm_parse_topo_defs.c \
-	src/charmm_file.h \
-	src/topo_defs.h \
-	src/charmm_parse_topo_defs.h
-	$(CC) $(CFLAGS) $(COPTO)obj/charmm_parse_topo_defs.o $(COPTC) src/charmm_parse_topo_defs.c
+	sb/src/charmm_parse_topo_defs.c \
+	sb/src/charmm_file.h \
+	sb/src/topo_defs.h \
+	sb/src/charmm_parse_topo_defs.h
+	$(CC) $(SBCFLAGS) $(COPTO)obj/charmm_parse_topo_defs.o $(COPTC) sb/src/charmm_parse_topo_defs.c
 obj/extract_alias.o: \
-	src/extract_alias.c \
-	src/stringhash.h \
-	src/extract_alias.h
-	$(CC) $(CFLAGS) $(COPTO)obj/extract_alias.o $(COPTC) src/extract_alias.c
+	sb/src/extract_alias.c \
+	sb/src/stringhash.h \
+	sb/src/extract_alias.h
+	$(CC) $(SBCFLAGS) $(COPTO)obj/extract_alias.o $(COPTC) sb/src/extract_alias.c
 obj/hash.o: \
-	src/hash.c \
-	src/hash.h
-	$(CC) $(CFLAGS) $(COPTO)obj/hash.o $(COPTC) src/hash.c
+	sb/src/hash.c \
+	sb/src/hash.h
+	$(CC) $(SBCFLAGS) $(COPTO)obj/hash.o $(COPTC) sb/src/hash.c
 obj/hasharray.o: \
-	src/hasharray.c \
-	src/hash.h \
-	src/memarena.h \
-	src/hasharray.h
-	$(CC) $(CFLAGS) $(COPTO)obj/hasharray.o $(COPTC) src/hasharray.c
+	sb/src/hasharray.c \
+	sb/src/hash.h \
+	sb/src/memarena.h \
+	sb/src/hasharray.h
+	$(CC) $(SBCFLAGS) $(COPTO)obj/hasharray.o $(COPTC) sb/src/hasharray.c
 obj/memarena.o: \
-	src/memarena.c \
-	src/memarena.h
-	$(CC) $(CFLAGS) $(COPTO)obj/memarena.o $(COPTC) src/memarena.c
+	sb/src/memarena.c \
+	sb/src/memarena.h
+	$(CC) $(SBCFLAGS) $(COPTO)obj/memarena.o $(COPTC) sb/src/memarena.c
 obj/pdb_file.o: \
-	src/pdb_file.c \
-	src/pdb_file.h
-	$(CC) $(CFLAGS) $(COPTO)obj/pdb_file.o $(COPTC) src/pdb_file.c
+	sb/src/pdb_file.c \
+	sb/src/pdb_file.h
+	$(CC) $(SBCFLAGS) $(COPTO)obj/pdb_file.o $(COPTC) sb/src/pdb_file.c
 obj/pdb_file_extract.o: \
-	src/pdb_file_extract.c \
-	src/pdb_file_extract.h \
-	src/stringhash.h \
-	src/topo_mol.h \
-	src/topo_defs.h \
-	src/pdb_file.h \
-	src/extract_alias.h
-	$(CC) $(CFLAGS) $(COPTO)obj/pdb_file_extract.o $(COPTC) src/pdb_file_extract.c
+	sb/src/pdb_file_extract.c \
+	sb/src/pdb_file_extract.h \
+	sb/src/stringhash.h \
+	sb/src/topo_mol.h \
+	sb/src/topo_defs.h \
+	sb/src/pdb_file.h \
+	sb/src/extract_alias.h
+	$(CC) $(SBCFLAGS) $(COPTO)obj/pdb_file_extract.o $(COPTC) sb/src/pdb_file_extract.c
 obj/psf_file.o: \
-	src/psf_file.c \
-	src/psf_file.h
-	$(CC) $(CFLAGS) $(COPTO)obj/psf_file.o $(COPTC) src/psf_file.c
+	sb/src/psf_file.c \
+	sb/src/psf_file.h
+	$(CC) $(SBCFLAGS) $(COPTO)obj/psf_file.o $(COPTC) sb/src/psf_file.c
 obj/psf_file_extract.o: \
-	src/psf_file_extract.c \
-	src/psf_file.h \
-	src/psf_file_extract.h \
-	src/topo_mol.h \
-	src/topo_defs.h \
-	src/topo_mol_struct.h \
-	src/hasharray.h \
-	src/memarena.h \
-	src/topo_defs_struct.h
-	$(CC) $(CFLAGS) $(COPTO)obj/psf_file_extract.o $(COPTC) src/psf_file_extract.c
+	sb/src/psf_file_extract.c \
+	sb/src/psf_file.h \
+	sb/src/psf_file_extract.h \
+	sb/src/topo_mol.h \
+	sb/src/topo_defs.h \
+	sb/src/topo_mol_struct.h \
+	sb/src/hasharray.h \
+	sb/src/memarena.h \
+	sb/src/topo_defs_struct.h
+	$(CC) $(SBCFLAGS) $(COPTO)obj/psf_file_extract.o $(COPTC) sb/src/psf_file_extract.c
 obj/topo_defs.o: \
-	src/topo_defs.c \
-	src/topo_defs_struct.h \
-	src/hasharray.h \
-	src/topo_defs.h
-	$(CC) $(CFLAGS) $(COPTO)obj/topo_defs.o $(COPTC) src/topo_defs.c
+	sb/src/topo_defs.c \
+	sb/src/topo_defs_struct.h \
+	sb/src/hasharray.h \
+	sb/src/topo_defs.h
+	$(CC) $(SBCFLAGS) $(COPTO)obj/topo_defs.o $(COPTC) sb/src/topo_defs.c
 obj/topo_mol.o: \
-	src/topo_mol.c \
-	src/topo_defs_struct.h \
-	src/hasharray.h \
-	src/topo_defs.h \
-	src/topo_mol_struct.h \
-	src/memarena.h \
-	src/topo_mol.h
-	$(CC) $(CFLAGS) $(COPTO)obj/topo_mol.o $(COPTC) src/topo_mol.c
+	sb/src/topo_mol.c \
+	sb/src/topo_defs_struct.h \
+	sb/src/hasharray.h \
+	sb/src/topo_defs.h \
+	sb/src/topo_mol_struct.h \
+	sb/src/memarena.h \
+	sb/src/topo_mol.h
+	$(CC) $(SBCFLAGS) $(COPTO)obj/topo_mol.o $(COPTC) sb/src/topo_mol.c
 obj/topo_mol_output.o: \
-	src/topo_mol_output.c \
-	src/topo_mol_output.h \
-	src/topo_mol.h \
-	src/topo_defs.h \
-	src/topo_mol_struct.h \
-	src/hasharray.h \
-	src/memarena.h \
-	src/topo_defs_struct.h \
-	src/pdb_file.h
-	$(CC) $(CFLAGS) $(COPTO)obj/topo_mol_output.o $(COPTC) src/topo_mol_output.c
+	sb/src/topo_mol_output.c \
+	sb/src/topo_mol_output.h \
+	sb/src/topo_mol.h \
+	sb/src/topo_defs.h \
+	sb/src/topo_mol_struct.h \
+	sb/src/hasharray.h \
+	sb/src/memarena.h \
+	sb/src/topo_defs_struct.h \
+	sb/src/pdb_file.h
+	$(CC) $(SBCFLAGS) $(COPTO)obj/topo_mol_output.o $(COPTC) sb/src/topo_mol_output.c
 obj/stringhash.o: \
-	src/stringhash.c \
-	src/memarena.h \
-	src/hasharray.h \
-	src/stringhash.h
-	$(CC) $(CFLAGS) $(COPTO)obj/stringhash.o $(COPTC) src/stringhash.c
+	sb/src/stringhash.c \
+	sb/src/memarena.h \
+	sb/src/hasharray.h \
+	sb/src/stringhash.h
+	$(CC) $(SBCFLAGS) $(COPTO)obj/stringhash.o $(COPTC) sb/src/stringhash.c

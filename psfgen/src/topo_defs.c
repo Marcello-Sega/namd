@@ -1,4 +1,5 @@
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "topo_defs_struct.h"
@@ -6,9 +7,9 @@
 
 topo_defs * topo_defs_create() {
   topo_defs *defs;
-  if ( defs = (topo_defs*) malloc(sizeof(topo_defs)) ) {
-    defs->errors = 0;
-    defs->error_handler = 0;
+  if ( (defs = (topo_defs*) malloc(sizeof(topo_defs))) ) {
+    defs->newerror_handler_data = 0;
+    defs->newerror_handler = 0;
     defs->auto_angles = 0;
     defs->auto_dihedrals = 0;
     strcpy(defs->pfirst,"");
@@ -80,37 +81,21 @@ void topo_defs_destroy(topo_defs *defs) {
     }
   }
   hasharray_destroy(defs->residue_hash);
-  if ( defs->errors ) free((void*)defs->errors);
   free((void*)defs);
 }
 
-void topo_defs_error_handler(topo_defs *defs, void (*print_msg)(const char *)) {
-  if ( defs ) defs->error_handler = print_msg;
-}
-
-const char * topo_defs_errors(topo_defs *defs) {
-  if ( defs ) return defs->errors;
+void topo_defs_error_handler(topo_defs *defs, void *v, void (*print_msg)(void *, const char *)) {
+  if ( defs ) {
+    defs->newerror_handler = print_msg;
+    defs->newerror_handler_data = v;
+  }
 }
 
 /* internal method */
 void topo_defs_log_error(topo_defs *defs, const char *msg) {
-  int oldlen, msglen;
-  char *newerrs;
-  if ( ! defs || ! msg ) return;
-  if ( defs->error_handler ) defs->error_handler(msg);
-  msglen = strlen(msg);
-  if ( defs->errors ) {
-    oldlen = strlen(defs->errors);
-    if ( newerrs = (char*) realloc((void*)defs->errors,oldlen+msglen+2) );
-    else return;
-  } else {
-    if ( newerrs = (char*) malloc(msglen+2) ) {
-      strcpy(newerrs,"");
-    } else return;
+  if (defs && msg && defs->newerror_handler) {
+    defs->newerror_handler(defs->newerror_handler_data, msg);
   }
-  strcat(newerrs,msg);
-  strcat(newerrs,"\n");
-  defs->errors = newerrs;
 }
 
 void topo_defs_auto_angles(topo_defs *defs, int autogen) {

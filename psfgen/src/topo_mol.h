@@ -10,8 +10,7 @@ typedef struct topo_mol topo_mol;
 topo_mol * topo_mol_create(topo_defs *defs);
 void topo_mol_destroy(topo_mol *mol);
 
-void topo_mol_error_handler(topo_mol *mol, void (*print_msg)(const char *));
-const char * topo_mol_errors(topo_mol *mol);
+void topo_mol_error_handler(topo_mol *mol, void *, void (*print_msg)(void *,const char *));
 
 int topo_mol_segment(topo_mol *mol, const char *segid);
 
@@ -34,14 +33,14 @@ typedef struct topo_mol_ident_t {
 int topo_mol_patch(topo_mol *mol, const topo_mol_ident_t *targets,
 			int ntargets, const char *rname, int prepend);
 
+void topo_mol_delete_atom(topo_mol *mol, const topo_mol_ident_t *target);
+
 int topo_mol_set_xyz(topo_mol *mol, const topo_mol_ident_t *target,
 					double x, double y, double z);
 
 int topo_mol_clear_xyz(topo_mol *mol, const topo_mol_ident_t *target);
 
 int topo_mol_guess_xyz(topo_mol *mol);
-
-void topo_mol_renumber(topo_mol *mol);
 
 #endif
 

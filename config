@@ -121,11 +121,13 @@ begin:
      perl -p -i -e 's/(?<!\r)\n$/\r\n/' < $f > $f:t
    end
   endif
-  echo "Linking src"
+  echo "Linking src and psfgen"
   if ( $ARCH =~ *MSVC* ) then
     cp -r .rootdir/src ./src
+    cp -r .rootdir/psfgen ./sb
   else
     ln -s .rootdir/src ./src
+    ln -s .rootdir/psfgen ./sb
   endif
   echo "Creating dpme2 and linking files"
   (cd $DIR/dpme2;find . -name CVS -prune -o -type d -print )|sed -e s@.@@> temp.d

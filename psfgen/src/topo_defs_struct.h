@@ -98,8 +98,8 @@ typedef struct topo_defs_residue_t {
 } topo_defs_residue_t;
 
 struct topo_defs {
-  char *errors;
-  void (*error_handler)(const char *);
+  void *newerror_handler_data;
+  void (*newerror_handler)(void *, const char *);
   int auto_angles;
   int auto_dihedrals;
   char pfirst[NAMEMAXLEN];

@@ -7,11 +7,11 @@
 #include "topo_mol.h"
 
 int pdb_file_extract_residues(topo_mol *mol, FILE *file, stringhash *h,
-                                void (*print_msg)(const char *));
+                                void *, void (*print_msg)(void *,const char *));
 
 int pdb_file_extract_coordinates(topo_mol *mol, FILE *file,
                                 const char *segid, stringhash *h,
-                                void (*print_msg)(const char *));
+                                void *,void (*print_msg)(void *,const char *));
 
 #endif
 

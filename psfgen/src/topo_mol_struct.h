@@ -83,9 +83,9 @@ typedef struct topo_mol_segment_t {
 } topo_mol_segment_t;
 
 struct topo_mol {
-  char *errors;
-  void (*error_handler)(const char *);
-
+  void *newerror_handler_data;
+  void (*newerror_handler)(void *, const char *);
+  
   topo_defs *defs;
 
   topo_mol_segment_t **segment_array;
