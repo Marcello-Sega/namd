@@ -329,7 +329,7 @@ NOEXCL
 	j += hgs;
 	pa_j += hgs;
 	} // for j
-    } else { // tuned assuming no fixed atoms
+    } else SELF( if ( j < j_upper ) ) { // tuned assuming no fixed atoms
       register BigReal p_j_x = p_j->x;
       register BigReal p_j_y = p_j->y;
       register BigReal p_j_z = p_j->z;
@@ -745,12 +745,18 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1037 $	$Date: 1998/07/08 22:23:04 $
+ *	$Revision: 1.1038 $	$Date: 1998/07/30 22:18:56 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1038  1998/07/30 22:18:56  jim
+ * Fixed "load-balancer bug".  Turned out to be array bounds problem.  Only
+ * occurs with ComputeHomeSelf, and then much more likely with a Proxy.  Since
+ * this only happens after load balancing, the crash seemed to be caused by
+ * the load balancer.  Mea cupla.
+ *
  * Revision 1.1037  1998/07/08 22:23:04  jim
  * Eliminated exclusion checking for atoms within hydrogen group (safely).
  *
