@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: structures.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/06 20:38:38 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1996/12/03 17:48:43 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -21,6 +21,9 @@
  * REVISION HISTORY:
  *
  * $Log: structures.h,v $
+ * Revision 1.2  1996/12/03 17:48:43  nealk
+ * Added nonbondedexcl.
+ *
  * Revision 1.1  1996/08/06 20:38:38  ari
  * Initial revision
  *
@@ -112,6 +115,13 @@ typedef struct improper
 	int atom4;
 	Index improper_type;
 } Improper;
+
+typedef struct nonbondedexcl
+{
+	int atom1;
+	int atom2;
+	Index nonbondedexcl_type;
+} NonbondedExcl;
 
 typedef struct exclusion
 {
