@@ -334,6 +334,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
   // in the case when trace is off at the beginning,
   // only turn trace of from after the first LB to the firstLdbStep after 
   // the second LB.
+#if CHARM_VERSION >= 050602
   {
   static int specialTracing = 0;
   if (ldbCycleNum == 1 && traceIsOn() == 0)  specialTracing = 1;
@@ -342,6 +343,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
     if (ldbCycleNum == 4) traceEnd();
   }
   }
+#endif
 
   nPatchesReported = 0;
   nPatchesExpected = nLocalPatches;
