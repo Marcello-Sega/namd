@@ -667,9 +667,10 @@ int write_dcdstep(int fd, int N, float *X, float *Y, float *Z)
 /*	fd - file descriptor for the dcd file				     */
 /*	filename - filename for output					     */
 /*	N - Number of atoms						     */
-/*	NSET - Number of sets of coordinates				     */
-/*	ISTART - Starting timestep of DCD file				     */
+/*	NFILE - Number of sets of coordinates				     */
+/*	NPRIV - Starting timestep of DCD file - NOT ZERO		     */
 /*	NSAVC - Timesteps between DCD saves				     */
+/*	NSTEP - Number of timesteps					     */
 /*	DELTA - length of a timestep					     */
 /*									     */
 /*   OUTPUTS:								     */
@@ -681,8 +682,8 @@ int write_dcdstep(int fd, int N, float *X, float *Y, float *Z)
 /*									     */
 /*****************************************************************************/
 
-int write_dcdheader(int fd, char *filename, int N, int NSET, int ISTART, 
-		   int NSAVC, double DELTA)
+int write_dcdheader(int fd, char *filename, int N, int NFILE, int NPRIV, 
+		   int NSAVC, int NSTEP, double DELTA)
 {
 	int32	out_integer;
 	float   out_float;
@@ -697,14 +698,15 @@ int write_dcdheader(int fd, char *filename, int N, int NSET, int ISTART,
 	NAMD_write(fd, (char *) & out_integer, sizeof(int32));
 	strcpy(title_string, "CORD");
 	NAMD_write(fd, title_string, 4);
-	out_integer = NSET;
+	out_integer = NFILE;
 	NAMD_write(fd, (char *) & out_integer, sizeof(int32));
-	out_integer = ISTART;
+	out_integer = NPRIV;
 	NAMD_write(fd, (char *) & out_integer, sizeof(int32));
 	out_integer = NSAVC;
 	NAMD_write(fd, (char *) & out_integer, sizeof(int32));
-	out_integer=0;
+	out_integer = NSTEP;
 	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+	out_integer=0;
 	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
 	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
 	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
@@ -813,12 +815,15 @@ void close_dcd_write(int fd)
  *
  *	$RCSfile: dcdlib.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1999/05/20 01:43:27 $
+ *	$Revision: 1.9 $	$Date: 1999/05/25 21:48:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: dcdlib.C,v $
+ * Revision 1.9  1999/05/25 21:48:51  jim
+ * Modified DCD code to be compatible with Quanta.
+ *
  * Revision 1.8  1999/05/20 01:43:27  jim
  * Fixed major problems with DCD file format vs CHARMm.
  *

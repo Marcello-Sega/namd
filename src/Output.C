@@ -311,7 +311,7 @@ int Output::coordinateNeeded(int timestep)
   //  Output a DCD trajectory 
   if ( (simParams->dcdFrequency != -1) &&
        ((timestep % simParams->dcdFrequency) == 0) &&
-       ((timestep != simParams->firstTimestep)||(timestep == 0)) )
+       (timestep != simParams->firstTimestep) )
   {
     positionsNeeded = 1;
   }
@@ -352,8 +352,10 @@ void Output::coordinate(int timestep, int n, Vector *coor)
   //  Output a DCD trajectory 
   if ( (simParams->dcdFrequency != -1) &&
        ((timestep % simParams->dcdFrequency) == 0) &&
-       ((timestep != simParams->firstTimestep)||(timestep == 0)) )
+       (timestep != simParams->firstTimestep) )
   {
+    iout << "WRITING COORDINATES TO DCD FILE AT STEP "
+				<< timestep << "\n" << endi;
     output_dcdfile(timestep, n, coor);
   }
 
@@ -362,12 +364,16 @@ void Output::coordinate(int timestep, int n, Vector *coor)
        ((timestep % simParams->restartFrequency) == 0) &&
        (timestep != simParams->firstTimestep) )
   {
+    iout << "WRITING COORDINATES TO RESTART FILE AT STEP "
+				<< timestep << "\n" << endi;
     output_restart_coordinates(coor, n, timestep);
   }
 
   //  Output final coordinates
   if (timestep == simParams->N)
   {
+    iout << "WRITING COORDINATES TO OUTPUT FILE AT STEP "
+				<< timestep << "\n" << endi;
     output_final_coordinates(coor, n, timestep);
   }
 
@@ -410,7 +416,7 @@ int Output::velocityNeeded(int timestep)
   //  Output a velocity DCD trajectory
   if ( (simParams->velDcdFrequency != -1) &&
        ((timestep % simParams->velDcdFrequency) == 0) &&
-       ((timestep != simParams->firstTimestep)||(timestep == 0)) )
+       (timestep != simParams->firstTimestep) )
   {
     velocitiesNeeded = 1;
   }
@@ -439,8 +445,10 @@ void Output::velocity(int timestep, int n, Vector *vel)
   //  Output velocity DCD trajectory
   if ( (simParams->velDcdFrequency != -1) &&
        ((timestep % simParams->velDcdFrequency) == 0) &&
-       ((timestep != simParams->firstTimestep)||(timestep == 0)) )
+       (timestep != simParams->firstTimestep) )
   {
+    iout << "WRITING VELOCITIES TO DCD FILE AT STEP "
+				<< timestep << "\n" << endi;
     output_veldcdfile(timestep, n, vel);
   }
 
@@ -449,12 +457,16 @@ void Output::velocity(int timestep, int n, Vector *vel)
        ((timestep % simParams->restartFrequency) == 0) &&
        (timestep != simParams->firstTimestep) )
   {
+    iout << "WRITING VELOCITIES TO RESTART FILE AT STEP "
+				<< timestep << "\n" << endi;
     output_restart_velocities(timestep, n, vel);
   }
 
   //  Output final velocities
   if (timestep == simParams->N)
   {
+    iout << "WRITING VELOCITIES TO OUTPUT FILE AT STEP "
+				<< timestep << "\n" << endi;
     output_final_velocities(timestep, n, vel);
   }
 }
@@ -624,6 +636,7 @@ void Output::output_dcdfile(int timestep, int n, Vector *coor)
   static float *x, *y, *z; // Arrays to hold x, y, and z arrays
   int i;      //  Loop counter
   int ret_code;    //  Return code from DCD calls
+  SimParameters *simParams = namdMyNode->simParams;
 
   if (first)
   {
@@ -640,14 +653,14 @@ void Output::output_dcdfile(int timestep, int n, Vector *coor)
     }
 
     //  Open the DCD file
-    fileid=open_dcd_write(namdMyNode->simParams->dcdFilename);
+    fileid=open_dcd_write(simParams->dcdFilename);
 
     if (fileid == DCD_FILEEXISTS)
     {
       char err_msg[257];
 
       sprintf(err_msg, "DCD file %s already exists!!",
-        namdMyNode->simParams->dcdFilename);
+        simParams->dcdFilename);
 
       NAMD_die(err_msg);
     }
@@ -656,20 +669,23 @@ void Output::output_dcdfile(int timestep, int n, Vector *coor)
       char err_msg[257];
 
       sprintf(err_msg, "Couldn't open DCD file %s",
-        namdMyNode->simParams->dcdFilename);
+        simParams->dcdFilename);
 
       NAMD_die(err_msg);
     }
 
+    int NSAVC, NFILE, NPRIV, NSTEP;
+    NSAVC = simParams->dcdFrequency;
+    NSTEP = NSAVC * (simParams->N/NSAVC);
+    NPRIV = simParams->firstTimestep+NSAVC;
+    NPRIV = NSAVC * (NPRIV/NSAVC);
+    NFILE = (NSTEP-NPRIV)/NSAVC + 1;
 
     //  Write out the header
     ret_code = write_dcdheader(fileid, 
-        namdMyNode->simParams->dcdFilename,
-        n, 
-        (int) ((namdMyNode->simParams->N+1)/namdMyNode->simParams->dcdFrequency)+1,
-        0, 
-        namdMyNode->simParams->dcdFrequency, 
-        namdMyNode->simParams->dt/TIMEFACTOR);
+        simParams->dcdFilename,
+        n, NFILE, NPRIV, NSAVC, NSTEP,
+        simParams->dt/TIMEFACTOR);
 
 
     if (ret_code<0)
@@ -698,8 +714,8 @@ void Output::output_dcdfile(int timestep, int n, Vector *coor)
 
   //  If this is the last time we will be writing coordinates,
   //  close the file before exiting
-  if ( (timestep+namdMyNode->simParams->dcdFrequency) >
-        namdMyNode->simParams->N)
+  if ( (timestep+simParams->dcdFrequency) >
+        simParams->N)
   {
     close_dcd_write(fileid);
   }
@@ -816,6 +832,7 @@ void Output::output_veldcdfile(int timestep, int n, Vector *vel)
   static float *x, *y, *z; // Arrays to hold x, y, and z arrays
   int i;      //  Loop counter
   int ret_code;    //  Return code from DCD calls
+  SimParameters *simParams = Node::Object()->simParameters;
 
   if (first)
   {
@@ -853,12 +870,18 @@ void Output::output_veldcdfile(int timestep, int n, Vector *vel)
       NAMD_die(err_msg);
     }
 
+    int NSAVC, NFILE, NPRIV, NSTEP;
+    NSAVC = simParams->velDcdFrequency;
+    NSTEP = NSAVC * (simParams->N/NSAVC);
+    NPRIV = simParams->firstTimestep+NSAVC;
+    NPRIV = NSAVC * (NPRIV/NSAVC);
+    NFILE = (NSTEP-NPRIV)/NSAVC + 1;
 
     //  Write out the header
-    ret_code = write_dcdheader(fileid, namdMyNode->simParams->velDcdFilename, n, 
-        (int) ((namdMyNode->simParams->N+1)/namdMyNode->simParams->velDcdFrequency)+1,
-        0, namdMyNode->simParams->velDcdFrequency, 
-        namdMyNode->simParams->dt/TIMEFACTOR);
+    ret_code = write_dcdheader(fileid, 
+        simParams->velDcdFilename,
+        n, NFILE, NPRIV, NSAVC, NSTEP,
+        simParams->dt/TIMEFACTOR);
 
 
     if (ret_code<0)
@@ -2242,6 +2265,7 @@ void Output::output_longforcedcdfile(int timestep, int n, Vector *forces)
   int i;      //  Loop counter
   int ret_code;    //  Return code from DCD calls
   char filename[257];  //  DCD filename
+  SimParameters *simParams = Node::Object()->simParameters;
 
   if (first)
   {
@@ -2280,12 +2304,18 @@ void Output::output_longforcedcdfile(int timestep, int n, Vector *forces)
       NAMD_die(err_msg);
     }
 
+    int NSAVC, NFILE, NPRIV, NSTEP;
+    NSAVC = simParams->electForceDcdFrequency;
+    NSTEP = NSAVC * (simParams->N/NSAVC);
+    NPRIV = simParams->firstTimestep+NSAVC;
+    NPRIV = NSAVC * (NPRIV/NSAVC);
+    NFILE = (NSTEP-NPRIV)/NSAVC + 1;
 
     //  Write out the header
-    ret_code = write_dcdheader(fileid, filename, n, 
-        (int) ((namdMyNode->simParams->N+1)/namdMyNode->simParams->electForceDcdFrequency)+1,
-        0, namdMyNode->simParams->electForceDcdFrequency, 
-        namdMyNode->simParams->dt/TIMEFACTOR);
+    ret_code = write_dcdheader(fileid, 
+        filename,
+        n, NFILE, NPRIV, NSAVC, NSTEP,
+        simParams->dt/TIMEFACTOR);
 
 
     if (ret_code<0)
@@ -2345,6 +2375,7 @@ void Output::output_shortforcedcdfile(int timestep, int n, Vector *forces)
   int i;      //  Loop counter
   int ret_code;    //  Return code from DCD calls
   char filename[257];
+  SimParameters *simParams = Node::Object()->simParameters;
 
   if (first)
   {
@@ -2383,11 +2414,18 @@ void Output::output_shortforcedcdfile(int timestep, int n, Vector *forces)
       NAMD_die(err_msg);
     }
 
+    int NSAVC, NFILE, NPRIV, NSTEP;
+    NSAVC = simParams->electForceDcdFrequency;
+    NSTEP = NSAVC * (simParams->N/NSAVC);
+    NPRIV = simParams->firstTimestep+NSAVC;
+    NPRIV = NSAVC * (NPRIV/NSAVC);
+    NFILE = (NSTEP-NPRIV)/NSAVC + 1;
+
     //  Write out the header
-    ret_code = write_dcdheader(fileid, filename, n, 
-        (int) ((namdMyNode->simParams->N+1)/namdMyNode->simParams->electForceDcdFrequency)+1,
-        0, namdMyNode->simParams->electForceDcdFrequency, 
-        namdMyNode->simParams->dt/TIMEFACTOR);
+    ret_code = write_dcdheader(fileid, 
+        filename,
+        n, NFILE, NPRIV, NSAVC, NSTEP,
+        simParams->dt/TIMEFACTOR);
 
 
     if (ret_code<0)
@@ -2445,6 +2483,7 @@ void Output::output_allforcedcdfile(int timestep, int n, Vector *forces)
   static float *x, *y, *z; // Arrays to hold x, y, and z arrays
   int i;      //  Loop counter
   int ret_code;    //  Return code from DCD calls
+  SimParameters *simParams = Node::Object()->simParameters;
 
   if (first)
   {
@@ -2482,12 +2521,18 @@ void Output::output_allforcedcdfile(int timestep, int n, Vector *forces)
       NAMD_die(err_msg);
     }
 
+    int NSAVC, NFILE, NPRIV, NSTEP;
+    NSAVC = simParams->allForceDcdFrequency;
+    NSTEP = NSAVC * (simParams->N/NSAVC);
+    NPRIV = simParams->firstTimestep+NSAVC;
+    NPRIV = NSAVC * (NPRIV/NSAVC);
+    NFILE = (NSTEP-NPRIV)/NSAVC + 1;
 
     //  Write out the header
-    ret_code = write_dcdheader(fileid, namdMyNode->simParams->allForceDcdFilename, n, 
-        (int) ((namdMyNode->simParams->N+1)/namdMyNode->simParams->allForceDcdFrequency)+1,
-        0, namdMyNode->simParams->allForceDcdFrequency, 
-        namdMyNode->simParams->dt/TIMEFACTOR);
+    ret_code = write_dcdheader(fileid, 
+        simParams->allForceDcdFilename,
+        n, NFILE, NPRIV, NSAVC, NSTEP,
+        simParams->dt/TIMEFACTOR);
 
 
     if (ret_code<0)
@@ -2530,13 +2575,16 @@ void Output::output_allforcedcdfile(int timestep, int n, Vector *forces)
  * RCS INFORMATION:
  *
  *  $RCSfile: Output.C,v $
- *  $Author: brunner $  $Locker:  $    $State: Exp $
- *  $Revision: 1.18 $  $Date: 1999/05/11 23:56:40 $
+ *  $Author: jim $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.19 $  $Date: 1999/05/25 21:48:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Output.C,v $
+ * Revision 1.19  1999/05/25 21:48:48  jim
+ * Modified DCD code to be compatible with Quanta.
+ *
  * Revision 1.18  1999/05/11 23:56:40  brunner
  * Changes for new charm version
  *

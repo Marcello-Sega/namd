@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1064 $  $Date: 1999/05/14 18:47:25 $
+ *  $Revision: 1.1065 $  $Date: 1999/05/25 21:48:50 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1065  1999/05/25 21:48:50  jim
+ * Modified DCD code to be compatible with Quanta.
+ *
  * Revision 1.1064  1999/05/14 18:47:25  jim
  * Split up huge functions into several smaller ones to help compilers.
  *
@@ -2548,6 +2551,9 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
         << dcdFilename << "\n";
      iout << iINFO << "DCD FREQUENCY          " 
         << dcdFrequency << "\n";
+     if ( ! firstTimestep ) {
+       iout << iWARN << "INITIAL COORDINATES WILL NOT BE WRITTEN TO DCD FILE\n";
+     }
    }
    else
    {
@@ -2574,6 +2580,9 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
         << velDcdFilename << "\n";
      iout << iINFO << "VELOCITY DCD FREQUENCY " 
         << velDcdFrequency << "\n";
+     if ( ! firstTimestep ) {
+       iout << iWARN << "INITIAL VELOCITIES WILL NOT BE WRITTEN TO DCD FILE\n";
+     }
    }
    else
    {
@@ -3672,12 +3681,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1064 $  $Date: 1999/05/14 18:47:25 $
+ *  $Revision: 1.1065 $  $Date: 1999/05/25 21:48:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1065  1999/05/25 21:48:50  jim
+ * Modified DCD code to be compatible with Quanta.
+ *
  * Revision 1.1064  1999/05/14 18:47:25  jim
  * Split up huge functions into several smaller ones to help compilers.
  *

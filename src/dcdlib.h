@@ -33,7 +33,7 @@ int read_dcdstep(int, int, float*, float*, float*, int, int, int*);
 int open_dcd_write(char *);     /*  Open a DCD file for writing		*/
 int write_dcdstep(int, int, float *, float *, float *);
 				/*  Write out a timesteps values	*/
-int write_dcdheader(int, char*, int, int, int, int, double);	
+int write_dcdheader(int, char*, int, int, int, int, int, double);	
 				/*  Write a dcd header			*/
 void close_dcd_read(int, int, int *);
 				/*  Close a dcd file open for reading   */
@@ -44,13 +44,16 @@ void close_dcd_write(int);	/*  Close a dcd file open for writing   */
  * RCS INFORMATION:
  *
  *	$RCSfile: dcdlib.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1997/03/19 11:55:02 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.3 $	$Date: 1999/05/25 21:48:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: dcdlib.h,v $
+ * Revision 1.3  1999/05/25 21:48:52  jim
+ * Modified DCD code to be compatible with Quanta.
+ *
  * Revision 1.2  1997/03/19 11:55:02  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.
