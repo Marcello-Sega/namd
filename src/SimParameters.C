@@ -1158,6 +1158,14 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
   {
     MTSAlgorithm = NAIVE;
   }
+  if (!strcasecmp(s, "constant"))
+  {
+    MTSAlgorithm = NAIVE;
+  }
+  else if (!strcasecmp(s, "impulse"))
+  {
+    MTSAlgorithm = VERLETI;
+  }
   else if (!strcasecmp(s, "verleti"))
   {
     MTSAlgorithm = VERLETI;
@@ -2444,8 +2452,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 
   if (MTSAlgorithm == NAIVE)
   {
-    iout << iWARN << "NAIVE MTS SCHEME IS NOT SUPPORTED, USING VERLET I.\n";
-    MTSAlgorithm = VERLETI;
+    iout << iINFO << "USING NAIVE (CONSTANT FORCE) MTS SCHEME.\n" << endi;
   }
   if (MTSAlgorithm == VERLETI )
   {

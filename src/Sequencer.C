@@ -104,9 +104,12 @@ void Sequencer::algorithm(void)
     const int stepsPerCycle = simParams->stepsPerCycle;
     const BigReal timestep = simParams->dt;
 
+    // what MTS method?
+    const int staleForces = ( simParams->MTSAlgorithm == NAIVE );
+
     const int nonbondedFrequency = simParams->nonbondedFrequency;
     slowFreq = nonbondedFrequency;
-    const BigReal nbondstep = timestep * nonbondedFrequency;
+    const BigReal nbondstep = timestep * (staleForces?1:nonbondedFrequency);
     int &doNonbonded = patch->flags.doNonbonded;
     doNonbonded = !(step%nonbondedFrequency);
     if ( nonbondedFrequency == 1 ) maxForceMerged = Results::nbond;
@@ -117,7 +120,7 @@ void Sequencer::algorithm(void)
 			simParams->FMAOn || simParams->PMEOn );
     const int fullElectFrequency = simParams->fullElectFrequency;
     if ( dofull ) slowFreq = fullElectFrequency;
-    const BigReal slowstep = timestep * fullElectFrequency;
+    const BigReal slowstep = timestep * (staleForces?1:fullElectFrequency);
     int &doFullElectrostatics = patch->flags.doFullElectrostatics;
     doFullElectrostatics = (dofull && !(step%fullElectFrequency));
     if ( dofull && (fullElectFrequency == 1) && !(simParams->mollyOn) )
@@ -129,6 +132,10 @@ void Sequencer::algorithm(void)
     rattle1(0.);  // enforce rigid bond constraints on initial positions
     minimizationQuenchVelocity();
     runComputeObjects(1); // must migrate here!
+    if ( staleForces ) {
+      if ( doNonbonded ) saveForce(Results::nbond);
+      if ( doFullElectrostatics ) saveForce(Results::slow);
+    }
     addForceToMomentum(0.); // zero velocities of fixed atoms
     reassignVelocities(step);
     rattle2(timestep,step);  // enforce rigid bonds on initial velocities
@@ -143,10 +150,10 @@ void Sequencer::algorithm(void)
 	// langevinVelocities(0.5*timestep);
 
 	addForceToMomentum(0.5*timestep);
-	if (doNonbonded)
-		addForceToMomentum(0.5*nbondstep,Results::nbond);
-	if (doFullElectrostatics)
-		addForceToMomentum(0.5*slowstep,Results::slow);
+	if (staleForces || doNonbonded)
+		addForceToMomentum(0.5*nbondstep,Results::nbond,staleForces);
+	if (staleForces || doFullElectrostatics)
+		addForceToMomentum(0.5*slowstep,Results::slow,staleForces);
 	langevinVelocitiesBBK1(timestep);
 
 	maximumMove(timestep);
@@ -166,13 +173,17 @@ void Sequencer::algorithm(void)
 
 	// Migrate Atoms on stepsPerCycle
 	runComputeObjects(!(step%stepsPerCycle));
+	if ( staleForces ) {
+	  if ( doNonbonded ) saveForce(Results::nbond);
+	  if ( doFullElectrostatics ) saveForce(Results::slow);
+	}
 
 	langevinVelocitiesBBK2(timestep);
 	addForceToMomentum(0.5*timestep);
-	if (doNonbonded)
-		addForceToMomentum(0.5*nbondstep,Results::nbond);
-	if (doFullElectrostatics)
-		addForceToMomentum(0.5*slowstep,Results::slow);
+	if (staleForces || doNonbonded)
+		addForceToMomentum(0.5*nbondstep,Results::nbond,staleForces);
+	if (staleForces || doFullElectrostatics)
+		addForceToMomentum(0.5*slowstep,Results::slow,staleForces);
 
 	// langevinVelocities(0.5*timestep);
 	reassignVelocities(step);
