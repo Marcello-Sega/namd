@@ -30,8 +30,7 @@ class maxheap;
 
 #define DEBUG_LEVEL 4
 
-#define TIMER_FNC()   CmiTimer()
-#define NO_IDLE_COMPUTATION
+#define TIMER_FNC()   CmiWallTimer()
 
 // static initialization
 LdbCoordinator *LdbCoordinator::_instance = 0;
