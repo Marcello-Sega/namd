@@ -31,7 +31,7 @@ public:
  private:
   PmeGrid myGrid;
   int qsize, fsize, bsize;
-  int fepOn, numGrids;
+  int fepOn, lesOn, lesFactor, numGrids;
   double **q_arr;
   char *f_arr;
   char *fz_arr;

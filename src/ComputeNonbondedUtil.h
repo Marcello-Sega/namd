@@ -95,6 +95,9 @@ public:
   static BigReal lambda;
   static BigReal lambda2;
 //sd-de
+  static Bool lesOn;
+  static int lesFactor;
+  static BigReal lesScaling;
 
   // for particle mesh Ewald
   static BigReal ewaldcof;

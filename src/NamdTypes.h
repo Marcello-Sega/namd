@@ -33,12 +33,12 @@ struct Transform
 struct CompAtom {
   Position position;
   Charge charge;
-  unsigned int id : 24;
+  unsigned int id : 22;
   unsigned int hydrogenGroupSize : 3;
   unsigned int nonbondedGroupIsAtom : 1;
   unsigned int atomFixed : 1;
   unsigned int groupFixed : 1;
-  unsigned int partition : 2;
+  unsigned int partition : 4;
 
   CompAtom() { ; }
 

@@ -589,6 +589,14 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
 // end FEP options
 //fepe
 
+   opts.optionalB("main", "les", "Is locally enhanced sampling enabled?",
+     &lesOn, FALSE);
+   opts.require("les", "lesFactor", "Local enhancement factor", &lesFactor);
+   opts.optional("les", "lesFile", "PDB file with enhancement flags "
+     "default is the input PDB file", PARSE_STRING); 
+   opts.optional("les", "lesCol", "Column in the lesFile with the "
+     "enhancement flag", PARSE_STRING);
+
    //  Dihedral angle dynamics
    opts.optionalB("main", "globalTest", "Should global integration (for development) be used?",
     &globalOn, FALSE);
@@ -1717,9 +1725,16 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
        strcat(fepOutFile, ".fep");
      }
    } else {
+     lambda = lambda2 = 0;
      fepOutFile[0] = STRINGNULL;
    }
 //fepe
+
+   if ( fepOn && lesOn )
+     NAMD_die("Sorry, combined LES and FEP is not implemented.");
+   if ( lesOn && ( lesFactor < 1 || lesFactor > 15 ) ) {
+     NAMD_die("lesFactor must be positive and less than 16");
+   }
 
    //  Set up load balancing variables
    if (opts.defined("ldbStrategy"))
@@ -2375,6 +2390,12 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    }
 
 //fepe
+
+   if ( lesOn ) {
+     iout << iINFO << "LOCALLY ENHANCED SAMPLING ACTIVE\n";
+     iout << iINFO << "LOCAL ENHANCEMENT FACTOR IS "
+          << lesFactor << "\n";
+   }
 
    if (consForceOn)
      iout << iINFO << "CONSTANT FORCE ACTIVE\n";

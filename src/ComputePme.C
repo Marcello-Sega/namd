@@ -115,7 +115,7 @@ private:
   double *work;
 #endif
 
-  int fepOn, numGrids;
+  int fepOn, lesOn, lesFactor, numGrids;
 
   LocalPmeInfo *localInfo;
   int qgrid_size;
@@ -172,6 +172,11 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 
   fepOn = simParams->fepOn;
   numGrids = fepOn ? 2 : 1;
+  lesOn = simParams->lesOn;
+  if ( lesOn ) {
+    lesFactor = simParams->lesFactor;
+    numGrids = lesFactor;
+  }
 
   {  // decide how many pes to use for reciprocal sum
     int nrp = 1;
@@ -851,6 +856,11 @@ ComputePme::ComputePme(ComputeID c) :
 
   fepOn = simParams->fepOn;
   numGrids = fepOn ? 2 : 1;
+  lesOn = simParams->lesOn;
+  if ( lesOn ) {
+    lesFactor = simParams->lesFactor;
+    numGrids = lesFactor;
+  }
 
   myGrid.K1 = simParams->PMEGridSizeX;
   myGrid.K2 = simParams->PMEGridSizeY;
@@ -943,7 +953,7 @@ void ComputePme::doWork()
   }
 
   // copy to other grids if needed
-  if ( numGrids > 1 ) {
+  if ( fepOn || lesOn ) {
     for ( g=0; g<numGrids; ++g ) {
       PmeParticle *lgd = localGridData[g];
       int nga = 0;
@@ -1128,7 +1138,7 @@ void ComputePme::ungridForces() {
 
     Vector *localResults = new Vector[numLocalAtoms*(numGrids>1?2:1)];
     Vector *gridResults;
-    if ( numGrids > 1 ) {
+    if ( fepOn || lesOn ) {
       for(int i=0; i<numLocalAtoms; ++i) { localResults[i] = 0.; }
       gridResults = localResults + numLocalAtoms;
     } else {
@@ -1142,10 +1152,14 @@ void ComputePme::ungridForces() {
       delete myRealSpace[g];
       scale_forces(gridResults, numGridAtoms[g], lattice);
 
-      if ( numGrids > 1 ) {
+      if ( fepOn || lesOn ) {
         double scale = 1.;
-        if ( fepOn && g == 0 ) scale = simParams->lambda;
-        else if ( fepOn && g == 1 ) scale = 1. - simParams->lambda;
+        if ( fepOn ) {
+          if ( g == 0 ) scale = simParams->lambda;
+          else if ( g == 1 ) scale = 1. - simParams->lambda;
+        } else if ( lesOn ) {
+          scale = 1.0 / (double)lesFactor;
+        }
         int nga = 0;
         for(int i=0; i<numLocalAtoms; ++i) {
           if ( localPartition[i] == 0 || localPartition[i] == (g+1) ) {
@@ -1182,8 +1196,12 @@ void ComputePme::ungridForces() {
    
     for ( g=0; g<numGrids; ++g ) {
       double scale = 1.;
-      if ( fepOn && g == 0 ) scale = simParams->lambda;
-      else if ( fepOn && g == 1 ) scale = 1. - simParams->lambda;
+      if ( fepOn ) {
+        if ( g == 0 ) scale = simParams->lambda;
+        else if ( g == 1 ) scale = 1. - simParams->lambda;
+      } else if ( lesOn ) {
+        scale = 1.0 / (double)lesFactor;
+      }
       reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += evir[0+7*g] * scale;
       reduction->item(REDUCTION_VIRIAL_SLOW_XX) += evir[1+7*g] * scale;
       reduction->item(REDUCTION_VIRIAL_SLOW_XY) += evir[2+7*g] * scale;

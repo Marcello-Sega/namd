@@ -225,6 +225,11 @@ int NamdState::configListInit(ConfigList *cfgList) {
                 configList->find("fepcol"), pdb, NULL);
         }
 //fepe
+        if (simParameters->lesOn) {
+	   if (simParameters->fepOn) NAMD_bug("FEP and LES are incompatible!");
+           molecule->build_fep_flags(configList->find("lesfile"),
+                configList->find("lescol"), pdb, NULL);
+        }
 
 	iout << iINFO << "****************************\n";
 	iout << iINFO << "STRUCTURE SUMMARY:\n";
@@ -289,6 +294,13 @@ int NamdState::configListInit(ConfigList *cfgList) {
                " ATOMS TO APPEAR IN FINAL STATE\n";
         }
 //fepe
+
+        if (simParameters->lesOn) {
+           iout << iINFO << molecule->numFepFinal <<
+               " LOCALLY ENHANCED ATOMS AVAILABLE\n";
+           iout << iINFO << molecule->numFepInitial <<
+               " LOCALLY ENHANCED ATOMS ENABLED\n";
+        }
 
 	{
 	  // Copied from Controller::printEnergies()

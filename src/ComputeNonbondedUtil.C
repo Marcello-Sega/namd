@@ -53,6 +53,9 @@ Bool            ComputeNonbondedUtil::fepOn;
 BigReal         ComputeNonbondedUtil::lambda;
 BigReal         ComputeNonbondedUtil::lambda2;
 //fepe
+Bool            ComputeNonbondedUtil::lesOn;
+int             ComputeNonbondedUtil::lesFactor;
+BigReal         ComputeNonbondedUtil::lesScaling;
 
 BigReal		ComputeNonbondedUtil::ewaldcof;
 BigReal		ComputeNonbondedUtil::pi_ewaldcof;
@@ -107,10 +110,15 @@ void ComputeNonbondedUtil::select(void)
 
 //fepb
   fepOn = simParams->fepOn;
-  lambda = simParams->lambda;
-  lambda2 = simParams->lambda2;
+  lambda = lambda2 = 0;
+  lesOn = simParams->lesOn;
+  lesScaling = lesFactor = 0;
 
-  if ( fepOn ) {
+  if ( fepOn || lesOn ) {
+    if ( fepOn ) lambda = simParams->lambda;
+    if ( fepOn ) lambda2 = simParams->lambda2;
+    if ( lesOn ) lesFactor = simParams->lesFactor;
+    if ( lesOn ) lesScaling = 1.0 / (double)lesFactor;
     ComputeNonbondedUtil::calcPair = calc_pair_fep;
     ComputeNonbondedUtil::calcSelf = calc_self_fep;
     ComputeNonbondedUtil::calcFullPair = calc_pair_fullelect_fep;

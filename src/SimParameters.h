@@ -203,6 +203,9 @@ public:
 //   End FEP flags
 //fepe
 
+	Bool lesOn;			//  Locally enhanced sampling?
+	int lesFactor;			//  local enhancement factor
+
         Bool extForcesOn;		//  Are ext command forces present?
         char extForcesCommand[257];
         char extCoordFilename[129];

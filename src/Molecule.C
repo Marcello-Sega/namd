@@ -1702,7 +1702,7 @@ void Molecule::send_Molecule(Communicate *com_obj)
 
 //fepb
       // send fep atom info
-      if (simParams->fepOn) {
+      if (simParams->fepOn || simParams->lesOn) {
         msg->put(numFepInitial);
         msg->put(numFepFinal);
         msg->put(numAtoms*sizeof(char), (char*)fepAtomFlags);
@@ -1878,7 +1878,7 @@ void Molecule::receive_Molecule(MIStream *msg)
 
 //fepb
       //receive fep atom info
-      if (simParams->fepOn) {
+      if (simParams->fepOn || simParams->lesOn) {
         delete [] fepAtomFlags;
         fepAtomFlags = new unsigned char[numAtoms];
 
@@ -3324,6 +3324,16 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
     }
 
     // Assign fep flag value
+    if (simParams->lesOn) {
+      if ( bval == (int) bval && bval > 0 ) {
+        if ( bval > 15 ) NAMD_die("LES flag must be less than 16.");
+        fepAtomFlags[i] = (int) bval;
+        numFepFinal++;
+        if ( bval <= simParams->lesFactor ) numFepInitial++;
+      } else {
+        fepAtomFlags[i] = 0;
+      }
+    } else {
     if (bval == 1.0) {
       fepAtomFlags[i] = 1;
       numFepFinal++;
@@ -3332,6 +3342,7 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
       numFepInitial++;
     } else {
       fepAtomFlags[i] = 0;
+    }
     }
 
   }

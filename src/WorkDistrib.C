@@ -250,6 +250,7 @@ void WorkDistrib::createHomePatches(void)
 //SD & CC, CNRS - LCTN, Nancy
     Bool fepOn = params->fepOn;
 //fepe
+    Bool lesOn = params->lesOn;
 
     for(j=0; j < n; j++)
     {
@@ -261,7 +262,7 @@ void WorkDistrib::createHomePatches(void)
 
 //Modifications for alchemical fep
 //SD & CC, CNRS - LCTN, Nancy
-      if (fepOn) {
+      if ( fepOn || lesOn ) {
         a[j].partition = molecule->get_fep_type(aid);
       } 
       else {

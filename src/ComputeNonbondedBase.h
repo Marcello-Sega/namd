@@ -429,12 +429,18 @@ void ComputeNonbondedUtil :: NAME
         if (ifep_type && jfep_type && ifep_type != jfep_type) {
 	  lambda_pair = 0.0;
 	  d_lambda_pair = 0.0;
-        } else if (ifep_type == 1 || jfep_type == 1) {
-  	  lambda_pair = lambda;
-	  d_lambda_pair = lambda2;
-        } else if ( ifep_type == 2 || jfep_type == 2) {
-	  lambda_pair = 1.0 - lambda;
-	  d_lambda_pair = 1.0 - lambda2;
+        } else if ( fepOn ) {
+          if (ifep_type == 1 || jfep_type == 1) {
+	    lambda_pair = lambda;
+	    d_lambda_pair = lambda2;
+          } else if ( ifep_type == 2 || jfep_type == 2) {
+	    lambda_pair = 1.0 - lambda;
+	    d_lambda_pair = 1.0 - lambda2;
+          }
+        } else { // lesOn
+          int fep_type = ifep_type ? ifep_type : jfep_type;
+          lambda_pair = fep_type > lesFactor ? 0.0 : lesScaling;
+	  d_lambda_pair = 0.0;
         }
       }
       )
