@@ -147,6 +147,12 @@ private:
 
   int child[PROXY_SPAN_DIM];	// spanning tree of proxies
   int nChild;
+
+#if CMK_PERSISTENT_COMM
+  PersistentHandle *localphs;
+public:
+  int phsReady;
+#endif
 };
 
 #endif

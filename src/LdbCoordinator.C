@@ -13,6 +13,7 @@
 #include "ProcessorPrivate.h"
 #include "InfoStream.h"
 
+#include "HomePatch.h"
 #include "LdbCoordinator.decl.h"
 #include "LdbCoordinator.h"
 #include "NamdTypes.h"
@@ -451,6 +452,8 @@ void LdbCoordinator::ExecuteMigrations(void)
     migrations = next;
   }
  
+  CmiDestoryAllPersistent();
+
  // computeMgr->updateComputes() call only on Node(0) i.e. right here
   // This will barrier for all Nodes - (i.e. Computes must be
   // here and with proxies before anyone can start up
@@ -548,6 +551,18 @@ void LdbCoordinator::resumeReady(CkQdMsg *msg) {
 void LdbCoordinator::resume2(void)
 {
   DebugM(3,"resume2()\n");
+
+#if CMK_PERSISTENT_COMM
+  HomePatchList *hpl = PatchMap::Object()->homePatchList();
+  ResizeArrayIter<HomePatchElem> ai(*hpl);
+
+  for (ai=ai.begin(); ai != ai.end(); ai++) {
+    HomePatch *patch = (*ai).patch;
+// CmiPrintf("%d set phsReady to 0\n");
+    patch->phsReady = 0;
+  }
+#endif
+
   awakenSequencers();
 }
 

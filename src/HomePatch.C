@@ -72,6 +72,11 @@ HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
   replacementForces = 0;
 
   nChild = 0;	// number of proxy spanning tree children
+#if CMK_PERSISTENT_COMM
+  phsReady = 0;
+  localphs = new PersistentHandle[CkNumPes()];
+  for (int i=0; i<CkNumPes(); i++) localphs[i] = 0;
+#endif
 }
 
 void HomePatch::reinitAtoms(FullAtomList al) {
@@ -304,6 +309,16 @@ void HomePatch::positionsReady(int doMigration)
     for (int i=0; i<nChild; i++) pids[i] = child[i];
   }
   if (npid) {
+#if CMK_PERSISTENT_COMM
+    if (phsReady == 0)
+    {
+//CmiPrintf("Build on %d phs0:%d\n", CmiMyPe(), localphs[0]);
+     for (int i=0; i<npid; i++) {
+       localphs[i] = CmiCreatePersistent(pids[i], 300000);
+     }
+     phsReady = 1;
+    }
+#endif
     int seq = flags.sequence;
     int priority = 64 + (seq % 256) * 256 + (patchID % 64);
     if (doMigration) {
@@ -314,7 +329,9 @@ void HomePatch::positionsReady(int doMigration)
         allmsg->flags = flags;
         allmsg->positionList = p;
         if (flags.doMolly) allmsg->avgPositionList = p_avg;
+//        CmiUsePersistentHandle(localphs, npid);
         ProxyMgr::Object()->sendProxyAll(allmsg,npid,pids);
+        CmiUsePersistentHandle(NULL, 0);
     } else {
         ProxyDataMsg *nmsg = new (sizeof(int)*8) ProxyDataMsg;
         CkSetQueueing(nmsg, CK_QUEUEING_IFIFO);
@@ -323,7 +340,9 @@ void HomePatch::positionsReady(int doMigration)
         nmsg->flags = flags;
         nmsg->positionList = p;
         if (flags.doMolly) nmsg->avgPositionList = p_avg;
+//        CmiUsePersistentHandle(localphs, npid);
         ProxyMgr::Object()->sendProxyData(nmsg,npid,pids);
+        CmiUsePersistentHandle(NULL, 0);
     }   
   }
   delete [] pids;
