@@ -2,7 +2,8 @@
 #####
 ## Choose your favorite Compiler options
 ####
-#CXXOPTS = -O
+CXXOPTS = -O -DGLOBALS
+#CXXOPTS = +O2
 #CXXOPTS = +O3
 #CXXOPTS = +O3 +DAK220 +DSK220 -G +Oinlinebudget=500 +Olibcalls
 #CXXOPTS = +O3 +DAK220 +DSK220 -G
@@ -10,7 +11,7 @@
 # this one below leads to numerical changes!
 #CXXOPTS = +O3 -G -z -ptn +Oentrysched +Ofastaccess +Onofltacc +Oregionsched
 #CXXOPTS = +O3 -G -z -ptn +Oentrysched
-CXXOPTS = +O3
+#CXXOPTS = +O3 -G
 #CXXOPTS = +O3 -z
 #CXXOPTS = -g -v -z -G
 #CXXOPTS = -g -v
@@ -22,7 +23,7 @@ CXXOPTS = +O3
 # uncomment for no warnings during compile
 #NOWARN=-w
 # uncomment for purify during compile
-#PURIFY=-purify
+# PURIFY=-purify
 
 #####
 # Directories
@@ -41,6 +42,7 @@ LIBS = dpmta2/mpole/libmpole.a dpmta2/src/libdpmta2.a pvm3/libpvmc.a dpme2/libdp
 # definitions for Charm routines
 #####
 CHARM = /Projects/l1/namd.2.0/charm
+# CHARM = /Home/p1/milind/charm/net-hp
 CHARMC = $(CHARM)/bin/charmc $(PURIFY)
 CHARMXI = $(CHARM)/bin/charmc $(PURIFY)
 
@@ -69,7 +71,8 @@ PVM=-I$(PVMDIR)
 
 
 CXX = CC -Aa -D_HPUX_SOURCE
-INCLUDE = /Projects/l1/namd.2.0/charm/include
+# CXX = g++ -D_HPUX_SOURCE
+INCLUDE = $(CHARM)/include
 CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(PVM) $(CXXOPTS) $(NOWARN)
 GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(PVM) $(NOWARN)
 
