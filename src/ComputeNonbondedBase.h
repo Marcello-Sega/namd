@@ -243,6 +243,9 @@ void ComputeNonbondedUtil :: NAME
   int *const fixglist = (j_upper < 1000 ? fixglist_std : new int[j_upper+5]);
   int *const goodglist = (j_upper < 1000 ? goodglist_std : new int[j_upper+5]);
 
+  float r2f_std[1005];
+  float *r2f = (j_upper < 1000 ? r2f_std : new float[j_upper+5]);
+
   register int g = 0;
   for ( j = 0; j < j_upper; ++j ) {
     if ( p_1[j].hydrogenGroupSize || p_1[j].nonbondedGroupIsAtom ) {
@@ -273,6 +276,7 @@ void ComputeNonbondedUtil :: NAME
       if (grouplist != grouplist_std) delete [] grouplist;
       if (fixglist != fixglist_std) delete [] fixglist;
       if (goodglist != goodglist_std) delete [] goodglist;
+      if (r2f != r2f_std) delete [] r2f;
       return;
     }
   }
@@ -329,8 +333,12 @@ void ComputeNonbondedUtil :: NAME
     register const BigReal p_i_y = p_i.position.y;
     register const BigReal p_i_z = p_i.position.z;
 
-    SHORT( FAST( Force & f_i = f_0[i]; ) )
-    FULL( Force & fullf_i = fullf_0[i]; )
+    SHORT( FAST( BigReal & f_i_x = f_0[i].x; ) )
+    SHORT( FAST( BigReal & f_i_y = f_0[i].y; ) )
+    SHORT( FAST( BigReal & f_i_z = f_0[i].z; ) )
+    FULL( BigReal & fullf_i_x = fullf_0[i].x; )
+    FULL( BigReal & fullf_i_y = fullf_0[i].y; )
+    FULL( BigReal & fullf_i_z = fullf_0[i].z; )
 
   if (p_i.hydrogenGroupSize || p_i.nonbondedGroupIsAtom)
     {
@@ -626,6 +634,7 @@ void ComputeNonbondedUtil :: NAME
   if (grouplist != grouplist_std) delete [] grouplist;
   if (fixglist != fixglist_std) delete [] fixglist;
   if (goodglist != goodglist_std) delete [] goodglist;
+  if (r2f != r2f_std) delete [] r2f;
   if (pairlist != pairlist_std) delete [] pairlist;
   if (pairlist2 != pairlist2_std) delete [] pairlist2;
   if (pairlistn != pairlistn_std) delete [] pairlistn;
