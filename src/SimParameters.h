@@ -125,16 +125,16 @@ public:
 					//  a velocity DCD file be updated
 	int xstFrequency;		//  How often (in timesteps) should
 					//  a XST trajectory file be updated
-	char auxFilename[129];		//  auxilary output filename
-	char dcdFilename[129];		//  DCD filename
-	char velDcdFilename[129];       //  Velocity DCD filename
-	char xstFilename[129];		//  Extended system trajectory filename
-	char outputFilename[129];	//  Output file name.  This name will
+	char auxFilename[128];		//  auxilary output filename
+	char dcdFilename[128];		//  DCD filename
+	char velDcdFilename[128];       //  Velocity DCD filename
+	char xstFilename[128];		//  Extended system trajectory filename
+	char outputFilename[128];	//  Output file name.  This name will
 					//  have .coor appended to it 
 					//  for the coordinates and 
 					//  .vel appended to
 					//  it for the velocities
-	char restartFilename[129];	//  Base name of the restart file
+	char restartFilename[128];	//  Base name of the restart file
 	int restartFrequency;		//  How often (in timesteps) shoud the
 					//  restart files be updated
         Bool restartSave;		//  unique filenames for restart files
@@ -257,9 +257,9 @@ public:
 	int lesFactor;			//  local enhancement factor
 
         Bool extForcesOn;		//  Are ext command forces present?
-        char extForcesCommand[257];
-        char extCoordFilename[129];
-        char extForceFilename[129];
+        char extForcesCommand[256];
+        char extCoordFilename[128];
+        char extForceFilename[128];
 
 	Bool pairInteractionOn;		//  Calculate pair interactions?
 	int pairInteractionGroup1;	//  Interaction group 1.
@@ -354,7 +354,7 @@ public:
 
 	Bool FFTWEstimate;
 	Bool FFTWUseWisdom;
-	char FFTWWisdomFile[129];
+	char FFTWWisdomFile[128];
 	char *FFTWWisdomString;
 
 	Bool minimizeCGOn;		//  Flag TRUE-> CG minimization active
@@ -394,7 +394,7 @@ public:
 	zVector eField;                  //  Electric field vector to be applied
 	
 	Bool stirOn;                   // Should a stirring torque be applied
-	char stirFilename[129];	       // Stirring filename (atoms marked)
+	char stirFilename[128];	       // Stirring filename (atoms marked)
 	//do the below two even needed to be defined?
 	BigReal stirStartingTheta;     // Stir starting theta offset
 	BigReal stirVel;               // Stir angular velocity
@@ -403,7 +403,7 @@ public:
         zVector stirPivot;             // Pivot point of stir axis
 
 	Bool consForceOn;		//  Should constant force be applied
-  char consForceFile[129];
+  char consForceFile[128];
 
 	int outputEnergies;		//  Number of timesteps between energy
 					//  outputs
@@ -548,7 +548,7 @@ private:
 	void print_config(ParseOptions &opts, ConfigList *config, char *&cwd);
 
 	int fmaFrequency;		//  outdated parameter name
-	char loadStrategy[65];		//  Load balancing strategy
+	char loadStrategy[64];		//  Load balancing strategy
 };
 
 #endif
