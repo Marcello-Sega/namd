@@ -131,6 +131,7 @@ public:
 	int numTotalExclusions; //  Real Total Number of Exclusions // hack
 	int numConstraints;	//  Number of atoms constrained
 	int numFixedAtoms;	//  Number of fixed atoms
+	int numHydrogenGroups;	//  Number of hydrogen groups
 
 	//  Number of dihedrals with multiple periodicity
 	int numMultipleDihedrals; 
@@ -358,12 +359,15 @@ public:
  *
  *	$RCSfile: Molecule.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/09/19 08:55:33 $
+ *	$Revision: 1.1012 $	$Date: 1997/09/21 21:58:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.1012  1997/09/21 21:58:31  jim
+ * Added printing of hydrogen group count.
+ *
  * Revision 1.1011  1997/09/19 08:55:33  jim
  * Added rudimentary but relatively efficient fixed atoms.  New options
  * are fixedatoms, fixedatomsfile, and fixedatomscol (nonzero means fixed).

@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Molecule.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1997/09/19 08:55:32 $
+ *	$Revision: 1.1016 $	$Date: 1997/09/21 21:58:30 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1016  1997/09/21 21:58:30  jim
+ * Added printing of hydrogen group count.
+ *
  * Revision 1.1015  1997/09/19 08:55:32  jim
  * Added rudimentary but relatively efficient fixed atoms.  New options
  * are fixedatoms, fixedatomsfile, and fixedatomscol (nonzero means fixed).
@@ -222,7 +225,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1015 1997/09/19 08:55:32 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1016 1997/09/21 21:58:30 jim Exp $";
 
 #include "Templates/UniqueSortedArray.h"
 #include "Molecule.h"
@@ -3581,11 +3584,13 @@ void Molecule::send_Molecule(Communicate *com_obj)
       atoms[a2].status |= HBAntecedentAtom;
   }
 
-  // sort the hydrogenGroup list
+  // sort the hydrogenGroup list and count number of groups
+  numHydrogenGroups = 0;
   for(i=0; i<numAtoms; i++)
   {
     // make H follow their group parents.
     if (!hg[i].isGP)	hg[i].sortVal = hg[hg[i].GPID].sortVal;
+    else ++numHydrogenGroups;
     // add to list to sort
     hydrogenGroup.add(hg[i]);
   }
@@ -3619,12 +3624,15 @@ void Molecule::send_Molecule(Communicate *com_obj)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1997/09/19 08:55:32 $
+ *	$Revision: 1.1016 $	$Date: 1997/09/21 21:58:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1016  1997/09/21 21:58:30  jim
+ * Added printing of hydrogen group count.
+ *
  * Revision 1.1015  1997/09/19 08:55:32  jim
  * Added rudimentary but relatively efficient fixed atoms.  New options
  * are fixedatoms, fixedatomsfile, and fixedatomscol (nonzero means fixed).
