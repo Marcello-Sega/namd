@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.6 1996/10/30 01:16:32 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.7 1996/10/30 01:50:19 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -24,6 +24,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1
 
 #include "ComputeMap.h"
 #include "Node.h"
+#include "Molecule.h"
 
 Patch::Patch(PatchID pd, AtomIDList al, PositionList pl) :
    positionPtr(0), forcePtr(0), atomPtr(0),
@@ -37,12 +38,19 @@ Patch::Patch(PatchID pd, AtomIDList al, PositionList pl) :
       CPrintf(
          "Patch::Patch(...) : Different numbers of Coordinates and IDs!\n");
     }
-    AtomIDListIter a(atomIDList);
+    Molecule *mol = Node::Object()->molecule;
+    AtomIDListIter ai(atomIDList);
     int i = 0;
-    for ( a = a.begin(); a != a.end(); a++ )
+    for ( ai = ai.begin(); ai != ai.end(); ai++ )
     {
-      LocalAtomID la(*a, i++);
+      LocalAtomID la(*ai, i++);
       localIndex.load(la);
+      AtomProperties ap;
+      ap.id = *ai;
+      ap.type = mol->atomvdwtype(*ai);
+      ap.mass = mol->atommass(*ai);
+      ap.charge = mol->atomcharge(*ai);
+      a.add(ap);
     }
     localIndex.sort();
     localIndex.uniq();
@@ -140,12 +148,15 @@ void Patch::positionsReady()
  *
  *	$RCSfile: Patch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/10/30 01:16:32 $
+ *	$Revision: 1.7 $	$Date: 1996/10/30 01:50:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.7  1996/10/30 01:50:19  jim
+ * atom properties list now filled on creation
+ *
  * Revision 1.6  1996/10/30 01:16:32  jim
  * added AtomProperties structure in Patch plus boxes, passing, etc.
  *
