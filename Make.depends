@@ -324,7 +324,6 @@ obj/CollectionMgr.o: \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/SimParameters.h \
 	src/Communicate.h \
@@ -433,7 +432,6 @@ obj/ComputeAngles.o: \
 	src/Molecule.h \
 	src/IntList.h \
 	src/ConfigList.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/ReductionMgr.h \
 	src/Inform.h \
@@ -469,7 +467,6 @@ obj/ComputeBonds.o: \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/ReductionMgr.h \
 	src/main.h \
@@ -618,7 +615,6 @@ obj/ComputeDihedrals.o: \
 	src/Molecule.h \
 	src/IntList.h \
 	src/ConfigList.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/ReductionMgr.h \
 	src/Inform.h \
@@ -695,7 +691,6 @@ obj/ComputeDPME.o: \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/SimParameters.h \
 	src/Communicate.h \
@@ -785,7 +780,6 @@ obj/ComputeDPMTA.o: \
 	src/structures.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeDPMTA.o -c src/ComputeDPMTA.C
@@ -852,7 +846,6 @@ obj/ComputeFreeEnergy.o: \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/ReductionMgr.h \
 	src/SimParameters.h \
@@ -917,7 +910,6 @@ obj/ComputeFullDirect.o: \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/Communicate.h \
 	src/MStream.h \
@@ -1023,7 +1015,6 @@ obj/ComputeHomePatches.o: \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/ReductionMgr.h \
 	src/Debug.h
@@ -1082,7 +1073,6 @@ obj/ComputeImpropers.o: \
 	src/Molecule.h \
 	src/IntList.h \
 	src/ConfigList.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/ReductionMgr.h \
 	src/Inform.h \
@@ -1168,7 +1158,6 @@ obj/ComputeGlobal.o: \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/ReductionMgr.h \
 	src/ComputeMgr.h \
@@ -1235,7 +1224,6 @@ obj/ComputeGlobalEasy.o: \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/ReductionMgr.h \
 	src/SimParameters.h \
@@ -1300,7 +1288,6 @@ obj/ComputeGlobalMaster.o: \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/ReductionMgr.h \
 	src/ComputeMgr.h \
@@ -1524,7 +1511,6 @@ obj/ComputeMgr.o: \
 	src/Molecule.h \
 	src/IntList.h \
 	src/ConfigList.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/Inform.h \
 	src/ComputeAngles.inl \
@@ -1589,7 +1575,6 @@ obj/ComputeNonbondedExcl.o: \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/Parameters.h \
 	src/strlib.h \
@@ -1754,7 +1739,6 @@ obj/ComputeNonbondedUtil.o: \
 	src/structures.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/LJTable.h \
 	src/ComputeNonbondedBase.h
@@ -1905,7 +1889,6 @@ obj/ComputePme.o: \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/ComputeMgr.h \
 	src/Debug.h \
@@ -1981,7 +1964,6 @@ obj/ComputeRestraints.o: \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/SimParameters.h \
 	src/Communicate.h \
@@ -2051,7 +2033,6 @@ obj/ComputeSMD.o: \
 	src/structures.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeSMD.o -c src/ComputeSMD.C
 obj/ComputeSphericalBC.o: \
@@ -2153,7 +2134,6 @@ obj/ComputeTcl.o: \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/ReductionMgr.h \
 	src/ComputeMgr.h \
@@ -2200,7 +2180,6 @@ obj/Controller.o: \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/SimParameters.h \
 	src/Communicate.h \
@@ -2499,7 +2478,6 @@ obj/HomePatch.o: \
 	src/Molecule.h \
 	src/IntList.h \
 	src/structures.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/PatchMgr.h \
 	src/Sequencer.h \
@@ -2554,7 +2532,6 @@ obj/IMDOutput.o: \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/Node.h \
 	src/main.h \
@@ -2805,11 +2782,11 @@ obj/Molecule.o: \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/strlib.h \
 	src/MStream.h \
 	src/Communicate.h \
+	src/ObjectArena.h \
 	src/Parameters.h \
 	src/HBondParam.h \
 	src/HBondPairData.h \
@@ -2842,7 +2819,6 @@ obj/NamdState.o: \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/Parameters.h \
 	src/strlib.h \
@@ -2905,7 +2881,6 @@ obj/NamdOneTools.o: \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/NamdOneTools.o -c src/NamdOneTools.C
@@ -2965,7 +2940,6 @@ obj/Node.o: \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/AtomMap.h \
 	src/Sequencer.h \
@@ -3017,7 +2991,6 @@ obj/Output.o: \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/Node.h \
 	src/main.h \
@@ -3136,7 +3109,6 @@ obj/Patch.o: \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/SimParameters.h \
 	src/Communicate.h \
@@ -3631,7 +3603,6 @@ obj/Sequencer.o: \
 	src/Molecule.h \
 	src/IntList.h \
 	src/structures.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/NamdOneTools.h \
 	src/PDB.h \
@@ -3755,7 +3726,6 @@ obj/WorkDistrib.o: \
 	src/structures.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/NamdOneTools.h \
 	src/Compute.h \
