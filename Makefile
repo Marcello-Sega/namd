@@ -88,7 +88,6 @@ OBJS = \
 	$(DSTDIR)/IMDOutput.o \
 	$(DSTDIR)/Inform.o \
 	$(DSTDIR)/InfoStream.o \
-	$(DSTDIR)/IntTree.o \
 	$(DSTDIR)/LdbCoordinator.o \
 	$(DSTDIR)/LJTable.o \
 	$(DSTDIR)/MStream.o \

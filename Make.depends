@@ -2515,12 +2515,6 @@ obj/InfoStream.o: \
 	src/InfoStream.C \
 	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) -o obj/InfoStream.o -c src/InfoStream.C
-obj/IntTree.o: \
-	src/IntTree.C \
-	src/IntTree.h \
-	src/common.h \
-	src/InfoStream.h
-	$(CXX) $(CXXFLAGS) -o obj/IntTree.o -c src/IntTree.C
 obj/LdbCoordinator.o: \
 	src/LdbCoordinator.C \
 	src/ProcessorPrivate.h \
