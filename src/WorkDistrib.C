@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1046 1998/04/06 16:34:13 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1047 1998/05/25 21:22:04 jim Exp $";
 
 #include <stdio.h>
 
@@ -308,7 +308,10 @@ void WorkDistrib::patchMapInit(void)
   Vector sysDim, sysMin;
 
   DebugM(3,"Mapping patches\n");
-  node->pdb->find_extremes(&xmin,&xmax);
+  // Need to use full box for FMA to match NAMD 1.X results.
+  if ( params->FMAOn ) node->pdb->find_extremes(&xmin,&xmax);
+  // Otherwise, this allows a small number of stray atoms.
+  else node->pdb->find_99percent_extremes(&xmin,&xmax);
 
   DebugM(3,"xmin.x = " << xmin.x << endl);
   DebugM(3,"xmin.y = " << xmin.y << endl);
@@ -1037,12 +1040,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1046 $	$Date: 1998/04/06 16:34:13 $
+ *	$Revision: 1.1047 $	$Date: 1998/05/25 21:22:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1047  1998/05/25 21:22:04  jim
+ * Use 99% bounding box unless FMA is active.  Avoids huge number of
+ * patches when a small number of atoms have drifted off.
+ *
  * Revision 1.1046  1998/04/06 16:34:13  jim
  * Added DPME (single processor only), test mode, and momenta printing.
  *

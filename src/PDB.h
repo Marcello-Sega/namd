@@ -80,7 +80,8 @@ class PDB {
                                   Real x2, Real y2, Real z2, Lattice lat );
 
 	// Find the extreme edges of the molecule
-    void find_extremes(Vector *, Vector *);
+    void find_extremes(Vector *low, Vector *high);
+    void find_99percent_extremes(Vector *low, Vector *high);
 
     void set_all_positions(Vector *);	//  Reset all the positions in PDB
 
@@ -92,13 +93,17 @@ class PDB {
  * RCS INFORMATION:
  *
  *	$RCSfile: PDB.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:40 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1998/05/25 21:22:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PDB.h,v $
+ * Revision 1.1002  1998/05/25 21:22:04  jim
+ * Use 99% bounding box unless FMA is active.  Avoids huge number of
+ * patches when a small number of atoms have drifted off.
+ *
  * Revision 1.1001  1997/03/19 11:54:40  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

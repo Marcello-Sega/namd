@@ -13,12 +13,13 @@
  * for a bit more information.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PDB.C,v 1.1003 1997/04/07 14:54:32 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PDB.C,v 1.1004 1998/05/25 21:22:03 jim Exp $";
 
 #include <stdio.h>
 #include <strings.h>
 #include "common.h"
 #include "PDB.h"
+#include "SortableResizeArray.h"
 
 
 // read in a file and stick all the elements on the appropriate list
@@ -342,6 +343,32 @@ void PDB::find_extremes(Vector *low, Vector *high)
   }
 }
 
+// find the lowest and highest bounds for 99% of the atoms
+void PDB::find_99percent_extremes(Vector *low, Vector *high)
+{
+    SortableResizeArray<Real> xcoor;
+    SortableResizeArray<Real> ycoor;
+    SortableResizeArray<Real> zcoor;
+    PDBAtomPtr *atomptr = atomArray;
+    for (int i=atomCount ; i>0; i--, atomptr++) {
+      PDBAtom *atom = *atomptr;
+      xcoor.add(atom->xcoor());
+      ycoor.add(atom->ycoor());
+      zcoor.add(atom->zcoor());
+    }
+    xcoor.sort();
+    ycoor.sort();
+    zcoor.sort();
+    int ilow = atomCount / 100;
+    low->x = xcoor[ilow];
+    low->y = ycoor[ilow];
+    low->z = zcoor[ilow];
+    int ihigh = atomCount - ilow - 1;
+    high->x = xcoor[ihigh];
+    high->y = ycoor[ihigh];
+    high->z = zcoor[ihigh];
+}
+
 //#define TEST_PDB_CLASS
 #ifdef TEST_PDB_CLASS
 
@@ -388,13 +415,17 @@ main()
  * RCS INFORMATION:
  *
  *	$RCSfile: PDB.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/04/07 14:54:32 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1998/05/25 21:22:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PDB.C,v $
+ * Revision 1.1004  1998/05/25 21:22:03  jim
+ * Use 99% bounding box unless FMA is active.  Avoids huge number of
+ * patches when a small number of atoms have drifted off.
+ *
  * Revision 1.1003  1997/04/07 14:54:32  nealk
  * Changed fclose() to Fclose() (found in common.[Ch]) to use with popen().
  * Also corrected compilation warnings in Set.[Ch].
