@@ -6,7 +6,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.15 1997/01/09 20:48:10 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.16 1997/01/13 23:26:19 jim Exp $";
 
 #include "unistd.h"
 
@@ -34,6 +34,10 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.
 #include "ProxyMgr.h"
 #include "ReductionMgr.top.h"
 #include "ReductionMgr.h"
+#include "CollectionMgr.top.h"
+#include "CollectionMgr.h"
+#include "CollectionMaster.top.h"
+#include "CollectionMaster.h"
 
 
 // Namd(void ) is the constructor for the startup node.  It needs to
@@ -61,6 +65,14 @@ Namd::Namd(void)
   // Create ReductionMgr
   InitMsg *initmsg5 = new (MsgIndex(InitMsg)) InitMsg;
   group.reductionMgr = new_group(ReductionMgr, initmsg5);
+
+  // Create Collection system
+  InitMsg *initmsg6 = new (MsgIndex(InitMsg)) InitMsg;
+  ChareIDType collectionMaster;
+  new_chare2(CollectionMaster,initmsg6,&collectionMaster,0);
+  SlaveInitMsg *initmsg7 = new (MsgIndex(SlaveInitMsg)) SlaveInitMsg;
+  initmsg7->master = collectionMaster;
+  group.collectionMgr = new_group(CollectionMgr,initmsg7);
 
   // Create the Node object and send it the IDs of all the other
   // parallel objects.
@@ -104,7 +116,7 @@ void Namd::startup(char *confFile)
  *
  *	$RCSfile: Namd.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.15 $	$Date: 1997/01/09 20:48:10 $
+ *	$Revision: 1.16 $	$Date: 1997/01/13 23:26:19 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -113,6 +125,9 @@ void Namd::startup(char *confFile)
  * REVISION HISTORY:
  *
  * $Log: Namd.C,v $
+ * Revision 1.16  1997/01/13 23:26:19  jim
+ * create collection system
+ *
  * Revision 1.15  1997/01/09 20:48:10  jim
  * added Controller code
  *
