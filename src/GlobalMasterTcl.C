@@ -163,6 +163,7 @@ int GlobalMasterTcl::Tcl_loadcoords(ClientData clientData,
       NAMD_die("TCL error in global force calculation!");
       return TCL_ERROR;
     }
+    Tcl_DecrRefCount(arrkey);
   }
 
   /* do the group stuff */
@@ -186,6 +187,7 @@ int GlobalMasterTcl::Tcl_loadcoords(ClientData clientData,
       NAMD_die("TCL error in global force calculation!");
       return TCL_ERROR;
     }
+    Tcl_DecrRefCount(arrkey);
   }
   return TCL_OK;
 }
@@ -203,13 +205,14 @@ int GlobalMasterTcl::Tcl_loadmasses(ClientData clientData,
   AtomIDList::iterator a_i = self->getAtomIdBegin();
   AtomIDList::iterator a_e = self->getAtomIdEnd();
   for ( ; a_i != a_e; ++a_i) {
-    if (!Tcl_ObjSetVar2(interp, vname,
-                        Tcl_NewIntObj((int)((*a_i)+1)),
+    Tcl_Obj *arrkey = Tcl_NewIntObj((int)((*a_i)+1));
+    if (!Tcl_ObjSetVar2(interp, vname, arrkey,
                         Tcl_NewDoubleObj((double)(mol->atommass(*a_i))),
                         0)) {
       NAMD_die("TCL error in global force calculation!");
       return TCL_ERROR;
     }
+    Tcl_DecrRefCount(arrkey);
   }
 
   const BigReal *g_i, *g_e;
@@ -219,13 +222,14 @@ int GlobalMasterTcl::Tcl_loadmasses(ClientData clientData,
   for ( ; g_i != g_e; ++g_i, ++gcount) {
     char buf[10];
     sprintf(buf, "g%d", gcount);
-    if (!Tcl_ObjSetVar2(interp, vname,
-                        Tcl_NewStringObj(buf, -1),
+    Tcl_Obj *arrkey = Tcl_NewStringObj(buf, -1);
+    if (!Tcl_ObjSetVar2(interp, vname, arrkey,
                         Tcl_NewDoubleObj((double)(*g_i)),
                         0)) {
       NAMD_die("TCL error in global force calculation!");
       return TCL_ERROR;
     }
+    Tcl_DecrRefCount(arrkey);
   }
   return TCL_OK;
 }
