@@ -7,8 +7,8 @@
 # this one below leads to numerical changes!
 #CXXOPTS = +O3 -G -z -ptn +Oentrysched +Ofastaccess +Onofltacc +Oregionsched
 #CXXOPTS = +O3 -G -z -ptn +Oentrysched
-#CXXOPTS = +O3 -G -z
-CXXOPTS = +O3 -z
+CXXOPTS = +O3 -G 
+#CXXOPTS = +O3 -z
 #CXXOPTS = -g -v -z -G
 #CXXOPTS = -g
 
