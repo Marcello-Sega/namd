@@ -172,6 +172,7 @@ void generatePmePeList2(int *gridPeMap, int numGridPes, int *transPeMap, int num
 
 class ComputePmeMgr : public BOCclass {
 public:
+  friend class ComputePme;
   ComputePmeMgr();
   ~ComputePmeMgr();
 
@@ -180,6 +181,7 @@ public:
   void sendGrid(void);
   void recvGrid(PmeGridMsg *);
   void gridCalc1(void);
+  void sendTransBarrier(void);
   void sendTrans(void);
   void recvTrans(PmeTransMsg *);
   void gridCalc2(void);
@@ -190,7 +192,7 @@ public:
   void recvUngrid(PmeGridMsg *);
   void ungridCalc(void);
 
-  void setCompute(ComputePme *c) { pmeCompute = c; }
+  void setCompute(ComputePme *c) { pmeCompute = c; c->setMgr(this); }
 
   //Tells if the current processor is a PME processor or not. Called by NamdCentralLB
   int isPmeProcessor(int p);  
@@ -240,6 +242,8 @@ private:
   PmeGridMsg **gridmsg_reuse;
   PmeReduction recip_evir[PME_MAX_EVALS];
   PmeReduction recip_evir2[PME_MAX_EVALS];
+
+  int sendTransBarrier_received;
 };
 
 #ifdef USE_COMM_LIB
@@ -281,6 +285,7 @@ ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), pmeProxyDir(thisgroup), pm
   untrans_count = 0;
   ungrid_count = 0;
   gridmsg_reuse= new PmeGridMsg*[CkNumPes()];
+  sendTransBarrier_received = 0;
 }
 
 void ComputePmeMgr::initialize(CkQdMsg *msg) {
@@ -490,6 +495,8 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 
   ungrid_count = numDestRecipPes;
 
+  sendTransBarrier_received = 0;
+
   if ( myGridPe < 0 && myTransPe < 0 ) return;
   // the following only for nodes doing reciprocal sum
 
@@ -606,8 +613,10 @@ void ComputePmeMgr::recvGrid(PmeGridMsg *msg) {
   if ( grid_count == 0 ) {
 #if CHARM_VERSION > 050402
     pmeProxyDir[CkMyPe()].gridCalc1();
+    pmeProxyDir[0].sendTransBarrier();
 #else
     pmeProxyDir.gridCalc1(CkMyPe());
+    pmeProxyDir.sendTransBarrier(0);
 #endif
   }
 }
@@ -622,14 +631,31 @@ void ComputePmeMgr::gridCalc1(void) {
   }
 #endif
 
+/*
 #if CHARM_VERSION > 050402
   pmeProxyDir[CkMyPe()].sendTrans();
 #else
   pmeProxyDir.sendTrans(CkMyPe());
 #endif
+*/
+}
+
+void ComputePmeMgr::sendTransBarrier(void) {
+  sendTransBarrier_received += 1;
+  // CkPrintf("sendTransBarrier on %d %d\n",myTransPe,numGridPes-sendTransBarrier_received);
+  if ( sendTransBarrier_received < numGridPes ) return;
+  sendTransBarrier_received = 0;
+  for ( int i=0; i<numTransPes; ++i ) {
+#if CHARM_VERSION > 050402
+    pmeProxyDir[transPeMap[i]].sendTrans();
+#else
+    pmeProxyDir.sendTrans(transPeMap[i]);
+#endif
+  }
 }
 
 void ComputePmeMgr::sendTrans(void) {
+  // CkPrintf("sendTrans on %d\n",myTransPe);
 
   // send data for transpose
   int zdim = myGrid.dim3;
@@ -1144,11 +1170,16 @@ void ComputePme::doWork()
     myRealSpace[g]->fill_charges(q, f, fz_arr, localGridData[g]);
   }
 
+#if 0
   CProxy_ComputePmeMgr pmeProxy(CpvAccess(BOCclass_group).computePmeMgr);
 #if CHARM_VERSION > 050402
   pmeProxy[CkMyPe()].sendGrid();
 #else
   pmeProxy.sendGrid(CkMyPe());
+#endif
+#else
+  sendData(myMgr->numGridPes,myMgr->gridPeOrder,
+		myMgr->recipPeDest,myMgr->gridPeMap);
 #endif
 }
 

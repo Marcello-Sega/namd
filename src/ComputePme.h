@@ -16,6 +16,7 @@ class PmeRealSpace;
 class ComputeMgr;
 class SubmitReduction;
 class PmeGridMsg;
+class ComputePmeMgr;
 #define PME_MAX_EVALS 15 
 typedef MathArray<double,7> PmeReduction;
 
@@ -27,6 +28,7 @@ public:
   void sendData(int, int*, int*, int*);
   void copyResults(PmeGridMsg *);
   void ungridForces();
+  void setMgr(ComputePmeMgr *mgr) { myMgr = mgr; }
 
  private:
   PmeGrid myGrid;
@@ -44,6 +46,7 @@ public:
   char *localPartition;
   int numGridAtoms[PME_MAX_EVALS];
   PmeParticle *localGridData[PME_MAX_EVALS];
+  ComputePmeMgr *myMgr;
 
 };
 

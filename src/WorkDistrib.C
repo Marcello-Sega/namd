@@ -1149,10 +1149,14 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
     }
     break;
   case computePmeType:
+#if 0
 #if CHARM_VERSION > 050402
     wdProxy[CkMyPe()].enqueuePme(msg);
 #else
     wdProxy.enqueuePme(msg,CkMyPe());
+#endif
+#else
+    msg->compute->doWork();
 #endif
     break;
   default:

@@ -321,6 +321,18 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 {
   PatchMap* patchMap = PatchMap::Object();
   ComputeMap* computeMap = ComputeMap::Object();
+
+#if 1
+  double bgfactor = 1.0 + 1.0 * CkNumPes()/1000.0;
+  if ( bgfactor > 2.0 ) bgfactor = 2.0;
+  iout << iINFO << "Scaling background load by " << bgfactor << ".\n" << endi;
+  int i;
+  for (i=0; i<count; i++) {
+    processorArray[i].Id = i;
+    processorArray[i].backgroundLoad = bgfactor * stats[i].bg_walltime;
+  }
+
+#else
   double bg_weight = 0.7;
 
   int i;
@@ -332,7 +344,6 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
       processorArray[i].backgroundLoad = stats[i].bg_walltime;
   }
   
-#if 1
   //Modification to reduce the coputeload on PME processors
   const SimParameters* simParams = Node::Object()->simParameters;  
   
