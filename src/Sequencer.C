@@ -853,11 +853,10 @@ void Sequencer::submitHalfstep(int step)
   }
  
   if (pressureProfileReduction) {
-    const Lattice &lattice = patch->lattice;
-    BigReal pressureProfileThickness = lattice.c().z;
-    BigReal idz = 1.0/pressureProfileThickness;
-    BigReal zmin = lattice.origin().z - 0.5*lattice.c().z;
     int nslabs = simParams->pressureProfileSlabs;
+    const Lattice &lattice = patch->lattice;
+    BigReal idz = nslabs/lattice.c().z;
+    BigReal zmin = lattice.origin().z - 0.5*lattice.c().z;
     int useGroupPressure = simParams->useGroupPressure;
 
     // Compute kinetic energy partition, possibly subtracting off
@@ -1011,11 +1010,10 @@ void Sequencer::submitReductions(int step)
 
   if (pressureProfileReduction && simParams->useGroupPressure) {
     // subtract off internal virial term, calculated as for intVirial.
-    const Lattice &lattice = patch->lattice;
-    BigReal pressureProfileThickness = lattice.c().z;
-    BigReal idz = 1.0/pressureProfileThickness;
-    BigReal zmin = lattice.origin().z - 0.5*lattice.c().z;
     int nslabs = simParams->pressureProfileSlabs;
+    const Lattice &lattice = patch->lattice;
+    BigReal idz = nslabs/lattice.c().z;
+    BigReal zmin = lattice.origin().z - 0.5*lattice.c().z;
     int useGroupPressure = simParams->useGroupPressure;
 
     int hgs;
