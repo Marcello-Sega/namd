@@ -1003,6 +1003,12 @@ void ComputePme::sendData(int numRecipPes, int firstDestRecipPe,
 
   if ( errcount ) NAMD_bug("Stray PME grid charges detected.");
 
+  for (int i=0; i<fsize; ++i) {
+    if ( q_arr[i] ) {
+      memset( (void*) (q_arr[i]), -1, myGrid.dim3 * sizeof(double) );
+    }
+  }
+
 }
 
 void ComputePme::copyResults(PmeGridMsg *msg) {
