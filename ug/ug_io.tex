@@ -71,7 +71,7 @@ a wide range of analysis and display programs.
 \subsection{\NAMD\ configuration parameters}
 \label{section:file_config}
 
-\paragraph{Input files}
+\subsubsection{Input files}
 
 \begin{itemize}
 \item
@@ -97,21 +97,8 @@ Only one value may be specified.}
 A CHARMM19 or CHARMM22 parameter file that defines all or part 
 of the parameters necessary for the molecular system to be simulated.  
 At least one parameter file must be specified for each simulation.  
-Multiple definitions are allowed for systems that require more 
-than one parameter file.  For example, if three files were needed, 
-lines such as:
-
-\bigskip
-
-{\tt parameters param1}
-
-{\tt parameters param2}
-
-{\tt parameters param3}
-
-\bigskip
-
-\noindent could be added to the configuration file.  
+Multiple definitions (but only one file per definition)
+are allowed for systems that require more than one parameter file.
 The files will be read 
 in the order that they appear in the configuration file.  If duplicate
 parameters are read, a warning message is printed and the last
@@ -192,7 +179,7 @@ which contains the configuration file given on the command line}.}
 
 \end{itemize}
 
-\paragraph{Output files}
+\subsubsection{Output files}
 
 \begin{itemize}
 \item
@@ -360,6 +347,18 @@ The initial velocities will not be included in the trajectory file.
 %to the trajectory file.  
 %}
 
+\end{itemize}
+
+\subsubsection{Standard output}
+
+NAMD logs a variety of summary information to standard output.
+The standard units used by NAMD are
+\index{units used for output}
+Angstroms for length, kcal/mol for energy,
+Kelvin for temperature, and bar for pressure.
+Wallclock or CPU times are given in seconds unless otherwise noted.
+
+\begin{itemize}
 \item
 \NAMDCONFWDEF{outputEnergies}
 {timesteps between energy output}{positive integer}{1}
