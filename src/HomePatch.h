@@ -73,7 +73,7 @@ public:
   void addVelocityToPosition(const BigReal);
 
   // methods for rigidBonds
-  void rattle1(const BigReal);
+  int rattle1(const BigReal);
   void rattle2(const BigReal, Tensor *virial);
 
   // methods for mollified impluse (MOLLY)

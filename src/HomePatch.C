@@ -360,7 +360,7 @@ void HomePatch::addVelocityToPosition(const BigReal timestep)
 }
 
 //  RATTLE algorithm from Allen & Tildesley
-void HomePatch::rattle1(const BigReal timestep)
+int HomePatch::rattle1(const BigReal timestep)
 {
   Molecule *mol = Node::Object()->molecule;
   SimParameters *simParams = Node::Object()->simParameters;
@@ -448,7 +448,9 @@ void HomePatch::rattle1(const BigReal timestep)
     }
     if ( consFailure ) {
       if ( dieOnError ) {
-	NAMD_die("Constraint failure in RATTLE algorithm!");
+	iout << iERROR <<
+	  "Constraint failure in RATTLE algorithm!\n" << endi;
+	return -1;  // triggers early exit
       } else {
 	iout << iWARN <<
 	  "Constraint failure in RATTLE algorithm!\n" << endi;
@@ -467,6 +469,7 @@ void HomePatch::rattle1(const BigReal timestep)
       atom[ig+i].velocity = vel[i];
     }
   }
+  return 0;
 
 }
 

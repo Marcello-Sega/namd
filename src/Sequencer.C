@@ -545,7 +545,12 @@ void Sequencer::addVelocityToPosition(BigReal dt)
 void Sequencer::rattle1(BigReal dt)
 {
   if ( simParams->rigidBonds != RIGID_NONE ) {
-    patch->rattle1(dt);
+    if ( patch->rattle1(dt) ) {
+      iout << iERROR << 
+        "Constraint failure; simulation has become unstable.\n" << endi;
+      Node::Object()->enableEarlyExit();
+      terminate();
+    }
   }
 }
 
