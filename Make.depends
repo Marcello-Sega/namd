@@ -1996,6 +1996,7 @@ obj/ComputeSMD.o: \
 	src/ProcessorPrivate.h \
 	src/Node.h \
 	src/SMD.h \
+	src/Random.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
@@ -2173,6 +2174,7 @@ obj/Controller.o: \
 	src/NamdOneTools.h \
 	src/PDB.h \
 	src/PDBData.h \
+	src/Random.h \
 	src/Debug.h
 	$(CXX) $(CXXTHREADFLAGS) -o obj/Controller.o -c src/Controller.C
 obj/defmain.o: \
@@ -2780,6 +2782,7 @@ obj/NamdState.o: \
 	inc/BroadcastMgr.decl.h \
 	src/ProcessorPrivate.h \
 	src/SMD.h \
+	src/Random.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/NamdState.o -c src/NamdState.C
 obj/NamdOneTools.o: \
@@ -2888,6 +2891,7 @@ obj/Node.o: \
 	src/elements.h \
 	src/Set.h \
 	src/SMD.h \
+	src/Random.h \
 	src/SMDMsgs.h \
 	src/TestController.h \
 	src/TestSequencer.h \
@@ -3485,6 +3489,7 @@ obj/Sequencer.o: \
 	src/Set.h \
 	src/ComputeMgr.h \
 	src/Thread.h \
+	src/Random.h \
 	src/Debug.h
 	$(CXX) $(CXXTHREADFLAGS) -o obj/Sequencer.o -c src/Sequencer.C
 obj/Set.o: \
@@ -3573,6 +3578,7 @@ obj/SMD.o: \
 	src/Communicate.h \
 	src/MStream.h \
 	src/SMD.h \
+	src/Random.h \
 	src/SMDMsgs.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/SMD.o -c src/SMD.C
@@ -3816,6 +3822,7 @@ obj/WorkDistrib.o: \
 	src/NamdOneTools.h \
 	src/Compute.h \
 	src/RecBisection.h \
+	src/Random.h \
 	src/Debug.h \
 	inc/WorkDistrib.def.h
 	$(CXX) $(CXXFLAGS) -o obj/WorkDistrib.o -c src/WorkDistrib.C
