@@ -139,6 +139,13 @@ template <class T, class S> class ComputeHomeTuples : public Compute {
 	         TuplePatchElem *p;
 	         t.p[i] = p = tuplePatchList.find(TuplePatchElem(aid[i].pid));
 	         if ( ! p ) {
+	           iout << iWARN << "Tuple " << *curTuple << " with atoms ";
+	           int erri;
+	           for( erri = 0; erri < T::size; erri++ ) {
+	             iout << t.atomID[erri] << "(" <<  aid[erri].pid << ") ";
+	           }
+	           iout << "missing patch " << aid[i].pid << "\n" << endi;
+	           
 	           NAMD_die("Patch needed for tuple is missing.\n");
 	         }
 	         t.localIndex[i] = aid[i].index;
