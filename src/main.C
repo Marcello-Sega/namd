@@ -85,17 +85,13 @@ public:
   {
     // print banner
     iout << iINFO << "NAMD " << NAMD_VERSION << " for " << NAMD_PLATFORM
-#ifdef NAMD_FFTW
-         << " (includes FFTW, do not distribute)"
-#endif
          << "\n"
 #if 1
          << iWARN << "\n"
          << iWARN << "          ***  UNRELEASED EXPERIMENTAL VERSION  ***\n"
          << iWARN << "\n"
 #endif
-         << iINFO << "Please complete the registration form at\n"
-         << iINFO << "http://www.ks.uiuc.edu/Research/namd/download.html\n"
+         << iINFO << "Please visit http://www.ks.uiuc.edu/Research/namd/\n"
          << iINFO << "and send feedback or bug reports to namd@ks.uiuc.edu\n"
          << endi;
 
