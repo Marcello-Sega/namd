@@ -34,6 +34,46 @@ ComputeNonbondedPair::~ComputeNonbondedPair()
 }
 
 
+int ComputeNonbondedPair::noWork() {
+
+  if ( numAtoms[0] && numAtoms[1] )
+  {
+    return 0;  // work to do, enqueue as usual
+  } else
+  {
+    // fake out patches and reduction system
+
+    BigReal reductionData[reductionDataSize];
+    for ( int i = 0; i < reductionDataSize; ++i ) reductionData[i] = 0;
+
+    Position* p[2];
+    Results* r[2];
+    Force* f[2];
+    AtomProperties* a[2];
+
+    // Open up positionBox, forceBox, and atomBox
+    for (i=0; i<2; i++) {
+      p[i] = positionBox[i]->open();
+      r[i] = forceBox[i]->open();
+      f[i] = r[i]->f[Results::normal];
+      a[i] = atomBox[i]->open();
+    }
+
+    // Close up boxes
+    for (i=0; i<2; i++) {
+      positionBox[i]->close(&p[i]);
+      forceBox[i]->close(&r[i]);
+      atomBox[i]->close(&a[i]);
+    }
+
+    submitReductionData(reductionData,reduction,fake_seq);
+    ++fake_seq;
+
+    return 1;  // no work to do, do not enqueue
+  }
+}
+
+
 void ComputeNonbondedPair::doForce(Position* p[2],
                                Force* f[2],
                                AtomProperties* a[2])
@@ -85,13 +125,16 @@ void ComputeNonbondedPair::doForce(Position* p[2],
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedPair.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/10 17:40:09 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/03/12 23:59:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.C,v $
+ * Revision 1.1004  1997/03/12 23:59:41  jim
+ * Added Compute::noWork() protocol to not enqueue do-nothing compute objects.
+ *
  * Revision 1.1003  1997/03/10 17:40:09  ari
  * UniqueSet changes - some more commenting and cleanup
  *

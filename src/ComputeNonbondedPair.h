@@ -26,6 +26,7 @@ public:
 
 protected :
   // virtual void initialize() { ComputePatchPair::initialize(); }
+  virtual int noWork();
   virtual void doForce(Position* p[2], Force* f[2], AtomProperties* a[2]);
 
   ReductionMgr *reduction;
@@ -39,13 +40,16 @@ protected :
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedPair.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/11 18:51:44 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/03/12 23:59:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.h,v $
+ * Revision 1.1002  1997/03/12 23:59:42  jim
+ * Added Compute::noWork() protocol to not enqueue do-nothing compute objects.
+ *
  * Revision 1.1001  1997/02/11 18:51:44  ari
  * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
  * fixed non-buffering of migration msgs

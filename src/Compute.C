@@ -32,7 +32,10 @@
 #include "Debug.h"
 
 void Compute::enqueueWork() {
-  WorkDistrib::messageEnqueueWork(this);  // should be in ComputeMgr?
+  if ( ! noWork() )
+  {
+    WorkDistrib::messageEnqueueWork(this);  // should be in ComputeMgr?
+  }
 }
 
 //---------------------------------------------------------------------
@@ -62,6 +65,10 @@ void Compute::patchReady(PatchID patchID, int doneMigration) {
 }
 
 
+int Compute::noWork() {
+  return 0;
+}
+
 void Compute::doWork() {
   iout << iERRORF 
     << "Default Compute::doWork() called.\n"
@@ -72,13 +79,16 @@ void Compute::doWork() {
  * RCS INFORMATION:
  *
  *	$RCSfile: Compute.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/06 22:05:57 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/03/12 23:59:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.C,v $
+ * Revision 1.1004  1997/03/12 23:59:37  jim
+ * Added Compute::noWork() protocol to not enqueue do-nothing compute objects.
+ *
  * Revision 1.1003  1997/03/06 22:05:57  ari
  * Removed Compute.ci
  * Comments added - more code cleaning

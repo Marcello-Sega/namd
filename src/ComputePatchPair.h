@@ -41,7 +41,7 @@ protected :
   virtual void doForce(Position* p[2], Force* f[2], AtomProperties* a[2]);
   Patch *patch[2];
 
-private:
+// private: // hack for ComputeNonbondedPair::noWork()
   PatchID patchID[2];
   int trans[2];
   PositionBox<Patch> *positionBox[2];
@@ -55,12 +55,15 @@ private:
  *
  *	$RCSfile: ComputePatchPair.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/12 22:06:39 $
+ *	$Revision: 1.1004 $	$Date: 1997/03/12 23:59:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatchPair.h,v $
+ * Revision 1.1004  1997/03/12 23:59:44  jim
+ * Added Compute::noWork() protocol to not enqueue do-nothing compute objects.
+ *
  * Revision 1.1003  1997/03/12 22:06:39  jim
  * First step towards multiple force returns and multiple time stepping.
  *

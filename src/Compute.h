@@ -61,7 +61,8 @@ public:
   // virtual void patchReady(void);
   virtual void patchReady(PatchID pid) { if (pid > -1) patchReady(pid,0); }
   virtual void patchReady(PatchID, int);
-  virtual void doWork();
+  virtual int noWork(); // cleans up and returns 1 if no work to do
+  virtual void doWork(); // actually does the work if noWork() returns 0
 };
 
 #endif
@@ -69,13 +70,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: Compute.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:57:42 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/03/12 23:59:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.h,v $
+ * Revision 1.1001  1997/03/12 23:59:39  jim
+ * Added Compute::noWork() protocol to not enqueue do-nothing compute objects.
+ *
  * Revision 1.1000  1997/02/06 15:57:42  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
