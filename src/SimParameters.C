@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1045 $  $Date: 1998/09/13 21:10:21 $
+ *  $Revision: 1.1046 $  $Date: 1998/09/14 22:02:41 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1046  1998/09/14 22:02:41  jim
+ * Altered load balancer defaults.
+ *
  * Revision 1.1045  1998/09/13 21:10:21  jim
  * Quick fix.
  *
@@ -472,7 +475,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1045 1998/09/13 21:10:21 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1046 1998/09/14 22:02:41 jim Exp $";
 
 
 #include "charm++.h"
@@ -1930,20 +1933,20 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
   if (!opts.defined("ldbPeriod"))
   {
-    ldbPeriod=10*stepsPerCycle;
+    ldbPeriod=200*stepsPerCycle;
   }
 
   //  Set default values
   if (!opts.defined("firstLdbStep"))
   {
-    firstLdbStep=ldbPeriod;
+    firstLdbStep=5*stepsPerCycle;
   }
    }
    else
    {
-  ldbStrategy=LDBSTRAT_NONE;
-  ldbPeriod=stepsPerCycle;
-  firstLdbStep=ldbPeriod;
+  ldbStrategy=LDBSTRAT_OTHER;
+  ldbPeriod=200*stepsPerCycle;
+  firstLdbStep=5*stepsPerCycle;
    }
 
 #ifdef MDCOMM
@@ -3308,12 +3311,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1045 $  $Date: 1998/09/13 21:10:21 $
+ *  $Revision: 1.1046 $  $Date: 1998/09/14 22:02:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1046  1998/09/14 22:02:41  jim
+ * Altered load balancer defaults.
+ *
  * Revision 1.1045  1998/09/13 21:10:21  jim
  * Quick fix.
  *
