@@ -99,7 +99,7 @@ LdbCoordinator::~LdbCoordinator(void)
 
 void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap)
 {
-  DebugM(10,"stepsPerLdbCycle initialized\n");
+  //  DebugM(10,"stepsPerLdbCycle initialized\n");
   stepsPerLdbCycle = (Node::Object()->simParameters)->ldbStepsPerCycle;
 
   computeMap = cMap;
@@ -299,7 +299,7 @@ int LdbCoordinator::checkAndSendStats(void)
     }
 
     msg->nComputes = 0;
-    for(i=0;i<computeMap->numComputes();i++)
+    for(i=0;i<nLocalComputes;i++)
     {
       if (computeStartTime[i] != -1.)
       {
@@ -342,21 +342,20 @@ void LdbCoordinator::processStatistics(void)
 
   const int numProcessors = Node::Object()->numNodes();
   const int numPatches = patchMap->numPatches();
-  const int numComputes = computeMap->numComputes();
 
-  buildData();
+  const int nMoveableComputes = buildData();
   
   char *algChoice = "Alg7"; 
 
   if (strcmp(algChoice,"RefineOnly") == 0)
   {
     new RefineOnly(computeArray,patchArray,processorArray,
-		   numComputes, numPatches, numProcessors);
+		   nMoveableComputes, numPatches, numProcessors);
   } 
   else if (strcmp(algChoice,"Alg7") == 0)
   {
     new Alg7(computeArray,patchArray,processorArray,
-	     numComputes, numPatches, numProcessors);
+	     nMoveableComputes, numPatches, numProcessors);
   }
 //   else if (algChoice == "Alg1")
 //     Alg1::Alg1(computeArray,patchArray,processorArray,
@@ -370,7 +369,7 @@ void LdbCoordinator::processStatistics(void)
 
   // 0) Rebuild ComputeMap using computeMap->setNewNode()
   int i;
-  for(i=0; i < numComputes; i++)
+  for(i=0; i < nMoveableComputes; i++)
   {
     if ( (computeArray[i].processor != computeArray[i].oldProcessor)
 	 && (computeArray[i].processor != -1) )
@@ -382,7 +381,7 @@ void LdbCoordinator::processStatistics(void)
   }
 
   // 1) Print out statistics in test format
-  printLdbReport();
+  printLdbReport(nMoveableComputes);
 
   // 2) delete messages
   cleanUpData();
@@ -426,11 +425,10 @@ void LdbCoordinator::awakenSequencers()
   }
 }
 
-void LdbCoordinator::buildData(void)
+int LdbCoordinator::buildData(void)
 {
   const int numProcessors = Node::Object()->numNodes();
   const int numPatches = patchMap->numPatches();
-  const int numComputes = computeMap->numComputes();
   
   int i;
   for (i=0; i<nStatsMessagesReceived; i++)
@@ -442,6 +440,7 @@ void LdbCoordinator::buildData(void)
     processorArray[i].proxies = new Set();
   }
 
+  int nMoveableComputes=0;
   for (i=0; i < nStatsMessagesReceived; i++)
   {
     const LdbStatsMsg *msg = statsMsgs[i];
@@ -480,8 +479,10 @@ void LdbCoordinator::buildData(void)
       computeArray[cid].patch1 = p0;
       computeArray[cid].patch2 = p1;
       computeArray[cid].load = msg->computeTime[j];
+      nMoveableComputes++;
     }
   }
+  return nMoveableComputes;
 }
 
 void LdbCoordinator::cleanUpData(void)
@@ -586,7 +587,7 @@ void LdbCoordinator::printLocalLdbReport(void)
     
 }
 
-void LdbCoordinator::printLdbReport(void)
+void LdbCoordinator::printLdbReport(const int nMoveableComputes)
 {
   if (ldbStatsFP == NULL)
   {
@@ -595,13 +596,12 @@ void LdbCoordinator::printLdbReport(void)
 
   const int nProcs = Node::Object()->numNodes();
   const int nPatches = patchMap->numPatches();
-  const int nComputes = computeMap->numComputes();
 
   int i,j;
 
   fprintf(ldbStatsFP,"*** Load balancer report ***\n");
 
-  fprintf(ldbStatsFP,"%4d %4d %4d\n",nProcs,nPatches,nComputes);
+  fprintf(ldbStatsFP,"%4d %4d %4d\n",nProcs,nPatches,nMoveableComputes);
 
   // Print out processor background load
   for (i=0;i<nProcs;i++)
@@ -623,6 +623,7 @@ void LdbCoordinator::printLdbReport(void)
   fprintf(ldbStatsFP,"\n");
   
   // Print out info for each compute
+  int numComputesPrinted = 0;
   for (i=0;i<nProcs;i++)
   {
     const LdbStatsMsg *msg = statsMsgs[i];
@@ -639,8 +640,12 @@ void LdbCoordinator::printLdbReport(void)
 
       fprintf(ldbStatsFP,"%4d %4d %4d %4d %8.3f\n",
 	      msg->cid[j],msg->proc,p0,p1,msg->computeTime[j]);
+      numComputesPrinted++;
     }
   }
+  if (numComputesPrinted != nMoveableComputes)
+    CPrintf("LDB stats missing %d %d \n",
+	    numComputesPrinted,nMoveableComputes);
   fprintf(ldbStatsFP,"\n");
   fprintf(ldbStatsFP,"*** Load balancer report complete ***\n");
   fflush(ldbStatsFP);

@@ -81,11 +81,11 @@ private:
   void processStatistics(void);
   void awakenSequencers(void);
   int requiredProxies(PatchID id, int []);
-  void buildData(void);
+  int buildData(void);
   void cleanUpData(void);
   void printRequiredProxies(PatchID id, FILE *fp);
   void printLocalLdbReport(void);
-  void printLdbReport(void);
+  void printLdbReport(const int nMoveableComputes);
 
   static LdbCoordinator *_instance;
   int stepsPerLdbCycle;
@@ -122,12 +122,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1997/04/08 07:08:47 $
+ *	$Revision: 1.8 $	$Date: 1997/04/08 23:00:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LdbCoordinator.h,v $
+ * Revision 1.8  1997/04/08 23:00:01  brunner
+ * Fixed problem with numComputes not equal to number of moveable computes
+ *
  * Revision 1.7  1997/04/08 07:08:47  ari
  * Modification for dynamic loadbalancing - moving computes
  * Still bug in new computes or usage of proxies/homepatches.
