@@ -337,6 +337,7 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
   int pmeOn = simParams->PMEOn;
   int unLoadPme = simParams->ldbUnloadPME;
   int pmeBarrier = simParams->PMEBarrier;
+  int unLoadSMP = simParams->ldbUnloadSMP;
 
   int i;
   for (i=0; i<count; ++i) {
@@ -392,6 +393,14 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
       if ((pmeBarrier && i==0) || isPmeProcessor(i)) 
 	processorArray[i].available = CmiFalse;
     }
+
+  if (unLoadSMP) {
+    int ppn = simParams->procsPerNode;
+    int unloadrank = simParams->ldbUnloadRank;
+    for (int i=0; i<count; i+=ppn) {
+      processorArray[i+unloadrank].available = CmiFalse;
+    }
+  }
 
   int nMoveableComputes=0;
   int nProxies = 0;		// total number of estimated proxies

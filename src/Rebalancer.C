@@ -646,13 +646,18 @@ double Rebalancer::computeAverage()
 {
    int i;
    double total = 0;
+   int availPes = 0;
    for (i=0; i<numComputes; i++)
       total += computes[i].load;
 
-   for (i=0; i<P; i++)
-      total += processors[i].backgroundLoad;
+   for (i=0; i<P; i++) {
+      if (processors[i].available) {
+        total += processors[i].backgroundLoad;
+        availPes++;
+      }
+   }
   
-   averageLoad = total/P;
+   averageLoad = total/availPes;
    return averageLoad;
 }
 

@@ -96,6 +96,9 @@ public:
 	BigReal ldbBackgroundScaling;	//  scaling factor for background load
 	BigReal ldbPMEBackgroundScaling;//  scaling factor for PME background
 	Bool ldbUnloadPME;		//  unload processors doing PME
+	Bool ldbUnloadSMP;		//  unload processors rank
+	int procsPerNode;		//  number of pes per node
+	int ldbUnloadRank;		//  unload rank on a node
 	BigReal initialTemp;   		//  Initial temperature for the 
 					//  simulation
 	Bool comMove;     		//  Should the center of mass be 

@@ -1089,6 +1089,14 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
    opts.range("ldbPMEBackgroundScaling", NOT_NEGATIVE);
    opts.optionalB("main", "ldbUnloadPME", "no load on PME nodes",
      &ldbUnloadPME, FALSE);
+   opts.optionalB("main", "ldbUnloadSMP", "no load on one pe of SMP node",
+     &ldbUnloadSMP, FALSE);
+   opts.optional("main", "procsPerNode", "Number of Processor per node",
+     &procsPerNode);
+   opts.range("procsPerNode", POSITIVE);
+   opts.optional("main", "ldbUnloadRank", "no load on rank pe of a node",
+     &ldbUnloadRank);
+   opts.range("ldbUnloadRank", POSITIVE);
 
    /////  Restart timestep option
    opts.optional("main", "firsttimestep", "Timestep to start simulation at",
@@ -1931,6 +1939,17 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    if (!opts.defined("ldbPMEBackgroundScaling")) {
      ldbPMEBackgroundScaling = ldbBackgroundScaling;
    }
+   if (!opts.defined("procsPerNode"))
+   {
+     procsPerNode=1;
+   }
+   if (!opts.defined("ldbUnloadRank"))
+   {
+     ldbUnloadRank = procsPerNode-1;
+   }
+   if (ldbUnloadRank >= procsPerNode)
+	NAMD_die("Invalid unload rank of SMP node!!!");
+
 
 
    //  Check on PME parameters
