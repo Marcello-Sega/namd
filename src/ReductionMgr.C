@@ -137,15 +137,26 @@ void ReductionMgr::broadcastDoSubmit(int seq, int n)
 }
 
 /******************************************************
- ReductionMgr::doDummySubmit(CheckForPatchMsg *m):
+ ReductionMgr::doDummySubmit(CheckForPatchMsg *msg):
  Checks if my pe number is > num Patches. If so submits
  a dummy Kinetic energy reduction
 ******************************************************/
-void ReductionMgr::doDummySubmit(CheckForPatchMsg *m)
+void ReductionMgr::doDummySubmit(CheckForPatchMsg *msg)
 {
-  if (CMyPe() >= m->numPatches) {
-	if (!m->seq) maxEvents++;
-	submit(m->seq, REDUCTION_KINETIC_ENERGY, 0.0);
+  if (CMyPe() >= msg->numPatches) {  // we are definitely not root node
+
+    ReductionMgrData *current=find(msg->seq);
+
+    if (current->numEvents >= maxEvents) {
+      ReductionDataMsg *m
+        = new (MsgIndex(ReductionDataMsg)) ReductionDataMsg;
+      m->seq = msg->seq;
+      for(int i=0;i<REDUCTION_MAX_RESERVED;i++)
+        m->data[i] = current->tagData[i];
+      CSendMsgBranch(ReductionMgr, recvReductionData, ReductionDataMsg, m, thisgroup, myParent);
+      gotAllData(current);
+    }
+
   }
 }
 
@@ -520,12 +531,15 @@ void	ReductionMgr::unsubscribe(ReductionTag tag)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1028 $	$Date: 1998/11/30 04:15:27 $
+ *	$Revision: 1.1029 $	$Date: 1999/02/17 05:29:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.C,v $
+ * Revision 1.1029  1999/02/17 05:29:01  jim
+ * Fixed bug in more nodes than patches code.
+ *
  * Revision 1.1028  1998/11/30 04:15:27  krishnan
  * Fixed the numNodes > nPatches bug. Dummy reduction is submitted on the nodes with no patches.
  *
