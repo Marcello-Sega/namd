@@ -94,6 +94,7 @@ begin:
   if ( $ARCH =~ *-Clustermatic* ) set ARCH_SUFFIX = -Clustermatic
   if ( $ARCH =~ *-Clustermatic4* ) set ARCH_SUFFIX = -Clustermatic4
   if ( $ARCH =~ *-MPI* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-MPI
+  if ( $ARCH =~ *-CMPI* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-CMPI
   if ( $ARCH =~ *-VMI* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-VMI
   if ( $ARCH =~ *-TCP* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-TCP
   if ( $ARCH =~ *-GM* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-GM
