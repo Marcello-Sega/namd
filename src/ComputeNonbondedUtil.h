@@ -60,6 +60,10 @@ public:
   static void (*calcFullSelf)(nonbonded *);
   static void (*calcFullExcl)(nonbonded *);
 
+  static void (*calcSlowPair)(nonbonded *);
+  static void (*calcSlowSelf)(nonbonded *);
+  static void (*calcSlowExcl)(nonbonded *);
+
   enum { electEnergyIndex, fullElectEnergyIndex, vdwEnergyIndex,
 	 virialXIndex, virialYIndex, virialZIndex,
 	 fullElectVirialXIndex, fullElectVirialYIndex, fullElectVirialZIndex,
@@ -83,7 +87,9 @@ public:
   static BigReal c3;
   static BigReal c5;
   static BigReal c6;
-  static BigReal d0;
+  static BigReal c7;
+  static BigReal c8;
+  // static BigReal d0;
 
   // for particle mesh Ewald
   static BigReal ewaldcof;
@@ -102,12 +108,18 @@ public:
   static void calc_pair (nonbonded *);
   static void calc_pair_fullelect (nonbonded *);
   static void calc_pair_fullelect_pme (nonbonded *);
+  static void calc_pair_slow_fullelect (nonbonded *);
+  static void calc_pair_slow_fullelect_pme (nonbonded *);
   static void calc_self (nonbonded *);
   static void calc_self_fullelect (nonbonded *);
   static void calc_self_fullelect_pme (nonbonded *);
+  static void calc_self_slow_fullelect (nonbonded *);
+  static void calc_self_slow_fullelect_pme (nonbonded *);
   static void calc_excl (nonbonded *);
   static void calc_excl_fullelect (nonbonded *);
   static void calc_excl_fullelect_pme (nonbonded *);
+  static void calc_excl_slow_fullelect (nonbonded *);
+  static void calc_excl_slow_fullelect_pme (nonbonded *);
   inline static void shifting(BigReal &, BigReal &,
 		       const BigReal &, const BigReal &,
 		       const BigReal &, const BigReal &);
@@ -116,12 +128,18 @@ public:
   static void calc_pair_c1 (nonbonded *);
   static void calc_pair_fullelect_c1 (nonbonded *);
   static void calc_pair_fullelect_pme_c1 (nonbonded *);
+  static void calc_pair_slow_fullelect_c1 (nonbonded *);
+  static void calc_pair_slow_fullelect_pme_c1 (nonbonded *);
   static void calc_self_c1 (nonbonded *);
   static void calc_self_fullelect_c1 (nonbonded *);
   static void calc_self_fullelect_pme_c1 (nonbonded *);
+  static void calc_self_slow_fullelect_c1 (nonbonded *);
+  static void calc_self_slow_fullelect_pme_c1 (nonbonded *);
   static void calc_excl_c1 (nonbonded *);
   static void calc_excl_fullelect_c1 (nonbonded *);
   static void calc_excl_fullelect_pme_c1 (nonbonded *);
+  static void calc_excl_slow_fullelect_c1 (nonbonded *);
+  static void calc_excl_slow_fullelect_pme_c1 (nonbonded *);
   inline static void c1splitting(BigReal &, BigReal &,
  			  const BigReal &, const BigReal &, const BigReal &);
 
@@ -129,19 +147,22 @@ public:
   static void calc_pair_xplor (nonbonded *);
   static void calc_pair_fullelect_xplor (nonbonded *);
   static void calc_pair_fullelect_pme_xplor (nonbonded *);
+  static void calc_pair_slow_fullelect_xplor (nonbonded *);
+  static void calc_pair_slow_fullelect_pme_xplor (nonbonded *);
   static void calc_self_xplor (nonbonded *);
   static void calc_self_fullelect_xplor (nonbonded *);
   static void calc_self_fullelect_pme_xplor (nonbonded *);
+  static void calc_self_slow_fullelect_xplor (nonbonded *);
+  static void calc_self_slow_fullelect_pme_xplor (nonbonded *);
   static void calc_excl_xplor (nonbonded *);
   static void calc_excl_fullelect_xplor (nonbonded *);
   static void calc_excl_fullelect_pme_xplor (nonbonded *);
+  static void calc_excl_slow_fullelect_xplor (nonbonded *);
+  static void calc_excl_slow_fullelect_pme_xplor (nonbonded *);
   inline static void xplorsplitting(BigReal &, BigReal &,
 			     const BigReal &,const BigReal &);
 
 };
-
-// include inline splitting functions
-#include "ComputeNonbondedSplitting.h"
 
 #endif
 /***************************************************************************
@@ -149,12 +170,15 @@ public:
  *
  *	$RCSfile: ComputeNonbondedUtil.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1020 $	$Date: 1999/06/17 17:05:42 $
+ *	$Revision: 1.1021 $	$Date: 1999/08/20 19:11:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.h,v $
+ * Revision 1.1021  1999/08/20 19:11:11  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1020  1999/06/17 17:05:42  jim
  * Renamed seq to step in most places.  Now has meaning only to user.
  *

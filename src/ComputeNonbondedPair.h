@@ -25,9 +25,11 @@ public:
   ~ComputeNonbondedPair();
 
 protected :
-  // virtual void initialize() { ComputePatchPair::initialize(); }
+  virtual void initialize();
   virtual int noWork();
   virtual void doForce(Position* p[2], Results* r[2], AtomProperties* a[2]);
+
+  PositionBox<Patch> *avgPositionBox[2];
 
   SubmitReduction *reduction;
 
@@ -39,12 +41,15 @@ protected :
  *
  *	$RCSfile: ComputeNonbondedPair.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1999/06/17 15:46:10 $
+ *	$Revision: 1.1009 $	$Date: 1999/08/20 19:11:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.h,v $
+ * Revision 1.1009  1999/08/20 19:11:10  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1008  1999/06/17 15:46:10  jim
  * Completely rewrote reduction system to eliminate need for sequence numbers.
  *

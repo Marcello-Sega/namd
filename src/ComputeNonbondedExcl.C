@@ -40,10 +40,8 @@ void NonbondedExclElem::computeForce(BigReal *reduction)
     register int localIndex0 = localIndex[0];
     register int localIndex1 = localIndex[1];
 
-    Vector x01(patch->lattice.delta(p0->x[localIndex0], p1->x[localIndex1]));
-
     nonbonded params;
-    params.p_ij = x01;
+    params.p_ij = patch->lattice.delta(p0->x[localIndex0], p1->x[localIndex1]);
     params.ff[0] = &(p0->r->f[Results::nbond][localIndex0]);
     params.ff[1] = &(p1->r->f[Results::nbond][localIndex1]);
     params.a[0] = &(p0->a[localIndex0]);
@@ -52,11 +50,18 @@ void NonbondedExclElem::computeForce(BigReal *reduction)
     params.reduction = reduction;
 
     if ( patch->flags.doFullElectrostatics )
-      {
+    {
       params.fullf[0] = &(p0->r->f[Results::slow][localIndex0]);
       params.fullf[1] = &(p1->r->f[Results::slow][localIndex1]);
-      ComputeNonbondedUtil::calcFullExcl(&params);
+      if ( patch->flags.doMolly ) {
+        ComputeNonbondedUtil::calcExcl(&params);
+        params.p_ij =
+	  patch->lattice.delta(p0->x_avg[localIndex0], p1->x_avg[localIndex1]);
+        ComputeNonbondedUtil::calcSlowExcl(&params);
+      } else {
+        ComputeNonbondedUtil::calcFullExcl(&params);
       }
+    }
     else
       ComputeNonbondedUtil::calcExcl(&params);
   }
@@ -152,13 +157,16 @@ ComputeNonbondedExcls::loadTuples() {
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedExcl.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1022 $	$Date: 1999/05/11 23:56:27 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1023 $	$Date: 1999/08/20 19:11:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedExcl.C,v $
+ * Revision 1.1023  1999/08/20 19:11:09  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1022  1999/05/11 23:56:27  brunner
  * Changes for new charm version
  *

@@ -113,7 +113,7 @@ void ComputeDPMTA::get_FMA_cube(int resize)
 
 ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
 {
-  ;
+  useAvgPositions = 1;
 }
 
 void ComputeDPMTA::initialize()
@@ -382,6 +382,10 @@ void ComputeDPMTA::doWork()
   for (i=0, ap = ap.begin(); ap != ap.end(); ap++)
   {
     Vector *x = (*ap).positionBox->open();
+    if ( patchList[0].p->flags.doMolly ) {
+      (*ap).positionBox->close(&x);
+      x = (*ap).avgPositionBox->open();
+    }
     AtomProperties *a = (*ap).atomBox->open();
 
     // store each atom in the particle_list
@@ -414,7 +418,8 @@ void ComputeDPMTA::doWork()
     }
 
     (*ap).atomBox->close(&a);
-    (*ap).positionBox->close(&x);
+    if ( patchList[0].p->flags.doMolly ) { (*ap).avgPositionBox->close(&x); }
+    else { (*ap).positionBox->close(&x); }
   } 
 
   if (i != totalAtoms)
@@ -476,7 +481,7 @@ void ComputeDPMTA::doWork()
 
   potential *= 0.5;
   DebugM(4,"Full-electrostatics energy: " << potential << "\n");
-  reduction->item(REDUCTION_ELECT_ENERGY) += potential;
+  reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += potential;
   // DPMTA won't work correctly if scaled anisotropically anyway.  -JCP
   reduction->item(REDUCTION_VIRIAL_SLOW_X) += potential / 3.;
   reduction->item(REDUCTION_VIRIAL_SLOW_Y) += potential / 3.;
@@ -501,12 +506,15 @@ void ComputeDPMTA::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1058 $	$Date: 1999/06/17 17:05:36 $
+ *	$Revision: 1.1059 $	$Date: 1999/08/20 19:11:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.C,v $
+ * Revision 1.1059  1999/08/20 19:11:07  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1058  1999/06/17 17:05:36  jim
  * Renamed seq to step in most places.  Now has meaning only to user.
  *

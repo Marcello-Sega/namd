@@ -24,6 +24,7 @@
 
 ComputeHomePatches::ComputeHomePatches(ComputeID c) : Compute(c) {
   patchMap = PatchMap::Object();
+  useAvgPositions = 0;
 }
 
 ComputeHomePatches::~ComputeHomePatches()
@@ -39,7 +40,7 @@ void ComputeHomePatches::initialize()
   patchList.resize(0);
 
   for ( ai = ai.begin(); ai != ai.end(); ai++ ) {
-    patchList.add(PatchElem((*ai).patch, cid));
+    patchList.add(PatchElem((*ai).patch, cid, useAvgPositions));
   }
 
   setNumPatches(patchList.size());
@@ -56,12 +57,15 @@ void ComputeHomePatches::atomUpdate()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1999/06/17 15:46:07 $
+ *	$Revision: 1.1007 $	$Date: 1999/08/20 19:11:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomePatches.C,v $
+ * Revision 1.1007  1999/08/20 19:11:08  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1006  1999/06/17 15:46:07  jim
  * Completely rewrote reduction system to eliminate need for sequence numbers.
  *

@@ -43,7 +43,7 @@ void ProxyAtomsMsg::prepack() {
     char *b = mybuffer = (char*)new char[mylength];
     *((int *)b) = patch; b += sizeof(PatchID);
     *((int *)b) = size; b += sizeof(int);
-    AtomID *data = (AtomID *)b;
+    char *data = b;
     PACKDATA(atomIDList,AtomID,data);
 }
   
@@ -64,7 +64,7 @@ ProxyAtomsMsg* ProxyAtomsMsg:: unpack (void *ptr)
     m->patch = *((int*)buffer);
     int size = *((int*)(buffer+sizeof(int)));
     m->atomIDList.resize(size);
-    AtomID *data = (AtomID*)(buffer+2*sizeof(int));
+    char *data = buffer+2*sizeof(int);
     UNPACKDATA(m->atomIDList,AtomID,data);
     CkFreeMsg(ptr);
     return m;
@@ -74,12 +74,17 @@ void * ProxyDataMsg:: pack (ProxyDataMsg *m)
   {
     int size = m->positionList.size();
     int length = 2 * sizeof(int) + sizeof(Flags) + size * sizeof(Position);
+    if ( m->flags.doMolly ) { length += size * sizeof(Position); }
     char *buffer = (char*)CkAllocBuffer(m,length);
     *((int*)buffer) = m->patch;
     *((int*)(buffer+sizeof(int))) = size;
     *((Flags*)(buffer+2*sizeof(int))) = m->flags;
-    Position *data = (Position*)(buffer+2*sizeof(int)+sizeof(Flags));
+    char *data = buffer+2*sizeof(int)+sizeof(Flags);
     PACKDATA(m->positionList,Position,data);
+    data += size*sizeof(Position);
+    if ( m->flags.doMolly ) {
+      PACKDATA(m->avgPositionList,Position,data);
+    }
     delete m;
     return buffer;
   }
@@ -93,8 +98,13 @@ ProxyDataMsg* ProxyDataMsg:: unpack (void *ptr)
     int size = *((int*)(buffer+sizeof(int)));
     m->flags = *((Flags*)(buffer+2*sizeof(int)));
     m->positionList.resize(size);
-    Position *data = (Position*)(buffer+2*sizeof(int)+sizeof(Flags));
+    char *data = buffer+2*sizeof(int)+sizeof(Flags);
     UNPACKDATA(m->positionList,Position,data);
+    data += size*sizeof(Position);
+    if ( m->flags.doMolly ) {
+      m->avgPositionList.resize(size);
+      UNPACKDATA(m->avgPositionList,Position,data);
+    }
     CkFreeMsg(ptr);
     return m;
   }
@@ -108,14 +118,19 @@ void * ProxyAllMsg:: pack (ProxyAllMsg *m)
 
 
     int length = 2 * sizeof(int) + sizeof(Flags) + size * sizeof(Position) + size * sizeof(AtomID);
+    if ( m->flags.doMolly ) { length += size * sizeof(Position); }
     char *buffer = (char*)CkAllocBuffer(m,length);
     *((int*)buffer) = m->patch;
     *((int*)(buffer+sizeof(int))) = size;
     *((Flags*)(buffer+2*sizeof(int))) = m->flags;
-    Position *data = (Position*)(buffer+2*sizeof(int)+sizeof(Flags));
+    char *data = buffer+2*sizeof(int)+sizeof(Flags);
     PACKDATA(m->positionList,Position,data);
-    AtomID *data2 = (AtomID*)(buffer+2*sizeof(int)+sizeof(Flags)+size*sizeof(Position));
-    PACKDATA(m->atomIDList,AtomID,data2);
+    data += size*sizeof(Position);
+    PACKDATA(m->atomIDList,AtomID,data);
+    data += size*sizeof(AtomID);
+    if ( m->flags.doMolly ) {
+      PACKDATA(m->avgPositionList,Position,data);
+    }
     delete m;
     return buffer;
   }
@@ -129,11 +144,16 @@ ProxyAllMsg* ProxyAllMsg:: unpack (void *ptr)
     int size = *((int*)(buffer+sizeof(int)));
     m->flags = *((Flags*)(buffer+2*sizeof(int)));
     m->positionList.resize(size);
-    Position *data = (Position*)(buffer+2*sizeof(int)+sizeof(Flags));
+    char *data = buffer+2*sizeof(int)+sizeof(Flags);
     UNPACKDATA(m->positionList,Position,data);
     m->atomIDList.resize(size);
-    AtomID *data2 = (AtomID*)(buffer+2*sizeof(int)+sizeof(Flags)+size*sizeof(Position));
-    UNPACKDATA(m->atomIDList,AtomID,data2);
+    data += size*sizeof(Position);
+    UNPACKDATA(m->atomIDList,AtomID,data);
+    data += size*sizeof(AtomID);
+    if ( m->flags.doMolly ) {
+      m->avgPositionList.resize(size);
+      UNPACKDATA(m->avgPositionList,Position,data);
+    }
     CkFreeMsg(ptr);
     return m;
   }
@@ -365,13 +385,16 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1024 $	$Date: 1999/05/11 23:56:45 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1025 $	$Date: 1999/08/20 19:11:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.1025  1999/08/20 19:11:14  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1024  1999/05/11 23:56:45  brunner
  * Changes for new charm version
  *

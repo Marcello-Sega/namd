@@ -25,6 +25,7 @@ public:
   				// Same number may appear multiple times!
   int doNonbonded;
   int doFullElectrostatics;
+  int doMolly;
   int submitLoadStats;
   int maxForceUsed;		// may ignore slower force classes
   int maxForceMerged;		// add this and faster to normal
@@ -48,12 +49,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1999/06/17 17:05:46 $
+ *	$Revision: 1.11 $	$Date: 1999/08/20 19:11:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchTypes.h,v $
+ * Revision 1.11  1999/08/20 19:11:13  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.10  1999/06/17 17:05:46  jim
  * Renamed seq to step in most places.  Now has meaning only to user.
  *

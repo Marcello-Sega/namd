@@ -27,6 +27,7 @@
 ComputeFullDirect::ComputeFullDirect(ComputeID c) : ComputeHomePatches(c)
 {
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+  useAvgPositions = 1;
 }
 
 ComputeFullDirect::~ComputeFullDirect()
@@ -96,6 +97,10 @@ void ComputeFullDirect::doWork()
   local_ptr = localData;
   for (ap = ap.begin(); ap != ap.end(); ap++) {
     Position *x = (*ap).positionBox->open();
+    if ( patchList[0].p->flags.doMolly ) {
+      (*ap).positionBox->close(&x);
+      x = (*ap).avgPositionBox->open();
+    }
     AtomProperties *a = (*ap).atomBox->open();
     int numAtoms = (*ap).p->getNumAtoms();
 
@@ -107,7 +112,8 @@ void ComputeFullDirect::doWork()
       *(local_ptr++) = a[i].charge;
     }
 
-    (*ap).positionBox->close(&x);
+    if ( patchList[0].p->flags.doMolly ) { (*ap).avgPositionBox->close(&x); }
+    else { (*ap).positionBox->close(&x); }
     (*ap).atomBox->close(&a);
   } 
 
@@ -246,7 +252,7 @@ void ComputeFullDirect::doWork()
 
   // send out reductions
   DebugM(4,"Full-electrostatics energy: " << electEnergy << "\n");
-  reduction->item(REDUCTION_ELECT_ENERGY) += electEnergy;
+  reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += electEnergy;
   reduction->item(REDUCTION_VIRIAL_SLOW_X) += virial.x;
   reduction->item(REDUCTION_VIRIAL_SLOW_Y) += virial.y;
   reduction->item(REDUCTION_VIRIAL_SLOW_Z) += virial.z;
@@ -281,12 +287,15 @@ void ComputeFullDirect::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1021 $	$Date: 1999/06/17 15:46:05 $
+ *	$Revision: 1.1022 $	$Date: 1999/08/20 19:11:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFullDirect.C,v $
+ * Revision 1.1022  1999/08/20 19:11:08  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1021  1999/06/17 15:46:05  jim
  * Completely rewrote reduction system to eliminate need for sequence numbers.
  *

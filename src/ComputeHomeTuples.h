@@ -45,9 +45,11 @@ class TuplePatchElem {
     PatchID patchID;
     Patch *p;
     PositionBox<Patch> *positionBox;
+    PositionBox<Patch> *avgPositionBox;
     Box<Patch,Results> *forceBox;
     Box<Patch,AtomProperties> *atomBox;
     Position *x;
+    Position *x_avg;
     Results *r;
     Force *f;
     AtomProperties *a;
@@ -58,9 +60,11 @@ class TuplePatchElem {
     patchID = pid;
     p = NULL;
     positionBox = NULL;
+    avgPositionBox = NULL;
     forceBox = NULL;
     atomBox = NULL;
     x = NULL;
+    x_avg = NULL;
     r = NULL;
     f = NULL;
     a = NULL;
@@ -70,9 +74,11 @@ class TuplePatchElem {
     patchID = p_param->getPatchID();
     p = p_param;
     positionBox = p_param->registerPositionPickup(cid);
+    avgPositionBox = p_param->registerAvgPositionPickup(cid);
     forceBox = p_param->registerForceDeposit(cid);
     atomBox = p_param->registerAtomPickup(cid);
     x = NULL;
+    x_avg = NULL;
     r = NULL;
     f = NULL;
     a = NULL;
@@ -227,11 +233,12 @@ template <class T, class S> class ComputeHomeTuples : public Compute {
         doLoadTuples = false;
       }
     
-      // Open Boxes - register tFat we are using Positions
+      // Open Boxes - register that we are using Positions
       // and will be depositing Forces.
       UniqueSetIter<TuplePatchElem> ap(tuplePatchList);
       for (ap = ap.begin(); ap != ap.end(); ap++) {
         ap->x = ap->positionBox->open();
+        if ( ap->p->flags.doMolly ) ap->x_avg = ap->avgPositionBox->open();
         ap->a = ap->atomBox->open();
         ap->r = ap->forceBox->open();
         ap->f = ap->r->f[Results::normal];
@@ -256,6 +263,7 @@ template <class T, class S> class ComputeHomeTuples : public Compute {
       // AtomProperties and that we are depositing Forces
       for (ap = ap.begin(); ap != ap.end(); ap++) {
         ap->positionBox->close(&(ap->x));
+        if ( ap->p->flags.doMolly ) ap->avgPositionBox->close(&(ap->x_avg));
         ap->atomBox->close(&(ap->a));
         ap->forceBox->close(&(ap->r));
       }

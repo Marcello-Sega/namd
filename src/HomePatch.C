@@ -15,7 +15,7 @@
  * superclass: 	Patch		
  ***************************************************************************/
 
-
+#include <math.h>
 #include "charm++.h"
 
 #include "SimParameters.h"
@@ -32,12 +32,14 @@
 #include "Sequencer.h"
 #include "LdbCoordinator.h"
 
+#define TINY 1.0e-20;
+#define MAXHGS 10
 #define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1054 1999/07/22 21:43:06 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1055 1999/08/20 19:11:11 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, TransformList tl,
       PositionList pl, VelocityList vl) : Patch(pd,al,pl), v(vl), t(tl)
@@ -71,8 +73,7 @@ void HomePatch::useSequencer(Sequencer *sequencerPtr)
 void HomePatch::runSequencer(void)
 { sequencer->run(); }
 
-void
-HomePatch::readPatchMap() {
+void HomePatch::readPatchMap() {
   PatchMap *p = PatchMap::Object();
   PatchID nnPatchID[PatchMap::MaxOneAway];
 
@@ -192,6 +193,8 @@ void HomePatch::positionsReady(int doMigration)
   // Workaround for oversize groups now handled by Patch.
   // doGroupSizeCheck();
 
+  if (flags.doMolly) mollyAverage();
+
   // Must Add Proxy Changes when migration completed!
   ProxyListIter pli(proxy);
   for ( pli = pli.begin(); pli != pli.end(); ++pli )
@@ -201,6 +204,7 @@ void HomePatch::positionsReady(int doMigration)
       allmsg->patch = patchID;
       allmsg->flags = flags;
       allmsg->positionList = p;
+      if (flags.doMolly) allmsg->avgPositionList = p_avg;
       allmsg->atomIDList = atomIDList;
       DebugM(1, "atomIDList.size() = " << atomIDList.size() << " p.size() = " << p.size() << "\n" );
       ProxyMgr::Object()->sendProxyAll(allmsg,pli->node);
@@ -209,6 +213,7 @@ void HomePatch::positionsReady(int doMigration)
       nmsg->patch = patchID;
       nmsg->flags = flags;
       nmsg->positionList = p;
+      if (flags.doMolly) nmsg->avgPositionList = p_avg;
       ProxyMgr::Object()->sendProxyData(nmsg,pli->node);
     }   
   }
@@ -272,7 +277,7 @@ void HomePatch::rattle1(const BigReal timestep)
       if ( fixed[i] ) rmass[i] = 0.; else ref[i] -= vel[i] * dt;
     }
     int icnt = 0;
-    if ( ( tmp = mol->rigid_bond_length(a[ig].id) ) ) {  // for water
+    if ( ( tmp = mol->rigid_bond_length(a[ig].id) ) > 0 ) {  // for water
       if ( hgs != 3 ) {
         NAMD_die("Hydrogen group error caught in rattle1().  It's a bug!\n");
       }
@@ -280,7 +285,7 @@ void HomePatch::rattle1(const BigReal timestep)
       if ( fixed[1] && fixed[2] ) --icnt;  // both fixed so skip it
     }
     for ( i = 1; i < hgs; ++i ) {  // normal bonds to mother atom
-      if ( ( tmp = mol->rigid_bond_length(a[ig+i].id) ) ) {
+      if ( ( tmp = mol->rigid_bond_length(a[ig+i].id) ) > 0 ) {
         dsq[icnt] = tmp * tmp;  ial[icnt] = 0;  ibl[icnt] = i;  ++icnt;
         if ( fixed[0] && fixed[i] ) --icnt;  // both fixed so skip it
       }
@@ -362,7 +367,7 @@ void HomePatch::rattle2(const BigReal timestep, Vector *virial)
       if ( fixed[i] ) rmass[i] = 0.;
     }
     int icnt = 0;
-    if ( ( tmp = mol->rigid_bond_length(a[ig].id) ) ) {  // for water
+    if ( ( tmp = mol->rigid_bond_length(a[ig].id) ) > 0 ) {  // for water
       if ( hgs != 3 ) {
         NAMD_die("Hydrogen group error caught in rattle2().  It's a bug!\n");
       }
@@ -371,7 +376,7 @@ void HomePatch::rattle2(const BigReal timestep, Vector *virial)
       if ( fixed[1] && fixed[2] ) --icnt;  // both fixed so skip it
     }
     for ( i = 1; i < hgs; ++i ) {  // normal bonds to mother atom
-      if ( ( tmp = mol->rigid_bond_length(a[ig+i].id) ) ) {
+      if ( ( tmp = mol->rigid_bond_length(a[ig+i].id) ) > 0 ) {
         redmass[icnt] = 1. / (rmass[0] + rmass[i]);
         dsqi[icnt] = 1. / (tmp * tmp);  ial[icnt] = 0;  ibl[icnt] = i;  ++icnt;
         if ( fixed[0] && fixed[i] ) --icnt;  // both fixed so skip it
@@ -414,13 +419,148 @@ void HomePatch::rattle2(const BigReal timestep, Vector *virial)
 
 }
 
+
+//  MOLLY algorithm part 1
+void HomePatch::mollyAverage()
+{
+  Molecule *mol = Node::Object()->molecule;
+  SimParameters *simParams = Node::Object()->simParameters;
+  BigReal tol = simParams->mollyTol;
+  int maxiter = simParams->mollyIter;
+  int i, iter;
+  BigReal dsq[MAXHGS], tmp;
+  int ial[MAXHGS], ibl[MAXHGS];
+  Vector ref[MAXHGS];  // reference position
+  Vector refab[MAXHGS];  // reference vector
+  BigReal rmass[MAXHGS];  // 1 / mass
+  BigReal redmass[MAXHGS];  // reduced mass
+  BigReal *lambda;  // Lagrange multipliers
+  Vector *avg;  // averaged position
+  int numLambdas = 0;
+  int fixed[MAXHGS];  // is atom fixed?
+
+  //  iout<<iINFO << "mollyAverage: "<<endl<<endi;
+  p_avg.resize(numAtoms);
+  for ( i=0; i<numAtoms; ++i ) p_avg[i] = p[i];
+
+  for ( int ig = 0; ig < numAtoms; ig += a[ig].hydrogenGroupSize ) {
+    int hgs = a[ig].hydrogenGroupSize;
+    if ( hgs == 1 ) continue;  // only one atom in group
+	for ( i = 0; i < hgs; ++i ) {
+	  ref[i] = p[ig+i];
+	  rmass[i] = 1. / a[ig+i].mass;
+	  fixed[i] = ( a[ig+i].flags & ATOM_FIXED );
+	  if ( fixed[i] ) rmass[i] = 0.;
+	}
+	avg = &(p_avg[ig]);
+	int icnt = 0;
+
+	if ( ( tmp = mol->rigid_bond_length(a[ig].id) ) ) {  // for water
+	  if ( hgs != 3 ) {
+	    NAMD_die("Hydrogen group error caught in mollyAverage().  It's a bug!\n");
+	  }
+	  redmass[icnt] = 1. / (rmass[1] + rmass[2]);
+	  dsq[icnt] = tmp * tmp;  ial[icnt] = 1;  ibl[icnt] = 2;  ++icnt;
+	  if ( fixed[1] && fixed[2] ) --icnt;  // both fixed so skip it
+	}
+	for ( i = 1; i < hgs; ++i ) {  // normal bonds to mother atom
+	  if ( ( tmp = mol->rigid_bond_length(a[ig+i].id) ) ) {
+	    redmass[icnt] = 1. / (rmass[0] + rmass[i]);
+	    dsq[icnt] =  tmp * tmp;  ial[icnt] = 0;  ibl[icnt] = i;  ++icnt;
+
+	    if ( fixed[0] && fixed[i] ) --icnt;  // both fixed so skip it
+	  }
+	}
+	if ( icnt == 0 ) continue;  // no constraints
+	numLambdas += icnt;
+	molly_lambda.resize(numLambdas);
+	lambda = &(molly_lambda[numLambdas - icnt]);
+	for ( i = 0; i < icnt; ++i ) {
+	  refab[i] = ref[ial[i]] - ref[ibl[i]];
+	}
+	//	iout<<iINFO<<"hgs="<<hgs<<" m="<<icnt<<endl<<endi;
+	iter=average(avg,ref,lambda,hgs,icnt,rmass,dsq,ial,ibl,refab,tol,maxiter);
+	if ( iter == maxiter ) {
+	  iout << iWARN << "Exceeded maximum number of iterations in mollyAverage().\n"<<endi;
+	}
+  }
+}
+
+
+//  MOLLY algorithm part 2
+void HomePatch::mollyMollify(Vector *virial)
+{
+  Molecule *mol = Node::Object()->molecule;
+  SimParameters *simParams = Node::Object()->simParameters;
+  Vector wc(0.,0.,0.);  // constraint virial
+  BigReal tol = simParams->mollyTol;
+  int maxiter = simParams->mollyIter;
+  int i, iter;
+  BigReal dsq[MAXHGS], tmp;
+  int ial[MAXHGS], ibl[MAXHGS];
+  Vector ref[MAXHGS];  // reference position
+  Vector *avg;  // averaged position
+  Vector refab[MAXHGS];  // reference vector
+  Vector force[MAXHGS];  // new force
+  BigReal rmass[MAXHGS];  // 1 / mass
+  BigReal redmass[MAXHGS];  // reduced mass
+  BigReal *lambda;  // Lagrange multipliers
+  int numLambdas = 0;
+  int fixed[MAXHGS];  // is atom fixed?
+
+  for ( int ig = 0; ig < numAtoms; ig += a[ig].hydrogenGroupSize ) {
+    int hgs = a[ig].hydrogenGroupSize;
+    if (hgs == 1 ) continue;  // only one atom in group
+	for ( i = 0; i < hgs; ++i ) {
+	  ref[i] = p[ig+i];
+	  force[i] = f[Results::slow][ig+i];
+	  rmass[i] = 1. / a[ig+i].mass;
+	  fixed[i] = ( a[ig+i].flags & ATOM_FIXED );
+	  if ( fixed[i] ) rmass[i] = 0.;
+	}
+	int icnt = 0;
+	// c-ji I'm only going to mollify water for now
+	if ( ( tmp = mol->rigid_bond_length(a[ig].id) ) ) {  // for water
+	  if ( hgs != 3 ) {
+	    NAMD_die("Hydrogen group error caught in mollyMollify().  It's a bug!\n");
+	  }
+	  redmass[icnt] = 1. / (rmass[1] + rmass[2]);
+	  dsq[icnt] = tmp * tmp;  ial[icnt] = 1;  ibl[icnt] = 2;  ++icnt;
+	  if ( fixed[1] && fixed[2] ) --icnt;  // both fixed so skip it
+	}
+	for ( i = 1; i < hgs; ++i ) {  // normal bonds to mother atom
+	  if ( ( tmp = mol->rigid_bond_length(a[ig+i].id) ) ) {
+	    redmass[icnt] = 1. / (rmass[0] + rmass[i]);
+	    dsq[icnt] = tmp * tmp;  ial[icnt] = 0;  ibl[icnt] = i;  ++icnt;
+	    if ( fixed[0] && fixed[i] ) --icnt;  // both fixed so skip it
+	  }
+	}
+
+	if ( icnt == 0 ) continue;  // no constraints
+	lambda = &(molly_lambda[numLambdas]);
+	numLambdas += icnt;
+	for ( i = 0; i < icnt; ++i ) {
+	  refab[i] = ref[ial[i]] - ref[ibl[i]];
+	}
+	avg = &(p_avg[ig]);
+	mollify(avg,ref,lambda,force,hgs,icnt,rmass,ial,ibl,refab);
+	// store data back to patch
+	for ( i = 0; i < hgs; ++i ) {
+	  f[Results::slow][ig+i] = force[i];
+	}
+  }
+  // check that there isn't a constant needed here!
+  *virial += wc;
+  p_avg.resize(0);
+}
+
 BigReal HomePatch::calcKineticEnergy()
 {
   BigReal total = 0;
   for ( int i = 0; i < numAtoms; ++i )
-  {
-     total += 0.5 * a[i].mass * v[i] * v[i];
-  }
+    {
+      total += 0.5 * a[i].mass * v[i] * v[i];
+    }
   return total;
 }
 
@@ -725,18 +865,533 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
   }
 }
 
+// c-ji code for MOLLY 7-31-99
+int HomePatch::average(Vector qtilde[],const Vector q[],BigReal lambda[],const int n,const int m, const BigReal imass[], const BigReal length2[], const int ial[], const int ibl[], const Vector refab[], const BigReal tolf, const int ntrial) {
+  //  input:  n = length of hydrogen group to be averaged (shaked)
+  //          q[n] = vector array of original positions
+  //          m = number of constraints
+  //          imass[n] = inverse mass for each atom
+  //          length2[m] = square of reference bond length for each constraint
+  //          ial[m] = atom a in each constraint 
+  //          ibl[m] = atom b in each constraint 
+  //          refab[m] = vector of q_ial(i) - q_ibl(i) for each constraint
+  //          tolf = function error tolerance for Newton's iteration
+  //          ntrial = max number of Newton's iterations
+  //  output: lambda[m] = double array of lagrange multipliers (used by mollify)
+  //          qtilde[n] = vector array of averaged (shaked) positions
+  Bool  flag;
+
+  void lubksb(BigReal **a, int n, int *indx, BigReal b[]);
+  void ludcmp(BigReal **a, int n, int *indx, BigReal *d);
+  int k,k1,i,j;
+  BigReal errx,errf,d,**fjac,tolx;
+
+  int indx[MAXHGS+1]; 
+  double p[MAXHGS+1];
+  double fvec[MAXHGS+1];
+  fjac = new double*[m];
+  fjac[0] = new double[m*m];
+  Vector avgab[MAXHGS]; 
+  Vector grhs[MAXHGS*MAXHGS]; 
+  Vector auxrhs[MAXHGS*MAXHGS]; 
+  Vector glhs[MAXHGS*MAXHGS]; 
+
+  //  iout <<iINFO << "average: n="<<n<<" m="<<m<<endl<<endi;
+  tolx=tolf; 
+  // make pointers work with NR linear solver
+  
+  for(i=1;i<m;i++) {
+    fjac[i] = fjac[0]+m*i-1;
+  }
+  fjac[0]--;
+  fjac--;
+//   p--;
+//   fvec--;
+//   indx--;
+
+  // initialize lambda, globalGrhs
+
+  for (i=0;i<m;i++) {
+    lambda[i]=0.0;
+  }
+
+  flag = 0;
+  // define grhs, auxrhs for all iterations
+  // grhs= g_x(q)
+  //
+  G_q(refab,grhs,n,m,ial,ibl);
+  for (k=1;k<=ntrial;k++) {
+    //    usrfun(qtilde,q0,lambda,fvec,fjac,n,water); 
+    BigReal gij[MAXHGS];
+    // this used to be main loop of usrfun
+    // compute qtilde given q0, lambda, IMASSes
+    {
+      BigReal multiplier;
+      //      Vector* tmp = new Vector[n];
+      Vector tmp[MAXHGS];
+      for (i=0;i<m;i++) {
+	multiplier = lambda[i];
+	// auxrhs = M^{-1}grhs^{T}
+	for (j=0;j<n;j++) {
+	  auxrhs[i*n+j]=multiplier*imass[j]*grhs[i*n+j];
+	}
+      }
+      for (j=0;j<n;j++) {
+	//      tmp[j]=0.0;      
+	for (i=0;i<m;i++) {
+	  tmp[j]+=auxrhs[i*n+j];
+	}
+      }
+ 
+      for (j=0;j<n;j++) {
+	qtilde[j]=q[j]+tmp[j];
+      }
+      //      delete [] tmp;
+    }
+  
+    for ( i = 0; i < m; i++ ) {
+      avgab[i] = qtilde[ial[i]] - qtilde[ibl[i]];
+    }
+
+    //  iout<<iINFO << "Calling Jac" << endl<<endi;
+    //  Jac(qtilde, q0, fjac,n,water);
+    {
+      int ierr;
+      //  Vector glhs[3*n+3];
+
+      Vector grhs2[MAXHGS*MAXHGS];
+
+      //      grhs2 = new Vector[m*n];
+
+
+      G_q(avgab,glhs,n,m,ial,ibl);
+#ifdef DEBUG0
+      iout<<iINFO << "G_q:" << endl<<endi;
+      for (i=0;i<m;i++) {
+	iout<<iINFO << glhs[i*n+0] << " " << glhs[i*n+1] << " " << glhs[i*n+2] << endl<<endi;
+      }
+#endif
+      //      G_q(refab,grhs2,m,ial,ibl);
+      // update with the masses
+      for (j=0; j<n; j++) { // number of atoms
+	for (i=0; i<m;i++) { // number of constraints
+	  grhs2[i*n+j] = grhs[i*n+j]*imass[j];
+	}
+      }
+
+      // G_q(qtilde) * M^-1 G_q'(q0) =
+      // G_q(qtilde) * grhs'
+      for (i=1;i<=m;i++) { // number of constraints
+	for (j=1;j<=m;j++) { // number of constraints
+	  fjac[i][j] = 0; 
+	  for (k1=0;k1<n;k1++) {
+	    fjac[i][j] += glhs[(i-1)*n+k1]*grhs2[(j-1)*n+k1]; 
+	  }
+	}
+      }
+#ifdef DEBUG0  
+      iout<<iINFO << "glhs" <<endi;
+      for(i=0;i<9;i++) {
+	iout<<iINFO << glhs[i] << ","<<endi;
+      }
+      iout<<iINFO << endl<<endi;
+      for(i=0;i<9;i++) {
+	iout<<iINFO << grhs2[i] << ","<<endi;
+      }
+      iout<<iINFO << endl<<endi;
+#endif
+      //      delete[] grhs2;
+    }
+    // end of Jac calculation
+#ifdef DEBUG0
+    iout<<iINFO << "Jac" << endl<<endi;
+    for (i=1;i<=m;i++) 
+      for (j=1;j<=m;j++)
+	iout<<iINFO << fjac[i][j] << " "<<endi;
+    iout<< endl<<endi;
+#endif
+    // calculate constraints in gij for n constraints this being a water
+    //  G(qtilde, gij, n, water);
+    for (i=0;i<m;i++) {
+      gij[i]=avgab[i]*avgab[i]-length2[i];
+    }
+#ifdef DEBUG0
+    iout<<iINFO << "G" << endl<<endi;
+    iout<<iINFO << "( "<<endi;
+    for(i=0;i<m-1;i++) {
+      iout<<iINFO << gij[i] << ", "<<endi;
+    }
+    iout<<iINFO << gij[m-1] << ")" << endl<<endi;
+#endif
+    // fill the return vector
+    for(i=0;i<m;i++) {
+      fvec[i+1] = gij[i];
+    }
+    // free up the constraints
+    //    delete[] gij;
+    // continue Newton's iteration    
+    errf=0.0;
+    for (i=1;i<=m;i++) errf += fabs(fvec[i]);
+#ifdef DEBUG0
+    iout<<iINFO << "errf: " << errf << endl<<endi;
+#endif
+    if (errf <= tolf) {
+      flag=1; // convergence!
+      break;
+    }
+    for (i=1;i<=m;i++) p[i] = -fvec[i];
+    //    iout<<iINFO << "Doing dcmp in average " << endl<<endi;
+    ludcmp(fjac,m,indx,&d);
+    lubksb(fjac,m,indx,p);
+
+    errx=0.0;
+    for (i=1;i<=m;i++) {
+      errx += fabs(p[i]);
+    }
+    for (i=0;i<m;i++)  
+      lambda[i] += p[i+1];
+
+#ifdef DEBUG0
+    iout<<iINFO << "lambda:" << lambda[0] 
+	 << " " << lambda[1] << " " << lambda[2] << endl<<endi;
+    iout<<iINFO << "errx: " << errx << endl<<endi;
+#endif
+    if (errx <= tolx) break;
+#ifdef DEBUG0
+    iout<<iINFO << "Qtilde:" << endl<<endi;
+    iout<<iINFO << qtilde[0] << " " << qtilde[1] << " " << qtilde[2] << endl<<endi; 
+#endif
+  }
+#ifdef DEBUG
+  iout<<iINFO << "LAMBDA:" << lambda[0] << " " << lambda[1] << " " << lambda[2] << endl<<endi;
+#endif
+  // restore NR vector, matrix pointers to C++ pointers
+  //  indx++;p++;fvec++;
+  fjac++;
+  fjac[0]++;
+//   delete[] glhs;
+//   glhs = NULL;
+//   delete [] auxrhs;
+//   auxrhs = NULL;
+//   delete [] grhs;
+//   grhs = NULL;
+//   delete [] avgab;
+//   avgab = NULL;
+  delete [] fjac[0];
+  fjac[0] = NULL;
+  delete [] fjac;
+  fjac = NULL;
+//   delete [] fvec;
+//   fvec = NULL;
+//   delete [] p;
+//   p = NULL;
+//   delete [] indx;
+//   indx = NULL;
+
+  return k; // 
+}
+
+void HomePatch::G_q(const Vector refab[],Vector gqij[], const int n, const int m, const int ial[],const int ibl[]) {
+  int i,j; 
+  // step through the rows of the matrix
+  for(i=0;i<m;i++) {
+    gqij[i*n+ial[i]]=2.0*refab[i];
+    gqij[i*n+ibl[i]]=-gqij[i*n+ial[i]];
+  }
+};
+
+void HomePatch::mollify(Vector qtilde[],const Vector q0[],const BigReal lambda[], Vector force[],const int n, const int m, const BigReal imass[],const int ial[],const int ibl[],const Vector refab[]) {
+  int i,j,k;
+  // for now,  ignore water and masses parameters
+  //  const int n = 3;
+  BigReal d,*fvec,**fjac;
+  int *indx;
+  Vector zero(0.0,0.0,0.0);
+  
+  double **fjacinv;
+  void lubksb(BigReal **a, int n, int *indx, BigReal b[]);
+  void ludcmp(BigReal **a, int n, int *indx, BigReal *d);
+  Vector tmpforce[MAXHGS]; 
+  Vector tmpforce2[MAXHGS];
+  Vector y[MAXHGS]; 
+  Vector gqij[MAXHGS*MAXHGS];
+  Vector grhs[MAXHGS*MAXHGS];
+  Vector glhs[MAXHGS*MAXHGS];
+
+  BigReal aux[MAXHGS];
+  BigReal aux2[MAXHGS];
+
+  indx = new int[n];
+  fvec=new double[m];
+  //  int indx[MAXHGS+1];
+  //  double fvec[MAXHGS];
+  fjac= new double*[m];
+  fjac[0] = new double[m*m];
+  fjacinv= new double*[m];
+  fjacinv[0] = new double[m*m];
+  for(i=1;i<m;i++) {
+    fjac[i] = fjac[0]+m*i-1;
+    fjacinv[i] = fjacinv[0]+m*i-1;
+  }
+  fjac[0]--;
+  fjacinv[0]--;
+  indx--;fvec--;fjac--;fjacinv--;
+
+  for(i=0;i<n;i++) {
+    tmpforce[i]=imass[i]*force[i];
+  }
+  //  Jac(qtilde, q0, fjac,n,water);
+    //  iout<<iINFO << "Calling Jac" << endl<<endi;
+    //  Jac(qtilde, q0, fjac,n,water);
+    {
+      int ierr;
+      //  Vector glhs[3*n+3];
+
+      Vector grhs2[MAXHGS*MAXHGS];
+      Vector avgab[MAXHGS*MAXHGS];
+
+      for ( i = 0; i < m; i++ ) {
+	avgab[i] = qtilde[ial[i]] - qtilde[ibl[i]];
+      }
+
+      G_q(avgab,glhs,n,m,ial,ibl);
+      G_q(refab,grhs,n,m,ial,ibl);
+      // update with the masses
+      for (j=0; j<n; j++) { // number of atoms
+	for (i=0; i<m;i++) { // number of constraints
+	  grhs2[i*n+j] = grhs[i*n+j]*imass[j];
+	}
+      }
+
+      // G_q(qtilde) * M^-1 G_q'(q0) =
+      // G_q(qtilde) * grhs'
+      for (i=1;i<=m;i++) { // number of constraints
+	for (j=1;j<=m;j++) { // number of constraints
+	  fjac[i][j] = 0; 
+	  for (k=0;k<n;k++) {
+	    fjac[i][j] += glhs[(i-1)*n+k]*grhs2[(j-1)*n+k]; 
+	  }
+	}
+      }
+      //      delete[] avgab;
+      //      delete[] grhs2;
+
+    }
+    // end of Jac calculation
+
+  for (i=1;i<=m;i++) {
+    for (j=1;j<=m;j++) {
+      fjacinv[i][j]=0.0;
+    }
+  }
+
+  for(i=1;i<=m;i++) {
+    fjacinv[i][i]=1.0;
+  }
+  
+  ludcmp(fjac,m,indx,&d);
+  for(i=1;i<=m;i++) {
+    lubksb(fjac,m,indx,fjacinv[i]);
+  }
+  // aux=gqij*tmpforce
+  //  globalGrhs::computeGlobalGrhs(q0,n,water);
+  //  G_q(refab,grhs,m,ial,ibl);
+  for(i=0;i<m;i++) {
+    aux[i]=0.0;
+    for(j=0;j<n;j++) {
+      aux[i]+=grhs[i*n+j]*tmpforce[j];
+    }
+  }
+
+  // aux2=fjacinv'*aux
+  for(i=0;i<m;i++) {
+    aux2[i]=0.0;
+    for(j=0;j<m;j++) {
+      aux2[i]+=fjacinv[i+1][j+1]*aux[j];
+    }
+  }
+  // y=gq(qtilde)'*aux
+  //  G_q(qtilde,gqij,n,water);
+  for(i=0;i<m;i++) {
+    for(j=0;j<n;j++) {
+      gqij[i*n+j] = aux2[i]*glhs[i*n+j];
+    }
+  }
+  // are these indices right? NO!!!
+//  for(j=0;j<m;j++) {
+//    y[j] = zero;
+//    for(i=0;i<n;i++) {
+//      y[j] += gqij[i*n+j];
+//      iout<<iINFO << i << ", " << n << ", " << j << endl<<endi;
+//    }
+//  }
+  for(j=0;j<n;j++) {
+    y[j] = zero;
+    for(i=0;i<m;i++) {
+      y[j] += gqij[i*n+j];
+      //iout<<iINFO << i << ", " << n << ", " << j << endl<<endi;
+    }
+  }
+  for(i=0;i<n;i++) {
+    y[i]=force[i]-y[i];
+  }
+    
+  //
+  // gqq12*y
+      
+
+  for(i=0;i<n;i++) {
+    tmpforce2[i]=imass[i]*y[i];
+  }
+
+  // here we assume that tmpforce is initialized to zero.
+  for (i=0;i<n;i++) {
+    tmpforce[i]=zero;
+  }
+  
+  for (j=0;j<m;j++) {
+    // tmpforce[ial[j]]+=2.0*lambda[j]*(tmpforce2[ial[j]]-tmpforce2[ibl[j]]);
+    // tmpforce[ibl[j]]-=tmpforce[ial[j]];  // BUG HERE! -JCP
+    Vector tmpf = 2.0*lambda[j]*(tmpforce2[ial[j]]-tmpforce2[ibl[j]]);
+    tmpforce[ial[j]] += tmpf;
+    tmpforce[ibl[j]] -= tmpf;
+  }
+  // c-ji the other bug for 2 constraint water was this line (2-4-99)
+  //  for(i=0;i<m;i++) {
+  for(i=0;i<n;i++) {
+    force[i]=tmpforce[i]+y[i];
+  }
+
+  //end partial
+//  delete[] gqij;
+  
+  indx++;fvec++;fjac++;fjacinv++;
+  fjac[0]++; fjacinv[0]++;
+  delete [] fjacinv[0];
+  delete [] fjacinv;
+  delete [] fjac[0];
+  delete [] fjac;
+//   delete [] fvec;
+//   delete [] indx;
+//   delete [] aux2;
+//   delete [] aux;
+//   delete[] grhs;
+//   delete [] gqij;
+//   delete [] glhs;
+//   delete [] y;
+//   delete [] tmpforce2;
+//   delete [] tmpforce;
+}
+
+void lubksb(double **a, int n, int *indx, double b[])
+{
+	int i,ii=0,ip,j;
+	double sum;
+
+	for (i=1;i<=n;i++) {
+		ip=indx[i];
+		sum=b[ip];
+		b[ip]=b[i];
+		if (ii)
+			for (j=ii;j<=i-1;j++) sum -= a[i][j]*b[j];
+		else if (sum) ii=i;
+		b[i]=sum;
+	}
+	for (i=n;i>=1;i--) {
+		sum=b[i];
+		for (j=i+1;j<=n;j++) sum -= a[i][j]*b[j];
+		b[i]=sum/a[i][i];
+	}
+}
+
+
+void ludcmp(double **a, int n, int *indx, double *d)
+{
+
+	int i,imax,j,k;
+	double big,dum,sum,temp;
+	double *vv;
+	double *dvector(long nl, long nh);
+	void free_dvector(double *v, long nl, long nh);
+	//	iout<<iINFO<<"ludcmp: n="<<n<<endl<<endi;
+	vv=dvector(1,n);
+	*d=1.0;
+	for (i=1;i<=n;i++) {
+		big=0.0;
+		for (j=1;j<=n;j++)
+			if ((temp=fabs(a[i][j])) > big) big=temp;
+		if (big == 0.0) NAMD_die("Singular matrix in routine ludcmp\n");
+		vv[i]=1.0/big;
+	}
+	for (j=1;j<=n;j++) {
+		for (i=1;i<j;i++) {
+			sum=a[i][j];
+			for (k=1;k<i;k++) sum -= a[i][k]*a[k][j];
+			a[i][j]=sum;
+		}
+		big=0.0;
+		for (i=j;i<=n;i++) {
+			sum=a[i][j];
+			for (k=1;k<j;k++)
+				sum -= a[i][k]*a[k][j];
+			a[i][j]=sum;
+			if ( (dum=vv[i]*fabs(sum)) >= big) {
+				big=dum;
+				imax=i;
+			}
+		}
+		if (j != imax) {
+			for (k=1;k<=n;k++) {
+				dum=a[imax][k];
+				a[imax][k]=a[j][k];
+				a[j][k]=dum;
+			}
+			*d = -(*d);
+			vv[imax]=vv[j];
+		}
+		indx[j]=imax;
+		if (a[j][j] == 0.0) a[j][j]=TINY;
+		if (j != n) {
+			dum=1.0/(a[j][j]);
+			for (i=j+1;i<=n;i++) a[i][j] *= dum;
+		}
+	}
+	free_dvector(vv,1,n);
+}
+
+// c-ji this should be changed to code as what I have above ASAP
+// 8-2-99
+double *dvector(long nl, long nh)
+/* allocate a double vector with subscript range v[nl..nh] */
+{
+	double *v;
+
+	v=(double *)malloc((size_t) ((nh-nl+2)*sizeof(double)));
+	if (!v) NAMD_die("allocation failure in dvector()\n");
+	return v-nl+1;
+}
+
+void free_dvector(double *v, long nl, long nh)
+/* free a double vector allocated with dvector() */
+{
+	free((char *) (v+nl-1));
+}
+
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1054 $	$Date: 1999/07/22 21:43:06 $
+ *	$Revision: 1.1055 $	$Date: 1999/08/20 19:11:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1055  1999/08/20 19:11:11  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1054  1999/07/22 21:43:06  jim
  * Fixed virial calculation during RATTLE.
  *
@@ -832,7 +1487,7 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  * Final debugging for compute migration / proxy creation for load balancing.
  * Lots of debug code added, mostly turned off now.
  * Fixed bug in PositionBox when Patch had no dependencies.
- * Eliminated use of cout and misuse of iout in numerous places.
+ * Eliminated use of iout<<iINFO and misuse of iout in numerous places.
  *                                            Ari & Jim
  *
  * Revision 1.1027  1997/04/08 07:08:35  ari

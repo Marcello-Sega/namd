@@ -28,10 +28,17 @@ ComputeNonbondedSelf::ComputeNonbondedSelf(ComputeID c, PatchID pid,
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 }
 
+void ComputeNonbondedSelf::initialize() {
+  ComputePatch::initialize();
+  avgPositionBox = patch->registerAvgPositionPickup(cid);
+}
 
 ComputeNonbondedSelf::~ComputeNonbondedSelf()
 {
   delete reduction;
+  if (avgPositionBox != NULL) {
+    patch->unregisterAvgPositionPickup(cid,&avgPositionBox);
+  }
 }
 
 
@@ -68,11 +75,20 @@ void ComputeNonbondedSelf::doForce(Position* p,
     params.numParts = numParts;
 
     if ( patch->flags.doFullElectrostatics )
-      {
+    {
       params.fullf[0] = r->f[Results::slow];
       params.fullf[1] = r->f[Results::slow];
-      calcFullSelf(&params);
+      if ( patch->flags.doMolly ) {
+        calcSelf(&params);
+        Position *p_avg = avgPositionBox->open();
+        params.p[0] = p_avg;
+        params.p[1] = p_avg;
+        calcSlowSelf(&params);
+        avgPositionBox->close(&p_avg);
+      } else {
+        calcFullSelf(&params);
       }
+    }
     else
       calcSelf(&params);
   }
@@ -88,12 +104,15 @@ void ComputeNonbondedSelf::doForce(Position* p,
  *
  *	$RCSfile: ComputeNonbondedSelf.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1999/06/17 17:05:40 $
+ *	$Revision: 1.1015 $	$Date: 1999/08/20 19:11:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.C,v $
+ * Revision 1.1015  1999/08/20 19:11:10  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1014  1999/06/17 17:05:40  jim
  * Renamed seq to step in most places.  Now has meaning only to user.
  *

@@ -44,15 +44,12 @@ typedef int  MTSChoices;
 
 #define NAIVE		0
 #define VERLETI		1
-#define VERLETII	2
-#define VERLETX		3
 
 //  The following definitions are used to distinuish between multiple
 //  long-short range force splittings
 #define SHARP		0
 #define XPLOR		1
 #define C1		2
-#define SKEEL		3
 
 //  The following definitions are used to distinguish among load
 //  balancing strategies
@@ -359,9 +356,12 @@ public:
 	int splitPatch;			// How are patches determined?
 	BigReal hgroupCutoff;		// what is the added hydrogen margin?
 
+	int mollyOn;			// mollify long range forces?
+	BigReal mollyTol;		// error tolerance for molly
+	int mollyIter;			// max number of iterations for molly
+
         int rigidBonds;                 // what type of rigid bonds to hydrogens
                                         // none, all, or only water
-
 
         BigReal rigidTol;               // error tolerance for rigid bonds
         int rigidIter;                  // Number of NR iterations 
@@ -455,12 +455,15 @@ private:
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1041 $	$Date: 1999/08/16 22:19:48 $
+ *	$Revision: 1.1042 $	$Date: 1999/08/20 19:11:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1042  1999/08/20 19:11:15  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1041  1999/08/16 22:19:48  jim
  * Incorporated Justin's interactive MD code.
  *

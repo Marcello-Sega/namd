@@ -72,7 +72,14 @@ public:
   // methods for rigidBonds
   void rattle1(const BigReal);
   void rattle2(const BigReal, Vector *virial);
-  
+
+  // methods for mollified impluse (MOLLY)
+  void mollyAverage();
+  void mollyMollify(Vector *virial);
+  Bool average(Vector qtilde[],const Vector q[],BigReal lambda[],const int n,const int m, const BigReal imass[], const BigReal length2[], const int ial[], const int ilb[], const Vector qji[], const BigReal tolf, const int ntrial);
+  void G_q(const Vector refab[],Vector gqij[], const int n, const int m, const int ial[],const int ibl[]);
+  void mollify(Vector qtilde[],const Vector q0[],const BigReal lambda[], Vector force[],const int n, const int m, const BigReal imass[],const int ial[],const int ibl[],const Vector refab[]); 
+
   // patch-wise calculations
   BigReal calcKineticEnergy();
   Vector calcMomentum();
@@ -96,6 +103,7 @@ private:
   // Store of Atom-wise variables
   VelocityList  v; 
   TransformList t;   
+  ResizeArray<BigReal> molly_lambda;  // used for MOLLY
   
   // List of Proxies
   ProxyList     proxy;
@@ -121,12 +129,15 @@ private:
  *
  *	$RCSfile: HomePatch.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1019 $	$Date: 1999/07/08 21:26:52 $
+ *	$Revision: 1.1020 $	$Date: 1999/08/20 19:11:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.1020  1999/08/20 19:11:12  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1019  1999/07/08 21:26:52  jim
  * Eliminated compiler warnings.
  *

@@ -29,6 +29,7 @@ class PatchElem {
     PatchID patchID;
     Patch *p;
     PositionBox<Patch> *positionBox;
+    PositionBox<Patch> *avgPositionBox;
     Box<Patch,Results> *forceBox;
     Box<Patch,AtomProperties> *atomBox;
     Position *x;
@@ -40,6 +41,7 @@ class PatchElem {
     patchID = -1;
     p = NULL;
     positionBox = NULL;
+    avgPositionBox = NULL;
     forceBox = NULL;
     atomBox = NULL;
     x = NULL;
@@ -52,10 +54,13 @@ class PatchElem {
     patchID = p_param;
   }
 
-  PatchElem(Patch *p_param, ComputeID cid) {
+  PatchElem(Patch *p_param, ComputeID cid, int useAvgPos) {
     patchID = p_param->getPatchID();
     p = p_param;
     positionBox = p_param->registerPositionPickup(cid);
+    if ( useAvgPos ) {
+      avgPositionBox = p_param->registerAvgPositionPickup(cid);
+    }
     forceBox = p_param->registerForceDeposit(cid);
     atomBox = p_param->registerAtomPickup(cid);
     x = NULL;
@@ -81,6 +86,8 @@ class ReductionMgr;
 
 class ComputeHomePatches : public Compute {
 protected:
+  int useAvgPositions;
+
   ComputeHomePatchList patchList;
 
   PatchMap *patchMap;
@@ -99,12 +106,15 @@ public:
  *
  *	$RCSfile: ComputeHomePatches.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1999/07/08 21:26:34 $
+ *	$Revision: 1.1007 $	$Date: 1999/08/20 19:11:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomePatches.h,v $
+ * Revision 1.1007  1999/08/20 19:11:08  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1006  1999/07/08 21:26:34  jim
  * Eliminated compiler warnings.
  *

@@ -33,6 +33,7 @@ Patch::Patch(PatchID pd) :
    patchID(pd), numAtoms(0),
    positionPtr(0), atomPtr(0),
    positionBox(this,&Patch::positionBoxClosed),
+   avgPositionBox(this,&Patch::avgPositionBoxClosed),
    forceBox(this,&Patch::forceBoxClosed),
    atomBox(this,&Patch::atomBoxClosed),
    boxesOpen(0)
@@ -46,6 +47,7 @@ Patch::Patch(PatchID pd, AtomIDList al, PositionList pl) :
    patchID(pd), numAtoms(al.size()), atomIDList(al), p(pl),
    positionPtr(0), atomPtr(0),
    positionBox(this,&Patch::positionBoxClosed),
+   avgPositionBox(this,&Patch::avgPositionBoxClosed),
    forceBox(this,&Patch::forceBoxClosed),
    atomBox(this,&Patch::atomBoxClosed),
    boxesOpen(0)
@@ -165,8 +167,6 @@ Patch::indexAtoms()
 }
 */
 
-
-
 PositionBox<Patch>* Patch::registerPositionPickup(ComputeID cid, int trans)
 {
    //DebugM(4, "registerPositionPickupa("<<patchID<<") from " << cid << "\n");
@@ -183,6 +183,19 @@ void Patch::unregisterPositionPickup(ComputeID cid, PositionBox<Patch> **const b
    DebugM(4, "UnregisterPositionPickup from " << cid << "\n");
    positionComputeList.del(cid);
    positionBox.checkIn(*box);
+   *box = 0;
+}
+
+PositionBox<Patch>* Patch::registerAvgPositionPickup(ComputeID cid, int trans)
+{
+   //DebugM(4, "registerAvgPositionPickup("<<patchID<<") from " << cid << "\n");
+   return avgPositionBox.checkOut(trans);
+}
+
+void Patch::unregisterAvgPositionPickup(ComputeID cid, PositionBox<Patch> **const box)
+{
+   DebugM(4, "UnregisterAvgPositionPickup from " << cid << "\n");
+   avgPositionBox.checkIn(*box);
    *box = 0;
 }
 
@@ -245,6 +258,12 @@ void Patch::atomBoxClosed(void)
    this->boxClosed(2);
 }
 
+void Patch::avgPositionBoxClosed(void)
+{
+   p_avg.encap(&avgPositionPtr,numAtoms);
+   this->boxClosed(3);
+}
+
 // void Patch::boxClosed(int box) is virtual
 
 void Patch::positionsReady(int doneMigration)
@@ -255,11 +274,16 @@ void Patch::positionsReady(int doneMigration)
    doGroupSizeCheck();
 
    boxesOpen = 3;
+   if ( flags.doMolly ) boxesOpen++;
    _hasNewAtoms = (doneMigration != 0);
 
    // Give all position pickup boxes access to positions
    positionPtr = p.unencap();
    positionBox.open(positionPtr,numAtoms,&lattice);
+   if ( flags.doMolly ) {
+     avgPositionPtr = p_avg.unencap();
+     avgPositionBox.open(avgPositionPtr,numAtoms,&lattice);
+   }
 
    // Give all force deposit boxes access to forces
    Force *forcePtr;
@@ -338,13 +362,16 @@ void Patch::doGroupSizeCheck(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1026 $	$Date: 1999/05/11 23:56:41 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1027 $	$Date: 1999/08/20 19:11:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.1027  1999/08/20 19:11:13  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1026  1999/05/11 23:56:41  brunner
  * Changes for new charm version
  *

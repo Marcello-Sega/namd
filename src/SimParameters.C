@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1075 $  $Date: 1999/08/16 22:19:43 $
+ *  $Revision: 1.1076 $  $Date: 1999/08/20 19:11:15 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1076  1999/08/20 19:11:15  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1075  1999/08/16 22:19:43  jim
  * Incorporated Justin's interactive MD code.
  *
@@ -829,6 +832,12 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
     &cellBasisVector3);
    opts.optional("main", "cellOrigin", "Fixed center of periodic cell",
     &cellOrigin);
+
+   opts.optionalB("main", "molly", "Rigid bonds to hydrogen",&mollyOn,FALSE);
+   opts.optional("main", "mollyTolerance", "Error tolerance for MOLLY",
+                 &mollyTol, 0.00001);
+   opts.optional("main", "mollyIterations", 
+		 "Max number of iterations for MOLLY", &mollyIter, 100);
 
    opts.optional("main", "rigidBonds", "Rigid bonds to hydrogen",PARSE_STRING);
    opts.optional("main", "rigidTolerance", 
@@ -1747,14 +1756,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
   {
     MTSAlgorithm = VERLETI;
   }
-  else if (!strcasecmp(s, "verletii"))
-  {
-    MTSAlgorithm = VERLETII;
-  }
-  else if (!strcasecmp(s, "verletx"))
-  {
-    MTSAlgorithm = VERLETX;
-  }
   else
   {
     char err_msg[129];
@@ -2009,6 +2010,11 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    if (tclOn && freeEnergyOn)
    {
       NAMD_die("Sorry, tcl scripting and freeEnergy cannot be used simultaneously");
+   }
+
+   if (splitPatch == SPLIT_PATCH_POSITION && mollyOn )
+   {
+      NAMD_die("splitPatch hydrogen is required for MOLLY");
    }
 
    if (splitPatch == SPLIT_PATCH_POSITION && rigidBonds != RIGID_NONE)
@@ -3234,8 +3240,8 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    if (berendsenPressureOn || langevinPistonOn) {
      if (rigidBonds != RIGID_NONE && useGroupPressure == FALSE) {
        useGroupPressure = TRUE;
-       iout << iWARN << "Option useGroupPressure enabled for "
-            << "pressure control with rigidBonds.\n" << endi;
+       iout << iWARN << "Option useGroupPressure is being enabled "
+            << "due to pressure control with rigidBonds.\n" << endi;
      }
    }
 
@@ -3330,22 +3336,15 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << endi;
    }
 
-   if (MTSAlgorithm != VERLETI)
-   {
   if (MTSAlgorithm == NAIVE)
   {
-    iout << iWARN << "NAIVE MTS SCHEME IS NOT SUPPORTED, USING VERLET I (r-RESPA).\n";
+    iout << iWARN << "NAIVE MTS SCHEME IS NOT SUPPORTED,\n";
+    MTSAlgorithm = VERLETI;
   }
-  else if (MTSAlgorithm == VERLETII )
-        {
-    iout << iWARN << "VERLET II MTS SCHEME IS NOT SUPPORTED, USING VERLET I (r-RESPA).\n";
-        }
-        else
+  if (MTSAlgorithm == VERLETI )
   {
-    iout << iWARN << "VERLET X MTS SCHEME IS NOT SUPPORTED, USING VERLET I (r-RESPA).\n";
+    iout << iWARN << "USING VERLET I (r-RESPA) MTS SCHEME.\n" << endi;
   }
-     iout << endi;
-   }
 
    if (longSplitting == SHARP)
   iout << iINFO << "SHARP SPLITTING OF LONG RANGE ELECTROSTATICS\n";
@@ -3360,6 +3359,14 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
   iout << iINFO << "PLACING ATOMS IN PATCHES BY HYDROGEN GROUPS\n";
 
    iout << endi;
+
+   if (mollyOn)
+   {
+     iout << iINFO << "SLOW FORCE MOLLIFICATION : \n";
+     iout << iINFO << "         ERROR TOLERANCE : " << mollyTol << "\n";
+     iout << iINFO << "          MAX ITERATIONS : " << mollyIter << "\n";
+     iout << endi;
+   }
 
    if (rigidBonds != RIGID_NONE)
    {
@@ -3549,12 +3556,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1075 $  $Date: 1999/08/16 22:19:43 $
+ *  $Revision: 1.1076 $  $Date: 1999/08/20 19:11:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1076  1999/08/20 19:11:15  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1075  1999/08/16 22:19:43  jim
  * Incorporated Justin's interactive MD code.
  *

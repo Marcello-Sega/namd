@@ -385,6 +385,7 @@ public:
 	}
 
 	// 0 if not rigid or length to parent, for parent refers to H-H length
+	// < 0 implies MOLLY but not SHAKE, > 1 implies both if MOLLY is on
 	Real rigid_bond_length(int atomnum) const
 	{
 		return(rigidBondLengths[atomnum]);
@@ -404,12 +405,15 @@ public:
  *
  *	$RCSfile: Molecule.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1025 $	$Date: 1999/03/12 02:08:35 $
+ *	$Revision: 1.1026 $	$Date: 1999/08/20 19:11:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.1026  1999/08/20 19:11:13  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1025  1999/03/12 02:08:35  jim
  * Fixed bug detection to deal with fixed atom optimizations.
  *

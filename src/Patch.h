@@ -64,6 +64,9 @@ class Patch
      PositionBox<Patch>* registerPositionPickup(ComputeID cid, int trans = 13);
      void unregisterPositionPickup(ComputeID cid,
 				   PositionBox<Patch>**const box);
+     PositionBox<Patch>* registerAvgPositionPickup(ComputeID cid, int trans = 13);
+     void unregisterAvgPositionPickup(ComputeID cid,
+				   PositionBox<Patch>**const box);
      Box<Patch,Results>* registerForceDeposit(ComputeID cid);
      void unregisterForceDeposit(ComputeID cid, Box<Patch,Results> **const box);
      Box<Patch,AtomProperties>* registerAtomPickup(ComputeID cid);
@@ -78,6 +81,7 @@ class Patch
      void positionBoxClosed(void);
      void forceBoxClosed(void);
      void atomBoxClosed(void);
+     void avgPositionBoxClosed(void);
 
      int getNumAtoms() { return numAtoms; }
      AtomIDList &getAtomIDList() { return (atomIDList); }
@@ -97,7 +101,9 @@ class Patch
      // LocalInt      localWaters;  NEVER USED -JCP
      // LocalInt      localNonWaters;  NEVER USED -JCP
      PositionList  p;
+     PositionList  p_avg;
      Position      *positionPtr;
+     Position      *avgPositionPtr;
      ForceList     f[Results::maxNumForces];
      Results	   results;
      AtomPropertiesList		a;
@@ -105,6 +111,8 @@ class Patch
 
      PositionOwnerBox<Patch> positionBox;
      ComputeIDList              positionComputeList;
+     PositionOwnerBox<Patch> avgPositionBox;
+     ComputeIDList              avgPositionComputeList;
      OwnerBox<Patch,Results>    forceBox;
      ComputeIDList              forceComputeList;
      OwnerBox<Patch,AtomProperties>    atomBox;
@@ -132,12 +140,15 @@ class Patch
  *
  *	$RCSfile: Patch.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1998/04/14 05:58:26 $
+ *	$Revision: 1.1013 $	$Date: 1999/08/20 19:11:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.h,v $
+ * Revision 1.1013  1999/08/20 19:11:13  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1012  1998/04/14 05:58:26  jim
  * Added automatic correction if hgroupCutoff is too small.  No more warnings.
  * However, performance wil degrade if many groups are below cutoff size.

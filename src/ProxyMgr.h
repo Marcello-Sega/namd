@@ -55,6 +55,7 @@ public:
   PatchID patch;
   Flags flags;
   PositionList positionList;
+  PositionList avgPositionList;
   static void* pack(ProxyDataMsg *msg);
   static ProxyDataMsg* unpack(void *ptr);
 };
@@ -65,6 +66,7 @@ public:
   Flags flags;
   AtomIDList atomIDList;
   PositionList positionList;
+  PositionList avgPositionList;
   static void* pack(ProxyAllMsg *msg);
   static ProxyAllMsg* unpack(void *ptr);
 };
@@ -136,13 +138,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1999/05/11 23:56:46 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1012 $	$Date: 1999/08/20 19:11:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.h,v $
+ * Revision 1.1012  1999/08/20 19:11:14  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1011  1999/05/11 23:56:46  brunner
  * Changes for new charm version
  *

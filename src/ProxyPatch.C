@@ -71,6 +71,7 @@ void ProxyPatch::receiveData(ProxyDataMsg *msg)
   msgBuffer = NULL;
   flags = msg->flags;
   p = msg->positionList;
+  p_avg = msg->avgPositionList;
   delete msg;
   positionsReady(0);
 }
@@ -91,6 +92,7 @@ void ProxyPatch::receiveAll(ProxyAllMsg *msg)
   AtomMap::Object()->registerIDs(patchID,msg->atomIDList);
   flags = msg->flags;
   p = msg->positionList;
+  p_avg = msg->avgPositionList;
 
   delete msg;
 
@@ -122,13 +124,16 @@ void ProxyPatch::sendResults(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyPatch.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1020 $	$Date: 1999/05/11 23:56:47 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1021 $	$Date: 1999/08/20 19:11:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.1021  1999/08/20 19:11:14  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1020  1999/05/11 23:56:47  brunner
  * Changes for new charm version
  *

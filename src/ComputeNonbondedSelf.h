@@ -26,8 +26,10 @@ public:
   virtual ~ComputeNonbondedSelf();
 
 protected :
-  // virtual void initialize() { ComputePatch::initialize(); }
+  virtual void initialize();
   virtual void doForce(Position* p, Results* r, AtomProperties* a);
+
+  PositionBox<Patch> *avgPositionBox;
 
   SubmitReduction *reduction;
 
@@ -41,12 +43,15 @@ protected :
  *
  *	$RCSfile: ComputeNonbondedSelf.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1999/06/17 15:46:10 $
+ *	$Revision: 1.1008 $	$Date: 1999/08/20 19:11:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.h,v $
+ * Revision 1.1008  1999/08/20 19:11:10  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1007  1999/06/17 15:46:10  jim
  * Completely rewrote reduction system to eliminate need for sequence numbers.
  *

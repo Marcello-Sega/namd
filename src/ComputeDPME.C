@@ -49,6 +49,7 @@ ComputeDPME::ComputeDPME(ComputeID c, ComputeMgr *m) :
   ComputeHomePatches(c), comm(m)
 {
   DebugM(4,"ComputeDPME created.\n");
+  useAvgPositions = 1;
 
   int numWorkingPes = CkNumPes();
   {
@@ -145,6 +146,10 @@ void ComputeDPME::doWork()
 				* ComputeNonbondedUtil::dielectric_1 );
   for (ap = ap.begin(); ap != ap.end(); ap++) {
     Position *x = (*ap).positionBox->open();
+    if ( patchList[0].p->flags.doMolly ) {
+      (*ap).positionBox->close(&x);
+      x = (*ap).avgPositionBox->open();
+    }
     AtomProperties *a = (*ap).atomBox->open();
     int numAtoms = (*ap).p->getNumAtoms();
 
@@ -159,7 +164,8 @@ void ComputeDPME::doWork()
       ++data_ptr;
     }
 
-    (*ap).positionBox->close(&x);
+    if ( patchList[0].p->flags.doMolly ) { (*ap).avgPositionBox->close(&x); }
+    else { (*ap).positionBox->close(&x); }
     (*ap).atomBox->close(&a);
   }
 
@@ -311,7 +317,7 @@ void ComputeDPMEMaster::recvData(ComputeDPMEDataMsg *msg)
   DebugM(4,"Reciprocal sum virial: " << recip_vir[0] << " " <<
 	recip_vir[1] << " " << recip_vir[2] << " " << recip_vir[3] << " " <<
 	recip_vir[4] << " " << recip_vir[5] << "\n");
-  reduction->item(REDUCTION_ELECT_ENERGY) += electEnergy;
+  reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += electEnergy;
   reduction->item(REDUCTION_VIRIAL_SLOW_X) += (BigReal)(recip_vir[0]);
   reduction->item(REDUCTION_VIRIAL_SLOW_Y) += (BigReal)(recip_vir[3]);
   reduction->item(REDUCTION_VIRIAL_SLOW_Z) += (BigReal)(recip_vir[5]);
@@ -381,12 +387,15 @@ void ComputeDPME::recvResults(ComputeDPMEResultsMsg *msg)
  *
  *	$RCSfile: ComputeDPME.C,v $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.15 $	$Date: 1999/06/17 17:05:35 $
+ *	$Revision: 1.16 $	$Date: 1999/08/20 19:11:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPME.C,v $
+ * Revision 1.16  1999/08/20 19:11:07  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.15  1999/06/17 17:05:35  jim
  * Renamed seq to step in most places.  Now has meaning only to user.
  *

@@ -11,7 +11,7 @@
  *
  *  $RCSfile: Molecule.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1035 $  $Date: 1999/03/12 02:08:33 $
+ *  $Revision: 1.1036 $  $Date: 1999/08/20 19:11:12 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1036  1999/08/20 19:11:12  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1035  1999/03/12 02:08:33  jim
  * Fixed bug detection to deal with fixed atom optimizations.
  *
@@ -3767,13 +3770,13 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
     for( ; h_i != h_e; ++h_i ) {
       if ( h_i->isGP ) {
 	parentIsFixed = fixedAtomFlags[h_i->atomID];
-	if ( (rigidBondLengths[h_i->atomID] != 0.)  // water
+	if ( (rigidBondLengths[h_i->atomID] > 0.)  // water
 		&& fixedAtomFlags[h_i[1].atomID]
 		&& fixedAtomFlags[h_i[2].atomID] ) {
 	  ++numFixedRigidBonds;
 	}
       } else {
-	if ( (rigidBondLengths[h_i->atomID] != 0.)
+	if ( (rigidBondLengths[h_i->atomID] > 0.)
 		&& fixedAtomFlags[h_i->atomID]
 		&& parentIsFixed ) {
 	  ++numFixedRigidBonds;
@@ -3983,14 +3986,16 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
   delete [] hg;
 
   // now deal with rigidBonds
-  if ( simParams->rigidBonds != RIGID_NONE ) {
+  if ( simParams->rigidBonds != RIGID_NONE || simParams->mollyOn ) {
 
     delete [] rigidBondLengths;
     rigidBondLengths = new Real[numAtoms];
     if ( ! rigidBondLengths ) {
       NAMD_die("Memory allocation failed in Molecule::build_atom_status()\n");
     }
+    for (i=0; i<numAtoms; ++i) rigidBondLengths[i] = 0;
     int mode = simParams->rigidBonds;
+    if ( simParams->mollyOn ) mode = RIGID_ALL;
 
     // add H-mother lengths or 0 if not constrained
     for (i=0; i < numBonds; i++) {
@@ -4002,7 +4007,6 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
       {
 	if ( ! is_hydrogen(a2) && ( is_water(a2) || mode == RIGID_ALL ) ) {
 	  rigidBondLengths[a1] = x0;
-	  ++numRigidBonds;
 	} else {
 	  rigidBondLengths[a1] = 0.;
         }
@@ -4011,7 +4015,6 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
       {
 	if ( is_water(a1) || mode == RIGID_ALL ) {
 	  rigidBondLengths[a2] = x0;
-	  ++numRigidBonds;
 	} else {
 	  rigidBondLengths[a2] = 0.;
         }
@@ -4037,7 +4040,24 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
       Real dum, t0;
       params->get_angle_params(&dum,&t0,&dum,&dum,angles[i].angle_type);
       rigidBondLengths[a2] = 2. * rigidBondLengths[a1] * sin(0.5*t0);
-      ++numRigidBonds;
+    }
+
+    // in case both molly and rigidBonds are in use make lengths which
+    // are molly-only negative and leave lengths which are both alone
+    if ( simParams->mollyOn ) {
+      mode = simParams->rigidBonds;
+      if ( mode == RIGID_NONE ) {
+	for (i=0; i<numAtoms; ++i) rigidBondLengths[i] *= -1;
+      } else if ( mode == RIGID_WATER ) {
+	for (i=0; i<numAtoms; ++i) {
+	  if ( ! is_water(i) ) rigidBondLengths[i] *= -1;
+	}
+      }
+    }
+
+    numRigidBonds = 0;
+    for (i=0; i<numAtoms; ++i) {
+      if ( rigidBondLengths[i] > 0. ) ++numRigidBonds;
     }
 
   }
@@ -4049,12 +4069,15 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1035 $  $Date: 1999/03/12 02:08:33 $
+ *  $Revision: 1.1036 $  $Date: 1999/08/20 19:11:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1036  1999/08/20 19:11:12  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1035  1999/03/12 02:08:33  jim
  * Fixed bug detection to deal with fixed atom optimizations.
  *

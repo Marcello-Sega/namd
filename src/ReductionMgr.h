@@ -17,6 +17,7 @@ typedef enum
   REDUCTION_BOND_ENERGY,
   REDUCTION_DIHEDRAL_ENERGY,
   REDUCTION_ELECT_ENERGY,
+  REDUCTION_ELECT_ENERGY_SLOW,
   REDUCTION_IMPROPER_ENERGY,
   REDUCTION_KINETIC_ENERGY,
   REDUCTION_INT_KINETIC_ENERGY,
@@ -196,12 +197,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1999/06/17 15:46:18 $
+ *	$Revision: 1.1018 $	$Date: 1999/08/20 19:11:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.h,v $
+ * Revision 1.1018  1999/08/20 19:11:14  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1017  1999/06/17 15:46:18  jim
  * Completely rewrote reduction system to eliminate need for sequence numbers.
  *

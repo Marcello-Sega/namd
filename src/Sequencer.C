@@ -118,8 +118,11 @@ void Sequencer::algorithm(void)
     const BigReal slowstep = timestep * fullElectFrequency;
     int &doFullElectrostatics = patch->flags.doFullElectrostatics;
     doFullElectrostatics = (dofull && !(step%fullElectFrequency));
-    if ( dofull && (fullElectFrequency == 1) ) maxForceMerged = Results::slow;
+    if ( dofull && (fullElectFrequency == 1) && !(simParams->mollyOn) )
+					maxForceMerged = Results::slow;
     if ( doFullElectrostatics ) maxForceUsed = Results::slow;
+    int &doMolly = patch->flags.doMolly;
+    doMolly = simParams->mollyOn && doFullElectrostatics;
 
     rattle1(0.);  // enforce rigid bond constraints on initial positions
     minimizationQuenchVelocity();
@@ -156,6 +159,7 @@ void Sequencer::algorithm(void)
 
 	doNonbonded = !(step%nonbondedFrequency);
 	doFullElectrostatics = (dofull && !(step%fullElectFrequency));
+	doMolly = simParams->mollyOn && doFullElectrostatics;
 
         maxForceUsed = Results::normal;
 	if ( doNonbonded ) maxForceUsed = Results::nbond;
@@ -606,6 +610,19 @@ void Sequencer::runComputeObjects(int migration)
 {
   patch->positionsReady(migration);
   suspend(); // until all deposit boxes close
+  if ( patch->flags.doMolly ) {
+    Vector virial(0.,0.,0.);
+    patch->mollyMollify(&virial);
+    reduction->item(REDUCTION_VIRIAL_SLOW_X) += virial.x;
+    reduction->item(REDUCTION_VIRIAL_SLOW_Y) += virial.y;
+    reduction->item(REDUCTION_VIRIAL_SLOW_Z) += virial.z;
+    reduction->item(REDUCTION_ALT_VIRIAL_SLOW_X) += virial.x;
+    reduction->item(REDUCTION_ALT_VIRIAL_SLOW_Y) += virial.y;
+    reduction->item(REDUCTION_ALT_VIRIAL_SLOW_Z) += virial.z;
+    reduction->item(REDUCTION_INT_VIRIAL_SLOW_X) += virial.x;
+    reduction->item(REDUCTION_INT_VIRIAL_SLOW_Y) += virial.y;
+    reduction->item(REDUCTION_INT_VIRIAL_SLOW_Z) += virial.z;
+  }
 }
 
 void Sequencer::rebalanceLoad(int timestep)
@@ -629,12 +646,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1070 $     $Date: 1999/08/11 19:32:19 $
+ *      $Revision: 1.1071 $     $Date: 1999/08/20 19:11:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1071  1999/08/20 19:11:15  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1070  1999/08/11 19:32:19  jim
  * Now kills unstable simulations with sensible error message.
  *

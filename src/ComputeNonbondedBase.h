@@ -42,7 +42,7 @@
 #if NBTYPE == NBPAIR
   #define PAIR(X) X
   #define CLASS ComputeNonbondedPair
-  #define CLASSNAME(X) FULLELECTNAME( X ## _pair )
+  #define CLASSNAME(X) SLOWONLYNAME( X ## _pair )
 #else
   #define PAIR(X)
 #endif
@@ -51,7 +51,7 @@
 #if NBTYPE == NBSELF
   #define SELF(X) X
   #define CLASS ComputeNonbondedSelf
-  #define CLASSNAME(X) FULLELECTNAME( X ## _self )
+  #define CLASSNAME(X) SLOWONLYNAME( X ## _self )
 #else
   #define SELF(X)
 #endif
@@ -61,11 +61,21 @@
 #if NBTYPE == NBEXCL
   #define EXCL(X) X
   #define CLASS ComputeNonbondedExcl
-  #define CLASSNAME(X) FULLELECTNAME( X ## _excl )
+  #define CLASSNAME(X) SLOWONLYNAME( X ## _excl )
   #define NOEXCL(X)
 #else
   #define EXCL(X)
   #define NOEXCL(X) X
+#endif
+
+#undef SLOWONLYNAME
+#undef FAST
+#ifdef SLOWONLY
+  #define FAST(X)
+  #define SLOWONLYNAME(X) FULLELECTNAME( X ## _slow )
+#else
+  #define FAST(X) X
+  #define SLOWONLYNAME(X) FULLELECTNAME( X )
 #endif
 
 #undef FULLELECTNAME
@@ -96,6 +106,11 @@
 
 #define LAST(X) X
 
+// see if things are really messed up
+SELF( PAIR( foo bar ) )
+SELF( EXCL( foo bar ) )
+EXCL( PAIR( foo bar ) )
+
 // ************************************************************
 // function header
 void ComputeNonbondedUtil :: NAME
@@ -108,8 +123,11 @@ void ComputeNonbondedUtil :: NAME
   EXCL
   (
     Position & p_ij = params->p_ij;
+    FAST
+    (
     Force & f_i = params->ff[0][0];
     Force & f_j = params->ff[1][0];
+    )
     const AtomProperties & a_i = params->a[0][0];
     const AtomProperties & a_j = params->a[1][0];
     int & m14 = params->m14;
@@ -123,9 +141,12 @@ void ComputeNonbondedUtil :: NAME
   // local variables
   BigReal vdwEnergy = 0;
   BigReal electEnergy = 0;
+  FAST
+  (
   BigReal virial_x = 0;
   BigReal virial_y = 0;
   BigReal virial_z = 0;
+  )
   FULL
   (
   BigReal fullElectEnergy = 0;
@@ -156,7 +177,9 @@ void ComputeNonbondedUtil :: NAME
   const BigReal c3 = ComputeNonbondedUtil:: c3;
   const BigReal c5 = ComputeNonbondedUtil:: c5;
   const BigReal c6 = ComputeNonbondedUtil:: c6;
-  const BigReal d0 = ComputeNonbondedUtil:: d0;
+  const BigReal c7 = ComputeNonbondedUtil:: c7;
+  const BigReal c8 = ComputeNonbondedUtil:: c8;
+  // const BigReal d0 = ComputeNonbondedUtil:: d0;
   )
 
   BigReal kqq;	// initialized later
@@ -219,13 +242,16 @@ NOEXCL
   const AtomProperties *a_1 = params->a[1];
   const Position *p_0 = params->p[0];
   const Position *p_1 = params->p[1];
-  Force *f_0 = params->ff[0];
-  Force *f_1 = params->ff[1];
+  FAST
+  (
+    Force *f_0 = params->ff[0];
+    Force *f_1 = params->ff[1];
+  )
   FULL
-    (
+  (
     Force *fullf_0 = params->fullf[0];
     Force *fullf_1 = params->fullf[1];
-    )
+  )
 
   SELF
   (
@@ -244,7 +270,7 @@ NOEXCL
     register const BigReal p_i_y = p_i.y;
     register const BigReal p_i_z = p_i.z;
 
-    Force & f_i = f_0[i];
+    FAST( Force & f_i = f_0[i]; )
     FULL( Force & fullf_i = fullf_0[i]; )
 
   NOHGROUPING
@@ -555,7 +581,7 @@ NOEXCL
 
       NOEXCL
       (
-      Force & f_j = f_1[j];
+      FAST( Force & f_j = f_1[j]; )
       )
 
       NOFULL
@@ -602,13 +628,32 @@ NOEXCL
     switch(SPLIT_TYPE)
       {
       case SPLIT_NONE:
-	shifting(shiftVal,dShiftVal,r,r2,c5,c6);
+	// shifting(shiftVal,dShiftVal,r,r2,c5,c6);
+	shiftVal = 1.0 - r2*c5;
+	dShiftVal = c6*shiftVal*r;
+	shiftVal *= shiftVal;
 	break;
       case SPLIT_C1:
-	c1splitting(shiftVal,dShiftVal,r,d0,switchOn);
+	{
+	  const BigReal d1 = r2 * c7;
+	  shiftVal = 1.0 + r * ( d1 - c8 );
+	  dShiftVal = 3.0 * d1 - c8;
+	}
+	/*
+	// c1splitting(shiftVal,dShiftVal,r,d0,switchOn);
+	dShiftVal = 0;  // formula only correct for forces
+	if (r > switchOn) {
+	  const BigReal d1 = d0*(r-switchOn);
+	  shiftVal = 1.0 + d1*d1*(2.0*d1-3.0);
+	} else {
+	  shiftVal = 1;
+	}
+	*/
 	break;
       case SPLIT_XPLOR:
-	xplorsplitting(shiftVal,dShiftVal, switchVal,dSwitchVal);
+	// xplorsplitting(shiftVal,dShiftVal, switchVal,dSwitchVal);
+	shiftVal = switchVal;
+	dShiftVal = dSwitchVal;
 	break;
       }
 
@@ -705,6 +750,8 @@ NOEXCL
 			r_1 - AmBterm*dSwitchVal )*r_1;
 )
 
+      FAST
+      (
       {
       register BigReal tmp_x = force_r * p_ij_x;
       virial_x += tmp_x * p_ij_x;
@@ -719,6 +766,7 @@ NOEXCL
       f_i.z += tmp_z;
       f_j.z -= tmp_z;
       }
+      )
 
       FULL
       (
@@ -745,11 +793,14 @@ NOEXCL
   HGROUPING( if (pairlist != pairlist_std) delete [] pairlist; )
 )
 
+  FAST
+  (
   reduction[vdwEnergyIndex] += vdwEnergy;
   reduction[electEnergyIndex] += electEnergy;
   reduction[virialXIndex] += virial_x;
   reduction[virialYIndex] += virial_y;
   reduction[virialZIndex] += virial_z;
+  )
   FULL
   (
   reduction[fullElectEnergyIndex] += fullElectEnergy;
@@ -764,12 +815,15 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1044 $	$Date: 1999/05/27 19:00:43 $
+ *	$Revision: 1.1045 $	$Date: 1999/08/20 19:11:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1045  1999/08/20 19:11:09  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1044  1999/05/27 19:00:43  jim
  * Added nonbondedScaling parameter and fixed Tcl scripting bug.
  *

@@ -27,10 +27,21 @@ ComputeNonbondedPair::ComputeNonbondedPair(ComputeID c, PatchID pid[], int trans
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 }
 
+void ComputeNonbondedPair::initialize() {
+  ComputePatchPair::initialize();
+  for (int i=0; i<2; i++) {
+    avgPositionBox[i] = patch[i]->registerAvgPositionPickup(cid);
+  }
+}
 
 ComputeNonbondedPair::~ComputeNonbondedPair()
 {
   delete reduction;
+  for (int i=0; i<2; i++) {
+    if (avgPositionBox[i] != NULL) {
+      patch[i]->unregisterAvgPositionPickup(cid,&avgPositionBox[i]);
+    }
+  }
 }
 
 int ComputeNonbondedPair::noWork() {
@@ -50,6 +61,7 @@ int ComputeNonbondedPair::noWork() {
     for ( i = 0; i < reductionDataSize; ++i ) reductionData[i] = 0;
 
     Position* p[2];
+    Position* p_avg[2];
     Results* r[2];
     AtomProperties* a[2];
 
@@ -58,6 +70,7 @@ int ComputeNonbondedPair::noWork() {
       p[i] = positionBox[i]->open();
       r[i] = forceBox[i]->open();
       a[i] = atomBox[i]->open();
+      if ( patch[0]->flags.doMolly ) p_avg[i] = avgPositionBox[i]->open();
     }
 
     // Close up boxes
@@ -65,6 +78,7 @@ int ComputeNonbondedPair::noWork() {
       positionBox[i]->close(&p[i]);
       forceBox[i]->close(&r[i]);
       atomBox[i]->close(&a[i]);
+      if ( patch[0]->flags.doMolly ) avgPositionBox[i]->close(&p_avg[i]);
     }
 
     submitReductionData(reductionData,reduction);
@@ -111,11 +125,23 @@ void ComputeNonbondedPair::doForce(Position* p[2],
       params.numAtoms[1] = numAtoms[0];
       DebugM(3, "NUMATOMSxNUMATOMS = " << numAtoms[0]*numAtoms[1] << "\n" );
       if ( patch[0]->flags.doFullElectrostatics )
-	{
-        params.fullf[0] = r[1]->f[Results::slow];
-        params.fullf[1] = r[0]->f[Results::slow];
-        calcFullPair(&params);
+      {
+	params.fullf[0] = r[1]->f[Results::slow];
+	params.fullf[1] = r[0]->f[Results::slow];
+	if ( patch[0]->flags.doMolly ) {
+          calcPair(&params);
+	  Position *p_avg[2];
+	  p_avg[0] = avgPositionBox[0]->open();
+	  p_avg[1] = avgPositionBox[1]->open();
+	  params.p[0] = p_avg[1];
+	  params.p[1] = p_avg[0];
+	  calcSlowPair(&params);
+	  avgPositionBox[0]->close(&p_avg[0]);
+	  avgPositionBox[1]->close(&p_avg[1]);
+	} else {
+	  calcFullPair(&params);
 	}
+      }
       else
         calcPair(&params);
     }
@@ -130,11 +156,23 @@ void ComputeNonbondedPair::doForce(Position* p[2],
       params.ff[0] = r[0]->f[Results::nbond];
       params.ff[1] = r[1]->f[Results::nbond];
       if ( patch[0]->flags.doFullElectrostatics )
-	{
+      {
         params.fullf[0] = r[0]->f[Results::slow];
         params.fullf[1] = r[1]->f[Results::slow];
-        calcFullPair(&params);
+	if ( patch[0]->flags.doMolly ) {
+          calcPair(&params);
+	  Position *p_avg[2];
+	  p_avg[0] = avgPositionBox[0]->open();
+	  p_avg[1] = avgPositionBox[1]->open();
+	  params.p[0] = p_avg[0];
+	  params.p[1] = p_avg[1];
+	  calcSlowPair(&params);
+	  avgPositionBox[0]->close(&p_avg[0]);
+	  avgPositionBox[1]->close(&p_avg[1]);
+	} else {
+	  calcFullPair(&params);
 	}
+      }
       else
         calcPair(&params);
     }
@@ -152,12 +190,15 @@ void ComputeNonbondedPair::doForce(Position* p[2],
  *
  *	$RCSfile: ComputeNonbondedPair.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1019 $	$Date: 1999/06/17 17:05:40 $
+ *	$Revision: 1.1020 $	$Date: 1999/08/20 19:11:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.C,v $
+ * Revision 1.1020  1999/08/20 19:11:09  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1019  1999/06/17 17:05:40  jim
  * Renamed seq to step in most places.  Now has meaning only to user.
  *

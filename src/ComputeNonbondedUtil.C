@@ -35,7 +35,9 @@ BigReal         ComputeNonbondedUtil::c1;
 BigReal         ComputeNonbondedUtil::c3;
 BigReal         ComputeNonbondedUtil::c5;
 BigReal         ComputeNonbondedUtil::c6;
-BigReal         ComputeNonbondedUtil::d0;
+BigReal         ComputeNonbondedUtil::c7;
+BigReal         ComputeNonbondedUtil::c8;
+// BigReal         ComputeNonbondedUtil::d0;
 
 BigReal		ComputeNonbondedUtil::ewaldcof;
 BigReal		ComputeNonbondedUtil::pi_ewaldcof;
@@ -48,10 +50,14 @@ void (*ComputeNonbondedUtil::calcFullPair)(nonbonded *);
 void (*ComputeNonbondedUtil::calcFullSelf)(nonbonded *);
 void (*ComputeNonbondedUtil::calcFullExcl)(nonbonded *);
 
+void (*ComputeNonbondedUtil::calcSlowPair)(nonbonded *);
+void (*ComputeNonbondedUtil::calcSlowSelf)(nonbonded *);
+void (*ComputeNonbondedUtil::calcSlowExcl)(nonbonded *);
+
 void ComputeNonbondedUtil::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {
-  reduction->item(REDUCTION_ELECT_ENERGY) += data[electEnergyIndex]
-					+ data[fullElectEnergyIndex];
+  reduction->item(REDUCTION_ELECT_ENERGY) += data[electEnergyIndex];
+  reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += data[fullElectEnergyIndex];
   reduction->item(REDUCTION_LJ_ENERGY) += data[vdwEnergyIndex];
   reduction->item(REDUCTION_VIRIAL_NBOND_X) += data[virialXIndex];
   reduction->item(REDUCTION_VIRIAL_NBOND_Y) += data[virialYIndex];
@@ -104,7 +110,7 @@ void ComputeNonbondedUtil::select(void)
   {
     switchOn = simParams->switchingDist;
     switchOn_1 = 1.0/switchOn;
-    d0 = 1.0/(cutoff-switchOn);
+    // d0 = 1.0/(cutoff-switchOn);
     switchOn2 = switchOn*switchOn;
     c0 = 1.0/(cutoff2-switchOn2);
   }
@@ -112,7 +118,7 @@ void ComputeNonbondedUtil::select(void)
   {
     switchOn = cutoff;
     switchOn_1 = 1.0/switchOn;
-    d0 = 0.;  // avoid division by zero
+    // d0 = 0.;  // avoid division by zero
     switchOn2 = switchOn*switchOn;
     c0 = 0.;  // avoid division by zero
   }
@@ -120,6 +126,8 @@ void ComputeNonbondedUtil::select(void)
   c3 = c1 * 4.0;
   c5 = 1/cutoff2;
   c6 = -4 * c5;
+  c7 = 0.5 / ( cutoff * cutoff2 );
+  c8 = 1.5 / cutoff;
 
 #ifdef DPME
   int PMEOn = simParams->PMEOn;
@@ -140,12 +148,15 @@ void ComputeNonbondedUtil::select(void)
   if ( ! ( simParams->fullDirectOn || simParams->FMAOn || PMEOn ) )
   {
   	calcFullPair = 0;
+  	calcSlowPair = 0;
   	calcPair = calc_pair;
 
   	calcFullSelf = 0;
+  	calcSlowSelf = 0;
   	calcSelf = calc_self;
 
   	calcFullExcl = 0;
+  	calcSlowSelf = 0;
   	calcExcl = calc_excl;
   }
   else switch ( simParams->longSplitting )
@@ -153,34 +164,42 @@ void ComputeNonbondedUtil::select(void)
     case XPLOR:
 	if ( PMEOn ) calcFullPair = calc_pair_fullelect_pme_xplor;
   	else calcFullPair = calc_pair_fullelect_xplor;
+	if ( PMEOn ) calcSlowPair = calc_pair_slow_fullelect_pme_xplor;
+  	else calcSlowPair = calc_pair_slow_fullelect_xplor;
   	calcPair = calc_pair_xplor;
 
 	if ( PMEOn ) calcFullSelf = calc_self_fullelect_pme_xplor;
   	else calcFullSelf = calc_self_fullelect_xplor;
+	if ( PMEOn ) calcSlowSelf = calc_self_slow_fullelect_pme_xplor;
+  	else calcSlowSelf = calc_self_slow_fullelect_xplor;
   	calcSelf = calc_self_xplor;
 
 	if ( PMEOn ) calcFullExcl = calc_excl_fullelect_pme_xplor;
   	else calcFullExcl = calc_excl_fullelect_xplor;
+	if ( PMEOn ) calcSlowExcl = calc_excl_slow_fullelect_pme_xplor;
+  	else calcSlowExcl = calc_excl_slow_fullelect_xplor;
   	calcExcl = calc_excl_xplor;
     	break;
 
     case C1:
 	if ( PMEOn ) calcFullPair = calc_pair_fullelect_pme_c1;
   	else calcFullPair = calc_pair_fullelect_c1;
+	if ( PMEOn ) calcSlowPair = calc_pair_slow_fullelect_pme_c1;
+  	else calcSlowPair = calc_pair_slow_fullelect_c1;
   	calcPair = calc_pair_c1;
 
 	if ( PMEOn ) calcFullSelf = calc_self_fullelect_pme_c1;
   	else calcFullSelf = calc_self_fullelect_c1;
+	if ( PMEOn ) calcSlowSelf = calc_self_slow_fullelect_pme_c1;
+  	else calcSlowSelf = calc_self_slow_fullelect_c1;
   	calcSelf = calc_self_c1;
 
 	if ( PMEOn ) calcFullExcl = calc_excl_fullelect_pme_c1;
   	else calcFullExcl = calc_excl_fullelect_c1;
+	if ( PMEOn ) calcSlowExcl = calc_excl_slow_fullelect_pme_c1;
+  	else calcSlowExcl = calc_excl_slow_fullelect_c1;
   	calcExcl = calc_excl_c1;
     	break;
-
-    case SKEEL:
-    NAMD_die("Sorry, SKEEL splitting not supported.");
-    break;
 
     case SHARP:
     NAMD_die("Sorry, SHARP splitting not supported.");
@@ -213,6 +232,14 @@ void ComputeNonbondedUtil::select(void)
 #undef  NBTYPE
 #define NBTYPE NBPAIR
 //     (1) BEGIN FULLELECT
+#define SLOWONLY
+#define FULLELECT FULLELECT_NOCORRECTION
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#define FULLELECT FULLELECT_PME
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#undef SLOWONLY
 #define FULLELECT FULLELECT_NOCORRECTION
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
@@ -224,6 +251,14 @@ void ComputeNonbondedUtil::select(void)
 #undef  NBTYPE
 #define NBTYPE NBSELF
 //     (1) BEGIN FULLELECT
+#define SLOWONLY
+#define FULLELECT FULLELECT_NOCORRECTION
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#define FULLELECT FULLELECT_PME
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#undef SLOWONLY
 #define FULLELECT FULLELECT_NOCORRECTION
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
@@ -235,6 +270,14 @@ void ComputeNonbondedUtil::select(void)
 #undef  NBTYPE
 #define NBTYPE NBEXCL
 //     (1) BEGIN FULLELECT
+#define SLOWONLY
+#define FULLELECT FULLELECT_NOCORRECTION
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#define FULLELECT FULLELECT_PME
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#undef SLOWONLY
 #define FULLELECT FULLELECT_NOCORRECTION
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
@@ -251,6 +294,14 @@ void ComputeNonbondedUtil::select(void)
 #undef  NBTYPE
 #define NBTYPE NBPAIR
 //     (1) BEGIN FULLELECT
+#define SLOWONLY
+#define FULLELECT FULLELECT_NOCORRECTION
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#define FULLELECT FULLELECT_PME
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#undef SLOWONLY
 #define FULLELECT FULLELECT_NOCORRECTION
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
@@ -262,6 +313,14 @@ void ComputeNonbondedUtil::select(void)
 #undef  NBTYPE
 #define NBTYPE NBSELF
 //     (1) BEGIN FULLELECT
+#define SLOWONLY
+#define FULLELECT FULLELECT_NOCORRECTION
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#define FULLELECT FULLELECT_PME
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#undef SLOWONLY
 #define FULLELECT FULLELECT_NOCORRECTION
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
@@ -273,6 +332,14 @@ void ComputeNonbondedUtil::select(void)
 #undef  NBTYPE
 #define NBTYPE NBEXCL
 //     (1) BEGIN FULLELECT
+#define SLOWONLY
+#define FULLELECT FULLELECT_NOCORRECTION
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#define FULLELECT FULLELECT_PME
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#undef SLOWONLY
 #define FULLELECT FULLELECT_NOCORRECTION
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
@@ -289,6 +356,14 @@ void ComputeNonbondedUtil::select(void)
 #undef  NBTYPE
 #define NBTYPE NBPAIR
 //     (1) BEGIN FULLELECT
+#define SLOWONLY
+#define FULLELECT FULLELECT_NOCORRECTION
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#define FULLELECT FULLELECT_PME
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#undef SLOWONLY
 #define FULLELECT FULLELECT_NOCORRECTION
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
@@ -300,6 +375,14 @@ void ComputeNonbondedUtil::select(void)
 #undef  NBTYPE
 #define NBTYPE NBSELF
 //     (1) BEGIN FULLELECT
+#define SLOWONLY
+#define FULLELECT FULLELECT_NOCORRECTION
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#define FULLELECT FULLELECT_PME
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#undef SLOWONLY
 #define FULLELECT FULLELECT_NOCORRECTION
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
@@ -311,6 +394,14 @@ void ComputeNonbondedUtil::select(void)
 #undef  NBTYPE
 #define NBTYPE NBEXCL
 //     (1) BEGIN FULLELECT
+#define SLOWONLY
+#define FULLELECT FULLELECT_NOCORRECTION
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#define FULLELECT FULLELECT_PME
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#undef SLOWONLY
 #define FULLELECT FULLELECT_NOCORRECTION
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
@@ -328,12 +419,15 @@ void ComputeNonbondedUtil::select(void)
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1025 $	$Date: 1999/06/17 17:05:41 $
+ *	$Revision: 1.1026 $	$Date: 1999/08/20 19:11:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1026  1999/08/20 19:11:10  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1025  1999/06/17 17:05:41  jim
  * Renamed seq to step in most places.  Now has meaning only to user.
  *

@@ -586,6 +586,7 @@ void Controller::printEnergies(int step)
     BigReal dihedralEnergy;
     BigReal improperEnergy;
     BigReal electEnergy;
+    BigReal electEnergySlow;
     BigReal ljEnergy;
     BigReal boundaryEnergy;
     BigReal miscEnergy;
@@ -600,6 +601,7 @@ void Controller::printEnergies(int step)
     dihedralEnergy = reduction->item(REDUCTION_DIHEDRAL_ENERGY);
     improperEnergy = reduction->item(REDUCTION_IMPROPER_ENERGY);
     electEnergy = reduction->item(REDUCTION_ELECT_ENERGY);
+    electEnergySlow = reduction->item(REDUCTION_ELECT_ENERGY_SLOW);
     ljEnergy = reduction->item(REDUCTION_LJ_ENERGY);
     boundaryEnergy = reduction->item(REDUCTION_BC_ENERGY);
     miscEnergy = reduction->item(REDUCTION_MISC_ENERGY);
@@ -613,8 +615,8 @@ void Controller::printEnergies(int step)
     angularMomentum.z = reduction->item(REDUCTION_ANGULAR_MOMENTUM_Z);
 
     totalEnergy = bondEnergy + angleEnergy + dihedralEnergy + improperEnergy +
-	 electEnergy + ljEnergy + kineticEnergy + boundaryEnergy +
-	 miscEnergy + smdEnergy;
+	electEnergy + electEnergySlow + ljEnergy + kineticEnergy +
+	boundaryEnergy + miscEnergy + smdEnergy;
 
     if ( node->simParameters->outputMomenta &&
          ! ( step % node->simParameters->outputMomenta ) )
@@ -634,7 +636,7 @@ void Controller::printEnergies(int step)
       energies[1] = angleEnergy;
       energies[2] = dihedralEnergy;
       energies[3] = improperEnergy;
-      energies[4] = electEnergy;
+      energies[4] = electEnergy + electEnergySlow;
       energies[5] = ljEnergy;
       energies[7] = kineticEnergy;
       Node::Object()->output->
@@ -784,7 +786,7 @@ void Controller::printEnergies(int step)
     iout << FORMAT(angleEnergy);
     iout << FORMAT(dihedralEnergy);
     iout << FORMAT(improperEnergy);
-    iout << FORMAT(electEnergy);
+    iout << FORMAT(electEnergy+electEnergySlow);
     iout << FORMAT(ljEnergy);
     iout << FORMAT(boundaryEnergy);
     iout << FORMAT(miscEnergy);
@@ -814,6 +816,8 @@ void Controller::printEnergies(int step)
       iout << FORMAT(smdEnergy);
     }
 
+    iout << FORMAT(electEnergy);
+    iout << FORMAT(electEnergySlow);
     iout << "\n" << endi;
 }
 
@@ -837,12 +841,15 @@ void Controller::terminate(void) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1077 $	$Date: 1999/08/13 22:57:00 $
+ *	$Revision: 1.1078 $	$Date: 1999/08/20 19:11:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1078  1999/08/20 19:11:11  jim
+ * Added MOLLY - mollified impluse method.
+ *
  * Revision 1.1077  1999/08/13 22:57:00  brunner
  * Added ccs files.  They are all currently disabled by ifdef NAMDCCS
  *
