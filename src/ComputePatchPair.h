@@ -50,13 +50,17 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputePatchPair.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/11/23 22:59:57 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatchPair.h,v $
+ * Revision 1.777  1997/01/17 19:36:04  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.5  1996/11/23 22:59:57  jim
  * made mapReady() public
  *

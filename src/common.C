@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: common.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/12/19 17:49:34 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:37:10 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -22,6 +22,10 @@
  * REVISION HISTORY:
  *
  * $Log: common.C,v $
+ * Revision 1.777  1997/01/17 19:37:10  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.5  1996/12/19 17:49:34  jim
  * added null-pointer check to ::delete
  *
@@ -101,7 +105,7 @@
  * Removed NAMD_warn; using Inform objects now to report information.
  * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.5 1996/12/19 17:49:34 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.777 1997/01/17 19:37:10 ari Exp $";
 
 #include "chare.h"
 #include "ckdefs.h"

@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: Vector.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/11/11 19:54:09 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:37:03 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,10 @@
  * REVISION HISTORY:
  *
  * $Log: Vector.h,v $
+ * Revision 1.777  1997/01/17 19:37:03  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.3  1996/11/11 19:54:09  nealk
  * Modified to use InfoStream instead of Inform.
  *

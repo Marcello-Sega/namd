@@ -116,13 +116,17 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/12/12 08:57:17 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.h,v $
+ * Revision 1.777  1997/01/17 19:35:49  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.7  1996/12/12 08:57:17  jim
  * added MapDistribMsg packing / unpacking routines
  *

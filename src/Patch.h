@@ -113,13 +113,17 @@ class Patch
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.11 $	$Date: 1996/12/12 02:58:49 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.h,v $
+ * Revision 1.777  1997/01/17 19:36:46  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.11  1996/12/12 02:58:49  jim
  * cleaned stuff up, move integration routines to HomePatch
  *

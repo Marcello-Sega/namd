@@ -134,13 +134,17 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedHack.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/12/03 21:05:09 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedHack.h,v $
+ * Revision 1.777  1997/01/17 19:35:55  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.6  1996/12/03 21:05:09  jim
  * added support for exclusion correction computes
  *

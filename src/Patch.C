@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.20 1997/01/15 17:09:43 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.777 1997/01/17 19:36:45 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -209,12 +209,16 @@ void Patch::positionsReady()
  *
  *	$RCSfile: Patch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.20 $	$Date: 1997/01/15 17:09:43 $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.777  1997/01/17 19:36:45  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.20  1997/01/15 17:09:43  ari
  * minor changes
  *

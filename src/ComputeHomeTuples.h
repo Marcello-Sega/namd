@@ -108,13 +108,17 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeHomeTuples.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1997/01/16 00:55:56 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.h,v $
+ * Revision 1.777  1997/01/17 19:35:45  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.10  1997/01/16 00:55:56  jim
  * Added reduction of energies from ComputeHomeTuples objects, except
  * for ComputeNonbondedExcl which only reports 0 energy.

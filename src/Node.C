@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.35 1997/01/10 21:33:22 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.777 1997/01/17 19:36:34 ari Exp $";
 
 
 #include "ckdefs.h"
@@ -414,13 +414,17 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.35 $	$Date: 1997/01/10 21:33:22 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.777  1997/01/17 19:36:34  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.35  1997/01/10 21:33:22  milind
  * Added some debugging statements
  *

@@ -42,7 +42,7 @@ private:
  *
  *	$RCSfile: Namd.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/12/05 21:37:53 $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:30 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -51,6 +51,10 @@ private:
  * REVISION HISTORY:
  *
  * $Log: Namd.h,v $
+ * Revision 1.777  1997/01/17 19:36:30  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.5  1996/12/05 21:37:53  ari
  * *** empty log message ***
  *

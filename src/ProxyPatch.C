@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.11 1996/12/19 00:33:10 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.777 1997/01/17 19:36:54 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -91,13 +91,17 @@ void ProxyPatch::sendResults(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyPatch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.11 $	$Date: 1996/12/19 00:33:10 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:54 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.777  1997/01/17 19:36:54  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.11  1996/12/19 00:33:10  jim
  * added message buffering debugging
  *

@@ -61,13 +61,17 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeAngles.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1997/01/16 00:55:49 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.h,v $
+ * Revision 1.777  1997/01/17 19:35:35  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.9  1997/01/16 00:55:49  jim
  * Added reduction of energies from ComputeHomeTuples objects, except
  * for ComputeNonbondedExcl which only reports 0 energy.

@@ -130,7 +130,7 @@ NamdState::configFileInit(char *confFile)
  *
  *	$RCSfile: NamdState.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/12/10 00:13:12 $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:31 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -139,6 +139,10 @@ NamdState::configFileInit(char *confFile)
  * REVISION HISTORY:
  *
  * $Log: NamdState.C,v $
+ * Revision 1.777  1997/01/17 19:36:31  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.6  1996/12/10 00:13:12  ari
  * *** empty log message ***
  *
@@ -156,4 +160,4 @@ NamdState::configFileInit(char *confFile)
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.6 1996/12/10 00:13:12 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.777 1997/01/17 19:36:31 ari Exp $";

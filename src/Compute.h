@@ -63,12 +63,16 @@ public:
  *
  *	$RCSfile: Compute.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/10/29 23:36:13 $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.h,v $
+ * Revision 1.777  1997/01/17 19:35:33  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.5  1996/10/29 23:36:13  ari
  * *** empty log message ***
  *

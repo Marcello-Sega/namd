@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: Parameters.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/11/11 19:54:09 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:40 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -25,6 +25,10 @@
  * REVISION HISTORY:
  *
  * $Log: Parameters.C,v $
+ * Revision 1.777  1997/01/17 19:36:40  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.5  1996/11/11 19:54:09  nealk
  * Modified to use InfoStream instead of Inform.
  *
@@ -88,7 +92,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Parameters.C,v 1.5 1996/11/11 19:54:09 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Parameters.C,v 1.777 1997/01/17 19:36:40 ari Exp $";
 
 #include <stdio.h>
 #include <stdlib.h>

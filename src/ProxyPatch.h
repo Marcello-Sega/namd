@@ -47,13 +47,17 @@ class ProxyPatch : public Patch
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyPatch.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/12/17 22:13:22 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.h,v $
+ * Revision 1.777  1997/01/17 19:36:55  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.2  1996/12/17 22:13:22  jim
  * implemented ProxyDataMsg use
  *

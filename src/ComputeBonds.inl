@@ -57,13 +57,17 @@ inline int BondElem::operator<(const BondElem &a) const
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeBonds.inl,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1997/01/14 15:29:47 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeBonds.inl,v $
+ * Revision 1.777  1997/01/17 19:35:38  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.1  1997/01/14 15:29:47  nealk
  * Initial revision
  *

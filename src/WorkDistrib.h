@@ -122,13 +122,17 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.17 $	$Date: 1996/12/14 00:01:59 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:37:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.777  1997/01/17 19:37:06  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.17  1996/12/14 00:01:59  jim
  * removed debug from .h file
  *

@@ -11,7 +11,7 @@
  *
  *	$RCSfile: PDBData.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/06 20:38:38 $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:38 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,10 @@
  * REVISION HISTORY:
  *
  * $Log: PDBData.C,v $
+ * Revision 1.777  1997/01/17 19:36:38  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.1  1996/08/06 20:38:38  ari
  * Initial revision
  *
@@ -62,7 +66,7 @@
  * Initial revision
  * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PDBData.C,v 1.1 1996/08/06 20:38:38 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PDBData.C,v 1.777 1997/01/17 19:36:38 ari Exp $";
 
 
 // Here are the routines to manupulate a PDB ATOM record

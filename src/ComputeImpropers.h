@@ -97,13 +97,17 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeImpropers.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1997/01/16 00:55:59 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeImpropers.h,v $
+ * Revision 1.777  1997/01/17 19:35:47  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.2  1997/01/16 00:55:59  jim
  * Added reduction of energies from ComputeHomeTuples objects, except
  * for ComputeNonbondedExcl which only reports 0 energy.

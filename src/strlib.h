@@ -11,7 +11,7 @@
  *
  *	$RCSfile: strlib.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/06 20:38:38 $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:37:16 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,10 @@
  * REVISION HISTORY:
  *
  * $Log: strlib.h,v $
+ * Revision 1.777  1997/01/17 19:37:16  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.1  1996/08/06 20:38:38  ari
  * Initial revision
  *

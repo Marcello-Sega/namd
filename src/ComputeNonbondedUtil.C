@@ -214,13 +214,17 @@ void ComputeNonbondedUtil::select(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1997/01/16 20:00:23 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.777  1997/01/17 19:35:59  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.6  1997/01/16 20:00:23  jim
  * Added reduction calls to ComputeNonbondedSelf and ...Pair.
  * Also moved some code from ...Excl to ...Util.

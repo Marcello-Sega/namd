@@ -261,12 +261,16 @@ ProxyMgr::recvProxyAtoms(ProxyAtomsMsg *msg) {
  *
  *	$RCSfile: ProxyMgr.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.12 $	$Date: 1997/01/15 17:09:43 $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.777  1997/01/17 19:36:52  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.12  1997/01/15 17:09:43  ari
  * minor changes
  *

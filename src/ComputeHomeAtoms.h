@@ -73,12 +73,16 @@ public:
  *
  *	$RCSfile: ComputeHomeAtoms.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/11/01 21:20:45 $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeAtoms.h,v $
+ * Revision 1.777  1997/01/17 19:35:43  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.1  1996/11/01 21:20:45  ari
  * Initial revision
  *

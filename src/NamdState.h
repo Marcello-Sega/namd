@@ -45,8 +45,8 @@ class NamdState {
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdState.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1997/01/09 20:48:10 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:32 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -55,6 +55,10 @@ class NamdState {
  * REVISION HISTORY:
  *
  * $Log: NamdState.h,v $
+ * Revision 1.777  1997/01/17 19:36:32  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.2  1997/01/09 20:48:10  jim
  * added Controller code
  *

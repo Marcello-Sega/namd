@@ -99,12 +99,16 @@ void ComputeGeneral::doWork() {
  *
  *	$RCSfile: ComputeGeneral.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/10/29 23:35:27 $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGeneral.C,v $
+ * Revision 1.777  1997/01/17 19:35:41  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.2  1996/10/29 23:35:27  ari
  * *** empty log message ***
  *

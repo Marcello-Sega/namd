@@ -59,13 +59,17 @@ inline LocalID AtomMap::localID(AtomID id)
  * RCS INFORMATION:
  *
  *	$RCSfile: AtomMap.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/11/22 01:43:32 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: AtomMap.h,v $
+ * Revision 1.777  1997/01/17 19:35:18  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.3  1996/11/22 01:43:32  jim
  * switched to use AtomIDList
  *

@@ -109,13 +109,17 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/12/17 23:58:02 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:53 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.h,v $
+ * Revision 1.777  1997/01/17 19:36:53  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.6  1996/12/17 23:58:02  jim
  * proxy result reporting is working
  *

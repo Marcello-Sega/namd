@@ -116,12 +116,16 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.18 $	$Date: 1997/01/09 20:48:10 $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.777  1997/01/17 19:36:35  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.18  1997/01/09 20:48:10  jim
  * added Controller code
  *

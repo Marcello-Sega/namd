@@ -38,13 +38,17 @@ protected :
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedPair.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1997/01/16 20:00:11 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.h,v $
+ * Revision 1.777  1997/01/17 19:35:57  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.6  1997/01/16 20:00:11  jim
  * Added reduction calls to ComputeNonbondedSelf and ...Pair.
  * Also moved some code from ...Excl to ...Util.

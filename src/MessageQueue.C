@@ -11,7 +11,7 @@
  *
  *	$RCSfile: MessageQueue.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/12/06 19:54:12 $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:24 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -25,6 +25,10 @@
  * REVISION HISTORY:
  *
  * $Log: MessageQueue.C,v $
+ * Revision 1.777  1997/01/17 19:36:24  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.1  1996/12/06 19:54:12  ari
  * Initial revision
  *

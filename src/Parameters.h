@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: Parameters.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/12/03 17:45:15 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:42 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,10 @@
  * REVISION HISTORY:
  *
  * $Log: Parameters.h,v $
+ * Revision 1.777  1997/01/17 19:36:42  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.4  1996/12/03 17:45:15  nealk
  * Added NonbondedExcl stub.
  *

@@ -54,13 +54,17 @@ void ComputeNonbondedPair::doForce(Position* p[2],
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedPair.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1997/01/16 20:00:06 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:56 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.C,v $
+ * Revision 1.777  1997/01/17 19:35:56  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.10  1997/01/16 20:00:06  jim
  * Added reduction calls to ComputeNonbondedSelf and ...Pair.
  * Also moved some code from ...Excl to ...Util.

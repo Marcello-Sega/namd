@@ -9,7 +9,7 @@
 /*
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/LJTable.C,v 1.4 1996/11/11 19:54:09 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/LJTable.C,v 1.777 1997/01/17 19:36:18 ari Exp $";
 #include "LJTable.h"
 #include "Node.h"
 #include "Parameters.h"
@@ -119,13 +119,17 @@ void LJTable::compute_vdw_params(int i, int j,
  * RCS INFORMATION:
  *
  *	$RCSfile: LJTable.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/11/11 19:54:09 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LJTable.C,v $
+ * Revision 1.777  1997/01/17 19:36:18  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.4  1996/11/11 19:54:09  nealk
  * Modified to use InfoStream instead of Inform.
  *

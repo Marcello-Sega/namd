@@ -158,8 +158,8 @@ void ComputeMgr:: enqueueWork(Compute *compute)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.11 $	$Date: 1997/01/10 21:33:22 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:

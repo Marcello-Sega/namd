@@ -6,7 +6,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.16 1997/01/13 23:26:19 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.777 1997/01/17 19:36:30 ari Exp $";
 
 #include "unistd.h"
 
@@ -115,8 +115,8 @@ void Namd::startup(char *confFile)
  * RCS INFORMATION:
  *
  *	$RCSfile: Namd.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.16 $	$Date: 1997/01/13 23:26:19 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:30 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -125,6 +125,10 @@ void Namd::startup(char *confFile)
  * REVISION HISTORY:
  *
  * $Log: Namd.C,v $
+ * Revision 1.777  1997/01/17 19:36:30  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.16  1997/01/13 23:26:19  jim
  * create collection system
  *

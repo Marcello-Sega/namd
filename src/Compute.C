@@ -63,13 +63,17 @@ void Compute::doWork() {
  * RCS INFORMATION:
  *
  *	$RCSfile: Compute.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/11/30 20:30:36 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.C,v $
+ * Revision 1.777  1997/01/17 19:35:32  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.4  1996/11/30 20:30:36  jim
  * turned off some debugging, switched to DebugM()
  *

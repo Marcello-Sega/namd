@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Communicate.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/12/06 19:52:20 $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:27 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -28,6 +28,10 @@
  * REVISION HISTORY:
  *
  * $Log: Communicate.h,v $
+ * Revision 1.777  1997/01/17 19:35:27  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.4  1996/12/06 19:52:20  ari
  * *** empty log message ***
  *

@@ -61,13 +61,17 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeDihedrals.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1997/01/16 00:55:54 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:40 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDihedrals.h,v $
+ * Revision 1.777  1997/01/17 19:35:40  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.3  1997/01/16 00:55:54  jim
  * Added reduction of energies from ComputeHomeTuples objects, except
  * for ComputeNonbondedExcl which only reports 0 energy.

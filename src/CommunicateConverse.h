@@ -11,7 +11,7 @@
  *
  *	$RCSfile: CommunicateConverse.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/12/06 19:52:20 $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:35:29 $
  *
  ***************************************************************************
  * DESCRIPTION:

@@ -113,13 +113,17 @@ return;
  * RCS INFORMATION:
  *
  *	$RCSfile: LJTable.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/11/20 23:17:23 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LJTable.h,v $
+ * Revision 1.777  1997/01/17 19:36:18  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.6  1996/11/20 23:17:23  jim
  * added missing #ifndef LJTABLE_H idiom
  *

@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: common.h,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/12/11 00:05:20 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:37:11 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -21,6 +21,10 @@
  * REVISION HISTORY:
  *
  * $Log: common.h,v $
+ * Revision 1.777  1997/01/17 19:37:11  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.3  1996/12/11 00:05:20  milind
  * *** empty log message ***
  *

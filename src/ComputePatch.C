@@ -99,13 +99,17 @@ void ComputePatch::doWork() {
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputePatch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/12/01 02:39:58 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.777 $	$Date: 1997/01/17 19:36:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatch.C,v $
+ * Revision 1.777  1997/01/17 19:36:01  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
  * Revision 1.6  1996/12/01 02:39:58  jim
  * added debugging
  *
