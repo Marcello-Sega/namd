@@ -48,7 +48,7 @@ class LocalWorkMsg : public comm_object
 {
 public:
   Compute *compute;
-}
+};
 
 #endif /* MAIN_H */
 
@@ -56,13 +56,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: main.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/09/10 04:45:06 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.7 $	$Date: 1996/09/15 20:43:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: main.h,v $
+ * Revision 1.7  1996/09/15 20:43:11  jim
+ * fixed missing semicolon
+ *
  * Revision 1.6  1996/09/10 04:45:06  ari
  * added LocalWorkMsg
  *
