@@ -124,7 +124,7 @@ void topo_defs_auto_dihedrals(topo_defs *defs, int autogen) {
 int topo_defs_type(topo_defs *defs, const char *atype, double mass, int id) {
   int i;
   topo_defs_type_t *newitem;
-  char errmsg[32 + NAMEMAXLEN];
+  char errmsg[64 + NAMEMAXLEN];
   if ( ! defs ) return -1;
   if ( NAMETOOLONG(atype) ) return -2;
   if ( ( i = hasharray_index(defs->type_hash,atype) ) != HASHARRAY_FAIL ) {
@@ -145,7 +145,7 @@ int topo_defs_type(topo_defs *defs, const char *atype, double mass, int id) {
 int topo_defs_residue(topo_defs *defs, const char *rname, int patch) {
   int i;
   topo_defs_residue_t *newitem;
-  char errmsg[32 + NAMEMAXLEN];
+  char errmsg[64 + NAMEMAXLEN];
   if ( ! defs ) return -1;
   defs->buildres = 0;
   defs->buildres_no_errors = 0;
