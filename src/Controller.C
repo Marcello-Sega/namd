@@ -1088,20 +1088,11 @@ void Controller::printEnergies(int step, int minimize)
     }
   
     int stepInRun = step - simParams->firstTimestep;
-    int benchPhase;
-    if ( stepInRun % simParams->firstLdbStep == 0 )
-    switch ( benchPhase = stepInRun / simParams->firstLdbStep )
-    {
-    case 0:
-    case 2:
-    case 4:
-      startBenchTime = CmiWallTimer();
-      break;
-    case 1:
-    case 3:
-    case 5:
+    if ( stepInRun % simParams->firstLdbStep == 0 ) {
+     int benchPhase = stepInRun / simParams->firstLdbStep;
+     if ( benchPhase > 0 && benchPhase < 7 ) {
       iout << iINFO;
-      if ( benchPhase == 1 ) iout << "Initial time: ";
+      if ( benchPhase < 4 ) iout << "Initial time: ";
       else iout << "Benchmark time: ";
       iout << CkNumPes() << " CPUs ";
       {
@@ -1114,7 +1105,8 @@ void Controller::printEnergies(int step, int minimize)
 	iout << wallPerStep << " s/step " << daysPerNano << " days/ns ";
         iout << (memusage()/1024) << " kB memory\n" << endi;
       }
-      break;
+     }
+     startBenchTime = CmiWallTimer();
     }
 
     printTiming(step);

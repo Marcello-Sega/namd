@@ -318,7 +318,13 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 
   // Fixup to take care of the extra timestep at startup
   // This is pretty ugly here, but it makes the count correct
-  if ((ldbCycleNum==1) || (ldbCycleNum == 2) || (! takingLdbData))
+  if (ldbCycleNum==1)
+  {
+    nLdbSteps = firstLdbStep;
+    takingLdbData = 0;
+    theLbdb->CollectStatsOff();
+  }
+  else if ((ldbCycleNum<=4) || (! takingLdbData))
   {
     nLdbSteps = firstLdbStep;
     takingLdbData = 1;
