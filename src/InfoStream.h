@@ -51,8 +51,8 @@ extern infostream iout;
 /** now we have a stream.  Let's tell the stream when/where to output **/
 /** iout << endi;  (send output to information console -- CPrintf) **/
 /** iout << endc;  (send output to host console -- cout) **/
-char * endi(infostream& s) { s.endi(); return ""; }
-char * endc(infostream& s) { s.endc(); return ""; }
+char * endi(infostream&);
+char * endc(infostream&);
 #define endi endi(iout)
 #define endc endc(iout)
 
