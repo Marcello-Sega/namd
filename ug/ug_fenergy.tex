@@ -1,14 +1,14 @@
 
-\section{Free Energy of Conformational Change Calculations}
+\subsection{Free Energy of Conformational Change Calculations}
 
-\subsection{User-Supplied Conformational Restraints}
+\subsubsection{User-Supplied Conformational Restraints}
 
 These restraints extend the scope of the available restraints beyond that
 provided by the harmonic position restraints. Each restraint is imposed with
 a potential energy term, whose form depends on the type of the
 restraint.\medskip
 
-\subsubsection{Fixed Restraints}
+\paragraph*{Fixed Restraints}
 
 {\em Position restraint (1 atom):} force constant $K_{f}$, and reference
 position $\overrightarrow{r_{ref}}$
@@ -34,7 +34,7 @@ angle $\chi _{ref}$
 $\qquad \qquad \qquad \qquad E=\left( E_{0}/2\right) \left\{ 1-\cos \left(
 \chi _{i}-\chi _{ref}\right) \right\} $
 
-\subsubsection{Forcing restraints}
+\paragraph*{Forcing restraints}
 
 {\em Position restraint (1 atom):} force constant $K_{f}$, and two reference
 positions $\overrightarrow{r_{0}}$ and $\overrightarrow{r_{1}}$
@@ -82,7 +82,7 @@ Alternatively, the value of $K_{f}$ may depend upon the coupling parameter $%
 
 $K_{f}$ = $K_{f,0}$\pagebreak $\lambda $
 
-\subsubsection{Bounds}
+\paragraph*{Bounds}
 
 \begin{tabular}{ll}
 {\em Position bound (1 atom):} & Force constant $K_{f}$, reference position $%
@@ -163,9 +163,9 @@ $\qquad \qquad G=E_{0}/\left\{ 1-\cos \left( \Delta \chi \right) \right\}
 Bounds may be used in pairs, to set a lower and upper bound. Torsional
 bounds always are defined in pairs.\pagebreak
 
-\subsection{Free Energy Calculations}
+\subsubsection{Free Energy Calculations}
 
-\subsubsection{Conformational forcing / Potential of mean force}
+\paragraph*{Conformational forcing / Potential of mean force}
 
 In conformational forcing calculations, structural parameters such as atomic
 positions, inter-atomic distances, and dihedral angles are forced to change
@@ -182,7 +182,7 @@ change in proportion to the coupling parameter. Such a calculation gives the
 value of a restraint free energy, i.e., the free energy change of the
 syste\bigskip m due to imposition of the restraint potential.
 
-\subsubsection{Methods for computing the free energy}
+\paragraph*{Methods for computing the free energy}
 
 With conformational forcing (or with molecular transformation calculations)
 one obtains a free energy difference for a process that is forced on the
@@ -200,7 +200,7 @@ The value of $\lambda $ is changed during the simulation. In the first
 method provided here, the change in $\lambda $ is stepwise, while in the
 second method it is virtually continuous.\medskip
 
-\paragraph*{Multi-configurational thermodynamic integration (MCTI).}
+\subparagraph*{Multi-configurational thermodynamic integration (MCTI).}
 
 In MCTI one accumulates $\,\left\langle \partial U/\partial \lambda
 \right\rangle $ at several values of $\lambda $, and from these averages
@@ -213,7 +213,7 @@ With this method, the precision of each $\left\langle \partial U/\partial %
 \lambda \right\rangle $ can be estimated from the fluctuations of the time
 series of $\partial U/\partial \lambda $.\bigskip 
 
-\paragraph*{Slow growth.}
+\subparagraph*{Slow growth.}
 
 In slow growth, $\lambda $ is incremented by $\delta \lambda =\pm 1/N_{step}$
 after each dynamics integration time-step, and the pmf is estimated as
@@ -226,9 +226,9 @@ change to $\lambda =1$, equilibration at $\lambda =1$, change to $\lambda =0$%
 . It is usual to estimate the precision of slow growth simulations from the
 results of successive cycles.\pagebreak 
 
-\subsection{Options for Conformational Restraints}
+\subsubsection{Options for Conformational Restraints}
 
-\subsubsection{User-supplied restraint and bounds specifications}
+\paragraph*{User-supplied restraint and bounds specifications}
 
 \qquad \qquad urestraint $\{$
 
@@ -237,7 +237,7 @@ see below
 
 \qquad \qquad $\}\medskip $
 
-\subsubsection{Restraint Specifications (not coupled to pmf calculations)}
+\paragraph*{Restraint Specifications (not coupled to pmf calculations)}
 
 \qquad \qquad 
 \begin{tabular}{llll}
@@ -248,7 +248,7 @@ dihe & 4 x ATOM & barr = B & ref = A
 \end{tabular}
 \bigskip 
 
-\subsubsection{Bound Specifications (not coupled to pmf calculations)}
+\paragraph*{Bound Specifications (not coupled to pmf calculations)}
 
 \qquad \qquad 
 \begin{tabular}{llll}
@@ -259,7 +259,7 @@ dihe bound & 4 x ATOM & gap = E & low = A0\quad hi = A1\quad delta = A2
 \end{tabular}
 \bigskip 
 
-\subsubsection{Forcing Restraint Specifications (coupled to pmf calculations)}
+\paragraph*{Forcing Restraint Specifications (coupled to pmf calculations)}
 
 \qquad \qquad 
 \begin{tabular}{llll}
@@ -270,7 +270,7 @@ dihe pmf & 4 x ATOM & barr=B & low = A0\quad hi = A1
 \end{tabular}
 \bigskip 
 
-\subsubsection{Units}
+\paragraph*{Units}
 
 \qquad \qquad 
 \begin{tabular}{|c|c|}
@@ -286,23 +286,23 @@ $^{2}$) or kcal/(mol rad$^{2}$) \\ \hline
 
 \pagebreak
 
-\subsection{Options for ATOM Specification}
+\subsubsection{Options for ATOM Specification}
 
 The designation ATOM, above, stands for one of the following forms:\medskip
 
-\subsubsection{A single atom}
+\paragraph*{A single atom}
 
 (segname, resnum, atomname)
 
 {\em Example:} (insulin, 10, ca)\medskip 
 
-\subsubsection{All atoms of a single residue}
+\paragraph*{All atoms of a single residue}
 
 (segname, resnum)
 
 {\em Example:} (insulin, 10)\medskip 
 
-\subsubsection{A list of atoms}
+\paragraph*{A list of atoms}
 
 group $\{$ (segname, resnum, atomname), (segname, resnum, atomname), $\ldots 
 $ $\}$
@@ -310,20 +310,20 @@ $ $\}$
 {\em Example:} group $\{$ (insulin, 10, ca), (insulin, 10, cb), (insulin,
 11, cg) $\}\medskip $
 
-\subsubsection{All atoms in a list of residues}
+\paragraph*{All atoms in a list of residues}
 
 group $\{$ (segname, resnum), (segname, resnum), $\ldots $ $\}$
 
 {\em Example:} group $\{$ (insulin, 10), (insulin, 12), (insulin, 14) $%
 \}\medskip $
 
-\subsubsection{All atoms in a range of residues}
+\paragraph*{All atoms in a range of residues}
 
 group $\{$ (segname, resnum) to (segname, resnum) $\}$
 
 {\em Example:} group $\{$ (insulin, 10) to (insulin, 12) $\}\medskip $
 
-\subsubsection{One or more atomnames in a list of residues}
+\paragraph*{One or more atomnames in a list of residues}
 
 \begin{tabular}{l}
 group $\{$ atomname: (segname, resnum), (segname, resnum), $\ldots $ $\}$ \\ 
@@ -345,7 +345,7 @@ $\}$ \\
 used, or the keyword all is used. atomname will not carry over from group to
 group. This note applies to the paragraph below.\medskip 
 
-\subsubsection{One or more atomnames in a range of residues}
+\paragraph*{One or more atomnames in a range of residues}
 
 \begin{tabular}{l}
 group $\{$ atomname: (segname, resnum) to (segname, resnum) $\}$ \\ 
@@ -361,7 +361,7 @@ resnum) $\}$%
 \end{tabular}
 \pagebreak 
 
-\subsection{Options for Potential of Mean Force Calculation}
+\subsubsection{Options for Potential of Mean Force Calculation}
 
 The pmf and mcti blocks, below, are used to simultaneously control all
 forcing restraints specified in urestraint above. These blocks are performed
@@ -371,7 +371,7 @@ used to either a) smoothly vary $\lambda $ from 0 $\rightarrow $1 or 1 $%
 from 0 $\rightarrow $1 or 1 $\rightarrow $0 in steps, so that $\lambda $ is
 fixed while $dU/d\lambda $ is accumulated.\medskip
 
-\subsubsection{Lamba control for slow growth}
+\paragraph*{Lamba control for slow growth}
 
 pmf $\{$
 
@@ -401,7 +401,7 @@ MCTI)\medskip \smallskip
 \end{tabular}
 \bigskip
 
-\subsubsection{Lambda control for automated MCTI}
+\paragraph*{Lambda control for automated MCTI}
 
 mcti $\{$
 
@@ -435,9 +435,9 @@ or 1 $\rightarrow $0. At each step, no data is accumulated for the initial
 period T1, then dU/d$\lambda $ is accumulated for T2. Therefore, the total
 duration of an mcti block is (T1+T2) x N.
 
-\subsection{Examples}
+\subsubsection{Examples}
 
-\subsubsection{Fixed restraints}
+\paragraph*{Fixed restraints}
 
 \begin{tabular}{l}
 {\footnotesize // 1. restrain the position of the ca atom of residue 0.} \\ 
@@ -500,7 +500,7 @@ dihe & group $\{$ca: (insulin, 10) to (insulin, 12)$\}$ \\
 
 $\}$
 
-\subsubsection{Bound specifications}
+\paragraph*{Bound specifications}
 
 \begin{tabular}{ll}
 {\footnotesize // 1. } & {\footnotesize impose an upper bound if an atom's
@@ -561,7 +561,7 @@ hi=120 delta=10
 
 $\}$
 
-\subsubsection{Forcing restraints}
+\paragraph*{Forcing restraints}
 
 \begin{tabular}{l}
 {\footnotesize // a forcing restraint will be imposed on the distance
@@ -670,9 +670,9 @@ mcti $\{$
 
 $\}$\pagebreak
 
-\subsection{Appendix}
+\subsubsection{Appendix}
 
-\subsubsection{Gradient for position restraint}
+\paragraph*{Gradient for position restraint}
 
 $E=\left( K_{f}/2\right) \left( \left| \overrightarrow{r_{i}}-%
 \overrightarrow{r_{ref}}\right| \right) ^{2}$
@@ -684,7 +684,7 @@ $\nabla (E)=K_{f}\left\{ \left( x_{i}-x_{ref}\right) \overrightarrow{i}%
 +\left( y_{i}-y_{ref}\right) \overrightarrow{j}+\left( z_{i}-z_{ref}\right) 
 \overrightarrow{k}\right\} $
 
-\subsubsection{Gradient for stretch restraint}
+\paragraph*{Gradient for stretch restraint}
 
 $E=\left( K_{f}/2\right) \left( d_{i}-d_{ref}\right) ^{2}$
 
@@ -693,7 +693,7 @@ $d_{i}=\left\{ \left( x_{2}-x_{1}\right) ^{2}+\left( y_{2}-y_{1}\right)
 
 $\nabla (E)=K_{f}\left( d_{i}-d_{ref}\right) \cdot \nabla (di)\medskip $
 
-\paragraph*{for atom 2 moving, and atom 1 fixed}
+\subparagraph*{for atom 2 moving, and atom 1 fixed}
 
 $\nabla (d_{i})=1/2\left\{ \left( x_{2}-x_{1}\right) ^{2}+\left(
 y_{2}-y_{1}\right) ^{2}+\left( z_{2}-z_{1}\right) ^{2}\right\}
@@ -708,7 +708,7 @@ $\nabla (E)=K_{f}\left\{ \left( d_{i}-d_{ref}\right) /d_{i}\right\} \left\{
 \left( x_{2}-x_{1}\right) \overrightarrow{i}+\left( y_{2}-y_{1}\right) 
 \overrightarrow{j}+\left( z_{2}-z_{1}\right) \overrightarrow{k}\right\} $
 
-\subsubsection{Gradient for bend restraint}
+\paragraph*{Gradient for bend restraint}
 
 $E=\left( K_{f}/2\right) \left( \theta _{i}-\theta _{ref}\right) ^{2}$
 
@@ -724,7 +724,7 @@ $\nabla (E)=K_{f}\left( \theta _{i}-\theta _{ref}\right) \cdot \nabla
 
 $\nabla (\theta _{i})=\frac{-1}{\sqrt{1-u^{2}}}\cdot \nabla (u)\medskip $
 
-\paragraph*{for atom A moving, atoms B \& C fixed (distances b and c
+\subparagraph*{for atom A moving, atoms B \& C fixed (distances b and c
 change)}
 
 $\nabla (u)=\left\{ -b/\left( ac\right) \right\} \cdot \nabla (b)+\left\{
@@ -739,7 +739,7 @@ $\nabla (c)=\left\{ \left( x_{A}-x_{B}\right) \overrightarrow{i}+\left(
 y_{A}-y_{B}\right) \overrightarrow{j}+\left( z_{A}-z_{B}\right) 
 \overrightarrow{k}\right\} /c\medskip $
 
-\paragraph*{for atom B moving, atoms A \& C fixed (distances a and c
+\subparagraph*{for atom B moving, atoms A \& C fixed (distances a and c
 change)}
 
 $\nabla (u)=\left\{ 1/(2c)+-c/(2a^{2})+b^{2}/(2a^{2}c)\right\} \cdot \nabla
@@ -752,7 +752,7 @@ $\nabla (a)=\left\{ (x_{B}-x_{C})\overrightarrow{i}+(y_{B}-y_{C})%
 $\nabla (c)=\left\{ (x_{B}-x_{A})\overrightarrow{i}+(y_{B}-y_{A})%
 \overrightarrow{j}+(z_{B}-z_{A})\overrightarrow{k}\right\} /c\medskip $
 
-\paragraph*{for atom C moving, atoms A \& B fixed (distances a and b
+\subparagraph*{for atom C moving, atoms A \& B fixed (distances a and b
 change)}
 
 $\nabla (u)=\left\{ -b/\left( ac\right) \right\} \cdot \nabla (b)+\left\{
@@ -765,7 +765,7 @@ $\nabla (b)=\left\{ (x_{C}-x_{A})\overrightarrow{i}+(y_{C}-y_{A})%
 $\nabla (a)=\left\{ (x_{C}-x_{B})\overrightarrow{i}+(y_{C}-y_{B})%
 \overrightarrow{j}+(z_{C}-z_{B})\overrightarrow{k}\right\} /a $
 
-\subsubsection{Gradient for dihedral angle restraint}
+\paragraph*{Gradient for dihedral angle restraint}
 
 $E=(E_{0}/2)\left\{ 1-\cos \left( \chi _{i}-\chi _{ref}\right) \right\} $
 
@@ -836,7 +836,7 @@ $%
 \end{tabular}
 \pagebreak 
 
-\paragraph*{for atom A moving, atoms B, C, \& D fixed}
+\subparagraph*{for atom A moving, atoms B, C, \& D fixed}
 
 \begin{tabular}{lrrr}
 $\nabla (p_{1})=$ & $(0.0)\overrightarrow{i}+$ & $(0.0)\overrightarrow{j}+$
@@ -854,7 +854,7 @@ $\nabla (p_{6})=$ & $(y_{B}-y_{C})\overrightarrow{i}+$ & $(x_{C}-x_{B})%
 \end{tabular}
 \bigskip 
 
-\paragraph*{for atom B moving, atoms A, C, \& D fixed}
+\subparagraph*{for atom B moving, atoms A, C, \& D fixed}
 
 \begin{tabular}{lrrr}
 $\nabla (p_{1})=$ & $(0.0)\overrightarrow{i}+$ & $(z_{C}-z_{D})%
@@ -872,7 +872,7 @@ $\nabla (p_{6})=$ & $(y_{C}-y_{A})\overrightarrow{i}+$ & $(x_{A}-x_{C})%
 \end{tabular}
 \pagebreak 
 
-\subsubsection{Gradient for forcing position restraint, $\partial U/\partial \lambda $}
+\paragraph*{Gradient for forcing position restraint, $\partial U/\partial \lambda $}
 
 $E=(K_{f}/2)\left( \left| \overrightarrow{r_{i}}-\overrightarrow{r_{ref}}%
 \right| \right) ^{2}$
@@ -895,7 +895,7 @@ $dE/d\lambda =K_{f}\times \left( \left( x_{i}-x_{ref}\right) \left(
 x_{0}-x_{1}\right) +\left( y_{i}-y_{ref}\right) \left( y_{0}-y_{1}\right)
 +\left( z_{i}-z_{ref}\right) \left( z_{0}-z_{1}\right) \right) \bigskip $
 
-\subsubsection{Gradient for forcing stretch restraint, $\partial U/\partial \lambda $}
+\paragraph*{Gradient for forcing stretch restraint, $\partial U/\partial \lambda $}
 
 $E=\left( K_{f}/2\right) \left( d_{i}-d_{ref}\right) ^{2}$
 
@@ -904,7 +904,7 @@ $d_{ref}=\lambda d_{1}+\left( 1-\lambda \right) d_{0}$
 $dE/d\lambda =K_{f}~\times ~\left( d_{i}-d_{ref}\right) ~\times ~\left(
 d_{0}-d_{1}\right) \bigskip $
 
-\subsubsection{Gradient for forcing bend restraint, $\partial U/\partial \lambda $}
+\paragraph*{Gradient for forcing bend restraint, $\partial U/\partial \lambda $}
 
 $E=\left( K_{f}/2\right) \left( \theta _{i}-\theta _{ref}\right) ^{2}$
 
@@ -913,7 +913,7 @@ $\theta _{ref}=\lambda \theta _{1}+\left( 1-\lambda \right) \theta _{0}$
 $dE/d\lambda =K_{f}~\times ~\left( \theta _{i}-\theta _{ref}\right) ~\times %
 ~\left( \theta _{0}-\theta _{1}\right) \bigskip $
 
-\subsubsection{Gradient for forcing dihedral restraint, $\partial U/\partial \lambda $}
+\paragraph*{Gradient for forcing dihedral restraint, $\partial U/\partial \lambda $}
 
 $E=\left( E_{0}/2\right) \left( 1-\cos \left( \chi _{i}-\chi _{ref}\right)
 \right) $
