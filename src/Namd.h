@@ -15,13 +15,8 @@
 #include "charm++.h"
 #include "converse.h"
 
-#include <stdlib.h>
-
-#include "NamdState.h"
-#include "Node.h"	// for determining time to compute 1ns
-#include "SimParameters.h" // for timesteps
-
 class Node;
+class NamdState;
 
 class Namd {
 public:
@@ -36,22 +31,7 @@ public:
   void startup(char *);   
 
   // last call of system
-  static void namdDone(void) { 
-    CkPrintf("==========================================\n");
-    Real CPUtime = CmiCpuTimer()-cmiCpuFirstStart;
-    Real Walltime = CmiWallTimer()-cmiWallFirstStart;
-    CkPrintf("WallClock : %f  CPUTime : %f \n",Walltime,CPUtime);
-
-    // femtoseconds
-    SimParameters *params = Node::Object()->simParameters;
-    BigReal fs = (params->N - params->firstTimestep) * params->dt;
-    // scale to nanoseconds
-    BigReal ns = fs / 1000000.0;
-    BigReal days = 1.0 / (24.0 * 60.0 * 60.0);
-    CkPrintf("Days per ns:  WallClock : %lf  CPUTime : %lf \n",
-	days*Walltime/ns, days*CPUtime/ns);
-    CkExit(); 
-  }
+  static void namdDone(void);
 
   // Emergency bailout 
   static void die() { CmiAbort("NAMD ABORTING DUE TO Namd::die().\n"); }
@@ -78,7 +58,7 @@ private:
   int workDistribGroup;
   int patchMgrGroup;
 
-  NamdState namdState;
+  NamdState *namdState;
 
 };
 
@@ -88,13 +68,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: Namd.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1999/05/11 23:56:36 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1013 $	$Date: 1999/06/02 15:14:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Namd.h,v $
+ * Revision 1.1013  1999/06/02 15:14:21  jim
+ * Now waits for output files to be written before halting.
+ *
  * Revision 1.1012  1999/05/11 23:56:36  brunner
  * Changes for new charm version
  *

@@ -390,34 +390,18 @@ void Node::scriptParam(ScriptParamMsg *msg) {
   delete msg;
 }
 
+
 //-----------------------------------------------------------------------
-// Node homeDone() - broadcast to all nodes
+// Node haltBarrier() - terminate program at end of run
 //-----------------------------------------------------------------------
-void Node::messageHomeDone() {
-  CProxy_Node cn(CpvAccess(BOCclass_group).node);
-  cn.homeDone(CkMyPe());
+
+void Node::enableHaltBarrier() {
+  CkStartQD(CProxy_Node::ckIdx_haltBarrier((CkQdMsg*)0),&thishandle);
 }
 
-
-//-----------------------------------------------------------------------
-// per node countdown of HomePatch completions.  Signals nodeDone()
-// when completed.
-//-----------------------------------------------------------------------
-void Node::homeDone() {
-  if (!--numHomePatchesRunning) {
-     CProxy_Node cn(CpvAccess(BOCclass_group).node);
-     cn.nodeDone(0);
-  }
-}
-
-
-//-----------------------------------------------------------------------
-// Countdown of Node completions - 
-//-----------------------------------------------------------------------
-void Node::nodeDone() {
-  if (!--numNodesRunning && !CkMyPe()) {
-     Namd::namdDone();
-  }
+void Node::haltBarrier(CkQdMsg *qmsg) {
+  delete qmsg;
+  Namd::namdDone();
 }
 
 
@@ -477,12 +461,15 @@ void Node::recvSMDData(SMDDataMsg *msg) {
  *
  *	$RCSfile: Node.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1034 $	$Date: 1999/05/26 22:23:54 $
+ *	$Revision: 1.1035 $	$Date: 1999/06/02 15:14:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1035  1999/06/02 15:14:21  jim
+ * Now waits for output files to be written before halting.
+ *
  * Revision 1.1034  1999/05/26 22:23:54  jim
  * Added basic Tcl scripting, fixed bugs in broadcasts.
  *

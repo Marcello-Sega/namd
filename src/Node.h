@@ -71,10 +71,9 @@ public:
   void scriptBarrier(CkQdMsg *);  
   void scriptParam(ScriptParamMsg *);
 
-  // Signal HomePatch and Node is done
-  static void messageHomeDone();
-  void homeDone();
-  void nodeDone();
+  // End of run
+  void enableHaltBarrier();  
+  void haltBarrier(CkQdMsg *);  
 
   // Deal with quiescence
   void quiescence(CkQdMsg *);
@@ -150,12 +149,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1999/05/26 22:23:55 $
+ *	$Revision: 1.1014 $	$Date: 1999/06/02 15:14:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.1014  1999/06/02 15:14:21  jim
+ * Now waits for output files to be written before halting.
+ *
  * Revision 1.1013  1999/05/26 22:23:55  jim
  * Added basic Tcl scripting, fixed bugs in broadcasts.
  *

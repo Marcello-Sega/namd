@@ -70,11 +70,7 @@ protected:
       Vector langevinPiston_strainRate;
 
     // void suspend(void) { CthSuspend(); };
-    void terminate(void) {
-	// CkPrintf("Controller terminating\n");
-	Node::messageHomeDone();
-	CthFree(thread); CthSuspend(); 
-    };
+    void terminate(void);
 
     SimParameters *const simParams;	// for convenience
     int numberOfCycles;			// stores argument to run()
@@ -102,12 +98,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1021 $	$Date: 1999/05/11 23:56:30 $
+ *	$Revision: 1.1022 $	$Date: 1999/06/02 15:14:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.h,v $
+ * Revision 1.1022  1999/06/02 15:14:20  jim
+ * Now waits for output files to be written before halting.
+ *
  * Revision 1.1021  1999/05/11 23:56:30  brunner
  * Changes for new charm version
  *

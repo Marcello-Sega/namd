@@ -689,7 +689,6 @@ void Sequencer::rebalanceLoad(int timestep)
 
 void
 Sequencer::terminate() {
-  Node::messageHomeDone();
   CthFree(thread);
   CthSuspend();
 }
@@ -699,12 +698,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1061 $     $Date: 1999/06/02 14:23:21 $
+ *      $Revision: 1.1062 $     $Date: 1999/06/02 15:14:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1062  1999/06/02 15:14:22  jim
+ * Now waits for output files to be written before halting.
+ *
  * Revision 1.1061  1999/06/02 14:23:21  jim
  * Generalized maximumMove to work with any dynamics mode.
  *

@@ -28,6 +28,7 @@
 #include "ComputeGlobalMsgs.h"
 #include "Molecule.h"
 #include "ReductionMgr.h"
+#include "SimParameters.h"
 #include "ComputeMgr.h"
 #include "ComputeMgr.decl.h"
 #include <stdio.h>
@@ -273,12 +274,15 @@ void ComputeFreeEnergy::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.17 $	$Date: 1999/05/11 23:56:20 $
+ *	$Revision: 1.18 $	$Date: 1999/06/02 15:14:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFreeEnergy.C,v $
+ * Revision 1.18  1999/06/02 15:14:19  jim
+ * Now waits for output files to be written before halting.
+ *
  * Revision 1.17  1999/05/11 23:56:20  brunner
  * Changes for new charm version
  *

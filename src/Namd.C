@@ -17,6 +17,7 @@
 #include "main.h"
 #include "BOCgroup.h"
 #include "Namd.h"
+#include "NamdState.h"
 #include "Molecule.h"
 #include "Parameters.h"
 #include "SimParameters.h"
@@ -52,6 +53,8 @@ float Namd::cmiCpuFirstStart;
 // read in file data,
 Namd::Namd(void)
 {
+  namdState = new NamdState;
+
   BOCgroup group;
 
   // Create WorkDistrib and send it an empty message
@@ -95,6 +98,7 @@ Namd::Namd(void)
 // ~Namd(void) just needs to tell all the slave nodes to die.
 Namd::~Namd(void)
 {
+  delete namdState;
   CkPrintf("Namd::~Namd() called\n");
 }
 
@@ -102,8 +106,8 @@ Namd::~Namd(void)
 // startup(char *) 
 void Namd::startup(char *confFile)
 {
-  namdState.configFileInit(confFile);
-  if (namdState.status()) {
+  namdState->configFileInit(confFile);
+  if (namdState->status()) {
     CkPrintf("Namd::startup() - could not initialize namdState from %s\n", 
       confFile);
     CkExit();
@@ -111,24 +115,44 @@ void Namd::startup(char *confFile)
 
   // Give our node[PE = 0] pointers to the data objects, so it can use them,
   // or send them on as messages elsewhere.
-  Node::Object()->saveMolDataPointers(&namdState);
+  Node::Object()->saveMolDataPointers(namdState);
 
   Node::messageStartUp(); // tell all nodes to startup
 }
 
+// last call of system
+void Namd::namdDone(void) {
+    CkPrintf("==========================================\n");
+    Real CPUtime = CmiCpuTimer()-cmiCpuFirstStart;
+    Real Walltime = CmiWallTimer()-cmiWallFirstStart;
+    CkPrintf("WallClock : %f  CPUTime : %f \n",Walltime,CPUtime);
+
+    // femtoseconds
+    SimParameters *params = Node::Object()->simParameters;
+    BigReal fs = (params->N - params->firstTimestep) * params->dt;
+    // scale to nanoseconds
+    BigReal ns = fs / 1000000.0;
+    BigReal days = 1.0 / (24.0 * 60.0 * 60.0);
+    CkPrintf("Days per ns:  WallClock : %lf  CPUTime : %lf \n",
+        days*Walltime/ns, days*CPUtime/ns);
+    CkExit();
+}
 
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: Namd.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1999/05/11 23:56:36 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1012 $	$Date: 1999/06/02 15:14:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Namd.C,v $
+ * Revision 1.1012  1999/06/02 15:14:20  jim
+ * Now waits for output files to be written before halting.
+ *
  * Revision 1.1011  1999/05/11 23:56:36  brunner
  * Changes for new charm version
  *

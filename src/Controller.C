@@ -896,17 +896,27 @@ void Controller::enqueueCollections(int timestep)
     collection->enqueueVelocities(timestep);
 }
 
+void Controller::terminate(void) {
+  Node::Object()->enableHaltBarrier();
+  CthFree(thread);
+  CthSuspend();
+}
+
+
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1067 $	$Date: 1999/05/26 22:23:53 $
+ *	$Revision: 1.1068 $	$Date: 1999/06/02 15:14:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1068  1999/06/02 15:14:19  jim
+ * Now waits for output files to be written before halting.
+ *
  * Revision 1.1067  1999/05/26 22:23:53  jim
  * Added basic Tcl scripting, fixed bugs in broadcasts.
  *

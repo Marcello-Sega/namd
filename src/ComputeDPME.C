@@ -19,6 +19,7 @@
 #include "PatchMgr.h"
 #include "Molecule.h"
 #include "ReductionMgr.h"
+#include "SimParameters.h"
 #include "ComputeMgr.h"
 #include "ComputeMgr.decl.h"
 // #define DEBUGM
@@ -391,12 +392,15 @@ void ComputeDPME::recvResults(ComputeDPMEResultsMsg *msg)
  *
  *	$RCSfile: ComputeDPME.C,v $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.12 $	$Date: 1999/05/27 19:00:42 $
+ *	$Revision: 1.13 $	$Date: 1999/06/02 15:14:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPME.C,v $
+ * Revision 1.13  1999/06/02 15:14:19  jim
+ * Now waits for output files to be written before halting.
+ *
  * Revision 1.12  1999/05/27 19:00:42  jim
  * Added nonbondedScaling parameter and fixed Tcl scripting bug.
  *
