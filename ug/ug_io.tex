@@ -291,6 +291,14 @@ The initial positions will not be included in the trajectory file.
 }
 
 \item
+\NAMDCONFWDEF{DCDUnitCell}{write unit cell data to dcd file?}
+{{\tt yes} or {\tt no}}{{\tt no}}
+{
+If this option is set to {\tt yes}, then DCD files will contain unit
+cell information in the style of Charmm DCD files.
+}
+
+\item
 \NAMDCONF{velDCDfile}{velocity trajectory output file}{UNIX filename}
 {
 The binary DCD velocity trajectory filename.  
