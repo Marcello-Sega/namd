@@ -271,6 +271,7 @@ int Rebalancer::refine()
       /* Keep selecting new donors, until we find one with some compute to
        * migrate
        */
+/*
       computeInfo* c=0;
       while (donor && !c) {
         Iterator nextCompute;
@@ -283,6 +284,13 @@ int Rebalancer::refine()
 	  donor = (processorInfo*)heavyProcessors->deleteMax();
         }
       };
+*/
+      while (donor) {
+	if (donor->computeSet.numElements()) break;
+        iout << iINFO << "Ignoring donor " << donor->Id
+              << " because no computes\n" << endi;
+	 donor = (processorInfo*)heavyProcessors->deleteMax();
+      }
   
       if (!donor) break;  // No donors found at all! Give up 
 
