@@ -30,7 +30,7 @@
 
 #include "InfoStream.h"
 
-int useSync = 1;
+int useSync = 0;
 
 Sync::Sync()
 {

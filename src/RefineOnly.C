@@ -34,6 +34,7 @@ void RefineOnly::strategy()
 #endif
 
   double max = computeMax();
+
   overLoad = 1.02;
   while (!refine())
     overLoad += .01;
