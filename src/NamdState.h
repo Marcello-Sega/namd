@@ -22,6 +22,7 @@ class Parameters;
 class ConfigList;
 class PDB;
 class Controller;
+class SMDData;
 
 // Everything needed to specify a simulation is in this object
 // For the moment it is really only a structure.  Eventually
@@ -55,14 +56,14 @@ class NamdState {
  *
  *	$RCSfile: NamdState.h,v $
  *	$Author: sergei $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1998/01/13 23:31:14 $
+ *	$Revision: 1.1006 $	$Date: 1998/01/13 23:51:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdState.h,v $
- * Revision 1.1005  1998/01/13 23:31:14  sergei
- * Added member smdData, usage similar to Molecule.
+ * Revision 1.1006  1998/01/13 23:51:46  sergei
+ * *** empty log message ***
  *
  * Revision 1.1004  1997/03/21 23:05:39  jim
  * Added Berendsen's pressure coupling method, won't work with MTS yet.

@@ -7,7 +7,7 @@
  * DESCRIPTION: Holds pointers to large molecule data structure, simulation
  *		Parameters...
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1011 1998/01/13 23:31:12 sergei Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1012 1998/01/13 23:51:45 sergei Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -23,6 +23,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C
 #include "PDB.h"
 #include "NamdState.h"
 #include "Controller.h"
+#include "SMD.h"
 #include <unistd.h>
 #include <sys/stat.h>
 
@@ -239,14 +240,14 @@ NamdState::configFileInit(char *confFile)
  *
  *	$RCSfile: NamdState.C,v $
  *	$Author: sergei $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1998/01/13 23:31:12 $
+ *	$Revision: 1.1012 $	$Date: 1998/01/13 23:51:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdState.C,v $
- * Revision 1.1011  1998/01/13 23:31:12  sergei
- * Added member smdData, usage similar to Molecule.
+ * Revision 1.1012  1998/01/13 23:51:45  sergei
+ * *** empty log message ***
  *
  * Revision 1.1010  1997/09/21 21:58:31  jim
  * Added printing of hydrogen group count.
