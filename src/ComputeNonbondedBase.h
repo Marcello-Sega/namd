@@ -120,21 +120,23 @@ NOEXCL
 
     for ( register int j = J_LOWER; j < j_upper; ++j )
     {
-      p_j += ( j + 1 < j_upper );
+      p_j += ( j + 1 < j_upper );			// preload
       register const BigReal p_ij_x = p_i_x - p_j_x;
-      p_j_x = p_j->x;
+      p_j_x = p_j->x;					// preload
       register const BigReal p_ij_y = p_i_y - p_j_y;
-      p_j_y = p_j->y;
+      p_j_y = p_j->y;					// preload
       register const BigReal p_ij_z = p_i_z - p_j_z;
-      p_j_z = p_j->z;
-      register const BigReal
-		r2 = p_ij_x * p_ij_x + p_ij_y * p_ij_y + p_ij_z * p_ij_z;
+      p_j_z = p_j->z;					// preload
 )
 EXCL
 (
-      Vector f_vdw = p_ij;
-      register const BigReal r2 = f_vdw.length2();
+      register const BigReal p_ij_x = p_ij.x;
+      register const BigReal p_ij_y = p_ij.y;
+      register const BigReal p_ij_z = p_ij.z;
 )
+      register const BigReal
+		r2 = p_ij_x * p_ij_x + p_ij_y * p_ij_y + p_ij_z * p_ij_z;
+
       if ( r2 > cutoff2 )
       {
 	NOEXCL( continue; )
@@ -146,9 +148,10 @@ EXCL
 	BigReal f = kqq*r_1;
 	if ( m14 ) f *= ( 1. - scale14 );
 	fullElectEnergy -= f;
-	const Vector f_elec = f_vdw * ( f * r_1 * r_1 );
+	const Vector f_elec = p_ij * ( f * r_1 * r_1 );
 	fullf_i -= f_elec;
 	fullf_j += f_elec;
+	reduction[fullElectEnergyIndex] += fullElectEnergy;
 	) return; )
       }
 
@@ -160,13 +163,15 @@ NOEXCL
 FULL
 (
       Force & fullf_j = fullf[J_SUB];
-      Vector f_vdw(p_ij_x,p_ij_y,p_ij_z);
       const BigReal r = sqrt(r2);
       const BigReal r_1 = 1/r;
       BigReal kqq = kq_i * a_j.charge;
       BigReal f = kqq*r_1;
 )
 )
+
+      register BigReal force_r = 0.;			//  force / r
+      FULL( register BigReal fullforce_r = 0.; )	//  fullforce / r
 
       const LJTable::TableEntry * lj_pars = 
 		ljTable->table_val(a_i.type, a_j.type);
@@ -175,28 +180,34 @@ FULL
       {
 NOEXCL
 (
-	if ( mol->checkexcl(a_i.id,a_j.id) )
+	if ( mol->checkexcl(a_i.id,a_j.id) )  // Inline this by hand.
 	{
 	  FULL
 	  (
 	    // Do a quick fix and get out!
 	    fullElectEnergy -= f;
-	    const Vector f_elec = f_vdw * ( f * r_1 * r_1 );
-	    fullf_i -= f_elec;
-	    fullf_j += f_elec;
+	    fullforce_r = -f * r_1 * r_1;
+	    register BigReal tmp;
+	    tmp = fullforce_r * p_ij_x;
+	    fullf_i.x += tmp;
+	    fullf_j.x -= tmp;
+	    tmp = fullforce_r * p_ij_y;
+	    fullf_i.y += tmp;
+	    fullf_j.y -= tmp;
+	    tmp = fullforce_r * p_ij_z;
+	    fullf_i.z += tmp;
+	    fullf_j.z -= tmp;
 	  )
-	  continue;
+	  continue;  // Must have stored force by now.
 	}
-	else if ( mol->check14excl(a_i.id,a_j.id) )
+	else if ( mol->check14excl(a_i.id,a_j.id) )  // Inline this by hand.
 	{
 	  FULL
 	  (
 	    // Make full electrostatics match rescaled charges!
 	    f *= ( 1. - scale14 );
 	    fullElectEnergy -= f;
-	    const Vector f_elec = f_vdw * ( f * r_1 * r_1 );
-	    fullf_i -= f_elec;
-	    fullf_j += f_elec;
+	    fullforce_r -= f * r_1 * r_1;
 	  )
 	  lj_pars = ljTable->table_val(a_i.type, a_j.type, 1);
 	  kq_i = kq_i_s;
@@ -211,7 +222,6 @@ EXCL
 
 NOEXCL
 (
-      NOFULL( Vector f_vdw(p_ij_x,p_ij_y,p_ij_z); )
       Force & f_j = ff[J_SUB];
 )
 
@@ -248,6 +258,11 @@ FULL
 	dSwitchVal = 0;
       }
 
+
+//  --------------------------------------------------------------------------
+//  BEGIN SHIFTING / SPLITTING FUNCTION DEFINITIONS
+//  --------------------------------------------------------------------------
+
 SHIFTING
 (
       // Basic electrostatics shifting function for cutoff simulations
@@ -280,6 +295,11 @@ C1SPLITTING
       }
 )
 
+//  --------------------------------------------------------------------------
+//  END SHIFTING / SPLITTING FUNCTION DEFINITIONS
+//  --------------------------------------------------------------------------
+
+
       NOFULL(const BigReal) EXCL(FULL(const BigReal)) kqq = kq_i * a_j.charge;
 
       NOFULL(BigReal) EXCL(FULL(BigReal)) f = kqq*r_1;
@@ -308,37 +328,31 @@ NOEXCL
       EXCL( FULL( BigReal f2 = f * ( r_1 * r_1 ); ) )
       f *= r_1*( shiftVal * r_1 - dShiftVal );
 
-      NOEXCL( const ) Vector f_elec = f_vdw*f;
+      NOEXCL( const ) BigReal f_elec = f;
 
 EXCL
 (
-      f_i -= f_elec;
-      f_j += f_elec;
+      force_r -= f_elec;
 FULL
 (
-      fullf_i += f_vdw * ( f - f2 );
-      fullf_j -= f_vdw * ( f - f2 );
+      fullforce_r += ( f - f2 );
 )
       if ( m14 )
       {
 	f_elec *= scale14;
-	f_i += f_elec;
-	f_j -= f_elec;
+	force_r += f_elec;
 FULL
 (
-	fullf_i -= f_vdw * ( ( f - f2 ) * scale14 );
-	fullf_j += f_vdw * ( ( f - f2 ) * scale14 );
+	fullforce_r -= ( ( f - f2 ) * scale14 );
 )
       }
 )
 NOEXCL
 (
-      f_i += f_elec;
-      f_j -= f_elec;
+      force_r += f_elec;
 FULL
 (
-      fullf_i -= f_elec;
-      fullf_j += f_elec;
+      fullforce_r -= f_elec;
 )
 )
 
@@ -361,10 +375,9 @@ EXCL
 	const BigReal B = lj_pars->B;
 	const BigReal AmBterm = (A*r_6 - B) * r_6;
 	vdwEnergy += switchVal * AmBterm;
-	const Vector f_vdwx = f_vdw * ( ( switchVal * 6 * (A*r_12 + AmBterm) *
+	const BigReal f_vdwx = ( ( switchVal * 6 * (A*r_12 + AmBterm) *
 			r_1 - AmBterm*dSwitchVal )*r_1 );
-	f_i += f_vdwx;
-	f_j -= f_vdwx;
+	force_r += f_vdwx;
       }
 )
 NOEXCL
@@ -373,18 +386,41 @@ NOEXCL
 )
 
 
-      f_vdw *= ( switchVal * 6 * (A*r_12 + AmBterm) *
+      const BigReal f_vdw = ( switchVal * 6 * (A*r_12 + AmBterm) *
 			r_1 - AmBterm*dSwitchVal )*r_1;
 
 EXCL
 (
-      f_i -= f_vdw;
-      f_j += f_vdw;
+      force_r -= f_vdw;
 )
 NOEXCL
 (
-      f_i += f_vdw;
-      f_j -= f_vdw;
+      force_r += f_vdw;
+)
+
+      register BigReal tmp;
+
+      tmp = force_r * p_ij_x;
+      f_i.x += tmp;
+      f_j.x -= tmp;
+      tmp = force_r * p_ij_y;
+      f_i.y += tmp;
+      f_j.y -= tmp;
+      tmp = force_r * p_ij_z;
+      f_i.z += tmp;
+      f_j.z -= tmp;
+
+FULL
+(
+      tmp = fullforce_r * p_ij_x;
+      fullf_i.x += tmp;
+      fullf_j.x -= tmp;
+      tmp = fullforce_r * p_ij_y;
+      fullf_i.y += tmp;
+      fullf_j.y -= tmp;
+      tmp = fullforce_r * p_ij_z;
+      fullf_i.z += tmp;
+      fullf_j.z -= tmp;
 )
 
 NOEXCL
@@ -405,12 +441,17 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/03/14 23:18:08 $
+ *	$Revision: 1.1008 $	$Date: 1997/03/17 02:52:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1008  1997/03/17 02:52:13  jim
+ * Did cleanups and speedups in preparation for virial calculation.
+ * Fixed minor bug which resulted in incorrect energies for excluded
+ * pairs which were outside of the cutoff radius (VERY rare).
+ *
  * Revision 1.1007  1997/03/14 23:18:08  jim
  * Implemented C1 splitting for long-range electrostatics.
  * Energies on sub-timesteps are incorrect.  (Aren't they always?)
