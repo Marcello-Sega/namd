@@ -35,9 +35,9 @@ Licensee agrees to reproduce the copyright notice and other proprietary
 markings on any derivative work and to include in the documentation of such 
 work the acknowledgement:
 
- "This software includes code developed by the Theoretical Biophysics Group 
-in the Beckman Institute for Advanced Science and Technology at the 
-University of Illinois at Urbana-Champaign."
+"This software includes code developed by the Theoretical Biophysics Group 
+ in the Beckman Institute for Advanced Science and Technology at the 
+ University of Illinois at Urbana-Champaign."
 
 Licensee may redistribute without restriction works with up to 1/2 of their 
 non-comment source code derived from at most 1/10 of the non-comment source 
@@ -90,17 +90,18 @@ the Software will acknowledge its use by the appropriate citation as
 follows:
 
 "NAMD was developed by the Theoretical Biophysics Group in the Beckman  
-Institute for Advanced Science and Technology at the University of  
-Illinois at Urbana-Champaign."
+ Institute for Advanced Science and Technology at the University of  
+ Illinois at Urbana-Champaign."
 
 Any published work which utilizes NAMD shall include the following reference:
+
 "Laxmikant Kale, Robert Skeel, Milind Bhandarkar, Robert Brunner,
  Attila Gursoy, Neal Krawetz, James Phillips, Aritomo Shinozaki,
  Krishnan Varadarajan, and Klaus Schulten. NAMD2: Greater scalability
  for parallel molecular dynamics.  J. Comp. Phys., 151:283-312, 1999."
 
 Electronic documents will include a direct link to the official NAMD page  
-at  http://www.ks.uiuc.edu/Research/namd/
+at http://www.ks.uiuc.edu/Research/namd/
 
 7. Commercial use of the Software, or derivative works based thereon,  
 REQUIRES A COMMERCIAL LICENSE.  Should Licensee wish to make commercial 
