@@ -52,26 +52,13 @@
 #undef FULL
 #undef NOFULL
 #ifdef FULLELECT
-  #if FULLELECT == FULLELECT_PME
-    #define FULLELECTNAME(X) SPLITTINGNAME( X ## _fullelect_pme )
-  #else
-    #define FULLELECTNAME(X) SPLITTINGNAME( X ## _fullelect )
-  #endif
+  #define FULLELECTNAME(X) LAST( X ## _fullelect )
   #define FULL(X) X
   #define NOFULL(X)
 #else
-  #define FULLELECTNAME(X) SPLITTINGNAME( X )
+  #define FULLELECTNAME(X) LAST( X )
   #define FULL(X)
   #define NOFULL(X) X
-#endif
-
-#undef SPLITTINGNAME
-#if SPLIT_TYPE == SPLIT_NONE
-  #define SPLITTINGNAME(X) LAST( X )
-#elif SPLIT_TYPE == SPLIT_XPLOR
-  #define SPLITTINGNAME(X) LAST( X ## _xplor )
-#elif SPLIT_TYPE == SPLIT_C1
-  #define SPLITTINGNAME(X) LAST( X ## _c1 )
 #endif
 
 #define LAST(X) X
@@ -93,10 +80,10 @@ void ComputeNonbondedUtil :: NAME
 
   // local variables
   int exclChecksum = 0;
-  BigReal vdwEnergy = 0;
-  BigReal electEnergy = 0;
   FAST
   (
+  BigReal vdwEnergy = 0;
+  BigReal electEnergy = 0;
   BigReal virial_xx = 0;
   BigReal virial_xy = 0;
   BigReal virial_xz = 0;
@@ -120,30 +107,22 @@ void ComputeNonbondedUtil :: NAME
   register const BigReal cutoff2 = ComputeNonbondedUtil:: cutoff2;
   register const BigReal groupcutoff2 = ComputeNonbondedUtil:: groupcutoff2;
   const BigReal dielectric_1 = ComputeNonbondedUtil:: dielectric_1;
-
-  FULL
-  (
-  const BigReal ewaldcof = ComputeNonbondedUtil:: ewaldcof;
-  const BigReal pi_ewaldcof = ComputeNonbondedUtil:: pi_ewaldcof;
-  )
-
   const LJTable* const ljTable = ComputeNonbondedUtil:: ljTable;
   const Molecule* const mol = ComputeNonbondedUtil:: mol;
+  const BigReal* const fast_table = ComputeNonbondedUtil:: fast_table;
+  FULL
+  (
+  const BigReal* const scor_table = ComputeNonbondedUtil:: scor_table;
+  const BigReal* const slow_table = ComputeNonbondedUtil:: slow_table;
+  )
   const BigReal scaling = ComputeNonbondedUtil:: scaling;
-  const BigReal scale14 = ComputeNonbondedUtil:: scale14;
-  const Real switchOn = ComputeNonbondedUtil:: switchOn;
+  const BigReal modf_mod = 1.0 - scale14;
+  FAST
+  (
   const BigReal switchOn2 = ComputeNonbondedUtil:: switchOn2;
-  // const BigReal c0 = ComputeNonbondedUtil:: c0;
   const BigReal c1 = ComputeNonbondedUtil:: c1;
   const BigReal c3 = ComputeNonbondedUtil:: c3;
-  const BigReal c5 = ComputeNonbondedUtil:: c5;
-  const BigReal c6 = ComputeNonbondedUtil:: c6;
-  const BigReal c7 = ComputeNonbondedUtil:: c7;
-  const BigReal c8 = ComputeNonbondedUtil:: c8;
-  // const BigReal d0 = ComputeNonbondedUtil:: d0;
-
-  BigReal kqq;	// initialized later
-  BigReal f;	// initialized later
+  )
 
   const int i_upper = params->numAtoms[0];
   register const int j_upper = params->numAtoms[1];
@@ -319,8 +298,7 @@ void ComputeNonbondedUtil :: NAME
 
     const int atomfixed = ( p_i.atomFixed );
 
-    const BigReal kq_i_u = COLOUMB * p_i.charge * scaling * dielectric_1;
-    const BigReal kq_i_s = kq_i_u * scale14;
+    const BigReal kq_i = COLOUMB * p_i.charge * scaling * dielectric_1;
     const LJTable::TableEntry * const lj_row =
 		ljTable->table_row(mol->atomvdwtype(p_i.id));
 
@@ -353,59 +331,20 @@ void ComputeNonbondedUtil :: NAME
 
       if ( atomfixed && ( p_j->atomFixed ) ) continue;
 
-      BigReal kq_i = kq_i_u;
-
-      FULL
-      (
-        Force & fullf_j = fullf_1[j];
-	const BigReal r = sqrt(r2);
-        const BigReal r_1 = 1.0/r;
-        kqq = kq_i * p_j->charge;
-        f = kqq*r_1;
-
-	//  Patch code for full electrostatics algorithms which
-	//  need to do a direct component like PME or P3M fits here.
-	//  This may not be the absolutely most efficient position,
-	//  but it is nicely detached from the complex logic of the
-	//  exclusion checking system below so it won't break anything.
-
-	switch ( FULLELECT ) {  // compiler should optimize this away
-	  case FULLELECT_PME: {
-	    register BigReal tmp_a = r * ewaldcof;
-	    register BigReal tmp_b = erfc(tmp_a);
-	    register BigReal tmp_c =
-		pi_ewaldcof*exp(-(tmp_a*tmp_a))*r_1 + tmp_b*r_1*r_1;
-	    register BigReal tmp_f = tmp_c * f;
-	    fullElectEnergy += tmp_b * f;
-	    register BigReal tmp_x = tmp_f * p_ij_x;
-	    fullElectVirial_xx += tmp_x * p_ij_x;
-	    fullElectVirial_xy += tmp_x * p_ij_y;
-	    fullElectVirial_xz += tmp_x * p_ij_z;
-	    fullf_i.x += tmp_x;
-	    fullf_j.x -= tmp_x;
-	    register BigReal tmp_y = tmp_f * p_ij_y;
-	    fullElectVirial_yy += tmp_y * p_ij_y;
-	    fullElectVirial_yz += tmp_y * p_ij_z;
-	    fullf_i.y += tmp_y;
-	    fullf_j.y -= tmp_y;
-	    register BigReal tmp_z = tmp_f * p_ij_z;
-	    fullElectVirial_zz += tmp_z * p_ij_z;
-	    fullf_i.z += tmp_z;
-	    fullf_j.z -= tmp_z;
-	  } break;
-	}
+      int table_i = (int) ( r2_delta_1 * r2 );
+      FAST(
+      const BigReal* const fast_i = fast_table + 4*table_i;
+      BigReal fast_a = fast_i[0];
       )
-
-      register BigReal force_r = 0.0;		//  force / r
-      FULL
-      (
-      register BigReal fullforce_r = 0.0;	//  fullforce / r
+      FULL(
+      const BigReal* const scor_i = scor_table + 4*table_i;
+      BigReal slow_a = scor_i[0]; 
       )
 
       const LJTable::TableEntry * lj_pars = 
 		lj_row + 2 * mol->atomvdwtype(p_j->id);
 
-      {
+      BigReal modf = 0.0;
 	register char excl_flag;
 	SELF( if ( j < j_hgroup ) { excl_flag = EXCHCK_FULL; } else ) {
            //  We want to search the array of the smaller atom
@@ -415,148 +354,66 @@ void ComputeNonbondedUtil :: NAME
 	  if ( excl_flag ) { ++exclChecksum; }
 	}
 	if ( excl_flag == EXCHCK_FULL ) {
-	  FULL
-	  (
-	    // Do a quick fix and get out!
-	    fullElectEnergy -= f;
-	    fullforce_r = -f * r_1*r_1;
-	    register BigReal tmp_x = fullforce_r * p_ij_x;
-	    fullElectVirial_xx += tmp_x * p_ij_x;
-	    fullElectVirial_xy += tmp_x * p_ij_y;
-	    fullElectVirial_xz += tmp_x * p_ij_z;
-	    fullf_i.x += tmp_x;
-	    fullf_j.x -= tmp_x;
-	    register BigReal tmp_y = fullforce_r * p_ij_y;
-	    fullElectVirial_yy += tmp_y * p_ij_y;
-	    fullElectVirial_yz += tmp_y * p_ij_z;
-	    fullf_i.y += tmp_y;
-	    fullf_j.y -= tmp_y;
-	    register BigReal tmp_z = fullforce_r * p_ij_z;
-	    fullElectVirial_zz += tmp_z * p_ij_z;
-	    fullf_i.z += tmp_z;
-	    fullf_j.z -= tmp_z;
-	  )
-	  continue;  // Must have stored force by now.
+	  NOFULL( continue; )
+	  modf = 1.0;
 	} else {
           if ( excl_flag == EXCHCK_MOD ) {
-	    FULL
-	    (
-	      // Make full electrostatics match rescaled charges!
-	      f *= ( 1. - scale14 );
-	      fullElectEnergy -= f;
-	      fullforce_r -= f * r_1*r_1;
-	    )
 	    lj_pars = lj_row + 2 * mol->atomvdwtype(p_j->id) + 1;
-	    kq_i = kq_i_s;
+	    modf = modf_mod;
 	  }
 	}
 
-      }
+      BigReal kqq = kq_i * p_j->charge;
+      BigReal diffa = r2 - r2_delta * table_i;
 
-      FAST( Force & f_j = f_1[j]; )
-
-      NOFULL
+      FAST
       (
-      const BigReal r = sqrt(r2);
-      const BigReal r_1 = 1.0/r;
-      )
+      const BigReal A = scaling * lj_pars->A;
+      const BigReal B = scaling * lj_pars->B;
 
-      BigReal switchVal; // used for Lennard-Jones
-      BigReal shiftVal; // used for electrostatics splitting as well
-      BigReal dSwitchVal; // used for Lennard-Jones
-      BigReal dShiftVal; // used for electrostatics splitting as well
+      if ( excl_flag != EXCHCK_FULL ) {
+
+      const BigReal r_2 = 1.0 / r2;
+      const BigReal r_6 = r_2*r_2*r_2;
+      const BigReal r_12 = r_6*r_6;
+
+      BigReal switchVal = 1;  // used for Lennard-Jones
+      BigReal dSwitchVal = 0;  // d switchVal / d r2
 
       // Lennard-Jones switching function
-      if (r > switchOn)
+      if (r2 > switchOn2)
       {
 	const BigReal c2 = cutoff2-r2;
 	const BigReal c4 = c2*(cutoff2+2.0*r2-3.0*switchOn2);
 	switchVal = c2*c4*c1;
-	dSwitchVal = c3*r*(c2*c2-c4);
+	dSwitchVal = 0.5*c3*(c2*c2-c4);
       }
-      else
-      {
-	switchVal = 1;
-	dSwitchVal = 0;
-      }
-
-
-//  --------------------------------------------------------------------------
-//  BEGIN SHIFTING / SPLITTING FUNCTION DEFINITIONS
-//  --------------------------------------------------------------------------
-
-
-    // compiler should optimize this code easily
-    switch(SPLIT_TYPE)
-      {
-      case SPLIT_NONE:
-	// shifting(shiftVal,dShiftVal,r,r2,c5,c6);
-	shiftVal = 1.0 - r2*c5;
-	dShiftVal = c6*shiftVal*r;
-	shiftVal *= shiftVal;
-	break;
-      case SPLIT_C1:
-	{
-	  const BigReal d1 = r2 * c7;
-	  shiftVal = 1.0 + r * ( d1 - c8 );
-	  dShiftVal = 3.0 * d1 - c8;
-	}
-	/*
-	// c1splitting(shiftVal,dShiftVal,r,d0,switchOn);
-	dShiftVal = 0;  // formula only correct for forces
-	if (r > switchOn) {
-	  const BigReal d1 = d0*(r-switchOn);
-	  shiftVal = 1.0 + d1*d1*(2.0*d1-3.0);
-	} else {
-	  shiftVal = 1;
-	}
-	*/
-	break;
-      case SPLIT_XPLOR:
-	// xplorsplitting(shiftVal,dShiftVal, switchVal,dSwitchVal);
-	shiftVal = switchVal;
-	dShiftVal = dSwitchVal;
-	break;
-      }
-
-//  --------------------------------------------------------------------------
-//  END SHIFTING / SPLITTING FUNCTION DEFINITIONS
-//  --------------------------------------------------------------------------
-
-
-      kqq = kq_i * p_j->charge;
-      f = kqq*r_1;
-      
-      electEnergy += f * shiftVal;
-
-FULL
-(
-      fullElectEnergy -= f * shiftVal;
-)
-      f *= r_1*(r_1*shiftVal - dShiftVal );
-
-      const BigReal f_elec = f;
-
-      force_r += f_elec;
-      FULL( fullforce_r -= f_elec; )
-
-      BigReal r_6 = r_1*r_1*r_1; r_6 *= r_6;
-      const BigReal r_12 = r_6*r_6;
-
-      const BigReal A = scaling * lj_pars->A;
-      const BigReal B = scaling * lj_pars->B;
 
       const BigReal AmBterm = (A*r_6 - B) * r_6;
 
       vdwEnergy += switchVal * AmBterm;
 
+      BigReal force_r = ( switchVal * 3.0 * (A*r_12 + AmBterm) * r_2
+				- AmBterm * dSwitchVal );
 
-      force_r += ( switchVal * 6.0 * (A*r_12 + AmBterm) *
-			r_1 - AmBterm*dSwitchVal )*r_1;
+      BigReal modfc = 1.0 - modf;
+      fast_a *= modfc;
+      BigReal fast_d = modfc * fast_i[3];
+      BigReal fast_c = modfc * fast_i[2];
+      BigReal fast_b = modfc * fast_i[1];
 
-      FAST
-      (
       {
+      register BigReal fast_val =
+	( ( diffa * fast_d + fast_c ) * diffa + fast_b ) * diffa + fast_a;
+      register BigReal fast_dir =
+	( 3.0 * diffa * fast_d + 2.0 * fast_c ) * diffa + fast_b;
+
+      electEnergy += kqq * fast_val;
+      force_r -= kqq * fast_dir;
+      }
+
+      force_r *= 2.0;
+      Force & f_j = f_1[j];
       register BigReal tmp_x = force_r * p_ij_x;
       virial_xx += tmp_x * p_ij_x;
       virial_xy += tmp_x * p_ij_y;
@@ -575,9 +432,30 @@ FULL
       }
       )
 
-      FULL
-      (
+      FULL(
+      BigReal slow_b = scor_i[1]; 
+      BigReal slow_c = scor_i[2]; 
+      BigReal slow_d = scor_i[3]; 
+      if ( modf ) {
+        const BigReal* const slow_i = slow_table + 4*table_i;
+        slow_a -= modf * slow_i[0];
+        slow_b -= modf * slow_i[1];
+        slow_c -= modf * slow_i[2];
+        slow_d -= modf * slow_i[3];
+      }
+
+      register BigReal slow_val =
+	( ( diffa * slow_d + slow_c ) * diffa + slow_b ) * diffa + slow_a;
+      register BigReal slow_dir =
+	( 3.0 * diffa * slow_d + 2.0 * slow_c ) * diffa + slow_b;
+
+      fullElectEnergy += kqq * slow_val;
+      BigReal fullforce_r = -1.0 * kqq * slow_dir;
+      
+
       {
+      fullforce_r *= 2.0;
+      Force & fullf_j = fullf_1[j];
       register BigReal tmp_x = fullforce_r * p_ij_x;
       fullElectVirial_xx += tmp_x * p_ij_x;
       fullElectVirial_xy += tmp_x * p_ij_y;

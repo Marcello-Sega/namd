@@ -48,15 +48,12 @@ public:
 
   static void (*calcPair)(nonbonded *);
   static void (*calcSelf)(nonbonded *);
-  static void (*calcExcl)(nonbonded *);
 
   static void (*calcFullPair)(nonbonded *);
   static void (*calcFullSelf)(nonbonded *);
-  static void (*calcFullExcl)(nonbonded *);
 
   static void (*calcSlowPair)(nonbonded *);
   static void (*calcSlowSelf)(nonbonded *);
-  static void (*calcSlowExcl)(nonbonded *);
 
   enum { exclChecksumIndex,
 	 electEnergyIndex, fullElectEnergyIndex, vdwEnergyIndex,
@@ -72,6 +69,11 @@ public:
   static BigReal dielectric_1;
   static const LJTable* ljTable;
   static const Molecule* mol;
+  static BigReal r2_delta, r2_delta_1;
+  static BigReal *table_alloc;
+  static BigReal *fast_table;
+  static BigReal *scor_table;
+  static BigReal *slow_table;
   static BigReal scaling;
   static BigReal scale14;
   static Real switchOn;
@@ -98,64 +100,13 @@ public:
 	return(x*x+y*y+z*z);
 	}
 
-  // for splitting
-  // No splitting
-  static void calc_pair (nonbonded *);
-  static void calc_pair_fullelect (nonbonded *);
-  static void calc_pair_fullelect_pme (nonbonded *);
-  static void calc_pair_slow_fullelect (nonbonded *);
-  static void calc_pair_slow_fullelect_pme (nonbonded *);
-  static void calc_self (nonbonded *);
-  static void calc_self_fullelect (nonbonded *);
-  static void calc_self_fullelect_pme (nonbonded *);
-  static void calc_self_slow_fullelect (nonbonded *);
-  static void calc_self_slow_fullelect_pme (nonbonded *);
-  static void calc_excl (nonbonded *);
-  static void calc_excl_fullelect (nonbonded *);
-  static void calc_excl_fullelect_pme (nonbonded *);
-  static void calc_excl_slow_fullelect (nonbonded *);
-  static void calc_excl_slow_fullelect_pme (nonbonded *);
-  inline static void shifting(BigReal &, BigReal &,
-		       const BigReal &, const BigReal &,
-		       const BigReal &, const BigReal &);
+  static void calc_pair(nonbonded *);
+  static void calc_pair_fullelect(nonbonded *);
+  static void calc_pair_slow_fullelect(nonbonded *);
 
-  // C1 Splitting
-  static void calc_pair_c1 (nonbonded *);
-  static void calc_pair_fullelect_c1 (nonbonded *);
-  static void calc_pair_fullelect_pme_c1 (nonbonded *);
-  static void calc_pair_slow_fullelect_c1 (nonbonded *);
-  static void calc_pair_slow_fullelect_pme_c1 (nonbonded *);
-  static void calc_self_c1 (nonbonded *);
-  static void calc_self_fullelect_c1 (nonbonded *);
-  static void calc_self_fullelect_pme_c1 (nonbonded *);
-  static void calc_self_slow_fullelect_c1 (nonbonded *);
-  static void calc_self_slow_fullelect_pme_c1 (nonbonded *);
-  static void calc_excl_c1 (nonbonded *);
-  static void calc_excl_fullelect_c1 (nonbonded *);
-  static void calc_excl_fullelect_pme_c1 (nonbonded *);
-  static void calc_excl_slow_fullelect_c1 (nonbonded *);
-  static void calc_excl_slow_fullelect_pme_c1 (nonbonded *);
-  inline static void c1splitting(BigReal &, BigReal &,
- 			  const BigReal &, const BigReal &, const BigReal &);
-
-  // XPLOR Splitting
-  static void calc_pair_xplor (nonbonded *);
-  static void calc_pair_fullelect_xplor (nonbonded *);
-  static void calc_pair_fullelect_pme_xplor (nonbonded *);
-  static void calc_pair_slow_fullelect_xplor (nonbonded *);
-  static void calc_pair_slow_fullelect_pme_xplor (nonbonded *);
-  static void calc_self_xplor (nonbonded *);
-  static void calc_self_fullelect_xplor (nonbonded *);
-  static void calc_self_fullelect_pme_xplor (nonbonded *);
-  static void calc_self_slow_fullelect_xplor (nonbonded *);
-  static void calc_self_slow_fullelect_pme_xplor (nonbonded *);
-  static void calc_excl_xplor (nonbonded *);
-  static void calc_excl_fullelect_xplor (nonbonded *);
-  static void calc_excl_fullelect_pme_xplor (nonbonded *);
-  static void calc_excl_slow_fullelect_xplor (nonbonded *);
-  static void calc_excl_slow_fullelect_pme_xplor (nonbonded *);
-  inline static void xplorsplitting(BigReal &, BigReal &,
-			     const BigReal &,const BigReal &);
+  static void calc_self(nonbonded *);
+  static void calc_self_fullelect(nonbonded *);
+  static void calc_self_slow_fullelect(nonbonded *);
 
 };
 
