@@ -238,19 +238,13 @@ void ComputeTcl::initialize() {
   // Get the script
   StringList *script = Node::Object()->configList->find("tclForcesScript");
 
-  Tcl_DString cmd;
-  Tcl_DStringInit(&cmd);
-
-  for ( ; script; script = script->next) {
-    Tcl_DStringAppend(&cmd,script->data,-1);
-    Tcl_DStringAppend(&cmd,"\n",-1);
+  for ( ; script; script = script->next ) {
+    int code;
+    if ( script->data[0] == '{' ) code = Tcl_Eval(interp,script->data+1);
+    else code = Tcl_EvalFile(interp,script->data);
+    if (*interp->result != 0) CPrintf("TCL: %s\n",interp->result);
+    if (code != TCL_OK) NAMD_die("TCL error in global force initialization!");
   }
-
-  int code = Tcl_Eval(interp,cmd.string);
-  if (*interp->result != 0) CPrintf("TCL: %s\n",interp->result);
-  if (code != TCL_OK) NAMD_die("TCL error in global force initialization!");
-
-  Tcl_DStringFree(&cmd);
 
   Tcl_DeleteCommand(interp, "addatom");
 #endif
@@ -306,12 +300,17 @@ void ComputeTcl::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1998/02/13 22:02:40 $
+ *	$Revision: 1.5 $	$Date: 1998/02/14 09:55:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeTcl.C,v $
+ * Revision 1.5  1998/02/14 09:55:23  jim
+ * Final changes to allow inline reading of { } delimited input.
+ * Strings read this way begin with a { but do not end with a }.
+ * This was done to allow inlines to be readily distinguishable.
+ *
  * Revision 1.4  1998/02/13 22:02:40  jim
  * Added script reading from config file and used streams in free energy.
  *

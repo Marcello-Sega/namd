@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1033 $  $Date: 1998/02/13 22:02:42 $
+ *  $Revision: 1.1034 $  $Date: 1998/02/14 09:55:24 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,11 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1034  1998/02/14 09:55:24  jim
+ * Final changes to allow inline reading of { } delimited input.
+ * Strings read this way begin with a { but do not end with a }.
+ * This was done to allow inlines to be readily distinguishable.
+ *
  * Revision 1.1033  1998/02/13 22:02:42  jim
  * Added script reading from config file and used streams in free energy.
  *
@@ -432,7 +437,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1033 1998/02/13 22:02:42 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1034 1998/02/14 09:55:24 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -2235,6 +2240,13 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
      current = config->find("tclForcesScript");
 
+     for ( ; current; current = current->next ) {
+
+     if ( current->data[0] == '{' ) {
+       iout << iINFO << "TCL GLOBAL FORCES SCRIPT INLINED IN CONFIG FILE\n";
+       continue;
+     }
+
      if ( (cwd == NULL) || (current->data[0] == '/') )
      {
        strcpy(filename, current->data);
@@ -2246,6 +2258,8 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
      }
 
      iout << iINFO << "TCL GLOBAL FORCES SCRIPT   " << filename << "\n";
+
+     }
    }
 
    if (freeEnergyOn)
@@ -2253,6 +2267,13 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
      iout << iINFO << "FREE ENERGY PERTURBATION ACTIVE\n";
 
      current = config->find("freeEnergyConfig");
+
+     for ( ; current; current = current->next ) {
+
+     if ( current->data[0] == '{' ) {
+       iout << iINFO << "FREE ENERGY PERTURBATION SCRIPT INLINED IN CONFIG FILE\n";
+       continue;
+     }
 
      if ( (cwd == NULL) || (current->data[0] == '/') )
      {
@@ -2265,6 +2286,8 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
      }
 
      iout << iINFO << "FREE ENERGY PERTURBATION SCRIPT   " << filename << "\n";
+
+     }
    }
 
    if (globalOn && ! dihedralOn)
@@ -2865,12 +2888,17 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1033 $  $Date: 1998/02/13 22:02:42 $
+ *  $Revision: 1.1034 $  $Date: 1998/02/14 09:55:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1034  1998/02/14 09:55:24  jim
+ * Final changes to allow inline reading of { } delimited input.
+ * Strings read this way begin with a { but do not end with a }.
+ * This was done to allow inlines to be readily distinguishable.
+ *
  * Revision 1.1033  1998/02/13 22:02:42  jim
  * Added script reading from config file and used streams in free energy.
  *

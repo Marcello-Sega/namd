@@ -94,11 +94,21 @@ void ComputeFreeEnergy::initialize() {
 
   configMsg = new (MsgIndex(ComputeGlobalConfigMsg)) ComputeGlobalConfigMsg;
 
-  // Get the path for our script
+  // Get our script
   StringList *script = Node::Object()->configList->find("freeEnergyConfig");
 
   for ( ; script; script = script->next) {
-    config << script->data << "\n";
+    if ( script->data[0] == '{' ) {  // this is a flag, no } at end
+      config << script->data + 1;    // so skip it at beginning
+    } else {
+      ifstream infile(script->data);
+      if ( infile ) infile.get(*config.rdbuf(),'\0');
+      if ( ! infile ) {
+	char errmsg[100];
+	sprintf(errmsg,"Error trying to read file %s!\n",script->data);
+	NAMD_die(errmsg);
+      }
+    }
   }
   config.flush();
 
@@ -135,12 +145,17 @@ void ComputeFreeEnergy::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1998/02/13 22:02:39 $
+ *	$Revision: 1.5 $	$Date: 1998/02/14 09:55:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFreeEnergy.C,v $
+ * Revision 1.5  1998/02/14 09:55:22  jim
+ * Final changes to allow inline reading of { } delimited input.
+ * Strings read this way begin with a { but do not end with a }.
+ * This was done to allow inlines to be readily distinguishable.
+ *
  * Revision 1.4  1998/02/13 22:02:39  jim
  * Added script reading from config file and used streams in free energy.
  *

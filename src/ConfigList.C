@@ -11,7 +11,7 @@
  *
  *	$RCSfile: ConfigList.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1998/02/13 22:02:41 $
+ *	$Revision: 1.1007 $	$Date: 1998/02/14 09:55:23 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -41,6 +41,11 @@
  * REVISION HISTORY:
  *
  * $Log: ConfigList.C,v $
+ * Revision 1.1007  1998/02/14 09:55:23  jim
+ * Final changes to allow inline reading of { } delimited input.
+ * Strings read this way begin with a { but do not end with a }.
+ * This was done to allow inlines to be readily distinguishable.
+ *
  * Revision 1.1006  1998/02/13 22:02:41  jim
  * Added script reading from config file and used streams in free energy.
  *
@@ -125,9 +130,10 @@
  * Initial revision
  *
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ConfigList.C,v 1.1006 1998/02/13 22:02:41 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ConfigList.C,v 1.1007 1998/02/14 09:55:23 jim Exp $";
 
 #include <iostream.h>
+#include <strstream.h>
 #include <string.h> // for strncpy, strcasecmp
 #include <ctype.h>   // for isspace
 #include <stdio.h>   // Yes, I do use stdio
@@ -295,30 +301,46 @@ ConfigList::ConfigList(const char *filename)
 
    // check if the data element begins with a '{'
    if (datastart[0] == '{') {
+     // note that initial '{' will be intact (for a flag), but final '}' will be removed
+     ostrstream alldata;
      char newdata[1000];
      int found_end = 0;
-     int open_brace_count = 1;
-     while (fgets(newdata, 999, infile)) {
-       linenumber ++;
+     int open_brace_count = 0;
+     char *newline = datastart;
+
+     while ( 1 ) {
        int i;
+       int escape_next = 0;
        for (i=0; i<1000; i++) {
-	 if (! newdata[i]) {
+	 if (! newline[i]) {
 	   break;
          }
-	 if (newdata[i] == '{' && ( ! i || newdata[i-1] != '\\' ) ) {
+	 if (escape_next) {
+	   escape_next = 0;
+	   continue;
+	 }
+	 if (newline[i] == '\\' && ! escape_next) {
+	   escape_next = 1;
+	 }
+	 if (newline[i] == '{' && ! escape_next) {
 	   ++open_brace_count;
 	 }
-	 if (newdata[i] == '}' && ( ! i || newdata[i-1] != '\\' ) ) {
+	 if (newline[i] == '}' && ! escape_next) {
 	   if ( found_end = ! --open_brace_count ) {
-	     newdata[i] = '\n';
-	     newdata[i+1] = 0;
+	     newline[i] = '\n';
+	     newline[i+1] = 0;
 	     break;
 	   }
 	 }
        }
-       add_element(namestart, nameend-namestart+1, newdata, strlen(newdata)-1);
+       alldata << newline;
        if (found_end) break;
+       newline = newdata;
+       if ( ! fgets(newdata, 999, infile) ) break;
+       linenumber ++;
      }
+     add_element(namestart, nameend-namestart+1, alldata.str(), alldata.pcount());
+     // delete string?
      if (!found_end) {
        *(nameend+1) = 0;
        sprintf(newdata, "configuration file ended early while parsing line "
@@ -399,12 +421,17 @@ main()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1998/02/13 22:02:41 $
+ *	$Revision: 1.1007 $	$Date: 1998/02/14 09:55:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ConfigList.C,v $
+ * Revision 1.1007  1998/02/14 09:55:23  jim
+ * Final changes to allow inline reading of { } delimited input.
+ * Strings read this way begin with a { but do not end with a }.
+ * This was done to allow inlines to be readily distinguishable.
+ *
  * Revision 1.1006  1998/02/13 22:02:41  jim
  * Added script reading from config file and used streams in free energy.
  *
