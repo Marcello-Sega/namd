@@ -100,6 +100,7 @@ int Tcl_AppInit(Tcl_Interp *interp) {
 }
 
 int main(int argc, char **argv) {
+  printf("PSFGEN from NAMD %s for %s\n",NAMD_VERSION,NAMD_PLATFORM);
   Tcl_Main(argc,argv,Tcl_AppInit);
   /* Never gets here; Tcl_Main evaluates 'exit' in the interpreter */
   exit(0);
