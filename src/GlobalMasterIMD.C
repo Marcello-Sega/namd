@@ -25,6 +25,7 @@ struct vmdforce {
   int index;
   Vector force;
   int operator <(const vmdforce& v) {return index < v.index;}
+  // XXX the following is an abuse of overloading!
   int operator ==(const vmdforce& v) {return index == v.index;}
   vmdforce& operator=(const vmdforce& v) {
     index=v.index;
@@ -165,16 +166,25 @@ int GlobalMasterIMD::get_vmd_forces() {
           vnew.index = vmd_atoms[i];
           if ( (vtest=vmdforces.find(vnew)) != NULL) {
             // find was successful, so overwrite the old force values
-            vtest->force.x = vmd_forces[3*i];
-            vtest->force.y = vmd_forces[3*i+1];
-            vtest->force.z = vmd_forces[3*i+2];
+            if (vmd_forces[3*i] != 0.0f || vmd_forces[3*i+1] != 0.0f
+                || vmd_forces[3*i+2] != 0.0f) {
+              vtest->force.x = vmd_forces[3*i];
+              vtest->force.y = vmd_forces[3*i+1];
+              vtest->force.z = vmd_forces[3*i+2];
+            } else {
+              // or delete it from the list if the new force is ZERO
+              vmdforces.del(vnew);
+            }
           }
           else {
-            // Create a new entry in the table
-            vnew.force.x = vmd_forces[3*i];
-            vnew.force.y = vmd_forces[3*i+1];
-            vnew.force.z = vmd_forces[3*i+2];
-            vmdforces.add(vnew);
+            // Create a new entry in the table if the new force isn't ZERO
+            if (vmd_forces[3*i] != 0.0f || vmd_forces[3*i+1] != 0.0f
+                || vmd_forces[3*i+2] != 0.0f) {
+              vnew.force.x = vmd_forces[3*i];
+              vnew.force.y = vmd_forces[3*i+1];
+              vnew.force.z = vmd_forces[3*i+2];
+              vmdforces.add(vnew);
+            }
           }
         } 
         retval = 1;
