@@ -296,15 +296,20 @@ template <class Elem> class UniqueSetRaw {
     // Utilities
 
     int findSize(int size) {
-      const int hashPrimes[] 
-        = {11,31,101,307,1009,3001,10007,30011,100003,300007,1000003};
-      const int hashPrimesSize = 11;
-      for (int i=0; i<hashPrimesSize; i++) {
-        if (hashPrimes[i] > size/2) {
-          return(hashPrimes[i]);
-        }
-      }
-      return(hashPrimes[hashPrimesSize-1]);
+      size /= 2;
+      int rval;
+      if ( ( rval = 11 ) <= size )
+       if ( ( rval = 31 ) <= size )
+        if ( ( rval = 101 ) <= size )
+         if ( ( rval = 307 ) <= size )
+          if ( ( rval = 1009 ) <= size )
+           if ( ( rval = 3001 ) <= size )
+            if ( ( rval = 10007 ) <= size )
+             if ( ( rval = 30011 ) <= size )
+              if ( ( rval = 100003 ) <= size )
+               if ( ( rval = 300007 ) <= size )
+                rval = 1000003;
+      return rval;
     }
 
     void cleanUp(void) {
