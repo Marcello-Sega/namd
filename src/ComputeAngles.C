@@ -45,44 +45,18 @@ void AngleElem::addTuplesForAtom
       }
 }
 
-BigReal angleForce (
-		const Position pos1, const Position pos2, const Position pos3,
-		Force *force1, Force *force2, Force *force3,
-		const Index angleType);
-
 BigReal AngleElem::computeForce(void)
 {
-    return
-    angleForce(p[0]->x[localIndex[0]],
-	       p[1]->x[localIndex[1]],
-	       p[2]->x[localIndex[2]],
-	       p[0]->f+localIndex[0],
-	       p[1]->f+localIndex[1],
-	       p[2]->f+localIndex[2],
-	       angleType);
-}
+  DebugM(3, "::computeForce() localIndex = " << localIndex[0] << " "
+               << localIndex[1] << " " << localIndex[2] << endl);
 
+  const Position & pos1 = p[0]->x[localIndex[0]];
+  const Position & pos2 = p[1]->x[localIndex[1]];
+  const Position & pos3 = p[2]->x[localIndex[2]];
+  Force & force1 = p[0]->f[localIndex[0]];
+  Force & force2 = p[1]->f[localIndex[1]];
+  Force & force3 = p[2]->f[localIndex[2]];
 
-
-/************************************************************************ 
-/*									*/
-/*			FUNCTION angleForce				*/
-/*									*/
-/*   INPUTS:								*/
-/*      pos1,2,3 - position of atoms					*/
-/*      angleType - desired angle (for k, k_ub, r,ub, theta0)		*/
-/*									*/
-/*   OUTPUTS:								*/
-/*      force1,2,3 - forces to be added to the atoms			*/
-/*		These forces are not initialized here!  Just added to..	*/
-/*	returns - energy from the angle					*/
-/*									*/
-/************************************************************************/
-BigReal angleForce (
-		const Position pos1, const Position pos2, const Position pos3,
-		Force *force1, Force *force2, Force *force3,
-		const Index angleType)
-{
   Vector r12, r32, r13;	// vector between atoms 1,2 and 3,2
   BigReal d12, d32, d13;	// distances between atoms
   BigReal theta;	// theta
@@ -92,7 +66,7 @@ BigReal angleForce (
   BigReal c1,c2;	// constant factors involved in force
   BigReal energy;	// energy from the angle
 
-  CPrintf("ComputeAngles::angleForce() -- starting wiht angle type %d\n",(int)angleType);
+  DebugM(3, "::computeForce() -- starting with angle type " << angleType << endl);
 
   // get the angle information
   Real k, theta0, k_ub, r_ub;
@@ -104,6 +78,8 @@ BigReal angleForce (
 
   d12 = r12.length();
   d32 = r32.length();
+
+  DebugM(3, "::computeForce() d12 = " << d12 << " d32 = " << d32 << endl);
 
   //  Make sure that the cosine value is acceptable.  With roundoff, you
   //  can get values like 1.0+2e-16, which makes acos puke.  So instead,
@@ -120,6 +96,8 @@ BigReal angleForce (
   //  Compare it to the rest angle
   diff = theta - theta0;
 
+  DebugM(3, "::computeForce() theta = " << theta << " theta0 = " << theta0 << endl);
+
   //  Add the energy from this angle to the total energy
   energy = k *diff*diff;
 
@@ -133,9 +111,10 @@ BigReal angleForce (
   c2 = diff/d32;
 
   //  Calculate the actual forces
-  *force1 += c1*(r12*cos_theta - r32);;
-  *force3 += c2*(r32*cos_theta - r12);;
-  *force2 -= (*force1+*force3);
+  r13 = c1*(r12*cos_theta - r32);
+  force1 += r13; force2 -= r13;
+  r13 = c2*(r32*cos_theta - r12);
+  force3 += r13; force2 -= r13;
 
   //  Check to see if we need to do the Urey-Bradley term
   //  Forces are used only when atom1 or atom3 are local
@@ -152,11 +131,11 @@ BigReal angleForce (
 	diff *= -2.0*k_ub / d13;
 	r13 *= diff;
 
-	*force1 += r13;
-	*force3 -= r13;
+	force1 += r13;
+	force3 -= r13;
   }
 
-  CPrintf("ComputeAngles::angleForce() -- ending with delta energy %f\n",(float)energy);
+  DebugM(3, "::computeForce() -- ending with delta energy " << energy << endl);
   return(energy);
 }
 

@@ -74,7 +74,9 @@ public:
 class ComputeAngles : public ComputeHomeTuples<AngleElem>
 {
 public:
+
   ComputeAngles(ComputeID c) : ComputeHomeTuples<AngleElem>(c) { ; }
+
 };
 
 #endif
@@ -83,12 +85,15 @@ public:
  *
  *	$RCSfile: ComputeAngles.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/11/19 06:58:37 $
+ *	$Revision: 1.7 $	$Date: 1996/11/22 01:45:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.h,v $
+ * Revision 1.7  1996/11/22 01:45:28  jim
+ * restructured, fixed bugs, now seems to work
+ *
  * Revision 1.6  1996/11/19 06:58:37  jim
  * first compiling templated version, needed ugly void* hack
  *
