@@ -120,6 +120,7 @@ OBJS = \
 	$(DSTDIR)/PatchMap.o \
 	$(DSTDIR)/PDB.o \
 	$(DSTDIR)/PDBData.o \
+	$(DSTDIR)/Priorities.o \
 	$(DSTDIR)/ProxyMgr.o \
 	$(DSTDIR)/ProxyPatch.o \
 	$(DSTDIR)/Rebalancer.o \
