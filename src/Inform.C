@@ -81,7 +81,7 @@ Inform& Inform::operator<<(double f)
 
 void Inform::display_message()
 {
-    printf("Node%d:%s>%s\n",0,name,buffer);
+    CPrintf("Node%d:%s>%s\n",0,name,buffer);
     buffer[0] = '\0';
 }
 
@@ -100,12 +100,17 @@ Inform& sendmsg(Inform& inform)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:20 $
+ *	$Revision: 1.1002 $	$Date: 1997/08/13 21:00:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Inform.C,v $
+ * Revision 1.1002  1997/08/13 21:00:16  brunner
+ * Made binary files always use 32 bits for the number of atoms, so that it
+ * works on both 64 and 32-bit machines.  Also, I made Inform.C use CPrintf,
+ * to fix the I/O buffering.
+ *
  * Revision 1.1001  1997/03/19 11:54:20  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

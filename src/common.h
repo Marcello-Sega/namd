@@ -21,6 +21,9 @@
 
 #ifdef T3E
 #include <fp.h>
+typedef	short	int32;
+#else
+typedef	int	int32;
 #endif
 
 //  Redefine new and delete if the MTS fast malloc is being used
@@ -253,12 +256,17 @@ int  Fclose(FILE *fout);
  *
  *	$RCSfile: common.h,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/08/01 18:45:22 $
+ *	$Revision: 1.1008 $	$Date: 1997/08/13 21:00:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.h,v $
+ * Revision 1.1008  1997/08/13 21:00:19  brunner
+ * Made binary files always use 32 bits for the number of atoms, so that it
+ * works on both 64 and 32-bit machines.  Also, I made Inform.C use CPrintf,
+ * to fix the I/O buffering.
+ *
  * Revision 1.1007  1997/08/01 18:45:22  brunner
  * Added #ifdef T3E, for T3E specific include
  *

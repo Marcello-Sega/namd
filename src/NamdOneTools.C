@@ -36,7 +36,7 @@ extern "C" long int lrand48(void);
 /************************************************************************/
 
 void read_binary_coors(char *fname, PDB *pdbobj) {
-  int n;			//  Number of atoms from file
+  int32 n;			//  Number of atoms from file
   Vector *newcoords;	//  Array of vectors to hold coordinates from file
   FILE *fp;		//  File descriptor
 
@@ -49,7 +49,7 @@ void read_binary_coors(char *fname, PDB *pdbobj) {
   }
 
   //  read the number of coordinates in this file
-  fread(&n, sizeof(int), 1, fp);
+  fread(&n, sizeof(int32), 1, fp);
 
   //  Die if this doesn't match the number in the system
   if (n != pdbobj->num_atoms()) {
@@ -314,13 +314,18 @@ void remove_com_motion(Vector *vel, Molecule *structure, int n)
 * RCS INFORMATION:
 *
 *	$RCSfile: NamdOneTools.C,v $
-*	$Author: nealk $	$Locker:  $		$State: Exp $
-*	$Revision: 1.7 $	$Date: 1997/04/07 14:54:30 $
+*	$Author: brunner $	$Locker:  $		$State: Exp $
+*	$Revision: 1.8 $	$Date: 1997/08/13 21:00:17 $
 *
 ***************************************************************************
 * REVISION HISTORY:
 *
 * $Log: NamdOneTools.C,v $
+* Revision 1.8  1997/08/13 21:00:17  brunner
+* Made binary files always use 32 bits for the number of atoms, so that it
+* works on both 64 and 32-bit machines.  Also, I made Inform.C use CPrintf,
+* to fix the I/O buffering.
+*
 * Revision 1.7  1997/04/07 14:54:30  nealk
 * Changed fclose() to Fclose() (found in common.[Ch]) to use with popen().
 * Also corrected compilation warnings in Set.[Ch].
@@ -353,4 +358,4 @@ void remove_com_motion(Vector *vel, Molecule *structure, int n)
 *
 ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdOneTools.C,v 1.7 1997/04/07 14:54:30 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdOneTools.C,v 1.8 1997/08/13 21:00:17 brunner Exp $";

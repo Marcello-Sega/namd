@@ -8,7 +8,7 @@
  * This object outputs the data collected on the master node
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Output.C,v 1.6 1997/04/10 17:28:45 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Output.C,v 1.7 1997/08/13 21:00:18 brunner Exp $";
 
 #include <string.h>
 #include <stdlib.h>
@@ -905,6 +905,7 @@ void Output::write_binary_file(char *fname, int n, Vector *vecs)
 
 {
 	FILE *fp;		//  File descriptor
+	int32 n32 = n;
 
 	//  open the file and die if the open fails
 	if ( (fp = fopen(fname, "w")) == NULL)
@@ -916,7 +917,7 @@ void Output::write_binary_file(char *fname, int n, Vector *vecs)
 	}
 
 	//  Write out the number of atoms and the vectors
-	fwrite(&n, sizeof(int), 1, fp);
+	fwrite(&n32, sizeof(int32), 1, fp);
 	fwrite(vecs, sizeof(Vector), n, fp);
 
 	fclose(fp);
@@ -2505,12 +2506,17 @@ void Output::output_allforcedcdfile(int timestep, int n, Vector *forces)
  *
  *	$RCSfile: Output.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1997/04/10 17:28:45 $
+ *	$Revision: 1.7 $	$Date: 1997/08/13 21:00:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Output.C,v $
+ * Revision 1.7  1997/08/13 21:00:18  brunner
+ * Made binary files always use 32 bits for the number of atoms, so that it
+ * works on both 64 and 32-bit machines.  Also, I made Inform.C use CPrintf,
+ * to fix the I/O buffering.
+ *
  * Revision 1.6  1997/04/10 17:28:45  brunner
  * Made time output in energy actually work.  The one in output doesn't do
  * anything.
