@@ -76,16 +76,18 @@ void ComputeHomeTuples<T>::mapReady() {
 
   dummy = new Force[maxProxyAtoms];
 
+  ResizeArrayIter<TuplePatchElem> tpi(tuplePatchList);
+
   /* cycle through each patch */
   DebugM(1, "ComputeHomeTuples::mapReady() - iterating over patches to get atoms" << endl);
-  for ( ai = ai.begin(); ai != ai.end(); ai++ )
+  for ( tpi = tpi.begin(); tpi != tpi.end(); tpi++ )
   {
-    Patch *p = (*ai).p;
-    DebugM(1, "ComputeHomeTuples::mapReady() - looking at patch " << (*ai).p->getPatchID() << endl );
+    Patch *p = (*tpi).p;
+    DebugM(1, "ComputeHomeTuples::mapReady() - looking at patch " <<
+	p->getPatchID() << " with " << p->getNumAtoms() << " atoms" << endl );
     AtomIDList &atomID = p->getAtomIDList();
 
-    /* cycle through each angle in the patch */
-    DebugM(1, "ComputeHomeTuples::mapReady() - patch has " << p->getNumAtoms() << " atoms\n" );
+    /* cycle through each atom in the patch */
 
     for (int i=0; i < p->getNumAtoms(); i++)
     {
