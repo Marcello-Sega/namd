@@ -6,7 +6,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.10 1996/11/22 00:18:51 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.11 1996/11/30 00:38:14 jim Exp $";
 
 #include "unistd.h"
 
@@ -28,6 +28,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.
 #include "WorkDistrib.h"
 #include "PatchMgr.top.h"
 #include "PatchMgr.h"
+#include "ComputeMgr.top.h"
+#include "ComputeMgr.h"
 
 
 // Namd(void ) is the constructor for the startup node.  It needs to
@@ -44,6 +46,10 @@ Namd::Namd(void)
   // Create PatchMgr and send it an empty message
   initmsg = new (MsgIndex(InitMsg)) InitMsg;
   group.patchMgr = new_group(PatchMgr, initmsg);
+
+  // Create ComputeMgr and send it an empty message
+  initmsg = new (MsgIndex(InitMsg)) InitMsg;
+  group.computeMgr = new_group(ComputeMgr, initmsg);
 
   // Create the Node object and send it the IDs of all the other
   // parallel objects.
@@ -85,8 +91,8 @@ void Namd::startup(char *confFile)
  * RCS INFORMATION:
  *
  *	$RCSfile: Namd.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1996/11/22 00:18:51 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.11 $	$Date: 1996/11/30 00:38:14 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -95,6 +101,9 @@ void Namd::startup(char *confFile)
  * REVISION HISTORY:
  *
  * $Log: Namd.C,v $
+ * Revision 1.11  1996/11/30 00:38:14  jim
+ * added ComputeMgr creation
+ *
  * Revision 1.10  1996/11/22 00:18:51  ari
  * *** empty log message ***
  *
