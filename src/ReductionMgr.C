@@ -28,7 +28,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1009 1997/02/13 16:17:20 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1010 1997/02/13 17:16:58 nealk Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -139,14 +139,14 @@ ReductionMgr::~ReductionMgr()
  ReductionMgr::displayData(): dump the data.
  Very useful for debugging.
  *******************************************/
+#if PANIC > 0
 void ReductionMgr::displayData(ReductionMgrData *current, ReductionTag tag)
 {
-   #if PANIC > 0
    iout << iPE << " seq=" << current->sequenceNum
 	<< " " << tagString[tag]
 	<< " " << current->tagData[tag] << "\n" << endi;
-   #endif
 } /* ReductionMgr::displayData() */
+#endif
 
 /*******************************************
  ReductionMgr::displayData(): dump the data.
@@ -502,7 +502,8 @@ void	ReductionMgr::gotAllData(ReductionMgrData *current)
  more == 1 signals immediate submission of other data
  There should be 1 submit per register.
  *******************************************/
-void	ReductionMgr::submit(int seq, ReductionTag tag, BigReal data, int more)
+void	ReductionMgr::submit(int seq, ReductionTag tag, BigReal data,
+			     int /* more */)
 {
   #if PANIC > 0
   if (panicMode > 1)
@@ -631,22 +632,6 @@ void	ReductionMgr::submit(int seq, ReductionTag tag)
 
     // all done here!
   }
-} /* ReductionMgr::submit() */
-
-/*******************************************
- ReductionMgr::submit(): pass on submitting data
- *******************************************/
-void	ReductionMgr::submit(int seq, ReductionTag tag, int more)
-{
-  #if PANIC > 0
-  if (panicMode > 1)
-  {
-    iout << iERRORF << "Panic due to wrong mode: " << panicMode << "\n" << endi;
-    NAMD_die("Panic due to wrong mode");
-  }
-  panicMode = 1;
-  #endif
-  DebugM(2,"Other submit tag=" << tag << "\n");
 } /* ReductionMgr::submit() */
 
 /*******************************************
