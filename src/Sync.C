@@ -33,7 +33,7 @@ extern int proxySendSpanning, proxyRecvSpanning;
 
 // make sure all HomePatches get their positions data and sendProxyData to 
 // their proxies before computes get positionsReady.
-int useSync = 0;
+int useSync = 1;
 
 // useProxySync will make sure all proxies get updated before computes' 
 // positionsReady triggered so that real computation starts.
