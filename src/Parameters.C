@@ -414,19 +414,19 @@ void Parameters::read_parameter_file(char *fname)
 
 //****** BEGIN CHARMM/XPLOR type changes
 /************************************************************************/
-/*									*/
-/*			FUNCTION read_charmm_paramter_file		*/
-/*									*/
-/*   INPUTS:								*/
-/*	fname - name of the parameter file to read			*/
-/*									*/
-/*	This function reads in a CAHRMM parameter file and adds the     */ 
+/*                                                                        */
+/*                        FUNCTION read_charmm_paramter_file                */
+/*                                                                        */
+/*   INPUTS:                                                                */
+/*        fname - name of the parameter file to read                        */
+/*                                                                        */
+/*        This function reads in a CAHRMM parameter file and adds the     */ 
 /*   parameters from this file to the current group of parameters.      */
 /*   The basic logic of the routine is to first find out what type of   */
 /*   parameter we have in the file. Then look at each line in turn      */
 /*   and call the appropriate routine to add the parameters until we hit*/
 /*   a new type of parameter or EOF.                                    */
-/*									*/
+/*                                                                        */
 /************************************************************************/
 
 void Parameters::read_charmm_parameter_file(char *fname)
@@ -435,18 +435,18 @@ void Parameters::read_charmm_parameter_file(char *fname)
   int  par_type=0;         //  What type of parameter are we currently
                            //  dealing with? (vide infra)
   int  skipline;           //  skip this line?
-  char buffer[512];	   //  Buffer to store each line of the file
-  char first_word[512];	   //  First word of the current line
-  FILE *pfile;		   //  File descriptor for the parameter file
+  char buffer[512];           //  Buffer to store each line of the file
+  char first_word[512];           //  First word of the current line
+  FILE *pfile;                   //  File descriptor for the parameter file
 
   /*  Check to make sure that we haven't previously been told     */
-  /*  that all the files were read				*/
+  /*  that all the files were read                                */
   if (AllFilesRead)
   {
     NAMD_die("Tried to read another parameter file after being told that all files were read!");
   }
 
-  /*  Try and open the file					*/
+  /*  Try and open the file                                        */
   if ( (pfile = fopen(fname, "r")) == NULL)
   {
     char err_msg[256];
@@ -455,10 +455,10 @@ void Parameters::read_charmm_parameter_file(char *fname)
     NAMD_die(err_msg);
   }
 
-  /*  Keep reading in lines until we hit the EOF			*/
+  /*  Keep reading in lines until we hit the EOF                        */
   while (NAMD_read_line(pfile, buffer) != -1)
   {
-    /*  Get the first word of the line			*/
+    /*  Get the first word of the line                        */
     NAMD_find_first_word(buffer, first_word);
     skipline=0;
 
@@ -466,8 +466,8 @@ void Parameters::read_charmm_parameter_file(char *fname)
     /*  blank lines, lines that start with '!' or '*', lines that  */
     /*  start with "END".                                          */
     if (!NAMD_blank_string(buffer) &&
-	(strncmp(first_word, "!", 1) != 0) &&
- 	(strncmp(first_word, "*", 1) != 0) &&
+        (strncmp(first_word, "!", 1) != 0) &&
+         (strncmp(first_word, "*", 1) != 0) &&
         (strncasecmp(first_word, "END", 3) != 0))
     {
       /*  Now, determine the apropriate parameter type.   */
@@ -542,11 +542,11 @@ void Parameters::read_charmm_parameter_file(char *fname)
                (strncasecmp(first_word, "cton", 4) == 0) ) 
       {
         if ((par_type != 5) && (par_type != 6) && (par_type != 7))
-	{
-	  char err_msg[512];
+        {
+          char err_msg[512];
 
-	  sprintf(err_msg, "ERROR IN CHARMM PARAMETER FILE %s\nLINE=*%s*",fname, buffer);
-	  NAMD_die(err_msg);
+          sprintf(err_msg, "ERROR IN CHARMM PARAMETER FILE %s\nLINE=*%s*",fname, buffer);
+          NAMD_die(err_msg);
         }
         else 
         {
@@ -555,12 +555,12 @@ void Parameters::read_charmm_parameter_file(char *fname)
       }        
       else if (par_type == 0)
       {
-	/*  This is an unknown paramter.        */
-	/*  This is BAD				*/
-	char err_msg[512];
+        /*  This is an unknown paramter.        */
+        /*  This is BAD                                */
+        char err_msg[512];
 
-	sprintf(err_msg, "UNKNOWN PARAMETER IN CHARMM PARAMETER FILE %s\nLINE=*%s*",fname, buffer);
-	NAMD_die(err_msg);
+        sprintf(err_msg, "UNKNOWN PARAMETER IN CHARMM PARAMETER FILE %s\nLINE=*%s*",fname, buffer);
+        NAMD_die(err_msg);
       }
     }
     else
@@ -571,7 +571,7 @@ void Parameters::read_charmm_parameter_file(char *fname)
     if ( (par_type != 0) && (!skipline) )
     {
       /*  Now, call the appropriate function based    */
-      /*  on the type of parameter we have		*/
+      /*  on the type of parameter we have                */
       /*  I know, this should really be a switch ...  */
       if (par_type == 1)
       {
@@ -605,13 +605,13 @@ void Parameters::read_charmm_parameter_file(char *fname)
       }
       else if (par_type == 7)
       {
-        add_hb_pair_param(buffer);		  
+        add_hb_pair_param(buffer);                  
       }
       else
       {
         /*  This really should not occour!      */
         /*  This is an internal error.          */
-        /*  This is VERY BAD			*/
+        /*  This is VERY BAD                        */
         char err_msg[512];
 
         sprintf(err_msg, "INTERNAL ERROR IN CHARMM PARAMETER FILE %s\nLINE=*%s*",fname, buffer);
@@ -620,12 +620,12 @@ void Parameters::read_charmm_parameter_file(char *fname)
     }
   }
 
-  /*  Close the file						*/
+  /*  Close the file                                                */
   fclose(pfile);
 
   return;
 }
-/*			END OF FUNCTION read_charmm_paramter_file		*/
+/*                        END OF FUNCTION read_charmm_paramter_file                */
 //****** END CHARMM/XPLOR type changes
 
 /************************************************************************/
@@ -974,7 +974,7 @@ struct angle_params *Parameters::add_to_angle_tree(struct angle_params *new_node
             (tree->angle != new_node->angle) ||
             (tree->k_ub != new_node->k_ub) ||
             (tree->r_ub != new_node->r_ub))
-	{
+        {
           iout << "\n" << iWARN << "DUPLICATE ANGLE ENTRY FOR "
             << new_node->atom1name << "-"
             << new_node->atom2name << "-"
@@ -987,7 +987,7 @@ struct angle_params *Parameters::add_to_angle_tree(struct angle_params *new_node
             << "\n   USING VALUES  k="
             << new_node->forceconstant << "  theta0="
             << new_node->angle << " k_ub="
-	    << new_node->k_ub << " r_ub=" << new_node->r_ub 
+            << new_node->k_ub << " r_ub=" << new_node->r_ub 
             << "\n" << endi;
 
           tree->forceconstant=new_node->forceconstant;
@@ -1341,13 +1341,13 @@ void Parameters::add_to_dihedral_list(
 
 //****** BEGIN CHARMM/XPLOR type changes
 /************************************************************************/
-/*									*/
-/*			FUNCTION add_to_charmm_dihedral_list		*/
-/*									*/
-/*   INPUTS:								*/
-/*	new_node - node that is to be added to dihedral_list		*/
-/*									*/
-/*	this function adds a new dihedral parameter to the linked list  */
+/*                                                                        */
+/*                        FUNCTION add_to_charmm_dihedral_list                */
+/*                                                                        */
+/*   INPUTS:                                                                */
+/*        new_node - node that is to be added to dihedral_list                */
+/*                                                                        */
+/*        this function adds a new dihedral parameter to the linked list  */
 /*   of dihedral parameters in CHARMM format.                           */
 /*   First, it checks for duplicates.  If a duplicate is found, a       */
 /*   warning message is printed. If the periodicity is the same as of   */
@@ -1357,47 +1357,47 @@ void Parameters::add_to_dihedral_list(
 /*   Otherwise, the node is added to the list.  This list is arranged   */
 /*   so that bonds with wildcards are placed at the tail of the list.   */
 /*   This will guarantee that if we just do a linear search, we will    */
-/*   always find an exact match before a wildcard match.		*/
-/*									*/
+/*   always find an exact match before a wildcard match.                */
+/*                                                                        */
 /************************************************************************/
 
 void Parameters::add_to_charmm_dihedral_list(
-				struct dihedral_params *new_node)
+                                struct dihedral_params *new_node)
 
 {
-	static struct dihedral_params *ptr;   //  position within list
-	static struct dihedral_params *tail;  //  Pointer to the end of 
-					      //  the list so we can add
-					      //  entries to the end of the
-					      //  list in constant time
-	int i;				      //  Loop counter
+        static struct dihedral_params *ptr;   //  position within list
+        static struct dihedral_params *tail;  //  Pointer to the end of 
+                                              //  the list so we can add
+                                              //  entries to the end of the
+                                              //  list in constant time
+        int i;                                      //  Loop counter
         int replace;                          //  replace values?
 
-	/*  If the list is currently empty, then the new node is the list*/
-	if (dihedralp == NULL)
-	{
-		dihedralp=new_node;
-		tail=new_node;
+        /*  If the list is currently empty, then the new node is the list*/
+        if (dihedralp == NULL)
+        {
+                dihedralp=new_node;
+                tail=new_node;
 
-		return;
-	}
+                return;
+        }
 
-	/*  The list isn't empty, so check for a duplicate		*/
-	ptr=dihedralp;
+        /*  The list isn't empty, so check for a duplicate                */
+        ptr=dihedralp;
 
-	while (ptr != NULL)
-	{
-		if (  ( (strcasecmp(new_node->atom1name, ptr->atom1name) == 0) &&
-		       (strcasecmp(new_node->atom2name, ptr->atom2name) == 0) &&
-		       (strcasecmp(new_node->atom3name, ptr->atom3name) == 0) &&
-		       (strcasecmp(new_node->atom4name, ptr->atom4name) == 0) ) ||
-		     ( (strcasecmp(new_node->atom4name, ptr->atom1name) == 0) &&
-		       (strcasecmp(new_node->atom3name, ptr->atom2name) == 0) &&
-		       (strcasecmp(new_node->atom2name, ptr->atom3name) == 0) &&
-		       (strcasecmp(new_node->atom1name, ptr->atom4name) == 0) )
-		       )
-		{
-			/*  Found a duplicate				*/
+        while (ptr != NULL)
+        {
+                if (  ( (strcasecmp(new_node->atom1name, ptr->atom1name) == 0) &&
+                       (strcasecmp(new_node->atom2name, ptr->atom2name) == 0) &&
+                       (strcasecmp(new_node->atom3name, ptr->atom3name) == 0) &&
+                       (strcasecmp(new_node->atom4name, ptr->atom4name) == 0) ) ||
+                     ( (strcasecmp(new_node->atom4name, ptr->atom1name) == 0) &&
+                       (strcasecmp(new_node->atom3name, ptr->atom2name) == 0) &&
+                       (strcasecmp(new_node->atom2name, ptr->atom3name) == 0) &&
+                       (strcasecmp(new_node->atom1name, ptr->atom4name) == 0) )
+                       )
+                {
+                        /*  Found a duplicate                                */
                         //****** BEGIN CHARMM/XPLOR type changes
                         /* we do not care about identical replacement */
                         int echoWarn=1;  // echo warning messages ?
@@ -1409,7 +1409,7 @@ void Parameters::add_to_charmm_dihedral_list(
                               (ptr->values[i].n == new_node->values[0].n) &&
                               (ptr->values[i].delta == new_node->values[0].delta)) 
                           {
-			    // found an identical replacement
+                            // found an identical replacement
                             echoWarn=0; 
                             break;
                           }
@@ -1418,34 +1418,34 @@ void Parameters::add_to_charmm_dihedral_list(
                   
                         if (echoWarn)
                         {
-			  iout << "\n" << iWARN << "DUPLICATE DIHEDRAL ENTRY FOR "
-			       << ptr->atom1name << "-"
-			       << ptr->atom2name << "-"
-			       << ptr->atom3name << "-"
-			       << ptr->atom4name
-			       << "\nPREVIOUS VALUES MULTIPLICITY: " << ptr->multiplicity << "\n";
+                          iout << "\n" << iWARN << "DUPLICATE DIHEDRAL ENTRY FOR "
+                               << ptr->atom1name << "-"
+                               << ptr->atom2name << "-"
+                               << ptr->atom3name << "-"
+                               << ptr->atom4name
+                               << "\nPREVIOUS VALUES MULTIPLICITY: " << ptr->multiplicity << "\n";
                           replace=0;
-			  
-			  for (i=0; i<ptr->multiplicity; i++)
-			  {
-			    iout << "  k=" << ptr->values[i].k
-			         << "  n=" << ptr->values[i].n
-			         << "  delta=" << ptr->values[i].delta << "\n";
+                          
+                          for (i=0; i<ptr->multiplicity; i++)
+                          {
+                            iout << "  k=" << ptr->values[i].k
+                                 << "  n=" << ptr->values[i].n
+                                 << "  delta=" << ptr->values[i].delta << "\n";
                             if (ptr->values[i].n == new_node->values[0].n)
-			    {
-			      iout << iWARN << "IDENTICAL PERIODICITY! REPLACING OLD VALUES BY: \n";
+                            {
+                              iout << iWARN << "IDENTICAL PERIODICITY! REPLACING OLD VALUES BY: \n";
                               ptr->values[i].k = new_node->values[0].k;
-			      ptr->values[i].delta = new_node->values[0].delta;
-			      iout <<     "  k=" << ptr->values[i].k
-			               << "  n=" << ptr->values[i].n
-			               << "  delta=" << ptr->values[i].delta<< "\n";
+                              ptr->values[i].delta = new_node->values[0].delta;
+                              iout <<     "  k=" << ptr->values[i].k
+                                       << "  n=" << ptr->values[i].n
+                                       << "  delta=" << ptr->values[i].delta<< "\n";
                               replace=1;
                               break;
                             }
-			  }
+                          }
 
                           if (!replace)
-			  {
+                          {
                             ptr->multiplicity += 1;
 
                             if (ptr->multiplicity > MAX_MULTIPLICITY)
@@ -1456,59 +1456,59 @@ void Parameters::add_to_charmm_dihedral_list(
                                       ptr->multiplicity, MAX_MULTIPLICITY);
                               NAMD_die(err_msg);
                             }
-			    iout << "INCREASING MULTIPLICITY TO: " << ptr->multiplicity << "\n";
+                            iout << "INCREASING MULTIPLICITY TO: " << ptr->multiplicity << "\n";
 
-			    i= ptr->multiplicity - 1; 
-			    ptr->values[i].k = new_node->values[0].k;
-			    ptr->values[i].n = new_node->values[0].n;
-			    ptr->values[i].delta = new_node->values[0].delta;
+                            i= ptr->multiplicity - 1; 
+                            ptr->values[i].k = new_node->values[0].k;
+                            ptr->values[i].n = new_node->values[0].n;
+                            ptr->values[i].delta = new_node->values[0].delta;
 
-			    iout <<       "  k=" << ptr->values[i].k
-			               << "  n=" << ptr->values[i].n
-			               << "  delta=" << ptr->values[i].delta<< "\n";
-		          }
+                            iout <<       "  k=" << ptr->values[i].k
+                                       << "  n=" << ptr->values[i].n
+                                       << "  delta=" << ptr->values[i].delta<< "\n";
+                          }
                         
-			  iout << endi;
+                          iout << endi;
                         }
                         //****** END CHARMM/XPLOR type changes
 
-			delete new_node;
+                        delete new_node;
 
-			return;
-		}
+                        return;
+                }
 
-		ptr=ptr->next;
-	}
+                ptr=ptr->next;
+        }
 
         /*  CHARMM and XPLOR wildcards for dihedrals are luckily the same */
-	/*  Check to see if we have any wildcards.  Since specific	*/
-	/*  entries are to take precedence, we'll put anything without  */
-	/*  wildcards at the begining of the list and anything with     */
-	/*  wildcards at the end of the list.  Then, we can just do a   */
-	/*  linear search for a bond and be guaranteed to have specific */
-	/*  entries take precendence over over wildcards	        */
-	if ( new_node->atom1wild ||
-	     new_node->atom2wild ||
-	     new_node->atom3wild ||
-	     new_node->atom4wild )
-	{
-		/*  add to the end of the list				*/
-		tail->next=new_node;
-		tail=new_node;
+        /*  Check to see if we have any wildcards.  Since specific        */
+        /*  entries are to take precedence, we'll put anything without  */
+        /*  wildcards at the begining of the list and anything with     */
+        /*  wildcards at the end of the list.  Then, we can just do a   */
+        /*  linear search for a bond and be guaranteed to have specific */
+        /*  entries take precendence over over wildcards                */
+        if ( new_node->atom1wild ||
+             new_node->atom2wild ||
+             new_node->atom3wild ||
+             new_node->atom4wild )
+        {
+                /*  add to the end of the list                                */
+                tail->next=new_node;
+                tail=new_node;
 
-		return;
-	}
-	else
-	{
-		/*  add to the head of the list				*/
-		new_node->next=dihedralp;
-		dihedralp=new_node;
+                return;
+        }
+        else
+        {
+                /*  add to the head of the list                                */
+                new_node->next=dihedralp;
+                dihedralp=new_node;
 
-		return;
-	}
+                return;
+        }
 
 }
-/*		END OF FUNCTION add_to_charmm_dihedral_list		*/
+/*                END OF FUNCTION add_to_charmm_dihedral_list                */
 //****** END CHARMM/XPLOR type changes
 
 /************************************************************************/
@@ -1542,7 +1542,7 @@ void Parameters::add_improper_param(char *buf, FILE *fd)
   int ret_code;         //  Return code
 
   //****** BEGIN CHARMM/XPLOR type changes
-  /*  Parse up the line with sscanf				*/
+  /*  Parse up the line with sscanf                                */
   if (paramType == paraXplor)
   {
     /* read XPLOR format */
@@ -1891,7 +1891,7 @@ void Parameters::add_vdw_param(char *buf)
 
   if ( epsilon < 0. || epsilon14 < 0. ) {
     iout << iWARN << "Ignoring VDW parameter with negative epsilon:\n"
-	<< buf << "\n" << endi;
+        << buf << "\n" << endi;
     return;
   }
 
@@ -2687,7 +2687,7 @@ void Parameters::assign_vdw_index(char *atomtype, Atom *atom_ptr)
     // we already had an exact match, this is never executed
     size_t windx;                      //  wildcard index
 
-    /*  Start again at the top				*/
+    /*  Start again at the top                                */
     ptr=vdwp;
   
      while (!found && (ptr!=NULL))
@@ -2707,12 +2707,12 @@ void Parameters::assign_vdw_index(char *atomtype, Atom *atom_ptr)
 
        if (comp_code == 0)
        {
-         /*  Found a match!				*/
+         /*  Found a match!                                */
          atom_ptr->vdw_type=ptr->index;
          found=1;
          char errbuf[100];
          sprintf(errbuf,"VDW TYPE NAME %s MATCHES PARAMETER TYPE NAME %s",
-			atomtype, ptr->atomname);
+                        atomtype, ptr->atomname);
          int i;
          for(i=0; i<error_msgs.size(); i++) {
            if ( strcmp(errbuf,error_msgs[i]) == 0 ) break;
@@ -2726,17 +2726,17 @@ void Parameters::assign_vdw_index(char *atomtype, Atom *atom_ptr)
        }
        else if (comp_code < 0)
        {
- 	 /*  Go to the left				*/
-		ptr=ptr->left;
+          /*  Go to the left                                */
+                ptr=ptr->left;
        }
        else
        {
-	 /*  Go to the right				*/
-		ptr=ptr->right;
+         /*  Go to the right                                */
+                ptr=ptr->right;
        }
      
      }
-	        
+                
   }
   //****** END CHARMM/XPLOR type changes
 
@@ -4780,9 +4780,9 @@ void Parameters::read_parm(const GromacsTopFile *gf, Bool min)
   for (i=0;i<NumBondParams;i++) {
     Real x0,k;
     gf->getBondParams(i,
-		      &x0, // the bond length
-		      &k,  // the spring constant
-		      &funct);           // discarded
+                      &x0, // the bond length
+                      &k,  // the spring constant
+                      &funct);           // discarded
     bond_array[i].x0 = x0;
     bond_array[i].k = k;
   }
@@ -4793,9 +4793,9 @@ void Parameters::read_parm(const GromacsTopFile *gf, Bool min)
   for (i=0;i<NumAngleParams;i++) {
     Real theta0,k;
     gf->getAngleParams(i,
-		       &theta0, // the angle size
-		       &k,      // the spring constant
-		       &funct);                // discarded
+                       &theta0, // the angle size
+                       &k,      // the spring constant
+                       &funct);                // discarded
     angle_array[i].theta0 = theta0*PI/180;
     angle_array[i].k = k;
     // Gromacs has no Urey-Bradley angle parameters, so they're set to 0
@@ -4828,13 +4828,13 @@ void Parameters::read_parm(const GromacsTopFile *gf, Bool min)
 
       // first a quick check to make sure this is legal
       if(MAX_MULTIPLICITY < 5)
-	NAMD_die("I can't do RB dihedrals with MAX_MULTIPLICITY < 5");
+        NAMD_die("I can't do RB dihedrals with MAX_MULTIPLICITY < 5");
       dihedral_array[i].multiplicity = 5;
 
       // Next we negate every other term, since GROMACS does this
       // silly thing with psi = 180 - phi:
       for(j=0;j<6;j++) {
-	if(j%2 == 1) c[j] = -c[j];
+        if(j%2 == 1) c[j] = -c[j];
       }
 
       // Now fill up all the terms.  Each is k(1 + cos(n*x - delta))
@@ -4855,30 +4855,30 @@ void Parameters::read_parm(const GromacsTopFile *gf, Bool min)
       // The constant term (which is missing) is c0 + 1/2 c2 + 3/8 c4
       test1 = 0;
       for(j=5;j>=0;j--) { // sum (..(c5 cos x + c4) cos x + c3)..) + c1
-	test1 *= cos(0.5);
-	test1 += c[j];
+        test1 *= cos(0.5);
+        test1 += c[j];
       }
 
       test2 = c[0]+1/2.*c[2]+3/8.*c[4];
       for(j=0;j<5;j++) { // sum k1 cos x + k2 cos 2x + ... 
-	test2 += dihedral_array[i].values[j].k * cos((j+1)*0.5);
+        test2 += dihedral_array[i].values[j].k * cos((j+1)*0.5);
       }
 
       if(fabs(test1-test2) > 0.0001)
-	NAMD_die("Internal error: failed to handle RB dihedrals");
+        NAMD_die("Internal error: failed to handle RB dihedrals");
       
       // Turn this on to have a look at the values if you *still*
       // don't believe that they are right!
 
       /*      iout << iINFO << "k: ";
-	      for(j=0;j<5;j++)
-	      iout  << dihedral_array[i].values[j].k << " ";
-	      iout << "\n" << endi;
-	      
-	      iout << iINFO << "c: ";
-	      for(j=0;j<6;j++)
-	      iout  << c[j] << " ";
-	      iout << "\n" << endi;*/
+              for(j=0;j<5;j++)
+              iout  << dihedral_array[i].values[j].k << " ";
+              iout << "\n" << endi;
+              
+              iout << iINFO << "c: ";
+              for(j=0;j<6;j++)
+              iout  << c[j] << " ";
+              iout << "\n" << endi;*/
       
       break;
     default:
@@ -4904,19 +4904,19 @@ void Parameters::read_parm(const GromacsTopFile *gf, Bool min)
       new_node->left = new_node->right = NULL;
 
       gf->getVDWParams(i,j, &(new_node->B), &(new_node->A),
-		       &(new_node->B14), &(new_node->A14));
+                       &(new_node->B14), &(new_node->A14));
 
       /* If we have any VDW radii equal to zero, atoms can just sit on
-	 each other during minimization.  So, we'll give a minimum of
-	 1.0 kcal*A^12 to the LJ-repulsion when we are minimizing.
-	 But a warning should be displayed to the user... */
+         each other during minimization.  So, we'll give a minimum of
+         1.0 kcal*A^12 to the LJ-repulsion when we are minimizing.
+         But a warning should be displayed to the user... */
       if(min && ( fabs(new_node->A) < 1.0 )) {
-	new_node->A = 1.0;
-	if(!warned) {
-	  iout << iWARN <<
-	    "Adding small LJ repulsion term to some atoms.\n" << endi;
-	  warned=true;
-	}
+        new_node->A = 1.0;
+        if(!warned) {
+          iout << iWARN <<
+            "Adding small LJ repulsion term to some atoms.\n" << endi;
+          warned=true;
+        }
       }
 
       vdw_pair_tree = add_to_indexed_vdw_pairs(new_node, vdw_pair_tree);
