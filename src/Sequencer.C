@@ -16,6 +16,7 @@
 #include "Sequencer.h"
 #include "HomePatch.h"
 #include "ReductionMgr.h"
+#include "CollectionMgr.h"
 
 #define MIN_DEBUG_LEVEL 4
 #define DEBUGM
@@ -24,7 +25,8 @@
 Sequencer::Sequencer(HomePatch *p) :
 	patch(p),
 	simParams(Node::Object()->simParameters),
-	reduction(ReductionMgr::Object())
+	reduction(ReductionMgr::Object()),
+	collection(CollectionMgr::Object())
 {
     reduction->Register(REDUCTION_KINETIC_ENERGY);
 }
@@ -57,8 +59,9 @@ void Sequencer::algorithm(void)
     int step, cycle;
     int seq = 0;
     patch->positionsReady();
-    reduction->submit(seq,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
     suspend();
+    reduction->submit(seq,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
+    collection->submitPositions(seq,patch->atomIDList,patch->p);
     ++seq;
     for ( cycle = 0; cycle < numberOfCycles; ++cycle )
     {
@@ -81,6 +84,7 @@ void Sequencer::algorithm(void)
             patch->addForceToMomentum(0.5*timestep);
 	    reduction->submit(seq, REDUCTION_KINETIC_ENERGY,
 		patch->calcKineticEnergy());
+	    collection->submitPositions(seq,patch->atomIDList,patch->p);
 	    ++seq;
         }
     }
