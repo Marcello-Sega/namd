@@ -607,12 +607,16 @@ obj/ComputeDPME.o: \
 	src/ComputeDPME.h \
 	src/ComputeHomePatches.h \
 	src/Compute.h \
+	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/PatchTypes.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
 	src/ComputeDPMEMsgs.h \
 	dpme2/dpme2.h \
 	dpme2/dpme2_pvm.h \
@@ -621,10 +625,6 @@ obj/ComputeDPME.o: \
 	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
 	src/PatchMgr.h \
-	src/HomePatch.h \
-	src/MigrateAtomsMsg.h \
-	src/Migration.h \
-	src/HomePatchTypes.h \
 	src/Molecule.h \
 	src/IntList.h \
 	src/structures.h \
@@ -705,18 +705,18 @@ obj/ComputeDPMTA.o: \
 	src/ComputeDPMTA.h \
 	src/ComputeHomePatches.h \
 	src/Compute.h \
+	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/PatchTypes.h \
-	dpmta-2.6/src/dpmta.h \
-	src/PatchMgr.h \
-	src/HomePatch.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/HomePatchTypes.h \
+	dpmta-2.6/src/dpmta.h \
+	src/PatchMgr.h \
 	src/Molecule.h \
 	src/IntList.h \
 	src/structures.h \
@@ -764,6 +764,7 @@ obj/ComputeFreeEnergy.o: \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
+	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
 	src/Box.h \
@@ -772,10 +773,15 @@ obj/ComputeFreeEnergy.o: \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ProcessorPrivate.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
 	src/FreeEnergyParse.h \
 	src/Namd.h \
 	src/Node.h \
-	src/ProcessorPrivate.h \
 	src/ComputeGlobal.h \
 	src/ComputeGlobalMsgs.h \
 	src/Molecule.h \
@@ -831,19 +837,19 @@ obj/ComputeFullDirect.o: \
 	src/ComputeFullDirect.h \
 	src/ComputeHomePatches.h \
 	src/Compute.h \
+	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/PatchTypes.h \
-	src/ComputeNonbondedUtil.h \
-	src/ReductionMgr.h \
-	src/PatchMgr.h \
-	src/HomePatch.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/HomePatchTypes.h \
+	src/ComputeNonbondedUtil.h \
+	src/ReductionMgr.h \
+	src/PatchMgr.h \
 	src/Molecule.h \
 	src/IntList.h \
 	src/structures.h \
@@ -892,17 +898,17 @@ obj/ComputeHomePatches.o: \
 	src/Tensor.h \
 	src/ComputeHomePatches.h \
 	src/Compute.h \
+	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/PatchTypes.h \
-	src/PatchMgr.h \
-	src/HomePatch.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/HomePatchTypes.h \
+	src/PatchMgr.h \
 	src/Molecule.h \
 	src/IntList.h \
 	src/structures.h \
@@ -1063,12 +1069,16 @@ obj/ComputeGlobal.o: \
 	src/ComputeGlobal.h \
 	src/ComputeHomePatches.h \
 	src/Compute.h \
+	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/PatchTypes.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
 	src/ComputeGlobalMaster.h \
 	src/ComputeGlobalMsgs.h \
 	src/ComputeMisc.h \
@@ -1086,10 +1096,6 @@ obj/ComputeGlobal.o: \
 	src/FreeEnergyParse.h \
 	src/ComputeIMD.h \
 	src/PatchMgr.h \
-	src/HomePatch.h \
-	src/MigrateAtomsMsg.h \
-	src/Migration.h \
-	src/HomePatchTypes.h \
 	src/Molecule.h \
 	src/IntList.h \
 	src/structures.h \
@@ -1143,21 +1149,21 @@ obj/ComputeGlobalEasy.o: \
 	src/ComputeGlobal.h \
 	src/ComputeHomePatches.h \
 	src/Compute.h \
+	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/PatchTypes.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
 	src/ComputeMisc.h \
 	src/ComputeGlobalEasy.h \
 	src/ComputeGlobalMaster.h \
 	src/ComputeGlobalMsgs.h \
 	src/PatchMgr.h \
-	src/HomePatch.h \
-	src/MigrateAtomsMsg.h \
-	src/Migration.h \
-	src/HomePatchTypes.h \
 	src/Molecule.h \
 	src/IntList.h \
 	src/structures.h \
@@ -1211,19 +1217,19 @@ obj/ComputeGlobalMaster.o: \
 	src/ComputeGlobal.h \
 	src/ComputeHomePatches.h \
 	src/Compute.h \
+	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/PatchTypes.h \
-	src/ComputeGlobalMaster.h \
-	src/ComputeGlobalMsgs.h \
-	src/PatchMgr.h \
-	src/HomePatch.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/HomePatchTypes.h \
+	src/ComputeGlobalMaster.h \
+	src/ComputeGlobalMsgs.h \
+	src/PatchMgr.h \
 	src/Molecule.h \
 	src/IntList.h \
 	src/structures.h \
@@ -1294,12 +1300,18 @@ obj/ComputeIMD.o: \
 	src/ComputeGlobal.h \
 	src/ComputeHomePatches.h \
 	src/Compute.h \
+	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
 	src/ComputeGlobalMsgs.h \
 	src/ComputeIMD.h \
 	src/ComputeGlobalMaster.h \
@@ -1365,6 +1377,7 @@ obj/ComputeMisc.o: \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
+	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
 	src/Box.h \
@@ -1373,6 +1386,12 @@ obj/ComputeMisc.o: \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ProcessorPrivate.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
 	src/ComputeGlobalEasy.h \
 	src/ComputeGlobalMaster.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeMisc.o -c src/ComputeMisc.C
@@ -1736,7 +1755,11 @@ obj/ComputePatch.o: \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/AtomMap.h \
+	src/HomePatch.h \
 	src/Patch.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputePatch.o -c src/ComputePatch.C
 obj/ComputePatchPair.o: \
@@ -1821,21 +1844,21 @@ obj/ComputePme.o: \
 	src/ComputePme.h \
 	src/ComputeHomePatches.h \
 	src/Compute.h \
+	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/PatchTypes.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
 	src/ComputePmeMsgs.h \
 	src/PmeBase.h \
 	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
 	src/PatchMgr.h \
-	src/HomePatch.h \
-	src/MigrateAtomsMsg.h \
-	src/Migration.h \
-	src/HomePatchTypes.h \
 	src/Molecule.h \
 	src/IntList.h \
 	src/structures.h \
@@ -2053,6 +2076,7 @@ obj/ComputeTcl.o: \
 	src/ComputeGlobalMaster.h \
 	src/ComputeHomePatches.h \
 	src/Compute.h \
+	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
 	src/Box.h \
@@ -2061,6 +2085,11 @@ obj/ComputeTcl.o: \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
 	src/ComputeGlobal.h \
 	src/ComputeGlobalMsgs.h \
 	src/Molecule.h \
@@ -2227,6 +2256,7 @@ obj/FreeEnergyParse.o: \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
+	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
 	src/Box.h \
@@ -2235,6 +2265,12 @@ obj/FreeEnergyParse.o: \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ProcessorPrivate.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
 	src/FreeEnergyParse.h
 	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyParse.o -c src/FreeEnergyParse.C
 obj/FreeEnergyRestrain.o: \
@@ -2275,6 +2311,7 @@ obj/FreeEnergyRestrain.o: \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
+	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
 	src/Box.h \
@@ -2282,7 +2319,13 @@ obj/FreeEnergyRestrain.o: \
 	src/PositionBox.h \
 	src/Lattice.h \
 	src/Tensor.h \
-	src/PatchTypes.h
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ProcessorPrivate.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h
 	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyRestrain.o -c src/FreeEnergyRestrain.C
 obj/FreeEnergyRMgr.o: \
 	src/FreeEnergyRMgr.C \
@@ -2322,6 +2365,7 @@ obj/FreeEnergyRMgr.o: \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
+	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
 	src/Box.h \
@@ -2329,7 +2373,13 @@ obj/FreeEnergyRMgr.o: \
 	src/PositionBox.h \
 	src/Lattice.h \
 	src/Tensor.h \
-	src/PatchTypes.h
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ProcessorPrivate.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h
 	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyRMgr.o -c src/FreeEnergyRMgr.C
 obj/FreeEnergyVector.o: \
 	src/FreeEnergyVector.C \
