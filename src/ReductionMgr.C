@@ -158,6 +158,7 @@ void ReductionMgr::doDummySubmit(CheckForPatchMsg *msg)
     }
 
   }
+  delete msg;
 }
 
 
@@ -531,12 +532,15 @@ void	ReductionMgr::unsubscribe(ReductionTag tag)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1029 $	$Date: 1999/02/17 05:29:01 $
+ *	$Revision: 1.1030 $	$Date: 1999/02/17 05:43:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.C,v $
+ * Revision 1.1030  1999/02/17 05:43:13  jim
+ * Fixed memory leak in more nodes than patches code.
+ *
  * Revision 1.1029  1999/02/17 05:29:01  jim
  * Fixed bug in more nodes than patches code.
  *
