@@ -7,8 +7,8 @@
 #####
 ## Choose your favorite Compiler options
 ####
-CXX = CC -DGLOBALS -DT3E
-CXXOPTS = -g
+CXX = CC -DGLOBALS -DT3E -DCYCLE_BARRIER
+CXXOPTS = -O
 
 #####
 # Flags
