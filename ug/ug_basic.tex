@@ -233,18 +233,8 @@ number can be specified.}
 \item
 \NAMDCONFWDEF{stepspercycle}{timesteps per cycle}{positive integer}{20}
 {Number of timesteps in each cycle.  Each cycle represents the number 
-of timesteps between pairlist generation and atom reassignment.  
-If full electrostatics are active, it is also the number of timesteps 
-between full electrostatic evaluation unless {\tt fullElectFrequency} is
-also specified.  
-It is recommended that {\tt stepspercycle} ({\tt fullElectFrequency}) be chosen so that 
-the product of {\tt stepspercycle} and {\tt timestep} does 
-not exceed $4.0$ unless {\tt rigidBonds all} is specified, 
-in which case the upper limit is perhaps doubled.  
-For more details on the 
-use of full electrostatics, see Section \ref{section:fmadesc}.  
-For more details
-on non-bonded force evaluation and pairlist generation, see
+of timesteps between atom reassignments.
+For more details on non-bonded force evaluation, see
 Section \ref{section:electdesc}.}
 
 
@@ -693,7 +683,7 @@ while retaining all bond motion.
 \begin{itemize}
 
 \item
-\NAMDCONFWDEF{fullElectFrequency}{number of timesteps between DPMTA calculations}{positive integer factor of {\tt stepspercycle}}{{\tt stepspercycle}}
+\NAMDCONFWDEF{fullElectFrequency}{number of timesteps between full electrostatic evaluations}{positive integer factor of {\tt stepspercycle}}{{\tt nonbondedFreq}}
 {This parameter specifies the number of timesteps between each full electrostatics evaluation.
 It is recommended that {\tt fullElectFrequency} be chosen so that 
 the product of {\tt fullElectFrequency} and {\tt timestep} does 
