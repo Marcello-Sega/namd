@@ -9,6 +9,7 @@
 #include "ComputeCylindricalBC.h"
 #include "Node.h"
 #include "SimParameters.h"
+#include "Patch.h"
 
 /************************************************************************/
 /*									*/
@@ -28,7 +29,6 @@ ComputeCylindricalBC::ComputeCylindricalBC(ComputeID c, PatchID pid)
 {
 	reduction = ReductionMgr::Object();
 	reduction->Register(REDUCTION_BC_ENERGY);
-	fake_seq = 0;
 
 	SimParameters *simParams = Node::Object()->simParameters;
 
@@ -338,8 +338,7 @@ void ComputeCylindricalBC::doForce(Position* p, Results* r, AtomProperties* a)
                 }
         }
 
-    reduction->submit(fake_seq, REDUCTION_BC_ENERGY, energy);
-    fake_seq++;
+    reduction->submit(patch->flags.seq, REDUCTION_BC_ENERGY, energy);
 
 }
 /*			END OF FUNCTION force				*/

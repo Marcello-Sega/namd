@@ -24,7 +24,6 @@ ComputeNonbondedSelf::ComputeNonbondedSelf(ComputeID c, PatchID pid)
 {
   reduction = ReductionMgr::Object();
   registerReductionData(reduction);
-  fake_seq = 0;
 }
 
 
@@ -51,8 +50,7 @@ void ComputeNonbondedSelf::doForce(Position* p,
   else
     calcSelf(p,r->f[Results::normal],a,numAtoms,reductionData);
 
-  submitReductionData(reductionData,reduction,fake_seq);
-  ++fake_seq;
+  submitReductionData(reductionData,reduction,patch->flags.seq);
 }
 
 /***************************************************************************
@@ -60,12 +58,15 @@ void ComputeNonbondedSelf::doForce(Position* p,
  *
  *	$RCSfile: ComputeNonbondedSelf.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/13 06:37:03 $
+ *	$Revision: 1.1004 $	$Date: 1997/03/18 21:35:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.C,v $
+ * Revision 1.1004  1997/03/18 21:35:30  jim
+ * Eliminated fake_seq.  Reductions now use Patch::flags.seq.
+ *
  * Revision 1.1003  1997/03/13 06:37:03  jim
  * Multiple time-stepping implemented, still needs proper splitting functions.
  *

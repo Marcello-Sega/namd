@@ -35,7 +35,6 @@ ComputeHomeTuples<T>::ComputeHomeTuples(ComputeID c) : Compute(c) {
   maxProxyAtoms = 0;
   dummyForce = NULL;	// initialized to NULL -- won't harm reallocating deletes.
   T::registerReductionData(reduction);
-  fake_seq = 0;
 }
 
 template <class T>
@@ -198,8 +197,7 @@ void ComputeHomeTuples<T>::doWork() {
     al->computeForce(reductionData);
   }
 
-  T::submitReductionData(reductionData,reduction,fake_seq);
-  ++fake_seq;
+  T::submitReductionData(reductionData,reduction,ap.begin()->p->flags.seq);
 
   // Close boxes - i.e. signal we are done with Positions and
   // AtomProperties and that we are depositing Forces
@@ -219,12 +217,15 @@ void ComputeHomeTuples<T>::doWork() {
  *
  *      $RCSfile: ComputeHomeTuples.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1008 $     $Date: 1997/03/13 22:39:35 $
+ *      $Revision: 1.1009 $     $Date: 1997/03/18 21:35:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.C,v $
+ * Revision 1.1009  1997/03/18 21:35:25  jim
+ * Eliminated fake_seq.  Reductions now use Patch::flags.seq.
+ *
  * Revision 1.1008  1997/03/13 22:39:35  jim
  * Fixed some bugs in multiple-force return / full electrostatics.
  *

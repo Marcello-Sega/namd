@@ -24,7 +24,6 @@ ComputeNonbondedPair::ComputeNonbondedPair(ComputeID c, PatchID pid[], int trans
 {
   reduction = ReductionMgr::Object();
   registerReductionData(reduction);
-  fake_seq = 0;
 }
 
 
@@ -64,8 +63,7 @@ int ComputeNonbondedPair::noWork() {
       atomBox[i]->close(&a[i]);
     }
 
-    submitReductionData(reductionData,reduction,fake_seq);
-    ++fake_seq;
+    submitReductionData(reductionData,reduction,patch[0]->flags.seq);
 
     return 1;  // no work to do, do not enqueue
   }
@@ -125,8 +123,7 @@ void ComputeNonbondedPair::doForce(Position* p[2],
     }
   }
 
-  submitReductionData(reductionData,reduction,fake_seq);
-  ++fake_seq;
+  submitReductionData(reductionData,reduction,patch[0]->flags.seq);
 }
 
 /***************************************************************************
@@ -134,12 +131,15 @@ void ComputeNonbondedPair::doForce(Position* p[2],
  *
  *	$RCSfile: ComputeNonbondedPair.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/13 06:36:59 $
+ *	$Revision: 1.1006 $	$Date: 1997/03/18 21:35:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.C,v $
+ * Revision 1.1006  1997/03/18 21:35:28  jim
+ * Eliminated fake_seq.  Reductions now use Patch::flags.seq.
+ *
  * Revision 1.1005  1997/03/13 06:36:59  jim
  * Multiple time-stepping implemented, still needs proper splitting functions.
  *

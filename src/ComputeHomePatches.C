@@ -25,8 +25,6 @@
 ComputeHomePatches::ComputeHomePatches(ComputeID c) : Compute(c) {
   patchMap = PatchMap::Object();
   reduction = ReductionMgr::Object();
-
-  fake_seq = 0;
 }
 
 ComputeHomePatches::~ComputeHomePatches()

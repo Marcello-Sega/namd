@@ -270,9 +270,6 @@ void ComputeDPMTA::doWork()
 
   // 0. only run when necessary
   // Skip computations if nothing to do.
-  DebugM(2,"fake_seq=" << fake_seq
-	<< " fmaFrequency=" << simParameters->fmaFrequency
-	<< "\n");
   if (!patchList[0].p->flags.doFullElectrostatics)
   {
     for (ap = ap.begin(); ap != ap.end(); ap++) {
@@ -283,13 +280,12 @@ void ComputeDPMTA::doWork()
       (*ap).atomBox->close(&a);
       (*ap).positionBox->close(&x);
     }
-    reduction->submit(fake_seq, REDUCTION_ELECT_ENERGY, 0.0);
-    reduction->submit(fake_seq, REDUCTION_VIRIAL, 0.0);
-    ++fake_seq;
+    reduction->submit(patchList[0].p->flags.seq, REDUCTION_ELECT_ENERGY, 0.0);
+    reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL, 0.0);
     return;
   }
 
-  DebugM(2,"DPMTA doWork() started at timestep " << fake_seq << "\n");
+  DebugM(2,"DPMTA doWork() started at timestep " << patchList[0].p->flags.seq << "\n");
 
   // setup
   // 1. get totalAtoms
@@ -402,9 +398,8 @@ void ComputeDPMTA::doWork()
 
   potential *= 0.5;
   DebugM(4,"Full-electrostatics energy: " << potential << "\n");
-  reduction->submit(fake_seq, REDUCTION_ELECT_ENERGY, potential);
-  reduction->submit(fake_seq, REDUCTION_VIRIAL, potential);  // TRUE! -JCP
-  ++fake_seq;
+  reduction->submit(patchList[0].p->flags.seq, REDUCTION_ELECT_ENERGY, potential);
+  reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL, potential);  // TRUE! -JCP
 
   // 5. clean-up
   if (totalAtoms > 0)

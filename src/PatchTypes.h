@@ -20,10 +20,11 @@
 class Flags
 {
 public:
+  int seq;			// sequence number
   int doFullElectrostatics;
 
 private:
-  int spacer;  // Use this to keep byte-aligned for now.  -JCP
+  // int spacer;  // Use this to keep byte-aligned for now.  -JCP
 };
 
 class Results

@@ -51,9 +51,8 @@ void ComputeFullDirect::doWork()
       Position *x = (*ap).positionBox->open();
       AtomProperties *a = (*ap).atomBox->open();
       Results *r = (*ap).forceBox->open();
-      reduction->submit(fake_seq, REDUCTION_ELECT_ENERGY, 0.);
-      reduction->submit(fake_seq, REDUCTION_VIRIAL, 0.0);
-      ++fake_seq;
+      reduction->submit(patchList[0].p->flags.seq, REDUCTION_ELECT_ENERGY, 0.);
+      reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL, 0.0);
       (*ap).positionBox->close(&x);
       (*ap).atomBox->close(&a);
       (*ap).forceBox->close(&r);
@@ -125,9 +124,8 @@ void ComputeFullDirect::doWork()
 
   // send out reductions
   DebugM(4,"Full-electrostatics energy: " << electEnergy << "\n");
-  reduction->submit(fake_seq, REDUCTION_ELECT_ENERGY, electEnergy);
-  reduction->submit(fake_seq, REDUCTION_VIRIAL, electEnergy);  // TRUE! -JCP
-  ++fake_seq;
+  reduction->submit(patchList[0].p->flags.seq, REDUCTION_ELECT_ENERGY, electEnergy);
+  reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL, electEnergy);  // TRUE! -JCP
 
   // add in forces
   j = 0;

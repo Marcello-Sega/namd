@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1016 1997/03/18 18:09:15 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1017 1997/03/18 21:35:35 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -71,7 +71,7 @@ void Sequencer::run(int numberOfCycles)
 void Sequencer::algorithm(void)
 {
     int step, cycle=-1;	// cycle is unused!
-    int seq = 0; // internal timestep
+    int &seq = patch->flags.seq; seq = 0; // internal timestep
 
     const int numberOfCycles = this->numberOfCycles;
     const int stepsPerCycle = this->stepsPerCycle;
@@ -102,6 +102,7 @@ void Sequencer::algorithm(void)
 
 	patch->flags.doFullElectrostatics =
 		(dofull && !((step+1)%stepsPerCycle));
+
 	// Migrate Atoms on stepsPerCycle
 	patch->positionsReady(!(seq%stepsPerCycle));
 	suspend(); // until all Force deposit boxes close
@@ -141,12 +142,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1016 $     $Date: 1997/03/18 18:09:15 $
+ *      $Revision: 1.1017 $     $Date: 1997/03/18 21:35:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1017  1997/03/18 21:35:35  jim
+ * Eliminated fake_seq.  Reductions now use Patch::flags.seq.
+ *
  * Revision 1.1016  1997/03/18 18:09:15  jim
  * Revamped collection system to ensure ordering and eliminate
  * unnecessary collections.  Also reduced make dependencies.

@@ -113,8 +113,6 @@ protected:
   AtomMap *atomMap;
   ReductionMgr *reduction;
 
-  int fake_seq;
-
   int maxProxyAtoms;
   Results dummyResults;
   Force *dummyForce;
@@ -133,12 +131,15 @@ public:
  *
  *	$RCSfile: ComputeHomeTuples.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/03/18 18:08:53 $
+ *	$Revision: 1.1007 $	$Date: 1997/03/18 21:35:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.h,v $
+ * Revision 1.1007  1997/03/18 21:35:26  jim
+ * Eliminated fake_seq.  Reductions now use Patch::flags.seq.
+ *
  * Revision 1.1006  1997/03/18 18:08:53  jim
  * Revamped collection system to ensure ordering and eliminate
  * unnecessary collections.  Also reduced make dependencies.

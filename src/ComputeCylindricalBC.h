@@ -46,8 +46,6 @@ public:
 
 	ReductionMgr *reduction;
 
-	int fake_seq;
-
 };
 
 #endif

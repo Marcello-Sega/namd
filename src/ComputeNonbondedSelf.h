@@ -30,8 +30,6 @@ protected :
 
   ReductionMgr *reduction;
 
-  int fake_seq;
-
 };
 
 #endif
@@ -40,12 +38,15 @@ protected :
  *
  *	$RCSfile: ComputeNonbondedSelf.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/13 06:37:04 $
+ *	$Revision: 1.1003 $	$Date: 1997/03/18 21:35:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.h,v $
+ * Revision 1.1003  1997/03/18 21:35:32  jim
+ * Eliminated fake_seq.  Reductions now use Patch::flags.seq.
+ *
  * Revision 1.1002  1997/03/13 06:37:04  jim
  * Multiple time-stepping implemented, still needs proper splitting functions.
  *

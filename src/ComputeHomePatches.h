@@ -86,8 +86,6 @@ protected:
   PatchMap *patchMap;
   ReductionMgr *reduction;
 
-  int fake_seq;
-
 public:
   ComputeHomePatches(ComputeID c);
   virtual ~ComputeHomePatches();
@@ -101,12 +99,15 @@ public:
  *
  *	$RCSfile: ComputeHomePatches.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/12 22:06:35 $
+ *	$Revision: 1.1002 $	$Date: 1997/03/18 21:35:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomePatches.h,v $
+ * Revision 1.1002  1997/03/18 21:35:23  jim
+ * Eliminated fake_seq.  Reductions now use Patch::flags.seq.
+ *
  * Revision 1.1001  1997/03/12 22:06:35  jim
  * First step towards multiple force returns and multiple time stepping.
  *
