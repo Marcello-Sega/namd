@@ -17,7 +17,6 @@ CpvDeclare(BroadcastMgr*, BroadcastMgr_instance);
 CpvDeclare(CollectionMaster*, CollectionMaster_instance);
 CpvDeclare(CollectionMgr*, CollectionMgr_instance);
 CpvDeclare(ComputeMap*, ComputeMap_instance);
-CpvDeclare(LJTable*, LJTable_instance);
 CpvDeclare(LdbCoordinator*, LdbCoordinator_instance);
 CpvDeclare(Node*, Node_instance);
 CpvDeclare(PatchMap*, PatchMap_instance);
@@ -48,8 +47,6 @@ void ProcessorPrivateInit(void)
   CpvAccess(CollectionMgr_instance) = 0;
   CpvInitialize(ComputeMap*, ComputeMap_instance);
   CpvAccess(ComputeMap_instance) = 0;
-  CpvInitialize(LJTable*, LJTable_instance);
-  CpvAccess(LJTable_instance) = 0;
   CpvInitialize(LdbCoordinator*, LdbCoordinator_instance);
   CpvAccess(LdbCoordinator_instance) = 0;
   CpvInitialize(Node*, Node_instance);

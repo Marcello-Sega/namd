@@ -11,12 +11,6 @@
 // #define DEBUGM
 #include "Debug.h"
 
-LJTable *LJTable::Instance() {
-  if (CpvAccess(LJTable_instance) == 0) {
-    CpvAccess(LJTable_instance) = new LJTable;	// this is never deleted.
-  }
-  return CpvAccess(LJTable_instance);
-}
 
 //----------------------------------------------------------------------  
 LJTable::LJTable()

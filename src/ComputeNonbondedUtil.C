@@ -21,7 +21,7 @@ Real            ComputeNonbondedUtil::cutoff;
 BigReal         ComputeNonbondedUtil::cutoff2;
 BigReal         ComputeNonbondedUtil::groupcutoff2;
 BigReal         ComputeNonbondedUtil::dielectric_1;
-const LJTable*  ComputeNonbondedUtil::ljTable;
+const LJTable*  ComputeNonbondedUtil::ljTable = 0;
 const Molecule* ComputeNonbondedUtil::mol;
 BigReal         ComputeNonbondedUtil::scaling;
 BigReal         ComputeNonbondedUtil::scale14;
@@ -81,7 +81,7 @@ void ComputeNonbondedUtil::select(void)
   groupcutoff2 = (cutoff+hcutoff)*(cutoff+hcutoff);
 
   dielectric_1 = 1.0/simParams->dielectric;
-  ljTable = LJTable::Instance();
+  if ( ! ljTable ) ljTable = new LJTable;
   mol = Node::Object()->molecule;
   scaling = simParams->nonbondedScaling;
   if ( simParams->exclude == SCALED14 )

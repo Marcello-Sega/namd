@@ -20,8 +20,8 @@ public:
     BigReal B;
   };
 
-  static LJTable *Instance(void);
-  inline static LJTable *Object(void) {return CpvAccess(LJTable_instance);}
+  LJTable(void);
+
   ~LJTable(void);
 
   const TableEntry *table_row(unsigned int i) const {
@@ -35,10 +35,6 @@ public:
   const TableEntry *table_val_scale14(unsigned int i, unsigned int j) const {
     return table + 2 * (i * table_dim + j) + 1;
   }
-
-
-protected:
-  LJTable(void);
 
 private:
 
