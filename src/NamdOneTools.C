@@ -141,7 +141,7 @@ void velocities_from_PDB(char *filename, Vector *v, int totalAtoms)
 /************************************************************************/
 void velocities_from_binfile(char *fname, Vector *vels, int n)
 {
-	int filen;		//  Number of atoms read from file
+	int32 filen;		//  Number of atoms read from file
 	FILE *fp;		//  File descriptor
 
 	//  Open the file and die if the open fails
@@ -153,7 +153,7 @@ void velocities_from_binfile(char *fname, Vector *vels, int n)
 	}
 
 	//  read the number of coordinates in this file
-	fread(&filen, sizeof(int), 1, fp);
+	fread(&filen, sizeof(int32), 1, fp);
 
 	//  Die if this doesn't match the number in our system
 	if (filen != n)
@@ -315,12 +315,15 @@ void remove_com_motion(Vector *vel, Molecule *structure, int n)
 *
 *	$RCSfile: NamdOneTools.C,v $
 *	$Author: brunner $	$Locker:  $		$State: Exp $
-*	$Revision: 1.8 $	$Date: 1997/08/13 21:00:17 $
+*	$Revision: 1.9 $	$Date: 1997/08/14 15:29:48 $
 *
 ***************************************************************************
 * REVISION HISTORY:
 *
 * $Log: NamdOneTools.C,v $
+* Revision 1.9  1997/08/14 15:29:48  brunner
+* More fixes for 32 bit ints in binary restart format
+*
 * Revision 1.8  1997/08/13 21:00:17  brunner
 * Made binary files always use 32 bits for the number of atoms, so that it
 * works on both 64 and 32-bit machines.  Also, I made Inform.C use CPrintf,
@@ -358,4 +361,4 @@ void remove_com_motion(Vector *vel, Molecule *structure, int n)
 *
 ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdOneTools.C,v 1.8 1997/08/13 21:00:17 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdOneTools.C,v 1.9 1997/08/14 15:29:48 brunner Exp $";

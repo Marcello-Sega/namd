@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1030 1997/04/22 04:26:03 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1031 1997/08/14 15:29:48 brunner Exp $";
 
 #include <stdio.h>
 
@@ -815,7 +815,7 @@ void WorkDistrib::velocities_from_PDB(char *filename,
 
 void WorkDistrib::velocities_from_binfile(char *fname, Vector *vels, int n)
 {
-  int filen;		//  Number of atoms read from file
+  int32 filen;		//  Number of atoms read from file
   FILE *fp;		//  File descriptor
 
   //  Open the file and die if the open fails
@@ -828,7 +828,7 @@ void WorkDistrib::velocities_from_binfile(char *fname, Vector *vels, int n)
   }
 
   //  read the number of coordinates in this file
-  fread(&filen, sizeof(int), 1, fp);
+  fread(&filen, sizeof(int32), 1, fp);
 
   //  Die if this doesn't match the number in our system
   if (filen != n)
@@ -966,13 +966,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1030 $	$Date: 1997/04/22 04:26:03 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1031 $	$Date: 1997/08/14 15:29:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1031  1997/08/14 15:29:48  brunner
+ * More fixes for 32 bit ints in binary restart format
+ *
  * Revision 1.1030  1997/04/22 04:26:03  jim
  * Added atomic restraints (harmonic constraints) via ComputeRestraints class.
  *
