@@ -261,7 +261,7 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
 
    opts.optional("main", "splitPatch", "Atom into patch splitting option",
     PARSE_STRING);
-   opts.optional("main", "hgroupCutoff", "Hydrogen margin", &hgroupCutoff);
+   opts.optional("main", "hgroupCutoff", "Hydrogen margin", &hgroupCutoff, 2.5);
 
    opts.optional("main", "extendedSystem",
     "Initial configuration of extended system variables and periodic cell",
@@ -1146,16 +1146,39 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      }
    }
 
+   if (!opts.defined("splitPatch"))
+   {
+     splitPatch = SPLIT_PATCH_HYDROGEN;
+   }
+   else
+   {
+     opts.get("splitPatch", s);
+     if (!strcasecmp(s, "position"))
+       splitPatch = SPLIT_PATCH_POSITION;
+     else if (!strcasecmp(s,"hydrogen"))
+       splitPatch = SPLIT_PATCH_HYDROGEN;
+     else
+     {
+       char err_msg[129];
+       sprintf(err_msg, 
+          "Illegal value '%s' for 'splitPatch' in configuration file", 
+       s);
+       NAMD_die(err_msg);
+     }
+   }
+
    ///// exclude stuff
    opts.get("exclude", s);
 
    if (!strcasecmp(s, "none"))
    {
       exclude = NONE;
+      splitPatch = SPLIT_PATCH_POSITION;
    }
    else if (!strcasecmp(s, "1-2"))
    {
       exclude = ONETWO;
+      splitPatch = SPLIT_PATCH_POSITION;
    }
    else if (!strcasecmp(s, "1-3"))
    {
@@ -1178,11 +1201,15 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
       NAMD_die(err_msg);
    }
 
-   if (opts.defined("1-4scaling") &&
-       exclude != SCALED14)
+   if (scale14 != 1.0 && exclude != SCALED14)
    {
-      iout << iWARN << "Value given for '1-4scaling', but 1-4 scaling "
-        << "not in effect.\n This value will be ignored!" << endi;
+      iout << iWARN << "Exclude is not scaled1-4; 1-4scaling ignored.\n" << endi;
+   }
+
+   if ( splitPatch == SPLIT_PATCH_HYDROGEN )
+   {
+     // increase margin by hgroupCutoff
+     margin += hgroupCutoff;
    }
 
    //  Get multiple timestep integration scheme
@@ -1211,37 +1238,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
        s);
     NAMD_die(err_msg);
   }
-   }
-
-   //  Get the atom-into-patch splitting specification
-   if (!opts.defined("hgroupCutoff"))
-   {
-  hgroupCutoff = 2.5;  // add 2.5 angstroms
-   }
-   if (!opts.defined("splitPatch"))
-   {
-  splitPatch = SPLIT_PATCH_HYDROGEN;
-   }
-   else
-   {
-  opts.get("splitPatch", s);
-  if (!strcasecmp(s, "position"))
-    splitPatch = SPLIT_PATCH_POSITION;
-  else if (!strcasecmp(s,"hydrogen"))
-    splitPatch = SPLIT_PATCH_HYDROGEN;
-  else
-  {
-    char err_msg[129];
-    sprintf(err_msg, 
-       "Illegal value '%s' for 'splitPatch' in configuration file", 
-       s);
-    NAMD_die(err_msg);
-  }
-   }
-   if ( splitPatch == SPLIT_PATCH_HYDROGEN )
-   {
-  // increase margin by hgroupCutoff
-  margin += hgroupCutoff;
    }
 
    //  Get the long range force splitting specification
