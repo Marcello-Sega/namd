@@ -18,7 +18,6 @@
 #include "ckdefs.h"
 #include "chare.h"
 #include "c++interface.h"
-#include <new.h>
 
 #include "BOCgroup.h"
 #include "NamdTypes.h"
@@ -73,13 +72,18 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: main.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/26 16:53:22 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/12/26 23:11:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: main.h,v $
+ * Revision 1.1002  1997/12/26 23:11:08  milind
+ * Made namd2 to compile, link and run under linux. Merged Templates and src
+ * directoriies, and removed separate definition and declaration files for
+ * templates.
+ *
  * Revision 1.1001  1997/02/26 16:53:22  ari
  * Cleaning and debuging for memory leaks.
  * Adding comments.

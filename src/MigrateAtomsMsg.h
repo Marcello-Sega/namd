@@ -22,7 +22,7 @@
 #include "c++interface.h"
 
 #include "NamdTypes.h"
-#include "Templates/SortedArray.h"
+#include "SortedArray.h"
 #include "Migration.h"
 
 // Message which stores list of atoms and their data
@@ -85,12 +85,17 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1997/04/11 06:03:24 $
+ *	$Revision: 1.7 $	$Date: 1997/12/26 23:10:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: MigrateAtomsMsg.h,v $
+ * Revision 1.7  1997/12/26 23:10:50  milind
+ * Made namd2 to compile, link and run under linux. Merged Templates and src
+ * directoriies, and removed separate definition and declaration files for
+ * templates.
+ *
  * Revision 1.6  1997/04/11 06:03:24  jim
  * Message combining implemented for atom migration.
  *

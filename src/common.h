@@ -26,16 +26,15 @@ typedef	short	int32;
 typedef	int	int32;
 #endif
 
-//  Redefine new and delete if the MTS fast malloc is being used
-//#ifdef MTS
 #ifdef GLOBALS
 void * operator new (size_t);
+void * operator new (size_t, void *);
 void   operator delete (void *);
 #else
 void * ::operator new (size_t);
+void * ::operator new (size_t, void *);
 void   ::operator delete (void *);
 #endif
-//#endif
 
 #ifndef DEFPRIO
 #define DEFPRIO (1 * 64)
@@ -261,12 +260,17 @@ int  Fclose(FILE *fout);
  *
  *	$RCSfile: common.h,v $
  *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/11/10 16:45:58 $
+ *	$Revision: 1.1012 $	$Date: 1997/12/26 23:11:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.h,v $
+ * Revision 1.1012  1997/12/26 23:11:07  milind
+ * Made namd2 to compile, link and run under linux. Merged Templates and src
+ * directoriies, and removed separate definition and declaration files for
+ * templates.
+ *
  * Revision 1.1011  1997/11/10 16:45:58  milind
  * Made comm a Cpv Variable.
  *

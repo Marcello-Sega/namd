@@ -19,8 +19,8 @@
 #include "Compute.h"
 #include "Patch.h"
 
-#include "Templates/Box.h"
-#include "Templates/OwnerBox.h"
+#include "Box.h"
+#include "OwnerBox.h"
 #include "PositionBox.h"
 #include "PositionOwnerBox.h"
 
@@ -98,13 +98,18 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeHomePatches.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/18 21:35:23 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/12/26 23:10:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomePatches.h,v $
+ * Revision 1.1003  1997/12/26 23:10:44  milind
+ * Made namd2 to compile, link and run under linux. Merged Templates and src
+ * directoriies, and removed separate definition and declaration files for
+ * templates.
+ *
  * Revision 1.1002  1997/03/18 21:35:23  jim
  * Eliminated fake_seq.  Reductions now use Patch::flags.seq.
  *

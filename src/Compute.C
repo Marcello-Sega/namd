@@ -19,8 +19,8 @@
 #include "WorkDistrib.h"
 
 #include "NamdTypes.h"
-#include "Templates/Box.h"
-#include "Templates/OwnerBox.h"
+#include "Box.h"
+#include "OwnerBox.h"
 
 #include "Node.h"
 #include "Compute.h"
@@ -94,12 +94,17 @@ int Compute::sequence(void)
  *
  *	$RCSfile: Compute.C,v $
  *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1997/09/28 10:19:03 $
+ *	$Revision: 1.1015 $	$Date: 1997/12/26 23:10:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.C,v $
+ * Revision 1.1015  1997/12/26 23:10:41  milind
+ * Made namd2 to compile, link and run under linux. Merged Templates and src
+ * directoriies, and removed separate definition and declaration files for
+ * templates.
+ *
  * Revision 1.1014  1997/09/28 10:19:03  milind
  * Fixed priorities, ReductionMgr etc.
  *

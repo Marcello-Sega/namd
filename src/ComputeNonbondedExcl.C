@@ -72,8 +72,8 @@ void NonbondedExclElem::computeForce(BigReal *reduction)
 #include "Molecule.h"
 #include "Parameters.h"
 #include "Node.h"
-#include "Templates/UniqueSet.h"
-#include "Templates/UniqueSetIter.h"
+#include "UniqueSet.h"
+#include "UniqueSetIter.h"
 
 void
 ComputeNonbondedExcls::loadTuples() {
@@ -154,13 +154,18 @@ ComputeNonbondedExcls::loadTuples() {
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedExcl.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1019 $	$Date: 1997/10/17 17:16:49 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1020 $	$Date: 1997/12/26 23:10:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedExcl.C,v $
+ * Revision 1.1020  1997/12/26 23:10:47  milind
+ * Made namd2 to compile, link and run under linux. Merged Templates and src
+ * directoriies, and removed separate definition and declaration files for
+ * templates.
+ *
  * Revision 1.1019  1997/10/17 17:16:49  jim
  * Switched from hash tables to checklists, eliminated special exclusion code.
  *

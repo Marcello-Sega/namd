@@ -24,7 +24,7 @@
 #include "NamdTypes.h"
 #include "BOCgroup.h"
 
-#include "Templates/ResizeArray.h"
+#include "ResizeArray.h"
 
 class Compute;
 class ComputeMap;
@@ -116,13 +116,18 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/12/19 23:48:50 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1010 $	$Date: 1997/12/26 23:10:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.h,v $
+ * Revision 1.1010  1997/12/26 23:10:46  milind
+ * Made namd2 to compile, link and run under linux. Merged Templates and src
+ * directoriies, and removed separate definition and declaration files for
+ * templates.
+ *
  * Revision 1.1009  1997/12/19 23:48:50  jim
  * Added Tcl interface for calculating forces.
  *

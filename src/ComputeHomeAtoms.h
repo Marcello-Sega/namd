@@ -22,8 +22,8 @@
 
 #include "NamdTypes.h"
 
-#include "Templates/Box.h"
-#include "Templates/OwnerBox.h"
+#include "Box.h"
+#include "OwnerBox.h"
 
 class Patch;
 
@@ -73,13 +73,18 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeHomeAtoms.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:57:56 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/12/26 23:10:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeAtoms.h,v $
+ * Revision 1.1001  1997/12/26 23:10:44  milind
+ * Made namd2 to compile, link and run under linux. Merged Templates and src
+ * directoriies, and removed separate definition and declaration files for
+ * templates.
+ *
  * Revision 1.1000  1997/02/06 15:57:56  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

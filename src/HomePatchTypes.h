@@ -16,7 +16,7 @@
 #define HOMEPATCHTYPES_H
 
 #include "PatchTypes.h"
-#include "Templates/Box.h"
+#include "Box.h"
 
 class ProxyListElem {
 public:
@@ -43,12 +43,17 @@ typedef ResizeArrayIter<ProxyListElem> ProxyListIter;
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/07/09 21:26:41 $
+ *	$Revision: 1.1004 $	$Date: 1997/12/26 23:10:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatchTypes.h,v $
+ * Revision 1.1004  1997/12/26 23:10:49  milind
+ * Made namd2 to compile, link and run under linux. Merged Templates and src
+ * directoriies, and removed separate definition and declaration files for
+ * templates.
+ *
  * Revision 1.1003  1997/07/09 21:26:41  milind
  * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
  * and #endif's.

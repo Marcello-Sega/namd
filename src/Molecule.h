@@ -26,8 +26,8 @@
 #include "structures.h"
 #include "ConfigList.h"
 #include "Vector.h"
-#include "Templates/UniqueSet.h"
-#include "Templates/ObjectArena.h"
+#include "UniqueSet.h"
+#include "ObjectArena.h"
 #include "Hydrogen.h"
 
 class SimParameters;
@@ -371,13 +371,18 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: Molecule.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1997/10/17 17:16:50 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1015 $	$Date: 1997/12/26 23:10:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.1015  1997/12/26 23:10:52  milind
+ * Made namd2 to compile, link and run under linux. Merged Templates and src
+ * directoriies, and removed separate definition and declaration files for
+ * templates.
+ *
  * Revision 1.1014  1997/10/17 17:16:50  jim
  * Switched from hash tables to checklists, eliminated special exclusion code.
  *

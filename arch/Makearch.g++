@@ -7,9 +7,10 @@
 #####
 ## Choose your favorite Compiler options
 ####
-CC = gcc -D_HPUX_SOURCE
-CXX = g++ -D_HPUX_SOURCE
-CXXOPTS = -O -DGLOBALS
+CC = gcc
+CXX = g++
+CXXOPTS = -g -DGLOBALS -DGCC
+COPTS = -g -DGLOBALS -DGCC
 
 #####
 # Flags
@@ -19,11 +20,13 @@ CXXOPTS = -O -DGLOBALS
 # uncomment for purify during compile
 # PURIFY=-purify
 
+PVM_ARCH=linux
+
 #####
 # definitions for Charm routines
 #####
 # CHARM = /Projects/l1/namd.2.0/charm
-CHARM = /Home/p1/milind/charm/net-hp
+CHARM = /Home/p1/milind/charm/net-linux
 
 #####
 # Unix commands

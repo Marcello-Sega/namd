@@ -14,8 +14,8 @@
 #include "chare.h"
 #include "c++interface.h"
 #include "main.h"
-#include "Templates/UniqueSet.h"
-#include "Templates/UniqueSetIter.h"
+#include "UniqueSet.h"
+#include "UniqueSetIter.h"
 #include "ProcessorPrivate.h"
 
 #ifndef _BCASTMGR_H
@@ -151,12 +151,17 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1997/11/07 20:17:33 $
+ *	$Revision: 1.5 $	$Date: 1997/12/26 23:10:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: BroadcastMgr.h,v $
+ * Revision 1.5  1997/12/26 23:10:39  milind
+ * Made namd2 to compile, link and run under linux. Merged Templates and src
+ * directoriies, and removed separate definition and declaration files for
+ * templates.
+ *
  * Revision 1.4  1997/11/07 20:17:33  milind
  * Made NAMD to run on shared memory machines.
  *

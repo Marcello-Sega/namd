@@ -22,8 +22,8 @@
 #include "main.h"
 #include "NamdTypes.h"
 #include "PatchTypes.h"
-#include "Templates/UniqueSet.h"
-#include "Templates/UniqueSetIter.h"
+#include "UniqueSet.h"
+#include "UniqueSetIter.h"
 #include "ProcessorPrivate.h"
 
 class RegisterProxyMsg : public comm_object {
@@ -154,12 +154,17 @@ private:
  *
  *	$RCSfile: ProxyMgr.h,v $
  *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/11/07 20:17:47 $
+ *	$Revision: 1.1009 $	$Date: 1997/12/26 23:10:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.h,v $
+ * Revision 1.1009  1997/12/26 23:10:59  milind
+ * Made namd2 to compile, link and run under linux. Merged Templates and src
+ * directoriies, and removed separate definition and declaration files for
+ * templates.
+ *
  * Revision 1.1008  1997/11/07 20:17:47  milind
  * Made NAMD to run on shared memory machines.
  *

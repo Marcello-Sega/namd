@@ -17,8 +17,8 @@
 #include "c++interface.h"
 
 #include "NamdTypes.h"
-#include "Templates/Box.h"
-#include "Templates/OwnerBox.h"
+#include "Box.h"
+#include "OwnerBox.h"
 
 #include "Node.h"
 #include "Patch.h"
@@ -100,13 +100,18 @@ void ComputeGeneral::doWork() {
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeGeneral.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/19 05:49:52 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/12/26 23:10:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGeneral.C,v $
+ * Revision 1.1004  1997/12/26 23:10:42  milind
+ * Made namd2 to compile, link and run under linux. Merged Templates and src
+ * directoriies, and removed separate definition and declaration files for
+ * templates.
+ *
  * Revision 1.1003  1997/03/19 05:49:52  jim
  * Added ComputeSphericalBC, cleaned up make dependencies.
  *

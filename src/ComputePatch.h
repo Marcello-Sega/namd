@@ -18,8 +18,8 @@
 #include "Compute.h"
 #include "PatchTypes.h"
 
-#include "Templates/Box.h"
-#include "Templates/OwnerBox.h"
+#include "Box.h"
+#include "OwnerBox.h"
 #include "PositionBox.h"
 #include "PositionOwnerBox.h"
 
@@ -56,13 +56,18 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputePatch.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/08/20 23:27:38 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/12/26 23:10:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatch.h,v $
+ * Revision 1.1005  1997/12/26 23:10:48  milind
+ * Made namd2 to compile, link and run under linux. Merged Templates and src
+ * directoriies, and removed separate definition and declaration files for
+ * templates.
+ *
  * Revision 1.1004  1997/08/20 23:27:38  jim
  * Created multiple enqueueWork entry points to aid analysis.
  *

@@ -59,6 +59,7 @@ private:
 };
 
 
+#ifdef NAMD_TCL
 int ComputeGlobalMaster::Tcl_print(ClientData,
 	Tcl_Interp *, int argc, char *argv[]) {
   char *msg = Tcl_Merge(argc-1,argv+1);
@@ -151,6 +152,7 @@ int ComputeGlobalMaster::Tcl_addforce(ClientData clientData,
   DebugM(4,"Atom ID " << atomid << " added to force list\n");
   return TCL_OK;
 }
+#endif
 
 
 ComputeGlobalMaster::ComputeGlobalMaster(ComputeGlobal *h) {
@@ -420,12 +422,17 @@ void ComputeGlobal::sendData()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1997/12/19 23:48:45 $
+ *	$Revision: 1.2 $	$Date: 1997/12/26 23:10:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGlobal.C,v $
+ * Revision 1.2  1997/12/26 23:10:43  milind
+ * Made namd2 to compile, link and run under linux. Merged Templates and src
+ * directoriies, and removed separate definition and declaration files for
+ * templates.
+ *
  * Revision 1.1  1997/12/19 23:48:45  jim
  * Added Tcl interface for calculating forces.
  *

@@ -10,9 +10,11 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ParseOptions.C,v 1.1004 1997/07/09 21:26:42 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ParseOptions.C,v 1.1005 1997/12/26 23:10:55 milind Exp $";
 // set the list of parameters
+#ifndef GCC
 #include <libc.h>
+#endif
 #include <iostream.h>
 #ifndef SP2
 #include <string.h>
@@ -1133,12 +1135,17 @@ Bool ParseOptions::units(const char *name, Units *units) // set
  *
  *	$RCSfile: ParseOptions.C,v $
  *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/07/09 21:26:42 $
+ *	$Revision: 1.1005 $	$Date: 1997/12/26 23:10:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ParseOptions.C,v $
+ * Revision 1.1005  1997/12/26 23:10:55  milind
+ * Made namd2 to compile, link and run under linux. Merged Templates and src
+ * directoriies, and removed separate definition and declaration files for
+ * templates.
+ *
  * Revision 1.1004  1997/07/09 21:26:42  milind
  * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
  * and #endif's.

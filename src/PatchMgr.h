@@ -20,7 +20,7 @@
 #include "c++interface.h"
 
 #include "NamdTypes.h"
-#include "Templates/SortedArray.h"
+#include "SortedArray.h"
 #include "HomePatch.h"
 #include "HomePatchList.h"
 #include "BOCgroup.h"
@@ -147,12 +147,17 @@ private:
  *
  *	$RCSfile: PatchMgr.h,v $
  *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/11/07 20:17:45 $
+ *	$Revision: 1.1008 $	$Date: 1997/12/26 23:10:56 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.h,v $
+ * Revision 1.1008  1997/12/26 23:10:56  milind
+ * Made namd2 to compile, link and run under linux. Merged Templates and src
+ * directoriies, and removed separate definition and declaration files for
+ * templates.
+ *
  * Revision 1.1007  1997/11/07 20:17:45  milind
  * Made NAMD to run on shared memory machines.
  *

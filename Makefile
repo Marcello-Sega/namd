@@ -59,11 +59,11 @@ PVMLIBS=pvm3/libpvmc.a
 ## definitions for TCL interface
 ######
 
-TCLDIR=/usr/local
-TCLINCL=-I$(TCLDIR)/include
-TCLLIB=-L$(TCLDIR)/lib -ltcl
-TCLFLAGS=-DNAMD_TCL
-TCL=$(TCLINCL) $(TCLFLAGS)
+#TCLDIR=/usr/local
+#TCLINCL=-I$(TCLDIR)/include
+#TCLLIB=-L$(TCLDIR)/lib -ltcl
+#TCLFLAGS=-DNAMD_TCL
+#TCL=$(TCLINCL) $(TCLFLAGS)
 
 
 ######
@@ -75,7 +75,7 @@ LIBS = $(DPMTALIBS) $(PVMLIBS) $(DPMELIBS)
 
 # CXX is platform dependent
 INCLUDE = $(CHARM)/include
-CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(SRCDIR)/Templates -I$(INCDIR) $(DPMTA) $(PVM) $(TCL) $(CXXOPTS) $(NOWARN) $(NAMDFLAGS)
+CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(PVM) $(TCL) $(CXXOPTS) $(NOWARN) $(NAMDFLAGS)
 GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(PVM) $(TCL) $(NOWARN) $(NAMDFLAGS)
 
 .SUFFIXES: 	.ci
@@ -163,24 +163,9 @@ INTERFACES = main.ci Node.ci WorkDistrib.ci PatchMgr.ci \
 		CollectionMgr.ci CollectionMaster.ci BroadcastMgr.ci \
 		LdbCoordinator.ci
 
-TEMPLATES = \
-	$(SRCDIR)/ComputeHomeTuples.C \
-	$(SRCDIR)/PositionBox.C \
-	$(SRCDIR)/PositionOwnerBox.C \
-	$(SRCDIR)/BroadcastObject.C \
-	$(SRCDIR)/Templates/Box.C \
-	$(SRCDIR)/Templates/ObjectArena.C \
-	$(SRCDIR)/Templates/OwnerBox.C \
-	$(SRCDIR)/Templates/ResizeArray.C \
-	$(SRCDIR)/Templates/ResizeArrayRaw.C \
-	$(SRCDIR)/Templates/SortableResizeArray.C \
-	$(SRCDIR)/Templates/SortedArray.C \
-	$(SRCDIR)/Templates/UniqueSetRaw.C \
-	$(SRCDIR)/Templates/UniqueSortedArray.C
-
-namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES) $(LIBS)
+namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(CHARMC) -verbose -ld++-option \
-	"-I$(INCLUDE) -I$(SRCDIR) -I$(SRCDIR)/Templates $(CXXOPTS) " \
+	"-I$(INCLUDE) -I$(SRCDIR) $(CXXOPTS) " \
 	-language charm++ \
 	-o namd2 $(OBJS) \
 	$(DPMTALIB) \
@@ -189,11 +174,11 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES) $(LIBS)
 
 # Now sit back, have a coke, and relax.
 
-projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES) $(LIBS)
+projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	cd $(PVMDIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
 	cd $(DPMTADIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
 	$(CHARMC) -verbose -ld++-option \
-	"-I$(INCLUDE) -I$(SRCDIR) -I$(SRCDIR)/Templates $(CXXOPTS) " \
+	"-I$(INCLUDE) -I$(SRCDIR) $(CXXOPTS) " \
 	-language charm++ -tracemode projections \
 	-o namd2 $(OBJS) \
 	$(DPMTALIB) \

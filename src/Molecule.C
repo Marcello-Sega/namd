@@ -11,7 +11,7 @@
  *
  *  $RCSfile: Molecule.C,v $
  *  $Author: milind $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1017 $  $Date: 1997/10/01 16:46:56 $
+ *  $Revision: 1.1018 $  $Date: 1997/12/26 23:10:51 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,11 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1018  1997/12/26 23:10:51  milind
+ * Made namd2 to compile, link and run under linux. Merged Templates and src
+ * directoriies, and removed separate definition and declaration files for
+ * templates.
+ *
  * Revision 1.1017  1997/10/01 16:46:56  milind
  * Removed old NAMD1 messaging and replaced it with new Message Streams library.
  *
@@ -228,9 +233,9 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1017 1997/10/01 16:46:56 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1018 1997/12/26 23:10:51 milind Exp $";
 
-#include "Templates/UniqueSortedArray.h"
+#include "UniqueSortedArray.h"
 #include "Molecule.h"
 #include <stdio.h>
 #include <string.h>
@@ -246,7 +251,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,
 #include "PDB.h"
 #include "SimParameters.h"
 #include "Hydrogen.h"
-#include "Templates/UniqueSetIter.h"
+#include "UniqueSetIter.h"
 
 #define MIN_DEBUG_LEVEL 3
 // #define DEBUGM
@@ -3629,12 +3634,17 @@ void Molecule::receive_Molecule(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1017 $  $Date: 1997/10/01 16:46:56 $
+ *  $Revision: 1.1018 $  $Date: 1997/12/26 23:10:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1018  1997/12/26 23:10:51  milind
+ * Made namd2 to compile, link and run under linux. Merged Templates and src
+ * directoriies, and removed separate definition and declaration files for
+ * templates.
+ *
  * Revision 1.1017  1997/10/01 16:46:56  milind
  * Removed old NAMD1 messaging and replaced it with new Message Streams library.
  *

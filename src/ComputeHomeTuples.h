@@ -15,21 +15,30 @@
 #ifndef COMPUTEHOMETUPLES_H
 #define COMPUTEHOMETUPLES_H
 
-#ifdef SP2
-#pragma implementation("ComputeHomeTuples.C");
-#endif
-
 #include "NamdTypes.h"
 #include "common.h"
 #include "structures.h"
 #include "Compute.h"
 #include "HomePatch.h"
 
-#include "Templates/Box.h"
-#include "Templates/OwnerBox.h"
+#include "Box.h"
+#include "OwnerBox.h"
 #include "PositionBox.h"
 #include "PositionOwnerBox.h"
-#include "Templates/UniqueSet.h"
+#include "UniqueSet.h"
+
+#include "Namd.h"
+#include "Node.h"
+#include "PatchMap.inl"
+#include "AtomMap.h"
+#include "ComputeHomeTuples.h"
+#include "PatchMgr.h"
+#include "HomePatchList.h"
+#include "Molecule.h"
+#include "ReductionMgr.h"
+#include "Inform.h"
+#include "UniqueSet.h"
+#include "UniqueSetIter.h"
 
 class TuplePatchElem {
   public:
@@ -86,158 +95,189 @@ typedef UniqueSetIter<TuplePatchElem> TuplePatchListIter;
 class AtomMap;
 class ReductionMgr;
 
-template <class T, class S>
-class ComputeHomeTuples : public Compute {
-private:
-  virtual void loadTuples();
-  int doLoadTuples;
+template <class T, class S> class ComputeHomeTuples : public Compute {
 
-protected:
-  UniqueSet<T> tupleList;
-  TuplePatchList tuplePatchList;
+  private:
+  
+    virtual void loadTuples(void) {
+      int numTuples;
+      int **tuplesByAtom;
+      S *tupleStructs;
+    
+      T::getMoleculePointers(node->molecule,
+		    &numTuples, &tuplesByAtom, &tupleStructs);
+    
+      char *tupleFlag = new char[numTuples];
+      int *tupleStack = new int[numTuples];
+      int *nextTuple = tupleStack;
+    
+      memset((void *)tupleFlag, 0, numTuples*sizeof(char));
+    
+      // cycle through each patch and gather all tuples
+      TuplePatchListIter ai(tuplePatchList);
+    
+      for ( ai = ai.begin(); ai != ai.end(); ai++ )
+      {
+        Patch *patch = (*ai).p;
+        AtomIDList atomID = patch->getAtomIDList();
+        int numAtoms = patch->getNumAtoms();
+    
+        // cycle through each atom in the patch and load up tuples
+        for (int i=0; i < numAtoms; i++)
+        {
+           /* get list of all tuples for the atom */
+           register int *tuples = tuplesByAtom[atomID[i]];
+    
+           /* cycle through each tuple */
+           register int t;
+           while((t = *tuples) != -1) {
+	     if (!tupleFlag[t])
+             {
+	       *nextTuple = t;
+	       nextTuple++;
+               tupleFlag[t] = 1;
+             }
+	     tuples++;
+           }
+        }
+      }
+    
+      delete [] tupleFlag;
+    
+      tupleList.clear();
+    
+      int *curTuple;
+      LocalID aid[T::size];
+      for (curTuple = tupleStack; curTuple != nextTuple; curTuple++ ) {
+        register int al = *curTuple;
+        T t(&tupleStructs[al]);
+        register int i;
+        aid[0] = atomMap->localID(t.atomID[0]);
+        int homepatch = aid[0].pid;
+        for (i=1; i < T::size; i++) {
+	    aid[i] = atomMap->localID(t.atomID[i]);
+	    homepatch = patchMap->downstream(homepatch,aid[i].pid);
+        }
+        if ( homepatch != notUsed && patchMap->node(homepatch) == CMyPe() ) {
+          for (i=0; i < T::size; i++) {
+	    t.p[i] = tuplePatchList.find(TuplePatchElem(aid[i].pid));
+	    t.localIndex[i] = aid[i].index;
+          }
+          tupleList.load(t);
+        }
+      }
+      delete [] tupleStack;
+    }
 
-  PatchMap *patchMap;
-  AtomMap *atomMap;
-  ReductionMgr *reduction;
+    int doLoadTuples;
+  
+  protected:
+  
+    UniqueSet<T> tupleList;
+    TuplePatchList tuplePatchList;
+  
+    PatchMap *patchMap;
+    AtomMap *atomMap;
+    ReductionMgr *reduction;
+  
+  public:
+  
+    ComputeHomeTuples(ComputeID c) : Compute(c) {
+      patchMap = PatchMap::Object();
+      atomMap = AtomMap::Object();
+      reduction = ReductionMgr::Object();
+      T::registerReductionData(reduction);
+      doLoadTuples = false;
+    }
 
-public:
-  ComputeHomeTuples(ComputeID c);
-  virtual ~ComputeHomeTuples();
-  void initialize();
-  void atomUpdate();
-  void doWork();
+    virtual ~ComputeHomeTuples() {
+      T::unregisterReductionData(reduction);
+    }
+
+    //======================================================================
+    // initialize() - Method is invoked only the first time
+    // atom maps, patchmaps etc are ready and we are about to start computations
+    //======================================================================
+    void initialize(void) {
+    
+      // Gather all HomePatches
+      HomePatchList *a = patchMap->homePatchList();
+      ResizeArrayIter<HomePatchElem> ai(*a);
+    
+      // Start with empty list
+      tuplePatchList.clear();
+    
+      for ( ai = ai.begin(); ai != ai.end(); ai++ ) {
+        tuplePatchList.add(TuplePatchElem((*ai).patch, cid));
+      }
+    
+      // Gather all proxy patches (neighbors, that is)
+      PatchID neighbors[PatchMap::MaxOneOrTwoAway];
+    
+      for ( ai = ai.begin(); ai != ai.end(); ai++ ) {
+        int numNeighbors = patchMap->upstreamNeighbors((*ai).pid,neighbors);
+        for ( int i = 0; i < numNeighbors; ++i ) {
+          if ( patchMap->node(neighbors[i]) != CMyPe() &&
+	       ! tuplePatchList.find(TuplePatchElem(neighbors[i])) ) {
+            Patch *patch = patchMap->patch(neighbors[i]);
+	    tuplePatchList.add(TuplePatchElem(patch, cid));
+          }
+        }
+      }
+      setNumPatches(tuplePatchList.size());
+      doLoadTuples = true;
+    }
+
+    //======================================================================
+    // atomUpdate() - Method is invoked after anytime that atoms have been
+    // changed in patches used by this Compute object.
+    //======================================================================
+    void atomUpdate(void) {
+      doLoadTuples = true;
+    }
+
+//-------------------------------------------------------------------
+// Routine which is called by enqueued work msg.  It wraps
+// actualy Force computation with the apparatus needed
+// to get access to atom positions, return forces etc.
+//-------------------------------------------------------------------
+    void doWork(void) {
+      if ( doLoadTuples ) {
+        loadTuples();
+        doLoadTuples = false;
+      }
+    
+      // Open Boxes - register tFat we are using Positions
+      // and will be depositing Forces.
+      UniqueSetIter<TuplePatchElem> ap(tuplePatchList);
+      for (ap = ap.begin(); ap != ap.end(); ap++) {
+        ap->x = ap->positionBox->open();
+        ap->a = ap->atomBox->open();
+        ap->r = ap->forceBox->open();
+        ap->f = ap->r->f[Results::normal];
+      } 
+    
+      BigReal reductionData[T::reductionDataSize];
+      for ( int i = 0; i < T::reductionDataSize; ++i ) reductionData[i] = 0;
+    
+      // take triplet and pass with tuple info to force eval
+      UniqueSetIter<T> al(tupleList);
+      for (al = al.begin(); al != al.end(); al++ ) {
+        al->computeForce(reductionData);
+      }
+    
+      T::submitReductionData(reductionData,reduction,ap.begin()->p->flags.seq);
+    
+      // Close boxes - i.e. signal we are done with Positions and
+      // AtomProperties and that we are depositing Forces
+      for (ap = ap.begin(); ap != ap.end(); ap++) {
+        ap->positionBox->close(&(ap->x));
+        ap->atomBox->close(&(ap->a));
+        ap->forceBox->close(&(ap->r));
+      }
+    }
 };
 
+
 #endif
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: ComputeHomeTuples.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/10/17 17:16:47 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: ComputeHomeTuples.h,v $
- * Revision 1.1011  1997/10/17 17:16:47  jim
- * Switched from hash tables to checklists, eliminated special exclusion code.
- *
- * Revision 1.1010  1997/10/02 22:01:21  jim
- * Moved loadTuples() out of recvProxyAll entry point and into enqueueWork.
- *
- * Revision 1.1009  1997/09/28 22:36:50  jim
- * Modified tuple-based computations to not duplicate calculations and
- * only require "upstream" proxies.
- *
- * Revision 1.1008  1997/07/09 21:26:40  milind
- * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
- * and #endif's.
- *
- * Revision 1.1007  1997/03/18 21:35:26  jim
- * Eliminated fake_seq.  Reductions now use Patch::flags.seq.
- *
- * Revision 1.1006  1997/03/18 18:08:53  jim
- * Revamped collection system to ensure ordering and eliminate
- * unnecessary collections.  Also reduced make dependencies.
- *
- * Revision 1.1005  1997/03/13 22:39:36  jim
- * Fixed some bugs in multiple-force return / full electrostatics.
- *
- * Revision 1.1004  1997/03/12 22:06:36  jim
- * First step towards multiple force returns and multiple time stepping.
- *
- * Revision 1.1003  1997/03/11 23:46:27  ari
- * Improved ComputeNonbondedExcl loadTuples() by overloading the default
- * template method from ComputeHomeTuples and used the checklist suggested
- * by Jim.  Good performance gain.
- *
- * Revision 1.1002  1997/03/10 17:40:05  ari
- * UniqueSet changes - some more commenting and cleanup
- *
- * Revision 1.1001  1997/02/17 23:46:58  ari
- * Added files for cleaning up atom migration code
- *
- * Revision 1.1000  1997/02/06 15:58:00  ari
- * Resetting CVS to merge branches back into the main trunk.
- * We will stick to main trunk development as suggested by CVS manual.
- * We will set up tags to track fixed points of development/release
- * as suggested by CVS manual - all praise the CVS manual.
- *
- * Revision 1.779  1997/02/06 15:52:58  ari
- * Updating Revision Line, getting rid of branches
- *
- * Revision 1.778.2.1  1997/02/05 22:18:04  ari
- * Added migration code - Currently the framework is
- * there with compiling code.  This version does
- * crash shortly after migration is complete.
- * Migration appears to complete, but Patches do
- * not appear to be left in a correct state.
- *
- * Revision 1.778  1997/01/28 00:30:12  ari
- * internal release uplevel to 1.778
- *
- * Revision 1.777.2.2  1997/01/27 22:45:01  ari
- * Basic Atom Migration Code added.
- * Added correct magic first line to .h files for xemacs to go to C++ mode.
- * Compiles and runs without migration turned on.
- *
- * Revision 1.777.2.1  1997/01/24 22:00:28  jim
- * Changes for periodic boundary conditions.
- *
- * Revision 1.777  1997/01/17 19:35:45  ari
- * Internal CVS leveling release.  Start development code work
- * at 1.777.1.1.
- *
- * Revision 1.10  1997/01/16 00:55:56  jim
- * Added reduction of energies from ComputeHomeTuples objects, except
- * for ComputeNonbondedExcl which only reports 0 energy.
- * Some problems with ReductionMgr are apparent, but it still runs.
- *
- * Revision 1.9  1997/01/14 17:59:48  jim
- * fixed multiple force additions (no adding to proxies now)
- *
- * Revision 1.8  1996/12/04 18:03:12  jim
- * added AtomProperties checkout
- *
- * Revision 1.7  1996/11/19 06:58:37  jim
- * first compiling templated version, needed ugly void* hack
- *
- * Revision 1.6  1996/11/19 04:24:24  jim
- * first templated version as ComputeHomeTuples<T>
- *
- * Revision 1.5  1996/11/18 21:28:48  ari
- * *** empty log message ***
- *
- * Revision 1.4  1996/11/04 20:06:17  nealk
- * Now it compiles :-)
- *
- * Revision 1.3  1996/11/04 19:29:02  nealk
- * Added angleForce() to system, but it is untested.
- *
- * Revision 1.2  1996/11/04 16:55:46  ari
- * *** empty log message ***
- *
- * Revision 1.1  1996/11/01 21:20:45  ari
- * Initial revision
- *
- * Revision 1.3  1996/10/16 08:22:39  ari
- * *** empty log message ***
- *
- * Revision 1.1  1996/08/19 22:07:49  ari
- * Initial revision
- *
- * Revision 1.4  1996/07/16 01:54:12  ari
- * *** empty log message ***
- *
- * Revision 1.3  96/07/16  01:10:26  01:10:26  ari (Aritomo Shinozaki)
- * Fixed comments, added methods
- * 
- * Revision 1.2  1996/06/25 21:10:48  gursoy
- * *** empty log message ***
- *
- * Revision 1.1  1996/06/24 14:12:26  gursoy
- * Initial revision
- *
- ***************************************************************************/
 

@@ -16,11 +16,11 @@
 #define PATCH_H
 
 #include "NamdTypes.h"
-#include "Templates/OwnerBox.h"
-#include "Templates/Box.h"
+#include "OwnerBox.h"
+#include "Box.h"
 #include "PositionOwnerBox.h"
 #include "PositionBox.h"
-#include "Templates/UniqueSortedArray.h"
+#include "UniqueSortedArray.h"
 #include "Lattice.h"
 #include "PatchTypes.h"
 
@@ -130,13 +130,18 @@ class Patch
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/09/19 05:17:44 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1010 $	$Date: 1997/12/26 23:10:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.h,v $
+ * Revision 1.1010  1997/12/26 23:10:55  milind
+ * Made namd2 to compile, link and run under linux. Merged Templates and src
+ * directoriies, and removed separate definition and declaration files for
+ * templates.
+ *
  * Revision 1.1009  1997/09/19 05:17:44  jim
  * Cleaned up and tweaked hydrogen-group based temporary pairlist
  * generation for roughly a 6% performance improvement.

@@ -3,7 +3,7 @@
 #define HYDROGEN_H
 
 #include "NamdTypes.h"
-#include "Templates/UniqueSortedArray.h"
+#include "UniqueSortedArray.h"
 
 // List maintaining the global atom indicies sorted by helix groups.
 class HydrogenGroupID {
@@ -60,13 +60,18 @@ typedef UniqueSortedArray<HydrogenGroupID> HydrogenGroup ;
  * RCS INFORMATION:
  *
  *      $RCSfile: Hydrogen.h,v $
- *      $Author: jim $        $Locker:  $             $State: Exp $
- *      $Revision: 1.7 $     $Date: 1997/06/27 21:36:47 $
+ *      $Author: milind $        $Locker:  $             $State: Exp $
+ *      $Revision: 1.8 $     $Date: 1997/12/26 23:10:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Hydrogen.h,v $
+ * Revision 1.8  1997/12/26 23:10:50  milind
+ * Made namd2 to compile, link and run under linux. Merged Templates and src
+ * directoriies, and removed separate definition and declaration files for
+ * templates.
+ *
  * Revision 1.7  1997/06/27 21:36:47  jim
  * Fixed HydrogenGroupID operator < to ensure parents are before children.
  *

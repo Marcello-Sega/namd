@@ -24,8 +24,8 @@
 #include "PatchTypes.h"
 #include "Compute.h"
 
-#include "Templates/Box.h"
-#include "Templates/OwnerBox.h"
+#include "Box.h"
+#include "OwnerBox.h"
 #include "PositionBox.h"
 #include "PositionOwnerBox.h"
 
@@ -99,13 +99,18 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeGeneral.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/12 22:06:34 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/12/26 23:10:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGeneral.h,v $
+ * Revision 1.1002  1997/12/26 23:10:42  milind
+ * Made namd2 to compile, link and run under linux. Merged Templates and src
+ * directoriies, and removed separate definition and declaration files for
+ * templates.
+ *
  * Revision 1.1001  1997/03/12 22:06:34  jim
  * First step towards multiple force returns and multiple time stepping.
  *

@@ -9,8 +9,10 @@
 ####
 CXX = /usr/lib64/cmplrs/CC -64 
 CC = /usr/lib64/cmplrs/cc -64 
-#CXXOPTS = -D_SGI_MP_SOURCE -O3 -DGLOBALS 
-CXXOPTS = -g -DGLOBALS -INLINE:=OFF
+CXXOPTS = -D_SGI_MP_SOURCE -O3 -IPA -r10000 -INLINE:all -DGLOBALS 
+COPTS = -D_SGI_MP_SOURCE -O3 -IPA -r10000 -INLINE:all
+#COPTS = -g -D_SGI_MP_SOURCE
+#CXXOPTS = -g -DGLOBALS -INLINE:=OFF
 
 #####
 # Flags
@@ -20,7 +22,8 @@ CXXOPTS = -g -DGLOBALS -INLINE:=OFF
 # uncomment for purify during compile
 # PURIFY=-purify
 
-#DFLAGS=
+#DFLAGS= -g -D_SGI_MP_SOURCE
+DFLAGS= -D_SGI_MP_SOURCE -O3 -IPA -r10000 -INLINE:all
 
 #####
 # definitions for Charm routines

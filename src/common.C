@@ -10,7 +10,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1008 1997/04/10 18:44:34 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1009 1997/12/26 23:11:06 milind Exp $";
 
 #include "chare.h"
 #include "ckdefs.h"
@@ -23,24 +23,14 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 
 #include "SimParameters.h"
 #include "Node.h"
 
-//  Provide alternate new and delete operators if the MTS fast allocator is being
-//  used
 #ifdef GLOBALS
-#ifdef MTS
-void * operator new (size_t t) { return malloc (t); }
-void   operator delete (void *p) { free (p); }
-#else
 void * operator new (size_t t) { return CmiAlloc (t); }
+void * operator new (size_t, void *p) { return p; }
 void   operator delete (void *p) { if ( p ) CmiFree (p); }
-#endif  // MTS
-#else
-#ifdef MTS
-void * ::operator new (size_t t) { return malloc (t); }
-void   ::operator delete (void *p) { free (p); }
 #else
 void * ::operator new (size_t t) { return CmiAlloc (t); }
+void * ::operator new (size_t, void *p) { return p; }
 void   ::operator delete (void *p) { if ( p ) CmiFree (p); }
-#endif // MTS
 #endif // GLOBALS
 
 // print out title
@@ -300,13 +290,18 @@ int	Fclose	(FILE *fout)
  * RCS INFORMATION:
  *
  *	$RCSfile: common.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/04/10 18:44:34 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1009 $	$Date: 1997/12/26 23:11:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.C,v $
+ * Revision 1.1009  1997/12/26 23:11:06  milind
+ * Made namd2 to compile, link and run under linux. Merged Templates and src
+ * directoriies, and removed separate definition and declaration files for
+ * templates.
+ *
  * Revision 1.1008  1997/04/10 18:44:34  nealk
  * 1. changed endl to endi on Controller.C
  * 2. identified popen() bug under HP-UX 9.  popen() occasionally (1/3 of the

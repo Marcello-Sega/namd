@@ -17,10 +17,10 @@
 #define NAMDTYPES_H
 
 #include "Vector.h"
-#include "Templates/ResizeArray.h"
-#include "Templates/UniqueSortedArray.h"
-#include "Templates/ResizeArrayIter.h"
-#include "Templates/ResizeArrayPrimIter.h"
+#include "ResizeArray.h"
+#include "UniqueSortedArray.h"
+#include "ResizeArrayIter.h"
+#include "ResizeArrayPrimIter.h"
 
 class Patch;
 class Compute;
@@ -104,13 +104,18 @@ typedef int Boolean;
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdTypes.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/09/19 08:55:34 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1997/12/26 23:10:53 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdTypes.h,v $
+ * Revision 1.1008  1997/12/26 23:10:53  milind
+ * Made namd2 to compile, link and run under linux. Merged Templates and src
+ * directoriies, and removed separate definition and declaration files for
+ * templates.
+ *
  * Revision 1.1007  1997/09/19 08:55:34  jim
  * Added rudimentary but relatively efficient fixed atoms.  New options
  * are fixedatoms, fixedatomsfile, and fixedatomscol (nonzero means fixed).

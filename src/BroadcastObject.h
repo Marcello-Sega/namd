@@ -10,51 +10,35 @@
  *		run in a thread!)
  ***************************************************************************/
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
-#include "BroadcastMgr.h"
-#include "BroadcastClient.h"
-
 #ifndef _BCASTOBJ_H
 #define _BCASTOBJ_H
 
-#ifdef SP2
-#pragma implementation("BroadcastObject.C");
-#endif
+#include "BroadcastMgr.h"
+#include "BroadcastClient.h"
 
-template <class T>
-class SimpleBroadcastObject : public BroadcastClient {
-public:
-  SimpleBroadcastObject(int id=0) : BroadcastClient(id) { }
-  ~SimpleBroadcastObject() { }
+template <class T> class SimpleBroadcastObject : public BroadcastClient {
 
-  T get(int);
-  void publish(int, const T &);
+  public:
+
+    SimpleBroadcastObject(int id=0) : BroadcastClient(id) { }
+    ~SimpleBroadcastObject() { }
+
+    T get(int tag) {
+      void *buf;
+      while (!(buf = (BroadcastMgr::Object())->getbuf(*this, tag))) {
+        suspendFor(tag);
+      }
+      T tmp = *(T *)buf;
+      delete buf;
+      return tmp;
+    }
+    
+    void publish(int tag,const T &t ) {
+      void *buf = new T;
+      *(T *)buf = t;
+      BroadcastMgr::Object()->send(*this, tag, buf, sizeof(T));
+    }
+
 };
 
 #endif
-
-
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1997/07/09 21:26:38 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: BroadcastObject.h,v $
- * Revision 1.2  1997/07/09 21:26:38  milind
- * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
- * and #endif's.
- *
- * Revision 1.1  1997/03/19 11:53:55  ari
- * Add Broadcast mechanism.
- * Fixed RCS Log entries on files that did not have Log entries.
- * Added some register variables to Molecule and ComputeNonbondedExcl.C
- *
- *
- ***************************************************************************/

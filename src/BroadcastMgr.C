@@ -13,8 +13,8 @@
 #include "ckdefs.h"
 #include "chare.h"
 #include "c++interface.h"
-#include "Templates/UniqueSet.h"
-#include "Templates/UniqueSetIter.h"
+#include "UniqueSet.h"
+#include "UniqueSetIter.h"
 #include "BroadcastMgr.top.h"
 #include "BroadcastMgr.h"
 #include "BroadcastClient.h"
@@ -126,12 +126,17 @@ BroadcastMgr::recvBroadcast(BroadcastMsg *msg) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1997/11/07 20:17:32 $
+ *	$Revision: 1.6 $	$Date: 1997/12/26 23:10:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: BroadcastMgr.C,v $
+ * Revision 1.6  1997/12/26 23:10:39  milind
+ * Made namd2 to compile, link and run under linux. Merged Templates and src
+ * directoriies, and removed separate definition and declaration files for
+ * templates.
+ *
  * Revision 1.5  1997/11/07 20:17:32  milind
  * Made NAMD to run on shared memory machines.
  *
