@@ -542,8 +542,17 @@ NOEXCL
       {
 	NOEXCL
 	(
-	if ( SELF( j < j_hgroup || ) mol->checkexcl(a_i.id,a_j.id) )  // Inline this by hand.
-	{
+	register int *list;
+	register int other_int;
+	SELF( if ( ! ( j < j_hgroup ) ) ) {
+           //  We want to search the array of the smaller atom
+	  int atom1 = a_i.id;
+	  int atom2 = a_j.id;
+	  list = mol->get_excl_check_for_atom(atom1<atom2?atom1:atom2);
+	  other_int = atom1<atom2?atom2:atom1;
+	  for ( ; *list != other_int && *list != -1; ++list );
+	}
+	if ( SELF( j < j_hgroup || ) ! ( *list != other_int ) ) {
 	  FULL
 	  (
 	    // Do a quick fix and get out!
@@ -566,18 +575,19 @@ NOEXCL
 	    fullf_j.z -= tmp_z;
 	  )
 	  continue;  // Must have stored force by now.
-	}
-	else if ( mol->check14excl(a_i.id,a_j.id) )  // Inline this by hand.
-	{
-	  FULL
-	  (
-	    // Make full electrostatics match rescaled charges!
-	    f *= ( 1. - scale14 );
-	    fullElectEnergy -= f;
-	    fullforce_r -= f * r_1*r_1;
-	  )
-	  lj_pars = ljTable->table_val(a_i.type, a_j.type, 1);
-	  kq_i = kq_i_s;
+	} else {
+	  for ( ++list ; *list != other_int && *list != -1; ++list );
+          if ( ! ( *list != other_int ) ) {
+	    FULL
+	    (
+	      // Make full electrostatics match rescaled charges!
+	      f *= ( 1. - scale14 );
+	      fullElectEnergy -= f;
+	      fullforce_r -= f * r_1*r_1;
+	    )
+	    lj_pars = ljTable->table_val(a_i.type, a_j.type, 1);
+	    kq_i = kq_i_s;
+	  }
 	}
 	)
 

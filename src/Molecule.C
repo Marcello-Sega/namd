@@ -23,6 +23,7 @@
 #include "MStream.h"
 #include "Communicate.h"
 // #include "Node.h"
+#include "ObjectArena.h"
 #include "Parameters.h"
 #include "PDB.h"
 #include "SimParameters.h"
@@ -174,13 +175,16 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
   impropersByAtom=NULL;
   exclusionsByAtom=NULL;
   all_exclusions=NULL;
-  onefour_exclusions=NULL;
   langevinParams=NULL;
   langForceVals=NULL;
   fixedAtomFlags=NULL;
   rigidBondLengths=NULL;
   consIndexes=NULL;
   consParams=NULL;
+  nameArena = new ObjectArena<char>;
+  nameArena->setAlignment(8);
+  arena = new ObjectArena<int>;
+  arena->setAlignment(32);
 
   /*  Initialize counts to 0 */
   numAtoms=0;
@@ -232,6 +236,7 @@ Molecule::~Molecule()
     // subarrarys allocated from arena - automatically deleted
     delete [] atomNames;
   }
+  delete nameArena;
 
   if (resLookup != NULL)
     delete resLookup;
@@ -275,14 +280,13 @@ Molecule::~Molecule()
   if (all_exclusions != NULL)
        delete [] all_exclusions;
   
-  if (onefour_exclusions != NULL)
-       delete [] onefour_exclusions;
-
   if (fixedAtomFlags != NULL)
        delete [] fixedAtomFlags;
 
   if (rigidBondLengths != NULL)
        delete [] rigidBondLengths;
+
+  delete arena;
 }
 /*      END OF FUNCTION Molecule      */
 
@@ -698,9 +702,9 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
     int namelength = strlen(atom_name)+1;
     int typelength = strlen(atom_type)+1;
 
-    atomNames[atom_number-1].resname = nameArena.getNewArray(reslength);
-    atomNames[atom_number-1].atomname = nameArena.getNewArray(namelength);
-    atomNames[atom_number-1].atomtype = nameArena.getNewArray(typelength);
+    atomNames[atom_number-1].resname = nameArena->getNewArray(reslength);
+    atomNames[atom_number-1].atomname = nameArena->getNewArray(namelength);
+    atomNames[atom_number-1].atomtype = nameArena->getNewArray(typelength);
   
     if (atomNames[atom_number-1].resname == NULL)
     {
@@ -2305,7 +2309,7 @@ void Molecule::receive_Molecule(MIStream *msg)
        }
        for (i=0; i<numAtoms; i++)
        {
-         bondsByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
+         bondsByAtom[i] = arena->getNewArray(byAtomSize[i]+1);
          bondsByAtom[i][byAtomSize[i]] = -1;
          byAtomSize[i] = 0;
        }
@@ -2335,7 +2339,7 @@ void Molecule::receive_Molecule(MIStream *msg)
        }
        for (i=0; i<numAtoms; i++)
        {
-         anglesByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
+         anglesByAtom[i] = arena->getNewArray(byAtomSize[i]+1);
          anglesByAtom[i][byAtomSize[i]] = -1;
          byAtomSize[i] = 0;
        }
@@ -2367,7 +2371,7 @@ void Molecule::receive_Molecule(MIStream *msg)
        }
        for (i=0; i<numAtoms; i++)
        {
-         impropersByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
+         impropersByAtom[i] = arena->getNewArray(byAtomSize[i]+1);
          impropersByAtom[i][byAtomSize[i]] = -1;
          byAtomSize[i] = 0;
        }
@@ -2400,7 +2404,7 @@ void Molecule::receive_Molecule(MIStream *msg)
        }
        for (i=0; i<numAtoms; i++)
        {
-         dihedralsByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
+         dihedralsByAtom[i] = arena->getNewArray(byAtomSize[i]+1);
          dihedralsByAtom[i][byAtomSize[i]] = -1;
          byAtomSize[i] = 0;
        }
@@ -2454,7 +2458,7 @@ void Molecule::receive_Molecule(MIStream *msg)
        }
        for (i=0; i<numAtoms; i++)
        {
-         exclusionsByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
+         exclusionsByAtom[i] = arena->getNewArray(byAtomSize[i]+1);
          exclusionsByAtom[i][byAtomSize[i]] = -1;
          byAtomSize[i] = 0;
        }
@@ -2477,17 +2481,17 @@ void Molecule::receive_Molecule(MIStream *msg)
        for (i=0; i<numTotalExclusions; i++)
        {
          // first atom should alway have lower number!
-         if ( ! exclusions[i].modified )
-         {
             if ( numFixedAtoms && fixedAtomFlags[exclusions[i].atom1]
                                && fixedAtomFlags[exclusions[i].atom2] ) continue;
             byAtomSize[exclusions[i].atom1]++;
-         }
        }
        for (i=0; i<numAtoms; i++)
        {
-         all_exclusions[i] = arena.getNewArray(byAtomSize[i]+1);
-         all_exclusions[i][byAtomSize[i]] = -1;
+         if ( byAtomSize[i] ) {
+           all_exclusions[i] = arena->getNewArray(byAtomSize[i]+2);
+         } else {
+           all_exclusions[i] = 0;
+         }
          byAtomSize[i] = 0;
        }
        for (i=0; i<numTotalExclusions; i++)
@@ -2501,44 +2505,32 @@ void Molecule::receive_Molecule(MIStream *msg)
             all_exclusions[a1][byAtomSize[a1]++] = a2;
          }
        }
-
-       //  If the exclusion policy is scaled 1-4, then allocate
-       //  an array of int *'s to hold the 1-4 interactions
-       //  Allocate them all the time and assume they are there! -JCP
-       // if (simParams->exclude == SCALED14)
-       { 
-         onefour_exclusions = new int *[numAtoms];
-
-         for (i=0; i<numAtoms; i++)
-         {
-            byAtomSize[i] = 0;
+       for (i=0; i<numAtoms; i++)
+       {
+         if ( all_exclusions[i] ) {
+           all_exclusions[i][byAtomSize[i]++] = -1;
          }
-         for (i=0; i<numTotalExclusions; i++)
+       }
+       for (i=0; i<numTotalExclusions; i++)
+       {
+         if ( exclusions[i].modified )
          {
-            // first atom should alway have lower number!
-            if ( exclusions[i].modified )
-            {
-              if ( numFixedAtoms && fixedAtomFlags[exclusions[i].atom1]
-                                 && fixedAtomFlags[exclusions[i].atom2] ) continue;
-              byAtomSize[exclusions[i].atom1]++;
-            }
+            if ( numFixedAtoms && fixedAtomFlags[exclusions[i].atom1]
+                               && fixedAtomFlags[exclusions[i].atom2] ) continue;
+            int a1 = exclusions[i].atom1;
+            int a2 = exclusions[i].atom2;
+            all_exclusions[a1][byAtomSize[a1]++] = a2;
          }
-         for (i=0; i<numAtoms; i++)
-         {
-            onefour_exclusions[i] = arena.getNewArray(byAtomSize[i]+1);
-            onefour_exclusions[i][byAtomSize[i]] = -1;
-            byAtomSize[i] = 0;
-         }
-         for (i=0; i<numTotalExclusions; i++)
-         {
-            if ( exclusions[i].modified )
-            {
-              if ( numFixedAtoms && fixedAtomFlags[exclusions[i].atom1]
-                                 && fixedAtomFlags[exclusions[i].atom2] ) continue;
-              int a1 = exclusions[i].atom1;
-              int a2 = exclusions[i].atom2;
-              onefour_exclusions[a1][byAtomSize[a1]++] = a2;
-            }
+       }
+       int *empty_excl = arena->getNewArray(2);
+       empty_excl[0] = -1;
+       empty_excl[1] = -1;
+       for (i=0; i<numAtoms; i++)
+       {
+         if ( all_exclusions[i] ) {
+           all_exclusions[i][byAtomSize[i]++] = -1;
+         } else {
+           all_exclusions[i] = empty_excl;
          }
        }
 
@@ -3786,4 +3778,45 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
   }
 
 }
+
+
+int Molecule::checkexcl(int atom1, int atom2) const {
+
+           register int check_int;      //  atom whose array we will search
+           int other_int;       //  atom we are looking for
+
+           //  We want to search the array of the smaller atom
+           if (atom1<atom2) {
+                check_int = atom1;
+                other_int = atom2;
+           } else {
+                check_int = atom2;
+                other_int = atom1;
+           }
+
+           //  Do the search and return the correct value
+           register int *list = all_exclusions[check_int];
+           if ( list ) {
+             check_int = *(list++);
+             while( check_int != other_int && check_int != -1 )
+             {
+                check_int = *(list++);
+             }
+
+             if ( check_int == other_int ) {
+               return 1;
+             } else {
+               check_int = *(list++);
+               while( check_int != other_int && check_int != -1 )
+               {
+                  check_int = *(list++);
+               }
+               if ( check_int == other_int ) { return 2; }
+             }
+           }
+
+           return 0;
+
+}
+
 

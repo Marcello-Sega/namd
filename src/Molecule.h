@@ -24,7 +24,6 @@
 #include "ConfigList.h"
 #include "Vector.h"
 #include "UniqueSet.h"
-#include "ObjectArena.h"
 #include "Hydrogen.h"
 
 class SimParameters;
@@ -39,6 +38,7 @@ class DihedralElem;
 class ImproperElem;
 class NonbondedExclElem;
 class ResidueLookupElem;
+template<class Type> class ObjectArena;
 
 // List maintaining the global atom indicies sorted by helix groups.
 class Molecule
@@ -57,7 +57,7 @@ friend class NonbondedExclElem;
 
 private:
 	Atom *atoms;		//  Array of atom structures
-	ObjectArena<char> nameArena;
+	ObjectArena<char> *nameArena;
 	AtomNameInfo *atomNames;//  Array of atom name info.  Only maintained
 				//  on node 0 for VMD interface
 	ResidueLookupElem *resLookup; // find residues by name
@@ -81,7 +81,7 @@ private:
 	ObjectArena<int> *tmpArena;
 	int **bondsWithAtom;	//  List of bonds involving each atom
 
-	ObjectArena<int> arena;
+	ObjectArena<int> *arena;
 	int **bondsByAtom;	//  List of bonds owned by each atom
 	int **anglesByAtom;     //  List of angles owned by each atom
 	int **dihedralsByAtom;  //  List of dihedrals owned by each atom
@@ -92,12 +92,7 @@ private:
 				//  List of all exclusions, including
 				//  explicit exclusions and those calculated
 				//  from the bonded structure based on the
-				//  exclusion policy
-	int **onefour_exclusions;
-				//  List of 1-4 interactions.  This list is
-				//  used only if the exclusion policy is 
-				//  scaled1-4 to track 1-4 interactions that
-				//  need to be handled differently
+				//  exclusion policy.  Also includes 1-4's.
 
 	void build_lists_by_atom();
 				//  Build the list of structures by atom
@@ -280,63 +275,11 @@ public:
 			{ return exclusionsByAtom[anum]; }
 	
 	//  Check for exclusions, either explicit or bonded.
-	//  Inline this funcion since it is called so often
-	Bool checkexcl(int atom1, int atom2) const
-        {
-	   register int check_int;	//  atom whose array we will search
-	   int other_int;	//  atom we are looking for
+        //  Returns 1 for full, 2 for 1-4 exclusions.
+	int checkexcl(int atom1, int atom2) const;
 
-	   //  We want to search the array of the smaller atom
-	   if (atom1<atom2)
-	   {
-		check_int = atom1;
-		other_int = atom2;
-	   }
-	   else
-	   {
-		check_int = atom2;
-		other_int = atom1;
-	   }
-
-	   //  Do the search and return the correct value
-	   register int *list = all_exclusions[check_int];
-	   check_int = *list;
-	   while( check_int != other_int && check_int != -1 )
-	   {
-	      check_int = *(++list);
-	   }
-	   return ( check_int != -1 );
-        }
-	
-	//  Check for 1-4 exclusions.  This is only valid when the
-	//  exclusion policy is set to scaled1-4. Inline this function
-	//  since it will be called so often
-	Bool check14excl(int atom1, int atom2) const
-        {
-	   register int check_int;	//  atom whose array we will search
-	   int other_int;	//  atom we are looking for
-
-	   //  We want to search the array of the smaller atom
-	   if (atom1<atom2)
-	   {
-		check_int = atom1;
-		other_int = atom2;
-	   }
-	   else
-	   {
-		check_int = atom2;
-		other_int = atom1;
-	   }
-
-	   //  Do the search and return the correct value
-	   register int *list = onefour_exclusions[check_int];
-	   check_int = *list;
-	   while( check_int != other_int && check_int != -1 )
-	   {
-	      check_int = *(++list);
-	   }
-	   return ( check_int != -1 );
-	}
+	int *get_excl_check_for_atom(int anum) const
+			 { return all_exclusions[anum]; }
 
 	//  Return true or false based on whether the specified atom
 	//  is constrained or not.
