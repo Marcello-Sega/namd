@@ -135,6 +135,18 @@ Additional features include:
     be executed in order to facilitate automated methods.  (For
     example, to revert or change a parameter.)  You will need to
     write code and compile NAMD to make use of this feature.
+ \item The ``coorfile" command allows NAMD to perform force and energy
+    analysis on trajectory files.  ``coorfile open dcd {\tt filename}" opens
+    the specified DCD file for reading.  ``coorfile read" reads the next
+    frame in the opened DCD file, replacing NAMD's atom coordinates with the
+    coordinates in the frame, and returns 0 if successful or -1 if  
+    end-of-file was reached.  ``coorfile skip" skips past one frame in the
+    DCD file; this is significantly faster than reading coordinates and 
+    throwing them away.  ``coorfile close" closes the file.   
+
+    Force and energy analysis are especially useful in the context of 
+    pair interaction calculations; see Sec.~\ref{section:pairinteraction}
+    for details, as well as the example scripts in Sec.~\ref{section:sample}.
 \end{itemize}
 
 Please note that while NAMD has traditionally allowed comments to be
