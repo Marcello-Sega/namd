@@ -931,13 +931,13 @@ void Controller::receivePressure(int step, int minimize)
       iout << "\n" << endi; 
 
       if (step != simParameters->firstTimestep) {
-        // output pressure profile averaged over the last Freq steps.
         scalefac /= simParameters->pressureProfileFreq;
-        iout << "PRESSUREPROFILEAVG: " << step << " ";
-        for (i=0; i<3*simParameters->pressureProfileSlabs; i++) 
-          iout << pressureProfileAverage[i]*scalefac << " ";
-        iout << "\n" << endi; 
       }
+      // output pressure profile averaged over the last Freq steps.
+      iout << "PRESSUREPROFILEAVG: " << step << " ";
+      for (i=0; i<3*simParameters->pressureProfileSlabs; i++) 
+        iout << pressureProfileAverage[i]*scalefac << " ";
+      iout << "\n" << endi; 
       // Clear the average for the next block
       memset(pressureProfileAverage, 0, 
           3*simParameters->pressureProfileSlabs*sizeof(BigReal));
