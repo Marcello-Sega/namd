@@ -49,9 +49,9 @@ $(DOCDIR)/ug.pdf: $(SRCFILES) $(PDFFIGS)
 	$(CD) $(DOCDIR); \
 	pdflatex $(MAIN_UG_FILE); \
 	bibtex $(MAIN_UG_FILE); \
-	makeindex $(MAIN_UG_FILE); \
+	makeindex $(MAIN_UG_FILE).idx; \
 	pdflatex $(MAIN_UG_FILE); \
-	makeindex $(MAIN_UG_FILE); \
+	makeindex $(MAIN_UG_FILE).idx; \
 	pdflatex $(MAIN_UG_FILE); \
 
 DISTILL = distill -compatlevel 2.1
@@ -78,9 +78,9 @@ $(DOCDIR)/ug.ps: $(SRCFILES)
 	$(CD) $(DOCDIR); \
 	latex $(MAIN_UG_FILE); \
 	bibtex $(MAIN_UG_FILE); \
-	makeindex $(MAIN_UG_FILE); \
+	makeindex $(MAIN_UG_FILE).idx; \
 	latex $(MAIN_UG_FILE); \
-	makeindex $(MAIN_UG_FILE); \
+	makeindex $(MAIN_UG_FILE).idx; \
 	latex $(MAIN_UG_FILE); \
 	dvips -t letter -o ug.ps ug.dvi
 
