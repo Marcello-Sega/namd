@@ -9,20 +9,17 @@
 
 long memusage();
 
-#ifdef MEMUSAGE_USE_SBRK
-
 class memusageinit {
 public:
   memusageinit();
 private:
   static int initialized;
   static long sbrkval;
+  static long memusage_sbrk();
   friend long memusage();
 };
 
 static memusageinit memusageinitobject;
-
-#endif
 
 #endif
 
