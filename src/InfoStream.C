@@ -23,7 +23,7 @@ void infostream::endi() {
   *this << ends;
   CkPrintf("%s",iBuffer);
   fflush(stdout);  // since CkPrintf doesn't always flush
-  (*this).seekp(0);   // clear buffer
+  (*this).seekp((pos_type)0);   // clear buffer
 }
 
 infostream& endi(infostream& s)  { s.endi(); return s; }

@@ -19,7 +19,7 @@
 void datastream::endd() {
   *this << ends;
   CollectionMgr::Object()->sendDataStream(dBuffer);
-  (*this).seekp(0);   // clear buffer
+  (*this).seekp((pos_type)0);   // clear buffer
 }
 
 datastream& operator<<(datastream& strm, const Vector &v1) {
