@@ -11,7 +11,7 @@
  *
  *	$RCSfile: PatchMap.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/08/19 21:37:02 $
+ *	$Revision: 1.4 $	$Date: 1996/08/23 22:03:52 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -20,6 +20,9 @@
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.4  1996/08/23 22:03:52  brunner
+ * *** empty log message ***
+ *
  * Revision 1.3  1996/08/19 21:37:02  brunner
  * Changed Position to Coordinate
  *
@@ -186,7 +189,7 @@ int PatchMap::cid(int pid,int i)
 }
 
 //----------------------------------------------------------------------
-int PatchMap::allocatePids(int ixDim, int iyDim, int izDim)
+PatchMap::ErrCode PatchMap::allocatePids(int ixDim, int iyDim, int izDim)
 {
   int i;
 
@@ -206,7 +209,7 @@ int PatchMap::allocatePids(int ixDim, int iyDim, int izDim)
   nPatches=xDim*yDim*zDim;
   patchData = new PatchData[nPatches];
   if (!patchData)
-    return -1;
+    return ERROR;
 
   for(i=0;i<nPatches;i++)
   {
@@ -218,7 +221,7 @@ int PatchMap::allocatePids(int ixDim, int iyDim, int izDim)
     patchData[i].numCidsAllocated=0;
   }
 
-  return 0;
+  return OK;
 }
 
 //----------------------------------------------------------------------
@@ -256,13 +259,14 @@ void PatchMap::storePatch(PatchID pid, int node, int max_computes,
 }
 
 //----------------------------------------------------------------------
-int PatchMap::newCid(int pid, int cid)
+PatchMap::ErrCode PatchMap::newCid(int pid, int cid)
 {
   if (patchData[pid].numCids < patchData[pid].numCidsAllocated)
   {
     patchData[pid].cids[patchData[pid].numCids]=cid;
     patchData[pid].numCids++;
-  } else return -1;
+    return OK;
+  } else return ERROR;
 }
 
 //----------------------------------------------------------------------

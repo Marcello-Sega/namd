@@ -47,7 +47,9 @@ public:
 
   void parentNode(Node *inode);
 
-  void buildMapsFromScratch(void); 
+  void buildMaps(void);
+  void sendMaps(void);
+  void createPatches(void);
 
   void saveMaps(MapDistribMsg *msg);
 };
@@ -59,12 +61,15 @@ public:
  *
  *	$RCSfile: WorkDistrib.h,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/08/19 21:37:02 $
+ *	$Revision: 1.6 $	$Date: 1996/08/23 22:03:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.6  1996/08/23 22:03:52  brunner
+ * *** empty log message ***
+ *
  * Revision 1.5  1996/08/19 21:37:02  brunner
  * Create Patches from PDB data
  *

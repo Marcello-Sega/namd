@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.8 1996/08/21 23:58:25 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.9 1996/08/23 22:03:52 brunner Exp $";
 
 #include <stdio.h>
 
@@ -51,7 +51,7 @@ void WorkDistrib::parentNode(Node *inode)
 }
 
 //----------------------------------------------------------------------
-void WorkDistrib::buildMapsFromScratch()
+void WorkDistrib::buildMaps(void)
 {
   int i;
   PatchMap *patchMap = &(node->patchMap);
@@ -62,17 +62,29 @@ void WorkDistrib::buildMapsFromScratch()
 
   //  node->patchMap.printPatchMap();
   //  node->computeMap.printComputeMap();
+}
 
-  // Send maps to other nodes.
-
+//----------------------------------------------------------------------
+void WorkDistrib::sendMaps(void)
+{
   MapDistribMsg *mapMsg = new (MsgIndex(MapDistribMsg)) MapDistribMsg ;
 
   CBroadcastMsgBranch(WorkDistrib, saveMaps, mapMsg, thisgroup);
+}
 
-  // Create patches on this node
+//----------------------------------------------------------------------
+void WorkDistrib::createPatches(void)
+{
+  int i;
+  PatchMap *patchMap = &(node->patchMap);
 
   for(i=0; i < patchMap->numPatches(); i++)
   {
+    
+    PositionList atomPositions;
+    VelocityList atomVelocities;
+    AtomIDList atomIDs;
+
     IntList *atomList;
 
     atomList = node->pdb->find_atoms_in_region(patchMap->minX(i),
@@ -81,6 +93,20 @@ void WorkDistrib::buildMapsFromScratch()
 					       patchMap->maxX(i),
 					       patchMap->maxY(i),
 					       patchMap->maxZ(i));
+
+    for(int j=0; j < atomList->num(); j++)
+    {
+      Position pos(node->pdb->atom((*atomList)[j])->xcoor(),
+		   node->pdb->atom((*atomList)[j])->ycoor(),
+		   node->pdb->atom((*atomList)[j])->zcoor() );
+      Velocity vel(0.,0.,0.);
+
+      atomIDs.add(j);
+      atomPositions.add(pos);
+      atomVelocities.add(vel);
+    }      
+    
+//    node->patchMgr->createPatch(i,atomPositions,atomVelocities);
     CPrintf("patchMgr->createPatch(%d,atoms,positions)\n",i);
   }
 
@@ -281,12 +307,15 @@ void WorkDistrib::mapElectComputes(void)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1996/08/21 23:58:25 $
+ *	$Revision: 1.9 $	$Date: 1996/08/23 22:03:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.9  1996/08/23 22:03:52  brunner
+ * *** empty log message ***
+ *
  * Revision 1.8  1996/08/21 23:58:25  brunner
  * *** empty log message ***
  *

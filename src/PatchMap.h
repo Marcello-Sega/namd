@@ -11,7 +11,7 @@
  *
  *	$RCSfile: PatchMap.h,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/08/19 21:37:02 $
+ *	$Revision: 1.3 $	$Date: 1996/08/23 22:03:52 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -20,6 +20,9 @@
  * REVISION HISTORY:
  *
  * $Log: PatchMap.h,v $
+ * Revision 1.3  1996/08/23 22:03:52  brunner
+ * *** empty log message ***
+ *
  * Revision 1.2  1996/08/19 21:37:02  brunner
  * Changed Position to Coordinate
  *
@@ -70,7 +73,8 @@ public:
 
   enum { MaxTwoAway = 5*5*5 - 3*3*3 - 1 };
   enum { MaxOneAway = 3*3*3 - 1 };
-
+  enum ErrCode { OK = 0, ERROR = -1 };
+  
   PatchMap(void);
 
   ~PatchMap(void);
@@ -141,7 +145,7 @@ public:
 
   // allocatePids(x_dim, y_dim, z_dim) tells the PatchMap to set aside
   // room for x_dim * y_dim * z_dim patches.
-  int allocatePids(int x_dim, int y_dim, int z_dim);
+  ErrCode allocatePids(int x_dim, int y_dim, int z_dim);
 
   // PatchID requestPid(int *xi, int *yi, int *zi) tells the
   // PatchMap to return the next unused pid, and the indices of
@@ -158,7 +162,7 @@ public:
   // newCid(pid,cid) stores a compute id associated with
   // patch id pid.  Error returned when there is no room to store
   // the pid.
-  int newCid(int pid, int cid);
+  ErrCode newCid(int pid, int cid);
 
   // oneAwayNeighbors(pid, &n, neighbor_ids) returns the number 
   // and ids of adjacent patches.  The caller is expected to provide
