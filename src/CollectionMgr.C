@@ -80,21 +80,5 @@ void CollectionMgr::submitVelocities(int seq, AtomIDList &i, VelocityList &d)
 }
 
 
-void CollectionMgr::submitForces(int seq, AtomIDList &i, ForceList &d)
-{
-  CollectVectorInstance *c;
-  if ( ( c = forces.submitData(seq,i,d) ) )
-  {
-    CollectVectorMsg * msg = new CollectVectorMsg;
-    msg->seq = c->seq;
-    msg->aid = c->aid;
-    msg->data = c->data;
-    CProxy_CollectionMaster cm(master);
-    cm.receiveForces(msg);
-    delete c;
-  }
-}
-
-
 #include "CollectionMgr.def.h"
 

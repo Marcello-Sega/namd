@@ -105,7 +105,6 @@ private:
 
   CollectVectorSequence positions;
   CollectVectorSequence velocities;
-  CollectVectorSequence forces;
 
 };
 

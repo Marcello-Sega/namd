@@ -89,34 +89,6 @@ void CollectionMaster::disposeVelocities(CollectVectorInstance *c)
 }
 
 
-void CollectionMaster::receiveForces(CollectVectorMsg *msg)
-{
-  forces.submitData(msg->seq,msg->aid,msg->data,msg->fdata);
-  delete msg;
-
-  CollectVectorInstance *c;
-  while ( ( c = forces.removeReady() ) ) { disposeForces(c); }
-}
-
-void CollectionMaster::enqueueForces(int seq)
-{
-  forces.enqueue(seq);
-
-  CollectVectorInstance *c;
-  while ( ( c = forces.removeReady() ) ) { disposeForces(c); }
-}
-
-void CollectionMaster::disposeForces(CollectVectorInstance *c)
-{
-    DebugM(3,"Collected forces at " << c->seq << endl);
-    int seq = c->seq;
-    int size = c->data.size();
-    Vector *data = c->data.begin();
-    Node::Object()->output->all_force(seq,size,data);
-    delete c;
-}
-
-
 PACK_MSG(CollectVectorMsg,
   PACK(seq);
   PACK_RESIZE(aid);

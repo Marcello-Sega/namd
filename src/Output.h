@@ -23,11 +23,6 @@ private:
    void output_dcdfile(int, int, FloatVector *);  //  output coords to dcd file
    void output_veldcdfile(int, int, Vector *); 	//  output velocities to
 						//  dcd file
-   void output_longforcedcdfile(int, int, Vector *); // output long range elect force 
-						//  to dcd file
-   void output_shortforcedcdfile(int, int, Vector *); // output short range elect force 
-						//  to dcd file
-   void output_allforcedcdfile(int, int, Vector *); // output total forces to dcd file
 
    void output_restart_coordinates(Vector *, int, int);
 						//  output coords to 
@@ -55,12 +50,6 @@ public :
    void velocity(int, int, Vector *);		//  Produce appropriate velocity
 						//  output for the current 
 						//  timestep
-   void long_force(int, int, Vector *);		//  Produce a long range elect force 
-						//  output for the current timestep
-   void short_force(int, int, Vector *);	//  Produce a short range elect force 
-						//  output for the current timestep
-   void all_force(int, int, Vector *);		//  Produce a total force output for 
-						//  the current timestep
 };
 
 #endif

@@ -29,16 +29,13 @@ public:
 
   void receivePositions(CollectVectorMsg *msg);
   void receiveVelocities(CollectVectorMsg *msg);
-  void receiveForces(CollectVectorMsg *msg);
 
   void enqueuePositions(int seq);
   void enqueueVelocities(int seq);
-  void enqueueForces(int seq);
 
   class CollectVectorInstance;
   void disposePositions(CollectVectorInstance *c);
   void disposeVelocities(CollectVectorInstance *c);
-  void disposeForces(CollectVectorInstance *c);
 
   class CollectVectorInstance
   {
@@ -123,7 +120,6 @@ private:
 
   CollectVectorSequence positions;
   CollectVectorSequence velocities;
-  CollectVectorSequence forces;
 
 };
 

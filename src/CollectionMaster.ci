@@ -12,7 +12,6 @@ module CollectionMaster {
     entry CollectionMaster(void);
     entry void receivePositions(CollectVectorMsg *);
     entry void receiveVelocities(CollectVectorMsg *);
-    entry void receiveForces(CollectVectorMsg *);
   };
 }
 
