@@ -96,6 +96,8 @@ private:
   {
     PatchID pid;
     int trans;
+
+    PatchRec() : pid(-1), trans(-1) { ; }
   };
 
   struct ComputeData
@@ -123,13 +125,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:03 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/02/07 22:52:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.h,v $
+ * Revision 1.1001  1997/02/07 22:52:15  jim
+ * Eliminated use of nAtomBased and uninitialized memory reads.
+ *
  * Revision 1.1000  1997/02/06 15:58:03  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

@@ -382,6 +382,7 @@ void PatchMap::storePatch(PatchID pid, int node, int max_computes,
   patchData[pid].node=node;
   patchData[pid].numCids = 0;
   patchData[pid].cids = new int[max_computes];
+  for ( int i = 0; i < max_computes; ++i ) patchData[pid].cids[i] = -1;
   patchData[pid].numCidsAllocated = max_computes;
   patchData[pid].x0 = x0;
   patchData[pid].x1 = x1;
@@ -546,13 +547,16 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/07 17:39:40 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/02/07 22:52:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.1003  1997/02/07 22:52:16  jim
+ * Eliminated use of nAtomBased and uninitialized memory reads.
+ *
  * Revision 1.1002  1997/02/07 17:39:40  ari
  * More debugging for atomMigration.
  * Using -w on CC got us some minor fixes

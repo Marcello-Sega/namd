@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1000 1997/02/06 15:58:02 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1001 1997/02/07 22:52:14 jim Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -239,16 +239,8 @@ ComputeID ComputeMap::storeCompute(int inode, int maxPids, ComputeType type)
 
   computeData[cid].type = type;
 
-  if (computeAnglesType == type)
-  {
-    computeData[cid].patchBased = false;
-    nAtomBased++;
-  }
-  else
-  {
-    computeData[cid].patchBased = true;
-    nPatchBased++;
-  }
+  computeData[cid].patchBased = true;
+  nPatchBased++;
 
   computeData[cid].numPids = 0;
   computeData[cid].pids = new PatchRec[maxPids];
@@ -307,13 +299,16 @@ void ComputeMap::printComputeMap(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:02 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/02/07 22:52:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.C,v $
+ * Revision 1.1001  1997/02/07 22:52:14  jim
+ * Eliminated use of nAtomBased and uninitialized memory reads.
+ *
  * Revision 1.1000  1997/02/06 15:58:02  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
