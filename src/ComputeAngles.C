@@ -16,20 +16,30 @@
 #include "Parameters.h"
 #include "Node.h"
 
+
+#define DEBUGM
+#include "Debug.h"
+
 void AngleElem::addTuplesForAtom
   (void *voidlist, AtomID atomID, Molecule *molecule)
 {
+      DebugM(1, "::addTuplesForAtom - atomID " << atomID << endl );
       UniqueSortedArray<AngleElem> &angleList =
                   *( (UniqueSortedArray<AngleElem>*) voidlist );
 
+      DebugM(1, "::addTuplesForAtom - current list size " << angleList.size() << endl );
+
       /* get list of all angles for the atom */
       LintList *angles = molecule->get_angles_for_atom(atomID);
+      DebugM(1, "::addTuplesForAtom - atomID " << atomID << endl );
+      DebugM(1, "::addTuplesForAtom - angles->head()" << angles->head() << endl );
 
       /* cycle through each angle */
       int angleNum = angles->head();
       while(angleNum != LIST_EMPTY)
       {
         /* store angle in the list */
+        DebugM(1, "::addTuplesForAtom - adding angle " << angleNum << endl );
         angleList.add(AngleElem(molecule->get_angle(angleNum)));
         angleNum = angles->next();
       }

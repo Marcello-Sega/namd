@@ -18,6 +18,9 @@
 #include "PatchMgr.h"
 #include "Molecule.h"
 
+#define  DEBUGM
+#include "Debug.h"
+
 template <class T>
 ComputeHomeTuples<T>::ComputeHomeTuples(ComputeID c) : Compute(c) {
   CPrintf("ComputeHomeTuples::ComputeHomeTuples(%d) -- starting\n",(int)c);
@@ -57,6 +60,7 @@ void ComputeHomeTuples<T>::mapReady() {
   HomePatchList *a = patchMap->homePatchList();
   ResizeArrayIter<HomePatchElem> ai(*a);
 
+  setNumPatches(a->size());
   tuplePatchList.resize(0);
   CPrintf("ComputeHomeTuples::mapReady() - Size of the tuplePatchList %d\n",
 	tuplePatchList.size());
@@ -77,12 +81,13 @@ void ComputeHomeTuples<T>::mapReady() {
     AtomIDList &atomID = p->getAtomIDList();
 
     /* cycle through each angle in the patch */
-    CPrintf("ComputeAtoms::mapReady() - patch has %d atoms\n", 
-      p->getNumAtoms() );
+    DebugM(1, "ComputeHomeTuples::mapReady() - patch has " << p->getNumAtoms() << " atoms\n" );
+
     for (int i=0; i < p->getNumAtoms(); i++)
     {
       T::addTuplesForAtom((void*)&tupleList,atomID[i],node->molecule);
     }
+    DebugM(1, "ComputeHomeTuples::mapReady() - tupleList size = " << tupleList.size() << endl );
   }
 
   // Resolve all atoms in tupleList to correct PatchList element and index
@@ -109,6 +114,7 @@ void ComputeHomeTuples<T>::doWork() {
   } 
 
   // take triplet and pass with tuple info to force eval
+  DebugM(1, "ComputeHomeTuples::doWork() - size of atom list = " << tupleList.size() << endl );
   ResizeArrayIter<T> al(tupleList);
   for (al = al.begin(); al != al.end(); al++ ) {
     // computeForce returns (BigReal)change in energy.  This must be used.

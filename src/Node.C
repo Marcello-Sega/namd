@@ -5,64 +5,79 @@
 /*                           All Rights Reserved                           */
 /*                                                                         */
 /***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.10 1996/11/05 16:59:58 ari Exp $";
 
-#include <stdio.h>
-#include "unistd.h"
+/***************************************************************************
+ * DESCRIPTION:
+ *
+ ***************************************************************************/
+
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.11 1996/11/22 00:18:51 ari Exp $";
+
 
 #include "ckdefs.h"
 #include "chare.h"
 #include "c++interface.h"
-
-#include "main.h"
-#include "main.top.h"
 #include "Node.top.h"
 #include "Node.h"
+
+#include <stdio.h>
+#include "converse.h"
+
+#include "unistd.h"
+
+#include "main.top.h"
+#include "main.h"
 #include "WorkDistrib.h"
 #include "PatchMgr.h"
 #include "Patch.h"
 #include "Compute.h"
 #include "ComputeAngles.h"
+#include "ComputeMap.h"
 //#include "ProxyMgr.h"
 //#include "MessageComm.h"
 //#include "PatchMap.h"
 
+#define DEBUGM
+#include "Debug.h"
+
 //======================================================================
 // Public Functions
 
-//----------------------------------------------------------------------
-
-//----------------------------------------------------------------------
-// Node(void) can allocate some static data, or set all pointers to NULL
 
 Node *Node::_instance = 0;
 
-Node::Node(NodeInitMsg *msg)
+Node::Node(GroupInitMsg *msg)
 {
+  DebugM(1, "Node::Node() - starting\n");
+  group = msg->group;
+  group.node = thisgroup;
+  delete msg;
+
   molecule = NULL;
   parameters = NULL;
   simParameters = NULL;
   configList = NULL;
   pdb = NULL;
+  Compute::setNode(this);
 
   if (_instance == 0) {
     _instance = this;
   } else {
-    CPrintf("Node::Node() - another instance of Node exists!\n");
+    DebugM(1, "Node::Node() - another instance of Node exists!\n");
   }
 
-  CPrintf("Node::Node() - constructing\n");
-  workDistribGroup = msg->workDistribGroup;
-  workDistrib = CLocalBranch(WorkDistrib,workDistribGroup);
-  patchMgrGroup = msg->patchMgrGroup;
-  patchMgr = CLocalBranch(PatchMgr,patchMgrGroup);
+  DebugM(1, "Node::Node() - constructing\n");
 
   patchMap = PatchMap::Instance();
   atomMap = AtomMap::Instance();
   computeMap = ComputeMap::Instance();
-  CPrintf("Node::Node() - I have the following groups\n");
-  CPrintf("Node::Node() - WorkDistrib %d\n", workDistribGroup);
-  CPrintf("Node::Node() - PatchMgr %d\n", patchMgrGroup);
+
+  DebugM(1,"Node::Node() - I have the following groups\n");
+  DebugM(1,"Node::Node() - WorkDistrib " << group.workDistrib << "\n");
+  DebugM(1,"Node::Node() - PatchMgr " << group.patchMgr << "\n");
+
+  // Put num<name of BOC>Startup here
+  numNodeStartup = CNumPes();
 }
 
 //----------------------------------------------------------------------
@@ -73,6 +88,8 @@ Node::~Node(void)
 }
 
 //----------------------------------------------------------------------
+// Node startup
+//
 // startup(void) receives all the startup data from the Namd object,
 // and does everything necessary to run the simulation
 //    Ask work_distrib for initial distribution
@@ -80,57 +97,96 @@ Node::~Node(void)
 // Receipt of the maps send by sendMaps() triggers the patch and compute
 // object creation
 
+void Node::messageStartup() {
+  InitMsg *msg = new (MsgIndex(InitMsg)) InitMsg;
+  CSendMsgBranch(Node, startup, msg, group.node, CMyPe() );
+}
+
 void Node::startup(InitMsg *msg)
 {
 
-  CPrintf("Node %d startup\n",myid());
+  delete msg;
 
-  if (CthImplemented())
-  {
+  DebugM(1, "Node::startup() Pe=" << CMyPe() << "\n");
+
+  // Thread initialization
+  if (CthImplemented()) {
     CthSetStrategyDefault(CthSelf());
-  }
-  else
-  {
-    CPrintf("Oh no, tiny elvis, threads not implemented here...\n");
+  } else {
+    DebugM(1, "Node::startup() - Oh no, tiny elvis, threads not implemented\n");
     CharmExit();
   }
+
+  workDistrib = CLocalBranch(WorkDistrib,group.workDistrib);
 
   workDistrib->buildMaps();
   workDistrib->sendMaps();
   workDistrib->awaitMaps();
   workDistrib->createPatches();
   workDistrib->createComputes();
+
+  patchMgr = CLocalBranch(PatchMgr,group.patchMgr);
+
+  messageStartupDone();   // collect on master node
+}
+
+
+//-----------------------------------------------------------------------
+// Node Startup completion messaging and barrier on node 0
+
+void Node::messageStartupDone() {
+  DoneMsg *msg = new (MsgIndex(DoneMsg)) DoneMsg;
+  CSendMsgBranch(Node, startupDone, msg, group.node, 0);
+}
+
+void Node::startupDone(DoneMsg *msg) {
+  delete msg;
+
+  if (CMyPe() == 0) {
+    DebugM(1, "Node::startupDone() - got one\n");
+    if (!--numNodeStartup) {
+      DebugM(1, "Node::startupDone() - triggered run() \n");
+      Node::messageRun();
+    }
+  } else {
+    DebugM(1, "Node::startupDone() - message sent to wrong Pe!\n");
+  }
+}
+
+//-----------------------------------------------------------------------
+// Node run() - broadcast to all nodes
+
+void Node::messageRun() {
+  RunMsg *msg = new (MsgIndex(RunMsg)) RunMsg;
+  CBroadcastMsgBranch(Node, run, msg, group.node);
 }
 
 
 // run(void) runs the specified simulation for the specified number of
 // steps, overriding the contents of the configuration file
-void Node::run(void)
+void Node::run(RunMsg *msg)
 {
-  CPrintf("Node::run() - invoked\n");
+  delete msg;
+
+  // This is testbed code!
+  DebugM(1, "Node::run() - invoked\n");
   ComputeAngles *angles = new ComputeAngles(1);
-  CPrintf("Node::run() - created new ComputeAngles(1), signaling mapReady()\n");
+  ComputeMap::Instance()->registerCompute(1,angles);
+  DebugM(1, "Node::run() - creat ComputeAngles(1) signaling mapReady()\n");
   angles->mapReady();
 
   HomePatchList *hpl = PatchMap::Object()->homePatchList();
   ResizeArrayIter<HomePatchElem> ai(*hpl);
-  CPrintf("Node::run() - iterating over home patches!\n");
+  DebugM(1, "Node::run() - iterating over home patches!\n");
   for (ai=ai.begin(); ai != ai.end(); ai++) {
-    CPrintf("Node::run() - signaling patch %d\n", (*ai).p->getPatchID());
+    DebugM(1, "Node::run() - signaling patch "<< (*ai).p->getPatchID() << endl);
     (*ai).p->positionsReady();
   }
-  sleep(10);
 }
 
-int Node::numNodes(void)
-{
-  return CNumPes();
-}
 
-int Node::myid(void)
-{
-  return CMyPe();
-}
+//------------------------------------------------------------------------
+// Some odd utilities
 
 void Node::saveMolDataPointers(Molecule *molecule,
 			       Parameters *parameters,
@@ -156,15 +212,15 @@ void Node::saveMolDataPointers(Molecule *molecule,
  *
  *	$RCSfile: Node.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1996/11/05 16:59:58 $
- *
- ***************************************************************************
- * DESCRIPTION:
+ *	$Revision: 1.11 $	$Date: 1996/11/22 00:18:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.11  1996/11/22 00:18:51  ari
+ * *** empty log message ***
+ *
  * Revision 1.10  1996/11/05 16:59:58  ari
  * *** empty log message ***
  *
@@ -195,24 +251,4 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * Revision 1.1  1996/08/16 21:19:34  ari
  * Initial revision
  *
- * Revision 1.7  1996/07/01 16:25:30  brunner
- * *** empty log message ***
- *
- * Revision 1.6  1996/06/14 18:39:00  brunner
- * *** empty log message ***
- *
- * Revision 1.5  1996/06/11 22:36:23  brunner
- * *** empty log message ***
- *
- * Revision 1.4  1996/06/10 22:04:14  brunner
- * *** empty log message ***
- *
- * Revision 1.3  1996/06/06 13:55:05  brunner
- * *** empty log message ***
- *
- * Revision 1.2  1996/06/04 16:12:18  brunner
- * Create dummy patches
- *
- * Revision 1.1  1996/05/30 20:16:09  brunner
- * Initial revision
  ***************************************************************************/

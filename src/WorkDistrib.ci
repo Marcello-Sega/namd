@@ -1,5 +1,5 @@
 extern message InitMsg;
-extern message MovePatchDoneMsg;
+extern message DoneMsg;
 extern message LocalWorkMsg;
 message MapDistribMsg;
 
@@ -7,6 +7,6 @@ group WorkDistrib
 {
   entry WorkDistrib(InitMsg *);
   entry saveMaps(MapDistribMsg *);
-  entry movePatchDone(MovePatchDoneMsg *);
+  entry movePatchDone(DoneMsg *);
   entry enqueueWork(LocalWorkMsg *);
 } ;

@@ -1,8 +1,13 @@
-extern message NodeInitMsg;
+extern message GroupInitMsg;
 extern message InitMsg;
+extern message ReadyMsg;
+extern message DoneMsg;
+extern message RunMsg;
 
 group Node
 {
-  entry Node(NodeInitMsg *);
+  entry Node(GroupInitMsg *);
   entry startup(InitMsg *);
+  entry startupDone(DoneMsg *);
+  entry run(RunMsg *);
 } ;

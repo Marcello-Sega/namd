@@ -21,8 +21,9 @@
 #include "NamdTypes.h"
 #include "Templates/SortedArray.h"
 #include "HomePatch.h"
+#include "BOCgroup.h"
 
-class PatchMgrInitMsg;
+class InitMsg;
 class HomePatch;
 
 class MovePatchesMsg : public comm_object {
@@ -103,8 +104,26 @@ typedef ResizeArrayIter<MovePatch> MovePatchListIter;
 
 typedef ResizeArray<int> PatchIndex;
 
-class PatchMgr : public groupmember
+class PatchMgr : public BOCclass
 {
+
+public:
+  PatchMgr(InitMsg *);
+  ~PatchMgr();
+  
+  void recvMovePatches(MovePatchesMsg *msg);
+
+  void createHomePatch(PatchID pid, AtomIDList aid, PositionList p, 
+     VelocityList v); 
+  void movePatch(PatchID, NodeID);
+  void sendMovePatches();
+  void ackMovePatches(AckMovePatchesMsg *msg);
+  HomePatch *homePatch(PatchID pid) {
+     return homePatches.find(HomePatchElem(pid))->p;
+  }
+
+  static void setGroup(BOCgroup g);
+
 private:
   friend PatchMap;
   PatchMap *patchMap;
@@ -121,24 +140,6 @@ private:
   // an array of patches to move off this node
   MovePatchList move;
   int ackMovePending;
-  
-  int workDistribGroup;
-
-public:
-  PatchMgr(PatchMgrInitMsg *);
-  ~PatchMgr();
-  
-  void recvMovePatches(MovePatchesMsg *msg);
-
-  void createHomePatch(PatchID pid, AtomIDList aid, PositionList p, 
-     VelocityList v); 
-  void movePatch(PatchID, NodeID);
-  void sigWorkDistrib();
-  void sendMovePatches();
-  void ackMovePatches(AckMovePatchesMsg *msg);
-  HomePatch *homePatch(PatchID pid) {
-     return homePatches.find(HomePatchElem(pid))->p;
-  }
 };
 
   // this is a list of immediate neighbor nodes (that is neighbor nodes
@@ -168,12 +169,15 @@ public:
  *
  *	$RCSfile: PatchMgr.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/11/01 21:20:45 $
+ *	$Revision: 1.5 $	$Date: 1996/11/22 00:18:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.h,v $
+ * Revision 1.5  1996/11/22 00:18:51  ari
+ * *** empty log message ***
+ *
  * Revision 1.4  1996/11/01 21:20:45  ari
  * *** empty log message ***
  *
@@ -185,6 +189,5 @@ public:
  *
  * Revision 1.1  1996/08/19 22:07:49  ari
  * Initial revision
- *
  *
  ***************************************************************************/

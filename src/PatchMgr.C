@@ -11,7 +11,7 @@
 /*								           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.5 1996/11/04 17:13:13 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.6 1996/11/22 00:18:51 ari Exp $";
 
 
 #include "ckdefs.h"
@@ -32,15 +32,19 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,
 #include "WorkDistrib.top.h"
 #include "WorkDistrib.h"
 
+#include "Node.top.h"
+#include "Node.h"
+
+#define DEBUGM
+#include "Debug.h"
 
 
-PatchMgr::PatchMgr(PatchMgrInitMsg *msg)
+PatchMgr::PatchMgr(InitMsg *msg)
 {
+    delete msg;
+
     patchMap = PatchMap::Instance();
     patchMap->registerPatchMgr(this);
-
-    workDistribGroup = msg->workDistribGroup;
-    delete msg;
 }
 
 PatchMgr::~PatchMgr()
@@ -56,9 +60,11 @@ PatchMgr::~PatchMgr()
     }
 }
 
+
 void PatchMgr::createHomePatch(PatchID pid, AtomIDList aid, 
 	PositionList p, VelocityList v) 
 {
+    DebugM(3, "PatchMgr::createHomePatch() number atoms = " << aid.size() << endl );
     HomePatch *patch = new HomePatch(pid, aid, p, v);
     homePatches.load(HomePatchElem(pid, patch));
     patchMap->registerPatch(pid, patch);
@@ -73,7 +79,7 @@ void PatchMgr::sendMovePatches()
 {
     ackMovePending = move.size();
     if (ackMovePending == 0) {   // tell local WorkDistrib we are
-	sigWorkDistrib();        // done with patch moves
+	WorkDistrib::messageMovePatchDone();  // done with patch moves
 	return;
     }
     MovePatchListIter m(move);
@@ -100,7 +106,7 @@ void PatchMgr::recvMovePatches(MovePatchesMsg *msg) {
     // Tell sending PatchMgr we received MovePatchMsg
     AckMovePatchesMsg *ackmsg = 
       new (MsgIndex(AckMovePatchesMsg)) AckMovePatchesMsg;
-    CSendMsgBranch(PatchMgr, ackMovePatches, ackmsg, thisgroup, msg->fromNodeID);
+    CSendMsgBranch(PatchMgr,ackMovePatches, ackmsg, thisgroup, msg->fromNodeID);
 
     // Make a new HomePatch
     createHomePatch(msg->pid, msg->aid, msg->p, msg->v);
@@ -112,16 +118,9 @@ void PatchMgr::ackMovePatches(AckMovePatchesMsg *msg)
 {
     delete msg;
     if (! --ackMovePending) 
-	sigWorkDistrib();
+	WorkDistrib::messageMovePatchDone();
 }
 
-void PatchMgr::sigWorkDistrib()
-{
-    // Send msg to WorkDistrib that all patchMoves are completed
-    MovePatchDoneMsg *msg = new (MsgIndex(MovePatchDoneMsg)) MovePatchDoneMsg;
-    CSendMsgBranch(WorkDistrib, movePatchDone, msg, workDistribGroup, CMyPe());
-}
-   
 
 #include "PatchMgr.bot.h"
 
@@ -130,11 +129,14 @@ void PatchMgr::sigWorkDistrib()
  *
  *	$RCSfile: PatchMgr.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/11/04 17:13:13 $
+ *	$Revision: 1.6 $	$Date: 1996/11/22 00:18:51 $
  *
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.C,v $
+ * Revision 1.6  1996/11/22 00:18:51  ari
+ * *** empty log message ***
+ *
  * Revision 1.5  1996/11/04 17:13:13  ari
  * *** empty log message ***
  *

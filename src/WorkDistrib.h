@@ -17,15 +17,16 @@
 #include "ckdefs.h"
 #include "chare.h"
 #include "c++interface.h"
+#include "main.h"
 
 #include "NamdTypes.h"
+#include "BOCgroup.h"
 
 class Node;
-class InitMsg;
-class MovePatchDoneMsg;
+class DoneMsg;
 class LocalWorkMsg;
 
-const double patchSize = 4.;
+const double patchSize = 4.0;
 
 enum { maxPatchDepends = 126 };
 
@@ -34,13 +35,17 @@ class MapDistribMsg : public comm_object
   int mapData;  // Fill in later
 } ;
 
-class WorkDistrib : public groupmember
+class WorkDistrib : public BOCclass
 {
 public:
   WorkDistrib(InitMsg *msg);
   ~WorkDistrib(void);
 
-  void movePatchDone(MovePatchDoneMsg *msg) {};
+  static void messageMovePatchDone();
+  void movePatchDone(DoneMsg *msg);
+
+  static void messageEnqueueWork(Compute *);
+  void enqueueWork(LocalWorkMsg *msg); // This is for testing
 
   void buildMaps(void);
   void sendMaps(void);
@@ -49,7 +54,6 @@ public:
 
   void saveMaps(MapDistribMsg *msg);
   void awaitMaps(void);
-  void enqueueWork(LocalWorkMsg *msg); // This is for testing
 
 private:
   void mapPatches(void);
@@ -60,7 +64,6 @@ private:
   Boolean mapsArrived;
   Boolean awaitingMaps;
   CthThread awaitingMapsTh;
-
 };
 
 #endif /* WORKDISTRIB_H */
@@ -70,12 +73,15 @@ private:
  *
  *	$RCSfile: WorkDistrib.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.11 $	$Date: 1996/10/29 23:35:27 $
+ *	$Revision: 1.12 $	$Date: 1996/11/22 00:18:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.12  1996/11/22 00:18:51  ari
+ * *** empty log message ***
+ *
  * Revision 1.11  1996/10/29 23:35:27  ari
  * *** empty log message ***
  *

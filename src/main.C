@@ -6,7 +6,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.6 1996/11/05 16:59:58 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.7 1996/11/22 00:18:51 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -27,10 +27,6 @@ Inform namdWarn("Warning");
 Inform namdInfo("Info");
 Inform namdDebug("** DEBUG **");
 
-int nodeReady = 0;
-int workDistribReady = 0;
-int patchMgrReady = 0;
-
 class main : public chare_object
 {
 public:
@@ -46,9 +42,7 @@ public:
 	namd.startup(argv[argc-1]);
     else
        CPrintf("main::main() no arguments, exiting\n");
-
-    // Send Message to start off NAMD
-    namd.run();
+    CPrintf("main() - leaving - Charmm should queue up messages now!\n");
   }
 };
 
@@ -58,7 +52,7 @@ public:
  *
  *	$RCSfile: main.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/11/05 16:59:58 $
+ *	$Revision: 1.7 $	$Date: 1996/11/22 00:18:51 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -67,6 +61,12 @@ public:
  * REVISION HISTORY:
  *
  * $Log: main.C,v $
+ * Revision 1.7  1996/11/22 00:18:51  ari
+ * *** empty log message ***
+ *
+ * Revision 1.7  1996/11/07 23:08:38  ari
+ * *** empty log message ***
+ *
  * Revision 1.6  1996/11/05 16:59:58  ari
  * *** empty log message ***
  *

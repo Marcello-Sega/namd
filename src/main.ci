@@ -1,7 +1,9 @@
+message GroupInitMsg;
 message InitMsg;
-message NodeInitMsg;
-message MovePatchDoneMsg;
-message PatchMgrInitMsg;
+message ReadyMsg;
+message RunMsg;
+message DoneMsg;
+
 message LocalWorkMsg;
 
 chare main {

@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.15 1996/11/05 16:59:58 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.16 1996/11/22 00:18:51 ari Exp $";
 
 #include <stdio.h>
 
@@ -19,18 +19,23 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib
 #include "chare.h"
 #include "c++interface.h"
 
+#include "BOCgroup.h"
 #include "WorkDistrib.top.h"
 #include "WorkDistrib.h"
 
 #include "main.top.h"
 #include "main.h"
 #include "Node.h"
+#include "PatchMgr.h"
 #include "PatchMap.h"
 #include "ComputeMap.h"
 #include "Compute.h"
 #include "Vector.h"
 #include "NamdTypes.h"
 #include "PDB.h"
+
+#define DEBUGM
+#include "Debug.h"
 
 //======================================================================
 // Public functions
@@ -52,14 +57,10 @@ WorkDistrib::~WorkDistrib(void)
 void WorkDistrib::buildMaps(void)
 {
   int i;
-  PatchMap *patchMap = PatchMap::Object();
-  
+
   CPrintf("Building maps\n");
   mapPatches();
   mapComputes();
-
-  //  node->patchMap.printPatchMap();
-  //  node->computeMap.printComputeMap();
 }
 
 //----------------------------------------------------------------------
@@ -82,8 +83,10 @@ void WorkDistrib::createComputes(void)
 void WorkDistrib::createPatches(void)
 {
   int i;
+
   PatchMap *patchMap = PatchMap::Object();
-  Node *node = Node::Object();
+  Node *node = CLocalBranch(Node,group.node);
+  PatchMgr *patchMgr = CLocalBranch(PatchMgr,group.patchMgr);
 
   for(i=0; i < patchMap->numPatches(); i++)
   {
@@ -100,6 +103,11 @@ void WorkDistrib::createPatches(void)
 					       patchMap->maxX(i),
 					       patchMap->maxY(i),
 					       patchMap->maxZ(i));
+    DebugM(1, "::createPatches() - X(" << i << ") = " << patchMap->minX(i) << " , " << patchMap->maxX(i) << endl);
+
+    DebugM(1, "::createPatches() - Y(" << i << ") = " << patchMap->minY(i) << " , " << patchMap->maxY(i) << endl);
+
+    DebugM(1, "::createPatches() - Z(" << i << ") = " << patchMap->minZ(i) << " , " << patchMap->maxZ(i) << endl);
 
     for(int j=0; j < atomList->num(); j++)
     {
@@ -108,18 +116,18 @@ void WorkDistrib::createPatches(void)
 		   node->pdb->atom((*atomList)[j])->zcoor() );
       Velocity vel(0.,0.,0.);
 
-      atomIDs.add(j);
+      atomIDs.add((*atomList)[j]);
       atomPositions.add(pos);
       atomVelocities.add(vel);
     }      
     
-    node->patchMgr->createHomePatch(i,atomIDs,atomPositions,atomVelocities);
+    patchMgr->createHomePatch(i,atomIDs,atomPositions,atomVelocities);
   }
 
   // Move patches to the proper node
   for(i=0;i < patchMap->numPatches(); i++)
   {
-    if (patchMap->node(i) != node->myid())
+    if (patchMap->node(i) != node->myid() )
       CPrintf("patchMgr->movePatch(%d,%d)\n",i,patchMap->node(i));
   }
 }
@@ -128,7 +136,7 @@ void WorkDistrib::createPatches(void)
 // saveMaps() is called when the map message is received
 void WorkDistrib::saveMaps(MapDistribMsg *msg)
 {
-  Node *node = Node::Object();
+  Node *node = CLocalBranch(Node,group.node);
 
   if (node->myid() != 0)
   {
@@ -166,7 +174,7 @@ void WorkDistrib::awaitMaps()
 void WorkDistrib::mapPatches(void)
 {
   PatchMap *patchMap = PatchMap::Object();
-  Node *node = Node::Object();
+  Node *node = CLocalBranch(Node, group.node);
 
   int xdim, ydim, zdim;
   int xi, yi, zi, pid;
@@ -207,12 +215,12 @@ void WorkDistrib::mapPatches(void)
   {
     pid=patchMap->requestPid(&xi,&yi,&zi);
     patchMap->storePatch(pid,assignedNode,250, 
-			 (xi*patchSize)/xdim+xmin.x,
-			 (yi*patchSize)/ydim+xmin.y,
-			 (zi*patchSize)/zdim+xmin.z,
-			 (xi*patchSize)/xdim+xmin.x+patchSize,
-			 (yi*patchSize)/ydim+xmin.y+patchSize,
-			 (zi*patchSize)/zdim+xmin.z+patchSize);
+			 (xi*patchSize)+xmin.x,
+			 (yi*patchSize)+xmin.y,
+			 (zi*patchSize)+xmin.z,
+			 (xi*patchSize)+xmin.x+patchSize,
+			 (yi*patchSize)+xmin.y+patchSize,
+			 (zi*patchSize)+xmin.z+patchSize);
     assignedNode++;
     if (node->numNodes()==assignedNode)
       assignedNode=0;
@@ -224,7 +232,7 @@ void WorkDistrib::mapComputes(void)
 {
   PatchMap *patchMap = PatchMap::Object();
   ComputeMap *computeMap = ComputeMap::Object();
-  Node *node = Node::Object();
+  Node *node = CLocalBranch(Node, group.node);
 
   CPrintf("Mapping computes\n");
 
@@ -245,10 +253,11 @@ void WorkDistrib::mapComputes(void)
 //----------------------------------------------------------------------
 void WorkDistrib::mapAngleComputes()
 {
-  int i;
   PatchMap *patchMap = PatchMap::Object();
   ComputeMap *computeMap = ComputeMap::Object();
-  Node *node = Node::Object();
+  Node *node = CLocalBranch(Node, group.node);
+
+  int i;
 
   int numNodes = node->numNodes();
 
@@ -331,8 +340,27 @@ void WorkDistrib::mapElectComputes(void)
   }
 }
 
+
+void WorkDistrib::messageEnqueueWork(Compute *compute) {
+  CPrintf("WorkDistrib::messageEnqueueWork() triggered\n");
+  LocalWorkMsg *msg = new (MsgIndex(LocalWorkMsg)) LocalWorkMsg;
+  msg->compute = compute; // pointer is valid since send is to local Pe
+  CSendMsgBranch(WorkDistrib, enqueueWork, msg, group.workDistrib, CMyPe() );
+}
+
 void WorkDistrib::enqueueWork(LocalWorkMsg *msg) {
   msg->compute->doWork();
+  delete msg;
+}
+
+void WorkDistrib::messageMovePatchDone() {
+  // Send msg to WorkDistrib that all patchMoves are completed
+  DoneMsg *msg = new (MsgIndex(DoneMsg)) DoneMsg;
+  CSendMsgBranch(WorkDistrib, movePatchDone, msg, group.workDistrib, CMyPe());
+}
+
+void WorkDistrib::movePatchDone(DoneMsg *msg) {
+  delete msg;
 }
 
 #include "WorkDistrib.bot.h"
@@ -342,12 +370,15 @@ void WorkDistrib::enqueueWork(LocalWorkMsg *msg) {
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.15 $	$Date: 1996/11/05 16:59:58 $
+ *	$Revision: 1.16 $	$Date: 1996/11/22 00:18:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.16  1996/11/22 00:18:51  ari
+ * *** empty log message ***
+ *
  * Revision 1.15  1996/11/05 16:59:58  ari
  * *** empty log message ***
  *

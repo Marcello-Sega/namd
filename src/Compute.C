@@ -18,6 +18,7 @@
 
 #include "Compute.top.h"
 #include "WorkDistrib.top.h"
+#include "WorkDistrib.h"
 
 #include "NamdTypes.h"
 #include "Templates/Box.h"
@@ -27,12 +28,7 @@
 #include "Compute.h"
 
 void Compute::enqueueWork() {
-  CPrintf("Compute::enqueueWork()-Sending LocalWorkMsg\n");
-
-  LocalWorkMsg *msg = new (MsgIndex(LocalWorkMsg)) LocalWorkMsg;
-  msg->compute = this; // pointer is valid since send is to local Pe
-  CSendMsgBranch(WorkDistrib, enqueueWork, msg, node->workDistribGroup, 
-		  CMyPe() );
+  WorkDistrib::messageEnqueueWork(this);
 }
 
 // Signal from patch or proxy that data is ready.
@@ -42,8 +38,10 @@ void Compute::patchReady(void) {
   if (numPatches <= 0 ) {
     CPrintf("Compute::patchReady()-call not valid!\n");
   } else {
+    CPrintf("Compute::patchReady() - counter = %d\n", patchReadyCounter);
     if (! --patchReadyCounter) {
       patchReadyCounter = numPatches;
+      CPrintf("Compute::patchReady() - enqueue()!\n");
       enqueueWork();
     }
   }
@@ -62,12 +60,15 @@ void Compute::doWork() {
  *
  *	$RCSfile: Compute.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/10/22 19:12:16 $
+ *	$Revision: 1.3 $	$Date: 1996/11/22 00:18:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.C,v $
+ * Revision 1.3  1996/11/22 00:18:51  ari
+ * *** empty log message ***
+ *
  * Revision 1.2  1996/10/22 19:12:16  ari
  * *** empty log message ***
  *

@@ -32,9 +32,38 @@ class PDB;
 class WorkDistrib;
 class PatchMgr;
 
-class Node : public groupmember
+class Node : public BOCclass
 {
 public:
+
+  Node(GroupInitMsg *msg);
+  ~Node(void);
+
+  // Singleton Access method
+  inline static Node *Object() {return _instance;}
+
+  // Run for the number of steps specified in the sim_parameters
+  static void messageRun();
+  void run(RunMsg *);                  
+
+  // Charm Entry point - Read in system data, get all ready to simulate
+  static void messageStartup();
+  void startup(InitMsg *);  
+
+  static void messageStartupDone();
+  void startupDone(DoneMsg *);
+
+  // Charm Entry point - synchronize on BOC creation and startup
+  static void messageBOCCheckIn();
+  void BOCCheckIn(InitMsg *msg);
+  void awaitBOCCheckIn();
+
+  // Utility for storing away simulation data for Node
+  void saveMolDataPointers(Molecule *, Parameters *,
+			   SimParameters *, ConfigList *,
+			   PDB *);
+
+
   // NAMD 1.X molecule database objects - must be public for now
   Molecule *molecule;
   Parameters *parameters;
@@ -42,33 +71,9 @@ public:
   ConfigList *configList;
   PDB *pdb;
 
-  // BOC objects for Now public (but should not be in future!)
-  // Access to methods should only be thru Map objects I believe
-  int workDistribGroup;
-  WorkDistrib *workDistrib;
-
-  int patchMgrGroup;
-  PatchMgr *patchMgr;
-
-  // Singleton Access method
-  inline static Node *Object() {return _instance;}
-
-  // Charm Entry point - distributed contructor
-  Node(NodeInitMsg *msg);
-  ~Node(void);
-
-  int myid(void);		   
-  int numNodes(void);		   
-  
-  // Charm Entry point - Read in system data, get all ready to simulate
-  void startup(InitMsg *initmsg);  
-
-  void saveMolDataPointers(Molecule *, Parameters *,
-			   SimParameters *, ConfigList *,
-			   PDB *);
-
-  // Run for the number of steps specified in the sim_parameters
-  void run(void);                  
+  // Remove these calls?
+  int myid() { return CMyPe(); }
+  int numNodes() { return CNumPes(); }
 
 protected:
   // Map Databases - they have a singleton this access method ::Object()
@@ -79,6 +84,12 @@ protected:
 private:
   static Node *_instance;
 
+  WorkDistrib *workDistrib;
+  PatchMgr *patchMgr;
+
+  // Countdown for Node::startup barrier
+  int numNodeStartup;
+
 };
 
 #endif /* _NODE_H */
@@ -88,12 +99,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1996/10/29 23:35:27 $
+ *	$Revision: 1.11 $	$Date: 1996/11/22 00:18:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.11  1996/11/22 00:18:51  ari
+ * *** empty log message ***
+ *
  * Revision 1.10  1996/10/29 23:35:27  ari
  * *** empty log message ***
  *

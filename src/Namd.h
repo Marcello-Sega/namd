@@ -15,10 +15,6 @@ class Node;
 
 class Namd
 {
-private:
-  Node *node;
-  int nodeGroup;
-  NamdState namdState;
 
 public:
     // Constructor for startup node
@@ -28,7 +24,14 @@ public:
     // read in various input files by invoking
     // proper classes (parameters, molecule etc)
   void startup(char *);   
-  void run();
+
+private:
+  Node *node;
+  int nodeGroup;
+  int workDistribGroup;
+  int patchMgrGroup;
+
+  NamdState namdState;
 };
 
 #endif /* _NAMD_H */
@@ -38,7 +41,7 @@ public:
  *
  *	$RCSfile: Namd.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/08/16 21:19:34 $
+ *	$Revision: 1.4 $	$Date: 1996/11/22 00:18:51 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -47,6 +50,9 @@ public:
  * REVISION HISTORY:
  *
  * $Log: Namd.h,v $
+ * Revision 1.4  1996/11/22 00:18:51  ari
+ * *** empty log message ***
+ *
  * Revision 1.3  1996/08/16 21:19:34  ari
  * *** empty log message ***
  *

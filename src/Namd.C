@@ -6,7 +6,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.9 1996/11/05 16:59:58 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.10 1996/11/22 00:18:51 ari Exp $";
 
 #include "unistd.h"
 
@@ -16,6 +16,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.
 
 #include "main.top.h"
 #include "main.h"
+#include "BOCgroup.h"
 #include "Namd.h"
 #include "Molecule.h"
 #include "Parameters.h"
@@ -28,30 +29,28 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.
 #include "PatchMgr.top.h"
 #include "PatchMgr.h"
 
+
 // Namd(void ) is the constructor for the startup node.  It needs to
 // read in file data,
 Namd::Namd(void)
 {
   InitMsg *initmsg;
-  PatchMgrInitMsg *pminitmsg;
+  BOCgroup group;
 
-  NodeInitMsg *node_msg = new (MsgIndex(NodeInitMsg)) NodeInitMsg;
-  
   // Create WorkDistrib and send it an empty message
-  pminitmsg = new (MsgIndex(PatchMgrInitMsg)) PatchMgrInitMsg;
   initmsg = new (MsgIndex(InitMsg)) InitMsg;
-  pminitmsg->workDistribGroup = node_msg->workDistribGroup
-    = new_group(WorkDistrib, initmsg);
+  group.workDistrib = new_group(WorkDistrib, initmsg);
 
   // Create PatchMgr and send it an empty message
-  node_msg->patchMgrGroup = new_group(PatchMgr, pminitmsg);
+  initmsg = new (MsgIndex(InitMsg)) InitMsg;
+  group.patchMgr = new_group(PatchMgr, initmsg);
 
   // Create the Node object and send it the IDs of all the other
   // parallel objects.
-  nodeGroup = new_group(Node, node_msg);
-  CPrintf("I'm getting the Node *node in Namd::Namd()\n");
-  node = CLocalBranch(Node,nodeGroup);
-  CPrintf("I've got the Node *node in Namd::Namd()\n");
+  GroupInitMsg *msg = new (MsgIndex(GroupInitMsg)) GroupInitMsg;
+  msg->group = group;
+
+  nodeGroup = new_group(Node, msg);
 }
 
 
@@ -64,8 +63,6 @@ Namd::~Namd(void)
 // startup(char *) 
 void Namd::startup(char *confFile)
 {
-  InitMsg *initmsg;
-
   namdState.configFileInit(confFile);
   if (namdState.status()) {
     CPrintf("Namd::startup() - could not initialize namdState from %s\n", 
@@ -75,32 +72,21 @@ void Namd::startup(char *confFile)
 
   // Give node[0] pointers to the data objects, so it can use them,
   // or send them on as messages elsewhere.
-  node->saveMolDataPointers(namdState.molecule,namdState.parameters,
+  Node::Object()->saveMolDataPointers(namdState.molecule,namdState.parameters,
 			    namdState.simParameters,namdState.configList,
 			    namdState.pdb);
 
-  // Tell Node to do any startup work
-  initmsg = new (MsgIndex(InitMsg)) InitMsg;
-  CSendMsgBranch(Node, startup, initmsg, nodeGroup, CMyPe());
+  Node::messageStartup();
 }
 
 
-// run(void) runs the specified simulation to completion
-void Namd::run(void)
-{
-  CPrintf("Namd::run() invoked\n");
-  node->run();
-  CPrintf("Namd::run() - finished node->run()\n");
-  sleep(15);
-  CharmExit();
-}
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: Namd.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1996/11/05 16:59:58 $
+ *	$Revision: 1.10 $	$Date: 1996/11/22 00:18:51 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -109,6 +95,9 @@ void Namd::run(void)
  * REVISION HISTORY:
  *
  * $Log: Namd.C,v $
+ * Revision 1.10  1996/11/22 00:18:51  ari
+ * *** empty log message ***
+ *
  * Revision 1.9  1996/11/05 16:59:58  ari
  * *** empty log message ***
  *

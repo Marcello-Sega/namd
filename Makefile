@@ -1,9 +1,10 @@
 CHARMC = /Projects/l1/namd.2.0/charm/bin/charmc
 CHARMXI = /Projects/l1/namd.2.0/charm/bin/charmc
 
+CXXOPTS = -g
 CXX = CC -Aa -D_HPUX_SOURCE
 INCLUDE = /Projects/l1/namd.2.0/charm/include
-CXXFLAGS = -I$(INCLUDE) $(CXXOPTS) -w
+CXXFLAGS = -I$(INCLUDE) $(CXXOPTS)  -w
 
 .SUFFIXES: 	.ci
 

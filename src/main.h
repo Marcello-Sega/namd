@@ -18,29 +18,29 @@
 #include "chare.h"
 #include "c++interface.h"
 
-class InitMsg : public comm_object
-{
-  int x;
-};
+#include "BOCgroup.h"
 
-class MovePatchDoneMsg : public comm_object
-{
-  int x;
-};
-
-class PatchMgrInitMsg : public comm_object
+class GroupInitMsg : public comm_object
 {
 public:
-  int workDistribGroup;
+  BOCgroup group;
 };
 
-class NodeInitMsg : public comm_object
-{
-public:
-  int workDistribGroup;
-  int patchMgrGroup;
+class EmptyMsg : public comm_object {
+  int dummy;
 };
 
+class InitMsg : public EmptyMsg { 
+};
+
+class RunMsg : public EmptyMsg { 
+};
+
+class ReadyMsg : public EmptyMsg { 
+};
+
+class DoneMsg : public EmptyMsg { 
+};
 
 class Compute;
 
@@ -56,13 +56,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: main.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/09/15 20:43:11 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.8 $	$Date: 1996/11/22 00:18:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: main.h,v $
+ * Revision 1.8  1996/11/22 00:18:51  ari
+ * *** empty log message ***
+ *
  * Revision 1.7  1996/09/15 20:43:11  jim
  * fixed missing semicolon
  *
@@ -83,6 +86,5 @@ public:
  *
  * Revision 1.1  1996/08/02 19:20:13  gursoy
  * Initial revision
- *
  *
  ***************************************************************************/

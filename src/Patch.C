@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.9 1996/11/04 17:13:31 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.10 1996/11/22 00:18:51 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -26,6 +26,9 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1
 #include "Node.h"
 #include "Molecule.h"
 
+#define  DEBUGM
+#include "Debug.h"
+
 Patch::Patch(PatchID pd, AtomIDList al, PositionList pl) :
    positionPtr(0), forcePtr(0), atomPtr(0),
    patchID(pd), atomIDList(al), p(pl),
@@ -38,6 +41,7 @@ Patch::Patch(PatchID pd, AtomIDList al, PositionList pl) :
       CPrintf(
          "Patch::Patch(...) : Different numbers of Coordinates and IDs!\n");
     }
+    numAtoms = p.size();
     Molecule *mol = Node::Object()->molecule;
     AtomIDListIter ai(atomIDList);
     int i = 0;
@@ -121,6 +125,7 @@ void Patch::boxClosed(int box)
 
 void Patch::positionsReady()
 {
+   DebugM(1,"Patch::positionsReady() - patchID " << patchID << endl );
    ComputeMap *computeMap = ComputeMap::Object();
 
    // Give all position pickup boxes access to positions
@@ -135,10 +140,13 @@ void Patch::positionsReady()
    atomPtr = a.unencap();
    atomBox.open(atomPtr);
 
+   CPrintf("Patch::positionsReady() - looping over positionComputeList\n");
+   CPrintf("Patch::positionsReady() - size %d\n", positionComputeList.size());
    // Iterate over compute objects that need to be informed we are ready
    ComputeIDListIter cid(positionComputeList);
    for(cid = cid.begin(); cid != cid.end(); cid++)
    {
+     DebugM(1,"Patch::positionsReady() - cid = " << *cid << endl );
      computeMap->compute(*cid)->patchReady(patchID);
    } 
 }
@@ -149,12 +157,15 @@ void Patch::positionsReady()
  *
  *	$RCSfile: Patch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1996/11/04 17:13:31 $
+ *	$Revision: 1.10 $	$Date: 1996/11/22 00:18:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.10  1996/11/22 00:18:51  ari
+ * *** empty log message ***
+ *
  * Revision 1.9  1996/11/04 17:13:31  ari
  * *** empty log message ***
  *
