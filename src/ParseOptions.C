@@ -23,7 +23,7 @@
 #endif
 
 // given the range, return the string
-const char *string(Range r)
+const char *rstring(Range r)
 {
    switch (r) {
     case FREE_RANGE: return "unconstrained";
@@ -31,7 +31,7 @@ const char *string(Range r)
     case NOT_NEGATIVE: return "non-negative";
     case NEGATIVE: return "negative";
     case NOT_POSITIVE: return "non-positive";
-    default: return "error in string(Range )";
+    default: return "error in rstring(Range )";
    }
 }
    
@@ -40,7 +40,7 @@ static const char *unit_string_array[N_UNITS_UNDEFINED+1] =  {
   "kcal", "kJ", "eV", "K", "undefined units"
 };
 // given the units, return the string
-const char *string(Units u) 
+const char *ustring(Units u) 
 {
    return unit_string_array[u];
 }
@@ -499,8 +499,8 @@ Bool ParseOptions::scan_float(DataElement *data, const char *s)
       }
       BigReal scale = convert(data->units, u);
       if (scale == 0) {
-	 iout << iERROR << "Could not translate from units '" << string(u) 
-	         << "' to '" << string(data->units) << "' for option '"
+	 iout << iERROR << "Could not translate from units '" << ustring(u) 
+	         << "' to '" << ustring(data->units) << "' for option '"
                  << data->name << "'" << "\n" << endi;
 	 return FALSE;
       }
@@ -602,7 +602,7 @@ int ParseOptions::set_##type(DataElement *el)            \
       return 1;                                          \
    }                                                     \
    iout << iERROR << "'" << el->name << "' was set to " << el->field << " but it " \
-	   << "should be " << string(el->range)          \
+	   << "should be " << rstring(el->range)          \
 	   << "\n" << endi;      \
    return 0;                \
 }
@@ -1123,7 +1123,7 @@ Bool ParseOptions::units(const char *name, Units units)  // get
       (tmp -> type != DataElement::INT && 
        tmp -> type != DataElement::FLOAT)) {
      iout << iERROR 
-	<< "Cannot set units '" << string(units) << "' for option '"
+	<< "Cannot set units '" << ustring(units) << "' for option '"
         << name << "'; wrong data type" << "\n" << endi;
      return FALSE;
   }
