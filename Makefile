@@ -10,11 +10,11 @@
 # this one below leads to numerical changes!
 #CXXOPTS = +O3 -G -z -ptn +Oentrysched +Ofastaccess +Onofltacc +Oregionsched
 #CXXOPTS = +O3 -G -z -ptn +Oentrysched
-#CXXOPTS = +O3 -G
+CXXOPTS = +O3
 #CXXOPTS = +O3 -z
 #CXXOPTS = -g -v -z -G
 #CXXOPTS = -g -v
-CXXOPTS = -g 
+#CXXOPTS = -g 
 
 #####
 # Flags
@@ -212,8 +212,8 @@ depends: cifiles $(DSTDIR) $(DEPENDSFILE)
 	      g++ -MM $(GXXFLAGS) \
 	        $(SRCDIR)/`basename $$i | awk -F. '{print $$1".C"}'` | \
 	      $(SRCDIR)/dc.pl $(INCLUDE) /usr/include /usr/local >> $(DEPENDFILE); \
-	      $(ECHO) "\t$$(CXX) $$(CXXFLAGS) -o "$$i" -c" \
-	        "$$(SRCDIR)/"`basename $$i | awk -F. '{print $$1".C"}'` \
+	      $(ECHO) '\t$$(CXX) $$(CXXFLAGS)' -o $$i -c \
+	        $(SRCDIR)/`basename $$i | awk -F. '{print $$1".C"}'` \
 		>> $(DEPENDFILE) ; \
 	done;
 
