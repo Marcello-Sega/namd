@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.25 1996/12/12 20:14:50 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.26 1996/12/13 08:54:10 jim Exp $";
 
 #include <stdio.h>
 
@@ -138,6 +138,7 @@ void WorkDistrib::createPatches(void)
       patchMgr->movePatch(i,patchMap->node(i));
     }
   }
+  patchMgr->sendMovePatches();
 }
 
 //----------------------------------------------------------------------
@@ -373,13 +374,16 @@ void WorkDistrib::movePatchDone(DoneMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.25 $	$Date: 1996/12/12 20:14:50 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.26 $	$Date: 1996/12/13 08:54:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.26  1996/12/13 08:54:10  jim
+ * now moves patches
+ *
  * Revision 1.25  1996/12/12 20:14:50  milind
  * *** empty log message ***
  *

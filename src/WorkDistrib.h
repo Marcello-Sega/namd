@@ -99,13 +99,19 @@ public:
     char *buffer = (char*)in;
     int patchMapSize = *((int*)buffer);
     buffer += sizeof(int);
-    patchMap = PatchMap::Instance();
-    patchMap->unpack((void*)buffer);
+    patchMap = PatchMap::Object();
+    if ( ! ( patchMap->patchData ) )
+    {
+      patchMap->unpack((void*)buffer);
+    }
     buffer += patchMapSize;
     int computeMapSize = *((int*)buffer);
     buffer += sizeof(int);
-    computeMap = ComputeMap::Instance();
-    computeMap->unpack((void*)buffer);
+    computeMap = ComputeMap::Object();
+    if ( ! ( computeMap->computeData ) )
+    {
+      computeMap->unpack((void*)buffer);
+    }
   }
 };
 
@@ -117,12 +123,15 @@ public:
  *
  *	$RCSfile: WorkDistrib.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.14 $	$Date: 1996/12/12 08:57:17 $
+ *	$Revision: 1.15 $	$Date: 1996/12/13 08:53:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.15  1996/12/13 08:53:49  jim
+ * now moves patches
+ *
  * Revision 1.14  1996/12/12 08:57:17  jim
  * added MapDistribMsg packing / unpacking routines
  *
