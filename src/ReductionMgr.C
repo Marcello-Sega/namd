@@ -27,7 +27,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1021 1997/11/07 20:17:48 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1022 1998/02/10 23:30:32 milind Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -271,7 +271,7 @@ void	ReductionMgr::recvReductionData	(ReductionDataMsg *msg)
     m->seq = seq;
     for(tag=0;tag<REDUCTION_MAX_RESERVED;tag++)
       m->data[tag] = current->tagData[tag];
-    CSendMsgBranch(ReductionMgr, recvReductionData, m, thisgroup, myParent);
+    CSendMsgBranch(ReductionMgr, recvReductionData, ReductionDataMsg, m, thisgroup, myParent);
     gotAllData(current);
   }
   if(isRoot()) {
@@ -380,7 +380,7 @@ void	ReductionMgr::submit(int seq, ReductionTag tag, BigReal data)
     m->seq = seq;
     for(int i=0;i<REDUCTION_MAX_RESERVED;i++)
       m->data[i] = current->tagData[i];
-    CSendMsgBranch(ReductionMgr, recvReductionData, m, thisgroup, myParent);
+    CSendMsgBranch(ReductionMgr, recvReductionData, ReductionDataMsg, m, thisgroup, myParent);
     gotAllData(current);
   }
   if (current->numData[tag] == maxData[tag] && isRoot())
@@ -483,12 +483,15 @@ void	ReductionMgr::unsubscribe(ReductionTag tag)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1021 $	$Date: 1997/11/07 20:17:48 $
+ *	$Revision: 1.1022 $	$Date: 1998/02/10 23:30:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.C,v $
+ * Revision 1.1022  1998/02/10 23:30:32  milind
+ * Fixed to reflect the current changes to Charm++ translator.
+ *
  * Revision 1.1021  1997/11/07 20:17:48  milind
  * Made NAMD to run on shared memory machines.
  *

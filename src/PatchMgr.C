@@ -11,7 +11,7 @@
 /*								           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1011 1997/12/19 23:42:37 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1012 1998/02/10 23:30:30 milind Exp $";
 
 
 #include "ckdefs.h"
@@ -108,7 +108,7 @@ void PatchMgr::sendMovePatches()
 	MovePatchesMsg(m->pid, p->atomIDList, p->p, p->v);
 
       // Sending to PatchMgr::recvMovePatches on remote node
-      CSendMsgBranch(PatchMgr, recvMovePatches, msg, thisgroup, m->nodeID);
+      CSendMsgBranch(PatchMgr, recvMovePatches, MovePatchesMsg, msg, thisgroup, m->nodeID);
 
       // Deleting the HomePatchElem will call a destructor for clean up
       // but the msg elements are safe since they use a container template
@@ -146,7 +146,7 @@ void PatchMgr::sendMigrationMsg(PatchID src, MigrationInfo m) {
   // We note that m.mList may be NULL indicating no atoms to migrate
   MigrateAtomsMsg *msg = 
     new (MsgIndex(MigrateAtomsMsg)) MigrateAtomsMsg(src,m.destPatchID,m.mList);
-  CSendMsgBranch(PatchMgr,recvMigrateAtoms,msg,thisgroup,m.destNodeID);
+  CSendMsgBranch(PatchMgr,recvMigrateAtoms,MigrateAtomsMsg,msg,thisgroup,m.destNodeID);
 }
 
 // Called by HomePatch to migrate atoms off to new patches
@@ -190,7 +190,7 @@ void PatchMgr::sendMigrationMsgs(PatchID src, MigrationInfo *m, int numMsgs) {
       if ( combineMigrationMsgs[destNodeID] )
       {
 	DebugM(3,"Sending MigrateAtomsCombinedMsg to node " << destNodeID << "\n");
-        CSendMsgBranch(PatchMgr, recvMigrateAtomsCombined,
+        CSendMsgBranch(PatchMgr, recvMigrateAtomsCombined, MigrateAtomsCombinedMsg,
 		combineMigrationMsgs[destNodeID], thisgroup, destNodeID);
       }
   }
@@ -253,12 +253,15 @@ void MovePatchesMsg::unpack (void *in)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMgr.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/12/19 23:42:37 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1012 $	$Date: 1998/02/10 23:30:30 $
  *
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.C,v $
+ * Revision 1.1012  1998/02/10 23:30:30  milind
+ * Fixed to reflect the current changes to Charm++ translator.
+ *
  * Revision 1.1011  1997/12/19 23:42:37  jim
  * Replaced assignments with memcpys and reordered memcpys for efficiency.
  *

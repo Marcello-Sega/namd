@@ -9,7 +9,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1023 1998/01/16 08:00:42 sergei Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1024 1998/02/10 23:30:30 milind Exp $";
 
 #include <unistd.h>
 #include "ckdefs.h"
@@ -130,13 +130,13 @@ Node::~Node(void)
 
 void Node::messageStartUp() {
   InitMsg *msg = new (MsgIndex(InitMsg)) InitMsg;
-  CBroadcastMsgBranch(Node, startup, msg, CpvAccess(BOCclass_group).node);
+  CBroadcastMsgBranch(Node, startup, InitMsg, msg, CpvAccess(BOCclass_group).node);
 }
 
 void Node::startUp(QuiescenceMessage *qmsg) {
   delete qmsg;
   InitMsg *msg = new (MsgIndex(InitMsg)) InitMsg;
-  CBroadcastMsgBranch(Node, startup, msg, CpvAccess(BOCclass_group).node);
+  CBroadcastMsgBranch(Node, startup, InitMsg, msg, CpvAccess(BOCclass_group).node);
 }
 
 
@@ -239,7 +239,7 @@ void Node::startup(InitMsg *msg) {
   startupPhase++;
   if (!CMyPe()) {
     if (!gotoRun) {
-      CStartQuiescence(GetEntryPtr(Node,startUp), thishandle);
+      CStartQuiescence(GetEntryPtr(Node,startUp,QuiescenceMessage), thishandle);
     } else {
       Node::messageRun();
       // CStartQuiescence(GetEntryPtr(Node,quiescence), thishandle);
@@ -340,7 +340,7 @@ void Node::buildSequencers() {
 //-----------------------------------------------------------------------
 void Node::messageRun() {
   RunMsg *msg = new (MsgIndex(RunMsg)) RunMsg;
-  CBroadcastMsgBranch(Node, run, msg, CpvAccess(BOCclass_group).node);
+  CBroadcastMsgBranch(Node, run, RunMsg, msg, CpvAccess(BOCclass_group).node);
 }
 
 
@@ -382,7 +382,7 @@ void Node::run(RunMsg *msg)
 //-----------------------------------------------------------------------
 void Node::messageHomeDone() {
   DoneMsg *msg = new (MsgIndex(DoneMsg)) DoneMsg;
-  CSendMsgBranch(Node, homeDone, msg, CpvAccess(BOCclass_group).node, CMyPe());
+  CSendMsgBranch(Node, homeDone, DoneMsg, msg, CpvAccess(BOCclass_group).node, CMyPe());
 }
 
 
@@ -395,7 +395,7 @@ void Node::homeDone(DoneMsg *msg) {
 
   if (!--numHomePatchesRunning) {
      DoneMsg *msg = new (MsgIndex(DoneMsg)) DoneMsg;
-     CSendMsgBranch(Node, nodeDone, msg, CpvAccess(BOCclass_group).node, 0);
+     CSendMsgBranch(Node, nodeDone, DoneMsg, msg, CpvAccess(BOCclass_group).node, 0);
   }
 }
 
@@ -442,7 +442,7 @@ void Node::saveMolDataPointers(NamdState *state)
 // send the SMD data
 //------------------------------------------------------------------------
 void Node::sendSMDData(SMDDataMsg *msg) {
-  CBroadcastMsgBranch(Node, recvSMDData, msg, CpvAccess(BOCclass_group).node);
+  CBroadcastMsgBranch(Node, recvSMDData, SMDDataMsg, msg, CpvAccess(BOCclass_group).node);
 }
 
 //------------------------------------------------------------------------
@@ -467,13 +467,16 @@ void Node::recvSMDData(SMDDataMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: sergei $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1023 $	$Date: 1998/01/16 08:00:42 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1024 $	$Date: 1998/02/10 23:30:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1024  1998/02/10 23:30:30  milind
+ * Fixed to reflect the current changes to Charm++ translator.
+ *
  * Revision 1.1023  1998/01/16 08:00:42  sergei
  * minor fix for SMD
  *

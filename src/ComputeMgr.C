@@ -73,21 +73,21 @@ void ComputeMgr::updateComputes(int ep, int chareID) {
     CharmExit();
     return;
   }
-  CStartQuiescence(GetEntryPtr(ComputeMgr,updateComputes2),thishandle);
+  CStartQuiescence(GetEntryPtr(ComputeMgr,updateComputes2,QuiescenceMessage),thishandle);
 }
 
 void ComputeMgr::updateComputes2(QuiescenceMessage *msg) {
   delete msg;
   WorkDistrib  *workDistrib = CLocalBranch(WorkDistrib, CpvAccess(BOCclass_group).workDistrib);
   workDistrib->saveComputeMapChanges(
-    GetEntryPtr(ComputeMgr, updateComputes3), thisgroup
+    GetEntryPtr(ComputeMgr, updateComputes3, DoneMsg), thisgroup
   );
 }
 
 void ComputeMgr::updateComputes3(DoneMsg *msg) {
   delete msg;
   RunMsg *runmsg = new (MsgIndex(RunMsg)) RunMsg;
-  CBroadcastMsgBranch(ComputeMgr, updateLocalComputes, runmsg, thisgroup); 
+  CBroadcastMsgBranch(ComputeMgr, updateLocalComputes, RunMsg, runmsg, thisgroup); 
 }
 
 void ComputeMgr::updateLocalComputes(RunMsg *msg) {
@@ -124,7 +124,7 @@ void ComputeMgr::updateLocalComputes(RunMsg *msg) {
  
   DebugM(4, "updateComputes - totalComputes = "<<Compute::totalComputes<<"\n");
   if (!CMyPe()) {
-      CStartQuiescence(GetEntryPtr(ComputeMgr,updateLocalComputes2),thishandle);  
+      CStartQuiescence(GetEntryPtr(ComputeMgr,updateLocalComputes2,QuiescenceMessage),thishandle);  
   }
 }
 
@@ -133,7 +133,7 @@ ComputeMgr::updateLocalComputes2(QuiescenceMessage *msg) {
   delete msg;
 
   RunMsg *runmsg = new (MsgIndex(RunMsg)) RunMsg;
-  CBroadcastMsgBranch(ComputeMgr, updateLocalComputes3, runmsg, thisgroup);
+  CBroadcastMsgBranch(ComputeMgr, updateLocalComputes3, RunMsg, runmsg, thisgroup);
 }
 
 void
@@ -161,7 +161,7 @@ ComputeMgr::updateLocalComputes3(RunMsg *msg) {
   PatchMap::Object()->checkMap();
 
   if (!CMyPe()) {
-    CStartQuiescence(GetEntryPtr(ComputeMgr,doneUpdateLocalComputes),
+    CStartQuiescence(GetEntryPtr(ComputeMgr,doneUpdateLocalComputes,DoneMsg),
 		      thishandle);
   }
   //DoneMsg *donemsg = new (MsgIndex(DoneMsg)) DoneMsg;
@@ -325,7 +325,7 @@ ComputeMgr::createComputes(ComputeMap *map)
 
 void ComputeMgr:: sendComputeGlobalConfig(ComputeGlobalConfigMsg *msg)
 {
-  CBroadcastMsgBranch(ComputeMgr, recvComputeGlobalConfig, msg,
+  CBroadcastMsgBranch(ComputeMgr, recvComputeGlobalConfig,ComputeGlobalConfigMsg, msg,
     CpvAccess(BOCclass_group).computeMgr);
 }
 
@@ -339,7 +339,7 @@ void ComputeMgr:: recvComputeGlobalConfig(ComputeGlobalConfigMsg *msg)
 
 void ComputeMgr:: sendComputeGlobalData(ComputeGlobalDataMsg *msg)
 {
-  CSendMsgBranch(ComputeMgr, recvComputeGlobalData, msg,
+  CSendMsgBranch(ComputeMgr, recvComputeGlobalData, ComputeGlobalDataMsg, msg,
     CpvAccess(BOCclass_group).computeMgr, 0);
 }
 
@@ -353,7 +353,7 @@ void ComputeMgr:: recvComputeGlobalData(ComputeGlobalDataMsg *msg)
 
 void ComputeMgr:: sendComputeGlobalResults(ComputeGlobalResultsMsg *msg)
 {
-  CBroadcastMsgBranch(ComputeMgr, recvComputeGlobalResults, msg,
+  CBroadcastMsgBranch(ComputeMgr, recvComputeGlobalResults, ComputeGlobalResultsMsg, msg,
     CpvAccess(BOCclass_group).computeMgr);
 }
 
@@ -373,13 +373,16 @@ void ComputeMgr:: recvComputeGlobalResults(ComputeGlobalResultsMsg *msg)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1998/01/22 20:11:03 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1019 $	$Date: 1998/02/10 23:30:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.C,v $
+ * Revision 1.1019  1998/02/10 23:30:28  milind
+ * Fixed to reflect the current changes to Charm++ translator.
+ *
  * Revision 1.1018  1998/01/22 20:11:03  brunner
  * Modified the ComputeMap redistribution to send only new patch assignments.
  *

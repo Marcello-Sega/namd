@@ -290,7 +290,7 @@ ProxyMgr::registerProxy(PatchID pid) {
   msg->node=CMyPe();
   msg->patch = pid;
 
-  CSendMsgBranch(ProxyMgr, recvRegisterProxy, msg, CpvAccess(BOCclass_group).proxyMgr, node);
+  CSendMsgBranch(ProxyMgr, recvRegisterProxy, RegisterProxyMsg, msg, CpvAccess(BOCclass_group).proxyMgr, node);
 }
 
 void
@@ -302,7 +302,7 @@ ProxyMgr::recvRegisterProxy(RegisterProxyMsg *msg) {
 void
 ProxyMgr::sendResults(ProxyResultMsg *msg) {
   NodeID node = PatchMap::Object()->node(msg->patch);
-  CSendMsgBranch(ProxyMgr, recvResults, msg, CpvAccess(BOCclass_group).proxyMgr, node);
+  CSendMsgBranch(ProxyMgr, recvResults, ProxyResultMsg, msg, CpvAccess(BOCclass_group).proxyMgr, node);
 }
 
 void
@@ -313,7 +313,7 @@ ProxyMgr::recvResults(ProxyResultMsg *msg) {
 
 void
 ProxyMgr::sendProxyData(ProxyDataMsg *msg, NodeID node) {
-  CSendMsgBranch(ProxyMgr, recvProxyData, msg, CpvAccess(BOCclass_group).proxyMgr, node);
+  CSendMsgBranch(ProxyMgr, recvProxyData, ProxyDataMsg, msg, CpvAccess(BOCclass_group).proxyMgr, node);
 }
 
 void
@@ -324,7 +324,7 @@ ProxyMgr::recvProxyData(ProxyDataMsg *msg) {
 
 void
 ProxyMgr::sendProxyAtoms(ProxyAtomsMsg *msg, NodeID node) {
-  CSendMsgBranch(ProxyMgr, recvProxyAtoms, msg, CpvAccess(BOCclass_group).proxyMgr, node);
+  CSendMsgBranch(ProxyMgr, recvProxyAtoms, ProxyAtomsMsg, msg, CpvAccess(BOCclass_group).proxyMgr, node);
 }
 
 void
@@ -335,7 +335,7 @@ ProxyMgr::recvProxyAtoms(ProxyAtomsMsg *msg) {
 
 void
 ProxyMgr::sendProxyAll(ProxyAllMsg *msg, NodeID node) {
-  CSendMsgBranch(ProxyMgr, recvProxyAll, msg, CpvAccess(BOCclass_group).proxyMgr, node);
+  CSendMsgBranch(ProxyMgr, recvProxyAll, ProxyAllMsg, msg, CpvAccess(BOCclass_group).proxyMgr, node);
 }
 
 void
@@ -351,13 +351,16 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1020 $	$Date: 1997/12/22 21:29:26 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1021 $	$Date: 1998/02/10 23:30:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.1021  1998/02/10 23:30:31  milind
+ * Fixed to reflect the current changes to Charm++ translator.
+ *
  * Revision 1.1020  1997/12/22 21:29:26  jim
  * Proxies no longer send empty arrays back to HomePatch.  Requires some new
  * flags to be set correctly in Sequencer in order to work.  These are:

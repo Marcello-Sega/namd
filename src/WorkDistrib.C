@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1041 1998/01/22 20:11:05 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1042 1998/02/10 23:30:33 milind Exp $";
 
 #include <stdio.h>
 
@@ -70,7 +70,7 @@ void WorkDistrib::sendMaps(void)
   mapMsg->patchMap = PatchMap::Object();
   mapMsg->computeMap = ComputeMap::Object();
 
-  CBroadcastMsgBranch(WorkDistrib, saveMaps, mapMsg, thisgroup);
+  CBroadcastMsgBranch(WorkDistrib, saveMaps, MapDistribMsg, mapMsg, thisgroup);
   mapsArrived = true;
 }
 
@@ -94,7 +94,7 @@ void WorkDistrib::saveComputeMapChanges(int ep, int chareID)
   for(i=0; i<computeMap->numComputes(); i++)
     mapMsg->newNodes[i] = computeMap->newNode(i);
 
-  CBroadcastMsgBranch(WorkDistrib, recvComputeMapChanges, mapMsg, thisgroup);
+  CBroadcastMsgBranch(WorkDistrib, recvComputeMapChanges, ComputeMapChangeMsg, mapMsg, thisgroup);
 }
 
 void WorkDistrib::recvComputeMapChanges(ComputeMapChangeMsg *msg) {
@@ -106,7 +106,7 @@ void WorkDistrib::recvComputeMapChanges(ComputeMapChangeMsg *msg) {
   delete msg;
 
   DoneMsg *donemsg = new (MsgIndex(DoneMsg)) DoneMsg;
-  CSendMsgBranch(WorkDistrib, doneSaveComputeMap, donemsg, thisgroup, 0);
+  CSendMsgBranch(WorkDistrib, doneSaveComputeMap, DoneMsg, donemsg, thisgroup, 0);
 
   DebugM(2, "ComputeMap after send!\n");
   for (i=0; i<computeMap->numComputes(); i++) {
@@ -779,17 +779,17 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
   msg->compute = compute; // pointer is valid since send is to local Pe
 
   if ( seq < 0 ) {
-   CSendMsgBranch(WorkDistrib, enqueueWork, msg, CpvAccess(BOCclass_group).workDistrib, CMyPe() );
+   CSendMsgBranch(WorkDistrib, enqueueWork, LocalWorkMsg, msg, CpvAccess(BOCclass_group).workDistrib, CMyPe() );
   }
   else switch ( seq % 3 ) {
   case 0:
-   CSendMsgBranch(WorkDistrib, enqueueWorkA, msg, CpvAccess(BOCclass_group).workDistrib, CMyPe() );
+   CSendMsgBranch(WorkDistrib, enqueueWorkA, LocalWorkMsg, msg, CpvAccess(BOCclass_group).workDistrib, CMyPe() );
    break;
   case 1:
-   CSendMsgBranch(WorkDistrib, enqueueWorkB, msg, CpvAccess(BOCclass_group).workDistrib, CMyPe() );
+   CSendMsgBranch(WorkDistrib, enqueueWorkB, LocalWorkMsg, msg, CpvAccess(BOCclass_group).workDistrib, CMyPe() );
    break;
   case 2:
-   CSendMsgBranch(WorkDistrib, enqueueWorkC, msg, CpvAccess(BOCclass_group).workDistrib, CMyPe() );
+   CSendMsgBranch(WorkDistrib, enqueueWorkC, LocalWorkMsg, msg, CpvAccess(BOCclass_group).workDistrib, CMyPe() );
    break;
   default:
    NAMD_die("WorkDistrib::messageEnqueueWork case statement error!");
@@ -1038,13 +1038,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1041 $	$Date: 1998/01/22 20:11:05 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1042 $	$Date: 1998/02/10 23:30:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1042  1998/02/10 23:30:33  milind
+ * Fixed to reflect the current changes to Charm++ translator.
+ *
  * Revision 1.1041  1998/01/22 20:11:05  brunner
  * Modified the ComputeMap redistribution to send only new patch assignments.
  *

@@ -32,7 +32,7 @@ void CollectionMgr::submitPositions(int seq, AtomIDList &i, PositionList &d)
     msg->seq = c->seq;
     msg->aid = c->aid;
     msg->data = c->data;
-    CSendMsg(CollectionMaster,receivePositions,msg,&master);
+    CSendMsg(CollectionMaster,receivePositions,CollectVectorMsg,msg,&master);
     delete c;
   }
 }
@@ -48,7 +48,7 @@ void CollectionMgr::submitVelocities(int seq, AtomIDList &i, VelocityList &d)
     msg->seq = c->seq;
     msg->aid = c->aid;
     msg->data = c->data;
-    CSendMsg(CollectionMaster,receiveVelocities,msg,&master);
+    CSendMsg(CollectionMaster,receiveVelocities,CollectVectorMsg,msg,&master);
     delete c;
   }
 }
@@ -64,7 +64,7 @@ void CollectionMgr::submitForces(int seq, AtomIDList &i, ForceList &d)
     msg->seq = c->seq;
     msg->aid = c->aid;
     msg->data = c->data;
-    CSendMsg(CollectionMaster,receiveForces,msg,&master);
+    CSendMsg(CollectionMaster,receiveForces,CollectVectorMsg,msg,&master);
     delete c;
   }
 }
@@ -77,12 +77,15 @@ void CollectionMgr::submitForces(int seq, AtomIDList &i, ForceList &d)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/11/07 20:17:35 $
+ *	$Revision: 1.1009 $	$Date: 1998/02/10 23:30:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMgr.C,v $
+ * Revision 1.1009  1998/02/10 23:30:26  milind
+ * Fixed to reflect the current changes to Charm++ translator.
+ *
  * Revision 1.1008  1997/11/07 20:17:35  milind
  * Made NAMD to run on shared memory machines.
  *

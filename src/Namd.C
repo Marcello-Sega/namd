@@ -9,7 +9,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.1005 1997/04/04 23:34:20 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.1006 1998/02/10 23:30:29 milind Exp $";
 
 #include "unistd.h"
 
@@ -57,39 +57,39 @@ Namd::Namd(void)
 
   // Create WorkDistrib and send it an empty message
   InitMsg *initmsg1 = new (MsgIndex(InitMsg)) InitMsg;
-  group.workDistrib = new_group(WorkDistrib, initmsg1);
+  group.workDistrib = new_group(WorkDistrib, InitMsg, initmsg1);
 
   // Create ProxyMgr
   InitMsg *initmsg2 = new (MsgIndex(InitMsg)) InitMsg;
-  group.proxyMgr = new_group(ProxyMgr, initmsg2);
+  group.proxyMgr = new_group(ProxyMgr, InitMsg, initmsg2);
 
   // Create PatchMgr
   InitMsg *initmsg3 = new (MsgIndex(InitMsg)) InitMsg;
-  group.patchMgr = new_group(PatchMgr, initmsg3);
+  group.patchMgr = new_group(PatchMgr, InitMsg, initmsg3);
 
   // Create ComputeMgr
   InitMsg *initmsg4 = new (MsgIndex(InitMsg)) InitMsg;
-  group.computeMgr = new_group(ComputeMgr, initmsg4);
+  group.computeMgr = new_group(ComputeMgr, InitMsg, initmsg4);
 
   // Create ReductionMgr
   InitMsg *initmsg5 = new (MsgIndex(InitMsg)) InitMsg;
-  group.reductionMgr = new_group(ReductionMgr, initmsg5);
+  group.reductionMgr = new_group(ReductionMgr, InitMsg, initmsg5);
 
   // Create Collection system
   InitMsg *initmsg6 = new (MsgIndex(InitMsg)) InitMsg;
   ChareIDType collectionMaster;
-  new_chare2(CollectionMaster,initmsg6,&collectionMaster,0);
+  new_chare2(CollectionMaster,InitMsg, initmsg6,&collectionMaster,0);
   SlaveInitMsg *initmsg7 = new (MsgIndex(SlaveInitMsg)) SlaveInitMsg;
   initmsg7->master = collectionMaster;
-  group.collectionMgr = new_group(CollectionMgr,initmsg7);
+  group.collectionMgr = new_group(CollectionMgr,SlaveInitMsg, initmsg7);
 
   // Create Broadcast system
   InitMsg *initmsg8 = new (MsgIndex(InitMsg)) InitMsg;
-  group.broadcastMgr = new_group(BroadcastMgr, initmsg8);
+  group.broadcastMgr = new_group(BroadcastMgr, InitMsg, initmsg8);
 
   // Create Load-balance coordinator
   InitMsg *initmsg9 = new (MsgIndex(InitMsg)) InitMsg;
-  group.ldbCoordinator = new_group(LdbCoordinator, initmsg9);
+  group.ldbCoordinator = new_group(LdbCoordinator, InitMsg, initmsg9);
 
   // Create the Node object and send it the IDs of all the other
   // parallel objects.
@@ -97,7 +97,7 @@ Namd::Namd(void)
   msg->group = group;
 
   iout << iINFO << "Starting up nodes\n" << endi;
-  nodeGroup = new_group(Node, msg);
+  nodeGroup = new_group(Node, GroupInitMsg, msg);
 }
 
 
@@ -132,12 +132,15 @@ void Namd::startup(char *confFile)
  *
  *	$RCSfile: Namd.C,v $
  *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/04/04 23:34:20 $
+ *	$Revision: 1.1006 $	$Date: 1998/02/10 23:30:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Namd.C,v $
+ * Revision 1.1006  1998/02/10 23:30:29  milind
+ * Fixed to reflect the current changes to Charm++ translator.
+ *
  * Revision 1.1005  1997/04/04 23:34:20  milind
  * Got NAMD2 to run on Origin2000.
  * Included definitions of class static variables in C files.
