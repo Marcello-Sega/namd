@@ -11,9 +11,8 @@
 #include <math.h>
 #include "Tensor.h"
 
-#ifdef NO_RINT
-#define rint(X) floor((X)+0.5)
-#endif
+// on T3E rint() is in fp.h, not math.h so just declare it again
+double rint(double);
 
 typedef Vector ScaledPosition;
 
