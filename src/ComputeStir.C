@@ -9,7 +9,7 @@
 #include "ComputeStir.h"
 #include "Node.h"
 #include "SimParameters.h"
-#include "Patch.h"
+#include "HomePatch.h"
 #include "DataStream.h"
 #include "Molecule.h"
 #include "CollectionMgr.h" //for error corr of buffer problem
@@ -17,7 +17,7 @@
 
 
 ComputeStir::ComputeStir(ComputeID c, PatchID pid)
-  : ComputePatch(c,pid)
+  : ComputeHomePatch(c,pid)
 {
 
   
@@ -285,11 +285,12 @@ Vector ComputeStir::placeThetaRadius (BigReal theta, BigReal height, BigReal rad
    ///iout <<"DEBUG:: in placeThetaRadius, a.x="<<a.x<<" a.y= "<<a.y<<" a.z= "<<a.z<<endi;
   return a;
 }
-void ComputeStir::doForce (CompAtom* p, Results* r) {
+void ComputeStir::doForce (FullAtom* p, Results* r) {
   
   
   Molecule *molecule = Node::Object()->molecule;
   SimParameters *simParams = Node::Object()->simParameters;
+  Lattice &lattice = homePatch->lattice;
   char statbuf[1024];
   Vector curPos; //current atom position
   Vector proj;  //projection on the axis ray
@@ -308,6 +309,8 @@ void ComputeStir::doForce (CompAtom* p, Results* r) {
   int GlobalId;
   Force *forces = r->f[Results::normal];
   BigReal energy = 0;
+  Force extForce = 0.;
+  Tensor extVirial;
   
   //CkPrintf("DEBUG: In ComputeStir::doForce");
   //  Loop through and check each atom
@@ -320,7 +323,7 @@ void ComputeStir::doForce (CompAtom* p, Results* r) {
 
 	molecule->get_stir_startTheta (p[i].id);
 	
-	curPos = p[i].position;
+	curPos = lattice.reverse_transform(p[i].position,p[i].transform);
 
 	rayDist = distanceToRay(axisUnit,pivot,curPos);
 	proj = projectionOnRay (axisUnit,pivot,curPos);
@@ -342,6 +345,8 @@ void ComputeStir::doForce (CompAtom* p, Results* r) {
 	theForce = (simParams->stirK) * forceMag * forceDir;
 	
 	forces[i]  += theForce;
+	extForce += theForce;
+	extVirial += outer(theForce,curPos);
 
 			     
           //CkPrintf ("DEBUG: now to get sprintf x y z's");
@@ -359,14 +364,12 @@ void ComputeStir::doForce (CompAtom* p, Results* r) {
       //sprintf (statbuf, "DEBUG: i= %d Global= %d\n",i,GlobalId);
       //dout << "DEBUG: i= " << i << " Global=" << GlobalId <<"\n"<<endd;
       //CollectionMgr::Object()->sendDataStream(statbuf);
-
-      //BigReal charge = p[i].charge;
-      //forces[i] += charge * eField;
-      //energy -= charge * ( eField * p[i].position );
     
     }
 
   reduction->item(REDUCTION_MISC_ENERGY) += energy;
+  ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_NORMAL,extForce);
+  ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,extVirial);
   reduction->submit();
 
 }

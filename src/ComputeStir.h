@@ -9,20 +9,20 @@
 #ifndef COMPUTESTIR_H
 #define COMPUTESTIR_H
 
-#include "ComputePatch.h"
+#include "ComputeHomePatch.h"
 #include "ReductionMgr.h"
 #include "Vector.h"
 #include "Tensor.h"
 
 
-class ComputeStir : public ComputePatch
+class ComputeStir : public ComputeHomePatch
 {
 
  public:
 	ComputeStir(ComputeID c, PatchID pid); 	//  Constructor
 	virtual ~ComputeStir();			//  Destructor
 	
-	virtual void doForce(CompAtom* p, Results* r);
+	virtual void doForce(FullAtom* p, Results* r);
 	
 	SubmitReduction *reduction;
  private:  

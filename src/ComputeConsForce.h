@@ -1,27 +1,27 @@
 #ifndef COMPUTECONSFORCE_H
 #define COMPUTECONSFORCE_H
 
-#include "ComputePatch.h"
+#include "ComputeHomePatch.h"
+#include "ReductionMgr.h"
 
-class ComputeConsForce : public ComputePatch
+class ComputeConsForce : public ComputeHomePatch
 {
 public:
   ComputeConsForce(ComputeID, PatchID);
-  virtual void doForce(CompAtom*, Results*);
+  virtual ~ComputeConsForce();
+  virtual void doForce(FullAtom*, Results*);
+private:
+  SubmitReduction *reduction;
 };
 
-#endif
-
-#ifndef COMPUTECONSTORQUE_H
-#define COMPUTECONSTORQUE_H
-
-#include "ComputePatch.h"
-
-class ComputeConsTorque : public ComputePatch
+class ComputeConsTorque : public ComputeHomePatch
 {
 public:
   ComputeConsTorque(ComputeID, PatchID);
-  virtual void doForce(CompAtom*, Results*);
+  virtual ~ComputeConsTorque();
+  virtual void doForce(FullAtom*, Results*);
+private:
+  SubmitReduction *reduction;
 };
 
 #endif

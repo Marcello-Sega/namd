@@ -7,17 +7,17 @@
 #ifndef COMPUTEEFIELD_H
 #define COMPUTEEFIELD_H
 
-#include "ComputePatch.h"
+#include "ComputeHomePatch.h"
 #include "ReductionMgr.h"
 
-class ComputeEField : public ComputePatch
+class ComputeEField : public ComputeHomePatch
 {
 
 public:
 	ComputeEField(ComputeID c, PatchID pid); 	//  Constructor
 	virtual ~ComputeEField();			//  Destructor
 
-	virtual void doForce(CompAtom* p, Results* r);
+	virtual void doForce(FullAtom* p, Results* r);
 
 	SubmitReduction *reduction;
 

@@ -7,11 +7,11 @@
 #include "ComputeEField.h"
 #include "Node.h"
 #include "SimParameters.h"
-#include "Patch.h"
+#include "HomePatch.h"
 
 
 ComputeEField::ComputeEField(ComputeID c, PatchID pid)
-  : ComputePatch(c,pid)
+  : ComputeHomePatch(c,pid)
 {
 
 	reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
@@ -28,22 +28,30 @@ ComputeEField::~ComputeEField()
 /*			END OF FUNCTION ~ComputeEField		*/
 
 
-void ComputeEField::doForce(CompAtom* p, Results* r) {
+void ComputeEField::doForce(FullAtom* p, Results* r) {
 
   SimParameters *simParams = Node::Object()->simParameters;
   Vector eField = simParams->eField;
 
   Force *forces = r->f[Results::normal];
   BigReal energy = 0;
+  Force extForce = 0.;
+  Tensor extVirial;
 
   //  Loop through and check each atom
   for (int i=0; i<numAtoms; i++) {
-    BigReal charge = p[i].charge;
-    forces[i] += charge * eField;
-    energy -= charge * ( eField * p[i].position );
+    Force force = p[i].charge * eField;
+    forces[i] += force;
+    extForce += force;
+    Position vpos = homePatch->lattice.reverse_transform(
+		p[i].position, p[i].transform );
+    energy -= force * (vpos - homePatch->lattice.origin());
+    extVirial += outer(force,vpos);
   }
 
   reduction->item(REDUCTION_MISC_ENERGY) += energy;
+  ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_NORMAL,extForce);
+  ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,extVirial);
   reduction->submit();
 
 }
