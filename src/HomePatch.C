@@ -329,9 +329,13 @@ void HomePatch::positionsReady(int doMigration)
         allmsg->flags = flags;
         allmsg->positionList = p;
         if (flags.doMolly) allmsg->avgPositionList = p_avg;
+#if CMK_PERSISTENT_COMM
 //        CmiUsePersistentHandle(localphs, npid);
+#endif
         ProxyMgr::Object()->sendProxyAll(allmsg,npid,pids);
+#if CMK_PERSISTENT_COMM
         CmiUsePersistentHandle(NULL, 0);
+#endif
     } else {
         ProxyDataMsg *nmsg = new (sizeof(int)*8) ProxyDataMsg;
         CkSetQueueing(nmsg, CK_QUEUEING_IFIFO);
