@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1011 1997/04/08 07:08:49 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1012 1997/04/08 21:08:41 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -37,7 +37,7 @@ Patch::Patch(PatchID pd) :
    positionBox(this,&(Patch::positionBoxClosed)),
    forceBox(this,&(Patch::forceBoxClosed)),
    atomBox(this,&(Patch::atomBoxClosed)),
-   numAtoms(0), boxesOpen(0)
+   numAtoms(0), boxesOpen(0), lattice(flags.lattice)
 {
   lattice = Node::Object()->simParameters->lattice;
   _hasNewAtoms = 0;
@@ -49,7 +49,7 @@ Patch::Patch(PatchID pd, AtomIDList al, PositionList pl) :
    positionBox(this,&(Patch::positionBoxClosed)),
    forceBox(this,&(Patch::forceBoxClosed)),
    atomBox(this,&(Patch::atomBoxClosed)),
-   numAtoms(al.size()), boxesOpen(0)
+   numAtoms(al.size()), boxesOpen(0), lattice(flags.lattice)
 {
   lattice = Node::Object()->simParameters->lattice;
   if (atomIDList.size() != p.size()) {
@@ -267,13 +267,16 @@ void Patch::positionsReady(int doneMigration)
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/04/08 07:08:49 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1012 $	$Date: 1997/04/08 21:08:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.1012  1997/04/08 21:08:41  jim
+ * Contant pressure now correct on multiple nodes, should work with MTS.
+ *
  * Revision 1.1011  1997/04/08 07:08:49  ari
  * Modification for dynamic loadbalancing - moving computes
  * Still bug in new computes or usage of proxies/homepatches.

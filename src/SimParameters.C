@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/03/31 19:23:04 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1012 $	$Date: 1997/04/08 21:08:49 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1012  1997/04/08 21:08:49  jim
+ * Contant pressure now correct on multiple nodes, should work with MTS.
+ *
  * Revision 1.1011  1997/03/31 19:23:04  nealk
  * Hard-coded +2 angstrom increase in patch margin when using hydrogen grouping.
  *
@@ -351,7 +354,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1011 1997/03/31 19:23:04 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1012 1997/04/08 21:08:49 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -702,6 +705,10 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 		&berendsenPressureRelaxationTime);
    opts.range("BerendsenPressureRelaxationTime", POSITIVE);
    opts.units("BerendsenPressureRelaxationTime", FSEC);
+   opts.optional("BerendsenPressure", "BerendsenPressureFreq",
+		"Number of steps between volume rescaling",
+		&berendsenPressureFreq, 1);
+   opts.range("BerendsenPressureFreq", POSITIVE);
 
    ////  Harmonic Constraints
    opts.optionalB("main", "constraints", "Are harmonic constraints active?",
@@ -1993,6 +2000,8 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    		 << berendsenPressureRelaxationTime << " FS\n";
 	berendsenPressureTarget /= PRESSUREFACTOR;
 	berendsenPressureCompressibility *= PRESSUREFACTOR;
+   	iout << iINFO << "    APPLIED EVERY "
+   		 << berendsenPressureFreq << " STEPS\n";
    }
 
    if (vmdFrequency > 0)
@@ -2246,6 +2255,7 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
 	msg->put(berendsenPressureTarget);
 	msg->put(berendsenPressureCompressibility);
 	msg->put(berendsenPressureRelaxationTime);
+	msg->put(berendsenPressureFreq);
 
 	// now broadcast this info to all other nodes
 	com_obj->broadcast_others(msg, SIMPARAMSTAG);
@@ -2383,6 +2393,7 @@ void SimParameters::receive_SimParameters(Message *msg)
 	msg->get(berendsenPressureTarget);
 	msg->get(berendsenPressureCompressibility);
 	msg->get(berendsenPressureRelaxationTime);
+	msg->get(berendsenPressureFreq);
 
 	//  Free the message
 	delete msg;
@@ -2396,12 +2407,15 @@ void SimParameters::receive_SimParameters(Message *msg)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/03/31 19:23:04 $
+ *	$Revision: 1.1012 $	$Date: 1997/04/08 21:08:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1012  1997/04/08 21:08:49  jim
+ * Contant pressure now correct on multiple nodes, should work with MTS.
+ *
  * Revision 1.1011  1997/03/31 19:23:04  nealk
  * Hard-coded +2 angstrom increase in patch margin when using hydrogen grouping.
  *

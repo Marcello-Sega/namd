@@ -84,7 +84,7 @@ class Patch
 
      PatchID getPatchID() { return patchID; }
 
-     Lattice lattice;
+     Lattice &lattice;
      Flags flags;
 
   protected:
@@ -130,13 +130,16 @@ class Patch
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/04/03 19:59:12 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1997/04/08 21:08:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.h,v $
+ * Revision 1.1008  1997/04/08 21:08:43  jim
+ * Contant pressure now correct on multiple nodes, should work with MTS.
+ *
  * Revision 1.1007  1997/04/03 19:59:12  nealk
  * 1) New Fopen() which handles .Z and .gz files.
  * 2) localWaters and localNonWaters lists on each patch.

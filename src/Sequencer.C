@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1028 1997/04/08 07:09:01 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1029 1997/04/08 21:08:47 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -162,7 +162,8 @@ void Sequencer::langevinVelocities(int step)
 
 void Sequencer::berendsenPressure(int step)
 {
-  if ( simParams->berendsenPressureOn )
+  const int freq = simParams->berendsenPressureFreq;
+  if ( simParams->berendsenPressureOn && !(step%freq) )
   {
     BigReal factor = broadcast->positionRescaleFactor.get(step);
     patch->lattice.rescale(factor);
@@ -248,13 +249,16 @@ Sequencer::terminate() {
  * RCS INFORMATION:
  *
  *      $RCSfile: Sequencer.C,v $
- *      $Author: ari $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1028 $     $Date: 1997/04/08 07:09:01 $
+ *      $Author: jim $  $Locker:  $             $State: Exp $
+ *      $Revision: 1.1029 $     $Date: 1997/04/08 21:08:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1029  1997/04/08 21:08:47  jim
+ * Contant pressure now correct on multiple nodes, should work with MTS.
+ *
  * Revision 1.1028  1997/04/08 07:09:01  ari
  * Modification for dynamic loadbalancing - moving computes
  * Still bug in new computes or usage of proxies/homepatches.

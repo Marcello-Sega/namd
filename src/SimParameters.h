@@ -182,6 +182,7 @@ public:
 	BigReal berendsenPressureTarget;
 	BigReal berendsenPressureCompressibility;
 	BigReal berendsenPressureRelaxationTime;
+	int berendsenPressureFreq;
 
 	unsigned int randomSeed;	//  Seed for random number generator
 
@@ -304,13 +305,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/04/04 17:31:43 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1009 $	$Date: 1997/04/08 21:08:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1009  1997/04/08 21:08:51  jim
+ * Contant pressure now correct on multiple nodes, should work with MTS.
+ *
  * Revision 1.1008  1997/04/04 17:31:43  brunner
  * New charm fixes for CommunicateConverse, and LdbCoordinator data file
  * output, required proxies, and idle time.

@@ -16,6 +16,7 @@
 #define PATCHTYPES_H
 
 #include "NamdTypes.h"
+#include "Lattice.h"
 
 class Flags
 {
@@ -24,6 +25,8 @@ public:
   int doNonbonded;
   int doFullElectrostatics;
   int submitLoadStats;
+
+  Lattice lattice;		// rather than shipping around separately
 
 private:
 //int spacer;  // Use this to keep byte-aligned for now.  -JCP
@@ -45,12 +48,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1997/03/27 20:25:50 $
+ *	$Revision: 1.7 $	$Date: 1997/04/08 21:08:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchTypes.h,v $
+ * Revision 1.7  1997/04/08 21:08:45  jim
+ * Contant pressure now correct on multiple nodes, should work with MTS.
+ *
  * Revision 1.6  1997/03/27 20:25:50  brunner
  * Changes for LdbCoordinator, the load balance control BOC
  *

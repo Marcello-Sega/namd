@@ -108,11 +108,12 @@ void Controller::algorithm(void)
 
 void Controller::berendsenPressure(int step)
 {
-  if ( simParams->berendsenPressureOn )
+  const int freq = simParams->berendsenPressureFreq;
+  if ( simParams->berendsenPressureOn && !(step%freq) )
   {
     BigReal factor = pressure - simParams->berendsenPressureTarget;
     factor *= simParams->berendsenPressureCompressibility;
-    factor *= simParams->dt;
+    factor *= ( simParams->dt * freq );
     factor /= simParams->berendsenPressureRelaxationTime;
     factor += 1.0;
     factor = cbrt(factor);
@@ -235,12 +236,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1997/03/27 03:16:53 $
+ *	$Revision: 1.1015 $	$Date: 1997/04/08 21:08:40 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1015  1997/04/08 21:08:40  jim
+ * Contant pressure now correct on multiple nodes, should work with MTS.
+ *
  * Revision 1.1014  1997/03/27 03:16:53  jim
  * Added code to check virial calculation, fixed problems with DPMTA and PBC's.
  *
