@@ -16,6 +16,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <converse.h>
 #include "strlib.h"
 #include "InfoStream.h"
 #include "MStream.h"
@@ -3087,44 +3088,58 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
     }
 
 
-    // go through the molecular structure, analyze the status of each atom,
-    // and save the data in the Atom structures stored for each atom.  This
-    // could be built up incrementally while the molecule is being read in,
-    // but doing it all in one shot allows us to just send the basic info
-    // over the network and have each node calculate the rest of the data on
-    // it's own.
-    void Molecule::build_atom_status(void) {
-      register int i;
-      int a1, a2, a3;
+// go through the molecular structure, analyze the status of each atom,
+// and save the data in the Atom structures stored for each atom.  This
+// could be built up incrementally while the molecule is being read in,
+// but doing it all in one shot allows us to just send the basic info
+// over the network and have each node calculate the rest of the data on
+// it's own.
+void Molecule::build_atom_status(void) {
+  register int i;
+  int a1, a2, a3;
 
-      // initialize information for each atom (note that the status has
-      // already been initialized during the read/receive phase)
-      hydrogenGroup.resize(numAtoms);
-      HydrogenGroupID *hg = hydrogenGroup.begin();
-      for (i=0; i < numAtoms; i++) {
-  atoms[i].partner = (-1);
-  hg[i].atomID = i;  // currently unsorted
-  hg[i].atomsInGroup = 1;  // currently only 1 in group
-  hg[i].isGP = 1;  // assume it is a group parent
-  hg[i].GPID = i;  // assume it is a group parent
-  hg[i].sortVal = 0;  // for group sorting
-      }
+  // initialize information for each atom (note that the status has
+  // already been initialized during the read/receive phase)
+  hydrogenGroup.resize(numAtoms);
+  HydrogenGroupID *hg = hydrogenGroup.begin();
+  for (i=0; i < numAtoms; i++) {
+    atoms[i].partner = (-1);
+    hg[i].atomID = i;  // currently unsorted
+    hg[i].atomsInGroup = 1;  // currently only 1 in group
+    hg[i].isGP = 1;  // assume it is a group parent
+    hg[i].GPID = i;  // assume it is a group parent
+    hg[i].sortVal = 0;  // for group sorting
+  }
 
-      // find which atom each hydrogen is bound to
-      // also determine number of atoms in each group
-      for (i=0; i < numBonds; i++) {
-  a1 = bonds[i].atom1;
-  a2 = bonds[i].atom2;
-  if (is_hydrogen(a1))
-  {
-    atoms[a1].partner = a2;
-    // check for hydrogen gas...  For H2, explicitly define the group parent.
-    // I have been informed that H3 is not a concern.  This is good since
-    // this code will fail for H3.
-    if (is_hydrogen(a2)) {
-        hg[a1].isGP = 1;
-	iout << iWARN << "Found H-H bond - are you sure?" << endi;
-    } else {
+  // deal with H-H bonds in a sane manner
+  // this information will be rewritten later if bonded elsewhere
+  int hhbondcount = 0;
+  for (i=0; i < numBonds; i++) {
+    a1 = bonds[i].atom1;
+    a2 = bonds[i].atom2;
+    if (is_hydrogen(a1) && is_hydrogen(a2)) {
+      ++hhbondcount;
+      // make H atoms point at each other for now
+      atoms[a1].partner = a2;
+      atoms[a2].partner = a1;
+      hg[a1].atomsInGroup++;
+      hg[a1].GPID = a2;
+      hg[a2].atomsInGroup++;
+      hg[a2].GPID = a1;
+    }
+  }
+  if ( hhbondcount && ! CmiMyPe() ) {
+    iout << iWARN << "Found " << hhbondcount << " H-H bonds.\n" << endi;
+  }
+
+  // find which atom each hydrogen is bound to
+  // also determine number of atoms in each group
+  for (i=0; i < numBonds; i++) {
+    a1 = bonds[i].atom1;
+    a2 = bonds[i].atom2;
+    if (is_hydrogen(a1)) {
+      if (is_hydrogen(a2)) continue;
+      atoms[a1].partner = a2;
       hg[a2].atomsInGroup++;
       hg[a1].atomsInGroup = 0;
       hg[a1].GPID = a2;
@@ -3132,9 +3147,7 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
       // check for waters (put them in their own groups: OH or OHH)
       if (is_oxygen(a2))  hg[a2].sortVal++;
     }
-  }
-    if (is_hydrogen(a2))
-      {
+    if (is_hydrogen(a2)) {
       atoms[a2].partner = a1;
       hg[a1].atomsInGroup++;
       hg[a2].atomsInGroup = 0;
@@ -3142,7 +3155,38 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
       hg[a2].isGP = 0;
       // check for waters (put them in their own groups: OH or OHH)
       if (is_oxygen(a1))  hg[a1].sortVal++;
+    }
+  }
+
+  // check up on our H-H bonds and general sanity check
+  int hGPcount = 0;
+  for(i=0; i<numAtoms; i++) {
+    if ( ! hg[hg[i].GPID].isGP ) {
+      char msg[256];
+      sprintf(msg, "child atom %d bonded only to child H atoms",i+1);
+      NAMD_die(msg);
+    }
+    if ( hg[i].isGP && is_hydrogen(i) ) {
+      if ( hg[i].GPID == i ) continue;  // atomic hydrogen ion
+      ++hGPcount;  // molecular hydrogen
+      if ( is_hydrogen(hg[i].GPID) && hg[hg[i].GPID].GPID != i ) {
+        char msg[256];
+        sprintf(msg, "H atom %d bonded only to child H atoms",i+1);
+        NAMD_die(msg);
       }
+      hg[i].GPID = i;
+      hg[hg[i].GPID].atomsInGroup = 0;
+      hg[hg[i].GPID].GPID = 0;
+      hg[hg[i].GPID].isGP = 0;
+      if ( hg[i].atomsInGroup != 2 ) {
+        char msg[256];
+        sprintf(msg, "H atom %d bonded to multiple H atoms",i+1);
+        NAMD_die(msg);
+      }
+    }
+  }
+  if ( hGPcount && ! CmiMyPe() ) {
+    iout << iWARN << "Found " << hGPcount << " H-H molecules.\n" << endi;
   }
 
   // sort the hydrogenGroup list and count number of groups
@@ -3194,20 +3238,17 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
       a2 = bonds[i].atom2;
       Real dum, x0;
       params->get_bond_params(&dum,&x0,bonds[i].bond_type);
-      if (is_hydrogen(a1))
-      {
-	if ( ! is_hydrogen(a2) && ( is_water(a2) || mode == RIGID_ALL ) ) {
+      if (is_hydrogen(a2)) { int tmp = a1;  a1 = a2;  a2 = tmp; } // swap
+      if (is_hydrogen(a1)) {
+        if ( is_hydrogen(a2) ) {  // H-H
+          if ( ! is_water(a2) ) {  // H-H but not water
+	    rigidBondLengths[a1] = ( mode == RIGID_ALL ? x0 : 0. );
+	    rigidBondLengths[a2] = ( mode == RIGID_ALL ? x0 : 0. );
+          }
+        } else if ( is_water(a2) || mode == RIGID_ALL ) {
 	  rigidBondLengths[a1] = x0;
 	} else {
 	  rigidBondLengths[a1] = 0.;
-        }
-      }
-      if (is_hydrogen(a2))
-      {
-	if ( is_water(a1) || mode == RIGID_ALL ) {
-	  rigidBondLengths[a2] = x0;
-	} else {
-	  rigidBondLengths[a2] = 0.;
         }
       }
     }
