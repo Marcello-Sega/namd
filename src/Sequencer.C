@@ -261,7 +261,7 @@ void Sequencer::berendsenPressure(int step)
   const int freq = simParams->berendsenPressureFreq;
   if ( simParams->berendsenPressureOn && !(step%freq) )
   {
-   BigReal factor = broadcast->positionRescaleFactor.get(step);
+   Vector factor = broadcast->positionRescaleFactor.get(step);
    patch->lattice.rescale(factor);
    if ( simParams->useGroupPressure )
    {
@@ -298,8 +298,8 @@ void Sequencer::langevinPiston(int step)
 {
   if ( simParams->langevinPistonOn )
   {
-   BigReal factor = broadcast->positionRescaleFactor.get(step);
-   BigReal velFactor = 1 / factor;
+   Vector factor = broadcast->positionRescaleFactor.get(step);
+   Vector velFactor(1/factor.x,1/factor.y,1/factor.z);
    patch->lattice.rescale(factor);
    if ( simParams->useGroupPressure )
    {
@@ -320,7 +320,10 @@ void Sequencer::langevinPiston(int step)
       patch->lattice.rescale(new_x_cm,factor);
       Position delta_x_cm = new_x_cm - x_cm;
       v_cm /= m_cm;
-      Velocity delta_v_cm = ( velFactor - 1. ) * v_cm;
+      Velocity delta_v_cm;
+      delta_v_cm.x = ( velFactor.x - 1 ) * v_cm.x;
+      delta_v_cm.y = ( velFactor.y - 1 ) * v_cm.y;
+      delta_v_cm.z = ( velFactor.z - 1 ) * v_cm.z;
       for ( j = i; j < (i+hgs); ++j ) {
         patch->p[j] += delta_x_cm;
         patch->v[j] += delta_v_cm;
@@ -332,7 +335,9 @@ void Sequencer::langevinPiston(int step)
     for ( int i = 0; i < patch->numAtoms; ++i )
     {
       patch->lattice.rescale(patch->p[i],factor);
-      patch->v[i] *= velFactor;
+      patch->v[i].x *= velFactor.x;
+      patch->v[i].y *= velFactor.y;
+      patch->v[i].z *= velFactor.z;
     }
    }
   }
@@ -580,12 +585,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1052 $     $Date: 1999/01/06 00:56:24 $
+ *      $Revision: 1.1053 $     $Date: 1999/01/06 19:19:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1053  1999/01/06 19:19:20  jim
+ * Broadcast and Sequencers understand anisotropic volume rescaling factors.
+ *
  * Revision 1.1052  1999/01/06 00:56:24  jim
  * All compute objects except DPMTA now return diagonal of virial tensor.
  *

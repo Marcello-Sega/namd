@@ -31,18 +31,20 @@ public:
   }
 
   // rescale lattice dimensions by factor, origin doesn't move
-  void rescale(BigReal factor)
+  void rescale(Vector factor)
   {
-    a1 *= factor;  b1 = ( a1 ? 1. / a1 : 0 );
-    a2 *= factor;  b2 = ( a2 ? 1. / a2 : 0 );
-    a3 *= factor;  b3 = ( a3 ? 1. / a3 : 0 );
+    a1 *= factor.x;  b1 = ( a1 ? 1. / a1 : 0 );
+    a2 *= factor.y;  b2 = ( a2 ? 1. / a2 : 0 );
+    a3 *= factor.z;  b3 = ( a3 ? 1. / a3 : 0 );
   }
 
   // rescale a position, keeping origin constant, assume 3D
-  void rescale(Position &p, BigReal factor) const
+  void rescale(Position &p, Vector factor) const
   {
     p -= o;
-    p *= factor;
+    p.x *= factor.x;
+    p.y *= factor.y;
+    p.z *= factor.z;
     p += o;
   }
 
@@ -190,12 +192,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1998/08/21 01:15:04 $
+ *	$Revision: 1.1010 $	$Date: 1999/01/06 19:19:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Lattice.h,v $
+ * Revision 1.1010  1999/01/06 19:19:20  jim
+ * Broadcast and Sequencers understand anisotropic volume rescaling factors.
+ *
  * Revision 1.1009  1998/08/21 01:15:04  jim
  * Eliminated warnings.
  *

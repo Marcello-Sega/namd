@@ -30,7 +30,7 @@ enum {
 struct ControllerBroadcasts
 {
   SimpleBroadcastObject<BigReal> velocityRescaleFactor;
-  SimpleBroadcastObject<BigReal> positionRescaleFactor;
+  SimpleBroadcastObject<Vector> positionRescaleFactor;
   SimpleBroadcastObject<BigReal> tcoupleCoefficient;
   // SimpleBroadcastObject<Lattice> lattice;
 #ifdef CYCLE_BARRIER
@@ -45,12 +45,15 @@ struct ControllerBroadcasts
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1998/03/06 20:55:24 $
+ *	$Revision: 1.4 $	$Date: 1999/01/06 19:19:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Broadcasts.h,v $
+ * Revision 1.4  1999/01/06 19:19:19  jim
+ * Broadcast and Sequencers understand anisotropic volume rescaling factors.
+ *
  * Revision 1.3  1998/03/06 20:55:24  jim
  * Added temperature coupling.
  *

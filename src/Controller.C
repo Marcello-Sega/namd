@@ -241,8 +241,8 @@ void Controller::berendsenPressure(int step)
     factor /= simParams->berendsenPressureRelaxationTime;
     factor += 1.0;
     factor = cbrt(factor);
-    broadcast->positionRescaleFactor.publish(step,factor);
-    state->lattice.rescale(factor);
+    broadcast->positionRescaleFactor.publish(step,Vector(1,1,1)*factor);
+    state->lattice.rescale(Vector(1,1,1)*factor);
   }
 }
 
@@ -277,14 +277,14 @@ void Controller::langevinPiston1(int step)
     if ( ! ( (step-1+slowFreq/2) % slowFreq ) )
     {
       BigReal factor = exp( dt_long * strainRate );
-      broadcast->positionRescaleFactor.publish(step,factor);
-      state->lattice.rescale(factor);
+      broadcast->positionRescaleFactor.publish(step,Vector(1,1,1)*factor);
+      state->lattice.rescale(Vector(1,1,1)*factor);
       iout << iINFO << "rescaling by: " << factor << "\n";
     }
     else
     {
       BigReal factor = 1.0;
-      broadcast->positionRescaleFactor.publish(step,factor);
+      broadcast->positionRescaleFactor.publish(step,Vector(1,1,1)*factor);
     }
 
     // corrections to integrator
@@ -798,12 +798,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1053 $	$Date: 1999/01/06 00:56:23 $
+ *	$Revision: 1.1054 $	$Date: 1999/01/06 19:19:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1054  1999/01/06 19:19:19  jim
+ * Broadcast and Sequencers understand anisotropic volume rescaling factors.
+ *
  * Revision 1.1053  1999/01/06 00:56:23  jim
  * All compute objects except DPMTA now return diagonal of virial tensor.
  *
