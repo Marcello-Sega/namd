@@ -1,0 +1,4 @@
+
+PLUGINARCH=SOLARIS2
+include .rootdir/arch/All-Unix.plugins
+

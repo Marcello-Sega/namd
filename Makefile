@@ -19,7 +19,6 @@ INCDIR = inc
 DPMTADIR=dpmta-2.6
 DPMEDIR=dpme2
 SBSRCDIR = sb/src
-PLUGINDIR = plugins
 
 # comment/uncomment these lines for (D)PMTA routines
 #DPMTAINCL=$(COPTI)$(DPMTADIR)/mpole $(COPTI)$(DPMTADIR)/src
@@ -34,12 +33,6 @@ PLUGINDIR = plugins
 #DPMEFLAGS=$(COPTD)DPME
 #DPME=$(DPMEINCL) $(DPMEFLAGS)
 #DPMELIBS= $(DPMEDIR)/libdpme.a
-
-# comment/uncomment for file I/O plugins
-#PLUGININCL=$(COPTI)$(PLUGINDIR)
-#PLUGINLIB=-L$(PLUGINDIR) -lmolfile_plugin
-#PLUGINFLAGS=$(COPTD)NAMD_PLUGINS
-#PLUGINS=$(PLUGININCL) $(PLUGINFLAGS)
 
 # defaults for special cases
 CXXTHREADOPTS = $(CXXOPTS)

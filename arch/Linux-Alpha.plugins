@@ -1,0 +1,4 @@
+
+PLUGINARCH=LINUXALPHA
+include .rootdir/arch/All-Unix.plugins
+

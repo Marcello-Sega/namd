@@ -1,0 +1,4 @@
+
+PLUGINARCH=T3E
+include .rootdir/arch/All-Unix.plugins
+

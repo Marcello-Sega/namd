@@ -1,0 +1,4 @@
+
+PLUGINARCH=LINUX
+include .rootdir/arch/All-Unix.plugins
+

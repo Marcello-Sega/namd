@@ -2,7 +2,7 @@
 goto begin
 syntax:
   echo ''
-  echo 'Usage: config [debug] [tcl] [fftw] [<build_dir>/]<arch>[.comment]'
+  echo 'Usage: config [debug] [tcl] [fftw] [plugins] [<build_dir>/]<arch>[.comment]'
   echo 'Environment variable NAMD_BUILD_BASE may point to scratch directory.'
   echo ''
   echo '<arch>: ' 
@@ -40,6 +40,14 @@ begin:
     shift
   else
     set use_fftw = 0
+  endif
+
+  if ($#argv < 1) goto syntax
+  if ( $1 == plugins ) then
+    set use_plugins = 1
+    shift
+  else
+    set use_plugins = 0
   endif
 
   if ($#argv < 1) goto syntax
@@ -95,10 +103,12 @@ begin:
    cat .rootdir/arch/Win32.base >> Makearch
    if ( $use_tcl ) cat .rootdir/arch/Win32.tcl >> Makearch
    if ( $use_fftw ) cat .rootdir/arch/Win32.fftw >> Makearch
+   if ( $use_plugins ) cat .rootdir/arch/Win32.plugins >> Makearch
   else
    echo 'include .rootdir/arch/$(NAMD_ARCH).base' >> Makearch
    if ( $use_tcl ) echo 'include .rootdir/arch/$(NAMD_ARCH).tcl' >> Makearch
    if ( $use_fftw ) echo 'include .rootdir/arch/$(NAMD_ARCH).fftw' >> Makearch
+   if ( $use_plugins ) echo 'include .rootdir/arch/$(NAMD_ARCH).plugins' >> Makearch
    if ( $use_debug ) then
     echo 'CXXOPTS = -g' >> Makearch
     echo 'CXXTHREADOPTS = -g' >> Makearch

@@ -1,0 +1,4 @@
+
+PLUGINARCH=AIX
+include .rootdir/arch/All-Unix.plugins
+
