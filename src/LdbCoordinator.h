@@ -35,10 +35,10 @@ class Sequencer;
 class InitMsg;
 
 enum {LDB_PATCHES = 4096};
-enum {LDB_COMPUTES = 65538};
-enum {COMPUTEMAX = 65538};
+enum {LDB_COMPUTES = 16384};
+enum {COMPUTEMAX = 16384};
 enum {PATCHMAX = 4096};
-enum {PROCESSORMAX = 256};
+enum {PROCESSORMAX = 512};
 
 
 struct LdbStatsMsg : public comm_object
@@ -150,12 +150,15 @@ inline int LdbCoordinator::balanceNow(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.14 $	$Date: 1997/08/29 22:00:29 $
+ *	$Revision: 1.15 $	$Date: 1997/09/02 15:30:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LdbCoordinator.h,v $
+ * Revision 1.15  1997/09/02 15:30:11  brunner
+ * Changed some static arrays to allow only a max of 16384 computes
+ *
  * Revision 1.14  1997/08/29 22:00:29  brunner
  * Load balancing improvements, and some diagnostic prints that need
  * to be removed, but won't occur if load balancing is off.
