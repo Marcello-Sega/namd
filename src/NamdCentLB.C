@@ -521,16 +521,54 @@ int NamdCentLB::requiredProxies(PatchID id, int neighborNodes[])
   // and avoid placing too many proxies on a single processor.  -JCP
 
   int numPatches = patchMap->numPatches();
-  if ( numNodes > 1.25 * numPatches ) {  // avoid marginal cases
-    int emptyNodes = numNodes - numPatches;
-    int nodesPerPatch = 3 + emptyNodes / numPatches;
-    int baseNode = (myNode - 1 + numNodes) % numNodes;
-    for ( i = 0; i < nodesPerPatch; ++i ) {
-      int proxyNode = (baseNode+i) % numNodes;
+  int emptyNodes = numNodes - numPatches;
+  if ( emptyNodes > numPatches ) {
+    int nodesPerPatch = nProxyNodes + 1 + (emptyNodes-1) / numPatches;
+    int proxyNode = (myNode + 1) % numNodes;
+    while ( nProxyNodes < nodesPerPatch &&
+			! patchMap->numPatchesOnNode(proxyNode) ) {
       if (proxyNode != myNode && proxyNodes[proxyNode] == No) {
-	proxyNodes[proxyNode] = Yes;
-	neighborNodes[nProxyNodes] = proxyNode;
-	nProxyNodes++;
+        proxyNodes[proxyNode] = Yes;
+        neighborNodes[nProxyNodes] = proxyNode;
+        nProxyNodes++;
+      }
+      proxyNode = (proxyNode + 1) % numNodes;
+    }
+    proxyNode = (myNode - 1 + numNodes) % numNodes;
+    while ( nProxyNodes < nodesPerPatch &&
+			! patchMap->numPatchesOnNode(proxyNode) ) {
+      if (proxyNode != myNode && proxyNodes[proxyNode] == No) {
+        proxyNodes[proxyNode] = Yes;
+        neighborNodes[nProxyNodes] = proxyNode;
+        nProxyNodes++;
+      }
+      proxyNode = (proxyNode - 1 + numNodes) % numNodes;
+    }
+    proxyNode = (myNode + 1) % numNodes;
+    while ( nProxyNodes < nodesPerPatch ) {
+      if ( ! patchMap->numPatchesOnNode(proxyNode) &&
+           proxyNode != myNode && proxyNodes[proxyNode] == No) {
+        proxyNodes[proxyNode] = Yes;
+        neighborNodes[nProxyNodes] = proxyNode;
+        nProxyNodes++;
+      }
+      proxyNode = (proxyNode + 1) % numNodes;
+    }
+  } else {
+    int proxyNode = myNode - 1;
+    if ( proxyNode >= 0 && ! patchMap->numPatchesOnNode(proxyNode) ) {
+      if (proxyNode != myNode && proxyNodes[proxyNode] == No) {
+        proxyNodes[proxyNode] = Yes;
+        neighborNodes[nProxyNodes] = proxyNode;
+        nProxyNodes++;
+      }
+    }
+    proxyNode = myNode + 1;
+    if ( proxyNode < numNodes && ! patchMap->numPatchesOnNode(proxyNode) ) {
+      if (proxyNode != myNode && proxyNodes[proxyNode] == No) {
+        proxyNodes[proxyNode] = Yes;
+        neighborNodes[nProxyNodes] = proxyNode;
+        nProxyNodes++;
       }
     }
   }
