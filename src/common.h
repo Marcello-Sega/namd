@@ -23,12 +23,16 @@ typedef	int	int32;
 typedef	short	int32;
 #endif
 
+#ifdef _MSC_VER
+typedef __int64 int64;
+#else
 #if ( INT_MAX == 9223372036854775807LL )
 typedef int int64;
 #elif ( LONG_MAX == 9223372036854775807LL )
 typedef long int64;
 #else
 typedef long long int64;
+#endif
 #endif
 
 #if defined(PLACEMENT_NEW)
