@@ -136,7 +136,11 @@ template <class T, class S> class ComputeHomeTuples : public Compute {
              }
              if ( homepatch != notUsed && patchMap->node(homepatch) == CkMyPe() ) {
                for (i=0; i < T::size; i++) {
-	         t.p[i] = tuplePatchList.find(TuplePatchElem(aid[i].pid));
+	         TuplePatchElem *p;
+	         t.p[i] = p = tuplePatchList.find(TuplePatchElem(aid[i].pid));
+	         if ( ! p ) {
+	           NAMD_die("Patch needed for tuple is missing.\n");
+	         }
 	         t.localIndex[i] = aid[i].index;
                }
                tupleList.load(t);
