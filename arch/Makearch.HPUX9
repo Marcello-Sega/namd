@@ -40,7 +40,6 @@ PVM_ARCH = HPPA
 # definitions for Charm routines
 #####
 CHARMARCH = net-hp-cc
-include Make.charm
 CHARM = $(CHARMBASE)/$(CHARMARCH)
 
 ######

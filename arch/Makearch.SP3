@@ -24,7 +24,6 @@ CXXTHREADOPTS = $(CXXOPTS)
 # definitions for Charm routines
 #####
 CHARMARCH = sp3
-include Make.charm
 CHARM = $(CHARMBASE)/$(CHARMARCH)
 
 ######

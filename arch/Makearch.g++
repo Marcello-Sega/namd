@@ -28,7 +28,6 @@ PVM_ARCH=linux
 # definitions for Charm routines
 #####
 CHARMARCH = net-linux
-include Make.charm
 CHARM = $(CHARMBASE)/$(CHARMARCH)
 
 ######

@@ -20,7 +20,6 @@ NOWARN=-w
 # definitions for Charm routines
 #####
 CHARMARCH = net-sol-cc
-include Make.charm
 CHARM = $(CHARMBASE)/$(CHARMARCH)
 
 ######

@@ -28,7 +28,6 @@ PVM_ARCH=EXEMPLAR
 # definitions for Charm routines
 #####
 CHARMARCH = exemplar-mpi
-include Make.charm
 CHARM = $(CHARMBASE)/$(CHARMARCH)
 
 ######

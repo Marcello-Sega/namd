@@ -30,7 +30,6 @@ DFLAGS= -D_SGI_MP_SOURCE -O3 -r10000 -INLINE:all
 # definitions for Charm routines
 #####
 CHARMARCH = origin2000
-include Make.charm
 CHARM = $(CHARMBASE)/$(CHARMARCH)
 
 ######
