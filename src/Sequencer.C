@@ -46,12 +46,24 @@ Sequencer::Sequencer(HomePatch *p) :
     if ( simParams->rigidBonds != RIGID_NONE ) {
 	;// reduction->Register(REDUCTION_VIRIAL);
     }
-    reduction->Register(REDUCTION_ALT_VIRIAL_NORMAL);
-    reduction->Register(REDUCTION_ALT_VIRIAL_NBOND);
-    reduction->Register(REDUCTION_ALT_VIRIAL_SLOW);
-    reduction->Register(REDUCTION_INT_VIRIAL_NORMAL);
-    reduction->Register(REDUCTION_INT_VIRIAL_NBOND);
-    reduction->Register(REDUCTION_INT_VIRIAL_SLOW);
+    reduction->Register(REDUCTION_ALT_VIRIAL_NORMAL_X);
+    reduction->Register(REDUCTION_ALT_VIRIAL_NORMAL_Y);
+    reduction->Register(REDUCTION_ALT_VIRIAL_NORMAL_Z);
+    reduction->Register(REDUCTION_ALT_VIRIAL_NBOND_X);
+    reduction->Register(REDUCTION_ALT_VIRIAL_NBOND_Y);
+    reduction->Register(REDUCTION_ALT_VIRIAL_NBOND_Z);
+    reduction->Register(REDUCTION_ALT_VIRIAL_SLOW_X);
+    reduction->Register(REDUCTION_ALT_VIRIAL_SLOW_Y);
+    reduction->Register(REDUCTION_ALT_VIRIAL_SLOW_Z);
+    reduction->Register(REDUCTION_INT_VIRIAL_NORMAL_X);
+    reduction->Register(REDUCTION_INT_VIRIAL_NORMAL_Y);
+    reduction->Register(REDUCTION_INT_VIRIAL_NORMAL_Z);
+    reduction->Register(REDUCTION_INT_VIRIAL_NBOND_X);
+    reduction->Register(REDUCTION_INT_VIRIAL_NBOND_Y);
+    reduction->Register(REDUCTION_INT_VIRIAL_NBOND_Z);
+    reduction->Register(REDUCTION_INT_VIRIAL_SLOW_X);
+    reduction->Register(REDUCTION_INT_VIRIAL_SLOW_Y);
+    reduction->Register(REDUCTION_INT_VIRIAL_SLOW_Z);
     reduction->Register(REDUCTION_MOMENTUM_X);
     reduction->Register(REDUCTION_MOMENTUM_Y);
     reduction->Register(REDUCTION_MOMENTUM_Z);
@@ -75,12 +87,24 @@ Sequencer::~Sequencer(void)
     if ( simParams->rigidBonds != RIGID_NONE ) {
 	;// reduction->unRegister(REDUCTION_VIRIAL);
     }
-    reduction->unRegister(REDUCTION_ALT_VIRIAL_NORMAL);
-    reduction->unRegister(REDUCTION_ALT_VIRIAL_NBOND);
-    reduction->unRegister(REDUCTION_ALT_VIRIAL_SLOW);
-    reduction->unRegister(REDUCTION_INT_VIRIAL_NORMAL);
-    reduction->unRegister(REDUCTION_INT_VIRIAL_NBOND);
-    reduction->unRegister(REDUCTION_INT_VIRIAL_SLOW);
+    reduction->unRegister(REDUCTION_ALT_VIRIAL_NORMAL_X);
+    reduction->unRegister(REDUCTION_ALT_VIRIAL_NORMAL_Y);
+    reduction->unRegister(REDUCTION_ALT_VIRIAL_NORMAL_Z);
+    reduction->unRegister(REDUCTION_ALT_VIRIAL_NBOND_X);
+    reduction->unRegister(REDUCTION_ALT_VIRIAL_NBOND_Y);
+    reduction->unRegister(REDUCTION_ALT_VIRIAL_NBOND_Z);
+    reduction->unRegister(REDUCTION_ALT_VIRIAL_SLOW_X);
+    reduction->unRegister(REDUCTION_ALT_VIRIAL_SLOW_Y);
+    reduction->unRegister(REDUCTION_ALT_VIRIAL_SLOW_Z);
+    reduction->unRegister(REDUCTION_INT_VIRIAL_NORMAL_X);
+    reduction->unRegister(REDUCTION_INT_VIRIAL_NORMAL_Y);
+    reduction->unRegister(REDUCTION_INT_VIRIAL_NORMAL_Z);
+    reduction->unRegister(REDUCTION_INT_VIRIAL_NBOND_X);
+    reduction->unRegister(REDUCTION_INT_VIRIAL_NBOND_Y);
+    reduction->unRegister(REDUCTION_INT_VIRIAL_NBOND_Z);
+    reduction->unRegister(REDUCTION_INT_VIRIAL_SLOW_X);
+    reduction->unRegister(REDUCTION_INT_VIRIAL_SLOW_Y);
+    reduction->unRegister(REDUCTION_INT_VIRIAL_SLOW_Z);
     reduction->unRegister(REDUCTION_MOMENTUM_X);
     reduction->unRegister(REDUCTION_MOMENTUM_Y);
     reduction->unRegister(REDUCTION_MOMENTUM_Z);
@@ -424,32 +448,44 @@ void Sequencer::submitReductions(int step)
   reduction->submit(step,REDUCTION_SMD_ENERGY,0.);  
 
   {
-    BigReal altVirial = 0.;
+    Vector altVirial(0.,0.,0.);
     for ( int i = 0; i < patch->numAtoms; ++i ) {
-      altVirial += ( patch->f[Results::normal][i] * patch->p[i] );
+      altVirial.x += ( patch->f[Results::normal][i].x * patch->p[i].x );
+      altVirial.y += ( patch->f[Results::normal][i].y * patch->p[i].y );
+      altVirial.z += ( patch->f[Results::normal][i].z * patch->p[i].z );
     }
-    reduction->submit(step,REDUCTION_ALT_VIRIAL_NORMAL,altVirial);
+    reduction->submit(step,REDUCTION_ALT_VIRIAL_NORMAL_X,altVirial.x);
+    reduction->submit(step,REDUCTION_ALT_VIRIAL_NORMAL_Y,altVirial.y);
+    reduction->submit(step,REDUCTION_ALT_VIRIAL_NORMAL_Z,altVirial.z);
   }
   {
-    BigReal altVirial = 0.;
+    Vector altVirial(0.,0.,0.);
     for ( int i = 0; i < patch->numAtoms; ++i ) {
-      altVirial += ( patch->f[Results::nbond][i] * patch->p[i] );
+      altVirial.x += ( patch->f[Results::nbond][i].x * patch->p[i].x );
+      altVirial.y += ( patch->f[Results::nbond][i].y * patch->p[i].y );
+      altVirial.z += ( patch->f[Results::nbond][i].z * patch->p[i].z );
     }
-    reduction->submit(step,REDUCTION_ALT_VIRIAL_NBOND,altVirial);
+    reduction->submit(step,REDUCTION_ALT_VIRIAL_NBOND_X,altVirial.x);
+    reduction->submit(step,REDUCTION_ALT_VIRIAL_NBOND_Y,altVirial.y);
+    reduction->submit(step,REDUCTION_ALT_VIRIAL_NBOND_Z,altVirial.z);
   }
   {
-    BigReal altVirial = 0.;
+    Vector altVirial(0.,0.,0.);
     for ( int i = 0; i < patch->numAtoms; ++i ) {
-      altVirial += ( patch->f[Results::slow][i] * patch->p[i] );
+      altVirial.x += ( patch->f[Results::slow][i].x * patch->p[i].x );
+      altVirial.y += ( patch->f[Results::slow][i].y * patch->p[i].y );
+      altVirial.z += ( patch->f[Results::slow][i].z * patch->p[i].z );
     }
-    reduction->submit(step,REDUCTION_ALT_VIRIAL_SLOW,altVirial);
+    reduction->submit(step,REDUCTION_ALT_VIRIAL_SLOW_X,altVirial.x);
+    reduction->submit(step,REDUCTION_ALT_VIRIAL_SLOW_Y,altVirial.y);
+    reduction->submit(step,REDUCTION_ALT_VIRIAL_SLOW_Z,altVirial.z);
   }
 
   {
     BigReal intKineticEnergy = 0;
-    BigReal intVirialNormal = 0;
-    BigReal intVirialNbond = 0;
-    BigReal intVirialSlow = 0;
+    Vector intVirialNormal(0.,0.,0.);
+    Vector intVirialNbond(0.,0.,0.);
+    Vector intVirialSlow(0.,0.,0.);
 
     int hgs;
     for ( int i = 0; i < patch->numAtoms; i += hgs ) {
@@ -469,18 +505,30 @@ void Sequencer::submitReductions(int step)
         Vector dv = patch->v[j] - v_cm;
         intKineticEnergy += patch->a[j].mass * (patch->v[j] * dv);
         Vector dx = patch->p[j] - x_cm;
-        intVirialNormal += patch->f[Results::normal][j] * dx;
-        intVirialNbond += patch->f[Results::nbond][j] * dx;
-        intVirialSlow += patch->f[Results::slow][j] * dx;
+        intVirialNormal.x += patch->f[Results::normal][j].x * dx.x;
+        intVirialNormal.y += patch->f[Results::normal][j].y * dx.y;
+        intVirialNormal.z += patch->f[Results::normal][j].z * dx.z;
+        intVirialNbond.x += patch->f[Results::nbond][j].x * dx.x;
+        intVirialNbond.y += patch->f[Results::nbond][j].y * dx.y;
+        intVirialNbond.z += patch->f[Results::nbond][j].z * dx.z;
+        intVirialSlow.x += patch->f[Results::slow][j].x * dx.x;
+        intVirialSlow.y += patch->f[Results::slow][j].y * dx.y;
+        intVirialSlow.z += patch->f[Results::slow][j].z * dx.z;
       }
     }
 
     intKineticEnergy *= 0.5;
 
     reduction->submit(step,REDUCTION_INT_KINETIC_ENERGY,intKineticEnergy);
-    reduction->submit(step,REDUCTION_INT_VIRIAL_NORMAL,intVirialNormal);
-    reduction->submit(step,REDUCTION_INT_VIRIAL_NBOND,intVirialNbond);
-    reduction->submit(step,REDUCTION_INT_VIRIAL_SLOW,intVirialSlow);
+    reduction->submit(step,REDUCTION_INT_VIRIAL_NORMAL_X,intVirialNormal.x);
+    reduction->submit(step,REDUCTION_INT_VIRIAL_NORMAL_Y,intVirialNormal.y);
+    reduction->submit(step,REDUCTION_INT_VIRIAL_NORMAL_Z,intVirialNormal.z);
+    reduction->submit(step,REDUCTION_INT_VIRIAL_NBOND_X,intVirialNbond.x);
+    reduction->submit(step,REDUCTION_INT_VIRIAL_NBOND_Y,intVirialNbond.y);
+    reduction->submit(step,REDUCTION_INT_VIRIAL_NBOND_Z,intVirialNbond.z);
+    reduction->submit(step,REDUCTION_INT_VIRIAL_SLOW_X,intVirialSlow.x);
+    reduction->submit(step,REDUCTION_INT_VIRIAL_SLOW_Y,intVirialSlow.y);
+    reduction->submit(step,REDUCTION_INT_VIRIAL_SLOW_Z,intVirialSlow.z);
   }
 
   Vector momentum = patch->calcMomentum();
@@ -532,12 +580,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1051 $     $Date: 1998/11/29 22:00:58 $
+ *      $Revision: 1.1052 $     $Date: 1999/01/06 00:56:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1052  1999/01/06 00:56:24  jim
+ * All compute objects except DPMTA now return diagonal of virial tensor.
+ *
  * Revision 1.1051  1998/11/29 22:00:58  jim
  * Added group-based pressure control to work with rigidBonds.
  * New option useGroupPressure, turned on automatically if needed.

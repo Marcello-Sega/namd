@@ -51,8 +51,12 @@ void ComputeNonbondedUtil::registerReductionData(ReductionMgr *reduction)
 {
   reduction->Register(REDUCTION_ELECT_ENERGY);
   reduction->Register(REDUCTION_LJ_ENERGY);
-  reduction->Register(REDUCTION_VIRIAL_NBOND);
-  reduction->Register(REDUCTION_VIRIAL_SLOW);
+  reduction->Register(REDUCTION_VIRIAL_NBOND_X);
+  reduction->Register(REDUCTION_VIRIAL_NBOND_Y);
+  reduction->Register(REDUCTION_VIRIAL_NBOND_Z);
+  reduction->Register(REDUCTION_VIRIAL_SLOW_X);
+  reduction->Register(REDUCTION_VIRIAL_SLOW_Y);
+  reduction->Register(REDUCTION_VIRIAL_SLOW_Z);
   reduction->Register(REDUCTION_COMPUTE_CHECKSUM);
 }
 
@@ -61,8 +65,12 @@ void ComputeNonbondedUtil::submitReductionData(BigReal *data, ReductionMgr *redu
   reduction->submit(seq, REDUCTION_ELECT_ENERGY, data[electEnergyIndex]
 					+ data[fullElectEnergyIndex]);
   reduction->submit(seq, REDUCTION_LJ_ENERGY, data[vdwEnergyIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL_NBOND, data[virialIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL_SLOW, data[fullElectVirialIndex]);
+  reduction->submit(seq, REDUCTION_VIRIAL_NBOND_X, data[virialXIndex]);
+  reduction->submit(seq, REDUCTION_VIRIAL_NBOND_Y, data[virialYIndex]);
+  reduction->submit(seq, REDUCTION_VIRIAL_NBOND_Z, data[virialZIndex]);
+  reduction->submit(seq, REDUCTION_VIRIAL_SLOW_X, data[fullElectVirialXIndex]);
+  reduction->submit(seq, REDUCTION_VIRIAL_SLOW_Y, data[fullElectVirialYIndex]);
+  reduction->submit(seq, REDUCTION_VIRIAL_SLOW_Z, data[fullElectVirialZIndex]);
   reduction->submit(seq, REDUCTION_COMPUTE_CHECKSUM, 1.);
 }
 
@@ -70,8 +78,12 @@ void ComputeNonbondedUtil::unregisterReductionData(ReductionMgr *reduction)
 {
   reduction->unRegister(REDUCTION_ELECT_ENERGY);
   reduction->unRegister(REDUCTION_LJ_ENERGY);
-  reduction->unRegister(REDUCTION_VIRIAL_NBOND);
-  reduction->unRegister(REDUCTION_VIRIAL_SLOW);
+  reduction->unRegister(REDUCTION_VIRIAL_NBOND_X);
+  reduction->unRegister(REDUCTION_VIRIAL_NBOND_Y);
+  reduction->unRegister(REDUCTION_VIRIAL_NBOND_Z);
+  reduction->unRegister(REDUCTION_VIRIAL_SLOW_X);
+  reduction->unRegister(REDUCTION_VIRIAL_SLOW_Y);
+  reduction->unRegister(REDUCTION_VIRIAL_SLOW_Z);
   reduction->unRegister(REDUCTION_COMPUTE_CHECKSUM);
 }
 
@@ -338,12 +350,15 @@ void ComputeNonbondedUtil::select(void)
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1020 $	$Date: 1998/11/18 21:17:39 $
+ *	$Revision: 1.1021 $	$Date: 1999/01/06 00:56:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1021  1999/01/06 00:56:23  jim
+ * All compute objects except DPMTA now return diagonal of virial tensor.
+ *
  * Revision 1.1020  1998/11/18 21:17:39  jim
  * Added checksum to make sure compute objects don't go missing.
  *

@@ -14,6 +14,9 @@
   BigReal *rp1 = results1;
   int j_begin = 0;
   register BigReal electEnergy = 0.;
+  register BigReal virial_x = 0.;
+  register BigReal virial_y = 0.;
+  register BigReal virial_z = 0.;
 
 #ifdef FULLDIRECT_PERIODIC
   BigReal a1 = lattice->a();  BigReal b1 = ( a1 ? 1. / a1 : 0 );
@@ -55,8 +58,11 @@
       register BigReal f = *(dp2++) * kq_i * r_1;
       electEnergy += f;
       f *= r_1*r_1;
+      virial_x += f * p_ij_x * p_ij_x;
       p_ij_x *= f;
+      virial_y += f * p_ij_y * p_ij_y;
       p_ij_y *= f;
+      virial_z += f * p_ij_z * p_ij_z;
       p_ij_z *= f;
       f_i_x += p_ij_x;
       f_i_y += p_ij_y;
@@ -70,6 +76,9 @@
     *(rp1++) += f_i_z;
   }
 
+  virial.x += virial_x;
+  virial.y += virial_y;
+  virial.z += virial_z;
   return electEnergy;
 }
 
@@ -78,12 +87,15 @@
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1998/03/30 21:01:16 $
+ *	$Revision: 1.2 $	$Date: 1999/01/06 00:56:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFullDirectBase.h,v $
+ * Revision 1.2  1999/01/06 00:56:21  jim
+ * All compute objects except DPMTA now return diagonal of virial tensor.
+ *
  * Revision 1.1  1998/03/30 21:01:16  jim
  * Added nearest-image support for periodic boundary conditions to full direct.
  *

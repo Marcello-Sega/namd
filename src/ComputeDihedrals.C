@@ -219,27 +219,34 @@ void DihedralElem::computeForce(BigReal *reduction)
 
   DebugM(3, "::computeForce() -- ending with delta energy " << energy << endl);
   reduction[dihedralEnergyIndex] += energy;
-  reduction[virialIndex] += ( f1 * r12 + f2 * r23 + f3 * r34 );
+  reduction[virialXIndex] += ( f1.x * r12.x + f2.x * r23.x + f3.x * r34.x );
+  reduction[virialYIndex] += ( f1.y * r12.y + f2.y * r23.y + f3.y * r34.y );
+  reduction[virialZIndex] += ( f1.z * r12.z + f2.z * r23.z + f3.z * r34.z );
 }
 
 
 void DihedralElem::registerReductionData(ReductionMgr *reduction)
 {
   reduction->Register(REDUCTION_DIHEDRAL_ENERGY);
-  reduction->Register(REDUCTION_VIRIAL_NORMAL);
+  reduction->Register(REDUCTION_VIRIAL_NORMAL_X);
+  reduction->Register(REDUCTION_VIRIAL_NORMAL_Y);
+  reduction->Register(REDUCTION_VIRIAL_NORMAL_Z);
 }
 
 void DihedralElem::submitReductionData(BigReal *data, ReductionMgr *reduction, int seq)
 {
   reduction->submit(seq, REDUCTION_DIHEDRAL_ENERGY, data[dihedralEnergyIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL, data[virialIndex]);
-  DebugM(4,"Dihedral virial = " << data[virialIndex] << "\n");
+  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL_X, data[virialXIndex]);
+  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL_Y, data[virialYIndex]);
+  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL_Z, data[virialZIndex]);
 }
 
 void DihedralElem::unregisterReductionData(ReductionMgr *reduction)
 {
   reduction->unRegister(REDUCTION_DIHEDRAL_ENERGY);
-  reduction->unRegister(REDUCTION_VIRIAL_NORMAL);
+  reduction->unRegister(REDUCTION_VIRIAL_NORMAL_X);
+  reduction->unRegister(REDUCTION_VIRIAL_NORMAL_Y);
+  reduction->unRegister(REDUCTION_VIRIAL_NORMAL_Z);
 }
 
 
@@ -248,12 +255,15 @@ void DihedralElem::unregisterReductionData(ReductionMgr *reduction)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1998/08/03 22:09:32 $
+ *	$Revision: 1.1011 $	$Date: 1999/01/06 00:56:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDihedrals.C,v $
+ * Revision 1.1011  1999/01/06 00:56:21  jim
+ * All compute objects except DPMTA now return diagonal of virial tensor.
+ *
  * Revision 1.1010  1998/08/03 22:09:32  brunner
  * Cleared errno before trig functions
  *

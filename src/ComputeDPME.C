@@ -114,7 +114,9 @@ void ComputeDPME::doWork()
     }
     if ( master ) {
       reduction->submit(patchList[0].p->flags.seq, REDUCTION_ELECT_ENERGY, 0.);
-      reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW, 0.0);
+      reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW_X, 0.);
+      reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW_Y, 0.);
+      reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW_Z, 0.);
     }
     return;
   }
@@ -173,7 +175,9 @@ ComputeDPMEMaster::ComputeDPMEMaster(ComputeDPME *h, ReductionMgr *r) :
   host(h), numLocalAtoms(0), reduction(r)
 {
   reduction->Register(REDUCTION_ELECT_ENERGY);
-  reduction->Register(REDUCTION_VIRIAL_SLOW);
+  reduction->Register(REDUCTION_VIRIAL_SLOW_X);
+  reduction->Register(REDUCTION_VIRIAL_SLOW_Y);
+  reduction->Register(REDUCTION_VIRIAL_SLOW_Z);
 
   Molecule * molecule = Node::Object()->molecule;
   localData = new Pme2Particle[molecule->numAtoms];
@@ -182,7 +186,9 @@ ComputeDPMEMaster::ComputeDPMEMaster(ComputeDPME *h, ReductionMgr *r) :
 ComputeDPMEMaster::~ComputeDPMEMaster()
 {
   reduction->unRegister(REDUCTION_ELECT_ENERGY);
-  reduction->unRegister(REDUCTION_VIRIAL_SLOW);
+  reduction->unRegister(REDUCTION_VIRIAL_SLOW_X);
+  reduction->unRegister(REDUCTION_VIRIAL_SLOW_Y);
+  reduction->unRegister(REDUCTION_VIRIAL_SLOW_Z);
 
   delete [] localData;
 }
@@ -296,8 +302,9 @@ void ComputeDPMEMaster::recvData(ComputeDPMEDataMsg *msg)
 	recip_vir[1] << " " << recip_vir[2] << " " << recip_vir[3] << " " <<
 	recip_vir[4] << " " << recip_vir[5] << "\n");
   reduction->submit(seq, REDUCTION_ELECT_ENERGY, electEnergy);
-  reduction->submit(seq, REDUCTION_VIRIAL_SLOW, 
-			(BigReal)(recip_vir[0] + recip_vir[3] + recip_vir[5]) );
+  reduction->submit(seq, REDUCTION_VIRIAL_SLOW_X, (BigReal)(recip_vir[0]));
+  reduction->submit(seq, REDUCTION_VIRIAL_SLOW_Y, (BigReal)(recip_vir[3]));
+  reduction->submit(seq, REDUCTION_VIRIAL_SLOW_Z, (BigReal)(recip_vir[5]));
 
   PmeVector *results_ptr = localResults + 1;
 
@@ -363,12 +370,15 @@ void ComputeDPME::recvResults(ComputeDPMEResultsMsg *msg)
  *
  *	$RCSfile: ComputeDPME.C,v $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1998/09/14 21:45:25 $
+ *	$Revision: 1.6 $	$Date: 1999/01/06 00:56:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPME.C,v $
+ * Revision 1.6  1999/01/06 00:56:20  jim
+ * All compute objects except DPMTA now return diagonal of virial tensor.
+ *
  * Revision 1.5  1998/09/14 21:45:25  jim
  * Turned off DPME and load balancer verbose output.
  *

@@ -87,27 +87,34 @@ void BondElem::computeForce(BigReal *reduction)
 
   DebugM(3, "::computeForce() -- ending with delta energy " << energy << endl);
   reduction[bondEnergyIndex] += energy;
-  reduction[virialIndex] += r12 * f12;
+  reduction[virialXIndex] += r12.x * f12.x;
+  reduction[virialYIndex] += r12.y * f12.y;
+  reduction[virialZIndex] += r12.z * f12.z;
 }
 
 
 void BondElem::registerReductionData(ReductionMgr *reduction)
 {
   reduction->Register(REDUCTION_BOND_ENERGY);
-  reduction->Register(REDUCTION_VIRIAL_NORMAL);
+  reduction->Register(REDUCTION_VIRIAL_NORMAL_X);
+  reduction->Register(REDUCTION_VIRIAL_NORMAL_Y);
+  reduction->Register(REDUCTION_VIRIAL_NORMAL_Z);
 }
 
 void BondElem::submitReductionData(BigReal *data, ReductionMgr *reduction, int seq)
 {
   reduction->submit(seq, REDUCTION_BOND_ENERGY, data[bondEnergyIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL, data[virialIndex]);
-  DebugM(4,"Bond virial = " << data[virialIndex] << "\n");
+  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL_X, data[virialXIndex]);
+  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL_Y, data[virialYIndex]);
+  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL_Z, data[virialZIndex]);
 }
 
 void BondElem::unregisterReductionData(ReductionMgr *reduction)
 {
   reduction->unRegister(REDUCTION_BOND_ENERGY);
-  reduction->unRegister(REDUCTION_VIRIAL_NORMAL);
+  reduction->unRegister(REDUCTION_VIRIAL_NORMAL_X);
+  reduction->unRegister(REDUCTION_VIRIAL_NORMAL_Y);
+  reduction->unRegister(REDUCTION_VIRIAL_NORMAL_Z);
 }
 
 
@@ -116,12 +123,15 @@ void BondElem::unregisterReductionData(ReductionMgr *reduction)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1998/06/18 14:47:59 $
+ *	$Revision: 1.1009 $	$Date: 1999/01/06 00:56:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeBonds.C,v $
+ * Revision 1.1009  1999/01/06 00:56:20  jim
+ * All compute objects except DPMTA now return diagonal of virial tensor.
+ *
  * Revision 1.1008  1998/06/18 14:47:59  jim
  * Split virial into NORMAL, NBOND, and SLOW parts to match force classes.
  *

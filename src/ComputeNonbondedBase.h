@@ -123,11 +123,15 @@ void ComputeNonbondedUtil :: NAME
   // local variables
   BigReal vdwEnergy = 0;
   BigReal electEnergy = 0;
-  BigReal virial = 0;
+  BigReal virial_x = 0;
+  BigReal virial_y = 0;
+  BigReal virial_z = 0;
   FULL
   (
   BigReal fullElectEnergy = 0;
-  BigReal fullElectVirial = 0;
+  BigReal fullElectVirial_x = 0;
+  BigReal fullElectVirial_y = 0;
+  BigReal fullElectVirial_z = 0;
   )
   NOEXCL
   (
@@ -444,7 +448,9 @@ NOEXCL
 	    fullf_i -= f_elec;
 	    fullf_j += f_elec;
 	    reduction[fullElectEnergyIndex] += fullElectEnergy;
-	    reduction[fullElectVirialIndex] += fullElectEnergy;
+	    reduction[fullElectVirialXIndex] -= p_ij.x * f_elec.x;
+	    reduction[fullElectVirialYIndex] -= p_ij.y * f_elec.y;
+	    reduction[fullElectVirialZIndex] -= p_ij.z * f_elec.z;
 	  )
 	return; )
       }
@@ -478,16 +484,18 @@ NOEXCL
 	    tmp_z = pi_ewaldcof*exp(-(tmp_x*tmp_x))*r_1 + tmp_y*r_1*r_1;
 	    register BigReal tmp_f = tmp_z * f;
 	    fullElectEnergy += tmp_y * f;
-	    fullElectVirial += tmp_f * r2;
 	    tmp_x = tmp_f * p_ij_x;
 	    fullf_i.x += tmp_x;
 	    fullf_j.x -= tmp_x;
+	    fullElectVirial_x += tmp_x * p_ij_x;
 	    tmp_y = tmp_f * p_ij_y;
 	    fullf_i.y += tmp_y;
 	    fullf_j.y -= tmp_y;
+	    fullElectVirial_y += tmp_y * p_ij_y;
 	    tmp_z = tmp_f * p_ij_z;
 	    fullf_i.z += tmp_z;
 	    fullf_j.z -= tmp_z;
+	    fullElectVirial_z += tmp_z * p_ij_z;
 	  } break;
 	}
       )
@@ -512,17 +520,19 @@ NOEXCL
 	  (
 	    // Do a quick fix and get out!
 	    fullElectEnergy -= f;
-	    fullElectVirial -= f;
 	    fullforce_r = -f * r_1*r_1;
 	    tmp_x = fullforce_r * p_ij_x;
 	    fullf_i.x += tmp_x;
 	    fullf_j.x -= tmp_x;
+	    fullElectVirial_x += tmp_x * p_ij_x;
 	    tmp_y = fullforce_r * p_ij_y;
 	    fullf_i.y += tmp_y;
 	    fullf_j.y -= tmp_y;
+	    fullElectVirial_y += tmp_y * p_ij_y;
 	    tmp_z = fullforce_r * p_ij_z;
 	    fullf_i.z += tmp_z;
 	    fullf_j.z -= tmp_z;
+	    fullElectVirial_z += tmp_z * p_ij_z;
 	  )
 	  continue;  // Must have stored force by now.
 	}
@@ -699,31 +709,33 @@ NOEXCL
 			r_1 - AmBterm*dSwitchVal )*r_1;
 )
 
-      virial += force_r * r2;
-
       tmp_x = force_r * p_ij_x;
       f_i.x += tmp_x;
       f_j.x -= tmp_x;
+      virial_x += tmp_x * p_ij_x;
       tmp_y = force_r * p_ij_y;
       f_i.y += tmp_y;
       f_j.y -= tmp_y;
+      virial_y += tmp_y * p_ij_y;
       tmp_z = force_r * p_ij_z;
       f_i.z += tmp_z;
       f_j.z -= tmp_z;
+      virial_z += tmp_z * p_ij_z;
 
       FULL
       (
-      fullElectVirial += fullforce_r * r2;
-
       tmp_x = fullforce_r * p_ij_x;
       fullf_i.x += tmp_x;
       fullf_j.x -= tmp_x;
+      fullElectVirial_x += tmp_x * p_ij_x;
       tmp_y = fullforce_r * p_ij_y;
       fullf_i.y += tmp_y;
       fullf_j.y -= tmp_y;
+      fullElectVirial_y += tmp_y * p_ij_y;
       tmp_z = fullforce_r * p_ij_z;
       fullf_i.z += tmp_z;
       fullf_j.z -= tmp_z;
+      fullElectVirial_z += tmp_z * p_ij_z;
       )
 
 NOEXCL
@@ -735,11 +747,15 @@ NOEXCL
 
   reduction[vdwEnergyIndex] += vdwEnergy;
   reduction[electEnergyIndex] += electEnergy;
-  reduction[virialIndex] += virial;
+  reduction[virialXIndex] += virial_x;
+  reduction[virialYIndex] += virial_y;
+  reduction[virialZIndex] += virial_z;
   FULL
   (
   reduction[fullElectEnergyIndex] += fullElectEnergy;
-  reduction[fullElectVirialIndex] += fullElectVirial;
+  reduction[fullElectVirialXIndex] += fullElectVirial_x;
+  reduction[fullElectVirialYIndex] += fullElectVirial_y;
+  reduction[fullElectVirialZIndex] += fullElectVirial_z;
   )
 }
 
@@ -748,12 +764,15 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1041 $	$Date: 1998/10/29 17:58:17 $
+ *	$Revision: 1.1042 $	$Date: 1999/01/06 00:56:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1042  1999/01/06 00:56:22  jim
+ * All compute objects except DPMTA now return diagonal of virial tensor.
+ *
  * Revision 1.1041  1998/10/29 17:58:17  jim
  * Fixed bug - moved declaration.
  *

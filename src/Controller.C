@@ -60,15 +60,33 @@ Controller::Controller(NamdState *s) :
     reduction->subscribe(REDUCTION_KINETIC_ENERGY);
     reduction->subscribe(REDUCTION_INT_KINETIC_ENERGY);
     reduction->subscribe(REDUCTION_BC_ENERGY);
-    reduction->subscribe(REDUCTION_VIRIAL_NORMAL);
-    reduction->subscribe(REDUCTION_VIRIAL_NBOND);
-    reduction->subscribe(REDUCTION_VIRIAL_SLOW);
-    reduction->subscribe(REDUCTION_ALT_VIRIAL_NORMAL);
-    reduction->subscribe(REDUCTION_ALT_VIRIAL_NBOND);
-    reduction->subscribe(REDUCTION_ALT_VIRIAL_SLOW);
-    reduction->subscribe(REDUCTION_INT_VIRIAL_NORMAL);
-    reduction->subscribe(REDUCTION_INT_VIRIAL_NBOND);
-    reduction->subscribe(REDUCTION_INT_VIRIAL_SLOW);
+    reduction->subscribe(REDUCTION_VIRIAL_NORMAL_X);
+    reduction->subscribe(REDUCTION_VIRIAL_NORMAL_Y);
+    reduction->subscribe(REDUCTION_VIRIAL_NORMAL_Z);
+    reduction->subscribe(REDUCTION_VIRIAL_NBOND_X);
+    reduction->subscribe(REDUCTION_VIRIAL_NBOND_Y);
+    reduction->subscribe(REDUCTION_VIRIAL_NBOND_Z);
+    reduction->subscribe(REDUCTION_VIRIAL_SLOW_X);
+    reduction->subscribe(REDUCTION_VIRIAL_SLOW_Y);
+    reduction->subscribe(REDUCTION_VIRIAL_SLOW_Z);
+    reduction->subscribe(REDUCTION_ALT_VIRIAL_NORMAL_X);
+    reduction->subscribe(REDUCTION_ALT_VIRIAL_NORMAL_Y);
+    reduction->subscribe(REDUCTION_ALT_VIRIAL_NORMAL_Z);
+    reduction->subscribe(REDUCTION_ALT_VIRIAL_NBOND_X);
+    reduction->subscribe(REDUCTION_ALT_VIRIAL_NBOND_Y);
+    reduction->subscribe(REDUCTION_ALT_VIRIAL_NBOND_Z);
+    reduction->subscribe(REDUCTION_ALT_VIRIAL_SLOW_X);
+    reduction->subscribe(REDUCTION_ALT_VIRIAL_SLOW_Y);
+    reduction->subscribe(REDUCTION_ALT_VIRIAL_SLOW_Z);
+    reduction->subscribe(REDUCTION_INT_VIRIAL_NORMAL_X);
+    reduction->subscribe(REDUCTION_INT_VIRIAL_NORMAL_Y);
+    reduction->subscribe(REDUCTION_INT_VIRIAL_NORMAL_Z);
+    reduction->subscribe(REDUCTION_INT_VIRIAL_NBOND_X);
+    reduction->subscribe(REDUCTION_INT_VIRIAL_NBOND_Y);
+    reduction->subscribe(REDUCTION_INT_VIRIAL_NBOND_Z);
+    reduction->subscribe(REDUCTION_INT_VIRIAL_SLOW_X);
+    reduction->subscribe(REDUCTION_INT_VIRIAL_SLOW_Y);
+    reduction->subscribe(REDUCTION_INT_VIRIAL_SLOW_Z);
     reduction->subscribe(REDUCTION_SMD_ENERGY);
     reduction->subscribe(REDUCTION_MOMENTUM_X);
     reduction->subscribe(REDUCTION_MOMENTUM_Y);
@@ -102,15 +120,33 @@ Controller::~Controller(void)
     reduction->unsubscribe(REDUCTION_KINETIC_ENERGY);
     reduction->unsubscribe(REDUCTION_INT_KINETIC_ENERGY);
     reduction->unsubscribe(REDUCTION_BC_ENERGY);
-    reduction->unsubscribe(REDUCTION_VIRIAL_NORMAL);
-    reduction->unsubscribe(REDUCTION_VIRIAL_NBOND);
-    reduction->unsubscribe(REDUCTION_VIRIAL_SLOW);
-    reduction->unsubscribe(REDUCTION_ALT_VIRIAL_NORMAL);
-    reduction->unsubscribe(REDUCTION_ALT_VIRIAL_NBOND);
-    reduction->unsubscribe(REDUCTION_ALT_VIRIAL_SLOW);
-    reduction->unsubscribe(REDUCTION_INT_VIRIAL_NORMAL);
-    reduction->unsubscribe(REDUCTION_INT_VIRIAL_NBOND);
-    reduction->unsubscribe(REDUCTION_INT_VIRIAL_SLOW);
+    reduction->unsubscribe(REDUCTION_VIRIAL_NORMAL_X);
+    reduction->unsubscribe(REDUCTION_VIRIAL_NORMAL_Y);
+    reduction->unsubscribe(REDUCTION_VIRIAL_NORMAL_Z);
+    reduction->unsubscribe(REDUCTION_VIRIAL_NBOND_X);
+    reduction->unsubscribe(REDUCTION_VIRIAL_NBOND_Y);
+    reduction->unsubscribe(REDUCTION_VIRIAL_NBOND_Z);
+    reduction->unsubscribe(REDUCTION_VIRIAL_SLOW_X);
+    reduction->unsubscribe(REDUCTION_VIRIAL_SLOW_Y);
+    reduction->unsubscribe(REDUCTION_VIRIAL_SLOW_Z);
+    reduction->unsubscribe(REDUCTION_ALT_VIRIAL_NORMAL_X);
+    reduction->unsubscribe(REDUCTION_ALT_VIRIAL_NORMAL_Y);
+    reduction->unsubscribe(REDUCTION_ALT_VIRIAL_NORMAL_Z);
+    reduction->unsubscribe(REDUCTION_ALT_VIRIAL_NBOND_X);
+    reduction->unsubscribe(REDUCTION_ALT_VIRIAL_NBOND_Y);
+    reduction->unsubscribe(REDUCTION_ALT_VIRIAL_NBOND_Z);
+    reduction->unsubscribe(REDUCTION_ALT_VIRIAL_SLOW_X);
+    reduction->unsubscribe(REDUCTION_ALT_VIRIAL_SLOW_Y);
+    reduction->unsubscribe(REDUCTION_ALT_VIRIAL_SLOW_Z);
+    reduction->unsubscribe(REDUCTION_INT_VIRIAL_NORMAL_X);
+    reduction->unsubscribe(REDUCTION_INT_VIRIAL_NORMAL_Y);
+    reduction->unsubscribe(REDUCTION_INT_VIRIAL_NORMAL_Z);
+    reduction->unsubscribe(REDUCTION_INT_VIRIAL_NBOND_X);
+    reduction->unsubscribe(REDUCTION_INT_VIRIAL_NBOND_Y);
+    reduction->unsubscribe(REDUCTION_INT_VIRIAL_NBOND_Z);
+    reduction->unsubscribe(REDUCTION_INT_VIRIAL_SLOW_X);
+    reduction->unsubscribe(REDUCTION_INT_VIRIAL_SLOW_Y);
+    reduction->unsubscribe(REDUCTION_INT_VIRIAL_SLOW_Z);
     reduction->unsubscribe(REDUCTION_SMD_ENERGY);
     reduction->unsubscribe(REDUCTION_MOMENTUM_X);
     reduction->unsubscribe(REDUCTION_MOMENTUM_Y);
@@ -378,17 +414,17 @@ void Controller::receivePressure(int seq)
     Lattice &lattice = state->lattice;
 
     BigReal intKineticEnergy;
-    BigReal virial;
-    BigReal virial_normal;
-    BigReal virial_nbond;
-    BigReal virial_slow;
-    BigReal altVirial_normal;
-    BigReal altVirial_nbond;
-    BigReal altVirial_slow;
-    BigReal intVirial;
-    BigReal intVirial_normal;
-    BigReal intVirial_nbond;
-    BigReal intVirial_slow;
+    Vector virial;
+    Vector virial_normal;
+    Vector virial_nbond;
+    Vector virial_slow;
+    Vector altVirial_normal;
+    Vector altVirial_nbond;
+    Vector altVirial_slow;
+    Vector intVirial;
+    Vector intVirial_normal;
+    Vector intVirial_nbond;
+    Vector intVirial_slow;
     BigReal volume;
 
     int numAtoms = molecule->numAtoms;
@@ -406,46 +442,62 @@ void Controller::receivePressure(int seq)
     reduction->require(seq, REDUCTION_KINETIC_ENERGY, kineticEnergy);
     reduction->require(seq, REDUCTION_INT_KINETIC_ENERGY, intKineticEnergy);
 
-    reduction->require(seq, REDUCTION_VIRIAL_NORMAL, virial_normal);
-    virial_normal /= 3.;  // virial submitted is wrong by factor of 3
-    reduction->require(seq, REDUCTION_VIRIAL_NBOND, virial_nbond);
-    virial_nbond /= 3.;  // virial submitted is wrong by factor of 3
-    reduction->require(seq, REDUCTION_VIRIAL_SLOW, virial_slow);
-    virial_slow /= 3.;  // virial submitted is wrong by factor of 3
+    reduction->require(seq, REDUCTION_VIRIAL_NORMAL_X, virial_normal.x);
+    reduction->require(seq, REDUCTION_VIRIAL_NORMAL_Y, virial_normal.y);
+    reduction->require(seq, REDUCTION_VIRIAL_NORMAL_Z, virial_normal.z);
+    reduction->require(seq, REDUCTION_VIRIAL_NBOND_X, virial_nbond.x);
+    reduction->require(seq, REDUCTION_VIRIAL_NBOND_Y, virial_nbond.y);
+    reduction->require(seq, REDUCTION_VIRIAL_NBOND_Z, virial_nbond.z);
+    reduction->require(seq, REDUCTION_VIRIAL_SLOW_X, virial_slow.x);
+    reduction->require(seq, REDUCTION_VIRIAL_SLOW_Y, virial_slow.y);
+    reduction->require(seq, REDUCTION_VIRIAL_SLOW_Z, virial_slow.z);
 
-    reduction->require(seq, REDUCTION_ALT_VIRIAL_NORMAL, altVirial_normal);
-    altVirial_normal /= 3.;  // virial submitted is wrong by factor of 3
-    reduction->require(seq, REDUCTION_ALT_VIRIAL_NBOND, altVirial_nbond);
-    altVirial_nbond /= 3.;  // virial submitted is wrong by factor of 3
-    reduction->require(seq, REDUCTION_ALT_VIRIAL_SLOW, altVirial_slow);
-    altVirial_slow /= 3.;  // virial submitted is wrong by factor of 3
+    reduction->require(seq, REDUCTION_ALT_VIRIAL_NORMAL_X, altVirial_normal.x);
+    reduction->require(seq, REDUCTION_ALT_VIRIAL_NORMAL_Y, altVirial_normal.y);
+    reduction->require(seq, REDUCTION_ALT_VIRIAL_NORMAL_Z, altVirial_normal.z);
+    reduction->require(seq, REDUCTION_ALT_VIRIAL_NBOND_X, altVirial_nbond.x);
+    reduction->require(seq, REDUCTION_ALT_VIRIAL_NBOND_Y, altVirial_nbond.y);
+    reduction->require(seq, REDUCTION_ALT_VIRIAL_NBOND_Z, altVirial_nbond.z);
+    reduction->require(seq, REDUCTION_ALT_VIRIAL_SLOW_X, altVirial_slow.x);
+    reduction->require(seq, REDUCTION_ALT_VIRIAL_SLOW_Y, altVirial_slow.y);
+    reduction->require(seq, REDUCTION_ALT_VIRIAL_SLOW_Z, altVirial_slow.z);
 
-    reduction->require(seq, REDUCTION_INT_VIRIAL_NORMAL, intVirial_normal);
-    intVirial_normal /= 3.;  // virial submitted is wrong by factor of 3
-    reduction->require(seq, REDUCTION_INT_VIRIAL_NBOND, intVirial_nbond);
-    intVirial_nbond /= 3.;  // virial submitted is wrong by factor of 3
-    reduction->require(seq, REDUCTION_INT_VIRIAL_SLOW, intVirial_slow);
-    intVirial_slow /= 3.;  // virial submitted is wrong by factor of 3
+    reduction->require(seq, REDUCTION_INT_VIRIAL_NORMAL_X, intVirial_normal.x);
+    reduction->require(seq, REDUCTION_INT_VIRIAL_NORMAL_Y, intVirial_normal.y);
+    reduction->require(seq, REDUCTION_INT_VIRIAL_NORMAL_Z, intVirial_normal.z);
+    reduction->require(seq, REDUCTION_INT_VIRIAL_NBOND_X, intVirial_nbond.x);
+    reduction->require(seq, REDUCTION_INT_VIRIAL_NBOND_Y, intVirial_nbond.y);
+    reduction->require(seq, REDUCTION_INT_VIRIAL_NBOND_Z, intVirial_nbond.z);
+    reduction->require(seq, REDUCTION_INT_VIRIAL_SLOW_X, intVirial_slow.x);
+    reduction->require(seq, REDUCTION_INT_VIRIAL_SLOW_Y, intVirial_slow.y);
+    reduction->require(seq, REDUCTION_INT_VIRIAL_SLOW_Z, intVirial_slow.z);
 
     temperature = 2.0 * kineticEnergy / ( numDegFreedom * BOLTZMAN );
 
     if ( (volume=lattice.volume()) != 0. )
     {
       pressure_normal = ( numAtoms * BOLTZMAN * temperature +
-						virial_normal ) / volume;
+	( virial_normal.x + virial_normal.y + virial_normal.z ) / 3. ) / volume;
+      Vector tmp_virial = virial_normal - intVirial_normal;
       groupPressure_normal = ( (2./3.)*( kineticEnergy - intKineticEnergy ) +
-                        ( virial_normal - intVirial_normal ) ) / volume;
+	( tmp_virial.x + tmp_virial.y + tmp_virial.z ) / 3. ) / volume;
 
       if ( ! ( seq % nbondFreq ) )
       {
-        pressure_nbond = virial_nbond / volume;
-        groupPressure_nbond = ( virial_nbond - intVirial_nbond ) / volume;
+        pressure_nbond = ( virial_nbond.x + virial_nbond.y + virial_nbond.z )
+							/ ( 3. * volume );
+	tmp_virial = virial_nbond - intVirial_nbond;
+        groupPressure_nbond = ( tmp_virial.x + tmp_virial.y + tmp_virial.z )
+							/ ( 3. * volume );
       }
 
       if ( ! ( seq % slowFreq ) )
       {
-        pressure_slow = virial_slow / volume;
-        groupPressure_slow = ( virial_slow - intVirial_slow ) / volume;
+        pressure_slow = ( virial_slow.x + virial_slow.y + virial_slow.z )
+							/ ( 3. * volume );
+	tmp_virial = virial_slow - intVirial_slow;
+        groupPressure_slow = ( tmp_virial.x + tmp_virial.y + tmp_virial.z )
+							/ ( 3. * volume );
       }
 
 /*
@@ -746,12 +798,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1052 $	$Date: 1998/12/30 21:49:07 $
+ *	$Revision: 1.1053 $	$Date: 1999/01/06 00:56:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1053  1999/01/06 00:56:23  jim
+ * All compute objects except DPMTA now return diagonal of virial tensor.
+ *
  * Revision 1.1052  1998/12/30 21:49:07  jim
  * Fixed bugs in extended system file output.
  *

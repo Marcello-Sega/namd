@@ -39,7 +39,7 @@ public:
     return 0x7FFFFFFF &((atomID[0]<<24) + (atomID[1]<<16) + (atomID[2]<<8) + atomID[3]);
   }
 
-  enum { dihedralEnergyIndex, virialIndex, reductionDataSize };
+  enum { dihedralEnergyIndex, virialXIndex, virialYIndex, virialZIndex, reductionDataSize };
   enum { reductionChecksumLabel = REDUCTION_DIHEDRAL_CHECKSUM };
   static void registerReductionData(ReductionMgr*);
   static void submitReductionData(BigReal*,ReductionMgr*,int);
@@ -70,12 +70,15 @@ public:
  *
  *	$RCSfile: ComputeDihedrals.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1998/11/01 23:25:45 $
+ *	$Revision: 1.1005 $	$Date: 1999/01/06 00:56:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDihedrals.h,v $
+ * Revision 1.1005  1999/01/06 00:56:21  jim
+ * All compute objects except DPMTA now return diagonal of virial tensor.
+ *
  * Revision 1.1004  1998/11/01 23:25:45  jim
  * Added basic correctness checking: atom counts, etc.
  *

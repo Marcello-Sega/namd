@@ -61,7 +61,9 @@ public:
   static void (*calcFullExcl)(nonbonded *);
 
   enum { electEnergyIndex, fullElectEnergyIndex, vdwEnergyIndex,
-	 virialIndex, fullElectVirialIndex, reductionDataSize };
+	 virialXIndex, virialYIndex, virialZIndex,
+	 fullElectVirialXIndex, fullElectVirialYIndex, fullElectVirialZIndex,
+	 reductionDataSize };
   static void registerReductionData(ReductionMgr*);
   static void submitReductionData(BigReal*,ReductionMgr*,int);
   static void unregisterReductionData(ReductionMgr*);
@@ -148,12 +150,15 @@ public:
  *
  *	$RCSfile: ComputeNonbondedUtil.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1998/07/02 21:06:37 $
+ *	$Revision: 1.1017 $	$Date: 1999/01/06 00:56:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.h,v $
+ * Revision 1.1017  1999/01/06 00:56:23  jim
+ * All compute objects except DPMTA now return diagonal of virial tensor.
+ *
  * Revision 1.1016  1998/07/02 21:06:37  jim
  * Added support for splitting ComputeNonbondedSelf into multiple computes.
  *

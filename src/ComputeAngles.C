@@ -149,27 +149,34 @@ void AngleElem::computeForce(BigReal *reduction)
 
   DebugM(3, "::computeForce() -- ending with delta energy " << energy << endl);
   reduction[angleEnergyIndex] += energy;
-  reduction[virialIndex] += ( r12 * force1 + r32 * force3 );
+  reduction[virialXIndex] += ( r12.x * force1.x + r32.x * force3.x );
+  reduction[virialYIndex] += ( r12.y * force1.y + r32.y * force3.y );
+  reduction[virialZIndex] += ( r12.z * force1.z + r32.z * force3.z );
 }
 
 
 void AngleElem::registerReductionData(ReductionMgr *reduction)
 {
   reduction->Register(REDUCTION_ANGLE_ENERGY);
-  reduction->Register(REDUCTION_VIRIAL_NORMAL);
+  reduction->Register(REDUCTION_VIRIAL_NORMAL_X);
+  reduction->Register(REDUCTION_VIRIAL_NORMAL_Y);
+  reduction->Register(REDUCTION_VIRIAL_NORMAL_Z);
 }
 
 void AngleElem::submitReductionData(BigReal *data, ReductionMgr *reduction, int seq)
 {
   reduction->submit(seq, REDUCTION_ANGLE_ENERGY, data[angleEnergyIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL, data[virialIndex]);
-  DebugM(4,"Angle virial = " << data[virialIndex] << "\n");
+  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL_X, data[virialXIndex]);
+  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL_Y, data[virialYIndex]);
+  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL_Z, data[virialZIndex]);
 }
 
 void AngleElem::unregisterReductionData(ReductionMgr *reduction)
 {
   reduction->unRegister(REDUCTION_ANGLE_ENERGY);
-  reduction->unRegister(REDUCTION_VIRIAL_NORMAL);
+  reduction->unRegister(REDUCTION_VIRIAL_NORMAL_X);
+  reduction->unRegister(REDUCTION_VIRIAL_NORMAL_Y);
+  reduction->unRegister(REDUCTION_VIRIAL_NORMAL_Z);
 }
 
 /***************************************************************************
@@ -177,12 +184,15 @@ void AngleElem::unregisterReductionData(ReductionMgr *reduction)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1998/08/03 22:09:31 $
+ *	$Revision: 1.1010 $	$Date: 1999/01/06 00:56:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.C,v $
+ * Revision 1.1010  1999/01/06 00:56:19  jim
+ * All compute objects except DPMTA now return diagonal of virial tensor.
+ *
  * Revision 1.1009  1998/08/03 22:09:31  brunner
  * Cleared errno before trig functions
  *

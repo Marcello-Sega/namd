@@ -39,7 +39,7 @@ public:
     return 0x7FFFFFFF & ((atomID[0]<<22) + (atomID[1]<<11) + (atomID[2])); 
   }
 
-  enum { angleEnergyIndex, virialIndex, reductionDataSize };
+  enum { angleEnergyIndex, virialXIndex, virialYIndex, virialZIndex, reductionDataSize };
   enum { reductionChecksumLabel = REDUCTION_ANGLE_CHECKSUM };
   static void registerReductionData(ReductionMgr*);
   static void submitReductionData(BigReal*,ReductionMgr*,int);
@@ -70,12 +70,15 @@ public:
  *
  *	$RCSfile: ComputeAngles.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1998/11/01 23:25:44 $
+ *	$Revision: 1.1008 $	$Date: 1999/01/06 00:56:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.h,v $
+ * Revision 1.1008  1999/01/06 00:56:20  jim
+ * All compute objects except DPMTA now return diagonal of virial tensor.
+ *
  * Revision 1.1007  1998/11/01 23:25:44  jim
  * Added basic correctness checking: atom counts, etc.
  *
