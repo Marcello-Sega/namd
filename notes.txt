@@ -172,7 +172,7 @@ mpirun -np X namd2 alanin.conf
 
 Automated Usage Reporting
 
-NAMD may print the information similar to the following at startup:
+NAMD may print information similar to the following at startup:
 
  Info: Sending usage information to NAMD developers via UDP.
  Info: Sent data is: 1 NAMD  2.2  Solaris-Sparc  1    verdun  jim
