@@ -266,7 +266,7 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(TCLLIB) \
 	$(FFTLIB) \
 	$(PLUGINLIB) \
-	-lm -o namd2
+	-lm -o namd2 -module commlib
 
 charmrun: $(CHARM)/bin/charmrun # XXX
 	$(COPY) $(CHARM)/bin/charmrun $@
