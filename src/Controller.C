@@ -914,8 +914,8 @@ void Controller::printEnergies(int step)
 	electEnergy + electEnergySlow + ljEnergy + kineticEnergy +
 	boundaryEnergy + miscEnergy;
 
-    if ( node->simParameters->outputMomenta &&
-         ! ( step % node->simParameters->outputMomenta ) )
+    if ( simParameters->outputMomenta &&
+         ! ( step % simParameters->outputMomenta ) )
     {
       iout << "MOMENTUM: " << step 
            << " P: " << momentum
@@ -923,8 +923,8 @@ void Controller::printEnergies(int step)
            << "\n" << endi;
     }
 
-    if ( node->simParameters->outputPressure &&
-         ! ( step % node->simParameters->outputPressure ) )
+    if ( simParameters->outputPressure &&
+         ! ( step % simParameters->outputPressure ) )
     {
       iout << "PRESSURE: " << step << " "
            << PRESSUREFACTOR * pressure << "\n"
@@ -932,7 +932,7 @@ void Controller::printEnergies(int step)
            << PRESSUREFACTOR * groupPressure << "\n" << endi;
     }
 
-    if (node->simParameters->IMDon && !(step % node->simParameters->IMDfreq)) {
+    if (simParameters->IMDon && !(step % simParameters->IMDfreq)) {
       IMDEnergies energies;
       energies.tstep = step;
       energies.T = temperature;
@@ -1043,7 +1043,7 @@ void Controller::printEnergies(int step)
 #endif
 
     // NO CALCULATIONS OR REDUCTIONS BEYOND THIS POINT!!!
-    if ( step % node->simParameters->outputEnergies ) return;
+    if ( step % simParameters->outputEnergies ) return;
     // ONLY OUTPUT SHOULD OCCUR BELOW THIS LINE!!!
 
     int printAtomicPressure = 1;
@@ -1051,7 +1051,7 @@ void Controller::printEnergies(int step)
     // if ( simParams->rigidBonds != RIGID_NONE ) { printAtomicPressure = 0; }
 #endif
 
-    if ( (step % (10 * node->simParameters->outputEnergies) ) == 0 )
+    if ( (step % (10 * simParameters->outputEnergies) ) == 0 )
     {
 	iout << "ETITLE:     TS    BOND        ANGLE       "
 	     << "DIHED       IMPRP       ELECT       VDW       "

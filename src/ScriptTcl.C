@@ -121,7 +121,6 @@ int ScriptTcl::Tcl_config(ClientData clientData,
   char *namestart, *nameend, *datastart, *dataend, *s;
   namestart = nameend = datastart = dataend = NULL;
   int spacecount = 0;
-  int inbraces = 0;
 
     for (s = buf; *s; s++) {    // get to the end of the line
        if (*s == '#')                       // found a comment, so break

@@ -377,7 +377,7 @@ void ComputePmeMgr::recvTrans(PmeTransMsg *msg) {
   }
 
   int zdim = myGrid.dim3;
-  int y_start = localInfo[myRecipPe].y_start_after_transpose;
+  // int y_start = localInfo[myRecipPe].y_start_after_transpose;
   int ny = localInfo[myRecipPe].ny_after_transpose;
   int x_start = msg->x_start;
   int nx = msg->nx;
@@ -396,7 +396,7 @@ void ComputePmeMgr::gridCalc2(void) {
   // CkPrintf("gridCalc2 on Pe(%d)\n",CkMyPe());
 
   int zdim = myGrid.dim3;
-  int y_start = localInfo[myRecipPe].y_start_after_transpose;
+  // int y_start = localInfo[myRecipPe].y_start_after_transpose;
   int ny = localInfo[myRecipPe].ny_after_transpose;
 
   // finish forward FFT (x dimension)
@@ -457,7 +457,7 @@ void ComputePmeMgr::recvUntrans(PmeUntransMsg *msg) {
   }
 
   int zdim = myGrid.dim3;
-  int x_start = localInfo[myRecipPe].x_start;
+  // int x_start = localInfo[myRecipPe].x_start;
   int nx = localInfo[myRecipPe].nx;
   int y_start = msg->y_start;
   int ny = msg->ny;
@@ -494,7 +494,7 @@ void ComputePmeMgr::gridCalc3(void) {
 void ComputePmeMgr::sendUngrid(void) {
 
   for ( int pe=0; pe<numSources; ++pe ) {
-    int msglen = qgrid_len;
+    // int msglen = qgrid_len;
     PmeGridMsg *newmsg = gridmsg_reuse[pe];
     if ( pe == 0 ) {  // only need these once
       newmsg->energy = recipEnergy;

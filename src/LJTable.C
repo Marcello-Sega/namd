@@ -49,7 +49,7 @@ void LJTable::compute_vdw_params(int i, int j,
   Parameters *params = Node::Object()->parameters;
 
   Real A, B, A14, B14;
-  BigReal sigma_max;
+  // BigReal sigma_max;
   //  We need the A and B parameters for the Van der Waals.  These can
   //  be explicitly be specified for this pair or calculated from the
   //  sigma and epsilon values for the two atom types
@@ -68,7 +68,7 @@ void LJTable::compute_vdw_params(int i, int j,
     if ((B14 == 0) || (A14/B14 < 0)) sigma_ij14 = 0;
     else sigma_ij14 = pow((BigReal)(A14/B14),(BigReal)(1./6.));
 
-    sigma_max = ( sigma_ij > sigma_ij14 ? sigma_ij : sigma_ij14 );
+    // sigma_max = ( sigma_ij > sigma_ij14 ? sigma_ij : sigma_ij14 );
   }
   else
   {
@@ -88,7 +88,7 @@ void LJTable::compute_vdw_params(int i, int j,
     BigReal sigma_ij14 = 0.5 * (sigma_i14+sigma_j14);
     BigReal epsilon_ij14 = sqrt(epsilon_i14*epsilon_j14);
 
-    sigma_max = ( sigma_ij > sigma_ij14 ? sigma_ij : sigma_ij14 );
+    // sigma_max = ( sigma_ij > sigma_ij14 ? sigma_ij : sigma_ij14 );
 
     //  Calculate sigma^6
     sigma_ij *= sigma_ij*sigma_ij;

@@ -40,12 +40,6 @@ void Alg7::strategy()
   //   printLoads();
 	      
   numAssigned = 0;
-  // int numAssigned1 = 0;
-  // int numAssigned2 = 0;
-  int numAssignedP2 = 0;
-  int numAssignedP1 = 0;
-  int numAssignedP0 = 0;
-  int numAssignedP4 = 0;
 
   //   for (int i=0; i<numPatches; i++)
   //     { cout << "(" << patches[i].Id << "," << patches[i].processor ;}
@@ -106,57 +100,11 @@ void Alg7::strategy()
       break;
     }
 
-//     } else {
-//       // At start, load is most important, rather than communications
-//       int *numAssignedptr = &numAssignedP2;
-//       bestP = bestP2;
-//       if (!bestP || (bestP1 && (bestP1->load < 0.8 * bestP->load)) ) {
-// 	bestP=bestP1;
-// 	numAssignedptr = &numAssignedP1;
-//       }
-//       if (!bestP || (bestP0 && (bestP0->load < 0.75 * bestP->load))) {
-// 	bestP=bestP0;
-// 	numAssignedptr = &numAssignedP0;
-//       }
-//       if (!bestP) {
-// 	iout << iERROR  << "*** Alg7 No receiver found 2 ***" << "\n" <<endi;
-// 	break;
-//       }
-//       assign(c,bestP);
-//       (*numAssignedptr)++;
-//       numAssigned++;
-//       numAssignedP4++;
-//     }
   }
-
-#ifdef DEBUG
-  iout << iINFO
-       << "numAssigned = " << numAssigned
-       << "\nnumAssignedP2 = " << numAssignedP2
-       << "\nnumAssignedP1 = " << numAssignedP1
-       << "\nnumAssignedP0 = " << numAssignedP0
-       << "\nnumAssignedP4 = " << numAssignedP4
-       << "\n" << endi;
-#endif
-
-#if 0
-  // The old Refinement procedure
-
-  overLoad = 1.02;
-  for (; !refine(); overLoad += .01);
-#endif
 
 
   // binary-search refinement procedure
   multirefine();
-
-
-  //  iout << iINFO  << "num assigned: " << numAssigned << endi;
-  //  iout << iINFO  << "Starting overLoad = " << overLoad << endi;
-  //  iout << iINFO  << "Ending overLoad = " << overLoad << endi;
-  //  iout << iINFO
-  //   << "After assignment\n" << endi;
-  // printLoads();
 
   CmiPrintf("Alg7 finish time: %f.\n", CmiWallTimer()-startTime);
 }

@@ -111,7 +111,10 @@ void ComputeNonbondedUtil :: NAME
   LJTable::TableEntry ljNull;  ljNull.A = 0; ljNull.B = 0;
   const LJTable::TableEntry* const lj_null_pars = &ljNull;
   const Molecule* const mol = ComputeNonbondedUtil:: mol;
+  FAST
+  (
   const BigReal* const fast_table = ComputeNonbondedUtil:: fast_table;
+  )
   FULL
   (
   const BigReal* const scor_table = ComputeNonbondedUtil:: scor_table;

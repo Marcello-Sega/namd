@@ -378,10 +378,6 @@ void WorkDistrib::patchMapInit(void)
 
   BigReal patchSize = params->patchDimension;
 
-  int xdim, ydim, zdim;
-  int xper, yper, zper;
-  int xi, yi, zi, pid;
-  int i;
   ScaledPosition xmin, xmax;
   ScaledPosition sysDim, sysMin;
 
@@ -400,99 +396,6 @@ void WorkDistrib::patchMapInit(void)
 
   patchMap->initialize(xmin,xmax,lattice,patchSize);
 
-/*
-  ScaledPosition center = 0.5 * ( xmax + xmin );
-
-  iout << iINFO << "PATCH GRID IS ";
-
-  if ( lattice.a_p() )
-  {
-    xper = 1;
-    sysDim.x = cross(lattice.b(),lattice.c()).unit() * lattice.a();
-    xdim = (int)(sysDim.x / patchSize);
-    if ( xdim < 2 ) xdim = 2;
-    iout << xdim << " (PERIODIC)";
-    center.x = 0.0;
-  }
-  else
-  {
-    xper = 0;
-    sysDim.x = xmax.x - xmin.x;
-    xdim = (int)((float)sysDim.x / patchSize);
-    if ((xdim * patchSize) < sysDim.x)
-      xdim++;
-    sysDim.x = xdim * patchSize;
-    iout << xdim;
-  }
-
-  iout << " BY ";
-
-  if ( lattice.b_p() )
-  {
-    yper = 1;
-    sysDim.y = cross(lattice.c(),lattice.a()).unit() * lattice.b();
-    ydim = (int)((float)sysDim.y / patchSize);
-    if ( ydim < 2 ) ydim = 2;
-    iout << ydim << " (PERIODIC)";
-    center.y = 0.0;
-  }
-  else
-  {
-    yper = 0;
-    sysDim.y = xmax.y - xmin.y;
-    ydim = (int)((float)sysDim.y / patchSize);
-    if ((ydim * patchSize) < sysDim.y)
-      ydim++;
-    sysDim.y = ydim * patchSize;
-    iout << ydim;
-  }
-
-  iout << " BY ";
-
-  if ( lattice.c_p() )
-  {
-    zper = 1;
-    sysDim.z = cross(lattice.a(),lattice.b()).unit() * lattice.c();
-    zdim = (int)((float)sysDim.z / patchSize);
-    if ( zdim < 2 ) zdim = 2;
-    iout << zdim << " (PERIODIC)";
-    center.z = 0.0;
-  }
-  else
-  {
-    zper = 0;
-    sysDim.z = xmax.z - xmin.z;
-    zdim = (int)((float)sysDim.z / patchSize);
-    if ((zdim * patchSize) < sysDim.z)
-      zdim++;
-    sysDim.z = zdim * patchSize;
-    iout << zdim;
-  }
-
-  iout << "\n" << endi;
-
-  sysMin = center - 0.5 * sysDim;
-
-  patchMap->setPeriodicity(xper,yper,zper);
-  patchMap->allocatePids(xdim, ydim, zdim);
-
-  patchMap->setGridOriginAndLength(sysMin,sysDim);
-
-  for(i=0; i < patchMap->numPatches(); i++)
-  {
-    pid=patchMap->requestPid(&xi,&yi,&zi); // generates next pid and grid pos
-    patchMap->storePatchCoord(pid, 
-lattice.scale( Vector(	((float)xi/(float)xdim)*sysDim.x+sysMin.x,
-			((float)yi/(float)ydim)*sysDim.y+sysMin.y,
-			((float)zi/(float)zdim)*sysDim.z+sysMin.z) ) ,
-lattice.scale( Vector(	((float)(xi+1)/(float)xdim)*sysDim.x+sysMin.x,
-			((float)(yi+1)/(float)ydim)*sysDim.y+sysMin.y,
-			((float)(zi+1)/(float)zdim)*sysDim.z+sysMin.z) ) );
-    patchMap->allocateCompute(pid, 100);
-    DebugM(3,"Patch " 
-        << pid << " is at grid " << xi << " " << yi << " " << zi << ".\n");
-  }
-*/
 }
 
 //----------------------------------------------------------------------
@@ -762,12 +665,6 @@ void WorkDistrib::mapComputePatch(ComputeType type)
 
 }
 
-#ifndef WIN32
-static inline int max(int x1,int x2)
-{
-  return (x1 > x2) ? x1 : x2;
-}
-#endif
 
 //----------------------------------------------------------------------
 void WorkDistrib::mapComputeNonbonded(void)

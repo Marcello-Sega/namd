@@ -96,9 +96,9 @@ void PmeRealSpace::compute_forces(const double * const *q_arr,
   int i, j, k, l, stride;
   double f1, f2, f3;
   double *Mi, *dMi;
-  int K1, K2, K3, dim2, dim3, order;
+  int K1, K2, K3, dim2, order;
 
-  K1=myGrid.K1; K2=myGrid.K2; K3=myGrid.K3; dim2=myGrid.dim2; dim3=myGrid.dim3;
+  K1=myGrid.K1; K2=myGrid.K2; K3=myGrid.K3; dim2=myGrid.dim2;
   order = myGrid.order;
   stride=3*order;
   Mi = M; dMi = dM;

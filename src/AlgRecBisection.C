@@ -253,7 +253,7 @@ void AlgRecBisection::mapPartitionsToNodes()
 
 void AlgRecBisection::strategy()
 {
-  int i,j,k;
+  int i,j;
 
   PatchMap *patchMap = PatchMap::Object();
 

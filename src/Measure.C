@@ -32,7 +32,7 @@ int Tcl_centerOfNumber(ClientData, Tcl_Interp *interp, int argc, char *argv[]) {
 
   Node *node = Node::Object();
   Molecule *molecule = node->molecule;
-  Parameters *parameters = node->parameters;
+  // Parameters *parameters = node->parameters;
   Vector *coordinates = node->coords;
   int numAtoms = molecule->numAtoms;
 
@@ -55,7 +55,7 @@ int Tcl_centerOfMass(ClientData, Tcl_Interp *interp, int argc, char *argv[]) {
 
   Node *node = Node::Object();
   Molecule *molecule = node->molecule;
-  Parameters *parameters = node->parameters;
+  // Parameters *parameters = node->parameters;
   Vector *coordinates = node->coords;
   int numAtoms = molecule->numAtoms;
 
@@ -79,7 +79,7 @@ int Tcl_radiusOfGyration(ClientData, Tcl_Interp *interp, int argc, char *argv[])
 
   Node *node = Node::Object();
   Molecule *molecule = node->molecule;
-  Parameters *parameters = node->parameters;
+  // Parameters *parameters = node->parameters;
   Vector *coordinates = node->coords;
   int numAtoms = molecule->numAtoms;
 

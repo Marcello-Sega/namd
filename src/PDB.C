@@ -341,3 +341,4 @@ PDB::PDB( const char *filename, Ambertoppar *amber_data)
     atomArray[i] = pdb;  // Include the new record into the array
   }
 }
+

@@ -163,9 +163,8 @@ ProxyCombinedResultMsg *ProxyPatch::depositCombinedResultMsg(ProxyCombinedResult
     for (; n_i!=n_e; ++n_i) msgCBuffer->nodes.add(*n_i);
     for ( int k = 0; k < Results::maxNumForces; ++k )
     {
-    register ForceList::iterator r_i, r_e;
+    register ForceList::iterator r_i;
     r_i = msgCBuffer->forceList[k].begin();
-    r_e = msgCBuffer->forceList[k].end();
     register ForceList::iterator f_i, f_e;
     f_i = msg->forceList[k].begin();
     f_e = msg->forceList[k].end();

@@ -156,7 +156,6 @@ void ComputeGlobal::recvResults(ComputeGlobalResultsMsg *msg) {
   AtomIDList::iterator a = msg->aid.begin();
   AtomIDList::iterator a_e = msg->aid.end();
   ForceList::iterator f2 = msg->f.begin();
-  int q=0;
   for ( ; a != a_e; ++a, ++f2 ) {
     LocalID localID = atomMap->localID(*a);
     if ( localID.pid == notUsed || ! f[localID.pid] ) continue;
