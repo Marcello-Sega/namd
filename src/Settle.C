@@ -189,7 +189,7 @@ int settle1(const Vector *ref, BigReal mO, BigReal mH,
 
   settlec(ref, mO, mH, pos, ra, rb, rc);
   
-  if (dt > 0) {
+  if (dt != 0) {  // dt can be negative during startup!
     vel[0] = (pos[0]-ref[0])/dt;
     vel[1] = (pos[1]-ref[1])/dt;
     vel[2] = (pos[2]-ref[2])/dt;
