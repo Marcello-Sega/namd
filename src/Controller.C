@@ -1152,7 +1152,11 @@ void Controller::printEnergies(int step, int minimize)
     pressure_avg_count += 1;
 
     Vector pairForce;
-    GET_VECTOR(pairForce,reduction,REDUCTION_PAIR_FORCE);
+    Tensor pairVirial;
+    if ( simParameters->pairInteractionOn ) {
+      GET_VECTOR(pairForce,reduction,REDUCTION_PAIR_FORCE);
+      GET_TENSOR(pairVirial,reduction,REDUCTION_PAIR_VIRIAL);
+    }
     
     // NO CALCULATIONS OR REDUCTIONS BEYOND THIS POINT!!!
     if ( ! minimize &&  step % simParameters->outputEnergies ) return;
@@ -1228,13 +1232,16 @@ void Controller::printEnergies(int step, int minimize)
       iout << " VDW: " << FORMAT(ljEnergy_f);
       iout << " ELECT: " << FORMAT(electEnergy_f + electEnergySlow_f);
       iout << " FORCE: ";
-#if 1
       iout << FORMAT(pairForce.x);
       iout << FORMAT(pairForce.y);
       iout << FORMAT(pairForce.z);
-#else
-      iout << pairForce.x << " " << pairForce.y << " " << pairForce.z;
-#endif
+      iout << " VIRIAL: ";
+      iout << FORMAT(pairVirial.xx);
+      iout << FORMAT(pairVirial.xy);
+      iout << FORMAT(pairVirial.xz);
+      iout << FORMAT(pairVirial.yy);
+      iout << FORMAT(pairVirial.yz);
+      iout << FORMAT(pairVirial.zz);
       iout << "\n" << endi;
     }
     pressure_avg = 0;

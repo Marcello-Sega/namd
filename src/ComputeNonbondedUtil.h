@@ -62,6 +62,7 @@ public:
 //sd-de
 	 TENSOR(virialIndex), TENSOR(fullElectVirialIndex),
          VECTOR(pairForceIndex),
+         TENSOR(pairVirialIndex),
 	 reductionDataSize };
   static void submitReductionData(BigReal*,SubmitReduction*);
 

@@ -112,6 +112,7 @@ typedef enum
   REDUCTION_MIN_HUGE_COUNT,
  // used for pair interaction calculations
   VECTOR(REDUCTION_PAIR_FORCE),
+  TENSOR(REDUCTION_PAIR_VIRIAL),
  // checksum
   REDUCTION_ATOM_CHECKSUM,
   REDUCTION_COMPUTE_CHECKSUM,

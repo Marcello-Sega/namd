@@ -535,9 +535,21 @@ void ComputeNonbondedUtil :: NAME
       f_j.z -= tmp_z;
 
       FEP(
-      reduction[pairForceIndex_X] += tmp_x * d_lambda_pair; 
-      reduction[pairForceIndex_Y] += tmp_y * d_lambda_pair; 
-      reduction[pairForceIndex_Z] += tmp_z * d_lambda_pair; 
+      tmp_x *= d_lambda_pair;
+      tmp_y *= d_lambda_pair;
+      tmp_z *= d_lambda_pair;
+      reduction[pairForceIndex_X] += tmp_x; 
+      reduction[pairForceIndex_Y] += tmp_y; 
+      reduction[pairForceIndex_Z] += tmp_z; 
+      reduction[pairVirialIndex_XX] += tmp_x * p_ij_x;
+      reduction[pairVirialIndex_XY] += tmp_x * p_ij_y;
+      reduction[pairVirialIndex_XZ] += tmp_x * p_ij_z;
+      reduction[pairVirialIndex_YX] += tmp_x * p_ij_y;
+      reduction[pairVirialIndex_YY] += tmp_y * p_ij_y;
+      reduction[pairVirialIndex_YZ] += tmp_y * p_ij_z;
+      reduction[pairVirialIndex_ZX] += tmp_x * p_ij_z;
+      reduction[pairVirialIndex_ZY] += tmp_y * p_ij_z;
+      reduction[pairVirialIndex_ZZ] += tmp_z * p_ij_z;
       )
 
       )
@@ -579,9 +591,21 @@ void ComputeNonbondedUtil :: NAME
       fullf_j.z -= tmp_z;
 
       FEP(
-      reduction[pairForceIndex_X] += tmp_x * d_lambda_pair; 
-      reduction[pairForceIndex_Y] += tmp_y * d_lambda_pair; 
-      reduction[pairForceIndex_Z] += tmp_z * d_lambda_pair; 
+      tmp_x *= d_lambda_pair;
+      tmp_y *= d_lambda_pair;
+      tmp_z *= d_lambda_pair;
+      reduction[pairForceIndex_X] += tmp_x; 
+      reduction[pairForceIndex_Y] += tmp_y; 
+      reduction[pairForceIndex_Z] += tmp_z; 
+      reduction[pairVirialIndex_XX] += tmp_x * p_ij_x;
+      reduction[pairVirialIndex_XY] += tmp_x * p_ij_y;
+      reduction[pairVirialIndex_XZ] += tmp_x * p_ij_z;
+      reduction[pairVirialIndex_YX] += tmp_x * p_ij_y;
+      reduction[pairVirialIndex_YY] += tmp_y * p_ij_y;
+      reduction[pairVirialIndex_YZ] += tmp_y * p_ij_z;
+      reduction[pairVirialIndex_ZX] += tmp_x * p_ij_z;
+      reduction[pairVirialIndex_ZY] += tmp_y * p_ij_z;
+      reduction[pairVirialIndex_ZZ] += tmp_z * p_ij_z;
       )
 
       }

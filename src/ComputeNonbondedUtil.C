@@ -92,6 +92,7 @@ void ComputeNonbondedUtil::submitReductionData(BigReal *data, SubmitReduction *r
   ADD_TENSOR(reduction,REDUCTION_VIRIAL_NBOND,data,virialIndex);
   ADD_TENSOR(reduction,REDUCTION_VIRIAL_SLOW,data,fullElectVirialIndex);
   ADD_VECTOR(reduction,REDUCTION_PAIR_FORCE,data,pairForceIndex);
+  ADD_TENSOR(reduction,REDUCTION_PAIR_VIRIAL,data,pairVirialIndex);
   reduction->item(REDUCTION_COMPUTE_CHECKSUM) += 1.;
 }
 
