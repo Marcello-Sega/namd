@@ -1,0 +1,12 @@
+
+TCLDIR = p:\namd2\tcl\win32
+TCLINCL = /I$(TCLDIR)\include
+TCLLIB = $(TCLDIR)\lib\tcl80.lib
+TCLDLL = tcl80.dll
+TCLFLAGS = /DNAMD_TCL
+TCL = $(TCLINCL) $(TCLFLAGS)
+
+$(TCLSENTINEL)$(TCLDLL): $(TCLDIR)\lib\$(TCLDLL)
+	$(COPY) $(TCLDIR)\lib\$(TCLDLL) $(TCLDLL)
+TCLSENTINEL = not_$(TCLSENTIEL)
+

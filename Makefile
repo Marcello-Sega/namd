@@ -174,7 +174,7 @@ CHARMINC = $(CHARM)/include
 CHARMLIB = $(CHARM)/lib
 
 # Libraries we may have changed
-LIBS = $(DPMTALIBS) $(DPMELIBS)
+LIBS = $(DPMTALIBS) $(DPMELIBS) $(TCLDLL)
 
 # CXX is platform dependent
 CXXFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXOPTS) $(RELEASE)

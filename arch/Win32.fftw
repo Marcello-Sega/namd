@@ -1,0 +1,7 @@
+
+FFTDIR = p:\namd2\fftw\win32
+FFTINCL = /I$(FFTDIR)\include
+FFTLIB = $(FFTDIR)\lib\fftw.lib $(FFTDIR)\lib\rfftw.lib
+FFTFLAGS = /DNAMD_FFTW
+FFT = $(FFTINCL) $(FFTFLAGS)
+
