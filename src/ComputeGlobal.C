@@ -16,6 +16,7 @@
 #include "ComputeGlobal.h"
 #include "ComputeGlobalMaster.h"
 #include "ComputeGlobalMsgs.h"
+#include "ComputeMisc.h"
 #include "ComputeTcl.h"
 //---these include files are needed for ComputeFreeEnergy---
 #include <string.h>
@@ -67,6 +68,7 @@ ComputeGlobal::ComputeGlobal(ComputeID c, ComputeMgr *m)
   else {
     SimParameters * simParams = Node::Object()->simParameters;
     if ( simParams->tclForcesOn ) master = new ComputeTcl(this);
+    else if ( simParams->miscForcesOn ) master = new ComputeMisc(this);
     else if ( simParams->freeEnergyOn ) master = new ComputeFreeEnergy(this);
 #ifdef MDCOMM
     else if ( simParams->vmdFrequency != -1 ) master = new ComputeMDComm(this);
@@ -231,12 +233,15 @@ void ComputeGlobal::sendData()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.12 $	$Date: 1999/05/11 23:56:21 $
+ *	$Revision: 1.13 $	$Date: 1999/06/03 16:50:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGlobal.C,v $
+ * Revision 1.13  1999/06/03 16:50:07  jim
+ * Added simplified interface to ComputeGlobal mechanism.
+ *
  * Revision 1.12  1999/05/11 23:56:21  brunner
  * Changes for new charm version
  *

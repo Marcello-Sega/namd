@@ -233,6 +233,7 @@ public:
 	Bool tclForcesOn;		//  Are Tcl forces present?
 	Bool freeEnergyOn;		//  Doing free energy perturbation?
 	Bool tclOn;			//  Are Tcl scripts present?
+	Bool miscForcesOn;		//  Using misc forces?
 
 	Bool fixedAtomsOn;		//  Are there fixed atoms?
 
@@ -444,12 +445,15 @@ private:
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1037 $	$Date: 1999/05/28 20:23:06 $
+ *	$Revision: 1.1038 $	$Date: 1999/06/03 16:50:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1038  1999/06/03 16:50:11  jim
+ * Added simplified interface to ComputeGlobal mechanism.
+ *
  * Revision 1.1037  1999/05/28 20:23:06  jim
  * Added constraintScaling parameter.
  *

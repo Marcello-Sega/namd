@@ -99,9 +99,11 @@ OBJS = \
 	$(DSTDIR)/ComputeImpropers.o \
 	$(DSTDIR)/ComputeGeneral.o \
 	$(DSTDIR)/ComputeGlobal.o \
+	$(DSTDIR)/ComputeGlobalEasy.o \
 	$(DSTDIR)/ComputeGlobalMaster.o \
 	$(DSTDIR)/ComputeGlobalMsgs.o \
 	$(DSTDIR)/ComputeMap.o \
+	$(DSTDIR)/ComputeMisc.o \
 	$(DSTDIR)/ComputeMgr.o \
 	$(DSTDIR)/ComputeMDComm.o \
 	$(DSTDIR)/ComputeNonbondedExcl.o \

@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1069 $  $Date: 1999/06/02 14:23:22 $
+ *  $Revision: 1.1070 $  $Date: 1999/06/03 16:50:09 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1070  1999/06/03 16:50:09  jim
+ * Added simplified interface to ComputeGlobal mechanism.
+ *
  * Revision 1.1069  1999/06/02 14:23:22  jim
  * Generalized maximumMove to work with any dynamics mode.
  *
@@ -1248,12 +1251,17 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
 
    //****** END SMD constraints changes 
 
-
    ////  Global Forces / Tcl
    opts.optionalB("main", "tclForces", "Are Tcl global forces active?",
      &tclForcesOn, FALSE);
    opts.require("tclForces", "tclForcesScript",
      "Tcl script for global forces", PARSE_MULTIPLES);
+
+   ////  Global Forces / Misc
+   opts.optionalB("main", "miscForces", "Are misc global forces active?",
+     &miscForcesOn, FALSE);
+   opts.optional("miscForces", "miscForcesScript",
+     "script for misc forces", PARSE_MULTIPLES);
 
    ////  Free Energy Perturbation
    opts.optionalB("main", "freeEnergy", "Perform free energy perturbation?",
@@ -2903,7 +2911,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    
    // Global forces configuration
 
-   globalForcesOn = ( tclForcesOn || freeEnergyOn );
+   globalForcesOn = ( tclForcesOn || freeEnergyOn || miscForcesOn );
 
 #ifdef MDCOMM
    if ( vmdFrequency != -1 ) globalForcesOn = 1;
@@ -2933,6 +2941,35 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      }
 
      iout << iINFO << "TCL GLOBAL FORCES SCRIPT   " << filename << "\n";
+
+     }
+     iout << endi;
+   }
+
+   if (miscForcesOn)
+   {
+     iout << iINFO << "MISC FORCES ACTIVE\n";
+
+     current = config->find("miscForcesScript");
+
+     for ( ; current; current = current->next ) {
+
+     if ( current->data[0] == '{' ) {
+       iout << iINFO << "MISC FORCES SCRIPT INLINED IN CONFIG FILE\n";
+       continue;
+     }
+
+     if ( (cwd == NULL) || (current->data[0] == '/') )
+     {
+       strcpy(filename, current->data);
+     }
+     else
+     {
+       strcpy(filename, cwd);
+       strcat(filename, current->data);
+     }
+
+     iout << iINFO << "MISC FORCES SCRIPT   " << filename << "\n";
 
      }
      iout << endi;
@@ -3485,7 +3522,8 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
   msg->put(SMDChForceOn)->put(SMDVmax);
   msg->put(SMDVmaxTave)->put(SMDFmin);
   //****** END SMD constraints changes 
-  msg->put(globalForcesOn)->put(tclForcesOn)->put(freeEnergyOn)->put(tclOn);
+  msg->put(globalForcesOn)->put(tclForcesOn)->put(miscForcesOn);
+  msg->put(freeEnergyOn)->put(tclOn);
   msg->put(FMAOn)->put(FMALevels)->put(FMAMp);
   msg->put(FMAFFTOn)->put(FMAFFTBlock)->put(minimizeOn);
   msg->put(maximumMove)->put(totalAtoms)->put(randomSeed);
@@ -3652,6 +3690,7 @@ void SimParameters::receive_SimParameters(MIStream *msg)
   //****** END SMD constraints changes 
   msg->get(globalForcesOn);
   msg->get(tclForcesOn);
+  msg->get(miscForcesOn);
   msg->get(freeEnergyOn);
   msg->get(tclOn);
   msg->get(FMAOn);
@@ -3781,12 +3820,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1069 $  $Date: 1999/06/02 14:23:22 $
+ *  $Revision: 1.1070 $  $Date: 1999/06/03 16:50:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1070  1999/06/03 16:50:09  jim
+ * Added simplified interface to ComputeGlobal mechanism.
+ *
  * Revision 1.1069  1999/06/02 14:23:22  jim
  * Generalized maximumMove to work with any dynamics mode.
  *

@@ -23,6 +23,7 @@ typedef enum
   REDUCTION_LJ_ENERGY,
   REDUCTION_BC_ENERGY,
   REDUCTION_SMD_ENERGY,
+  REDUCTION_MISC_ENERGY,
  // pressure
   REDUCTION_VIRIAL_NORMAL_X,
   REDUCTION_VIRIAL_NORMAL_Y,
@@ -171,12 +172,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1999/05/11 23:56:48 $
+ *	$Revision: 1.1016 $	$Date: 1999/06/03 16:50:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.h,v $
+ * Revision 1.1016  1999/06/03 16:50:09  jim
+ * Added simplified interface to ComputeGlobal mechanism.
+ *
  * Revision 1.1015  1999/05/11 23:56:48  brunner
  * Changes for new charm version
  *

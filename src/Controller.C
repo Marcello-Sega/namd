@@ -61,6 +61,7 @@ Controller::Controller(NamdState *s) :
     reduction->subscribe(REDUCTION_KINETIC_ENERGY);
     reduction->subscribe(REDUCTION_INT_KINETIC_ENERGY);
     reduction->subscribe(REDUCTION_BC_ENERGY);
+    reduction->subscribe(REDUCTION_MISC_ENERGY);
     reduction->subscribe(REDUCTION_VIRIAL_NORMAL_X);
     reduction->subscribe(REDUCTION_VIRIAL_NORMAL_Y);
     reduction->subscribe(REDUCTION_VIRIAL_NORMAL_Z);
@@ -125,6 +126,7 @@ Controller::~Controller(void)
     reduction->unsubscribe(REDUCTION_KINETIC_ENERGY);
     reduction->unsubscribe(REDUCTION_INT_KINETIC_ENERGY);
     reduction->unsubscribe(REDUCTION_BC_ENERGY);
+    reduction->unsubscribe(REDUCTION_MISC_ENERGY);
     reduction->unsubscribe(REDUCTION_VIRIAL_NORMAL_X);
     reduction->unsubscribe(REDUCTION_VIRIAL_NORMAL_Y);
     reduction->unsubscribe(REDUCTION_VIRIAL_NORMAL_Z);
@@ -672,6 +674,7 @@ void Controller::printEnergies(int seq)
     BigReal electEnergy;
     BigReal ljEnergy;
     BigReal boundaryEnergy;
+    BigReal miscEnergy;
     BigReal smdEnergy;
     BigReal totalEnergy;
     Vector momentum;
@@ -685,6 +688,7 @@ void Controller::printEnergies(int seq)
     reduction->require(seq, REDUCTION_ELECT_ENERGY, electEnergy);
     reduction->require(seq, REDUCTION_LJ_ENERGY, ljEnergy);
     reduction->require(seq, REDUCTION_BC_ENERGY, boundaryEnergy);
+    reduction->require(seq, REDUCTION_MISC_ENERGY, miscEnergy);
     reduction->require(seq, REDUCTION_SMD_ENERGY, smdEnergy);
 
     reduction->require(seq, REDUCTION_MOMENTUM_X, momentum.x);
@@ -695,7 +699,8 @@ void Controller::printEnergies(int seq)
     reduction->require(seq, REDUCTION_ANGULAR_MOMENTUM_Z, angularMomentum.z);
 
     totalEnergy = bondEnergy + angleEnergy + dihedralEnergy + improperEnergy +
-	 electEnergy + ljEnergy + kineticEnergy + boundaryEnergy + smdEnergy;
+	 electEnergy + ljEnergy + kineticEnergy + boundaryEnergy +
+	 miscEnergy + smdEnergy;
 
     if ( node->simParameters->outputMomenta &&
          ! ( seq % node->simParameters->outputMomenta ) )
@@ -847,7 +852,7 @@ void Controller::printEnergies(int seq)
     {
 	iout << "ETITLE:     TS    BOND        ANGLE       "
 	     << "DIHED       IMPRP       ELECT       VDW       "
-	     << "BOUNDARY    KINETIC        TOTAL     TEMP";
+	     << "BOUNDARY    MISC        KINETIC        TOTAL     TEMP";
 	if ( volume != 0. ) {
 	  if ( printAtomicPressure ) iout << "     PRESSURE";
 	  iout << "    GPRESSURE";
@@ -868,6 +873,7 @@ void Controller::printEnergies(int seq)
     iout << FORMAT(electEnergy);
     iout << FORMAT(ljEnergy);
     iout << FORMAT(boundaryEnergy);
+    iout << FORMAT(miscEnergy);
     iout << FORMAT(kineticEnergy);
     iout << FORMAT(totalEnergy);
     iout << FORMAT(temperature);
@@ -908,12 +914,15 @@ void Controller::terminate(void) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1068 $	$Date: 1999/06/02 15:14:19 $
+ *	$Revision: 1.1069 $	$Date: 1999/06/03 16:50:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1069  1999/06/03 16:50:08  jim
+ * Added simplified interface to ComputeGlobal mechanism.
+ *
  * Revision 1.1068  1999/06/02 15:14:19  jim
  * Now waits for output files to be written before halting.
  *

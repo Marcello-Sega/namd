@@ -1,0 +1,58 @@
+/***************************************************************************/
+/*       (C) Copyright 1996,1997 The Board of Trustees of the              */
+/*                          University of Illinois                         */
+/*                           All Rights Reserved                           */
+/***************************************************************************/
+/***************************************************************************
+ * DESCRIPTION:  Forwards atoms to master node for force evaluation.
+ *
+ ***************************************************************************/
+
+#include "ComputeMisc.h"
+#include "InfoStream.h"
+
+ComputeMisc::ComputeMisc(ComputeGlobal *h)
+  : ComputeGlobalEasy(h,"miscForcesScript") {
+  ;
+}
+
+ComputeMisc::~ComputeMisc() {
+  ;
+}
+
+/* you may use the following in easy_init or easy_calc
+  int getAtomID(const char *segid, int resid, const char *aname); // zero-based
+  int getNumAtoms(const char* segid, int resid); // 0 on error
+  int getAtomID(const char *segid, int resid, int index);
+  double getMass(int atomid); // -1.0 on error
+*/
+
+/* you may use the following only in easy_init()
+  int requestAtom(int atomid); // 0 on success, -1 on error
+*/
+
+void ComputeMisc::easy_init(const char *config) {
+  iout << iINFO << "  MISC FORCES CONFIG\n";
+  iout << iINFO << "**********************\n";
+  iout << config;
+  iout << iINFO << "**********************\n" << endi;
+
+  requestAtom(0);
+}
+
+/* you may use the following only in easy_calc()
+  int getPosition(int atomid, Position &position); // 0 on success, -1 on error
+  int addForce(int atomid, Force force); // 0 on success, -1 on error
+  void addEnergy(BigReal);
+*/
+
+void ComputeMisc::easy_calc() {
+  Vector p;
+  BigReal k = 10.0;
+  getPosition(0,p);
+  iout << iINFO << "Atom 0 is at " << p << "\n" << endi;
+  addForce(0,-k * p);
+  addEnergy(0.5 * k * p.length2());
+}
+
+
