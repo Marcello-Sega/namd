@@ -8,7 +8,9 @@
 ## Choose your favorite Compiler options
 ####
 CXX = CC -Aa -D_HPUX_SOURCE
-CXXOPTS = -O -DGLOBALS
+CXXOPTS = -g
+#CXX = CC -Aa -D_HPUX_SOURCE
+#CXXOPTS = -O -DGLOBALS
 #CXXOPTS = +O2
 #CXXOPTS = +O3
 #CXXOPTS = +O3 +DAK220 +DSK220 -G +Oinlinebudget=500 +Olibcalls
