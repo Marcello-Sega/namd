@@ -338,18 +338,12 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
   
   CkPrintf("BACKGROUND LOAD\n");
   if(simParams->PMEOn) {
+    double bgfactor = 1.0 + 3.0 * CkNumPes()/1000.0;
+    if ( bgfactor > 4.0 ) bgfactor = 4.0;
     for (i=0; i<count; i++) {
       CkPrintf("BG[%d] =  %5.5lf,", i, processorArray[i].backgroundLoad);
       if(isPmeProcessor(i)) {
-        double oldbgload = processorArray[i].backgroundLoad;
-        if ( processorArray[i].computeLoad > (3*oldbgload) ) {
-          processorArray[i].backgroundLoad += (3*oldbgload);
-          processorArray[i].computeLoad -= (3*oldbgload);
-        } else {
-          processorArray[i].backgroundLoad += processorArray[i].computeLoad;
-          processorArray[i].computeLoad = 0;
-        }
-	processorArray[i].backgroundLoad = 4*oldbgload;
+	processorArray[i].backgroundLoad *= bgfactor;
       }
       CkPrintf("%5.5lf;  ", processorArray[i].backgroundLoad);
     }
