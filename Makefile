@@ -256,7 +256,6 @@ namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS) $(DSTDIR)/moduleinit.o
 	$(LINK) $(LINKOPTS) /nodefaultlib:libc /nodefaultlib:libcmt.lib \
 	/out:namd2.exe \
 	$(CHARMLIB)/libldb-rand.o \
-	$(CHARMLIB)/libtrace-none.a \
 	$(CHARMLIB)/libconv-core.a \
 	$(CHARMLIB)/libconv-cplus-y.a \
 	$(CHARMLIB)/libck.a \
