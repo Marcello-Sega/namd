@@ -63,8 +63,8 @@ void Rebalancer::makeHeaps()
    computesHeap->insert( (InfoRecord *) &(computes[i]));
 
  for (i=0; i<P; i++) {
-   processors[i].computesWithBoth = new maxHeap(numComputes);
-   processors[i].computesWithOne = new maxHeap(numComputes);
+   processors[i].computesWithBoth = new maxHeap(numComputes+2);
+   processors[i].computesWithOne = new maxHeap(numComputes+2);
     for (j=0; j<numComputes; j++) {
       int count = 0;
       if (patches[computes[j].patch1].processor = i) count ++;
@@ -76,6 +76,15 @@ void Rebalancer::makeHeaps()
 		       insert( (InfoRecord *) &(computes[j]));
     }
  }
+
+ /*   for (int ii=0; ii<numPatches; ii++)
+     { cout << "(3:" << patches[ii].Id << "," << patches[ii].processor <<"]" ;}
+     */
+}
+
+void Rebalancer::assign(computeInfo *c, int processor)
+{
+assign(c, &(processors[processor]));
 }
 
 void Rebalancer::assign(computeInfo *c, processorInfo *p)
@@ -231,11 +240,14 @@ double max;
     //	 << "[ " << processors[i].backgroundLoad << "," 
     //   << processors[i].computeLoad << "]. " << endl << endi;
 
-    //    CPrintf("load on %d is : %f [%f,%f]\n",i,processors[i].load,
-    //    processors[i].backgroundLoad,processors[i].computeLoad);
     // iout << iINFO << "# Messages received: "
     //	 << processors[i].proxies->numElements() - processors[i].patchSet->numElements() 
     //	 << endl << endi;
+    //    cout << "load on "<< i << " is :" << processors[i].load 
+    //	 << "[ " << processors[i].backgroundLoad << "," <<
+    //	 processors[i].computeLoad << "]. ";
+    //    cout << "# Messages received: " << 
+    //      processors[i].proxies->numElements() - processors[i].patchSet->numElements();
     Iterator p;
     int count = 0;
     
@@ -254,6 +266,9 @@ double max;
   computeAverage();
   max = computeMax();
   iout << iINFO 
+       << "------------------------------------------------------------\n" 
+       << endi;
+  iout << iINFO 
        << "Load summary for strategy: " << strategyName
        << "\n" << iINFO 
        << "Processors = " << P
@@ -264,6 +279,9 @@ double max;
        << "\n" << iINFO 
        << "# of messages = " << total << "  Message bytes = " << numBytes
        << "\n" << endi;
+  iout << iINFO 
+       << "============================================================\n"
+       << endi;
 }
 
 void Rebalancer::computeAverage()
@@ -310,5 +328,3 @@ int Rebalancer::isAvailableOn(patchInfo *patch, processorInfo *p)
 {
   return  p->proxies->find(patch);
 }
-
-

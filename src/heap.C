@@ -6,6 +6,7 @@ class maxHeap;
 
 minHeap::minHeap(int size)
 {
+  this->size = size;
   h = new heapRecord[size];
   count = 0;
 }
@@ -15,13 +16,17 @@ minHeap::numElements()
   return count;
 }
 
-void minHeap::insert(InfoRecord *x)
+minHeap::insert(InfoRecord *x)
 {
   h[count].info = x;
   h[count].deleted = 0;
 
   int current = count;
   count++;
+
+  if (count >= size) {
+    cout << "minHeap overflow. \n" ; 
+    return -1;}
 
   int parent = (current - 1)/2;
   while (current != 0)
@@ -92,6 +97,7 @@ InfoRecord *minHeap::next(heapIterator *iter){
 
 maxHeap::maxHeap(int size)
 {
+  this->size = size;
   h = new heapRecord[size];
   count = 0;
 }
@@ -101,12 +107,16 @@ maxHeap::numElements()
   return count;
 }
 
-void maxHeap::insert(InfoRecord *x)
+maxHeap::insert(InfoRecord *x)
 {
   h[count].info = x;
   h[count].deleted  = 0;
   int current = count;
   count++;
+
+  if (count >= size) {
+    cout << "maxHeap overflow. \n" ; 
+    return -1;}
 
   int parent = (current - 1)/2;
   while (current != 0)

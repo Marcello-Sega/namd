@@ -19,8 +19,7 @@ public:
   /*   int computeId; replaced by Id */
   int patch1, patch2;
   int processor; // caller to ReBalancer MAY leave this field -1, 
-		 // or store the current assignment of the compute object.
-  int oldProcessor;
+  int oldProcessor; // stores the current assignment of the compute object.
 };
 
 class patchInfo : public InfoRecord

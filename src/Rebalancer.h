@@ -27,6 +27,7 @@ protected:
   void strategy();
   void makeHeaps();
   void assign(computeInfo *c, processorInfo *pRec);
+  void assign(computeInfo *c, int p);
   void deAssign(computeInfo *c, processorInfo *pRec);
   int refine();
   void printResults();
@@ -34,10 +35,11 @@ protected:
   void computeAverage();
   double computeMax();
 
+
 public:
   double overLoad;
   char *strategyName;
-  Rebalancer() { bytesPerAtom = 32; }; 
+  Rebalancer() {}
   Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
 	     processorInfo *processorArray,
 	     int nComps, int nPatches, int nPes);

@@ -16,7 +16,7 @@ class minHeap
 private:
   heapRecord *h;
   int count;
-
+  int size;
   void swap(int i, int j) 
     {
       heapRecord temp = h[i];
@@ -27,7 +27,7 @@ private:
 public:
   minHeap(int size);
   int numElements();
-  void insert(InfoRecord *);
+  insert(InfoRecord *);
   InfoRecord *deleteMin();
   InfoRecord *iterator(heapIterator *);
   InfoRecord *next(heapIterator *);
@@ -38,6 +38,7 @@ class maxHeap
 private:
   heapRecord *h;
   int count;
+  int size;
 
   void swap(int i, int j) 
     {
@@ -49,7 +50,7 @@ private:
 public:  
   maxHeap(int size);
   int numElements();
-  void insert(InfoRecord *);
+  insert(InfoRecord *);
   InfoRecord *deleteMax();
   InfoRecord *iterator(heapIterator *);
   InfoRecord *next(heapIterator *);

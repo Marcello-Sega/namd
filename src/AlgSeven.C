@@ -1,5 +1,8 @@
-#include "InfoStream.h"
+#include <iostream.h>
+#include <InfoStream.h>
 #include "Alg7.h"
+
+#define TINYLOAD 0.001
 
 Alg7::Alg7(computeInfo *computeArray, patchInfo *patchArray, 
 	   processorInfo *processorArray, int nComps, 
@@ -16,15 +19,52 @@ void Alg7::strategy()
 {
    double bestSize0, bestSize1, bestSize2;
    computeInfo *c;
+   int numAssigned;
    processorInfo *bestP0, *bestP1, *bestP2;
    bestP0 = bestP1 = bestP2 = (processorInfo *)0;
+   //   iout << iINFO  << "calling makeHeaps. \n";
    makeHeaps();
    computeAverage();
+   iout << iINFO
+	<< "Before assignment\n" << endi;
    printLoads();
 	      
-  for (int i=0; i<numComputes; i++){
+   numAssigned = 0;
+   //   for (int i=0; i<numPatches; i++)
+   //     { cout << "(" << patches[i].Id << "," << patches[i].processor ;}
+   int i;
+   for (i=0; i<numComputes; i++){
+     /* if compute i is a self-interaction, assign it to the home processor.
+	Also, if compute i represents load below a threshold ("zero load")
+	assign it to the old processor it was on */
+    
+     computeInfo * c = (computeInfo *) &(computes[i]);
+     if (c->patch1 == c->patch2)
+       {
+	 assign(c, patches[c->patch1].processor);
+
+	 /*
+	   cout << "assigning load " << c->load << "," << "to processor:" <<
+	   patches[c->patch1].processor << "because of patch:" << c->patch1 
+	      << "patchID" << patches[c->patch1].Id 
+	      << endl; 
+	      */
+
+	 numAssigned++;
+       }
+     else if (c->load < TINYLOAD) {
+       assign(c, c->oldProcessor);
+       numAssigned++;
+     }
+   }
+
+   //   iout << iINFO  << numAssigned <<  "done initial assignments.\n";
+
+   //   printLoads();
+  for (i=0; i<numComputes; i++){
      c = (computeInfo *) computesHeap->deleteMax();
-    heapIterator nextProcessor;
+     if (c->processor != -1) continue; // skip to the next compute;
+     heapIterator nextProcessor;
     processorInfo *p = (processorInfo *) 
       pes->iterator((heapIterator *) &nextProcessor);
     bestSize0 = bestSize1 = bestSize2 = 0;
@@ -64,31 +104,38 @@ void Alg7::strategy()
 		    (p->load < bestP2->load))
 	 bestP2 = p;
        break;
-       default: iout << "Error. Illegal number of proxies.\n" << endi;    
+       default:
+	 iout << iINFO  << "Error. Illegal number of proxies.\n" << endi;    
        }
      p = (processorInfo *) pes->next(&nextProcessor);
     }
     
     if ((bestP2) && (bestP2->load < 1.2*bestP0->load)){
       assign(c, bestP2);
+      numAssigned++;
     }
     else if ((bestP1) && (bestP1->load < 1.2*bestP0->load)){
       assign(c, bestP1);
+      numAssigned++;
     }
     else if (bestP0){
      assign(c, bestP0);
+      numAssigned++;
     }
     else { 
-      iout << "No receiver found" << "\n" << endi;
+      iout << iINFO  << "No receiver found" << "\n" <<endi;
       break;
     }
 
   }
-  printLoads();
+  //  printLoads();
   overLoad = 1.01;
-  iout << "Starting overLoad = " << overLoad << endl << endi;
+  //  iout << iINFO  << "num assigned: " << numAssigned << endi;
+  //  iout << iINFO  << "Starting overLoad = " << overLoad << endi;
   for (; !refine(); overLoad += .01);
-  iout << "Ending overLoad = " << overLoad << endl << endi;
+  //  iout << iINFO  << "Ending overLoad = " << overLoad << endi;
+  iout << iINFO
+       << "After assignment\n" << endi;
   printLoads();
 }
 

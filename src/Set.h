@@ -23,7 +23,7 @@ private:
 public:
  Set();
  void insert(InfoRecord *);
- find(InfoRecord *) ;
+ int find(InfoRecord *) ;
  void remove(InfoRecord *);
  void myRemove(listNode **n, InfoRecord *r);
  InfoRecord *iterator(Iterator *);

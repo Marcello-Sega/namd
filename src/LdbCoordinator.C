@@ -77,7 +77,9 @@ LdbCoordinator::LdbCoordinator(InitMsg *msg)
   delete msg;
 
   // Register Converse timer routines
-  //CsdSetNotifyIdle((CmiHandler)notifyIdleStart,(CmiHandler)notifyIdleEnd);
+#ifndef NO_IDLE_COMPUTATION
+  CsdSetNotifyIdle((CmiHandler)notifyIdleStart,(CmiHandler)notifyIdleEnd);
+#endif
   idleTime = 0;
 }
 
@@ -188,7 +190,9 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap)
 
   // Start idle-time recording
   idleTime = 0;
-  //  CsdStartNotifyIdle();
+#ifndef NO_IDLE_COMPUTATION
+  CsdStartNotifyIdle();
+#endif
   totalStartTime = TIMER_FNC();
 }
 
@@ -256,7 +260,9 @@ int LdbCoordinator::checkAndSendStats(void)
        && (nComputesReported == nComputesExpected) )
   {
     // Turn off idle-time calculation
-    //CsdStopNotifyIdle();
+#ifndef NO_IDLE_COMPUTATION
+    CsdStopNotifyIdle();
+#endif
     totalTime = TIMER_FNC() - totalStartTime;
 
 #ifndef NO_IDLE_COMPUTATION

@@ -1,20 +1,20 @@
 #include "Set.h"
 #include "elements.h"
-#include "InfoStream.h"
+#include <iostream.h>
 
 
 Set::Set() 
 {
-   head = (listNode *) 0;
+  head = (listNode *) 0;
 }
 
 void Set::insert(InfoRecord *info) 
 {
-   listNode *node = new listNode();
-
-   node->info = info;
-   node->next = head;
-   head = node;
+  listNode *node = new listNode();
+  
+  node->info = info;
+  node->next = head;
+  head = node;
    
 }
 
@@ -22,46 +22,46 @@ void Set::insert(InfoRecord *info)
 void Set::myRemove(listNode **n, InfoRecord *r)
 {
   if ((*n)->info == r)
-   *n = (*n)->next;
+    *n = (*n)->next;
   else 
     myRemove(&((*n)->next), r);
 }
 
 void Set::remove(InfoRecord * r) 
- {
-   listNode *p = head;
-   if (!head)
-     return;
+{
+  listNode *p = head;
+  if (!head)
+    return;
 
-   listNode *q = head->next;
+  listNode *q = head->next;
 
-   if (p->info == r){
-     head = head->next;
-     return;
-   }
+  if (p->info == r){
+    head = head->next;
+    return;
+  }
      
-   while (q){
-     if (q->info == r){
-       p->next = q->next;
-       delete q;
-       return;
-     }
-     else {
-       p = q;
-       q = q->next;
-     }
-   }
- }
+  while (q){
+    if (q->info == r){
+      p->next = q->next;
+      delete q;
+      return;
+    }
+    else {
+      p = q;
+      q = q->next;
+    }
+  }
+}
 
- Set::find(InfoRecord * r) 
- {
-   listNode *p = head;
-   while (p) {
-     if (p->info == r) return 1;
-     else p = p->next;
-   }
-   return 0;
- }
+int Set::find(InfoRecord * r) 
+{
+  listNode *p = head;
+  while (p) {
+    if (p->info == r) return 1;
+    else p = p->next;
+  }
+  return 0;
+}
 
 InfoRecord * Set::iterator(Iterator *iter)
 {
@@ -100,10 +100,8 @@ int n;
 void Set::print() 
 {
   listNode *p = head;
-  int i = 0;
   while (p){
-    if ( ! ( i = (i+1)%10 ) ) { iout << "\n" << endi << "     "; }
-    iout << p->info->Id << " ";
+    cout << p->info->Id << " ";
     p = p->next;
   }
 }

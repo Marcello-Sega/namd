@@ -64,7 +64,7 @@ private:
     // new matched with delete
     void * operator new(size_t size) { return ::operator new(size); }	
     // placement new for use within containers
-    void * operator new(size_t size, void * ptr) { return ptr; }
+    void * operator new(size_t /* size */, void * ptr) { return ptr; }
 
     // delete matched with new
     void operator delete(void* ptr) { ::operator delete(ptr); }		
@@ -102,13 +102,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/04/10 09:13:52 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1997/04/17 19:19:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.h,v $
+ * Revision 1.1008  1997/04/17 19:19:36  brunner
+ * Put in new AlgSeven.C
+ *
  * Revision 1.1007  1997/04/10 09:13:52  ari
  * Final debugging for compute migration / proxy creation for load balancing.
  * Lots of debug code added, mostly turned off now.
