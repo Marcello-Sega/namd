@@ -37,20 +37,32 @@ private:
       int size = a.size();
       for( int i = 0; i < size; ++i )
       {
-	aid.add(a[i]);
-	data.add(d[i]);
+	data.add(VectorData(a[i],d[i]));
       }
       return ( ! --remaining );
     }
 
     int seq;
-    AtomIDList aid;
-    ResizeArray<Vector> data;
 
     operator<(const CollectVectorInstance &o) { return (seq < o.seq); }
     operator==(const CollectVectorInstance &o) { return (seq == o.seq); }
     void * operator new(size_t size) { return ::operator new(size); }
     void operator delete(void* ptr) { ::operator delete(ptr); }
+
+    class VectorData
+    {
+    public:
+      VectorData(void) : aid(-1) { ; }
+      VectorData(AtomID a, Vector d) : aid(a), data(d) { ; }
+      AtomID aid;
+      Vector data;
+      operator<(const VectorData &o) { return (aid < o.aid); }
+      operator==(const VectorData &o) { return (aid == o.aid); }
+      void * operator new(size_t size) { return ::operator new(size); }
+      void operator delete(void* ptr) { ::operator delete(ptr); }
+    };
+
+    SortableResizeArray<VectorData> data;
 
   private:
     int remaining;

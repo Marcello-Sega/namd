@@ -1,5 +1,6 @@
 #include "CollectionMaster.top.h"
 #include "CollectionMaster.h"
+#include "InfoStream.h"
 
 #define DEBUGM
 #include "Debug.h"
@@ -20,6 +21,14 @@ void CollectionMaster::receivePositions(CollectVectorMsg *msg)
   if ( c = positions.submitData(msg->seq,msg->aid,msg->data) )
   {
     DebugM(3,"Collected positions at " << msg->seq << endl);
+    iout << "\n\n********** POSITIONS " << c->seq << " **********\n\n";
+    c->data.sort();
+    int size = c->data.size();
+    for ( int i = 0; i < size; ++i )
+    {
+      iout << c->data[i].aid << "  " << c->data[i].data << "\n";
+    }
+    iout << "\n" << endi;
     delete c;
   }
 }
@@ -31,6 +40,14 @@ void CollectionMaster::receiveVelocities(CollectVectorMsg *msg)
   if ( c = velocities.submitData(msg->seq,msg->aid,msg->data) )
   {
     DebugM(3,"Collected velocities at " << msg->seq << endl);
+    iout << "\n\n********** VELOCITIES " << c->seq << " **********\n\n";
+    c->data.sort();
+    int size = c->data.size();
+    for ( int i = 0; i < size; ++i )
+    {
+      iout << c->data[i].aid << "  " << c->data[i].data << "\n";
+    }
+    iout << "\n" << endi;
     delete c;
   }
 }
@@ -42,6 +59,14 @@ void CollectionMaster::receiveForces(CollectVectorMsg *msg)
   if ( c = forces.submitData(msg->seq,msg->aid,msg->data) )
   {
     DebugM(3,"Collected forces at " << msg->seq << endl);
+    iout << "\n\n********** FORCES " << c->seq << " **********\n\n";
+    c->data.sort();
+    int size = c->data.size();
+    for ( int i = 0; i < size; ++i )
+    {
+      iout << c->data[i].aid << "  " << c->data[i].data << "\n";
+    }
+    iout << "\n" << endi;
     delete c;
   }
 }
