@@ -88,7 +88,7 @@ void CollectionMgr::submitVelocities(int seq, FullAtomList &a)
 
 void CollectionMgr::sendDataStream(const char *data) {
   DataStreamMsg *msg = new DataStreamMsg;
-  msg->data.resize(strlen(data+1));
+  msg->data.resize(strlen(data)+1);
   strcpy(msg->data.begin(),data);
   CProxy_CollectionMaster cm(master);
   cm.receiveDataStream(msg);
