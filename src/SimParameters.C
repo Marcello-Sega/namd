@@ -2639,21 +2639,32 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
   iout << "NO\n" << endi;
    }
 
-// If this is AMBER, then there's no following options
 
-   if (!amberOn)
+// If this is AMBER, then print AMBER options
+
+   if (amberOn)
+   { iout << iINFO << "Using AMBER format force field!\n";
+     current = config->find("parmfile");
+     iout << iINFO << "AMBER PARM FILE        " << current->data << '\n';
+     if (opts.defined("coordinates"))
+     { current = config->find("coordinates");
+       iout << iINFO << "COORDINATE PDB         " << current->data << '\n';
+     }
+     else
+     { current = config->find("ambercoor");
+       iout << iINFO << "AMBER COORDINATE FILE  " << current->data << '\n';
+     }
+     if (readExclusions)
+       iout << iINFO << "Exclusions will be read from PARM file!\n";
+     else
+       iout << iINFO << "Exclusions in PARM file will be ignored!\n";
+     iout << iINFO << "SCNB (VDW SCALING)     " << vdwscale14 << "\n" << endi;
+   }
+   else
    {
      current = config->find("coordinates");
 
      iout << iINFO << "COORDINATE PDB         " << current->data << '\n' << endi;
-
-     if (opts.defined("bincoordinates"))
-     {
-    current = config->find("bincoordinates");
-
-       iout << iINFO << "BINARY COORDINATES     " 
-                << current->data << "\n";
-     }
 
      current = config->find("structure");
 
@@ -2679,6 +2690,14 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
           << current->data << "\n" << endi;
        current = current->next;
      }
+   }
+
+   if (opts.defined("bincoordinates"))
+   {
+     current = config->find("bincoordinates");
+
+     iout << iINFO << "BINARY COORDINATES     " 
+              << current->data << "\n";
    }
 
 

@@ -3398,7 +3398,7 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, Ambertoppar *amb
 
 void Molecule::read_parm(Ambertoppar *amber_data)
 {
-  int i,j,nbonh,ntheth,nphih,current_index,a1,a2,
+  int i,j,ntheth,nphih,current_index,a1,a2,
       max,min,index,found;
 
   if (!amber_data->data_read)
@@ -3441,36 +3441,48 @@ void Molecule::read_parm(Ambertoppar *amber_data)
 // note that NAMD indexes arrays from 0 to NumAtoms-1.
 
   // Copy bond information
-  numBonds = amber_data->Nbonh + amber_data->Nbona;
-  if (numBonds > 0)
-  { nbonh = amber_data->Nbonh;
-    bonds = new Bond[numBonds];
-    if (bonds == NULL || numBonds < nbonh)
+  // Fake bonds (bonds with 0 force constant) are ignored
+  Real k, x0;
+  numBonds = 0;
+  if (amber_data->Nbonh + amber_data->Nbona > 0)
+  { bonds = new Bond[amber_data->Nbonh + amber_data->Nbona];
+    if (bonds == NULL || amber_data->Nbona < 0)
       NAMD_die("memory allocation failed when reading bond information");
     // Bonds WITH hydrogen
-    for (i=0; i<nbonh; ++i)
-    { bonds[i].atom1 = amber_data->BondHAt1[i] / 3;
-      bonds[i].atom2 = amber_data->BondHAt2[i] / 3;
-      bonds[i].bond_type = amber_data->BondHNum[i] - 1;
-      if (bonds[i].atom1>=numAtoms || bonds[i].atom2>=numAtoms ||
-          bonds[i].bond_type>=amber_data->Numbnd)
+    for (i=0; i<amber_data->Nbonh; ++i)
+    { bonds[numBonds].atom1 = amber_data->BondHAt1[i] / 3;
+      bonds[numBonds].atom2 = amber_data->BondHAt2[i] / 3;
+      bonds[numBonds].bond_type = amber_data->BondHNum[i] - 1;
+      if (bonds[numBonds].atom1>=numAtoms || bonds[numBonds].atom2>=numAtoms ||
+          bonds[numBonds].bond_type>=amber_data->Numbnd)
       { char err_msg[128];
         sprintf(err_msg, "BOND (WITH H) # %d OVERFLOW IN PARM FILE", i+1);
         NAMD_die(err_msg);
       }
+      params->get_bond_params(&k,&x0,bonds[numBonds].bond_type);
+      if ( k != 0. ) ++numBonds;  // real bond
     }
     // Bonds WITHOUT hydrogen
-    for (i=nbonh; i<numBonds; ++i)
-    { bonds[i].atom1 = amber_data->BondAt1[i-nbonh] / 3;
-      bonds[i].atom2 = amber_data->BondAt2[i-nbonh] / 3;
-      bonds[i].bond_type = amber_data->BondNum[i-nbonh] - 1;
+    for (i=amber_data->Nbonh; i<amber_data->Nbonh+amber_data->Nbona; ++i)
+    { bonds[numBonds].atom1 = amber_data->BondAt1[i-amber_data->Nbonh] / 3;
+      bonds[numBonds].atom2 = amber_data->BondAt2[i-amber_data->Nbonh] / 3;
+      bonds[numBonds].bond_type = amber_data->BondNum[i-amber_data->Nbonh] - 1;
       if (bonds[i].atom1>=numAtoms || bonds[i].atom2>=numAtoms ||
           bonds[i].bond_type>=amber_data->Numbnd)
       { char err_msg[128];
-        sprintf(err_msg, "BOND (WITHOUT H) # %d OVERFLOW IN PARM FILE", i+1-nbonh);
+        sprintf(err_msg, "BOND (WITHOUT H) # %d OVERFLOW IN PARM FILE", i+1-amber_data->Nbonh);
         NAMD_die(err_msg);
       }
+      params->get_bond_params(&k,&x0,bonds[numBonds].bond_type);
+      if ( k != 0. ) ++numBonds;  // real bond
     }
+  }
+  /*  Tell user about our subterfuge  */
+  if ( numBonds !=  amber_data->Nbonh + amber_data->Nbona) {
+    iout << iWARN << "Ignored " << amber_data->Nbonh + amber_data->Nbona - numBonds <<
+            " bonds with zero force constants.\n" << endi;
+    iout << iWARN <<
+	"Will get H-H distance in rigid H2O from H-O-H angle.\n" << endi;
   }
 
   // Copy angle information

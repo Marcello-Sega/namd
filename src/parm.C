@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "common.h"
+#include "InfoStream.h"
 #include "parm.h"
 
 extern int 	errno;
@@ -147,7 +148,8 @@ int Ambertoppar::readparm(char *name)
 	{ printf("Duplicate parm data in one object!\n");
 	  return(0);}
 
-	printf("Reading parm file (%s)\n", name);
+//	printf("Reading parm file (%s)\n", name);
+	iout << "Reading parm file (" << name << ") ...\n" << endi;
 
 //	if ((file = genopen(name, "parm")) == NULL) 
 	if ((file = genopen(name)) == NULL)
