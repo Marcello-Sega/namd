@@ -21,7 +21,7 @@ and the electrostatic force is still computed at every timestep
 for interactions within the specified distance.  
 However, the \NAMD\ integration uses multiple time stepping to 
 compute electrostatic force interactions beyond this distance 
-every \verb!stepspercycle! timesteps.}
+every {\tt stepspercycle} timesteps.}
 
 \item
 \XNCOMP{vdwswitchdist}{CTONNB}
@@ -42,32 +42,32 @@ every \verb!stepspercycle! timesteps.}
 {Both parameters specify which atom pairs 
 to exclude from non-bonded interactions.  
 The ability to ignore explicit exclusions is {\it not} present within \NAMD, 
-thus only positive values of \verb!NBXMod! have \NAMD\ equivalents.  
+thus only positive values of {\tt NBXMod} have \NAMD\ equivalents.  
 These equivalences are
 \begin{itemize}
 \item
-\verb!NBXMod=1! is equivalent to \verb!exclude=none! 
+{\tt NBXMod=1} is equivalent to {\tt exclude=none} 
 --- no atom pairs excluded, 
 \item
-\verb!NBXMod=2! is equivalent to \verb!exclude=1-2! 
+{\tt NBXMod=2} is equivalent to {\tt exclude=1-2} 
 --- only 1-2 pairs excluded, 
 \item
-\verb!NBXMod=3! is equivalent to \verb!exclude=1-3! 
+{\tt NBXMod=3} is equivalent to {\tt exclude=1-3} 
 --- 1-2 and 1-3 pairs excluded, 
 \item
-\verb!NBXMod=4! is equivalent to \verb!exclude=1-4! 
+{\tt NBXMod=4} is equivalent to {\tt exclude=1-4} 
 --- 1-2, 1-3, and 1-4 pairs excluded, 
 \item
-\verb!NBXMod!=5 is equivalent to \verb!exclude=scaled1-4! 
+{\tt NBXMod}=5 is equivalent to {\tt exclude=scaled1-4} 
 --- 1-2 and 1-3 pairs excluded, 1-4 pairs modified. 
 \end{itemize}}
 
 \item
 \XNCOMP{switching}{SHIFt, VSWItch, and TRUNcation}
-{Activating the \NAMD\ option \verb!switching! is equivalent 
-to using the X-PLOR options \verb!SHIFt! and \verb!VSWItch!.  
-Deactivating \verb!switching! is equivalent 
-to using the X-PLOR option \verb!TRUNcation!.}
+{Activating the \NAMD\ option {\tt switching} is equivalent 
+to using the X-PLOR options {\tt SHIFt} and {\tt VSWItch}.  
+Deactivating {\tt switching} is equivalent 
+to using the X-PLOR option {\tt TRUNcation}.}
 
 \item
 \XNCOMP{temperature}{FIRSttemp}

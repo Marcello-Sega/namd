@@ -33,7 +33,7 @@ being input or output from \NAMD.
 This is the standard format for coordinate data
 for most other molecular dynamics programs as well, including X-PLOR and CHARMM.
 A full description of this file format can be obtained via anonymous FTP from
-\verb!ftp.pdb.bnl.gov! in \verb!/pub/format.desc.ps.Z! or \verb!/pub/format.desc.txt!.
+{\tt ftp.pdb.bnl.gov} in {\tt /pub/format.desc.ps.Z} or {\tt /pub/format.desc.txt}.
 
 \subsubsection{X-PLOR format PSF files}
 
@@ -98,11 +98,11 @@ lines such as:
 
 \bigskip
 
-\verb!parameters param1!
+{\tt parameters param1}
 
-\verb!parameters param2!
+{\tt parameters param2}
 
-\verb!parameters param3!
+{\tt parameters param3}
 
 \bigskip
 
@@ -115,7 +115,7 @@ can be important in cases where duplicate values appear in
 separate files.}
 
 \item
-\NAMDCONFWDEF{paraTypeXplor}{Is the parameter file in X-PLOR format?}{\verb!on! or \verb!off!}{\verb!on!}
+\NAMDCONFWDEF{paraTypeXplor}{Is the parameter file in X-PLOR format?}{{\tt on} or {\tt off}}{{\tt on}}
 {Specifies whether or not the parameter file(s) are in X-PLOR format.
  X-PLOR format is the default for parameter files!
  Caveat: The PSF file should be also constructed with X-PLOR in
@@ -124,7 +124,7 @@ separate files.}
  manual for details.}
 
 \item
-\NAMDCONFWDEF{paraTypeCharmm}{Is the parameter file in CHARMM format?}{\verb!on! or \verb!off!}{\verb!off!}
+\NAMDCONFWDEF{paraTypeCharmm}{Is the parameter file in CHARMM format?}{{\tt on} or {\tt off}}{{\tt off}}
 {Specifies whether or not the parameter file(s) are in CHARMM format.
  X-PLOR format is the default for parameter files!
  Caveat: The information about multiplicity of dihedrals will be
@@ -140,8 +140,8 @@ The PDB file containing the initial velocities for all
 atoms in the simulation.  
 This is typically a restart file or final velocity file written 
 by \NAMD\ during a previous simulation.  
-Either the \verb!temperature! 
-or the \verb!velocities!/\verb!binvelocities! 
+Either the {\tt temperature} 
+or the {\tt velocities}/{\tt binvelocities} 
 option must be defined to determine an initial set of velocities.  
 Both options cannot be used together.}
 
@@ -151,11 +151,11 @@ Both options cannot be used together.}
 The binary file containing initial velocities for all 
 atoms in the simulation.  
 A binary velocity file is created as output from \NAMD\ 
-by activating the \verb!binaryrestart! option.  
-The \verb!binvelocities! option should be used as 
-an alternative to \verb!velocities!.  
-Either the \verb!temperature! 
-or the \verb!velocities!/\verb!binvelocities! 
+by activating the {\tt binaryrestart} option.  
+The {\tt binvelocities} option should be used as 
+an alternative to {\tt velocities}.  
+Either the {\tt temperature} 
+or the {\tt velocities}/{\tt binvelocities} 
 option must be defined to determine an initial set of velocities.  
 Both options cannot be used together.  
 }
@@ -166,11 +166,11 @@ Both options cannot be used together.
 The binary restart file containing initial position 
 coordinate data.  
 A binary coordinate restart file is created as output from \NAMD\ 
-by activating the \verb!binaryrestart! option.  
+by activating the {\tt binaryrestart} option.  
 Note that, in the current implementation at least, 
-the \verb!bincoordinates! option must be used in addition 
-to the \verb!coordinates! option, 
-but the positions specified by \verb!coordinates! will then be ignored.  
+the {\tt bincoordinates} option must be used in addition 
+to the {\tt coordinates} option, 
+but the positions specified by {\tt coordinates} will then be ignored.  
 }
 
 \item
@@ -178,10 +178,10 @@ but the positions specified by \verb!coordinates! will then be ignored.
 {The default directory for input and output files.  
 If a value is given, all filenames that 
 do not begin with a / are assumed to be in this directory.  
-For example, if \verb!cwd! is set to \verb!/scr!, then a
-filename of \verb!outfile! would be modified to \verb!/scr/outfile!
-while a filename of \verb!/tmp/outfile! would remain unchanged.
-If no value for \verb!cwd! is specified, than all filenames are 
+For example, if {\tt cwd} is set to {\tt /scr}, then a
+filename of {\tt outfile} would be modified to {\tt /scr/outfile}
+while a filename of {\tt /tmp/outfile} would remain unchanged.
+If no value for {\tt cwd} is specified, than all filenames are 
 left unchanged {\em but are assumed to be relative to the directory
 which contains the configuration file given on the command line}.}
 
@@ -199,13 +199,13 @@ containing the final coordinates and another containing
 the final velocities of all atoms in the simulation.  
 This option specifies the file prefix for these two files.  
 The position coordinates will be saved to a file named as this prefix 
-with \verb!.coor! appended.  
+with {\tt .coor} appended.  
 The velocities will be saved to a file 
-named as this prefix with \verb!.vel! appended.  
+named as this prefix with {\tt .vel} appended.  
 For example, 
-if the prefix specified using this option was \verb!/tmp/output!, 
+if the prefix specified using this option was {\tt /tmp/output}, 
 then the two files 
-would be \verb!/tmp/output.coor! and \verb!/tmp/output.vel!.}
+would be {\tt /tmp/output.coor} and {\tt /tmp/output.vel}.}
 
 \item
 \NAMDCONF{restartname}{restart files}{UNIX filename prefix}
@@ -215,27 +215,27 @@ The prefix to use for restart filenames.
 that store the current positions and velocities of all 
 atoms at some step of the simulation.  
 This option specifies the prefix to use for restart 
-files in the same way that \verb!outputname! 
+files in the same way that {\tt outputname} 
 specifies a filename prefix for the final
 positions and velocities.  
-If \verb!restartname! is defined then
-the parameter \verb!restartfreq! must also be defined.}
+If {\tt restartname} is defined then
+the parameter {\tt restartfreq} must also be defined.}
 
 \item
 \NAMDCONF{restartfreq}{frequency of restart file generation}{positive integer}
 {
 The number of timesteps between the generation of restart files.  
-If \verb!restartfreq! is defined, then \verb!restartname! 
+If {\tt restartfreq} is defined, then {\tt restartname} 
 must also be defined.}
 
 \item
 \NAMDCONFWDEF{binaryrestart}{use binary restart files?}%
-{\verb!yes! or \verb!no!}{\verb!yes!}%
+{{\tt yes} or {\tt no}}{{\tt yes}}%
 {%
 Activates the use of binary restart files.  
 %%  Should binary files be used rather than PDB files for 
 %%  restart coordinate and velocity files?  
-If this option is set to \verb!yes!, then the restart 
+If this option is set to {\tt yes}, then the restart 
 files and final output files 
 will be written in binary rather than PDB format.  
 Binary files preserve more accuracy between \NAMD\ restarts 
@@ -250,7 +250,7 @@ between computer architectures.
 The binary DCD position coordinate trajectory filename.  
 This file stores the trajectory of all atom position coordinates 
 using the same format (binary DCD) as X-PLOR.  
-If \verb!DCDfile! is defined, then \verb!DCDfreq! must also be defined.  
+If {\tt DCDfile} is defined, then {\tt DCDfreq} must also be defined.  
 }
 
 \item
@@ -268,7 +268,7 @@ to the trajectory file.
 The binary DCD velocity trajectory filename.  
 This file stores the trajectory of 
 all atom velocities using the same format (binary DCD) as X-PLOR.  
-If \verb!velDCDfile! is defined, then \verb!velDCDfreq! must also 
+If {\tt velDCDfile} is defined, then {\tt velDCDfreq} must also 
 be defined.  
 }
 
@@ -290,8 +290,8 @@ velocities to the trajectory file.
 %trajectory filename prefix.  
 %The short and long range electrostatic force trajectories 
 %will be respectively stored in files with 
-%\verb!.s! and \verb!.l! appended to this prefix.  
-%If \verb!electForceDCDfile! is defined, then \verb!electForceDCDfreq! 
+%{\tt .s} and {\tt .l} appended to this prefix.  
+%If {\tt electForceDCDfile} is defined, then {\tt electForceDCDfreq} 
 %must also be defined.  
 %}
 %
@@ -310,8 +310,8 @@ velocities to the trajectory file.
 %The binary DCD total force trajectory filename.  
 %This file stores the trajectory of the total forces 
 %on each atom.  
-%If \verb!allForceDCDfile! is defined, then 
-%\verb!allForceDCDfreq! must also be defined.  
+%If {\tt allForceDCDfile} is defined, then 
+%{\tt allForceDCDfreq} must also be defined.  
 %}
 %
 %\item

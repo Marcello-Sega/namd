@@ -10,10 +10,10 @@ the following may be needed:
 \item
 Because \NAMD\ depends on CHARMM or X-PLOR for providing input files, 
 it is recommended that the user get and install CHARMM or X-PLOR.  
-%See \verb!<URL>! for instructions.  
+%See {\tt <URL>} for instructions.  
 \item
 The companion \MDSCOPE\ visualization program \VMD\ is not required.  
-If desired, see \verb!http://www.ks.uiuc.edu/vmd! for instructions.  
+If desired, see {\tt http://www.ks.uiuc.edu/vmd} for instructions.  
 \item
 The initial structure of the molecular system is needed in the 
 form of a PDB file.  
@@ -88,10 +88,10 @@ keyword {
 The specification of the keywords is case insensitive 
 so that any combination of 
 upper and lower case letters will have the same meaning.  
-Hence, \verb!DCDfile! and \verb!dcdfile! 
+Hence, {\tt DCDfile} and {\tt dcdfile} 
 are equivalent.  The capitalization in the values, however, may be important.
 Some values indicate file names, in which capitalization is critical.  
-Other values such as \verb!on! or \verb!off! are case insensitive.
+Other values such as {\tt on} or {\tt off} are case insensitive.
 
 \subsubsection{Required \NAMD\ configuration parameters}
 \label{section:configparams}
@@ -102,34 +102,34 @@ The following parameters are {\em required} for every
 \begin{itemize}
 
 \item
-\verb!numsteps! (page \pageref{param:numsteps}),
+{\tt numsteps} (page \pageref{param:numsteps}),
 
 \item
-\verb!coordinates! (page \pageref{param:coordinates}),
+{\tt coordinates} (page \pageref{param:coordinates}),
 
 \item
-\verb!structure! (page \pageref{param:structure}),
+{\tt structure} (page \pageref{param:structure}),
 
 \item
-\verb!parameters! (page \pageref{param:parameters}),
+{\tt parameters} (page \pageref{param:parameters}),
 
 \item
-\verb!exclude! (page \pageref{param:exclude}), 
+{\tt exclude} (page \pageref{param:exclude}), 
 
 \item
-\verb!outputname! (page \pageref{param:outputname}), 
+{\tt outputname} (page \pageref{param:outputname}), 
 
 \item
 one of the following three:
 \begin{itemize}
 \item
-\verb!temperature! (page \pageref{param:temperature}),
+{\tt temperature} (page \pageref{param:temperature}),
 
 \item
-\verb!velocities! (page \pageref{param:velocities}),
+{\tt velocities} (page \pageref{param:velocities}),
 
 \item
-\verb!binvelocities! (page \pageref{param:binvelocities}).
+{\tt binvelocities} (page \pageref{param:binvelocities}).
 \end{itemize}
 
 \end{itemize}
@@ -139,13 +139,13 @@ the simulation.  %  that is to be performed.
 In addition, it is highly recommended that 
 \begin{itemize}
 \item
-\verb!pairlistdist! be specified with a 
+{\tt pairlistdist} be specified with a 
 value at least one greater than the maximum of 
-\verb!cutoff!, \verb!vdwcutoff!, and \verb!eleccutoff!, 
+{\tt cutoff}, {\tt vdwcutoff}, and {\tt eleccutoff}, 
 \item 
-\verb!stepspercycle! be chosen so that the product of 
-\verb!stepspercycle! and \verb!timestep! does not exceed 
-$4.0$ unless \verb!rigidBonds all! is specified, 
+{\tt stepspercycle} be chosen so that the product of 
+{\tt stepspercycle} and {\tt timestep} does not exceed 
+$4.0$ unless {\tt rigidBonds all} is specified, 
 in which case the upper limit is perhaps doubled.  
 \end{itemize}
 

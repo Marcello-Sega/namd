@@ -15,14 +15,14 @@ parameters.
 The simplest non-bonded 
 interaction is the van der Waals interaction.  In 
 \NAMD, van der Waals interactions are always truncated at the 
-cutoff distance, specified by \verb!vdwcutoff! or \verb!cutoff!.  
+cutoff distance, specified by {\tt vdwcutoff} or {\tt cutoff}.  
 The main option that effects van der Waals interactions
-is the \verb!switching! parameter.  With this option set to \verb!on!,
+is the {\tt switching} parameter.  With this option set to {\tt on},
 a smooth switching function will be used to truncate the
 van der Waals potential energy smoothly at the cutoff distance.  
 A graph of the van der Waals 
 potential with this switching function is shown in Figure 
-\ref{fig:switching}.  If \verb!switching! is set to \verb!off!, the 
+\ref{fig:switching}.  If {\tt switching} is set to {\tt off}, the 
 van der Waals energy is just abruptly truncated at the cutoff 
 distance, so that energy may not be conserved.  
 
@@ -39,11 +39,11 @@ distance, so that energy may not be conserved.
 
 The details of the switching function are given in the \PG.
 The switching function used is based on the X-PLOR switching
-function.  The parameter \verb!switchdist! specifies the distance
+function.  The parameter {\tt switchdist} specifies the distance
 at which the switching function should start taking effect to
 bring the van der Waals potential to 0 smoothly at the cutoff distance.  
-Thus, the value of \verb!switchdist! must always be less than that 
-of \verb!cutoff!.
+Thus, the value of {\tt switchdist} must always be less than that 
+of {\tt cutoff}.
 
 
 \subsubsection{Non-bonded electrostatic interactions}
@@ -56,7 +56,7 @@ are truncated at a given distance.
 First let us consider the latter case, where electrostatics are truncated at
 the cutoff distance.  Using this scheme, all electrostatic interactions
 beyond a specified distance are ignored, or assumed to be zero.  If
-\verb!switching! is set to \verb!on!, rather than having a discontinuity
+{\tt switching} is set to {\tt on}, rather than having a discontinuity
 in the potential
 at the cutoff distance, a shifting function is applied to the electrostatic
 potential as shown in Figure \ref{fig:shifting}.  As this figure shows, the
@@ -75,7 +75,7 @@ shifting function used by X-PLOR.
 
 Next, consider the case where full electrostatics are calculated.  In this
 case, the electrostatic interactions are not truncated at any distance.  In
-this scheme, the \verb!cutoff! parameter has a slightly different meaning
+this scheme, the {\tt cutoff} parameter has a slightly different meaning
 for the electrostatic interactions --- it represents
 the {\it local interaction distance\/}, or distance within which electrostatic
 pairs will be directly calculated every timestep.  Outside of this distance,
@@ -95,7 +95,7 @@ Section \ref{section:fmadesc}.
 
 \subsubsection{Nonbonded interaction distance-testing}
 The last critical parameter for non-bonded
-interaction calculations is the parameter \verb!pairlistdist!.  To reduce the
+interaction calculations is the parameter {\tt pairlistdist}.  To reduce the
 cost of performing the non-bonded interactions, \NAMD\ 1.X used a {\it non-bonded
 pair list} which contained all pairs of atoms for which
 non-bonded interactions
@@ -127,20 +127,20 @@ and the pair list will not be rebuilt for another five timesteps, this pair
 will be ignored for five timesteps causing energy not to be conserved 
 within the system.  
 \prettypar
-To avoid this problem, the parameter \verb!pairlistdist! allowed the user
-to specify a distance greater than the \verb!cutoff! distance for pairs
+To avoid this problem, the parameter {\tt pairlistdist} allowed the user
+to specify a distance greater than the {\tt cutoff} distance for pairs
 to be included in the pair list, as shown in Figure \ref{fig:pairlistdist}.
 Pairs that are included in the pair list but are outside the cutoff distance
-are simply ignored.  So in the above example, if the \verb!pairlistdist!
+are simply ignored.  So in the above example, if the {\tt pairlistdist}
 were set to $10.0$ \AA, then 
 the atom pair A and B would be included in the pair list, even though
 the pair would initially be ignored because they are further apart than
 the cutoff distance.  As the pair moved closer and entered the cutoff
 distance, because the pair was already in the pair list, the non-bonded
 interactions would immediately be calculated and energy conservation
-would be preserved.  The value of \verb!pairlistdist! should be chosen
+would be preserved.  The value of {\tt pairlistdist} should be chosen
 such that no atom pair moves more than 
-$\mbox{\verb!pairlistdist!}-\mbox{\verb!cutoff!}$ 
+$\mbox{{\tt pairlistdist}}-\mbox{{\tt cutoff}}$ 
 in one cycle.  This will insure energy conservation.
 
 \begin{figure}[htb]
@@ -156,12 +156,12 @@ in one cycle.  This will insure energy conservation.
 
 NAMD 2.X eliminated the explicit use of pairlists in order to reduce memory usage in light of equally efficient distance-testing algorithms.
 Specifically, it was realized that building a pairlist on top of the existing spatial decomposition was only marginally more efficient than actually testing atom distances at every timestep given efficient methods for dealing with nonbonded exclusions.
-The \verb!pairlistdist! parameter now serves the same function, but is instead used to determine the minimum patch size.
-Unless the \verb!splitPatch! parameter is explicitly set to \verb!position!, hydrogen atoms will be placed on the same patch as the ``mother atom'' to which they are bonded.
-These {\em hydrogen groups} are then distance tested against each other using only a cutoff increased by the the value of the \verb!hgroupCutoff! parameter.
+The {\tt pairlistdist} parameter now serves the same function, but is instead used to determine the minimum patch size.
+Unless the {\tt splitPatch} parameter is explicitly set to {\tt position}, hydrogen atoms will be placed on the same patch as the ``mother atom'' to which they are bonded.
+These {\em hydrogen groups} are then distance tested against each other using only a cutoff increased by the the value of the {\tt hgroupCutoff} parameter.
 The size of the patches is also increased by this amount.
-\NAMD\ functions correctly even if a hydrogen atom and its mother atom are separated by more than half of \verb!hgroupCutoff! by breaking that group into its individual atoms for distance testing.
-Warning messages are printed if an atom moves outside of a safe zone surrounding the patch to which it is assigned, indicating that \verb!pairlistdist! should be increased in order for forces to be calculated correctly and energy to be conserved.
+\NAMD\ functions correctly even if a hydrogen atom and its mother atom are separated by more than half of {\tt hgroupCutoff} by breaking that group into its individual atoms for distance testing.
+Warning messages are printed if an atom moves outside of a safe zone surrounding the patch to which it is assigned, indicating that {\tt pairlistdist} should be increased in order for forces to be calculated correctly and energy to be conserved.
 
 \subsection{Full electrostatic integration}
 \label{section:fmadesc}
@@ -178,7 +178,7 @@ Since the long range forces are slowly varying, they are not evaluated
 every timestep.  Instead, they are evaluated every $k$ timesteps, and
 each set of $k$ timesteps is referred to as a $cycle$.
 The value of $k$ is specified by the \NAMD\ parameter
-\verb!stepspercycle!.  
+{\tt stepspercycle}.  
 An impulse of $k$ times the long range force is applied to the system
 every $k$ timesteps (i.e., the r-RESPA integrator is used).
 For appropriate values of $k$,
@@ -216,7 +216,7 @@ ${\mathcal O}(N)$ time as well.
 The number of simulation timesteps to be performed.  
 An integer greater than 0 is acceptable.  
 The total amount of simulation 
-time is $\mbox{\verb!numsteps!} \times \mbox{\verb!timestep!}$.}
+time is $\mbox{{\tt numsteps}} \times \mbox{{\tt timestep}}$.}
 
 \item
 \NAMDCONFWDEF{timestep}{timestep size (fs)}{non-negative decimal}{1.0}
@@ -235,11 +235,11 @@ number can be specified.}
 {Number of timesteps in each cycle.  Each cycle represents the number 
 of timesteps between pairlist generation and atom reassignment.  
 If full electrostatics are active, it is also the number of timesteps 
-between full electrostatic evaluation unless \verb!fmaFrequency! is
+between full electrostatic evaluation unless {\tt fmaFrequency} is
 also specified.  
-It is recommended that \verb!stepspercycle! (\verb!fmaFrequency!) be chosen so that 
-the product of \verb!stepspercycle! and \verb!timestep! does 
-not exceed $4.0$ unless \verb!rigidBonds all! is specified, 
+It is recommended that {\tt stepspercycle} ({\tt fmaFrequency}) be chosen so that 
+the product of {\tt stepspercycle} and {\tt timestep} does 
+not exceed $4.0$ unless {\tt rigidBonds all} is specified, 
 in which case the upper limit is perhaps doubled.  
 For more details on the 
 use of full electrostatics, see Section \ref{section:fmadesc}.  
@@ -248,8 +248,8 @@ on non-bonded force evaluation and pairlist generation, see
 Section \ref{section:electdesc}.}
 
 \item
-\NAMDCONFWDEF{nonbondedFreq}{timesteps between nonbonded evaluation}{positive integer factor of \verb!fmaFrequency!}{1}
-{This parameter specifies how often short-range nonbonded interactions should be calculated.  Setting \verb!nonbondedFreq! between 1 and \verb!fmaFrequency! allows triple timestepping where, for example, one could evaluate bonded forces every 1 fs, short-range nonbonded forces every 2 fs, and long-range electrostatics every 4 fs.} 
+\NAMDCONFWDEF{nonbondedFreq}{timesteps between nonbonded evaluation}{positive integer factor of {\tt fmaFrequency}}{1}
+{This parameter specifies how often short-range nonbonded interactions should be calculated.  Setting {\tt nonbondedFreq} between 1 and {\tt fmaFrequency} allows triple timestepping where, for example, one could evaluate bonded forces every 1 fs, short-range nonbonded forces every 2 fs, and long-range electrostatics every 4 fs.} 
 
 
 \end{itemize}
@@ -265,8 +265,8 @@ Section \ref{section:electdesc}.}
 %for the DPMTA algorithm.
 %Otherwise, this value specifies the distance at which
 %electrostatic interactions are truncated.
-%If \verb!eleccutoff! is defined, it supersedes \verb!cutoff!.
-%If \verb!eleccutoff! is not defined, then \verb !cutoff! {\em must}
+%If {\tt eleccutoff} is defined, it supersedes {\tt cutoff}.
+%If {\tt eleccutoff} is not defined, then \verb }cutoff} {\em must}
 %be defined.
 %See Section \ref{section:electdesc} for a further discussion
 %of this configuration value.}
@@ -277,8 +277,8 @@ Section \ref{section:electdesc}.}
 %{positive decimal}%
 %{This value specifies the distance at which
 %van der Waals interactions are truncated.
-%If \verb!vdwcutoff! is defined, it supersedes \verb!cutoff!.
-%If \verb!vdwcutoff! is not defined, then \verb !cutoff! {\em must}
+%If {\tt vdwcutoff} is defined, it supersedes {\tt cutoff}.
+%If {\tt vdwcutoff} is not defined, then \verb }cutoff} {\em must}
 %be defined.
 %See Section \ref{section:electdesc} for a further discussion
 %of this configuration value.}
@@ -288,34 +288,34 @@ Section \ref{section:electdesc}.}
 {local interaction distance common to both electrostatic 
 and van der Waals calculations (\AA)}
 {positive decimal}
-{%This value can substitute for either \verb!eleccutoff!
-%or \verb!vdwcutoff! if either of those is undefined.
+{%This value can substitute for either {\tt eleccutoff}
+%or {\tt vdwcutoff} if either of those is undefined.
 See Section \ref{section:electdesc} for more information.}
 
 \item
-\NAMDCONFWDEF{switching}{use switching function?}{\verb!on! or \verb!off!}
-{\verb!off!}
-{If \verb!switching! is
-specified to be \verb!off!, then a truncated cutoff is performed.
-If \verb!switching! is turned \verb!on!, then smoothing functions
+\NAMDCONFWDEF{switching}{use switching function?}{{\tt on} or {\tt off}}
+{{\tt off}}
+{If {\tt switching} is
+specified to be {\tt off}, then a truncated cutoff is performed.
+If {\tt switching} is turned {\tt on}, then smoothing functions
 are applied to both the electrostatics and van der Waals forces.
 For a complete description of the non-bonded force parameters see
-Section \ref{section:electdesc}.  If \verb!switching! is set to
-\verb!on!, then \verb!switchdist! must also be defined.}
+Section \ref{section:electdesc}.  If {\tt switching} is set to
+{\tt on}, then {\tt switchdist} must also be defined.}
 
 %\item
-%\NAMDCONF{elecswitchdist}{distance at which to activate switching function for %electrostatic calculations (\AA)}{positive decimal $\leq$ \verb!eleccutoff!}
+%\NAMDCONF{elecswitchdist}{distance at which to activate switching function for %electrostatic calculations (\AA)}{positive decimal $\leq$ {\tt eleccutoff}}
 %{Distance at which the switching function
 %used to smooth the truncation of
 %electrostatic forces should begin to take effect.  
-%This parameter only has meaning if \verb!switching! is 
-%set to \verb!on!.  
-%The value of \verb!elecswitchdist! must be less than
-%or equal to the value of \verb!eleccutoff!, since the switching function
-%is only applied on the range from \verb!elecswitchdist! to \verb!eleccutoff!.
-%If \verb!elecswitchdist! is defined, it supersedes \verb!switchdist!.
-%If \verb!elecswitchdist! is not defined and \verb!switching! is
-%\verb!on!, then \verb !switchdist! {\em must} be defined.
+%This parameter only has meaning if {\tt switching} is 
+%set to {\tt on}.  
+%The value of {\tt elecswitchdist} must be less than
+%or equal to the value of {\tt eleccutoff}, since the switching function
+%is only applied on the range from {\tt elecswitchdist} to {\tt eleccutoff}.
+%If {\tt elecswitchdist} is defined, it supersedes {\tt switchdist}.
+%If {\tt elecswitchdist} is not defined and {\tt switching} is
+%{\tt on}, then \verb }switchdist} {\em must} be defined.
 %For a complete description of the non-bonded force parameters, see
 %Section \ref{section:electdesc}.
 %}
@@ -324,18 +324,18 @@ Section \ref{section:electdesc}.  If \verb!switching! is set to
 %\NAMDCONF{vdwswitchdist}%
 %{distance at which to activate switching function 
 %for van der Waals calculations (\AA)}%
-%{positive decimal $\leq$ \verb!vdwcutoff!}%
+%{positive decimal $\leq$ {\tt vdwcutoff}}%
 %{Distance at which the switching function
 %used to smooth the truncation of
 %van der Waals forces should begin to take effect.  
-%This parameter only has meaning if \verb!switching! is 
-%set to \verb!on!.  
-%The value of \verb!vdwswitchdist! must be less than
-%or equal to the value of \verb!vdwcutoff!, since the switching function
-%is only applied on the range from \verb!vdwswitchdist! to \verb!vdwcutoff!.
-%If \verb!vdwswitchdist! is defined, it supersedes \verb!switchdist!.
-%If \verb!vdwswitchdist! is not defined and \verb!switching! is
-%\verb!on!, then \verb !switchdist! {\em must} be defined.
+%This parameter only has meaning if {\tt switching} is 
+%set to {\tt on}.  
+%The value of {\tt vdwswitchdist} must be less than
+%or equal to the value of {\tt vdwcutoff}, since the switching function
+%is only applied on the range from {\tt vdwswitchdist} to {\tt vdwcutoff}.
+%If {\tt vdwswitchdist} is defined, it supersedes {\tt switchdist}.
+%If {\tt vdwswitchdist} is not defined and {\tt switching} is
+%{\tt on}, then \verb }switchdist} {\em must} be defined.
 %For a complete description of the non-bonded force parameters, see
 %Section \ref{section:electdesc}.
 %}
@@ -344,49 +344,49 @@ Section \ref{section:electdesc}.  If \verb!switching! is set to
 \NAMDCONF{switchdist}
 {distance at which to activate switching function 
 for electrostatic and van der Waals calculations (\AA)}
-{positive decimal $\leq$ \verb!cutoff!}
+{positive decimal $\leq$ {\tt cutoff}}
 {Distance at which the switching function
 should begin to take effect.  
-This parameter only has meaning if \verb!switching! is 
-set to \verb!on!.  
-The value of \verb!switchdist! must be less than
-or equal to the value of \verb!cutoff!, since the switching function
-is only applied on the range from \verb!switchdist! to \verb!cutoff!.  
+This parameter only has meaning if {\tt switching} is 
+set to {\tt on}.  
+The value of {\tt switchdist} must be less than
+or equal to the value of {\tt cutoff}, since the switching function
+is only applied on the range from {\tt switchdist} to {\tt cutoff}.  
 For a complete description of the non-bonded force parameters see
 Section \ref{section:electdesc}.}
 
 \item
 \NAMDCONFWDEF{pairlistdist}
 {distance between pairs for inclusion in pair lists (\AA)}
-{positive decimal $\geq$ \verb!cutoff!}
-{\verb!cutoff!}
+{positive decimal $\geq$ {\tt cutoff}}
+{{\tt cutoff}}
 {
 A pair list is generated each cycle, 
 containing pairs of atoms for which 
 electrostatics and van der Waals interactions will be calculated.
-This parameter is used when \verb!switching! is set to \verb!on! to
+This parameter is used when {\tt switching} is set to {\tt on} to
 specify the allowable distance between atoms for inclusion in the
 pair list.  
-This parameter is equivalent to the X-PLOR parameter \verb!CUTNb!.
-If no atom moves more than \verb!pairlistdist!$-$\verb!cutoff! during
+This parameter is equivalent to the X-PLOR parameter {\tt CUTNb}.
+If no atom moves more than {\tt pairlistdist}$-${\tt cutoff} during
 one cycle, then there will be no jump in electrostatic or van der
 Waals energies when the next pair list is built.  Since such a jump
 is unavoidable when truncation is used, this parameter may only
-be specified when \verb!switching! is set to \verb!on!.  If this
-parameter is not specified and \verb!switching! is set to \verb!on!,
-the value of \verb!cutoff! is used.  
+be specified when {\tt switching} is set to {\tt on}.  If this
+parameter is not specified and {\tt switching} is set to {\tt on},
+the value of {\tt cutoff} is used.  
 A value of at least one greater than the maximum of 
-\verb!eleccutoff!, \verb!vdwcutoff!, and \verb!cutoff! 
+{\tt eleccutoff}, {\tt vdwcutoff}, and {\tt cutoff} 
 is recommended.  
 }
 
 \item
 \NAMDCONFWDEF{splitPatch}
 {how to assign atoms to patches}
-{\verb!position! or \verb!hydrogen!}
-{\verb!hydrogen!}
+{{\tt position} or {\tt hydrogen}}
+{{\tt hydrogen}}
 {
-When set to \verb!hydrogen!, hydrogen atoms are kept on the same patch as their parents, allowing faster distance checking and rigid bonds.
+When set to {\tt hydrogen}, hydrogen atoms are kept on the same patch as their parents, allowing faster distance checking and rigid bonds.
 }
 
 \item
@@ -410,11 +410,11 @@ possible performance, just leave this value at the default.}
 
 %\item
 %\NAMDCONFWDEF{plMarginCheck}%
-%{perform pairlist margin check?}{\verb!yes! or \verb!no!}{\verb!no!}%
+%{perform pairlist margin check?}{{\tt yes} or {\tt no}}{{\tt no}}%
 %{\label{param:margincheck}
 %If this parameter is activated, a check will be performed during 
 %each timestep to detect atoms that may have violated the margin 
-%between the \verb!pairlistdist! and \verb!cutoff! distances.  
+%between the {\tt pairlistdist} and {\tt cutoff} distances.  
 %Such violations will be output by \NAMD.}
 
 \end{itemize}
@@ -425,26 +425,26 @@ possible performance, just leave this value at the default.}
 \item
 \NAMDCONF{exclude}
 {exclusion policy to use}
-{\verb!none!, \verb!1-2!, \verb!1-3!, \verb!1-4!, or \verb!scaled1-4!}
+{{\tt none}, {\tt 1-2}, {\tt 1-3}, {\tt 1-4}, or {\tt scaled1-4}}
 {\label{param:exclude}
 %% This parameter is {\it required\/} for every simulation.
 This parameter specifies which pairs of bonded atoms should
 be excluded from non-bonded
-interactions.  With the value of \verb!none!, no bonded pairs of atoms 
-will be excluded.  With the value of \verb!1-2!, all atom pairs that
+interactions.  With the value of {\tt none}, no bonded pairs of atoms 
+will be excluded.  With the value of {\tt 1-2}, all atom pairs that
 are directly connected via a linear bond will be excluded.  With the
-value of \verb!1-3!, all \verb!1-2! pairs will be excluded along with
+value of {\tt 1-3}, all {\tt 1-2} pairs will be excluded along with
 all pairs of atoms that are bonded to a common
 third atom (i.e., if atom A is bonded to atom B and atom B is bonded
 to atom C, then the atom pair A-C would be excluded).
-With the value of \verb!1-4!, all \verb!1-3! pairs will be excluded along
+With the value of {\tt 1-4}, all {\tt 1-3} pairs will be excluded along
 with all pairs connected by a set of two bonds (i.e., if atom A is bonded
 to atom B, and atom B is bonded to atom C, and atom C is bonded to
 atom D, then the atom pair A-D would be excluded).  With the value
-of \verb!scaled1-4!, all \verb!1-3! pairs are excluded and all pairs
-that match the \verb!1-4! criteria are modified.  The electrostatic
+of {\tt scaled1-4}, all {\tt 1-3} pairs are excluded and all pairs
+that match the {\tt 1-4} criteria are modified.  The electrostatic
 interactions for such pairs are modified by the constant factor
-defined by \verb!1-4scaling!.  
+defined by {\tt 1-4scaling}.  
 The van der Waals interactions are modified
 by using the special 1-4 parameters defined in the parameter files.}
 
@@ -456,18 +456,18 @@ Using this option will generate a random
 velocity distribution for the initial velocities 
 for all the atoms such that the system 
 is at the desired temperature.  
-Either the \verb!temperature! 
-or the \verb!velocities!/\verb!binvelocities!
+Either the {\tt temperature} 
+or the {\tt velocities}/{\tt binvelocities}
 option must be defined to determine an initial set of velocities.  
 Both options cannot be used together.}
 
 \item
 \NAMDCONFWDEF{COMmotion}{allow center of mass motion?}
-{\verb!yes! or \verb!no!}{\verb!no!}
+{{\tt yes} or {\tt no}}{{\tt no}}
 {
 Specifies whether or not motion of 
 the center of mass of the entire system is allowed.  
-If this option is set to \verb!no!, the initial velocities of the system 
+If this option is set to {\tt no}, the initial velocities of the system 
 will be adjusted to remove center of mass motion of the system.
 Note that this does not preclude later center-of-mass motion due to 
 external forces such as random noise in Langevin dynamics, boundary
@@ -484,10 +484,10 @@ electrostatic forces acting in the system.}
 \NAMDCONFWDEF{1-4scaling}{scaling factor for 1-4 interactions}
 {0 $\leq$ decimal $\leq$ 1}{1.0}
 {Scaling factor for 1-4 interactions.  This factor is only used when the
-\verb!exclude! parameter is set to \verb!scaled1-4!.  In this case, this
+{\tt exclude} parameter is set to {\tt scaled1-4}.  In this case, this
 factor is used to modify the electrostatic interactions between 1-4 atom
-pairs.  If the \verb!exclude! parameter is set to anything but 
-\verb!scaled1-4!, this parameter has no effect regardless of its value.}
+pairs.  If the {\tt exclude} parameter is set to anything but 
+{\tt scaled1-4}, this parameter has no effect regardless of its value.}
 
 \item
 \NAMDCONFWDEF{seed}{random number seed}{positive integer}
@@ -505,13 +505,13 @@ even using the same seed will {\it not} guarantee reproducible results.
 }
 
 \item
-\NAMDCONFWDEF{rigidBonds}{controls if and how ShakeH is used}{\verb!none!,
-\verb!water!, \verb!all!}{\verb!none!} 
+\NAMDCONFWDEF{rigidBonds}{controls if and how ShakeH is used}{{\tt none},
+{\tt water}, {\tt all}}{{\tt none}} 
 {When {\tt rigidBonds} is {\tt all}, the bond between each hydrogen
 and its mother atom is fixed to the nominal bond length given in the
 parameter file.  When {\tt water} is selected, only the bonds between
 the hydrogens and the oxygen in water molecules are constrained.  
-For the default case \verb!none!, no lengths are constrained.
+For the default case {\tt none}, no lengths are constrained.
 }
 
 \item
@@ -547,49 +547,49 @@ For a further description of how exactly full electrostatics
 are incorporated into \NAMD, see Section \ref{section:fmadesc}.
 For a greater level of detail about DPMTA and the specific
 meaning of its options, see the DPMTA distribution which is
-available via anonymous FTP from the site \verb!ftp.ee.duke.edu!
-in the directory \verb!/pub/SciComp/src!.
+available via anonymous FTP from the site {\tt ftp.ee.duke.edu}
+in the directory {\tt /pub/SciComp/src}.
 
 \begin{itemize}
 
 \item
-\NAMDCONFWDEF{FMA}{use full electrostatics?}{\verb!on! or \verb!off!}{\verb!off!}
+\NAMDCONFWDEF{FMA}{use full electrostatics?}{{\tt on} or {\tt off}}{{\tt off}}
 {Specifies whether or not 
 the DPMTA algorithm from Duke University should be used 
 to compute the full electrostatic interactions.  If set to 
-\verb!on!, DPMTA will be used with a multiple timestep integration scheme 
+{\tt on}, DPMTA will be used with a multiple timestep integration scheme 
 to provide full electrostatic interactions as detailed in Section 
 \ref{section:fmadesc}.  Because of the way this feature is currently 
 implemented, PVM must be running for DPMTA to function, even if \NAMD\ 
 is running only on one processor.}
 
 \item
-\NAMDCONFWDEF{FMAFrequency}{number of timesteps between DPMTA calculations}{positive integer factor of \verb!stepspercycle!}{\verb!stepspercycle!}
+\NAMDCONFWDEF{FMAFrequency}{number of timesteps between DPMTA calculations}{positive integer factor of {\tt stepspercycle}}{{\tt stepspercycle}}
 {This parameter specifies the number of timesteps between each invocation of the DPMTA algorithm.}
 
 \item
 \NAMDCONFWDEF{FMALevels}{number of levels to use in multipole expansion}{positive integer}{5}
 {Number of levels to use for the multipole expansion.  This parameter
-is only used if \verb!FMA! is set to \verb!on!.  
+is only used if {\tt FMA} is set to {\tt on}.  
 A value of 4 should be sufficient for systems with less than 10,000 atoms.  
 A value of 5 or greater should be used for larger systems. }
 
 \item
 \NAMDCONFWDEF{FMAMp}{number of multipole terms to use for FMA}{positive integer}{8}
 {Number of terms to use in the multipole expansion.  
-This parameter is only used if \verb!FMA! is set to \verb!on!.  
-If the \verb!FMAFFT! is set to \verb!on!, then this value must 
+This parameter is only used if {\tt FMA} is set to {\tt on}.  
+If the {\tt FMAFFT} is set to {\tt on}, then this value must 
 be a multiple of 4.  The default value of 8 should be suitable
 for most applications.}
 
 \item
-\NAMDCONFWDEF{FMAFFT}{use DPMTA FFT enhancement?}{\verb!on! or \verb!off!}{\verb!on!}
+\NAMDCONFWDEF{FMAFFT}{use DPMTA FFT enhancement?}{{\tt on} or {\tt off}}{{\tt on}}
 {Specifies whether or not the DPMTA code should use the FFT enhancement 
-feature.  This parameter is only used if \verb!FMA! is set to \verb!on!.  
-If \verb!FMAFFT! is set to \verb!on!, the value of \verb!FMAMp! must be 
+feature.  This parameter is only used if {\tt FMA} is set to {\tt on}.  
+If {\tt FMAFFT} is set to {\tt on}, the value of {\tt FMAMp} must be 
 set to a multiple of 4.  
 This feature offers substantial benefits only for values 
-of \verb!FMAMp! of 8 or greater.  This feature will substantially 
+of {\tt FMAMp} of 8 or greater.  This feature will substantially 
 increase the amount of memory used by DPMTA.}
 
 %%  REMOVE THIS AS A DOCUMENTED FEATURE.  WE USE stepspercycle INSTEAD.  
@@ -608,8 +608,8 @@ recommendations by the developers of the code.}
 \item
 \NAMDCONFWDEF{FMAFFTBlock}{blocking factor for FMA FFT}{positive integer}{4}
 {The blocking factor for the FFT enhancement to DPMTA.
-This parameter is only used if both \verb!FMA! and \verb!FMAFFT! 
-are set to \verb!on!.  The default value of 4 should be suitable
+This parameter is only used if both {\tt FMA} and {\tt FMAFFT} 
+are set to {\tt on}.  The default value of 4 should be suitable
 for most applications.}
 
 \end{itemize}
@@ -623,7 +623,7 @@ None of the parameters should affect energy conservation, although they may affe
 \begin{itemize}
 
 \item
-\NAMDCONFWDEF{PME}{Use particle mesh Ewald for electrostatics?}{\verb!yes! or \verb!no!}{\verb!no!}
+\NAMDCONFWDEF{PME}{Use particle mesh Ewald for electrostatics?}{{\tt yes} or {\tt no}}{{\tt no}}
 {Turns on DPME.}
 
 \item
@@ -637,17 +637,17 @@ None of the parameters should affect energy conservation, although they may affe
 \item
 \NAMDCONF{PMEGridSizeX}{PME grid in x dimension}{positive integer}
 {The grid size partially determines the accuracy and efficiency of DPME.
-For speed, \verb!PMEGridSizeX! should have only small integer factors (2, 3 and 5).}
+For speed, {\tt PMEGridSizeX} should have only small integer factors (2, 3 and 5).}
 
 \item
 \NAMDCONF{PMEGridSizeY}{PME grid in y dimension}{positive integer}
 {The grid size partially determines the accuracy and efficiency of DPME.
-For speed, \verb!PMEGridSizeY! should have only small integer factors (2, 3 and 5).}
+For speed, {\tt PMEGridSizeY} should have only small integer factors (2, 3 and 5).}
 
 \item
 \NAMDCONF{PMEGridSizeZ}{PME grid in z dimension}{positive integer}
 {The grid size partially determines the accuracy and efficiency of DPME.
-For speed, \verb!PMEGridSizeZ! should have only small integer factors (2, 3 and 5).}
+For speed, {\tt PMEGridSizeZ} should have only small integer factors (2, 3 and 5).}
 
 \end{itemize}
 
@@ -668,7 +668,7 @@ full Ewald sum.
 \begin{itemize}
 
 \item
-\NAMDCONFWDEF{FullDirect}{calculate full electrostatics directly?}{\verb!yes! or \verb!no!}{\verb!no!}
+\NAMDCONFWDEF{FullDirect}{calculate full electrostatics directly?}{{\tt yes} or {\tt no}}{{\tt no}}
 {Specifies whether or not direct computation of 
 full electrostatics should be performed.}
 
@@ -686,16 +686,16 @@ in the \PG\ is used.
 \begin{itemize}
 
 \item
-\NAMDCONFWDEF{MTSAlgorithm}{MTS algorithm to be used}{\verb!verletI!}{\verb!naive!}
+\NAMDCONFWDEF{MTSAlgorithm}{MTS algorithm to be used}{{\tt verletI}}{{\tt naive}}
 {Specifies the multiple timestep algorithm used to integrate the 
-long and short range forces.  \verb!verletI! is the same as r-RESPA.}
+long and short range forces.  {\tt verletI} is the same as r-RESPA.}
 
 \item
-\NAMDCONFWDEF{longSplitting}{how should long and short range forces be split?}{\verb!xplor!, \verb!c1!}{\verb!sharp!}
+\NAMDCONFWDEF{longSplitting}{how should long and short range forces be split?}{{\tt xplor}, {\tt c1}}{{\tt sharp}}
 {Specifies the method used to split electrostatic forces between long 
 and short range potentials.  
-The \verb!xplor! option uses the X-PLOR shifting function, 
-and the \verb!c1! splitting uses 
+The {\tt xplor} option uses the X-PLOR shifting function, 
+and the {\tt c1} splitting uses 
 the following $C^1$ continuous shifting 
 function \mycite{Humphreys \ETAL}{HUMP94}:  
 \begin{list}{}{}
@@ -714,9 +714,9 @@ where
 \begin{list}{}{}
 \item
 $R_{\mathit on}$ is a constant defined using the configuration value 
-\verb!switchdist! 
+{\tt switchdist} 
 \item
-$R_{\mathit off}$ is specified using the configuration value \verb!cutoff!
+$R_{\mathit off}$ is specified using the configuration value {\tt cutoff}
 \end{list}
 
 \end{itemize}
