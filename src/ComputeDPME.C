@@ -20,7 +20,7 @@
 #include "ReductionMgr.h"
 #include "ComputeMgr.h"
 #include "ComputeMgr.top.h"
-#define DEBUGM
+// #define DEBUGM
 #define MIN_DEBUG_LEVEL 3
 #include "Debug.h"
 
@@ -363,12 +363,15 @@ void ComputeDPME::recvResults(ComputeDPMEResultsMsg *msg)
  *
  *	$RCSfile: ComputeDPME.C,v $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1998/06/18 14:48:00 $
+ *	$Revision: 1.5 $	$Date: 1998/09/14 21:45:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPME.C,v $
+ * Revision 1.5  1998/09/14 21:45:25  jim
+ * Turned off DPME and load balancer verbose output.
+ *
  * Revision 1.4  1998/06/18 14:48:00  jim
  * Split virial into NORMAL, NBOND, and SLOW parts to match force classes.
  *

@@ -374,11 +374,13 @@ void LdbCoordinator::nodeDone(LdbResumeMsg *msg)
 void LdbCoordinator::sendStats(LdbResumeMsg *inMsg)
 {
   delete inMsg;
+/* REMOVE VERBOSE OUTPUT
   if(CMyPe()==0)
   {
     CPrintf("WallClock : %f  CPUTime : %f \n", CmiWallTimer()-Namd::cmiWallStart, 
 	    CmiCpuTimer()-Namd::cmiCpuStart);
   }
+*/
   // Turn off idle-time calculation
 #ifndef NO_IDLE_COMPUTATION
   CsdStopNotifyIdle();
@@ -417,6 +419,7 @@ void LdbCoordinator::sendStats(LdbResumeMsg *inMsg)
   msg->proc = Node::Object()->myid();
   msg->procLoad = totalTime - idleTime;
 
+/*  REMOVE VERBOSE OUTPUT
   iout << iINFO << iPE << " Last " << nLdbSteps 
        << " steps: processor time = " << totalTime 
        << "  time per step = " << totalTime/nLdbSteps 
@@ -425,6 +428,7 @@ void LdbCoordinator::sendStats(LdbResumeMsg *inMsg)
   CPrintf("[%d] Processor idle time (this ldb cycle)=%5.1f%%\n",
 	  msg->proc,100.*idleTime/totalTime);
 #endif
+*/
 
   int i;
   msg->nPatches = 0;
@@ -500,11 +504,13 @@ void LdbCoordinator::processStatistics(void)
   {
     if (ldbCycleNum == 1)
     {
-      CPrintf("Cycle %d Performing Alg7\n",ldbCycleNum);
+      iout << iINFO << "Load balance cycle " << ldbCycleNum
+	<< " using Alg7\n" << endi;
       rebalancer = new Alg7(computeArray,patchArray,processorArray,
 			    nMoveableComputes, numPatches, numProcessors);
     } else {
-      CPrintf("Cycle %d Performing RefineOnly\n",ldbCycleNum);
+      iout << iINFO << "Load balance cycle " << ldbCycleNum
+	<< " using RefineOnly\n" << endi;
       rebalancer = new RefineOnly(computeArray,patchArray,processorArray,
 				  nMoveableComputes, numPatches,
 				  numProcessors);
@@ -660,7 +666,9 @@ int LdbCoordinator::buildData(void)
       computeArray[nMoveableComputes].load = msg->computeTime[j];
       nMoveableComputes++;
     }
+/* REMOVE VERBOSE OUTPUT
     CPrintf("PE %d nComputes = %d\n",msg->proc,j);
+*/
     
   }
   return nMoveableComputes;

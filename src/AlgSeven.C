@@ -178,7 +178,7 @@ void Alg7::strategy()
     }
   }
 
-//#ifdef DEBUG
+#ifdef DEBUG
   iout << iINFO
        << "numAssigned = " << numAssigned
        << "\nnumAssigned1 = " << numAssigned1
@@ -188,7 +188,7 @@ void Alg7::strategy()
        << "\nnumAssignedP0 = " << numAssignedP0
        << "\nnumAssignedP4 = " << numAssignedP4
        << "\n" << endi;
-//#endif
+#endif
 
 //
 
