@@ -849,19 +849,19 @@ void Controller::compareChecksums(int step) {
     }
 
     checksum = reduction->item(REDUCTION_BOND_CHECKSUM);
-    if ( ((int)checksum) != molecule->numCalcBonds )
+    if ( checksum && (((int)checksum) != molecule->numCalcBonds) )
       NAMD_bug("Bad global bond count!\n");
 
     checksum = reduction->item(REDUCTION_ANGLE_CHECKSUM);
-    if ( ((int)checksum) != molecule->numCalcAngles )
+    if ( checksum && (((int)checksum) != molecule->numCalcAngles) )
       NAMD_bug("Bad global angle count!\n");
 
     checksum = reduction->item(REDUCTION_DIHEDRAL_CHECKSUM);
-    if ( ((int)checksum) != molecule->numCalcDihedrals )
+    if ( checksum && (((int)checksum) != molecule->numCalcDihedrals) )
       NAMD_bug("Bad global dihedral count!\n");
 
     checksum = reduction->item(REDUCTION_IMPROPER_CHECKSUM);
-    if ( ((int)checksum) != molecule->numCalcImpropers )
+    if ( checksum && (((int)checksum) != molecule->numCalcImpropers) )
       NAMD_bug("Bad global improper count!\n");
 
     checksum = reduction->item(REDUCTION_EXCLUSION_CHECKSUM);

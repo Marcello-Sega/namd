@@ -719,14 +719,19 @@ void WorkDistrib::mapComputes(void)
     mapComputeHomePatches(computeExtType);
 
   mapComputeNonbonded();
-  mapComputeHomePatches(computeBondsType);
-  mapComputeHomePatches(computeAnglesType);
-  mapComputeHomePatches(computeDihedralsType);
-  mapComputeHomePatches(computeImpropersType);
-  mapComputePatch(computeSelfBondsType);
-  mapComputePatch(computeSelfAnglesType);
-  mapComputePatch(computeSelfDihedralsType);
-  mapComputePatch(computeSelfImpropersType);
+
+  // pair interaction calculations aren't implemented for
+  // bonded interactions, so don't compute them.
+  if ( !node->simParameters->pairInteractionOn ) {
+    mapComputeHomePatches(computeBondsType);
+    mapComputeHomePatches(computeAnglesType);
+    mapComputeHomePatches(computeDihedralsType);
+    mapComputeHomePatches(computeImpropersType);
+    mapComputePatch(computeSelfBondsType);
+    mapComputePatch(computeSelfAnglesType);
+    mapComputePatch(computeSelfDihedralsType);
+    mapComputePatch(computeSelfImpropersType);
+  }
 
   if ( node->simParameters->eFieldOn )
     mapComputePatch(computeEFieldType);
