@@ -358,7 +358,7 @@ void ComputeNonbondedUtil :: NAME
 	  modf = 1.0;
 	} else {
           if ( excl_flag == EXCHCK_MOD ) {
-	    lj_pars = lj_row + 2 * mol->atomvdwtype(p_j->id) + 1;
+	    ++lj_pars;
 	    modf = modf_mod;
 	  }
 	}
