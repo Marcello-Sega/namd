@@ -328,7 +328,7 @@ void HomePatch::positionsReady(int doMigration)
 #if CMK_PERSISTENT_COMM
     if (phsReady == 0)
     {
-//CmiPrintf("Build on %d phs0:%d\n", CmiMyPe(), localphs[0]);
+//CmiPrintf("Build on %d phs0:%d\n", CkMyPe(), localphs[0]);
      for (int i=0; i<npid; i++) {
        localphs[i] = CmiCreatePersistent(pids[i], 300000);
      }

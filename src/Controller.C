@@ -119,6 +119,9 @@ void Controller::run(void)
     DebugM(4, "Starting thread in controller on this=" << this << "\n");
     thread = CthCreate((CthVoidFn)&(threadRun),(void*)(this),CTRL_STK_SZ);
     CthSetStrategyDefault(thread);
+#if CMK_BLUEGENE_CHARM
+    BgAttach(thread);
+#endif
     awaken();
 }
 

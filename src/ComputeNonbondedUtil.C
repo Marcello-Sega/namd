@@ -136,7 +136,7 @@ void ComputeNonbondedUtil::submitPressureProfileData(BigReal *data,
   
 void ComputeNonbondedUtil::select(void)
 {
-  if ( CmiMyRank() ) return;
+  if ( CkMyRank() ) return;
 
   SimParameters * simParams = Node::Object()->simParameters;
 
