@@ -51,6 +51,31 @@ public:
   void unpack (void *in);
 };
 
+class MigrateAtomsCombinedMsg : public comm_object
+{
+public:
+  NodeID fromNodeID;
+  ResizeArray<PatchID> srcPatchID;
+  ResizeArray<PatchID> destPatchID;
+  ResizeArray<int> numAtoms;
+  int totalAtoms;
+  MigrationList migrationList;
+
+  MigrateAtomsCombinedMsg(void);
+  ~MigrateAtomsCombinedMsg(void) { };
+
+  void add(PatchID source, PatchID destination, MigrationList *m);
+
+  // Standard new overload for comm_object new
+  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
+  void * operator new(size_t s) { return comm_object::operator new(s); }
+  void * operator new(size_t, void *ptr) { return ptr; }
+
+  // pack and unpack functions
+  void * pack (int *length);
+  void unpack (void *in);
+};
+
 #endif
 
 
@@ -59,12 +84,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1997/03/19 11:54:30 $
+ *	$Revision: 1.5 $	$Date: 1997/04/10 22:29:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: MigrateAtomsMsg.h,v $
+ * Revision 1.5  1997/04/10 22:29:14  jim
+ * First steps towards combining atom migration messages.
+ *
  * Revision 1.4  1997/03/19 11:54:30  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

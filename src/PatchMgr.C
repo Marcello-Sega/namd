@@ -11,7 +11,7 @@
 /*								           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1007 1997/04/10 09:14:03 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1008 1997/04/10 22:29:16 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -146,6 +146,14 @@ void PatchMgr::sendMigrationMsg(PatchID src, MigrationInfo m) {
   CSendMsgBranch(PatchMgr,recvMigrateAtoms,msg,thisgroup,m.destNodeID);
 }
 
+// Called by HomePatch to migrate atoms off to new patches
+// Message combining could occur here
+void PatchMgr::sendMigrationMsgs(PatchID src, MigrationInfo *m, int numMsgs) {
+  for (int i=0; i < numMsgs; i++) {
+    PatchMgr::Object()->sendMigrationMsg(src, m[i]);
+  }
+}
+
 // Receive end of sendMigrateionMsg() above
 void PatchMgr::recvMigrateAtoms (MigrateAtomsMsg *msg) {
   //  msg must be deleted by HomePatch::depositMigrationMsg();
@@ -215,12 +223,15 @@ void MovePatchesMsg::unpack (void *in)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMgr.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/04/10 09:14:03 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1997/04/10 22:29:16 $
  *
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.C,v $
+ * Revision 1.1008  1997/04/10 22:29:16  jim
+ * First steps towards combining atom migration messages.
+ *
  * Revision 1.1007  1997/04/10 09:14:03  ari
  * Final debugging for compute migration / proxy creation for load balancing.
  * Lots of debug code added, mostly turned off now.

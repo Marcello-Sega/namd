@@ -200,7 +200,7 @@ void Controller::printEnergies(int seq)
 
     iout << iINFO
 	 << "CPU time = " << CmiTimer() << " Wall Time = " 
-	 << CmiWallTimer() << endi;
+	 << CmiWallTimer() << "\n" << endi;
 
     iout << ETITLE(seq)
 	 << FORMAT(bondEnergy)
@@ -241,12 +241,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1997/04/10 18:44:33 $
+ *	$Revision: 1.1019 $	$Date: 1997/04/10 22:29:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1019  1997/04/10 22:29:09  jim
+ * First steps towards combining atom migration messages.
+ *
  * Revision 1.1018  1997/04/10 18:44:33  nealk
  * 1. changed endl to endi on Controller.C
  * 2. identified popen() bug under HP-UX 9.  popen() occasionally (1/3 of the

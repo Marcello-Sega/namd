@@ -9,7 +9,7 @@
  *		
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/MigrateAtomsMsg.C,v 1.3 1997/03/06 22:06:04 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/MigrateAtomsMsg.C,v 1.4 1997/04/10 22:29:12 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -87,16 +87,96 @@ void MigrateAtomsMsg::unpack (void *in) {
   // DO NOT delete void *in - this is done by Charm
 }
 
+MigrateAtomsCombinedMsg::MigrateAtomsCombinedMsg(void)
+{
+  fromNodeID = CMyPe();
+  totalAtoms = 0;
+}
+
+void MigrateAtomsCombinedMsg::
+	add(PatchID source, PatchID destination, MigrationList *m)
+{
+  srcPatchID.add(source);
+  destPatchID.add(destination);
+  int n = m->size();
+  numAtoms.add(n);
+  totalAtoms += n;
+  for ( int i = 0; i < n; ++i )
+  {
+    migrationList.add((*m)[i]);
+  }
+  delete m;
+}
+
+
+void * MigrateAtomsCombinedMsg::pack (int *length) {
+  int n = srcPatchID.size();
+  int l = sizeof(NodeID)			// fromNodeID
+	+ sizeof(int)				// totalAtoms
+	+ sizeof(int)				// n
+	+ sizeof(PatchID) * n			// srcPatchID
+	+ sizeof(PatchID) * n			// destPatchID
+	+ sizeof(MigrationElem) * totalAtoms	// migrationList
+  ; *length = l;
+
+  char *buffer;
+  char *b = buffer = (char*)new_packbuffer(this,*length);
+
+  *((NodeID*)b) = fromNodeID;	b += sizeof(NodeID);
+  *((int*)b) = totalAtoms;	b += sizeof(int);
+  *((int*)b) = n;		b += sizeof(int);
+
+  memcpy(b,(void*)&srcPatchID[0], sizeof(PatchID) * n);
+  b += sizeof(PatchID) * n;
+
+  memcpy(b,(void*)&destPatchID[0], sizeof(PatchID) * n);
+  b += sizeof(PatchID) * n;
+
+  memcpy(b,(void*)&migrationList[0], sizeof(MigrationElem) * totalAtoms);
+  b += sizeof(MigrationElem) * totalAtoms;
+
+  this->~MigrateAtomsCombinedMsg();
+  return buffer;
+}
+
+void MigrateAtomsCombinedMsg::unpack (void *in) {
+  new((void*)this) MigrateAtomsCombinedMsg;
+  char *b = (char*)in;
+
+  fromNodeID = *((NodeID*)b);	b += sizeof(NodeID);
+  totalAtoms = *((int*)b);	b += sizeof(int);
+  int n = *((int*)b);		b += sizeof(int);
+
+  srcPatchID.resize(n);
+  memcpy((void*)&srcPatchID[0], b, sizeof(PatchID) * n);
+  b += sizeof(PatchID) * n;
+
+  destPatchID.resize(n);
+  memcpy((void*)&destPatchID[0], b, sizeof(PatchID) * n);
+  b += sizeof(PatchID) * n;
+
+  srcPatchID.resize(totalAtoms);
+  memcpy((void*)&migrationList[0], b, sizeof(MigrationElem) * totalAtoms);
+  b += sizeof(MigrationElem) * totalAtoms;
+
+  // DO NOT delete void *in - this is done by Charm
+}
+
+
+
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: MigrateAtomsMsg.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1997/03/06 22:06:04 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.4 $	$Date: 1997/04/10 22:29:12 $
  *
  * REVISION HISTORY:
  *
  * $Log: MigrateAtomsMsg.C,v $
+ * Revision 1.4  1997/04/10 22:29:12  jim
+ * First steps towards combining atom migration messages.
+ *
  * Revision 1.3  1997/03/06 22:06:04  ari
  * Removed Compute.ci
  * Comments added - more code cleaning

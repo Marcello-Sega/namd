@@ -114,6 +114,7 @@ public:
   } 
 
   void sendMigrationMsg(PatchID, MigrationInfo);
+  void sendMigrationMsgs(PatchID, MigrationInfo*, int);
   void recvMigrateAtoms(MigrateAtomsMsg *);
   static void setGroup(BOCgroup g);
  
@@ -142,13 +143,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMgr.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/06 22:06:09 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/04/10 22:29:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.h,v $
+ * Revision 1.1005  1997/04/10 22:29:17  jim
+ * First steps towards combining atom migration messages.
+ *
  * Revision 1.1004  1997/03/06 22:06:09  ari
  * Removed Compute.ci
  * Comments added - more code cleaning

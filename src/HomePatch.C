@@ -39,7 +39,7 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1028 1997/04/10 09:13:57 ari Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1029 1997/04/10 22:29:11 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
 		     VelocityList vl) : Patch(pd,al,pl), v(vl) 
@@ -366,9 +366,10 @@ HomePatch::doAtomMigration()
   }
   numAtoms = atomIDList.size();
 
-  for (i=0; i < numNeighbors; i++) {
-    PatchMgr::Object()->sendMigrationMsg(patchID, realInfo[i]);
-  }
+  PatchMgr::Object()->sendMigrationMsgs(patchID, realInfo, numNeighbors);
+  // for (i=0; i < numNeighbors; i++) {
+  //   PatchMgr::Object()->sendMigrationMsg(patchID, realInfo[i]);
+  // }
 
   // signal depositMigration() that we are inMigration mode
   inMigration = true;
@@ -450,13 +451,16 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1028 $	$Date: 1997/04/10 09:13:57 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1029 $	$Date: 1997/04/10 22:29:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1029  1997/04/10 22:29:11  jim
+ * First steps towards combining atom migration messages.
+ *
  * Revision 1.1028  1997/04/10 09:13:57  ari
  * Final debugging for compute migration / proxy creation for load balancing.
  * Lots of debug code added, mostly turned off now.
