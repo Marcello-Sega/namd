@@ -172,16 +172,6 @@ void Rebalancer::makeHeaps()
    computesHeap = new maxHeap(numComputes+2);
    for (i=0; i<numComputes; i++)
       computesHeap->insert( (InfoRecord *) &(computes[i]));
-
-   for (i=0; i<P; i++) 
-   {
-      for (j=0; j<numComputes; j++) 
-      {
-         int count = 0;
-         if ( (patches[computes[j].patch1].processor == i) ) count ++;
-         if ( (patches[computes[j].patch2].processor == i) ) count ++;
-      }
-   }
 }
 
 void Rebalancer::assign(computeInfo *c, int processor)
