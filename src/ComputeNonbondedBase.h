@@ -191,20 +191,50 @@ void ComputeNonbondedUtil :: NAME
   const CompAtom *p_0 = params->p[0];
   const CompAtom *p_1 = params->p[1];
 
+  int grouplist_std[1005];
+  int fixglist_std[1005];  // list of non-fixed groups if fixedAtomsOn
+  int *const grouplist = (j_upper < 1000 ? grouplist_std : new int[j_upper+5]);
+  int *const fixglist = (j_upper < 1000 ? fixglist_std : new int[j_upper+5]);
+
+  register int g = 0;
+  for ( j = 0; j < j_upper; ++j ) {
+    if ( p_1[j].hydrogenGroupSize || p_1[j].nonbondedGroupIsAtom ) {
+      grouplist[g++] = j;
+    }
+  }
+  const int g_upper = g;
+  int fixg = 0;
+
   // check for all fixed atoms
   if ( fixedAtomsOn ) {
     register int all_fixed = 1;
-    for ( i = 0; all_fixed && i < i_upper; ++i)
-      all_fixed = p_0[i].atomFixed;
+    for ( g = 0; g < g_upper; ++g ) {
+      j = grouplist[g];
+      if ( ! p_1[j].groupFixed ) {
+        all_fixed = 0;
+        fixglist[fixg++] = j;
+      }
+    }
     PAIR
     (
-    for ( j = 0; all_fixed && j < j_upper; ++j)
-      all_fixed = p_1[j].atomFixed;
+    for ( i = 0; all_fixed && i < i_upper; ++i ) {
+      if ( ! p_0[i].atomFixed ) all_fixed = 0;
+    }
     )
-    if ( all_fixed ) return;
+    if ( all_fixed ) {
+      if (grouplist != grouplist_std) delete [] grouplist;
+      if (fixglist != fixglist_std) delete [] fixglist;
+      return;
+    }
   }
 
-  SELF( int j_hgroup = 0; )
+  const int fixg_upper = fixg;
+
+  SELF(
+  int j_hgroup = 0;
+  int g_lower = 0;
+  int fixg_lower = 0;
+  )
   int pairlistindex=0;
   int pairlistoffset=0;
   int pairlist_std[1005];  // pad 1 + 4 for nonbonded group runover
@@ -277,12 +307,13 @@ void ComputeNonbondedUtil :: NAME
     register const CompAtom *p_j = p_1;
     SELF( p_j += i+1; )
 
-    PAIR( j = 0; )
     SELF
     (
       if ( p_i.hydrogenGroupSize ) {
         // exclude child hydrogens of i
         j_hgroup = i + p_i.hydrogenGroupSize;
+        while ( grouplist[g_lower] < j_hgroup ) ++g_lower;
+        while ( fixglist[fixg_lower] < j_hgroup ) ++fixg_lower;
       }
       // add all child or sister hydrogens of i
       for ( j = i + 1; j < j_hgroup; ++j ) {
@@ -294,42 +325,23 @@ void ComputeNonbondedUtil :: NAME
     // add remaining atoms to pairlist via hydrogen groups
     register int *pli = pairlist + pairlistindex;
 
-    if ( groupfixed ) { // tuned assuming most atoms fixed
-      while ( j < j_upper )
-	{
-	register int hgs = ( p_j->nonbondedGroupIsAtom ? 1 :
-                                                p_j->hydrogenGroupSize );
-	if ( ! (p_j->groupFixed) )
-	{
-	  // use a slightly large cutoff to include hydrogens
-	  if ( square(p_j->position.x-p_i_x,p_j->position.y-p_i_y,p_j->position.z-p_i_z) <= groupcutoff2 ) {
-	    pli[0] = j;   // copy over the next four in any case
-	    pli[1] = j+1;
-	    pli[2] = j+2;
-	    pli[3] = j+3; // assume hgs <= 4
-	    pli += hgs;
-	  }
-	}
-	j += hgs;
-	p_j += hgs;
-	} // for j
-    } else SELF( if ( j < j_upper ) ) { // tuned assuming no fixed atoms
-      register BigReal p_j_x = p_j->position.x;
-      register BigReal p_j_y = p_j->position.y;
-      register BigReal p_j_z = p_j->position.z;
-      while ( j < j_upper ) {
-	register int hgs = ( p_j->nonbondedGroupIsAtom ? 1 :
-                                                p_j->hydrogenGroupSize );
-	p_j += ( ( j + hgs < j_upper ) ? hgs : 0 );
-	register BigReal r2 = p_i_x - p_j_x;
+    {
+      const int *glist = ( groupfixed ? fixglist : grouplist );
+      SELF( const int gl = ( groupfixed ? fixg_lower : g_lower ); )
+      const int gu = ( groupfixed ? fixg_upper : g_upper );
+      for ( g = PAIR(0) SELF(gl) ; g < gu; ++g ) {
+        j = glist[g];
+        BigReal p_j_x = p_1[j].position.x;
+	BigReal r2 = p_i_x - p_j_x;
 	r2 *= r2;
-	p_j_x = p_j->position.x;	// preload
-	register BigReal t2 = p_i_y - p_j_y;
+        BigReal p_j_y = p_1[j].position.y;
+	BigReal t2 = p_i_y - p_j_y;
 	r2 += t2 * t2;
-	p_j_y = p_j->position.y;	// preload
+        BigReal p_j_z = p_1[j].position.z;
 	t2 = p_i_z - p_j_z;
 	r2 += t2 * t2;
-	p_j_z = p_j->position.z;	// preload
+	int hgs = ( p_1[j].nonbondedGroupIsAtom ? 1 :
+                                                p_1[j].hydrogenGroupSize );
 	// use a slightly large cutoff to include hydrogens
 	if ( r2 <= groupcutoff2 ) {
 	  pli[0] = j;   // copy over the next four in any case
@@ -338,8 +350,7 @@ void ComputeNonbondedUtil :: NAME
 	  pli[3] = j+3; // assume hgs <= 4
 	  pli += hgs;
 	}
-	j += hgs;
-      } // for j
+      } // for g
     }
 
     pairlistindex = pli - pairlist;
@@ -374,42 +385,35 @@ void ComputeNonbondedUtil :: NAME
     if ( atomfixed ) {
       for (int k=pairlistoffset; k<pairlistindex; k++) {
         j = pairlist[k];
-        register const CompAtom *p_j = p_1 + j;
-	if ( ! (p_j->atomFixed) ) {
-          register BigReal r2 = square(p_j->position.x-p_i_x,
-			p_j->position.y-p_i_y,p_j->position.z-p_i_z);
-          if ( (r2 <= cutoff2) && ! ((r2 <= r2_delta) && ++exclChecksum) ) {
-            *(pli++) = j;
-          }
+        BigReal p_j_x = p_1[j].position.x;
+	BigReal r2 = p_i_x - p_j_x;
+	r2 *= r2;
+        BigReal p_j_y = p_1[j].position.y;
+	BigReal t2 = p_i_y - p_j_y;
+	r2 += t2 * t2;
+        BigReal p_j_z = p_1[j].position.z;
+	t2 = p_i_z - p_j_z;
+	r2 += t2 * t2;
+	if ( (! p_1[j].atomFixed) &&
+	     (r2 <= cutoff2) && ! ((r2 <= r2_delta) && ++exclChecksum) ) {
+          *(pli++) = j;
         }
       }
     } else {
-      register const CompAtom *p_j = p_1;
-      if ( pairlistoffset < pairlistindex ) p_j += pairlist[pairlistoffset];
-      register BigReal p_j_x = p_j->position.x;
-      register BigReal p_j_y = p_j->position.y;
-      register BigReal p_j_z = p_j->position.z;
-      int j1 = pairlist[pairlistoffset];
-
       for (int k=pairlistoffset; k<pairlistindex; k++) {
-        int j = j1;
-
-        // don't worry about [k+1] going beyond array since array is 1 too large
-        j1 = pairlist[k+1];
-        p_j = p_1 + j1;			// preload
-
-	register BigReal r2 = p_i_x - p_j_x;
+        j = pairlist[k];
+        BigReal p_j_x = p_1[j].position.x;
+	BigReal r2 = p_i_x - p_j_x;
 	r2 *= r2;
-	p_j_x = p_j->position.x;	// preload
-	register BigReal t2 = p_i_y - p_j_y;
+        BigReal p_j_y = p_1[j].position.y;
+	BigReal t2 = p_i_y - p_j_y;
 	r2 += t2 * t2;
-	p_j_y = p_j->position.y;	// preload
+        BigReal p_j_z = p_1[j].position.z;
 	t2 = p_i_z - p_j_z;
 	r2 += t2 * t2;
-	p_j_z = p_j->position.z;	// preload
-
-        *pli = j;
-        if ( (r2 <= cutoff2) && ! ((r2 <= r2_delta) && ++exclChecksum) ) { ++pli; }
+	if ( (r2 <= cutoff2) && ! ((r2 <= r2_delta) && ++exclChecksum) ) {
+          *(pli++) = j;
+        }
       }
     }
     int npair2 = pli - pairlist2;
@@ -654,6 +658,8 @@ void ComputeNonbondedUtil :: NAME
 
     } // for pairlist
   } // for i
+  if (grouplist != grouplist_std) delete [] grouplist;
+  if (fixglist != fixglist_std) delete [] fixglist;
   if (pairlist != pairlist_std) delete [] pairlist;
   if (pairlist2 != pairlist2_std) delete [] pairlist2;
 
