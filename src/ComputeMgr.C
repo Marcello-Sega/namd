@@ -43,6 +43,7 @@
 #include "ComputeStir.h"
 #include "ComputeSphericalBC.h"
 #include "ComputeCylindricalBC.h"
+#include "ComputeTclBC.h"
 #include "ComputeRestraints.h"
 #include "ComputeConsForce.h"
 #include "ComputeConsForceMsgs.h"
@@ -351,6 +352,11 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	break;
       case computeCylindricalBCType:
 	c = new ComputeCylindricalBC(i,map->computeData[i].pids[0].pid); // unknown delete
+	map->registerCompute(i,c);
+	c->initialize();
+	break;
+      case computeTclBCType:
+	c = new ComputeTclBC(i); // unknown delete
 	map->registerCompute(i,c);
 	c->initialize();
 	break;

@@ -10,12 +10,12 @@
 #endif
 #include <errno.h>
 #include "TclCommands.h"
+#include "Vector.h"
+#include "NamdTypes.h"
 
 #ifdef NAMD_TCL
 
 #include <tcl.h>
-#include <Vector.h>
-#include <NamdTypes.h>
 
 #define SIMPLE_TCL_OPT(string,result)       \
 if (!strcmp(argv[1], string)) {             \

@@ -862,6 +862,9 @@ void WorkDistrib::mapComputes(void)
     mapComputePatch(computeSphericalBCType);
   if ( node->simParameters->cylindricalBCOn )
     mapComputePatch(computeCylindricalBCType);
+  if ( node->simParameters->tclBCOn ) {
+    mapComputeHomePatches(computeTclBCType);
+  }
   if ( node->simParameters->constraintsOn )
     mapComputePatch(computeRestraintsType);
   if ( node->simParameters->consForceOn )

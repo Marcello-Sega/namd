@@ -270,6 +270,9 @@ public:
      
 	Bool globalForcesOn;		//  Are global forces present?
 	Bool tclForcesOn;		//  Are Tcl forces present?
+	Bool tclBCOn;			//  Are Tcl boundary forces present
+	char *tclBCScript;		//  Script defining tclBC calcforces
+	char tclBCArgs[128];		//  Extra args for calcforces command
 	Bool freeEnergyOn;		//  Doing free energy perturbation?
 	Bool miscForcesOn;		//  Using misc forces?
 

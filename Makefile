@@ -93,6 +93,7 @@ OBJS = \
 	$(DSTDIR)/ComputeRestraints.o \
 	$(DSTDIR)/ComputeSphericalBC.o \
 	$(DSTDIR)/ComputeStir.o \
+	$(DSTDIR)/ComputeTclBC.o \
 	$(DSTDIR)/ConfigList.o \
 	$(DSTDIR)/Controller.o \
 	$(DSTDIR)/ccsinterface.o \
@@ -496,7 +497,7 @@ depends: $(INCDIR) $(CIFILES) $(DSTDIR) $(DEPENDFILE)
 	      SRCFILE=$(SRCDIR)/`basename $$i .o`.C ; \
 	      $(ECHO) "checking dependencies for $$SRCFILE" ; \
 	      g++ -MM $(GXXFLAGS) $$SRCFILE | \
-	      perl $(SRCDIR)/dc.pl $(CHARMINC) /usr/include /usr/local >> $(DEPENDFILE); \
+	      perl $(SRCDIR)/dc.pl $(CHARMINC) $(TCLDIR) $(FFTDIR) $(PLUGINDIR) /usr/include /usr/local >> $(DEPENDFILE); \
 	      $(ECHO) '	$$(CXX) $$(CXXFLAGS) $$(COPTO)'$$i '$$(COPTC)' \
 		$$SRCFILE >> $(DEPENDFILE) ; \
 	done; \
@@ -504,7 +505,7 @@ depends: $(INCDIR) $(CIFILES) $(DSTDIR) $(DEPENDFILE)
 	      SRCFILE=$(SBSRCDIR)/`basename $$i .o`.c ; \
 	      $(ECHO) "checking dependencies for $$SRCFILE" ; \
 	      gcc -MM $(SBGCCFLAGS) $$SRCFILE | \
-	      perl $(SRCDIR)/dc.pl $(CHARMINC) /usr/include /usr/local >> $(DEPENDFILE); \
+	      perl $(SRCDIR)/dc.pl $(CHARMINC) $(TCLDIR) $(FFTDIR) $(PLUGINDIR) /usr/include /usr/local >> $(DEPENDFILE); \
 	      $(ECHO) '	$$(CC) $$(SBCFLAGS) $$(COPTO)'$$i '$$(COPTC)' \
 		$$SRCFILE >> $(DEPENDFILE) ; \
 	done; \

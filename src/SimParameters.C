@@ -151,6 +151,7 @@ void SimParameters::scriptSet(const char *param, const char *value) {
 				berendsenPressureRelaxationTime)
   SCRIPT_PARSE_FLOAT("constraintScaling",constraintScaling)
   SCRIPT_PARSE_STRING("outputname",outputFilename)
+  SCRIPT_PARSE_STRING("tclBCArgs",tclBCArgs)
   SCRIPT_PARSE_VECTOR("eField",eField)
   SCRIPT_PARSE_VECTOR("stirAxis",stirAxis)
   SCRIPT_PARSE_VECTOR("stirPivot",stirPivot)
@@ -967,6 +968,16 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
      &tclForcesOn, FALSE);
    opts.require("tclForces", "tclForcesScript",
      "Tcl script for global forces", PARSE_MULTIPLES);
+
+   ////  Boundary Forces / Tcl
+   opts.optionalB("main", "tclBC", "Are Tcl boundary forces active?",
+     &tclBCOn, FALSE);
+   opts.require("tclBC", "tclBCScript",
+     "Tcl script defining calcforces for boundary forces", PARSE_STRING);
+   tclBCScript = 0;
+   opts.optional("tclBC", "tclBCArgs", "Extra args for calcforces command",
+     tclBCArgs);
+   tclBCArgs[0] = 0;
 
    ////  Global Forces / Misc
    opts.optionalB("main", "miscForces", "Are misc global forces active?",
@@ -2829,6 +2840,18 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << iINFO << "EXT FORCE FILENAME: " << extForceFilename << "\n";
      iout << endi;
    }
+
+   tclBCScript = 0;
+   if (tclBCOn) {
+     iout << iINFO << "TCL BOUNDARY FORCES ACTIVE\n";
+     current = config->find("tclBCScript");
+     if ( current ) {
+       tclBCScript = current->data;
+       iout << iINFO << "TCL BOUNDARY FORCES SCRIPT   " << current->data << "\n";
+     }
+       iout << iINFO << "TCL BOUNDARY FORCES ARGS     " << tclBCArgs << "\n";
+     iout << endi;
+   }
    
    // Global forces configuration
 
@@ -3538,6 +3561,11 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
     msg->put(fftwlen);
     msg->put(fftwlen,FFTWWisdomString);
   }
+  if ( tclBCScript ) {
+    int tcllen = strlen(tclBCScript) + 1;
+    msg->put(tcllen);
+    msg->put(tcllen,tclBCScript);
+  }
 
   msg->end();
 }
@@ -3564,6 +3592,12 @@ void SimParameters::receive_SimParameters(MIStream *msg)
 #ifdef NAMD_FFTW
     fftw_import_wisdom_from_string(FFTWWisdomString);
 #endif
+  }
+  if ( tclBCScript ) {
+    int tcllen;
+    msg->get(tcllen);
+    tclBCScript = new char[tcllen];
+    msg->get(tcllen,tclBCScript);
   }
 
   delete msg;

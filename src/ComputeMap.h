@@ -40,6 +40,7 @@ enum ComputeType
   computeStirType,
   computeSphericalBCType,
   computeCylindricalBCType,
+  computeTclBCType,
   computeRestraintsType,
   computeConsForceType,
   computeConsTorqueType,
