@@ -831,10 +831,7 @@ void Controller::outputExtendedSystem(int step)
     {
       if ( step == simParams->firstTimestep )
       {
-        char bfname[140];
-        strcpy(bfname, simParams->xstFilename);
-        strcat(bfname, ".BAK");
-        rename(simParams->xstFilename,bfname);
+        NAMD_backup_file(simParams->xstFilename);
         xstFile.open(simParams->xstFilename);
         xstFile << "# NAMD extended system trajectory file" << endl;
         writeExtendedSystemLabels(xstFile);
@@ -856,10 +853,7 @@ void Controller::outputExtendedSystem(int step)
       char fname[140];
       strcpy(fname, simParams->restartFilename);
       strcat(fname, ".xsc");
-      char bfname[140];
-      strcpy(bfname, simParams->restartFilename);
-      strcat(bfname, ".xsc.BAK");
-      rename(fname,bfname);
+      NAMD_backup_file(fname);
       ofstream xscFile(fname);
       iout << "WRITING EXTENDED SYSTEM TO RESTART FILE AT STEP "
 		<< step << "\n" << endi;
@@ -874,10 +868,7 @@ void Controller::outputExtendedSystem(int step)
       static char fname[140];
       strcpy(fname, simParams->outputFilename);
       strcat(fname, ".xsc");
-      char bfname[140];
-      strcpy(bfname, simParams->outputFilename);
-      strcat(bfname, ".xsc.BAK");
-      rename(fname,bfname);
+      NAMD_backup_file(fname);
       ofstream xscFile(fname);
       iout << "WRITING EXTENDED SYSTEM TO OUTPUT FILE AT STEP "
 		<< simParams->N << "\n" << endi;
