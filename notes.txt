@@ -1,6 +1,6 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                      NAMD 2.4b2 Release Notes                      |
+|                       NAMD 2.4 Release Notes                       |
 |                                                                    |
 +--------------------------------------------------------------------+
 
@@ -297,8 +297,8 @@ and FFTW from http://www.fftw.org/ (use --disable-type-prefix) if
 not already available on your machine.  Both are free.
 
 Unpack source code and enter directory:
-  tar xzf NAMD_2.4b2_Source.tar.gz
-  cd NAMD_2.4b2_Source
+  tar xzf NAMD_2.4_Source.tar.gz
+  cd NAMD_2.4_Source
 
 Download and build Charm++/Converse library:
   setenv CVSROOT ":pserver:checkout@charm.cs.uiuc.edu:/cvsroot"

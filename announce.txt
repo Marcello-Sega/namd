@@ -1,10 +1,10 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                  NAMD 2.4b2 Release Announcement                   |
+|                   NAMD 2.4 Release Announcement                    |
 |                                                                    |
 +--------------------------------------------------------------------+
 
-                                                   February 22, 2002
+                                                      March 11, 2002
 
 The Theoretical Biophysics Group at the University of Illinois is
 proud to announce the public release of a new version of NAMD, a
@@ -13,7 +13,7 @@ high-performance simulation of large biomolecular systems.  NAMD is
 distributed free of charge and includes source code.  NAMD development
 is supported by the NIH National Center for Research Resources.
 
-NAMD 2.4b2 has several advantages over NAMD 2.3:
+NAMD 2.4 has several advantages over NAMD 2.3:
 
 - Greatly improved parallel scaling with particle mesh Ewald.
 
@@ -24,12 +24,6 @@ NAMD 2.4b2 has several advantages over NAMD 2.3:
 - GROMACS ASCII topology and coordinate input file compatibility.
 
 NAMD is available from http://www.ks.uiuc.edu/Research/namd/.
-
-"Biomedical Applications of Molecular Dynamics on the TeraGrid", a
-three-day NAMD users workshop co-sponsored by NCSA, will be held
-April 17-19 in Urbana, Ilinois and broadcast on the Access Grid.
-See http://www.ncsa.uiuc.edu/Divisions/eot/training/NAMD/ for more
-information.  The deadline for registration is March 7, 2002.
 
 For your convenience, NAMD has been ported to and will be installed
 on the machines at the NSF-sponsored national supercomputing centers.
