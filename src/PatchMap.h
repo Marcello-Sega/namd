@@ -31,6 +31,7 @@ public:
 
   enum { MaxTwoAway = 5*5*5 - 3*3*3 };
   enum { MaxOneAway = 3*3*3 - 1 };
+  enum { MaxOneOrTwoAway = MaxOneAway + MaxTwoAway };
   enum ErrCode { OK = 0, ERROR = -1 };
 
   static void registerPatchMgr(PatchMgr *pmgr) {
@@ -137,6 +138,8 @@ public:
 
   int twoAwayNeighbors(int pid, PatchID *neighbor_ids);
 
+  int oneOrTwoAwayNeighbors(int pid, PatchID *neighbor_ids);
+
   void printPatchMap(void);
 
   inline Patch *patch(PatchID pid);
@@ -189,12 +192,15 @@ inline Patch *PatchMap::patch(PatchID pid)
  *
  *	$RCSfile: PatchMap.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1996/12/12 08:57:17 $
+ *	$Revision: 1.9 $	$Date: 1996/12/18 21:07:54 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.h,v $
+ * Revision 1.9  1996/12/18 21:07:54  jim
+ * added oneOrTwoAwayNeighbors()
+ *
  * Revision 1.8  1996/12/12 08:57:17  jim
  * added MapDistribMsg packing / unpacking routines
  *

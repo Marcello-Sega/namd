@@ -389,6 +389,14 @@ int PatchMap::twoAwayNeighbors(int pid, PatchID *neighbor_ids)
 }
 
 //----------------------------------------------------------------------
+int PatchMap::oneOrTwoAwayNeighbors(int pid, PatchID *neighbor_ids)
+{
+  int numOneAway = oneAwayNeighbors(pid,neighbor_ids);
+  int numTwoAway = twoAwayNeighbors(pid,neighbor_ids+numOneAway);
+  return numOneAway + numTwoAway;
+}
+
+//----------------------------------------------------------------------
 void PatchMap::printPatchMap(void)
 {
   CPrintf("---------------------------------------");
@@ -438,13 +446,16 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.12 $	$Date: 1996/12/13 22:58:01 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.13 $	$Date: 1996/12/18 21:07:54 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.13  1996/12/18 21:07:54  jim
+ * added oneOrTwoAwayNeighbors()
+ *
  * Revision 1.12  1996/12/13 22:58:01  nealk
  * Found pack/unpack bug and corrected it.  (wrong offset!)
  *
