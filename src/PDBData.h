@@ -27,6 +27,7 @@
 #include <strings.h>
 #endif
 #include "common.h"
+#include <string.h>
 
 class PDBData {  // at the basic level, a PDB record only knows its type
    public:

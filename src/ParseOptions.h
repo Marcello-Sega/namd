@@ -24,10 +24,10 @@ class StringList;
 class ConfigList;
 
 enum Range { FREE_RANGE, POSITIVE, NOT_NEGATIVE , NEGATIVE, NOT_POSITIVE };
-const char *string(Range r); // for printing the range
+// const char *string(Range r); // for printing the range
 enum Units { N_UNIT, N_FSEC, N_NSEC, N_SEC, N_MIN, N_HOUR, N_ANGSTROM, N_NANOMETER, N_METER, 
              N_KCAL, N_KJOULE, N_EV, N_KELVIN, N_UNITS_UNDEFINED};
-const char *string(Units u); // for printing the units
+// const char *string(Units u); // for printing the units
 BigReal convert(Units to, Units from);//return 0 if stupid (like METER to SEC)
 
 #define PARSE_FLOAT (BigReal *) NULL
