@@ -106,17 +106,14 @@ NamdState::configFileInit(char *confFile)
 
   iout << iINFO << "Configuration file is " << confFile << "\n" << endi;
   if (stat(confFile, &statBuf)) {
-    iout << iERRORF << "Configuration File is not accessible." << "\n" << endi;
-    return(1);
+    NAMD_die("Simulation config file is not accessible.");
   }
 
   if ( NULL == confFile || NULL == (configList = new ConfigList(confFile)) ) {
-    iout << iERRORF << "Configuration List is NULL." << "\n" << endi;
-    return(1);
+    NAMD_die("Simulation config file is empty.");
   }
   if (!configList->okay()) {
-    iout << iERRORF << " ConfigList is bad." << "\n" << endi;
-    return(1);
+    NAMD_die("Simulation config file is incomplete or contains errors.");
   }
   DebugM(1,"NamdState::configFileInit configList okay\n");
 

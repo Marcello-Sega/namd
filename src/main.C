@@ -50,7 +50,7 @@ public:
 	namd->startup(argv[argc-1]);
     }
     else {
-       NAMD_die("main::main() no arguments, exiting\n");
+       NAMD_die("No simulation config file specified on command line.");
     }
     DebugM(1, "main() - leaving - Charm should queue up messages now!\n");
   }
