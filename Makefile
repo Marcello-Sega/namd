@@ -68,6 +68,7 @@ OBJS = \
 	$(DSTDIR)/main.o \
 	$(DSTDIR)/strlib.o \
 	$(DSTDIR)/AtomMap.o \
+	$(DSTDIR)/AlgSeven.o \
 	$(DSTDIR)/BroadcastMgr.o \
 	$(DSTDIR)/BroadcastClient.o \
 	$(DSTDIR)/CollectionMaster.o \
