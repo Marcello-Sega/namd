@@ -136,12 +136,23 @@ void Controller::rescaleVelocities(int step)
   }
 }
 
+static char *FORMAT(BigReal X)
+{
+  static char tmp_string[21];
+  sprintf(tmp_string,"%.4f ",X); 
+  NAMD_pad(tmp_string, 12);
+  return  tmp_string;
+}
+
+static char *ETITLE(int X)
+{
+  static char tmp_string[21];
+  sprintf(tmp_string,"ENERGY: %6d ",X); 
+  return  tmp_string;
+}
+
 void Controller::printEnergies(int seq)
 {
-    char tmp_string[21];
-#define ETITLE(X) ( sprintf(tmp_string,"ENERGY: %6d ",X), tmp_string )
-#define FORMAT(X) ( sprintf(tmp_string,"%.4f ",X), NAMD_pad(tmp_string, 12), tmp_string )
-
     Node *node = Node::Object();
     Lattice &lattice = state->lattice;
 
@@ -242,12 +253,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1021 $	$Date: 1997/04/21 00:18:53 $
+ *	$Revision: 1.1022 $	$Date: 1997/08/13 14:52:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1022  1997/08/13 14:52:20  milind
+ * Made two #defines as inlined functions to fix a bug on solaris.
+ *
  * Revision 1.1021  1997/04/21 00:18:53  jim
  * Fixed slowing-down problem caused by failing to require ALT_VIRIAL from
  * reduction system in controller when not printing energies.
