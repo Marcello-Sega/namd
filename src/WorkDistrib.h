@@ -23,6 +23,7 @@
 class Node;
 class InitMsg;
 class MovePatchDoneMsg;
+class LocalWorkMsg;
 
 const double patchSize = 4.;
 
@@ -49,6 +50,7 @@ public:
   void createComputes(void);
 
   void saveMaps(MapDistribMsg *msg);
+  void enqueueWork(LocalWorkMsg *msg); // This is for testing
 
 private:
   Node *node;
@@ -64,13 +66,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1996/10/04 22:23:50 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.9 $	$Date: 1996/10/16 08:22:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.9  1996/10/16 08:22:39  ari
+ * *** empty log message ***
+ *
  * Revision 1.8  1996/10/04 22:23:50  brunner
  * Added createComputes
  *

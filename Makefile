@@ -16,11 +16,11 @@ OBJS = \
 	ConfigList.o Inform.o Parameters.o common.o \
 	strlib.o SimParameters.o ParseOptions.o Namd.o \
 	NamdState.o WorkDistrib.o Node.o PatchMap.o ComputeMap.o \
-	PatchMgr.o Patch.o HomePatch.o Sequencer.o
+	PatchMgr.o Patch.o HomePatch.o Sequencer.o Compute.o
 
 CXXFILES = $(OBJS:.o=.C)
 
-INTERFACES = main.ci Node.ci WorkDistrib.ci PatchMgr.ci
+INTERFACES = main.ci Node.ci WorkDistrib.ci PatchMgr.ci Compute.ci
 
 namd2:	$(OBJS)
 	$(CHARMC) -ld++-option "-I $(INCLUDE)" -g -language charm++ -o namd2 $(OBJS)

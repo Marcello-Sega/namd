@@ -5,7 +5,7 @@
 /*                           All Rights Reserved                           */
 /*                                                                         */
 /***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.6 1996/10/04 22:24:15 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.7 1996/10/16 08:22:39 ari Exp $";
 
 #include <stdio.h>
 
@@ -19,6 +19,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "Node.h"
 #include "WorkDistrib.h"
 #include "PatchMgr.h"
+#include "Patch.h"
+#include "Compute.h"
 //#include "ProxyMgr.h"
 //#include "MessageComm.h"
 //#include "PatchMap.h"
@@ -39,8 +41,13 @@ Node::Node(NodeInitMsg *msg)
   configList = NULL;
   pdb = NULL;
 
-  workDistrib = CLocalBranch(WorkDistrib,msg->workDistribGroup);
-  patchMgr = CLocalBranch(PatchMgr,msg->patchMgrGroup);
+  Patch::setNode(this);
+  Compute::setNode(this);
+
+  workDistribGroup = msg->workDistribGroup;
+  workDistrib = CLocalBranch(WorkDistrib,workDistribGroup);
+  patchMgrGroup = msg->patchMgrGroup;
+  patchMgr = CLocalBranch(PatchMgr,patchMgrGroup);
 }
 
 //----------------------------------------------------------------------
@@ -109,8 +116,8 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/10/04 22:24:15 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.7 $	$Date: 1996/10/16 08:22:39 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -119,6 +126,9 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.7  1996/10/16 08:22:39  ari
+ * *** empty log message ***
+ *
  * Revision 1.6  1996/10/04 22:24:15  brunner
  * Took out call to createPatches.  Maybe this will have to go back in
  *

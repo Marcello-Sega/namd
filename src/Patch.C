@@ -12,20 +12,24 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.3 1996/10/04 21:07:46 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.4 1996/10/16 08:22:39 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
 #include "c++interface.h"
 
 #include "Patch.h"
+#include "PatchMap.h"
 #include "Compute.h"
 
+#include "ComputeMap.h"
+#include "Node.h"
+
 Patch::Patch(PatchID pd, AtomIDList al, PositionList pl) :
-   pPtr(0), fPtr(0),
+   positionPtr(0), forcePtr(0),
    patchID(pd), atomIDList(al), p(pl),
-   pBox(this,&(Patch::pClosed)),
-   fBox(this,&(Patch::fClosed))
+   positionBox(this,&(Patch::positionBoxClosed)),
+   forceBox(this,&(Patch::forceBoxClosed))
 {
     if (atomIDList.size() != p.size())
     {
@@ -45,39 +49,39 @@ Patch::Patch(PatchID pd, AtomIDList al, PositionList pl) :
 
 Box<Patch,Position>* Patch::registerPositionPickup(ComputeID cid)
 {
-   // pList.add(c);
-   return pBox.checkOut();
+   if (positionComputeList.add(cid) < 0) return NULL;
+   return positionBox.checkOut();
 }
 
 void Patch::unregisterPositionPickup(ComputeID cid, Box<Patch,Position> **const box)
 {
-   // pList.del(c);
-   pBox.checkIn(*box);
+   positionComputeList.del(cid);
+   positionBox.checkIn(*box);
    *box = 0;
 }
 
 Box<Patch,Force>* Patch::registerForceDeposit(ComputeID cid)
 {
-   // fList.add(c);
-   return fBox.checkOut();
+   if (forceComputeList.add(cid) < 0) return NULL;
+   return forceBox.checkOut();
 }
 
 void Patch::unregisterForceDeposit(ComputeID cid, Box<Patch,Force> **const box)
 {
-   // fList.del(c);
-   fBox.checkIn(*box);
+   forceComputeList.del(cid);
+   forceBox.checkIn(*box);
    *box = 0;
 }
 
-void Patch::pClosed(void)
+void Patch::positionBoxClosed(void)
 {
-   p.encap(&pPtr,numAtoms);
+   p.encap(&positionPtr,numAtoms);
    this->boxClosed(0);
 }
 
-void Patch::fClosed(void)
+void Patch::forceBoxClosed(void)
 {
-   f.encap(&fPtr,numAtoms);
+   f.encap(&forcePtr,numAtoms);
    this->boxClosed(1);
 }
 
@@ -88,16 +92,19 @@ void Patch::boxClosed(int box)
 
 void Patch::positionsReady()
 {
-   pPtr = p.unencap();
-   pBox.open(pPtr);
+   // Give all position pickup boxes access to positions
+   positionPtr = p.unencap();
+   positionBox.open(positionPtr);
 
-   fPtr = f.unencap();
-   fBox.open(fPtr);
+   // Give all force deposit boxes access to forces
+   forcePtr = f.unencap();
+   forceBox.open(forcePtr);
 
-   ComputeListIter cl(pList);
-   for(cl = cl.begin(); cl != cl.end(); cl++)
+   // Iterate over compute objects that need to be informed we are ready
+   ComputeIDListIter cid(positionComputeList);
+   for(cid = cid.begin(); cid != cid.end(); cid++)
    {
-     (*cl)->patchReady(patchID);
+     (node->computeMap).compute(*cid)->patchReady(patchID);
    } 
 }
 
@@ -106,13 +113,16 @@ void Patch::positionsReady()
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/10/04 21:07:46 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.4 $	$Date: 1996/10/16 08:22:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.4  1996/10/16 08:22:39  ari
+ * *** empty log message ***
+ *
  * Revision 1.3  1996/10/04 21:07:46  jim
  * Moved in functionality from HomePatch
  *

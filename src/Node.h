@@ -39,7 +39,10 @@ public:
   SimParameters *simParameters;
   ConfigList *configList;
   PDB *pdb;
+
+  int workDistribGroup;
   WorkDistrib *workDistrib;
+  int patchMgrGroup;
   PatchMgr *patchMgr;
 
   PatchMap patchMap;
@@ -70,12 +73,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1996/09/03 22:54:25 $
+ *	$Revision: 1.9 $	$Date: 1996/10/16 08:22:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.9  1996/10/16 08:22:39  ari
+ * *** empty log message ***
+ *
  * Revision 1.8  1996/09/03 22:54:25  ari
  * *** empty log message ***
  *

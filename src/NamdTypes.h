@@ -48,6 +48,9 @@ typedef ResizeArrayIter<PatchID> PatchIDListIter;
 typedef ResizeArray<Patch *> PatchList;
 typedef ResizeArrayIter<Patch *> PatchListIter;
 
+typedef UniqueSortedArray<ComputeID> ComputeIDList;
+typedef ResizeArrayIter<ComputeID> ComputeIDListIter;
+
 typedef ResizeArray<Compute *> ComputeList;
 typedef ResizeArrayIter<Compute *> ComputeListIter;
 
@@ -72,13 +75,16 @@ enum Boolean
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdTypes.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/09/10 04:16:28 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.8 $	$Date: 1996/10/16 08:22:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdTypes.h,v $
+ * Revision 1.8  1996/10/16 08:22:39  ari
+ * *** empty log message ***
+ *
  * Revision 1.7  1996/09/10 04:16:28  jim
  * Added iterators for all lists.
  *

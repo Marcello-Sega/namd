@@ -14,120 +14,113 @@
 #ifndef COMPUTE_H
 #define COMPUTE_H
 
+#include "main.h"
 #include "ckdefs.h"
 #include "chare.h"
 #include "c++interface.h"
 
 #include "NamdTypes.h"
 
+#include "Templates/Box.h"
+#include "Templates/OwnerBox.h"
+
 class Patch;
-class LocalWorkMsg;
+class Node;
+class PatchMap;
+
+class PatchDeposit {
+public:
+   PatchID pid;
+   Box<Patch,Force> *box;
+   Patch *p;
+   Force *f;
+
+   PatchDeposit(PatchID p) : pid(p) {};
+   PatchDeposit() : pid(-1) {};
+   ~PatchDeposit() {};
+   int operator== (const PatchDeposit p) const { 
+     return (pid == p.pid);
+   }
+   int operator< (const PatchDeposit p) const {
+     return (pid < p.pid);
+   }
+};
+
+class PatchPickup {
+public:
+   PatchID pid;
+   Box<Patch,Position> *box;
+   Patch *p;
+   Position *x;
+
+   PatchPickup(PatchID p) : pid(p) {};
+   PatchPickup() : pid(-1) {};
+   ~PatchPickup() {};
+
+   int operator== (const PatchPickup p) const { 
+     return (pid == p.pid);
+   }
+   int operator< (const PatchPickup p) const {
+     return (pid < p.pid);
+   }
+};
+
+typedef ResizeArrayIter<PatchDeposit> PatchDepositListIter;
+typedef SortedArray<PatchDeposit> PatchDepositList;
+typedef ResizeArrayIter<PatchPickup> PatchPickupListIter;
+typedef SortedArray<PatchPickup> PatchPickupList;
 
 // Base class for various forms of Compute objects
 // including: <linkto class=ComputeAtoms>ComputeAtoms</linkto> 
 // and <linkto class=ComputePatches>ComputePatches</linkto>
 class Compute {
-   private:
-      int numPatches;
-      int counter;
+private:
+  static Node* node;
+  ComputeID cid;
 
-   protected :
-	  // For use by derived class objects to queue up itself for work
-      void enqueueWork() {}
-	  // Utility which sets up list of home patches to current Node
-	  // and register to the patches.
-      void setupHomePatches() {};
-	  // Utility which sets up list of given patches and 
-	  // registers to the patches.
-      void setupPatches(PatchIDList &) {};
+  int numPatches;
+  int patchReadyCounter;
 
-   public:
-      Compute() {};
-      ~Compute() {};
+  PatchDepositList patchDepositList;
+  PatchPickupList patchPickupList;
 
-	  // Signal from patch or proxy that data is ready.
-	  // When all Patches and Proxies needed by this Compute object
-	  // have checked-in, we are ready to enqueueWork()
-      void patchReady(PatchID) {};
-      void patchReady(void) {};
+protected :
 
-	  // Actual computation, called by work queue, triggered
-	  // by scheduled work msg.
-      void virtual doWork(LocalWorkMsg *msg) {};
+  void enqueueWork();
+  void depositAllForces();
+  void registerForceDeposit(PatchID pid);
+  void unregisterForceDeposit(PatchID pid);
+  void registerPositionPickup(PatchID pid);
+  void unregisterPositionPickup(PatchID pid);
+
+public:
+  Compute(ComputeID c) 
+      : cid(c) {
+  };
+
+  ~Compute();
+
+  static void setNode(Node *n) { node = n; }
+
+  virtual void patchReady(void);
+  virtual void patchReady(PatchID pid) { if (pid > -1) patchReady(); }
+  virtual void doWork();
 };
-
-
-/*
-// Compute object for Atom-wise type forces i.e. Bonded Forces in general.
-// 
-class ComputeAtoms : public Compute
-{
-	// Array of atoms for which we must report forces.
-    AtomArray atom;
-	// Array of patches for which we must report all appropo
-	// bonded-atom type forces.
-    PatchArray patch;
-    void (* mapMethod)();
-    void mapByAtoms();
-    void mapByPatches();
-    void mapByHomePatches();
-    
-    protected:
-	    // Take list of atoms and registers to appropriate patches
-	    // which are not necessarily the same as atoms
-	    // for which forces are computed (generally additional atoms
-	    // are needed for computation of forces)
-	  registerDependency(AtomArray &);
-
-    public:
-	  // void argument constructor implies this object will
-	  // do Atom type computation appropriate atoms in Home Patches.
-       ComputeAtoms();
-	  // Initializes this object to compute appropriate forces
-	  // for the atoms in AtomArray.
-       ComputeAtoms(PatchArray &);
-       ComputeAtoms(AtomArray &);
-       ~ComputeAtoms(); 
-
-	  // Signal to take known atoms and register 
-	  // dependencies to appropriate patches.
-       void mapAtoms();
-	  // work method
-       void virtual doWork(LocalWorkMsg *msg);
-};
-
-
-
-class ComputePatches : public Compute
-{
-    public:
-	 // Default constructor imples do computation for all atoms in
-	 // a given patch.
-       ComputePatches();
-	// do computation over all atoms in 
-       ComputePatches(PatchArray &);
-
-       ~ComputePatches();
-
-	  // work method
-       void virtual doWork(LocalWorkMsg *msg);
-};
-*/
 
 #endif
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: Compute.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/10/04 21:07:06 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.3 $	$Date: 1996/10/16 08:22:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.h,v $
- * Revision 1.2  1996/10/04 21:07:06  jim
- * eliminated redundant message class definition
+ * Revision 1.3  1996/10/16 08:22:39  ari
+ * *** empty log message ***
  *
  * Revision 1.1  1996/08/19 22:07:49  ari
  * Initial revision

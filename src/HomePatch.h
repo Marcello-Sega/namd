@@ -26,7 +26,7 @@ class HomePatch : public Patch {
    friend PatchMgr;
 
    private:
-      PositionList  pBegin;
+      PositionList  pInit;
       VelocityList  v; 
       ForceList     f_short;
       ForceList     f_long;
@@ -90,13 +90,16 @@ class HomePatch : public Patch {
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/10/04 21:14:47 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.5 $	$Date: 1996/10/16 08:22:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.5  1996/10/16 08:22:39  ari
+ * *** empty log message ***
+ *
  * Revision 1.4  1996/10/04 21:14:47  jim
  * Moved functionality to Patch
  *

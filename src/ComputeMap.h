@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/08/16 21:41:11 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.3 $	$Date: 1996/10/16 08:22:39 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -20,6 +20,9 @@
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.h,v $
+ * Revision 1.3  1996/10/16 08:22:39  ari
+ * *** empty log message ***
+ *
  * Revision 1.2  1996/08/16 21:41:11  brunner
  * *** empty log message ***
  *
@@ -39,6 +42,8 @@
 #define COMPUTEMAP_H
 
 #include "NamdTypes.h"
+
+class Compute;
 
 class ComputeMap
 {
@@ -108,6 +113,8 @@ public:
   int newPid(int cid, int pid);
 
   void printComputeMap(void);
+
+  Compute *compute(ComputeID cid) { return (NULL); };
 
 };
 

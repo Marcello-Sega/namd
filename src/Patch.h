@@ -19,8 +19,11 @@
 #include "Templates/Box.h"
 #include "Templates/UniqueSortedArray.h"
 
+class Node;
+
 class Compute;
 class Sequencer;
+class PatchMap;
 
 class LocalAtomID {
 public:
@@ -61,24 +64,28 @@ class Patch
      void positionsReady(void);
 
      // methods for Box callbacks
-     void pClosed(void);
-     void fClosed(void);
+     void positionBoxClosed(void);
+     void forceBoxClosed(void);
+
+     static void setNode(Node * n) { node = n; }
 
   protected:
+     static Node* node;
 
      PatchID       patchID;
      int           numAtoms;
      AtomIDList    atomIDList;
      LocalIndex    localIndex;
      PositionList  p;
-     Position      *pPtr;
-     ForceList     f;
-     Force         *fPtr;
+     Position      *positionPtr;
 
-     OwnerBox<Patch,Position> pBox;
-     ComputeList              pList;
-     OwnerBox<Patch,Force>    fBox;
-     ComputeList              fList;
+     ForceList     f;
+     Force         *forcePtr;
+
+     OwnerBox<Patch,Position> positionBox;
+     ComputeIDList              positionComputeList;
+     OwnerBox<Patch,Force>    forceBox;
+     ComputeIDList              forceComputeList;
 
      virtual void boxClosed(int);
 
@@ -93,13 +100,16 @@ class Patch
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/10/04 21:07:46 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.4 $	$Date: 1996/10/16 08:22:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.h,v $
+ * Revision 1.4  1996/10/16 08:22:39  ari
+ * *** empty log message ***
+ *
  * Revision 1.3  1996/10/04 21:07:46  jim
  * Moved in functionality from HomePatch
  *

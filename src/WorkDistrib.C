@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.11 1996/10/04 22:23:34 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.12 1996/10/16 08:22:39 ari Exp $";
 
 #include <stdio.h>
 
@@ -27,6 +27,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib
 #include "Node.h"
 #include "PatchMap.h"
 #include "ComputeMap.h"
+#include "Compute.h"
 #include "Vector.h"
 #include "NamdTypes.h"
 #include "PDB.h"
@@ -307,19 +308,26 @@ void WorkDistrib::mapElectComputes(void)
   }
 }
 
+void WorkDistrib::enqueueWork(LocalWorkMsg *msg) {
+  msg->compute->doWork();
+}
+
 #include "WorkDistrib.bot.h"
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.11 $	$Date: 1996/10/04 22:23:34 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.12 $	$Date: 1996/10/16 08:22:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.12  1996/10/16 08:22:39  ari
+ * *** empty log message ***
+ *
  * Revision 1.11  1996/10/04 22:23:34  brunner
  * Empty method for createComputes
  *

@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/10/10 17:23:41 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.6 $	$Date: 1996/10/16 08:22:39 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -20,6 +20,9 @@
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.6  1996/10/16 08:22:39  ari
+ * *** empty log message ***
+ *
  * Revision 1.5  1996/10/10 17:23:41  brunner
  * Added patch * in patchmap
  *
@@ -62,6 +65,7 @@
 #include "c++interface.h"
 
 #include "PatchMap.h"
+#include "Patch.h"
 
 PatchMap::PatchMap(void)
 {
