@@ -121,11 +121,29 @@ public:
          << iINFO << "and downloaded the latest version of NAMD available at\n"
          << iINFO << "http://www.ks.uiuc.edu/Research/namd/\n"
          << iINFO << "******************************************************\n"
-         << iINFO << "\n"
 #else
+         << iINFO << "\n"
          << iINFO << "Please visit http://www.ks.uiuc.edu/Research/namd/\n"
          << iINFO << "and send feedback or bug reports to namd@ks.uiuc.edu\n"
 #endif
+<< iINFO << "\n"
+<< iINFO << "The user agrees that any reports or published results obtained with\n"
+<< iINFO << "this software will acknowledge its use by the following citation:\n"
+<< iINFO << "\n"
+<< iINFO << " \"NAMD was developed by the Theoretical Biophysics Group in the\n"
+<< iINFO << "  Beckman Institute for Advanced Science and Technology at the\n"
+<< iINFO << "  University of Illinois at Urbana-Champaign.\"\n"
+<< iINFO << "\n"
+<< iINFO << "Any published work which utilizes NAMD shall reference:\n"
+<< iINFO << "\n"
+<< iINFO << " \"Laxmikant Kale, Robert Skeel, Milind Bhandarkar, Robert Brunner,\n"
+<< iINFO << "  Attila Gursoy, Neal Krawetz, James Phillips, Aritomo Shinozaki,\n"
+<< iINFO << "  Krishnan Varadarajan, and Klaus Schulten.  NAMD2: Greater scalability\n"
+<< iINFO << "  for parallel molecular dynamics.  J. Comp. Phys., 151:283-312, 1999.\"\n"
+<< iINFO << "\n"
+<< iINFO << "Electronic documents will include a direct link to the official\n"
+<< iINFO << "NAMD page http://www.ks.uiuc.edu/Research/namd/\n"
+<< iINFO << "\n"
          << endi;
 
 #ifndef WIN32
