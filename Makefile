@@ -216,6 +216,15 @@ flipdcd:	$(SRCDIR)/flipdcd.c
 flipbinpdb:	$(SRCDIR)/flipbinpdb.c
 	$(CC) -o flipbinpdb $(SRCDIR)/flipbinpdb.c
 
+fixdcd:	$(SRCDIR)/fixdcd.c
+	$(CC) -o fixdcd $(SRCDIR)/fixdcd.c
+
+dumpdcd:	$(SRCDIR)/dumpdcd.c
+	$(CC) -o dumpdcd $(SRCDIR)/dumpdcd.c
+
+loaddcd:	$(SRCDIR)/loaddcd.c
+	$(CC) -o loaddcd $(SRCDIR)/loaddcd.c
+
 # Now sit back, have a coke, and relax.
 
 projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
