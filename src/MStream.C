@@ -62,6 +62,21 @@ MOStream::~MOStream()
     CmiFree(msgBuf);
 }
 
+static int checkSum(StreamMessage *msg)
+{
+  int checksum = 0;
+  for ( int i=0; i < msg->len; i++ ) {
+    checksum += (unsigned char) msg->data[i];
+  }
+  if ( checksum != msg->checksum ) {
+    DebugM(5,"Error on " << tag << ":" << msg->index <<
+          " of length " << msg->len <<
+          " with checksum " << ((int)checksum) <<
+          " vs " << ((int)(msg->checksum)) <<"\n");
+    NAMD_bug("MStream checksums do not agree!");
+  }
+}
+
 MIStream *MIStream::Get(char *buf, int len)
 {
   while(len) {
@@ -81,6 +96,7 @@ MIStream *MIStream::Get(char *buf, int len)
       } else {
         DebugM(1,"Receiving message.\n");
         msg = (StreamMessage *) cobj->getMessage(PE, tag);
+        checkSum(msg);
       }
       while ( msg->index != currentIndex ) {
         if ( msg->index < currentIndex ) {
@@ -104,21 +120,11 @@ MIStream *MIStream::Get(char *buf, int len)
         }
         DebugM(1,"Receiving message again.\n");
         msg = (StreamMessage *) cobj->getMessage(PE, tag);
-      }
+        checkSum(msg);
+      } 
       currentPos = 0;
       currentIndex += 1;
-      checksum = 0;
-      for ( int i=0; i < msg->len; i++ ) {
-        checksum += (unsigned char) msg->data[i];
-      }
-      if ( checksum != msg->checksum ) {
-        DebugM(5,"Error on " << tag << ":" << msg->index <<
-          " of length " << msg->len <<
-          " with checksum " << ((int)checksum) <<
-          " vs " << ((int)(msg->checksum)) <<"\n");
-        NAMD_bug("MStream checksums do not agree!");
-      }
-    }
+    }  // end of if (msg==0)
     if(currentPos+len <= msg->len) {
       memcpy(buf, &(msg->data[currentPos]), len);
       currentPos += len;
