@@ -1,9 +1,18 @@
 NAMD_ARCH = Linux-ia64
 CHARMARCH = net-linux-ia64-ecc
 
+#PROFOPTS = -prof_genx -prof_dir$(HOME)/prof -DCMK_OPTIMIZE=1
+#PROFOPTS = -prof_use -prof_dir$(HOME)/prof -DCMK_OPTIMIZE=1 -g -qp
+#PROFOPTS = -prof_use -prof_dir$(HOME)/prof -DCMK_OPTIMIZE=1
+PROFOPTS = -DCMK_OPTIMIZE=1
+
+FLOATOPTS = -ftz -IPF_fma -IPF_fltacc -IPF_flt_eval_method0 -IPF_fp_speculationfast
+
 CXX = ecpc -D_IA64 -I/usr/local/gnu/include -DSOCKLEN_T=socklen_t
-CXXOPTS = -O2 -DCMK_OPTIMIZE
+CXXOPTS = -O2 $(FLOATOPTS) $(PROFOPTS)
+CXXNOALIASOPTS = -O2 -fno-alias $(FLOATOPTS) $(PROFOPTS) -opt_report \
+	 -opt_report_levelmin -opt_report_routinecalc_
 
 CC = ecc
-COPTS = -O3 
+COPTS = -O2 $(FLOATOPTS)
 
