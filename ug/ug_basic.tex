@@ -388,14 +388,72 @@ this parameter will not change the physical results of the simulation.
 Unless you are very motivated to get the {\it very} best 
 possible performance, just leave this value at the default.}
 
-%\item
-%\NAMDCONFWDEF{plMarginCheck}%
-%{perform pairlist margin check?}{{\tt yes} or {\tt no}}{{\tt no}}%
-%{\label{param:margincheck}
-%If this parameter is activated, a check will be performed during 
-%each timestep to detect atoms that may have violated the margin 
-%between the {\tt pairlistdist} and {\tt cutoff} distances.  
-%Such violations will be output by \NAMD.}
+\item
+\NAMDCONFWDEF{pairlistMinProcs}{min procs for pairlists}
+{positive integer}{1}
+{
+Pairlists may consume a large amount of memory as atom counts, densities,
+and cutoff distances increase.  Since this data is distributed across
+processors it is normally only problematic for small processor counts.
+Set pairlistMinProcs to the smallest number of processors on which
+the simulation can fit into memory when pairlists are used.
+}
+
+\item
+\NAMDCONFWDEF{pairlistsPerCycle}{regenerate x times per cycle}
+{positive integer}{2}
+{
+Rather than only regenerating the pairlist at the beginning of a cycle,
+regenerate multiple times in order to better balance the costs of
+atom migration, pairlist generation, and larger pairlists.
+}
+
+\item
+\NAMDCONFWDEF{outputPairlists}{how often to print warnings}
+{non-negative integer}{0}
+{
+If an atom moves further than the pairlist tolerance during a simulation
+(initially (pairlistdist - cutoff)/2 but refined during the run) any
+pairlists covering that atom are invalidated and temporary pairlists
+are used until the next full pairlist regeneration.  All interactions
+are calculated correctly, but efficiency may be degraded.  Enabling
+outputPairlists will summarize these pairlist violation warnings
+periodically during the run.
+}
+
+\item
+\NAMDCONFWDEF{pairlistShrink}{tol *= (1 - x) on regeneration}
+{non-negative decimal}{0.01}
+{
+In order to maintain validity for the pairlist for an entire cycle,
+the pairlist tolerance (the distance an atom can move without causing
+the pairlist to be invalidated) is adjusted during the simulation.
+Every time pairlists are regenerated the tolerance is reduced by
+this fraction.
+}
+
+\item
+\NAMDCONFWDEF{pairlistGrow}{tol *= (1 + x) on trigger}
+{non-negative decimal}{0.01}
+{
+In order to maintain validity for the pairlist for an entire cycle,
+the pairlist tolerance (the distance an atom can move without causing
+the pairlist to be invalidated) is adjusted during the simulation.
+Every time an atom exceeds a trigger criterion that is some fraction
+of the tolerance distance, the tolerance is increased by this fraction.
+}
+
+\item
+\NAMDCONFWDEF{pairlistTrigger}{trigger is atom beyond (1 - x) * tol}
+{non-negative decimal}{0.3}
+{
+The goal of pairlist tolerance adjustment is to make pairlist invalidations
+rare while keeping the tolerance as small as possible for best performance.
+Rather than monitoring the (very rare) case where atoms actually move more
+than the tolerance distance, we reduce the trigger tolerance by this
+fraction.  The tolerance is increased whenever the trigger tolerance is
+exceeded, as specified by pairlistGrow.
+}
 
 \end{itemize}
 
@@ -496,7 +554,7 @@ For the default case {\tt none}, no lengths are constrained.
 
 \item
 \NAMDCONFWDEF{rigidTolerance}{allowable bond-length error for ShakeH (\AA)}
-{positive decimal}{0.00001}
+{positive decimal}{1.0e-8}
 {
 The ShakeH algorithm is assumed to have converged when all constrained
 bonds differ from the nominal bond length by less than this amount.
@@ -512,6 +570,22 @@ final value achieved by ShakeH.
 Although the default value is 100, 
 convergence is usually reached after fewer than 10 iterations.
 }
+
+\item
+\NAMDCONFWDEF{rigidDieOnError}{maximum ShakeH iterations}{{\tt on} or {\tt off}}
+{{\tt on}}
+{
+Exit and report an error if rigidTolerance is not achieved after rigidIterations.
+}
+
+\item
+\NAMDCONFWDEF{useSettle}{Use SETTLE for waters.}{{\tt on} or {\tt off}}
+{{\tt on}}
+{
+If rigidBonds are enabled then use the non-iterative SETTLE algorithm to
+keep waters rigid rather than the slower SHAKE algorithm.
+}
+
 
 \end{itemize}
 
