@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.9 1996/12/17 22:13:22 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.10 1996/12/17 23:58:02 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -25,7 +25,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.
 #include "ProxyMgr.h"
 #include "AtomMap.h"
 
-#define MIN_DEBUG_LEVEL 3
+#define MIN_DEBUG_LEVEL 4
 #define  DEBUGM
 #include "Debug.h"
 
@@ -63,11 +63,11 @@ void ProxyPatch::receiveData(ProxyDataMsg *msg)
   if ( boxesOpen )
   {
     // store message in queue (only need one element, though)
-    DebugM(4,"Proxy data arrived early, adding to buffer.\n");
+    DebugM(4,"Proxy data arrived early, storing in buffer.\n");
     msgBuffer = msg;
     return;
   }
-  DebugM(3,"Processing proxy data\n");
+  DebugM(3,"Processing proxy data.\n");
   msgBuffer = NULL;
   p = msg->positionList;
   delete msg;
@@ -77,6 +77,7 @@ void ProxyPatch::receiveData(ProxyDataMsg *msg)
 void ProxyPatch::sendResults(void)
 {
   ProxyResultMsg *msg = new (MsgIndex(ProxyResultMsg)) ProxyResultMsg;
+  msg->node = CMyPe();
   msg->patch = patchID;
   msg->forceList = f;
   ProxyMgr::Object()->sendResults(msg);
@@ -87,12 +88,15 @@ void ProxyPatch::sendResults(void)
  *
  *	$RCSfile: ProxyPatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1996/12/17 22:13:22 $
+ *	$Revision: 1.10 $	$Date: 1996/12/17 23:58:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.10  1996/12/17 23:58:02  jim
+ * proxy result reporting is working
+ *
  * Revision 1.9  1996/12/17 22:13:22  jim
  * implemented ProxyDataMsg use
  *

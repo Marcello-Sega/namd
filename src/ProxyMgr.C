@@ -25,6 +25,7 @@
 #include "ComputeMap.h"
 
 #define DEBUGM
+#define MIN_DEBUG_LEVEL 2
 #include "Debug.h"
 
 void * ProxyAtomsMsg:: pack (int *length)
@@ -80,11 +81,12 @@ void ProxyDataMsg:: unpack (void *in)
 void * ProxyResultMsg:: pack (int *length)
   {
     int size = forceList.size();
-    *length = 2 * sizeof(int) + size * sizeof(Force);
+    *length = 4 * sizeof(int) + size * sizeof(Force);
     char *buffer = (char*)new_packbuffer(this,*length);
-    *((int*)buffer) = patch;
-    *((int*)(buffer+sizeof(int))) = size;
-    Force *data = (Force*)(buffer+2*sizeof(int));
+    *((int*)buffer) = node;
+    *((int*)(buffer+sizeof(int))) = patch;
+    *((int*)(buffer+2*sizeof(int))) = size;
+    Force *data = (Force*)(buffer+4*sizeof(int));
     for ( int i = 0; i < size; ++i )
       data[i] = forceList[i];
     this->~ProxyResultMsg();
@@ -94,10 +96,11 @@ void ProxyResultMsg:: unpack (void *in)
   {
     new((void*)this) ProxyResultMsg;
     char *buffer = (char*)in;
-    patch = *((int*)buffer);
-    int size = *((int*)(buffer+sizeof(int)));
+    node = *((int*)buffer);
+    patch = *((int*)(buffer+sizeof(int)));
+    int size = *((int*)(buffer+2*sizeof(int)));
     forceList.resize(size);
-    Force *data = (Force*)(buffer+2*sizeof(int));
+    Force *data = (Force*)(buffer+4*sizeof(int));
     for ( int i = 0; i < size; ++i )
       forceList[i] = data[i];
   }
@@ -208,10 +211,16 @@ ProxyMgr::recvRegisterProxy(RegisterProxyMsg *msg) {
 
 void
 ProxyMgr::sendResults(ProxyResultMsg *msg) {
+  NodeID node = PatchMap::Object()->node(msg->patch);
+  DebugM(1,"For patch " << msg->patch << " sending results from proxy on node " << CMyPe() << " to home patch on node " << node << endl);
+  CSendMsgBranch(ProxyMgr, recvResults, msg, group.proxyMgr, node);
 }
 
 void
 ProxyMgr::recvResults(ProxyResultMsg *msg) {
+  DebugM(1,"For patch " << msg->patch << " received results from proxy on node " << msg->node << endl);
+  HomePatch *home = (HomePatch *) PatchMap::Object()->patch(msg->patch);
+  home->receiveResults(msg);
 }
 
 void
@@ -248,12 +257,15 @@ ProxyMgr::recvProxyAtoms(ProxyAtomsMsg *msg) {
  *
  *	$RCSfile: ProxyMgr.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1996/12/17 17:07:41 $
+ *	$Revision: 1.11 $	$Date: 1996/12/17 23:58:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.11  1996/12/17 23:58:02  jim
+ * proxy result reporting is working
+ *
  * Revision 1.10  1996/12/17 17:07:41  jim
  * moved messages from main to ProxyMgr
  *

@@ -28,6 +28,7 @@
 
 class RegisterProxyMsg;
 class UnregisterProxyMsg;
+class ProxyResultMsg;
 
 class HomePatch : public Patch {
    friend PatchMgr;
@@ -40,6 +41,7 @@ class HomePatch : public Patch {
 
       void registerProxy(RegisterProxyMsg *);
       void unregisterProxy(UnregisterProxyMsg *);
+      void receiveResults(ProxyResultMsg *msg);
       void useSequencer(Sequencer *sequencerPtr) {sequencer=sequencerPtr;}
       void runSequencer(int numberOfCycles = 0)
 		{ sequencer->run(numberOfCycles); }
@@ -108,12 +110,15 @@ class HomePatch : public Patch {
  *
  *	$RCSfile: HomePatch.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.12 $	$Date: 1996/12/17 22:13:22 $
+ *	$Revision: 1.13 $	$Date: 1996/12/17 23:58:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.13  1996/12/17 23:58:02  jim
+ * proxy result reporting is working
+ *
  * Revision 1.12  1996/12/17 22:13:22  jim
  * implemented ProxyDataMsg use
  *

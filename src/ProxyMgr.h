@@ -57,6 +57,7 @@ public:
 
 class ProxyResultMsg : public comm_object {
 public:
+  NodeID node;
   PatchID patch;
   ForceList forceList;
   void * pack (int *length);
@@ -109,12 +110,15 @@ private:
  *
  *	$RCSfile: ProxyMgr.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/12/17 17:07:41 $
+ *	$Revision: 1.6 $	$Date: 1996/12/17 23:58:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.h,v $
+ * Revision 1.6  1996/12/17 23:58:02  jim
+ * proxy result reporting is working
+ *
  * Revision 1.5  1996/12/17 17:07:41  jim
  * moved messages from main to ProxyMgr
  *

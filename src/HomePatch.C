@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.15 1996/12/17 22:13:22 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.16 1996/12/17 23:58:02 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -71,6 +71,16 @@ void HomePatch::unregisterProxy(UnregisterProxyMsg *msg) {
   proxy.del(i);
 }
 
+void HomePatch::receiveResults(ProxyResultMsg *msg)
+{
+  int i = proxy.findIndex(ProxyListElem(msg->node));
+  Force* f = proxy[i].forceBox->open();
+  for ( int j = 0; j < numAtoms; ++j )
+  {
+    f[j] += msg->forceList[j];
+  }
+  proxy[i].forceBox->close(&f);
+}
 
 void HomePatch::positionsReady(void)
 {
@@ -303,12 +313,15 @@ void HomePatch::dispose(char *&data)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.15 $	$Date: 1996/12/17 22:13:22 $
+ *	$Revision: 1.16 $	$Date: 1996/12/17 23:58:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.16  1996/12/17 23:58:02  jim
+ * proxy result reporting is working
+ *
  * Revision 1.15  1996/12/17 22:13:22  jim
  * implemented ProxyDataMsg use
  *

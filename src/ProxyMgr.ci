@@ -11,5 +11,6 @@ group ProxyMgr
   entry recvRegisterProxy(RegisterProxyMsg *);
   entry recvProxyData(ProxyDataMsg *);
   entry recvProxyAtoms(ProxyAtomsMsg *);
+  entry recvResults(ProxyResultMsg *);
 };
 
