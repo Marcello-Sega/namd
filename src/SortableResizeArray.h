@@ -50,22 +50,22 @@ template <class Elem> class SortableResizeArray : public ResizeArray<Elem> {
 
     SortableResizeArray(int size) : ResizeArray<Elem>(size) { init(); }
 
-    SortableResizeArray(const ResizeArray<Elem> &ra) : 
+    SortableResizeArray(ResizeArray<Elem> &ra) : 
       ResizeArray<Elem>(ra) { init(); }
 
-    SortableResizeArray(const SortableResizeArray<Elem> &ra) :
+    SortableResizeArray(SortableResizeArray<Elem> &ra) :
       ResizeArray<Elem>(ra) { init(); }
 
-    SortableResizeArray(ResizeArray<Elem>* const ra) : 
+    SortableResizeArray(const ResizeArray<Elem>* ra) : 
       ResizeArray<Elem>(ra) { init(); }
 
-    SortableResizeArray(SortableResizeArray<Elem>* const ra) : 
+    SortableResizeArray(const SortableResizeArray<Elem>* ra) : 
       ResizeArray<Elem>(ra) { init(); }
 
     SortableResizeArray(Elem* * const r, int numElem, int maxElem) : 
       ResizeArray<Elem>(r,numElem,maxElem) { init(); }
 
-    SortableResizeArray<Elem>& operator =(const SortableResizeArray<Elem>& sa) {
+    SortableResizeArray<Elem>& operator =(SortableResizeArray<Elem>& sa) {
       ResizeArray<Elem>::operator=(sa);
       return(*this);
     }
@@ -95,7 +95,7 @@ template <class Elem> class SortableResizeArray : public ResizeArray<Elem> {
       }
     }
 
-    void uniq(void);
+    inline void uniq(void);
 
     // Search returns index of position where elem should be inserted.
     // This is equal to the first position equal to elem
@@ -120,7 +120,7 @@ template <class Elem> class SortableResizeArray : public ResizeArray<Elem> {
 };
 
 template <class Elem>
-void SortableResizeArray<Elem>::uniq(void) {
+inline void SortableResizeArray<Elem>::uniq(void) {
   if (this->size()) {
     int oldIndex=0;
     int newIndex=0;

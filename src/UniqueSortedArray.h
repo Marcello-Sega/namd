@@ -15,42 +15,46 @@ template <class Elem> class UniqueSortedArray : public SortedArray<Elem> {
 
     UniqueSortedArray(int s=0) : SortedArray<Elem>(s) { }
 
-    UniqueSortedArray(const UniqueSortedArray<Elem> &ua) : 
+    UniqueSortedArray(UniqueSortedArray<Elem> &ua) : 
       SortedArray<Elem>(ua) { }
 
-    UniqueSortedArray(const SortedArray<Elem> &sa) : SortedArray<Elem>(sa) { 
+    UniqueSortedArray(SortedArray<Elem> &sa) : SortedArray<Elem>(sa) { 
       this->uniq(); 
     }
 
-    UniqueSortedArray(const ResizeArray<Elem> &ra) : SortedArray<Elem>(ra) {
+/*
+    UniqueSortedArray(ResizeArray<Elem> &ra) : SortedArray<Elem>(ra) {
       this->uniq();
     }
+*/
   
-    UniqueSortedArray<Elem>& operator =(const UniqueSortedArray<Elem> & ua) {
+    UniqueSortedArray<Elem>& operator =(UniqueSortedArray<Elem> & ua) {
       SortedArray<Elem>::operator=(ua);
       return(*this);
     }
   
-    UniqueSortedArray<Elem>& operator =(const SortedArray<Elem> &sa) {
+    UniqueSortedArray<Elem>& operator =(SortedArray<Elem> &sa) {
       SortedArray<Elem>::operator=(sa);
       this->uniq();
       return(*this);
     }
 
-    UniqueSortedArray<Elem>& operator =(const ResizeArray<Elem> &ra) {
+/*
+    UniqueSortedArray<Elem>& operator =(ResizeArray<Elem> &ra) {
       SortedArray<Elem>::operator=(ra);
       this->uniq();
       return(*this);
     }
+*/
   
     int add(const Elem& elem) { return(insert(elem)); }
 
-    int insert(const Elem& elem);
+    inline int insert(const Elem& elem);
 
 };
 
 template <class Elem>
-int 
+inline int 
 UniqueSortedArray<Elem>::insert(const Elem& elem) {
   this->found = bsearch(elem);
   if (this->found == -1) {

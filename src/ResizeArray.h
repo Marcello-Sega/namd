@@ -35,7 +35,11 @@ template <class Elem> class ResizeArray {
     iterator end(void) { return rep->array + rep->arraySize; }
 
     // Various Constructors
-    ResizeArray(void);
+    ResizeArray(void) {
+      rep = new ResizeArrayRaw<Elem>();
+      rep->resize(0);
+      rep->refCount = 1;
+    }
 
     // Constructor make ResizeArray of predefined size
     ResizeArray(int s) {
@@ -45,19 +49,19 @@ template <class Elem> class ResizeArray {
     }
 
     // Contructor makes ResizeArray which points to same ResizeArrayRaw
-    ResizeArray(const ResizeArray<Elem> &ra) {
+    ResizeArray(ResizeArray<Elem> &ra) {
       rep = ra.rep;
       rep->refCount++;
     }
 
     // Constructor makes a copy of ResizeArrayRaw
-    ResizeArray(ResizeArray<Elem>* const ra) {
+    ResizeArray(const ResizeArray<Elem>* ra) {
       rep = new ResizeArrayRaw<Elem>(*(ra->rep));
       rep->refCount = 1;
     }
 
     // Constructor to take-in pre-existing array
-    ResizeArray(Elem * * const array, int arraySize, int allocSize=0) {
+    ResizeArray(Elem * * array, int arraySize, int allocSize=0) {
       rep = new ResizeArrayRaw<Elem>(array, arraySize, allocSize);
       rep->refCount = 1;
     }
@@ -67,7 +71,7 @@ template <class Elem> class ResizeArray {
     }
 
     // We copy reference to ResizeArrayRaw
-    ResizeArray<Elem> & operator= (const ResizeArray<Elem> &ra) {
+    ResizeArray<Elem> & operator= (ResizeArray<Elem> &ra) {
       if (rep != NULL && !(--rep->refCount) )
         delete rep;
       rep = ra.rep;
@@ -113,7 +117,8 @@ template <class Elem> class ResizeArray {
     }
 
     // array member access (can be lvalue) no checks.
-    inline Elem & operator[](int index) const { return rep->array[index]; }
+    inline Elem & operator[](int index) { return rep->array[index]; }
+    inline const Elem & operator[](int index) const { return rep->array[index]; }
 
     // returns size of ResizeArray
     inline int size(void) const { return rep->size(); }
@@ -122,12 +127,5 @@ template <class Elem> class ResizeArray {
     void reduce(void) { rep->reduce(); }
 
 };
-
-template <class Elem>
-ResizeArray<Elem>::ResizeArray(void) {
-  rep = new ResizeArrayRaw<Elem>();
-  rep->resize(0);
-  rep->refCount = 1;
-}
 
 #endif

@@ -114,7 +114,12 @@ template <class Elem> class ResizeArrayRaw {
       minSize = MinSize;
     }
   
-    ~ResizeArrayRaw(void);
+    ~ResizeArrayRaw(void) {
+      for (int i=0; i < size(); i++) {
+        array[i].~Elem();
+      }
+      delete[] varray;
+    }
   
     // minSize = minimum growth size - (also initial size of array)
     // growthFactor = mulplicative factor by which to grow array.

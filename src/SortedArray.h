@@ -26,23 +26,23 @@ template <class Elem> class SortedArray: public SortableResizeArray<Elem> {
       found = -1; isSorted = 1;
     }
 
-    SortedArray(const SortedArray<Elem> &sa) : SortableResizeArray<Elem>(sa) { 
+    SortedArray(SortedArray<Elem> &sa) : SortableResizeArray<Elem>(sa) { 
       found = -1; if(!(isSorted = sa.isSorted)) sort();
       isSorted = 1;
     }
 
-    SortedArray(const SortableResizeArray<Elem> &ra) : 
+    SortedArray(SortableResizeArray<Elem> &ra) : 
         SortableResizeArray<Elem>(ra) {
       found = -1; sort(); isSorted = 1;
     }
 
-    SortedArray<Elem>& operator =(const SortedArray<Elem> & sa) {
+    SortedArray<Elem>& operator =(SortedArray<Elem> & sa) {
       SortableResizeArray<Elem>::operator=(sa);
       found = -1; isSorted = sa.isSorted;
       return(*this);
     }
 
-    SortedArray<Elem>& operator =(const SortableResizeArray<Elem> &ra) {
+    SortedArray<Elem>& operator =(SortableResizeArray<Elem> &ra) {
       SortableResizeArray<Elem>::operator=(ra);
       found = -1; sort(); isSorted = 1;
       return(*this);
@@ -74,11 +74,11 @@ template <class Elem> class SortedArray: public SortableResizeArray<Elem> {
       return (SortableResizeArray<Elem>::bsearch(elem));
     }
 
-    int insert(const Elem& elem);
+    inline int insert(const Elem& elem);
 
     int index(const Elem& elem) { return(found = bsearch(elem)); }
 
-    Elem *find(const Elem& elem);
+    inline Elem *find(const Elem& elem);
 
     Elem * find(void) {
       if (found < 0 || ++found >= this->size()) {
@@ -93,7 +93,7 @@ template <class Elem> class SortedArray: public SortableResizeArray<Elem> {
 };
 
 template <class Elem>
-int SortedArray<Elem>::insert(const Elem& elem) {
+inline int SortedArray<Elem>::insert(const Elem& elem) {
   found = bsearch(elem);
   if (found == -1) {
     return (ResizeArray<Elem>::insert(elem, 0));
@@ -106,7 +106,7 @@ int SortedArray<Elem>::insert(const Elem& elem) {
 }
 
 template <class Elem>
-Elem * SortedArray<Elem>::find(const Elem& elem) {
+inline Elem * SortedArray<Elem>::find(const Elem& elem) {
   if ( (found = bsearch(elem)) < 0) 
     return ((Elem *)NULL);
   if ((*(this->rep))[found] == elem) {

@@ -104,14 +104,14 @@ template <class Elem> class EntryGlob {
 
   private:
 
-    EntryGlob(int size);
+    inline EntryGlob(int size);
   
     EntryGlob<Elem> *_next;
     Entry<Elem> *glob;
 };
   
 template<class Elem>
-EntryGlob<Elem>::EntryGlob(int size) {
+inline EntryGlob<Elem>::EntryGlob(int size) {
   _next = 0;
   Entry<Elem>* entry = glob = new Entry<Elem>[size];
   for (; entry != glob+size-1; entry++) {
@@ -138,7 +138,7 @@ template <class Elem> class UniqueSetRaw {
   public:
 
     // Various Constructors
-    UniqueSetRaw(int size=0);
+    inline UniqueSetRaw(int size=0);
 
     // Hopefully, this is never used
     UniqueSetRaw(const UniqueSetRaw<Elem> &us) { copy(us); }
@@ -386,7 +386,7 @@ template <class Elem> class UniqueSetRaw {
 };
 
 template <class  Elem>
-UniqueSetRaw<Elem>::UniqueSetRaw(int size) : 
+inline UniqueSetRaw<Elem>::UniqueSetRaw(int size) : 
   table(0), tableLength(0), numElem(0), growable(1) {
   const int minGlobSize = 32;
   static const int hashThing[] 
