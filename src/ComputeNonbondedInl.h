@@ -21,6 +21,7 @@
 #include "Molecule.h"
 #include "LJTable.h"
 #include "ReductionMgr.h"
+#include "ReserveArray.h"
 
 #include "PressureProfile.h"
 

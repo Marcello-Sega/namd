@@ -1330,6 +1330,7 @@ obj/ComputeNonbondedStd.o: \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
 	src/LJTable.h \
+	src/ReserveArray.h \
 	src/PressureProfile.h \
 	src/ComputeNonbondedBase.h \
 	src/ComputeNonbondedBase2.h
@@ -1364,6 +1365,7 @@ obj/ComputeNonbondedFEP.o: \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
 	src/LJTable.h \
+	src/ReserveArray.h \
 	src/PressureProfile.h \
 	src/ComputeNonbondedBase.h \
 	src/ComputeNonbondedBase2.h
@@ -1398,6 +1400,7 @@ obj/ComputeNonbondedLES.o: \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
 	src/LJTable.h \
+	src/ReserveArray.h \
 	src/PressureProfile.h \
 	src/ComputeNonbondedBase.h \
 	src/ComputeNonbondedBase2.h

@@ -245,41 +245,28 @@ void ComputeNonbondedUtil :: NAME
   const CompAtom *p_0 = params->p[0];
   const CompAtom *p_1 = params->p[1];
 
-  plint grouplist_std[1005];
-  plint fixglist_std[1005];  // list of non-fixed groups if fixedAtomsOn
-  plint goodglist_std[1005];
-  plint pairlistx_std[1005];
-  plint pairlistm_std[1005];
-  plint pairlist_std[1005];
-  plint pairlist2_std[1005];
-  plint pairlisti_std[1005];
-
-  plint *grouplist = grouplist_std;
-  plint *fixglist = fixglist_std;
-  plint *goodglist = goodglist_std;
-  plint *pairlistx = pairlistx_std;
-  plint *pairlistm = pairlistm_std;
-  plint *pairlist = pairlist_std;
-  plint *pairlist2 = pairlist2_std;
   plint *pairlistn_save;  int npairn;
   plint *pairlistx_save;  int npairx;
   plint *pairlistm_save;  int npairm;
-  plint *pairlisti = ( j_upper >= 1000 ? new plint[j_upper+5] : pairlisti_std );
+
+  int arraysize = j_upper+5;
+
+  RESERVEARRAY(plint,pairlisti,1005,arraysize)
+
+  if ( ! ( savePairlists || ! usePairlists ) ) arraysize = 0;
+
+  RESERVEARRAY(plint,grouplist,1005,arraysize);
+  RESERVEARRAY(plint,fixglist,1005,arraysize);
+  RESERVEARRAY(plint,goodglist,1005,arraysize);
+  RESERVEARRAY(plint,pairlistx,1005,arraysize);
+  RESERVEARRAY(plint,pairlistm,1005,arraysize);
+  RESERVEARRAY(plint,pairlist,1005,arraysize);
+  RESERVEARRAY(plint,pairlist2,1005,arraysize);
 
   int fixg_upper = 0;
   int g_upper = 0;
 
   if ( savePairlists || ! usePairlists ) {
-
-  if ( j_upper >= 1000 ) {
-    grouplist = new plint[j_upper+5];
-    fixglist = new plint[j_upper+5];
-    goodglist = new plint[j_upper+5];
-    pairlistx = new plint[j_upper+5];
-    pairlistm = new plint[j_upper+5];
-    pairlist = new plint[j_upper+5];
-    pairlist2 = new plint[j_upper+5];
-  }
 
   register int g = 0;
   for ( j = 0; j < j_upper; ++j ) {
@@ -721,15 +708,6 @@ void ComputeNonbondedUtil :: NAME
   } // for i
 
   // PAIR(iout << "++++++++\n" << endi;)
-
-  if (grouplist != grouplist_std) delete [] grouplist;
-  if (fixglist != fixglist_std) delete [] fixglist;
-  if (goodglist != goodglist_std) delete [] goodglist;
-  if (pairlist != pairlist_std) delete [] pairlist;
-  if (pairlist2 != pairlist2_std) delete [] pairlist2;
-  if (pairlistx != pairlistx_std) delete [] pairlistx;
-  if (pairlistm != pairlistm_std) delete [] pairlistm;
-  if (pairlisti != pairlisti_std) delete [] pairlisti;
 
   reduction[exclChecksumIndex] += exclChecksum;
   FAST
