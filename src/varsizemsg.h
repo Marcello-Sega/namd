@@ -89,7 +89,7 @@ template<class T> inline T* cast_size(T*, size_t a) { return (T*) a; }
     break; \
   case 1: \
     varsizemsg_msg->ARRAY = cast_array(varsizemsg_msg->ARRAY, \
-	(char *)(varsizemsg_msg + varsizemsg_totalsize)); \
+	(char *) varsizemsg_msg + varsizemsg_totalsize); \
     varsizemsg_arraysize = sizeof(*(varsizemsg_msg->ARRAY)) * \
 		varsizemsg_array[varsizemsg_arraycount]; \
     varsizemsg_totalsize += ALIGN8(varsizemsg_arraysize); \
@@ -97,11 +97,11 @@ template<class T> inline T* cast_size(T*, size_t a) { return (T*) a; }
     break; \
   case 2: \
     varsizemsg_msg->ARRAY = cast_size(varsizemsg_msg->ARRAY, \
-	(char *) (varsizemsg_msg->ARRAY) - (char *) varsizemsg_msg ); \
+      (char *) (varsizemsg_msg->ARRAY) - (char *) &(varsizemsg_msg->ARRAY) ); \
     break; \
   case 3: \
     varsizemsg_msg->ARRAY = cast_array(varsizemsg_msg->ARRAY, \
-	(size_t) (varsizemsg_msg->ARRAY) + (char *) varsizemsg_msg ); \
+      (char *) &(varsizemsg_msg->ARRAY) + (size_t) (varsizemsg_msg->ARRAY) ); \
     break; \
   default: \
     break; \
