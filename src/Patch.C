@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.8 1996/11/01 21:20:45 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.9 1996/11/04 17:13:31 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -33,9 +33,6 @@ Patch::Patch(PatchID pd, AtomIDList al, PositionList pl) :
    forceBox(this,&(Patch::forceBoxClosed)),
    atomBox(this,&(Patch::atomBoxClosed))
 {
-    patchMap = PatchMap::Object();
-    patchMap->registerPatch(patchID, this);
-
     if (atomIDList.size() != p.size())
     {
       CPrintf(
@@ -152,12 +149,15 @@ void Patch::positionsReady()
  *
  *	$RCSfile: Patch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1996/11/01 21:20:45 $
+ *	$Revision: 1.9 $	$Date: 1996/11/04 17:13:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.9  1996/11/04 17:13:31  ari
+ * *** empty log message ***
+ *
  * Revision 1.8  1996/11/01 21:20:45  ari
  * *** empty log message ***
  *

@@ -11,7 +11,7 @@
 /*								           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.4 1996/11/01 21:20:45 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.5 1996/11/04 17:13:13 ari Exp $";
 
 
 #include "ckdefs.h"
@@ -59,7 +59,9 @@ PatchMgr::~PatchMgr()
 void PatchMgr::createHomePatch(PatchID pid, AtomIDList aid, 
 	PositionList p, VelocityList v) 
 {
-    homePatches.load( HomePatchElem(pid, new HomePatch(pid, aid, p, v)) );
+    HomePatch *patch = new HomePatch(pid, aid, p, v);
+    homePatches.load(HomePatchElem(pid, patch));
+    patchMap->registerPatch(pid, patch);
 }
 
 void PatchMgr::movePatch(PatchID pid, NodeID nodeID) 
@@ -77,6 +79,8 @@ void PatchMgr::sendMovePatches()
     MovePatchListIter m(move);
     for ( m = m.begin(); m != m.end(); m++) {
       HomePatch *p = homePatch((*m).pid);
+      patchMap->unregisterPatch((*m).pid, p);
+
       MovePatchesMsg *msg = new (MsgIndex(MovePatchesMsg))
 	MovePatchesMsg((*m).pid, p->atomIDList, p->p, p->v);
 
@@ -126,11 +130,14 @@ void PatchMgr::sigWorkDistrib()
  *
  *	$RCSfile: PatchMgr.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/11/01 21:20:45 $
+ *	$Revision: 1.5 $	$Date: 1996/11/04 17:13:13 $
  *
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.C,v $
+ * Revision 1.5  1996/11/04 17:13:13  ari
+ * *** empty log message ***
+ *
  * Revision 1.4  1996/11/01 21:20:45  ari
  * *** empty log message ***
  *
