@@ -14,6 +14,7 @@
 #include "Molecule.h"
 #include "Parameters.h"
 #include "ComputeNonbondedExcl.h"
+#include "AtomMap.h"
 
 #undef DEBUGM
 #include "Debug.h"
@@ -124,12 +125,15 @@ ComputeNonbondedExcls::loadTuples() {
  *
  *	$RCSfile: ComputeNonbondedExcl.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/03/13 06:36:57 $
+ *	$Revision: 1.1009 $	$Date: 1997/03/19 05:49:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedExcl.C,v $
+ * Revision 1.1009  1997/03/19 05:49:59  jim
+ * Added ComputeSphericalBC, cleaned up make dependencies.
+ *
  * Revision 1.1008  1997/03/13 06:36:57  jim
  * Multiple time-stepping implemented, still needs proper splitting functions.
  *

@@ -14,6 +14,7 @@
 #include "WorkDistrib.top.h"
 #include "Node.h"
 #include "ComputePatch.h"
+#include "PatchMap.h"
 #include "Patch.h"
 
 #define MIN_DEBUG_LEVEL 4
@@ -104,12 +105,15 @@ void ComputePatch::doWork() {
  *
  *	$RCSfile: ComputePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/18 18:08:54 $
+ *	$Revision: 1.1005 $	$Date: 1997/03/19 05:50:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatch.C,v $
+ * Revision 1.1005  1997/03/19 05:50:02  jim
+ * Added ComputeSphericalBC, cleaned up make dependencies.
+ *
  * Revision 1.1004  1997/03/18 18:08:54  jim
  * Revamped collection system to ensure ordering and eliminate
  * unnecessary collections.  Also reduced make dependencies.

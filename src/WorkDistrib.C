@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1015 1997/03/15 22:15:35 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1016 1997/03/19 05:50:14 jim Exp $";
 
 #include <stdio.h>
 
@@ -28,14 +28,12 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib
 #include "Node.h"
 #include "PatchMgr.h"
 #include "PatchMap.h"
-#include "ComputeMap.h"
-#include "Compute.h"
-#include "Vector.h"
 #include "NamdTypes.h"
 #include "PDB.h"
 #include "SimParameters.h"
 #include "Molecule.h"
 #include "NamdOneTools.h"
+#include "Compute.h"
 
 #define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
@@ -392,6 +390,8 @@ void WorkDistrib::mapComputes(void)
   mapComputeHomePatches(computeDihedralsType);
   mapComputeHomePatches(computeImpropersType);
 
+  if ( node->simParameters->sphericalBCOn )
+    mapComputePatch(computeSphericalBCType);
   if ( node->simParameters->cylindricalBCOn )
     mapComputePatch(computeCylindricalBCType);
 }
@@ -768,12 +768,15 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1997/03/15 22:15:35 $
+ *	$Revision: 1.1016 $	$Date: 1997/03/19 05:50:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1016  1997/03/19 05:50:14  jim
+ * Added ComputeSphericalBC, cleaned up make dependencies.
+ *
  * Revision 1.1015  1997/03/15 22:15:35  jim
  * Added ComputeCylindricalBC.  Doesn't break anything but untested and
  * cylinder is along x axis (will fix soon).

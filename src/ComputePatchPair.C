@@ -14,6 +14,7 @@
 #include "WorkDistrib.top.h"
 #include "Node.h"
 #include "ComputePatchPair.h"
+#include "PatchMap.h"
 #include "Patch.h"
 
 //#define DEBUGM
@@ -125,12 +126,15 @@ void ComputePatchPair::doWork() {
  *
  *	$RCSfile: ComputePatchPair.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/03/18 18:08:56 $
+ *	$Revision: 1.1008 $	$Date: 1997/03/19 05:50:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatchPair.C,v $
+ * Revision 1.1008  1997/03/19 05:50:04  jim
+ * Added ComputeSphericalBC, cleaned up make dependencies.
+ *
  * Revision 1.1007  1997/03/18 18:08:56  jim
  * Revamped collection system to ensure ordering and eliminate
  * unnecessary collections.  Also reduced make dependencies.

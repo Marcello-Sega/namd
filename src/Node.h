@@ -18,11 +18,11 @@
 #include "c++interface.h"
 
 #include "main.h"
-#include "PatchMap.h"
-#include "AtomMap.h"
-#include "ComputeMap.h"
-#include "ProxyMgr.h"
 
+class PatchMap;
+class AtomMap;
+class ProxyMgr;
+class ComputeMap;
 class PatchMgr;
 class Molecule;
 class Parameters;
@@ -124,12 +124,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/18 18:09:09 $
+ *	$Revision: 1.1006 $	$Date: 1997/03/19 05:50:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.1006  1997/03/19 05:50:12  jim
+ * Added ComputeSphericalBC, cleaned up make dependencies.
+ *
  * Revision 1.1005  1997/03/18 18:09:09  jim
  * Revamped collection system to ensure ordering and eliminate
  * unnecessary collections.  Also reduced make dependencies.

@@ -22,6 +22,7 @@
 
 #include "NamdTypes.h"
 #include "BOCgroup.h"
+#include "ComputeMap.h"
 
 class Node;
 class DoneMsg;
@@ -129,12 +130,15 @@ public:
  *
  *	$RCSfile: WorkDistrib.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/03/15 22:15:36 $
+ *	$Revision: 1.1007 $	$Date: 1997/03/19 05:50:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.1007  1997/03/19 05:50:16  jim
+ * Added ComputeSphericalBC, cleaned up make dependencies.
+ *
  * Revision 1.1006  1997/03/15 22:15:36  jim
  * Added ComputeCylindricalBC.  Doesn't break anything but untested and
  * cylinder is along x axis (will fix soon).

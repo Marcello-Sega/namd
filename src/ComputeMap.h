@@ -20,6 +20,24 @@
 class Compute;
 class ComputeMgr;
 
+enum ComputeType
+{
+  computeNonbondedSelfType,
+  computeNonbondedPairType,
+  computeNonbondedExclType,
+  computeBondsType,
+  computeAnglesType,
+  computeDihedralsType,
+  computeImpropersType,
+#ifdef DPMTA
+  computeDPMTAType,
+  computeDPMEType,
+#endif
+  computeFullDirectType,
+  computeSphericalBCType,
+  computeCylindricalBCType
+};
+
 class ComputeMap
 {
 public:
@@ -125,13 +143,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/11 18:51:42 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/03/19 05:49:54 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.h,v $
+ * Revision 1.1003  1997/03/19 05:49:54  jim
+ * Added ComputeSphericalBC, cleaned up make dependencies.
+ *
  * Revision 1.1002  1997/02/11 18:51:42  ari
  * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
  * fixed non-buffering of migration msgs

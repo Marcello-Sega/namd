@@ -21,7 +21,6 @@
 #include "c++interface.h"
 
 #include "NamdTypes.h"
-#include "ComputeMap.h"
 
 class Node;
 class PatchMap;
@@ -37,7 +36,6 @@ private:
 
 protected:
   static Node* node;
-  static ComputeMap *computeMap;
   static PatchMap *patchMap;
 
   void enqueueWork();
@@ -45,10 +43,7 @@ protected:
 public:
   const ComputeID cid;
 
-  Compute(ComputeID c) : cid(c) { 
-    doAtomUpdate = false;
-    computeMap = ComputeMap::Object(); 
-  }
+  Compute(ComputeID);
   virtual ~Compute() {}
 
   static void setNode(Node *n) { node = n; }
@@ -71,12 +66,15 @@ public:
  *
  *	$RCSfile: Compute.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/12 23:59:39 $
+ *	$Revision: 1.1002 $	$Date: 1997/03/19 05:49:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.h,v $
+ * Revision 1.1002  1997/03/19 05:49:48  jim
+ * Added ComputeSphericalBC, cleaned up make dependencies.
+ *
  * Revision 1.1001  1997/03/12 23:59:39  jim
  * Added Compute::noWork() protocol to not enqueue do-nothing compute objects.
  *

@@ -22,6 +22,7 @@
 
 #include "Node.h"
 #include "Patch.h"
+#include "PatchMap.h"
 #include "ComputeGeneral.h"
 
 
@@ -100,12 +101,15 @@ void ComputeGeneral::doWork() {
  *
  *	$RCSfile: ComputeGeneral.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/18 18:08:51 $
+ *	$Revision: 1.1003 $	$Date: 1997/03/19 05:49:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGeneral.C,v $
+ * Revision 1.1003  1997/03/19 05:49:52  jim
+ * Added ComputeSphericalBC, cleaned up make dependencies.
+ *
  * Revision 1.1002  1997/03/18 18:08:51  jim
  * Revamped collection system to ensure ordering and eliminate
  * unnecessary collections.  Also reduced make dependencies.

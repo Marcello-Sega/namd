@@ -31,6 +31,10 @@
 #define DEBUGM
 #include "Debug.h"
 
+Compute::Compute(ComputeID c) : cid(c) { 
+  doAtomUpdate = false;
+}
+
 void Compute::enqueueWork() {
   if ( ! noWork() )
   {
@@ -80,12 +84,15 @@ void Compute::doWork() {
  *
  *	$RCSfile: Compute.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/12 23:59:37 $
+ *	$Revision: 1.1005 $	$Date: 1997/03/19 05:49:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.C,v $
+ * Revision 1.1005  1997/03/19 05:49:46  jim
+ * Added ComputeSphericalBC, cleaned up make dependencies.
+ *
  * Revision 1.1004  1997/03/12 23:59:37  jim
  * Added Compute::noWork() protocol to not enqueue do-nothing compute objects.
  *

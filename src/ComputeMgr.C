@@ -24,6 +24,8 @@
 #include "ComputeMgr.h"
 
 #include "Node.h"
+#include "ComputeMap.h"
+
 #include "ComputeNonbondedUtil.h"
 #include "ComputeNonbondedSelf.h"
 #include "ComputeNonbondedPair.h"
@@ -34,6 +36,7 @@
 #include "ComputeNonbondedExcl.h"
 #include "ComputeFullDirect.h"
 #include "ComputeDPMTA.h"
+#include "ComputeSphericalBC.h"
 #include "ComputeCylindricalBC.h"
 
 ComputeMgr::ComputeMgr(InitMsg *msg)
@@ -162,6 +165,12 @@ void ComputeMgr:: createComputes(ComputeMap *map)
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
+      case computeSphericalBCType:
+	c = new ComputeSphericalBC(i,map->computeData[i].pids[0].pid); // unknown delete
+	DebugM(4,"ComputeSphericalBC created.\n");
+	map->registerCompute(i,c);
+	c->initialize();
+	break;
       case computeCylindricalBCType:
 	c = new ComputeCylindricalBC(i,map->computeData[i].pids[0].pid); // unknown delete
 	DebugM(4,"ComputeCylindricalBC created.\n");
@@ -192,7 +201,7 @@ void ComputeMgr:: createComputes(ComputeMap *map)
  *
  *	$RCSfile: ComputeMgr.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/03/15 22:15:25 $
+ *	$Revision: 1.1007 $	$Date: 1997/03/19 05:49:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:

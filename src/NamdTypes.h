@@ -77,23 +77,6 @@ struct LocalID
   int index;
 };
 
-enum ComputeType
-{
-  computeNonbondedSelfType,
-  computeNonbondedPairType,
-  computeNonbondedExclType,
-  computeBondsType,
-  computeAnglesType,
-  computeDihedralsType,
-  computeImpropersType,
-#ifdef DPMTA
-  computeDPMTAType,
-  computeDPMEType,
-#endif
-  computeFullDirectType,
-  computeCylindricalBCType
-};
-
 // HP compiler complains that true, false "Will be" future reserved words.
 //enum Boolean
 //{
@@ -113,12 +96,15 @@ typedef int Boolean;
  *
  *	$RCSfile: NamdTypes.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/15 22:15:26 $
+ *	$Revision: 1.1005 $	$Date: 1997/03/19 05:50:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdTypes.h,v $
+ * Revision 1.1005  1997/03/19 05:50:10  jim
+ * Added ComputeSphericalBC, cleaned up make dependencies.
+ *
  * Revision 1.1004  1997/03/15 22:15:26  jim
  * Added ComputeCylindricalBC.  Doesn't break anything but untested and
  * cylinder is along x axis (will fix soon).

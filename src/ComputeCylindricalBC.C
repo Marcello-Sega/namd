@@ -147,7 +147,6 @@ void ComputeCylindricalBC::doForce(Position* p, Results* r, AtomProperties* a)
 			//  Check to see if we are outside radius 1
 			if (dist > r1)
 			{
-//printf ("In first force dist=%f\n", dist);
 				//  Assign the force vector to the
 				//  unit direction vector
 				f.x = diff.x;
@@ -190,7 +189,6 @@ void ComputeCylindricalBC::doForce(Position* p, Results* r, AtomProperties* a)
 			//  and if we are outside of it
 			if (twoForces && (dist > r2) )
 			{
-//printf ("In two forces dist = %f\n", dist);
 				//  Assign the force vector to the
 				//  unit direction vector
 				f.x = diff.x;

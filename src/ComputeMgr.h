@@ -25,7 +25,9 @@
 #include "BOCgroup.h"
 
 #include "Templates/ResizeArray.h"
-#include "Compute.h"
+
+class Compute;
+class ComputeMap;
 
 class ComputeMgr : public groupmember
 {
@@ -83,13 +85,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/04 22:37:09 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/03/19 05:49:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.h,v $
+ * Revision 1.1004  1997/03/19 05:49:57  jim
+ * Added ComputeSphericalBC, cleaned up make dependencies.
+ *
  * Revision 1.1003  1997/03/04 22:37:09  ari
  * Clean up of code.  Debug statements removal, dead code removal.
  * Minor fixes, output fixes.
