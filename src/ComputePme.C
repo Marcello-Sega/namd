@@ -72,7 +72,6 @@ public:
 struct LocalPmeInfo {
   int nx, x_start;
   int ny_after_transpose, y_start_after_transpose;
-  int total_size;
 };
 
 class ComputePmeMgr : public BOCclass {
@@ -121,8 +120,10 @@ private:
 
   int numSources;
   int numRecipPes;
+  int numDestRecipPes;
   int myRecipPe;
   int *recipPeMap;
+  int *recipPeDest;
   int grid_count;
   int trans_count;
   int untrans_count;
@@ -141,6 +142,7 @@ ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), pmeCompute(0) {
   myKSpace = 0;
   localInfo = new LocalPmeInfo[CkNumPes()];
   recipPeMap = new int[CkNumPes()];
+  recipPeDest = new int[CkNumPes()];
   qgrid = 0;
   work = 0;
   grid_count = 0;
@@ -198,16 +200,12 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     iout << iINFO << "PME using " << numRecipPes <<
       " processors for FFT and reciprocal sum.\n" << endi;
   }
-  ungrid_count = numRecipPes;
 
   myRecipPe = -1;
   for ( int i=0; i<numRecipPes; ++i ) {
     recipPeMap[i] = CkNumPes() - numRecipPes + i;
     if ( recipPeMap[i] == CkMyPe() ) myRecipPe = i;
   }
-
-  if ( myRecipPe < 0 ) return;
-  // the following only for nodes doing reciprocal sum
 
   myGrid.K1 = simParams->PMEGridSizeX;
   myGrid.K2 = simParams->PMEGridSizeY;
@@ -231,6 +229,68 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     localInfo[pe].ny_after_transpose =
 			ny - localInfo[pe].y_start_after_transpose;
   }
+
+  {  // decide how many pes this node exchanges charges with
+
+  PatchMap *patchMap = PatchMap::Object();
+  Lattice lattice = simParams->lattice;
+  BigReal sysdima = lattice.a_r().unit() * lattice.a();
+  BigReal cutoff = simParams->cutoff;
+  BigReal patchdim = simParams->patchDimension;
+  int numPatches = patchMap->numPatches();
+  int numNodes = CkNumPes();
+  int *source_flags = new int[numNodes];
+  int node;
+  for ( node=0; node<numNodes; ++node ) {
+    source_flags[node] = 0;
+    recipPeDest[node] = 0;
+  }
+
+  // make sure that we don't get ahead of ourselves on this node
+  if ( CkMyPe() < numPatches && myRecipPe >= 0 ) {
+    source_flags[CkMyPe()] = 1;
+    recipPeDest[myRecipPe] = 1;
+  }
+
+  for ( int pid=0; pid < numPatches; ++pid ) {
+    int pnode = patchMap->node(pid);
+    BigReal minx = patchMap->min_a(pid);
+    BigReal maxx = patchMap->max_a(pid);
+    BigReal margina = 0.5 * ( patchdim - cutoff ) / sysdima;
+    // min1 (max1) is smallest (largest) grid line for this patch
+    int min1 = ((int) floor(myGrid.K1 * (minx - margina))) - myGrid.order + 1;
+    int max1 = ((int) floor(myGrid.K1 * (maxx + margina)));
+    for ( int i=min1; i<=max1; ++i ) {
+      int ix = i;
+      while ( ix >= myGrid.K1 ) ix -= myGrid.K1;
+      while ( ix < 0 ) ix += myGrid.K1;
+      // set source_flags[pnode] if this patch sends to our node
+      if ( myRecipPe >= 0 && ix >= localInfo[myRecipPe].x_start &&
+           ix < localInfo[myRecipPe].x_start + localInfo[myRecipPe].nx ) {
+        source_flags[pnode] = 1;
+      }
+      // set dest_flags[] for node that our patch sends to
+      if ( pnode == CkMyPe() ) {
+        recipPeDest[ix / myGrid.block1] = 1;
+      }
+    }
+  }
+
+  numSources = 0;
+  numDestRecipPes = 0;
+  for ( node=0; node<numNodes; ++node ) {
+    if ( source_flags[node] ) ++numSources;
+    if ( recipPeDest[node] ) ++numDestRecipPes;
+  }
+  CkPrintf("PME on node %d has %d sources and %d destinations\n",
+            CkMyPe(), numSources, numDestRecipPes);
+
+  }  // decide how many pes this node exchanges charges with (end)
+
+  ungrid_count = numDestRecipPes;
+
+  if ( myRecipPe < 0 ) return;
+  // the following only for nodes doing reciprocal sum
 
   int k2_start = localInfo[myRecipPe].y_start_after_transpose;
   int k2_end = k2_start + localInfo[myRecipPe].ny_after_transpose;
@@ -270,10 +330,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   NAMD_die("Sorry, FFTW must be compiled in to use PME.");
 #endif
 
-  numSources = CkNumPes();
-  int npatches = (PatchMap::Object())->numPatches();
-  if ( numSources > npatches ) numSources = npatches;
-
+  if ( numSources == 0 ) NAMD_bug("PME grid elements exist without sources.");
   grid_count = numSources;
   memset( (void*) qgrid, 0, qgrid_len * sizeof(double) );
 }
@@ -282,6 +339,7 @@ ComputePmeMgr::~ComputePmeMgr() {
   delete myKSpace;
   delete [] localInfo;
   delete [] recipPeMap;
+  delete [] recipPeDest;
   delete [] qgrid;
   delete [] work;
   delete [] trans_buf;
@@ -290,7 +348,7 @@ ComputePmeMgr::~ComputePmeMgr() {
 }
 
 void ComputePmeMgr::sendGrid(void) {
-  pmeCompute->sendData(numRecipPes,recipPeMap);
+  pmeCompute->sendData(numRecipPes,recipPeDest,recipPeMap);
 }
 
 void ComputePmeMgr::recvGrid(PmeGridMsg *msg) {
@@ -316,7 +374,7 @@ void ComputePmeMgr::recvGrid(PmeGridMsg *msg) {
     }
   }
 
-  gridmsg_reuse[msg->sourceNode] = msg;
+  gridmsg_reuse[numSources-grid_count] = msg;
   --grid_count;
 
   if ( grid_count == 0 ) {
@@ -533,13 +591,19 @@ void ComputePmeMgr::gridCalc3(void) {
 
 void ComputePmeMgr::sendUngrid(void) {
 
-  for ( int pe=0; pe<numSources; ++pe ) {
+  for ( int j=0; j<numSources; ++j ) {
     // int msglen = qgrid_len;
-    PmeGridMsg *newmsg = gridmsg_reuse[pe];
-    if ( pe == 0 ) {  // only need these once
+    PmeGridMsg *newmsg = gridmsg_reuse[j];
+    int pe = newmsg->sourceNode;
+    if ( j == 0 ) {  // only need these once
       newmsg->energy = recipEnergy;
       for ( int i=0; i<6; ++i ) {
         newmsg->virial[i] = recip_vir[i];
+      }
+    } else {
+      newmsg->energy = 0.;
+      for ( int i=0; i<6; ++i ) {
+        newmsg->virial[i] = 0.;
       }
     }
     int zdim = myGrid.dim3;
@@ -591,7 +655,7 @@ void ComputePmeMgr::ungridCalc(void) {
 
   pmeCompute->ungridForces();
 
-  ungrid_count = numRecipPes;
+  ungrid_count = numDestRecipPes;
 }
 
 
@@ -786,7 +850,7 @@ void ComputePme::doWork()
 #endif
 }
 
-void ComputePme::sendData(int numRecipPes, int *recipPeMap) {
+void ComputePme::sendData(int numRecipPes, int *recipPeDest, int *recipPeMap) {
 
   // iout << "Sending charge grid for " << numLocalAtoms << " atoms to FFT on " << iPE << ".\n" << endi;
 
@@ -799,7 +863,8 @@ void ComputePme::sendData(int numRecipPes, int *recipPeMap) {
   resultsRemaining = numRecipPes;
 
   CProxy_ComputePmeMgr pmeProxy(CpvAccess(BOCclass_group).computePmeMgr);
-  for (int pe=0; pe<numRecipPes; pe++) {
+  for (int j=0; j<numRecipPes; j++) {
+    int pe = ( j + CkMyPe() ) % numRecipPes;  // different order on each node
     int start = pe * bsize;
     int len = bsize;
     if ( start >= qsize ) { start = 0; len = 0; }
@@ -814,6 +879,11 @@ void ComputePme::sendData(int numRecipPes, int *recipPeMap) {
       fcount += ( f[i] ? 1 : 0 );
     }
     // CkPrintf("count(%d -> %d) = %d\n",CkMyPe(),pe,fcount);
+
+    if ( ! recipPeDest[pe] ) {
+      if ( fcount ) NAMD_bug("Stray PME grid charges detected.");
+      continue;
+    }
 
     PmeGridMsg *msg = new (flen, fcount*zdim, 0) PmeGridMsg;
     msg->sourceNode = CkMyPe();
@@ -842,12 +912,12 @@ void ComputePme::sendData(int numRecipPes, int *recipPeMap) {
 
 void ComputePme::copyResults(PmeGridMsg *msg) {
 
-  if ( CkMyPe() == 0 ) {
+  // if ( CkMyPe() == 0 ) {
     energy += msg->energy;
     for ( int i=0; i<6; ++i ) {
       virial[i] += msg->virial[i];
     }
-  }
+  // }
   int zdim = myGrid.dim3;
   int flen = msg->len;
   int fstart = msg->start;

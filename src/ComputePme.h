@@ -21,7 +21,7 @@ public:
   ComputePme(ComputeID c);
   virtual ~ComputePme();
   void doWork();
-  void sendData(int numRecipPes, int *recipPeMap);
+  void sendData(int numRecipPes, int *recipPeDest, int *recipPeMap);
   void copyResults(PmeGridMsg *);
   void ungridForces();
 
