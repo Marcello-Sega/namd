@@ -133,8 +133,9 @@ Additional features include:
     random distribution based on the given temperature.
  \item The "measure" command allows user-programmed calculations to
     be executed in order to facilitate automated methods.  (For
-    example, to revert or change a parameter.)  You will need to
-    write code and compile NAMD to make use of this feature.
+    example, to revert or change a parameter.)  A number of measure
+    commands are included in the NAMD binary; the module has been designed
+    to make it easy for users to add additional measure commands.  
  \item The ``coorfile" command allows NAMD to perform force and energy
     analysis on trajectory files.  ``coorfile open dcd {\tt filename}" opens
     the specified DCD file for reading.  ``coorfile read" reads the next

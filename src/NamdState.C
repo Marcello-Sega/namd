@@ -184,8 +184,12 @@ int NamdState::configListInit(ConfigList *cfgList) {
 	}
 
 	// If constant forces are active, read the forces necessary
-	if (simParameters->consForceOn)
-	  molecule->build_constant_forces(configList->find("consforcefile")->data);
+	if (simParameters->consForceOn) {
+    char *filename = NULL;
+    if (configList->find("consforcefile"))
+      filename = configList->find("consforcefile")->data;
+    molecule->build_constant_forces(filename);
+  }
 
         if (simParameters->excludeFromPressure) {
            molecule->build_exPressure_atoms(

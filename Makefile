@@ -91,6 +91,7 @@ OBJS = \
 	$(DSTDIR)/ComputeRestraints.o \
 	$(DSTDIR)/ComputeSphericalBC.o \
 	$(DSTDIR)/ComputeConsForce.o \
+	$(DSTDIR)/ComputeConsForceMsgs.o \
 	$(DSTDIR)/ConfigList.o \
 	$(DSTDIR)/Controller.o \
 	$(DSTDIR)/ccsinterface.o \

@@ -3865,6 +3865,15 @@ void Molecule::build_constant_forces(char *filename)
 { int i, index;
   PDB *forcePDB;
   
+  if (!filename) {
+    // then all forces are zero to begin with; may be changed by
+    // the consforceconfig command.
+    iout << iWARN << "NO CONSTANT FORCES SPECIFIED, BUT CONSTANT FORCE IS ON . . .\n" << endi;
+    consForceIndexes = new int32[numAtoms];
+    for (i=0; i<numAtoms; i++) consForceIndexes[i] = -1;
+    return;
+  }
+
   if ((forcePDB=new PDB(filename)) == NULL)
     NAMD_die("Memory allocation failed in Molecule::build_constant_forces");
   if (forcePDB->num_atoms() != numAtoms)

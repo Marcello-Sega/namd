@@ -12,6 +12,8 @@ module ComputeMgr {
   message [packed] ComputeDPMEDataMsg;
   message [packed] ComputeDPMEResultsMsg;
 
+  message [packed] ComputeConsForceMsg;
+
   group ComputeMgr
   {
     entry ComputeMgr(void);
@@ -30,6 +32,8 @@ module ComputeMgr {
 
     entry void recvComputeDPMEData(ComputeDPMEDataMsg *);
     entry void recvComputeDPMEResults(ComputeDPMEResultsMsg *);
+
+    entry void recvComputeConsForceMsg(ComputeConsForceMsg *);
   } ;
 }
 

@@ -426,7 +426,7 @@ int ScriptTcl::Tcl_output(ClientData clientData,
 void ScriptTcl::measure(Vector *c) {
   Measure::createCommands(interp);
   Node::Object()->coords = c;
-  Tcl_Eval(interp,measure_command);
+  measure_result = Tcl_Eval(interp,measure_command);
   Node::Object()->coords = 0;
   Measure::deleteCommands(interp);
 }
@@ -443,7 +443,7 @@ int ScriptTcl::Tcl_measure(ClientData clientData,
 
   script->runController(SCRIPT_MEASURE);
 
-  return TCL_OK;
+  return script->measure_result;
 }
 
 int ScriptTcl::Tcl_checkpoint(ClientData clientData,

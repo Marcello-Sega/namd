@@ -989,6 +989,18 @@ obj/ComputeGlobal.o: \
 	src/MStream.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeGlobal.o $(COPTC) src/ComputeGlobal.C
+obj/ComputeConsForceMsgs.o: \
+	src/ComputeConsForceMsgs.C \
+	src/ComputeConsForceMsgs.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	inc/ComputeMgr.decl.h \
+	src/packmsg.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeConsForceMsgs.o $(COPTC) src/ComputeConsForceMsgs.C
 obj/ComputeGlobalMsgs.o: \
 	src/ComputeGlobalMsgs.C \
 	src/ComputeGlobalMsgs.h \

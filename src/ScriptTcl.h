@@ -71,6 +71,7 @@ private:
   void doCallback(const char *labels, const char *data);
   int doCallback() { return ! ! callbackname; }
   char *measure_command;
+  int measure_result;
 #endif
 };
 

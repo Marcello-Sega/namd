@@ -31,6 +31,7 @@ class ComputeGlobalResultsMsg;
 class ComputeDPME;
 class ComputeDPMEDataMsg;
 class ComputeDPMEResultsMsg;
+class ComputeConsForceMsg;
 
 class ComputeMgr : public BOCclass
 {
@@ -60,6 +61,8 @@ public:
   void recvComputeDPMEData(ComputeDPMEDataMsg *);
   void sendComputeDPMEResults(ComputeDPMEResultsMsg *, int);
   void recvComputeDPMEResults(ComputeDPMEResultsMsg *);
+
+  void recvComputeConsForceMsg(ComputeConsForceMsg *);
 
 private:
   void createCompute(ComputeID, ComputeMap *);

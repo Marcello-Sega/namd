@@ -950,8 +950,6 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
    ////  Constant Force
    opts.optionalB("main", "constantforce", "Apply constant force?",
      &consForceOn, FALSE);
-   opts.require("constantforce", "consforcefile",
-     "PDB file containing constant forces", PARSE_STRING);
 }
 
 void SimParameters::config_parser_movdrag(ParseOptions &opts) {

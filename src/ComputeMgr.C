@@ -44,6 +44,7 @@
 #include "ComputeCylindricalBC.h"
 #include "ComputeRestraints.h"
 #include "ComputeConsForce.h"
+#include "ComputeConsForceMsgs.h"
 #include "WorkDistrib.h"
 
 /* include all of the specific masters we need here */
@@ -520,6 +521,27 @@ void ComputeMgr:: recvComputeDPMEResults(ComputeDPMEResultsMsg *msg)
   }
   else if ( ! (PatchMap::Object())->numHomePatches() ) delete msg;
   else NAMD_die("ComputeMgr::computeDPMEObject is NULL!");
+}
+
+void ComputeMgr::recvComputeConsForceMsg(ComputeConsForceMsg *msg)
+{
+  Molecule *m = Node::Object()->molecule;
+  delete [] m->consForceIndexes;
+  delete [] m->consForce;
+  int n = msg->aid.size();
+  if (n > 0) {
+    m->consForceIndexes = new int32[m->numAtoms];
+    m->consForce = new Vector[n];
+    int i;
+    for (i=0; i<m->numAtoms; i++) m->consForceIndexes[i] = -1;
+    for (i=0; i<msg->aid.size(); i++) {
+      m->consForceIndexes[msg->aid[i]] = i;
+      m->consForce[i] = msg->f[i];
+    }
+  } else {
+    m->consForceIndexes = NULL;
+    m->consForce = NULL;
+  }
 }
 
 #include "ComputeMgr.def.h"
