@@ -57,6 +57,14 @@ ProxyMgr::recvRegisterProxy(RegisterProxyMsg *msg) {
 }
 
 void
+ProxyMgr::sendResults(ProxyResultMsg *msg) {
+}
+
+void
+ProxyMgr::recvResults(ProxyResultMsg *msg) {
+}
+
+void
 ProxyMgr::sendProxyData(ProxyDataMsg *msg) {
 }
 
@@ -79,13 +87,16 @@ ProxyMgr::recvProxyAtoms(ProxyAtomsMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/12/05 21:37:43 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1996/12/05 22:17:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.2  1996/12/05 22:17:38  jim
+ * added functions
+ *
  * Revision 1.1  1996/12/05 21:37:43  ari
  * Initial revision
  *
