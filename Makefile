@@ -300,23 +300,23 @@ psfgen.exe:	$(DSTDIR) $(SBOBJS)
 	$(LINK) $(LINKOPTS) /out:psfgen.exe $(SBOBJS) $(TCLWINLIB) $(TCLAPPLIB)
 
 flipdcd:	$(SRCDIR)/flipdcd.c
-	$(CC) -o $@ $(SRCDIR)/flipdcd.c || \
+	$(CC) $(CFLAGS) -o $@ $(SRCDIR)/flipdcd.c || \
 	echo "#!/bin/sh\necho unavailable on this platform" > $@; \
 	chmod +x $@
 
 flipbinpdb:	$(SRCDIR)/flipbinpdb.c
-	$(CC) -o $@ $(SRCDIR)/flipbinpdb.c || \
+	$(CC) $(CFLAGS) -o $@ $(SRCDIR)/flipbinpdb.c || \
 	echo "#!/bin/sh\necho unavailable on this platform" > $@; \
 	chmod +x $@
 
 fixdcd:	$(SRCDIR)/fixdcd.c
-	$(CC) -o fixdcd $(SRCDIR)/fixdcd.c
+	$(CC) $(CFLAGS) -o fixdcd $(SRCDIR)/fixdcd.c
 
 dumpdcd:	$(SRCDIR)/dumpdcd.c
-	$(CC) -o dumpdcd $(SRCDIR)/dumpdcd.c
+	$(CC) $(CFLAGS) -o dumpdcd $(SRCDIR)/dumpdcd.c
 
 loaddcd:	$(SRCDIR)/loaddcd.c
-	$(CC) -o loaddcd $(SRCDIR)/loaddcd.c
+	$(CC) $(CFLAGS) -o loaddcd $(SRCDIR)/loaddcd.c
 
 projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
