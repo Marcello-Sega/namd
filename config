@@ -74,13 +74,4 @@ begin:
   sh temp.m
   sh temp.l
   rm -f temp.d temp.f temp.m temp.l
-  echo "Creating efence and linking files"
-  (cd $DIR/efence;find . -name CVS -prune -o -type d -print )|sed -e s@.@@> temp.d
-  (cd $DIR/efence;find . -name CVS -prune -o -type f -print )|sed -e s@.@@> temp.f
-  awk '{print "mkdir efence"$1;}' < temp.d > temp.m
-  awk '{print "ln -s ../.rootdir efence"$1;}' < temp.d >> temp.m
-  awk '{print "ln -s .rootdir/efence"$1" efence"$1;}' < temp.f > temp.l
-  sh temp.m
-  sh temp.l
-  rm -f temp.d temp.f temp.m temp.l
   echo "You are ready to do a make in directory $ARCH now."
