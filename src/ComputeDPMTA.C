@@ -134,13 +134,12 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   else
   {
 	iout << "Unable to start DPMTA!\n" << endi;
-	for(int i=0; i<pmta_data.nprocs; i++)
-	{
-	  iout << "  ** tid[" << i << "]"
-	       << "=" << pmta_data.calling_tids[i] << "\n" << endi;
-	}
-	NAMD_die("Unable to start DPMTA!");
   }
+  for(int i=0; i<pmta_data.nprocs; i++)
+    {
+      iout << "  ** tid[" << i << "]"
+	   << "=" << pmta_data.calling_tids[i] << "\n" << endi;
+    }
 
   //  Register this master with the other DPMTA processes
   if (PMTAregister() < 0)
@@ -201,7 +200,7 @@ void ComputeDPMTA::doWork()
 
   // setup
   // 1. get totalAtoms
-  totalAtoms = Node::Object()->simParameters->totalAtoms;
+  totalAtoms = Node::Object()->molecule->numAtoms;
 
   // 2. setup atom list
   int i=0,j;
