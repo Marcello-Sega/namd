@@ -98,7 +98,7 @@ template <class T, class S, class P> class ComputeSelfTuples :
       // Start with empty list
       tuplePatchList.clear();
     
-      tuplePatchList.add(TuplePatchElem(patchMap->patch(patchID), cid));
+      tuplePatchList.add(TuplePatchElem(ComputeHomeTuples<T,S,P>::patchMap->patch(patchID), cid));
     
       setNumPatches(tuplePatchList.size());
       doLoadTuples = true;
