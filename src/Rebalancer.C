@@ -270,7 +270,12 @@ void Rebalancer::refine_togrid(pcgrid &grid, double thresholdLoad,
   if ( c->load + p->load < thresholdLoad) {
     int nPatches = numPatchesAvail(c,p);
     int nProxies = numProxiesAvail(c,p);
-    if ( nProxies < 0 ) return;
+    if ( nProxies < 0 ) { nPatches = nProxies = 0; }
+    if ( nPatches + nProxies < 2 && p->proxies.numElements() > 6 &&
+          p->proxies.numElements() >
+                ((double)numProxies / (double)numPesAvailable + 3) ) {
+      nPatches = nProxies = 0;
+    }
 	       
     if (nPatches < 0 || nPatches > 2)
 	 iout << iERROR << "Too many patches: " << nPatches 
@@ -285,20 +290,11 @@ void Rebalancer::refine_togrid(pcgrid &grid, double thresholdLoad,
     pcpair *pair = &grid[nPatches][nProxies];
 
     if (! pair->c) {
-      if (p->proxies.numElements() <
-                ((double)numProxies / (double)numPesAvailable + 2) ) {
 	 pair->c = c;
 	 pair->p = p;
-      }
     } else if (p->load <= pair->p->load && c->load >= pair->c->load) {
-      if ( nPatches + nProxies == 2 ) {
 	 pair->c = c;
 	 pair->p = p;
-      } else if (p->proxies.numElements() <
-                ((double)numProxies / (double)numPesAvailable + 2) ) {
-	 pair->c = c;
-	 pair->p = p;
-      }
     }
 
   }
@@ -726,23 +722,26 @@ int Rebalancer::numProxiesAvail(computeInfo *c, processorInfo *p)
    p1 = c->patch1;
    p2 = c->patch2;
    int count = 0;
+   int bad = 0;
    if (isAvailableOn((patchInfo *)&(patches[p1]), p) ) {
      if ( patches[p1].processor != p->Id ) count++;
    } else {
-     if ( patches[p1].proxiesOn.numElements() >
-	  ( (double)numProxies / (double)numPatches + 2 ) ) return -1;
+     if ( patches[p1].proxiesOn.numElements() > 6 &&
+          patches[p1].proxiesOn.numElements() >
+	  ( (double)numProxies / (double)numPatches + 3 ) ) bad = 10;
    }
    if (p1 != p2) {  // self computes get one patch for free so don't allow 2
      if ( isAvailableOn((patchInfo *)&(patches[p2]), p) ) {
        if ( patches[p2].processor != p->Id ) count++;
      } else {
-       if ( patches[p2].proxiesOn.numElements() >
-	  ( (double)numProxies / (double)numPatches + 2 ) ) return -1;
+       if ( patches[p2].proxiesOn.numElements() > 6 &&
+            patches[p2].proxiesOn.numElements() >
+	  ( (double)numProxies / (double)numPatches + 3 ) ) bad = 10;
      }
    }
 
    //iout << iINFO << "Returning " << count << " proxies\n" << endi;
-   return count;   
+   return ( count - bad );
 }
 
 int Rebalancer::numPatchesAvail(computeInfo *c, processorInfo *p)

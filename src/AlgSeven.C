@@ -31,7 +31,12 @@ void Alg7::togrid(processorInfo* goodP[3][3], processorInfo* poorP[3][3],
 
       int nPatches = numPatchesAvail(c,p);
       int nProxies = numProxiesAvail(c,p);
-      if ( nProxies < 0 ) return;
+      if ( nProxies < 0 ) { nPatches = nProxies = 0; }
+      if ( nPatches + nProxies < 2 && p->proxies.numElements() > 6 &&
+          p->proxies.numElements() >
+		((double)numProxies / (double)numPesAvailable + 3) ) {
+        nPatches = nProxies = 0;
+      }
 
       if (nPatches < 0 || nPatches > 2)
 	iout << iERROR << "Too many patches: " << nPatches << "\n" << endi;
@@ -40,31 +45,15 @@ void Alg7::togrid(processorInfo* goodP[3][3], processorInfo* poorP[3][3],
 
       if (c->load + p->load < overLoad*averageLoad) {
         processorInfo* &altp = goodP[nPatches][nProxies];
-        if ( nPatches + nProxies == 2 ) {
-          if (!altp || p->load < altp->load ) {
+        if (!altp || p->load < altp->load ) {
 	    altp = p;
-          }
-        } else if (p->proxies.numElements() <
-		((double)numProxies / (double)numPesAvailable + 2) ) {
-          if (!altp || p->proxies.numElements() <
-			altp->proxies.numElements() ) {
-	    altp = p;
-          }
         }
       }
 
       {
         processorInfo* &altp = poorP[nPatches][nProxies];
-        if ( nPatches + nProxies == 2 ) {
-          if (!altp || p->load < altp->load ) {
+        if (!altp || p->load < altp->load ) {
 	    altp = p;
-          }
-        } else if (p->proxies.numElements() <
-		((double)numProxies / (double)numPesAvailable + 2) ) {
-          if (!altp || p->proxies.numElements() <
-			altp->proxies.numElements() ) {
-	    altp = p;
-          }
         }
       }
 }
