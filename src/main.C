@@ -6,7 +6,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.7 1996/11/22 00:18:51 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.8 1996/12/06 19:54:12 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -17,7 +17,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.
 
 // Needed for namd.1.X components
 #include "Namd.h"
-#include "Communicate.h"
+#include "CommunicateConverse.h"
 #include "Inform.h"
 
 // Needed for namd.1.X components
@@ -36,7 +36,7 @@ public:
     CPrintf("main::main() - Namd::Namd() should have been invoked\n");
 
     // Needed for namd.1.X components - comm is global!
-    comm = new Communicate();
+    comm = new CommunicateConverse(argc,argv);
 
     if (argc >= 2)
 	namd.startup(argv[argc-1]);
@@ -52,7 +52,7 @@ public:
  *
  *	$RCSfile: main.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/11/22 00:18:51 $
+ *	$Revision: 1.8 $	$Date: 1996/12/06 19:54:12 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -61,6 +61,9 @@ public:
  * REVISION HISTORY:
  *
  * $Log: main.C,v $
+ * Revision 1.8  1996/12/06 19:54:12  ari
+ * *** empty log message ***
+ *
  * Revision 1.7  1996/11/22 00:18:51  ari
  * *** empty log message ***
  *

@@ -32,6 +32,7 @@ class PDB;
 class WorkDistrib;
 class PatchMgr;
 class ComputeMgr;
+class Communicate;
 
 class Node : public BOCclass
 {
@@ -104,12 +105,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.12 $	$Date: 1996/11/30 00:44:24 $
+ *	$Revision: 1.13 $	$Date: 1996/12/06 19:54:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.13  1996/12/06 19:54:12  ari
+ * *** empty log message ***
+ *
  * Revision 1.12  1996/11/30 00:44:24  jim
  * added sequencer use, ComputeMgr use, and quiescence detection
  *

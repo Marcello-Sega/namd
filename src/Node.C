@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.18 1996/12/02 19:39:26 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.19 1996/12/06 19:54:12 ari Exp $";
 
 
 #include "ckdefs.h"
@@ -43,6 +43,9 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 //#include "ProxyMgr.h"
 //#include "MessageComm.h"
 //#include "PatchMap.h"
+#include "Parameters.h"
+#include "SimParameters.h"
+#include "CommunicateConverse.h"
 #include "Debug.h"
 
 //======================================================================
@@ -109,6 +112,24 @@ void Node::messageStartup() {
 
 void Node::startup(InitMsg *msg)
 {
+  char **argvdummy;
+  extern Communicate *comm;
+
+  if ( CMyPe() ) {
+     comm = new CommunicateConverse(0,argvdummy);
+     simParameters = new SimParameters;
+     parameters = new Parameters;
+     molecule = new Molecule(simParameters);
+     simParameters->receive_SimParameters(comm->receive(0,SIMPARAMSTAG));
+     parameters->receive_Parameters(comm->receive(0,STATICPARAMSTAG));
+     molecule->receive_Molecule(comm->receive(0,MOLECULETAG));
+  } else {
+     simParameters->send_SimParameters(comm);
+     parameters->send_Parameters(comm);
+     molecule->send_Molecule(comm);
+  }
+
+
   AtomMap::Object()->allocateMap(molecule->numAtoms);
 
   delete msg;
@@ -235,13 +256,16 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.18 $	$Date: 1996/12/02 19:39:26 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.19 $	$Date: 1996/12/06 19:54:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.19  1996/12/06 19:54:12  ari
+ * *** empty log message ***
+ *
  * Revision 1.18  1996/12/02 19:39:26  nealk
  * Removed DEBUGM macro
  *
