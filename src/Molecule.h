@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Molecule.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/12/04 17:48:31 $
+ *	$Revision: 1.7 $	$Date: 1996/12/05 17:43:10 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -25,6 +25,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.7  1996/12/05 17:43:10  nealk
+ * Still debugging ComputeNonbondedExcl.
+ *
  * Revision 1.6  1996/12/04 17:48:31  nealk
  * Nonbondedexcl now inits.
  *
@@ -148,10 +151,10 @@ private:
 	Angle *angles;		//  Array of angle structures
 	Dihedral *dihedrals;	//  Array of dihedral structures
 	Improper *impropers;	//  Array of improper structures
-	NonbondedExcl *nonbondedexcls;	// Array of Nonbonded Excl structures
+	NonbondedExcl *nonbondedexcls; // Array of Nonbonded Excl structures
+	Exclusion *exclusions;	//  temp Array of exclusions
 	Bond *donors;	        //  Array of hydrogen bond donor structures
 	Bond *acceptors;	//  Array of hydrogen bond acceptor
-	Exclusion *exclusions;	//  Array of exclusion structures
 	int *consIndexes;	//  Constraint indexes for each atom
 	ConstraintParams *consParams;
 				//  Parameters for each atom constrained
@@ -164,8 +167,6 @@ private:
 				//  List of dihedrals by atom
 	LintList *impropersByAtom;
 				//  List of impropers by atom
-	LintList *nonbondedexclsByAtom;
-				//  List of nonbonded excls involving each atom
 	IntList *all_exclusions;
 				//  List of all exclusions, including
 				//  explicit exclusions and those calculated
@@ -198,9 +199,9 @@ private:
 	void read_exclusions(FILE *);
 				//  Read in exclusion info from .psf
 
-	void build12excl(IntList *, LintList *);
-	void build13excl(IntList *, LintList *);
-	void build14excl(IntList *, LintList *);
+	void build12excl(IntList *);
+	void build13excl(IntList *);
+	void build14excl(IntList *);
 	void build_exclusions();
 
 	// analyze the atoms, and determine which are oxygen, hb donors, etc.
@@ -326,8 +327,10 @@ public:
 			{return (&(dihedralsByAtom[anum]));}
 	LintList *get_impropers_for_atom(int anum) 
 			{return (&(impropersByAtom[anum]));}
-	LintList *get_nonbondedexcls_for_atom(int anum)
-			{return (&(nonbondedexclsByAtom[anum]));}
+	IntList *get_nonbondedexcls_for_allatom(int anum)
+			{return (&(all_exclusions[anum]));}
+	IntList *get_nonbondedexcls_for_14atom(int anum)
+			{return (&(onefour_exclusions[anum]));}
 	
 	//  Check for exclusions, either explicit or bonded.
 	//  Inline this funcion since it is called so often

@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Molecule.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/12/04 18:14:49 $
+ *	$Revision: 1.7 $	$Date: 1996/12/05 17:43:10 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.7  1996/12/05 17:43:10  nealk
+ * Still debugging ComputeNonbondedExcl.
+ *
  * Revision 1.6  1996/12/04 18:14:49  nealk
  * *** empty log message ***
  *
@@ -140,7 +143,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.6 1996/12/04 18:14:49 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.7 1996/12/05 17:43:10 nealk Exp $";
 
 #include "Molecule.h"
 #include <stdio.h>
@@ -252,7 +255,7 @@ Molecule::~Molecule()
 	if (impropers != NULL)
 		delete [] impropers;
 
-	if (nonbondedexcls != NULL)
+	if (nonbondedexcls!= NULL)
 		delete [] nonbondedexcls;
 
 	if (donors != NULL)
@@ -276,9 +279,6 @@ Molecule::~Molecule()
 	if (impropersByAtom != NULL)
 	   	delete [] impropersByAtom;
 	
-	if (nonbondedexclsByAtom != NULL)
-	   	delete [] nonbondedexclsByAtom;
-
 	if (all_exclusions != NULL)
 	   	delete [] all_exclusions;
 	
@@ -1331,8 +1331,11 @@ void Molecule::read_exclusions(FILE *fd)
 	/*  exlcuded atom indexes					*/
 	exclusions      = new Exclusion[numExclusions];
 	exclusion_atoms = new int[numExclusions];
+	nonbondedexcls  = new NonbondedExcl[numExclusions];
 
-	if ( (exclusions == NULL) || (exclusion_atoms == NULL) )
+	if ( (nonbondedexcls == NULL) ||
+	     (exclusions == NULL) ||
+	     (exclusion_atoms == NULL) )
 	{
 	  NAMD_die("memory allocation failed in Molecule::read_exclusions");
 	}
@@ -1392,6 +1395,8 @@ void Molecule::read_exclusions(FILE *fd)
 				/*  the pointer into the index list     */
 				exclusions[insert_index].atom1=num_read;
 				exclusions[insert_index].atom2=exclusion_atoms[insert_index];
+				nonbondedexcls[insert_index].atom1=num_read;
+				nonbondedexcls[insert_index].atom2=exclusion_atoms[insert_index];;
 			}
 
 			last_index=current_index;
@@ -2078,10 +2083,13 @@ void Molecule::receive_Molecule(Message *msg)
 	if (numExclusions)
 	{
 		exclusions=new Exclusion[numExclusions];
+		nonbondedexcls=new NonbondedExcl[numExclusions];
 		i1 = new int[numExclusions];
 		i2 = new int[numExclusions];
 
-		if ( (exclusions==NULL) || (i1==NULL) || (i2==NULL) )
+		if ( (nonbondedexcls == NULL) ||
+		     (exclusions==NULL) ||
+		     (i1==NULL) || (i2==NULL) )
 		{
 			NAMD_die("memory allocation failed in Molecule::receive_Molecule");
 		}
@@ -2093,6 +2101,8 @@ void Molecule::receive_Molecule(Message *msg)
 		{
 			exclusions[i].atom1 = i1[i];
 			exclusions[i].atom2 = i2[i];
+			nonbondedexcls[i].atom1 = i1[i];
+			nonbondedexcls[i].atom2 = i2[i];
 		}
 
 		delete [] i1;
@@ -2188,7 +2198,6 @@ void Molecule::build_lists_by_atom()
    anglesByAtom = new LintList[numAtoms];
    dihedralsByAtom = new LintList[numAtoms];
    impropersByAtom = new LintList[numAtoms];
-   nonbondedexclsByAtom = new LintList[numAtoms];
    
    if ( (bondsByAtom == NULL) || (anglesByAtom == NULL) || (dihedralsByAtom == NULL)
        || (impropersByAtom == NULL) )
@@ -2295,12 +2304,10 @@ void Molecule::build_exclusions()
 	  if (exclusions[i].atom1 < exclusions[i].atom2)
 	  {
 	    all_exclusions[exclusions[i].atom1].add(exclusions[i].atom2);
-	    nonbondedexclsByAtom[exclusions[i].atom1].add(exclusions[i].atom2);
 	  }
 	  else
 	  {
 	    all_exclusions[exclusions[i].atom2].add(exclusions[i].atom1);
-	    nonbondedexclsByAtom[exclusions[i].atom2].add(exclusions[i].atom1);
 	  }
 	}
 
@@ -2310,21 +2317,21 @@ void Molecule::build_exclusions()
 		case NONE:
 			break;
 		case ONETWO:
-			build12excl(all_exclusions,nonbondedexclsByAtom);
+			build12excl(all_exclusions);
 			break;
 		case ONETHREE:
-			build12excl(all_exclusions,nonbondedexclsByAtom);
-			build13excl(all_exclusions,nonbondedexclsByAtom);
+			build12excl(all_exclusions);
+			build13excl(all_exclusions);
 			break;
 		case ONEFOUR:
-			build12excl(all_exclusions,nonbondedexclsByAtom);
-			build13excl(all_exclusions,nonbondedexclsByAtom);
-			build14excl(all_exclusions,nonbondedexclsByAtom);
+			build12excl(all_exclusions);
+			build13excl(all_exclusions);
+			build14excl(all_exclusions);
 			break;
 		case SCALED14:
-			build12excl(all_exclusions,nonbondedexclsByAtom);
-			build13excl(all_exclusions,nonbondedexclsByAtom);
-			build14excl(onefour_exclusions,nonbondedexclsByAtom);
+			build12excl(all_exclusions);
+			build13excl(all_exclusions);
+			build14excl(onefour_exclusions);
 			break;
 	}
 
@@ -2347,7 +2354,6 @@ void Molecule::build_exclusions()
 /*									*/
 /*   INPUTS:								*/
 /*	lists - An array of IntList objects to put the exclusions into  */
-/*	llists - An array of LintList objects to put the exclusions into */
 /*									*/
 /*	This function determines all the 1-2 exclusions (that is, atoms */
 /*   that are bond together by a linear bond) and places these          */
@@ -2355,7 +2361,7 @@ void Molecule::build_exclusions()
 /*									*/
 /************************************************************************/
 
-void Molecule::build12excl(IntList *lists, LintList *llists)
+void Molecule::build12excl(IntList *lists)
    
 {
    int current_val;	//  Current value to check
@@ -2374,7 +2380,6 @@ void Molecule::build12excl(IntList *lists, LintList *llists)
 	      if (i<bonds[current_val].atom2)
 	      {
 		 lists[i].add(bonds[current_val].atom2);
-		 llists[i].add(bonds[current_val].atom2);
 		 DebugM(2,"Adding 12excl: " << i << " " << bonds[current_val].atom2 << "\n");
 	      }
 	   }
@@ -2383,7 +2388,6 @@ void Molecule::build12excl(IntList *lists, LintList *llists)
 	      if (i<bonds[current_val].atom1)
 	      {
 		 lists[i].add(bonds[current_val].atom1);
-		 llists[i].add(bonds[current_val].atom1);
 		 DebugM(2,"Adding 12excl: " << i << " " << bonds[current_val].atom1 << "\n");
 	      }
 	   }
@@ -2400,7 +2404,6 @@ void Molecule::build12excl(IntList *lists, LintList *llists)
 /*									*/
 /*   INPUTS:								*/
 /*	lists - Array of IntList objects to put exclusions into		*/
-/*	llists - An array of LintList objects to put the exclusions into */
 /*									*/
 /*	This function calculates the 1-3 exclusions (that is, atoms     */
 /*   that are bonded by linear bonds to a common third atom) and places */
@@ -2408,7 +2411,7 @@ void Molecule::build12excl(IntList *lists, LintList *llists)
 /*									*/
 /************************************************************************/
 
-void Molecule::build13excl(IntList *lists, LintList *llists)
+void Molecule::build13excl(IntList *lists)
    
 {
    int bond1, bond2;	//  The two bonds being checked
@@ -2444,7 +2447,6 @@ void Molecule::build13excl(IntList *lists, LintList *llists)
 				if (i < bonds[bond2].atom2)
 				{
 					lists[i].add(bonds[bond2].atom2);
-					llists[i].add(bonds[bond2].atom2);
 					DebugM(2,"Adding 13excl: " << i << " " << bonds[bond2].atom2 << "\n");
 				}
 			}
@@ -2453,7 +2455,6 @@ void Molecule::build13excl(IntList *lists, LintList *llists)
 				if (i < bonds[bond2].atom1)
 				{
 					lists[i].add(bonds[bond2].atom1);
-					llists[i].add(bonds[bond2].atom1);
 		 			DebugM(2,"Adding 13excl: " << i << " " << bonds[bond2].atom1 << "\n");
 				}
 			}
@@ -2473,7 +2474,6 @@ void Molecule::build13excl(IntList *lists, LintList *llists)
 /*									*/
 /*   INPUTS:								*/
 /*	lists - Array of IntList objects to put exclusions into		*/
-/*	llists - Array of LintList objects to put the exclusions into   */
 /*									*/
 /*	This function calculates all the 1-4 exclusions (that is,	*/
 /*   atoms that are connected via a sequence of three linear bonds) and */
@@ -2483,7 +2483,7 @@ void Molecule::build13excl(IntList *lists, LintList *llists)
 /************************************************************************/
 
 
-void Molecule::build14excl(IntList *lists, LintList *llists)
+void Molecule::build14excl(IntList *lists)
    
 {
    int bond1, bond2, bond3;	//  The two bonds being checked
@@ -2540,7 +2540,6 @@ void Molecule::build14excl(IntList *lists, LintList *llists)
 					if (i<bonds[bond3].atom2)
 					{
 					   lists[i].add(bonds[bond3].atom2);
-					   llists[i].add(bonds[bond3].atom2);
 		 			   DebugM(2,"Adding 14excl: " << i << " " << bonds[bond3].atom2 << "\n");
 					}
 				}
@@ -2549,7 +2548,6 @@ void Molecule::build14excl(IntList *lists, LintList *llists)
 				   	if (i<bonds[bond3].atom1)
 					{
 					   lists[i].add(bonds[bond3].atom1);
-					   llists[i].add(bonds[bond3].atom1);
 		 			   DebugM(2,"Adding 14excl: " << i << " " << bonds[bond3].atom1 << "\n");
 					}
 				}
