@@ -14,9 +14,35 @@
 #ifndef COMPUTEDPMTA_H
 #define COMPUTEDPMTA_H
 
+extern "C"
+  {
+  #include "dpmta.h"
+  }
 #include "ComputeHomePatches.h"
 
+typedef struct patch_info
+{
+   int pid;                     //  Patch ID number
+   int num;                     //  Number of atoms in this patch
+   int *indexes;                //  Global indexes for these atoms
+   Vector *pos;                 //  Positions for this patch
+   struct patch_info *next;     //  Pointer to next link in list
+} PatchInfo;
+
 class ComputeDPMTA : public ComputeHomePatches {
+private:
+  int *slavetids;	//  PID for slave processes
+  PatchInfo *patchData;	//  List containing data from patches
+  PatchInfo *patchTail;	//  Tail of patch data list
+  int numPatches;	//  Number of patches being dealt with
+  int numDistributed;	//  Number of patches that we have
+			//  distributed forces back to
+  int totalAtoms;	//  Total number of atoms being dealt with
+  PmtaPartInfo *fmaResults;	//  Results from the PMTA code
+  PmtaPartInfo *ljResults;	//  Results from the PMTA code
+
+  void ComputeDPMTA::get_FMA_cube(BigReal *boxsize, Vector *boxcenter);
+
 public:
   ComputeDPMTA(ComputeID c);
   virtual ~ComputeDPMTA();
@@ -28,18 +54,15 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeDPMTA.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:57:49 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/02/10 19:36:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.h,v $
- * Revision 1.1000  1997/02/06 15:57:49  ari
- * Resetting CVS to merge branches back into the main trunk.
- * We will stick to main trunk development as suggested by CVS manual.
- * We will set up tags to track fixed points of development/release
- * as suggested by CVS manual - all praise the CVS manual.
+ * Revision 1.1001  1997/02/10 19:36:37  nealk
+ * Added DPMTA stuff.
  *
  * Revision 1.778  1997/01/28 01:00:33  ari
  * uplevel
