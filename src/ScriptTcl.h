@@ -19,22 +19,28 @@
 #include <tcl.h>
 #endif
 
+class ConfigList;
+
 class ScriptTcl {
 public:
   ScriptTcl();
   ~ScriptTcl();
   void awaken(void) { CthAwaken(thread); }
-  void run();
+  void run(char *filename, ConfigList *configList);
 private:
+  char *scriptFile;
+  ConfigList *config;
   CthThread thread;
   static void threadRun(ScriptTcl*);
   void suspend(void) { CthSuspend(); }
   void algorithm();
   SimpleBroadcastObject<int> scriptBarrier;
   int barrierStep;
+  int runWasCalled;
 #ifdef NAMD_TCL
   Tcl_Interp *interp;
   static int Tcl_print(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_config(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_param(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_run(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_move(ClientData, Tcl_Interp *, int, char **);

@@ -36,6 +36,22 @@ int ScriptTcl::Tcl_print(ClientData,
   return TCL_OK;
 }
 
+int ScriptTcl::Tcl_config(ClientData clientData,
+	Tcl_Interp *, int argc, char *argv[]) {
+  /*
+  char *msg = Tcl_Merge(argc-1,argv+1);
+  CkPrintf("TCL: %s\n",msg);
+  free(msg);
+  */
+  char *name = argv[1];
+  char *data = Tcl_Merge(argc-2,argv+2);
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  script->config->add_element(name,strlen(name),data,strlen(data));
+  free(data);
+
+  return TCL_OK;
+}
+
 int ScriptTcl::Tcl_param(ClientData clientData,
         Tcl_Interp *interp, int argc, char *argv[]) {
   if (argc != 3) {
@@ -60,6 +76,17 @@ int ScriptTcl::Tcl_param(ClientData clientData,
 
 int ScriptTcl::Tcl_run(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  if ( script->runWasCalled == 0 ) {
+    CkPrintf("TCL: Run called, suspending until startup complete.\n");
+    Tcl_CreateCommand(interp, "param", Tcl_param,
+      (ClientData) script, (Tcl_CmdDeleteProc *) NULL);
+    Tcl_CreateCommand(interp, "unknown", Tcl_param,
+      (ClientData) script, (Tcl_CmdDeleteProc *) NULL);
+    script->config->add_element("tcl",3,"on",2);
+    script->runWasCalled = 1;
+    script->suspend();
+  }
   if (argc != 2) {
     interp->result = "wrong # args";
     return TCL_ERROR;
@@ -73,7 +100,6 @@ int ScriptTcl::Tcl_run(ClientData clientData,
     return TCL_ERROR;
   }
   SimParameters *simParams = Node::Object()->simParameters;
-  ScriptTcl *script = (ScriptTcl *)clientData;
   if (numsteps % simParams->stepsPerCycle) {
     interp->result = "number of steps must be a multiple of stepsPerCycle";
     return TCL_ERROR;
@@ -102,6 +128,11 @@ int ScriptTcl::Tcl_run(ClientData clientData,
 
 int ScriptTcl::Tcl_move(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  if (! script->runWasCalled) {
+    interp->result = "called before run";
+    return TCL_ERROR;
+  }
   if (argc != 4) {
     interp->result = "wrong # args";
     return TCL_ERROR;
@@ -128,7 +159,6 @@ int ScriptTcl::Tcl_move(ClientData clientData,
   free(fstring);
 
   SimParameters *simParams = Node::Object()->simParameters;
-  ScriptTcl *script = (ScriptTcl *)clientData;
 
   iout << "TCL: Moving atom " << atomid << " ";
   if ( moveto ) iout << "to"; else iout << "by";
@@ -147,11 +177,43 @@ int ScriptTcl::Tcl_move(ClientData clientData,
 
 int ScriptTcl::Tcl_output(ClientData clientData,
         Tcl_Interp *interp, int argc, char *argv[]) {
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  if (! script->runWasCalled) {
+    interp->result = "called before run";
+    return TCL_ERROR;
+  }
+  if (argc != 2) {
+    interp->result = "wrong # args";
+    return TCL_ERROR;
+  }
+  if (strlen(argv[1]) > MAX_SCRIPT_PARAM_SIZE) {
+    interp->result = "file name too long";
+    return TCL_ERROR;
+  }
+
+  SimParameters *simParams = Node::Object()->simParameters;
+  char oldname[MAX_SCRIPT_PARAM_SIZE+1];
+  strncpy(oldname,simParams->outputFilename,MAX_SCRIPT_PARAM_SIZE);
+
+  ScriptParamMsg *msg = new ScriptParamMsg;
+  strncpy(msg->param,"outputname",MAX_SCRIPT_PARAM_SIZE);
+  strncpy(msg->value,argv[1],MAX_SCRIPT_PARAM_SIZE);
+  CProxy_Node(CpvAccess(BOCclass_group).node).scriptParam(msg);
+
+  Node::Object()->enableScriptBarrier();
+  script->suspend();
 
   iout << "TCL: Triggering file output.\n" << endi;
 
-  ScriptTcl *script = (ScriptTcl *)clientData;
   script->scriptBarrier.publish(script->barrierStep++,2);
+  script->suspend();
+
+  msg = new ScriptParamMsg;
+  strncpy(msg->param,"outputname",MAX_SCRIPT_PARAM_SIZE);
+  strncpy(msg->value,oldname,MAX_SCRIPT_PARAM_SIZE);
+  CProxy_Node(CpvAccess(BOCclass_group).node).scriptParam(msg);
+
+  Node::Object()->enableScriptBarrier();
   script->suspend();
 
   return TCL_OK;
@@ -181,12 +243,16 @@ void ScriptTcl::threadRun(ScriptTcl* arg)
 }
 
 // Invoked by Node::run()
-void ScriptTcl::run()
+void ScriptTcl::run(char *filename, ConfigList *configList)
 {
+    scriptFile = filename;
+    config = configList;
+
     // create a Thread and invoke it
     DebugM(4, "::run() - this = " << this << "\n" );
     thread = CthCreate((CthVoidFn)&(threadRun),(void*)(this),TCL_STK_SZ);
     CthSetStrategyDefault(thread);
+    CthAwaken(thread);
     // awaken(); // triggered by sequencers
 }
 
@@ -198,12 +264,14 @@ void ScriptTcl::algorithm() {
 #ifdef NAMD_TCL
   // Create interpreter
   interp = Tcl_CreateInterp();
-  if (Tcl_Init(interp) == TCL_ERROR) {
-    CkPrintf("Tcl startup error: %\n", interp->result);
-  }
+//  if (Tcl_Init(interp) == TCL_ERROR) {
+//    CkPrintf("Tcl startup error: %\n", interp->result);
+//  }
   Tcl_CreateCommand(interp, "print", Tcl_print,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "param", Tcl_param,
+  Tcl_CreateCommand(interp, "unknown", Tcl_config,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "param", Tcl_config,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "run", Tcl_run,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
@@ -212,6 +280,7 @@ void ScriptTcl::algorithm() {
   Tcl_CreateCommand(interp, "output", Tcl_output,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
 
+/*
   // Get the script
   StringList *script = Node::Object()->configList->find("tclScript");
 
@@ -221,6 +290,17 @@ void ScriptTcl::algorithm() {
     else code = Tcl_EvalFile(interp,script->data);
     if (*interp->result != 0) CkPrintf("TCL: %s\n",interp->result);
     if (code != TCL_OK) NAMD_die("TCL error in script!");
+  }
+*/
+
+  runWasCalled = 0;
+  int code = Tcl_EvalFile(interp,scriptFile);
+  if (*interp->result != 0) CkPrintf("TCL: %s\n",interp->result);
+  if (code != TCL_OK) NAMD_die("TCL error in script!");
+  if (runWasCalled == 0) {
+    CkPrintf("TCL: Exiting after processing config file.\n");
+    CthFree(thread); CthSuspend();
+    return;
   }
 
 #else

@@ -103,6 +103,9 @@ Node::Node(GroupInitMsg *msg)
   output = NULL;
   smdData = NULL;
   script = NULL;
+#ifdef NAMD_TCL
+  script = new ScriptTcl;
+#endif
   imd = NULL;
 
   Compute::setNode(this);
@@ -144,6 +147,21 @@ Node::~Node(void)
 
 //----------------------------------------------------------------------
 // Startup Sequence
+
+#ifdef NAMD_TCL
+void Node::enableStartupCont(Namd *n) {
+  namd = n;
+  // CkPrintf("Starting quiescence detection for startup thread.\n");
+  CkStartQD(CProxy_Node::ckIdx_startupCont((CkQdMsg*)0),&thishandle);
+}
+
+void Node::startupCont(CkQdMsg *) {
+  // CkPrintf("Startup thread suspended, continuing with startup.\n");
+  namd->startupCont();
+}
+#else
+void Node::startupCont(CkQdMsg *) { ; }
+#endif
 
 void Node::messageStartUp() {
   CProxy_Node(CpvAccess(BOCclass_group).node).startup();
@@ -324,10 +342,6 @@ void Node::buildSequencers() {
     if ( simParameters->testOn ) controller = new TestController(state);
     else controller = new Controller(state);
     state->useController(controller);
-
-    if ( simParameters->tclOn ) {
-      script = new ScriptTcl;
-    }
   }
 
   // Assign Sequencer to all HomePatch(es)
@@ -373,7 +387,6 @@ void Node::run()
   // Start Controller (aka scalar Sequencer) on Pe(0)
   if ( ! CkMyPe() ) {
     state->runController();
-    if ( script ) script->run();
   }
 
   DebugM(4, "Starting Sequencers\n");

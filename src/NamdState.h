@@ -34,10 +34,14 @@ class NamdState {
     Controller *controller;
     Lattice lattice;
     SMDData *smdData;
+    char *currentdir;
   public:
     NamdState(void);
     ~NamdState() {}
     int configFileInit(char *);
+#ifdef NAMD_TCL
+    int configFileInitCont(void);
+#endif
     int status();
     void useController(Controller *controllerPtr);
     void runController(void);

@@ -18,6 +18,8 @@ module Node {
     entry void startUp(CkQdMsg *);
     entry void startup(void);
 
+    entry void startupCont(CkQdMsg *);
+
     // used to move from phase to phase
     entry void quiescence(CkQdMsg *);
 

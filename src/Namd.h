@@ -28,6 +28,9 @@ public:
   // read in various input files by invoking
   // proper classes (parameters, molecule etc)
   void startup(char *);   
+#ifdef NAMD_TCL
+  void startupCont(void);
+#endif
 
   // last call of system
   static void namdDone(void);

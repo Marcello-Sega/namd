@@ -113,6 +113,16 @@ void ConfigList::add_element( char *s1, int len1, char *s2, int len2)
 }
 
 
+// The scripting interface will call our add_element routine.
+
+ConfigList::ConfigList(void)
+{
+  isokay = TRUE;
+  theList = NULL;
+}
+
+// Used to implement "source" for file parser below.
+
 struct FileStack {
   FILE *file;
   int linenumber;

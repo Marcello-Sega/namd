@@ -37,7 +37,7 @@ public:
          << " (includes FFTW, do not distribute)"
 #endif
          << "\n"
-#if 0
+#if 1
          << iWARN << "\n"
          << iWARN << "          ***  UNRELEASED EXPERIMENTAL VERSION  ***\n"
          << iWARN << "\n"

@@ -107,9 +107,17 @@ Namd::~Namd(void)
 void Namd::startup(char *confFile)
 {
   namdState->configFileInit(confFile);
+
+#ifdef NAMD_TCL
+  Node::Object()->enableStartupCont(this);
+}
+
+void Namd::startupCont(void) {
+  namdState->configFileInitCont();
+#endif
+
   if (namdState->status()) {
-    CkPrintf("Namd::startup() - could not initialize namdState from %s\n", 
-      confFile);
+    CkPrintf("Namd::startup() - could not initialize namdState.\n");
     CkExit();
   }
 

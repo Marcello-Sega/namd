@@ -101,10 +101,11 @@ class ConfigList {
     ConfigListNode *theList;
        // copy the information into a String, as appropriate
        // this is really a "push"
-    void add_element( char *s1, int len1, char *s2, int len2);
     ConfigListNode *find_key_word( const char *keyword) const;
     Bool isokay;
   public:
+    ConfigList(void);
+    void add_element( char *s1, int len1, char *s2, int len2);
     ConfigList( const char *filename);
     Bool okay( void) { return isokay; }
     ~ConfigList( void);

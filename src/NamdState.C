@@ -18,9 +18,11 @@
 #include "SimParameters.h"
 #include "ConfigList.h"
 #include "PDB.h"
+#include "Namd.h"
 #include "NamdState.h"
 #include "Controller.h"
 #include "SMD.h"
+#include "ScriptTcl.h"
 #include <unistd.h>
 #include <sys/stat.h>
 
@@ -90,7 +92,7 @@ NamdState::configFileInit(char *confFile)
 {
   struct stat statBuf;
 
-  char *currentdir=confFile;
+  currentdir=confFile;
   char *tmp;
   for(tmp=confFile;*tmp;++tmp); // find final null
   for( ; tmp != confFile && *tmp != '/'; --tmp); // find last '/'
@@ -109,9 +111,22 @@ NamdState::configFileInit(char *confFile)
     NAMD_die("Simulation config file is not accessible.");
   }
 
+#ifdef NAMD_TCL
+  configList = new ConfigList;  // empty, will be filled by Tcl
+
+  ScriptTcl *script = Node::Object()->getScript();
+  script->run(confFile,configList);
+
+  return 0;
+}
+
+int NamdState::configFileInitCont(void) {
+
+#else
   if ( NULL == confFile || NULL == (configList = new ConfigList(confFile)) ) {
     NAMD_die("Simulation config file is empty.");
   }
+#endif
   if (!configList->okay()) {
     NAMD_die("Simulation config file is incomplete or contains errors.");
   }

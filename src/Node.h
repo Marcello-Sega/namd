@@ -38,6 +38,7 @@ class WorkDistrib;
 class PatchMgr;
 class ComputeMgr;
 class Communicate;
+class Namd;
 class NamdState;
 class Output;
 class LdbCoordinator;
@@ -62,6 +63,12 @@ public:
 
   // Singleton Access method
   inline static Node *Object() {return CpvAccess(Node_instance);}
+
+  void startupCont(CkQdMsg *);
+#ifdef NAMD_TCL
+  void enableStartupCont(Namd *);
+  ScriptTcl *getScript(void) { return script; }
+#endif
 
   // Run for the number of steps specified in the sim_parameters
   static void messageRun();
@@ -133,6 +140,9 @@ private:
   ComputeMgr *computeMgr;
   ProxyMgr *proxyMgr;
   ScriptTcl *script;
+#ifdef NAMD_TCL
+  Namd *namd;
+#endif
 
   // Countdown for Node::startup barrier
   int numNodeStartup;

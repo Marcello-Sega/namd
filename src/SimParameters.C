@@ -87,6 +87,7 @@ void SimParameters::scriptSet(const char *param, const char *value) {
 #define MAX_SCRIPT_PARAM_SIZE 128
 #define SCRIPT_PARSE_INT(NAME,VAR) { if ( ! strncasecmp(param,(NAME),MAX_SCRIPT_PARAM_SIZE) ) { (VAR) = atoi(value); return; } }
 #define SCRIPT_PARSE_FLOAT(NAME,VAR) { if ( ! strncasecmp(param,(NAME),MAX_SCRIPT_PARAM_SIZE) ) { (VAR) = atof(value); return; } }
+#define SCRIPT_PARSE_STRING(NAME,VAR) { if ( ! strncasecmp(param,(NAME),MAX_SCRIPT_PARAM_SIZE) ) { strcpy(VAR,value); return; } }
 
   SCRIPT_PARSE_INT("numsteps",N)
   SCRIPT_PARSE_INT("firsttimestep",firstTimestep)
@@ -94,6 +95,7 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_FLOAT("rescaleTemp",rescaleTemp)
   SCRIPT_PARSE_FLOAT("langevinTemp",langevinTemp)
   SCRIPT_PARSE_FLOAT("constraintScaling",constraintScaling)
+  SCRIPT_PARSE_STRING("outputname",outputFilename)
   if ( ! strncasecmp(param,"nonbondedScaling",MAX_SCRIPT_PARAM_SIZE) ) {
     nonbondedScaling = atof(value);
     ComputeNonbondedUtil::select();
@@ -152,8 +154,8 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
    opts.range("timestep", NOT_NEGATIVE);
    opts.units("timestep", N_FSEC);
 
-   opts.require("main", "numsteps", "number of timesteps to perform",
-    &N);
+   opts.optional("main", "numsteps", "number of timesteps to perform",
+    &N,0);
    opts.range("numsteps", NOT_NEGATIVE);
 
    opts.optional("main", "stepspercycle",
@@ -757,8 +759,10 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
    ////  Tcl Scripting
    opts.optionalB("main", "tcl", "Is Tcl scripting active?",
      &tclOn, FALSE);
+/*
    opts.require("tcl", "tclScript",
      "Tcl script", PARSE_MULTIPLES);
+*/
 #endif
 
 }
