@@ -337,7 +337,12 @@ void ComputeNonbondedUtil :: NAME
 
   for ( i = 0; i < (i_upper SELF(- 1)); ++i )
   {
-	// PAIR( iout << i << " " << i_upper << " start\n" << endi;)
+                    
+#if CHARM_VERSION > 50800
+      CmiNetworkProgress();
+#endif
+
+    // PAIR( iout << i << " " << i_upper << " start\n" << endi;)
     const CompAtom &p_i = p_0[i];
     register const BigReal p_i_x = p_i.position.x;
     register const BigReal p_i_y = p_i.position.y;
