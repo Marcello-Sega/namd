@@ -35,12 +35,10 @@ public:
 
   void set_transrate(int newrate) {transrate = newrate; }
   void update();
-  void close() {sock = 0;}
 
 private:
   void *sock;
 
-  //float *fcoords;
   int curstep;   
   int transrate;
   int haveEnergies;
