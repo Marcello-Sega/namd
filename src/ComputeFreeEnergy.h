@@ -19,6 +19,7 @@ class ComputeGlobalDataMsg;
 class ComputeGlobalResultsMsg;
 class ComputeGlobalMaster;
 class ComputeMgr;
+class Molecule;
 
 class ComputeFreeEnergy : public ComputeGlobalMaster {
 private:
@@ -27,6 +28,17 @@ private:
   ~ComputeFreeEnergy();
   virtual void initialize();
   virtual void calculate();
+  virtual void user_initialize();
+  virtual void user_calculate();
+  ComputeGlobalConfigMsg *configMsg;
+  ComputeGlobalResultsMsg *resultsMsg;
+  Molecule *molecule;
+protected:
+  // These all return -1 on error.
+  int getAtomID(const char *segid, int resid, const char *aname);
+  int requestAtom(int atomid);
+  int getPosition(int atomid, Position &position);
+  int addForce(int atomid, Force force);
 };
 
 #endif
@@ -35,12 +47,16 @@ private:
  *
  *	$RCSfile: ComputeFreeEnergy.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1998/02/10 06:45:09 $
+ *	$Revision: 1.2 $	$Date: 1998/02/11 07:31:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFreeEnergy.h,v $
+ * Revision 1.2  1998/02/11 07:31:35  jim
+ * Finished interface to free energy perturbation code, including method
+ * for determining atomid from segnamde, resid, and atomname.
+ *
  * Revision 1.1  1998/02/10 06:45:09  jim
  * Added class ComputeFreeEnergy.
  *
