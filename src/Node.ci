@@ -31,8 +31,7 @@ module Node {
 
     // exit scheduler to return to front end
     entry void recvEnableExitScheduler(CkQdMsg *);
-    entry void bcastExitScheduler(CkQdMsg *);
-    entry void exitScheduler(void);
+    entry void exitScheduler(CkQdMsg *);
 
     // terminate program at end of run
     entry void haltBarrier(CkQdMsg *);

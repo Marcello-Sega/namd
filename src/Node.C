@@ -431,18 +431,13 @@ void Node::recvEnableExitScheduler(CkQdMsg *msg) {
 
 void Node::enableExitScheduler(void) {
   //CmiPrintf("enableExitScheduler\n");
-  CkStartQD(CProxy_Node::ckIdx_bcastExitScheduler((CkQdMsg*)0),&thishandle);
+  CkStartQD(CProxy_Node::ckIdx_exitScheduler((CkQdMsg*)0),&thishandle);
 }
 
-void Node::bcastExitScheduler(CkQdMsg *msg) {
-  //CmiPrintf("bcastExitScheduler %d\n",CkMyPe());
-  CProxy_Node(thisgroup).exitScheduler();
-  delete msg;
-}
-
-void Node::exitScheduler() {
+void Node::exitScheduler(CkQdMsg *msg) {
   //CmiPrintf("exitScheduler %d\n",CkMyPe());
   CsdExitScheduler();
+  delete msg;
 }
 
 
