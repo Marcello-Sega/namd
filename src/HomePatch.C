@@ -229,10 +229,7 @@ void HomePatch::positionsReady(int doMigration)
   patchMapRead = 1;
 
   // gzheng
-  if (useSync) {
-     Sync *sync = Sync::Object();
-     sync->PatchReady();
-  }
+  if (useSync) Sync::Object()->PatchReady();
 }
 
 void HomePatch::saveForce(const int ftag)
