@@ -9,8 +9,8 @@
 ####
 CC = gcc
 CXX = KCC
-CXXOPTS = -O3 -DGLOBALS -DGCC +K3 -Bstatic --backend -m486
-COPTS = -O3 -DGCC -m486
+CXXOPTS = -O3 -DGLOBALS -DGCC +K3 -Bstatic --backend -march=pentiumpro --backend -ffast-math
+COPTS = -O3 -DGCC -march=pentiumpro -ffast-math
 CXXTHREADOPTS = $(CXXOPTS)
 
 #####
