@@ -1042,7 +1042,7 @@ void WorkDistrib::random_velocities(BigReal Temp,Molecule *structure,
     //  "Handbook of Mathematical Functions", pg 952.
     for (randnum=0.0, j=0; j<12; j++)
     {
-      randnum += vel_random.next_double();
+      randnum += vel_random.uniform();
     }
 
     randnum -= 6.0;
@@ -1051,7 +1051,7 @@ void WorkDistrib::random_velocities(BigReal Temp,Molecule *structure,
 
     for (randnum=0.0, j=0; j<12; j++)
     {
-      randnum += vel_random.next_double();
+      randnum += vel_random.uniform();
     }
 
     randnum -= 6.0;
@@ -1060,7 +1060,7 @@ void WorkDistrib::random_velocities(BigReal Temp,Molecule *structure,
 
     for (randnum=0.0, j=0; j<12; j++)
     {
-      randnum += vel_random.next_double();
+      randnum += vel_random.uniform();
     }
 
     randnum -= 6.0;
@@ -1125,12 +1125,15 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1068 $	$Date: 1999/07/13 19:21:05 $
+ *	$Revision: 1.1069 $	$Date: 1999/07/22 15:39:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1069  1999/07/22 15:39:47  jim
+ * Eliminated last remnants of non-reentrant rand48 calls.
+ *
  * Revision 1.1068  1999/07/13 19:21:05  jim
  * Implemented new self contained version of rand48 random number generator.
  *

@@ -139,7 +139,6 @@ extern "C" {
   typedef int CCMPFN(const void *, const void*);
 }
 int *NAMD_bsearch(int *, int *, int, int, CCMPFN *cmpfn);
-BigReal NAMD_random();
 FILE *Fopen(const char *filename, const char *mode);
 int  Fclose(FILE *fout);
 
@@ -281,12 +280,15 @@ int  Fclose(FILE *fout);
  *
  *	$RCSfile: common.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1022 $	$Date: 1999/07/08 22:08:08 $
+ *	$Revision: 1.1023 $	$Date: 1999/07/22 15:39:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.h,v $
+ * Revision 1.1023  1999/07/22 15:39:50  jim
+ * Eliminated last remnants of non-reentrant rand48 calls.
+ *
  * Revision 1.1022  1999/07/08 22:08:08  jim
  * Eliminated rint definition from fp.h on T3E.
  *

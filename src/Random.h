@@ -15,6 +15,7 @@
 #define RANDOM_H
 
 #include <math.h>
+#include "common.h"
 
 #define	RAND48_SEED_0	(0x330e)
 #define	RAND48_SEED_1	(0xabcd)
@@ -30,6 +31,8 @@ class Random {
 
 private:
 
+  double second_gaussian;
+  unsigned short second_gaussian_waiting;
   unsigned short rand48_seed_0;
   unsigned short rand48_seed_1;
   unsigned short rand48_seed_2;
@@ -44,6 +47,8 @@ public:
 
   // default constructor
   Random(void) {
+    second_gaussian = 0;
+    second_gaussian_waiting = 0;
     rand48_seed_0 = RAND48_SEED_0;
     rand48_seed_1 = RAND48_SEED_1;
     rand48_seed_2 = RAND48_SEED_2;
@@ -57,6 +62,8 @@ public:
 
   // constructor with seed
   Random(long seed) {
+    second_gaussian = 0;
+    second_gaussian_waiting = 0;
     rand48_seed_0 = RAND48_SEED_0;
     rand48_seed_1 = (unsigned short) seed;
     rand48_seed_2 = (unsigned short) (seed >> 16);
@@ -70,6 +77,8 @@ public:
 
   // reinitialize with seed
   void init(long seed) {
+    second_gaussian = 0;
+    second_gaussian_waiting = 0;
     rand48_seed_0 = RAND48_SEED_0;
     rand48_seed_1 = (unsigned short) seed;
     rand48_seed_2 = (unsigned short) (seed >> 16);
@@ -144,18 +153,49 @@ public:
     rand48_seed_0 = save_seed_0;
     rand48_seed_1 = save_seed_1;
     rand48_seed_2 = save_seed_2;
+
+    second_gaussian = 0;
+    second_gaussian_waiting = 0;
   }
 
-  // return a random double
-  double next_double(void) {
+  // return a number uniformly distributed between 0 and 1
+  BigReal uniform(void) {
     skip();
     return ldexp((double) rand48_seed_0, -48) +
            ldexp((double) rand48_seed_1, -32) +
            ldexp((double) rand48_seed_2, -16);
   }
 
+  // return a number from a standard gaussian distribution
+  BigReal gaussian(void) {
+    BigReal fac, r, v1, v2;
+
+    if (second_gaussian_waiting) {
+      second_gaussian_waiting = 0;
+      return second_gaussian;
+    } else {
+      r = 2.;                 // r >= 1.523e-8 ensures abs result < 6
+      while (r >=1. || r < 1.523e-8) { // make sure we are within unit circle
+        v1 = 2.0 * uniform() - 1.0;
+        v2 = 2.0 * uniform() - 1.0;
+        r = v1*v1 + v2*v2;
+      }
+      fac = sqrt(-2.0 * log(r)/r);
+      // now make the Box-Muller transformation to get two normally
+      // distributed random numbers. Save one and return the other.
+      second_gaussian_waiting = 1;
+      second_gaussian = v1 * fac;
+      return v2 * fac;
+    }
+  }
+
+  // return a vector of gaussian random numbers
+  Vector gaussian_vector(void) {
+    return Vector( gaussian(), gaussian(), gaussian() );
+  }
+
   // return a random long
-  long next_long(void) {
+  long integer(void) {
     skip();
     return ((long) rand48_seed_2 << 15) + ((long) rand48_seed_1 >> 1);
   }

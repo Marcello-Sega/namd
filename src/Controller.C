@@ -28,6 +28,7 @@
 #include "NamdOneTools.h"
 #include "PatchMap.h"
 #include "PatchMap.inl"
+#include "Random.h"
 
 #ifndef cbrt
   // cbrt() not in math.h on goneril
@@ -51,6 +52,8 @@ Controller::Controller(NamdState *s) :
 {
     broadcast = new ControllerBroadcasts;
     reduction = ReductionMgr::Object()->willRequire(REDUCTIONS_BASIC);
+    random = new Random(simParams->randomSeed);
+    random->split(0,PatchMap::Object()->numPatches()+1);
 
     rescaleVelocities_sumTemps = 0;  rescaleVelocities_numTemps = 0;
     langevinPiston_strainRate = simParams->strainRate;
@@ -64,6 +67,7 @@ Controller::~Controller(void)
 {
     delete broadcast;
     delete reduction;
+    delete random;
 }
 
 void Controller::threadRun(Controller* arg)
@@ -201,9 +205,9 @@ void Controller::langevinPiston1(int step)
       BigReal f2 = sqrt( ( 1. - f1*f1 ) * kT / mass );
       strainRate *= f1;
       if ( simParams->useFlexibleCell )
-	strainRate += f2 * gaussian_random_vector();
+	strainRate += f2 * random->gaussian_vector();
       else
-	strainRate += f2 * gaussian_random_number() * Vector(1,1,1);
+	strainRate += f2 * random->gaussian() * Vector(1,1,1);
 #ifdef DEBUG_PRESSURE
       iout << iINFO << "applying langevin, strain rate: " << strainRate << "\n";
 #endif
@@ -306,9 +310,9 @@ void Controller::langevinPiston2(int step)
       BigReal f2 = sqrt( ( 1. - f1*f1 ) * kT / mass );
       strainRate *= f1;
       if ( simParams->useFlexibleCell )
-	strainRate += f2 * gaussian_random_vector();
+	strainRate += f2 * random->gaussian_vector();
       else
-	strainRate += f2 * gaussian_random_number() * Vector(1,1,1);
+	strainRate += f2 * random->gaussian() * Vector(1,1,1);
 #ifdef DEBUG_PRESSURE
       iout << iINFO << "applying langevin, strain rate: " << strainRate << "\n";
 #endif
@@ -820,12 +824,15 @@ void Controller::terminate(void) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1074 $	$Date: 1999/07/08 21:26:39 $
+ *	$Revision: 1.1075 $	$Date: 1999/07/22 15:39:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1075  1999/07/22 15:39:41  jim
+ * Eliminated last remnants of non-reentrant rand48 calls.
+ *
  * Revision 1.1074  1999/07/08 21:26:39  jim
  * Eliminated compiler warnings.
  *

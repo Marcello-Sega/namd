@@ -25,6 +25,8 @@
 #include "NamdOneTools.h"
 #include "LdbCoordinator.h"
 #include "Thread.h"
+#include "Random.h"
+#include "PatchMap.inl"
 
 #define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
@@ -38,6 +40,8 @@ Sequencer::Sequencer(HomePatch *p) :
     broadcast = new ControllerBroadcasts;
     reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
     ldbCoordinator = (LdbCoordinator::Object());
+    random = new Random(simParams->randomSeed);
+    random->split(patch->getPatchID()+1,PatchMap::Object()->numPatches()+1);
 
     rescaleVelocities_numTemps = 0;
 }
@@ -46,6 +50,7 @@ Sequencer::~Sequencer(void)
 {
     delete broadcast;
     delete reduction;
+    delete random;
 }
 
 // Invoked by thread
@@ -209,7 +214,7 @@ void Sequencer::langevinVelocities(BigReal dt_fs)
       BigReal f2 = sqrt( ( 1. - f1*f1 ) * kbT / patch->a[i].mass );
 
       patch->v[i] *= f1;
-      patch->v[i] += f2 * gaussian_random_vector();
+      patch->v[i] += f2 * random->gaussian_vector();
     }
   }
 }
@@ -226,7 +231,7 @@ void Sequencer::langevinVelocitiesBBK1(BigReal dt_fs)
       int aid = patch->atomIDList[i];
       BigReal dt_gamma = dt * molecule->langevin_param(aid);
 
-      patch->v[i] += gaussian_random_vector() *
+      patch->v[i] += random->gaussian_vector() *
              sqrt( dt_gamma * kbT / patch->a[i].mass );
       patch->v[i] /= ( 1. + 0.5 * dt_gamma );
     }
@@ -247,7 +252,7 @@ void Sequencer::langevinVelocitiesBBK2(BigReal dt_fs)
       BigReal dt_gamma = dt * molecule->langevin_param(aid);
 
       patch->v[i] *= ( 1. - 0.5 * dt_gamma );
-      patch->v[i] += gaussian_random_vector() *
+      patch->v[i] += random->gaussian_vector() *
              sqrt( dt_gamma * kbT / patch->a[i].mass );
     }
   }
@@ -373,7 +378,7 @@ void Sequencer::reassignVelocities(int step)
     for ( int i = 0; i < patch->numAtoms; ++i )
     {
       patch->v[i] = ( ( patch->a[i].flags & ATOM_FIXED ) ? Vector(0,0,0) :
-        sqrt( kbT / patch->a[i].mass ) * gaussian_random_vector() );
+        sqrt( kbT / patch->a[i].mass ) * random->gaussian_vector() );
     }
   }
 }
@@ -613,12 +618,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1067 $     $Date: 1999/07/08 21:27:02 $
+ *      $Revision: 1.1068 $     $Date: 1999/07/22 15:39:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1068  1999/07/22 15:39:45  jim
+ * Eliminated last remnants of non-reentrant rand48 calls.
+ *
  * Revision 1.1067  1999/07/08 21:27:02  jim
  * Eliminated compiler warnings.
  *

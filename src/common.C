@@ -99,46 +99,6 @@ void NAMD_write(int fd, const void *buf, size_t count)
    }
 }
 
-//  NAMD_random returns a random number from 0.0 to 1.0.  It is really
-//  just used for portability so porting to machines with different
-//  random number generators is easy.  This is less necessary as
-//  drand48 appears more and more places . . .
-
-BigReal NAMD_random()
-{
-	static int first=1;	//  Flag indicating first call
-
-	//  If this is the first call, seed it
-	if (first)
-	{
-		int i;		//  Loop counter
-
-		//  Seed the random number generator initially.  Add the node
-		//  number to get more randomness
-		srand48(Node::Object()->simParameters->randomSeed+CkMyPe());
-
-		//  If this is a client node, now pick off the node-1
-		//  first random numbers and then use the next random number
-		//  to again seed the generator.  This will really insure that
-		//  there is no correlation between random numbers on different
-		//  nodes.
-		if (CkMyPe())
-		{
-			for (i=0; i<(CkMyPe()-1); i++)
-			{
-				drand48();
-			}
-
-			srand48((long) (drand48()*1073741824));
-		}
-
-		first=0;
-	}
-
-	return(drand48());
-}
-
-
 
 /********************************************************************************/
 /*										*/
@@ -304,12 +264,15 @@ int	Fclose	(FILE *fout)
  *
  *	$RCSfile: common.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1020 $	$Date: 1999/07/06 20:32:46 $
+ *	$Revision: 1.1021 $	$Date: 1999/07/22 15:39:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.C,v $
+ * Revision 1.1021  1999/07/22 15:39:49  jim
+ * Eliminated last remnants of non-reentrant rand48 calls.
+ *
  * Revision 1.1020  1999/07/06 20:32:46  jim
  * Eliminated warnings from new generation of picky compilers.
  *

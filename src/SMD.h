@@ -19,6 +19,7 @@
 
 #include "Vector.h"
 #include "common.h"
+#include "Random.h"
 
 class SMDDataMsg;
 class SimParameters;
@@ -59,6 +60,8 @@ public:
 
  
 private:
+  Random random;          // random number generator
+                          // this should probably be seeded
   int timeStamp;          // time the refPos was last changed
   Vector direction;       // direction of restraint point movement
   Vector refPos;          // restraint point position

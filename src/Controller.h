@@ -25,6 +25,7 @@ class NamdState;
 class SimParameters;
 class RequireReduction;
 class CollectionMaster;
+class Random;
 
 class Controller
 {
@@ -72,6 +73,7 @@ protected:
     // void suspend(void) { CthSuspend(); };
     void terminate(void);
 
+    Random *random;
     SimParameters *const simParams;	// for convenience
     NamdState *const state;		// access data in state
     RequireReduction *reduction;
@@ -97,12 +99,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1024 $	$Date: 1999/07/08 21:26:43 $
+ *	$Revision: 1.1025 $	$Date: 1999/07/22 15:39:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.h,v $
+ * Revision 1.1025  1999/07/22 15:39:42  jim
+ * Eliminated last remnants of non-reentrant rand48 calls.
+ *
  * Revision 1.1024  1999/07/08 21:26:43  jim
  * Eliminated compiler warnings.
  *

@@ -112,18 +112,18 @@ void SMDData::choose_direction(int t, const Vector &p) {
   BigReal Pi = 4.*atan(1.);
 
   // get the random values for theta and phi
-  phi = NAMD_random() * 2. * Pi;
+  phi = random.uniform() * 2. * Pi;
 
   switch(method) {
   case SMD_GAUSSIAN:
     theta = coneAngle + 1.0;
     while (theta > coneAngle) { // reject everything that's beyond coneAngle
-      theta = simParams->SMDGaussW * fabs(gaussian_random_number());
+      theta = simParams->SMDGaussW * fabs(random.gaussian());
     }
     break;
   case SMD_UNIFORM:
   default:
-    theta = NAMD_random() * coneAngle;
+    theta = random.uniform() * coneAngle;
     break;
   }
   theta *= Pi/180.0;   // transform to radians

@@ -16,15 +16,6 @@
 #include "PDB.h"
 #include "Molecule.h"
 
-extern void velocities_from_PDB(char *filename, Vector *v, int totalAtoms);
-extern void velocities_from_binfile(char *fname, Vector *vels, int n);
-
-extern Vector gaussian_random_vector(void);
-extern BigReal gaussian_random_number(void);
-
-extern void random_velocities(BigReal Temp,
-			Molecule *structure, Vector *v, int totalAtoms);
-extern void remove_com_motion(Vector *vel, Molecule *structure, int n);
 extern void read_binary_coors(char *fname, PDB *pdbobj);
 extern void vec_rotation_matrix(BigReal angle, Vector v, BigReal m[]);
 extern Vector mat_multiply_vec(const Vector &v, BigReal m[]);
@@ -34,13 +25,16 @@ extern Vector mat_multiply_vec(const Vector &v, BigReal m[]);
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdOneTools.h,v $
- *	$Author: sergei $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1998/10/01 00:28:57 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.5 $	$Date: 1999/07/22 15:39:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdOneTools.h,v $
+ * Revision 1.5  1999/07/22 15:39:44  jim
+ * Eliminated last remnants of non-reentrant rand48 calls.
+ *
  * Revision 1.4  1998/10/01 00:28:57  sergei
  * added vec_rotation_matrix (adopted from Mesa code) and mat_multiply_vec
  *

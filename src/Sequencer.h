@@ -24,6 +24,7 @@ class SubmitReduction;
 class CollectionMgr;
 class ControllerBroadcasts;
 class LdbCoordinator;
+class Random;
 
 class Sequencer
 {
@@ -64,6 +65,8 @@ protected:
     void langevinVelocitiesBBK2(BigReal);
 
     void terminate(void);
+
+    Random *random;
     SimParameters *const simParams;	// for convenience
     HomePatch *const patch;		// access methods in patch
     SubmitReduction *reduction;
@@ -87,12 +90,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1025 $	$Date: 1999/07/08 21:27:06 $
+ *	$Revision: 1.1026 $	$Date: 1999/07/22 15:39:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.h,v $
+ * Revision 1.1026  1999/07/22 15:39:46  jim
+ * Eliminated last remnants of non-reentrant rand48 calls.
+ *
  * Revision 1.1025  1999/07/08 21:27:06  jim
  * Eliminated compiler warnings.
  *
