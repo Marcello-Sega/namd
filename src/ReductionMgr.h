@@ -120,6 +120,7 @@ public:
   void submit(int seq, ReductionTag tag, BigReal data, int more=0);
   // void submit(int seq, ReductionTag tag, Vector data, int more=0);
   // void submit(int seq, ReductionTag tag, Tensor data, int more=0);
+  void submit(int seq, ReductionTag tag);
 
   // pass on submitting data
   void submit(int seq, ReductionTag tag, int more=0);

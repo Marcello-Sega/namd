@@ -19,10 +19,10 @@
 #include "CollectionMgr.h"
 
 #define MIN_DEBUG_LEVEL 4
-// #define DEBUGM
+#define DEBUGM
 #include "Debug.h"
 
-#define MIGRATION 0
+#define MIGRATION 1
 
 Sequencer::Sequencer(HomePatch *p) :
 	patch(p),
@@ -83,7 +83,7 @@ void Sequencer::algorithm(void)
 		<< ": (" << cycle << "," << step << ") "
 		<< "Sending positionsReady().\n");
 	    threadStatus = NOTSUSPENDED;
-#if MIGRATION == 1
+#if MIGRATION	// defined at the top of the file
             patch->positionsReady(!(step%stepsPerCycle));
 #else
             patch->positionsReady(0);
