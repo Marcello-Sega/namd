@@ -77,6 +77,7 @@ begin:
   endif
   echo "Linking Makefiles"
   ln -s .rootdir/Makefile ./Makefile
+  ln -s .rootdir/Make.depends ./Make.depends
   echo "Linking src"
   ln -s .rootdir/src ./src
   echo "Creating dpme2 and linking files"

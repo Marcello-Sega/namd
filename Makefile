@@ -1,8 +1,16 @@
+# pass version/platform information to compile
+NAMD_VERSION = 2.2b1
+
+# compiler flags (Win32 overrides)
+COPTI = -I
+COPTC = -c
+COPTD = -D
+COPTO = -o $(SPACE)
+
 include Makearch
 
 # pass version/platform information to compile
-NAMD_VERSION = 2.2b1
-RELEASE=-DNAMD_VERSION=\"$(NAMD_VERSION)\" -DNAMD_PLATFORM=\"$(NAMD_PLATFORM)\"
+RELEASE=$(COPTD)NAMD_VERSION=\"$(NAMD_VERSION)\" $(COPTD)NAMD_PLATFORM=\"$(NAMD_PLATFORM)\"
 
 # directories
 SRCDIR = src
@@ -12,18 +20,20 @@ DPMTADIR=dpmta-2.6
 DPMEDIR=dpme2
 
 # comment/uncomment these lines for (D)PMTA routines
-DPMTAINCL=-I$(DPMTADIR)/mpole -I$(DPMTADIR)/src
+DPMTAINCL=$(COPTI)$(DPMTADIR)/mpole $(COPTI)$(DPMTADIR)/src
 DPMTALIB=-L$(DPMTADIR)/mpole -L$(DPMTADIR)/src -ldpmta2 -lmpole -lpvmc
-DPMTAFLAGS=-DDPMTA
+DPMTAFLAGS=$(COPTD)DPMTA
 DPMTA=$(DPMTAINCL) $(DPMTAFLAGS)
 DPMTALIBS=$(DPMTADIR)/mpole/libmpole.a $(DPMTADIR)/src/libdpmta2.a
 
 # comment/uncomment these lines for DPME routines
-DPMEINCL=-I$(DPMEDIR)
+DPMEINCL=$(COPTI)$(DPMEDIR)
 DPMELIB=-L$(DPMEDIR) -ldpme
-DPMEFLAGS=-DDPME
+DPMEFLAGS=$(COPTD)DPME
 DPME=$(DPMEINCL) $(DPMEFLAGS)
 DPMELIBS= $(DPMEDIR)/libdpme.a
+
+include Makearch
 
 # Add new source files here.
 
@@ -160,16 +170,17 @@ CIFILES = 	\
 # definitions for Charm routines
 CHARMC = $(CHARM)/bin/charmc
 CHARMXI = $(CHARM)/bin/charmc
-INCLUDE = $(CHARM)/include
+CHARMINC = $(CHARM)/include
+CHARMLIB = $(CHARM)/lib
 
 # Libraries we may have changed
 LIBS = $(DPMTALIBS) $(DPMELIBS)
 
 # CXX is platform dependent
-CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXOPTS) $(RELEASE)
-CXXTHREADFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXTHREADOPTS) $(RELEASE)
-CXXSIMPARAMFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXSIMPARAMOPTS) $(RELEASE)
-GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(RELEASE)
+CXXFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXOPTS) $(RELEASE)
+CXXTHREADFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXTHREADOPTS) $(RELEASE)
+CXXSIMPARAMFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXSIMPARAMOPTS) $(RELEASE)
+GXXFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(RELEASE)
 
 # Add new executables here.
 
@@ -179,13 +190,34 @@ all:	$(BINARIES)
 
 namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(CHARMC) -verbose -ld++-option \
-	"-I$(INCLUDE) -I$(INCDIR) -I$(SRCDIR) $(CXXOPTS)" \
+	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
 	-language charm++ \
 	-o namd2 $(OBJS) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
 	$(TCLLIB) \
 	$(FFTLIB)
+
+win32binaries: namd2.exe daemon.exe conv-host.exe
+
+namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
+	$(LINK) /out:namd2.exe \
+	$(CHARMLIB)/libldb-rand.obj \
+	$(CHARMLIB)/libtrace-none.lib \
+	$(CHARMLIB)/libconv-core.lib \
+	$(CHARMLIB)/libconv-cplus-y.lib \
+	$(CHARMLIB)/libck.lib \
+	obj/*.o \
+	$(DPMTALIB) \
+	$(DPMELIB) \
+	$(TCLLIB) \
+	$(FFTLIB)
+
+daemon.exe:  $(CHARM)\bin\daemon.exe
+	$(COPY) $(CHARM)\bin\daemon.exe daemon.exe
+
+conv-host.exe:  $(CHARM)\bin\conv-host.exe
+	$(COPY) $(CHARM)\bin\conv-host.exe conv-host.exe
 
 flipdcd:	$(SRCDIR)/flipdcd.c
 	$(CC) -o $@ $(SRCDIR)/flipdcd.c || \
@@ -208,7 +240,7 @@ loaddcd:	$(SRCDIR)/loaddcd.c
 
 projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(CHARMC) -verbose -ld++-option \
-	"-I$(INCLUDE) -I$(INCDIR) -I$(SRCDIR) $(CXXOPTS)" \
+	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
 	-language charm++ -tracemode projections \
 	-o namd2 $(OBJS) \
 	$(DPMTALIB) \
@@ -218,7 +250,7 @@ projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 
 summary:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(CHARMC) -verbose -ld++-option \
-	"-I$(INCLUDE) -I$(INCDIR) -I$(SRCDIR) $(CXXOPTS)" \
+	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
 	-language charm++ -tracemode summary \
 	-o namd2 $(OBJS) \
 	$(DPMTALIB) \
@@ -240,6 +272,8 @@ ECHO = echo
 MOVE = mv
 COPY = cp
 RM = rm -f
+
+include Makearch
 
 # Explicit rules for modules.
 
@@ -357,8 +391,8 @@ depends: $(INCDIR) $(CIFILES) $(DSTDIR) $(DEPENDFILE)
 	        `basename $$i | awk -F. '{print $$1".C"}'` ; \
 	      g++ -MM $(GXXFLAGS) \
 	        $(SRCDIR)/`basename $$i | awk -F. '{print $$1".C"}'` | \
-	      perl $(SRCDIR)/dc.pl $(INCLUDE) /usr/include /usr/local >> $(DEPENDFILE); \
-	      $(ECHO) '	$$(CXX) $$(CXXFLAGS)' -o $$i -c \
+	      perl $(SRCDIR)/dc.pl $(CHARMINC) /usr/include /usr/local >> $(DEPENDFILE); \
+	      $(ECHO) '	$$(CXX) $$(CXXFLAGS) $$(COPTO)'$$i '$$(COPTC)' \
 	        $(SRCDIR)/`basename $$i | awk -F. '{print $$1".C"}'` \
 		>> $(DEPENDFILE) ; \
 	done; \
@@ -374,7 +408,7 @@ depends: $(INCDIR) $(CIFILES) $(DSTDIR) $(DEPENDFILE)
 $(DEPENDFILE):
 	touch $(DEPENDFILE)
 
-include	$(DEPENDFILE)
+include Make.depends
 
 $(DSTDIR):
 	mkdir $(DSTDIR)
