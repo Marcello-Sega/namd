@@ -959,13 +959,15 @@ void WorkDistrib::mapComputeNonbonded(void)
   for(i=0; i<patchMap->numPatches(); i++) // do the self 
   {
     int64 numAtoms = patchMap->patch(i)->getNumAtoms();  // avoid overflow
+    int64 numFixed = patchMap->patch(i)->getNumFixedAtoms();  // avoid overflow
     int numPartitions;
     if (node->simParameters->numAtomsSelf == 0) {
-      numPartitions = 1 + (numAtoms > 50) + (numAtoms*numAtoms)/50000;
+      numPartitions = 1 + (numAtoms*numAtoms-numFixed*numFixed > 2500) +
+	(numAtoms*numAtoms-numFixed*numFixed)/50000;
     }
     else {
       numPartitions = (int) (
-        numAtoms*numAtoms / (double)(node->simParameters->numAtomsSelf*node->simParameters->numAtomsSelf) + 0.5 );
+        (numAtoms*numAtoms-numFixed*numFixed) / (double)(node->simParameters->numAtomsSelf*node->simParameters->numAtomsSelf) + 0.5 );
       if (numPartitions < 1) numPartitions = 1;
     }
     if ( numPartitions > node->simParameters->maxSelfPart )
@@ -992,6 +994,8 @@ void WorkDistrib::mapComputeNonbonded(void)
 	int p2 = oneAway[j];
 	int64 numAtoms1 = patchMap->patch(p1)->getNumAtoms();
 	int64 numAtoms2 = patchMap->patch(p2)->getNumAtoms();
+	int64 numFixed1 = patchMap->patch(p1)->getNumFixedAtoms();
+	int64 numFixed2 = patchMap->patch(p2)->getNumFixedAtoms();
 	const int distance =
  	  ( patchMap->index_a(p1) == patchMap->index_a(p2) ? 0 : 1 ) +
  	  ( patchMap->index_b(p1) == patchMap->index_b(p2) ? 0 : 1 ) +
@@ -1004,11 +1008,11 @@ void WorkDistrib::mapComputeNonbonded(void)
 	  divide = node->simParameters->numAtomsPair2;
 	}
 	if (divide == 0) {
-          numPartitions = 1 + (numAtoms1*numAtoms2 > 2500) + (numAtoms1*numAtoms2)/100000;
+          numPartitions = 1 + (numAtoms1*numAtoms2-numFixed1*numFixed2 > 2500) + (numAtoms1*numAtoms2-numFixed1*numFixed2)/100000;
 	}
 	else {
           numPartitions = (int) (
-		numAtoms1*numAtoms2/(double)(divide*divide) + 0.5 );
+		(numAtoms1*numAtoms2-numFixed1*numFixed2)/(double)(divide*divide) + 0.5 );
           if ( numPartitions < 1 ) numPartitions = 1;
 	}
         if ( numPartitions > node->simParameters->maxPairPart )
