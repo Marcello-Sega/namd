@@ -39,7 +39,7 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1029 1997/04/10 22:29:11 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1030 1997/04/21 00:58:33 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
 		     VelocityList vl) : Patch(pd,al,pl), v(vl) 
@@ -179,6 +179,8 @@ void HomePatch::positionsReady(int doMigration)
     patchMapRead = 1;
   }
       
+  doMigration = doMigration && numNeighbors;
+
   if (doMigration) {
     doAtomMigration();
   }
@@ -452,12 +454,15 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1029 $	$Date: 1997/04/10 22:29:11 $
+ *	$Revision: 1.1030 $	$Date: 1997/04/21 00:58:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1030  1997/04/21 00:58:33  jim
+ * Fixed hang on patch migration in systems with only one patch.
+ *
  * Revision 1.1029  1997/04/10 22:29:11  jim
  * First steps towards combining atom migration messages.
  *
