@@ -1,0 +1,125 @@
++--------------------------------------------------------------------+
+|                                                                    |
+|                      NAMD 2.0 Release Notes                        |
+|                                                                    |
++--------------------------------------------------------------------+
+
+New Features in NAMD 2.0
+
+- Reads CHARMM (or X-PLOR) formatted parameter files.
+
+- Supports periodic and non-periodic MD simulations.
+
+- Particle mesh Ewald full electrostatics for periodic simulations.
+
+- Triple timestepping.
+
+- Rigid bonds to hydrogen atoms.
+
+- Fixed atoms implemented efficiently, no unnecessary force calculations.
+
+- Berendsen and Langevin piston constant pressure methods.
+
+- Steered Molecular Dynamics (SMD) features.
+
+----------------------------------------------------------------------
+
+Problems?
+
+For problems or questions, send email to namd@ks.uiuc.edu.  If you
+think you have found a bug, please include what machine you are
+running on, and, if possible, a dump of the program output and/or a
+copy of your input files.  Your feedback will help us improve NAMD2.
+
+----------------------------------------------------------------------
+
+This File
+
+This file contains brief instructions for running NAMD2.  For more
+detailed information, see the users guide (ug.ps, in the doc directory).
+
+----------------------------------------------------------------------
+
+Runing NAMD2
+
+-- Workstation Networks --
+
+Workstation networks require two files, the namd2 executable and the
+conv-host program.  The conv-host program starts namd2 on the desired
+hosts, and handles console I/O for the node programs.
+
+To specify what machines namd2 will run on, the user creates a file
+called "nodelist".  Below is an example nodelist file:
+
+group main
+ host brutus
+ host romeo
+
+The "group main" line defines the default machine list.  Hosts brutus
+and romeo are the two machines on which to run the simulation.  Note
+that conv-host may run on one of those machines, or conv-host may run
+on a third machine.  The "rsh" command ("remsh" on HPUX) is used to
+start namd2 on each of the nodes specified in the nodelist file.  If
+NAMD fails without printing any output, check to make sure that "rsh"
+works on your machine, by seeing if "rsh hostname ls" works for each
+host in the nodelist.
+
+A number of parameters may be passed to conv-host.  The most important
+is the "+pX" option, where X specifies the number of processors.  If X
+is less than the number of hosts in the nodelist, machines are
+selected from top to bottom.  If X is greater than the number of
+hosts, conv-host will start multiple processes on the machines,
+starting from the top.  To run multiple processes on members of a SMP
+workstation cluster, you may either just use the +p option to go
+through the list the right number of times, or list each machine
+several times, once for each processor.
+
+Once the nodelist file is set up, and you have your configuration file
+prepared (alanin.conf, in this example), run NAMD2 as follows:
+
+conv-host +pX namd2 alanin.conf
+
+Due to their processor design, Intel-based machines running the linux
+version produce binary files (restart and DCD files) with a different
+format.  The "flipbinpdb" and the "flipdcd" programs will convert
+files back and forth from Intel format to the non-Intel format.
+
+-- T3E --
+
+The T3E version has been tested on the Pittsburgh Supercomputer Center
+T3E.  To run on X processors, use the mpprun command:
+
+mpprun -n X namd2 alanin.conf
+
+-- Origin 2000 --
+
+For small numbers of processors (1-8) use the non-MPI version of namd2.
+To run on X processors call the binary directly with the +p option:
+
+namd2 +pX alanin.conf
+
+For better performance on larger numbers of processors we recommend
+that you use the MPI version of NAMD2.  To run this version, you must
+have MPI installed.  Furthermore, you must set two environment
+variables to tell MPI how to allocate certain internal buffers.  Put
+the following commands in your .cshrc/.profile file, or in your job
+file if you are running under a queuing system:
+
+setenv MPI_REQUEST_MAX 10240
+setenv MPI_TYPE_MAX 10240
+
+Then run NAMD2 with the following command:
+
+mpirun -np X namd2 alanin.conf
+
+----------------------------------------------------------------------
+
+NAMD2 Known Deficiencies
+
+- PME does not parallelize well and has had limited testing.
+
+- NAMD2 requires X-PLOR or CHARMM to produce the .psf structure input
+files.  If you don't have one of these, you probably can't use NAMD2 yet.
+
+----------------------------------------------------------------------
+
