@@ -10,7 +10,7 @@
 #define TOKLEN 100
 #define BUFLEN 200
 
-char * parse_atom(char *aref, int *res, int *rel) {
+static char * parse_atom(char *aref, int *res, int *rel) {
   if ( isdigit(*aref) ) { *res = *aref - '1'; ++aref; }
   else { *res = 0; }
   if ( *aref == '-' ) { *rel = -1; ++aref; }
@@ -20,11 +20,11 @@ char * parse_atom(char *aref, int *res, int *rel) {
   return aref;
 }
 
-void null_print_msg(void *v, const char *s) {
-  ;
+static void null_print_msg(void *v, const char *s) {
+  printf("%s\n", s);
 }
 
-void debug_msg(const char *s) {
+static void debug_msg(const char *s) {
   ;
 }
 
@@ -132,6 +132,8 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
       debug_msg("Recognized atom statement.");
       if ( ntok < 4 ) {
         print_msg(v,"ERROR!  Failed to parse atom statement.");
+      } else if ( ntok > 4 ) {
+        print_msg(v,"ERROR!  Explicit exclustions not supported, atom ignored.");
       } else {
         s1 = parse_atom(tok[1],&i1,&j1);
         if ( topo_defs_atom(defs,0,0, s1,i1,j1,tok[2],atof(tok[3])) ) {
@@ -288,7 +290,7 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
     else if ( ! strncmp("END",tok[0],4) ) {
       debug_msg("Recognized file end statement.");
       if ( topo_defs_end(defs) ) {
-        print_msg(v,"ERROR!  Failed to file end statement.");
+        print_msg(v,"ERROR!  Failed to parse file end statement.");
       }
     }
     else if ( ! strncmp("GROU",tok[0],4) ) {

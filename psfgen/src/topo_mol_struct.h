@@ -47,6 +47,7 @@ typedef struct topo_mol_conformation_t {
 #define TOPO_MOL_XYZ_VOID 0
 #define TOPO_MOL_XYZ_SET 1
 #define TOPO_MOL_XYZ_GUESS 2
+#define TOPO_MOL_XYZ_BADGUESS 3
 
 typedef struct topo_mol_atom_t {
   struct topo_mol_atom_t *next;
@@ -108,9 +109,6 @@ topo_mol_dihedral_t * topo_mol_dihedral_next(
 
 topo_mol_improper_t * topo_mol_improper_next(
                 topo_mol_improper_t *tuple, topo_mol_atom_t *atom);
-
-topo_mol_conformation_t * topo_mol_conformation_next(
-                topo_mol_conformation_t *tuple, topo_mol_atom_t *atom);
 
 #endif
 

@@ -140,7 +140,7 @@ int topo_defs_residue(topo_defs *defs, const char *rname, int patch) {
     topo_defs_log_error(defs,errmsg);
     /* newitem = &defs->residue_array[i]; */
     defs->buildres_no_errors = 1;
-    return -3;
+    return 0;
   } else {
     i = hasharray_insert(defs->residue_hash,rname);
     if ( i == HASHARRAY_FAIL ) return -4;

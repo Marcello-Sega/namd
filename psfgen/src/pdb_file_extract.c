@@ -1,8 +1,13 @@
 
 #include <string.h>
+#include <ctype.h>
 #include "pdb_file_extract.h"
 #include "pdb_file.h"
 #include "extract_alias.h"
+
+static void strtoupper(char *s) {
+  while ( *s ) { *s = toupper(*s); ++s; }
+}
 
 int pdb_file_extract_residues(topo_mol *mol, FILE *file, stringhash *h,
                                 void *v,void (*print_msg)(void *,const char *)) {
@@ -27,6 +32,7 @@ int pdb_file_extract_residues(topo_mol *mol, FILE *file, stringhash *h,
       if ( strcmp(oldresid,resid) ) {
         strcpy(oldresid,resid);
         ++rcount;
+        strtoupper(resname);
         realres = extract_alias_residue_check(h,resname);
         if ( topo_mol_residue(mol,resid,realres) ) {
           sprintf(msg,"ERROR: failed on residue %s from pdb file",resname);
@@ -60,13 +66,15 @@ int pdb_file_extract_coordinates(topo_mol *mol, FILE *file,
       get_pdb_fields(record, name, resname, chain,
                    segname, resid, insertion, &x, &y, &z, &o, &b);
       target.resid = resid;
+      strtoupper(resname);
+      strtoupper(name);
       target.aname = extract_alias_atom_check(h,resname,name);
       /* Use PDB segid if no segid given */
       if (!segid) {
         target.segid = segname;
       }
       if ( topo_mol_set_xyz(mol,&target,x,y,z) ) {
-        sprintf(msg,"Warning: failed to set coordinate for atom %s in residue %s:%s of segment %s",name,resname,resid,segid ? segid : segname);
+        sprintf(msg,"Warning: failed to set coordinate for atom %s\t %s:%s\t  %s",name,resname,resid,segid ? segid : segname);
         print_msg(v,msg);
       }
     }

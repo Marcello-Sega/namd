@@ -34,8 +34,8 @@ void topo_mol_destroy(topo_mol *mol) {
   n = hasharray_count(mol->segment_hash);
   for ( i=0; i<n; ++i ) {
     s = mol->segment_array[i];
+    if ( ! s ) continue;
     hasharray_destroy(s->residue_hash);
-    free(s);
   }
   hasharray_destroy(mol->segment_hash);
   memarena_destroy(mol->arena);
@@ -50,15 +50,12 @@ void topo_mol_error_handler(topo_mol *mol, void *v, void (*print_msg)(void *,con
 }
 
 /* internal method */
-void topo_mol_log_error(topo_mol *mol, const char *msg) {
+static void topo_mol_log_error(topo_mol *mol, const char *msg) {
   if (mol && msg && mol->newerror_handler)
     mol->newerror_handler(mol->newerror_handler_data, msg);
 }
 
-static int topo_mol_auto_angles(topo_mol *mol, topo_mol_segment_t *seg);
-static int topo_mol_auto_dihedrals(topo_mol *mol, topo_mol_segment_t *seg);
-
-topo_mol_segment_t * topo_mol_get_seg(topo_mol *mol,
+static topo_mol_segment_t * topo_mol_get_seg(topo_mol *mol,
 			const topo_mol_ident_t *target) {
   int iseg;
   char errmsg[64 + 3*NAMEMAXLEN];
@@ -73,7 +70,7 @@ topo_mol_segment_t * topo_mol_get_seg(topo_mol *mol,
   return mol->segment_array[iseg];
 }
 
-topo_mol_residue_t * topo_mol_get_res(topo_mol *mol,
+static topo_mol_residue_t * topo_mol_get_res(topo_mol *mol,
 			const topo_mol_ident_t *target, int irel) {
   int nres, ires;
   topo_mol_segment_t *seg;
@@ -104,7 +101,7 @@ topo_mol_residue_t * topo_mol_get_res(topo_mol *mol,
   return (seg->residue_array + ires + irel);
 }
 
-topo_mol_atom_t * topo_mol_get_atom(topo_mol *mol,
+static topo_mol_atom_t * topo_mol_get_atom(topo_mol *mol,
 			const topo_mol_ident_t *target, int irel) {
   topo_mol_residue_t *res;
   topo_mol_atom_t *atom;
@@ -118,6 +115,15 @@ topo_mol_atom_t * topo_mol_get_atom(topo_mol *mol,
     sprintf(errmsg,"no atom %s in residue %s:%s of segment %s",
 		target->aname,res->name,res->resid,target->segid);
     topo_mol_log_error(mol,errmsg);
+  }
+  return atom;
+}
+
+static topo_mol_atom_t *topo_mol_get_atom_from_res(
+    const topo_mol_residue_t *res, const char *aname) {
+  topo_mol_atom_t *atom;
+  for ( atom = res->atoms; atom; atom = atom->next ) {
+    if ( ! strcmp(aname,atom->name) ) break;
   }
   return atom;
 }
@@ -136,8 +142,8 @@ int topo_mol_segment(topo_mol *mol, const char *segid) {
   } else {
     i = hasharray_insert(mol->segment_hash,segid);
     if ( i == HASHARRAY_FAIL ) return -4;
-    newitem = mol->segment_array[i] =
-		(topo_mol_segment_t*) malloc(sizeof(topo_mol_segment_t));
+    newitem = mol->segment_array[i] = (topo_mol_segment_t*)
+		memarena_alloc(mol->arena,sizeof(topo_mol_segment_t));
     if ( ! newitem ) return -5;
   }
   strcpy(newitem->segid,segid);
@@ -263,7 +269,7 @@ int topo_mol_mutate(topo_mol *mol, const char *resid, const char *rname) {
   return 0;
 }
 
-topo_mol_atom_t * topo_mol_unlink_atom(
+static topo_mol_atom_t * topo_mol_unlink_atom(
 		topo_mol_atom_t **atoms, const char *aname) {
   topo_mol_atom_t **atom;
   topo_mol_atom_t *oldatom;
@@ -276,7 +282,7 @@ topo_mol_atom_t * topo_mol_unlink_atom(
   return oldatom;
 }
 
-int topo_mol_add_atom(topo_mol *mol, topo_mol_atom_t **atoms,
+static int topo_mol_add_atom(topo_mol *mol, topo_mol_atom_t **atoms,
 		topo_mol_atom_t **oldatoms, topo_defs_atom_t *atomdef) {
   int idef;
   topo_mol_atom_t *atomtmp;
@@ -354,7 +360,7 @@ topo_mol_improper_t * topo_mol_improper_next(
   return 0;
 }
 
-topo_mol_conformation_t * topo_mol_conformation_next(
+static topo_mol_conformation_t * topo_mol_conformation_next(
 		topo_mol_conformation_t *tuple, topo_mol_atom_t *atom) {
   if ( tuple->atom[0] == atom ) return tuple->next[0];
   if ( tuple->atom[1] == atom ) return tuple->next[1];
@@ -363,7 +369,7 @@ topo_mol_conformation_t * topo_mol_conformation_next(
   return 0;
 }
 
-void topo_mol_destroy_atom(topo_mol_atom_t *atom) {
+static void topo_mol_destroy_atom(topo_mol_atom_t *atom) {
   topo_mol_bond_t *bondtmp;
   topo_mol_angle_t *angletmp;
   topo_mol_dihedral_t *dihetmp;
@@ -392,13 +398,40 @@ void topo_mol_destroy_atom(topo_mol_atom_t *atom) {
   }
 }
 
-void topo_mol_del_atom(topo_mol_residue_t *res, const char *aname) {
+static void topo_mol_del_atom(topo_mol_residue_t *res, const char *aname) {
   if ( ! res ) return;
   topo_mol_destroy_atom(topo_mol_unlink_atom(&(res->atoms),aname));
 }
 
+/*
+ * The add_xxx_to_residues routines exist because topo_mol_end can do
+ * more intelligent error checking than what's done in the add_xxx
+ * routines.  The add_xxx routines are called by topo_mol_patch, which
+ * has to be more general (and more paranoid) about its input.  Returning
+ * nonzero from add_xxx_to_residues is always a serious error.
+ */
+static int add_bond_to_residues(topo_mol *mol, 
+    const topo_mol_residue_t *res1, const char *aname1,
+    const topo_mol_residue_t *res2, const char *aname2) {
+  topo_mol_bond_t *tuple;
+  topo_mol_atom_t *a1, *a2;
 
-int topo_mol_add_bond(topo_mol *mol, const topo_mol_ident_t *targets,
+  a1 = topo_mol_get_atom_from_res(res1, aname1);
+  a2 = topo_mol_get_atom_from_res(res2, aname2);
+  if (!a1 || !a2) return -1;
+  tuple = memarena_alloc(mol->arena,sizeof(topo_mol_bond_t));
+  if ( ! tuple ) return -10;
+  tuple->next[0] = a1->bonds;
+  tuple->atom[0] = a1;
+  tuple->next[1] = a2->bonds;
+  tuple->atom[1] = a2;
+  tuple->del = 0;
+  a1->bonds = tuple;
+  a2->bonds = tuple;
+  return 0;
+}
+
+static int topo_mol_add_bond(topo_mol *mol, const topo_mol_ident_t *targets,
 				int ntargets, topo_defs_bond_t *def) {
   topo_mol_bond_t *tuple;
   topo_mol_atom_t *a1, *a2;
@@ -426,7 +459,7 @@ int topo_mol_add_bond(topo_mol *mol, const topo_mol_ident_t *targets,
   return 0;
 }
 
-void topo_mol_del_bond(topo_mol *mol, const topo_mol_ident_t *targets,
+static void topo_mol_del_bond(topo_mol *mol, const topo_mol_ident_t *targets,
 				int ntargets, topo_defs_bond_t *def) {
   topo_mol_bond_t *tuple;
   topo_mol_atom_t *a1, *a2;
@@ -449,7 +482,7 @@ void topo_mol_del_bond(topo_mol *mol, const topo_mol_ident_t *targets,
 }
 
 
-int topo_mol_add_angle(topo_mol *mol, const topo_mol_ident_t *targets,
+static int topo_mol_add_angle(topo_mol *mol, const topo_mol_ident_t *targets,
 				int ntargets, topo_defs_angle_t *def) {
   topo_mol_angle_t *tuple;
   topo_mol_atom_t *a1, *a2, *a3;
@@ -485,7 +518,7 @@ int topo_mol_add_angle(topo_mol *mol, const topo_mol_ident_t *targets,
   return 0;
 }
 
-void topo_mol_del_angle(topo_mol *mol, const topo_mol_ident_t *targets,
+static void topo_mol_del_angle(topo_mol *mol, const topo_mol_ident_t *targets,
 				int ntargets, topo_defs_angle_t *def) {
   topo_mol_angle_t *tuple;
   topo_mol_atom_t *a1, *a2, *a3;
@@ -514,7 +547,7 @@ void topo_mol_del_angle(topo_mol *mol, const topo_mol_ident_t *targets,
 }
 
 
-int topo_mol_add_dihedral(topo_mol *mol, const topo_mol_ident_t *targets,
+static int topo_mol_add_dihedral(topo_mol *mol, const topo_mol_ident_t *targets,
 				int ntargets, topo_defs_dihedral_t *def) {
   topo_mol_dihedral_t *tuple;
   topo_mol_atom_t *a1, *a2, *a3, *a4;
@@ -558,7 +591,7 @@ int topo_mol_add_dihedral(topo_mol *mol, const topo_mol_ident_t *targets,
   return 0;
 }
 
-void topo_mol_del_dihedral(topo_mol *mol, const topo_mol_ident_t *targets,
+static void topo_mol_del_dihedral(topo_mol *mol, const topo_mol_ident_t *targets,
 				int ntargets, topo_defs_dihedral_t *def) {
   topo_mol_dihedral_t *tuple;
   topo_mol_atom_t *a1, *a2, *a3, *a4;
@@ -590,8 +623,38 @@ void topo_mol_del_dihedral(topo_mol *mol, const topo_mol_ident_t *targets,
   }
 }
 
+static int add_improper_to_residues(topo_mol *mol, 
+    const topo_mol_residue_t *res1, const char *aname1,
+    const topo_mol_residue_t *res2, const char *aname2,
+    const topo_mol_residue_t *res3, const char *aname3,
+    const topo_mol_residue_t *res4, const char *aname4) {
+  topo_mol_improper_t *tuple;
+  topo_mol_atom_t *a1, *a2, *a3, *a4;
 
-int topo_mol_add_improper(topo_mol *mol, const topo_mol_ident_t *targets,
+  a1 = topo_mol_get_atom_from_res(res1, aname1);
+  a2 = topo_mol_get_atom_from_res(res2, aname2);
+  a3 = topo_mol_get_atom_from_res(res3, aname3);
+  a4 = topo_mol_get_atom_from_res(res4, aname4);
+  if (!a1 || !a2 || !a3 || !a4) return -1;
+  tuple = memarena_alloc(mol->arena,sizeof(topo_mol_improper_t));
+  if ( ! tuple ) return -10;
+  tuple->next[0] = a1->impropers;
+  tuple->atom[0] = a1;
+  tuple->next[1] = a2->impropers;
+  tuple->atom[1] = a2;
+  tuple->next[2] = a3->impropers;
+  tuple->atom[2] = a3;
+  tuple->next[3] = a4->impropers;
+  tuple->atom[3] = a4;
+  tuple->del = 0;
+  a1->impropers = tuple;
+  a2->impropers = tuple;
+  a3->impropers = tuple;
+  a4->impropers = tuple;
+  return 0;
+}
+
+static int topo_mol_add_improper(topo_mol *mol, const topo_mol_ident_t *targets,
 				int ntargets, topo_defs_improper_t *def) {
   topo_mol_improper_t *tuple;
   topo_mol_atom_t *a1, *a2, *a3, *a4;
@@ -635,7 +698,7 @@ int topo_mol_add_improper(topo_mol *mol, const topo_mol_ident_t *targets,
   return 0;
 }
 
-void topo_mol_del_improper(topo_mol *mol, const topo_mol_ident_t *targets,
+static void topo_mol_del_improper(topo_mol *mol, const topo_mol_ident_t *targets,
 				int ntargets, topo_defs_improper_t *def) {
   topo_mol_improper_t *tuple;
   topo_mol_atom_t *a1, *a2, *a3, *a4;
@@ -668,7 +731,45 @@ void topo_mol_del_improper(topo_mol *mol, const topo_mol_ident_t *targets,
 }
 
 
-int topo_mol_add_conformation(topo_mol *mol, const topo_mol_ident_t *targets,
+static int add_conformation_to_residues(topo_mol *mol, 
+    const topo_mol_residue_t *res1, const char *aname1,
+    const topo_mol_residue_t *res2, const char *aname2,
+    const topo_mol_residue_t *res3, const char *aname3,
+    const topo_mol_residue_t *res4, const char *aname4, 
+    topo_defs_conformation_t *def) {
+
+  topo_mol_conformation_t *tuple;
+  topo_mol_atom_t *a1, *a2, *a3, *a4;
+  a1 = topo_mol_get_atom_from_res(res1, aname1);
+  a2 = topo_mol_get_atom_from_res(res2, aname2);
+  a3 = topo_mol_get_atom_from_res(res3, aname3);
+  a4 = topo_mol_get_atom_from_res(res4, aname4);
+  if (!a1 || !a2 || !a3 || !a4) return -1;
+  tuple = memarena_alloc(mol->arena,sizeof(topo_mol_conformation_t));
+  if ( ! tuple ) return -10;
+  tuple->next[0] = a1->conformations;
+  tuple->atom[0] = a1;
+  tuple->next[1] = a2->conformations;
+  tuple->atom[1] = a2;
+  tuple->next[2] = a3->conformations;
+  tuple->atom[2] = a3;
+  tuple->next[3] = a4->conformations;
+  tuple->atom[3] = a4;
+  tuple->del = 0;
+  tuple->improper = def->improper;
+  tuple->dist12 = def->dist12;
+  tuple->angle123 = def->angle123;
+  tuple->dihedral = def->dihedral;
+  tuple->angle234 = def->angle234;
+  tuple->dist34 = def->dist34;
+  a1->conformations = tuple;
+  a2->conformations = tuple;
+  a3->conformations = tuple;
+  a4->conformations = tuple;
+  return 0;
+}
+
+static int topo_mol_add_conformation(topo_mol *mol, const topo_mol_ident_t *targets,
 				int ntargets, topo_defs_conformation_t *def) {
   topo_mol_conformation_t *tuple;
   topo_mol_atom_t *a1, *a2, *a3, *a4;
@@ -718,7 +819,7 @@ int topo_mol_add_conformation(topo_mol *mol, const topo_mol_ident_t *targets,
   return 0;
 }
 
-void topo_mol_del_conformation(topo_mol *mol, const topo_mol_ident_t *targets,
+static void topo_mol_del_conformation(topo_mol *mol, const topo_mol_ident_t *targets,
 				int ntargets, topo_defs_conformation_t *def) {
   topo_mol_conformation_t *tuple;
   topo_mol_atom_t *a1, *a2, *a3, *a4;
@@ -752,6 +853,8 @@ void topo_mol_del_conformation(topo_mol *mol, const topo_mol_ident_t *targets,
   }
 }
 
+static int topo_mol_auto_angles(topo_mol *mol, topo_mol_segment_t *segp);
+static int topo_mol_auto_dihedrals(topo_mol *mol, topo_mol_segment_t *segp);
 
 int topo_mol_end(topo_mol *mol) {
   int i,n;
@@ -820,11 +923,33 @@ int topo_mol_end(topo_mol *mol) {
     target.segid = seg->segid;
     target.resid = res->resid;
     for ( bonddef = resdef->bonds; bonddef; bonddef = bonddef->next ) {
-      if ( topo_mol_add_bond(mol,&target,1,bonddef) ) {
-        sprintf(errmsg,"Warning: add bond %s(%d) %s(%d) failed in residue %s:%s",
-		bonddef->atom1,bonddef->rel1,bonddef->atom2,bonddef->rel2,
-		res->name,res->resid);
-        topo_mol_log_error(mol,errmsg);
+      int ires1, ires2;
+      if (bonddef->res1 != 0 || bonddef->res2 != 0) {
+        /* 
+         * XXX This should be caught much earlier, like when the topology
+         * file is initially read in. 
+         */
+        sprintf(errmsg, "ERROR: Bad bond definition %s %s-%s; skipping.",
+            res->name, bonddef->atom1, bonddef->atom2);
+        topo_mol_log_error(mol, errmsg);
+        continue;
+      }
+      ires1=bonddef->rel1+i;
+      ires2=bonddef->rel2+i;
+      if (ires1 < 0 || ires2 < 0 || ires1 >= n || ires2 >= n) {
+        sprintf(errmsg, "Info: skipping bond %s-%s at %s of segment.", 
+            bonddef->atom1, bonddef->atom2, i==0 ? "beginning" : "end");
+        topo_mol_log_error(mol, errmsg);
+        continue;
+      }
+      if (add_bond_to_residues(mol, 
+            &(seg->residue_array[ires1]), bonddef->atom1,
+            &(seg->residue_array[ires2]), bonddef->atom2)) {
+        sprintf(errmsg, 
+            "ERROR: Missing atoms for bond %s(%d) %s(%d) in residue %s:%s",
+            bonddef->atom1,bonddef->rel1,bonddef->atom2,bonddef->rel2,
+            res->name,res->resid);
+        topo_mol_log_error(mol, errmsg);
       }
     }
     if ( seg->auto_angles && resdef->angles ) {
@@ -848,17 +973,68 @@ int topo_mol_end(topo_mol *mol) {
       }
     }
     for ( imprdef = resdef->impropers; imprdef; imprdef = imprdef->next ) {
-      if ( topo_mol_add_improper(mol,&target,1,imprdef) ) {
-        sprintf(errmsg,"Warning: add improper failed in residue %s:%s",res->name,res->resid);
-        topo_mol_log_error(mol,errmsg);
+      int ires1, ires2, ires3, ires4;
+      if (imprdef->res1 != 0 || imprdef->res2 != 0 || imprdef->res3 != 0 ||
+          imprdef->res4 != 0) {
+        sprintf(errmsg, "ERROR: Bad improper definition %s %s-%s-%s-%s; skipping.",
+            res->name, imprdef->atom1, imprdef->atom2, imprdef->atom3, 
+            imprdef->atom4);
+        topo_mol_log_error(mol, errmsg);
+        continue;
+      }
+      ires1=imprdef->rel1+i;
+      ires2=imprdef->rel2+i;
+      ires3=imprdef->rel3+i;
+      ires4=imprdef->rel4+i;
+      if (ires1 < 0 || ires2 < 0 || ires3 < 0 || ires4 < 0 ||
+          ires1 >= n || ires2 >= n || ires3 >= n || ires4 >= n) {
+        sprintf(errmsg,"Info: skipping improper %s-%s-%s-%s at %s of segment.", 
+            imprdef->atom1, imprdef->atom2, imprdef->atom3, imprdef->atom4,
+            i==0 ? "beginning" : "end");
+        topo_mol_log_error(mol, errmsg);
+        continue;
+      }
+      if (add_improper_to_residues(mol, 
+            &(seg->residue_array[ires1]), imprdef->atom1,
+            &(seg->residue_array[ires2]), imprdef->atom2,
+            &(seg->residue_array[ires3]), imprdef->atom3,
+            &(seg->residue_array[ires4]), imprdef->atom4)) {
+        sprintf(errmsg, 
+            "ERROR: Missing atoms for improper %s(%d) %s(%d) %s(%d) %s(%d)\n\tin residue %s:%s",
+            imprdef->atom1,imprdef->rel1,imprdef->atom2,imprdef->rel2,
+            imprdef->atom3,imprdef->rel3,imprdef->atom4,imprdef->rel4,
+            res->name,res->resid);
+        topo_mol_log_error(mol, errmsg);
       }
     }
     for ( confdef = resdef->conformations; confdef; confdef = confdef->next ) {
-      if ( topo_mol_add_conformation(mol,&target,1,confdef) ) {
-        sprintf(errmsg,"Warning: add conformation %s-%s-%s-%s failed in residue %s:%s",
-		confdef->atom1,confdef->atom2,confdef->atom3,confdef->atom4,
-		res->name,res->resid);
-        topo_mol_log_error(mol,errmsg);
+      int ires1, ires2, ires3, ires4;
+      if (confdef->res1 != 0 || confdef->res2 != 0 || confdef->res3 != 0 ||
+          confdef->res4 != 0) {
+        sprintf(errmsg, "ERROR: Bad conformation definition %s %s-%s-%s-%s; skipping.",
+            res->name, confdef->atom1, confdef->atom2, confdef->atom3, 
+            confdef->atom4);
+        topo_mol_log_error(mol, errmsg);
+        continue;
+      }
+      ires1=confdef->rel1+i;
+      ires2=confdef->rel2+i;
+      ires3=confdef->rel3+i;
+      ires4=confdef->rel4+i;
+      if (ires1 < 0 || ires2 < 0 || ires3 < 0 || ires4 < 0 ||
+          ires1 >= n || ires2 >= n || ires3 >= n || ires4 >= n) {
+        sprintf(errmsg,"Info: skipping conformation %s-%s-%s-%s at %s of segment.", 
+            confdef->atom1, confdef->atom2, confdef->atom3, confdef->atom4,
+            i==0 ? "beginning" : "end");
+        topo_mol_log_error(mol, errmsg);
+        continue;
+      }
+      if (add_conformation_to_residues(mol, 
+            &(seg->residue_array[ires1]), confdef->atom1,
+            &(seg->residue_array[ires2]), confdef->atom2,
+            &(seg->residue_array[ires3]), confdef->atom3,
+            &(seg->residue_array[ires4]), confdef->atom4, confdef)) {
+        fprintf(stderr, "Missing atoms for conformation definition\n");
       }
     }
   }
@@ -909,7 +1085,7 @@ int topo_mol_regenerate_dihedrals(topo_mol *mol) {
   return errval;
 }
 
-int topo_mol_auto_angles(topo_mol *mol, topo_mol_segment_t *segp) {
+static int topo_mol_auto_angles(topo_mol *mol, topo_mol_segment_t *segp) {
   int ires, nres, iseg, nseg;
   topo_mol_segment_t *seg;
   topo_mol_residue_t *res;
@@ -922,6 +1098,7 @@ int topo_mol_auto_angles(topo_mol *mol, topo_mol_segment_t *segp) {
 
   for ( iseg=0; iseg<nseg; ++iseg ) {
     seg = segp ? segp : mol->segment_array[iseg];
+    if ( ! seg ) continue;
 
     nres = hasharray_count(seg->residue_hash);
     for ( ires=0; ires<nres; ++ires ) {
@@ -937,6 +1114,7 @@ int topo_mol_auto_angles(topo_mol *mol, topo_mol_segment_t *segp) {
 
   for ( iseg=0; iseg<nseg; ++iseg ) {
   seg = segp ? segp : mol->segment_array[iseg];
+  if ( ! seg ) continue;
 
   nres = hasharray_count(seg->residue_hash);
   for ( ires=0; ires<nres; ++ires ) {
@@ -974,19 +1152,20 @@ int topo_mol_auto_angles(topo_mol *mol, topo_mol_segment_t *segp) {
   return 0;
 }
 
-int topo_mol_auto_dihedrals(topo_mol *mol, topo_mol_segment_t *segp) {
+static int topo_mol_auto_dihedrals(topo_mol *mol, topo_mol_segment_t *segp) {
   int ires, nres, iseg, nseg, found, atomid;
   topo_mol_segment_t *seg;
   topo_mol_residue_t *res;
   topo_mol_angle_t *g1, *g2;
   topo_mol_dihedral_t *tuple;
-  topo_mol_atom_t *atom, *a1, *a2, *a3, *a4;
+  topo_mol_atom_t *atom, *a1=0, *a2=0, *a3=0, *a4=0;
 
   if (! mol) return -1;
   nseg = segp ? 1 : hasharray_count(mol->segment_hash);
 
   for ( iseg=0; iseg<nseg; ++iseg ) {
     seg = segp ? segp : mol->segment_array[iseg];
+    if ( ! seg ) continue;
 
     nres = hasharray_count(seg->residue_hash);
     for ( ires=0; ires<nres; ++ires ) {
@@ -1002,10 +1181,10 @@ int topo_mol_auto_dihedrals(topo_mol *mol, topo_mol_segment_t *segp) {
 
   for ( iseg=0; iseg<nseg; ++iseg ) {
   seg = segp ? segp : mol->segment_array[iseg];
+  if ( ! seg ) continue;
 
   /*  number atoms, needed to avoid duplicate dihedrals below  */
   atomid = 0;
-  a1 = a2 = a3 = a4 = 0; /* Make compiler happy */
   nres = hasharray_count(seg->residue_hash);
   for ( ires=0; ires<nres; ++ires ) {
     res = &(seg->residue_array[ires]);
@@ -1017,6 +1196,7 @@ int topo_mol_auto_dihedrals(topo_mol *mol, topo_mol_segment_t *segp) {
 
   for ( iseg=0; iseg<nseg; ++iseg ) {
   seg = segp ? segp : mol->segment_array[iseg];
+  if ( ! seg ) continue;
 
   nres = hasharray_count(seg->residue_hash);
   for ( ires=0; ires<nres; ++ires ) {
@@ -1184,6 +1364,10 @@ int topo_mol_multiply_atoms(topo_mol *mol, const topo_mol_ident_t *targets,
   int nres, ires;
 
   if (!mol) return -1;
+
+  /* Quiet compiler warnings */
+  natoms = 0; 
+  atoms = NULL;
 
   /* two passes needed to find atoms */
   for (ipass=0; ipass<2; ++ipass) {
@@ -1424,6 +1608,19 @@ void topo_mol_delete_atom(topo_mol *mol, const topo_mol_ident_t *target) {
   
   if (!target->resid) {
     /* Delete this segment */
+    int nres = hasharray_count(seg->residue_hash);
+    for ( ires=0; ires<nres; ++ires ) {
+      topo_mol_atom_t *atom;
+      res = &(seg->residue_array[ires]);
+      atom = res->atoms;
+      while (atom) {
+        topo_mol_destroy_atom(atom);
+        atom = atom->next;
+      }
+      res->atoms = 0;
+    }
+    hasharray_destroy(seg->residue_hash);
+    mol->segment_array[iseg] = 0;
     if (hasharray_delete(mol->segment_hash, target->segid) < 0) {
       topo_mol_log_error(mol, "Unable to delete segment");
     }
@@ -1459,21 +1656,25 @@ void topo_mol_delete_atom(topo_mol *mol, const topo_mol_ident_t *target) {
 
 int topo_mol_set_xyz(topo_mol *mol, const topo_mol_ident_t *target,
                                         double x, double y, double z) {
+  topo_mol_residue_t *res;
   topo_mol_atom_t *atom;
   if ( ! mol ) return -1;
   if ( ! target ) return -2;
-
-  atom = topo_mol_get_atom(mol,target,0);
+  res = topo_mol_get_res(mol,target,0);
+  if ( ! res ) return -3;
+  for ( atom = res->atoms; atom; atom = atom->next ) {
+    if ( ! strcmp(target->aname,atom->name) ) break;
+  }
   if ( ! atom ) return -3;
 
   atom->x = x;
   atom->y = y;
   atom->z = z;
   atom->xyz_state = TOPO_MOL_XYZ_SET;
-
   return 0;
 }
 
+/* XXX Unused */
 int topo_mol_clear_xyz(topo_mol *mol, const topo_mol_ident_t *target) {
   topo_mol_atom_t *atom;
   if ( ! mol ) return -1;
@@ -1513,8 +1714,7 @@ int topo_mol_guess_xyz(topo_mol *mol) {
   nseg = hasharray_count(mol->segment_hash);
   for ( iseg=0; iseg<nseg; ++iseg ) {
     seg = mol->segment_array[iseg];
-    if (hasharray_index(mol->segment_hash, seg->segid) == HASHARRAY_FAIL) 
-      continue;
+    if (! seg) continue;
     nres = hasharray_count(seg->residue_hash);
     for ( ires=0; ires<nres; ++ires ) {
       res = &(seg->residue_array[ires]);
@@ -1526,7 +1726,7 @@ int topo_mol_guess_xyz(topo_mol *mol) {
       }
     }
   }
-  sprintf(msg,"Warning: guessing coordinates for %d atoms (%d non-hydrogen)",
+  sprintf(msg,"Info: guessing coordinates for %d atoms (%d non-hydrogen)",
 						ucount, hcount);
   topo_mol_log_error(mol,msg);
 
@@ -1536,8 +1736,7 @@ int topo_mol_guess_xyz(topo_mol *mol) {
   nseg = hasharray_count(mol->segment_hash);
   for ( iseg=0; iseg<nseg; ++iseg ) {
     seg = mol->segment_array[iseg];
-    if (hasharray_index(mol->segment_hash, seg->segid) == HASHARRAY_FAIL) 
-      continue;
+    if (! seg) continue;
     nres = hasharray_count(seg->residue_hash);
     for ( ires=0; ires<nres; ++ires ) {
       res = &(seg->residue_array[ires]);
@@ -1669,7 +1868,8 @@ int topo_mol_guess_xyz(topo_mol *mol) {
       atom->x = a3->x + a * ix + b * jx + c * kx;
       atom->y = a3->y + a * iy + b * jy + c * ky;
       atom->z = a3->z + a * iz + b * jz + c * kz;
-      atom->xyz_state = TOPO_MOL_XYZ_GUESS; ++gcount;
+      atom->xyz_state = okwild ? TOPO_MOL_XYZ_BADGUESS : TOPO_MOL_XYZ_GUESS; 
+      ++gcount;
     }
    }
   }
@@ -1709,7 +1909,7 @@ int topo_mol_guess_xyz(topo_mol *mol) {
       a1->x = atom->x + 1.0;
       a1->y = atom->y;
       a1->z = atom->z;
-      a1->xyz_state = TOPO_MOL_XYZ_GUESS;
+      a1->xyz_state = TOPO_MOL_XYZ_BADGUESS;
       ++gcount;  ++wcount;
       if ( a1->mass > 2.5 ) ++hcount;
       continue;
@@ -1737,7 +1937,7 @@ int topo_mol_guess_xyz(topo_mol *mol) {
       a2->x = atom->x + a * ix + b * jx;
       a2->y = atom->y + a * iy + b * jy;
       a2->z = atom->z + a * iz + b * jz;
-      a2->xyz_state = TOPO_MOL_XYZ_GUESS;
+      a2->xyz_state = TOPO_MOL_XYZ_BADGUESS;
       ++gcount;  ++wcount;
       if ( a2->mass > 2.5 ) ++hcount;
       continue;
@@ -1769,7 +1969,7 @@ int topo_mol_guess_xyz(topo_mol *mol) {
         a2->x = atom->x - jx;
         a2->y = atom->y - jy;
         a2->z = atom->z - jz;
-        a2->xyz_state = TOPO_MOL_XYZ_GUESS;
+        a2->xyz_state = TOPO_MOL_XYZ_BADGUESS;
         ++gcount;  ++wcount;
         if ( a2->mass > 2.5 ) ++hcount;
       } else {  /* two unknown atoms */
@@ -1793,10 +1993,10 @@ int topo_mol_guess_xyz(topo_mol *mol) {
         a2->x = atom->x - a * ix + b * jx;
         a2->y = atom->y - a * iy + b * jy;
         a2->z = atom->z - a * iz + b * jz;
-        a1->xyz_state = TOPO_MOL_XYZ_GUESS;
+        a1->xyz_state = TOPO_MOL_XYZ_BADGUESS;
         ++gcount;  ++wcount;
         if ( a1->mass > 2.5 ) ++hcount;
-        a2->xyz_state = TOPO_MOL_XYZ_GUESS;
+        a2->xyz_state = TOPO_MOL_XYZ_BADGUESS;
         ++gcount;  ++wcount;
         if ( a2->mass > 2.5 ) ++hcount;
       }
@@ -1834,7 +2034,7 @@ int topo_mol_guess_xyz(topo_mol *mol) {
       a2->x = atom->x - a * jx;
       a2->y = atom->y - a * jy;
       a2->z = atom->z - a * jz;
-      a2->xyz_state = TOPO_MOL_XYZ_GUESS;
+      a2->xyz_state = TOPO_MOL_XYZ_BADGUESS;
       ++gcount;  ++wcount;
       if ( a2->mass > 2.5 ) ++hcount;
       continue;
@@ -1847,8 +2047,23 @@ int topo_mol_guess_xyz(topo_mol *mol) {
     if ( uatoms[i]->xyz_state == TOPO_MOL_XYZ_VOID ) ++gcount;
   }
   if ( wcount ) {
-    sprintf(msg,"Warning: poorly guessed coordinates for %d atoms (%d non-hydrogen)", wcount, hcount);
+    sprintf(msg,"Warning: poorly guessed coordinates for %d atoms (%d non-hydrogen):", wcount, hcount);
     topo_mol_log_error(mol,msg);
+    for ( iseg=0; iseg<nseg; ++iseg ) {
+      seg = mol->segment_array[iseg];
+      if (! seg) continue;
+      nres = hasharray_count(seg->residue_hash);
+      for ( ires=0; ires<nres; ++ires ) {
+        res = &(seg->residue_array[ires]);
+        for ( atom = res->atoms; atom; atom = atom->next ) {
+          if ( atom->xyz_state == TOPO_MOL_XYZ_BADGUESS) {
+            sprintf(msg, "Warning: poorly guessed coordinate for atom %s\t %s:%s\t  %s",
+                atom->name, res->name, res->resid, seg->segid);
+            topo_mol_log_error(mol, msg);
+          }
+        }
+      }
+    }
   }
   if ( gcount ) {
     sprintf(msg,"Warning: failed to guess coordinates for %d atoms",gcount);

@@ -46,8 +46,6 @@ int topo_mol_multiply_atoms(topo_mol *mol, const topo_mol_ident_t *targets,
 int topo_mol_set_xyz(topo_mol *mol, const topo_mol_ident_t *target,
 					double x, double y, double z);
 
-int topo_mol_clear_xyz(topo_mol *mol, const topo_mol_ident_t *target);
-
 int topo_mol_guess_xyz(topo_mol *mol);
 
 #endif

@@ -8,6 +8,7 @@ int topo_mol_write_pdb(topo_mol *mol, FILE *file, void *v,
                                 void (*print_msg)(void *, const char *)) {
 
   int iseg,nseg,ires,nres,atomid;
+  int has_guessed_atoms = 0;
   double x,y,z,o,b;
   topo_mol_segment_t *seg;
   topo_mol_residue_t *res;
@@ -21,7 +22,7 @@ int topo_mol_write_pdb(topo_mol *mol, FILE *file, void *v,
   nseg = hasharray_count(mol->segment_hash);
   for ( iseg=0; iseg<nseg; ++iseg ) {
     seg = mol->segment_array[iseg];
-    if (hasharray_index(mol->segment_hash, seg->segid) == HASHARRAY_FAIL) continue;
+    if (! seg) continue;
     nres = hasharray_count(seg->residue_hash);
     for ( ires=0; ires<nres; ++ires ) {
       res = &(seg->residue_array[ires]);
@@ -34,7 +35,9 @@ int topo_mol_write_pdb(topo_mol *mol, FILE *file, void *v,
           x = atom->x;  y = atom->y;  z = atom->z;  o = 1.0;
           break;
         case TOPO_MOL_XYZ_GUESS:
+        case TOPO_MOL_XYZ_BADGUESS:
           x = atom->x;  y = atom->y;  z = atom->z;  o = 0.0;
+          has_guessed_atoms = 1;
           break;
         default:
           print_msg(v,"ERROR: Internal error, atom has invalid state.");
@@ -52,7 +55,10 @@ int topo_mol_write_pdb(topo_mol *mol, FILE *file, void *v,
   }
 
   write_pdb_end(file);
-
+  if (has_guessed_atoms) {
+    print_msg(v, 
+        "Info: Atoms with guessed coordinates will have occupancy of 0.0.");
+  }
   return 0;
 }
 
@@ -91,7 +97,7 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, void *v,
   nseg = hasharray_count(mol->segment_hash);
   for ( iseg=0; iseg<nseg; ++iseg ) {
     seg = mol->segment_array[iseg];
-    if (hasharray_index(mol->segment_hash, seg->segid) == HASHARRAY_FAIL) continue;
+    if (! seg) continue;
     nres = hasharray_count(seg->residue_hash);
     for ( ires=0; ires<nres; ++ires ) {
       res = &(seg->residue_array[ires]);
@@ -138,7 +144,7 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, void *v,
   fprintf(file,"%8d !NATOM\n",atomid);
   for ( iseg=0; iseg<nseg; ++iseg ) {
     seg = mol->segment_array[iseg];
-    if (hasharray_index(mol->segment_hash, seg->segid) == HASHARRAY_FAIL) continue;
+    if (! seg) continue;
     nres = hasharray_count(seg->residue_hash);
     for ( ires=0; ires<nres; ++ires ) {
       res = &(seg->residue_array[ires]);
@@ -159,7 +165,7 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, void *v,
   numinline = 0;
   for ( iseg=0; iseg<nseg; ++iseg ) {
     seg = mol->segment_array[iseg];
-    if (hasharray_index(mol->segment_hash, seg->segid) == HASHARRAY_FAIL) continue;
+    if (! seg) continue;
     nres = hasharray_count(seg->residue_hash);
     for ( ires=0; ires<nres; ++ires ) {
       res = &(seg->residue_array[ires]);
@@ -181,7 +187,7 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, void *v,
   numinline = 0;
   for ( iseg=0; iseg<nseg; ++iseg ) {
     seg = mol->segment_array[iseg];
-    if (hasharray_index(mol->segment_hash, seg->segid) == HASHARRAY_FAIL) continue;
+    if (! seg) continue;
     nres = hasharray_count(seg->residue_hash);
     for ( ires=0; ires<nres; ++ires ) {
       res = &(seg->residue_array[ires]);
@@ -204,7 +210,7 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, void *v,
   numinline = 0;
   for ( iseg=0; iseg<nseg; ++iseg ) {
     seg = mol->segment_array[iseg];
-    if (hasharray_index(mol->segment_hash, seg->segid) == HASHARRAY_FAIL) continue;
+    if (! seg) continue;
     nres = hasharray_count(seg->residue_hash);
     for ( ires=0; ires<nres; ++ires ) {
       res = &(seg->residue_array[ires]);
@@ -228,7 +234,7 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, void *v,
   numinline = 0;
   for ( iseg=0; iseg<nseg; ++iseg ) {
     seg = mol->segment_array[iseg];
-    if (hasharray_index(mol->segment_hash, seg->segid) == HASHARRAY_FAIL) continue;
+    if (! seg) continue;
     nres = hasharray_count(seg->residue_hash);
     for ( ires=0; ires<nres; ++ires ) {
       res = &(seg->residue_array[ires]);
