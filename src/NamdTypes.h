@@ -28,8 +28,8 @@ struct Transform
 {
   int i,j,k;
   Transform(void) { i=0; j=0; k=0; }
-  int operator==(const Transform &o) const {
-	return ( i==o.i && j==o.j && k==o.k ); }
+//  int operator==(const Transform &o) const {
+//	return ( i==o.i && j==o.j && k==o.k ); }
 };
 
 struct AtomProperties
@@ -45,9 +45,9 @@ struct AtomProperties
   // Bool water;	// TRUE if water atom (O or H)  NEVER USED -JCP
   unsigned char flags;	// for fixed atoms, etc. - use with & operator
 
-  int operator==(const AtomProperties& a) {
-    return( id == a.id );
-  }
+//  int operator==(const AtomProperties& a) {
+//    return( id == a.id );
+//  }
 };
 
 // Definitions for AtomProperties flags

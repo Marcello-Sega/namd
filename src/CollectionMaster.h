@@ -66,9 +66,6 @@ public:
 
     int seq;
 
-    int operator<(const CollectVectorInstance &o) { return (seq < o.seq); }
-    int operator==(const CollectVectorInstance &o) { return (seq == o.seq); }
-
     ResizeArray<Vector> data;
     ResizeArray<FloatVector> fdata;
 
@@ -84,13 +81,15 @@ public:
     void submitData(
 	int seq, AtomIDList &i, ResizeArray<Vector> &d, ResizeArray<FloatVector> &fd)
     {
-      CollectVectorInstance *c = data.find(CollectVectorInstance(seq));
-      if ( ! c )
+      CollectVectorInstance **c = data.begin();
+      CollectVectorInstance **c_e = data.end();
+      for( ; c != c_e && (*c)->seq != seq; ++c );
+      if ( c == c_e )
       {
-	data.add(CollectVectorInstance(seq));
-	c = data.find(CollectVectorInstance(seq));
+        data.add(new CollectVectorInstance(seq));
+        c = data.end() - 1;
       }
-      c->append(i,d,fd);
+      (*c)->append(i,d,fd);
     }
 
     void enqueue(int seq) { queue.add(seq); }
@@ -101,18 +100,20 @@ public:
       if ( queue.size() )
       {
         int seq = queue[0];
-        CollectVectorInstance *c = data.find(CollectVectorInstance(seq));
-        if ( c && c->ready() )
+        CollectVectorInstance **c = data.begin();
+        CollectVectorInstance **c_e = data.end();
+        for( ; c != c_e && (*c)->seq != seq; ++c );
+        if ( c != c_e && (*c)->ready() )
         {
-	  o = new CollectVectorInstance(*c);
-	  data.del(*c);
+	  o = *c;
+	  data.del(c - data.begin());
 	  queue.del(0,1);
         }
       }
       return o;
     }
 
-    ResizeArray<CollectVectorInstance> data;
+    ResizeArray<CollectVectorInstance*> data;
     ResizeArray<int> queue;
 
   };

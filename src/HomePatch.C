@@ -157,17 +157,21 @@ void HomePatch::registerProxy(RegisterProxyMsg *msg) {
 }
 
 void HomePatch::unregisterProxy(UnregisterProxyMsg *msg) {
-  int i = proxy.findIndex(ProxyListElem(msg->node));
-  forceBox.checkIn(proxy[i].forceBox);
-  proxy.del(i);
+  int n = msg->node;
+  ProxyListElem *pe = proxy.begin();
+  for ( ; pe->node != n; ++pe );
+  forceBox.checkIn(pe->forceBox);
+  proxy.del(pe - proxy.end());
   delete msg;
 }
 
 void HomePatch::receiveResults(ProxyResultMsg *msg)
 {
   DebugM(4, "patchID("<<patchID<<") receiveRes() nodeID("<<msg->node<<")\n");
-  int i = proxy.findIndex(ProxyListElem(msg->node));
-  Results *r = proxy[i].forceBox->open();
+  int n = msg->node;
+  ProxyListElem *pe = proxy.begin();
+  for ( ; pe->node != n; ++pe );
+  Results *r = pe->forceBox->open();
   for ( int k = 0; k < Results::maxNumForces; ++k )
   {
     Force *f = r->f[k];
@@ -176,7 +180,7 @@ void HomePatch::receiveResults(ProxyResultMsg *msg)
     f_e = msg->forceList[k].end();
     for ( ; f_i != f_e; ++f_i, ++f ) *f += *f_i;
   }
-  proxy[i].forceBox->close(&r);
+  pe->forceBox->close(&r);
   delete msg;
 }
 

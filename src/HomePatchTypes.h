@@ -17,10 +17,6 @@ public:
   ProxyListElem(NodeID n, Box<Patch,Results> *f ) : node(n), forceBox(f) {};
   ~ProxyListElem() {};
 
-  int operator==(const ProxyListElem &p) {
-    return (node == p.node);
-  }
-
   NodeID node;
   Box<Patch,Results> *forceBox;
 };

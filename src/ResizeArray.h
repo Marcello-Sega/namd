@@ -108,16 +108,6 @@ template <class Elem> class ResizeArray {
       return(rep->del(index,num));
     }
 
-    // delete elements that == e
-    virtual int del(const Elem &e) {
-      for (int i=0; i < rep->size(); i++) {
-        if (rep->array[i] == e) {
-          return(del(i,1));
-        }
-      }
-      return(0);
-    }
-
     // insert element at index
     int insert (const Elem& elem, int index) {
       rep->ins(elem,index);
@@ -137,22 +127,6 @@ template <class Elem> class ResizeArray {
 
     // returns size of ResizeArray
     inline int size(void) const { return rep->size(); }
-
-    // Find and return pointer to element that == e
-    Elem * find(const Elem &e) {
-      for (int i=0; i < rep->size(); i++) {
-        if (rep->array[i] == e) return ((rep->array)+i);
-      }
-      return NULL;
-    }
-  
-    // Find and return index to element that == e
-    int findIndex(const Elem &e) {
-      for (int i=0; i < rep->size(); i++) {
-        if (rep->array[i] == e) return (i);
-      }
-      return -1;
-    }
 
     // reduce storage size
     void reduce(void) { rep->reduce(); }

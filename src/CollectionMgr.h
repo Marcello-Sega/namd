@@ -67,9 +67,6 @@ public:
     ResizeArray<Vector> data;
     ResizeArray<FloatVector> fdata;
 
-    int operator<(const CollectVectorInstance &o) { return (seq < o.seq); }
-    int operator==(const CollectVectorInstance &o) { return (seq == o.seq); }
-
   private:
     int remaining;
 
@@ -82,17 +79,19 @@ public:
     CollectVectorInstance* submitData(
 	int seq, AtomIDList &i, ResizeArray<Vector> &d, int prec=2)
     {
-      CollectVectorInstance *c = data.find(CollectVectorInstance(seq));
-      if ( ! c )
+      CollectVectorInstance **c = data.begin();
+      CollectVectorInstance **c_e = data.end();
+      for( ; c != c_e && (*c)->seq != seq; ++c );
+      if ( c == c_e )
       {
-	data.add(CollectVectorInstance(seq,prec));
-	c = data.find(CollectVectorInstance(seq));
+	data.add(new CollectVectorInstance(seq,prec));
+	c = data.end() - 1;
       }
-      if ( c->append(i,d) )
+      if ( (*c)->append(i,d) )
       {
-	c = new CollectVectorInstance(*c);
-	data.del(CollectVectorInstance(seq));
-        return c;
+	CollectVectorInstance *i = *c;
+	data.del(c - data.begin());
+        return i;
       }
       else
       {
@@ -100,7 +99,7 @@ public:
       }
     }
 
-    ResizeArray<CollectVectorInstance> data;
+    ResizeArray<CollectVectorInstance*> data;
 
   };
 private:
