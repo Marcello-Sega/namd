@@ -6,7 +6,7 @@
 **/
 
 /*
-    Sync will ensure that all homepatches finished updating before Computes starts
+    Sync will ensure that all homepatches finished updating before Computes starts and all proxies finished updating themselves.
 */
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -29,7 +29,16 @@
 
 #include "InfoStream.h"
 
+// make sure all HomePatches get their positions data and sendProxyData to 
+// their proxies before computes get positionsReady.
 int useSync = 1;
+
+// useProxySync will make sure all proxies get updated before computes' 
+// positionsReady triggered and real computation begins.
+// when these two combined, it will make sure that homepatch get all its force 
+// and positions data, and proxies receive its updated data before all 
+// computes start.
+int useProxySync = 1;
 
 Sync::Sync()
 {
@@ -49,12 +58,25 @@ Sync::Sync()
     numPatches = -1;
 }
 
+Sync::~Sync()
+{
+  delete [] clist;
+}
+
 void Sync::openSync(void)
 {
+  if (useSync) {
+    // no proxies on this node, no need to use proxy sync.
+    if (useProxySync && ProxyMgr::Object()->numProxies() == 0) useProxySync = 0;
+    if (!useProxySync && PatchMap::Object()->numHomePatches() == 0) useSync = 0;
+  }
+#if 0
+// was
    if (useSync && PatchMap::Object()->numHomePatches() == 0) {
        // CkPrintf("********* Local Sync is removed on node %d ******** \n", CkMyPe());
-       useSync = 0;
+     useSync = 0;
    }
+#endif
 }    
 
 // called from Patch::positionsReady()
@@ -89,6 +111,7 @@ void Sync::registerComp(PatchID pid, ComputeIDListIter cid, int doneMigration)
   }
 }
 
+// called from HomePatch::positionsReady()
 void Sync::PatchReady(void)
 {
   counter ++;

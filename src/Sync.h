@@ -44,6 +44,7 @@ private:
     void triggerCompute();
 public:
     Sync(void);
+    ~Sync(void);
     inline static Sync *Object() { return CpvAccess(Sync_instance); }
     void openSync(); 
     void registerComp(PatchID pid, ComputeIDListIter cid, int doneMigration);

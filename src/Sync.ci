@@ -10,7 +10,6 @@ module Sync {
   group Sync
   {
     entry Sync(void);
-//    entry void PatchReady(void);
   };
 }
 
