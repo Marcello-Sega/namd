@@ -33,6 +33,7 @@ ComputeHomeTuples<T>::ComputeHomeTuples(ComputeID c) : Compute(c) {
   atomMap = AtomMap::Object();
   reduction = ReductionMgr::Object();
   T::registerReductionData(reduction);
+  doLoadTuples = false;
 }
 
 template <class T>
@@ -78,7 +79,7 @@ void ComputeHomeTuples<T>::initialize() {
 
   setNumPatches(tuplePatchList.size());
 
-  loadTuples();
+  doLoadTuples = true;
 }
 
 //===========================================================================
@@ -87,11 +88,13 @@ void ComputeHomeTuples<T>::initialize() {
 //===========================================================================
 template <class T>
 void ComputeHomeTuples<T>::atomUpdate() {
-  loadTuples();
+  doLoadTuples = true;
 }
 
 template <class T>
 void ComputeHomeTuples<T>::loadTuples() {
+  doLoadTuples = false;
+
   // cycle through each patch and gather all tuples
   TuplePatchListIter ai(tuplePatchList);
 
@@ -166,6 +169,8 @@ void ComputeHomeTuples<T>::loadTuples() {
 //-------------------------------------------------------------------
 template <class T>
 void ComputeHomeTuples<T>::doWork() {
+  if ( doLoadTuples ) loadTuples();
+
   DebugM(1, "ComputeHomeTuples::doWork() -- started " << endl );
 
   // Open Boxes - register tFat we are using Positions
@@ -205,12 +210,15 @@ void ComputeHomeTuples<T>::doWork() {
  *
  *      $RCSfile: ComputeHomeTuples.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1016 $     $Date: 1997/09/30 16:57:42 $
+ *      $Revision: 1.1017 $     $Date: 1997/10/02 22:01:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.C,v $
+ * Revision 1.1017  1997/10/02 22:01:20  jim
+ * Moved loadTuples() out of recvProxyAll entry point and into enqueueWork.
+ *
  * Revision 1.1016  1997/09/30 16:57:42  jim
  * Fixed bug dealing with atoms on unknown patches.
  *

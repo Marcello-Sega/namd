@@ -90,6 +90,7 @@ template <class T>
 class ComputeHomeTuples : public Compute {
 private:
   virtual void loadTuples();
+  int doLoadTuples;
 
 protected:
   UniqueSet<T> tupleList;
@@ -113,12 +114,15 @@ public:
  *
  *	$RCSfile: ComputeHomeTuples.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/09/28 22:36:50 $
+ *	$Revision: 1.1010 $	$Date: 1997/10/02 22:01:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.h,v $
+ * Revision 1.1010  1997/10/02 22:01:21  jim
+ * Moved loadTuples() out of recvProxyAll entry point and into enqueueWork.
+ *
  * Revision 1.1009  1997/09/28 22:36:50  jim
  * Modified tuple-based computations to not duplicate calculations and
  * only require "upstream" proxies.
