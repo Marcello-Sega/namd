@@ -16,7 +16,7 @@ PACK_MSG(MyMsg,
 
 */
 
-template<class T> class ResizeArray<T>;
+template<class T> class ResizeArray;
 
 template<class T> size_t sizeof_element(ResizeArray<T> &) { return sizeof(T); }
 
