@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.19 1996/12/19 00:37:31 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.20 1997/01/15 17:09:43 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -69,18 +69,28 @@ void Patch::loadAtoms(AtomIDList al)
 void Patch::loadAtomProperties(void)
 {
     Molecule *mol = Node::Object()->molecule;
-    AtomIDListIter ai(atomIDList);
+//    AtomIDListIter ai(atomIDList);
     localIndex.resize(0);
-    int i = 0;
-    for ( ai = ai.begin(); ai != ai.end(); ai++ )
+//    int i = 0;
+//    for ( ai = ai.begin(); ai != ai.end(); ai++ )
+//    {
+//      LocalAtomID la(*ai, i++);
+//      localIndex.load(la);
+//      AtomProperties ap;
+//      ap.id = *ai;
+//      ap.type = mol->atomvdwtype(*ai);
+//      ap.mass = mol->atommass(*ai);
+//      ap.charge = mol->atomcharge(*ai);
+//      a.add(ap);
+//    }
+    for ( int i=0; i<atomIDList.size(); i++)
     {
-      LocalAtomID la(*ai, i++);
-      localIndex.load(la);
+      localIndex.load(LocalAtomID(atomIDList[i], i));
       AtomProperties ap;
-      ap.id = *ai;
-      ap.type = mol->atomvdwtype(*ai);
-      ap.mass = mol->atommass(*ai);
-      ap.charge = mol->atomcharge(*ai);
+      ap.id = atomIDList[i];
+      ap.type = mol->atomvdwtype(ap.id);
+      ap.mass = mol->atommass(ap.id);
+      ap.charge = mol->atomcharge(ap.id);
       a.add(ap);
     }
     localIndex.sort();
@@ -198,13 +208,16 @@ void Patch::positionsReady()
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.19 $	$Date: 1996/12/19 00:37:31 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.20 $	$Date: 1997/01/15 17:09:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.20  1997/01/15 17:09:43  ari
+ * minor changes
+ *
  * Revision 1.19  1996/12/19 00:37:31  jim
  * increase MIN_DEBUG_LEVEL
  *

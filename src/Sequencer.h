@@ -23,6 +23,7 @@ class CollectionMgr;
 
 class Sequencer
 {
+    friend HomePatch;
 public:
     Sequencer(HomePatch *p);
     ~Sequencer(void);

@@ -17,7 +17,9 @@
 
 #include "Vector.h"
 #include "Templates/ResizeArray.h"
+#include "Templates/UniqueSortedArray.h"
 #include "Templates/ResizeArrayIter.h"
+#include "Templates/ResizeArrayPrimIter.h"
 
 class Patch;
 class Compute;
@@ -54,22 +56,18 @@ typedef ResizeArray<AtomProperties> AtomPropertiesList;
 typedef ResizeArrayIter<AtomProperties> AtomPropertiesListIter;
 
 typedef ResizeArray<AtomID> AtomIDList;
-typedef ResizeArrayIter<AtomID> AtomIDListIter;
 
 typedef int PatchID;
 typedef int ComputeID;
 typedef int NodeID;
 
 typedef ResizeArray<PatchID> PatchIDList;
-typedef ResizeArrayIter<PatchID> PatchIDListIter;
 typedef ResizeArray<Patch *> PatchList;
-typedef ResizeArrayIter<Patch *> PatchListIter;
 
 typedef UniqueSortedArray<ComputeID> ComputeIDList;
-typedef ResizeArrayIter<ComputeID> ComputeIDListIter;
+typedef ResizeArrayPrimIter<ComputeID> ComputeIDListIter;
 
 typedef ResizeArray<Compute *> ComputeList;
-typedef ResizeArrayIter<Compute *> ComputeListIter;
 
 struct LocalID
 {
@@ -101,12 +99,15 @@ enum Boolean
  *
  *	$RCSfile: NamdTypes.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.13 $	$Date: 1996/12/05 01:47:07 $
+ *	$Revision: 1.14 $	$Date: 1997/01/15 17:09:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdTypes.h,v $
+ * Revision 1.14  1997/01/15 17:09:43  ari
+ * minor changes
+ *
  * Revision 1.13  1996/12/05 01:47:07  ari
  * added == to AtomProperties definition
  *

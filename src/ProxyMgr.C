@@ -25,12 +25,13 @@
 #include "ComputeMap.h"
 
 #define DEBUGM
-#define MIN_DEBUG_LEVEL 2
+#define MIN_DEBUG_LEVEL 4
 #include "Debug.h"
 
-void * ProxyAtomsMsg:: pack (int *length)
+void * ProxyAtomsMsg::pack (int *length)
   {
     int size = atomIDList.size();
+    DebugM(3,"Size of atomIDList " << size << "\n");
     *length = 2 * sizeof(int) + size * sizeof(AtomID);
     char *buffer = (char*)new_packbuffer(this,*length);
     *((int*)buffer) = patch;
@@ -41,6 +42,7 @@ void * ProxyAtomsMsg:: pack (int *length)
     this->~ProxyAtomsMsg();
     return buffer;
   }
+
 void ProxyAtomsMsg:: unpack (void *in)
   {
     new((void*)this) ProxyAtomsMsg;
@@ -66,6 +68,7 @@ void * ProxyDataMsg:: pack (int *length)
     this->~ProxyDataMsg();
     return buffer;
   }
+
 void ProxyDataMsg:: unpack (void *in)
   {
     new((void*)this) ProxyDataMsg;
@@ -92,6 +95,7 @@ void * ProxyResultMsg:: pack (int *length)
     this->~ProxyResultMsg();
     return buffer;
   }
+
 void ProxyResultMsg:: unpack (void *in)
   {
     new((void*)this) ProxyResultMsg;
@@ -256,13 +260,16 @@ ProxyMgr::recvProxyAtoms(ProxyAtomsMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.11 $	$Date: 1996/12/17 23:58:02 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.12 $	$Date: 1997/01/15 17:09:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.12  1997/01/15 17:09:43  ari
+ * minor changes
+ *
  * Revision 1.11  1996/12/17 23:58:02  jim
  * proxy result reporting is working
  *
