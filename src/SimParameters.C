@@ -605,7 +605,7 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
 #endif
 
    opts.optionalB("main", "FFTWEstimate", "Use estimates to optimize FFTW?",
-	&FFTWUseWisdom, FALSE);
+	&FFTWEstimate, FALSE);
    opts.optionalB("main", "FFTWUseWisdom", "Read/save wisdom file for FFTW?",
 	&FFTWUseWisdom, TRUE);
    opts.optional("FFTWUseWisdom", "FFTWWisdomFile", "File for FFTW wisdom",
