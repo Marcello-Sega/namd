@@ -44,7 +44,7 @@ DFLAGS = -D$(PVM_ARCH)  -DVIRIAL
 # tell the compiler where to locate the PVM include
 # files
 #
-IFLAGS = -I$(PVM_HOME) -I../src -I../dpmta2 -I/Projects/l1/namd.2.0/charm/include
+IFLAGS = -I$(PVM_HOME) -I../src -I../dpmta2 -I$(CHARM)/include
 
 # library flags - set the flags to point to the directories
 #   containing the PVM 
