@@ -55,6 +55,9 @@ protected:
       BigReal pressure_avg;
       BigReal groupPressure_avg;
       int avg_count;
+      Tensor pressure_tavg;
+      Tensor groupPressure_tavg;
+      int tavg_count;
     void compareChecksums(int,int=0);
       int computeChecksum;
       int marginViolations;

@@ -93,6 +93,9 @@ Controller::Controller(NamdState *s) :
     pressure_avg = 0;
     groupPressure_avg = 0;
     avg_count = 0;
+    pressure_tavg = 0;
+    groupPressure_tavg = 0;
+    tavg_count = 0;
     checkpoint_stored = 0;
 }
 
@@ -707,7 +710,7 @@ static char *FORMAT(BigReal X)
   return tmp_string;
 }
 
-static char *FORMAT(char *X)
+static char *FORMAT(const char *X)
 {
   static char tmp_string[25];
   sprintf(tmp_string," %14s",X); 
@@ -1216,13 +1219,23 @@ void Controller::printEnergies(int step, int minimize)
            << "\n" << endi;
     }
 
-    if ( simParameters->outputPressure &&
-         ( minimize || ! ( step % simParameters->outputPressure ) ) )
-    {
-      iout << "PRESSURE: " << step << " "
+    if ( simParameters->outputPressure ) {
+      pressure_tavg += pressure;
+      groupPressure_tavg += groupPressure;
+      tavg_count += 1;
+      if ( minimize || ! ( step % simParameters->outputPressure ) ) {
+        iout << "PRESSURE: " << step << " "
            << PRESSUREFACTOR * pressure << "\n"
            << "GPRESSURE: " << step << " "
-           << PRESSUREFACTOR * groupPressure << "\n" << endi;
+           << PRESSUREFACTOR * groupPressure << "\n";
+        if ( tavg_count > 1 ) iout << "PRESSAVG: " << step << " "
+           << (PRESSUREFACTOR/tavg_count) * pressure_tavg << "\n"
+           << "GPRESSAVG: " << step << " "
+           << (PRESSUREFACTOR/tavg_count) * groupPressure_tavg << "\n" << endi;
+        pressure_tavg = 0;
+        groupPressure_tavg = 0;
+        tavg_count = 0;
+      }
     }
 
     if (simParameters->IMDon && !(step % simParameters->IMDfreq)) {
