@@ -22,6 +22,7 @@ class Sequencer
 {
 public:
 	Sequencer(HomePatch *p) : patch(p) { };
+	~Sequencer(void) { };
 	void run(int numberOfCycles);             // spawn thread, etc.
 	void awaken(void) { CthAwaken(thread); };
 	void suspend(void) { CthSuspend(); };
@@ -29,7 +30,7 @@ public:
 protected:
 	virtual void threadRun(void);  // subclasses redefine this method
 	int numberOfCycles;            // stores argument to run()
-	const HomePatch *patch;        // access methods in patch
+	HomePatch *const patch;        // access methods in patch
 
 private:
 	CthThread thread;
