@@ -33,6 +33,17 @@ struct ReductionMgrData
 
 class ReductionMgr
 {
+private:
+  #if PANIC > 0
+  int panicMode;
+  #endif
+  int numSubscribed[REDUCTION_MAX_RESERVED];
+  ReductionMgrData *data;
+  ReductionMgrData *createdata(int seq);
+  int maxData[REDUCTION_MAX_RESERVED];	// number of data to expect
+  void remove(int seq);	// delete (remove) a sequence
+  ReductionMgrData *find(int seq);
+
 public:
 
   // Vector and Tensor operations can eventually be defined
@@ -46,8 +57,9 @@ public:
   // (un)register to submit data for reduction
   // may cause an error if reductions are active
   // ASSUMPTION: nobody should register after data has been collected.
-  void register(ReductionTag tag);
-  void unregister(ReductionTag tag);
+  // (register is a key word)
+  void Register(ReductionTag tag);
+  void unRegister(ReductionTag tag);
 
   // submit data for reduction
   // more == 1 signals immediate submission of other data
@@ -70,17 +82,6 @@ public:
   // void require(int seq, ReductionTag tag, Vector &data);
   // void require(int seq, ReductionTag tag, Tensor &data);
   // void require(int seq, ReductionTag tag); // pass on requiring data
-
-private:
-  #if PANIC > 0
-  int panicMode;
-  #endif
-  int numSubscribed[REDUCTION_MAX_RESERVED];
-  ReductionMgrData *data;
-  ReductionMgrData *createdata(int seq);
-  int maxData[REDUCTION_MAX_RESERVED];	// number of data to expect
-  void remove(int seq);	// delete (remove) a sequence
-  ReductionMgrData *find(int seq);
 };
 
 #endif
