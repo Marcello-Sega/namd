@@ -64,7 +64,7 @@ void NAMD_new_handler() {
   char tmp[100];
   sprintf(tmp,"Memory allocation failed on processor %d.",CmiMyPe());
   NAMD_die(tmp);
-#ifdef defined(WIN32) && !defined(__CYGWIN__)
+#if defined(WIN32) && !defined(__CYGWIN__)
   return 0;
 #endif
 }
