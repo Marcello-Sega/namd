@@ -1,0 +1,4 @@
+# Set CHARMBASE to the top level charm directory.
+
+CHARMBASE = /Projects/namd2/charm
+

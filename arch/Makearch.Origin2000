@@ -29,7 +29,9 @@ DFLAGS= -D_SGI_MP_SOURCE -O3 -r10000 -INLINE:all
 #####
 # definitions for Charm routines
 #####
-CHARM =/Projects/namd2/charm/origin2000
+CHARMARCH = origin2000
+include Make.charm
+CHARM = $(CHARMBASE)/$(CHARMARCH)
 
 ######
 ## definitions for TCL interface

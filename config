@@ -33,6 +33,7 @@ begin:
   echo "Linking Makefiles"
   ln -s ../Makefile ./Makefile
   ln -s ../Make.depends ./Make.depends
+  ln -s ../Make.charm ./Make.charm
   ln -s .. .rootdir
   echo "Creating src and linking files"
   (cd $DIR/src ; find . -name CVS -prune -o -type d -print )|sed -e s@.@@> temp.d

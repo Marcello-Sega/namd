@@ -23,7 +23,9 @@ CXXTHREADOPTS = $(CXXOPTS)
 #####
 # definitions for Charm routines
 #####
-CHARM = /Projects/l1/namd.2.0/charm
+CHARMARCH = net-whatever
+include Make.charm
+CHARM = $(CHARMBASE)/$(CHARMARCH)
 
 ######
 ## definitions for TCL interface

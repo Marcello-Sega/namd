@@ -23,7 +23,9 @@ CXXTHREADOPTS = $(CXXOPTS)
 #####
 # definitions for Charm routines
 #####
-CHARM = /ccsthome/bhandark/charm/sp3
+CHARMARCH = sp3
+include Make.charm
+CHARM = $(CHARMBASE)/$(CHARMARCH)
 
 ######
 ## definitions for TCL interface

@@ -41,7 +41,9 @@ PVM_ARCH = HPPA
 #####
 # definitions for Charm routines
 #####
-CHARM = /Projects/namd2/charm/net-hp-cc
+CHARMARCH = net-hp-cc
+include Make.charm
+CHARM = $(CHARMBASE)/$(CHARMARCH)
 
 ######
 ## definitions for TCL interface
