@@ -299,6 +299,30 @@ both 25 and 50 cycles (see the stepspercycle parameter) and base your
 estimate on the additional time needed for the longer simulation in
 order to exclude startup costs and allow for initial load balancing.
 
+We provide both standard (UDP) and new TCP based precompiled binaries
+for Linux clusters.  We have observed that the TCP version is better
+on our dual processor clusters with gigabit ethernet while the basic
+UDP version is superior on our single processor fast ethernet cluster.
+When using the UDP version with gigabit you can add the +giga option
+to adjust several tuning parameters.  Additional performance may be
+gained by building NAMD against an SMP version of Charm++ such as
+net-linux-smp or net-linux-smp-icc.  This will use a communication
+thread for each process to respond to network activity more rapidly.
+For dual processor clusters we have found it that running two separate
+processes per node, each with its own communication thread, is faster
+than using the charmrun ++ppn option to run multiple worker threads.
+However, we have observed that when running on a single hyperthreaded
+processor (i.e., a newer Pentium 4) there is an additional 15% boost
+from running standalone with two threads (namd2 +p2) beyond running
+two processors (charmrun namd2 ++local +p2).  For a cluster of single
+processor hyperthreaded machines an SMP version should provide very
+good scaling running one process per node since the communication
+thread can run very efficiently on the second virtual processor.  We
+are unable to ship an SMP build for Linux due to portability problems
+with the Linux pthreads implementation needed by Charm++.  The new
+NPTL pthreads library in RedHat 9 fixes these problems so an SMP port
+can become the standard shipping binary version in the future.
+
 On some large machines with very high bandwidth interconnects you may
 be able to increase performance for PME simulations by adding either
 "+strategy USE_MESH" or "+strategy USE_GRID" to the command line.
