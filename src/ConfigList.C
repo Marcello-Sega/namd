@@ -58,7 +58,7 @@ ConfigList::ConfigListNode *ConfigList::find_key_word(const char *key) const
 // name does already exist, make a new ListNode and add the name to the end
 //   String 1 starts at s1 and is of length len1
 //      "   2    "   "  s2  "   "  "   "    len2
-void ConfigList::add_element( char *s1, int len1, char *s2, int len2)
+void ConfigList::add_element(const char *s1, int len1, const char *s2, int len2)
 {
     char *temps = new char[len1 + 1];  // what is the name?
     if ( temps == NULL )
@@ -258,7 +258,11 @@ ConfigList::ConfigList(const char *filename_in)
    } else if (datastart[0] == '{') {
      // check if the data begins with a '{'
      // will remove initial '{' and final '}' to match Tcl.
+#ifndef NO_STRSTREAM_H
      ostrstream alldata;
+#else
+     ostringstream alldata;
+#endif
      char newdata[1000];
      int found_end = 0;
      ++datastart;  // remove initial '{'
@@ -296,7 +300,11 @@ ConfigList::ConfigList(const char *filename_in)
        if ( ! fgets(newdata, 999, infile) ) break;
        linenumber ++;
      }
+#ifndef NO_STRSTREAM_H
      add_element(namestart, nameend-namestart+1, alldata.str(), alldata.pcount());
+#else
+     add_element(namestart, nameend-namestart+1, alldata.str().c_str(), alldata.str().length());
+#endif
      // delete string?
      if (!found_end) {
        *(nameend+1) = 0;

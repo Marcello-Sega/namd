@@ -106,7 +106,7 @@ class ConfigList {
     Bool isokay;
   public:
     ConfigList(void);
-    void add_element( char *s1, int len1, char *s2, int len2);
+    void add_element( const char *s1, int len1, const char *s2, int len2);
     ConfigList( const char *filename);
     Bool okay( void) { return isokay; }
     ~ConfigList( void);
