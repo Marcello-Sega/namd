@@ -30,6 +30,15 @@ ComputeRestraints::ComputeRestraints(ComputeID c, PatchID pid)
 	//  Get parameters from the SimParameters object
 	consExp = simParams->constraintExp;
 	
+	//****** BEGIN selective restraints (X,Y,Z) changes 
+	consSelectOn = simParams->selectConstraintsOn;
+	if (consSelectOn) {
+	  consSelectX = simParams->constrXOn;
+	  consSelectY = simParams->constrYOn;
+	  consSelectZ = simParams->constrZOn;
+	}
+	//****** END selective restraints (X,Y,Z) changes 
+	
 	//****** BEGIN moving constraints changes 
 	consMoveOn = simParams->movingConstraintsOn;
 	if (consMoveOn) {
@@ -107,17 +116,26 @@ void ComputeRestraints::doForce(Position* p, Results* res, AtomProperties* a)
 	    // BEGIN moving and rotating constraint changes ******
 	    
 	    if (consMoveOn) {
-	      Rij = refPos + currentTime * moveVel  - p[localID];
+	      refPos += currentTime * moveVel;
 	    }
 	    else if(consRotOn) {
-	      Rij = mat_multiply_vec(refPos - rotPivot, m) + rotPivot 
-		- p[localID];
+	      refPos = mat_multiply_vec(refPos - rotPivot, m) + rotPivot;
 	    }
-	    else { // the default case
-	     Rij = refPos - p[localID];
-	    } 
 
 	    // END moving and rotating constraint changes *******
+
+	    Rij = patch->lattice.delta(refPos,p[localID]);
+
+
+	    //****** BEGIN selective restraints (X,Y,Z) changes 
+	    if (consSelectOn) { // check which components we want to restrain:
+	      if (!consSelectX) {Rij.x=0.0;}  // by setting the appropriate
+	      if (!consSelectY) {Rij.y=0.0;}  // Cartesian component to zero
+	      if (!consSelectZ) {Rij.z=0.0;}  // we will avoid a restoring force
+	    }                                 // along that component, and the
+	                                      // energy will also be correct
+	    //****** END selective restraints (X,Y,Z) changes 
+
 	    
 	    //  Calculate the distance and the distance squared
 	    r2 = Rij.length2();
@@ -148,7 +166,8 @@ void ComputeRestraints::doForce(Position* p, Results* res, AtomProperties* a)
 	      value /= r2;
       
 	      Rij.mult(value);
-      
+              //iout << iINFO << "restraining force" << Rij        << "\n"; 
+
 	      f[localID] += Rij;
 	    }
 	  }
@@ -163,13 +182,16 @@ void ComputeRestraints::doForce(Position* p, Results* res, AtomProperties* a)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeRestraints.C,v $
- *	$Author: sergei $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1998/10/01 00:31:31 $
+ *	$Author: ferenc $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.5 $	$Date: 1999/01/08 23:24:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeRestraints.C,v $
+ * Revision 1.5  1999/01/08 23:24:26  ferenc
+ * added selective position restraints for specific Cartesian components
+ *
  * Revision 1.4  1998/10/01 00:31:31  sergei
  * added rotating restraints feature;
  * changed the moving restraints from only moving one atom to moving all

@@ -174,6 +174,14 @@ public:
 					//  active
 	int constraintExp;		//  Exponent for harmonic constraints
 
+        //****** BEGIN selective restraints (X,Y,Z) changes 
+        Bool selectConstraintsOn;       //  Flag TRUE-> selective restraints  
+                                        //  active
+        Bool constrXOn, constrYOn,       
+             constrZOn;                 //  Flag TRUE-> select which Cartesian 
+                                        //  component to restrain
+        //****** END selective restraints (X,Y,Z) changes 
+
         //****** BEGIN moving constraints changes 
         Bool movingConstraintsOn;       //  Flag TRUE-> moving constraints 
                                         //  active
@@ -395,13 +403,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1028 $	$Date: 1999/01/06 22:50:33 $
+ *	$Author: ferenc $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1029 $	$Date: 1999/01/08 23:24:54 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1029  1999/01/08 23:24:54  ferenc
+ * added selective position restraints for specific Cartesian components
+ *
  * Revision 1.1028  1999/01/06 22:50:33  jim
  * Anisotropic (flexible cell) Langevin Piston pressure control finished.
  *

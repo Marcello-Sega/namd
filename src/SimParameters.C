@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *  $RCSfile: SimParameters.C,v $
- *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1053 $  $Date: 1999/01/06 22:50:32 $
+ *  $Author: ferenc $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1054 $  $Date: 1999/01/08 23:24:49 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1054  1999/01/08 23:24:49  ferenc
+ * added selective position restraints for specific Cartesian components
+ *
  * Revision 1.1053  1999/01/06 22:50:32  jim
  * Anisotropic (flexible cell) Langevin Piston pressure control finished.
  *
@@ -974,6 +977,22 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
     "consref)", PARSE_STRING);
    opts.require("constraints", "conskcol", "Column of conskfile to use "
     "for the force constants (defaults to O)", PARSE_STRING);
+
+
+   //****** BEGIN selective restraints (X,Y,Z) changes
+
+   //// selective restraints (X,Y,Z) 
+   opts.optionalB("constraints", "selectConstraints", 
+   "Restrain only selected Cartesian components of the coordinates?",
+     &selectConstraintsOn, FALSE);
+   opts.optionalB("selectConstraints", "selectConstrX",  
+   "Restrain X components of coordinates ", &constrXOn, FALSE);
+   opts.optionalB("selectConstraints", "selectConstrY",  
+   "Restrain Y components of coordinates ", &constrYOn, FALSE);
+   opts.optionalB("selectConstraints", "selectConstrZ",  
+   "Restrain Z components of coordinates ", &constrZOn, FALSE);
+   //****** END selective restraints (X,Y,Z) changes
+ 
 
    //****** BEGIN moving constraints changes 
 
@@ -2087,6 +2106,10 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    {
      constraintExp = 0;     
 
+     //****** BEGIN selective restraints (X,Y,Z) changes
+     selectConstraintsOn = FALSE;
+     //****** END selective restraints (X,Y,Z) changes
+ 
      //****** BEGIN moving constraints changes 
      movingConstraintsOn = FALSE;
      //****** END moving constraints changes 
@@ -2105,6 +2128,18 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
      NAMD_die("Rotating and moving constraints are mutually exclusive!");
    }
    //****** END rotating constraints changes 
+
+   //****** BEGIN selective restraints (X,Y,Z) changes
+   if(opts.defined("selectConstraints") && !opts.defined("selectConstrX")
+      && !opts.defined("selectConstrY") && !opts.defined("selectConstrZ")) {
+     NAMD_die("selectConstraints was specified, but no Cartesian components were defined!");
+   }
+   if (!opts.defined("selectConstraints")) {
+       constrXOn = FALSE;
+       constrYOn = FALSE;
+       constrZOn = FALSE;
+   }
+   //****** END selective restraints (X,Y,Z) changes
 
 
    //****** BEGIN SMD constraints changes 
@@ -2529,6 +2564,23 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
       iout << iINFO << "HARMONIC CONS EXP      "
          << constraintExp << "\n";
+
+      //****** BEGIN selective restraints (X,Y,Z) changes 
+
+      if (selectConstraintsOn) {
+	iout << iINFO << "SELECTED CARTESIAN COMPONENTS OF HARMONIC RESTRAINTS ACTIVE\n";
+
+        if (constrXOn)
+	iout << iINFO << "RESTRAINING X-COMPONENTS OF CARTESIAN COORDINATES!\n";
+
+        if (constrYOn)
+	iout << iINFO << "RESTRAINING Y-COMPONENTS OF CARTESIAN COORDINATES!\n";
+
+        if (constrZOn)
+	iout << iINFO << "RESTRAINING Z-COMPONENTS OF CARTESIAN COORDINATES!\n";
+      }
+      iout << endi;
+      //****** END selective restraints (X,Y,Z) changes 
 
       //****** BEGIN moving constraints changes 
 
@@ -3128,6 +3180,9 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
   msg->put(switchingDist)->put(elecswitchDist)->put(vdwswitchDist);
   msg->put(pairlistDist)->put(plMarginCheckOn)->put(constraintsOn);
   msg->put(constraintExp);
+  //****** BEGIN selective restraints (X,Y,Z) changes 
+  msg->put(selectConstraintsOn)->put(constrXOn)->put(constrYOn)->put(constrZOn);
+  //****** END selective restraints (X,Y,Z) changes 
   //****** BEGIN moving constraints changes 
   msg->put(movingConstraintsOn)->put(&movingConsVel);
   //****** END moving constraints changes 
@@ -3266,6 +3321,12 @@ void SimParameters::receive_SimParameters(MIStream *msg)
   msg->get(plMarginCheckOn);
   msg->get(constraintsOn);
   msg->get(constraintExp);
+  //****** BEGIN selective restraints (X,Y,Z) changes 
+  msg->get(selectConstraintsOn);
+  msg->get(constrXOn);
+  msg->get(constrYOn);
+  msg->get(constrZOn);
+  //****** END selective restraints (X,Y,Z) changes 
   //****** BEGIN moving constraints changes 
   msg->get(movingConstraintsOn);
   msg->get(&movingConsVel);
@@ -3426,12 +3487,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1053 $  $Date: 1999/01/06 22:50:32 $
+ *  $Revision: 1.1054 $  $Date: 1999/01/08 23:24:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1054  1999/01/08 23:24:49  ferenc
+ * added selective position restraints for specific Cartesian components
+ *
  * Revision 1.1053  1999/01/06 22:50:32  jim
  * Anisotropic (flexible cell) Langevin Piston pressure control finished.
  *

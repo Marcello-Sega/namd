@@ -23,6 +23,11 @@ class ComputeRestraints : public ComputePatch
 {
 private:
 	int consExp;		//  Exponent for energy function from SimParameters
+	//****** BEGIN selective restraints (X,Y,Z) changes 
+	Bool consSelectOn;      // Selection of Cartesian components active?
+	Bool consSelectX, consSelectY,
+	     consSelectZ;       // which components are active?
+	//****** END selective restraints (X,Y,Z) changes 
 	//****** BEGIN moving constraints changes 
 	Bool consMoveOn;        //  Are the moving constraints on?
         Vector moveVel;         // velocity of the constraint movement (A/timestep).
@@ -52,13 +57,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeRestraints.h,v $
- *	$Author: sergei $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1998/10/01 00:31:31 $
+ *	$Author: ferenc $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.4 $	$Date: 1999/01/08 23:24:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeRestraints.h,v $
+ * Revision 1.4  1999/01/08 23:24:34  ferenc
+ * added selective position restraints for specific Cartesian components
+ *
  * Revision 1.3  1998/10/01 00:31:31  sergei
  * added rotating restraints feature;
  * changed the moving restraints from only moving one atom to moving all
