@@ -1200,10 +1200,13 @@ int topo_mol_clear_xyz(topo_mol *mol, const topo_mol_ident_t *target) {
 
 int topo_mol_guess_xyz(topo_mol *mol) {
   char msg[128];
-  int iseg,nseg,ires,nres,ucount,i,gcount,gwild,okwild,wcount;
+  int iseg,nseg,ires,nres,ucount,i,nk,nu,gcount,gwild,okwild,wcount;
   topo_mol_segment_t *seg;
   topo_mol_residue_t *res;
   topo_mol_atom_t *atom, *a1, *a2, *a3;
+  topo_mol_atom_t *ka[4];
+  topo_mol_atom_t *ua[4];
+  topo_mol_bond_t *bondtmp;
   double dihedral, angle234, dist34;
   topo_mol_atom_t **uatoms;
   topo_mol_conformation_t *conf;
@@ -1363,6 +1366,168 @@ int topo_mol_guess_xyz(topo_mol *mol) {
       atom->xyz_state = TOPO_MOL_XYZ_GUESS; ++gcount;
     }
    }
+  }
+
+  for ( i=0; i<ucount; ++i ) { atom = uatoms[i];
+    if ( atom->xyz_state != TOPO_MOL_XYZ_VOID ) continue;
+
+    /* pick heaviest atom we are bonded to (to deal with water) */
+    a1 = 0;
+    for ( bondtmp = atom->bonds; bondtmp;
+		bondtmp = topo_mol_bond_next(bondtmp,atom) ) {
+      if ( bondtmp->atom[0] == atom ) a2 = bondtmp->atom[1];
+      else a2 = bondtmp->atom[0];
+      if ( a1 == 0 || a2->mass > a1->mass ) a1 = a2;
+    }
+    if ( a1 == 0 || a1->xyz_state == TOPO_MOL_XYZ_VOID ) continue;
+    atom = a1;
+
+    /* find all bonded atoms known and unknown coordinates */
+    nk = 0;  nu = 0;
+    for ( bondtmp = atom->bonds; bondtmp;
+		bondtmp = topo_mol_bond_next(bondtmp,atom) ) {
+      if ( bondtmp->del ) continue;
+      if ( bondtmp->atom[0] == atom ) a2 = bondtmp->atom[1];
+      else a2 = bondtmp->atom[0];
+      if ( a2->xyz_state == TOPO_MOL_XYZ_VOID ) {
+        if ( nu < 4 ) ua[nu++] = a2;
+      } else {
+        if ( nk < 4 ) ka[nk++] = a2;
+      }
+    }
+
+    if ( nu + nk > 4 ) continue;  /* no intuition beyond this case */
+
+    if ( nk == 0 ) {  /* not bonded to any known atoms */
+      a1 = ua[0];
+      a1->x = atom->x + 1.0;
+      a1->y = atom->y;
+      a1->z = atom->z;
+      a1->xyz_state = TOPO_MOL_XYZ_GUESS;
+      ++gcount;  ++wcount;
+      continue;
+    }
+
+    if ( nk == 1 ) {  /* bonded to one known atom */
+      a1 = ka[0];
+      ix = a1->x - atom->x;
+      iy = a1->y - atom->y;
+      iz = a1->z - atom->z;
+      a = sqrt(ix*ix+iy*iy+iz*iz);
+      if ( a ) a = 1.0 / a;  else continue;
+      ix *= a; iy *= a; iz *= a;
+      jx = -1.0 * iy;  jy = ix;  jz = 0;
+      if ( jx*jx + jy*jy + jz*jz < 0.1 ) {
+        jx = 0;  jy = -1.0 * iz;  jz = iy;
+      }
+      a = sqrt(jx*jx+jy*jy+jz*jz);
+      if ( a ) a = 1.0 / a;  else continue;
+      jx *= a; jy *= a; jz *= a;
+      angle234 = 109.0*M_PI/180.0;
+      a = cos(angle234);
+      b = sin(angle234);
+      a2 = ua[0];
+      a2->x = atom->x + a * ix + b * jx;
+      a2->y = atom->y + a * iy + b * jy;
+      a2->z = atom->z + a * iz + b * jz;
+      a2->xyz_state = TOPO_MOL_XYZ_GUESS;
+      ++gcount;  ++wcount;
+      continue;
+    }
+
+    if ( nk == 2 ) {  /* bonded to two known atoms */
+      a1 = ka[0];
+      ix = a1->x - atom->x;
+      iy = a1->y - atom->y;
+      iz = a1->z - atom->z;
+      a = sqrt(ix*ix+iy*iy+iz*iz);
+      if ( a ) a = 1.0 / a;  else continue;
+      ix *= a; iy *= a; iz *= a;
+      jx = ix;  jy = iy;  jz = iz;
+      a1 = ka[1];
+      ix = a1->x - atom->x;
+      iy = a1->y - atom->y;
+      iz = a1->z - atom->z;
+      a = sqrt(ix*ix+iy*iy+iz*iz);
+      if ( a ) a = 1.0 / a;  else continue;
+      ix *= a; iy *= a; iz *= a;
+      kx = jx - ix;  ky = jy - iy;  kz = jz - iz;
+      jx += ix;  jy += iy;  jz += iz;
+      a = sqrt(jx*jx+jy*jy+jz*jz);
+      if ( a ) a = 1.0 / a;  else continue;
+      jx *= a; jy *= a; jz *= a;
+      if ( nu == 1 ) {  /* one unknown atom */
+        a2 = ua[0];
+        a2->x = atom->x - jx;
+        a2->y = atom->y - jy;
+        a2->z = atom->z - jz;
+        a2->xyz_state = TOPO_MOL_XYZ_GUESS;
+        ++gcount;  ++wcount;
+      } else {  /* two unknown atoms */
+        a = sqrt(kx*kx+ky*ky+kz*kz);
+        if ( a ) a = 1.0 / a;  else continue;
+        kx *= a; ky *= a; kz *= a;
+        ix = jy*kz - jz*ky;
+        iy = jz*kx - jx*kz;
+        iz = jx*ky - jy*kx;
+        a = sqrt(ix*ix+iy*iy+iz*iz);
+        if ( a ) a = 1.0 / a;  else continue;
+        ix *= a; iy *= a; iz *= a;
+        angle234 = (180.0-0.5*109.0)*M_PI/180.0;
+        a = sin(angle234);
+        b = cos(angle234);
+        a1 = ua[0];
+        a2 = ua[1];
+        a1->x = atom->x + a * ix + b * jx;
+        a1->y = atom->y + a * iy + b * jy;
+        a1->z = atom->z + a * iz + b * jz;
+        a2->x = atom->x - a * ix + b * jx;
+        a2->y = atom->y - a * iy + b * jy;
+        a2->z = atom->z - a * iz + b * jz;
+        a1->xyz_state = TOPO_MOL_XYZ_GUESS;
+        ++gcount;  ++wcount;
+        a2->xyz_state = TOPO_MOL_XYZ_GUESS;
+        ++gcount;  ++wcount;
+      }
+      continue;
+    }
+
+    if ( nk == 3 ) {  /* bonded to three known atoms */
+      a1 = ka[0];
+      ix = a1->x - atom->x;
+      iy = a1->y - atom->y;
+      iz = a1->z - atom->z;
+      a = sqrt(ix*ix+iy*iy+iz*iz);
+      if ( a ) a = 1.0 / a;  else continue;
+      ix *= a; iy *= a; iz *= a;
+      jx = ix;  jy = iy;  jz = iz;
+      a1 = ka[1];
+      ix = a1->x - atom->x;
+      iy = a1->y - atom->y;
+      iz = a1->z - atom->z;
+      a = sqrt(ix*ix+iy*iy+iz*iz);
+      if ( a ) a = 1.0 / a;  else continue;
+      ix *= a; iy *= a; iz *= a;
+      jx += ix;  jy += iy;  jz += iz;
+      a1 = ka[2];
+      ix = a1->x - atom->x;
+      iy = a1->y - atom->y;
+      iz = a1->z - atom->z;
+      a = sqrt(ix*ix+iy*iy+iz*iz);
+      if ( a ) a = 1.0 / a;  else continue;
+      ix *= a; iy *= a; iz *= a;
+      jx += ix;  jy += iy;  jz += iz;
+      a = sqrt(jx*jx+jy*jy+jz*jz);
+      if ( a ) a = 1.0 / a;  else continue;
+      a2 = ua[0];
+      a2->x = atom->x - a * jx;
+      a2->y = atom->y - a * jy;
+      a2->z = atom->z - a * jz;
+      a2->xyz_state = TOPO_MOL_XYZ_GUESS;
+      ++gcount;  ++wcount;
+      continue;
+    }
+
   }
 
   gcount = 0;
