@@ -242,8 +242,6 @@ obj/Compute.o: \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/Compute.h \
-	src/Sync.h \
-	inc/Sync.decl.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/Compute.o -c src/Compute.C
 obj/ComputeAngles.o: \
@@ -284,20 +282,24 @@ obj/ComputeAngles.o: \
 	src/UniqueSetRaw.h \
 	src/Node.h \
 	inc/Node.decl.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/MStream.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
-	src/ConfigList.h \
 	src/Hydrogen.h \
-	src/ReductionMgr.h \
-	src/UniqueSetIter.h \
-	src/ComputeAngles.inl \
 	src/Parameters.h \
 	src/strlib.h \
-	src/MStream.h \
-	src/SimParameters.h \
-	src/Communicate.h \
+	src/ReductionMgr.h \
+	src/UniqueSetIter.h \
+	src/ComputeSelfTuples.h \
+	src/LdbCoordinator.h \
+	inc/LdbCoordinator.decl.h \
+	inc/NamdCentLB.decl.h \
+	src/ComputeAngles.inl \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeAngles.o -c src/ComputeAngles.C
 obj/ComputeBonds.o: \
@@ -342,16 +344,20 @@ obj/ComputeBonds.o: \
 	src/HomePatchTypes.h \
 	src/Node.h \
 	inc/Node.decl.h \
+	src/SimParameters.h \
+	src/Communicate.h \
+	src/MStream.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/PatchMgr.h \
-	src/UniqueSetIter.h \
-	src/ComputeBonds.inl \
 	src/Parameters.h \
 	src/strlib.h \
-	src/MStream.h \
-	src/SimParameters.h \
-	src/Communicate.h \
+	src/UniqueSetIter.h \
+	src/ComputeSelfTuples.h \
+	src/LdbCoordinator.h \
+	inc/LdbCoordinator.decl.h \
+	inc/NamdCentLB.decl.h \
+	src/ComputeBonds.inl \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeBonds.o -c src/ComputeBonds.C
 obj/ComputeCylindricalBC.o: \
@@ -424,20 +430,24 @@ obj/ComputeDihedrals.o: \
 	src/UniqueSetRaw.h \
 	src/Node.h \
 	inc/Node.decl.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/MStream.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
-	src/ConfigList.h \
 	src/Hydrogen.h \
-	src/ReductionMgr.h \
-	src/UniqueSetIter.h \
-	src/ComputeDihedrals.inl \
 	src/Parameters.h \
 	src/strlib.h \
-	src/MStream.h \
-	src/SimParameters.h \
-	src/Communicate.h \
+	src/ReductionMgr.h \
+	src/UniqueSetIter.h \
+	src/ComputeSelfTuples.h \
+	src/LdbCoordinator.h \
+	inc/LdbCoordinator.decl.h \
+	inc/NamdCentLB.decl.h \
+	src/ComputeDihedrals.inl \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeDihedrals.o -c src/ComputeDihedrals.C
 obj/ComputeDPME.o: \
@@ -799,19 +809,23 @@ obj/ComputeImpropers.o: \
 	src/UniqueSetRaw.h \
 	src/Node.h \
 	inc/Node.decl.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/MStream.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
-	src/ConfigList.h \
 	src/Hydrogen.h \
-	src/ReductionMgr.h \
-	src/UniqueSetIter.h \
 	src/Parameters.h \
 	src/strlib.h \
-	src/MStream.h \
-	src/SimParameters.h \
-	src/Communicate.h \
+	src/ReductionMgr.h \
+	src/UniqueSetIter.h \
+	src/ComputeSelfTuples.h \
+	src/LdbCoordinator.h \
+	inc/LdbCoordinator.decl.h \
+	inc/NamdCentLB.decl.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeImpropers.o -c src/ComputeImpropers.C
 obj/ComputeGlobal.o: \
@@ -1153,10 +1167,19 @@ obj/ComputeMgr.o: \
 	src/InfoStream.h \
 	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/MStream.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
-	src/ConfigList.h \
 	src/Hydrogen.h \
+	src/Parameters.h \
+	src/strlib.h \
+	src/ComputeSelfTuples.h \
+	src/LdbCoordinator.h \
+	inc/LdbCoordinator.decl.h \
+	inc/NamdCentLB.decl.h \
 	src/ComputeAngles.inl \
 	src/ComputeDihedrals.h \
 	src/ComputeDihedrals.inl \
@@ -1645,6 +1668,13 @@ obj/ComputeTcl.o: \
 	src/Hydrogen.h \
 	src/ReductionMgr.h \
 	src/ComputeMgr.h \
+	src/ScriptTcl.h \
+	src/Broadcasts.h \
+	src/BroadcastObject.h \
+	src/BroadcastMgr.h \
+	src/UniqueSetIter.h \
+	inc/BroadcastMgr.decl.h \
+	src/BroadcastClient.h \
 	src/TclCommands.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeTcl.o -c src/ComputeTcl.C
@@ -1943,6 +1973,7 @@ obj/HomePatch.o: \
 	inc/NamdCentLB.decl.h \
 	src/Sync.h \
 	inc/Sync.decl.h \
+	src/ResizeArrayPrimIter.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/HomePatch.o -c src/HomePatch.C
 obj/IMDOutput.o: \
@@ -1984,7 +2015,36 @@ obj/InfoStream.o: \
 	$(CXX) $(CXXFLAGS) -o obj/InfoStream.o -c src/InfoStream.C
 obj/LdbCoordinator.o: \
 	src/LdbCoordinator.C \
+	src/NamdCentLB.h \
+	inc/NamdCentLB.decl.h \
+	src/Node.h \
+	src/main.h \
 	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/Node.decl.h \
+	src/PatchMap.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/MStream.h \
+	src/RefineOnly.h \
+	src/elements.h \
+	src/Set.h \
+	src/Rebalancer.h \
+	src/heap.h \
+	src/Alg7.h \
+	src/InfoStream.h \
 	inc/LdbCoordinator.decl.h \
 	src/LdbCoordinator.h \
 	src/PatchMap.inl \
@@ -2302,6 +2362,8 @@ obj/Node.o: \
 	src/BroadcastObject.h \
 	src/BroadcastMgr.h \
 	src/BroadcastClient.h \
+	src/Sync.h \
+	src/ResizeArrayPrimIter.h \
 	inc/Node.def.h
 	$(CXX) $(CXXFLAGS) -o obj/Node.o -c src/Node.C
 obj/Output.o: \
@@ -2418,6 +2480,8 @@ obj/Patch.o: \
 	src/Communicate.h \
 	src/MStream.h \
 	src/ResizeArrayPrimIter.h \
+	src/Sync.h \
+	inc/Sync.decl.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/Patch.o -c src/Patch.C
 obj/PatchMgr.o: \
@@ -2878,6 +2942,44 @@ obj/SimParameters.o: \
 	src/InfoStream.h \
 	src/Debug.h
 	$(CXX) $(CXXSIMPARAMFLAGS) -o obj/SimParameters.o -c src/SimParameters.C
+obj/Sync.o: \
+	src/Sync.C \
+	src/Patch.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	src/ProxyMgr.h \
+	src/main.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/UniqueSetIter.h \
+	inc/ProxyMgr.decl.h \
+	src/Compute.h \
+	src/ComputeMap.h \
+	src/Sync.h \
+	inc/Sync.decl.h \
+	src/ResizeArrayPrimIter.h \
+	src/Debug.h \
+	src/InfoStream.h \
+	inc/Sync.def.h
+	$(CXX) $(CXXFLAGS) -o obj/Sync.o -c src/Sync.C
 obj/TclCommands.o: \
 	src/TclCommands.C \
 	src/TclCommands.h
@@ -2961,28 +3063,3 @@ obj/imd.o: \
 	src/imd.h \
 	src/vmdsock.h
 	$(CXX) $(CXXFLAGS) -o obj/imd.o -c src/imd.C
-obj/Sync.o: \
-	src/Sync.C \
-	inc/Sync.decl.h \
-	src/Sync.h \
-	src/ProcessorPrivate.h \
-	src/BOCgroup.h \
-	src/PatchMap.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/common.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
-	src/HomePatchList.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
-	src/ResizeArrayIter.h \
-	src/Lattice.h \
-	src/Tensor.h \
-	src/Compute.h \
-	src/main.h \
-	src/ComputeMap.h \
-	src/Debug.h \
-	src/InfoStream.h \
-	inc/Sync.def.h
-	$(CXX) $(CXXFLAGS) -o obj/Sync.o -c src/Sync.C
