@@ -83,6 +83,7 @@ inline ostream& iINFO (ostream& s)  { return s << "Info: "; }
 inline ostream& iWARN (ostream& s)  { return s << "Warning: "; }
 inline ostream& iERROR(ostream& s)  { return s << "ERROR: "; }
 inline ostream& iDEBUG(ostream& s)  { return s << "DEBUG: "; }
+inline ostream& iPE(ostream& s)     { return s << "Pe(" << CMyPe() << ')'; }
 
 #define iFILE __FILE__<<'('<<__LINE__<<"): "
 #define iINFOF  iINFO << iFILE
