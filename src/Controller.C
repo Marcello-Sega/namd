@@ -497,21 +497,22 @@ void Controller::printEnergies(int seq)
 	iout << iINFO << "Benchmark time per step: "
 	     << (endWTime - startBenchTime) / 32. << "\n" << endi;
 
-    if ( node->simParameters->outputTiming &&
-         ! ( seq % node->simParameters->outputTiming ) )
+    if ( simParams->outputTiming && ! ( seq % simParams->outputTiming ) )
     {
       const double elapsedW = 
-	(endWTime - startWTime) / node->simParameters->outputTiming;
+	(endWTime - startWTime) / simParams->outputTiming;
       const double elapsedC = 
-	(endCTime - startCTime) / node->simParameters->outputTiming;
+	(endCTime - startCTime) / simParams->outputTiming;
 
       startWTime = endWTime;
       startCTime = endCTime;
 
-      iout << "TIMING: " << seq
-           << " CPU: " << endCTime << " wall: " << endWTime
-           << " CPU/step: " << elapsedC << " wall/step: " << elapsedW
-           << "\n" << endi;
+      if ( seq >= (simParams->firstTimestep + simParams->outputTiming) ) {
+        iout << "TIMING: " << seq
+             << "  CPU: " << endCTime << ", " << elapsedC << "/step"
+             << "  Wall: " << endWTime << ", " << elapsedW << "/step"
+             << "\n" << endi;
+      }
     }
 
     // NO CALCULATIONS OR REDUCTIONS BEYOND THIS POINT!!!
@@ -574,12 +575,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1042 $	$Date: 1998/09/13 21:06:07 $
+ *	$Revision: 1.1043 $	$Date: 1998/09/14 16:51:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1043  1998/09/14 16:51:05  jim
+ * Fixed timing printout.
+ *
  * Revision 1.1042  1998/09/13 21:06:07  jim
  * Cleaned up output, defaults, etc.
  *
