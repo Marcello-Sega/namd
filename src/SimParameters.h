@@ -220,6 +220,7 @@ public:
         BigReal SMDVmax;                //  Max allowed ave velocity
         int SMDVmaxTave;                //  Time for averaging Vmax (timesteps)
         BigReal SMDFmin;                //  Force (pN) to which to reset
+	Bool SMDProjectForce;		// Project force along pulling dir?
         //****** END SMD constraints changes 
 
 	Bool globalForcesOn;		//  Are global forces present?

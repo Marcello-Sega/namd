@@ -31,6 +31,7 @@ ComputeSMD::ComputeSMD(ComputeID c, PatchID pid)
 	outputFreq = simParams->SMDOutputFreq;
 	chDirOn = simParams->SMDChDirOn;
 	chForceOn =  simParams->SMDChForceOn;
+ 	projectForce = simParams->SMDProjectForce;
 	
 
 }
@@ -86,12 +87,17 @@ void ComputeSMD::doForce(Position* p, Results* res, AtomProperties* a)
 	      - p[localID];
 
 	    //  Calculate the distance and the distance squared
-	    r2 = Rij.length2();
-	    r = sqrt(r2);
+            if (projectForce) {
+              r = Rij*moveDir;   // Take dot product of R along pulling dir.
+            } else {
+	      r2 = Rij.length2();
+	      r = sqrt(r2);
+            }
 
 	    //  Only calculate the energy and the force if the distance is
 	    //  non-zero.   Otherwise, you could end up dividing by 0, which
 	    //  is bad
+            Vector smdForce;
 	    if (r>0.0)
 	    {
 	      value=k;
@@ -110,16 +116,19 @@ void ComputeSMD::doForce(Position* p, Results* res, AtomProperties* a)
 	      //  Now calculate the force, which is kr^(e-1).  Also, divide
 	      //  by another factor of r to normalize the vector before we
 	      //  multiple it by the magnitude
-	      value /= r2;
-      
-	      Rij.mult(value);
-      
-	      f[localID] += Rij;
-
+	      if (projectForce) {
+                value /= r;
+                smdForce = value*moveDir;
+	      } else {
+	        value /= r2;
+	        Rij.mult(value);
+	        smdForce = Rij;
+              }
 	    }
-	    
+	    f[localID] += smdForce;
+ 
 	    if (currentTime % outputFreq == 0) {
-	      smdData->output(currentTime, p[localID], Rij);
+	      smdData->output(currentTime, p[localID], smdForce);
 	    }
 	    
 	    break;  // change this when there are many atoms restrained.

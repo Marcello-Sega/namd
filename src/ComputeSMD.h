@@ -21,6 +21,8 @@ private:
         int outputFreq;         // output frequency
         Bool chDirOn;           // is changing direction on?
         Bool chForceOn;         // is changing force on?
+	Bool projectForce;	// If true, force applied only in pulling
+				// direction.
 
 public:
 	ComputeSMD(ComputeID c, PatchID pid); 	//  Constructor

@@ -679,6 +679,10 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
 		 "Timestep of the last refPos change",
 		 &SMDTStamp);
 
+   opts.optionalB("SMD", "SMDProjectForce",
+		 "Project force along pulling direction?",
+		 &SMDProjectForce, FALSE);
+
    //// this is only used if any of SMDChDir or SMDChForce is ON
    opts.optional("SMD", "SMDFmin",
 		"Force value to reset constraint to, pN",
@@ -2336,6 +2340,10 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      
      iout << iINFO << "SMD RESET FORCE VALUE    "
 	  << SMDFmin << " pN\n";
+
+     if (SMDProjectForce) {
+       iout << iINFO << "SMD FORCE APPLIED ALONG SMD DIRECTION ONLY\n";
+     }
 
      if (SMDChDirOn) {
        iout << iINFO << "SMD CHANGING DIRECTION ACTIVE\n";
