@@ -24,6 +24,7 @@ public:
   int patchMgr;
   int proxyMgr;
   int computeMgr;
+  int reductionMgr;
   int node;
 };
 
