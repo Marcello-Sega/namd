@@ -1,7 +1,7 @@
 # config for ASCI Red
 
 # compiler options
-CXX = ciCC -PLACEMENT_NEW
+CXX = ciCC -DPLACEMENT_NEW
 CXXOPTS = -O
 CXXTHREADOPTS = $(CXXOPTS)
 CC = cicc
