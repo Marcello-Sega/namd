@@ -255,15 +255,14 @@ HomePatchList *PatchMap::homePatchList() {
 }
 
 //----------------------------------------------------------------------
-PatchIDList PatchMap::homePatchIDList() {
-  PatchIDList pids;
+void PatchMap::homePatchIDList(PatchIDList &pids) {
+  pids.resize(0);
   int i;
   for ( i=0; i<nPatches; ++i ) {
     if ( patchData[i].node == CkMyPe() ) {
       pids.add(i);
     }
   }
-  return pids;
 }
 
 //----------------------------------------------------------------------

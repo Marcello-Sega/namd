@@ -37,7 +37,7 @@ public:
   }
 
   HomePatchList *homePatchList();
-  PatchIDList homePatchIDList();  // expensive - for startup only
+  void homePatchIDList(PatchIDList &);  // expensive - for startup only
   int numHomePatches(void);
 
   // returns the number of patches being managed 

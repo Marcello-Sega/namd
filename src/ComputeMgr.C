@@ -168,6 +168,7 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 {
     Compute *c;
     PatchID pid2[2];
+    PatchIDList pids;
     int trans2[2];
 
     switch ( map->type(i) )
@@ -196,26 +197,26 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	c->initialize();
 	break;
       case computeBondsType:
-	c = new ComputeBonds(i,
-		PatchMap::Object()->homePatchIDList()); // unknown delete
+	PatchMap::Object()->homePatchIDList(pids);
+	c = new ComputeBonds(i,pids); // unknown delete
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
       case computeAnglesType:
-	c = new ComputeAngles(i,
-		PatchMap::Object()->homePatchIDList()); // unknown delete
+	PatchMap::Object()->homePatchIDList(pids);
+	c = new ComputeAngles(i,pids); // unknown delete
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
       case computeDihedralsType:
-	c = new ComputeDihedrals(i,
-		PatchMap::Object()->homePatchIDList()); // unknown delete
+	PatchMap::Object()->homePatchIDList(pids);
+	c = new ComputeDihedrals(i,pids); // unknown delete
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
       case computeImpropersType:
-	c = new ComputeImpropers(i,
-		PatchMap::Object()->homePatchIDList()); // unknown delete
+	PatchMap::Object()->homePatchIDList(pids);
+	c = new ComputeImpropers(i,pids); // unknown delete
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
