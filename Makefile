@@ -90,6 +90,7 @@ OBJS = \
 	$(DSTDIR)/ComputeSMD.o \
 	$(DSTDIR)/ComputeSphericalBC.o \
 	$(DSTDIR)/ComputeTcl.o \
+	$(DSTDIR)/ComputeConsForce.o \
 	$(DSTDIR)/ConfigList.o \
 	$(DSTDIR)/Controller.o \
 	$(DSTDIR)/ccsinterface.o \
