@@ -49,7 +49,9 @@ Controller::Controller(NamdState *s) :
 	state(s),
 	collection(CollectionMaster::Object()),
         startCTime(0),
+        firstCTime(CmiTimer()),
         startWTime(0),
+        firstWTime(CmiWallTimer()),
         startBenchTime(0),
 	ldbSteps(0)
 
@@ -797,12 +799,12 @@ void Controller::compareChecksums(int step) {
         " margin violations detected during timestep " << step << ".\n" << endi;
 }
 
-void Controller::printMinimizeEnergies(int step) {
+void Controller::printTiming(int step) {
 
     if ( simParams->outputTiming && ! ( step % simParams->outputTiming ) )
     {
-      const double endWTime = CmiWallTimer();
-      const double endCTime = CmiTimer();
+      const double endWTime = CmiWallTimer() - firstWTime;
+      const double endCTime = CmiTimer() - firstCTime;
 
       const double elapsedW = 
 	(endWTime - startWTime) / simParams->outputTiming;
@@ -824,6 +826,11 @@ void Controller::printMinimizeEnergies(int step) {
              << ".\n" << endi;
       }
     }
+}
+
+void Controller::printMinimizeEnergies(int step) {
+
+    printTiming(step);
 
     reduction->require();
 
@@ -1007,31 +1014,7 @@ void Controller::printEnergies(int step)
       break;
     }
 
-    if ( simParams->outputTiming && ! ( step % simParams->outputTiming ) )
-    {
-      const double endWTime = CmiWallTimer();
-      const double endCTime = CmiTimer();
-
-      const double elapsedW = 
-	(endWTime - startWTime) / simParams->outputTiming;
-      const double elapsedC = 
-	(endCTime - startCTime) / simParams->outputTiming;
-
-      const double remainingW = elapsedW * (simParams->N - step);
-      const double remainingW_hours = remainingW / 3600;
-
-      startWTime = endWTime;
-      startCTime = endCTime;
-
-      if ( step >= (simParams->firstTimestep + simParams->outputTiming) ) {
-        iout << "TIMING: " << step
-             << "  CPU: " << endCTime << ", " << elapsedC << "/step"
-             << "  Wall: " << endWTime << ", " << elapsedW << "/step"
-             << ", " << remainingW_hours << " hours remaining"
-             << ", " << (memusage()/1024) << " kB of memory in use"
-             << ".\n" << endi;
-      }
-    }
+    printTiming(step);
 
     // callback to Tcl with whatever we can
 #ifdef NAMD_TCL
@@ -1332,7 +1315,7 @@ void Controller::cycleBarrier(int doBarrier, int step) {
 	if (doBarrier) {
 	  broadcast->cycleBarrier.publish(step,1);
 	  CkPrintf("Cycle time at sync Wall: %f CPU %f\n",
-		  CmiWallTimer(),CmiTimer());
+		  CmiWallTimer()-firstWTime,CmiTimer()-firstCTime);
 	}
 #endif
 }

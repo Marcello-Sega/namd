@@ -48,6 +48,7 @@ protected:
       int slowFreq;
     void compareChecksums(int);
       int computeChecksum;
+    void printTiming(int);
     void printMinimizeEnergies(int);
       BigReal min_energy;
       BigReal min_f_dot_f;
@@ -121,6 +122,8 @@ private:
 
     double startCTime;
     double startWTime;
+    double firstCTime;
+    double firstWTime;
     double startBenchTime;
 
 };
