@@ -95,6 +95,13 @@ void Sequencer::algorithm(void)
 	continue;
     }
 
+    if ( simParams->minimizeCGOn ) {
+      minimize();
+      if (! simParams->tclOn) break;
+      Node::Object()->enableExitScheduler();
+      continue;
+    }
+
     int &step = patch->flags.step;
     step = simParams->firstTimestep;
 

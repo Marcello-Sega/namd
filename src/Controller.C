@@ -132,6 +132,13 @@ void Controller::algorithm(void)
         continue;
     }
 
+    if ( simParams->minimizeCGOn ) {
+      minimize();
+      if (! simParams->tclOn) break;
+      Node::Object()->enableExitScheduler();
+      continue;
+    }
+
     int step = simParams->firstTimestep;
 
     const int numberOfSteps = simParams->N;
@@ -200,10 +207,13 @@ struct minpoint {
 };
 
 void Controller::minimize() {
-  iout << "Controller::minimize() called.\n" << endi;
+  // iout << "Controller::minimize() called.\n" << endi;
 
   const int numberOfSteps = simParams->N;
   int step = simParams->firstTimestep;
+  BigReal tinystep = simParams->minTinyStep;  // 1.0e-6
+  BigReal babystep = simParams->minBabyStep;  // 1.0e-2
+  BigReal linegoal = simParams->minLineGoal;  // 1.0e-4
 
   CALCULATE
 
@@ -225,9 +235,9 @@ void Controller::minimize() {
     lo.u = min_energy;
     lo.dudx = -1. * min_f_dot_v;
     mid = lo;
-    BigReal tol = fabs( 1.0e-4 * min_f_dot_v );
+    BigReal tol = fabs( linegoal * min_f_dot_v );
     iout << "GRADIENT TOLERANCE: " << tol << "\n" << endi;
-    x = 1.0e-2; if ( atStart ) { x = 1.0e-6; }
+    x = babystep; if ( atStart ) { x = tinystep; }
     x *= sqrt( min_f_dot_f / min_v_dot_v ); MOVETO(x)
     // bracket minimum on line
     while ( last.u < mid.u ) {
@@ -733,7 +743,26 @@ void Controller::printMinimizeEnergies(int step) {
     totalEnergy = bondEnergy + angleEnergy + dihedralEnergy + improperEnergy +
 	electEnergy + electEnergySlow + ljEnergy + boundaryEnergy + miscEnergy;
 
-    iout << "STEP " << step << " ENERGY IS " << totalEnergy << "\n" << endi;
+    if ( ( step % 10 ) == 0 ) {
+	iout << "ETITLE:     TS    BOND        ANGLE       "
+	     << "DIHED       IMPRP       ELECT       VDW       "
+	     << "BOUNDARY    MISC        TOTAL\n" << endi;
+    }
+
+    // N.B.  HP's aCC compiler merges FORMAT calls in the same expression.
+    //       Need separate statements because data returned in static array.
+
+    iout << ETITLE(step);
+    iout << FORMAT(bondEnergy);
+    iout << FORMAT(angleEnergy);
+    iout << FORMAT(dihedralEnergy);
+    iout << FORMAT(improperEnergy);
+    iout << FORMAT(electEnergy+electEnergySlow);
+    iout << FORMAT(ljEnergy);
+    iout << FORMAT(boundaryEnergy);
+    iout << FORMAT(miscEnergy);
+    iout << FORMAT(totalEnergy);
+    iout << "\n" << endi;
 
     min_energy = totalEnergy;
     min_f_dot_f = reduction->item(REDUCTION_MIN_F_DOT_F);

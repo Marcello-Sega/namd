@@ -262,6 +262,10 @@ public:
 
 	Bool useDPME;			//  Flag TRUE -> old DPME code
 
+	Bool minimizeCGOn;		//  Flag TRUE-> CG minimization active
+	BigReal minTinyStep;		//  Minimization parameter
+	BigReal minBabyStep;		//  Minimization parameter
+	BigReal minLineGoal;		//  Minimization parameter
 	Bool minimizeOn;		//  Flag TRUE-> minimization active
 	BigReal maximumMove;		//  Maximum movement per timestep 
 					//  during minimization

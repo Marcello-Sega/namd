@@ -454,7 +454,20 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    
    /////////// Special Dynamics Methods
    opts.optionalB("main", "minimization", "Should minimization be performed?",
-      &minimizeOn, FALSE);
+      &minimizeCGOn, FALSE);
+   opts.optional("main", "minTinyStep", "very first minimization steps",
+      &minTinyStep, 1.0e-6);
+   opts.range("minTinyStep", POSITIVE);
+   opts.optional("main", "minBabyStep", "initial minimization steps",
+      &minBabyStep, 1.0e-2);
+   opts.range("minBabyStep", POSITIVE);
+   opts.optional("main", "minLineGoal", "line minimization gradient reduction",
+      &minLineGoal, 1.0e-4);
+   opts.range("minLineGoal", POSITIVE);
+
+   opts.optionalB("main", "velocityQuenching",
+      "Should old-style minimization be performed?", &minimizeOn, FALSE);
+
    opts.optional("main", "maximumMove", "Maximum atom movement per step", &maximumMove, 0.0);
    opts.range("maximumMove", NOT_NEGATIVE);
    opts.units("maximumMove", N_ANGSTROM);
@@ -1362,12 +1375,12 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    if ( dihedralOn ) globalOn = TRUE;
 
    //  Make sure modes don't conflict
-   if (minimizeOn && langevinOn) 
+   if ((minimizeOn||minimizeCGOn) && langevinOn) 
    {
       NAMD_die("Minimization and Langevin dynamics are mutually exclusive dynamics modes");
    }
 
-   if (minimizeOn && tCoupleOn) 
+   if ((minimizeOn||minimizeCGOn) && tCoupleOn) 
    {
       NAMD_die("Minimization and temperature coupling are mutually exclusive dynamics modes");
    }
@@ -1459,7 +1472,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
   }
    }
 
-   if (minimizeOn && rescaleFreq > 0) 
+   if ((minimizeOn||minimizeCGOn) && rescaleFreq > 0) 
    {
     NAMD_die("Minimization and temperature rescaling are mutually exclusive dynamics modes");
    }
@@ -1516,7 +1529,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
   reassignHold = 0.0;
    }
 
-   if (minimizeOn && reassignFreq > 0) 
+   if ((minimizeOn||minimizeCGOn) && reassignFreq > 0) 
    {
     NAMD_die("Minimization and temperature reassignment are mutually exclusive dynamics modes");
    }
@@ -2336,7 +2349,16 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 
    if (minimizeOn)
    {
-      iout << iINFO << "MINIMIZATION ACTIVE\n";
+      iout << iINFO << "OLD STYLE MINIMIZATION ACTIVE\n";
+      iout << endi;
+   }
+
+   if (minimizeCGOn)
+   {
+      iout << iINFO << "CONJUGATE GRADIENT MINIMIZATION ACTIVE\n";
+      iout << iINFO << "LINE MINIMIZATION GOAL = " << minTinyStep << "\n";
+      iout << iINFO << "BABY STEP SIZE = " << minTinyStep << "\n";
+      iout << iINFO << "TINY STEP SIZE = " << minTinyStep << "\n";
       iout << endi;
    }
 
