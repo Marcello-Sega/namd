@@ -7,8 +7,14 @@
 // written by David Hurwitz, March to May 1998.
 
 #include <memory.h>
+#ifndef NO_STRSTREAM_H
 #include <iostream.h>
 #include <iomanip.h>
+#else
+#include <iostream>
+#include <iomanip>
+using namespace std;
+#endif
 #include "FreeEnergyAssert.h"
 #include "FreeEnergyGroup.h"
 
