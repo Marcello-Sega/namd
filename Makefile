@@ -52,6 +52,7 @@ OBJS = \
 	$(DSTDIR)/strlib.o \
 	$(DSTDIR)/AlgSeven.o \
 	$(DSTDIR)/AlgRecBisection.o \
+	$(DSTDIR)/AlgNbor.o \
 	$(DSTDIR)/AtomMap.o \
 	$(DSTDIR)/BackEnd.o \
 	$(DSTDIR)/BroadcastMgr.o \
@@ -116,6 +117,7 @@ OBJS = \
 	$(DSTDIR)/MigrateAtomsMsg.o \
 	$(DSTDIR)/Molecule.o \
 	$(DSTDIR)/NamdCentLB.o \
+	$(DSTDIR)/NamdNborLB.o \
 	$(DSTDIR)/NamdState.o \
 	$(DSTDIR)/NamdOneTools.o \
 	$(DSTDIR)/Node.o \
@@ -166,6 +168,8 @@ CIFILES = 	\
 		$(INCDIR)/LdbCoordinator.def.h \
 		$(INCDIR)/NamdCentLB.decl.h \
 		$(INCDIR)/NamdCentLB.def.h \
+		$(INCDIR)/NamdNborLB.decl.h \
+		$(INCDIR)/NamdNborLB.def.h \
 		$(INCDIR)/Node.decl.h \
 		$(INCDIR)/Node.def.h \
 		$(INCDIR)/PatchMgr.decl.h \
@@ -373,6 +377,13 @@ $(INCDIR)/NamdCentLB.decl.h: $(SRCDIR)/NamdCentLB.ci
 	$(CHARMXI) $(SRCDIR)/NamdCentLB.ci
 	$(MOVE) NamdCentLB.def.h $(INCDIR)
 	$(MOVE) NamdCentLB.decl.h $(INCDIR)
+
+$(INCDIR)/NamdNborLB.def.h: $(INCDIR)/NamdNborLB.decl.h
+
+$(INCDIR)/NamdNborLB.decl.h: $(SRCDIR)/NamdNborLB.ci
+	$(CHARMXI) $(SRCDIR)/NamdNborLB.ci
+	$(MOVE) NamdNborLB.def.h $(INCDIR)
+	$(MOVE) NamdNborLB.decl.h $(INCDIR)
 
 $(INCDIR)/Node.def.h: $(INCDIR)/Node.decl.h
 
