@@ -56,7 +56,7 @@
 #include "Sync.h"
 #include "BackEnd.h"
 
-#if(CMK_CCS_AVAILABLE)
+#if(CMK_CCS_AVAILABLE && CMK_WEB_MODE)
 extern "C" void CApplicationInit();
 #endif
 
@@ -72,7 +72,7 @@ int eventEndOfTimeStep;
 Node::Node(GroupInitMsg *msg)
 {
   DebugM(4,"Creating Node\n");
-#if(CMK_CCS_AVAILABLE)
+#if(CMK_CCS_AVAILABLE && CMK_WEB_MODE)
   CApplicationInit();
 #endif
   if (CpvAccess(Node_instance) == 0) {

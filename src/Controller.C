@@ -29,7 +29,7 @@
 #include "InfoStream.h"
 #include "BackEnd.h"
 
-#if(CMK_CCS_AVAILABLE)
+#if(CMK_CCS_AVAILABLE && CMK_WEB_MODE)
 extern "C" void CApplicationDepositNode0Data(char *);
 #endif
 
@@ -1050,7 +1050,7 @@ void Controller::printEnergies(int step)
     iout << FORMAT(totalEnergy);
     iout << FORMAT(temperature);
 
-#if(CMK_CCS_AVAILABLE)
+#if(CMK_CCS_AVAILABLE && CMK_WEB_MODE)
      char webout[80];
      sprintf(webout,"%d %d %d %d",(int)totalEnergy,
 	     (int)(totalEnergy - kineticEnergy),

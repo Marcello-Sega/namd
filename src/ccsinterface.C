@@ -7,7 +7,7 @@
 #include "ccsinterface.h"
 #include <conv-ccs.h>
 
-#if(CMK_CCS_AVAILABLE)
+#if(CMK_CCS_AVAILABLE && CMK_WEB_MODE)
 #include <stdlib.h>
 
 extern unsigned int appletIP;

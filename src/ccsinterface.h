@@ -27,7 +27,7 @@
 #include <sys/resource.h>
 #endif
 
-#if(CMK_CCS_AVAILABLE)
+#if(CMK_CCS_AVAILABLE && CMK_WEB_MODE)
 
 #ifdef __cplusplus
 extern "C" {
