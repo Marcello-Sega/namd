@@ -13,7 +13,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1007 1997/02/26 23:18:45 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1008 1997/02/28 16:13:55 nealk Exp $";
 
 #include <stdio.h>
 
@@ -39,7 +39,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib
 #include "Molecule.h"
 
 #define MIN_DEBUG_LEVEL 4
-#define DEBUGM
+// #define DEBUGM
 #include "Debug.h"
 
 
@@ -723,13 +723,16 @@ void WorkDistrib::enqueueWork(LocalWorkMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/02/26 23:18:45 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1997/02/28 16:13:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1008  1997/02/28 16:13:55  nealk
+ * Turned off debugging code.
+ *
  * Revision 1.1007  1997/02/26 23:18:45  jim
  * Now should read binary coordinate files - untested.
  *

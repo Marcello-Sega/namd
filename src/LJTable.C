@@ -9,11 +9,13 @@
 /*
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/LJTable.C,v 1.1001 1997/02/14 19:07:31 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/LJTable.C,v 1.1002 1997/02/28 16:13:53 nealk Exp $";
 #include "LJTable.h"
 #include "Node.h"
 #include "Parameters.h"
 #include "InfoStream.h"
+// #define DEBUGM
+#include "Debug.h"
 
 LJTable *LJTable::_instance = 0;
 
@@ -30,7 +32,7 @@ LJTable::LJTable()
   table_dim = Node::Object()->parameters->get_num_vdw_params();
   half_table_sz = table_dim * table_dim;
 
-  iout << iINFO << "Allocating LJ Table: size = " << table_dim << "\n" << endi;
+  DebugM(1,"Allocating LJ Table: size = " << table_dim << "\n");
   
   table = new TableEntry[half_table_sz * 2];
 
@@ -45,7 +47,7 @@ LJTable::LJTable()
       *curji = *curij;
       *(curji + half_table_sz) = *(curij + half_table_sz);
     }
-  iout << iINFO << "LJ Table done\n" << endi;
+  DebugM(1,"LJ Table done\n");
 }
 
 //----------------------------------------------------------------------  
@@ -120,12 +122,15 @@ void LJTable::compute_vdw_params(int i, int j,
  *
  *	$RCSfile: LJTable.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/14 19:07:31 $
+ *	$Revision: 1.1002 $	$Date: 1997/02/28 16:13:53 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LJTable.C,v $
+ * Revision 1.1002  1997/02/28 16:13:53  nealk
+ * Turned off debugging code.
+ *
  * Revision 1.1001  1997/02/14 19:07:31  nealk
  * Added new/delete comments.
  * Played with DPMTA.

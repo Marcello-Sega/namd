@@ -26,7 +26,7 @@
 #include "pvmc.h"
 
 #define MIN_DEBUG_LEVEL 1
-#define DEBUGM
+// #define DEBUGM
 #include "Debug.h"
 
 extern Communicate *comm;
@@ -209,7 +209,7 @@ void ComputeDPMTA::doWork()
       Position *x = (*ap).positionBox->open();
       AtomProperties *a = (*ap).atomBox->open();
       Force *f = (*ap).forceBox->open();
-      reduction->submit(fake_seq, REDUCTION_ELECT_ENERGY, 0.);
+      reduction->submit(fake_seq, REDUCTION_ELECT_ENERGY, 0.0);
       ++fake_seq;
       (*ap).positionBox->close(&x);
       (*ap).atomBox->close(&a);
@@ -271,7 +271,8 @@ void ComputeDPMTA::doWork()
   // 4. deposit
   i=0;
   BigReal potential=0;
-  for (ap = ap.begin(); ap != ap.end(); ap++) {
+  for (ap = ap.begin(); ap != ap.end(); ap++)
+  {
     (*ap).f = (*ap).forceBox->open();
 
     // deposit here
@@ -286,6 +287,7 @@ void ComputeDPMTA::doWork()
 
     (*ap).forceBox->close(&(*ap).f);
   }
+
   potential *= 0.5;
   DebugM(4,"Full-electrostatics energy: " << potential << "\n");
   reduction->submit(fake_seq, REDUCTION_ELECT_ENERGY, potential);

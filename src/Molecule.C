@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: Molecule.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/10 08:14:37 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/02/28 16:13:54 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1002  1997/02/28 16:13:54  nealk
+ * Turned off debugging code.
+ *
  * Revision 1.1001  1997/02/10 08:14:37  jim
  * Fixed problem with exclusions where both modified and unmodified
  * versions of the same exclusion could be placed in the list, causing
@@ -165,7 +168,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1001 1997/02/10 08:14:37 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1002 1997/02/28 16:13:54 nealk Exp $";
 
 #include "Molecule.h"
 #include <stdio.h>
@@ -182,7 +185,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,
 #include "SimParameters.h"
 
 #define MIN_DEBUG_LEVEL 3
-#define DEBUGM
+// #define DEBUGM
 #include "Debug.h"
 
 /************************************************************************/

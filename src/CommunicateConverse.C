@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *  $RCSfile: CommunicateConverse.C,v $
- *  $Author: brunner $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1001 $  $Date: 1997/02/19 23:19:35 $
+ *  $Author: nealk $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1002 $  $Date: 1997/02/28 16:13:50 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -21,7 +21,7 @@
  * send/receive data.
  * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/CommunicateConverse.C,v 1.1001 1997/02/19 23:19:35 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/CommunicateConverse.C,v 1.1002 1997/02/28 16:13:50 nealk Exp $";
 
 #include <iostream.h>
 #include <string.h>
@@ -31,6 +31,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Commu
 #include "MessageQueue.h"
 #include "MessageManager.h"
 #include "pvmc.h"
+// #define DEBUGM
+#include "Debug.h"
 
 #define MemCopy memcpy
 
@@ -231,10 +233,10 @@ Message* CommunicateConverse::unpack_message(char *mcmsg, int &tag, int &node)
     // get number of items in this message
     MemCopy(&nitems, mcmsg, sizeof(int));
     mcmsg += Align(sizeof(int));
-    iout << "Received message with tag " << msg_tag
+    DebugM(1,"Received message with tag " << msg_tag
          << " from " << sender 
          << " containing " << nitems 
-         << " Items\n" << endi;
+         << " Items\n");
 
     // create data structure for this message
     if(nitems > 0) 
