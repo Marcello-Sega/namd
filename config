@@ -8,15 +8,71 @@ syntax:
   echo ''
   exit 1
 
+exists:
+  echo ''
+  echo 'directory already exists'
+  echo ''
+  exit 1
+
 begin:
 
   if ($#argv < 1) goto syntax
   set ARCH=$1 ; shift
+  set DIR=`pwd`;
 
   if ( x$ARCH == x ) goto syntax
   if ( ! -f arch/Makearch.$ARCH ) goto syntax
+  if ( -d $ARCH ) goto exists
+
+  echo "Creating Directory: $ARCH"
+  mkdir $ARCH
+  cd $ARCH
 
   echo "Creating link: Makearch.$ARCH to Makearch"
-  rm -f Makearch
-  ln -s arch/Makearch.$ARCH ./Makearch
-  echo 'You are ready to do a make now.'
+  ln -s ../arch/Makearch.$ARCH ./Makearch
+  echo "Linking Makefiles"
+  ln -s ../Makefile ./Makefile
+  ln -s ../Make.depends ./Make.depends
+  echo "Creating src and linking files"
+  (cd $DIR/src ; find . -name CVS -prune -o -type d -print )|sed -e s@.@@> temp.d
+  (cd $DIR/src ; find . -name CVS -prune -o -type f -print )|sed -e s@.@@> temp.f
+  awk '{print "mkdir src"$1;}' < temp.d > temp.m
+  awk '{print "ln -s '$DIR'/src"$1" src"$1;}' < temp.f > temp.l
+  sh temp.m
+  sh temp.l
+  rm -f temp.d temp.f temp.m temp.l
+  echo "Creating dpme2 and linking files"
+  (cd $DIR/dpme2;find . -name CVS -prune -o -type d -print )|sed -e s@.@@> temp.d
+  (cd $DIR/dpme2;find . -name CVS -prune -o -type f -print )|sed -e s@.@@> temp.f
+  awk '{print "mkdir dpme2"$1;}' < temp.d > temp.m
+  awk '{print "ln -s '$DIR'/dpme2"$1" dpme2"$1;}' < temp.f > temp.l
+  sh temp.m
+  sh temp.l
+  rm -f temp.d temp.f temp.m temp.l
+  echo "Creating dpmta-2.6 and linking files"
+  (cd $DIR/dpmta-2.6;find . -name CVS -prune -o -type d -print )|sed -e s@.@@> temp.d
+  (cd $DIR/dpmta-2.6;find . -name CVS -prune -o -type f -print )|sed -e s@.@@> temp.f
+  awk '{print "mkdir dpmta-2.6"$1;}' < temp.d > temp.m
+  awk '{print "ln -s '$DIR'/dpmta-2.6"$1" dpmta-2.6"$1;}' < temp.f > temp.l
+  sh temp.m
+  sh temp.l
+  rm -f temp.d temp.f temp.m temp.l
+  echo "Creating pvm3 and linking files"
+  (cd $DIR/pvm3 ; find . -name CVS -prune -o -type d -print )|sed -e s@.@@> temp.d
+  (cd $DIR/pvm3 ; find . -name CVS -prune -o -type f -print )|sed -e s@.@@> temp.f
+  awk '{print "mkdir pvm3"$1;}' < temp.d > temp.m
+  awk '{print "ln -s '$DIR'/pvm3"$1" pvm3"$1;}' < temp.f > temp.l
+  sh temp.m
+  sh temp.l
+  rm -f temp.d temp.f temp.m temp.l
+  echo "Creating efence and linking files"
+  (cd $DIR/efence;find . -name CVS -prune -o -type d -print )|sed -e s@.@@> temp.d
+  (cd $DIR/efence;find . -name CVS -prune -o -type f -print )|sed -e s@.@@> temp.f
+  awk '{print "mkdir efence"$1;}' < temp.d > temp.m
+  awk '{print "ln -s '$DIR'/efence"$1" efence"$1;}' < temp.f > temp.l
+  sh temp.m
+  sh temp.l
+  rm -f temp.d temp.f temp.m temp.l
+  echo "Translating cifiles"
+  make cifiles
+  echo "You are ready to do a make in directory $ARCH now."
