@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1034 1997/09/28 10:19:10 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1035 1997/09/30 16:22:19 brunner Exp $";
 
 #include <stdio.h>
 
@@ -532,7 +532,7 @@ void WorkDistrib::mapComputes(void)
   // throw in a few extras, in case I forget some.
 
   int numPotentialCids = 
-    patchMap->numPatches() * (124/2+10) + node->numNodes() * 10;
+    patchMap->numPatches() * (26/2+10) + node->numNodes() * 10;
 
   computeMap->allocateCids(numPotentialCids);
 
@@ -994,13 +994,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1034 $	$Date: 1997/09/28 10:19:10 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1035 $	$Date: 1997/09/30 16:22:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1035  1997/09/30 16:22:19  brunner
+ * Reduced static arrays to allows only 1-away computes to decrease mem usage.
+ *
  * Revision 1.1034  1997/09/28 10:19:10  milind
  * Fixed priorities, ReductionMgr etc.
  *
