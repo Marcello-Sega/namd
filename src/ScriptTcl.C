@@ -139,7 +139,7 @@ int ScriptTcl::Tcl_config(ClientData clientData,
 
     if (!namestart || !nameend || !datastart || !dataend) {
       free(buf);
-      interp->result = "error parsing config file";
+      Tcl_SetResult(interp,"error parsing config file",TCL_VOLATILE);
       return TCL_ERROR;
     }
 
@@ -154,7 +154,7 @@ int ScriptTcl::Tcl_config(ClientData clientData,
 int ScriptTcl::Tcl_param(ClientData clientData,
         Tcl_Interp *interp, int argc, char *argv[]) {
   if (argc != 3) {
-    interp->result = "wrong # args";
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
   }
   char *param = argv[1];
@@ -172,11 +172,11 @@ int ScriptTcl::Tcl_reinitvels(ClientData clientData,
         Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
   if (! script->runWasCalled) {
-    interp->result = "called before run";
+    Tcl_SetResult(interp,"called before run",TCL_VOLATILE);
     return TCL_ERROR;
   }
   if (argc != 2) {
-    interp->result = "wrong # args";
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
   }
   char *temp = argv[1];
@@ -206,7 +206,7 @@ int ScriptTcl::Tcl_run(ClientData clientData,
     script->suspend();
   }
   if (argc != 2) {
-    interp->result = "wrong # args";
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
   }
   int numsteps;
@@ -214,12 +214,12 @@ int ScriptTcl::Tcl_run(ClientData clientData,
     return TCL_ERROR;
   }
   if (numsteps < 0) {
-    interp->result = "number of steps must be non-negative";
+    Tcl_SetResult(interp,"number of steps must be non-negative",TCL_VOLATILE);
     return TCL_ERROR;
   }
   SimParameters *simParams = Node::Object()->simParameters;
   if (numsteps % simParams->stepsPerCycle) {
-    interp->result = "number of steps must be a multiple of stepsPerCycle";
+    Tcl_SetResult(interp,"number of steps must be a multiple of stepsPerCycle",TCL_VOLATILE);
     return TCL_ERROR;
   }
   iout << "TCL: Running for " << numsteps << " steps\n" << endi;
@@ -251,7 +251,7 @@ int ScriptTcl::Tcl_minimize(ClientData clientData,
     script->suspend();
   }
   if (argc != 2) {
-    interp->result = "wrong # args";
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
   }
   int numsteps;
@@ -259,12 +259,12 @@ int ScriptTcl::Tcl_minimize(ClientData clientData,
     return TCL_ERROR;
   }
   if (numsteps < 0) {
-    interp->result = "number of steps must be non-negative";
+    Tcl_SetResult(interp,"number of steps must be non-negative",TCL_VOLATILE);
     return TCL_ERROR;
   }
   SimParameters *simParams = Node::Object()->simParameters;
   if (numsteps % simParams->stepsPerCycle) {
-    interp->result = "number of steps must be a multiple of stepsPerCycle";
+    Tcl_SetResult(interp,"number of steps must be a multiple of stepsPerCycle",TCL_VOLATILE);
     return TCL_ERROR;
   }
   iout << "TCL: Minimizing for " << numsteps << " steps\n" << endi;
@@ -282,11 +282,11 @@ int ScriptTcl::Tcl_move(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
   if (! script->runWasCalled) {
-    interp->result = "called before run";
+    Tcl_SetResult(interp,"called before run",TCL_VOLATILE);
     return TCL_ERROR;
   }
   if (argc != 4) {
-    interp->result = "wrong # args";
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
   }
   char **fstring;  int fnum;  int atomid;  int moveto;  double x, y, z;
@@ -294,7 +294,7 @@ int ScriptTcl::Tcl_move(ClientData clientData,
   if (argv[2][0]=='t' && argv[2][1]=='o' && argv[2][2]==0) moveto = 1;
   else if (argv[2][0]=='b' && argv[2][1]=='y' && argv[2][2]==0) moveto = 0;
   else {
-    interp->result = "syntax is 'move <id> to|by {<x> <y> <z>}'";
+    Tcl_SetResult(interp,"syntax is 'move <id> to|by {<x> <y> <z>}'",TCL_VOLATILE);
     return TCL_ERROR;
   }
   if (Tcl_SplitList(interp, argv[3], &fnum, &fstring) != TCL_OK) {
@@ -304,7 +304,7 @@ int ScriptTcl::Tcl_move(ClientData clientData,
        (Tcl_GetDouble(interp, fstring[0],&x) != TCL_OK) ||
        (Tcl_GetDouble(interp, fstring[1],&y) != TCL_OK) ||
        (Tcl_GetDouble(interp, fstring[2],&z) != TCL_OK) ) {
-    interp->result = "third argument not a vector";
+    Tcl_SetResult(interp,"third argument not a vector",TCL_VOLATILE);
     free(fstring);
     return TCL_ERROR;
   }
@@ -331,15 +331,15 @@ int ScriptTcl::Tcl_output(ClientData clientData,
         Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
   if (! script->runWasCalled) {
-    interp->result = "called before run";
+    Tcl_SetResult(interp,"called before run",TCL_VOLATILE);
     return TCL_ERROR;
   }
   if (argc != 2) {
-    interp->result = "wrong # args";
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
   }
   if (strlen(argv[1]) > MAX_SCRIPT_PARAM_SIZE) {
-    interp->result = "file name too long";
+    Tcl_SetResult(interp,"file name too long",TCL_VOLATILE);
     return TCL_ERROR;
   }
 
@@ -372,11 +372,11 @@ int ScriptTcl::Tcl_measure(ClientData clientData,
         Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
   if (! script->runWasCalled) {
-    interp->result = "called before run";
+    Tcl_SetResult(interp,"called before run",TCL_VOLATILE);
     return TCL_ERROR;
   }
   if (argc != 2) {
-    interp->result = "wrong # args";
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
   }
   script->measure_command = argv[1];
@@ -390,11 +390,11 @@ int ScriptTcl::Tcl_checkpoint(ClientData clientData,
         Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
   if (! script->runWasCalled) {
-    interp->result = "called before run";
+    Tcl_SetResult(interp,"called before run",TCL_VOLATILE);
     return TCL_ERROR;
   }
   if (argc != 1) {
-    interp->result = "wrong # args";
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
   }
 
@@ -407,11 +407,11 @@ int ScriptTcl::Tcl_revert(ClientData clientData,
         Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
   if (! script->runWasCalled) {
-    interp->result = "called before run";
+    Tcl_SetResult(interp,"called before run",TCL_VOLATILE);
     return TCL_ERROR;
   }
   if (argc != 1) {
-    interp->result = "wrong # args";
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
   }
 
@@ -424,7 +424,7 @@ int ScriptTcl::Tcl_callback(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
   if (argc != 2) {
-    interp->result = "wrong # args";
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
   }
 
@@ -446,10 +446,8 @@ void ScriptTcl::doCallback(const char *labels, const char *data) {
   int rval = Tcl_Eval(interp,cmd);
   delete [] cmd;
   if (rval != TCL_OK) {
-     char *errmsg = new char[strlen(interp->result) + 20];
-     sprintf(errmsg,"Tcl callback: %s",interp->result);
-     NAMD_die(errmsg);
-     delete [] errmsg;
+    char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
+    NAMD_die(errorInfo);
   }
 }
 
@@ -488,9 +486,6 @@ void ScriptTcl::algorithm() {
 #ifdef NAMD_TCL
   // Create interpreter
   interp = Tcl_CreateInterp();
-//  if (Tcl_Init(interp) == TCL_ERROR) {
-//    CkPrintf("Tcl startup error: %s\n", interp->result);
-//  }
   Tcl_CreateCommand(interp, "exit", Tcl_exit,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "abort", Tcl_abort,

@@ -31,11 +31,11 @@ int proc_vecadd(ClientData, Tcl_Interp *interp, int argc,
 		       char *argv[])
 {
   if (argc == 1) {
-    interp -> result = "no value given for parameter \"x\" to \"vecadd\"";
+    Tcl_SetResult(interp,"no value given for parameter \"x\" to \"vecadd\"",TCL_VOLATILE);
     return TCL_ERROR;
   }
   if (argc == 2) {
-    interp -> result = "no value given for parameter \"y\" to \"vecadd\"";
+    Tcl_SetResult(interp,"no value given for parameter \"y\" to \"vecadd\"",TCL_VOLATILE);
     return TCL_ERROR;
   }
   int num;
@@ -61,7 +61,7 @@ int proc_vecadd(ClientData, Tcl_Interp *interp, int argc,
       return TCL_ERROR;
     }
     if (num != num2) {
-      interp -> result = "vecadd: two vectors don't have the same size";
+      Tcl_SetResult(interp,"vecadd: two vectors don't have the same size",TCL_VOLATILE);
       delete [] sum;
       free(data);
       return TCL_ERROR;
@@ -93,11 +93,11 @@ int proc_vecadd(ClientData, Tcl_Interp *interp, int argc,
 int proc_vecsub(ClientData, Tcl_Interp *interp, int argc, char *argv[])
 {
   if (argc == 1) {
-    interp -> result = "no value given for parameter \"x\" to \"vecsub\"";
+    Tcl_SetResult(interp,"no value given for parameter \"x\" to \"vecsub\"",TCL_VOLATILE);
     return TCL_ERROR;
   }
   if (argc == 2) {
-    interp -> result = "no value given for parameter \"y\" to \"vecsub\"";
+    Tcl_SetResult(interp,"no value given for parameter \"y\" to \"vecsub\"",TCL_VOLATILE);
     return TCL_ERROR;
   }
   int num1, num2;
@@ -110,7 +110,7 @@ int proc_vecsub(ClientData, Tcl_Interp *interp, int argc, char *argv[])
     return TCL_ERROR;
   }
   if (num1 != num2) {
-    interp -> result = "vecadd: two vectors don't have the same size";
+    Tcl_SetResult(interp,"vecadd: two vectors don't have the same size",TCL_VOLATILE);
     delete [] data1;
     delete [] data2;
     return TCL_ERROR;
@@ -132,16 +132,16 @@ int proc_vecscale(ClientData, Tcl_Interp *interp, int argc,
 		       char *argv[])
 {
   if (argc == 1) {
-    interp -> result = "no value given for parameter \"c\" to \"vecscale\"";
+    Tcl_SetResult(interp,"no value given for parameter \"c\" to \"vecscale\"",TCL_VOLATILE);
     return TCL_ERROR;
   }
     
   if (argc == 2) {
-    interp -> result = "no value given for parameter \"v\" to \"vecscale\"";
+    Tcl_SetResult(interp,"no value given for parameter \"v\" to \"vecscale\"",TCL_VOLATILE);
     return TCL_ERROR;
   }
   if (argc != 3) {
-    interp -> result = "called \"vecscale\" with too many arguments";
+    Tcl_SetResult(interp,"called \"vecscale\" with too many arguments",TCL_VOLATILE);
     return TCL_ERROR;
   }
     
@@ -157,10 +157,10 @@ int proc_vecscale(ClientData, Tcl_Interp *interp, int argc,
   int result = TCL_OK;
   if (num1 == 0 || num2 == 0) {
     result = TCL_ERROR;
-    interp -> result = "vecscale: parameters must have data";
+    Tcl_SetResult(interp,"vecscale: parameters must have data",TCL_VOLATILE);
   } else if (num1 != 1 && num2 != 1) {
     result = TCL_ERROR;
-    interp -> result = "vecscale: one parameter must be a scalar value";
+    Tcl_SetResult(interp,"vecscale: one parameter must be a scalar value",TCL_VOLATILE);
   } else {
     char *scalar, **vector;
     int num;
@@ -180,7 +180,7 @@ int proc_vecscale(ClientData, Tcl_Interp *interp, int argc,
     } else {
       for (int i=0; i<num; i++) {
 	if (Tcl_GetDouble(interp, vector[i], &val2) != TCL_OK) {
-	  interp -> result = "vecscale: vector contains a non-number";
+	  Tcl_SetResult(interp,"vecscale: vector contains a non-number",TCL_VOLATILE);
 	  result = TCL_ERROR;
 	  break;
 	}
@@ -202,7 +202,7 @@ int proc_transoffset(ClientData, Tcl_Interp *interp, int argc,
 		     char *argv[])
 {
   if (argc != 2) {
-    interp -> result = "transoffset: takes one parameter, an offset vector";
+    Tcl_SetResult(interp,"transoffset: takes one parameter, an offset vector",TCL_VOLATILE);
     return TCL_ERROR;
   }
   // get the vector
@@ -228,7 +228,7 @@ int proc_transoffset(ClientData, Tcl_Interp *interp, int argc,
 
 /// Given a string with a matrix in it, return the matrix
 // returns TCL_OK if good
-// If bad, returns TCL_ERROR and sets the interp->result to the error message
+// If bad, returns TCL_ERROR and sets the result to the error message
 // The name of the function should be passed in 'fctn' so the error message
 // can be constructed correctly
 int tcl_get_matrix(char *fctn, Tcl_Interp *interp, 
@@ -237,12 +237,12 @@ int tcl_get_matrix(char *fctn, Tcl_Interp *interp,
   int num_rows;
   char **data_rows;
   if (Tcl_SplitList(interp, s, &num_rows, &data_rows) != TCL_OK) {
-    sprintf(interp -> result, "%s: badly formed matrix", fctn);
+    Tcl_SetResultFoo(interp,"badly formed matrix",TCL_VOLATILE);
     return TCL_ERROR;
   }
   if (num_rows != 4) {
     free(data_rows);
-    sprintf(interp -> result, "%s: need a 4x4 matrix", fctn);
+    Tcl_SetResultFoo(interp,"need a 4x4 matrix",TCL_VOLATILE);
     return TCL_ERROR;
   }
   int num_row[4];
@@ -272,7 +272,7 @@ int tcl_get_matrix(char *fctn, Tcl_Interp *interp,
     for (int j=0; j<4; j++) {
       if (Tcl_GetDouble(interp, data_row[i][j], &tmp) != TCL_OK) {
 	ret_val = TCL_ERROR;
-	sprintf(interp -> result, "%s: non-numeric in matrix", fctn);
+	Tcl_SetResultFoo(interp,"non-numeric in matrix",TCL_VOLATILE);
       } else {
 	mat -> mat[j][i] = tmp;  // Matrix4 is transpose to Tcl's matrix
       }
@@ -305,7 +305,7 @@ void tcl_append_matrix(Tcl_Interp *interp, const Matrix4 &mat)
 // Given a string with a vector in it, get the vector
 // YOU must delete [] the vector (in "result") when finished
 // returns TCL_OK if good
-// If bad, returns TCL_ERROR and sets the interp->result to the error message
+// If bad, returns TCL_ERROR and sets the result to the error message
 // The name of the function should be passed in 'fctn' so the error message
 // can be constructed correctly
 int tcl_get_vector(char *fctn, Tcl_Interp *interp, 
@@ -323,7 +323,7 @@ int tcl_get_vector(char *fctn, Tcl_Interp *interp,
   double tmp;
   for (int i=0; i<*num; i++) {
     if (Tcl_GetDouble(interp, data[i], &tmp) != TCL_OK) {  // of numbers
-      sprintf(interp->result, "%s: non-numeric in vector", fctn);
+      Tcl_SetResult(interp,"non-numeric in vector",TCL_VOLATILE);
       ret_val = TCL_ERROR;
     } else {
       (*result)[i] = tmp;
@@ -426,11 +426,11 @@ int proc_transmult(ClientData, Tcl_Interp *interp, int argc,
 {
   // make there there are at least two values
   if (argc <= 1) {
-    interp -> result = "no value given for parameter \"mx\" to \"transmult\"";
+    Tcl_SetResult(interp,"no value given for parameter \"mx\" to \"transmult\"",TCL_VOLATILE);
     return TCL_ERROR;
   }
   if (argc == 2) {
-    interp -> result = "no value given for parameter \"my\" to \"transmult\"";
+    Tcl_SetResult(interp,"no value given for parameter \"my\" to \"transmult\"",TCL_VOLATILE);
     return TCL_ERROR;
   }
   // Get the first matrix

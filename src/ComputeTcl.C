@@ -42,7 +42,7 @@ int ComputeTcl::Tcl_print(ClientData,
 int ComputeTcl::Tcl_atomid(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
   if (argc != 4) {
-    interp->result = "wrong # args";
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
   }
   char *segid = argv[1];
@@ -56,7 +56,7 @@ int ComputeTcl::Tcl_atomid(ClientData clientData,
   int atomid = mol->get_atom_from_name(segid,resid,aname);
 
   if (atomid < 0) {
-    interp->result = "atom not found";
+    Tcl_SetResult(interp,"atom not found",TCL_VOLATILE);
     return TCL_ERROR;
   }
   atomid += 1;
@@ -71,7 +71,7 @@ int ComputeTcl::Tcl_atomid(ClientData clientData,
 int ComputeTcl::Tcl_addatom(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
   if (argc != 2) {
-    interp->result = "wrong # args";
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
   }
   int atomid;
@@ -88,7 +88,7 @@ int ComputeTcl::Tcl_addatom(ClientData clientData,
 int ComputeTcl::Tcl_addgroup(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
   if (argc != 2) {
-    interp->result = "wrong # args";
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
   }
 
@@ -126,7 +126,7 @@ int ComputeTcl::Tcl_addgroup(ClientData clientData,
 int ComputeTcl::Tcl_reconfig(ClientData clientData,
 	Tcl_Interp *interp, int argc, char **) {
   if (argc != 1) {
-    interp->result = "wrong # args";
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
   }
   int *reconfig = (int *)clientData;
@@ -139,7 +139,7 @@ int ComputeTcl::Tcl_reconfig(ClientData clientData,
 int ComputeTcl::Tcl_loadcoords(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
   if (argc != 2) {
-    interp->result = "wrong # args";
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
   }
   char *vname = argv[1];
@@ -176,7 +176,7 @@ int ComputeTcl::Tcl_loadcoords(ClientData clientData,
 int ComputeTcl::Tcl_loadmasses(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
   if (argc != 2) {
-    interp->result = "wrong # args";
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
   }
   char *vname = argv[1];
@@ -212,7 +212,7 @@ int ComputeTcl::Tcl_loadmasses(ClientData clientData,
 int ComputeTcl::Tcl_addforce(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
   if (argc != 3) {
-    interp->result = "wrong # args";
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
   }
   char **fstring;  int fnum;  int atomid;  double x, y, z;
@@ -230,7 +230,7 @@ int ComputeTcl::Tcl_addforce(ClientData clientData,
        (Tcl_GetDouble(interp, fstring[0],&x) != TCL_OK) ||
        (Tcl_GetDouble(interp, fstring[1],&y) != TCL_OK) ||
        (Tcl_GetDouble(interp, fstring[2],&z) != TCL_OK) ) {
-    interp->result = "force not a vector";
+    Tcl_SetResult(interp,"force not a vector",TCL_VOLATILE);
     free(fstring);
     return TCL_ERROR;
   }
@@ -273,15 +273,6 @@ void ComputeTcl::initialize() {
 
 #ifdef NAMD_TCL
   interp = Node::Object()->getScript()->interp;
-/*
-  // Create interpreter
-  interp = Tcl_CreateInterp();
-//  if (Tcl_Init(interp) == TCL_ERROR) {
-//    CkPrintf("Tcl startup error: %s\n", interp->result);
-//  }
-  Tcl_CreateCommand(interp, "print", Tcl_print,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-*/
   Tcl_CreateCommand(interp, "atomid", Tcl_atomid,
     (ClientData) (Node::Object()->molecule), (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "vecadd", proc_vecadd,
@@ -290,14 +281,6 @@ void ComputeTcl::initialize() {
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "vecscale", proc_vecscale,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-/*
-  Tcl_CreateCommand(interp, "transoffset", proc_transoffset,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "transmult", proc_transmult,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "vectrans", proc_vectrans,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-*/
 
   // Call interpreter to determine requested atoms
   Tcl_CreateCommand(interp, "addatom", Tcl_addatom,
@@ -315,8 +298,12 @@ void ComputeTcl::initialize() {
        code = Tcl_Eval(interp,script->data+1);
     }
     else code = Tcl_EvalFile(interp,script->data);
-    if (*interp->result != 0) CkPrintf("TCL: %s\n",interp->result);
-    if (code != TCL_OK) NAMD_die("TCL error in global force initialization!");
+    char *result = Tcl_GetStringResult(interp);
+    if (*result != 0) CkPrintf("TCL: %s\n",result);
+    if (code != TCL_OK) {
+      char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
+      NAMD_die(errorInfo);
+    }
   }
 
   Tcl_DeleteCommand(interp, "addatom");
@@ -359,8 +346,12 @@ void ComputeTcl::calculate() {
 
   char cmd[129];  int code;
   strcpy(cmd,"calcforces");  code = Tcl_Eval(interp,cmd);
-  if (*interp->result != 0) CkPrintf("TCL: %s\n",interp->result);
-  if (code != TCL_OK) NAMD_die("TCL error in global force calculation!");
+  char *result = Tcl_GetStringResult(interp);
+  if (*result != 0) CkPrintf("TCL: %s\n",result);
+  if (code != TCL_OK) {
+    char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
+    NAMD_die(errorInfo);
+  }
 
   Tcl_DeleteCommand(interp, "loadcoords");
   Tcl_DeleteCommand(interp, "loadmasses");

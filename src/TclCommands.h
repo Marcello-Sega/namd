@@ -25,18 +25,18 @@ int proc_vectrans(ClientData, Tcl_Interp *interp, int argc, char *argv[]);
 
 // get a matrix from a string; 
 // returns TCL_OK if good
-// If bad, returns TCL_ERROR and sets the interp->result to the error message
+// If bad, returns TCL_ERROR and sets the result to the error message
 // The name of the function should be passed in 'fctn' so the error message
 // can be constructed correctly
 int tcl_get_matrix(char *fctn, Tcl_Interp *interp,
 		   char *s, Matrix4 *mat);
 
-// append the matrix information to the interp->result field
+// append the matrix information to the result field
 void tcl_append_matrix(Tcl_Interp *interp, const Matrix4 &mat);
 
 // get a vector -- YOU must delete the vector, if successful
 // returns TCL_OK if good
-// If bad, returns TCL_ERROR and sets the interp->result to the error message
+// If bad, returns TCL_ERROR and sets the result to the error message
 // The name of the function should be passed in 'fctn' so the error message
 // can be constructed correctly
 int tcl_get_vector(char *fctn, Tcl_Interp *interp, 
