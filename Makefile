@@ -204,7 +204,7 @@ depends: cifiles $(DSTDIR) $(DEPENDSFILE)
 	      g++ -MM $(GXXFLAGS) \
 	        $(SRCDIR)/`basename $$i | awk -F. '{print $$1".C"}'` | \
 	      perl $(SRCDIR)/dc.pl $(INCLUDE) /usr/include /usr/local >> $(DEPENDFILE); \
-	      $(ECHO) '\t$$(CXX) $$(CXXFLAGS)' -o $$i -c \
+	      $(ECHO) "	$$(CXX) $$(CXXFLAGS)" -o $$i -c \
 	        $(SRCDIR)/`basename $$i | awk -F. '{print $$1".C"}'` \
 		>> $(DEPENDFILE) ; \
 	done;

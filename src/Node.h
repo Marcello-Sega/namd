@@ -19,6 +19,10 @@
 
 #include "main.h"
 
+#ifdef SOLARIS
+extern "C" int gethostname( char *name, int namelen);
+#endif
+
 class PatchMap;
 class AtomMap;
 class ProxyMgr;
@@ -126,12 +130,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/03/27 20:25:50 $
+ *	$Revision: 1.1008 $	$Date: 1997/08/12 22:18:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.1008  1997/08/12 22:18:42  milind
+ * Made NAMD2 to link on Solaris machines.
+ *
  * Revision 1.1007  1997/03/27 20:25:50  brunner
  * Changes for LdbCoordinator, the load balance control BOC
  *

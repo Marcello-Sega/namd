@@ -19,7 +19,7 @@
 //#undef DEBUGM
 #include "Debug.h"
 
-BigReal NonbondedExclElem::reductionDummy[reductionDataSize];
+BigReal NonbondedExclElem::reductionDummy[ComputeNonbondedUtil::reductionDataSize];
 
 void NonbondedExclElem::computeForce(BigReal *reduction)
 {
@@ -131,13 +131,16 @@ ComputeNonbondedExcls::loadTuples() {
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedExcl.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1997/05/20 15:49:09 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1014 $	$Date: 1997/08/12 22:18:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedExcl.C,v $
+ * Revision 1.1014  1997/08/12 22:18:41  milind
+ * Made NAMD2 to link on Solaris machines.
+ *
  * Revision 1.1013  1997/05/20 15:49:09  nealk
  * Pair, Self, and Excl not use the same parameters!
  *

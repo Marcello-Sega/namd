@@ -1,0 +1,27 @@
+#####
+## Choose your favorite Compiler options
+####
+CXX = CC -DSOLARIS
+#CXXOPTS = -O -DGLOBALS
+CXXOPTS = -DGLOBALS
+
+#####
+# Flags
+#####
+# uncomment for no warnings during compile
+NOWARN=-w
+# uncomment for purify during compile
+# PURIFY=-purify
+
+#####
+# definitions for Charm routines
+#####
+CHARM = /home/kale/milind/charm/net-sol-cc
+
+#####
+# Unix commands
+#####
+ECHO = echo
+MOVE = mv
+COPY = cp
+

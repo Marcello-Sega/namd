@@ -12,7 +12,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PDBData.C,v 1.1001 1997/03/19 11:54:40 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PDBData.C,v 1.1002 1997/08/12 22:18:43 milind Exp $";
 
 
 // Here are the routines to manupulate a PDB ATOM record
@@ -32,7 +32,7 @@ const Real PDBAtom::default_temperaturefactor = 0.00;
 const int PDBAtom::no_footnote = 0;
 
 // write down the names so I won't have to do so again
-char *PDBData::PDBNames[UNKNOWN+1] = {"HEADER", "OBSLTE", "COMPND",
+char *PDBData::PDBNames[PDBData::UNKNOWN+1] = {"HEADER", "OBSLTE", "COMPND",
        "SOURCE", "EXPDTA", "AUTHOR", "REVDAT", "SPRSDE", "JRNL",
        "REMARK", "SEQRES", "FTNOTE", "HET", "FORMUL", "HELIX",
        "SHEET", "TURN", "SSBOND", "SITE", "CRYST1", "ORIGX",
@@ -704,13 +704,16 @@ main()
  * RCS INFORMATION:
  *
  *	$RCSfile: PDBData.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:40 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/08/12 22:18:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PDBData.C,v $
+ * Revision 1.1002  1997/08/12 22:18:43  milind
+ * Made NAMD2 to link on Solaris machines.
+ *
  * Revision 1.1001  1997/03/19 11:54:40  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.
