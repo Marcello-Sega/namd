@@ -2044,7 +2044,8 @@ void Molecule::receive_Molecule(MIStream *msg)
 
        int32 *byAtomSize = new int32[numAtoms];
 
-       const int pair_self = simParams->pairInteractionSelf;
+       const int pair_self = 
+         simParams->pairInteractionOn ? simParams->pairInteractionSelf : 0;
 
        DebugM(3,"Building bond lists.\n");
     

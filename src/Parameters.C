@@ -2277,6 +2277,7 @@ void Parameters::done_reading_files()
     {
       NAMD_die("memory allocation of dihedral_array failed!");
     }
+    memset(dihedral_array, 0, NumDihedralParams*sizeof(DihedralValue));
   }
 
   if (NumImproperParams)
@@ -2287,6 +2288,7 @@ void Parameters::done_reading_files()
     {
       NAMD_die("memory allocation of improper_array failed!");
     }
+    memset(improper_array, 0, NumImproperParams*sizeof(ImproperValue));
   }
 
   if (NumVdwParams)
