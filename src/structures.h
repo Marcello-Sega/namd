@@ -51,6 +51,7 @@ typedef struct atom_constants
 	int partner;             // connecting atom, for hydrogens
 	IntList *donorList;      // donor-hydrogen pairs this is part of
 	IntList *acceptorList;   // acceptor-anteced pairs this is part of
+	int hydrogenList;	// index of atom in hydrogenGroup list
 } Atom;
 
 typedef struct bond
@@ -119,12 +120,15 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: structures.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/11 04:07:56 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/03/31 16:12:55 $
  *
  * REVISION HISTORY:
  *
  * $Log: structures.h,v $
+ * Revision 1.1003  1997/03/31 16:12:55  nealk
+ * Atoms now can migrate by hydrogen groups.
+ *
  * Revision 1.1002  1997/03/11 04:07:56  jim
  * Eliminated use of LintList for by-atom lists.
  * Now uses little arrays managed by ObjectArena<int>.

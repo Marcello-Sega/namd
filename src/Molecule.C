@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Molecule.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/03/20 17:28:36 $
+ *	$Revision: 1.1011 $	$Date: 1997/03/31 16:12:53 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1011  1997/03/31 16:12:53  nealk
+ * Atoms now can migrate by hydrogen groups.
+ *
  * Revision 1.1010  1997/03/20 17:28:36  nealk
  * Moved debugging code.
  *
@@ -203,7 +206,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1010 1997/03/20 17:28:36 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1011 1997/03/31 16:12:53 nealk Exp $";
 
 #include "Templates/UniqueSortedArray.h"
 #include "Molecule.h"
@@ -1608,1711 +1611,1716 @@ void Molecule::send_Molecule(Communicate *com_obj)
 	  NAMD_die("memory allocation failed in Molecule::send_Molecule");
 	}
 
-	for (i=0; i<numAtoms; i++)
-	{
-		a1[i]=atoms[i].mass;
-		a2[i]=atoms[i].charge;
-		ind1[i]=atoms[i].vdw_type;
-		i1[i]=atoms[i].status;
-	}
-
-	msg->put(numAtoms);
-	msg->put(numAtoms, a1).put(numAtoms, a2);
-	msg->put(numAtoms, ind1).put(numAtoms, i1);
-
-	delete [] a1;
-	delete [] a2;
-	delete [] ind1;
-	delete [] i1;
-
-	//  Send the bond information
-	msg->put(numBonds);
-
-	if (numBonds)
-	{
-		i1= new int[numBonds];
-		i2= new int[numBonds];
-		ind1= new Index[numBonds];
-
-		if ( (i1==NULL) || (i2==NULL) || (ind1==NULL) )
-		{
-			NAMD_die("memory allocation failed in Molecule::send_Molecule");
-		}
-
-		for (i=0; i<numBonds; i++)
-		{
-			i1[i]=bonds[i].atom1;
-			i2[i]=bonds[i].atom2;
-			ind1[i]=bonds[i].bond_type;
-		}
-	
-		msg->put(numBonds, i1).put(numBonds, i2);
-		msg->put(numBonds, ind1);
-	
-		delete [] i1;
-		delete [] i2;
-		delete [] ind1;
-	}
-
-	//  Send the angle information
-	msg->put(numAngles);
-
-	if (numAngles)
-	{
-		i1= new int[numAngles];
-		i2= new int[numAngles];
-		i3= new int[numAngles];
-		ind1= new Index[numAngles];
-
-		if ( (i1==NULL) || (i2==NULL) || (i3==NULL) || (ind1==NULL) )
-		{
-			NAMD_die("memory allocation failed in Molecule::send_Molecule");
-		}
-
-		for (i=0; i<numAngles; i++)
-		{
-			i1[i]=angles[i].atom1;
-			i2[i]=angles[i].atom2;
-			i3[i]=angles[i].atom3;
-			ind1[i]=angles[i].angle_type;
-		}
-
-		msg->put(numAngles, i1).put(numAngles, i2);
-		msg->put(numAngles, i3).put(numAngles, ind1);
-
-		delete [] i1;
-		delete [] i2;
-		delete [] i3;
-		delete [] ind1;
-	}
-
-	//  Send the dihedral information
-	msg->put(numDihedrals);
-
-	if (numDihedrals)
-	{
-		i1= new int[numDihedrals];
-		i2= new int[numDihedrals];
-		i3= new int[numDihedrals];
-		i4= new int[numDihedrals];
-		ind1= new Index[numDihedrals];
-
-		if ( (i1==NULL) || (i2==NULL) || (i3==NULL) || (i4==NULL) || 
-		     (ind1==NULL) )
-		{
-			NAMD_die("memory allocation failed in Molecule::send_Molecule");
-		}
-
-		for (i=0; i<numDihedrals; i++)
-		{
-			i1[i]=dihedrals[i].atom1;
-			i2[i]=dihedrals[i].atom2;
-			i3[i]=dihedrals[i].atom3;
-			i4[i]=dihedrals[i].atom4;
-			ind1[i]=dihedrals[i].dihedral_type;
-		}
-	
-		msg->put(numDihedrals, i1).put(numDihedrals, i2);
-		msg->put(numDihedrals, i3).put(numDihedrals, i4);
-		msg->put(numDihedrals, ind1);
-
-		delete [] i1;
-		delete [] i2;
-		delete [] i3;
-		delete [] i4;
-		delete [] ind1;
-	}
-
-	//  Send the improper information
-	msg->put(numImpropers);
-
-	if (numImpropers)
-	{
-		i1= new int[numImpropers];
-		i2= new int[numImpropers];
-		i3= new int[numImpropers];
-		i4= new int[numImpropers];
-		ind1= new Index[numImpropers];
-
-		if ( (i1==NULL) || (i2==NULL) || (i3==NULL) || (i4==NULL) || 
-		     (ind1==NULL) )
-		{
-			NAMD_die("memory allocation failed in Molecule::send_Molecule");
-		}
-
-		for (i=0; i<numImpropers; i++)
-		{
-			i1[i]=impropers[i].atom1;
-			i2[i]=impropers[i].atom2;
-			i3[i]=impropers[i].atom3;
-			i4[i]=impropers[i].atom4;
-			ind1[i]=impropers[i].improper_type;
-		}
-
-		msg->put(numImpropers, i1).put(numImpropers, i2);
-		msg->put(numImpropers, i3).put(numImpropers, i4);
-		msg->put(numImpropers, ind1);
-
-		delete [] i1;
-		delete [] i2;
-		delete [] i3;
-		delete [] i4;
-		delete [] ind1;
-	}
-
-	// send the hydrogen bond donor information
-	msg->put(numDonors);
-
-	if(numDonors)
-	{
-	        i1= new int[numDonors];
-		i2= new int[numDonors];
-
-		if ( (i1==NULL) || (i2==NULL) )
-		{
-			NAMD_die("memory allocation failed in Molecule::send_Molecule");
-		}
-
-		for (i=0; i<numDonors; i++)
-		{
-			i1[i]=donors[i].atom1;
-			i2[i]=donors[i].atom2;
-		}
-
-		msg->put(numDonors, i1).put(numDonors, i2);
-
-		delete [] i1;
-		delete [] i2;
-	}
-
-	// send the hydrogen bond acceptor information
-	msg->put(numAcceptors);
-
-	if(numAcceptors)
-	{
-	        i1= new int[numAcceptors];
-		i2= new int[numAcceptors];
-
-		if ( (i1==NULL) || (i2==NULL) )
-		{
-			NAMD_die("memory allocation failed in Molecule::send_Molecule");
-		}
-
-		for (i=0; i<numAcceptors; i++)
-		{
-			i1[i]=acceptors[i].atom1;
-			i2[i]=acceptors[i].atom2;
-		}
-
-		msg->put(numAcceptors, i1).put(numAcceptors, i2);
-
-		delete [] i1;
-		delete [] i2;
-	}
-
-	//  Send the exclusion information
-	msg->put(numExclusions);
-
-	if (numExclusions)
-	{
-		i1= new int[numExclusions];
-		i2= new int[numExclusions];
-
-		if ( (i1==NULL) || (i2==NULL) )
-		{
-			NAMD_die("memory allocation failed in Molecule::send_Molecule");
-		}
-
-		for (i=0; i<numExclusions; i++)
-		{
-			i1[i]=exclusions[i].atom1;
-			i2[i]=exclusions[i].atom2;
-		}
-
-		msg->put(numExclusions, i1).put(numExclusions, i2);
-
-		delete [] i1;
-		delete [] i2;
-	}
-	
-	//  Send the constraint information, if used
-	if (simParams->constraintsOn)
-	{
-	   msg->put(numConstraints);
-	   
-	   msg->put(numAtoms, consIndexes);
-	   
-	   if (numConstraints)
-	   {
-	      a1 = new Real[numConstraints];
-	      v1 = new Vector[numConstraints];
-	      
-	      if ( (a1 == NULL) || (v1 == NULL) )
-	      {
-		 NAMD_die("Memory allocation failed in Molecule::send_Molecule()");
-	      }
-	      
-	      for (i=0; i<numConstraints; i++)
-	      {
-		 a1[i] = consParams[i].k;
-		 v1[i] = consParams[i].refPos;
-	      }
-	      
-	      msg->put(numConstraints, a1);
-	      msg->put(numConstraints, v1);
-	      
-	      delete [] a1;
-	      delete [] v1;
-	   }
-	}
-
-	//  Send the langevin parameters, if active
-	if (simParams->langevinOn || 
-	    simParams->tCoupleOn)
-	{
-		msg->put(numAtoms, langevinParams);
-		msg->put(numAtoms, langForceVals);
-	}
-
-
-	// Broadcast the message to the other nodes
-	com_obj->broadcast_others(msg, MOLECULETAG);
-	
-	//  Now build arrays of indexes into these arrays by atom
-	build_lists_by_atom();
-}
-/*			END OF FUNCTION send_Molecule			*/
-
-/************************************************************************/
-/*									*/
-/*			FUNCTION receive_Molecule			*/
-/*									*/
-/*	receive_Molecule is used by all the clients to receive the	*/
-/*   structural data sent out by the master node.  It is NEVER called   */
-/*   by the Master node.						*/
-/*									*/
-/************************************************************************/
-
-void Molecule::receive_Molecule(Message *msg)
-
-{
-	int *i1, *i2, *i3, *i4;		//  Temporary integer arrays
-	Real *a1, *a2;			//  Temporary real arrays
-	Index *ind1;			//  Temporary array of Indexes
-	Vector *v1;			//  Temporary array of Vectors
-	register int i;				//  Loop counter
-
-	//  Get the atom information
-	msg->get(numAtoms);
-
-	delete [] atoms;
-	atoms= new Atom[numAtoms];
-	a1   = new Real[numAtoms];
-	a2   = new Real[numAtoms];
-	ind1 = new Index[numAtoms];
-	i1   = new int[numAtoms];
-
-	if (atoms==NULL || a1==NULL || a2==NULL || ind1==NULL || i1==NULL)
-	{
-	  NAMD_die("memory allocation failed in Molecule::receive_Molecule");
-	}
-
-	msg->get(a1);
-	msg->get(a2);
-	msg->get(ind1);
-	msg->get(i1);
-
-	for (i=0; i<numAtoms; i++)
-	{
-		atoms[i].mass = a1[i];
-		atoms[i].charge = a2[i];
-		atoms[i].vdw_type = ind1[i];
-		atoms[i].status = i1[i];
-	}
-
-	delete [] a1;
-	delete [] a2;
-	delete [] ind1;
-	delete [] i1;
-
-	//  Get the bond information
-	msg->get(numBonds);
-
-	if (numBonds)
-	{
-		delete [] bonds;
-		bonds=new Bond[numBonds];
-		i1 = new int[numBonds];
-		i2 = new int[numBonds];
-		ind1 = new Index[numBonds];
-
-		if ( (bonds==NULL) || (i1==NULL) || (i2==NULL) || (ind1==NULL) )
-		{
-			NAMD_die("memory allocation failed in Molecule::receive_Molecule");
-		}
-
-		msg->get(i1);
-		msg->get(i2);
-		msg->get(ind1);
-
-		for (i=0; i<numBonds; i++)
-		{
-			bonds[i].atom1 = i1[i];
-			bonds[i].atom2 = i2[i];
-			bonds[i].bond_type = ind1[i];
-		}
-
-		delete [] i1;
-		delete [] i2;
-		delete [] ind1;
-	}
-
-	//  Get the angle information
-	msg->get(numAngles);
-
-	if (numAngles)
-	{
-		delete [] angles;
-		angles=new Angle[numAngles];
-		i1 = new int[numAngles];
-		i2 = new int[numAngles];
-		i3 = new int[numAngles];
-		ind1 = new Index[numAngles];
-
-		if ( (angles==NULL) || (i1==NULL) || (i2==NULL) || (i3==NULL) ||
-		     (ind1==NULL) )
-		{
-			NAMD_die("memory allocation failed in Molecule::receive_Molecule");
-		}
-
-		msg->get(i1);
-		msg->get(i2);
-		msg->get(i3);
-		msg->get(ind1);
-
-		for (i=0; i<numAngles; i++)
-		{
-			angles[i].atom1 = i1[i];
-			angles[i].atom2 = i2[i];
-			angles[i].atom3 = i3[i];
-			angles[i].angle_type = ind1[i];
-		}
-
-		delete [] i1;
-		delete [] i2;
-		delete [] i3;
-		delete [] ind1;
-	}
-
-	//  Get the dihedral information
-	msg->get(numDihedrals);
-
-	if (numDihedrals)
-	{
-		delete [] dihedrals;
-		dihedrals=new Dihedral[numDihedrals];
-		i1 = new int[numDihedrals];
-		i2 = new int[numDihedrals];
-		i3 = new int[numDihedrals];
-		i4 = new int[numDihedrals];
-		ind1 = new Index[numDihedrals];
-
-		if ( (dihedrals==NULL) || (i1==NULL) || (i2==NULL) || (i3==NULL) ||
-		     (i4==NULL) || (ind1==NULL) )
-		{
-			NAMD_die("memory allocation failed in Molecule::receive_Molecule");
-		}
-
-		msg->get(i1);
-		msg->get(i2);
-		msg->get(i3);
-		msg->get(i4);
-		msg->get(ind1);
-
-		for (i=0; i<numDihedrals; i++)
-		{
-			dihedrals[i].atom1 = i1[i];
-			dihedrals[i].atom2 = i2[i];
-			dihedrals[i].atom3 = i3[i];
-			dihedrals[i].atom4 = i4[i];
-			dihedrals[i].dihedral_type = ind1[i];
-		}
-
-		delete [] i1;
-		delete [] i2;
-		delete [] i3;
-		delete [] i4;
-		delete [] ind1;
-	}
-
-	//  Get the improper information
-	msg->get(numImpropers);
-
-	if (numImpropers)
-	{
-		delete [] impropers;
-		impropers=new Improper[numImpropers];
-		i1 = new int[numImpropers];
-		i2 = new int[numImpropers];
-		i3 = new int[numImpropers];
-		i4 = new int[numImpropers];
-		ind1 = new Index[numImpropers];
-
-		if ( (impropers==NULL) || (i1==NULL) || (i2==NULL) || (i3==NULL) ||
-		     (i4==NULL) || (ind1==NULL) )
-		{
-			NAMD_die("memory allocation failed in Molecule::receive_Molecule");
-		}
-
-		msg->get(i1);
-		msg->get(i2);
-		msg->get(i3);
-		msg->get(i4);
-		msg->get(ind1);
-
-		for (i=0; i<numImpropers; i++)
-		{
-			impropers[i].atom1 = i1[i];
-			impropers[i].atom2 = i2[i];
-			impropers[i].atom3 = i3[i];
-			impropers[i].atom4 = i4[i];
-			impropers[i].improper_type = ind1[i];
-		}
-
-		delete [] i1;
-		delete [] i2;
-		delete [] i3;
-		delete [] i4;
-		delete [] ind1;
-	}
-
-	//  Get the hydrogen bond donors
-	msg->get(numDonors);
-
-	if (numDonors)
-	{
-		delete [] donors;
-	        donors=new Bond[numDonors];
-		i1 = new int[numDonors];
-		i2 = new int[numDonors];
-
-		if ( (donors==NULL) || (i1==NULL) || (i2==NULL) )
-		{
-			NAMD_die("memory allocation failed in Molecule::receive_Molecule");
-		}
-
-		msg->get(i1);
-		msg->get(i2);
-
-		for (i=0; i<numDonors; i++)
-		{
-			donors[i].atom1 = i1[i];
-			donors[i].atom2 = i2[i];
-		}
-
-		delete [] i1;
-		delete [] i2;
-	}
-
-	//  Get the hydrogen bond acceptors
-	msg->get(numAcceptors);
-
-	if (numAcceptors)
-	{
-		delete [] acceptors;
-	        acceptors=new Bond[numAcceptors];
-		i1 = new int[numAcceptors];
-		i2 = new int[numAcceptors];
-
-		if ( (acceptors==NULL) || (i1==NULL) || (i2==NULL) )
-		{
-			NAMD_die("memory allocation failed in Molecule::receive_Molecule");
-		}
-
-		msg->get(i1);
-		msg->get(i2);
-
-		for (i=0; i<numAcceptors; i++)
-		{
-			acceptors[i].atom1 = i1[i];
-			acceptors[i].atom2 = i2[i];
-		}
-
-		delete [] i1;
-		delete [] i2;
-	}
-
-	//  Get the exclusion information
-	msg->get(numExclusions);
-
-	if (numExclusions)
-	{
-		delete [] exclusions;
-		exclusions=new Exclusion[numExclusions];
-		i1 = new int[numExclusions];
-		i2 = new int[numExclusions];
-
-		if ( (exclusions==NULL) || (i1==NULL) || (i2==NULL) )
-		{
-			NAMD_die("memory allocation failed in Molecule::receive_Molecule");
-		}
-
-		msg->get(i1);
-		msg->get(i2);
-
-		for (i=0; i<numExclusions; i++)
-		{
-			exclusions[i].atom1 = i1[i];
-			exclusions[i].atom2 = i2[i];
-		}
-
-		delete [] i1;
-		delete [] i2;
-	}
-	
-	//  Get the constraint information, if they are active
-	if (simParams->constraintsOn)
-	{
-	   msg->get(numConstraints);
-
-	   delete [] consIndexes;
-	   consIndexes = new int[numAtoms];
-	   
-	   if (consIndexes == NULL)
-	   {
+	    for (i=0; i<numAtoms; i++)
+	    {
+		    a1[i]=atoms[i].mass;
+		    a2[i]=atoms[i].charge;
+		    ind1[i]=atoms[i].vdw_type;
+		    i1[i]=atoms[i].status;
+	    }
+
+	    msg->put(numAtoms);
+	    msg->put(numAtoms, a1).put(numAtoms, a2);
+	    msg->put(numAtoms, ind1).put(numAtoms, i1);
+
+	    delete [] a1;
+	    delete [] a2;
+	    delete [] ind1;
+	    delete [] i1;
+
+	    //  Send the bond information
+	    msg->put(numBonds);
+
+	    if (numBonds)
+	    {
+		    i1= new int[numBonds];
+		    i2= new int[numBonds];
+		    ind1= new Index[numBonds];
+
+		    if ( (i1==NULL) || (i2==NULL) || (ind1==NULL) )
+		    {
+			    NAMD_die("memory allocation failed in Molecule::send_Molecule");
+		    }
+
+		    for (i=0; i<numBonds; i++)
+		    {
+			    i1[i]=bonds[i].atom1;
+			    i2[i]=bonds[i].atom2;
+			    ind1[i]=bonds[i].bond_type;
+		    }
+	    
+		    msg->put(numBonds, i1).put(numBonds, i2);
+		    msg->put(numBonds, ind1);
+	    
+		    delete [] i1;
+		    delete [] i2;
+		    delete [] ind1;
+	    }
+
+	    //  Send the angle information
+	    msg->put(numAngles);
+
+	    if (numAngles)
+	    {
+		    i1= new int[numAngles];
+		    i2= new int[numAngles];
+		    i3= new int[numAngles];
+		    ind1= new Index[numAngles];
+
+		    if ( (i1==NULL) || (i2==NULL) || (i3==NULL) || (ind1==NULL) )
+		    {
+			    NAMD_die("memory allocation failed in Molecule::send_Molecule");
+		    }
+
+		    for (i=0; i<numAngles; i++)
+		    {
+			    i1[i]=angles[i].atom1;
+			    i2[i]=angles[i].atom2;
+			    i3[i]=angles[i].atom3;
+			    ind1[i]=angles[i].angle_type;
+		    }
+
+		    msg->put(numAngles, i1).put(numAngles, i2);
+		    msg->put(numAngles, i3).put(numAngles, ind1);
+
+		    delete [] i1;
+		    delete [] i2;
+		    delete [] i3;
+		    delete [] ind1;
+	    }
+
+	    //  Send the dihedral information
+	    msg->put(numDihedrals);
+
+	    if (numDihedrals)
+	    {
+		    i1= new int[numDihedrals];
+		    i2= new int[numDihedrals];
+		    i3= new int[numDihedrals];
+		    i4= new int[numDihedrals];
+		    ind1= new Index[numDihedrals];
+
+		    if ( (i1==NULL) || (i2==NULL) || (i3==NULL) || (i4==NULL) || 
+			 (ind1==NULL) )
+		    {
+			    NAMD_die("memory allocation failed in Molecule::send_Molecule");
+		    }
+
+		    for (i=0; i<numDihedrals; i++)
+		    {
+			    i1[i]=dihedrals[i].atom1;
+			    i2[i]=dihedrals[i].atom2;
+			    i3[i]=dihedrals[i].atom3;
+			    i4[i]=dihedrals[i].atom4;
+			    ind1[i]=dihedrals[i].dihedral_type;
+		    }
+	    
+		    msg->put(numDihedrals, i1).put(numDihedrals, i2);
+		    msg->put(numDihedrals, i3).put(numDihedrals, i4);
+		    msg->put(numDihedrals, ind1);
+
+		    delete [] i1;
+		    delete [] i2;
+		    delete [] i3;
+		    delete [] i4;
+		    delete [] ind1;
+	    }
+
+	    //  Send the improper information
+	    msg->put(numImpropers);
+
+	    if (numImpropers)
+	    {
+		    i1= new int[numImpropers];
+		    i2= new int[numImpropers];
+		    i3= new int[numImpropers];
+		    i4= new int[numImpropers];
+		    ind1= new Index[numImpropers];
+
+		    if ( (i1==NULL) || (i2==NULL) || (i3==NULL) || (i4==NULL) || 
+			 (ind1==NULL) )
+		    {
+			    NAMD_die("memory allocation failed in Molecule::send_Molecule");
+		    }
+
+		    for (i=0; i<numImpropers; i++)
+		    {
+			    i1[i]=impropers[i].atom1;
+			    i2[i]=impropers[i].atom2;
+			    i3[i]=impropers[i].atom3;
+			    i4[i]=impropers[i].atom4;
+			    ind1[i]=impropers[i].improper_type;
+		    }
+
+		    msg->put(numImpropers, i1).put(numImpropers, i2);
+		    msg->put(numImpropers, i3).put(numImpropers, i4);
+		    msg->put(numImpropers, ind1);
+
+		    delete [] i1;
+		    delete [] i2;
+		    delete [] i3;
+		    delete [] i4;
+		    delete [] ind1;
+	    }
+
+	    // send the hydrogen bond donor information
+	    msg->put(numDonors);
+
+	    if(numDonors)
+	    {
+		    i1= new int[numDonors];
+		    i2= new int[numDonors];
+
+		    if ( (i1==NULL) || (i2==NULL) )
+		    {
+			    NAMD_die("memory allocation failed in Molecule::send_Molecule");
+		    }
+
+		    for (i=0; i<numDonors; i++)
+		    {
+			    i1[i]=donors[i].atom1;
+			    i2[i]=donors[i].atom2;
+		    }
+
+		    msg->put(numDonors, i1).put(numDonors, i2);
+
+		    delete [] i1;
+		    delete [] i2;
+	    }
+
+	    // send the hydrogen bond acceptor information
+	    msg->put(numAcceptors);
+
+	    if(numAcceptors)
+	    {
+		    i1= new int[numAcceptors];
+		    i2= new int[numAcceptors];
+
+		    if ( (i1==NULL) || (i2==NULL) )
+		    {
+			    NAMD_die("memory allocation failed in Molecule::send_Molecule");
+		    }
+
+		    for (i=0; i<numAcceptors; i++)
+		    {
+			    i1[i]=acceptors[i].atom1;
+			    i2[i]=acceptors[i].atom2;
+		    }
+
+		    msg->put(numAcceptors, i1).put(numAcceptors, i2);
+
+		    delete [] i1;
+		    delete [] i2;
+	    }
+
+	    //  Send the exclusion information
+	    msg->put(numExclusions);
+
+	    if (numExclusions)
+	    {
+		    i1= new int[numExclusions];
+		    i2= new int[numExclusions];
+
+		    if ( (i1==NULL) || (i2==NULL) )
+		    {
+			    NAMD_die("memory allocation failed in Molecule::send_Molecule");
+		    }
+
+		    for (i=0; i<numExclusions; i++)
+		    {
+			    i1[i]=exclusions[i].atom1;
+			    i2[i]=exclusions[i].atom2;
+		    }
+
+		    msg->put(numExclusions, i1).put(numExclusions, i2);
+
+		    delete [] i1;
+		    delete [] i2;
+	    }
+	    
+	    //  Send the constraint information, if used
+	    if (simParams->constraintsOn)
+	    {
+	       msg->put(numConstraints);
+	       
+	       msg->put(numAtoms, consIndexes);
+	       
+	       if (numConstraints)
+	       {
+		  a1 = new Real[numConstraints];
+		  v1 = new Vector[numConstraints];
+		  
+		  if ( (a1 == NULL) || (v1 == NULL) )
+		  {
+		     NAMD_die("Memory allocation failed in Molecule::send_Molecule()");
+		  }
+		  
+		  for (i=0; i<numConstraints; i++)
+		  {
+		     a1[i] = consParams[i].k;
+		     v1[i] = consParams[i].refPos;
+		  }
+		  
+		  msg->put(numConstraints, a1);
+		  msg->put(numConstraints, v1);
+		  
+		  delete [] a1;
+		  delete [] v1;
+	       }
+	    }
+
+	    //  Send the langevin parameters, if active
+	    if (simParams->langevinOn || 
+		simParams->tCoupleOn)
+	    {
+		    msg->put(numAtoms, langevinParams);
+		    msg->put(numAtoms, langForceVals);
+	    }
+
+
+	    // Broadcast the message to the other nodes
+	    com_obj->broadcast_others(msg, MOLECULETAG);
+	    
+	    //  Now build arrays of indexes into these arrays by atom
+	    build_lists_by_atom();
+    }
+    /*			END OF FUNCTION send_Molecule			*/
+
+    /************************************************************************/
+    /*									*/
+    /*			FUNCTION receive_Molecule			*/
+    /*									*/
+    /*	receive_Molecule is used by all the clients to receive the	*/
+    /*   structural data sent out by the master node.  It is NEVER called   */
+    /*   by the Master node.						*/
+    /*									*/
+    /************************************************************************/
+
+    void Molecule::receive_Molecule(Message *msg)
+
+    {
+	    int *i1, *i2, *i3, *i4;		//  Temporary integer arrays
+	    Real *a1, *a2;			//  Temporary real arrays
+	    Index *ind1;			//  Temporary array of Indexes
+	    Vector *v1;			//  Temporary array of Vectors
+	    register int i;				//  Loop counter
+
+	    //  Get the atom information
+	    msg->get(numAtoms);
+
+	    delete [] atoms;
+	    atoms= new Atom[numAtoms];
+	    a1   = new Real[numAtoms];
+	    a2   = new Real[numAtoms];
+	    ind1 = new Index[numAtoms];
+	    i1   = new int[numAtoms];
+
+	    if (atoms==NULL || a1==NULL || a2==NULL || ind1==NULL || i1==NULL)
+	    {
 	      NAMD_die("memory allocation failed in Molecule::receive_Molecule");
-	   }
-	   
-	   msg->get(consIndexes);
-	   
-	   if (numConstraints)
-	   {
-	      delete [] consParams;
-	      consParams = new ConstraintParams[numConstraints];
-	      a1         = new Real[numConstraints];
-	      v1         = new Vector[numConstraints];
-	      
-	      if ( (consParams == NULL) || (a1 == NULL) || (v1 == NULL) )
-	      {
-		 NAMD_die("memory allocation failed in Molecule::receive_Molecule");
-	      }
-	      
-	      msg->get(a1);
-	      msg->get(v1);
-	      
-	      for (i=0; i<numConstraints; i++)
-	      {
-		 consParams[i].k = a1[i];
-		 consParams[i].refPos = v1[i];
-	      }
-	      
-	      delete [] a1;
-	      delete [] v1;
-	   }
-	}
-	      
+	    }
 
-	//  Get the langevin parameters, if they are active
-	if (simParams->langevinOn ||
-	    simParams->tCoupleOn)
-	{
-		delete [] langevinParams;
-		delete [] langForceVals;
-		langevinParams = new Real[numAtoms];
-		langForceVals = new Real[numAtoms];
+	    msg->get(a1);
+	    msg->get(a2);
+	    msg->get(ind1);
+	    msg->get(i1);
 
-		if ( (langevinParams == NULL) || (langForceVals == NULL) )
-		{
-			NAMD_die("memory allocation failed in Molecule::receive_Molecule");
-		}
+	    for (i=0; i<numAtoms; i++)
+	    {
+		    atoms[i].mass = a1[i];
+		    atoms[i].charge = a2[i];
+		    atoms[i].vdw_type = ind1[i];
+		    atoms[i].status = i1[i];
+	    }
 
-		msg->get(langevinParams);
-		msg->get(langForceVals);
-	}
+	    delete [] a1;
+	    delete [] a2;
+	    delete [] ind1;
+	    delete [] i1;
 
+	    //  Get the bond information
+	    msg->get(numBonds);
 
-	//  Now free the message 
-	delete msg;
-	
-	//  analyze the data and find the status of each atom
-	build_atom_status();
+	    if (numBonds)
+	    {
+		    delete [] bonds;
+		    bonds=new Bond[numBonds];
+		    i1 = new int[numBonds];
+		    i2 = new int[numBonds];
+		    ind1 = new Index[numBonds];
 
-	//  Now build arrays of indexes into these arrays by atom
-	build_lists_by_atom();
-}
-/*			END OF FUNCTION receive_Molecule		*/
+		    if ( (bonds==NULL) || (i1==NULL) || (i2==NULL) || (ind1==NULL) )
+		    {
+			    NAMD_die("memory allocation failed in Molecule::receive_Molecule");
+		    }
 
-/************************************************************************/
-/*									*/
-/*			FUNCTION build_lists_by_atom			*/
-/*									*/
-/*	This function builds O(NumAtoms) arrays that store the bonds,   */
-/*  angles, dihedrals, and impropers, that each atom is involved in.    */
-/*  This is a space hog, but VERY fast.  This will certainly have to    */
-/*  change to make things scalable in memory, but for now, speed is the */
-/*  thing!								*/
-/*									*/
-/************************************************************************/
+		    msg->get(i1);
+		    msg->get(i2);
+		    msg->get(ind1);
 
-void Molecule::build_lists_by_atom()
-   
-{
-   register int i;			//  Loop counter
-   
-   bondsByAtom = new intPtr[numAtoms];
-   anglesByAtom = new intPtr[numAtoms];
-   dihedralsByAtom = new intPtr[numAtoms];
-   impropersByAtom = new intPtr[numAtoms];
-   exclusionsByAtom = new intPtr[numAtoms];
+		    for (i=0; i<numBonds; i++)
+		    {
+			    bonds[i].atom1 = i1[i];
+			    bonds[i].atom2 = i2[i];
+			    bonds[i].bond_type = ind1[i];
+		    }
 
-   int *byAtomSize = new int[numAtoms];
+		    delete [] i1;
+		    delete [] i2;
+		    delete [] ind1;
+	    }
 
-   DebugM(3,"Building bond lists.\n");
-      
-   //  Build the bond lists
-   for (i=0; i<numAtoms; i++)
-   {
-      byAtomSize[i] = 0;
-   }
-   for (i=0; i<numBonds; i++)
-   {
-      byAtomSize[bonds[i].atom1]++;
-      byAtomSize[bonds[i].atom2]++;
-   }
-   for (i=0; i<numAtoms; i++)
-   {
-      bondsByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
-      bondsByAtom[i][byAtomSize[i]] = -1;
-      byAtomSize[i] = 0;
-   }
-   for (i=0; i<numBonds; i++)
-   {
-      int a1 = bonds[i].atom1;
-      int a2 = bonds[i].atom2;
-      bondsByAtom[a1][byAtomSize[a1]++] = i;
-      bondsByAtom[a2][byAtomSize[a2]++] = i;
-   }
-   
-   DebugM(3,"Building angle lists.\n");
-      
-   //  Build the angle lists
-   for (i=0; i<numAtoms; i++)
-   {
-      byAtomSize[i] = 0;
-   }
-   for (i=0; i<numAngles; i++)
-   {
-      byAtomSize[angles[i].atom1]++;
-      byAtomSize[angles[i].atom2]++;
-      byAtomSize[angles[i].atom3]++;
-   }
-   for (i=0; i<numAtoms; i++)
-   {
-      anglesByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
-      anglesByAtom[i][byAtomSize[i]] = -1;
-      byAtomSize[i] = 0;
-   }
-   for (i=0; i<numAngles; i++)
-   {
-      int a1 = angles[i].atom1;
-      int a2 = angles[i].atom2;
-      int a3 = angles[i].atom3;
-      anglesByAtom[a1][byAtomSize[a1]++] = i;
-      anglesByAtom[a2][byAtomSize[a2]++] = i;
-      anglesByAtom[a3][byAtomSize[a3]++] = i;
-   }
-   
-   DebugM(3,"Building improper lists.\n");
-      
-   //  Build the improper lists
-   for (i=0; i<numAtoms; i++)
-   {
-      byAtomSize[i] = 0;
-   }
-   for (i=0; i<numImpropers; i++)
-   {
-      byAtomSize[impropers[i].atom1]++;
-      byAtomSize[impropers[i].atom2]++;
-      byAtomSize[impropers[i].atom3]++;
-      byAtomSize[impropers[i].atom4]++;
-   }
-   for (i=0; i<numAtoms; i++)
-   {
-      impropersByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
-      impropersByAtom[i][byAtomSize[i]] = -1;
-      byAtomSize[i] = 0;
-   }
-   for (i=0; i<numImpropers; i++)
-   {
-      int a1 = impropers[i].atom1;
-      int a2 = impropers[i].atom2;
-      int a3 = impropers[i].atom3;
-      int a4 = impropers[i].atom4;
-      impropersByAtom[a1][byAtomSize[a1]++] = i;
-      impropersByAtom[a2][byAtomSize[a2]++] = i;
-      impropersByAtom[a3][byAtomSize[a3]++] = i;
-      impropersByAtom[a4][byAtomSize[a4]++] = i;
-   }
-   
-   DebugM(3,"Building dihedral lists.\n");
-      
-   //  Build the dihedral lists
-   for (i=0; i<numAtoms; i++)
-   {
-      byAtomSize[i] = 0;
-   }
-   for (i=0; i<numDihedrals; i++)
-   {
-      byAtomSize[dihedrals[i].atom1]++;
-      byAtomSize[dihedrals[i].atom2]++;
-      byAtomSize[dihedrals[i].atom3]++;
-      byAtomSize[dihedrals[i].atom4]++;
-   }
-   for (i=0; i<numAtoms; i++)
-   {
-      dihedralsByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
-      dihedralsByAtom[i][byAtomSize[i]] = -1;
-      byAtomSize[i] = 0;
-   }
-   for (i=0; i<numDihedrals; i++)
-   {
-      int a1 = dihedrals[i].atom1;
-      int a2 = dihedrals[i].atom2;
-      int a3 = dihedrals[i].atom3;
-      int a4 = dihedrals[i].atom4;
-      dihedralsByAtom[a1][byAtomSize[a1]++] = i;
-      dihedralsByAtom[a2][byAtomSize[a2]++] = i;
-      dihedralsByAtom[a3][byAtomSize[a3]++] = i;
-      dihedralsByAtom[a4][byAtomSize[a4]++] = i;
-   }
-      
-   DebugM(3,"Building exclusion data.\n");
-      
-   //  Build the arrays of exclusions for each atom
-   build_exclusions();
+	    //  Get the angle information
+	    msg->get(numAngles);
 
-   if (exclusions != NULL)
-   	delete [] exclusions;
+	    if (numAngles)
+	    {
+		    delete [] angles;
+		    angles=new Angle[numAngles];
+		    i1 = new int[numAngles];
+		    i2 = new int[numAngles];
+		    i3 = new int[numAngles];
+		    ind1 = new Index[numAngles];
 
-   // 1-4 exclusions which are also fully excluded were eliminated by hash table
-   numTotalExclusions = exclusionSet.size();
-   exclusions = new Exclusion[numTotalExclusions];
-   UniqueSetIter<Exclusion> exclIter(exclusionSet);
-   for ( exclIter=exclIter.begin(),i=0; exclIter != exclIter.end(); exclIter++,i++ )
-   {
-      exclusions[i] = *exclIter;
-   }
-   // Free exclusionSet storage
-   // exclusionSet.clear(1);
-   exclusionSet.clear();
+		    if ( (angles==NULL) || (i1==NULL) || (i2==NULL) || (i3==NULL) ||
+			 (ind1==NULL) )
+		    {
+			    NAMD_die("memory allocation failed in Molecule::receive_Molecule");
+		    }
 
-   DebugM(3,"Building exclusion lists.\n");
-      
-   for (i=0; i<numAtoms; i++)
-   {
-      byAtomSize[i] = 0;
-   }
-   for (i=0; i<numTotalExclusions; i++)
-   {
-      byAtomSize[exclusions[i].atom1]++;
-      byAtomSize[exclusions[i].atom2]++;
-   }
-   for (i=0; i<numAtoms; i++)
-   {
-      exclusionsByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
-      exclusionsByAtom[i][byAtomSize[i]] = -1;
-      byAtomSize[i] = 0;
-   }
-   for (i=0; i<numTotalExclusions; i++)
-   {
-      int a1 = exclusions[i].atom1;
-      int a2 = exclusions[i].atom2;
-      exclusionsByAtom[a1][byAtomSize[a1]++] = i;
-      exclusionsByAtom[a2][byAtomSize[a2]++] = i;
-   }
+		    msg->get(i1);
+		    msg->get(i2);
+		    msg->get(i3);
+		    msg->get(ind1);
 
-   //  Allocate an array of intPtr's to hold the exclusions for
-   //  each atom
-   all_exclusions = new intPtr[numAtoms];
+		    for (i=0; i<numAngles; i++)
+		    {
+			    angles[i].atom1 = i1[i];
+			    angles[i].atom2 = i2[i];
+			    angles[i].atom3 = i3[i];
+			    angles[i].angle_type = ind1[i];
+		    }
 
-   for (i=0; i<numAtoms; i++)
-   {
-      byAtomSize[i] = 0;
-   }
-   for (i=0; i<numTotalExclusions; i++)
-   {
-      // first atom should alway have lower number!
-      if ( ! exclusions[i].modified )
-         byAtomSize[exclusions[i].atom1]++;
-   }
-   for (i=0; i<numAtoms; i++)
-   {
-      all_exclusions[i] = arena.getNewArray(byAtomSize[i]+1);
-      all_exclusions[i][byAtomSize[i]] = -1;
-      byAtomSize[i] = 0;
-   }
-   for (i=0; i<numTotalExclusions; i++)
-   {
-      if ( ! exclusions[i].modified )
-      {
-         int a1 = exclusions[i].atom1;
-         int a2 = exclusions[i].atom2;
-         all_exclusions[a1][byAtomSize[a1]++] = a2;
-      }
-   }
+		    delete [] i1;
+		    delete [] i2;
+		    delete [] i3;
+		    delete [] ind1;
+	    }
 
-   //  If the exclusion policy is scaled 1-4, then allocate
-   //  an array of intPtr's to hold the 1-4 interactions
-   if (simParams->exclude == SCALED14)
-   { 
-      onefour_exclusions = new intPtr[numAtoms];
+	    //  Get the dihedral information
+	    msg->get(numDihedrals);
 
-      for (i=0; i<numAtoms; i++)
-      {
-         byAtomSize[i] = 0;
-      }
-      for (i=0; i<numTotalExclusions; i++)
-      {
-         // first atom should alway have lower number!
-         if ( exclusions[i].modified )
-            byAtomSize[exclusions[i].atom1]++;
-      }
-      for (i=0; i<numAtoms; i++)
-      {
-         onefour_exclusions[i] = arena.getNewArray(byAtomSize[i]+1);
-         onefour_exclusions[i][byAtomSize[i]] = -1;
-         byAtomSize[i] = 0;
-      }
-      for (i=0; i<numTotalExclusions; i++)
-      {
-         if ( exclusions[i].modified )
-         {
-            int a1 = exclusions[i].atom1;
-            int a2 = exclusions[i].atom2;
-            onefour_exclusions[a1][byAtomSize[a1]++] = a2;
-         }
-      }
-   }
+	    if (numDihedrals)
+	    {
+		    delete [] dihedrals;
+		    dihedrals=new Dihedral[numDihedrals];
+		    i1 = new int[numDihedrals];
+		    i2 = new int[numDihedrals];
+		    i3 = new int[numDihedrals];
+		    i4 = new int[numDihedrals];
+		    ind1 = new Index[numDihedrals];
 
-   delete [] byAtomSize;
+		    if ( (dihedrals==NULL) || (i1==NULL) || (i2==NULL) || (i3==NULL) ||
+			 (i4==NULL) || (ind1==NULL) )
+		    {
+			    NAMD_die("memory allocation failed in Molecule::receive_Molecule");
+		    }
 
-}
-/*		END OF FUNCTION build_lists_by_atom		*/
+		    msg->get(i1);
+		    msg->get(i2);
+		    msg->get(i3);
+		    msg->get(i4);
+		    msg->get(ind1);
 
-/****************************************************************/
-/*								*/
-/*			FUNCTION build_exclusions		*/
-/*								*/
-/*	This function builds a list of all the exlcusions       */
-/*  atoms.  These lists include explicit exclusions as well as  */
-/*  exclusions that are calculated based on the bonded structure*/
-/*  and the exclusion flag.  For each pair of atoms that are    */
-/*  excluded, the larger of the 2 atom indexes is stored in the */
-/*  array of the smaller index.  All the arrays are not sorted. */
-/*  Then to determine if two atoms have an exclusion, a linear  */
-/*  search is done on the array of the atom with the smaller    */
-/*  index for the larger index.					*/
-/*	If the exclusion policy is set to scaled1-4, there are  */
-/*  actually two lists built.  One contains the pairs of atoms  */
-/*  that are to be exlcuded (i.e., explicit exclusions, 1-2,    */
-/*  and 1-3 interactions) and the other contains just the 1-4   */
-/*  interactions, since they will need to be determined 	*/
-/*  independantly of the other exclusions.			*/
-/*								*/
-/****************************************************************/
+		    for (i=0; i<numDihedrals; i++)
+		    {
+			    dihedrals[i].atom1 = i1[i];
+			    dihedrals[i].atom2 = i2[i];
+			    dihedrals[i].atom3 = i3[i];
+			    dihedrals[i].atom4 = i4[i];
+			    dihedrals[i].dihedral_type = ind1[i];
+		    }
 
-void Molecule::build_exclusions()
-{
-	register int i;					//  Loop counter
-	ExclusionSettings exclude_flag;		//  Exclusion policy
+		    delete [] i1;
+		    delete [] i2;
+		    delete [] i3;
+		    delete [] i4;
+		    delete [] ind1;
+	    }
 
-	exclude_flag = simParams->exclude;
+	    //  Get the improper information
+	    msg->get(numImpropers);
 
-	//  Go through the explicit exclusions and add them to the arrays
-	for (i=0; i<numExclusions; i++)
-	{
-		exclusionSet.add(exclusions[i]);
-	}
+	    if (numImpropers)
+	    {
+		    delete [] impropers;
+		    impropers=new Improper[numImpropers];
+		    i1 = new int[numImpropers];
+		    i2 = new int[numImpropers];
+		    i3 = new int[numImpropers];
+		    i4 = new int[numImpropers];
+		    ind1 = new Index[numImpropers];
 
-	//  Now calculate the bonded exlcusions based on the exclusion policy
-	switch (exclude_flag)
-	{
-		case NONE:
-			break;
-		case ONETWO:
-			build12excl();
-			break;
-		case ONETHREE:
-			build12excl();
-			build13excl();
-			break;
-		case ONEFOUR:
-			build12excl();
-			build13excl();
-			build14excl(0);
-			break;
-		case SCALED14:
-			build12excl();
-			build13excl();
-			build14excl(1);
-			break;
-	}
+		    if ( (impropers==NULL) || (i1==NULL) || (i2==NULL) || (i3==NULL) ||
+			 (i4==NULL) || (ind1==NULL) )
+		    {
+			    NAMD_die("memory allocation failed in Molecule::receive_Molecule");
+		    }
 
-}
-/*			END OF FUNCTION build_exclusions		*/
+		    msg->get(i1);
+		    msg->get(i2);
+		    msg->get(i3);
+		    msg->get(i4);
+		    msg->get(ind1);
 
-/************************************************************************/
-/*									*/
-/*			FUNCTION build12excl				*/
-/*									*/
-/*   INPUTS:								*/
-/*	lists - An array of IntList objects to put the exclusions into  */
-/*									*/
-/*	This function determines all the 1-2 exclusions (that is, atoms */
-/*   that are bond together by a linear bond) and places these          */
-/*   exclusions into the array of IntList's that are passed in.		*/
-/*									*/
-/************************************************************************/
+		    for (i=0; i<numImpropers; i++)
+		    {
+			    impropers[i].atom1 = i1[i];
+			    impropers[i].atom2 = i2[i];
+			    impropers[i].atom3 = i3[i];
+			    impropers[i].atom4 = i4[i];
+			    impropers[i].improper_type = ind1[i];
+		    }
 
-void Molecule::build12excl(void)
-   
-{
-   int *current_val;	//  Current value to check
-   register int i;		//  Loop counter to loop through all atoms
-   
-   //  Loop through all the atoms marking the bonded interactions for each one
-   for (i=0; i<numAtoms; i++)
-   {
-   	current_val = bondsByAtom[i];
-   
-	//  Loop through all the bonds for this atom
-   	while (*current_val != -1)
-   	{
-	   if (bonds[*current_val].atom1 == i)
-	   {
-	      if (i<bonds[*current_val].atom2)
-	      {
-		 exclusionSet.add(Exclusion(i,bonds[*current_val].atom2));
-	      }
-	   }
-	   else
-	   {
-	      if (i<bonds[*current_val].atom1)
-	      {
-		 exclusionSet.add(Exclusion(i,bonds[*current_val].atom1));
-	      }
-	   }
+		    delete [] i1;
+		    delete [] i2;
+		    delete [] i3;
+		    delete [] i4;
+		    delete [] ind1;
+	    }
+
+	    //  Get the hydrogen bond donors
+	    msg->get(numDonors);
+
+	    if (numDonors)
+	    {
+		    delete [] donors;
+		    donors=new Bond[numDonors];
+		    i1 = new int[numDonors];
+		    i2 = new int[numDonors];
+
+		    if ( (donors==NULL) || (i1==NULL) || (i2==NULL) )
+		    {
+			    NAMD_die("memory allocation failed in Molecule::receive_Molecule");
+		    }
+
+		    msg->get(i1);
+		    msg->get(i2);
+
+		    for (i=0; i<numDonors; i++)
+		    {
+			    donors[i].atom1 = i1[i];
+			    donors[i].atom2 = i2[i];
+		    }
+
+		    delete [] i1;
+		    delete [] i2;
+	    }
+
+	    //  Get the hydrogen bond acceptors
+	    msg->get(numAcceptors);
+
+	    if (numAcceptors)
+	    {
+		    delete [] acceptors;
+		    acceptors=new Bond[numAcceptors];
+		    i1 = new int[numAcceptors];
+		    i2 = new int[numAcceptors];
+
+		    if ( (acceptors==NULL) || (i1==NULL) || (i2==NULL) )
+		    {
+			    NAMD_die("memory allocation failed in Molecule::receive_Molecule");
+		    }
+
+		    msg->get(i1);
+		    msg->get(i2);
+
+		    for (i=0; i<numAcceptors; i++)
+		    {
+			    acceptors[i].atom1 = i1[i];
+			    acceptors[i].atom2 = i2[i];
+		    }
+
+		    delete [] i1;
+		    delete [] i2;
+	    }
+
+	    //  Get the exclusion information
+	    msg->get(numExclusions);
+
+	    if (numExclusions)
+	    {
+		    delete [] exclusions;
+		    exclusions=new Exclusion[numExclusions];
+		    i1 = new int[numExclusions];
+		    i2 = new int[numExclusions];
+
+		    if ( (exclusions==NULL) || (i1==NULL) || (i2==NULL) )
+		    {
+			    NAMD_die("memory allocation failed in Molecule::receive_Molecule");
+		    }
+
+		    msg->get(i1);
+		    msg->get(i2);
+
+		    for (i=0; i<numExclusions; i++)
+		    {
+			    exclusions[i].atom1 = i1[i];
+			    exclusions[i].atom2 = i2[i];
+		    }
+
+		    delete [] i1;
+		    delete [] i2;
+	    }
 	    
-     	   ++current_val;
-   	}
-   }
-}
-/*			END OF FUNCTION build12excl			*/
+	    //  Get the constraint information, if they are active
+	    if (simParams->constraintsOn)
+	    {
+	       msg->get(numConstraints);
 
-/************************************************************************/
-/*									*/
-/*			FUNCTION build13excl				*/
-/*									*/
-/*   INPUTS:								*/
-/*	lists - Array of IntList objects to put exclusions into		*/
-/*									*/
-/*	This function calculates the 1-3 exclusions (that is, atoms     */
-/*   that are bonded by linear bonds to a common third atom) and places */
-/*   these exclusions into the array of IntList objects passed in.	*/
-/*									*/
-/************************************************************************/
-
-void Molecule::build13excl(void)
-   
-{
-   int *bond1, *bond2;	//  The two bonds being checked
-   int middle_atom;	//  Common third atom
-   register int i;		//  Loop counter to loop through all atoms
-   
-   //  Loop through all the atoms looking at the bonded connections
-   //  for each one
-   for (i=0; i<numAtoms; i++)
-   {
-   	 bond1 = bondsByAtom[i];
-   
-	 //  Loop through all the bonds directly connect to atom i
-   	 while (*bond1 != -1)
-    	 {
-    	 	if (bonds[*bond1].atom1 == i)
-        	{
-			middle_atom=bonds[*bond1].atom2;
-      		}
-      		else
-      		{
-			middle_atom=bonds[*bond1].atom1;
-      		}
-
-      		bond2 = bondsByAtom[middle_atom];
-
-		//  Now loop through all the bonds connect to the
-		//  middle atom
-      		while (*bond2 != -1)
-      		{
-			if (bonds[*bond2].atom1 == middle_atom)
-			{
-				if (i < bonds[*bond2].atom2)
-				{
-					exclusionSet.add(Exclusion(i,bonds[*bond2].atom2));
-				}
-			}
-			else
-			{
-				if (i < bonds[*bond2].atom1)
-				{
-					exclusionSet.add(Exclusion(i,bonds[*bond2].atom1));
-				}
-			}
-
-     			++bond2;
-		}
-
-      		++bond1;
-	}
-   }
-}
-/*			END OF FUNCTION build13excl			*/
-
-/************************************************************************/
-/*									*/
-/*				FUNCTION build14excl			*/
-/*									*/
-/*   INPUTS:								*/
-/*	lists - Array of IntList objects to put exclusions into		*/
-/*									*/
-/*	This function calculates all the 1-4 exclusions (that is,	*/
-/*   atoms that are connected via a sequence of three linear bonds) and */
-/*   places these interactions into the array of IntList object passed  */
-/*   in.								*/
-/*									*/
-/************************************************************************/
-
-
-void Molecule::build14excl(int modified)
-   
-{
-   int *bond1, *bond2, *bond3;	//  The two bonds being checked
-   int mid1, mid2;		//  Middle atoms
-   register int i;			//  Counter to loop through all atoms
-   
-   //  Loop through all the atoms
-   for (i=0; i<numAtoms; i++)
-   {	
-        // Get all the bonds connect directly to atom i
-   	bond1 = bondsByAtom[i];
-   
-  	while (*bond1 != -1)
-        {
-      		if (bonds[*bond1].atom1 == i)
-      		{
-			mid1=bonds[*bond1].atom2;
-      		}
-      		else
-      		{
-			mid1=bonds[*bond1].atom1;
-      		}
-
-      		bond2 = bondsByAtom[mid1];
-
-		//  Loop through all the bonds connected to atom mid1
-      		while (*bond2 != -1)
-      		{
-        		if (bonds[*bond2].atom1 == mid1)
-      			{
-				mid2 = bonds[*bond2].atom2;
-      			}
-      			else
-      			{
-				mid2 = bonds[*bond2].atom1;
-      			}
-
-			//  Make sure that we don't double back to where
-			//  we started from.  This causes strange behavior.
-			//  Trust me, I've been there . . .
-			if (mid2 == i)
-			{
-     				++bond2;
-				continue;
-			}
-
-			bond3=bondsByAtom[mid2];
-
-			//  Loop through all the bonds connected to mid2
-      			while (*bond3 != -1)
-      			{
-    		   		if (bonds[*bond3].atom1 == mid2)
-      				{
-					//  Make sure that we don't double back to where
-					//  we started from.  This causes strange behavior.
-					//  Trust me, I've been there . . .
-					//  I added this!!!  Why wasn't it there before?  -JCP
-					if (bonds[*bond3].atom2 != mid1)
-					if (i<bonds[*bond3].atom2)
-					{
-					   exclusionSet.add(Exclusion(i,bonds[*bond3].atom2,modified));
-					}
-				}
-				else
-				{
-					//  Make sure that we don't double back to where
-					//  we started from.  This causes strange behavior.
-					//  Trust me, I've been there . . .
-					//  I added this!!!  Why wasn't it there before?  -JCP
-					if (bonds[*bond3].atom1 != mid1)
-				   	if (i<bonds[*bond3].atom1)
-					{
-					   exclusionSet.add(Exclusion(i,bonds[*bond3].atom1,modified));
-					}
-				}
-
-				++bond3;
-			}
-
-     			++bond2;
-      		}
-	    
-      		++bond1;
-   	}
-   }
-}
-/*			END OF FUNCTION build14excl			*/
-
-/************************************************************************/
-/*									*/
-/*			FUNCTION build_constraint_params		*/
-/*									*/
-/*   INPUTS:								*/
-/*	consref - Value of consref parameter from config file		*/
-/*	conskfile - Value of conskfile from config file			*/
-/*	conskcol - Value of conskcol from config file			*/
-/*	initial_pdb - PDB object that contains initial positions	*/
-/*	cwd - Current working directory					*/
-/*									*/
-/*	This function builds all the parameters that are necessary	*/
-/*   to do harmonic constraints.  This involves looking through		*/
-/*   one or more PDB objects to determine which atoms are constrained,  */
-/*   and what the force constant and reference position is force each   */
-/*   atom that is constrained.  This information is then stored		*/
-/*   in the arrays consIndexes and consParams.				*/
-/*									*/
-/************************************************************************/
-
-void Molecule::build_constraint_params(StringList *consref, 
-				       StringList *conskfile, 
-				       StringList *conskcol, 
-				       PDB *initial_pdb,
-				       char *cwd)
-   
-{
-   PDB *refPDB, *kPDB;		//  Pointer to other PDB's if used
-   register int i;			//  Loop counter
-   int current_index=0;		//  Index into values used
-   int kcol;			//  Column to look for force constant in
-   Real kval;			//  Force constant value retreived
-   char filename[129];		//  PDB filename
-   
-   //  Get the PDB object that contains the reference positions.  If
-   //  the user gave another file name, use it.  Otherwise, just use
-   //  the PDB file that has the initial coordinates.  i.e., constrain
-   //  the atoms around their initial position.  This is the most likely
-   //  case anyway
-   if (consref == NULL)
-   {
-      refPDB = initial_pdb;
-   }
-   else
-   {
-      if (consref->next != NULL)
-      {
-	 NAMD_die("Multiple definitions of constraint reference file in configruation file");
-      }
-
-      if ( (cwd == NULL) || (consref->data[0] == '/') )
-      {
-	   strcpy(filename, consref->data);
-      }
-      else
-      {
-	   strcpy(filename, cwd);
-	   strcat(filename, consref->data);
-      }
-      
-      refPDB = new PDB(filename);
-      if ( refPDB == NULL )
-      {
-	NAMD_die("Memory allocation failed in Molecule::build_constraint_params");
-      }
-      
-      if (refPDB->num_atoms() != numAtoms)
-      {
-	 NAMD_die("Number of atoms in constraint reference PDB doesn't match coordinate PDB");
-      }
-   }
-   
-   //  Get the PDB to read the force constants from.  Again, if the user
-   //  gave us another file name, open that one.  Otherwise, just use
-   //  the PDB with the initial coordinates
-   if (conskfile == NULL)
-   {
-      kPDB = initial_pdb;
-   }
-   else
-   {
-      if (conskfile->next != NULL)
-      {
-	 NAMD_die("Multiple definitions of constraint constant file in configuration file");
-      }
-
-      if ( (consref != NULL) && (strcasecmp(consref->data, conskfile->data) == 0) )
-      {
-	 //  Same PDB used for reference positions and force constants
-         kPDB = refPDB; 
-      }
-      else
-      {
-	if ( (cwd == NULL) || (conskfile->data[0] == '/') )
-	{
-		strcpy(filename, conskfile->data);
-	}
-	else
-	{
-		strcpy(filename, cwd);
-		strcat(filename, conskfile->data);
-	}
-
-      	kPDB = new PDB(filename);
-	if ( kPDB == NULL )
-	{
-	  NAMD_die("Memory allocation failed in Molecule::build_constraint_params");
-	}
-      
-      	if (kPDB->num_atoms() != numAtoms)
-      	{
-	   NAMD_die("Number of atoms in constraint constant PDB doesn't match coordinate PDB");
-        }
-      }
-   }
-   
-   //  Get the column that the force constant is going to be in.  It
-   //  can be in any of the 5 floating point fields in the PDB, according
-   //  to what the user wants.  The allowable fields are X, Y, Z, O, or
-   //  B which correspond to the 1st, 2nd, ... 5th floating point fields.
-   //  The default is the 4th field, which is the occupancy
-   if (conskcol == NULL)
-   {
-      kcol = 4;
-   }
-   else
-   {
-      if (conskcol->next != NULL)
-      {
-	 NAMD_die("Multiple definitions of harmonic constraint column in config file");
-      }
-      
-      if (strcasecmp(conskcol->data, "X") == 0)
-      {
-	 kcol=1;
-      }
-      else if (strcasecmp(conskcol->data, "Y") == 0)
-      {
-	 kcol=2;
-      }
-      else if (strcasecmp(conskcol->data, "Z") == 0)
-      {
-	 kcol=3;
-      }
-      else if (strcasecmp(conskcol->data, "O") == 0)
-      {
-	 kcol=4;
-      }
-      else if (strcasecmp(conskcol->data, "B") == 0)
-      {
-	 kcol=5;
-      }
-      else
-      {
-	 NAMD_die("conskcol must have value of X, Y, Z, O, or B");
-      }
-   }
-   
-   //  Allocate an array that will store an index into the constraint
-   //  parameters for each atom.  If the atom is not constrained, its
-   //  value will be set to -1 in this array.
-   consIndexes = new int[numAtoms];
-   
-   if (consIndexes == NULL)
-   {
-      NAMD_die("memory allocation failed in Molecule::build_constraint_params()");
-   }
-   
-   //  Loop through all the atoms and find out which ones are constrained
-   for (i=0; i<numAtoms; i++)
-   {
-      //  Get the k value based on where we were told to find it
-      switch (kcol)
-      {
-	 case 1:
-	    kval = (kPDB->atom(i))->xcoor();
-	    break;
-	 case 2:
-	    kval = (kPDB->atom(i))->ycoor();
-	    break;
-	 case 3:
-	    kval = (kPDB->atom(i))->zcoor();
-	    break;
-	 case 4:
-	    kval = (kPDB->atom(i))->occupancy();
-	    break;
-	 case 5:
-	    kval = (kPDB->atom(i))->temperaturefactor();
-	    break;
-      }
-      
-      if (kval > 0.0)
-      {
-	 //  This atom is constrained
-	 consIndexes[i] = current_index;
-	 current_index++;
-      }
-      else
-      {
-	 //  This atom is not constrained
-	 consIndexes[i] = -1;
-      }
-   }
-   
-   if (current_index == 0)
-   {
-      //  Constraints were turned on, but there weren't really any constrained
-      iout << iWARN << "NO CONSTRAINED ATOMS WERE FOUND, BUT CONSTRAINTS ARE ON . . . " << endi;
-   }
-   else
-   {
-      //  Allocate an array to hold the constraint parameters
-      consParams = new ConstraintParams[current_index];
-      
-      if (consParams == NULL)
-      {
-	 NAMD_die("memory allocation failed in Molecule::build_constraint_params");
-      }
-   }
-   
-   numConstraints = current_index;
-   
-   //  Loop through all the atoms and assign the parameters for those
-   //  that are constrained
-   for (i=0; i<numAtoms; i++)
-   {
-      if (consIndexes[i] != -1)
-      {
-	       //  This atom is constrained, so get the k value again
-	       switch (kcol)
-               {
-	          case 1:
-	             consParams[consIndexes[i]].k = (kPDB->atom(i))->xcoor();
-	             break;
-	          case 2:
-	             consParams[consIndexes[i]].k = (kPDB->atom(i))->ycoor();
-	             break;
-	          case 3:
-	             consParams[consIndexes[i]].k = (kPDB->atom(i))->zcoor();
-	             break;
-	          case 4:
-	             consParams[consIndexes[i]].k = (kPDB->atom(i))->occupancy();
-	             break;
-	          case 5:
-	             consParams[consIndexes[i]].k = (kPDB->atom(i))->temperaturefactor();
-	             break;
+	       delete [] consIndexes;
+	       consIndexes = new int[numAtoms];
+	       
+	       if (consIndexes == NULL)
+	       {
+		  NAMD_die("memory allocation failed in Molecule::receive_Molecule");
 	       }
 	       
-	       //  Get the reference position
-	       consParams[consIndexes[i]].refPos.x = (refPDB->atom(i))->xcoor();
-	       consParams[consIndexes[i]].refPos.y = (refPDB->atom(i))->ycoor();
-	       consParams[consIndexes[i]].refPos.z = (refPDB->atom(i))->zcoor();
+	       msg->get(consIndexes);
+	       
+	       if (numConstraints)
+	       {
+		  delete [] consParams;
+		  consParams = new ConstraintParams[numConstraints];
+		  a1         = new Real[numConstraints];
+		  v1         = new Vector[numConstraints];
+		  
+		  if ( (consParams == NULL) || (a1 == NULL) || (v1 == NULL) )
+		  {
+		     NAMD_die("memory allocation failed in Molecule::receive_Molecule");
+		  }
+		  
+		  msg->get(a1);
+		  msg->get(v1);
+		  
+		  for (i=0; i<numConstraints; i++)
+		  {
+		     consParams[i].k = a1[i];
+		     consParams[i].refPos = v1[i];
+		  }
+		  
+		  delete [] a1;
+		  delete [] v1;
+	       }
+	    }
+		  
+
+	    //  Get the langevin parameters, if they are active
+	    if (simParams->langevinOn ||
+		simParams->tCoupleOn)
+	    {
+		    delete [] langevinParams;
+		    delete [] langForceVals;
+		    langevinParams = new Real[numAtoms];
+		    langForceVals = new Real[numAtoms];
+
+		    if ( (langevinParams == NULL) || (langForceVals == NULL) )
+		    {
+			    NAMD_die("memory allocation failed in Molecule::receive_Molecule");
+		    }
+
+		    msg->get(langevinParams);
+		    msg->get(langForceVals);
+	    }
+
+
+	    //  Now free the message 
+	    delete msg;
+	    
+	    //  analyze the data and find the status of each atom
+	    build_atom_status();
+
+	    //  Now build arrays of indexes into these arrays by atom
+	    build_lists_by_atom();
+    }
+    /*			END OF FUNCTION receive_Molecule		*/
+
+    /************************************************************************/
+    /*									*/
+    /*			FUNCTION build_lists_by_atom			*/
+    /*									*/
+    /*	This function builds O(NumAtoms) arrays that store the bonds,   */
+    /*  angles, dihedrals, and impropers, that each atom is involved in.    */
+    /*  This is a space hog, but VERY fast.  This will certainly have to    */
+    /*  change to make things scalable in memory, but for now, speed is the */
+    /*  thing!								*/
+    /*									*/
+    /************************************************************************/
+
+    void Molecule::build_lists_by_atom()
+       
+    {
+       register int i;			//  Loop counter
+       
+       bondsByAtom = new intPtr[numAtoms];
+       anglesByAtom = new intPtr[numAtoms];
+       dihedralsByAtom = new intPtr[numAtoms];
+       impropersByAtom = new intPtr[numAtoms];
+       exclusionsByAtom = new intPtr[numAtoms];
+
+       int *byAtomSize = new int[numAtoms];
+
+       DebugM(3,"Building bond lists.\n");
+	  
+       //  Build the bond lists
+       for (i=0; i<numAtoms; i++)
+       {
+	  byAtomSize[i] = 0;
+       }
+       for (i=0; i<numBonds; i++)
+       {
+	  byAtomSize[bonds[i].atom1]++;
+	  byAtomSize[bonds[i].atom2]++;
+       }
+       for (i=0; i<numAtoms; i++)
+       {
+	  bondsByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
+	  bondsByAtom[i][byAtomSize[i]] = -1;
+	  byAtomSize[i] = 0;
+       }
+       for (i=0; i<numBonds; i++)
+       {
+	  int a1 = bonds[i].atom1;
+	  int a2 = bonds[i].atom2;
+	  bondsByAtom[a1][byAtomSize[a1]++] = i;
+	  bondsByAtom[a2][byAtomSize[a2]++] = i;
+       }
+       
+       DebugM(3,"Building angle lists.\n");
+	  
+       //  Build the angle lists
+       for (i=0; i<numAtoms; i++)
+       {
+	  byAtomSize[i] = 0;
+       }
+       for (i=0; i<numAngles; i++)
+       {
+	  byAtomSize[angles[i].atom1]++;
+	  byAtomSize[angles[i].atom2]++;
+	  byAtomSize[angles[i].atom3]++;
+       }
+       for (i=0; i<numAtoms; i++)
+       {
+	  anglesByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
+	  anglesByAtom[i][byAtomSize[i]] = -1;
+	  byAtomSize[i] = 0;
+       }
+       for (i=0; i<numAngles; i++)
+       {
+	  int a1 = angles[i].atom1;
+	  int a2 = angles[i].atom2;
+	  int a3 = angles[i].atom3;
+	  anglesByAtom[a1][byAtomSize[a1]++] = i;
+	  anglesByAtom[a2][byAtomSize[a2]++] = i;
+	  anglesByAtom[a3][byAtomSize[a3]++] = i;
+       }
+       
+       DebugM(3,"Building improper lists.\n");
+	  
+       //  Build the improper lists
+       for (i=0; i<numAtoms; i++)
+       {
+	  byAtomSize[i] = 0;
+       }
+       for (i=0; i<numImpropers; i++)
+       {
+	  byAtomSize[impropers[i].atom1]++;
+	  byAtomSize[impropers[i].atom2]++;
+	  byAtomSize[impropers[i].atom3]++;
+	  byAtomSize[impropers[i].atom4]++;
+       }
+       for (i=0; i<numAtoms; i++)
+       {
+	  impropersByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
+	  impropersByAtom[i][byAtomSize[i]] = -1;
+	  byAtomSize[i] = 0;
+       }
+       for (i=0; i<numImpropers; i++)
+       {
+	  int a1 = impropers[i].atom1;
+	  int a2 = impropers[i].atom2;
+	  int a3 = impropers[i].atom3;
+	  int a4 = impropers[i].atom4;
+	  impropersByAtom[a1][byAtomSize[a1]++] = i;
+	  impropersByAtom[a2][byAtomSize[a2]++] = i;
+	  impropersByAtom[a3][byAtomSize[a3]++] = i;
+	  impropersByAtom[a4][byAtomSize[a4]++] = i;
+       }
+       
+       DebugM(3,"Building dihedral lists.\n");
+	  
+       //  Build the dihedral lists
+       for (i=0; i<numAtoms; i++)
+       {
+	  byAtomSize[i] = 0;
+       }
+       for (i=0; i<numDihedrals; i++)
+       {
+	  byAtomSize[dihedrals[i].atom1]++;
+	  byAtomSize[dihedrals[i].atom2]++;
+	  byAtomSize[dihedrals[i].atom3]++;
+	  byAtomSize[dihedrals[i].atom4]++;
+       }
+       for (i=0; i<numAtoms; i++)
+       {
+	  dihedralsByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
+	  dihedralsByAtom[i][byAtomSize[i]] = -1;
+	  byAtomSize[i] = 0;
+       }
+       for (i=0; i<numDihedrals; i++)
+       {
+	  int a1 = dihedrals[i].atom1;
+	  int a2 = dihedrals[i].atom2;
+	  int a3 = dihedrals[i].atom3;
+	  int a4 = dihedrals[i].atom4;
+	  dihedralsByAtom[a1][byAtomSize[a1]++] = i;
+	  dihedralsByAtom[a2][byAtomSize[a2]++] = i;
+	  dihedralsByAtom[a3][byAtomSize[a3]++] = i;
+	  dihedralsByAtom[a4][byAtomSize[a4]++] = i;
+       }
+	  
+       DebugM(3,"Building exclusion data.\n");
+	  
+       //  Build the arrays of exclusions for each atom
+       build_exclusions();
+
+       if (exclusions != NULL)
+	    delete [] exclusions;
+
+       // 1-4 exclusions which are also fully excluded were eliminated by hash table
+       numTotalExclusions = exclusionSet.size();
+       exclusions = new Exclusion[numTotalExclusions];
+       UniqueSetIter<Exclusion> exclIter(exclusionSet);
+       for ( exclIter=exclIter.begin(),i=0; exclIter != exclIter.end(); exclIter++,i++ )
+       {
+	  exclusions[i] = *exclIter;
+       }
+       // Free exclusionSet storage
+       // exclusionSet.clear(1);
+       exclusionSet.clear();
+
+       DebugM(3,"Building exclusion lists.\n");
+	  
+       for (i=0; i<numAtoms; i++)
+       {
+	  byAtomSize[i] = 0;
+       }
+       for (i=0; i<numTotalExclusions; i++)
+       {
+	  byAtomSize[exclusions[i].atom1]++;
+	  byAtomSize[exclusions[i].atom2]++;
+       }
+       for (i=0; i<numAtoms; i++)
+       {
+	  exclusionsByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
+	  exclusionsByAtom[i][byAtomSize[i]] = -1;
+	  byAtomSize[i] = 0;
+       }
+       for (i=0; i<numTotalExclusions; i++)
+       {
+	  int a1 = exclusions[i].atom1;
+	  int a2 = exclusions[i].atom2;
+	  exclusionsByAtom[a1][byAtomSize[a1]++] = i;
+	  exclusionsByAtom[a2][byAtomSize[a2]++] = i;
+       }
+
+       //  Allocate an array of intPtr's to hold the exclusions for
+       //  each atom
+       all_exclusions = new intPtr[numAtoms];
+
+       for (i=0; i<numAtoms; i++)
+       {
+	  byAtomSize[i] = 0;
+       }
+       for (i=0; i<numTotalExclusions; i++)
+       {
+	  // first atom should alway have lower number!
+	  if ( ! exclusions[i].modified )
+	     byAtomSize[exclusions[i].atom1]++;
+       }
+       for (i=0; i<numAtoms; i++)
+       {
+	  all_exclusions[i] = arena.getNewArray(byAtomSize[i]+1);
+	  all_exclusions[i][byAtomSize[i]] = -1;
+	  byAtomSize[i] = 0;
+       }
+       for (i=0; i<numTotalExclusions; i++)
+       {
+	  if ( ! exclusions[i].modified )
+	  {
+	     int a1 = exclusions[i].atom1;
+	     int a2 = exclusions[i].atom2;
+	     all_exclusions[a1][byAtomSize[a1]++] = a2;
+	  }
+       }
+
+       //  If the exclusion policy is scaled 1-4, then allocate
+       //  an array of intPtr's to hold the 1-4 interactions
+       if (simParams->exclude == SCALED14)
+       { 
+	  onefour_exclusions = new intPtr[numAtoms];
+
+	  for (i=0; i<numAtoms; i++)
+	  {
+	     byAtomSize[i] = 0;
+	  }
+	  for (i=0; i<numTotalExclusions; i++)
+	  {
+	     // first atom should alway have lower number!
+	     if ( exclusions[i].modified )
+		byAtomSize[exclusions[i].atom1]++;
+	  }
+	  for (i=0; i<numAtoms; i++)
+	  {
+	     onefour_exclusions[i] = arena.getNewArray(byAtomSize[i]+1);
+	     onefour_exclusions[i][byAtomSize[i]] = -1;
+	     byAtomSize[i] = 0;
+	  }
+	  for (i=0; i<numTotalExclusions; i++)
+	  {
+	     if ( exclusions[i].modified )
+	     {
+		int a1 = exclusions[i].atom1;
+		int a2 = exclusions[i].atom2;
+		onefour_exclusions[a1][byAtomSize[a1]++] = a2;
+	     }
+	  }
+       }
+
+       delete [] byAtomSize;
+
+    }
+    /*		END OF FUNCTION build_lists_by_atom		*/
+
+    /****************************************************************/
+    /*								*/
+    /*			FUNCTION build_exclusions		*/
+    /*								*/
+    /*	This function builds a list of all the exlcusions       */
+    /*  atoms.  These lists include explicit exclusions as well as  */
+    /*  exclusions that are calculated based on the bonded structure*/
+    /*  and the exclusion flag.  For each pair of atoms that are    */
+    /*  excluded, the larger of the 2 atom indexes is stored in the */
+    /*  array of the smaller index.  All the arrays are not sorted. */
+    /*  Then to determine if two atoms have an exclusion, a linear  */
+    /*  search is done on the array of the atom with the smaller    */
+    /*  index for the larger index.					*/
+    /*	If the exclusion policy is set to scaled1-4, there are  */
+    /*  actually two lists built.  One contains the pairs of atoms  */
+    /*  that are to be exlcuded (i.e., explicit exclusions, 1-2,    */
+    /*  and 1-3 interactions) and the other contains just the 1-4   */
+    /*  interactions, since they will need to be determined 	*/
+    /*  independantly of the other exclusions.			*/
+    /*								*/
+    /****************************************************************/
+
+    void Molecule::build_exclusions()
+    {
+	    register int i;					//  Loop counter
+	    ExclusionSettings exclude_flag;		//  Exclusion policy
+
+	    exclude_flag = simParams->exclude;
+
+	    //  Go through the explicit exclusions and add them to the arrays
+	    for (i=0; i<numExclusions; i++)
+	    {
+		    exclusionSet.add(exclusions[i]);
+	    }
+
+	    //  Now calculate the bonded exlcusions based on the exclusion policy
+	    switch (exclude_flag)
+	    {
+		    case NONE:
+			    break;
+		    case ONETWO:
+			    build12excl();
+			    break;
+		    case ONETHREE:
+			    build12excl();
+			    build13excl();
+			    break;
+		    case ONEFOUR:
+			    build12excl();
+			    build13excl();
+			    build14excl(0);
+			    break;
+		    case SCALED14:
+			    build12excl();
+			    build13excl();
+			    build14excl(1);
+			    break;
+	    }
+
+    }
+    /*			END OF FUNCTION build_exclusions		*/
+
+    /************************************************************************/
+    /*									*/
+    /*			FUNCTION build12excl				*/
+    /*									*/
+    /*   INPUTS:								*/
+    /*	lists - An array of IntList objects to put the exclusions into  */
+    /*									*/
+    /*	This function determines all the 1-2 exclusions (that is, atoms */
+    /*   that are bond together by a linear bond) and places these          */
+    /*   exclusions into the array of IntList's that are passed in.		*/
+    /*									*/
+    /************************************************************************/
+
+    void Molecule::build12excl(void)
+       
+    {
+       int *current_val;	//  Current value to check
+       register int i;		//  Loop counter to loop through all atoms
+       
+       //  Loop through all the atoms marking the bonded interactions for each one
+       for (i=0; i<numAtoms; i++)
+       {
+	    current_val = bondsByAtom[i];
+       
+	    //  Loop through all the bonds for this atom
+	    while (*current_val != -1)
+	    {
+	       if (bonds[*current_val].atom1 == i)
+	       {
+		  if (i<bonds[*current_val].atom2)
+		  {
+		     exclusionSet.add(Exclusion(i,bonds[*current_val].atom2));
+		  }
+	       }
+	       else
+	       {
+		  if (i<bonds[*current_val].atom1)
+		  {
+		     exclusionSet.add(Exclusion(i,bonds[*current_val].atom1));
+		  }
+	       }
+		
+	       ++current_val;
+	    }
+       }
+    }
+    /*			END OF FUNCTION build12excl			*/
+
+    /************************************************************************/
+    /*									*/
+    /*			FUNCTION build13excl				*/
+    /*									*/
+    /*   INPUTS:								*/
+    /*	lists - Array of IntList objects to put exclusions into		*/
+    /*									*/
+    /*	This function calculates the 1-3 exclusions (that is, atoms     */
+    /*   that are bonded by linear bonds to a common third atom) and places */
+    /*   these exclusions into the array of IntList objects passed in.	*/
+    /*									*/
+    /************************************************************************/
+
+    void Molecule::build13excl(void)
+       
+    {
+       int *bond1, *bond2;	//  The two bonds being checked
+       int middle_atom;	//  Common third atom
+       register int i;		//  Loop counter to loop through all atoms
+       
+       //  Loop through all the atoms looking at the bonded connections
+       //  for each one
+       for (i=0; i<numAtoms; i++)
+       {
+	     bond1 = bondsByAtom[i];
+       
+	     //  Loop through all the bonds directly connect to atom i
+	     while (*bond1 != -1)
+	     {
+		    if (bonds[*bond1].atom1 == i)
+		    {
+			    middle_atom=bonds[*bond1].atom2;
+		    }
+		    else
+		    {
+			    middle_atom=bonds[*bond1].atom1;
+		    }
+
+		    bond2 = bondsByAtom[middle_atom];
+
+		    //  Now loop through all the bonds connect to the
+		    //  middle atom
+		    while (*bond2 != -1)
+		    {
+			    if (bonds[*bond2].atom1 == middle_atom)
+			    {
+				    if (i < bonds[*bond2].atom2)
+				    {
+					    exclusionSet.add(Exclusion(i,bonds[*bond2].atom2));
+				    }
+			    }
+			    else
+			    {
+				    if (i < bonds[*bond2].atom1)
+				    {
+					    exclusionSet.add(Exclusion(i,bonds[*bond2].atom1));
+				    }
+			    }
+
+			    ++bond2;
+		    }
+
+		    ++bond1;
+	    }
+       }
+    }
+    /*			END OF FUNCTION build13excl			*/
+
+    /************************************************************************/
+    /*									*/
+    /*				FUNCTION build14excl			*/
+    /*									*/
+    /*   INPUTS:								*/
+    /*	lists - Array of IntList objects to put exclusions into		*/
+    /*									*/
+    /*	This function calculates all the 1-4 exclusions (that is,	*/
+    /*   atoms that are connected via a sequence of three linear bonds) and */
+    /*   places these interactions into the array of IntList object passed  */
+    /*   in.								*/
+    /*									*/
+    /************************************************************************/
+
+
+    void Molecule::build14excl(int modified)
+       
+    {
+       int *bond1, *bond2, *bond3;	//  The two bonds being checked
+       int mid1, mid2;		//  Middle atoms
+       register int i;			//  Counter to loop through all atoms
+       
+       //  Loop through all the atoms
+       for (i=0; i<numAtoms; i++)
+       {	
+	    // Get all the bonds connect directly to atom i
+	    bond1 = bondsByAtom[i];
+       
+	    while (*bond1 != -1)
+	    {
+		    if (bonds[*bond1].atom1 == i)
+		    {
+			    mid1=bonds[*bond1].atom2;
+		    }
+		    else
+		    {
+			    mid1=bonds[*bond1].atom1;
+		    }
+
+		    bond2 = bondsByAtom[mid1];
+
+		    //  Loop through all the bonds connected to atom mid1
+		    while (*bond2 != -1)
+		    {
+			    if (bonds[*bond2].atom1 == mid1)
+			    {
+				    mid2 = bonds[*bond2].atom2;
+			    }
+			    else
+			    {
+				    mid2 = bonds[*bond2].atom1;
+			    }
+
+			    //  Make sure that we don't double back to where
+			    //  we started from.  This causes strange behavior.
+			    //  Trust me, I've been there . . .
+			    if (mid2 == i)
+			    {
+				    ++bond2;
+				    continue;
+			    }
+
+			    bond3=bondsByAtom[mid2];
+
+			    //  Loop through all the bonds connected to mid2
+			    while (*bond3 != -1)
+			    {
+				    if (bonds[*bond3].atom1 == mid2)
+				    {
+					    //  Make sure that we don't double back to where
+					    //  we started from.  This causes strange behavior.
+					    //  Trust me, I've been there . . .
+					    //  I added this!!!  Why wasn't it there before?  -JCP
+					    if (bonds[*bond3].atom2 != mid1)
+					    if (i<bonds[*bond3].atom2)
+					    {
+					       exclusionSet.add(Exclusion(i,bonds[*bond3].atom2,modified));
+					    }
+				    }
+				    else
+				    {
+					    //  Make sure that we don't double back to where
+					    //  we started from.  This causes strange behavior.
+					    //  Trust me, I've been there . . .
+					    //  I added this!!!  Why wasn't it there before?  -JCP
+					    if (bonds[*bond3].atom1 != mid1)
+					    if (i<bonds[*bond3].atom1)
+					    {
+					       exclusionSet.add(Exclusion(i,bonds[*bond3].atom1,modified));
+					    }
+				    }
+
+				    ++bond3;
+			    }
+
+			    ++bond2;
+		    }
+		
+		    ++bond1;
+	    }
+       }
+    }
+    /*			END OF FUNCTION build14excl			*/
+
+    /************************************************************************/
+    /*									*/
+    /*			FUNCTION build_constraint_params		*/
+    /*									*/
+    /*   INPUTS:								*/
+    /*	consref - Value of consref parameter from config file		*/
+    /*	conskfile - Value of conskfile from config file			*/
+    /*	conskcol - Value of conskcol from config file			*/
+    /*	initial_pdb - PDB object that contains initial positions	*/
+    /*	cwd - Current working directory					*/
+    /*									*/
+    /*	This function builds all the parameters that are necessary	*/
+    /*   to do harmonic constraints.  This involves looking through		*/
+    /*   one or more PDB objects to determine which atoms are constrained,  */
+    /*   and what the force constant and reference position is force each   */
+    /*   atom that is constrained.  This information is then stored		*/
+    /*   in the arrays consIndexes and consParams.				*/
+    /*									*/
+    /************************************************************************/
+
+    void Molecule::build_constraint_params(StringList *consref, 
+					   StringList *conskfile, 
+					   StringList *conskcol, 
+					   PDB *initial_pdb,
+					   char *cwd)
+       
+    {
+       PDB *refPDB, *kPDB;		//  Pointer to other PDB's if used
+       register int i;			//  Loop counter
+       int current_index=0;		//  Index into values used
+       int kcol;			//  Column to look for force constant in
+       Real kval;			//  Force constant value retreived
+       char filename[129];		//  PDB filename
+       
+       //  Get the PDB object that contains the reference positions.  If
+       //  the user gave another file name, use it.  Otherwise, just use
+       //  the PDB file that has the initial coordinates.  i.e., constrain
+       //  the atoms around their initial position.  This is the most likely
+       //  case anyway
+       if (consref == NULL)
+       {
+	  refPDB = initial_pdb;
+       }
+       else
+       {
+	  if (consref->next != NULL)
+	  {
+	     NAMD_die("Multiple definitions of constraint reference file in configruation file");
+	  }
+
+	  if ( (cwd == NULL) || (consref->data[0] == '/') )
+	  {
+	       strcpy(filename, consref->data);
+	  }
+	  else
+	  {
+	       strcpy(filename, cwd);
+	       strcat(filename, consref->data);
+	  }
+	  
+	  refPDB = new PDB(filename);
+	  if ( refPDB == NULL )
+	  {
+	    NAMD_die("Memory allocation failed in Molecule::build_constraint_params");
+	  }
+	  
+	  if (refPDB->num_atoms() != numAtoms)
+	  {
+	     NAMD_die("Number of atoms in constraint reference PDB doesn't match coordinate PDB");
+	  }
+       }
+       
+       //  Get the PDB to read the force constants from.  Again, if the user
+       //  gave us another file name, open that one.  Otherwise, just use
+       //  the PDB with the initial coordinates
+       if (conskfile == NULL)
+       {
+	  kPDB = initial_pdb;
+       }
+       else
+       {
+	  if (conskfile->next != NULL)
+	  {
+	     NAMD_die("Multiple definitions of constraint constant file in configuration file");
+	  }
+
+	  if ( (consref != NULL) && (strcasecmp(consref->data, conskfile->data) == 0) )
+	  {
+	     //  Same PDB used for reference positions and force constants
+	     kPDB = refPDB; 
+	  }
+	  else
+	  {
+	    if ( (cwd == NULL) || (conskfile->data[0] == '/') )
+	    {
+		    strcpy(filename, conskfile->data);
+	    }
+	    else
+	    {
+		    strcpy(filename, cwd);
+		    strcat(filename, conskfile->data);
+	    }
+
+	    kPDB = new PDB(filename);
+	    if ( kPDB == NULL )
+	    {
+	      NAMD_die("Memory allocation failed in Molecule::build_constraint_params");
+	    }
+	  
+	    if (kPDB->num_atoms() != numAtoms)
+	    {
+	       NAMD_die("Number of atoms in constraint constant PDB doesn't match coordinate PDB");
+	    }
+	  }
+       }
+       
+       //  Get the column that the force constant is going to be in.  It
+       //  can be in any of the 5 floating point fields in the PDB, according
+       //  to what the user wants.  The allowable fields are X, Y, Z, O, or
+       //  B which correspond to the 1st, 2nd, ... 5th floating point fields.
+       //  The default is the 4th field, which is the occupancy
+       if (conskcol == NULL)
+       {
+	  kcol = 4;
+       }
+       else
+       {
+	  if (conskcol->next != NULL)
+	  {
+	     NAMD_die("Multiple definitions of harmonic constraint column in config file");
+	  }
+	  
+	  if (strcasecmp(conskcol->data, "X") == 0)
+	  {
+	     kcol=1;
+	  }
+	  else if (strcasecmp(conskcol->data, "Y") == 0)
+	  {
+	     kcol=2;
+	  }
+	  else if (strcasecmp(conskcol->data, "Z") == 0)
+	  {
+	     kcol=3;
+	  }
+	  else if (strcasecmp(conskcol->data, "O") == 0)
+	  {
+	     kcol=4;
+	  }
+	  else if (strcasecmp(conskcol->data, "B") == 0)
+	  {
+	     kcol=5;
+	  }
+	  else
+	  {
+	     NAMD_die("conskcol must have value of X, Y, Z, O, or B");
+	  }
+       }
+       
+       //  Allocate an array that will store an index into the constraint
+       //  parameters for each atom.  If the atom is not constrained, its
+       //  value will be set to -1 in this array.
+       consIndexes = new int[numAtoms];
+       
+       if (consIndexes == NULL)
+       {
+	  NAMD_die("memory allocation failed in Molecule::build_constraint_params()");
+       }
+       
+       //  Loop through all the atoms and find out which ones are constrained
+       for (i=0; i<numAtoms; i++)
+       {
+	  //  Get the k value based on where we were told to find it
+	  switch (kcol)
+	  {
+	     case 1:
+		kval = (kPDB->atom(i))->xcoor();
+		break;
+	     case 2:
+		kval = (kPDB->atom(i))->ycoor();
+		break;
+	     case 3:
+		kval = (kPDB->atom(i))->zcoor();
+		break;
+	     case 4:
+		kval = (kPDB->atom(i))->occupancy();
+		break;
+	     case 5:
+		kval = (kPDB->atom(i))->temperaturefactor();
+		break;
+	  }
+	  
+	  if (kval > 0.0)
+	  {
+	     //  This atom is constrained
+	     consIndexes[i] = current_index;
+	     current_index++;
+	  }
+	  else
+	  {
+	     //  This atom is not constrained
+	     consIndexes[i] = -1;
+	  }
+       }
+       
+       if (current_index == 0)
+       {
+	  //  Constraints were turned on, but there weren't really any constrained
+	  iout << iWARN << "NO CONSTRAINED ATOMS WERE FOUND, BUT CONSTRAINTS ARE ON . . . " << endi;
+       }
+       else
+       {
+	  //  Allocate an array to hold the constraint parameters
+	  consParams = new ConstraintParams[current_index];
+	  
+	  if (consParams == NULL)
+	  {
+	     NAMD_die("memory allocation failed in Molecule::build_constraint_params");
+	  }
+       }
+       
+       numConstraints = current_index;
+       
+       //  Loop through all the atoms and assign the parameters for those
+       //  that are constrained
+       for (i=0; i<numAtoms; i++)
+       {
+	  if (consIndexes[i] != -1)
+	  {
+		   //  This atom is constrained, so get the k value again
+		   switch (kcol)
+		   {
+		      case 1:
+			 consParams[consIndexes[i]].k = (kPDB->atom(i))->xcoor();
+			 break;
+		      case 2:
+			 consParams[consIndexes[i]].k = (kPDB->atom(i))->ycoor();
+			 break;
+		      case 3:
+			 consParams[consIndexes[i]].k = (kPDB->atom(i))->zcoor();
+			 break;
+		      case 4:
+			 consParams[consIndexes[i]].k = (kPDB->atom(i))->occupancy();
+			 break;
+		      case 5:
+			 consParams[consIndexes[i]].k = (kPDB->atom(i))->temperaturefactor();
+			 break;
+		   }
+		   
+		   //  Get the reference position
+		   consParams[consIndexes[i]].refPos.x = (refPDB->atom(i))->xcoor();
+		   consParams[consIndexes[i]].refPos.y = (refPDB->atom(i))->ycoor();
+		   consParams[consIndexes[i]].refPos.z = (refPDB->atom(i))->zcoor();
+	  }
+       }
+       
+       //  If we had to create new PDB objects, delete them now
+       if (consref != NULL)
+       {
+	  delete refPDB;
+       }
+       
+       if ((conskfile != NULL) &&
+	   !((consref != NULL) && 
+	     (strcasecmp(consref->data, conskfile->data) == 0)
+	    )
+	  )
+       {
+	  delete kPDB;
+       }
+    }
+    /*			END OF FUNCTION build_constraint_params		*/
+
+    /************************************************************************/
+    /*									*/
+    /*			FUNCTION build_langevin_params			*/
+    /*									*/
+    /*   INPUTS:								*/
+    /*	langfile - Value of langevinfile from config file		*/
+    /*	langcol - Value of langevincol from config file			*/
+    /*	initial_pdb - PDB object that contains initial positions	*/
+    /*      cwd - Current working directory					*/
+    /*									*/
+    /*	This function builds the array of b values necessary for	*/
+    /*   Langevin dynamics.  It takes the name of the PDB file and the      */
+    /*   column in the PDB file that contains the b values.  It then	*/
+    /*   builds the array langevinParams for use during the program.	*/
+    /*									*/
+    /************************************************************************/
+
+    void Molecule::build_langevin_params(StringList *langfile, 
+					 StringList *langcol, 
+					 PDB *initial_pdb,
+					 char *cwd)
+       
+    {
+       PDB *bPDB;			//  Pointer to PDB object to use
+       int bcol;			//  Column that data is in
+       Real bval;			//  b value from PDB file
+       int i;			//  Loop counter
+       BigReal forceConstant;	//  Constant factor in force calc
+       char filename[129];		//  Filename
+       
+       //  Get the PDB object that contains the b values.  If
+       //  the user gave another file name, use it.  Otherwise, just use
+       //  the PDB file that has the initial coordinates.  
+       if (langfile == NULL)
+       {
+	  bPDB = initial_pdb;
+       }
+       else
+       {
+	  if (langfile->next != NULL)
+	  {
+	     NAMD_die("Multiple definitions of langvein PDB file in configuration file");
+	  }
+
+	  if ( (cwd == NULL) || (langfile->data[0] == '/') )
+	  {
+	       strcpy(filename, langfile->data);
+	  }
+	  else
+	  {
+	       strcpy(filename, cwd);
+	       strcat(filename, langfile->data);
+	  }
+	  
+	  bPDB = new PDB(filename);
+	  if ( bPDB == NULL )
+	  {
+	    NAMD_die("Memory allocation failed in Molecule::build_langevin_params");
+	  }
+	  
+	  if (bPDB->num_atoms() != numAtoms)
+	  {
+	     NAMD_die("Number of atoms in langevin parameter PDB doesn't match coordinate PDB");
+	  }
+       }
+       
+       //  Get the column that the b vaules are in.  It
+       //  can be in any of the 5 floating point fields in the PDB, according
+       //  to what the user wants.  The allowable fields are X, Y, Z, O, or
+       //  B which correspond to the 1st, 2nd, ... 5th floating point fields.
+       //  The default is the 4th field, which is the occupancy
+       if (langcol == NULL)
+       {
+	  bcol = 4;
+       }
+       else
+       {
+	  if (langcol->next != NULL)
+	  {
+	     NAMD_die("Multiple definitions of langevin parameter column in config file");
+	  }
+	  
+	  if (strcasecmp(langcol->data, "X") == 0)
+	  {
+	     bcol=1;
+	  }
+	  else if (strcasecmp(langcol->data, "Y") == 0)
+	  {
+	     bcol=2;
+	  }
+	  else if (strcasecmp(langcol->data, "Z") == 0)
+	  {
+	     bcol=3;
+	  }
+	  else if (strcasecmp(langcol->data, "O") == 0)
+	  {
+	     bcol=4;
+	  }
+	  else if (strcasecmp(langcol->data, "B") == 0)
+	  {
+	     bcol=5;
+	  }
+	  else
+	  {
+	     NAMD_die("langevincol must have value of X, Y, Z, O, or B");
+	  }
+       }
+       
+       //  Allocate the array to hold all the data
+       langevinParams = new Real[numAtoms];
+       langForceVals = new Real[numAtoms];
+       
+       if ( (langevinParams == NULL) || (langForceVals == NULL) )
+       {
+	  NAMD_die("memory allocation failed in Molecule::build_langevin_params()");
+       }
+
+       //  Calculate the constant portion of the force values.  Note that
+       //  because we need to convert from femtoseconds to picoseconds,
+       //  the factor of 0.001 is needed.  
+       forceConstant = 0.002*TIMEFACTOR*TIMEFACTOR*BOLTZMAN*(simParams->langevinTemp)/(simParams->dt);
+       
+       //  Loop through all the atoms and get the b value
+       for (i=0; i<numAtoms; i++)
+       {
+	  //  Get the k value based on where we were told to find it
+	  switch (bcol)
+	  {
+	     case 1:
+		bval = (bPDB->atom(i))->xcoor();
+		break;
+	     case 2:
+		bval = (bPDB->atom(i))->ycoor();
+		break;
+	     case 3:
+		bval = (bPDB->atom(i))->zcoor();
+		break;
+	     case 4:
+		bval = (bPDB->atom(i))->occupancy();
+		break;
+	     case 5:
+		bval = (bPDB->atom(i))->temperaturefactor();
+		break;
+	  }
+	  
+	  //  Assign the b value
+	  langevinParams[i] = bval;
+
+	  //  Calculate the random force value
+	  langForceVals[i] = sqrt(forceConstant*atoms[i].mass*bval);
+       }
+       
+       //  If we had to create a PDB object, delete it now
+       if (langfile != NULL)
+       {
+	  delete bPDB;
+       }
+    }
+    /*			END OF FUNCTION build_constraint_params		*/
+
+
+
+    Bool Molecule::is_hydrogen(int anum)
+    {
+	return ((atoms[anum].status & HydrogenAtom) != 0);
+    }
+
+    Bool Molecule::is_oxygen(int anum)
+    {
+	return ((atoms[anum].status & OxygenAtom) != 0);
+    }
+
+    Bool Molecule::is_hb_donor(int anum)
+    {
+	return ((atoms[anum].status & HBDonorAtom) != 0);
+    }
+
+    Bool Molecule::is_hb_acceptor(int anum)
+    {
+	return ((atoms[anum].status & HBAcceptorAtom) != 0);
+    }
+
+    Bool Molecule::is_hb_antecedent(int anum)
+    {
+	return ((atoms[anum].status & HBAntecedentAtom) != 0);
+    }
+
+    Bool Molecule::is_hb_hydrogen(int anum)
+    {
+	return ((atoms[anum].status & HBHydrogenAtom) != 0);
+    }
+
+    Bool Molecule::is_hydrogenGroupParent(int anum)
+    {
+	return (hydrogenGroup[atoms[anum].hydrogenList].isGP);
+    }
+
+
+    int Molecule::get_mother_atom(int anum)
+    {
+	// for efficiency reasons, we are not checking if anum is already 
+	// hydrogen or not. This function must be called for hydrogens only;
+	return atoms[anum].partner;
+    }
+
+
+    // return the list of hbond donor interactions for the Nth's atom.
+    IntList *Molecule::get_atom_hb_donors(int anum)
+    {
+	return atoms[anum].donorList;
+    }
+
+
+    // return the list of hbond acceptor interactions for the Nth's atom.
+    IntList *Molecule::get_atom_hb_acceptors(int anum)
+    {
+	return atoms[anum].acceptorList;
+    }
+
+
+    // go through the molecular structure, analyze the status of each atom,
+    // and save the data in the Atom structures stored for each atom.  This
+    // could be built up incrementally while the molecule is being read in,
+    // but doing it all in one shot allows us to just send the basic info
+    // over the network and have each node calculate the rest of the data on
+    // it's own.
+    void Molecule::build_atom_status(void) {
+      register int i;
+      int a1, a2;
+
+      // initialize information for each atom (note that the status has
+      // already been initialized during the read/receive phase)
+      HydrogenGroupID *hg;
+      hg = new HydrogenGroupID[numAtoms];
+      for (i=0; i < numAtoms; i++) {
+	atoms[i].partner = (-1);
+	atoms[i].donorList = NULL;
+	atoms[i].acceptorList = NULL;
+	hg[i].atomID = i;	// currently unsorted
+	hg[i].atomsInGroup = 1;	// currently only 1 in group
+	hg[i].isGP = 1;	// assume it is a group parent
+	hg[i].GPID = i;	// assume it is a group parent
+	hg[i].sortVal = 0;	// for group sorting
       }
-   }
-   
-   //  If we had to create new PDB objects, delete them now
-   if (consref != NULL)
-   {
-      delete refPDB;
-   }
-   
-   if ((conskfile != NULL) &&
-       !((consref != NULL) && 
-         (strcasecmp(consref->data, conskfile->data) == 0)
-        )
-      )
-   {
-      delete kPDB;
-   }
-}
-/*			END OF FUNCTION build_constraint_params		*/
 
-/************************************************************************/
-/*									*/
-/*			FUNCTION build_langevin_params			*/
-/*									*/
-/*   INPUTS:								*/
-/*	langfile - Value of langevinfile from config file		*/
-/*	langcol - Value of langevincol from config file			*/
-/*	initial_pdb - PDB object that contains initial positions	*/
-/*      cwd - Current working directory					*/
-/*									*/
-/*	This function builds the array of b values necessary for	*/
-/*   Langevin dynamics.  It takes the name of the PDB file and the      */
-/*   column in the PDB file that contains the b values.  It then	*/
-/*   builds the array langevinParams for use during the program.	*/
-/*									*/
-/************************************************************************/
-
-void Molecule::build_langevin_params(StringList *langfile, 
-				     StringList *langcol, 
-				     PDB *initial_pdb,
-				     char *cwd)
-   
-{
-   PDB *bPDB;			//  Pointer to PDB object to use
-   int bcol;			//  Column that data is in
-   Real bval;			//  b value from PDB file
-   int i;			//  Loop counter
-   BigReal forceConstant;	//  Constant factor in force calc
-   char filename[129];		//  Filename
-   
-   //  Get the PDB object that contains the b values.  If
-   //  the user gave another file name, use it.  Otherwise, just use
-   //  the PDB file that has the initial coordinates.  
-   if (langfile == NULL)
-   {
-      bPDB = initial_pdb;
-   }
-   else
-   {
-      if (langfile->next != NULL)
-      {
-	 NAMD_die("Multiple definitions of langvein PDB file in configuration file");
-      }
-
-      if ( (cwd == NULL) || (langfile->data[0] == '/') )
-      {
-	   strcpy(filename, langfile->data);
-      }
-      else
-      {
-	   strcpy(filename, cwd);
-	   strcat(filename, langfile->data);
-      }
-      
-      bPDB = new PDB(filename);
-      if ( bPDB == NULL )
-      {
-	NAMD_die("Memory allocation failed in Molecule::build_langevin_params");
-      }
-      
-      if (bPDB->num_atoms() != numAtoms)
-      {
-	 NAMD_die("Number of atoms in langevin parameter PDB doesn't match coordinate PDB");
-      }
-   }
-   
-   //  Get the column that the b vaules are in.  It
-   //  can be in any of the 5 floating point fields in the PDB, according
-   //  to what the user wants.  The allowable fields are X, Y, Z, O, or
-   //  B which correspond to the 1st, 2nd, ... 5th floating point fields.
-   //  The default is the 4th field, which is the occupancy
-   if (langcol == NULL)
-   {
-      bcol = 4;
-   }
-   else
-   {
-      if (langcol->next != NULL)
-      {
-	 NAMD_die("Multiple definitions of langevin parameter column in config file");
-      }
-      
-      if (strcasecmp(langcol->data, "X") == 0)
-      {
-	 bcol=1;
-      }
-      else if (strcasecmp(langcol->data, "Y") == 0)
-      {
-	 bcol=2;
-      }
-      else if (strcasecmp(langcol->data, "Z") == 0)
-      {
-	 bcol=3;
-      }
-      else if (strcasecmp(langcol->data, "O") == 0)
-      {
-	 bcol=4;
-      }
-      else if (strcasecmp(langcol->data, "B") == 0)
-      {
-	 bcol=5;
-      }
-      else
-      {
-	 NAMD_die("langevincol must have value of X, Y, Z, O, or B");
-      }
-   }
-   
-   //  Allocate the array to hold all the data
-   langevinParams = new Real[numAtoms];
-   langForceVals = new Real[numAtoms];
-   
-   if ( (langevinParams == NULL) || (langForceVals == NULL) )
-   {
-      NAMD_die("memory allocation failed in Molecule::build_langevin_params()");
-   }
-
-   //  Calculate the constant portion of the force values.  Note that
-   //  because we need to convert from femtoseconds to picoseconds,
-   //  the factor of 0.001 is needed.  
-   forceConstant = 0.002*TIMEFACTOR*TIMEFACTOR*BOLTZMAN*(simParams->langevinTemp)/(simParams->dt);
-   
-   //  Loop through all the atoms and get the b value
-   for (i=0; i<numAtoms; i++)
-   {
-      //  Get the k value based on where we were told to find it
-      switch (bcol)
-      {
-	 case 1:
-	    bval = (bPDB->atom(i))->xcoor();
-	    break;
-	 case 2:
-	    bval = (bPDB->atom(i))->ycoor();
-	    break;
-	 case 3:
-	    bval = (bPDB->atom(i))->zcoor();
-	    break;
-	 case 4:
-	    bval = (bPDB->atom(i))->occupancy();
-	    break;
-	 case 5:
-	    bval = (bPDB->atom(i))->temperaturefactor();
-	    break;
-      }
-      
-      //  Assign the b value
-      langevinParams[i] = bval;
-
-      //  Calculate the random force value
-      langForceVals[i] = sqrt(forceConstant*atoms[i].mass*bval);
-   }
-   
-   //  If we had to create a PDB object, delete it now
-   if (langfile != NULL)
-   {
-      delete bPDB;
-   }
-}
-/*			END OF FUNCTION build_constraint_params		*/
-
-
-
-Bool Molecule::is_hydrogen(int anum)
-{
-    return ((atoms[anum].status & HydrogenAtom) != 0);
-}
-
-Bool Molecule::is_oxygen(int anum)
-{
-    return ((atoms[anum].status & OxygenAtom) != 0);
-}
-
-Bool Molecule::is_hb_donor(int anum)
-{
-    return ((atoms[anum].status & HBDonorAtom) != 0);
-}
-
-Bool Molecule::is_hb_acceptor(int anum)
-{
-    return ((atoms[anum].status & HBAcceptorAtom) != 0);
-}
-
-Bool Molecule::is_hb_antecedent(int anum)
-{
-    return ((atoms[anum].status & HBAntecedentAtom) != 0);
-}
-
-Bool Molecule::is_hb_hydrogen(int anum)
-{
-    return ((atoms[anum].status & HBHydrogenAtom) != 0);
-}
-
-
-int Molecule::get_mother_atom(int anum)
-{
-    // for efficiency reasons, we are not checking if anum is already 
-    // hydrogen or not. This function must be called for hydrogens only;
-    return atoms[anum].partner;
-}
-
-
-// return the list of hbond donor interactions for the Nth's atom.
-IntList *Molecule::get_atom_hb_donors(int anum)
-{
-    return atoms[anum].donorList;
-}
-
-
-// return the list of hbond acceptor interactions for the Nth's atom.
-IntList *Molecule::get_atom_hb_acceptors(int anum)
-{
-    return atoms[anum].acceptorList;
-}
-
-
-// go through the molecular structure, analyze the status of each atom,
-// and save the data in the Atom structures stored for each atom.  This
-// could be built up incrementally while the molecule is being read in,
-// but doing it all in one shot allows us to just send the basic info
-// over the network and have each node calculate the rest of the data on
-// it's own.
-void Molecule::build_atom_status(void) {
-  register int i;
-  int a1, a2;
-
-  // initialize information for each atom (note that the status has
-  // already been initialized during the read/receive phase)
-  HydrogenGroupID *hg;
-  hg = new HydrogenGroupID[numAtoms];
-  for (i=0; i < numAtoms; i++) {
-    atoms[i].partner = (-1);
-    atoms[i].donorList = NULL;
-    atoms[i].acceptorList = NULL;
-    hg[i].atomID = i;	// currently unsorted
-    hg[i].atomsInGroup = 1;	// currently only 1 in group
-    hg[i].isGP = 1;	// assume it is a group parent
-    hg[i].GPID = i;	// assume it is a group parent
-    hg[i].sortVal = 0;	// for group sorting
-  }
-
-  // find which atom each hydrogen is bound to
-  // also determine number of atoms in each group
-  for (i=0; i < numBonds; i++) {
-    a1 = bonds[i].atom1;
-    a2 = bonds[i].atom2;
-    if (is_hydrogen(a1))
-      {
-      atoms[a1].partner = a2;
-      // check for hydrogen gas...  For H2, explicitly define the group parent.
-      // I have been informed that H3 is not a concern.  This is good since
-      // this code will fail for H3.
-      if (is_hydrogen(a2))
-		hg[a1].isGP = 1;
-      else
-	{
-	hg[a2].atomsInGroup++;
-	hg[a1].atomsInGroup = 0;
-	hg[a1].GPID = a2;
-	hg[a1].isGP = 0;
-	// check for waters (put them in their own groups: OH or OHH)
+      // find which atom each hydrogen is bound to
+      // also determine number of atoms in each group
+      for (i=0; i < numBonds; i++) {
+	a1 = bonds[i].atom1;
+	a2 = bonds[i].atom2;
+	if (is_hydrogen(a1))
+	  {
+	  atoms[a1].partner = a2;
+	  // check for hydrogen gas...  For H2, explicitly define the group parent.
+	  // I have been informed that H3 is not a concern.  This is good since
+	  // this code will fail for H3.
+	  if (is_hydrogen(a2))
+		    hg[a1].isGP = 1;
+	  else
+	    {
+	    hg[a2].atomsInGroup++;
+	    hg[a1].atomsInGroup = 0;
+	    hg[a1].GPID = a2;
+	    hg[a1].isGP = 0;
+	    // check for waters (put them in their own groups: OH or OHH)
 	if (is_oxygen(a2))	hg[a2].sortVal++;
 	}
       }
@@ -3372,6 +3380,16 @@ void Molecule::build_atom_status(void) {
   }
   hydrogenGroup.sort();
 
+  // finally, add the indexing from atoms[] to hydrogenGroup[]
+  waterIndex = numAtoms;
+  for(i=0; i<numAtoms; i++)
+    {
+    atoms[hydrogenGroup[i].atomID].hydrogenList = i;
+    // identify where waters start
+    if ((hydrogenGroup[i].sortVal == 2) && (i < numAtoms))
+	waterIndex = i;
+    }
+
   #if 0
   // debugging code for showing sorted atoms
   for(i=0; i<numAtoms; i++)
@@ -3390,12 +3408,15 @@ void Molecule::build_atom_status(void) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/03/20 17:28:36 $
+ *	$Revision: 1.1011 $	$Date: 1997/03/31 16:12:53 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1011  1997/03/31 16:12:53  nealk
+ * Atoms now can migrate by hydrogen groups.
+ *
  * Revision 1.1010  1997/03/20 17:28:36  nealk
  * Moved debugging code.
  *

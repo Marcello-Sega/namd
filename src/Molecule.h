@@ -136,6 +136,7 @@ public:
 	int numMultipleImpropers; 
 	// indexes of "atoms" sorted by hydrogen groups
 	HydrogenGroup hydrogenGroup;
+	int waterIndex;
 
 	Molecule(SimParameters *, Parameters *param=NULL, char *filename=NULL);
 	~Molecule();		//  Destructor
@@ -165,6 +166,7 @@ public:
         Bool is_hb_acceptor(int);  // return true if atom is hbond acceptor
         Bool is_hb_antecedent(int);// return true if atom is hbond antecedent
         Bool is_hb_hydrogen(int);  // return true if atom is hbond hydrogen
+	Bool is_hydrogenGroupParent(int);	// return true if atom is group parent
 
         int get_mother_atom(int);  // return mother atom of a hydrogen
 
@@ -340,12 +342,15 @@ public:
  *
  *	$RCSfile: Molecule.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/03/27 17:08:30 $
+ *	$Revision: 1.1009 $	$Date: 1997/03/31 16:12:54 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.1009  1997/03/31 16:12:54  nealk
+ * Atoms now can migrate by hydrogen groups.
+ *
  * Revision 1.1008  1997/03/27 17:08:30  nealk
  * Added hydrogen groupings.  Now configuration parameter "splitPatch" determines
  * atom-into-patch distribution.

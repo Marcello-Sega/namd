@@ -19,13 +19,16 @@
 #include "ckdefs.h"
 #include "chare.h"
 #include "c++interface.h"
+#include "SimParameters.h"
 #include "HomePatch.h"
 #include "AtomMap.h"
+#include "Node.h"
 #include "PatchMap.h"
 #include "main.h"
 #include "ProxyMgr.top.h"
 #include "ProxyMgr.h"
 #include "Migration.h"
+#include "Molecule.h"
 #include "PatchMgr.h"
 #include "Sequencer.h"
 #include "LdbCoordinator.h"
@@ -35,7 +38,7 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1024 1997/03/27 20:25:44 brunner Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1025 1997/03/31 16:12:51 nealk Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
 		     VelocityList vl) : Patch(pd,al,pl), v(vl) 
@@ -261,10 +264,9 @@ void HomePatch::submitLoadStats(int timestep)
 void
 HomePatch::doAtomMigration()
 {
-  int i;
+  int i,j;
   int xdev, ydev, zdev;
   MigrationList *mCur;
-
 
   // Drain the migration message buffer
   //for (i=0; i<numMlBuf; i++) {
@@ -284,22 +286,41 @@ HomePatch::doAtomMigration()
 
   // Determine atoms that need to migrate
   i = 0;
+  SimParameters *simParams = Node::Object()->simParameters;
+  Molecule *mol = Node::Object()->molecule;
   while ( i < atomIDList.size() )
   {
      Position Min = lattice.unscale(min);
      Position Max = lattice.unscale(max);
 
-     if (p[i].x < Min.x) xdev = 0;
-     else if (Max.x <= p[i].x) xdev = 2; 
-     else xdev = 1;
+     if (simParams->splitPatch == SPLIT_PATCH_HYDROGEN)
+	{
+	// All atoms are always in hydrogen-group order.  Thus, if it's
+	// a group member, then it is always moved *after* the group parent.
+	// So, we only determine where to move if it's a group parent.
 
-     if (p[i].y < Min.y) ydev = 0;
-     else if (Max.y <= p[i].y) ydev = 2; 
-     else ydev = 1;
+	// group members have their group parent ID
+	// group parents have their own ID
+	// ...do this in stages so it's easier to read
+	j = mol->is_hydrogenGroupParent(atomIDList[i]);	// j is parent flag
+	}
+      else j=1;	// check all atoms
 
-     if (p[i].z < Min.z) zdev = 0;
-     else if (Max.z <= p[i].z) zdev = 2; 
-     else zdev = 1;
+      if (j)
+	  {
+	  // check if atom should is within bounds
+	  if (p[i].x < Min.x) xdev = 0;
+	  else if (Max.x <= p[i].x) xdev = 2; 
+	  else xdev = 1;
+
+	  if (p[i].y < Min.y) ydev = 0;
+	  else if (Max.y <= p[i].y) ydev = 2; 
+	  else ydev = 1;
+
+	  if (p[i].z < Min.z) zdev = 0;
+	  else if (Max.z <= p[i].z) zdev = 2; 
+	  else zdev = 1;
+	  }
 
      if (mInfo[xdev][ydev][zdev]) { // process atom for migration
                                     // Don't migrate if destination is myself
@@ -316,8 +337,7 @@ HomePatch::doAtomMigration()
        for ( int j = 0; j < Results::maxNumForces; ++j ) force[j] = f[j][i];
        DebugM(3,"Migrating atom " << atomIDList[i] << " from patch "
 		<< patchID << " with position " << p[i] << "\n");
-       mCur->add(MigrationElem(atomIDList[i], a[i], p[i],
-         p[i], v[i], force)
+       mCur->add(MigrationElem(atomIDList[i], a[i], p[i], p[i], v[i], force)
        );
        a.del(i);
        atomIDList.del(i,1);
@@ -419,13 +439,16 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1024 $	$Date: 1997/03/27 20:25:44 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1025 $	$Date: 1997/03/31 16:12:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1025  1997/03/31 16:12:51  nealk
+ * Atoms now can migrate by hydrogen groups.
+ *
  * Revision 1.1024  1997/03/27 20:25:44  brunner
  * Changes for LdbCoordinator, the load balance control BOC
  *
