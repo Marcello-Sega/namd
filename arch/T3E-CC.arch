@@ -2,7 +2,7 @@ NAMD_ARCH = T3E
 CHARMARCH = t3e
 
 # compiler options
-CXX = CC 
+CXX = CC -h new_for_init
 CXXOPTS = -O2
 CXXSIMPARAMOPTS = -g
 CC = cc
