@@ -3,7 +3,7 @@
 ####
 CC = cc -DSOLARIS
 CXX = CC -DSOLARIS
-CXXOPTS = -compat=4 -fast -xO5 -native -xarch=v8plusa -fsimple=2 -DGLOBALS
+CXXOPTS = -fast -xO5 -native -xarch=v8plusa -fsimple=2 -DDONT_DECLARE_NEW
 #CXXOPTS = -DGLOBALS
 COPTS = -fast -xO5 -native -xarch=v8plusa
 CXXTHREADOPTS = $(CXXOPTS)
@@ -28,7 +28,7 @@ CHARM = $(CHARMBASE)/$(CHARMARCH)
 
 TCLDIR=/Projects/namd2/tcl/solaris
 TCLINCL=-I$(TCLDIR)/include
-TCLLIB=-L$(TCLDIR)/lib -ltcl
+TCLLIB=-L$(TCLDIR)/lib -ltcl -ldl
 TCLFLAGS=-DNAMD_TCL
 TCL=$(TCLINCL) $(TCLFLAGS)
 
