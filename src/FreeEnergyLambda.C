@@ -96,9 +96,15 @@ void ALambdaControl::Accumulate(double dU_dLambda) {
     case kStepDown:  case kStepGrow:  case kStepFade:
       m_Sum_dU_dLambda += dU_dLambda;
       break;
-    // lambda is changing
-    case kUp:  case kDown:  case kGrow:  case kFade:
+    // lambda is increasing
+    case kUp:
+    case kGrow:
       m_Sum_dU_dLambda += dU_dLambda / (double)m_NumSteps;
+      break;
+    // lambda is decreasing
+    case kDown:
+    case kFade:
+      m_Sum_dU_dLambda -= dU_dLambda / (double)m_NumSteps;
       break;
     // should never get here
     default:
@@ -404,6 +410,9 @@ double ALambdaControl::GetLambdaRef() {
  * REVISION HISTORY:
  *
  * $Log: FreeEnergyLambda.C,v $
+ * Revision 1.4  1998/06/09 22:00:17  hurwitz
+ * small fix:  if Lambda is decreasing, dLambda is negative
+ *
  * Revision 1.3  1998/06/05 22:54:40  hurwitz
  * accumulate dU/dLambda for free energy calculation
  *
