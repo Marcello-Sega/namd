@@ -15,36 +15,74 @@
 #define PATCH_H
 
 #include "NamdTypes.h"
+#include "Templates/OwnerBox.h"
+#include "Templates/Box.h"
+#include "Templates/UniqueSortedArray.h"
 
 class Compute;
+class Sequencer;
+
+class LocalAtomID {
+public:
+    AtomID atomID;
+    int index;
+    LocalAtomID(AtomID a, int i) : atomID(a), index(i) {};
+    LocalAtomID() {};
+    ~LocalAtomID() {};
+    int operator < (const LocalAtomID &a) const {
+	return (atomID < a.atomID);
+    }
+    int operator== (const LocalAtomID &a) const {
+       return (atomID == a.atomID);
+    }
+};
+
+typedef UniqueSortedArray<LocalAtomID> LocalIndex ;
 
 
 // This the base class of homepatches and proxy patches. It maintains
 // common functions of these patches. These include managing dependences
-// between compute (force) objects and the patch and updatint atom map
+// between compute (force) objects and the patch and updating atom map.
+
 class Patch
 {
-  private:
+  public:
 
-     ComputePickupList computePickupList;
-     ComputeDepositList computeDepositList;
+     Patch(PatchID pd, AtomIDList al, PositionList pl);
+     virtual ~Patch(void) { };
 
-     // number of unfinished computation objects
-     int bondedCounter;
-     int shortElectCounter;
+     // methods for use by Compute objects
+     Box<Patch,Position>* registerPositionPickup(ComputeID cid);
+     void unregisterPositionPickup(ComputeID cid, Box<Patch,Position> **const box);
+     Box<Patch,Force>* registerForceDeposit(ComputeID cid);
+     void unregisterForceDeposit(ComputeID cid, Box<Patch,Force> **const box);
 
-     void positionsReady();
+     // methods for use by Sequencer or ProxyManager
+     void positionsReady(void);
+
+     // methods for Box callbacks
+     void pClosed(void);
+     void fClosed(void);
 
   protected:
-     PatchID myPatchId;
-     int numAtoms;
 
+     PatchID       patchID;
+     int           numAtoms;
+     AtomIDList    atomIDList;
+     LocalIndex    localIndex;
+     PositionList  p;
+     Position      *pPtr;
+     ForceList     f;
+     Force         *fPtr;
 
+     OwnerBox<Patch,Position> pBox;
+     ComputeList              pList;
+     OwnerBox<Patch,Force>    fBox;
+     ComputeList              fList;
 
-  public :
+     virtual void boxClosed(int);
 
-     Patch();
-     ~Patch();
+  private:
 
 };
 
@@ -55,13 +93,16 @@ class Patch
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/09/10 03:07:14 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.3 $	$Date: 1996/10/04 21:07:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.h,v $
+ * Revision 1.3  1996/10/04 21:07:46  jim
+ * Moved in functionality from HomePatch
+ *
  * Revision 1.2  1996/09/10 03:07:14  ari
  * *** empty log message ***
  *
