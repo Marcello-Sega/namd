@@ -89,7 +89,7 @@ public:
     // print banner
     iout << iINFO << "NAMD " << NAMD_VERSION << " for " << NAMD_PLATFORM
          << "\n"
-#if 1
+#if 0
          << iWARN << "\n"
          << iWARN << "          ***  UNRELEASED EXPERIMENTAL VERSION  ***\n"
          << iWARN << "\n"

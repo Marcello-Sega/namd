@@ -1,7 +1,7 @@
 include Makearch
 
 # pass version/platform information to compile
-NAMD_VERSION = 2.1
+NAMD_VERSION = 2.2b1
 RELEASE=-DNAMD_VERSION=\"$(NAMD_VERSION)\" -DNAMD_PLATFORM=\"$(NAMD_PLATFORM)\"
 
 # directories
