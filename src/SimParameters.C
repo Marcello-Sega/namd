@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1056 $  $Date: 1999/03/09 01:44:15 $
+ *  $Revision: 1.1057 $  $Date: 1999/03/10 05:11:34 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1057  1999/03/10 05:11:34  jim
+ * Added reassignHold parameter.
+ *
  * Revision 1.1056  1999/03/09 01:44:15  jim
  * Added langevinDamping and langevinHydrogen parameters.
  *
@@ -911,6 +914,10 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.optional("main", "reassignIncr", "Temperature increment for velocity reassignment",
     &reassignIncr);
    opts.units("reassignIncr", N_KELVIN);
+   opts.optional("main", "reassignHold", "Final holding temperature for velocity reassignment",
+    &reassignHold);
+   opts.range("reassignHold", NOT_NEGATIVE);
+   opts.units("reassignHold", N_KELVIN);
 
    ////  Group rather than atomic pressure
    opts.optionalB("main", "useGroupPressure", 
@@ -1914,12 +1921,24 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    {
   if (!opts.defined("reassignFreq"))
   {
-    NAMD_die("Must give a reassignment freqency if reassignmentIncr is given");
+    NAMD_die("Must give a reassignment freqency if reassignIncr is given");
   }
    }
    else
    {
   reassignIncr = 0.0;
+   }
+
+   if (opts.defined("reassignHold"))
+   {
+  if (!opts.defined("reassignIncr"))
+  {
+    NAMD_die("Must give a reassignment increment if reassignHold is given");
+  }
+   }
+   else
+   {
+  reassignHold = 0.0;
    }
 
    if (minimizeOn && reassignFreq > 0) 
@@ -2929,6 +2948,9 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
      if ( reassignIncr != 0. )
        iout << iINFO << "VELOCITY REASSIGNMENT INCR  "
         << reassignIncr << "\n";
+     if ( reassignHold != 0. )
+       iout << iINFO << "VELOCITY REASSIGNMENT HOLD  "
+        << reassignHold << "\n";
      iout << endi;
    }
 
@@ -3264,7 +3286,8 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
   msg->put(langevinOn)->put(langevinTemp)->put(globalOn);
   msg->put(dihedralOn)->put(COLDOn)->put(COLDRate)->put(COLDTemp);
   msg->put(rescaleFreq)->put(rescaleTemp);
-  msg->put(reassignFreq)->put(reassignTemp)->put(reassignIncr);
+  msg->put(reassignFreq)->put(reassignTemp);
+  msg->put(reassignIncr)->put(reassignHold);
   msg->put(sphericalBCOn)->put(sphericalBCr1);
   msg->put(sphericalBCr2)->put(sphericalBCk1)->put(sphericalBCk2);
   msg->put(sphericalBCexp1)->put(sphericalBCexp2);
@@ -3443,6 +3466,7 @@ void SimParameters::receive_SimParameters(MIStream *msg)
   msg->get(reassignFreq);
   msg->get(reassignTemp);
   msg->get(reassignIncr);
+  msg->get(reassignHold);
   msg->get(sphericalBCOn);
   msg->get(sphericalBCr1);
   msg->get(sphericalBCr2);
@@ -3548,12 +3572,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1056 $  $Date: 1999/03/09 01:44:15 $
+ *  $Revision: 1.1057 $  $Date: 1999/03/10 05:11:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1057  1999/03/10 05:11:34  jim
+ * Added reassignHold parameter.
+ *
  * Revision 1.1056  1999/03/09 01:44:15  jim
  * Added langevinDamping and langevinHydrogen parameters.
  *

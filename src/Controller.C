@@ -401,7 +401,13 @@ void Controller::reassignVelocities(int step)
   if ( ( reassignFreq > 0 ) && ! ( step % reassignFreq ) ) {
     BigReal newTemp = simParams->reassignTemp;
     newTemp += ( step / reassignFreq ) * simParams->reassignIncr;
-    if ( newTemp < 0 ) newTemp = 0;
+    if ( simParams->reassignIncr < 0 ) {
+      if ( newTemp < simParams->reassignHold )
+        newTemp = simParams->reassignHold;
+    } else {
+      if ( newTemp > simParams->reassignHold )
+        newTemp = simParams->reassignHold;
+    }
     iout << "REASSIGNING VELOCITIES AT STEP " << step
          << " TO " << newTemp << " KELVIN.\n" << endi;
   }
@@ -838,12 +844,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1056 $	$Date: 1999/02/17 20:00:43 $
+ *	$Revision: 1.1057 $	$Date: 1999/03/10 05:11:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1057  1999/03/10 05:11:33  jim
+ * Added reassignHold parameter.
+ *
  * Revision 1.1056  1999/02/17 20:00:43  jim
  * Added error checking to keep Berendsen pressure from blowing up.
  *

@@ -371,7 +371,13 @@ void Sequencer::reassignVelocities(int step)
   if ( ( reassignFreq > 0 ) && ! ( step % reassignFreq ) ) {
     BigReal newTemp = simParams->reassignTemp;
     newTemp += ( step / reassignFreq ) * simParams->reassignIncr;
-    if ( newTemp < 0 ) newTemp = 0;
+    if ( simParams->reassignIncr < 0 ) {
+      if ( newTemp < simParams->reassignHold )
+        newTemp = simParams->reassignHold;
+    } else {
+      if ( newTemp > simParams->reassignHold )
+        newTemp = simParams->reassignHold;
+    }
     BigReal kbT = BOLTZMAN * newTemp;
     for ( int i = 0; i < patch->numAtoms; ++i )
     {
@@ -608,12 +614,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1054 $     $Date: 1999/01/06 22:50:31 $
+ *      $Revision: 1.1055 $     $Date: 1999/03/10 05:11:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1055  1999/03/10 05:11:34  jim
+ * Added reassignHold parameter.
+ *
  * Revision 1.1054  1999/01/06 22:50:31  jim
  * Anisotropic (flexible cell) Langevin Piston pressure control finished.
  *

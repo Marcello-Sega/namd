@@ -253,6 +253,7 @@ public:
 	int reassignFreq;		//  Velocity reassignment frequency
 	BigReal reassignTemp;		//  Temperature to reassign to
 	BigReal reassignIncr;		//  Added to reassignTemp each time
+	BigReal reassignHold;		//  Hold reassignTemp at this value
 
 	Bool useGroupPressure;		//  Use group rather than atomic
 					//  quantities for pressure calc
@@ -411,12 +412,15 @@ public:
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1031 $	$Date: 1999/03/09 01:44:17 $
+ *	$Revision: 1.1032 $	$Date: 1999/03/10 05:11:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1032  1999/03/10 05:11:35  jim
+ * Added reassignHold parameter.
+ *
  * Revision 1.1031  1999/03/09 01:44:17  jim
  * Added langevinDamping and langevinHydrogen parameters.
  *

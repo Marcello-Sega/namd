@@ -267,20 +267,26 @@ and to what temperature this reassignment is performed.
 \item
 \NAMDCONF{reassignFreq}{number of timesteps between temperature reassignment}{positive integer}
 {The equilibration feature of \NAMD\ is activated by 
-specifying the number of timesteps between each temperature reassignment.  
+specifying the number of timesteps between each temperature reassignment.
 If this value is given, then the {\tt reassignTemp} parameter must also 
 be given to specify the target temperature. }
 
 \item
-\NAMDCONF{reassignTemp}{temperature for equilibration (K)}{positive decimal}
+\NAMDCONFWDEF{reassignTemp}{temperature for equilibration (K)}{positive decimal}{{\tt temperature} if set, otherwise none}
 {The temperature to which all velocities will be reassigned
 every {\tt reassignFreq} timesteps.  
 This parameter is valid only if {\tt reassignFreq} has been set.}
 
 \item
-\NAMDCONFWDEF{reassignIncr}{temperature increment for equilibration (K)}{positive decimal}{0}
+\NAMDCONFWDEF{reassignIncr}{temperature increment for equilibration (K)}{decimal}{0}
 {In order to allow simulated annealing or other slow heating/cooling protocols, {\tt reassignIncr} will be added to {\tt reassignTemp} after each reassignment.
+(Reassignment is carried out at the first timestep.)  The {\tt reassignHold} parameter may be set to limit the final temperature.
 This parameter is valid only if {\tt reassignFreq} has been set.}
+
+\item
+\NAMDCONF{reassignHold}{holding temperature for equilibration (K)}{positive decimal}
+{The final temperature for reassignment when {\tt reassignIncr} is set; {\tt reassignTemp} will be held at this value once it has been reached.
+This parameter is valid only if {\tt reassignIncr} has been set.}
 
 \end{itemize}
 
