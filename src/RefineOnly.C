@@ -20,16 +20,19 @@ void RefineOnly::strategy()
 	 
 
   computeAverage();
+#if 0
   iout << iINFO
        << "------------------------------------------------------------\n"
        << iINFO << "Before load balancing (measured stats):\n" << endi;
   printLoads();
+#endif
 
   double max = computeMax();
   overLoad = 1.02;
   refine();
 
   computeAverage();
+#if 0
   iout << iINFO
        << "------------------------------------------------------------\n"
        << iINFO 
@@ -38,5 +41,6 @@ void RefineOnly::strategy()
   iout << iINFO 
        << "------------------------------------------------------------\n"
        << endi;
+#endif
   max = computeMax();
 }

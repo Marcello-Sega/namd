@@ -55,8 +55,8 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
       processors[i].load += processors[i].computeLoad;
    }
 
-   iout << iINFO << "Initial load" << "\n";
-   printLoads();
+   // iout << iINFO << "Initial load" << "\n";
+   // printLoads();
 
    for(i=0;i<P; i++)
    {
@@ -378,6 +378,8 @@ void Rebalancer::printResults()
 
 void Rebalancer::printLoads()
 {
+   return;  // Something evil in these print statements.  -JCP
+
    int i, total = 0, numBytes = 0;
    double max;
 
@@ -433,17 +435,17 @@ void Rebalancer::printLoads()
    computeAverage();
    max = computeMax();
 
-   iout << iINFO << "\n";
-   iout << iINFO << "------------------------------------------------------------\n"; 
-   iout << iINFO << "          LOAD SUMMARY FOR STRATEGY \"" << strategyName << "\"\n\n";
+   iout << iINFO << "\n" << endi;
+   iout << iINFO << "------------------------------------------------------------\n" << endi; 
+   iout << iINFO << "          LOAD SUMMARY FOR STRATEGY \"" << strategyName << "\"\n\n" << endi;
    iout << iINFO << "Processors = " << setw(5) << P << "\t"
-        << "  Overload = " << setw(7) << overLoad << "\n";
+        << "  Overload = " << setw(7) << overLoad << "\n" << endi;
    iout << iINFO << "Patches    = " << setw(5) << numPatches << "\t"
-        << "  Avg load = " << setw(7) << averageLoad << "\n";
+        << "  Avg load = " << setw(7) << averageLoad << "\n" << endi;
    iout << iINFO << "Computes   = " << setw(5) << numComputes << "\t"
-        << "  Max load = " << setw(7) << max << "\n";
+        << "  Max load = " << setw(7) << max << "\n" << endi;
    iout << iINFO << "# messages = " << setw(5) << total << "\t"
-        << "  Msg size = " << numBytes << " bytes" << "\n" << "\n";
+        << "  Msg size = " << numBytes << " bytes" << "\n" << "\n" << endi;
   iout << iINFO <<"============================================================\n"
        << "\n" << endi;
    iout.unsetf(ios::right);
