@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1048 1998/06/28 17:53:04 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1049 1998/06/28 21:52:06 jim Exp $";
 
 #include <stdio.h>
 
@@ -777,9 +777,9 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
   int seq = compute->sequence();
 
   if ( seq < 0 ) {
-    *CPriorityPtr(msg) = compute->priority();
+    *CPriorityPtr(msg) = 128 + compute->priority();
   } else {
-    *CPriorityPtr(msg) = (seq %256) * 256 + compute->priority();
+    *CPriorityPtr(msg) = 128 + (seq %256) * 256 + compute->priority();
   }
 
   msg->compute = compute; // pointer is valid since send is to local Pe
@@ -1045,12 +1045,15 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1048 $	$Date: 1998/06/28 17:53:04 $
+ *	$Revision: 1.1049 $	$Date: 1998/06/28 21:52:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1049  1998/06/28 21:52:06  jim
+ * Added 128 to priority of all enqueueWork messages.
+ *
  * Revision 1.1048  1998/06/28 17:53:04  jim
  * Workaround for computes returning -1 for their sequence number.
  *
