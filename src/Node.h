@@ -19,14 +19,16 @@
 #include "c++interface.h"
 
 #include "main.h"
+#include "PatchMap.h"
+#include "ComputeMap.h"
 
 class Molecule;
 class Parameters;
 class SimParameters;
 class ConfigList;
 class WorkDistrib;
-class PatchMap;
-class ComputeMap;
+
+
 
 class Node : public groupmember
 {
@@ -63,12 +65,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/08/16 21:56:17 $
+ *	$Revision: 1.4 $	$Date: 1996/08/19 17:57:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.4  1996/08/19 17:57:47  ari
+ * *** empty log message ***
+ *
  * Revision 1.3  1996/08/16 21:56:17  brunner
  * *** empty log message ***
  *
