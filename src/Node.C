@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.14 1996/11/23 23:01:00 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.15 1996/11/26 16:33:35 nealk Exp $";
 
 
 #include "ckdefs.h"
@@ -32,6 +32,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "Patch.h"
 #include "Compute.h"
 #include "ComputeAngles.h"
+#include "ComputeDihedrals.h"
+#include "ComputeImpropers.h"
 #include "ComputeNonbondedSelf.h"
 #include "ComputeMap.h"
 #include "Molecule.h"
@@ -175,10 +177,21 @@ void Node::run(RunMsg *msg)
 
   // This is testbed code!
   DebugM(1, "Node::run() - invoked\n");
+
   ComputeAngles *angles = new ComputeAngles(1);
   ComputeMap::Instance()->registerCompute(1,angles);
   DebugM(1, "Node::run() - creat ComputeAngles(1) signaling mapReady()\n");
   angles->mapReady();
+
+  ComputeDihedrals *dihedrals = new ComputeDihedrals(1);
+  ComputeMap::Instance()->registerCompute(1,dihedrals);
+  DebugM(1, "Node::run() - creat ComputeDihedrals(1) signaling mapReady()\n");
+  dihedrals->mapReady();
+
+  ComputeImpropers *impropers = new ComputeImpropers(1);
+  ComputeMap::Instance()->registerCompute(1,impropers);
+  DebugM(1, "Node::run() - creat ComputeImpropers(1) signaling mapReady()\n");
+  impropers->mapReady();
 
   HomePatchList *hpl = PatchMap::Object()->homePatchList();
   ResizeArrayIter<HomePatchElem> ai(*hpl);
@@ -228,13 +241,16 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.14 $	$Date: 1996/11/23 23:01:00 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.15 $	$Date: 1996/11/26 16:33:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.15  1996/11/26 16:33:35  nealk
+ * Added ComputeDihedrals and ComputeImpropers.
+ *
  * Revision 1.14  1996/11/23 23:01:00  jim
  * added ComputeNonbondedSelf test code
  *
