@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: Molecule.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/12/05 17:43:10 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.8 $	$Date: 1996/12/06 06:54:41 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -25,14 +25,8 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
- * Revision 1.7  1996/12/05 17:43:10  nealk
- * Still debugging ComputeNonbondedExcl.
- *
- * Revision 1.6  1996/12/04 17:48:31  nealk
- * Nonbondedexcl now inits.
- *
- * Revision 1.5  1996/12/03 17:50:13  nealk
- * Added nonbonded excl stuff.
+ * Revision 1.8  1996/12/06 06:54:41  jim
+ * started from 1.4, added support for treating exclusions like bonds
  *
  * Revision 1.4  1996/11/21 23:36:04  ari
  * *** empty log message ***
@@ -129,6 +123,7 @@
 #include "structures.h"
 #include "ConfigList.h"
 #include "Vector.h"
+#include "Templates/ResizeArray.h"
 
 class SimParameters;
 class Parameters;
@@ -151,10 +146,10 @@ private:
 	Angle *angles;		//  Array of angle structures
 	Dihedral *dihedrals;	//  Array of dihedral structures
 	Improper *impropers;	//  Array of improper structures
-	NonbondedExcl *nonbondedexcls; // Array of Nonbonded Excl structures
-	Exclusion *exclusions;	//  temp Array of exclusions
 	Bond *donors;	        //  Array of hydrogen bond donor structures
 	Bond *acceptors;	//  Array of hydrogen bond acceptor
+	Exclusion *exclusions;	//  Array of exclusion structures
+	ResizeArray<Exclusion> exclusionList;  //  Used for building
 	int *consIndexes;	//  Constraint indexes for each atom
 	ConstraintParams *consParams;
 				//  Parameters for each atom constrained
@@ -162,11 +157,14 @@ private:
 	Real *langForceVals;    //  Calculated values for langvin random forces
 
 	LintList *bondsByAtom;	//  List of bonds involving each atom
-	LintList *anglesByAtom;	//  List of angles involving each atom
+	LintList *anglesByAtom;  //  List of angles involving each atom
 	LintList *dihedralsByAtom;
 				//  List of dihedrals by atom
 	LintList *impropersByAtom;
 				//  List of impropers by atom
+	LintList *exclusionsByAtom;
+				//  List of exclusions by atom
+
 	IntList *all_exclusions;
 				//  List of all exclusions, including
 				//  explicit exclusions and those calculated
@@ -201,7 +199,7 @@ private:
 
 	void build12excl(IntList *);
 	void build13excl(IntList *);
-	void build14excl(IntList *);
+	void build14excl(IntList *, int);
 	void build_exclusions();
 
 	// analyze the atoms, and determine which are oxygen, hb donors, etc.
@@ -217,7 +215,6 @@ public:
 	int numAngles;		//  Number of angles
 	int numDihedrals;	//  Number of dihedrals
 	int numImpropers;	//  Number of impropers
-	int numNonbondedExcls;	//  Number of nonbonded excls
 	int numDonors;	        //  Number of hydrogen bond donors
 	int numAcceptors;	//  Number of hydrogen bond acceptors
 	int numExclusions;	//  Number of exclusions
@@ -296,15 +293,14 @@ public:
 	//  Retrieve a dihedral structure
 	Dihedral *get_dihedral(int dnum) const {return (&(dihedrals[dnum]));}
 
-	//  Retrieve a nonbonded excl structure
-	NonbondedExcl *get_nonbondedexcl(int nnum) const
-		{return (&(nonbondedexcls[nnum]));}
-
 	//  Retrieve a hydrogen bond donor structure
 	Bond *get_donor(int dnum) const {return (&(donors[dnum]));}
 
 	//  Retrieve a hydrogen bond acceptor structure
 	Bond *get_acceptor(int dnum) const {return (&(acceptors[dnum]));}
+
+	//  Retrieve an exclusion structure
+	Exclusion *get_exclusion(int ex) const {return (&(exclusions[ex]));}
 
 	//  Retrieve an atom type
 	const char *get_atomtype(int anum) const
@@ -327,10 +323,8 @@ public:
 			{return (&(dihedralsByAtom[anum]));}
 	LintList *get_impropers_for_atom(int anum) 
 			{return (&(impropersByAtom[anum]));}
-	IntList *get_nonbondedexcls_for_allatom(int anum)
-			{return (&(all_exclusions[anum]));}
-	IntList *get_nonbondedexcls_for_14atom(int anum)
-			{return (&(onefour_exclusions[anum]));}
+	LintList *get_exclusions_for_atom(int anum)
+			{return (&(exclusionsByAtom[anum]));}
 	
 	//  Check for exclusions, either explicit or bonded.
 	//  Inline this funcion since it is called so often
@@ -350,15 +344,16 @@ public:
 		check_int = atom2;
 		other_int = atom1;
 	   }
+
 	   //  Do the search and return the correct value
-           if (all_exclusions[check_int].find(other_int) == INTLIST_NOTFOUND)
-           {
-                return(FALSE);
-           }
-           else
-           {
-                return(TRUE);
-           }
+	   if (all_exclusions[check_int].find(other_int) == INTLIST_NOTFOUND)
+	   {
+		return(FALSE);
+	   }
+	   else
+	   {
+		return(TRUE);
+	   }
         }
 	
 	//  Check for 1-4 exclusions.  This is only valid when the
