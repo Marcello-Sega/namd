@@ -29,7 +29,7 @@ public:
     static void addTuplesForAtom(void*, AtomID, Molecule*);
 
     // Internal data
-    Index nonbondedexclType;
+    Index modified;
 
 
   NonbondedExclElem() {
@@ -38,10 +38,10 @@ public:
     p[0] = NULL;
     p[1] = NULL;
   }
-  NonbondedExclElem(const NonbondedExcl *a) {
+  NonbondedExclElem(const Exclusion *a) {
     atomID[0] = a->atom1;
     atomID[1] = a->atom2;
-    nonbondedexclType = a->nonbondedexcl_type;
+    modified = a->modified;
   }
 
   NonbondedExclElem(AtomID atom0, AtomID atom1) {
@@ -77,13 +77,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedExcl.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/12/03 17:17:03 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1996/12/06 06:56:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedExcl.h,v $
+ * Revision 1.2  1996/12/06 06:56:11  jim
+ * cleaned up and renamed a bit, now it works
+ *
  * Revision 1.1  1996/12/03 17:17:03  nealk
  * Initial revision
  *
