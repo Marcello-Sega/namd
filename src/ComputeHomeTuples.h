@@ -14,47 +14,6 @@
 #ifndef COMPUTEANGLE_H
 #define COMPUTEANGLE_H
 
-/*
-
-from class Parameters
-void get_angle_params(Real *k, Real *theta0, Real *k_ub, Real *r_ub,
-			      Index index)
-{
-  *k = angle_array[index].k;
-  *theta0 = angle_array[index].theta0;
-  *k_ub = angle_array[index].k_ub;
-  *r_ub = angle_array[index].r_ub;
-}
-
-from structures.h
-
-typedef struct angle
-{
-    int atom1;
-    int atom2;
-    int atom3;
-    Index angle_type;
-} Angle;
-
-from Molecule.h
-    LintList *get_angles_for_atom(int anum)
-		{return (&(anglesByAtom[anum]));}
-
-
-   #include "LintList.h"
-   method in LintList
-   int head()
-   check for LIST_EMPTY
-   int next()
-   returns integer value stored
-*/
-
-
-#include "main.h"
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
-
 #include "NamdTypes.h"
 #include "common.h"
 #include "structures.h"
@@ -64,60 +23,9 @@ from Molecule.h
 #include "Templates/Box.h"
 #include "Templates/OwnerBox.h"
 
-class AnglePatchElem;
-
-class AngleElem {
-public:
-    AtomID atomID[3];
-    int    localIndex[3];
-    AnglePatchElem *p[3];
-    Index angleType;
-
-
-  AngleElem() {
-    atomID[0] = -1;
-    atomID[1] = -1;
-    atomID[2] = -1;
-    p[0] = NULL;
-    p[1] = NULL;
-    p[2] = NULL;
-  }
-  AngleElem(const Angle *a) {
-    atomID[0] = a->atom1;
-    atomID[1] = a->atom2;
-    atomID[2] = a->atom3;
-    angleType = a->angle_type;
-  }
-
-  AngleElem(AtomID atom0, AtomID atom1, AtomID atom2) {
-    if (atom0 > atom2) {  // Swap end atoms so lowest is first!
-      AtomID tmp = atom2; atom2 = atom0; atom0 = tmp; 
-    }
-    atomID[0] = atom0;
-    atomID[1] = atom1;
-    atomID[2] = atom2;
-  }
-  ~AngleElem() {};
-
-  int operator==(const AngleElem &a) const {
-    return (a.atomID[0] == atomID[0] && a.atomID[1] == atomID[1] &&
-        a.atomID[2] == atomID[2]);
-  }
-
-  int operator<(const AngleElem &a) const {
-    return (atomID[0] < a.atomID[0] ||
-            (atomID[0] == a.atomID[0] &&
-            (atomID[1] < a.atomID[1] ||
-            (atomID[1] == a.atomID[1] &&
-             atomID[2] < a.atomID[2]) )));
-  }
-};
-
-typedef UniqueSortedArray<AngleElem> AngleList;
-
 enum PatchType {HOME,PROXY};
 
-class AnglePatchElem {
+class TuplePatchElem {
   public:
     PatchID patchID;
     Patch *p;
@@ -127,7 +35,7 @@ class AnglePatchElem {
     Position *x;
     Force *f;
 
-  AnglePatchElem() {
+  TuplePatchElem() {
     patchID = -1;
     p = NULL;
     positionBox = NULL;
@@ -136,11 +44,11 @@ class AnglePatchElem {
     f = NULL;
   }
 
-  AnglePatchElem(PatchID p) {
+  TuplePatchElem(PatchID p) {
     patchID = p;
   }
 
-  AnglePatchElem(Patch *p, PatchType pt, ComputeID cid) {
+  TuplePatchElem(Patch *p, PatchType pt, ComputeID cid) {
     patchID = p->getPatchID();
     this->p = p;
     patchType = pt;
@@ -150,25 +58,26 @@ class AnglePatchElem {
     f = NULL;
   }
     
-  ~AnglePatchElem() {};
+  ~TuplePatchElem() {};
 
-  int operator==(const AnglePatchElem &a) const {
+  int operator==(const TuplePatchElem &a) const {
     return (a.patchID == patchID);
   }
 
-  int operator<(const AnglePatchElem &a) const {
+  int operator<(const TuplePatchElem &a) const {
     return (patchID < a.patchID);
   }
 };
 
-typedef UniqueSortedArray<AnglePatchElem> AnglePatchList;
+typedef UniqueSortedArray<TuplePatchElem> TuplePatchList;
 
 class AtomMap;
 
-class ComputeAngles : public Compute {
+template <class T>
+class ComputeHomeTuples : public Compute {
 private:
-  AngleList angleList;
-  AnglePatchList anglePatchList;
+  UniqueSortedArray<T> tupleList;
+  TuplePatchList tuplePatchList;
 
   PatchMap *patchMap;
   AtomMap *atomMap;
@@ -176,13 +85,9 @@ private:
   int maxProxyAtoms;
   Force *dummy;
   
-  BigReal angleForce(const Position p1, const Position p2, const Position p3,
-		  Force *f1, Force *f2, Force *f3,
-		    const Index angleType);
-
 public:
-  ComputeAngles(ComputeID c);
-  virtual ~ComputeAngles() {
+  ComputeHomeTuples(ComputeID c);
+  virtual ~ComputeHomeTuples() {
     delete [] dummy;
   }
 
@@ -195,13 +100,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeHomeTuples.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/11/18 21:28:48 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.6 $	$Date: 1996/11/19 04:24:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.h,v $
+ * Revision 1.6  1996/11/19 04:24:24  jim
+ * first templated version as ComputeHomeTuples<T>
+ *
  * Revision 1.5  1996/11/18 21:28:48  ari
  * *** empty log message ***
  *
