@@ -174,6 +174,18 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES) $(LIBS)
 
 # Now sit back, have a coke, and relax.
 
+projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES) $(LIBS)
+	cd $(PVMDIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
+	cd $(DPMTADIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
+	$(CHARMC) -verbose -ld++-option \
+	"-I$(INCLUDE) -I$(SRCDIR) -I$(SRCDIR)/Templates $(CXXOPTS) " \
+	-language charm++ -tracemode projections \
+	-o namd2 $(OBJS) \
+	$(DPMTALIB) \
+	$(PVMLIB)
+
+# Now sit back, have a coke, and relax.
+
 $(DPMTADIR)/mpole/libmpole.a:
 	cd $(DPMTADIR) ; $(MAKE) ; cd ..
 

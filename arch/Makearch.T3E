@@ -7,9 +7,12 @@
 #####
 ## Choose your favorite Compiler options
 ####
-CC = cc -DGLOBALS -DT3E -DCYCLE_BARRIER
-CXX = CC -DGLOBALS -DT3E -DCYCLE_BARRIER
+CC = cc -DGLOBALS -DT3E
+CXX = CC -DGLOBALS -DT3E
 CXXOPTS = -O
+#CC = cc -DGLOBALS -DT3E -DCYCLE_BARRIER
+#CXX = CC -DGLOBALS -DT3E -DCYCLE_BARRIER
+#CXXOPTS = -O
 
 #####
 # Flags
