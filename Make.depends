@@ -23,6 +23,7 @@ obj/main.o: \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
+	inc/Sync.decl.h \
 	src/main.h \
 	inc/main.def.h
 	$(CXX) $(CXXFLAGS) -o obj/main.o -c src/main.C
@@ -100,6 +101,7 @@ obj/BackEnd.o: \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
+	inc/Sync.decl.h \
 	src/CollectionMgr.h \
 	src/NamdTypes.h \
 	src/Vector.h \
@@ -240,6 +242,8 @@ obj/Compute.o: \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/Compute.h \
+	src/Sync.h \
+	inc/Sync.decl.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/Compute.o -c src/Compute.C
 obj/ComputeAngles.o: \
@@ -1937,6 +1941,8 @@ obj/HomePatch.o: \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
+	src/Sync.h \
+	inc/Sync.decl.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/HomePatch.o -c src/HomePatch.C
 obj/IMDOutput.o: \
@@ -2242,6 +2248,7 @@ obj/Node.o: \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
+	inc/Sync.decl.h \
 	src/WorkDistrib.h \
 	src/NamdTypes.h \
 	src/Vector.h \
@@ -2456,6 +2463,7 @@ obj/PatchMgr.o: \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
+	inc/Sync.decl.h \
 	src/WorkDistrib.h \
 	src/ComputeMap.h \
 	src/packmsg.h \
@@ -2623,6 +2631,7 @@ obj/ProxyPatch.o: \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
+	inc/Sync.decl.h \
 	src/main.h \
 	src/ProxyPatch.h \
 	src/Patch.h \
@@ -2904,6 +2913,7 @@ obj/WorkDistrib.o: \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
+	inc/Sync.decl.h \
 	src/Node.h \
 	src/PatchMgr.h \
 	src/HomePatch.h \
@@ -2951,3 +2961,28 @@ obj/imd.o: \
 	src/imd.h \
 	src/vmdsock.h
 	$(CXX) $(CXXFLAGS) -o obj/imd.o -c src/imd.C
+obj/Sync.o: \
+	src/Sync.C \
+	inc/Sync.decl.h \
+	src/Sync.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	src/PatchMap.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/Compute.h \
+	src/main.h \
+	src/ComputeMap.h \
+	src/Debug.h \
+	src/InfoStream.h \
+	inc/Sync.def.h
+	$(CXX) $(CXXFLAGS) -o obj/Sync.o -c src/Sync.C
