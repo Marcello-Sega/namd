@@ -27,6 +27,7 @@
 #include "ComputeDihedrals.h"
 #include "ComputeImpropers.h"
 #include "ComputeBonds.h"
+#include "ComputeNonbondedExcl.h"
 
 #define MIN_DEBUG_LEVEL 4
 #define DEBUGM 1
@@ -97,7 +98,11 @@ void ComputeMgr:: createComputes(ComputeMap *map)
 	c->mapReady();
 	break;
       case computeNonbondedExclType:
-	DebugM(7,"ComputeNonbondedExcl would have been created.\n");
+	c = new ComputeNonbondedExcls(i);
+	DebugM(3,"ComputeNonbondedExcls created.\n");
+	map->registerCompute(i,c);
+	c->mapReady();
+	break;
 	break;
       case computeBondsType:
 	c = new ComputeBonds(i);
@@ -149,8 +154,8 @@ void ComputeMgr:: enqueueWork(Compute *compute)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/12/04 17:16:32 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.8 $	$Date: 1996/12/04 17:49:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
