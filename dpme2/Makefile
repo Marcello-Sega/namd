@@ -81,7 +81,7 @@ all:	$(objects) $(Dpme_Recip) $(Dpubfft)
 	ar -vr libdpme.a $(objects) $(Dpme_Recip) $(Dpubfft)
 
 .c.o:
-	$(CC) $(CFLAGS) $(DFLAGS) $(IFLAGS) $(FFTW) -c -o $*.o  $*.c
+	$(CC) $(CFLAGS) $(DFLAGS) $(IFLAGS) $(FFT) -c -o $*.o  $*.c
 
 dpme_test:    $(objects) dpme2_testW.o
 	$(CC) $(CFLAGS)    -o dpme_test  $(objects) dpme2_testW.o $(libobjects) $(LDLIBS) $(LFLAGS)
