@@ -223,6 +223,8 @@ public:
 	Bool useGroupPressure;		//  Use group rather than atomic
 					//  quantities for pressure calc
 
+	Bool excludeFromPressure;	//  Flag TRUE-> some atoms not rescaled
+ 
 	Bool useFlexibleCell;		//  Use anisotropic cell fluctuations
 
 	Bool berendsenPressureOn;	//  Berendsen pressure bath

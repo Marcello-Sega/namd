@@ -414,6 +414,7 @@ void Sequencer::langevinPiston(int step)
    // JCP FIX THIS!!!
    Vector velFactor(1/factor.xx,1/factor.yy,1/factor.zz);
    patch->lattice.rescale(factor);
+   Molecule *mol = Node::Object()->molecule;
    if ( simParams->useGroupPressure )
    {
     int hgs;
@@ -439,6 +440,10 @@ void Sequencer::langevinPiston(int step)
       delta_v_cm.z = ( velFactor.z - 1 ) * v_cm.z;
       for ( j = i; j < (i+hgs); ++j ) {
         if ( a[j].atomFixed ) continue;
+        if ( mol->is_atom_exPressure(a[j].id) ) {
+		printf("skipping %d\n", a[j].id);
+		continue;
+	}
         a[j].position += delta_x_cm;
         a[j].velocity += delta_v_cm;
       }
@@ -449,6 +454,10 @@ void Sequencer::langevinPiston(int step)
     for ( int i = 0; i < numAtoms; ++i )
     {
       if ( a[i].atomFixed ) continue;
+      if ( mol->is_atom_exPressure(a[i].id) ) {
+		printf("skipping %d\n", a[i].id);
+		continue;
+	}
       patch->lattice.rescale(a[i].position,factor);
       a[i].velocity.x *= velFactor.x;
       a[i].velocity.y *= velFactor.y;

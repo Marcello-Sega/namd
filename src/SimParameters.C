@@ -595,6 +595,18 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
       "Use anisotropic cell fluctuation for pressure control?",
       &useFlexibleCell, FALSE);
 
+   //// Exclude atoms from pressure
+   opts.optionalB("main", "excludeFromPressure",
+	"Should some atoms be excluded from pressure rescaling?",
+	&excludeFromPressure, FALSE);
+   opts.optional("excludeFromPressure", "excludeFromPressureFile",
+	"PDB file for atoms to be excluded from pressure",
+        PARSE_STRING);
+   opts.optional("excludeFromPressure", "excludeFromPressureCol", 
+        "Column in the excludeFromPressureFile"
+        "containing the flags (nonzero means excluded);\n"
+        "default is 'O'", PARSE_STRING);
+
    ////  Berendsen pressure bath coupling
    opts.optionalB("main", "BerendsenPressure", 
       "Should Berendsen pressure bath coupling be performed?",
@@ -2465,6 +2477,10 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    if (berendsenPressureOn && langevinPistonOn)
    {
       NAMD_die("Multiple pressure control algorithms selected!\n");
+   }
+
+   if (excludeFromPressure) {
+     iout << iINFO << "EXCLUDE FROM PRESSURE ACTIVE\n";
    }
 
    if (berendsenPressureOn || langevinPistonOn) {

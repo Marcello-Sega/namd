@@ -82,6 +82,7 @@ private:
 	Real *langevinParams;   //  b values for langevin dynamics
 	Real *langForceVals;    //  Calculated values for langvin random forces
 	int32 *fixedAtomFlags;	//  1 for fixed, -1 for fixed group, else 0
+	int32 *exPressureAtomFlags; // 1 for excluded, -1 for excluded group.
 	Real *rigidBondLengths;  //  if H, length to parent or 0. or
 				//  if not H, length between children or 0.
 
@@ -149,6 +150,7 @@ public:
 	int numTotalExclusions; //  Real Total Number of Exclusions // hack
 	int numConstraints;	//  Number of atoms constrained
 	int numFixedAtoms;	//  Number of fixed atoms
+	int numExPressureAtoms; //  Number of atoms excluded from pressure
 	int numHydrogenGroups;	//  Number of hydrogen groups
 	int numRigidBonds;	//  Number of rigid bonds
 	int numFixedRigidBonds; //  Number of rigid bonds between fixed atoms
@@ -198,6 +200,10 @@ public:
 
 	void build_fixed_atoms(StringList *, StringList *, PDB *, char *);
 				//  Determine which atoms are fixed (if any)
+
+	void build_exPressure_atoms(StringList *, StringList *, PDB *, char *);
+				//  Determine which atoms are excluded from
+                                //  pressure (if any)
 
         Bool is_hydrogen(int);     // return true if atom is hydrogen
         Bool is_oxygen(int);       // return true if atom is oxygen
@@ -328,7 +334,10 @@ public:
 	{
 		return (numFixedAtoms && (fixedAtomFlags[atomnum] == -1));
 	}
-
+	Bool is_atom_exPressure(int atomnum) const
+	{
+		return (numExPressureAtoms && exPressureAtomFlags[atomnum]);
+	}
 	// 0 if not rigid or length to parent, for parent refers to H-H length
 	// < 0 implies MOLLY but not SHAKE, > 1 implies both if MOLLY is on
 	Real rigid_bond_length(int atomnum) const

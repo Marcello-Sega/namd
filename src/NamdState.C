@@ -1,4 +1,4 @@
-/**
+/*
 ***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
 ***  The Board of Trustees of the University of Illinois.
 ***  All rights reserved.
@@ -158,6 +158,12 @@ int NamdState::configListInit(ConfigList *cfgList) {
 					NULL);
 	}
 
+        if (simParameters->excludeFromPressure) {
+           molecule->build_exPressure_atoms(
+             configList->find("excludeFromPressureFile"),
+             configList->find("excludeFromPressureCol"),
+	     pdb, NULL);
+        }
 	//  If langevin dynamics or temperature coupling are active, build 
 	//  the parameters necessary
 	if (simParameters->langevinOn)

@@ -178,6 +178,7 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
   langevinParams=NULL;
   langForceVals=NULL;
   fixedAtomFlags=NULL;
+  exPressureAtomFlags=NULL;
   rigidBondLengths=NULL;
   consIndexes=NULL;
   consParams=NULL;
@@ -199,6 +200,7 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
   numExclusions=0;
   numConstraints=0;
   numFixedAtoms=0;
+  numExPressureAtoms=0;
   numRigidBonds=0;
   numFixedRigidBonds=0;
   numMultipleDihedrals=0;
@@ -284,6 +286,9 @@ Molecule::~Molecule()
   
   if (fixedAtomFlags != NULL)
        delete [] fixedAtomFlags;
+
+  if (exPressureAtomFlags != NULL)
+       delete [] exPressureAtomFlags;
 
   if (rigidBondLengths != NULL)
        delete [] rigidBondLengths;
@@ -1664,6 +1669,11 @@ void Molecule::send_Molecule(Communicate *com_obj)
 	msg->put(numFixedRigidBonds);
       }
 
+      if (simParams->excludeFromPressure) {
+        msg->put(numExPressureAtoms);
+        msg->put(numAtoms, exPressureAtomFlags);
+      }
+
       // Broadcast the message to the other nodes
       msg->end();
       delete msg;
@@ -1811,6 +1821,12 @@ void Molecule::receive_Molecule(MIStream *msg)
         msg->get(numFixedAtoms);
         msg->get(numAtoms, fixedAtomFlags);
         msg->get(numFixedRigidBonds);
+      }
+
+      if (simParams->excludeFromPressure) {
+        exPressureAtomFlags = new int32[numAtoms];
+        msg->get(numExPressureAtoms);
+        msg->get(numAtoms, exPressureAtomFlags);
       }
 
       //  Now free the message 
@@ -3059,6 +3075,102 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
 }
     /*      END OF FUNCTION build_fixed_atoms    */
 
+void Molecule::build_exPressure_atoms(StringList *fixedfile, 
+   StringList *fixedcol, PDB *initial_pdb, char *cwd) {
+       
+  PDB *bPDB;      //  Pointer to PDB object to use
+  int bcol = 4;      //  Column that data is in
+  Real bval = 0;      //  b value from PDB file
+  int i;      //  Loop counter
+  char filename[129];    //  Filename
+
+  //  Get the PDB object that contains the b values.  If
+  //  the user gave another file name, use it.  Otherwise, just use
+  //  the PDB file that has the initial coordinates.
+  if (fixedfile == NULL) {
+    bPDB = initial_pdb;
+  } else {
+    if (fixedfile->next != NULL) {
+      NAMD_die("Multiple definitions of excluded pressure atoms PDB file in configuration file");
+    }
+
+    if ( (cwd == NULL) || (fixedfile->data[0] == '/') ) {
+         strcpy(filename, fixedfile->data);
+    } else {
+         strcpy(filename, cwd);
+         strcat(filename, fixedfile->data);
+    }
+    bPDB = new PDB(filename);
+    if ( bPDB == NULL ) {
+      NAMD_die("Memory allocation failed in Molecule::build_exPressure_atoms");
+    }
+
+    if (bPDB->num_atoms() != numAtoms) {
+      NAMD_die("Number of atoms in excludedPressure atoms PDB doesn't match coordinate PDB");
+    }
+  }
+
+  //  Get the column that the b vaules are in.  It
+  //  can be in any of the 5 floating point fields in the PDB, according
+  //  to what the user wants.  The allowable fields are X, Y, Z, O, or
+  //  B which correspond to the 1st, 2nd, ... 5th floating point fields.
+  //  The default is the 4th field, which is the occupancy
+  if (fixedcol == NULL) {
+    bcol = 4;
+  } else {
+    if (fixedcol->next != NULL) {
+      NAMD_die("Multiple definitions of excludedPressure atoms column in config file");
+    }
+
+    if (strcasecmp(fixedcol->data, "X") == 0) {
+       bcol=1;
+    } else if (strcasecmp(fixedcol->data, "Y") == 0) {
+       bcol=2;
+    } else if (strcasecmp(fixedcol->data, "Z") == 0) {
+       bcol=3;
+    } else if (strcasecmp(fixedcol->data, "O") == 0) {
+       bcol=4;
+    } else if (strcasecmp(fixedcol->data, "B") == 0) {
+       bcol=5;
+    } else {
+       NAMD_die("excludedPressureFileCol must have value of X, Y, Z, O, or B");
+    }
+  }
+
+  //  Allocate the array to hold all the data
+  exPressureAtomFlags = new int32[numAtoms];
+
+  if (exPressureAtomFlags == NULL) {
+    NAMD_die("memory allocation failed in Molecule::build_fixed_atoms()");
+  }
+
+  numExPressureAtoms = 0;
+
+  //  Loop through all the atoms and get the b value
+  for (i=0; i<numAtoms; i++) {
+    //  Get the k value based on where we were told to find it
+    switch (bcol) {
+       case 1: bval = (bPDB->atom(i))->xcoor(); break;
+       case 2: bval = (bPDB->atom(i))->ycoor(); break;
+       case 3: bval = (bPDB->atom(i))->zcoor(); break;
+       case 4: bval = (bPDB->atom(i))->occupancy(); break;
+       case 5: bval = (bPDB->atom(i))->temperaturefactor(); break;
+    }
+
+    //  Assign the b value
+    if ( bval != 0 ) {
+      exPressureAtomFlags[i] = 1;
+      numExPressureAtoms++;
+    } else {
+      exPressureAtomFlags[i] = 0;
+    }
+  }
+  if (fixedfile != NULL) 
+    delete bPDB;
+
+  iout << iINFO << "Got " << numExPressureAtoms << " excluded pressure atoms." 
+       << endi;
+}
 
 
     Bool Molecule::is_hydrogen(int anum)
