@@ -11,7 +11,7 @@
  *
  *  $RCSfile: Molecule.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1023 $  $Date: 1998/02/18 05:38:30 $
+ *  $Revision: 1.1024 $  $Date: 1998/02/19 01:21:14 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1024  1998/02/19 01:21:14  jim
+ * Small usability changes.
+ *
  * Revision 1.1023  1998/02/18 05:38:30  jim
  * RigidBonds mainly finished.  Now temperature is correct and a form
  * of Langevin dynamics works with constraints.
@@ -254,7 +257,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1023 1998/02/18 05:38:30 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1024 1998/02/19 01:21:14 jim Exp $";
 
 #include "UniqueSortedArray.h"
 #include "Molecule.h"
@@ -843,12 +846,21 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
   /*  Allocate the atom arrays          */
   atoms     = new Atom[numAtoms];
   atomNames = new AtomNameInfo[numAtoms];
-  ResidueLookupElem *tmpResLookup = resLookup = new ResidueLookupElem;
   hydrogenGroup.resize(0);
 
-  if (atoms == NULL || atomNames == NULL || resLookup == NULL )
+  if (atoms == NULL || atomNames == NULL )
   {
     NAMD_die("memory allocation failed in Molecule::read_atoms");
+  }
+
+  ResidueLookupElem *tmpResLookup = NULL;
+  if ( simParams->globalForcesOn )
+  {
+    tmpResLookup = resLookup = new ResidueLookupElem;
+    if ( resLookup == NULL )
+    {
+      NAMD_die("memory allocation failed in Molecule::read_atoms");
+    }
   }
 
   /*  Loop and read in numAtoms atom lines.      */
@@ -914,7 +926,7 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
     atoms[atom_number-1].status = UnknownAtom;
 
     /*  Add this atom to residue lookup table */
-    tmpResLookup =
+    if ( tmpResLookup ) tmpResLookup =
 	tmpResLookup->append(segment_name, residue_number, atom_number-1);
 
     /*  Determine the type of the atom (H or O) */
@@ -3876,12 +3888,15 @@ void Molecule::receive_Molecule(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1023 $  $Date: 1998/02/18 05:38:30 $
+ *  $Revision: 1.1024 $  $Date: 1998/02/19 01:21:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1024  1998/02/19 01:21:14  jim
+ * Small usability changes.
+ *
  * Revision 1.1023  1998/02/18 05:38:30  jim
  * RigidBonds mainly finished.  Now temperature is correct and a form
  * of Langevin dynamics works with constraints.

@@ -38,7 +38,7 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1042 1998/02/17 06:39:19 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1043 1998/02/19 01:21:13 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
 		     VelocityList vl) : Patch(pd,al,pl), v(vl), pInit(&pl)
@@ -452,24 +452,26 @@ void HomePatch::doGroupSizeCheck()
   PositionList::iterator p_i = p.begin();
   PositionList::iterator p_e = p.end();
   BigReal x,y,z;
-  int problemCount = 0;
+  int parentID;
 
   while ( p_i != p_e ) {
     if ( a_i->hydrogenGroupSize ) {  // group parent
-      x = p_i->x; y = p_i->y; z = p_i->z;
+      x = p_i->x; y = p_i->y; z = p_i->z; parentID = a_i->id;
     } else {  // child atom
       BigReal dx = p_i->x - x;
       BigReal dy = p_i->y - y;
       BigReal dz = p_i->z - z;
       BigReal r2 = dx * dx + dy * dy + dz * dz;
-      if ( r2 > hgcut ) ++problemCount;
+      if ( r2 > hgcut ) {
+        iout << iERROR << "H-group size violation between atoms " <<
+		parentID + 1 << " and " << a_i->id + 1 <<
+		" at distance " << sqrt(r2) << "!\n" <<
+		"You may wish to increase the hgroupCutoff parameter " <<
+		"from its current value of " << simParams->hgroupCutoff <<
+		".\n" << endi;
+      }
     }
     ++p_i; ++ a_i;
-  }
-
-  if ( problemCount ) {
-      iout << iERROR <<
-	"Found " << problemCount << " H-group size violations!\n" << endi;
   }
 }
 
@@ -718,12 +720,15 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1042 $	$Date: 1998/02/17 06:39:19 $
+ *	$Revision: 1.1043 $	$Date: 1998/02/19 01:21:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1043  1998/02/19 01:21:13  jim
+ * Small usability changes.
+ *
  * Revision 1.1042  1998/02/17 06:39:19  jim
  * SHAKE/RATTLE (rigidBonds) appears to work!!!  Still needs langevin,
  * proper startup, and degree of freedom tracking.
