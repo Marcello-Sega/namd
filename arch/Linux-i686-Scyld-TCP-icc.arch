@@ -1,0 +1,4 @@
+include .rootdir/arch/Linux-i686-Scyld-icc.arch
+
+CHARMARCH = net-linux-scyld-tcp-icc
+

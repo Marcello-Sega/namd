@@ -1,5 +1,5 @@
 NAMD_ARCH = Linux-i686
-CHARMARCH = net-linux-tcp-icc
+CHARMARCH = net-linux-icc
 
 FLOATOPTS = -march=pentiumpro -mcpu=pentium4 -ip -fno-rtti
 
