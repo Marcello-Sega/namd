@@ -548,6 +548,22 @@ int ScriptTcl::Tcl_coorfile(ClientData clientData,
     delete [] coords;
     delete [] vcoords;
 
+  } else if (argc ==2 && !strcmp(argv[1], "skip")) {
+    if (filehandle == NULL) {
+      Tcl_AppendResult(interp, "coorfile skip: Error, no file open for reading",
+	NULL);
+      return TCL_ERROR;
+    }
+    molfile_timestep_t ts;
+    ts.numatoms = numatoms;
+    ts.coords = coords;
+    int rc = dcdapi->read_next_timestep(filehandle, &ts);
+    if (rc) {  // EOF
+      Tcl_SetObjResult(interp, Tcl_NewIntObj(-1));
+      return TCL_OK;
+    }
+    Tcl_SetObjResult(interp, Tcl_NewIntObj(0));
+
   } else {
     NAMD_die("Unknown option passed to coorfile");
   }
