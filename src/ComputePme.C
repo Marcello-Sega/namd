@@ -107,6 +107,7 @@ private:
   Lattice lattice;
   PmeKSpace *myKSpace;
   double *qgrid;
+  double *kgrid;
 
 #ifdef NAMD_FFTW
   fftw_plan forward_plan_x, backward_plan_x;
@@ -140,10 +141,6 @@ private:
   int trans_count;
   int untrans_count;
   int ungrid_count;
-  PmeTransMsg **trans_buf;
-  int trans_buf_len;
-  PmeUntransMsg **untrans_buf;
-  int untrans_buf_len;
   PmeGridMsg **gridmsg_reuse;
   PmeReduction recip_evir;
   PmeReduction recip_evir2;
@@ -159,15 +156,12 @@ ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), pmeCompute(0) {
   gridPeOrder = new int[CkNumPes()];
   transPeOrder = new int[CkNumPes()];
   qgrid = 0;
+  kgrid = 0;
   work = 0;
   grid_count = 0;
   trans_count = 0;
   untrans_count = 0;
   ungrid_count = 0;
-  trans_buf = new PmeTransMsg*[CkNumPes()];
-  trans_buf_len = 0;
-  untrans_buf = new PmeUntransMsg*[CkNumPes()];
-  untrans_buf_len = 0;
   gridmsg_reuse= new PmeGridMsg*[CkNumPes()];
 }
 
@@ -401,6 +395,11 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   int local_size_2 = myGrid.block2 * myGrid.K1 * myGrid.dim3;
   if ( local_size < local_size_2 ) local_size = local_size_2;
   qgrid = new double[local_size*numGrids];
+  if ( numGridPes > 1 || numTransPes > 1 ) {
+    kgrid = new double[local_size*numGrids];
+  } else {
+    kgrid = qgrid;
+  }
   qgrid_size = local_size;
 
   if ( myGridPe >= 0 ) {
@@ -423,13 +422,13 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   if ( ! CkMyPe() ) iout << " 2..." << endi;
   if ( myTransPe >= 0 ) {
   forward_plan_x = fftw_create_plan_specific(n[0], FFTW_REAL_TO_COMPLEX,
-	FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) qgrid,
+	FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) kgrid,
 	localInfo[myTransPe].ny_after_transpose * myGrid.dim3 / 2, work, 1);
   }
   if ( ! CkMyPe() ) iout << " 3..." << endi;
   if ( myTransPe >= 0 ) {
   backward_plan_x = fftw_create_plan_specific(n[0], FFTW_COMPLEX_TO_REAL,
-	FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) qgrid,
+	FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) kgrid,
 	localInfo[myTransPe].ny_after_transpose * myGrid.dim3 / 2, work, 1);
   }
   if ( ! CkMyPe() ) iout << " 4..." << endi;
@@ -446,7 +445,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 		NAMD_bug("PME grid elements exist without sources.");
   grid_count = numSources;
   memset( (void*) qgrid, 0, qgrid_size * numGrids * sizeof(double) );
-  if ( myGridPe < 0 ) trans_count = numGridPes;
+  trans_count = numGridPes;
 }
 
 ComputePmeMgr::~ComputePmeMgr() {
@@ -458,9 +457,8 @@ ComputePmeMgr::~ComputePmeMgr() {
   delete [] gridPeOrder;
   delete [] transPeOrder;
   delete [] qgrid;
+  if ( kgrid != qgrid ) delete [] kgrid;
   delete [] work;
-  delete [] trans_buf;
-  delete [] untrans_buf;
   delete [] gridmsg_reuse;
 }
 
@@ -555,27 +553,11 @@ void ComputePmeMgr::sendTrans(void) {
 #endif
   }
 
-  trans_count = numGridPes;
-  if ( trans_buf_len ) {
-    // CkPrintf("resending %d recvTrans on Pe(%d)\n",trans_buf_len,CkMyPe());
-    for ( int m=0; m<trans_buf_len; ++m ) {
-#if CHARM_VERSION > 050402
-      pmeProxy[CkMyPe()].recvTrans(trans_buf[m]);
-#else
-      pmeProxy.recvTrans(trans_buf[m],CkMyPe());
-#endif
-    }
-    trans_buf_len = 0;
-  }
-  if ( myTransPe < 0 ) untrans_count = numTransPes;
+  untrans_count = numTransPes;
 }
 
 void ComputePmeMgr::recvTrans(PmeTransMsg *msg) {
   // CkPrintf("recvTrans on Pe(%d)\n",CkMyPe());
-  if ( trans_count == 0 ) {
-    trans_buf[trans_buf_len++] = msg;
-    return;
-  }
   if ( trans_count == numGridPes ) {
     lattice = msg->lattice;
   }
@@ -586,7 +568,7 @@ void ComputePmeMgr::recvTrans(PmeTransMsg *msg) {
   int x_start = msg->x_start;
   int nx = msg->nx;
   for ( int g=0; g<numGrids; ++g ) {
-    memcpy((void*)(qgrid + qgrid_size * g + x_start*ny*zdim),
+    memcpy((void*)(kgrid + qgrid_size * g + x_start*ny*zdim),
 	(void*)(msg->qgrid + nx*ny*zdim*g), nx*ny*zdim*sizeof(double));
   }
 
@@ -612,19 +594,19 @@ void ComputePmeMgr::gridCalc2(void) {
   for ( int g=0; g<numGrids; ++g ) {
     // finish forward FFT (x dimension)
 #ifdef NAMD_FFTW
-    fftw(forward_plan_x, ny * zdim / 2, (fftw_complex *)(qgrid+qgrid_size*g),
+    fftw(forward_plan_x, ny * zdim / 2, (fftw_complex *)(kgrid+qgrid_size*g),
 	ny * zdim / 2, 1, work, 1, 0);
 #endif
 
     // reciprocal space portion of PME
     BigReal ewaldcof = ComputeNonbondedUtil::ewaldcof;
-    recip_evir2[7*g] = myKSpace->compute_energy(qgrid+qgrid_size*g,
+    recip_evir2[7*g] = myKSpace->compute_energy(kgrid+qgrid_size*g,
 			lattice, ewaldcof, &(recip_evir2[7*g+1]));
     // CkPrintf("Ewald reciprocal energy = %f\n", recip_evir2[7*g]);
 
     // start backward FFT (x dimension)
 #ifdef NAMD_FFTW
-    fftw(backward_plan_x, ny * zdim / 2, (fftw_complex *)(qgrid+qgrid_size*g),
+    fftw(backward_plan_x, ny * zdim / 2, (fftw_complex *)(kgrid+qgrid_size*g),
 	ny * zdim / 2, 1, work, 1, 0);
 #endif
   }
@@ -659,7 +641,7 @@ void ComputePmeMgr::sendUntrans(void) {
     newmsg->ny = ny;
     for ( int g=0; g<numGrids; ++g ) {
       memcpy((void*)(newmsg->qgrid+nx*ny*zdim*g),
-		(void*)(qgrid + qgrid_size*g + x_start*ny*zdim),
+		(void*)(kgrid + qgrid_size*g + x_start*ny*zdim),
 		nx*ny*zdim*sizeof(double));
     }
 #if CHARM_VERSION > 050402
@@ -669,27 +651,11 @@ void ComputePmeMgr::sendUntrans(void) {
 #endif
   }
 
-  untrans_count = numTransPes;
-  if ( untrans_buf_len ) {
-    // CkPrintf("resending %d recvUntrans on Pe(%d)\n",untrans_buf_len,CkMyPe());
-    for ( int m=0; m<untrans_buf_len; ++m ) {
-#if CHARM_VERSION > 050402
-      pmeProxy[CkMyPe()].recvUntrans(untrans_buf[m]);
-#else
-      pmeProxy.recvUntrans(untrans_buf[m],CkMyPe());
-#endif
-    }
-    untrans_buf_len = 0;
-  }
-  if ( myGridPe < 0 ) trans_count = numGridPes;
+  trans_count = numGridPes;
 }
 
 void ComputePmeMgr::recvUntrans(PmeUntransMsg *msg) {
   // CkPrintf("recvUntrans on Pe(%d)\n",CkMyPe());
-  if ( untrans_count == 0 ) {
-    untrans_buf[untrans_buf_len++] = msg;
-    return;
-  }
   if ( untrans_count == numTransPes ) {
     recip_evir = 0.;
   }
