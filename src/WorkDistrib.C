@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1047 1998/05/25 21:22:04 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1048 1998/06/28 17:53:04 jim Exp $";
 
 #include <stdio.h>
 
@@ -775,7 +775,12 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
     = new (MsgIndex(LocalWorkMsg), sizeof(int)*8) LocalWorkMsg;
 
   int seq = compute->sequence();
-  *CPriorityPtr(msg) = (seq %256) * 256 + compute->priority();
+
+  if ( seq < 0 ) {
+    *CPriorityPtr(msg) = compute->priority();
+  } else {
+    *CPriorityPtr(msg) = (seq %256) * 256 + compute->priority();
+  }
 
   msg->compute = compute; // pointer is valid since send is to local Pe
 
@@ -1040,12 +1045,15 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1047 $	$Date: 1998/05/25 21:22:04 $
+ *	$Revision: 1.1048 $	$Date: 1998/06/28 17:53:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1048  1998/06/28 17:53:04  jim
+ * Workaround for computes returning -1 for their sequence number.
+ *
  * Revision 1.1047  1998/05/25 21:22:04  jim
  * Use 99% bounding box unless FMA is active.  Avoids huge number of
  * patches when a small number of atoms have drifted off.
