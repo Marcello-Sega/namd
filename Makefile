@@ -1,7 +1,7 @@
 CHARMC = /Projects/l1/namd.2.0/charm/bin/charmc
 CHARMXI = /Projects/l1/namd.2.0/charm/bin/charmc
 
-CXX = g++
+CXX = CC -Aa -D_HPUX_SOURCE -g
 CXXFLAGS = -I/Projects/l1/namd.2.0/charm/include
 
 .SUFFIXES: 	.ci
@@ -18,7 +18,7 @@ CXXFILES = $(OBJS:.o=.C)
 INTERFACES = main.ci
 
 namd2:	$(OBJS)
-	$(CHARMC) -language charm++ -o namd2 $(OBJS)
+	$(CHARMC) -g -language charm++ -o namd2 $(OBJS)
 
 cifiles:
 	for i in $(INTERFACES); do \

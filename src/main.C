@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: main.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/08/06 20:38:38 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.3 $	$Date: 1996/08/15 20:32:14 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -20,6 +20,9 @@
  * REVISION HISTORY:
  *
  * $Log: main.C,v $
+ * Revision 1.3  1996/08/15 20:32:14  brunner
+ * *** empty log message ***
+ *
  * Revision 1.2  1996/08/06 20:38:38  ari
  * *** empty log message ***
  *
@@ -29,7 +32,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.2 1996/08/06 20:38:38 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.3 1996/08/15 20:32:14 brunner Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -50,12 +53,12 @@ Inform namdWarn("Warning");
 Inform namdInfo("Info");
 Inform namdDebug("** DEBUG **");
 
+
 class main : public chare_object
 {
 public:
   main(int argc, char **argv)
   {
-
     Molecule *molecule;
     Parameters *parameter;
     SimParameters *simParams;

@@ -28,9 +28,9 @@ public:
   int nodes(void) { return 1; }
   int this_node(void) { return 0; }
 
-  int send(Message *msg, int node, int tag, int delmsg = TRUE) {}
+  int send(Message *msg, int node, int tag, int delmsg = TRUE) { return 0; }
 
-  int send_all(void){};
+  int send_all(void){ return 0; };
 
   int send_now(Message *msg, int node, int tag, int delmsg = TRUE) 
   {
@@ -41,8 +41,8 @@ public:
   
   Message *receive(int& node, int& tag){return 0;}
 
-  int broadcast_all(Message *msg , int i){}
-  int broadcast_others(Message *msg, int i, int delmsg=TRUE){}
+  int broadcast_all(Message *msg , int i){ return 0; }
+  int broadcast_others(Message *msg, int i, int delmsg=TRUE){ return 0; }
 };
 
 #endif
