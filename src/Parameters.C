@@ -1454,14 +1454,12 @@ void Parameters::add_to_charmm_dihedral_list(
                             }
                             if (ptr->values[i].n == new_node->values[0].n)
                             {
-                              if (!same_as_last)
-                                iout << iWARN << "IDENTICAL PERIODICITY! REPLACING OLD VALUES BY: \n";
+                              iout << iWARN << "IDENTICAL PERIODICITY! REPLACING OLD VALUES BY: \n";
                               ptr->values[i].k = new_node->values[0].k;
                               ptr->values[i].delta = new_node->values[0].delta;
-                              if (!same_as_last)
-                                iout << "  k=" << ptr->values[i].k
-                                     << "  n=" << ptr->values[i].n
-                                     << "  delta=" << ptr->values[i].delta<< "\n";
+                              iout << "  k=" << ptr->values[i].k
+                                   << "  n=" << ptr->values[i].n
+                                   << "  delta=" << ptr->values[i].delta<< "\n";
                               replace=1;
                               break;
                             }
