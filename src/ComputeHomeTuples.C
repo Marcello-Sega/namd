@@ -124,7 +124,8 @@ void ComputeHomeTuples<T>::doWork() {
   ResizeArrayIter<TuplePatchElem> ap(tuplePatchList);
   for (ap = ap.begin(); ap != ap.end(); ap++) {
     (*ap).x = (*ap).positionBox->open();
-    (*ap).f = (*ap).forceBox->open();
+    if ( (*ap).patchType == HOME ) (*ap).f = (*ap).forceBox->open();
+    else (*ap).f = dummy;
     (*ap).a = (*ap).atomBox->open();
   } 
 
@@ -138,7 +139,7 @@ void ComputeHomeTuples<T>::doWork() {
 
   for (ap = ap.begin(); ap != ap.end(); ap++) {
     (*ap).positionBox->close(&(*ap).x);
-    (*ap).forceBox->close(&(*ap).f);
+    if ( (*ap).patchType == HOME ) (*ap).forceBox->close(&(*ap).f);
     (*ap).atomBox->close(&(*ap).a);
   }
   DebugM(1, "ComputeHomeTuples::doWork() -- done" << endl);

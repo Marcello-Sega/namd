@@ -57,7 +57,8 @@ class TuplePatchElem {
     this->p = p;
     patchType = pt;
     positionBox = p->registerPositionPickup(cid);
-    forceBox = p->registerForceDeposit(cid);
+    if ( pt == HOME ) forceBox = p->registerForceDeposit(cid);
+    else forceBox =  NULL;
     atomBox = p->registerAtomPickup(cid);
     x = NULL;
     f = NULL;
@@ -107,12 +108,15 @@ public:
  *
  *	$RCSfile: ComputeHomeTuples.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1996/12/04 18:03:12 $
+ *	$Revision: 1.9 $	$Date: 1997/01/14 17:59:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.h,v $
+ * Revision 1.9  1997/01/14 17:59:48  jim
+ * fixed multiple force additions (no adding to proxies now)
+ *
  * Revision 1.8  1996/12/04 18:03:12  jim
  * added AtomProperties checkout
  *
