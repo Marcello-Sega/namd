@@ -62,7 +62,11 @@ void read_binary_coors(char *fname, PDB *pdbobj) {
   }
 
   //  Read the coordinate from the file
-  fread(newcoords, sizeof(Vector), n, fp);
+  if (fread(newcoords, sizeof(Vector), n, fp) != n)
+  {
+    NAMD_die("Error reading binary coordinate file");
+  }
+
 
   //  Set the coordinates in the PDB object to the new coordinates
   pdbobj->set_all_positions(newcoords);
@@ -159,7 +163,11 @@ void velocities_from_binfile(char *fname, Vector *vels, int n)
 	  NAMD_die("Number of coordinates in binary velocity file incorrect");
 	}
 
-	fread(vels, sizeof(Vector), n, fp);
+	if (fread(vels, sizeof(Vector), n, fp) != n)
+	{
+	  NAMD_die("Error reading binary velocity file");
+	}
+
 
 	Fclose(fp);
 }
@@ -361,12 +369,15 @@ void remove_com_motion(Vector *vel, Molecule *structure, int n)
 *
 *	$RCSfile: NamdOneTools.C,v $
 *	$Author: jim $	$Locker:  $		$State: Exp $
-*	$Revision: 1.12 $	$Date: 1998/03/04 19:26:26 $
+*	$Revision: 1.13 $	$Date: 1998/08/17 21:04:33 $
 *
 ***************************************************************************
 * REVISION HISTORY:
 *
 * $Log: NamdOneTools.C,v $
+* Revision 1.13  1998/08/17 21:04:33  jim
+* Added checks for short binary input files.
+*
 * Revision 1.12  1998/03/04 19:26:26  jim
 * Switched to more efficient gaussian_random_vector implementation.
 *
@@ -416,4 +427,4 @@ void remove_com_motion(Vector *vel, Molecule *structure, int n)
 *
 ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdOneTools.C,v 1.12 1998/03/04 19:26:26 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdOneTools.C,v 1.13 1998/08/17 21:04:33 jim Exp $";

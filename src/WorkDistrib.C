@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1059 1998/08/11 22:44:13 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1060 1998/08/17 21:04:31 jim Exp $";
 
 #include <stdio.h>
 
@@ -982,7 +982,10 @@ void WorkDistrib::velocities_from_binfile(char *fname, Vector *vels, int n)
     NAMD_die("Number of coordinates in binary velocity file incorrect");
   }
 
-  fread(vels, sizeof(Vector), n, fp);
+  if (fread(vels, sizeof(Vector), n, fp) != n)
+  {
+    NAMD_die("Error reading binary velocity file");
+  }
 
   Fclose(fp);
 }
@@ -1113,12 +1116,15 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1059 $	$Date: 1998/08/11 22:44:13 $
+ *	$Revision: 1.1060 $	$Date: 1998/08/17 21:04:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1060  1998/08/17 21:04:31  jim
+ * Added checks for short binary input files.
+ *
  * Revision 1.1059  1998/08/11 22:44:13  jim
  * Fixed numPatches < numNodes error, added "Tiny Elvis" for Rob.
  *
