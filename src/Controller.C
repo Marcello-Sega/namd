@@ -732,13 +732,6 @@ void Controller::receivePressure(int step, int minimize)
     virial_nbond -= outer(extForce_nbond,extPosition);
     virial_slow -= outer(extForce_slow,extPosition);
 
-    if (simParameters->pairInteractionOn) {
-      pairVirial = virial_normal + virial_nbond + virial_slow;
-      if (simParameters->useGroupPressure) {
-        pairVirial -= (intVirial_normal + intVirial_nbond + intVirial_slow);
-      }
-    }
-      
     temperature = 2.0 * kineticEnergy / ( numDegFreedom * BOLTZMAN );
 
     if ( (volume=lattice.volume()) != 0. )
@@ -1158,9 +1151,10 @@ void Controller::printEnergies(int step, int minimize)
     groupPressure_avg += trace(groupPressure)/3.;
     pressure_avg_count += 1;
 
-    Vector pairForce;
+    Vector pairVDWForce, pairElectForce;
     if ( simParameters->pairInteractionOn ) {
-      GET_VECTOR(pairForce,reduction,REDUCTION_PAIR_FORCE);
+      GET_VECTOR(pairVDWForce,reduction,REDUCTION_PAIR_VDW_FORCE);
+      GET_VECTOR(pairElectForce,reduction,REDUCTION_PAIR_ELECT_FORCE);
     }
     
     // NO CALCULATIONS OR REDUCTIONS BEYOND THIS POINT!!!
@@ -1234,17 +1228,14 @@ void Controller::printEnergies(int step, int minimize)
     if (simParameters->pairInteractionOn) {
       iout << "PAIR INTERACTION:";
       iout << " STEP: " << step;
-      iout << " FORCE: ";
-      iout << FORMAT(pairForce.x);
-      iout << FORMAT(pairForce.y);
-      iout << FORMAT(pairForce.z);
-      iout << " VIRIAL: ";
-      iout << FORMAT(pairVirial.xx);
-      iout << FORMAT(pairVirial.xy);
-      iout << FORMAT(pairVirial.xz);
-      iout << FORMAT(pairVirial.yy);
-      iout << FORMAT(pairVirial.yz);
-      iout << FORMAT(pairVirial.zz);
+      iout << " VDW_FORCE: ";
+      iout << FORMAT(pairVDWForce.x);
+      iout << FORMAT(pairVDWForce.y);
+      iout << FORMAT(pairVDWForce.z);
+      iout << " ELECT_FORCE: ";
+      iout << FORMAT(pairElectForce.x);
+      iout << FORMAT(pairElectForce.y);
+      iout << FORMAT(pairElectForce.z);
       iout << "\n" << endi;
     }
     pressure_avg = 0;

@@ -493,6 +493,12 @@ void ComputeNonbondedUtil :: NAME
         ( switchVal * 3.0 * (A*r_12 + AmBterm) * r_2 - AmBterm * dSwitchVal );
 
       FEP( vdwEnergy_s += d_lambda_pair * switchVal * AmBterm; )
+      
+      FEP( 
+      reduction[pairVDWForceIndex_X] += 2.0 * force_r * p_ij_x;
+      reduction[pairVDWForceIndex_Y] += 2.0 * force_r * p_ij_y;
+      reduction[pairVDWForceIndex_Z] += 2.0 * force_r * p_ij_z;
+      )
 
       BigReal modfc = 1.0 - modf;
       fast_a *= modfc;
@@ -511,6 +517,11 @@ void ComputeNonbondedUtil :: NAME
 
       FEP( electEnergy_s += d_lambda_pair * kqq * fast_val; )
 
+      FEP(
+      reduction[pairElectForceIndex_X] -= 2.0 * kqq * fast_dir * p_ij_x;
+      reduction[pairElectForceIndex_Y] -= 2.0 * kqq * fast_dir * p_ij_y;
+      reduction[pairElectForceIndex_Z] -= 2.0 * kqq * fast_dir * p_ij_z;
+      )
 /*
       // JCP ERROR CHECKING CODE
       if ( abs(fast_val) > 1.0e4 || abs(fast_dir) > 1.0e4 ) {
@@ -541,15 +552,6 @@ void ComputeNonbondedUtil :: NAME
       virial_zz += tmp_z * p_ij_z;
       f_i.z += tmp_z;
       f_j.z -= tmp_z;
-
-      FEP(
-      tmp_x *= d_lambda_pair;
-      tmp_y *= d_lambda_pair;
-      tmp_z *= d_lambda_pair;
-      reduction[pairForceIndex_X] += tmp_x; 
-      reduction[pairForceIndex_Y] += tmp_y; 
-      reduction[pairForceIndex_Z] += tmp_z; 
-      )
 
       )
 
@@ -590,12 +592,9 @@ void ComputeNonbondedUtil :: NAME
       fullf_j.z -= tmp_z;
 
       FEP(
-      tmp_x *= d_lambda_pair;
-      tmp_y *= d_lambda_pair;
-      tmp_z *= d_lambda_pair;
-      reduction[pairForceIndex_X] += tmp_x; 
-      reduction[pairForceIndex_Y] += tmp_y; 
-      reduction[pairForceIndex_Z] += tmp_z; 
+      reduction[pairElectForceIndex_X] += tmp_x; 
+      reduction[pairElectForceIndex_Y] += tmp_y; 
+      reduction[pairElectForceIndex_Z] += tmp_z; 
       )
 
       }

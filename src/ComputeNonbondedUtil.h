@@ -61,7 +61,7 @@ public:
 	 electEnergyIndex_s, fullElectEnergyIndex_s, vdwEnergyIndex_s,
 //sd-de
 	 TENSOR(virialIndex), TENSOR(fullElectVirialIndex),
-         VECTOR(pairForceIndex),
+         VECTOR(pairVDWForceIndex), VECTOR(pairElectForceIndex),
 	 reductionDataSize };
   static void submitReductionData(BigReal*,SubmitReduction*);
 

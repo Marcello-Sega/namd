@@ -1215,10 +1215,10 @@ the resulting instability in the simulation.
 two groups of atoms.  When enabled, pair interaction information will be
 calculated and printed in the standard output file on its own line at the
 same frequency as energy output.  The format of the line is
-{\tt PAIR INTERACTION: STEP: {\it step} FORCE: {\it fx fy fz} 
-VIRIAL: {\it xx xy xz yy yz zz}}.
+{\tt PAIR INTERACTION: STEP: {\it step} VDW\_FORCE: {\it fx fy fz} 
+ELECT\_FORCE: {\it fx fy fz}}.
 The displayed force is the force on atoms in group 1 and is units of 
-kcal/mol/\AA.  The virial is in units of kcal/mol.
+kcal/mol/\AA. 
 
 For trajectory analysis the 
 recommended way to use this set of options is to use the NAMD Tcl scripting 
@@ -1254,8 +1254,7 @@ fields of the PDB file, either X, Y, Z, occupancy, or beta-coupling
 bewteen groups}{{\tt on} or {\tt off}}{{\tt off}}
 {
 When active, NAMD will compute bonded and nonbonded interactions only for atoms 
-within group 1.  Note that the reported force is incorrect and should be
-ignored; by definition the total force within a group is zero.  
+within group 1.  
 }
  
 \item

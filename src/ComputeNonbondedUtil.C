@@ -91,7 +91,8 @@ void ComputeNonbondedUtil::submitReductionData(BigReal *data, SubmitReduction *r
 //fepe
   ADD_TENSOR(reduction,REDUCTION_VIRIAL_NBOND,data,virialIndex);
   ADD_TENSOR(reduction,REDUCTION_VIRIAL_SLOW,data,fullElectVirialIndex);
-  ADD_VECTOR(reduction,REDUCTION_PAIR_FORCE,data,pairForceIndex);
+  ADD_VECTOR(reduction,REDUCTION_PAIR_VDW_FORCE,data,pairVDWForceIndex);
+  ADD_VECTOR(reduction,REDUCTION_PAIR_ELECT_FORCE,data,pairElectForceIndex);
   reduction->item(REDUCTION_COMPUTE_CHECKSUM) += 1.;
 }
 
