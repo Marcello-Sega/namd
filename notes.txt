@@ -1,6 +1,6 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                     NAMD 2.2b1 Release Notes                       |
+|                     NAMD 2.2b2 Release Notes                       |
 |                                                                    |
 +--------------------------------------------------------------------+
 
@@ -11,10 +11,215 @@ a list of know deficiencies, and advice for reporting bugs.
 
 ----------------------------------------------------------------------
 
-Compiling NAMD
+New Features
 
- ***  If you have downloaded a precompiled version of NAMD,  ***
- ***  please skip down to the next section, "Running NAMD".  ***
+--- First port to Windows NT ---
+
+NAMD now runs on Windows NT.  Windows 2000 probably works and
+Windows 98 might but I'm not promising anything.  You can now run
+NAMD on all those NT machines sittle idle at night.  Enjoy.
+
+--- Parallel PME Reciprocal Sum ---
+
+Formerly a serial bottleneck, the particle mesh Ewald FFT and
+reciprocal space sum have been distributed.  Early results have
+demonstrated speedups on 128 processors of a Cray T3E.  The number
+of processors used may be limited with the "PMEProcessors" parameter.
+
+--- FFTW in Shipping Binaries ---
+
+Under a new license with MIT, FFTW (www.fftw.org) is now included in 
+all release binaries.  Users no longer need recompile NAMD themselves
+to obtain this performance boost.  (FFTW is also available under GPL.)
+
+--- Conjugate Gradient Minimizer ---
+
+The default minimizer is now based on conjugate gradients and line
+searches.  It is orders of magnitude faster than the old method, which
+is still available via the "velocityQuenching" option.  If you have
+any problems with the new minimizer, please contact us immediately.
+
+--- Improved Load Balancer ---
+
+With a new load balancing framework and careful removal of serial
+bottlenecks, we have demonstrated scaling to 1024 or even 2048
+processors on the ASCI Red machine.  This work will be presented at
+SC2000 and is a finalist for the Gordon Bell award.
+
+----------------------------------------------------------------------
+
+Running NAMD
+
+-- Workstation Networks --
+
+Workstation networks require two files, the namd2 executable and the
+conv-host program.  The conv-host program starts namd2 on the desired
+hosts, and handles console I/O for the node programs.
+
+To specify what machines namd2 will run on, the user creates a file
+called "nodelist".  Below is an example nodelist file:
+
+group main
+ host brutus
+ host romeo
+
+The "group main" line defines the default machine list.  Hosts brutus
+and romeo are the two machines on which to run the simulation.  Note
+that conv-host may run on one of those machines, or conv-host may run
+on a third machine.
+
+The "rsh" command ("remsh" on HPUX) is used to start namd2 on each node
+specified in the nodelist file.  If NAMD fails without printing any
+output, check to make sure that "rsh" works on your machine, by seeing
+if "rsh hostname ls" works for each host in the nodelist.  If you want
+or need to use "ssh" instead, then add "setenv CONV_RSH ssh" to your
+login or batch script and try "ssh hostname ls" to each host first to
+ensure that the machine is in your .ssh/known_hosts file.
+
+Some automounters use a temporary mount directory which is prepended
+to the path returned by the pwd command.  To run on multiple machines
+you must place a "pathfix" line in your nodelist file before any
+"host" lines.  For example:
+
+group main
+ pathfix /tmp_mnt
+ host alpha1
+ host alpha2
+
+A number of parameters may be passed to conv-host.  The most important
+is the "+pX" option, where X specifies the number of processors.  If X
+is less than the number of hosts in the nodelist, machines are
+selected from top to bottom.  If X is greater than the number of
+hosts, conv-host will start multiple processes on the machines,
+starting from the top.  To run multiple processes on members of a SMP
+workstation cluster, you may either just use the +p option to go
+through the list the right number of times, or list each machine
+several times, once for each processor.  The default is +p1.
+
+You may specify the nodelist file with the "++nodelist" option and the
+group (which defaults to "main") with the "++nodegroup" option.  If
+you do not use "++nodelist" conv-host will first look for "nodelist"
+in your current directory and then ".nodelist" in your home directory.
+
+If you always want to run on the machine you are logged in to you may
+use "localhost" in place of the hostname in your nodelist file, but
+only if there are no other machines.  You will not need "pathfix".
+For example, ".nodelist" in your home directory could read:
+
+group main
+ host localhost
+
+Once the nodelist file is set up, and you have your configuration file
+prepared (alanin.conf, in this example), run NAMD as follows:
+
+conv-host +pX namd2 alanin.conf
+
+Intel and Alpha processors produce binary files (restart and DCD
+files) which must be "byte-swapped" to be read on other platforms.
+The flipbinpdb and flipdcd programs will perform this conversion.
+NAMD and VMD now handle this conversion automatically for most files.
+See the section "Endian Issues" below.
+
+-- Windows NT Workstation Networks ---
+
+Windows NT is the same as other workstation networks described above,
+except that rsh is not available on this platform.  Instead, you must
+run the provided daemon (daemon.exe) on every node listed in the
+nodelist file, even if you are only running on one machine.
+
+-- IBM RS/6000 SP --
+
+Run NAMD as you would any POE program.  The options and environment
+variables for poe are various and arcane, so you should consult your
+local documentation for recommended settings.  As an example, to run
+interactively on Blue Horizon one would specify:
+
+poe namd2 alanin.conf -nodes n -tasks_per_node m -rmpool 1
+
+-- Cray T3E --
+
+The T3E version has been tested on the Pittsburgh Supercomputer Center
+T3E.  To run on X processors, use the mpprun command:
+
+mpprun -n X namd2 alanin.conf
+
+-- Origin 2000 --
+
+For small numbers of processors (1-8) use the non-MPI version of namd2.
+If your stack size limit is unlimited, which DQS may do, you will need
+to set it with "limit stacksize 64M" to run on multiple processors.
+To run on X processors call the binary directly with the +p option:
+
+namd2 +pX alanin.conf
+
+For better performance on larger numbers of processors we recommend
+that you use the MPI version of NAMD.  To run this version, you must
+have MPI installed.  Furthermore, you must set two environment
+variables to tell MPI how to allocate certain internal buffers.  Put
+the following commands in your .cshrc or .profile file, or in your
+job file if you are running under a queuing system:
+
+setenv MPI_REQUEST_MAX 10240
+setenv MPI_TYPE_MAX 10240
+
+Then run NAMD with the following command:
+
+mpirun -np X namd2 alanin.conf
+
+----------------------------------------------------------------------
+
+Endian Issues
+
+Some architectures write binary data (integer or floating point) with
+the most significant byte first; others put the most significant byte
+last.  This doesn't effect text files but it does matter when a binary
+data file that was written on a "big-endian" machine (Sun, HP, SGI) is
+read on a "small-endian" machine (Intel, Alpha) or vice versa.
+
+NAMD generates DCD trajectory files and binary coordinate and velocity
+files which are "endian-sensitive".  While VMD 1.4b1 can read DCD files
+from any machine and NAMD reads most other-endian binary restart files,
+most analysis programs (like CHARMM or X-PLOR) require same-endian DCD
+files.  We provide the programs flipdcd and flipbinpdb for switching the
+endianness of DCD and binary restart files, respectively.  These programs
+use mmap to alter the file in-place and may therefore appear to consume
+an amount of memory equal to the size of the file.
+
+----------------------------------------------------------------------
+
+Known Deficiencies
+
+- NAMD requires X-PLOR or CHARMM to produce the .psf structure input
+  files.  If you don't have one of these, you probably can't use NAMD.
+  We are planning on adding these features to VMD or a new program.
+
+----------------------------------------------------------------------
+
+Problems?  Found a bug?
+
+For problems or questions, send email to namd@ks.uiuc.edu.  If you
+think you have found a bug, please follow the steps outlined below.
+Your feedback will help us improve NAMD.
+
+ 1. Download and test the latest version of NAMD. 
+ 2. Please check the FAQ, known bugs and problem reports. 
+ 3. Gather, in a single directory, all input and config files needed
+    to reproduce your problem. 
+ 4. Run once, redirecting output to a file. 
+ 5. Tar everything up (but not the namd2 or conv-host binaries) and
+    compress it. 
+ 6. Email namd@ks.uiuc.edu with: 
+    - A synopsis of the problem as the subject. 
+    - The NAMD version number the problem occurs with. 
+    - The platform and number of CPU's the problem occurs with. 
+    - A description of the problematic behavior and any error messages. 
+    - If the problem is consistent or random. 
+    - The compressed tar file as an attachment (or a URL if it is too big). 
+ 7. We'll get back to you by the next business day. 
+
+----------------------------------------------------------------------
+
+Compiling NAMD
 
 You must first download and install NAMD's communications library,
 Charm++/Converse, from http://charm.cs.uiuc.edu/.  You will have
@@ -96,192 +301,6 @@ is available from www.fftw.org.  If you download the RPM or configure
 FFTW with --enable-type-prefix you will need to make symbolic links to
 the double precision versions of the libraries and header files.  FFTW
 is now included in the release binaries under a special license.
-
-----------------------------------------------------------------------
-
-Running NAMD
-
--- Workstation Networks --
-
-Workstation networks require two files, the namd2 executable and the
-conv-host program.  The conv-host program starts namd2 on the desired
-hosts, and handles console I/O for the node programs.
-
-To specify what machines namd2 will run on, the user creates a file
-called "nodelist".  Below is an example nodelist file:
-
-group main
- host brutus
- host romeo
-
-The "group main" line defines the default machine list.  Hosts brutus
-and romeo are the two machines on which to run the simulation.  Note
-that conv-host may run on one of those machines, or conv-host may run
-on a third machine.
-
-The "rsh" command ("remsh" on HPUX) is used to start namd2 on each node
-specified in the nodelist file.  If NAMD fails without printing any
-output, check to make sure that "rsh" works on your machine, by seeing
-if "rsh hostname ls" works for each host in the nodelist.  If you want
-or need to use "ssh" instead, then add "setenv CONV_RSH ssh" to your
-login or batch script and try "ssh hostname ls" to each host first to
-ensure that the machine is in your .ssh/known_hosts file.
-
-Some automounters use a temporary mount directory which is prepended
-to the path returned by the pwd command.  To run on multiple machines
-you must place a "pathfix" line in your nodelist file before any
-"host" lines.  For example:
-
-group main
- pathfix /tmp_mnt
- host alpha1
- host alpha2
-
-A number of parameters may be passed to conv-host.  The most important
-is the "+pX" option, where X specifies the number of processors.  If X
-is less than the number of hosts in the nodelist, machines are
-selected from top to bottom.  If X is greater than the number of
-hosts, conv-host will start multiple processes on the machines,
-starting from the top.  To run multiple processes on members of a SMP
-workstation cluster, you may either just use the +p option to go
-through the list the right number of times, or list each machine
-several times, once for each processor.  The default is +p1.
-
-You may specify the nodelist file with the "++nodelist" option and the
-group (which defaults to "main") with the "++nodegroup" option.  If
-you do not use "++nodelist" conv-host will first look for "nodelist"
-in your current directory and then ".nodelist" in your home directory.
-
-If you always want to run on the machine you are logged in to you may
-use "localhost" in place of the hostname in your nodelist file, but
-only if there are no other machines.  You will not need "pathfix".
-For example, ".nodelist" in your home directory could read:
-
-group main
- host localhost
-
-Once the nodelist file is set up, and you have your configuration file
-prepared (alanin.conf, in this example), run NAMD as follows:
-
-conv-host +pX namd2 alanin.conf
-
-Intel and Alpha processors produce binary files (restart and DCD
-files) which must be "byte-swapped" to be read on other platforms.
-The flipbinpdb and flipdcd programs will perform this conversion.
-NAMD and VMD now handle this conversion automatically for most files.
-See the section "Endian Issues" below.
-
--- T3E --
-
-The T3E version has been tested on the Pittsburgh Supercomputer Center
-T3E.  To run on X processors, use the mpprun command:
-
-mpprun -n X namd2 alanin.conf
-
--- Origin 2000 --
-
-For small numbers of processors (1-8) use the non-MPI version of namd2.
-If your stack size limit is unlimited, which DQS may do, you will need
-to set it with "limit stacksize 64M" to run on multiple processors.
-To run on X processors call the binary directly with the +p option:
-
-namd2 +pX alanin.conf
-
-For better performance on larger numbers of processors we recommend
-that you use the MPI version of NAMD.  To run this version, you must
-have MPI installed.  Furthermore, you must set two environment
-variables to tell MPI how to allocate certain internal buffers.  Put
-the following commands in your .cshrc or .profile file, or in your
-job file if you are running under a queuing system:
-
-setenv MPI_REQUEST_MAX 10240
-setenv MPI_TYPE_MAX 10240
-
-Then run NAMD with the following command:
-
-mpirun -np X namd2 alanin.conf
-
-----------------------------------------------------------------------
-
-New Features
-
---- Parallel PME Reciprocal Sum ---
-
-Formerly a serial bottleneck, the particle mesh Ewald FFT and
-reciprocal space sum have been distributed.  Early results have
-demonstrated speedups on 128 processors of a Cray T3E.  The number
-of processors used may be limited with the "PMEProcessors" parameter.
-
---- FFTW in Shipping Binaries ---
-
-Under a new license with MIT, FFTW (www.fftw.org) is now included in 
-all release binaries.  Users no longer need recompile NAMD themselves
-to obtain this performance boost.  (FFTW is also available under GPL.)
-
---- Conjugate Gradient Minimizer ---
-
-The default minimizer is now based on conjugate gradients and line
-searches.  It is orders of magnitude faster than the old method, which
-is still available via the "velocityQuenching" option.  If you have
-any problems with the new minimizer, please contact us immediately.
-
---- Improved Load Balancer ---
-
-With a new load balancing framework and careful removal of serial
-bottlenecks, we have demonstrated scaling to 1024 or even 2048
-processors on the ASCI Red machine.  This work will be presented at
-SC2000 and is a finalist for the Gordon Bell award.
-
-----------------------------------------------------------------------
-
-Endian Issues
-
-Some architectures write binary data (integer or floating point) with
-the most significant byte first; others put the most significant byte
-last.  This doesn't effect text files but it does matter when a binary
-data file that was written on a "big-endian" machine (Sun, HP, SGI) is
-read on a "small-endian" machine (Intel, Alpha) or vice versa.
-
-NAMD generates DCD trajectory files and binary coordinate and velocity
-files which are "endian-sensitive".  While VMD 1.4b1 can read DCD files
-from any machine and NAMD reads most other-endian binary restart files,
-most analysis programs (like CHARMM or X-PLOR) require same-endian DCD
-files.  We provide the programs flipdcd and flipbinpdb for switching the
-endianness of DCD and binary restart files, respectively.  These programs
-use mmap to alter the file in-place and may therefore appear to consume
-an amount of memory equal to the size of the file.
-
-----------------------------------------------------------------------
-
-Known Deficiencies
-
-- NAMD requires X-PLOR or CHARMM to produce the .psf structure input
-  files.  If you don't have one of these, you probably can't use NAMD.
-  We are planning on adding these features to VMD or a new program.
-
-----------------------------------------------------------------------
-
-Problems?  Found a bug?
-
-For problems or questions, send email to namd@ks.uiuc.edu.  If you
-think you have found a bug, please follow the steps outlined below.
-Your feedback will help us improve NAMD.
-
- 1. Download and test the latest version of NAMD. 
- 2. Please check the FAQ, known bugs and problem reports. 
- 3. Gather, in a single directory, all input and config files needed
-    to reproduce your problem. 
- 4. Run once, redirecting output to a file. 
- 5. Tar everything up (but not the namd2 or conv-host binaries) and
-    compress it. 
- 6. Email namd@ks.uiuc.edu with: 
-    - A synopsis of the problem as the subject. 
-    - The NAMD version number the problem occurs with. 
-    - The platform and number of CPU's the problem occurs with. 
-    - A description of the problematic behavior and any error messages. 
-    - If the problem is consistent or random. 
-    - The compressed tar file as an attachment (or a URL if it is too big). 
- 7. We'll get back to you by the next business day. 
 
 ----------------------------------------------------------------------
 
