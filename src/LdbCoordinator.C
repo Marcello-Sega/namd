@@ -272,6 +272,9 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
   }
     
 
+  if (nLocalPatches == 0 || nLocalComputes==0 )
+  	checkAndGoToBarrier();
+
   // Start idle-time recording
   idleTime = 0;
 #ifndef NO_IDLE_COMPUTATION
