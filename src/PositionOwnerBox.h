@@ -3,9 +3,8 @@
 #define POSITIONOWNERBOX_H
 
 #include "PositionBox.h"
+#include "Lattice.h"
 #include "charm++.h"
-
-class Lattice;
 
 template <class Owner> class PositionOwnerBox {
 
