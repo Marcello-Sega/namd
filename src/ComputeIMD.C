@@ -30,21 +30,31 @@ struct vmdforce {
 
 static UniqueSortedArray<vmdforce> vmdforces;
 
+// Search for a free port in the range 1025-4096; return the successful port,
+// or -1 if we failed.
+
+static int find_free_port(void *sock, int defport) {
+  if (vmdsock_bind(sock, defport)==0) return defport; // success
+  for (int port=1025; port < 4096; port++) 
+    if (vmdsock_bind(sock, port)==0) return port;
+  return -1;
+}
+ 
 ComputeIMD::ComputeIMD(ComputeGlobal *h)
 : ComputeGlobalMaster(h) {
   SimParameters *simparams = Node::Object()->simParameters;
+  int rc;
   int port = simparams->IMDport;
 
   sock = vmdsock_create();
-  int rc = vmdsock_bind(sock, port);
-  if (rc < 0) {
+  port = find_free_port(sock, port);
+  if (port < 0) {
     vmdsock_destroy(sock);
-    NAMD_die("Unable to connect to given IMDport\n");
+    NAMD_die("Unable to find free port\n");
   }
+  iout << iINFO << "INTERACTIVE MD BIND    "<< port << "\n" << endi;
   rc = vmdsock_listen(sock); 
   // Wait for VMD to connect
-  iout << iINFO << "Waiting for connection on port "<<port << ", "
-       << "Timeout in 60 minutes.\n"  << endi;
   rc = vmdsock_selread(sock,3600);
   if (rc < 0) {
     iout << iDEBUG << "select: " << strerror(errno) << '\n' << endi;
