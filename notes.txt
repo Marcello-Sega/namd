@@ -125,7 +125,9 @@ See the section "Endian Issues" below.
 Windows NT is the same as other workstation networks described above,
 except that rsh is not available on this platform.  Instead, you must
 run the provided daemon (daemon.exe) on every node listed in the
-nodelist file, even if you are only running on one machine.
+nodelist file, even if you are only running on one machine.  Using
+daemon_background rather than daemon will eliminate consoles for the
+daemon and node processes.
 
 -- IBM RS/6000 SP --
 
