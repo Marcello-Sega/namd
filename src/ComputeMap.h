@@ -22,6 +22,10 @@ enum ComputeType
   computeAnglesType,
   computeDihedralsType,
   computeImpropersType,
+  computeSelfBondsType,
+  computeSelfAnglesType,
+  computeSelfDihedralsType,
+  computeSelfImpropersType,
 #ifdef DPMTA
   computeDPMTAType,
 #endif

@@ -8,6 +8,7 @@
 #define COMPUTEIMPROPERS_H
 
 #include "ComputeHomeTuples.h"
+#include "ComputeSelfTuples.h"
 #include "ReductionMgr.h"
 
 class Molecule;
@@ -88,6 +89,14 @@ class ComputeImpropers : public ComputeHomeTuples<ImproperElem,Improper,Improper
 public:
 
   ComputeImpropers(ComputeID c) : ComputeHomeTuples<ImproperElem,Improper,ImproperValue>(c) { ; }
+
+};
+
+class ComputeSelfImpropers : public ComputeSelfTuples<ImproperElem,Improper,ImproperValue>
+{
+public:
+
+  ComputeSelfImpropers(ComputeID c, PatchID p) : ComputeSelfTuples<ImproperElem,Improper,ImproperValue>(c,p) { ; }
 
 };
 

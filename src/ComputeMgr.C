@@ -215,6 +215,26 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
+      case computeSelfBondsType:
+	c = new ComputeSelfBonds(i,map->computeData[i].pids[0].pid);
+	map->registerCompute(i,c);
+	c->initialize();
+	break;
+      case computeSelfAnglesType:
+	c = new ComputeSelfAngles(i,map->computeData[i].pids[0].pid);
+	map->registerCompute(i,c);
+	c->initialize();
+	break;
+      case computeSelfDihedralsType:
+	c = new ComputeSelfDihedrals(i,map->computeData[i].pids[0].pid);
+	map->registerCompute(i,c);
+	c->initialize();
+	break;
+      case computeSelfImpropersType:
+	c = new ComputeSelfImpropers(i,map->computeData[i].pids[0].pid);
+	map->registerCompute(i,c);
+	c->initialize();
+	break;
 #ifdef DPMTA
       case computeDPMTAType:
 	c = new ComputeDPMTA(i); // unknown delete

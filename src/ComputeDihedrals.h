@@ -8,6 +8,7 @@
 #define COMPUTEDIHEDRALS_H
 
 #include "ComputeHomeTuples.h"
+#include "ComputeSelfTuples.h"
 #include "ReductionMgr.h"
 
 class Molecule;
@@ -51,6 +52,14 @@ class ComputeDihedrals : public ComputeHomeTuples<DihedralElem,Dihedral,Dihedral
 public:
 
   ComputeDihedrals(ComputeID c) : ComputeHomeTuples<DihedralElem,Dihedral,DihedralValue>(c) { ; }
+
+};
+
+class ComputeSelfDihedrals : public ComputeSelfTuples<DihedralElem,Dihedral,DihedralValue>
+{
+public:
+
+  ComputeSelfDihedrals(ComputeID c, PatchID p) : ComputeSelfTuples<DihedralElem,Dihedral,DihedralValue>(c,p) { ; }
 
 };
 

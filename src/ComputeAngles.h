@@ -8,6 +8,7 @@
 #define COMPUTEANGLE_H
 
 #include "ComputeHomeTuples.h"
+#include "ComputeSelfTuples.h"
 #include "ReductionMgr.h"
 
 class Molecule;
@@ -50,6 +51,14 @@ class ComputeAngles : public ComputeHomeTuples<AngleElem,Angle,AngleValue>
 public:
 
   ComputeAngles(ComputeID c) : ComputeHomeTuples<AngleElem,Angle,AngleValue>(c) { ; }
+
+};
+
+class ComputeSelfAngles : public ComputeSelfTuples<AngleElem,Angle,AngleValue>
+{
+public:
+
+  ComputeSelfAngles(ComputeID c, PatchID p) : ComputeSelfTuples<AngleElem,Angle,AngleValue>(c,p) { ; }
 
 };
 

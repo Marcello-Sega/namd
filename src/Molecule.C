@@ -2507,8 +2507,10 @@ void Molecule::receive_Molecule(MIStream *msg)
            all_exclusions[i].flags = 0;
          }
        }
-       iout << numTotalExclusions << " exclusions consume "
+       if ( 0 ) {
+         iout << iINFO << numTotalExclusions << " exclusions consume "
             << exclmem << " bytes.\n" << endi;
+       }
        for (i=0; i<numTotalExclusions; i++)
        {
          int a1 = exclusions[i].atom1;

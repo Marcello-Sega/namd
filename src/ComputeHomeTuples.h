@@ -89,7 +89,7 @@ class ReductionMgr;
 
 template <class T, class S, class P> class ComputeHomeTuples : public Compute {
 
-  private:
+  protected:
   
     virtual void loadTuples(void) {
       int numTuples;
@@ -126,8 +126,13 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
              register int i;
              aid[0] = atomMap->localID(t.atomID[0]);
              int homepatch = aid[0].pid;
+             int samepatch = 1;
              for (i=1; i < T::size; i++) {
 	         aid[i] = atomMap->localID(t.atomID[i]);
+	         samepatch = samepatch && ( homepatch == aid[i].pid );
+             }
+             if ( samepatch ) continue;
+             for (i=1; i < T::size; i++) {
 	         homepatch = patchMap->downstream(homepatch,aid[i].pid);
              }
              if ( homepatch != notUsed && patchMap->node(homepatch) == CkMyPe() ) {
@@ -226,7 +231,7 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
 // actualy Force computation with the apparatus needed
 // to get access to atom positions, return forces etc.
 //-------------------------------------------------------------------
-    void doWork(void) {
+    virtual void doWork(void) {
 
       // Open Boxes - register that we are using Positions
       // and will be depositing Forces.

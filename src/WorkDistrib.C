@@ -643,6 +643,10 @@ void WorkDistrib::mapComputes(void)
   mapComputeHomePatches(computeAnglesType);
   mapComputeHomePatches(computeDihedralsType);
   mapComputeHomePatches(computeImpropersType);
+  mapComputePatch(computeSelfBondsType);
+  mapComputePatch(computeSelfAnglesType);
+  mapComputePatch(computeSelfDihedralsType);
+  mapComputePatch(computeSelfImpropersType);
 
   if ( node->simParameters->sphericalBCOn )
     mapComputePatch(computeSphericalBCType);

@@ -12,6 +12,7 @@
 #include "Molecule.h"
 #include "ReductionMgr.h"
 #include "ComputeHomeTuples.h"
+#include "ComputeSelfTuples.h"
 
 
 class TuplePatchElem;
@@ -52,6 +53,14 @@ class ComputeBonds : public ComputeHomeTuples<BondElem,Bond,BondValue>
 public:
 
   ComputeBonds(ComputeID c) : ComputeHomeTuples<BondElem,Bond,BondValue>(c) { ; }
+
+};
+
+class ComputeSelfBonds : public ComputeSelfTuples<BondElem,Bond,BondValue>
+{
+public:
+
+  ComputeSelfBonds(ComputeID c, PatchID p) : ComputeSelfTuples<BondElem,Bond,BondValue>(c,p) { ; }
 
 };
 
