@@ -228,6 +228,7 @@ void Sequencer::integrate() {
 void Sequencer::addMovDragToPosition(BigReal timestep) {
   FullAtom *atom = patch->atom.begin();
   int numAtoms = patch->numAtoms;
+  BigReal movDragGlobVel = simParams->movDragGlobVel;
   Molecule *molecule = Node::Object()->molecule;   // need its methods
   // the following MUST be the same as in the integrator!
   const BigReal dt = timestep / TIMEFACTOR;
@@ -235,9 +236,10 @@ void Sequencer::addMovDragToPosition(BigReal timestep) {
   for ( int i = 0; i < numAtoms; ++i )
   {
     // skip if fixed atom or zero drag attribute
-    if ( (simParams->fixedAtomsOn && atom[i].atomFixed) || !(molecule->is_atom_movdragged(atom[i].id)) ) continue;
+    if ( (simParams->fixedAtomsOn && atom[i].atomFixed) 
+	 || !(molecule->is_atom_movdragged(atom[i].id)) ) continue;
     molecule->get_movdrag_params(movDragVel, atom[i].id);
-    dragIncrement = movDragVel * dt;
+    dragIncrement = movDragGlobVel * movDragVel * dt;
     atom[i].position += dragIncrement;
   }
 }
@@ -246,6 +248,7 @@ void Sequencer::addMovDragToPosition(BigReal timestep) {
 void Sequencer::addRotDragToPosition(BigReal timestep) {
   FullAtom *atom = patch->atom.begin();
   int numAtoms = patch->numAtoms;
+  BigReal rotDragGlobVel = simParams->rotDragGlobVel;
   Molecule *molecule = Node::Object()->molecule;   // need its methods
   // the following MUST be the same as in the integrator!
   const BigReal dt = timestep / TIMEFACTOR;
@@ -256,9 +259,10 @@ void Sequencer::addRotDragToPosition(BigReal timestep) {
   for ( int i = 0; i < numAtoms; ++i )
   {
     // skip if fixed atom or zero drag attribute
-    if ( (simParams->fixedAtomsOn && atom[i].atomFixed) || !(molecule->is_atom_rotdragged(atom[i].id)) ) continue;
+    if ( (simParams->fixedAtomsOn && atom[i].atomFixed) 
+	 || !(molecule->is_atom_rotdragged(atom[i].id)) ) continue;
     molecule->get_rotdrag_params(rotDragVel, rotDragAxis, rotDragPivot, atom[i].id);
-    dAngle = rotDragVel * dt;
+    dAngle = rotDragGlobVel * rotDragVel * dt;
     rotDragUnit = rotDragAxis / rotDragAxis.length();
     atomRadius = atom[i].position - rotDragPivot;
     atomTangent = rotDragUnit * (atomRadius * rotDragUnit) / atomRadius.length();

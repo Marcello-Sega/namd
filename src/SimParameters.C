@@ -924,6 +924,8 @@ void SimParameters::config_parser_movdrag(ParseOptions &opts) {
       "Main moving drag PDB file", movDragFile);
    opts.require("movDragOn", "movDragCol",
       "Main moving drag PDB column", PARSE_STRING);
+   opts.require("movDragOn", "movDragGlobVel",
+      "Global moving drag velocity (A/step)", &movDragGlobVel);
    opts.require("movDragOn", "movDragVelFile",
       "Moving drag linear velocity file", movDragVelFile);
 }
@@ -940,10 +942,12 @@ void SimParameters::config_parser_rotdrag(ParseOptions &opts) {
       "Rotating drag axis file", rotDragAxisFile);
    opts.require("rotDragOn", "rotDragPivotFile",
       "Rotating drag pivot point file", rotDragPivotFile);
+   opts.require("rotDragOn", "rotDragGlobVel",
+      "Global rotating drag angular velocity (deg/step)", &rotDragGlobVel);
    opts.require("rotDragOn", "rotDragVelFile",
       "Rotating drag angular velocity file", rotDragVelFile);
    opts.require("rotDragOn", "rotDragVelCol",
-      "Rotating drag velocity column", PARSE_STRING);
+      "Rotating drag angular velocity column", PARSE_STRING);
 }
 
 void SimParameters::config_parser_boundary(ParseOptions &opts) {
@@ -2467,6 +2471,9 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << iINFO << "MOVING DRAG MAIN PDB FILE "
 	  << movDragFile << "\n";
      
+     iout << iINFO << "MOVING DRAG GLOBAL VELOCITY (A/step) "
+	  << movDragGlobVel << "\n";
+     
      iout << iINFO << "MOVING DRAG LINEAR VELOCITY FILE " 
 	  << movDragVelFile << "\n";
      
@@ -2485,6 +2492,9 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      
      iout << iINFO << "ROTATING DRAG PIVOT POINT FILE " 
 	  << rotDragPivotFile << "\n";
+     
+     iout << iINFO << "ROTATING DRAG GLOBAL ANGULAR VELOCITY (deg/step) "
+	  << rotDragGlobVel << "\n";
      
      iout << iINFO << "ROTATING DRAG ANGULAR VELOCITY FILE " 
 	  << rotDragVelFile << "\n";

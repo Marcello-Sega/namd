@@ -189,8 +189,9 @@ public:
         Bool movDragOn;               //  Flag TRUE-> moving drag active
         char movDragFile[128];        //  PDB file defining dragged atoms
                                       //  by non-zero value in the column
-	char movDragVelFile[128];     //  PDB file; XYZ define moving drag
-                                      //  velocity (A/step) for each atom
+	BigReal movDragGlobVel;       //  global drag velocity (A/step)
+	char movDragVelFile[128];     //  PDB file; XYZ scale moving drag
+                                      //  velocity for each atom
         //****** END moving drag changes
         //****** BEGIN rotatingdrag changes
         Bool rotDragOn;               //  Flag TRUE-> rotating drag active
@@ -198,8 +199,9 @@ public:
                                       //  by non-zero value in the column
 	char rotDragAxisFile[128];    //  PDB file; XYZ define axes for atoms;
 	char rotDragPivotFile[128];   //  PDB file; XYZ define pivots for atoms
-	char rotDragVelFile[128];     //  PDB file; B or O defines angular
-                                      //  velocity (deg/step)
+	BigReal rotDragGlobVel;       //  global drag velocity (deg/step)
+	char rotDragVelFile[128];     //  PDB file; B or O scales angular
+                                      //  velocity for each atom
         //****** END rotating drag changes
 
         //****** BEGIN SMD constraints changes   
