@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1004 1997/02/13 22:27:04 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1005 1997/02/14 20:24:57 jim Exp $";
 
 #include <stdio.h>
 
@@ -524,6 +524,8 @@ void WorkDistrib::mapPatches(void)
   Node *node = CLocalBranch(Node, group.node);
   SimParameters *params = node->simParameters;
 
+  BigReal patchSize = params->patchDimension;
+
   int xdim, ydim, zdim;
   int xper, yper, zper;
   int xi, yi, zi, pid;
@@ -774,12 +776,15 @@ void WorkDistrib::movePatchDone(DoneMsg *msg) {
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/02/13 22:27:04 $
+ *	$Revision: 1.1005 $	$Date: 1997/02/14 20:24:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1005  1997/02/14 20:24:57  jim
+ * Patches are now sized according to config file.
+ *
  * Revision 1.1004  1997/02/13 22:27:04  jim
  * Added inital velocity code from NAMD 1.
  * Reading velocity pdb file appears to work.

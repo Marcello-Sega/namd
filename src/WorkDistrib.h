@@ -27,8 +27,6 @@ class Node;
 class DoneMsg;
 class LocalWorkMsg;
 
-const double patchSize = 12.0;
-
 enum { maxPatchDepends = 126 };
 
 class MapDistribMsg;
@@ -123,13 +121,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/14 19:07:32 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/02/14 20:24:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.1002  1997/02/14 20:24:58  jim
+ * Patches are now sized according to config file.
+ *
  * Revision 1.1001  1997/02/14 19:07:32  nealk
  * Added new/delete comments.
  * Played with DPMTA.
