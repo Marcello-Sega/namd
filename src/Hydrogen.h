@@ -22,28 +22,27 @@ class HydrogenGroupID {
     ~HydrogenGroupID() {};
 
     int operator < (const HydrogenGroupID &a) const {
+      int rval;
       if (isGP)
 	{
 	// case 1: both are group parents
-	if (a.isGP)	return(atomID < a.atomID);
+	if (a.isGP)	rval = (atomID < a.atomID);
 	// case 2: only this atom is a group parent
-        return(GPID < a.atomID);
+	else		rval = (GPID < a.atomID);
 	}
       else
 	{
 	// case 3: only 'a' is a group parent
-	if (a.isGP)	return(GPID < a.atomID);
+	if (a.isGP)	rval = (GPID < a.atomID);
 	// case 4: both are in a group
-        return(atomID < a.atomID);
+	else		rval = (atomID < a.atomID);
 	}
+      return(rval);
     }
 
     int operator == (const HydrogenGroupID &a) const {
       // only the same when both part of same group
-      if (!isGP && !a.isGP
-	  && (GPID == a.GPID) )
-		return(1);	// they are the same
-      return(0);
+      return (!isGP && !a.isGP && (GPID == a.GPID) );
     }
 };
 
@@ -55,13 +54,16 @@ typedef UniqueSortedArray<HydrogenGroupID> HydrogenGroup ;
  * RCS INFORMATION:
  *
  *      $RCSfile: Hydrogen.h,v $
- *      $Author: nealk $        $Locker:  $             $State: Exp $
- *      $Revision: 1.3 $     $Date: 1997/03/19 18:48:19 $
+ *      $Author: jim $        $Locker:  $             $State: Exp $
+ *      $Revision: 1.4 $     $Date: 1997/03/19 20:49:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Hydrogen.h,v $
+ * Revision 1.4  1997/03/19 20:49:20  jim
+ * Changes to make inliner happy.
+ *
  * Revision 1.3  1997/03/19 18:48:19  nealk
  * Forgot to close the log comment.
  *
