@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.2 1996/12/05 21:11:06 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.3 1996/12/05 22:02:17 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -65,6 +65,7 @@ void ProxyPatch::receiveData(ProxyDataMsg *msg)
   }
   p = msg->positionList;
   delete msg;
+  positionsReady();
 }
 
 void ProxyPatch::sendResults(void)
@@ -81,12 +82,15 @@ void ProxyPatch::sendResults(void)
  *
  *	$RCSfile: ProxyPatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/12/05 21:11:06 $
+ *	$Revision: 1.3 $	$Date: 1996/12/05 22:02:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.3  1996/12/05 22:02:17  jim
+ * added positionsReady call to receiveData
+ *
  * Revision 1.2  1996/12/05 21:11:06  jim
  * filled out message functions
  *
