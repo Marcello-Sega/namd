@@ -13,7 +13,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1006 1997/02/26 16:53:19 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1007 1997/02/26 23:18:45 jim Exp $";
 
 #include <stdio.h>
 
@@ -42,63 +42,6 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib
 #define DEBUGM
 #include "Debug.h"
 
-
-/********************************************************************************/
-/*										*/
-/*				FUNCTION read_binary_coors			*/
-/*										*/
-/*   INPUTS:									*/
-/*	fname - Filename to read coordinates from				*/
-/*	pdbobj - PDB object to place coordinates into				*/
-/*										*/
-/*	This function reads initial coordinates from a binary restart file	*/
-/*										*/
-/********************************************************************************/
-
-void read_binary_coors(char *fname, PDB *pdbobj)
-
-{
-	int n;			//  Number of atoms from file
-	Vector *newcoords;	//  Array of vectors to hold coordinates from file
-	FILE *fp;		//  File descriptor
-
-	//  Open the file and die if the open fails
-	if ( (fp = fopen(fname, "r")) == NULL)
-	{
-		char errmsg[256];
-
-		sprintf(errmsg, "Unable to open binary coordinate file %s", fname);
-		NAMD_die(errmsg);
-	}
-
-	//  read the number of coordinates in this file
-	fread(&n, sizeof(int), 1, fp);
-
-	//  Die if this doesn't match the number in the system
-	if (n != pdbobj->num_atoms())
-	{
-		NAMD_die("Number of coordinates in binary coordinate file incorrect");
-	}
-
-	//  Allocate an array to hold the new coordinates
-	newcoords = new Vector[n];
-
-	if (newcoords == NULL)
-	{
-		NAMD_die("Memory allocation of newcoords in Node::read_binary_coors failed");
-	}
-
-	//  Read the coordinate from the file
-	fread(newcoords, sizeof(Vector), n, fp);
-
-	//  Set the coordinates in the PDB object to the new coordinates
-	pdbobj->set_all_positions(newcoords);
-
-	//  Clean up
-	fclose(fp);
-	delete [] newcoords;
-}
-/*			END OF FUNCTION read_binary_coors	*/
 
 /************************************************************************/
 /*									*/
@@ -641,7 +584,15 @@ void WorkDistrib::mapComputes(void)
 
   // Handle full electrostatics
   if ( node->simParameters->fullDirectOn )
-    mapComputeHomePatches(computeFullDirectType);
+  {
+    if ( node->numNodes() > 1 )
+      NAMD_die("Full direct electrostatics only works on one processor.");
+    else if ( patchMap->xIsPeriodic() ||
+		patchMap->yIsPeriodic() || patchMap->zIsPeriodic() )
+      NAMD_die("Full direct electrostatics is incompatible with periodic boundary conditions.");
+    else
+      mapComputeHomePatches(computeFullDirectType);
+  }
 #ifdef DPMTA
   if ( node->simParameters->FMAOn )
     mapComputeHomePatches(computeDPMTAType);
@@ -772,13 +723,16 @@ void WorkDistrib::enqueueWork(LocalWorkMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/02/26 16:53:19 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1007 $	$Date: 1997/02/26 23:18:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1007  1997/02/26 23:18:45  jim
+ * Now should read binary coordinate files - untested.
+ *
  * Revision 1.1006  1997/02/26 16:53:19  ari
  * Cleaning and debuging for memory leaks.
  * Adding comments.

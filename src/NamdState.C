@@ -67,6 +67,8 @@ NamdState::status()
     return(ret);
 }
 
+void read_binary_coors(char *fname, PDB *pdbobj);
+
 int
 NamdState::configFileInit(char *confFile)
 {
@@ -107,9 +109,9 @@ NamdState::configFileInit(char *confFile)
 
   CPrintf("NamdState::configFileInit got Coordinates \n");
 
-  iout << "files are : " << moleculeFilename->data << " and "
-      << parameterFilename->data << " and " << coordinateFilename->data
-      << "\n" << endi;
+  // iout << "files are : " << moleculeFilename->data << " and "
+  //    << parameterFilename->data << " and " << coordinateFilename->data
+  //    << "\n" << endi;
 
   simParameters =  new SimParameters(configList,currentdir);
 
@@ -128,6 +130,12 @@ NamdState::configFileInit(char *confFile)
     return(1);
   }
 
+  StringList *binCoordinateFilename = configList->find("bincoordinates");
+  if ( binCoordinateFilename )
+  {
+    read_binary_coors(binCoordinateFilename->data, pdb);
+  }
+
   DebugM(4, "::configFileInit() - printing Molecule Information\n");
 
   molecule->print_atoms(parameters);
@@ -142,12 +150,71 @@ NamdState::configFileInit(char *confFile)
   return(0);
 }
 
+
+/********************************************************************************/
+/*										*/
+/*				FUNCTION read_binary_coors			*/
+/*										*/
+/*   INPUTS:									*/
+/*	fname - Filename to read coordinates from				*/
+/*	pdbobj - PDB object to place coordinates into				*/
+/*										*/
+/*	This function reads initial coordinates from a binary restart file	*/
+/*										*/
+/********************************************************************************/
+
+void read_binary_coors(char *fname, PDB *pdbobj)
+
+{
+	int n;			//  Number of atoms from file
+	Vector *newcoords;	//  Array of vectors to hold coordinates from file
+	FILE *fp;		//  File descriptor
+
+	//  Open the file and die if the open fails
+	if ( (fp = fopen(fname, "r")) == NULL)
+	{
+		char errmsg[256];
+
+		sprintf(errmsg, "Unable to open binary coordinate file %s", fname);
+		NAMD_die(errmsg);
+	}
+
+	//  read the number of coordinates in this file
+	fread(&n, sizeof(int), 1, fp);
+
+	//  Die if this doesn't match the number in the system
+	if (n != pdbobj->num_atoms())
+	{
+		NAMD_die("Number of coordinates in binary coordinate file incorrect");
+	}
+
+	//  Allocate an array to hold the new coordinates
+	newcoords = new Vector[n];
+
+	if (newcoords == NULL)
+	{
+		NAMD_die("Memory allocation of newcoords in Node::read_binary_coors failed");
+	}
+
+	//  Read the coordinate from the file
+	fread(newcoords, sizeof(Vector), n, fp);
+
+	//  Set the coordinates in the PDB object to the new coordinates
+	pdbobj->set_all_positions(newcoords);
+
+	//  Clean up
+	fclose(fp);
+	delete [] newcoords;
+}
+/*			END OF FUNCTION read_binary_coors	*/
+
+
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdState.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/11 18:51:48 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/02/26 23:18:44 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -156,6 +223,9 @@ NamdState::configFileInit(char *confFile)
  * REVISION HISTORY:
  *
  * $Log: NamdState.C,v $
+ * Revision 1.1002  1997/02/26 23:18:44  jim
+ * Now should read binary coordinate files - untested.
+ *
  * Revision 1.1001  1997/02/11 18:51:48  ari
  * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
  * fixed non-buffering of migration msgs
@@ -204,4 +274,4 @@ NamdState::configFileInit(char *confFile)
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1001 1997/02/11 18:51:48 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1002 1997/02/26 23:18:44 jim Exp $";
