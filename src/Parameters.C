@@ -2075,17 +2075,19 @@ void Parameters::add_hb_pair_param(char *buf)
   //****** BEGIN CHARMM/XPLOR type changes
   //// luckily the format and units are the same CHARMM is just missing the HBON marker
   /*  Parse up the input line using sscanf      */
-  if ((sscanf(buf, "%*s %s %s %f %f\n", a1n, a2n, &A, &B) != 4) && (paramType == paraXplor)) /* read XPLOR format */
-  {
-    char err_msg[512];
-    sprintf(err_msg, "BAD HBOND PAIR FORMAT IN XPLOR PARAMETER FILE\nLINE=*%s*", buf);
-    NAMD_die(err_msg);
+  if (paramType == paraXplor) {
+    if (sscanf(buf, "%*s %s %s %f %f\n", a1n, a2n, &A, &B) != 4) {
+      char err_msg[512];
+      sprintf(err_msg, "BAD HBOND PAIR FORMAT IN XPLOR PARAMETER FILE\nLINE=*%s*", buf);
+      NAMD_die(err_msg);
+    }
   }
-  else if ((sscanf(buf, "%s %s %f %f\n", a1n, a2n, &A, &B) != 4) && (paramType == paraCharmm)) /* read CHARMM format */
-  {
-    char err_msg[512];
-    sprintf(err_msg, "BAD HBOND PAIR FORMAT IN CHARMM PARAMETER FILE\nLINE=*%s*", buf);
-    NAMD_die(err_msg);
+  else if (paramType == paraCharmm) {
+    if (sscanf(buf, "%s %s %f %f\n", a1n, a2n, &A, &B) != 4) {
+      char err_msg[512];
+      sprintf(err_msg, "BAD HBOND PAIR FORMAT IN CHARMM PARAMETER FILE\nLINE=*%s*", buf);
+      NAMD_die(err_msg);
+    }
   }
   //****** END CHARMM/XPLOR type changes
 
@@ -4531,12 +4533,15 @@ int Parameters::vdw_pair_to_arrays(int *ind1_array, int *ind2_array,
  *
  *  $RCSfile: Parameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1011 $  $Date: 1999/03/17 17:54:18 $
+ *  $Revision: 1.1012 $  $Date: 1999/06/18 18:34:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Parameters.C,v $
+ * Revision 1.1012  1999/06/18 18:34:47  jim
+ * Fixed bug in xplor-style hbond reading.
+ *
  * Revision 1.1011  1999/03/17 17:54:18  jim
  * Added synonyms for angle, dihe, impr for charm19 parameter sets.
  *
