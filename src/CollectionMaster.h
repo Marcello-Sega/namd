@@ -66,6 +66,7 @@ public:
     void * operator new(size_t size) { return ::operator new(size); }
     void * operator new(size_t, void * ptr) { return ptr; }
     void operator delete(void* ptr) { ::operator delete(ptr); }
+    // crashes egcs!  void operator delete(void*, void*) { ; }
 
     ResizeArray<Vector> data;
 
@@ -157,12 +158,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1998/11/30 04:12:34 $
+ *	$Revision: 1.1013 $	$Date: 1999/03/17 17:59:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMaster.h,v $
+ * Revision 1.1013  1999/03/17 17:59:22  jim
+ * Eliminated compiler warnings and errors.
+ *
  * Revision 1.1012  1998/11/30 04:12:34  krishnan
  * Fixed the numNodes > nPatches bug.
  *

@@ -90,6 +90,7 @@ private:
 
     // delete matched with new
     void operator delete(void* ptr) { ::operator delete(ptr); }		
+    // error on IRIX!  void operator delete(void*, void*) { ; }		
 
     int operator<(ComputeElem e) { return (cid < e.cid); }
     int operator==(ComputeElem e) { return (cid == e.cid); }
@@ -125,12 +126,15 @@ private:
  *
  *	$RCSfile: ComputeMgr.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1998/04/10 04:16:01 $
+ *	$Revision: 1.1014 $	$Date: 1999/03/17 17:59:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.h,v $
+ * Revision 1.1014  1999/03/17 17:59:22  jim
+ * Eliminated compiler warnings and errors.
+ *
  * Revision 1.1013  1998/04/10 04:16:01  jim
  * Finished incorporating DPME.
  *

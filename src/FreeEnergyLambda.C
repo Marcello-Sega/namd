@@ -427,10 +427,10 @@ void ALambdaControl::PrintLambdaHeader(double dT) {
 // ASSUMING that this object is currently active, write out the header for
 // a new lambda control object
 //----------------------------------------------------------------------------
-  double Time;
+  // double Time;
   
   // calculate current time in femto-seconds
-  Time = (double)m_CurrStep * dT;
+  // Time = (double)m_CurrStep * dT;
 
 iout << "FreeEnergy: ";
 #if !defined(_VERBOSE_PMF)
@@ -592,6 +592,9 @@ double ALambdaControl::GetLambdaRef() {
  * REVISION HISTORY:
  *
  * $Log: FreeEnergyLambda.C,v $
+ * Revision 1.6  1999/03/17 17:59:23  jim
+ * Eliminated compiler warnings and errors.
+ *
  * Revision 1.5  1998/09/20 16:34:58  hurwitz
  * make sure Lambda control objects start and stop on just the right step.
  * made output shorter and more readable (compile with _VERBOSE_PMF for old output)

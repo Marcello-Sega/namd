@@ -56,6 +56,7 @@ public:
     void * operator new(size_t size) { return ::operator new(size); }
     void * operator new(size_t, void * ptr) { return ptr; }
     void operator delete(void* ptr) { ::operator delete(ptr); }
+    // crashes egcs!  void operator delete(void*, void*) { ; }
 
   private:
     int remaining;
@@ -92,6 +93,7 @@ public:
     void * operator new(size_t size) { return ::operator new(size); }
     void * operator new(size_t, void *ptr) { return ptr; }
     void operator delete(void* ptr) { ::operator delete(ptr); }
+    // crashes egcs!  void operator delete(void*, void*) { ; }
   };
 private:
 
@@ -111,12 +113,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1998/08/11 16:30:26 $
+ *	$Revision: 1.1009 $	$Date: 1999/03/17 17:59:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMgr.h,v $
+ * Revision 1.1009  1999/03/17 17:59:22  jim
+ * Eliminated compiler warnings and errors.
+ *
  * Revision 1.1008  1998/08/11 16:30:26  jim
  * Modified output from periodic boundary simulations to return atoms to
  * internally consistent coordinates.  We store the transformations which

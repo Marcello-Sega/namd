@@ -39,14 +39,14 @@
 #include "Debug.h"
 
 Controller::Controller(NamdState *s) :
+	computeChecksum(0),
 	simParams(Node::Object()->simParameters),
 	state(s),
 	reduction(ReductionMgr::Object()),
 	collection(CollectionMaster::Object()),
         startCTime(0),
         startWTime(0),
-        startBenchTime(0),
-	computeChecksum(0)
+        startBenchTime(0)
 
 {
     broadcast = new ControllerBroadcasts;
@@ -847,12 +847,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1059 $	$Date: 1999/03/12 02:08:35 $
+ *	$Revision: 1.1060 $	$Date: 1999/03/17 17:59:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1060  1999/03/17 17:59:23  jim
+ * Eliminated compiler warnings and errors.
+ *
  * Revision 1.1059  1999/03/12 02:08:35  jim
  * Fixed bug detection to deal with fixed atom optimizations.
  *

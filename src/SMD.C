@@ -225,8 +225,10 @@ void SMDData::sendData(int t) {
 
 // receive the SMD data from other Nodes 
 void SMDData::recvData(SMDDataMsg *msg) {
+/*
   int t;
   t = msg->curTime;  // t is wasted, but can be used for error checking
+*/
   timeStamp = msg->timeStamp;
   direction = msg->direction;
   refPos = msg->refPos;

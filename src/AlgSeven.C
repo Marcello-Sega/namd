@@ -17,7 +17,7 @@ strategy();
 
 void Alg7::strategy()
 {
-   double bestSize0, bestSize1, bestSize2;
+   // double bestSize0, bestSize1, bestSize2;
    computeInfo *c;
    int numAssigned;
    processorInfo *bestP, *bestP0, *bestP1, *bestP2;
@@ -79,7 +79,7 @@ void Alg7::strategy()
      heapIterator nextProcessor;
     processorInfo *p = (processorInfo *) 
       pes->iterator((heapIterator *) &nextProcessor);
-    bestSize0 = bestSize1 = bestSize2 = 0;
+    // bestSize0 = bestSize1 = bestSize2 = 0;
     bestP0 = bestP1 = bestP2 = (processorInfo *)0;
     while (p){
        int n=0;

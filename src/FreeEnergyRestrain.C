@@ -305,7 +305,7 @@ double APosRestraint::GetE(AVector RefPos, double LambdaKf) {
 }
 
 
-AVector APosRestraint::GetGrad(int WhichGroup, 
+AVector APosRestraint::GetGrad(int /* WhichGroup */, 
                                AVector RefPos, double LambdaKf) {
 //-------------------------------------------------------------------------
 // calculate and return the gradient for this position restraint.
@@ -320,7 +320,7 @@ AVector APosRestraint::GetGrad(int WhichGroup,
 //        m_pCOMS[0][0] returns the x value from the vector (x,y,z)
 //        (operator[] is defined to return an item from the vector)
 //-------------------------------------------------------------------------
-  WhichGroup = 0;  // don't care -- there's only 1 atom restrained
+  // WhichGroup = 0;  // don't care -- there's only 1 atom restrained
   AVector Vec(m_pCOMs[0][0] - RefPos[0],
               m_pCOMs[0][1] - RefPos[1],
               m_pCOMs[0][2] - RefPos[2]);
@@ -762,7 +762,7 @@ double ABoundPosRestraint::GetEnergy() {
 }
 
 
-AVector ABoundPosRestraint::GetGradient(int WhichGroup) {
+AVector ABoundPosRestraint::GetGradient(int /* WhichGroup */) {
 //---------------------------------------------------------------------------
 // calculate and return the gradient for this bound position restraint.
 //
@@ -772,7 +772,7 @@ AVector ABoundPosRestraint::GetGradient(int WhichGroup) {
   double  Dist;
   AVector Vec;   // Vec is initialized to (0,0,0)
 
-  WhichGroup = 0;  // don't care -- there's only 1 atom restrained
+  // WhichGroup = 0;  // don't care -- there's only 1 atom restrained
   Dist = m_pCOMs[0].Dist(m_RefPos);
   if (((m_Bound==kUpper) && (Dist>m_RefDist)) ||
       ((m_Bound==kLower) && (Dist<m_RefDist))) {
@@ -1104,6 +1104,9 @@ double AForcingDiheRestraint::Get_dU_dLambda() {
  * REVISION HISTORY:
  *
  * $Log: FreeEnergyRestrain.C,v $
+ * Revision 1.6  1999/03/17 17:59:24  jim
+ * Eliminated compiler warnings and errors.
+ *
  * Revision 1.5  1998/09/20 16:35:00  hurwitz
  * make sure Lambda control objects start and stop on just the right step.
  * made output shorter and more readable (compile with _VERBOSE_PMF for old output)

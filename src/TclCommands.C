@@ -11,7 +11,7 @@
  *
  *	$RCSfile: TclCommands.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1998/04/15 22:13:53 $
+ *	$Revision: 1.4 $	$Date: 1999/03/17 17:59:26 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -34,19 +34,6 @@
 if (!strcmp(argv[1], string)) {             \
   Tcl_AppendResult(interp, result, NULL);   \
   return TCL_OK;                            \
-}
-
-// append t to s and return a pointer to the terminating '\0'
-static char * my_strcat(char *s, const char *t)
-{
-  while (*s) {  // go to end of string
-    s++;
-  }
-  while (*t) {  // copy to the end
-    *s++ = *t++;
-  }
-  *s = 0;       // terminate the string
-  return s;
 }
 
 
