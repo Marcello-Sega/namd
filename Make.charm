@@ -1,4 +1,4 @@
 # Set CHARMBASE to the top level charm directory.
 
-CHARMBASE = /home/brunner/projects/charm
+CHARMBASE = /Projects/namd2/charm
 
