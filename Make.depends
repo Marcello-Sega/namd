@@ -1227,8 +1227,9 @@ obj/ComputeNonbondedUtil.o: \
 	src/LJTable.h \
 	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedUtil.o $(COPTC) src/ComputeNonbondedUtil.C
-obj/ComputeNonbondedBase.o: \
-	src/ComputeNonbondedBase.C \
+obj/ComputeNonbondedStd.o: \
+	src/ComputeNonbondedStd.C \
+	src/ComputeNonbondedInl.h \
 	src/ComputeNonbondedUtil.h \
 	src/NamdTypes.h \
 	src/Vector.h \
@@ -1259,7 +1260,75 @@ obj/ComputeNonbondedBase.o: \
 	src/PressureProfile.h \
 	src/ComputeNonbondedBase.h \
 	src/ComputeNonbondedBase2.h
-	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedBase.o $(COPTC) src/ComputeNonbondedBase.C
+	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedStd.o $(COPTC) src/ComputeNonbondedStd.C
+obj/ComputeNonbondedFEP.o: \
+	src/ComputeNonbondedFEP.C \
+	src/ComputeNonbondedInl.h \
+	src/ComputeNonbondedUtil.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/ReductionMgr.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/ProcessorPrivate.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/MStream.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/Node.h \
+	inc/Node.decl.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/structures.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
+	src/LJTable.h \
+	src/PressureProfile.h \
+	src/ComputeNonbondedBase.h \
+	src/ComputeNonbondedBase2.h
+	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedFEP.o $(COPTC) src/ComputeNonbondedFEP.C
+obj/ComputeNonbondedLES.o: \
+	src/ComputeNonbondedLES.C \
+	src/ComputeNonbondedInl.h \
+	src/ComputeNonbondedUtil.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/ReductionMgr.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/ProcessorPrivate.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/MStream.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/Node.h \
+	inc/Node.decl.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/structures.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
+	src/LJTable.h \
+	src/PressureProfile.h \
+	src/ComputeNonbondedBase.h \
+	src/ComputeNonbondedBase2.h
+	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedLES.o $(COPTC) src/ComputeNonbondedLES.C
 obj/ComputePatch.o: \
 	src/ComputePatch.C \
 	inc/WorkDistrib.decl.h \
@@ -2101,6 +2170,7 @@ obj/HomePatch.o: \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
 	src/Settle.h \
+	src/ReductionMgr.h \
 	src/Sync.h \
 	inc/Sync.decl.h \
 	src/ResizeArrayPrimIter.h \
