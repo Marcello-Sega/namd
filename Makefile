@@ -56,6 +56,17 @@ PVMLIBS=pvm3/libpvmc.a
 
 
 ######
+## definitions for TCL interface
+######
+
+TCLDIR=/usr/local
+TCLINCL=-I$(TCLDIR)/include
+TCLLIB=-L$(TCLDIR)/lib -ltcl
+TCLFLAGS=-DNAMD_TCL
+TCL=$(TCLINCL) $(TCLFLAGS)
+
+
+######
 ## Libraries we may have changed
 ######
 
@@ -64,8 +75,8 @@ LIBS = $(DPMTALIBS) $(PVMLIBS) $(DPMELIBS)
 
 # CXX is platform dependent
 INCLUDE = $(CHARM)/include
-CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(SRCDIR)/Templates -I$(INCDIR) $(DPMTA) $(PVM) $(CXXOPTS) $(NOWARN) $(NAMDFLAGS)
-GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(PVM) $(NOWARN) $(NAMDFLAGS)
+CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(SRCDIR)/Templates -I$(INCDIR) $(DPMTA) $(PVM) $(TCL) $(CXXOPTS) $(NOWARN) $(NAMDFLAGS)
+GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(PVM) $(TCL) $(NOWARN) $(NAMDFLAGS)
 
 .SUFFIXES: 	.ci
 
@@ -93,6 +104,8 @@ OBJS = \
 	$(DSTDIR)/ComputeHomePatches.o \
 	$(DSTDIR)/ComputeImpropers.o \
 	$(DSTDIR)/ComputeGeneral.o \
+	$(DSTDIR)/ComputeGlobal.o \
+	$(DSTDIR)/ComputeGlobalMsgs.o \
 	$(DSTDIR)/ComputeMap.o \
 	$(DSTDIR)/ComputeMgr.o \
 	$(DSTDIR)/ComputeNonbondedExcl.o \
@@ -139,6 +152,7 @@ OBJS = \
 	$(DSTDIR)/Sequencer.o \
 	$(DSTDIR)/Set.o \
 	$(DSTDIR)/SimParameters.o \
+	$(DSTDIR)/TclCommands.o \
 	$(DSTDIR)/VoidTree.o \
 	$(DSTDIR)/WorkDistrib.o
 
@@ -170,7 +184,8 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES) $(LIBS)
 	-language charm++ \
 	-o namd2 $(OBJS) \
 	$(DPMTALIB) \
-	$(PVMLIB)
+	$(PVMLIB) \
+	$(TCLLIB)
 
 # Now sit back, have a coke, and relax.
 
@@ -182,7 +197,8 @@ projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES) $(LIBS)
 	-language charm++ -tracemode projections \
 	-o namd2 $(OBJS) \
 	$(DPMTALIB) \
-	$(PVMLIB)
+	$(PVMLIB) \
+	$(TCLLIB)
 
 # Now sit back, have a coke, and relax.
 

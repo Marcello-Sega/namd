@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1038 1997/12/17 10:28:09 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1039 1997/12/19 23:48:53 jim Exp $";
 
 #include <stdio.h>
 
@@ -552,6 +552,9 @@ void WorkDistrib::mapComputes(void)
     mapComputeHomePatches(computeDPMTAType);
 #endif
 
+  if ( node->simParameters->globalForcesOn )
+    mapComputeHomePatches(computeGlobalType);
+
   mapComputeNonbonded();
   mapComputeHomePatches(computeNonbondedExclType);
   mapComputeHomePatches(computeBondsType);
@@ -995,12 +998,15 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1038 $	$Date: 1997/12/17 10:28:09 $
+ *	$Revision: 1.1039 $	$Date: 1997/12/19 23:48:53 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1039  1997/12/19 23:48:53  jim
+ * Added Tcl interface for calculating forces.
+ *
  * Revision 1.1038  1997/12/17 10:28:09  jim
  * Full direct electrostatics now works in parallel.
  *

@@ -165,6 +165,8 @@ public:
         Vector movingConsVel;           //  Velocity of the movement, A/timestep
         int movingConsAtom;             //  Index of the atom to be moved
 
+	Bool globalForcesOn;		//  Are global forces present?
+
 	Bool fixedAtomsOn;		//  Are there fixed atoms?
 
 	Bool langevinOn;		//  Flag TRUE-> langevin dynamics active
@@ -312,13 +314,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.h,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1997/10/01 16:47:03 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1015 $	$Date: 1997/12/19 23:48:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1015  1997/12/19 23:48:51  jim
+ * Added Tcl interface for calculating forces.
+ *
  * Revision 1.1014  1997/10/01 16:47:03  milind
  * Removed old NAMD1 messaging and replaced it with new Message Streams library.
  *

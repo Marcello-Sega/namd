@@ -35,6 +35,7 @@ enum ComputeType
   computeDPMEType,
 #endif
   computeFullDirectType,
+  computeGlobalType,
   computeSphericalBCType,
   computeCylindricalBCType,
   computeRestraintsType,
@@ -164,13 +165,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.h,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/11/07 20:17:37 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1011 $	$Date: 1997/12/19 23:48:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.h,v $
+ * Revision 1.1011  1997/12/19 23:48:48  jim
+ * Added Tcl interface for calculating forces.
+ *
  * Revision 1.1010  1997/11/07 20:17:37  milind
  * Made NAMD to run on shared memory machines.
  *

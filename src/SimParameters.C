@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *  $RCSfile: SimParameters.C,v $
- *  $Author: brunner $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1025 $  $Date: 1997/10/15 22:03:24 $
+ *  $Author: jim $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1026 $  $Date: 1997/12/19 23:48:51 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1026  1997/12/19 23:48:51  jim
+ * Added Tcl interface for calculating forces.
+ *
  * Revision 1.1025  1997/10/15 22:03:24  brunner
  * Bug fix:  Fixed atoms parameter not propagated to other nodes.
  *
@@ -405,7 +408,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1025 1997/10/15 22:03:24 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1026 1997/12/19 23:48:51 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -797,6 +800,12 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
     "Index of the atom to move", 
     &movingConsAtom);
    opts.range("movingConsAtom", NOT_NEGATIVE);
+
+   ////  Global Forces / Tcl
+   opts.optionalB("main", "globalForces", "Are Tcl global forces active?",
+     &globalForcesOn, FALSE);
+   opts.require("globalForces", "globalForcesTcl",
+     "Tcl script for global forces", PARSE_STRING);
 
    //// Spherical Boundary Conditions
    opts.optionalB("main", "sphericalBC", "Are spherical boundary counditions "
@@ -1934,6 +1943,25 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
          << constraintExp << "\n";
    }
 
+   if (globalForcesOn)
+   {
+     iout << iINFO << "GLOBAL FORCES ACTIVE\n";
+
+     current = config->find("globalForcesTcl");
+
+     if ( (cwd == NULL) || (current->data[0] == '/') )
+     {
+       strcpy(filename, current->data);
+     }
+     else
+     {
+       strcpy(filename, cwd);
+       strcat(filename, current->data);
+     }
+
+     iout << iINFO << "GLOBAL FORCES SCRIPT   " << filename << "\n";
+   }
+
    if (globalOn && ! dihedralOn)
    {
       iout << iINFO << "GLOBAL INTEGRATION TEST MODE ACTIVE\n";
@@ -2280,6 +2308,7 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
   msg->put(pairlistDist)->put(plMarginCheckOn)->put(constraintsOn);
   msg->put(constraintExp);
   msg->put(movingConstraintsOn)->put(movingConsAtom)->put(&movingConsVel);
+  msg->put(globalForcesOn);
   msg->put(FMAOn)->put(FMALevels)->put(FMAMp);
   msg->put(FMAFFTOn)->put(FMAFFTBlock)->put(minimizeOn);
   msg->put(maximumMove)->put(totalAtoms)->put(randomSeed);
@@ -2388,6 +2417,7 @@ void SimParameters::receive_SimParameters(MIStream *msg)
   msg->get(movingConstraintsOn);
   msg->get(movingConsAtom);
   msg->get(&movingConsVel);
+  msg->get(globalForcesOn);
   msg->get(FMAOn);
   msg->get(FMALevels);
   msg->get(FMAMp);
@@ -2493,12 +2523,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1025 $  $Date: 1997/10/15 22:03:24 $
+ *  $Revision: 1.1026 $  $Date: 1997/12/19 23:48:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1026  1997/12/19 23:48:51  jim
+ * Added Tcl interface for calculating forces.
+ *
  * Revision 1.1025  1997/10/15 22:03:24  brunner
  * Bug fix:  Fixed atoms parameter not propagated to other nodes.
  *

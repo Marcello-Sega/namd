@@ -40,6 +40,8 @@
 #include "ComputeBonds.h"
 #include "ComputeNonbondedExcl.h"
 #include "ComputeFullDirect.h"
+#include "ComputeGlobal.h"
+#include "ComputeGlobalMsgs.h"
 #ifdef DPMTA
 #include "ComputeDPMTA.h"
 #endif
@@ -52,6 +54,7 @@ ComputeMgr::ComputeMgr(InitMsg *msg)
 {
   delete msg;
   CpvAccess(BOCclass_group).computeMgr = thisgroup;
+  computeGlobalObject = 0;
 }
 
 ComputeMgr::~ComputeMgr(void)
@@ -244,6 +247,11 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
+      case computeGlobalType:
+	c = computeGlobalObject = new ComputeGlobal(i,this); // unknown delete
+	map->registerCompute(i,c);
+	c->initialize();
+	break;
       case computeSphericalBCType:
 	c = new ComputeSphericalBC(i,map->computeData[i].pids[0].pid); // unknown delete
 	map->registerCompute(i,c);
@@ -308,6 +316,49 @@ ComputeMgr::createComputes(ComputeMap *map)
 }
 
 
+void ComputeMgr:: sendComputeGlobalConfig(ComputeGlobalConfigMsg *msg)
+{
+  CBroadcastMsgBranch(ComputeMgr, recvComputeGlobalConfig, msg,
+    CpvAccess(BOCclass_group).computeMgr);
+}
+
+void ComputeMgr:: recvComputeGlobalConfig(ComputeGlobalConfigMsg *msg)
+{
+  if ( computeGlobalObject ) {
+    computeGlobalObject->recvConfig(msg);
+  }
+  else NAMD_die("ComputeMgr::computeGlobalObject is NULL!");
+}
+
+void ComputeMgr:: sendComputeGlobalData(ComputeGlobalDataMsg *msg)
+{
+  CSendMsgBranch(ComputeMgr, recvComputeGlobalData, msg,
+    CpvAccess(BOCclass_group).computeMgr, 0);
+}
+
+void ComputeMgr:: recvComputeGlobalData(ComputeGlobalDataMsg *msg)
+{
+  if ( computeGlobalObject ) {
+    computeGlobalObject->recvData(msg);
+  }
+  else NAMD_die("ComputeMgr::computeGlobalObject is NULL!");
+}
+
+void ComputeMgr:: sendComputeGlobalResults(ComputeGlobalResultsMsg *msg)
+{
+  CBroadcastMsgBranch(ComputeMgr, recvComputeGlobalResults, msg,
+    CpvAccess(BOCclass_group).computeMgr);
+}
+
+void ComputeMgr:: recvComputeGlobalResults(ComputeGlobalResultsMsg *msg)
+{
+  if ( computeGlobalObject ) {
+    computeGlobalObject->recvResults(msg);
+  }
+  else NAMD_die("ComputeMgr::computeGlobalObject is NULL!");
+}
+
+
 #include "ComputeMgr.bot.h"
 
 
@@ -315,13 +366,16 @@ ComputeMgr::createComputes(ComputeMap *map)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1997/11/07 20:17:38 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1016 $	$Date: 1997/12/19 23:48:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.C,v $
+ * Revision 1.1016  1997/12/19 23:48:49  jim
+ * Added Tcl interface for calculating forces.
+ *
  * Revision 1.1015  1997/11/07 20:17:38  milind
  * Made NAMD to run on shared memory machines.
  *

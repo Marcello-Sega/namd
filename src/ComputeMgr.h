@@ -30,6 +30,11 @@ class Compute;
 class ComputeMap;
 class QuiescenceMessage;
 
+class ComputeGlobal;
+class ComputeGlobalConfigMsg;
+class ComputeGlobalDataMsg;
+class ComputeGlobalResultsMsg;
+
 class ComputeMgr : public BOCclass
 {
 public:
@@ -45,10 +50,19 @@ public:
   void updateLocalComputes3(RunMsg *);
   void doneUpdateLocalComputes(DoneMsg *);
 
+  void sendComputeGlobalConfig(ComputeGlobalConfigMsg *);
+  void recvComputeGlobalConfig(ComputeGlobalConfigMsg *);
+  void sendComputeGlobalData(ComputeGlobalDataMsg *);
+  void recvComputeGlobalData(ComputeGlobalDataMsg *);
+  void sendComputeGlobalResults(ComputeGlobalResultsMsg *);
+  void recvComputeGlobalResults(ComputeGlobalResultsMsg *);
+
 private:
   void createCompute(ComputeID, ComputeMap *);
   int numNonbondedSelf;
   int numNonbondedPair;
+
+  ComputeGlobal *computeGlobalObject;
 
   int updateComputesCount;
   int updateComputesReturnEP;
@@ -102,13 +116,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/04/17 19:19:36 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1009 $	$Date: 1997/12/19 23:48:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.h,v $
+ * Revision 1.1009  1997/12/19 23:48:50  jim
+ * Added Tcl interface for calculating forces.
+ *
  * Revision 1.1008  1997/04/17 19:19:36  brunner
  * Put in new AlgSeven.C
  *
