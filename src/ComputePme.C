@@ -380,12 +380,12 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     isPmeFlag[i] = 0;
   for ( i=0; i<numGridPes; ++i ) {
     if ( gridPeMap[i] == CkMyPe() ) myGridPe = i;
-    isPmeFlag[i] |= 1;
+    isPmeFlag[gridPeMap[i]] |= 1;
   }
   myTransPe = -1;
   for ( i=0; i<numTransPes; ++i ) {
     if ( transPeMap[i] == CkMyPe() ) myTransPe = i;
-    isPmeFlag[i] |= 2;
+    isPmeFlag[transPeMap[i]] |= 2;
   }
   
   if ( ! CkMyPe() ) {
