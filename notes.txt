@@ -1,6 +1,6 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                     NAMD 2.1b2 Release Notes                       |
+|                     NAMD 2.1b3 Release Notes                       |
 |                                                                    |
 +--------------------------------------------------------------------+
 
@@ -63,12 +63,12 @@ DPME are included in the release binaries.)
 
 You may edit arch/Makearch.ARCH to enable or disable linking with Tcl
 and FFTW.  Tcl is required for Tcl global forces (tclForces) and for
-Tcl scripting (tcl).  Tcl is available from www.scriptics.com.  FFTW
-replaces the slower the built-in FFT in particle mesh Ewald.  FFTW is
-available from www.fftw.org.  If you download the RPM or configure FFTW
-with --enable-type-prefix you will need to make symbolic links to the
-double precision versions of the libraries and header files.  (Tcl is
-included in the release binaries, FFTW is not.)
+Tcl scripting.  Tcl is available from www.scriptics.com.  FFTW replaces
+the slower the built-in FFT in particle mesh Ewald.  FFTW is available
+from www.fftw.org.  If you download the RPM or configure FFTW with
+--enable-type-prefix you will need to make symbolic links to the double
+precision versions of the libraries and header files.  (Tcl is included
+in the release binaries, FFTW is not.)
 
 ----------------------------------------------------------------------
 
@@ -96,6 +96,16 @@ NAMD fails without printing any output, check to make sure that "rsh"
 works on your machine, by seeing if "rsh hostname ls" works for each
 host in the nodelist.
 
+Some automounters use a temporary mount directory which is prepended
+to the path returned by the pwd command.  To run on multiple machines
+you must place a "pathfix" line in your nodelist file before any
+"host" lines.  For example:
+
+group main
+ pathfix /tmp_mnt
+ host alpha1
+ host alpha2
+
 A number of parameters may be passed to conv-host.  The most important
 is the "+pX" option, where X specifies the number of processors.  If X
 is less than the number of hosts in the nodelist, machines are
@@ -104,17 +114,30 @@ hosts, conv-host will start multiple processes on the machines,
 starting from the top.  To run multiple processes on members of a SMP
 workstation cluster, you may either just use the +p option to go
 through the list the right number of times, or list each machine
-several times, once for each processor.
+several times, once for each processor.  The default is +p1.
+
+You may specify the nodelist file with the "++nodelist" option and the
+group (which defaults to "main") with the "++nodegroup" option.  If
+you do not use "++nodelist" conv-host will first look for "nodelist"
+in your current directory and then ".nodelist" in your home directory.
+
+If you always want to run on the machine you are logged in to you may
+use "localhost" in place of the hostname in your nodelist file, but
+only if there are no other machines.  You will not need "pathfix".
+For example, ".nodelist" in your home directory could read:
+
+group main
+ host localhost
 
 Once the nodelist file is set up, and you have your configuration file
 prepared (alanin.conf, in this example), run NAMD as follows:
 
 conv-host +pX namd2 alanin.conf
 
-Due to their processor design, Intel-based machines running the linux
-version produce binary files (restart and DCD files) with a different
-format.  The "flipbinpdb" and the "flipdcd" programs will convert
-files back and forth from Intel format to the non-Intel format.
+Intel and Alpha processors produce binary files (restart and DCD
+files) which must be "byte-swapped" to be read on other platforms.
+The flipbinpdb and flipdcd programs will perform this conversion.
+See the section "Endian Issues" below.
 
 -- T3E --
 
@@ -126,6 +149,8 @@ mpprun -n X namd2 alanin.conf
 -- Origin 2000 --
 
 For small numbers of processors (1-8) use the non-MPI version of namd2.
+If your stack size limit is unlimited, which DQS may do, you will need
+to set it with "limit stacksize 64M" to run on multiple processors.
 To run on X processors call the binary directly with the +p option:
 
 namd2 +pX alanin.conf
@@ -134,8 +159,8 @@ For better performance on larger numbers of processors we recommend
 that you use the MPI version of NAMD.  To run this version, you must
 have MPI installed.  Furthermore, you must set two environment
 variables to tell MPI how to allocate certain internal buffers.  Put
-the following commands in your .cshrc/.profile file, or in your job
-file if you are running under a queuing system:
+the following commands in your .cshrc or .profile file, or in your
+job file if you are running under a queuing system:
 
 setenv MPI_REQUEST_MAX 10240
 setenv MPI_TYPE_MAX 10240
@@ -147,6 +172,52 @@ mpirun -np X namd2 alanin.conf
 ----------------------------------------------------------------------
 
 New Features
+
+--- Tcl Scripting Language Interface ---
+
+This exciting feature was scheduled for version 3.0 but an incomplete
+version is available now---and quite useful!  When compiled with Tcl
+(all released binaries) the config file is parsed by Tcl in a fully
+backwards compatible manner with the added bonus that any Tcl command
+may also be used.  This alone allows:
+  * the "source" command to include other files (works w/o Tcl too!),
+  * the "print" command to display messages ("puts" is broken, sorry),
+  * environment variables through the env array ("$env(USER)"), and
+  * user-defined variables ("set base sim23", "dcdfile ${base}.dcd").
+
+But wait, there's more:
+  * The "callback" command takes a 2-parameter Tcl procedure which
+    is then called with a list of labels and a list of values during
+    every timestep, allowing analysis, formatting, whatever.
+  * The "run" command takes a number of steps to run (overriding the
+    now optional numsteps parameter, which defaults to 0) and can be
+    called repeatedly.  You can "run 0" just to get energies.
+  * The "output" command takes an output file basename and causes
+    .coor, .vel, and .xsc files to be written with that name.
+  * Between "run" commands the reassignTemp, rescaleTemp, and
+    langevinTemp parameters can be changed to allow simulated
+    annealing protocols within a single config file.  (Many more
+    parameters of this type will be enabled in future versions.)
+
+Please note that while NAMD has traditionally allowed comments to be
+started by a # appearing anywhere on a line, Tcl only allows comments
+to appear where a new statement could begin.  With Tcl config file
+parsing enabled (all shipped binaries) both NAMD and Tcl comments are
+allowed before the first "run" command.  At this point only pure Tcl
+syntax is allowed.  In addition, the ";#" idiom for Tcl comments will
+only work with Tcl enabled.  NAMD has also traditionally allowed 
+parameters to be specified as "param=value".  This is supported, but
+only before the first "run" command.  Some examples:
+
+# this is my config file                            <- OK
+reassignFreq 100 ; # how often to reset velocities  <- only w/ Tcl
+reassignTemp 20 # temp to reset velocities to       <- OK before "run"
+run 1000                                            <- now Tcl only
+reassignTemp 40 ; # temp to reset velocities to     <- ";" is required
+
+NAMD has also traditionally allowed parameters to be specified as
+"param=value" as well as "param value".  This is supported, but only
+before the first "run" command.  For an easy life, use "param value".
 
 --- Mollified Impulse Method (MOLLY) ---
 
@@ -210,17 +281,36 @@ Known Deficiencies
 
 - PME (the Ewald sum) is not well parallelized.
 
+- TclForces runs in a separate Tcl intepreter from the so you cannot
+  pass variables between TclForces and the Tcl front end script.
+
 - NAMD requires X-PLOR or CHARMM to produce the .psf structure input
-files.  If you don't have one of these, you probably can't use NAMD yet.
+  files.  If you don't have one of these, you probably can't use NAMD.
+  We are planning on adding these features to VMD or a new program.
 
 ----------------------------------------------------------------------
 
-Problems?
+Problems?  Found a bug?
 
 For problems or questions, send email to namd@ks.uiuc.edu.  If you
-think you have found a bug, please include what machine you are
-running on, and, if possible, a dump of the program output and/or a
-copy of your input files.  Your feedback will help us improve NAMD.
+think you have found a bug, please follow the steps outlined below.
+Your feedback will help us improve NAMD.
+
+ 1. Download and test the latest version of NAMD. 
+ 2. Please check the FAQ, known bugs and problem reports. 
+ 3. Gather, in a single directory, all input and config files needed
+    to reproduce your problem. 
+ 4. Run once, redirecting output to a file. 
+ 5. Tar everything up (but not the namd2 or conv-host binaries) and
+    compress it. 
+ 6. Email namd@ks.uiuc.edu with: 
+    - A synopsis of the problem as the subject. 
+    - The NAMD version number the problem occurs with. 
+    - The platform and number of CPU's the problem occurs with. 
+    - A description of the problematic behavior and any error messages. 
+    - If the problem is consistent or random. 
+    - The compressed tar file as an attachment (or a URL if it is too big). 
+ 7. We'll get back to you by the next business day. 
 
 ----------------------------------------------------------------------
 
