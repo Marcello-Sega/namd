@@ -47,7 +47,7 @@ public:
   int zlistlen;
   int *zlist;
   char *fgrid;
-  double *qgrid;
+  float *qgrid;
 };
 
 class PmeTransMsg : public CMessage_PmeTransMsg {
@@ -398,7 +398,7 @@ void ComputePmeMgr::recvGrid(PmeGridMsg *msg) {
   int zlistlen = msg->zlistlen;
   int *zlist = msg->zlist;
   double *q = qgrid;
-  double *qmsg = msg->qgrid;
+  float *qmsg = msg->qgrid;
   for ( int i=0; i<fgrid_len; ++i ) {
     if ( f[i] ) {
       for ( int k=0; k<zlistlen; ++k ) {
@@ -674,7 +674,7 @@ void ComputePmeMgr::sendUngrid(void) {
     int zlistlen = newmsg->zlistlen;
     int *zlist = newmsg->zlist;
     char *f = newmsg->fgrid;
-    double *qmsg = newmsg->qgrid;
+    float *qmsg = newmsg->qgrid;
     double *q = qgrid + (fstart-fgrid_start) * zdim;
     for ( int i=0; i<flen; ++i ) {
       if ( f[i] ) {
@@ -985,7 +985,7 @@ void ComputePme::sendData(int numRecipPes, int firstDestRecipPe,
     memcpy((void*)(msg->fgrid),(void*)(f),flen*sizeof(char));
 
     double **q = q_arr + fstart;
-    double *qmsg = msg->qgrid;
+    float *qmsg = msg->qgrid;
     for ( i=0; i<flen; ++i ) {
       if ( f[i] ) {
         for ( int k=0; k<zlistlen; ++k ) {
@@ -1017,7 +1017,7 @@ void ComputePme::copyResults(PmeGridMsg *msg) {
   char *f = msg->fgrid;
   int zlistlen = msg->zlistlen;
   int *zlist = msg->zlist;
-  double *qmsg = msg->qgrid;
+  float *qmsg = msg->qgrid;
   double **q = q_arr + fstart;
   for ( int i=0; i<flen; ++i ) {
     if ( f[i] ) {

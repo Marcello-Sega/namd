@@ -9,7 +9,7 @@ module ComputePmeMgr {
   message PmeGridMsg {
     int zlist[];
     char fgrid[];
-    double qgrid[];
+    float qgrid[];
   };
   message PmeTransMsg {
     double qgrid[];
