@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1001 1997/02/06 18:05:29 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1002 1997/02/06 21:20:49 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -103,6 +103,7 @@ void Patch::loadAtomProperties(void)
 void
 Patch::indexAtoms()
 {
+    localIndex.resize(0);
     for ( int i=0; i<atomIDList.size(); i++)
     {
       localIndex.load(LocalAtomID(atomIDList[i], i));
@@ -228,13 +229,16 @@ void Patch::positionsReady(int doneMigration)
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/06 18:05:29 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/02/06 21:20:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.1002  1997/02/06 21:20:49  jim
+ * Fixed a couple of atom migration bugs.
+ *
  * Revision 1.1001  1997/02/06 18:05:29  nealk
  * Modified (added some, turned off others) debug statements.
  *

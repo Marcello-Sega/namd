@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1001 1997/02/06 18:05:28 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1002 1997/02/06 21:20:50 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -44,6 +44,7 @@ HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl,
   min.y = PatchMap::Object()->maxY(patchID);
   min.z = PatchMap::Object()->maxZ(patchID);
 
+  migrationSuspended = false;
   patchMapRead = 0; // We delay read of PatchMap data
 		    // to make sure it is really valid
 }
@@ -314,13 +315,16 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/06 18:05:28 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/02/06 21:20:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1002  1997/02/06 21:20:50  jim
+ * Fixed a couple of atom migration bugs.
+ *
  * Revision 1.1001  1997/02/06 18:05:28  nealk
  * Modified (added some, turned off others) debug statements.
  *
