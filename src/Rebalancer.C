@@ -17,6 +17,9 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
   P = nPes;
   int i;
   for (i=0; i<P; i++){
+    // For testing only...
+    //    processors[i].backgroundLoad = 0;
+    // End of test section
     processors[i].load = processors[i].backgroundLoad;
     processors[i].computeLoad = 0;
     processors[i].patchSet = new Set();
@@ -34,6 +37,18 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
 
   for (i=0; i<numComputes; i++){
     computeArray[i].processor = -1;
+  }
+
+  for (i=0; i < numComputes; i++)
+  {
+    processors[computes[i].oldProcessor].computeLoad += computes[i].load;
+  }
+  iout << iINFO << "Initial load\n" << endi;
+  printLoads();
+
+  for(i=0;i<P; i++)
+  {
+    processors[i].computeLoad = 0;
   }
 
   for (i=0; i <P; i++) {
