@@ -6,15 +6,14 @@
 **/
 
 /*
-   Toplevel routines for initializing a Node for a simulation
-   one Node per Pe (processor element).
+    Sync will ensure that all homepatches finished updating before Computes starts
 */
 
 #ifndef WIN32
 #include <unistd.h>
 #endif
+#include <stdio.h>
 #include <charm++.h>
-#include "Sync.decl.h"
 
 #include "Patch.h"
 #include "PatchMap.h"
@@ -27,9 +26,6 @@
 #define MIN_DEBUG_LEVEL 3
 //#define DEBUGM
 #include "Debug.h"
-
-#include <stdio.h>
-#include <converse.h>
 
 #include "InfoStream.h"
 
@@ -44,7 +40,7 @@ Sync::Sync()
 	  << "Sync instanced twice on same processor!" << endi;
 	CkExit();
     }
-    capacity = 3000;
+    capacity = 1000;
     clist = new _clist[capacity];
     step = 0;
     counter = 0;
@@ -61,35 +57,34 @@ void Sync::openSync(void)
    }
 }    
 
+// called from Patch::positionsReady()
 void Sync::registerComp(PatchID pid, ComputeIDListIter cid, int doneMigration)
 {
-  int i;
   int slot = 0;
-  for (slot = 0; slot < cnum; slot++)
+  for (; slot < cnum; slot++)
      if (clist[slot].pid == -1) break;
   if (slot == cnum) {
     cnum++;
-    // expand the list
+    // table is full, expand the list
     if (cnum == capacity) {
       capacity += 1000;
       struct _clist *tmp = new _clist[capacity];
-      for (i=0; i<cnum; i++) tmp[i] = clist[i];
+      memcpy(tmp, clist, cnum*sizeof(_clist));
       delete [] clist;
       clist = tmp;
-      CmiPrintf("Sync buffer overflow and expanded!\n");
+      CmiPrintf("Info:: Sync buffer overflow and expanded!\n");
     }
   }
 
-  PatchMap *patchMap =  PatchMap::Object();
   clist[slot].cid = cid;
   clist[slot].pid = pid;
   clist[slot].doneMigration  = doneMigration;
-  clist[slot].step = patchMap->patch(pid)->flags.step;
+  clist[slot].step = PatchMap::Object()->patch(pid)->flags.step;
 
 //  CkPrintf("REG[%d]: patch:%d step:%d-%d slot:%d\n", CkMyPe(), pid, patchMap->patch(pid)->flags.step, step, slot);
 
   if (clist[slot].step == step) {
-//      nPatcheReady++;
+      nPatcheReady++;
       triggerCompute();
   }
 }
@@ -107,28 +102,24 @@ void Sync::triggerCompute()
   if (numPatches == -1) 
     numPatches = ProxyMgr::Object()->numProxies() + patchMap->numHomePatches();
 
-  nPatcheReady= 0 ;
-  for (int i= 0; i<cnum; i++) {
-      PatchID pid = clist[i].pid;
-      if (pid == -1) continue;
-      if (clist[i].step == step) nPatcheReady++;
-  }
-
 //  CkPrintf("SYNC[%d]: PATCHREADY:%d %d patches:%d %d\n", CkMyPe(), counter, PatchMap::Object()->numHomePatches(), nPatcheReady, numPatches);
   if (counter == patchMap->numHomePatches() && nPatcheReady == numPatches)
   {
 //       CkPrintf("TRIGGERED[%d]\n", CkMyPe());
        ComputeMap *computeMap = ComputeMap::Object();
+       nPatcheReady = 0;
        for (int i= 0; i<cnum; i++) {
          int &pid = clist[i].pid;
 	 if (pid == -1) continue;
-	 if (clist[i].step != step) continue;
+	 if (clist[i].step != step) {
+            // count for next step
+            if (clist[i].step == step + 1) nPatcheReady++;
+            continue;
+         }
 //         CkPrintf(" %d-%d-%d ", clist[i].pid, clist[i].step, patchMap->patch(pid)->flags.step);
          ComputeIDListIter cid = clist[i].cid;
          for(cid = cid.begin(); cid != cid.end(); cid++)
-         {
 	    computeMap->compute(*cid)->patchReady(pid,clist[i].doneMigration);
-         }
 	 pid = -1;
        }
 //       CkPrintf("\n");
