@@ -501,10 +501,6 @@ obj/ComputeDPME.o: \
 	src/HomePatchTypes.h \
 	src/ComputeDPMEMsgs.h \
 	inc/ComputeMgr.decl.h \
-	dpme2/dpme2.h \
-	dpme2/dpme2_pvm.h \
-	dpme2/dpme2def.h \
-	dpme2/protype.h \
 	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
 	src/PatchMgr.h \
@@ -529,10 +525,6 @@ obj/ComputeDPMEMsgs.o: \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	inc/ComputeMgr.decl.h \
-	dpme2/dpme2.h \
-	dpme2/dpme2_pvm.h \
-	dpme2/dpme2def.h \
-	dpme2/protype.h \
 	src/packmsg.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeDPMEMsgs.o $(COPTC) src/ComputeDPMEMsgs.C
@@ -579,7 +571,6 @@ obj/ComputeDPMTA.o: \
 	src/InfoStream.h \
 	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
-	dpmta-2.6/src/dpmta.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
 	src/structures.h \
@@ -1203,13 +1194,8 @@ obj/ComputeMgr.o: \
 	src/ComputeGlobal.h \
 	src/ComputeGlobalMsgs.h \
 	src/ComputeDPMTA.h \
-	dpmta-2.6/src/dpmta.h \
 	src/ComputeDPME.h \
 	src/ComputeDPMEMsgs.h \
-	dpme2/dpme2.h \
-	dpme2/dpme2_pvm.h \
-	dpme2/dpme2def.h \
-	dpme2/protype.h \
 	src/ComputePme.h \
 	src/PmeBase.h \
 	src/ComputeSphericalBC.h \
@@ -1684,6 +1670,7 @@ obj/Controller.o: \
 	src/imd.h \
 	src/IMDOutput.h \
 	src/InfoStream.h \
+	src/BackEnd.h \
 	src/Debug.h
 	$(CXX) $(CXXTHREADFLAGS) $(COPTO)obj/Controller.o $(COPTC) src/Controller.C
 obj/ccsinterface.o: \
@@ -2303,6 +2290,7 @@ obj/Node.o: \
 	src/BroadcastClient.h \
 	src/Sync.h \
 	src/ResizeArrayPrimIter.h \
+	src/BackEnd.h \
 	inc/Node.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Node.o $(COPTC) src/Node.C
 obj/Output.o: \
@@ -2967,6 +2955,7 @@ obj/WorkDistrib.o: \
 	src/Compute.h \
 	src/RecBisection.h \
 	src/Random.h \
+	src/varsizemsg.h \
 	src/Debug.h \
 	inc/WorkDistrib.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/WorkDistrib.o $(COPTC) src/WorkDistrib.C
