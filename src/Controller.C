@@ -52,6 +52,7 @@ Controller::Controller(NamdState *s) :
     reduction->subscribe(REDUCTION_BC_ENERGY);
     reduction->subscribe(REDUCTION_VIRIAL);
     reduction->subscribe(REDUCTION_ALT_VIRIAL);
+    reduction->subscribe(REDUCTION_SMD_ENERGY);
 }
 
 Controller::~Controller(void)
@@ -68,6 +69,7 @@ Controller::~Controller(void)
     reduction->unsubscribe(REDUCTION_BC_ENERGY);
     reduction->unsubscribe(REDUCTION_VIRIAL);
     reduction->unsubscribe(REDUCTION_ALT_VIRIAL);
+    reduction->unsubscribe(REDUCTION_SMD_ENERGY);
 }
 
 void Controller::threadRun(Controller* arg)
@@ -184,6 +186,7 @@ void Controller::printEnergies(int seq)
     BigReal boundaryEnergy;
     BigReal virial;
     BigReal altVirial;
+    BigReal smdEnergy;
     BigReal totalEnergy;
     BigReal volume;
 
@@ -195,6 +198,7 @@ void Controller::printEnergies(int seq)
     reduction->require(seq, REDUCTION_LJ_ENERGY, ljEnergy);
     reduction->require(seq, REDUCTION_KINETIC_ENERGY, kineticEnergy);
     reduction->require(seq, REDUCTION_BC_ENERGY, boundaryEnergy);
+    reduction->require(seq, REDUCTION_SMD_ENERGY, smdEnergy);
     reduction->require(seq, REDUCTION_VIRIAL, virial);
     virial /= 3.;  // virial submitted is wrong by factor of 3
     reduction->require(seq, REDUCTION_ALT_VIRIAL, altVirial);
@@ -212,7 +216,7 @@ void Controller::printEnergies(int seq)
     }
 
     totalEnergy = bondEnergy + angleEnergy + dihedralEnergy + improperEnergy +
-	 electEnergy + ljEnergy + kineticEnergy + boundaryEnergy;
+	 electEnergy + ljEnergy + kineticEnergy + boundaryEnergy + smdEnergy;
 
     // NO CALCULATIONS OR REDUCTIONS BEYOND THIS POINT!!!
     if ( seq % node->simParameters->outputEnergies ) return;
@@ -228,6 +232,7 @@ void Controller::printEnergies(int seq)
 	     << "DIHED       IMPRP       ELECT       VDW       "
 	     << "BOUNDARY    KINETIC        TOTAL     TEMP";
 	if ( volume != 0. ) iout << "     PRESSURE    VOLUME";
+	if (simParams->SMDOn) iout << "     SMD";
 	iout << "\n" << endi;
     }
 
@@ -242,11 +247,17 @@ void Controller::printEnergies(int seq)
 	 << FORMAT(kineticEnergy)
 	 << FORMAT(totalEnergy)
 	 << FORMAT(temperature);
+
     if ( volume != 0. )
     {
 	iout << FORMAT(pressure*PRESSUREFACTOR)
 	     << FORMAT(volume);
     }
+
+    if (simParams->SMDOn) {
+      iout << FORMAT(smdEnergy);
+    }
+
     iout << "\n" << endi;
 
     DebugM(4,"step: " << seq << " virial: " << virial
@@ -267,12 +278,16 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1027 $	$Date: 1997/09/25 22:52:45 $
+ *	$Revision: 1.1028 $	$Date: 1998/01/05 20:25:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1028  1998/01/05 20:25:29  sergei
+ * added reduction->(un)subscribe(REDUCTION_SMD_ENERGY) to (con/de)structor
+ * added SMD fields in printEnergies().
+ *
  * Revision 1.1027  1997/09/25 22:52:45  brunner
  * I put in a 2-stage load balancing, so first Alg7 is done, then RefineOnly.
  * I also temporarily made the prints occur at every energy output.
