@@ -123,6 +123,7 @@ OBJS = \
 	$(DSTDIR)/Sequencer.o \
 	$(DSTDIR)/Set.o \
 	$(DSTDIR)/SimParameters.o \
+	$(DSTDIR)/Sync.o \
 	$(DSTDIR)/TclCommands.o \
 	$(DSTDIR)/WorkDistrib.o \
 	$(DSTDIR)/pub3dfft.o \
@@ -303,6 +304,12 @@ $(INCDIR)/ReductionMgr.def.h: $(INCDIR)/ReductionMgr.decl.h
 $(INCDIR)/ReductionMgr.decl.h: $(SRCDIR)/ReductionMgr.ci
 	$(CHARMXI) $(SRCDIR)/ReductionMgr.ci
 	$(MOVE) ReductionMgr.decl.h ReductionMgr.def.h $(INCDIR)
+
+$(INCDIR)/Sync.def.h: $(INCDIR)/Sync.decl.h
+
+$(INCDIR)/Sync.decl.h: $(SRCDIR)/Sync.ci
+	$(CHARMXI) $(SRCDIR)/Sync.ci
+	$(MOVE) Sync.decl.h Sync.def.h $(INCDIR)
 
 $(INCDIR)/WorkDistrib.def.h: $(INCDIR)/WorkDistrib.decl.h
 
