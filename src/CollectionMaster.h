@@ -14,8 +14,10 @@
 #include "PatchMap.h"
 #include "PatchMap.inl"
 #include "CollectionMaster.decl.h"
+#include <stdio.h>
 
 class CollectVectorMsg;
+class DataStreamMsg;
 
 class CollectionMaster : public Chare
 {
@@ -29,6 +31,8 @@ public:
 
   void receivePositions(CollectVectorMsg *msg);
   void receiveVelocities(CollectVectorMsg *msg);
+
+  void receiveDataStream(DataStreamMsg *msg);
 
   void enqueuePositions(int seq);
   void enqueueVelocities(int seq);
@@ -134,6 +138,7 @@ private:
 
   CollectVectorSequence positions;
   CollectVectorSequence velocities;
+  FILE *dataStreamFile;
 
 };
 
@@ -149,6 +154,17 @@ public:
 
   static void* pack(CollectVectorMsg* msg);
   static CollectVectorMsg* unpack(void *ptr);
+
+};
+
+
+class DataStreamMsg : public CMessage_DataStreamMsg {
+public:
+
+  ResizeArray<char> data;
+
+  static void* pack(DataStreamMsg* msg);
+  static DataStreamMsg* unpack(void *ptr);
 
 };
 

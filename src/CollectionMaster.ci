@@ -6,12 +6,14 @@
 
 module CollectionMaster {
   message [packed] CollectVectorMsg;
+  message [packed] DataStreamMsg;
   
   chare CollectionMaster
   {
     entry CollectionMaster(void);
     entry void receivePositions(CollectVectorMsg *);
     entry void receiveVelocities(CollectVectorMsg *);
+    entry void receiveDataStream(DataStreamMsg *);
   };
 }
 

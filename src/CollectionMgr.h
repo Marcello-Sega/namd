@@ -35,6 +35,7 @@ public:
 
   void submitPositions(int seq, FullAtomList &a, Lattice l, int prec);
   void submitVelocities(int seq, FullAtomList &a);
+  void sendDataStream(const char *);
 
   class CollectVectorInstance
   {

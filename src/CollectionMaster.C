@@ -12,6 +12,7 @@
 #include "Output.h"
 #include "ProcessorPrivate.h"
 #include "packmsg.h"
+#include <stdio.h>
 
 // #define DEBUGM
 #include "Debug.h"
@@ -23,6 +24,7 @@ CollectionMaster::CollectionMaster()
   } else {
     DebugM(1, "CollectionMaster::CollectionMaster() - another instance of CollectionMaster exists!\n");
   }
+  dataStreamFile = 0;
 }
 
 
@@ -89,11 +91,27 @@ void CollectionMaster::disposeVelocities(CollectVectorInstance *c)
 }
 
 
+void CollectionMaster::receiveDataStream(DataStreamMsg *msg) {
+    CkPrintf(msg->data.begin());
+    if ( ! dataStreamFile ) {
+      dataStreamFile = fopen("aux_data.txt","w");
+      if ( ! dataStreamFile ) NAMD_die("Can't open data stream file!");
+    }
+    fprintf(dataStreamFile,"%s",msg->data.begin());
+    fflush(dataStreamFile);
+    delete msg;
+}
+
+
 PACK_MSG(CollectVectorMsg,
   PACK(seq);
   PACK_RESIZE(aid);
   PACK_RESIZE(data);
   PACK_RESIZE(fdata);
+)
+
+PACK_MSG(DataStreamMsg,
+  PACK_RESIZE(data);
 )
 
 
