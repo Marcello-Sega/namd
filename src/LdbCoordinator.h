@@ -63,12 +63,6 @@ public:
   void ExpectMigrate(LdbMigrateMsg*);
   void ResumeFromSync(void);
 
-#ifdef DELETEME
-  // Public variables accessed by the idle-event functions
-  double idleStart;
-  double idleTime;
-#endif
-
 private:
   struct Migration {
     int id;
@@ -102,20 +96,13 @@ public:
   int *patchNAtoms;
   Controller *controllerThread;
   Sequencer **sequencerThreads;
-#ifdef DELETEME
-  double *computeStartTime;
-  double *computeTotalTime;
-#endif
+
   int ldbCycleNum;
   int nLdbSteps;
   int firstLdbStep;
   int nodesDone;
 
   FILE *ldbStatsFP;
-#ifdef DELETEME
-  double totalStartTime;
-  double totalTime;
-#endif
   computeInfo *computeArray;
   patchInfo *patchArray;
   processorInfo *processorArray;

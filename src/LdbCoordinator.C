@@ -33,10 +33,6 @@
 
 #define DEBUG_LEVEL 4
 
-#ifdef DELETEME
-//#define TIMER_FNC()   CmiWallTimer()
-#define TIMER_FNC() 0
-#endif
  
 void LdbCoordinator::staticMigrateFn(LDObjHandle handle, int dest)
 {
@@ -102,9 +98,6 @@ LdbCoordinator::LdbCoordinator()
 
   ldbCycleNum = 1;
   nLocalComputes = nLocalPatches = 0;
-#ifdef DELETEME
-  computeStartTime = computeTotalTime = (double *)NULL;
-#endif
   patchNAtoms = (int *) NULL;
   sequencerThreads = (Sequencer **) NULL;
   ldbStatsFP = NULL;
@@ -112,10 +105,6 @@ LdbCoordinator::LdbCoordinator()
   patchArray = NULL;
   processorArray = NULL;
 
-#ifdef DELETEME
-  // Register Converse timer routines
-  idleTime = 0;
-#endif
   nodesDone = 0;
 
   // Register self as an object manager for new charm++ balancer framework
@@ -145,10 +134,6 @@ LdbCoordinator::~LdbCoordinator(void)
 {
   delete [] patchNAtoms;
   delete [] sequencerThreads;
-#ifdef DELETEME
-  delete [] computeStartTime;
-  delete [] computeStartTime;
-#endif
   delete [] objHandles;
   if (CkMyPe() == 0)
   {
@@ -203,31 +188,13 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
   if (nLocalPatches != pMap->numHomePatches())
     NAMD_die("Disaggreement in patchMap data.\n");
  
-#ifdef DELETEME
-  delete [] computeStartTime;  // Depends on delete NULL to do nothing
-  computeStartTime = new double[cMap->numComputes()];
-
-  delete [] computeTotalTime;  // Depends on delete NULL to do nothing
-  computeTotalTime = new double[cMap->numComputes()];
-#endif
-
   nLocalComputes = 0;
   for(i=0;i<cMap->numComputes();i++)  {
     if ( (cMap->node(i) == Node::Object()->myid())
 	 && ( (cMap->type(i) == computeNonbondedPairType)
 	      || (cMap->type(i) == computeNonbondedSelfType) ) ) {
-#ifdef DELETEME      
-      computeStartTime[i] = computeTotalTime[i] = 0.;
-#endif
       nLocalComputes++;
     }
-#ifdef DELETEME
- else {
-
-      computeStartTime[i] = 
-	computeTotalTime[i] = -1.;
-    }
-#endif
   }
   
   // New LB frameworks registration
@@ -327,12 +294,6 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 
   if (nLocalPatches == 0 || nLocalComputes==0 )
   	checkAndGoToBarrier();
-
-#ifdef DELETEME
-  // Start idle-time recording
-  idleTime = 0;
-  totalStartTime = TIMER_FNC();
-#endif
 
   theLbdb->ClearLoads();
 }
@@ -608,23 +569,6 @@ void LdbCoordinator::printLocalLdbReport(void)
   
   curLoc = outputBuf;
   j=0;
-#ifdef DELETEME
-  for(i=0; i<computeMap->numComputes(); i++)
-  {
-    if (computeTotalTime[i] != -1)
-    {
-      curLoc += sprintf(curLoc,"%5d: %4f ",i,computeTotalTime[i]);
-      j++;
-    } 
-    if (((j % 4) == 0) && j)
-    {
-      curLoc = outputBuf;
-      CkPrintf("[%d]%s\n",CkMyPe(),outputBuf);
-      j=0;
-    }
-  }
-#endif
-    
 }
 
 void LdbCoordinator::printRequiredProxies(PatchID id, FILE *fp)

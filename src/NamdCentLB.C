@@ -16,7 +16,7 @@ void CreateNamdCentLB()
 
 NamdCentLB::NamdCentLB()
 {
-  // if (CkMyPe()==0)
+  //  if (CkMyPe()==0)
   //   CkPrintf("[%d] NamdCentLB created\n",CkMyPe());
 }
 
