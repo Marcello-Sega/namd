@@ -288,7 +288,7 @@ int psf_file_extract(topo_mol *mol, FILE *file,
     topo_mol_residue_t *res;
     topo_mol_atom_t *atomtmp;
     int firstatom, j;
-    const char *resid;
+    const char *resid, *segname;
     seg = get_segment(mol, atomlist[i].segname);
     if (!seg) { 
       print_msg("ERROR: unable to get segment!");
@@ -300,10 +300,12 @@ int psf_file_extract(topo_mol *mol, FILE *file,
       break;
     }
     resid = atomlist[i].resid;
+    segname = atomlist[i].segname;
     strcpy(res->name, atomlist[i].resname);
     res->atoms = 0;
     firstatom = i;
-    while (i<natoms && !strcmp(resid, atomlist[i].resid)) {
+    while (i<natoms && !strcmp(resid, atomlist[i].resid) &&
+                       !strcmp(segname, atomlist[i].segname)) {
       /* Add atoms to residue */
       atomtmp = memarena_alloc(mol->arena, sizeof(topo_mol_atom_t));
       atomtmp->bonds = 0;
