@@ -18,7 +18,7 @@
 #include "PatchMgr.h"
 #include "Molecule.h"
 #define DEBUGM
-#define MIN_DEBUG_LEVEL 2
+#define MIN_DEBUG_LEVEL 1
 #include "Debug.h"
 
 template <class T>
@@ -35,27 +35,7 @@ ComputeHomeTuples<T>::ComputeHomeTuples(ComputeID c) : Compute(c) {
 template <class T>
 void ComputeHomeTuples<T>::mapReady() {
 
-  // ComputeHomeTuples contribution for proxies should be
-  // gathered here.
-  // Gather all home patches
-  /*
-  ProxyPatchList *pp = patchMap->proxyPatchList();
-  ProxyPatchListIter ppi(*pp);
-
-  maxProxyAtoms = 0;
-  delete[] dummy;
-
-  for ( ppi = ppi.begin(); ppi != ppi.end(); ppi++ ) {
-    tuplePatchList.add(TuplePatchElem((*ppi).patch, HOME, cid));
-    if ((*ppi).patch->getNumAtoms() > maxProxyAtoms) {
-      maxProxyAtoms = (*ppi).patch->getNumAtoms();
-    }
-  }
-  dummy = new Force[maxProxyAtoms];
-  */
-
-
-  // Gather all home patches
+  // Gather all patches
   DebugM(1, "ComputeHomeTuples::mapReady() - Starting Up" << endl );
   HomePatchList *a = patchMap->homePatchList();
   ResizeArrayIter<HomePatchElem> ai(*a);
@@ -68,6 +48,33 @@ void ComputeHomeTuples<T>::mapReady() {
     tuplePatchList.add(TuplePatchElem((*ai).p, HOME, cid));
     DebugM( 1, "ComputeHomeTuples::mapReady() - adding Patch " << (*ai).p->getPatchID() << " to list" << endl );
   }
+
+  // Gather all proxy patches (neighbors, that is)
+  PatchID oneaway[PatchMap::MaxOneAway];
+  maxProxyAtoms = 0;
+  delete[] dummy;
+
+  for ( ai = ai.begin(); ai != ai.end(); ai++ ) {
+    int numOneAway = patchMap->oneAwayNeighbors((*ai).pid, oneaway);
+    for ( int i = 0; i < numOneAway; ++i )
+    {
+      if ( patchMap->node(oneaway[i]) != CMyPe() &&
+	   ! tuplePatchList.find(TuplePatchElem(oneaway[i])) )
+      {
+        Patch *patch = patchMap->patch(oneaway[i]);
+	DebugM( 1, "ComputeHomeTuples::mapReady() - adding (Proxy)Patch " <<
+		patch->getPatchID() << " to list" << endl );
+	tuplePatchList.add(TuplePatchElem(patch, PROXY, cid));
+	DebugM( 1, "ComputeHomeTuples::mapReady() - tuplePatchList now has " <<
+		tuplePatchList.size() << " elements" << endl );
+	if (patch->getNumAtoms() > maxProxyAtoms) {
+	  maxProxyAtoms = patch->getNumAtoms();
+	}
+      }
+    }
+  }
+
+  dummy = new Force[maxProxyAtoms];
 
   /* cycle through each patch */
   DebugM(1, "ComputeHomeTuples::mapReady() - iterating over patches to get atoms" << endl);
