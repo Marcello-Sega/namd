@@ -3,9 +3,9 @@
 ####
 CC = cc -DSOLARIS
 CXX = CC -DSOLARIS
-CXXOPTS = -O -DGLOBALS
+CXXOPTS = -fast -xO5 -native -xarch=v8plusa -fsimple=2 -DGLOBALS
 #CXXOPTS = -DGLOBALS
-COPTS = -O
+COPTS = -fast -xO5 -native -xarch=v8plusa -fsimple=2 
 CXXTHREADOPTS = $(CXXOPTS)
 
 #####
