@@ -756,8 +756,6 @@ void Controller::compareChecksums(int step) {
       NAMD_bug("Bad global improper count!\n");
 
     checksum = reduction->item(REDUCTION_EXCLUSION_CHECKSUM);
-    if ( ((int)checksum) && ((int)checksum) < molecule->numCalcExclusions )
-      NAMD_bug("Bad global exclusion count!\n");
     if ( ((int)checksum) > molecule->numCalcExclusions )
       iout << iWARN << "Not all atoms have unique coordinates.\n" << endi;
 
@@ -768,6 +766,13 @@ void Controller::compareChecksums(int step) {
 
 void Controller::printMinimizeEnergies(int step) {
     reduction->require();
+
+    Node *node = Node::Object();
+    Molecule *molecule = node->molecule;
+    BigReal checksum = reduction->item(REDUCTION_EXCLUSION_CHECKSUM);
+    if ( ((int)checksum) && ((int)checksum) < molecule->numCalcExclusions )
+      iout << iWARN << "Bad global exclusion count, possible error!\n" << iWARN
+        << "Increasing cutoff during minimization may avoid this.\n" << endi;
     compareChecksums(step);
 
     BigReal bondEnergy;
@@ -827,6 +832,9 @@ void Controller::printEnergies(int step)
     SimParameters *simParameters = node->simParameters;
     Lattice &lattice = state->lattice;
 
+    BigReal checksum = reduction->item(REDUCTION_EXCLUSION_CHECKSUM);
+    if ( ((int)checksum) && ((int)checksum) < molecule->numCalcExclusions )
+      NAMD_bug("Bad global exclusion count!\n");
     compareChecksums(step);
 
     BigReal bondEnergy;
