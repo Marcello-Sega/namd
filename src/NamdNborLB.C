@@ -50,6 +50,7 @@ CmiBool NamdNborLB::QueryBalanceNow(int _step)
 
 NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
 {
+#if CHARM_VERSION > 050403
   //  CkPrintf("LDB: All statistics received at %f, %f\n",
   //  CmiTimer(),CmiWallTimer());
   int i,j;
@@ -163,6 +164,9 @@ NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
     migrateInfo[i] = 0;
   }
   return msg;
+#else
+  return NULL;
+#endif
 };
 
 
