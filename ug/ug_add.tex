@@ -1212,9 +1212,10 @@ the resulting instability in the simulation.
 
 \subsection{Pair Interaction Calculations}
 \NAMD supportes the calculation of nonbonded interaction energies between 
-two groups of atoms.  When enabled, the reported VDW and ELECT energies will
-correspond to the interaction energy of the two groups.  The recommended
-way to use this set of options is to use the NAMD Tcl scripting 
+two groups of atoms.  When enabled, two new terms, PAIR\_VDW and PAIR\_ELECT,
+will be present in the energy output to report 
+the interaction energy of the two groups.  For trajectory analysis the 
+recommended way to use this set of options is to use the NAMD Tcl scripting 
 interface as described in Sec.~\ref{section:tclscripting} to run for
 0 steps, so that NAMD prints the energy without performing any dynamics.
 
@@ -1244,4 +1245,10 @@ is not involved in pair interaction calculations; a value of -1 indicates it
 belongs to group 1; a value of 2 indicates it belongs to group 2.
 }
 
+\item
+\NAMDCONFWDEF{pairInteractionOnly}{should only pair interactions be 
+calculated?}{{\tt yes} or {\tt no}}{{\tt no}}
+{ Specifies whether to compute only pair interaction calculations and nothing
+else.  Choose {\tt yes} when analyzing completed trajectories; choose {\tt no}
+to output pair interaction energies while the simulation is running.}
 
