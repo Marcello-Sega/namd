@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1066 $  $Date: 1999/05/26 22:23:55 $
+ *  $Revision: 1.1067 $  $Date: 1999/05/27 19:00:45 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1067  1999/05/27 19:00:45  jim
+ * Added nonbondedScaling parameter and fixed Tcl scripting bug.
+ *
  * Revision 1.1066  1999/05/26 22:23:55  jim
  * Added basic Tcl scripting, fixed bugs in broadcasts.
  *
@@ -542,6 +545,7 @@
 
 #include "charm++.h"
 
+#include "ComputeNonbondedUtil.h"
 #include "ConfigList.h"
 #include "SimParameters.h"
 #include "ParseOptions.h"
@@ -616,6 +620,12 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_FLOAT("reassignTemp",reassignTemp)
   SCRIPT_PARSE_FLOAT("rescaleTemp",rescaleTemp)
   SCRIPT_PARSE_FLOAT("langevinTemp",langevinTemp)
+  if ( ! strncasecmp(param,"nonbondedScaling",MAX_SCRIPT_PARAM_SIZE) ) {
+    nonbondedScaling = atof(value);
+    ComputeNonbondedUtil::select();
+    return;
+  }
+
   char *error = new char[2 * MAX_SCRIPT_PARAM_SIZE + 100];
   sprintf(error,"Setting parameter %s from script failed!\n",param);
   NAMD_die(error);
@@ -682,6 +692,10 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
    opts.range("cutoff", POSITIVE);
    opts.units("cutoff", N_ANGSTROM);
    
+   opts.optional("main", "nonbondedScaling", "nonbonded scaling factor",
+     &nonbondedScaling, 1.0);
+   opts.range("nonbondedScaling", POSITIVE);
+
    opts.require("main", "exclude", "Electrostatic exclusion policy",
     PARSE_STRING);
 
@@ -2552,6 +2566,11 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    iout << iINFO << "DIELECTRIC             " 
       << dielectric << "\n";
 
+   if ( nonbondedScaling != 1.0 )
+   {
+     iout << iINFO << "NONBONDED SCALING    " << nonbondedScaling << "\n" << endi;
+   }
+
    iout << iINFO << "EXCLUDE                ";
 
    switch (exclude)
@@ -3417,7 +3436,7 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
   msg->put(ldbStrategy)->put(ldbPeriod)->put(firstLdbStep);
   msg->put(initialTemp)->put(comMove);
   msg->put(wrapWater);
-  msg->put(dielectric)->put(exclude)->put(scale14);
+  msg->put(dielectric)->put(nonbondedScaling)->put(exclude)->put(scale14);
   msg->put(dcdFrequency)->put(velDcdFrequency)->put(vmdFrequency);
   msg->put(dcdFilename);
   msg->put(velDcdFilename);
@@ -3451,7 +3470,7 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
   msg->put(SMDChForceOn)->put(SMDVmax);
   msg->put(SMDVmaxTave)->put(SMDFmin);
   //****** END SMD constraints changes 
-  msg->put(globalForcesOn)->put(tclForcesOn)->put(freeEnergyOn);
+  msg->put(globalForcesOn)->put(tclForcesOn)->put(freeEnergyOn)->put(tclOn);
   msg->put(FMAOn)->put(FMALevels)->put(FMAMp);
   msg->put(FMAFFTOn)->put(FMAFFTBlock)->put(minimizeOn);
   msg->put(maximumMove)->put(totalAtoms)->put(randomSeed);
@@ -3545,6 +3564,7 @@ void SimParameters::receive_SimParameters(MIStream *msg)
   msg->get(comMove);
   msg->get(wrapWater);
   msg->get(dielectric);
+  msg->get(nonbondedScaling);
   msg->get(exclude);
   msg->get(scale14);
   msg->get(dcdFrequency);
@@ -3617,6 +3637,7 @@ void SimParameters::receive_SimParameters(MIStream *msg)
   msg->get(globalForcesOn);
   msg->get(tclForcesOn);
   msg->get(freeEnergyOn);
+  msg->get(tclOn);
   msg->get(FMAOn);
   msg->get(FMALevels);
   msg->get(FMAMp);
@@ -3744,12 +3765,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1066 $  $Date: 1999/05/26 22:23:55 $
+ *  $Revision: 1.1067 $  $Date: 1999/05/27 19:00:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1067  1999/05/27 19:00:45  jim
+ * Added nonbondedScaling parameter and fixed Tcl scripting bug.
+ *
  * Revision 1.1066  1999/05/26 22:23:55  jim
  * Added basic Tcl scripting, fixed bugs in broadcasts.
  *

@@ -147,6 +147,7 @@ void ComputeNonbondedUtil :: NAME
 
   const LJTable* const ljTable = ComputeNonbondedUtil:: ljTable;
   const Molecule* const mol = ComputeNonbondedUtil:: mol;
+  const BigReal scaling = ComputeNonbondedUtil:: scaling;
   const BigReal scale14 = ComputeNonbondedUtil:: scale14;
   const Real switchOn = ComputeNonbondedUtil:: switchOn;
   const BigReal switchOn2 = ComputeNonbondedUtil:: switchOn2;
@@ -163,7 +164,7 @@ void ComputeNonbondedUtil :: NAME
 
 EXCL
 (
-  const BigReal kq_i = COLOUMB * a_i.charge * dielectric_1;
+  const BigReal kq_i = COLOUMB * a_i.charge * scaling * dielectric_1;
   register const BigReal p_ij_x = p_ij.x;
   register const BigReal p_ij_y = p_ij.y;
   register const BigReal p_ij_z = p_ij.z;
@@ -377,7 +378,7 @@ NOEXCL
 
     const int atomfixed = ( a_i.flags & ATOM_FIXED );
 
-    const BigReal kq_i_u = COLOUMB * a_i.charge * dielectric_1;
+    const BigReal kq_i_u = COLOUMB * a_i.charge * scaling * dielectric_1;
     const BigReal kq_i_s = kq_i_u * scale14;
 
     register const Position *p_j = p_1;
@@ -666,8 +667,8 @@ NOEXCL
       BigReal r_6 = r_1*r_1*r_1; r_6 *= r_6;
       const BigReal r_12 = r_6*r_6;
 
-      const BigReal &A = lj_pars->A;
-      const BigReal &B = lj_pars->B;
+      const BigReal A = scaling * lj_pars->A;
+      const BigReal B = scaling * lj_pars->B;
 
       const BigReal AmBterm = (A*r_6 - B) * r_6;
 
@@ -678,8 +679,8 @@ EXCL
       if ( m14 )
       {
 	lj_pars = ljTable->table_val(a_i.type, a_j.type, 1);
-	const BigReal &A = lj_pars->A;
-	const BigReal &B = lj_pars->B;
+	const BigReal A = scaling * lj_pars->A;
+	const BigReal B = scaling * lj_pars->B;
 	const BigReal AmBterm = (A*r_6 - B) * r_6;
 	vdwEnergy += switchVal * AmBterm;
 	force_r += ( ( switchVal * 6.0 * (A*r_12 + AmBterm) *
@@ -763,12 +764,15 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1043 $	$Date: 1999/01/07 01:18:29 $
+ *	$Revision: 1.1044 $	$Date: 1999/05/27 19:00:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1044  1999/05/27 19:00:43  jim
+ * Added nonbondedScaling parameter and fixed Tcl scripting bug.
+ *
  * Revision 1.1043  1999/01/07 01:18:29  jim
  * Speed hacks to inner electrostatics loop.
  *

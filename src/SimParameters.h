@@ -115,6 +115,7 @@ public:
 					//  be made
 	BigReal scale14;		//  Scaling factor for 1-4 
 					//  electrostatics
+	BigReal nonbondedScaling;	//  Scaling factor for nonbonded forces
 	int dcdFrequency;		//  How often (in timesteps) should
 					//  a DCD trajectory file be updated
 	int velDcdFrequency;		//  How often (in timesteps) should
@@ -442,12 +443,15 @@ private:
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1035 $	$Date: 1999/05/26 22:23:57 $
+ *	$Revision: 1.1036 $	$Date: 1999/05/27 19:00:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1036  1999/05/27 19:00:46  jim
+ * Added nonbondedScaling parameter and fixed Tcl scripting bug.
+ *
  * Revision 1.1035  1999/05/26 22:23:57  jim
  * Added basic Tcl scripting, fixed bugs in broadcasts.
  *

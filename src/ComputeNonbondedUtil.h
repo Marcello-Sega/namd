@@ -75,6 +75,7 @@ public:
   static BigReal dielectric_1;
   static const LJTable* ljTable;
   static const Molecule* mol;
+  static BigReal scaling;
   static BigReal scale14;
   static Real switchOn;
   static BigReal switchOn_1;
@@ -150,12 +151,15 @@ public:
  *
  *	$RCSfile: ComputeNonbondedUtil.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1999/01/06 00:56:23 $
+ *	$Revision: 1.1018 $	$Date: 1999/05/27 19:00:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.h,v $
+ * Revision 1.1018  1999/05/27 19:00:44  jim
+ * Added nonbondedScaling parameter and fixed Tcl scripting bug.
+ *
  * Revision 1.1017  1999/01/06 00:56:23  jim
  * All compute objects except DPMTA now return diagonal of virial tensor.
  *

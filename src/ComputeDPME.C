@@ -143,7 +143,8 @@ void ComputeDPME::doWork()
 
   // get positions and charges
   Pme2Particle * data_ptr = localData;
-  const BigReal coloumb_sqrt = sqrt( COLOUMB * ComputeNonbondedUtil::dielectric_1 );
+  const BigReal coloumb_sqrt = sqrt( COLOUMB * ComputeNonbondedUtil::scaling
+				* ComputeNonbondedUtil::dielectric_1 );
   for (ap = ap.begin(); ap != ap.end(); ap++) {
     Position *x = (*ap).positionBox->open();
     AtomProperties *a = (*ap).atomBox->open();
@@ -390,12 +391,15 @@ void ComputeDPME::recvResults(ComputeDPMEResultsMsg *msg)
  *
  *	$RCSfile: ComputeDPME.C,v $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.11 $	$Date: 1999/05/11 23:56:17 $
+ *	$Revision: 1.12 $	$Date: 1999/05/27 19:00:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPME.C,v $
+ * Revision 1.12  1999/05/27 19:00:42  jim
+ * Added nonbondedScaling parameter and fixed Tcl scripting bug.
+ *
  * Revision 1.11  1999/05/11 23:56:17  brunner
  * Changes for new charm version
  *

@@ -25,6 +25,7 @@ BigReal         ComputeNonbondedUtil::groupcutoff2;
 BigReal         ComputeNonbondedUtil::dielectric_1;
 const LJTable*  ComputeNonbondedUtil::ljTable;
 const Molecule* ComputeNonbondedUtil::mol;
+BigReal         ComputeNonbondedUtil::scaling;
 BigReal         ComputeNonbondedUtil::scale14;
 Real            ComputeNonbondedUtil::switchOn;
 BigReal         ComputeNonbondedUtil::switchOn_1;
@@ -116,6 +117,7 @@ void ComputeNonbondedUtil::select(void)
   dielectric_1 = 1.0/simParams->dielectric;
   ljTable = LJTable::Instance();
   mol = Node::Object()->molecule;
+  scaling = simParams->nonbondedScaling;
   if ( simParams->exclude == SCALED14 )
   {
     scale14 = simParams->scale14;
@@ -352,12 +354,15 @@ void ComputeNonbondedUtil::select(void)
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1022 $	$Date: 1999/03/22 20:55:44 $
+ *	$Revision: 1.1023 $	$Date: 1999/05/27 19:00:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1023  1999/05/27 19:00:44  jim
+ * Added nonbondedScaling parameter and fixed Tcl scripting bug.
+ *
  * Revision 1.1022  1999/03/22 20:55:44  jim
  * DPME now compiles using C compiler.
  *

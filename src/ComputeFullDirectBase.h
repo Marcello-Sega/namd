@@ -9,7 +9,8 @@
  ***************************************************************************/
 
 {
-  const BigReal coloumb = COLOUMB * ComputeNonbondedUtil::dielectric_1;
+  const BigReal coloumb = COLOUMB * ComputeNonbondedUtil::scaling
+				* ComputeNonbondedUtil::dielectric_1;
   BigReal *dp1 = data1;
   BigReal *rp1 = results1;
   int j_begin = 0;
@@ -87,12 +88,15 @@
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1999/01/06 00:56:21 $
+ *	$Revision: 1.3 $	$Date: 1999/05/27 19:00:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFullDirectBase.h,v $
+ * Revision 1.3  1999/05/27 19:00:43  jim
+ * Added nonbondedScaling parameter and fixed Tcl scripting bug.
+ *
  * Revision 1.2  1999/01/06 00:56:21  jim
  * All compute objects except DPMTA now return diagonal of virial tensor.
  *

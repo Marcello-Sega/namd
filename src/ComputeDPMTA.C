@@ -387,7 +387,8 @@ void ComputeDPMTA::doWork()
 	NAMD_die("DPMTA Failed to allocate memory.");
 	}
 
-  BigReal unitFactor = sqrt(COLOUMB * ComputeNonbondedUtil::dielectric_1);
+  BigReal unitFactor = sqrt(COLOUMB * ComputeNonbondedUtil::scaling
+				* ComputeNonbondedUtil::dielectric_1);
   DebugM(2,"Charge unit factor = " << unitFactor << "\n");
   for (i=0, ap = ap.begin(); ap != ap.end(); ap++)
   {
@@ -510,12 +511,15 @@ void ComputeDPMTA::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1055 $	$Date: 1999/05/11 23:56:19 $
+ *	$Revision: 1.1056 $	$Date: 1999/05/27 19:00:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.C,v $
+ * Revision 1.1056  1999/05/27 19:00:43  jim
+ * Added nonbondedScaling parameter and fixed Tcl scripting bug.
+ *
  * Revision 1.1055  1999/05/11 23:56:19  brunner
  * Changes for new charm version
  *
