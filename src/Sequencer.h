@@ -19,6 +19,7 @@
 class HomePatch;
 class SimParameters;
 class ReductionMgr;
+class CollectionMgr;
 
 class Sequencer
 {
@@ -38,6 +39,7 @@ protected:
     int stepsPerCycle;			// stores info from run()
     HomePatch *const patch;		// access methods in patch
     ReductionMgr *const reduction;
+    CollectionMgr *const collection;
 
 private:
     CthThread thread;
