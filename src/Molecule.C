@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Molecule.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/03/20 16:58:36 $
+ *	$Revision: 1.1010 $	$Date: 1997/03/20 17:28:36 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1010  1997/03/20 17:28:36  nealk
+ * Moved debugging code.
+ *
  * Revision 1.1009  1997/03/20 16:58:36  nealk
  * Atoms now sorted by: (1) hydrogen groups, (2) "groups".  The groups are
  * in the order: non-special, OH (special-1), OHH (special-2).
@@ -200,7 +203,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1009 1997/03/20 16:58:36 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1010 1997/03/20 17:28:36 nealk Exp $";
 
 #include "Templates/UniqueSortedArray.h"
 #include "Molecule.h"
@@ -3360,8 +3363,6 @@ void Molecule::build_atom_status(void) {
   }
 
   // sort the hydrogenGroup list
-  #if 0
-  // debugging code for showing sorted atoms
   for(i=0; i<numAtoms; i++)
   {
     // make H follow their group parents.
@@ -3369,9 +3370,10 @@ void Molecule::build_atom_status(void) {
     // add to list to sort
     hydrogenGroup.add(hg[i]);
   }
-  #endif
-
   hydrogenGroup.sort();
+
+  #if 0
+  // debugging code for showing sorted atoms
   for(i=0; i<numAtoms; i++)
     iout << i << " atomID=" << hydrogenGroup[i].atomID
 	 << " isGP=" << hydrogenGroup[i].isGP
@@ -3379,6 +3381,7 @@ void Molecule::build_atom_status(void) {
 	 << " #" << hydrogenGroup[i].atomsInGroup
 	 << " sortVal=" << hydrogenGroup[i].sortVal
 	 << "\n" << endi;
+  #endif
   delete [] hg;
 }
 
@@ -3387,12 +3390,15 @@ void Molecule::build_atom_status(void) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/03/20 16:58:36 $
+ *	$Revision: 1.1010 $	$Date: 1997/03/20 17:28:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1010  1997/03/20 17:28:36  nealk
+ * Moved debugging code.
+ *
  * Revision 1.1009  1997/03/20 16:58:36  nealk
  * Atoms now sorted by: (1) hydrogen groups, (2) "groups".  The groups are
  * in the order: non-special, OH (special-1), OHH (special-2).
