@@ -1,8 +1,4 @@
-NAMD_ARCH = Tru64-Alpha
-CHARMARCH = mpi-axp-cxx
+include .rootdir/arch/Tru64-Alpha-CC.arch
 
-CXX = cxx
-CXXOPTS = -fast -O4 -nocleanup
-CC = cc
-COPTS = -fast -O4
+CHARMARCH = mpi-axp-cxx
 
