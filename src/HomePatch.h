@@ -34,7 +34,6 @@ class HomePatch : public Patch {
   friend class TestSequencer;
 
 private: 
-  static char ident[];
   // for PatchMgr to use only
   HomePatch(PatchID, AtomIDList, TransformList, PositionList, VelocityList);
   ScaledPosition min, max, center;
