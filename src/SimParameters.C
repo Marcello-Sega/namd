@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1078 $  $Date: 1999/09/03 20:46:27 $
+ *  $Revision: 1.1079 $  $Date: 1999/09/07 21:58:10 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1079  1999/09/07 21:58:10  jim
+ * Fixed missing erfc defs on KCC.
+ *
  * Revision 1.1078  1999/09/03 20:46:27  jim
  * Support for non-orthogonal periodic boundary conditions.
  *
@@ -590,6 +593,9 @@
 #include <time.h>
 #include <unistd.h>
 #include <fstream.h>
+extern "C" {
+  extern double erfc(double);
+}
 
 #ifdef SP2
 #include "strlib.h"    //  For strcasecmp and strncasecmp
@@ -3558,12 +3564,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1078 $  $Date: 1999/09/03 20:46:27 $
+ *  $Revision: 1.1079 $  $Date: 1999/09/07 21:58:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1079  1999/09/07 21:58:10  jim
+ * Fixed missing erfc defs on KCC.
+ *
  * Revision 1.1078  1999/09/03 20:46:27  jim
  * Support for non-orthogonal periodic boundary conditions.
  *
