@@ -270,6 +270,7 @@ void Rebalancer::refine_togrid(pcgrid &grid, double thresholdLoad,
   if ( c->load + p->load < thresholdLoad) {
     int nPatches = numPatchesAvail(c,p);
     int nProxies = numProxiesAvail(c,p);
+    if ( nProxies < 0 ) return;
 	       
     if (nPatches < 0 || nPatches > 2)
 	 iout << iERROR << "Too many patches: " << nPatches 
@@ -575,6 +576,7 @@ void Rebalancer::printLoads()
    iout.setf(ios::right | ios::fixed);
    iout.precision(3);
    int maxproxies = 0;
+   int maxpatchproxies = 0;
    for (i=0; i<P; i++)
    {
 #if 0
@@ -609,6 +611,7 @@ void Rebalancer::printLoads()
       {
          int myProxies;
          myProxies = patch->proxiesOn.numElements()-1;
+         if ( myProxies > maxpatchproxies ) maxpatchproxies = myProxies;
          numBytes += myProxies *patch->numAtoms*bytesPerAtom;
          count += myProxies;
          patch = (patchInfo *)processors[i].patchSet.next(&p);
@@ -634,7 +637,7 @@ void Rebalancer::printLoads()
    iout << iINFO << "Computes   = " << setw(5) << numComputes << "\t"
         << "  Max load = " ; setw(7); iout << max << "\n";
    iout << iINFO << "Messages   = " << setw(5) << total << "\t"
-        << "  Max msgs = " << maxproxies << "\n" << "\n";
+        << "  Max msgs = " << maxproxies << ", " << maxpatchproxies << "\n";
    iout << iINFO <<"============================================================\n"
        << "\n" << endi;
    iout.unsetf(ios::right);
@@ -723,18 +726,19 @@ int Rebalancer::numProxiesAvail(computeInfo *c, processorInfo *p)
    p1 = c->patch1;
    p2 = c->patch2;
    int count = 0;
-   if (isAvailableOn((patchInfo *)&(patches[p1]), p) 
-       && patches[p1].processor != p->Id ) {
-      count++;
-      //iout << iINFO << "Patch " << patches[p1].Id << " has a proxy on " 
-      //     << p->Id << "\n" << endi;
+   if (isAvailableOn((patchInfo *)&(patches[p1]), p) ) {
+     if ( patches[p1].processor != p->Id ) count++;
+   } else {
+     if ( patches[p1].proxiesOn.numElements() >
+	  ( (double)numProxies / (double)numPatches + 2 ) ) return -1;
    }
-   if (p1 != p2  // self computes get one patch for free so don't allow 2
-       && isAvailableOn((patchInfo *)&(patches[p2]), p)
-       && patches[p2].processor != p->Id ) {
-      count++;
-      //iout << iINFO << "Patch " << patches[p2].Id << " has a proxy on " 
-      //   << p->Id << "\n" << endi;
+   if (p1 != p2) {  // self computes get one patch for free so don't allow 2
+     if ( isAvailableOn((patchInfo *)&(patches[p2]), p) ) {
+       if ( patches[p2].processor != p->Id ) count++;
+     } else {
+       if ( patches[p2].proxiesOn.numElements() >
+	  ( (double)numProxies / (double)numPatches + 2 ) ) return -1;
+     }
    }
 
    //iout << iINFO << "Returning " << count << " proxies\n" << endi;

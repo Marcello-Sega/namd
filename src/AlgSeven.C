@@ -31,6 +31,8 @@ void Alg7::togrid(processorInfo* goodP[3][3], processorInfo* poorP[3][3],
 
       int nPatches = numPatchesAvail(c,p);
       int nProxies = numProxiesAvail(c,p);
+      if ( nProxies < 0 ) return;
+
       if (nPatches < 0 || nPatches > 2)
 	iout << iERROR << "Too many patches: " << nPatches << "\n" << endi;
       if (nProxies < 0 || nProxies > 2)
