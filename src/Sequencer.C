@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1031 1997/04/16 22:12:20 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1032 1997/08/22 19:27:37 brunner Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -132,6 +132,12 @@ void Sequencer::algorithm(void)
 	rescaleVelocities(step);
 	berendsenPressure(step);
 	langevinVelocities(step);
+#ifdef CYCLE_BARRIER
+	int x;
+	if (!((step+1) % stepsPerCycle))
+	  x = broadcast->cycleBarrier.get(step);
+#endif
+
 	//
 	// Trigger load balance stats collection
 	//
@@ -250,12 +256,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: brunner $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1031 $     $Date: 1997/04/16 22:12:20 $
+ *      $Revision: 1.1032 $     $Date: 1997/08/22 19:27:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1032  1997/08/22 19:27:37  brunner
+ * Added cycle barrier, enabled by compiling with -DCYCLE_BARRIER
+ *
  * Revision 1.1031  1997/04/16 22:12:20  brunner
  * Fixed an LdbCoordinator bug, and cleaned up timing and Ldb output some.
  *

@@ -236,9 +236,9 @@ int i, total = 0, numBytes = 0;
 double max;
 
   for (i=0; i<P; i++){
-    // iout << iINFO << "load on "<< i << " is :" << processors[i].load 
-    //	 << "[ " << processors[i].backgroundLoad << "," 
-    //   << processors[i].computeLoad << "]. " << endl << endi;
+    iout << iINFO << "load on "<< i << " is :" << processors[i].load 
+    	 << "[ " << processors[i].backgroundLoad << "," 
+         << processors[i].computeLoad << "]. " << endl << endi;
 
     // iout << iINFO << "# Messages received: "
     //	 << processors[i].proxies->numElements() - processors[i].patchSet->numElements() 
@@ -300,8 +300,8 @@ void Rebalancer::computeAverage()
 double Rebalancer::computeMax()
 {
   int i;
-  double max = 0;
-  for (i=0; i<P; i++){
+  double max = processors[0].load;
+  for (i=1; i<P; i++){
     if (processors[i].load > max) 
     max = processors[i].load;
   }

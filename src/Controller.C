@@ -102,6 +102,10 @@ void Controller::algorithm(void)
         printEnergies(step);
         rescaleVelocities(step);
 	berendsenPressure(step);
+#ifdef CYCLE_BARRIER
+	if (!((step+1) % stepsPerCycle))
+	  broadcast->cycleBarrier.publish(step,1);
+#endif
     }
 
     terminate();
@@ -253,12 +257,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1022 $	$Date: 1997/08/13 14:52:20 $
+ *	$Revision: 1.1023 $	$Date: 1997/08/22 19:27:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1023  1997/08/22 19:27:36  brunner
+ * Added cycle barrier, enabled by compiling with -DCYCLE_BARRIER
+ *
  * Revision 1.1022  1997/08/13 14:52:20  milind
  * Made two #defines as inlined functions to fix a bug on solaris.
  *
