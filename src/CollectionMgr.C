@@ -35,18 +35,13 @@ CollectionMgr::~CollectionMgr(void)
 void CollectionMgr::submitPositions(int seq, FullAtomList &a,
 				Lattice l, int prec)
 {
-  int wrapWater = Node::Object()->simParameters->wrapWater;
   Molecule *mol = Node::Object()->molecule;
   int numAtoms = a.size();
   AtomIDList aid(numAtoms);
   PositionList d(numAtoms);
   for ( int i=0; i<numAtoms; ++i ) {
     aid[i] = a[i].id;
-    if ( wrapWater && mol->is_water(a[i].id) ) {
-      d[i] = a[i].position;
-    } else {
-      d[i] = l.reverse_transform(a[i].position,a[i].transform);
-    }
+    d[i] = l.reverse_transform(a[i].position,a[i].transform);
   }
   CollectVectorInstance *c;
   if ( ( c = positions.submitData(seq,aid,d,prec) ) )
