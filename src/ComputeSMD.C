@@ -100,7 +100,7 @@ void ComputeSMD::doForce(Position* p, Results* res, AtomProperties* a)
 	      value=k;
       
 	      //  Loop through and multiple k by r consExp times.
-	      //  i.e.  calculate kr^e
+	      //  i.e.  calculate kr^e/e
 	      //  I know, I could use pow(), but I don't trust it.
 	      for (int k=0; k<consExp; ++k)
 	      {
@@ -108,12 +108,11 @@ void ComputeSMD::doForce(Position* p, Results* res, AtomProperties* a)
 	      }
 
 	      //  Add to the energy total
-	      energy += value;
+	      energy += value/consExp;
       
-	      //  Now calculate the force, which is ekr^(e-1).  Also, divide
+	      //  Now calculate the force, which is kr^(e-1).  Also, divide
 	      //  by another factor of r to normalize the vector before we
 	      //  multiple it by the magnitude
-	      value *= consExp;
 	      value /= r2;
       
 	      Rij.mult(value);
