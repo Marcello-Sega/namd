@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1997/07/09 21:26:44 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1019 $	$Date: 1997/07/11 02:19:59 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1019  1997/07/11 02:19:59  jim
+ * Fixed hgroupCutoff not propagated to all nodes bug.
+ *
  * Revision 1.1018  1997/07/09 21:26:44  milind
  * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
  * and #endif's.
@@ -380,7 +383,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1018 1997/07/09 21:26:44 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1019 1997/07/11 02:19:59 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -2239,7 +2242,7 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
 	msg->put(allForceDcdFilename).put(allForceDcdFrequency);
 	msg->put(MTSAlgorithm).put(sphericalCenterCOM).put(&sphericalCenter);
 	msg->put(longSplitting).put(tCoupleOn).put(tCoupleTemp);
-	msg->put(splitPatch);
+	msg->put(splitPatch).put(hgroupCutoff);
 	msg->put(fmaFrequency).put(fmaTheta);
         msg->put(rigidBonds);
         msg->put(rigidTol);
@@ -2364,6 +2367,7 @@ void SimParameters::receive_SimParameters(Message *msg)
 	msg->get(tCoupleOn);
 	msg->get(tCoupleTemp);
 	msg->get(splitPatch);
+	msg->get(hgroupCutoff);
 	msg->get(fmaFrequency);
 	msg->get(fmaTheta);
 	msg->get(rigidBonds);
@@ -2423,12 +2427,15 @@ void SimParameters::receive_SimParameters(Message *msg)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1997/07/09 21:26:44 $
+ *	$Revision: 1.1019 $	$Date: 1997/07/11 02:19:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1019  1997/07/11 02:19:59  jim
+ * Fixed hgroupCutoff not propagated to all nodes bug.
+ *
  * Revision 1.1018  1997/07/09 21:26:44  milind
  * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
  * and #endif's.
