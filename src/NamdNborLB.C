@@ -172,6 +172,7 @@ NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
 
 int NamdNborLB::buildData(NborBaseLB::LDStats* stats, int count)
 {
+#if CHARM_VERSION > 050403
   PatchMap* patchMap = PatchMap::Object();
   ComputeMap* computeMap = ComputeMap::Object();
   double bg_weight = 0.7;
@@ -260,6 +261,9 @@ int NamdNborLB::buildData(NborBaseLB::LDStats* stats, int count)
     }
   }
   return nMoveableComputes;
+#else
+  return 0;
+#endif
 }
 
 // Figure out which proxies we will definitely create on other
