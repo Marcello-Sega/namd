@@ -30,10 +30,33 @@ extern void _initCharm(int, char**);
 float cpuTime_start;
 float wallTime_start;
 
+CpvStaticDeclare(int,exitSchedHndlr);
+
+extern "C" void exit_sched(void* msg)
+{
+  //  CmiPrintf("Exiting scheduler on %d\n",CmiMyPe());
+  CsdExitScheduler();
+  CmiFree(msg);
+}
+
+static void register_exit_sched(void)
+{
+  CpvInitialize(int,exitSchedHndlr);
+  CpvAccess(exitSchedHndlr) = CmiRegisterHandler((CmiHandler)exit_sched);
+}
+
+void BackEnd::ExitSchedOn(int pe)
+{
+  void* msg = CmiAlloc(CmiMsgHeaderSizeBytes);
+  CmiSetHandler(msg,CpvAccess(exitSchedHndlr));
+  CmiSyncSendAndFree(pe,CmiMsgHeaderSizeBytes,msg);
+}
+
 // called on all procs by namd_init()
 void slave_init(int argc, char **argv)
 {
   ProcessorPrivateInit();
+  register_exit_sched();
   _initCharm(argc, argv);
   CsdScheduler(-1);
 }
@@ -48,6 +71,7 @@ void BackEnd::init(int argc, char **argv) {
     ConverseExit();  // should never return
   }
   ProcessorPrivateInit();
+  register_exit_sched();
   _initCharm(argc, argv);  // message main Chare
 
   // Create branch-office chares
@@ -79,8 +103,13 @@ void BackEnd::exit(void) {
   	"WallClock : %f  CPUTime : %f \n",wallTime,cpuTime);
   // ConverseExit();  // Only kills this node.
   // CkExit(); CsdScheduler(-1);  // Kills everything?
-  // CmiAbort("Exiting normally.\n");  // Actually works.
-  CmiAbort(endmsg);
+  // CmiAbort("Exiting normally.\n");  // Actually works. 
+  //                                     (Well, only on workstations -RKB)
+  // 
+  int i;
+  for(i=1; i < CmiNumPes(); i++)
+    ExitSchedOn(i);
+  ConverseExit();
 }
 
 // start scheduler

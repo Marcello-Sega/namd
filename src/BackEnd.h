@@ -18,6 +18,8 @@ public:
   static void suspend(void);  // Let message code run...
   static void awaken(void);  // ...then return
   static void barrier(void);  // Let message code run, then return
+  static void ExitSchedOn(int pe); // Tell a remote processor to stop
+                                   // his scheduler
 
 };
 
