@@ -69,7 +69,7 @@ PatchMap::~PatchMap(void)
 
 void * PatchMap::pack (int *length)
 {
-  DebugM(4,"Packing PatchMap\n");
+  DebugM(4,"Packing PatchMap on node " << CMyPe() << endl);
   int i,j;
 
   // calculate memory needed
@@ -89,13 +89,16 @@ void * PatchMap::pack (int *length)
   char *b = buffer;
   PACK(int,curPatch);
   PACK(int,nPatches);
+  DebugM(4,"nPatches = " << nPatches << endl);
   PACK(int,xDim); PACK(int,yDim); PACK(int,zDim);
   for(i=0;i<nPatches;++i)
   {
+    DebugM(3,"Patch " << i << " is on node " << patchData[i].node << endl);
     PACK(PatchData,patchData[i]);
     for(j=0;j<patchData[i].numCidsAllocated;++j)
       PACK(ComputeID,patchData[i].cids[j]);
   }
+  DebugM(3,buffer + size - b << " == 0 ?" << endl);
 
   return buffer;
 }
@@ -105,16 +108,18 @@ void * PatchMap::pack (int *length)
 
 void PatchMap::unpack (void *in)
 {
-  DebugM(4,"Unpacking PatchMap\n");
+  DebugM(4,"Unpacking PatchMap on node " << CMyPe() << endl);
   int i,j;
   char *b = (char*)in;
   UNPACK(int,curPatch);
   UNPACK(int,nPatches);
+  DebugM(4,"nPatches = " << nPatches << endl);
   UNPACK(int,xDim); UNPACK(int,yDim); UNPACK(int,zDim);
   patchData = new PatchData[nPatches];
   for(i=0;i<nPatches;++i)
   {
     UNPACK(PatchData,patchData[i]);
+    DebugM(3,"Patch " << i << " is on node " << patchData[i].node << endl);
     patchData[i].cids = new ComputeID[patchData[i].numCidsAllocated];
     for(j=0;j<patchData[i].numCidsAllocated;++j)
       UNPACK(ComputeID,patchData[i].cids[j]);
@@ -432,12 +437,15 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
  *
  *	$RCSfile: PatchMap.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1996/12/12 08:57:17 $
+ *	$Revision: 1.11 $	$Date: 1996/12/13 19:39:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.11  1996/12/13 19:39:55  jim
+ * added debugging, looking for error in PatchMap sending
+ *
  * Revision 1.10  1996/12/12 08:57:17  jim
  * added MapDistribMsg packing / unpacking routines
  *

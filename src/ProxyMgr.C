@@ -114,6 +114,8 @@ ProxyMgr::registerProxy(PatchID pid) {
   msg->node=CMyPe();
   msg->patch = pid;
 
+  DebugM(1,"For patch " << pid << " registering proxy on node " << CMyPe() << " with home patch on node " << node << endl);
+
   CSendMsgBranch(ProxyMgr, recvRegisterProxy, msg, group.proxyMgr, node);
 }
 
@@ -140,6 +142,7 @@ ProxyMgr::sendProxyData(ProxyDataMsg *msg) {
 
 void
 ProxyMgr::recvProxyData(ProxyDataMsg *msg) {
+  DebugM(1,"For patch " << msg->patch << " received data for proxy on node " << CMyPe() << endl);
   ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
   proxy->receiveData(msg);
 }
@@ -152,6 +155,7 @@ ProxyMgr::sendProxyAtoms(ProxyAtomsMsg *msg) {
 
 void
 ProxyMgr::recvProxyAtoms(ProxyAtomsMsg *msg) {
+  DebugM(1,"For patch " << msg->patch << " received atoms for proxy on node " << CMyPe() << endl);
   ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
   proxy->receiveAtoms(msg);
 }
@@ -164,12 +168,15 @@ ProxyMgr::recvProxyAtoms(ProxyAtomsMsg *msg) {
  *
  *	$RCSfile: ProxyMgr.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/12/13 08:54:53 $
+ *	$Revision: 1.7 $	$Date: 1996/12/13 19:39:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.7  1996/12/13 19:39:55  jim
+ * added debugging, looking for error in PatchMap sending
+ *
  * Revision 1.6  1996/12/13 08:54:53  jim
  * fixed initialization bug
  *
