@@ -73,10 +73,12 @@ void ComputeNonbondedUtil::submitReductionData(BigReal *data, SubmitReduction *r
   reduction->item(REDUCTION_COMPUTE_CHECKSUM) += 1.;
 }
 
+#ifndef _IA64
 //  Not in KCC's math.h
 extern "C" {
   extern double erfc(double);
 }
+#endif
 
 void ComputeNonbondedUtil::select(void)
 {

@@ -66,7 +66,9 @@
 
 
 /*			GLOBAL VARIABLES				*/
+#ifndef _IA64
 extern int errno;
+#endif
 
 void pad(char *s, int len)
 {

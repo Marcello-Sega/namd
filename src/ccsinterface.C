@@ -42,7 +42,7 @@ void CApplicationRequestData(void)
 
 void CApplicationInit(void)
 {
-  CcsRegisterHandler("perf_app",CApplicationRequestData);
+  CcsRegisterHandler("perf_app",(CmiHandler)CApplicationRequestData);
 }
 
 #endif
