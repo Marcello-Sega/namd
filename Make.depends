@@ -2885,6 +2885,7 @@ obj/NamdState.o: \
 	src/Tensor.h \
 	src/PDB.h \
 	src/PDBData.h \
+	src/Namd.h \
 	src/NamdState.h \
 	src/Controller.h \
 	src/Node.h \
@@ -2904,6 +2905,12 @@ obj/NamdState.o: \
 	src/ProcessorPrivate.h \
 	src/SMD.h \
 	src/Random.h \
+	src/ScriptTcl.h \
+	src/Broadcasts.h \
+	src/BroadcastObject.h \
+	src/BroadcastMgr.h \
+	src/UniqueSetIter.h \
+	src/BroadcastClient.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/NamdState.o -c src/NamdState.C
 obj/NamdOneTools.o: \
