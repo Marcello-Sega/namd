@@ -25,7 +25,7 @@ OBJS = \
 	ComputeBonds.o ComputeNonbondedExcl.o ComputeMgr.o \
 	ProxyMgr.o ProxyPatch.o CommunicateConverse.o \
 	Communicate.o IntTree.o MessageQueue.o MessageManager.o \
-	ReductionMgr.o
+	ReductionMgr.o Controller.o
 
 CXXFILES = $(OBJS:.o=.C)
 
