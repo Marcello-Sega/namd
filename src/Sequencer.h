@@ -14,29 +14,25 @@
 #ifndef SEQUENCER_H
 #define SEQUENCER_H
 
+#include "converse.h"
+
+extern class HomePatch;
+
 class Sequencer
 {
 public:
-	Sequencer(HomePatch *p) { patch = p };
-	void awaken(void)
-	{
-		Cth_Awaken(thread);
-	}
-	void initForce(void)
-	{
-		thread = Cth_Create(this, thread_initForce());
-	}
-	void run(int number_of_cycles, int steps_per_cycle)
-	{
-		thread = Cth_Create(this,
-			thread_run(number_of_cycles, steps_per_cycle));
-	}
+	Sequencer(HomePatch *p) : patch(p) { };
+	void run(int numberOfCycles);             // spawn thread, etc.
+	void awaken(void){ CthAwaken(thread); };
+
+protected:
+	virtual void threadRun(void);  // subclasses redefine this method
+	int numberOfCycles;            // stores argument to run()
+	const HomePatch *patch;        // access methods in patch
 
 private:
-	HomePatch *patch;
-	Cthread thread;
-	virtual void thread_initForce(void);
-	virtual void thread_run(int number_of_cycles, int steps_per_cycle);
+	CthThread thread;
+	friend void Sequencer_threadRun(Sequencer*);
 };
 
 #endif // SEQUENCER_H
