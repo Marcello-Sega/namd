@@ -28,9 +28,8 @@
 #include "ComputeImpropers.h"
 #include "ComputeBonds.h"
 #include "ComputeNonbondedExcl.h"
-
 #define MIN_DEBUG_LEVEL 4
-#define DEBUGM 1
+#define DEBUGM
 #include "Debug.h"
 
 ComputeMgr::ComputeMgr(InitMsg *msg)
@@ -45,19 +44,21 @@ ComputeMgr::~ComputeMgr(void)
 
 void ComputeMgr:: createComputes(ComputeMap *map)
 {
+  DebugM(5,"createComputes 0\n");
   Node *node = Node::Object();
   int myNode = node->myid();
 
   int numNonbondedSelf = 0;
   int numNonbondedPair = 0;
 
-  DebugM(1,"---------------------------------------");
+  DebugM(1,"---------------------------------------\n");
   DebugM(1,"---------------------------------------\n");
 
   DebugM(1,"nComputes = " << map->nComputes << '\n');
   DebugM(1,"nPatchBased = " << map->nPatchBased << '\n');
   DebugM(1,"nAtomBased = " << map->nAtomBased << '\n');
   DebugM(1,"nAllocated = " << map->nComputes << '\n');
+  DebugM(5,"createComputes 1: looping " << map->nComputes << "\n");
   for(int i=0; i < map->nComputes; i++)
   {
     if ( map->computeData[i].node != myNode ) continue;
@@ -79,6 +80,7 @@ void ComputeMgr:: createComputes(ComputeMap *map)
     Compute *c;
     PatchID pid2[2];
 
+  DebugM(5,"createComputes 2: looping " << i << "on type: " << map->computeData[i].type << "\n");
     switch ( map->computeData[i].type )
     {
       case computeNonbondedSelfType:
@@ -99,10 +101,11 @@ void ComputeMgr:: createComputes(ComputeMap *map)
 	break;
       case computeNonbondedExclType:
 	c = new ComputeNonbondedExcls(i);
-	DebugM(3,"ComputeNonbondedExcls created.\n");
+	DebugM(5,"ComputeNonbondedExcls created.\n");
 	map->registerCompute(i,c);
+	DebugM(5,"ComputeNonbondedExcls registered.\n");
 	c->mapReady();
-	break;
+	DebugM(5,"ComputeNonbondedExcls ready.\n");
 	break;
       case computeBondsType:
 	c = new ComputeBonds(i);
@@ -134,6 +137,7 @@ void ComputeMgr:: createComputes(ComputeMap *map)
 
   }
 
+  DebugM(5,"createComputes 5: done looping\n");
   DebugM(4, numNonbondedSelf << " ComputeNonbondedSelf created\n");
   DebugM(4, numNonbondedPair << " ComputeNonbondedPair created\n");
 
@@ -155,7 +159,7 @@ void ComputeMgr:: enqueueWork(Compute *compute)
  *
  *	$RCSfile: ComputeMgr.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1996/12/04 17:49:28 $
+ *	$Revision: 1.9 $	$Date: 1996/12/16 19:06:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
