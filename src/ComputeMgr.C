@@ -165,7 +165,8 @@ ComputeMgr::updateLocalComputes4(CkQdMsg *msg) {
 
 void
 ComputeMgr::updateLocalComputes5() {
-  ProxyMgr::Object()->buildProxySpanningTree();
+  if (proxySendSpanning || proxyRecvSpanning )
+    ProxyMgr::Object()->buildProxySpanningTree();
   if (!CkMyPe()) 
     CkStartQD(CProxy_ComputeMgr::ckIdx_doneUpdateLocalComputes(), &thishandle);
 }
