@@ -453,6 +453,12 @@ int PatchMap::oneAwayNeighbors(int pid, PatchID *neighbor_ids, int *transform_id
 //----------------------------------------------------------------------
 int PatchMap::twoAwayNeighbors(int pid, PatchID *neighbor_ids,  int *transform_ids)
 {
+  // ELIMINATE USE OF TWO-AWAY NEIGHBORS
+
+  return 0;
+
+  // ELIMINATE USE OF TWO-AWAY NEIGHBORS
+
   int xi, yi, zi;
   int xinc, yinc, zinc;
   int n=0;
@@ -554,12 +560,15 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
  *
  *	$RCSfile: PatchMap.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/02/13 04:43:11 $
+ *	$Revision: 1.1005 $	$Date: 1997/02/28 23:14:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.1005  1997/02/28 23:14:23  jim
+ * Eliminated use of two-away neighbors, method now returns 0.
+ *
  * Revision 1.1004  1997/02/13 04:43:11  jim
  * Fixed initial hanging (bug in PatchMap, but it still shouldn't have
  * happened) and saved migration messages in the buffer from being
