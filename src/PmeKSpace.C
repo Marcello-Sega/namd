@@ -48,8 +48,8 @@ static void compute_b_moduli(double *bm, int K, int order) {
   delete [] M;
 }
 
-PmeKSpace::PmeKSpace(PmeGrid grid, int K1_start, int K1_end) 
-  : myGrid(grid), k1_start(K1_start), k1_end(K1_end) {
+PmeKSpace::PmeKSpace(PmeGrid grid, int K2_start, int K2_end) 
+  : myGrid(grid), k2_start(K2_start), k2_end(K2_end) {
   int K1, K2, K3, order;
   K1=myGrid.K1; K2=myGrid.K2, K3=myGrid.K3; order=myGrid.order;
 
@@ -84,7 +84,8 @@ double PmeKSpace::compute_energy(double *q_arr, Lattice lattice, double ewald, d
   int K1, K2, K3;
 
   K1=myGrid.K1; K2=myGrid.K2; K3=myGrid.K3;
-  pad2 = (myGrid.dim2-K2)*myGrid.dim3;
+  // pad2 = (myGrid.dim2-K2)*myGrid.dim3;
+  pad2 = 0;
   pad3 = myGrid.dim3-K3-(K3 & 1 ? 1 : 2);
 
   i_pi_volume = 1.0/(M_PI * lattice.volume());
@@ -104,14 +105,14 @@ double PmeKSpace::compute_energy(double *q_arr, Lattice lattice, double ewald, d
     init_exp(exp3, K3, recipz);
 
     ind = 0;
-    for ( k1=k1_start; k1<k1_end; ++k1 ) {
+    for ( k1=0; k1<K1; ++k1 ) {
       double m1, m11, b1, xp1;
       b1 = bm1[k1];
       int k1_s = k1<=K1/2 ? k1 : k1-K1;
       m1 = k1_s*recipx;
       m11 = m1*m1;
       xp1 = i_pi_volume*exp1[abs(k1_s)];
-      for ( k2=0; k2<K2; ++k2 ) {
+      for ( k2=k2_start; k2<k2_end; ++k2 ) {
         double m2, m22, b1b2, xp2;
         b1b2 = b1*bm2[k2];
         int k2_s = k2<=K2/2 ? k2 : k2-K2;
@@ -169,13 +170,13 @@ double PmeKSpace::compute_energy(double *q_arr, Lattice lattice, double ewald, d
     init_exp(exp3, K3, recip3.length());
 
     ind = 0;
-    for ( k1=k1_start; k1<k1_end; ++k1 ) {
+    for ( k1=0; k1<K1; ++k1 ) {
       double b1; Vector m1;
       b1 = bm1[k1];
       int k1_s = k1<=K1/2 ? k1 : k1-K1;
       m1 = k1_s*recip1;
       // xp1 = i_pi_volume*exp1[abs(k1_s)];
-      for ( k2=0; k2<K2; ++k2 ) {
+      for ( k2=k2_start; k2<k2_end; ++k2 ) {
         double xp2, b1b2, m2_x, m2_y, m2_z;
         b1b2 = b1*bm2[k2];
         int k2_s = k2<=K2/2 ? k2 : k2-K2;
@@ -235,13 +236,13 @@ double PmeKSpace::compute_energy(double *q_arr, Lattice lattice, double ewald, d
     double recip3_z = recip3.z;
 
     ind = 0;
-    for ( k1=k1_start; k1<k1_end; ++k1 ) {
+    for ( k1=0; k1<K1; ++k1 ) {
       double b1; Vector m1;
       b1 = bm1[k1];
       int k1_s = k1<=K1/2 ? k1 : k1-K1;
       m1 = k1_s*recip1;
       // xp1 = i_pi_volume*exp1[abs(k1_s)];
-      for ( k2=0; k2<K2; ++k2 ) {
+      for ( k2=k2_start; k2<k2_end; ++k2 ) {
         double b1b2, m2_x, m2_y, m2_z;
         b1b2 = b1*bm2[k2];
         int k2_s = k2<=K2/2 ? k2 : k2-K2;

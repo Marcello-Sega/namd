@@ -15,6 +15,7 @@ public:
   int patchMgr;
   int proxyMgr;
   int computeMgr;
+  int computePmeMgr;
   int reductionMgr;
   int collectionMgr;
   int broadcastMgr;

@@ -10,9 +10,8 @@
 #include "AtomMap.h"
 #include "ComputePme.h"
 #include "ComputePmeMsgs.h"
-#include <ampi.h>
-#include <ampiimpl.h>
-#include "rfftw_mpi.h"
+#include <fftw.h>
+#include <rfftw.h>
 #include "ComputePmeMgr.decl.h"
 #include "PmeRealSpace.h"
 #include "PmeKSpace.h"
@@ -27,6 +26,7 @@
 #include "Debug.h"
 #include "SimParameters.h"
 #include "WorkDistrib.h"
+#include "varsizemsg.h"
 
 #include "PmeCoulomb.h"
 
@@ -34,21 +34,436 @@
 #define SQRT_PI 1.7724538509055160273 /* mathematica 15 digits*/
 #endif
 
-#define PME_TAG_QARR 1
-#define PME_TAG_LATTICE 2
-
-// needed for ampi - not used
-extern "C" void pack_() { }
-extern "C" void unpack_() { }
-extern "C" void get_size_() { }
-
-class ComputePmeMgr : public ampi {
-public:
-  ComputePmeMgr() {;}
-  ComputePmeMgr(CkMigrateMessage*) {;}
-  void start();
+class PmeNullMsg : public CMessage_PmeNullMsg {
 };
 
+class PmeGridMsg : public CMessage_PmeGridMsg {
+public:
+
+  int sourceNode;
+  Lattice lattice;
+  int start;
+  int len;
+  double *qgrid;
+
+  VARSIZE_DECL(PmeGridMsg);
+};
+
+VARSIZE_MSG(PmeGridMsg,
+  VARSIZE_ARRAY(qgrid);
+)
+
+class PmeTransMsg : public CMessage_PmeTransMsg {
+public:
+
+  int sourceNode;
+  int x_start;
+  int nx;
+  double *qgrid;
+
+  VARSIZE_DECL(PmeTransMsg);
+};
+
+VARSIZE_MSG(PmeTransMsg,
+  VARSIZE_ARRAY(qgrid);
+)
+
+class PmeUntransMsg : public CMessage_PmeUntransMsg {
+public:
+
+  int sourceNode;
+  double energy;
+  double virial[6];
+  int y_start;
+  int ny;
+  double *qgrid;
+
+  VARSIZE_DECL(PmeUntransMsg);
+};
+
+VARSIZE_MSG(PmeUntransMsg,
+  VARSIZE_ARRAY(qgrid);
+)
+
+class PmeUngridMsg : public CMessage_PmeUngridMsg {
+public:
+
+  int sourceNode;
+  Lattice lattice;
+  int start;
+  int len;
+  double *qgrid;
+
+  VARSIZE_DECL(PmeUngridMsg);
+};
+
+VARSIZE_MSG(PmeUngridMsg,
+  VARSIZE_ARRAY(qgrid);
+)
+
+struct LocalPmeInfo {
+  int nx, x_start;
+  int ny_after_transpose, y_start_after_transpose;
+  int total_size;
+};
+
+class ComputePmeMgr : public BOCclass {
+public:
+  ComputePmeMgr();
+  ~ComputePmeMgr();
+
+  void recvGrid(PmeGridMsg *);
+  void gridCalc1(PmeNullMsg *);
+  void recvTrans(PmeTransMsg *);
+  void gridCalc2(PmeNullMsg *);
+  void recvUntrans(PmeUntransMsg *);
+  void gridCalc3(PmeNullMsg *);
+  void recvUngrid(PmeUngridMsg *);
+  void ungridCalc(PmeNullMsg *);
+
+  void setCompute(ComputePme *c) { pmeCompute = c; }
+
+private:
+  int initialized;
+  void initialize();
+
+  CProxy_ComputePmeMgr pmeProxy;
+  ComputePme *pmeCompute;
+  PmeGrid myGrid;
+  Lattice lattice;
+  PmeKSpace *myKSpace;
+  double *qgrid;
+
+  fftw_plan forward_plan_x, backward_plan_x;
+  rfftwnd_plan forward_plan_yz, backward_plan_yz;
+  fftw_complex *work;
+
+  LocalPmeInfo *localInfo;
+  int qgrid_start;
+  int qgrid_len;
+
+  int numSources;
+  int grid_count;
+  int trans_count;
+  int untrans_count;
+  int ungrid_count;
+  PmeTransMsg **trans_buf;
+  int trans_buf_len;
+  PmeUntransMsg **untrans_buf;
+  int untrans_buf_len;
+};
+
+ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), pmeCompute(0),
+						initialized(0) {
+  CpvAccess(BOCclass_group).computePmeMgr = thisgroup;
+  myKSpace = 0;
+  localInfo = 0;
+  qgrid = 0;
+  work = 0;
+  grid_count = 0;
+  trans_count = 0;
+  untrans_count = 0;
+  ungrid_count = 0;
+  trans_buf = new PmeTransMsg*[CkNumPes()];
+  trans_buf_len = 0;
+  untrans_buf = new PmeUntransMsg*[CkNumPes()];
+  untrans_buf_len = 0;
+}
+
+void ComputePmeMgr::initialize() {
+  if ( initialized ) { return; }
+  initialized = 1;
+
+  SimParameters *simParams = Node::Object()->simParameters;
+  WorkDistrib *workDistrib = Node::Object()->workDistrib;
+
+  myGrid.K1 = simParams->PMEGridSizeX;
+  myGrid.K2 = simParams->PMEGridSizeY;
+  myGrid.K3 = simParams->PMEGridSizeZ;
+  myGrid.order = simParams->PMEInterpOrder;
+  myGrid.dim2 = myGrid.K2;
+  myGrid.dim3 = 2 * (myGrid.K3/2 + 1);
+  myGrid.block1 = ( myGrid.K1 + CkNumPes() - 1 ) / CkNumPes();
+  myGrid.block2 = ( myGrid.K2 + CkNumPes() - 1 ) / CkNumPes();
+
+  int n[3]; n[0] = myGrid.K1; n[1] = myGrid.K2; n[2] = myGrid.K3;
+  forward_plan_x = fftw_create_plan(n[0], FFTW_REAL_TO_COMPLEX,
+					FFTW_MEASURE | FFTW_IN_PLACE);
+  forward_plan_yz = rfftwnd_create_plan(2, n+1, FFTW_REAL_TO_COMPLEX,
+					FFTW_MEASURE | FFTW_IN_PLACE);
+  backward_plan_x = fftw_create_plan(n[0], FFTW_COMPLEX_TO_REAL,
+					FFTW_MEASURE | FFTW_IN_PLACE);
+  backward_plan_yz = rfftwnd_create_plan(2, n+1, FFTW_COMPLEX_TO_REAL,
+					FFTW_MEASURE | FFTW_IN_PLACE);
+  work = new fftw_complex[n[0]];
+
+  localInfo = new LocalPmeInfo[CkNumPes()];
+
+  int nx = 0;
+  int ny = 0;
+  for ( int pe = 0; pe < CkNumPes(); ++pe ) {
+    localInfo[pe].x_start = nx;
+    nx += myGrid.block1;
+    if ( nx > myGrid.K1 ) nx = myGrid.K1;
+    localInfo[pe].nx = nx - localInfo[pe].x_start;
+    localInfo[pe].y_start_after_transpose = ny;
+    ny += myGrid.block2;
+    if ( ny > myGrid.K2 ) ny = myGrid.K2;
+    localInfo[pe].ny_after_transpose =
+			ny - localInfo[pe].y_start_after_transpose;
+  }
+
+  int k2_start = localInfo[CkMyPe()].y_start_after_transpose;
+  int k2_end = k2_start + localInfo[CkMyPe()].ny_after_transpose;
+  myKSpace = new PmeKSpace(myGrid, k2_start, k2_end);
+
+  int local_size = myGrid.block1 * myGrid.K2 * myGrid.dim3;
+  int local_size_2 = myGrid.block2 * myGrid.K1 * myGrid.dim3;
+  if ( local_size < local_size_2 ) local_size = local_size_2;
+  qgrid = new double[local_size];
+
+  qgrid_start = localInfo[CkMyPe()].x_start * myGrid.K2 * myGrid.dim3;
+  qgrid_len = localInfo[CkMyPe()].nx * myGrid.K2 * myGrid.dim3;
+
+  numSources = CkNumPes();
+  int npatches = (PatchMap::Object())->numPatches();
+  if ( numSources > npatches ) numSources = npatches;
+
+  grid_count = numSources;
+  ungrid_count = CkNumPes();
+}
+
+ComputePmeMgr::~ComputePmeMgr() {
+  delete myKSpace;
+  delete [] localInfo;
+  delete [] qgrid;
+  delete [] work;
+  delete [] trans_buf;
+  delete [] untrans_buf;
+}
+
+void ComputePmeMgr::recvGrid(PmeGridMsg *msg) {
+  initialize();
+  // CkPrintf("recvGrid on Pe(%d)\n",CkMyPe());
+  if ( grid_count == 0 ) {
+    NAMD_bug("Message order failure in ComputePmeMgr::recvGrid\n");
+  }
+  if ( grid_count == numSources ) {
+    int local_size = myGrid.block1 * myGrid.K2 * myGrid.dim3;
+    double *q = qgrid;
+    for ( int i=0; i<local_size; ++i ) {
+      *(q++) = 0;
+    }
+    lattice = msg->lattice;
+  }
+
+  double *q = qgrid + (msg->start - qgrid_start);
+  double *qm = msg->qgrid;
+  for ( int i=0; i<msg->len; ++i ) {
+    *(q++) += *(qm++);
+  }
+  delete msg;
+  --grid_count;
+
+  if ( grid_count == 0 ) {
+    pmeProxy.gridCalc1(new PmeNullMsg,CkMyPe());
+  }
+}
+
+void ComputePmeMgr::gridCalc1(PmeNullMsg *msg) {
+  // CkPrintf("gridCalc1 on Pe(%d)\n",CkMyPe());
+  delete msg;
+
+  rfftwnd_real_to_complex(forward_plan_yz, localInfo[CkMyPe()].nx,
+	qgrid, 1, myGrid.dim2 * myGrid.dim3, 0, 0, 0);
+
+  // send data for transpose
+  int zdim = myGrid.dim3;
+  int nx = localInfo[CkMyPe()].nx;
+  int x_start = localInfo[CkMyPe()].x_start;
+  int slicelen = myGrid.K2 * zdim;
+  for ( int pe=0; pe<CkNumPes(); ++pe ) {
+    LocalPmeInfo &li = localInfo[pe];
+    int cpylen = li.ny_after_transpose * zdim;
+    int msglen = nx * cpylen;
+    PmeTransMsg *newmsg = new (&msglen,0) PmeTransMsg;
+    newmsg->sourceNode = CkMyPe();
+    newmsg->x_start = x_start;
+    newmsg->nx = nx;
+    double *q = qgrid + li.y_start_after_transpose * zdim;
+    double *qmsg = newmsg->qgrid;
+    for ( int x = 0; x < nx; ++x ) {
+      memcpy((void*)qmsg, (void*)q, cpylen*sizeof(double));
+      q += slicelen;
+      qmsg += cpylen;
+    }
+    pmeProxy.recvTrans(newmsg,pe);
+  }
+
+  trans_count = CkNumPes();
+  if ( trans_buf_len ) {
+    // CkPrintf("resending %d recvTrans on Pe(%d)\n",trans_buf_len,CkMyPe());
+    for ( int m=0; m<trans_buf_len; ++m ) {
+      pmeProxy.recvTrans(trans_buf[m],CkMyPe());
+    }
+    trans_buf_len = 0;
+  }
+}
+
+void ComputePmeMgr::recvTrans(PmeTransMsg *msg) {
+  // CkPrintf("recvTrans on Pe(%d)\n",CkMyPe());
+  if ( trans_count == 0 ) {
+    trans_buf[trans_buf_len++] = msg;
+    return;
+  }
+
+  int zdim = myGrid.dim3;
+  int y_start = localInfo[CkMyPe()].y_start_after_transpose;
+  int ny = localInfo[CkMyPe()].ny_after_transpose;
+  int x_start = msg->x_start;
+  int nx = msg->nx;
+  memcpy((void*)(qgrid + x_start*ny*zdim), (void*)(msg->qgrid),
+				nx*ny*zdim*sizeof(double));
+
+  delete msg;
+  --trans_count;
+
+  if ( trans_count == 0 ) {
+    pmeProxy.gridCalc2(new PmeNullMsg,CkMyPe());
+  }
+}
+
+void ComputePmeMgr::gridCalc2(PmeNullMsg *msg) {
+  // CkPrintf("gridCalc2 on Pe(%d)\n",CkMyPe());
+  delete msg;
+
+  int zdim = myGrid.dim3;
+  int y_start = localInfo[CkMyPe()].y_start_after_transpose;
+  int ny = localInfo[CkMyPe()].ny_after_transpose;
+
+  // finish forward FFT (x dimension)
+  fftw(forward_plan_x, ny * zdim / 2, (fftw_complex *) qgrid,
+	ny * zdim / 2, 1, work, 1, 0);
+
+  // reciprocal space portion of PME
+  double recipEnergy;
+  double recip_vir[6];
+  BigReal ewaldcof = ComputeNonbondedUtil::ewaldcof;
+  recipEnergy = myKSpace->compute_energy(qgrid, lattice, ewaldcof, recip_vir);
+  // CkPrintf("Ewald reciprocal energy = %f\n", recipEnergy);
+
+  // start backward FFT (x dimension)
+  fftw(backward_plan_x, ny * zdim / 2, (fftw_complex *) qgrid,
+	ny * zdim / 2, 1, work, 1, 0);
+
+  // send data for reverse transpose
+  for ( int pe=0; pe<CkNumPes(); ++pe ) {
+    LocalPmeInfo &li = localInfo[pe];
+    int x_start =li.x_start;
+    int nx = li.nx;
+    int msglen = nx*ny*zdim;
+    PmeUntransMsg *newmsg = new (&msglen,0) PmeUntransMsg;
+    if ( pe == 0 ) {  // only need these once
+      newmsg->energy = recipEnergy;
+      for ( int i=0; i<6; ++i ) { newmsg->virial[i] = recip_vir[i]; }
+    }
+    newmsg->sourceNode = CkMyPe();
+    newmsg->y_start = y_start;
+    newmsg->ny = ny;
+    memcpy((void*)(newmsg->qgrid), (void*)(qgrid + x_start*ny*zdim),
+				nx*ny*zdim*sizeof(double));
+    pmeProxy.recvUntrans(newmsg,pe);
+  }
+
+  untrans_count = CkNumPes();
+  if ( untrans_buf_len ) {
+    // CkPrintf("resending %d recvUntrans on Pe(%d)\n",untrans_buf_len,CkMyPe());
+    for ( int m=0; m<untrans_buf_len; ++m ) {
+      pmeProxy.recvUntrans(untrans_buf[m],CkMyPe());
+    }
+    untrans_buf_len = 0;
+  }
+}
+
+void ComputePmeMgr::recvUntrans(PmeUntransMsg *msg) {
+  // CkPrintf("recvUntrans on Pe(%d)\n",CkMyPe());
+  if ( untrans_count == 0 ) {
+    untrans_buf[untrans_buf_len++] = msg;
+    return;
+  }
+
+  if ( CkMyPe() == 0 ) {
+    pmeCompute->copyEnergy(msg);
+  }
+
+  int zdim = myGrid.dim3;
+  int x_start = localInfo[CkMyPe()].x_start;
+  int nx = localInfo[CkMyPe()].nx;
+  int y_start = msg->y_start;
+  int ny = msg->ny;
+  int slicelen = myGrid.K2 * zdim;
+  int cpylen = ny * zdim;
+  double *q = qgrid + y_start * zdim;
+  double *qmsg = msg->qgrid;
+  for ( int x = 0; x < nx; ++x ) {
+    memcpy((void*)q, (void*)qmsg, cpylen*sizeof(double));
+    q += slicelen;
+    qmsg += cpylen;
+  }
+
+  delete msg;
+  --untrans_count;
+
+  if ( untrans_count == 0 ) {
+    pmeProxy.gridCalc3(new PmeNullMsg,CkMyPe());
+  }
+}
+
+void ComputePmeMgr::gridCalc3(PmeNullMsg *msg) {
+  // CkPrintf("gridCalc3 on Pe(%d)\n",CkMyPe());
+  delete msg;
+
+  // finish backward FFT
+  rfftwnd_complex_to_real(backward_plan_yz, localInfo[CkMyPe()].nx,
+	(fftw_complex *) qgrid, 1, myGrid.dim2 * myGrid.dim3 / 2, 0, 0, 0);
+
+  for ( int pe=0; pe<numSources; ++pe ) {
+    int msglen = qgrid_len;
+    PmeUngridMsg *newmsg = new (&msglen,0) PmeUngridMsg;
+    newmsg->sourceNode = CkMyPe();
+    newmsg->start = qgrid_start;
+    newmsg->len = qgrid_len;
+    memcpy((void*)(newmsg->qgrid), (void*)qgrid, qgrid_len*sizeof(double));
+    pmeProxy.recvUngrid(newmsg,pe);
+  }
+  grid_count = numSources;
+}
+
+void ComputePmeMgr::recvUngrid(PmeUngridMsg *msg) {
+  // CkPrintf("recvUngrid on Pe(%d)\n",CkMyPe());
+  if ( ungrid_count == 0 ) {
+    NAMD_bug("Message order failure in ComputePmeMgr::recvUngrid\n");
+  }
+
+  pmeCompute->copyResults(msg);
+  delete msg;
+  --ungrid_count;
+
+  if ( ungrid_count == 0 ) {
+    pmeProxy.ungridCalc(new PmeNullMsg,CkMyPe());
+  }
+}
+
+void ComputePmeMgr::ungridCalc(PmeNullMsg *msg) {
+  // CkPrintf("ungridCalc on Pe(%d)\n",CkMyPe());
+  delete msg;
+
+  pmeCompute->ungridForces();
+
+  ungrid_count = CkNumPes();
+}
+
+#if 0
 void ComputePmeMgr::start() {
 #ifndef NAMD_FFTW
   NAMD_die("FFTW (http://www.fftw.org/) is required to use PME.");
@@ -168,6 +583,7 @@ while ( 1 ) {
   // iout << "ComputePmeMgr thread " << thisIndex << " finished on " << iPE << "\n" << endi;
 #endif  // NAMD_FFTW
 }
+#endif
 
 
 static void scale_coordinates(PmeParticle p[], int N, Lattice lattice, PmeGrid grid) {
@@ -250,6 +666,10 @@ ComputePme::ComputePme(ComputeID c, ComputeMgr *m) :
   ComputeHomePatches(c), comm(m)
 {
   DebugM(4,"ComputePme created.\n");
+
+  CProxy_ComputePmeMgr::ckLocalBranch(
+	CpvAccess(BOCclass_group).computePmeMgr)->setCompute(this);
+
   useAvgPositions = 1;
 
   int numWorkingPes = CkNumPes();
@@ -372,34 +792,23 @@ void ComputePme::doWork()
 
   resultsRemaining = CkNumPes();
 
-  WorkDistrib *workDistrib = Node::Object()->workDistrib;
-  CkArrayID pmeAid = workDistrib->pmeAid;
-
+  CProxy_ComputePmeMgr pmeProxy(CpvAccess(BOCclass_group).computePmeMgr);
   for (int pe=0; pe<CkNumPes(); pe++) {
     int start = pe * bsize;
     int len = bsize;
     if ( start >= qsize ) { start = 0; len = 0; }
     if ( start + len > qsize ) { len = qsize - start; }
-    // TempoArray::ckTempoSendElem(PME_TAG_QARR,
-    ampi::sendraw(PME_TAG_QARR, AMPI_ANY_TAG,
-	(void*)(q_arr+start), len * sizeof(double), pmeAid, pe);
+    int msglens[1];
+    msglens[0] = len;
+    PmeGridMsg *msg = new (msglens,0) PmeGridMsg;
+    msg->sourceNode = CkMyPe();
+    msg->lattice = lattice;
+    msg->start = start;
+    msg->len = len;
+    memcpy((void*)(msg->qgrid),(void*)(q_arr+start),len*sizeof(double));
+    pmeProxy.recvGrid(msg,pe);
   }
 
-  if ( ! CkMyPe() ) {
-    // iout << "Sending lattice on " << iPE << ".\n" << endi;
-    for (int pe=0; pe<CkNumPes(); pe++) {
-      // TempoArray::ckTempoSendElem(PME_TAG_LATTICE,
-      ampi::sendraw(PME_TAG_LATTICE, AMPI_ANY_TAG,
-	(void*)(&lattice), sizeof(lattice), pmeAid, pe);
-    }
-  }
-
-//  // send data to master
-//  ComputePmeDataMsg *msg = new ComputePmeDataMsg;
-//  msg->node = CkMyPe();
-//  msg->numParticles = numLocalAtoms;
-//  msg->particles = localData;
-//  comm->sendComputePmeData(msg);
 }
 
 void ComputePme::recvData(ComputePmeDataMsg *msg)
@@ -537,6 +946,16 @@ void ComputePmeMaster::recvData(ComputePmeDataMsg *msg)
 
 }
 
+void ComputePme::copyResults(PmeUngridMsg *msg) {
+  memcpy((void*)(q_arr + msg->start), (void*)(msg->qgrid),
+				msg->len * sizeof(double));
+}
+
+void ComputePme::copyEnergy(PmeUntransMsg *msg) {
+  energy += msg->energy;
+  for ( int i=0; i<6; ++i ) { virial[i] += msg->virial[i]; }
+}
+
 void ComputePme::recvResults(ComputePmeResultsMsg *msg)
 {
   --resultsRemaining;
@@ -553,8 +972,11 @@ void ComputePme::recvResults(ComputePmeResultsMsg *msg)
   energy += msg->energy;
   delete msg;
 
-  if ( ! resultsRemaining ) {
-    // iout << "ComputePme received all results on " << iPE << ".\n" << endi;
+  if ( ! resultsRemaining ) ungridForces();
+
+}
+
+void ComputePme::ungridForces() {
 
     Vector *localResults = new Vector[numLocalAtoms];
     myRealSpace->compute_forces(q_arr, localData, localResults);
@@ -596,8 +1018,7 @@ void ComputePme::recvResults(ComputePmeResultsMsg *msg)
     reduction->item(REDUCTION_VIRIAL_SLOW_ZY) += (BigReal)(virial[4]);
     reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += (BigReal)(virial[5]);
     reduction->submit();
-  }
-  
+
 }
 
 #include "ComputePmeMgr.def.h"

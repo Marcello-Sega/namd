@@ -6,11 +6,26 @@
 
 module ComputePmeMgr {
 
-  extern module ampi;
+  message PmeNullMsg;
+  message [varsize] PmeGridMsg;
+  message [varsize] PmeTransMsg;
+  message [varsize] PmeUntransMsg;
+  message [varsize] PmeUngridMsg;
 
-  array [1D] ComputePmeMgr : ampi {
+  group ComputePmeMgr {
+
     entry ComputePmeMgr(void);
-  } ;
+
+    entry void recvGrid(PmeGridMsg *);
+    entry void gridCalc1(PmeNullMsg *);
+    entry void recvTrans(PmeTransMsg *);
+    entry void gridCalc2(PmeNullMsg *);
+    entry void recvUntrans(PmeUntransMsg *);
+    entry void gridCalc3(PmeNullMsg *);
+    entry void recvUngrid(PmeUngridMsg *);
+    entry void ungridCalc(PmeNullMsg *);
+
+  };
 
 }
 

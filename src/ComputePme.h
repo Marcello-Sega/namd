@@ -17,6 +17,8 @@ class ComputePmeMaster;
 class PmeRealSpace;
 class ComputeMgr;
 class SubmitReduction;
+class PmeUngridMsg;
+class PmeUntransMsg;
 
 class ComputePme : public ComputeHomePatches {
 public:
@@ -25,6 +27,9 @@ public:
   void doWork();
   void recvData(ComputePmeDataMsg *);
   void recvResults(ComputePmeResultsMsg *);
+  void ComputePme::copyEnergy(PmeUntransMsg *);
+  void ComputePme::copyResults(PmeUngridMsg *);
+  void ComputePme::ungridForces();
 
   ComputeMgr *comm;
   int getMasterNode(void) { return masterNode; }

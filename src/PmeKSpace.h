@@ -13,7 +13,7 @@
 class PmeKSpace {
 
 public:
-  PmeKSpace(PmeGrid grid, int K1_start, int K1_end);
+  PmeKSpace(PmeGrid grid, int K2_start, int K2_end);
   ~PmeKSpace();
 
   double compute_energy(double q_arr[], Lattice lattice, double ewald,
@@ -26,7 +26,7 @@ private:
   double i_pi_volume, piob;
 
   const PmeGrid myGrid;
-  const int k1_start, k1_end;
+  const int k2_start, k2_end;
 
   void init_exp(double *xp, int K, double recip);
 };
