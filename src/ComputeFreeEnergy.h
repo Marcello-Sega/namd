@@ -28,7 +28,7 @@ private:
   ~ComputeFreeEnergy();
   virtual void initialize();
   virtual void calculate();
-  virtual void user_initialize();
+  virtual void user_initialize(const char *filename);
   virtual void user_calculate();
   ComputeGlobalConfigMsg *configMsg;
   ComputeGlobalResultsMsg *resultsMsg;
@@ -47,12 +47,15 @@ protected:
  *
  *	$RCSfile: ComputeFreeEnergy.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1998/02/11 07:31:35 $
+ *	$Revision: 1.3 $	$Date: 1998/02/11 17:49:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFreeEnergy.h,v $
+ * Revision 1.3  1998/02/11 17:49:03  jim
+ * Added filename parameter to user_initialize().
+ *
  * Revision 1.2  1998/02/11 07:31:35  jim
  * Finished interface to free energy perturbation code, including method
  * for determining atomid from segnamde, resid, and atomname.

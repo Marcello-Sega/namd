@@ -24,9 +24,10 @@
 #include "Debug.h"
 
 
-void ComputeFreeEnergy::user_initialize()
+void ComputeFreeEnergy::user_initialize(const char *filename)
 {
-  ;
+  iout << iDEBUG << "Initializing free energy from " <<
+					filename << "\n" << endi; 
 }
 
 
@@ -94,7 +95,7 @@ void ComputeFreeEnergy::initialize() {
   char *filename = Node::Object()->configList->find("freeEnergyConfig")->data;
 
   iout << iDEBUG << "Free energy perturbation - initialize()\n" << endi; 
-  user_initialize();
+  user_initialize(filename);
 
   // Send config to clients
   host->comm->sendComputeGlobalConfig(configMsg);
@@ -126,12 +127,15 @@ void ComputeFreeEnergy::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1998/02/11 07:31:34 $
+ *	$Revision: 1.3 $	$Date: 1998/02/11 17:49:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFreeEnergy.C,v $
+ * Revision 1.3  1998/02/11 17:49:03  jim
+ * Added filename parameter to user_initialize().
+ *
  * Revision 1.2  1998/02/11 07:31:34  jim
  * Finished interface to free energy perturbation code, including method
  * for determining atomid from segnamde, resid, and atomname.
