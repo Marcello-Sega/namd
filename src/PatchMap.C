@@ -1,11 +1,8 @@
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1996 The Board of Trustees of the            */
+/*         (C) Copyright 1996,1997 The Board of Trustees of the            */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*									   */
 /***************************************************************************/
-
 /***************************************************************************
  * DESCRIPTION:
  *
@@ -39,7 +36,6 @@ PatchMap *PatchMap::Instance() {
   }
   return(_instance);
 }
-
 
 
 PatchMap::PatchMap(void)
@@ -139,16 +135,17 @@ void PatchMap::unpack (void *in)
 }
 
 
+//---------------------------------------------------------------------
+// Access HomePatch information
+
 int PatchMap::numHomePatches(void)
 {
   return patchMgr->homePatches.size();
 }
 
-
 HomePatchList *PatchMap::homePatchList() {
   return &(patchMgr->homePatches);
 }
-
 
 //----------------------------------------------------------------------
 int PatchMap::numPatches(void)
@@ -379,21 +376,27 @@ PatchID PatchMap::requestPid(int *xi, int *yi, int *zi)
 }
 
 //----------------------------------------------------------------------
-void PatchMap::storePatch(PatchID pid, int node, int max_computes,
+void PatchMap::storePatchCoord(PatchID pid,
 			  Coordinate x0, Coordinate y0, Coordinate z0,
 			  Coordinate x1, Coordinate y1, Coordinate z1)
 {
-  patchData[pid].node=node;
-  patchData[pid].numCids = 0;
-  patchData[pid].cids = new int[max_computes];
-  for ( int i = 0; i < max_computes; ++i ) patchData[pid].cids[i] = -1;
-  patchData[pid].numCidsAllocated = max_computes;
   patchData[pid].x0 = x0;
   patchData[pid].x1 = x1;
   patchData[pid].y0 = y0;
   patchData[pid].y1 = y1;
   patchData[pid].z0 = z0;
   patchData[pid].z1 = z1;
+}
+
+void PatchMap::assignNode(PatchID pid, NodeID node) {
+  patchData[pid].node=node;
+}
+
+void PatchMap::allocateCompute(PatchID pid, int max_computes) {
+  patchData[pid].numCids = 0;
+  patchData[pid].cids = new int[max_computes];
+  for ( int i = 0; i < max_computes; ++i ) patchData[pid].cids[i] = -1;
+  patchData[pid].numCidsAllocated = max_computes;
 }
 
 //----------------------------------------------------------------------
@@ -559,13 +562,19 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/02/28 23:14:23 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1006 $	$Date: 1997/03/14 21:40:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.1006  1997/03/14 21:40:14  ari
+ * Reorganized startup to make possible inital load
+ * balancing by changing methods in WorkDistrib.
+ * Also made startup more transparent and easier
+ * to modify.
+ *
  * Revision 1.1005  1997/02/28 23:14:23  jim
  * Eliminated use of two-away neighbors, method now returns 0.
  *

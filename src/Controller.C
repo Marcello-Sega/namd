@@ -18,7 +18,7 @@
 #include "ReductionMgr.h"
 #include "strlib.h"
 
-#define MIN_DEBUG_LEVEL 4
+#define MIN_DEBUG_LEVEL 3
 //#define DEBUGM
 #include "Debug.h"
 
@@ -55,8 +55,12 @@ void Controller::threadRun(Controller* arg)
 void Controller::run(int numberOfCycles)
 {
     stepsPerCycle = simParams->stepsPerCycle;
-    if ( numberOfCycles ) this->numberOfCycles = numberOfCycles;
-    else this->numberOfCycles = simParams->N - simParams->firstTimestep; // / stepsPerCycle;
+    if ( numberOfCycles ) 
+      this->numberOfCycles = numberOfCycles;
+    else 
+      this->numberOfCycles = simParams->N - simParams->firstTimestep; 
+      // / stepsPerCycle;
+    DebugM(4, "Starting thread in controller on this=" << this << "\n");
     thread = CthCreate((CthVoidFn)&(threadRun),(void*)(this),0);
     CthSetStrategyDefault(thread);
     CthAwaken(thread);
@@ -64,14 +68,14 @@ void Controller::run(int numberOfCycles)
 
 void Controller::algorithm(void)
 {
-    DebugM(4, "Controller algorithm active.\n");
+    DebugM(4, "Controller algorithm active. this = " << this << "\n");
     const int numberOfCycles = this->numberOfCycles;
     const int stepsPerCycle = this->stepsPerCycle;
     const BigReal timestep = simParams->dt;
+    DebugM(4, "Controller algorithm active. timestep = " << timestep << "\n");
     // int step;
     int cycle;
     int seq = 0;
-    iout << iINFO << "Starting Controller...\n" << endi;
     printEnergies(seq++);
     for ( cycle = 0; cycle < numberOfCycles; ++cycle )
     {

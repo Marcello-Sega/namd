@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1007 1997/03/04 22:37:07 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1008 1997/03/14 21:40:08 ari Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -23,7 +23,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.
 #include "ComputeMap.h"
 
 #define MIN_DEBUG_LEVEL 3
-// #define DEBUGM 1
+// #define DEBUGM
 #include "Debug.h"
 
 // Singleton implementation
@@ -265,28 +265,28 @@ int ComputeMap::newPid(ComputeID cid, PatchID pid, int trans)
 //----------------------------------------------------------------------
 void ComputeMap::printComputeMap(void)
 {
-  DebugM(1,"---------------------------------------");
-  DebugM(1,"---------------------------------------\n");
+  DebugM(4,"---------------------------------------");
+  DebugM(4,"---------------------------------------\n");
 
-  DebugM(1,"nComputes = " << nComputes << '\n');
-  DebugM(1,"nPatchBased = " << nPatchBased << '\n');
-  DebugM(1,"nAtomBased = " << nAtomBased << '\n');
-  DebugM(1,"nAllocated = " << nComputes << '\n');
+  DebugM(4,"nComputes = " << nComputes << '\n');
+  DebugM(4,"nPatchBased = " << nPatchBased << '\n');
+  DebugM(4,"nAtomBased = " << nAtomBased << '\n');
+  DebugM(4,"nAllocated = " << nComputes << '\n');
   for(int i=0; i < nComputes; i++)
   {
-    DebugM(1,"Compute " << i << '\n');
-    DebugM(1,"  node = " << computeData[i].node << '\n');
-    DebugM(1,"  patchBased = " << computeData[i].patchBased << '\n');
-    DebugM(1,"  numPids = " << computeData[i].numPids << '\n');
-    DebugM(1,"  numPidsAllocated = " << computeData[i].numPidsAllocated << '\n');
+    DebugM(4,"Compute " << i << '\n');
+    DebugM(4,"  node = " << computeData[i].node << '\n');
+    DebugM(4,"  patchBased = " << computeData[i].patchBased << '\n');
+    DebugM(4,"  numPids = " << computeData[i].numPids << '\n');
+    DebugM(4,"  numPidsAllocated = " << computeData[i].numPidsAllocated << '\n');
     for(int j=0; j < computeData[i].numPids; j++)
     {
-      DebugM(1,computeData[i].pids[j].pid);
+      DebugM(4,computeData[i].pids[j].pid);
       if (!((j+1) % 6))
-	DebugM(1,'\n');
+	DebugM(4,'\n');
     }
-    DebugM(1,"\n---------------------------------------");
-    DebugM(1,"---------------------------------------\n");
+    DebugM(4,"\n---------------------------------------");
+    DebugM(4,"---------------------------------------\n");
 
   }
 }
@@ -295,12 +295,18 @@ void ComputeMap::printComputeMap(void)
  *
  *	$RCSfile: ComputeMap.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/03/04 22:37:07 $
+ *	$Revision: 1.1008 $	$Date: 1997/03/14 21:40:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.C,v $
+ * Revision 1.1008  1997/03/14 21:40:08  ari
+ * Reorganized startup to make possible inital load
+ * balancing by changing methods in WorkDistrib.
+ * Also made startup more transparent and easier
+ * to modify.
+ *
  * Revision 1.1007  1997/03/04 22:37:07  ari
  * Clean up of code.  Debug statements removal, dead code removal.
  * Minor fixes, output fixes.

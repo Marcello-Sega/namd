@@ -13,20 +13,11 @@ message QuiescenceMessage;
 group Node
 {
   entry Node(GroupInitMsg *);
+  entry startUp(QuiescenceMessage *);
   entry startup(InitMsg *);
 
   // used to move from phase to phase
   entry quiescence(QuiescenceMessage *);
-
-  // multiple phases used to order startup over all nodes
-  entry startup1(InitMsg *);
-  entry messageStartup2(QuiescenceMessage *);
-  entry startup2(InitMsg *);
-  entry messageStartup3(QuiescenceMessage *);
-  entry startup3(InitMsg *);
-  entry messageStartup4(QuiescenceMessage *);
-  entry startup4(InitMsg *);
-  entry startupDone(DoneMsg *);
 
   // after startup barriers - run simulation
   entry run(RunMsg *);

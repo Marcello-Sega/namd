@@ -9,7 +9,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1007 1997/03/10 17:40:14 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1008 1997/03/14 21:40:11 ari Exp $";
 
 #include <unistd.h>
 #include "ckdefs.h"
@@ -20,7 +20,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "Namd.h"
 
 #define MIN_DEBUG_LEVEL 3
-// #define DEBUGM
+//#define DEBUGM
 #include "Debug.h"
 
 #include <stdio.h>
@@ -34,10 +34,6 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "PatchMgr.h"
 #include "Patch.h"
 #include "Compute.h"
-//#include "ComputeAngles.h"
-//#include "ComputeDihedrals.h"
-//#include "ComputeImpropers.h"
-//#include "ComputeNonbondedSelf.h"
 #include "ComputeMap.h"
 #include "ComputeMgr.h"
 #include "Molecule.h"
@@ -48,41 +44,40 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "NamdState.h"
 #include "Output.h"
 #include "ProxyMgr.h"
-//#include "MessageComm.h"
 #include "PatchMap.h"
 #include "Parameters.h"
 #include "SimParameters.h"
 #include "CommunicateConverse.h"
 
 extern "C" int gethostname(char *, size_t);
-
 extern Communicate *comm;
-
 
 //======================================================================
 // Public Functions
 
-
+//----------------------------------------------------------------------
+// Singleton implementation
 Node *Node::_instance = 0;
 
+//----------------------------------------------------------------------
+// BOC constructor
 Node::Node(GroupInitMsg *msg)
 {
-  DebugM(1, "Node::Node() - starting\n");
+  if (_instance == 0) {
+    _instance = this;
+  } else {
+    iout << iERRORF << "Node::Node() - another instance of Node exists!\n"
+      << endi;
+    Namd::die();
+  }
+
   group = msg->group;
-  group.node = thisgroup;
   delete msg;
 
-  /* Communicate *comm is a global - old Namd1.X style object
-  /* Located in main.C
-  /* in case any node other than 0 reaches this place first. */
-  if (comm == NULL)
-  {
-    comm = new CommunicateConverse(0,0);
-    DebugM(3,"comm being initialized in Node::Node().\n");
-  }
-  else {
-    DebugM(3,"comm already initialized.\n");
-  }
+  group.node = thisgroup;
+
+  startupPhase = 0;
+  numNodeStartup = CNumPes();
 
   molecule = NULL;
   parameters = NULL;
@@ -91,28 +86,22 @@ Node::Node(GroupInitMsg *msg)
   pdb = NULL;
   state = NULL;
   output = NULL;
-  Compute::setNode(this);
 
-  if (_instance == 0) {
-    _instance = this;
-  } else {
-    iout << iERRORF 
-      << "Node::Node() - another instance of Node exists!\n"
-      << endi;
-    Namd::die();
-  }
+  Compute::setNode(this);
 
   patchMap = PatchMap::Instance();
   atomMap = AtomMap::Instance();
   computeMap = ComputeMap::Instance();
 
-  // Put num<name of BOC>Startup here
-  numNodeStartup = CNumPes();
+  patchMgr = CLocalBranch(PatchMgr,group.patchMgr);
+  proxyMgr = CLocalBranch(ProxyMgr,group.proxyMgr);
+  workDistrib = CLocalBranch(WorkDistrib,group.workDistrib);
+  computeMgr = CLocalBranch(ComputeMgr,group.computeMgr);
 
   // Where are we?
   char host[1024];
   gethostname(host, 1024);
-  iout << iINFO << "Starting out on host: " << host << "\n" << endi;
+  iout << iINFO << iPE << " Starting out on host: " << host << "\n" << endi;
 }
 
 //----------------------------------------------------------------------
@@ -121,75 +110,178 @@ Node::Node(GroupInitMsg *msg)
 Node::~Node(void)
 {
   delete output;
+  delete computeMap;
+  delete atomMap;
+  delete patchMap;
+  delete comm;
 }
 
 //----------------------------------------------------------------------
-// Node startup
-//
-// startup(void) receives all the startup data from the Namd object,
-// and does everything necessary to run the simulation
-//    Ask work_distrib for initial distribution
-//    This must be split-phase, so results can be received from node 0.
-// Receipt of the maps send by sendMaps() triggers the patch and compute
-// object creation
+// Startup Sequence
 
-void Node::messageStartup() {
+void Node::messageStartUp() {
+  InitMsg *msg = new (MsgIndex(InitMsg)) InitMsg;
+  CBroadcastMsgBranch(Node, startup, msg, group.node);
+}
+
+void Node::startUp(QuiescenceMessage *qmsg) {
+  delete qmsg;
   InitMsg *msg = new (MsgIndex(InitMsg)) InitMsg;
   CBroadcastMsgBranch(Node, startup, msg, group.node);
 }
 
 
-//--------------------------------------------------------------------
-// startup procedures for each Node. startup is done in phases, 
-// each phase terminating
-// and leading to next phase via quiescense detection
-// startup() primarily handles Namd1.X style initialization
-// of objects like Molecule which were brought over from Namd1.X
-//--------------------------------------------------------------------
-void Node::startup(InitMsg *msg)
+void Node::startup(InitMsg *msg) {
+  delete msg;
+
+  int gotoRun = false;
+  
+  switch (startupPhase) {
+
+  case 0:
+    if (!CMyPe()) {
+       iout << iINFO << " Starting Phase " << startupPhase << "\n" << endi;
+    }
+    namdOneCommInit(); // Namd1.X style
+  break;
+
+  case 1:
+    if (!CMyPe()) {
+       iout << iINFO << " Starting Phase " << startupPhase << "\n" << endi;
+    }
+
+    // send & receive molecule, simparameters... (Namd1.X style)
+    if (CMyPe()) {
+      namdOneRecv();
+    } else {
+      namdOneSend();
+    }
+  break;
+
+  case 2:
+    if (!CMyPe()) {
+       iout << iINFO << " Starting Phase " << startupPhase << "\n" << endi;
+    }
+
+    // take care of inital thread setting
+    threadInit();
+
+    // create blank AtomMap
+    AtomMap::Object()->allocateMap(molecule->numAtoms);
+  break;
+
+  case 3:
+    if (!CMyPe()) {
+       iout << iINFO << " Starting Phase " << startupPhase << "\n" << endi;
+    }
+    if (!CMyPe()) {
+      output = new Output; // create output object just on PE(0)
+      workDistrib->patchMapInit(); // create space division
+      workDistrib->createHomePatches(); // load atoms into HomePatch(es)
+      workDistrib->assignNodeToPatch();
+      workDistrib->mapComputes();
+      ComputeMap::Object()->printComputeMap();
+      workDistrib->sendMaps();
+    }
+  break;
+
+  case 4:
+    if (!CMyPe()) {
+       iout << iINFO << " Starting Phase " << startupPhase << "\n" << endi;
+
+      workDistrib->distributeHomePatches();
+    }
+  break;
+
+  case 5: 
+    if (!CMyPe()) {
+       iout << iINFO << " Starting Phase " << startupPhase << "\n" << endi;
+    }
+    proxyMgr->createProxies();  // need Home patches before this
+  break;
+
+  case 6:
+    if (!CMyPe()) {
+       iout << iINFO << " Starting Phase " << startupPhase << "\n" << endi;
+      ComputeMap::Object()->printComputeMap();
+    }
+    computeMgr->createComputes(ComputeMap::Object());
+    buildSequencers();
+  break;
+
+  case 7:
+    if (!CMyPe()) {
+       iout << iINFO << " Starting Phase " << startupPhase << "\n" << endi;
+    }
+    gotoRun = true;
+  break;
+
+  default:
+    iout << iERRORF << iPE << "Startup Phase has a bug - check case statement\n" << endi;
+    Namd::die();
+  break;
+
+  }
+
+  startupPhase++;
+  if (!CMyPe()) {
+    if (!gotoRun) {
+      CStartQuiescence(GetEntryPtr(Node,startUp), thishandle);
+    } else {
+      Node::messageRun();
+      CStartQuiescence(GetEntryPtr(Node,quiescence), thishandle);
+    }
+  }
+}
+
+void Node::namdOneCommInit()
 {
+  if (comm == NULL) {
+    comm = new CommunicateConverse(0,0,1);
+  }
+}
+
+// Namd 1.X style Send/Recv of simulation information
+
+void Node::namdOneRecv() {
   Message *conv_msg=NULL;
   int tag;
   int zero=0;
-  
-  delete msg;
-
-  // comm should have been initialized in Node::Node()
-  /* in case node 0 reaches here before other nodes... */
-  if (comm == NULL)
-  {
-    comm = new CommunicateConverse(0,0);
-    DebugM(3,"comm being initialized in Node::startup().\n");
-  }
-  else DebugM(3,"comm already initialized.\n");
 
   // Receive molecule and simulation parameter information
-  if ( CMyPe() ) {
-     simParameters = new SimParameters;
-     parameters = new Parameters;
-     molecule = new Molecule(simParameters);
-     do{
-	tag=SIMPARAMSTAG;
-        conv_msg = comm->receive(zero,tag);
-     } while (conv_msg == NULL);
-     simParameters->receive_SimParameters(conv_msg);
-     do{
-	tag=STATICPARAMSTAG;
-        conv_msg = comm->receive(zero,tag);
-     } while (conv_msg == NULL);
-     parameters->receive_Parameters(conv_msg);
-     do{
-	tag=MOLECULETAG;
-        conv_msg = comm->receive(zero,tag);
-     } while (conv_msg == NULL);
-     molecule->receive_Molecule(conv_msg);
-  } else {
-     // I'm Pe(0) so I send what I know
-     simParameters->send_SimParameters(comm);
-     parameters->send_Parameters(comm);
-     molecule->send_Molecule(comm);
-  }
+  simParameters = new SimParameters;
+  parameters = new Parameters;
+  molecule = new Molecule(simParameters);
 
+  do{
+    tag=SIMPARAMSTAG;
+    conv_msg = comm->receive(zero,tag);
+  } while (conv_msg == NULL);
+  simParameters->receive_SimParameters(conv_msg);
+
+  do{
+    tag=STATICPARAMSTAG;
+    conv_msg = comm->receive(zero,tag);
+  } while (conv_msg == NULL);
+  parameters->receive_Parameters(conv_msg);
+
+  do{
+    tag=MOLECULETAG;
+    conv_msg = comm->receive(zero,tag);
+  } while (conv_msg == NULL);
+  molecule->receive_Molecule(conv_msg);
+}
+
+void Node::namdOneSend() {
+  // I'm Pe(0) so I send what I know
+  simParameters->send_SimParameters(comm);
+  parameters->send_Parameters(comm);
+  molecule->send_Molecule(comm);
+}
+
+// Initial thread setup
+
+void Node::threadInit() {
   // Thread initialization
   if (CthImplemented()) {
     CthSetStrategyDefault(CthSelf());
@@ -199,131 +291,10 @@ void Node::startup(InitMsg *msg)
       << endi;
     Namd::die();
   }
-
-  AtomMap::Object()->allocateMap(molecule->numAtoms);
-  workDistrib = CLocalBranch(WorkDistrib,group.workDistrib);
-
-  // barrier indicating Namd1.X style initialization complete
-  if ( CMyPe() ) {
-     conv_msg = new Message;
-     conv_msg->put(1);
-     comm->send_method(Communicate::NOW);
-     tag=DISTRIBTAG;
-     comm->send(conv_msg,0,tag);
-  } else {
-     for ( int i = 1; i < numNodes(); ++i )
-     {
-       do
-       {
-	 tag=DISTRIBTAG;
-         conv_msg = comm->receive(i,tag);
-       } while (conv_msg == NULL);
-       delete conv_msg;
-     }
-     InitMsg *msg = new (MsgIndex(InitMsg)) InitMsg;
-     CSendMsgBranch(Node, startup1, msg, group.node, 0);
-  }
-  // End of Namd1.X style startup.
 }
 
-//--------------------------------------------------------------------
-// startup1() - primarily to direct build and send out our 
-// work distribution map (i.e. Compute objects layout)
-// Run on Pe(0) - WorkDistrib methods send info to other nodes
-// Upon detection of Quiescence, we move to startup2()
-//--------------------------------------------------------------------
-void Node::startup1(InitMsg *msg)
-{
-  delete msg;
-
-  workDistrib->buildMaps();
-  workDistrib->sendMaps();
-
-  CStartQuiescence(GetEntryPtr(Node,messageStartup2), thishandle);
-}
-
-//--------------------------------------------------------------------
-// Launch startup2() on all nodes upon Quiescence detection
-//--------------------------------------------------------------------
-void Node::messageStartup2(QuiescenceMessage * qm) {
-  delete qm;
-
-  InitMsg *msg = new (MsgIndex(InitMsg)) InitMsg;
-  CBroadcastMsgBranch(Node, startup2, msg, group.node);
-}
-
-
-//--------------------------------------------------------------------
-// startup2() - primarily to build our patches and distribute them
-// this is done by method in WorkDistrib::createPatches()
-// In createPatches(), WorkDistrib and PatchMgr generate a 
-// flock of messages, work and acknowledgements - when
-// they die out - we are done and Quiescence is detected.
-//--------------------------------------------------------------------
-void Node::startup2(InitMsg *msg)
-{
-  delete msg;
-  
-  if ( ! CMyPe() ) { // run only on Pe(0) - other Pe's sent info
-    ComputeMap::Object()->printComputeMap();
-    workDistrib->createPatches();
-    output = new Output;
-    CStartQuiescence(GetEntryPtr(Node,messageStartup3), thishandle);
-  }
-}
-
-
-//--------------------------------------------------------------------
-void Node::messageStartup3(QuiescenceMessage * qm) {
-  delete qm;
-
-  InitMsg *msg = new (MsgIndex(InitMsg)) InitMsg;
-  CBroadcastMsgBranch(Node, startup3, msg, group.node);
-}
-
-
-//--------------------------------------------------------------------
-// startup3() - primarily to build up ProxyPatches
-// and have them registered to their HomePatches.
-// ProxyMgr methods do the work
-//--------------------------------------------------------------------
-void Node::startup3(InitMsg *msg)
-{
-  delete msg;
-
-  // create proxies on all Pe's
-  proxyMgr = CLocalBranch(ProxyMgr,group.proxyMgr);
-  proxyMgr->createProxies();
-
-  if ( ! CMyPe() ) {
-    CStartQuiescence(GetEntryPtr(Node,messageStartup4), thishandle);
-  }
-}
-
-
-//--------------------------------------------------------------------
-void Node::messageStartup4(QuiescenceMessage * qm) {
-  delete qm;
-
-  InitMsg *msg = new (MsgIndex(InitMsg)) InitMsg;
-  CBroadcastMsgBranch(Node, startup4, msg, group.node);
-}
-
-
-//--------------------------------------------------------------------
-// startup4() - Primarily creates Compute objects
-// on each Pe as laid-out in ComputeMap.
-//--------------------------------------------------------------------
-void Node::startup4(InitMsg *msg)
-{
-  delete msg;
-
-  DebugM(1,"In startup4() on node " << CMyPe() << endl);
-  // create computes
-  computeMgr = CLocalBranch(ComputeMgr,group.computeMgr);
-  computeMgr->createComputes(ComputeMap::Object());
-  patchMgr = CLocalBranch(PatchMgr,group.patchMgr);
-
+//
+void Node::buildSequencers() {
   HomePatchList *hpl = PatchMap::Object()->homePatchList();
   ResizeArrayIter<HomePatchElem> ai(*hpl);
 
@@ -339,33 +310,8 @@ void Node::startup4(InitMsg *msg)
     Sequencer *sequencer = new Sequencer(patch);
     patch->useSequencer(sequencer);
   }
-
-  messageStartupDone();   // collect on master node
 }
 
-
-//-----------------------------------------------------------------------
-// Node Startup completion messaging and barrier on node 0
-//--------------------------------------------------------------------
-void Node::messageStartupDone() {
-  DoneMsg *msg = new (MsgIndex(DoneMsg)) DoneMsg;
-  CSendMsgBranch(Node, startupDone, msg, group.node, 0);
-}
-
-void Node::startupDone(DoneMsg *msg) {
-  delete msg;
-
-  // Check-in messages from all other Node only to Pe(0)
-  if (CMyPe() == 0) {
-    if (!--numNodeStartup) {
-      Node::messageRun();
-      CStartQuiescence(GetEntryPtr(Node,quiescence), thishandle);
-    }
-  } else {
-    iout << iERRORF << "::startupDone() - message sent to wrong Pe!\n" << endi;
-    Namd::die();
-  }
-}
 
 
 //-----------------------------------------------------------------------
@@ -385,6 +331,7 @@ void Node::run(RunMsg *msg)
 {
   delete msg;
 
+  iout << iINFO << iPE << " Running\n" << endi;
   numHomePatchesRunning = patchMap->numHomePatches();
   if (CMyPe() == 0) {
     numHomePatchesRunning++; //Take into account controller on node 0
@@ -398,6 +345,7 @@ void Node::run(RunMsg *msg)
     state->runController();
   }
 
+  DebugM(4, "Starting Sequencers\n");
   // Run Sequencer on each HomePatch - i.e. start simulation
   HomePatchList *hpl = PatchMap::Object()->homePatchList();
   ResizeArrayIter<HomePatchElem> ai(*hpl);
@@ -479,12 +427,18 @@ void Node::saveMolDataPointers(NamdState *state)
  *
  *	$RCSfile: Node.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/03/10 17:40:14 $
+ *	$Revision: 1.1008 $	$Date: 1997/03/14 21:40:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1008  1997/03/14 21:40:11  ari
+ * Reorganized startup to make possible inital load
+ * balancing by changing methods in WorkDistrib.
+ * Also made startup more transparent and easier
+ * to modify.
+ *
  * Revision 1.1007  1997/03/10 17:40:14  ari
  * UniqueSet changes - some more commenting and cleanup
  *

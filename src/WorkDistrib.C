@@ -1,9 +1,7 @@
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1996 The Board of Trustees of the            */
+/*         (C) Copyright 1996,1997 The Board of Trustees of the            */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*                                                                         */
 /***************************************************************************/
 
 /***************************************************************************
@@ -13,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1013 1997/03/11 16:37:07 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1014 1997/03/14 21:40:16 ari Exp $";
 
 #include <stdio.h>
 
@@ -40,7 +38,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib
 #include "NamdOneTools.h"
 
 #define MIN_DEBUG_LEVEL 4
-// #define DEBUGM
+//#define DEBUGM
 #include "Debug.h"
 
 extern "C" long int lrand48(void);
@@ -52,24 +50,14 @@ WorkDistrib::WorkDistrib(InitMsg *msg)
 {
   delete msg;
 
-  DebugM(3,"WorkDistrib::WorkDistrib() - constructing\n");
   mapsArrived = false;
   awaitingMaps = false;
-  DebugM(3,"WorkDistrib::WorkDistrib() - done constructing\n");
 }
 
 //----------------------------------------------------------------------
 WorkDistrib::~WorkDistrib(void)
-{
-}
+{ }
 
-//----------------------------------------------------------------------
-void WorkDistrib::buildMaps(void)
-{
-  DebugM(4,"Building maps\n");
-  mapPatches();
-  mapComputes();
-}
 
 //----------------------------------------------------------------------
 void WorkDistrib::sendMaps(void)
@@ -79,28 +67,20 @@ void WorkDistrib::sendMaps(void)
   mapMsg->patchMap = PatchMap::Object();
   mapMsg->computeMap = ComputeMap::Object();
 
-  DebugM(3,"calling CBroadcastMsgBranch\n");
   CBroadcastMsgBranch(WorkDistrib, saveMaps, mapMsg, thisgroup);
-  DebugM(3,"called CBroadcastMsgBranch\n");
   mapsArrived = true;
 }
 
-//----------------------------------------------------------------------
-void WorkDistrib::createComputes(void)
-{
-  DebugM(7,"I don't know how to create computes yet\n");
-  CharmExit();
-}
 
 //----------------------------------------------------------------------
 // This should only be called on node 0.
 //----------------------------------------------------------------------
-void WorkDistrib::createPatches(void)
+void WorkDistrib::createHomePatches(void)
 {
   int i;
   StringList *current;	//  Pointer used to retrieve configuration items
-  PatchMap *patchMap = PatchMap::Object();
   Node *node = CLocalBranch(Node,group.node);
+  PatchMap *patchMap = PatchMap::Object();
   PatchMgr *patchMgr = CLocalBranch(PatchMgr,group.patchMgr);
   SimParameters *params = node->simParameters;
   Molecule *molecule = node->molecule;
@@ -186,9 +166,17 @@ void WorkDistrib::createPatches(void)
   delete [] atomIDs;
   delete [] atomPositions;
   delete [] atomVelocities;
+}
+
+void WorkDistrib::distributeHomePatches() {
+  // ref BOC
+  Node *node = CLocalBranch(Node,group.node);
+  PatchMgr *patchMgr = CLocalBranch(PatchMgr,group.patchMgr);
+  // ref singleton
+  PatchMap *patchMap = PatchMap::Object();
 
   // Move patches to the proper node
-  for(i=0;i < patchMap->numPatches(); i++)
+  for(int i=0;i < patchMap->numPatches(); i++)
   {
     if (patchMap->node(i) != node->myid() )
     {
@@ -198,9 +186,6 @@ void WorkDistrib::createPatches(void)
     }
   }
   patchMgr->sendMovePatches();
-  // NOTE:  Using Quiescence detection in Node::Startup2()
-  // sendMovePatches() generates flock of messages and work
-  // when it dies out - Quiescence should be detected
 }
 
 
@@ -224,24 +209,9 @@ void WorkDistrib::saveMaps(MapDistribMsg *msg)
   mapsArrived = true;
 }
 
-//----------------------------------------------------------------------
-// awaitMaps() is called when node needs to wait for the map message
-void WorkDistrib::awaitMaps()
-{
-  while (!mapsArrived)
-  {
-    awaitingMapsTh = CthSelf();
-    awaitingMaps = true;
-    DebugM(4,"suspending in awaitMaps(), thread = " << awaitingMapsTh << "\n");
-    CthYield();
-  }
-}
 
-
-//======================================================================
-// Private functions
 //----------------------------------------------------------------------
-void WorkDistrib::mapPatches(void)
+void WorkDistrib::patchMapInit(void)
 {
   PatchMap *patchMap = PatchMap::Object();
   Node *node = CLocalBranch(Node, group.node);
@@ -329,54 +299,56 @@ void WorkDistrib::mapPatches(void)
   patchMap->setPeriodicity(xper,yper,zper);
   patchMap->allocatePids(xdim, ydim, zdim);
 
-//  int *num_patch_stored = new int[node->numNodes()];
-//  int min;
-//  for (i=0; i<node->numNodes(); i++) {
-//    num_patch_stored[i] = 0;
-//  }
   patchMap->setGridOriginAndLength(sysMin,sysDim);
 
   int assignedNode=0;
   for(i=0; i < patchMap->numPatches(); i++)
   {
-    pid=patchMap->requestPid(&xi,&yi,&zi);
-    DebugM(4,"Patch " << pid << " is at grid " << xi << " " << yi << " " << zi << " on node " << assignedNode << ".\n");
-    patchMap->storePatch(pid,assignedNode,250, 
+    pid=patchMap->requestPid(&xi,&yi,&zi); // generates next pid and grid pos
+    patchMap->storePatchCoord(pid, 
 			 ((float)xi/(float)xdim)*sysDim.x+sysMin.x,
 			 ((float)yi/(float)ydim)*sysDim.y+sysMin.y,
 			 ((float)zi/(float)zdim)*sysDim.z+sysMin.z,
 			 ((float)(xi+1)/(float)xdim)*sysDim.x+sysMin.x,
 			 ((float)(yi+1)/(float)ydim)*sysDim.y+sysMin.y,
 			 ((float)(zi+1)/(float)zdim)*sysDim.z+sysMin.z);
-
-//    num_patch_stored[assignedNode]++;
-//    min = num_patch_stored[0];
-//    for (int n=1; n<node->numNodes(); n++) {
-//      if (num_patch_stored[n] < min) {
-//	min = num_patch_stored[n];
-//      }
-//    }
-    // Pseudo Random allocation
-//    while (num_patch_stored[assignedNode] > min) {
- //     assignedNode = lrand48() % node->numNodes();
-  //  }
-
-    // Strip allocation
-    /*
-    if (i >= (int)( ((float)assignedNode+1.0)
-	       *((float)patchMap->numPatches() / (float)node->numNodes()) ))
-    {
-	assignedNode++;
-    }
-    // just incase the last one is off
-    if (node->numNodes()==assignedNode)
-      assignedNode--;
-    */
-
-    // Alternating allocation
-    assignedNode++;
-    assignedNode %= node->numNodes();
+    patchMap->allocateCompute(pid, 100);
+    DebugM(4,"Patch " 
+        << pid << " is at grid " << xi << " " << yi << " " << zi << ".\n");
   }
+}
+
+//
+//----------------------------------------------------------------------
+void WorkDistrib::assignNodeToPatch() {
+  int pid; 
+  int assignedNode = 0;
+  PatchMap *patchMap = PatchMap::Object();
+  Node *node = CLocalBranch(Node, group.node);
+
+  int *numAtoms = new int[node->numNodes()];
+  for (int i=0; i<node->numNodes(); i++) {
+    numAtoms[i] = 0;
+  }
+
+  // Assign patch to node with least atoms assigned.
+  for(pid=0; pid < patchMap->numPatches(); pid++) {
+    assignedNode = 0;
+    for (i=1; i < node->numNodes(); i++) {
+      if (numAtoms[i] < numAtoms[assignedNode]) assignedNode = i;
+    }
+    patchMap->assignNode(pid, assignedNode);
+    numAtoms[assignedNode] += patchMap->patch(pid)->getNumAtoms();
+
+    /*
+    iout << iINFO << "Patch (" << pid << ") has " 
+      << patchMap->patch(pid)->getNumAtoms() 
+      << " atoms:  Assigned to Node(" << assignedNode << ")\n" 
+      << endi;
+    */
+  }
+
+  delete[] numAtoms;
 }
 
 //----------------------------------------------------------------------
@@ -459,6 +431,7 @@ void WorkDistrib::mapComputeNonbonded(void)
 
   PatchMap *patchMap = PatchMap::Object();
   ComputeMap *computeMap = ComputeMap::Object();
+  Node *node = CLocalBranch(Node,group.node);
 
   PatchID oneAway[PatchMap::MaxOneAway];
   PatchID oneAwayTrans[PatchMap::MaxOneAway];
@@ -468,28 +441,43 @@ void WorkDistrib::mapComputeNonbonded(void)
   ComputeID cid;
   int numNeighbors;
   int j;
+  int numAtoms, numAtoms1, numAtoms2;
 
-  for(i=0; i<patchMap->numPatches(); i++)
+  int *pairWork = new int[node->numNodes()];
+  for (j=0; j<node->numNodes(); j++) {
+    pairWork[j] = 0;
+  }
+
+  for(i=0; i<patchMap->numPatches(); i++) // do the self 
   {
     // self-interaction
     cid=computeMap->storeCompute(patchMap->node(i),1,computeNonbondedSelfType);
+    numAtoms = patchMap->patch(i)->getNumAtoms();
+    pairWork[patchMap->node(i)] += (numAtoms*numAtoms)/2 - numAtoms;
     computeMap->newPid(cid,i);
     patchMap->newCid(i,cid);
+  }
 
+  for(i=0; i<patchMap->numPatches(); i++) // do the pairs
+  {
     // one-away neighbors
     numNeighbors=patchMap->oneAwayNeighbors(i,oneAway,oneAwayTrans);
     for(j=0;j<numNeighbors;j++)
     {
       if (i < oneAway[j])
       {
-	// Random choice which node wins the Compute
-//	if (lrand48()%2) {
+        numAtoms1 = patchMap->patch(i)->getNumAtoms();
+        numAtoms2 = patchMap->patch(oneAway[j])->getNumAtoms();
+
+	if (pairWork[patchMap->node(i)]<pairWork[patchMap->node(oneAway[j])]) {
 	    cid=computeMap->storeCompute(patchMap->node(i),2,
 				     computeNonbondedPairType);
-//	} else {
-//	    cid=computeMap->storeCompute(patchMap->node(oneAway[j]),2,
-//				     computeNonbondedPairType);
-//	}
+	    pairWork[patchMap->node(i)] += numAtoms1*numAtoms2/2;
+	} else {
+	    cid=computeMap->storeCompute(patchMap->node(oneAway[j]),2,
+				     computeNonbondedPairType);
+	    pairWork[patchMap->node(oneAway[j])] += numAtoms1*numAtoms2/2;
+	}
 	 
 	computeMap->newPid(cid,i);
 	computeMap->newPid(cid,oneAway[j],oneAwayTrans[j]);
@@ -497,6 +485,15 @@ void WorkDistrib::mapComputeNonbonded(void)
 	patchMap->newCid(oneAway[j],cid);
       }
     }
+  }
+  /*
+  for(i=0; i<node->numNodes(); i++) {
+    iout << iINFO << "PairWork on node(" << i << ") = " << pairWork[i] 
+      << "\n" << endi;
+  }
+  */
+  delete[] pairWork;
+}
 
 /*
     // two-away neighbors
@@ -514,8 +511,6 @@ void WorkDistrib::mapComputeNonbonded(void)
       }
     }
 */
-  }
-}
 
 //----------------------------------------------------------------------
 void WorkDistrib::messageEnqueueWork(Compute *compute) {
@@ -528,16 +523,6 @@ void WorkDistrib::enqueueWork(LocalWorkMsg *msg) {
   msg->compute->doWork();
   delete msg;
 }
-
-//void WorkDistrib::messageMovePatchDone() {
-  // Send msg to WorkDistrib that all patchMoves are completed
-//  DoneMsg *msg = new (MsgIndex(DoneMsg)) DoneMsg;
-//  CSendMsgBranch(WorkDistrib, movePatchDone, msg, group.workDistrib, CMyPe());
-//}
-
-//void WorkDistrib::movePatchDone(DoneMsg *msg) {
-//  delete msg;
-//}
 
 
 //**********************************************************************
@@ -761,16 +746,18 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1997/03/11 16:37:07 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1014 $	$Date: 1997/03/14 21:40:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
- * Revision 1.1013  1997/03/11 16:37:07  nealk
- * Difference in ElectForce with FMA and non-FMA not due to FMA.
- * (I'm finally convinced.)
+ * Revision 1.1014  1997/03/14 21:40:16  ari
+ * Reorganized startup to make possible inital load
+ * balancing by changing methods in WorkDistrib.
+ * Also made startup more transparent and easier
+ * to modify.
  *
  * Revision 1.1012  1997/03/10 17:40:18  ari
  * UniqueSet changes - some more commenting and cleanup

@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1013 1997/03/13 06:37:12 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1014 1997/03/14 21:40:15 ari Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -20,7 +20,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C
 #include "ReductionMgr.h"
 #include "CollectionMgr.h"
 
-#define MIN_DEBUG_LEVEL 4
+#define MIN_DEBUG_LEVEL 3
 //#define DEBUGM
 #include "Debug.h"
 
@@ -56,6 +56,7 @@ void Sequencer::run(int numberOfCycles)
       this->numberOfCycles = simParams->N - simParams->firstTimestep; // / stepsPerCycle;
 
     // create a Thread and invoke it
+    DebugM(4, "::run() - this = " << this << "\n" );
     thread = CthCreate((CthVoidFn)&(threadRun),(void*)(this),0);
     CthSetStrategyDefault(thread);
     awaken();
@@ -128,13 +129,19 @@ Sequencer::terminate() {
  * RCS INFORMATION:
  *
  *      $RCSfile: Sequencer.C,v $
- *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1013 $     $Date: 1997/03/13 06:37:12 $
+ *      $Author: ari $  $Locker:  $             $State: Exp $
+ *      $Revision: 1.1014 $     $Date: 1997/03/14 21:40:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1014  1997/03/14 21:40:15  ari
+ * Reorganized startup to make possible inital load
+ * balancing by changing methods in WorkDistrib.
+ * Also made startup more transparent and easier
+ * to modify.
+ *
  * Revision 1.1013  1997/03/13 06:37:12  jim
  * Multiple time-stepping implemented, still needs proper splitting functions.
  *

@@ -135,9 +135,13 @@ public:
   // storePatch(pid, node, max_computes, x0, y0, z0, x1, y1, z1)
   // stores the info about the patch into the previously requested
   // pid.
-  void storePatch(PatchID pid, int node, int max_computes,
+  void storePatchCoord(PatchID pid,
 		  Coordinate x0, Coordinate y0, Coordinate z0,
 		  Coordinate x1, Coordinate y1, Coordinate z1);
+
+  void assignNode(PatchID, NodeID);
+
+  void allocateCompute(PatchID, int);
 
   // newCid(pid,cid) stores a compute id associated with
   // patch id pid.  Error returned when there is no room to store
@@ -218,13 +222,19 @@ inline HomePatch *PatchMap::homePatch(PatchID pid)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/13 04:43:12 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/03/14 21:40:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.h,v $
+ * Revision 1.1003  1997/03/14 21:40:14  ari
+ * Reorganized startup to make possible inital load
+ * balancing by changing methods in WorkDistrib.
+ * Also made startup more transparent and easier
+ * to modify.
+ *
  * Revision 1.1002  1997/02/13 04:43:12  jim
  * Fixed initial hanging (bug in PatchMap, but it still shouldn't have
  * happened) and saved migration messages in the buffer from being

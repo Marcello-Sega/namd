@@ -59,18 +59,9 @@ public:
   void quiescence(QuiescenceMessage *);
 
   // Charm Entry point - Read in system data, get all ready to simulate
-  static void messageStartup();
+  static void messageStartUp();
   void startup(InitMsg *);  
-  void startup1(InitMsg *);  
-  void messageStartup2(QuiescenceMessage *);
-  void startup2(InitMsg *);  
-  void messageStartup3(QuiescenceMessage *);
-  void startup3(InitMsg *);  
-  void messageStartup4(QuiescenceMessage *);
-  void startup4(InitMsg *);  
-
-  static void messageStartupDone();
-  void startupDone(DoneMsg *);
+  void startUp(QuiescenceMessage *);  
 
   // Charm Entry point - synchronize on BOC creation and startup
   static void messageBOCCheckIn();
@@ -102,6 +93,11 @@ protected:
 
 private:
   static Node *_instance;
+  void namdOneCommInit();
+  void namdOneRecv();
+  void namdOneSend();
+  void threadInit();
+  void buildSequencers();
 
   WorkDistrib *workDistrib;
   PatchMgr *patchMgr;
@@ -116,6 +112,9 @@ private:
 
   // Countdown for Node::nodeDone termination
   int numNodesRunning;
+
+  // Startup phase
+  int startupPhase;
 };
 
 #endif /* _NODE_H */
@@ -125,12 +124,18 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/04 22:37:15 $
+ *	$Revision: 1.1004 $	$Date: 1997/03/14 21:40:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.1004  1997/03/14 21:40:13  ari
+ * Reorganized startup to make possible inital load
+ * balancing by changing methods in WorkDistrib.
+ * Also made startup more transparent and easier
+ * to modify.
+ *
  * Revision 1.1003  1997/03/04 22:37:15  ari
  * Clean up of code.  Debug statements removal, dead code removal.
  * Minor fixes, output fixes.

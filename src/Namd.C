@@ -9,7 +9,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.1001 1997/03/04 22:37:10 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.1002 1997/03/14 21:40:10 ari Exp $";
 
 #include "unistd.h"
 
@@ -82,6 +82,7 @@ Namd::Namd(void)
   GroupInitMsg *msg = new (MsgIndex(GroupInitMsg)) GroupInitMsg;
   msg->group = group;
 
+  iout << iINFO << "Starting up nodes\n" << endi;
   nodeGroup = new_group(Node, msg);
 }
 
@@ -107,7 +108,7 @@ void Namd::startup(char *confFile)
   // or send them on as messages elsewhere.
   Node::Object()->saveMolDataPointers(&namdState);
 
-  Node::messageStartup(); // tell all nodes to startup
+  Node::messageStartUp(); // tell all nodes to startup
 }
 
 
@@ -117,12 +118,18 @@ void Namd::startup(char *confFile)
  *
  *	$RCSfile: Namd.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/04 22:37:10 $
+ *	$Revision: 1.1002 $	$Date: 1997/03/14 21:40:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Namd.C,v $
+ * Revision 1.1002  1997/03/14 21:40:10  ari
+ * Reorganized startup to make possible inital load
+ * balancing by changing methods in WorkDistrib.
+ * Also made startup more transparent and easier
+ * to modify.
+ *
  * Revision 1.1001  1997/03/04 22:37:10  ari
  * Clean up of code.  Debug statements removal, dead code removal.
  * Minor fixes, output fixes.

@@ -44,17 +44,16 @@ public:
   static void messageEnqueueWork(Compute *);
   void enqueueWork(LocalWorkMsg *msg); // This is for testing
 
-  void buildMaps(void);
+  void mapComputes(void);
   void sendMaps(void);
-  void createPatches(void);
-  void createComputes(void);
+  void createHomePatches(void);
+  void distributeHomePatches(void);
+  void patchMapInit(void);
+  void assignNodeToPatch(void);
 
   void saveMaps(MapDistribMsg *msg);
-  void awaitMaps(void);
 
 private:
-  void mapPatches(void);
-  void mapComputes(void);
   void mapComputeNonbonded(void);
   void mapComputeHomePatches(ComputeType);
   void velocities_from_PDB(char *filename, 
@@ -128,13 +127,19 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/06 22:18:17 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/03/14 21:40:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.1005  1997/03/14 21:40:17  ari
+ * Reorganized startup to make possible inital load
+ * balancing by changing methods in WorkDistrib.
+ * Also made startup more transparent and easier
+ * to modify.
+ *
  * Revision 1.1004  1997/03/06 22:18:17  brunner
  * Made utility functions private functions of WorkDistrib.
  *

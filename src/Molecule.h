@@ -12,7 +12,7 @@
  *
  *	$RCSfile: Molecule.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/11 23:46:31 $
+ *	$Revision: 1.1005 $	$Date: 1997/03/14 21:40:10 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -26,6 +26,12 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.1005  1997/03/14 21:40:10  ari
+ * Reorganized startup to make possible inital load
+ * balancing by changing methods in WorkDistrib.
+ * Also made startup more transparent and easier
+ * to modify.
+ *
  * Revision 1.1004  1997/03/11 23:46:31  ari
  * Improved ComputeNonbondedExcl loadTuples() by overloading the default
  * template method from ComputeHomeTuples and used the checklist suggested
@@ -371,7 +377,7 @@ public:
 	//  Inline this funcion since it is called so often
 	Bool checkexcl(int atom1, int atom2) const
         {
-	   int check_int;	//  atom whose array we will search
+	   register int check_int;	//  atom whose array we will search
 	   int other_int;	//  atom we are looking for
 
 	   //  We want to search the array of the smaller atom
@@ -387,7 +393,7 @@ public:
 	   }
 
 	   //  Do the search and return the correct value
-	   int *list = all_exclusions[check_int];
+	   register int *list = all_exclusions[check_int];
 	   check_int = *list;
 	   while( check_int != other_int && check_int != -1 )
 	   {
@@ -401,7 +407,7 @@ public:
 	//  since it will be called so often
 	Bool check14excl(int atom1, int atom2) const
         {
-	   int check_int;	//  atom whose array we will search
+	   register int check_int;	//  atom whose array we will search
 	   int other_int;	//  atom we are looking for
 
 	   //  We want to search the array of the smaller atom
@@ -417,7 +423,7 @@ public:
 	   }
 
 	   //  Do the search and return the correct value
-	   int *list = onefour_exclusions[check_int];
+	   register int *list = onefour_exclusions[check_int];
 	   check_int = *list;
 	   while( check_int != other_int && check_int != -1 )
 	   {
