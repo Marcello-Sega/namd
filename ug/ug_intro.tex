@@ -11,7 +11,7 @@
 %
 %       $RCSfile: ug_intro.tex,v $
 %       $Author: jim $        $Locker:  $                $State: Exp $
-%       $Revision: 1.3 $      $Date: 1998/03/06 11:03:29 $
+%       $Revision: 1.4 $      $Date: 1998/03/06 21:06:31 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -21,6 +21,9 @@
 % REVISION HISTORY:
 %
 % $Log: ug_intro.tex,v $
+% Revision 1.4  1998/03/06 21:06:31  jim
+% Put temperature couple back in.
+%
 % Revision 1.3  1998/03/06 11:03:29  jim
 % Added nonbondedFreq parameter.
 %
@@ -100,7 +103,7 @@ The most noticable change to the end user is the switch from PVM to the Converse
 New features in \NAMD\ \NAMDVER\ include periodic boundary conditions, the Berendsen constant pressure simulation method, fixed atoms, several boundary conditions, triple timestepping, full electrostatic evaluation independent of cycle length, and the ability to do on-the-fly analysis and apply forces to the system via Tcl scripts.
 The new multiple timestepping parameter \verb!nonbondedFreq! allows nonbonded interactions to be evaluated less frequently, leaving only bonded interactions to be calculated every timestep.
 The new spatial partitioning parameters \verb!splitPatch! and \verb!hgroupCutoff! have been added due to a change from pairlists to group-based distance checking.
-The Langevin dynamics algorithm has been altered to be more suitable for temperature control with small damping coefficients.
+The Langevin dynamics and temperature coupling algorithms has been altered to be more suitable for temperature control with small damping coefficients.
 
 Several options have been removed in this release.
 Multiple timestepping is currently limited to impulse methods.

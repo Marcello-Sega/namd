@@ -156,47 +156,47 @@ A value of 0 indicates that the atom will remain unaffected.}
 
 \end{itemize}
 
-%\paragraph{Temperature coupling parameters}
-%
-%As described in the \PG, \NAMD\ is capable
-%of performing temperature coupling, in which forces are added or 
-%reduced to simulate the coupling of the system to a heat bath 
-%of a specified temperature.  
-%This capability is based on that implemented in X-PLOR which is detailed
-%in the X-PLOR {\it User's Manual} \mycite{(Br\"unger, 1992)}{BRUN92b}.
-%
-%\begin{itemize}
-%
-%\item
-%\NAMDCONFWDEF{tCouple}{perform temperature coupling?}{\verb!on! or %\verb!off!}{\verb!off!}
-%{Specifies whether or not temperature coupling is active.  
-%If set to \verb!on!, then the parameter \verb!tCoupleTemp! must be set and 
-%the parameters \verb!tCoupleFile! and \verb!tCoupleCol! can 
-%optionally be set to control the behavior of this feature.} 
-%
-%\item
-%\NAMDCONF{tCoupleTemp}{temperature for heat bath (K)}{positive decimal}
-%{Temperature to which atoms affected 
-%by temperature coupling will be adjusted.  
-%This temperature will be roughly maintained across the affected atoms 
-%through the addition of forces.}
-%
-%\item
-%\NAMDCONFWDEF{tCoupleFile}{PDB file with tCouple parameters}%
-%{UNIX filename}{\verb!coordinates!}%
-%{PDB file to use for the temperature coupling coefficient for each atom.  
-%If this parameter is not specified, then 
-%the PDB file specified by \verb!coordinates! is used.} 
-%
-%\item
-%\NAMDCONFWDEF{tCoupleCol}{column of PDB from which to read coefficients}
-%{\verb!X!, \verb!Y!, \verb!Z!, \verb!O!, or \verb!B!}{\verb!O!} 
-%{Column of the PDB file to use for the temperature coupling coefficient for 
-%each atom.  This value can be read from any 
-%floating point column of the PDB file.  
-%A value of $0$ indicates that the atom will remain unaffected.}
-%
-%\end{itemize}
+\paragraph{Temperature coupling parameters}
+
+As described in the \PG, \NAMD\ is capable
+of performing temperature coupling, in which forces are added or 
+reduced to simulate the coupling of the system to a heat bath 
+of a specified temperature.  
+This capability is based on that implemented in X-PLOR which is detailed
+in the X-PLOR {\it User's Manual} \mycite{(Br\"unger, 1992)}{BRUN92b}.
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{tCouple}{perform temperature coupling?}{\verb!on! or \verb!off!}{\verb!off!}
+{Specifies whether or not temperature coupling is active.  
+If set to \verb!on!, then the parameter \verb!tCoupleTemp! must be set and 
+the parameters \verb!tCoupleFile! and \verb!tCoupleCol! can 
+optionally be set to control the behavior of this feature.} 
+
+\item
+\NAMDCONF{tCoupleTemp}{temperature for heat bath (K)}{positive decimal}
+{Temperature to which atoms affected 
+by temperature coupling will be adjusted.  
+This temperature will be roughly maintained across the affected atoms 
+through the addition of forces.}
+
+\item
+\NAMDCONFWDEF{tCoupleFile}{PDB file with tCouple parameters}%
+{UNIX filename}{\verb!coordinates!}%
+{PDB file to use for the temperature coupling coefficient for each atom.  
+If this parameter is not specified, then 
+the PDB file specified by \verb!coordinates! is used.} 
+
+\item
+\NAMDCONFWDEF{tCoupleCol}{column of PDB from which to read coefficients}
+{\verb!X!, \verb!Y!, \verb!Z!, \verb!O!, or \verb!B!}{\verb!O!} 
+{Column of the PDB file to use for the temperature coupling coefficient for 
+each atom.  This value can be read from any 
+floating point column of the PDB file.  
+A value of $0$ indicates that the atom will remain unaffected.}
+
+\end{itemize}
 
 \paragraph{Temperature rescaling parameters}
 
