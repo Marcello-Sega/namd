@@ -6,9 +6,9 @@
 
                                                       XXXXXXXX, 2002
 
-The Theoretical Biophysics Group at the University of Illinois is
-proud to announce the public release of a new version of NAMD, a
-parallel, object-oriented molecular dynamics code designed for
+The Theoretical and Computational Biophysics Group at the University of
+Illinois is proud to announce the public release of a new version of
+NAMD, a parallel, object-oriented molecular dynamics code designed for
 high-performance simulation of large biomolecular systems.  NAMD is
 distributed free of charge and includes source code.  NAMD development
 is supported by the NIH National Center for Research Resources.
@@ -29,10 +29,10 @@ If you are planning substantial simulation work of an academic nature
 you should apply for these resources.  Benchmarks for your proposal
 are available at http://www.ks.uiuc.edu/Research/namd/performance.html
 
-The Theoretical Biophysics Group encourages NAMD users to be closely
-involved in the development process through reporting bugs, contributing
-fixes, periodical surveys and via other means.  Questions or comments
-may be directed to namd@ks.uiuc.edu.
+The Theoretical and Computational Biophysics Group encourages NAMD users
+to be closely involved in the development process through reporting
+bugs, contributing fixes, periodical surveys and via other means.
+Questions or comments may be directed to namd@ks.uiuc.edu.
 
 We are eager to hear from you, and thank you for using our software!
 
