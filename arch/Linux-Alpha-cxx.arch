@@ -1,10 +1,10 @@
 NAMD_ARCH = Linux-Alpha
-CHARMARCH = net-linux-axp
+CHARMARCH = net-linux-axp-cxx
 
 CXX = cxx -DSOCKLEN_T=socklen_t
-CXXOPTS = -O4 -arch host -tune host -nocleanup
+CXXOPTS = -O4 -arch host -tune host -nocleanup -non_shared
 CXXTHREADOPTS = $(CXXOPTS)
 CXXSIMPARAMOPTS = $(CXXOPTS)
 CC = ccc
-COPTS = -O4 -arch host -tune host
+COPTS = -O4 -arch host -tune host -non_shared
 
