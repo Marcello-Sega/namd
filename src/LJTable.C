@@ -9,7 +9,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/LJTable.C,v 1.1005 1997/11/07 20:17:38 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/LJTable.C,v 1.1006 1998/01/15 18:39:39 jim Exp $";
 #include "LJTable.h"
 #include "Node.h"
 #include "Parameters.h"
@@ -73,8 +73,8 @@ void LJTable::compute_vdw_params(int i, int j,
     cur_scaled->A = A14;
     cur_scaled->B = B14;
 
-    BigReal sigma_ij = pow(A/B,1./6.);
-    BigReal sigma_ij14 = pow(A14/B14,1./6.);
+    BigReal sigma_ij = pow((BigReal)(A/B),(BigReal)(1./6.));
+    BigReal sigma_ij14 = pow((BigReal)(A14/B14),(BigReal)(1./6.));
 
     sigma_max = ( sigma_ij > sigma_ij14 ? sigma_ij : sigma_ij14 );
   }
@@ -119,13 +119,16 @@ void LJTable::compute_vdw_params(int i, int j,
  * RCS INFORMATION:
  *
  *	$RCSfile: LJTable.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/11/07 20:17:38 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1006 $	$Date: 1998/01/15 18:39:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LJTable.C,v $
+ * Revision 1.1006  1998/01/15 18:39:39  jim
+ * Tweaks for picky aCC compiler.
+ *
  * Revision 1.1005  1997/11/07 20:17:38  milind
  * Made NAMD to run on shared memory machines.
  *

@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1016 1997/09/19 08:55:35 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1017 1998/01/15 18:39:40 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -34,9 +34,9 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1
 Patch::Patch(PatchID pd) :
    patchID(pd),
    positionPtr(0), atomPtr(0),
-   positionBox(this,&(Patch::positionBoxClosed)),
-   forceBox(this,&(Patch::forceBoxClosed)),
-   atomBox(this,&(Patch::atomBoxClosed)),
+   positionBox(this,&Patch::positionBoxClosed),
+   forceBox(this,&Patch::forceBoxClosed),
+   atomBox(this,&Patch::atomBoxClosed),
    numAtoms(0), boxesOpen(0), lattice(flags.lattice)
 {
   lattice = Node::Object()->simParameters->lattice;
@@ -46,9 +46,9 @@ Patch::Patch(PatchID pd) :
 Patch::Patch(PatchID pd, AtomIDList al, PositionList pl) :
    patchID(pd), atomIDList(al), p(pl),
    positionPtr(0), atomPtr(0),
-   positionBox(this,&(Patch::positionBoxClosed)),
-   forceBox(this,&(Patch::forceBoxClosed)),
-   atomBox(this,&(Patch::atomBoxClosed)),
+   positionBox(this,&Patch::positionBoxClosed),
+   forceBox(this,&Patch::forceBoxClosed),
+   atomBox(this,&Patch::atomBoxClosed),
    numAtoms(al.size()), boxesOpen(0), lattice(flags.lattice)
 {
   lattice = Node::Object()->simParameters->lattice;
@@ -297,12 +297,15 @@ void Patch::positionsReady(int doneMigration)
  *
  *	$RCSfile: Patch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1997/09/19 08:55:35 $
+ *	$Revision: 1.1017 $	$Date: 1998/01/15 18:39:40 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.1017  1998/01/15 18:39:40  jim
+ * Tweaks for picky aCC compiler.
+ *
  * Revision 1.1016  1997/09/19 08:55:35  jim
  * Added rudimentary but relatively efficient fixed atoms.  New options
  * are fixedatoms, fixedatomsfile, and fixedatomscol (nonzero means fixed).
