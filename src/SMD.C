@@ -24,16 +24,22 @@
 /*			FUNCTION SMDData      			        */
 /*									*/
 /************************************************************************/
-SMDData::SMDData(void) {
+SMDData::SMDData(SimParameters *simP) {
 
-  simParams = Node::Object()->simParameters;
+  simParams = simP;
+
+}
+
+// initialize on node 0
+SMDData::init(PDB *pdb) {
 
   timeStamp = simParams->firstTimestep;
   direction = simParams->SMDDir;
   refPos = simParams->SMDRefPos;
 
   int atomNum = simParams->SMDAtom;
-  PDBAtom *atom =  Node::Object()->pdb->atom(atomNum);
+
+  PDBAtom *atom =  pdb->atom(atomNum);
 
   atomPosVmin.x = atomPosVmax.x = atom->xcoor();
   atomPosVmin.y = atomPosVmax.y = atom->ycoor();
@@ -226,3 +232,35 @@ void SMDData::recvData(SMDDataMsg *msg) {
 }
 
 
+
+// send the SMD data from Node 0
+void SMDData::send_SMDData(Communicate *com_obj) {
+   //  Message to send to clients
+  MOStream *msg=com_obj->newOutputStream(ALLBUTME, MOLECULETAG, BUFSIZE);
+  
+  if ( msg == NULL )
+  {
+    NAMD_die("Memory allocation failed in SMDData::send_SMDData");
+  }
+
+  msg->put(timeStamp);
+  msg->put(&direction);
+  msg->put(&refPos);
+  msg->put(&atomPosVmin);
+  msg->put(&atomPosVmax);
+
+
+}  
+
+
+// receive the SMD data from Node 0
+void SMDData::receive_SMDData(MIStream *msg) {
+
+  msg->get(timeStamp);
+  msg->get(&direction);
+  msg->get(&refPos);
+  msg->get(&atomPosVmin);
+  msg->get(&atomPosVmax);
+
+  delete msg;
+}

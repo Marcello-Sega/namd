@@ -24,13 +24,21 @@ class SimParameters;
 
 class SMDData {
 public:
-  SMDData();
+  SMDData(SimParameters *simP);
   ~SMDData() {};
 
+  // these functions are for sending a few numbers every ?? timesteps
   void sendData(int t);  //  receive the SMD data  
   void recvData(SMDDataMsg *msg);
                          //  receive the SMD data  
-    
+
+  void init(void); // initialize on Node 0
+
+  // these functions are for sending the initial SMDData obj
+  // from Node 0 to other Nodes
+  void send_SMDData(Communicate *com_obj);
+  void receive_SMDData(MIStream *msg);
+
 
   void output(int t, const Vector &p, const Vector &f);
                          //  output the data
