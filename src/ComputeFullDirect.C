@@ -49,7 +49,6 @@ void ComputeFullDirect::doWork()
       Position *x = (*ap).positionBox->open();
       AtomProperties *a = (*ap).atomBox->open();
       Results *r = (*ap).forceBox->open();
-      Force *f = r->f[Results::normal];
       reduction->submit(fake_seq, REDUCTION_ELECT_ENERGY, 0.);
       ++fake_seq;
       (*ap).positionBox->close(&x);
@@ -130,7 +129,7 @@ void ComputeFullDirect::doWork()
   j = 0;
   for (ap = ap.begin(); ap != ap.end(); ap++) {
     Results *r = (*ap).forceBox->open();
-    Force *f = r->f[Results::normal];
+    Force *f = r->f[Results::slow];
     int numAtoms = (*ap).p->getNumAtoms();
 
     for(int i=0; i<numAtoms; ++i, ++j)

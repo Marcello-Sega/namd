@@ -33,7 +33,7 @@ ComputeHomeTuples<T>::ComputeHomeTuples(ComputeID c) : Compute(c) {
   reduction = ReductionMgr::Object();
 
   maxProxyAtoms = 0;
-  dummy = NULL;	// initialized to NULL -- won't harm reallocating deletes.
+  dummyForce = NULL;	// initialized to NULL -- won't harm reallocating deletes.
   T::registerReductionData(reduction);
   fake_seq = 0;
 }
@@ -41,7 +41,7 @@ ComputeHomeTuples<T>::ComputeHomeTuples(ComputeID c) : Compute(c) {
 template <class T>
 ComputeHomeTuples<T>::~ComputeHomeTuples()
 {
-  delete [] dummy;	// allocated during initialize; reallocated in doWork
+  delete [] dummyForce;	// allocated during initialize; reallocated in doWork
   T::unregisterReductionData(reduction);
 }
 
@@ -66,8 +66,6 @@ void ComputeHomeTuples<T>::initialize() {
 
   // Gather all proxy patches (neighbors, that is)
   PatchID neighbors[PatchMap::MaxOneOrTwoAway];
-  maxProxyAtoms = 0;
-  delete[] dummy;	// deleted, but reallocated soon
 
   for ( ai = ai.begin(); ai != ai.end(); ai++ ) {
     int numNeighbors = patchMap->oneOrTwoAwayNeighbors((*ai).pid,neighbors);
@@ -78,18 +76,13 @@ void ComputeHomeTuples<T>::initialize() {
       {
         Patch *patch = patchMap->patch(neighbors[i]);
 	tuplePatchList.add(TuplePatchElem(patch, PROXY, cid));
-	if (patch->getNumAtoms() > maxProxyAtoms) {
-	  maxProxyAtoms = patch->getNumAtoms();
-	}
       }
     }
   }
 
   setNumPatches(tuplePatchList.size());
 
-  // Allocate dummy force vector for non-returning forces
-  dummy = new Force[maxProxyAtoms];	// reallocated
-
+  sizeDummy();
   loadTuples();
 }
 
@@ -151,7 +144,7 @@ void ComputeHomeTuples<T>::loadTuples() {
 //-----------------------------------------------------------------------
 template <class T>
 void ComputeHomeTuples<T>::sizeDummy() {
-  delete[] dummy;	// deleted, but reallocated very soon
+  delete[] dummyForce;	// deleted, but reallocated very soon
   maxProxyAtoms = 0;
 
   // find size of largest patch on tuplePatchList, setup dummy force array
@@ -161,7 +154,11 @@ void ComputeHomeTuples<T>::sizeDummy() {
       maxProxyAtoms = tpi->p->getNumAtoms();
     }
   }
-  dummy = new Force[maxProxyAtoms];	// reallocated
+  dummyForce = new Force[maxProxyAtoms];	// reallocated
+  for ( int i = 0; i < Results::maxNumForces; ++i )
+  {
+    dummyResults.f[i] = dummyForce;
+  }
 }
 
 
@@ -184,12 +181,12 @@ void ComputeHomeTuples<T>::doWork() {
     if ( ap->patchType == HOME ) 
     {
       ap->r = ap->forceBox->open();
-      ap->f = ap->r->f[Results::normal];
     }
     else 
     {
-      ap->f = dummy;
+      ap->r = &dummyResults;
     }
+    ap->f = ap->r->f[Results::normal];
   } 
 
   BigReal reductionData[T::reductionDataSize];
@@ -222,12 +219,15 @@ void ComputeHomeTuples<T>::doWork() {
  *
  *      $RCSfile: ComputeHomeTuples.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1007 $     $Date: 1997/03/12 22:06:35 $
+ *      $Revision: 1.1008 $     $Date: 1997/03/13 22:39:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.C,v $
+ * Revision 1.1008  1997/03/13 22:39:35  jim
+ * Fixed some bugs in multiple-force return / full electrostatics.
+ *
  * Revision 1.1007  1997/03/12 22:06:35  jim
  * First step towards multiple force returns and multiple time stepping.
  *

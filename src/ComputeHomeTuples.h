@@ -116,7 +116,8 @@ protected:
   int fake_seq;
 
   int maxProxyAtoms;
-  Force *dummy;
+  Results dummyResults;
+  Force *dummyForce;
   
 public:
   ComputeHomeTuples(ComputeID c);
@@ -132,12 +133,15 @@ public:
  *
  *	$RCSfile: ComputeHomeTuples.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/12 22:06:36 $
+ *	$Revision: 1.1005 $	$Date: 1997/03/13 22:39:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.h,v $
+ * Revision 1.1005  1997/03/13 22:39:36  jim
+ * Fixed some bugs in multiple-force return / full electrostatics.
+ *
  * Revision 1.1004  1997/03/12 22:06:36  jim
  * First step towards multiple force returns and multiple time stepping.
  *
