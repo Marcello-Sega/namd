@@ -18,10 +18,6 @@
 // don't define this if you want the original code.
 #if 1
   #define HGROUPING(X) X
-  #define NOHGROUPING(X)
-#else
-  #define HGROUPING(X)
-  #define NOHGROUPING(X) X
 #endif
 
 // determining class name
@@ -270,18 +266,6 @@ NOEXCL
     FAST( Force & f_i = f_0[i]; )
     FULL( Force & fullf_i = fullf_0[i]; )
 
-  NOHGROUPING
-  (
-  SELF
-  (
-  {
-    int opc = pairCount;
-    pairCount += i_upper - 1 - i;
-    if ( opc < minPairCount || opc >= maxPairCount ) continue;
-  }
-  )
-  )
-
   HGROUPING
   (
   if (a_i.nonbondedGroupSize) // if hydrogen group parent
@@ -406,13 +390,6 @@ NOEXCL
 
     register const Position *p_j = p_1;
 
-    NOHGROUPING
-    (
-    SELF
-      (
-        if ( i + 1 < j_upper ) p_j += i+1;
-      )
-    )
     HGROUPING
     (
       if ( pairlistoffset < pairlistindex ) p_j += pairlist[pairlistoffset];
@@ -429,15 +406,6 @@ NOEXCL
       j = pairlist[k];
       // don't worry about [k+1] going beyond array since array is 1 too large
       p_j += pairlist[k+1]-j; // preload
-    )
-    NOHGROUPING
-    (
-
-    SELF( j = i+1; )
-    PAIR( j = 0; )
-    for( ; j<j_upper; j++)
-    {
-      p_j += ( j + 1 < j_upper );
     )
       register const BigReal p_ij_x = p_i_x - p_j_x;
       p_j_x = p_j->x;					// preload
