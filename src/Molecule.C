@@ -4873,8 +4873,10 @@ void Molecule::build_atom_status(void) {
       ++numZeroMassAtoms;
     }
   }
-  iout << iWARN << "FOUND " << numZeroMassAtoms <<
+  if ( numZeroMassAtoms && ! CmiMyPe() ) {
+    iout << iWARN << "FOUND " << numZeroMassAtoms <<
 	" ATOMS WITH ZERO OR NEGATIVE MASSES!  CHANGED TO 0.001\n" << endi;
+  }
 
   // initialize information for each atom (note that the status has
   // already been initialized during the read/receive phase)
