@@ -619,7 +619,6 @@ void WorkDistrib::mapComputes(void)
 		node->simParameters->maxSelfPart + 10) +
 	node->numNodes() * 20;
   //iout << iINFO << "numPotentialCids: " << numPotentialCids << "\n" << endl;
-
   computeMap->allocateCids(numPotentialCids);
 
   // Handle full electrostatics
@@ -767,8 +766,7 @@ void WorkDistrib::mapComputeNonbonded(void)
 			numPartitions = node->simParameters->maxSelfPart;
     // self-interaction
     DebugM(4,"Mapping " << numPartitions << " ComputeNonbondedSelf objects for patch " << i << "\n");
-    //iout <<"Self numPartitions = " <<numPartitions <<" numAtoms " <<numAtoms
-    //     <<endl;
+//    iout <<"Self numPartitions = " <<numPartitions <<" numAtoms " <<numAtoms <<endl;
     for(int partition=0; partition < numPartitions; partition++)
     {
       cid=computeMap->storeCompute(patchMap->node(i),1,
@@ -844,13 +842,13 @@ void WorkDistrib::mapComputeNonbonded(void)
           numPartitions = 1 + (numAtoms1*numAtoms2 > 2500) + (numAtoms1*numAtoms2)/100000;
 	}
 	else {
-          numPartitions = numAtoms1*numAtoms2/(double)node->simParameters->numAtomsPair + 0.5;
-        if ( numPartitions < 1 ) numPartitions = 1;
+          numPartitions = numAtoms1*numAtoms2/(double)(node->simParameters->numAtomsPair*node->simParameters->numAtomsPair) + 0.5;
+          if ( numPartitions < 1 ) numPartitions = 1;
 	}
         if ( numPartitions > node->simParameters->maxPairPart )
 			numPartitions = node->simParameters->maxPairPart;
         if ( distance > 1 ) numPartitions = 1;
-	// if ( numPartitions > 1 ) iout << "Mapping " << numPartitions << " ComputeNonbondedPair objects for patches " << p1 << " and " << p2 << "\n" << endi;
+//	if ( numPartitions > 1 ) iout << "Mapping " << numPartitions << " ComputeNonbondedPair objects for patches " << p1 << "(" << numAtoms1 << ") and " << p2 << "(" << numAtoms2 << ")\n" << endi;
 	for(int partition=0; partition < numPartitions; partition++)
 	{
 	  cid=computeMap->storeCompute(
