@@ -27,7 +27,7 @@ NAMD is available from http://www.ks.uiuc.edu/Research/namd/.
 
 The Theoretical Biophysics group encourages NAMD users to be closely
 involved in the development process through reporting bugs, contributing
-fixes, periodical surveys and via other means.  Any questions or comments
+fixes, periodical surveys and via other means.  Questions or comments
 may be directed to namd@ks.uiuc.edu.
 
 We are eager to hear from you, and thank you for using our software!
