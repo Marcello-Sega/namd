@@ -3,6 +3,9 @@
 
 #include "NamdTypes.h"
 
+// debug code to determine if I should panic
+#define PANIC	1
+
 // typedef Vector[3] Tensor;
 
 typedef enum
@@ -18,6 +21,16 @@ typedef enum
   REDUCTION_MAX_RESERVED
 } ReductionTag;
 
+struct ReductionMgrData
+{
+  int sequenceNum;
+  int dataToSend;			// number of tags to send (not full)
+  int numRequire[REDUCTION_MAX_RESERVED]; // number of folks requiring data
+  int numData[REDUCTION_MAX_RESERVED];	// number of data to expect
+  BigReal tagData[REDUCTION_MAX_RESERVED];	// values in tags
+  ReductionMgrData *next;	// a queue! ugly but effective.
+};
+
 class ReductionMgr
 {
 public:
@@ -27,35 +40,47 @@ public:
   // For example, reserve the first two tags after a vector
   // and the first eight after a tensor to allow storage.  -JCP
 
+  ReductionMgr();
+  ~ReductionMgr();
+
   // (un)register to submit data for reduction
   // may cause an error if reductions are active
-  register(ReductionTag tag);
-  unregister(ReductionTag tag);
+  // ASSUMPTION: nobody should register after data has been collected.
+  void register(ReductionTag tag);
+  void unregister(ReductionTag tag);
 
   // submit data for reduction
   // more == 1 signals immediate submission of other data
-  submit(int seq, ReductionTag tag, BigReal data, int more=0);
-  submit(int seq, ReductionTag tag, Vector data, int more=0);
-  submit(int seq, ReductionTag tag, Tensor data, int more=0);
+  void submit(int seq, ReductionTag tag, BigReal data, int more=0);
+  // void submit(int seq, ReductionTag tag, Vector data, int more=0);
+  // void submit(int seq, ReductionTag tag, Tensor data, int more=0);
 
   // pass on submitting data
-  submit(int seq, ReductionTag tag, int more=0);
+  void submit(int seq, ReductionTag tag, int more=0);
 
   // methods for use by global sequencer
 
   // raises an error if reductions or broadcasts are active
-  subscribe(ReductionTag tag);
-  unsubscribe(ReductionTag tag);
+  void subscribe(ReductionTag tag);
+  void unsubscribe(ReductionTag tag);
 
   // suspend until this data is ready
   // should be called only from Sequencer thread
-  require(int seq, ReductionTag tag, BigReal &data);
-  require(int seq, ReductionTag tag, Vector &data);
-  require(int seq, ReductionTag tag, Tensor &data);
-  require(int seq, ReductionTag tag); // pass on requiring data
+  void require(int seq, ReductionTag tag, BigReal &data);
+  // void require(int seq, ReductionTag tag, Vector &data);
+  // void require(int seq, ReductionTag tag, Tensor &data);
+  // void require(int seq, ReductionTag tag); // pass on requiring data
 
 private:
-
+  #if PANIC > 0
+  int panicMode;
+  #endif
+  int numSubscribed[REDUCTION_MAX_RESERVED];
+  ReductionMgrData *data;
+  ReductionMgrData *createdata(int seq);
+  int maxData[REDUCTION_MAX_RESERVED];	// number of data to expect
+  void remove(int seq);	// delete (remove) a sequence
+  ReductionMgrData *find(int seq);
 };
 
 #endif
