@@ -16,7 +16,6 @@
 #define COMPUTEANGLE_INL
 
 #include "ComputeAngles.h"
-#include "Debug.h"
 
 inline AngleElem::AngleElem()
   {
@@ -66,13 +65,16 @@ inline int AngleElem::operator<(const AngleElem &a) const
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeAngles.inl,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/21 17:38:31 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/03/16 22:31:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.inl,v $
+ * Revision 1.1002  1997/03/16 22:31:19  jim
+ * Removed include Debug.h which was screwing up debugging in .C file.
+ *
  * Revision 1.1001  1997/02/21 17:38:31  nealk
  * Got DPMTA to work!
  *
