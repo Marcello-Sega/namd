@@ -111,6 +111,8 @@ int  Fclose(FILE *fout);
 #define FULLFORCETAG 105
 #define DPMTATAG 106
 
+// for proxy spanning tree
+#define PROXY_SPAN_DIM 4
 
 #endif
 
