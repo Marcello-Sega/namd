@@ -25,9 +25,9 @@ void Alg7::strategy()
    //   iout << iINFO  << "calling makeHeaps. \n";
    makeHeaps();
    computeAverage();
-   iout << iINFO
-	<< "Before assignment\n" << endi;
-   printLoads();
+   //   iout << iINFO
+   //	<< "Before assignment\n" << endi;
+   //   printLoads();
 	      
    numAssigned = 0;
    int numAssigned1 = 0;
@@ -39,8 +39,6 @@ void Alg7::strategy()
    //   for (int i=0; i<numPatches; i++)
    //     { cout << "(" << patches[i].Id << "," << patches[i].processor ;}
    int i;
-   int selfTo15=0, selfToOthers=0;
-   int tinyTo15=0, tinyToOthers=0;
 
    for (i=0; i<numComputes; i++){
      /* if compute i is a self-interaction, assign it to the home processor.
@@ -50,10 +48,6 @@ void Alg7::strategy()
      computeInfo * c = (computeInfo *) &(computes[i]);
      if (c->patch1 == c->patch2)
        {
-	 if (c->oldProcessor==15)
-	   selfTo15++;
-	 else selfToOthers++;
-
 	 //	 assign(c, patches[c->patch1].processor);
 	 assign(c, c->oldProcessor);
 
@@ -68,32 +62,11 @@ void Alg7::strategy()
 	 numAssigned1++;
        }
      else if (c->load < TINYLOAD) {
-       if (c->oldProcessor==15)
-	   tinyTo15++;
-	 else tinyToOthers++;
        assign(c, c->oldProcessor);
        numAssigned++;
        numAssigned2++;
      }
    }
-   iout << iINFO
-	<< "selfTo15 = " << selfTo15
-	<< "\nselfToOthers = " << selfToOthers
-	<< "\ntinyTo15 = " << tinyTo15
-	<< "\ntinyToOthers = " << tinyToOthers
-        << "\n" << endi;
-
-  heapIterator nextProcessor;
-  processorInfo *p = (processorInfo *) 
-    pes->iterator((heapIterator *) &nextProcessor);
-  while(p)
-  {
-    iout << iINFO 
-	 << "ID = " << p->Id
-	 << "  NComputes = " << p->computeSet->numElements()
-	 << "\n" << endi;
-     p = (processorInfo *) pes->next(&nextProcessor);
-  }
 
    //   iout << iINFO  << numAssigned <<  "done initial assignments.\n";
 
@@ -168,6 +141,8 @@ void Alg7::strategy()
     }
 
   }
+
+#ifdef DEBUG
   iout << iINFO
        << "numAssigned = " << numAssigned
        << "\nnumAssigned1 = " << numAssigned1
@@ -176,16 +151,19 @@ void Alg7::strategy()
        << "\nnumAssignedP1 = " << numAssignedP1
        << "\nnumAssignedP0 = " << numAssignedP0
        << "\n" << endi;
+#endif
 
-  p = (processorInfo *) pes->iterator((heapIterator *) &nextProcessor);
-  while(p)
-  {
-    iout << iINFO 
-	 << "ID = " << p->Id
-	 << "  NComputes = " << p->computeSet->numElements()
-	 << "\n" << endi;
-     p = (processorInfo *) pes->next(&nextProcessor);
-  }
+//
+
+//  p = (processorInfo *) pes->iterator((heapIterator *) &nextProcessor);
+//  while(p)
+ // {
+//    iout << iINFO 
+//	 << "ID = " << p->Id
+//	 << "  NComputes = " << p->computeSet->numElements()
+//	 << "\n" << endi;
+//     p = (processorInfo *) pes->next(&nextProcessor);
+//  }
     
   //  printLoads();
   overLoad = 1.1;
@@ -193,9 +171,9 @@ void Alg7::strategy()
   //  iout << iINFO  << "Starting overLoad = " << overLoad << endi;
   for (; !refine(); overLoad += .01);
   //  iout << iINFO  << "Ending overLoad = " << overLoad << endi;
-  iout << iINFO
-       << "After assignment\n" << endi;
-  printLoads();
+  //  iout << iINFO
+  //   << "After assignment\n" << endi;
+  //  printLoads();
 }
 
 
