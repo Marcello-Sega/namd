@@ -38,12 +38,18 @@ private:
  *
  *	$RCSfile: ComputeFullDirect.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1997/02/06 15:52:55 $
+ *	$Revision: 1.1000 $	$Date: 1997/02/06 15:57:54 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFullDirect.h,v $
+ * Revision 1.1000  1997/02/06 15:57:54  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
  * Revision 1.2  1997/02/06 15:52:55  ari
  * Updating Revision Line, getting rid of branches
  *

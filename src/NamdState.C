@@ -143,7 +143,7 @@ NamdState::configFileInit(char *confFile)
  *
  *	$RCSfile: NamdState.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:16 $
+ *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:48 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -152,6 +152,12 @@ NamdState::configFileInit(char *confFile)
  * REVISION HISTORY:
  *
  * $Log: NamdState.C,v $
+ * Revision 1.1000  1997/02/06 15:58:48  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
  * Revision 1.779  1997/02/06 15:53:16  ari
  * Updating Revision Line, getting rid of branches
  *
@@ -189,4 +195,4 @@ NamdState::configFileInit(char *confFile)
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.779 1997/02/06 15:53:16 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1000 1997/02/06 15:58:48 ari Exp $";

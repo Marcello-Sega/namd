@@ -215,12 +215,18 @@ void ComputeNonbondedUtil::select(void)
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:25 $
+ *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1000  1997/02/06 15:58:13  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
  * Revision 1.778  1997/01/28 00:30:25  ari
  * internal release uplevel to 1.778
  *

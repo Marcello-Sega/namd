@@ -29,12 +29,21 @@ public:
  *
  *	$RCSfile: ComputeDPMTA.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1997/01/28 01:00:11 $
+ *	$Revision: 1.1000 $	$Date: 1997/02/06 15:57:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.h,v $
+ * Revision 1.1000  1997/02/06 15:57:49  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
+ * Revision 1.778  1997/01/28 01:00:33  ari
+ * uplevel
+ *
  * Revision 1.2  1997/01/28 01:00:11  ari
  * Adding This again
  *

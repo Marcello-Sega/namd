@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.779 1997/02/06 15:53:32 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1000 1997/02/06 15:59:26 ari Exp $";
 
 #include <stdio.h>
 
@@ -442,12 +442,18 @@ void WorkDistrib::movePatchDone(DoneMsg *msg) {
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:32 $
+ *	$Revision: 1.1000 $	$Date: 1997/02/06 15:59:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1000  1997/02/06 15:59:26  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
  * Revision 1.779  1997/02/06 15:53:32  ari
  * Updating Revision Line, getting rid of branches
  *

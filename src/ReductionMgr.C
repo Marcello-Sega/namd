@@ -28,7 +28,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.781 1997/02/06 15:53:27 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1000 1997/02/06 15:59:15 ari Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>

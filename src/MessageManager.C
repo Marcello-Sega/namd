@@ -11,7 +11,7 @@
  *
  *	$RCSfile: MessageManager.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:48 $
+ *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:40 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,12 @@
  * REVISION HISTORY:
  *
  * $Log: MessageManager.C,v $
+ * Revision 1.1000  1997/02/06 15:58:40  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
  * Revision 1.778  1997/01/28 00:30:48  ari
  * internal release uplevel to 1.778
  *
@@ -44,7 +50,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/MessageManager.C,v 1.778 1997/01/28 00:30:48 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/MessageManager.C,v 1.1000 1997/02/06 15:58:40 ari Exp $";
 
 #include "MessageManager.h"
 #include "common.h"

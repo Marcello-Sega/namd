@@ -11,7 +11,7 @@
  *
  *	$RCSfile: SimParameters.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:30 $
+ *	$Revision: 1.1000 $	$Date: 1997/02/06 15:59:20 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,12 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1000  1997/02/06 15:59:20  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
  * Revision 1.779  1997/02/06 15:53:30  ari
  * Updating Revision Line, getting rid of branches
  *
@@ -306,7 +312,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.779 1997/02/06 15:53:30 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1000 1997/02/06 15:59:20 ari Exp $";
 
 
 #include "ckdefs.h"

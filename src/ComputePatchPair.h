@@ -56,12 +56,18 @@ private:
  *
  *	$RCSfile: ComputePatchPair.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:10 $
+ *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatchPair.h,v $
+ * Revision 1.1000  1997/02/06 15:58:18  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
  * Revision 1.779  1997/02/06 15:53:10  ari
  * Updating Revision Line, getting rid of branches
  *

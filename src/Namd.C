@@ -6,7 +6,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.778 1997/01/28 00:30:55 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.1000 1997/02/06 15:58:46 ari Exp $";
 
 #include "unistd.h"
 
@@ -116,7 +116,7 @@ void Namd::startup(char *confFile)
  *
  *	$RCSfile: Namd.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:55 $
+ *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:46 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -125,6 +125,12 @@ void Namd::startup(char *confFile)
  * REVISION HISTORY:
  *
  * $Log: Namd.C,v $
+ * Revision 1.1000  1997/02/06 15:58:46  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
  * Revision 1.778  1997/01/28 00:30:55  ari
  * internal release uplevel to 1.778
  *

@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.779 1997/02/06 15:53:11 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1000 1997/02/06 15:58:26 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -315,12 +315,18 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:11 $
+ *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1000  1997/02/06 15:58:26  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
  * Revision 1.779  1997/02/06 15:53:11  ari
  * Updating Revision Line, getting rid of branches
  *

@@ -116,12 +116,18 @@ public:
  *
  *	$RCSfile: ComputeHomeTuples.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.779 $	$Date: 1997/02/06 15:52:58 $
+ *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.h,v $
+ * Revision 1.1000  1997/02/06 15:58:00  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
  * Revision 1.779  1997/02/06 15:52:58  ari
  * Updating Revision Line, getting rid of branches
  *

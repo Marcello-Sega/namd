@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Molecule.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.780 $	$Date: 1997/02/06 15:53:15 $
+ *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:44 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,12 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1000  1997/02/06 15:58:44  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
  * Revision 1.780  1997/02/06 15:53:15  ari
  * Updating Revision Line, getting rid of branches
  *
@@ -153,7 +159,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.780 1997/02/06 15:53:15 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1000 1997/02/06 15:58:44 ari Exp $";
 
 #include "Molecule.h"
 #include <stdio.h>
