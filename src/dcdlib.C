@@ -828,7 +828,7 @@ int write_dcdheader(int fd, char *filename, int N, int NFILE, int NPRIV,
 	NAMD_write(fd, title_string, 80);
 
         char username[100];
-#ifdef WIN32
+#if defined(WIN32) || defined(NO_GETPWUID)
 	sprintf(username,"Win32");
 #else
 	user_id= (int) getuid();
