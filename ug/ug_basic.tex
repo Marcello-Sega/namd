@@ -174,10 +174,8 @@ as well as that portion of electrostatic interactions for pairs that are separat
 The long range component consists only of 
 electrostatic interactions outside of the local interaction distance.
 Since the long range forces are slowly varying, they are not evaluated
-every timestep.  Instead, they are evaluated every $k$ timesteps, and
-each set of $k$ timesteps is referred to as a $cycle$.
-The value of $k$ is specified by the \NAMD\ parameter
-{\tt stepspercycle}.  
+every timestep.  Instead, they are evaluated every $k$ timesteps,
+specified by the \NAMD\ parameter {\tt fullElectFrequency}.  
 An impulse of $k$ times the long range force is applied to the system
 every $k$ timesteps (i.e., the r-RESPA integrator is used).
 For appropriate values of $k$,
