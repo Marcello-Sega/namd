@@ -143,6 +143,7 @@ NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
   //  CkPrintf("LDB:[%d] All statistics received at %f, %f\n",
   //  CmiMyPe(), CmiTimer(),CmiWallTimer());
   int i,j;
+  int mype = CkMyPe();
 
   ldbNum ++;
 
@@ -172,13 +173,13 @@ NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
   nMoveableComputes = buildData(stats,count);
 
   //CmiPrintf("AlgNbor begin on %d\n", CmiMyPe());
-  AlgNbor(CkMyPe(), computeArray,patchArray,processorArray,
+  AlgNbor(mype, computeArray,patchArray,processorArray,
 			nMoveableComputes, numPatches, numProcessors, count);
   //CmiPrintf("AlgNbor end on %d\n", CmiMyPe());
 
   CkVec<MigrateInfo *> migrateInfo;
   for(i=0;i<nMoveableComputes;i++) {
-    if (computeArray[i].oldProcessor == CkMyPe())
+    if (computeArray[i].oldProcessor == mype)
     if (computeArray[i].processor != computeArray[i].oldProcessor) {
       // CkPrintf("[%d] Obj %d migrating from %d to %d\n",
       //          CkMyPe(),computeArray[i].handle.id.id[0],
