@@ -66,6 +66,12 @@ struct ReductionMgrData
   int suspendFlag[REDUCTION_MAX_RESERVED];
 };
 
+class CheckForPatchMsg : public comm_object {
+public:
+  int seq;
+  int numPatches;
+};
+
 class ReductionDataMsg : public comm_object {
 public:
   int seq;
@@ -132,6 +138,10 @@ public:
 
   // for receiving data from other ReductionMgr objects
   void recvReductionData(ReductionDataMsg *msg);
+
+  // check for patches < numNodes 
+  void doDummySubmit(CheckForPatchMsg *m);
+  void broadcastDoSubmit(int seq, int n);
 };
 
 #endif
@@ -142,12 +152,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1998/11/01 23:25:49 $
+ *	$Revision: 1.1013 $	$Date: 1998/11/30 04:16:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.h,v $
+ * Revision 1.1013  1998/11/30 04:16:08  krishnan
+ * Added broadcastDoSubmit( ) and doDummySubmit().
+ *
  * Revision 1.1012  1998/11/01 23:25:49  jim
  * Added basic correctness checking: atom counts, etc.
  *
