@@ -29,9 +29,11 @@ NAMD is available from http://www.ks.uiuc.edu/Research/namd/.
 
 For your convenience, NAMD has been ported to and will be installed on
 both the PSC TCS1 Alpha cluster and the NCSA Platinum Linux cluster.
-Please mention NAMD when you apply for time on these new resources.
+Please consider the performance advantages of running NAMD when you
+apply for time on these new resources.  Benchmarks for your proposal
+are available at http://www.ks.uiuc.edu/Research/namd/performance.html
 
-The Theoretical Biophysics group encourages NAMD users to be closely
+The Theoretical Biophysics Group encourages NAMD users to be closely
 involved in the development process through reporting bugs, contributing
 fixes, periodical surveys and via other means.  Questions or comments
 may be directed to namd@ks.uiuc.edu.
