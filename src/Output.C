@@ -534,15 +534,14 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor,
       double cosAC = (a*c)/(unitcell[0]*unitcell[5]);
       double cosBC = (b*c)/(unitcell[2]*unitcell[5]);
       if (cosAB > 1.0) cosAB = 1.0; else if (cosAB < -1.0) cosAB = -1.0;
-      if (cosAC > 1.0) cosAB = 1.0; else if (cosAC < -1.0) cosAC = -1.0;
+      if (cosAC > 1.0) cosAC = 1.0; else if (cosAC < -1.0) cosAC = -1.0;
       if (cosBC > 1.0) cosBC = 1.0; else if (cosBC < -1.0) cosBC = -1.0;
-      // Try to get exact results when the angles are exactly 90.
-      unitcell[1] = 90.0 + RAD2DEG*asin(-cosAB);
-      unitcell[3] = 90.0 + RAD2DEG*asin(-cosAC);
-      unitcell[4] = 90.0 + RAD2DEG*asin(-cosBC);
+      unitcell[1] = cosAB;
+      unitcell[3] = cosAC;
+      unitcell[4] = cosBC;
     } else {
       unitcell[0] = unitcell[2] = unitcell[5] = 1.0;
-      unitcell[1] = unitcell[3] = unitcell[4] = 90.0;
+      unitcell[1] = unitcell[3] = unitcell[4] = 0.0;
     }
     ret_code = write_dcdstep(fileid, n, x, y, z, unitcell);
   } else {
