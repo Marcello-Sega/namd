@@ -262,6 +262,7 @@ void ComputeDPMTA::doWork()
   if (totalAtoms > 0)
   {
     free(particle_list);
+    free(fmaResults);
   }
 
   DebugM(1,"DPMTA doWork() done\n");
