@@ -29,6 +29,7 @@
 #include "PatchMgr.h"
 #include "Sequencer.h"
 #include "LdbCoordinator.h"
+#include "Settle.h"
 
 #include "Sync.h"
 
@@ -444,6 +445,17 @@ int HomePatch::rattle1(const BigReal timestep)
       if ( hgs != 3 ) {
         NAMD_bug("Hydrogen group error caught in rattle1().");
       }
+      // Use SETTLE for water unless some of the water atoms are fixed
+      if (simParams->useSettle && !fixed[0] && !fixed[1] && !fixed[2]) {
+        settle1(ref, atom[ig].mass, atom[ig+1].mass, pos, vel, dt,
+                mol->rigid_bond_length(atom[ig].id),
+                mol->rigid_bond_length(atom[ig+1].id));
+        for (i=0; i<3; i++) {
+          atom[ig+i].position = pos[i];
+          atom[ig+i].velocity = vel[i];
+        }
+        continue;
+      }
       if ( !(fixed[1] && fixed[2]) ) {
 	dsq[icnt] = tmp * tmp;  ial[icnt] = 1;  ibl[icnt] = 2;  ++icnt;
       }
@@ -462,6 +474,7 @@ int HomePatch::rattle1(const BigReal timestep)
     int done;
     int consFailure;
     for ( iter = 0; iter < maxiter; ++iter ) {
+//if (iter > 0) CkPrintf("iteration %d\n", iter);
       done = 1;
       consFailure = 0;
       for ( i = 0; i < icnt; ++i ) {
@@ -561,6 +574,14 @@ void HomePatch::rattle2(const BigReal timestep, Tensor *virial)
       if ( hgs != 3 ) {
         NAMD_bug("Hydrogen group error caught in rattle2().");
       }
+      // Use SETTLE for water unless some of the water atoms are fixed
+      if (simParams->useSettle && !fixed[0] && !fixed[1] && !fixed[2]) {
+        settle2(atom[ig].mass, atom[ig+1].mass, ref, vel, dt, virial);
+        for (i=0; i<3; i++) {
+          atom[ig+i].velocity = vel[i];
+        }
+        continue;
+      }
       if ( !(fixed[1] && fixed[2]) ) {
 	redmass[icnt] = 1. / (rmass[1] + rmass[2]);
 	dsqi[icnt] = 1. / (tmp * tmp);  ial[icnt] = 1;  ibl[icnt] = 2;  ++icnt;
@@ -600,6 +621,7 @@ void HomePatch::rattle2(const BigReal timestep, Tensor *virial)
 	}
       }
       if ( done ) break;
+      //if (done) { if (iter > 0) CkPrintf("iter=%d\n", iter); break; }
     }
     if ( ! done ) {
       if ( dieOnError ) {

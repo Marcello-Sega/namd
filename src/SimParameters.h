@@ -415,6 +415,8 @@ public:
         int rigidIter;                  // Number of NR iterations 
 	int rigidDie;			// die if rigidTol not achieved
 
+	Bool useSettle;			// Use SETTLE; requires rigid waters
+
 	Bool testOn;			//  Do tests rather than simulation
 	Bool commOnly;			//  Don't do any force evaluations
 

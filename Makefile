@@ -146,6 +146,7 @@ OBJS = \
 	$(DSTDIR)/ScriptTcl.o \
 	$(DSTDIR)/Sequencer.o \
 	$(DSTDIR)/Set.o \
+	$(DSTDIR)/Settle.o \
 	$(DSTDIR)/SimParameters.o \
 	$(DSTDIR)/Sync.o \
 	$(DSTDIR)/TclCommands.o \

@@ -380,6 +380,9 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
    opts.optionalB("main", "rigidDieOnError", 
 		 "Die if rigidTolerance is not achieved after rigidIterations",
 		 &rigidDie, TRUE);
+   opts.optionalB("main", "useSettle",
+                  "Use the SETTLE algorithm for rigid waters",
+                 &useSettle, FALSE);
 
    opts.optional("main", "nonbondedFreq", "Nonbonded evaluation frequency",
     &nonbondedFrequency, 1);
@@ -1586,6 +1589,11 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
       {
            rigidBonds = RIGID_NONE;
       }
+   }
+   if (useSettle) {
+     if (rigidBonds != RIGID_ALL && rigidBonds != RIGID_WATER) {
+       NAMD_die("useSettle option requires rigid waters");
+     }
    }
    
    //  Take care of switching stuff
@@ -3206,6 +3214,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      if (rigidBonds == RIGID_WATER)  iout << "WATER\n";
      iout << iINFO << "        ERROR TOLERANCE : " << rigidTol << "\n";
      iout << iINFO << "         MAX ITERATIONS : " << rigidIter << "\n";
+     if (useSettle) iout << iINFO << "RIGID WATER USING SETTLE ALGORITHM\n";
      iout << endi;
    }
    

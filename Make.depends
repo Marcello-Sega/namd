@@ -1994,6 +1994,7 @@ obj/HomePatch.o: \
 	src/Sync.h \
 	inc/Sync.decl.h \
 	src/ResizeArrayPrimIter.h \
+	src/Settle.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/HomePatch.o $(COPTC) src/HomePatch.C
 obj/IMDOutput.o: \
@@ -2993,6 +2994,13 @@ obj/Set.o: \
 	src/Set.h \
 	src/elements.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Set.o $(COPTC) src/Set.C
+obj/Settle.o: \
+	src/Settle.C \
+	src/Settle.h \
+	src/Vector.h \
+	src/Tensor.h \
+	src/common.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/Settle.o $(COPTC) src/Settle.C
 obj/SimParameters.o: \
 	src/SimParameters.C \
 	src/ComputeNonbondedUtil.h \
