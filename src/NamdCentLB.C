@@ -48,6 +48,15 @@ CmiBool NamdCentLB::QueryBalanceNow(int _step)
   }
 }
 
+CmiBool NamdCentLB::QueryDumpData()
+{
+#if 0
+  if (LdbCoordinator::Object()->ldbCycleNum == 1)  return CmiTrue;
+  if (LdbCoordinator::Object()->ldbCycleNum == 2)  return CmiTrue;
+#endif
+  return CmiFalse;
+}
+            
 CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
 {
   //  CkPrintf("LDB: All statistics received at %f, %f\n",
