@@ -17,6 +17,7 @@
 #include "NamdTypes.h"
 
 class Compute;
+class ComputeMgr;
 
 class ComputeMap
 {
@@ -78,6 +79,8 @@ public:
 
   Compute *compute(ComputeID cid) { return (computeData[cid].compute); };
 
+  friend ComputeMgr;
+
 protected:
   ComputeMap(void);
 
@@ -88,6 +91,7 @@ private:
   {
     Compute *compute;
     int node;
+    ComputeType type;
     Boolean patchBased;
     int numPids;
     int numPidsAllocated;
@@ -108,13 +112,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/11/01 21:20:45 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.6 $	$Date: 1996/11/30 00:32:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.h,v $
+ * Revision 1.6  1996/11/30 00:32:52  jim
+ * added ComputeMgr friend and storage of ComputeType
+ *
  * Revision 1.5  1996/11/01 21:20:45  ari
  * *** empty log message ***
  *
