@@ -981,13 +981,13 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
    
    //  If minimization isn't on, must have a temp or velocity
-   if (!minimizeOn && !opts.defined("temperature") && 
+   if (!(minimizeOn||minimizeCGOn) && !opts.defined("temperature") && 
        !opts.defined("velocities") && !opts.defined("binvelocities") ) 
    {
       NAMD_die("Must have either an initial temperature or a velocity file");
    }
 
-   if (minimizeOn) { initialTemp = 0.0; }
+   if (minimizeOn||minimizeCGOn) { initialTemp = 0.0; }
    if (opts.defined("velocities") || opts.defined("binvelocities") )
    {
   initialTemp = -1.0;
