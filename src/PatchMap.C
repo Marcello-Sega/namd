@@ -92,7 +92,7 @@ int PatchMap::zDimension(void)
 //----------------------------------------------------------------------
 int PatchMap::pid(int xIndex, int yIndex, int zIndex)
 {
-  return ((zIndex*zDim)+yIndex)*yDim + xIndex;
+  return ((zIndex*yDim)+yIndex)*xDim + xIndex;
 }
 
 //----------------------------------------------------------------------
@@ -110,7 +110,7 @@ int PatchMap::yIndex(int pid)
 //----------------------------------------------------------------------
 int PatchMap::zIndex(int pid)
 {
-  return (pid / xDim) / yDim;
+  return (pid / (xDim*yDim));
 }
 
 //----------------------------------------------------------------------
@@ -368,13 +368,16 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1996/11/01 21:20:45 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.9 $	$Date: 1996/11/21 21:17:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.9  1996/11/21 21:17:10  jim
+ * small bug fix in patch indexing functions
+ *
  * Revision 1.8  1996/11/01 21:20:45  ari
  * *** empty log message ***
  *
