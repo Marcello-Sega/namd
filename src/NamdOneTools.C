@@ -19,7 +19,6 @@
 //#define DEBUGM
 #include "Debug.h"
 extern "C" long int lrand48(void);
-extern "C" void bzero(void *, size_t);
 
 //#define DEBUGM
 #include "Debug.h"
@@ -380,7 +379,7 @@ void vec_rotation_matrix( BigReal angle, Vector v, BigReal m[] ) {
 
    if (mag == 0.0) {
       /* generate an identity matrix and return */
-      bzero(m, sizeof(BigReal)*9);
+      for ( int i = 0; i < 9; ++i ) m[i] = 0.0;
       m[0] = m[4] = m[8] = 1.0;
       return;
    }
@@ -479,13 +478,16 @@ Vector mat_multiply_vec(const Vector &v, BigReal m[]) {
 * RCS INFORMATION:
 *
 *	$RCSfile: NamdOneTools.C,v $
-*	$Author: brunner $	$Locker:  $		$State: Exp $
-*	$Revision: 1.17 $	$Date: 1999/05/11 23:56:37 $
+*	$Author: jim $	$Locker:  $		$State: Exp $
+*	$Revision: 1.18 $	$Date: 1999/06/04 14:09:08 $
 *
 ***************************************************************************
 * REVISION HISTORY:
 *
 * $Log: NamdOneTools.C,v $
+* Revision 1.18  1999/06/04 14:09:08  jim
+* Eliminated use of bzero().
+*
 * Revision 1.17  1999/05/11 23:56:37  brunner
 * Changes for new charm version
 *
