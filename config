@@ -69,10 +69,10 @@ begin:
   echo 'CHARM = $(CHARMBASE)/$(CHARMARCH)' >> Makearch
   if ( $ARCH:t =~ *-MPI* ) then
     echo 'NAMD_PLATFORM = $(NAMD_ARCH)-MPI' >> Makearch
-  else if ( $ARCH:t =~ *-Scyld* ) then
-    echo 'NAMD_PLATFORM = $(NAMD_ARCH)-Scyld' >> Makearch
   else if ( $ARCH:t =~ *-ScyldCD* ) then
     echo 'NAMD_PLATFORM = $(NAMD_ARCH)-ScyldCD' >> Makearch
+  else if ( $ARCH:t =~ *-Scyld* ) then
+    echo 'NAMD_PLATFORM = $(NAMD_ARCH)-Scyld' >> Makearch
   else
     echo 'NAMD_PLATFORM = $(NAMD_ARCH)' >> Makearch
   endif
