@@ -1,0 +1,32 @@
+##########################################
+##########################################
+# Makefile architecture template
+##########################################
+##########################################
+
+#####
+## Choose your favorite Compiler options
+####
+CXX = mpCC -w 
+CXXOPTS = -O3 -qstrict -Q -qarch=pwr -qtune=pwr -DSP2 -DGLOBALS
+
+#####
+# Flags
+#####
+# uncomment for no warnings during compile
+#NOWARN=-w
+# uncomment for purify during compile
+# PURIFY=-purify
+
+#####
+# definitions for Charm routines
+#####
+CHARM = /ccsthome/bhandark/charm/sp3
+
+#####
+# Unix commands
+#####
+ECHO = echo
+MOVE = mv
+COPY = cp
+
