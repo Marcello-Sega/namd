@@ -119,19 +119,25 @@ void wrap_coor(Vector *coor, Lattice &lattice, double *done) {
   const int wrapAll = simParams->wrapAll;
   Molecule *molecule = Node::Object()->molecule;
   int n = molecule->numAtoms;
-  int cs;
-  for ( int i = 0; i < n; coor+=cs,i+=cs ) {
-    cs = molecule->get_cluster(i);
-    if ( ! cs ) NAMD_bug("Cluster list corrupted on output!");
-    if ( ! wrapAll && ! molecule->is_water(i) ) continue;
-    int j;
-    Position con = 0;
-    for ( j = 0; j < cs; ++j ) con += coor[j];
-    con /= cs;
-    Vector trans = ( wrapNearest ?
-	lattice.wrap_nearest_delta(con) : lattice.wrap_delta(con) );
-    for ( j = 0; j < cs; ++j ) coor[j] += trans;
+  int i;
+  Position *con = new Position[n];
+  for ( i = 0; i < n; ++i ) {
+    con[i] = 0;
+    int ci = molecule->get_cluster(i);
+    con[ci] += coor[i];
   }
+  for ( i = 0; i < n; ++i ) {
+    if ( ! wrapAll && ! molecule->is_water(i) ) continue;
+    int ci = molecule->get_cluster(i);
+    if ( ci == i ) {
+      Vector coni = con[i] / molecule->get_clusterSize(i);
+      Vector trans = ( wrapNearest ?
+	lattice.wrap_nearest_delta(coni) : lattice.wrap_delta(coni) );
+      con[i] = trans;
+    }
+    coor[i] += con[ci];
+  }
+  delete [] con;
 }
 
 void wrap_coor(FloatVector *coor, Lattice &lattice, float *done) {
