@@ -15,6 +15,8 @@
 #include "ReductionMgr.h"
 #include "Patch.h"
 #include "LdbCoordinator.h"
+#include "Priorities.h"
+#include "PatchMap.h"
 
 #define MIN_DEBUG_LEVEL 4
 #define DEBUGM
@@ -31,6 +33,22 @@ ComputeNonbondedPair::ComputeNonbondedPair(ComputeID c, PatchID pid[], int trans
 ComputeNonbondedPair::~ComputeNonbondedPair()
 {
   unregisterReductionData(reduction);
+}
+
+
+int ComputeNonbondedPair::priority(void)
+{
+  PatchMap *patchMap = PatchMap::Object();
+  int myNode = CMyPe();
+  if ( patchMap->node(patchID[0]) != myNode ||
+       patchMap->node(patchID[1]) != myNode )
+  {
+    return Priorities::nonlocal;
+  }
+  else
+  {
+    return Priorities::base;
+  }
 }
 
 
@@ -143,13 +161,17 @@ void ComputeNonbondedPair::doForce(Position* p[2],
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedPair.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/03/27 20:25:42 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1009 $	$Date: 1997/04/03 23:22:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.C,v $
+ * Revision 1.1009  1997/04/03 23:22:19  jim
+ * Added basic priority() method to Compute.  Only distinguishes between
+ * local and nonlocal computations for now.
+ *
  * Revision 1.1008  1997/03/27 20:25:42  brunner
  * Changes for LdbCoordinator, the load balance control BOC
  *

@@ -24,6 +24,7 @@
 
 #include "Node.h"
 #include "Compute.h"
+#include "Priorities.h"
 
 #define MIN_DEBUG_LEVEL 5
 #define DEBUGM
@@ -77,17 +78,26 @@ void Compute::doWork() {
     << endi;
 }
 
+int Compute::priority(void)
+{
+  return Priorities::base;
+}
+
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: Compute.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/03/20 23:53:26 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1007 $	$Date: 1997/04/03 23:22:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.C,v $
+ * Revision 1.1007  1997/04/03 23:22:16  jim
+ * Added basic priority() method to Compute.  Only distinguishes between
+ * local and nonlocal computations for now.
+ *
  * Revision 1.1006  1997/03/20 23:53:26  ari
  * Some changes for comments. Copyright date additions.
  * Hooks for base level update of Compute objects from ComputeMap

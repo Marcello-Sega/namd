@@ -23,6 +23,7 @@ class ComputeNonbondedPair : public ComputePatchPair, private ComputeNonbondedUt
 public:
   ComputeNonbondedPair(ComputeID c, PatchID pid[], int trans[]);
   virtual ~ComputeNonbondedPair();
+  virtual int priority(void);
 
 protected :
   // virtual void initialize() { ComputePatchPair::initialize(); }
@@ -39,12 +40,16 @@ protected :
  *
  *	$RCSfile: ComputeNonbondedPair.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/18 21:35:29 $
+ *	$Revision: 1.1005 $	$Date: 1997/04/03 23:22:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.h,v $
+ * Revision 1.1005  1997/04/03 23:22:21  jim
+ * Added basic priority() method to Compute.  Only distinguishes between
+ * local and nonlocal computations for now.
+ *
  * Revision 1.1004  1997/03/18 21:35:29  jim
  * Eliminated fake_seq.  Reductions now use Patch::flags.seq.
  *

@@ -60,6 +60,7 @@ public:
   virtual void patchReady(PatchID, int);
   virtual int noWork(); // cleans up and returns 1 if no work to do
   virtual void doWork(); // actually does the work if noWork() returns 0
+  virtual int priority(void); // returns execution priority for this work
 };
 
 #endif
@@ -67,13 +68,17 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: Compute.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/20 23:53:27 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/04/03 23:22:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.h,v $
+ * Revision 1.1004  1997/04/03 23:22:18  jim
+ * Added basic priority() method to Compute.  Only distinguishes between
+ * local and nonlocal computations for now.
+ *
  * Revision 1.1003  1997/03/20 23:53:27  ari
  * Some changes for comments. Copyright date additions.
  * Hooks for base level update of Compute objects from ComputeMap
