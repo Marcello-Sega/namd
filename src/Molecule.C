@@ -5055,6 +5055,22 @@ void Molecule::build_atom_status(void) {
     // fill in H-H lengths for waters that are missing angles
     int numBondWaters = 0;
     int numFailedWaters = 0;
+
+    for (i=0; i < numBonds; i++) {
+      a1 = bonds[i].atom1;
+      a2 = bonds[i].atom2;
+      if ( ! is_hydrogen(a1) ) continue;
+      if ( ! is_hydrogen(a2) ) continue;
+      int ma1 = get_mother_atom(a1);
+      int ma2 = get_mother_atom(a2);
+      if ( ma1 != ma2 ) continue;
+      if ( ! is_water(ma1) ) continue;
+      if ( rigidBondLengths[ma1] != 0. ) continue;
+      Real dum, x0;
+      params->get_bond_params(&dum,&x0,bonds[i].bond_type);
+      rigidBondLengths[ma1] = x0;
+    }
+
     h_i = hydrogenGroup.begin();  h_e = hydrogenGroup.end();
     for( ; h_i != h_e; ++h_i ) {
       if ( h_i->isGP && is_water(h_i->atomID) &&
@@ -5231,7 +5247,8 @@ void Molecule::read_parm(Ambertoppar *amber_data)
         NAMD_die(err_msg);
       }
       params->get_bond_params(&k,&x0,bonds[numBonds].bond_type);
-      if ( k != 0. ) ++numBonds;  // real bond
+      // if ( k != 0. ) ++numBonds;  // real bond
+      ++numBonds;  // keep all bonds in case needed for rigid water
     }
     // Bonds WITHOUT hydrogen
     for (i=amber_data->Nbonh; i<amber_data->Nbonh+amber_data->Nbona; ++i)
@@ -5245,7 +5262,8 @@ void Molecule::read_parm(Ambertoppar *amber_data)
         NAMD_die(err_msg);
       }
       params->get_bond_params(&k,&x0,bonds[numBonds].bond_type);
-      if ( k != 0. ) ++numBonds;  // real bond
+      // if ( k != 0. ) ++numBonds;  // real bond
+      ++numBonds;  // keep all bonds in case needed for rigid water
     }
   }
   /*  Tell user about our subterfuge  */
