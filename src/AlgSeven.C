@@ -120,18 +120,24 @@ void Alg7::strategy()
      p = (processorInfo *) pes->next(&nextProcessor);
     }
     
-    if ((bestP2) && (bestP2->load < 1.2*bestP0->load)){
-      assign(c, bestP2);
-      numAssigned++;
-      numAssignedP2++;
+    if (bestP2)
+    {
+      if ((bestP0==NULL) || (bestP2->load < 1.2*bestP0->load)) {
+	assign(c, bestP2);
+	numAssigned++;
+	numAssignedP2++;
+      }
     }
-    else if ((bestP1) && (bestP1->load < 1.2*bestP0->load)){
-      assign(c, bestP1);
-      numAssigned++;
-      numAssignedP1++;
+    else if (bestP1)
+    {
+      if ((bestP0==NULL) || (bestP1->load < 1.2*bestP0->load)){
+	assign(c, bestP1);
+	numAssigned++;
+	numAssignedP1++;
+      }
     }
     else if (bestP0){
-     assign(c, bestP0);
+      assign(c, bestP0);
       numAssigned++;
       numAssignedP0++;
     }
@@ -175,6 +181,16 @@ void Alg7::strategy()
   //   << "After assignment\n" << endi;
   //  printLoads();
 }
+
+
+
+
+
+
+
+
+
+
 
 
 
