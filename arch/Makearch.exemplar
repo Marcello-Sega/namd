@@ -21,7 +21,7 @@ COPTS = +O2
 # uncomment for purify during compile
 # PURIFY=-purify
 
-DFLAGS= +O2 -Wp,-H20000
+#DFLAGS= +O2 -Wp,-H20000
 PVM_ARCH=EXEMPLAR
 
 #####

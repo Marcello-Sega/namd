@@ -22,7 +22,7 @@ CXXTHREADOPTS = $(CXXOPTS)
 # PURIFY=-purify
 PURIFY=-c++ KCC -ld++ KCC
 
-DFLAGS = -O -DGCC
+#DFLAGS = -O -DGCC
 PVM_ARCH=linux
 
 #####
