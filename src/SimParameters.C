@@ -2754,12 +2754,12 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 
   if (MTSAlgorithm == NAIVE)
   {
-    iout << iWARN << "NAIVE MTS SCHEME IS NOT SUPPORTED,\n";
+    iout << iWARN << "NAIVE MTS SCHEME IS NOT SUPPORTED, USING VERLET I.\n";
     MTSAlgorithm = VERLETI;
   }
   if (MTSAlgorithm == VERLETI )
   {
-    iout << iWARN << "USING VERLET I (r-RESPA) MTS SCHEME.\n" << endi;
+    iout << iINFO << "USING VERLET I (r-RESPA) MTS SCHEME.\n" << endi;
   }
 
    if (longSplitting == SHARP)
