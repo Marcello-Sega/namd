@@ -20,6 +20,7 @@
 #include "ComputeAngles.h"
 #include "PatchMgr.h"
 #include "Molecule.h"
+#include "Parameters.h"
 
 ComputeAngles::ComputeAngles(ComputeID c) : Compute(c) {
   patchMap = PatchMap::Object();
@@ -141,7 +142,7 @@ void ComputeAngles::doWork() {
 /*	returns - energy from the angle					*/
 /*									*/
 /************************************************************************/
-BigReal ComputeAngle::angleForce	(
+BigReal ComputeAngles::angleForce	(
 		const Position pos1, const Position pos2, const Position pos3,
 		Force *force1, Force *force2, Force *force3,
 		const Index angleType)
@@ -153,11 +154,11 @@ BigReal ComputeAngle::angleForce	(
   BigReal sin_theta;	// sin(theta)
   BigReal diff;		// difference between theta and theta0
   BigReal c1,c2;	// constant factors involved in force
-  BigReal energy=0;	// energy from the angle
+  BigReal energy;	// energy from the angle
 
   // get the angle information
   Real k, theta0, k_ub, r_ub;
-  Parameters::get_angle_params(&k,&theta0,&k_ub,&r_ub,angleType);
+  Node::Object()->parameters->get_angle_params(&k,&theta0,&k_ub,&r_ub,angleType);
 
   // compute vectors between atoms and their distances
   r12 = pos1-pos2;

@@ -178,7 +178,7 @@ private:
   
   BigReal angleForce(const Position p1, const Position p2, const Position p3,
 		  Force *f1, Force *f2, Force *f3,
-		    const Index angleType) {};
+		    const Index angleType);
 
 public:
   ComputeAngles(ComputeID c);
@@ -196,12 +196,15 @@ public:
  *
  *	$RCSfile: ComputeAngles.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/11/04 19:29:02 $
+ *	$Revision: 1.4 $	$Date: 1996/11/04 20:06:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.h,v $
+ * Revision 1.4  1996/11/04 20:06:17  nealk
+ * Now it compiles :-)
+ *
  * Revision 1.3  1996/11/04 19:29:02  nealk
  * Added angleForce() to system, but it is untested.
  *
