@@ -337,6 +337,14 @@ public:
 	Bool commOnly;			//  Don't do any force evaluations
 
 	int totalAtoms;			//  Total Number of atoms in simulation
+        int maxSelfPart;                // maximum number of self partitions
+                                        // that a patch can be split into
+        int maxPairPart;                // maximum number of pair partitions
+                                        // that a patch can be split into
+        int numAtomsSelf;               // maximum number of atoms in a single
+                                        // self-compute 
+        int numAtomsPair;               // maximum number of atoms in a single
+                                        // pair-compute 
 
 	//
         // hydrogen bond simulation parameters

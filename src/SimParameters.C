@@ -882,6 +882,22 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
    opts.range("IMDfreq",POSITIVE);
    opts.optionalB("IMDon","IMDwait","Pause until IMD connection?",&IMDwait,
      FALSE);
+
+   // Maximum Partition options
+   opts.optional("main", "maxSelfPart", 
+     "maximum number of self partitions in one patch", &maxSelfPart, 100);
+   opts.range("maxSelfPart",POSITIVE);
+   opts.optional("main", "maxPairPart", 
+     "maximum number of pair partitions in one patch", &maxPairPart, 10);
+   opts.range("maxPairPart",POSITIVE);
+   opts.optional("main", "numAtomsSelf", 
+               "maximum number of atoms in one self compute distribution", 
+               &numAtomsSelf, 0);
+   opts.range("numAtomsSelf",NOT_NEGATIVE);
+   opts.optional("main", "numAtomsPair", 
+               "maximum number of atoms in one pair compute distribution", 
+               &numAtomsPair, 0);
+   opts.range("numAtomsPair",NOT_NEGATIVE);
 }
 
 void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&cwd) {
@@ -1822,6 +1838,8 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    iout << iINFO << "TIMESTEP               " << dt << "\n" << endi;
    iout << iINFO << "NUMBER OF STEPS        " << N << "\n";
    iout << iINFO << "STEPS PER CYCLE        " << stepsPerCycle << "\n";
+   iout << iINFO << "MAX SELF PARTITIONS    " << maxSelfPart << "\n"
+        << iINFO << "MAX PAIR PARTITIONS    " << maxPairPart << "\n";
    iout << endi;
 
    if ( lattice.a_p() || lattice.b_p() || lattice.c_p() ) {
