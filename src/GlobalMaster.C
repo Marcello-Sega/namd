@@ -17,12 +17,18 @@ void GlobalMaster::processData(AtomIDList::iterator a_i,
 			       AtomIDList::iterator a_e,
 			       PositionList::iterator p_i,
 			       PositionList::iterator g_i,
-			       PositionList::iterator g_e) {
+			       PositionList::iterator g_e,
+			       AtomIDList::iterator last_atoms_forced_i,
+			       AtomIDList::iterator last_atoms_forced_e,
+			       ForceList::iterator last_forces_i) {
   atomIdBegin = a_i;
   atomIdEnd = a_e;
   atomPositionBegin = p_i;
   groupPositionBegin = g_i;
   groupPositionEnd = g_e;
+  lastAtomsForcedBegin = last_atoms_forced_i;
+  lastAtomsForcedEnd = last_atoms_forced_e;
+  lastForcesBegin = last_forces_i;
 
   calculate();
 
@@ -167,3 +173,14 @@ const ResizeArray<BigReal>::iterator GlobalMaster::getGroupMassEnd() {
   return groupMasses.end();
 }
 
+const AtomIDList::iterator GlobalMaster::getLastAtomsForcedBegin() {
+  return lastAtomsForcedBegin;
+}
+
+const AtomIDList::iterator GlobalMaster::getLastAtomsForcedEnd() {
+  return lastAtomsForcedEnd;
+}
+
+const ForceList::iterator GlobalMaster::getLastForcesBegin() {
+  return lastForcesBegin;
+}

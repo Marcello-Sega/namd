@@ -41,9 +41,9 @@ void GlobalMasterServer::recvData(ComputeGlobalDataMsg *msg) {
   /* iterate over each member of the group position list */
   int i=0;
   for ( ; g_i != g_e; ++g_i ) {
+    DebugM(1,"Received center of mass "<<*g_i<<"\n");
     if(i >= totalGroupsRequested) NAMD_die("Received too many groups.");
     receivedGroupPositions[i] += (*g_i);
-    DebugM(1,"Received center of mass "<<*g_i<<"\n");
     i++;
   }
   if(i!=totalGroupsRequested) NAMD_die("Received too few groups.");
@@ -123,6 +123,8 @@ void GlobalMasterServer::resetForceList(AtomIDList atomsForced,
   atomsForced.resize(0);
   forces.resize(0);
   groupForces.resize(0);
+  lastAtomsForced.resize(0);
+  lastForces.resize(0);
 
   /* iterate over all of the masters */
   GlobalMaster **m_i = clientList.begin();
@@ -136,6 +138,8 @@ void GlobalMasterServer::resetForceList(AtomIDList atomsForced,
     for(i=0;i<(*m_i)->forcedAtoms().size();i++) {
       atomsForced.add((*m_i)->forcedAtoms()[i]);
       forces.add((*m_i)->appliedForces()[i]);
+      lastAtomsForced.add((*m_i)->forcedAtoms()[i]);
+      lastForces.add((*m_i)->appliedForces()[i]);
     }
 
     /* add all of the group forces for this master */
@@ -193,6 +197,9 @@ void GlobalMasterServer::callClients() {
   PositionList::iterator p_i = receivedAtomPositions.begin();
   PositionList::iterator g_i = receivedGroupPositions.begin();
   PositionList::iterator g_e = receivedGroupPositions.end();
+  AtomIDList::iterator forced_atoms_i = lastAtomsForced.begin();
+  AtomIDList::iterator forced_atoms_e = lastAtomsForced.end();
+  ForceList::iterator forces_i = lastForces.begin();
   GlobalMaster **m_i = clientList.begin();
   GlobalMaster **m_e = clientList.end();
 
@@ -217,7 +224,9 @@ void GlobalMasterServer::callClients() {
 
     /* update this master */
     master->clearChanged();
-    master->processData(a_i,a_i+num_atoms_requested,p_i,g_i,g_i+num_groups_requested);
+    master->processData(a_i,a_i+num_atoms_requested,
+			p_i,g_i,g_i+num_groups_requested,
+			forced_atoms_i,forced_atoms_e,forces_i);
 
     /* check to see if anything changed */
     if(master->changedAtoms()) {

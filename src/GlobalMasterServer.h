@@ -79,6 +79,11 @@ class GlobalMasterServer {
      to the list (1,2,3,-1,2,3,4,-1).  The number of groups sent is
      stored in the variable <numGroups>*/
   void resetGroupList(AtomIDList groupsRequested, int *numGroups);
+
+  /* stores the version of forces that was found by resetForceList */
+  AtomIDList lastAtomsForced;
+  ForceList lastForces;
+
 };
 
 #endif

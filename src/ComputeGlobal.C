@@ -203,6 +203,7 @@ void ComputeGlobal::sendData()
       com += lattice.reverse_transform(x_orig,trans) * mol->atommass(*g_i);
     }
     com /= *gm_i;
+    DebugM(1,"Adding center of mass "<<com<<"\n");
     msg->gcom.add(com);
   }
 
