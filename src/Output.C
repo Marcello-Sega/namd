@@ -163,7 +163,8 @@ void Output::coordinate(int timestep, int n, Vector *coor, FloatVector *fcoor,
        ((timestep % simParams->dcdFrequency) == 0) )
     {
       wrap_coor(fcoor,lattice,&fcoor_wrapped);
-      output_dcdfile(timestep, n, fcoor);
+      output_dcdfile(timestep, n, fcoor, 
+          simParams->dcdUnitCell ? &lattice : NULL);
     }
 
     //  Output a restart file
@@ -209,7 +210,8 @@ void Output::coordinate(int timestep, int n, Vector *coor, FloatVector *fcoor,
   //  Close trajectory files
   if (timestep == END_OF_RUN)
   {
-    if (simParams->dcdFrequency) output_dcdfile(END_OF_RUN,0,0);
+    if (simParams->dcdFrequency) output_dcdfile(END_OF_RUN,0,0, 
+        simParams->dcdUnitCell ? &lattice : NULL);
   }
 
 }
@@ -416,13 +418,17 @@ void Output::output_restart_velocities(int timestep, int n, Vector *vel)
 /*  timestep - Current timestep          */
 /*  n - Number of atoms in simulation        */
 /*  coor - Coordinate vectors for all atoms        */
+/*  lattice - periodic cell data; NULL if not to be written */
 /*                  */
 /*  This function maintains the interface between the Output object */
 /*   and the dcd writing routines contained in dcdlib.      */
 /*                  */
 /************************************************************************/
 
-void Output::output_dcdfile(int timestep, int n, FloatVector *coor)
+#define RAD2DEG 180.0/3.14159265359
+
+void Output::output_dcdfile(int timestep, int n, FloatVector *coor,
+    const Lattice *lattice)
 
 {
   static Bool first=TRUE;  //  Flag indicating first call
@@ -493,7 +499,7 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor)
     ret_code = write_dcdheader(fileid, 
         simParams->dcdFilename,
         n, NFILE, NPRIV, NSAVC, NSTEP,
-        simParams->dt/TIMEFACTOR);
+        simParams->dt/TIMEFACTOR, lattice != NULL);
 
 
     if (ret_code<0)
@@ -515,8 +521,32 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor)
   //  Write out the values for this timestep
   iout << "WRITING COORDINATES TO DCD FILE AT STEP "
 	<< timestep << "\n" << endi;
-  ret_code = write_dcdstep(fileid, n, x, y, z);
-
+  if (lattice) {
+    double unitcell[6];
+    if (lattice->a_p() && lattice->b_p() && lattice->c_p()) {
+      const Vector &a=lattice->a();
+      const Vector &b=lattice->b();
+      const Vector &c=lattice->c();
+      unitcell[0] = a.length();
+      unitcell[2] = b.length();
+      unitcell[5] = c.length();
+      double cosAB = (a*b)/(unitcell[0]*unitcell[2]);
+      double cosAC = (a*c)/(unitcell[0]*unitcell[5]);
+      double cosBC = (b*c)/(unitcell[2]*unitcell[5]);
+      if (cosAB > 1.0) cosAB = 1.0; else if (cosAB < -1.0) cosAB = -1.0;
+      if (cosAC > 1.0) cosAB = 1.0; else if (cosAC < -1.0) cosAC = -1.0;
+      if (cosBC > 1.0) cosBC = 1.0; else if (cosBC < -1.0) cosBC = -1.0;
+      unitcell[1] = RAD2DEG*acos(cosAB);
+      unitcell[3] = RAD2DEG*acos(cosAC);
+      unitcell[4] = RAD2DEG*acos(cosBC);
+    } else {
+      unitcell[0] = unitcell[2] = unitcell[5] = 1.0;
+      unitcell[1] = unitcell[3] = unitcell[4] = 90.0;
+    }
+    ret_code = write_dcdstep(fileid, n, x, y, z, unitcell);
+  } else {
+    ret_code = write_dcdstep(fileid, n, x, y, z, NULL);
+  }
   if (ret_code < 0)
   {
     NAMD_err("Writing of DCD step failed!!");
@@ -698,10 +728,11 @@ void Output::output_veldcdfile(int timestep, int n, Vector *vel)
     NFILE = (NSTEP-NPRIV)/NSAVC + 1;
 
     //  Write out the header
+    const int with_unitcell = 0;
     ret_code = write_dcdheader(fileid, 
         simParams->velDcdFilename,
         n, NFILE, NPRIV, NSAVC, NSTEP,
-        simParams->dt/TIMEFACTOR);
+        simParams->dt/TIMEFACTOR, with_unitcell);
 
 
     if (ret_code<0)
@@ -723,7 +754,7 @@ void Output::output_veldcdfile(int timestep, int n, Vector *vel)
   //  Write out the values for this timestep
   iout << "WRITING VELOCITIES TO DCD FILE AT STEP "
 	<< timestep << "\n" << endi;
-  ret_code = write_dcdstep(fileid, n, x, y, z);
+  ret_code = write_dcdstep(fileid, n, x, y, z, NULL);
 
   if (ret_code < 0)
   {

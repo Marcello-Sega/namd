@@ -26,7 +26,10 @@ class Output
 {
 
 private:
-   void output_dcdfile(int, int, FloatVector *);  //  output coords to dcd file
+
+   //  output coords to dcd file
+   //  Pass non-NULL Lattice to include unit cell in the timesteps.
+   void output_dcdfile(int, int, FloatVector *, const Lattice *); 
    void output_veldcdfile(int, int, Vector *); 	//  output velocities to
 						//  dcd file
 

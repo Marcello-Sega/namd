@@ -120,6 +120,7 @@ public:
 	BigReal nonbondedScaling;	//  Scaling factor for nonbonded forces
 	int dcdFrequency;		//  How often (in timesteps) should
 					//  a DCD trajectory file be updated
+  int dcdUnitCell;  // Whether to write unit cell information in the DCD
 	int velDcdFrequency;		//  How often (in timesteps) should
 					//  a velocity DCD file be updated
 	int xstFrequency;		//  How often (in timesteps) should

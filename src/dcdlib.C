@@ -679,6 +679,7 @@ int open_dcd_write(char *dcdname)
 /*	X - X coordinates						*/
 /*	Y - Y coordinates						*/
 /*	Z - Z coordinates						*/
+/*  unitcell - a, b, c, alpha, beta, gamma of unit cell */
 /*									*/
 /*   OUTPUTS:								*/
 /*	none								*/
@@ -688,12 +689,21 @@ int open_dcd_write(char *dcdname)
 /*									*/
 /************************************************************************/
 
-int write_dcdstep(int fd, int N, float *X, float *Y, float *Z)
+int write_dcdstep(int fd, int N, float *X, float *Y, float *Z, double *cell)
 
 {
 	int32 NSAVC,NSTEP,NFILE;
 	int32 out_integer;
 
+  /* Unit cell */
+  if (cell) {
+    out_integer = 48;
+    NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+    NAMD_write(fd, (char *) cell, out_integer);
+    NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+  }
+
+  /* Coordinates */
 	out_integer = N*4;
 	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
 	NAMD_write(fd, (char *) X, out_integer);
@@ -755,7 +765,7 @@ int write_dcdstep(int fd, int N, float *X, float *Y, float *Z)
 /*****************************************************************************/
 
 int write_dcdheader(int fd, char *filename, int N, int NFILE, int NPRIV, 
-		   int NSAVC, int NSTEP, double DELTA)
+		   int NSAVC, int NSTEP, double DELTA, int with_unitcell)
 {
 	int32	out_integer;
 	float   out_float;
@@ -790,7 +800,9 @@ int write_dcdheader(int fd, char *filename, int N, int NFILE, int NPRIV,
 	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
 	out_float = DELTA;
 	NAMD_write(fd, (char *) &out_float, sizeof(float));
+  out_integer = with_unitcell ? 1 : 0;
 	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+  out_integer = 0;
 	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
 	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
 	NAMD_write(fd, (char *) &out_integer, sizeof(int32));

@@ -443,6 +443,8 @@ void SimParameters::config_parser_fileio(ParseOptions &opts) {
    opts.range("DCDfreq", NOT_NEGATIVE);
    opts.optional("DCDfreq", "DCDfile", "DCD trajectory output file name",
      dcdFilename);
+   opts.optionalB("DCDfreq", "DCDunitcell", "Store unit cell in dcd timesteps?",
+       &dcdUnitCell, FALSE);
 
    opts.optional("main", "velDCDfreq", "Frequency of velocity "
     "DCD output, in timesteps", &velDcdFrequency, 0);
@@ -2379,6 +2381,9 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
         << dcdFrequency << "\n";
      if ( ! firstTimestep ) {
        iout << iWARN << "INITIAL COORDINATES WILL NOT BE WRITTEN TO DCD FILE\n";
+     }
+     if ( dcdUnitCell ) {
+       iout << iINFO << "DCD FILE WILL CONTAIN UNIT CELL DATA\n";
      }
    }
    else

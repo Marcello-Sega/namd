@@ -30,9 +30,9 @@ int read_dcdheader(int, int*, int*, int*, int*, double*, int*, int**);
 int read_dcdstep(int, int, float*, float*, float*, int, int, int*);	
 				/*  Read a timestep's values		*/
 int open_dcd_write(char *);     /*  Open a DCD file for writing		*/
-int write_dcdstep(int, int, float *, float *, float *);
+int write_dcdstep(int, int, float *, float *, float *, double *unitcell);
 				/*  Write out a timesteps values	*/
-int write_dcdheader(int, char*, int, int, int, int, int, double);	
+int write_dcdheader(int, char*, int, int, int, int, int, double, int);	
 				/*  Write a dcd header			*/
 void close_dcd_read(int, int, int *);
 				/*  Close a dcd file open for reading   */
