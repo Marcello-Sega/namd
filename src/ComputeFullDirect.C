@@ -18,11 +18,10 @@
 #include "Molecule.h"
 #include "ReductionMgr.h"
 #include "Communicate.h"
+#include "Lattice.h"
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 3
 #include "Debug.h"
-
-// Only works without periodic boundary conditions.  -JCP
 
 ComputeFullDirect::ComputeFullDirect(ComputeID c) : ComputeHomePatches(c)
 {
@@ -36,61 +35,18 @@ ComputeFullDirect::~ComputeFullDirect()
   reduction->unRegister(REDUCTION_VIRIAL);
 }
 
-
 BigReal calc_fulldirect(BigReal *data1, BigReal *results1, int n1,
-                        BigReal *data2, BigReal *results2, int n2, int selfmode)
+                        BigReal *data2, BigReal *results2, int n2,
+			int selfmode, Lattice *lattice)
 {
-  const BigReal coloumb = COLOUMB * ComputeNonbondedUtil::dielectric_1;
-  BigReal *dp1 = data1;
-  BigReal *rp1 = results1;
-  int j_begin = 0;
-  register BigReal electEnergy = 0.;
-  for(int i=0; i<n1; ++i)
-  {
-    register BigReal p_i_x = *(dp1++);
-    register BigReal p_i_y = *(dp1++);
-    register BigReal p_i_z = *(dp1++);
-    register BigReal kq_i = coloumb * *(dp1++);
-    register BigReal f_i_x = 0.;
-    register BigReal f_i_y = 0.;
-    register BigReal f_i_z = 0.;
-    if ( selfmode )
-    {
-      ++j_begin; data2 += 4; results2 += 3;
-    }
-    register BigReal *dp2 = data2;
-    register BigReal *rp2 = results2;
-    register int n2c = n2;
-    register int j;
-    for( j = j_begin; j<n2c; ++j)
-    {
-      register BigReal p_ij_x = p_i_x - *(dp2++);
-      register BigReal p_ij_y = p_i_y - *(dp2++);
-      register BigReal p_ij_z = p_i_z - *(dp2++);
-
-      register BigReal r_1;
-      r_1 = 1./sqrt(p_ij_x * p_ij_x + p_ij_y * p_ij_y + p_ij_z * p_ij_z);
-      register BigReal f = *(dp2++) * kq_i * r_1;
-      electEnergy += f;
-      f *= r_1*r_1;
-      p_ij_x *= f;
-      p_ij_y *= f;
-      p_ij_z *= f;
-      f_i_x += p_ij_x;
-      f_i_y += p_ij_y;
-      f_i_z += p_ij_z;
-      *(rp2++) -= p_ij_x;
-      *(rp2++) -= p_ij_y;
-      *(rp2++) -= p_ij_z;
-    }
-    *(rp1++) += f_i_x;
-    *(rp1++) += f_i_y;
-    *(rp1++) += f_i_z;
+  if ( lattice->a() != 0. || lattice->b() != 0. || lattice->c() != 0. ) {
+    #define FULLDIRECT_PERIODIC
+    #include "ComputeFullDirectBase.h"
+  } else {
+    #undef FULLDIRECT_PERIODIC
+    #include "ComputeFullDirectBase.h"
   }
-
-  return electEnergy;
 }
-
 
 void ComputeFullDirect::doWork()
 {
@@ -99,6 +55,7 @@ void ComputeFullDirect::doWork()
   BigReal *localResults;
   BigReal *newLocalResults;
   register BigReal *local_ptr;
+  Lattice *lattice;
 
   ResizeArrayIter<PatchElem> ap(patchList);
 
@@ -127,6 +84,8 @@ void ComputeFullDirect::doWork()
   localData = new BigReal[4*numLocalAtoms];	// freed at end of this method
   localResults = new BigReal[3*numLocalAtoms];	// freed at end of this method
   newLocalResults = new BigReal[3*numLocalAtoms];  // freed at end of this method
+
+  lattice = &((*(ap.begin())).p->lattice);
 
   // get positions and charges
   local_ptr = localData;
@@ -217,7 +176,7 @@ void ComputeFullDirect::doWork()
       DebugM(4,"self interaction\n");
       electEnergy += calc_fulldirect(
         localData,localResults,numLocalAtoms,
-        localData,localResults,numLocalAtoms,1);
+        localData,localResults,numLocalAtoms,1,lattice);
     }
     else if ( stage < lastStage ||
             ( stage == lastStage && ( CNumPes() % 2 ) ) )
@@ -225,7 +184,7 @@ void ComputeFullDirect::doWork()
       DebugM(4,"full other interaction\n");
       electEnergy += calc_fulldirect(
         localData,localResults,numLocalAtoms,
-        remoteData,remoteResults,numRemoteAtoms,0);
+        remoteData,remoteResults,numRemoteAtoms,0,lattice);
     }
     else if ( stage == lastStage )
     {  // half other interaction
@@ -233,13 +192,13 @@ void ComputeFullDirect::doWork()
       if ( CMyPe() < ( CNumPes() / 2 ) )
         electEnergy += calc_fulldirect(
           localData,localResults,numLocalAtoms/2,
-          remoteData,remoteResults,numRemoteAtoms,0);
+          remoteData,remoteResults,numRemoteAtoms,0,lattice);
       else
         electEnergy += calc_fulldirect(
           localData,localResults,numLocalAtoms,
           remoteData + 4*(numRemoteAtoms/2),
           remoteResults + 3*(numRemoteAtoms/2),
-          numRemoteAtoms - (numRemoteAtoms/2), 0);
+          numRemoteAtoms - (numRemoteAtoms/2), 0,lattice);
     }
 
     delete [] remoteData;  remoteData = 0;
@@ -311,12 +270,15 @@ void ComputeFullDirect::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1997/12/17 10:28:07 $
+ *	$Revision: 1.1014 $	$Date: 1998/03/30 21:01:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFullDirect.C,v $
+ * Revision 1.1014  1998/03/30 21:01:16  jim
+ * Added nearest-image support for periodic boundary conditions to full direct.
+ *
  * Revision 1.1013  1997/12/17 10:28:07  jim
  * Full direct electrostatics now works in parallel.
  *

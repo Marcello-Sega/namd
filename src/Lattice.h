@@ -83,18 +83,9 @@ public:
   Vector delta(Position p1, Position p2) const
   {
     Vector result = p1 - p2;
-    if ( a1 )
-    {
-      BigReal tmp = b1 * result.x; result.x = a1 * ( tmp - rint(tmp) );
-    }
-    if ( a2 )
-    {
-      BigReal tmp = b2 * result.y; result.y = a2 * ( tmp - rint(tmp) );
-    }
-    if ( a3 )
-    {
-      BigReal tmp = b3 * result.z; result.z = a3 * ( tmp - rint(tmp) );
-    }
+    result.x -= a1 * rint( b1 * result.x );
+    result.y -= a2 * rint( b2 * result.y );
+    result.z -= a3 * rint( b3 * result.z );
     return result;
   }
 
@@ -154,12 +145,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1998/03/26 23:28:29 $
+ *	$Revision: 1.1006 $	$Date: 1998/03/30 21:01:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Lattice.h,v $
+ * Revision 1.1006  1998/03/30 21:01:17  jim
+ * Added nearest-image support for periodic boundary conditions to full direct.
+ *
  * Revision 1.1005  1998/03/26 23:28:29  jim
  * Small changes for KCC port.  Altered use of strstream in ComputeFreeEnergy.
  *

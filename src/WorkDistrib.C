@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1044 1998/03/26 23:28:36 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1045 1998/03/30 21:01:18 jim Exp $";
 
 #include <stdio.h>
 
@@ -547,13 +547,7 @@ void WorkDistrib::mapComputes(void)
 
   // Handle full electrostatics
   if ( node->simParameters->fullDirectOn )
-  {
-    if ( patchMap->xIsPeriodic() ||
-		patchMap->yIsPeriodic() || patchMap->zIsPeriodic() )
-      NAMD_die("Full direct electrostatics is incompatible with periodic boundary conditions.");
-    else
-      mapComputeHomePatches(computeFullDirectType);
-  }
+    mapComputeHomePatches(computeFullDirectType);
 #ifdef DPMTA
   if ( node->simParameters->FMAOn )
     mapComputeHomePatches(computeDPMTAType);
@@ -1039,12 +1033,15 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1044 $	$Date: 1998/03/26 23:28:36 $
+ *	$Revision: 1.1045 $	$Date: 1998/03/30 21:01:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1045  1998/03/30 21:01:18  jim
+ * Added nearest-image support for periodic boundary conditions to full direct.
+ *
  * Revision 1.1044  1998/03/26 23:28:36  jim
  * Small changes for KCC port.  Altered use of strstream in ComputeFreeEnergy.
  *
