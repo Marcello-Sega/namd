@@ -1,4 +1,4 @@
 include .rootdir/arch/Linux-i686-icc.arch
 
-CHARMARCH = net-linux-clustermatic-smp-icc
+CHARMARCH = net-linux-clustermatic-tcp-icc
 
