@@ -45,7 +45,8 @@ protected:
 	  threadStatus = SUSPENDED;
 	  CthSuspend();
 	};
-    void terminate(void) { CthFree(thread); CthSuspend(); };
+    void terminate(void) { CthFree(thread); CthSuspend();
+			   NAMD_die("Sequencer: Terminate failed!"); };
     SimParameters *const simParams;	// for convenience
     int numberOfCycles;			// stores argument to run()
     int stepsPerCycle;			// stores info from run()
