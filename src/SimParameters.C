@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *  $RCSfile: SimParameters.C,v $
- *  $Author: ferenc $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1055 $  $Date: 1999/02/02 08:02:36 $
+ *  $Author: jim $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1056 $  $Date: 1999/03/09 01:44:15 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1056  1999/03/09 01:44:15  jim
+ * Added langevinDamping and langevinHydrogen parameters.
+ *
  * Revision 1.1055  1999/02/02 08:02:36  ferenc
  * Added support for CHARMM parameter format in parameter files.
  *
@@ -847,6 +850,11 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
      "dynamics", &langevinTemp);
    opts.range("langevinTemp", NOT_NEGATIVE);
    opts.units("langevinTemp", N_KELVIN);
+   opts.optional("Langevin", "langevinDamping", "Damping coefficient (1/ps)",
+      &langevinDamping, 0.0);
+   opts.range("langevinDamping", NOT_NEGATIVE);
+   opts.optionalB("Langevin", "langevinHydrogen", "Should Langevin dynamics be applied to hydrogen atoms?",
+      &langevinHydrogen, TRUE);
    opts.optional("Langevin", "langevinFile", "PDB file with temperature "
      "coupling terms (B(i)) (default is the PDB input file)",
      PARSE_STRING);
@@ -2873,6 +2881,16 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
       iout << iINFO << "LANGEVIN DYNAMICS ACTIVE\n";
       iout << iINFO << "LANGEVIN TEMPERATURE   "
          << langevinTemp << "\n";
+      if (langevinDamping > 0.0) {
+	iout << iINFO << "LANGEVIN DAMPING COEFFICIENT IS "
+		<< langevinDamping << " INVERSE PS\n";
+	if (langevinHydrogen)
+		iout << iINFO << "LANGEVIN DYNAMICS APPLIED TO HYDROGENS\n";
+	else
+		iout << iINFO << "LANGEVIN DYNAMICS NOT APPLIED TO HYDROGENS\n";
+      } else {
+	iout << iINFO << "LANGEVIN DAMPING COEFFICIENTS DETERMINED FROM FILES\n";
+      }
       iout << endi;
    }
 
@@ -3530,12 +3548,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1055 $  $Date: 1999/02/02 08:02:36 $
+ *  $Revision: 1.1056 $  $Date: 1999/03/09 01:44:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1056  1999/03/09 01:44:15  jim
+ * Added langevinDamping and langevinHydrogen parameters.
+ *
  * Revision 1.1055  1999/02/02 08:02:36  ferenc
  * Added support for CHARMM parameter format in parameter files.
  *

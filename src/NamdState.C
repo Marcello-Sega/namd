@@ -167,10 +167,15 @@ NamdState::configFileInit(char *confFile)
 	//  the parameters necessary
 	if (simParameters->langevinOn)
 	{
-	   molecule->build_langevin_params(configList->find("langevinfile"),
+	  if (simParameters->langevinDamping == 0.0) {
+	    molecule->build_langevin_params(configList->find("langevinfile"),
 					    configList->find("langevincol"),
 					    pdb,
 					    NULL);
+	  } else {
+	    molecule->build_langevin_params(simParameters->langevinDamping,
+					    simParameters->langevinHydrogen);
+	  }
 	}
 	else if (simParameters->tCoupleOn)
 	{
@@ -274,13 +279,16 @@ NamdState::configFileInit(char *confFile)
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdState.C,v $
- *	$Author: ferenc $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1999/02/02 08:02:31 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1018 $	$Date: 1999/03/09 01:44:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdState.C,v $
+ * Revision 1.1018  1999/03/09 01:44:15  jim
+ * Added langevinDamping and langevinHydrogen parameters.
+ *
  * Revision 1.1017  1999/02/02 08:02:31  ferenc
  * Added support for CHARMM parameter format in parameter files.
  *

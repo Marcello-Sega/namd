@@ -233,6 +233,8 @@ public:
 
 	Bool langevinOn;		//  Flag TRUE-> langevin dynamics active
 	BigReal langevinTemp;		//  Temperature for Langevin dynamics
+	BigReal langevinDamping;	//  Damping coefficient (1/ps)
+	Bool langevinHydrogen;		//  Flag TRUE-> apply to hydrogens
 
 	Bool globalOn;			//  Flag TRUE-> use global integrator
 	Bool dihedralOn;		//  Flag TRUE-> dihedral dynamics active
@@ -408,13 +410,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.h,v $
- *	$Author: ferenc $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1030 $	$Date: 1999/02/02 08:02:37 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1031 $	$Date: 1999/03/09 01:44:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1031  1999/03/09 01:44:17  jim
+ * Added langevinDamping and langevinHydrogen parameters.
+ *
  * Revision 1.1030  1999/02/02 08:02:37  ferenc
  * Added support for CHARMM parameter format in parameter files.
  *

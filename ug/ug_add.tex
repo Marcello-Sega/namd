@@ -162,6 +162,15 @@ This temperature will be roughly maintained across the affected atoms
 through the addition of friction and random forces.}
 
 \item
+\NAMDCONFWDEF{langevinDamping}{damping coefficient for Langevin dynamics (1/ps)}{positive decimal}{per-atom values from PDB file}
+{Langevin coupling coefficient to be applied to all atoms (unless \verb!langevinHydrogen! is \verb!off!, in which case only non-hydrogen atoms are affected).
+If not given, a PDB file is used to obtain coefficients for each atom (see \verb!langevinFile! and \verb!langevinCol! below).}
+
+\item
+\NAMDCONFWDEF{langevinHydrogen}{Apply Langevin dynamics to hydrogen atoms?}{\verb!on! or \verb!off!}{\verb!on!}
+{If \verb!langevinDamping! is set then setting \verb!langevinHydrogen! to \verb!off! will turn off Langevin dynamics for hydrogen atoms.  This parameter has no effect if Langevin coupling coefficients are read from a PDB file.}
+
+\item
 \NAMDCONFWDEF{langevinFile}{PDB file containing Langevin parameters}
 {UNIX filename}{\verb!coordinates!}
 {PDB file to use for the Langevin coupling coefficients for each atom.  

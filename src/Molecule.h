@@ -180,6 +180,7 @@ public:
 				//  Build the set of harmonic constraint 
 				// parameters
 
+	void build_langevin_params(BigReal coupling, Bool doHydrogen);
 	void build_langevin_params(StringList *, StringList *, PDB *, char *);
 				//  Build the set of langevin dynamics parameters
 
@@ -395,12 +396,15 @@ public:
  *
  *	$RCSfile: Molecule.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1023 $	$Date: 1998/12/28 22:42:14 $
+ *	$Revision: 1.1024 $	$Date: 1999/03/09 01:44:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.1024  1999/03/09 01:44:15  jim
+ * Added langevinDamping and langevinHydrogen parameters.
+ *
  * Revision 1.1023  1998/12/28 22:42:14  jim
  * Eliminated unnecessary intPtr and RealPtr typedefs.
  *

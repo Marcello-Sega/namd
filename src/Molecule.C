@@ -11,7 +11,7 @@
  *
  *  $RCSfile: Molecule.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1033 $  $Date: 1998/12/28 22:42:13 $
+ *  $Revision: 1.1034 $  $Date: 1999/03/09 01:44:14 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1034  1999/03/09 01:44:14  jim
+ * Added langevinDamping and langevinHydrogen parameters.
+ *
  * Revision 1.1033  1998/12/28 22:42:13  jim
  * Eliminated unnecessary intPtr and RealPtr typedefs.
  *
@@ -3388,6 +3391,39 @@ void Molecule::receive_Molecule(MIStream *msg)
     }
     /*      END OF FUNCTION build_constraint_params    */
 
+void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
+
+  //  Allocate the array to hold all the data
+  langevinParams = new Real[numAtoms];
+  langForceVals = new Real[numAtoms];
+
+  if ( (langevinParams == NULL) || (langForceVals == NULL) )
+  {
+    NAMD_die("memory allocation failed in Molecule::build_langevin_params()");
+  }
+
+  //  Calculate the constant portion of the force values.  Note that
+  //  because we need to convert from femtoseconds to picoseconds,
+  //  the factor of 0.001 is needed.
+  BigReal forceConstant = 0.002*TIMEFACTOR*TIMEFACTOR*BOLTZMAN*
+			(simParams->langevinTemp)/(simParams->dt);
+
+  //  Loop through all the atoms and get the b value
+  for (int i=0; i<numAtoms; i++)
+  {
+    BigReal bval = coupling;
+
+    if ( (! doHydrogen) && is_hydrogen(i) ) bval = 0;
+
+    //  Assign the b value
+    langevinParams[i] = bval;
+
+    //  Calculate the random force value
+    langForceVals[i] = sqrt(forceConstant*atoms[i].mass*bval);
+  }
+
+}
+
     /************************************************************************/
     /*                  */
     /*      FUNCTION build_langevin_params      */
@@ -3995,12 +4031,15 @@ void Molecule::receive_Molecule(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1033 $  $Date: 1998/12/28 22:42:13 $
+ *  $Revision: 1.1034 $  $Date: 1999/03/09 01:44:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1034  1999/03/09 01:44:14  jim
+ * Added langevinDamping and langevinHydrogen parameters.
+ *
  * Revision 1.1033  1998/12/28 22:42:13  jim
  * Eliminated unnecessary intPtr and RealPtr typedefs.
  *
