@@ -164,6 +164,12 @@ void Sequencer::integrate() {
     int energyFrequency = simParams->outputEnergies;
 
     rattle1(0.,0);  // enforce rigid bond constraints on initial positions
+
+    const int reassignFreq = simParams->reassignFreq;
+    if ( !commOnly && ( reassignFreq>0 ) && ! (step%reassignFreq) ) {
+       reassignVelocities(timestep,step);
+    }
+
     doEnergy = ! ( step % energyFrequency );
     runComputeObjects(1,step<numberOfSteps); // must migrate here!
     if ( staleForces ) {
@@ -213,7 +219,7 @@ void Sequencer::integrate() {
 		addForceToMomentum(0.5*slowstep,Results::slow,staleForces);
        }
 
-       const int reassignFreq = simParams->reassignFreq;
+       /* reassignment based on half-step velocities
        if ( !commOnly && ( reassignFreq>0 ) && ! (step%reassignFreq) ) {
 	addVelocityToPosition(0.5*timestep);
         reassignVelocities(timestep,step);
@@ -222,7 +228,7 @@ void Sequencer::integrate() {
 	rattle1(-timestep,0);
 	addVelocityToPosition(-1.0*timestep);
 	rattle1(timestep,0);
-       }
+       } */
 
 	maximumMove(timestep);
 	if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
@@ -247,6 +253,17 @@ void Sequencer::integrate() {
 	  if ( doNonbonded ) saveForce(Results::nbond);
 	  if ( doFullElectrostatics ) saveForce(Results::slow);
 	}
+
+       // reassignment based on full-step velocities
+       if ( !commOnly && ( reassignFreq>0 ) && ! (step%reassignFreq) ) {
+        reassignVelocities(timestep,step);
+        addForceToMomentum(-0.5*timestep);
+        if (staleForces || doNonbonded)
+		addForceToMomentum(-0.5*nbondstep,Results::nbond,staleForces);
+        if (staleForces || doFullElectrostatics)
+		addForceToMomentum(-0.5*slowstep,Results::slow,staleForces);
+        rattle1(-timestep,0);
+       }
 
        if ( ! commOnly ) {
 	langevinVelocitiesBBK2(timestep);
@@ -876,6 +893,7 @@ void Sequencer::submitHalfstep(int step)
   } 
 
   {
+    BigReal intKineticEnergy = 0;
     Tensor intVirialNormal;
 
     int hgs;
@@ -893,10 +911,13 @@ void Sequencer::submitHalfstep(int step)
         BigReal mass = a[j].mass;
         Vector v = a[j].velocity;
         Vector dv = v - v_cm;
+        intKineticEnergy += mass * (v * dv);
         intVirialNormal += mass * outer(v,dv);
       }
     }
 
+    intKineticEnergy *= 0.5 * 0.5;
+    reduction->item(REDUCTION_INT_HALFSTEP_KINETIC_ENERGY) += intKineticEnergy;
     intVirialNormal *= 0.5;
     ADD_TENSOR_OBJECT(reduction,REDUCTION_INT_VIRIAL_NORMAL,intVirialNormal);
   }
@@ -937,6 +958,7 @@ void Sequencer::submitReductions(int step)
 #endif
 
   {
+    BigReal intKineticEnergy = 0;
     Tensor intVirialNormal;
     Tensor intVirialNbond;
     Tensor intVirialSlow;
@@ -947,15 +969,21 @@ void Sequencer::submitReductions(int step)
       int j;
       BigReal m_cm = 0;
       Position x_cm(0,0,0);
+      Velocity v_cm(0,0,0);
       for ( j = i; j < (i+hgs); ++j ) {
         m_cm += a[j].mass;
         x_cm += a[j].mass * a[j].position;
+        v_cm += a[j].mass * a[j].velocity;
       }
       x_cm /= m_cm;
+      v_cm /= m_cm;
       for ( j = i; j < (i+hgs); ++j ) {
 	// net force treated as zero for fixed atoms
         if ( simParams->fixedAtomsOn && a[j].atomFixed ) continue;
         BigReal mass = a[j].mass;
+        Vector v = a[j].velocity;
+        Vector dv = v - v_cm;
+        intKineticEnergy += mass * (v * dv);
         Vector dx = a[j].position - x_cm;
         intVirialNormal += outer(patch->f[Results::normal][j],dx);
         intVirialNbond += outer(patch->f[Results::nbond][j],dx);
@@ -963,6 +991,8 @@ void Sequencer::submitReductions(int step)
       }
     }
 
+    intKineticEnergy *= 0.5;
+    reduction->item(REDUCTION_INT_CENTERED_KINETIC_ENERGY) += intKineticEnergy;
     ADD_TENSOR_OBJECT(reduction,REDUCTION_INT_VIRIAL_NORMAL,intVirialNormal);
     ADD_TENSOR_OBJECT(reduction,REDUCTION_INT_VIRIAL_NBOND,intVirialNbond);
     ADD_TENSOR_OBJECT(reduction,REDUCTION_INT_VIRIAL_SLOW,intVirialSlow);

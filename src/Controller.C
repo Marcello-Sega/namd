@@ -44,6 +44,8 @@ extern "C" void CApplicationDepositNode0Data(char *);
 //#define DEBUGM
 #include "Debug.h"
 
+#define XXXBIGREAL 1.0e32
+
 Controller::Controller(NamdState *s) :
 	computeChecksum(0), marginViolations(0),
 	simParams(Node::Object()->simParameters),
@@ -82,7 +84,7 @@ Controller::Controller(NamdState *s) :
       AVGXY(langevinPiston_strainRate);
 #undef AVGXY
     }
-    smooth2_avg = 0;
+    smooth2_avg = XXXBIGREAL;
     temp_avg = 0;
     pressure_avg = 0;
     groupPressure_avg = 0;
@@ -195,6 +197,7 @@ void Controller::integrate() {
     else
       slowFreq = simParams->nonbondedFrequency;
 
+    reassignVelocities(step);  // only for full-step velecities
     receivePressure(step);
     printFepMessage(step);
     printDynamicsEnergies(step);
@@ -745,13 +748,16 @@ void Controller::receivePressure(int step, int minimize)
 
     int numAtoms = molecule->numAtoms;
     numDegFreedom = 3 * numAtoms;
+    int numGroupDegFreedom = 3 * molecule->numHydrogenGroups;
     int numFixedAtoms =
 	( simParameters->fixedAtomsOn ? molecule->numFixedAtoms : 0 );
     int numFixedGroups = ( numFixedAtoms ? molecule->numFixedGroups : 0 );
     if ( numFixedAtoms ) numDegFreedom -= 3 * numFixedAtoms;
+    if ( numFixedGroups ) numGroupDegFreedom -= 3 * numFixedGroups;
     if ( ! ( numFixedAtoms || molecule->numConstraints
 	|| simParameters->comMove || simParameters->langevinOn ) ) {
       numDegFreedom -= 3;
+      numGroupDegFreedom -= 3;
     }
     int numRigidBonds = molecule->numRigidBonds;
     int numFixedRigidBonds =
@@ -760,6 +766,28 @@ void Controller::receivePressure(int step, int minimize)
 
     kineticEnergyHalfstep = reduction->item(REDUCTION_HALFSTEP_KINETIC_ENERGY);
     kineticEnergyCentered = reduction->item(REDUCTION_CENTERED_KINETIC_ENERGY);
+
+    BigReal groupKineticEnergyHalfstep = kineticEnergyHalfstep -
+	reduction->item(REDUCTION_INT_HALFSTEP_KINETIC_ENERGY);
+    BigReal groupKineticEnergyCentered = kineticEnergyCentered -
+	reduction->item(REDUCTION_INT_CENTERED_KINETIC_ENERGY);
+
+    BigReal atomTempHalfstep = 2.0 * kineticEnergyHalfstep
+					/ ( numDegFreedom * BOLTZMAN );
+    BigReal atomTempCentered = 2.0 * kineticEnergyCentered
+					/ ( numDegFreedom * BOLTZMAN );
+    BigReal groupTempHalfstep = 2.0 * groupKineticEnergyHalfstep
+					/ ( numGroupDegFreedom * BOLTZMAN );
+    BigReal groupTempCentered = 2.0 * groupKineticEnergyCentered
+					/ ( numGroupDegFreedom * BOLTZMAN );
+
+    /*  test code for comparing different temperatures
+    iout << "TEMPTEST: " << step << " " << 
+	atomTempHalfstep << " " <<
+	atomTempCentered << " " <<
+	groupTempHalfstep << " " <<
+	groupTempCentered << "\n" << endi;
+    */
 
     GET_TENSOR(virial_normal,reduction,REDUCTION_VIRIAL_NORMAL);
     GET_TENSOR(virial_nbond,reduction,REDUCTION_VIRIAL_NBOND);
@@ -783,8 +811,8 @@ void Controller::receivePressure(int step, int minimize)
     virial_nbond -= outer(extForce_nbond,extPosition);
     virial_slow -= outer(extForce_slow,extPosition);
 
-    kineticEnergy = (kineticEnergyHalfstep + 2.*kineticEnergyCentered) / 3.0;
-    temperature = 2.0 * kineticEnergyHalfstep / ( numDegFreedom * BOLTZMAN );
+    kineticEnergy = kineticEnergyCentered;
+    temperature = 2.0 * kineticEnergyCentered / ( numDegFreedom * BOLTZMAN );
 
     if ( (volume=lattice.volume()) != 0. )
     {
@@ -1073,6 +1101,7 @@ void Controller::printEnergies(int step, int minimize)
     BigReal boundaryEnergy;
     BigReal miscEnergy;
     BigReal potentialEnergy;
+    BigReal flatEnergy;
     BigReal smoothEnergy;
     Vector momentum;
     Vector angularMomentum;
@@ -1114,14 +1143,17 @@ void Controller::printEnergies(int step, int minimize)
 	improperEnergy + electEnergy + electEnergySlow + ljEnergy +
 	boundaryEnergy + miscEnergy;
     totalEnergy = potentialEnergy + kineticEnergy;
-    smoothEnergy = totalEnergy +
-        (4.0/3.0)*( kineticEnergyCentered - kineticEnergyHalfstep);
+    flatEnergy = totalEnergy +
+        (1.0/3.0)*( kineticEnergyHalfstep - kineticEnergyCentered);
     if ( !(step%slowFreq) ) {
       // only adjust based on most accurate energies
+      BigReal s = (4.0/3.0)*( kineticEnergyHalfstep - kineticEnergyCentered);
+      if ( smooth2_avg == XXXBIGREAL ) smooth2_avg = s;
       smooth2_avg *= 0.9375;
-      smooth2_avg -= 0.0625 *
-        (4.0/3.0)*( kineticEnergyCentered - kineticEnergyHalfstep);
+      smooth2_avg += 0.0625 * s;
     }
+    smoothEnergy = flatEnergy + smooth2_avg -
+        (4.0/3.0)*( kineticEnergyHalfstep - kineticEnergyCentered);
 
     if ( simParameters->outputMomenta && ! minimize &&
          ! ( step % simParameters->outputMomenta ) )
@@ -1288,8 +1320,8 @@ void Controller::printEnergies(int step, int minimize)
     iout << "     ";
     iout << FORMAT(totalEnergy);
     iout << FORMAT(temperature);
+    iout << FORMAT(flatEnergy);
     iout << FORMAT(smoothEnergy);
-    iout << FORMAT(smoothEnergy+smooth2_avg);
     iout << FORMAT(temp_avg/avg_count);
     if ( volume != 0. )
     {
