@@ -35,13 +35,6 @@ class MapDistribMsg : public comm_object
 
 class WorkDistrib : public groupmember
 {
-private:
-  Node *node;
-  void mapPatches(void);
-  void mapComputes(void);
-  void mapAngleComputes(void);
-  void mapElectComputes(void);
-
 public:
   WorkDistrib(InitMsg *msg);
   ~WorkDistrib(void);
@@ -53,8 +46,16 @@ public:
   void buildMaps(void);
   void sendMaps(void);
   void createPatches(void);
+  void createComputes(void);
 
   void saveMaps(MapDistribMsg *msg);
+
+private:
+  Node *node;
+  void mapPatches(void);
+  void mapComputes(void);
+  void mapAngleComputes(void);
+  void mapElectComputes(void);
 };
 
 #endif /* WORKDISTRIB_H */
@@ -63,13 +64,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/08/29 00:50:42 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.8 $	$Date: 1996/10/04 22:23:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.8  1996/10/04 22:23:50  brunner
+ * Added createComputes
+ *
  * Revision 1.7  1996/08/29 00:50:42  ari
  * *** empty log message ***
  *
