@@ -662,6 +662,13 @@ void ComputeNonbondedUtil :: NAME
     LES( BigReal *lambda_table_i =
 			lambda_table + (lesFactor+1) * p_i.partition; )
 
+    INT(
+    const BigReal force_sign = (
+      ( pairInteractionOn && ! pairInteractionSelf ) ?
+        ( ( p_i.partition == 1 ) ? 1. : -1. ) : 0.
+    );
+      
+    )
 
     const BigReal kq_i = COLOUMB * p_i.charge * scaling * dielectric_1;
     const LJTable::TableEntry * const lj_row =

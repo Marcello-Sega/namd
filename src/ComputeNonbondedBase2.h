@@ -94,9 +94,9 @@ NORMAL( MODIFIED( foo bar ) )
       register BigReal vdw_dir =
 	( 3.0 * diffa * vdw_d + 2.0 * vdw_c ) * diffa + vdw_b;
       // BigReal force_r = -1.0 * LAM(lambda_pair *) vdw_dir;
-      reduction[pairVDWForceIndex_X] -= 2.0 * vdw_dir * p_ij_x;
-      reduction[pairVDWForceIndex_Y] -= 2.0 * vdw_dir * p_ij_y;
-      reduction[pairVDWForceIndex_Z] -= 2.0 * vdw_dir * p_ij_z;
+      reduction[pairVDWForceIndex_X] -= 2.0 * force_sign * vdw_dir * p_ij_x;
+      reduction[pairVDWForceIndex_Y] -= 2.0 * force_sign * vdw_dir * p_ij_y;
+      reduction[pairVDWForceIndex_Z] -= 2.0 * force_sign * vdw_dir * p_ij_z;
       )
 
 #if ( SHORT(1+) 0 )
@@ -126,9 +126,9 @@ NORMAL( MODIFIED( foo bar ) )
       register BigReal fast_dir =
 	( 3.0 * diffa * fast_d + 2.0 * fast_c ) * diffa + fast_b;
       // force_r -= LAM(lambda_pair *) fast_dir;
-      reduction[pairElectForceIndex_X] -= 2.0 * fast_dir * p_ij_x;
-      reduction[pairElectForceIndex_Y] -= 2.0 * fast_dir * p_ij_y;
-      reduction[pairElectForceIndex_Z] -= 2.0 * fast_dir * p_ij_z;
+      reduction[pairElectForceIndex_X] -= 2.0 * force_sign * fast_dir * p_ij_x;
+      reduction[pairElectForceIndex_Y] -= 2.0 * force_sign * fast_dir * p_ij_y;
+      reduction[pairElectForceIndex_Z] -= 2.0 * force_sign * fast_dir * p_ij_z;
       )
       }
 
@@ -211,9 +211,9 @@ NORMAL( MODIFIED( foo bar ) )
       INT( {
       register BigReal slow_dir =
 	( 3.0 * diffa * slow_d + 2.0 * slow_c ) * diffa + slow_b;
-      reduction[pairElectForceIndex_X] -= 2.0 * slow_dir * p_ij_x;
-      reduction[pairElectForceIndex_Y] -= 2.0 * slow_dir * p_ij_y;
-      reduction[pairElectForceIndex_Z] -= 2.0 * slow_dir * p_ij_z;
+      reduction[pairElectForceIndex_X] -= 2.0 * force_sign * slow_dir * p_ij_x;
+      reduction[pairElectForceIndex_Y] -= 2.0 * force_sign * slow_dir * p_ij_y;
+      reduction[pairElectForceIndex_Z] -= 2.0 * force_sign * slow_dir * p_ij_z;
       } )
 
       FAST(
