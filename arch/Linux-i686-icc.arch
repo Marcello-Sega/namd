@@ -4,10 +4,10 @@ CHARMARCH = net-linux-icc
 FLOATOPTS = -march=pentiumpro -mcpu=pentium4 -ip -fno-rtti
 
 CXX = icpc -DSOCKLEN_T=socklen_t
-CXXOPTS = -O2 $(FLOATOPTS) -static
+CXXOPTS = -O2 $(FLOATOPTS)
 CXXNOALIASOPTS = -O3 -fno-alias $(FLOATOPTS)
 
 CC = icc
-COPTS = -O2 $(FLOATOPTS) -static
+COPTS = -O2 $(FLOATOPTS)
 
 
