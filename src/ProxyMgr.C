@@ -24,8 +24,14 @@
 #include "ProxyPatch.h"
 #include "ComputeMap.h"
 #include "HomePatch.h"
+#include <string.h>
 
 #include "ProcessorPrivate.h"
+
+#define PACKDATA(LIST,TYPE,DATA) \
+	memcpy((void*)DATA,(void*)(LIST.begin()),size*sizeof(TYPE))
+#define UNPACKDATA(LIST,TYPE,DATA) \
+	memcpy((void*)(LIST.begin()),(void*)DATA,size*sizeof(TYPE))
 
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 4
@@ -40,8 +46,7 @@ void ProxyAtomsMsg::prepack() {
     *((int *)b) = patch; b += sizeof(PatchID);
     *((int *)b) = size; b += sizeof(int);
     AtomID *data = (AtomID *)b;
-    for ( int i = 0; i < size; ++i )
-      data[i] = atomIDList[i];
+    PACKDATA(atomIDList,AtomID,data);
 }
   
   
@@ -63,8 +68,7 @@ void ProxyAtomsMsg:: unpack (void *in)
     int size = *((int*)(buffer+sizeof(int)));
     atomIDList.resize(size);
     AtomID *data = (AtomID*)(buffer+2*sizeof(int));
-    for ( int i = 0; i < size; ++i )
-      atomIDList[i] = data[i];
+    UNPACKDATA(atomIDList,AtomID,data);
   }
 
 void * ProxyDataMsg:: pack (int *length)
@@ -76,8 +80,7 @@ void * ProxyDataMsg:: pack (int *length)
     *((int*)(buffer+sizeof(int))) = size;
     *((Flags*)(buffer+2*sizeof(int))) = flags;
     Position *data = (Position*)(buffer+2*sizeof(int)+sizeof(Flags));
-    for ( int i = 0; i < size; ++i )
-      data[i] = positionList[i];
+    PACKDATA(positionList,Position,data);
     this->~ProxyDataMsg();
     return buffer;
   }
@@ -91,14 +94,11 @@ void ProxyDataMsg:: unpack (void *in)
     flags = *((Flags*)(buffer+2*sizeof(int)));
     positionList.resize(size);
     Position *data = (Position*)(buffer+2*sizeof(int)+sizeof(Flags));
-    for ( int i = 0; i < size; ++i )
-      positionList[i] = data[i];
+    UNPACKDATA(positionList,Position,data);
   }
 
 void * ProxyAllMsg:: pack (int *length)
   {
-    int i;
-
     int size = positionList.size();
     if (size != atomIDList.size()) {
       iout << "ProxyAllMsg::pack() - Bad News, sizes don't match!" << endi;
@@ -111,19 +111,15 @@ void * ProxyAllMsg:: pack (int *length)
     *((int*)(buffer+sizeof(int))) = size;
     *((Flags*)(buffer+2*sizeof(int))) = flags;
     Position *data = (Position*)(buffer+2*sizeof(int)+sizeof(Flags));
-    for ( i = 0; i < size; ++i )
-      data[i] = positionList[i];
+    PACKDATA(positionList,Position,data);
     AtomID *data2 = (AtomID*)(buffer+2*sizeof(int)+sizeof(Flags)+size*sizeof(Position));
-    for ( i = 0; i < size; ++i )
-      data2[i] = atomIDList[i];
+    PACKDATA(atomIDList,AtomID,data2);
     this->~ProxyAllMsg();
     return buffer;
   }
 
 void ProxyAllMsg:: unpack (void *in)
   {
-    int i;
-
     new((void*)this) ProxyAllMsg;
     char *buffer = (char*)in;
     patch = *((int*)buffer);
@@ -131,12 +127,10 @@ void ProxyAllMsg:: unpack (void *in)
     flags = *((Flags*)(buffer+2*sizeof(int)));
     positionList.resize(size);
     Position *data = (Position*)(buffer+2*sizeof(int)+sizeof(Flags));
-    for ( i = 0; i < size; ++i )
-      positionList[i] = data[i];
+    UNPACKDATA(positionList,Position,data);
     atomIDList.resize(size);
     AtomID *data2 = (AtomID*)(buffer+2*sizeof(int)+sizeof(Flags)+size*sizeof(Position));
-    for ( i = 0; i < size; ++i )
-      atomIDList[i] = data2[i];
+    UNPACKDATA(atomIDList,AtomID,data2);
   }
 
 void * ProxyResultMsg:: pack (int *length)
@@ -150,8 +144,7 @@ void * ProxyResultMsg:: pack (int *length)
     for ( int j = 0; j < Results::maxNumForces; ++j )
     {
       Force *data = (Force*)(buffer+4*sizeof(int)+size*sizeof(Force)*j);
-      for ( int i = 0; i < size; ++i )
-        data[i] = forceList[j][i];
+      PACKDATA(forceList[j],Force,data);
     }
     this->~ProxyResultMsg();
     return buffer;
@@ -168,8 +161,7 @@ void ProxyResultMsg:: unpack (void *in)
     {
       forceList[j].resize(size);
       Force *data = (Force*)(buffer+4*sizeof(int)+size*sizeof(Force)*j);
-      for ( int i = 0; i < size; ++i )
-        forceList[j][i] = data[i];
+      UNPACKDATA(forceList[j],Force,data);
     }
   }
 
@@ -353,13 +345,16 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1997/12/10 17:53:35 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1019 $	$Date: 1997/12/19 23:42:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.1019  1997/12/19 23:42:36  jim
+ * Replaced assignments with memcpys and reordered memcpys for efficiency.
+ *
  * Revision 1.1018  1997/12/10 17:53:35  milind
  * Removed the dcd file already exists error. Now, if a dcd file already exists,
  * it is moved to a .bak before writing new dcd file.

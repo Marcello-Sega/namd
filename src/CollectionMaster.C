@@ -135,17 +135,10 @@ void * CollectVectorMsg::pack(int *length)
 		data.size() * sizeof(Vector);
   char *buffer = (char*)new_packbuffer(this,*length);
   char *b = buffer;
-  // *((int*)b) = seq; b += sizeof(int);
-  // *((int*)b) = aid.size(); b += sizeof(int);
   memcpy(b, &seq, sizeof(int)); b += sizeof(int);
   int size = aid.size(); memcpy(b, &size, sizeof(int)); b += sizeof(int);
-  for ( int i = 0; i < aid.size(); i++ )
-  {
-    // *((AtomID*)b) = aid[i]; b += sizeof(AtomID);
-    // *((Vector*)b) = data[i]; b += sizeof(Vector);
-    memcpy(b, &aid[i], sizeof(AtomID)); b += sizeof(AtomID);
-    memcpy(b, &data[i], sizeof(Vector)); b += sizeof(Vector);
-  }
+  memcpy(b, aid.begin(), size*sizeof(AtomID)); b += size*sizeof(AtomID);
+  memcpy(b, data.begin(), size*sizeof(Vector)); b += size*sizeof(Vector);
   this->~CollectVectorMsg();
   return buffer;
 }
@@ -155,19 +148,12 @@ void CollectVectorMsg::unpack(void *in)
 {
   new((void*)this) CollectVectorMsg;
   char *b = (char*)in;
-  // seq = *((int*)b); b += sizeof(int);
-  // int size = *((int*)b); b += sizeof(int);
   memcpy(&seq, b, sizeof(int)); b += sizeof(int);
   int size; memcpy(&size, b, sizeof(int)); b += sizeof(int);
   aid.resize(size);
+  memcpy(aid.begin(), b, size*sizeof(AtomID)); b += size*sizeof(AtomID);
   data.resize(size);
-  for ( int i = 0; i < size; i++ )
-  {
-    // aid[i] = *((AtomID*)b); b += sizeof(AtomID);
-    // data[i] = *((Vector*)b); b += sizeof(Vector);
-    memcpy(&aid[i], b, sizeof(AtomID)); b += sizeof(AtomID);
-    memcpy(&data[i], b, sizeof(Vector)); b += sizeof(Vector);
-  }
+  memcpy(data.begin(), b, size*sizeof(Vector)); b += size*sizeof(Vector);
 }
 
 
@@ -179,12 +165,15 @@ void CollectVectorMsg::unpack(void *in)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/12/10 17:53:33 $
+ *	$Revision: 1.1012 $	$Date: 1997/12/19 23:42:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMaster.C,v $
+ * Revision 1.1012  1997/12/19 23:42:38  jim
+ * Replaced assignments with memcpys and reordered memcpys for efficiency.
+ *
  * Revision 1.1011  1997/12/10 17:53:33  milind
  * Removed the dcd file already exists error. Now, if a dcd file already exists,
  * it is moved to a .bak before writing new dcd file.

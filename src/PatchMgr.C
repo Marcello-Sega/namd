@@ -11,7 +11,7 @@
 /*								           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1010 1997/11/07 20:17:45 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1011 1997/12/19 23:42:37 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -220,22 +220,13 @@ void * MovePatchesMsg::pack (int *length)
 		v.size() * sizeof(Velocity);
     char *buffer = (char*)new_packbuffer(this,*length);
     char *b = buffer;
-    // *((NodeID*)b) = fromNodeID; b += sizeof(NodeID);
-    // *((PatchID*)b) = pid; b += sizeof(PatchID);
-    // *((int*)b) = aid.size(); b += sizeof(int);
     memcpy(b, &fromNodeID, sizeof(NodeID)); b += sizeof(NodeID);
     memcpy(b, &pid, sizeof(PatchID)); b += sizeof(PatchID);
-    int dummy=aid.size(); memcpy(b, &dummy, sizeof(int)); b += sizeof(int);
-    // rewrite using unencap (AS)
-    for ( int i = 0; i < aid.size(); i++ )
-    {
-      // *((AtomID*)b) = aid[i]; b += sizeof(AtomID);
-      // *((Position*)b) = p[i]; b += sizeof(Position);
-      // *((Velocity*)b) = v[i]; b += sizeof(Velocity);
-      memcpy(b, &aid[i], sizeof(AtomID)); b += sizeof(AtomID);
-      memcpy(b, &p[i], sizeof(Position)); b += sizeof(Position);
-      memcpy(b, &v[i], sizeof(Velocity)); b += sizeof(Velocity);
-    }
+    int size=aid.size(); 
+    memcpy(b, &size, sizeof(int)); b += sizeof(int);
+    memcpy(b, aid.begin(), size*sizeof(AtomID)); b += size*sizeof(AtomID);     
+    memcpy(b, p.begin(), size*sizeof(Position)); b += size*sizeof(Position);
+    memcpy(b, v.begin(), size*sizeof(Velocity)); b += size*sizeof(Velocity);
     this->~MovePatchesMsg();
     return buffer;
   }
@@ -244,26 +235,16 @@ void MovePatchesMsg::unpack (void *in)
   {
     new((void*)this) MovePatchesMsg;
     char *b = (char*)in;
-    //fromNodeID = *((NodeID*)b); b += sizeof(NodeID);
-    //pid = *((PatchID*)b); b += sizeof(PatchID);
-    //int size = *((int*)b); b += sizeof(int);
     memcpy(&fromNodeID, b, sizeof(NodeID)); b += sizeof(NodeID);
     memcpy(&pid,b, sizeof(PatchID)); b += sizeof(PatchID);
     int size; memcpy(&size, b, sizeof(int)); b += sizeof(int);
     DebugM(1,"MovePatchesMsg::unpack() - size = " << size << endl);
     aid.resize(size);
+    memcpy(aid.begin(),b,size*sizeof(AtomID)); b += size*sizeof(AtomID);
     p.resize(size);
+    memcpy(p.begin(),b,size*sizeof(Position)); b += size*sizeof(Position);
     v.resize(size);
-    // rewrite using encap (AS)
-    for ( int i = 0; i < size; i++ )
-    {
-      //aid[i] = *((AtomID*)b); b += sizeof(AtomID);
-      //p[i] = *((Position*)b); b += sizeof(Position);
-      //v[i] = *((Velocity*)b); b += sizeof(Velocity);
-      memcpy(&aid[i],b, sizeof(AtomID)); b += sizeof(AtomID);
-      memcpy(&p[i], b, sizeof(Position)); b += sizeof(Position);
-      memcpy(&v[i], b, sizeof(Velocity)); b += sizeof(Velocity);
-    }
+    memcpy(v.begin(),b,size*sizeof(Velocity)); b += size*sizeof(Velocity);
   }
 
 #include "PatchMgr.bot.h"
@@ -272,12 +253,15 @@ void MovePatchesMsg::unpack (void *in)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMgr.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/11/07 20:17:45 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1011 $	$Date: 1997/12/19 23:42:37 $
  *
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.C,v $
+ * Revision 1.1011  1997/12/19 23:42:37  jim
+ * Replaced assignments with memcpys and reordered memcpys for efficiency.
+ *
  * Revision 1.1010  1997/11/07 20:17:45  milind
  * Made NAMD to run on shared memory machines.
  *
