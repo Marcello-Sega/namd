@@ -443,6 +443,8 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
 	&PMEGridSizeY);
    opts.require("PME", "PMEGridSizeZ", "PME grid in z dimension",
 	&PMEGridSizeZ);
+   opts.optional("PME", "PMEProcessors",
+	"PME FFT and reciprocal sum processor count", &PMEProcessors, 0);
 
 #ifdef DPME
    opts.optionalB("PME", "useDPME", "Use old DPME code?", &useDPME, FALSE);

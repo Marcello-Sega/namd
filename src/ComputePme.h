@@ -15,15 +15,13 @@ class PmeRealSpace;
 class ComputeMgr;
 class SubmitReduction;
 class PmeGridMsg;
-class PmeUntransMsg;
 
 class ComputePme : public ComputeHomePatches {
 public:
   ComputePme(ComputeID c);
   virtual ~ComputePme();
   void doWork();
-  void sendData();
-  void copyEnergy(PmeUntransMsg *);
+  void sendData(int numRecipPes, int *recipPeMap);
   void copyResults(PmeGridMsg *);
   void ungridForces();
 
