@@ -5,6 +5,8 @@
 +--------------------------------------------------------------------+
 
 This file includes directions for compiling and running NAMD,
+configuration file parameters for new simulation features,
+advice for dealing with endian issues when switching platforms,
 a list of know deficiencies, and advice for reporting bugs.
 
 ----------------------------------------------------------------------
@@ -132,9 +134,69 @@ mpirun -np X namd2 alanin.conf
 
 ----------------------------------------------------------------------
 
+New Features
+
+--- Mollified Impulse Method (MOLLY) ---
+
+This method eliminates the components of the long range electrostatic
+forces which contribute to resonance along bonds to hydrogen atoms,
+allowing a fullElectFrequency of 6 (vs. 4) with a 1 fs timestep
+without using "rigidBonds all".  You may use "rigidBonds water" but
+using "rigidBonds all" with MOLLY makes no sense since the degrees of
+freedom which MOLLY protects from resonance are already frozen.
+The following parameters enable MOLLY:
+  * molly on
+  * mollyIterations <max iterations for solver> (optional, default=100)
+  * mollyTolerance <tolerance for solver> (optional, default=0.00001)
+
+--- Non-orthogonal Periodic Cells ---
+
+The parameters (cellBasisVector[123] and cellOrigin) have not changed,
+but the basis vectors may now be in any direction.  This feature has
+received limited testing.  PME should work.  Non-isotropic constant
+pressure methods (useFlexibleCell) won't.
+
+--- Interactive Molecular Dynamics ---
+
+NAMD now works directly with VMD (http://www.ks.uiuc.edu/Research/vmd/)
+to allow you to view and interactively steer your simulation.  NAMD will
+wait for VMD to connect on startup with the following parameters:
+  * IMDon yes
+  * IMDport <positive integer, port number to expect VMD to connect on>
+  * IMDfreq <positive integer, timesteps between sending coordinates>
+
+--- Faster Particle Mesh Ewald ---
+
+If for some reason you wish to use the slower DPME implementation
+of the particle mesh Ewald method add "useDPME yes".  If you set
+cellOrigin to something other than (0,0,0) the energy may differ
+slightly between the old and new implementations.  For even better
+performance get the NAMD source code and compile with FFTW.
+
+----------------------------------------------------------------------
+
+Endian Issues
+
+Some architectures write binary data (integer or floating point) with
+the most significant byte first; others put the most significant byte
+last.  This doesn't effect text files but it does matter when a binary
+data file that was written on a "big-endian" machine (Sun, HP, SGI) is
+read on a "small-endian" machine (Intel, Alpha) or vice versa.
+
+NAMD generates DCD trajectory files and binary coordinate and velocity
+files which are "endian-sensitive".  While VMD 1.4b1 can read DCD files
+from any machine, NAMD requires same-endian binary restart files and
+most analysis programs (like CHARMM or X-PLOR) require same-endian DCD
+files.  We provide the programs flipdcd and flipbinpdb for switching the
+endianness of DCD and binary restart files, respectively.  These programs
+use mmap to alter the file in-place and may therefore appear to consume
+an amount of memory equal to the size of the file.
+
+----------------------------------------------------------------------
+
 Known Deficiencies
 
-- PME does not parallelize well.
+- PME (the Ewald sum) is not well parallelized.
 
 - NAMD requires X-PLOR or CHARMM to produce the .psf structure input
 files.  If you don't have one of these, you probably can't use NAMD yet.
