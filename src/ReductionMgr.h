@@ -31,7 +31,9 @@ typedef enum
 struct ReductionMgrData
 {
   int sequenceNum;
+  #if PANIC > 0
   int dataToSend;			// number of tags to send (not full)
+  #endif
   int numData[REDUCTION_MAX_RESERVED];	// number of data to expect
   BigReal tagData[REDUCTION_MAX_RESERVED];	// values in tags
   ReductionMgrData *next;	// a queue! ugly but effective.

@@ -28,7 +28,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.779 1997/01/28 17:17:03 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.780 1997/01/28 18:11:05 nealk Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -151,9 +151,9 @@ void ReductionMgr::displayData(ReductionMgrData *current, ReductionTag tag)
 void ReductionMgr::displayData(ReductionMgrData *current)
 {
   if (!current) return;
+  #if PANIC > 0
   if (current->dataToSend)
 	iout << "Unfilled data fields: "<< current->dataToSend <<"\n" << endi;
-  #if PANIC > 0
   for(int tag=0; tag<REDUCTION_MAX_RESERVED; tag++)
 	displayData(current,(ReductionTag)tag);
   #endif
@@ -168,7 +168,9 @@ ReductionMgrData *ReductionMgr::createdata()
   ReductionMgrData *data;
   data = new ReductionMgrData;
   data->sequenceNum = nextSequence;
+  #if PANIC > 0
   data->dataToSend = REDUCTION_MAX_RESERVED;
+  #endif
   data->next = NULL;
   data->threadNum = 0;
   data->suspendFlag = 0;
@@ -436,6 +438,7 @@ void	ReductionMgr::gotAllData(ReductionMgrData *current)
 {
   DebugM(2,"All data collected for seq=" << current->sequenceNum << "\n");
 
+  #if PANIC > 0
   // one less data to send (delete if all done)
   current->dataToSend--;
 
@@ -446,13 +449,11 @@ void	ReductionMgr::gotAllData(ReductionMgrData *current)
 	 << "\n";
   }
 
-  #if PANIC > 0
   // display all the data
   if (current->dataToSend == 0)
   {
     displayData(current);
   }
-  #endif
 
   // remove when done
   if (current->dataToSend <= 0)
@@ -461,9 +462,11 @@ void	ReductionMgr::gotAllData(ReductionMgrData *current)
       {
 	DebugM(4,"Node 0 reduction done.\n");
       }
-      if (current->eventCounter >= maxEvent)
-	remove(current->sequenceNum);
   }
+  #endif
+
+  if (current->eventCounter >= maxEvent)
+	remove(current->sequenceNum);
 } /* ReductionMgr::gotAllData() */
 
 /*******************************************
