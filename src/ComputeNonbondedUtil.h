@@ -103,6 +103,8 @@ public:
 
   static Bool pairInteractionOn;
   static Bool pairInteractionOnly;
+  static Bool pairInteractionGroup1;
+  static Bool pairInteractionGroup2;
 
   // for particle mesh Ewald
   static BigReal ewaldcof;

@@ -428,14 +428,19 @@ void ComputeNonbondedUtil :: NAME
       // for pair interactions, we want lambda = d_lambda = 1 for 
       // pairs containing one atom from each group; otherwise skip it.
       if (pairInteractionOn) {
-        if (!ifep_type || !jfep_type || ifep_type == jfep_type) {
+        if (pairInteractionGroup1) {
+          if (ifep_type != 1 || jfep_type != 1) {
+            if (pairInteractionOnly) continue; else d_lambda_pair = 0;
+          }
+        } else if (pairInteractionGroup2) {
+          if (ifep_type != 2 || jfep_type != 2) {
+            if (pairInteractionOnly) continue; else d_lambda_pair = 0;
+          }
+        } else if (!ifep_type || !jfep_type || ifep_type == jfep_type) {
            // no pairInteraction for this pair of atoms.  If that's all we
            // care about, skip it, otherwise mark d_lambda_pair as zero
            // so it doesn't get added to our reduction.
-           if (pairInteractionOnly)
-             continue;
-           else
-             d_lambda_pair = 0;
+           if (pairInteractionOnly) continue; else d_lambda_pair = 0;
         }
         //iout << iINFO << "Doing interaction for atoms " << p_i.id << " " 
              //<< p_j->id << "\n" << endi;

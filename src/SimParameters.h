@@ -235,6 +235,8 @@ public:
 
 	Bool pairInteractionOn;		//  Calculate pair interactions?
         Bool pairInteractionOnly; 	//  Compute no other interactions?
+	Bool pairInteractionGroup1;	//  Compute just group 1 interactions?
+	Bool pairInteractionGroup2;	//  Compute just group 2 interactions?
      
 	Bool globalForcesOn;		//  Are global forces present?
 	Bool tclForcesOn;		//  Are Tcl forces present?
