@@ -166,7 +166,6 @@ void Sequencer::integrate() {
       if (staleForces || doFullElectrostatics)
 		addForceToMomentum(-0.5*slowstep,Results::slow,staleForces);
     }
-    reassignVelocities(timestep,step);
     minimizationQuenchVelocity();
     rattle1(-timestep,0);
     submitHalfstep(step);
@@ -203,12 +202,22 @@ void Sequencer::integrate() {
 		addForceToMomentum(0.5*slowstep,Results::slow,staleForces);
        }
 
+       const int reassignFreq = simParams->reassignFreq;
+       if ( !commOnly && ( reassignFreq>0 ) && ! (step%reassignFreq) ) {
+	addVelocityToPosition(0.5*timestep);
+        reassignVelocities(timestep,step);
+	addVelocityToPosition(0.5*timestep);
+	rattle1(0.,0);
+	rattle1(-timestep,0);
+	addVelocityToPosition(-1.0*timestep);
+	rattle1(timestep,0);
+       }
+
 	maximumMove(timestep);
 	if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
 	langevinPiston(step);
 	if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
 
-	reassignVelocities(timestep,step);  // needs full reinitialization!!!
 	minimizationQuenchVelocity();
 	submitHalfstep(step);
 
@@ -642,7 +651,8 @@ void Sequencer::reassignVelocities(BigReal timestep, int step)
       a[i].velocity = ( ( simParams->fixedAtomsOn && a[i].atomFixed ) ? Vector(0,0,0) :
         sqrt( kbT / a[i].mass ) * random->gaussian_vector() );
     }
-    rattle1(-timestep,0);
+  } else {
+    NAMD_bug("Sequencer::reassignVelocities called improperly!");
   }
 }
 

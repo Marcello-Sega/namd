@@ -175,7 +175,6 @@ void Controller::integrate() {
       slowFreq = simParams->nonbondedFrequency;
 
     receivePressure(step);
-    reassignVelocities(step);
     printFepMessage(step);
     printDynamicsEnergies(step);
     outputFepEnergy(step);
