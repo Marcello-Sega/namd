@@ -457,8 +457,6 @@ void Controller::langevinPiston1(int step)
     {
       // We only use on-diagonal terms (for now)
       Tensor factor;
-#if 0
-XXX THIS IS JUST FOR TESTING!!!  -JCP
       if ( !simParams->useConstantArea ) {
         factor.xx = exp( dt_long * strainRate.xx );
         factor.yy = exp( dt_long * strainRate.yy );
@@ -466,15 +464,6 @@ XXX THIS IS JUST FOR TESTING!!!  -JCP
         factor.xx = factor.yy = 1;
       }
       factor.zz = exp( dt_long * strainRate.zz );
-#else
-      if ( !simParams->useConstantArea ) {
-        factor.xx = 1. + dt_long * strainRate.xx;
-        factor.yy = 1. + dt_long * strainRate.yy;
-      } else {
-        factor.xx = factor.yy = 1;
-      }
-      factor.zz = 1. + dt_long * strainRate.zz;
-#endif
       broadcast->positionRescaleFactor.publish(step,factor);
       state->lattice.rescale(factor);
 #ifdef DEBUG_PRESSURE
