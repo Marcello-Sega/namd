@@ -59,35 +59,31 @@ public:
 class ProxyAtomsMsg : public comm_object {
 public:
   PatchID patch;
-  AtomIDList *atomIDList;
-  ProxyAtomsMsg(PatchID pid, AtomIDList a) : patch(pid)
-  {
-    atomIDList = new AtomIDList(a);
-  }
-  ~ProxyAtomsMsg()
-  {
-    delete atomIDList;
-  }
+  AtomIDList atomIDList;
   void * pack (int *length)
   {
-    int size = atomIDList->size();
+    int size = atomIDList.size();
     *length = sizeof(int) + size * sizeof(AtomID);
     char *buffer = (char*)new_packbuffer(this,*length);
     *((int*)buffer) = size;
     AtomID *data = (AtomID*)(buffer+sizeof(int));
     for ( int i = 0; i < size; ++i )
-      data[i] = (*atomIDList)[i];
-    atomIDList = NULL;
+      data[i] = atomIDList[i];
+    this->~ProxyAtomsMsg();
     return buffer;
   }
+  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
+  void * operator new(size_t s) { return comm_object::operator new(s); }
+  void * operator new(size_t, void *ptr) { return ptr; }
   void unpack (void *in)
   {
+    new((void*)this) ProxyAtomsMsg;
     char *buffer = (char*)in;
     int size = *((int*)buffer);
-    atomIDList = new AtomIDList; atomIDList->resize(size);
+    atomIDList.resize(size);
     AtomID *data = (AtomID*)(buffer+sizeof(int));
     for ( int i = 0; i < size; ++i )
-      (*atomIDList)[i] = buffer[i];
+      atomIDList[i] = buffer[i];
   }
 };
 
@@ -168,12 +164,15 @@ public:
  *
  *	$RCSfile: main.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.16 $	$Date: 1996/12/16 22:19:26 $
+ *	$Revision: 1.17 $	$Date: 1996/12/16 22:52:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: main.h,v $
+ * Revision 1.17  1996/12/16 22:52:43  jim
+ * added placement new and explicit destructor calls to ProxyAtomsMsg
+ *
  * Revision 1.16  1996/12/16 22:19:26  jim
  * added placement new and destructor to messages
  *

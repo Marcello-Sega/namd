@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.7 1996/12/14 00:02:42 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.8 1996/12/16 22:52:43 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -53,7 +53,7 @@ void ProxyPatch::boxClosed(int box)
 
 void ProxyPatch::receiveAtoms(ProxyAtomsMsg *msg)
 {
-  loadAtoms(*(msg->atomIDList));
+  loadAtoms(msg->atomIDList);
   AtomMap::Object()->registerIDs(patchID,msg->atomIDList);
   delete msg;
 }
@@ -85,12 +85,15 @@ void ProxyPatch::sendResults(void)
  *
  *	$RCSfile: ProxyPatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/12/14 00:02:42 $
+ *	$Revision: 1.8 $	$Date: 1996/12/16 22:52:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.8  1996/12/16 22:52:43  jim
+ * added placement new and explicit destructor calls to ProxyAtomsMsg
+ *
  * Revision 1.7  1996/12/14 00:02:42  jim
  * debugging ProxyAtomsMsg path to make compute creation work
  *
