@@ -885,6 +885,7 @@ void WorkDistrib::mapComputeNonbonded(void)
 //----------------------------------------------------------------------
 void WorkDistrib::messageEnqueueWork(Compute *compute) {
   LocalWorkMsg *msg = compute->localWorkMsg;
+  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
   int seq = compute->sequence();
 
   if ( seq < 0 ) {
