@@ -336,19 +336,19 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
   //Modification to reduce the coputeload on PME processors
   const SimParameters* simParams = Node::Object()->simParameters;  
   
-  CkPrintf("BACKGROUND LOAD\n");
+  // CkPrintf("BACKGROUND LOAD\n");
   if(simParams->PMEOn) {
-    double bgfactor = 1.0 + 3.0 * CkNumPes()/1000.0;
-    if ( bgfactor > 4.0 ) bgfactor = 4.0;
+    double bgfactor = 1.0 + 1.0 * CkNumPes()/1000.0;
+    if ( bgfactor > 2.0 ) bgfactor = 2.0;
     for (i=0; i<count; i++) {
-      CkPrintf("BG[%d] =  %5.5lf,", i, processorArray[i].backgroundLoad);
+      // CkPrintf("BG[%d] =  %5.5lf,", i, processorArray[i].backgroundLoad);
       if(isPmeProcessor(i)) {
 	processorArray[i].backgroundLoad *= bgfactor;
       }
-      CkPrintf("%5.5lf;  ", processorArray[i].backgroundLoad);
+      // CkPrintf("%5.5lf;  ", processorArray[i].backgroundLoad);
     }
   }
-  CkPrintf("\n");
+  // CkPrintf("\n");
 #endif  
 
   int nMoveableComputes=0;
