@@ -5,7 +5,7 @@
 
 MAKE   = make
 SHELL  = /bin/sh
-CC     =gcc  -Wall # SGI: cc -fullwarn -g3 -lmalloc
+CC     = gcc -Wall # SGI: cc -fullwarn -g3 -lmalloc
 AR     = ar
 RM     = rm -f
 

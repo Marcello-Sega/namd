@@ -32,7 +32,7 @@ DSTDIR = obj
 # temp include directory for cifiles
 INCDIR = inc
 # Libraries we may have changed
-LIBS = dpmta2/mpole/libmpole.a dpmta2/src/libdpmta2.a pvm3/libpvmc.a
+LIBS = dpmta2/mpole/libmpole.a dpmta2/src/libdpmta2.a pvm3/libpvmc.a dpme2/libdpme2.a
 
 
 #####
@@ -50,6 +50,14 @@ DPMTAINCL=-I$(DPMTADIR)/include
 DPMTALIB=-L$(DPMTADIR) -ldpmta2 -lmpole
 DPMTAFLAGS=-DDPMTA
 DPMTA=$(DPMTAINCL) $(DPMTAFLAGS)
+#####
+# definitions for DPME routines
+#####
+DPMEDIR=dpme2
+DPMEINCL=-I$(DPMEDIR)/include
+DPMELIB=-L$(DPMEDIR) -ldpme2 -lmpole
+DPMEFLAGS=-DDPME
+DPME=$(DPMEINCL) $(DPMEFLAGS)
 ######
 ## definitions for PVM routines
 ######
@@ -168,6 +176,9 @@ dpmta2/mpole/libmpole.a:
 dpmta2/src/libdpmta2.a:
 	cd $(DPMTADIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
 
+dpme2/libdpme2.a:
+	cd $(DPMEDIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
+
 pvm3/libpvmc.a:
 	cd $(PVMDIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
 
@@ -221,7 +232,8 @@ clean:
 	rm -rf ptrepository
 	rm -rf $(DSTDIR)
 	rm -f namd2
-#	cd $(DPMTADIR) ; $(MAKE) clean ; cd ..
+	cd $(DPMTADIR) ; $(MAKE) clean ; cd ..
+	cd $(DPMEDIR) ; $(MAKE) clean ; cd ..
 
 veryclean:	clean
 	rm -rf $(INCDIR)
