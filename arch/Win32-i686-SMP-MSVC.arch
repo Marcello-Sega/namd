@@ -1,0 +1,4 @@
+include .rootdir/arch/Win32-i686-MSVC.arch
+
+CHARMARCH = net-win32-smp
+
