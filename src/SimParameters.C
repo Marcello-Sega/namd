@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1061 $  $Date: 1999/03/18 02:29:04 $
+ *  $Revision: 1.1062 $  $Date: 1999/03/19 01:00:18 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1062  1999/03/19 01:00:18  jim
+ * Minor bug fix.
+ *
  * Revision 1.1061  1999/03/18 02:29:04  jim
  * Improved some parameter handling.
  *
@@ -569,7 +572,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    char filename[129];  //  Temporary file name
 
    // local use only
-   BigReal fmaFrequency;
+   int fmaFrequency;
 
    //****** BEGIN SMD constraints changes 
    char chDirMethod[65]; // SMD changing direction method
@@ -3610,12 +3613,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1061 $  $Date: 1999/03/18 02:29:04 $
+ *  $Revision: 1.1062 $  $Date: 1999/03/19 01:00:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1062  1999/03/19 01:00:18  jim
+ * Minor bug fix.
+ *
  * Revision 1.1061  1999/03/18 02:29:04  jim
  * Improved some parameter handling.
  *
