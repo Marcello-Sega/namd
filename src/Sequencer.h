@@ -36,6 +36,7 @@ protected:
 
     void runComputeObjects(int migration = 1, int pairlists = 0);
     int pairlistsAreValid;
+    int pairlistsAge;
 
     void submitReductions(int);
     void submitHalfstep(int);

@@ -25,11 +25,8 @@ extern "C" {
 
 Bool		ComputeNonbondedUtil::commOnly;
 Bool		ComputeNonbondedUtil::fixedAtomsOn;
-Real            ComputeNonbondedUtil::cutoff;
+BigReal         ComputeNonbondedUtil::cutoff;
 BigReal         ComputeNonbondedUtil::cutoff2;
-BigReal         ComputeNonbondedUtil::groupcutoff2;
-BigReal         ComputeNonbondedUtil::plcutoff2;
-BigReal         ComputeNonbondedUtil::groupplcutoff2;
 BigReal         ComputeNonbondedUtil::dielectric_1;
 const LJTable*  ComputeNonbondedUtil::ljTable = 0;
 const Molecule* ComputeNonbondedUtil::mol;
@@ -48,7 +45,7 @@ BigReal*	ComputeNonbondedUtil::vdwa_table;
 BigReal*	ComputeNonbondedUtil::vdwb_table;
 BigReal         ComputeNonbondedUtil::scaling;
 BigReal         ComputeNonbondedUtil::scale14;
-Real            ComputeNonbondedUtil::switchOn;
+BigReal         ComputeNonbondedUtil::switchOn;
 BigReal         ComputeNonbondedUtil::switchOn_1;
 BigReal         ComputeNonbondedUtil::switchOn2;
 BigReal         ComputeNonbondedUtil::c0;
@@ -110,6 +107,7 @@ void (*ComputeNonbondedUtil::calcSlowSelfEnergy)(nonbonded *);
 void ComputeNonbondedUtil::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {
   reduction->item(REDUCTION_EXCLUSION_CHECKSUM) += data[exclChecksumIndex];
+  reduction->item(REDUCTION_PAIRLIST_WARNINGS) += data[pairlistWarningIndex];
   reduction->item(REDUCTION_ELECT_ENERGY) += data[electEnergyIndex];
   reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += data[fullElectEnergyIndex];
   reduction->item(REDUCTION_LJ_ENERGY) += data[vdwEnergyIndex];
@@ -147,8 +145,6 @@ void ComputeNonbondedUtil::select(void)
 
   cutoff = simParams->cutoff;
   cutoff2 = cutoff*cutoff;
-  BigReal plcutoff = simParams->pairlistDist;
-  plcutoff2 = plcutoff*plcutoff;
 
 //fepb
   fepOn = simParams->fepOn;
@@ -259,12 +255,6 @@ void ComputeNonbondedUtil::select(void)
   }
 
 //fepe
-
-  // we add slightly more than 2 angstroms to get the same numbers.
-  // don't know why...ask jim... :-)
-  const BigReal &hcutoff = simParams->hgroupCutoff;
-  groupcutoff2 = (cutoff+hcutoff)*(cutoff+hcutoff);
-  groupplcutoff2 = (plcutoff+hcutoff)*(plcutoff+hcutoff);
 
   dielectric_1 = 1.0/simParams->dielectric;
   if ( ! ljTable ) ljTable = new LJTable;

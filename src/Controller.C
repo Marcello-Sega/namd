@@ -1006,13 +1006,12 @@ void Controller::compareChecksums(int step, int forgiving) {
     marginViolations += (int)checksum;
 
     checksum = reduction->item(REDUCTION_PAIRLIST_WARNINGS);
-    if ( ((int)checksum) && ! pairlistWarnings ) {
-      iout << iWARN <<
+    if ( simParams->outputPairlists && ((int)checksum) && ! pairlistWarnings ) {
+      iout << iINFO <<
         "Pairlistdist is too small for " << ((int)checksum) <<
-        " patches during timestep " << step << ".\n" << iWARN <<
-        "Pairlists partially disabled; reduced performance likely.\n" << endi;
+        " computes during timestep " << step << ".\n" << endi;
     }
-    pairlistWarnings += (int)checksum;
+    if ( simParams->outputPairlists )  pairlistWarnings += (int)checksum;
 }
 
 void Controller::printTiming(int step) {
@@ -1302,6 +1301,14 @@ void Controller::printEnergies(int step, int minimize)
       GET_VECTOR(pairVDWForce,reduction,REDUCTION_PAIR_VDW_FORCE);
       GET_VECTOR(pairElectForce,reduction,REDUCTION_PAIR_ELECT_FORCE);
     }
+
+    if ( simParams->outputPairlists && pairlistWarnings &&
+				! (step % simParams->outputPairlists) ) {
+      iout << iINFO << pairlistWarnings <<
+        " pairlist warnings in past " << simParams->outputPairlists <<
+	" steps.\n" << endi;
+      pairlistWarnings = 0;
+    }
     
     // NO CALCULATIONS OR REDUCTIONS BEYOND THIS POINT!!!
     if ( ! minimize &&  step % simParameters->outputEnergies ) return;
@@ -1312,12 +1319,6 @@ void Controller::printEnergies(int step, int minimize)
         " margin violations detected since previous energy output.\n" << endi;
     }
     marginViolations = 0;
-
-    if ( pairlistWarnings ) {
-      iout << iWARN << pairlistWarnings <<
-        " pairlist warnings since previous energy output.\n" << endi;
-    }
-    pairlistWarnings = 0;
 
     if ( (step % (10 * (minimize?1:simParameters->outputEnergies) ) ) == 0 )
     {

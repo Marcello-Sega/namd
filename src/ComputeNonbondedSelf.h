@@ -28,6 +28,8 @@ protected :
   BigReal *pressureProfileData;
 
   Pairlists pairlists;
+  int pairlistsValid;
+  BigReal pairlistTolerance;
 
   int minPart, maxPart, numParts;
 

@@ -26,6 +26,8 @@ ComputeNonbondedSelf::ComputeNonbondedSelf(ComputeID c, PatchID pid,
     pressureProfileReduction = NULL;
     pressureProfileData = NULL;
   }
+  pairlistsValid = 0;
+  pairlistTolerance = 0.;
 }
 
 void ComputeNonbondedSelf::initialize() {
@@ -78,10 +80,30 @@ void ComputeNonbondedSelf::doForce(CompAtom* p,
     params.numParts = numParts;
 
     params.pairlists = &pairlists;
-    // params.savePairlists = 0;
-    // params.usePairlists = 0;
-    params.savePairlists = patch->flags.savePairlists;
-    params.usePairlists = patch->flags.usePairlists;
+    params.savePairlists = 0;
+    params.usePairlists = 0;
+    if ( patch->flags.savePairlists ) {
+      params.savePairlists = 1;
+      params.usePairlists = 1;
+    } else if ( patch->flags.usePairlists ) {
+      if ( ! pairlistsValid ||
+           ( 2. * patch->flags.maxAtomMovement > pairlistTolerance ) ) {
+        reductionData[pairlistWarningIndex] += 1;
+      } else { 
+        params.usePairlists = 1;
+      }
+    }
+    if ( ! params.usePairlists ) {
+      pairlistsValid = 0;
+    }
+    params.plcutoff = cutoff;
+    params.groupplcutoff = cutoff + 2. * patch->flags.maxGroupRadius;
+    if ( params.savePairlists ) {
+      pairlistsValid = 1;
+      pairlistTolerance = 2. * patch->flags.pairlistTolerance;
+      params.plcutoff += pairlistTolerance;
+      params.groupplcutoff += pairlistTolerance;
+    }
 
     if ( patch->flags.doFullElectrostatics )
     {

@@ -68,6 +68,8 @@ struct nonbonded {
   Pairlists *pairlists;
   int savePairlists;
   int usePairlists;
+  BigReal plcutoff;
+  BigReal groupplcutoff;
 
   int minPart;
   int maxPart;
@@ -102,7 +104,7 @@ public:
   static void (*calcSlowSelf)(nonbonded *);
   static void (*calcSlowSelfEnergy)(nonbonded *);
 
-  enum { exclChecksumIndex,
+  enum { exclChecksumIndex, pairlistWarningIndex,
 	 electEnergyIndex, fullElectEnergyIndex, vdwEnergyIndex,
 //sd-db
 	 electEnergyIndex_s, fullElectEnergyIndex_s, vdwEnergyIndex_s,
@@ -115,11 +117,8 @@ public:
 
   static Bool commOnly;
   static Bool fixedAtomsOn;
-  static Real cutoff;
+  static BigReal cutoff;
   static BigReal cutoff2;
-  static BigReal groupcutoff2;
-  static BigReal plcutoff2;
-  static BigReal groupplcutoff2;
   static BigReal dielectric_1;
   static const LJTable* ljTable;
   static const Molecule* mol;
@@ -137,7 +136,7 @@ public:
   static BigReal *vdwb_table;
   static BigReal scaling;
   static BigReal scale14;
-  static Real switchOn;
+  static BigReal switchOn;
   static BigReal switchOn_1;
   static BigReal switchOn2;
   static BigReal c0;

@@ -165,10 +165,11 @@ public:
 					//  to enable pairlists
 	int usePairlists;		//  Derived from pairlistMinProcs
 
-        Bool plMarginCheckOn;           //  Should atom movement be checked
-	  				//  each tstep to see if an atom
-					//  has moved too far for the current
-					//  pairlistdist
+	int pairlistsPerCycle;		//  regenerate x times per cycle
+	BigReal pairlistShrink;		//  tol *= (1 - x) on regeneration
+	BigReal pairlistGrow;		//  tol *= (1 + x) on trigger
+	BigReal pairlistTrigger;	//  trigger is atom > (1 - x) * tol
+	int outputPairlists;		//  print pairlist warnings this often
 
 	Bool constraintsOn;		//  Flag TRUE-> harmonic constraints 
 					//  active

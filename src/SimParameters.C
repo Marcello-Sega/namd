@@ -247,8 +247,8 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
    opts.range("numsteps", NOT_NEGATIVE);
 
    opts.optional("main", "stepspercycle",
-      "Number of steps between pairlist generation and FMA execution, if active", 
-      &stepsPerCycle, 15);
+      "Number of steps between atom migrations", 
+      &stepsPerCycle, 20);
    opts.range("stepspercycle", POSITIVE);
 
    opts.optional("main", "cutoff", "local electrostatic and Vdw distance", 
@@ -309,9 +309,25 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
      &pairlistMinProcs,1);
    opts.range("pairlistMinProcs", POSITIVE);
 
-   opts.optionalB("main", "plMarginCheck", 
-      "Check atom movement since pairlist made?",
-      &plMarginCheckOn, FALSE);
+   opts.optional("main", "pairlistsPerCycle",  "regenerate x times per cycle",
+     &pairlistsPerCycle,2);
+   opts.range("pairlistsPerCycle", POSITIVE);
+
+   opts.optional("main", "outputPairlists", "how often to print warnings",
+     &outputPairlists, 0);
+   opts.range("outputPairlists", NOT_NEGATIVE);
+
+   opts.optional("main", "pairlistShrink",  "tol *= (1 - x) on regeneration",
+     &pairlistShrink,0.01);
+   opts.range("pairlistShrink", NOT_NEGATIVE);
+
+   opts.optional("main", "pairlistGrow",  "tol *= (1 + x) on trigger",
+     &pairlistGrow, 0.01);
+   opts.range("pairlistGrow", NOT_NEGATIVE);
+
+   opts.optional("main", "pairlistTrigger",  "trigger is atom > (1 - x) * tol",
+     &pairlistTrigger, 0.3);
+   opts.range("pairlistTrigger", NOT_NEGATIVE);
 
    opts.optional("main", "temperature", "initial temperature",
      &initialTemp);
@@ -2534,16 +2550,14 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
       iout << iINFO << "CUTOFF                 " 
          << cutoff << "\n";
    }
-   iout << iINFO << "PAIRLIST DISTANCE      "
-         << pairlistDist << "\n";
+   iout << iINFO << "PAIRLIST DISTANCE      " << pairlistDist << "\n";
+   iout << iINFO << "PAIRLIST SHRINK RATE   " << pairlistShrink << "\n";
+   iout << iINFO << "PAIRLIST GROW RATE     " << pairlistGrow << "\n";
+   iout << iINFO << "PAIRLIST TRIGGER       " << pairlistTrigger << "\n";
+   iout << iINFO << "PAIRLISTS PER CYCLE    " << pairlistsPerCycle << "\n";
+   if ( outputPairlists )
+     iout << iINFO << "PAIRLIST OUTPUT STEPS  " << outputPairlists << "\n";
    iout << endi;
-
-/* No pairlists but check always performed
-   if (plMarginCheckOn)
-     iout << iINFO << "PAIRLIST CHECK ON\n";
-   else 
-     iout << iINFO << "PAIRLIST CHECK OFF\n";
-*/
 
    if ( pairlistMinProcs > 1 )
      iout << iINFO << "REQUIRING " << pairlistMinProcs << " PROCESSORS FOR PAIRLISTS\n";

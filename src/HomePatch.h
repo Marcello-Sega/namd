@@ -70,7 +70,6 @@ public:
   // Signal HomePatch that positions stored are to be now to be used
   void positionsReady(int doMigration=0);
   int marginViolations;
-  int pairlistWarning;
 
   // methods to implement integration
   void saveForce(const int ftag = Results::normal);
@@ -133,7 +132,7 @@ private:
   // checkPairlist data
   CompAtomList doPairlistCheck_positions;
   Lattice doPairlistCheck_lattice;
-  int doPairlistCheck_listsValid;
+  BigReal doPairlistCheck_newTolerance;
 
   // MOLLY data
   ResizeArray<BigReal> molly_lambda;

@@ -27,6 +27,8 @@ ComputeNonbondedPair::ComputeNonbondedPair(ComputeID c, PatchID pid[], int trans
     pressureProfileReduction = NULL;
     pressureProfileData = NULL;
   }
+  pairlistsValid = 0;
+  pairlistTolerance = 0.;
 }
 
 void ComputeNonbondedPair::initialize() {
@@ -127,9 +129,33 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2],
     params.numParts = numParts;
 
     params.pairlists = &pairlists;
-    params.savePairlists = patch[0]->flags.savePairlists;
-    params.usePairlists =
-	patch[0]->flags.usePairlists && patch[1]->flags.usePairlists;
+    params.savePairlists = 0;
+    params.usePairlists = 0;
+    if ( patch[0]->flags.savePairlists ) {
+      params.savePairlists = 1;
+      params.usePairlists = 1;
+    } else if ( patch[0]->flags.usePairlists && patch[1]->flags.usePairlists ) {
+      if ( ! pairlistsValid ||
+           ( patch[0]->flags.maxAtomMovement +
+             patch[1]->flags.maxAtomMovement > pairlistTolerance ) ) {
+        reductionData[pairlistWarningIndex] += 1;
+      } else {
+        params.usePairlists = 1;
+      }
+    }
+    if ( ! params.usePairlists ) {
+      pairlistsValid = 0;
+    }
+    params.plcutoff = cutoff;
+    params.groupplcutoff = cutoff +
+	patch[0]->flags.maxGroupRadius + patch[1]->flags.maxGroupRadius;
+    if ( params.savePairlists ) {
+      pairlistsValid = 1;
+      pairlistTolerance = patch[0]->flags.pairlistTolerance +
+                          patch[1]->flags.pairlistTolerance;
+      params.plcutoff += pairlistTolerance;
+      params.groupplcutoff += pairlistTolerance;
+    }
 
     // swap to place more atoms in inner loop (second patch)
     int a = 0;  int b = 1;

@@ -940,7 +940,6 @@ void Sequencer::submitReductions(int step)
 
   reduction->item(REDUCTION_ATOM_CHECKSUM) += numAtoms;
   reduction->item(REDUCTION_MARGIN_VIOLATIONS) += patch->marginViolations;
-  reduction->item(REDUCTION_PAIRLIST_WARNINGS) += patch->pairlistWarning;
   reduction->item(REDUCTION_CENTERED_KINETIC_ENERGY) += patch->calcKineticEnergy();
 
 #ifdef ALTVIRIAL
@@ -1204,6 +1203,10 @@ void Sequencer::submitCollections(int step)
 void Sequencer::runComputeObjects(int migration, int pairlists)
 {
   if ( migration ) pairlistsAreValid = 0;
+  if ( pairlistsAreValid && ( pairlistsAge > (
+         (simParams->stepsPerCycle - 1) / simParams->pairlistsPerCycle ) ) ) {
+    pairlistsAreValid = 0;
+  }
   if ( ! simParams->usePairlists ) pairlists = 0;
   patch->flags.usePairlists = pairlists || pairlistsAreValid;
   patch->flags.savePairlists =
@@ -1212,7 +1215,9 @@ void Sequencer::runComputeObjects(int migration, int pairlists)
   suspend(); // until all deposit boxes close
   if ( patch->flags.savePairlists && patch->flags.doNonbonded ) {
     pairlistsAreValid = 1;
+    pairlistsAge = 0;
   }
+  if ( pairlistsAreValid ) ++pairlistsAge;
   if ( patch->flags.doMolly ) {
     Tensor virial;
     patch->mollyMollify(&virial);

@@ -27,6 +27,9 @@ public:
 
   int usePairlists;
   int savePairlists;
+  BigReal pairlistTolerance;
+  BigReal maxAtomMovement;
+  BigReal maxGroupRadius;
 
   Lattice lattice;		// rather than shipping around separately
 

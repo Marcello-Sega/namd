@@ -75,7 +75,10 @@ HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
 
   numAtoms = atom.size();
   replacementForces = 0;
-  doPairlistCheck_listsValid = 0;
+
+  SimParameters *simParams = Node::Object()->simParameters;
+  doPairlistCheck_newTolerance = 
+	0.5 * ( simParams->pairlistDist - simParams->cutoff );
 
   nChild = 0;	// number of proxy spanning tree children
 #if CMK_PERSISTENT_COMM
@@ -897,10 +900,11 @@ void HomePatch::submitLoadStats(int timestep)
 
 void HomePatch::doPairlistCheck()
 {
-  pairlistWarning = 0;
+  SimParameters *simParams = Node::Object()->simParameters;
 
   if ( ! flags.usePairlists ) {
-    doPairlistCheck_listsValid = 0;
+    flags.pairlistTolerance = 0.;
+    flags.maxAtomMovement = 99999.;
     return;
   }
 
@@ -908,17 +912,13 @@ void HomePatch::doPairlistCheck()
   CompAtom *p_i = p.begin();
 
   if ( flags.savePairlists ) {
-    doPairlistCheck_listsValid = 1;
+    flags.pairlistTolerance = doPairlistCheck_newTolerance;
+    flags.maxAtomMovement = 0.;
+    doPairlistCheck_newTolerance *= (1. - simParams->pairlistShrink);
     doPairlistCheck_lattice = lattice;
     doPairlistCheck_positions.resize(numAtoms);
     CompAtom *psave_i = doPairlistCheck_positions.begin();
     for ( i=0; i<n; ++i ) { psave_i[i] = p_i[i]; }
-    return;
-  }
-
-  if ( ! doPairlistCheck_listsValid ) {
-    flags.usePairlists = 0;
-    pairlistWarning = 1;
     return;
   }
 
@@ -956,13 +956,15 @@ void HomePatch::doPairlistCheck()
   }
   max_pd = sqrt(max_pd);
 
-  SimParameters *simParams = Node::Object()->simParameters;
+  BigReal max_tol = max_pd + max_cd;
 
-  BigReal tol = 0.5 * ( simParams->pairlistDist - simParams->cutoff );
-  if ( max_pd + max_cd > tol ) {
-    doPairlistCheck_listsValid = 0;
-    flags.usePairlists = 0;
-    pairlistWarning = 1;
+  flags.maxAtomMovement = max_tol;
+
+  // if ( max_tol > flags.pairlistTolerance ) iout << "tolerance " << max_tol << " > " << flags.pairlistTolerance << "\n" << endi;
+
+  if ( max_tol > ( (1. - simParams->pairlistTrigger) *
+				doPairlistCheck_newTolerance ) ) {
+    doPairlistCheck_newTolerance *= (1. + simParams->pairlistGrow);
   }
 
 }
@@ -973,6 +975,7 @@ void HomePatch::doGroupSizeCheck()
 
   SimParameters *simParams = Node::Object()->simParameters;
   BigReal hgcut = 0.5 * simParams->hgroupCutoff;  hgcut *= hgcut;
+  BigReal maxrad2 = 0.;
 
   FullAtomList::iterator p_i = atom.begin();
   FullAtomList::iterator p_e = atom.end();
@@ -994,6 +997,7 @@ void HomePatch::doGroupSizeCheck()
       BigReal r2 = dx * dx + dy * dy + dz * dz;
       ++p_i;
       if ( r2 > hgcut ) oversize = 1;
+      else if ( r2 > maxrad2 ) maxrad2 = r2;
     }
     // also limit to at most 4 atoms per group
     if ( oversize || hgs > 4 ) {
@@ -1004,6 +1008,9 @@ void HomePatch::doGroupSizeCheck()
       }
     }
   }
+
+  flags.maxGroupRadius = sqrt(maxrad2);
+
 }
 
 void HomePatch::doMarginCheck()

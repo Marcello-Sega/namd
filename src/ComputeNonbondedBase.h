@@ -202,10 +202,10 @@ void ComputeNonbondedUtil :: NAME
 
   // Bringing stuff into local namespace for speed.
 
-  register const BigReal cutoff2 = ( savePairlists ? plcutoff2 :
-				ComputeNonbondedUtil:: cutoff2 );
-  register const BigReal groupcutoff2 = ( savePairlists ? groupplcutoff2 :
-				ComputeNonbondedUtil:: groupcutoff2 );
+  register const BigReal plcutoff2 = \
+ 			params->plcutoff * params->plcutoff;
+  register const BigReal groupplcutoff2 = \
+	 		params->groupplcutoff * params->groupplcutoff;
   const BigReal dielectric_1 = ComputeNonbondedUtil:: dielectric_1;
   const LJTable* const ljTable = ComputeNonbondedUtil:: ljTable;
   LJTable::TableEntry ljNull;  ljNull.A = 0; ljNull.B = 0;
@@ -437,7 +437,7 @@ void ComputeNonbondedUtil :: NAME
 	r2 += t2 * t2;
         p_j_z = p_1[j2].position.z;
 	// use a slightly large cutoff to include hydrogens
-	if ( r2 <= groupcutoff2 ) { *gli = j; ++gli; }
+	if ( r2 <= groupplcutoff2 ) { *gli = j; ++gli; }
        }
 
        int hu = gli - goodglist;
@@ -516,7 +516,7 @@ void ComputeNonbondedUtil :: NAME
         BigReal p_j_z = p_1[j].position.z;
 	t2 = p_i_z - p_j_z;
 	r2 += t2 * t2;
-	if ( ( ! (atomfixed && p_1[j].atomFixed) ) && (r2 <= cutoff2) ) {
+	if ( ( ! (atomfixed && p_1[j].atomFixed) ) && (r2 <= plcutoff2) ) {
           int atom2 = p_1[j].id;
           if ( atom2 >= excl_min && atom2 <= excl_max ) *(pli++) = j;
           else *(plin++) = j;
@@ -536,7 +536,7 @@ void ComputeNonbondedUtil :: NAME
         BigReal p_j_z = p_1[j].position.z;
 	t2 = p_i_z - p_j_z;
 	r2 += t2 * t2;
-	if ( (! p_1[j].atomFixed) && (r2 <= cutoff2) ) {
+	if ( (! p_1[j].atomFixed) && (r2 <= plcutoff2) ) {
           int atom2 = p_1[j].id;
           if ( atom2 >= excl_min && atom2 <= excl_max ) *(pli++) = j;
           else *(plin++) = j;
@@ -563,7 +563,7 @@ void ComputeNonbondedUtil :: NAME
 	t2 = p_i_z - p_j_z;
 	r2 += t2 * t2;
         p_j_z = p_1[j2].position.z;
-	if (r2 <= cutoff2) {
+	if (r2 <= plcutoff2) {
           if ( atom2 >= excl_min && atom2 <= excl_max ) *(pli++) = j;
           else *(plin++) = j;
         }
@@ -664,7 +664,7 @@ void ComputeNonbondedUtil :: NAME
     int npairi;
     int k;
 
-    npairi = pairlist_from_pairlist(ComputeNonbondedUtil:: cutoff2,
+    npairi = pairlist_from_pairlist(ComputeNonbondedUtil::cutoff2,
 	p_i_x, p_i_y, p_i_z, p_1, pairlistn_save, npairn, pairlisti);
 
 #define NORMAL(X) X
@@ -675,7 +675,7 @@ void ComputeNonbondedUtil :: NAME
 #undef EXCLUDED
 #undef MODIFIED
 
-    npairi = pairlist_from_pairlist(ComputeNonbondedUtil:: cutoff2,
+    npairi = pairlist_from_pairlist(ComputeNonbondedUtil::cutoff2,
 	p_i_x, p_i_y, p_i_z, p_1, pairlistm_save, npairm, pairlisti);
     exclChecksum += npairi;
 
@@ -688,7 +688,7 @@ void ComputeNonbondedUtil :: NAME
 #undef MODIFIED
 
 #ifdef FULLELECT
-    npairi = pairlist_from_pairlist(ComputeNonbondedUtil:: cutoff2,
+    npairi = pairlist_from_pairlist(ComputeNonbondedUtil::cutoff2,
 	p_i_x, p_i_y, p_i_z, p_1, pairlistx_save, npairx, pairlisti);
     exclChecksum += npairi;
     SELF(
