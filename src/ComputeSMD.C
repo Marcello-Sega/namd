@@ -86,53 +86,49 @@ void ComputeSMD::doForce(Position* p, Results* res, AtomProperties* a, Transform
 
 	    // now calculate the force and energy
 	    smdData->get_smd_params(timeStamp, moveDir, refPos);
-	    Rij = refPos + (currentTime - timeStamp) * moveVel * moveDir
-	      - atomPos;
 
-	    //  Calculate the distance and the distance squared
-            if (projectForce) {
-              r = Rij*moveDir;   // Take dot product of R along pulling dir.
-            } else {
-	      r2 = Rij.length2();
-	      r = sqrt(r2);
-            }
-
-	    //  Only calculate the energy and the force if the distance is
-	    //  non-zero.   Otherwise, you could end up dividing by 0, which
-	    //  is bad
             Vector smdForce;
-	    if (r>0.0)
-	    {
-	      value=k;
-      
-	      //  Loop through and multiple k by r consExp times.
-	      //  i.e.  calculate kr^e/e
-	      //  I know, I could use pow(), but I don't trust it.
-	      for (int i=0; i<consExp; ++i)
-	      {
-		value *= r;
-	      }
+            if (projectForce) {  // Valid for exponent of 2 ONLY!
+              r = moveVel*(currentTime - timeStamp)  
+                  - (atomPos - refPos)*moveDir;
+              value = k*r;
+              energy += 0.5*value*r;
+              smdForce = value*moveDir;
+            }
+            else {
+	      Rij = refPos + (currentTime - timeStamp) * moveVel * moveDir
+	        - atomPos;
 
-	      //  Add to the energy total
-	      energy += value/consExp;
+	      //  Calculate the distance and the distance squared
+              r2 = Rij.length2();
+              r = sqrt(r2);
+
+	      //  Only calculate the energy and the force if the distance is
+	      //  non-zero.   Otherwise, you could end up dividing by 0, which
+	      //  is bad
+	      if (r>0.0)
+	      {
+	        value=k;
+                 
+	        //  Loop through and multiple k by r consExp times.
+	        //  i.e.  calculate kr^e/e
+	        //  I know, I could use pow(), but I don't trust it.
+	        for (int i=0; i<consExp; ++i) value *= r;
+
+	        //  Add to the energy total
+	        energy += value/consExp;
       
-	      //  Now calculate the force, which is kr^(e-1).  Also, divide
-	      //  by another factor of r to normalize the vector before we
-	      //  multiple it by the magnitude
-	      if (projectForce) {
-                value /= r;
-                smdForce = value*moveDir;
-	      } else {
+	        //  Now calculate the force, which is kr^(e-1).  Also, divide
+	        //  by another factor of r to normalize the vector before we
+	        //  multiple it by the magnitude
 	        value /= r2;
 	        Rij.mult(value);
-	        smdForce = Rij;
-              }
-	    }
-	    f[localID] += smdForce;
- 
-	    if (currentTime % outputFreq == 0) {
+                smdForce = Rij;
+	      }
+            } 
+            f[localID] += smdForce;
+	    if (currentTime % outputFreq == 0) 
 	      smdData->output(currentTime, atomPos, smdForce);
-	    }
 	    
 	    break;  // change this when there are many atoms restrained.
 
