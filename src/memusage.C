@@ -5,6 +5,9 @@
 **/
 
 #include "memusage.h"
+
+#ifdef MEMUSAGE_USE_SBRK
+
 #ifndef WIN32
 #include <unistd.h>
 #else
@@ -25,4 +28,28 @@ long memusage() {
   long newval = (long) sbrk(0);
   return ( newval - memusageinit::sbrkval );
 }
+
+#else // ifdef MEMUSAGE_USE_SBRK
+
+#ifndef WIN32
+
+#include <malloc.h>
+
+long memusage() {
+
+  struct mallinfo mi = mallinfo();
+
+  long memtotal = mi.usmblks + mi.uordblks + mi.hblkhd;
+
+  return memtotal;
+
+}
+
+#else // ifndef WIN32
+
+long memusage() { return 0; }
+
+#endif
+
+#endif
 

@@ -9,6 +9,8 @@
 
 long memusage();
 
+#ifdef MEMUSAGE_USE_SBRK
+
 class memusageinit {
 public:
   memusageinit();
@@ -19,6 +21,8 @@ private:
 };
 
 static memusageinit memusageinitobject;
+
+#endif
 
 #endif
 
