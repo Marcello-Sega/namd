@@ -4,14 +4,17 @@
 ***  All rights reserved.
 **/
 
+#ifdef NAMD_FFTW
+#include <fftw.h>
+#include <rfftw.h>
+#endif
+
 #include "Node.h"
 #include "PatchMap.h"
 #include "PatchMap.inl"
 #include "AtomMap.h"
 #include "ComputePme.h"
 #include "ComputePmeMsgs.h"
-#include <fftw.h>
-#include <rfftw.h>
 #include "ComputePmeMgr.decl.h"
 #include "PmeRealSpace.h"
 #include "PmeKSpace.h"
@@ -124,9 +127,13 @@ private:
   PmeKSpace *myKSpace;
   double *qgrid;
 
+#ifdef NAMD_FFTW
   fftw_plan forward_plan_x, backward_plan_x;
   rfftwnd_plan forward_plan_yz, backward_plan_yz;
   fftw_complex *work;
+#else
+  double *work;
+#endif
 
   LocalPmeInfo *localInfo;
   int qgrid_start;
@@ -213,6 +220,8 @@ void ComputePmeMgr::initialize() {
   fgrid_len = localInfo[CkMyPe()].nx * myGrid.K2;
 
   int n[3]; n[0] = myGrid.K1; n[1] = myGrid.K2; n[2] = myGrid.K3;
+
+#ifdef NAMD_FFTW
   work = new fftw_complex[n[0]];
 
   forward_plan_yz = rfftwnd_create_plan_specific(2, n+1, FFTW_REAL_TO_COMPLEX,
@@ -225,6 +234,9 @@ void ComputePmeMgr::initialize() {
 	localInfo[CkMyPe()].ny_after_transpose * myGrid.dim3 / 2, work, 1);
   backward_plan_yz = rfftwnd_create_plan_specific(2, n+1, FFTW_COMPLEX_TO_REAL,
 	FFTW_MEASURE | FFTW_IN_PLACE, qgrid, 1, 0, 0);
+#else
+  NAMD_die("Sorry, FFTW must be compiled in to use PME.");
+#endif
 
   numSources = CkNumPes();
   int npatches = (PatchMap::Object())->numPatches();
@@ -286,8 +298,10 @@ void ComputePmeMgr::gridCalc1(PmeNullMsg *msg) {
   // CkPrintf("gridCalc1 on Pe(%d)\n",CkMyPe());
   delete msg;
 
+#ifdef NAMD_FFTW
   rfftwnd_real_to_complex(forward_plan_yz, localInfo[CkMyPe()].nx,
 	qgrid, 1, myGrid.dim2 * myGrid.dim3, 0, 0, 0);
+#endif
 
   pmeProxy.sendTrans(new PmeNullMsg, CkMyPe());
 }
@@ -360,8 +374,10 @@ void ComputePmeMgr::gridCalc2(PmeNullMsg *msg) {
   int ny = localInfo[CkMyPe()].ny_after_transpose;
 
   // finish forward FFT (x dimension)
+#ifdef NAMD_FFTW
   fftw(forward_plan_x, ny * zdim / 2, (fftw_complex *) qgrid,
 	ny * zdim / 2, 1, work, 1, 0);
+#endif
 
   // reciprocal space portion of PME
   BigReal ewaldcof = ComputeNonbondedUtil::ewaldcof;
@@ -369,8 +385,10 @@ void ComputePmeMgr::gridCalc2(PmeNullMsg *msg) {
   // CkPrintf("Ewald reciprocal energy = %f\n", recipEnergy);
 
   // start backward FFT (x dimension)
+#ifdef NAMD_FFTW
   fftw(backward_plan_x, ny * zdim / 2, (fftw_complex *) qgrid,
 	ny * zdim / 2, 1, work, 1, 0);
+#endif
 
   pmeProxy.sendUntrans(new PmeNullMsg, CkMyPe());
 }
@@ -450,8 +468,10 @@ void ComputePmeMgr::gridCalc3(PmeNullMsg *msg) {
   delete msg;
 
   // finish backward FFT
+#ifdef NAMD_FFTW
   rfftwnd_complex_to_real(backward_plan_yz, localInfo[CkMyPe()].nx,
 	(fftw_complex *) qgrid, 1, myGrid.dim2 * myGrid.dim3 / 2, 0, 0, 0);
+#endif
 
   pmeProxy.sendUngrid(new PmeNullMsg, CkMyPe());
 }
