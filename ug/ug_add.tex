@@ -1452,10 +1452,13 @@ significant overhead and has not been implemented for PME calculations.
 The calculation of the nonbonded contribution should be performed offline,
 using the saved frames of the trajectory file and a long nonbonded cutoff.
 
-Pressure profile calculations must be performed in a constant volume 
-ensemble due to the way the simulation space is partitioned; this constraint
-may be relaxed in future versions.  Periodic boundary conditions must also
-be enabled.
+Pressure profile calculations may be performed in either constant volume 
+or constant pressure conditions.  If constant pressure is enabled, the
+slabs thickness will be rescaled along with the unit cell; the dcdUnitCell
+option will also be switched on so that unit cell information is stored in
+the trajectory file.
+
+Periodic boundary conditions must also be enabled.
 
 
 \item
@@ -1504,12 +1507,12 @@ the nonbonded component of the pressure profile.  It assumes that the
 coordinates were saved in three dcd files ({\tt pp01.dcd}, {\tt pp02.dcd},
 and {\tt pp03.dcd}) every 500 timesteps.  The {\tt pressureProfileSlabs}
 must be the same as was used for the calculation of the bonded part of
-the pressure.
+the pressure.  Note the use of no switching function; this way the calculated
+electrostatic energy will be closest to what would be calculated by PME.
 \begin{verbatim}
-cutoff		     18.0
-switching	     on
-switchdist	   16.5	
-pairlistdist	 18.5 
+switching	     off
+cutoff		     20.0
+pairlistdist   20.5
 
 pressureProfile	on
 pressureProfileSlabs 60 
