@@ -50,6 +50,84 @@ CmiHandler notifyIdleEnd(void)
   return 0;
 }
 
+LdbStatsMsg::LdbStatsMsg(void)
+{
+  nPatches = -1;
+  nComputes = -1;
+}
+
+LdbStatsMsg::LdbStatsMsg(int np, int nc)
+{
+  nPatches = np;
+  pid = new int[np];
+  nAtoms = new int [np];
+  nComputes = nc;
+  cid = new int[nc];
+  computeTime = new float[nc];
+}
+
+LdbStatsMsg::~LdbStatsMsg()
+{
+  delete [] pid;
+  delete [] nAtoms;
+  delete [] cid;
+  delete [] computeTime;
+}
+
+void *LdbStatsMsg::pack(int *length)
+{
+  // A few extra bytes are allocated for the unused pointers,
+  // but it makes the code shorter
+
+  *length = sizeof(LdbStatsMsg) + nPatches * 2 * sizeof(int) 
+    + nComputes * (sizeof(int) + sizeof(float));
+
+  char *buffer = (char *)new_packbuffer(this,*length);
+
+  *((LdbStatsMsg *)buffer) = *this;
+  char *curbuf = buffer+sizeof(LdbStatsMsg);
+
+  memcpy(curbuf,pid,nPatches*sizeof(int));
+  curbuf += nPatches * sizeof(int);
+
+  memcpy(curbuf,nAtoms,nPatches*sizeof(int));
+  curbuf += nPatches * sizeof(int);
+
+  memcpy(curbuf,cid,nComputes*sizeof(int));
+  curbuf += nComputes * sizeof(int);
+
+  memcpy(curbuf,computeTime,nComputes*sizeof(float));
+
+  return buffer;
+}
+
+void LdbStatsMsg::unpack(void *buffer)
+{
+  new ((void *)this) LdbStatsMsg;
+
+  *this = *((LdbStatsMsg *)buffer);
+  
+  char *curbuf = (char *)buffer+sizeof(LdbStatsMsg);
+
+  pid = new int[nPatches];
+  memcpy(pid,curbuf,nPatches*sizeof(int));
+  curbuf += nPatches * sizeof(int);
+
+  nAtoms = new int[nPatches];
+  memcpy(nAtoms,curbuf,nPatches*sizeof(int));
+  curbuf += nPatches * sizeof(int);
+
+  cid = new int[nComputes];
+  memcpy(cid,curbuf,nComputes*sizeof(int));
+  curbuf += nComputes * sizeof(int);
+
+  computeTime = new float[nComputes];
+  memcpy(computeTime,curbuf,nComputes*sizeof(float));
+
+  // Deleteing buffer is unnecessary, the system will do it.
+  return;
+}
+
 LdbCoordinator::LdbCoordinator(InitMsg *msg)
 {
   if (_instance == NULL)
@@ -319,7 +397,8 @@ void LdbCoordinator::sendStats(LdbResumeMsg *inMsg)
     NAMD_die(die_msg);
   }
 
-  LdbStatsMsg *msg = new (MsgIndex(LdbStatsMsg)) LdbStatsMsg;
+  LdbStatsMsg *msg = 
+    new (MsgIndex(LdbStatsMsg)) LdbStatsMsg(nLocalPatches,nLocalComputes);
   
   if (msg == NULL)
     NAMD_die("LdbCoordinator::checkAndSendStats: Insufficient memory");

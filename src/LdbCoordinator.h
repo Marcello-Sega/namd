@@ -41,17 +41,34 @@ enum {PATCHMAX = 4096};
 enum {PROCESSORMAX = 512};
 
 
-struct LdbStatsMsg : public comm_object
+class LdbStatsMsg : public comm_object
 {
+public:
   int proc;
   double procLoad;
   int nPatches;
-  int pid[LDB_PATCHES];
-  int nAtoms[LDB_PATCHES];
+  int *pid;
+  int *nAtoms;
   int nComputes;
-  int cid[LDB_COMPUTES];
-  float computeTime[LDB_COMPUTES];
+  int *cid;
+  float *computeTime;
+
+  LdbStatsMsg(void);
+  LdbStatsMsg(int npatches, int ncomputes);
+  ~LdbStatsMsg(void);
+  void *pack (int *length);
+  void unpack (void *in);
+  // Normal constructor
+  void * operator new(size_t s) { return comm_object::operator new(s); }
+  // In-place constructor
+  void *operator new(size_t, void *ptr) { return ptr; } 
+  // This one is needed, too.
+  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
+  // And maybe this one
+  //  void * operator new(size_t s, int i, int j) {return comm_object::operator new(s,i,j);}
 };
+
+
 
 struct LdbResumeMsg : public comm_object
 {
@@ -150,12 +167,15 @@ inline int LdbCoordinator::balanceNow(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.15 $	$Date: 1997/09/02 15:30:11 $
+ *	$Revision: 1.16 $	$Date: 1997/09/23 20:07:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LdbCoordinator.h,v $
+ * Revision 1.16  1997/09/23 20:07:57  brunner
+ * Added Load balance message packing
+ *
  * Revision 1.15  1997/09/02 15:30:11  brunner
  * Changed some static arrays to allow only a max of 16384 computes
  *
