@@ -29,7 +29,7 @@
 
 #include "InfoStream.h"
 
-int useSync = 0;
+int useSync = 1;
 
 Sync::Sync()
 {
@@ -116,10 +116,24 @@ void Sync::triggerCompute()
             if (clist[i].step == step + 1) nPatcheReady++;
             continue;
          }
-//         CkPrintf(" %d-%d-%d ", clist[i].pid, clist[i].step, patchMap->patch(pid)->flags.step);
+	 //         CkPrintf(" %d-%d-%d ",
+	 //	 clist[i].pid, clist[i].step,
+	 //      patchMap->patch(pid)->flags.step);
+
          ComputeIDListIter cid = clist[i].cid;
-         for(cid = cid.begin(); cid != cid.end(); cid++)
-	    computeMap->compute(*cid)->patchReady(pid,clist[i].doneMigration);
+
+         int compute_count = 0;
+         for(cid = cid.begin(); cid != cid.end(); cid++) {
+	   compute_count++;
+	   computeMap->compute(*cid)->patchReady(pid,clist[i].doneMigration);
+	 }
+	 if (compute_count == 0 && patchMap->node(pid) != CkMyPe()) {
+	   iout << iINFO << "PATCH_COUNT-Sync step " << step
+		<< "]: Patch " << pid << " on PE " 
+		<< CkMyPe() <<" home patch " 
+		<< patchMap->node(pid) << " does not have any computes\n" 
+		<< endi;
+	 }
 	 pid = -1;
        }
 //       CkPrintf("\n");
