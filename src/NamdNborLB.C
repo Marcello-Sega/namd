@@ -27,6 +27,7 @@ NamdNborLB::NamdNborLB()
   processorArray = 0;
   patchArray = 0;
   computeArray = 0;
+  act = 0;
 }
 
 /*
@@ -38,6 +39,87 @@ NamdNborLB::~NamdNborLB()
 }
 */
 
+int NamdNborLB::max_neighbors() {
+  return 4;
+}
+
+int NamdNborLB::num_neighbors() {
+  return numNbors;
+}
+
+void NamdNborLB::neighbors(int* _n) {
+#if 0
+    const int me = CkMyPe();
+    const int npe = CkNumPes();
+    if (npe > 1)
+      _n[0] = (me + npe - 1) % npe;
+    if (npe > 2)
+      _n[1] = (me + 1) % npe;
+
+    int bigstep = (npe - 1) / 3 + 1;
+    if (bigstep == 1) bigstep++;
+
+    if (npe > 3)
+      _n[2] = (me + bigstep) % npe;
+    if (npe > 4)
+      _n[3] = (me + npe - bigstep) % npe;
+#else	// 2D mesh or Torus mesh
+#define SEQ(x, y) ((x)*yDim + (y))
+#define WRAP   0
+    numNbors = 0;
+    int yDim = sqrt(CkNumPes());
+    int xDim = CkNumPes() / yDim;
+    if (CkNumPes() % yDim) xDim++;
+    int x = CmiMyPe()/yDim;
+    int y = CmiMyPe()%yDim;
+    int x1, y1, s;
+    CmiPrintf("[%d]info: %d %d %d %d\n", CmiMyPe(), xDim, yDim, x,y);
+
+    x1=x; y1 = y-1;
+#if WRAP
+    if (y1==-1) y1=yDim-1;
+    if (SEQ(x1, y1) >= CkNumPes()) s = CkNumPes()-1;
+    else s = SEQ(x1, y1);
+    if (s != CmiMyPe()) _n[numNbors++] = s;
+#else
+    if (y1 != -1)  _n[numNbors++] = SEQ(x1, y1);
+#endif
+
+    x1=x; y1=y+1;
+#if WRAP
+    if (y1 == yDim || SEQ(x1,y1) >= CkNumPes()) y1=0;
+    s = SEQ(x1, y1);
+    if (s != _n[numNbors-1] && s != CmiMyPe()) _n[numNbors++] = s;
+#else
+    if (y1 == yDim || SEQ(x1,y1) >= CkNumPes()) ;
+    else _n[numNbors++] = SEQ(x1, y1);
+#endif
+
+    y1=y; x1=x-1;
+#if WRAP
+    if (x1==-1) x1=xDim-1;
+    if (SEQ(x1, y1) >= CkNumPes()) x1--;
+    s = SEQ(x1, y1);
+    if (s != CmiMyPe()) _n[numNbors++] = s;
+#else
+    if (x1!=-1) _n[numNbors++] = SEQ(x1, y1);
+#endif
+
+    y1=y; x1=x+1;
+#if WRAP
+    if (x1==xDim || SEQ(x1,y1) >= CkNumPes()) x1=0;
+    s = SEQ(x1, y1);
+    if (s != _n[numNbors-1] && s != CmiMyPe()) _n[numNbors++] = s;
+#else
+    if (x1==xDim || SEQ(x1,y1) >= CkNumPes()) ;
+    else _n[numNbors++] = SEQ(x1,y1);
+#endif
+    CmiPrintf("[%d] %d neighbors: %d %d %d %d\n", CmiMyPe(), numNbors, _n[0], _n[1], _n[2], _n[3]);
+    act = (x+y)%2;
+#endif
+
+};
+
 CmiBool NamdNborLB::QueryBalanceNow(int _step)
 {
   //  CkPrintf("[%d] Balancing on step %d\n",CkMyPe(),_step);
@@ -46,6 +128,12 @@ CmiBool NamdNborLB::QueryBalanceNow(int _step)
   } else {
     return CmiFalse;
   }
+}
+
+CmiBool NamdNborLB::QueryMigrateStep(int _step)
+{
+  CmiPrintf("[%d] QueryMigrateStep %d %d.\n", CmiMyPe(), _step, act);
+  return (act+_step)%2 == 0;
 }
 
 NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
@@ -84,64 +172,7 @@ NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
   AlgNbor(CkMyPe(), computeArray,patchArray,processorArray,
 			nMoveableComputes, numPatches, numProcessors, count);
   //CmiPrintf("AlgNbor end on %d\n", CmiMyPe());
-/*
-  if (simParams->ldbStrategy == LDBSTRAT_REFINEONLY) {
-    RefineOnly(computeArray,patchArray,processorArray,
-                                nMoveableComputes, numPatches, numProcessors);
-  } else if (simParams->ldbStrategy == LDBSTRAT_ALG7) {
-    Alg7(computeArray,patchArray,processorArray,
-                          nMoveableComputes, numPatches, numProcessors);
-  } else if (simParams->ldbStrategy == LDBSTRAT_ALGROB) {
-    if (step() == 0) {
-      iout << iINFO << "Load balance cycle " << step()
-        << " using RecBisection\n" << endi;
-      AlgRecBisection(computeArray,patchArray,processorArray,
-                            nMoveableComputes, numPatches, numProcessors);
-    } else {
-      iout << iINFO << "Load balance cycle " << step()
-        << " using RefineOnly\n" << endi;
-      RefineOnly(computeArray,patchArray,processorArray,
-                                  nMoveableComputes, numPatches,
-                                  numProcessors);
-    }
-  } else if (simParams->ldbStrategy == LDBSTRAT_OTHER) {
-    if (step() == 0) {
-      iout << iINFO << "Load balance cycle " << step()
-        << " using Alg7\n" << endi;
-      Alg7(computeArray,patchArray,processorArray,
-                            nMoveableComputes, numPatches, numProcessors);
-    } else {
-      iout << iINFO << "Load balance cycle " << step()
-        << " using RefineOnly\n" << endi;
-      // To save the data to a file, uncomment the following lines -RKB
-      //      if (step() == 1) {
-      //	iout << iINFO << "Dumping data\n" << endi;
-      //	dumpDataASCII("refinedata", numProcessors, numPatches,
-      //		      nMoveableComputes);
-      //      }
-      RefineOnly(computeArray,patchArray,processorArray,
-                                  nMoveableComputes, numPatches,
-                                  numProcessors);
-    }
-  }
-*/
 
-  // For error checking:
-  // Count up computes, to see if somebody doesn't have any computes
-/*
-  int* computeCount = new int[numProcessors];
-  for(i=0; i<numProcessors; i++)
-    computeCount[i]=0;
-  for(i=0; i<nMoveableComputes; i++)
-    computeCount[computeArray[i].processor]++;
-  for(i=0; i<numProcessors; i++) {
-    if (computeCount[i]==0)
-      iout << iINFO <<"Warning: Processor " << i 
-	   << " has NO moveable computes.\n" << endi;
-  }
-  delete [] computeCount;
-*/
-  
   CkVec<MigrateInfo *> migrateInfo;
   for(i=0;i<nMoveableComputes;i++) {
     if (computeArray[i].oldProcessor == CkMyPe())
@@ -194,8 +225,10 @@ int NamdNborLB::buildData(NborBaseLB::LDStats* stats, int count)
   for (i=0; i<CmiNumPes(); i++) {
     processorArray[i].load = 0.0;
     processorArray[i].backgroundLoad = 0.0;
+    processorArray[i].move = CmiFalse;
     if (i == CmiMyPe()) {
       processorArray[i].Id = i;
+      processorArray[i].move = myStats.move;
     if (patchMap->numPatches() > 0)
       processorArray[i].backgroundLoad = myStats.bg_walltime*bg_weight;
     else 
@@ -205,6 +238,7 @@ int NamdNborLB::buildData(NborBaseLB::LDStats* stats, int count)
     int peslot = NeighborIndex(i);
     if (peslot != -1) {
     processorArray[i].Id = i;
+      processorArray[i].move = stats[peslot].move;
     if (patchMap->numPatches() > 0)
       processorArray[i].backgroundLoad = bg_weight * stats[peslot].bg_walltime;
     else 

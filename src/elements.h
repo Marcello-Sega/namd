@@ -39,6 +39,8 @@ public:
    double backgroundLoad; // background work pre-assigned to the processor.
    double computeLoad;    //load due to computes. The total load is computed
                           // by adding these two.		     
+   // Added 10/22/01:  indicate if this processor will migrate its objs.   
+   CmiBool  move;
    Set patchSet;   // caller to ReBalancer should leave this field NULL.
    Set proxies;    // caller to ReBalancer should fill in the forced proxies
    Set computeSet; // caller to ReBalancer should leave this field NULL.

@@ -1666,8 +1666,10 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
        ldbStrategy=LDBSTRAT_REFINEONLY;
      else if (strcasecmp(loadStrategy, "alg7") == 0)
        ldbStrategy=LDBSTRAT_ALG7;
-     else if (strcasecmp(loadStrategy, "rob") == 0)
-       ldbStrategy=LDBSTRAT_ALGROB;
+     else if (strcasecmp(loadStrategy, "orb") == 0)
+       ldbStrategy=LDBSTRAT_ALGORB;
+     else if (strcasecmp(loadStrategy, "neighbor") == 0)
+       ldbStrategy=LDBSTRAT_ALGNBOR;
      else if (strcasecmp(loadStrategy, "other") == 0)
        ldbStrategy=LDBSTRAT_OTHER;
      else
@@ -1961,8 +1963,10 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
        iout << iINFO << "LOAD BALANCE STRATEGY  Refine-only\n";
      } else if (ldbStrategy==LDBSTRAT_ALG7)  {
        iout << iINFO << "LOAD BALANCE STRATEGY  Alg7\n";
-     } else if (ldbStrategy==LDBSTRAT_ALGROB)  {
+     } else if (ldbStrategy==LDBSTRAT_ALGORB)  {
        iout << iINFO << "LOAD BALANCE STRATEGY  RecBisection\n";
+     } else if (ldbStrategy==LDBSTRAT_ALGNBOR)  {
+       iout << iINFO << "LOAD BALANCE STRATEGY  Neighborhood\n";
      } else if (ldbStrategy==LDBSTRAT_OTHER)  {
        iout << iINFO << "LOAD BALANCE STRATEGY  Other\n";
      }

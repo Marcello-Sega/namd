@@ -75,7 +75,7 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
   } else if (simParams->ldbStrategy == LDBSTRAT_ALG7) {
     Alg7(computeArray,patchArray,processorArray,
                           nMoveableComputes, numPatches, numProcessors);
-  } else if (simParams->ldbStrategy == LDBSTRAT_ALGROB) {
+  } else if (simParams->ldbStrategy == LDBSTRAT_ALGORB) {
     if (step() == 0) {
       iout << iINFO << "Load balance cycle " << step()
         << " using RecBisection\n" << endi;

@@ -17,7 +17,14 @@ class NamdNborLB : public NeighborLB {
 public:
   NamdNborLB();
 private:
+  int act;
+  int numNbors;
+private:
+  int max_neighbors();
+  int num_neighbors();
+  void neighbors(int* _n);
   CmiBool QueryBalanceNow(int step);
+  CmiBool QueryMigrateStep(int _step);
   NLBMigrateMsg* Strategy(NborBaseLB::LDStats* stats, int count);
   int buildData(NborBaseLB::LDStats* stats, int count);
   int requiredProxies(PatchID id, int neighborNodes[]);
