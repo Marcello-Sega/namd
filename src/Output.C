@@ -8,7 +8,7 @@
  * This object outputs the data collected on the master node
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Output.C,v 1.7 1997/08/13 21:00:18 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Output.C,v 1.8 1997/09/18 21:05:12 brunner Exp $";
 
 #include <string.h>
 #include <stdlib.h>
@@ -350,7 +350,10 @@ void Output::coordinate(int timestep, int n, Vector *coor)
 	//  Output a DCD trajectory 
 	if ( (namdMyNode->simParams->dcdFrequency != -1) &&
 	     ( ((timestep % namdMyNode->simParams->dcdFrequency) == 0) ||
-	       (timestep == 0) ) )
+	       (timestep == 0) ) 
+	     && !((namdMyNode->simParams->firstTimestep !=0) 
+		  && (timestep == namdMyNode->simParams->firstTimestep)
+		 ))
 	{
 		output_dcdfile(timestep, n, coor);
 	}
@@ -412,8 +415,11 @@ int Output::velocityNeeded(int timestep)
 
 	//  Output velocity DCD trajectory
 	if ( (simParams->velDcdFrequency != -1) &&
-	     ( ((timestep % simParams->velDcdFrequency) == 0)  ||
-	       (timestep==0) ) )
+	     ( ((timestep % simParams->velDcdFrequency) == 0) ||
+	       (timestep == 0) ) 
+	     && !((simParams->firstTimestep !=0) 
+		  && (timestep == simParams->firstTimestep)
+		 ))
 	{
 		velocitiesNeeded = 1;
 	}
@@ -438,8 +444,11 @@ void Output::velocity(int timestep, int n, Vector *vel)
 
 	//  Output velocity DCD trajectory
 	if ( (namdMyNode->simParams->velDcdFrequency != -1) &&
-	     ( ((timestep % namdMyNode->simParams->velDcdFrequency) == 0)  ||
-	       (timestep==0) ) )
+	     ( ((timestep % namdMyNode->simParams->velDcdFrequency) == 0) ||
+	       (timestep == 0) ) 
+	     && !((namdMyNode->simParams->firstTimestep !=0) 
+		  && (timestep == namdMyNode->simParams->firstTimestep)
+		 ))
 	{
 		output_veldcdfile(timestep, n, vel);
 	}
@@ -2506,12 +2515,16 @@ void Output::output_allforcedcdfile(int timestep, int n, Vector *forces)
  *
  *	$RCSfile: Output.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1997/08/13 21:00:18 $
+ *	$Revision: 1.8 $	$Date: 1997/09/18 21:05:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Output.C,v $
+ * Revision 1.8  1997/09/18 21:05:12  brunner
+ * Made DCD files no update on first timestep, if firstTimestep
+ * is non-zero.
+ *
  * Revision 1.7  1997/08/13 21:00:18  brunner
  * Made binary files always use 32 bits for the number of atoms, so that it
  * works on both 64 and 32-bit machines.  Also, I made Inform.C use CPrintf,
