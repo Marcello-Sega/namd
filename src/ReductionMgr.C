@@ -55,24 +55,24 @@ public:
   int sourceNode;
   int sequenceNumber;
   int dataSize;
-  BigReal *data;
+  BigReal data[1];
 
   static void *alloc(int msgnum, int size, int *array, int priobits) {
     int totalsize = size + array[0]*sizeof(BigReal);
     ReductionSubmitMsg *newMsg = (ReductionSubmitMsg*)
 				CkAllocMsg(msgnum,totalsize,priobits);
-    newMsg->data = (BigReal*) ((char*)newMsg + size);
+    // newMsg->data = (BigReal*) ((char*)newMsg + size);
     return (void*)newMsg;
   }
 
   static void *pack(ReductionSubmitMsg *in) {
-    in->data = (BigReal*) ((char*)in->data - (char*)&(in->data));
+    // in->data = (BigReal*) ((char*)in->data - (char*)&(in->data));
     return (void*)in;
   }
 
   static ReductionSubmitMsg *unpack(void *in) {
     ReductionSubmitMsg *me = (ReductionSubmitMsg*)in;
-    me->data = (BigReal*) ((char*)&(me->data) + (size_t)(me->data));
+    // me->data = (BigReal*) ((char*)&(me->data) + (size_t)(me->data));
     return me;
   }
 
