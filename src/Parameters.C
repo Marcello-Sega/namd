@@ -1870,6 +1870,12 @@ void Parameters::add_vdw_param(char *buf)
   }
   //****** END CHARMM/XPLOR type changes
 
+  if ( epsilon < 0. || epsilon14 < 0. ) {
+    iout << iWARN << "Ignoring VDW parameter with negative epsilon:\n"
+	<< buf << "\n" << endi;
+    return;
+  }
+
   /*  Allocate a new node            */
   new_node = new vdw_params;
 
@@ -2007,6 +2013,7 @@ void Parameters::add_vdw_pair_param(char *buf)
   }
   else if (paramType == paraCharmm)
   {
+    // XXX CHARMM CAN HAVE 1-4 PARAMETERS TOO!!!
     /* read CHARMM format */
     read_count=sscanf(buf, "%s %s %f %f\n", atom1name, 
        atom2name, &A, &B);
