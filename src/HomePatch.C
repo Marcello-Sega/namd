@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.18 1997/01/15 17:09:43 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.19 1997/01/15 17:59:11 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -107,7 +107,7 @@ void HomePatch::positionsReady(int doMigration)
 
 void HomePatch::addForceToMomentum(const BigReal timestep)
 {
-  const BigReal dt = TIMEFACTOR * timestep;
+  const BigReal dt = timestep / TIMEFACTOR;
   for ( int i = 0; i < numAtoms; ++i )
   {
     v[i] += f[i] * ( dt / a[i].mass );
@@ -116,7 +116,7 @@ void HomePatch::addForceToMomentum(const BigReal timestep)
 
 void HomePatch::addVelocityToPosition(const BigReal timestep)
 {
-  const BigReal dt = TIMEFACTOR * timestep;
+  const BigReal dt = timestep / TIMEFACTOR;
   for ( int i = 0; i < numAtoms; ++i )
   {
     p[i] += v[i] * dt;
@@ -431,13 +431,16 @@ void HomePatch::dispose(char *&data)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.18 $	$Date: 1997/01/15 17:09:43 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.19 $	$Date: 1997/01/15 17:59:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.19  1997/01/15 17:59:11  jim
+ * now divide by TIMEFACTOR
+ *
  * Revision 1.18  1997/01/15 17:09:43  ari
  * Commented out new Atom migration code
  *
