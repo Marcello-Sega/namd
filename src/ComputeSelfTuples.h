@@ -26,7 +26,7 @@ template <class T, class S, class P> class ComputeSelfTuples :
 		    &numTuples, &tuplesByAtom, &tupleStructs);
       T::getParameterPointers(node->parameters, &tupleValues);
 
-      tupleList.clear();
+      this->tupleList.clear();
 
       LocalID aid[T::size];
 
@@ -37,7 +37,7 @@ template <class T, class S, class P> class ComputeSelfTuples :
 
       // cycle through each patch and gather all tuples
       // There should be only one!
-      TuplePatchListIter ai(tuplePatchList);
+      TuplePatchListIter ai(this->tuplePatchList);
 
       for ( ai = ai.begin(); ai != ai.end(); ai++ )
       {
@@ -56,24 +56,24 @@ template <class T, class S, class P> class ComputeSelfTuples :
            for( ; *curTuple != -1; ++curTuple) {
              T t(&tupleStructs[*curTuple],tupleValues);
              register int i;
-             aid[0] = atomMap->localID(t.atomID[0]);
+             aid[0] = this->atomMap->localID(t.atomID[0]);
              int homepatch = aid[0].pid;
              int samepatch = 1;
              int has_les = lesOn && node->molecule->get_fep_type(t.atomID[0]);
              for (i=1; i < T::size; i++) {
-	         aid[i] = atomMap->localID(t.atomID[i]);
+	         aid[i] = this->atomMap->localID(t.atomID[i]);
 	         samepatch = samepatch && ( homepatch == aid[i].pid );
                  has_les |= lesOn && node->molecule->get_fep_type(t.atomID[i]);
              }
              if ( samepatch ) {
                t.scale = has_les ? invLesFactor : 1;
 	       TuplePatchElem *p;
-	       p = tuplePatchList.find(TuplePatchElem(homepatch));
+	       p = this->tuplePatchList.find(TuplePatchElem(homepatch));
                for (i=0; i < T::size; i++) {
 	         t.p[i] = p;
 	         t.localIndex[i] = aid[i].index;
                }
-               tupleList.load(t);
+               this->tupleList.load(t);
              }
            }
         }
@@ -89,11 +89,11 @@ template <class T, class S, class P> class ComputeSelfTuples :
     }
 
     virtual ~ComputeSelfTuples() {
-      UniqueSetIter<TuplePatchElem> ap(tuplePatchList);
+      UniqueSetIter<TuplePatchElem> ap(this->tuplePatchList);
       for (ap = ap.begin(); ap != ap.end(); ap++) {
-        ap->p->unregisterPositionPickup(cid,&(ap->positionBox));
-        ap->p->unregisterAvgPositionPickup(cid,&(ap->avgPositionBox));
-        ap->p->unregisterForceDeposit(cid,&(ap->forceBox));
+        ap->p->unregisterPositionPickup(this->cid,&(ap->positionBox));
+        ap->p->unregisterAvgPositionPickup(this->cid,&(ap->avgPositionBox));
+        ap->p->unregisterForceDeposit(this->cid,&(ap->forceBox));
       }
     }
 
@@ -105,30 +105,30 @@ template <class T, class S, class P> class ComputeSelfTuples :
     virtual void initialize(void) {
     
       // Start with empty list
-      tuplePatchList.clear();
+      this->tuplePatchList.clear();
     
-      tuplePatchList.add(TuplePatchElem(ComputeHomeTuples<T,S,P>::patchMap->patch(patchID), cid));
+      this->tuplePatchList.add(TuplePatchElem(ComputeHomeTuples<T,S,P>::patchMap->patch(patchID), this->cid));
     
-      setNumPatches(tuplePatchList.size());
-      doLoadTuples = true;
+      setNumPatches(this->tuplePatchList.size());
+      this->doLoadTuples = true;
 
       int myNode = CkMyPe();
       if ( PatchMap::Object()->node(patchID) != myNode )
       {
-        basePriority = 64 + patchID % 64;
+        this->basePriority = 64 + patchID % 64;
       }
       else
       {
-        basePriority = 2 * 64 + (patchID % 64);
+        this->basePriority = 2 * 64 + (patchID % 64);
       }
     }
 
     void doWork(void) {
-      LdbCoordinator::Object()->startWork(cid,0); // Timestep not used
+      LdbCoordinator::Object()->startWork(this->cid,0); // Timestep not used
 
       ComputeHomeTuples<T,S,P>::doWork();
 
-      LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
+      LdbCoordinator::Object()->endWork(this->cid,0); // Timestep not used
     }
 
 #if 0

@@ -36,35 +36,35 @@ template <class Elem, int Size> class MathArray : public Array<Elem,Size> {
 
     // bulk mathematical operations
     MathArray<Elem,Size> & operator+= (const Array<Elem,Size> &a2) {
-      for ( int i = 0; i < Size; ++i ) { data[i] += a2.data[i]; }
+      for ( int i = 0; i < Size; ++i ) { this->data[i] += a2.data[i]; }
       return (*this);
     }
     MathArray<Elem,Size> & operator+= (const Elem &v) {
-      for ( int i = 0; i < Size; ++i ) { data[i] += v; }
+      for ( int i = 0; i < Size; ++i ) { this->data[i] += v; }
       return (*this);
     }
     MathArray<Elem,Size> & operator-= (const Array<Elem,Size> &a2) {
-      for ( int i = 0; i < Size; ++i ) { data[i] -= a2.data[i]; }
+      for ( int i = 0; i < Size; ++i ) { this->data[i] -= a2.data[i]; }
       return (*this);
     }
     MathArray<Elem,Size> & operator-= (const Elem &v) {
-      for ( int i = 0; i < Size; ++i ) { data[i] -= v; }
+      for ( int i = 0; i < Size; ++i ) { this->data[i] -= v; }
       return (*this);
     }
     MathArray<Elem,Size> & operator*= (const Array<Elem,Size> &a2) {
-      for ( int i = 0; i < Size; ++i ) { data[i] *= a2.data[i]; }
+      for ( int i = 0; i < Size; ++i ) { this->data[i] *= a2.data[i]; }
       return (*this);
     }
     MathArray<Elem,Size> & operator*= (const Elem &v) {
-      for ( int i = 0; i < Size; ++i ) { data[i] *= v; }
+      for ( int i = 0; i < Size; ++i ) { this->data[i] *= v; }
       return (*this);
     }
     MathArray<Elem,Size> & operator/= (const Array<Elem,Size> &a2) {
-      for ( int i = 0; i < Size; ++i ) { data[i] /= a2.data[i]; }
+      for ( int i = 0; i < Size; ++i ) { this->data[i] /= a2.data[i]; }
       return (*this);
     }
     MathArray<Elem,Size> & operator/= (const Elem &v) {
-      for ( int i = 0; i < Size; ++i ) { data[i] /= v; }
+      for ( int i = 0; i < Size; ++i ) { this->data[i] /= v; }
       return (*this);
     }
     friend MathArray<Elem,Size> operator+ (
