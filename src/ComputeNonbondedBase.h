@@ -25,7 +25,7 @@
 #include "SimParameters.h"
 #include "Molecule.h"
 
-#define MIN_DEBUG_LEVEL 3
+#define MIN_DEBUG_LEVEL 5
 #define DEBUGM
 #include "Debug.h"
 
@@ -177,12 +177,15 @@ SW
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/11/23 23:00:30 $
+ *	$Revision: 1.7 $	$Date: 1996/11/30 20:30:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.7  1996/11/30 20:30:36  jim
+ * turned off some debugging, switched to DebugM()
+ *
  * Revision 1.6  1996/11/23 23:00:30  jim
  * added debug message - energy output
  *

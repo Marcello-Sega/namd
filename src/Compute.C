@@ -27,6 +27,10 @@
 #include "Node.h"
 #include "Compute.h"
 
+#define MIN_DEBUG_LEVEL 5
+#define DEBUGM
+#include "Debug.h"
+
 void Compute::enqueueWork() {
   WorkDistrib::messageEnqueueWork(this);
 }
@@ -36,12 +40,12 @@ void Compute::enqueueWork() {
 // have checked-in, we are ready to enqueueWork()
 void Compute::patchReady(void) { 
   if (numPatches <= 0 ) {
-    CPrintf("Compute::patchReady()-call not valid!\n");
+    DebugM(10,"Compute::patchReady()-call not valid!\n");
   } else {
-    CPrintf("Compute::patchReady() - counter = %d\n", patchReadyCounter);
+    DebugM(2,"patchReadyCounter = " << patchReadyCounter << endl);
     if (! --patchReadyCounter) {
       patchReadyCounter = numPatches;
-      CPrintf("Compute::patchReady() - enqueue()!\n");
+      DebugM(3,"Compute::patchReady() - enqueue()!\n");
       enqueueWork();
     }
   }
@@ -49,7 +53,7 @@ void Compute::patchReady(void) {
 
 
 void Compute::doWork() {
-  CPrintf("This is the default Compute::doWork() Nothing happens\n");
+  DebugM(5,"Default Compute::doWork() called.\n");
 }
 
 #include "Compute.bot.h"
@@ -59,13 +63,16 @@ void Compute::doWork() {
  * RCS INFORMATION:
  *
  *	$RCSfile: Compute.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/11/22 00:18:51 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.4 $	$Date: 1996/11/30 20:30:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.C,v $
+ * Revision 1.4  1996/11/30 20:30:36  jim
+ * turned off some debugging, switched to DebugM()
+ *
  * Revision 1.3  1996/11/22 00:18:51  ari
  * *** empty log message ***
  *
