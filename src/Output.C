@@ -110,7 +110,8 @@ int Output::coordinateNeeded(int timestep)
   return positionsNeeded;
 }
 
-void wrap_coor(Vector *coor, Lattice &lattice, double *done) {
+template <class xVector, class xDone>
+void wrap_coor_int(xVector *coor, Lattice &lattice, xDone *done) {
   SimParameters *simParams = Node::Object()->simParameters;
   if ( *done ) return;
   *done = 1;
@@ -135,38 +136,18 @@ void wrap_coor(Vector *coor, Lattice &lattice, double *done) {
 	lattice.wrap_nearest_delta(coni) : lattice.wrap_delta(coni) );
       con[i] = trans;
     }
-    coor[i] += con[ci];
+    coor[i] = coor[i] + con[ci];
   }
   delete [] con;
 }
 
+void wrap_coor(Vector *coor, Lattice &lattice, double *done) {
+  wrap_coor_int(coor,lattice,done);
+};
+
 void wrap_coor(FloatVector *coor, Lattice &lattice, float *done) {
-  SimParameters *simParams = Node::Object()->simParameters;
-  if ( *done ) return;
-  *done = 1;
-  if ( ! ( simParams->wrapAll || simParams->wrapWater ) ) return;
-  const int wrapNearest = simParams->wrapNearest;
-  const int wrapAll = simParams->wrapAll;
-  Molecule *molecule = Node::Object()->molecule;
-  int n = molecule->numAtoms;
-  int cs;
-  for ( int i = 0; i < n; coor+=cs,i+=cs ) {
-    cs = molecule->get_cluster(i);
-    if ( ! cs ) NAMD_bug("Cluster list corrupted on output!");
-    if ( ! wrapAll && ! molecule->is_water(i) ) continue;
-    int j;
-    Position con = 0;
-    for ( j = 0; j < cs; ++j ) con += coor[j];
-    con /= cs;
-    Vector trans = ( wrapNearest ?
-	lattice.wrap_nearest_delta(con) : lattice.wrap_delta(con) );
-    for ( j = 0; j < cs; ++j ) {
-      coor[j].x += trans.x;
-      coor[j].y += trans.y;
-      coor[j].z += trans.z;
-    }
-  }
-}
+  wrap_coor_int(coor,lattice,done);
+};
 
 void Output::coordinate(int timestep, int n, Vector *coor, FloatVector *fcoor,
 							Lattice &lattice)
