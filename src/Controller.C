@@ -401,11 +401,11 @@ void Controller::reassignVelocities(int step)
   if ( ( reassignFreq > 0 ) && ! ( step % reassignFreq ) ) {
     BigReal newTemp = simParams->reassignTemp;
     newTemp += ( step / reassignFreq ) * simParams->reassignIncr;
-    if ( simParams->reassignIncr < 0 ) {
-      if ( newTemp < simParams->reassignHold )
+    if ( simParams->reassignIncr > 0.0 ) {
+      if ( newTemp > simParams->reassignHold && simParams->reassignHold > 0.0 )
         newTemp = simParams->reassignHold;
     } else {
-      if ( newTemp > simParams->reassignHold )
+      if ( newTemp < simParams->reassignHold )
         newTemp = simParams->reassignHold;
     }
     iout << "REASSIGNING VELOCITIES AT STEP " << step
@@ -847,12 +847,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1060 $	$Date: 1999/03/17 17:59:23 $
+ *	$Revision: 1.1061 $	$Date: 1999/03/17 19:57:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1061  1999/03/17 19:57:57  jim
+ * Fixed logic bug in reassignment.
+ *
  * Revision 1.1060  1999/03/17 17:59:23  jim
  * Eliminated compiler warnings and errors.
  *
