@@ -46,6 +46,7 @@ void CollectionMaster::enqueuePositions(int seq)
 void CollectionMaster::disposePositions(CollectVectorInstance *c)
 {
     DebugM(3,"Collected positions at " << c->seq << endl);
+    int seq = c->seq;
     int size = c->data.size();
     Vector *data = new Vector[size];
     for ( int i = 0; i < size; ++i )
@@ -53,7 +54,7 @@ void CollectionMaster::disposePositions(CollectVectorInstance *c)
       data[c->data[i].aid] = c->data[i].data;
     }
     delete c;
-    Node::Object()->output->coordinate(c->seq,size,data);
+    Node::Object()->output->coordinate(seq,size,data);
     delete data;
 }
 
@@ -80,6 +81,7 @@ void CollectionMaster::enqueueVelocities(int seq)
 void CollectionMaster::disposeVelocities(CollectVectorInstance *c)
 {
     DebugM(3,"Collected velocities at " << c->seq << endl);
+    int seq = c->seq;
     int size = c->data.size();
     Vector *data = new Vector[size];
     for ( int i = 0; i < size; ++i )
@@ -87,7 +89,7 @@ void CollectionMaster::disposeVelocities(CollectVectorInstance *c)
       data[c->data[i].aid] = c->data[i].data;
     }
     delete c;
-    Node::Object()->output->velocity(c->seq,size,data);
+    Node::Object()->output->velocity(seq,size,data);
     delete data;
 }
 
@@ -177,12 +179,15 @@ void CollectVectorMsg::unpack(void *in)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/11/07 20:17:33 $
+ *	$Revision: 1.1010 $	$Date: 1997/12/02 22:04:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMaster.C,v $
+ * Revision 1.1010  1997/12/02 22:04:00  milind
+ * Fixed a silly bug that accessed memory after it was freed.
+ *
  * Revision 1.1009  1997/11/07 20:17:33  milind
  * Made NAMD to run on shared memory machines.
  *
