@@ -139,10 +139,11 @@ int ComputeIMD::get_vmd_forces() {
   int32 length;
   int32 *vmd_atoms;
   float *vmd_forces;
-  int retval; 
+  int retval = 0;
+  int paused = 0;
   vmdforce *vtest, vnew;
 
-  while (vmdsock_selread(clientsock,0) > 0)  {     // Drain the socket
+  while (vmdsock_selread(clientsock,0) > 0 || paused) {  // Drain the socket
     type = imd_recv_header(clientsock, &length);
     int i;
     switch (type) {
@@ -179,6 +180,13 @@ int ComputeIMD::get_vmd_forces() {
         iout << iINFO << "Setting transfer rate to " << length<<'\n'<<endi;	
         Node::Object()->imd->set_transrate(length);
         break;
+      case IMD_PAUSE:
+        if ( paused ) iout << iINFO << "Resuming IMD\n" << endi;
+        paused = ! paused;
+        if ( paused ) iout << iINFO << "Pausing IMD\n" << endi;
+        break;
+      case IMD_IOERROR:
+        iout << iWARN << "IMD connection lost\n" << endi;
       case IMD_DISCONNECT:
         iout<<iDEBUG<<"Detaching simulation from remote connection\n" << endi;
         vmdsock_destroy(clientsock);
@@ -197,11 +205,6 @@ int ComputeIMD::get_vmd_forces() {
         imd_recv_fcoords(clientsock, length, vmd_forces);
         delete [] vmd_forces;
         break;
-      case IMD_IOERROR:
-        vmdsock_destroy(clientsock);
-        clientsock = NULL;
-        iout << iWARN << "IMD connection lost\n" << endi;
-        break;    
       default: ;
     }
   }
