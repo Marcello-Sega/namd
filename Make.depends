@@ -597,7 +597,8 @@ obj/ComputeFullDirect.o: \
 	src/Migration.h \
 	src/HomePatchTypes.h \
 	src/ReductionMgr.h \
-	src/Debug.h
+	src/Debug.h \
+	src/ComputeFullDirectBase.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeFullDirect.o -c src/ComputeFullDirect.C
 obj/ComputeHomePatches.o: \
 	src/ComputeHomePatches.C \
@@ -1905,6 +1906,8 @@ obj/Node.o: \
 	src/Set.h \
 	src/SMD.h \
 	src/SMDMsgs.h \
+	src/TestController.h \
+	src/TestSequencer.h \
 	inc/Node.bot.h
 	$(CXX) $(CXXFLAGS) -o obj/Node.o -c src/Node.C
 obj/Output.o: \
@@ -2417,6 +2420,114 @@ obj/TclCommands.o: \
 	src/TclCommands.C \
 	src/TclCommands.h
 	$(CXX) $(CXXFLAGS) -o obj/TclCommands.o -c src/TclCommands.C
+obj/TestController.o: \
+	src/TestController.C \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/ResizeArrayPrimIter.h \
+	src/ProcessorPrivate.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/ObjectArena.h \
+	src/Hydrogen.h \
+	src/SimParameters.h \
+	src/Communicate.h \
+	src/MStream.h \
+	src/Lattice.h \
+	src/TestController.h \
+	src/Controller.h \
+	src/ReductionMgr.h \
+	src/CollectionMaster.h \
+	src/Output.h \
+	src/strlib.h \
+	src/BroadcastObject.h \
+	src/BroadcastMgr.h \
+	src/UniqueSetIter.h \
+	src/BroadcastClient.h \
+	src/NamdState.h \
+	src/Broadcasts.h \
+	src/Thread.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/TestController.o -c src/TestController.C
+obj/TestSequencer.o: \
+	src/TestSequencer.C \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/ResizeArrayPrimIter.h \
+	src/ProcessorPrivate.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/MStream.h \
+	src/Lattice.h \
+	src/TestSequencer.h \
+	src/Sequencer.h \
+	src/PatchTypes.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
+	src/ReductionMgr.h \
+	src/CollectionMgr.h \
+	src/BroadcastObject.h \
+	src/BroadcastMgr.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/UniqueSetIter.h \
+	src/BroadcastClient.h \
+	src/Output.h \
+	src/Controller.h \
+	src/Broadcasts.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/ObjectArena.h \
+	src/Hydrogen.h \
+	src/NamdOneTools.h \
+	src/PDB.h \
+	src/PDBData.h \
+	src/LdbCoordinator.h \
+	src/elements.h \
+	src/Set.h \
+	src/ComputeMgr.h \
+	src/Thread.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/TestSequencer.o -c src/TestSequencer.C
 obj/VoidTree.o: \
 	src/VoidTree.C \
 	src/VoidTree.h \

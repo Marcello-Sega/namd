@@ -161,6 +161,8 @@ OBJS = \
 	$(DSTDIR)/SMD.o \
 	$(DSTDIR)/SMDMsgs.o \
 	$(DSTDIR)/TclCommands.o \
+	$(DSTDIR)/TestController.o \
+	$(DSTDIR)/TestSequencer.o \
 	$(DSTDIR)/VoidTree.o \
 	$(DSTDIR)/WorkDistrib.o
 
