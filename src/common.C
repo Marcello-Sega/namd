@@ -61,8 +61,11 @@ void NAMD_quit(Bool die_hard)
 void NAMD_die(const char *err_msg)
 
 {
-   CkPrintf("FATAL ERROR: %s\n",err_msg);
-   CmiAbort(err_msg);
+   char *new_err_msg = new char[strlen(err_msg) + 20];
+   sprintf(new_err_msg,"FATAL ERROR: %s\n",err_msg);
+   CkPrintf(new_err_msg);
+   CmiAbort(new_err_msg);
+   delete [] new_err_msg;
 }
 
 
