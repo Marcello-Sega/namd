@@ -22,6 +22,7 @@
 //#include "Alg0.h"
 //#include "Alg1.h"
 //#include "Alg4.h"
+#include "packmsg.h"
 
 #include "elements.h"
 #include "ComputeMgr.decl.h"
@@ -73,61 +74,15 @@ LdbStatsMsg::~LdbStatsMsg()
   delete [] computeTime;
 }
 
-void *LdbStatsMsg::pack(LdbStatsMsg *m)
-{
-  // A few extra bytes are allocated for the unused pointers,
-  // but it makes the code shorter
+PACK_MSG(LdbStatsMsg,
+  PACK(proc);
+  PACK(procLoad);
+  PACK_AND_NEW_ARRAY(pid,nPatches);
+  PACK_AND_NEW_ARRAY(nAtoms,nPatches);
+  PACK_AND_NEW_ARRAY(cid,nComputes);
+  PACK_AND_NEW_ARRAY(computeTime,nComputes);
+)
 
-  int length = sizeof(LdbStatsMsg) + m->nPatches * 2 * sizeof(int) 
-    + m->nComputes * (sizeof(int) + sizeof(float));
-
-  char *buffer = (char *)CkAllocBuffer(m,length);
-
-  *((LdbStatsMsg *)buffer) = *m;
-  char *curbuf = buffer+sizeof(LdbStatsMsg);
-
-  memcpy(curbuf,m->pid,m->nPatches*sizeof(int));
-  curbuf += m->nPatches * sizeof(int);
-
-  memcpy(curbuf,m->nAtoms,m->nPatches*sizeof(int));
-  curbuf += m->nPatches * sizeof(int);
-
-  memcpy(curbuf,m->cid,m->nComputes*sizeof(int));
-  curbuf += m->nComputes * sizeof(int);
-
-  memcpy(curbuf,m->computeTime,m->nComputes*sizeof(float));
-
-  delete m;
-  return buffer;
-}
-
-LdbStatsMsg* LdbStatsMsg::unpack(void *buffer)
-{
-  void *_ptr = CkAllocBuffer(buffer, sizeof(LdbStatsMsg));
-  LdbStatsMsg* m = new (_ptr) LdbStatsMsg;
-
-  *m = *((LdbStatsMsg *)buffer);
-  
-  char *curbuf = (char *)buffer+sizeof(LdbStatsMsg);
-
-  m->pid = new int[m->nPatches];
-  memcpy(m->pid,curbuf,m->nPatches*sizeof(int));
-  curbuf += m->nPatches * sizeof(int);
-
-  m->nAtoms = new int[m->nPatches];
-  memcpy(m->nAtoms,curbuf,m->nPatches*sizeof(int));
-  curbuf += m->nPatches * sizeof(int);
-
-  m->cid = new int[m->nComputes];
-  memcpy(m->cid,curbuf,m->nComputes*sizeof(int));
-  curbuf += m->nComputes * sizeof(int);
-
-  m->computeTime = new float[m->nComputes];
-  memcpy(m->computeTime,curbuf,m->nComputes*sizeof(float));
-
-  CkFreeMsg(buffer);
-  return m;
-}
 
 LdbCoordinator::LdbCoordinator()
 {

@@ -28,8 +28,7 @@
 #include "WorkDistrib.decl.h"
 #include "WorkDistrib.h"
 
-// #include "Node.decl.h"
-// #include "Node.h"
+#include "packmsg.h"
 
 // #define DEBUGM
 #define MIN_DEBUG_LEVEL 3
@@ -139,7 +138,6 @@ void PatchMgr::recvMovePatches(MovePatchesMsg *msg) {
 // Called by HomePatch to migrate atoms off to new patches
 // Message combining could occur here
 void PatchMgr::sendMigrationMsg(PatchID src, MigrationInfo m) {
-  // We note that m.mList may be NULL indicating no atoms to migrate
   MigrateAtomsMsg *msg = new MigrateAtomsMsg(src,m.destPatchID,m.mList);
   CProxy_PatchMgr cp(thisgroup);
   cp.recvMigrateAtoms(msg, m.destNodeID);
@@ -216,50 +214,16 @@ void PatchMgr::moveAtom(MoveAtomMsg *msg) {
   delete msg;
 }
 
-void * MovePatchesMsg::pack (MovePatchesMsg *m)
-  {
-    DebugM(1,"MovePatchesMsg::pack() - aid.size() = " << m->aid.size() << endl);
-    DebugM(1,"MovePatchesMsg::pack() - p.size() = " << m->p.size() << endl);
-    DebugM(1,"MovePatchesMsg::pack() - v.size() = " << m->v.size() << endl);
-    int length = sizeof(NodeID) + sizeof(PatchID) + sizeof(int) +
-		m->aid.size() * sizeof(AtomID) +
-		m->t.size() * sizeof(Transform) +
-		m->p.size() * sizeof(Position) +
-		m->v.size() * sizeof(Velocity);
-    char *buffer = (char*)CkAllocBuffer(m,length);
-    char *b = buffer;
-    memcpy(b, &(m->fromNodeID), sizeof(NodeID)); b += sizeof(NodeID);
-    memcpy(b, &(m->pid), sizeof(PatchID)); b += sizeof(PatchID);
-    int size=m->aid.size(); 
-    memcpy(b, &size, sizeof(int)); b += sizeof(int);
-    memcpy(b, m->aid.begin(),size*sizeof(AtomID)); b += size*sizeof(AtomID);
-    memcpy(b, m->t.begin(),size*sizeof(Transform)); b += size*sizeof(Transform);
-    memcpy(b, m->p.begin(),size*sizeof(Position)); b += size*sizeof(Position);
-    memcpy(b, m->v.begin(),size*sizeof(Velocity)); b += size*sizeof(Velocity);
-    delete m;
-    return buffer;
-  }
 
-MovePatchesMsg* MovePatchesMsg::unpack (void *ptr)
-  {
-    void *_ptr = CkAllocBuffer(ptr, sizeof(MovePatchesMsg));
-    MovePatchesMsg* m = new (_ptr) MovePatchesMsg;
-    char *b = (char*)ptr;
-    memcpy(&(m->fromNodeID), b, sizeof(NodeID)); b += sizeof(NodeID);
-    memcpy(&(m->pid),b, sizeof(PatchID)); b += sizeof(PatchID);
-    int size; memcpy(&size, b, sizeof(int)); b += sizeof(int);
-    DebugM(1,"MovePatchesMsg::unpack() - size = " << size << endl);
-    m->aid.resize(size);
-    memcpy(m->aid.begin(),b,size*sizeof(AtomID)); b += size*sizeof(AtomID);
-    m->t.resize(size);
-    memcpy(m->t.begin(),b,size*sizeof(Transform)); b += size*sizeof(Transform);
-    m->p.resize(size);
-    memcpy(m->p.begin(),b,size*sizeof(Position)); b += size*sizeof(Position);
-    m->v.resize(size);
-    memcpy(m->v.begin(),b,size*sizeof(Velocity)); b += size*sizeof(Velocity);
-    CkFreeMsg(ptr);
-    return m;
-  }
+PACK_MSG(MovePatchesMsg,
+  PACK(fromNodeID);
+  PACK(pid);
+  PACK_RESIZE(aid);
+  PACK_RESIZE(t);
+  PACK_RESIZE(p);
+  PACK_RESIZE(v);
+)
+
 
 #include "PatchMgr.def.h"
 
@@ -268,11 +232,14 @@ MovePatchesMsg* MovePatchesMsg::unpack (void *ptr)
  *
  *	$RCSfile: PatchMgr.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1999/08/11 16:53:07 $
+ *	$Revision: 1.1019 $	$Date: 1999/09/24 17:15:10 $
  *
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.C,v $
+ * Revision 1.1019  1999/09/24 17:15:10  jim
+ * Added packmsg.h with macros to simplify packing.
+ *
  * Revision 1.1018  1999/08/11 16:53:07  jim
  * Added move command to TCL scripting.
  *

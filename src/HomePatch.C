@@ -50,7 +50,7 @@ void mollify(Vector *qtilde,const HGArrayVector &q0,const BigReal *lambda, HGArr
 
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1060 1999/09/03 20:46:14 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1061 1999/09/24 17:15:09 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, TransformList tl,
       PositionList pl, VelocityList vl) : Patch(pd,al,pl), v(vl), t(tl)
@@ -95,7 +95,7 @@ void HomePatch::readPatchMap() {
   for (n=0; n<numNeighbors; n++) {
     realInfo[n].destNodeID = p->node(realInfo[n].destPatchID = nnPatchID[n]);
      DebugM( 1, " nnPatchID=" <<nnPatchID[n]<<" nnNodeID="<< realInfo[n].destNodeID<< "\n");
-    realInfo[n].mList = NULL;
+    realInfo[n].mList.resize(0);
   }
 
   // Make mapping from the 3x3x3 cube of pointers to real migration info
@@ -155,8 +155,7 @@ void HomePatch::registerProxy(RegisterProxyMsg *msg) {
   proxy.add(ProxyListElem(msg->node,forceBox.checkOut()));
   ProxyAtomsMsg *nmsg = new ProxyAtomsMsg;
   nmsg->patch = patchID;
-  nmsg->atomIDList = atomIDList;
-  nmsg->prepack();
+  nmsg->atomIDList = AtomIDList(&atomIDList); // copy the array
   ProxyMgr::Object()->sendProxyAtoms(nmsg,msg->node);
   delete msg;
 }
@@ -696,7 +695,6 @@ HomePatch::doAtomMigration()
 {
   int i,j;
   int xdev=1, ydev=1, zdev=1;
-  MigrationList *mCur;
 
   // Drain the migration message buffer
   //for (i=0; i<numMlBuf; i++) {
@@ -708,7 +706,7 @@ HomePatch::doAtomMigration()
   // realInfo points to migration lists for neighbors we actually have. 
   //    element of mInfo[3][3][3] points to an element of realInfo
   for (i=0; i<numNeighbors; i++) {
-    realInfo[i].mList = NULL;
+    realInfo[i].mList.resize(0);
   }
 
   // Purge the AtomMap
@@ -751,18 +749,12 @@ HomePatch::doAtomMigration()
                                     // Don't migrate if destination is myself
 
        // See if we have a migration list already
-       if (NULL == (mCur = mInfo[xdev][ydev][zdev]->mList)) {
-	 // new: all mList pointers are actually in realInfo[].mList
-	 //one of the following below sendMigrationMsg() does delete
-	 // [1] in pack of MigrateAtomsMsg (PatchMgr.C)
-	 // [2] in recvMigrateAtoms (PatchMgr.C)
-	 mCur = mInfo[xdev][ydev][zdev]->mList = new MigrationList;
-       }
+       MigrationList &mCur = mInfo[xdev][ydev][zdev]->mList;
        Force force[Results::maxNumForces];
        for ( j = 0; j < Results::maxNumForces; ++j ) force[j] = *(f_i[j]);
        DebugM(3,"Migrating atom " << atomIDList_i << " from patch "
 		<< patchID << " with position " << p_i << "\n");
-       mCur->add(MigrationElem(*atomIDList_i, *a_i, *t_i, *p_i, *v_i, force));
+       mCur.add(MigrationElem(*atomIDList_i, *a_i, *t_i, *p_i, *v_i, force));
 
        ++delnum;
 
@@ -834,8 +826,6 @@ HomePatch::doAtomMigration()
 void 
 HomePatch::depositMigration(MigrateAtomsMsg *msg)
 {
-  // PatchID srcPatchID;
-  MigrationList *migrationList;
 
   if (!inMigration) { // We have to buffer changes due to migration
 		      // until our patch is in migration mode
@@ -843,12 +833,10 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
     return;
   } 
 
-  // srcPatchID = msg->srcPatchID;
-  migrationList = msg->migrationList;
-
-  if (migrationList) {
-    MigrationListIter mi(*migrationList);
-    for (mi = mi.begin(); mi != mi.end(); mi++) {
+  {
+    MigrationList &migrationList = msg->migrationList;
+    MigrationList::iterator mi;
+    for (mi = migrationList.begin(); mi != migrationList.end(); mi++) {
       DebugM(1,"Migrating atom " << mi->atomID << " to patch "
 		<< patchID << " with position " << mi->pos << "\n"); 
       atomIDList.add(mi->atomID);
@@ -859,9 +847,8 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
       for ( int j = 0; j < Results::maxNumForces; ++j )
         f[j].add(mi-> force[j]);
     }
-    delete migrationList;
-    migrationList = NULL;
   }
+
   numAtoms = atomIDList.size();
   delete msg;
 
@@ -1246,12 +1233,15 @@ void mollify(Vector *qtilde,const HGArrayVector &q0,const BigReal *lambda, HGArr
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1060 $	$Date: 1999/09/03 20:46:14 $
+ *	$Revision: 1.1061 $	$Date: 1999/09/24 17:15:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1061  1999/09/24 17:15:09  jim
+ * Added packmsg.h with macros to simplify packing.
+ *
  * Revision 1.1060  1999/09/03 20:46:14  jim
  * Support for non-orthogonal periodic boundary conditions.
  *

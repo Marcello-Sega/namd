@@ -21,76 +21,23 @@
 #include "PatchMgr.decl.h"
 #include "PatchMap.h"
 #include "HomePatch.h"
+#include "packmsg.h"
 
-MigrateAtomsMsg::MigrateAtomsMsg(void) { 
-    migrationList = NULL; 
-}
 
-MigrateAtomsMsg::~MigrateAtomsMsg(void) { 
-  // delete migrationList; NOW DELETED on pack() and by HomePatch on use!
-}
-
-MigrateAtomsMsg::MigrateAtomsMsg(PatchID src, PatchID dest, MigrationList *m) : 
+MigrateAtomsMsg::MigrateAtomsMsg(PatchID src, PatchID dest, MigrationList &m) : 
       srcPatchID(src), destPatchID(dest), migrationList(m) 
 {
     fromNodeID = CkMyPe();
 }
 
-void* MigrateAtomsMsg::pack (MigrateAtomsMsg *m) {
-  int length = sizeof(NodeID) + sizeof(PatchID) + sizeof(PatchID) + sizeof(int) 
-    + (m->migrationList != NULL 
-	   ? m->migrationList->size() * sizeof(MigrationElem) 
-	   : 0 );
 
-  // This is what I want
-  char *buffer;
-  char *b = buffer = (char*)CkAllocBuffer(m,length);
+PACK_MSG(MigrateAtomsMsg,
+  PACK(fromNodeID);
+  PACK(srcPatchID);
+  PACK(destPatchID);
+  PACK_RESIZE(migrationList);
+)
 
-  *((NodeID*)b) = m->fromNodeID; b += sizeof(NodeID);
-  *((PatchID*)b) = m->srcPatchID; b += sizeof(PatchID);
-  *((PatchID*)b) = m->destPatchID; b += sizeof(PatchID);
-
-  if (m->migrationList != NULL) {
-    *((int*)b) = m->migrationList->size(); b += sizeof(int);
-    for ( int i = 0; i < m->migrationList->size(); i++ ) {
-      *((MigrationElem*)b) = (*(m->migrationList))[i]; 
-      b += sizeof(MigrationElem);
-    }
-  }
-  else {
-    *((int*)b) = 0; b += sizeof(int);
-  }
-
-  // Delete of new'd item from HomePatch::doAtomMigration()
-  delete m->migrationList;
-  m->migrationList = 0;
-
-  delete m;
-  return buffer;
-}
-
-MigrateAtomsMsg* MigrateAtomsMsg::unpack(void *ptr) {
-  void *_ptr = CkAllocBuffer(ptr, sizeof(MigrateAtomsMsg));
-  MigrateAtomsMsg* m = new (_ptr) MigrateAtomsMsg;
-  char *b = (char*)ptr;
-  m->fromNodeID = *((NodeID*)b); b += sizeof(NodeID);
-  m->srcPatchID = *((PatchID*)b); b += sizeof(PatchID);
-  m->destPatchID = *((PatchID*)b); b += sizeof(PatchID);
-  int size = *((int*)b); b += sizeof(int);
-  if (size != 0) {
-    m->migrationList = new MigrationList();
-    m->migrationList->resize(size);
-    for ( int i = 0; i < size; i++ ) {
-      (*(m->migrationList))[i] = *((MigrationElem*)b); 
-      b += sizeof(MigrationElem);
-    }
-  }
-  else {
-    m->migrationList = NULL;
-  }
-  CkFreeMsg(ptr);
-  return m;
-}
 
 MigrateAtomsCombinedMsg::MigrateAtomsCombinedMsg(void)
 {
@@ -99,18 +46,17 @@ MigrateAtomsCombinedMsg::MigrateAtomsCombinedMsg(void)
 }
 
 void MigrateAtomsCombinedMsg::
-	add(PatchID source, PatchID destination, MigrationList *m)
+	add(PatchID source, PatchID destination, MigrationList &m)
 {
   srcPatchID.add(source);
   destPatchID.add(destination);
-  int n = ( m ? m->size() : 0 );
+  int n = m.size();
   numAtoms.add(n);
   totalAtoms += n;
   for ( int i = 0; i < n; ++i )
   {
-    migrationList.add((*m)[i]);
+    migrationList.add(m[i]);
   }
-  delete m;
 }
 
 
@@ -125,97 +71,40 @@ void MigrateAtomsCombinedMsg::distribute(void)
     msg->srcPatchID = srcPatchID[i];
     msg->destPatchID = destPatchID[i];
     int l = numAtoms[i];
-    if ( l )
     {
       DebugM(3,"Distributing " << l << " atoms to patch " << msg->destPatchID << "\n");
-      msg->migrationList = new MigrationList(l);
-      for ( int j = 0; j < l; ++j ) (*msg->migrationList)[j] = migrationList[m+j];
+      msg->migrationList.resize(l);
+      for ( int j = 0; j < l; ++j ) msg->migrationList[j] = migrationList[m+j];
       m += l;
-    }
-    else
-    {
-      msg->migrationList = 0;
     }
     PatchMap::Object()->homePatch(msg->destPatchID)->depositMigration(msg);
   }
 }
 
-void * MigrateAtomsCombinedMsg::pack (MigrateAtomsCombinedMsg *m) {
-  int n = m->srcPatchID.size();
-  int l = sizeof(NodeID)			// fromNodeID
-	+ sizeof(int)				// totalAtoms
-	+ sizeof(int)				// n
-	+ sizeof(PatchID) * n			// srcPatchID
-	+ sizeof(PatchID) * n			// destPatchID
-	+ sizeof(int) * n			// numAtoms
-	+ sizeof(MigrationElem) * m->totalAtoms	// migrationList
-  ;
 
-  char *buffer;
-  char *b = buffer = (char*)CkAllocBuffer(m,l);
-
-  *((NodeID*)b) = m->fromNodeID;	b += sizeof(NodeID);
-  *((int*)b) = m->totalAtoms;	b += sizeof(int);
-  *((int*)b) = n;		b += sizeof(int);
-
-  memcpy(b,(void*)&(m->srcPatchID[0]), sizeof(PatchID) * n);
-  b += sizeof(PatchID) * n;
-
-  memcpy(b,(void*)&(m->destPatchID[0]), sizeof(PatchID) * n);
-  b += sizeof(PatchID) * n;
-
-  memcpy(b,(void*)&(m->numAtoms[0]), sizeof(int) * n);
-  b += sizeof(int) * n;
-
-  memcpy(b,(void*)&(m->migrationList[0]),sizeof(MigrationElem) * m->totalAtoms);
-  b += sizeof(MigrationElem) * m->totalAtoms;
-
-  delete m;
-  return buffer;
-}
-
-MigrateAtomsCombinedMsg* MigrateAtomsCombinedMsg::unpack(void *ptr) {
-  void *_ptr = CkAllocBuffer(ptr, sizeof(MigrateAtomsCombinedMsg));
-  MigrateAtomsCombinedMsg* m = new (_ptr) MigrateAtomsCombinedMsg;
-  char *b = (char*)ptr;
-
-  m->fromNodeID = *((NodeID*)b);	b += sizeof(NodeID);
-  m->totalAtoms = *((int*)b);	b += sizeof(int);
-  int n = *((int*)b);		b += sizeof(int);
-
-  DebugM(3,"Unpacking MigrateAtomsCombinedMsg with " << n << " messages.\n");
-
-  m->srcPatchID.resize(n);
-  memcpy((void*)&(m->srcPatchID[0]), b, sizeof(PatchID) * n);
-  b += sizeof(PatchID) * n;
-
-  m->destPatchID.resize(n);
-  memcpy((void*)&(m->destPatchID[0]), b, sizeof(PatchID) * n);
-  b += sizeof(PatchID) * n;
-
-  m->numAtoms.resize(n);
-  memcpy((void*)&(m->numAtoms[0]), b, sizeof(int) * n);
-  b += sizeof(int) * n;
-
-  m->migrationList.resize(m->totalAtoms);
-  memcpy((void*)&(m->migrationList[0]), b, sizeof(MigrationElem)*m->totalAtoms);
-  b += sizeof(MigrationElem) * m->totalAtoms;
-  CkFreeMsg(ptr);
-  return m;
-}
-
+PACK_MSG(MigrateAtomsCombinedMsg,
+  PACK(fromNodeID);
+  PACK(totalAtoms);
+  PACK_RESIZE(srcPatchID);
+  PACK_RESIZE(destPatchID);
+  PACK_RESIZE(numAtoms);
+  PACK_RESIZE(migrationList);
+)
 
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: MigrateAtomsMsg.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1999/05/11 23:56:35 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.10 $	$Date: 1999/09/24 17:15:09 $
  *
  * REVISION HISTORY:
  *
  * $Log: MigrateAtomsMsg.C,v $
+ * Revision 1.10  1999/09/24 17:15:09  jim
+ * Added packmsg.h with macros to simplify packing.
+ *
  * Revision 1.9  1999/05/11 23:56:35  brunner
  * Changes for new charm version
  *

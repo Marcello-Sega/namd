@@ -23,182 +23,45 @@
 #include "ComputeMap.h"
 #include "HomePatch.h"
 #include <string.h>
-
 #include "ProcessorPrivate.h"
-
-#define PACKDATA(LIST,TYPE,DATA) \
-	memcpy((void*)DATA,(void*)(LIST.begin()),size*sizeof(TYPE))
-#define UNPACKDATA(LIST,TYPE,DATA) \
-	memcpy((void*)(LIST.begin()),(void*)DATA,size*sizeof(TYPE))
+#include "packmsg.h"
 
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 4
 #include "Debug.h"
 
-// Use before CSendMsg... but don't use if msg is sent to local node 
-// in this case, msg will never be sent locally.  
-void ProxyAtomsMsg::prepack() {
-    int size = atomIDList.size();
-    mylength = sizeof(PatchID) + sizeof(int) + size * sizeof(AtomID);
-    char *b = mybuffer = (char*)new char[mylength];
-    *((int *)b) = patch; b += sizeof(PatchID);
-    *((int *)b) = size; b += sizeof(int);
-    char *data = b;
-    PACKDATA(atomIDList,AtomID,data);
-}
+
+PACK_MSG(ProxyAtomsMsg,
+  PACK(patch);
+  PACK_RESIZE(atomIDList);
+)
   
-  
-void * ProxyAtomsMsg::pack (ProxyAtomsMsg *msg) {
-    char *buffer = (char*)CkAllocBuffer(msg,msg->mylength);
-    memcpy(buffer, msg->mybuffer, msg->mylength);
-    delete [] msg->mybuffer;
-    delete msg;
-    return buffer;
-}
 
-ProxyAtomsMsg* ProxyAtomsMsg:: unpack (void *ptr)
-  {
-    void *_ptr = CkAllocBuffer(ptr, sizeof(ProxyAtomsMsg));
-    ProxyAtomsMsg*m = new (_ptr) ProxyAtomsMsg;
-    char *buffer = (char*)ptr;
-    m->patch = *((int*)buffer);
-    int size = *((int*)(buffer+sizeof(int)));
-    m->atomIDList.resize(size);
-    char *data = buffer+2*sizeof(int);
-    UNPACKDATA(m->atomIDList,AtomID,data);
-    CkFreeMsg(ptr);
-    return m;
+PACK_MSG(ProxyDataMsg,
+  PACK(patch);
+  PACK(flags);
+  PACK_RESIZE(positionList);
+  if (packmsg_msg->flags.doMolly) PACK_RESIZE(avgPositionList);
+)
+
+
+PACK_MSG(ProxyAllMsg,
+  PACK(patch);
+  PACK(flags);
+  PACK_RESIZE(atomIDList);
+  PACK_RESIZE(positionList);
+  if (packmsg_msg->flags.doMolly) PACK_RESIZE(avgPositionList);
+)
+
+
+PACK_MSG(ProxyResultMsg,
+  PACK(node);
+  PACK(patch);
+  for ( int j = 0; j < Results::maxNumForces; ++j ) {
+    PACK_RESIZE(forceList[j]);
   }
+)
 
-void * ProxyDataMsg:: pack (ProxyDataMsg *m)
-  {
-    int size = m->positionList.size();
-    int length = 2 * sizeof(int) + sizeof(Flags) + size * sizeof(Position);
-    if ( m->flags.doMolly ) { length += size * sizeof(Position); }
-    char *buffer = (char*)CkAllocBuffer(m,length);
-    *((int*)buffer) = m->patch;
-    *((int*)(buffer+sizeof(int))) = size;
-    *((Flags*)(buffer+2*sizeof(int))) = m->flags;
-    char *data = buffer+2*sizeof(int)+sizeof(Flags);
-    PACKDATA(m->positionList,Position,data);
-    data += size*sizeof(Position);
-    if ( m->flags.doMolly ) {
-      PACKDATA(m->avgPositionList,Position,data);
-    }
-    delete m;
-    return buffer;
-  }
-
-ProxyDataMsg* ProxyDataMsg:: unpack (void *ptr)
-  {
-    void *_ptr = CkAllocBuffer(ptr, sizeof(ProxyDataMsg));
-    ProxyDataMsg* m = new (_ptr) ProxyDataMsg;
-    char *buffer = (char*)ptr;
-    m->patch = *((int*)buffer);
-    int size = *((int*)(buffer+sizeof(int)));
-    m->flags = *((Flags*)(buffer+2*sizeof(int)));
-    m->positionList.resize(size);
-    char *data = buffer+2*sizeof(int)+sizeof(Flags);
-    UNPACKDATA(m->positionList,Position,data);
-    data += size*sizeof(Position);
-    if ( m->flags.doMolly ) {
-      m->avgPositionList.resize(size);
-      UNPACKDATA(m->avgPositionList,Position,data);
-    }
-    CkFreeMsg(ptr);
-    return m;
-  }
-
-void * ProxyAllMsg:: pack (ProxyAllMsg *m)
-  {
-    int size = m->positionList.size();
-    if (size != m->atomIDList.size()) {
-      iout << "ProxyAllMsg::pack() - Bad News, sizes don't match!" << endi;
-    }
-
-
-    int length = 2 * sizeof(int) + sizeof(Flags) + size * sizeof(Position) + size * sizeof(AtomID);
-    if ( m->flags.doMolly ) { length += size * sizeof(Position); }
-    char *buffer = (char*)CkAllocBuffer(m,length);
-    *((int*)buffer) = m->patch;
-    *((int*)(buffer+sizeof(int))) = size;
-    *((Flags*)(buffer+2*sizeof(int))) = m->flags;
-    char *data = buffer+2*sizeof(int)+sizeof(Flags);
-    PACKDATA(m->positionList,Position,data);
-    data += size*sizeof(Position);
-    PACKDATA(m->atomIDList,AtomID,data);
-    data += size*sizeof(AtomID);
-    if ( m->flags.doMolly ) {
-      PACKDATA(m->avgPositionList,Position,data);
-    }
-    delete m;
-    return buffer;
-  }
-
-ProxyAllMsg* ProxyAllMsg:: unpack (void *ptr)
-  {
-    void *_ptr = CkAllocBuffer(ptr, sizeof(ProxyAllMsg));
-    ProxyAllMsg* m = new (_ptr) ProxyAllMsg;
-    char *buffer = (char*)ptr;
-    m->patch = *((int*)buffer);
-    int size = *((int*)(buffer+sizeof(int)));
-    m->flags = *((Flags*)(buffer+2*sizeof(int)));
-    m->positionList.resize(size);
-    char *data = buffer+2*sizeof(int)+sizeof(Flags);
-    UNPACKDATA(m->positionList,Position,data);
-    m->atomIDList.resize(size);
-    data += size*sizeof(Position);
-    UNPACKDATA(m->atomIDList,AtomID,data);
-    data += size*sizeof(AtomID);
-    if ( m->flags.doMolly ) {
-      m->avgPositionList.resize(size);
-      UNPACKDATA(m->avgPositionList,Position,data);
-    }
-    CkFreeMsg(ptr);
-    return m;
-  }
-
-void * ProxyResultMsg:: pack (ProxyResultMsg *m)
-  {
-    int length = ( 4 + Results::maxNumForces ) * sizeof(int);
-    int j;
-    for ( j = 0; j < Results::maxNumForces; ++j )
-    {
-      length += sizeof(Force) * m->forceList[j].size();
-    }
-    char *buffer = (char*)CkAllocBuffer(m,length);
-    char *b = buffer;
-    *((int*)b) = m->node;  b += sizeof(int);
-    *((int*)b) = m->patch;  b += sizeof(int);
-    for ( j = 0; j < Results::maxNumForces; ++j )
-    {
-      int size = m->forceList[j].size();
-      memcpy((void*)b,(void*)(&size),sizeof(int));  b += sizeof(int);
-      memcpy((void*)b,(void*)(m->forceList[j].begin()),size*sizeof(Force));
-      b += size*sizeof(Force);
-    }
-    delete m;
-    return buffer;
-  }
-
-ProxyResultMsg* ProxyResultMsg:: unpack (void *ptr)
-  {
-    void *_ptr = CkAllocBuffer(ptr, sizeof(ProxyResultMsg));
-    ProxyResultMsg* m = new (_ptr) ProxyResultMsg;
-    char *b = (char*)ptr;
-    m->node = *((int*)b);  b += sizeof(int);
-    m->patch = *((int*)b);  b += sizeof(int);
-    for ( int j = 0; j < Results::maxNumForces; ++j )
-    {
-      int size;
-      memcpy((void*)(&size),(void*)b,sizeof(int));  b += sizeof(int);
-      m->forceList[j].resize(size);
-      memcpy((void*)(m->forceList[j].begin()),(void*)b,size*sizeof(Force));
-      b += size*sizeof(Force);
-    }
-    CkFreeMsg(ptr);
-    return m;
-  }
 
 ProxyMgr::ProxyMgr() { 
   if (CpvAccess(ProxyMgr_instance)) {
@@ -325,7 +188,7 @@ ProxyMgr::registerProxy(PatchID pid) {
 
 void
 ProxyMgr::recvRegisterProxy(RegisterProxyMsg *msg) {
-  HomePatch *homePatch = (HomePatch *)PatchMap::Object()->patch(msg->patch);
+  HomePatch *homePatch = PatchMap::Object()->homePatch(msg->patch);
   homePatch->registerProxy(msg); // message deleted in registerProxy()
 }
 
@@ -338,7 +201,7 @@ ProxyMgr::sendResults(ProxyResultMsg *msg) {
 
 void
 ProxyMgr::recvResults(ProxyResultMsg *msg) {
-  HomePatch *home = (HomePatch *) PatchMap::Object()->patch(msg->patch);
+  HomePatch *home = PatchMap::Object()->homePatch(msg->patch);
   home->receiveResults(msg); // delete done in HomePatch::receiveResults()
 }
 
@@ -386,12 +249,15 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
  *
  *	$RCSfile: ProxyMgr.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1025 $	$Date: 1999/08/20 19:11:14 $
+ *	$Revision: 1.1026 $	$Date: 1999/09/24 17:15:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.1026  1999/09/24 17:15:10  jim
+ * Added packmsg.h with macros to simplify packing.
+ *
  * Revision 1.1025  1999/08/20 19:11:14  jim
  * Added MOLLY - mollified impluse method.
  *

@@ -61,7 +61,7 @@ typedef ResizeArrayIter<MigrationElem> MigrationListIter;
 struct MigrationInfo {
   PatchID destPatchID;
   NodeID  destNodeID;
-  MigrationList *mList;
+  MigrationList mList;
 };
 
 #endif // MIGRATION_H
@@ -72,12 +72,15 @@ struct MigrationInfo {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1998/08/11 16:30:29 $
+ *	$Revision: 1.1006 $	$Date: 1999/09/24 17:15:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Migration.h,v $
+ * Revision 1.1006  1999/09/24 17:15:10  jim
+ * Added packmsg.h with macros to simplify packing.
+ *
  * Revision 1.1005  1998/08/11 16:30:29  jim
  * Modified output from periodic boundary simulations to return atoms to
  * internally consistent coordinates.  We store the transformations which

@@ -33,12 +33,10 @@ public:
   NodeID  fromNodeID;
   PatchID srcPatchID;
   PatchID destPatchID;
-  MigrationList *migrationList;
+  MigrationList migrationList;
 
-  MigrateAtomsMsg(void);
-  ~MigrateAtomsMsg(void);
-
-  MigrateAtomsMsg(PatchID source, PatchID destination, MigrationList *m);
+  MigrateAtomsMsg(PatchID source, PatchID destination, MigrationList &m);
+  MigrateAtomsMsg(void) { ; }
 
   // pack and unpack functions
   static void* pack(MigrateAtomsMsg* msg);
@@ -58,7 +56,7 @@ public:
   MigrateAtomsCombinedMsg(void);
   ~MigrateAtomsCombinedMsg(void) { };
 
-  void add(PatchID source, PatchID destination, MigrationList *m);
+  void add(PatchID source, PatchID destination, MigrationList &m);
   void distribute(void);
 
   // pack and unpack functions
@@ -74,12 +72,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1999/05/11 23:56:35 $
+ *	$Revision: 1.10 $	$Date: 1999/09/24 17:15:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: MigrateAtomsMsg.h,v $
+ * Revision 1.10  1999/09/24 17:15:10  jim
+ * Added packmsg.h with macros to simplify packing.
+ *
  * Revision 1.9  1999/05/11 23:56:35  brunner
  * Changes for new charm version
  *

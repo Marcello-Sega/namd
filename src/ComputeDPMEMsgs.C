@@ -9,6 +9,7 @@
  ***************************************************************************/
 
 #include "ComputeDPMEMsgs.h"
+#include "packmsg.h"
 
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 3
@@ -25,32 +26,10 @@ ComputeDPMEDataMsg::~ComputeDPMEDataMsg(void) {
   delete [] particles;
 }
 
-void * ComputeDPMEDataMsg::pack (ComputeDPMEDataMsg *msg) {
-  int length = 2 * sizeof(int) + msg->numParticles * sizeof(Pme2Particle);
-
-  char *buffer;
-  char *b = buffer = (char*)CkAllocBuffer(msg,length);
-
-  memcpy(b, &(msg->node), sizeof(int)); b += sizeof(int);
-  memcpy(b, &(msg->numParticles), sizeof(int)); b += sizeof(int);
-  memcpy(b, msg->particles, msg->numParticles*sizeof(Pme2Particle));
-  b += msg->numParticles*sizeof(Pme2Particle);
-  delete msg;
-  return buffer;
-}
-
-ComputeDPMEDataMsg* ComputeDPMEDataMsg::unpack (void *ptr) {
-  void *_ptr = CkAllocBuffer(ptr, sizeof(ComputeDPMEDataMsg));
-  ComputeDPMEDataMsg* m = new (_ptr) ComputeDPMEDataMsg;
-  char *b = (char*)ptr;
-
-  memcpy(&(m->node), b, sizeof(int)); b += sizeof(int);
-  memcpy(&(m->numParticles), b, sizeof(int)); b += sizeof(int);
-  m->particles = new Pme2Particle[m->numParticles];
-  memcpy(m->particles, b, m->numParticles*sizeof(Pme2Particle));
-  CkFreeMsg(ptr);
-  return m;
-}
+PACK_MSG(ComputeDPMEDataMsg,
+  PACK(node);
+  PACK_AND_NEW_ARRAY(particles,numParticles);
+)
 
 
 // RESULTS MESSAGE
@@ -64,32 +43,10 @@ ComputeDPMEResultsMsg::~ComputeDPMEResultsMsg(void) {
   delete [] forces;
 }
 
-void * ComputeDPMEResultsMsg::pack (ComputeDPMEResultsMsg *msg) {
-  int length = 2 * sizeof(int) + msg->numParticles * sizeof(Pme2Particle);
-
-  char *buffer;
-  char *b = buffer = (char*)CkAllocBuffer(msg,length);
-
-  memcpy(b, &(msg->node), sizeof(int)); b += sizeof(int);
-  memcpy(b, &(msg->numParticles), sizeof(int)); b += sizeof(int);
-  memcpy(b, msg->forces, msg->numParticles*sizeof(PmeVector));
-  delete msg;
-  return buffer;
-}
-
-ComputeDPMEResultsMsg* ComputeDPMEResultsMsg::unpack (void *ptr) {
-  void *_ptr = CkAllocBuffer(ptr, sizeof(ComputeDPMEResultsMsg));
-  ComputeDPMEResultsMsg*m = new (_ptr) ComputeDPMEResultsMsg;
-  char *b = (char*)ptr;
-
-  memcpy(&(m->node), b, sizeof(int)); b += sizeof(int);
-  memcpy(&(m->numParticles), b, sizeof(int)); b += sizeof(int);
-  m->forces = new PmeVector[m->numParticles];
-  memcpy(m->forces, b, m->numParticles*sizeof(PmeVector));
-  CkFreeMsg(ptr);
-  return m;
-}
-
+PACK_MSG(ComputeDPMEResultsMsg,
+  PACK(node);
+  PACK_AND_NEW_ARRAY(forces,numParticles);
+)
 
 
 /***************************************************************************
@@ -97,11 +54,14 @@ ComputeDPMEResultsMsg* ComputeDPMEResultsMsg::unpack (void *ptr) {
  *
  *	$RCSfile: ComputeDPMEMsgs.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1999/09/08 16:05:44 $
+ *	$Revision: 1.5 $	$Date: 1999/09/24 17:15:08 $
  *
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMEMsgs.C,v $
+ * Revision 1.5  1999/09/24 17:15:08  jim
+ * Added packmsg.h with macros to simplify packing.
+ *
  * Revision 1.4  1999/09/08 16:05:44  jim
  * Added internal PUB3DFFT package.
  *

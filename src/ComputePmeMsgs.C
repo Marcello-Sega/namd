@@ -9,6 +9,7 @@
  ***************************************************************************/
 
 #include "ComputePmeMsgs.h"
+#include "packmsg.h"
 
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 3
@@ -17,6 +18,7 @@
 #include "ComputeMgr.decl.h"
 
 #include "PmeBase.h"
+
 
 // DATA MESSAGE
 
@@ -29,32 +31,10 @@ ComputePmeDataMsg::~ComputePmeDataMsg(void) {
   delete [] particles;
 }
 
-void * ComputePmeDataMsg::pack (ComputePmeDataMsg *msg) {
-  int length = 2 * sizeof(int) + msg->numParticles * sizeof(PmeParticle);
-
-  char *buffer;
-  char *b = buffer = (char*)CkAllocBuffer(msg,length);
-
-  memcpy(b, &(msg->node), sizeof(int)); b += sizeof(int);
-  memcpy(b, &(msg->numParticles), sizeof(int)); b += sizeof(int);
-  memcpy(b, msg->particles, msg->numParticles*sizeof(PmeParticle));
-  b += msg->numParticles*sizeof(PmeParticle);
-  delete msg;
-  return buffer;
-}
-
-ComputePmeDataMsg* ComputePmeDataMsg::unpack (void *ptr) {
-  void *_ptr = CkAllocBuffer(ptr, sizeof(ComputePmeDataMsg));
-  ComputePmeDataMsg* m = new (_ptr) ComputePmeDataMsg;
-  char *b = (char*)ptr;
-
-  memcpy(&(m->node), b, sizeof(int)); b += sizeof(int);
-  memcpy(&(m->numParticles), b, sizeof(int)); b += sizeof(int);
-  m->particles = new PmeParticle[m->numParticles];
-  memcpy(m->particles, b, m->numParticles*sizeof(PmeParticle));
-  CkFreeMsg(ptr);
-  return m;
-}
+PACK_MSG(ComputePmeDataMsg,
+  PACK(node);
+  PACK_AND_NEW_ARRAY(particles,numParticles);
+)
 
 
 // RESULTS MESSAGE
@@ -68,32 +48,10 @@ ComputePmeResultsMsg::~ComputePmeResultsMsg(void) {
   delete [] forces;
 }
 
-void * ComputePmeResultsMsg::pack (ComputePmeResultsMsg *msg) {
-  int length = 2 * sizeof(int) + msg->numParticles * sizeof(PmeParticle);
-
-  char *buffer;
-  char *b = buffer = (char*)CkAllocBuffer(msg,length);
-
-  memcpy(b, &(msg->node), sizeof(int)); b += sizeof(int);
-  memcpy(b, &(msg->numParticles), sizeof(int)); b += sizeof(int);
-  memcpy(b, msg->forces, msg->numParticles*sizeof(Vector));
-  delete msg;
-  return buffer;
-}
-
-ComputePmeResultsMsg* ComputePmeResultsMsg::unpack (void *ptr) {
-  void *_ptr = CkAllocBuffer(ptr, sizeof(ComputePmeResultsMsg));
-  ComputePmeResultsMsg*m = new (_ptr) ComputePmeResultsMsg;
-  char *b = (char*)ptr;
-
-  memcpy(&(m->node), b, sizeof(int)); b += sizeof(int);
-  memcpy(&(m->numParticles), b, sizeof(int)); b += sizeof(int);
-  m->forces = new Vector[m->numParticles];
-  memcpy(m->forces, b, m->numParticles*sizeof(Vector));
-  CkFreeMsg(ptr);
-  return m;
-}
-
+PACK_MSG(ComputePmeResultsMsg,
+  PACK(node);
+  PACK_AND_NEW_ARRAY(forces,numParticles);
+)
 
 
 /***************************************************************************
@@ -101,11 +59,14 @@ ComputePmeResultsMsg* ComputePmeResultsMsg::unpack (void *ptr) {
  *
  *	$RCSfile: ComputePmeMsgs.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1999/09/03 20:46:11 $
+ *	$Revision: 1.3 $	$Date: 1999/09/24 17:15:09 $
  *
  * REVISION HISTORY:
  *
  * $Log: ComputePmeMsgs.C,v $
+ * Revision 1.3  1999/09/24 17:15:09  jim
+ * Added packmsg.h with macros to simplify packing.
+ *
  * Revision 1.2  1999/09/03 20:46:11  jim
  * Support for non-orthogonal periodic boundary conditions.
  *

@@ -41,11 +41,6 @@ class ProxyAtomsMsg : public CMessage_ProxyAtomsMsg {
 public:
   PatchID patch;
   AtomIDList atomIDList;
-  int mylength;
-  char *mybuffer;
-
-  void prepack();
-
   static void* pack(ProxyAtomsMsg *msg);
   static ProxyAtomsMsg* unpack(void *ptr);
 };
@@ -139,12 +134,15 @@ private:
  *
  *	$RCSfile: ProxyMgr.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1999/08/20 19:11:14 $
+ *	$Revision: 1.1013 $	$Date: 1999/09/24 17:15:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.h,v $
+ * Revision 1.1013  1999/09/24 17:15:10  jim
+ * Added packmsg.h with macros to simplify packing.
+ *
  * Revision 1.1012  1999/08/20 19:11:14  jim
  * Added MOLLY - mollified impluse method.
  *

@@ -210,6 +210,7 @@ obj/CollectionMaster.o: \
 	src/AtomMap.h \
 	src/Node.h \
 	src/Output.h \
+	src/packmsg.h \
 	src/Debug.h \
 	inc/CollectionMaster.def.h
 	$(CXX) $(CXXFLAGS) -o obj/CollectionMaster.o -c src/CollectionMaster.C
@@ -662,6 +663,7 @@ obj/ComputeDPMEMsgs.o: \
 	dpme2/dpme2_pvm.h \
 	dpme2/dpme2def.h \
 	dpme2/protype.h \
+	src/packmsg.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeDPMEMsgs.o -c src/ComputeDPMEMsgs.C
 obj/ComputeDPMTA.o: \
@@ -1262,6 +1264,7 @@ obj/ComputeGlobalMsgs.o: \
 	src/ResizeArrayIter.h \
 	src/ResizeArrayPrimIter.h \
 	inc/ComputeMgr.decl.h \
+	src/packmsg.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeGlobalMsgs.o -c src/ComputeGlobalMsgs.C
 obj/ComputeIMD.o: \
@@ -1884,6 +1887,7 @@ obj/ComputePmeMsgs.o: \
 	src/ResizeArrayPrimIter.h \
 	inc/ComputeMgr.decl.h \
 	src/PmeBase.h \
+	src/packmsg.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputePmeMsgs.o -c src/ComputePmeMsgs.C
 obj/ComputeRestraints.o: \
@@ -2569,6 +2573,7 @@ obj/LdbCoordinator.o: \
 	src/Rebalancer.h \
 	src/heap.h \
 	src/Alg7.h \
+	src/packmsg.h \
 	inc/LdbCoordinator.def.h
 	$(CXX) $(CXXFLAGS) -o obj/LdbCoordinator.o -c src/LdbCoordinator.C
 obj/LJTable.o: \
@@ -2664,7 +2669,8 @@ obj/MigrateAtomsMsg.o: \
 	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h
+	inc/BroadcastMgr.decl.h \
+	src/packmsg.h
 	$(CXX) $(CXXFLAGS) -o obj/MigrateAtomsMsg.o -c src/MigrateAtomsMsg.C
 obj/Molecule.o: \
 	src/Molecule.C \
@@ -3148,6 +3154,7 @@ obj/PatchMgr.o: \
 	src/AtomMap.h \
 	src/WorkDistrib.h \
 	src/ComputeMap.h \
+	src/packmsg.h \
 	src/Debug.h \
 	inc/PatchMgr.def.h
 	$(CXX) $(CXXFLAGS) -o obj/PatchMgr.o -c src/PatchMgr.C
@@ -3335,6 +3342,7 @@ obj/ProxyMgr.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/HomePatchTypes.h \
+	src/packmsg.h \
 	src/Debug.h \
 	inc/ProxyMgr.def.h
 	$(CXX) $(CXXFLAGS) -o obj/ProxyMgr.o -c src/ProxyMgr.C

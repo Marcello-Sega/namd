@@ -5,6 +5,7 @@
 #include "Node.h"
 #include "Output.h"
 #include "ProcessorPrivate.h"
+#include "packmsg.h"
 
 // #define DEBUGM
 #include "Debug.h"
@@ -110,44 +111,12 @@ void CollectionMaster::disposeForces(CollectVectorInstance *c)
 }
 
 
-void * CollectVectorMsg::pack(CollectVectorMsg *msg)
-{
-  int length = sizeof(int) +
-		sizeof(int) + msg->aid.size() * sizeof(AtomID) +
-		sizeof(int) + msg->data.size() * sizeof(Vector) +
-		sizeof(int) + msg->fdata.size() * sizeof(FloatVector);
-  char *buffer = (char*)CkAllocBuffer(msg,length);
-  char *b = buffer;
-  memcpy(b, &(msg->seq), sizeof(int)); b += sizeof(int);
-  int size = msg->aid.size(); memcpy(b, &size, sizeof(int)); b += sizeof(int);
-  memcpy(b, msg->aid.begin(), size*sizeof(AtomID)); b += size*sizeof(AtomID);
-  size = msg->data.size(); memcpy(b, &size, sizeof(int)); b += sizeof(int);
-  memcpy(b, msg->data.begin(), size*sizeof(Vector)); b += size*sizeof(Vector);
-  size = msg->fdata.size(); memcpy(b, &size, sizeof(int)); b += sizeof(int);
-  memcpy(b, msg->fdata.begin(), size*sizeof(FloatVector)); b += size*sizeof(FloatVector);
-  delete msg;
-  return buffer;
-}
-
-
-CollectVectorMsg* CollectVectorMsg::unpack(void *ptr)
-{
-  void *_ptr = CkAllocBuffer(ptr, sizeof(CollectVectorMsg));
-  CollectVectorMsg* m = new (_ptr) CollectVectorMsg;
-  char *b = (char*)ptr;
-  memcpy(&(m->seq), b, sizeof(int)); b += sizeof(int);
-  int size; memcpy(&size, b, sizeof(int)); b += sizeof(int);
-  m->aid.resize(size);
-  memcpy(m->aid.begin(), b, size*sizeof(AtomID)); b += size*sizeof(AtomID);
-  memcpy(&size, b, sizeof(int)); b += sizeof(int);
-  m->data.resize(size);
-  memcpy(m->data.begin(), b, size*sizeof(Vector)); b += size*sizeof(Vector);
-  memcpy(&size, b, sizeof(int)); b += sizeof(int);
-  m->fdata.resize(size);
-  memcpy(m->fdata.begin(), b, size*sizeof(FloatVector)); b += size*sizeof(FloatVector);
-  CkFreeMsg(ptr);
-  return m;
-}
+PACK_MSG(CollectVectorMsg,
+  PACK(seq);
+  PACK_RESIZE(aid);
+  PACK_RESIZE(data);
+  PACK_RESIZE(fdata);
+)
 
 
 #include "CollectionMaster.def.h"
@@ -158,12 +127,15 @@ CollectVectorMsg* CollectVectorMsg::unpack(void *ptr)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1020 $	$Date: 1999/09/12 19:33:13 $
+ *	$Revision: 1.1021 $	$Date: 1999/09/24 17:15:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMaster.C,v $
+ * Revision 1.1021  1999/09/24 17:15:08  jim
+ * Added packmsg.h with macros to simplify packing.
+ *
  * Revision 1.1020  1999/09/12 19:33:13  jim
  * Collections now use floats when possible.
  *

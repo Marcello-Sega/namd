@@ -1,0 +1,101 @@
+#ifndef PACKMSG_H
+#define PACKMSG_H
+
+/* Macros for automatically packing and unpacking messages.
+
+Usage:
+
+PACK_MSG(MyMsg,
+  PACK_THIS;  // for the lazy, bit-copies the whole object, may be unsafe
+  PACK(myint);
+  PACK(myfloat);
+  PACK_RESIZE(myvector);  // needs size(), resize(), and begin()
+  PACK_ARRAY(myarray,n);  // n must be a message field and is also sent
+  PACK_AND_NEW_ARRAY(myarray2,n);  // also calls new [] but not delete []
+)
+
+*/
+
+template<class T> class ResizeArray<T>;
+
+template<class T> size_t sizeof_element(ResizeArray<T> &) { return sizeof(T); }
+
+template<class T> T* new_array(T*, int n) { return new T[n]; }
+
+#define PACK_MSG(MSGTYPE,MSGDATA) \
+void *MSGTYPE::pack(MSGTYPE *packmsg_msg) { \
+  int packmsg_size = 0; \
+  char *packmsg_cur = 0; \
+  { \
+    const int packmsg_pass = 0; \
+    MSGDATA \
+  } \
+  void *packmsg_buf = CkAllocBuffer(packmsg_msg,packmsg_size); \
+  packmsg_cur = (char *)packmsg_buf; \
+  { \
+    const int packmsg_pass = 1; \
+    MSGDATA \
+  } \
+  delete packmsg_msg; \
+  return packmsg_buf; \
+} \
+ \
+MSGTYPE *MSGTYPE::unpack(void *packmsg_buf) { \
+  int packmsg_size = 0; \
+  void *packmsg_msg_ = CkAllocBuffer(packmsg_buf,sizeof(MSGTYPE)); \
+  MSGTYPE *packmsg_msg = new (packmsg_msg_) MSGTYPE; \
+  char *packmsg_cur = (char *)packmsg_buf; \
+  { \
+    const int packmsg_pass = 2; \
+    MSGDATA \
+  } \
+  CkFreeMsg(packmsg_buf); \
+  return packmsg_msg; \
+}
+
+#define PACK_MEMORY(BUF,SIZE) { \
+  switch ( packmsg_pass ) { \
+  case 0: \
+    packmsg_size += (SIZE); \
+    break; \
+  case 1: \
+    memcpy((void *)packmsg_cur,(void *)(BUF),(SIZE)); \
+    packmsg_cur += (SIZE); \
+    break; \
+  case 2: \
+    memcpy((void *)(BUF),(void *)packmsg_cur,(SIZE)); \
+    packmsg_cur += (SIZE); \
+    break; \
+  default: \
+    break; \
+  } \
+}
+
+#define PACK_THIS PACK_MEMORY(packmsg_msg,sizeof(*packmsg_msg));
+
+#define PACK(DATA) PACK_MEMORY(&(packmsg_msg->DATA),sizeof(packmsg_msg->DATA))
+
+#define PACK_RESIZE(DATA) { \
+  int packmsg_array_len = packmsg_msg->DATA.size(); \
+  PACK_MEMORY(&packmsg_array_len,sizeof(packmsg_array_len)); \
+  if ( packmsg_pass == 2 ) packmsg_msg->DATA.resize(packmsg_array_len); \
+  int packmsg_array_size = \
+    packmsg_array_len * sizeof_element(packmsg_msg->DATA); \
+  PACK_MEMORY(packmsg_msg->DATA.begin(),packmsg_array_size); \
+}
+
+#define PACK_ARRAY(DATA,LEN) { \
+  PACK(LEN); \
+  PACK_MEMORY(packmsg_msg->DATA,packmsg_msg->LEN*sizeof(*(packmsg_msg->DATA))); \
+}
+
+#define PACK_AND_NEW_ARRAY(DATA,LEN) { \
+  PACK(LEN)\
+  if ( packmsg_pass == 2 ) { \
+    packmsg_msg->DATA = new_array(packmsg_msg->DATA,packmsg_msg->LEN); \
+  } \
+  PACK_MEMORY(packmsg_msg->DATA,packmsg_msg->LEN*sizeof(*(packmsg_msg->DATA))); \
+}
+
+#endif
+
