@@ -235,6 +235,9 @@ public:
 	BigReal langevinPistonPeriod;
 	BigReal langevinPistonDecay;
 	BigReal langevinPistonTemp;
+
+        BigReal surfaceTensionTarget;
+
 	zVector strainRate;
 	zVector strainRate2; // off diagonal elements (xy, xz, yz)
 

@@ -338,8 +338,16 @@ void Controller::langevinPiston1(int step)
 #endif
     }
 
+    // Apply surface tension.  If surfaceTensionTarget is zero, we get
+    // the default (isotropic pressure) case.
+    
+    Tensor ptarget;
+    ptarget.zz = simParams->langevinPistonTarget;
+    ptarget.xx = ptarget.yy = simParams->langevinPistonTarget - 
+        simParams->surfaceTensionTarget / state->lattice.c().z;
+
     strainRate += ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
-	( controlPressure - Tensor::identity(simParams->langevinPistonTarget) );
+      ( controlPressure - ptarget );
 
 #ifdef DEBUG_PRESSURE
     iout << iINFO << "integrating half step, strain rate: " << strainRate << "\n";
@@ -422,9 +430,17 @@ void Controller::langevinPiston2(int step)
 #endif
     }
 
-    strainRate += ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
-	( controlPressure - Tensor::identity(simParams->langevinPistonTarget) );
+    // Apply surface tension.  If surfaceTensionTarget is zero, we get
+    // the default (isotropic pressure) case.
+   
+    Tensor ptarget;
+    ptarget.zz = simParams->langevinPistonTarget;
+    ptarget.xx = ptarget.yy = simParams->langevinPistonTarget -
+        simParams->surfaceTensionTarget / state->lattice.c().z;
 
+    strainRate += ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
+      ( controlPressure - ptarget );
+ 
 #ifdef DEBUG_PRESSURE
     iout << iINFO << "integrating half step, strain rate: " << strainRate << "\n";
 #endif

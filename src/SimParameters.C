@@ -589,6 +589,11 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
       "Initial strain rate for pressure control (x y z)",
       &strainRate);
 
+   //// Surface tension 
+   opts.optional("main", "SurfaceTensionTarget",
+      "Surface tension in the x-y plane",
+      &surfaceTensionTarget, 0);
+
 }
 
 void SimParameters::config_parser_constraints(ParseOptions &opts) {
@@ -2407,7 +2412,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 
    if (langevinPistonOn)
    {
-     iout << iINFO << "LANGIVIN PISTON PRESSURE CONTROL ACTIVE\n";
+     iout << iINFO << "LANGEVIN PISTON PRESSURE CONTROL ACTIVE\n";
      iout << iINFO << "       TARGET PRESSURE IS "
         << langevinPistonTarget << " BAR\n";
      iout << iINFO << "    OSCILLATION PERIOD IS "
@@ -2424,6 +2429,17 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
         << strainRate << "\n";
      iout << endi;
      langevinPistonTarget /= PRESSUREFACTOR;
+   }
+
+   if (surfaceTensionTarget != 0)
+   {
+     iout << iINFO << "SURFACE TENSION CONTROL ACTIVE\n";
+     iout << iINFO << "      TARGET SURFACE TENSION IS "
+          << surfaceTensionTarget << " DYN/CM\n";
+     iout << endi;
+     // multiply by 100 to convert from dyn/cm to bar-Angstroms, then divide
+     // by PRESSURE factor to convert bar to NAMD internal pressure units. 
+     surfaceTensionTarget *= 100.0 / PRESSUREFACTOR;
    }
 
    if (FMAOn)
