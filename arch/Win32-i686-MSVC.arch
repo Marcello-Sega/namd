@@ -10,7 +10,7 @@ LINK = link /nologo /subsystem:console /incremental:no \
 CXXOPTS = /O2 /G6
 CXXTHREADOPTS = $(CXXOPTS)
 CXXSIMPARAMOPTS = $(CXXOPTS)
-LINKOPTS = /machine:i686 /OPT:REF
+LINKOPTS = /OPT:REF
 
 winall: win32binaries
 
