@@ -777,7 +777,7 @@ There are two parameters that control this feature.
 {
 The X, Y, Z and occupancy (O) fields of this file are read to
 determine the constant force vector of each atom, which is
-(X,Y,Z)*O, in unit of Kcal/(mol*\AA). The occupancy (O) serves as
+(X,Y,Z)*O, in unit of kcal/(mol*\AA). The occupancy (O) serves as
 a scaling factor, which could expand the range of the force
 applied. (One may be unable to record very large or very small
 numbers in the data fields of a PDB file due to limited space).
@@ -1209,6 +1209,14 @@ Applies force (in kcal mol$^{-1}$ \AA$^{-1}$) to atom or group.
 {\tt addforce} should only be called from within the {\tt calcforces} procedure.
 For example, ``\verb!addforce $groupid { 1. 0. 2. }!''.
 
+\item
+{\tt addenergy <energy (kcal/mol)>} \\
+This command adds the specified energy to the MISC column (and
+hence the total energy) in the energy output. For normal runs,
+the command does not affect the simulation trajectory at all, and
+only has an artificial effect on its energy output. However, it
+can indeed affect minimizations.
+
 \end{itemize}
 
 With the commands above and the functionality of the Tcl language,
@@ -1277,11 +1285,13 @@ list is a 3-D vector in the form of a Tcl list.
 \end{itemize}
 
 As an example, here's a script which applies a harmonic
-constraint (reference position being 0) to a dihedral:
+constraint (reference position being 0) to a dihedral. Note that
+the ``addenergy'' line is not really necessary -- it simply adds
+the calculated constraining energy to the MISC column, which is
+displayed in the energy output.
 
 \begin{verbatim}
 tclForcesScript {
-
   # The IDs of the four atoms defining the dihedral
   set aid1 112
   set aid2 123
@@ -1308,6 +1318,9 @@ tclForcesScript {
     set phi [getdihedral $p($aid1) $p($aid2) $p($aid3) $p($aid4)]
     # Change to radian
     set phi [expr $phi*$PI/180]
+    
+    # (optional) Add this constraining energy to "MISC" in the energy output
+    addenergy [expr $k*$phi*$phi/2.0]
     
     # Calculate the "force" along the dihedral according to the harmonic constraint
     set force [expr -$k*$phi]
