@@ -488,17 +488,17 @@ void Controller::printEnergies(int seq)
       xscFile << endl;
     }
 
-    const double endWTime = CmiWallTimer();
-    const double endCTime = CmiTimer();
-
     if (seq == 32)
-	startBenchTime = endWTime;
+	startBenchTime = CmiWallTimer();
     else if (seq == 64)
 	iout << iINFO << "Benchmark time per step: "
-	     << (endWTime - startBenchTime) / 32. << "\n" << endi;
+	     << (CmiWallTimer() - startBenchTime) / 32. << "\n" << endi;
 
     if ( simParams->outputTiming && ! ( seq % simParams->outputTiming ) )
     {
+      const double endWTime = CmiWallTimer();
+      const double endCTime = CmiTimer();
+
       const double elapsedW = 
 	(endWTime - startWTime) / simParams->outputTiming;
       const double elapsedC = 
@@ -575,12 +575,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1043 $	$Date: 1998/09/14 16:51:05 $
+ *	$Revision: 1.1044 $	$Date: 1998/09/14 20:05:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1044  1998/09/14 20:05:32  jim
+ * Eliminated unnecessary timer calls.
+ *
  * Revision 1.1043  1998/09/14 16:51:05  jim
  * Fixed timing printout.
  *
