@@ -78,11 +78,10 @@ inline int PatchMap::zIsPeriodic(void)
 }
 
 //----------------------------------------------------------------------
-#define MODULO(I,J) ( (I)<0 ? (I)-(J)*((I)/(J)-1) : (I)-(J)*((I)/(J)) )
+#define MODULO(I,J) ( (I)<0 ? ((J)-(-1*(I))%(J))%(J) : (I)%(J) )
 
 inline int PatchMap::pid(int xIndex, int yIndex, int zIndex)
 {
-  int allsame = 0;
   if ( xPeriodic ) xIndex = MODULO(xIndex,xDim);
   else
   {
@@ -216,12 +215,15 @@ inline int PatchMap::cid(int pid,int i)
  *
  *	$RCSfile: PatchMap.inl,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1998/07/16 18:52:14 $
+ *	$Revision: 1.3 $	$Date: 1998/08/17 23:29:53 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.inl,v $
+ * Revision 1.3  1998/08/17 23:29:53  jim
+ * Fixed MODULO macro needed for negative arguments.  I can't do math.
+ *
  * Revision 1.2  1998/07/16 18:52:14  jim
  * Localized common downstream patch optimization.
  *
