@@ -351,7 +351,7 @@ int load_bsp_moduli(double *bsp_mod1, double *
   
   
   extern /* Subroutine */ int dftmod(double *, double *,  int *)  ;
-  extern /* Subroutine */ int fill_bspline(double *,  int *, 
+  extern /* Subroutine */ int fill_bspline(double,  int, 
 					   double *, double *); 
   /* Parameter adjustments */
   --bsp_mod1;
@@ -367,7 +367,7 @@ int load_bsp_moduli(double *bsp_mod1, double *
   bsp_arr= dvector_pme(nmax +1);
 
   w = 0.;
-  fill_bspline(&w, order, array, darray);
+  fill_bspline(w, *order, array, darray);
   
   for (i = 1; i <=nmax; ++i) {
     bsp_arr[i - 1] = 0.;

@@ -7,12 +7,12 @@
 #include "dpme2.h"
 #include "math.h"
 
-int fill_charge_grid2(int * /* numatoms */, int nlocal,
+int fill_charge_grid2(int /* numatoms */, int nlocal,
 		      Pme2Particle *ParticlePtr,
 		      double *theta1, double *theta2, double *theta3, 
-	double *fr1, double *fr2, double *fr3,  int *order, 
-	int *nfft1,  int *nfft2,  int *nfft3,  int *nfftdim1, 
-	int *nfftdim2, int *nfftdim3, double *q)
+	double *fr1, double *fr2, double *fr3,  int order, 
+	int nfft1,  int nfft2,  int nfft3,  int nfftdim1, 
+	int nfftdim2, int nfftdim3, double *q)
 {
 /* --------------------------------------------------------------------- */
 /* INPUT: */
@@ -38,61 +38,27 @@ int fill_charge_grid2(int * /* numatoms */, int nlocal,
     int nn;
 
     /* Parameter adjustments */
-    theta1_dim1 = *order;
+    theta1_dim1 = order;
     theta1_offset = theta1_dim1 + 1;
     theta1 -= theta1_offset;
-    theta2_dim1 = *order;
+    theta2_dim1 = order;
     theta2_offset = theta2_dim1 + 1;
     theta2 -= theta2_offset;
-    theta3_dim1 = *order;
+    theta3_dim1 = order;
     theta3_offset = theta3_dim1 + 1;
     theta3 -= theta3_offset;
 
     /* ayt 4/96 changes --fr1;    --fr2;    --fr3; */
 
-    q_dim2 = *nfftdim1;
-    q_dim3 = *nfftdim2;
+    q_dim2 = nfftdim1;
+    q_dim3 = nfftdim2;
     q_offset = (q_dim2 * (q_dim3 + 1) + 1 << 1) + 1;
     q -= q_offset;
 
-    ntot = (*nfftdim1 * 2) * *nfftdim2 * *nfftdim3;
+    ntot = (nfftdim1 * 2) * nfftdim2 * nfftdim3;
    
     clearq(&q[q_offset], &ntot);
 
-
-#if 0
-    /* PART 1 , loop over my local particles */
-    nn=0; /* use in indexing arrays created w/dvecotor ie fr123 */
-   
-    for (n = 1; n <= (nlocal); n++,++nn) {
-      k0 = (int)(fr3[nn]) - *order;
-      for (ith3 = 1; ith3 <= (*order); ++ith3) {
-	++k0;
-	k = k0 + 1 + (*nfft3 - Nsign(*nfft3, k0)) / 2;
-	j0 = (int) fr2[nn] - *order;
-	for (ith2 = 1; ith2 <= (*order); ++ith2) {
-	  ++j0;
-	  j = j0 + 1 + (*nfft2 - Nsign(*nfft2, j0)) / 2;
-	  prod = theta2[ith2 + n * theta2_dim1] *
-	    theta3[ith3 + n * theta3_dim1] * ParticlePtr[n].cg;
-	  i0 = (int)fr1[nn] - *order;
-	  for (ith1 = 1; ith1 <=(*order); ++ith1) {
-	    ++i0;
-	    i = i0 + 1 + (*nfft1 - Nsign(*nfft1, i0)) / 2;
-	    /* the *2 below replaced a shift oprtr "<<1"  ayt */
-	    q[(i + (j + k * q_dim3) * q_dim2 << 1) + 1] += 
-	      theta1[ith1 + n * theta1_dim1] * prod;
-	    
-	  }
-	}
-      }
-    }
-    
-    /* part 2 loop over the rest of atoms. deleted ayt 3/97 */
-  
-#endif
-
-#if 1
 
 #if DPME_DEBUG
     printf("fill_charge_grid modified ...\n");
@@ -101,20 +67,20 @@ int fill_charge_grid2(int * /* numatoms */, int nlocal,
     nn=1; /* ayt 3/97. use in indexing arrays created w/dvecotor ie fr123 */
    
     for (n = 1; n <= (nlocal); n++,nn++) {
-      k0 = (int)(fr3[n-1]) - *order;
-      for (ith3 = 1; ith3 <= (*order); ++ith3) {
+      k0 = (int)(fr3[n-1]) - order;
+      for (ith3 = 1; ith3 <= (order); ++ith3) {
 	++k0;
-	k = k0 + 1 + (*nfft3 - Nsign(*nfft3, k0)) / 2;
-	j0 = (int) fr2[n-1] - *order;
-	for (ith2 = 1; ith2 <= (*order); ++ith2) {
+	k = k0 + 1 + (nfft3 - Nsign(nfft3, k0)) / 2;
+	j0 = (int) fr2[n-1] - order;
+	for (ith2 = 1; ith2 <= (order); ++ith2) {
 	  ++j0;
-	  j = j0 + 1 + (*nfft2 - Nsign(*nfft2, j0)) / 2;
+	  j = j0 + 1 + (nfft2 - Nsign(nfft2, j0)) / 2;
 	  prod = theta2[ith2 + n * theta2_dim1] *
 	    theta3[ith3 + n * theta3_dim1] * ParticlePtr[nn].cg;
-	  i0 = (int)fr1[n-1] - *order;
-	  for (ith1 = 1; ith1 <=(*order); ++ith1) {
+	  i0 = (int)fr1[n-1] - order;
+	  for (ith1 = 1; ith1 <=(order); ++ith1) {
 	    ++i0;
-	    i = i0 + 1 + (*nfft1 - Nsign(*nfft1, i0)) / 2;
+	    i = i0 + 1 + (nfft1 - Nsign(nfft1, i0)) / 2;
 	    /* the *2 below replaced a shift oprtr "<<1"  ayt */
 	    q[(i + (j + k * q_dim3) * q_dim2 << 1) + 1] += 
 	      theta1[ith1 + n * theta1_dim1] * prod;
@@ -126,7 +92,6 @@ int fill_charge_grid2(int * /* numatoms */, int nlocal,
     
     /* part 2 loop over the rest of atoms, is deleted ayt 3/97  */
    
-#endif    
     return 0;
   } /* fill_charge_grid2 */
 
@@ -275,14 +240,14 @@ int fill_charge_grid2(int * /* numatoms */, int nlocal,
 } /* scalar_sum */
 
 /* ----------------------------------------------------------- */
-/* Subroutine */ int grad_sum( int *nlocal,
+/* Subroutine */ int grad_sum( int nlocal,
 			      Pme2Particle *ParticlePtr, 
 	double *recip, double *theta1, double *theta2, double 
 	*theta3, double *dtheta1, double *dtheta2, double *
 	dtheta3, PmeVector *rfparticle, double *
-	fr1, double *fr2, double *fr3,  int *order,  int *nfft1,
-	  int *nfft2,  int *nfft3,  int *nfftdim1,  int *nfftdim2,
-	  int * /* nfftdim3 */, double *q)
+	fr1, double *fr2, double *fr3,  int order,  int nfft1,
+	  int nfft2,  int nfft3,  int nfftdim1,  int nfftdim2,
+	  int /* nfftdim3 */, double *q)
 {
     /* System generated locals */
     int theta1_dim1, theta2_dim1, theta3_dim1, dtheta1_dim1,
@@ -296,82 +261,31 @@ int fill_charge_grid2(int * /* numatoms */, int nlocal,
     double f3;
     int ith1, ith2, ith3;
     int index1, index2,index3,ifr;
+    double ctheta3, cdtheta3, theta2theta3, dtheta2theta3, theta2dtheta3;
 
     /* Parameter adjustments */
    
 /* july 4 96    recip -= 4; */
-    theta1_dim1 = *order;
-    theta1 -= *order +1 ;
-    theta2_dim1 = *order;
-    theta2 -= *order +1 ;
-    theta3_dim1 = *order;
-    theta3 -=  *order +1 ;
+    theta1_dim1 = order;
+    theta1 -= order +1 ;
+    theta2_dim1 = order;
+    theta2 -= order +1 ;
+    theta3_dim1 = order;
+    theta3 -=  order +1 ;
 
-    dtheta1_dim1 = *order;
-    dtheta1 -=  *order +1 ;
-    dtheta2_dim1 = *order;
-    dtheta2 -=  *order +1 ;
-    dtheta3_dim1 = *order;
-    dtheta3 -=  *order +1 ;
+    dtheta1_dim1 = order;
+    dtheta1 -=  order +1 ;
+    dtheta2_dim1 = order;
+    dtheta2 -=  order +1 ;
+    dtheta3_dim1 = order;
+    dtheta3 -=  order +1 ;
   
   
 
-    q_dim2 = *nfftdim1;
-    q_dim3 = *nfftdim2;
+    q_dim2 = nfftdim1;
+    q_dim3 = nfftdim2;
     q_offset = (q_dim2 * (q_dim3 + 1) + 1 << 1) + 1;
     q -= q_offset;
-
-#if 0
-    /* this is NOT CORRECT because it doesn't use list[] atom pointers */
-
-    /* do so because I start n-atoms loop counter from 1*/
-    /* u can do fr(n-1) if u wish and not do this */
-    --fr1; 
-    --fr2;
-    --fr3; 
-    
-    /* each processor calc recip-force on its own set */
-    for (n = 1; n <= (*nlocal); ++n) {
-      f1 = 0.;
-      f2 = 0.;
-      f3 = 0.;
-      k0 = ( int) fr3[n] - *order;
-      for (ith3 = 1; ith3 <= ( *order); ++ith3) {
-	++k0;
-	k = k0 + 1 + (*nfft3 - Nsign(*nfft3, k0)) / 2;
-	j0 = ( int) fr2[n] - *order;
-	
-	for (ith2 = 1; ith2 <=(*order); ++ith2) {
-	  ++j0;
-	  j = j0 + 1 + (*nfft2 - Nsign(*nfft2, j0)) / 2;
-	  i0 = ( int) fr1[n] - *order;
-
-	  for (ith1 = 1; ith1 <= (*order); ++ith1) {
-	    ++i0;
-	    i = i0 + 1 + (*nfft1 - Nsign(*nfft1, i0)) / 2;
-	    term = ParticlePtr[n].cg * q[(i + (j + k * q_dim3) * q_dim2 << 1) 
-					 + 1];
-	    /* force is negative of grad */
-	    f1 -= *nfft1 * term * dtheta1[ith1 + n * dtheta1_dim1] * 
-	      theta2[ith2 + n * theta2_dim1] * theta3[ith3 + n *
-						      theta3_dim1];
-	    f2 -= *nfft2 * term * theta1[ith1 + n * theta1_dim1] * 
-	      dtheta2[ith2 + n * dtheta2_dim1] * theta3[ith3 + 
-							n * theta3_dim1];
-	    f3 -= *nfft3 * term * theta1[ith1 + n * theta1_dim1] * 
-	      theta2[ith2 + n * theta2_dim1] * dtheta3[ith3 + n 
-						       * dtheta3_dim1];
-	  }
-	}
-      }
-      /* this was n-1 now corrected dec 96 */
-      rfparticle[n].x += recip[0] * f1 + recip[3] * f2 + recip[6] * f3;
-      rfparticle[n].y += recip[1] * f1 + recip[4] * f2 + recip[7] * f3;
-      rfparticle[n].z += recip[2] * f1 + recip[5] * f2 + recip[8] * f3;
-      }
-#endif
-
-#if 1
 
 #if DPME_DEBUG
     printf("grad_sum MODIFIED..\n");
@@ -381,33 +295,40 @@ int fill_charge_grid2(int * /* numatoms */, int nlocal,
 
     ifr=0; /* index the fr123 arrays = n-1 */
     /* each processor calc recip-force on its own set */
-    for (n = 1; n <= (*nlocal); ++n, ++ifr, ++nn) {
+    for (n = 1; n <= (nlocal); ++n, ++ifr, ++nn) {
       f1 = 0.;
       f2 = 0.;
       f3 = 0.;
-      k0 = ( int) fr3[ifr] - *order;
-      for (ith3 = 1; ith3 <= ( *order); ++ith3) {
+      k0 = ( int) fr3[ifr] - order;
+      for (ith3 = 1; ith3 <= ( order); ++ith3) {
 	++k0;
-	k = k0 + 1 + (*nfft3 - Nsign(*nfft3, k0)) / 2;
-	j0 = ( int) fr2[ifr] - *order;
-	index3= ith3 + n * (*order) ;
+	k = k0 + 1 + (nfft3 - Nsign(nfft3, k0)) / 2;
+	j0 = ( int) fr2[ifr] - order;
+	index3= ith3 + n * (order) ;
 
-	for (ith2 = 1; ith2 <=(*order); ++ith2) {
+	ctheta3 = theta3[index3];
+	cdtheta3 = dtheta3[index3];
+
+	for (ith2 = 1; ith2 <=(order); ++ith2) {
 	  ++j0;
-	  j = j0 + 1 + (*nfft2 - Nsign(*nfft2, j0)) / 2;
-	  i0 = ( int) fr1[ifr] - *order;
-	  index2 = ith2 + n * (*order) ;
+	  j = j0 + 1 + (nfft2 - Nsign(nfft2, j0)) / 2;
+	  i0 = ( int) fr1[ifr] - order;
+	  index2 = ith2 + n * (order) ;
 
-	  for (ith1 = 1; ith1 <= (*order); ++ith1) {
+	  theta2theta3 = theta2[index2] * ctheta3;
+	  dtheta2theta3 = dtheta2[index2] * ctheta3;
+	  theta2dtheta3 =  theta2[index2] * cdtheta3;
+
+	  for (ith1 = 1; ith1 <= (order); ++ith1) {
 	    ++i0;
-	    i = i0 + 1 + (*nfft1 - Nsign(*nfft1, i0)) / 2;
+	    i = i0 + 1 + (nfft1 - Nsign(nfft1, i0)) / 2;
 	    term = ParticlePtr[nn].cg * q[(i + (j + k * q_dim3) * q_dim2 << 1) 
 					 + 1];
-	    index1=  ith1 + n * (*order) ;
+	    index1=  ith1 + n * (order) ;
 	    /* force is negative of grad */
-	    f1 -= *nfft1 * term * dtheta1[index1] * theta2[index2] * theta3[index3];
-	    f2 -= *nfft2 * term * theta1[index1] * dtheta2[index2] * theta3[index3];
-	    f3 -= *nfft3 * term * theta1[index1] * theta2[index2] * dtheta3[index3];
+	    f1 -= nfft1 * term * dtheta1[index1] * theta2theta3;
+	    f2 -= nfft2 * term * theta1[index1] * dtheta2theta3;
+	    f3 -= nfft3 * term * theta1[index1] * theta2dtheta3;
 	  }
 	}
       }
@@ -420,7 +341,6 @@ int fill_charge_grid2(int * /* numatoms */, int nlocal,
        * rfparticle[nn].x, rfparticle[nn].y,  rfparticle[nn].z);
        */
     }
-#endif /* modfied grad sum */
     return 0;
   } /* grad_sum */
 

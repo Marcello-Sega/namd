@@ -13,6 +13,14 @@
 */
 #include "dpme2.h"
 
+#ifdef NAMD_FFTW
+#include "fftw.h"
+
+fftwnd_plan forward_plan;
+fftwnd_plan backward_plan;
+
+#endif
+
 /* this file has been modified to exclude the SGI & CRAY */
 /* optimizatoin stuff, by default we are using the Pubff stuff */
 /* this is necessary for the f2c to work. ayt 6/29/94 */
@@ -32,20 +40,26 @@
     i_1 = max(*nfft2,*nfft1);
     nfftmax = max(*nfft3,i_1);
     *nfftdim1 = *nfft1;
+#ifndef NAMD_FFTW
     n = *nfft1 / 2;
     if (*nfft1 == n << 1) {
 	*nfftdim1 = *nfft1 + 1;
     }
+#endif
     *nfftdim2 = *nfft2;
+#ifndef NAMD_FFTW
     n = *nfft2 / 2;
     if (*nfft2 == n << 1) {
 	*nfftdim2 = *nfft2 + 1;
     }
+#endif
     *nfftdim3 = *nfft3;
+#ifndef NAMD_FFTW
     n = *nfft3 / 2;
     if (*nfft3 == n << 1) {
 	*nfftdim3 = *nfft3 + 1;
     }
+#endif
 /*     the pubfft is active now */
     *nfftable = (nfftmax << 2) + 15;
     *nffwork = nfftmax;
@@ -65,14 +79,21 @@
     extern /* Subroutine */ int pubz3di( int *,  int *,  int *, 
 	    double *,  int *);
 
-    /* Parameter adjustments */
-    /* --array; not used */
-    /*  --ffwork; var not used */
-    --fftable;
+#ifdef NAMD_FFTW
+
+  forward_plan = fftw3d_create_plan(*nfft3, *nfft2, *nfft1,
+	1, FFTW_MEASURE | FFTW_IN_PLACE);
+  backward_plan = fftw3d_create_plan(*nfft3, *nfft2, *nfft1,
+	-1, FFTW_MEASURE | FFTW_IN_PLACE);
+
+#else
+
 #if VERBOSE       
     printf("using public domain fft code...\n");
 #endif
-    pubz3di(nfft1, nfft2, nfft3, &fftable[1], nfftable);
+    pubz3di(nfft1, nfft2, nfft3, fftable, nfftable);
+
+#endif
 
     return 0;
 } /* fft_setup */
@@ -88,15 +109,19 @@
 	     int *, doublecomplex *,  int *,  int *, double *, 
 	     int *, doublecomplex *,  int *);
 
-    /* Parameter adjustments */
-    --array;
-    --fftable;
-    --ffwork;
+#ifdef NAMD_FFTW
+
+  fftwnd_one(forward_plan,(fftw_complex*)array,(fftw_complex*)array);
+
+#else
 
     /* Function Body */
     isign = 1;
-    pubz3d(&isign, nfft1, nfft2, nfft3, &array[1], nfftdim1, nfftdim2, &
-	    fftable[1], nfftable, &ffwork[1], nffwork);
+    pubz3d(&isign, nfft1, nfft2, nfft3, array, nfftdim1, nfftdim2,
+	    fftable, nfftable, ffwork, nffwork);
+
+#endif
+
     return 0;
 } /* fft_forward */
 
@@ -111,14 +136,18 @@
 		    int *, doublecomplex *,  int *,  int *, double *, 
 		    int *, doublecomplex *,  int *);
   
-  /* Parameter adjustments */
-  --array;
-  --fftable;
-  --ffwork;
-  
+#ifdef NAMD_FFTW
+
+  fftwnd_one(backward_plan,(fftw_complex*)array,(fftw_complex*)array);
+
+#else
+
   isign = -1;
-  pubz3d(&isign, nfft1, nfft2, nfft3, &array[1], nfftdim1, nfftdim2, &
-	 fftable[1], nfftable, &ffwork[1], nffwork);
+  pubz3d(&isign, nfft1, nfft2, nfft3, array, nfftdim1, nfftdim2,
+	 fftable, nfftable, ffwork, nffwork);
+
+#endif
+
   return 0;
 } /* fft_back */
 

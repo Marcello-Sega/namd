@@ -30,7 +30,7 @@
 	    dtheta2_dim1, dtheta2_offset, dtheta3_dim1, dtheta3_offset;
 
     /* Local variables */
-    extern /* Subroutine */ int fill_bspline(double *,  int *, 
+    extern /* Subroutine */ int fill_bspline(double,  int, 
 	    double *, double *);
      int n,nn;
      double w;
@@ -58,20 +58,20 @@
      for (n = 1; n <= (*numatoms); ++n,++nn) {
        w = fr1[nn] - (int) fr1[nn];
 
-       fill_bspline(&w, order, &theta1[n * theta1_dim1 + 1], 
+       fill_bspline(w, *order, &theta1[n * theta1_dim1 + 1], 
 		    &dtheta1[n * dtheta1_dim1 + 1]);
        w = fr2[nn] - (int) fr2[nn];
-       fill_bspline(&w, order, &theta2[n * theta2_dim1 + 1], 
+       fill_bspline(w, *order, &theta2[n * theta2_dim1 + 1], 
 		    &dtheta2[n *  dtheta2_dim1 + 1]);
        w = fr3[nn] - (int) fr3[nn];
-       fill_bspline(&w, order, &theta3[n * theta3_dim1 + 1], 
+       fill_bspline(w, *order, &theta3[n * theta3_dim1 + 1], 
 		    &dtheta3[n * dtheta3_dim1 + 1]);
      }
      return 0;
 } /* get_bspline_coeffs */
 
 /* --------------------------------------------------- */
-/* Subroutine */ int fill_bspline(double *w,   int *order, double 
+/* Subroutine */ int fill_bspline(double w,   int order, double 
 	*array, double *darray)
 {
   /* Local variables */
@@ -79,6 +79,8 @@
 	    init(double *, double *,  int *), one_pass(
 	    double *, double *,  int *);
     int k;
+    int j;
+    double div;
 
     /* Parameter adjustments */
     --array;
@@ -87,17 +89,43 @@
     /* Function Body */
 /* ---------- use standard B-spline recursions: see doc file */
 /* do linear case */
-    init(&array[1], w, order);
+    /* inlined by hand: init(&array[1], w, order); */
+	array[order] = 0.;
+	array[2] = w;
+	array[1] = 1. - w;
 /* compute standard b-spline recursion */
     
-    for (k = 3; k <= ( *order - 1); ++k) {
-	one_pass(&array[1], w, &k);
+    for (k = 3; k <= ( order - 1); ++k) {
+	/* inlined by hand: one_pass(&array[1], w, &k); */
+	div = 1. / (k - 1);
+	array[k] = div * w * array[k - 1];
+
+	for (j = 1; j <= ( k - 2); ++j) {
+	  array[k - j] = div * ((w + j) * array[k - j - 1] + (k - j - w) * array[k - j]);
+	}
+	array[1] = div * (1 - w) * array[1];
+	
 /* L10: */
     }
 /* perform standard b-spline differentiation */
-    diff(&array[1], &darray[1], order);
+    /* inlined by hand: diff(&array[1], &darray[1], order); */
+    darray[1] = - array[1];
+
+    for (j = 2; j <= (order); ++j) {
+        darray[j] = array[j - 1] - array[j];
+/* L10: */
+    }
+
 /* one more recursion */
-    one_pass(&array[1], w, order);
+    /* inlined by hand: one_pass(&array[1], w, order); */
+	div = 1. / (order - 1);
+	array[order] = div * w * array[order - 1];
+
+	for (j = 1; j <= ( order - 2); ++j) {
+	  array[order - j] = div * ((w + j) * array[order - j - 1] + (order - j - w) * array[order - j]);
+	}
+	array[1] = div * (1 - w) * array[1];
+	
     return 0;
 } /* fill_bspline */
 

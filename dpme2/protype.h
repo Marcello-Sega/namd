@@ -3,7 +3,7 @@
  *  Copyright (c) 1996,1997 Duke University
  *  All rights reserved
  */
-/* $Id: protype.h,v 1.3 1997/04/23 17:05:35 nealk Exp $
+/* $Id: protype.h,v 1.4 1999/03/18 22:06:32 jim Exp $
  */
 
 /* prototype of functions and subroutines used in DPME2 */
@@ -173,7 +173,7 @@ double  erfcfun(double *x);
 	double *theta2, double *theta3, double *dtheta1, 
 	double *dtheta2, double *dtheta3);
 
- int fill_bspline(double *w,   int *order, double 
+ int fill_bspline(double w,   int order, double 
 	*array, double *darray);
 
  int init(double *c, double *x,  int *order);
@@ -182,12 +182,12 @@ double  erfcfun(double *x);
 
  int diff(double *c, double *d,  int *order);
 
-int fill_charge_grid2(int *numatoms, int nlocal,
+int fill_charge_grid2(int numatoms, int nlocal,
 		      Pme2Particle *ParticlePtr,
 	 double *theta1, double *theta2, double *theta3, 
-	double *fr1, double *fr2, double *fr3,  int *order, 
-	int *nfft1,  int *nfft2,  int *nfft3,  int *nfftdim1, 
-	int *nfftdim2, int *nfftdim3, double *q);
+	double *fr1, double *fr2, double *fr3,  int order, 
+	int nfft1,  int nfft2,  int nfft3,  int nfftdim1, 
+	int nfftdim2, int nfftdim3, double *q);
 
  int clearq(double *q, int *ntot);
 
@@ -198,14 +198,14 @@ int fill_charge_grid2(int *numatoms, int nlocal,
 	int *nfft2, int *nfft3, int *nfftdim1, int *nfftdim2, 
 	int *nfftdim3, double *eer, double *vir);
 
- int grad_sum( int *numatoms, 
+ int grad_sum( int numatoms, 
 	      Pme2Particle *ParticlePtr, 
 	double *recip, double *theta1, double *theta2, double 
 	*theta3, double *dtheta1, double *dtheta2, double *
 	dtheta3, PmeVector *rfparticle, double *
-	fr1, double *fr2, double *fr3,  int *order,  int *nfft1,
-	  int *nfft2,  int *nfft3,  int *nfftdim1,  int *nfftdim2,
-	  int *nfftdim3, double *q);
+	fr1, double *fr2, double *fr3,  int order,  int nfft1,
+	  int nfft2,  int nfft3,  int nfftdim1,  int nfftdim2,
+	  int nfftdim3, double *q);
 
 
  int get_fftdims( int *nfft1,  int *nfft2,  int *

@@ -3,7 +3,7 @@
  *  Copyright (c) 1996,1997 Duke University
  *  All rights reserved
  */
-/* $Id: dpme2_recip_sumW.c,v 1.2 1997/04/23 18:15:17 nealk Exp $
+/* $Id: dpme2_recip_sumW.c,v 1.3 1999/03/18 22:06:32 jim Exp $
  */
 
 
@@ -142,9 +142,11 @@ double recip_sum_calc2(double ewaldcof, double volume, double *recip, MYPROC ,
     nfftdim2=nfft2;  
     nfftdim3=nfft3;
     
+#ifndef NAMD_FFTW
     if (nfft1 == (2*(nfft1/2))) nfftdim1= nfft1+1;
     if (nfft2 == (2*(nfft2/2))) nfftdim2= nfft2+1;
     if (nfft3 == (2*(nfft3/2))) nfftdim3= nfft3+1;
+#endif
     siz_q=2*nfftdim1*nfftdim2*nfftdim3;
     q=dvector(0,siz_q); /* alloc q  now */
 #if (DEBUG_DPME)
@@ -167,10 +169,10 @@ double recip_sum_calc2(double ewaldcof, double volume, double *recip, MYPROC ,
   gettimeofday(&intime[2],&tzp);
 #endif
 
-  fill_charge_grid2(&numatoms, nlocal,
+  fill_charge_grid2(numatoms, nlocal,
 		    Myparticles, theta1, theta2, 
-		    theta3,  myfr1, myfr2, myfr3, &order, &nfft1, &nfft2, &nfft3, 
-		    &nfftdim1, &nfftdim2, &nfftdim3, q);
+		    theta3,  myfr1, myfr2, myfr3, order, nfft1, nfft2, nfft3, 
+		    nfftdim1, nfftdim2, nfftdim3, q);
  
 
 #if TIMEME
@@ -196,11 +198,11 @@ double recip_sum_calc2(double ewaldcof, double volume, double *recip, MYPROC ,
 #if TIMEME
   gettimeofday(&intime[6],&tzp);
 #endif   
-  grad_sum(&nlocal,
+  grad_sum(nlocal,
 	   Myparticles, recip, theta1, theta2, theta3,
 	   dtheta1, dtheta2, dtheta3, rfparticle,
-	   myfr1, myfr2, myfr3, &order, &nfft1, &nfft2, &nfft3, 
-	   &nfftdim1, &nfftdim2, &nfftdim3, q);
+	   myfr1, myfr2, myfr3, order, nfft1, nfft2, nfft3, 
+	   nfftdim1, nfftdim2, nfftdim3, q);
 #if TIMEME
   gettimeofday(&intime[7],&tzp);
 #endif 
