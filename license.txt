@@ -1,5 +1,9 @@
-
-NAMD Molecular Dynamics Software Non-Exclusive, Non-Commercial Use License
++--------------------------------------------------------------------+
+|                                                                    |
+|                 NAMD Molecular Dynamics Software                   |
+|             Non-Exclusive, Non-Commercial Use License              |
+|                                                                    |
++--------------------------------------------------------------------+
 
 Introduction
 

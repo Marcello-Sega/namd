@@ -1,0 +1,41 @@
++--------------------------------------------------------------------+
+|                                                                    |
+|                          NAMD 2.1b1 README                         |
+|                                                                    |
++--------------------------------------------------------------------+
+
+NAMD is a parallel, object-oriented molecular dynamics code designed
+for high-performance simulation of large biomolecular systems.
+NAMD is distributed free of charge and includes source code.
+
+All distributions of NAMD include the following files:
+
+ announce.txt
+	This file contains the announcement for this version of NAMD.
+
+ notes.txt
+	This file includes directions for compiling and running NAMD,
+	configuration file parameters for new simulation features,
+	advice for dealing with endian issues when switching platforms,
+	a list of know deficiencies, and advice for reporting bugs.
+
+ license.txt
+	This file contains the license under which NAMD is distributed
+	and to which you must agree in order to use the program.
+
+Full documentation for using NAMD is available from the NAMD web site:
+	http://www.ks.uiuc.edu/Research/namd/
+
+VMD, NAMD, and BioCoRE represent a broad effort by the Theoretical
+Biophysics Group, an NIH Resource for Macromolecular Modeling and
+Bioinformatics, to develop and freely distribute effective tools
+(with source code) for molecular dynamics studies in structural biology.
+
+For more information, see:
+	http://www.ks.uiuc.edu/Research/VMD/
+	http://www.ks.uiuc.edu/Research/NAMD/
+	http://www.ks.uiuc.edu/Research/collaboratory/
+
+The NAMD project is funded by the National Institutes of Health
+(grant number PHS 5 P41 RR05969).
+
