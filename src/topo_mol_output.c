@@ -46,7 +46,7 @@ int topo_mol_write_pdb(topo_mol *mol, FILE *file,
   return 0;
 }
 
-int topo_mol_write_psf(topo_mol *mol, FILE *file,
+int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt,
                                 void (*print_msg)(const char *)) {
 
   int iseg,nseg,ires,nres,atomid;
@@ -64,7 +64,10 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file,
   int numinline;
 
   fprintf(file,"PSF\n\n%8d !NTITLE\n",1);
-  fprintf(file," REMARKS %s\n","original generated structure psf file");
+  if ( charmmfmt ) 
+   fprintf(file," REMARKS %s\n","original generated structure charmm psf file");
+  else
+   fprintf(file," REMARKS %s\n","original generated structure x-plor psf file");
   fprintf(file,"\n");
 
   atomid = 0;
@@ -115,15 +118,15 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file,
 
   fprintf(file,"%8d !NATOM\n",atomid);
   for ( iseg=0; iseg<nseg; ++iseg ) {
-    /* must left-align the segid */
-    char segbuf[5];
-    strncpy(segbuf, seg->segid, 4);
-    segbuf[4] = '\0';
     seg = mol->segment_array[iseg];
     nres = hasharray_count(seg->residue_hash);
     for ( ires=0; ires<nres; ++ires ) {
       res = &(seg->residue_array[ires]);
-      for ( atom = res->atoms; atom; atom = atom->next ) {
+      if ( charmmfmt ) for ( atom = res->atoms; atom; atom = atom->next ) {
+        fprintf(file,"%8d %-4s %-4s %-4s %-4s %4d %10.6f     %9.4f  %10d\n",
+                atom->atomid, seg->segid,res->resid,res->name,
+                atom->name,atom->typeid,atom->charge,atom->mass,0);
+      } else for ( atom = res->atoms; atom; atom = atom->next ) {
         fprintf(file,"%8d %-4s %-4s %-4s %-4s %-4s %10.6f     %9.4f  %10d\n",
                 atom->atomid, seg->segid,res->resid,res->name,
                 atom->name,atom->type,atom->charge,atom->mass,0);

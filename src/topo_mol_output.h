@@ -8,7 +8,7 @@
 int topo_mol_write_pdb(topo_mol *mol, FILE *file,
                                 void (*print_msg)(const char *));
 
-int topo_mol_write_psf(topo_mol *mol, FILE *file,
+int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt,
                                 void (*print_msg)(const char *));
 
 #endif

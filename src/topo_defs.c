@@ -121,7 +121,7 @@ void topo_defs_auto_dihedrals(topo_defs *defs, int autogen) {
   if ( defs ) defs->auto_dihedrals = ! ! autogen;
 }
 
-int topo_defs_type(topo_defs *defs, const char *atype, double mass) {
+int topo_defs_type(topo_defs *defs, const char *atype, double mass, int id) {
   int i;
   topo_defs_type_t *newitem;
   char errmsg[32 + NAMEMAXLEN];
@@ -137,6 +137,7 @@ int topo_defs_type(topo_defs *defs, const char *atype, double mass) {
     newitem = &defs->type_array[i];
     strcpy(newitem->name,atype);
   }
+  newitem->id = id;
   newitem->mass = mass;
   return 0;
 }

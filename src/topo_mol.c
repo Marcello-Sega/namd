@@ -254,6 +254,7 @@ int topo_mol_add_atom(topo_mol *mol, topo_mol_atom_t **atoms,
   atomtmp->next = *atoms;
   atomtmp->charge = atomdef->charge;
   strcpy(atomtmp->type,atomdef->type);
+  atomtmp->typeid = 0;
   atomtmp->mass = 0;
   idef = hasharray_index(mol->defs->type_hash,atomtmp->type);
   if ( idef == HASHARRAY_FAIL ) {
@@ -262,6 +263,7 @@ int topo_mol_add_atom(topo_mol *mol, topo_mol_atom_t **atoms,
     return -3;
   } else {
     atype = &(mol->defs->type_array[idef]);
+    atomtmp->typeid = atype->id;
     atomtmp->mass = atype->mass;
   }
   *atoms = atomtmp;

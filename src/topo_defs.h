@@ -14,7 +14,7 @@ const char * topo_defs_errors(topo_defs *defs);
 void topo_defs_auto_angles(topo_defs *defs, int autogen);
 void topo_defs_auto_dihedrals(topo_defs *defs, int autogen);
 
-int topo_defs_type(topo_defs *defs, const char *atype, double mass);
+int topo_defs_type(topo_defs *defs, const char *atype, double mass, int id);
 
 int topo_defs_residue(topo_defs *defs, const char *rname, int patch);
 int topo_defs_end(topo_defs *defs);

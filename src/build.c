@@ -405,6 +405,7 @@ int tcl_writepsf(ClientData data, Tcl_Interp *interp,
 					int argc, char *argv[]) {
   FILE *res_file;
   char *filename;
+  int charmmfmt;
   char msg[128];
   psfgen_data *psf = (psfgen_data *)data;
 
@@ -412,11 +413,21 @@ int tcl_writepsf(ClientData data, Tcl_Interp *interp,
     Tcl_SetResult(interp,"no psf file specified",TCL_VOLATILE);
     return TCL_ERROR;
   }
-  if ( argc > 2 ) {
+  if ( argc > 3 ) {
     Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
     return TCL_ERROR;
   }
-  filename = argv[1];
+  charmmfmt = 0;
+  if ( argc == 3 ) {
+    if ( strcmp(argv[1],"charmm") == 0 ) charmmfmt = 1;
+    else if ( strcmp(argv[1],"x-plor") == 0 ) charmmfmt = 0;
+    else {
+      sprintf(msg,"ERROR: Unknown psf file format %s (not charmm or x-plor).\n",argv[1]);
+      Tcl_SetResult(interp,msg,TCL_VOLATILE);
+      return TCL_ERROR;
+    }
+  }
+  filename = argv[argc-1];
 
   if ( ! ( res_file = fopen(filename,"w") ) ) {
     sprintf(msg,"ERROR: Unable to open psf file %s to write structure\n",filename);
@@ -425,7 +436,7 @@ int tcl_writepsf(ClientData data, Tcl_Interp *interp,
   }
   sprintf(msg,"writing psf file %s",filename);
   handle_msg(msg);
-  if ( topo_mol_write_psf(psf->mol,res_file,handle_msg) ) {
+  if ( topo_mol_write_psf(psf->mol,res_file,charmmfmt,handle_msg) ) {
     Tcl_SetResult(interp,"ERROR: failed on writing structure to psf file",TCL_VOLATILE);
     fclose(res_file);
     return TCL_ERROR;
