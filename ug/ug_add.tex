@@ -1211,11 +1211,11 @@ reset to that of another image to avoid any bad initial contacts and
 the resulting instability in the simulation.
 
 \subsection{Pair Interaction Calculations}
-\NAMD supportes the calculation of nonbonded interaction energies between 
+\NAMD supportes the calculation of interaction energy calculations between 
 two groups of atoms.  When enabled, pair interaction information will be
 calculated and printed in the standard output file on its own line at the
 same frequency as energy output.  The format of the line is
-{\tt PAIR INTERACTION: STEP: {\it step} VDW: {\it vdw} FORCE: {\it fx fy fz} 
+{\tt PAIR INTERACTION: STEP: {\it step} FORCE: {\it fx fy fz} 
 VIRIAL: {\it xx xy xz yy yz zz}}.
 The displayed force is the force on atoms in group 1 and is units of 
 kcal/mol/\AA.  The virial is in units of kcal/mol.
@@ -1246,30 +1246,30 @@ interaction flags}{{\tt X}, {\tt Y}, {\tt Z}, {\tt O}, or {\tt B}}{{\tt B}}
 Column of the PDB file to specify which atoms to use for pair interaction
 calculations.  This parameter may specify any of the floating point
 fields of the PDB file, either X, Y, Z, occupancy, or beta-coupling
-(temperature-coupling).  A value of zero in this column indicates the atom
-is not involved in pair interaction calculations; a value of -1 indicates it
-belongs to group 1; a value of 2 indicates it belongs to group 2.
+(temperature-coupling).  
 }
 
 \item
-\NAMDCONFWDEF{pairInteractionOnly}{should only pair interactions be 
-calculated?}{{\tt yes} or {\tt no}}{{\tt no}}
-{ Specifies whether to compute only pair interaction calculations and nothing
-else.  Choose {\tt yes} when analyzing completed trajectories; choose {\tt no}
-to output pair interaction energies while the simulation is running.}
+\NAMDCONFWDEF{pairInteractionSelf}{compute within-group interactions instead of
+bewteen groups}{{\tt on} or {\tt off}}{{\tt off}}
+{
+When active, NAMD will compute bonded and nonbonded interactions only for atoms 
+within group 1.  Note that the reported force is incorrect and should be
+ignored; by definition the total force within a group is zero.  
+}
+ 
+\item
+\NAMDCONF{pairInteractionGroup1}{Flag to indicate atoms in
+group 1?}{integer}{}
 
 \item
-\NAMDCONFWDEF{pairInteractionGroup1}{should interactions be calculated only
-for group 1?}{{\tt yes} or {\tt no}}{{\tt no}}{}
-
-\item
-\NAMDCONFWDEF{pairInteractionGroup2}{should interactions be calculated only
-for group 2?}{{\tt yes} or {\tt no}}{{\tt no}}{
-When either of these options is enabled, the pair interaction energies 
-reported are for atoms within the group only, as opposed to interactions 
-between the groups.  Note that the reported force is incorrect and should be
-ignored; by definition the total force within a group is zero.  The 
-{\tt pairInteractionGroup{\it n}} options are mutually exclusive.
+\NAMDCONF{pairInteractionGroup2}{Flag to indicate atoms in
+group 2?}{integer}{}
+{
+These options are used to indicate which atoms belong to each interaction 
+group.  Atoms with a value in the column specified by {\tt pairInteractionCol} 
+equal to {\tt pairInteractionGroup1} will be assigned to group 1; likewise
+for group 2.
 }
 
 \end{itemize}
