@@ -235,95 +235,71 @@ RM = rm -f
 
 # Explicit rules for modules.
 
-MOVECIFILES = $(MOVE) *.decl.h *.def.h $(INCDIR)
+$(INCDIR)/BroadcastMgr.def.h: $(INCDIR)/BroadcastMgr.decl.h
 
-$(INCDIR)/BroadcastMgr.decl.h:	$(SRCDIR)/BroadcastMgr.ci
+$(INCDIR)/BroadcastMgr.decl.h: $(SRCDIR)/BroadcastMgr.ci
 	$(CHARMXI) $(SRCDIR)/BroadcastMgr.ci
-	$(MOVECIFILES)
+	$(MOVE) BroadcastMgr.decl.h BroadcastMgr.def.h $(INCDIR)
 
-$(INCDIR)/BroadcastMgr.def.h:	$(SRCDIR)/BroadcastMgr.ci
-	$(CHARMXI) $(SRCDIR)/BroadcastMgr.ci
-	$(MOVECIFILES)
+$(INCDIR)/CollectionMaster.def.h: $(INCDIR)/CollectionMaster.decl.h
 
-$(INCDIR)/CollectionMaster.decl.h:	$(SRCDIR)/CollectionMaster.ci
+$(INCDIR)/CollectionMaster.decl.h: $(SRCDIR)/CollectionMaster.ci
 	$(CHARMXI) $(SRCDIR)/CollectionMaster.ci
-	$(MOVECIFILES)
+	$(MOVE) CollectionMaster.decl.h CollectionMaster.def.h $(INCDIR)
 
-$(INCDIR)/CollectionMaster.def.h:	$(SRCDIR)/CollectionMaster.ci
-	$(CHARMXI) $(SRCDIR)/CollectionMaster.ci
-	$(MOVECIFILES)
+$(INCDIR)/CollectionMgr.def.h: $(INCDIR)/CollectionMgr.decl.h
 
-$(INCDIR)/CollectionMgr.decl.h:	$(SRCDIR)/CollectionMgr.ci
+$(INCDIR)/CollectionMgr.decl.h: $(SRCDIR)/CollectionMgr.ci
 	$(CHARMXI) $(SRCDIR)/CollectionMgr.ci
-	$(MOVECIFILES)
+	$(MOVE) CollectionMgr.decl.h CollectionMgr.def.h $(INCDIR)
 
-$(INCDIR)/CollectionMgr.def.h:	$(SRCDIR)/CollectionMgr.ci
-	$(CHARMXI) $(SRCDIR)/CollectionMgr.ci
-	$(MOVECIFILES)
+$(INCDIR)/ComputeMgr.def.h: $(INCDIR)/ComputeMgr.decl.h
 
-$(INCDIR)/ComputeMgr.decl.h:	$(SRCDIR)/ComputeMgr.ci
+$(INCDIR)/ComputeMgr.decl.h: $(SRCDIR)/ComputeMgr.ci
 	$(CHARMXI) $(SRCDIR)/ComputeMgr.ci
-	$(MOVECIFILES)
+	$(MOVE) ComputeMgr.decl.h ComputeMgr.def.h $(INCDIR)
 
-$(INCDIR)/ComputeMgr.def.h:	$(SRCDIR)/ComputeMgr.ci
-	$(CHARMXI) $(SRCDIR)/ComputeMgr.ci
-	$(MOVECIFILES)
+$(INCDIR)/LdbCoordinator.def.h: $(INCDIR)/LdbCoordinator.decl.h
 
-$(INCDIR)/LdbCoordinator.decl.h:	$(SRCDIR)/LdbCoordinator.ci
+$(INCDIR)/LdbCoordinator.decl.h: $(SRCDIR)/LdbCoordinator.ci
 	$(CHARMXI) $(SRCDIR)/LdbCoordinator.ci
-	$(MOVECIFILES)
+	$(MOVE) LdbCoordinator.decl.h LdbCoordinator.def.h $(INCDIR)
 
-$(INCDIR)/LdbCoordinator.def.h:	$(SRCDIR)/LdbCoordinator.ci
-	$(CHARMXI) $(SRCDIR)/LdbCoordinator.ci
-	$(MOVECIFILES)
+$(INCDIR)/Node.def.h: $(INCDIR)/Node.decl.h
 
-$(INCDIR)/Node.decl.h:	$(SRCDIR)/Node.ci
+$(INCDIR)/Node.decl.h: $(SRCDIR)/Node.ci
 	$(CHARMXI) $(SRCDIR)/Node.ci
-	$(MOVECIFILES)
+	$(MOVE) Node.decl.h Node.def.h $(INCDIR)
 
-$(INCDIR)/Node.def.h:	$(SRCDIR)/Node.ci
-	$(CHARMXI) $(SRCDIR)/Node.ci
-	$(MOVECIFILES)
+$(INCDIR)/PatchMgr.def.h: $(INCDIR)/PatchMgr.decl.h
 
-$(INCDIR)/PatchMgr.decl.h:	$(SRCDIR)/PatchMgr.ci
+$(INCDIR)/PatchMgr.decl.h: $(SRCDIR)/PatchMgr.ci
 	$(CHARMXI) $(SRCDIR)/PatchMgr.ci
-	$(MOVECIFILES)
+	$(MOVE) PatchMgr.decl.h PatchMgr.def.h $(INCDIR)
 
-$(INCDIR)/PatchMgr.def.h:	$(SRCDIR)/PatchMgr.ci
-	$(CHARMXI) $(SRCDIR)/PatchMgr.ci
-	$(MOVECIFILES)
+$(INCDIR)/ProxyMgr.def.h: $(INCDIR)/ProxyMgr.decl.h
 
-$(INCDIR)/ProxyMgr.decl.h:	$(SRCDIR)/ProxyMgr.ci
+$(INCDIR)/ProxyMgr.decl.h: $(SRCDIR)/ProxyMgr.ci
 	$(CHARMXI) $(SRCDIR)/ProxyMgr.ci
-	$(MOVECIFILES)
+	$(MOVE) ProxyMgr.decl.h ProxyMgr.def.h $(INCDIR)
 
-$(INCDIR)/ProxyMgr.def.h:	$(SRCDIR)/ProxyMgr.ci
-	$(CHARMXI) $(SRCDIR)/ProxyMgr.ci
-	$(MOVECIFILES)
+$(INCDIR)/ReductionMgr.def.h: $(INCDIR)/ReductionMgr.decl.h
 
-$(INCDIR)/ReductionMgr.decl.h:	$(SRCDIR)/ReductionMgr.ci
+$(INCDIR)/ReductionMgr.decl.h: $(SRCDIR)/ReductionMgr.ci
 	$(CHARMXI) $(SRCDIR)/ReductionMgr.ci
-	$(MOVECIFILES)
+	$(MOVE) ReductionMgr.decl.h ReductionMgr.def.h $(INCDIR)
 
-$(INCDIR)/ReductionMgr.def.h:	$(SRCDIR)/ReductionMgr.ci
-	$(CHARMXI) $(SRCDIR)/ReductionMgr.ci
-	$(MOVECIFILES)
+$(INCDIR)/WorkDistrib.def.h: $(INCDIR)/WorkDistrib.decl.h
 
-$(INCDIR)/WorkDistrib.decl.h:	$(SRCDIR)/WorkDistrib.ci
+$(INCDIR)/WorkDistrib.decl.h: $(SRCDIR)/WorkDistrib.ci
 	$(CHARMXI) $(SRCDIR)/WorkDistrib.ci
-	$(MOVECIFILES)
+	$(MOVE) WorkDistrib.decl.h WorkDistrib.def.h $(INCDIR)
 
-$(INCDIR)/WorkDistrib.def.h:	$(SRCDIR)/WorkDistrib.ci
-	$(CHARMXI) $(SRCDIR)/WorkDistrib.ci
-	$(MOVECIFILES)
+$(INCDIR)/main.def.h: $(INCDIR)/main.decl.h
 
-$(INCDIR)/main.decl.h:	$(SRCDIR)/main.ci
+$(INCDIR)/main.decl.h: $(SRCDIR)/main.ci
 	$(CHARMXI) $(SRCDIR)/main.ci
-	$(MOVECIFILES)
-
-$(INCDIR)/main.def.h:	$(SRCDIR)/main.ci
-	$(CHARMXI) $(SRCDIR)/main.ci
-	$(MOVECIFILES)
+	$(MOVE) main.decl.h main.def.h $(INCDIR)
 
 DEPENDFILE = .rootdir/Make.depends
 
