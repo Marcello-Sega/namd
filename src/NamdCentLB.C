@@ -111,6 +111,7 @@ void NamdCentLB::dumpData(char *file, int numProcessors, int numPatches, int num
      perror("dumpLDStats");
      return;
   }
+  CkPrintf("***** DUMP data to file: %s ***** \n"m file);
   write(fd, &numProcessors, sizeof(int));
   write(fd, &numPatches, sizeof(int));
   write(fd, &numComputes, sizeof(int));
@@ -123,7 +124,7 @@ void NamdCentLB::dumpData(char *file, int numProcessors, int numPatches, int num
   {
       int num = processorArray[i].proxies->numElements();
       write(fd, &num, sizeof(int));
-CkPrintf("**** Proc:%d num:%d \n", i, num);
+//CkPrintf("**** Proc:%d num:%d \n", i, num);
       Iterator nextProxy;
 //      nextProxy.id = 0;
       patchInfo *p = (patchInfo *)processorArray[i].proxies->iterator((Iterator *)&nextProxy);
