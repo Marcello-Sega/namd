@@ -3518,8 +3518,8 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
 
       // initialize information for each atom (note that the status has
       // already been initialized during the read/receive phase)
-      HydrogenGroupID *hg;
-      hg = new HydrogenGroupID[numAtoms];
+      hydrogenGroup.resize(numAtoms);
+      HydrogenGroupID *hg = hydrogenGroup.begin();
       for (i=0; i < numAtoms; i++) {
   atoms[i].partner = (-1);
   hg[i].atomID = i;  // currently unsorted
@@ -3571,8 +3571,6 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
     // make H follow their group parents.
     if (!hg[i].isGP)  hg[i].sortVal = hg[hg[i].GPID].sortVal;
     else ++numHydrogenGroups;
-    // add to list to sort
-    hydrogenGroup.add(hg[i]);
   }
   hydrogenGroup.sort();
 
@@ -3596,7 +3594,6 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
    << " sortVal=" << hydrogenGroup[i].sortVal
    << "\n" << endi;
   #endif
-  delete [] hg;
 
   // now deal with rigidBonds
   if ( simParams->rigidBonds != RIGID_NONE || simParams->mollyOn ) {

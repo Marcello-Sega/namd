@@ -57,7 +57,7 @@ class HydrogenGroupID {
     }
 };
 
-typedef UniqueSortedArray<HydrogenGroupID> HydrogenGroup ;
+typedef SortableResizeArray<HydrogenGroupID> HydrogenGroup ;
 
 #endif
 
