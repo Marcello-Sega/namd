@@ -82,6 +82,7 @@ private:
   void remove(int seq);				// delete (remove) a sequence
   ReductionMgrData *find(int seq);		// find the data
   void gotAllData(ReductionMgrData *current);	// done collecting data
+  void displayData(ReductionMgrData *current);	// display collected data
 
 public:
 

@@ -28,7 +28,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.11 1997/01/14 20:21:04 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.12 1997/01/16 21:09:38 nealk Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -113,10 +113,28 @@ ReductionMgr::~ReductionMgr()
     while(data != NULL)
     {
       nextdata = data->next;
+      #if PANIC > 0
+      displayData(data);
+      #endif
       delete data;
       data = nextdata;
     }
 } /* ReductionMgr::~ReductionMgr() */
+
+/*******************************************
+ ReductionMgr::displayData(): dump the data.
+ Very useful for debugging.
+ *******************************************/
+void ReductionMgr::displayData(ReductionMgrData *current)
+{
+  if (!current) return;
+  if (current->dataToSend)
+	iout << "Unfilled data fields: " << current->dataToSend << "\n" << endi;
+  for(int tag=0; tag<REDUCTION_MAX_RESERVED; tag++)
+      iout << iPE << " " << current->sequenceNum
+	   << " " << tagString[tag]
+	   << " " << current->tagData[tag] << "\n" << endi;
+} /* ReductionMgr::displayData() */
 
 /*******************************************
  ReductionMgr::createdata(): create a blank
@@ -127,8 +145,8 @@ ReductionMgrData *ReductionMgr::createdata(int seq)
   ReductionMgrData *data;
   data = new ReductionMgrData;
   data->sequenceNum = seq;
-  // data->dataToSend = REDUCTION_MAX_RESERVED;
-  data->dataToSend = 1;
+  data->dataToSend = REDUCTION_MAX_RESERVED;
+  // data->dataToSend = 1;
   data->next = NULL;
   data->threadNum = 0;
   data->suspendFlag = 0;
@@ -360,9 +378,7 @@ void	ReductionMgr::gotAllData(ReductionMgrData *current)
   // display all the data
   if (current->dataToSend == 0)
   {
-    for(int tag=0; tag<REDUCTION_MAX_RESERVED; tag++)
-      iout << iPE << " " << tagString[tag]
-	   << " " << current->tagData[tag] << "\n" << endi;
+    displayData(current);
   }
   #endif
 
