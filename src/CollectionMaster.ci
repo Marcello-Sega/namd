@@ -1,7 +1,9 @@
+extern message InitMsg;
 packmessage CollectVectorMsg;
 
 chare CollectionMaster
 {
+  entry CollectionMaster(InitMsg *);
   entry receivePositions(CollectVectorMsg *);
   entry receiveVelocities(CollectVectorMsg *);
   entry receiveForces(CollectVectorMsg *);

@@ -13,7 +13,7 @@ class CollectionMaster : public chare_object
 {
 public:
 
-  CollectionMaster(void);
+  CollectionMaster(InitMsg *msg);
   ~CollectionMaster(void);
 
   void receivePositions(CollectVectorMsg *msg);

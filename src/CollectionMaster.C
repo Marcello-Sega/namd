@@ -5,8 +5,9 @@
 #define DEBUGM
 #include "Debug.h"
 
-CollectionMaster::CollectionMaster(void)
+CollectionMaster::CollectionMaster(InitMsg *msg)
 {
+  delete msg;
 }
 
 
