@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Output.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1997/02/11 22:56:15 $
+ *	$Revision: 1.2 $	$Date: 1997/02/26 18:38:24 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -20,6 +20,10 @@
  * REVISION HISTORY:
  *
  * $Log: Output.C,v $
+ * Revision 1.2  1997/02/26 18:38:24  jim
+ * Eliminated +1 from output timestep checks, now makes sense.
+ * This should match changes being made in NAMD 1.X.
+ *
  * Revision 1.1  1997/02/11 22:56:15  jim
  * Added dcd file writing.
  *
@@ -169,7 +173,7 @@
  * Initial revision
  * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Output.C,v 1.1 1997/02/11 22:56:15 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Output.C,v 1.2 1997/02/26 18:38:24 jim Exp $";
 
 #include <string.h>
 #include <stdlib.h>
@@ -437,7 +441,7 @@ void Output::energy(int timestep, BigReal *energy)
    //  or a multiple of the vmdFrequency, send the energies to the
    //  VMD connection as well
    if ( (namdMyNode->simParams->vmdFrequency != -1) && 
-	( ( ( (timestep+1) % namdMyNode->simParams->vmdFrequency) == 0) || 
+	( ( ( timestep % namdMyNode->simParams->vmdFrequency) == 0) || 
 	  (timestep==0) ) )
    {
 	gather_vmd_energies(timestep, energy, temperature, totalEnergy);
@@ -468,7 +472,7 @@ void Output::coordinate(int timestep, int n, Vector *coor)
 {
 	//  Output a DCD trajectory 
 	if ( (namdMyNode->simParams->dcdFrequency != -1) &&
-	     ( (((timestep+1) % namdMyNode->simParams->dcdFrequency) == 0) ||
+	     ( ((timestep % namdMyNode->simParams->dcdFrequency) == 0) ||
 	       (timestep == 0) ) )
 	{
 		output_dcdfile(timestep, n, coor);
@@ -476,7 +480,7 @@ void Output::coordinate(int timestep, int n, Vector *coor)
 
 	//  Output a restart file
 	if ( (namdMyNode->simParams->restartFrequency != -1) &&
-	     (((timestep+1) % namdMyNode->simParams->restartFrequency) == 0) )
+	     ((timestep % namdMyNode->simParams->restartFrequency) == 0) )
 	{
 		output_restart_coordinates(coor, n, timestep);
 	}
@@ -492,7 +496,7 @@ void Output::coordinate(int timestep, int n, Vector *coor)
 	//  0th timestep or a mutiple of the vmdFrequency, then send
 	//  the coordinates to VMD as well
         if ( (namdMyNode->simParams->vmdFrequency != -1) && 
-	   ( ( ((timestep+1) % namdMyNode->simParams->vmdFrequency) == 0) ||
+	   ( ( (timestep % namdMyNode->simParams->vmdFrequency) == 0) ||
 	     (timestep == 0) ) )
         {
 		gather_vmd_coords(timestep, n, coor);
@@ -521,14 +525,14 @@ void Output::velocity(int timestep, int n, Vector *vel)
 {
 	//  Output restart file
 	if ( (namdMyNode->simParams->restartFrequency != -1) &&
-	     (((timestep+1) % namdMyNode->simParams->restartFrequency) == 0) )
+	     ((timestep % namdMyNode->simParams->restartFrequency) == 0) )
 	{
 		output_restart_velocities(timestep, n, vel);
 	}
 
 	//  Output velocity DCD trajectory
 	if ( (namdMyNode->simParams->velDcdFrequency != -1) &&
-	     ( (((timestep+1) % namdMyNode->simParams->velDcdFrequency) == 0)  ||
+	     ( ((timestep % namdMyNode->simParams->velDcdFrequency) == 0)  ||
 	       (timestep==0) ) )
 	{
 		output_veldcdfile(timestep, n, vel);
