@@ -61,9 +61,7 @@ obj/mainfunc.o: \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/ConfigList.h \
-	src/ScriptTcl.h \
-	/Projects/namd2/tcl/solaris/include/tcl.h \
-	/Projects/namd2/tcl/solaris/include/tclDecls.h
+	src/ScriptTcl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/mainfunc.o $(COPTC) src/mainfunc.C
 obj/memusage.o: \
 	src/memusage.C \
@@ -1125,8 +1123,6 @@ obj/ComputeMgr.o: \
 	src/GlobalMasterIMD.h \
 	src/imd.h \
 	src/GlobalMasterTcl.h \
-	/Projects/namd2/tcl/solaris/include/tcl.h \
-	/Projects/namd2/tcl/solaris/include/tclDecls.h \
 	src/GlobalMasterSMD.h \
 	src/GlobalMasterEasy.h \
 	src/GlobalMasterMisc.h \
@@ -1332,8 +1328,6 @@ obj/ComputePatchPair.o: \
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputePatchPair.o $(COPTC) src/ComputePatchPair.C
 obj/ComputePme.o: \
 	src/ComputePme.C \
-	/Projects/namd2/fftw/solaris/include/sfftw.h \
-	/Projects/namd2/fftw/solaris/include/srfftw.h \
 	src/Node.h \
 	src/main.h \
 	src/ProcessorPrivate.h \
@@ -1575,8 +1569,6 @@ obj/Controller.o: \
 	src/NamdState.h \
 	src/ScriptTcl.h \
 	src/Broadcasts.h \
-	/Projects/namd2/tcl/solaris/include/tcl.h \
-	/Projects/namd2/tcl/solaris/include/tclDecls.h \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
@@ -1876,8 +1868,6 @@ obj/GlobalMasterTcl.o: \
 	src/UniqueSetIter.h \
 	inc/BroadcastMgr.decl.h \
 	src/BroadcastClient.h \
-	/Projects/namd2/tcl/solaris/include/tcl.h \
-	/Projects/namd2/tcl/solaris/include/tclDecls.h \
 	src/InfoStream.h \
 	src/GlobalMaster.h \
 	src/GlobalMasterTcl.h \
@@ -2228,8 +2218,6 @@ obj/LJTable.o: \
 obj/Measure.o: \
 	src/Measure.C \
 	src/Measure.h \
-	/Projects/namd2/tcl/solaris/include/tcl.h \
-	/Projects/namd2/tcl/solaris/include/tclDecls.h \
 	src/Node.h \
 	src/main.h \
 	src/ProcessorPrivate.h \
@@ -2445,8 +2433,6 @@ obj/NamdState.o: \
 	src/UniqueSetIter.h \
 	inc/BroadcastMgr.decl.h \
 	src/BroadcastClient.h \
-	/Projects/namd2/tcl/solaris/include/tcl.h \
-	/Projects/namd2/tcl/solaris/include/tclDecls.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdState.o $(COPTC) src/NamdState.C
 obj/NamdOneTools.o: \
@@ -2557,8 +2543,6 @@ obj/Node.o: \
 	src/BroadcastObject.h \
 	src/BroadcastMgr.h \
 	src/BroadcastClient.h \
-	/Projects/namd2/tcl/solaris/include/tcl.h \
-	/Projects/namd2/tcl/solaris/include/tclDecls.h \
 	src/Sync.h \
 	src/ResizeArrayPrimIter.h \
 	src/BackEnd.h \
@@ -2611,8 +2595,6 @@ obj/Output.o: \
 	src/UniqueSetIter.h \
 	inc/BroadcastMgr.decl.h \
 	src/BroadcastClient.h \
-	/Projects/namd2/tcl/solaris/include/tcl.h \
-	/Projects/namd2/tcl/solaris/include/tclDecls.h \
 	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Output.o $(COPTC) src/Output.C
 obj/Parameters.o: \
@@ -3018,8 +3000,6 @@ obj/ScriptTcl.o: \
 	src/BOCgroup.h \
 	inc/BroadcastMgr.decl.h \
 	src/BroadcastClient.h \
-	/Projects/namd2/tcl/solaris/include/tcl.h \
-	/Projects/namd2/tcl/solaris/include/tclDecls.h \
 	src/ConfigList.h \
 	src/Node.h \
 	inc/Node.decl.h \
@@ -3161,8 +3141,6 @@ obj/SimParameters.o: \
 	src/ParseOptions.h \
 	src/structures.h \
 	src/InfoStream.h \
-	/Projects/namd2/fftw/solaris/include/sfftw.h \
-	/Projects/namd2/fftw/solaris/include/srfftw.h \
 	src/Debug.h
 	$(CXX) $(CXXSIMPARAMFLAGS) $(COPTO)obj/SimParameters.o $(COPTC) src/SimParameters.C
 obj/Sync.o: \
@@ -3205,9 +3183,7 @@ obj/Sync.o: \
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Sync.o $(COPTC) src/Sync.C
 obj/TclCommands.o: \
 	src/TclCommands.C \
-	src/TclCommands.h \
-	/Projects/namd2/tcl/solaris/include/tcl.h \
-	/Projects/namd2/tcl/solaris/include/tclDecls.h
+	src/TclCommands.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/TclCommands.o $(COPTC) src/TclCommands.C
 obj/WorkDistrib.o: \
 	src/WorkDistrib.C \
@@ -3301,9 +3277,7 @@ obj/imd.o: \
 	src/vmdsock.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/imd.o $(COPTC) src/imd.C
 obj/tcl_main.o: \
-	sb/src/tcl_main.c \
-	/Projects/namd2/tcl/solaris/include/tcl.h \
-	/Projects/namd2/tcl/solaris/include/tclDecls.h
+	sb/src/tcl_main.c
 	$(CC) $(SBCFLAGS) $(COPTO)obj/tcl_main.o $(COPTC) sb/src/tcl_main.c
 obj/tcl_psfgen.o: \
 	sb/src/tcl_psfgen.c \
@@ -3315,9 +3289,7 @@ obj/tcl_psfgen.o: \
 	sb/src/topo_mol_output.h \
 	sb/src/pdb_file_extract.h \
 	sb/src/psf_file_extract.h \
-	sb/src/extract_alias.h \
-	/Projects/namd2/tcl/solaris/include/tcl.h \
-	/Projects/namd2/tcl/solaris/include/tclDecls.h
+	sb/src/extract_alias.h
 	$(CC) $(SBCFLAGS) $(COPTO)obj/tcl_psfgen.o $(COPTC) sb/src/tcl_psfgen.c
 obj/charmm_file.o: \
 	sb/src/charmm_file.c \
