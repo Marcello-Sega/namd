@@ -23,6 +23,9 @@ class ComputeRestraints : public ComputePatch
 {
 private:
 	int consExp;		//  Exponent for energy function from SimParameters
+	Bool consMoveOn;        //  Are the cmoving constraints on?
+	int moveAtom;           //  Index of the atom to move
+        Vector moveVel;         // velocity of the constraint movement (A/timestep).
 
 public:
 	ComputeRestraints(ComputeID c, PatchID pid); 	//  Constructor
@@ -40,13 +43,17 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeRestraints.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1997/04/22 04:26:01 $
+ *	$Author: sergei $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1997/08/18 20:16:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeRestraints.h,v $
+ * Revision 1.2  1997/08/18 20:16:06  sergei
+ * added moving restraint capability with input from config file
+ * one atom only
+ *
  * Revision 1.1  1997/04/22 04:26:01  jim
  * Added atomic restraints (harmonic constraints) via ComputeRestraints class.
  *
