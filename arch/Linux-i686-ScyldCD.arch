@@ -1,7 +1,7 @@
 NAMD_ARCH = Linux-i686
 CHARMARCH = mpi-linux
 
-CXX = g++ -DSOCKLEN_T=socklen_t
+CXX = g++ -DSOCKLEN_T=socklen_t -DSCYLD_NOTICE
 CXXOPTS = -O3 -Wall -march=pentiumpro -ffast-math
 CXXTHREADOPTS = $(CXXOPTS)
 CXXSIMPARAMOPTS = $(CXXOPTS)
