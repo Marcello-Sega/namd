@@ -24,17 +24,13 @@ void CollectionMaster::receivePositions(CollectVectorMsg *msg)
   if ( c = positions.submitData(msg->seq,msg->aid,msg->data) )
   {
     DebugM(1,"Collected positions at " << c->seq << endl);
-    c->data.sort();
     int size = c->data.size();
-    // iout << "\n\n********** POSITIONS " << c->seq << " **********\n\n";
     Vector *data = new Vector[size];
     for ( int i = 0; i < size; ++i )
     {
-      data[i] = c->data[i].data;
-      // iout << c->data[i].aid << "  " << c->data[i].data << "\n" << endi;
+      data[c->data[i].aid] = c->data[i].data;
     }
     delete c;
-    // iout << "\n" << endi;
     Node::Object()->output->coordinate(msg->seq,size,data);
     delete data;
   }
@@ -48,17 +44,13 @@ void CollectionMaster::receiveVelocities(CollectVectorMsg *msg)
   if ( c = velocities.submitData(msg->seq,msg->aid,msg->data) )
   {
     DebugM(3,"Collected velocities at " << c->seq << endl);
-    c->data.sort();
     int size = c->data.size();
-    // iout << "\n\n********** VELOCITIES " << c->seq << " **********\n\n";
     Vector *data = new Vector[size];
     for ( int i = 0; i < size; ++i )
     {
-      data[i] = c->data[i].data;
-      // iout << c->data[i].aid << "  " << c->data[i].data << "\n" << endi;
+      data[c->data[i].aid] = c->data[i].data;
     }
     delete c;
-    // iout << "\n" << endi;
     Node::Object()->output->velocity(msg->seq,size,data);
     delete data;
   }
@@ -72,17 +64,13 @@ void CollectionMaster::receiveForces(CollectVectorMsg *msg)
   if ( c = forces.submitData(msg->seq,msg->aid,msg->data) )
   {
     DebugM(3,"Collected forces at " << c->seq << endl);
-    c->data.sort();
     int size = c->data.size();
-    // iout << "\n\n********** FORCES " << c->seq << " **********\n\n";
     Vector *data = new Vector[size];
     for ( int i = 0; i < size; ++i )
     {
-      data[i] = c->data[i].data;
-      // iout << c->data[i].aid << "  " << c->data[i].data << "\n" << endi;
+      data[c->data[i].aid] = c->data[i].data;
     }
     delete c;
-    // iout << "\n" << endi;
     Node::Object()->output->all_force(msg->seq,size,data);
     delete data;
   }
