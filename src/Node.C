@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.27 1996/12/19 02:26:30 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.28 1996/12/20 22:53:27 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -119,6 +119,8 @@ void Node::startup(InitMsg *msg)
   char **argvdummy;
   extern Communicate *comm;
   Message *conv_msg=NULL;
+  
+  delete msg;
 
   comm = new CommunicateConverse(0,0);
 
@@ -144,32 +146,51 @@ void Node::startup(InitMsg *msg)
      molecule->send_Molecule(comm);
   }
 
-
-  AtomMap::Object()->allocateMap(molecule->numAtoms);
-
-  delete msg;
-
-  DebugM(1, "Node::startup() Pe=" << CMyPe() << "\n");
-
   // Thread initialization
   if (CthImplemented()) {
     CthSetStrategyDefault(CthSelf());
   } else {
-    DebugM(1, "Node::startup() - Oh no, tiny elvis, threads not implemented\n");
+    DebugM(10, "Node::startup() - Oh no, tiny elvis, threads not implemented\n");
     CharmExit();
   }
 
+  AtomMap::Object()->allocateMap(molecule->numAtoms);
+
   workDistrib = CLocalBranch(WorkDistrib,group.workDistrib);
 
-  if ( ! CMyPe() ) {
-  DebugM(1, "workDistrib->buildMaps() Pe=" << CMyPe() << "\n");
-    workDistrib->buildMaps();
-  DebugM(1, "workDistrib->sendMaps() Pe=" << CMyPe() << "\n");
-    workDistrib->sendMaps();
+  if ( CMyPe() ) {
+     conv_msg = new Message;
+     conv_msg->put(1);
+     comm->send(conv_msg,0,DISTRIBTAG);
+  } else {
+     for ( int i = 1; i < numNodes(); ++i )
+     {
+       DebugM(1,"Looking for checkin from node " << i << "\n");
+       do
+       {
+         conv_msg = comm->receive(i,DISTRIBTAG);
+         delete conv_msg;
+       } while (conv_msg == NULL);
+       DebugM(1,"Received checkin from node " << i << "\n");
+     }
+     DebugM(1,"Received all checkins, messaging startup1()\n");
+     InitMsg *msg = new (MsgIndex(InitMsg)) InitMsg;
+     CSendMsgBranch(Node, startup1, msg, group.node, 0);
   }
+}
 
-  if ( ! CMyPe() )
-	CStartQuiescence(GetEntryPtr(Node,messageStartup2), thishandle);
+void Node::startup1(InitMsg *msg)
+{
+  DebugM(1,"In startup1() on node " << CMyPe() << endl);
+  delete msg;
+
+  DebugM(1, "workDistrib->buildMaps() Pe=" << CMyPe() << "\n");
+  workDistrib->buildMaps();
+  DebugM(1, "workDistrib->sendMaps() Pe=" << CMyPe() << "\n");
+  workDistrib->sendMaps();
+
+  CStartQuiescence(GetEntryPtr(Node,messageStartup2), thishandle);
+  DebugM(1,"End of startup1()\n");
 }
 
 void Node::messageStartup2(QuiescenceMessage * qm) {
@@ -182,6 +203,8 @@ void Node::messageStartup2(QuiescenceMessage * qm) {
 void Node::startup2(InitMsg *msg)
 {
   DebugM(1,"In startup2() on node " << CMyPe() << endl);
+  delete msg;
+  
   ComputeMap::Object()->printComputeMap();
 
   DebugM(1, "workDistrib->createPatches() Pe=" << CMyPe() << "\n");
@@ -189,6 +212,7 @@ void Node::startup2(InitMsg *msg)
 
   if ( ! CMyPe() )
 	CStartQuiescence(GetEntryPtr(Node,messageStartup3), thishandle);
+  DebugM(1,"End of startup2()\n");
 }
 
 void Node::messageStartup3(QuiescenceMessage * qm) {
@@ -209,6 +233,7 @@ void Node::startup3(InitMsg *msg)
 
   if ( ! CMyPe() )
 	CStartQuiescence(GetEntryPtr(Node,messageStartup4), thishandle);
+  DebugM(1,"End of startup3()\n");
 }
 
 void Node::messageStartup4(QuiescenceMessage * qm) {
@@ -232,6 +257,7 @@ void Node::startup4(InitMsg *msg)
   DebugM(3, "Created patch managers\n");
 
   messageStartupDone();   // collect on master node
+  DebugM(1,"End of startup4()\n");
 }
 
 
@@ -275,6 +301,10 @@ void Node::run(RunMsg *msg)
 
   // This is testbed code!
   DebugM(4, "Node::run() - invoked\n");
+  DebugM(1, "Node::run() - message address was " << msg << "\n");
+  static int foo = 0;
+  if ( ! foo ) foo = 1;
+  else return;
 
   HomePatchList *hpl = PatchMap::Object()->homePatchList();
   ResizeArrayIter<HomePatchElem> ai(*hpl);
@@ -327,12 +357,15 @@ void Node::saveMolDataPointers(Molecule *molecule,
  *
  *	$RCSfile: Node.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.27 $	$Date: 1996/12/19 02:26:30 $
+ *	$Revision: 1.28 $	$Date: 1996/12/20 22:53:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.28  1996/12/20 22:53:27  jim
+ * fixing parallel bugs, going home for Christmass
+ *
  * Revision 1.27  1996/12/19 02:26:30  jim
  * Node::startup2 is now triggered by quiescence
  *
