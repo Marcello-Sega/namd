@@ -67,6 +67,7 @@ private:
   void mapComputePatch(ComputeType);
   void assignPatchesToLowestLoadNode(void);
   void assignPatchesRecursiveBisection(void);
+  void assignPatchesRoundRobin(void);
   void velocities_from_PDB(char *filename, 
 			   Vector *v, int totalAtoms);
   void velocities_from_binfile(char *fname, Vector *vels, int n);
@@ -182,12 +183,15 @@ public:
  *
  *	$RCSfile: WorkDistrib.h,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1998/03/03 23:05:31 $
+ *	$Revision: 1.1013 $	$Date: 1998/07/02 21:00:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.1013  1998/07/02 21:00:03  brunner
+ * Changed initial patch distribution, should work on more PES
+ *
  * Revision 1.1012  1998/03/03 23:05:31  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

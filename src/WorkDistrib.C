@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1049 1998/06/28 21:52:06 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1050 1998/07/02 21:00:02 brunner Exp $";
 
 #include <stdio.h>
 
@@ -420,13 +420,15 @@ void WorkDistrib::assignNodeToPatch()
 {
   int method=1;
 
-  if (method==1)
+  PatchMap *patchMap = PatchMap::Object();
+  int nNodes = Node::Object()->numNodes();
+  if (nNodes <= patchMap->numPatches())
+    assignPatchesRoundRobin();
+  else if (method==1)
     assignPatchesRecursiveBisection();
   else
     assignPatchesToLowestLoadNode();
 
-  PatchMap *patchMap = PatchMap::Object();
-  int nNodes = Node::Object()->numNodes();
   int *nAtoms = new int[nNodes];
   int numAtoms=0;
   int i;
@@ -435,6 +437,12 @@ void WorkDistrib::assignNodeToPatch()
 
   for(i=0; i < patchMap->numPatches(); i++)
   {
+    iout << iINFO << "Patch " << i << " has " 
+	 << patchMap->patch(i)->getNumAtoms() << " atoms and "
+	 << patchMap->patch(i)->getNumAtoms() * 
+            patchMap->patch(i)->getNumAtoms() 
+	 << " pairs.\n" << endi;
+
     if (patchMap->patch(i)) {
       numAtoms += patchMap->patch(i)->getNumAtoms();
       nAtoms[patchMap->node(i)] += patchMap->patch(i)->getNumAtoms();
@@ -493,19 +501,19 @@ void WorkDistrib::assignPatchesToLowestLoadNode()
   PatchMap *patchMap = PatchMap::Object();
   Node *node = CLocalBranch(Node, CpvAccess(BOCclass_group).node);
 
-  int *numAtoms = new int[node->numNodes()];
+  int *load = new int[node->numNodes()];
   for (int i=0; i<node->numNodes(); i++) {
-    numAtoms[i] = 0;
+    load[i] = 0;
   }
 
   // Assign patch to node with least atoms assigned.
   for(pid=0; pid < patchMap->numPatches(); pid++) {
     assignedNode = 0;
     for (int i=1; i < node->numNodes(); i++) {
-      if (numAtoms[i] < numAtoms[assignedNode]) assignedNode = i;
+      if (load[i] < load[assignedNode]) assignedNode = i;
     }
     patchMap->assignNode(pid, assignedNode);
-    numAtoms[assignedNode] += patchMap->patch(pid)->getNumAtoms();
+    load[assignedNode] += patchMap->patch(pid)->getNumAtoms() + 1;
 
     /*
     iout << iINFO << "Patch (" << pid << ") has " 
@@ -515,7 +523,21 @@ void WorkDistrib::assignPatchesToLowestLoadNode()
     */
   }
 
-  delete[] numAtoms;
+  delete[] load;
+}
+
+//----------------------------------------------------------------------
+void WorkDistrib::assignPatchesRoundRobin() 
+{
+  int pid; 
+  int assignedNode = 0;
+  PatchMap *patchMap = PatchMap::Object();
+  Node *node = CLocalBranch(Node, CpvAccess(BOCclass_group).node);
+
+  for(pid=0; pid < patchMap->numPatches(); pid++) {
+    assignedNode = pid % node->numNodes();
+    patchMap->assignNode(pid, assignedNode);
+  }
 }
 
 //----------------------------------------------------------------------
@@ -1044,13 +1066,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1049 $	$Date: 1998/06/28 21:52:06 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1050 $	$Date: 1998/07/02 21:00:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1050  1998/07/02 21:00:02  brunner
+ * Changed initial patch distribution, should work on more PES
+ *
  * Revision 1.1049  1998/06/28 21:52:06  jim
  * Added 128 to priority of all enqueueWork messages.
  *
