@@ -203,7 +203,11 @@ NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
   
   int migrate_count=migrateInfo.length();
   CkPrintf("NamdNborLB [%d] migrating %d elements\n", CkMyPe(), migrate_count);
+#if CHARM_VERSION > 050611
+  NLBMigrateMsg* msg = new(migrate_count,CkNumPes(),CkNumPes(),0) NLBMigrateMsg;
+#else
   NLBMigrateMsg* msg = new(&migrate_count,1) NLBMigrateMsg;
+#endif
   msg->n_moves = migrate_count;
   for(i=0; i < migrate_count; i++) {
     MigrateInfo* item = migrateInfo[i];

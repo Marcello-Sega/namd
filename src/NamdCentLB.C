@@ -156,7 +156,11 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
   
   int migrate_count=migrateInfo.length();
   // CkPrintf("NamdCentLB migrating %d elements\n",migrate_count);
+#if CHARM_VERSION > 050611
+  CLBMigrateMsg* msg = new(migrate_count,CkNumPes(),CkNumPes(),0) CLBMigrateMsg;
+#else
   CLBMigrateMsg* msg = new(&migrate_count,1) CLBMigrateMsg;
+#endif
   msg->n_moves = migrate_count;
   for(i=0; i < migrate_count; i++) {
     MigrateInfo* item = migrateInfo[i];
