@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.16 1996/12/12 02:58:49 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.17 1996/12/17 08:55:02 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -62,6 +62,8 @@ void Patch::loadAtoms(AtomIDList al)
   atomIDList = al;
   numAtoms = atomIDList.size();
   loadAtomProperties();
+  DebugM(3,"Loading " << numAtoms << " atoms into patch " << patchID <<
+	" on node " << CMyPe() << endl);
 }
 
 void Patch::loadAtomProperties(void)
@@ -197,12 +199,15 @@ void Patch::positionsReady()
  *
  *	$RCSfile: Patch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.16 $	$Date: 1996/12/12 02:58:49 $
+ *	$Revision: 1.17 $	$Date: 1996/12/17 08:55:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.17  1996/12/17 08:55:02  jim
+ * added debug statement
+ *
  * Revision 1.16  1996/12/12 02:58:49  jim
  * cleaned stuff up, move integration routines to HomePatch
  *
