@@ -898,6 +898,10 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
                "maximum number of atoms in one pair compute distribution", 
                &numAtomsPair, 0);
    opts.range("numAtomsPair",NOT_NEGATIVE);
+   opts.optional("main", "numAtomsPair2", 
+               "maximum number of atoms in one pair compute distribution", 
+               &numAtomsPair2, 0);
+   opts.range("numAtomsPair2",NOT_NEGATIVE);
 }
 
 void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&cwd) {

@@ -345,6 +345,8 @@ public:
                                         // self-compute 
         int numAtomsPair;               // maximum number of atoms in a single
                                         // pair-compute 
+        int numAtomsPair2;              // maximum number of atoms in a single
+                                        // pair-compute 
 
 	//
         // hydrogen bond simulation parameters
