@@ -2,6 +2,7 @@ extern message InitMsg;
 extern message RegisterProxyMsg;
 extern message ProxyDataMsg;
 extern message ProxyAtomsMsg;
+extern message ProxyResultMsg;
 
 group ProxyMgr
 {
