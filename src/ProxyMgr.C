@@ -22,6 +22,7 @@
 #include "Namd.h"
 #include "PatchMap.h"
 #include "ProxyPatch.h"
+#include "ComputeMap.h"
 
 ProxyMgr *ProxyMgr::_instance = 0;
 
@@ -35,6 +36,68 @@ ProxyMgr::ProxyMgr(InitMsg *) {
 
 ProxyMgr::~ProxyMgr() { 
   _instance = NULL;
+}
+
+void ProxyMgr::removeProxies(void)
+{
+  for ( int i = 0; i < numProxies; ++i )
+  {
+    delete proxyList[i];
+  }
+  delete [] proxyList;
+  proxyList = NULL;
+  numProxies = 0;
+}
+
+void ProxyMgr::createProxies(void)
+{
+  // Delete the old proxies.
+  removeProxies();
+
+  // Figure out which proxies we will be needing.
+  PatchMap *pmap = PatchMap::Object();
+  int n = pmap->numPatches();
+  int myNode = CMyPe();
+  int *pflags = new int[n]; // 0 = unknown, 1 = home, 2 = proxy needed
+  int i, j;
+  // Note all home patches.
+  for ( i = 0; i < n; ++i )
+  {
+    pflags[i] = pmap->node(i) == myNode ? 1 : 0;
+  }
+  // Check all two-away neighbors.
+  PatchID neighbors[PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
+  for ( i = 0; i < n; ++i )
+  {
+    int nn = pmap->oneAwayNeighbors(i,neighbors);
+    nn += pmap->twoAwayNeighbors(i,neighbors+nn);
+    for ( j = 0; j < nn; ++j )
+    {
+      if ( ! pflags[neighbors[j]] ) pflags[neighbors[j]] = 2;
+    }
+  }
+  // Check all patch-based compute objects.
+  ComputeMap *cmap = ComputeMap::Object();
+  int nc = cmap->numComputes();
+  for ( i = 0; i < nc; ++i )
+  {
+    if ( cmap->node(i) != myNode || ! cmap->isPatchBased(i) ) continue;
+    int ncp = cmap->numPids(i);
+    for ( j = 0; j < ncp; ++j )
+    {
+      int pid = cmap->pid(i,j);
+      if ( ! pflags[pid] ) pflags[pid] = 2;
+    }
+  }
+  
+  // Create proxies.
+  for ( i = 0; i < n; ++i ) if ( pflags[i] == 2 ) ++numProxies;
+  proxyList = new ProxyPatch*[numProxies];
+  numProxies = 0;
+  for ( i = 0; i < n; ++i ) if ( pflags[i] == 2 )
+  {
+    proxyList[numProxies++] = new ProxyPatch(i);
+  }
 }
 
 void
@@ -96,13 +159,16 @@ ProxyMgr::recvProxyAtoms(ProxyAtomsMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/12/05 23:45:09 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.4 $	$Date: 1996/12/06 03:39:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.4  1996/12/06 03:39:09  jim
+ * creation methods
+ *
  * Revision 1.3  1996/12/05 23:45:09  ari
  * *** empty log message ***
  *

@@ -21,6 +21,7 @@
 #include "main.h"
 #include "NamdTypes.h"
 
+class ProxyPatch;
 
 class ProxyMgr : public BOCclass
 {
@@ -28,6 +29,9 @@ class ProxyMgr : public BOCclass
 public:
   ProxyMgr(InitMsg *);
   ~ProxyMgr();
+
+  void removeProxies(void);
+  void createProxies(void);
 
   void registerProxy(PatchID pid);
   void recvRegisterProxy(RegisterProxyMsg *);
@@ -46,6 +50,9 @@ public:
 private:
   static ProxyMgr *_instance;
 
+  ProxyPatch** proxyList;
+  int numProxies;
+
 };
 
 #endif /* PATCHMGR_H */
@@ -53,13 +60,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/12/05 21:37:53 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1996/12/06 03:39:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.h,v $
+ * Revision 1.2  1996/12/06 03:39:09  jim
+ * creation methods
+ *
  * Revision 1.1  1996/12/05 21:37:53  ari
  * Initial revision
  *
