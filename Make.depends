@@ -1264,6 +1264,7 @@ obj/ComputeMgr.o: \
 	src/ComputeSphericalBC.h \
 	src/ComputeCylindricalBC.h \
 	src/ComputeRestraints.h \
+	src/ComputeConsForce.h \
 	src/WorkDistrib.h \
 	inc/WorkDistrib.decl.h \
 	inc/ComputeMgr.def.h
@@ -1677,6 +1678,37 @@ obj/ComputeTcl.o: \
 	src/TclCommands.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeTcl.o $(COPTC) src/ComputeTcl.C
+obj/ComputeConsForce.o: \
+	src/ComputeConsForce.C \
+	src/ComputeConsForce.h \
+	src/ComputePatch.h \
+	src/Compute.h \
+	src/main.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/PatchTypes.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/Box.h \
+	src/OwnerBox.h \
+	src/PositionBox.h \
+	src/PositionOwnerBox.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/Node.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/Node.decl.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeConsForce.o $(COPTC) src/ComputeConsForce.C
 obj/ConfigList.o: \
 	src/ConfigList.C \
 	src/InfoStream.h \
@@ -3055,6 +3087,8 @@ obj/vmdsock.o: \
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/vmdsock.o $(COPTC) src/vmdsock.C
 obj/parm.o: \
 	src/parm.C \
+	src/common.h \
+	src/InfoStream.h \
 	src/parm.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/parm.o $(COPTC) src/parm.C
 obj/imd.o: \
