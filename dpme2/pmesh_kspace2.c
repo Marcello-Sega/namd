@@ -5,6 +5,7 @@
  */
 
 #include "dpme2.h"
+#include "math.h"
 
 /* Subroutine */ 
 int pmesh_kspace_get_sizes( int *nfft1,  int *nfft2, 
@@ -49,10 +50,10 @@ int pmesh_kspace_get_sizes( int *nfft1,  int *nfft2,
 int pmesh_kspace_setup(double *bsp_mod1, double *
 		       bsp_mod2, double *bsp_mod3, double *fftable, double *ffwork,  
 		       int *nfft1,  int *nfft2,  int *nfft3,  int *order,  
-		       int *sizfftab,  int *sizffwrk)
+		       int * /* sizfftab */,  int * /* sizffwrk */)
 {
   int nfftable, sfft, sffw;
-  double *dummy;
+  double *dummy = NULL;
   extern int fft_setup(double *, double *, 
 		       double *,  int *,  int *,  int *,  int *,  int 
 		       *,  int *,  int *,  int *), 
@@ -385,7 +386,7 @@ int load_bsp_moduli(double *bsp_mod1, double *
 {
     
     /* Builtin functions */
-    double cos(double), sin(double);
+    /* double cos(double), sin(double); */
 
     /* Local variables */
      double tiny;

@@ -3,7 +3,7 @@
  *  Copyright (c) 1996,1997 Duke University
  *  All rights reserved
  */
-/* $Id: dpme2_paralibsW.c,v 1.1 1997/04/23 17:05:17 nealk Exp $
+/* $Id: dpme2_paralibsW.c,v 1.2 1997/04/23 18:15:16 nealk Exp $
  */
 
 /***********************************************************
@@ -115,12 +115,13 @@ dpme_register(char *spawnme, char **args, PeInfo *pe_info)
 int merge_i(int *ivalue,  MYPROC *myproc, int *tidarray)
 {
   int i1, i2;
-  int itmp, ipartner, i;
+  int itmp, ipartner;
+  double i;
   int ipartner_tid;
   
   i1 = myproc->ncube - 1;
   for (i = 0; i <= i1; ++i) {
-    i2= pow(2.0,(double)i);
+    i2 = (int)pow(2.0,i);
     ipartner = myproc->node ^ i2 ; /* XOR = ieor */
     /*********** PVM- WRITE ********************/
     pvm_initsend(PvmDataType);
@@ -255,12 +256,12 @@ int swap(int node, double *sbuf, int islen, int isnode,
 /* Global reduction of a double, efficient for power of 2 configs */
 int merge_d(double *dvalue, MYPROC myproc,int *tidarray, int msg_tag)
 {
-  int i,i1,i2,ipartner, ipartner_tid ;
-  double tmp;
+  int i1,i2,ipartner, ipartner_tid ;
+  double tmp, i;
 
   i1 = myproc.ncube - 1;
   for (i = 0; i <= i1; ++i) {
-    i2 = pow(2.0,(double)i);
+    i2 = (int)pow(2.0,i);
     ipartner = myproc.node ^ i2; /* XOR */
     /*********** PVM- WRITE ********************/
     pvm_initsend(PvmDataType);

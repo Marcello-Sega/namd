@@ -5,7 +5,8 @@
 
 MAKE   = make
 SHELL  = /bin/sh
-CC     = gcc # -Wall  sun :,sgi: cc -fullwarn -g3 
+# CC     = gcc # -Wall  sun :,sgi: cc -fullwarn -g3 
+CC     = CC # -Wall  sun :,sgi: cc -fullwarn -g3 
 AR     = ar
 RM     = rm -f
 
@@ -13,12 +14,13 @@ RM     = rm -f
 # where the executables will be placed.
 #
 # SUN
-PVM_ARCH = SUN4SOL2       #DSIL
+#PVM_ARCH = SUN4SOL2       #DSIL
 # SGI 
 #PVM_ARCH = SGI64
 #don't forget to change the LIBS
 
 #PVM_HOME = $(HOME)/pvm3
+PVM_ARCH = HPUX
 PVM_HOME = ../pvm3
 
 # Specify compile time flags

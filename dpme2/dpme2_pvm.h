@@ -32,5 +32,10 @@
 * define the working directory where executables reside
 * and the data directory where input data file is
 */
+/**
 #define  WORKINGDIR  "/home/scicomp0/ayt/pvm3/bin/SUN4SOL2/PPME/DPME2/COW_Code/"
 #define  DATADIR  "/home/scicomp0/ayt/pvm3/bin/SUN4SOL2/PPME/DPME2/COW_Code/"
+**/
+#define  WORKINGDIR "./"
+#define  DATADIR "./"
+

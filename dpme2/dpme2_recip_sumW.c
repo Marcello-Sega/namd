@@ -3,7 +3,7 @@
  *  Copyright (c) 1996,1997 Duke University
  *  All rights reserved
  */
-/* $Id: dpme2_recip_sumW.c,v 1.1 1997/04/23 17:05:19 nealk Exp $
+/* $Id: dpme2_recip_sumW.c,v 1.2 1997/04/23 18:15:17 nealk Exp $
  */
 
 
@@ -37,7 +37,7 @@ Called subroutines are both in utility.c and pme_recip.a
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 int recip_sum_setup2(int numatoms,int nlocal, 
 		     double *recip, Pme2Particle *Myparticles,
-		     Grid nfftgrd, int order, MYPROC myproc, double **fr1, double **fr2, 
+		     Grid nfftgrd, int order, MYPROC , double **fr1, double **fr2, 
 		     double **fr3, double *fftable, double *bsp_mod1, double *bsp_mod2, 
 		     double *bsp_mod3)
 {
@@ -95,7 +95,7 @@ int recip_sum_setup2(int numatoms,int nlocal,
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
-double recip_sum_calc2(double ewaldcof, double volume, double *recip, MYPROC myproc, 
+double recip_sum_calc2(double ewaldcof, double volume, double *recip, MYPROC , 
 		       int nlocal, 
 		       double **fr1, double **fr2, double **fr3, int numatoms,
 		       int order, Grid nfftgrd, Pme2Particle *Myparticles, double *fftable,

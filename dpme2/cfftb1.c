@@ -1,3 +1,5 @@
+/* Subroutine */ int passb4(int *ido, int *l1, double *cc,
+	double *ch, double *wa1, double *wa2, double *wa3);
 
 /* Subroutine */ int cfftb1(int *n, double *c, double *ch, 
 	double *wa, int *ifac)

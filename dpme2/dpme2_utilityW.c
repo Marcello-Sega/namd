@@ -3,7 +3,7 @@
  *  Copyright (c) 1996,1997 Duke University
  *  All rights reserved
  */
-/* $Id: dpme2_utilityW.c,v 1.1 1997/04/23 17:05:21 nealk Exp $
+/* $Id: dpme2_utilityW.c,v 1.2 1997/04/23 18:15:18 nealk Exp $
  */
 
 /*******************************************************************************
@@ -15,6 +15,7 @@
  ********************************************************************************/
 
 #include "dpme2.h"
+#include "math.h"
 
 #define FIXIT 1 /* this was added to fix the swap boundaries when NPE=3 */
 
@@ -245,9 +246,9 @@ int setup_parallel(AtomInfo *atom_info, BoxInfo *box_info, BndryInfo *bndry_info
  
 
  if (igrid==0) {  /* program will figure out processor-grid config */
-   npdim[0]= pow(2.0,(myproc->ncube/3));
-   npdim[1]= pow(2.0,((myproc->ncube+1)/3));
-   npdim[2]= pow(2.0,((myproc->ncube+2)/3));
+   npdim[0]= (int)pow(2.0,(myproc->ncube/3));
+   npdim[1]= (int)pow(2.0,((myproc->ncube+1)/3));
+   npdim[2]= (int)pow(2.0,((myproc->ncube+2)/3));
  }
   if (npdim[0]*npdim[1]*npdim[2]!= (myproc->nprocs)){
     printf("npdim=(%d,%d,%d) total procs=%d \n",npdim[0],npdim[1],npdim[2],
@@ -274,9 +275,9 @@ int setup_parallel(AtomInfo *atom_info, BoxInfo *box_info, BndryInfo *bndry_info
   border[4] = (double) me[2] / npdim[2] * prd.z - prd2.z;
   border[5] = (double) (me[2] + 1) / npdim[2] * prd.z - prd2.z;
 
-  need[0] = rs  / (prd.x / npdim[0]) + 1.;
-  need[1] = rs / (prd.y / npdim[1]) + 1.;
-  need[2] = rs / (prd.z / npdim[2]) + 1.;
+  need[0] = (int)(rs  / (prd.x / npdim[0]) + 1.0);
+  need[1] = (int)(rs / (prd.y / npdim[1]) + 1.0);
+  need[2] = (int)(rs / (prd.z / npdim[2]) + 1.0);
 
 /* don't exchange if only 1 box in a dimension */
     if (npdim[0] == 1) need[0] = 0;
@@ -414,13 +415,13 @@ int setup_parallel(AtomInfo *atom_info, BoxInfo *box_info, BndryInfo *bndry_info
     iy = (int) ((border[3] + prd2.y) / binsize->y) + 1;
     iz = (int) ((border[5] + prd2.z) / binsize->z) + 1;
     if (ix > nbin->x) {
-      ix = nbin->x;
+      ix = (int)(nbin->x);
     }
     if (iy > nbin->y) {
-      iy = nbin->y;
+      iy = (int)(nbin->y);
     }
     if (iz > nbin->z) {
-      iz = nbin->z;
+      iz = (int)(nbin->z);
     }
     mbin->x = (int) (ix - mbinlo->x + 1);
     mbin->y = (int) (iy - mbinlo->y + 1);
@@ -486,8 +487,8 @@ fflush(stdout);
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
-int setup_atom( AtomInfo *atom_info,int **mylist, Pme2Particle **ParticlePtr, PmeBVector box, 
-	       double *border, PmeVector prd2, MYPROC *myproc,
+int setup_atom( AtomInfo *atom_info,int **mylist, Pme2Particle **ParticlePtr, PmeBVector /* box */, 
+	       double *border, PmeVector /* prd2 */, MYPROC *myproc,
 	       int *tidarray)
 {
   int  *list;
@@ -1193,19 +1194,19 @@ int build_linkcell(AtomInfo *atom_info , PmeVector mbin, PmeVector binsize,
   i = *atompnt;
   i_1 = *nlocal + *nother;
   for (ii = 1; ii <= i_1; ++ii) {
-    ix = (Myparticles[i].x + myprd2.x)* invbx;
-    iy = (Myparticles[i].y + myprd2.y)* invby;
-    iz = (Myparticles[i].z + myprd2.z)* invbz;
+    ix = (int)( (Myparticles[i].x + myprd2.x)* invbx);
+    iy = (int)( (Myparticles[i].y + myprd2.y)* invby);
+    iz = (int)( (Myparticles[i].z + myprd2.z)* invbz);
 
-    ix -= mbinlo.x;
-    if (ix < 0)  ix += nbin.x;
-    iy -= mbinlo.y;
-    if (iy < 0)   iy += nbin.y;
-    iz -= mbinlo.z;
-    if (iz < 0)  iz += nbin.z;
+    ix -= (int)(mbinlo.x);
+    if (ix < 0)  ix += (int)(nbin.x);
+    iy -= (int)(mbinlo.y);
+    if (iy < 0)  iy += (int)(nbin.y);
+    iz -= (int)(mbinlo.z);
+    if (iz < 0)  iz += (int)(nbin.z);
 
     if (ix <= mbin.x && iy <= mbin.y && iz <= mbin.z){
-      ib = iz * mbin.y * mbin.x + iy * mbin.x + ix + 1;
+      ib = (int)(iz * mbin.y * mbin.x + iy * mbin.x + ix + 1);
       mybin[i] = mybinpnt[ib];
       mybinpnt[ib] = i;
     }
@@ -1229,9 +1230,9 @@ int build_linkcell(AtomInfo *atom_info , PmeVector mbin, PmeVector binsize,
     xtmp =Myparticles[i].x;
     ytmp =Myparticles[i].y;
     ztmp =Myparticles[i].z;
-    ixx = (xtmp + myprd2.x)* invbx;
-    iyy = (ytmp + myprd2.y)* invby;
-    izz = (ztmp + myprd2.z)* invbz;
+    ixx = (int)( (xtmp + myprd2.x)* invbx);
+    iyy = (int)( (ytmp + myprd2.y)* invby);
+    izz = (int)( (ztmp + myprd2.z)* invbz);
     for (k = 0; k <= 26; ++k) {
 #if 0
       ix = ixx + (k % 3) - 1;
@@ -1242,28 +1243,28 @@ int build_linkcell(AtomInfo *atom_info , PmeVector mbin, PmeVector binsize,
       iy = iyy + offset[k].y;
       iz = izz + offset[k].z;
 #endif
-      ix -= mbinlo.x;
+      ix -= (int)(mbinlo.x);
       if (ix < 0) {
-	ix += nbin.x;
+	ix += (int)(nbin.x);
       }
-      else if (ix == nbin.x) {
+      else if (ix == (int)(nbin.x)) {
 	ix = 0;
       }
-      iy -= mbinlo.y;
+      iy -= (int)(mbinlo.y);
       if (iy < 0) {
-	iy += nbin.y;
+	iy += (int)(nbin.y);
       }
-      else if (iy == nbin.y) {
+      else if (iy == (int)(nbin.y)) {
 	iy = 0;
       }
-      iz -= mbinlo.z;
+      iz -= (int)(mbinlo.z);
       if (iz < 0) {
-	iz += nbin.z;
+	iz += (int)(nbin.z);
       }
-      else if (iz == nbin.z) {
+      else if (iz == (int)(nbin.z)) {
 	iz = 0;
       }
-      ib = iz * mbin.y * mbin.x + iy * mbin.x + ix  + 1;
+      ib = (int)(iz * mbin.y * mbin.x + iy * mbin.x + ix  + 1);
       j = mybinpnt[ib];
       while (j != 0) {
 	if (j <= i) j = mybin[j];
@@ -1406,13 +1407,14 @@ int mesh_3d(int *nx, int *ny, int *nz, int *node,
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
 double dir_energy(int *atompnt, int *nlocal, int *nnlist, int *nlist, int *list, 
-		  MYPROC myproc, PmeVector myprd, double cutoff, double ewaldcof, 
-		  Pme2Particle *Myparticles, PmeVector mymc2,int *tidarray)
+		  MYPROC , PmeVector myprd, double cutoff, double ewaldcof, 
+		  Pme2Particle *Myparticles,
+		  PmeVector mymc2,int * /* tidarray */)
 {
   int i,i_2,ii,j,k; 
   double direct_eng,factor,rsq,delx,dely,delz;
   double cutsq1,myr,myx,ewaldpot;
-  extern double sqrt(double), erfc(double);
+  /* extern double sqrt(double), erfc(double); */
   
   cutsq1= cutoff * cutoff;
   direct_eng = 0.0;
@@ -1456,8 +1458,8 @@ double dir_energy(int *atompnt, int *nlocal, int *nnlist, int *nlist, int *list,
 double dpme_dir_force(AtomInfo *atom_info, int *list, SwapInfo swap_info,
 		 Pme2Particle *Myparticles, BoxInfo box_info, 
 		 PmeVector **directF, double *virial, 
-		 PeInfo pe_info,int time_count, int tsteps, double *mytime,
-		 int max_used)
+		 PeInfo pe_info,int /* time_count */, int /* tsteps */,
+		 double *mytime, int max_used)
                    
 {
   int i,i_2,ii,j,k;
@@ -1817,7 +1819,7 @@ void  update_coordinates(AtomInfo atom_info, Pme2Particle *particlelist,BoxInfo 
 double dpme_adjust_dir(AtomInfo *atom_info, SwapInfo swap_info,
 		  Pme2Particle *Myparticles, BoxInfo box_info, 
 		  PmeVector *mydirectF, PeInfo pe_info,
-		  int time_count, int tsteps,
+		  int /* time_count */, int /* tsteps */,
 		  double *dir_vir,  int *list,
 		  double *my_adj_dir_eng, double *mytime)
      
@@ -1944,7 +1946,8 @@ double dpme_adjust_dir(AtomInfo *atom_info, SwapInfo swap_info,
 * interactions */
 
 double dpme_adjust_recip(AtomInfo atom_info,BoxInfo box_info,Pme2Particle *Myparticles,
-		    PeInfo pe_info,int time_count, int tsteps, double *adj_vir, 
+		    PeInfo pe_info,
+		    int /* time_count */, int /* tsteps */, double *adj_vir, 
 		    double *my_adj_rcp_eng, PmeVector **adjustF,double *mytime)
 {
   static int firsttime=0;
@@ -2183,7 +2186,7 @@ int correct_water_recip( int i,  int j, Pme2Particle particle1, Pme2Particle par
  int ew_adjust(double *ewaldcof, double *crd, double *pot, double *grad)
 {
     /* Builtin functions */
-    double sqrt(double), exp(double);
+    /* double sqrt(double), exp(double); */
 
     /* Local variables */
     double term;
@@ -2316,7 +2319,7 @@ int check_forces(int numatoms, PmeVector *ApprxF,
     double d_1, d_2, d_3; /* ok */
 
     /* Local variables */
-    int i,n,atomidx=0,atomidy=0,atomidz=0;
+    int i,atomidx=0,atomidy=0,atomidz=0;
     double rms, rms_den, rms_num;
     register double xmax, ymax, zmax;
   
@@ -2373,7 +2376,7 @@ int check_forces(int numatoms, PmeVector *ApprxF,
 /*************************************************************************/
 int verify_results(int nlocal, PmeVector *directF, PmeVector *recipF, PmeVector *adjustF)
 {
-  int i, ii,offset;
+  int i, offset;
   PmeVector *ExactF,*RExactF, *DExactF,*AExactF, *ApprxF;
 
 #if VERBOSE
@@ -2433,7 +2436,7 @@ int verify_results(int nlocal, PmeVector *directF, PmeVector *recipF, PmeVector 
 int dpme_reneighbor(AtomInfo *atom_info, int **list, BoxInfo *box_info, 
 		    Pme2Particle **ParticlePtr,PeInfo *pe_info,BndryInfo *bndry_info,
 		    SwapInfo *swap_info,BinInfo *bin_info, int time_count,
-		    int tsteps, double *time_used)
+		    int /* tsteps */, double *time_used)
 {
   
   static int firsttime = 0;

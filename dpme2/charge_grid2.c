@@ -5,8 +5,9 @@
  */
 
 #include "dpme2.h"
+#include "math.h"
 
-int fill_charge_grid2(int *numatoms, int nlocal,
+int fill_charge_grid2(int * /* numatoms */, int nlocal,
 		      Pme2Particle *ParticlePtr,
 		      double *theta1, double *theta2, double *theta3, 
 	double *fr1, double *fr2, double *fr3,  int *order, 
@@ -34,7 +35,7 @@ int fill_charge_grid2(int *numatoms, int nlocal,
     int ntot, i, j, k, n, i0, j0, k0;
     extern /* Subroutine */ int clearq(double *, int *);
     int ith1, ith2, ith3;
-    int nn, ncg ;
+    int nn;
 
     /* Parameter adjustments */
     theta1_dim1 = *order;
@@ -151,14 +152,14 @@ int fill_charge_grid2(int *numatoms, int nlocal,
 	double *volume, double *recip, double *bsp_mod1, 
 	double *bsp_mod2, double *bsp_mod3, int *nfft1, 
 	int *nfft2, int *nfft3, int *nfftdim1, int *nfftdim2, 
-	int *nfftdim3, double *eer, double *vir)
+	int * /* nfftdim3 */, double *eer, double *vir)
 {
     /* System generated locals */
      int q_dim2, q_dim3, q_offset;
     double d_1, d_2;  /* ok */
 
     /* Builtin functions */
-    double exp(double);
+    /* double exp(double); */
 
     /* Local variables */
     double mhat1, mhat2, mhat3;
@@ -281,7 +282,7 @@ int fill_charge_grid2(int *numatoms, int nlocal,
 	dtheta3, PmeVector *rfparticle, double *
 	fr1, double *fr2, double *fr3,  int *order,  int *nfft1,
 	  int *nfft2,  int *nfft3,  int *nfftdim1,  int *nfftdim2,
-	  int *nfftdim3, double *q)
+	  int * /* nfftdim3 */, double *q)
 {
     /* System generated locals */
     int theta1_dim1, theta2_dim1, theta3_dim1, dtheta1_dim1,

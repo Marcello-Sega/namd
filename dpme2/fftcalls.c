@@ -55,10 +55,10 @@
 } /* get_fftdims */
 
 /* --------------------------------------------------------------- */
-/* Subroutine */ int fft_setup(double *array, double *fftable, 
-	double *ffwork,  int *nfft1,  int *nfft2,  int *nfft3, 
-	 int *nfftdim1,  int *nfftdim2,  int *nfftdim3,  int *
-	nfftable,  int *nffwork)
+/* Subroutine */ int fft_setup(double * /* array */, double *fftable, 
+	double * /* ffwork */,  int *nfft1,  int *nfft2,  int *nfft3, 
+	 int * /* nfftdim1 */,  int * /* nfftdim2 */,  int * /* nfftdim3 */,
+	 int *nfftable,  int * /* nffwork */)
 {
 
     /* Local variables */
@@ -80,8 +80,8 @@
 /* ----------------------------------------------------------- */
 /* Subroutine */ int fft_forward(doublecomplex *array, double *fftable, 
 	doublecomplex *ffwork,  int *nfft1,  int *nfft2,  int *nfft3, 
-	 int *nfftdim1,  int *nfftdim2,  int *nfftdim3,  int *
-	nfftable,  int *nffwork)
+	 int *nfftdim1,  int *nfftdim2,  int * /* nfftdim3 */,
+	 int *nfftable,  int *nffwork)
 {
       int isign;
     extern /* Subroutine */ int pubz3d( int *,  int *,  int *, 
@@ -103,8 +103,8 @@
 /* ----------------------------------------------------------- */
 /* Subroutine */ int fft_back(doublecomplex *array, double *fftable, 
 	 doublecomplex *ffwork,  int *nfft1,  int *nfft2,  int *nfft3, 
-	 int *nfftdim1,  int *nfftdim2,  int *nfftdim3,  int *
-	nfftable,  int *nffwork)
+	 int *nfftdim1,  int *nfftdim2,  int * /* nfftdim3 */,
+	 int *nfftable,  int *nffwork)
 {
   int isign;
   extern int pubz3d( int *,  int *,  int *, 
