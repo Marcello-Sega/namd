@@ -213,7 +213,6 @@ void Node::startup() {
   break;
 
   case 6: 
-    Sync::Object()->openSync();  // decide if to open local Sync 
     proxyMgr->createProxies();  // need Home patches before this
     if (!CkMyPe()) LdbCoordinator::Object()->createLoadBalancer();
   break;
@@ -222,6 +221,7 @@ void Node::startup() {
     if (!CkMyPe()) {
       ComputeMap::Object()->printComputeMap();
     }
+    Sync::Object()->openSync();  // decide if to open local Sync 
     if (proxySendSpanning || proxyRecvSpanning )
       proxyMgr->buildProxySpanningTree();
     DebugM(4,"Creating Computes\n");

@@ -149,22 +149,22 @@ void Patch::positionsReady(int doneMigration)
    ComputeIDListIter cid(positionComputeList);
    // gzheng
    if (useSync) {
-     Sync::Object()->registerComp(patchID, cid, doneMigration);
+     if (Sync::Object()->holdComputes(patchID, cid, doneMigration))
+       return;
    }
-   else {
-     int compute_count = 0;
-     int seq = flags.sequence;
-     for(cid = cid.begin(); cid != cid.end(); cid++)
-     {
+
+   int compute_count = 0;
+   int seq = flags.sequence;
+   for(cid = cid.begin(); cid != cid.end(); cid++)
+   {
          compute_count++;
 	 computeMap->compute(*cid)->patchReady(patchID,doneMigration,seq);
-     }
-     if (compute_count == 0 && patchMap->node(patchID) != CkMyPe()) {
+   }
+   if (compute_count == 0 && patchMap->node(patchID) != CkMyPe()) {
        iout << iINFO << "PATCH_COUNT: Patch " << patchID 
 	    << " on PE " << CkMyPe() <<" home patch " 
 	    << patchMap->node(patchID) << " does not have any computes\n" 
 	    << endi;
-     }
    }
 }
 

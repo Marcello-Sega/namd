@@ -36,13 +36,13 @@ extern int proxySendSpanning, proxyRecvSpanning;
 int useSync = 0;
 
 // useProxySync will make sure all proxies get updated before computes' 
-// positionsReady triggered and real computation begins.
+// positionsReady triggered so that real computation starts.
 // when these two combined, it will make sure that homepatch get all its force 
 // and positions data, and proxies receive its updated data before all 
 // computes start.
 int useProxySync = 0;
 
-Sync::Sync()
+Sync::Sync(): INCREASE(600), step(0), counter(0), homeReady(0)
 {
     if (CpvAccess(Sync_instance) == NULL) {
         CpvAccess(Sync_instance) = this;
@@ -51,10 +51,8 @@ Sync::Sync()
 	  << "Sync instanced twice on same processor!" << endi;
 	CkExit();
     }
-    capacity = 1000;
+    capacity = INCREASE;
     clist = new _clist[capacity];
-    step = 0;
-    counter = 0;
     cnum = 0;
     nPatcheReady = 0;
     numPatches = -1;
@@ -75,18 +73,21 @@ void Sync::openSync(void)
     // if no proxy sync and no home patch, then disable home patch sync as well
     if (!useProxySync && PatchMap::Object()->numHomePatches() == 0) useSync = 0;
   }
-#if 0
-// was
-   if (useSync && PatchMap::Object()->numHomePatches() == 0) {
-       // CkPrintf("********* Local Sync is removed on node %d ******** \n", CkMyPe());
-     useSync = 0;
-   }
-#endif
+//CmiPrintf("[%d] useSync: %d, useProxySync: %d\n", CmiMyPe(), useSync, useProxySync);
 }    
 
 // called from Patch::positionsReady()
-void Sync::registerComp(PatchID pid, ComputeIDListIter cid, int doneMigration)
+int Sync::holdComputes(PatchID pid, ComputeIDListIter cid, int doneMigration)
 {
+  if (!useProxySync) {
+    // only hold when homepatches are not ready
+    PatchMap *patchMap = PatchMap::Object();
+    if (homeReady) {
+      triggerCompute();
+      return 0;
+    }
+  }
+
   int slot = 0;
   for (; slot < cnum; slot++)
      if (clist[slot].pid == -1) break;
@@ -94,12 +95,12 @@ void Sync::registerComp(PatchID pid, ComputeIDListIter cid, int doneMigration)
     cnum++;
     // table is full, expand the list
     if (cnum == capacity) {
-      capacity += 1000;
+      capacity += INCREASE;
       struct _clist *tmp = new _clist[capacity];
       memcpy(tmp, clist, cnum*sizeof(_clist));
       delete [] clist;
       clist = tmp;
-      CmiPrintf("Info:: Sync buffer overflow and expanded!\n");
+      CmiPrintf("[%d] Info:: Sync buffer overflow and expanded!\n", CmiMyPe());
     }
   }
 
@@ -114,6 +115,7 @@ void Sync::registerComp(PatchID pid, ComputeIDListIter cid, int doneMigration)
       nPatcheReady++;
       triggerCompute();
   }
+  return 1;
 }
 
 // called from HomePatch::positionsReady()
@@ -121,6 +123,43 @@ void Sync::PatchReady(void)
 {
   counter ++;
   triggerCompute();
+}
+
+void Sync::releaseComputes()
+{
+  PatchMap *patchMap = PatchMap::Object();
+  ComputeMap *computeMap = ComputeMap::Object();
+
+  nPatcheReady = 0;
+  for (int i= 0; i<cnum; i++) {
+    int &pid = clist[i].pid;
+    if (pid == -1) continue;
+    if (clist[i].step != step) {
+      // count for next step
+      if (clist[i].step == step + 1) nPatcheReady++;
+      continue;
+    }
+    //         CkPrintf(" %d-%d-%d ",
+    //	 clist[i].pid, clist[i].step,
+    //      patchMap->patch(pid)->flags.sequence);
+
+    ComputeIDListIter cid = clist[i].cid;
+
+    int compute_count = 0;
+    for(cid = cid.begin(); cid != cid.end(); cid++) {
+      compute_count++;
+      computeMap->compute(*cid)->patchReady(pid,clist[i].doneMigration,step);
+    }
+    if (compute_count == 0 && patchMap->node(pid) != CkMyPe()) {
+	   iout << iINFO << "PATCH_COUNT-Sync step " << step
+		<< "]: Patch " << pid << " on PE " 
+		<< CkMyPe() <<" home patch " 
+		<< patchMap->node(pid) << " does not have any computes\n" 
+		<< endi;
+    }
+    pid = -1;
+  }
+//  CkPrintf("\n");
 }
 
 void Sync::triggerCompute()
@@ -131,45 +170,24 @@ void Sync::triggerCompute()
     numPatches = ProxyMgr::Object()->numProxies() + patchMap->numHomePatches();
 
 //  CkPrintf("SYNC[%d]: PATCHREADY:%d %d patches:%d %d\n", CkMyPe(), counter, PatchMap::Object()->numHomePatches(), nPatcheReady, numPatches);
-  if (counter == patchMap->numHomePatches() && nPatcheReady == numPatches)
+
+  if (!useProxySync) {
+    if (homeReady == 0 && counter == patchMap->numHomePatches()) {
+      homeReady = 1;
+      releaseComputes();
+    }
+  }
+
+  if (homeReady && nPatcheReady == numPatches)
   {
-//       CkPrintf("TRIGGERED[%d]\n", CkMyPe());
-       ComputeMap *computeMap = ComputeMap::Object();
-       nPatcheReady = 0;
-       for (int i= 0; i<cnum; i++) {
-         int &pid = clist[i].pid;
-	 if (pid == -1) continue;
-	 if (clist[i].step != step) {
-            // count for next step
-            if (clist[i].step == step + 1) nPatcheReady++;
-            continue;
-         }
-	 //         CkPrintf(" %d-%d-%d ",
-	 //	 clist[i].pid, clist[i].step,
-	 //      patchMap->patch(pid)->flags.sequence);
+//     CkPrintf("TRIGGERED[%d]\n", CkMyPe());
+    if (useProxySync) releaseComputes();
 
-         ComputeIDListIter cid = clist[i].cid;
-
-         int compute_count = 0;
-         for(cid = cid.begin(); cid != cid.end(); cid++) {
-	   compute_count++;
-	   computeMap->compute(*cid)->patchReady(pid,clist[i].doneMigration,step);
-	 }
-	 if (compute_count == 0 && patchMap->node(pid) != CkMyPe()) {
-	   iout << iINFO << "PATCH_COUNT-Sync step " << step
-		<< "]: Patch " << pid << " on PE " 
-		<< CkMyPe() <<" home patch " 
-		<< patchMap->node(pid) << " does not have any computes\n" 
-		<< endi;
-	 }
-	 pid = -1;
-       }
-//       CkPrintf("\n");
-
-       // reset counter
-       counter = 0;
-       numPatches = -1;
-       step++;
+    // reset counter
+    counter = 0;
+    numPatches = -1;
+    step++;
+    homeReady = 0;
   }
 }
 

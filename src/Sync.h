@@ -20,7 +20,7 @@
 #include "Sync.decl.h"
 #include "ResizeArrayPrimIter.h"
 
-extern int useSync;
+extern int useSync, useProxySync;
 
 typedef ResizeArrayPrimIter<ComputeID> ComputeIDListIter;
 
@@ -33,6 +33,7 @@ private:
     ComputeIDListIter cid;
     int doneMigration;
     } *clist;
+    const int INCREASE;
     int capacity;
 
     int step;
@@ -41,13 +42,16 @@ private:
     int nPatcheReady;
     int numPatches;
 
+    char homeReady;
+
+    void releaseComputes();
     void triggerCompute();
 public:
     Sync(void);
     ~Sync(void);
     inline static Sync *Object() { return CpvAccess(Sync_instance); }
     void openSync(); 
-    void registerComp(PatchID pid, ComputeIDListIter cid, int doneMigration);
+    int holdComputes(PatchID pid, ComputeIDListIter cid, int doneMigration);
     void PatchReady(void);
 };
 
