@@ -343,7 +343,7 @@ void ComputeNonbondedUtil :: NAME
   if (p_i.hydrogenGroupSize || p_i.nonbondedGroupIsAtom)
     {
     if ( p_i.hydrogenGroupSize ) {
-      int opc = pairCount;
+      int64 opc = pairCount;
       int hgs = p_i.hydrogenGroupSize;
       SELF
       (
