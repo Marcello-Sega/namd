@@ -471,10 +471,10 @@ are to be applied to the system in the z direction.}
 
 \item
 \NAMDCONF{XSTfile}{XST file to write cell trajectory to}{file name}
-{\NAMD\ can also generate a .xst (eXtended System Trajectory) file which contains a record of the periodic cell parameters and extended system variables during the simulation.}
+{\NAMD\ can also generate a .xst (eXtended System Trajectory) file which contains a record of the periodic cell parameters and extended system variables during the simulation.  If {\tt XSTfile} is defined, then {\tt XSTfreq} must also be defined.}
 
 \item
-\NAMDCONFWDEF{XSTFreq}{how often to append state to XST file}{positive integer}{1}
+\NAMDCONF{XSTfreq}{how often to append state to XST file}{positive integer}
 {Like the {\tt DCDfreq} option, controls how often the extended system configuration will be appended to the XST file.}
 
 \item
