@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1020 1998/04/14 05:58:26 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1021 1998/04/14 20:08:09 jim Exp $";
 
 #include "charm++.h"
 
@@ -294,6 +294,8 @@ void Patch::positionsReady(int doneMigration)
 
 void Patch::doGroupSizeCheck(void)
 {
+  if ( ! flags.doNonbonded ) return;
+
   SimParameters *simParams = Node::Object()->simParameters;
   BigReal hgcut = 0.5 * simParams->hgroupCutoff;  hgcut *= hgcut;
 
@@ -303,12 +305,16 @@ void Patch::doGroupSizeCheck(void)
 
   while ( p_i != p_e ) {
     int hgs = a_i->hydrogenGroupSize;
+    a_i->nonbondedGroupSize = hgs;
+    ++a_i;
     BigReal x = p_i->x;
     BigReal y = p_i->y;
     BigReal z = p_i->z;
     ++p_i;
     int oversize = 0;
     for ( int i = 1; i < hgs; ++i ) {
+      a_i->nonbondedGroupSize = 0;
+      ++a_i;
       BigReal dx = p_i->x - x;
       BigReal dy = p_i->y - y;
       BigReal dz = p_i->z - z;
@@ -317,13 +323,9 @@ void Patch::doGroupSizeCheck(void)
       if ( r2 > hgcut ) oversize = 1;
     }
     if ( oversize ) {
+      a_i -= hgs;
       for ( int i = 0; i < hgs; ++i ) {
         a_i->nonbondedGroupSize = 1;
-        ++a_i;
-      }
-    } else {
-      for ( int i = 0; i < hgs; ++i ) {
-        a_i->nonbondedGroupSize = a_i->hydrogenGroupSize;
         ++a_i;
       }
     }
@@ -336,12 +338,15 @@ void Patch::doGroupSizeCheck(void)
  *
  *	$RCSfile: Patch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1020 $	$Date: 1998/04/14 05:58:26 $
+ *	$Revision: 1.1021 $	$Date: 1998/04/14 20:08:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.1021  1998/04/14 20:08:09  jim
+ * Slight performance improvement in group size check.
+ *
  * Revision 1.1020  1998/04/14 05:58:26  jim
  * Added automatic correction if hgroupCutoff is too small.  No more warnings.
  * However, performance wil degrade if many groups are below cutoff size.
