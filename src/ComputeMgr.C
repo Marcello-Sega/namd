@@ -44,7 +44,7 @@ ComputeMgr::~ComputeMgr(void)
 
 void ComputeMgr:: createComputes(ComputeMap *map)
 {
-  DebugM(5,"createComputes 0\n");
+  DebugM(2,"createComputes 0\n");
   Node *node = Node::Object();
   int myNode = node->myid();
 
@@ -58,7 +58,7 @@ void ComputeMgr:: createComputes(ComputeMap *map)
   DebugM(1,"nPatchBased = " << map->nPatchBased << '\n');
   DebugM(1,"nAtomBased = " << map->nAtomBased << '\n');
   DebugM(1,"nAllocated = " << map->nComputes << '\n');
-  DebugM(5,"createComputes 1: looping " << map->nComputes << "\n");
+  DebugM(2,"createComputes 1: looping " << map->nComputes << "\n");
   for(int i=0; i < map->nComputes; i++)
   {
     if ( map->computeData[i].node != myNode ) continue;
@@ -80,7 +80,7 @@ void ComputeMgr:: createComputes(ComputeMap *map)
     Compute *c;
     PatchID pid2[2];
 
-  DebugM(5,"createComputes 2: looping " << i << "on type: " << map->computeData[i].type << "\n");
+  DebugM(2,"createComputes 2: looping " << i << "on type: " << map->computeData[i].type << "\n");
     switch ( map->computeData[i].type )
     {
       case computeNonbondedSelfType:
@@ -101,11 +101,11 @@ void ComputeMgr:: createComputes(ComputeMap *map)
 	break;
       case computeNonbondedExclType:
 	c = new ComputeNonbondedExcls(i);
-	DebugM(5,"ComputeNonbondedExcls created.\n");
+	DebugM(3,"ComputeNonbondedExcls created.\n");
 	map->registerCompute(i,c);
-	DebugM(5,"ComputeNonbondedExcls registered.\n");
+	DebugM(2,"ComputeNonbondedExcls registered.\n");
 	c->mapReady();
-	DebugM(5,"ComputeNonbondedExcls ready.\n");
+	DebugM(2,"ComputeNonbondedExcls ready.\n");
 	break;
       case computeBondsType:
 	c = new ComputeBonds(i);
@@ -137,7 +137,7 @@ void ComputeMgr:: createComputes(ComputeMap *map)
 
   }
 
-  DebugM(5,"createComputes 5: done looping\n");
+  DebugM(2,"createComputes 5: done looping\n");
   DebugM(4, numNonbondedSelf << " ComputeNonbondedSelf created\n");
   DebugM(4, numNonbondedPair << " ComputeNonbondedPair created\n");
 
@@ -158,8 +158,8 @@ void ComputeMgr:: enqueueWork(Compute *compute)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1996/12/16 19:06:05 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.10 $	$Date: 1996/12/17 08:59:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
