@@ -39,8 +39,8 @@ class NamdState {
     NamdState(void);
     ~NamdState() {}
     int configFileInit(char *);
-#ifdef NAMD_TCL
     friend class ScriptTcl;
+#ifdef NAMD_TCL
     int configFileInitCont(void);
 #endif
     int status();
