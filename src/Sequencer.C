@@ -330,6 +330,7 @@ void Sequencer::langevinVelocitiesBBK1(BigReal dt_fs)
     {
       int aid = a[i].id;
       BigReal dt_gamma = dt * molecule->langevin_param(aid);
+      if ( ! dt_gamma ) continue;
 
       a[i].velocity += random->gaussian_vector() *
              sqrt( dt_gamma * kbT / a[i].mass );
@@ -352,6 +353,7 @@ void Sequencer::langevinVelocitiesBBK2(BigReal dt_fs)
     {
       int aid = a[i].id;
       BigReal dt_gamma = dt * molecule->langevin_param(aid);
+      if ( ! dt_gamma ) continue;
 
       a[i].velocity *= ( 1. - 0.5 * dt_gamma );
       a[i].velocity += random->gaussian_vector() *
