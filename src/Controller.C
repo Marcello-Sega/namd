@@ -277,7 +277,7 @@ void Controller::langevinPiston1(int step)
     BigReal mass = controlNumDegFreedom * kT * tau * tau * cellDims;
 
 #ifdef DEBUG_PRESSURE
-    iout << iINFO << "strain rate: " << strainRate << "\n";
+    iout << iINFO << "entering langevinPiston1, strain rate: " << strainRate << "\n";
 #endif
 
     if ( ! ( (step-1) % slowFreq ) )
@@ -285,21 +285,21 @@ void Controller::langevinPiston1(int step)
       BigReal gamma = 1 / simParams->langevinPistonDecay;
       BigReal f1 = exp( -0.5 * dt_long * gamma );
       BigReal f2 = sqrt( ( 1. - f1*f1 ) * kT / mass );
-#ifdef DEBUG_PRESSURE
-      iout << iINFO << "applying langevin to strain rate\n";
-#endif
       strainRate *= f1;
       if ( simParams->useFlexibleCell )
 	strainRate += f2 * gaussian_random_vector();
       else
 	strainRate += f2 * gaussian_random_number() * Vector(1,1,1);
+#ifdef DEBUG_PRESSURE
+      iout << iINFO << "applying langevin, strain rate: " << strainRate << "\n";
+#endif
     }
 
     strainRate += ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
 	( controlPressure - Vector(1,1,1)*simParams->langevinPistonTarget );
 
 #ifdef DEBUG_PRESSURE
-    iout << iINFO << "strain rate: " << strainRate << "\n";
+    iout << iINFO << "integrating half step, strain rate: " << strainRate << "\n";
 #endif
 
     if ( ! ( (step-1-slowFreq/2) % slowFreq ) )
@@ -322,7 +322,7 @@ void Controller::langevinPiston1(int step)
       iout << iINFO << "correcting strain rate for nbond, ";
 #endif
       strainRate -= ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
-		( 0.5 * (nbondFreq - 1) * controlPressure_nbond );
+		( (nbondFreq - 1) * controlPressure_nbond );
 #ifdef DEBUG_PRESSURE
       iout << "strain rate: " << strainRate << "\n";
 #endif
@@ -333,7 +333,7 @@ void Controller::langevinPiston1(int step)
       iout << iINFO << "correcting strain rate for slow, ";
 #endif
       strainRate -= ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
-		( 0.5 * (slowFreq - 1) * controlPressure_slow );
+		( (slowFreq - 1) * controlPressure_slow );
 #ifdef DEBUG_PRESSURE
       iout << "strain rate: " << strainRate << "\n";
 #endif
@@ -361,7 +361,7 @@ void Controller::langevinPiston2(int step)
       iout << iINFO << "correcting strain rate for nbond, ";
 #endif
       strainRate += ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
-		( 0.5 * (nbondFreq - 1) * controlPressure_nbond );
+		( (nbondFreq - 1) * controlPressure_nbond );
 #ifdef DEBUG_PRESSURE
       iout << "strain rate: " << strainRate << "\n";
 #endif
@@ -372,7 +372,7 @@ void Controller::langevinPiston2(int step)
       iout << iINFO << "correcting strain rate for slow, ";
 #endif
       strainRate += ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
-		( 0.5 * (slowFreq - 1) * controlPressure_slow );
+		( (slowFreq - 1) * controlPressure_slow );
 #ifdef DEBUG_PRESSURE
       iout << "strain rate: " << strainRate << "\n";
 #endif
@@ -381,23 +381,27 @@ void Controller::langevinPiston2(int step)
     strainRate += ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
 	( controlPressure - Vector(1,1,1)*simParams->langevinPistonTarget );
 
+#ifdef DEBUG_PRESSURE
+    iout << iINFO << "integrating half step, strain rate: " << strainRate << "\n";
+#endif
+
     if ( ! ( step % slowFreq ) )
     {
       BigReal gamma = 1 / simParams->langevinPistonDecay;
       BigReal f1 = exp( -0.5 * dt_long * gamma );
       BigReal f2 = sqrt( ( 1. - f1*f1 ) * kT / mass );
-#ifdef DEBUG_PRESSURE
-      iout << iINFO << "applying langevin to strain rate\n";
-#endif
       strainRate *= f1;
       if ( simParams->useFlexibleCell )
 	strainRate += f2 * gaussian_random_vector();
       else
 	strainRate += f2 * gaussian_random_number() * Vector(1,1,1);
+#ifdef DEBUG_PRESSURE
+      iout << iINFO << "applying langevin, strain rate: " << strainRate << "\n";
+#endif
     }
 
 #ifdef DEBUG_PRESSURE
-    iout << iINFO << "strain rate: " << strainRate << "\n";
+    iout << iINFO << "exiting langevinPiston2, strain rate: " << strainRate << "\n";
 #endif
   }
 }
@@ -598,6 +602,12 @@ void Controller::receivePressure(int seq)
       controlPressure = ( controlPressure *
 	Vector(1,1,1) / 3. ) * Vector(1,1,1);
     }
+
+#ifdef DEBUG_PRESSURE
+    iout << iINFO << "Control pressure = " << controlPressure <<
+      " = " << controlPressure_normal << " + " <<
+      controlPressure_nbond << " + " << controlPressure_slow << "\n" << endi;
+#endif
 
 }
 
@@ -883,12 +893,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1064 $	$Date: 1999/03/19 23:03:00 $
+ *	$Revision: 1.1065 $	$Date: 1999/03/22 05:43:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1065  1999/03/22 05:43:58  jim
+ * Fixed bug in langevinPiston routine.
+ *
  * Revision 1.1064  1999/03/19 23:03:00  jim
  * Fixed bugs in constant pressure code.
  *
