@@ -328,6 +328,9 @@ int Rebalancer::refine()
 	       if (nProxies < 0 || nProxies > 2)
 		 iout << iERROR << "Too many proxies: " << nProxies 
 		      << "\n" << endi;
+	       if (nProxies + nPatches > 2)
+		 iout << iERROR << "Too many patches (" << nPatches
+		      << ") + proxies (" << nProxies << ")\n" << endi;
 
 	       if ((c->load > goodSize[nPatches][nProxies]) 
 		   && (!goodP[nPatches][nProxies] 
@@ -540,7 +543,8 @@ int Rebalancer::numAvailable(computeInfo *c, processorInfo *p)
    int count = 0;
    if (isAvailableOn((patchInfo *)&(patches[p1]), p))
       count++;
-   if (isAvailableOn((patchInfo *)&(patches[p2]), p))
+   // self computes get one patch for free here
+   if (p1 == p2 || isAvailableOn((patchInfo *)&(patches[p2]), p))
       count++;
    return count;   
 }
@@ -558,7 +562,8 @@ int Rebalancer::numProxiesAvail(computeInfo *c, processorInfo *p)
       //iout << iINFO << "Patch " << patches[p1].Id << " has a proxy on " 
       //     << p->Id << "\n" << endi;
    }
-   if (isAvailableOn((patchInfo *)&(patches[p2]), p)
+   if (p1 != p2  // self computes get one patch for free so don't allow 2
+       && isAvailableOn((patchInfo *)&(patches[p2]), p)
        && patches[p2].processor != p->Id ) {
       count++;
       //iout << iINFO << "Patch " << patches[p2].Id << " has a proxy on " 
@@ -582,7 +587,8 @@ int Rebalancer::numPatchesAvail(computeInfo *c, processorInfo *p)
      //iout << iINFO << "Patch " << patches[p1].Id << " is on " 
      //  << patches[p1].processor << "\n" << endi;
    }
-   if (patches[p2].processor == p->Id) {
+   // self computes get one patch for free here
+   if (p1 == p2 || patches[p2].processor == p->Id) {
      count++;
      //iout << iINFO << "Patch " << patches[p2].Id << " is on " 
      //  << patches[p2].processor << "\n" << endi;
