@@ -90,7 +90,7 @@ void Patch::unregisterForceDeposit(ComputeID cid, Box<Patch,Results> **const box
 
 void Patch::positionBoxClosed(void)
 {
-   p.encap(&positionPtr,numAtoms);
+   positionPtr = 0;
    this->boxClosed(0);
 }
 
@@ -99,14 +99,14 @@ void Patch::forceBoxClosed(void)
    DebugM(4, "patchID("<<patchID<<") forceBoxClosed! call\n");
    for (int j = 0; j < Results::maxNumForces; ++j )
    {
-     f[j].encap(&(results.f[j]),numAtoms);
+     results.f[j] = 0;
    }
    this->boxClosed(1);
 }
 
 void Patch::avgPositionBoxClosed(void)
 {
-   p_avg.encap(&avgPositionPtr,numAtoms);
+   avgPositionPtr = 0;
    this->boxClosed(3);
 }
 
@@ -124,10 +124,10 @@ void Patch::positionsReady(int doneMigration)
    _hasNewAtoms = (doneMigration != 0);
 
    // Give all position pickup boxes access to positions
-   positionPtr = p.unencap();
+   positionPtr = p.begin();
    positionBox.open(positionPtr,numAtoms,&lattice);
    if ( flags.doMolly ) {
-     avgPositionPtr = p_avg.unencap();
+     avgPositionPtr = p_avg.begin();
      avgPositionBox.open(avgPositionPtr,numAtoms,&lattice);
    }
 
@@ -136,7 +136,7 @@ void Patch::positionsReady(int doneMigration)
    for ( int j = 0; j < Results::maxNumForces; ++j )
    {
       f[j].resize(numAtoms);
-      forcePtr = f[j].unencap();
+      forcePtr = f[j].begin();
       for(register int i=0; i<numAtoms; i++) forcePtr[i] = 0.;
       results.f[j] = forcePtr;
    }

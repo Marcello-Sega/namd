@@ -24,10 +24,6 @@ template <class Type> class ResizeArrayRaw;
 
 template <class Elem> class ResizeArray {
   friend class ResizeArrayIter<Elem>;
-  private:
-    Elem *secret;
-    int   secretArraySize;
-    int   secretAllocSize;
 
   protected:
     ResizeArrayRaw<Elem> *rep;
@@ -46,28 +42,24 @@ template <class Elem> class ResizeArray {
       rep = new ResizeArrayRaw<Elem>();
       rep->resize(s);
       rep->refCount = 1;
-      secret = NULL;
     }
 
     // Contructor makes ResizeArray which points to same ResizeArrayRaw
     ResizeArray(const ResizeArray<Elem> &ra) {
       rep = ra.rep;
       rep->refCount++;
-      secret = NULL;
     }
 
     // Constructor makes a copy of ResizeArrayRaw
     ResizeArray(ResizeArray<Elem>* const ra) {
       rep = new ResizeArrayRaw<Elem>(*(ra->rep));
       rep->refCount = 1;
-      secret = NULL;
     }
 
     // Constructor to take-in pre-existing array
     ResizeArray(Elem * * const array, int arraySize, int allocSize=0) {
       rep = new ResizeArrayRaw<Elem>(array, arraySize, allocSize);
       rep->refCount = 1;
-      secret = NULL;
     }
 
     virtual ~ResizeArray(void) {
@@ -76,7 +68,6 @@ template <class Elem> class ResizeArray {
 
     // We copy reference to ResizeArrayRaw
     ResizeArray<Elem> & operator= (const ResizeArray<Elem> &ra) {
-      secret = NULL;
       if (rep != NULL && !(--rep->refCount) )
         delete rep;
       rep = ra.rep;
@@ -130,47 +121,6 @@ template <class Elem> class ResizeArray {
     // reduce storage size
     void reduce(void) { rep->reduce(); }
 
-    // Unencap the internal array for use
-    // We no-longer control encapsulated array
-    Elem * unencap(void) {
-      secret = rep->array;
-      secretArraySize = rep->arraySize;
-      secretAllocSize = rep->allocSize;
-      rep->array = NULL;
-      rep->varray = NULL;
-      rep->arraySize = 0;
-      rep->allocSize = 0;
-      return secret;
-    }
-
-    // Unencap with all the info
-    Elem * unencap(int *numElem, int *numAlloc) {
-      *numElem = rep->arraySize;
-      *numAlloc = rep->allocSize;
-      return(unencap());
-    }
-
-    // Encap the array back into the ResizeArrayRaw
-    void encap(Elem * *const array, int arraySize, int allocSize=0) {
-      if (allocSize < arraySize) allocSize = arraySize;
-    
-      if (secret == *array) {
-        rep->arraySize = secretArraySize;
-        rep->allocSize = secretAllocSize;
-        rep->array = *array;
-        rep->varray = (void *)*array;
-        secret = NULL;
-        *array = NULL;
-      } else {
-        // Out with the old (but with a proper burial)
-        ResizeArrayRaw<Elem> *tmprep
-          = new ResizeArrayRaw<Elem>(&secret, secretArraySize, secretAllocSize);
-        delete tmprep;
-    
-        // In with the new
-        rep = new ResizeArrayRaw<Elem>(array, arraySize, allocSize);
-      }
-    }
 };
 
 template <class Elem>
@@ -178,7 +128,6 @@ ResizeArray<Elem>::ResizeArray(void) {
   rep = new ResizeArrayRaw<Elem>();
   rep->resize(0);
   rep->refCount = 1;
-  secret = NULL;
 }
 
 #endif

@@ -39,7 +39,7 @@ template <class Elem> class ResizeArrayRaw {
 
   private:
     Elem *array;
-    void *varray;
+    unsigned char *varray;
 
     int arraySize;
     int allocSize;
@@ -58,13 +58,15 @@ template <class Elem> class ResizeArrayRaw {
         size = (int)(allocSize*growthFactor);
       if ( (size-allocSize) < minSize) 
         size = allocSize+minSize;
+
+      // align everything to 32-byte boundaries (if possible)
+      unsigned char *tmpv = new unsigned char[size*sizeof(Elem)+31];
+      Elem *tmpa = (Elem *)((((long)tmpv)+31L)&(-32L));
+      memcpy((void *)tmpa, (void *)array, sizeof(Elem)*arraySize);
   
-      void *tmp = (void *) new char[size*sizeof(Elem)];
-      memcpy(tmp, varray, sizeof(Elem)*arraySize);
-  
-      if (allocSize) 
-        delete[] (char *) varray;
-      array = (Elem *)(varray = tmp);
+      if (allocSize) delete[] varray;
+      varray = tmpv;
+      array = tmpa;
       allocSize = size;
     }
 
@@ -82,19 +84,19 @@ template <class Elem> class ResizeArrayRaw {
 
     // Default constructor 
     ResizeArrayRaw(void) : 
-      array((Elem *)0), varray((void *)0), arraySize(0), allocSize(0) { 
+      array((Elem *)0), varray((unsigned char *)0), arraySize(0), allocSize(0) { 
       growthFactor = GrowthFactor;
       minSize = MinSize;
     }
 
     // Copy constructor - true copy on construction.
     ResizeArrayRaw(const ResizeArrayRaw<Elem> &rar ) : 
-      array((Elem *)0), varray((void *)0), arraySize(0), allocSize(0) {
+      array((Elem *)0), varray((unsigned char *)0), arraySize(0), allocSize(0) {
       growthFactor = rar.growthFactor;
       minSize = rar.minSize;
       // We want rar.size() slots, but no constructor run on the elements
       resizeRaw(rar.size());
-      memcpy(varray, rar.varray, sizeof(Elem)*rar.size());
+      memcpy((void*)array, (void*)rar.array, sizeof(Elem)*rar.size());
       arraySize = rar.size();
     }
   
@@ -129,7 +131,7 @@ template <class Elem> class ResizeArrayRaw {
       resize(0);
       resizeRaw(rar.size());
   
-      memcpy(varray, rar.varray, sizeof(Elem)*rar.size());
+      memcpy((void*)array, (void*)rar.array, sizeof(Elem)*rar.size());
       arraySize = rar.size();
       return *this;
     }
@@ -169,8 +171,8 @@ template <class Elem> class ResizeArrayRaw {
       }
   
       // Shift down
-      memmove((void *)((char *)varray+index*sizeof(Elem)),
-         (void *)((char *)varray+(index+number)*sizeof(Elem)),
+      memmove((void *)(array+index),
+         (void *)(array+index+number),
          (arraySize-number-index)*sizeof(Elem));
       
       // fixup size of array
@@ -187,8 +189,8 @@ template <class Elem> class ResizeArrayRaw {
       if (index < arraySize) {
         resizeRaw(arraySize+1);
         // Shift up
-        memmove((void *)((char *)varray+(index+1)*sizeof(Elem)),
-          (void *)((char *)varray+index*sizeof(Elem)),
+        memmove((void *)(array+index+1),
+          (void *)(array+index),
           (arraySize-index)*sizeof(Elem));
       } else {
         resizeRaw(index+1);
@@ -217,6 +219,6 @@ ResizeArrayRaw<Elem>::~ResizeArrayRaw() {
   for (int i=0; i < size(); i++) {
     array[i].~Elem();
   }
-  delete[] (char *) varray;
+  delete[] varray;
 }
 #endif
