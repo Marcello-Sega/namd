@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1032 1997/08/20 23:27:41 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1033 1997/08/22 20:12:05 milind Exp $";
 
 #include <stdio.h>
 
@@ -729,10 +729,10 @@ void WorkDistrib::mapComputeNonbonded(void)
 void WorkDistrib::messageEnqueueWork(Compute *compute) {
   // This did not work with 32 for prio (crashed!)
   LocalWorkMsg *msg 
-    // = new (MsgIndex(LocalWorkMsg),Priorities::numBits) LocalWorkMsg;
-    = new (MsgIndex(LocalWorkMsg)) LocalWorkMsg;
+    = new (MsgIndex(LocalWorkMsg),Priorities::numBits) LocalWorkMsg;
+    // = new (MsgIndex(LocalWorkMsg)) LocalWorkMsg;
   msg->compute = compute; // pointer is valid since send is to local Pe
-  //*CPriorityPtr(msg) = (unsigned int)compute->priority();
+  *CPriorityPtr(msg) = (unsigned int)compute->priority();
   //CSetQueueing(msg, Priorities::strategy);
   //DebugM(3, "Priority = " << (unsigned int)compute->priority() << "\n");
 
@@ -997,13 +997,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1032 $	$Date: 1997/08/20 23:27:41 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1033 $	$Date: 1997/08/22 20:12:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1033  1997/08/22 20:12:05  milind
+ * Turned on Priorities.
+ *
  * Revision 1.1032  1997/08/20 23:27:41  jim
  * Created multiple enqueueWork entry points to aid analysis.
  *

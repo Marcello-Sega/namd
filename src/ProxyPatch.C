@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1013 1997/07/08 15:48:11 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1014 1997/08/22 20:12:04 milind Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -107,14 +107,14 @@ void ProxyPatch::sendResults(void)
 {
   DebugM(3, "sendResults(" << patchID << ")\n");
   ProxyResultMsg *msg 
-    //= new (MsgIndex(ProxyResultMsg),Priorities::numBits) ProxyResultMsg;
-    = new (MsgIndex(ProxyResultMsg)) ProxyResultMsg;
+    = new (MsgIndex(ProxyResultMsg),Priorities::numBits) ProxyResultMsg;
+    // = new (MsgIndex(ProxyResultMsg)) ProxyResultMsg;
   msg->node = CMyPe();
   msg->patch = patchID;
   register int i;
   for ( i = 0; i < Results::maxNumForces; ++i ) 
     msg->forceList[i] = f[i];
-  //*CPriorityPtr(msg) = (unsigned int)Priorities::urgent;
+  *CPriorityPtr(msg) = (unsigned int)Priorities::urgent;
   //CSetQueueing(msg, C_QUEUEING_IFIFO);
   ProxyMgr::Object()->sendResults(msg);
 }
@@ -124,12 +124,15 @@ void ProxyPatch::sendResults(void)
  *
  *	$RCSfile: ProxyPatch.C,v $
  *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1997/07/08 15:48:11 $
+ *	$Revision: 1.1014 $	$Date: 1997/08/22 20:12:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.1014  1997/08/22 20:12:04  milind
+ * Turned on Priorities.
+ *
  * Revision 1.1013  1997/07/08 15:48:11  milind
  * Made namd2 to work with Origin2000: Again...
  *

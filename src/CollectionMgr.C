@@ -31,12 +31,12 @@ void CollectionMgr::submitPositions(int seq, AtomIDList &i, PositionList &d)
   if ( c = positions.submitData(seq,i,d) )
   {
     CollectVectorMsg * msg = 
-      // new (MsgIndex(CollectVectorMsg),Priorities::numBits) CollectVectorMsg;
-      new (MsgIndex(CollectVectorMsg)) CollectVectorMsg;
+      new (MsgIndex(CollectVectorMsg),Priorities::numBits) CollectVectorMsg;
+      // new (MsgIndex(CollectVectorMsg)) CollectVectorMsg;
     msg->seq = c->seq;
     msg->aid = c->aid;
     msg->data = c->data;
-    //*CPriorityPtr(msg) = Priorities::low;
+    *CPriorityPtr(msg) = Priorities::low;
     //CSetQueueing(msg, C_QUEUEING_IFIFO);
     CSendMsg(CollectionMaster,receivePositions,msg,&master);
     delete c;
@@ -89,12 +89,15 @@ void CollectionMgr::submitForces(int seq, AtomIDList &i, ForceList &d)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/07/08 15:48:06 $
+ *	$Revision: 1.1005 $	$Date: 1997/08/22 20:12:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMgr.C,v $
+ * Revision 1.1005  1997/08/22 20:12:03  milind
+ * Turned on Priorities.
+ *
  * Revision 1.1004  1997/07/08 15:48:06  milind
  * Made namd2 to work with Origin2000: Again...
  *

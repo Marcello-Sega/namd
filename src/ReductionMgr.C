@@ -28,7 +28,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1017 1997/07/08 15:48:12 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1018 1997/08/22 20:12:04 milind Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -561,12 +561,12 @@ void	ReductionMgr::submit(int seq, ReductionTag tag, BigReal data,
     if (CMyPe() != 0)
     {
       ReductionDataMsg *m 
-	//= new (MsgIndex(ReductionDataMsg),Priorities::numBits) ReductionDataMsg;
-	= new (MsgIndex(ReductionDataMsg)) ReductionDataMsg;
+	= new (MsgIndex(ReductionDataMsg),Priorities::numBits) ReductionDataMsg;
+	//= new (MsgIndex(ReductionDataMsg)) ReductionDataMsg;
       m->seq = seq;
       m->tag = tag;
       m->data = current->tagData[tag];
-      //*CPriorityPtr(m) = Priorities::high;
+      *CPriorityPtr(m) = Priorities::high;
       //CSetQueueing(m, C_QUEUEING_IFIFO);
       DebugM(4,"Sending seq=" << seq
 		 << " tag=" << tag
@@ -626,12 +626,12 @@ void	ReductionMgr::submit(int seq, ReductionTag tag)
     if (CMyPe() != 0)
     {
       ReductionDataMsg *m 
-	//= new (MsgIndex(ReductionDataMsg),Priorities::numBits) ReductionDataMsg;
-	= new (MsgIndex(ReductionDataMsg)) ReductionDataMsg;
+	= new (MsgIndex(ReductionDataMsg),Priorities::numBits) ReductionDataMsg;
+	//= new (MsgIndex(ReductionDataMsg)) ReductionDataMsg;
       m->seq = seq;
       m->tag = tag;
       m->data = current->tagData[tag];
-      //*CPriorityPtr(m) = Priorities::high;
+      *CPriorityPtr(m) = Priorities::high;
       //CSetQueueing(m, C_QUEUEING_IFIFO);
       CSendMsgBranch(ReductionMgr, recvReductionData, m, thisgroup, 0);
       gotAllData(current);
@@ -779,12 +779,15 @@ void	ReductionMgr::unsubscribe(ReductionTag tag)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1997/07/08 15:48:12 $
+ *	$Revision: 1.1018 $	$Date: 1997/08/22 20:12:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.C,v $
+ * Revision 1.1018  1997/08/22 20:12:04  milind
+ * Turned on Priorities.
+ *
  * Revision 1.1017  1997/07/08 15:48:12  milind
  * Made namd2 to work with Origin2000: Again...
  *
