@@ -29,9 +29,9 @@ public:
 
 protected:
     friend class ScriptTcl;
-    int scriptSeq;
     virtual void algorithm(void);	// subclasses redefine this method
 
+    void integrate(); // Verlet integrator
     void minimize(); // CG minimizer
 
     void receivePressure(int);

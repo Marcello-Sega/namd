@@ -68,38 +68,39 @@ void Sequencer::run(void)
 // when to migrate atoms, when to add forces to velocity update.
 void Sequencer::algorithm(void)
 {
-  int scriptTask = SCRIPT_RUN;
+  int scriptTask;
   int scriptSeq = 0;
-  while ( (! simParams->tclOn) ||
-    (scriptTask = broadcast->scriptBarrier.get(scriptSeq++)) != SCRIPT_END ) {
+  while ( (scriptTask = broadcast->scriptBarrier.get(scriptSeq++)) != SCRIPT_END ) {
     switch ( scriptTask ) {
-      case SCRIPT_RUN:
+      case SCRIPT_OUTPUT:
+	submitCollections(FILE_OUTPUT);
+	break;
+      case SCRIPT_MEASURE:
+	submitCollections(EVAL_MEASURE);
+	break;
+      case SCRIPT_REINITVELS:
+	reinitVelocities();
+	break;
+      case SCRIPT_CHECKPOINT:
+        patch->checkpoint();
+	break;
+      case SCRIPT_REVERT:
+        patch->revert();
 	break;
       case SCRIPT_MINIMIZE:
 	minimize();
-	continue;
-      case SCRIPT_OUTPUT:
-	submitCollections(FILE_OUTPUT);
-	continue;
-      case SCRIPT_MEASURE:
-	submitCollections(EVAL_MEASURE);
-	continue;
-      case SCRIPT_REINITVELS:
-	reinitVelocities();
-	continue;
-      case SCRIPT_CHECKPOINT:
-        patch->checkpoint();
-	continue;
-      case SCRIPT_REVERT:
-        patch->revert();
-	continue;
+	break;
+      case SCRIPT_RUN:
+	integrate();
+	break;
     }
+  }
+  submitCollections(END_OF_RUN);
+  terminate();
+}
 
-    if ( simParams->minimizeCGOn ) {
-      minimize();
-      if (! simParams->tclOn) break;
-      continue;
-    }
+
+void Sequencer::integrate() {
 
     int &step = patch->flags.step;
     step = simParams->firstTimestep;
@@ -210,19 +211,8 @@ void Sequencer::algorithm(void)
         cycleBarrier(!((step+1) % stepsPerCycle),step);
 	rebalanceLoad(step);
     }
-
-    if (! simParams->tclOn) break;
-  }
-
-  if (! simParams->tclOn) {
-    if ( broadcast->scriptBarrier.get(scriptSeq++) != SCRIPT_END )
-      NAMD_bug("SCRIPT_END not received properly in Sequencer.");
-  }
-
-  // only reach here on SCRIPT_END or no script
-  submitCollections(END_OF_RUN);
-  terminate();
 }
+
 
 void Sequencer::minimize() {
   const int numberOfSteps = simParams->N;

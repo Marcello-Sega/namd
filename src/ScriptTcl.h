@@ -36,6 +36,7 @@ private:
   void algorithm();
   int runWasCalled;
   void barrier();
+  void initcheck();
   SimpleBroadcastObject<int> scriptBarrier;
   int barrierStep;
   void runController(int task);

@@ -121,10 +121,8 @@ public:
   int myid() { return CkMyPe(); }
   int numNodes() { return CkNumPes(); }
 
-#ifdef NAMD_TCL
   void setScript(ScriptTcl *s) { script = s; }
   ScriptTcl *getScript(void) { return script; }
-#endif
 
 protected:
   // Map Databases - they have a singleton this access method ::Object()
@@ -143,10 +141,8 @@ private:
   PatchMgr *patchMgr;
   ComputeMgr *computeMgr;
   ProxyMgr *proxyMgr;
-#ifdef NAMD_TCL
   Namd *namd;
   ScriptTcl *script;
-#endif
 
   // Countdown for Node::startup barrier
   int numNodeStartup;

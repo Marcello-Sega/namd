@@ -31,6 +31,7 @@ public:
 protected:
     virtual void algorithm(void);	// subclasses redefine this method
 
+    void integrate(); // Verlet integrator
     void minimize(); // CG minimizer
 
     void runComputeObjects(int migration = 0);

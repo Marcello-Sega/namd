@@ -39,6 +39,24 @@ void ScriptTcl::barrier() {
   BackEnd::barrier();
 }
 
+void ScriptTcl::initcheck() {
+  if ( runWasCalled == 0 ) {
+#ifdef NAMD_TCL
+    CkPrintf("TCL: Suspending until startup complete.\n");
+    Tcl_CreateCommand(interp, "param", Tcl_param,
+      (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+    Tcl_CreateCommand(interp, "unknown", Tcl_param,
+      (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+#endif
+    runWasCalled = 1;
+
+    state->configListInit(config);
+    Node::Object()->saveMolDataPointers(state);
+    Node::messageStartUp();
+    suspend();
+  }
+}
+
 void ScriptTcl::runController(int task) {
   scriptBarrier.publish(barrierStep++,task);
   suspend();
@@ -171,10 +189,7 @@ int ScriptTcl::Tcl_param(ClientData clientData,
 int ScriptTcl::Tcl_reinitvels(ClientData clientData,
         Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
-  if (! script->runWasCalled) {
-    Tcl_SetResult(interp,"called before run",TCL_VOLATILE);
-    return TCL_ERROR;
-  }
+  script->initcheck();
   if (argc != 2) {
     Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
@@ -191,20 +206,7 @@ int ScriptTcl::Tcl_reinitvels(ClientData clientData,
 int ScriptTcl::Tcl_run(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
-  if ( script->runWasCalled == 0 ) {
-    CkPrintf("TCL: Run called, suspending until startup complete.\n");
-    Tcl_CreateCommand(interp, "param", Tcl_param,
-      (ClientData) script, (Tcl_CmdDeleteProc *) NULL);
-    Tcl_CreateCommand(interp, "unknown", Tcl_param,
-      (ClientData) script, (Tcl_CmdDeleteProc *) NULL);
-    script->config->add_element("tcl",3,"on",2);
-    script->runWasCalled = 1;
-
-    script->state->configListInit(script->config);
-    Node::Object()->saveMolDataPointers(script->state);
-    Node::messageStartUp();
-    script->suspend();
-  }
+  script->initcheck();
   if (argc != 2) {
     Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
@@ -236,20 +238,7 @@ int ScriptTcl::Tcl_run(ClientData clientData,
 int ScriptTcl::Tcl_minimize(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
-  if ( script->runWasCalled == 0 ) {
-    CkPrintf("TCL: Minimize called, suspending until startup complete.\n");
-    Tcl_CreateCommand(interp, "param", Tcl_param,
-      (ClientData) script, (Tcl_CmdDeleteProc *) NULL);
-    Tcl_CreateCommand(interp, "unknown", Tcl_param,
-      (ClientData) script, (Tcl_CmdDeleteProc *) NULL);
-    script->config->add_element("tcl",3,"on",2);
-    script->runWasCalled = 1;
-
-    script->state->configListInit(script->config);
-    Node::Object()->saveMolDataPointers(script->state);
-    Node::messageStartUp();
-    script->suspend();
-  }
+  script->initcheck();
   if (argc != 2) {
     Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
@@ -281,10 +270,7 @@ int ScriptTcl::Tcl_minimize(ClientData clientData,
 int ScriptTcl::Tcl_move(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
-  if (! script->runWasCalled) {
-    Tcl_SetResult(interp,"called before run",TCL_VOLATILE);
-    return TCL_ERROR;
-  }
+  script->initcheck();
   if (argc != 4) {
     Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
@@ -330,10 +316,7 @@ int ScriptTcl::Tcl_move(ClientData clientData,
 int ScriptTcl::Tcl_output(ClientData clientData,
         Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
-  if (! script->runWasCalled) {
-    Tcl_SetResult(interp,"called before run",TCL_VOLATILE);
-    return TCL_ERROR;
-  }
+  script->initcheck();
   if (argc != 2) {
     Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
@@ -371,10 +354,7 @@ void ScriptTcl::measure(Vector *c) {
 int ScriptTcl::Tcl_measure(ClientData clientData,
         Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
-  if (! script->runWasCalled) {
-    Tcl_SetResult(interp,"called before run",TCL_VOLATILE);
-    return TCL_ERROR;
-  }
+  script->initcheck();
   if (argc != 2) {
     Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
@@ -389,10 +369,7 @@ int ScriptTcl::Tcl_measure(ClientData clientData,
 int ScriptTcl::Tcl_checkpoint(ClientData clientData,
         Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
-  if (! script->runWasCalled) {
-    Tcl_SetResult(interp,"called before run",TCL_VOLATILE);
-    return TCL_ERROR;
-  }
+  script->initcheck();
   if (argc != 1) {
     Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
@@ -406,10 +383,7 @@ int ScriptTcl::Tcl_checkpoint(ClientData clientData,
 int ScriptTcl::Tcl_revert(ClientData clientData,
         Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
-  if (! script->runWasCalled) {
-    Tcl_SetResult(interp,"called before run",TCL_VOLATILE);
-    return TCL_ERROR;
-  }
+  script->initcheck();
   if (argc != 1) {
     Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
@@ -472,18 +446,20 @@ ScriptTcl::~ScriptTcl() {
 #endif
 }
 
-void ScriptTcl::run(char *filename, ConfigList *configList)
+void ScriptTcl::run(char *filename, ConfigList *)
 {
     scriptFile = filename;
-    config = configList;
-
     algorithm();
 }
 
 void ScriptTcl::algorithm() {
   DebugM(4,"Running ScriptTcl\n");
 
+  runWasCalled = 0;
+
 #ifdef NAMD_TCL
+  config = new ConfigList;
+
   // Create interpreter
   interp = Tcl_CreateInterp();
   Tcl_CreateCommand(interp, "exit", Tcl_exit,
@@ -515,7 +491,6 @@ void ScriptTcl::algorithm() {
   Tcl_CreateCommand(interp, "callback", Tcl_callback,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
 
-  runWasCalled = 0;
   int code = Tcl_EvalFile(interp,scriptFile);
   char *result = Tcl_GetStringResult(interp);
   if (*result != 0) CkPrintf("TCL: %s\n",result);
@@ -523,22 +498,21 @@ void ScriptTcl::algorithm() {
     char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
     NAMD_die(errorInfo);
   }
-  if (runWasCalled == 0) {
-    state->configListInit(config);
-    Node::Object()->saveMolDataPointers(state);
-    Node::messageStartUp();
-    suspend();
-    runController(SCRIPT_END);
-    return;
-  } else {
-    runController(SCRIPT_END);
-  }
 
 #else
-
-  NAMD_die("Sorry, TCL scripting not available; built without TCL.");
-
+  if ( NULL == scriptFile || NULL == (config = new ConfigList(scriptFile)) ) {
+    NAMD_die("Simulation config file is empty.");
+  }
 #endif
+
+  if (runWasCalled == 0) {
+    initcheck();
+    SimParameters *simParams = Node::Object()->simParameters;
+    if ( simParams->minimizeCGOn ) runController(SCRIPT_MINIMIZE);
+    else runController(SCRIPT_RUN);
+  }
+
+  runController(SCRIPT_END);
 
 }
 

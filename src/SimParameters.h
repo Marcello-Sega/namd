@@ -190,7 +190,6 @@ public:
 	Bool globalForcesOn;		//  Are global forces present?
 	Bool tclForcesOn;		//  Are Tcl forces present?
 	Bool freeEnergyOn;		//  Doing free energy perturbation?
-	Bool tclOn;			//  Are Tcl scripts present?
 	Bool miscForcesOn;		//  Using misc forces?
 
 	Bool fixedAtomsOn;		//  Are there fixed atoms?

@@ -47,7 +47,6 @@ Controller::Controller(NamdState *s) :
 	computeChecksum(0),
 	simParams(Node::Object()->simParameters),
 	state(s),
-	scriptSeq(0),
 	collection(CollectionMaster::Object()),
         startCTime(0),
         startWTime(0),
@@ -89,58 +88,55 @@ void Controller::run(void)
     awaken();
 }
 
-extern int eventEndOfTimeStep;
 
 void Controller::algorithm(void)
 {
-  int scriptTask = SCRIPT_END;
+  int scriptTask;
   int scriptSeq = 0;
-  if ( simParams->tclOn ) { BackEnd::awaken(); }
-  while ( (! simParams->tclOn) ||
-    (scriptTask = broadcast->scriptBarrier.get(scriptSeq++)) != SCRIPT_END) {
+  BackEnd::awaken();
+  while ( (scriptTask = broadcast->scriptBarrier.get(scriptSeq++)) != SCRIPT_END) {
     switch ( scriptTask ) {
-      case SCRIPT_RUN:
-        break;
-      case SCRIPT_MINIMIZE:
-        minimize();
-        BackEnd::awaken();
-        continue;
       case SCRIPT_OUTPUT:
         enqueueCollections(FILE_OUTPUT);
         outputExtendedSystem(FILE_OUTPUT);
-        BackEnd::awaken();
-        continue;
+        break;
       case SCRIPT_MEASURE:
         enqueueCollections(EVAL_MEASURE);
-        BackEnd::awaken();
-        continue;
+        break;
       case SCRIPT_REINITVELS:
         iout << "REINITIALIZING VELOCITIES AT STEP " << simParams->firstTimestep
           << " TO " << simParams->initialTemp << " KELVIN.\n" << endi;
-        BackEnd::awaken();
-        continue;
+        break;
       case SCRIPT_CHECKPOINT:
         iout << "CHECKPOINTING POSITIONS AT STEP " << simParams->firstTimestep
           << "\n" << endi;
         checkpoint_lattice = state->lattice;
         checkpoint_langevinPiston_strainRate = langevinPiston_strainRate;
-        BackEnd::awaken();
-        continue;
+        break;
       case SCRIPT_REVERT:
         iout << "REVERTING POSITIONS AT STEP " << simParams->firstTimestep
           << "\n" << endi;
         state->lattice = checkpoint_lattice;
         langevinPiston_strainRate = checkpoint_langevinPiston_strainRate;
-        BackEnd::awaken();
-        continue;
+        break;
+      case SCRIPT_MINIMIZE:
+        minimize();
+        break;
+      case SCRIPT_RUN:
+        integrate();
+        break;
     }
+    BackEnd::awaken();
+  }
+  enqueueCollections(END_OF_RUN);
+  outputExtendedSystem(END_OF_RUN);
+  terminate();
+}
 
-    if ( simParams->minimizeCGOn ) {
-      minimize();
-      BackEnd::awaken();
-      if (! simParams->tclOn) break;
-      continue;
-    }
+
+extern int eventEndOfTimeStep;
+
+void Controller::integrate() {
 
     int step = simParams->firstTimestep;
 
@@ -176,18 +172,8 @@ void Controller::algorithm(void)
         cycleBarrier(!((step+1) % stepsPerCycle),step);
         rebalanceLoad(step);
     }
-
-    BackEnd::awaken();
-    if (! simParams->tclOn) break;
-  }
-  if (! simParams->tclOn) {
-    if ( broadcast->scriptBarrier.get(scriptSeq++) != SCRIPT_END )
-      NAMD_bug("SCRIPT_END not received properly in Controller.");
-  }
-  enqueueCollections(END_OF_RUN);
-  outputExtendedSystem(END_OF_RUN);
-  terminate();
 }
+
 
 #define CALCULATE \
   printMinimizeEnergies(step); \

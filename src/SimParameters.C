@@ -732,10 +732,6 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
    opts.require("freeEnergy", "freeEnergyConfig",
      "Configuration file for free energy perturbation", PARSE_MULTIPLES);
 
-   ////  Tcl Scripting
-   opts.optionalB("main", "tcl", "Is Tcl scripting active?",
-     &tclOn, FALSE);
-
 }
 
 void SimParameters::config_parser_boundary(ParseOptions &opts) {
@@ -1428,11 +1424,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    if ( (!!SMDOn+!!IMDon+!!tclForcesOn+!!miscForcesOn+!!freeEnergyOn) > 1)
    {
       NAMD_die("Sorry, only one of IMD, TclForces, MiscForces, and FreeEnergy may be used at a time.");
-   }
-
-   if (tclOn && freeEnergyOn)
-   {
-      NAMD_die("Sorry, tcl scripting and freeEnergy cannot be used simultaneously");
    }
 
    if (splitPatch == SPLIT_PATCH_POSITION && mollyOn )
@@ -2227,25 +2218,6 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      }
 
      iout << iINFO << "FREE ENERGY PERTURBATION SCRIPT   " << current->data << "\n";
-
-     }
-     iout << endi;
-   }
-
-   if (tclOn)
-   {
-     iout << iINFO << "TCL SCRIPTING ACTIVE\n";
-
-     current = config->find("tclScript");
-
-     for ( ; current; current = current->next ) {
-
-     if ( current->data[0] == '{' ) {
-       iout << iINFO << "TCL SCRIPT INLINED IN CONFIG FILE\n";
-       continue;
-     }
-
-     iout << iINFO << "TCL SCRIPT   " << current->data << "\n";
 
      }
      iout << endi;
