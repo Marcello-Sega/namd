@@ -1204,7 +1204,7 @@ void Sequencer::submitMinimizeReductions(int step)
     Vector fixForceSlow = 0;
 
     for ( int j = 0; j < numAtoms; j++ ) {
-      if ( simParams->fixedAtomsOn && a[j].atomFixed ) {
+      if ( a[j].atomFixed ) {
         Vector dx = a[j].fixedPosition;
         // all negative because fixed atoms cancels these forces
         fixVirialNormal -= outer(patch->f[Results::normal][j],dx);

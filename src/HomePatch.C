@@ -407,17 +407,15 @@ void HomePatch::addForceToMomentum(const BigReal timestep, const int ftag,
 {
   SimParameters *simParams = Node::Object()->simParameters;
   const BigReal dt = timestep / TIMEFACTOR;
-  if ( useSaved ) {
-    for ( int i = 0; i < numAtoms; ++i )
-    {
-      atom[i].velocity += f_saved[ftag][i] * ( dt / atom[i].mass );
-      if ( simParams->fixedAtomsOn && atom[i].atomFixed ) atom[i].velocity = 0;
+  const ForceList *f_use = ( useSaved ? f_saved : f );
+  if ( simParams->fixedAtomsOn ) {
+    for ( int i = 0; i < numAtoms; ++i ) {
+      if ( atom[i].atomFixed ) atom[i].velocity = 0;
+      else atom[i].velocity += f_use[ftag][i] * ( dt / atom[i].mass );
     }
   } else {
-    for ( int i = 0; i < numAtoms; ++i )
-    {
-      atom[i].velocity += f[ftag][i] * ( dt / atom[i].mass );
-      if ( simParams->fixedAtomsOn && atom[i].atomFixed ) atom[i].velocity = 0;
+    for ( int i = 0; i < numAtoms; ++i ) {
+      atom[i].velocity += f_use[ftag][i] * ( dt / atom[i].mass );
     }
   }
 }
@@ -426,9 +424,14 @@ void HomePatch::addVelocityToPosition(const BigReal timestep)
 {
   SimParameters *simParams = Node::Object()->simParameters;
   const BigReal dt = timestep / TIMEFACTOR;
-  for ( int i = 0; i < numAtoms; ++i )
-  {
-    if ( ! ( simParams->fixedAtomsOn && atom[i].atomFixed ) ) atom[i].position += atom[i].velocity * dt;
+  if ( simParams->fixedAtomsOn ) {
+    for ( int i = 0; i < numAtoms; ++i ) {
+      if ( ! atom[i].atomFixed ) atom[i].position += atom[i].velocity * dt;
+    }
+  } else {
+    for ( int i = 0; i < numAtoms; ++i ) {
+      atom[i].position += atom[i].velocity * dt;
+    }
   }
 }
 
@@ -438,6 +441,8 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
 {
   Molecule *mol = Node::Object()->molecule;
   SimParameters *simParams = Node::Object()->simParameters;
+  const int fixedAtomsOn = simParams->fixedAtomsOn;
+  const int useSettle = simParams->useSettle;
   const BigReal dt = timestep / TIMEFACTOR;
   BigReal tol2 = 2.0 * simParams->rigidTol;
   int maxiter = simParams->rigidIter;
@@ -471,7 +476,7 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
       pos[i] = atom[ig+i].position;
       vel[i] = atom[ig+i].velocity;
       rmass[i] = 1. / atom[ig+i].mass;
-      fixed[i] = ( simParams->fixedAtomsOn && atom[ig+i].atomFixed );
+      fixed[i] = ( fixedAtomsOn && atom[ig+i].atomFixed );
       // undo addVelocityToPosition to get proper reference coordinates
       if ( fixed[i] ) rmass[i] = 0.; else pos[i] += vel[i] * dt;
     }
@@ -481,7 +486,7 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
         NAMD_bug("Hydrogen group error caught in rattle1().");
       }
       // Use SETTLE for water unless some of the water atoms are fixed
-      if (simParams->useSettle && !fixed[0] && !fixed[1] && !fixed[2]) {
+      if (useSettle && !fixed[0] && !fixed[1] && !fixed[2]) {
         settle1(ref, atom[ig].mass, atom[ig+1].mass, pos, vel, dt,
                 mol->rigid_bond_length(atom[ig].id),
                 mol->rigid_bond_length(atom[ig+1].id));
@@ -619,6 +624,8 @@ void HomePatch::rattle2(const BigReal timestep, Tensor *virial)
 {
   Molecule *mol = Node::Object()->molecule;
   SimParameters *simParams = Node::Object()->simParameters;
+  const int fixedAtomsOn = simParams->fixedAtomsOn;
+  const int useSettle = simParams->useSettle;
   const BigReal dt = timestep / TIMEFACTOR;
   Tensor wc;  // constraint virial
   BigReal tol = simParams->rigidTol;
@@ -644,7 +651,7 @@ void HomePatch::rattle2(const BigReal timestep, Tensor *virial)
       ref[i] = atom[ig+i].position;
       vel[i] = atom[ig+i].velocity;
       rmass[i] = 1. / atom[ig+i].mass;
-      fixed[i] = ( simParams->fixedAtomsOn && atom[ig+i].atomFixed );
+      fixed[i] = ( fixedAtomsOn && atom[ig+i].atomFixed );
       if ( fixed[i] ) rmass[i] = 0.;
     }
     int icnt = 0;
@@ -653,7 +660,7 @@ void HomePatch::rattle2(const BigReal timestep, Tensor *virial)
         NAMD_bug("Hydrogen group error caught in rattle2().");
       }
       // Use SETTLE for water unless some of the water atoms are fixed
-      if (simParams->useSettle && !fixed[0] && !fixed[1] && !fixed[2]) {
+      if (useSettle && !fixed[0] && !fixed[1] && !fixed[2]) {
         settle2(atom[ig].mass, atom[ig+1].mass, ref, vel, dt, virial);
         for (i=0; i<3; i++) {
           atom[ig+i].velocity = vel[i];
