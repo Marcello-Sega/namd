@@ -177,6 +177,7 @@ obj/BroadcastMgr.o: \
 	src/BOCgroup.h \
 	src/BroadcastClient.h \
 	src/BroadcastObject.h \
+	src/common.h \
 	src/Debug.h \
 	inc/BroadcastMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/BroadcastMgr.o $(COPTC) src/BroadcastMgr.C
@@ -1092,6 +1093,8 @@ obj/ComputeMgr.o: \
 	src/ComputeDPMEMsgs.h \
 	src/ComputePme.h \
 	src/PmeBase.h \
+	src/MathArray.h \
+	src/Array.h \
 	src/ComputeEField.h \
 	src/ComputeSphericalBC.h \
 	src/ComputeCylindricalBC.h \
@@ -1319,6 +1322,8 @@ obj/ComputePme.o: \
 	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	src/PmeBase.h \
+	src/MathArray.h \
+	src/Array.h \
 	inc/ComputePmeMgr.decl.h \
 	src/PmeRealSpace.h \
 	src/PmeKSpace.h \
