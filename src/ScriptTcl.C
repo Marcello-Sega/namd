@@ -63,9 +63,14 @@ void ScriptTcl::setParameter(const char* param, int value) {
 
 int ScriptTcl::Tcl_print(ClientData,
 	Tcl_Interp *, int argc, char *argv[]) {
-  char *msg = Tcl_Merge(argc-1,argv+1);
-  CkPrintf("TCL: %s\n",msg);
-  free(msg);
+  Tcl_DString msg;
+  Tcl_DStringInit(&msg);
+  for ( int i = 1; i < argc; ++i ) {
+    Tcl_DStringAppend(&msg," ",-1);
+    Tcl_DStringAppend(&msg,argv[i],-1);
+  }
+  CkPrintf("TCL:%s\n",Tcl_DStringValue(&msg));
+  Tcl_DStringFree(&msg);
   return TCL_OK;
 }
 
