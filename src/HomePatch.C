@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1004 1997/02/07 05:42:30 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1005 1997/02/07 07:51:42 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -45,6 +45,7 @@ HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl,
   max.z = PatchMap::Object()->maxZ(patchID);
 
   migrationSuspended = false;
+  allMigrationIn = false;
   patchMapRead = 0; // We delay read of PatchMap data
 		    // to make sure it is really valid
 }
@@ -230,7 +231,8 @@ HomePatch::doAtomMigration()
 
   // Determine atoms that need to migrate
   i = 0;
-  while (i<atomIDList.size()) { // use while - we might not advance i
+  while ( i < atomIDList.size() )
+  {
      if (p[i].x < min.x) xdev = 0;
      else if (max.x <= p[i].x) xdev = 2; 
      else xdev = 1;
@@ -250,20 +252,23 @@ HomePatch::doAtomMigration()
        if (NULL == (mCur = mInfo[xdev][ydev][zdev]->mList)) {
 	 mCur = mInfo[xdev][ydev][zdev]->mList = new MigrationList;
        }
+       DebugM(4,"Migrating atom " << atomIDList[i] << " from patch "
+		<< patchID << " with position " << p[i] << "\n");
        mCur->add(MigrationElem(atomIDList[i], a[i], pInit[i],
          p[i], v[i], f[i], f_short[i], f_long[i])
        );
        a.del(i);
        atomIDList.del(i,1);
        p.del(i);
-       pInit.del(i);
+       // pInit.del(i);
        v.del(i);
        f.del(i);
        f_short.del(i);
        f_long.del(i);
      }
-     else { // look to next atom
-	 i++;
+     else
+     {
+       ++i;
      }
   }
   numAtoms = atomIDList.size();
@@ -292,10 +297,12 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
   if (migrationList) {
     MigrationListIter mi(*migrationList);
     for (mi = mi.begin(); mi != mi.end(); mi++) {
+      DebugM(4,"Migrating atom " << mi->atomID << " to patch "
+		<< patchID << " with position " << mi->pos << "\n"); 
       a.add(mi->atomProp);
       atomIDList.add(mi->atomID);
       p.add(mi->pos);
-      pInit.add(mi->posInit);
+      // pInit.add(mi->posInit);
       v.add(mi->vel);
       f.add(mi->force);
       f_short.add(mi->forceShort);
@@ -322,13 +329,17 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/02/07 05:42:30 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/02/07 07:51:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1005  1997/02/07 07:51:42  jim
+ * pInit aliases p, leading to problems.  I commented out any add or del
+ * involving it.  Now seems to integrate correctly.
+ *
  * Revision 1.1004  1997/02/07 05:42:30  ari
  * Some bug fixing - atom migration on one node works
  * Atom migration on multiple nodes gets SIGSEGV
