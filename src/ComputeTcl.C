@@ -237,7 +237,7 @@ int ComputeTcl::Tcl_addforce(ClientData clientData,
   free(fstring);
   ComputeGlobalResultsMsg *msg = (ComputeGlobalResultsMsg *)clientData;
   if ( isgroup ) {
-    msg->gforce.item(atomid) += Vector(x,y,z);
+    msg->gforce.item(atomid-1) += Vector(x,y,z);
   } else {
     msg->aid.add(atomid-1);
     msg->f.add(Vector(x,y,z));
