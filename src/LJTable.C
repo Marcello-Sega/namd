@@ -67,8 +67,13 @@ void LJTable::compute_vdw_params(int i, int j,
     cur_scaled->A = A14;
     cur_scaled->B = B14;
 
-    BigReal sigma_ij = pow((BigReal)(A/B),(BigReal)(1./6.));
-    BigReal sigma_ij14 = pow((BigReal)(A14/B14),(BigReal)(1./6.));
+    BigReal sigma_ij, sigma_ij14;
+
+    if ((A == 0) && (B == 0)) sigma_ij = 0;
+    else sigma_ij = pow((BigReal)(A/B),(BigReal)(1./6.));
+
+    if ((A14 == 0) && (B14 == 0)) sigma_ij14 = 0;
+    else sigma_ij14 = pow((BigReal)(A14/B14),(BigReal)(1./6.));
 
     sigma_max = ( sigma_ij > sigma_ij14 ? sigma_ij : sigma_ij14 );
   }
