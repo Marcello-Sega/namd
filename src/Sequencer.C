@@ -1157,7 +1157,9 @@ void Sequencer::runComputeObjects(int migration, int pairlists)
 	pairlists && ! pairlistsAreValid;
   patch->positionsReady(migration);
   suspend(); // until all deposit boxes close
-  if ( patch->flags.savePairlists ) pairlistsAreValid = 1;
+  if ( patch->flags.savePairlists && patch->flags.doNonbonded ) {
+    pairlistsAreValid = 1;
+  }
   if ( patch->flags.doMolly ) {
     Tensor virial;
     patch->mollyMollify(&virial);
