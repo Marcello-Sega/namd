@@ -171,6 +171,13 @@ void ComputeDPMTA::get_FMA_cube(int resize)
 
 ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
 {
+  ;
+}
+
+void ComputeDPMTA::initialize()
+{
+  ComputeHomePatches::initialize();
+
   Message *conv_msg;
 
   DebugM(2,"ComputeDPMTA creating\n");
@@ -194,7 +201,15 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   // all nodes should init
   reduction->Register(REDUCTION_ELECT_ENERGY);
   reduction->Register(REDUCTION_VIRIAL);
-  initDPMTA = 0;	// still needs some init when method is done
+
+  // Don't need any more initialization  -JCP
+  initDPMTA = TRUE;	// still needs some init when method is done
+  ResizeArrayIter<PatchElem> ap(patchList);
+  DebugM(2,"init() getting first patch info for FMA box\n");
+  ap = ap.begin();
+  DebugM(2,"init() getting lattice from patch for FMA box\n");
+  initLattice = (*ap).p->lattice.dimension();
+  DebugM(2,"init() initLattice is " << initLattice << "\n");
 
   //  NOTE that the theta value is hardwired to the value of 0.715
   //  as per the recommendation of the Duke developers
@@ -237,14 +252,7 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   pvm_spawn(NULL,NULL,0,NULL,numProcs,slavetids);
   DebugM(2,"DPMTA slavetids allocated\n");
 
-  //  Get the size of the FMA cube
-  DebugM(2,"DPMTA getting FMA cube\n");
-  get_FMA_cube(FALSE);
-  DebugM(2,"DPMTA got FMA cube\n");
-
   // check for PBC
-  // We set usePBC after get_FMA_cube() since the lattice (entire patch!) is
-  // not yet defined.
   usePBC = patchMap->xIsPeriodic()
 	 + patchMap->yIsPeriodic()
 	 + patchMap->zIsPeriodic();
@@ -255,6 +263,12 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   }
   DebugM(2,"Use PBC = " << usePBC << "\n");
   usePBC = (usePBC == 3);	// either PBC "3D" or no PBC
+  if ( usePBC ) iout << iINFO << "DPMTA: SYSTEM IS PERIODIC\n" << endi;
+
+  //  Get the size of the FMA cube
+  DebugM(2,"DPMTA getting FMA cube\n");
+  get_FMA_cube(FALSE);
+  DebugM(2,"DPMTA got FMA cube\n");
 
   // reduce function calling time
   SimParameters *simParams = Node::Object()->simParameters;
@@ -508,12 +522,15 @@ void ComputeDPMTA::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1038 $	$Date: 1997/03/25 16:57:47 $
+ *	$Revision: 1.1039 $	$Date: 1997/03/27 03:16:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.C,v $
+ * Revision 1.1039  1997/03/27 03:16:50  jim
+ * Added code to check virial calculation, fixed problems with DPMTA and PBC's.
+ *
  * Revision 1.1038  1997/03/25 16:57:47  nealk
  * Added PBC scaling to DPMTA.
  * Turned off debugging code in Controller.C.

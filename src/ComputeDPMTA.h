@@ -32,10 +32,11 @@ private:
   int initDPMTA;	// mark DPMTA object as initialized
 
   void get_FMA_cube(int resize);
-  void init	();
+  void init();
 
 public:
   ComputeDPMTA(ComputeID c);
+  void initialize();
   virtual ~ComputeDPMTA();
   void doWork();
 };
@@ -46,13 +47,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeDPMTA.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1997/03/25 16:57:48 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1016 $	$Date: 1997/03/27 03:16:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.h,v $
+ * Revision 1.1016  1997/03/27 03:16:51  jim
+ * Added code to check virial calculation, fixed problems with DPMTA and PBC's.
+ *
  * Revision 1.1015  1997/03/25 16:57:48  nealk
  * Added PBC scaling to DPMTA.
  * Turned off debugging code in Controller.C.

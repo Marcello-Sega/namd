@@ -50,6 +50,7 @@ Controller::Controller(NamdState *s) :
     reduction->subscribe(REDUCTION_KINETIC_ENERGY);
     reduction->subscribe(REDUCTION_BC_ENERGY);
     reduction->subscribe(REDUCTION_VIRIAL);
+    reduction->subscribe(REDUCTION_ALT_VIRIAL);
 }
 
 Controller::~Controller(void)
@@ -65,6 +66,7 @@ Controller::~Controller(void)
     reduction->unsubscribe(REDUCTION_KINETIC_ENERGY);
     reduction->unsubscribe(REDUCTION_BC_ENERGY);
     reduction->unsubscribe(REDUCTION_VIRIAL);
+    reduction->unsubscribe(REDUCTION_ALT_VIRIAL);
 }
 
 void Controller::threadRun(Controller* arg)
@@ -212,6 +214,12 @@ void Controller::printEnergies(int seq)
     }
     iout << "\n" << endi;
 
+    BigReal altVirial;
+    reduction->require(seq, REDUCTION_ALT_VIRIAL, altVirial);
+    altVirial /= 3.;  // virial submitted is wrong by factor of 3
+    DebugM(4,"step: " << seq << " virial: " << virial
+		<< " altVirial: " << altVirial << "\n");
+
 }
 
 void Controller::enqueueCollections(int timestep)
@@ -227,12 +235,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1997/03/25 16:57:49 $
+ *	$Revision: 1.1014 $	$Date: 1997/03/27 03:16:53 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1014  1997/03/27 03:16:53  jim
+ * Added code to check virial calculation, fixed problems with DPMTA and PBC's.
+ *
  * Revision 1.1013  1997/03/25 16:57:49  nealk
  * Added PBC scaling to DPMTA.
  * Turned off debugging code in Controller.C.

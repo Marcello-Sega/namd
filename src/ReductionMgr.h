@@ -29,6 +29,7 @@ typedef enum
   // REDUCTION_LONG_RANGE_ENERGY,
   REDUCTION_BC_ENERGY,
   REDUCTION_VIRIAL,
+  REDUCTION_ALT_VIRIAL,
   REDUCTION_MAX_RESERVED
 } ReductionTag;
 
@@ -152,12 +153,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/19 11:54:54 $
+ *	$Revision: 1.1005 $	$Date: 1997/03/27 03:16:54 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.h,v $
+ * Revision 1.1005  1997/03/27 03:16:54  jim
+ * Added code to check virial calculation, fixed problems with DPMTA and PBC's.
+ *
  * Revision 1.1004  1997/03/19 11:54:54  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

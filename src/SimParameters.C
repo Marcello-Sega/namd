@@ -11,7 +11,7 @@
  *
  *	$RCSfile: SimParameters.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/03/25 23:01:03 $
+ *	$Revision: 1.1008 $	$Date: 1997/03/27 03:16:57 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1008  1997/03/27 03:16:57  jim
+ * Added code to check virial calculation, fixed problems with DPMTA and PBC's.
+ *
  * Revision 1.1007  1997/03/25 23:01:03  jim
  * Added nonbondedFrequency parameter and multiple time-stepping
  *
@@ -338,7 +341,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1007 1997/03/25 23:01:03 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1008 1997/03/27 03:16:57 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -1621,6 +1624,9 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    iout << iINFO << "TIMESTEP               " << dt << "\n" << endi;
    iout << iINFO << "NUMBER OF STEPS        " << N << "\n";
    iout << iINFO << "STEPS PER CYCLE        " << stepsPerCycle << "\n";
+
+   iout << iINFO << "PERIODIC CELL          " << lattice.dimension() << "\n";
+
    if (ldbStrategy==LDBSTRAT_NONE)  {
      iout << iINFO << "LOAD BALANCE STRATEGY  none\n";
    } else if (ldbStrategy==LDBSTRAT_RANDOM)  {
@@ -2351,12 +2357,15 @@ void SimParameters::receive_SimParameters(Message *msg)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/03/25 23:01:03 $
+ *	$Revision: 1.1008 $	$Date: 1997/03/27 03:16:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1008  1997/03/27 03:16:57  jim
+ * Added code to check virial calculation, fixed problems with DPMTA and PBC's.
+ *
  * Revision 1.1007  1997/03/25 23:01:03  jim
  * Added nonbondedFrequency parameter and multiple time-stepping
  *

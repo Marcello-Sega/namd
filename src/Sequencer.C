@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1023 1997/03/25 23:01:02 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1024 1997/03/27 03:16:56 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -40,6 +40,7 @@ Sequencer::Sequencer(HomePatch *p) :
 
     reduction->Register(REDUCTION_KINETIC_ENERGY);
     reduction->Register(REDUCTION_BC_ENERGY); // in case not used elsewhere
+    reduction->Register(REDUCTION_ALT_VIRIAL);
 }
 
 Sequencer::~Sequencer(void)
@@ -48,6 +49,7 @@ Sequencer::~Sequencer(void)
 
     reduction->unRegister(REDUCTION_KINETIC_ENERGY);
     reduction->unRegister(REDUCTION_BC_ENERGY); // in case not used elsewhere
+    reduction->unRegister(REDUCTION_ALT_VIRIAL);
 }
 
 // Invoked by thread
@@ -192,6 +194,16 @@ void Sequencer::submitReductions(int step)
 {
   reduction->submit(step,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
   reduction->submit(step,REDUCTION_BC_ENERGY,0.);
+
+  BigReal altVirial = 0.;
+  for ( int i = 0; i < patch->numAtoms; ++i )
+  {
+    for ( int j = 0; j < Results::maxNumForces; ++j )
+    {
+      altVirial += ( patch->f[j][i] * patch->p[i] );
+    }
+  }
+  reduction->submit(step,REDUCTION_ALT_VIRIAL,altVirial);
 }
 
 void Sequencer::submitCollections(int step)
@@ -220,12 +232,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1023 $     $Date: 1997/03/25 23:01:02 $
+ *      $Revision: 1.1024 $     $Date: 1997/03/27 03:16:56 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1024  1997/03/27 03:16:56  jim
+ * Added code to check virial calculation, fixed problems with DPMTA and PBC's.
+ *
  * Revision 1.1023  1997/03/25 23:01:02  jim
  * Added nonbondedFrequency parameter and multiple time-stepping
  *
