@@ -19,12 +19,16 @@
 #include <iostream.h>
 #include <errno.h>
 #include "InfoStream.h"
+#include "limits.h"
 
 #ifdef T3E
 #include <fp.h>
-typedef	short	int32;
-#else
+#endif
+
+#if ( INT_MAX == 2147483647 )
 typedef	int	int32;
+#else
+typedef	short	int32;
 #endif
 
 #ifndef GCC
@@ -274,13 +278,16 @@ int  Fclose(FILE *fout);
  * RCS INFORMATION:
  *
  *	$RCSfile: common.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1998/09/02 20:38:35 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1018 $	$Date: 1998/09/10 19:07:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.h,v $
+ * Revision 1.1018  1998/09/10 19:07:21  brunner
+ * Changed int32 declaration
+ *
  * Revision 1.1017  1998/09/02 20:38:35  jim
  * Improved error checking on file output.
  *
