@@ -80,51 +80,6 @@ void NamdState:: runController(void)
 
 extern void read_binary_coors(char *fname, PDB *pdbobj);
 
-#if 0
-int
-NamdState::configFileInit(char *confFile)
-{
-  struct stat statBuf;
-
-  currentdir=confFile;
-  char *tmp;
-  for(tmp=confFile;*tmp;++tmp); // find final null
-  for( ; tmp != confFile && *tmp != '/'; --tmp); // find last '/'
-  if ( tmp != confFile )
-  {
-    *tmp = 0; confFile = tmp + 1; 
-    if ( chdir(currentdir) ) NAMD_die("chdir() failed!");
-    iout << iINFO << "Changed directory to " << currentdir << "\n" << endi;
-  }
-  else if ( *tmp == '/' ) // config file in / is odd, but it might happen
-    if ( chdir("/") ) NAMD_die("chdir() failed!");
-  currentdir = NULL;
-
-  iout << iINFO << "Configuration file is " << confFile << "\n" << endi;
-  if (stat(confFile, &statBuf)) {
-    NAMD_die("Simulation config file is not accessible.");
-  }
-
-#ifdef NAMD_TCL
-  configList = new ConfigList;  // empty, will be filled by Tcl
-
-  ScriptTcl *script = Node::Object()->getScript();
-  script->run(confFile,configList);
-
-/*
-  return 0;
-}
-
-int NamdState::configFileInitCont(void) {
-*/
-
-#else
-  if ( NULL == confFile || NULL == (configList = new ConfigList(confFile)) ) {
-    NAMD_die("Simulation config file is empty.");
-  }
-#endif
-#endif
-
 int NamdState::configListInit(ConfigList *cfgList) {
   configList = cfgList;
   if (!configList->okay()) {
