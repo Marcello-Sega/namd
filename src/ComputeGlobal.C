@@ -36,11 +36,22 @@ ComputeGlobal::ComputeGlobal(ComputeID c, ComputeMgr *m)
   gdef.resize(0);
   comm = m;
   firsttime = 1;
+  int i, numAtoms=Node::Object()->molecule->numAtoms;
+  isRequested = new int[numAtoms];
+  for (i=0; i<numAtoms; ++i)
+    isRequested[i] = 0;
+  SimParameters *sp = Node::Object()->simParameters;
+  dofull = (sp->fullDirectOn || sp->FMAOn || sp->PMEOn);
+  fid = new AtomIDList;
+  totalForce = new ForceList;
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 }
 
 ComputeGlobal::~ComputeGlobal()
 {
+  delete[] isRequested;
+  delete fid;
+  delete totalForce;
   delete reduction;
 }
 
@@ -48,9 +59,17 @@ void ComputeGlobal::configure(AtomIDList newaid, AtomIDList newgdef) {
   DebugM(4,"Receiving configuration (" << newaid.size() <<
 	" atoms and " << newgdef.size() << " atoms/groups) on client\n");
 
+  AtomIDList::iterator a, a_e;
+  
+  for (a=aid.begin(),a_e=aid.end(); a!=a_e; ++a)
+    isRequested[*a] = 0;
+
   // store data
   aid = newaid;
   gdef = newgdef;
+  
+  for (a=aid.begin(),a_e=aid.end(); a!=a_e; ++a)
+    isRequested[*a] = 1;
 
   // calculate group masses
   Molecule *mol = Node::Object()->molecule;
@@ -234,6 +253,13 @@ void ComputeGlobal::sendData()
   for (ap = ap.begin(); ap != ap.end(); ap++) {
     (*ap).positionBox->close(&(x[(*ap).patchID]));
   }
+  
+  msg->fid = *fid;
+  msg->tf = *totalForce;
+  delete fid;
+  delete totalForce;
+  fid = new AtomIDList;
+  totalForce = new ForceList;
 
   delete [] x;
   delete [] t;
@@ -242,3 +268,29 @@ void ComputeGlobal::sendData()
   comm->sendComputeGlobalData(msg);
 }
 
+
+// This function is called by each HomePatch after force
+// evaluation. It stores the indices and forces of the requested
+// atoms here, to be sent to GlobalMasterServer during the next
+// time step. The total force is the sum of three components:
+// "normal", "nbond" and "slow", the latter two may be calculated
+// less frequently, so their most recent values are stored in
+// "f_saved" and used here. If we don't do full electrostatics,
+// there's no "slow" part.
+void ComputeGlobal::saveTotalForces(HomePatch *homePatch)
+{
+  int i, index, num=homePatch->numAtoms;
+  FullAtomList atoms = homePatch->atom;
+  ForceList f1=homePatch->f[Results::normal], f2=homePatch->f_saved[Results::nbond],
+            f3=homePatch->f_saved[Results::slow];
+  Force f_sum;
+  
+  for (i=0; i<num; ++i)
+    if (isRequested[index=atoms[i].id])
+    { f_sum = f1[i]+f2[i];
+      if (dofull)
+        f_sum += f3[i];
+      fid->add(index);
+      totalForce->add(f_sum);
+    }
+}

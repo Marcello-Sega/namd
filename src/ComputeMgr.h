@@ -64,12 +64,14 @@ public:
 
   void recvComputeConsForceMsg(ComputeConsForceMsg *);
 
+  // Made public in order to access the ComputeGlobal on the node
+  ComputeGlobal *computeGlobalObject; /* node part of global computes */
+  
 private:
   void createCompute(ComputeID, ComputeMap *);
   int numNonbondedSelf;
   int numNonbondedPair;
 
-  ComputeGlobal *computeGlobalObject; /* node part of global computes */
   GlobalMasterServer *masterServerObject; /* master part of global computes */
   ComputeDPME *computeDPMEObject;
 

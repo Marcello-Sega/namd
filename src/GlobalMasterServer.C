@@ -37,6 +37,14 @@ void GlobalMasterServer::recvData(ComputeGlobalDataMsg *msg) {
     receivedAtomIDs.add(*a_i);
     receivedAtomPositions.add(*p_i);
   }
+  
+  /* iterate over each member of "total force" lists */
+  a_e = msg->fid.end();
+  ForceList::iterator f_i=msg->tf.begin();
+  for (a_i=msg->fid.begin() ; a_i!=a_e; ++a_i,++f_i)
+  { receivedForceIDs.add(*a_i);
+    receivedTotalForces.add(*f_i);
+  }
 
   /* iterate over each member of the group position list */
   int i=0;
@@ -62,6 +70,8 @@ void GlobalMasterServer::recvData(ComputeGlobalDataMsg *msg) {
     receivedAtomPositions.resize(0);
     receivedGroupPositions.resize(totalGroupsRequested);
     receivedGroupPositions.setall(Vector(0,0,0));
+    receivedForceIDs.resize(0);
+    receivedTotalForces.resize(0);
     recvCount = 0;
   }
 }
@@ -226,7 +236,8 @@ void GlobalMasterServer::callClients() {
     master->clearChanged();
     master->processData(a_i,a_i+num_atoms_requested,
 			p_i,g_i,g_i+num_groups_requested,
-			forced_atoms_i,forced_atoms_e,forces_i);
+			forced_atoms_i,forced_atoms_e,forces_i,
+     receivedForceIDs.begin(),receivedForceIDs.end(),receivedTotalForces.begin());
 
     /* check to see if anything changed */
     if(master->changedAtoms()) {

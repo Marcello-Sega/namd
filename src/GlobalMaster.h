@@ -38,7 +38,10 @@ class GlobalMaster {
 		   PositionList::iterator g_e,
 		   AtomIDList::iterator last_atoms_forced_i,
 		   AtomIDList::iterator last_atoms_forced_e,
-		   ForceList::iterator last_forces_i);
+		   ForceList::iterator last_forces_i,
+		   AtomIDList::iterator,
+		   AtomIDList::iterator,
+		   ForceList::iterator);
 
   bool changedAtoms(); // false if the atom IDs haven't changed
   const AtomIDList &requestedAtoms(); // the atom ids requested
@@ -92,6 +95,12 @@ class GlobalMaster {
   AtomIDList::const_iterator getLastAtomsForcedEnd();
   ForceList::const_iterator getLastForcesBegin();
   
+  /* These return the pointers to the lists of requested atom IDs
+     and total forces on these atoms */
+  AtomIDList::const_iterator getForceIdBegin();
+  AtomIDList::const_iterator getForceIdEnd();
+  ForceList::const_iterator getTotalForce();
+  
   /* This helpful function returns an array with the masses of each of
      the groups whose positions we have.  */
   ResizeArray<BigReal>::const_iterator getGroupMassBegin();
@@ -113,6 +122,11 @@ class GlobalMaster {
   AtomIDList::iterator lastAtomsForcedBegin;
   ForceList::iterator lastForcesBegin;
   AtomIDList::iterator lastAtomsForcedEnd;
+  
+  /* These store all the total forces returned from the simulation */
+  AtomIDList::iterator forceIdBegin;
+  AtomIDList::iterator forceIdEnd;
+  ForceList::iterator totalForceBegin;
   
   /* this stores the masses of all the groups whose positions we have */
   ResizeArray<BigReal> groupMasses;

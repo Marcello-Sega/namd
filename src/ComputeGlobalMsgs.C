@@ -40,6 +40,8 @@ PACK_MSG(ComputeGlobalDataMsg,
   PACK_RESIZE(aid);
   PACK_RESIZE(p);
   PACK_RESIZE(gcom);
+  PACK_RESIZE(fid);
+  PACK_RESIZE(tf);
 )
 
 

@@ -27,6 +27,8 @@ public:
   void doWork();
   void recvConfig(ComputeGlobalConfigMsg *);
   void recvResults(ComputeGlobalResultsMsg *);
+  // For "loadtotalforces" TCL command
+  void saveTotalForces(HomePatch *);
 
 private:
   ComputeMgr *comm;
@@ -37,6 +39,16 @@ private:
   AtomIDList aid;
   AtomIDList gdef;  // definitions of groups
   ResizeArray<BigReal> gmass;  // masses of groups
+  
+  // (For "loadtotalforces" TCL command)
+  // The atom IDs and forces of the requested atoms on the node
+  // after force evaluation. "fid" could be slightly different
+  // from "aid", since the latter is after atom migration.
+  AtomIDList *fid;
+  ForceList *totalForce;
+  
+  int *isRequested;  // whether this atom is requested by the TCL script
+  int dofull;  // whether "Results::slow" force will exist
 
   int firsttime;
   SubmitReduction *reduction;

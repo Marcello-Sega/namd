@@ -106,6 +106,9 @@ public:
   // Made public for pmeAid;
   WorkDistrib *workDistrib;
 
+  // Made public in order to access the ComputeGlobal on the node
+  ComputeMgr *computeMgr;
+  
   // NAMD 1.X molecule database objects - must be public for now
   Molecule *molecule;
   Parameters *parameters;
@@ -139,7 +142,6 @@ private:
   void buildSequencers();
 
   PatchMgr *patchMgr;
-  ComputeMgr *computeMgr;
   ProxyMgr *proxyMgr;
   Namd *namd;
   ScriptTcl *script;

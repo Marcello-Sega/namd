@@ -34,6 +34,8 @@ public:
   AtomIDList aid;
   PositionList p;
   PositionList gcom;  // group center of mass
+  AtomIDList fid;
+  ForceList tf;
 
   // constructor and destructor
   ComputeGlobalDataMsg(void);

@@ -20,6 +20,8 @@
 #include "Thread.h"
 #include "Random.h"
 #include "PatchMap.inl"
+#include "ComputeMgr.h"
+#include "ComputeGlobal.h"
 
 #define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
@@ -158,6 +160,10 @@ void Sequencer::integrate() {
     if ( doFullElectrostatics ) maxForceUsed = Results::slow;
     int &doMolly = patch->flags.doMolly;
     doMolly = simParams->mollyOn && doFullElectrostatics;
+    
+    // Do we need to return forces to TCL script?
+    int doTcl = simParams->tclForcesOn;
+    ComputeGlobal *computeGlobal = Node::Object()->computeMgr->computeGlobalObject;
 
     // Bother to calculate energies?
     int &doEnergy = patch->flags.doEnergy;
@@ -172,10 +178,12 @@ void Sequencer::integrate() {
 
     doEnergy = ! ( step % energyFrequency );
     runComputeObjects(1,step<numberOfSteps); // must migrate here!
-    if ( staleForces ) {
+    if ( staleForces || doTcl ) {
       if ( doNonbonded ) saveForce(Results::nbond);
       if ( doFullElectrostatics ) saveForce(Results::slow);
     }
+    if (doTcl)
+      computeGlobal->saveTotalForces(patch);
     if ( ! commOnly ) {
       addForceToMomentum(-0.5*timestep);
       if (staleForces || doNonbonded)
@@ -249,10 +257,12 @@ void Sequencer::integrate() {
 	// Migrate Atoms on stepsPerCycle
         doEnergy = ! ( step % energyFrequency );
 	runComputeObjects(!(step%stepsPerCycle),step<numberOfSteps);
-	if ( staleForces ) {
+	if ( staleForces || doTcl ) {
 	  if ( doNonbonded ) saveForce(Results::nbond);
 	  if ( doFullElectrostatics ) saveForce(Results::slow);
 	}
+        if (doTcl)
+          computeGlobal->saveTotalForces(patch);
 
        // reassignment based on full-step velocities
        if ( !commOnly && ( reassignFreq>0 ) && ! (step%reassignFreq) ) {

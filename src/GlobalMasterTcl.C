@@ -220,6 +220,52 @@ int GlobalMasterTcl::Tcl_loadforces(ClientData clientData,
   return TCL_OK;
 }
 
+
+// Here I simply copied the code from "Tcl_loadforces" above. The
+// only difference is the source data.
+int GlobalMasterTcl::Tcl_loadtotalforces(ClientData clientData,
+	Tcl_Interp *interp, int objc, Tcl_Obj * const objv[])
+{
+  if(objc != 2)
+  { Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  Tcl_Obj * const force_array_name = objv[1];
+  
+  GlobalMasterTcl *self = (GlobalMasterTcl *)clientData;
+  AtomIDList::const_iterator forced_ids_i = self->getForceIdBegin();
+  AtomIDList::const_iterator forced_ids_e = self->getForceIdEnd();
+  ForceList::const_iterator forces_i = self->getTotalForce();
+  
+  // now make a Tcl array containing all of the requested atoms and
+  // their forces
+  while(forced_ids_i != forced_ids_e) {
+    Tcl_Obj *array_key = Tcl_NewIntObj((int)((*forced_ids_i)+1)); // the id
+    Tcl_Obj *newlist = Tcl_NewListObj(0,NULL); // the list <fx,fy,fz>
+    Tcl_ListObjAppendElement(interp, newlist,
+      Tcl_NewDoubleObj((double)((*forces_i).x)));
+    Tcl_ListObjAppendElement(interp, newlist, 
+      Tcl_NewDoubleObj((double)((*forces_i).y)));
+    Tcl_ListObjAppendElement(interp, newlist, 
+      Tcl_NewDoubleObj((double)((*forces_i).z)));
+
+    // add the pair (id,F) to the array
+    if (!Tcl_ObjSetVar2(interp, force_array_name, array_key, newlist, 0)) {
+      NAMD_die("TCL error in loadtotalforces!");
+      return TCL_ERROR;
+    }
+
+    // what is this for?
+    Tcl_DecrRefCount(array_key);
+
+    // go to the next atom
+    forced_ids_i++;
+    forces_i++;
+  }
+  return TCL_OK;
+}
+
+  
 int GlobalMasterTcl::Tcl_loadcoords(ClientData clientData,
 	Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
   if (objc != 2) {
@@ -431,6 +477,8 @@ void GlobalMasterTcl::initialize() {
   Tcl_DeleteCommand(interp, "addgroup");
 
   Tcl_CreateObjCommand(interp, (char *)"loadforces", Tcl_loadforces,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateObjCommand(interp, (char *)"loadtotalforces", Tcl_loadtotalforces,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateObjCommand(interp, (char *)"loadcoords", Tcl_loadcoords,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);

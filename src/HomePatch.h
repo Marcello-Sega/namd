@@ -34,6 +34,7 @@ class SubmitReduction;
 class HomePatch : public Patch {
   friend class PatchMgr;
   friend class Sequencer;
+  friend class ComputeGlobal;
 
 private: 
   // for PatchMgr to use only

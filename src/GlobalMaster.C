@@ -20,7 +20,10 @@ void GlobalMaster::processData(AtomIDList::iterator a_i,
 			       PositionList::iterator g_e,
 			       AtomIDList::iterator last_atoms_forced_i,
 			       AtomIDList::iterator last_atoms_forced_e,
-			       ForceList::iterator last_forces_i) {
+			       ForceList::iterator last_forces_i,
+			       AtomIDList::iterator forceid_i,
+			       AtomIDList::iterator forceid_e,
+			       ForceList::iterator totalforce_i) {
   atomIdBegin = a_i;
   atomIdEnd = a_e;
   atomPositionBegin = p_i;
@@ -29,6 +32,9 @@ void GlobalMaster::processData(AtomIDList::iterator a_i,
   lastAtomsForcedBegin = last_atoms_forced_i;
   lastAtomsForcedEnd = last_atoms_forced_e;
   lastForcesBegin = last_forces_i;
+  forceIdBegin = forceid_i;
+  forceIdEnd = forceid_e;
+  totalForceBegin = totalforce_i;
 
   calculate();
 
@@ -183,4 +189,19 @@ AtomIDList::const_iterator GlobalMaster::getLastAtomsForcedEnd() {
 
 ForceList::const_iterator GlobalMaster::getLastForcesBegin() {
   return lastForcesBegin;
+}
+
+AtomIDList::const_iterator GlobalMaster::getForceIdBegin()
+{
+  return forceIdBegin;
+}
+
+AtomIDList::const_iterator GlobalMaster::getForceIdEnd()
+{
+  return forceIdEnd;
+}
+
+ForceList::const_iterator GlobalMaster::getTotalForce()
+{
+  return totalForceBegin;
 }

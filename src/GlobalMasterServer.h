@@ -44,11 +44,14 @@ class GlobalMasterServer {
   /* the receivedAtomIDs and receivedAtomPositions lists give
      correspond to each other: element i of the receivedAtomIDs is the
      ID of an atom that has position given by element i of the
-     receivedAtomPositions.  This data is built up as messages are
+     receivedAtomPositions. The receivedForceIDs and receivedTotalForces
+     lists have similar relationship. This data is built up as messages are
      received, and cleared after being passed off to the Masters. */
   AtomIDList receivedAtomIDs;
   PositionList receivedAtomPositions;
   PositionList receivedGroupPositions; // the group positions
+  AtomIDList receivedForceIDs;
+  ForceList receivedTotalForces;
 
   /* the compute manager responsible for my message delivery */
   ComputeMgr *myComputeManager;
