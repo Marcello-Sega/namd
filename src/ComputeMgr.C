@@ -441,7 +441,7 @@ void ComputeMgr:: recvComputeGlobalConfig(ComputeGlobalConfigMsg *msg)
   if ( computeGlobalObject ) {
     computeGlobalObject->recvConfig(msg);
   }
-  else if ( CkMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
+  else if ( ! (PatchMap::Object())->numHomePatches() ) delete msg;
   else NAMD_die("ComputeMgr::computeGlobalObject is NULL!");
 }
 
@@ -472,7 +472,7 @@ void ComputeMgr:: recvComputeGlobalResults(ComputeGlobalResultsMsg *msg)
   if ( computeGlobalObject ) {
     computeGlobalObject->recvResults(msg);
   }
-  else if ( CkMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
+  else if ( ! (PatchMap::Object())->numHomePatches() ) delete msg;
   else NAMD_die("ComputeMgr::computeGlobalObject is NULL!");
 }
 
@@ -485,7 +485,7 @@ void ComputeMgr:: sendComputeDPMEData(ComputeDPMEDataMsg *msg)
     cm.recvComputeDPMEData(msg,node);
 #endif
   }
-  else if ( CkMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
+  else if ( ! (PatchMap::Object())->numHomePatches() ) delete msg;
   else NAMD_die("ComputeMgr::computeDPMEObject is NULL!");
 }
 
@@ -496,7 +496,7 @@ void ComputeMgr:: recvComputeDPMEData(ComputeDPMEDataMsg *msg)
     computeDPMEObject->recvData(msg);
 #endif
   }
-  else if ( CkMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
+  else if ( ! (PatchMap::Object())->numHomePatches() ) delete msg;
   else NAMD_die("ComputeMgr::computeDPMEObject is NULL!");
 }
 
@@ -517,7 +517,7 @@ void ComputeMgr:: recvComputeDPMEResults(ComputeDPMEResultsMsg *msg)
     computeDPMEObject->recvResults(msg);
 #endif
   }
-  else if ( CkMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
+  else if ( ! (PatchMap::Object())->numHomePatches() ) delete msg;
   else NAMD_die("ComputeMgr::computeDPMEObject is NULL!");
 }
 
