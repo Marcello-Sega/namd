@@ -18,7 +18,7 @@
 #include "PatchMgr.h"
 #include "Molecule.h"
 #define DEBUGM
-#define MIN_DEBUG_LEVEL 1
+#define MIN_DEBUG_LEVEL 3
 #include "Debug.h"
 
 template <class T>
@@ -40,7 +40,6 @@ void ComputeHomeTuples<T>::mapReady() {
   HomePatchList *a = patchMap->homePatchList();
   ResizeArrayIter<HomePatchElem> ai(*a);
 
-  setNumPatches(a->size());
   tuplePatchList.resize(0);
   DebugM(1, "ComputeHomeTuples::mapReady() - Size of the tuplePatchList " << tuplePatchList.size() << endl );
 
@@ -73,6 +72,8 @@ void ComputeHomeTuples<T>::mapReady() {
       }
     }
   }
+
+  setNumPatches(tuplePatchList.size());
 
   dummy = new Force[maxProxyAtoms];
 
