@@ -7,11 +7,11 @@
 #####
 ## Choose your favorite Compiler options
 ####
-CXX = /usr/lib64/cmplrs/CC -64 
-CC = /usr/lib64/cmplrs/cc -64 
-CXXOPTS = -D_SGI_MP_SOURCE -O3 -mips4 -r10000 -INLINE:all -DGLOBALS 
+CXX = CC -64 -DGCC
+CC = cc -64 
+CXXOPTS = -D_SGI_MP_SOURCE -O3 -mips4 -r10000 -INLINE:all -DGLOBALS -OPT:IEEE_arithmetic=3:roundoff=3 -lfastm -lm
 CXXTHREADOPTS = -D_SGI_MP_SOURCE -r10000 -INLINE:all -DGLOBALS
-COPTS = -D_SGI_MP_SOURCE -O3 -mips4 -r10000 -INLINE:all
+COPTS = -D_SGI_MP_SOURCE -O3 -mips4 -r10000 -INLINE:all -OPT:IEEE_arithmetic=3:roundoff=3 -lfastm -lm
 #COPTS = -g -D_SGI_MP_SOURCE
 #CXXOPTS = -g -DGLOBALS -INLINE:=OFF
 
@@ -38,6 +38,13 @@ CHARM = $(CHARMBASE)/$(CHARMARCH)
 #TCLLIB=-L$(TCLDIR)/lib -ltclx -ltcl
 #TCLFLAGS=-DNAMD_TCL
 #TCL=$(TCLINCL) $(TCLFLAGS)
+
+######
+## definitions for FFT (used by PME)
+######
+FFTLIB=-lcomplib.sgimath
+FFTFLAGS=-DNAMD_SGI_COMPLIB_FFT
+FFT=$(FFTFLAGS)
 
 ######
 ## definitions for MDCOMM interface
