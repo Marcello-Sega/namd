@@ -1,4 +1,4 @@
 include .rootdir/arch/Linux-ia64-ecc.arch
 
-CHARMARCH = mpi-linux-ia64-vmi-icc
+CHARMARCH = mpi-linux-ia64-vmi-ecc
 
