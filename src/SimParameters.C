@@ -1177,6 +1177,8 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
      &ldbUnloadZero, FALSE);
    opts.optionalB("main", "ldbUnloadRankZero", "no load on rank zero",
      &ldbUnloadRankZero, FALSE);
+   opts.optionalB("main", "noPatchesOnZero", "no patches on pe zero",
+     &noPatchesOnZero, FALSE);
    opts.optional("main", "procsPerNode", "Number of Processor per node",
      &procsPerNode);
    opts.range("procsPerNode", POSITIVE);
@@ -2399,6 +2401,11 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << iINFO << "REMOVING LOAD FROM PME NODES" << "\n";
      }
      if ( ldbUnloadZero ) iout << iINFO << "REMOVING LOAD FROM NODE 0\n";
+     iout << endi;
+     if ( CkNumPes() > 64 || ( IMDon && CkNumPes() > 8 ) ) {
+       noPatchesOnZero = TRUE;
+     }
+     if ( noPatchesOnZero ) iout << iINFO << "REMOVING PATCHES FROM NODE 0\n";
      iout << endi;
      if ( ldbUnloadRankZero ) iout << iINFO << "REMOVING LOAD FROM RANK 0\n";
      iout << endi;

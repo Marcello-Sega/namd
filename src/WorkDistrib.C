@@ -524,8 +524,8 @@ void WorkDistrib::assignNodeToPatch()
   int nNodes = Node::Object()->numNodes();
   if (nNodes > patchMap->numPatches())
     assignPatchesBitReversal();
-  else if (nNodes == patchMap->numPatches())
-    assignPatchesRoundRobin();
+  // else if (nNodes == patchMap->numPatches())
+  //   assignPatchesRoundRobin();
   else if (method==1)
     assignPatchesRecursiveBisection();
   else
@@ -604,6 +604,7 @@ void WorkDistrib::assignPatchesToLowestLoadNode()
   PatchMap *patchMap = PatchMap::Object();
   CProxy_Node nd(CpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
+  SimParameters *simParams = node->simParameters;
 
   int *load = new int[node->numNodes()];
   int *assignedNodes = new int[patchMap->numPatches()];
@@ -611,10 +612,12 @@ void WorkDistrib::assignPatchesToLowestLoadNode()
     load[i] = 0;
   }
 
+  int defaultNode = 0;
+  if ( simParams->noPatchesOnZero && node->numNodes() > 1 ) defaultNode = 1;
   // Assign patch to node with least atoms assigned.
   for(pid=0; pid < patchMap->numPatches(); pid++) {
-    assignedNode = 0;
-    for (int i=1; i < node->numNodes(); i++) {
+    assignedNode = defaultNode;
+    for (int i=assignedNode + 1; i < node->numNodes(); i++) {
       if (load[i] < load[assignedNode]) assignedNode = i;
     }
     assignedNodes[pid] = assignedNode;
@@ -758,8 +761,9 @@ void WorkDistrib::assignPatchesRecursiveBisection()
   PatchMap *patchMap = PatchMap::Object();
   int *assignedNode = new int[patchMap->numPatches()];
   int numNodes = Node::Object()->numNodes();
+  SimParameters *simParams = Node::Object()->simParameters;
   int usedNodes = numNodes;
-  if ( numNodes > 64 ) usedNodes -= 1;
+  if ( simParams->noPatchesOnZero && numNodes > 1 ) usedNodes -= 1;
   RecBisection recBisec(usedNodes,PatchMap::Object());
   if ( recBisec.partition(assignedNode) ) {
     if ( usedNodes != numNodes ) {

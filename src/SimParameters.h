@@ -105,6 +105,7 @@ public:
 	Bool ldbUnloadRankZero;		//  unload processors rank
 	int procsPerNode;		//  number of pes per node
 	int ldbUnloadRank;		//  unload rank on a node
+	Bool noPatchesOnZero;		//  no patches on processor 0
 	BigReal initialTemp;   		//  Initial temperature for the 
 					//  simulation
 	Bool comMove;     		//  Should the center of mass be 
