@@ -10,7 +10,7 @@
 */
 
 #include <unistd.h>
-#include "charm++.h"
+#include <charm++.h>
 #include "Node.decl.h"
 #include "Node.h"
 #include "pvm3.h"
@@ -22,7 +22,7 @@
 #include "Debug.h"
 
 #include <stdio.h>
-#include "converse.h"
+#include <converse.h>
 
 #include "unistd.h"
 

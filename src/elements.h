@@ -7,29 +7,29 @@
 #ifndef ELEMENTS_DEFS_H
 #define ELEMENTS_DEFS_H
 
+#include <lbdb.h>
 #include "Set.h"
+
 class minHeap;
 class maxHeap;
 
-class InfoRecord
-{
+class InfoRecord {
 public:
    double load;
    int Id; // should replace other Ids.
 };
 
 
-class computeInfo : public InfoRecord
-{
+class computeInfo : public InfoRecord {
 public: 
    /*   int computeId; replaced by Id */
    int patch1, patch2;
    int processor; // caller to ReBalancer MAY leave this field -1, 
    int oldProcessor; // stores the current assignment of the compute object.
+   LDObjHandle handle;
 };
 
-class patchInfo : public InfoRecord
-{
+class patchInfo : public InfoRecord {
 public:
    int processor;
    int numAtoms;
@@ -38,8 +38,7 @@ public:
    Set *proxiesOn;  // caller to ReBalancer should fill in the forced proxies
 };
 
-class processorInfo: public InfoRecord
-{
+class processorInfo: public InfoRecord {
 public:
    // int processorNum; replaced by inherited "Id".
    double backgroundLoad; // background work pre-assigned to the processor.

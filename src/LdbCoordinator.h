@@ -9,9 +9,9 @@
 
 #include <stdio.h>
 
-#include "charm++.h"
+#include <charm++.h>
+#include <LBDatabase.h>
 
-#include "converse.h"
 #include "NamdTypes.h"
 #include "BOCgroup.h"
 #include "LdbCoordinator.decl.h"
@@ -30,33 +30,6 @@ enum {COMPUTEMAX = 16384};
 enum {PATCHMAX = 4096};
 enum {PROCESSORMAX = 512};
 
-
-class LdbStatsMsg : public CMessage_LdbStatsMsg
-{
-public:
-  int proc;
-  double procLoad;
-  int nPatches;
-  int *pid;
-  int *nAtoms;
-  int nComputes;
-  int *cid;
-  float *computeTime;
-
-  LdbStatsMsg(void);
-  LdbStatsMsg(int npatches, int ncomputes);
-  ~LdbStatsMsg(void);
-  static void* pack(LdbStatsMsg* msg);
-  static LdbStatsMsg* unpack(void *ptr);
-};
-
-
-
-struct LdbResumeMsg : public CMessage_LdbResumeMsg
-{
-  int dummy;
-};
-
 class LdbCoordinator : public BOCclass
 {
 public:
@@ -72,29 +45,46 @@ public:
   void endWork(ComputeID id, int timestep);
   void rebalance(Sequencer *seq, PatchID id);
   void rebalance(Controller *seq);
-  void nodeDone(LdbResumeMsg *msg);
-  void sendStats(LdbResumeMsg *msg);
-  void analyze(LdbStatsMsg *msg);
+  void nodeDone(void);
   void updateComputesReady();
-  void resume(LdbResumeMsg *msg);
+  void resume(void);
   void resumeReady(CkQdMsg *msg);
-  void resume2(LdbResumeMsg *msg);
+  void resume2(void);
   int steps(void) { return nLdbSteps; }
+  static void staticMigrateFn(LDObjHandle handle, int dest);
+  static void staticStatsFn(LDOMHandle h, int state);
+  static void staticQueryEstLoadFn(LDOMHandle h);
+  static void staticReceiveAtSync(void* data);
+  static void staticResumeFromSync(void* data);
+  void ReceiveAtSync(void);
+  void Migrate(LDObjHandle handle, int dest);
+  void RecvMigrate(LdbMigrateMsg*);
+  void ProcessMigrate(LdbMigrateMsg*);
+  void ExpectMigrate(LdbMigrateMsg*);
+  void ResumeFromSync(void);
 
+#ifdef DELETEME
   // Public variables accessed by the idle-event functions
   double idleStart;
   double idleTime;
+#endif
 
 private:
+  struct Migration {
+    int id;
+    int from;
+    int to;
+    Migration* next;
+  };
+
+public:
   int checkAndGoToBarrier(void);
-  void processStatistics(void);
+  void ExecuteMigrations(void);
   void awakenSequencers(void);
   int requiredProxies(PatchID id, int []);
-  int buildData(void);
   void cleanUpData(void);
   void printRequiredProxies(PatchID id, FILE *fp);
   void printLocalLdbReport(void);
-  void printLdbReport(const int nMoveableComputes);
 
   int stepsPerLdbCycle;
   int nLocalComputes;
@@ -112,21 +102,42 @@ private:
   int *patchNAtoms;
   Controller *controllerThread;
   Sequencer **sequencerThreads;
+#ifdef DELETEME
   double *computeStartTime;
   double *computeTotalTime;
+#endif
   int ldbCycleNum;
   int nLdbSteps;
   int firstLdbStep;
   int nodesDone;
 
-  LdbStatsMsg **statsMsgs;
   FILE *ldbStatsFP;
+#ifdef DELETEME
   double totalStartTime;
   double totalTime;
+#endif
   computeInfo *computeArray;
   patchInfo *patchArray;
   processorInfo *processorArray;
+  LBDatabase *theLbdb;
+  LDOMid myOMid;
+  LDOMHandle myHandle;
+  LDObjHandle* objHandles;
+  int nRegisteredObjs;
+  LDBarrierClient ldBarrierHandle;
+  bool reg_all_objs;
+  LDObjHandle* patchHandles;
+  Migration* migrations;
 };
+
+class LdbMigrateMsg : public CMessage_LdbMigrateMsg
+{
+public:
+  LDObjHandle handle;
+  int from;
+  int to;
+};
+
 
 #endif // LDBCOORDINATOR_H
 

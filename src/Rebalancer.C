@@ -384,7 +384,7 @@ void Rebalancer::printResults()
 
 void Rebalancer::printLoads()
 {
-#if 0  // Something evil in these print statements.  -JCP
+#if 1  // Something evil in these print statements.  -JCP
 
    int i, total = 0, numBytes = 0;
    double max;

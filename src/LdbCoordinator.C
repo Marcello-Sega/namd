@@ -6,7 +6,8 @@
 
 #include <iostream.h>
 #include <stdlib.h>
-#include "charm++.h"
+#include <charm++.h>
+#include <NamdCentLB.h>
 
 #include "ProcessorPrivate.h"
 #include "InfoStream.h"
@@ -25,113 +26,132 @@
 #include "Sequencer.h"
 #include "RefineOnly.h"
 #include "ComputeMgr.h"
-#include "Alg7.h"
-//#include "Alg0.h"
-//#include "Alg1.h"
-//#include "Alg4.h"
 #include "packmsg.h"
 
 #include "elements.h"
 #include "ComputeMgr.decl.h"
 
-
-class manheap;
-class maxheap;
-
 #define DEBUG_LEVEL 4
 
-#define TIMER_FNC()   CmiWallTimer()
-
-CmiHandler notifyIdleStart(void)
+#ifdef DELETEME
+//#define TIMER_FNC()   CmiWallTimer()
+#define TIMER_FNC() 0
+#endif
+ 
+void LdbCoordinator::staticMigrateFn(LDObjHandle handle, int dest)
 {
-  LdbCoordinator::Object()->idleStart = TIMER_FNC();
-  return 0;
+   ((LdbCoordinator*)handle.omhandle.user_ptr)->Migrate(handle,dest);
 }
 
-CmiHandler notifyIdleEnd(void)
+void LdbCoordinator::Migrate(LDObjHandle handle, int dest)
 {
-  const double idleEndTime = TIMER_FNC();
-  LdbCoordinator::Object()->idleTime +=
-    idleEndTime - LdbCoordinator::Object()->idleStart;
-  LdbCoordinator::Object()->idleStart = -1;
-  return 0;
+  LdbMigrateMsg* msg = new LdbMigrateMsg;
+  msg->handle = handle;
+  msg->from = CkMyPe();
+  msg->to = dest;
+  CProxy_LdbCoordinator(thisgroup).RecvMigrate(msg,CkMyPe());
 }
 
-LdbStatsMsg::LdbStatsMsg(void)
+void LdbCoordinator::staticStatsFn(LDOMHandle h, int state)
 {
-  nPatches = -1;
-  nComputes = -1;
+  CkPrintf("I'm supposed to set stats\n");
 }
 
-LdbStatsMsg::LdbStatsMsg(int np, int nc)
+void LdbCoordinator::staticQueryEstLoadFn(LDOMHandle h)
 {
-  nPatches = np;
-  pid = new int[np];
-  nAtoms = new int [np];
-  nComputes = nc;
-  cid = new int[nc];
-  computeTime = new float[nc];
+  CkPrintf("I'm supposed to query load\n");
 }
 
-LdbStatsMsg::~LdbStatsMsg()
+void LdbCoordinator::staticReceiveAtSync(void* data)
 {
-  delete [] pid;
-  delete [] nAtoms;
-  delete [] cid;
-  delete [] computeTime;
+  ((LdbCoordinator*)data)->ReceiveAtSync();
 }
 
-PACK_MSG(LdbStatsMsg,
-  PACK(proc);
-  PACK(procLoad);
-  PACK_AND_NEW_ARRAY(pid,nPatches);
-  PACK_AND_NEW_ARRAY(nAtoms,nPatches);
-  PACK_AND_NEW_ARRAY(cid,nComputes);
-  PACK_AND_NEW_ARRAY(computeTime,nComputes);
-)
+void LdbCoordinator::ReceiveAtSync()
+{
+  theLbdb->RegisteringObjects(myHandle);
+}
 
+void LdbCoordinator::staticResumeFromSync(void* data)
+{
+  ((LdbCoordinator*)data)->ResumeFromSync();
+}
+
+void LdbCoordinator::ResumeFromSync()
+{
+  theLbdb->DoneRegisteringObjects(myHandle);
+  CProxy_LdbCoordinator cl(thisgroup);
+  cl.nodeDone(0);
+}
 
 LdbCoordinator::LdbCoordinator()
 {
-  if (CpvAccess(LdbCoordinator_instance) == NULL)
-  {
+  if (CpvAccess(LdbCoordinator_instance) == NULL) {
     CpvAccess(LdbCoordinator_instance) = this;
   } else {
     iout << iFILE << iERROR << iPE 
 	 << "LdbCoordinator instanced twice on same node!" << endi;
     CkExit();
   }
+  
+  // Create a load balancer
+  if (CkMyPe() == 0) {
+    //   CreateCentralLB();
+    CreateNamdCentLB();
+  }
 
   ldbCycleNum = 1;
   nLocalComputes = nLocalPatches = 0;
+#ifdef DELETEME
   computeStartTime = computeTotalTime = (double *)NULL;
+#endif
   patchNAtoms = (int *) NULL;
   sequencerThreads = (Sequencer **) NULL;
-  if (CkMyPe() == 0)
-    statsMsgs = new (LdbStatsMsg *[CkNumPes()]);
-  else statsMsgs = NULL;
   ldbStatsFP = NULL;
   computeArray = NULL;
   patchArray = NULL;
   processorArray = NULL;
 
+#ifdef DELETEME
   // Register Converse timer routines
-#ifndef NO_IDLE_COMPUTATION
-  CsdSetNotifyIdle((CmiHandler)notifyIdleStart,(CmiHandler)notifyIdleEnd);
-#endif
   idleTime = 0;
+#endif
   nodesDone = 0;
+
+  // Register self as an object manager for new charm++ balancer framework
+  theLbdb = CProxy_LBDatabase::ckLocalBranch(lbdb);
+  myOMid.id = 1;
+  LDCallbacks cb = { (LDMigrateFn)staticMigrateFn,
+		     (LDStatsFn)staticStatsFn,
+		     (LDQueryEstLoadFn)staticQueryEstLoadFn
+                   };
+  myHandle = theLbdb->RegisterOM(myOMid,(void*)this,cb);
+
+  // Add myself as a local barrier receiver, so I know when I might
+  // be registering objects.
+  theLbdb->AddLocalBarrierReceiver((LDBarrierFn)staticReceiveAtSync,
+				   (void*)this);;
+
+  // Also, add a local barrier client, to trigger load balancing
+  ldBarrierHandle = theLbdb->
+    AddLocalBarrierClient((LDResumeFn)staticResumeFromSync,
+			  (void*)this);
+  objHandles = 0;
+  reg_all_objs = true;
+  migrations = 0;
 }
 
 LdbCoordinator::~LdbCoordinator(void)
 {
   delete [] patchNAtoms;
   delete [] sequencerThreads;
+#ifdef DELETEME
   delete [] computeStartTime;
-  delete [] computeTotalTime;
+  delete [] computeStartTime;
+#endif
+  delete [] objHandles;
   if (CkMyPe() == 0)
   {
-    delete [] statsMsgs;
     delete [] computeArray;
     delete [] patchArray;
     delete [] processorArray;
@@ -183,27 +203,97 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
   if (nLocalPatches != pMap->numHomePatches())
     NAMD_die("Disaggreement in patchMap data.\n");
  
+#ifdef DELETEME
   delete [] computeStartTime;  // Depends on delete NULL to do nothing
   computeStartTime = new double[cMap->numComputes()];
 
   delete [] computeTotalTime;  // Depends on delete NULL to do nothing
   computeTotalTime = new double[cMap->numComputes()];
+#endif
 
   nLocalComputes = 0;
-  for(i=0;i<cMap->numComputes();i++)
-  {
+  for(i=0;i<cMap->numComputes();i++)  {
     if ( (cMap->node(i) == Node::Object()->myid())
 	 && ( (cMap->type(i) == computeNonbondedPairType)
-	      || (cMap->type(i) == computeNonbondedSelfType) ) )
-    {
-      computeStartTime[i] =
-	computeTotalTime[i] = 0.;
-
+	      || (cMap->type(i) == computeNonbondedSelfType) ) ) {
+#ifdef DELETEME      
+      computeStartTime[i] = computeTotalTime[i] = 0.;
+#endif
       nLocalComputes++;
-    } else {
+    }
+#ifdef DELETEME
+ else {
+
       computeStartTime[i] = 
 	computeTotalTime[i] = -1.;
     }
+#endif
+  }
+  
+  // New LB frameworks registration
+
+  // Allocate data structure to save incoming migrations.  Processor
+  // zero will get all migrations
+
+  // If this is the first time through, we need it register patches
+  if (reg_all_objs) {
+    // Tell the lbdb that I'm registering objects, until I'm done
+    // registering them.
+    theLbdb->RegisteringObjects(myHandle);
+    
+    patchHandles = new LDObjHandle[nLocalPatches];
+    int patch_count=0;
+    int i;
+    for(i=0;i<pMap->numPatches();i++)
+      if (pMap->node(i) == Node::Object()->myid()) {
+	LDObjid elemID;
+	elemID.id[0] = i;
+	elemID.id[1] = elemID.id[2] = elemID.id[3] = -2;
+
+	if (patch_count >= nLocalPatches) {
+	  iout << iFILE << iERROR << iPE 
+	       << "LdbCoordinator found too many local patches!" << endi;
+	  CkExit();
+	}
+	patchHandles[patch_count] 
+	  = theLbdb->RegisterObj(myHandle,elemID,0,0);
+	patch_count++;
+      }
+  
+    // Allocate new object handles
+    if (objHandles == 0) {
+      objHandles = new LDObjHandle[cMap->numComputes()];
+      for(i=0;i<cMap->numComputes();i++)
+	objHandles[i].id.id[0] = -1; // Use -1 to mark unused entries
+
+      // Register computes
+      for(i=0;i<cMap->numComputes();i++)  {
+	if ( (cMap->node(i) == Node::Object()->myid())
+	     && ( (cMap->type(i) == computeNonbondedPairType)
+		  || (cMap->type(i) == computeNonbondedSelfType) ) ) {
+	  // Register the object with the load balancer
+	  // Store the depended patch IDs in the rest of the element ID
+	  LDObjid elemID;
+	  elemID.id[0] = i;
+	
+	  if (cMap->numPids(i) > 2)
+	    elemID.id[3] = cMap->pid(i,2);
+	  else elemID.id[3] = -1;
+
+	  if (cMap->numPids(i) > 1)
+	    elemID.id[2] =  cMap->pid(i,1);
+	  else elemID.id[2] = -1;
+
+	  if (cMap->numPids(i) > 0)
+	    elemID.id[1] =  cMap->pid(i,0);
+	  else elemID.id[1] = -1;
+
+	  objHandles[i] = theLbdb->RegisterObj(myHandle,elemID,0,1);
+	}
+      }
+    }
+    theLbdb->DoneRegisteringObjects(myHandle);
+    reg_all_objs = false;
   }
 
   // Fixup to take care of the extra timestep at startup
@@ -238,18 +328,18 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
   if (nLocalPatches == 0 || nLocalComputes==0 )
   	checkAndGoToBarrier();
 
+#ifdef DELETEME
   // Start idle-time recording
   idleTime = 0;
-#ifndef NO_IDLE_COMPUTATION
-  CsdStartNotifyIdle();
-#endif
   totalStartTime = TIMER_FNC();
+#endif
+
+  theLbdb->ClearLoads();
 }
 
 void LdbCoordinator::patchLoad(PatchID id, int nAtoms, int /* timestep */)
 {
-  if (patchNAtoms[id] != -1)
-  {
+  if (patchNAtoms[id] != -1) {
     patchNAtoms[id] = nAtoms;
     nPatchesReported++;
   } else {
@@ -260,38 +350,13 @@ void LdbCoordinator::patchLoad(PatchID id, int nAtoms, int /* timestep */)
 
 void LdbCoordinator::startWork(ComputeID id, int /* timestep */ )
 {
-  if (Node::Object()->simParameters->ldbStrategy == LDBSTRAT_NONE)
-    return;
-
-  if (computeStartTime[id] == -1.)
-  {
-    DebugM(4, "::startWork() Unexpected compute("<<id<<") reporting in\n");
-  } else if (computeStartTime[id] > 0.)
-  {
-    DebugM(4, "::startWork() Attempting to start already-running timer\n");
-  }
-  else
-    computeStartTime[id] = TIMER_FNC();
+  theLbdb->ObjectStart(objHandles[id]);
 }
 
 void LdbCoordinator::endWork(ComputeID id, int /* timestep */)
 {
-  double endTime = TIMER_FNC();
-
-  if (Node::Object()->simParameters->ldbStrategy == LDBSTRAT_NONE)
-    return;
-
-  if (computeStartTime[id] == -1.)
-  {
-    DebugM(4, "::endWork() Unexpected compute("<<id<<") reporting in\n");
-  } else if (computeStartTime[id] == 0)
-  {
-    DebugM(4, "::endwork() Attempting to save non-running timer\n");
-  } else  {
-    computeTotalTime[id] += endTime-computeStartTime[id];
-    computeStartTime[id] = 0.;
-    nComputesReported++;
-  }
+  theLbdb->ObjectStop(objHandles[id]);
+  nComputesReported++;
   checkAndGoToBarrier();
 }
 
@@ -339,258 +404,108 @@ int LdbCoordinator::checkAndGoToBarrier(void)
        && (controllerReported == controllerExpected) )
   {
     DebugM(3, "Load balance barrier reached.\n");
-    LdbResumeMsg *msg = new LdbResumeMsg;
-    CProxy_LdbCoordinator cl(thisgroup);
-    cl.nodeDone(msg,0);
+    theLbdb->AtLocalBarrier(ldBarrierHandle);
     return 1;
   }
   else return 0;
 }
 
-void LdbCoordinator::nodeDone(LdbResumeMsg *msg)
+
+void LdbCoordinator::nodeDone(void)
 {
   nodesDone++;
-  if (nodesDone==Node::Object()->numNodes())
-  {
+  if (nodesDone==Node::Object()->numNodes()) {
     nodesDone=0;
-    CProxy_LdbCoordinator(thisgroup).sendStats(msg);
-  }
-  else delete msg;
-}
-void LdbCoordinator::sendStats(LdbResumeMsg *inMsg)
-{
-  delete inMsg;
-/* REMOVE VERBOSE OUTPUT
-  if(CkMyPe()==0)
-  {
-    CkPrintf("WallClock : %f  CPUTime : %f \n", CmiWallTimer()-Namd::cmiWallStart, 
-	    CmiCpuTimer()-Namd::cmiCpuStart);
-  }
-*/
-  // Turn off idle-time calculation
-#ifndef NO_IDLE_COMPUTATION
-  CsdStopNotifyIdle();
-#endif
-  totalTime = TIMER_FNC() - totalStartTime;
-
-#ifndef NO_IDLE_COMPUTATION
-  if (idleStart!= -1)
-    iout << iPE << "WARNING: idle time still accumulating?\n" << endi;
-
-#endif
-  if (nLocalPatches > LDB_PATCHES)
-  {
-    char die_msg[255];
-    sprintf(die_msg,
-	    "%s(%d): Insufficient memory.  Increase LDB_PATCHES to %d",
-	    __FILE__,__LINE__,nPatchesReported);
-    NAMD_die(die_msg);
-  }
-
-  if (nLocalComputes > LDB_COMPUTES)
-  {
-    char die_msg[255];
-    sprintf(die_msg,
-	    "%s(%d): Insufficient memory.  Increase LDB_COMPUTES to %d",
-	    __FILE__,__LINE__,nComputesReported);
-    NAMD_die(die_msg);
-  }
-
-  LdbStatsMsg *msg = new LdbStatsMsg(nLocalPatches,nLocalComputes);
-  
-  if (msg == NULL)
-    NAMD_die("LdbCoordinator::checkAndSendStats: Insufficient memory");
-
-  msg->proc = Node::Object()->myid();
-  msg->procLoad = totalTime - idleTime;
-
-/*  REMOVE VERBOSE OUTPUT
-  iout << iINFO << iPE << " Last " << nLdbSteps 
-       << " steps: processor time = " << totalTime 
-       << "  time per step = " << totalTime/nLdbSteps 
-       << "\n" << endi;
-#ifndef NO_IDLE_COMPUTATION
-  CkPrintf("[%d] Processor idle time (this ldb cycle)=%5.1f%%\n",
-	  msg->proc,100.*idleTime/totalTime);
-#endif
-*/
-
-  int i;
-  msg->nPatches = 0;
-
-  for(i=0;i<patchMap->numPatches();i++)
-  {
-    if (patchNAtoms[i] != -1)
-    {
-      msg->pid[msg->nPatches]=i;
-      msg->nAtoms[msg->nPatches]=patchNAtoms[i];
-      msg->nPatches++;
-    }
-  }
-
-  msg->nComputes = 0;
-  for(i=0;i<computeMap->numComputes();i++)
-  {
-    if (computeStartTime[i] != -1.)
-    {
-      msg->cid[msg->nComputes]=i;
-      msg->computeTime[msg->nComputes]=computeTotalTime[i];
-      msg->nComputes++;
-    }
-  }
-  for(i=0;i<msg->nComputes;i++)
-    msg->procLoad -= msg->computeTime[i];
-  
-  CProxy_LdbCoordinator cl(thisgroup);
-  cl.analyze(msg,0);
-  return;
-}
-
-void LdbCoordinator::analyze(LdbStatsMsg *msg)
-{
-  if (Node::Object()->myid() != 0)
-  {
-    CkPrintf("Unexpected call to LdbCoordinator::analyze\n");
-    return;
-  }
-
-  statsMsgs[msg->proc] = msg;
-  nStatsMessagesReceived++;
-
-  if (nStatsMessagesReceived==nStatsMessagesExpected)
-  {
-    processStatistics();
+    ExecuteMigrations();
   }
 }
 
-void LdbCoordinator::processStatistics(void)
+void LdbCoordinator::ExecuteMigrations(void)
 {
-  //  CkPrintf("LDB: All statistics received at %f, %f\n",
-  //  CmiTimer(),CmiWallTimer());
-
-  const int numProcessors = Node::Object()->numNodes();
-  const int numPatches = patchMap->numPatches();
-  const SimParameters *simParams = Node::Object()->simParameters;
-
-  const int nMoveableComputes = buildData();
-  
-  Rebalancer *rebalancer = 0;
-
-  if (simParams->ldbStrategy == LDBSTRAT_REFINEONLY)
-  {
-    rebalancer = new RefineOnly(computeArray,patchArray,processorArray,
-				nMoveableComputes, numPatches, numProcessors);
-  } 
-  else if (simParams->ldbStrategy == LDBSTRAT_ALG7)
-  {
-    rebalancer = new Alg7(computeArray,patchArray,processorArray,
-			  nMoveableComputes, numPatches, numProcessors);
+  while (migrations) {
+    computeMap->setNewNode(migrations->id,migrations->to);
+    Migration *const next = migrations->next;
+    delete migrations;
+    migrations = next;
   }
-  else if (simParams->ldbStrategy == LDBSTRAT_OTHER)
-  {
-    if (ldbCycleNum == 1)
-    {
-      iout << iINFO << "Load balance cycle " << ldbCycleNum
-	<< " using Alg7\n" << endi;
-      rebalancer = new Alg7(computeArray,patchArray,processorArray,
-			    nMoveableComputes, numPatches, numProcessors);
-    } else {
-      iout << iINFO << "Load balance cycle " << ldbCycleNum
-	<< " using RefineOnly\n" << endi;
-      rebalancer = new RefineOnly(computeArray,patchArray,processorArray,
-				  nMoveableComputes, numPatches,
-				  numProcessors);
-    }
-  }
-
-
-      
-    
-      
-  delete rebalancer;
-
-  // 0) Rebuild ComputeMap using computeMap->setNewNode()
-  int i;
-  for(i=0; i < nMoveableComputes; i++)
-  {
-    if ( (computeArray[i].processor != computeArray[i].oldProcessor)
-	 && (computeArray[i].processor != -1) )
-    {
-      // CkPrintf("Assigning compute %d from %d to %d\n",
-      //    i,computeArray[i].oldProcessor,computeArray[i].processor);
-      computeMap->setNewNode(computeArray[i].Id,computeArray[i].processor);
-      DebugM(2, "setting("<<computeArray[i].Id<<") newNode - curnode="
-	<<computeMap->node(computeArray[i].Id) 
-	<<" newnode="<<computeMap->newNode(computeArray[i].Id) << "\n" );
-    } else {
-      DebugM(2, "current setup - curnode="<<computeMap->node(computeArray[i].Id)
-	<<" newnode="<<computeMap->newNode(computeArray[i].Id) << "\n" );
-    }
-  }
-  /*
-  if (computeMap->node(71) == 0) {
-      iout << iPE << iERRORF << " moving computeID(71) by hand to node 2\n" << endi;
-      computeMap->setNewNode(71, 2);
-  }
-  computeMap->setNewNode(72, (computeMap->node(72)+1)%3);
-  computeMap->setNewNode(73, (computeMap->node(72)+1)%3);
-  computeMap->setNewNode(74, (computeMap->node(72)+1)%3);
-  computeMap->setNewNode(75, (computeMap->node(72)+2)%3);
-  computeMap->setNewNode(76, (computeMap->node(72)+2)%3);
-  computeMap->setNewNode(77, (computeMap->node(72)+2)%3);
-  */
-
-  // 1) Print out statistics in test format
-  // printLdbReport(nMoveableComputes);
-
-
-  // 2) delete messages
-  cleanUpData();
-  for (i=0; i < nStatsMessagesReceived; i++)
-    delete statsMsgs[i];
-
-  // computeMgr->updateComputes() call only on Node(0) i.e. right here
+ 
+ // computeMgr->updateComputes() call only on Node(0) i.e. right here
   // This will barrier for all Nodes - (i.e. Computes must be
   // here and with proxies before anyone can start up
+
   CProxy_ComputeMgr cm(CpvAccess(BOCclass_group).computeMgr);
   ComputeMgr *computeMgr = cm.ckLocalBranch();
-  computeMgr->updateComputes(CProxy_LdbCoordinator::ckIdx_updateComputesReady(),thisgroup);
-  //  CkPrintf("LDB: Done processing statistics at %f, %f\n",
-  //	  CmiTimer(),CmiWallTimer());
+  computeMgr->updateComputes(CProxy_LdbCoordinator::
+			     ckIdx_updateComputesReady(),thisgroup);
+}
+
+void LdbCoordinator::RecvMigrate(LdbMigrateMsg* m)
+{
+  // This method receives the migration from the framework,
+  // unregisters it, and
+  // sends it to PE 0, which is where NAMD coordinates all of the
+  // load balancing
+  const int id = m->handle.id.id[0];
+
+  theLbdb->UnregisterObj(objHandles[id]);
+  objHandles[id].id.id[0] = -1;
+
+  CProxy_LdbCoordinator(thisgroup).ProcessMigrate(m,0);
+}
+
+void LdbCoordinator::ProcessMigrate(LdbMigrateMsg* m)
+{
+  // On PE 0, we store the migration, and then forward it on to the
+  // destination PE
+
+  Migration* new_migration = new Migration;
+
+  new_migration->id = m->handle.id.id[0];
+  new_migration->from = m->from;
+  new_migration->to = m->to;
+  new_migration->next = migrations;
+  migrations = new_migration;
+
+  CProxy_LdbCoordinator(thisgroup).ExpectMigrate(m,m->to);
+}
+
+void LdbCoordinator::ExpectMigrate(LdbMigrateMsg* m)
+{
+  objHandles[m->handle.id.id[0]] 
+    = theLbdb->RegisterObj(myHandle,m->handle.id,0,1);
+
+  theLbdb->Migrated(objHandles[m->handle.id.id[0]]);
+
+  delete m;
 }
 
 void LdbCoordinator::updateComputesReady() {
   DebugM(3,"updateComputesReady()\n");
 
-  LdbResumeMsg *sendmsg = new LdbResumeMsg;
-  CProxy_LdbCoordinator(thisgroup).resume(sendmsg);
+  CProxy_LdbCoordinator(thisgroup).resume();
   CkStartQD(CProxy_LdbCoordinator::ckIdx_resumeReady((CkQdMsg*)0),&thishandle);
 }
 
-void LdbCoordinator::resume(LdbResumeMsg *msg)
+void LdbCoordinator::resume(void)
 {
   DebugM(3,"resume()\n");
   //  printLocalLdbReport();
 
   ldbCycleNum++;
   initialize(PatchMap::Object(),ComputeMap::Object(),1);
-  delete msg;
 }
 
 void LdbCoordinator::resumeReady(CkQdMsg *msg) {
   DebugM(3,"resumeReady()\n");
   delete msg;
 
-  // Namd::startTimer();
-  LdbResumeMsg *sendmsg = new LdbResumeMsg;
-  CProxy_LdbCoordinator(thisgroup).resume2(sendmsg);
+  CProxy_LdbCoordinator(thisgroup).resume2();
 }
 
-void LdbCoordinator::resume2(LdbResumeMsg *msg)
+void LdbCoordinator::resume2(void)
 {
   DebugM(3,"resume2()\n");
   awakenSequencers();
-  delete msg;
 }
 
 void LdbCoordinator::awakenSequencers()
@@ -604,72 +519,10 @@ void LdbCoordinator::awakenSequencers()
   {
     if (sequencerThreads[i])
     {
-      //      CkPrintf("Awakening thread %d\n",i);
       sequencerThreads[i]->awaken();
     }
     sequencerThreads[i]= NULL;
   }
-}
-
-int LdbCoordinator::buildData(void)
-{
-  int i;
-  for (i=0; i<nStatsMessagesReceived; i++)
-  {
-    const LdbStatsMsg *msg = statsMsgs[i];
-    processorArray[i].Id = msg->proc;
-    processorArray[i].backgroundLoad = statsMsgs[i]->procLoad;
-    processorArray[i].proxies = new Set();
-  }
-
-  int nMoveableComputes=0;
-  for (i=0; i < nStatsMessagesReceived; i++)
-  {
-    const LdbStatsMsg *msg = statsMsgs[i];
-    int j;
-    for (j=0; j<msg->nPatches; j++)
-    {
-      const int pid = msg->pid[j];
-      int neighborNodes[PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
-
-      patchArray[pid].Id = pid;
-      patchArray[pid].numAtoms = msg->nAtoms[j];
-      patchArray[pid].processor = patchMap->node(pid);
-      const int numProxies = requiredProxies(pid,neighborNodes);
-      patchArray[pid].proxiesOn = new Set();
-
-      for (int k=0; k<numProxies; k++)
-      {
-	processorArray[neighborNodes[k]].proxies->insert(&patchArray[pid]);
-	patchArray[pid].proxiesOn->insert(&processorArray[neighborNodes[k]]);
-      }
-    }
-
-    for (j=0; j<statsMsgs[i]->nComputes; j++)
-    {
-      const int p0 = computeMap->pid(msg->cid[j],0);
-
-      // For self-interactions, just return the same pid twice
-      int p1;
-      if (computeMap->numPids(msg->cid[j]) > 1)
-	p1 = computeMap->pid(msg->cid[j],1);
-      else 
-	p1 = p0;
-
-      const int cid = msg->cid[j];
-      computeArray[nMoveableComputes].Id = cid;
-      computeArray[nMoveableComputes].oldProcessor = msg->proc;
-      computeArray[nMoveableComputes].patch1 = p0;
-      computeArray[nMoveableComputes].patch2 = p1;
-      computeArray[nMoveableComputes].load = msg->computeTime[j];
-      nMoveableComputes++;
-    }
-/* REMOVE VERBOSE OUTPUT
-    CkPrintf("PE %d nComputes = %d\n",msg->proc,j);
-*/
-    
-  }
-  return nMoveableComputes;
 }
 
 void LdbCoordinator::cleanUpData(void)
@@ -755,6 +608,7 @@ void LdbCoordinator::printLocalLdbReport(void)
   
   curLoc = outputBuf;
   j=0;
+#ifdef DELETEME
   for(i=0; i<computeMap->numComputes(); i++)
   {
     if (computeTotalTime[i] != -1)
@@ -769,71 +623,8 @@ void LdbCoordinator::printLocalLdbReport(void)
       j=0;
     }
   }
+#endif
     
-}
-
-void LdbCoordinator::printLdbReport(const int nMoveableComputes)
-{
-  if (ldbStatsFP == NULL)
-  {
-    ldbStatsFP = fopen("ldbreport.dat","w");
-  }
-
-  const int nProcs = Node::Object()->numNodes();
-  const int nPatches = patchMap->numPatches();
-
-  int i,j;
-
-  fprintf(ldbStatsFP,"*** Load balancer report ***\n");
-
-  fprintf(ldbStatsFP,"%4d %4d %4d\n",nProcs,nPatches,nMoveableComputes);
-
-  // Print out processor background load
-  for (i=0;i<nProcs;i++)
-    fprintf(ldbStatsFP,"%8.3f ",statsMsgs[i]->procLoad);
-  fprintf(ldbStatsFP,"\n\n");
-
-  // Print out info for each patch
-  for (i=0;i<nProcs;i++)
-  {
-    const LdbStatsMsg *msg = statsMsgs[i];
-    for ( j=0; j < msg->nPatches; j++)
-    {
-      fprintf(ldbStatsFP,"%4d %4d %4d ",
-	      msg->pid[j],msg->nAtoms[j],msg->proc);
-      printRequiredProxies(msg->pid[j],ldbStatsFP);
-      fprintf(ldbStatsFP,"\n");
-    }
-  }
-  fprintf(ldbStatsFP,"\n");
-  
-  // Print out info for each compute
-  int numComputesPrinted = 0;
-  for (i=0;i<nProcs;i++)
-  {
-    const LdbStatsMsg *msg = statsMsgs[i];
-    for ( j=0; j < msg->nComputes; j++)
-    {
-      const int p0 = computeMap->pid(msg->cid[j],0);
-
-      // For self-interactions, just return the same pid twice
-      int p1;
-      if (computeMap->numPids(msg->cid[j]) > 1)
-	p1 = computeMap->pid(msg->cid[j],1);
-      else 
-	p1 = p0;
-
-      fprintf(ldbStatsFP,"%4d %4d %4d %4d %8.3f\n",
-	      msg->cid[j],msg->proc,p0,p1,msg->computeTime[j]);
-      numComputesPrinted++;
-    }
-  }
-  if (numComputesPrinted != nMoveableComputes)
-    CkPrintf("LDB stats missing %d %d \n",
-	    numComputesPrinted,nMoveableComputes);
-  fprintf(ldbStatsFP,"\n");
-  fprintf(ldbStatsFP,"*** Load balancer report complete ***\n");
-  fflush(ldbStatsFP);
 }
 
 void LdbCoordinator::printRequiredProxies(PatchID id, FILE *fp)

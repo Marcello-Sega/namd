@@ -662,10 +662,12 @@ void Controller::printEnergies(int step)
     {
     case 0:
     case 2:
+    case 4:
       startBenchTime = CmiWallTimer();
       break;
     case 1:
     case 3:
+    case 5:
       iout << iINFO;
       if ( benchPhase == 1 ) iout << "Initial time: ";
       else iout << "Benchmark time: ";

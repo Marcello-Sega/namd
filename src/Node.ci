@@ -7,6 +7,8 @@
 module Node {
   // Node is on each Pe - 
 
+  extern module main;
+
   message GroupInitMsg;
   message ScriptParamMsg;
 
