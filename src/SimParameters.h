@@ -302,6 +302,9 @@ public:
 	int outputMomenta;		//  Number of timesteps between momentum
 					//  outputs
 
+	int outputTiming;		//  Number of timesteps between timing
+					//  outputs
+
 	int firstTimestep;		//  Starting timestep.  Will be 0 unless
 					//  restarting a simulation
 
@@ -379,12 +382,15 @@ public:
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1023 $	$Date: 1998/08/17 23:34:30 $
+ *	$Revision: 1.1024 $	$Date: 1998/09/13 21:06:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1024  1998/09/13 21:06:15  jim
+ * Cleaned up output, defaults, etc.
+ *
  * Revision 1.1023  1998/08/17 23:34:30  jim
  * Added options for Langevin piston and wrapWater.
  *

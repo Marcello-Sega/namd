@@ -13,7 +13,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Parameters.C,v 1.1005 1997/10/01 16:47:00 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Parameters.C,v 1.1006 1998/09/13 21:06:10 jim Exp $";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -3019,13 +3019,13 @@ void Parameters::print_vdw_pair_params()
 void Parameters::print_param_summary()
 {
   iout << iINFO << "SUMMARY OF PARAMETERS:\n" 
-     << NumBondParams << " BONDS\n" 
-           << NumAngleParams << " ANGLES\n"
-           << NumDihedralParams << " DIHEDRAL\n"
-           << NumImproperParams << " IMPROPER\n"
-           << NumVdwParams << " VDW\n"
-           << NumVdwPairParams << " VDW_PAIRS\n"
-     << hbondParams.num() << " HBOND_PAIRS\n" << endi;
+       << iINFO << NumBondParams << " BONDS\n" 
+       << iINFO << NumAngleParams << " ANGLES\n"
+       << iINFO << NumDihedralParams << " DIHEDRAL\n"
+       << iINFO << NumImproperParams << " IMPROPER\n"
+       << iINFO << NumVdwParams << " VDW\n"
+       << iINFO << NumVdwPairParams << " VDW_PAIRS\n"
+       << iINFO << hbondParams.num() << " HBOND_PAIRS\n" << endi;
 }
 
 
@@ -3818,13 +3818,16 @@ int Parameters::vdw_pair_to_arrays(int *ind1_array, int *ind2_array,
  * RCS INFORMATION:
  *
  *  $RCSfile: Parameters.C,v $
- *  $Author: milind $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1005 $  $Date: 1997/10/01 16:47:00 $
+ *  $Author: jim $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1006 $  $Date: 1998/09/13 21:06:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Parameters.C,v $
+ * Revision 1.1006  1998/09/13 21:06:10  jim
+ * Cleaned up output, defaults, etc.
+ *
  * Revision 1.1005  1997/10/01 16:47:00  milind
  * Removed old NAMD1 messaging and replaced it with new Message Streams library.
  *

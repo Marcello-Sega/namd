@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1061 1998/09/01 23:10:34 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1062 1998/09/13 21:06:16 jim Exp $";
 
 #include <stdio.h>
 
@@ -328,14 +328,15 @@ void WorkDistrib::patchMapInit(void)
 
   Vector center = 0.5 * ( xmax + xmin );
 
+  iout << iINFO << "PATCH GRID IS ";
+
   if ( params->cellBasisVector1.x )
   {
     xper = 1;
     sysDim.x = params->cellBasisVector1.x;
     xdim = (int)(sysDim.x / patchSize);
     if ( xdim < 2 ) xdim = 2;
-    iout << iINFO 
-	 << "Periodic in x dimension with " << xdim << " patches.\n";
+    iout << xdim << " (PERIODIC)";
     center.x = params->lattice.origin().x;
   }
   else
@@ -346,9 +347,10 @@ void WorkDistrib::patchMapInit(void)
     if ((xdim * patchSize) < sysDim.x)
       xdim++;
     sysDim.x = xdim * patchSize;
-    iout << iINFO
-	 << "Non-periodic in x dimension with " << xdim << " patches.\n";
+    iout << xdim;
   }
+
+  iout << " BY ";
 
   if ( params->cellBasisVector2.y )
   {
@@ -356,8 +358,7 @@ void WorkDistrib::patchMapInit(void)
     sysDim.y = params->cellBasisVector2.y;
     ydim = (int)((float)sysDim.y / patchSize);
     if ( ydim < 2 ) ydim = 2;
-    iout << iINFO
-	 << "Periodic in y dimension with " << ydim << " patches.\n";
+    iout << ydim << " (PERIODIC)";
     center.y = params->lattice.origin().y;
   }
   else
@@ -368,9 +369,10 @@ void WorkDistrib::patchMapInit(void)
     if ((ydim * patchSize) < sysDim.y)
       ydim++;
     sysDim.y = ydim * patchSize;
-    iout << iINFO 
-	 << "Non-periodic in y dimension with " << ydim << " patches.\n";
+    iout << ydim;
   }
+
+  iout << " BY ";
 
   if ( params->cellBasisVector3.z )
   {
@@ -378,8 +380,7 @@ void WorkDistrib::patchMapInit(void)
     sysDim.z = params->cellBasisVector3.z;
     zdim = (int)((float)sysDim.z / patchSize);
     if ( zdim < 2 ) zdim = 2;
-    iout << iINFO
-	 << "Periodic in z dimension with " << zdim << " patches.\n";
+    iout << zdim << " (PERIODIC)";
     center.z = params->lattice.origin().z;
   }
   else
@@ -390,9 +391,10 @@ void WorkDistrib::patchMapInit(void)
     if ((zdim * patchSize) < sysDim.z)
       zdim++;
     sysDim.z = zdim * patchSize;
-    iout << iINFO
-	 << "Non-periodic in z dimension with " << zdim << " patches.\n";
+    iout << zdim;
   }
+
+  iout << "\n" << endi;
 
   sysMin = center - 0.5 * sysDim;
 
@@ -458,9 +460,10 @@ void WorkDistrib::assignNodeToPatch()
 
   for(i=0; i < nNodes; i++)
     iout << iINFO 
-	 << nAtoms[i] << " atoms assigned to processor " << i << endl;
-  iout << iINFO 
-       << "Simulation has " << numAtoms << " atoms." << endl;
+	 << nAtoms[i] << " atoms assigned to node " << i << endl;
+  if ( numAtoms != Node::Object()->molecule->numAtoms ) {
+    NAMD_die("Incorrect atom count in WorkDistrib::assignNodeToPatch\n");
+  }
 
   delete [] nAtoms;
  
@@ -1097,9 +1100,8 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
   //  If any of the velocities really need to change, adjust them
   if ( (fabs(mv.x) > 0.0) || (fabs(mv.y) > 0.0) || (fabs(mv.y) > 0.0) )
   {
-    iout << "ADJUSTING COM VELOCITY ("
-	 << mv.x << ", " << mv.y << ", " << mv.z  
-	 << ") TO REMOVE MOVEMENT\n" << endi;
+    iout << iINFO << "REMOVING COM VELOCITY "
+	<< ( PDBVELFACTOR * mv ) << "\n" << endi;
 
     for (i=0; i<n; i++)
     {
@@ -1115,13 +1117,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1061 $	$Date: 1998/09/01 23:10:34 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1062 $	$Date: 1998/09/13 21:06:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1062  1998/09/13 21:06:16  jim
+ * Cleaned up output, defaults, etc.
+ *
  * Revision 1.1061  1998/09/01 23:10:34  brunner
  * Fixed PDB velocity input conversion problem: PDBVELINVFACTOR
  *

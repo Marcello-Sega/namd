@@ -9,7 +9,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.1008 1998/05/22 00:33:58 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.1009 1998/09/13 21:06:08 jim Exp $";
 
 #include "unistd.h"
 
@@ -97,7 +97,7 @@ Namd::Namd(void)
   GroupInitMsg *msg = new (MsgIndex(GroupInitMsg)) GroupInitMsg;
   msg->group = group;
 
-  iout << iINFO << "Starting up nodes\n" << endi;
+  // iout << iINFO << "Starting up nodes\n" << endi;
   nodeGroup = new_group(Node, GroupInitMsg, msg);
 }
 
@@ -133,12 +133,15 @@ void Namd::startup(char *confFile)
  *
  *	$RCSfile: Namd.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1998/05/22 00:33:58 $
+ *	$Revision: 1.1009 $	$Date: 1998/09/13 21:06:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Namd.C,v $
+ * Revision 1.1009  1998/09/13 21:06:08  jim
+ * Cleaned up output, defaults, etc.
+ *
  * Revision 1.1008  1998/05/22 00:33:58  jim
  * Fixed final timing when load balancing is used.
  *

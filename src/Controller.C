@@ -396,9 +396,9 @@ void Controller::printEnergies(int seq)
     if ( node->simParameters->outputMomenta &&
          ! ( seq % node->simParameters->outputMomenta ) )
     {
-      iout << "MOMENTA: " << seq 
-           << " P=" << momentum
-           << " L=" << angularMomentum
+      iout << "MOMENTUM: " << seq 
+           << " P: " << momentum
+           << " L: " << angularMomentum
            << "\n" << endi;
     }
 
@@ -488,34 +488,35 @@ void Controller::printEnergies(int seq)
       xscFile << endl;
     }
 
-    // NO CALCULATIONS OR REDUCTIONS BEYOND THIS POINT!!!
-    if ( seq % node->simParameters->outputEnergies ) return;
-    // ONLY OUTPUT SHOULD OCCUR BELOW THIS LINE!!!
-
     const double endWTime = CmiWallTimer();
     const double endCTime = CmiTimer();
 
     if (seq == 32)
 	startBenchTime = endWTime;
     else if (seq == 64)
-	iout << iINFO << "Benchmark time: "
+	iout << iINFO << "Benchmark time per step: "
 	     << (endWTime - startBenchTime) / 32. << "\n" << endi;
 
-    const double elapsedW = 
-	(endWTime - startWTime) / node->simParameters->outputEnergies;
-    const double elapsedC = 
-	(endCTime - startCTime) / node->simParameters->outputEnergies;
+    if ( node->simParameters->outputTiming &&
+         ! ( seq % node->simParameters->outputTiming ) )
+    {
+      const double elapsedW = 
+	(endWTime - startWTime) / node->simParameters->outputTiming;
+      const double elapsedC = 
+	(endCTime - startCTime) / node->simParameters->outputTiming;
 
-    startWTime = endWTime;
-    startCTime = endCTime;
+      startWTime = endWTime;
+      startCTime = endCTime;
 
-    iout << iINFO
-    	 << "Elapsed time CPU: " << endCTime << " Wall: " 
-    	 << endWTime << "\n" << endi;
+      iout << "TIMING: " << seq
+           << " CPU: " << endCTime << " wall: " << endWTime
+           << " CPU/step: " << elapsedC << " wall/step: " << elapsedW
+           << "\n" << endi;
+    }
 
-    iout << iINFO
-    	 << "Time per step CPU: " << elapsedC << " Wall: " 
-    	 << elapsedW << "\n" << endi;
+    // NO CALCULATIONS OR REDUCTIONS BEYOND THIS POINT!!!
+    if ( seq % node->simParameters->outputEnergies ) return;
+    // ONLY OUTPUT SHOULD OCCUR BELOW THIS LINE!!!
 
     if ( (seq % (10 * node->simParameters->outputEnergies) ) == 0 )
     {
@@ -573,12 +574,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1041 $	$Date: 1998/08/18 23:27:43 $
+ *	$Revision: 1.1042 $	$Date: 1998/09/13 21:06:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1042  1998/09/13 21:06:07  jim
+ * Cleaned up output, defaults, etc.
+ *
  * Revision 1.1041  1998/08/18 23:27:43  jim
  * First implementation of constant pressure.
  * Isotropic only, incompatible with multiple timestepping or SHAKE.

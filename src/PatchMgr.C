@@ -11,7 +11,7 @@
 /*								           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1014 1998/08/11 16:30:30 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1015 1998/09/13 21:06:12 jim Exp $";
 
 #include "charm++.h"
 
@@ -40,7 +40,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,
 // BOC constructor
 PatchMgr::PatchMgr(InitMsg *msg)
 {
-    CPrintf("[%d] PatchMgr Created\n", CMyPe());
+    // CPrintf("[%d] PatchMgr Created\n", CMyPe());
     delete msg;
 
     // Singleton pattern
@@ -255,11 +255,14 @@ void MovePatchesMsg::unpack (void *in)
  *
  *	$RCSfile: PatchMgr.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1998/08/11 16:30:30 $
+ *	$Revision: 1.1015 $	$Date: 1998/09/13 21:06:12 $
  *
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.C,v $
+ * Revision 1.1015  1998/09/13 21:06:12  jim
+ * Cleaned up output, defaults, etc.
+ *
  * Revision 1.1014  1998/08/11 16:30:30  jim
  * Modified output from periodic boundary simulations to return atoms to
  * internally consistent coordinates.  We store the transformations which

@@ -4,7 +4,7 @@
 /*                           All Rights Reserved                           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.1008 1998/05/25 21:10:35 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.1009 1998/09/13 21:06:17 jim Exp $";
 
 #include "charm++.h"
 
@@ -30,6 +30,12 @@ class main : public chare_object
 public:
   main(int argc, char **argv)
   {
+    // print banner
+    iout << iINFO << "NAMD 2.0b2\n"
+         << iINFO << "Please complete the registration form at\n"
+         << iINFO << "http://www.ks.uiuc.edu/Research/namd/namd_register.html\n"
+         << iINFO << "and send feedback or bug reports to namd@ks.uiuc.edu\n"
+         << endi;
 
     // Namd object is only on Pe(0)
     Namd *namd = new Namd;
@@ -50,7 +56,7 @@ public:
  *
  *	$RCSfile: main.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1998/05/25 21:10:35 $
+ *	$Revision: 1.1009 $	$Date: 1998/09/13 21:06:17 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -59,6 +65,9 @@ public:
  * REVISION HISTORY:
  *
  * $Log: main.C,v $
+ * Revision 1.1009  1998/09/13 21:06:17  jim
+ * Cleaned up output, defaults, etc.
+ *
  * Revision 1.1008  1998/05/25 21:10:35  jim
  * Started using CmiAbort().
  *

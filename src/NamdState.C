@@ -7,7 +7,7 @@
  * DESCRIPTION: Holds pointers to large molecule data structure, simulation
  *		Parameters...
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1014 1998/03/03 23:05:18 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1015 1998/09/13 21:06:09 jim Exp $";
 
 #include "charm++.h"
 
@@ -99,13 +99,13 @@ NamdState::configFileInit(char *confFile)
   {
     *tmp = 0; confFile = tmp + 1; 
     if ( chdir(currentdir) ) NAMD_die("chdir() failed!");
-    iout << iINFO << "Changed Directory to " << currentdir << "\n" << endi;
+    iout << iINFO << "Changed directory to " << currentdir << "\n" << endi;
   }
   else if ( *tmp == '/' ) // config file in / is odd, but it might happen
     if ( chdir("/") ) NAMD_die("chdir() failed!");
   currentdir = NULL;
 
-  iout << iINFO << "Configuration File is " << confFile << "\n" << endi;
+  iout << iINFO << "Configuration file is " << confFile << "\n" << endi;
   if (stat(confFile, &statBuf)) {
     iout << iERRORF << "Configuration File is not accessible." << "\n" << endi;
     return(1);
@@ -264,13 +264,16 @@ NamdState::configFileInit(char *confFile)
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdState.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1998/03/03 23:05:18 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1015 $	$Date: 1998/09/13 21:06:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdState.C,v $
+ * Revision 1.1015  1998/09/13 21:06:09  jim
+ * Cleaned up output, defaults, etc.
+ *
  * Revision 1.1014  1998/03/03 23:05:18  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

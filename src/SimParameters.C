@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1043 $  $Date: 1998/08/17 23:34:28 $
+ *  $Revision: 1.1044 $  $Date: 1998/09/13 21:06:13 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1044  1998/09/13 21:06:13  jim
+ * Cleaned up output, defaults, etc.
+ *
  * Revision 1.1043  1998/08/17 23:34:28  jim
  * Added options for Langevin piston and wrapWater.
  *
@@ -466,7 +469,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1043 1998/08/17 23:34:28 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1044 1998/09/13 21:06:13 jim Exp $";
 
 
 #include "charm++.h"
@@ -636,6 +639,10 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
      &outputMomenta, 0);
    opts.range("outputMomenta", NOT_NEGATIVE);
      
+   opts.optional("main", "outputTiming", "How often to print timing data in timesteps",
+     &outputTiming, 0);
+   opts.range("outputTiming", NOT_NEGATIVE);
+     
    opts.optional("main", "MTSAlgorithm", "Multiple timestep algorithm",
     PARSE_STRING);
 
@@ -661,10 +668,11 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
    opts.optional("main", "rigidBonds", "Rigid bonds to hydrogen",PARSE_STRING);
    opts.optional("main", "rigidTolerance", 
-                  "Error tolerance for rigid bonds to hydrogen",&rigidTol);
+                 "Error tolerance for rigid bonds to hydrogen",
+                 &rigidTol, 0.00001);
    opts.optional("main", "rigidIterations", 
-		 "Number of Newton-Rhapson iterations for rigid bonds to hydrogen",
-		 &rigidIter);
+		 "Max number of SHAKE iterations for rigid bonds to hydrogen",
+		 &rigidIter, 100);
 
    opts.optional("main", "nonbondedFreq", "Nonbonded evaluation frequency",
     &nonbondedFrequency, 1);
@@ -1507,7 +1515,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    //  Get the long range force splitting specification
    if (!opts.defined("longSplitting"))
    {
-  longSplitting = SHARP;
+  longSplitting = C1;
    }
    else
    {
@@ -1529,12 +1537,10 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
   }
    }
 
-
    // take care of rigid bond options
    if (!opts.defined("rigidBonds"))
    {
       rigidBonds = RIGID_NONE;
-      rigidTol   = 0.0;
    }
    else
    {
@@ -1550,20 +1556,6 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
       else
       {
            rigidBonds = RIGID_NONE;
-      }
-
-      if (!opts.defined("rigidTolerance"))
-      {
-         rigidTol = 0.00001;
-         iout << iWARN << "rigidBonds is on but rigidTol is not provided:" ;
-         iout << iWARN << " using default value of " << rigidTol << endi;
-      }
-
-      if (!opts.defined("rigidIterations"))
-      {
-         rigidIter = 100;
-         iout << iWARN << "rigidBonds is on but rigidIterations not provided:";
-         iout << iWARN << " using default value of " << rigidIter << endi;
       }
    }
    
@@ -2203,13 +2195,16 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    iout << iINFO << "TIMESTEP               " << dt << "\n" << endi;
    iout << iINFO << "NUMBER OF STEPS        " << N << "\n";
    iout << iINFO << "STEPS PER CYCLE        " << stepsPerCycle << "\n";
-
-   iout << iINFO << "PERIODIC CELL          " << lattice.dimension() << "\n";
-   iout << iINFO << "PERIODIC CELL CENTER   " << lattice.origin() << "\n";
-   if (wrapWater) {
-     iout << iINFO << "WRAPPING WATERS AROUND PERIODIC BOUNDARIES ON OUTPUT.\n";
-   }
    iout << endi;
+
+   if ( lattice.a() || lattice.b() || lattice.c() ) {
+     iout << iINFO << "PERIODIC CELL          " << lattice.dimension() << "\n";
+     iout << iINFO << "PERIODIC CELL CENTER   " << lattice.origin() << "\n";
+     if (wrapWater) {
+       iout << iINFO << "WRAPPING WATERS AROUND PERIODIC BOUNDARIES ON OUTPUT.\n";
+     }
+     iout << endi;
+   }
 
    if (ldbStrategy==LDBSTRAT_NONE)  {
      iout << iINFO << "LOAD BALANCE STRATEGY  none\n" << endi;
@@ -2379,6 +2374,13 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
                << switchingDist << "\n";
       iout << iINFO << "SWITCHING OFF          "
                << cutoff << "\n";
+      if ( elecswitchDist != switchingDist ||
+           vdwswitchDist  != switchingDist ||
+           eleccutoff     != cutoff        ||
+           vdwcutoff      != cutoff         ) {
+        NAMD_die("Separate elect and vdw switching parameters not supported\n");
+      }
+    /*
       iout << iINFO << "E-SWITCHING ON         "
                << elecswitchDist << "\n";
       iout << iINFO << "E-SWITCHING OFF        "
@@ -2387,6 +2389,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
                << vdwswitchDist << "\n";
       iout << iINFO << "VDW-SWITCHING OFF      "
                << vdwcutoff << "\n";
+    */
       iout << iINFO << "PAIRLIST DISTANCE      "
                << pairlistDist << "\n";
    }
@@ -2397,13 +2400,22 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    }
    iout << endi;
 
+/* No pairlists but check always performed
    if (plMarginCheckOn)
      iout << iINFO << "PAIRLIST CHECK ON\n";
    else 
      iout << iINFO << "PAIRLIST CHECK OFF\n";
-            
-   iout << iINFO << "MARGIN                 " 
-      << margin << "\n";
+*/
+
+   iout << iINFO << "MARGIN                 ";
+
+   if ( splitPatch == SPLIT_PATCH_HYDROGEN ) {
+     iout << ( margin - hgroupCutoff ) << "\n"
+          << iINFO << "HYDROGEN GROUP CUTOFF  "
+      << hgroupCutoff << "\n";
+   } else {
+     iout << margin << "\n";
+   }
    
    iout << iINFO << "PATCH DIMENSION        "
             << patchDimension << "\n";
@@ -2421,6 +2433,13 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    {
       iout << iINFO << "MOMENTUM OUTPUT STEPS  "
          << outputMomenta << "\n";
+      iout << endi;
+   }
+   
+   if (outputTiming != 0)
+   {
+      iout << iINFO << "TIMING OUTPUT STEPS    "
+         << outputTiming << "\n";
       iout << endi;
    }
    
@@ -2839,15 +2858,15 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
    iout << endi;
 
-   if (rigidBonds == RIGID_ALL)
+   if (rigidBonds != RIGID_NONE)
    {
-     iout << iINFO <<"RIGID BONDS TO HYDROGEN : ALL, TOLERANCE=" << rigidTol << "\n";
+     iout << iINFO << "RIGID BONDS TO HYDROGEN : ";
+     if (rigidBonds == RIGID_ALL)    iout << "ALL\n";
+     if (rigidBonds == RIGID_WATER)  iout << "WATER\n";
+     iout << iINFO << "        ERROR TOLERANCE : " << rigidIter << "\n";
+     iout << iINFO << "         MAX ITERATIONS : " << rigidTol << "\n";
+     iout << endi;
    }
-   else if (rigidBonds == RIGID_WATER)
-   {
-    iout << iINFO<<"RIGID BONDS TO HYDROGEN :  WATER, TOLERANCE="<< rigidTol << "\n";
-   }
-   iout << endi;
    
 
    if (nonbondedFrequency != 1)
@@ -2883,19 +2902,19 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    }
 
 
-   iout << iINFO << "Here we go config->find\n" << endi;
+   // iout << iINFO << "Here we go config->find\n" << endi;
    current = config->find("coordinates");
-   iout << iINFO << "Here done config->find\n" << endi;
+   // iout << iINFO << "Here done config->find\n" << endi;
 
    if ( (cwd == NULL) || (current->data[0] == '/') )
    {
-        iout << iINFO << "Here cwd==NULL and current is "
-  << current->data << '\n' << endi;
+     //   iout << iINFO << "Here cwd==NULL and current is "
+     // << current->data << '\n' << endi;
      strcpy(filename, current->data);
    }
    else
    {
-        iout << iINFO << "cwd != NULL and not abs\n" << endi;
+     //   iout << iINFO << "cwd != NULL and not abs\n" << endi;
      strcpy(filename, cwd);
      strcat(filename, current->data);
    }
@@ -3286,12 +3305,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1043 $  $Date: 1998/08/17 23:34:28 $
+ *  $Revision: 1.1044 $  $Date: 1998/09/13 21:06:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1044  1998/09/13 21:06:13  jim
+ * Cleaned up output, defaults, etc.
+ *
  * Revision 1.1043  1998/08/17 23:34:28  jim
  * Added options for Langevin piston and wrapWater.
  *

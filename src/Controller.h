@@ -57,7 +57,7 @@ protected:
 
     // void suspend(void) { CthSuspend(); };
     void terminate(void) {
-	CPrintf("Controller terminating\n");
+	// CPrintf("Controller terminating\n");
 	Node::messageHomeDone();
 	CthFree(thread); CthSuspend(); 
     };
@@ -88,12 +88,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1998/08/18 23:27:44 $
+ *	$Revision: 1.1015 $	$Date: 1998/09/13 21:06:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.h,v $
+ * Revision 1.1015  1998/09/13 21:06:07  jim
+ * Cleaned up output, defaults, etc.
+ *
  * Revision 1.1014  1998/08/18 23:27:44  jim
  * First implementation of constant pressure.
  * Isotropic only, incompatible with multiple timestepping or SHAKE.

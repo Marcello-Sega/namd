@@ -9,7 +9,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1027 1998/03/31 04:55:46 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1028 1998/09/13 21:06:09 jim Exp $";
 
 #include <unistd.h>
 #include "charm++.h"
@@ -68,7 +68,7 @@ extern "C" int registerEvent(char *);
 // BOC constructor
 Node::Node(GroupInitMsg *msg)
 {
-  CPrintf("[%d] Node Created\n", CMyPe());
+  // CPrintf("[%d] Node Created\n", CMyPe());
   if (CpvAccess(Node_instance) == 0) {
     CpvAccess(Node_instance) = this;
     eventEndOfTimeStep = registerEvent("EndOfTimeStep");
@@ -144,21 +144,18 @@ void Node::startup(InitMsg *msg) {
   delete msg;
 
   int gotoRun = false;
+
+  if (!CMyPe()) {
+     iout << iINFO << "Entering startup phase " << startupPhase << "\n" << endi;
+  }
   
   switch (startupPhase) {
 
   case 0:
-    if (!CMyPe()) {
-       iout << iINFO << " Starting Phase " << startupPhase << "\n" << endi;
-    }
     namdOneCommInit(); // Namd1.X style
   break;
 
   case 1:
-    if (!CMyPe()) {
-       iout << iINFO << " Starting Phase " << startupPhase << "\n" << endi;
-    }
-
     // send & receive molecule, simparameters... (Namd1.X style)
     if (CMyPe()) {
       namdOneRecv();
@@ -168,10 +165,6 @@ void Node::startup(InitMsg *msg) {
   break;
 
   case 2:
-    if (!CMyPe()) {
-       iout << iINFO << " Starting Phase " << startupPhase << "\n" << endi;
-    }
-
     // take care of inital thread setting
     threadInit();
 
@@ -180,9 +173,6 @@ void Node::startup(InitMsg *msg) {
   break;
 
   case 3:
-    if (!CMyPe()) {
-       iout << iINFO << " Starting Phase " << startupPhase << "\n" << endi;
-    }
     if (!CMyPe()) {
       output = new Output; // create output object just on PE(0)
       workDistrib->patchMapInit(); // create space division
@@ -196,22 +186,16 @@ void Node::startup(InitMsg *msg) {
 
   case 4:
     if (!CMyPe()) {
-       iout << iINFO << " Starting Phase " << startupPhase << "\n" << endi;
-
       workDistrib->distributeHomePatches();
     }
   break;
 
   case 5: 
-    if (!CMyPe()) {
-       iout << iINFO << " Starting Phase " << startupPhase << "\n" << endi;
-    }
     proxyMgr->createProxies();  // need Home patches before this
   break;
 
   case 6:
     if (!CMyPe()) {
-       iout << iINFO << " Starting Phase " << startupPhase << "\n" << endi;
       ComputeMap::Object()->printComputeMap();
     }
     DebugM(4,"Creating Computes\n");
@@ -223,9 +207,6 @@ void Node::startup(InitMsg *msg) {
   break;
 
   case 7:
-    if (!CMyPe()) {
-       iout << iINFO << " Starting Phase " << startupPhase << "\n" << endi;
-    }
     gotoRun = true;
   break;
 
@@ -472,12 +453,15 @@ void Node::recvSMDData(SMDDataMsg *msg) {
  *
  *	$RCSfile: Node.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1027 $	$Date: 1998/03/31 04:55:46 $
+ *	$Revision: 1.1028 $	$Date: 1998/09/13 21:06:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1028  1998/09/13 21:06:09  jim
+ * Cleaned up output, defaults, etc.
+ *
  * Revision 1.1027  1998/03/31 04:55:46  jim
  * Added test mode, fixed errors in virial with full electrostatics.
  *
