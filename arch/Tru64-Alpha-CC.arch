@@ -1,5 +1,5 @@
 NAMD_ARCH = Tru64-Alpha
-CHARMARCH = net-axp-cc
+CHARMARCH = net-axp-cxx
 
 CXX = cxx
 CXXOPTS = -O4 -arch host -tune host -nocleanup
