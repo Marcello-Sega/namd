@@ -40,6 +40,35 @@ int ComputeTcl::Tcl_print(ClientData,
 }
 
 
+int ComputeTcl::Tcl_atomid(ClientData clientData,
+	Tcl_Interp *interp, int argc, char *argv[]) {
+  if (argc != 4) {
+    interp->result = "wrong # args";
+    return TCL_ERROR;
+  }
+  char *segid = argv[1];
+  int resid;
+  if (Tcl_GetInt(interp,argv[2],&resid) != TCL_OK) {
+    return TCL_ERROR;
+  }
+  char *aname = argv[3];
+
+  Molecule *mol = (Molecule *)clientData;
+  int atomid = mol->get_atom_from_name(segid,resid,aname);
+
+  if (atomid < 0) {
+    interp->result = "atom not found";
+    return TCL_ERROR;
+  }
+  atomid += 1;
+
+  char s[10];  sprintf(s,"%d",atomid);
+  Tcl_SetResult(interp,s,TCL_VOLATILE);
+  DebugM(4,"Atom ID " << atomid << " identified by name\n");
+  return TCL_OK;
+}
+
+
 int ComputeTcl::Tcl_addatom(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
   if (argc != 2) {
@@ -185,6 +214,8 @@ void ComputeTcl::initialize() {
     }
   Tcl_CreateCommand(interp, "print", Tcl_print,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "atomid", Tcl_atomid,
+    (ClientData) (Node::Object()->molecule), (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "vecadd", proc_vecadd,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "vecsub", proc_vecsub,
@@ -266,12 +297,15 @@ void ComputeTcl::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1998/02/10 06:45:10 $
+ *	$Revision: 1.3 $	$Date: 1998/02/11 09:13:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeTcl.C,v $
+ * Revision 1.3  1998/02/11 09:13:25  jim
+ * Added atomid command to tclForces.  Finds id from segname, resid, atomname.
+ *
  * Revision 1.2  1998/02/10 06:45:10  jim
  * Added class ComputeFreeEnergy.
  *
