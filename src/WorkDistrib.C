@@ -479,6 +479,17 @@ void WorkDistrib::patchMapInit(void)
     node->pdb->find_extremes(&(xmin.z),&(xmax.z),lattice.c_r(),0.9);
   }
 
+  BigReal origin_shift;
+  origin_shift = lattice.a_r() * lattice.origin();
+  xmin.x -= origin_shift;
+  xmax.x -= origin_shift;
+  origin_shift = lattice.b_r() * lattice.origin();
+  xmin.y -= origin_shift;
+  xmax.y -= origin_shift;
+  origin_shift = lattice.c_r() * lattice.origin();
+  xmin.z -= origin_shift;
+  xmax.z -= origin_shift;
+
   patchMap->initialize(xmin,xmax,lattice,patchSize,
 				params->twoAwayX ? 2 : 1,
 				params->twoAwayY ? 2 : 1,
