@@ -21,8 +21,14 @@
 
 #ifdef NAMDCCS
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 void CApplicationInit(void);
 void CApplicationDepositData(char *data);
 void CApplicationDepositNode0Data(char *data);
+#ifdef __cplusplus
+}
+#endif
 
 #endif

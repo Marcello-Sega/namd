@@ -2,6 +2,7 @@
 #include "ccsinterface.h"
 
 #ifdef NAMDCCS
+#include <stdlib.h>
 
 extern unsigned int appletIP;
 extern unsigned int appletPort;
@@ -68,7 +69,7 @@ void CApplicationDataCollectionHandler(char *msg){
   }
 }
 
-void CApplicationDepositData(char *data)
+extern "C" void CApplicationDepositData(char *data)
 {
   char *msg;
   int msgSize;
@@ -86,7 +87,7 @@ void CApplicationDepositData(char *data)
   CmiSyncSendAndFree(0, msgSize, msg);
 }
 
-void CApplicationDepositNode0Data(char *data)
+extern "C" void CApplicationDepositNode0Data(char *data)
 {
   char *reply;
   int len;
@@ -116,7 +117,7 @@ void CApplicationInit(void)
 
   CpvInitialize(int, CApplicationDataCollectionHandlerIndex);
   CpvAccess(CApplicationDataCollectionHandlerIndex) =
-    CmiRegisterHandler(CApplicationDataCollectionHandler);
+    CmiRegisterHandler((CmiHandler)CApplicationDataCollectionHandler);
 
   applicationValueArray = (char **)malloc(sizeof(char *) * CmiNumPes());
   for(i = 0; i < CmiNumPes(); i++)

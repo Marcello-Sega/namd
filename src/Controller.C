@@ -796,8 +796,8 @@ void Controller::printEnergies(int step)
 
 #ifdef NAMDCCS
      char webout[80];
-     sprintf(webout,"%d %d %d %d",-(int)totalEnergy,
-	     -(int)(totalEnergy - kineticEnergy),
+     sprintf(webout,"%d %d %d %d",(int)totalEnergy,
+	     (int)(totalEnergy - kineticEnergy),
 	     (int)kineticEnergy,(int)temperature);
      CApplicationDepositNode0Data(webout);
      CkPrintf("Depositing %s\n",webout);
@@ -841,12 +841,16 @@ void Controller::terminate(void) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1078 $	$Date: 1999/08/20 19:11:11 $
+ *	$Revision: 1.1079 $	$Date: 1999/08/30 21:38:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1079  1999/08/30 21:38:35  ferenc
+ * Removed negative sign in CCS energies, and fixed some declaration
+ * problems int ccsinterface.[Ch]
+ *
  * Revision 1.1078  1999/08/20 19:11:11  jim
  * Added MOLLY - mollified impluse method.
  *
