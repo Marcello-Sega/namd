@@ -47,7 +47,7 @@ class PDB {
        coordinate file, generating an error message if the file
        can't be parsed or if its contents don't jive with what is in
        the topo file <topology>. */
-    PDB::PDB(const char *filename, const GromacsTopFile *topology);
+    PDB(const char *filename, const GromacsTopFile *topology);
 
     ~PDB(void);               // clear everything
     void write(const char *outfilename, const char *commentline=NULL); // write the coordinates to a file
