@@ -28,6 +28,7 @@ NamdNborLB::NamdNborLB()
   patchArray = 0;
   computeArray = 0;
   act = 0;
+  ldbNum = 0;
 }
 
 /*
@@ -73,7 +74,7 @@ void NamdNborLB::neighbors(int* _n) {
     int x = CmiMyPe()/yDim;
     int y = CmiMyPe()%yDim;
     int x1, y1, s;
-    CmiPrintf("[%d]info: %d %d %d %d\n", CmiMyPe(), xDim, yDim, x,y);
+    // CmiPrintf("[%d]info: %d %d %d %d\n", CmiMyPe(), xDim, yDim, x,y);
 
     x1=x; y1 = y-1;
 #if WRAP
@@ -114,7 +115,7 @@ void NamdNborLB::neighbors(int* _n) {
     if (x1==xDim || SEQ(x1,y1) >= CkNumPes()) ;
     else _n[numNbors++] = SEQ(x1,y1);
 #endif
-    CmiPrintf("[%d] %d neighbors: %d %d %d %d\n", CmiMyPe(), numNbors, _n[0], _n[1], _n[2], _n[3]);
+    // CmiPrintf("[%d] %d neighbors: %d %d %d %d\n", CmiMyPe(), numNbors, _n[0], _n[1], _n[2], _n[3]);
     act = (x+y)%2;
 #endif
 
@@ -122,7 +123,7 @@ void NamdNborLB::neighbors(int* _n) {
 
 CmiBool NamdNborLB::QueryBalanceNow(int _step)
 {
-  //  CkPrintf("[%d] Balancing on step %d\n",CkMyPe(),_step);
+  // CkPrintf("[%d] QueryBalanceNow on step %d: %d\n",CkMyPe(),_step, LdbCoordinator::Object()->takingLdbData);
   if ( LdbCoordinator::Object()->takingLdbData ) {
     return CmiTrue;
   } else {
@@ -132,8 +133,8 @@ CmiBool NamdNborLB::QueryBalanceNow(int _step)
 
 CmiBool NamdNborLB::QueryMigrateStep(int _step)
 {
-  CmiPrintf("[%d] QueryMigrateStep %d %d.\n", CmiMyPe(), _step, act);
-  return (act+_step)%2 == 0;
+  // CmiPrintf("[%d] QueryMigrateStep %d %d.\n", CmiMyPe(), _step, act);
+  return (act+ldbNum)%2 == 0;
 }
 
 NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
@@ -142,6 +143,8 @@ NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
   //  CkPrintf("LDB:[%d] All statistics received at %f, %f\n",
   //  CmiMyPe(), CmiTimer(),CmiWallTimer());
   int i,j;
+
+  ldbNum ++;
 
   const int numProcessors = CmiNumPes();
   const int numPatches = PatchMap::Object()->numPatches();
@@ -158,7 +161,7 @@ NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
       if (this_obj.migratable)  nMoveableComputes++;
     }
   }
-  CmiPrintf("%d nMoveableComputes: %d\n", CmiMyPe(), nMoveableComputes);
+  // CmiPrintf("%d nMoveableComputes: %d\n", CmiMyPe(), nMoveableComputes);
 
   // these sizes should never change
   processorArray = new processorInfo[numProcessors];

@@ -29,6 +29,7 @@ private:
   int buildData(NborBaseLB::LDStats* stats, int count);
   int requiredProxies(PatchID id, int neighborNodes[]);
 
+  int ldbNum;
   computeInfo *computeArray;
   patchInfo *patchArray;
   processorInfo *processorArray;
