@@ -12,17 +12,9 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1 1996/08/19 22:07:49 ari Exp $";
-
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.2 1996/09/10 03:07:04 ari Exp $";
 
 #include "Patch.h"
-
-//#include "Compute.h"
-//#include "BondForce.h"
-//#include "AngleForce.h"
-//#include "DihedForce.h"
-//#include "ImpropForce.h"
-//#include "ElectForce.h"
 
 Patch::Patch()
 {
@@ -32,101 +24,30 @@ Patch::~Patch()
 {
 }
 
-/*
-void Patch::fShortCheck()
+void Patch::positionsReady()
 {
-    if ( atomBasedDone      && 
-         patchBasedDone     &&
-         bondedCounter==0   && 
-         shortElectCounter==0 ) 
-    {
-       bondedCounter     = numBonded;
-       shortElectCounter = numShortElect;
-       fShortDone();
-    }
-}
-*/
-
-
-/*
-void Patch::fLongCheck()
-{
-    if ( patchBasedDone && shortElectCounter==0 && fullElectCounter==0)
-    {
-       shortElectCounter  = numShortElect;
-       fullElectCounterm  = numFullElect;
-       fLongDone();
-    }
-}
-*/
-
-
-
-/*
-void Patch::patchBasedRegDone()
-{
-     patchBasedDone = TRUE;
-
-     numShorElect = shortElectForces->size();
-     numFullElect = fullElectForces->size();
-
-     if ( bondedCounter==0     && shortElectCounter==0 ) fShortDone();
-     if ( shortElectCounter==0 && fullElectCounter==0  ) fLongDone();
-}
-*/
-
-
-/*
-void Patch::atomBasedRegDone()
-{
-     atomBasedDone = TRUE;
-
-     numBonded = bondedForces->size();
-
-     if ( bondedCounter==0     && shortElectCounter==0 ) fShortDone();
-}
-*/
-
-
-   /*
-//void Patch::informCompObjs(ComputeList& compList)
-//{
-   int i;
-   for(i=0; i<compList->size(); i++)
+   ComputeListIter cl(computeList);
+   for(cl = cl.begin(); cl != cl.end(); cl++)
    {
-      (compList[i])->patchReady();
+     (*cl).compute->patchReady();
    } 
-//}
-   */
+}
 
-
-/*
-//void Patch::updateAtomMap()
-//{
-   int i;
-   for(i=0; i<numAtoms;i++) 
-   {
-       atomMap->setAtomEntry(atoms[i],myPatchId,i);
-   }
-//}
-*/
-
-
-
-//Force *Patch::acquireBuffer(int size);
-//void  Patch::releaseBuffer(Force *buffer);
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/19 22:07:49 $
+ *	$Revision: 1.2 $	$Date: 1996/09/10 03:07:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.2  1996/09/10 03:07:04  ari
+ * *** empty log message ***
+ *
  * Revision 1.1  1996/08/19 22:07:49  ari
  * Initial revision
  *

@@ -26,64 +26,26 @@ class Patch
 {
   private:
 
-     // list of bonded computation objects that depends on me.
-     // Currently, we have one from each bonded interaction type.
-     // i.e. one bond, one angle, one dihedral and one improper computation
-     // object per processing node.
-     ComputeList bondedForces;
-     ComputeList shortElectForces;
+     ComputePickupList computePickupList;
+     ComputeDepositList computeDepositList;
 
      // number of unfinished computation objects
      int bondedCounter;
      int shortElectCounter;
 
- //    void informCompObjs(ComputeList& compList);
+     void positionsReady();
 
   protected:
-     int myPatchId;
+     PatchID myPatchId;
      int numAtoms;
 
-     // the global numbers of my atoms
-     int atoms;  
+
+
   public :
 
      Patch();
      ~Patch();
 
-     // register_compute is overloded
-//     void registerCompute(BondForce *comp)   {bondedForces.add(comp)};
-//     void registerCompute(AngleForce *comp)  {bondedForces.add(comp)}; 
-//     void registerCompute(DihedForce *comp)  {bondedForces.add(comp)};
-//     void registerCompute(ImpropForce *comp) {bondedForces.add(comp)};
-//     void registerCompute(ShortElectForce *comp) {shortElectForces.add(comp);}
-//     void registerCompute(FullElectForce *comp)  {fullElectForces.add(comp);}
-
-     // compute_done is overloded 
-//     void computeDone(BondForce *comp)      {bondedCounter--; fShortCheck();}
-
-//     void computeDone(AngleForce *comp)     {bondedCounter--; fShortCheck();}
-
-//     void computeDone(DihedForce *comp)     {bondedCounter--; fShortCheck();}
-
-//     void computeDone(ImpropForce *comp)    {bondedCounter--; fShortCheck();}
-     
-//     void computeDone(FullElectForce *comp) {fullElectCounter--;fLongCheck();} 
-  
-//     void computeDone(ShortElectForce *comp) 
-//     {
-//          shortElectCounter--;
-//          fShortCheck(); 
-//          fLongCheck();
-//     }
-
-
-//     void  patchBasedRegDone();
-//     void  atomBasedRegDone();
-
-//     void  updateAtomMap();
-
-//     Force *acquireBuffer(int size);
-//     void  releaseBuffer(Force *buffer);
 };
 
 
@@ -94,12 +56,15 @@ class Patch
  *
  *	$RCSfile: Patch.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/19 22:07:49 $
+ *	$Revision: 1.2 $	$Date: 1996/09/10 03:07:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.h,v $
+ * Revision 1.2  1996/09/10 03:07:14  ari
+ * *** empty log message ***
+ *
  * Revision 1.1  1996/08/19 22:07:49  ari
  * Initial revision
  *
