@@ -17,25 +17,29 @@
 #include "converse.h"
 
 class HomePatch;
+class SimParameters;
 
 class Sequencer
 {
 public:
-    Sequencer(HomePatch *p) : patch(p) { };
+    Sequencer(HomePatch *p);
     ~Sequencer(void) { };
     void run(int numberOfCycles);             // spawn thread, etc.
     void awaken(void) { CthAwaken(thread); };
 
 protected:
+    virtual void algorithm(void);	// subclasses redefine this method
+
     void suspend(void) { CthSuspend(); };
     void terminate(void) { CthFree(thread); CthSuspend(); };
-    virtual void threadRun(void);  // subclasses redefine this method
-    int numberOfCycles;            // stores argument to run()
-    HomePatch *const patch;        // access methods in patch
+    SimParameters *const simParams;	// for convenience
+    int numberOfCycles;			// stores argument to run()
+    int stepsPerCycle;			// stores info from run()
+    HomePatch *const patch;		// access methods in patch
 
 private:
     CthThread thread;
-    friend void SequencerThreadRun(Sequencer*);
+    static void threadRun(Sequencer*);
 };
 
 #endif // SEQUENCER_H

@@ -11,6 +11,8 @@
  *
  ***************************************************************************/
 
+#include "Node.h"
+#include "SimParameters.h"
 #include "Sequencer.h"
 #include "HomePatch.h"
 
@@ -18,23 +20,33 @@
 #define DEBUGM
 #include "Debug.h"
 
-void SequencerThreadRun(Sequencer* arg)
+Sequencer::Sequencer(HomePatch *p) :
+	patch(p),
+	simParams(Node::Object()->simParameters)
 {
-    arg->threadRun();
+  ;
+}
+
+void Sequencer::threadRun(Sequencer* arg)
+{
+    arg->algorithm();
 }
 
 void Sequencer::run(int numberOfCycles)
 {
-    this->numberOfCycles = numberOfCycles;
-    thread = CthCreate((CthVoidFn)&(SequencerThreadRun),(void*)(this),0);
+    stepsPerCycle = simParams->stepsPerCycle;
+    if ( numberOfCycles ) this->numberOfCycles = numberOfCycles;
+    else this->numberOfCycles = simParams->N % stepsPerCycle;
+    thread = CthCreate((CthVoidFn)&(threadRun),(void*)(this),0);
     CthSetStrategyDefault(thread);
     CthAwaken(thread);
 }
 
-void Sequencer::threadRun(void)
+void Sequencer::algorithm(void)
 {
-    const int stepsPerCycle = 2;
-    const int timestep = 1.0;
+    const int numberOfCycles = this->numberOfCycles;
+    const int stepsPerCycle = this->stepsPerCycle;
+    const BigReal timestep = simParams->dt;
     int step, cycle;
     for ( cycle = 0; cycle < numberOfCycles; ++cycle )
     {
