@@ -2,3 +2,5 @@ include .rootdir/arch/Linux-i686-icc.arch
 
 CHARMARCH = net-linux-scyld-tcp-icc
 
+CXXOPTS = -O2 $(FLOATOPTS) -static
+
