@@ -392,6 +392,7 @@ ProxyMgr::buildProxySpanningTree()
 {
   PatchIDList pids;
   CkPrintf("Building spanning tree: send:%d recv:%d\n", proxySendSpanning, proxyRecvSpanning);
+  if (!CkMyPe()) iout << iINFO << "Building spanning tree ... send: " << proxySendSpanning << " recv: " << proxyRecvSpanning << "\n" << endi;
   PatchMap::Object()->homePatchIDList(pids);
   for (int i=0; i<pids.size(); i++) {
     HomePatch *home = PatchMap::Object()->homePatch(pids[i]);
@@ -423,7 +424,6 @@ ProxyMgr::recvSpanningTree(ProxySpanningTreeMsg *msg) {
   // build subtree and pass down
   if (nChild == 0) return;
 //CkPrintf("[%d] %d:(%d) %d %d %d %d %d\n", CkMyPe(), msg->patch, size, msg->tree[0], msg->tree[1], msg->tree[2], msg->tree[3], msg->tree[4]);
-  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
   NodeIDList tree[PROXY_SPAN_DIM];
   int level = 1, index=1;
   int done = 0;
@@ -503,9 +503,9 @@ ProxyMgr::recvProxyData(ProxyDataMsg *msg) {
   ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
   if (proxySendSpanning == 1) {
     // copy the message and send to spanning children
-    int npid = 0;
     int pids[PROXY_SPAN_DIM];
-    if (npid = proxy->getSpanningTreeChild(pids)) {
+    int npid = proxy->getSpanningTreeChild(pids);
+    if (npid) {
       ProxyDataMsg *newmsg = new(sizeof(int)*8) ProxyDataMsg;
       CkSetQueueing(newmsg, CK_QUEUEING_IFIFO);
       *((int*) CkPriorityPtr(newmsg)) = *((int*) CkPriorityPtr(msg));
@@ -530,9 +530,9 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
   ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
   if (proxySendSpanning == 1) {
     // copy the message and send to spanning children
-    int npid = 0;
     int pids[PROXY_SPAN_DIM];
-    if (npid = proxy->getSpanningTreeChild(pids)) {
+    int npid = proxy->getSpanningTreeChild(pids);
+    if (npid) {
       ProxyAllMsg *newmsg = new(sizeof(int)*8) ProxyAllMsg;
       CkSetQueueing(newmsg, CK_QUEUEING_IFIFO);
       *((int*) CkPriorityPtr(newmsg)) = *((int*) CkPriorityPtr(msg));
