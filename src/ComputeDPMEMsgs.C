@@ -14,15 +14,6 @@
 #define MIN_DEBUG_LEVEL 3
 #include "Debug.h"
 
-#include "ComputeMgr.decl.h"
-
-#ifdef DPME
-#include "dpme2.h"
-#else
-#define Pme2Particle char;
-#define PmeVector char;
-#endif
-
 // DATA MESSAGE
 
 ComputeDPMEDataMsg::ComputeDPMEDataMsg(void) { 
@@ -105,12 +96,15 @@ ComputeDPMEResultsMsg* ComputeDPMEResultsMsg::unpack (void *ptr) {
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeDPMEMsgs.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1999/05/11 23:56:18 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.4 $	$Date: 1999/09/08 16:05:44 $
  *
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMEMsgs.C,v $
+ * Revision 1.4  1999/09/08 16:05:44  jim
+ * Added internal PUB3DFFT package.
+ *
  * Revision 1.3  1999/05/11 23:56:18  brunner
  * Changes for new charm version
  *

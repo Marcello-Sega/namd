@@ -20,8 +20,8 @@
 #ifdef DPME
 #include "dpme2.h"
 #else
-class Pme2Particle;
-class PmeVector;
+#define Pme2Particle char
+#define PmeVector char
 #endif
 
 class ComputeDPMEDataMsg : public CMessage_ComputeDPMEDataMsg {
@@ -66,12 +66,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1999/05/11 23:56:18 $
+ *	$Revision: 1.3 $	$Date: 1999/09/08 16:05:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMEMsgs.h,v $
+ * Revision 1.3  1999/09/08 16:05:44  jim
+ * Added internal PUB3DFFT package.
+ *
  * Revision 1.2  1999/05/11 23:56:18  brunner
  * Changes for new charm version
  *

@@ -14,8 +14,6 @@
 #include "ComputeHomePatches.h"
 #include "NamdTypes.h"
 
-#ifdef DPME
-
 class ComputePmeDataMsg;
 class ComputePmeResultsMsg;
 class ComputePmeMaster;
@@ -40,18 +38,20 @@ public:
 };
 
 #endif
-#endif
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputePme.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1999/06/08 14:52:07 $
+ *	$Revision: 1.2 $	$Date: 1999/09/08 16:05:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePme.h,v $
+ * Revision 1.2  1999/09/08 16:05:44  jim
+ * Added internal PUB3DFFT package.
+ *
  * Revision 1.1  1999/06/08 14:52:07  jim
  * Incorporated Justin's faster PME code along side DPME.
  *

@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1079 $  $Date: 1999/09/07 21:58:10 $
+ *  $Revision: 1.1080 $  $Date: 1999/09/08 16:05:46 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1080  1999/09/08 16:05:46  jim
+ * Added internal PUB3DFFT package.
+ *
  * Revision 1.1079  1999/09/07 21:58:10  jim
  * Fixed missing erfc defs on KCC.
  *
@@ -997,7 +1000,9 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
    opts.require("PME", "PMEGridSizeZ", "PME grid in z dimension",
 	&PMEGridSizeZ);
 
+#ifdef DPME
    opts.optionalB("PME", "useDPME", "Use old DPME code?", &useDPME, FALSE);
+#endif
 
 }
 
@@ -1292,11 +1297,13 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
 
    //****** END SMD constraints changes 
 
+#ifdef NAMD_TCL
    ////  Global Forces / Tcl
    opts.optionalB("main", "tclForces", "Are Tcl global forces active?",
      &tclForcesOn, FALSE);
    opts.require("tclForces", "tclForcesScript",
      "Tcl script for global forces", PARSE_MULTIPLES);
+#endif
 
    ////  Global Forces / Misc
    opts.optionalB("main", "miscForces", "Are misc global forces active?",
@@ -1310,11 +1317,13 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
    opts.require("freeEnergy", "freeEnergyConfig",
      "Configuration file for free energy perturbation", PARSE_MULTIPLES);
 
+#ifdef NAMD_TCL
    ////  Tcl Scripting
    opts.optionalB("main", "tcl", "Is Tcl scripting active?",
      &tclOn, FALSE);
    opts.require("tcl", "tclScript",
      "Tcl script", PARSE_MULTIPLES);
+#endif
 
 }
 
@@ -3564,12 +3573,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1079 $  $Date: 1999/09/07 21:58:10 $
+ *  $Revision: 1.1080 $  $Date: 1999/09/08 16:05:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1080  1999/09/08 16:05:46  jim
+ * Added internal PUB3DFFT package.
+ *
  * Revision 1.1079  1999/09/07 21:58:10  jim
  * Fixed missing erfc defs on KCC.
  *

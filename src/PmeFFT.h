@@ -19,10 +19,14 @@ public:
   void backward(double *q_arr);
   
 private:
-  int dim2, dim3;
-#ifdef NAMD_FFTW
+  int k1, k2, k3, dim2, dim3;
+#if defined(NAMD_FFTW)
   rfftwnd_plan forward_plan;
   rfftwnd_plan backward_plan;
+#else
+  int ntable;
+  double *table;
+  double *work;
 #endif
 
 };

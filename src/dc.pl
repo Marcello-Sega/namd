@@ -10,7 +10,7 @@ $n = @dontprint;
 while (<>) {
 # if line ends with : it is the start of a dependency
   chop;
-  if ( ($target,$other) = /([a-zA-Z_]*\.o:)(.*)$/ ) {
+  if ( ($target,$other) = /([a-zA-Z0-9_]*\.o:)(.*)$/ ) {
     print "obj/";
     print $target;
     $go=1;

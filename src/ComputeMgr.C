@@ -366,9 +366,11 @@ void ComputeMgr:: recvComputeGlobalResults(ComputeGlobalResultsMsg *msg)
 void ComputeMgr:: sendComputeDPMEData(ComputeDPMEDataMsg *msg)
 {
   if ( computeDPMEObject ) {
+#ifdef DPME
     int node = computeDPMEObject->getMasterNode();
     CProxy_ComputeMgr cm(CpvAccess(BOCclass_group).computeMgr);
     cm.recvComputeDPMEData(msg,node);
+#endif
   }
   else if ( CkMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
   else NAMD_die("ComputeMgr::computeDPMEObject is NULL!");
@@ -377,7 +379,9 @@ void ComputeMgr:: sendComputeDPMEData(ComputeDPMEDataMsg *msg)
 void ComputeMgr:: recvComputeDPMEData(ComputeDPMEDataMsg *msg)
 {
   if ( computeDPMEObject ) {
+#ifdef DPME
     computeDPMEObject->recvData(msg);
+#endif
   }
   else if ( CkMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
   else NAMD_die("ComputeMgr::computeDPMEObject is NULL!");
@@ -392,7 +396,9 @@ void ComputeMgr:: sendComputeDPMEResults(ComputeDPMEResultsMsg *msg, int node)
 void ComputeMgr:: recvComputeDPMEResults(ComputeDPMEResultsMsg *msg)
 {
   if ( computeDPMEObject ) {
+#ifdef DPME
     computeDPMEObject->recvResults(msg);
+#endif
   }
   else if ( CkMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
   else NAMD_die("ComputeMgr::computeDPMEObject is NULL!");
@@ -441,12 +447,15 @@ void ComputeMgr:: recvComputePmeResults(ComputePmeResultsMsg *msg)
  *
  *	$RCSfile: ComputeMgr.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1028 $	$Date: 1999/06/08 14:52:06 $
+ *	$Revision: 1.1029 $	$Date: 1999/09/08 16:05:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.C,v $
+ * Revision 1.1029  1999/09/08 16:05:44  jim
+ * Added internal PUB3DFFT package.
+ *
  * Revision 1.1028  1999/06/08 14:52:06  jim
  * Incorporated Justin's faster PME code along side DPME.
  *

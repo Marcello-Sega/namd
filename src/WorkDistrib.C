@@ -588,9 +588,11 @@ void WorkDistrib::mapComputes(void)
   // Handle full electrostatics
   if ( node->simParameters->fullDirectOn )
     mapComputeHomePatches(computeFullDirectType);
-#ifdef DPMTA
   if ( node->simParameters->FMAOn )
+#ifdef DPMTA
     mapComputeHomePatches(computeDPMTAType);
+#else
+    NAMD_die("This binary does not include DPMTA (FMA).");
 #endif
   if ( node->simParameters->PMEOn )
 #ifdef DPME
@@ -1127,12 +1129,15 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1070 $	$Date: 1999/09/03 20:46:31 $
+ *	$Revision: 1.1071 $	$Date: 1999/09/08 16:05:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1071  1999/09/08 16:05:46  jim
+ * Added internal PUB3DFFT package.
+ *
  * Revision 1.1070  1999/09/03 20:46:31  jim
  * Support for non-orthogonal periodic boundary conditions.
  *

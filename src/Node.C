@@ -245,7 +245,9 @@ void Node::namdOneCommInit()
 {
   if (CpvAccess(comm) == NULL) {
     CpvAccess(comm) = new Communicate();
+#ifdef DPMTA
     pvmc_init();
+#endif
   }
 }
 
@@ -475,12 +477,15 @@ void Node::recvSMDData(SMDDataMsg *msg) {
  *
  *	$RCSfile: Node.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1037 $	$Date: 1999/08/16 22:19:35 $
+ *	$Revision: 1.1038 $	$Date: 1999/09/08 16:05:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1038  1999/09/08 16:05:45  jim
+ * Added internal PUB3DFFT package.
+ *
  * Revision 1.1037  1999/08/16 22:19:35  jim
  * Incorporated Justin's interactive MD code.
  *

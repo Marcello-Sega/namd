@@ -176,6 +176,7 @@ OBJS = \
 	$(DSTDIR)/TestSequencer.o \
 	$(DSTDIR)/VoidTree.o \
 	$(DSTDIR)/WorkDistrib.o \
+	$(DSTDIR)/pub3dfft.o \
 	$(DSTDIR)/vmdsock.o \
 	$(DSTDIR)/imd.o
 # Add new modules here and also define explicit rule below.
@@ -399,7 +400,7 @@ $(INCDIR):
 	mkdir $(INCDIR)
 
 clean:
-	rm -rf ptrepository Templates.DB $(DSTDIR) $(INCDIR)
+	rm -rf ptrepository Templates.DB SunWS_cache $(DSTDIR) $(INCDIR)
 	cd $(DPMTADIR) ; $(MAKE) clean ; cd ..
 	cd $(PVMDIR) ; $(MAKE) clean ; cd ..
 	cd $(DPMEDIR) ; $(MAKE) clean ; cd ..

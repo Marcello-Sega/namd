@@ -3251,7 +3251,8 @@ obj/PmeFFT.o: \
 	src/PmeFFT.C \
 	src/PmeFFT.h \
 	src/common.h \
-	src/InfoStream.h
+	src/InfoStream.h \
+	src/pub3dfft.h
 	$(CXX) $(CXXFLAGS) -o obj/PmeFFT.o -c src/PmeFFT.C
 obj/PmeKSpace.o: \
 	src/PmeKSpace.C \
@@ -3926,6 +3927,10 @@ obj/WorkDistrib.o: \
 	src/Debug.h \
 	inc/WorkDistrib.def.h
 	$(CXX) $(CXXFLAGS) -o obj/WorkDistrib.o -c src/WorkDistrib.C
+obj/pub3dfft.o: \
+	src/pub3dfft.C \
+	src/pub3dfft.h
+	$(CXX) $(CXXFLAGS) -o obj/pub3dfft.o -c src/pub3dfft.C
 obj/vmdsock.o: \
 	src/vmdsock.C \
 	src/vmdsock.h
