@@ -188,8 +188,15 @@ void RecBisection::rec_divide(int n, const Partition &p)
     }
 
     // always divide along x or y if possible
-    if ( p.origin.x != p.corner.x ) mindir = XDIR;
+    int n2x = n * (p.load - loadarray[XDIR]) / p.load + 0.5;
+    if ( p.origin.x != p.corner.x && n2x > 0 && n2x < n ) mindir = XDIR;
     // else if ( p.origin.y != p.corner.y ) mindir = YDIR;
+
+    // revise n1 and n2 based on selected splitting dimension
+    n2 = n * (p.load - loadarray[mindir]) / p.load + 0.5;
+    if ( n2 < 1 ) n2 = 1;
+    if ( n2 >= n ) n2 = n-1;
+    n1 = n-n2;
 
     // divide along mindir
     switch (mindir) {
