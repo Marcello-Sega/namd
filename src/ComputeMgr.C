@@ -26,6 +26,7 @@
 #include "ComputeAngles.h"
 #include "ComputeDihedrals.h"
 #include "ComputeImpropers.h"
+#include "ComputeBonds.h"
 
 #define MIN_DEBUG_LEVEL 4
 #define DEBUGM 1
@@ -99,7 +100,10 @@ void ComputeMgr:: createComputes(ComputeMap *map)
 	DebugM(7,"ComputeNonbondedExcl would have been created.\n");
 	break;
       case computeBondsType:
-	DebugM(7,"ComputeBonds would have been created.\n");
+	c = new ComputeBonds(i);
+	DebugM(3,"ComputeBonds created.\n");
+	map->registerCompute(i,c);
+	c->mapReady();
 	break;
       case computeAnglesType:
 	c = new ComputeAngles(i);
@@ -144,8 +148,8 @@ void ComputeMgr:: enqueueWork(Compute *compute)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/12/01 21:03:31 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.6 $	$Date: 1996/12/03 14:53:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
