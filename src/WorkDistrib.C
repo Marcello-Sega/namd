@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.5 1996/08/19 20:39:11 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.6 1996/08/19 21:37:02 brunner Exp $";
 
 #include <stdio.h>
 
@@ -27,6 +27,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib
 #include "Node.h"
 #include "PatchMap.h"
 #include "ComputeMap.h"
+#include "Vector.h"
+#include "NamdTypes.h"
 
 //======================================================================
 // Public functions
@@ -56,9 +58,9 @@ void WorkDistrib::buildMapsFromScratch()
   CPrintf("Building maps\n");
   mapPatches();
   mapComputes();
-  //  node->patchMap.printPatchMap();
+
+  node->patchMap.printPatchMap();
   //  node->computeMap.printComputeMap();
-  //  CharmExit();
 
   // Send maps to other nodes.
 
@@ -93,6 +95,7 @@ void WorkDistrib::saveMaps(MapDistribMsg *msg)
   {
     CPrintf("Node 0 patch map already built\n");
   }
+  CharmExit();
 }
 
 
@@ -105,18 +108,26 @@ void WorkDistrib::mapPatches(void)
   int xdim, ydim, zdim;
   int xi, yi, zi, pid;
   int i;
+  Vector xmin, xmax;
+  Position sysDim;
 
   CPrintf("Mapping patches\n");
-  xdim = (int)((float)sysDimX / patchSize);
-  if ((xdim * patchSize) < sysDimX)
+  /*
+   *  pdb->find_extremes(&xmin,&xmax);
+   */
+  sysDim.x = xmax.x - xmin.x;
+  sysDim.y = xmax.y - xmin.y;
+  sysDim.z = xmax.z - xmin.z;
+  xdim = (int)((float)sysDim.x / patchSize);
+  if ((xdim * patchSize) < sysDim.x)
     xdim++;
 
-  ydim = (int)((float)sysDimY / patchSize);
-  if ((ydim * patchSize) < sysDimY)
+  ydim = (int)((float)sysDim.y / patchSize);
+  if ((ydim * patchSize) < sysDim.y)
     ydim++;
 
-  zdim = (int)((float)sysDimZ / patchSize);
-  if ((zdim * patchSize) < sysDimZ)
+  zdim = (int)((float)sysDim.z / patchSize);
+  if ((zdim * patchSize) < sysDim.z)
     zdim++;
 
   patchMap->allocatePids(xdim, ydim, zdim);
@@ -126,13 +137,12 @@ void WorkDistrib::mapPatches(void)
   {
     pid=patchMap->requestPid(&xi,&yi,&zi);
     patchMap->storePatch(pid,assignedNode,250, 
-			 (xi*sysDimX)/patchSize,
-			 (yi*sysDimY)/patchSize,
-			 (zi*sysDimZ)/patchSize,
-			 ((xi+1)*sysDimX)/patchSize,
-			 ((yi+1)*sysDimY)/patchSize,
-			 ((zi+1)*sysDimZ)/patchSize);
-
+			 (xi*patchSize)/xdim+xmin.x,
+			 (yi*patchSize)/ydim+xmin.y,
+			 (zi*patchSize)/zdim+xmin.z,
+			 (xi*patchSize)/xdim+xmin.x+patchSize,
+			 (yi*patchSize)/ydim+xmin.y+patchSize,
+			 (zi*patchSize)/zdim+xmin.z+patchSize);
     assignedNode++;
     if (node->numNodes()==assignedNode)
       assignedNode=0;
@@ -255,12 +265,15 @@ void WorkDistrib::mapElectComputes(void)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/08/19 20:39:11 $
+ *	$Revision: 1.6 $	$Date: 1996/08/19 21:37:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.6  1996/08/19 21:37:02  brunner
+ * Create Patches from PDB data
+ *
  * Revision 1.5  1996/08/19 20:39:11  brunner
  * *** empty log message ***
  *

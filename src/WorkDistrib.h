@@ -23,10 +23,7 @@
 class Node;
 class InitMsg;
 
-const Position sysDimX = 20.;
-const Position sysDimY = 20.;
-const Position sysDimZ = 20.;
-const Position patchSize = 4.;
+const double patchSize = 4.;
 
 enum { maxPatchDepends = 126 };
 
@@ -62,12 +59,15 @@ public:
  *
  *	$RCSfile: WorkDistrib.h,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/08/19 20:39:11 $
+ *	$Revision: 1.5 $	$Date: 1996/08/19 21:37:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.5  1996/08/19 21:37:02  brunner
+ * Create Patches from PDB data
+ *
  * Revision 1.4  1996/08/19 20:39:11  brunner
  * *** empty log message ***
  *
