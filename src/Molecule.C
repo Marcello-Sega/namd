@@ -1763,7 +1763,7 @@ void Molecule::receive_Molecule(MIStream *msg)
          msg->get(numConstraints);
 
          delete [] consIndexes;
-         consIndexes = new int[numAtoms];
+         consIndexes = new int32[numAtoms];
          
          msg->get(numAtoms, consIndexes);
          
@@ -1793,7 +1793,7 @@ void Molecule::receive_Molecule(MIStream *msg)
       if (simParams->fixedAtomsOn)
       {
         delete [] fixedAtomFlags;
-        fixedAtomFlags = new int[numAtoms];
+        fixedAtomFlags = new int32[numAtoms];
 
         msg->get(numFixedAtoms);
         msg->get(numAtoms, fixedAtomFlags);
@@ -2173,7 +2173,7 @@ void Molecule::receive_Molecule(MIStream *msg)
     void Molecule::build12excl(void)
        
     {
-       int *current_val;  //  Current value to check
+       int32 *current_val;  //  Current value to check
        register int i;    //  Loop counter to loop through all atoms
        
        //  Loop through all the atoms marking the bonded interactions for each one
@@ -2214,7 +2214,7 @@ void Molecule::receive_Molecule(MIStream *msg)
     void Molecule::build13excl(void)
        
     {
-       int *bond1, *bond2;  //  The two bonds being checked
+       int32 *bond1, *bond2;  //  The two bonds being checked
        int middle_atom;  //  Common third atom
        register int i;    //  Loop counter to loop through all atoms
        
@@ -2276,7 +2276,7 @@ void Molecule::receive_Molecule(MIStream *msg)
     void Molecule::build14excl(int modified)
        
     {
-       int *bond1, *bond2, *bond3;  //  The two bonds being checked
+       int32 *bond1, *bond2, *bond3;  //  The two bonds being checked
        int mid1, mid2;    //  Middle atoms
        register int i;      //  Counter to loop through all atoms
        

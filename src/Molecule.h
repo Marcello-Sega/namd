@@ -263,14 +263,14 @@ public:
 	//  The following routines are used to get the list of bonds
 	//  for a given atom.  This is used when creating the bond lists
 	//  for the force objects
-	int *get_bonds_for_atom(int anum) { return bondsByAtom[anum]; }
-	int *get_angles_for_atom(int anum) 
+	int32 *get_bonds_for_atom(int anum) { return bondsByAtom[anum]; }
+	int32 *get_angles_for_atom(int anum) 
 			{ return anglesByAtom[anum]; }
-	int *get_dihedrals_for_atom(int anum) 
+	int32 *get_dihedrals_for_atom(int anum) 
 			{ return dihedralsByAtom[anum]; }
-	int *get_impropers_for_atom(int anum) 
+	int32 *get_impropers_for_atom(int anum) 
 			{ return impropersByAtom[anum]; }
-	int *get_exclusions_for_atom(int anum)
+	int32 *get_exclusions_for_atom(int anum)
 			{ return exclusionsByAtom[anum]; }
 	
 	//  Check for exclusions, either explicit or bonded.
