@@ -7,7 +7,10 @@
 
 /* global defines */
 
+#ifndef PI
+#undef PI
 #define PI  3.14159265358979323846
+#endif
 #define  SQRT_PI  1.7724538509055160273 /* mathematica 15 digits*/
 #define TwoBySqrtPi  1.12837916709551 /* mathematica 15 digits*/
 
