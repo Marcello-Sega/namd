@@ -337,14 +337,12 @@ int ScriptTcl::Tcl_moveallby(ClientData clientData,
     return TCL_ERROR;
   }
   Tcl_Free((char*)fstring);
-  int numatoms = Node::Object()->pdb->num_atoms();
-  Vector *pos = new Vector[numatoms];
-  Vector offset(x, y, z);
-  Node::Object()->pdb->get_all_positions(pos);
-  for (int i=0; i<numatoms; i++) pos[i] += offset;
-  Node::Object()->pdb->set_all_positions(pos);
-  delete [] pos;
-  script->reinitAtoms();
+
+  MoveAllByMsg *msg = new MoveAllByMsg;
+  msg->offset = Vector(x,y,z);
+  (CProxy_PatchMgr(CpvAccess(BOCclass_group).patchMgr)).moveAllBy(msg);
+
+  script->barrier();
   return TCL_OK;
 }
 

@@ -46,6 +46,11 @@ public:
   Vector coord;
 };
 
+class MoveAllByMsg : public CMessage_MoveAllByMsg {
+public:
+  Vector offset;
+};
+
 // PatchMgr creates and manages homepatches. There exist one instance of 
 // PatchMgr on each node (derived from Charm++ Group).  // That is, when a new operator causes creation of one instance on each node. 
 // In addition to creation of homepatches, it handles the atom redistribution
@@ -102,6 +107,7 @@ public:
   static void setGroup(BOCgroup g);
 
   void moveAtom(MoveAtomMsg *msg);
+  void moveAllBy(MoveAllByMsg *msg);
  
 private:
 

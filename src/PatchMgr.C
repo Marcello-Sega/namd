@@ -245,6 +245,19 @@ void PatchMgr::moveAtom(MoveAtomMsg *msg) {
   delete msg;
 }
 
+void PatchMgr::moveAllBy(MoveAllByMsg *msg) {
+  // loop over homePatches, moving every atom
+  for (HomePatchElem *elem = homePatches.begin(); elem != homePatches.end(); elem++) {
+    HomePatch *hp = elem->patch;
+    for (int i=0; i<hp->getNumAtoms(); i++) {
+      FullAtom &a = hp->atom[i];
+      a.fixedPosition = hp->lattice.reverse_transform(a.position,a.transform);
+      a.fixedPosition += msg->offset;
+      a.position = hp->lattice.apply_transform(a.fixedPosition,a.transform);
+    }
+  }
+  delete msg;
+}
 
 PACK_MSG(MovePatchesMsg,
   PACK(fromNodeID);

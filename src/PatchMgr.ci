@@ -11,6 +11,7 @@ module PatchMgr {
   message [packed] MigrateAtomsMsg;
   message [packed] MigrateAtomsCombinedMsg;
   message MoveAtomMsg;
+  message MoveAllByMsg;
 
   group PatchMgr
   {
@@ -20,6 +21,7 @@ module PatchMgr {
     entry void recvMigrateAtoms(MigrateAtomsMsg *);
     entry void recvMigrateAtomsCombined(MigrateAtomsCombinedMsg *);
     entry void moveAtom(MoveAtomMsg *);
+    entry void moveAllBy(MoveAllByMsg *);
   } ;
 }
 
