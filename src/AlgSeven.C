@@ -184,6 +184,7 @@ void Alg7::strategy()
     }
   }
 
+#ifdef DEBUG
   iout << iINFO
        << "numAssigned = " << numAssigned
        << "\nnumAssignedP2 = " << numAssignedP2
@@ -191,6 +192,7 @@ void Alg7::strategy()
        << "\nnumAssignedP0 = " << numAssignedP0
        << "\nnumAssignedP4 = " << numAssignedP4
        << "\n" << endi;
+#endif
 
 //
 
@@ -204,15 +206,15 @@ void Alg7::strategy()
 //     p = (processorInfo *) pes->next(&nextProcessor);
 //  }
     
-  printLoads();
+  // printLoads();
   overLoad = 1.02;
   //  iout << iINFO  << "num assigned: " << numAssigned << endi;
   //  iout << iINFO  << "Starting overLoad = " << overLoad << endi;
   for (; !refine(); overLoad += .01);
-  iout << iINFO  << "Ending overLoad = " << overLoad << endi;
-  iout << iINFO
-       << "After assignment\n" << endi;
-  printLoads();
+  //  iout << iINFO  << "Ending overLoad = " << overLoad << endi;
+  //  iout << iINFO
+  //   << "After assignment\n" << endi;
+  // printLoads();
 }
 
 

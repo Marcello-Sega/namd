@@ -275,8 +275,7 @@ $(INCDIR)/ComputeMgr.decl.h: $(SRCDIR)/ComputeMgr.ci
 
 $(INCDIR)/LdbCoordinator.def.h: $(INCDIR)/LdbCoordinator.decl.h
 
-$(INCDIR)/LdbCoordinator.decl.h: $(SRCDIR)/LdbCoordinator.ci \
-	$(INCDIR)/NamdCentLB.decl.h
+$(INCDIR)/LdbCoordinator.decl.h: $(SRCDIR)/LdbCoordinator.ci
 	$(CHARMXI) $(SRCDIR)/LdbCoordinator.ci
 	$(MOVE) LdbCoordinator.decl.h LdbCoordinator.def.h $(INCDIR)
 

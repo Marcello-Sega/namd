@@ -9,15 +9,15 @@
 
 void CreateNamdCentLB()
 {
-  CkPrintf("[%d] creating NamdCentLB %d\n",CkMyPe(),loadbalancer);
+  // CkPrintf("[%d] creating NamdCentLB %d\n",CkMyPe(),loadbalancer);
   loadbalancer = CProxy_NamdCentLB::ckNew();
-  CkPrintf("[%d] created NamdCentLB %d\n",CkMyPe(),loadbalancer);
+  // CkPrintf("[%d] created NamdCentLB %d\n",CkMyPe(),loadbalancer);
 }
 
 NamdCentLB::NamdCentLB()
 {
-  if (CkMyPe()==0)
-    CkPrintf("[%d] NamdCentLB created\n",CkMyPe());
+  // if (CkMyPe()==0)
+  //   CkPrintf("[%d] NamdCentLB created\n",CkMyPe());
 }
 
 CmiBool NamdCentLB::QueryBalanceNow(int _step)
@@ -85,10 +85,10 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
   delete [] computeArray;
 
   int migrate_count=migrateInfo.size();
-  CkPrintf("NamdCentLB migrating %d elements\n",migrate_count);
+  // CkPrintf("NamdCentLB migrating %d elements\n",migrate_count);
   CLBMigrateMsg* msg = new(&migrate_count,1) CLBMigrateMsg;
   msg->n_moves = migrate_count;
-  for(int i=0; i < migrate_count; i++) {
+  for(i=0; i < migrate_count; i++) {
     MigrateInfo* item = (MigrateInfo*) migrateInfo[i];
     msg->moves[i] = *item;
     delete item;
