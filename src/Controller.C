@@ -848,7 +848,7 @@ void Controller::outputExtendedSystem(int step)
       char fname[140];
       strcpy(fname, simParams->restartFilename);
       strcat(fname, ".xsc");
-      NAMD_backup_file(fname);
+      NAMD_backup_file(fname,".old");
       ofstream xscFile(fname);
       iout << "WRITING EXTENDED SYSTEM TO RESTART FILE AT STEP "
 		<< step << "\n" << endi;

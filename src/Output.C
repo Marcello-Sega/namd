@@ -284,7 +284,7 @@ void Output::output_restart_coordinates(Vector *coor, int n, int timestep)
     strcpy(restart_name, namdMyNode->simParams->restartFilename);
     strcat(restart_name, ".coor");
     strcpy(restart_bak, namdMyNode->simParams->restartFilename);
-    strcat(restart_bak, ".coor.BAK");
+    strcat(restart_bak, ".coor.old");
 
     first=FALSE;
   }
@@ -348,7 +348,7 @@ void Output::output_restart_velocities(int timestep, int n, Vector *vel)
     strcpy(restart_name, namdMyNode->simParams->restartFilename);
     strcat(restart_name, ".vel");
     strcpy(restart_bak, namdMyNode->simParams->restartFilename);
-    strcat(restart_bak, ".vel.BAK");
+    strcat(restart_bak, ".vel.old");
 
     first=FALSE;
   }

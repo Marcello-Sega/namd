@@ -83,11 +83,12 @@ void NAMD_bug(const char *err_msg)
 }
 
 // move filename to filename.BAK
-void NAMD_backup_file(const char *filename)
+void NAMD_backup_file(const char *filename, const char *extension)
 {
-  char *backup = new char[strlen(filename)+5];
+  if ( ! extension ) extension = ".BAK";
+  char *backup = new char[strlen(filename)+strlen(extension)+1];
   strcpy(backup, filename);
-  strcat(backup, ".BAK");
+  strcat(backup, extension);
   rename(filename,backup);
   delete [] backup;
 }

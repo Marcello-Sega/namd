@@ -113,7 +113,7 @@ void NAMD_check_messages(void);
 void NAMD_quit(Bool die_hard=FALSE);
 void NAMD_die(const char *);
 void NAMD_bug(const char *);
-void NAMD_backup_file(const char *);
+void NAMD_backup_file(const char *filename, const char *extension = 0);
 void NAMD_write(int fd, const void *buf, size_t count); // NAMD_die on error
 char *NAMD_stringdup(const char *);
 extern "C" {
