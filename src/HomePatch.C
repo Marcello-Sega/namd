@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1000 1997/02/06 15:58:26 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1001 1997/02/06 18:05:28 nealk Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -27,7 +27,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C
 #include "PatchMgr.h"
 
 #define MIN_DEBUG_LEVEL 3
-#define DEBUGM
+// #define DEBUGM
 #include "Debug.h"
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
@@ -314,13 +314,16 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:26 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/02/06 18:05:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1001  1997/02/06 18:05:28  nealk
+ * Modified (added some, turned off others) debug statements.
+ *
  * Revision 1.1000  1997/02/06 15:58:26  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

@@ -28,7 +28,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1001 1997/02/06 16:53:35 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1002 1997/02/06 18:05:29 nealk Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -42,11 +42,12 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMg
 
 // determine whether PANIC sequence checking is performed (debugging)
 #define PANIC 0
+// #define PANIC 1
 #include "ReductionMgr.top.h"
 #include "ReductionMgr.h"
 
 // #define DEBUGM
-#define MIN_DEBUG_LEVEL 4
+#define MIN_DEBUG_LEVEL 5
 #define STDERR_LEVEL 7
 #include "Debug.h"
 
@@ -177,7 +178,6 @@ ReductionMgrData *ReductionMgr::createdata()
   #if PANIC > 0
   data->dataToSend = REDUCTION_MAX_RESERVED;
   #endif
-
   for(int i=0; i<REDUCTION_MAX_RESERVED; i++)
   {
       data->numData[i] = 0;
@@ -185,8 +185,6 @@ ReductionMgrData *ReductionMgr::createdata()
       data->suspendFlag[i] = 0;
       data->threadNum[i] = 0;
   }
-  data->eventCounter = 0;
-
   DebugM(4," createdata(" << nextSequence << ")\n");
   nextSequence++;
   return(data);
@@ -250,7 +248,7 @@ void	ReductionMgr::unRegister(ReductionTag tag)
  may cause an error if reductions are active
 
  Note: there should be a general event flag
- that counts down to zero.  When it hits 0 it
+ that counts down to zero.  Then it hits 0 it
  should remove the sequence.
    numEvents = numRequire+numSubmit
  This will cause a minor performance improval.
@@ -463,7 +461,7 @@ void	ReductionMgr::gotAllData(ReductionMgrData *current)
   }
 
   // remove when done
-  if (current->dataToSend <= 0)
+  if (current->dataToSend == 0)
   {
       if (CMyPe() == 0)
       {
@@ -608,7 +606,15 @@ void	ReductionMgr::require(int seq, ReductionTag tag, BigReal &data)
 	<< " thread=" << current->threadNum[tag]
 	<< "\n");
     while(current->suspendFlag[tag] == 1)
+    {
 	CthSuspend();
+	if (current->suspendFlag[tag] == 1)
+	{
+	  iout << iERRORF << iPE
+	       << " CthSuspend() resumed improperly.  Suspending again!\n"
+	       << endi;
+	}
+    }
     // ...then return value
     if (current->suspendFlag[tag] == 1)
     {
