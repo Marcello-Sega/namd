@@ -21,9 +21,21 @@
 #include "NamdTypes.h"
 #include "Patch.h"
 
+#include "Sequencer.h"
 
 class HomePatch : public Patch {
    friend PatchMgr;
+
+   public:
+
+      HomePatch(PatchID, AtomIDList, PositionList, VelocityList);
+      ~HomePatch();
+
+      void useSequencer(Sequencer *sequencerPtr) {sequencer=sequencerPtr;}
+      void runSequencer(int numberOfCycles) {sequencer->run(numberOfCycles);}
+
+   protected:
+      virtual void boxClosed(int);
 
    private:
       PositionList  pInit;
@@ -31,24 +43,8 @@ class HomePatch : public Patch {
       ForceList     f_short;
       ForceList     f_long;
 
-      //Sequencer  *sequencer;
-      // keeps track of remaining proxies that i am waiting to updat my data
-      //int        proxyCounter; 
-      // declaration for 
-      // local computations i.e., computations that needs the local data only
-      // for example 
-      //       -- harmonic constraints
-      //       -- shake 
-      //       etc
+      Sequencer  *sequencer;
 
-      inline int beginCycle() { return 0; }
-
-   public:
-
-      HomePatch(PatchID, AtomIDList, PositionList, VelocityList);
-      ~HomePatch();
-
-      // void use_sequencer(Sequencer *sequencerPtr) {sequencer=sequencerPtr;}
       // 
       /*
       void prepare_for_next_cycle();
@@ -90,13 +86,16 @@ class HomePatch : public Patch {
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/10/16 08:22:39 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.6 $	$Date: 1996/11/30 00:35:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.6  1996/11/30 00:35:51  jim
+ * implemented boxClosed(), useSequencer(), runSequencer()
+ *
  * Revision 1.5  1996/10/16 08:22:39  ari
  * *** empty log message ***
  *

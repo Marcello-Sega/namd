@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.6 1996/11/22 01:44:53 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.7 1996/11/30 00:35:51 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -19,6 +19,10 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C
 
 #include "HomePatch.h"
 #include "AtomMap.h"
+
+#define MIN_DEBUG_LEVEL 3
+#define DEBUGM
+#include "Debug.h"
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, 
   PositionList pl, VelocityList vl)
@@ -34,6 +38,20 @@ HomePatch::HomePatch(PatchID pd, AtomIDList al,
 
 HomePatch::~HomePatch()
 {
+}
+
+
+void HomePatch::boxClosed(int)
+{
+  if ( ! --boxesOpen )
+  {
+    DebugM(2,"Trying to awaken sequencer.\n");
+    sequencer->awaken();
+  }
+  else
+  {
+    DebugM(2,boxesOpen << " boxes left to close.\n");
+  }
 }
 
 
@@ -229,12 +247,15 @@ void HomePatch::dispose(char *&data)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/11/22 01:44:53 $
+ *	$Revision: 1.7 $	$Date: 1996/11/30 00:35:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.7  1996/11/30 00:35:51  jim
+ * implemented boxClosed(), useSequencer(), runSequencer()
+ *
  * Revision 1.6  1996/11/22 01:44:53  jim
  * added calls to service AtomMap
  *
