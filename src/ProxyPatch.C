@@ -79,7 +79,7 @@ void ProxyPatch::receiveAll(ProxyAllMsg *msg)
   }
   msgAllBuffer = NULL;
 
-  AtomMap::Object()->unregisterIDs(patchID,p);
+  AtomMap::Object()->unregisterIDs(patchID,p.begin(),p.end());
   flags = msg->flags;
   p = msg->positionList;
   numAtoms = p.size();

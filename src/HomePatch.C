@@ -590,12 +590,12 @@ void HomePatch::mollyMollify(Tensor *virial)
 }
 
 void HomePatch::checkpoint(void) {
-  checkpoint_atom = FullAtomList(&atom);
+  FullAtomList tmp_a(&atom); checkpoint_atom = tmp_a;
   checkpoint_lattice = lattice;
 }
 
 void HomePatch::revert(void) {
-  atom = FullAtomList(&checkpoint_atom);
+  FullAtomList tmp_a(&checkpoint_atom); atom = tmp_a;
   numAtoms = atom.size();
   lattice = checkpoint_lattice;
 }
@@ -742,7 +742,7 @@ HomePatch::doAtomMigration()
   }
 
   // Purge the AtomMap
-  AtomMap::Object()->unregisterIDs(patchID,p);
+  AtomMap::Object()->unregisterIDs(patchID,p.begin(),p.end());
 
   // Determine atoms that need to migrate
   FullAtomList::iterator atom_i = atom.begin();

@@ -117,7 +117,7 @@ void Patch::positionsReady(int doneMigration)
    DebugM(4,"Patch::positionsReady() - patchID(" << patchID <<")"<<endl );
    ComputeMap *computeMap = ComputeMap::Object();
 
-   if ( doneMigration ) AtomMap::Object()->registerIDs(patchID,p);
+   if ( doneMigration ) AtomMap::Object()->registerIDs(patchID,p.begin(),p.end());
 
    boxesOpen = 2;
    if ( flags.doMolly ) boxesOpen++;
