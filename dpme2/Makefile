@@ -8,7 +8,7 @@ include ../Makearch
 MAKE   = make
 SHELL  = /bin/sh
 # CC     = gcc # -Wall  sun :,sgi: cc -fullwarn -g3 
-CC     = CC # -Wall  sun :,sgi: cc -fullwarn -g3 
+CC     = CC
 AR     = ar
 RM     = rm -f
 
@@ -68,7 +68,7 @@ LFLAGS = $(LDIR)
 #FFLAGS= -O +U77 -lf -lm -lF77
 MYCC = $(CC) $(MYCFLAGS)
 ####################################################################
-objects = dpme2_recip_sumW.o dpme2_paralibsW.o  erfcfun.o  dpme2_utilityW.o  dpme2_testW.o
+objects = dpme2_recip_sumW.o dpme2_paralibsW.o  erfcfun.o  dpme2_utilityW.o
 Dpme_Recip = charge_grid2.o fftcalls.o bspline2.o pmesh_kspace2.o
 Dpubfft = cfftb.o cfftf1.o passb.o passb4.o passf2.o \
 	  passf5.o cfftb1.o cffti.o passb2.o passb5.o passf3.o \
@@ -80,9 +80,9 @@ all:	$(objects) $(Dpme_Recip) $(Dpubfft)
 .c.o:
 	$(CC) $(CFLAGS) $(DFLAGS) $(IFLAGS) -c -o $*.o  $*.c
 
-dpme_test:    $(objects)
-	$(CC) $(CFLAGS)    -o dpme2_test  $(objects)  $(libobjects) $(LDLIBS) $(LFLAGS)
+dpme_test:    $(objects) dpme2_testW.o
+	$(CC) $(CFLAGS)    -o dpme_test  $(objects) dpme2_testW.o $(libobjects) $(LDLIBS) $(LFLAGS)
 
 clean:
-	rm -f *.o *.a
+	rm -f *.o *.a dpme_test
 

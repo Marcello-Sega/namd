@@ -438,6 +438,61 @@ obj/ComputeDihedrals.o: \
 	src/VoidTree.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeDihedrals.o -c src/ComputeDihedrals.C
+obj/ComputeDPME.o: \
+	src/ComputeDPME.C \
+	src/Namd.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/ResizeArrayPrimIter.h \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/ProcessorPrivate.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/MStream.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/AtomMap.h \
+	src/ComputeDPME.h \
+	src/ComputeHomePatches.h \
+	src/Compute.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/PatchTypes.h \
+	src/ComputeNonbondedUtil.h \
+	src/ComputeNonbondedSplitting.h \
+	src/LJTable.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
+	src/structures.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/ObjectArena.h \
+	src/Hydrogen.h \
+	src/PatchMgr.h \
+	src/HomePatch.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/HomePatchTypes.h \
+	src/ReductionMgr.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputeDPME.o -c src/ComputeDPME.C
 obj/ComputeDPMTA.o: \
 	src/ComputeDPMTA.C \
 	src/common.h \

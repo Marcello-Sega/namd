@@ -1,4 +1,10 @@
 
+/* Builtin functions */
+extern "C" {
+  double cos(double);
+  double sin(double);
+}
+
 /* Subroutine */ int cffti1(int *n, double *wa, int *ifac)
 {
     /* Initialized data */
@@ -7,9 +13,6 @@
 
     /* System generated locals */
     int i_1, i_2, i_3;
-
-    /* Builtin functions */
-    double cos(double), sin(double);
 
     /* Local variables */
     static double argh;

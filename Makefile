@@ -38,11 +38,11 @@ DPMTALIBS=$(DPMTADIR)/mpole/libmpole.a $(DPMTADIR)/src/libdpmta2.a
 #####
 
 DPMEDIR=dpme2
-DPMEINCL=-I$(DPMEDIR)/include
-DPMELIB=-L$(DPMEDIR) -ldpme2 -lmpole
+DPMEINCL=-I$(DPMEDIR)
+DPMELIB=-L$(DPMEDIR) -ldpme
 DPMEFLAGS=-DDPME
 DPME=$(DPMEINCL) $(DPMEFLAGS)
-#DPMELIBS= dpme2/libdpme2.a
+DPMELIBS= $(DPMEDIR)/libdpme.a
 
 
 ######
@@ -77,8 +77,8 @@ LIBS = $(DPMTALIBS) $(PVMLIBS) $(DPMELIBS)
 
 # CXX is platform dependent
 INCLUDE = $(CHARM)/include
-CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(PVM) $(TCL) $(CXXOPTS) $(NOWARN) $(NAMDFLAGS)
-GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(PVM) $(TCL) $(NOWARN) $(NAMDFLAGS)
+CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(TCL) $(CXXOPTS) $(NOWARN) $(NAMDFLAGS)
+GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(TCL) $(NOWARN) $(NAMDFLAGS)
 
 .SUFFIXES: 	.ci
 
@@ -101,6 +101,7 @@ OBJS = \
 	$(DSTDIR)/ComputeBonds.o \
 	$(DSTDIR)/ComputeCylindricalBC.o \
 	$(DSTDIR)/ComputeDihedrals.o \
+	$(DSTDIR)/ComputeDPME.o \
 	$(DSTDIR)/ComputeDPMTA.o \
 	$(DSTDIR)/ComputeFreeEnergy.o \
 	$(DSTDIR)/ComputeFullDirect.o \
@@ -179,6 +180,7 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	-language charm++ \
 	-o namd2 $(OBJS) \
 	$(DPMTALIB) \
+	$(DPMELIB) \
 	$(PVMLIB) \
 	$(TCLLIB)
 
@@ -187,11 +189,13 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	cd $(PVMDIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
 	cd $(DPMTADIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
+	cd $(DPMEDIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
 	$(CHARMC) -verbose -ld++-option \
 	"-I$(INCLUDE) -I$(SRCDIR) $(CXXOPTS) " \
 	-language charm++ -tracemode projections \
 	-o namd2 $(OBJS) \
 	$(DPMTALIB) \
+	$(DPMELIB) \
 	$(PVMLIB) \
 	$(TCLLIB)
 
@@ -203,7 +207,7 @@ $(DPMTADIR)/mpole/libmpole.a:
 $(DPMTADIR)/src/libdpmta2.a:
 	cd $(DPMTADIR) ; $(MAKE) ; cd ..
 
-dpme2/libdpme2.a:
+$(DPMEDIR)/libdpme.a:
 	cd $(DPMEDIR) ; $(MAKE) ; cd ..
 
 pvm3/libpvmc.a:
