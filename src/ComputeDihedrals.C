@@ -154,36 +154,20 @@ void DihedralElem::computeForce(BigReal *reduction)
       //  use the sin version to avoid 1/cos terms
       K1 = K1/sin_phi;
 
-      #if 0
-      /** this is not a cross product...
-      "Explore" shows it as a very complex
-      function.  Double checked with docs and with Robert. -NK **/
-      f1 = cross(K1,r23,dcosdA);
-      f1.y = K1*(r23.z*dcosdA.x - r23.x*dcosdA.z);
+      f1.x += K1*(r23.y*dcosdA.z - r23.z*dcosdA.y);
+      f1.y += K1*(r23.z*dcosdA.x - r23.x*dcosdA.z);
+      f1.z += K1*(r23.x*dcosdA.y - r23.y*dcosdA.x);
 
+      f3.x += K1*(r23.z*dcosdB.y - r23.y*dcosdB.z);
+      f3.y += K1*(r23.x*dcosdB.z - r23.z*dcosdB.x);
+      f3.z += K1*(r23.y*dcosdB.x - r23.x*dcosdB.y);
 
-      f3 = cross(K1,dcosdB,r23);
-      f3.y = K1*(r23.x*dcosdB.z - r23.z*dcosdB.x);
-
-      f2 = K1*(cross(dcosdA,r12) + cross(r34,dcosdB));
-      f2.y = K1*(r12.x*dcosdA.z - r12.z*dcosdA.x
-               + r34.z*dcosdB.x - r34.x*dcosdB.z);
-      #else
-      f1.x = K1*(r23.y*dcosdA.z - r23.z*dcosdA.y);
-      f1.y = K1*(r23.z*dcosdA.x - r23.x*dcosdA.z);
-      f1.z = K1*(r23.x*dcosdA.y - r23.y*dcosdA.x);
-
-      f3.x = K1*(r23.z*dcosdB.y - r23.y*dcosdB.z);
-      f3.y = K1*(r23.x*dcosdB.z - r23.z*dcosdB.x);
-      f3.z = K1*(r23.y*dcosdB.x - r23.x*dcosdB.y);
-
-      f2.x = K1*(r12.z*dcosdA.y - r12.y*dcosdA.z
+      f2.x += K1*(r12.z*dcosdA.y - r12.y*dcosdA.z
                + r34.y*dcosdB.z - r34.z*dcosdB.y);
-      f2.y = K1*(r12.x*dcosdA.z - r12.z*dcosdA.x
+      f2.y += K1*(r12.x*dcosdA.z - r12.z*dcosdA.x
                + r34.z*dcosdB.x - r34.x*dcosdB.z);
-      f2.z = K1*(r12.y*dcosdA.x - r12.x*dcosdA.y
+      f2.z += K1*(r12.y*dcosdA.x - r12.x*dcosdA.y
              + r34.x*dcosdB.y - r34.y*dcosdB.x);
-      #endif
     }
     else
     {
@@ -191,27 +175,27 @@ void DihedralElem::computeForce(BigReal *reduction)
       //  90, so use the cos version to avoid 1/sin terms
       K1 = -K1/cos_phi;
 
-      f1.x = K1*((r23.y*r23.y + r23.z*r23.z)*dsindC.x
+      f1.x += K1*((r23.y*r23.y + r23.z*r23.z)*dsindC.x
                 - r23.x*r23.y*dsindC.y
                 - r23.x*r23.z*dsindC.z);
-      f1.y = K1*((r23.z*r23.z + r23.x*r23.x)*dsindC.y
+      f1.y += K1*((r23.z*r23.z + r23.x*r23.x)*dsindC.y
                 - r23.y*r23.z*dsindC.z
                 - r23.y*r23.x*dsindC.x);
-      f1.z = K1*((r23.x*r23.x + r23.y*r23.y)*dsindC.z
+      f1.z += K1*((r23.x*r23.x + r23.y*r23.y)*dsindC.z
                 - r23.z*r23.x*dsindC.x
                 - r23.z*r23.y*dsindC.y);
 
-      f3 = cross(K1,dsindB,r23);
+      f3 += cross(K1,dsindB,r23);
 
-      f2.x = K1*(-(r23.y*r12.y + r23.z*r12.z)*dsindC.x
+      f2.x += K1*(-(r23.y*r12.y + r23.z*r12.z)*dsindC.x
              +(2.0*r23.x*r12.y - r12.x*r23.y)*dsindC.y
              +(2.0*r23.x*r12.z - r12.x*r23.z)*dsindC.z
              +dsindB.z*r34.y - dsindB.y*r34.z);
-      f2.y = K1*(-(r23.z*r12.z + r23.x*r12.x)*dsindC.y
+      f2.y += K1*(-(r23.z*r12.z + r23.x*r12.x)*dsindC.y
              +(2.0*r23.y*r12.z - r12.y*r23.z)*dsindC.z
              +(2.0*r23.y*r12.x - r12.y*r23.x)*dsindC.x
              +dsindB.x*r34.z - dsindB.z*r34.x);
-      f2.z = K1*(-(r23.x*r12.x + r23.y*r12.y)*dsindC.z
+      f2.z += K1*(-(r23.x*r12.x + r23.y*r12.y)*dsindC.z
              +(2.0*r23.z*r12.x - r12.z*r23.x)*dsindC.x
              +(2.0*r23.z*r12.y - r12.z*r23.y)*dsindC.y
              +dsindB.y*r34.x - dsindB.x*r34.y);
@@ -258,12 +242,15 @@ void DihedralElem::unregisterReductionData(ReductionMgr *reduction)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/20 23:53:34 $
+ *	$Revision: 1.1006 $	$Date: 1997/08/18 05:02:53 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDihedrals.C,v $
+ * Revision 1.1006  1997/08/18 05:02:53  jim
+ * Fixed bugs related to multiple dihedrals and exclude 1-2, 1-3, or 1-4.
+ *
  * Revision 1.1005  1997/03/20 23:53:34  ari
  * Some changes for comments. Copyright date additions.
  * Hooks for base level update of Compute objects from ComputeMap

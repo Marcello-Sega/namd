@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: Molecule.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1997/04/07 14:54:29 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1014 $	$Date: 1997/08/18 05:02:56 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1014  1997/08/18 05:02:56  jim
+ * Fixed bugs related to multiple dihedrals and exclude 1-2, 1-3, or 1-4.
+ *
  * Revision 1.1013  1997/04/07 14:54:29  nealk
  * Changed fclose() to Fclose() (found in common.[Ch]) to use with popen().
  * Also corrected compilation warnings in Set.[Ch].
@@ -214,7 +217,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1013 1997/04/07 14:54:29 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1014 1997/08/18 05:02:56 jim Exp $";
 
 #include "Templates/UniqueSortedArray.h"
 #include "Molecule.h"
@@ -2474,7 +2477,8 @@ void Molecule::send_Molecule(Communicate *com_obj)
 
        //  If the exclusion policy is scaled 1-4, then allocate
        //  an array of intPtr's to hold the 1-4 interactions
-       if (simParams->exclude == SCALED14)
+       //  Allocate them all the time and assume they are there! -JCP
+       // if (simParams->exclude == SCALED14)
        { 
 	  onefour_exclusions = new intPtr[numAtoms];
 
@@ -3425,12 +3429,15 @@ void Molecule::send_Molecule(Communicate *com_obj)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1997/04/07 14:54:29 $
+ *	$Revision: 1.1014 $	$Date: 1997/08/18 05:02:56 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1014  1997/08/18 05:02:56  jim
+ * Fixed bugs related to multiple dihedrals and exclude 1-2, 1-3, or 1-4.
+ *
  * Revision 1.1013  1997/04/07 14:54:29  nealk
  * Changed fclose() to Fclose() (found in common.[Ch]) to use with popen().
  * Also corrected compilation warnings in Set.[Ch].
