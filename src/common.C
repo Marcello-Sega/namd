@@ -131,7 +131,6 @@ void NAMD_backup_file(const char *filename, const char *extension)
 // same as write, only does error checking internally
 void NAMD_write(int fd, const char *buf, size_t count) {
   while ( count ) {
-    if ( count < 0 ) NAMD_bug("count < 0 in NAMD_write()");
     ssize_t retval =
 #if defined(WIN32) && !defined(__CYGWIN__)
         _write(fd,buf,count);
@@ -139,6 +138,7 @@ void NAMD_write(int fd, const char *buf, size_t count) {
         write(fd,buf,count);
 #endif
     if ( retval < 0 ) NAMD_die(strerror(errno));
+    if ( retval > count ) NAMD_bug("extra bytes written in NAMD_write64()");
     buf += retval;
     count -= retval;
   }
