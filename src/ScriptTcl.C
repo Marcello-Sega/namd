@@ -547,7 +547,7 @@ static int get_lattice_from_ts(Lattice *lattice, const molfile_timestep_t *ts)
   if (fabs(B.y) < UNITCELLSLOP) B.y = 0;
   vecC.x = ts->C * cosAC;
   vecC.y = (ts->B*ts->C*cosBC - B.x*vecC.x)/B.y;
-  vecC.z = sqrt(ts->C*ts->C - vecC.x*vecC.x - vecC.y+vecC.y);
+  vecC.z = sqrt(ts->C*ts->C - vecC.x*vecC.x - vecC.y*vecC.y);
   if (fabs(vecC.x) < UNITCELLSLOP) vecC.x = 0;
   if (fabs(vecC.y) < UNITCELLSLOP) vecC.y = 0;
   if (fabs(vecC.z) < UNITCELLSLOP) vecC.z = 0;
