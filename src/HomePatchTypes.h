@@ -30,4 +30,5 @@ public:
 };
 
 typedef ResizeArray<ProxyListElem> ProxyList;
+typedef ResizeArrayIter<ProxyListElem> ProxyListIter;
 
