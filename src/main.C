@@ -30,7 +30,7 @@ public:
   {
     // print banner
     iout << iINFO << "NAMD 2.0\n"
-#if 0
+#if 1
          << iWARN << "          ***  UNRELEASED EXPERIMENTAL VERSION  ***\n"
 #else
          << iINFO << "Please complete the registration form at\n"
@@ -58,7 +58,7 @@ public:
  *
  *	$RCSfile: main.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1999/03/22 05:54:21 $
+ *	$Revision: 1.1015 $	$Date: 1999/04/01 20:52:14 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -67,6 +67,9 @@ public:
  * REVISION HISTORY:
  *
  * $Log: main.C,v $
+ * Revision 1.1015  1999/04/01 20:52:14  jim
+ * Added experimental version warning.
+ *
  * Revision 1.1014  1999/03/22 05:54:21  jim
  * Changed message to release 2.0 version.
  *
