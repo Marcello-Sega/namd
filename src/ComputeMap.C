@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1017 1998/07/03 23:13:40 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1018 1998/08/04 15:56:51 jim Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -285,10 +285,12 @@ ComputeID ComputeMap::storeCompute(int inode, int maxPids,
   int cid;
 
   if (!computeData)
-    return -1;                   // Have to allocate first
+    NAMD_die("ID's not allocated in ComputeMap::storeCompute().\n");
+    //return -1;                   // Have to allocate first
 
   if (nComputes == nAllocated)
-    return -1;                   // Used up all the allocated entries
+    NAMD_die("Allocated ID's exceeded in ComputeMap::storeCompute().\n");
+    //return -1;                   // Used up all the allocated entries
 
   cid = nComputes;
   nComputes++;
@@ -359,13 +361,19 @@ void ComputeMap::printComputeMap(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1998/07/03 23:13:40 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1018 $	$Date: 1998/08/04 15:56:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.C,v $
+ * Revision 1.1018  1998/08/04 15:56:51  jim
+ * Fixed bug where no bond/angle/dihedral/etc energies computed.
+ * Turns out we were exceeding the preallocated number of compute ID's
+ * because patches were huge with many ComputeNonbondedSelf's.
+ * The only error was to return -1, which was ignored.  Now it dies.
+ *
  * Revision 1.1017  1998/07/03 23:13:40  brunner
  * Bug fixes put in.  Will load balancing work???
  *

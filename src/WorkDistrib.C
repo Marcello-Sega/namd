@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1055 1998/07/28 21:15:11 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1056 1998/08/04 15:56:52 jim Exp $";
 
 #include <stdio.h>
 
@@ -37,8 +37,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib
 #include "ComputeMap.h"
 #include "RecBisection.h"
 
-#define MIN_DEBUG_LEVEL 4
-#define DEBUGM
+//#define MIN_DEBUG_LEVEL 4
+//#define DEBUGM
 #include "Debug.h"
 
 extern "C" long int lrand48(void);
@@ -565,8 +565,11 @@ void WorkDistrib::mapComputes(void)
   // electrostatics, and 1 angleForce for each node.  Then I might
   // throw in a few extras, in case I forget some.
 
-  int numPotentialCids = 
-    patchMap->numPatches() * (26/2+10) + node->numNodes() * 10;
+#define MAX_SELF_PARTITIONS 100
+
+  int numPotentialCids =
+	patchMap->numPatches() * (26/2 + 10 + MAX_SELF_PARTITIONS) +
+	node->numNodes() * 20;
 
   computeMap->allocateCids(numPotentialCids);
 
@@ -689,7 +692,10 @@ void WorkDistrib::mapComputeNonbonded(void)
   {
     numAtoms = patchMap->patch(i)->getNumAtoms();
     int numPartitions = 1 + (numAtoms > 50) + (numAtoms*numAtoms)/50000;
+    if ( numPartitions > MAX_SELF_PARTITIONS )
+			numPartitions = MAX_SELF_PARTITIONS;
     // self-interaction
+    DebugM(4,"Mapping " << numPartitions << " ComputeNonbondedSelf objects for patch " << i << "\n");
     for(int partition=0; partition < numPartitions; partition++)
     {
       cid=computeMap->storeCompute(patchMap->node(i),1,
@@ -1099,13 +1105,19 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1055 $	$Date: 1998/07/28 21:15:11 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1056 $	$Date: 1998/08/04 15:56:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1056  1998/08/04 15:56:52  jim
+ * Fixed bug where no bond/angle/dihedral/etc energies computed.
+ * Turns out we were exceeding the preallocated number of compute ID's
+ * because patches were huge with many ComputeNonbondedSelf's.
+ * The only error was to return -1, which was ignored.  Now it dies.
+ *
  * Revision 1.1055  1998/07/28 21:15:11  brunner
  * AssignPatchesRoundRobin was being called all the time. This results in
  * too much communication for small numbers of processors.
