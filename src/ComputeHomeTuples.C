@@ -115,6 +115,7 @@ void ComputeHomeTuples<T>::loadTuples() {
   HomePatchList *a = patchMap->homePatchList();
   ResizeArrayIter<HomePatchElem> ai(*a);
 
+  tupleList.resize(0);
   for ( ai = ai.begin(); ai != ai.end(); ai++ )
   {
     Patch *p = (*ai).p;

@@ -263,6 +263,7 @@ ProxyMgr::recvResults(ProxyResultMsg *msg) {
   DebugM(1,"For patch " << msg->patch << " received results from proxy on node " << msg->node << endl);
   HomePatch *home = (HomePatch *) PatchMap::Object()->patch(msg->patch);
   home->receiveResults(msg);
+  delete msg;
 }
 
 void
@@ -311,13 +312,16 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:59:11 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/02/06 21:56:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.1001  1997/02/06 21:56:34  jim
+ * Fixed bugs.
+ *
  * Revision 1.1000  1997/02/06 15:59:11  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
