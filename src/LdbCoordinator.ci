@@ -6,6 +6,7 @@
 
 module LdbCoordinator {
   extern module NamdCentLB;
+  extern module NamdNborLB;
     
   message LdbMigrateMsg;
 
