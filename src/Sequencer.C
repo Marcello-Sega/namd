@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1039 1998/02/18 19:13:59 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1040 1998/03/06 10:25:27 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -117,6 +117,7 @@ void Sequencer::algorithm(void)
     if ( doFullElectrostatics ) maxForceUsed = Results::slow;
 
     rattle1(0.);  // enforce rigid bond constraints on initial positions
+    minimizationQuenchVelocity();
     runComputeObjects();
     addForceToMomentum(0.); // zero velocities of fixed atoms
     rattle2(timestep,step);  // enfore rigid bonds on initial velocities
@@ -135,8 +136,10 @@ void Sequencer::algorithm(void)
 	if (doFullElectrostatics)
 		addForceToMomentum(0.5*slowstep,Results::slow);
 
+	minimizationMaximumMove(timestep);
 	addVelocityToPosition(timestep);
 	rattle1(timestep);
+	minimizationQuenchVelocity();
 
 	doNonbonded = !(step%nonbondedFrequency);
 	doFullElectrostatics = (dofull && !(step%fullElectFrequency));
@@ -249,6 +252,33 @@ void Sequencer::rattle2(BigReal dt, int step)
   }
 }
 
+void Sequencer::minimizationMaximumMove(BigReal timestep)
+{
+  if ( simParams->minimizeOn ) {
+    const BigReal dt = timestep / TIMEFACTOR;
+    const BigReal maxvel = simParams->maximumMove / dt;
+    const BigReal maxvel2 = maxvel * maxvel;
+    VelocityList::iterator v_i, v_e;
+    v_i = patch->v.begin();  v_e = patch->v.end();
+    for ( ; v_i != v_e; ++v_i ) {
+      if ( v_i->length2() > maxvel2 ) {
+	*v_i *= ( maxvel / v_i->length() );
+      }
+    }
+  }
+}
+
+void Sequencer::minimizationQuenchVelocity(void)
+{
+  if ( simParams->minimizeOn ) {
+    VelocityList::iterator v_i, v_e;
+    v_i = patch->v.begin();  v_e = patch->v.end();
+    for ( ; v_i != v_e; ++v_i ) {
+      *v_i = 0.;
+    }
+  }
+}
+
 void Sequencer::submitReductions(int step)
 {
   reduction->submit(step,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
@@ -302,12 +332,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1039 $     $Date: 1998/02/18 19:13:59 $
+ *      $Revision: 1.1040 $     $Date: 1998/03/06 10:25:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1040  1998/03/06 10:25:27  jim
+ * Added very basic minimizer.
+ *
  * Revision 1.1039  1998/02/18 19:13:59  jim
  * Fixed Langevin dynamics, undoing changes from yesterday.
  *

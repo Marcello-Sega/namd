@@ -49,6 +49,9 @@ protected:
     void rattle1(BigReal);
     void rattle2(BigReal,int);
 
+    void minimizationMaximumMove(BigReal);
+    void minimizationQuenchVelocity(void);
+
     void rescaleVelocities(int);
     void berendsenPressure(int);
     void langevinVelocities(BigReal);
@@ -77,12 +80,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1998/02/18 19:14:00 $
+ *	$Revision: 1.1014 $	$Date: 1998/03/06 10:25:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.h,v $
+ * Revision 1.1014  1998/03/06 10:25:28  jim
+ * Added very basic minimizer.
+ *
  * Revision 1.1013  1998/02/18 19:14:00  jim
  * Fixed Langevin dynamics, undoing changes from yesterday.
  *
