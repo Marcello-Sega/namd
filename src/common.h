@@ -27,28 +27,10 @@ typedef	int	int32;
 typedef	short	int32;
 #endif
 
-#if !defined(DONT_DECLARE_NEW)
-
-#ifndef GCC
-#ifdef GLOBALS
-void * operator new (size_t, void *);
-#else
-void * ::operator new (size_t, void *);
-#endif
-#endif
-
-#endif /* !defined(DONT_DECLARE_NEW) */
-
-#if 0
-#ifdef GLOBALS
-void * operator new (size_t);
-void * operator new (size_t, void *);
-void   operator delete (void *);
-#else
-void * ::operator new (size_t);
-void * ::operator new (size_t, void *);
-void   ::operator delete (void *);
-#endif
+#if defined(PLACEMENT_NEW)
+void * ::operator new (size_t, void *p) { return p; }
+#elif defined(PLACEMENT_NEW_GLOBAL)
+void * operator new (size_t, void *p) { return p; }
 #endif
 
 #ifndef DEFPRIO
@@ -280,12 +262,15 @@ int  Fclose(FILE *fout);
  *
  *	$RCSfile: common.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1023 $	$Date: 1999/07/22 15:39:50 $
+ *	$Revision: 1.1024 $	$Date: 1999/09/08 23:02:56 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.h,v $
+ * Revision 1.1024  1999/09/08 23:02:56  jim
+ * Cleaned up compilation.
+ *
  * Revision 1.1023  1999/07/22 15:39:50  jim
  * Eliminated last remnants of non-reentrant rand48 calls.
  *

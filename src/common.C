@@ -21,27 +21,6 @@
 #include "SimParameters.h"
 #include "Node.h"
 
-#if !defined(DONT_DECLARE_NEW)
-
-#ifndef GCC
-#ifdef GLOBALS
-void * operator new (size_t, void *p) { return p; }
-#else
-void * ::operator new (size_t, void *p) { return p; }
-#endif // GLOBALS
-#endif
-
-#endif  // !defined(DONT_DECLARE_NEW)
-
-#if 0
-#ifdef GLOBALS
-void * operator new (size_t t) { return CmiAlloc (t); }
-void   operator delete (void *p) { if ( p ) CmiFree (p); }
-#else
-void * ::operator new (size_t t) { return CmiAlloc (t); }
-void   ::operator delete (void *p) { if ( p ) CmiFree (p); }
-#endif // GLOBALS
-#endif
 
 // print out title
 void NAMD_title(void)
@@ -264,12 +243,15 @@ int	Fclose	(FILE *fout)
  *
  *	$RCSfile: common.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1021 $	$Date: 1999/07/22 15:39:49 $
+ *	$Revision: 1.1022 $	$Date: 1999/09/08 23:02:56 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.C,v $
+ * Revision 1.1022  1999/09/08 23:02:56  jim
+ * Cleaned up compilation.
+ *
  * Revision 1.1021  1999/07/22 15:39:49  jim
  * Eliminated last remnants of non-reentrant rand48 calls.
  *

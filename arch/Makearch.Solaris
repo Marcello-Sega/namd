@@ -1,53 +1,27 @@
-#####
-## Choose your favorite Compiler options
-####
-CC = cc -DSOLARIS
+# config for Solaris
+
+# compiler options
 CXX = CC -DSOLARIS
-CXXOPTS = -fast -xO5 -native -xarch=v8plusa -fsimple=2 -DDONT_DECLARE_NEW
-#CXXOPTS = -g -DDONT_DECLARE_NEW
-#CXXOPTS = -DGLOBALS
+CXXOPTS = -fast -xO5 -native -xarch=v8plusa -fsimple=2
+CXXTHREADOPTS = -fns -ftrap=%none -xlibmil -xlibmopt -xO5 -native -xarch=v8plusa -fsimple=2
+CC = cc -DSOLARIS
 COPTS = -fast -xO5 -native -xarch=v8plusa
-#COPTS = -g
-CXXTHREADOPTS = -fns -ftrap=%none -xlibmil -xlibmopt -xO5 -native -xarch=v8plusa -fsimple=2 -DDONT_DECLARE_NEW
 
-#####
-# Flags
-#####
-# uncomment for no warnings during compile
-#NOWARN=-w
-# uncomment for purify during compile
-# PURIFY=-purify
-
-#####
 # definitions for Charm routines
-#####
 CHARMARCH = net-sol-cc
 CHARM = $(CHARMBASE)/$(CHARMARCH)
 
-######
-## definitions for TCL interface
-######
-
+# definitions for TCL interface
 TCLDIR=/Projects/namd2/tcl/solaris
 TCLINCL=-I$(TCLDIR)/include
 TCLLIB=-L$(TCLDIR)/lib -ltcl -ldl
 TCLFLAGS=-DNAMD_TCL
 TCL=$(TCLINCL) $(TCLFLAGS)
 
-######
-## definitions for FFT (used by PME)
-######
+# definitions for FFT (used by PME)
 FFTDIR=/Projects/namd2/fftw/solaris
 FFTINCL=-I$(FFTDIR)/include
 FFTLIB=-L$(FFTDIR)/lib -lfftw -lrfftw
 FFTFLAGS=-DNAMD_FFTW
 FFT=$(FFTINCL) $(FFTFLAGS)
 
-#####
-# Unix commands
-#####
-ECHO = echo
-MOVE = mv
-COPY = cp
-RM = rm -f
-AR = ar

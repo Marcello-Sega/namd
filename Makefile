@@ -267,6 +267,13 @@ $(DPMEDIR)/libdpme.a:
 pvm3/libpvmc.a:
 	cd $(PVMDIR) ; $(MAKE) ; cd ..
 
+# Unix commands
+
+ECHO = echo
+MOVE = mv
+COPY = cp
+RM = rm -f
+
 # Explicit rules for modules.
 
 MOVECIFILES = $(MOVE) *.decl.h *.def.h $(INCDIR)

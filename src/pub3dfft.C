@@ -1,6 +1,9 @@
 
 #include <math.h>
 #include "pub3dfft.h"
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 /* Subroutine */ int passb(int *nac, int *ido, int *ip, int *
 	l1, int *idl1, double *cc, double *c1, double *c2, 

@@ -10,13 +10,6 @@
  *
  ***************************************************************************/
 
-// set the list of parameters
-/* Sun doesn't like libc.h, so I'm removing it... RKB
-#ifndef GCC
-#include <libc.h>
-#endif
-*/
-
 #include <iostream.h>
 #ifndef SP2
 #include <string.h>
@@ -1164,12 +1157,15 @@ Bool ParseOptions::units(const char *name, Units *units) // set
  *
  *	$RCSfile: ParseOptions.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1999/07/08 21:26:57 $
+ *	$Revision: 1.1012 $	$Date: 1999/09/08 23:02:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ParseOptions.C,v $
+ * Revision 1.1012  1999/09/08 23:02:55  jim
+ * Cleaned up compilation.
+ *
  * Revision 1.1011  1999/07/08 21:26:57  jim
  * Eliminated compiler warnings.
  *

@@ -6,10 +6,13 @@
 # Copyright (c) 1995 Duke University
 # All rights reserved
 #
-# RCS Info: $Id: Makefile,v 1.4 1998/08/23 20:59:22 jim Exp $
+# RCS Info: $Id: Makefile,v 1.5 1999/09/08 23:02:36 jim Exp $
 #
 # Revision History:
 # $Log: Makefile,v $
+# Revision 1.5  1999/09/08 23:02:36  jim
+# Cleaned up compilation.
+#
 # Revision 1.4  1998/08/23 20:59:22  jim
 # Fixed compile option passing.
 #
@@ -57,6 +60,7 @@
 #
 ################################################################
 
+RM = rm -f
 include ../../Makearch
 
 #  for the HPPA machines, add "-Ae" and "-Wp,-H500000" to CFLAGS

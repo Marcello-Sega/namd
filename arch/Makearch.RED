@@ -1,47 +1,27 @@
-##########################################
-##########################################
-# Makefile architecture HPUX10
-##########################################
-##########################################
+# config for ASCI Red
 
-#####
-## Choose your favorite Compiler options
-####
-CC = cicc
-COPTS = -O
-CXX = ciCC
+# compiler options
+CXX = ciCC -PLACEMENT_NEW
 CXXOPTS = -O
 CXXTHREADOPTS = $(CXXOPTS)
+CC = cicc
+COPTS = -O
 
-#####
-# Flags
-#####
-# uncomment for no warnings during compile
-#NOWARN=-w
-# uncomment for purify during compile
-# PURIFY=-purify
-
-#####
 # definitions for Charm routines
-#####
 CHARMARCH = paragon-red
 CHARM = $(CHARMBASE)/$(CHARMARCH)
 
-######
-## definitions for TCL interface
-######
+# definitions for TCL interface
+#TCLDIR=/usr/local
+#TCLINCL=-I$(TCLDIR)/include
+#TCLLIB=-L$(TCLDIR)/lib -ltcl
+#TCLFLAGS=-DNAMD_TCL
+#TCL=$(TCLINCL) $(TCLFLAGS)
 
-TCLDIR=/usr/local
-TCLINCL=-I$(TCLDIR)/include
-TCLLIB=-L$(TCLDIR)/lib -ltclx -ltcl
-TCLFLAGS=-DNAMD_TCL
-TCL=$(TCLINCL) $(TCLFLAGS)
+# definitions for FFT (used by PME)
+#FFTDIR=/usr/local
+#FFTINCL=-I$(FFTDIR)/include
+#FFTLIB=-L$(FFTDIR)/lib -lfftw -lrfftw
+#FFTFLAGS=-DNAMD_FFTW
+#FFT=$(FFTINCL) $(FFTFLAGS)
 
-#####
-# Unix commands
-#####
-ECHO = echo
-MOVE = mv
-COPY = cp
-RM = rm -f
-AR = xar

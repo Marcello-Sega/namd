@@ -1,50 +1,27 @@
-##########################################
-##########################################
-# Makefile architecture T3E
-##########################################
-##########################################
+# config for Cray T3E
 
-#####
-## Choose your favorite Compiler options
-####
-CC = cc -DGLOBALS -DT3E
-COPTS = -O
-CXX = CC -DGLOBALS -DT3E
+# compiler options
+CXX = CC -DPLACEMENT_NEW_GLOBAL
 CXXOPTS = -O2
-#CC = cc -DGLOBALS -DT3E -DCYCLE_BARRIER
-#CXX = CC -DGLOBALS -DT3E -DCYCLE_BARRIER
-#CXXOPTS = -O
 CXXTHREADOPTS = $(CXXOPTS)
+CC = cc
+COPTS = -O
 
-#####
-# Flags
-#####
-# uncomment for no warnings during compile
-#NOWARN=-w
-# uncomment for purify during compile
-#PURIFY=-purify
-
-#####
 # definitions for Charm routines
-#####
 CHARMARCH = t3e
 CHARM = $(CHARMBASE)/$(CHARMARCH)
 
-######
-## definitions for TCL interface 
-## Doesn't work on T3E!
-######
+# definitions for TCL interface 
 #TCLDIR=/usr/local
 #TCLINCL=-I$(TCLDIR)/include
-#TCLLIB=-L$(TCLDIR)/lib -ltclx -ltcl
+#TCLLIB=-L$(TCLDIR)/lib -ltcl
 #TCLFLAGS=-DNAMD_TCL
 #TCL=$(TCLINCL) $(TCLFLAGS)
 
-#####
-# Unix commands
-#####
-ECHO = echo
-MOVE = mv
-COPY = cp
-RM = rm -f
-AR = ar
+# definitions for FFT (used by PME)
+#FFTDIR=/usr/local
+#FFTINCL=-I$(FFTDIR)/include
+#FFTLIB=-L$(FFTDIR)/lib -lfftw -lrfftw
+#FFTFLAGS=-DNAMD_FFTW
+#FFT=$(FFTINCL) $(FFTFLAGS)
+

@@ -23,6 +23,8 @@ private:
 #if defined(NAMD_FFTW)
   rfftwnd_plan forward_plan;
   rfftwnd_plan backward_plan;
+#elif defined(NAMD_SGI_COMPLIB_FFT)
+  double *sgi_complib_fft_coeff;
 #else
   int ntable;
   double *table;

@@ -1,25 +1,25 @@
-# config for KAI C++ on Intel Linux
+# config for HPUX
 
 # compiler options
-CXX = KCC
-CXXOPTS = -O3 +K3 -Bstatic --backend -march=pentiumpro --backend -ffast-math
+CXX = CC -Aa -D_HPUX_SOURCE -DPLACEMENT_NEW_GLOBAL
+CXXOPTS = -O
 CXXTHREADOPTS = $(CXXOPTS)
-CC = egcs -DGCC
-COPTS = -O3 -march=pentiumpro -ffast-math
+CC = cc -Aa -Wp,-H16000 -D_HPUX_SOURCE
+COPTS = -O
 
 # definitions for Charm routines
-CHARMARCH = net-linux-kcc
+CHARMARCH = net-hp-cc
 CHARM = $(CHARMBASE)/$(CHARMARCH)
 
 # definitions for TCL interface
-TCLDIR=/Projects/namd2/tcl/linux
+TCLDIR=/Projects/namd2/tcl/hpux
 TCLINCL=-I$(TCLDIR)/include
-TCLLIB=-L$(TCLDIR)/lib -ltcl -ldl
+TCLLIB=-L$(TCLDIR)/lib -ltcl
 TCLFLAGS=-DNAMD_TCL
 TCL=$(TCLINCL) $(TCLFLAGS)
 
 # definitions for FFT (used by PME)
-FFTDIR=/Projects/namd2/fftw/linux
+FFTDIR=/Projects/namd2/fftw/hpux
 FFTINCL=-I$(FFTDIR)/include
 FFTLIB=-L$(FFTDIR)/lib -lfftw -lrfftw
 FFTFLAGS=-DNAMD_FFTW

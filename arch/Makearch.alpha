@@ -1,55 +1,27 @@
-##########################################
-##########################################
-# Makefile architecture for alpha
-##########################################
-##########################################
+# config for alpha
 
-#####
-## Choose your favorite Compiler options
-####
-CC = cc
+# compiler options
 CXX = cxx
-CXXOPTS = -O4 -arch host -tune host -fp_reorder -nocleanup -DDONT_DECLARE_NEW
-COPTS = -O4 -arch host -tune host -fp_reorder
+CXXOPTS = -O4 -arch host -tune host -fp_reorder -nocleanup
 CXXTHREADOPTS = $(CXXOPTS)
+CC = cc
+COPTS = -O4 -arch host -tune host -fp_reorder
 
-#####
-# Flags
-#####
-# uncomment for no warnings during compile
-#NOWARN=-w
-# uncomment for purify during compile
-# PURIFY=-purify
-
-#####
 # definitions for Charm routines
-#####
 CHARMARCH = net-axp-cc
 CHARM = $(CHARMBASE)/$(CHARMARCH)
 
-######
-## definitions for TCL interface
-######
+# definitions for TCL interface
 TCLDIR=/Projects/namd2/tcl/alpha
 TCLINCL=-I$(TCLDIR)/include
 TCLLIB=-L$(TCLDIR)/lib -ltcl
 TCLFLAGS=-DNAMD_TCL
 TCL=$(TCLINCL) $(TCLFLAGS)
 
-######
-## definitions for FFT (used by PME)
-######
+# definitions for FFT (used by PME)
 FFTDIR=/Projects/namd2/fftw/alpha
 FFTINCL=-I$(FFTDIR)/include
 FFTLIB=-L$(FFTDIR)/lib -lfftw -lrfftw
 FFTFLAGS=-DNAMD_FFTW
 FFT=$(FFTINCL) $(FFTFLAGS)
 
-#####
-# Unix commands
-#####
-ECHO = echo
-MOVE = mv
-COPY = cp
-RM = rm -f
-AR = ar
