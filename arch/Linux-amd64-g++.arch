@@ -2,7 +2,7 @@ NAMD_ARCH = Linux-amd64
 CHARMARCH = net-linux-opteron
 
 CXX = g++ -DSOCKLEN_T=socklen_t -DNO_STRSTREAM_H
-CXXOPTS = -O3 -march=athlon -m64 -fexpensive-optimizations -ffast-math 
+CXXOPTS = -O3 -m64 -fexpensive-optimizations -ffast-math 
 CC = gcc
-COPTS = -O3 -march=athlon -m64 -fexpensive-optimizations -ffast-math
+COPTS = -O3 -m64 -fexpensive-optimizations -ffast-math
 

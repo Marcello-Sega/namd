@@ -1,7 +1,7 @@
 
-FFTDIR=$(HOME)/fftw
-FFTINCL=-I$(FFTDIR)/include -I$(HOME)/fftw-linux/include
-FFTLIB=-L$(FFTDIR)/lib -L$(HOME)/fftw-linux/lib -lsrfftw -lsfftw
+FFTDIR=/Projects/namd2/fftw/linux-amd64
+FFTINCL=-I$(FFTDIR)/include -I$(HOME)/fftw/include
+FFTLIB=-L$(FFTDIR)/lib -L$(HOME)/fftw/lib -lsrfftw -lsfftw
 FFTFLAGS=-DNAMD_FFTW
 FFT=$(FFTINCL) $(FFTFLAGS)
 
