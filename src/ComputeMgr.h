@@ -17,8 +17,11 @@
 #include "ckdefs.h"
 #include "chare.h"
 #include "c++interface.h"
+#include "main.h"
 
 #include "NamdTypes.h"
+#include "BOCgroup.h"
+
 #include "Templates/ResizeArray.h"
 #include "Compute.h"
 
@@ -26,7 +29,7 @@ class ComputeMgr : public groupmember
 {
 public:
 
-  ComputeMgr(ComputeMgrInitMsg *);
+  ComputeMgr(InitMsg *);
   ~ComputeMgr();
   void createComputes(ComputeMap *map);
   void enqueueWork(Compute *);
@@ -72,12 +75,15 @@ private:
  *
  *	$RCSfile: ComputeMgr.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/11/27 20:19:59 $
+ *	$Revision: 1.2 $	$Date: 1996/11/30 00:34:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.h,v $
+ * Revision 1.2  1996/11/30 00:34:05  jim
+ * added some includes, now uses InitMsg
+ *
  * Revision 1.1  1996/11/27 20:19:59  jim
  * Initial revision
  *
