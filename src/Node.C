@@ -209,6 +209,7 @@ void Node::startup() {
     if (!CkMyPe()) {
       ComputeMap::Object()->printComputeMap();
     }
+    proxyMgr->buildProxySpanningTree();
     DebugM(4,"Creating Computes\n");
     computeMgr->createComputes(ComputeMap::Object());
     DebugM(4,"Building Sequencers\n");
