@@ -36,6 +36,14 @@ BigReal         ComputeNonbondedUtil::c6;
 BigReal         ComputeNonbondedUtil::d0;
 
 
+void (*ComputeNonbondedUtil::calcPair)(nonbonded *);
+void (*ComputeNonbondedUtil::calcSelf)(nonbonded *);
+void (*ComputeNonbondedUtil::calcExcl)(nonbonded *);
+
+void (*ComputeNonbondedUtil::calcFullPair)(nonbonded *);
+void (*ComputeNonbondedUtil::calcFullSelf)(nonbonded *);
+void (*ComputeNonbondedUtil::calcFullExcl)(nonbonded *);
+
 void ComputeNonbondedUtil::registerReductionData(ReductionMgr *reduction)
 {
   reduction->Register(REDUCTION_ELECT_ENERGY);
@@ -259,13 +267,16 @@ void ComputeNonbondedUtil::select(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1997/06/04 20:13:55 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1014 $	$Date: 1997/07/08 15:48:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1014  1997/07/08 15:48:08  milind
+ * Made namd2 to work with Origin2000: Again...
+ *
  * Revision 1.1013  1997/06/04 20:13:55  nealk
  * Modified to simplify macros.
  *

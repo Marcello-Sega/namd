@@ -34,10 +34,10 @@ class ComputeMap;
 class Sequencer;
 class InitMsg;
 
-enum {LDB_PATCHES = 1024};
-enum {LDB_COMPUTES = 25000};
-enum {COMPUTEMAX = 25000};
-enum {PATCHMAX = 2400};
+enum {LDB_PATCHES = 4096};
+enum {LDB_COMPUTES = 65538};
+enum {COMPUTEMAX = 65538};
+enum {PATCHMAX = 4096};
 enum {PROCESSORMAX = 256};
 
 
@@ -142,12 +142,15 @@ inline int LdbCoordinator::balanceNow(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.11 $	$Date: 1997/04/16 23:44:03 $
+ *	$Revision: 1.12 $	$Date: 1997/07/08 15:48:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LdbCoordinator.h,v $
+ * Revision 1.12  1997/07/08 15:48:10  milind
+ * Made namd2 to work with Origin2000: Again...
+ *
  * Revision 1.11  1997/04/16 23:44:03  brunner
  * Put ldbStrategy={none|refineonly|alg7}, ldbPeriod, and firstLdbStep
  * in SimParameters.

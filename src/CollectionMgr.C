@@ -31,7 +31,8 @@ void CollectionMgr::submitPositions(int seq, AtomIDList &i, PositionList &d)
   if ( c = positions.submitData(seq,i,d) )
   {
     CollectVectorMsg * msg = 
-      new (MsgIndex(CollectVectorMsg),Priorities::numBits) CollectVectorMsg;
+      // new (MsgIndex(CollectVectorMsg),Priorities::numBits) CollectVectorMsg;
+      new (MsgIndex(CollectVectorMsg)) CollectVectorMsg;
     msg->seq = c->seq;
     msg->aid = c->aid;
     msg->data = c->data;
@@ -49,7 +50,8 @@ void CollectionMgr::submitVelocities(int seq, AtomIDList &i, VelocityList &d)
   if ( c = velocities.submitData(seq,i,d) )
   {
     CollectVectorMsg * msg 
-      = new (MsgIndex(CollectVectorMsg),Priorities::numBits) CollectVectorMsg;
+      //= new (MsgIndex(CollectVectorMsg),Priorities::numBits) CollectVectorMsg;
+      = new (MsgIndex(CollectVectorMsg)) CollectVectorMsg;
     msg->seq = c->seq;
     msg->aid = c->aid;
     msg->data = c->data;
@@ -67,7 +69,8 @@ void CollectionMgr::submitForces(int seq, AtomIDList &i, ForceList &d)
   if ( c = forces.submitData(seq,i,d) )
   {
     CollectVectorMsg * msg 
-      = new (MsgIndex(CollectVectorMsg), Priorities::numBits) CollectVectorMsg;
+    // = new (MsgIndex(CollectVectorMsg), Priorities::numBits) CollectVectorMsg;
+    = new (MsgIndex(CollectVectorMsg)) CollectVectorMsg;
     msg->seq = c->seq;
     msg->aid = c->aid;
     msg->data = c->data;
@@ -86,12 +89,15 @@ void CollectionMgr::submitForces(int seq, AtomIDList &i, ForceList &d)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/04/08 07:08:07 $
+ *	$Revision: 1.1004 $	$Date: 1997/07/08 15:48:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMgr.C,v $
+ * Revision 1.1004  1997/07/08 15:48:06  milind
+ * Made namd2 to work with Origin2000: Again...
+ *
  * Revision 1.1003  1997/04/08 07:08:07  ari
  * Modification for dynamic loadbalancing - moving computes
  * Still bug in new computes or usage of proxies/homepatches.

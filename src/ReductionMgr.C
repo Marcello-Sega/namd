@@ -28,7 +28,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1016 1997/04/08 07:08:59 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1017 1997/07/08 15:48:12 milind Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -561,7 +561,8 @@ void	ReductionMgr::submit(int seq, ReductionTag tag, BigReal data,
     if (CMyPe() != 0)
     {
       ReductionDataMsg *m 
-	= new (MsgIndex(ReductionDataMsg),Priorities::numBits) ReductionDataMsg;
+	//= new (MsgIndex(ReductionDataMsg),Priorities::numBits) ReductionDataMsg;
+	= new (MsgIndex(ReductionDataMsg)) ReductionDataMsg;
       m->seq = seq;
       m->tag = tag;
       m->data = current->tagData[tag];
@@ -625,7 +626,8 @@ void	ReductionMgr::submit(int seq, ReductionTag tag)
     if (CMyPe() != 0)
     {
       ReductionDataMsg *m 
-	= new (MsgIndex(ReductionDataMsg),Priorities::numBits) ReductionDataMsg;
+	//= new (MsgIndex(ReductionDataMsg),Priorities::numBits) ReductionDataMsg;
+	= new (MsgIndex(ReductionDataMsg)) ReductionDataMsg;
       m->seq = seq;
       m->tag = tag;
       m->data = current->tagData[tag];
@@ -777,12 +779,15 @@ void	ReductionMgr::unsubscribe(ReductionTag tag)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1997/04/08 07:08:59 $
+ *	$Revision: 1.1017 $	$Date: 1997/07/08 15:48:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.C,v $
+ * Revision 1.1017  1997/07/08 15:48:12  milind
+ * Made namd2 to work with Origin2000: Again...
+ *
  * Revision 1.1016  1997/04/08 07:08:59  ari
  * Modification for dynamic loadbalancing - moving computes
  * Still bug in new computes or usage of proxies/homepatches.

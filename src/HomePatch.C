@@ -39,7 +39,7 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1030 1997/04/21 00:58:33 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1031 1997/07/08 15:48:08 milind Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
 		     VelocityList vl) : Patch(pd,al,pl), v(vl) 
@@ -191,7 +191,8 @@ void HomePatch::positionsReady(int doMigration)
   {
     if (doMigration) {
       ProxyAllMsg *allmsg 
-	= new (MsgIndex(ProxyAllMsg),Priorities::numBits) ProxyAllMsg;
+//	= new (MsgIndex(ProxyAllMsg),Priorities::numBits) ProxyAllMsg;
+	= new (MsgIndex(ProxyAllMsg)) ProxyAllMsg;
       allmsg->patch = patchID;
       allmsg->flags = flags;
       allmsg->positionList = p;
@@ -202,7 +203,8 @@ void HomePatch::positionsReady(int doMigration)
       ProxyMgr::Object()->sendProxyAll(allmsg,pli->node);
     } else {
       ProxyDataMsg *nmsg 
-	= new (MsgIndex(ProxyDataMsg), Priorities::numBits) ProxyDataMsg;
+	//= new (MsgIndex(ProxyDataMsg), Priorities::numBits) ProxyDataMsg;
+	= new (MsgIndex(ProxyDataMsg)) ProxyDataMsg;
       nmsg->patch = patchID;
       nmsg->flags = flags;
       nmsg->positionList = p;
@@ -453,13 +455,16 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1030 $	$Date: 1997/04/21 00:58:33 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1031 $	$Date: 1997/07/08 15:48:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1031  1997/07/08 15:48:08  milind
+ * Made namd2 to work with Origin2000: Again...
+ *
  * Revision 1.1030  1997/04/21 00:58:33  jim
  * Fixed hang on patch migration in systems with only one patch.
  *

@@ -2,8 +2,8 @@
 #####
 ## Define your architecture
 #####
-# ARCH = Origin2000
-ARCH = HPUX9
+ARCH = Origin2000
+# ARCH = HPUX9
 # ARCH = HPUX10
 # ARCH = g++
 include Makearch.$(ARCH)

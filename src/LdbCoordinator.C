@@ -7,6 +7,7 @@
 #include "LdbCoordinator.top.h"
 #include "LdbCoordinator.h"
 #include "Node.h"
+#include "Namd.h"
 #include "SimParameters.h"
 #include "PatchMap.h"
 #include "ComputeMap.h"
@@ -259,6 +260,10 @@ int LdbCoordinator::checkAndSendStats(void)
   if ( (nPatchesReported == nPatchesExpected) 
        && (nComputesReported == nComputesExpected) )
   {
+    if(CMyPe()==0) {
+      CPrintf("WallClock : %f  CPUTime : %f \n", CmiWallTimer()-Namd::cmiWallStart, 
+        CmiCpuTimer()-Namd::cmiCpuStart);
+    }
     // Turn off idle-time calculation
 #ifndef NO_IDLE_COMPUTATION
     CsdStopNotifyIdle();
@@ -440,6 +445,8 @@ void LdbCoordinator::resume(LdbResumeMsg *msg)
 {
   //  printLocalLdbReport();
 
+  if(CMyPe()==0)
+    Namd::startTimer();
   awakenSequencers();
   initialize(PatchMap::Object(),ComputeMap::Object());
   delete msg;
@@ -468,8 +475,7 @@ int LdbCoordinator::buildData(void)
   {
     const LdbStatsMsg *msg = statsMsgs[i];
     processorArray[i].Id = msg->proc;
-    processorArray[i].backgroundLoad = 0;
-                             // should be = statsMsgs[i]->procLoad;
+    processorArray[i].backgroundLoad = statsMsgs[i]->procLoad;
     processorArray[i].proxies = new Set();
   }
 

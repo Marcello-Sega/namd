@@ -58,6 +58,8 @@ public:
   static void startTimer() { cmiWallStart = CmiWallTimer(); 
 			     cmiCpuStart = CmiCpuTimer(); }
 
+  static float cmiWallStart;
+  static float cmiCpuStart;
 private:
   Node *node;
   int nodeGroup;
@@ -66,8 +68,6 @@ private:
 
   NamdState namdState;
 
-  static float cmiWallStart;
-  static float cmiCpuStart;
 };
 
 #endif /* _NAMD_H */
@@ -76,13 +76,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: Namd.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/05/28 19:30:56 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1007 $	$Date: 1997/07/08 15:48:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Namd.h,v $
+ * Revision 1.1007  1997/07/08 15:48:10  milind
+ * Made namd2 to work with Origin2000: Again...
+ *
  * Revision 1.1006  1997/05/28 19:30:56  nealk
  * Added output to show number of days to compute 1 ns.
  *

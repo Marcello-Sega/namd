@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 
 # input set of strings to match
 @dontprint = @ARGV;

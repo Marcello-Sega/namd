@@ -7,8 +7,8 @@
 #####
 ## Choose your favorite Compiler options
 ####
-CXX = CC -64 
-CXXOPTS = -O -DGLOBALS -OPT:Olimit=5000
+CXX = /usr/lib64/cmplrs/CC -64 
+CXXOPTS = -D_SGI_MP_SOURCE -O3 -DGLOBALS 
 #CXXOPTS = -g -DGLOBALS -INLINE:=OFF
 
 #####

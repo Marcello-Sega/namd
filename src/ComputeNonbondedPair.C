@@ -126,7 +126,7 @@ void ComputeNonbondedPair::doForce(Position* p[2],
       params.a[1] = a[0];
       params.numAtoms[0] = numAtoms[1];
       params.numAtoms[1] = numAtoms[0];
-      DebugM(3, "NUMATOMSxNUMATOMS = " << numAtoms_r[0]*numAtoms_r[1] << "\n" );
+      DebugM(3, "NUMATOMSxNUMATOMS = " << numAtoms[0]*numAtoms[1] << "\n" );
       if ( patch[0]->flags.doFullElectrostatics )
 	{
         params.fullf[0] = r[1]->f[Results::slow];
@@ -167,13 +167,16 @@ void ComputeNonbondedPair::doForce(Position* p[2],
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedPair.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1997/05/20 15:49:09 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1014 $	$Date: 1997/07/08 15:48:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.C,v $
+ * Revision 1.1014  1997/07/08 15:48:07  milind
+ * Made namd2 to work with Origin2000: Again...
+ *
  * Revision 1.1013  1997/05/20 15:49:09  nealk
  * Pair, Self, and Excl not use the same parameters!
  *
