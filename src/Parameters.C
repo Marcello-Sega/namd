@@ -13,7 +13,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Parameters.C,v 1.1001 1997/03/19 11:54:42 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Parameters.C,v 1.1002 1997/03/20 15:38:30 nealk Exp $";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -488,7 +488,7 @@ struct bond_params *Parameters::add_to_bond_tree(struct bond_params *new_node,
 			  << "  x0=" << tree->distance
 			  << "\n   USING VALUES  k=" << new_node->forceconstant
 			  << "  x0=" << new_node->distance
-			  << endi;
+			  << "\n" << endi;
 
 			tree->forceconstant=new_node->forceconstant;
 			tree->distance=new_node->distance;
@@ -670,7 +670,7 @@ struct angle_params *Parameters::add_to_angle_tree(struct angle_params *new_node
 				  << new_node->angle
 				  << new_node->angle << " k_ub="
 				  << new_node->k_ub << " r_ub="
-				  << endi;
+				  << "\n" << endi;
 
 				tree->forceconstant=new_node->forceconstant;
 				tree->angle=new_node->angle;
@@ -1331,7 +1331,7 @@ struct vdw_params *Parameters::add_to_vdw_tree(struct vdw_params *new_node,
 		  << " epsilon=" << new_node->epsilon
 		  << " sigma14=" << new_node->sigma14
 		  << " epsilon14" << new_node->epsilon14
-		  << endi;
+		  << "\n" << endi;
 
 		tree->sigma=new_node->sigma;
 		tree->epsilon=new_node->epsilon;
@@ -1452,7 +1452,7 @@ void Parameters::add_hb_pair_param(char *buf)
 	/*  add data */
 	if (hbondParams.add_hbond_pair(a1n, a2n, A, B) == FALSE) {
 	  iout << iWARN << "Duplicate HBOND parameters for types " << a1n
-		<< " and " << a2n << " found; using latest values." << endi;
+		<< " and " << a2n << " found; using latest values." << "\n" << endi;
 	}
 }
 /*			END OF FUNCTION add_hb_par_param		*/
@@ -1513,7 +1513,7 @@ void Parameters::add_to_vdw_pair_list(struct vdw_pair_params *new_node)
 			  << " B=" << new_node->B
 			  << " A14=" << new_node->A14
 			  << " B14" << new_node->B14
-			  << endi;
+			  << "\n" << endi;
 
 			ptr->A=new_node->A;
 			ptr->B=new_node->B;
@@ -1893,7 +1893,7 @@ Index Parameters::index_vdw(struct vdw_params *tree, Index index)
 	nameloc[MAX_ATOMTYPE_CHARS] = '\0';
 
 //	iout << iWARN << "Parameters: Stored name for type " << index << ": '";
-//      iout << iWARN << nameloc << "'" << endi;
+//      iout << iWARN << nameloc << "'" << "\n" << endi;
 
 	index++;
 
@@ -2718,7 +2718,7 @@ void Parameters::traverse_bond_params(struct bond_params *tree)
 
 	DEBUG_MSG("BOND " <<  tree->atom1name << "  " << tree->atom2name \
 		  << " index=" << tree->index << " k=" << tree->forceconstant \
-		  << " x0=" << tree->distance << endi);
+		  << " x0=" << tree->distance);
 
 	if (tree->right != NULL)
 	{
@@ -2754,7 +2754,7 @@ void Parameters::traverse_angle_params(struct angle_params *tree)
 	DEBUG_MSG("ANGLE " << tree->atom1name << "  " << tree->atom2name \
 		  << "  " << tree->atom3name << " index=" << tree->index \
 		  << " k=" << tree->forceconstant << " theta0=" << tree->angle \
-		  << endi);
+		  );
 
 	if (tree->right != NULL)
 	{
@@ -2793,7 +2793,7 @@ void Parameters::traverse_dihedral_params(struct dihedral_params *list)
 		{
 		  DEBUG_MSG("k=" << list->values[i].k \
 			    << " n=" << list->values[i].n  \
-			    << " delta=" << list->values[i].delta << endi);
+			    << " delta=" << list->values[i].delta);
 		}
 
 		list=list->next;
@@ -2831,7 +2831,7 @@ void Parameters::traverse_improper_params(struct improper_params *list)
 		{
 		   DEBUG_MSG("k=" << list->values[i].k \
 			     << " n=" << list->values[i].n \
-			     << " delta=" << list->values[i].delta << endi);
+			     << " delta=" << list->values[i].delta);
 		}
 
 		list=list->next;
@@ -2867,7 +2867,7 @@ void Parameters::traverse_vdw_params(struct vdw_params *tree)
 	DEBUG_MSG("vdW " << tree->atomname << " index=" << tree->index \
 		  << " sigma=" << tree->sigma << " epsilon=" << \
 		  tree->epsilon << " sigma 1-4=" << tree->sigma14 \
-		  << " epsilon 1-4=" << tree->epsilon14 << endi);
+		  << " epsilon 1-4=" << tree->epsilon14);
 
 	if (tree->right != NULL)
 	{
@@ -2898,7 +2898,7 @@ void Parameters::traverse_vdw_pair_params(struct vdw_pair_params *list)
 		  << list->atom2name << " A=" << list->A \
 		  << " B=" << list->B << " A 1-4=" \
 		  << list->A14 << " B 1-4=" << list->B14 \
-		  << endi);
+		  );
 
 	traverse_vdw_pair_params(list->next);
 }
@@ -2917,7 +2917,7 @@ void Parameters::print_bond_params()
 {
 	DEBUG_MSG(NumBondParams << " BOND PARAMETERS\n" \
 		  << "*****************************************"  \
-		  << endi);
+		  );
 
 	traverse_bond_params(bondp);
 }
@@ -2934,8 +2934,7 @@ void Parameters::print_bond_params()
 void Parameters::print_angle_params()
 {
 	DEBUG_MSG(NumAngleParams << " ANGLE PARAMETERS\n"
-		  << "*****************************************" 
-		  << endi);
+		  << "*****************************************" );
 
 	traverse_angle_params(anglep);
 }
@@ -2952,8 +2951,7 @@ void Parameters::print_angle_params()
 void Parameters::print_dihedral_params()
 {
 	DEBUG_MSG(NumDihedralParams << " DIHEDRAL PARAMETERS\n" \
-		  << "*****************************************"  \
-		  << endi);
+		  << "*****************************************" );
 
 	traverse_dihedral_params(dihedralp);
 }
@@ -2970,8 +2968,7 @@ void Parameters::print_dihedral_params()
 void Parameters::print_improper_params()
 {
 	DEBUG_MSG(NumImproperParams << " IMPROPER PARAMETERS\n" \
-		  << "*****************************************"  \
-		  << endi);
+		  << "*****************************************" );
 
 	traverse_improper_params(improperp);
 }
@@ -2988,8 +2985,7 @@ void Parameters::print_improper_params()
 void Parameters::print_vdw_params()
 {
 	DEBUG_MSG(NumVdwParams << " vdW PARAMETERS\n" \
-		  << "*****************************************" \
-		  << endi);
+		  << "*****************************************" );
 
 	traverse_vdw_params(vdwp);
 }
@@ -3006,8 +3002,7 @@ void Parameters::print_vdw_params()
 void Parameters::print_vdw_pair_params()
 {
 	DEBUG_MSG(NumVdwPairParams << " vdW PAIR PARAMETERS\n" \
-		  << "*****************************************"  \
-		  << endi);
+		  << "*****************************************" );
 
 	traverse_vdw_pair_params(vdw_pairp);
 }
@@ -3832,13 +3827,17 @@ int Parameters::vdw_pair_to_arrays(int *ind1_array, int *ind2_array,
  * RCS INFORMATION:
  *
  *	$RCSfile: Parameters.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:42 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/03/20 15:38:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Parameters.C,v $
+ * Revision 1.1002  1997/03/20 15:38:30  nealk
+ * Added "\n" before endi in iout statements.
+ * Removed endi from DebugM() calls.
+ *
  * Revision 1.1001  1997/03/19 11:54:42  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.
