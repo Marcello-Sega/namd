@@ -29,7 +29,8 @@ NamdState::NamdState()
 int
 NamdState::status()
 {
-    int ret;
+    int ret=0;
+
     if (configList != NULL) {
 	cout << "Config List exists" << endl;
     } else {
@@ -70,11 +71,12 @@ NamdState::configFileInit(char *confFile)
 
   CPrintf("NamdState::configFileInit running %s\n",confFile);
 
-  if ( confFile != NULL ) {
-    configList = new ConfigList(confFile);
+  if ( NULL == confFile || NULL == (configList = new ConfigList(confFile)) ) {
+    CPrintf("NamdState::configFileInit() Config File is NULL\n");
+    return(1);
   }
-  else {
-    CPrintf("NamdState::configFileInit() Config File ptr is NULL\n");
+  if (!configList->okay()) {
+    CPrintf("NamdState::configFileInit() ConfigList is bad\n");
     return(1);
   }
 
@@ -110,7 +112,7 @@ NamdState::configFileInit(char *confFile)
  *
  *	$RCSfile: NamdState.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/16 04:39:46 $
+ *	$Revision: 1.2 $	$Date: 1996/08/16 04:55:30 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -119,9 +121,12 @@ NamdState::configFileInit(char *confFile)
  * REVISION HISTORY:
  *
  * $Log: NamdState.C,v $
+ * Revision 1.2  1996/08/16 04:55:30  ari
+ * *** empty log message ***
+ *
  * Revision 1.1  1996/08/16 04:39:46  ari
  * Initial revision
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1 1996/08/16 04:39:46 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.2 1996/08/16 04:55:30 ari Exp $";

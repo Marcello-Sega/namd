@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Parameters.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/08/16 04:39:46 $
+ *	$Revision: 1.3 $	$Date: 1996/08/16 04:55:30 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -25,6 +25,9 @@
  * REVISION HISTORY:
  *
  * $Log: Parameters.C,v $
+ * Revision 1.3  1996/08/16 04:55:30  ari
+ * *** empty log message ***
+ *
  * Revision 1.2  1996/08/16 04:39:46  ari
  * *** empty log message ***
  *
@@ -79,7 +82,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Parameters.C,v 1.2 1996/08/16 04:39:46 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Parameters.C,v 1.3 1996/08/16 04:55:30 ari Exp $";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -338,7 +341,6 @@ void Parameters::read_parameter_file(char *fname)
 	}
 
 	/*  Keep reading in lines until we hit the EOF			*/
-	cout << "Starting NAMD_read_line loop" << endl;
 	while (NAMD_read_line(pfile, buffer) != -1)
 	{
 		/*  Get the first word of the line			*/
@@ -420,7 +422,6 @@ void Parameters::read_parameter_file(char *fname)
 	/*  Close the file						*/
 	fclose(pfile);
 
-	cout << "Ending read_parameter_file" << endl;
 	return;
 }
 /*			END OF FUNCTION read_paramter_file		*/
