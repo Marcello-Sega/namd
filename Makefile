@@ -1,74 +1,27 @@
 include Make.charm
 include Makearch
 
-#####
-# Directories
-#####
-
-# source directory
+# directories
 SRCDIR = src
-# destination directory (binaries) -- currently, MUST be .
 DSTDIR = obj
-# temp include directory for .decl.h and .def.h files
 INCDIR = inc
-
-#####
-# definitions for Charm routines
-#####
-
-# CHARM is platform dependent
-CHARMC = $(CHARM)/bin/charmc $(PURIFY)
-CHARMXI = $(CHARM)/bin/charmc $(PURIFY)
-
-
-#####
-# definitions for (D)PMTA routines
-#####
-
 DPMTADIR=dpmta-2.6
-DPMTAINCL=-I$(DPMTADIR)/mpole -I$(DPMTADIR)/src
-DPMTALIB=-L$(DPMTADIR)/mpole -L$(DPMTADIR)/src -ldpmta2 -lmpole
+PVMDIR=pvm3
+DPMEDIR=dpme2
+
+# comment/uncomment these lines for (D)PMTA routines
+DPMTAINCL=-I$(DPMTADIR)/mpole -I$(DPMTADIR)/src -I$(PVMDIR)
+DPMTALIB=-L$(DPMTADIR)/mpole -L$(DPMTADIR)/src -ldpmta2 -lmpole -L$(PVMDIR) -lpvmc
 DPMTAFLAGS=-DDPMTA
 DPMTA=$(DPMTAINCL) $(DPMTAFLAGS)
-DPMTALIBS=$(DPMTADIR)/mpole/libmpole.a $(DPMTADIR)/src/libdpmta2.a
+DPMTALIBS=$(DPMTADIR)/mpole/libmpole.a $(DPMTADIR)/src/libdpmta2.a $(PVMDIR)/libpvmc.a
 
-
-#####
-# definitions for DPME routines
-#####
-
-DPMEDIR=dpme2
+# comment/uncomment these lines for DPME routines
 DPMEINCL=-I$(DPMEDIR)
 DPMELIB=-L$(DPMEDIR) -ldpme
 DPMEFLAGS=-DDPME
 DPME=$(DPMEINCL) $(DPMEFLAGS)
 DPMELIBS= $(DPMEDIR)/libdpme.a
-
-
-######
-## definitions for PVM routines
-######
-
-PVMDIR=pvm3
-PVMLIB=-L$(PVMDIR) -lpvmc
-PVM=-I$(PVMDIR)
-PVMLIBS=pvm3/libpvmc.a
-
-
-######
-## Libraries we may have changed
-######
-
-LIBS = $(DPMTALIBS) $(PVMLIBS) $(DPMELIBS)
-
-
-# CXX is platform dependent
-INCLUDE = $(CHARM)/include
-CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(TCL) $(FFT) $(CXXOPTS) $(NOWARN) $(NAMDFLAGS)
-CXXTHREADFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(TCL) $(FFT) $(CXXTHREADOPTS) $(NOWARN) $(NAMDFLAGS)
-GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(TCL) $(FFT) $(NOWARN) $(NAMDFLAGS)
-
-DEPENDFILE = Make.depends
 
 # Add new source files here.
 
@@ -179,6 +132,7 @@ OBJS = \
 	$(DSTDIR)/pub3dfft.o \
 	$(DSTDIR)/vmdsock.o \
 	$(DSTDIR)/imd.o
+
 # Add new modules here and also define explicit rule below.
 
 CIFILES = 	\
@@ -205,6 +159,19 @@ CIFILES = 	\
 		$(INCDIR)/main.decl.h \
 		$(INCDIR)/main.def.h
 
+# definitions for Charm routines
+CHARMC = $(CHARM)/bin/charmc
+CHARMXI = $(CHARM)/bin/charmc
+INCLUDE = $(CHARM)/include
+
+# Libraries we may have changed
+LIBS = $(DPMTALIBS) $(DPMELIBS)
+
+# CXX is platform dependent
+CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CXXOPTS)
+CXXTHREADFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CXXTHREADOPTS)
+GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT)
+
 # Add new executables here.
 
 BINARIES = namd2 flipdcd flipbinpdb
@@ -213,12 +180,11 @@ all:	$(BINARIES)
 
 namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(CHARMC) -verbose -ld++-option \
-	"-I$(INCLUDE) -I$(INCDIR) -I$(SRCDIR) $(CXXOPTS) $(LDOPTS)" \
+	"-I$(INCLUDE) -I$(INCDIR) -I$(SRCDIR) $(CXXOPTS)" \
 	-language charm++ \
 	-o namd2 $(OBJS) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
-	$(PVMLIB) \
 	$(TCLLIB) \
 	$(FFTLIB)
 
@@ -237,23 +203,15 @@ dumpdcd:	$(SRCDIR)/dumpdcd.c
 loaddcd:	$(SRCDIR)/loaddcd.c
 	$(CC) -o loaddcd $(SRCDIR)/loaddcd.c
 
-# Now sit back, have a coke, and relax.
-
 projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
-	cd $(PVMDIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
-	cd $(DPMTADIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
-	cd $(DPMEDIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
 	$(CHARMC) -verbose -ld++-option \
-	"-I$(INCLUDE) -I$(SRCDIR) $(CXXOPTS) " \
+	"-I$(INCLUDE) -I$(INCDIR) -I$(SRCDIR) $(CXXOPTS)" \
 	-language charm++ -tracemode projections \
 	-o namd2 $(OBJS) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
-	$(PVMLIB) \
 	$(TCLLIB) \
 	$(FFTLIB)
-
-# Now sit back, have a coke, and relax.
 
 $(DPMTADIR)/mpole/libmpole.a:
 	cd $(DPMTADIR) ; $(MAKE) ; cd ..
@@ -264,7 +222,7 @@ $(DPMTADIR)/src/libdpmta2.a:
 $(DPMEDIR)/libdpme.a:
 	cd $(DPMEDIR) ; $(MAKE) ; cd ..
 
-pvm3/libpvmc.a:
+$(PVMDIR)/libpvmc.a:
 	cd $(PVMDIR) ; $(MAKE) ; cd ..
 
 # Unix commands
@@ -366,6 +324,8 @@ $(INCDIR)/main.def.h:	$(SRCDIR)/main.ci
 	$(CHARMXI) $(SRCDIR)/main.ci
 	$(MOVECIFILES)
 
+DEPENDFILE = Make.depends
+
 # make depends is ugly!  The problem: we have obj/file.o and want src/file.C.
 # Solution: heavy use of basename and awk.
 # This is a CPU killer...  Don't make depends if you don't need to.
@@ -415,5 +375,3 @@ clean:
 veryclean:	clean
 	rm -f $(BINARIES)
 
-accesslist:
-	cvs admin -aari,brunner,jim,milind,nealk .
