@@ -439,13 +439,13 @@ void Rebalancer::printLoads()
    iout << iINFO << "------------------------------------------------------------\n" << endi; 
    iout << iINFO << "          LOAD SUMMARY FOR STRATEGY \"" << strategyName << "\"\n\n" << endi;
    iout << iINFO << "Processors = " << setw(5) << P << "\t"
-        << "  Overload = " << setw(7) << overLoad << "\n" << endi;
+        << "  Overload = " << setw(7) << overLoad << "\n";
    iout << iINFO << "Patches    = " << setw(5) << numPatches << "\t"
-        << "  Avg load = " << setw(7) << averageLoad << "\n" << endi;
+        << "  Avg load = " << setw(7) << averageLoad << "\n";
    iout << iINFO << "Computes   = " << setw(5) << numComputes << "\t"
-        << "  Max load = " << setw(7) << max << "\n" << endi;
+        << "  Max load = " << setw(7) << max << "\n";
    iout << iINFO << "# messages = " << setw(5) << total << "\t"
-        << "  Msg size = " << numBytes << " bytes" << "\n" << "\n" << endi;
+        << "  Msg size = " << numBytes << " bytes" << "\n" << "\n";
   iout << iINFO <<"============================================================\n"
        << "\n" << endi;
    iout.unsetf(ios::right);
