@@ -37,7 +37,7 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1053 1999/07/08 21:26:48 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1054 1999/07/22 21:43:06 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, TransformList tl,
       PositionList pl, VelocityList vl) : Patch(pd,al,pl), v(vl), t(tl)
@@ -408,9 +408,9 @@ void HomePatch::rattle2(const BigReal timestep, Vector *virial)
     for ( i = 0; i < hgs; ++i ) {
       v[ig+i] = vel[i];
     }
-    // check that there isn't a constant needed here!
-    *virial += wc / ( 0.5 * dt );
   }
+  // check that there isn't a constant needed here!
+  *virial += wc / ( 0.5 * dt );
 
 }
 
@@ -731,12 +731,15 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1053 $	$Date: 1999/07/08 21:26:48 $
+ *	$Revision: 1.1054 $	$Date: 1999/07/22 21:43:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1054  1999/07/22 21:43:06  jim
+ * Fixed virial calculation during RATTLE.
+ *
  * Revision 1.1053  1999/07/08 21:26:48  jim
  * Eliminated compiler warnings.
  *
