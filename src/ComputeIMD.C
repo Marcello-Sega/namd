@@ -43,12 +43,17 @@ ComputeIMD::ComputeIMD(ComputeGlobal *h)
   }
   rc = vmdsock_listen(sock); 
   // Wait for VMD to connect
-  iout << iINFO << "Waiting for VMD to connect to port "<<port<<'\n'<<endi;
-  while ( !(rc = vmdsock_selread(sock)));
+  iout << iINFO << "Waiting for connection on port "<<port << ", "
+       << "Timeout in 60 minutes.\n"  << endi;
+  rc = vmdsock_selread(sock,3600);
   if (rc < 0) {
     iout << iDEBUG << "select: " << strerror(errno) << '\n' << endi;
     vmdsock_destroy(sock);
     NAMD_die("Connection error\n");
+  }
+  if (rc == 0) {
+    vmdsock_destroy(sock);
+    NAMD_die("No connection\n");
   }
   rc = vmdsock_accept(sock);
   if (rc < 0) {
@@ -111,7 +116,7 @@ int ComputeIMD::get_vmd_forces() {
   int hsize; 
   int retval = 0;
   int rc;
-  while (vmdsock_selread(sock))  {     // Drain the socket
+  while (vmdsock_selread(sock,0))  {     // Drain the socket
     rc = imd_readheader(sock, &htype, &hlength, &hsize); 
     if (rc != sizeof(IMDHeader)) {
       iout << iDEBUG << "header: " << strerror(errno) << '\n' << endi;

@@ -32,8 +32,8 @@ int   vmdsock_accept(void *);
 int   vmdsock_connect(void *, const char *, int);
 int   vmdsock_write(void *, const void *, int);
 int   vmdsock_read(void *, void *, int);
-int   vmdsock_selread(void *);
-int   vmdsock_selwrite(void *);
+int   vmdsock_selread(void *, int);
+int   vmdsock_selwrite(void *, int);
 void  vmdsock_destroy(void *);
 
 #endif /* Not Windows */

@@ -105,7 +105,7 @@ void vmdsock_destroy(void * v) {
   free(s);  
 }
 
-int vmdsock_selread(void *v) {
+int vmdsock_selread(void *v, int sec) {
   vmdsocket *s = (vmdsocket *)v;
   // struct fd_set rfd;
   fd_set rfd;
@@ -115,6 +115,7 @@ int vmdsock_selread(void *v) {
   FD_ZERO(&rfd);
   FD_SET(s->sd, &rfd);
   memset((void *)&tv, 0, sizeof(struct timeval));
+  tv.tv_sec = sec;
   do {
     rc = select(s->sd+1, &rfd, NULL, NULL, &tv);
   } while (rc < 0 && errno == EINTR);
@@ -122,7 +123,7 @@ int vmdsock_selread(void *v) {
 
 }
   
-int vmdsock_selwrite(void *v) {
+int vmdsock_selwrite(void *v, int sec) {
   vmdsocket *s = (vmdsocket *)v;
   // struct fd_set wfd;
   fd_set wfd;
@@ -132,6 +133,7 @@ int vmdsock_selwrite(void *v) {
   FD_ZERO(&wfd);
   FD_SET(s->sd, &wfd);
   memset((void *)&tv, 0, sizeof(struct timeval));
+  tv.tv_sec = sec;
   do {
     rc = select(s->sd + 1, NULL, &wfd, NULL, &tv);
   } while (rc < 0 && errno == EINTR);
