@@ -489,7 +489,9 @@ void ComputeNonbondedUtil :: NAME
 	r2 += t2 * t2;
 	if ( ( ! (atomfixed && p_1[j].atomFixed) ) &&
 	     (r2 <= cutoff2) && ! ((r2 <= r2_delta) && ++exclChecksum) ) {
-          *(pli++) = j;
+          int atom2 = p_1[j].id;
+          if ( atom2 >= excl_min && atom2 <= excl_max ) *(pli++) = j;
+          else *(plin++) = j;
         }
       }
     } else
@@ -508,7 +510,9 @@ void ComputeNonbondedUtil :: NAME
 	r2 += t2 * t2;
 	if ( (! p_1[j].atomFixed) &&
 	     (r2 <= cutoff2) && ! ((r2 <= r2_delta) && ++exclChecksum) ) {
-          *(pli++) = j;
+          int atom2 = p_1[j].id;
+          if ( atom2 >= excl_min && atom2 <= excl_max ) *(pli++) = j;
+          else *(plin++) = j;
         }
       }
     } else {
