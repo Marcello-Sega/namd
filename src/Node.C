@@ -58,7 +58,7 @@
 #include "ScriptTcl.h"
 #include "ComputeMgr.decl.h"
 
-#ifdef NAMD_CCS
+#if(CMK_CCS_AVAILABLE)
 extern "C" void CApplicationInit();
 #endif
 
@@ -74,7 +74,7 @@ int eventEndOfTimeStep;
 Node::Node(GroupInitMsg *msg)
 {
   DebugM(4,"Creating Node\n");
-#ifdef NAMD_CCS
+#if(CMK_CCS_AVAILABLE)
   CApplicationInit();
 #endif
   if (CpvAccess(Node_instance) == 0) {

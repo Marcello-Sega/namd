@@ -2,7 +2,7 @@
 goto begin
 syntax:
   echo ''
-  echo 'Usage: config [tcl] [fftw] [ccs] [<build_dir>/]<arch> '
+  echo 'Usage: config [tcl] [fftw] [<build_dir>/]<arch> '
   echo ''
   echo 'arch: ' `( cd arch ; ls -1 *.arch |sed -e 's/\.arch//' | egrep -v 'template' )`
   echo ''
@@ -33,14 +33,6 @@ begin:
   endif
 
   if ($#argv < 1) goto syntax
-  if ( $1 == ccs ) then
-    set use_ccs = 1
-    shift
-  else
-    set use_ccs = 0
-  endif
-
-  if ($#argv < 1) goto syntax
   set ARCH=$1 ; shift
   set DIR=`pwd`;
 
@@ -68,7 +60,6 @@ begin:
   echo 'include .rootdir/arch/$(NAMD_ARCH).base' >> Makearch
   if ( $use_tcl ) echo 'include .rootdir/arch/$(NAMD_ARCH).tcl' >> Makearch
   if ( $use_fftw ) echo 'include .rootdir/arch/$(NAMD_ARCH).fftw' >> Makearch
-  if ( $use_ccs ) echo 'CCS=-DNAMD_CCS' >> Makearch
   echo "Linking Makefiles"
   ln -s .rootdir/Makefile ./Makefile
   echo "Linking src"

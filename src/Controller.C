@@ -26,7 +26,7 @@
 #include "imd.h"
 #include "IMDOutput.h"
 
-#ifdef NAMD_CCS
+#if(CMK_CCS_AVAILABLE)
 extern "C" void CApplicationDepositNode0Data(char *);
 #endif
 
@@ -767,7 +767,7 @@ void Controller::printEnergies(int step)
     iout << FORMAT(totalEnergy);
     iout << FORMAT(temperature);
 
-#ifdef NAMD_CCS
+#if(CMK_CCS_AVAILABLE)
      char webout[80];
      sprintf(webout,"%d %d %d %d",(int)totalEnergy,
 	     (int)(totalEnergy - kineticEnergy),

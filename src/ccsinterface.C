@@ -6,7 +6,7 @@
 
 #include "ccsinterface.h"
 
-#ifdef NAMD_CCS
+#if(CMK_CCS_AVAILABLE)
 #include <stdlib.h>
 
 extern unsigned int appletIP;
