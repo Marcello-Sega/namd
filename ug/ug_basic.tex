@@ -37,7 +37,6 @@ distance, so that energy may not be conserved.
   \label{fig:switching}
 \end{figure}
 
-The details of the switching function are given in the \PG.
 The switching function used is based on the X-PLOR switching
 function.  The parameter {\tt switchdist} specifies the distance
 at which the switching function should start taking effect to
@@ -62,7 +61,7 @@ at the cutoff distance, a shifting function is applied to the electrostatic
 potential as shown in Figure \ref{fig:shifting}.  As this figure shows, the
 shifting function shifts the entire potential curve so that the curve
 intersects the x-axis at the cutoff distance.  This shifting function
-is fully described in the \PG\ and is based on the
+is based on the
 shifting function used by X-PLOR.
 
 \begin{figure}[htb]
@@ -388,7 +387,6 @@ This should be set to twice the largest distance which will ever occur between a
 {An internal tuning parameter used in determining the size of the cubes 
 of space with which \NAMD\ uses to partition the system.  The value of 
 this parameter will not change the physical results of the simulation.  
-For more details about this parameter see the \PG.  
 Unless you are very motivated to get the {\it very} best 
 possible performance, just leave this value at the default.}
 
@@ -521,6 +519,11 @@ convergence is usually reached after fewer than 10 iterations.
 
 \subsubsection{DPMTA parameters}
 
+{\em DPMTA is no longer included in the released NAMD binaries.
+We recommend that you instead use PME with a periodic system because
+it conserves energy better, is more efficient, and is better parallelized.
+If you must have the fast multipole algorithm you may compile \NAMD\ yourself.} 
+
 These parameters control the options to DPMTA, an algorithm
 used to provide full electrostatic interactions.  DPMTA is a
 modified version of the FMA (Fast Multipole Algorithm) and, 
@@ -543,7 +546,7 @@ the DPMTA algorithm from Duke University should be used
 to compute the full electrostatic interactions.  If set to 
 {\tt on}, DPMTA will be used with a multiple timestep integration scheme 
 to provide full electrostatic interactions as detailed in Section 
-\ref{section:fmadesc}. }
+\ref{section:fmadesc}.  {\em DPMTA is no longer included in released binaries.}}
 
 \item
 \NAMDCONFWDEF{FMALevels}{number of levels to use in multipole expansion}{positive integer}{5}
@@ -640,6 +643,7 @@ The new code is faster and allows non-orthogonal cells so you
 probably just want to leave this option turned off.  If you set
 {\tt cellOrigin} to something other than $(0,0,0)$ the energy may differ
 slightly between the old and new implementations.
+{\em DPME is no longer included in released binaries.}
 }
 
 \end{itemize}

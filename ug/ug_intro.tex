@@ -11,7 +11,7 @@
 %
 %       $RCSfile: ug_intro.tex,v $
 %       $Author: jim $        $Locker:  $                $State: Exp $
-%       $Revision: 1.13 $      $Date: 2000/09/29 20:41:15 $
+%       $Revision: 1.14 $      $Date: 2001/02/23 00:52:00 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -21,6 +21,9 @@
 % REVISION HISTORY:
 %
 % $Log: ug_intro.tex,v $
+% Revision 1.14  2001/02/23 00:52:00  jim
+% Many updates and cleanups for 2.3.
+%
 % Revision 1.13  2000/09/29 20:41:15  jim
 % Updated many things for 2.2.
 %
@@ -113,46 +116,39 @@ The document is divided into several sections:
 \item[Section \ref{section:avail}] gives details on installing \NAMD.
 \end{description}
 
-We have attempted to make this document and the \PG\ both
+We have attempted to make this document 
 complete and easy to understand and to make \NAMD\ itself
-easy to install and run.  Please take a moment to help us improve
-the documentation and the code by filling out the users' survey
-at the end of this section.
+easy to install and run.
+We welcome your suggestions for improving the documentation or code
+at {\tt namd@ks.uiuc.edu}.
 
 \subsection{New features in version \NAMDVER}
 
-\subsubsection*{First Port to Windows}
+\subsubsection*{Charmrun on All Platforms}
 
-NAMD now runs on Windows.  NAMD is built and tested on Windows NT,
-but should work on Windows 98 and 2000 as well.  You can now run
-NAMD on all those desktop machines that sit idle at night.
+The former \verb#conv-host# is now \verb#charmrun# and is present on all
+platforms.  On some platforms this is a script which attempts to
+provide a uniform command format.  Your results may vary but on
+any platform you can try \verb#charmrun namd2 +p<procs> <configfile>#.
 
-\subsubsection*{Parallel PME Reciprocal Sum}
+\subsubsection*{Simple Local Usage}
 
-Formerly a serial bottleneck, the particle mesh Ewald FFT and
-reciprocal space sum have been distributed.  Early results have
-demonstrated speedups on 128 processors of a Cray T3E.  The number
-of processors used may be limited with the "PMEProcessors" parameter.
+Workstation network versions of NAMD no longer require the ability
+to \verb#rsh localhost# or a nodelist file in order to run only on the
+local machine.  The new option \verb#++local# spawns processes directly,
+as in \verb#charmrun namd2 ++local +p<procs> <configfile>\verb#.
 
-\subsubsection*{FFTW in Shipping Binaries}
+\subsubsection*{Support for Scyld Beowulf}
 
-Under a new license with MIT, FFTW (www.fftw.org) is now included in
-all release binaries.  Users no longer need recompile NAMD themselves
-to obtain this performance boost.  (FFTW is also available under GPL.)
+NAMD has been ported to the Linux-based Scyld Beowulf operating
+system, which provides a single system image for PC clusters.
 
-\subsubsection*{Conjugate Gradient Minimizer}
+\subsubsection*{Building PSF Structure Files}
 
-The default minimizer is now based on conjugate gradients and line
-searches.  It is orders of magnitude faster than the old method, which
-is still available via the "velocityQuenching" option.  If you have
-any problems with the new minimizer, please contact us immediately.
+A new tool, \verb#psfgen#, has been added, which uses CHARMM topology
+files and PDB coordinate files to generate PSF structure files
+suitable for use with NAMD.
 
-\subsubsection*{Improved Load Balancer}
-
-With a new load balancing framework and careful removal of serial
-bottlenecks, we have demonstrated scaling to 1024 or even 2048
-processors on the ASCI Red machine.  This work will be presented at
-SC2000 and is a finalist for the Gordon Bell award.
 
 \subsection{\NAMD\ and molecular dynamics simulations}
 
@@ -189,12 +185,10 @@ and pairwise interactions including electrostatic and van der Waals forces.
 This commonality allows simulations to migrate between these three programs.
 
 \item{\bf Efficient Full Electrostatics Algorithms}\\
-\NAMD\ incorporates the Distributed Parallel Multipole Tree Algorithm 
-(DPMTA) \mycite{(Board \ETAL)}{duke:fma} and Distributed Particle Mesh
-Ewald (DPME) algorithms, which takes the full electrostatic
-interactions into account.  These algorithm reduces the computational
-complexity of electrostatic force evaluation from $O(N^2)$ to $O(N)$
-or $O(N \log N)$.
+\NAMD\ incorporates the Particle Mesh Ewald (PME) algorithm,
+which takes the full electrostatic interactions into account.
+This algorithm reduces the computational complexity of electrostatic
+force evaluation from $O(N^2)$ to $O(N \log N)$.
 
 \item{\bf Multiple Time Stepping}\\
 The velocity Verlet integration method
@@ -252,10 +246,9 @@ maintainability. In order to achieve this, it is designed in an
 object-oriented style with C++. Since molecular dynamics is a new field,
 new algorithms and techniques are continually being developed.
 \NAMD's modular design allows one to integrate and test new algorithms 
-easily.  The structure and design of the program 
-is described in the \PG\ with sufficient
-detail to allow additions of such
-new algorithms.
+easily.  If you are contemplating a particular modification to \NAMD\
+you are encouraged to contact the developers at {\tt namd@ks.uiuc.edu}
+for guidance.
 
 \item{\bf Interactive MD simulations}\\
 A system undergoing simulation in \NAMD\ may be viewed and
@@ -272,6 +265,7 @@ hard to compute and difficult to generalize to the evaluation of many different
 types of forces.  \NAMD\ addresses this problem by using a simple uniform 
 spatial decomposition where the entire model is split into uniform cubes of 
 space called {\em patches}. An initial load balancer assigns patches
+and the calculation of interactions among the atoms within them
 to processors such that the computational load is balanced as much as possible.
 During the simulation, an incremental load balancer monitors the load
 and performs necessary adjustments.
@@ -283,80 +277,13 @@ and performs necessary adjustments.
 If you have problems installing or running \NAMD\ after
 reading this document, please send a
 complete description of the problem by email to {\tt namd@ks.uiuc.edu}.  If
-you discover and fix a problem not described in this manual or the
-\PG, we would
+you discover and fix a problem not described in this manual we would
 appreciate if you would tell us about this as well, so we can alert
 other users and incorporate the fix into the public distribution.
 \prettypar
 We are interested in making \NAMD\ more useful to the molecular modeling
-community.  Please take a few minutes to complete the short survey on
-the next page and mail or fax it to
-
-\bigskip
-
-\NAMD\ Support
-
-Theoretical Biophysics Group
-
-Beckman Institute
-
-University of Illinois
-
-405 N. Mathews St.
-
-Urbana, IL  61801
-
-FAX (217) 244-6078
-
-\bigskip
-
-\noindent or email the relevant information
-to {\tt namd@ks.uiuc.edu} with subject ``Survey.''  
-This will help
-us make \NAMD\ relevant and responsive to the needs of our user
-community.
-
-\newpage
-\begin{enumerate}
-
-\item Name:
-
-\item Company/University:
-
-\item Address:
-
-\kern 0.4in
-
-\item Email address:
-
-\item Research area:
-
-\kern 0.3in
-
-\item Molecular systems to be studied with \NAMD:
-
-\kern 0.4in
-
-\item \NAMD\ features most useful for your research:
-
-\kern 0.4in
-
-\item I run \NAMD\ on the following platforms and operating systems:
-
-\kern 0.5in
-
-\item I would like to run \NAMD\ on:
-
-\kern 0.2in
-
-\item How can we improve the \NAMD\ documentation?
-
-\kern 1.2in
-
-\item Other comments:
-
-\end{enumerate}
-\newpage
+community.  Your suggestions are welcome at {\tt namd@ks.uiuc.edu}.
+We also appreciate hearing about how you are using \NAMD\ in your work.
 
 \subsection{Acknowledgments}
 

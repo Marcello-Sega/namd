@@ -11,7 +11,7 @@
 %
 %       $RCSfile: ug_runit.tex,v $
 %       $Author: jim $        $Locker:  $                $State: Exp $
-%       $Revision: 1.4 $      $Date: 2000/09/29 20:41:15 $
+%       $Revision: 1.5 $      $Date: 2001/02/23 00:52:00 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -22,6 +22,9 @@
 % REVISION HISTORY:
 %
 % $Log: ug_runit.tex,v $
+% Revision 1.5  2001/02/23 00:52:00  jim
+% Many updates and cleanups for 2.3.
+%
 % Revision 1.4  2000/09/29 20:41:15  jim
 % Updated many things for 2.2.
 %
@@ -66,16 +69,50 @@
 \label{section:run}
 
 \NAMD\ runs on a variety of platforms.  Details of running on each
-specific platform are given below.
+specific platform are given below and in the release notes included
+in every distribution.
+
+\subsection{Individual Workstations}
+
+Individual workstations use the same version of NAMD as workstation
+networks, but running NAMD is much easier.  You may launch any number
+of namd2 processes on the local machine (for best performance lauch
+one process per processor) using the \verb#++local# option via:
+
+\begin{verbatim}
+  charmrun namd2 ++local +p<procs> <configfile>
+\end{verbatim}
+
+There is no longer any need to be able to \verb#rsh localhost# or to
+create a nodelist file containing the single host localhost.
+
+Intel and Alpha processors produce binary files (restart and DCD
+files) which must be \verb#byte-swapped# to be read on other platforms.
+NAMD and VMD now handle this conversion automatically for most files.
+
+\subsection{Individual Windows Workstations}
+
+NAMD may be run on a single Windows workstation via the command:
+
+\begin{verbatim}
+  charmrun namd2 ++local +p<procs> <configfile>
+\end{verbatim}
+
+For best performance, <procs> should be the number of processors in
+your machine, and defaults to one if the \verb#+p# option is omitted.
+However, the \verb#++local# option is required unless \verb#charmd# is running
+and a nodelist file (containing only localhost) is present.
+
+See below to run on multiple machines.
 
 \subsection{Workstation Networks}
 
 Workstation networks require two files, the namd2 executable and the
-conv-host program.  The conv-host program starts namd2 on the desired
+charmrun program.  The charmrun program starts namd2 on the desired
 hosts, and handles console I/O for the node programs.
 
 To specify what machines namd2 will run on, the user creates a file
-called "nodelist".  Below is an example nodelist file:
+called \verb#nodelist#.  Below is an example nodelist file:
 
 \begin{verbatim}
 group main
@@ -83,104 +120,135 @@ group main
  host romeo
 \end{verbatim}
 
-The "group main" line defines the default machine list.  Hosts brutus
+The \verb#group main# line defines the default machine list.  Hosts brutus
 and romeo are the two machines on which to run the simulation.  Note
-that conv-host may run on one of those machines, or conv-host may run
+that charmrun may run on one of those machines, or charmrun may run
 on a third machine.
 
-The "rsh" command ("remsh" on HPUX) is used to start namd2 on each node
+The \verb#rsh# command (\verb#remsh# on HPUX) is used to start namd2 on each node
 specified in the nodelist file.  If NAMD fails without printing any
-output, check to make sure that "rsh" works on your machine, by seeing
-if "rsh hostname ls" works for each host in the nodelist.  If you want
-or need to use "ssh" instead, then add "setenv CONV\_RSH ssh" to your
-login or batch script and try "ssh hostname ls" to each host first to
-ensure that the machine is in your .ssh/known\_hosts file.
+output, check to make sure that \verb#rsh# works on your machine, by seeing
+if \verb#rsh hostname ls# works for each host in the nodelist.  If you want
+or need to use \verb#ssh# instead, then add \verb#setenv CONV_RSH ssh# to your
+login or batch script and try \verb#ssh hostname ls# to each host first to
+ensure that the machine is in your \verb#.ssh/known_hosts# file.  If you are
+unable to use rsh or ssh, then add \verb#setenv CONV_DAEMON# and run \verb#charmd#
+(or \verb#charmd_faceless#, which produces a log file) on every node.
 
 Some automounters use a temporary mount directory which is prepended
 to the path returned by the pwd command.  To run on multiple machines
-you must place a "pathfix" line in your nodelist file before any
-"host" lines.  For example:
+you must add a \verb#++pathfix# option to your nodelist file.  For example:
 
 \begin{verbatim}
-group main
- pathfix /tmp_mnt
+group main ++pathfix /tmp_mnt /
  host alpha1
  host alpha2
 \end{verbatim}
 
-A number of parameters may be passed to conv-host.  The most important
-is the "+pX" option, where X specifies the number of processors.  If X
+A number of parameters may be passed to charmrun.  The most important
+is the \verb#+pX# option, where X specifies the number of processors.  If X
 is less than the number of hosts in the nodelist, machines are
 selected from top to bottom.  If X is greater than the number of
-hosts, conv-host will start multiple processes on the machines,
+hosts, charmrun will start multiple processes on the machines,
 starting from the top.  To run multiple processes on members of a SMP
 workstation cluster, you may either just use the +p option to go
 through the list the right number of times, or list each machine
 several times, once for each processor.  The default is +p1.
 
-You may specify the nodelist file with the "++nodelist" option and the
-group (which defaults to "main") with the "++nodegroup" option.  If
-you do not use "++nodelist" conv-host will first look for "nodelist"
-in your current directory and then ".nodelist" in your home directory.
+You may specify the nodelist file with the \verb#++nodelist# option and the
+group (which defaults to \verb#main#) with the \verb#++nodegroup# option.  If
+you do not use \verb#++nodelist# charmrun will first look for \verb#nodelist#
+in your current directory and then \verb#.nodelist# in your home directory.
 
 If you always want to run on the machine you are logged in to you may
-use "localhost" in place of the hostname in your nodelist file, but
-only if there are no other machines.  You will not need "pathfix".
-For example, ".nodelist" in your home directory could read:
+use \verb#localhost# in place of the hostname in your nodelist file, but
+only if there are no other machines.  You will not need \verb#++pathfix#.
+For example, \verb#.nodelist# in your home directory could read:
 
 \begin{verbatim}
 group main
  host localhost
 \end{verbatim}
 
+It is simpler in many cases to instead use the \verb#++local# option as
+described under \verb#Individual Workstations# above, which eliminates the
+need for the nodelist file and rsh entirely.
+
 Once the nodelist file is set up, and you have your configuration file
-prepared (alanin.conf, in this example), run NAMD as follows:
+prepared, run NAMD as follows:
 
 \begin{verbatim}
-conv-host +pX namd2 alanin.conf
+  charmrun +p<procs> namd2 <configfile>
 \end{verbatim}
-
-Intel and Alpha processors produce binary files (restart and DCD
-files) which must be "byte-swapped" to be read on other platforms.
-The flipbinpdb and flipdcd programs will perform this conversion.
-NAMD and VMD now handle this conversion automatically for most files.
 
 \subsection{Windows Workstation Networks}
 
 Windows is the same as other workstation networks described above,
 except that rsh is not available on this platform.  Instead, you must
-run the provided daemon (daemon.exe) on every node listed in the
-nodelist file, even if you are only running on one machine.  Using
-daemon\_background rather than daemon will eliminate consoles for the
-daemon and node processes.
+run the provided daemon (\verb#charmd.exe#) on every node listed in the
+nodelist file.  Using \verb#charmd_faceless# rather than \verb#charmd# will eliminate
+consoles for the daemon and node processes.  The \verb#++local# option is
+also available under Windows, eliminating the need for \verb#charmd# and
+nodelist when running NAMD only on the local machine.
+
+\subsection{Scyld Beowulf Clusters}
+
+Scyld Beowulf clusters replace rsh and other methods of launching jobs
+via a distributed process space.  There is no need for a nodelist file
+or any special daemons.  In order to allow access to files, the first
+NAMD process must be on the master node of the cluster.  Launch jobs
+from the master node of the cluster via the command:
+
+\begin{verbatim}
+  charmrun namd2 +p<procs> <configfile>
+\end{verbatim}
+
+For best performance, run a single NAMD job on all available nodes and
+never run multiple NAMD jobs at the same time.  You may safely suspend
+and resume a running NAMD job on a Scyld Beowulf using control-Z or
+\verb#kill -STOP# and \verb#kill -CONT# on the charmrun process.
+
+\subsection{Compaq AlphaServer SC}
+
+Although NAMD uses MPI and the Elan library on this platform, parallel
+jobs are run using the \verb#prun# command.  (The standard MPI charmrun is
+wrong on this platform.)  The syntax for this command is:
+
+\begin{verbatim}
+  prun -n <procs> <configfile>
+\end{verbatim}
+
+There are additional options.  Consult your local documentation.
 
 \subsection{IBM RS/6000 SP}
 
 Run NAMD as you would any POE program.  The options and environment
 variables for poe are various and arcane, so you should consult your
 local documentation for recommended settings.  As an example, to run
-interactively on Blue Horizon one would specify:
+on Blue Horizon one would specify:
 
 \begin{verbatim}
-poe namd2 alanin.conf -nodes n -tasks_per_node m -rmpool 1
+  poe namd2 <configfile> -nodes <procs/8> -tasks_per_node 8
 \end{verbatim}
 
 \subsection{Cray T3E}
 
 The T3E version has been tested on the Pittsburgh Supercomputer Center
-T3E.  To run on X processors, use the mpprun command:
+T3E.  To run on <procs> processors, use the mpprun command:
 
-mpprun -n X namd2 alanin.conf
+\begin{verbatim}
+  mpprun -n <procs> namd2 <configfile>
+\end{verbatim}
 
 \subsection{Origin 2000}
 
 For small numbers of processors (1-8) use the non-MPI version of namd2.
 If your stack size limit is unlimited, which DQS may do, you will need
-to set it with "limit stacksize 64M" to run on multiple processors.
-To run on X processors call the binary directly with the +p option:
+to set it with \verb#limit stacksize 64M# to run on multiple processors.
+To run on <procs> processors call the binary directly with the +p option:
 
 \begin{verbatim}
-namd2 +pX alanin.conf
+  namd2 +p<procs> <configfile>
 \end{verbatim}
 
 For better performance on larger numbers of processors we recommend
@@ -191,14 +259,14 @@ the following commands in your .cshrc or .profile file, or in your
 job file if you are running under a queuing system:
 
 \begin{verbatim}
-setenv MPI_REQUEST_MAX 10240
-setenv MPI_TYPE_MAX 10240
+  setenv MPI_REQUEST_MAX 10240
+  setenv MPI_TYPE_MAX 10240
 \end{verbatim}
 
 Then run NAMD with the following command:
 
 \begin{verbatim}
-mpirun -np X namd2 alanin.conf
+  mpirun -np <procs> namd2 <configfile>
 \end{verbatim}
 
 
