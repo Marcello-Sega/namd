@@ -4,6 +4,7 @@
 extern message InitMsg;
 extern message DoneMsg;
 extern message LocalWorkMsg;
+message ComputeMapChangeMsg;
 packmessage MapDistribMsg;
 packmessage ComputeMapDistribMsg;
 
@@ -11,7 +12,7 @@ group WorkDistrib
 {
   entry WorkDistrib(InitMsg *);
   entry saveMaps(MapDistribMsg *);
-  entry recvComputeMap(ComputeMapDistribMsg *);
+  entry recvComputeMapChanges(ComputeMapChangeMsg *);
   entry doneSaveComputeMap(DoneMsg *);
   entry enqueueWork(LocalWorkMsg *);
   entry enqueueWorkA(LocalWorkMsg *);
@@ -25,12 +26,15 @@ group WorkDistrib
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/08/20 23:27:42 $
+ *	$Revision: 1.1006 $	$Date: 1998/01/22 20:11:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.ci,v $
+ * Revision 1.1006  1998/01/22 20:11:07  brunner
+ * Modified the ComputeMap redistribution to send only new patch assignments.
+ *
  * Revision 1.1005  1997/08/20 23:27:42  jim
  * Created multiple enqueueWork entry points to aid analysis.
  *

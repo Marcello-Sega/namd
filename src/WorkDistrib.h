@@ -32,6 +32,7 @@ class Molecule;
 enum { maxPatchDepends = 126 };
 
 class MapDistribMsg;
+class ComputeMapChangeMsg;
 class ComputeMapDistribMsg;
 
 class WorkDistrib : public BOCclass
@@ -51,8 +52,8 @@ public:
 
   void mapComputes(void);
   void sendMaps(void);
-  void saveComputeMap(int,int);
-  void recvComputeMap(ComputeMapDistribMsg *);
+  void saveComputeMapChanges(int,int);
+  void recvComputeMapChanges(ComputeMapChangeMsg *);
   void doneSaveComputeMap(DoneMsg *);
   void createHomePatches(void);
   void distributeHomePatches(void);
@@ -167,6 +168,13 @@ public:
   }
 };
 
+class ComputeMapChangeMsg : public comm_object
+{
+public:
+  int newNodes[20000];
+  int numNewNodes;
+};
+
 
 #endif /* WORKDISTRIB_H */
 
@@ -174,13 +182,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/08/20 23:27:43 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1011 $	$Date: 1998/01/22 20:11:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.1011  1998/01/22 20:11:06  brunner
+ * Modified the ComputeMap redistribution to send only new patch assignments.
+ *
  * Revision 1.1010  1997/08/20 23:27:43  jim
  * Created multiple enqueueWork entry points to aid analysis.
  *

@@ -79,7 +79,7 @@ void ComputeMgr::updateComputes(int ep, int chareID) {
 void ComputeMgr::updateComputes2(QuiescenceMessage *msg) {
   delete msg;
   WorkDistrib  *workDistrib = CLocalBranch(WorkDistrib, CpvAccess(BOCclass_group).workDistrib);
-  workDistrib->saveComputeMap(
+  workDistrib->saveComputeMapChanges(
     GetEntryPtr(ComputeMgr, updateComputes3), thisgroup
   );
 }
@@ -373,13 +373,16 @@ void ComputeMgr:: recvComputeGlobalResults(ComputeGlobalResultsMsg *msg)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.C,v $
- *	$Author: sergei $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1998/01/05 20:24:26 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1018 $	$Date: 1998/01/22 20:11:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.C,v $
+ * Revision 1.1018  1998/01/22 20:11:03  brunner
+ * Modified the ComputeMap redistribution to send only new patch assignments.
+ *
  * Revision 1.1017  1998/01/05 20:24:26  sergei
  * added #include "ComputeSMD.h";
  * added case computeSMDType in ComputeMgr::createCompute for SMD

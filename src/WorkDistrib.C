@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1040 1998/01/05 20:29:02 sergei Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1041 1998/01/22 20:11:05 brunner Exp $";
 
 #include <stdio.h>
 
@@ -75,7 +75,7 @@ void WorkDistrib::sendMaps(void)
 }
 
 //----------------------------------------------------------------------
-void WorkDistrib::saveComputeMap(int ep, int chareID)
+void WorkDistrib::saveComputeMapChanges(int ep, int chareID)
 {
   saveComputeMapReturnEP = ep;
   saveComputeMapReturnChareID = chareID;
@@ -87,22 +87,29 @@ void WorkDistrib::saveComputeMap(int ep, int chareID)
     DebugM(3, "ComputeMap (" << i << ") node = " << computeMap->node(i) << " newNode = " << computeMap->newNode(i) << "\n");
   }
   
-  ComputeMapDistribMsg *mapMsg 
-    = new (MsgIndex(ComputeMapDistribMsg)) ComputeMapDistribMsg ;
+  ComputeMapChangeMsg *mapMsg 
+    = new (MsgIndex(ComputeMapChangeMsg)) ComputeMapChangeMsg ;
 
-  mapMsg->computeMap = ComputeMap::Object();
+  mapMsg->numNewNodes = computeMap->numComputes();
+  for(i=0; i<computeMap->numComputes(); i++)
+    mapMsg->newNodes[i] = computeMap->newNode(i);
 
-  CBroadcastMsgBranch(WorkDistrib, recvComputeMap, mapMsg, thisgroup);
+  CBroadcastMsgBranch(WorkDistrib, recvComputeMapChanges, mapMsg, thisgroup);
 }
 
-void WorkDistrib::recvComputeMap(ComputeMapDistribMsg *msg) {
+void WorkDistrib::recvComputeMapChanges(ComputeMapChangeMsg *msg) {
+  
+  ComputeMap *computeMap = ComputeMap::Object();
+  for(int i=0; i<computeMap->numComputes(); i++)
+    computeMap->setNewNode(i,msg->newNodes[i]);
+
   delete msg;
+
   DoneMsg *donemsg = new (MsgIndex(DoneMsg)) DoneMsg;
   CSendMsgBranch(WorkDistrib, doneSaveComputeMap, donemsg, thisgroup, 0);
-  ComputeMap *computeMap = ComputeMap::Object();
 
   DebugM(2, "ComputeMap after send!\n");
-  for (int i=0; i<computeMap->numComputes(); i++) {
+  for (i=0; i<computeMap->numComputes(); i++) {
     DebugM(2, "ComputeMap (" << i << ") node = " << computeMap->node(i) << " newNode = " << computeMap->newNode(i) << " type=" << computeMap->type(i) << "\n");
   }
   DebugM(2, "===================================================\n");
@@ -619,6 +626,11 @@ void WorkDistrib::mapComputePatch(ComputeType type)
 
 }
 
+static inline int max(int x1,int x2)
+{
+  return (x1 > x2) ? x1 : x2;
+}
+
 //----------------------------------------------------------------------
 void WorkDistrib::mapComputeNonbonded(void)
 {
@@ -662,47 +674,74 @@ void WorkDistrib::mapComputeNonbonded(void)
     patchMap->newCid(i,cid);
   }
 
-  for(i=0; i<patchMap->numPatches(); i++) // do the pairs
+//   for(i=0; i<patchMap->numPatches(); i++) // do the pairs
+//   {
+//     // one-away neighbors
+//     numNeighbors=patchMap->oneAwayNeighbors(i,oneAway,oneAwayTrans);
+//     for(j=0;j<numNeighbors;j++)
+//     {
+//       if (i < oneAway[j])
+//       {
+//         numAtoms1 = patchMap->patch(i)->getNumAtoms();
+//         numAtoms2 = patchMap->patch(oneAway[j])->getNumAtoms();
+// 	const int distance = 
+// 	  abs(patchMap->xIndex(i)-patchMap->xIndex(oneAway[j])) 
+// 	  + abs(patchMap->yIndex(i)-patchMap->yIndex(oneAway[j])) 
+// 	  + abs(patchMap->zIndex(i)-patchMap->zIndex(oneAway[j]));
+
+//         double weight;
+//         if(distance==1) {
+//           weight = 0.69;
+//         } else if(distance==2) {
+//           weight = 0.32;
+//         } else if(distance==3) {
+//           weight = 0.24;
+//         } else weight = 0;
+
+// 	if (pairWork[patchMap->node(i)]<pairWork[patchMap->node(oneAway[j])]) {
+// 	    cid=computeMap->storeCompute(patchMap->node(i),2,
+// 				     computeNonbondedPairType);
+// 	    pairWork[patchMap->node(i)] += weight * numAtoms1*numAtoms2;
+// 	} else {
+// 	    cid=computeMap->storeCompute(patchMap->node(oneAway[j]),2,
+// 				     computeNonbondedPairType);
+// 	    pairWork[patchMap->node(oneAway[j])] += weight * numAtoms1*numAtoms2;
+// 	}
+	 
+// 	computeMap->newPid(cid,i);
+// 	computeMap->newPid(cid,oneAway[j],oneAwayTrans[j]);
+// 	patchMap->newCid(i,cid);
+// 	patchMap->newCid(oneAway[j],cid);
+//       }
+//     }
+//   }
+
+  for(int p1=0; p1 <patchMap->numPatches(); p1++) // do the pairs
   {
     // one-away neighbors
-    numNeighbors=patchMap->oneAwayNeighbors(i,oneAway,oneAwayTrans);
+    numNeighbors=patchMap->oneAwayNeighbors(p1,oneAway,oneAwayTrans);
     for(j=0;j<numNeighbors;j++)
     {
-      if (i < oneAway[j])
+      if (p1 < oneAway[j])
       {
-        numAtoms1 = patchMap->patch(i)->getNumAtoms();
-        numAtoms2 = patchMap->patch(oneAway[j])->getNumAtoms();
-	const int distance = 
-	  abs(patchMap->xIndex(i)-patchMap->xIndex(oneAway[j])) 
-	  + abs(patchMap->yIndex(i)-patchMap->yIndex(oneAway[j])) 
-	  + abs(patchMap->zIndex(i)-patchMap->zIndex(oneAway[j]));
+	int p2 = oneAway[j];
 
-        double weight;
-        if(distance==1) {
-          weight = 0.69;
-        } else if(distance==2) {
-          weight = 0.32;
-        } else if(distance==3) {
-          weight = 0.24;
-        } else weight = 0;
+	int x = max(patchMap->xIndex(p1),patchMap->xIndex(p2));
+	int y = max(patchMap->yIndex(p1),patchMap->yIndex(p2));
+	int z = max(patchMap->zIndex(p1),patchMap->zIndex(p2));
 
-	if (pairWork[patchMap->node(i)]<pairWork[patchMap->node(oneAway[j])]) {
-	    cid=computeMap->storeCompute(patchMap->node(i),2,
+	cid=computeMap->storeCompute(patchMap->node(patchMap->pid(x,y,z)),2,
 				     computeNonbondedPairType);
-	    pairWork[patchMap->node(i)] += weight * numAtoms1*numAtoms2;
-	} else {
-	    cid=computeMap->storeCompute(patchMap->node(oneAway[j]),2,
-				     computeNonbondedPairType);
-	    pairWork[patchMap->node(oneAway[j])] += weight * numAtoms1*numAtoms2;
-	}
-	 
-	computeMap->newPid(cid,i);
-	computeMap->newPid(cid,oneAway[j],oneAwayTrans[j]);
-	patchMap->newCid(i,cid);
-	patchMap->newCid(oneAway[j],cid);
+	computeMap->newPid(cid,p1);
+	computeMap->newPid(cid,p2,oneAwayTrans[j]);
+	patchMap->newCid(p1,cid);
+	patchMap->newCid(p2,cid);
+
       }
+	 
     }
   }
+
   /*
   for(i=0; i<node->numNodes(); i++) {
     iout << iINFO << "PairWork on node(" << i << ") = " << pairWork[i] 
@@ -999,13 +1038,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: sergei $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1040 $	$Date: 1998/01/05 20:29:02 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1041 $	$Date: 1998/01/22 20:11:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1041  1998/01/22 20:11:05  brunner
+ * Modified the ComputeMap redistribution to send only new patch assignments.
+ *
  * Revision 1.1040  1998/01/05 20:29:02  sergei
  * added mapComputePatch(computeSMDType) to WorkDistrib::mapComputes
  *
