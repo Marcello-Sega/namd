@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.10 1996/09/03 22:45:35 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.11 1996/10/04 22:23:34 brunner Exp $";
 
 #include <stdio.h>
 
@@ -73,6 +73,12 @@ void WorkDistrib::sendMaps(void)
 }
 
 //----------------------------------------------------------------------
+void WorkDistrib::createComputes(void)
+{
+  CPrintf("I don't know how to create computes yet\n");
+}
+
+//----------------------------------------------------------------------
 void WorkDistrib::createPatches(void)
 {
   int i;
@@ -129,6 +135,8 @@ void WorkDistrib::saveMaps(MapDistribMsg *msg)
   {
     CPrintf("Node 0 patch map built\n");
   }
+  createPatches();
+  createComputes();
   CharmExit();
 }
 
@@ -305,13 +313,16 @@ void WorkDistrib::mapElectComputes(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1996/09/03 22:45:35 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.11 $	$Date: 1996/10/04 22:23:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.11  1996/10/04 22:23:34  brunner
+ * Empty method for createComputes
+ *
  * Revision 1.10  1996/09/03 22:45:35  ari
  * *** empty log message ***
  *
