@@ -825,6 +825,8 @@ void Sequencer::submitHalfstep(int step)
       int slab = (int)floor((z-zmin)*idz);
       if (slab < 0) slab += nslabs;
       else if (slab >= nslabs) slab -= nslabs;
+      // factor of 1/2 because submitHalfstep gets called twice
+      // per timestep.
       pressureProfileReduction->item(3*slab) +=
         0.5 * a[i].mass * a[i].velocity.x * a[i].velocity.x;
       pressureProfileReduction->item(3*slab+1) +=
@@ -832,9 +834,6 @@ void Sequencer::submitHalfstep(int step)
       pressureProfileReduction->item(3*slab+2) +=
         0.5 * a[i].mass * a[i].velocity.z * a[i].velocity.z;
     }
-
-    // always submit reduction 
-    pressureProfileReduction->submit();
   }
 
   {
@@ -970,6 +969,7 @@ void Sequencer::submitReductions(int step)
   reduction->item(REDUCTION_ANGULAR_MOMENTUM_Z) += angularMomentum.z;  
 
   reduction->submit();
+  if (pressureProfileReduction) pressureProfileReduction->submit();
 }
 
 void Sequencer::submitMinimizeReductions(int step)
