@@ -62,7 +62,7 @@ public:
   void * pack (int *length)
   {
     int size = atomIDList.size();
-    *length = sizeof(int) + size * sizeof(AtomID)
+    *length = sizeof(int) + size * sizeof(AtomID);
     char *buffer = (char*)new_packbuffer(this,*length);
     *((int*)buffer) = size;
     AtomID *data = (AtomID*)(buffer+sizeof(int));
@@ -88,7 +88,7 @@ public:
   void * pack (int *length)
   {
     int size = positionList.size();
-    *length = sizeof(int) + size * sizeof(Position)
+    *length = sizeof(int) + size * sizeof(Position);
     char *buffer = (char*)new_packbuffer(this,*length);
     *((int*)buffer) = size;
     Position *data = (Position*)(buffer+sizeof(int));
@@ -114,7 +114,7 @@ public:
   void * pack (int *length)
   {
     int size = forceList.size();
-    *length = sizeof(int) + size * sizeof(Force)
+    *length = sizeof(int) + size * sizeof(Force);
     char *buffer = (char*)new_packbuffer(this,*length);
     *((int*)buffer) = size;
     Force *data = (Force*)(buffer+sizeof(int));
@@ -148,12 +148,15 @@ public:
  *
  *	$RCSfile: main.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.13 $	$Date: 1996/12/05 20:25:03 $
+ *	$Revision: 1.14 $	$Date: 1996/12/05 20:26:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: main.h,v $
+ * Revision 1.14  1996/12/05 20:26:27  jim
+ * missing ;
+ *
  * Revision 1.13  1996/12/05 20:25:03  jim
  * forgot to fill in length of message
  *
