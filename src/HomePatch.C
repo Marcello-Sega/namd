@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1016 1997/02/26 16:53:09 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1017 1997/02/26 21:39:27 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -43,6 +43,7 @@ HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl,
   max.x = PatchMap::Object()->maxX(patchID);
   max.y = PatchMap::Object()->maxY(patchID);
   max.z = PatchMap::Object()->maxZ(patchID);
+  center = 0.5*(min+max);
 
   migrationSuspended = false;
   allMigrationIn = false;
@@ -357,7 +358,7 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
 		<< patchID << " with position " << mi->pos << "\n"); 
       a.add(mi->atomProp);
       atomIDList.add(mi->atomID);
-      p.add(mi->pos);
+      p.add(lattice.nearest(mi->pos,center));
       v.add(mi->vel);
       f.add(mi->force);
     }
@@ -389,13 +390,17 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1997/02/26 16:53:09 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1017 $	$Date: 1997/02/26 21:39:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1017  1997/02/26 21:39:27  jim
+ * Fixed migration with periodic boundary conditions to correctly
+ * re-center migrated atoms on their new home patch.
+ *
  * Revision 1.1016  1997/02/26 16:53:09  ari
  * Cleaning and debuging for memory leaks.
  * Adding comments.

@@ -39,7 +39,7 @@ class HomePatch : public Patch {
   friend Sequencer;
 private: // for PatchMgr to use only!!
   HomePatch(PatchID, AtomIDList, PositionList, VelocityList);
-  Vector min, max;
+  Vector min, max, center;
 
 public:
 
@@ -100,13 +100,17 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/02/17 23:47:00 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/02/26 21:39:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.1004  1997/02/26 21:39:28  jim
+ * Fixed migration with periodic boundary conditions to correctly
+ * re-center migrated atoms on their new home patch.
+ *
  * Revision 1.1003  1997/02/17 23:47:00  ari
  * Added files for cleaning up atom migration code
  *
