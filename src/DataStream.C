@@ -15,15 +15,16 @@
 #include "Tensor.h"
 #include <stdio.h>
 
-#ifdef WIN32
-typedef int pos_type;
-#endif
-
 /* output using CkPrintf() (end by inform) */
 void datastream::endd() {
   *this << ends;
+#ifndef NO_STRSTREAM_H
   CollectionMgr::Object()->sendDataStream(dBuffer);
-  (*this).seekp((pos_type)0);   // clear buffer
+  (*this).seekp(0);   // clear buffer
+#else
+  CollectionMgr::Object()->sendDataStream(str().c_str());
+  (*this).seekp(0, ios_base::beg);
+#endif
 }
 
 datastream& operator<<(datastream& strm, const Vector &v1) {

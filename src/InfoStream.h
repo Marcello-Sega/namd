@@ -17,7 +17,7 @@
 #include <strstream.h>
 #else
 #include <iostream>
-#include <strstream>
+#include <sstream>
 using namespace std;
 #endif
 #else
@@ -26,10 +26,16 @@ using namespace std;
 class Vector;
 class Tensor;
 
+#ifndef NO_STRSTREAM_H
 class infostream : public ostrstream
+#else
+class infostream : public ostringstream
+#endif
 {
+#ifndef NO_STRSTREAM_H
   private:
   char iBuffer[16384];
+#endif
 
   public:
   infostream();

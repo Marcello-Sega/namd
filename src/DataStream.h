@@ -13,13 +13,23 @@
 
 #include "InfoStream.h"
 
+#ifndef NO_STRSTREAM_H
 class datastream : public ostrstream
+#else
+class datastream : public ostringstream
+#endif
 {
+#ifndef NO_STRSTREAM_H
   private:
   char dBuffer[16384];
+#endif
 
   public:
+#ifndef NO_STRSTREAM_H
   datastream() : ostrstream(dBuffer,sizeof(dBuffer)) {;}
+#else
+  datastream() : ostringstream() {}
+#endif
   ~datastream() {;}
 
   void endd();

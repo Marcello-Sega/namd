@@ -14,20 +14,26 @@
 #include "Tensor.h"
 #include <stdio.h>
 
-#ifdef WIN32
-typedef int pos_type;
-#endif
-
+#ifndef NO_STRSTREAM_H
 infostream::infostream() : ostrstream(iBuffer,sizeof(iBuffer)) {;}
+#else
+infostream::infostream() : ostringstream() {}
+#endif
 
 infostream::~infostream() {;}
 
 /* output using CkPrintf() (end by inform) */
 void infostream::endi() {
   *this << ends;
+#ifndef NO_STRSTREAM_H
   CkPrintf("%s",iBuffer);
   fflush(stdout);  // since CkPrintf doesn't always flush
-  (*this).seekp((pos_type)0);   // clear buffer
+  (*this).seekp(0);   // clear buffer
+#else
+  CkPrintf("%s",str().c_str());
+  fflush(stdout);  // since CkPrintf doesn't always flush
+  (*this).seekp(0, ios_base::beg);
+#endif
 }
 
 infostream& endi(infostream& s)  { s.endi(); return s; }
