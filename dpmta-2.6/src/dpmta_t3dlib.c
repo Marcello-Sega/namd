@@ -13,12 +13,15 @@
 *
 */
 
-static char rcsid[] = "$Id: dpmta_t3dlib.c,v 1.3 1997/09/29 23:58:43 jim Exp $";
+static char rcsid[] = "$Id: dpmta_t3dlib.c,v 1.4 1999/04/23 04:53:28 jim Exp $";
 
 /*
  * revision history:
  *
  * $Log: dpmta_t3dlib.c,v $
+ * Revision 1.4  1999/04/23 04:53:28  jim
+ * Added missing return statements assumed to be zero.
+ *
  * Revision 1.3  1997/09/29 23:58:43  jim
  * Incorporated changes from version 2.6.1 of DPMTA.
  *   - fixes for bad handling of empty/invalid multipoles when
@@ -347,6 +350,7 @@ int PMTAinit( PmtaInitDataPtr initdata, int *rtn_tids )
       Dpmta_Resize = TRUE;
    }
 
+   return(0);
 
 } /* PMTAinit */
 
@@ -413,6 +417,8 @@ int PMTAregister()
 #ifdef TIME
    pvm_joingroup("DpmtaSlave");
 #endif
+
+   return(0);
 
 } /* PMTAregister */
 
@@ -569,6 +575,8 @@ int PMTAforce(
    Recv_Slave_Times(Dpmta_Pid, Dpmta_Nproc);
 
 #endif
+
+   return(0);
 
 } /* PMTAforce */
 
