@@ -56,9 +56,17 @@ void NonbondedExclElem::computeForce(BigReal *reduction)
   BigReal dummy[reductionDataSize];
   for ( int i = 0; i < reductionDataSize; ++i ) dummy[i] = 0.;
 
-  ComputeNonbondedUtil::calcExcl(
+  if ( p[0]->p->flags.doFullElectrostatics )
+    ComputeNonbondedUtil::calcFullExcl(
 	lattice.delta(p[0]->x[localIndex[0]],p[1]->x[localIndex[1]]),
-	Vector(0,0,0), // Eliminate this from call!!!
+	p[0]->f[localIndex[0]], p[1]->f[localIndex[1]],
+	p[0]->f[localIndex[0]], p[1]->f[localIndex[1]],
+	p[0]->a[localIndex[0]], p[1]->a[localIndex[1]],
+	modified,
+	( p[0]->patchType == HOME ) ? reduction : dummy );
+  else
+    ComputeNonbondedUtil::calcExcl(
+	lattice.delta(p[0]->x[localIndex[0]],p[1]->x[localIndex[1]]),
 	p[0]->f[localIndex[0]], p[1]->f[localIndex[1]],
 	p[0]->a[localIndex[0]], p[1]->a[localIndex[1]],
 	modified,

@@ -14,8 +14,7 @@
 
 // Several special cases are defined:
 //   NBPAIR, NBSELF, NBEXCL switch environment (mutually exclusive)
-//   MODIFY14 modified 1-4 parameters?
-//   SWITCHING switching function?
+//   FULLELECT full electrostatics calculation?
 
 #include "ComputeNonbondedHack.h"
 
@@ -30,21 +29,43 @@
 DECL( static ) void NODECL( ComputeNonbondedUtil :: ) NAME
 NOEXCL
 (
-(Position* p PLEN, Force* f PLEN, AtomProperties* a PLEN,
+NOFULL
+(
+(Position* p PLEN, Force* ff PLEN,
+ AtomProperties* a PLEN,
  int numAtoms PLEN, BigReal *reduction)
+)
+FULL
+(
+(Position* p PLEN, Force* ff PLEN, Force* fullf PLEN,
+ AtomProperties* a PLEN,
+ int numAtoms PLEN, BigReal *reduction)
+)
 )
 EXCL
 (
-(const Position & p_ij, const Position &,
+NOFULL
+(
+(const Position & p_ij,
  Force & f_i, Force & f_j,
  const AtomProperties & a_i, const AtomProperties & a_j,
  int m14, BigReal *reduction)
+)
+FULL
+(
+(const Position & p_ij,
+ Force & f_i, Force & f_j,
+ Force & fullf_i, Force & fullf_j,
+ const AtomProperties & a_i, const AtomProperties & a_j,
+ int m14, BigReal *reduction)
+)
 )
 DECL( ; )
 #endif
 #ifdef DEFINITION
 {
   BigReal electEnergy = 0;
+  BigReal fullElectEnergy = 0;
   BigReal vdwEnergy = 0;
 
   register const BigReal cutoff2 = ComputeNonbondedUtil:: cutoff2;
@@ -75,7 +96,8 @@ NOEXCL
     const AtomProperties a_i = a[I_SUB];
 
 
-    Force & f_i = f[I_SUB];
+    Force & f_i = ff[I_SUB];
+    FULL( Force & fullf_i = fullf[I_SUB]; )
 )
 
     const BigReal NOEXCL( kq_i_u ) EXCL( kq_i ) =
@@ -106,12 +128,37 @@ EXCL
       Vector f_vdw = p_ij;
       register const BigReal r2 = f_vdw.length2();
 )
-      if ( r2 > cutoff2 ) NOEXCL( continue ) EXCL( return );
+      if ( r2 > cutoff2 )
+      {
+	NOEXCL( continue; )
+	EXCL( FULL(
+	// Do a quick fix and get out!
+	const BigReal r = sqrt(r2);
+	const BigReal r_1 = 1/r;
+	BigReal kqq = kq_i * a_j.charge;
+	BigReal f = kqq*r_1;
+	if ( m14 ) f *= ( 1. - scale14 );
+	fullElectEnergy -= f;
+	const Vector f_elec = f_vdw * ( f * r_1 * r_1 );
+	fullf_i -= f_elec;
+	fullf_j += f_elec;
+	) return; )
+      }
 
 NOEXCL
 (
       BigReal kq_i = kq_i_u;
       const AtomProperties & a_j = a[J_SUB];
+
+FULL
+(
+      Force & fullf_j = fullf[J_SUB];
+      Vector f_vdw(p_ij_x,p_ij_y,p_ij_z);
+      const BigReal r = sqrt(r2);
+      const BigReal r_1 = 1/r;
+      BigReal kqq = kq_i * a_j.charge;
+      BigReal f = kqq*r_1;
+)
 )
 
       const LJTable::TableEntry * lj_pars = 
@@ -121,9 +168,29 @@ NOEXCL
       {
 NOEXCL
 (
-	if ( mol->checkexcl(a_i.id,a_j.id) ) continue;
+	if ( mol->checkexcl(a_i.id,a_j.id) )
+	{
+	  FULL
+	  (
+	    // Do a quick fix and get out!
+	    fullElectEnergy -= f;
+	    const Vector f_elec = f_vdw * ( f * r_1 * r_1 );
+	    fullf_i -= f_elec;
+	    fullf_j += f_elec;
+	  )
+	  continue;
+	}
 	else if ( mol->check14excl(a_i.id,a_j.id) )
 	{
+	  FULL
+	  (
+	    // Make full electrostatics match rescaled charges!
+	    f *= ( 1. - scale14 );
+	    fullElectEnergy -= f;
+	    const Vector f_elec = f_vdw * ( f * r_1 * r_1 );
+	    fullf_i -= f_elec;
+	    fullf_j += f_elec;
+	  )
 	  lj_pars = ljTable->table_val(a_i.type, a_j.type, 1);
 	  kq_i = kq_i_s;
 	}
@@ -137,12 +204,23 @@ EXCL
 
 NOEXCL
 (
-      Vector f_vdw(p_ij_x,p_ij_y,p_ij_z);
-      Force & f_j = f[J_SUB];
+      NOFULL( Vector f_vdw(p_ij_x,p_ij_y,p_ij_z); )
+      Force & f_j = ff[J_SUB];
 )
 
+NOFULL
+(
       const BigReal r = sqrt(r2);
       const BigReal r_1 = 1/r;
+)
+EXCL
+(
+FULL
+(
+      const BigReal r = sqrt(r2);
+      const BigReal r_1 = 1/r;
+)
+)
 
       BigReal switchVal;
       BigReal shiftVal;
@@ -166,9 +244,9 @@ NOEXCL
       dShiftVal = c6*shiftVal*r;
       shiftVal *= shiftVal;
 
-      const BigReal kqq = kq_i * a_j.charge;
+      NOFULL(const BigReal) EXCL(FULL(const BigReal)) kqq = kq_i * a_j.charge;
 
-      BigReal f = kqq*r_1;
+      NOFULL(BigReal) EXCL(FULL(BigReal)) f = kqq*r_1;
       
 EXCL
 (
@@ -179,7 +257,19 @@ NOEXCL
 (
       electEnergy += f * shiftVal;
 )
-      
+FULL
+(
+EXCL
+(
+      fullElectEnergy += f * ( shiftVal - 1. );
+      if ( m14 ) fullElectEnergy -= f * ( shiftVal - 1. ) * scale14;
+)
+NOEXCL
+(
+      fullElectEnergy -= f * shiftVal;
+)
+)      
+      EXCL( FULL( BigReal f2 = f * ( r_1 * r_1 ); ) )
       f *= r_1*( shiftVal * r_1 - dShiftVal );
 
       NOEXCL( const ) Vector f_elec = f_vdw*f;
@@ -188,18 +278,32 @@ EXCL
 (
       f_i -= f_elec;
       f_j += f_elec;
-
+FULL
+(
+      fullf_i += f_vdw * ( f - f2 );
+      fullf_j -= f_vdw * ( f - f2 );
+)
       if ( m14 )
       {
 	f_elec *= scale14;
 	f_i += f_elec;
 	f_j -= f_elec;
+FULL
+(
+	fullf_i -= f_vdw * ( ( f - f2 ) * scale14 );
+	fullf_j += f_vdw * ( ( f - f2 ) * scale14 );
+)
       }
 )
 NOEXCL
 (
       f_i += f_elec;
       f_j -= f_elec;
+FULL
+(
+      fullf_i -= f_elec;
+      fullf_j += f_elec;
+)
 )
 
       BigReal r_6 = r_1*r_1*r_1; r_6 *= r_6;
@@ -254,6 +358,7 @@ NOEXCL
 )
 
   reduction[electEnergyIndex] += electEnergy;
+  reduction[fullElectEnergyIndex] += fullElectEnergy;
   reduction[vdwEnergyIndex] += vdwEnergy;
 
 }
@@ -264,12 +369,15 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/02/21 20:45:11 $
+ *	$Revision: 1.1004 $	$Date: 1997/02/28 04:47:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1004  1997/02/28 04:47:02  jim
+ * Full electrostatics now works with fulldirect on one node.
+ *
  * Revision 1.1003  1997/02/21 20:45:11  jim
  * Eliminated multiple function for switching and modified 1-4 interactions.
  * Now assumes a switching function, but parameters are such that nothing

@@ -68,11 +68,12 @@ void ProxyAtomsMsg:: unpack (void *in)
 void * ProxyDataMsg:: pack (int *length)
   {
     int size = positionList.size();
-    *length = 2 * sizeof(int) + size * sizeof(Position);
+    *length = 2 * sizeof(int) + sizeof(Flags) + size * sizeof(Position);
     char *buffer = (char*)new_packbuffer(this,*length);
     *((int*)buffer) = patch;
     *((int*)(buffer+sizeof(int))) = size;
-    Position *data = (Position*)(buffer+2*sizeof(int));
+    *((Flags*)(buffer+2*sizeof(int))) = flags;
+    Position *data = (Position*)(buffer+2*sizeof(int)+sizeof(Flags));
     for ( int i = 0; i < size; ++i )
       data[i] = positionList[i];
     this->~ProxyDataMsg();
@@ -85,8 +86,9 @@ void ProxyDataMsg:: unpack (void *in)
     char *buffer = (char*)in;
     patch = *((int*)buffer);
     int size = *((int*)(buffer+sizeof(int)));
+    flags = *((Flags*)(buffer+2*sizeof(int)));
     positionList.resize(size);
-    Position *data = (Position*)(buffer+2*sizeof(int));
+    Position *data = (Position*)(buffer+2*sizeof(int)+sizeof(Flags));
     for ( int i = 0; i < size; ++i )
       positionList[i] = data[i];
   }
@@ -101,14 +103,15 @@ void * ProxyAllMsg:: pack (int *length)
     }
 
 
-    *length = 2 * sizeof(int) + size * sizeof(Position) + size * sizeof(AtomID);
+    *length = 2 * sizeof(int) + sizeof(Flags) + size * sizeof(Position) + size * sizeof(AtomID);
     char *buffer = (char*)new_packbuffer(this,*length);
     *((int*)buffer) = patch;
     *((int*)(buffer+sizeof(int))) = size;
-    Position *data = (Position*)(buffer+2*sizeof(int));
+    *((Flags*)(buffer+2*sizeof(int))) = flags;
+    Position *data = (Position*)(buffer+2*sizeof(int)+sizeof(Flags));
     for ( i = 0; i < size; ++i )
       data[i] = positionList[i];
-    AtomID *data2 = (AtomID*)(buffer+2*sizeof(int)+size*sizeof(Position));
+    AtomID *data2 = (AtomID*)(buffer+2*sizeof(int)+sizeof(Flags)+size*sizeof(Position));
     for ( i = 0; i < size; ++i )
       data2[i] = atomIDList[i];
     this->~ProxyAllMsg();
@@ -123,12 +126,13 @@ void ProxyAllMsg:: unpack (void *in)
     char *buffer = (char*)in;
     patch = *((int*)buffer);
     int size = *((int*)(buffer+sizeof(int)));
+    flags = *((Flags*)(buffer+2*sizeof(int)));
     positionList.resize(size);
-    Position *data = (Position*)(buffer+2*sizeof(int));
+    Position *data = (Position*)(buffer+2*sizeof(int)+sizeof(Flags));
     for ( i = 0; i < size; ++i )
       positionList[i] = data[i];
     atomIDList.resize(size);
-    AtomID *data2 = (AtomID*)(buffer+2*sizeof(int)+size*sizeof(Position));
+    AtomID *data2 = (AtomID*)(buffer+2*sizeof(int)+sizeof(Flags)+size*sizeof(Position));
     for ( i = 0; i < size; ++i )
       atomIDList[i] = data2[i];
   }
@@ -346,13 +350,16 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/02/26 16:53:16 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1010 $	$Date: 1997/02/28 04:47:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.1010  1997/02/28 04:47:11  jim
+ * Full electrostatics now works with fulldirect on one node.
+ *
  * Revision 1.1009  1997/02/26 16:53:16  ari
  * Cleaning and debuging for memory leaks.
  * Adding comments.

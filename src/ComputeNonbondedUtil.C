@@ -27,7 +27,8 @@ void ComputeNonbondedUtil::registerReductionData(ReductionMgr *reduction)
 
 void ComputeNonbondedUtil::submitReductionData(BigReal *data, ReductionMgr *reduction, int seq)
 {
-  reduction->submit(seq, REDUCTION_ELECT_ENERGY, data[electEnergyIndex]);
+  reduction->submit(seq, REDUCTION_ELECT_ENERGY, data[electEnergyIndex]
+					+ data[fullElectEnergyIndex]);
   reduction->submit(seq, REDUCTION_LJ_ENERGY, data[vdwEnergyIndex]);
 }
 
@@ -77,16 +78,28 @@ void ComputeNonbondedUtil::select(void)
 #define NBPAIR
 #undef NBSELF
 #undef NBEXCL
+#define FULLELECT
+#include "ComputeNonbondedHack.h"
+  calcFullPair = NAME;
+#undef FULLELECT
 #include "ComputeNonbondedHack.h"
   calcPair = NAME;
 #undef NBPAIR
 #define NBSELF
 #undef NBEXCL
+#define FULLELECT
+#include "ComputeNonbondedHack.h"
+  calcFullSelf = NAME;
+#undef FULLELECT
 #include "ComputeNonbondedHack.h"
   calcSelf = NAME;
 #undef NBPAIR
 #undef NBSELF
 #define NBEXCL
+#define FULLELECT
+#include "ComputeNonbondedHack.h"
+  calcFullExcl = NAME;
+#undef FULLELECT
 #include "ComputeNonbondedHack.h"
   calcExcl = NAME;
 }
@@ -129,12 +142,15 @@ void ComputeNonbondedUtil::select(void)
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/21 20:45:13 $
+ *	$Revision: 1.1002 $	$Date: 1997/02/28 04:47:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1002  1997/02/28 04:47:06  jim
+ * Full electrostatics now works with fulldirect on one node.
+ *
  * Revision 1.1001  1997/02/21 20:45:13  jim
  * Eliminated multiple function for switching and modified 1-4 interactions.
  * Now assumes a switching function, but parameters are such that nothing

@@ -22,6 +22,7 @@
 #include "PositionBox.h"
 #include "Templates/UniqueSortedArray.h"
 #include "Lattice.h"
+#include "PatchTypes.h"
 
 class Compute;
 class Sequencer;
@@ -84,6 +85,7 @@ class Patch
      PatchID getPatchID() { return patchID; }
 
      Lattice lattice;
+     Flags flags;
 
   protected:
      static PatchMap *patchMap;
@@ -126,13 +128,16 @@ class Patch
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/02/26 16:53:13 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/02/28 04:47:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.h,v $
+ * Revision 1.1004  1997/02/28 04:47:09  jim
+ * Full electrostatics now works with fulldirect on one node.
+ *
  * Revision 1.1003  1997/02/26 16:53:13  ari
  * Cleaning and debuging for memory leaks.
  * Adding comments.

@@ -20,17 +20,20 @@
 #include "PatchMgr.h"
 #include "Molecule.h"
 #include "ReductionMgr.h"
+// #define DEBUGM
 #define MIN_DEBUG_LEVEL 3
 #include "Debug.h"
 
+// Only works on one processor, without periodic boundary conditions.  -JCP
+
 ComputeFullDirect::ComputeFullDirect(ComputeID c) : ComputeHomePatches(c)
 {
-  ;
+  reduction->Register(REDUCTION_ELECT_ENERGY);
 }
 
 ComputeFullDirect::~ComputeFullDirect()
 {
-  ;
+  reduction->unRegister(REDUCTION_ELECT_ENERGY);
 }
 
 
@@ -38,6 +41,22 @@ void ComputeFullDirect::doWork()
 {
   ResizeArrayIter<PatchElem> ap(patchList);
   register int i,j;
+
+  // Skip computations if nothing to do.
+  if ( ! patchList[0].p->flags.doFullElectrostatics )
+  {
+    for (ap = ap.begin(); ap != ap.end(); ap++) {
+      Position *x = (*ap).positionBox->open();
+      AtomProperties *a = (*ap).atomBox->open();
+      Force *f = (*ap).forceBox->open();
+      reduction->submit(fake_seq, REDUCTION_ELECT_ENERGY, 0.);
+      ++fake_seq;
+      (*ap).positionBox->close(&x);
+      (*ap).atomBox->close(&a);
+      (*ap).forceBox->close(&f);
+    }
+    return;
+  }
 
   // allocate storage
   numLocalAtoms = 0;
@@ -80,9 +99,10 @@ void ComputeFullDirect::doWork()
     register BigReal f_i_z = 0.;
     for(j=i+1; j<numLocalAtoms; ++j)
     {
-      register BigReal p_ij_x = p_i_x - localPositions[j].x;
-      register BigReal p_ij_y = p_i_y - localPositions[j].y;
-      register BigReal p_ij_z = p_i_z - localPositions[j].z;
+      register Position *p_j = localPositions + j;
+      register BigReal p_ij_x = p_i_x - p_j->x;
+      register BigReal p_ij_y = p_i_y - p_j->y;
+      register BigReal p_ij_z = p_i_z - p_j->z;
 
       register BigReal r_1;
       r_1 = 1./sqrt(p_ij_x * p_ij_x + p_ij_y * p_ij_y + p_ij_z * p_ij_z);
@@ -95,12 +115,14 @@ void ComputeFullDirect::doWork()
       f_i_x += p_ij_x;
       f_i_y += p_ij_y;
       f_i_z += p_ij_z;
-      localForces[j] += Vector(p_ij_x,p_ij_y,p_ij_z);
+      localForces[j] -= Vector(p_ij_x,p_ij_y,p_ij_z);
     }
-    localForces[i] -= Vector(f_i_x,f_i_y,f_i_z);
+    localForces[i] += Vector(f_i_x,f_i_y,f_i_z);
   }
 
   // send out reductions
+  DebugM(4,"Full-electrostatics energy: " << electEnergy << "\n");
+  reduction->submit(fake_seq, REDUCTION_ELECT_ENERGY, electEnergy);
   ++fake_seq;
 
   // add in forces

@@ -14,8 +14,7 @@
 
 // Several special cases are defined:
 //   NBPAIR, NBSELF, NBEXCL switch environment (mutually exclusive)
-//   MODIFY14 modified 1-4 parameters?
-//   SWITCHING switching function?
+//   FULLELECT full electrostatics calculation?
 
 #undef DECL
 #undef NODECL
@@ -114,12 +113,15 @@
  *
  *	$RCSfile: ComputeNonbondedHack.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/21 20:45:12 $
+ *	$Revision: 1.1002 $	$Date: 1997/02/28 04:47:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedHack.h,v $
+ * Revision 1.1002  1997/02/28 04:47:03  jim
+ * Full electrostatics now works with fulldirect on one node.
+ *
  * Revision 1.1001  1997/02/21 20:45:12  jim
  * Eliminated multiple function for switching and modified 1-4 interactions.
  * Now assumes a switching function, but parameters are such that nothing

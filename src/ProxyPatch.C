@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1007 1997/02/26 16:53:17 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1008 1997/02/28 04:47:12 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -73,6 +73,7 @@ void ProxyPatch::receiveData(ProxyDataMsg *msg)
   }
   DebugM(3,"Processing proxy data.\n");
   msgBuffer = NULL;
+  flags = msg->flags;
   p = msg->positionList;
   delete msg;
   positionsReady(0);
@@ -93,6 +94,7 @@ void ProxyPatch::receiveAll(ProxyAllMsg *msg)
   AtomMap::Object()->unregisterIDs(patchID,atomIDList);
   loadAtoms(msg->atomIDList);
   AtomMap::Object()->registerIDs(patchID,msg->atomIDList);
+  flags = msg->flags;
   p = msg->positionList;
   DebugM(4,"  ProxyAll received atomIDList.size = " << atomIDList.size() << " positionList.size = " << p.size() << "\n");
 
@@ -114,13 +116,16 @@ void ProxyPatch::sendResults(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyPatch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/02/26 16:53:17 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1997/02/28 04:47:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.1008  1997/02/28 04:47:12  jim
+ * Full electrostatics now works with fulldirect on one node.
+ *
  * Revision 1.1007  1997/02/26 16:53:17  ari
  * Cleaning and debuging for memory leaks.
  * Adding comments.

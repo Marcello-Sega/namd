@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1017 1997/02/26 21:39:27 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1018 1997/02/28 04:47:08 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -165,6 +165,7 @@ void HomePatch::positionsReady(int doMigration)
     if (doMigration) {
       ProxyAllMsg *allmsg = new (MsgIndex(ProxyAllMsg)) ProxyAllMsg;
       allmsg->patch = patchID;
+      allmsg->flags = flags;
       allmsg->positionList = p;
       allmsg->atomIDList = atomIDList;
       DebugM(1, "atomIDList.size() = " << atomIDList.size() << " p.size() = " << p.size() << "\n" );
@@ -172,6 +173,7 @@ void HomePatch::positionsReady(int doMigration)
     } else {
       ProxyDataMsg *nmsg = new (MsgIndex(ProxyDataMsg)) ProxyDataMsg;
       nmsg->patch = patchID;
+      nmsg->flags = flags;
       nmsg->positionList = p;
       ProxyMgr::Object()->sendProxyData(nmsg,pli->node);
     }   
@@ -391,12 +393,15 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1997/02/26 21:39:27 $
+ *	$Revision: 1.1018 $	$Date: 1997/02/28 04:47:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1018  1997/02/28 04:47:08  jim
+ * Full electrostatics now works with fulldirect on one node.
+ *
  * Revision 1.1017  1997/02/26 21:39:27  jim
  * Fixed migration with periodic boundary conditions to correctly
  * re-center migrated atoms on their new home patch.

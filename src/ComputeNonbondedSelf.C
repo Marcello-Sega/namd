@@ -13,6 +13,7 @@
 
 #include "ComputeNonbondedSelf.h"
 #include "ReductionMgr.h"
+#include "Patch.h"
 
 #define MIN_DEBUG_LEVEL 5
 #define DEBUGM
@@ -43,7 +44,10 @@ void ComputeNonbondedSelf::doForce(Position* p,
   BigReal reductionData[reductionDataSize];
   for ( int i = 0; i < reductionDataSize; ++i ) reductionData[i] = 0;
 
-  ComputeNonbondedUtil::calcSelf(p,f,a,numAtoms,reductionData);
+  if ( patch->flags.doFullElectrostatics )
+    ComputeNonbondedUtil::calcFullSelf(p,f,f,a,numAtoms,reductionData);
+  else
+    ComputeNonbondedUtil::calcSelf(p,f,a,numAtoms,reductionData);
 
   submitReductionData(reductionData,reduction,fake_seq);
   ++fake_seq;
@@ -53,13 +57,16 @@ void ComputeNonbondedSelf::doForce(Position* p,
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedSelf.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:12 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/02/28 04:47:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.C,v $
+ * Revision 1.1001  1997/02/28 04:47:05  jim
+ * Full electrostatics now works with fulldirect on one node.
+ *
  * Revision 1.1000  1997/02/06 15:58:12  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

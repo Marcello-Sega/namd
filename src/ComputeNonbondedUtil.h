@@ -25,14 +25,22 @@ class ComputeNonbondedUtil {
 public:
 
   static void select(void);
+
   static void (*calcPair)(Position*[2],Force*[2],AtomProperties*[2],int[2],BigReal*);
   static void (*calcSelf)(Position*,Force*,AtomProperties*,int,BigReal*);
-  static void (*calcExcl)(const Position &, const Position &,
+  static void (*calcExcl)(const Position &,
 		Force &, Force &,
 		const AtomProperties &, const AtomProperties &,
 		int, BigReal*);
 
-  enum { electEnergyIndex, vdwEnergyIndex, reductionDataSize };
+  static void (*calcFullPair)(Position*[2],Force*[2],Force*[2],AtomProperties*[2],int[2],BigReal*);
+  static void (*calcFullSelf)(Position*,Force*,Force*,AtomProperties*,int,BigReal*);
+  static void (*calcFullExcl)(const Position &,
+		Force &, Force &, Force &, Force &,
+		const AtomProperties &, const AtomProperties &,
+		int, BigReal*);
+
+  enum { electEnergyIndex, fullElectEnergyIndex, vdwEnergyIndex, reductionDataSize };
   static void registerReductionData(ReductionMgr*);
   static void submitReductionData(BigReal*,ReductionMgr*,int);
   static void unregisterReductionData(ReductionMgr*);
@@ -92,12 +100,15 @@ public:
  *
  *	$RCSfile: ComputeNonbondedUtil.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/21 20:45:13 $
+ *	$Revision: 1.1002 $	$Date: 1997/02/28 04:47:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.h,v $
+ * Revision 1.1002  1997/02/28 04:47:06  jim
+ * Full electrostatics now works with fulldirect on one node.
+ *
  * Revision 1.1001  1997/02/21 20:45:13  jim
  * Eliminated multiple function for switching and modified 1-4 interactions.
  * Now assumes a switching function, but parameters are such that nothing

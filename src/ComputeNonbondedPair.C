@@ -13,6 +13,7 @@
 
 #include "ComputeNonbondedPair.h"
 #include "ReductionMgr.h"
+#include "Patch.h"
 
 #define MIN_DEBUG_LEVEL 5
 //#define DEBUGM
@@ -61,11 +62,17 @@ void ComputeNonbondedPair::doForce(Position* p[2],
       int numAtoms_r[2];
       numAtoms_r[0] = numAtoms[1];
       numAtoms_r[1] = numAtoms[0];
-      ComputeNonbondedUtil::calcPair(p_r,f_r,a_r,numAtoms_r,reductionData);
+      if ( patch[0]->flags.doFullElectrostatics )
+        ComputeNonbondedUtil::calcFullPair(p_r,f_r,f_r,a_r,numAtoms_r,reductionData);
+      else
+        ComputeNonbondedUtil::calcPair(p_r,f_r,a_r,numAtoms_r,reductionData);
     }
     else
     {
-      ComputeNonbondedUtil::calcPair(p,f,a,numAtoms,reductionData);
+      if ( patch[0]->flags.doFullElectrostatics )
+        ComputeNonbondedUtil::calcFullPair(p,f,f,a,numAtoms,reductionData);
+      else
+        ComputeNonbondedUtil::calcPair(p,f,a,numAtoms,reductionData);
     }
   }
 
@@ -77,13 +84,16 @@ void ComputeNonbondedPair::doForce(Position* p[2],
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedPair.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/13 23:17:16 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/02/28 04:47:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.C,v $
+ * Revision 1.1002  1997/02/28 04:47:04  jim
+ * Full electrostatics now works with fulldirect on one node.
+ *
  * Revision 1.1001  1997/02/13 23:17:16  ari
  * Fixed a final bug in AtomMigration - numatoms in ComputePatchPair.C not
  * set correctly in atomUpdate()

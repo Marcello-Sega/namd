@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1008 1997/02/14 05:53:04 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1009 1997/02/28 04:47:13 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -59,6 +59,8 @@ void Sequencer::run(int numberOfCycles)
 
 void Sequencer::algorithm(void)
 {
+    patch->flags.doFullElectrostatics =
+	( simParams->fullDirectOn || simParams->FMAOn );
     const int numberOfCycles = this->numberOfCycles;
     const int stepsPerCycle = this->stepsPerCycle;
     const BigReal timestep = simParams->dt;
@@ -127,12 +129,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1008 $     $Date: 1997/02/14 05:53:04 $
+ *      $Revision: 1.1009 $     $Date: 1997/02/28 04:47:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1009  1997/02/28 04:47:13  jim
+ * Full electrostatics now works with fulldirect on one node.
+ *
  * Revision 1.1008  1997/02/14 05:53:04  jim
  * Position and velocity output should now work.
  *

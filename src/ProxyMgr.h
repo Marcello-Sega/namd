@@ -21,6 +21,7 @@
 
 #include "main.h"
 #include "NamdTypes.h"
+#include "PatchTypes.h"
 
 class RegisterProxyMsg : public comm_object {
 public:
@@ -53,6 +54,7 @@ public:
 class ProxyDataMsg : public comm_object {
 public:
   PatchID patch;
+  Flags flags;
   PositionList positionList;
   void * pack (int *length);
   void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
@@ -64,6 +66,7 @@ public:
 class ProxyAllMsg : public comm_object {
 public:
   PatchID patch;
+  Flags flags;
   AtomIDList atomIDList;
   PositionList positionList;
   void * pack (int *length);
@@ -128,13 +131,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/26 16:53:17 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/02/28 04:47:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.h,v $
+ * Revision 1.1003  1997/02/28 04:47:11  jim
+ * Full electrostatics now works with fulldirect on one node.
+ *
  * Revision 1.1002  1997/02/26 16:53:17  ari
  * Cleaning and debuging for memory leaks.
  * Adding comments.

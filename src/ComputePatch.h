@@ -39,10 +39,10 @@ public:
 protected :
   int numAtoms;
   virtual void doForce(Position* p, Force* f, AtomProperties* a);
+  Patch *patch;
 
 private:
   PatchID patchID;
-  Patch *patch;
   PositionBox<Patch> *positionBox;
   Box<Patch,Force> *forceBox;
   Box<Patch,AtomProperties> *atomBox;
@@ -54,13 +54,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputePatch.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:16 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/02/28 04:47:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatch.h,v $
+ * Revision 1.1001  1997/02/28 04:47:07  jim
+ * Full electrostatics now works with fulldirect on one node.
+ *
  * Revision 1.1000  1997/02/06 15:58:16  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
