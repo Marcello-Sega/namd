@@ -34,9 +34,13 @@ public:
 class ComputePmeResultsMsg : public CMessage_ComputePmeResultsMsg {
 public:
   // data members
-  int node;
-  int numParticles;
-  Vector *forces;
+  double energy;
+  double virial[6];
+  int start;
+  int q_len;
+  double *q_arr;
+  // not really data
+  int will_delete_array;
 
   // constructor and destructor
   ComputePmeResultsMsg(void);

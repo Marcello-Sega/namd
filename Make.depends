@@ -20,6 +20,7 @@ obj/main.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/ComputeMgr.decl.h \
+	inc/ComputePmeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
@@ -98,6 +99,7 @@ obj/BackEnd.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/ComputeMgr.decl.h \
+	inc/ComputePmeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
@@ -1200,8 +1202,8 @@ obj/ComputeMgr.o: \
 	dpme2/dpme2def.h \
 	dpme2/protype.h \
 	src/ComputePme.h \
-	src/ComputePmeMsgs.h \
 	src/PmeBase.h \
+	src/ComputePmeMsgs.h \
 	src/ComputeSphericalBC.h \
 	src/ComputeCylindricalBC.h \
 	src/ComputeRestraints.h \
@@ -1462,9 +1464,13 @@ obj/ComputePme.o: \
 	src/InfoStream.h \
 	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
+	src/PmeBase.h \
 	src/ComputePmeMsgs.h \
 	inc/ComputeMgr.decl.h \
-	src/PmeBase.h \
+	fftw/rfftw_mpi.h \
+	inc/ComputePmeMgr.decl.h \
+	src/PmeRealSpace.h \
+	src/PmeKSpace.h \
 	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
 	src/PatchMgr.h \
@@ -1479,10 +1485,12 @@ obj/ComputePme.o: \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/MStream.h \
+	src/WorkDistrib.h \
+	src/ComputeMap.h \
+	inc/WorkDistrib.decl.h \
 	src/PmeCoulomb.h \
 	src/PmeFFT.h \
-	src/PmeRealSpace.h \
-	src/PmeKSpace.h
+	inc/ComputePmeMgr.def.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputePme.o -c src/ComputePme.C
 obj/ComputePmeMsgs.o: \
 	src/ComputePmeMsgs.C \
@@ -2305,6 +2313,7 @@ obj/Node.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/ComputeMgr.decl.h \
+	inc/ComputePmeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
@@ -2524,6 +2533,7 @@ obj/PatchMgr.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/ComputeMgr.decl.h \
+	inc/ComputePmeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
@@ -2692,6 +2702,7 @@ obj/ProxyPatch.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/ComputeMgr.decl.h \
+	inc/ComputePmeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
@@ -3012,6 +3023,7 @@ obj/WorkDistrib.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/ComputeMgr.decl.h \
+	inc/ComputePmeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \

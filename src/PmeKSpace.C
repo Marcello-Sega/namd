@@ -48,8 +48,8 @@ static void compute_b_moduli(double *bm, int K, int order) {
   delete [] M;
 }
 
-PmeKSpace::PmeKSpace(PmeGrid grid) 
-  : myGrid(grid) {
+PmeKSpace::PmeKSpace(PmeGrid grid, int K1_start, int K1_end) 
+  : myGrid(grid), k1_start(K1_start), k1_end(K1_end) {
   int K1, K2, K3, order;
   K1=myGrid.K1; K2=myGrid.K2, K3=myGrid.K3; order=myGrid.order;
 
@@ -104,7 +104,7 @@ double PmeKSpace::compute_energy(double *q_arr, Lattice lattice, double ewald, d
     init_exp(exp3, K3, recipz);
 
     ind = 0;
-    for ( k1=0; k1<K1; ++k1 ) {
+    for ( k1=k1_start; k1<k1_end; ++k1 ) {
       double m1, m11, b1, xp1;
       b1 = bm1[k1];
       int k1_s = k1<=K1/2 ? k1 : k1-K1;
@@ -169,7 +169,7 @@ double PmeKSpace::compute_energy(double *q_arr, Lattice lattice, double ewald, d
     init_exp(exp3, K3, recip3.length());
 
     ind = 0;
-    for ( k1=0; k1<K1; ++k1 ) {
+    for ( k1=k1_start; k1<k1_end; ++k1 ) {
       double b1; Vector m1;
       b1 = bm1[k1];
       int k1_s = k1<=K1/2 ? k1 : k1-K1;
@@ -235,7 +235,7 @@ double PmeKSpace::compute_energy(double *q_arr, Lattice lattice, double ewald, d
     double recip3_z = recip3.z;
 
     ind = 0;
-    for ( k1=0; k1<K1; ++k1 ) {
+    for ( k1=k1_start; k1<k1_end; ++k1 ) {
       double b1; Vector m1;
       b1 = bm1[k1];
       int k1_s = k1<=K1/2 ? k1 : k1-K1;

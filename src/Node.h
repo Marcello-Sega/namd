@@ -112,6 +112,9 @@ public:
   // Init the socket connect for imd
   void IMDinit(void *);
 
+  // Made public for pmeAid;
+  WorkDistrib *workDistrib;
+
   // NAMD 1.X molecule database objects - must be public for now
   Molecule *molecule;
   Parameters *parameters;
@@ -146,7 +149,6 @@ private:
   void threadInit();
   void buildSequencers();
 
-  WorkDistrib *workDistrib;
   PatchMgr *patchMgr;
   ComputeMgr *computeMgr;
   ProxyMgr *proxyMgr;

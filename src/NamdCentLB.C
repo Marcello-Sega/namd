@@ -230,6 +230,8 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
     int j;
     for (j=0; j < stats[i].n_objs; j++) {
       const LDObjData this_obj = stats[i].objData[j];
+      // filter out non-NAMD managed objects (like PME array)
+      if (this_obj.omID.id != 1) continue;
       if (this_obj.id.id[1] == -2) { // Its a patch
 	const int pid = this_obj.id.id[0];
 	int neighborNodes[PatchMap::MaxOneAway + PatchMap::MaxTwoAway];

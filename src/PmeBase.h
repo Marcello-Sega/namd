@@ -17,6 +17,7 @@ struct PmeGrid {
   int K1, K2, K3;
   int dim2, dim3;
   int order;
+  int block1, block2;
 };
 
 struct PmeParticle {

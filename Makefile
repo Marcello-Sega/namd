@@ -141,6 +141,8 @@ CIFILES = 	\
 		$(INCDIR)/CollectionMgr.def.h \
 		$(INCDIR)/ComputeMgr.decl.h \
 		$(INCDIR)/ComputeMgr.def.h \
+		$(INCDIR)/ComputePmeMgr.decl.h \
+		$(INCDIR)/ComputePmeMgr.def.h \
 		$(INCDIR)/LdbCoordinator.decl.h \
 		$(INCDIR)/LdbCoordinator.def.h \
 		$(INCDIR)/NamdCentLB.decl.h \
@@ -181,7 +183,7 @@ all:	$(BINARIES)
 namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(CHARMC) -verbose -ld++-option \
 	"-I$(INCLUDE) -I$(INCDIR) -I$(SRCDIR) $(CXXOPTS)" \
-	-language charm++ \
+	-language ampi \
 	-o namd2 $(OBJS) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
@@ -210,7 +212,7 @@ loaddcd:	$(SRCDIR)/loaddcd.c
 projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(CHARMC) -verbose -ld++-option \
 	"-I$(INCLUDE) -I$(INCDIR) -I$(SRCDIR) $(CXXOPTS)" \
-	-language charm++ -tracemode projections \
+	-language ampi -tracemode projections \
 	-o namd2 $(OBJS) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
@@ -220,7 +222,7 @@ projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 summary:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(CHARMC) -verbose -ld++-option \
 	"-I$(INCLUDE) -I$(INCDIR) -I$(SRCDIR) $(CXXOPTS)" \
-	-language charm++ -tracemode summary \
+	-language ampi -tracemode summary \
 	-o namd2 $(OBJS) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
@@ -271,6 +273,12 @@ $(INCDIR)/ComputeMgr.def.h: $(INCDIR)/ComputeMgr.decl.h
 $(INCDIR)/ComputeMgr.decl.h: $(SRCDIR)/ComputeMgr.ci
 	$(CHARMXI) $(SRCDIR)/ComputeMgr.ci
 	$(MOVE) ComputeMgr.decl.h ComputeMgr.def.h $(INCDIR)
+
+$(INCDIR)/ComputePmeMgr.def.h: $(INCDIR)/ComputePmeMgr.decl.h
+
+$(INCDIR)/ComputePmeMgr.decl.h: $(SRCDIR)/ComputePmeMgr.ci
+	$(CHARMXI) $(SRCDIR)/ComputePmeMgr.ci
+	$(MOVE) ComputePmeMgr.decl.h ComputePmeMgr.def.h $(INCDIR)
 
 $(INCDIR)/LdbCoordinator.def.h: $(INCDIR)/LdbCoordinator.decl.h
 

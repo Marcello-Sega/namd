@@ -36,16 +36,22 @@ PACK_MSG(ComputePmeDataMsg,
 // RESULTS MESSAGE
 
 ComputePmeResultsMsg::ComputePmeResultsMsg(void) { 
-  numParticles = 0;
-  forces = 0;
+  energy = 0.;
+  for ( int i=0; i<6; ++i ) { virial[i] = 0.; }
+  start = 0;
+  q_len = 0;
+  q_arr = 0;
+  will_delete_array = 1;
 }
 
 ComputePmeResultsMsg::~ComputePmeResultsMsg(void) { 
-  delete [] forces;
+  if ( will_delete_array ) { delete [] q_arr; }
 }
 
 PACK_MSG(ComputePmeResultsMsg,
-  PACK(node);
-  PACK_AND_NEW_ARRAY(forces,numParticles);
+  PACK(energy);
+  PACK(virial);
+  PACK(start);
+  PACK_AND_NEW_ARRAY(q_arr,q_len);
 )
 

@@ -61,6 +61,7 @@ void WorkDistrib::sendMaps(void)
 
   mapMsg->patchMap = PatchMap::Object();
   mapMsg->computeMap = ComputeMap::Object();
+  mapMsg->pmeAid = pmeAid;
 
   CProxy_WorkDistrib(thisgroup).saveMaps(mapMsg);
   mapsArrived = true;
@@ -301,6 +302,8 @@ void WorkDistrib::distributeHomePatches() {
 // saveMaps() is called when the map message is received
 void WorkDistrib::saveMaps(MapDistribMsg *msg)
 {
+  pmeAid = msg->pmeAid;
+
   delete msg;
 
   CProxy_Node nd(CpvAccess(BOCclass_group).node);
@@ -621,17 +624,27 @@ void WorkDistrib::mapComputes(void)
 #else
     NAMD_die("This binary does not include DPMTA (FMA).");
 #endif
-  if ( node->simParameters->PMEOn )
+  if ( node->simParameters->PMEOn ) {
 #ifdef DPME
-  {
     if ( node->simParameters->useDPME )
       mapComputeHomePatches(computeDPMEType);
-    else
+    else {
       mapComputeHomePatches(computePmeType);
-  }
+      iout << "Creating ComputePmeMgr threads on " << iPE << ".\n" << endi;
+      pmeAid = CProxy_ComputePmeMgr::ckNew(CkNumPes());
+      CProxy_ComputePmeMgr farray(pmeAid);
+      iout << "Starting ComputePmeMgr threads on " << iPE << ".\n" << endi;
+      for (int i=0; i<CkNumPes(); i++) { farray[i].run(); }
+    }
 #else
     mapComputeHomePatches(computePmeType);
+    iout << "Creating ComputePmeMgr threads on " << iPE << ".\n" << endi;
+    pmeAid = CProxy_ComputePmeMgr::ckNew(CkNumPes());
+    CProxy_ComputePmeMgr farray(pmeAid);
+    iout << "Starting ComputePmeMgr threads on " << iPE << ".\n" << endi;
+    for (int i=0; i<CkNumPes(); i++) { farray[i].run(); }
 #endif
+  }
 
   if ( node->simParameters->globalForcesOn )
     mapComputeHomePatches(computeGlobalType);

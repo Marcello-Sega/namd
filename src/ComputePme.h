@@ -8,12 +8,15 @@
 #define COMPUTEPME_H
 
 #include "ComputeHomePatches.h"
+#include "PmeBase.h"
 #include "NamdTypes.h"
 
 class ComputePmeDataMsg;
 class ComputePmeResultsMsg;
 class ComputePmeMaster;
+class PmeRealSpace;
 class ComputeMgr;
+class SubmitReduction;
 
 class ComputePme : public ComputeHomePatches {
 public:
@@ -29,7 +32,17 @@ public:
  private:
   ComputePmeMaster *master;
   int masterNode;
+
+  PmeGrid myGrid;
+  int qsize, bsize;
+  double *q_arr;
+  double energy;
+  double virial[6];
+  SubmitReduction *reduction;
+  int resultsRemaining;
+  PmeRealSpace *myRealSpace;
   int numLocalAtoms;
+  PmeParticle *localData;
 
 };
 

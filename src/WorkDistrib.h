@@ -65,6 +65,7 @@ public:
   void assignNodeToPatch(void);
 
   void saveMaps(MapDistribMsg *msg);
+  CkArrayID pmeAid;
 
 private:
   void mapComputeNonbonded(void);
@@ -126,13 +127,14 @@ public:
   MapDistribMsg(void) : patchMap(0), computeMap(0) { ; }
   PatchMap *patchMap;
   ComputeMap *computeMap;
+  CkArrayID pmeAid;
 
   // pack and unpack functions
   static void* pack(MapDistribMsg *msg)
   {
     int patchMapSize = msg->patchMap->packSize();
     int computeMapSize = msg->computeMap->packSize();
-    int length = sizeof(int) + patchMapSize + sizeof(int) + computeMapSize;
+    int length = sizeof(int) + patchMapSize + sizeof(int) + computeMapSize + sizeof(CkArrayID);
     char *buffer = (char*)CkAllocBuffer(msg,length);
     char *b = buffer;
     *((int*)b) = patchMapSize;
@@ -142,6 +144,8 @@ public:
     *((int*)b) = computeMapSize;
     b += sizeof(int);
     msg->computeMap->pack(b);
+    b += computeMapSize;
+    memcpy((void*)b,(void*)&(msg->pmeAid),sizeof(CkArrayID));
     delete msg;
     return buffer;
   }
@@ -159,13 +163,15 @@ public:
       m->patchMap->unpack(buffer);
     }
     buffer += patchMapSize;
-    // int computeMapSize = *((int*)buffer);
+    int computeMapSize = *((int*)buffer);
     buffer += sizeof(int);
     m->computeMap = ComputeMap::Object();
     if ( ! ( m->computeMap->computeData ) )
     {
       m->computeMap->unpack(buffer);
     }
+    buffer += computeMapSize;
+    memcpy((void*)&(m->pmeAid),(void*)buffer,sizeof(CkArrayID));
     CkFreeMsg(ptr);
     return m;
   }

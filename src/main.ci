@@ -17,6 +17,7 @@ mainmodule main {
   extern module Node;
   extern module LdbCoordinator;
   extern module ComputeMgr;
+  extern module ComputePmeMgr;
   extern module CollectionMgr;
   extern module CollectionMaster;
   extern module BroadcastMgr;

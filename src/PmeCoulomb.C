@@ -14,7 +14,7 @@ PmeCoulomb::PmeCoulomb(PmeGrid grid, int natoms)
   myFFT = new PmeFFT(myGrid.K1, myGrid.K2, myGrid.K3);
   myFFT->getdims(&(myGrid.dim2), &(myGrid.dim3));
   myRealSpace = new PmeRealSpace(myGrid, natoms);
-  myKSpace = new PmeKSpace(myGrid);
+  myKSpace = new PmeKSpace(myGrid,0,myGrid.K1);
 
   qsize = myGrid.K1 * myGrid.dim2 * myGrid.dim3;
   q_arr = new double[qsize];
