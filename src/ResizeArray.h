@@ -123,8 +123,8 @@ template <class Elem> class ResizeArray {
     // array member access (can be lvalue) that grows array.
     inline Elem & item(int i) {
       i = ( i < 0 ? 0 : i );
-      if (i > size()-1)
-          resize(i);
+      if ((i+1) > size())
+          resize(i+1);
       return rep->array[i];
     }
 

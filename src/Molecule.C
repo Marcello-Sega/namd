@@ -11,7 +11,7 @@
  *
  *  $RCSfile: Molecule.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1029 $  $Date: 1998/07/17 18:50:22 $
+ *  $Revision: 1.1030 $  $Date: 1998/09/14 16:11:36 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1030  1998/09/14 16:11:36  jim
+ * Changes to reduce node 0 memory use.  Fixed bug in ResizeArray::item().
+ *
  * Revision 1.1029  1998/07/17 18:50:22  jim
  * Eliminated completely fixed tuples from lookup tables.
  *
@@ -273,7 +276,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1029 1998/07/17 18:50:22 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1030 1998/09/14 16:11:36 jim Exp $";
 
 #include "UniqueSortedArray.h"
 #include "Molecule.h"
@@ -488,14 +491,7 @@ Molecule::~Molecule()
 
   if (atomNames != NULL)
   {
-    for( int i=0; i<numAtoms; i++ )
-    {
-      // One block is created, so only the start of the block,
-      // resname, needs to be deleted now.
-      delete [] atomNames[i].resname;
-      //      delete [] atomNames[i].atomname;
-      //      delete [] atomNames[i].atomtype;
-    }
+    // subarrarys allocated from arena - automatically deleted
     delete [] atomNames;
   }
 
@@ -957,11 +953,10 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
     int reslength = strlen(residue_name)+1;
     int namelength = strlen(atom_name)+1;
     int typelength = strlen(atom_type)+1;
-    char *nameMemBlock =  new char[reslength + namelength + typelength];
 
-    atomNames[atom_number-1].resname = nameMemBlock;
-    atomNames[atom_number-1].atomname = nameMemBlock+reslength;
-    atomNames[atom_number-1].atomtype = nameMemBlock+reslength+namelength;
+    atomNames[atom_number-1].resname = nameArena.getNewArray(reslength);
+    atomNames[atom_number-1].atomname = nameArena.getNewArray(namelength);
+    atomNames[atom_number-1].atomtype = nameArena.getNewArray(typelength);
   
     if (atomNames[atom_number-1].resname == NULL)
     {
@@ -4015,12 +4010,15 @@ void Molecule::receive_Molecule(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1029 $  $Date: 1998/07/17 18:50:22 $
+ *  $Revision: 1.1030 $  $Date: 1998/09/14 16:11:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1030  1998/09/14 16:11:36  jim
+ * Changes to reduce node 0 memory use.  Fixed bug in ResizeArray::item().
+ *
  * Revision 1.1029  1998/07/17 18:50:22  jim
  * Eliminated completely fixed tuples from lookup tables.
  *

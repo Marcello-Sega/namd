@@ -47,7 +47,7 @@ public:
       int size = a.size();
       for( int i = 0; i < size; ++i )
       {
-	data.add(VectorData(a[i],d[i]));
+	data.item(a[i]) = d[i];
       }
       return ( ! --remaining );
     }
@@ -62,21 +62,7 @@ public:
     void * operator new(size_t, void * ptr) { return ptr; }
     void operator delete(void* ptr) { ::operator delete(ptr); }
 
-    class VectorData
-    {
-    public:
-      VectorData(void) : aid(-1) { ; }
-      VectorData(AtomID a, Vector d) : aid(a), data(d) { ; }
-      AtomID aid;
-      Vector data;
-      int operator<(const VectorData &o) { return (aid < o.aid); }
-      int operator==(const VectorData &o) { return (aid == o.aid); }
-      void * operator new(size_t size) { return ::operator new(size); }
-      void * operator new(size_t, void * ptr) { return ptr; }
-      void operator delete(void* ptr) { ::operator delete(ptr); }
-    };
-
-    ResizeArray<VectorData> data;
+    ResizeArray<Vector> data;
 
   private:
     int remaining;
@@ -166,12 +152,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1998/03/03 23:05:02 $
+ *	$Revision: 1.1011 $	$Date: 1998/09/14 16:11:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMaster.h,v $
+ * Revision 1.1011  1998/09/14 16:11:34  jim
+ * Changes to reduce node 0 memory use.  Fixed bug in ResizeArray::item().
+ *
  * Revision 1.1010  1998/03/03 23:05:02  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

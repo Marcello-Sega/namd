@@ -48,14 +48,9 @@ void CollectionMaster::disposePositions(CollectVectorInstance *c)
     DebugM(3,"Collected positions at " << c->seq << endl);
     int seq = c->seq;
     int size = c->data.size();
-    Vector *data = new Vector[size];
-    for ( int i = 0; i < size; ++i )
-    {
-      data[c->data[i].aid] = c->data[i].data;
-    }
-    delete c;
+    Vector *data = c->data.begin();
     Node::Object()->output->coordinate(seq,size,data);
-    delete [] data;
+    delete c;
 }
 
 
@@ -83,14 +78,9 @@ void CollectionMaster::disposeVelocities(CollectVectorInstance *c)
     DebugM(3,"Collected velocities at " << c->seq << endl);
     int seq = c->seq;
     int size = c->data.size();
-    Vector *data = new Vector[size];
-    for ( int i = 0; i < size; ++i )
-    {
-      data[c->data[i].aid] = c->data[i].data;
-    }
-    delete c;
+    Vector *data = c->data.begin();
     Node::Object()->output->velocity(seq,size,data);
-    delete[] data;
+    delete c;
 }
 
 
@@ -118,14 +108,9 @@ void CollectionMaster::disposeForces(CollectVectorInstance *c)
     DebugM(3,"Collected forces at " << c->seq << endl);
     int seq = c->seq;
     int size = c->data.size();
-    Vector *data = new Vector[size];
-    for ( int i = 0; i < size; ++i )
-    {
-      data[c->data[i].aid] = c->data[i].data;
-    }
-    delete c;
+    Vector *data = c->data.begin();
     Node::Object()->output->all_force(seq,size,data);
-    delete[] data;
+    delete c;
 }
 
 
@@ -166,12 +151,15 @@ void CollectVectorMsg::unpack(void *in)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1998/02/26 01:51:23 $
+ *	$Revision: 1.1014 $	$Date: 1998/09/14 16:11:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMaster.C,v $
+ * Revision 1.1014  1998/09/14 16:11:33  jim
+ * Changes to reduce node 0 memory use.  Fixed bug in ResizeArray::item().
+ *
  * Revision 1.1013  1998/02/26 01:51:23  milind
  * Fixed bugs in CollectionMaster and ReductionManager that were causing
  * crash on Origin2000.

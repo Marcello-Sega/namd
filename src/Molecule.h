@@ -62,6 +62,7 @@ friend class NonbondedExclElem;
 
 private:
 	Atom *atoms;		//  Array of atom structures
+	ObjectArena<char> nameArena;
 	AtomNameInfo *atomNames;//  Array of atom name info.  Only maintained
 				//  on node 0 for VMD interface
 	ResidueLookupElem *resLookup; // find residues by name
@@ -396,12 +397,15 @@ public:
  *
  *	$RCSfile: Molecule.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1021 $	$Date: 1998/07/16 00:49:22 $
+ *	$Revision: 1.1022 $	$Date: 1998/09/14 16:11:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.1022  1998/09/14 16:11:39  jim
+ * Changes to reduce node 0 memory use.  Fixed bug in ResizeArray::item().
+ *
  * Revision 1.1021  1998/07/16 00:49:22  jim
  * Removed unnecessary tuple uniqueness code, changed tuplesByAtom
  * lists to only include tuple on list for first atom rather than all.
