@@ -31,7 +31,7 @@ class HydrogenGroupID {
 	// case 1: both are group parents
 	if (a.isGP)	rval = (atomID < a.atomID);
 	// case 2: only this atom is a group parent
-	else		rval = (GPID < a.atomID);
+	else		rval = (atomID <= a.GPID);
 	}
       else
 	{
@@ -60,13 +60,16 @@ typedef UniqueSortedArray<HydrogenGroupID> HydrogenGroup ;
  * RCS INFORMATION:
  *
  *      $RCSfile: Hydrogen.h,v $
- *      $Author: nealk $        $Locker:  $             $State: Exp $
- *      $Revision: 1.6 $     $Date: 1997/03/21 16:35:59 $
+ *      $Author: jim $        $Locker:  $             $State: Exp $
+ *      $Revision: 1.7 $     $Date: 1997/06/27 21:36:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Hydrogen.h,v $
+ * Revision 1.7  1997/06/27 21:36:47  jim
+ * Fixed HydrogenGroupID operator < to ensure parents are before children.
+ *
  * Revision 1.6  1997/03/21 16:35:59  nealk
  * Modified sorting case when both atoms are group members.
  * Was incorrectly sorting them by their atomID.  Now sorting by GPID.
