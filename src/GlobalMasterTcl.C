@@ -553,8 +553,8 @@ void GlobalMasterTcl::calculate() {
     char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
     NAMD_die(errorInfo);
   }
-  if (reduction->item(REDUCTION_MISC_ENERGY) != 0)
-    reduction->submit();
 #endif
+
+  reduction->submit();
 
 }
