@@ -38,14 +38,14 @@ IMDOutput::IMDOutput(void *s) {
 IMDOutput::~IMDOutput() {}
 
 void IMDOutput::gather_energies(IMDEnergies *energies) { 
-  if (!vmdsock_selwrite(sock,0)) 
+  if (!sock || !vmdsock_selwrite(sock,0)) 
     return; 
   if (energies->tstep % transrate) return;
   imd_send_energies(sock, energies);
 }
 
 void IMDOutput::gather_coordinates(int timestep, int N, FloatVector *coords) {
-  if (!vmdsock_selwrite(sock,0)) return;
+  if (!sock || !vmdsock_selwrite(sock,0)) return;
   if (timestep % transrate) return;
   imd_send_fcoords(sock, N, (float *)coords);
 }
