@@ -34,7 +34,9 @@ double PmeCoulomb::compute_recip(PmeParticle p[], Lattice lattice,
   for (i=0; i<qsize; q_arr[i++] = 0.0);
 
   scale_coordinates(p, lattice);  // move to nodes
-  myRealSpace->fill_charges(q_arr, p);
+  char *f_arr = new char[myGrid.K1 * myGrid.dim2];
+  myRealSpace->fill_charges(q_arr, f_arr, p);
+  delete [] f_arr;
 
   myFFT->forward(q_arr);
 

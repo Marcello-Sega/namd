@@ -10,7 +10,6 @@ module ComputePmeMgr {
   message [varsize] PmeGridMsg;
   message [varsize] PmeTransMsg;
   message [varsize] PmeUntransMsg;
-  message [varsize] PmeUngridMsg;
 
   group ComputePmeMgr {
 
@@ -26,7 +25,7 @@ module ComputePmeMgr {
     entry void recvUntrans(PmeUntransMsg *);
     entry void gridCalc3(PmeNullMsg *);
     entry void sendUngrid(PmeNullMsg *);
-    entry void recvUngrid(PmeUngridMsg *);
+    entry void recvUngrid(PmeGridMsg *);
     entry void ungridCalc(PmeNullMsg *);
 
   };

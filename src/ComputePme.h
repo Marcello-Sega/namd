@@ -17,7 +17,7 @@ class ComputePmeMaster;
 class PmeRealSpace;
 class ComputeMgr;
 class SubmitReduction;
-class PmeUngridMsg;
+class PmeGridMsg;
 class PmeUntransMsg;
 
 class ComputePme : public ComputeHomePatches {
@@ -28,9 +28,9 @@ public:
   void sendData();
   void recvData(ComputePmeDataMsg *);
   void recvResults(ComputePmeResultsMsg *);
-  void ComputePme::copyEnergy(PmeUntransMsg *);
-  void ComputePme::copyResults(PmeUngridMsg *);
-  void ComputePme::ungridForces();
+  void copyEnergy(PmeUntransMsg *);
+  void copyResults(PmeGridMsg *);
+  void ungridForces();
 
   ComputeMgr *comm;
   int getMasterNode(void) { return masterNode; }
@@ -40,8 +40,9 @@ public:
   int masterNode;
 
   PmeGrid myGrid;
-  int qsize, bsize;
+  int qsize, fsize, bsize;
   double *q_arr;
+  char *f_arr;
   double energy;
   double virial[6];
   SubmitReduction *reduction;

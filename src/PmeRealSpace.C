@@ -37,7 +37,7 @@ void PmeRealSpace::fill_b_spline(PmeParticle p[]) {
   }
 }
 
-void PmeRealSpace::fill_charges(double *q_arr, PmeParticle p[]) {
+void PmeRealSpace::fill_charges(double *q_arr, char *f_arr, PmeParticle p[]) {
   
   int i, j, k, l;
   int stride;
@@ -60,14 +60,16 @@ void PmeRealSpace::fill_charges(double *q_arr, PmeParticle p[]) {
       int ind1;
       m1 = Mi[j]*q;
       u1++;
-      ind1 = (u1 + (u1 < 0 ? K1 : 0))*dim2*dim3;
+      ind1 = (u1 + (u1 < 0 ? K1 : 0))*dim2;
       u2 = (int)(p[i].y) - order;
       for (k=0; k<order; k++) {
         double m1m2;
 	int ind2;
         m1m2 = m1*Mi[order+k];
 	u2++;
-	ind2 = ind1 + (u2 + (u2 < 0 ? K2 : 0))*dim3;
+	ind2 = ind1 + (u2 + (u2 < 0 ? K2 : 0));
+	f_arr[ind2] = 1;
+	ind2 *= dim3;
         u3 = (int)(p[i].z) - order;
         for (l=0; l<order; l++) {
 	  double m3;
@@ -108,7 +110,7 @@ void PmeRealSpace::compute_forces(const double *q_arr, const PmeParticle p[],
       m1=Mi[j]*q;
       d1=K1*dMi[j]*q;
       u1++;
-      ind1 = (u1 + (u1 < 0 ? K1 : 0))*dim2*dim3; 
+      ind1 = (u1 + (u1 < 0 ? K1 : 0))*dim2; 
       u2 = (int)(p[i].y) - order;
       for (k=0; k<order; k++) {
         double m2, d2, m1m2, m1d2, d1m2;
@@ -119,7 +121,8 @@ void PmeRealSpace::compute_forces(const double *q_arr, const PmeParticle p[],
 	m1d2=m1*d2;
 	d1m2=d1*m2;
 	u2++;
-	ind2 = ind1 + (u2 + (u2 < 0 ? K2 : 0))*dim3;
+	ind2 = ind1 + (u2 + (u2 < 0 ? K2 : 0));
+	ind2 *= dim3;
         u3 = (int)(p[i].z) - order;
         for (l=0; l<order; l++) {
 	  double term, m3, d3;
