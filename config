@@ -5,7 +5,7 @@ syntax:
   echo 'Usage: config [debug] [tcl] [fftw] [<build_dir>/]<arch> '
   echo ''
   echo '<arch>: ' 
-  ( cd arch ; ls -1 *.arch |sed -e 's/\.arch//' | egrep -v 'template' | pr -4t)
+  ( cd arch ; ls -1 *.arch |sed -e 's/\.arch//' | egrep -v 'template' | pr -3t)
   echo ''
   exit 1
 
@@ -69,6 +69,10 @@ begin:
   echo 'CHARM = $(CHARMBASE)/$(CHARMARCH)' >> Makearch
   if ( $ARCH:t =~ *-MPI* ) then
     echo 'NAMD_PLATFORM = $(NAMD_ARCH)-MPI' >> Makearch
+  else if ( $ARCH:t =~ *-Scyld* ) then
+    echo 'NAMD_PLATFORM = $(NAMD_ARCH)-Scyld' >> Makearch
+  else if ( $ARCH:t =~ *-ScyldCD* ) then
+    echo 'NAMD_PLATFORM = $(NAMD_ARCH)-ScyldCD' >> Makearch
   else
     echo 'NAMD_PLATFORM = $(NAMD_ARCH)' >> Makearch
   endif
