@@ -1258,3 +1258,18 @@ calculated?}{{\tt yes} or {\tt no}}{{\tt no}}
 else.  Choose {\tt yes} when analyzing completed trajectories; choose {\tt no}
 to output pair interaction energies while the simulation is running.}
 
+\item
+\NAMDCONFWDEF{pairInteractionGroup1}{should interactions be calculated only
+for group 1?}{{\tt yes} or {\tt no}}{{\tt no}}{}
+
+\item
+\NAMDCONFWDEF{pairInteractionGroup2}{should interactions be calculated only
+for group 2?}{{\tt yes} or {\tt no}}{{\tt no}}{
+When either of these options is enabled, the pair interaction energies 
+reported are for atoms within the group only, as opposed to interactions 
+between the groups.  Note that the reported force is incorrect and should be
+ignored; by definition the total force within a group is zero.  The 
+{\tt pairInteractionGroup{\it n}} options are mutually exclusive.
+}
+
+\end{itemize}
