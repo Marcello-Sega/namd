@@ -35,7 +35,7 @@ public:
     Index angleType;
 
   int hash() const { 
-    return 0x7FFFFFFF & ((atomID[0]<<22) + (atomID[1]<<11) + (atomID[3])); 
+    return 0x7FFFFFFF & ((atomID[0]<<22) + (atomID[1]<<11) + (atomID[2])); 
   }
 
   enum { angleEnergyIndex, reductionDataSize };
@@ -67,13 +67,17 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeAngles.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/10 17:40:00 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/03/12 18:09:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.h,v $
+ * Revision 1.1004  1997/03/12 18:09:41  jim
+ * Fixed nasty bug in hash function which occasionally caused duplicate
+ * angles to be stored in the hash table.
+ *
  * Revision 1.1003  1997/03/10 17:40:00  ari
  * UniqueSet changes - some more commenting and cleanup
  *
