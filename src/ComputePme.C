@@ -50,6 +50,9 @@ public:
 };
 
 void ComputePmeMgr::start() {
+#ifndef NAMD_FFTW
+  NAMD_die("FFTW (http://www.fftw.org/) is required to use PME.");
+#else
   // iout << "ComputePmeMgr thread " << thisIndex << " running on " << iPE << "\n" << endi;
 
   SimParameters *simParams = Node::Object()->simParameters;
@@ -158,6 +161,7 @@ while ( 1 ) {
   delete [] q_work;
   delete [] q_arr;
   // iout << "ComputePmeMgr thread " << thisIndex << " finished on " << iPE << "\n" << endi;
+#endif  // NAMD_FFTW
 }
 
 

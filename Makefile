@@ -169,10 +169,10 @@ INCLUDE = $(CHARM)/include
 LIBS = $(DPMTALIBS) $(DPMELIBS) fftw/libfftw_ampi.a
 
 # CXX is platform dependent
-CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXOPTS) $(RELEASE)
-CXXTHREADFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXTHREADOPTS) $(RELEASE)
-CXXSIMPARAMFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXSIMPARAMOPTS) $(RELEASE)
-GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(RELEASE)
+CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) -Ifftw $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXOPTS) $(RELEASE)
+CXXTHREADFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) -Ifftw $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXTHREADOPTS) $(RELEASE)
+CXXSIMPARAMFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) -Ifftw $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXSIMPARAMOPTS) $(RELEASE)
+GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) -Ifftw $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(RELEASE)
 
 # Add new executables here.
 
@@ -187,6 +187,7 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	-o namd2 $(OBJS) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
+	-Lfftw -lfftw_ampi \
 	$(TCLLIB) \
 	$(FFTLIB)
 
@@ -216,6 +217,7 @@ projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	-o namd2 $(OBJS) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
+	-Lfftw -lfftw_ampi \
 	$(TCLLIB) \
 	$(FFTLIB)
 
@@ -226,6 +228,7 @@ summary:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	-o namd2 $(OBJS) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
+	-Lfftw -lfftw_ampi \
 	$(TCLLIB) \
 	$(FFTLIB)
 

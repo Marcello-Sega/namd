@@ -1,7 +1,7 @@
 
 FFTDIR=/Projects/namd2/fftw/solaris
-FFTINCL=-I$(FFTDIR)/include -Ifftw
-FFTLIB=-L$(FFTDIR)/lib -lrfftw -lfftw -Lfftw -lfftw_ampi
+FFTINCL=-I$(FFTDIR)/include
+FFTLIB=-L$(FFTDIR)/lib -lrfftw -lfftw
 FFTFLAGS=-DNAMD_FFTW
 FFT=$(FFTINCL) $(FFTFLAGS)
 
