@@ -38,6 +38,7 @@ public:
 
 private:
   void *sock;
+  void *serversock;  // for IMDignore only
 
   int curstep;   
   int transrate;
@@ -45,6 +46,8 @@ private:
   int haveCoords;
   float *coordtmp;
   int coordtmpsize;
+
+  void manage_sockets();
 };
 
 #endif

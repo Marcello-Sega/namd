@@ -51,10 +51,18 @@ ComputeIMD::ComputeIMD(ComputeMgr *c)
   }
   sock = vmdsock_create();
   clientsock = NULL;
-  port = find_free_port(sock, port);
-  if (port < 0) {
+  int newport = find_free_port(sock, port);
+  if (newport != port) {
+    iout << iWARN << "Interactive MD failed to bind to port "
+                  << port << ".\n" << endi;
+  }
+  if (newport < 0) {
     vmdsock_destroy(sock);
-    NAMD_die("Unable to find free port\n");
+    NAMD_die("Interactive MD failed to find free port.\n");
+  }
+  if (newport != port) {
+    iout << iWARN << "Interactive MD listening on port "
+                  << newport << ".\n" << endi;
   }
   vmdsock_listen(sock); 
 }

@@ -957,6 +957,8 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
    opts.range("IMDfreq",POSITIVE);
    opts.optionalB("IMDon","IMDwait","Pause until IMD connection?",&IMDwait,
      FALSE);
+   opts.optionalB("IMDon","IMDignore","Ignore forces, etc.?",&IMDignore,
+     FALSE);
 
    // Maximum Partition options
    opts.optional("main", "maxSelfPart", 
@@ -1543,7 +1545,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
       NAMD_die("COLD and velocity rescaling are mutually exclusive dynamics modes");
    }
 
-   if ( (!!SMDOn+!!IMDon+!!tclForcesOn+!!miscForcesOn+!!freeEnergyOn) > 1)
+   if ( (!!SMDOn+!!(IMDon && ! IMDignore)+!!tclForcesOn+!!miscForcesOn+!!freeEnergyOn) > 1)
    {
       NAMD_die("Sorry, only one of IMD, TclForces, MiscForces, and FreeEnergy may be used at a time.");
    }
@@ -2310,8 +2312,8 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    
    // Global forces configuration
 
-   globalForcesOn = ( tclForcesOn || freeEnergyOn || miscForcesOn || IMDon 
-                      || SMDOn);
+   globalForcesOn = ( tclForcesOn || freeEnergyOn || miscForcesOn ||
+                      (IMDon && ! IMDignore) || SMDOn);
 
    if (tclForcesOn)
    {
@@ -2375,7 +2377,11 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << iINFO << "INTERACTIVE MD ACTIVE\n";
      iout << iINFO << "INTERACTIVE MD PORT    " << IMDport << "\n";
      iout << iINFO << "INTERACTIVE MD FREQ    " << IMDfreq << "\n";
-     if (IMDwait) iout << iINFO << "WILL AWAIT INTERACTIVE MD CONNECTION\n";
+     if (IMDignore) {
+        iout << iINFO << "INTERACTIVE MD WILL NOT INFLUENCE SIMULATION\n";
+     } else {
+       if (IMDwait) iout << iINFO << "WILL AWAIT INTERACTIVE MD CONNECTION\n";
+     }
      iout << endi;
    }
 

@@ -393,6 +393,8 @@ public:
  	int IMDfreq;  // frequency at which coordinates will be available
         int IMDwait;  // if true, pause the simulation when there is no
                       // connection
+ 	int IMDignore;  // IMD connection does not influence simulation
+                        // only sends coordinates and energies to VMD
         
         // AMBER options
         Bool amberOn; // FLAG TRUE-> amber force field is used

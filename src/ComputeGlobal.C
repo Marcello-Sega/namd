@@ -74,7 +74,7 @@ ComputeGlobal::ComputeGlobal(ComputeID c, ComputeMgr *m)
   ComputeGlobalMaster *master;
   if ( !CkMyPe() ) { 
     SimParameters * simParams = Node::Object()->simParameters;
-    if (simParams->IMDon) master = new ComputeIMD(m);
+    if (simParams->IMDon && ! simParams->IMDignore) master = new ComputeIMD(m);
     else if ( simParams->tclForcesOn ) master = new ComputeTcl(m);
     else if ( simParams->miscForcesOn ) master = new ComputeMisc(m);
     else if ( simParams->freeEnergyOn ) master = new ComputeFreeEnergy(m);
