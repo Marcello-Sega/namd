@@ -94,6 +94,8 @@ begin:
     echo 'NAMD_PLATFORM = $(NAMD_ARCH)-VMI' >> Makearch
   else if ( $ARCH =~ *-GM* ) then
     echo 'NAMD_PLATFORM = $(NAMD_ARCH)-GM' >> Makearch
+  else if ( $ARCH =~ *-Elan* ) then
+    echo 'NAMD_PLATFORM = $(NAMD_ARCH)-Elan' >> Makearch
   else if ( $ARCH =~ *-ScyldCD* ) then
     echo 'NAMD_PLATFORM = $(NAMD_ARCH)-ScyldCD' >> Makearch
   else if ( $ARCH =~ *-Scyld* ) then
