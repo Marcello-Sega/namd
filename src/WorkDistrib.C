@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.17 1996/11/22 01:02:18 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.18 1996/11/30 01:27:34 jim Exp $";
 
 #include <stdio.h>
 
@@ -270,7 +270,7 @@ void WorkDistrib::mapAngleComputes()
   for(i=0; i<node->numNodes(); i++)
   {
     cid[i]=computeMap->storeCompute(i,patchMap->numPatches(),
-				    angleForceType);
+				    computeAnglesType);
   }
 
   PatchID j;
@@ -305,7 +305,7 @@ void WorkDistrib::mapElectComputes(void)
   for(i=0; i<patchMap->numPatches(); i++)
   {
     // self-interaction
-    cid=computeMap->storeCompute(patchMap->node(i),1,electForceType);
+    cid=computeMap->storeCompute(patchMap->node(i),1,computeNonbondedSelfType);
     computeMap->newPid(cid,i);
     patchMap->newCid(i,cid);
 
@@ -316,7 +316,7 @@ void WorkDistrib::mapElectComputes(void)
       if (i < oneAway[j])
       {
 	cid=computeMap->storeCompute(patchMap->node(i),2,
-				     electForceType);
+				     computeNonbondedPairType);
 	computeMap->newPid(cid,i);
 	computeMap->newPid(cid,oneAway[j]);
 	patchMap->newCid(i,cid);
@@ -331,7 +331,7 @@ void WorkDistrib::mapElectComputes(void)
       if (i < oneAway[j])
       {
 	cid=computeMap->storeCompute(patchMap->node(i),2,
-				     electForceType);
+				     computeNonbondedPairType);
 	computeMap->newPid(cid,i);
 	computeMap->newPid(cid,oneAway[j]);
 	patchMap->newCid(i,cid);
@@ -370,13 +370,16 @@ void WorkDistrib::movePatchDone(DoneMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.17 $	$Date: 1996/11/22 01:02:18 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.18 $	$Date: 1996/11/30 01:27:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.18  1996/11/30 01:27:34  jim
+ * switched to realistic ComputeType definitions
+ *
  * Revision 1.17  1996/11/22 01:02:18  ari
  * *** empty log message ***
  *

@@ -65,15 +65,30 @@ void ComputeMgr:: createComputes(ComputeMap *map)
 
     switch ( map->computeData[i].type )
     {
-      case angleForceType:
+      case computeNonbondedSelfType:
+        DebugM(2,"ComputeNonbondedSelf would have been created.\n");
+        break;
+      case computeNonbondedPairType:
+        DebugM(2,"ComputeNonbondedPair would have been created.\n");
+        break;
+      case computeNonbondedExclType:
+        DebugM(2,"ComputeNonbondedExcl would have been created.\n");
+        break;
+      case computeBondsType:
+        DebugM(2,"ComputeBonds would have been created.\n");
+        break;
+      case computeAnglesType:
         c = new ComputeAngles(i);
         map->registerCompute(i,c);
-        DebugM(3,"Angle compute created\n");
+        DebugM(3,"ComputeAngles created\n");
         c->mapReady();
         DebugM(3,"mapReady() sent\n");
         break;
-      case electForceType:
-        DebugM(2,"Nonbonded compute would have been created.\n");
+      case computeDihedralsType:
+        DebugM(2,"ComputeDihedrals would have been created.\n");
+        break;
+      case computeImpropersType:
+        DebugM(2,"ComputeImpropers would have been created.\n");
         break;
       default:
         DebugM(10,"Unknown compute type not created!\n");
@@ -94,7 +109,7 @@ void ComputeMgr:: enqueueWork(Compute *compute)
  *
  *	$RCSfile: ComputeMgr.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/11/30 00:34:45 $
+ *	$Revision: 1.2 $	$Date: 1996/11/30 01:27:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:

@@ -75,11 +75,13 @@ struct LocalID
 
 enum ComputeType
 {
-  electForceType,
-  bondForceType,
-  angleForceType,
-  dihedralForceType,
-  improperForceType
+  computeNonbondedSelfType,
+  computeNonbondedPairType,
+  computeNonbondedExclType,
+  computeBondsType,
+  computeAnglesType,
+  computeDihedralsType,
+  computeImpropersType
 };
 
 enum Boolean
@@ -95,12 +97,15 @@ enum Boolean
  *
  *	$RCSfile: NamdTypes.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.11 $	$Date: 1996/10/30 01:05:50 $
+ *	$Revision: 1.12 $	$Date: 1996/11/30 01:27:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdTypes.h,v $
+ * Revision 1.12  1996/11/30 01:27:34  jim
+ * switched to realistic ComputeType definitions
+ *
  * Revision 1.11  1996/10/30 01:05:50  jim
  * added AtomPropertiesList
  *

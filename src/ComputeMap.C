@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.9 1996/11/30 00:32:52 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.10 1996/11/30 01:27:34 jim Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -178,7 +178,7 @@ ComputeID ComputeMap::storeCompute(int inode, int maxPids, ComputeType type)
 
   computeData[cid].type = type;
 
-  if (angleForceType == type)
+  if (computeAnglesType == type)
   {
     computeData[cid].patchBased = false;
     nAtomBased++;
@@ -246,12 +246,15 @@ void ComputeMap::printComputeMap(void)
  *
  *	$RCSfile: ComputeMap.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1996/11/30 00:32:52 $
+ *	$Revision: 1.10 $	$Date: 1996/11/30 01:27:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.C,v $
+ * Revision 1.10  1996/11/30 01:27:34  jim
+ * switched to realistic ComputeType definitions
+ *
  * Revision 1.9  1996/11/30 00:32:52  jim
  * added ComputeMgr friend and storage of ComputeType
  *
