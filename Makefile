@@ -120,6 +120,7 @@ OBJS = \
 	$(DSTDIR)/ComputeTcl.o \
 	$(DSTDIR)/ConfigList.o \
 	$(DSTDIR)/Controller.o \
+	$(DSTDIR)/ccsinterface.o \
         $(DSTDIR)/defmain.o \
         $(DSTDIR)/FreeEnergyAssert.o \
         $(DSTDIR)/FreeEnergyGroup.o \
