@@ -11,7 +11,7 @@
 %
 %       $RCSfile: ug_psfgen.tex,v $
 %       $Author: jim $        $Locker:  $                $State: Exp $
-%       $Revision: 1.5 $      $Date: 2001/05/08 20:57:31 $
+%       $Revision: 1.6 $      $Date: 2001/08/02 14:37:06 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -283,16 +283,6 @@ patch DISU BPTI:14 BPTI:38
 patch DISU BPTI:30 BPTI:51
 \end{verbatim}
 
-\paragraph*{Writing psf structure file.}
-
-
-Now that all of the atoms and bonds have been created, we can write
-out the psf structure file for the system.
-
-\begin{verbatim}
-writepsf output/bpti.psf
-\end{verbatim}
-
 \paragraph*{Reading coordinates from pdb file.}
 
 
@@ -305,30 +295,6 @@ should be applied to the segment BPTI.
 \begin{verbatim}
 alias atom ILE CD1 CD
 coordpdb output/6PTI_protein.pdb BPTI
-\end{verbatim}
-
-\paragraph*{Guessing missing coordinates.}
-
-
-The tolopogy file contains default internal coordinates which can be
-used to guess the locations of many atoms, hydrogens in particular.
-In the output pdb file, the occupancy field of guessed atoms will be
-set to 1, atoms which are known are set to 0, and atoms which could
-not be guessed are set to -1.  Some atoms are "poorly guessed" if
-needed bond lengths and angles were missing from the topology file.
-
-\begin{verbatim}
-guesscoord
-\end{verbatim}
-
-\paragraph*{Writing pdb coordinate file.}
-
-
-This ends the matching coordinate pdb file.  The psf and pdb files
-are a matched set with identical atom ordering as needed by NAMD.
-
-\begin{verbatim}
-writepdb output/bpti.pdb
 \end{verbatim}
 
 \paragraph*{Adding a segment of water.}
@@ -359,22 +325,47 @@ alias atom HOH O OH2
 coordpdb output/6PTI_water.pdb SOLV
 \end{verbatim}
 
-\paragraph*{Trying to guess water coordinates is not possible.}
+
+\paragraph*{Writing psf structure file.}
 
 
-Try to guess coordinates again, but hydrogens are not guessed for water
-because all three atoms are needed to orient the molecules.
+Now that all of the atoms and bonds have been created, we can write
+out the psf structure file for the system.
+
+\begin{verbatim}
+writepsf output/bpti.psf
+\end{verbatim}
+
+\paragraph*{Guessing missing coordinates.}
+
+
+The tolopogy file contains default internal coordinates which can be
+used to guess the locations of many atoms, hydrogens in particular.
+In the output pdb file, the occupancy field of guessed atoms will be
+set to 1, atoms which are known are set to 0, and atoms which could
+not be guessed are set to -1.  Some atoms are "poorly guessed" if
+needed bond lengths and angles were missing from the topology file.
+Similarly, waters with missing hydrogen coordinates are given a
+default orientation.
 
 \begin{verbatim}
 guesscoord
 \end{verbatim}
 
+\paragraph*{Writing pdb coordinate file.}
 
-Don't write out the structure with water since coordinates are missing.
+
+This creates the matching coordinate pdb file.  The psf and pdb files
+are a matched set with identical atom ordering as needed by NAMD.
+
+\begin{verbatim}
+writepdb output/bpti.pdb
+\end{verbatim}
 
 \begin{verbatim}
 ENDMOL
 \end{verbatim}
+
 
 \paragraph*{Using generated files in NAMD.}
 
