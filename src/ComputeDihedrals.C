@@ -225,20 +225,20 @@ void DihedralElem::computeForce(BigReal *reduction)
 void DihedralElem::registerReductionData(ReductionMgr *reduction)
 {
   reduction->Register(REDUCTION_DIHEDRAL_ENERGY);
-  reduction->Register(REDUCTION_VIRIAL);
+  reduction->Register(REDUCTION_VIRIAL_NORMAL);
 }
 
 void DihedralElem::submitReductionData(BigReal *data, ReductionMgr *reduction, int seq)
 {
   reduction->submit(seq, REDUCTION_DIHEDRAL_ENERGY, data[dihedralEnergyIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL, data[virialIndex]);
+  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL, data[virialIndex]);
   DebugM(4,"Dihedral virial = " << data[virialIndex] << "\n");
 }
 
 void DihedralElem::unregisterReductionData(ReductionMgr *reduction)
 {
   reduction->unRegister(REDUCTION_DIHEDRAL_ENERGY);
-  reduction->unRegister(REDUCTION_VIRIAL);
+  reduction->unRegister(REDUCTION_VIRIAL_NORMAL);
 }
 
 
@@ -247,12 +247,15 @@ void DihedralElem::unregisterReductionData(ReductionMgr *reduction)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/10/17 17:16:45 $
+ *	$Revision: 1.1009 $	$Date: 1998/06/18 14:48:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDihedrals.C,v $
+ * Revision 1.1009  1998/06/18 14:48:01  jim
+ * Split virial into NORMAL, NBOND, and SLOW parts to match force classes.
+ *
  * Revision 1.1008  1997/10/17 17:16:45  jim
  * Switched from hash tables to checklists, eliminated special exclusion code.
  *

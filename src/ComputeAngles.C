@@ -155,20 +155,20 @@ void AngleElem::computeForce(BigReal *reduction)
 void AngleElem::registerReductionData(ReductionMgr *reduction)
 {
   reduction->Register(REDUCTION_ANGLE_ENERGY);
-  reduction->Register(REDUCTION_VIRIAL);
+  reduction->Register(REDUCTION_VIRIAL_NORMAL);
 }
 
 void AngleElem::submitReductionData(BigReal *data, ReductionMgr *reduction, int seq)
 {
   reduction->submit(seq, REDUCTION_ANGLE_ENERGY, data[angleEnergyIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL, data[virialIndex]);
+  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL, data[virialIndex]);
   DebugM(4,"Angle virial = " << data[virialIndex] << "\n");
 }
 
 void AngleElem::unregisterReductionData(ReductionMgr *reduction)
 {
   reduction->unRegister(REDUCTION_ANGLE_ENERGY);
-  reduction->unRegister(REDUCTION_VIRIAL);
+  reduction->unRegister(REDUCTION_VIRIAL_NORMAL);
 }
 
 /***************************************************************************
@@ -176,12 +176,15 @@ void AngleElem::unregisterReductionData(ReductionMgr *reduction)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/10/17 17:16:42 $
+ *	$Revision: 1.1008 $	$Date: 1998/06/18 14:47:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.C,v $
+ * Revision 1.1008  1998/06/18 14:47:59  jim
+ * Split virial into NORMAL, NBOND, and SLOW parts to match force classes.
+ *
  * Revision 1.1007  1997/10/17 17:16:42  jim
  * Switched from hash tables to checklists, eliminated special exclusion code.
  *

@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1042 1998/04/06 16:34:09 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1043 1998/06/18 14:48:05 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -41,12 +41,18 @@ Sequencer::Sequencer(HomePatch *p) :
     broadcast = new ControllerBroadcasts;
 
     reduction->Register(REDUCTION_KINETIC_ENERGY);
+    reduction->Register(REDUCTION_INT_KINETIC_ENERGY);
     reduction->Register(REDUCTION_BC_ENERGY); // in case not used elsewhere
     reduction->Register(REDUCTION_SMD_ENERGY); // in case not used elsewhere
     if ( simParams->rigidBonds != RIGID_NONE ) {
 	;// reduction->Register(REDUCTION_VIRIAL);
     }
-    reduction->Register(REDUCTION_ALT_VIRIAL);
+    reduction->Register(REDUCTION_ALT_VIRIAL_NORMAL);
+    reduction->Register(REDUCTION_ALT_VIRIAL_NBOND);
+    reduction->Register(REDUCTION_ALT_VIRIAL_SLOW);
+    reduction->Register(REDUCTION_INT_VIRIAL_NORMAL);
+    reduction->Register(REDUCTION_INT_VIRIAL_NBOND);
+    reduction->Register(REDUCTION_INT_VIRIAL_SLOW);
     reduction->Register(REDUCTION_MOMENTUM_X);
     reduction->Register(REDUCTION_MOMENTUM_Y);
     reduction->Register(REDUCTION_MOMENTUM_Z);
@@ -61,12 +67,18 @@ Sequencer::~Sequencer(void)
     delete broadcast;
 
     reduction->unRegister(REDUCTION_KINETIC_ENERGY);
+    reduction->unRegister(REDUCTION_INT_KINETIC_ENERGY);
     reduction->unRegister(REDUCTION_BC_ENERGY); // in case not used elsewhere
     reduction->unRegister(REDUCTION_SMD_ENERGY); // in case not used elsewhere
     if ( simParams->rigidBonds != RIGID_NONE ) {
 	;// reduction->unRegister(REDUCTION_VIRIAL);
     }
-    reduction->unRegister(REDUCTION_ALT_VIRIAL);
+    reduction->unRegister(REDUCTION_ALT_VIRIAL_NORMAL);
+    reduction->unRegister(REDUCTION_ALT_VIRIAL_NBOND);
+    reduction->unRegister(REDUCTION_ALT_VIRIAL_SLOW);
+    reduction->unRegister(REDUCTION_INT_VIRIAL_NORMAL);
+    reduction->unRegister(REDUCTION_INT_VIRIAL_NBOND);
+    reduction->unRegister(REDUCTION_INT_VIRIAL_SLOW);
     reduction->unRegister(REDUCTION_MOMENTUM_X);
     reduction->unRegister(REDUCTION_MOMENTUM_Y);
     reduction->unRegister(REDUCTION_MOMENTUM_Z);
@@ -317,15 +329,65 @@ void Sequencer::submitReductions(int step)
   reduction->submit(step,REDUCTION_BC_ENERGY,0.);
   reduction->submit(step,REDUCTION_SMD_ENERGY,0.);  
 
-  BigReal altVirial = 0.;
-  for ( int i = 0; i < patch->numAtoms; ++i )
   {
-    for ( int j = 0; j < Results::maxNumForces; ++j )
-    {
-      altVirial += ( patch->f[j][i] * patch->p[i] );
+    BigReal altVirial = 0.;
+    for ( int i = 0; i < patch->numAtoms; ++i ) {
+      altVirial += ( patch->f[Results::normal][i] * patch->p[i] );
     }
+    reduction->submit(step,REDUCTION_ALT_VIRIAL_NORMAL,altVirial);
   }
-  reduction->submit(step,REDUCTION_ALT_VIRIAL,altVirial);
+  {
+    BigReal altVirial = 0.;
+    for ( int i = 0; i < patch->numAtoms; ++i ) {
+      altVirial += ( patch->f[Results::nbond][i] * patch->p[i] );
+    }
+    reduction->submit(step,REDUCTION_ALT_VIRIAL_NBOND,altVirial);
+  }
+  {
+    BigReal altVirial = 0.;
+    for ( int i = 0; i < patch->numAtoms; ++i ) {
+      altVirial += ( patch->f[Results::slow][i] * patch->p[i] );
+    }
+    reduction->submit(step,REDUCTION_ALT_VIRIAL_SLOW,altVirial);
+  }
+
+  {
+    BigReal intKineticEnergy = 0;
+    BigReal intVirialNormal = 0;
+    BigReal intVirialNbond = 0;
+    BigReal intVirialSlow = 0;
+
+    int hgs;
+    for ( int i = 0; i < patch->numAtoms; i += hgs ) {
+      hgs = patch->a[i].hydrogenGroupSize;
+      int j;
+      BigReal m_cm = 0;
+      Position x_cm;
+      Velocity v_cm;
+      for ( j = i; j < (i+hgs); ++j ) {
+        m_cm += patch->a[j].mass;
+        x_cm += patch->a[j].mass * patch->p[j];
+        v_cm += patch->a[j].mass * patch->v[j];
+      }
+      x_cm /= m_cm;
+      v_cm /= m_cm;
+      for ( j = i; j < (i+hgs); ++j ) {
+        Vector dv = patch->v[j] - v_cm;
+        intKineticEnergy += patch->a[j].mass * (patch->v[j] * dv);
+        Vector dx = patch->p[j] - x_cm;
+        intVirialNormal += patch->f[Results::normal][j] * dx;
+        intVirialNbond += patch->f[Results::nbond][j] * dx;
+        intVirialSlow += patch->f[Results::slow][j] * dx;
+      }
+    }
+
+    intKineticEnergy *= 0.5;
+
+    reduction->submit(step,REDUCTION_INT_KINETIC_ENERGY,intKineticEnergy);
+    reduction->submit(step,REDUCTION_INT_VIRIAL_NORMAL,intVirialNormal);
+    reduction->submit(step,REDUCTION_INT_VIRIAL_NBOND,intVirialNbond);
+    reduction->submit(step,REDUCTION_INT_VIRIAL_SLOW,intVirialSlow);
+  }
 
   Vector momentum = patch->calcMomentum();
   reduction->submit(step,REDUCTION_MOMENTUM_X,momentum.x);  
@@ -375,12 +437,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1042 $     $Date: 1998/04/06 16:34:09 $
+ *      $Revision: 1.1043 $     $Date: 1998/06/18 14:48:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1043  1998/06/18 14:48:05  jim
+ * Split virial into NORMAL, NBOND, and SLOW parts to match force classes.
+ *
  * Revision 1.1042  1998/04/06 16:34:09  jim
  * Added DPME (single processor only), test mode, and momenta printing.
  *

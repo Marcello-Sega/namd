@@ -114,7 +114,7 @@ void ComputeDPME::doWork()
     }
     if ( master ) {
       reduction->submit(patchList[0].p->flags.seq, REDUCTION_ELECT_ENERGY, 0.);
-      reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL, 0.0);
+      reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW, 0.0);
     }
     return;
   }
@@ -173,7 +173,7 @@ ComputeDPMEMaster::ComputeDPMEMaster(ComputeDPME *h, ReductionMgr *r) :
   host(h), numLocalAtoms(0), reduction(r)
 {
   reduction->Register(REDUCTION_ELECT_ENERGY);
-  reduction->Register(REDUCTION_VIRIAL);
+  reduction->Register(REDUCTION_VIRIAL_SLOW);
 
   Molecule * molecule = Node::Object()->molecule;
   localData = new Pme2Particle[molecule->numAtoms];
@@ -182,7 +182,7 @@ ComputeDPMEMaster::ComputeDPMEMaster(ComputeDPME *h, ReductionMgr *r) :
 ComputeDPMEMaster::~ComputeDPMEMaster()
 {
   reduction->unRegister(REDUCTION_ELECT_ENERGY);
-  reduction->unRegister(REDUCTION_VIRIAL);
+  reduction->unRegister(REDUCTION_VIRIAL_SLOW);
 
   delete [] localData;
 }
@@ -296,7 +296,7 @@ void ComputeDPMEMaster::recvData(ComputeDPMEDataMsg *msg)
 	recip_vir[1] << " " << recip_vir[2] << " " << recip_vir[3] << " " <<
 	recip_vir[4] << " " << recip_vir[5] << "\n");
   reduction->submit(seq, REDUCTION_ELECT_ENERGY, electEnergy);
-  reduction->submit(seq, REDUCTION_VIRIAL, 
+  reduction->submit(seq, REDUCTION_VIRIAL_SLOW, 
 			(BigReal)(recip_vir[0] + recip_vir[3] + recip_vir[5]) );
 
   PmeVector *results_ptr = localResults + 1;
@@ -363,12 +363,15 @@ void ComputeDPME::recvResults(ComputeDPMEResultsMsg *msg)
  *
  *	$RCSfile: ComputeDPME.C,v $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1998/04/15 22:13:49 $
+ *	$Revision: 1.4 $	$Date: 1998/06/18 14:48:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPME.C,v $
+ * Revision 1.4  1998/06/18 14:48:00  jim
+ * Split virial into NORMAL, NBOND, and SLOW parts to match force classes.
+ *
  * Revision 1.3  1998/04/15 22:13:49  jim
  * Make depends returns same results regardless of DPME, DPMTA, TCL or MDCOMM.
  *

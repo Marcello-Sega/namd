@@ -140,7 +140,7 @@ void ComputeDPMTA::initialize()
 
   // all nodes should init
   reduction->Register(REDUCTION_ELECT_ENERGY);
-  reduction->Register(REDUCTION_VIRIAL);
+  reduction->Register(REDUCTION_VIRIAL_SLOW);
 
   // Don't need any more initialization  -JCP
   ResizeArrayIter<PatchElem> ap(patchList);
@@ -308,7 +308,7 @@ ComputeDPMTA::~ComputeDPMTA()
   DebugM(2,"DPMTA exited\n");
 
   reduction->unRegister(REDUCTION_ELECT_ENERGY);
-  reduction->unRegister(REDUCTION_VIRIAL);
+  reduction->unRegister(REDUCTION_VIRIAL_SLOW);
 }
 
 
@@ -331,7 +331,7 @@ void ComputeDPMTA::doWork()
       (*ap).positionBox->close(&x);
     }
     reduction->submit(patchList[0].p->flags.seq, REDUCTION_ELECT_ENERGY, 0.0);
-    reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL, 0.0);
+    reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW, 0.0);
     return;
   }
 
@@ -472,7 +472,7 @@ void ComputeDPMTA::doWork()
   potential *= 0.5;
   DebugM(4,"Full-electrostatics energy: " << potential << "\n");
   reduction->submit(patchList[0].p->flags.seq, REDUCTION_ELECT_ENERGY, potential);
-  reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL, potential);  // TRUE! -JCP
+  reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW, potential);  // TRUE! -JCP
 
   // 5. clean-up
   if (totalAtoms > 0)
@@ -492,12 +492,15 @@ void ComputeDPMTA::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1049 $	$Date: 1998/04/15 22:13:50 $
+ *	$Revision: 1.1050 $	$Date: 1998/06/18 14:48:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.C,v $
+ * Revision 1.1050  1998/06/18 14:48:00  jim
+ * Split virial into NORMAL, NBOND, and SLOW parts to match force classes.
+ *
  * Revision 1.1049  1998/04/15 22:13:50  jim
  * Make depends returns same results regardless of DPME, DPMTA, TCL or MDCOMM.
  *

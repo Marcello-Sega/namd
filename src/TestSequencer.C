@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/TestSequencer.C,v 1.2 1998/04/06 16:34:12 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/TestSequencer.C,v 1.3 1998/06/18 14:48:05 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -64,7 +64,7 @@ void TestSequencer::algorithm(void)
     const BigReal nbondstep = timestep * nonbondedFrequency;
     int &doNonbonded = patch->flags.doNonbonded;
     doNonbonded = !(step%nonbondedFrequency);
-    if ( nonbondedFrequency == 1 ) maxForceMerged = Results::nbond;
+    // if ( nonbondedFrequency == 1 ) maxForceMerged = Results::nbond;
     if ( doNonbonded ) maxForceUsed = Results::nbond;
 
     // Do we do full electrostatics?
@@ -74,7 +74,7 @@ void TestSequencer::algorithm(void)
     const BigReal slowstep = timestep * fullElectFrequency;
     int &doFullElectrostatics = patch->flags.doFullElectrostatics;
     doFullElectrostatics = (dofull && !(step%fullElectFrequency));
-    if ( dofull && (fullElectFrequency == 1) ) maxForceMerged = Results::slow;
+    // if ( dofull && (fullElectFrequency == 1) ) maxForceMerged = Results::slow;
     if ( doFullElectrostatics ) maxForceUsed = Results::slow;
 
     rattle1(0.);  // enforce rigid bond constraints on initial positions
@@ -161,12 +161,15 @@ void TestSequencer::translatePosition(BigReal dx, BigReal dy, BigReal dz) {
  *
  *      $RCSfile: TestSequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.2 $     $Date: 1998/04/06 16:34:12 $
+ *      $Revision: 1.3 $     $Date: 1998/06/18 14:48:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: TestSequencer.C,v $
+ * Revision 1.3  1998/06/18 14:48:05  jim
+ * Split virial into NORMAL, NBOND, and SLOW parts to match force classes.
+ *
  * Revision 1.2  1998/04/06 16:34:12  jim
  * Added DPME (single processor only), test mode, and momenta printing.
  *

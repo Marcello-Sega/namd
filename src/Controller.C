@@ -50,9 +50,17 @@ Controller::Controller(NamdState *s) :
     reduction->subscribe(REDUCTION_ELECT_ENERGY);
     reduction->subscribe(REDUCTION_LJ_ENERGY);
     reduction->subscribe(REDUCTION_KINETIC_ENERGY);
+    reduction->subscribe(REDUCTION_INT_KINETIC_ENERGY);
     reduction->subscribe(REDUCTION_BC_ENERGY);
-    reduction->subscribe(REDUCTION_VIRIAL);
-    reduction->subscribe(REDUCTION_ALT_VIRIAL);
+    reduction->subscribe(REDUCTION_VIRIAL_NORMAL);
+    reduction->subscribe(REDUCTION_VIRIAL_NBOND);
+    reduction->subscribe(REDUCTION_VIRIAL_SLOW);
+    reduction->subscribe(REDUCTION_ALT_VIRIAL_NORMAL);
+    reduction->subscribe(REDUCTION_ALT_VIRIAL_NBOND);
+    reduction->subscribe(REDUCTION_ALT_VIRIAL_SLOW);
+    reduction->subscribe(REDUCTION_INT_VIRIAL_NORMAL);
+    reduction->subscribe(REDUCTION_INT_VIRIAL_NBOND);
+    reduction->subscribe(REDUCTION_INT_VIRIAL_SLOW);
     reduction->subscribe(REDUCTION_SMD_ENERGY);
     reduction->subscribe(REDUCTION_MOMENTUM_X);
     reduction->subscribe(REDUCTION_MOMENTUM_Y);
@@ -73,9 +81,17 @@ Controller::~Controller(void)
     reduction->unsubscribe(REDUCTION_ELECT_ENERGY);
     reduction->unsubscribe(REDUCTION_LJ_ENERGY);
     reduction->unsubscribe(REDUCTION_KINETIC_ENERGY);
+    reduction->unsubscribe(REDUCTION_INT_KINETIC_ENERGY);
     reduction->unsubscribe(REDUCTION_BC_ENERGY);
-    reduction->unsubscribe(REDUCTION_VIRIAL);
-    reduction->unsubscribe(REDUCTION_ALT_VIRIAL);
+    reduction->unsubscribe(REDUCTION_VIRIAL_NORMAL);
+    reduction->unsubscribe(REDUCTION_VIRIAL_NBOND);
+    reduction->unsubscribe(REDUCTION_VIRIAL_SLOW);
+    reduction->unsubscribe(REDUCTION_ALT_VIRIAL_NORMAL);
+    reduction->unsubscribe(REDUCTION_ALT_VIRIAL_NBOND);
+    reduction->unsubscribe(REDUCTION_ALT_VIRIAL_SLOW);
+    reduction->unsubscribe(REDUCTION_INT_VIRIAL_NORMAL);
+    reduction->unsubscribe(REDUCTION_INT_VIRIAL_NBOND);
+    reduction->unsubscribe(REDUCTION_INT_VIRIAL_SLOW);
     reduction->unsubscribe(REDUCTION_SMD_ENERGY);
     reduction->unsubscribe(REDUCTION_MOMENTUM_X);
     reduction->unsubscribe(REDUCTION_MOMENTUM_Y);
@@ -219,9 +235,12 @@ void Controller::printEnergies(int seq)
     BigReal electEnergy;
     BigReal ljEnergy;
     BigReal kineticEnergy;
+    BigReal intKineticEnergy;
     BigReal boundaryEnergy;
+    BigReal tmpVirial;
     BigReal virial;
     BigReal altVirial;
+    BigReal intVirial;
     BigReal smdEnergy;
     BigReal totalEnergy;
     BigReal volume;
@@ -235,12 +254,33 @@ void Controller::printEnergies(int seq)
     reduction->require(seq, REDUCTION_ELECT_ENERGY, electEnergy);
     reduction->require(seq, REDUCTION_LJ_ENERGY, ljEnergy);
     reduction->require(seq, REDUCTION_KINETIC_ENERGY, kineticEnergy);
+    reduction->require(seq, REDUCTION_INT_KINETIC_ENERGY, intKineticEnergy);
     reduction->require(seq, REDUCTION_BC_ENERGY, boundaryEnergy);
     reduction->require(seq, REDUCTION_SMD_ENERGY, smdEnergy);
-    reduction->require(seq, REDUCTION_VIRIAL, virial);
+    virial = 0;
+    reduction->require(seq, REDUCTION_VIRIAL_NORMAL, tmpVirial);
+    virial += tmpVirial;
+    reduction->require(seq, REDUCTION_VIRIAL_NBOND, tmpVirial);
+    virial += tmpVirial;
+    reduction->require(seq, REDUCTION_VIRIAL_SLOW, tmpVirial);
+    virial += tmpVirial;
     virial /= 3.;  // virial submitted is wrong by factor of 3
-    reduction->require(seq, REDUCTION_ALT_VIRIAL, altVirial);
+    altVirial = 0;
+    reduction->require(seq, REDUCTION_ALT_VIRIAL_NORMAL, tmpVirial);
+    altVirial += tmpVirial;
+    reduction->require(seq, REDUCTION_ALT_VIRIAL_NBOND, tmpVirial);
+    altVirial += tmpVirial;
+    reduction->require(seq, REDUCTION_ALT_VIRIAL_SLOW, tmpVirial);
+    altVirial += tmpVirial;
     altVirial /= 3.;  // virial submitted is wrong by factor of 3
+    intVirial = 0;
+    reduction->require(seq, REDUCTION_INT_VIRIAL_NORMAL, tmpVirial);
+    intVirial += tmpVirial;
+    reduction->require(seq, REDUCTION_INT_VIRIAL_NBOND, tmpVirial);
+    intVirial += tmpVirial;
+    reduction->require(seq, REDUCTION_INT_VIRIAL_SLOW, tmpVirial);
+    intVirial += tmpVirial;
+    intVirial /= 3.;  // virial submitted is wrong by factor of 3
 
     reduction->require(seq, REDUCTION_MOMENTUM_X, momentum.x);
     reduction->require(seq, REDUCTION_MOMENTUM_Y, momentum.y);
@@ -251,13 +291,17 @@ void Controller::printEnergies(int seq)
 
     temperature = 2.0 * kineticEnergy / ( numDegFreedom * BOLTZMAN );
 
+    BigReal groupPressure;
     if ( (volume=lattice.volume()) != 0. )
     {
       pressure = ( numAtoms * BOLTZMAN * temperature + virial ) / volume;
+      groupPressure = ( (2./3.)*( kineticEnergy - intKineticEnergy ) +
+                        ( virial - intVirial ) ) / volume;
     }
     else
     {
       pressure = 0.;
+      groupPressure = 0.;
     }
 
     totalEnergy = bondEnergy + angleEnergy + dihedralEnergy + improperEnergy +
@@ -302,7 +346,7 @@ void Controller::printEnergies(int seq)
 	iout << "ETITLE:     TS    BOND        ANGLE       "
 	     << "DIHED       IMPRP       ELECT       VDW       "
 	     << "BOUNDARY    KINETIC        TOTAL     TEMP";
-	if ( volume != 0. ) iout << "     PRESSURE    VOLUME";
+	if ( volume != 0. ) iout << "     PRESSURE    GPRESSURE    VOLUME";
 	if (simParams->SMDOn) iout << "     SMD";
 	iout << "\n" << endi;
     }
@@ -322,6 +366,7 @@ void Controller::printEnergies(int seq)
     if ( volume != 0. )
     {
 	iout << FORMAT(pressure*PRESSUREFACTOR)
+	     << FORMAT(groupPressure*PRESSUREFACTOR)
 	     << FORMAT(volume);
     }
 
@@ -349,12 +394,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1033 $	$Date: 1998/05/15 16:19:03 $
+ *	$Revision: 1.1034 $	$Date: 1998/06/18 14:48:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1034  1998/06/18 14:48:03  jim
+ * Split virial into NORMAL, NBOND, and SLOW parts to match force classes.
+ *
  * Revision 1.1033  1998/05/15 16:19:03  jim
  * Made Controller suspend during load balancing (for reduction system).
  *

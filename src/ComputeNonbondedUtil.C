@@ -51,7 +51,8 @@ void ComputeNonbondedUtil::registerReductionData(ReductionMgr *reduction)
 {
   reduction->Register(REDUCTION_ELECT_ENERGY);
   reduction->Register(REDUCTION_LJ_ENERGY);
-  reduction->Register(REDUCTION_VIRIAL);
+  reduction->Register(REDUCTION_VIRIAL_NBOND);
+  reduction->Register(REDUCTION_VIRIAL_SLOW);
 }
 
 void ComputeNonbondedUtil::submitReductionData(BigReal *data, ReductionMgr *reduction, int seq)
@@ -59,15 +60,16 @@ void ComputeNonbondedUtil::submitReductionData(BigReal *data, ReductionMgr *redu
   reduction->submit(seq, REDUCTION_ELECT_ENERGY, data[electEnergyIndex]
 					+ data[fullElectEnergyIndex]);
   reduction->submit(seq, REDUCTION_LJ_ENERGY, data[vdwEnergyIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL, data[virialIndex]
-					+ data[fullElectVirialIndex]);
+  reduction->submit(seq, REDUCTION_VIRIAL_NBOND, data[virialIndex]);
+  reduction->submit(seq, REDUCTION_VIRIAL_SLOW, data[fullElectVirialIndex]);
 }
 
 void ComputeNonbondedUtil::unregisterReductionData(ReductionMgr *reduction)
 {
   reduction->unRegister(REDUCTION_ELECT_ENERGY);
   reduction->unRegister(REDUCTION_LJ_ENERGY);
-  reduction->unRegister(REDUCTION_VIRIAL);
+  reduction->unRegister(REDUCTION_VIRIAL_NBOND);
+  reduction->unRegister(REDUCTION_VIRIAL_SLOW);
 }
 
 #ifdef DPME
@@ -333,12 +335,15 @@ void ComputeNonbondedUtil::select(void)
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1998/04/10 04:16:01 $
+ *	$Revision: 1.1019 $	$Date: 1998/06/18 14:48:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1019  1998/06/18 14:48:03  jim
+ * Split virial into NORMAL, NBOND, and SLOW parts to match force classes.
+ *
  * Revision 1.1018  1998/04/10 04:16:01  jim
  * Finished incorporating DPME.
  *

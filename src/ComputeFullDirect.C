@@ -26,13 +26,13 @@
 ComputeFullDirect::ComputeFullDirect(ComputeID c) : ComputeHomePatches(c)
 {
   reduction->Register(REDUCTION_ELECT_ENERGY);
-  reduction->Register(REDUCTION_VIRIAL);
+  reduction->Register(REDUCTION_VIRIAL_SLOW);
 }
 
 ComputeFullDirect::~ComputeFullDirect()
 {
   reduction->unRegister(REDUCTION_ELECT_ENERGY);
-  reduction->unRegister(REDUCTION_VIRIAL);
+  reduction->unRegister(REDUCTION_VIRIAL_SLOW);
 }
 
 BigReal calc_fulldirect(BigReal *data1, BigReal *results1, int n1,
@@ -71,7 +71,7 @@ void ComputeFullDirect::doWork()
       (*ap).forceBox->close(&r);
     }
     reduction->submit(patchList[0].p->flags.seq, REDUCTION_ELECT_ENERGY, 0.);
-    reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL, 0.0);
+    reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW, 0.0);
     return;
   }
 
@@ -239,7 +239,7 @@ void ComputeFullDirect::doWork()
   // send out reductions
   DebugM(4,"Full-electrostatics energy: " << electEnergy << "\n");
   reduction->submit(patchList[0].p->flags.seq, REDUCTION_ELECT_ENERGY, electEnergy);
-  reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL, electEnergy);  // TRUE! -JCP
+  reduction->submit(patchList[0].p->flags.seq, REDUCTION_VIRIAL_SLOW, electEnergy);  // TRUE! -JCP
 
   // add in forces
   local_ptr = localResults;
@@ -270,12 +270,15 @@ void ComputeFullDirect::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1998/03/30 21:01:16 $
+ *	$Revision: 1.1015 $	$Date: 1998/06/18 14:48:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFullDirect.C,v $
+ * Revision 1.1015  1998/06/18 14:48:02  jim
+ * Split virial into NORMAL, NBOND, and SLOW parts to match force classes.
+ *
  * Revision 1.1014  1998/03/30 21:01:16  jim
  * Added nearest-image support for periodic boundary conditions to full direct.
  *

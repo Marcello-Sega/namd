@@ -17,10 +17,18 @@ typedef enum
   REDUCTION_ELECT_ENERGY,
   REDUCTION_IMPROPER_ENERGY,
   REDUCTION_KINETIC_ENERGY,
+  REDUCTION_INT_KINETIC_ENERGY,
   REDUCTION_LJ_ENERGY,
   REDUCTION_BC_ENERGY,
-  REDUCTION_VIRIAL,
-  REDUCTION_ALT_VIRIAL,
+  REDUCTION_VIRIAL_NORMAL,
+  REDUCTION_VIRIAL_NBOND,
+  REDUCTION_VIRIAL_SLOW,
+  REDUCTION_ALT_VIRIAL_NORMAL,
+  REDUCTION_ALT_VIRIAL_NBOND,
+  REDUCTION_ALT_VIRIAL_SLOW,
+  REDUCTION_INT_VIRIAL_NORMAL,
+  REDUCTION_INT_VIRIAL_NBOND,
+  REDUCTION_INT_VIRIAL_SLOW,
   REDUCTION_SMD_ENERGY,
   REDUCTION_MOMENTUM_X,
   REDUCTION_MOMENTUM_Y,
@@ -121,12 +129,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1998/04/06 16:34:08 $
+ *	$Revision: 1.1011 $	$Date: 1998/06/18 14:48:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.h,v $
+ * Revision 1.1011  1998/06/18 14:48:04  jim
+ * Split virial into NORMAL, NBOND, and SLOW parts to match force classes.
+ *
  * Revision 1.1010  1998/04/06 16:34:08  jim
  * Added DPME (single processor only), test mode, and momenta printing.
  *

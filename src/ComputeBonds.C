@@ -94,20 +94,20 @@ void BondElem::computeForce(BigReal *reduction)
 void BondElem::registerReductionData(ReductionMgr *reduction)
 {
   reduction->Register(REDUCTION_BOND_ENERGY);
-  reduction->Register(REDUCTION_VIRIAL);
+  reduction->Register(REDUCTION_VIRIAL_NORMAL);
 }
 
 void BondElem::submitReductionData(BigReal *data, ReductionMgr *reduction, int seq)
 {
   reduction->submit(seq, REDUCTION_BOND_ENERGY, data[bondEnergyIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL, data[virialIndex]);
+  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL, data[virialIndex]);
   DebugM(4,"Bond virial = " << data[virialIndex] << "\n");
 }
 
 void BondElem::unregisterReductionData(ReductionMgr *reduction)
 {
   reduction->unRegister(REDUCTION_BOND_ENERGY);
-  reduction->unRegister(REDUCTION_VIRIAL);
+  reduction->unRegister(REDUCTION_VIRIAL_NORMAL);
 }
 
 
@@ -116,12 +116,15 @@ void BondElem::unregisterReductionData(ReductionMgr *reduction)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/10/17 17:16:44 $
+ *	$Revision: 1.1008 $	$Date: 1998/06/18 14:47:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeBonds.C,v $
+ * Revision 1.1008  1998/06/18 14:47:59  jim
+ * Split virial into NORMAL, NBOND, and SLOW parts to match force classes.
+ *
  * Revision 1.1007  1997/10/17 17:16:44  jim
  * Switched from hash tables to checklists, eliminated special exclusion code.
  *

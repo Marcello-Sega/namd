@@ -229,20 +229,20 @@ void ImproperElem::computeForce(BigReal *reduction)
 void ImproperElem::registerReductionData(ReductionMgr *reduction)
 {
   reduction->Register(REDUCTION_IMPROPER_ENERGY);
-  reduction->Register(REDUCTION_VIRIAL);
+  reduction->Register(REDUCTION_VIRIAL_NORMAL);
 }
 
 void ImproperElem::submitReductionData(BigReal *data, ReductionMgr *reduction, int seq)
 {
   reduction->submit(seq, REDUCTION_IMPROPER_ENERGY, data[improperEnergyIndex]);
-  reduction->submit(seq, REDUCTION_VIRIAL, data[virialIndex]);
+  reduction->submit(seq, REDUCTION_VIRIAL_NORMAL, data[virialIndex]);
   DebugM(4,"Improper virial = " << data[virialIndex] << "\n");
 }
 
 void ImproperElem::unregisterReductionData(ReductionMgr *reduction)
 {
   reduction->unRegister(REDUCTION_IMPROPER_ENERGY);
-  reduction->unRegister(REDUCTION_VIRIAL);
+  reduction->unRegister(REDUCTION_VIRIAL_NORMAL);
 }
 
 
@@ -252,12 +252,15 @@ void ImproperElem::unregisterReductionData(ReductionMgr *reduction)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/10/17 17:16:47 $
+ *	$Revision: 1.1008 $	$Date: 1998/06/18 14:48:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeImpropers.C,v $
+ * Revision 1.1008  1998/06/18 14:48:02  jim
+ * Split virial into NORMAL, NBOND, and SLOW parts to match force classes.
+ *
  * Revision 1.1007  1997/10/17 17:16:47  jim
  * Switched from hash tables to checklists, eliminated special exclusion code.
  *
