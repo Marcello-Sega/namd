@@ -391,3 +391,176 @@ may vary.
 
 \end{itemize}
 
+
+\subsection{AMBER force field parameters}
+
+AMBER format PARM file and coordinate file can be read by NAMD,
+which allows one to use AMBER force field to carry out all types
+of simulations that NAMD has supported. The output of
+the simulation (restart file, DCD file, etc.) will still be in
+traditional format that has been used in NAMD.
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{amber}{use AMBER format force field?}{yes or no}{no}
+{
+If {\tt amber} is set to on, then {\tt parmfile} must be defined,
+and {\tt structure} and {\tt parameters} should not be defined.
+}
+
+\item
+\NAMDCONF{parmfile}{AMBER format PARM file}{UNIX filename}
+{
+This file contains complete topology and parameter information of
+the system.
+}
+
+\item
+\NAMDCONF{ambercoor}{AMBER format coordinate file}{UNIX filename}
+{
+This file contains the coordinates of all the atoms. Note that
+{\tt coordinates} can also be used for PDB format coordinate
+file. When {\tt amber} is set to on, either {\tt ambercoor}
+or {\tt coordinates} must be defined, but not both.
+}
+
+\item
+\NAMDCONFWDEF{readexclusions}{Read exclusions from PARM file?}{yes or no}{yes}
+{
+PARM file explicitly gives complete exclusion (including 1-4
+exclusions) information. When {\tt readexclusions} is set to on,
+NAMD will read all exclusions from PARM file and will not add any
+more; alternatively, if {\tt readexclusions} is set to
+off, NAMD will ignore the exclusions in PARM file and will
+automatically generate them according to the
+exclusion policy specified by {\tt exclude}.
+}
+
+\item
+\NAMDCONFWDEF{scnb}{VDW 1-4 scaling factor}{decimal $\geq$ 1.0}{2.0}
+{
+Same meaning as SCNB in AMBER. Note that in NAMD, 1-4 vdw
+interactions are DIVIDED by {\tt scnb}, whereas 1-4 electrostatic
+interactions are MULTIPLIED by {\tt 1-4scaling}. So
+{\tt 1-4scaling} should be set to the inverse of SCEE value used
+in AMBER.
+}
+
+\end{itemize}
+
+\noindent Caveat:
+
+\noindent 1. Polarizable parameters in AMBER are not supported.
+
+\noindent 2. NAMD does not support the 10-12 potential terms in
+some old AMBER versions. When non-zero 10-12 parameter is
+encountered in PARM file, NAMD will terminate.
+
+\noindent 3. NAMD has several exclusion policy options, defined
+by {\tt exclude}. The way AMBER dealing with exclusions
+corresponds to the "scaled1-4" in NAMD. So for simulations using
+AMBER force field, one would specify "exclude scaled1-4" in the
+configuration file, and set {\tt 1-4scaling} to the inverse value
+of SCEE as would be used in AMBER.
+
+\noindent 4. NAMD does not read periodic box lengths in PARM or
+coordinate file. They must be explicitly specified in NAMD
+configuration file.
+
+\noindent 5. By default, NAMD applies switching functions to
+the non-bond interactions within the cutoff distance,
+which helps to improve energy conservation, while AMBER does not
+use switching functions so it simply
+truncates the interactions at cutoff. However, if "authentic"
+AMBER cutoff simulations are desired, the switching functions
+could be turned off by specifying "switching off" in NAMD
+configuration file.
+
+\noindent 6. When SHAKE is applied to water molecules, NAMD
+constrains the two O-H bonds and the H-O-H angle, which produces
+the same result as constraining the additional H-H bond. But in
+some AMBER models, water is defined by three real bonds and no
+angle. In this case NAMD will apply SHAKE only to the two O-H
+bonds and not to the angle or the H-H bond (because the angle is
+not defined). Thus, when
+SHAKE is used along with this kind of water model, difference
+would be expected between NAMD and AMBER.
+
+\noindent 7. NAMD and AMBER may have different default values for
+some parameters (e.g., the tolerance of SHAKE). One should check
+other sections of this manual for accurate descriptions
+of the NAMD options.
+\newline
+
+Following are two examples of the NAMD configuration file to read
+AMBER force field and carry out simulation. They may help users
+to select proper NAMD options for AMBER force field. For the
+convenience of AMBER users, the AMBER~6 sander input files are
+given in the left for comparison, which would accomplish similar
+tasks in AMBER.
+\newline
+
+\noindent Example~1: Non-periodic boundary system, cutoff simulation
+
+\begin{verbatim}
+---AMBER----      ---NAMD---
+
+ TITLE
+ &cntrl
+  ntb=0, igb=2,   # non-periodic, use cutoff for non-bond
+  nstlim=1000,    numsteps       1000  # Num of total steps
+  ntpr=50,        outputEnergies 50  # Energy output frequency
+  ntwr=50,        restartfreq    50  # Restart file frequency
+  ntwx=100,       DCDfreq        100  # Trajectory file frequency
+  dt=0.001,       timestep       1  # in unit of fs (This is default)
+  tempi=0.,       temperature    0  # Initial temp for velocity assignment
+  cut=10.,        cutoff         10
+                  switching      off  # Turn off the switching functions
+  scee=1.2,       exclude        scaled1-4
+                  1-4scaling     0.833333  # =1/1.2, default is 1.0
+  scnb=2.0        scnb           2  # This is default
+ &end
+                  amber          on  # Specify this is AMBER force field
+                  parmfile       prmtop  # Input PARM file
+                  ambercoor      inpcrd  # Input coordinate file
+                  outputname     md  # Prefix of output files
+\end{verbatim}
+
+\noindent Example~2: Periodic boundary system, PME, NVE ensemble,
+using SHAKE algorithm
+
+\begin{verbatim}
+---AMBER----      ---NAMD---
+
+ TITLE
+ &cntrl
+  ntc=2, ntf=2,   # SHAKE to the bond between each hydrogen and it mother atom
+                  rigidBonds     all
+  tol=0.0005,     rigidTolerance 0.0005  # Default is  0.00001
+  nstlim=500,     numsteps       500  # Num of total steps
+  ntpr=50,        outputEnergies 50  # Energy output frequency
+  ntwr=100,       restartfreq    100  # Restart file frequency
+  ntwx=100,       DCDfreq        100  # Trajectory file frequency
+  dt=0.001,       timestep       1  # in unit of fs (This is default)
+  tempi=300.,     temperature    300  # Initial temp for velocity assignment
+  cut=9.,         cutoff         9
+                  switching      off  # Turn off the switching functions
+ &end
+ &ewald           PME            on  # Use PME for electrostatic calculation
+                  # Orthogonal periodic box size
+  a=62.23,        cellBasisVector1   62.23  0  0
+  b=62.23,        cellBasisVector2   0  62.23  0
+  c=62.23,        cellBasisVector3   0  0  62.23
+  nfft1=64,       PMEGridSizeX   64
+  nfft2=64,       PMEGridSizeY   64
+  nfft3=64,       PMEGridSizeZ   64
+  ischrgd=1,      # NAMD doesn't force neutralization of charge
+ &end
+                  amber          on  # Specify this is AMBER force field
+                  parmfile       FILENAME  # Input PARM file
+                  ambercoor      FILENAME  # Input coordinate file
+                  outputname     PREFIX  # Prefix of output files
+                  exclude        scaled1-4
+                  1-4scaling     0.833333  # =1/1.2, default is 1.0
+\end{verbatim}
