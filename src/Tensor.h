@@ -174,12 +174,18 @@ class Tensor {
      }
 
      inline friend Tensor symmetric(const Tensor &t1) {
-       return (0.5 * (t1 + transpose(t1)));
+       Tensor tmp;
+       tmp.xx = t1.xx; tmp.xy = 0.5*(t1.xy+t1.yx); tmp.xz = 0.5*(t1.xz+t1.zx);
+       tmp.yx = tmp.xy; tmp.yy = t1.yy; tmp.yz = 0.5*(t1.yz+t1.zy);
+       tmp.zx = tmp.xz; tmp.zy = tmp.yz; tmp.zz = t1.zz;
+       return tmp;
      }
 
      inline friend Tensor triangular(const Tensor &t1) {
-       Tensor tmp = (0.5 * (t1 + transpose(t1)));
-       tmp.yx = tmp.zx = tmp.zy = 0;
+       Tensor tmp;
+       tmp.xx = t1.xx; tmp.xy = 0.5*(t1.xy+t1.yx); tmp.xz = 0.5*(t1.xz+t1.zx);
+       tmp.yx = 0; tmp.yy = t1.yy; tmp.yz = 0.5*(t1.yz+t1.zy);
+       tmp.zx = 0; tmp.zy = 0; tmp.zz = t1.zz;
        return tmp;
      }
 

@@ -60,7 +60,9 @@ Controller::Controller(NamdState *s) :
     random->split(0,PatchMap::Object()->numPatches()+1);
 
     rescaleVelocities_sumTemps = 0;  rescaleVelocities_numTemps = 0;
-    langevinPiston_strainRate = Tensor::diagonal(simParams->strainRate);
+    // strainRate tensor is symmetric to avoid rotation
+    langevinPiston_strainRate =
+	Tensor::symmetric(simParams->strainRate,simParams->strainRate2);
     if ( ! simParams->useFlexibleCell ) {
       BigReal avg = trace(langevinPiston_strainRate) / 3.;
       langevinPiston_strainRate = Tensor::identity(avg);
@@ -388,6 +390,7 @@ void Controller::langevinPiston1(int step)
       BigReal f2 = sqrt( ( 1. - f1*f1 ) * kT / mass );
       strainRate *= f1;
       if ( simParams->useFlexibleCell )
+        // We only use on-diagonal terms (for now)
 	strainRate += f2 * Tensor::diagonal(random->gaussian_vector());
       else
 	strainRate += f2 * Tensor::identity(random->gaussian());
@@ -413,7 +416,7 @@ void Controller::langevinPiston1(int step)
 
     if ( ! ( (step-1-slowFreq/2) % slowFreq ) )
     {
-      // JCP FIX THIS:  NOT JUST ELEMENT-WISE EXP.  WHY NOT LINEAR?
+      // We only use on-diagonal terms (for now)
       Tensor factor;
       factor.xx = exp( dt_long * strainRate.xx );
       factor.yy = exp( dt_long * strainRate.yy );
@@ -510,6 +513,7 @@ void Controller::langevinPiston2(int step)
       BigReal f2 = sqrt( ( 1. - f1*f1 ) * kT / mass );
       strainRate *= f1;
       if ( simParams->useFlexibleCell )
+        // We only use on-diagonal terms (for now)
 	strainRate += f2 * Tensor::diagonal(random->gaussian_vector());
       else
 	strainRate += f2 * Tensor::identity(random->gaussian());
@@ -701,7 +705,13 @@ void Controller::receivePressure(int step)
       controlNumDegFreedom = numDegFreedom / 3;
     }
 
-    if ( ! simParameters->useFlexibleCell ) {
+    if ( simParameters->useFlexibleCell ) {
+      // use symmetric pressure to control rotation
+      controlPressure_normal = symmetric(controlPressure_normal);
+      controlPressure_nbond = symmetric(controlPressure_nbond);
+      controlPressure_slow = symmetric(controlPressure_slow);
+      controlPressure = symmetric(controlPressure);
+    } else {
       controlPressure_normal =
 		Tensor::identity(trace(controlPressure_normal)/3.);
       controlPressure_nbond =
