@@ -4,7 +4,7 @@
 /*                           All Rights Reserved                           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.1009 1998/09/13 21:06:17 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.1010 1998/09/15 05:18:13 jim Exp $";
 
 #include "charm++.h"
 
@@ -33,7 +33,7 @@ public:
     // print banner
     iout << iINFO << "NAMD 2.0b2\n"
          << iINFO << "Please complete the registration form at\n"
-         << iINFO << "http://www.ks.uiuc.edu/Research/namd/namd_register.html\n"
+         << iINFO << "http://www.ks.uiuc.edu/Research/namd/namd2feedback.html\n"
          << iINFO << "and send feedback or bug reports to namd@ks.uiuc.edu\n"
          << endi;
 
@@ -56,7 +56,7 @@ public:
  *
  *	$RCSfile: main.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1998/09/13 21:06:17 $
+ *	$Revision: 1.1010 $	$Date: 1998/09/15 05:18:13 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -65,6 +65,9 @@ public:
  * REVISION HISTORY:
  *
  * $Log: main.C,v $
+ * Revision 1.1010  1998/09/15 05:18:13  jim
+ * Changed web feedback address.
+ *
  * Revision 1.1009  1998/09/13 21:06:17  jim
  * Cleaned up output, defaults, etc.
  *
