@@ -432,6 +432,25 @@ int NamdCentLB::requiredProxies(PatchID id, int neighborNodes[])
       }
   }
 
+  // Distribute initial default proxies across empty processors.
+  // This shouldn't be necessary, but may constrain the load balancer
+  // and avoid placing too many proxies on a single processor.  -JCP
+
+  int numPatches = patchMap->numPatches();
+  if ( numNodes > 1.25 * numPatches ) {  // avoid marginal cases
+    int emptyNodes = numNodes - numPatches;
+    int nodesPerPatch = 3 + (emptyNodes-1) / numPatches;
+    int baseNode = (emptyNodes * id) / numPatches;
+    for ( i = 0; i < nodesPerPatch; ++i ) {
+      int proxyNode = numPatches + ((baseNode+i) % emptyNodes);
+      if (proxyNode != myNode && proxyNodes[proxyNode] == No) {
+	proxyNodes[proxyNode] = Yes;
+	neighborNodes[nProxyNodes] = proxyNode;
+	nProxyNodes++;
+      }
+    }
+  }
+
   delete [] proxyNodes;
   return nProxyNodes;
 }
