@@ -39,8 +39,8 @@ if ( argc != 2 ) {
   exit(-1);
 }
 
-if ( ( fd = open(argv[1], O_RDWR) ) < 0 ) {
-  fprintf(stderr,"Can't open %s for updating.\n",argv[1]);
+if ( ( fd = open(argv[1], O_RDONLY) ) < 0 ) {
+  fprintf(stderr,"Can't open %s for reading.\n",argv[1]);
   exit(-1);
 }
 
@@ -61,7 +61,7 @@ if ( n % 4 ) {
   exit(-1);
 }
 
-if ( ( d = mmap(0,n,PROT_READ|PROT_WRITE,MAP_FILE|MAP_SHARED,fd,0) )
+if ( ( d = mmap(0,n,PROT_READ,MAP_FILE|MAP_SHARED,fd,0) )
 							== (caddr_t) -1 ) {
   fprintf(stderr,"Can't mmap %s.\n",argv[1]);
   exit(-1);
