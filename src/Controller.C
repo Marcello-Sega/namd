@@ -44,7 +44,7 @@ extern "C" void CApplicationDepositNode0Data(char *);
 #include "Debug.h"
 
 Controller::Controller(NamdState *s) :
-	computeChecksum(0),
+	computeChecksum(0), marginViolations(0),
 	simParams(Node::Object()->simParameters),
 	state(s),
 	collection(CollectionMaster::Object()),
@@ -881,8 +881,11 @@ void Controller::compareChecksums(int step) {
       iout << iWARN << "Not all atoms have unique coordinates.\n" << endi;
 
     checksum = reduction->item(REDUCTION_MARGIN_VIOLATIONS);
-    if ( ((int)checksum) ) iout << iWARN << ((int)checksum) <<
+    if ( ((int)checksum) && ! marginViolations ) {
+      iout << iWARN << ((int)checksum) <<
         " margin violations detected during timestep " << step << ".\n" << endi;
+    }
+    marginViolations += (int)checksum;
 }
 
 void Controller::printTiming(int step) {
@@ -1162,6 +1165,12 @@ void Controller::printEnergies(int step, int minimize)
     // NO CALCULATIONS OR REDUCTIONS BEYOND THIS POINT!!!
     if ( ! minimize &&  step % simParameters->outputEnergies ) return;
     // ONLY OUTPUT SHOULD OCCUR BELOW THIS LINE!!!
+
+    if ( marginViolations ) {
+      iout << iWARN << marginViolations <<
+        " margin violations detected since previous energy output.\n" << endi;
+    }
+    marginViolations = 0;
 
     int printAtomicPressure = 1;
 #ifndef DEBUG_PRESSURE

@@ -65,6 +65,7 @@ public:
 
   // Signal HomePatch that positions stored are to be now to be used
   void positionsReady(int doMigration=0);
+  int marginViolations;
 
   // methods to implement integration
   void saveForce(const int ftag = Results::normal);

@@ -751,6 +751,7 @@ void Sequencer::submitReductions(int step)
   int numAtoms = patch->numAtoms;
 
   reduction->item(REDUCTION_ATOM_CHECKSUM) += numAtoms;
+  reduction->item(REDUCTION_MARGIN_VIOLATIONS) += patch->marginViolations;
   reduction->item(REDUCTION_KINETIC_ENERGY) += patch->calcKineticEnergy();
 
   {

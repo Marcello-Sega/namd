@@ -61,6 +61,7 @@ HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
 
   migrationSuspended = false;
   allMigrationIn = false;
+  marginViolations = 0;
   patchMapRead = 0; // We delay read of PatchMap data
 		    // to make sure it is really valid
   inMigration = false;
@@ -862,10 +863,11 @@ void HomePatch::doMarginCheck()
 
   }
 
-  if ( problemCount ) {
-      iout << iERROR <<
-	"Found " << problemCount << " margin violations!\n" << endi;
-  } 
+  marginViolations = problemCount;
+  // if ( problemCount ) {
+  //     iout << iERROR <<
+  //       "Found " << problemCount << " margin violations!\n" << endi;
+  // } 
 
 }
 
@@ -964,6 +966,7 @@ HomePatch::doAtomMigration()
   allMigrationIn = false;
 
   inMigration = false;
+  marginViolations = 0;
 }
 
 void 

@@ -51,6 +51,7 @@ protected:
       int pressure_avg_count;
     void compareChecksums(int);
       int computeChecksum;
+      int marginViolations;
     void printTiming(int);
     void printMinimizeEnergies(int);
       BigReal min_energy;
