@@ -40,7 +40,7 @@ public:
 class ExtForceMsg : public CMessage_ExtForceMsg {
 public:
   BigReal energy;
-  BigReal virial[6];
+  BigReal virial[3][3];
   Force *force;
 };
 
@@ -57,7 +57,6 @@ public:
 private:
   CProxy_ComputeExtMgr extProxy;
   ComputeExt *extCompute;
-  Lattice lattice;
 
   int numSources;
   int numArrived;
@@ -179,6 +178,7 @@ void ComputeExtMgr::recvCoord(ExtCoordMsg *msg) {
   numArrived = 0;
 
   // ALL DATA ARRIVED --- CALCULATE FORCES
+  Lattice lattice = msg->lattice;
   SimParameters *simParams = Node::Object()->simParameters;
   FILE *file;
   int iret;
@@ -194,6 +194,13 @@ void ComputeExtMgr::recvCoord(ExtCoordMsg *msg) {
     iret = fprintf(file,"%f %f %f\n",x,y,z);
     if ( iret < 0 ) { NAMD_die(strerror(errno)); }
   }
+  // write periodic cell lattice (0 0 0 if non-periodic)
+  Vector a = lattice.a();  if ( ! lattice.a_p() ) a = Vector(0,0,0);
+  Vector b = lattice.b();  if ( ! lattice.b_p() ) b = Vector(0,0,0);
+  Vector c = lattice.c();  if ( ! lattice.c_p() ) c = Vector(0,0,0);
+  iret = fprintf(file,"%f %f %f\n%f %f %f\n%f %f %f\n",
+                 a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z);
+  if ( iret < 0 ) { NAMD_die(strerror(errno)); }
   fclose(file);
 
   // run user-specified command
@@ -216,10 +223,27 @@ void ComputeExtMgr::recvCoord(ExtCoordMsg *msg) {
     if ( iret != 3 ) { NAMD_die("Error reading external forces file."); }
     coord[i].position.x = x; coord[i].position.y = y; coord[i].position.z = z;
   }
-  BigReal energy = 0;
-  BigReal virial[6];
-  virial[0] = 0; virial[1] = 0; virial[2] = 0;
-  virial[3] = 0; virial[4] = 0; virial[5] = 0;
+  // read energy and virial if they are present
+  // virial used by NAMD is -'ve of normal convention, so reverse it!
+  // virial[i][j] in file should be sum of -1 * f_i * r_j
+  double energy;
+  double virial[3][3];
+  iret = fscanf(file,"%lf\n", &energy);
+  if ( iret != 1 ) {
+    energy = 0;
+    for ( int k=0; k<3; ++k ) for ( int l=0; l<3; ++l ) virial[k][l] = 0;
+  } else {
+    iret = fscanf(file,"%lf %lf %lf\n%lf %lf %lf\n%lf %lf %lf\n",
+      &virial[0][0], &virial[0][1], &virial[0][2],
+      &virial[1][0], &virial[1][1], &virial[1][2],
+      &virial[2][0], &virial[2][1], &virial[2][2]);
+    if ( iret != 9 ) {
+      for ( int k=0; k<3; ++k ) for ( int l=0; l<3; ++l ) virial[k][l] = 0;
+    } else {
+      // virial used by NAMD is -'ve of normal convention, so reverse it!
+      for ( int k=0; k<3; ++k ) for ( int l=0; l<3; ++l ) virial[k][l] *= -1.0;
+    }
+  }
   fclose(file);
 
   // remove force file
@@ -236,13 +260,12 @@ void ComputeExtMgr::recvCoord(ExtCoordMsg *msg) {
     }
     if ( ! j ) {
       fmsg->energy = energy;
-      fmsg->virial[0] = virial[0]; fmsg->virial[1] = virial[1];
-      fmsg->virial[2] = virial[2]; fmsg->virial[3] = virial[3];
-      fmsg->virial[4] = virial[4]; fmsg->virial[5] = virial[5];
+      for ( int k=0; k<3; ++k ) for ( int l=0; l<3; ++l )
+        fmsg->virial[k][l] = virial[k][l];
     } else {
       fmsg->energy = 0;
-      fmsg->virial[0] = 0; fmsg->virial[1] = 0; fmsg->virial[2] = 0;
-      fmsg->virial[3] = 0; fmsg->virial[4] = 0; fmsg->virial[5] = 0;
+      for ( int k=0; k<3; ++k ) for ( int l=0; l<3; ++l )
+        fmsg->virial[k][l] = 0;
     }
 #if CHARM_VERSION > 050402
     extProxy[cmsg->sourceNode].recvForce(fmsg);
@@ -279,15 +302,15 @@ void ComputeExt::saveResults(ExtForceMsg *msg)
     }
 
     reduction->item(REDUCTION_MISC_ENERGY) += msg->energy;
-    reduction->item(REDUCTION_VIRIAL_NORMAL_XX) += msg->virial[0];
-    reduction->item(REDUCTION_VIRIAL_NORMAL_XY) += msg->virial[1];
-    reduction->item(REDUCTION_VIRIAL_NORMAL_XZ) += msg->virial[2];
-    reduction->item(REDUCTION_VIRIAL_NORMAL_YX) += msg->virial[1];
-    reduction->item(REDUCTION_VIRIAL_NORMAL_YY) += msg->virial[3];
-    reduction->item(REDUCTION_VIRIAL_NORMAL_YZ) += msg->virial[4];
-    reduction->item(REDUCTION_VIRIAL_NORMAL_ZX) += msg->virial[2];
-    reduction->item(REDUCTION_VIRIAL_NORMAL_ZY) += msg->virial[4];
-    reduction->item(REDUCTION_VIRIAL_NORMAL_ZZ) += msg->virial[5];
+    reduction->item(REDUCTION_VIRIAL_NORMAL_XX) += msg->virial[0][0];
+    reduction->item(REDUCTION_VIRIAL_NORMAL_XY) += msg->virial[0][1];
+    reduction->item(REDUCTION_VIRIAL_NORMAL_XZ) += msg->virial[0][2];
+    reduction->item(REDUCTION_VIRIAL_NORMAL_YX) += msg->virial[1][0];
+    reduction->item(REDUCTION_VIRIAL_NORMAL_YY) += msg->virial[1][1];
+    reduction->item(REDUCTION_VIRIAL_NORMAL_YZ) += msg->virial[1][2];
+    reduction->item(REDUCTION_VIRIAL_NORMAL_ZX) += msg->virial[2][0];
+    reduction->item(REDUCTION_VIRIAL_NORMAL_ZY) += msg->virial[2][1];
+    reduction->item(REDUCTION_VIRIAL_NORMAL_ZZ) += msg->virial[2][2];
     reduction->submit();
 }
 
