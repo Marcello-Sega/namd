@@ -21,6 +21,7 @@
 #include "main.h"
 #include "PatchMap.h"
 #include "ComputeMap.h"
+#include "PatchMgr.h"
 
 class Molecule;
 class Parameters;
@@ -69,12 +70,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/08/23 22:03:52 $
+ *	$Revision: 1.8 $	$Date: 1996/09/03 22:54:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.8  1996/09/03 22:54:25  ari
+ * *** empty log message ***
+ *
  * Revision 1.7  1996/08/23 22:03:52  brunner
  * Made WorkdDistrib, PatchMgr public members
  *

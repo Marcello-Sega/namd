@@ -39,7 +39,7 @@ public:
 };
 
 
-class LocalIndex : public UniqueSortedArray<LocalAtomID> { };
+typedef UniqueSortedArray<LocalAtomID> LocalIndex ;
 
 class HomePatch : public Patch {
    friend PatchMgr;
@@ -70,28 +70,10 @@ class HomePatch : public Patch {
    public:
 
       HomePatch();
-      HomePatch(PatchID pd, AtomIDList al, 
-	PositionList pl, VelocityList vl) : 
-	  patchID(pd), atomIDList(al), p(pl), pBegin(pl), v(vl) {
-	if (atomIDList.size() != p.size() || atomIDList.size() != v.size()) {
-	  CPrintf("HomePatch::HomePatch(...) : Whoa - got different # of\
-	  atom coordinates, id's or velocities!\n");
-	}
-	AtomIDListIter a(atomIDList);
-	int i = 0;
-	for ( a = a.begin(); a != a.end(); a++ ) {
-	  LocalAtomID la(*a, i++);
-	  localIndex.load(la);
-	}
-	localIndex.sort();
-	localIndex.uniq();
-      }
-	
+      HomePatch(PatchID, AtomIDList, PositionList, VelocityList);
       ~HomePatch();
 
-
       // void use_sequencer(Sequencer *sequencerPtr) {sequencer=sequencerPtr;}
-
       // 
       /*
       void prepare_for_next_cycle();
@@ -134,12 +116,15 @@ class HomePatch : public Patch {
  *
  *	$RCSfile: HomePatch.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/08/29 00:50:42 $
+ *	$Revision: 1.3 $	$Date: 1996/09/03 22:54:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.3  1996/09/03 22:54:25  ari
+ * *** empty log message ***
+ *
  * Revision 1.2  1996/08/29 00:50:42  ari
  * *** empty log message ***
  *

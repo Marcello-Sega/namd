@@ -11,7 +11,7 @@
 /*								           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.2 1996/08/29 00:50:42 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.3 1996/09/03 22:51:14 ari Exp $";
 
 
 #include "ckdefs.h"
@@ -33,7 +33,6 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,
 
 
 
-
 PatchMgr::PatchMgr(PatchMgrInitMsg *msg)
 {
     workDistribGroup = msg->workDistribGroup;
@@ -42,12 +41,21 @@ PatchMgr::PatchMgr(PatchMgrInitMsg *msg)
 
 PatchMgr::~PatchMgr()
 {
+    // This is should clean up and delete the only thing that dangles,
+    // the home patch pointers.  Of course, we expect PatchMgr to dissappear!
+    // This is a kludge - the lists should have better semantics.
+
+    MovePatchListIter m(move);
+    for ( m = m.begin(); m != m.end(); m++) {
+      HomePatchElem* hp = homePatches.find(HomePatchElem((*m).pid));
+      delete hp->p;
+    }
 }
 
 void PatchMgr::createHomePatch(PatchID pid, AtomIDList aid, 
 	PositionList p, VelocityList v) 
 {
-    homePatches.load(HomePatchElem(pid,new HomePatch(pid, aid, p, v)));
+    homePatches.load( HomePatchElem(pid, new HomePatch(pid, aid, p, v)) );
 }
 
 void PatchMgr::movePatch(PatchID pid, NodeID nodeID) 
@@ -74,6 +82,7 @@ void PatchMgr::sendMovePatches()
       // Deleting the HomePatchElem will call a destructor for clean up
       // but the msg elements are safe since they use a container template
       // that uses ref counting.
+      delete p;
       homePatches.del(HomePatchElem((*m).pid)); 
     }
     move.resize(0);
@@ -113,11 +122,14 @@ void PatchMgr::sigWorkDistrib()
  *
  *	$RCSfile: PatchMgr.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/08/29 00:50:42 $
+ *	$Revision: 1.3 $	$Date: 1996/09/03 22:51:14 $
  *
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.C,v $
+ * Revision 1.3  1996/09/03 22:51:14  ari
+ * *** empty log message ***
+ *
  * Revision 1.2  1996/08/29 00:50:42  ari
  * *** empty log message ***
  *

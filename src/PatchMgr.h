@@ -70,7 +70,13 @@ public:
   operator==(HomePatchElem e) { return (pid == e.pid); }
 
   HomePatchElem(PatchID id=-1, HomePatch *patch=NULL) : pid(id), p(patch) {};
-  ~HomePatchElem() { delete p; p = NULL; };
+  ~HomePatchElem() { };
+  HomePatchElem& operator=(const HomePatchElem &e) { 
+    pid = e.pid; p = e.p;  // Do not delete p!  This op only used to shuffle
+			   // we delete the p here only when the HomePatch is 
+			   // moved off!
+    return(*this);
+  };
 };
 
 typedef SortedArray<HomePatchElem> HomePatchList;
@@ -159,12 +165,15 @@ public:
  *
  *	$RCSfile: PatchMgr.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/08/29 00:50:42 $
+ *	$Revision: 1.3 $	$Date: 1996/09/03 22:54:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.h,v $
+ * Revision 1.3  1996/09/03 22:54:25  ari
+ * *** empty log message ***
+ *
  * Revision 1.2  1996/08/29 00:50:42  ari
  * *** empty log message ***
  *

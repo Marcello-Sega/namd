@@ -6,7 +6,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.7 1996/08/29 00:50:42 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.8 1996/09/03 22:54:09 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -36,14 +36,13 @@ Namd::Namd(void)
   NodeInitMsg *node_msg = new (MsgIndex(NodeInitMsg)) NodeInitMsg;
   
   // Create WorkDistrib and send it an empty message
+  pminitmsg = new (MsgIndex(PatchMgrInitMsg)) PatchMgrInitMsg;
   initmsg = new (MsgIndex(InitMsg)) InitMsg;
-  node_msg->workDistribGroup
+  pminitmsg->workDistribGroup = node_msg->workDistribGroup
     = new_group(WorkDistrib, initmsg);
 
   // Create PatchMgr and send it an empty message
-  pminitmsg = new (MsgIndex(PatchMgrInitMsg)) PatchMgrInitMsg;
-  pminitmsg->workDistribGroup = node_msg->workDistribGroup
-    = new_group(PatchMgr, pminitmsg);
+  node_msg->patchMgrGroup = new_group(PatchMgr, pminitmsg);
 
   // Create the Node object and send it the IDs of all the other
   // parallel objects.
@@ -96,7 +95,7 @@ void Namd::run(void)
  *
  *	$RCSfile: Namd.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/08/29 00:50:42 $
+ *	$Revision: 1.8 $	$Date: 1996/09/03 22:54:09 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -105,6 +104,9 @@ void Namd::run(void)
  * REVISION HISTORY:
  *
  * $Log: Namd.C,v $
+ * Revision 1.8  1996/09/03 22:54:09  ari
+ * *** empty log message ***
+ *
  * Revision 1.7  1996/08/29 00:50:42  ari
  * *** empty log message ***
  *

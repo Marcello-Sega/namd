@@ -3,7 +3,7 @@ CHARMXI = /Projects/l1/namd.2.0/charm/bin/charmc
 
 CXX = CC -Aa -D_HPUX_SOURCE
 INCLUDE = /Projects/l1/namd.2.0/charm/include
-CXXFLAGS = -I$(INCLUDE) $(CXXOPTS)
+CXXFLAGS = -I$(INCLUDE) $(CXXOPTS) -w
 
 .SUFFIXES: 	.ci
 
@@ -56,8 +56,10 @@ $(INTERFACES:.ci=.bot.h):	$$(@:.bot.h=.ci)
 
 
 clean:
-	rm -rf *.o
+	rm -f *.o
+	rm -rf ptrepository
 
 veryclean:
-	rm -rf *.o
+	rm -f *.o
+	rm -rf ptrepository
 	rm -f *.top.h *.bot.h *.depends
