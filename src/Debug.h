@@ -51,12 +51,12 @@
   #define Debug(x) (x)
   #define DebugM(level,format) \
 	{ \
-	  infostream Dout; \
-	  Dout << iFILE << iPE << ' '; \
 	  if ((level >= MIN_DEBUG_LEVEL) && (level <= MAX_DEBUG_LEVEL)) \
 	  { \
-	    if (level >= STDERR_LEVEL)	Dout << "ERROR (" << level << "): "; \
-	    else if (level > 0) Dout << "Debug (" << level << "): "; \
+	    infostream Dout; \
+	    if (level >= STDERR_LEVEL)	Dout << "[ERROR " << level << "] "; \
+	    else if (level > 0) Dout << "[Debug " << level << "] "; \
+	    Dout << iPE << ' ' << iFILE; \
 	    Dout << format << endi; \
 	  } \
 	}
