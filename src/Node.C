@@ -9,7 +9,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1019 1997/11/10 16:45:55 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1020 1998/01/05 20:33:01 sergei Exp $";
 
 #include <unistd.h>
 #include "ckdefs.h"
@@ -53,6 +53,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "Communicate.h"
 #include "Inform.h"
 #include "LdbCoordinator.h"
+#include "SMD.h"
+#include "SMDMsgs.h"
 
 //======================================================================
 // Public Functions
@@ -91,6 +93,7 @@ Node::Node(GroupInitMsg *msg)
   pdb = NULL;
   state = NULL;
   output = NULL;
+  smdData = NULL;
 
   Compute::setNode(this);
 
@@ -168,6 +171,9 @@ void Node::startup(InitMsg *msg) {
     if (!CMyPe()) {
        iout << iINFO << " Starting Phase " << startupPhase << "\n" << endi;
     }
+
+    // now that we have SimParameters, we can call this
+    smdData = new SMDData();
 
     // take care of inital thread setting
     threadInit();
@@ -427,6 +433,25 @@ void Node::saveMolDataPointers(NamdState *state)
   this->state = state;
 }
 
+//------------------------------------------------------------------------
+// send the SMD data
+//------------------------------------------------------------------------
+void Node::sendSMDData(SMDDataMsg *msg) {
+  CBroadcastMsgBranch(Node, recvSMDData, msg, CpvAccess(BOCclass_group).node);
+}
+
+//------------------------------------------------------------------------
+// receive the SMD data
+//------------------------------------------------------------------------
+void Node::recvSMDData(SMDDataMsg *msg) {
+  if ( smdData ) {
+    smdData->recvData(msg);
+  }
+  else NAMD_die("Node::smdData is NULL!");
+}
+
+
+
 //======================================================================
 // Private functions
 
@@ -437,13 +462,17 @@ void Node::saveMolDataPointers(NamdState *state)
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1019 $	$Date: 1997/11/10 16:45:55 $
+ *	$Author: sergei $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1020 $	$Date: 1998/01/05 20:33:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1020  1998/01/05 20:33:01  sergei
+ * added new SMDData() in phase 2 of startup;
+ * added functions recvSMDData() and sendSMDData()
+ *
  * Revision 1.1019  1997/11/10 16:45:55  milind
  * Made comm a Cpv Variable.
  *
