@@ -121,7 +121,7 @@ public:
  
 private:
 
-  friend PatchMap;
+  friend class PatchMap;
   PatchMap *patchMap;
 
   int numAllPatches;
@@ -146,13 +146,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMgr.h,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/12/26 23:10:56 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1009 $	$Date: 1998/01/15 04:58:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.h,v $
+ * Revision 1.1009  1998/01/15 04:58:49  jim
+ * Corrected "friend foo" to "friend class foo".
+ *
  * Revision 1.1008  1997/12/26 23:10:56  milind
  * Made namd2 to compile, link and run under linux. Merged Templates and src
  * directoriies, and removed separate definition and declaration files for

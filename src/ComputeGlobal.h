@@ -30,7 +30,7 @@ public:
   void recvResults(ComputeGlobalResultsMsg *);
 
 private:
-  friend ComputeGlobalMaster;
+  friend class ComputeGlobalMaster;
   ComputeGlobalMaster *master;
   ComputeMgr *comm;
 
@@ -45,12 +45,15 @@ private:
  *
  *	$RCSfile: ComputeGlobal.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1997/12/19 23:48:46 $
+ *	$Revision: 1.2 $	$Date: 1998/01/15 04:58:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGlobal.h,v $
+ * Revision 1.2  1998/01/15 04:58:46  jim
+ * Corrected "friend foo" to "friend class foo".
+ *
  * Revision 1.1  1997/12/19 23:48:46  jim
  * Added Tcl interface for calculating forces.
  *

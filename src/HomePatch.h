@@ -31,8 +31,8 @@ class ProxyResultMsg;
 class Sequencer;
 
 class HomePatch : public Patch {
-  friend PatchMgr;
-  friend Sequencer;
+  friend class PatchMgr;
+  friend class Sequencer;
 
 private: 
   static char ident[];
@@ -118,12 +118,15 @@ private:
  *
  *	$RCSfile: HomePatch.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1998/01/14 00:40:57 $
+ *	$Revision: 1.1013 $	$Date: 1998/01/15 04:58:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.1013  1998/01/15 04:58:48  jim
+ * Corrected "friend foo" to "friend class foo".
+ *
  * Revision 1.1012  1998/01/14 00:40:57  jim
  * Added hydrogen group size checking (vs. hgroupcutoff parameter).
  *

@@ -27,7 +27,7 @@ class LdbCoordinator;
 
 class Sequencer
 {
-    friend HomePatch;
+    friend class HomePatch;
 public:
     Sequencer(HomePatch *p);
     ~Sequencer(void);
@@ -74,12 +74,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/03/27 20:25:52 $
+ *	$Revision: 1.1011 $	$Date: 1998/01/15 04:58:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.h,v $
+ * Revision 1.1011  1998/01/15 04:58:50  jim
+ * Corrected "friend foo" to "friend class foo".
+ *
  * Revision 1.1010  1997/03/27 20:25:52  brunner
  * Changes for LdbCoordinator, the load balance control BOC
  *

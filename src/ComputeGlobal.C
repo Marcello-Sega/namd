@@ -36,7 +36,7 @@
 
 class ComputeGlobalMaster {
 private:
-  friend ComputeGlobal;
+  friend class ComputeGlobal;
   ComputeGlobal *host;
   ComputeGlobalMaster(ComputeGlobal *);
   ~ComputeGlobalMaster();
@@ -460,12 +460,15 @@ void ComputeGlobal::sendData()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1998/01/10 23:57:25 $
+ *	$Revision: 1.5 $	$Date: 1998/01/15 04:58:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGlobal.C,v $
+ * Revision 1.5  1998/01/15 04:58:45  jim
+ * Corrected "friend foo" to "friend class foo".
+ *
  * Revision 1.4  1998/01/10 23:57:25  jim
  * Added loadmasses command to TCL.
  *

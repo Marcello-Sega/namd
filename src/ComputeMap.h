@@ -117,7 +117,7 @@ public:
 
   Compute *compute(ComputeID cid) { return (computeData[cid].compute); };
 
-  friend ComputeMgr;
+  friend class ComputeMgr;
 
   struct PatchRec
   {
@@ -166,13 +166,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.h,v $
- *	$Author: sergei $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1998/01/05 20:23:39 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1013 $	$Date: 1998/01/15 04:58:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.h,v $
+ * Revision 1.1013  1998/01/15 04:58:47  jim
+ * Corrected "friend foo" to "friend class foo".
+ *
  * Revision 1.1012  1998/01/05 20:23:39  sergei
  * added  computeSMDType to enum ComputeType for SMD
  *
