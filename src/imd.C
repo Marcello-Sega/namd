@@ -40,15 +40,20 @@ static int32 imd_htonl(int32 h) {
   return n;
 }
 
+typedef struct {
+  unsigned int highest : 8;
+  unsigned int high    : 8;
+  unsigned int low     : 8;
+  unsigned int lowest  : 8;
+} netint;
+
 static int32 imd_ntohl(int32 n) {
   int32 h = 0;
-  h |= (int32)(((char *)&n)[0]) << 24;
-  h |= (int32)(((char *)&n)[1]) << 16;
-  h |= (int32)(((char *)&n)[2]) << 8;
-  h |= (int32)(((char *)&n)[3]);
+  netint net;
+  net = *((netint *)&n);
+  h |= net.highest << 24 | net.high << 16 | net.low << 8 | net.lowest;
   return h;
 }
-
 
 static void fill_header(IMDheader *header, IMDType type, int32 length) {
   header->type = imd_htonl((int32)type);
@@ -171,13 +176,23 @@ int imd_send_fcoords(void *s, int32 n, const float *coords) {
 
 // The IMD receive functions
 
+// The IMD receive functions
+IMDType imd_recv_header_nolengthswap(void *s, int32 *length) {
+  IMDheader header;
+  if (imd_readn(s, (char *)&header, HEADERSIZE) != HEADERSIZE)
+    return IMD_IOERROR;
+  *length = header.length;
+  swap_header(&header);
+  return IMDType(header.type);
+}
+
 int imd_recv_handshake(void *s) {
   // Wait 5 seconds for the handshake to come
   if (vmdsock_selread(s, 5) != 1) return -1;
 
   // Check to see that a valid handshake was received
   int32 buf;
-  IMDType type = imd_recv_header(s, &buf);
+  IMDType type = imd_recv_header_nolengthswap(s, &buf);
   if (type != IMD_HANDSHAKE) return -1;
 
   // Check its endianness, as well as the IMD version.
