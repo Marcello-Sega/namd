@@ -2972,3 +2972,85 @@ obj/imd.o: \
 	src/imd.h \
 	src/vmdsock.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/imd.o $(COPTC) src/imd.C
+obj/build.o: \
+	src/build.c \
+	src/charmm_parse_topo_defs.h \
+	src/topo_defs.h \
+	src/topo_mol.h \
+	src/pdb_file_extract.h \
+	src/stringhash.h
+	$(CC) $(CFLAGS) $(COPTO)obj/build.o $(COPTC) src/build.c
+obj/charmm_file.o: \
+	src/charmm_file.c \
+	src/charmm_file.h
+	$(CC) $(CFLAGS) $(COPTO)obj/charmm_file.o $(COPTC) src/charmm_file.c
+obj/charmm_parse_topo_defs.o: \
+	src/charmm_parse_topo_defs.c \
+	src/charmm_file.h \
+	src/topo_defs.h \
+	src/charmm_parse_topo_defs.h
+	$(CC) $(CFLAGS) $(COPTO)obj/charmm_parse_topo_defs.o $(COPTC) src/charmm_parse_topo_defs.c
+obj/extract_alias.o: \
+	src/extract_alias.c \
+	src/stringhash.h \
+	src/extract_alias.h
+	$(CC) $(CFLAGS) $(COPTO)obj/extract_alias.o $(COPTC) src/extract_alias.c
+obj/hash.o: \
+	src/hash.c \
+	src/hash.h
+	$(CC) $(CFLAGS) $(COPTO)obj/hash.o $(COPTC) src/hash.c
+obj/hasharray.o: \
+	src/hasharray.c \
+	src/hash.h \
+	src/memarena.h \
+	src/hasharray.h
+	$(CC) $(CFLAGS) $(COPTO)obj/hasharray.o $(COPTC) src/hasharray.c
+obj/memarena.o: \
+	src/memarena.c \
+	src/memarena.h
+	$(CC) $(CFLAGS) $(COPTO)obj/memarena.o $(COPTC) src/memarena.c
+obj/pdb_file.o: \
+	src/pdb_file.c \
+	src/pdb_file.h
+	$(CC) $(CFLAGS) $(COPTO)obj/pdb_file.o $(COPTC) src/pdb_file.c
+obj/pdb_file_extract.o: \
+	src/pdb_file_extract.c \
+	src/pdb_file_extract.h \
+	src/stringhash.h \
+	src/topo_mol.h \
+	src/topo_defs.h \
+	src/pdb_file.h \
+	src/extract_alias.h
+	$(CC) $(CFLAGS) $(COPTO)obj/pdb_file_extract.o $(COPTC) src/pdb_file_extract.c
+obj/topo_defs.o: \
+	src/topo_defs.c \
+	src/topo_defs_struct.h \
+	src/hasharray.h \
+	src/topo_defs.h
+	$(CC) $(CFLAGS) $(COPTO)obj/topo_defs.o $(COPTC) src/topo_defs.c
+obj/topo_mol.o: \
+	src/topo_mol.c \
+	src/topo_defs_struct.h \
+	src/hasharray.h \
+	src/topo_defs.h \
+	src/topo_mol_struct.h \
+	src/memarena.h \
+	src/topo_mol.h
+	$(CC) $(CFLAGS) $(COPTO)obj/topo_mol.o $(COPTC) src/topo_mol.c
+obj/topo_mol_output.o: \
+	src/topo_mol_output.c \
+	src/topo_mol_output.h \
+	src/topo_mol.h \
+	src/topo_defs.h \
+	src/topo_mol_struct.h \
+	src/hasharray.h \
+	src/memarena.h \
+	src/topo_defs_struct.h \
+	src/pdb_file.h
+	$(CC) $(CFLAGS) $(COPTO)obj/topo_mol_output.o $(COPTC) src/topo_mol_output.c
+obj/stringhash.o: \
+	src/stringhash.c \
+	src/memarena.h \
+	src/hasharray.h \
+	src/stringhash.h
+	$(CC) $(CFLAGS) $(COPTO)obj/stringhash.o $(COPTC) src/stringhash.c

@@ -168,6 +168,23 @@ CIFILES = 	\
 		$(INCDIR)/main.decl.h \
 		$(INCDIR)/main.def.h
 
+# Add new source files here.
+
+SBOBJS = \
+	$(DSTDIR)/build.o \
+	$(DSTDIR)/charmm_file.o \
+	$(DSTDIR)/charmm_parse_topo_defs.o \
+	$(DSTDIR)/extract_alias.o \
+	$(DSTDIR)/hash.o \
+	$(DSTDIR)/hasharray.o \
+	$(DSTDIR)/memarena.o \
+	$(DSTDIR)/pdb_file.o \
+	$(DSTDIR)/pdb_file_extract.o \
+	$(DSTDIR)/topo_defs.o \
+	$(DSTDIR)/topo_mol.o \
+	$(DSTDIR)/topo_mol_output.o \
+	$(DSTDIR)/stringhash.o
+
 # definitions for Charm routines
 CHARMC = $(CHARM)/bin/charmc
 CHARMXI = $(CHARM)/bin/charmc
@@ -182,10 +199,11 @@ CXXFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DP
 CXXTHREADFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXTHREADOPTS) $(RELEASE)
 CXXSIMPARAMFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXSIMPARAMOPTS) $(RELEASE)
 GXXFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(RELEASE)
+CFLAGS = $(COPTI)$(SRCDIR) $(TCL) $(COPTS) $(RELEASE)
 
 # Add new executables here.
 
-BINARIES = namd2 flipdcd flipbinpdb
+BINARIES = namd2 psfgen flipdcd flipbinpdb
 
 all:	$(BINARIES)
 
@@ -199,7 +217,7 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(TCLLIB) \
 	$(FFTLIB)
 
-win32binaries: namd2.exe daemon.exe daemon_background.exe conv-host.exe
+win32binaries: namd2.exe psfgen.exe daemon.exe daemon_background.exe conv-host.exe
 
 namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(LINK) $(LINKOPTS) /out:namd2.exe \
@@ -223,6 +241,12 @@ daemon_background.exe:
 
 conv-host.exe:
 	$(COPY) $(CHARM)\bin\conv-host.exe conv-host.exe
+
+psfgen:	$(DSTDIR) $(SBOBJS)
+	$(CC) $(CFLAGS) -o psfgen $(SBOBJS) -lm
+
+psfgen.exe:	$(DSTDIR) $(SBOBJS)
+	$(LINK) $(LINKOPTS) /out:psfgen.exe $(SBOBJS)
 
 flipdcd:	$(SRCDIR)/flipdcd.c
 	$(CC) -o $@ $(SRCDIR)/flipdcd.c || \
@@ -392,14 +416,20 @@ depends: $(INCDIR) $(CIFILES) $(DSTDIR) $(DEPENDFILE)
 	fi; \
 	touch $(DEPENDFILE); \
 	for i in $(OBJS) ; do \
-	      $(ECHO) "checking dependencies for" \
-	        `basename $$i | awk -F. '{print $$1".C"}'` ; \
-	      g++ -MM $(GXXFLAGS) \
-	        $(SRCDIR)/`basename $$i | awk -F. '{print $$1".C"}'` | \
+	      SRCFILE=$(SRCDIR)/`basename $$i | awk -F. '{print $$1".C"}'` ; \
+	      $(ECHO) "checking dependencies for $$SRCFILE" ; \
+	      g++ -MM $(GXXFLAGS) $$SRCFILE | \
 	      perl $(SRCDIR)/dc.pl $(CHARMINC) /usr/include /usr/local >> $(DEPENDFILE); \
 	      $(ECHO) '	$$(CXX) $$(CXXFLAGS) $$(COPTO)'$$i '$$(COPTC)' \
-	        $(SRCDIR)/`basename $$i | awk -F. '{print $$1".C"}'` \
-		>> $(DEPENDFILE) ; \
+		$$SRCFILE >> $(DEPENDFILE) ; \
+	done; \
+	for i in $(SBOBJS) ; do \
+	      SRCFILE=$(SRCDIR)/`basename $$i | awk -F. '{print $$1".c"}'` ; \
+	      $(ECHO) "checking dependencies for $$SRCFILE" ; \
+	      gcc -MM $(GCCFLAGS) $$SRCFILE | \
+	      perl $(SRCDIR)/dc.pl $(CHARMINC) /usr/include /usr/local >> $(DEPENDFILE); \
+	      $(ECHO) '	$$(CC) $$(CFLAGS) $$(COPTO)'$$i '$$(COPTC)' \
+		$$SRCFILE >> $(DEPENDFILE) ; \
 	done; \
 	$(RM) $(DEPENDFILE).sed; \
 	sed -e "/obj\/Controller.o/ s/CXXFLAGS/CXXTHREADFLAGS/" \
