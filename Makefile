@@ -142,6 +142,7 @@ OBJS = \
 	$(DSTDIR)/WorkDistrib.o \
 	$(DSTDIR)/pub3dfft.o \
 	$(DSTDIR)/vmdsock.o \
+	$(DSTDIR)/parm.o \
 	$(DSTDIR)/imd.o
 
 # Add new modules here and also define explicit rule below.

@@ -234,6 +234,7 @@ obj/CollectionMgr.o: \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/Molecule.h \
+	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -265,13 +266,6 @@ obj/Compute.o: \
 	src/BOCgroup.h \
 	src/ComputeMap.h \
 	src/ProcessorPrivate.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
-	src/ResizeArrayIter.h \
-	src/Lattice.h \
-	src/Tensor.h \
 	src/Box.h \
 	src/OwnerBox.h \
 	src/Node.h \
@@ -325,6 +319,7 @@ obj/ComputeAngles.o: \
 	src/AtomMap.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
+	src/parm.h \
 	src/Hydrogen.h \
 	src/Parameters.h \
 	src/strlib.h \
@@ -346,6 +341,7 @@ obj/ComputeBonds.o: \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/Molecule.h \
+	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -473,6 +469,7 @@ obj/ComputeDihedrals.o: \
 	src/AtomMap.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
+	src/parm.h \
 	src/Hydrogen.h \
 	src/Parameters.h \
 	src/strlib.h \
@@ -528,6 +525,7 @@ obj/ComputeDPME.o: \
 	src/ReductionMgr.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
+	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -596,6 +594,7 @@ obj/ComputeDPMTA.o: \
 	src/HomePatchTypes.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
+	src/parm.h \
 	src/structures.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
@@ -683,6 +682,7 @@ obj/ComputeFreeEnergy.o: \
 	src/ComputeGlobalMsgs.h \
 	inc/ComputeMgr.decl.h \
 	src/Molecule.h \
+	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -736,6 +736,7 @@ obj/ComputeFullDirect.o: \
 	src/ReductionMgr.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
+	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -821,6 +822,7 @@ obj/ComputeHomePatches.o: \
 	src/HomePatchTypes.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
+	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -875,6 +877,7 @@ obj/ComputeImpropers.o: \
 	src/AtomMap.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
+	src/parm.h \
 	src/Hydrogen.h \
 	src/Parameters.h \
 	src/strlib.h \
@@ -943,6 +946,7 @@ obj/ComputeGlobal.o: \
 	src/ComputeSMD.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
+	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -999,6 +1003,7 @@ obj/ComputeGlobalEasy.o: \
 	inc/ComputeMgr.decl.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
+	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -1053,6 +1058,7 @@ obj/ComputeGlobalMaster.o: \
 	inc/ComputeMgr.decl.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
+	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -1231,6 +1237,7 @@ obj/ComputeMgr.o: \
 	src/MStream.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
+	src/parm.h \
 	src/Hydrogen.h \
 	src/Parameters.h \
 	src/strlib.h \
@@ -1347,12 +1354,14 @@ obj/ComputeNonbondedUtil.o: \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/Molecule.h \
+	src/parm.h \
 	src/structures.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
 	src/LJTable.h \
+	src/InfoStream.h \
 	src/ComputeNonbondedBase.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedUtil.o $(COPTC) src/ComputeNonbondedUtil.C
 obj/ComputePatch.o: \
@@ -1466,6 +1475,7 @@ obj/ComputePme.o: \
 	src/ReductionMgr.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
+	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -1507,6 +1517,7 @@ obj/ComputeRestraints.o: \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/Molecule.h \
+	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -1568,6 +1579,7 @@ obj/ComputeSMD.o: \
 	src/ComputeGlobalMsgs.h \
 	inc/ComputeMgr.decl.h \
 	src/PDB.h \
+	src/parm.h \
 	src/PDBData.h \
 	src/Molecule.h \
 	src/structures.h \
@@ -1647,6 +1659,7 @@ obj/ComputeTcl.o: \
 	src/ComputeGlobalMsgs.h \
 	inc/ComputeMgr.decl.h \
 	src/Molecule.h \
+	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -1679,6 +1692,7 @@ obj/Controller.o: \
 	src/BOCgroup.h \
 	inc/Node.decl.h \
 	src/Molecule.h \
+	src/parm.h \
 	src/common.h \
 	src/NamdTypes.h \
 	src/Vector.h \
@@ -1951,6 +1965,7 @@ obj/HomePatch.o: \
 	src/UniqueSetRaw.h \
 	src/UniqueSetIter.h \
 	src/Molecule.h \
+	src/parm.h \
 	src/structures.h \
 	src/Hydrogen.h \
 	src/PatchMgr.h \
@@ -1970,6 +1985,7 @@ obj/IMDOutput.o: \
 	src/imd.h \
 	src/InfoStream.h \
 	src/Molecule.h \
+	src/parm.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/ResizeArray.h \
@@ -2056,6 +2072,7 @@ obj/LJTable.o: \
 	src/main.h \
 	inc/Node.decl.h \
 	src/Parameters.h \
+	src/parm.h \
 	src/structures.h \
 	src/strlib.h \
 	src/MStream.h \
@@ -2080,6 +2097,7 @@ obj/Measure.o: \
 	src/BOCgroup.h \
 	inc/Node.decl.h \
 	src/Parameters.h \
+	src/parm.h \
 	src/common.h \
 	src/structures.h \
 	src/strlib.h \
@@ -2143,6 +2161,7 @@ obj/MigrateAtomsMsg.o: \
 obj/Molecule.o: \
 	src/Molecule.C \
 	src/Molecule.h \
+	src/parm.h \
 	src/common.h \
 	src/NamdTypes.h \
 	src/Vector.h \
@@ -2211,6 +2230,7 @@ obj/NamdState.o: \
 	src/common.h \
 	src/InfoStream.h \
 	src/Molecule.h \
+	src/parm.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/ResizeArray.h \
@@ -2255,6 +2275,7 @@ obj/NamdOneTools.o: \
 	src/ResizeArrayRaw.h \
 	src/NamdOneTools.h \
 	src/PDB.h \
+	src/parm.h \
 	src/PDBData.h \
 	src/Lattice.h \
 	src/Tensor.h \
@@ -2299,22 +2320,22 @@ obj/Node.o: \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/ComputeMap.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
+	src/PatchMgr.h \
 	src/SortedArray.h \
 	src/SortableResizeArray.h \
-	src/ResizeArrayIter.h \
-	src/Lattice.h \
-	src/Tensor.h \
-	src/PatchMgr.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
+	src/Lattice.h \
+	src/Tensor.h \
 	src/UniqueSortedArray.h \
 	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/InfoStream.h \
@@ -2322,6 +2343,7 @@ obj/Node.o: \
 	src/Compute.h \
 	src/ComputeMgr.h \
 	src/Molecule.h \
+	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -2360,6 +2382,7 @@ obj/Output.o: \
 	src/dcdlib.h \
 	src/strlib.h \
 	src/Molecule.h \
+	src/parm.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/ResizeArray.h \
@@ -2401,6 +2424,7 @@ obj/Output.o: \
 obj/Parameters.o: \
 	src/Parameters.C \
 	src/Parameters.h \
+	src/parm.h \
 	src/common.h \
 	src/structures.h \
 	src/strlib.h \
@@ -2455,6 +2479,7 @@ obj/Patch.o: \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/Molecule.h \
+	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -2559,6 +2584,7 @@ obj/PDB.o: \
 	src/PDB.C \
 	src/common.h \
 	src/PDB.h \
+	src/parm.h \
 	src/PDBData.h \
 	src/Vector.h \
 	src/Lattice.h \
@@ -2865,6 +2891,7 @@ obj/Sequencer.o: \
 	src/Controller.h \
 	src/Broadcasts.h \
 	src/Molecule.h \
+	src/parm.h \
 	src/structures.h \
 	src/Hydrogen.h \
 	src/NamdOneTools.h \
@@ -2962,13 +2989,6 @@ obj/WorkDistrib.o: \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/ComputeMap.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
-	src/ResizeArrayIter.h \
-	src/Lattice.h \
-	src/Tensor.h \
 	inc/main.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
@@ -2984,14 +3004,21 @@ obj/WorkDistrib.o: \
 	inc/Sync.decl.h \
 	src/Node.h \
 	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
+	src/Lattice.h \
+	src/Tensor.h \
 	src/UniqueSortedArray.h \
 	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/InfoStream.h \
@@ -2999,6 +3026,7 @@ obj/WorkDistrib.o: \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/PDB.h \
+	src/parm.h \
 	src/PDBData.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
@@ -3025,6 +3053,10 @@ obj/vmdsock.o: \
 	src/vmdsock.C \
 	src/vmdsock.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/vmdsock.o $(COPTC) src/vmdsock.C
+obj/parm.o: \
+	src/parm.C \
+	src/parm.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/parm.o $(COPTC) src/parm.C
 obj/imd.o: \
 	src/imd.C \
 	src/imd.h \
@@ -3033,12 +3065,13 @@ obj/imd.o: \
 obj/build.o: \
 	src/build.c \
 	src/psfgen.h \
-	src/charmm_parse_topo_defs.h \
 	src/topo_defs.h \
 	src/topo_mol.h \
+	src/stringhash.h \
+	src/charmm_parse_topo_defs.h \
 	src/topo_mol_output.h \
 	src/pdb_file_extract.h \
-	src/stringhash.h
+	src/psf_file_extract.h
 	$(CC) $(CFLAGS) $(COPTO)obj/build.o $(COPTC) src/build.c
 obj/charmm_file.o: \
 	src/charmm_file.c \
@@ -3084,17 +3117,18 @@ obj/pdb_file_extract.o: \
 	$(CC) $(CFLAGS) $(COPTO)obj/pdb_file_extract.o $(COPTC) src/pdb_file_extract.c
 obj/psf_file.o: \
 	src/psf_file.c \
-	src/psf_file.h 
+	src/psf_file.h
 	$(CC) $(CFLAGS) $(COPTO)obj/psf_file.o $(COPTC) src/psf_file.c
 obj/psf_file_extract.o: \
 	src/psf_file_extract.c \
-	src/psf_file_extract.h \
 	src/psf_file.h \
-	src/stringhash.h \
+	src/psf_file_extract.h \
 	src/topo_mol.h \
 	src/topo_defs.h \
-	src/pdb_file.h \
-	src/extract_alias.h
+	src/topo_mol_struct.h \
+	src/hasharray.h \
+	src/memarena.h \
+	src/topo_defs_struct.h
 	$(CC) $(CFLAGS) $(COPTO)obj/psf_file_extract.o $(COPTC) src/psf_file_extract.c
 obj/topo_defs.o: \
 	src/topo_defs.c \
