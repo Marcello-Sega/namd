@@ -1,27 +1,5 @@
 
 #####
-# definitions for Charm routines
-#####
-CHARMC = /Projects/l1/namd.2.0/charm/bin/charmc
-CHARMXI = /Projects/l1/namd.2.0/charm/bin/charmc
-
-#####
-# definitions for PMTA routines
-#####
-#PMTADIR=/Projects/l2/namd/dpmta-2.5/src
-#PMTAINCL=-I$(PMTADIR)
-#PMTALIBDIR=-L$(PMTADIR)
-#PMTALIB=-ldpmta
-#PMTAFLAGS=-DDPMTA
-#DPMTA=$(PMTAINCL) $(PMTAFLAGS)
-#####
-# definitions for PVM routines
-#####
-#PVMDIR=/usr/local/shared/pvm/pvm3/lib/HPPA
-#PVMLIBDIR=-L$(PVMDIR)
-#PVMLIB=-lpvm3
-
-#####
 # Directories
 #####
 # source directory
@@ -30,6 +8,28 @@ SRCDIR = src
 DSTDIR = obj
 # temp include directory for cifiles
 INCDIR = inc
+
+#####
+# definitions for Charm routines
+#####
+CHARMC = /Projects/l1/namd.2.0/charm/bin/charmc
+CHARMXI = /Projects/l1/namd.2.0/charm/bin/charmc
+
+#####
+# definitions for PMTA routines
+#####
+DPMTADIR=dpmta
+PMTAINCL=-I$(DPMTADIR)
+PMTALIBDIR=-L$(DPMTADIR)
+PMTALIB=-ldpmta
+PMTAFLAGS=-DDPMTA
+DPMTA=$(PMTAINCL) $(PMTAFLAGS)
+#####
+# definitions for PVM routines
+#####
+PVMDIR=/usr/local/shared/pvm/pvm3/lib/HPPA
+PVMLIBDIR=-L$(PVMDIR)
+PVMLIB=-lpvm3
 
 # CXXOPTS = -O
 CXXOPTS = -g
@@ -44,6 +44,7 @@ GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) -w
 DEPENDFILE = Make.depends
 ECHO = echo
 MOVE = mv
+COPY = cp
 
 OBJS = \
 	$(DSTDIR)/common.o \
@@ -116,7 +117,7 @@ TEMPLATES = \
 	$(SRCDIR)/Templates/SortedArray.C \
 	$(SRCDIR)/Templates/UniqueSortedArray.C
 
-namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES)
+namd2:	$(DPMTALIB) $(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES)
 	$(CHARMC) -ld++-option \
 	"-I $(INCLUDE) -I $(SRCDIR) $(CXXOPTS) " \
 	-language charm++ \
@@ -156,6 +157,11 @@ Make.depends:
 
 include	$(DEPENDFILE)
 
+
+obj/libdpmta.a:
+	cd $(DPMTADIR) ; $(MAKE) libdpmta.a ; cd ..
+	$(COPY) $(DPMTADIR)/libdpmta.a ../$(DSTDIR)
+
 $(INTERFACES:.ci=.top.h):	$(INCDIR) $$(@:.top.h=.ci)
 	$(CHARMXI) $?
 	$(MOVE) $(SRCDIR)/*.top.h $(INCDIR)
@@ -174,6 +180,7 @@ clean:
 	rm -rf ptrepository
 	rm -rf $(DSTDIR)
 	rm -f namd2
+	cd $(DPMTADIR) ; $(MAKE) clean ; cd ..
 
 veryclean:	clean
 	rm -rf $(INCDIR)
