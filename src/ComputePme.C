@@ -276,11 +276,11 @@ void ComputePmeMgr::initialize() {
   iout << iINFO << "Optimizing 4 FFT steps.  1..." << endi;
   forward_plan_yz = rfftwnd_create_plan_specific(2, n+1, FFTW_REAL_TO_COMPLEX,
 	FFTW_MEASURE | FFTW_IN_PLACE, qgrid, 1, 0, 0);
-  iout << "2..." << endi;
+  iout << " 2..." << endi;
   forward_plan_x = fftw_create_plan_specific(n[0], FFTW_REAL_TO_COMPLEX,
 	FFTW_MEASURE | FFTW_IN_PLACE, (fftw_complex *) qgrid,
 	localInfo[myRecipPe].ny_after_transpose * myGrid.dim3 / 2, work, 1);
-  iout << "3..." << endi;
+  iout << " 3..." << endi;
   backward_plan_x = fftw_create_plan_specific(n[0], FFTW_COMPLEX_TO_REAL,
 	FFTW_MEASURE | FFTW_IN_PLACE, (fftw_complex *) qgrid,
 	localInfo[myRecipPe].ny_after_transpose * myGrid.dim3 / 2, work, 1);
