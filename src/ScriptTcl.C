@@ -329,7 +329,7 @@ int ScriptTcl::Tcl_move(ClientData clientData,
   msg->atomid = atomid - 1;
   msg->moveto = moveto;
   msg->coord = Vector(x,y,z);
-  CProxy_PatchMgr(CpvAccess(BOCclass_group).patchMgr).moveAtom(msg);
+  (CProxy_PatchMgr(CpvAccess(BOCclass_group).patchMgr)).moveAtom(msg);
 
   script->barrier();
 
