@@ -633,7 +633,7 @@ void Controller::printEnergies(int step)
     {
       xstFile.open(simParameters->xstFilename);
       xstFile << "# NAMD extended system trajectory file" << endl;
-      xstFile << "#$LABELS step a_x b_y c_z o_x o_y o_z";
+      xstFile << "#$LABELS step a_x a_y a_z b_x b_y b_z c_x c_y c_z o_x o_y o_z";
       if ( simParameters->langevinPistonOn ) {
         xstFile << " s_x s_y s_z s_u s_v s_w";
       }
@@ -642,8 +642,11 @@ void Controller::printEnergies(int step)
     if ( simParameters->xstFrequency != -1 &&
          ! ( step % simParameters->xstFrequency ) )
     {
-      xstFile << step;
-      xstFile << " " << lattice.a() << " " << lattice.b() << " " << lattice.c() << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
+      xstFile << step
+        << " " << lattice.a().x << " " << lattice.a().y << " " << lattice.a().z
+        << " " << lattice.b().x << " " << lattice.b().y << " " << lattice.b().z
+        << " " << lattice.c().x << " " << lattice.c().y << " " << lattice.c().z
+        << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
       if ( simParameters->langevinPistonOn ) {
 	Vector strainRate = diagonal(langevinPiston_strainRate);
 	Vector strainRate2 = off_diagonal(langevinPiston_strainRate);
@@ -677,13 +680,16 @@ void Controller::printEnergies(int step)
       rename(fname,bfname);
       ofstream xscFile(fname);
       xscFile << "# NAMD extended system configuration file" << endl;
-      xscFile << "#$LABELS step a_x b_y c_z o_x o_y o_z";
+      xscFile << "#$LABELS step a_x a_y a_z b_x b_y b_z c_x c_y c_z o_x o_y o_z";
       if ( simParameters->langevinPistonOn ) {
         xscFile << " s_x s_y s_z s_u s_v s_w";
       }
       xscFile << endl;
-      xscFile << step;
-      xscFile << " " << lattice.a() << " " << lattice.b() << " " << lattice.c() << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
+      xscFile << step
+        << " " << lattice.a().x << " " << lattice.a().y << " " << lattice.a().z
+        << " " << lattice.b().x << " " << lattice.b().y << " " << lattice.b().z
+        << " " << lattice.c().x << " " << lattice.c().y << " " << lattice.c().z
+        << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
       if ( simParameters->langevinPistonOn ) {
 	Vector strainRate = diagonal(langevinPiston_strainRate);
 	Vector strainRate2 = off_diagonal(langevinPiston_strainRate);
@@ -704,13 +710,16 @@ void Controller::printEnergies(int step)
       strcat(fname, ".xsc");
       ofstream xscFile(fname);
       xscFile << "# NAMD extended system configuration file" << endl;
-      xscFile << "#$LABELS step a_x b_y c_z o_x o_y o_z";
+      xscFile << "#$LABELS step a_x a_y a_z b_x b_y b_z c_x c_y c_z o_x o_y o_z";
       if ( simParameters->langevinPistonOn ) {
         xscFile << " s_x s_y s_z s_u s_v s_w";
       }
       xscFile << endl;
-      xscFile << step;
-      xscFile << " " << lattice.a() << " " << lattice.b() << " " << lattice.c() << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
+      xscFile << step
+        << " " << lattice.a().x << " " << lattice.a().y << " " << lattice.a().z
+        << " " << lattice.b().x << " " << lattice.b().y << " " << lattice.b().z
+        << " " << lattice.c().x << " " << lattice.c().y << " " << lattice.c().z
+        << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
       if ( simParameters->langevinPistonOn ) {
 	Vector strainRate = diagonal(langevinPiston_strainRate);
 	Vector strainRate2 = off_diagonal(langevinPiston_strainRate);
