@@ -1,0 +1,22 @@
+#!/bin/csh -f
+goto begin
+syntax:
+  echo ''
+  echo 'Usage: config <arch> '
+  echo ''
+  echo 'arch: ' `( cd arch ; ls -1 |sed -e 's/Makearch\.//' | egrep -v 'template' )`
+  echo ''
+  exit 1
+
+begin:
+
+  if ($#argv < 1) goto syntax
+  set ARCH=$1 ; shift
+
+  if ( x$ARCH == x ) goto syntax
+  if ( ! -f arch/Makearch.$ARCH ) goto syntax
+
+  echo "Creating link: Makearch.$ARCH to Makearch"
+  rm -f Makearch
+  ln -s arch/Makearch.$ARCH ./Makearch
+  echo 'You are ready to do a make now.'

@@ -1,17 +1,9 @@
-
-#####
-## Define your architecture
-#####
-# ARCH = Origin2000
-ARCH = SP3
-# ARCH = HPUX9
-# ARCH = HPUX10
-# ARCH = g++
-include Makearch.$(ARCH)
+include Makearch
 
 #####
 # Directories
 #####
+
 # source directory
 SRCDIR = src
 # destination directory (binaries) -- currently, MUST be .
@@ -26,29 +18,38 @@ LIBS = dpmta2/mpole/libmpole.a dpmta2/src/libdpmta2.a pvm3/libpvmc.a
 #####
 # definitions for Charm routines
 #####
+
 # CHARM is platform dependent
 CHARMC = $(CHARM)/bin/charmc $(PURIFY)
 CHARMXI = $(CHARM)/bin/charmc $(PURIFY)
 
+
 #####
 # definitions for (D)PMTA routines
 #####
+
 DPMTADIR=dpmta2
 DPMTAINCL=-I$(DPMTADIR)/include
 DPMTALIB=-L$(DPMTADIR) -ldpmta2 -lmpole
 DPMTAFLAGS=-DDPMTA
 DPMTA=$(DPMTAINCL) $(DPMTAFLAGS)
+
+
 #####
 # definitions for DPME routines
 #####
+
 DPMEDIR=dpme2
 DPMEINCL=-I$(DPMEDIR)/include
 DPMELIB=-L$(DPMEDIR) -ldpme2 -lmpole
 DPMEFLAGS=-DDPME
 DPME=$(DPMEINCL) $(DPMEFLAGS)
+
+
 ######
 ## definitions for PVM routines
 ######
+
 PVMDIR=pvm3
 PVMLIB=-L$(PVMDIR) -lpvmc
 PVM=-I$(PVMDIR)
@@ -202,7 +203,7 @@ depends: cifiles $(DSTDIR) $(DEPENDSFILE)
 	        `basename $$i | awk -F. '{print $$1".C"}'` ; \
 	      g++ -MM $(GXXFLAGS) \
 	        $(SRCDIR)/`basename $$i | awk -F. '{print $$1".C"}'` | \
-	      $(SRCDIR)/dc.pl $(INCLUDE) /usr/include /usr/local >> $(DEPENDFILE); \
+	      perl $(SRCDIR)/dc.pl $(INCLUDE) /usr/include /usr/local >> $(DEPENDFILE); \
 	      $(ECHO) '\t$$(CXX) $$(CXXFLAGS)' -o $$i -c \
 	        $(SRCDIR)/`basename $$i | awk -F. '{print $$1".C"}'` \
 		>> $(DEPENDFILE) ; \
