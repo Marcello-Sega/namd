@@ -216,6 +216,7 @@ void Controller::minimize() {
   BigReal babystep = simParams->minBabyStep;  // 1.0e-2
   BigReal linegoal = simParams->minLineGoal;  // 1.0e-4
   BigReal initstep = tinystep;
+  const BigReal goldenRatio = 0.5 * ( sqrt(5.0) - 1.0 );
 
   CALCULATE
 
@@ -230,7 +231,6 @@ void Controller::minimize() {
   while ( 1 ) {
     // line minimization
     // bracket minimum on line
-    int bracket = 0;
     minpoint lo,hi,mid,last;
     BigReal x = last.x = 0;
     lo.x = x;
@@ -245,9 +245,12 @@ void Controller::minimize() {
     x *= sqrt( min_f_dot_f / min_v_dot_v ); MOVETO(x)
     // bracket minimum on line
     initstep *= 0.25;
+    int noGradients;
     while ( last.u < mid.u ) {
       initstep *= 2.0;
       lo = mid; mid = last;
+      // when bracketed, need to know if midpoint gradient is valid
+      noGradients = min_huge_count;
       x *= 2.0; MOVETO(x)
     }
     hi = last;
@@ -256,7 +259,26 @@ void Controller::minimize() {
     int itcnt;
     for ( itcnt = 10; fabs(last.dudx) > tol && itcnt > 0 ; --itcnt ) {
       // select new position
-      if ( mid.dudx > 0. ) {
+      if ( noGradients ) {
+       if ( ( mid.x - lo.x ) > ( hi.x - mid.x ) ) {  // subdivide left side
+	x = (1.0 - goldenRatio) * lo.x + goldenRatio * mid.x;
+	MOVETO(x)
+	if ( last.u <= mid.u ) {
+	  hi = mid; mid = last; noGradients = min_huge_count;
+	} else {
+	  lo = last;
+	}
+       } else {  // subdivide right side
+	x = (1.0 - goldenRatio) * hi.x + goldenRatio * mid.x;
+	MOVETO(x)
+	if ( last.u <= mid.u ) {
+	  lo = mid; mid = last; noGradients = min_huge_count;
+	} else {
+	  hi = last;
+	}
+       }
+      } else {
+       if ( mid.dudx > 0. ) {  // subdivide left side
         BigReal altxhi = 0.1 * lo.x + 0.9 * mid.x;
         BigReal altxlo = 0.9 * lo.x + 0.1 * mid.x;
         x = mid.dudx*(mid.x*mid.x-lo.x*lo.x) + 2*mid.x*(lo.u-mid.u);
@@ -265,8 +287,12 @@ void Controller::minimize() {
         if ( x < altxlo ) x = altxlo;
         if ( x-last.x == 0 ) break;
         MOVETO(x)
-        if ( last.u <= mid.u ) { hi = mid; mid = last; } else { lo = last; }
-      } else {
+        if ( last.u <= mid.u ) {
+	  hi = mid; mid = last; noGradients = min_huge_count;
+	} else {
+	  lo = last;
+	}
+       } else {  // subdivide right side
         BigReal altxlo = 0.1 * hi.x + 0.9 * mid.x;
         BigReal altxhi = 0.9 * hi.x + 0.1 * mid.x;
         x = mid.dudx*(mid.x*mid.x-hi.x*hi.x) + 2*mid.x*(hi.u-mid.u);
@@ -275,7 +301,12 @@ void Controller::minimize() {
         if ( x > altxhi ) x = altxhi;
         if ( x-last.x == 0 ) break;
         MOVETO(x)
-        if ( last.u <= mid.u ) { lo = mid; mid = last; } else { hi = last; }
+        if ( last.u <= mid.u ) {
+	  lo = mid; mid = last; noGradients = min_huge_count;
+	} else {
+	  hi = last;
+	}
+       }
       }
       iout << "BRACKET: " << (hi.x-lo.x) << " " << ((hi.u>lo.u?hi.u:lo.u)-mid.u) << " " << lo.dudx << " " << mid.dudx << " " << hi.dudx << " \n" << endi;
     }
@@ -760,6 +791,7 @@ void Controller::printMinimizeEnergies(int step) {
     min_f_dot_f = reduction->item(REDUCTION_MIN_F_DOT_F);
     min_f_dot_v = reduction->item(REDUCTION_MIN_F_DOT_V);
     min_v_dot_v = reduction->item(REDUCTION_MIN_V_DOT_V);
+    min_huge_count = reduction->item(REDUCTION_MIN_HUGE_COUNT);
 
     if ( ( step % 10 ) == 0 ) {
 	iout << "ETITLE:     TS    BOND        ANGLE       "

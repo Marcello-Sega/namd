@@ -722,11 +722,13 @@ void Sequencer::submitMinimizeReductions(int step)
   BigReal fdotf = 0;
   BigReal fdotv = 0;
   BigReal vdotv = 0;
+  int numHuge = 0;
   for ( int i = 0; i < numAtoms; ++i ) {
     if ( a[i].atomFixed ) continue;
     Force f = f1[i] + f2[i] + f3[i];
     BigReal ff = f * f;
     if ( ff > fmax2 ) {
+      ++numHuge;
       BigReal fmult = sqrt(fmax2/ff);
       f *= fmult;  ff = f * f;
       f1[i] *= fmult;
@@ -741,6 +743,7 @@ void Sequencer::submitMinimizeReductions(int step)
   reduction->item(REDUCTION_MIN_F_DOT_F) += fdotf;
   reduction->item(REDUCTION_MIN_F_DOT_V) += fdotv;
   reduction->item(REDUCTION_MIN_V_DOT_V) += vdotv;
+  reduction->item(REDUCTION_MIN_HUGE_COUNT) += numHuge;
 
   reduction->submit();
 }

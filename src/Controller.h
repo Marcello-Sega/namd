@@ -53,6 +53,7 @@ protected:
       BigReal min_f_dot_f;
       BigReal min_f_dot_v;
       BigReal min_v_dot_v;
+      int min_huge_count;
     void printEnergies(int);
       int numDegFreedom;
       BigReal electEnergy;
