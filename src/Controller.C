@@ -238,6 +238,7 @@ void Controller::minimize() {
 
   const int numberOfSteps = simParams->N;
   int step = simParams->firstTimestep;
+  slowFreq = nbondFreq = 1;
   BigReal tinystep = simParams->minTinyStep;  // 1.0e-6
   BigReal babystep = simParams->minBabyStep;  // 1.0e-2
   BigReal linegoal = simParams->minLineGoal;  // 1.0e-4

@@ -40,9 +40,9 @@
 
 typedef int HGArrayInt[MAXHGS];
 typedef BigReal HGArrayBigReal[MAXHGS];
-typedef Vector HGArrayVector[MAXHGS];
+typedef zVector HGArrayVector[MAXHGS];
 typedef BigReal HGMatrixBigReal[MAXHGS][MAXHGS];
-typedef Vector HGMatrixVector[MAXHGS][MAXHGS];
+typedef zVector HGMatrixVector[MAXHGS][MAXHGS];
 
 int average(CompAtom *qtilde,const HGArrayVector &q,BigReal *lambda,const int n,const int m, const HGArrayBigReal &imass, const HGArrayBigReal &length2, const HGArrayInt &ial, const HGArrayInt &ibl, const HGArrayVector &refab, const BigReal tolf, const int ntrial);
 
@@ -653,6 +653,14 @@ void HomePatch::mollyAverage()
 	  iout << iWARN << "Exceeded maximum number of iterations in mollyAverage().\n"<<endi;
 	}
   }
+
+  // for ( i=0; i<numAtoms; ++i ) {
+  //    if ( ( p_avg[i].position - p[i].position ).length2() > 1.0 ) {
+  //      iout << iERROR << "MOLLY moved atom " << (p[i].id + 1) << " from "
+  //        << p[i].position << " to " << p_avg[i].position << "\n" << endi;
+  //    }
+  // }
+
 }
 
 
