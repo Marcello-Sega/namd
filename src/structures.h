@@ -47,43 +47,43 @@ typedef struct atom_constants
 	Real mass;
 	Real charge;
 	Index vdw_type;
-	int status;	         // flags telling about this atom
-	int partner;             // connecting atom, for hydrogens
+	int32 status;	         // flags telling about this atom
+	int32 partner;             // connecting atom, for hydrogens
 	IntList *donorList;      // donor-hydrogen pairs this is part of
 	IntList *acceptorList;   // acceptor-anteced pairs this is part of
-	int hydrogenList;	// index of atom in hydrogenGroup list
+	int32 hydrogenList;	// index of atom in hydrogenGroup list
 } Atom;
 
 typedef struct bond
 {
-	int atom1;
-	int atom2;
+	int32 atom1;
+	int32 atom2;
 	Index bond_type;
 } Bond;
 
 typedef struct angle
 {
-	int atom1;
-	int atom2;
-	int atom3;
+	int32 atom1;
+	int32 atom2;
+	int32 atom3;
 	Index angle_type;
 } Angle;
 
 typedef struct dihedral
 {
-	int atom1;
-	int atom2;
-	int atom3;
-	int atom4;
+	int32 atom1;
+	int32 atom2;
+	int32 atom3;
+	int32 atom4;
 	Index dihedral_type;
 } Dihedral;
 
 typedef struct improper
 {
-	int atom1;
-	int atom2;
-	int atom3;
-	int atom4;
+	int32 atom1;
+	int32 atom2;
+	int32 atom3;
+	int32 atom4;
 	Index improper_type;
 } Improper;
 
@@ -93,8 +93,8 @@ public:
 	Exclusion(void) : modified(0) {;}
 	Exclusion(int a1, int a2, int mod = 0) :
 		atom1(a1), atom2(a2), modified(mod) {;}
-	int atom1;
-	int atom2;
+	int32 atom1;
+	int32 atom2;
 	Index modified;
 	int hash(void) const
 	{
@@ -120,12 +120,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: structures.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/31 16:12:55 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1998/09/10 19:04:23 $
  *
  * REVISION HISTORY:
  *
  * $Log: structures.h,v $
+ * Revision 1.1004  1998/09/10 19:04:23  brunner
+ * Made ints into int32s, to save memory.  Unfortunately, it doesn't help
+ * much.
+ *
  * Revision 1.1003  1997/03/31 16:12:55  nealk
  * Atoms now can migrate by hydrogen groups.
  *
