@@ -93,9 +93,9 @@ class Patch
      PatchID       patchID;
      int           numAtoms;
      AtomIDList    atomIDList;
-     LocalIndex    localIndex;
-     LocalInt      localWaters;
-     LocalInt      localNonWaters;
+     // LocalIndex    localIndex;  NEVER USED -JCP
+     // LocalInt      localWaters;  NEVER USED -JCP
+     // LocalInt      localNonWaters;  NEVER USED -JCP
      PositionList  p;
      Position      *positionPtr;
      ForceList     f[Results::maxNumForces];
@@ -131,12 +131,16 @@ class Patch
  *
  *	$RCSfile: Patch.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/04/08 21:08:43 $
+ *	$Revision: 1.1009 $	$Date: 1997/09/19 05:17:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.h,v $
+ * Revision 1.1009  1997/09/19 05:17:44  jim
+ * Cleaned up and tweaked hydrogen-group based temporary pairlist
+ * generation for roughly a 6% performance improvement.
+ *
  * Revision 1.1008  1997/04/08 21:08:43  jim
  * Contant pressure now correct on multiple nodes, should work with MTS.
  *

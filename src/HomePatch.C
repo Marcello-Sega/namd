@@ -39,7 +39,7 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1033 1997/08/26 16:26:15 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1034 1997/09/19 05:17:43 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
 		     VelocityList vl) : Patch(pd,al,pl), v(vl) 
@@ -279,7 +279,7 @@ void HomePatch::submitLoadStats(int timestep)
 void
 HomePatch::doAtomMigration()
 {
-  int i,j;
+  int i;
   int xdev, ydev, zdev;
   MigrationList *mCur;
 
@@ -308,6 +308,7 @@ HomePatch::doAtomMigration()
      Position Min = lattice.unscale(min);
      Position Max = lattice.unscale(max);
 
+/*
      if (simParams->splitPatch == SPLIT_PATCH_HYDROGEN)
 	{
 	// All atoms are always in hydrogen-group order.  Thus, if it's
@@ -320,8 +321,9 @@ HomePatch::doAtomMigration()
 	j = mol->is_hydrogenGroupParent(atomIDList[i]);	// j is parent flag
 	}
       else j=1;	// check all atoms
+*/
 
-      if (j)
+      if ( a[i].hydrogenGroupSize )
 	  {
 	  // check if atom should is within bounds
 	  if (p[i].x < Min.x) xdev = 0;
@@ -392,7 +394,7 @@ HomePatch::doAtomMigration()
     migrationSuspended = false;
   }
   allMigrationIn = false;
-  indexAtoms();
+  // indexAtoms();  NEVER USED -JCP
 
   // reload the AtomMap
   AtomMap::Object()->registerIDs(patchID,atomIDList);
@@ -456,12 +458,16 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1033 $	$Date: 1997/08/26 16:26:15 $
+ *	$Revision: 1.1034 $	$Date: 1997/09/19 05:17:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1034  1997/09/19 05:17:43  jim
+ * Cleaned up and tweaked hydrogen-group based temporary pairlist
+ * generation for roughly a 6% performance improvement.
+ *
  * Revision 1.1033  1997/08/26 16:26:15  jim
  * Revamped prioritites for petter performance and easier changes.
  *

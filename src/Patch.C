@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1014 1997/05/05 15:28:26 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1015 1997/09/19 05:17:44 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -74,10 +74,10 @@ void Patch::loadAtomProperties(void)
     Molecule *mol = Node::Object()->molecule;
     int splitPatch = (Node::Object()->simParameters->splitPatch == SPLIT_PATCH_HYDROGEN);
     a.resize(0);
-    localIndex.resize(0);
+    // localIndex.resize(0);  NEVER USED -JCP
     for ( register int i=0; i<numAtoms; i++)
     {
-      localIndex.load(LocalAtomID(atomIDList[i], i));
+      // localIndex.load(LocalAtomID(atomIDList[i], i));  NEVER USED -JCP
       AtomProperties ap;
       ap.id = atomIDList[i];
       ap.type = mol->atomvdwtype(ap.id);
@@ -87,14 +87,20 @@ void Patch::loadAtomProperties(void)
       // make water/nonwater hydrogen group lists
       // NOTE: only group parents know the group size.
       // When no hydrogen-group migration don't use hydrogen groups.
-      if (mol->is_hydrogenGroupParent(atomIDList[i]) && splitPatch)
-      	ap.hydrogenGroupSize = mol->get_groupSize(atomIDList[i]);
-      else ap.hydrogenGroupSize = 0;
+
+      if ( splitPatch ) {
+	if (mol->is_hydrogenGroupParent(atomIDList[i]))
+	  ap.hydrogenGroupSize = mol->get_groupSize(atomIDList[i]);
+	else
+	  ap.hydrogenGroupSize = 0;
+      }
+      else ap.hydrogenGroupSize = 1;  // A group unto itself.
       ap.water = mol->is_water(atomIDList[i]);
 
       // add the property
       a.add(ap);
     }
+    /* NEVER USED -JCP
     localIndex.sort();
     localIndex.uniq();
 
@@ -103,14 +109,16 @@ void Patch::loadAtomProperties(void)
     localNonWaters.resize(0);
     for(i=0; i<numAtoms; i++)
     {
-      if (a[i].hydrogenGroupSize)
+      if (a[i].hydrogenGroupSize) // THIS WILL NO LONGER WORK -JCP
       {
 	if (a[i].water) localWaters.load(i);
 	else localNonWaters.load(i);
       }
     }
+    */
 }
 
+/* NEVER USED -JCP
 void
 Patch::indexAtoms()
 {
@@ -128,14 +136,14 @@ Patch::indexAtoms()
     localNonWaters.resize(0);
     for(i=0; i<numAtoms; i++)
     {
-      if (a[i].hydrogenGroupSize)
+      if (a[i].hydrogenGroupSize) // THIS WILL NO LONGER WORK -JCP
       {
 	if (a[i].water) localWaters.load(i);
 	else localNonWaters.load(i);
       }
     }
 }
-
+*/
 
 
 
@@ -268,13 +276,17 @@ void Patch::positionsReady(int doneMigration)
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1997/05/05 15:28:26 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1015 $	$Date: 1997/09/19 05:17:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.1015  1997/09/19 05:17:44  jim
+ * Cleaned up and tweaked hydrogen-group based temporary pairlist
+ * generation for roughly a 6% performance improvement.
+ *
  * Revision 1.1014  1997/05/05 15:28:26  nealk
  * Added water-water specific code to NonbondedBase.  The cutoff for the temp
  * pairlist is currently disabled.

@@ -182,7 +182,7 @@ NOEXCL
   // generate mini-pairlist.
   if (1000 < j_upper)
 	{
-	if (pairlist != pairlist_std) delete pairlist;
+	if (pairlist != pairlist_std) delete [] pairlist;
 	pairlist = new int[j_upper + 1];
 	pairlist[j_upper] = 0;
 	}
@@ -219,23 +219,20 @@ NOEXCL
 
   HGROUPING
   (
-  if (a_i.hydrogenGroupSize)
+  if (a_i.hydrogenGroupSize) // if hydrogen group parent
     {
     pairlistindex = 0;	// initialize with 0 elements
     pairlistoffset=0;
 
-    // If patch divisions are not made by hydrogen groups, then it's
-    // very possibly to have a hydrogen without a parent.  Because of
-    // ordering, when this happens the lost hydrogens will ALWAYS be the
-    // first atoms in the list.
-    // Also, the end of the list may be missing hydrogen atoms
-    {
+    // If patch divisions are not made by hydrogen groups, then
+    // hydrogenGroupSize is set to 1 for all atoms.  Thus we can
+    // carry on as if we did have groups - only less efficiently.
+    // An optimization in this case is to not rebuild the temporary
+    // pairlist but to include every atom in it.  This should be a
+    // a very minor expense.
+
     register const Position *p_j = p_1;
     SELF( p_j += i+1; )
-
-    // add all "lost" hydrogens to pairlist
-    // this loop may not be necessary -- it's not necessary when
-    // migrating by hydrogen groups.
 
     PAIR( j = 0; )
     SELF
@@ -249,29 +246,41 @@ NOEXCL
       )
 
     // add remaining atoms to pairlist via hydrogen groups
-    for ( ; j < j_upper; ++j )
+    register const AtomProperties *pa_j = a_1 + j;
+    register BigReal p_j_x = p_j->x;
+    register BigReal p_j_y = p_j->y;
+    register BigReal p_j_z = p_j->z;
+    register int *pli = pairlist + pairlistindex;
+
+    while ( j < j_upper )
 	{
-	const AtomProperties &pa_j = a_1[j];
-	if (pa_j.hydrogenGroupSize)
-	  {
-	  r2 = square(p_i_x - p_j->x, p_i_y - p_j->y, p_i_z - p_j->z);
-	  // use a slightly large cutoff to include hydrogens
-	  if ( r2 <= groupcutoff2 )
+	register int hgs = pa_j->hydrogenGroupSize;
+	p_j += ( ( j + hgs < j_upper ) ? hgs : 0 );
+	r2 = p_i_x - p_j_x;
+	r2 *= r2;
+	p_j_x = p_j->x;					// preload
+	register BigReal t2 = p_i_y - p_j_y;
+	r2 += t2 * t2;
+	p_j_y = p_j->y;					// preload
+	t2 = p_i_z - p_j_z;
+	r2 += t2 * t2;
+	p_j_z = p_j->z;					// preload
+	pa_j += hgs;
+	// use a slightly large cutoff to include hydrogens
+	if ( r2 <= groupcutoff2 )
 		{
-		register int l;
-		// be careful, last group may be missing hydrogens
-		for(l=0; (l<pa_j.hydrogenGroupSize); l++)
+		register int l = j;
+		j += hgs;
+		for( ; l<j; ++l)
 		  {
-		  pairlist[pairlistindex++] = l+j;
+		  *pli = l;
+		  ++pli;
 		  }
-		l--;  // decrease because everything will be incremented later
-		j   += l;
-		p_j += l;
 		}
-	  }
-	p_j++;
+	else j += hgs;
 	} // for j
-    }
+
+    pairlistindex = pli - pairlist;
     // make sure padded element on pairlist points to real data
     if ( pairlistindex ) pairlist[pairlistindex] = pairlist[pairlistindex-1];
   } // if i is hydrogen group parent
@@ -604,7 +613,7 @@ NOEXCL
 (
     } // for pairlist
   } // for i
-  HGROUPING( if (pairlist != pairlist_std) delete pairlist; )
+  HGROUPING( if (pairlist != pairlist_std) delete [] pairlist; )
 )
 
   reduction[vdwEnergyIndex] += vdwEnergy;
@@ -622,12 +631,16 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1026 $	$Date: 1997/09/19 02:59:56 $
+ *	$Revision: 1.1027 $	$Date: 1997/09/19 05:17:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1027  1997/09/19 05:17:42  jim
+ * Cleaned up and tweaked hydrogen-group based temporary pairlist
+ * generation for roughly a 6% performance improvement.
+ *
  * Revision 1.1026  1997/09/19 02:59:56  jim
  * Added caching of groupcutoff2.
  *
