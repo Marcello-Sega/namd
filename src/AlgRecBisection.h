@@ -28,6 +28,7 @@ typedef struct {
   int v[3];
   double load;
   int  refno;
+  int  tv;
 } ComputeLoad;
 
 public:
@@ -49,6 +50,10 @@ int currentp, refno;
 
 void strategy();
 void rec_divide(int, Partition&);
+void setVal(int x, int y, int z);
+int sort_partition(int x, int p, int r);
+void qsort(int x, int p, int r);
+void quicksort(int x);
 
 
 public:

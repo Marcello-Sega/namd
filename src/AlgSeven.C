@@ -29,6 +29,8 @@ void Alg7::strategy()
   int numAssigned;
   processorInfo* goodP[3][3];  // goodP[# of real patches][# of proxies]
 
+  double startTime = CmiWallTimer();
+
   //   iout << iINFO  << "calling makeHeaps. \n";
   makeHeaps();
   computeAverage();
@@ -213,6 +215,8 @@ void Alg7::strategy()
   //  iout << iINFO
   //   << "After assignment\n" << endi;
   // printLoads();
+
+  CmiPrintf("Alg7 finish time: %f.\n", CmiWallTimer()-startTime);
 }
 
 

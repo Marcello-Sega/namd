@@ -113,11 +113,77 @@ void AlgRecBisection::rec_divide(int n, Partition &p)
   rec_divide(n2, p2);
 }
 
+#if 0
 int comp(const void *a, const void *b)
 {
   AlgRecBisection::VecArray *va = (AlgRecBisection::VecArray *)a;
   AlgRecBisection::VecArray *vb = (AlgRecBisection::VecArray *)b;
   return va->v - vb->v;
+}
+#endif
+
+void AlgRecBisection::setVal(int x, int y, int z)
+{
+  int i;
+  for (i=0; i<numComputes; i++) {
+    computeLoad[i].tv = 100000*computeLoad[i].v[x]+
+			1000*computeLoad[i].v[y]+
+			computeLoad[i].v[z];
+  }
+#if 0
+  CmiPrintf("original:%d\n", x);
+  for (i=0; i<numComputes; i++) 
+    CmiPrintf("%d ", computeLoad[i].tv);
+  CmiPrintf("\n");
+#endif
+}
+
+int AlgRecBisection::sort_partition(int x, int p, int r)
+{
+  int mid = computeLoad[vArray[x][p].id].tv;
+  int i= p;
+  int j= r;
+  while (1) {
+    while (computeLoad[vArray[x][j].id].tv > mid && j>i) j--;
+    while (computeLoad[vArray[x][i].id].tv < mid && i<j) i++;
+    if (i<j) {
+      if (computeLoad[vArray[x][i].id].tv == computeLoad[vArray[x][j].id].tv)
+      {
+	if (computeLoad[vArray[x][i].id].tv != mid) NAMD_die("my god!\n");
+	i++; continue;
+      }
+      VecArray tmp = vArray[x][i];
+      vArray[x][i] = vArray[x][j];
+      vArray[x][j] = tmp;
+    }
+    else
+      return j;
+  }
+}
+
+void AlgRecBisection::qsort(int x, int p, int r)
+{
+  if (p<r) {
+    int q = sort_partition(x, p, r);
+//CmiPrintf("midpoint: %d %d %d\n", p,q,r);
+    qsort(x, p, q-1);
+    qsort(x, q+1, r);
+  }
+}
+
+void AlgRecBisection::quicksort(int x)
+{
+  int y = (x+1)%3;
+  int z = (x+2)%3;
+  setVal(x, y, z);
+  qsort(x, 0, numComputes-1);
+
+#if 0
+  CmiPrintf("result:%d\n", x);
+  for (int i=0; i<numComputes; i++) 
+    CmiPrintf("%d ", computeLoad[vArray[x][i].id].tv);
+  CmiPrintf("\n");
+#endif
 }
 
 void AlgRecBisection::strategy()
@@ -128,12 +194,12 @@ void AlgRecBisection::strategy()
 
   // create computeLoad and calculate tentative computes coordinates
   computeLoad = new ComputeLoad[numComputes];
-  vArray[XDIR] = new VecArray[numComputes];
-  vArray[YDIR] = new VecArray[numComputes];
-  vArray[ZDIR] = new VecArray[numComputes];
+  for (i=XDIR; i<=ZDIR; i++) vArray[i] = new VecArray[numComputes];
 
   CmiPrintf("AlgRecBisection: numComputes:%d\n", numComputes);
 
+  // v[0] = XDIR  v[1] = YDIR v[2] = ZDIR
+  // vArray[XDIR] is an array holding the x vector for all computes
   for (i=0; i<numComputes; i++) {
     int pid1 = computes[i].patch1;
     int pid2 = computes[i].patch2;
@@ -145,17 +211,29 @@ void AlgRecBisection::strategy()
     computeLoad[i].load = computes[i].load;
     computeLoad[i].refno = 0;
 
+    for (j=XDIR; j<=ZDIR; j++) {
+      vArray[j][i].id = i;
+      vArray[j][i].v = computeLoad[i].v[j];
+    }
+/*
     vArray[XDIR][i].id = vArray[YDIR][i].id = vArray[ZDIR][i].id = i;
     vArray[XDIR][i].v = computeLoad[i].v[0];
     vArray[YDIR][i].v = computeLoad[i].v[1];
     vArray[ZDIR][i].v = computeLoad[i].v[2];
+*/
   }
 //  CmiPrintf("\n");
 
   double t = CmiWallTimer();
+
+/*
   qsort(vArray[XDIR], numComputes, sizeof(VecArray), comp);
   qsort(vArray[YDIR], numComputes, sizeof(VecArray), comp);
   qsort(vArray[ZDIR], numComputes, sizeof(VecArray), comp);
+*/
+  quicksort(XDIR);
+  quicksort(YDIR);
+  quicksort(ZDIR);
   CmiPrintf("qsort time: %f\n", CmiWallTimer() - t);
 
   npartition = P;
@@ -180,6 +258,7 @@ void AlgRecBisection::strategy()
   rec_divide(npartition, top_partition);
 
   CmiPrintf("After partitioning: \n");
+  // debug
   for (i=0; i<P; i++) {
     CmiPrintf("[%d] (%d,%d,%d) (%d,%d,%d) load:%f count:%d\n", i, partitions[i].origin[0], partitions[i].origin[1], partitions[i].origin[2], partitions[i].corner[0], partitions[i].corner[1], partitions[i].corner[2], partitions[i].load, partitions[i].count);
   }
@@ -201,9 +280,10 @@ void AlgRecBisection::strategy()
     if (num[i] != partitions[i].count) 
       NAMD_die("AlgRecBisection: Compute counts don't agree!\n");
 
+  delete [] num;
+
   for (i=0; i<numComputes; i++) {
     if (computes[i].processor == -1) NAMD_bug("AlgRecBisection failure!\n");
-//    CmiPrintf("[%d] old:%d new:%d\n", i, computes[i].oldProcessor, computes[i].processor);
   }
 
 
