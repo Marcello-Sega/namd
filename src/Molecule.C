@@ -3634,10 +3634,11 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
     // Assign fep flag value
     if (simParams->lesOn) {
       if ( bval == (int) bval && bval > 0 ) {
-        if ( bval > 15 ) NAMD_die("LES flag must be less than 16.");
+        if ( bval > simParams->lesFactor ) 
+          NAMD_die("LES flag must be less than or equal to lesFactor.");
         fepAtomFlags[i] = (int) bval;
         numFepFinal++;
-        if ( bval <= simParams->lesFactor ) numFepInitial++;
+        numFepInitial++;
       } else {
         fepAtomFlags[i] = 0;
       }

@@ -309,8 +309,6 @@ int NamdState::configListInit(ConfigList *cfgList) {
 //fepe
 
         if (simParameters->lesOn) {
-           iout << iINFO << molecule->numFepFinal <<
-               " LOCALLY ENHANCED ATOMS AVAILABLE\n";
            iout << iINFO << molecule->numFepInitial <<
                " LOCALLY ENHANCED ATOMS ENABLED\n";
         }

@@ -446,7 +446,7 @@ void ComputeNonbondedUtil :: NAME
           }
         } else { // lesOn
           int fep_type = ifep_type ? ifep_type : jfep_type;
-          lambda_pair = fep_type > lesFactor ? 0.0 : lesScaling;
+          lambda_pair = lesScaling;
 	  d_lambda_pair = 0.0;
         }
       }
