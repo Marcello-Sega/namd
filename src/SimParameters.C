@@ -3151,8 +3151,10 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    }
 
    if (pressureProfileOn) {
-     if (berendsenPressureOn || langevinPistonOn)
-       NAMD_die("Pressure profile calculations cannot be used with constant pressure.");
+     if ((berendsenPressureOn || langevinPistonOn) && !dcdUnitCell) {
+       iout << iWARN << "Turning on dcdUnitCell so that trajectory files contain unit cell data.\n" << endi;
+       dcdUnitCell = 1;
+     }
      if (pressureProfileSlabs < 1) 
        NAMD_die("pressureProfileSlabs must be positive.");
      pressureProfileThickness = cellBasisVector3.z / pressureProfileSlabs; 

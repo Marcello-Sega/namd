@@ -59,9 +59,13 @@ void ComputeNonbondedSelf::doForce(CompAtom* p,
 
   BigReal reductionData[reductionDataSize];
   for ( int i = 0; i < reductionDataSize; ++i ) reductionData[i] = 0;
-  if (pressureProfileNonbonded)
+  if (pressureProfileNonbonded) {
     memset(pressureProfileData, 0, 3*pressureProfileSlabs*sizeof(BigReal));
-
+    // adjust lattice dimensions to allow constant pressure
+    const Lattice &lattice = patch->lattice;
+    pressureProfileThickness = lattice.c().z / pressureProfileSlabs;
+    pressureProfileMin = lattice.origin().z - 0.5*lattice.c().z;
+  }
   if ( patch->flags.doNonbonded )
   {
     int doEnergy = patch->flags.doEnergy;

@@ -308,9 +308,15 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       BigReal reductionData[T::reductionDataSize];
       for ( int i = 0; i < T::reductionDataSize; ++i ) reductionData[i] = 0;
       int tupleCount = 0;
-      if (pressureProfileData)
+      if (pressureProfileData) {
         memset(pressureProfileData, 0, 3*pressureProfileSlabs*sizeof(BigReal));
-    
+        // Silly variable hiding of the previous iterator
+        UniqueSetIter<TuplePatchElem> newap(tuplePatchList);
+        newap = newap.begin();
+        const Lattice &lattice = newap->p->lattice;
+        T::pressureProfileThickness = lattice.c().z / pressureProfileSlabs;
+        T::pressureProfileMin = lattice.origin().z - 0.5*lattice.c().z;
+      }
       // take triplet and pass with tuple info to force eval
       UniqueSetIter<T> al(tupleList);
       if ( Node::Object()->simParameters->commOnly ) {
