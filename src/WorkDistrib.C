@@ -48,12 +48,14 @@ public:
   int numNewNodes;
   int *newNodes;
 
-  VARSIZE_DECL(ComputeMapChangeMsg);
+//  VARSIZE_DECL(ComputeMapChangeMsg);
 };
 
+/*
 VARSIZE_MSG(ComputeMapChangeMsg,
   VARSIZE_ARRAY(newNodes);
 )
+*/
 
 
 //======================================================================
@@ -87,7 +89,7 @@ void WorkDistrib::saveComputeMapChanges(int ep, int chareID)
   
   int nnn = computeMap->numComputes();
   ComputeMapChangeMsg *mapMsg 
-    = new (&nnn,0) ComputeMapChangeMsg ;
+    = new (nnn,0) ComputeMapChangeMsg ;
 
   mapMsg->numNewNodes = nnn;
   for(i=0; i<nnn; i++)
@@ -315,13 +317,15 @@ class MapDistribMsg: public CMessage_MapDistribMsg {
     char *patchMapData;
     char *computeMapData;
 
-  VARSIZE_DECL(MapDistribMsg);
+//  VARSIZE_DECL(MapDistribMsg);
 };
 
+/*
 VARSIZE_MSG(MapDistribMsg,
   VARSIZE_ARRAY(patchMapData);
   VARSIZE_ARRAY(computeMapData);
 )
+*/
 
 void WorkDistrib::sendMaps(void)
 {
@@ -334,7 +338,7 @@ void WorkDistrib::sendMaps(void)
   sizes[0] = PatchMap::Object()->packSize();
   sizes[1] = ComputeMap::Object()->packSize();
 
-  MapDistribMsg *mapMsg = new (sizes,0) MapDistribMsg;
+  MapDistribMsg *mapMsg = new (sizes[0], sizes[1], 0) MapDistribMsg;
 
   PatchMap::Object()->pack(mapMsg->patchMapData);
   ComputeMap::Object()->pack(mapMsg->computeMapData);

@@ -8,8 +8,13 @@ module WorkDistrib {
   // WorkDistributor - is a bit of a mishmash
 
   message LocalWorkMsg;
-  message [varsize] ComputeMapChangeMsg;
-  message [varsize] MapDistribMsg;
+  message ComputeMapChangeMsg {
+    int newNodes[];
+  };
+  message MapDistribMsg {
+    char patchMapData[];
+    char computeMapData[];
+  };
 
   group WorkDistrib
   {
