@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1057 $  $Date: 1999/03/10 05:11:34 $
+ *  $Revision: 1.1058 $  $Date: 1999/03/10 18:15:48 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1058  1999/03/10 18:15:48  jim
+ * Added output for binary output file usage.
+ *
  * Revision 1.1057  1999/03/10 05:11:34  jim
  * Added reassignHold parameter.
  *
@@ -2508,6 +2511,10 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
      
    iout << iINFO << "OUTPUT FILENAME        " 
       << outputFilename << "\n" << endi;
+   if (binaryOutput)
+   {
+     iout << iINFO << "BINARY OUTPUT FILES WILL BE USED\n" << endi;
+   }
 
    if (restartFrequency == -1)
    {
@@ -3572,12 +3579,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1057 $  $Date: 1999/03/10 05:11:34 $
+ *  $Revision: 1.1058 $  $Date: 1999/03/10 18:15:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1058  1999/03/10 18:15:48  jim
+ * Added output for binary output file usage.
+ *
  * Revision 1.1057  1999/03/10 05:11:34  jim
  * Added reassignHold parameter.
  *
