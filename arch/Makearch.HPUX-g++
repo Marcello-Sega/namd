@@ -2,15 +2,15 @@
 NAMD_ARCH = HP-UX
 
 # compiler options
-CXX = CC -Aa -D_HPUX_SOURCE -DPLACEMENT_NEW_GLOBAL
-CXXOPTS = -O +DAportable
+CXX = g++
+CXXOPTS = -O3 -Wall
 CXXTHREADOPTS = $(CXXOPTS)
 CXXSIMPARAMOPTS = $(CXXOPTS)
-CC = cc -Aa -Wp,-H16000 -D_HPUX_SOURCE
-COPTS = -O +DAportable
+CC = gcc
+COPTS = -O3 -Wall
 
 # definitions for Charm routines
-CHARMARCH = net-hp-cc
+CHARMARCH = net-hp
 CHARM = $(CHARMBASE)/$(CHARMARCH)
 
 # definitions for TCL interface

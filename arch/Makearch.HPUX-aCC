@@ -2,7 +2,7 @@
 NAMD_ARCH = HP-UX
 
 # compiler options
-CXX = CC -Aa -D_HPUX_SOURCE -DPLACEMENT_NEW_GLOBAL
+CXX = aCC
 CXXOPTS = -O +DAportable
 CXXTHREADOPTS = $(CXXOPTS)
 CXXSIMPARAMOPTS = $(CXXOPTS)
@@ -10,7 +10,7 @@ CC = cc -Aa -Wp,-H16000 -D_HPUX_SOURCE
 COPTS = -O +DAportable
 
 # definitions for Charm routines
-CHARMARCH = net-hp-cc
+CHARMARCH = net-hp-acc
 CHARM = $(CHARMBASE)/$(CHARMARCH)
 
 # definitions for TCL interface
