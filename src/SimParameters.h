@@ -143,6 +143,8 @@ public:
 					//  restart files be updated
 	Bool binaryRestart;		//  should restart files be
 					//  binary format rather than PDB
+	Bool binaryOutput;		//  should output files be
+					//  binary format rather than PDB
 	BigReal cutoff;			//  Cutoff distance
 	BigReal eleccutoff;		//  electrostatic Cutoff distance
 	BigReal vdwcutoff;		//  vdw Cutoff distance
@@ -387,13 +389,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.h,v $
- *	$Author: sergei $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1025 $	$Date: 1998/10/01 00:31:30 $
+ *	$Author: krishnan $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1026 $	$Date: 1998/10/26 17:14:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1026  1998/10/26 17:14:51  krishnan
+ * Added binaryOutput
+ *
  * Revision 1.1025  1998/10/01 00:31:30  sergei
  * added rotating restraints feature;
  * changed the moving restraints from only moving one atom to moving all
