@@ -1,3 +1,5 @@
+#include <iostream.h>
+#include <stdlib.h>
 #include "ckdefs.h"
 #include "chare.h"
 #include "c++interface.h"
@@ -10,6 +12,18 @@
 #include "ComputeMap.h"
 #include "Debug.h"
 #include "Sequencer.h"
+#include "RefineOnly.h"
+//#include "Alg0.h"
+//#include "Alg1.h"
+//#include "Alg4.h"
+//#include "Alg7.h"
+
+#include "elements.h"
+#include "RefineOnly.h"
+
+
+class manheap;
+class maxheap;
 
 #define DEBUG_LEVEL 3
 #define TIMER_FNC()   CmiTimer()
@@ -296,27 +310,67 @@ void LdbCoordinator::analyze(LdbStatsMsg *msg)
 
   if (nStatsMessagesReceived==nStatsMessagesExpected)
   {
-    CPrintf("All statistics received\n");
-    // 1) Print out statistics in test format
-    // 2) Delete messages
-    // 3) Resume operation with a message
-    
-    // 1) Print out statistics in test format
-    printLdbReport();
-
-    // 2) delete messages
-    for (int i=0; i < nStatsMessagesReceived; i++)
-      delete statsMsgs[i];
-
-    // 3) Resume operation with a message
-    CPrintf("Node 0 LDB resuming other processors\n",CMyPe());
-    LdbResumeMsg *sendmsg = new (MsgIndex(LdbResumeMsg)) LdbResumeMsg;
-    CBroadcastMsgBranch(LdbCoordinator, resume, sendmsg, thisgroup);
+    processStatistics();
   }
+}
+
+void LdbCoordinator::processStatistics(void)
+{
+  CPrintf("All statistics received\n");
+
+  const int numProcessors = Node::Object()->numNodes();
+  const int numPatches = patchMap->numPatches();
+  const int numComputes = computeMap->numComputes();
+
+  buildData();
+  
+  char *algChoice = "RefineOnly"; 
+
+  if (algChoice == "RefineOnly")
+  {
+    new RefineOnly(computeArray,patchArray,processorArray,
+		   numComputes, numPatches, numProcessors);
+    
+  }
+//   else if (algChoice == "Alg0")
+//     Alg0::Alg0(computeArray,patchArray,processorArray,
+//       numComputes, numPatches, numProcessors);
+//   else if (algChoice == "Alg1")
+//     Alg1::Alg1(computeArray,patchArray,processorArray,
+//       numComputes, numPatches, numProcessors);
+//   else if (algChoice == "Alg4")
+//     Alg4::Alg4(computeArray,patchArray,processorArray,
+//       numComputes, numPatches, numProcessors);
+//   else if (algChoice == "Alg1")
+//     Alg7::Alg7(computeArray,patchArray,processorArray,
+//       numComputes, numPatches, numProcessors);
+
+  // 0) Rebuild ComputeMap using computeMap->newNode()
+
+  // 1) Print out statistics in test format
+  printLdbReport();
+
+  // 2) delete messages
+
+  for (int i=0; i < nStatsMessagesReceived; i++)
+    delete statsMsgs[i];
+
+  // 3) Resume operation with a message
+  //    Rewrite to send revised computeMap 
+  CPrintf("Node 0 LDB resuming other processors\n",CMyPe());
+  LdbResumeMsg *sendmsg = new (MsgIndex(LdbResumeMsg)) LdbResumeMsg;
+  CBroadcastMsgBranch(LdbCoordinator, resume, sendmsg, thisgroup);
 }
 
 void LdbCoordinator::resume(LdbResumeMsg *msg)
 {
+  // Rewrite to receive new computeMap
+
+  // computeMgr->updateComputes()
+
+  // Barrier for all Nodes - (i.e. Computes must be
+  // here and with proxies before anyone can start
+
   //  printLocalLdbReport();
 
   awakenSequencers();
@@ -337,11 +391,64 @@ void LdbCoordinator::awakenSequencers()
   }
 }
 
+void LdbCoordinator::buildData(void)
+{
+  const int numProcessors = Node::Object()->numNodes();
+  const int numPatches = patchMap->numPatches();
+  const int numComputes = computeMap->numComputes();
+
+  for (int i=0; i<nStatsMessagesReceived; i++)
+  {
+    const LdbStatsMsg *msg = statsMsgs[i];
+    processorArray[i].Id = msg->proc;
+    processorArray[i].backgroundLoad = 0;
+                             // should be = statsMsgs[i]->procLoad;
+    processorArray[i].proxies = new Set();
+
+    for (int j=0; j<msg->nPatches; j++)
+    {
+      const int pid = msg->pid[j];
+      int neighborNodes[PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
+
+      patchArray[i].Id = pid;
+      patchArray[i].numAtoms = msg->nAtoms[j];
+      patchArray[i].processor = patchMap->node(pid);
+      const int numProxies = requiredProxies(pid,neighborNodes);
+      patchArray[i].proxiesOn = new Set();
+
+      for (int k=0; k<numProxies; k++)
+      {
+	processorArray[neighborNodes[k]].proxies->insert(&patchArray[pid]);
+	patchArray[pid].proxiesOn->insert(&processorArray[neighborNodes[k]]);
+      }
+    }
+
+    for (j=0; j<statsMsgs[i]->nComputes; j++)
+    {
+      const int p0 = computeMap->pid(msg->cid[j],0);
+
+      // For self-interactions, just return the same pid twice
+      int p1;
+      if (computeMap->numPids(msg->cid[j]) > 1)
+	p1 = computeMap->pid(msg->cid[j],1);
+      else 
+	p1 = p0;
+
+      const int cid = msg->cid[j];
+      computeArray[i].Id = cid;
+      computeArray[i].oldProcessor = msg->proc;
+      computeArray[i].patch1 = p0;
+      computeArray[i].patch2 = p1;
+      computeArray[i].load = msg->computeTime[j];
+    }
+  }
+}
+
 // Figure out which proxies we will definitely create on other
 // nodes, without regard for non-bonded computes.  This code is swiped
 // from ProxyMgr, and changes there probable need to be propagated here.
 
-void LdbCoordinator::requiredProxies(PatchID id, FILE *fp)
+int LdbCoordinator::requiredProxies(PatchID id, int neighborNodes[])
 {
   int numPatches = patchMap->numPatches();
   enum proxyHere { No, Yes };
@@ -372,16 +479,13 @@ void LdbCoordinator::requiredProxies(PatchID id, FILE *fp)
       if (proxyNodes[proxyNode] == No)
       {
 	proxyNodes[proxyNode] = Yes;
+	neighborNodes[nProxyNodes] = proxyNode;
 	nProxyNodes++;
       }
   }
 
-  fprintf(fp,"%4d ",nProxyNodes);
-  for(i=0;i<numNodes;i++)
-    if (proxyNodes[i]==Yes)
-      fprintf(fp,"%4d ",i);
-
   delete [] proxyNodes;
+  return nProxyNodes;
 }
 
 void LdbCoordinator::printLocalLdbReport(void)
@@ -459,7 +563,7 @@ void LdbCoordinator::printLdbReport(void)
     {
       fprintf(ldbStatsFP,"%4d %4d %4d ",
 	      msg->pid[j],msg->nAtoms[j],msg->proc);
-      requiredProxies(msg->pid[j],ldbStatsFP);
+      printRequiredProxies(msg->pid[j],ldbStatsFP);
       fprintf(ldbStatsFP,"\n");
     }
   }
@@ -488,4 +592,19 @@ void LdbCoordinator::printLdbReport(void)
   fprintf(ldbStatsFP,"*** Load balancer report complete ***\n");
   fflush(ldbStatsFP);
 }
+
+void LdbCoordinator::printRequiredProxies(PatchID id, FILE *fp)
+{
+  // Check all two-away neighbors.
+  // This is really just one-away neighbors, since 
+  // two-away always returns zero: RKB
+  int neighborNodes[PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
+  const int nProxyNodes = requiredProxies(id,neighborNodes);
+
+  fprintf(fp,"%4d ",nProxyNodes);
+
+  for(int i=0;i<nProxyNodes;i++)
+    fprintf(fp,"%4d ",neighborNodes[i]);
+}
+
 #include "LdbCoordinator.bot.h"

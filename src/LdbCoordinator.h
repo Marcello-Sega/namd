@@ -23,6 +23,7 @@
 
 #include "converse.h"
 #include "NamdTypes.h"
+#include "elements.h"
 
 class PatchMap;
 class ComputeMap;
@@ -31,6 +32,10 @@ class InitMsg;
 
 enum {LDB_PATCHES = 1024};
 enum {LDB_COMPUTES = 8192};
+enum {COMPUTEMAX = 10000};
+enum {PATCHMAX = 1000};
+enum {PROCESSORMAX = 1000};
+
 
 struct LdbStatsMsg : public comm_object
 {
@@ -70,8 +75,11 @@ public:
 
 private:
   int checkAndSendStats(void);
+  void processStatistics(void);
   void awakenSequencers(void);
-  void requiredProxies(PatchID id, FILE *fp);
+  int requiredProxies(PatchID id, int []);
+  void buildData(void);
+  void printRequiredProxies(PatchID id, FILE *fp);
   void printLocalLdbReport(void);
   void printLdbReport(void);
 
@@ -97,6 +105,9 @@ private:
   FILE *ldbStatsFP;
   double totalStartTime;
   double totalTime;
+  computeInfo computeArray[COMPUTEMAX];
+  patchInfo patchArray[PATCHMAX];
+  processorInfo processorArray[PROCESSORMAX];
 };
 
 #endif // LDBCOORDINATOR_H
@@ -107,12 +118,16 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1997/04/04 17:31:42 $
+ *	$Revision: 1.5 $	$Date: 1997/04/05 04:53:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LdbCoordinator.h,v $
+ * Revision 1.5  1997/04/05 04:53:11  brunner
+ * Rebalancer code linked in.  It is called, but the results are not currently
+ * used.
+ *
  * Revision 1.4  1997/04/04 17:31:42  brunner
  * New charm fixes for CommunicateConverse, and LdbCoordinator data file
  * output, required proxies, and idle time.
