@@ -8,8 +8,7 @@
 ## Choose your favorite Compiler options
 ####
 CXX = CC -Aa -D_HPUX_SOURCE
-#CXXOPTS = -g
-#CXX = CC -Aa -D_HPUX_SOURCE
+CXXOPTS = -g
 #CXXOPTS = -O -DGLOBALS
 #CXXOPTS = +O2
 #CXXOPTS = +O3
@@ -23,7 +22,6 @@ CXX = CC -Aa -D_HPUX_SOURCE
 #CXXOPTS = +O3 -z
 #CXXOPTS = -g -v -z -G
 #CXXOPTS = -g -v
-CXXOPTS = -g 
 
 #####
 # Flags
