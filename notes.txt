@@ -311,7 +311,7 @@ Unpack source code and enter directory:
 Download and build Charm++/Converse library:
   setenv CVSROOT ":pserver:checkout@thrift.cs.uiuc.edu:/expand6/cvsroot"
   cvs login   (PRESS RETURN WHEN ASKED FOR A PASSWORD)
-  cvs co -D 2001-02-22 -P charm
+  cvs co -D 2001-05-11 -P charm
   cd charm
   ./build charm++ net-linux
   cd ..
@@ -336,9 +336,9 @@ That's it.  A more complete explanation of the build process follows.
 
 You must first download and install NAMD's communications library,
 Charm++/Converse, from http://charm.cs.uiuc.edu/.  You will have
-to obtain the Feb. 22, 2001 beta version via public CVS.  Follow the
+to obtain the May 11, 2001 beta version via public CVS.  Follow the
 directions at http://charm.cs.uiuc.edu/beta.html for connecting but
-use the command "cvs co -D 2001-02-22 -P charm" to get the files.
+use the command "cvs co -D 2001-05-11 -P charm" to get the files.
 
 This table shows the version needed for each NAMD architecture.  It is
 important that the same C++ compiler is used for both Charm and NAMD.
@@ -388,9 +388,14 @@ SUPER_INSTALL command in the charm directory:
 
   ./build charm++ CHARMVERSION
 
-where CHARMVERSION is the appropriate version listed above.  You only
-actually need the bin, include, and lib subdirectories, you can remove
-pgms and tmp from each build directory.
+where CHARMVERSION is the appropriate version listed above, separated
+into the comm-OS-cpu base (such as "net-linux-axp") and the separate
+options which are also needed (such as "scyld" and "cxx").  So, for 
+Scyld on Alpha Linux, use "./build charm++ net-linux-axp scyld cxx".
+The README distributed with Charm contains a complete explanation.
+
+You only actually need the bin, include, and lib subdirectories, you
+can remove pgms and tmp from each build directory.
 
 Edit Make.charm to point to the directory where Charm++ is installed.
 
