@@ -45,12 +45,10 @@ void BondElem::addTuplesForAtom
 
 BigReal BondElem::computeForce(void)
 {
-  DebugM(3, "::computeForce() localIndex = " << localIndex[0] << " "
+  DebugM(1, "::computeForce() localIndex = " << localIndex[0] << " "
                << localIndex[1] << endl);
 
-  const Position & pos1 = p[0]->x[localIndex[0]];
-  const Position & pos2 = p[1]->x[localIndex[1]];
-  Force new_force;	// vector between atoms 1,2
+  Force r12;	// vector between atoms 1,2
   BigReal r;		// Distance between atoms
   BigReal diff;		// difference between theta and theta0
   BigReal energy;	// energy from the bond
@@ -62,8 +60,8 @@ BigReal BondElem::computeForce(void)
   Node::Object()->parameters->get_bond_params(&k,&x0,bondType);
 
   // compute vectors between atoms and their distances
-  new_force = x[i1] - x[i2];
-  r = new_force.length();
+  r12 = p[0]->x[localIndex[0]] - p[1]->x[localIndex[1]];
+  r = r12.length();
 
   //  Compare it to the rest bond
   diff = r - x0;
@@ -78,11 +76,11 @@ BigReal BondElem::computeForce(void)
   diff /= r;
 
   //  Scale the force vector accordingly
-  new_force *= diff;
+  r12 *= diff;
 
   //  Now add the forces to each force vector
-  p[0]->f[localIndex[0]] += new_force;
-  p[1]->f[localIndex[1]] -= new_force;
+  p[0]->f[localIndex[0]] += r12;
+  p[1]->f[localIndex[1]] -= r12;
 
   DebugM(3, "::computeForce() -- ending with delta energy " << energy << endl);
   return(energy);
