@@ -840,7 +840,7 @@ void Sequencer::submitReductions(int step)
 
     for ( int j = 0; j < numAtoms; j++ ) {
       if ( simParams->fixedAtomsOn && a[j].atomFixed ) {
-        Vector dx = a[j].position;
+        Vector dx = a[j].fixedPosition;
         // all negative because fixed atoms cancels these forces
         fixVirialNormal -= outer(patch->f[Results::normal][j],dx);
         fixVirialNbond -= outer(patch->f[Results::nbond][j],dx);
@@ -958,7 +958,7 @@ void Sequencer::submitMinimizeReductions(int step)
 
     for ( int j = 0; j < numAtoms; j++ ) {
       if ( simParams->fixedAtomsOn && a[j].atomFixed ) {
-        Vector dx = a[j].position;
+        Vector dx = a[j].fixedPosition;
         // all negative because fixed atoms cancels these forces
         fixVirialNormal -= outer(patch->f[Results::normal][j],dx);
         fixVirialNbond -= outer(patch->f[Results::nbond][j],dx);
