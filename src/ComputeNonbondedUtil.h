@@ -58,6 +58,7 @@ public:
   static BigReal c3;
   static BigReal c5;
   static BigReal c6;
+  static BigReal d0;
 
 #define DECLARATION
 #undef DEFINITON
@@ -171,12 +172,16 @@ public:
  *
  *	$RCSfile: ComputeNonbondedUtil.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/14 06:44:58 $
+ *	$Revision: 1.1004 $	$Date: 1997/03/14 23:18:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.h,v $
+ * Revision 1.1004  1997/03/14 23:18:14  jim
+ * Implemented C1 splitting for long-range electrostatics.
+ * Energies on sub-timesteps are incorrect.  (Aren't they always?)
+ *
  * Revision 1.1003  1997/03/14 06:44:58  jim
  * First working versions of full electrostatics splitting functions.
  *

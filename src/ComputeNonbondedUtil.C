@@ -59,12 +59,14 @@ void ComputeNonbondedUtil::select(void)
   if ( simParams->switchingActive )
   {
     switchOn = simParams->switchingDist;
+    d0 = 1/(cutoff-switchOn);
     switchOn2 = switchOn*switchOn;
     c0 = 1/(cutoff2-switchOn2);
   }
   else
   {
     switchOn = cutoff;
+    d0 = 0.;  // avoid division by zero
     switchOn2 = switchOn*switchOn;
     c0 = 0.;  // avoid division by zero
   }
@@ -335,12 +337,16 @@ void ComputeNonbondedUtil::select(void)
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/14 06:44:56 $
+ *	$Revision: 1.1004 $	$Date: 1997/03/14 23:18:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1004  1997/03/14 23:18:13  jim
+ * Implemented C1 splitting for long-range electrostatics.
+ * Energies on sub-timesteps are incorrect.  (Aren't they always?)
+ *
  * Revision 1.1003  1997/03/14 06:44:56  jim
  * First working versions of full electrostatics splitting functions.
  *

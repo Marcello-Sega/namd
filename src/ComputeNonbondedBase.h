@@ -86,6 +86,7 @@ NOEXCL
   const BigReal c3 = ComputeNonbondedUtil:: c3;
   const BigReal c5 = ComputeNonbondedUtil:: c5;
   const BigReal c6 = ComputeNonbondedUtil:: c6;
+  const BigReal d0 = ComputeNonbondedUtil:: d0;
 )
 
 NOEXCL
@@ -267,10 +268,16 @@ C1SPLITTING
 (
       // C1 electrostatics splitting function for multiple timestepping
 
-      // NOT IMPLEMENTED PENDING FURTHER STUDY  -JCP
-      shiftVal = 1 - r2*c5;
-      dShiftVal = c6*shiftVal*r;
-      shiftVal *= shiftVal;
+      dShiftVal = 0;  // formula only correct for forces
+      if (r > switchOn)
+      {
+	const BigReal d1 = d0*(r-switchOn);
+	shiftVal = 1. + d1*d1*(2.*d1-3.);
+      }
+      else
+      {
+	shiftVal = 1;
+      }
 )
 
       NOFULL(const BigReal) EXCL(FULL(const BigReal)) kqq = kq_i * a_j.charge;
@@ -398,12 +405,16 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/03/14 06:44:53 $
+ *	$Revision: 1.1007 $	$Date: 1997/03/14 23:18:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1007  1997/03/14 23:18:08  jim
+ * Implemented C1 splitting for long-range electrostatics.
+ * Energies on sub-timesteps are incorrect.  (Aren't they always?)
+ *
  * Revision 1.1006  1997/03/14 06:44:53  jim
  * First working versions of full electrostatics splitting functions.
  *
