@@ -43,7 +43,7 @@ class PDBData {  // at the basic level, a PDB record only knows its type
      MTRIX, TVECT, MODEL, ATOM, HETATM, SIGATM, ANISOU, SIGUIJ,
      TER, ENDMDL, CONECT, MASTER, END, UNKNOWN};
 
-    static char *PDBNames[UNKNOWN+1];   // string descriptors for each field
+    static const char *PDBNames[UNKNOWN+1]; // string descriptors for each field
 
     enum PDBFormatStyle { COLUMNS, FIELDS };  // used to specify if the
        // output should be based on columns (FORTRAN style) or
@@ -251,13 +251,16 @@ PDBData *new_PDBData(const char *data);  // nasty
  * RCS INFORMATION:
  *
  *	$RCSfile: PDBData.h,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/07/09 21:26:42 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1999/07/09 21:05:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PDBData.h,v $
+ * Revision 1.1003  1999/07/09 21:05:50  jim
+ * Eliminated compiler warnings.
+ *
  * Revision 1.1002  1997/07/09 21:26:42  milind
  * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
  * and #endif's.

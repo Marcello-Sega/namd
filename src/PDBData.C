@@ -29,7 +29,8 @@ const Real PDBAtom::default_temperaturefactor = 0.00;
 const int PDBAtom::no_footnote = 0;
 
 // write down the names so I won't have to do so again
-char *PDBData::PDBNames[PDBData::UNKNOWN+1] = {"HEADER", "OBSLTE", "COMPND",
+const char *PDBData::PDBNames[PDBData::UNKNOWN+1] = {
+       "HEADER", "OBSLTE", "COMPND",
        "SOURCE", "EXPDTA", "AUTHOR", "REVDAT", "SPRSDE", "JRNL",
        "REMARK", "SEQRES", "FTNOTE", "HET", "FORMUL", "HELIX",
        "SHEET", "TURN", "SSBOND", "SITE", "CRYST1", "ORIGX",
@@ -703,12 +704,15 @@ main()
  *
  *	$RCSfile: PDBData.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1999/03/10 23:03:14 $
+ *	$Revision: 1.1006 $	$Date: 1999/07/09 21:05:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PDBData.C,v $
+ * Revision 1.1006  1999/07/09 21:05:49  jim
+ * Eliminated compiler warnings.
+ *
  * Revision 1.1005  1999/03/10 23:03:14  jim
  * Eliminated warnings sent to stderr.
  *
