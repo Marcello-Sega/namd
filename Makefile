@@ -129,8 +129,8 @@ TEMPLATES = \
 	$(SRCDIR)/Templates/UniqueSortedArray.C
 
 namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES)
-#	cd $(DPMTADIR) ; $(MAKE) ; cd ..
-#	cd $(PVMDIR) ; $(MAKE) ; cd ..
+	cd $(DPMTADIR) ; $(MAKE) ; cd ..
+	cd $(PVMDIR) ; $(MAKE) ; cd ..
 	$(CHARMC) -verbose -ld++-option \
 	"-I $(INCLUDE) -I $(SRCDIR) $(CXXOPTS) " \
 	-language charm++ \
