@@ -34,7 +34,7 @@ static int	debug = 0;	/* set it if you want */
  *	 9118 FORMAT(12I6)
  *	 9128 FORMAT(5E16.8)
  */
-char	*f9118 = "%6d%6d%6d%6d%6d%6d%6d%6d%6d%6d%6d%6d\n";
+const char	*f9118 = "%6d%6d%6d%6d%6d%6d%6d%6d%6d%6d%6d%6d\n";
 
 
 // This function was borrowed from VMD code in "ReadPARM.C". Here it
@@ -109,7 +109,7 @@ char *Ambertoppar::get(int size)
  							PREADLN()
 ************************************************************************/
 
-void Ambertoppar::preadln(FILE *file, char *name, char *string)
+void Ambertoppar::preadln(FILE *file, const char *name, char *string)
 {
 	int 	i, j;
 

@@ -38,7 +38,7 @@ typedef struct parm {
 	FILE  *genopen (const char *name);
 	void  genclose (FILE *);
 	char  *get (int);
-	void  preadln (FILE *, char *, char *);
+	void  preadln (FILE *, const char *, char *);
 	int  readparm (char *);
 	int  firstwat();
 } Ambertoppar;
