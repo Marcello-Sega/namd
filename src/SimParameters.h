@@ -229,6 +229,7 @@ public:
 	Bool miscForcesOn;		//  Using misc forces?
 
 	Bool fixedAtomsOn;		//  Are there fixed atoms?
+	Bool fixedAtomsForces;		//  Calculate forces anyway?
 
 	Bool langevinOn;		//  Flag TRUE-> langevin dynamics active
 	BigReal langevinTemp;		//  Temperature for Langevin dynamics

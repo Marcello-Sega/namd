@@ -113,11 +113,36 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_INT("firsttimestep",firstTimestep)
   SCRIPT_PARSE_FLOAT("reassignTemp",reassignTemp)
   SCRIPT_PARSE_FLOAT("rescaleTemp",rescaleTemp)
+  // SCRIPT_PARSE_BOOL("Langevin",langevinOn)
   SCRIPT_PARSE_FLOAT("langevinTemp",langevinTemp)
   SCRIPT_PARSE_FLOAT("initialTemp",initialTemp)
+  SCRIPT_PARSE_BOOL("useGroupPressure",useGroupPressure)
+  SCRIPT_PARSE_BOOL("useFlexibleCell",useFlexibleCell)
+  SCRIPT_PARSE_BOOL("useConstantArea",useConstantArea)
+  SCRIPT_PARSE_BOOL("LangevinPiston",langevinPistonOn)
+  SCRIPT_PARSE_FLOAT("LangevinPistonTarget",langevinPistonTarget)
+  SCRIPT_PARSE_FLOAT("LangevinPistonPeriod",langevinPistonPeriod)
+  SCRIPT_PARSE_FLOAT("LangevinPistonDecay",langevinPistonDecay)
+  SCRIPT_PARSE_FLOAT("LangevinPistonTemp",langevinPistonTemp)
+  SCRIPT_PARSE_FLOAT("SurfaceTensionTarget",surfaceTensionTarget)
+  SCRIPT_PARSE_BOOL("BerendsenPressure",berendsenPressureOn)
+  SCRIPT_PARSE_FLOAT("BerendsenPressureTarget",berendsenPressureTarget)
+  SCRIPT_PARSE_FLOAT("BerendsenPressureCompressibility",
+				berendsenPressureCompressibility)
+  SCRIPT_PARSE_FLOAT("BerendsenPressureRelaxationTime",
+				berendsenPressureRelaxationTime)
   SCRIPT_PARSE_FLOAT("constraintScaling",constraintScaling)
   SCRIPT_PARSE_STRING("outputname",outputFilename)
   SCRIPT_PARSE_VECTOR("eField",eField)
+
+  if ( ! strncasecmp(param,"fixedatoms",MAX_SCRIPT_PARAM_SIZE) ) {
+    if ( ! fixedAtomsOn )
+      NAMD_die("FixedAtoms may not be enabled in a script.");
+    if ( ! fixedAtomsForces )
+      NAMD_die("To use fixedAtoms in script first use fixedAtomsForces yes.");
+    fixedAtomsOn = atobool(value);
+    return;
+  }
 
 //Modifications for alchemical fep
 //SD & CC, CNRS - LCTN, Nancy
@@ -722,7 +747,7 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
       "Temperature for pressure control piston",
       &langevinPistonTemp);
    opts.range("LangevinPistonTemp", POSITIVE);
-   opts.units("langevinTemp", N_KELVIN);
+   opts.units("LangevinPistonTemp", N_KELVIN);
    opts.optional("LangevinPiston", "StrainRate",
       "Initial strain rate for pressure control (x y z)",
       &strainRate);
@@ -739,6 +764,9 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
    ////  Fixed Atoms
    opts.optionalB("main", "fixedatoms", "Are there fixed atoms?",
     &fixedAtomsOn, FALSE);
+   opts.optionalB("fixedatoms", "fixedAtomsForces",
+     "Calculate forces between fixed atoms?  (Required to unfix during run.)",
+     &fixedAtomsForces, FALSE);
    opts.optional("fixedatoms", "fixedAtomsFile", "PDB file with flags for "
      "fixed atoms (default is the PDB input file)",
      PARSE_STRING);
@@ -1921,6 +1949,10 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      NAMD_die("Sorry, FEP is only implemented for PME full electrostatics.");
    }
 
+   if ( ! fixedAtomsOn ) {
+     fixedAtomsForces = 0;
+   }
+
    if (!opts.defined("constraints"))
    {
      constraintExp = 0;     
@@ -2321,6 +2353,8 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    if (fixedAtomsOn)
    {
       iout << iINFO << "FIXED ATOMS ACTIVE\n";
+      if ( fixedAtomsForces )
+	iout << iINFO << "FORCES BETWEEN FIXED ATOMS ARE CALCULATED\n";
       iout << endi;
    }
 

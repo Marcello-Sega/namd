@@ -210,6 +210,7 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
   numDrag=0;
   numConsForce=0;
   numFixedAtoms=0;
+  numFixedGroups=0;
   numExPressureAtoms=0;
   numRigidBonds=0;
   numFixedRigidBonds=0;
@@ -1942,7 +1943,12 @@ void Molecule::receive_Molecule(MIStream *msg)
        
     {
        register int i;      //  Loop counter
-       register int numFixedAtoms = this->numFixedAtoms;  // many tests
+
+       register int numFixedAtoms = this->numFixedAtoms;
+       // if we want forces on fixed atoms then just pretend
+       // there are none for the purposes of this routine;
+       if ( simParams->fixedAtomsForces ) numFixedAtoms = 0;
+
 //fepb
 //     int numFepInitial = this->numFepInitial;
 //     int numFepFinal = this->numFepFinal;
@@ -3436,6 +3442,22 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
 	}
       }
     }
+  }
+
+  // how many hydrogen groups are completely fixed
+  {
+    numFixedGroups = 0;
+    HydrogenGroup::iterator h_i, h_e;
+    h_i = hydrogenGroup.begin();  h_e = hydrogenGroup.end();
+    int allFixed = 0;
+    for( ; h_i != h_e; ++h_i ) {
+      if ( h_i->isGP ) {
+        if ( allFixed ) ++numFixedGroups;
+        allFixed = 1;
+      }
+      allFixed = allFixed && fixedAtomFlags[h_i->atomID];
+    }
+    if ( allFixed ) ++numFixedGroups;
   }
 
 }

@@ -175,12 +175,9 @@ void WorkDistrib::createHomePatches(void)
     random_velocities(params->initialTemp, molecule, velocities, numAtoms);
   }
 
-  int numDegFreedom = 3*numAtoms;
-
   //  If COMMotion == no, remove center of mass motion
   if (!(params->comMove)) {
     remove_com_motion(velocities, molecule, numAtoms);
-    numDegFreedom -= 3;
   }
 
   FullAtomList *atoms = new FullAtomList[numPatches];

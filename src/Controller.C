@@ -641,18 +641,26 @@ void Controller::receivePressure(int step)
     Tensor intVirial_normal;
     Tensor intVirial_nbond;
     Tensor intVirial_slow;
+    Vector extForce_normal;
+    Vector extForce_nbond;
+    Vector extForce_slow;
+    Vector extPosition;
+    BigReal extCount;
     BigReal volume;
 
     int numAtoms = molecule->numAtoms;
     numDegFreedom = 3 * numAtoms;
-    int numFixedAtoms = molecule->numFixedAtoms;
+    int numFixedAtoms =
+	( simParameters->fixedAtomsOn ? molecule->numFixedAtoms : 0 );
+    int numFixedGroups = ( numFixedAtoms ? molecule->numFixedGroups : 0 );
     if ( numFixedAtoms ) numDegFreedom -= 3 * numFixedAtoms;
     if ( ! ( numFixedAtoms || molecule->numConstraints
 	|| simParameters->comMove || simParameters->langevinOn ) ) {
       numDegFreedom -= 3;
     }
     int numRigidBonds = molecule->numRigidBonds;
-    int numFixedRigidBonds = molecule->numFixedRigidBonds;
+    int numFixedRigidBonds =
+	( simParameters->fixedAtomsOn ? molecule->numFixedRigidBonds : 0 );
     numDegFreedom -= ( numRigidBonds - numFixedRigidBonds );
 
     kineticEnergy = reduction->item(REDUCTION_KINETIC_ENERGY);
@@ -671,6 +679,16 @@ void Controller::receivePressure(int step)
     GET_TENSOR(intVirial_normal,reduction,REDUCTION_INT_VIRIAL_NORMAL);
     GET_TENSOR(intVirial_nbond,reduction,REDUCTION_INT_VIRIAL_NBOND);
     GET_TENSOR(intVirial_slow,reduction,REDUCTION_INT_VIRIAL_SLOW);
+
+    GET_VECTOR(extForce_normal,reduction,REDUCTION_EXT_FORCE_NORMAL);
+    GET_VECTOR(extForce_nbond,reduction,REDUCTION_EXT_FORCE_NBOND);
+    GET_VECTOR(extForce_slow,reduction,REDUCTION_EXT_FORCE_SLOW);
+    GET_VECTOR(extPosition,reduction,REDUCTION_EXT_POSITION);
+    extCount = reduction->item(REDUCTION_EXT_COUNT);
+    if ( extCount != 0. ) extPosition /= extCount;
+    virial_normal -= outer(extForce_normal,extPosition);
+    virial_nbond -= outer(extForce_nbond,extPosition);
+    virial_slow -= outer(extForce_slow,extPosition);
 
     temperature = 2.0 * kineticEnergy / ( numDegFreedom * BOLTZMAN );
 
@@ -715,7 +733,7 @@ void Controller::receivePressure(int step)
       controlPressure_nbond = groupPressure_nbond;
       controlPressure_slow = groupPressure_slow;
       controlPressure = groupPressure;
-      controlNumDegFreedom = molecule->numHydrogenGroups;
+      controlNumDegFreedom = molecule->numHydrogenGroups - numFixedGroups;
       if ( ! ( numFixedAtoms || molecule->numConstraints
 	|| simParameters->comMove || simParameters->langevinOn ) ) {
         controlNumDegFreedom -= 1;

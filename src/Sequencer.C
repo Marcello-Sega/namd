@@ -241,7 +241,7 @@ void Sequencer::addMovDragToPosition(BigReal timestep) {
   for ( int i = 0; i < numAtoms; ++i )
   {
     // skip if fixed atom or zero drag attribute
-    if ( atom[i].atomFixed || !(molecule->is_atom_dragged(atom[i].id)) ) continue;
+    if ( (simParams->fixedAtomsOn && atom[i].atomFixed) || !(molecule->is_atom_dragged(atom[i].id)) ) continue;
     // compute the increment
     dragIncrement = movDragVel * dt;
     // scale the increment by the individual atom factor
@@ -276,7 +276,7 @@ void Sequencer::addRotDragToPosition(BigReal timestep) {
   for ( int i = 0; i < numAtoms; ++i )
   {
     // skip if fixed atom or zero drag attribute
-    if ( atom[i].atomFixed || !(molecule->is_atom_dragged(atom[i].id)) ) continue;
+    if ( (simParams->fixedAtomsOn && atom[i].atomFixed) || !(molecule->is_atom_dragged(atom[i].id)) ) continue;
     // do vector algebra
     atomRadius = atom[i].position - rotDragPivot;
     atomTangent = rotDragUnit * (atomRadius * rotDragUnit) / atomRadius.length();
@@ -352,7 +352,7 @@ void Sequencer::newMinimizeDirection(BigReal c) {
   for ( int i = 0; i < numAtoms; ++i ) {
     a[i].velocity *= c;
     a[i].velocity += f1[i] + f2[i] + f3[i];
-    if ( a[i].atomFixed ) a[i].velocity = 0;
+    if ( simParams->fixedAtomsOn && a[i].atomFixed ) a[i].velocity = 0;
   }
 }
 
@@ -456,10 +456,12 @@ void Sequencer::berendsenPressure(int step)
     int hgs;
     for ( int i = 0; i < numAtoms; i += hgs ) {
       hgs = a[i].hydrogenGroupSize;
+      if ( simParams->fixedAtomsOn && a[i].groupFixed ) continue;
       int j;
       BigReal m_cm = 0;
       Position x_cm(0,0,0);
       for ( j = i; j < (i+hgs); ++j ) {
+        if ( simParams->fixedAtomsOn && a[j].atomFixed ) continue;
         m_cm += a[j].mass;
         x_cm += a[j].mass * a[j].position;
       }
@@ -468,7 +470,7 @@ void Sequencer::berendsenPressure(int step)
       patch->lattice.rescale(new_x_cm,factor);
       Position delta_x_cm = new_x_cm - x_cm;
       for ( j = i; j < (i+hgs); ++j ) {
-        if ( a[j].atomFixed ) continue;
+        if ( simParams->fixedAtomsOn && a[j].atomFixed ) continue;
         a[j].position += delta_x_cm;
       }
     }
@@ -477,7 +479,7 @@ void Sequencer::berendsenPressure(int step)
    {
     for ( int i = 0; i < numAtoms; ++i )
     {
-      if ( a[i].atomFixed ) continue;
+      if ( simParams->fixedAtomsOn && a[i].atomFixed ) continue;
       patch->lattice.rescale(a[i].position,factor);
     }
    }
@@ -500,11 +502,13 @@ void Sequencer::langevinPiston(int step)
     int hgs;
     for ( int i = 0; i < numAtoms; i += hgs ) {
       hgs = a[i].hydrogenGroupSize;
+      if ( simParams->fixedAtomsOn && a[i].groupFixed ) continue;
       int j;
       BigReal m_cm = 0;
       Position x_cm(0,0,0);
       Velocity v_cm(0,0,0);
       for ( j = i; j < (i+hgs); ++j ) {
+        if ( simParams->fixedAtomsOn && a[j].atomFixed ) continue;
         m_cm += a[j].mass;
         x_cm += a[j].mass * a[j].position;
         v_cm += a[j].mass * a[j].velocity;
@@ -519,7 +523,7 @@ void Sequencer::langevinPiston(int step)
       delta_v_cm.y = ( velFactor.y - 1 ) * v_cm.y;
       delta_v_cm.z = ( velFactor.z - 1 ) * v_cm.z;
       for ( j = i; j < (i+hgs); ++j ) {
-        if ( a[j].atomFixed ) continue;
+        if ( simParams->fixedAtomsOn && a[j].atomFixed ) continue;
         if ( mol->is_atom_exPressure(a[j].id) ) continue;
         a[j].position += delta_x_cm;
         a[j].velocity += delta_v_cm;
@@ -530,7 +534,7 @@ void Sequencer::langevinPiston(int step)
    {
     for ( int i = 0; i < numAtoms; ++i )
     {
-      if ( a[i].atomFixed ) continue;
+      if ( simParams->fixedAtomsOn && a[i].atomFixed ) continue;
       if ( mol->is_atom_exPressure(a[i].id) ) continue;
       patch->lattice.rescale(a[i].position,factor);
       a[i].velocity.x *= velFactor.x;
@@ -577,7 +581,7 @@ void Sequencer::reassignVelocities(int step)
     BigReal kbT = BOLTZMAN * newTemp;
     for ( int i = 0; i < numAtoms; ++i )
     {
-      a[i].velocity = ( ( a[i].atomFixed ) ? Vector(0,0,0) :
+      a[i].velocity = ( ( simParams->fixedAtomsOn && a[i].atomFixed ) ? Vector(0,0,0) :
         sqrt( kbT / a[i].mass ) * random->gaussian_vector() );
     }
   }
@@ -591,7 +595,7 @@ void Sequencer::reinitVelocities(void)
   BigReal kbT = BOLTZMAN * newTemp;
   for ( int i = 0; i < numAtoms; ++i )
   {
-    a[i].velocity = ( ( a[i].atomFixed ) ? Vector(0,0,0) :
+    a[i].velocity = ( ( simParams->fixedAtomsOn && a[i].atomFixed ) ? Vector(0,0,0) :
       sqrt( kbT / a[i].mass ) * random->gaussian_vector() );
   }
 }
@@ -771,6 +775,8 @@ void Sequencer::submitReductions(int step)
         Vector dv = v - v_cm;
         intKineticEnergy += mass * (v * dv);
         intVirialNormal += mass * outer(v,dv);
+	// net force treated as zero for fixed atoms
+        if ( simParams->fixedAtomsOn && a[j].atomFixed ) continue;
         Vector dx = a[j].position - x_cm;
         intVirialNormal += outer(patch->f[Results::normal][j],dx);
         intVirialNbond += outer(patch->f[Results::nbond][j],dx);
@@ -784,6 +790,41 @@ void Sequencer::submitReductions(int step)
     ADD_TENSOR_OBJECT(reduction,REDUCTION_INT_VIRIAL_NORMAL,intVirialNormal);
     ADD_TENSOR_OBJECT(reduction,REDUCTION_INT_VIRIAL_NBOND,intVirialNbond);
     ADD_TENSOR_OBJECT(reduction,REDUCTION_INT_VIRIAL_SLOW,intVirialSlow);
+  }
+
+  if ( simParams->fixedAtomsOn ) {
+    Tensor fixVirialNormal;
+    Tensor fixVirialNbond;
+    Tensor fixVirialSlow;
+    Vector fixForceNormal = 0;
+    Vector fixForceNbond = 0;
+    Vector fixForceSlow = 0;
+    Vector fixPosition = 0;
+    int fixCount = 0;
+
+    for ( int j = 0; j < numAtoms; j++ ) {
+      if ( simParams->fixedAtomsOn && a[j].atomFixed ) {
+        Vector dx = a[j].position;
+        // all negative because fixed atoms cancels these forces
+        fixVirialNormal -= outer(patch->f[Results::normal][j],dx);
+        fixVirialNbond -= outer(patch->f[Results::nbond][j],dx);
+        fixVirialSlow -= outer(patch->f[Results::slow][j],dx);
+        fixForceNormal -= patch->f[Results::normal][j];
+        fixForceNbond -= patch->f[Results::nbond][j];
+        fixForceSlow -= patch->f[Results::slow][j];
+        fixPosition += dx;
+        fixCount += 1;
+      }
+    }
+
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,fixVirialNormal);
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NBOND,fixVirialNbond);
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_SLOW,fixVirialSlow);
+    ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_NORMAL,fixForceNormal);
+    ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_NBOND,fixForceNbond);
+    ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_SLOW,fixForceSlow);
+    ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_POSITION,fixPosition);
+    reduction->item(REDUCTION_EXT_COUNT) += fixCount;
   }
 
   Vector momentum = patch->calcMomentum();
@@ -816,7 +857,7 @@ void Sequencer::submitMinimizeReductions(int step)
   BigReal vdotv = 0;
   int numHuge = 0;
   for ( int i = 0; i < numAtoms; ++i ) {
-    if ( a[i].atomFixed ) continue;
+    if ( simParams->fixedAtomsOn && a[i].atomFixed ) continue;
     Force f = f1[i] + f2[i] + f3[i];
     BigReal ff = f * f;
     if ( ff > fmax2 ) {

@@ -24,6 +24,11 @@
   R->item( RL ## _Y ) += D[ DL ## _Y ]; \
   R->item( RL ## _Z ) += D[ DL ## _Z ]
 
+#define ADD_VECTOR_OBJECT(R,RL,D) \
+  R->item( RL ## _X ) += D.x; \
+  R->item( RL ## _Y ) += D.y; \
+  R->item( RL ## _Z ) += D.z
+
 #define ADD_TENSOR(R,RL,D,DL) \
   R->item( RL ## _XX) += D[ DL ## _XX ]; \
   R->item( RL ## _XY) += D[ DL ## _XY ]; \
@@ -92,6 +97,11 @@ typedef enum
   TENSOR(REDUCTION_INT_VIRIAL_NORMAL),
   TENSOR(REDUCTION_INT_VIRIAL_NBOND),
   TENSOR(REDUCTION_INT_VIRIAL_SLOW),
+  VECTOR(REDUCTION_EXT_FORCE_NORMAL),
+  VECTOR(REDUCTION_EXT_FORCE_NBOND),
+  VECTOR(REDUCTION_EXT_FORCE_SLOW),
+  VECTOR(REDUCTION_EXT_POSITION),
+  REDUCTION_EXT_COUNT,
  // momentum
   VECTOR(REDUCTION_MOMENTUM),
   VECTOR(REDUCTION_ANGULAR_MOMENTUM),

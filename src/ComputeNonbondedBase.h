@@ -233,7 +233,7 @@ void ComputeNonbondedUtil :: NAME
 
     pairlistindex = 0;	// initialize with 0 elements
     pairlistoffset=0;
-    const int groupfixed = ( p_i.groupFixed );
+    const int groupfixed = ( fixedAtomsOn && p_i.groupFixed );
 
     // If patch divisions are not made by hydrogen groups, then
     // hydrogenGroupSize is set to 1 for all atoms.  Thus we can
@@ -321,7 +321,7 @@ void ComputeNonbondedUtil :: NAME
     else pairlistoffset++;
     )
 
-    const int atomfixed = ( p_i.atomFixed );
+    const int atomfixed = ( fixedAtomsOn && p_i.atomFixed );
 
   FEP
     (

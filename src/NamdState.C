@@ -328,6 +328,11 @@ int NamdState::configListInit(ConfigList *cfgList) {
 	}
 
 	iout << iINFO << molecule->numHydrogenGroups << " HYDROGEN GROUPS\n";
+	if (simParameters->fixedAtomsOn)
+	{
+	   iout << iINFO << molecule->numFixedGroups <<
+			" HYDROGEN GROUPS WITH ALL ATOMS FIXED\n";
+	}
 
         {
           BigReal totalMass = 0;

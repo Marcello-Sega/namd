@@ -103,7 +103,7 @@ void ComputeNonbondedUtil::select(void)
   SimParameters * simParams = Node::Object()->simParameters;
 
   commOnly = simParams->commOnly;
-  fixedAtomsOn = simParams->fixedAtomsOn;
+  fixedAtomsOn = ( simParams->fixedAtomsOn && ! simParams->fixedAtomsForces );
 
   cutoff = simParams->cutoff;
   cutoff2 = cutoff*cutoff;

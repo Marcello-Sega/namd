@@ -167,6 +167,7 @@ public:
 	int numFixedAtoms;	//  Number of fixed atoms
 	int numExPressureAtoms; //  Number of atoms excluded from pressure
 	int numHydrogenGroups;	//  Number of hydrogen groups
+	int numFixedGroups;	//  Number of totally fixed hydrogen groups
 	int numRigidBonds;	//  Number of rigid bonds
 	int numFixedRigidBonds; //  Number of rigid bonds between fixed atoms
 //fepb

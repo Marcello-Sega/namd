@@ -349,28 +349,30 @@ void HomePatch::saveForce(const int ftag)
 void HomePatch::addForceToMomentum(const BigReal timestep, const int ftag,
 							const int useSaved)
 {
+  SimParameters *simParams = Node::Object()->simParameters;
   const BigReal dt = timestep / TIMEFACTOR;
   if ( useSaved ) {
     for ( int i = 0; i < numAtoms; ++i )
     {
       atom[i].velocity += f_saved[ftag][i] * ( dt / atom[i].mass );
-      if ( atom[i].atomFixed ) atom[i].velocity = 0;
+      if ( simParams->fixedAtomsOn && atom[i].atomFixed ) atom[i].velocity = 0;
     }
   } else {
     for ( int i = 0; i < numAtoms; ++i )
     {
       atom[i].velocity += f[ftag][i] * ( dt / atom[i].mass );
-      if ( atom[i].atomFixed ) atom[i].velocity = 0;
+      if ( simParams->fixedAtomsOn && atom[i].atomFixed ) atom[i].velocity = 0;
     }
   }
 }
 
 void HomePatch::addVelocityToPosition(const BigReal timestep)
 {
+  SimParameters *simParams = Node::Object()->simParameters;
   const BigReal dt = timestep / TIMEFACTOR;
   for ( int i = 0; i < numAtoms; ++i )
   {
-    if ( ! ( atom[i].atomFixed ) ) atom[i].position += atom[i].velocity * dt;
+    if ( ! ( simParams->fixedAtomsOn && atom[i].atomFixed ) ) atom[i].position += atom[i].velocity * dt;
   }
 }
 
@@ -402,7 +404,7 @@ int HomePatch::rattle1(const BigReal timestep)
       pos[i] = atom[ig+i].position;
       vel[i] = atom[ig+i].velocity;
       rmass[i] = 1. / atom[ig+i].mass;
-      fixed[i] = ( atom[ig+i].atomFixed );
+      fixed[i] = ( simParams->fixedAtomsOn && atom[ig+i].atomFixed );
       // undo addVelocityToPosition to get proper reference coordinates
       if ( fixed[i] ) rmass[i] = 0.; else ref[i] -= vel[i] * dt;
     }
@@ -520,7 +522,7 @@ void HomePatch::rattle2(const BigReal timestep, Tensor *virial)
       ref[i] = atom[ig+i].position;
       vel[i] = atom[ig+i].velocity;
       rmass[i] = 1. / atom[ig+i].mass;
-      fixed[i] = ( atom[ig+i].atomFixed );
+      fixed[i] = ( simParams->fixedAtomsOn && atom[ig+i].atomFixed );
       if ( fixed[i] ) rmass[i] = 0.;
     }
     int icnt = 0;
@@ -617,7 +619,7 @@ void HomePatch::mollyAverage()
 	for ( i = 0; i < hgs; ++i ) {
 	  ref[i] = atom[ig+i].position;
 	  rmass[i] = 1. / atom[ig+i].mass;
-	  fixed[i] = ( atom[ig+i].atomFixed );
+	  fixed[i] = ( simParams->fixedAtomsOn && atom[ig+i].atomFixed );
 	  if ( fixed[i] ) rmass[i] = 0.;
 	}
 	avg = &(p_avg[ig]);
@@ -678,7 +680,7 @@ void HomePatch::mollyMollify(Tensor *virial)
 	  ref[i] = atom[ig+i].position;
 	  force[i] = f[Results::slow][ig+i];
 	  rmass[i] = 1. / atom[ig+i].mass;
-	  fixed[i] = ( atom[ig+i].atomFixed );
+	  fixed[i] = ( simParams->fixedAtomsOn && atom[ig+i].atomFixed );
 	  if ( fixed[i] ) rmass[i] = 0.;
 	}
 	int icnt = 0;

@@ -91,6 +91,10 @@ void ComputeRestraints::doForce(CompAtom* p, Results* res)
 	Force *f = res->f[Results::normal];
 	BigReal energy = 0;
 	BigReal m[9];
+	Tensor virial;
+	Vector netForce = 0;
+	Vector consPosition = 0;
+	int consCount = 0;
 
 	// BEGIN moving and rotating constraint changes ******
 
@@ -105,7 +109,7 @@ void ComputeRestraints::doForce(CompAtom* p, Results* res)
 	// END moving and rotating constraint changes ******
 
 	  
-	for (int localID=0; localID<numAtoms; ++localID)
+	if (scaling != 0.) for (int localID=0; localID<numAtoms; ++localID)
 	{
 	  if (molecule->is_atom_constrained(p[localID].id))
 	  {
@@ -125,7 +129,7 @@ void ComputeRestraints::doForce(CompAtom* p, Results* res)
 	    // END moving and rotating constraint changes *******
 
 	    Rij = patch->lattice.delta(refPos,p[localID].position);
-
+	    Vector vpos = refPos - Rij;
 
 	    //****** BEGIN selective restraints (X,Y,Z) changes 
 	    if (consSelectOn) { // check which components we want to restrain:
@@ -169,11 +173,19 @@ void ComputeRestraints::doForce(CompAtom* p, Results* res)
               //iout << iINFO << "restraining force" << Rij        << "\n"; 
 
 	      f[localID] += Rij;
+	      netForce += Rij;
+	      virial += outer(Rij,vpos);
+	      consPosition += vpos;
+	      consCount++;
 	    }
 	  }
 	}
 
 	reduction->item(REDUCTION_BC_ENERGY) += energy;
+	ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,virial);
+	ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_NORMAL,netForce);
+	ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_POSITION,consPosition);
+	reduction->item(REDUCTION_EXT_COUNT) += consCount;
 	reduction->submit();
 
 }
