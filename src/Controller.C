@@ -969,8 +969,9 @@ void Controller::compareChecksums(int step, int forgiving) {
 
     checksum = reduction->item(REDUCTION_MARGIN_VIOLATIONS);
     if ( ((int)checksum) && ! marginViolations ) {
-      iout << (forgiving ? iWARN : iERROR) << ((int)checksum) <<
-        " margin violations detected during timestep " << step << ".\n" << endi;
+      iout << iERROR << "Margin is too small for " << ((int)checksum) <<
+        " atoms during timestep " << step << ".\n" << iERROR <<
+      "Incorrect nonbonded forces and energies may be calculated!\n" << endi;
     }
     marginViolations += (int)checksum;
 
@@ -1277,7 +1278,7 @@ void Controller::printEnergies(int step, int minimize)
     // ONLY OUTPUT SHOULD OCCUR BELOW THIS LINE!!!
 
     if ( marginViolations ) {
-      iout << iWARN << marginViolations <<
+      iout << iERROR << marginViolations <<
         " margin violations detected since previous energy output.\n" << endi;
     }
     marginViolations = 0;
