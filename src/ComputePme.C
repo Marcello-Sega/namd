@@ -29,6 +29,7 @@
 #include "SimParameters.h"
 #include "WorkDistrib.h"
 #include "varsizemsg.h"
+#include "Random.h"
 
 #ifndef SQRT_PI
 #define SQRT_PI 1.7724538509055160273 /* mathematica 15 digits*/
@@ -133,6 +134,8 @@ private:
   int myRecipPe;
   int *recipPeMap;
   int *recipPeDest;
+  int *gridPeOrder;
+  int *transPeOrder;
   int grid_count;
   int trans_count;
   int untrans_count;
@@ -152,6 +155,8 @@ ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), pmeCompute(0) {
   localInfo = new LocalPmeInfo[CkNumPes()];
   recipPeMap = new int[CkNumPes()];
   recipPeDest = new int[CkNumPes()];
+  gridPeOrder = new int[CkNumPes()];
+  transPeOrder = new int[CkNumPes()];
   qgrid = 0;
   work = 0;
   grid_count = 0;
@@ -219,6 +224,15 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     iout << iINFO << "PME using " << numRecipPes <<
       " (max of " << numGridPes << " and " << numTransPes << ")" <<
       " processors for FFT and reciprocal sum.\n" << endi;
+  }
+  { // generate random orderings for grid and trans messages
+    for ( int i = 0; i < numRecipPes; ++i ) {
+      gridPeOrder[i] = i;
+      transPeOrder[i] = i;
+    }
+    Random rand(CkMyPe());
+    rand.reorder(gridPeOrder,numGridPes);
+    rand.reorder(transPeOrder,numTransPes);
   }
 
   {  // decide which pes to use by bit reversal
@@ -420,6 +434,8 @@ ComputePmeMgr::~ComputePmeMgr() {
   delete [] localInfo;
   delete [] recipPeMap;
   delete [] recipPeDest;
+  delete [] gridPeOrder;
+  delete [] transPeOrder;
   delete [] qgrid;
   delete [] work;
   delete [] trans_buf;
@@ -494,7 +510,7 @@ void ComputePmeMgr::sendTrans(void) {
   int x_start = localInfo[myRecipPe].x_start;
   int slicelen = myGrid.K2 * zdim;
   for (int j=0; j<numTransPes; j++) {
-    int pe = ( j + myRecipPe ) % numTransPes;  // different order on each node
+    int pe = transPeOrder[j];  // different order on each node
     LocalPmeInfo &li = localInfo[pe];
     int cpylen = li.ny_after_transpose * zdim;
     PmeTransMsg *newmsg = new (nx * cpylen * numGrids,0) PmeTransMsg;
@@ -607,7 +623,7 @@ void ComputePmeMgr::sendUntrans(void) {
 
   // send data for reverse transpose
   for (int j=0; j<numGridPes; j++) {
-    int pe = ( j + myRecipPe ) % numGridPes;  // different order on each node
+    int pe = gridPeOrder[j];  // different order on each node
     LocalPmeInfo &li = localInfo[pe];
     int x_start =li.x_start;
     int nx = li.nx;

@@ -218,6 +218,17 @@ public:
     return ((long) rand48_seed_2 << 15) + ((long) rand48_seed_1 >> 1);
   }
 
+  // randomly order an array of whatever
+  template <class Elem> void reorder(Elem *a, int n) {
+    for ( int i = 0; i < (n-1); ++i ) {
+      int ie = i + ( integer() % (n-i) );
+      if ( ie == i ) continue;
+      const Elem e = a[ie];
+      a[ie] = a[i];
+      a[i] = e;
+    }
+  }
+
 };
 
 #endif  // RANDOM_H
