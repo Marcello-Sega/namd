@@ -3644,11 +3644,9 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
       }
     } else if (simParams->pairInteractionOn || simParams->fepOn) {
       if (bval == 1.0) {
-        cout << "got bval = 1.0 at atom " << i << endl;
         fepAtomFlags[i] = 1;
         numFepFinal++;
       } else if (bval == -1.0) {
-        cout << "got bval = -1.0 at atom " << i << endl;
         fepAtomFlags[i] = 2;
         numFepInitial++;
       } else {
