@@ -30,52 +30,26 @@ class MovePatchesMsg : public comm_object {
 public:
     NodeID  fromNodeID;
     PatchID pid;
-    AtomIDList aid;
-    PositionList p;
-    VelocityList v;
+    AtomIDList *aid;
+    PositionList *p;
+    VelocityList *v;
 
-    MovePatchesMsg(PatchID p, AtomIDList a, PositionList pl, VelocityList vl) : 
-      pid(p), aid(a), p(pl), v(vl) {
+    MovePatchesMsg(PatchID n, AtomIDList a, PositionList pl, VelocityList vl) : 
+      pid(n) {
       fromNodeID = CMyPe();
+      aid = new AtomIDList(a);
+      p = new PositionList(pl);
+      v = new VelocityList(vl);
     }
-    ~MovePatchesMsg() {};
+    ~MovePatchesMsg() {
+      delete aid;
+      delete p;
+      delete v;
+    };
 
   // pack and unpack functions
-  void * pack (int *length)
-  {
-    *length = sizeof(NodeID) + sizeof(PatchID) + sizeof(int) +
-		aid.size() * sizeof(AtomID) +
-		p.size() * sizeof(Position) +
-		v.size() * sizeof(Velocity);
-    char *buffer = (char*)new_packbuffer(this,*length);
-    char *b = buffer;
-    *((NodeID*)b) = fromNodeID; b += sizeof(NodeID);
-    *((PatchID*)b) = pid; b += sizeof(PatchID);
-    *((int*)b) = aid.size(); b += sizeof(int);
-    memcpy(b, &aid[0], aid.size() * sizeof(AtomID));
-    b += aid.size() * sizeof(AtomID);
-    memcpy(b, &p[0], p.size() * sizeof(Position));
-    b += p.size() * sizeof(Position);
-    memcpy(b, &v[0], v.size() * sizeof(Velocity));
-    b += v.size() * sizeof(Velocity);
-    return buffer;
-  }
-  void unpack (void *in)
-  {
-    char *b = (char*)in;
-    fromNodeID = *((NodeID*)b); b += sizeof(NodeID);
-    pid = *((PatchID*)b); b += sizeof(PatchID);
-    int size = *((int*)b); b += sizeof(int);
-    aid.resize(size);
-    memcpy(&aid[0], b, aid.size() * sizeof(AtomID));
-    b += aid.size() * sizeof(AtomID);
-    p.resize(size);
-    memcpy(&p[0], b, p.size() * sizeof(Position));
-    b += p.size() * sizeof(Position);
-    v.resize(size);
-    memcpy(&v[0], b, v.size() * sizeof(Velocity));
-    b += v.size() * sizeof(Velocity);
-  }
+  void * pack (int *length);
+  void unpack (void *in);
 };
 
 class AckMovePatchesMsg : public comm_object {
@@ -118,7 +92,7 @@ typedef SortedArray<HomePatchElem> HomePatchList;
 
 struct MovePatch 
 {
-    MovePatch(NodeID n=-1, PatchID p=-1) : nodeID(n), pid(p) {};
+    MovePatch(PatchID p=-1, NodeID n=-1) : nodeID(n), pid(p) {};
     ~MovePatch() {};
 
     NodeID nodeID;
@@ -203,12 +177,16 @@ private:
  *
  *	$RCSfile: PatchMgr.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/12/12 21:03:15 $
+ *	$Revision: 1.7 $	$Date: 1996/12/13 08:56:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.h,v $
+ * Revision 1.7  1996/12/13 08:56:04  jim
+ * move pack and unpack into C file, eliminated need for constructor
+ * before unpack or destructor after pack
+ *
  * Revision 1.6  1996/12/12 21:03:15  jim
  * added pack and unpack for patch movement message
  *
