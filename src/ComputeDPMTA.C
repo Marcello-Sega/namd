@@ -27,8 +27,8 @@
 #include "pvmc.h"
 #include "InfoStream.h"
 
-#define MIN_DEBUG_LEVEL 1
-// #define DEBUGM
+#define MIN_DEBUG_LEVEL 2
+#define DEBUGM
 #include "Debug.h"
 
 extern Communicate *comm;
@@ -64,18 +64,18 @@ void ComputeDPMTA::get_FMA_cube(int resize)
   }
   else
   {
-    DebugM(1,"getting patch info for FMA box\n");
+    DebugM(2,"getting patch info for FMA box\n");
 
     // determine boxSize from the PBC lattice
     // lattice is the same on all patches, so choose first patch
     ResizeArrayIter<PatchElem> ap(patchList);
-    DebugM(1,"getting first patch info for FMA box\n");
+    DebugM(2,"getting first patch info for FMA box\n");
     ap = ap.begin();
-    DebugM(1,"getting lattice from patch for FMA box\n");
+    DebugM(2,"getting lattice from patch for FMA box\n");
     Lattice lattice = (*ap).p->lattice;
-    DebugM(1,"getting patch dimension for FMA box\n");
+    DebugM(2,"getting patch dimension for FMA box\n");
     boxSize = lattice.dimension();
-    DebugM(1,"boxSize is " << boxSize << "\n");
+    DebugM(2,"boxSize is " << boxSize << "\n");
 
     boxCenter = patchMap->Origin();
     boxCenter.x += boxSize.x/2.0;
@@ -86,7 +86,7 @@ void ComputeDPMTA::get_FMA_cube(int resize)
   // don't bother checking if the center has moved since it depends on the size.
   if (boxsize != boxSize)
   {
-	DebugM(1,"resetting FMA box\n");
+	DebugM(2,"resetting FMA box\n");
 	// reset the size and center
 	boxsize = boxSize;
 	boxcenter = boxCenter;
@@ -107,9 +107,9 @@ void ComputeDPMTA::get_FMA_cube(int resize)
 	  iout << iINFO << "BOX CENTER = (" << center.x << ","
 		<< center.y << "," << center.z << ")\n";
 	  iout << endi;
-	  DebugM(1,"calling PMTAresize()\n");
+	  DebugM(2,"calling PMTAresize()\n");
 	  PMTAresize(&size,&center);
-	  DebugM(1,"called PMTAresize()\n");
+	  DebugM(2,"called PMTAresize()\n");
 	}
   }
   DebugM(2,"cube center: " << boxcenter << " size=" << boxsize << "\n");
@@ -147,10 +147,10 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
     {
 	NAMD_die("PMTARegister failed!!");
     }
-    DebugM(1,"DPMTA done PMTAinit.\n");
+    DebugM(2,"DPMTA done PMTAinit.\n");
     return;
   }
-  DebugM(1,"DPMTA configuring\n");
+  DebugM(2,"DPMTA configuring\n");
 
   // *****************************************
   // ONLY THE MASTER (NODE 0) NEEDS TO DO THIS:
@@ -165,12 +165,12 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
 
   // pvm_spawn is a dummy function under Converse.  Just the array is required.
   pvm_spawn(NULL,NULL,0,NULL,numProcs,slavetids);
-  DebugM(1,"DPMTA slavetids allocated\n");
+  DebugM(2,"DPMTA slavetids allocated\n");
 
   //  Get the size of the FMA cube
-  DebugM(1,"DPMTA getting FMA cube\n");
+  DebugM(2,"DPMTA getting FMA cube\n");
   get_FMA_cube(FALSE);
-  DebugM(1,"DPMTA got FMA cube\n");
+  DebugM(2,"DPMTA got FMA cube\n");
 
   // check for PBC
   // We set usePBC after get_FMA_cube() since the lattice (entire patch!) is
@@ -219,7 +219,7 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
 	<< pmta_data.cubectr.y << "," << pmta_data.cubectr.z << ")\n";
   iout << endi;
 
-  DebugM(1,"DPMTA calling PMTAinit.\n");
+  DebugM(2,"DPMTA calling PMTAinit.\n");
   if (PMTAinit(&pmta_data,slavetids) >= 0)
   {
 	iout << iINFO << "SUCCESSFULLY STARTED DPMTA\n" << endi;
@@ -234,14 +234,14 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   {
 	NAMD_die("PMTARegister failed!!");
   }
-  DebugM(1,"DPMTA done PMTAinit.\n");
+  DebugM(2,"DPMTA done PMTAinit.\n");
 
-  DebugM(1,"DPMTA configured\n");
+  DebugM(2,"DPMTA configured\n");
 }
 
 ComputeDPMTA::~ComputeDPMTA()
 {
-  DebugM(1,"DPMTA exiting\n");
+  DebugM(2,"DPMTA exiting\n");
   //  If this is the master node, then call PMTAexit()
   if (CMyPe() == 0)	PMTAexit();
 
@@ -252,7 +252,7 @@ ComputeDPMTA::~ComputeDPMTA()
 	}
   delete [] ljResults;
   delete [] slavetids;
-  DebugM(1,"DPMTA exited\n");
+  DebugM(2,"DPMTA exited\n");
 
   reduction->unRegister(REDUCTION_ELECT_ENERGY);
 }
@@ -285,46 +285,53 @@ void ComputeDPMTA::doWork()
     return;
   }
 
-  DebugM(1,"DPMTA doWork() started at timestep " << fake_seq << "\n");
+  DebugM(2,"DPMTA doWork() started at timestep " << fake_seq << "\n");
 
   // setup
   // 1. get totalAtoms
   for (totalAtoms=0, ap = ap.begin(); ap != ap.end(); ap++)
      totalAtoms += (*ap).p->getNumAtoms();
+
+  // 1b. resize cure if necessary
   if (CMyPe() == 0)
   {
     // check if box has changes for PBC
+    DebugM(2,"Node resizing FMA\n");
     get_FMA_cube(TRUE);
+    DebugM(2,"Node resized FMA\n");
   }
   else
   {
-    DebugM(1,"Node not resizing FMA\n");
+    DebugM(2,"Node *not* resizing FMA\n");
   }
 
   // 2. setup atom list
   int i,j;
-  particle_list = (PmtaParticle *) calloc(totalAtoms, sizeof(PmtaParticle));
-  fmaResults = (PmtaPartInfo *) calloc(totalAtoms, sizeof(PmtaPartInfo));
+  particle_list = (PmtaParticle *)calloc(totalAtoms,sizeof(PmtaParticle));
+  fmaResults =    (PmtaPartInfo *)calloc(totalAtoms,sizeof(PmtaPartInfo));
   if (!particle_list || !fmaResults)
 	{
 	NAMD_die("DPMTA Failed to allocate memory.");
 	}
 
   BigReal unitFactor = sqrt(COLOUMB * ComputeNonbondedUtil::dielectric_1);
+  DebugM(2,"Charge unit factor = " << unitFactor << "\n");
   for (i=0, ap = ap.begin(); ap != ap.end(); ap++)
   {
-    (*ap).x = (*ap).positionBox->open();
-    (*ap).a = (*ap).atomBox->open();
+    Vector *x = (*ap).positionBox->open();
+    AtomProperties *a = (*ap).atomBox->open();
 
     // store each atom in the particle_list
     Vector pos;
     for(j=0; j<(*ap).p->getNumAtoms(); j++)
     {
       // explicitly copy -- two different data structures
-      particle_list[i].p.x = (*ap).x[j].x;
-      particle_list[i].p.y = (*ap).x[j].y;
-      particle_list[i].p.z = (*ap).x[j].z;
-      particle_list[i].q = (*ap).a[j].charge * unitFactor;
+      particle_list[i].p.x = x[j].x;
+      particle_list[i].p.y = x[j].y;
+      particle_list[i].p.z = x[j].z;
+      particle_list[i].q = a[j].charge * unitFactor;
+      DebugM(1,"atom[" << i << "]=" << x[j] << " "
+	      << a[j].charge*unitFactor << "\n");
       i++;
       if (i > totalAtoms)
 	{
@@ -334,11 +341,11 @@ void ComputeDPMTA::doWork()
 	}
     }
 
-    (*ap).atomBox->close(&(*ap).a);
-    (*ap).positionBox->close(&(*ap).x);
+    (*ap).atomBox->close(&a);
+    (*ap).positionBox->close(&x);
   } 
 
-  DebugM(1,"DPMTA doWork() there are " << i << " atoms in this node.\n");
+  DebugM(2,"DPMTA doWork() there are " << totalAtoms << " atoms in this node.\n");
 
   // 3. (run DPMTA) compute the forces
   if ( PMTAforce(i, particle_list, fmaResults, NULL) < 0 )
@@ -350,20 +357,20 @@ void ComputeDPMTA::doWork()
   BigReal potential=0;
   for (i=0, ap = ap.begin(); ap != ap.end(); ap++)
   {
-    (*ap).r = (*ap).forceBox->open();
-    (*ap).f = (*ap).r->f[Results::slow];
+    Results *r = (*ap).forceBox->open();
+    Force *f = r->f[Results::slow];
 
     // deposit here
     for(j=0; j<(*ap).p->getNumAtoms(); j++)
     {
-      (*ap).f[j].x += fmaResults[i].f.x;
-      (*ap).f[j].y += fmaResults[i].f.y;
-      (*ap).f[j].z += fmaResults[i].f.z;
+      f[j].x += fmaResults[i].f.x;
+      f[j].y += fmaResults[i].f.y;
+      f[j].z += fmaResults[i].f.z;
       potential += fmaResults[i].v;
       i++;
     }
 
-    (*ap).forceBox->close(&(*ap).r);
+    (*ap).forceBox->close(&r);
   }
 
   potential *= 0.5;
@@ -378,7 +385,7 @@ void ComputeDPMTA::doWork()
     free(fmaResults);
   }
 
-  DebugM(1,"DPMTA doWork() done\n");
+  DebugM(2,"DPMTA doWork() done\n");
 }
 
 #endif
