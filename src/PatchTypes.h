@@ -35,3 +35,22 @@ public:
 };
 
 #endif
+
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.4 $	$Date: 1997/03/19 11:54:48 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: PatchTypes.h,v $
+ * Revision 1.4  1997/03/19 11:54:48  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ ***************************************************************************/

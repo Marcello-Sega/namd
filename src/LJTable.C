@@ -9,7 +9,7 @@
 /*
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/LJTable.C,v 1.1002 1997/02/28 16:13:53 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/LJTable.C,v 1.1003 1997/03/19 11:54:23 ari Exp $";
 #include "LJTable.h"
 #include "Node.h"
 #include "Parameters.h"
@@ -36,8 +36,8 @@ LJTable::LJTable()
   
   table = new TableEntry[half_table_sz * 2];
 
-  for (int i=0; i < table_dim; i++)
-    for (int j=i; j < table_dim; j++)
+  for (register int i=0; i < table_dim; i++)
+    for (register int j=i; j < table_dim; j++)
     {
       TableEntry *curij = &(table[i*table_dim+j]);
       TableEntry *curji = &(table[j*table_dim+i]);
@@ -121,13 +121,18 @@ void LJTable::compute_vdw_params(int i, int j,
  * RCS INFORMATION:
  *
  *	$RCSfile: LJTable.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/28 16:13:53 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/03/19 11:54:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LJTable.C,v $
+ * Revision 1.1003  1997/03/19 11:54:23  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
  * Revision 1.1002  1997/02/28 16:13:53  nealk
  * Turned off debugging code.
  *

@@ -71,3 +71,20 @@ void CollectionMgr::submitForces(int seq, AtomIDList &i, ForceList &d)
 
 #include "CollectionMgr.bot.h"
 
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/03/19 11:53:58 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: CollectionMgr.C,v $
+ * Revision 1.1001  1997/03/19 11:53:58  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ ***************************************************************************/

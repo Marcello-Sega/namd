@@ -69,13 +69,11 @@ ComputeNonbondedExcls::loadTuples() {
   // cycle through each home patch and gather all tuples
   HomePatchList *a = patchMap->homePatchList();
   ResizeArrayIter<HomePatchElem> ai(*a);
-  int i;
+  register int i;
   int numExclusions = node->molecule->numTotalExclusions;
 
   char *exclFlag = new char[numExclusions];
-  for (register char *c = exclFlag; c < (exclFlag+numExclusions); c++) {
-    *c = 0;
-  }
+  for (register char *c = exclFlag; c < (exclFlag+numExclusions); *c++ = 0);
 
   tupleList.clear();
   for ( ai = ai.begin(); ai != ai.end(); ai++ )
@@ -84,7 +82,8 @@ ComputeNonbondedExcls::loadTuples() {
     AtomIDList atomID = patch->getAtomIDList();
 
     // cycle through each atom in the patch and load up tuples
-    for (i=0; i < patch->getNumAtoms(); i++)
+    int numAtoms = patch->getNumAtoms();
+    for (i=0; i < numAtoms; i++)
     {
        /* get list of all bonds for the atom */
        register int *excls = node->molecule->get_exclusions_for_atom(atomID[i]);
@@ -106,15 +105,17 @@ ComputeNonbondedExcls::loadTuples() {
   UniqueSetIter<NonbondedExclElem> al(tupleList);
  
   for (al = al.begin(); al != al.end(); al++ ) {
-    for (int i=0; i < NonbondedExclElem::size; i++) {
+    for (i=0; i < NonbondedExclElem::size; i++) {
       LocalID aid = atomMap->localID(al->atomID[i]);
       al->p[i] = tuplePatchList.find(TuplePatchElem(aid.pid));
+      /*
       if ( ! (al->p)[i] ) {
  	iout << iERROR << "ComputeHomeTuples couldn't find patch " 
  	    << aid.pid << " for atom " << al->atomID[i] 
  	    << ", aborting.\n" << endi;
  	Namd::die();
       }
+      */
       al->localIndex[i] = aid.index;
     }
   }
@@ -124,13 +125,18 @@ ComputeNonbondedExcls::loadTuples() {
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedExcl.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/03/19 05:49:59 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1010 $	$Date: 1997/03/19 11:54:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedExcl.C,v $
+ * Revision 1.1010  1997/03/19 11:54:11  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
  * Revision 1.1009  1997/03/19 05:49:59  jim
  * Added ComputeSphericalBC, cleaned up make dependencies.
  *

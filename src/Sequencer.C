@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1017 1997/03/18 21:35:35 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1018 1997/03/19 11:54:55 ari Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -19,6 +19,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C
 #include "HomePatch.h"
 #include "ReductionMgr.h"
 #include "CollectionMgr.h"
+#include "BroadcastObject.h"
 #include "Output.h"
 
 #define MIN_DEBUG_LEVEL 3
@@ -31,6 +32,7 @@ Sequencer::Sequencer(HomePatch *p) :
 	reduction(ReductionMgr::Object()),
 	collection(CollectionMgr::Object())
 {
+    sequence = new SimpleBroadcastObject<int>(1);
     reduction->Register(REDUCTION_KINETIC_ENERGY);
     reduction->Register(REDUCTION_BC_ENERGY); // in case not used elsewhere
     threadStatus = NOTSUSPENDED;
@@ -87,9 +89,9 @@ void Sequencer::algorithm(void)
     patch->positionsReady();
     suspend(); // until all deposit boxes close
 
-    DebugM(4,"Submit seq=" << seq << " Patch=" << patch->getPatchID() << "\n");
     reduction->submit(seq,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
     reduction->submit(seq,REDUCTION_BC_ENERGY,0.);
+    // int value = sequence->get(seq); // gets broadcast value (suspend if nec)
     submitCollections(seq+first);
     ++seq;
     for ( step = 0; step < numberOfCycles; ++step )
@@ -112,10 +114,10 @@ void Sequencer::algorithm(void)
 		patch->addForceToMomentum(0.5*slowstep,Results::slow);
 
 	// Pass up information from this Patch
-	DebugM(4,"Submit seq=" <<seq<<" Patch="<<patch->getPatchID()<<"\n");
 	reduction->submit(seq, REDUCTION_KINETIC_ENERGY,
 	    patch->calcKineticEnergy());
 	reduction->submit(seq,REDUCTION_BC_ENERGY,0.);
+        // value = sequence->get(seq);
 	submitCollections(seq+first);
 	++seq;
     }
@@ -141,13 +143,18 @@ Sequencer::terminate() {
  * RCS INFORMATION:
  *
  *      $RCSfile: Sequencer.C,v $
- *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1017 $     $Date: 1997/03/18 21:35:35 $
+ *      $Author: ari $  $Locker:  $             $State: Exp $
+ *      $Revision: 1.1018 $     $Date: 1997/03/19 11:54:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1018  1997/03/19 11:54:55  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
  * Revision 1.1017  1997/03/18 21:35:35  jim
  * Eliminated fake_seq.  Reductions now use Patch::flags.seq.
  *

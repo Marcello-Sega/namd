@@ -51,3 +51,21 @@ void ComputeHomePatches::atomUpdate()
   Compute::atomUpdate();
 }
 
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/03/19 11:54:08 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: ComputeHomePatches.C,v $
+ * Revision 1.1003  1997/03/19 11:54:08  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ ***************************************************************************/

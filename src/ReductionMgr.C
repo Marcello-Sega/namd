@@ -28,7 +28,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1010 1997/02/13 17:16:58 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1011 1997/03/19 11:54:53 ari Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -754,3 +754,21 @@ void	ReductionMgr::unsubscribe(ReductionTag tag)
 #include "ReductionMgr.bot.h"
 // nothing should be placed below here
 
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1011 $	$Date: 1997/03/19 11:54:53 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: ReductionMgr.C,v $
+ * Revision 1.1011  1997/03/19 11:54:53  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ ***************************************************************************/

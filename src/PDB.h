@@ -1,20 +1,10 @@
 //-*-c++-*-
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
+/*       (C) Copyright 1995,1996,1997 The Board of Trustees of the         */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*								   	   */
 /***************************************************************************/
-
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: PDB.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:54 $
- *
- ***************************************************************************
  * DESCRIPTION:
  * PDB Class
  *   Given a PDB file name, read in all the data.
@@ -26,66 +16,8 @@
  * and so on...).  Note that with these searches there is no
  * way to choose ATOM or HETATM; you have to make that distinguishment
  * yourself.
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: PDB.h,v $
- * Revision 1.1000  1997/02/06 15:58:54  ari
- * Resetting CVS to merge branches back into the main trunk.
- * We will stick to main trunk development as suggested by CVS manual.
- * We will set up tags to track fixed points of development/release
- * as suggested by CVS manual - all praise the CVS manual.
- *
- * Revision 1.779  1997/02/06 15:53:19  ari
- * Updating Revision Line, getting rid of branches
- *
- * Revision 1.778.2.1  1997/02/06 02:35:28  jim
- * Implemented periodic boundary conditions - may not work with
- * atom migration yet, but doesn't seem to alter calculation,
- * appears to work correctly when turned on.
- * NamdState chdir's to same directory as config file in argument.
- *
- * Revision 1.778  1997/01/28 00:31:02  ari
- * internal release uplevel to 1.778
- *
- * Revision 1.777.2.1  1997/01/27 22:45:29  ari
- * Basic Atom Migration Code added.
- * Added correct magic first line to .h files for xemacs to go to C++ mode.
- * Compiles and runs without migration turned on.
- *
- * Revision 1.777  1997/01/17 19:36:37  ari
- * Internal CVS leveling release.  Start development code work
- * at 1.777.1.1.
- *
- * Revision 1.1  1996/08/06 20:38:38  ari
- * Initial revision
- *
- * Revision 1.8  1995/07/07 20:06:30  nelson
- * Removed annoying error message in PDBAtomList declaration
- *
- * Revision 1.7  95/03/08  14:47:50  14:47:50  nelson (Mark T. Nelson)
- * Added copyright
- * 
- * Revision 1.6  94/10/12  15:25:40  15:25:40  nelson (Mark T. Nelson)
- * Added get_all_positions, set_all_positions and added comment line
- * to write()
- * 
- * Revision 1.5  94/10/05  17:05:03  17:05:03  dalke (Andrew Dalke)
- * Added a 'write' function to write the PDB coordinates
- * 
- * Revision 1.4  94/09/07  17:16:14  17:16:14  dalke (Andrew Dalke)
- * Converted from linked list to array after reading in PDB
- * 
- * Revision 1.3  94/08/08  15:32:39  15:32:39  nelson (Mark T. Nelson)
- * added find_extremes routine
- * 
- * Revision 1.2  94/07/06  01:31:55  01:31:55  dalke (Andrew Dalke)
- * Added some more "find_atom_*" functions
- * 
- * Revision 1.1  94/07/05  12:52:16  12:52:16  dalke (Andrew Dalke)
- * Initial revision
- * 
  ***************************************************************************/
+
 
 
 #ifndef PDB_H
@@ -156,3 +88,75 @@ class PDB {
 };
 
 #endif // PDB_H
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile: PDB.h,v $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:40 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: PDB.h,v $
+ * Revision 1.1001  1997/03/19 11:54:40  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ * Revision 1.1000  1997/02/06 15:58:54  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
+ * Revision 1.779  1997/02/06 15:53:19  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.1  1997/02/06 02:35:28  jim
+ * Implemented periodic boundary conditions - may not work with
+ * atom migration yet, but doesn't seem to alter calculation,
+ * appears to work correctly when turned on.
+ * NamdState chdir's to same directory as config file in argument.
+ *
+ * Revision 1.778  1997/01/28 00:31:02  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.1  1997/01/27 22:45:29  ari
+ * Basic Atom Migration Code added.
+ * Added correct magic first line to .h files for xemacs to go to C++ mode.
+ * Compiles and runs without migration turned on.
+ *
+ * Revision 1.777  1997/01/17 19:36:37  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
+ * Revision 1.1  1996/08/06 20:38:38  ari
+ * Initial revision
+ *
+ * Revision 1.8  1995/07/07 20:06:30  nelson
+ * Removed annoying error message in PDBAtomList declaration
+ *
+ * Revision 1.7  95/03/08  14:47:50  14:47:50  nelson (Mark T. Nelson)
+ * Added copyright
+ * 
+ * Revision 1.6  94/10/12  15:25:40  15:25:40  nelson (Mark T. Nelson)
+ * Added get_all_positions, set_all_positions and added comment line
+ * to write()
+ * 
+ * Revision 1.5  94/10/05  17:05:03  17:05:03  dalke (Andrew Dalke)
+ * Added a 'write' function to write the PDB coordinates
+ * 
+ * Revision 1.4  94/09/07  17:16:14  17:16:14  dalke (Andrew Dalke)
+ * Converted from linked list to array after reading in PDB
+ * 
+ * Revision 1.3  94/08/08  15:32:39  15:32:39  nelson (Mark T. Nelson)
+ * added find_extremes routine
+ * 
+ * Revision 1.2  94/07/06  01:31:55  01:31:55  dalke (Andrew Dalke)
+ * Added some more "find_atom_*" functions
+ * 
+ * Revision 1.1  94/07/05  12:52:16  12:52:16  dalke (Andrew Dalke)
+ * Initial revision
+ * 
+ ***************************************************************************/

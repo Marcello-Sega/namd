@@ -11,7 +11,7 @@
  *
  *	$RCSfile: IntTree.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:33 $
+ *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:22 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -20,6 +20,11 @@
  * REVISION HISTORY:
  *
  * $Log: IntTree.C,v $
+ * Revision 1.1001  1997/03/19 11:54:22  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
  * Revision 1.1000  1997/02/06 15:58:33  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
@@ -47,7 +52,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/IntTree.C,v 1.1000 1997/02/06 15:58:33 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/IntTree.C,v 1.1001 1997/03/19 11:54:22 ari Exp $";
 
 #include "IntTree.h"
 
@@ -242,3 +247,22 @@ int IntTree::populate_array(IntNode *itree, int *iarray, int cur_index)
 	return(cur_index);
 }
 /*			END OF FUNCTION populate_array			*/
+
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:22 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: IntTree.C,v $
+ * Revision 1.1001  1997/03/19 11:54:22  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ ***************************************************************************/

@@ -1,93 +1,17 @@
 //-*-c++-*-
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
+/*      (C) Copyright 1995,1996,1997 The Board of Trustees of the          */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*								   	   */
 /***************************************************************************/
-
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: Parameters.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:59 $
- *
- ***************************************************************************
  * DESCRIPTION:
  *
  *	The Parameters class is used to read in and store all of the parameters
  * from the parameter files.  These parameters are stored and used to assign
  * constants to bonds and atoms as they are read in from the psf file
  *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: Parameters.h,v $
- * Revision 1.1000  1997/02/06 15:58:59  ari
- * Resetting CVS to merge branches back into the main trunk.
- * We will stick to main trunk development as suggested by CVS manual.
- * We will set up tags to track fixed points of development/release
- * as suggested by CVS manual - all praise the CVS manual.
- *
- * Revision 1.778  1997/01/28 00:31:06  ari
- * internal release uplevel to 1.778
- *
- * Revision 1.777.2.2  1997/01/27 22:45:31  ari
- * Basic Atom Migration Code added.
- * Added correct magic first line to .h files for xemacs to go to C++ mode.
- * Compiles and runs without migration turned on.
- *
- * Revision 1.777.2.1  1997/01/24 02:29:55  jim
- * Fixed bug where only first parameter file was read!
- * Added files for hydrogen bond parameter reading.
- *
- * Revision 1.777  1997/01/17 19:36:42  ari
- * Internal CVS leveling release.  Start development code work
- * at 1.777.1.1.
- *
- * Revision 1.4  1996/12/03 17:45:15  nealk
- * Added NonbondedExcl stub.
- *
- * Revision 1.3  1996/10/31 20:42:40  jim
- * small changes to support LJTable
- *
- * Revision 1.2  1996/08/16 04:39:46  ari
- * *** empty log message ***
- *
- * Revision 1.1  1996/08/06 20:38:38  ari
- * Initial revision
- *
- * Revision 1.9  1996/04/18 18:46:18  billh
- * Updated to read hydrogen bond information.
- *
- * Revision 1.8  1995/04/10 11:29:06  nelson
- * Added allusions to structure definitions
- *
- * Revision 1.7  95/03/08  14:33:35  14:33:35  nelson (Mark T. Nelson)
- * Added copyright
- * 
- * Revision 1.6  95/01/26  14:31:22  14:31:22  nelson (Mark T. Nelson)
- * Added Charm22 parameters
- * 
- * Revision 1.5  94/09/24  20:12:03  20:12:03  nelson (Mark T. Nelson)
- * Added routines to deal with vdw pairs correctly
- * 
- * Revision 1.4  94/09/12  17:56:02  17:56:02  gursoy (Attila Gursoy)
- * receive_Parameters gets the message from Node object (charm++ integration)
- * 
- * Revision 1.3  94/08/02  16:28:23  16:28:23  nelson (Mark T. Nelson)
- * Implemented send_Parameters and receive_Parameters
- * 
- * Revision 1.2  94/07/07  13:30:32  13:30:32  nelson (Mark T. Nelson)
- * changed to make parameter access index based
- * 
- * Revision 1.1  94/06/22  15:04:43  15:04:43  nelson (Mark T. Nelson)
- * Initial revision
- * 
  ***************************************************************************/
-
 #ifndef PARAM_H
 
 #define PARAM_H
@@ -435,3 +359,83 @@ public:
 };
 
 #endif
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile: Parameters.h,v $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:44 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: Parameters.h,v $
+ * Revision 1.1001  1997/03/19 11:54:44  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ * Revision 1.1000  1997/02/06 15:58:59  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
+ * Revision 1.778  1997/01/28 00:31:06  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.2  1997/01/27 22:45:31  ari
+ * Basic Atom Migration Code added.
+ * Added correct magic first line to .h files for xemacs to go to C++ mode.
+ * Compiles and runs without migration turned on.
+ *
+ * Revision 1.777.2.1  1997/01/24 02:29:55  jim
+ * Fixed bug where only first parameter file was read!
+ * Added files for hydrogen bond parameter reading.
+ *
+ * Revision 1.777  1997/01/17 19:36:42  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
+ * Revision 1.4  1996/12/03 17:45:15  nealk
+ * Added NonbondedExcl stub.
+ *
+ * Revision 1.3  1996/10/31 20:42:40  jim
+ * small changes to support LJTable
+ *
+ * Revision 1.2  1996/08/16 04:39:46  ari
+ * *** empty log message ***
+ *
+ * Revision 1.1  1996/08/06 20:38:38  ari
+ * Initial revision
+ *
+ * Revision 1.9  1996/04/18 18:46:18  billh
+ * Updated to read hydrogen bond information.
+ *
+ * Revision 1.8  1995/04/10 11:29:06  nelson
+ * Added allusions to structure definitions
+ *
+ * Revision 1.7  95/03/08  14:33:35  14:33:35  nelson (Mark T. Nelson)
+ * Added copyright
+ * 
+ * Revision 1.6  95/01/26  14:31:22  14:31:22  nelson (Mark T. Nelson)
+ * Added Charm22 parameters
+ * 
+ * Revision 1.5  94/09/24  20:12:03  20:12:03  nelson (Mark T. Nelson)
+ * Added routines to deal with vdw pairs correctly
+ * 
+ * Revision 1.4  94/09/12  17:56:02  17:56:02  gursoy (Attila Gursoy)
+ * receive_Parameters gets the message from Node object (charm++ integration)
+ * 
+ * Revision 1.3  94/08/02  16:28:23  16:28:23  nelson (Mark T. Nelson)
+ * Implemented send_Parameters and receive_Parameters
+ * 
+ * Revision 1.2  94/07/07  13:30:32  13:30:32  nelson (Mark T. Nelson)
+ * changed to make parameter access index based
+ * 
+ * Revision 1.1  94/06/22  15:04:43  15:04:43  nelson (Mark T. Nelson)
+ * Initial revision
+ * 
+ ***************************************************************************/
+

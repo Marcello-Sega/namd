@@ -12,7 +12,7 @@
  *
  *	$RCSfile: HBondPairData.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:23 $
+ *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:15 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,11 @@
  * REVISION HISTORY:
  *
  * $Log: HBondPairData.h,v $
+ * Revision 1.1001  1997/03/19 11:54:15  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
  * Revision 1.1000  1997/02/06 15:58:23  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
@@ -113,3 +118,22 @@ public:
 
 
 #endif
+
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:15 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: HBondPairData.h,v $
+ * Revision 1.1001  1997/03/19 11:54:15  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ ***************************************************************************/

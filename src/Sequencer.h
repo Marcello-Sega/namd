@@ -21,6 +21,8 @@ class HomePatch;
 class SimParameters;
 class ReductionMgr;
 class CollectionMgr;
+template <class T>
+class SimpleBroadcastObject;
 
 enum ThreadStatus { SUSPENDED, NOTSUSPENDED, AWAKENED };
 
@@ -60,7 +62,26 @@ private:
     ThreadStatus threadStatus;
     CthThread thread;
     static void threadRun(Sequencer*);
+    SimpleBroadcastObject<int> *sequence;
 };
 
 #endif // SEQUENCER_H
 
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/03/19 11:54:56 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: Sequencer.h,v $
+ * Revision 1.1005  1997/03/19 11:54:56  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ ***************************************************************************/

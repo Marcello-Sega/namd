@@ -1,32 +1,27 @@
+extern message GroupInitMsg;
+packmessage BroadcastMsg;
 
-// WorkDistributor - is a bit of a mishmash
-
-extern message InitMsg;
-extern message LocalWorkMsg;
-packmessage MapDistribMsg;
-
-group WorkDistrib
+group BroadcastMgr
 {
-  entry WorkDistrib(InitMsg *);
-  entry saveMaps(MapDistribMsg *);
-  entry enqueueWork(LocalWorkMsg *);
+  entry BroadcastMgr(GroupInitMsg *);
+  entry recvBroadcast(BroadcastMsg *);
 } ;
-
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/19 11:54:59 $
+ *	$Revision: 1.1 $	$Date: 1997/03/19 11:53:53 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
- * $Log: WorkDistrib.ci,v $
- * Revision 1.1003  1997/03/19 11:54:59  ari
+ * $Log: BroadcastMgr.ci,v $
+ * Revision 1.1  1997/03/19 11:53:53  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.
  * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
  *
  ***************************************************************************/

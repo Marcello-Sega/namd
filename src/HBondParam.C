@@ -10,7 +10,7 @@
  *
  *	$RCSfile: HBondParam.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:24 $
+ *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:16 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -22,6 +22,11 @@
  * REVISION HISTORY:
  *
  * $Log: HBondParam.C,v $
+ * Revision 1.1001  1997/03/19 11:54:16  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
  * Revision 1.1000  1997/02/06 15:58:24  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
@@ -411,3 +416,22 @@ int HBondParam::receive_message(Message *msg) {
   // done; return number of unique items actually retrieved
   return num();
 }
+
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:16 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: HBondParam.C,v $
+ * Revision 1.1001  1997/03/19 11:54:16  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ ***************************************************************************/

@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1007 1997/03/12 22:06:43 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1008 1997/03/19 11:54:46 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -74,7 +74,7 @@ void Patch::loadAtomProperties(void)
     Molecule *mol = Node::Object()->molecule;
     a.resize(0);
     localIndex.resize(0);
-    for ( int i=0; i<numAtoms; i++)
+    for ( register int i=0; i<numAtoms; i++)
     {
       localIndex.load(LocalAtomID(atomIDList[i], i));
       AtomProperties ap;
@@ -93,7 +93,7 @@ Patch::indexAtoms()
 {
     numAtoms = atomIDList.size();
     localIndex.resize(0);
-    for ( int i=0; i<numAtoms; i++)
+    for ( register int i=0; i<numAtoms; i++)
     {
       localIndex.load(LocalAtomID(atomIDList[i], i));
     }
@@ -165,7 +165,7 @@ void Patch::positionBoxClosed(void)
 
 void Patch::forceBoxClosed(void)
 {
-   for ( int j = 0; j < Results::maxNumForces; ++j )
+   for ( register int j = 0; j < Results::maxNumForces; ++j )
    {
      f[j].encap(&(results.f[j]),numAtoms);
    }
@@ -194,11 +194,11 @@ void Patch::positionsReady(int doneMigration)
 
    // Give all force deposit boxes access to forces
    Force *forcePtr;
-   for ( int j = 0; j < Results::maxNumForces; ++j )
+   for ( register int j = 0; j < Results::maxNumForces; ++j )
    {
       f[j].resize(numAtoms);
       forcePtr = f[j].unencap();
-      for(int i=0; i<numAtoms; i++) forcePtr[i] = 0.;
+      for(register int i=0; i<numAtoms; i++) forcePtr[i] = 0.;
       results.f[j] = forcePtr;
    }
    forceBox.open(&results);
@@ -223,13 +223,18 @@ void Patch::positionsReady(int doneMigration)
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/03/12 22:06:43 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1997/03/19 11:54:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.1008  1997/03/19 11:54:46  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
  * Revision 1.1007  1997/03/12 22:06:43  jim
  * First step towards multiple force returns and multiple time stepping.
  *

@@ -1,12 +1,10 @@
 /***************************************************************************/
-/*                                                                         */
 /*              (C) Copyright 1996 The Board of Trustees of the            */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.1002 1997/03/04 22:37:20 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.1003 1997/03/19 11:55:03 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -56,7 +54,7 @@ public:
  *
  *	$RCSfile: main.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/04 22:37:20 $
+ *	$Revision: 1.1003 $	$Date: 1997/03/19 11:55:03 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -65,6 +63,11 @@ public:
  * REVISION HISTORY:
  *
  * $Log: main.C,v $
+ * Revision 1.1003  1997/03/19 11:55:03  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
  * Revision 1.1002  1997/03/04 22:37:20  ari
  * Clean up of code.  Debug statements removal, dead code removal.
  * Minor fixes, output fixes.

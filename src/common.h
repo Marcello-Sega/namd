@@ -1,219 +1,13 @@
 //-*-c++-*-
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
+/*    (C) Copyright 1995,1996,1997 The Board of Trustees of the            */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*								   	   */
 /***************************************************************************/
-
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: common.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/14 19:07:54 $
- *
- ***************************************************************************
  * DESCRIPTION:
- *
  * common definitions for namd.
- ***************************************************************************
- * REVISION HISTORY:
  *
- * $Log: common.h,v $
- * Revision 1.1002  1997/03/14 19:07:54  nealk
- * DPMTA nodes now synchronize to PMTAresize doesn't crash system.
- * Later will will use the "new" Broadcast manager.  But since that system
- * does not exist yet, we use the "old" Communicate object.
- *
- * Revision 1.1001  1997/02/13 22:27:05  jim
- * Added inital velocity code from NAMD 1.
- * Reading velocity pdb file appears to work.
- * Reading binary velociy file should work but is untested.
- * Random velocites appears to work but differs from NAMD 1.
- *
- * Revision 1.1000  1997/02/06 15:59:33  ari
- * Resetting CVS to merge branches back into the main trunk.
- * We will stick to main trunk development as suggested by CVS manual.
- * We will set up tags to track fixed points of development/release
- * as suggested by CVS manual - all praise the CVS manual.
- *
- * Revision 1.778  1997/01/28 00:31:36  ari
- * internal release uplevel to 1.778
- *
- * Revision 1.777.2.1  1997/01/27 22:45:45  ari
- * Basic Atom Migration Code added.
- * Added correct magic first line to .h files for xemacs to go to C++ mode.
- * Compiles and runs without migration turned on.
- *
- * Revision 1.777  1997/01/17 19:37:11  ari
- * Internal CVS leveling release.  Start development code work
- * at 1.777.1.1.
- *
- * Revision 1.3  1996/12/11 00:05:20  milind
- * *** empty log message ***
- *
- * Revision 1.2  1996/12/02 17:05:37  nealk
- * Debugging stuff.
- *
- * Revision 1.1  1996/08/06 20:38:38  ari
- * Initial revision
- *
- * Revision 1.49  1996/04/23 20:41:54  billh
- * Added SMALLRAD and SMALLRAD2 defines, which indicate minimum distances
- * between atoms before an error occurs in a force or energy evaluation.
- *
- * Revision 1.48  1996/04/15 19:00:28  billh
- * Added NAMD_stringdup routine
- *
- * Revision 1.47  1996/02/22 23:03:43  jean
- * added NAMD_bsearch
- *
- * Revision 1.46  1995/10/29 00:59:05  jim
- * Eliminated DONEPREINTEGRATETAG.
- *
- * Revision 1.45  95/10/27  21:37:40  21:37:40  jim (Jim Phillips)
- * Added tags for global integration.
- * 
- * Revision 1.44  95/09/26  15:15:14  15:15:14  nelson (Mark T. Nelson)
- * Added tag for collection of all forces for DCD output
- * 
- * Revision 1.43  95/09/26  13:27:54  13:27:54  nelson (Mark T. Nelson)
- * Added tag for temperature coupling'
- * 
- * Revision 1.42  95/09/21  17:43:58  17:43:58  billh (Bill Humphrey)
- * Added checks to see if things defined such as PI, TWOPI, TRUE, FALSE, etc
- * 
- * Revision 1.41  95/08/30  11:08:18  11:08:18  nelson (Mark T. Nelson)
- * Added MAXTAGVALUE tag
- * 
- * Revision 1.40  95/08/11  14:06:18  14:06:18  nelson (Mark T. Nelson)
- * Added OUTPUTFORCE tag for force DCD file generation
- * 
- * Revision 1.39  95/05/13  10:43:36  10:43:36  nelson (Mark T. Nelson)
- * Added SHORTREALS ifdef
- * 
- * Revision 1.38  95/04/06  14:44:48  14:44:48  nelson (Mark T. Nelson)
- * Removed definition of FIRST_TIMESTEP
- * 
- * Revision 1.37  95/04/06  12:52:06  12:52:06  nelson (Mark T. Nelson)
- * Removed extern class references
- * 
- * Revision 1.36  95/03/30  21:55:32  21:55:32  nelson (Mark T. Nelson)
- * Added messages for full electrostatics
- * 
- * Revision 1.35  95/03/22  11:23:45  11:23:45  nelson (Mark T. Nelson)
- * Added tag for sending center of mass
- * 
- * Revision 1.34  95/03/18  13:11:56  13:11:56  nelson (Mark T. Nelson)
- * Changed TAGS to work with new MessageManager scheme
- * 
- * Revision 1.33  95/03/10  16:28:59  16:28:59  brunner (Robert Brunner)
- * Added MAX_NEIGHBORS=27 for declaring max array sizes and
- * MULTINBCOORTAG tag for multiple coordinate messages.
- * 
- * Revision 1.32  95/03/08  14:35:03  14:35:03  nelson (Mark T. Nelson)
- * Added copyright
- * 
- * Revision 1.31  95/03/06  20:52:37  20:52:37  nelson (Mark T. Nelson)
- * Added include of errno.h for EDOM definition
- * 
- * Revision 1.30  95/02/14  14:56:55  14:56:55  nelson (Mark T. Nelson)
- * Fixed NAMD_die and NAMD_quit so that namd will really terminate nicely in the
- * case of a failure
- * 
- * Revision 1.29  95/02/01  14:15:57  14:15:57  nelson (Mark T. Nelson)
- * Replaced ifdef with if for NAMD_DEBUG defintion
- * 
- * Revision 1.28  95/02/01  11:49:06  11:49:06  billh (Bill Humphrey)
- * Added DEBUG_MSG, DEBUG_MSG_N macros
- * 
- * Revision 1.27  95/01/30  20:09:32  20:09:32  nelson (Mark T. Nelson)
- * Added RESCALEVELTAG
- * 
- * Revision 1.26  95/01/26  15:34:38  15:34:38  nelson (Mark T. Nelson)
- * Added definitions for MTS memory system
- * 
- * Revision 1.25  95/01/19  13:29:04  13:29:04  brunner (Robert Brunner)
- * Added PATCHMOVETAG, which indicates a message for patch migration
- * due to load balancing.
- * 
- * Revision 1.24  94/12/01  14:16:44  14:16:44  brunner (Robert Brunner)
- * Added LSTATINFOTAG and LDBBARRIERTAG for load balancing
- * 
- * Revision 1.23  94/11/28  14:14:01  14:14:01  nelson (Mark T. Nelson)
- * Fixed so that line and file in CHECK_DOMAIN were correct
- * 
- * Revision 1.22  94/11/23  09:32:10  09:32:10  nelson (Mark T. Nelson)
- * Added macro CHECK_DOMAIN
- * 
- * Revision 1.21  94/11/22  13:39:02  13:39:02  nelson (Mark T. Nelson)
- * Added tag for patch load stats
- * 
- * Revision 1.20  94/10/11  10:59:05  10:59:05  nelson (Mark T. Nelson)
- * Added NAMD_compare_ints() function and ATOMREDISTTAG
- * 
- * Revision 1.19  94/10/07  12:19:51  12:19:51  nelson (Mark T. Nelson)
- * Corrected value of boltzman's constant
- * 
- * Revision 1.18  94/10/06  15:44:15  15:44:15  gursoy (Attila Gursoy)
- * removed the SYNCMSG type (no need anymore)
- * 
- * Revision 1.17  94/09/29  18:27:55  18:27:55  gursoy (Attila Gursoy)
- * defined a new message tag for synchronization SYNCMSG
- * 
- * Revision 1.16  94/09/28  18:29:14  18:29:14  gursoy (Attila Gursoy)
- * added output message tags OUTPUTENERGY, OUTPUTCOOR, OUTPUTVEL
- * 
- * Revision 1.15  94/09/22  12:16:10  12:16:10  nelson (Mark T. Nelson)
- * Added COLOUMB and TIMEFACTOR
- * 
- * Revision 1.14  94/09/09  10:20:01  10:20:01  gursoy (Attila Gursoy)
- * added FIRST_TIMESTEP
- * 
- * Revision 1.13  94/09/02  16:36:24  16:36:24  nelson (Mark T. Nelson)
- * moved NAMD_DEBUG from namd.C to common.h
- * 
- * Revision 1.12  94/08/30  13:59:55  13:59:55  nelson (Mark T. Nelson)
- * Added a bunch of tags
- * 
- * Revision 1.11  94/08/09  13:20:15  13:20:15  nelson (Mark T. Nelson)
- * Added DISTRIBTAG
- * 
- * Revision 1.10  94/08/03  21:59:03  21:59:03  nelson (Mark T. Nelson)
- * Added TAG for Molecule class
- * 
- * Revision 1.9  94/08/02  16:29:03  16:29:03  nelson (Mark T. Nelson)
- * Added tags for Parameters class and Inform objcets
- * 
- * Revision 1.8  94/08/01  10:38:20  10:38:20  nelson (Mark T. Nelson)
- * Changed definitions of Bool, TRUE, FALSE, etc. to work better
- * with the communication class
- * 
- * Revision 1.7  94/07/08  16:37:35  16:37:35  nelson (Mark T. Nelson)
- * Added message tag for SimParameters
- * 
- * Revision 1.6  94/07/06  15:21:11  15:21:11  nelson (Mark T. Nelson)
- * Added BigReal definition
- * 
- * Revision 1.5  94/06/29  22:48:37  22:48:37  dalke (Andrew Dalke)
- * Changed Bool from int to an enum
- * 
- * Revision 1.4  94/06/28  17:42:43  17:42:43  billh (Bill Humphrey)
- * Added namdDebug global variable for debugging messages.  Turned
- * on by defining NAMD_DEBUG.
- * 
- * Revision 1.3  94/06/24  03:10:11  03:10:11  billh (Bill Humphrey)
- * Added NAMD_title, NAMD_quit, NAMD_check_messages global functions.
- * Removed NAMD_warn; using Inform objects now to report information.
- * 
- * Revision 1.2  94/06/22  15:07:20  15:07:20  nelson (Mark T. Nelson)
- * Added NAMD_die and NAMD_warn prototypes
- * 
- * Revision 1.1  94/06/20  21:36:16  21:36:16  billh (Bill Humphrey)
- * Initial revision
- * 
  ***************************************************************************/
 
 #ifndef COMMON_DEF_H
@@ -441,3 +235,213 @@ BigReal NAMD_random();
 	}
 
 #endif
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile: common.h,v $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/03/19 11:55:00 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: common.h,v $
+ * Revision 1.1003  1997/03/19 11:55:00  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ * Revision 1.1002  1997/03/14 19:07:54  nealk
+ * DPMTA nodes now synchronize to PMTAresize doesn't crash system.
+ * Later will will use the "new" Broadcast manager.  But since that system
+ * does not exist yet, we use the "old" Communicate object.
+ *
+ * Revision 1.1001  1997/02/13 22:27:05  jim
+ * Added inital velocity code from NAMD 1.
+ * Reading velocity pdb file appears to work.
+ * Reading binary velociy file should work but is untested.
+ * Random velocites appears to work but differs from NAMD 1.
+ *
+ * Revision 1.1000  1997/02/06 15:59:33  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
+ * Revision 1.778  1997/01/28 00:31:36  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.1  1997/01/27 22:45:45  ari
+ * Basic Atom Migration Code added.
+ * Added correct magic first line to .h files for xemacs to go to C++ mode.
+ * Compiles and runs without migration turned on.
+ *
+ * Revision 1.777  1997/01/17 19:37:11  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
+ * Revision 1.3  1996/12/11 00:05:20  milind
+ * *** empty log message ***
+ *
+ * Revision 1.2  1996/12/02 17:05:37  nealk
+ * Debugging stuff.
+ *
+ * Revision 1.1  1996/08/06 20:38:38  ari
+ * Initial revision
+ *
+ * Revision 1.49  1996/04/23 20:41:54  billh
+ * Added SMALLRAD and SMALLRAD2 defines, which indicate minimum distances
+ * between atoms before an error occurs in a force or energy evaluation.
+ *
+ * Revision 1.48  1996/04/15 19:00:28  billh
+ * Added NAMD_stringdup routine
+ *
+ * Revision 1.47  1996/02/22 23:03:43  jean
+ * added NAMD_bsearch
+ *
+ * Revision 1.46  1995/10/29 00:59:05  jim
+ * Eliminated DONEPREINTEGRATETAG.
+ *
+ * Revision 1.45  95/10/27  21:37:40  21:37:40  jim (Jim Phillips)
+ * Added tags for global integration.
+ * 
+ * Revision 1.44  95/09/26  15:15:14  15:15:14  nelson (Mark T. Nelson)
+ * Added tag for collection of all forces for DCD output
+ * 
+ * Revision 1.43  95/09/26  13:27:54  13:27:54  nelson (Mark T. Nelson)
+ * Added tag for temperature coupling'
+ * 
+ * Revision 1.42  95/09/21  17:43:58  17:43:58  billh (Bill Humphrey)
+ * Added checks to see if things defined such as PI, TWOPI, TRUE, FALSE, etc
+ * 
+ * Revision 1.41  95/08/30  11:08:18  11:08:18  nelson (Mark T. Nelson)
+ * Added MAXTAGVALUE tag
+ * 
+ * Revision 1.40  95/08/11  14:06:18  14:06:18  nelson (Mark T. Nelson)
+ * Added OUTPUTFORCE tag for force DCD file generation
+ * 
+ * Revision 1.39  95/05/13  10:43:36  10:43:36  nelson (Mark T. Nelson)
+ * Added SHORTREALS ifdef
+ * 
+ * Revision 1.38  95/04/06  14:44:48  14:44:48  nelson (Mark T. Nelson)
+ * Removed definition of FIRST_TIMESTEP
+ * 
+ * Revision 1.37  95/04/06  12:52:06  12:52:06  nelson (Mark T. Nelson)
+ * Removed extern class references
+ * 
+ * Revision 1.36  95/03/30  21:55:32  21:55:32  nelson (Mark T. Nelson)
+ * Added messages for full electrostatics
+ * 
+ * Revision 1.35  95/03/22  11:23:45  11:23:45  nelson (Mark T. Nelson)
+ * Added tag for sending center of mass
+ * 
+ * Revision 1.34  95/03/18  13:11:56  13:11:56  nelson (Mark T. Nelson)
+ * Changed TAGS to work with new MessageManager scheme
+ * 
+ * Revision 1.33  95/03/10  16:28:59  16:28:59  brunner (Robert Brunner)
+ * Added MAX_NEIGHBORS=27 for declaring max array sizes and
+ * MULTINBCOORTAG tag for multiple coordinate messages.
+ * 
+ * Revision 1.32  95/03/08  14:35:03  14:35:03  nelson (Mark T. Nelson)
+ * Added copyright
+ * 
+ * Revision 1.31  95/03/06  20:52:37  20:52:37  nelson (Mark T. Nelson)
+ * Added include of errno.h for EDOM definition
+ * 
+ * Revision 1.30  95/02/14  14:56:55  14:56:55  nelson (Mark T. Nelson)
+ * Fixed NAMD_die and NAMD_quit so that namd will really terminate nicely in the
+ * case of a failure
+ * 
+ * Revision 1.29  95/02/01  14:15:57  14:15:57  nelson (Mark T. Nelson)
+ * Replaced ifdef with if for NAMD_DEBUG defintion
+ * 
+ * Revision 1.28  95/02/01  11:49:06  11:49:06  billh (Bill Humphrey)
+ * Added DEBUG_MSG, DEBUG_MSG_N macros
+ * 
+ * Revision 1.27  95/01/30  20:09:32  20:09:32  nelson (Mark T. Nelson)
+ * Added RESCALEVELTAG
+ * 
+ * Revision 1.26  95/01/26  15:34:38  15:34:38  nelson (Mark T. Nelson)
+ * Added definitions for MTS memory system
+ * 
+ * Revision 1.25  95/01/19  13:29:04  13:29:04  brunner (Robert Brunner)
+ * Added PATCHMOVETAG, which indicates a message for patch migration
+ * due to load balancing.
+ * 
+ * Revision 1.24  94/12/01  14:16:44  14:16:44  brunner (Robert Brunner)
+ * Added LSTATINFOTAG and LDBBARRIERTAG for load balancing
+ * 
+ * Revision 1.23  94/11/28  14:14:01  14:14:01  nelson (Mark T. Nelson)
+ * Fixed so that line and file in CHECK_DOMAIN were correct
+ * 
+ * Revision 1.22  94/11/23  09:32:10  09:32:10  nelson (Mark T. Nelson)
+ * Added macro CHECK_DOMAIN
+ * 
+ * Revision 1.21  94/11/22  13:39:02  13:39:02  nelson (Mark T. Nelson)
+ * Added tag for patch load stats
+ * 
+ * Revision 1.20  94/10/11  10:59:05  10:59:05  nelson (Mark T. Nelson)
+ * Added NAMD_compare_ints() function and ATOMREDISTTAG
+ * 
+ * Revision 1.19  94/10/07  12:19:51  12:19:51  nelson (Mark T. Nelson)
+ * Corrected value of boltzman's constant
+ * 
+ * Revision 1.18  94/10/06  15:44:15  15:44:15  gursoy (Attila Gursoy)
+ * removed the SYNCMSG type (no need anymore)
+ * 
+ * Revision 1.17  94/09/29  18:27:55  18:27:55  gursoy (Attila Gursoy)
+ * defined a new message tag for synchronization SYNCMSG
+ * 
+ * Revision 1.16  94/09/28  18:29:14  18:29:14  gursoy (Attila Gursoy)
+ * added output message tags OUTPUTENERGY, OUTPUTCOOR, OUTPUTVEL
+ * 
+ * Revision 1.15  94/09/22  12:16:10  12:16:10  nelson (Mark T. Nelson)
+ * Added COLOUMB and TIMEFACTOR
+ * 
+ * Revision 1.14  94/09/09  10:20:01  10:20:01  gursoy (Attila Gursoy)
+ * added FIRST_TIMESTEP
+ * 
+ * Revision 1.13  94/09/02  16:36:24  16:36:24  nelson (Mark T. Nelson)
+ * moved NAMD_DEBUG from namd.C to common.h
+ * 
+ * Revision 1.12  94/08/30  13:59:55  13:59:55  nelson (Mark T. Nelson)
+ * Added a bunch of tags
+ * 
+ * Revision 1.11  94/08/09  13:20:15  13:20:15  nelson (Mark T. Nelson)
+ * Added DISTRIBTAG
+ * 
+ * Revision 1.10  94/08/03  21:59:03  21:59:03  nelson (Mark T. Nelson)
+ * Added TAG for Molecule class
+ * 
+ * Revision 1.9  94/08/02  16:29:03  16:29:03  nelson (Mark T. Nelson)
+ * Added tags for Parameters class and Inform objcets
+ * 
+ * Revision 1.8  94/08/01  10:38:20  10:38:20  nelson (Mark T. Nelson)
+ * Changed definitions of Bool, TRUE, FALSE, etc. to work better
+ * with the communication class
+ * 
+ * Revision 1.7  94/07/08  16:37:35  16:37:35  nelson (Mark T. Nelson)
+ * Added message tag for SimParameters
+ * 
+ * Revision 1.6  94/07/06  15:21:11  15:21:11  nelson (Mark T. Nelson)
+ * Added BigReal definition
+ * 
+ * Revision 1.5  94/06/29  22:48:37  22:48:37  dalke (Andrew Dalke)
+ * Changed Bool from int to an enum
+ * 
+ * Revision 1.4  94/06/28  17:42:43  17:42:43  billh (Bill Humphrey)
+ * Added namdDebug global variable for debugging messages.  Turned
+ * on by defining NAMD_DEBUG.
+ * 
+ * Revision 1.3  94/06/24  03:10:11  03:10:11  billh (Bill Humphrey)
+ * Added NAMD_title, NAMD_quit, NAMD_check_messages global functions.
+ * Removed NAMD_warn; using Inform objects now to report information.
+ * 
+ * Revision 1.2  94/06/22  15:07:20  15:07:20  nelson (Mark T. Nelson)
+ * Added NAMD_die and NAMD_warn prototypes
+ * 
+ * Revision 1.1  94/06/20  21:36:16  21:36:16  billh (Bill Humphrey)
+ * Initial revision
+ * 
+ ***************************************************************************/

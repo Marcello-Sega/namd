@@ -1,20 +1,10 @@
 //-*-c++-*-
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
+/*       (C) Copyright 1995,1996,1997 The Board of Trustees of the         */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*									   */
 /***************************************************************************/
-
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: ParseOptions.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:59:01 $
- *
- ***************************************************************************
  * DESCRIPTION:
  *   Simplifies the interaction with the ConfigList.  This allows you to
  *  define a set of dependencies in the configuration file, along with
@@ -23,40 +13,7 @@
  *  unneeded options, and errors for stuff it couldn't understand, or
  *  were out of range or in the wrong units, ...
  *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: ParseOptions.h,v $
- * Revision 1.1000  1997/02/06 15:59:01  ari
- * Resetting CVS to merge branches back into the main trunk.
- * We will stick to main trunk development as suggested by CVS manual.
- * We will set up tags to track fixed points of development/release
- * as suggested by CVS manual - all praise the CVS manual.
- *
- * Revision 1.778  1997/01/28 00:31:08  ari
- * internal release uplevel to 1.778
- *
- * Revision 1.777.2.1  1997/01/27 22:45:32  ari
- * Basic Atom Migration Code added.
- * Added correct magic first line to .h files for xemacs to go to C++ mode.
- * Compiles and runs without migration turned on.
- *
- * Revision 1.777  1997/01/17 19:36:44  ari
- * Internal CVS leveling release.  Start development code work
- * at 1.777.1.1.
- *
- * Revision 1.1  1996/08/06 20:38:38  ari
- * Initial revision
- *
- * Revision 1.2  1995/04/05 15:33:34  nelson
- * Added support for unsigned ints and changed the way strings
- * work for integration into SimParameters
- *
- * Revision 1.1  95/04/04  13:49:34  13:49:34  dalke (Andrew Dalke)
- * Initial revision
- * 
  ***************************************************************************/
-
 #ifndef PARSEOPTIONS_H
 
 #define PARSEOPTIONS_H
@@ -301,3 +258,50 @@ class ParseOptions {
 };
 
 #endif
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile: ParseOptions.h,v $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:45 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: ParseOptions.h,v $
+ * Revision 1.1001  1997/03/19 11:54:45  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ * Revision 1.1000  1997/02/06 15:59:01  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
+ * Revision 1.778  1997/01/28 00:31:08  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.1  1997/01/27 22:45:32  ari
+ * Basic Atom Migration Code added.
+ * Added correct magic first line to .h files for xemacs to go to C++ mode.
+ * Compiles and runs without migration turned on.
+ *
+ * Revision 1.777  1997/01/17 19:36:44  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
+ * Revision 1.1  1996/08/06 20:38:38  ari
+ * Initial revision
+ *
+ * Revision 1.2  1995/04/05 15:33:34  nelson
+ * Added support for unsigned ints and changed the way strings
+ * work for integration into SimParameters
+ *
+ * Revision 1.1  95/04/04  13:49:34  13:49:34  dalke (Andrew Dalke)
+ * Initial revision
+ * 
+ ***************************************************************************/
+

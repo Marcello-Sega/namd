@@ -1,108 +1,16 @@
 //-*-c++-*-
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
+/*      (C) Copyright 1995,1996,1997 The Board of Trustees of the          */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*								   	   */
 /***************************************************************************/
-
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: Vector.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/26 16:53:18 $
- *
- ***************************************************************************
  * DESCRIPTION:
  *   Implement a vector class.  This means we can do vector manipulation
  * with something like v3=v1+v2.  I don't know how fast it is compared
  * to the old fashioned way.  We may have to change things once it gets
  * working.
  *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: Vector.h,v $
- * Revision 1.1001  1997/02/26 16:53:18  ari
- * Cleaning and debuging for memory leaks.
- * Adding comments.
- * Removed some dead code due to use of Quiescense detection.
- *
- * Revision 1.1000  1997/02/06 15:59:23  ari
- * Resetting CVS to merge branches back into the main trunk.
- * We will stick to main trunk development as suggested by CVS manual.
- * We will set up tags to track fixed points of development/release
- * as suggested by CVS manual - all praise the CVS manual.
- *
- * Revision 1.778  1997/01/28 00:31:28  ari
- * internal release uplevel to 1.778
- *
- * Revision 1.777.2.1  1997/01/27 22:45:43  ari
- * Basic Atom Migration Code added.
- * Added correct magic first line to .h files for xemacs to go to C++ mode.
- * Compiles and runs without migration turned on.
- *
- * Revision 1.777  1997/01/17 19:37:03  ari
- * Internal CVS leveling release.  Start development code work
- * at 1.777.1.1.
- *
- * Revision 1.3  1996/11/11 19:54:09  nealk
- * Modified to use InfoStream instead of Inform.
- *
- * Revision 1.2  1996/11/04 19:44:42  nealk
- * Replaced old vector.h with new one.
- *
- * Revision 1.15  1996/10/17 15:17:11  nealk
- * Removed a negation from all cross pruoduct functions... :-)
- *
- * Revision 1.14  1996/10/14 14:02:01  nealk
- * Added negation "-" to vector class.
- *
- * Revision 1.13  1996/10/12 00:11:00  brunner
- * Made several functions const, since they don't modify the object
- *
- * Revision 1.12  1996/09/25 19:20:51  nealk
- * Added "inline" and it seems to make a small difference.
- *
- * Revision 1.11  1996/09/24 14:54:33  nealk
- * Added cross with scalar since this is a very common use for cross products.
- *
- * Revision 1.10  1996/09/17 16:40:19  nealk
- * Modified +=, *=, and -= to not return a value (void).  This makes them
- * as efficient as explicit declarations.  Note: they cannot be used to
- * return values (but the return isn't used in any of the code anyway).
- * Also added /=.
- *
- * Revision 1.9  1996/04/27 20:42:24  billh
- * Added insertion  operator for Vector, and changed how Vector.h included.
- *
- * Revision 1.8  1996/04/17 16:42:07  billh
- * Added v1 = v2, v1 = const, v1 *= const operators
- *
- * Revision 1.7  1995/04/04  18:40:48  dalke
- * added a string "set"
- *
- * Revision 1.6  1995/03/08  14:29:57  nelson
- * Added copyright
- *
- * Revision 1.5  94/09/04  20:18:50  20:18:50  nelson (Mark T. Nelson)
- * add function div and fixed length function
- * 
- * Revision 1.4  94/08/09  13:20:02  13:20:02  nelson (Mark T. Nelson)
- * Added add_const routine
- * 
- * Revision 1.3  94/07/07  16:47:45  16:47:45  dalke (Andrew Dalke)
- * changed data type from Real to BigReal
- * 
- * Revision 1.2  94/07/06  11:55:57  11:55:57  dalke (Andrew Dalke)
- * Added unit and length function, also added two-element operations
- * to minimize copies.
- * 
- * Revision 1.1  94/07/06  11:13:22  11:13:22  dalke (Andrew Dalke)
- * Initial revision
- * 
  ***************************************************************************/
 
 #ifndef VECTOR_H
@@ -387,3 +295,99 @@ main()
 #endif
 
 #endif
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile: Vector.h,v $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/03/19 11:54:58 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: Vector.h,v $
+ * Revision 1.1002  1997/03/19 11:54:58  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ * Revision 1.1001  1997/02/26 16:53:18  ari
+ * Cleaning and debuging for memory leaks.
+ * Adding comments.
+ * Removed some dead code due to use of Quiescense detection.
+ *
+ * Revision 1.1000  1997/02/06 15:59:23  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
+ * Revision 1.778  1997/01/28 00:31:28  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.1  1997/01/27 22:45:43  ari
+ * Basic Atom Migration Code added.
+ * Added correct magic first line to .h files for xemacs to go to C++ mode.
+ * Compiles and runs without migration turned on.
+ *
+ * Revision 1.777  1997/01/17 19:37:03  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
+ * Revision 1.3  1996/11/11 19:54:09  nealk
+ * Modified to use InfoStream instead of Inform.
+ *
+ * Revision 1.2  1996/11/04 19:44:42  nealk
+ * Replaced old vector.h with new one.
+ *
+ * Revision 1.15  1996/10/17 15:17:11  nealk
+ * Removed a negation from all cross pruoduct functions... :-)
+ *
+ * Revision 1.14  1996/10/14 14:02:01  nealk
+ * Added negation "-" to vector class.
+ *
+ * Revision 1.13  1996/10/12 00:11:00  brunner
+ * Made several functions const, since they don't modify the object
+ *
+ * Revision 1.12  1996/09/25 19:20:51  nealk
+ * Added "inline" and it seems to make a small difference.
+ *
+ * Revision 1.11  1996/09/24 14:54:33  nealk
+ * Added cross with scalar since this is a very common use for cross products.
+ *
+ * Revision 1.10  1996/09/17 16:40:19  nealk
+ * Modified +=, *=, and -= to not return a value (void).  This makes them
+ * as efficient as explicit declarations.  Note: they cannot be used to
+ * return values (but the return isn't used in any of the code anyway).
+ * Also added /=.
+ *
+ * Revision 1.9  1996/04/27 20:42:24  billh
+ * Added insertion  operator for Vector, and changed how Vector.h included.
+ *
+ * Revision 1.8  1996/04/17 16:42:07  billh
+ * Added v1 = v2, v1 = const, v1 *= const operators
+ *
+ * Revision 1.7  1995/04/04  18:40:48  dalke
+ * added a string "set"
+ *
+ * Revision 1.6  1995/03/08  14:29:57  nelson
+ * Added copyright
+ *
+ * Revision 1.5  94/09/04  20:18:50  20:18:50  nelson (Mark T. Nelson)
+ * add function div and fixed length function
+ * 
+ * Revision 1.4  94/08/09  13:20:02  13:20:02  nelson (Mark T. Nelson)
+ * Added add_const routine
+ * 
+ * Revision 1.3  94/07/07  16:47:45  16:47:45  dalke (Andrew Dalke)
+ * changed data type from Real to BigReal
+ * 
+ * Revision 1.2  94/07/06  11:55:57  11:55:57  dalke (Andrew Dalke)
+ * Added unit and length function, also added two-element operations
+ * to minimize copies.
+ * 
+ * Revision 1.1  94/07/06  11:13:22  11:13:22  dalke (Andrew Dalke)
+ * Initial revision
+ * 
+ ***************************************************************************/
+

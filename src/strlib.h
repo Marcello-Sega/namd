@@ -6,24 +6,63 @@
 /*                           All Rights Reserved                           */
 /*								   	   */
 /***************************************************************************/
-
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: strlib.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:59:39 $
- *
- ***************************************************************************
  * DESCRIPTION:
  *	strlib contains a number of useful routines for doing file I/O
  * and some basic string manipulation.  These routines are used for 
  * reading in the parameter and .psf files
  *
+ ***************************************************************************/
+
+
+#ifndef STRLIB_H
+
+#define STRLIB_H
+
+#include <stdio.h>
+#include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+#include "common.h"
+
+void	NAMD_truncate(char *);		//  Remove trailing spaces from
+					//  a string
+int	NAMD_read_line(FILE *, char *); //  Read in a line from a file
+int	NAMD_find_word(char *, char *); //  Check for given word in a
+					//  string
+int	NAMD_blank_string(char *);	//  Check to see if a string
+					//  is blank
+void	NAMD_find_first_word(char *, char *);
+					//  Find the first word in a string
+int	NAMD_read_int(FILE *, char *);  //  Read an integer from a file
+void	NAMD_pad(char *, int);		//  Pad a string with leading spaces
+void	NAMD_remove_comment(char *);	//  Remove comments at the end of
+					//  a line demarked by !
+
+//  Add definitions for missing library routines in AIX
+#ifdef AIX
+int strcasecmp(const char s[], const char t[]);
+int strncasecmp(const char s[], const char t[], int n);
+#endif
+
+#endif
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile: strlib.h,v $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/03/19 11:55:05 $
+ *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: strlib.h,v $
+ * Revision 1.1001  1997/03/19 11:55:05  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
  * Revision 1.1000  1997/02/06 15:59:39  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
@@ -61,36 +100,3 @@
  * Initial revision
  * 
  ***************************************************************************/
-
-#ifndef STRLIB_H
-
-#define STRLIB_H
-
-#include <stdio.h>
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
-#include <strings.h>
-#include "common.h"
-
-void	NAMD_truncate(char *);		//  Remove trailing spaces from
-					//  a string
-int	NAMD_read_line(FILE *, char *); //  Read in a line from a file
-int	NAMD_find_word(char *, char *); //  Check for given word in a
-					//  string
-int	NAMD_blank_string(char *);	//  Check to see if a string
-					//  is blank
-void	NAMD_find_first_word(char *, char *);
-					//  Find the first word in a string
-int	NAMD_read_int(FILE *, char *);  //  Read an integer from a file
-void	NAMD_pad(char *, int);		//  Pad a string with leading spaces
-void	NAMD_remove_comment(char *);	//  Remove comments at the end of
-					//  a line demarked by !
-
-//  Add definitions for missing library routines in AIX
-#ifdef AIX
-int strcasecmp(const char s[], const char t[]);
-int strncasecmp(const char s[], const char t[], int n);
-#endif
-
-#endif

@@ -1,81 +1,18 @@
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
+/*     (C) Copyright 1995,1996,1997 The Board of Trustees of the           */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*								   	   */
 /***************************************************************************/
-
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: PDBData.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:55 $
- *
- ***************************************************************************
  * DESCRIPTION:
  *   The code to implement the various PDBData classes.  These are:
  *  PDBData (base class), PDBUnknown (for unimplemented records),
  *  and PDBAtom, PDBAtomRecord, and PDBHetAtm, for the various types
  *  of atom records.
  *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: PDBData.C,v $
- * Revision 1.1000  1997/02/06 15:58:55  ari
- * Resetting CVS to merge branches back into the main trunk.
- * We will stick to main trunk development as suggested by CVS manual.
- * We will set up tags to track fixed points of development/release
- * as suggested by CVS manual - all praise the CVS manual.
- *
- * Revision 1.778  1997/01/28 00:31:03  ari
- * internal release uplevel to 1.778
- *
- * Revision 1.777  1997/01/17 19:36:38  ari
- * Internal CVS leveling release.  Start development code work
- * at 1.777.1.1.
- *
- * Revision 1.1  1996/08/06 20:38:38  ari
- * Initial revision
- *
- * Revision 1.7  1995/07/07 19:54:15  nelson
- * Added int to elvis_count declaration
- *
- * Revision 1.6  95/05/19  11:45:27  11:45:27  dalke (Andrew Dalke)
- * made atom name output compatible with X-Plor
- * ie. 1, 2, and 3 letter names start in the 2nd
- * column of the 4 column field.  4 letter namds
- * start in the first
- * 
- * Revision 1.5  95/05/19  10:47:37  10:47:37  dalke (Andrew Dalke)
- * Made residue sequence output compatible with X-Plor when >9999
- * (ie, 10000 == A000, etc.)
- * 
- * Revision 1.4  95/03/08  14:27:42  14:27:42  nelson (Mark T. Nelson)
- * Added copyright message
- * 
- * Revision 1.3  94/10/23  21:57:59  21:57:59  dalke (Andrew Dalke)
- * Fixed non-bug with
- * 1) "    " a blank field in integer and Real input got converted
- *   to 0 or 0.0 while a non-string (ie., past input) got converted
- *   to the default value.  I made the blank string get converted to
- *   the default as well
- * 2) During field output, if the temperature factor was 0, a # sign
- *   was printed.  Since the T.F. field can be used for things other
- *   than temperature factor, I made it print the value, even if it
- *   is the default value.  This is same manner by which I treat
- *   the occupancy field.
- * 
- * Revision 1.2  94/10/19  02:15:03  02:15:03  dalke (Andrew Dalke)
- * Fixed bug with records of the type "HETATM12345".
- * 
- * Revision 1.1  94/07/05  12:52:16  12:52:16  dalke (Andrew Dalke)
- * Initial revision
- * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PDBData.C,v 1.1000 1997/02/06 15:58:55 ari Exp $";
+
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PDBData.C,v 1.1001 1997/03/19 11:54:40 ari Exp $";
 
 
 // Here are the routines to manupulate a PDB ATOM record
@@ -763,3 +700,70 @@ main()
   
 }
 #endif
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile: PDBData.C,v $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:40 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: PDBData.C,v $
+ * Revision 1.1001  1997/03/19 11:54:40  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ * Revision 1.1000  1997/02/06 15:58:55  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
+ * Revision 1.778  1997/01/28 00:31:03  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777  1997/01/17 19:36:38  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
+ * Revision 1.1  1996/08/06 20:38:38  ari
+ * Initial revision
+ *
+ * Revision 1.7  1995/07/07 19:54:15  nelson
+ * Added int to elvis_count declaration
+ *
+ * Revision 1.6  95/05/19  11:45:27  11:45:27  dalke (Andrew Dalke)
+ * made atom name output compatible with X-Plor
+ * ie. 1, 2, and 3 letter names start in the 2nd
+ * column of the 4 column field.  4 letter namds
+ * start in the first
+ * 
+ * Revision 1.5  95/05/19  10:47:37  10:47:37  dalke (Andrew Dalke)
+ * Made residue sequence output compatible with X-Plor when >9999
+ * (ie, 10000 == A000, etc.)
+ * 
+ * Revision 1.4  95/03/08  14:27:42  14:27:42  nelson (Mark T. Nelson)
+ * Added copyright message
+ * 
+ * Revision 1.3  94/10/23  21:57:59  21:57:59  dalke (Andrew Dalke)
+ * Fixed non-bug with
+ * 1) "    " a blank field in integer and Real input got converted
+ *   to 0 or 0.0 while a non-string (ie., past input) got converted
+ *   to the default value.  I made the blank string get converted to
+ *   the default as well
+ * 2) During field output, if the temperature factor was 0, a # sign
+ *   was printed.  Since the T.F. field can be used for things other
+ *   than temperature factor, I made it print the value, even if it
+ *   is the default value.  This is same manner by which I treat
+ *   the occupancy field.
+ * 
+ * Revision 1.2  94/10/19  02:15:03  02:15:03  dalke (Andrew Dalke)
+ * Fixed bug with records of the type "HETATM12345".
+ * 
+ * Revision 1.1  94/07/05  12:52:16  12:52:16  dalke (Andrew Dalke)
+ * Initial revision
+ * 
+ ***************************************************************************/

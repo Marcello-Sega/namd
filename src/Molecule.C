@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Molecule.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/03/11 23:46:29 $
+ *	$Revision: 1.1007 $	$Date: 1997/03/19 11:54:32 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,11 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1007  1997/03/19 11:54:32  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
  * Revision 1.1006  1997/03/11 23:46:29  ari
  * Improved ComputeNonbondedExcl loadTuples() by overloading the default
  * template method from ComputeHomeTuples and used the checklist suggested
@@ -184,7 +189,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1006 1997/03/11 23:46:29 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1007 1997/03/19 11:54:32 ari Exp $";
 
 #include "Molecule.h"
 #include <stdio.h>
@@ -779,7 +784,7 @@ void Molecule::read_bonds(FILE *fd, Parameters *params)
 	char atom1name[11];	// Atom type for atom #1
 	char atom2name[11];	// Atom type for atom #2
 	char tmp_string[11];	// Temporary string to read in atom #'s
-	int j;			// Loop counter
+	register int j;			// Loop counter
 	int num_read=0;		// Number of bonds read so far
 
 	/*  Allocate the array to hold the bonds			*/
@@ -867,7 +872,7 @@ void Molecule::read_angles(FILE *fd, Parameters *params)
 	char atom2name[11];	//  Atom type for atom 2
 	char atom3name[11];	//  Atom type for atom 3
 	char tmp_string[11];	//  Temporary string for reading atoms
-	int j;			//  Loop counter
+	register int j;			//  Loop counter
 	int num_read=0;		//  Number of angles read so far
 
 	/*  Alloc the array of angles					*/
@@ -962,7 +967,7 @@ void Molecule::read_dihedrals(FILE *fd, Parameters *params)
 	char atom3name[11];	// Atom type for atom 3
 	char atom4name[11];	// Atom type for atom 4
 	char tmp_string[11];	// Temporary string for reading indexes
-	int j;			// loop counter
+	register int j;			// loop counter
 	int num_read=0;		// number of dihedrals read so far
 	int multiplicity=1;	// multiplicity of the current bond
 	Bool duplicate_bond;	// Is this a duplicate of the last bond
@@ -1082,7 +1087,7 @@ void Molecule::read_impropers(FILE *fd, Parameters *params)
 	char atom3name[11];	//  Atom type for atom 3
 	char atom4name[11];	//  Atom type for atom 4
 	char tmp_string[11];	//  Temporary string to read in indexes
-	int j;			//  Loop counter
+	register int j;			//  Loop counter
 	int num_read=0;		//  Number of impropers read so far
 	int multiplicity=1;	// multiplicity of the current bond
 	Bool duplicate_bond;	// Is this a duplicate of the last bond
@@ -1203,7 +1208,7 @@ void Molecule::read_donors(FILE *fd)
 
 {
 	int d[2];               // temporary storage of donor atom index
-	int j;			// Loop counter
+	register int j;			// Loop counter
 	int num_read=0;		// Number of bonds read so far
 	int num_no_hydr=0;      // Number of bonds with no hydrogen given
 	char tmp_string[11];	// Temporary string to read in atom #'s
@@ -1279,7 +1284,7 @@ void Molecule::read_acceptors(FILE *fd)
 
 {
 	int d[2];               // temporary storage of atom index
-	int j;			// Loop counter
+	register int j;			// Loop counter
 	int num_read=0;		// Number of bonds read so far
         int num_no_ante=0;      // number of pairs with no antecedent
 	char tmp_string[11];	// Temporary string to read in atom #'s
@@ -1363,10 +1368,10 @@ void Molecule::read_exclusions(FILE *fd)
 {
 	int *exclusion_atoms;	//  Array of indexes of excluded atoms
 	char tmp_string[11];	//  temporary string for readin in values
-	int num_read=0;		//  Number fo exclusions read in
+	register int num_read=0;		//  Number fo exclusions read in
 	int current_index;	//  Current index value
 	int last_index;		//  the previous index value
-	int insert_index=0;	//  index of where we are in exlcusions array
+	register int insert_index=0;	//  index of where we are in exlcusions array
 
 	/*  Allocate the array of exclusion structures and the array of */
 	/*  exlcuded atom indexes					*/
@@ -1458,7 +1463,7 @@ void Molecule::read_exclusions(FILE *fd)
 void Molecule::print_atoms(Parameters *params)
 
 {
-	int i;
+	register int i;
 	Real sigma;
 	Real epsilon;
 	Real sigma14;
@@ -1497,7 +1502,7 @@ pp		  << endi);
 void Molecule::print_bonds(Parameters *params)
 
 {
-	int i;
+	register int i;
 	Real k;
 	Real x0;
 
@@ -1529,7 +1534,7 @@ void Molecule::print_bonds(Parameters *params)
 
 void Molecule::print_exclusions()
 {
-	int i;
+	register int i;
 
 	DEBUG_MSG("EXPLICIT EXCLUSION LIST\n" \
 		  << "********************************\n" \
@@ -1569,7 +1574,7 @@ void Molecule::send_Molecule(Communicate *com_obj)
 	Index *ind1;		//  Array of Indexes used to send data
 	int *i1, *i2, *i3, *i4;	//  Array of ints used to send data
 	Vector *v1;		//  Array of vectors used to send data
-	int i;			//  Loop counter
+	register int i;			//  Loop counter
 	if ( msg == NULL )
 	{
 	  NAMD_die("Memory allocation failed in Molecule::send_Molecule");
@@ -1878,7 +1883,7 @@ void Molecule::receive_Molecule(Message *msg)
 	Real *a1, *a2;			//  Temporary real arrays
 	Index *ind1;			//  Temporary array of Indexes
 	Vector *v1;			//  Temporary array of Vectors
-	int i;				//  Loop counter
+	register int i;				//  Loop counter
 
 	//  Get the atom information
 	msg->get(numAtoms);
@@ -2235,7 +2240,7 @@ void Molecule::receive_Molecule(Message *msg)
 void Molecule::build_lists_by_atom()
    
 {
-   int i;			//  Loop counter
+   register int i;			//  Loop counter
    
    bondsByAtom = new intPtr[numAtoms];
    anglesByAtom = new intPtr[numAtoms];
@@ -2501,7 +2506,7 @@ void Molecule::build_lists_by_atom()
 
 void Molecule::build_exclusions()
 {
-	int i;					//  Loop counter
+	register int i;					//  Loop counter
 	ExclusionSettings exclude_flag;		//  Exclusion policy
 
 	exclude_flag = simParams->exclude;
@@ -2556,7 +2561,7 @@ void Molecule::build12excl(void)
    
 {
    int *current_val;	//  Current value to check
-   int i;		//  Loop counter to loop through all atoms
+   register int i;		//  Loop counter to loop through all atoms
    
    //  Loop through all the atoms marking the bonded interactions for each one
    for (i=0; i<numAtoms; i++)
@@ -2605,7 +2610,7 @@ void Molecule::build13excl(void)
 {
    int *bond1, *bond2;	//  The two bonds being checked
    int middle_atom;	//  Common third atom
-   int i;		//  Loop counter to loop through all atoms
+   register int i;		//  Loop counter to loop through all atoms
    
    //  Loop through all the atoms looking at the bonded connections
    //  for each one
@@ -2675,7 +2680,7 @@ void Molecule::build14excl(int modified)
 {
    int *bond1, *bond2, *bond3;	//  The two bonds being checked
    int mid1, mid2;		//  Middle atoms
-   int i;			//  Counter to loop through all atoms
+   register int i;			//  Counter to loop through all atoms
    
    //  Loop through all the atoms
    for (i=0; i<numAtoms; i++)
@@ -2787,7 +2792,7 @@ void Molecule::build_constraint_params(StringList *consref,
    
 {
    PDB *refPDB, *kPDB;		//  Pointer to other PDB's if used
-   int i;			//  Loop counter
+   register int i;			//  Loop counter
    int current_index=0;		//  Index into values used
    int kcol;			//  Column to look for force constant in
    Real kval;			//  Force constant value retreived
@@ -3253,7 +3258,8 @@ IntList *Molecule::get_atom_hb_acceptors(int anum)
 // over the network and have each node calculate the rest of the data on
 // it's own.
 void Molecule::build_atom_status(void) {
-  int i, a1, a2;
+  register int i;
+  int a1, a2;
 
   // initialize information for each atom (note that the status has
   // already been initialized during the read/receive phase)
@@ -3308,3 +3314,22 @@ void Molecule::build_atom_status(void) {
   }
 
 }
+
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1007 $	$Date: 1997/03/19 11:54:32 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: Molecule.C,v $
+ * Revision 1.1007  1997/03/19 11:54:32  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ ***************************************************************************/

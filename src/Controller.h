@@ -19,6 +19,9 @@
 #include "Node.h"
 #include "common.h"
 
+template <class T>
+class SimpleBroadcastObject;
+
 class NamdState;
 class SimParameters;
 class ReductionMgr;
@@ -55,7 +58,27 @@ protected:
 private:
     CthThread thread;
     static void threadRun(Controller*);
+
+    SimpleBroadcastObject<int> * sequence;
 };
 
 #endif // SEQUENCER_H
 
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/03/19 11:54:14 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: Controller.h,v $
+ * Revision 1.1005  1997/03/19 11:54:14  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ ***************************************************************************/

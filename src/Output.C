@@ -1,183 +1,14 @@
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
+/*      (C) Copyright 1995,1996,1997 The Board of Trustees of the          */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*								   	   */
 /***************************************************************************/
-
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: Output.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1997/03/18 18:09:11 $
- *
- ***************************************************************************
  * DESCRIPTION:
  * This object outputs the data collected on the master node
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: Output.C,v $
- * Revision 1.3  1997/03/18 18:09:11  jim
- * Revamped collection system to ensure ordering and eliminate
- * unnecessary collections.  Also reduced make dependencies.
- *
- * Revision 1.2  1997/02/26 18:38:24  jim
- * Eliminated +1 from output timestep checks, now makes sense.
- * This should match changes being made in NAMD 1.X.
- *
- * Revision 1.1  1997/02/11 22:56:15  jim
- * Added dcd file writing.
- *
- * Revision 1.44  1997/01/03 22:13:55  brunner
- * Added momentum output
- *
- * Revision 1.43  1996/12/03 18:46:48  brunner
- * Put cylindrical BC into Constraint output field
- *
- * Revision 1.42  1996/10/24 19:00:22  brunner
- * Made timestep go from 0->N, inclusive
- *
- * Revision 1.41  1996/09/13 15:14:52  nealk
- * Changed structures to use array atom[] rather than explicit atom1, atom2, etc.
- *
- * Revision 1.40  1996/05/08 20:55:23  gursoy
- * modified calculation of temperature
- * to acocound number of degrees of freedom
- *
- * Revision 1.39  1996/04/27 23:40:59  billh
- * Modified to calculate and print hydrogen bond forces and energies.
- *
- * Revision 1.38  1996/01/28 21:50:08  jean
- * Attempting to make stable RCS without Mark Nelson's
- * fma/pairlist decoupling
- *
- * Revision 1.38  1995/12/05 22:13:34  brunner
- * Rearranged #ifdef MDCOMM 's so it will compile without MDCOMM defined
- *
- * Revision 1.37  1995/10/27 12:24:14  dalke
- * Removed bad delete's
- *
- * Revision 1.36  95/10/26  16:24:27  16:24:27  dalke (Andrew Dalke)
- * added new mdcomm code
- * 
- * Revision 1.35  1995/10/09  18:32:31  hazen
- * Updated memory allocation to use C++ new/delete
- * and freed temporary memory allocated in arrays X, Y, Z in
- * functions output_* and strings restart_name and restart_bak.
- * Also freed vmdData struct members X, Y, Z and others in destructor.
- *
- * Revision 1.34  1995/09/30  19:55:14  billh
- * Added ETITLE and ENERGY strings  in energy output records.
- * Added tiny Elvis warning if temperature exceeds 1000 degrees.
- *
- * Revision 1.33  95/09/26  15:15:04  15:15:04  nelson (Mark T. Nelson)
- * Added all force DCD files and cleaned up symantics of long and short
- * range electrostatic force DCD files.
- * 
- * Revision 1.32  95/09/26  13:28:21  13:28:21  nelson (Mark T. Nelson)
- * Added broadcast of temperature for temperature coupling
- * 
- * Revision 1.31  95/08/31  10:45:41  10:45:41  nelson (Mark T. Nelson)
- * Changed so that DCD output write during both first and last timestep
- * 
- * Revision 1.30  95/08/30  14:03:09  14:03:09  nelson (Mark T. Nelson)
- * Added short range DCD file output and binary coordinate restart files
- * 
- * Revision 1.29  95/08/11  14:52:17  14:52:17  nelson (Mark T. Nelson)
- * Added routines for the generation of force DCD files
- * 
- * Revision 1.28  95/07/14  14:19:08  14:19:08  nelson (Mark T. Nelson)
- * Added binary velocity restart files
- * 
- * Revision 1.27  95/07/11  09:18:15  09:18:15  nelson (Mark T. Nelson)
- * Changed scaling factors for velocity restart files so that it matches
- * X-PLOR files
- * 
- * Revision 1.26  95/07/05  11:48:56  11:48:56  nelson (Mark T. Nelson)
- * Changed scaling factor on velocity restart files to match X-PLOR
- * 
- * Revision 1.25  95/06/20  11:34:33  11:34:33  nelson (Mark T. Nelson)
- * Added explicit int declaration to get rid of warning messages
- * 
- * Revision 1.24  95/05/23  14:11:51  14:11:51  nelson (Mark T. Nelson)
- * Added electric field energy values
- * 
- * Revision 1.23  95/04/10  13:35:43  13:35:43  nelson (Mark T. Nelson)
- * Removed some nulls to silence gcc
- * 
- * Revision 1.22  95/03/22  11:22:59  11:22:59  nelson (Mark T. Nelson)
- * Added output opition for sphereical boundary conditions and 
- * added outputEnergies option
- * 
- * Revision 1.21  95/03/08  14:47:32  14:47:32  nelson (Mark T. Nelson)
- * Added copyright
- * 
- * Revision 1.20  95/02/17  12:37:16  12:37:16  nelson (Mark T. Nelson)
- * Added shifting factor for velocity PDB files
- * 
- * Revision 1.19  95/01/31  19:46:07  19:46:07  nelson (Mark T. Nelson)
- * Added call for rescaling velocities
- * 
- * Revision 1.18  94/11/23  09:38:04  09:38:04  nelson (Mark T. Nelson)
- * Added functions for outputing VMD patch load data
- * 
- * Revision 1.17  94/11/10  20:31:43  20:31:43  nelson (Mark T. Nelson)
- * Added code to send Patch data to VMD
- * 
- * Revision 1.16  94/11/09  13:30:31  13:30:31  nelson (Mark T. Nelson)
- * Removed debugging statement in vmd output function
- * 
- * Revision 1.15  94/11/09  13:28:18  13:28:18  nelson (Mark T. Nelson)
- * Changed elapsed_cpu to elapsed_time
- * 
- * Revision 1.14  94/10/31  19:25:21  19:25:21  nelson (Mark T. Nelson)
- * Added functions for VMD interface
- * 
- * Revision 1.13  94/10/19  21:39:59  21:39:59  nelson (Mark T. Nelson)
- * Added harmonic constraint energy output
- * 
- * Revision 1.12  94/10/18  20:32:42  20:32:42  nelson (Mark T. Nelson)
- * Added functions to output velocity DCD files
- * 
- * Revision 1.11  94/10/14  09:36:49  09:36:49  nelson (Mark T. Nelson)
- * Added output of final coordinate and velocity files as well
- * as rearranging and commenting other output routines
- * 
- * Revision 1.10  94/10/12  15:27:57  15:27:57  nelson (Mark T. Nelson)
- * Added comment line to restart files
- * 
- * Revision 1.9  94/10/12  15:18:44  15:18:44  nelson (Mark T. Nelson)
- * Added restart file capability
- * 
- * Revision 1.8  94/10/07  12:19:25  12:19:25  nelson (Mark T. Nelson)
- * Added temperature output
- * 
- * Revision 1.7  94/10/06  21:37:15  21:37:15  nelson (Mark T. Nelson)
- * added dcd file output
- * 
- * Revision 1.6  94/10/06  15:51:36  15:51:36  gursoy (Attila Gursoy)
- * coordinates and velocities are passed as an array(it was a message)
- * 
- * Revision 1.5  94/09/30  11:09:41  11:09:41  nelson (Mark T. Nelson)
- * added Kinetic energy
- * 
- * Revision 1.4  94/09/30  09:10:07  09:10:07  nelson (Mark T. Nelson)
- * Enhanced output format
- * 
- * Revision 1.3  94/09/29  16:35:20  16:35:20  nelson (Mark T. Nelson)
- * Added total energy to output
- * 
- * Revision 1.2  94/09/29  12:32:11  12:32:11  nelson (Mark T. Nelson)
- * Changed format of energy output
- * 
- * Revision 1.1  94/09/29  12:04:57  12:04:57  gursoy (Attila Gursoy)
- * Initial revision
- * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Output.C,v 1.3 1997/03/18 18:09:11 jim Exp $";
+
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Output.C,v 1.4 1997/03/19 11:54:36 ari Exp $";
 
 #include <string.h>
 #include <stdlib.h>
@@ -2667,3 +2498,175 @@ void Output::output_allforcedcdfile(int timestep, int n, Vector *forces)
 	}
 }
 /*			END OF FUNCTION output_allforcedcdfile			*/
+
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile: Output.C,v $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.4 $	$Date: 1997/03/19 11:54:36 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: Output.C,v $
+ * Revision 1.4  1997/03/19 11:54:36  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ * Revision 1.2  1997/02/26 18:38:24  jim
+ * Eliminated +1 from output timestep checks, now makes sense.
+ * This should match changes being made in NAMD 1.X.
+ *
+ * Revision 1.1  1997/02/11 22:56:15  jim
+ * Added dcd file writing.
+ *
+ * Revision 1.44  1997/01/03 22:13:55  brunner
+ * Added momentum output
+ *
+ * Revision 1.43  1996/12/03 18:46:48  brunner
+ * Put cylindrical BC into Constraint output field
+ *
+ * Revision 1.42  1996/10/24 19:00:22  brunner
+ * Made timestep go from 0->N, inclusive
+ *
+ * Revision 1.41  1996/09/13 15:14:52  nealk
+ * Changed structures to use array atom[] rather than explicit atom1, 
+ * atom2, etc.
+ *
+ * Revision 1.40  1996/05/08 20:55:23  gursoy
+ * modified calculation of temperature
+ * to acocound number of degrees of freedom
+ *
+ * Revision 1.39  1996/04/27 23:40:59  billh
+ * Modified to calculate and print hydrogen bond forces and energies.
+ *
+ * Revision 1.38  1996/01/28 21:50:08  jean
+ * Attempting to make stable RCS without Mark Nelson's
+ * fma/pairlist decoupling
+ *
+ * Revision 1.38  1995/12/05 22:13:34  brunner
+ * Rearranged #ifdef MDCOMM 's so it will compile without MDCOMM defined
+ *
+ * Revision 1.37  1995/10/27 12:24:14  dalke
+ * Removed bad delete's
+ *
+ * Revision 1.36  95/10/26  16:24:27  16:24:27  dalke (Andrew Dalke)
+ * added new mdcomm code
+ * 
+ * Revision 1.35  1995/10/09  18:32:31  hazen
+ * Updated memory allocation to use C++ new/delete
+ * and freed temporary memory allocated in arrays X, Y, Z in
+ * functions output_* and strings restart_name and restart_bak.
+ * Also freed vmdData struct members X, Y, Z and others in destructor.
+ *
+ * Revision 1.34  1995/09/30  19:55:14  billh
+ * Added ETITLE and ENERGY strings  in energy output records.
+ * Added tiny Elvis warning if temperature exceeds 1000 degrees.
+ *
+ * Revision 1.33  95/09/26  15:15:04  15:15:04  nelson (Mark T. Nelson)
+ * Added all force DCD files and cleaned up symantics of long and short
+ * range electrostatic force DCD files.
+ * 
+ * Revision 1.32  95/09/26  13:28:21  13:28:21  nelson (Mark T. Nelson)
+ * Added broadcast of temperature for temperature coupling
+ * 
+ * Revision 1.31  95/08/31  10:45:41  10:45:41  nelson (Mark T. Nelson)
+ * Changed so that DCD output write during both first and last timestep
+ * 
+ * Revision 1.30  95/08/30  14:03:09  14:03:09  nelson (Mark T. Nelson)
+ * Added short range DCD file output and binary coordinate restart files
+ * 
+ * Revision 1.29  95/08/11  14:52:17  14:52:17  nelson (Mark T. Nelson)
+ * Added routines for the generation of force DCD files
+ * 
+ * Revision 1.28  95/07/14  14:19:08  14:19:08  nelson (Mark T. Nelson)
+ * Added binary velocity restart files
+ * 
+ * Revision 1.27  95/07/11  09:18:15  09:18:15  nelson (Mark T. Nelson)
+ * Changed scaling factors for velocity restart files so that it matches
+ * X-PLOR files
+ * 
+ * Revision 1.26  95/07/05  11:48:56  11:48:56  nelson (Mark T. Nelson)
+ * Changed scaling factor on velocity restart files to match X-PLOR
+ * 
+ * Revision 1.25  95/06/20  11:34:33  11:34:33  nelson (Mark T. Nelson)
+ * Added explicit int declaration to get rid of warning messages
+ * 
+ * Revision 1.24  95/05/23  14:11:51  14:11:51  nelson (Mark T. Nelson)
+ * Added electric field energy values
+ * 
+ * Revision 1.23  95/04/10  13:35:43  13:35:43  nelson (Mark T. Nelson)
+ * Removed some nulls to silence gcc
+ * 
+ * Revision 1.22  95/03/22  11:22:59  11:22:59  nelson (Mark T. Nelson)
+ * Added output opition for sphereical boundary conditions and 
+ * added outputEnergies option
+ * 
+ * Revision 1.21  95/03/08  14:47:32  14:47:32  nelson (Mark T. Nelson)
+ * Added copyright
+ * 
+ * Revision 1.20  95/02/17  12:37:16  12:37:16  nelson (Mark T. Nelson)
+ * Added shifting factor for velocity PDB files
+ * 
+ * Revision 1.19  95/01/31  19:46:07  19:46:07  nelson (Mark T. Nelson)
+ * Added call for rescaling velocities
+ * 
+ * Revision 1.18  94/11/23  09:38:04  09:38:04  nelson (Mark T. Nelson)
+ * Added functions for outputing VMD patch load data
+ * 
+ * Revision 1.17  94/11/10  20:31:43  20:31:43  nelson (Mark T. Nelson)
+ * Added code to send Patch data to VMD
+ * 
+ * Revision 1.16  94/11/09  13:30:31  13:30:31  nelson (Mark T. Nelson)
+ * Removed debugging statement in vmd output function
+ * 
+ * Revision 1.15  94/11/09  13:28:18  13:28:18  nelson (Mark T. Nelson)
+ * Changed elapsed_cpu to elapsed_time
+ * 
+ * Revision 1.14  94/10/31  19:25:21  19:25:21  nelson (Mark T. Nelson)
+ * Added functions for VMD interface
+ * 
+ * Revision 1.13  94/10/19  21:39:59  21:39:59  nelson (Mark T. Nelson)
+ * Added harmonic constraint energy output
+ * 
+ * Revision 1.12  94/10/18  20:32:42  20:32:42  nelson (Mark T. Nelson)
+ * Added functions to output velocity DCD files
+ * 
+ * Revision 1.11  94/10/14  09:36:49  09:36:49  nelson (Mark T. Nelson)
+ * Added output of final coordinate and velocity files as well
+ * as rearranging and commenting other output routines
+ * 
+ * Revision 1.10  94/10/12  15:27:57  15:27:57  nelson (Mark T. Nelson)
+ * Added comment line to restart files
+ * 
+ * Revision 1.9  94/10/12  15:18:44  15:18:44  nelson (Mark T. Nelson)
+ * Added restart file capability
+ * 
+ * Revision 1.8  94/10/07  12:19:25  12:19:25  nelson (Mark T. Nelson)
+ * Added temperature output
+ * 
+ * Revision 1.7  94/10/06  21:37:15  21:37:15  nelson (Mark T. Nelson)
+ * added dcd file output
+ * 
+ * Revision 1.6  94/10/06  15:51:36  15:51:36  gursoy (Attila Gursoy)
+ * coordinates and velocities are passed as an array(it was a message)
+ * 
+ * Revision 1.5  94/09/30  11:09:41  11:09:41  nelson (Mark T. Nelson)
+ * added Kinetic energy
+ * 
+ * Revision 1.4  94/09/30  09:10:07  09:10:07  nelson (Mark T. Nelson)
+ * Enhanced output format
+ * 
+ * Revision 1.3  94/09/29  16:35:20  16:35:20  nelson (Mark T. Nelson)
+ * Added total energy to output
+ * 
+ * Revision 1.2  94/09/29  12:32:11  12:32:11  nelson (Mark T. Nelson)
+ * Changed format of energy output
+ * 
+ * Revision 1.1  94/09/29  12:04:57  12:04:57  gursoy (Attila Gursoy)
+ * Initial revision
+ * 
+ ***************************************************************************/

@@ -462,6 +462,7 @@ int PatchMap::twoAwayNeighbors(int pid, PatchID *neighbor_ids,  int *transform_i
 
   // ELIMINATE USE OF TWO-AWAY NEIGHBORS
 
+  /*
   int xi, yi, zi;
   int xinc, yinc, zinc;
   int n=0;
@@ -500,6 +501,7 @@ int PatchMap::twoAwayNeighbors(int pid, PatchID *neighbor_ids,  int *transform_i
   }
   DebugM(3,"Patch " << pid << " has " << n << " second neighbors.\n");
   return n;
+  */
 }
 
 //----------------------------------------------------------------------
@@ -563,12 +565,17 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
  *
  *	$RCSfile: PatchMap.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/03/14 21:40:14 $
+ *	$Revision: 1.1007 $	$Date: 1997/03/19 11:54:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.1007  1997/03/19 11:54:47  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
  * Revision 1.1006  1997/03/14 21:40:14  ari
  * Reorganized startup to make possible inital load
  * balancing by changing methods in WorkDistrib.

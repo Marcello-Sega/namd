@@ -196,15 +196,21 @@ void ComputeMgr:: createComputes(ComputeMap *map)
 
 #include "ComputeMgr.bot.h"
 
+
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/03/19 05:49:55 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1997/03/19 11:54:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
+ * $Log: ComputeMgr.C,v $
+ * Revision 1.1008  1997/03/19 11:54:09  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
  *
  ***************************************************************************/

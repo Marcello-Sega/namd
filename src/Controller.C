@@ -19,6 +19,7 @@
 #include "CollectionMaster.h"
 #include "Output.h"
 #include "strlib.h"
+#include "BroadcastObject.h"
 
 #define MIN_DEBUG_LEVEL 3
 //#define DEBUGM
@@ -30,6 +31,8 @@ Controller::Controller(NamdState *s) :
 	reduction(ReductionMgr::Object()),
 	collection(CollectionMaster::Object())
 {
+    sequence = new SimpleBroadcastObject<int>(1);
+
     reduction->subscribe(REDUCTION_BOND_ENERGY);
     reduction->subscribe(REDUCTION_ANGLE_ENERGY);
     reduction->subscribe(REDUCTION_DIHEDRAL_ENERGY);
@@ -75,7 +78,6 @@ void Controller::run(int numberOfCycles)
 
 void Controller::algorithm(void)
 {
-    DebugM(4, "Controller algorithm active. this = " << this << "\n");
     const int numberOfCycles = this->numberOfCycles;
     const int stepsPerCycle = this->stepsPerCycle;
     const BigReal timestep = simParams->dt;
@@ -85,16 +87,16 @@ void Controller::algorithm(void)
     int cycle;
     int seq = 0;
     enqueueCollections(seq+first);
-    printEnergies(seq++);
+    printEnergies(seq);
+    //sequence->publish(seq,seq); // broadcast the value seq to all Sequencers
+    seq++;
     for ( cycle = 0; cycle < numberOfCycles; ++cycle )
     {
-        // for ( step = 0; step < stepsPerCycle; ++step )
-        // {
         enqueueCollections(seq+first);
-        printEnergies(seq++);
-        // }
+        sequence->publish(seq,seq);
+        printEnergies(seq);
+	seq++;
     }
-    DebugM(4, "Controller: Exiting.\n");
     terminate();
 }
 
@@ -171,4 +173,21 @@ void Controller::enqueueCollections(int timestep)
     collection->enqueueVelocities(timestep);
 }
 
-
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1010 $	$Date: 1997/03/19 11:54:13 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: Controller.C,v $
+ * Revision 1.1010  1997/03/19 11:54:13  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ *
+ ***************************************************************************/

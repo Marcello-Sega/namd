@@ -19,3 +19,22 @@ group ProxyMgr
   entry recvResults(ProxyResultMsg *);
 };
 
+
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/03/19 11:54:52 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: ProxyMgr.ci,v $
+ * Revision 1.1002  1997/03/19 11:54:52  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ ***************************************************************************/

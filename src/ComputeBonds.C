@@ -108,3 +108,21 @@ void BondElem::unregisterReductionData(ReductionMgr *reduction)
   reduction->unRegister(REDUCTION_VIRIAL);
 }
 
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/03/19 11:54:03 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: ComputeBonds.C,v $
+ * Revision 1.1004  1997/03/19 11:54:03  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ ***************************************************************************/

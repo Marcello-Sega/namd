@@ -9,7 +9,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1008 1997/03/14 21:40:11 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1009 1997/03/19 11:54:35 ari Exp $";
 
 #include <unistd.h>
 #include "ckdefs.h"
@@ -398,7 +398,7 @@ void Node::quiescence(QuiescenceMessage * msg)
 {
   delete msg;
 
-  DebugM(4, "Quiescence detected, exiting Charm.\n");
+  iout << iINFO << iPE << "Quiescence detected, exiting Charm.\n" << endi;
   CharmExit();
 }
 
@@ -427,12 +427,17 @@ void Node::saveMolDataPointers(NamdState *state)
  *
  *	$RCSfile: Node.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/03/14 21:40:11 $
+ *	$Revision: 1.1009 $	$Date: 1997/03/19 11:54:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1009  1997/03/19 11:54:35  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
  * Revision 1.1008  1997/03/14 21:40:11  ari
  * Reorganized startup to make possible inital load
  * balancing by changing methods in WorkDistrib.

@@ -1,37 +1,14 @@
 /***************************************************************************/
-/*                                                                         */
 /*              (C) Copyright 1995 The Board of Trustees of the            */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*								   	   */
 /***************************************************************************/
-
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: dcdlib.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1997/02/11 22:56:18 $
- *
- ***************************************************************************
  * DESCRIPTION:
  *	dcdlib contains C routines used for reading and writing binary
  * dcd files.  The format of these files is from binary FORTRAN output,
  * so its pretty ugly.  If you're squimish, don't look!!
  *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: dcdlib.h,v $
- * Revision 1.1  1997/02/11 22:56:18  jim
- * Added dcd file writing.
- *
- * Revision 1.2  1995/03/08 14:37:29  nelson
- * Added copyright
- *
- * Revision 1.1  94/10/06  21:40:21  21:40:21  nelson (Mark T. Nelson)
- * Initial revision
- * 
  ***************************************************************************/
 
 #ifndef DCDLIB_H
@@ -63,3 +40,29 @@ void close_dcd_read(int, int, int *);
 void close_dcd_write(int);	/*  Close a dcd file open for writing   */
 
 #endif /* ! DCDLIB_H */
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile: dcdlib.h,v $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1997/03/19 11:55:02 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: dcdlib.h,v $
+ * Revision 1.2  1997/03/19 11:55:02  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ * Revision 1.1  1997/02/11 22:56:18  jim
+ * Added dcd file writing.
+ *
+ * Revision 1.2  1995/03/08 14:37:29  nelson
+ * Added copyright
+ *
+ * Revision 1.1  94/10/06  21:40:21  21:40:21  nelson (Mark T. Nelson)
+ * Initial revision
+ * 
+ ***************************************************************************/

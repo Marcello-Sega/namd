@@ -1,86 +1,16 @@
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
+/*        (C) Copyright 1995,1996,1997 The Board of Trustees of the        */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*                                                                         */
 /***************************************************************************/
-
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: ParseOptions.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/04 22:37:16 $
- *
- ***************************************************************************
  * DESCRIPTION:
  *   Defines a set of dependencies, units, ranges, defaults, and info
  * messages which simplify the parsing of a ConfigList
  *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: ParseOptions.C,v $
- * Revision 1.1002  1997/03/04 22:37:16  ari
- * Clean up of code.  Debug statements removal, dead code removal.
- * Minor fixes, output fixes.
- * Commented some code from the top->down.  Mainly reworked Namd, Node, main.
- *
- * Revision 1.1001  1997/02/11 18:51:51  ari
- * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
- * fixed non-buffering of migration msgs
- * Migration works on multiple processors
- *
- * Revision 1.1000  1997/02/06 15:59:00  ari
- * Resetting CVS to merge branches back into the main trunk.
- * We will stick to main trunk development as suggested by CVS manual.
- * We will set up tags to track fixed points of development/release
- * as suggested by CVS manual - all praise the CVS manual.
- *
- * Revision 1.778  1997/01/28 00:31:07  ari
- * internal release uplevel to 1.778
- *
- * Revision 1.777  1997/01/17 19:36:43  ari
- * Internal CVS leveling release.  Start development code work
- * at 1.777.1.1.
- *
- * Revision 1.4  1996/12/12 20:14:50  milind
- * *** empty log message ***
- *
- * Revision 1.3  1996/12/11 00:04:23  milind
- * *** empty log message ***
- *
- * Revision 1.2  1996/11/08 17:39:58  nealk
- * Changed to use iout rather than namdError, namdWarn.
- *
- * Revision 1.1  1996/08/06 20:38:38  ari
- * Initial revision
- *
- * Revision 1.6  1995/09/21 17:44:43  billh
- * Use `\0' instead of NULL when terminating a string (or comparing a
- * character to the string terminator character ... yes they're both 0,
- * but NULL is a void *, and '\0' is a char)
- *
- * Revision 1.5  95/04/10  15:12:22  15:12:22  nelson (Mark T. Nelson)
- * Fixed problems associated with handling of default values of Booleans
- * 
- * Revision 1.4  95/04/10  13:36:09  13:36:09  nelson (Mark T. Nelson)
- * Fixed minor pointer bug
- * 
- * Revision 1.3  95/04/10  11:28:34  11:28:34  nelson (Mark T. Nelson)
- * Added include of strlib for AIX to resolve strcasecmp and strncasecmp
- * 
- * Revision 1.2  95/04/05  15:32:37  15:32:37  nelson (Mark T. Nelson)
- * Added support for unsigned ints and changed the way strings
- * work for integration into SimParameters
- * 
- * Revision 1.1  95/04/04  13:49:34  13:49:34  dalke (Andrew Dalke)
- * Initial revision
- * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ParseOptions.C,v 1.1002 1997/03/04 22:37:16 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ParseOptions.C,v 1.1003 1997/03/19 11:54:44 ari Exp $";
 // set the list of parameters
 #include <libc.h>
 #include <iostream.h>
@@ -1196,3 +1126,76 @@ Bool ParseOptions::units(const char *name, Units *units) // set
    return TRUE;
 }
 
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile: ParseOptions.C,v $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/03/19 11:54:44 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: ParseOptions.C,v $
+ * Revision 1.1003  1997/03/19 11:54:44  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ * Revision 1.1002  1997/03/04 22:37:16  ari
+ * Clean up of code.  Debug statements removal, dead code removal.
+ * Minor fixes, output fixes.
+ * Commented some code from the top->down.  Mainly reworked Namd, Node, main.
+ *
+ * Revision 1.1001  1997/02/11 18:51:51  ari
+ * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
+ * fixed non-buffering of migration msgs
+ * Migration works on multiple processors
+ *
+ * Revision 1.1000  1997/02/06 15:59:00  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
+ * Revision 1.778  1997/01/28 00:31:07  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777  1997/01/17 19:36:43  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
+ * Revision 1.4  1996/12/12 20:14:50  milind
+ * *** empty log message ***
+ *
+ * Revision 1.3  1996/12/11 00:04:23  milind
+ * *** empty log message ***
+ *
+ * Revision 1.2  1996/11/08 17:39:58  nealk
+ * Changed to use iout rather than namdError, namdWarn.
+ *
+ * Revision 1.1  1996/08/06 20:38:38  ari
+ * Initial revision
+ *
+ * Revision 1.6  1995/09/21 17:44:43  billh
+ * Use `\0' instead of NULL when terminating a string (or comparing a
+ * character to the string terminator character ... yes they're both 0,
+ * but NULL is a void *, and '\0' is a char)
+ *
+ * Revision 1.5  95/04/10  15:12:22  15:12:22  nelson (Mark T. Nelson)
+ * Fixed problems associated with handling of default values of Booleans
+ * 
+ * Revision 1.4  95/04/10  13:36:09  13:36:09  nelson (Mark T. Nelson)
+ * Fixed minor pointer bug
+ * 
+ * Revision 1.3  95/04/10  11:28:34  11:28:34  nelson (Mark T. Nelson)
+ * Added include of strlib for AIX to resolve strcasecmp and strncasecmp
+ * 
+ * Revision 1.2  95/04/05  15:32:37  15:32:37  nelson (Mark T. Nelson)
+ * Added support for unsigned ints and changed the way strings
+ * work for integration into SimParameters
+ * 
+ * Revision 1.1  95/04/04  13:49:34  13:49:34  dalke (Andrew Dalke)
+ * Initial revision
+ * 
+ ***************************************************************************/

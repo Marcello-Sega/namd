@@ -12,7 +12,7 @@
  *
  *	$RCSfile: ConfigList.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:20 $
+ *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:12 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -43,6 +43,11 @@
  * REVISION HISTORY:
  *
  * $Log: ConfigList.h,v $
+ * Revision 1.1001  1997/03/19 11:54:12  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
  * Revision 1.1000  1997/02/06 15:58:20  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
@@ -186,3 +191,22 @@ class ConfigList {
 
 
 #endif // CONFIGLIST_H
+
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:12 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: ConfigList.h,v $
+ * Revision 1.1001  1997/03/19 11:54:12  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ ***************************************************************************/

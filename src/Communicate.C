@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Communicate.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:57:35 $
+ *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:00 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -28,6 +28,11 @@
  * REVISION HISTORY:
  *
  * $Log: Communicate.C,v $
+ * Revision 1.1001  1997/03/19 11:54:00  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
  * Revision 1.1000  1997/02/06 15:57:35  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
@@ -86,7 +91,7 @@
  * Initial revision
  * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Communicate.C,v 1.1000 1997/02/06 15:57:35 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Communicate.C,v 1.1001 1997/03/19 11:54:00 ari Exp $";
 
 #include "Communicate.h"
 #include "Message.h"
@@ -341,3 +346,21 @@ int Communicate::broadcast_others(Message *msg, int tag, int delmsg)
   
   return TotalNodes - 1;
 }
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:00 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: Communicate.C,v $
+ * Revision 1.1001  1997/03/19 11:54:00  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ ***************************************************************************/

@@ -61,7 +61,7 @@ void AngleElem::computeForce(BigReal *reduction)
   BigReal theta;	// theta
   BigReal cos_theta;	// cos(theta)
   BigReal sin_theta;	// sin(theta)
-  BigReal diff;		// difference between theta and theta0
+  register BigReal diff;		// difference between theta and theta0
   BigReal c1,c2;	// constant factors involved in force
   BigReal energy;	// energy from the angle
 
@@ -166,3 +166,20 @@ void AngleElem::unregisterReductionData(ReductionMgr *reduction)
   reduction->unRegister(REDUCTION_VIRIAL);
 }
 
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/03/19 11:54:02 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: ComputeAngles.C,v $
+ * Revision 1.1004  1997/03/19 11:54:02  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ ***************************************************************************/

@@ -340,3 +340,22 @@ void ComputeCylindricalBC::doForce(Position* p, Results* r, AtomProperties* a)
 
 }
 /*			END OF FUNCTION force				*/
+
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.5 $	$Date: 1997/03/19 11:54:04 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: ComputeCylindricalBC.C,v $
+ * Revision 1.5  1997/03/19 11:54:04  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ ***************************************************************************/

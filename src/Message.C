@@ -11,7 +11,7 @@
  *
  *      $RCSfile: Message.C,v $
  *      $Author: ari $        $Locker:  $             $State: Exp $
- *      $Revision: 1.1000 $        $Date: 1997/02/06 15:58:38 $
+ *      $Revision: 1.1001 $        $Date: 1997/03/19 11:54:25 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -25,6 +25,11 @@
  * REVISION HISTORY:
  *
  * $Log: Message.C,v $
+ * Revision 1.1001  1997/03/19 11:54:25  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
  * Revision 1.1000  1997/02/06 15:58:38  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
@@ -79,7 +84,7 @@
  * Initial revision
  * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Message.C,v 1.1000 1997/02/06 15:58:38 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Message.C,v 1.1001 1997/03/19 11:54:25 ari Exp $";
 
 #include <string.h>
 #include "Message.h"
@@ -306,3 +311,22 @@ ostream& operator<<(ostream &o, Message &msg) {
   return o;
 }
 */
+
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:25 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: Message.C,v $
+ * Revision 1.1001  1997/03/19 11:54:25  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ ***************************************************************************/

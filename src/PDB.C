@@ -1,101 +1,19 @@
 /***************************************************************************/
 /*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
+/*     (C) Copyright 1995,1996,1997 The Board of Trustees of the           */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
 /*								   	   */
 /***************************************************************************/
-
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: PDB.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:53 $
- *
- ***************************************************************************
  * DESCRIPTION:
  * PDB Class
  *   Code to implement the PDB class.  This reads in a bunch of
  * PDBData records from a file, given the filename.  See PDB.h
  * for a bit more information.
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: PDB.C,v $
- * Revision 1.1000  1997/02/06 15:58:53  ari
- * Resetting CVS to merge branches back into the main trunk.
- * We will stick to main trunk development as suggested by CVS manual.
- * We will set up tags to track fixed points of development/release
- * as suggested by CVS manual - all praise the CVS manual.
- *
- * Revision 1.779  1997/02/06 15:53:18  ari
- * Updating Revision Line, getting rid of branches
- *
- * Revision 1.778.2.1  1997/02/06 02:35:27  jim
- * Implemented periodic boundary conditions - may not work with
- * atom migration yet, but doesn't seem to alter calculation,
- * appears to work correctly when turned on.
- * NamdState chdir's to same directory as config file in argument.
- *
- * Revision 1.778  1997/01/28 00:31:01  ari
- * internal release uplevel to 1.778
- *
- * Revision 1.777  1997/01/17 19:36:36  ari
- * Internal CVS leveling release.  Start development code work
- * at 1.777.1.1.
- *
- * Revision 1.1  1996/08/06 20:38:38  ari
- * Initial revision
- *
- * Revision 1.15  1996/02/19 22:44:57  jean
- * undid stuff about mother atoms
- *
- * Revision 1.14  1996/02/19 21:46:11  jean
- * added code to place hydrogens in same initial patch as their mother
- *
- * Revision 1.13  1995/10/10 02:18:35  hazen
- * Memory Allocation error-checking added
- *
- * Revision 1.12  1995/03/08  14:47:44  nelson
- * Added copyright
- *
- * Revision 1.11  95/02/23  19:48:41  19:48:41  dalke (Andrew Dalke)
- * Added "END" at the end of the PDB file output
- * 
- * Revision 1.10  94/10/12  15:36:16  15:36:16  nelson (Mark T. Nelson)
- * Fixed bug in comment line of write
- * 
- * Revision 1.9  94/10/12  15:25:21  15:25:21  nelson (Mark T. Nelson)
- * Added get_all_positions, set_all_positions and added comment line
- * to write()
- * 
- * Revision 1.8  94/10/05  17:04:40  17:04:40  dalke (Andrew Dalke)
- * Added a 'write' function to write the PDB coordinates
- * 
- * Revision 1.7  94/09/09  01:19:47  01:19:47  dalke (Andrew Dalke)
- * fixed bug in find_extremes
- * 
- * Revision 1.6  94/09/07  17:15:53  17:15:53  dalke (Andrew Dalke)
- * Converted from linked list to array after reading in PDB
- * 
- * Revision 1.5  94/08/12  15:11:33  15:11:33  nelson (Mark T. Nelson)
- * Added a destructor and fixed core dump if input file didn't exist
- * 
- * Revision 1.4  94/08/08  15:32:55  15:32:55  nelson (Mark T. Nelson)
- * added find_extremes routine
- * 
- * Revision 1.3  94/07/06  11:21:31  11:21:31  dalke (Andrew Dalke)
- * Fixed problem with comments in macro #defines
- * 
- * Revision 1.2  94/07/06  01:31:27  01:31:27  dalke (Andrew Dalke)
- * Added some more "find_atom_*" functions
- * 
- * Revision 1.1  94/07/05  13:46:46  13:46:46  dalke (Andrew Dalke)
- * Initial revision
- * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PDB.C,v 1.1000 1997/02/06 15:58:53 ari Exp $";
+
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PDB.C,v 1.1001 1997/03/19 11:54:39 ari Exp $";
 
 #include <stdio.h>
 #include <strings.h>
@@ -466,3 +384,91 @@ main()
  }
 }
 #endif // TEST_PDB_CLASS
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile: PDB.C,v $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:39 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: PDB.C,v $
+ * Revision 1.1001  1997/03/19 11:54:39  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ * Revision 1.1000  1997/02/06 15:58:53  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
+ * Revision 1.779  1997/02/06 15:53:18  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.1  1997/02/06 02:35:27  jim
+ * Implemented periodic boundary conditions - may not work with
+ * atom migration yet, but doesn't seem to alter calculation,
+ * appears to work correctly when turned on.
+ * NamdState chdir's to same directory as config file in argument.
+ *
+ * Revision 1.778  1997/01/28 00:31:01  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777  1997/01/17 19:36:36  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
+ * Revision 1.1  1996/08/06 20:38:38  ari
+ * Initial revision
+ *
+ * Revision 1.15  1996/02/19 22:44:57  jean
+ * undid stuff about mother atoms
+ *
+ * Revision 1.14  1996/02/19 21:46:11  jean
+ * added code to place hydrogens in same initial patch as their mother
+ *
+ * Revision 1.13  1995/10/10 02:18:35  hazen
+ * Memory Allocation error-checking added
+ *
+ * Revision 1.12  1995/03/08  14:47:44  nelson
+ * Added copyright
+ *
+ * Revision 1.11  95/02/23  19:48:41  19:48:41  dalke (Andrew Dalke)
+ * Added "END" at the end of the PDB file output
+ * 
+ * Revision 1.10  94/10/12  15:36:16  15:36:16  nelson (Mark T. Nelson)
+ * Fixed bug in comment line of write
+ * 
+ * Revision 1.9  94/10/12  15:25:21  15:25:21  nelson (Mark T. Nelson)
+ * Added get_all_positions, set_all_positions and added comment line
+ * to write()
+ * 
+ * Revision 1.8  94/10/05  17:04:40  17:04:40  dalke (Andrew Dalke)
+ * Added a 'write' function to write the PDB coordinates
+ * 
+ * Revision 1.7  94/09/09  01:19:47  01:19:47  dalke (Andrew Dalke)
+ * fixed bug in find_extremes
+ * 
+ * Revision 1.6  94/09/07  17:15:53  17:15:53  dalke (Andrew Dalke)
+ * Converted from linked list to array after reading in PDB
+ * 
+ * Revision 1.5  94/08/12  15:11:33  15:11:33  nelson (Mark T. Nelson)
+ * Added a destructor and fixed core dump if input file didn't exist
+ * 
+ * Revision 1.4  94/08/08  15:32:55  15:32:55  nelson (Mark T. Nelson)
+ * added find_extremes routine
+ * 
+ * Revision 1.3  94/07/06  11:21:31  11:21:31  dalke (Andrew Dalke)
+ * Fixed problem with comments in macro #defines
+ * 
+ * Revision 1.2  94/07/06  01:31:27  01:31:27  dalke (Andrew Dalke)
+ * Added some more "find_atom_*" functions
+ * 
+ * Revision 1.1  94/07/05  13:46:46  13:46:46  dalke (Andrew Dalke)
+ * Initial revision
+ * 
+ ***************************************************************************/

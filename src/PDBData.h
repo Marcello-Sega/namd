@@ -1,67 +1,16 @@
 //-*-c++-*-
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
+/*      (C) Copyright 1995,1996,1997 The Board of Trustees of the          */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*								   	   */
 /***************************************************************************/
-
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: PDBData.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:55 $
- *
- ***************************************************************************
  * DESCRIPTION:
  *   Read and parse a line of data from a PDB record.  There are many
  * different types of PDB records.  This version reads only the ATOM and
  * HETATM records and makes all fields accessible via the appropriate
  * member function.  In NAMD, this will be called only by the PDB class,
  * which reads PDB files, and a PDB writer class.
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: PDBData.h,v $
- * Revision 1.1000  1997/02/06 15:58:55  ari
- * Resetting CVS to merge branches back into the main trunk.
- * We will stick to main trunk development as suggested by CVS manual.
- * We will set up tags to track fixed points of development/release
- * as suggested by CVS manual - all praise the CVS manual.
- *
- * Revision 1.778  1997/01/28 00:31:04  ari
- * internal release uplevel to 1.778
- *
- * Revision 1.777.2.1  1997/01/27 22:45:30  ari
- * Basic Atom Migration Code added.
- * Added correct magic first line to .h files for xemacs to go to C++ mode.
- * Compiles and runs without migration turned on.
- *
- * Revision 1.777  1997/01/17 19:36:39  ari
- * Internal CVS leveling release.  Start development code work
- * at 1.777.1.1.
- *
- * Revision 1.1  1996/08/06 20:38:38  ari
- * Initial revision
- *
- * Revision 1.5  1995/10/10 02:23:23  hazen
- * Memory Allocation error-checking added
- *
- * Revision 1.4  1995/03/08  14:29:41  nelson
- * Added copyright
- *
- * Revision 1.3  94/10/05  17:05:06  17:05:06  dalke (Andrew Dalke)
- * Changed residue length from 3 characters (PDB format) to 4
- * characters (XPLOR type PDB format)
- * 
- * Revision 1.2  94/08/12  15:12:10  15:12:10  nelson (Mark T. Nelson)
- * Moved destructor from protected to private
- * 
- * Revision 1.1  94/07/05  12:52:16  12:52:16  dalke (Andrew Dalke)
- * Initial revision
- * 
  ***************************************************************************/
 
 #ifndef _PDBREADER_H_
@@ -296,3 +245,57 @@ PDBData *new_PDBData(const char *data);  // nasty
 
 
 #endif
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile: PDBData.h,v $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:41 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: PDBData.h,v $
+ * Revision 1.1001  1997/03/19 11:54:41  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ * Revision 1.1000  1997/02/06 15:58:55  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
+ * Revision 1.778  1997/01/28 00:31:04  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.1  1997/01/27 22:45:30  ari
+ * Basic Atom Migration Code added.
+ * Added correct magic first line to .h files for xemacs to go to C++ mode.
+ * Compiles and runs without migration turned on.
+ *
+ * Revision 1.777  1997/01/17 19:36:39  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
+ * Revision 1.1  1996/08/06 20:38:38  ari
+ * Initial revision
+ *
+ * Revision 1.5  1995/10/10 02:23:23  hazen
+ * Memory Allocation error-checking added
+ *
+ * Revision 1.4  1995/03/08  14:29:41  nelson
+ * Added copyright
+ *
+ * Revision 1.3  94/10/05  17:05:06  17:05:06  dalke (Andrew Dalke)
+ * Changed residue length from 3 characters (PDB format) to 4
+ * characters (XPLOR type PDB format)
+ * 
+ * Revision 1.2  94/08/12  15:12:10  15:12:10  nelson (Mark T. Nelson)
+ * Moved destructor from protected to private
+ * 
+ * Revision 1.1  94/07/05  12:52:16  12:52:16  dalke (Andrew Dalke)
+ * Initial revision
+ * 
+ ***************************************************************************/

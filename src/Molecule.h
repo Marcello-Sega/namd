@@ -1,20 +1,10 @@
 //-*-c++-*-
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
+/*    (C) Copyright 1995,1996,1997 The Board of Trustees of the            */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*								   	   */
 /***************************************************************************/
-
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: Molecule.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/14 21:40:10 $
- *
- ***************************************************************************
  * DESCRIPTION:
  *	This class is used to store all of the structural       
  *   information for a simulation.  It reas in this information 
@@ -22,142 +12,8 @@
  *   from the Parameters object that is passed in, and then     
  *   stores all this information for later use.	
  *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: Molecule.h,v $
- * Revision 1.1005  1997/03/14 21:40:10  ari
- * Reorganized startup to make possible inital load
- * balancing by changing methods in WorkDistrib.
- * Also made startup more transparent and easier
- * to modify.
- *
- * Revision 1.1004  1997/03/11 23:46:31  ari
- * Improved ComputeNonbondedExcl loadTuples() by overloading the default
- * template method from ComputeHomeTuples and used the checklist suggested
- * by Jim.  Good performance gain.
- *
- * Revision 1.1003  1997/03/11 06:29:14  jim
- * Modified exclusion lookup to use fixed arrays and linear searches.
- *
- * Revision 1.1002  1997/03/11 04:07:55  jim
- * Eliminated use of LintList for by-atom lists.
- * Now uses little arrays managed by ObjectArena<int>.
- *
- * Revision 1.1001  1997/02/10 08:14:36  jim
- * Fixed problem with exclusions where both modified and unmodified
- * versions of the same exclusion could be placed in the list, causing
- * one to be selected more or less randomly.  Also caused different
- * results on different numbers of processors.
- *
- * Revision 1.1000  1997/02/06 15:58:45  ari
- * Resetting CVS to merge branches back into the main trunk.
- * We will stick to main trunk development as suggested by CVS manual.
- * We will set up tags to track fixed points of development/release
- * as suggested by CVS manual - all praise the CVS manual.
- *
- * Revision 1.778  1997/01/28 00:30:54  ari
- * internal release uplevel to 1.778
- *
- * Revision 1.777.2.1  1997/01/27 22:45:25  ari
- * Basic Atom Migration Code added.
- * Added correct magic first line to .h files for xemacs to go to C++ mode.
- * Compiles and runs without migration turned on.
- *
- * Revision 1.777  1997/01/17 19:36:29  ari
- * Internal CVS leveling release.  Start development code work
- * at 1.777.1.1.
- *
- * Revision 1.9  1996/12/06 17:28:15  jim
- * put build_lists_by_atom back where it belongs
- *
- * Revision 1.8  1996/12/06 06:54:41  jim
- * started from 1.4, added support for treating exclusions like bonds
- *
- * Revision 1.4  1996/11/21 23:36:04  ari
- * *** empty log message ***
- *
- * Revision 1.3  1996/11/05 05:01:23  jim
- * added some consts
- *
- * Revision 1.2  1996/08/16 04:39:46  ari
- * *** empty log message ***
- *
- * Revision 1.1  1996/08/06 20:38:38  ari
- * Initial revision
- *
- * Revision 1.22  1996/04/23 22:44:48  billh
- * Modified Atom structure to store a list of the hydrogen bond pairs
- * each atom participates in.
- *
- * Revision 1.21  1996/04/18 18:46:18  billh
- * Updated to read hydrogen bond information.
- *
- * Revision 1.20  1996/02/16 16:37:04  gursoy
- * added atomType array and functions to allow is_hydrogen and is_oxygen
- * queries for an atom.
- *
- * Revision 1.19  95/04/06  12:52:03  12:52:03  nelson (Mark T. Nelson)
- * Removed extern class references
- * 
- * Revision 1.18  95/03/08  14:46:22  14:46:22  nelson (Mark T. Nelson)
- * Added copyright
- * 
- * Revision 1.17  95/02/22  14:55:45  14:55:45  nelson (Mark T. Nelson)
- * Made changes for current working directory parameter
- * 
- * Revision 1.16  95/01/26  14:17:38  14:17:38  nelson (Mark T. Nelson)
- * Made additions for Charm22 parameters
- * 
- * Revision 1.15  95/01/19  15:29:03  15:29:03  nelson (Mark T. Nelson)
- * Added langevin dynamics parameters
- * 
- * Revision 1.14  94/10/28  12:47:28  12:47:28  nelson (Mark T. Nelson)
- * Added routine to get atom types for VMD
- * 
- * Revision 1.13  94/10/19  21:43:17  21:43:17  nelson (Mark T. Nelson)
- * Added functions and data structures for harmonic constraints
- * 
- * Revision 1.12  94/10/12  09:38:31  09:38:31  nelson (Mark T. Nelson)
- * Changed the way exclusions are handled so that bonded
- * exclusions are now pre-calculated and all exclusions
- * are stored in arrays by atom that can be searched via
- * binary searches.
- * 
- * Revision 1.11  94/10/08  10:28:35  10:28:35  nelson (Mark T. Nelson)
- * Added routines to get bonded lists by atom
- * 
- * Revision 1.10  94/10/04  10:35:03  10:35:03  nelson (Mark T. Nelson)
- * Changed 12, 13, and 14 search routines
- * 
- * Revision 1.9  94/09/28  10:00:28  10:00:28  nelson (Mark T. Nelson)
- * Added get_improper and get_dihedral functions
- * 
- * Revision 1.8  94/09/24  20:11:37  20:11:37  nelson (Mark T. Nelson)
- * Added routines to check for 1-2, 1-3, and 1-4 interactions
- * 
- * Revision 1.7  94/09/13  14:33:19  14:33:19  gursoy (Attila Gursoy)
- * receive_Molecule gets the message from Node object (charm++ integration)
- * 
- * Revision 1.6  94/09/13  13:47:12  13:47:12  nelson (Mark T. Nelson)
- * Added get_angle function
- * 
- * Revision 1.5  94/09/04  20:20:21  20:20:21  nelson (Mark T. Nelson)
- * Added get_bond function
- * 
- * Revision 1.4  94/08/30  13:56:45  13:56:45  nelson (Mark T. Nelson)
- * added routines atommass and atomcharge
- * 
- * Revision 1.3  94/08/04  08:39:36  08:39:36  nelson (Mark T. Nelson)
- * Added send_Molecule and receive_Molecule functions
- * 
- * Revision 1.2  94/07/07  13:31:23  13:31:23  nelson (Mark T. Nelson)
- * Changed due to changes in Parameters class
- * 
- * Revision 1.1  94/06/22  15:04:16  15:04:16  nelson (Mark T. Nelson)
- * Initial revision
- * 
  ***************************************************************************/
+
 
 #ifndef MOLECULE_H
 
@@ -474,3 +330,151 @@ public:
 };
 
 #endif
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile: Molecule.h,v $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1006 $	$Date: 1997/03/19 11:54:33 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: Molecule.h,v $
+ * Revision 1.1006  1997/03/19 11:54:33  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ * Revision 1.1005  1997/03/14 21:40:10  ari
+ * Reorganized startup to make possible inital load
+ * balancing by changing methods in WorkDistrib.
+ * Also made startup more transparent and easier
+ * to modify.
+ *
+ * Revision 1.1004  1997/03/11 23:46:31  ari
+ * Improved ComputeNonbondedExcl loadTuples() by overloading the default
+ * template method from ComputeHomeTuples and used the checklist suggested
+ * by Jim.  Good performance gain.
+ *
+ * Revision 1.1003  1997/03/11 06:29:14  jim
+ * Modified exclusion lookup to use fixed arrays and linear searches.
+ *
+ * Revision 1.1002  1997/03/11 04:07:55  jim
+ * Eliminated use of LintList for by-atom lists.
+ * Now uses little arrays managed by ObjectArena<int>.
+ *
+ * Revision 1.1001  1997/02/10 08:14:36  jim
+ * Fixed problem with exclusions where both modified and unmodified
+ * versions of the same exclusion could be placed in the list, causing
+ * one to be selected more or less randomly.  Also caused different
+ * results on different numbers of processors.
+ *
+ * Revision 1.1000  1997/02/06 15:58:45  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
+ * Revision 1.778  1997/01/28 00:30:54  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.1  1997/01/27 22:45:25  ari
+ * Basic Atom Migration Code added.
+ * Added correct magic first line to .h files for xemacs to go to C++ mode.
+ * Compiles and runs without migration turned on.
+ *
+ * Revision 1.777  1997/01/17 19:36:29  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
+ * Revision 1.9  1996/12/06 17:28:15  jim
+ * put build_lists_by_atom back where it belongs
+ *
+ * Revision 1.8  1996/12/06 06:54:41  jim
+ * started from 1.4, added support for treating exclusions like bonds
+ *
+ * Revision 1.4  1996/11/21 23:36:04  ari
+ * *** empty log message ***
+ *
+ * Revision 1.3  1996/11/05 05:01:23  jim
+ * added some consts
+ *
+ * Revision 1.2  1996/08/16 04:39:46  ari
+ * *** empty log message ***
+ *
+ * Revision 1.1  1996/08/06 20:38:38  ari
+ * Initial revision
+ *
+ * Revision 1.22  1996/04/23 22:44:48  billh
+ * Modified Atom structure to store a list of the hydrogen bond pairs
+ * each atom participates in.
+ *
+ * Revision 1.21  1996/04/18 18:46:18  billh
+ * Updated to read hydrogen bond information.
+ *
+ * Revision 1.20  1996/02/16 16:37:04  gursoy
+ * added atomType array and functions to allow is_hydrogen and is_oxygen
+ * queries for an atom.
+ *
+ * Revision 1.19  95/04/06  12:52:03  12:52:03  nelson (Mark T. Nelson)
+ * Removed extern class references
+ * 
+ * Revision 1.18  95/03/08  14:46:22  14:46:22  nelson (Mark T. Nelson)
+ * Added copyright
+ * 
+ * Revision 1.17  95/02/22  14:55:45  14:55:45  nelson (Mark T. Nelson)
+ * Made changes for current working directory parameter
+ * 
+ * Revision 1.16  95/01/26  14:17:38  14:17:38  nelson (Mark T. Nelson)
+ * Made additions for Charm22 parameters
+ * 
+ * Revision 1.15  95/01/19  15:29:03  15:29:03  nelson (Mark T. Nelson)
+ * Added langevin dynamics parameters
+ * 
+ * Revision 1.14  94/10/28  12:47:28  12:47:28  nelson (Mark T. Nelson)
+ * Added routine to get atom types for VMD
+ * 
+ * Revision 1.13  94/10/19  21:43:17  21:43:17  nelson (Mark T. Nelson)
+ * Added functions and data structures for harmonic constraints
+ * 
+ * Revision 1.12  94/10/12  09:38:31  09:38:31  nelson (Mark T. Nelson)
+ * Changed the way exclusions are handled so that bonded
+ * exclusions are now pre-calculated and all exclusions
+ * are stored in arrays by atom that can be searched via
+ * binary searches.
+ * 
+ * Revision 1.11  94/10/08  10:28:35  10:28:35  nelson (Mark T. Nelson)
+ * Added routines to get bonded lists by atom
+ * 
+ * Revision 1.10  94/10/04  10:35:03  10:35:03  nelson (Mark T. Nelson)
+ * Changed 12, 13, and 14 search routines
+ * 
+ * Revision 1.9  94/09/28  10:00:28  10:00:28  nelson (Mark T. Nelson)
+ * Added get_improper and get_dihedral functions
+ * 
+ * Revision 1.8  94/09/24  20:11:37  20:11:37  nelson (Mark T. Nelson)
+ * Added routines to check for 1-2, 1-3, and 1-4 interactions
+ * 
+ * Revision 1.7  94/09/13  14:33:19  14:33:19  gursoy (Attila Gursoy)
+ * receive_Molecule gets the message from Node object (charm++ integration)
+ * 
+ * Revision 1.6  94/09/13  13:47:12  13:47:12  nelson (Mark T. Nelson)
+ * Added get_angle function
+ * 
+ * Revision 1.5  94/09/04  20:20:21  20:20:21  nelson (Mark T. Nelson)
+ * Added get_bond function
+ * 
+ * Revision 1.4  94/08/30  13:56:45  13:56:45  nelson (Mark T. Nelson)
+ * added routines atommass and atomcharge
+ * 
+ * Revision 1.3  94/08/04  08:39:36  08:39:36  nelson (Mark T. Nelson)
+ * Added send_Molecule and receive_Molecule functions
+ * 
+ * Revision 1.2  94/07/07  13:31:23  13:31:23  nelson (Mark T. Nelson)
+ * Changed due to changes in Parameters class
+ * 
+ * Revision 1.1  94/06/22  15:04:16  15:04:16  nelson (Mark T. Nelson)
+ * Initial revision
+ * 
+ ***************************************************************************/

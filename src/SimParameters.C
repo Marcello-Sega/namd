@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/16 19:44:06 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/03/19 11:54:57 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,11 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1004  1997/03/19 11:54:57  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
  * Revision 1.1003  1997/03/16 19:44:06  jim
  * Added cylindricalBCAxis option to cylindrical boundary conditions.
  *
@@ -324,7 +329,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1003 1997/03/16 19:44:06 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1004 1997/03/19 11:54:57 ari Exp $";
 
 
 #include "ckdefs.h"
@@ -2273,4 +2278,20 @@ void SimParameters::receive_SimParameters(Message *msg)
 /*			END OF FUNCTION receive_SimParameters	*/
 
 
-
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/03/19 11:54:57 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: SimParameters.C,v $
+ * Revision 1.1004  1997/03/19 11:54:57  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ ***************************************************************************/

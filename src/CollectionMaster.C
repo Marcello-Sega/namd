@@ -161,3 +161,23 @@ void CollectVectorMsg::unpack(void *in)
 
 
 #include "CollectionMaster.bot.h"
+
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1007 $	$Date: 1997/03/19 11:53:56 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: CollectionMaster.C,v $
+ * Revision 1.1007  1997/03/19 11:53:56  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ *
+ ***************************************************************************/

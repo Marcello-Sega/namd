@@ -97,3 +97,21 @@ extern infostream iout;
 
 #endif /* INFOSTREAM_H */
 
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:19 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: InfoStream.h,v $
+ * Revision 1.1001  1997/03/19 11:54:19  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ ***************************************************************************/

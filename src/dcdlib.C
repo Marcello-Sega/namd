@@ -1,51 +1,17 @@
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
+/*       (C) Copyright 1995,1996,1997 The Board of Trustees of the         */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*								   	   */
 /***************************************************************************/
-
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: dcdlib.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1997/02/11 22:56:18 $
- *
- ***************************************************************************
  * DESCRIPTION:
  *	dcdlib contains C routines for reading and writing binary DCD
  * files.  The output format of these files is based on binary FORTRAN
  * output, so its pretty ugly.  If you are squimish, don't look!
  *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: dcdlib.C,v $
- * Revision 1.1  1997/02/11 22:56:18  jim
- * Added dcd file writing.
- *
- * Revision 1.5  1995/10/13 16:41:27  hazen
- * Updated memory allocation to use C++ new/delete
- *
- * Revision 1.4  1995/09/21  17:45:50  billh
- * Use `\0' instead of NULL when terminating a string (or comparing a
- * character to the string terminator character ... yes they're both 0,
- * but NULL is a void *, and '\0' is a char)
- *
- * Revision 1.3  95/04/06  14:08:24  14:08:24  nelson (Mark T. Nelson)
- * Added inclusion of stdio.h
- * 
- * Revision 1.2  95/03/08  14:36:16  14:36:16  nelson (Mark T. Nelson)
- * Added copyright
- * 
- * Revision 1.1  94/10/06  21:42:01  21:42:01  nelson (Mark T. Nelson)
- * Initial revision
- * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/dcdlib.C,v 1.1 1997/02/11 22:56:18 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/dcdlib.C,v 1.2 1997/03/19 11:55:01 ari Exp $";
 
 #include "dcdlib.h"
 #include <stdio.h>
@@ -817,3 +783,41 @@ void close_dcd_write(int fd)
 {
 	close(fd);
 }
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile: dcdlib.C,v $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1997/03/19 11:55:01 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: dcdlib.C,v $
+ * Revision 1.2  1997/03/19 11:55:01  ari
+ * Add Broadcast mechanism.
+ * Fixed RCS Log entries on files that did not have Log entries.
+ * Added some register variables to Molecule and ComputeNonbondedExcl.C
+ *
+ * Revision 1.1  1997/02/11 22:56:18  jim
+ * Added dcd file writing.
+ *
+ * Revision 1.5  1995/10/13 16:41:27  hazen
+ * Updated memory allocation to use C++ new/delete
+ *
+ * Revision 1.4  1995/09/21  17:45:50  billh
+ * Use `\0' instead of NULL when terminating a string (or comparing a
+ * character to the string terminator character ... yes they're both 0,
+ * but NULL is a void *, and '\0' is a char)
+ *
+ * Revision 1.3  95/04/06  14:08:24  14:08:24  nelson (Mark T. Nelson)
+ * Added inclusion of stdio.h
+ * 
+ * Revision 1.2  95/03/08  14:36:16  14:36:16  nelson (Mark T. Nelson)
+ * Added copyright
+ * 
+ * Revision 1.1  94/10/06  21:42:01  21:42:01  nelson (Mark T. Nelson)
+ * Initial revision
+ * 
+ ***************************************************************************/
