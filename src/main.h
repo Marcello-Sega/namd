@@ -41,6 +41,15 @@ public:
   int patchMgrGroup;
 };
 
+
+class Compute;
+
+class LocalWorkMsg : public comm_object
+{
+public:
+  Compute *compute;
+}
+
 #endif /* MAIN_H */
 
 /***************************************************************************
@@ -48,12 +57,15 @@ public:
  *
  *	$RCSfile: main.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/08/29 00:50:42 $
+ *	$Revision: 1.6 $	$Date: 1996/09/10 04:45:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: main.h,v $
+ * Revision 1.6  1996/09/10 04:45:06  ari
+ * added LocalWorkMsg
+ *
  * Revision 1.5  1996/08/29 00:50:42  ari
  * *** empty log message ***
  *
