@@ -369,7 +369,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
     if (patchArray == NULL)
       patchArray = new patchInfo[patchMap->numPatches()];
     if (processorArray == NULL)
-      processorArray = new processorInfo[Node::Object()->numNodes()];
+      processorArray = new processorInfo[CkNumPes()];
   }
     
   theLbdb->ClearLoads();
