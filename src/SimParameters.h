@@ -101,7 +101,8 @@ public:
 	int twoAwayZ;			//  half-size patches in Z dimension
 	Bool ldbUnloadPME;		//  unload processors doing PME
 	Bool ldbUnloadSMP;		//  unload processors rank
-	Bool ldbUnloadZero;		//  unload processors rank
+	Bool ldbUnloadZero;		//  unload processor 0
+	Bool ldbUnloadRankZero;		//  unload processors rank
 	int procsPerNode;		//  number of pes per node
 	int ldbUnloadRank;		//  unload rank on a node
 	BigReal initialTemp;   		//  Initial temperature for the 

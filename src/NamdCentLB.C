@@ -342,6 +342,7 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
   int unLoadPme = simParams->ldbUnloadPME;
   int pmeBarrier = simParams->PMEBarrier;
   int unLoadZero = simParams->ldbUnloadZero;
+  int unLoadRankZero = simParams->ldbUnloadRankZero;
   int unLoadSMP = simParams->ldbUnloadSMP;
 
   int i;
@@ -397,6 +398,10 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 #endif  
 
   if (unLoadZero) processorArray[0].available = CmiFalse;
+  if (unLoadRankZero) {
+    for (int i=0; i<count; i+=4) 
+      processorArray[i].available = CmiFalse;
+  }
 
   // if all pes are Pme, disable this flag
   if (pmeOn && unLoadPme) {
