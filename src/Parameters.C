@@ -473,6 +473,10 @@ void Parameters::read_charmm_parameter_file(char *fname)
       {
         par_type=4; skipline=1;
       }
+      else if (strncasecmp(first_word, "nbon", 4)==0)
+      {
+        par_type=5; skipline=1;
+      }
       else if (strncasecmp(first_word, "nonb", 4)==0)
       {
         par_type=5; skipline=1;
