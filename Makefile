@@ -106,6 +106,7 @@ OBJS = \
 	$(DSTDIR)/ComputeNonbondedUtil.o \
 	$(DSTDIR)/ComputePatch.o \
 	$(DSTDIR)/ComputePatchPair.o \
+	$(DSTDIR)/ComputeSphericalBC.o \
 	$(DSTDIR)/ConfigList.o \
 	$(DSTDIR)/Controller.o \
 	$(DSTDIR)/HomePatch.o \
