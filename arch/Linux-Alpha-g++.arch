@@ -1,0 +1,10 @@
+NAMD_ARCH = Linux-Alpha
+CHARMARCH = net-linux-axp
+
+CXX = g++ -DSOCKLEN_T=socklen_t
+CXXOPTS = -O3 -Wall -ffast-math
+CXXTHREADOPTS = $(CXXOPTS)
+CXXSIMPARAMOPTS = $(CXXOPTS)
+CC = gcc
+COPTS = -O3 -ffast-math
+
