@@ -25,7 +25,7 @@
 #include <sys/resource.h>
 #endif
 
-#ifdef NAMDCCS
+#ifdef NAMD_CCS
 
 #ifdef __cplusplus
 extern "C" {

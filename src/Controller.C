@@ -25,7 +25,7 @@
 #include "imd.h"
 #include "IMDOutput.h"
 
-#ifdef NAMDCCS
+#ifdef NAMD_CCS
 extern "C" void CApplicationDepositNode0Data(char *);
 #endif
 
@@ -823,13 +823,12 @@ void Controller::printEnergies(int step)
     iout << FORMAT(totalEnergy);
     iout << FORMAT(temperature);
 
-#ifdef NAMDCCS
+#ifdef NAMD_CCS
      char webout[80];
      sprintf(webout,"%d %d %d %d",(int)totalEnergy,
 	     (int)(totalEnergy - kineticEnergy),
 	     (int)kineticEnergy,(int)temperature);
      CApplicationDepositNode0Data(webout);
-     CkPrintf("Depositing %s\n",webout);
 #endif
 
     if ( volume != 0. )

@@ -6,7 +6,7 @@
 
 #include "ccsinterface.h"
 
-#ifdef NAMDCCS
+#ifdef NAMD_CCS
 #include <stdlib.h>
 
 extern unsigned int appletIP;
@@ -42,7 +42,6 @@ static void sendDataFunction(void)
 #else
   CcsSendReply(appletIP, appletPort, strlen(reply) + 1, reply);
 #endif
-  CmiPrintf("Reply = %s\n", reply);
   free(reply);
 
   /* Free applicationValueArray contents */
@@ -112,7 +111,6 @@ extern "C" void CApplicationDepositNode0Data(char *data)
 #else
   CcsSendReply(appletIP, appletPort, strlen(reply) + 1, reply);
 #endif
-  CmiPrintf("Reply = %s\n", reply);
   free(reply);
 }
 
