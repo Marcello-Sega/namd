@@ -39,6 +39,7 @@ enum ComputeType
   computeSphericalBCType,
   computeCylindricalBCType,
   computeRestraintsType,
+  computeSMDType,
   computeErrorType
 };
 
@@ -165,13 +166,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/12/19 23:48:48 $
+ *	$Author: sergei $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1012 $	$Date: 1998/01/05 20:23:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.h,v $
+ * Revision 1.1012  1998/01/05 20:23:39  sergei
+ * added  computeSMDType to enum ComputeType for SMD
+ *
  * Revision 1.1011  1997/12/19 23:48:48  jim
  * Added Tcl interface for calculating forces.
  *
