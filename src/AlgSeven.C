@@ -7,6 +7,8 @@
 #include <iostream.h>
 #include "common.h"
 #include "InfoStream.h"
+#include "SimParameters.h"
+#include "Node.h"
 #include "Alg7.h"
 
 #define TINYLOAD 0.0005
@@ -22,8 +24,14 @@ strategyName = "Alg7";
 strategy();
 }
 
+extern int isPmeProcessor(int);
+
 void Alg7::togrid(processorInfo* goodP[3][3], processorInfo* poorP[3][3],
 			processorInfo *p, computeInfo *c) {
+      const SimParameters* simParams = Node::Object()->simParameters;
+      if( simParams->PMEOn && (CkNumPes() > 1000) &&
+        ( (p->Id == 0) || isPmeProcessor(p->Id) ) ) return;
+
       int nPatches = numPatchesAvail(c,p);
       int nProxies = numProxiesAvail(c,p);
       if (nPatches < 0 || nPatches > 2)

@@ -7,6 +7,8 @@
 #include "InfoStream.h"
 #include <iostream.h>
 #include <iomanip.h>
+#include "SimParameters.h"
+#include "Node.h"
 #include "Rebalancer.h"
 
 Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
@@ -249,8 +251,15 @@ void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
    }
 }
 
+extern int isPmeProcessor(int);
+
 void Rebalancer::refine_togrid(pcgrid &grid, double thresholdLoad,
 			processorInfo *p, computeInfo *c) {
+
+  const SimParameters* simParams = Node::Object()->simParameters;
+
+  if( simParams->PMEOn && (CkNumPes() > 1000) &&
+	( (p->Id == 0) || isPmeProcessor(p->Id) ) ) return;
 
             if ( c->load + p->load < thresholdLoad) {
                int nPatches = numPatchesAvail(c,p);
