@@ -1212,9 +1212,13 @@ the resulting instability in the simulation.
 
 \subsection{Pair Interaction Calculations}
 \NAMD supportes the calculation of nonbonded interaction energies between 
-two groups of atoms.  When enabled, two new terms, PAIR\_VDW and PAIR\_ELECT,
-will be present in the energy output to report 
-the interaction energy of the two groups.  For trajectory analysis the 
+two groups of atoms.  When enabled, pair interaction information will be
+calculated and printed in the standard output file on its own line at the
+same frequency as energy output.  The format of the line is
+{\tt PAIR INTERACTION: STEP: {\it step} VDW: {\it vdw} FORCE: {\it fx fy fz}}.
+The displayed force is the force on atoms in group 1.
+
+For trajectory analysis the 
 recommended way to use this set of options is to use the NAMD Tcl scripting 
 interface as described in Sec.~\ref{section:tclscripting} to run for
 0 steps, so that NAMD prints the energy without performing any dynamics.
