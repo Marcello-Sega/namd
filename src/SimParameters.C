@@ -1009,6 +1009,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
       NAMD_die("Must have either an initial temperature or a velocity file");
    }
 
+   if (minimizeOn) { initialTemp = 0.0; }
    if (opts.defined("velocities") || opts.defined("binvelocities") )
    {
   initialTemp = -1.0;
