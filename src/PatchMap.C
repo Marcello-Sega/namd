@@ -217,22 +217,24 @@ int PatchMap::zIsPeriodic(void)
 }
 
 //----------------------------------------------------------------------
+#define MODULO(I,J) ( (I)<0 ? (I)-(J)*((I)/(J)-1) : (I)-(J)*((I)/(J)) )
+
 int PatchMap::pid(int xIndex, int yIndex, int zIndex)
 {
   int allsame = 0;
-  if ( xPeriodic ) xIndex = (xIndex+xDim)%xDim;
+  if ( xPeriodic ) xIndex = MODULO(xIndex,xDim);
   else
   {
     if ( xIndex < 0 ) xIndex = 0;
     if ( xIndex >= xDim ) xIndex = xDim - 1;
   }
-  if ( yPeriodic ) yIndex = (yIndex+yDim)%yDim;
+  if ( yPeriodic ) yIndex = MODULO(yIndex,yDim);
   else
   {
     if ( yIndex < 0 ) yIndex = 0;
     if ( yIndex >= yDim ) yIndex = yDim - 1;
   }
-  if ( zPeriodic ) zIndex = (zIndex+zDim)%zDim;
+  if ( zPeriodic ) zIndex = MODULO(zIndex,zDim);
   else
   {
     if ( zIndex < 0 ) zIndex = 0;
@@ -377,15 +379,14 @@ PatchID PatchMap::requestPid(int *xi, int *yi, int *zi)
 
 //----------------------------------------------------------------------
 void PatchMap::storePatchCoord(PatchID pid,
-			  Coordinate x0, Coordinate y0, Coordinate z0,
-			  Coordinate x1, Coordinate y1, Coordinate z1)
+				ScaledPosition min, ScaledPosition max)
 {
-  patchData[pid].x0 = x0;
-  patchData[pid].x1 = x1;
-  patchData[pid].y0 = y0;
-  patchData[pid].y1 = y1;
-  patchData[pid].z0 = z0;
-  patchData[pid].z1 = z1;
+  patchData[pid].x0 = min.x;
+  patchData[pid].x1 = max.x;
+  patchData[pid].y0 = min.y;
+  patchData[pid].y1 = max.y;
+  patchData[pid].z0 = min.z;
+  patchData[pid].z1 = max.z;
 }
 
 void PatchMap::assignNode(PatchID pid, NodeID node) {
@@ -564,13 +565,16 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/03/19 11:54:47 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1997/03/27 08:04:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.1008  1997/03/27 08:04:20  jim
+ * Reworked Lattice to keep center of cell fixed during rescaling.
+ *
  * Revision 1.1007  1997/03/19 11:54:47  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

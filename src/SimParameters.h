@@ -80,6 +80,7 @@ public:
 	Vector cellBasisVector1;	//  Basis vector for periodic cell
 	Vector cellBasisVector2;	//  Basis vector for periodic cell
 	Vector cellBasisVector3;	//  Basis vector for periodic cell
+	Vector cellOrigin;		//  Fixed center of periodic cell
 	Lattice lattice;		//  All data for periodic cell
 	
 
@@ -298,12 +299,15 @@ public:
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/25 23:01:05 $
+ *	$Revision: 1.1006 $	$Date: 1997/03/27 08:04:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1006  1997/03/27 08:04:26  jim
+ * Reworked Lattice to keep center of cell fixed during rescaling.
+ *
  * Revision 1.1005  1997/03/25 23:01:05  jim
  * Added nonbondedFrequency parameter and multiple time-stepping
  *

@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1024 1997/03/27 03:16:56 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1025 1997/03/27 08:04:23 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -162,7 +162,7 @@ void Sequencer::berendsenPressure(int step)
     patch->lattice.rescale(factor);
     for ( int i = 0; i < patch->numAtoms; ++i )
     {
-      patch->p[i] *= factor;
+      patch->lattice.rescale(patch->p[i],factor);
     }
   }
 }
@@ -232,12 +232,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1024 $     $Date: 1997/03/27 03:16:56 $
+ *      $Revision: 1.1025 $     $Date: 1997/03/27 08:04:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1025  1997/03/27 08:04:23  jim
+ * Reworked Lattice to keep center of cell fixed during rescaling.
+ *
  * Revision 1.1024  1997/03/27 03:16:56  jim
  * Added code to check virial calculation, fixed problems with DPMTA and PBC's.
  *

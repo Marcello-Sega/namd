@@ -38,7 +38,7 @@ private:
   static char ident[];
   // for PatchMgr to use only
   HomePatch(PatchID, AtomIDList, PositionList, VelocityList);
-  Vector min, max, center;
+  ScaledPosition min, max, center;
 
 public:
   ~HomePatch();
@@ -115,12 +115,15 @@ private:
  *
  *	$RCSfile: HomePatch.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/03/18 18:09:03 $
+ *	$Revision: 1.1009 $	$Date: 1997/03/27 08:04:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.1009  1997/03/27 08:04:17  jim
+ * Reworked Lattice to keep center of cell fixed during rescaling.
+ *
  * Revision 1.1008  1997/03/18 18:09:03  jim
  * Revamped collection system to ensure ordering and eliminate
  * unnecessary collections.  Also reduced make dependencies.

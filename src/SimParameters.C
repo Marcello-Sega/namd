@@ -11,7 +11,7 @@
  *
  *	$RCSfile: SimParameters.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/03/27 03:16:57 $
+ *	$Revision: 1.1009 $	$Date: 1997/03/27 08:04:24 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1009  1997/03/27 08:04:24  jim
+ * Reworked Lattice to keep center of cell fixed during rescaling.
+ *
  * Revision 1.1008  1997/03/27 03:16:57  jim
  * Added code to check virial calculation, fixed problems with DPMTA and PBC's.
  *
@@ -341,7 +344,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1008 1997/03/27 03:16:57 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1009 1997/03/27 08:04:24 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -511,6 +514,8 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 		&cellBasisVector2);
    opts.optional("main", "cellBasisVector3", "Basis vector for periodic cell",
 		&cellBasisVector3);
+   opts.optional("main", "cellOrigin", "Fixed center of periodic cell",
+		&cellOrigin);
 
    opts.optional("main", "rigidBonds", "Rigid bonds to hydrogen",PARSE_STRING);
    opts.optional("main", "rigidTolerance", 
@@ -962,7 +967,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 	NAMD_die("Basis vector elements must be positive.");
    }
 
-   lattice.set(cellBasisVector1,cellBasisVector2,cellBasisVector3);
+   lattice.set(cellBasisVector1,cellBasisVector2,cellBasisVector3,cellOrigin);
 
    char s[129];
 
@@ -1626,6 +1631,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    iout << iINFO << "STEPS PER CYCLE        " << stepsPerCycle << "\n";
 
    iout << iINFO << "PERIODIC CELL          " << lattice.dimension() << "\n";
+   iout << iINFO << "PERIODIC CELL CENTER   " << lattice.origin() << "\n";
 
    if (ldbStrategy==LDBSTRAT_NONE)  {
      iout << iINFO << "LOAD BALANCE STRATEGY  none\n";
@@ -2203,6 +2209,7 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
 	msg->put(cellBasisVector1.x);
 	msg->put(cellBasisVector2.y);
 	msg->put(cellBasisVector3.z);
+	msg->put(&cellOrigin);
 
 	// send pressure control data
 	msg->put(berendsenPressureOn);
@@ -2337,7 +2344,8 @@ void SimParameters::receive_SimParameters(Message *msg)
 	msg->get(cellBasisVector1.x);
 	msg->get(cellBasisVector2.y);
 	msg->get(cellBasisVector3.z);
-	lattice.set(cellBasisVector1,cellBasisVector2,cellBasisVector3);
+	msg->get(&cellOrigin);
+	lattice.set(cellBasisVector1,cellBasisVector2,cellBasisVector3,cellOrigin);
 
 	// receive pressure control data
 	msg->get(berendsenPressureOn);
@@ -2357,12 +2365,15 @@ void SimParameters::receive_SimParameters(Message *msg)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/03/27 03:16:57 $
+ *	$Revision: 1.1009 $	$Date: 1997/03/27 08:04:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1009  1997/03/27 08:04:24  jim
+ * Reworked Lattice to keep center of cell fixed during rescaling.
+ *
  * Revision 1.1008  1997/03/27 03:16:57  jim
  * Added code to check virial calculation, fixed problems with DPMTA and PBC's.
  *

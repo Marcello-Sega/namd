@@ -17,10 +17,10 @@
 
 #include "NamdTypes.h"
 #include "HomePatchList.h"
+#include "Lattice.h"
 
 class Patch;
 class PatchMgr;
-class Lattice;
 class HomePatch;
 
 class PatchMap
@@ -135,9 +135,7 @@ public:
   // storePatch(pid, node, max_computes, x0, y0, z0, x1, y1, z1)
   // stores the info about the patch into the previously requested
   // pid.
-  void storePatchCoord(PatchID pid,
-		  Coordinate x0, Coordinate y0, Coordinate z0,
-		  Coordinate x1, Coordinate y1, Coordinate z1);
+  void storePatchCoord(PatchID pid, ScaledPosition min, ScaledPosition max);
 
   void assignNode(PatchID, NodeID);
 
@@ -222,13 +220,16 @@ inline HomePatch *PatchMap::homePatch(PatchID pid)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/14 21:40:14 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/03/27 08:04:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.h,v $
+ * Revision 1.1004  1997/03/27 08:04:21  jim
+ * Reworked Lattice to keep center of cell fixed during rescaling.
+ *
  * Revision 1.1003  1997/03/14 21:40:14  ari
  * Reorganized startup to make possible inital load
  * balancing by changing methods in WorkDistrib.

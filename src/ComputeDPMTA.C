@@ -26,7 +26,7 @@
 #include "InfoStream.h"
 
 #define MIN_DEBUG_LEVEL 2
-// #define DEBUGM
+#define DEBUGM
 #include "Debug.h"
 
 extern Communicate *comm;
@@ -130,11 +130,7 @@ void ComputeDPMTA::get_FMA_cube(int resize)
     DebugM(2,"getting patch dimension for FMA box\n");
     boxSize = lattice.dimension();
     DebugM(2,"boxSize is " << boxSize << "\n");
-
-    boxCenter = patchMap->Origin();
-    boxCenter.x += boxSize.x/2.0;
-    boxCenter.y += boxSize.y/2.0;
-    boxCenter.z += boxSize.z/2.0;
+    boxCenter = lattice.origin();
   }
 
   // don't bother checking if the center has moved since it depends on the size.
@@ -217,6 +213,23 @@ void ComputeDPMTA::initialize()
   //  NOTE 2: Theta is now an optional config parameter,
   //  but it defaults to 0.715
 
+  // check for PBC
+  usePBC = patchMap->xIsPeriodic()
+	 + patchMap->yIsPeriodic()
+	 + patchMap->zIsPeriodic();
+  if ((usePBC != 0) && (usePBC != 3))
+  {
+    iout << iERROR << "DPMTA (FMA) does not support " << usePBC
+	 << "-dimension PBC.\n" << endi;
+  }
+  DebugM(2,"Use PBC = " << usePBC << "\n");
+  usePBC = (usePBC == 3);	// either PBC "3D" or no PBC
+
+  //  Get the size of the FMA cube
+  DebugM(2,"DPMTA getting FMA cube\n");
+  get_FMA_cube(FALSE);
+  DebugM(2,"DPMTA got FMA cube\n");
+
   if (CMyPe() != 0)
   {
     DebugM(2,"waiting for Init go-ahead\n");
@@ -252,24 +265,6 @@ void ComputeDPMTA::initialize()
   pvm_spawn(NULL,NULL,0,NULL,numProcs,slavetids);
   DebugM(2,"DPMTA slavetids allocated\n");
 
-  // check for PBC
-  usePBC = patchMap->xIsPeriodic()
-	 + patchMap->yIsPeriodic()
-	 + patchMap->zIsPeriodic();
-  if ((usePBC != 0) && (usePBC != 3))
-  {
-    iout << iERROR << "DPMTA (FMA) does not support " << usePBC
-	 << "-dimension PBC.\n" << endi;
-  }
-  DebugM(2,"Use PBC = " << usePBC << "\n");
-  usePBC = (usePBC == 3);	// either PBC "3D" or no PBC
-  if ( usePBC ) iout << iINFO << "DPMTA: SYSTEM IS PERIODIC\n" << endi;
-
-  //  Get the size of the FMA cube
-  DebugM(2,"DPMTA getting FMA cube\n");
-  get_FMA_cube(FALSE);
-  DebugM(2,"DPMTA got FMA cube\n");
-
   // reduce function calling time
   SimParameters *simParams = Node::Object()->simParameters;
 
@@ -300,11 +295,19 @@ void ComputeDPMTA::initialize()
   iout << iINFO << "  NUMBER OF MULTIPOLE TERMS = " << pmta_data.mp << "\n";
   iout << iINFO << "  FFT FLAG = " << pmta_data.fft << "\n";
   iout << iINFO << "  FFT BLOCKING FACTOR = " << pmta_data.fftblock << "\n";
+  if ( usePBC ) iout << iINFO << "  SYSTEM IS PERIODIC\n" << endi;
   iout << iINFO << "  BOX DIMENSIONS = (" << pmta_data.cubelen.x << ","
 	<< pmta_data.cubelen.y << "," << pmta_data.cubelen.z << ")\n";
   iout << iINFO << "  BOX CENTER = (" << pmta_data.cubectr.x << ","
 	<< pmta_data.cubectr.y << "," << pmta_data.cubectr.z << ")\n";
   iout << endi;
+
+  if ( usePBC )
+  {
+    pmta_data.cubectr.x = 0.;
+    pmta_data.cubectr.y = 0.;
+    pmta_data.cubectr.z = 0.;
+  }
 
   DebugM(2,"DPMTA calling PMTAinit.\n");
   if (PMTAinit(&pmta_data,slavetids) >= 0)
@@ -403,6 +406,7 @@ void ComputeDPMTA::doWork()
     iout << iINFO << "FMA rescale factor " << rescaleFactor << "\n" << endi;
     DebugM(2,"Rescale factor = " << initLattice << "/" << newLattice
 		<< " = " << rescaleFactor << "\n");
+    DebugM(2,"boxcenter = " << boxcenter << "\n");
     }
   else
     {
@@ -434,9 +438,9 @@ void ComputeDPMTA::doWork()
       // explicitly copy -- two different data structures
       if (usePBC)
 	{
-	particle_list[i].p.x = rescaleFactor.x * x[j].x;
-	particle_list[i].p.y = rescaleFactor.y * x[j].y;
-	particle_list[i].p.z = rescaleFactor.z * x[j].z;
+	particle_list[i].p.x = rescaleFactor.x * (x[j].x-boxcenter.x);
+	particle_list[i].p.y = rescaleFactor.y * (x[j].y-boxcenter.y);
+	particle_list[i].p.z = rescaleFactor.z * (x[j].z-boxcenter.z);
 	}
       else
 	{
@@ -522,12 +526,15 @@ void ComputeDPMTA::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1039 $	$Date: 1997/03/27 03:16:50 $
+ *	$Revision: 1.1040 $	$Date: 1997/03/27 08:04:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.C,v $
+ * Revision 1.1040  1997/03/27 08:04:14  jim
+ * Reworked Lattice to keep center of cell fixed during rescaling.
+ *
  * Revision 1.1039  1997/03/27 03:16:50  jim
  * Added code to check virial calculation, fixed problems with DPMTA and PBC's.
  *

@@ -5,56 +5,93 @@
 #include "NamdTypes.h"
 #include <math.h>
 
+typedef Vector ScaledPosition;
+
 class Lattice
 {
 public:
-  Lattice(void) : anz(0), bnz(0), cnz(0) {};
+  Lattice(void) : a1(0), a2(0), a3(0) {};
 
+  // maps a transformation triplet onto a single integer
   static int index(int i=0, int j=0, int k=0)
   {
     return 9 * (k+1) + 3 * (j+1) + (i+1);
   }
 
-  void set(Vector aa, Vector bb, Vector cc)
+  // sets lattice basis vectors and origin (fixed center)
+  void set(Vector A, Vector B, Vector C, Position Origin)
   {
-    a = aa; b = bb; c = cc;
-    anz = ( a.length2() > 0 );
-    bnz = ( b.length2() > 0 );
-    cnz = ( c.length2() > 0 );
+    a1 = A.x;  b1 = ( a1 ? 1. / a1 : 0 );
+    a2 = B.y;  b2 = ( a2 ? 1. / a2 : 0 );
+    a3 = C.z;  b3 = ( a3 ? 1. / a3 : 0 );
+    o = Origin;
   }
 
-  Vector nearest(Vector data, Vector ref) const
+  // rescale lattice dimensions by factor, origin doesn't move
+  void rescale(BigReal factor)
   {
-    Vector result = data;
-    if ( anz )
-    {
-      result.x = ref.x + drem(data.x-ref.x,a.x);
-    }
-    if ( bnz )
-    {
-      result.y = ref.y + drem(data.y-ref.y,b.y);
-    }
-    if ( cnz )
-    {
-      result.z = ref.z + drem(data.z-ref.z,c.z);
-    }
-    return result;
+    a1 *= factor;  b1 = ( a1 ? 1. / a1 : 0 );
+    a2 *= factor;  b2 = ( a2 ? 1. / a2 : 0 );
+    a3 *= factor;  b3 = ( a3 ? 1. / a3 : 0 );
   }
 
-  Vector delta(Vector v1, Vector v2) const
+  // rescale a position, keeping origin constant, assume 3D
+  void rescale(Position &p, BigReal factor) const
   {
-    Vector result = v1 - v2;
-    if ( anz )
+    p -= o;
+    p *= factor;
+    p += o;
+  }
+
+  // transform scaled position to unscaled position
+  Position unscale(ScaledPosition s) const
+  {
+    return Vector
+    (
+	( a1 ? ( o.x + a1 * s.x ) : s.x ),
+	( a2 ? ( o.y + a2 * s.y ) : s.y ),
+	( a3 ? ( o.z + a3 * s.z ) : s.z )
+    );
+  }
+
+  // transform unscaled position to scaled position
+  ScaledPosition scale(Position p) const
+  {
+    return Vector
+    (
+	( a1 ? ( b1 * ( p.x - o.x ) ) : p.x ),
+	( a2 ? ( b2 * ( p.y - o.y ) ) : p.y ),
+	( a3 ? ( b3 * ( p.z - o.z ) ) : p.z )
+    );
+  }
+
+  // transforms a position nearest to a SCALED reference position
+  Position nearest(Position data, ScaledPosition ref) const
+  {
+    BigReal tmp;
+    return Vector
+    (
+	( a1 ? ( tmp=b1*(data.x-o.x)-ref.x, o.x+a1*(ref.x+tmp-rint(tmp)) ) : data.x ),
+	( a2 ? ( tmp=b2*(data.y-o.y)-ref.y, o.y+a2*(ref.y+tmp-rint(tmp)) ) : data.y ),
+	( a3 ? ( tmp=b3*(data.z-o.z)-ref.z, o.z+a3*(ref.z+tmp-rint(tmp)) ) : data.z )
+    );
+  }
+
+  // calculates shortest vector from p2 to p1 (equivalent to p1 - p2)
+  Vector delta(Position p1, Position p2) const
+  {
+    Vector result = p1 - p2;
+    if ( a1 )
     {
-      result.x = drem(result.x,a.x);
+      BigReal tmp = b1 * result.x; result.x = a1 * ( tmp - rint(tmp) );
     }
-    if ( bnz )
+    if ( a2 )
     {
-      result.y = drem(result.y,b.y);
+      BigReal tmp = b2 * result.y; result.y = a2 * ( tmp - rint(tmp) );
     }
-    if ( cnz )
+    if ( a3 )
     {
-      result.z = drem(result.z,c.z);
+      BigReal tmp = b3 * result.z; result.z = a3 * ( tmp - rint(tmp) );
     }
     return result;
   }
@@ -65,7 +102,7 @@ public:
     if ( i != 13 )
     {
       dt = new Position[n];
-      Vector shift = (i/9-1) * c + ((i/3)%3-1) * b + (i%3-1) * a;
+      Vector shift( (i%3-1) * a1 , ((i/3)%3-1) * a2 , (i/9-1) * a3 );
       for( int j = 0; j < n; ++j )
         dt[j] = d[j] + shift;
     }
@@ -82,30 +119,29 @@ public:
     *d = NULL;
   }
 
-  Vector dimension()
+  BigReal a() const { return a1; }
+  BigReal b() const { return a2; }
+  BigReal c() const { return a3; }
+
+  Vector dimension() const
   {
-  Vector rc;
-  rc.x = a.x;
-  rc.y = b.y;
-  rc.z = c.z;
-  return (rc);
+    return Vector(a1,a2,a3);
+  }
+
+  Vector origin() const
+  {
+    return o;
   }
 
   BigReal volume(void) const
   {
-    return ( a.x * b.y * c.z );
-  }
-
-  void rescale(BigReal factor)
-  {
-    a *= factor;
-    b *= factor;
-    c *= factor;
+    return ( a1 * a2 * a3 );
   }
 
 private:
-  Vector a,b,c;
-  int anz, bnz, cnz;
+  BigReal a1,a2,a3; // real lattice vectors (eventually)
+  BigReal b1,b2,b3; // reciprocal lattice vectors (eventually)
+  Vector o; // origin (fixed center of cell)
 
 };
 
@@ -116,12 +152,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/21 23:05:36 $
+ *	$Revision: 1.1004 $	$Date: 1997/03/27 08:04:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Lattice.h,v $
+ * Revision 1.1004  1997/03/27 08:04:18  jim
+ * Reworked Lattice to keep center of cell fixed during rescaling.
+ *
  * Revision 1.1003  1997/03/21 23:05:36  jim
  * Added Berendsen's pressure coupling method, won't work with MTS yet.
  *

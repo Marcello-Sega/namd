@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1016 1997/03/19 05:50:14 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1017 1997/03/27 08:04:27 jim Exp $";
 
 #include <stdio.h>
 
@@ -149,9 +149,9 @@ void WorkDistrib::createHomePatches(void)
       DebugM(4,"Created " << i << " patches so far.\n");
     }
 
-    Position center(0.5*(patchMap->minX(i)+patchMap->maxX(i)),
-		    0.5*(patchMap->minY(i)+patchMap->maxY(i)),
-		    0.5*(patchMap->minZ(i)+patchMap->maxZ(i)));
+    ScaledPosition center(0.5*(patchMap->minX(i)+patchMap->maxX(i)),
+			  0.5*(patchMap->minY(i)+patchMap->maxY(i)),
+			  0.5*(patchMap->minZ(i)+patchMap->maxZ(i)));
 
     for(int j=0; j < atomIDs[i].size(); j++)
     {
@@ -235,6 +235,8 @@ void WorkDistrib::patchMapInit(void)
   DebugM(4,"xmax.y = " << xmax.y << endl);
   DebugM(4,"xmax.z = " << xmax.z << endl);
 
+  Vector center = 0.5 * ( xmax + xmin );
+
   if ( params->cellBasisVector1.x )
   {
     xper = 1;
@@ -242,6 +244,7 @@ void WorkDistrib::patchMapInit(void)
     xdim = (int)(sysDim.x / patchSize);
     if ( xdim < 2 ) xdim = 2;
     DebugM(4,"Periodic in x dimension with " << xdim << " patches.\n");
+    center.x = params->lattice.origin().x;
   }
   else
   {
@@ -261,6 +264,7 @@ void WorkDistrib::patchMapInit(void)
     ydim = (int)((float)sysDim.y / patchSize);
     if ( ydim < 2 ) ydim = 2;
     DebugM(4,"Periodic in y dimension with " << ydim << " patches.\n");
+    center.y = params->lattice.origin().y;
   }
   else
   {
@@ -280,6 +284,7 @@ void WorkDistrib::patchMapInit(void)
     zdim = (int)((float)sysDim.z / patchSize);
     if ( zdim < 2 ) zdim = 2;
     DebugM(4,"Periodic in z dimension with " << zdim << " patches.\n");
+    center.z = params->lattice.origin().z;
   }
   else
   {
@@ -292,24 +297,26 @@ void WorkDistrib::patchMapInit(void)
     DebugM(4,"Non-periodic in z dimension with " << zdim << " patches.\n");
   }
 
-  sysMin = xmin - 0.5 * ( xmin + sysDim - xmax );
+  sysMin = center - 0.5 * sysDim;
 
   patchMap->setPeriodicity(xper,yper,zper);
   patchMap->allocatePids(xdim, ydim, zdim);
 
   patchMap->setGridOriginAndLength(sysMin,sysDim);
 
+  Lattice lattice = params->lattice;
+
   int assignedNode=0;
   for(i=0; i < patchMap->numPatches(); i++)
   {
     pid=patchMap->requestPid(&xi,&yi,&zi); // generates next pid and grid pos
     patchMap->storePatchCoord(pid, 
-			 ((float)xi/(float)xdim)*sysDim.x+sysMin.x,
-			 ((float)yi/(float)ydim)*sysDim.y+sysMin.y,
-			 ((float)zi/(float)zdim)*sysDim.z+sysMin.z,
-			 ((float)(xi+1)/(float)xdim)*sysDim.x+sysMin.x,
-			 ((float)(yi+1)/(float)ydim)*sysDim.y+sysMin.y,
-			 ((float)(zi+1)/(float)zdim)*sysDim.z+sysMin.z);
+lattice.scale( Vector(	((float)xi/(float)xdim)*sysDim.x+sysMin.x,
+			((float)yi/(float)ydim)*sysDim.y+sysMin.y,
+			((float)zi/(float)zdim)*sysDim.z+sysMin.z) ) ,
+lattice.scale( Vector(	((float)(xi+1)/(float)xdim)*sysDim.x+sysMin.x,
+			((float)(yi+1)/(float)ydim)*sysDim.y+sysMin.y,
+			((float)(zi+1)/(float)zdim)*sysDim.z+sysMin.z) ) );
     patchMap->allocateCompute(pid, 100);
     DebugM(4,"Patch " 
         << pid << " is at grid " << xi << " " << yi << " " << zi << ".\n");
@@ -768,12 +775,15 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1997/03/19 05:50:14 $
+ *	$Revision: 1.1017 $	$Date: 1997/03/27 08:04:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1017  1997/03/27 08:04:27  jim
+ * Reworked Lattice to keep center of cell fixed during rescaling.
+ *
  * Revision 1.1016  1997/03/19 05:50:14  jim
  * Added ComputeSphericalBC, cleaned up make dependencies.
  *

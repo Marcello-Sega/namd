@@ -34,7 +34,7 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1022 1997/03/18 18:09:01 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1023 1997/03/27 08:04:16 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
 		     VelocityList vl) : Patch(pd,al,pl), v(vl) 
@@ -280,16 +280,19 @@ HomePatch::doAtomMigration()
   i = 0;
   while ( i < atomIDList.size() )
   {
-     if (p[i].x < min.x) xdev = 0;
-     else if (max.x <= p[i].x) xdev = 2; 
+     Position Min = lattice.unscale(min);
+     Position Max = lattice.unscale(max);
+
+     if (p[i].x < Min.x) xdev = 0;
+     else if (Max.x <= p[i].x) xdev = 2; 
      else xdev = 1;
 
-     if (p[i].y < min.y) ydev = 0;
-     else if (max.y <= p[i].y) ydev = 2; 
+     if (p[i].y < Min.y) ydev = 0;
+     else if (Max.y <= p[i].y) ydev = 2; 
      else ydev = 1;
 
-     if (p[i].z < min.z) zdev = 0;
-     else if (max.z <= p[i].z) zdev = 2; 
+     if (p[i].z < Min.z) zdev = 0;
+     else if (Max.z <= p[i].z) zdev = 2; 
      else zdev = 1;
 
      if (mInfo[xdev][ydev][zdev]) { // process atom for migration
@@ -411,12 +414,15 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1022 $	$Date: 1997/03/18 18:09:01 $
+ *	$Revision: 1.1023 $	$Date: 1997/03/27 08:04:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1023  1997/03/27 08:04:16  jim
+ * Reworked Lattice to keep center of cell fixed during rescaling.
+ *
  * Revision 1.1022  1997/03/18 18:09:01  jim
  * Revamped collection system to ensure ordering and eliminate
  * unnecessary collections.  Also reduced make dependencies.
