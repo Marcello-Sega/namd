@@ -18,12 +18,13 @@
 
 class HomePatch;
 class SimParameters;
+class ReductionMgr;
 
 class Sequencer
 {
 public:
     Sequencer(HomePatch *p);
-    ~Sequencer(void) { };
+    ~Sequencer(void);
     void run(int numberOfCycles);             // spawn thread, etc.
     void awaken(void) { CthAwaken(thread); };
 
@@ -36,6 +37,7 @@ protected:
     int numberOfCycles;			// stores argument to run()
     int stepsPerCycle;			// stores info from run()
     HomePatch *const patch;		// access methods in patch
+    ReductionMgr *const reduction;
 
 private:
     CthThread thread;

@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.33 1997/01/09 20:48:10 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.34 1997/01/10 17:41:25 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -353,7 +353,6 @@ void Node::run(RunMsg *msg)
     DebugM(4, "Node::run() - creating controller.\n");
     Controller *controller = new Controller(state);
     state->useController(controller);
-    state->runController();
   }
 
   DebugM(4, "Node::run() - iterating over home patches!\n");
@@ -362,6 +361,15 @@ void Node::run(RunMsg *msg)
     DebugM(1, "Node::run() - signaling patch "<< p->getPatchID() << endl);
     Sequencer *sequencer = new Sequencer(p);
     p->useSequencer(sequencer);
+  }
+
+  if ( ! CMyPe() )
+  {
+    state->runController();
+  }
+
+  for (ai=ai.begin(); ai != ai.end(); ai++) {
+    HomePatch *p = (*ai).p;
     p->runSequencer();
   }
 }
@@ -405,12 +413,15 @@ void Node::saveMolDataPointers(Molecule *molecule,
  *
  *	$RCSfile: Node.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.33 $	$Date: 1997/01/09 20:48:10 $
+ *	$Revision: 1.34 $	$Date: 1997/01/10 17:41:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.34  1997/01/10 17:41:25  jim
+ * *** empty log message ***
+ *
  * Revision 1.33  1997/01/09 20:48:10  jim
  * added Controller code
  *

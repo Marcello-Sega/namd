@@ -24,7 +24,12 @@ Controller::Controller(NamdState *s) :
 	simParams(Node::Object()->simParameters),
 	reduction(ReductionMgr::Object())
 {
-  ;
+    reduction->subscribe(REDUCTION_KINETIC_ENERGY);
+}
+
+Controller::~Controller(void)
+{
+    reduction->unsubscribe(REDUCTION_KINETIC_ENERGY);
 }
 
 void Controller::threadRun(Controller* arg)
@@ -49,13 +54,15 @@ void Controller::algorithm(void)
     const int stepsPerCycle = this->stepsPerCycle;
     const BigReal timestep = simParams->dt;
     int step, cycle;
+    int seq = 0;
     for ( cycle = 0; cycle < numberOfCycles; ++cycle )
     {
         for ( step = 0; step < stepsPerCycle; ++step )
         {
-	    DebugM(2, patch->getPatchID()
-		<< ": (" << cycle << "," << step << ") "
-		<< "Awakened!\n");
+	    BigReal ke;
+	    reduction->require(seq, REDUCTION_KINETIC_ENERGY, ke);
+	    DebugM(5, "Step: " << seq << " KE: " << ke << "\n");
+	    ++seq;
         }
     }
     DebugM(4, "Controller: Exiting.\n");

@@ -24,7 +24,7 @@ class Controller
 {
 public:
     Controller(NamdState *s);
-    ~Controller(void) { };
+    ~Controller(void);
     void run(int numberOfCycles);             // spawn thread, etc.
     void awaken(void) { CthAwaken(thread); };
 

@@ -15,6 +15,7 @@
 #include "SimParameters.h"
 #include "Sequencer.h"
 #include "HomePatch.h"
+#include "ReductionMgr.h"
 
 #define MIN_DEBUG_LEVEL 4
 #define DEBUGM
@@ -22,9 +23,15 @@
 
 Sequencer::Sequencer(HomePatch *p) :
 	patch(p),
-	simParams(Node::Object()->simParameters)
+	simParams(Node::Object()->simParameters),
+	reduction(ReductionMgr::Object())
 {
-  ;
+    reduction->Register(REDUCTION_KINETIC_ENERGY);
+}
+
+Sequencer::~Sequencer(void)
+{
+    reduction->unRegister(REDUCTION_KINETIC_ENERGY);
 }
 
 void Sequencer::threadRun(Sequencer* arg)
@@ -48,6 +55,7 @@ void Sequencer::algorithm(void)
     const int stepsPerCycle = this->stepsPerCycle;
     const BigReal timestep = simParams->dt;
     int step, cycle;
+    int seq = 0;
     patch->positionsReady();
     suspend();
     for ( cycle = 0; cycle < numberOfCycles; ++cycle )
@@ -68,6 +76,8 @@ void Sequencer::algorithm(void)
 		<< ": (" << cycle << "," << step << ") "
 		<< "Awakened!\n");
             patch->addForceToMomentum(0.5*timestep);
+	    reduction->submit(seq, REDUCTION_KINETIC_ENERGY, 1.0);
+	    ++seq;
         }
     }
     DebugM(4, patch->getPatchID() << ": Exiting.\n");
