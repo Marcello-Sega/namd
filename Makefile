@@ -8,18 +8,18 @@ CHARMXI = /Projects/l1/namd.2.0/charm/bin/charmc
 #####
 # definitions for PMTA routines
 #####
-PMTADIR=/Projects/l2/namd/dpmta-2.5/src
-PMTAINCL=-I$(PMTADIR)
-PMTALIBDIR=-L$(PMTADIR)
-PMTALIB=-ldpmta
-PMTAFLAGS=-DDPMTA
-DPMTA=$(PMTAINCL) $(PMTAFLAGS)
+#PMTADIR=/Projects/l2/namd/dpmta-2.5/src
+#PMTAINCL=-I$(PMTADIR)
+#PMTALIBDIR=-L$(PMTADIR)
+#PMTALIB=-ldpmta
+#PMTAFLAGS=-DDPMTA
+#DPMTA=$(PMTAINCL) $(PMTAFLAGS)
 #####
 # definitions for PVM routines
 #####
-PVMDIR=/usr/local/shared/pvm/pvm3/lib/HPPA
-PVMLIBDIR=-L$(PVMDIR)
-PVMLIB=-lpvm3
+#PVMDIR=/usr/local/shared/pvm/pvm3/lib/HPPA
+#PVMLIBDIR=-L$(PVMDIR)
+#PVMLIB=-lpvm3
 
 #####
 # Directories
