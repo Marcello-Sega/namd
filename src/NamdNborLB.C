@@ -170,8 +170,10 @@ NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
 
   delete [] patchArray;
   delete [] computeArray;
+  /*
   for(i=0; i<numProcessors; i++)
       delete [] processorArray[i].proxyUsage;
+  */
   delete [] processorArray;
 
   return msg;
