@@ -632,13 +632,13 @@ void Controller::printEnergies(int seq)
       xscFile << "# NAMD extended system configuration file" << endl;
       xscFile << "#$LABELS step a_x b_y c_z o_x o_y o_z";
       if ( simParameters->langevinPistonOn ) {
-	xstFile << " strainRate";
+	xscFile << " strainRate";
       }
       xscFile << endl;
       xscFile << seq;
       xscFile << " " << lattice.a() << " " << lattice.b() << " " << lattice.c() << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
       if ( simParameters->langevinPistonOn ) {
-	xstFile << " " << langevinPiston_strainRate;
+	xscFile << " " << langevinPiston_strainRate;
       }
       xscFile << endl;
     }
@@ -651,9 +651,15 @@ void Controller::printEnergies(int seq)
       ofstream xscFile(fname);
       xscFile << "# NAMD extended system configuration file" << endl;
       xscFile << "#$LABELS step a_x b_y c_z o_x o_y o_z";
+      if ( simParameters->langevinPistonOn ) {
+	xscFile << " strainRate";
+      }
       xscFile << endl;
       xscFile << seq;
       xscFile << " " << lattice.a() << " " << lattice.b() << " " << lattice.c() << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
+      if ( simParameters->langevinPistonOn ) {
+	xscFile << " " << langevinPiston_strainRate;
+      }
       xscFile << endl;
     }
 
@@ -740,12 +746,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1051 $	$Date: 1998/12/07 03:54:29 $
+ *	$Revision: 1.1052 $	$Date: 1998/12/30 21:49:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1052  1998/12/30 21:49:07  jim
+ * Fixed bugs in extended system file output.
+ *
  * Revision 1.1051  1998/12/07 03:54:29  jim
  * Constant pressure should work with multiple timestepping.
  * Still needs some testing.  Some debug code still enabled.
