@@ -533,7 +533,7 @@ optionally be set to control the behavior of this feature.}
 {Specifies relaxation time for Berendsen's method.}
 
 \item
-\NAMDCONFWDEF{BerendsenPressureFreq}{how often to rescale positions}{positive integer}{1}
+\NAMDCONFWDEF{BerendsenPressureFreq}{how often to rescale positions}{positive multiple of {\tt nonbondedFrequency} and {\tt fullElectFrequency}}{{\tt nonbondedFrequency} or {\tt fullElectFrequency} if used}
 {Specifies number of timesteps between position rescalings for Berendsen's method.}
 
 \end{itemize}

@@ -48,10 +48,10 @@ of {\tt cutoff}.
 
 \subsubsection{Non-bonded electrostatic interactions}
 The handling of electrostatics is slightly
-more complicated due to the incorporation of DPMTA to provide full
+more complicated due to the incorporation of multiple timestepping for full
 electrostatic interactions.  There are two cases to consider, one where
-DPMTA is used to provide full electrostatics and the other where electrostatics
-are truncated at a given distance.  
+full electrostatics is employed and the other where electrostatics
+are truncated at a given distance.
 \prettypar
 First let us consider the latter case, where electrostatics are truncated at
 the cutoff distance.  Using this scheme, all electrostatic interactions
@@ -79,7 +79,7 @@ this scheme, the {\tt cutoff} parameter has a slightly different meaning
 for the electrostatic interactions --- it represents
 the {\it local interaction distance\/}, or distance within which electrostatic
 pairs will be directly calculated every timestep.  Outside of this distance,
-interactions will be calculated only periodically using DPMTA.  These forces
+interactions will be calculated only periodically.  These forces
 will be applied using a multiple timestep integration scheme as described in
 Section \ref{section:fmadesc}.
 
@@ -185,10 +185,10 @@ For appropriate values of $k$,
 it is believed that the error introduced by this infrequent evaluation
 is modest compared to the error already incurred by the use of the numerical
 (Verlet) integrator.  
-The performance of \NAMD\ with the use of DPMTA to provide 
-full electrostatics approximately doubles the 
-run time of a simulation as compared to \NAMD\ with an 
-$8.0$ \AA\ electrostatic cutoff.  
+%The performance of \NAMD\ with the use of DPMTA to provide 
+%full electrostatics approximately doubles the 
+%run time of a simulation as compared to \NAMD\ with an 
+%$8.0$ \AA\ electrostatic cutoff.  
 Improved methods for incorporating these long range forces
 are currently being investigated, 
 with the intention of improving accuracy as well as 
@@ -235,9 +235,9 @@ number can be specified.}
 {Number of timesteps in each cycle.  Each cycle represents the number 
 of timesteps between pairlist generation and atom reassignment.  
 If full electrostatics are active, it is also the number of timesteps 
-between full electrostatic evaluation unless {\tt fmaFrequency} is
+between full electrostatic evaluation unless {\tt fullElectFrequency} is
 also specified.  
-It is recommended that {\tt stepspercycle} ({\tt fmaFrequency}) be chosen so that 
+It is recommended that {\tt stepspercycle} ({\tt fullElectFrequency}) be chosen so that 
 the product of {\tt stepspercycle} and {\tt timestep} does 
 not exceed $4.0$ unless {\tt rigidBonds all} is specified, 
 in which case the upper limit is perhaps doubled.  
@@ -246,10 +246,6 @@ use of full electrostatics, see Section \ref{section:fmadesc}.
 For more details
 on non-bonded force evaluation and pairlist generation, see
 Section \ref{section:electdesc}.}
-
-\item
-\NAMDCONFWDEF{nonbondedFreq}{timesteps between nonbonded evaluation}{positive integer factor of {\tt fmaFrequency}}{1}
-{This parameter specifies how often short-range nonbonded interactions should be calculated.  Setting {\tt nonbondedFreq} between 1 and {\tt fmaFrequency} allows triple timestepping where, for example, one could evaluate bonded forces every 1 fs, short-range nonbonded forces every 2 fs, and long-range electrostatics every 4 fs.} 
 
 
 \end{itemize}
@@ -559,13 +555,7 @@ the DPMTA algorithm from Duke University should be used
 to compute the full electrostatic interactions.  If set to 
 {\tt on}, DPMTA will be used with a multiple timestep integration scheme 
 to provide full electrostatic interactions as detailed in Section 
-\ref{section:fmadesc}.  Because of the way this feature is currently 
-implemented, PVM must be running for DPMTA to function, even if \NAMD\ 
-is running only on one processor.}
-
-\item
-\NAMDCONFWDEF{FMAFrequency}{number of timesteps between DPMTA calculations}{positive integer factor of {\tt stepspercycle}}{{\tt stepspercycle}}
-{This parameter specifies the number of timesteps between each invocation of the DPMTA algorithm.}
+\ref{section:fmadesc}. }
 
 \item
 \NAMDCONFWDEF{FMALevels}{number of levels to use in multipole expansion}{positive integer}{5}
@@ -686,12 +676,24 @@ in the \PG\ is used.
 \begin{itemize}
 
 \item
-\NAMDCONFWDEF{MTSAlgorithm}{MTS algorithm to be used}{{\tt verletI}}{{\tt naive}}
+\NAMDCONFWDEF{fullElectFrequency}{number of timesteps between DPMTA calculations}{positive integer factor of {\tt stepspercycle}}{{\tt stepspercycle}}
+{This parameter specifies the number of timesteps between each full electrostatics evaluation.
+It is recommended that {\tt fullElectFrequency} be chosen so that 
+the product of {\tt fullElectFrequency} and {\tt timestep} does 
+not exceed $4.0$ unless {\tt rigidBonds all} is specified, 
+in which case the upper limit is perhaps doubled.}
+
+\item
+\NAMDCONFWDEF{nonbondedFreq}{timesteps between nonbonded evaluation}{positive integer factor of {\tt fullElectFrequency}}{1}
+{This parameter specifies how often short-range nonbonded interactions should be calculated.  Setting {\tt nonbondedFreq} between 1 and {\tt fullElectFrequency} allows triple timestepping where, for example, one could evaluate bonded forces every 1 fs, short-range nonbonded forces every 2 fs, and long-range electrostatics every 4 fs.} 
+
+\item
+\NAMDCONFWDEF{MTSAlgorithm}{MTS algorithm to be used}{{\tt verletI}}{{\tt verletI}}
 {Specifies the multiple timestep algorithm used to integrate the 
 long and short range forces.  {\tt verletI} is the same as r-RESPA.}
 
 \item
-\NAMDCONFWDEF{longSplitting}{how should long and short range forces be split?}{{\tt xplor}, {\tt c1}}{{\tt sharp}}
+\NAMDCONFWDEF{longSplitting}{how should long and short range forces be split?}{{\tt xplor}, {\tt c1}}{{\tt c1}}
 {Specifies the method used to split electrostatic forces between long 
 and short range potentials.  
 The {\tt xplor} option uses the X-PLOR shifting function, 

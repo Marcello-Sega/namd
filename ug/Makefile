@@ -24,7 +24,9 @@ doc:	$(DOCDIR)/ug.ps
 
 ### run latex2html
 html:	$(DOCDIR)/ug.ps
-	latex2html -local_icons -split 5 -toc_depth 4 ug 
+	latex2html -local_icons -split 5 -toc_depth 4 \
+	-t "NAMD 2.0 User's Guide" -address "namd@ks.uiuc.edu" \
+	-up_url "../../" -up_title "Main NAMD Page" ug 
 
 $(DOCDIR)/ug.ps: namd_begindoc.tex namd_copyright.tex namd_macros.tex \
 namd_title.tex namd_version.tex ug.tex ug_add.tex ug_avail.tex ug_basic.tex \

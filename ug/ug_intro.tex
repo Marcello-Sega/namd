@@ -11,7 +11,7 @@
 %
 %       $RCSfile: ug_intro.tex,v $
 %       $Author: jim $        $Locker:  $                $State: Exp $
-%       $Revision: 1.7 $      $Date: 1999/03/09 20:58:47 $
+%       $Revision: 1.8 $      $Date: 1999/03/18 01:49:51 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -21,6 +21,9 @@
 % REVISION HISTORY:
 %
 % $Log: ug_intro.tex,v $
+% Revision 1.8  1999/03/18 01:49:51  jim
+% Many changes, now mostly ready for 2.0 release.
+%
 % Revision 1.7  1999/03/09 20:58:47  jim
 % Changed verb to tt in most places to help out latex2html.
 %
@@ -114,7 +117,7 @@ The new multiple timestepping parameter {\tt nonbondedFreq} allows nonbonded int
 The new spatial partitioning parameters {\tt splitPatch} and {\tt hgroupCutoff} have been added due to a change from pairlists to group-based distance checking.
 The Langevin dynamics and temperature coupling algorithms has been altered to be more suitable for temperature control with small damping coefficients.
 Finally, \NAMD\ \NAMDVER\ can now read CHARMM as well as X-PLOR formatted 
-structure and parameter files.
+parameter files.
 
 Several options have been removed in this release.
 Multiple timestepping is currently limited to impulse methods.
@@ -156,24 +159,26 @@ interaction terms consisting of bonded interactions between 2, 3, and 4 atoms
 and pairwise interactions including electrostatic and van der Waals forces.
 This commonality allows simulations to migrate between these three programs.
 
-\item{\bf Fast Multipole Algorithm}\\
+\item{\bf Efficient Full Electrostatics Algorithms}\\
 \NAMD\ incorporates the Distributed Parallel Multipole Tree Algorithm 
-(DPMTA) \mycite{(Board \ETAL)}{duke:fma}, which takes the full electrostatic
-interactions into account.  This algorithm reduces the computational
-complexity of electrostatic force evaluation from $O(N^2)$ to $O(N)$.
+(DPMTA) \mycite{(Board \ETAL)}{duke:fma} and Distributed Particle Mesh
+Ewald (DPME) algorithms, which takes the full electrostatic
+interactions into account.  These algorithm reduces the computational
+complexity of electrostatic force evaluation from $O(N^2)$ to $O(N)$
+or $O(N \log N)$.
 
-\item{\bf Multiple Time Stepping:}\\
+\item{\bf Multiple Time Stepping}\\
 The velocity Verlet integration method
 \mycite{M. P. Allen and D. J. Tildesley, 1987}{ALLE87}
 is used to advance the positions and velocities of the atoms in time.
 To further reduce the cost of the evaluation of 
 long-range electrostatic forces, 
-a multiple time step scheme is combined with the DPMTA method.  The local
+a multiple time step scheme is employed.  The local
 interactions (bonded, van der Waals and electrostatic interactions within a
 specified distance) are calculated at each time step.  The longer range
 interactions (electrostatic interactions beyond the specified distance) are
-only computed every $k$ steps, with each set of $k$ steps called a {\em cycle}.
-This amortizes the cost of computing the electrostatic forces over the $k$ steps in the cycle.
+only computed less often.
+This amortizes the cost of computing the electrostatic forces over several timesteps.
 A smooth splitting function is used to separate a quickly varying short-range portion of the electrostatic interaction from a more slowly varying long-range component.
 It is also possible to employ an intermediate timestep for the short-range non-bonded interactions, performing only bonded interactions every timestep.
 
@@ -181,8 +186,8 @@ It is also possible to employ an intermediate timestep for the short-range non-b
 \item{\bf Input and Output Compatibility}\\
 The input and output file formats used by \NAMD\ are identical to those
 used by CHARMM and X-PLOR.  Input formats include coordinate files in PDB format
-\mycite{(Bernstein \ETAL, 1977)}{BERN77}, structure files in PSF format, 
-and energy parameter files in the same format used by ~CHARMM and X-PLOR.
+\mycite{(Bernstein \ETAL, 1977)}{BERN77}, structure files in X-PLOR PSF format, 
+and energy parameter files in either ~CHARMM or X-PLOR formats.
 Output formats include PDB coordinate files and binary DCD trajectory files.
 These similarities assure that the molecular dynamics trajectories from \NAMD\ 
 can be read by CHARMM or X-PLOR and that the user can exploit the many 
@@ -191,12 +196,19 @@ analysis algorithms of the latter packages.
 \item{\bf Dynamics Simulation Options}\\
 MD simulations may be carried out using several options, including
 \begin{itemize}
-  \item NVE ensemble dynamics,
-  \item NVT ensemble dynamics,
+  \item Constant energy dynamics,
+  \item Constant temperature dynamics via
+  \begin{itemize}
+    \item Velocity rescaling,
+    \item Velocity reassignment,
+    \item Langevin dynamics,
+  \end{itemize}
   \item Periodic boundary conditions,
-  \item NPT ensemble dynamics (Berendsen's method),
-  \item Velocity rescaling,
-  \item Langevin dynamics,
+  \item Constant pressure dynamics via
+  \begin{itemize}
+    \item Berendsen pressure coupling,
+    \item Nos\'{e}-Hoover Langevin piston,
+  \end{itemize}
   \item Energy minimization,
   \item Fixed atoms,
   \item Rigid waters,

@@ -11,7 +11,7 @@ To achieve this compatibility,
 the set of input files which \NAMD\ uses to define 
 a molecular system are identical to the input files used by X-PLOR and CHARMM.  
 Thus it is trivial to move an existing simulation from
-X-PLOR or CHARMM to \NAMD\.
+X-PLOR or CHARMM to \NAMD.
 A description of these molecular system definition 
 files is given in Section \ref{section:formats}.  
 \prettypar
@@ -37,15 +37,19 @@ A full description of this file format can be obtained via anonymous FTP from
 
 \subsubsection{X-PLOR format PSF files}
 
-\NAMD\ uses the same protein structure files that X-PLOR and CHARMM do.
+\NAMD\ uses the same protein structure files that X-PLOR does.
 At this time, the
 easiest way to generate these files is using X-PLOR or CHARMM,
 although it is possible to build them by hand.
+CHARMM can generate an X-PLOR format PSF file with the command
+``{\tt write psf card xplor}''.
 
 \subsubsection{CHARMM19 and CHARMM22 parameter files}
 
-\NAMD\ supports CHARMM19 and CHARMM22 parameter files in the same format 
-that is used by X-PLOR and CHARMM.  
+\NAMD\ supports CHARMM19 and CHARMM22 parameter files in both
+X-PLOR and CHARMM formats.
+(X-PLOR format is the default, CHARMM format parameter files
+may be used given the parameter ``{\tt paraTypeCharmm on}''.)
 For a full description of the format of commands 
 used in these files, see the X-PLOR and CHARMM User's Manual 
 \mycite{(Br\"unger, 1992)}{BRUN92b}.  
@@ -58,7 +62,9 @@ The DCD files are single precision binary FORTRAN files,
 so are transportable between computer architectures.  
 They are not, unfortunately, transportable between big-endian (most
 workstations) and little endian (Intel) architectures.
-(This same caveat applies to binary velocity and coordinate files.)
+(This same caveat applies to binary velocity and coordinate files.
+The utility programs {\tt flipdcd} and {\tt flipbinpdb} are
+provided with the Linux/Intel version to reformat these files.)
 The exact format of these files is very ugly but supported by 
 a wide range of analysis and display programs.  
 
@@ -81,14 +87,13 @@ Only one value may be specified.}
 \NAMDCONF{structure}{PSF file}{UNIX filename}
 {\label{param:structure}
 %% This parameter is {\it required\/} for every simulation.
-The X-PLOR or CHARMM style PSF file describing the molecular 
+The X-PLOR format PSF file describing the molecular 
 system to be simulated.  
 Only one value may be specified.}
 
 \item
 \NAMDCONF{parameters}{parameter file}{UNIX filename}
 {\label{param:parameters}
-%% This parameter is {\it required\/} for every simulation.  
 A CHARMM19 or CHARMM22 parameter file that defines all or part 
 of the parameters necessary for the molecular system to be simulated.  
 At least one parameter file must be specified for each simulation.  
@@ -119,8 +124,8 @@ separate files.}
 {Specifies whether or not the parameter file(s) are in X-PLOR format.
  X-PLOR format is the default for parameter files!
  Caveat: The PSF file should be also constructed with X-PLOR in
- case of a X-PLOR parameter file because X-PLOR stores information
- about the multiplicity of dihedrals in the PSF file. See X-PLOR
+ case of an X-PLOR parameter file because X-PLOR stores information
+ about the multiplicity of dihedrals in the PSF file. See the X-PLOR
  manual for details.}
 
 \item
@@ -130,8 +135,8 @@ separate files.}
  Caveat: The information about multiplicity of dihedrals will be
  obtained directly from the parameter file, and the full multiplicity
  will be used (same behaviour as in CHARMM). If the PSF file originates
- from X-PLOR, consecutive multiple entries for the same dihedral - 
- indicating the dihedral multiplicity for X-PLOR - will be ignored.}
+ from X-PLOR, consecutive multiple entries for the same dihedral 
+ (indicating the dihedral multiplicity for X-PLOR) will be ignored.}
 
 \item
 \NAMDCONF{velocities}{velocity PDB file}{UNIX filename}
@@ -151,7 +156,7 @@ Both options cannot be used together.}
 The binary file containing initial velocities for all 
 atoms in the simulation.  
 A binary velocity file is created as output from \NAMD\ 
-by activating the {\tt binaryrestart} option.  
+by activating the {\tt binaryrestart} or {\tt binaryoutput} options.  
 The {\tt binvelocities} option should be used as 
 an alternative to {\tt velocities}.  
 Either the {\tt temperature} 
@@ -166,7 +171,7 @@ Both options cannot be used together.
 The binary restart file containing initial position 
 coordinate data.  
 A binary coordinate restart file is created as output from \NAMD\ 
-by activating the {\tt binaryrestart} option.  
+by activating the {\tt binaryrestart} or {\tt binaryoutput} options.  
 Note that, in the current implementation at least, 
 the {\tt bincoordinates} option must be used in addition 
 to the {\tt coordinates} option, 
@@ -218,6 +223,8 @@ Binary files preserve more accuracy between \NAMD\ restarts
 than ASCII PDB files, 
 but the binary files are not guaranteed to be transportable 
 between computer architectures.  
+(The utility program {\tt flipbinpdb} is provided with the Linux/Intel
+version to reformat these files.)
 }
 
 \item
@@ -252,6 +259,8 @@ Binary files preserve more accuracy between \NAMD\ restarts
 than ASCII PDB files, 
 but the binary files are not guaranteed to be transportable 
 between computer architectures.  
+(The utility program {\tt flipbinpdb} is provided with the Linux/Intel
+version to reformat these files.)
 }
 
 \item
@@ -270,6 +279,8 @@ If {\tt DCDfile} is defined, then {\tt DCDfreq} must also be defined.
 {
 The number of timesteps between the writing of position coordinates 
 to the trajectory file.  
+The initial positions will be included in the trajectory file unless
+the {\tt firsttimestep} parameter is set non-zero.
 }
 
 \item
@@ -289,6 +300,8 @@ be defined.
 {
 The number of timesteps between the writing of 
 velocities to the trajectory file.  
+The initial velocities will be included in the trajectory file unless
+the {\tt firsttimestep} parameter is set non-zero.
 }
 
 %\item

@@ -5,26 +5,20 @@
 \subsection{What is needed}
 
 Before running \NAMD, explained in section \ref{section:run}, 
-the following may be needed:
+the following are be needed:
 \begin{itemize}
+\item A CHARMM force field in either CHARMM or X-PLOR format.
 \item
-Because \NAMD\ depends on CHARMM or X-PLOR for providing input files, 
-it is recommended that the user get and install CHARMM or X-PLOR.  
-%See {\tt <URL>} for instructions.  
+An X-PLOR format PSF file describing the modelular structure.
 \item
-The companion \MDSCOPE\ visualization program \VMD\ is not required.  
-If desired, see {\tt http://www.ks.uiuc.edu/vmd} for instructions.  
+The initial coordinates of the molecular system in the form of a PDB file.  
 \item
-The initial structure of the molecular system is needed in the 
-form of a PDB file.  
-%(Should we cite a page number in X-PLOR manual?)  
-\item
-If \VMD\ is not being used as a GUI, then the user must provide 
-a \NAMD\ configuration file. % (check this!)  
-This is discussed in sections 
-\ref{section:config}, \ref{section:files}, 
-\ref{section:basic}, and \ref{section:add}.  
+A \NAMD\ configuration file.
 \end{itemize}
+
+We strongly recommend that you have access to either CHARMM or X-PLOR,
+either of which is capable of generating both the PSF and PDB files.
+\NAMD\ currently provides no automatic method of generating these files.
 
 \subsection{\NAMD\ configuration file}
 \label{section:config}
@@ -36,19 +30,17 @@ This file specifies what dynamics options and values that
 initial temperature, etc.  
 The options and values in this file control how 
 the system will be simulated.  
-The format and options used in this configuration 
-file are described in Section \ref{section:config}.  
 
 A \NAMD\ configuration file contains a set of options and values.  
 The options and values specified determine the exact behavior of
 \NAMD, what features are active or inactive, how long the simulation
 should continue, etc.  Section \ref{section:configsyntax} describes how
 options are specified within a \NAMD\ configuration file.  Section
-\ref{section:configparams} describes the various parameters that are
-available and how to use them.  Section \ref{section:xplorequiv}
+\ref{section:requiredparams} lists the parameters which are required
+to run a basic simulation.  Section \ref{section:xplorequiv}
 describes the relation between specific \NAMD\ and X-PLOR dynamics
 options.  Several sample \NAMD\ configuration files are shown
-in Section \ref{section:sample}
+in section \ref{section:sample}.
 
 
 \subsubsection{Configuration parameter syntax}
@@ -94,7 +86,7 @@ Some values indicate file names, in which capitalization is critical.
 Other values such as {\tt on} or {\tt off} are case insensitive.
 
 \subsubsection{Required \NAMD\ configuration parameters}
-\label{section:configparams}
+\label{section:requiredparams}
 
 The following parameters are {\em required} for every
 \NAMD\ simulation:
@@ -137,15 +129,6 @@ one of the following three:
 \noindent These required parameters specify the most basic properties of
 the simulation.  %  that is to be performed.
 In addition, it is highly recommended that 
-\begin{itemize}
-\item
 {\tt pairlistdist} be specified with a 
-value at least one greater than the maximum of 
-{\tt cutoff}, {\tt vdwcutoff}, and {\tt eleccutoff}, 
-\item 
-{\tt stepspercycle} be chosen so that the product of 
-{\tt stepspercycle} and {\tt timestep} does not exceed 
-$4.0$ unless {\tt rigidBonds all} is specified, 
-in which case the upper limit is perhaps doubled.  
-\end{itemize}
+value at least one greater than {\tt cutoff}.
 
