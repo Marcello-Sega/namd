@@ -29,8 +29,11 @@ extern int isPmeProcessor(int);
 void Alg7::togrid(processorInfo* goodP[3][3], processorInfo* poorP[3][3],
 			processorInfo *p, computeInfo *c) {
       const SimParameters* simParams = Node::Object()->simParameters;
-      if( simParams->PMEOn && (CkNumPes() > 1000) &&
-        ( (p->Id == 0) || isPmeProcessor(p->Id) ) ) return;
+
+      if( simParams->PMEOn && simParams->ldbUnloadPME &&
+        ( (simParams->PMEBarrier && p->Id == 0) || isPmeProcessor(p->Id) ) )
+        return;
+
 
       int nPatches = numPatchesAvail(c,p);
       int nProxies = numProxiesAvail(c,p);

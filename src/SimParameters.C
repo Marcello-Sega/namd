@@ -560,6 +560,8 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
 	&PMEGridSizeZ);
    opts.optional("PME", "PMEProcessors",
 	"PME FFT and reciprocal sum processor count", &PMEProcessors, 0);
+   opts.optionalB("main", "PMEBarrier", "Use barrier in PME?",
+	&PMEBarrier, FALSE);
 
 #ifdef DPME
    opts.optionalB("PME", "useDPME", "Use old DPME code?", &useDPME, FALSE);
@@ -1079,6 +1081,14 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
      "when to start load balancing",
      &firstLdbStep);
    opts.range("firstLdbStep", POSITIVE);
+   opts.optional("main", "ldbBackgroundScaling",
+     "background load scaling", &ldbBackgroundScaling);
+   opts.range("ldbBackgroundScaling", NOT_NEGATIVE);
+   opts.optional("main", "ldbPMEBackgroundScaling",
+     "PME node background load scaling", &ldbPMEBackgroundScaling);
+   opts.range("ldbPMEBackgroundScaling", NOT_NEGATIVE);
+   opts.optionalB("main", "ldbUnloadPME", "no load on PME nodes",
+     &ldbUnloadPME, FALSE);
 
    /////  Restart timestep option
    opts.optional("main", "firsttimestep", "Timestep to start simulation at",
@@ -1915,6 +1925,13 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 	NAMD_die("More than one full electrostatics algorithm selected!!!");
    }
 
+   if (!opts.defined("ldbBackgroundScaling")) {
+     ldbBackgroundScaling = 1.0;
+   }
+   if (!opts.defined("ldbPMEBackgroundScaling")) {
+     ldbPMEBackgroundScaling = ldbBackgroundScaling;
+   }
+
 
    //  Check on PME parameters
    if (PMEOn) {  // idiot checking
@@ -2204,8 +2221,15 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
        iout << iINFO << "LOAD BALANCE STRATEGY  Other\n";
      }
      iout << iINFO << "LDB PERIOD             " << ldbPeriod << " steps\n";
-     iout << iINFO << "FIRST LDB TIMESTEP     " << firstLdbStep 
-    << "\n" << endi;
+     iout << iINFO << "FIRST LDB TIMESTEP     " << firstLdbStep << "\n";
+     iout << iINFO << "LDB BACKGROUND SCALING " << ldbBackgroundScaling << "\n";
+     if ( PMEOn ) {
+       iout << iINFO << "PME BACKGROUND SCALING "
+				<< ldbPMEBackgroundScaling << "\n";
+     if ( ldbUnloadPME )
+     iout << iINFO << "REMOVING LOAD FROM PME NODES" << "\n";
+     }
+     iout << endi;
    }
 
    iout << iINFO << "MAX SELF PARTITIONS    " << maxSelfPart << "\n"
@@ -2989,6 +3013,9 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 	<< PMEGridSizeX << " "
 	<< PMEGridSizeY << " "
 	<< PMEGridSizeZ << "\n";
+     if ( PMEBarrier ) {
+       iout << "PME BARRIER ENABLED\n";
+     }
      iout << endi;
      if ( useDPME ) iout << iINFO << "USING OLD DPME CODE\n";
 #ifdef NAMD_FFTW

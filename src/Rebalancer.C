@@ -258,8 +258,9 @@ void Rebalancer::refine_togrid(pcgrid &grid, double thresholdLoad,
 
   const SimParameters* simParams = Node::Object()->simParameters;
 
-  if( simParams->PMEOn && (CkNumPes() > 1000) &&
-	( (p->Id == 0) || isPmeProcessor(p->Id) ) ) return;
+  if( simParams->PMEOn && simParams->ldbUnloadPME &&
+	( (simParams->PMEBarrier && p->Id == 0) || isPmeProcessor(p->Id) ) )
+    return;
 
             if ( c->load + p->load < thresholdLoad) {
                int nPatches = numPatchesAvail(c,p);

@@ -93,6 +93,9 @@ public:
 	int ldbPeriod;                  //  How often to do load balancing
 	int firstLdbStep;		//  What step to do the first 
                                         //  load-balance on.
+	BigReal ldbBackgroundScaling;	//  scaling factor for background load
+	BigReal ldbPMEBackgroundScaling;//  scaling factor for PME background
+	Bool ldbUnloadPME;		//  unload processors doing PME
 	BigReal initialTemp;   		//  Initial temperature for the 
 					//  simulation
 	Bool comMove;     		//  Should the center of mass be 
@@ -325,6 +328,7 @@ public:
 	int PMEGridSizeY;		//  No. of grid points in y dim
 	int PMEGridSizeZ;		//  No. of grid points in z dim
 	int PMEProcessors;		//  No. of processors to use
+	Bool PMEBarrier;		//  Use barrier before sendTrans
 
 	Bool useDPME;			//  Flag TRUE -> old DPME code
 

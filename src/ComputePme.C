@@ -244,6 +244,7 @@ private:
   PmeReduction recip_evir[PME_MAX_EVALS];
   PmeReduction recip_evir2[PME_MAX_EVALS];
 
+  int useBarrier;
   int sendTransBarrier_received;
 };
 
@@ -283,6 +284,7 @@ ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), pmeProxyDir(thisgroup), pm
   untrans_count = 0;
   ungrid_count = 0;
   gridmsg_reuse= new PmeGridMsg*[CkNumPes()];
+  useBarrier = 0;
   sendTransBarrier_received = 0;
 }
 
@@ -294,6 +296,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   fepOn = simParams->fepOn;
   numGrids = fepOn ? 2 : 1;
   lesOn = simParams->lesOn;
+  useBarrier = simParams->PMEBarrier;
   if ( lesOn ) {
     lesFactor = simParams->lesFactor;
     numGrids = lesFactor;
@@ -618,10 +621,10 @@ void ComputePmeMgr::recvGrid(PmeGridMsg *msg) {
   if ( grid_count == 0 ) {
 #if CHARM_VERSION > 050402
     pmeProxyDir[CkMyPe()].gridCalc1();
-//    pmeProxyDir[0].sendTransBarrier();
+    if ( useBarrier ) pmeProxyDir[0].sendTransBarrier();
 #else
     pmeProxyDir.gridCalc1(CkMyPe());
-//    pmeProxyDir.sendTransBarrier(0);
+    if ( useBarrier ) pmeProxyDir.sendTransBarrier(0);
 #endif
   }
 }
@@ -636,15 +639,11 @@ void ComputePmeMgr::gridCalc1(void) {
   }
 #endif
 
-/*
-*/
 #if CHARM_VERSION > 050402
-  pmeProxyDir[CkMyPe()].sendTrans();
+  if ( ! useBarrier ) pmeProxyDir[CkMyPe()].sendTrans();
 #else
-  pmeProxyDir.sendTrans(CkMyPe());
+  if ( ! useBarrier ) pmeProxyDir.sendTrans(CkMyPe());
 #endif
-/*
-*/
 }
 
 void ComputePmeMgr::sendTransBarrier(void) {
