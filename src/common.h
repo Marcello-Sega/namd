@@ -13,6 +13,7 @@
 #ifndef COMMON_DEF_H
 #define COMMON_DEF_H
 
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream.h>
@@ -127,6 +128,7 @@ void NAMD_title(void);
 void NAMD_check_messages(void);
 void NAMD_quit(Bool die_hard=FALSE);
 void NAMD_die(char *);
+void NAMD_write(int fd, const void *buf, size_t count); // NAMD_die on error
 int NAMD_compare_ints(const void *, const void *);
 char *NAMD_stringdup(const char *);
 int *NAMD_bsearch(int *, int *, int, int,
@@ -272,13 +274,16 @@ int  Fclose(FILE *fout);
  * RCS INFORMATION:
  *
  *	$RCSfile: common.h,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1998/03/09 17:06:47 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1017 $	$Date: 1998/09/02 20:38:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.h,v $
+ * Revision 1.1017  1998/09/02 20:38:35  jim
+ * Improved error checking on file output.
+ *
  * Revision 1.1016  1998/03/09 17:06:47  milind
  * Changed prototype of ::new for GCC only.
  *

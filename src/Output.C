@@ -8,7 +8,7 @@
  * This object outputs the data collected on the master node
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Output.C,v 1.14 1998/04/30 04:53:28 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Output.C,v 1.15 1998/09/02 20:38:31 jim Exp $";
 
 #include <string.h>
 #include <stdlib.h>
@@ -930,7 +930,13 @@ void Output::write_binary_file(char *fname, int n, Vector *vecs)
   fwrite(&n32, sizeof(int32), 1, fp);
   fwrite(vecs, sizeof(Vector), n, fp);
 
-  fclose(fp);
+  if ( ferror(fp) || fclose(fp) )
+  {
+    char errmsg[256];
+
+    sprintf(errmsg, "Error on write to binary file %s", fname);
+    NAMD_die(errmsg);
+  }
 }
 /*      END OF FUNCTION write_binary_file    */
 
@@ -2527,12 +2533,15 @@ void Output::output_allforcedcdfile(int timestep, int n, Vector *forces)
  *
  *  $RCSfile: Output.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.14 $  $Date: 1998/04/30 04:53:28 $
+ *  $Revision: 1.15 $  $Date: 1998/09/02 20:38:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Output.C,v $
+ * Revision 1.15  1998/09/02 20:38:31  jim
+ * Improved error checking on file output.
+ *
  * Revision 1.14  1998/04/30 04:53:28  jim
  * Added forces from MDComm and other improvements to ComputeGlobal.
  *

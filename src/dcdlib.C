@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/dcdlib.C,v 1.4 1997/12/10 17:53:36 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/dcdlib.C,v 1.5 1998/09/02 20:38:37 jim Exp $";
 
 #include "dcdlib.h"
 #include "common.h" // for int32 definition
@@ -646,15 +646,15 @@ int write_dcdstep(int fd, int N, float *X, float *Y, float *Z)
 	int32 out_integer;
 
 	out_integer = N*4;
-	write(fd, (char *) &out_integer, sizeof(int32));
-	write(fd, (char *) X, out_integer);
-	write(fd, (char *) &out_integer, sizeof(int32));
-	write(fd, (char *) &out_integer, sizeof(int32));
-	write(fd, (char *) Y, out_integer);
-	write(fd, (char *) &out_integer, sizeof(int32));
-	write(fd, (char *) &out_integer, sizeof(int32));
-	write(fd, (char *) Z, out_integer);
-	write(fd, (char *) &out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) X, out_integer);
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) Y, out_integer);
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) Z, out_integer);
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
 
 	return(0);
 }
@@ -693,43 +693,43 @@ int write_dcdheader(int fd, char *filename, int N, int NSET, int ISTART,
 	char    time_str[11];
 
 	out_integer = 84;
-	write(fd, (char *) & out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) & out_integer, sizeof(int32));
 	strcpy(title_string, "CORD");
-	write(fd, title_string, 4);
+	NAMD_write(fd, title_string, 4);
 	out_integer = NSET;
-	write(fd, (char *) & out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) & out_integer, sizeof(int32));
 	out_integer = ISTART;
-	write(fd, (char *) & out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) & out_integer, sizeof(int32));
 	out_integer = NSAVC;
-	write(fd, (char *) & out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) & out_integer, sizeof(int32));
 	out_integer=0;
-	write(fd, (char *) &out_integer, sizeof(int32));
-	write(fd, (char *) &out_integer, sizeof(int32));
-	write(fd, (char *) &out_integer, sizeof(int32));
-	write(fd, (char *) &out_integer, sizeof(int32));
-	write(fd, (char *) &out_integer, sizeof(int32));
-	write(fd, (char *) &out_integer, sizeof(int32));
-	write(fd, (char *) &DELTA, sizeof(double));
-	write(fd, (char *) &out_integer, sizeof(int32));
-	write(fd, (char *) &out_integer, sizeof(int32));
-	write(fd, (char *) &out_integer, sizeof(int32));
-	write(fd, (char *) &out_integer, sizeof(int32));
-	write(fd, (char *) &out_integer, sizeof(int32));
-	write(fd, (char *) &out_integer, sizeof(int32));
-	write(fd, (char *) &out_integer, sizeof(int32));
-	write(fd, (char *) &out_integer, sizeof(int32));
-	write(fd, (char *) &out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) &DELTA, sizeof(double));
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
 	out_integer = 84;
-	write(fd, (char *) & out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) & out_integer, sizeof(int32));
 
 	out_integer = 164;
-	write(fd, (char *) & out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) & out_integer, sizeof(int32));
 	out_integer = 2;
-	write(fd, (char *) & out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) & out_integer, sizeof(int32));
 
 	sprintf(title_string, "REMARKS FILENAME=%s CREATED BY NAMD", filename);
 	pad(title_string, 80);
-	write(fd, title_string, 80);
+	NAMD_write(fd, title_string, 80);
 
 	user_id= (int) getuid();
 	pwbuf=getpwuid(user_id);
@@ -740,15 +740,15 @@ int write_dcdheader(int fd, char *filename, int N, int NSET, int ISTART,
 	sprintf(title_string, "REMARKS DATE: %s CREATED BY USER: %s",
 	   time_str, pwbuf->pw_name);
 	pad(title_string, 80);
-	write(fd, title_string, 80);
+	NAMD_write(fd, title_string, 80);
 	out_integer = 164;
-	write(fd, (char *) & out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) & out_integer, sizeof(int32));
 	out_integer = 4;
-	write(fd, (char *) & out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) & out_integer, sizeof(int32));
 	out_integer = N;
-	write(fd, (char *) & out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) & out_integer, sizeof(int32));
 	out_integer = 4;
-	write(fd, (char *) & out_integer, sizeof(int32));
+	NAMD_write(fd, (char *) & out_integer, sizeof(int32));
 
 	return(0);
 }
@@ -808,13 +808,16 @@ void close_dcd_write(int fd)
  * RCS INFORMATION:
  *
  *	$RCSfile: dcdlib.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1997/12/10 17:53:36 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.5 $	$Date: 1998/09/02 20:38:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: dcdlib.C,v $
+ * Revision 1.5  1998/09/02 20:38:37  jim
+ * Improved error checking on file output.
+ *
  * Revision 1.4  1997/12/10 17:53:36  milind
  * Removed the dcd file already exists error. Now, if a dcd file already exists,
  * it is moved to a .bak before writing new dcd file.

@@ -13,7 +13,7 @@
  * for a bit more information.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PDB.C,v 1.1004 1998/05/25 21:22:03 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PDB.C,v 1.1005 1998/09/02 20:38:30 jim Exp $";
 
 #include <stdio.h>
 #include <strings.h>
@@ -133,7 +133,9 @@ void PDB::write(const char *outfilename, const char *commentline)
 	if (fputs("END\n", outfile) == EOF) {
 	   NAMD_die("EOF in PDB::write while printing 'END' -- file system full?");
 	}
-	fclose(outfile);
+	if (fclose(outfile) == EOF) {
+	   NAMD_die("EOF in PDB::write while closing -- file system full?");
+	}
 	  
 }
 
@@ -416,12 +418,15 @@ main()
  *
  *	$RCSfile: PDB.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1998/05/25 21:22:03 $
+ *	$Revision: 1.1005 $	$Date: 1998/09/02 20:38:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PDB.C,v $
+ * Revision 1.1005  1998/09/02 20:38:30  jim
+ * Improved error checking on file output.
+ *
  * Revision 1.1004  1998/05/25 21:22:03  jim
  * Use 99% bounding box unless FMA is active.  Avoids huge number of
  * patches when a small number of atoms have drifted off.

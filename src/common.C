@@ -10,7 +10,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1013 1998/05/25 21:10:36 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.1014 1998/09/02 20:38:34 jim Exp $";
 
 #include "charm++.h"
 #include "converse.h"
@@ -85,6 +85,15 @@ void NAMD_die(char *err_msg)
    CmiAbort(err_msg);
 }
 
+
+// same as write, only does error checking internally
+void NAMD_write(int fd, const void *buf, size_t count)
+
+{
+   if ( write(fd,buf,count) < 0 ) {
+     NAMD_die("NAMD_write - write to file descriptor failed.");
+   }
+}
 
 //  NAMD_random returns a random number from 0.0 to 1.0.  It is really
 //  just used for portability so porting to machines with different
@@ -298,12 +307,15 @@ int	Fclose	(FILE *fout)
  *
  *	$RCSfile: common.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1998/05/25 21:10:36 $
+ *	$Revision: 1.1014 $	$Date: 1998/09/02 20:38:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.C,v $
+ * Revision 1.1014  1998/09/02 20:38:34  jim
+ * Improved error checking on file output.
+ *
  * Revision 1.1013  1998/05/25 21:10:36  jim
  * Started using CmiAbort().
  *
