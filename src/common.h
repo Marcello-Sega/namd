@@ -19,6 +19,10 @@
 #include <errno.h>
 #include "InfoStream.h"
 
+#ifdef T3E
+#include <fp.h>
+#endif
+
 //  Redefine new and delete if the MTS fast malloc is being used
 //#ifdef MTS
 #ifdef GLOBALS
@@ -248,13 +252,16 @@ int  Fclose(FILE *fout);
  * RCS INFORMATION:
  *
  *	$RCSfile: common.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/04/07 14:54:39 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1007 $	$Date: 1997/08/01 18:45:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.h,v $
+ * Revision 1.1007  1997/08/01 18:45:22  brunner
+ * Added #ifdef T3E, for T3E specific include
+ *
  * Revision 1.1006  1997/04/07 14:54:39  nealk
  * Changed fclose() to Fclose() (found in common.[Ch]) to use with popen().
  * Also corrected compilation warnings in Set.[Ch].
