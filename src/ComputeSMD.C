@@ -101,7 +101,7 @@ void ComputeSMD::doForce(Position* p, Results* res, AtomProperties* a)
 	      //  Loop through and multiple k by r consExp times.
 	      //  i.e.  calculate kr^e/e
 	      //  I know, I could use pow(), but I don't trust it.
-	      for (int k=0; k<consExp; ++k)
+	      for (int i=0; i<consExp; ++i)
 	      {
 		value *= r;
 	      }

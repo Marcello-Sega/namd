@@ -28,8 +28,8 @@ template <class T> class UniqueSetIter {
   
     UniqueSetIter(void) { us = NULL; eg = NULL; index = 0; }
 
-    UniqueSetIter(UniqueSet<T>& us) { 
-       this->us = &us; eg = us.rep->globHead; index = 0;
+    UniqueSetIter(UniqueSet<T>& us_param) { 
+       us = &us_param; eg = us_param.rep->globHead; index = 0;
     }
 
     UniqueSetIter(const UniqueSetIter<T>& iter) {

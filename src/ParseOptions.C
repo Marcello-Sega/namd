@@ -42,7 +42,7 @@ const char *string(Range r)
    }
 }
    
-static char *unit_string_array[N_UNITS_UNDEFINED+1] =  {
+static const char *unit_string_array[N_UNITS_UNDEFINED+1] =  {
   "", "fs", "ns", "sec", "min", "hr", "A", "nm", "m", 
   "kcal", "kJ", "eV", "K", "undefined units"
 };
@@ -1163,13 +1163,16 @@ Bool ParseOptions::units(const char *name, Units *units) // set
  * RCS INFORMATION:
  *
  *	$RCSfile: ParseOptions.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1999/07/01 21:01:20 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1011 $	$Date: 1999/07/08 21:26:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ParseOptions.C,v $
+ * Revision 1.1011  1999/07/08 21:26:57  jim
+ * Eliminated compiler warnings.
+ *
  * Revision 1.1010  1999/07/01 21:01:20  brunner
  * Removed definitions for default new() for Sun, and got rid of libc.h
  *

@@ -47,7 +47,7 @@ class NamdState {
     int configFileInit(char *);
     int status();
     void useController(Controller *controllerPtr);
-    void runController(int numberOfCycles = 0);
+    void runController(void);
 };
 
 #endif /* _NAMDSTATE_H */
@@ -57,12 +57,15 @@ class NamdState {
  *
  *	$RCSfile: NamdState.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1998/03/31 04:55:45 $
+ *	$Revision: 1.1009 $	$Date: 1999/07/08 21:26:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdState.h,v $
+ * Revision 1.1009  1999/07/08 21:26:55  jim
+ * Eliminated compiler warnings.
+ *
  * Revision 1.1008  1998/03/31 04:55:45  jim
  * Added test mode, fixed errors in virial with full electrostatics.
  *

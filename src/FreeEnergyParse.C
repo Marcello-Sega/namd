@@ -20,7 +20,7 @@
 #include "FreeEnergyParse.h"
 
 
-void ProblemParsing(char* Message, char* Str, Bool_t Terminate) {
+void ProblemParsing(const char* Message, const char* Str, Bool_t Terminate) {
 //----------------------------------------------------------------------------
 // print this message if there's a problem parsing
 //----------------------------------------------------------------------------
@@ -43,7 +43,7 @@ void ProblemParsing(char* Message, char* Str, Bool_t Terminate) {
 }
 
 
-void CheckParentheses(char* Str) {
+void CheckParentheses(const char* Str) {
 //----------------------------------------------------------------------------
 // check for balanced '(' ')' and '{' '}'
 //----------------------------------------------------------------------------
@@ -759,7 +759,7 @@ int ReadChar(char* Str, char Char, Bool_t ErrMsg) {
 }
 
 
-int ReadWord(char* Str, char* Word, Bool_t ErrMsg) {
+int ReadWord(const char* Str, const char* Word, Bool_t ErrMsg) {
 //----------------------------------------------------------------------------
 // Str should start with Word plus, perhaps, some extra alphabetic
 // characters, plus trailing white space.
@@ -773,7 +773,7 @@ int ReadWord(char* Str, char* Word, Bool_t ErrMsg) {
 //
 // Print an error message if ErrMsg is kTrue, and word is not read.
 //----------------------------------------------------------------------------
-  char*  FullString=Str;
+  const char*  FullString=Str;
   int    NumChars, StrLen;
   char   Message[64];
   
@@ -1393,14 +1393,14 @@ int IsAResidue(char* Str) {
 }
 
 
-int ReadParentheses(char* Str) {
+int ReadParentheses(const char* Str) {
 //-------------------------------------------------------------------
 // count the number of characters from the leading '('
 // to the first ')' of Str (inclusive).
 //     no leading '('  =>  return  0
 //     no closing ')'  =>  return -1
 //-------------------------------------------------------------------
-  char* Str2;
+  const char* Str2;
 
   if (Str[0] != '(') {
     return(0);
@@ -1413,7 +1413,7 @@ int ReadParentheses(char* Str) {
 }
 
 
-int ReadAlpha(char* Str) {
+int ReadAlpha(const char* Str) {
 //-------------------------------------------------------------------
 // determine the leading number of alphabetic characters in Str.
 //-------------------------------------------------------------------
@@ -1431,7 +1431,7 @@ int ReadAlpha(char* Str) {
 }
 
 
-int ReadAlphaNum(char* Str) {
+int ReadAlphaNum(const char* Str) {
 //-------------------------------------------------------------------
 // determine the leading number of alphanumeric characters in Str.
 //-------------------------------------------------------------------
@@ -1449,7 +1449,7 @@ int ReadAlphaNum(char* Str) {
 }
 
 
-int ReadDigits(char* Str) {
+int ReadDigits(const char* Str) {
 //-------------------------------------------------------------------
 // determine the leading number of numeric characters in Str.
 //-------------------------------------------------------------------
@@ -1467,7 +1467,7 @@ int ReadDigits(char* Str) {
 }
 
 
-int ReadWhite(char* Str) {
+int ReadWhite(const char* Str) {
 //-------------------------------------------------------------------
 // determine the leading number of white characters in Str.
 // a white char is:
@@ -1522,6 +1522,9 @@ void ToLower(char* Str) {
  * REVISION HISTORY:
  *
  * $Log: FreeEnergyParse.C,v $
+ * Revision 1.6  1999/07/08 21:26:44  jim
+ * Eliminated compiler warnings.
+ *
  * Revision 1.5  1999/04/06 20:29:37  hurwitz
  * read white-space at start of restraints file
  *

@@ -11,8 +11,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: ConfigList.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:12 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1999/07/08 21:26:38 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -43,6 +43,9 @@
  * REVISION HISTORY:
  *
  * $Log: ConfigList.h,v $
+ * Revision 1.1002  1999/07/08 21:26:38  jim
+ * Eliminated compiler warnings.
+ *
  * Revision 1.1001  1997/03/19 11:54:12  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.
@@ -159,13 +162,13 @@ class ConfigList {
         delete [] name;                  // delete the new'ed name
         name = NULL;
         next = NULL;
-        StringList *curr=data, *next=NULL;        // go through the string list
+        StringList *curr=data, *next_local=NULL;  // go through the string list
 
         while ( curr!=NULL ) 
 	{
-          next = curr -> next;           // and delete each element
+          next_local = curr->next;           // and delete each element
           delete curr;
-	  curr = next;
+	  curr = next_local;
         }
       }
     };
@@ -198,12 +201,15 @@ class ConfigList {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:12 $
+ *	$Revision: 1.1002 $	$Date: 1999/07/08 21:26:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ConfigList.h,v $
+ * Revision 1.1002  1999/07/08 21:26:38  jim
+ * Eliminated compiler warnings.
+ *
  * Revision 1.1001  1997/03/19 11:54:12  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

@@ -31,7 +31,7 @@ class Sequencer
 public:
     Sequencer(HomePatch *p);
     virtual ~Sequencer(void);
-    void run(int numberOfCycles);             // spawn thread, etc.
+    void run(void);             // spawn thread, etc.
     void awaken(void) { CthAwaken(thread); }
     void suspend(void) { CthSuspend(); }
 
@@ -65,7 +65,6 @@ protected:
 
     void terminate(void);
     SimParameters *const simParams;	// for convenience
-    int numberOfCycles;			// stores argument to run()
     HomePatch *const patch;		// access methods in patch
     SubmitReduction *reduction;
     CollectionMgr *const collection;
@@ -88,12 +87,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1024 $	$Date: 1999/06/17 15:46:20 $
+ *	$Revision: 1.1025 $	$Date: 1999/07/08 21:27:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.h,v $
+ * Revision 1.1025  1999/07/08 21:27:06  jim
+ * Eliminated compiler warnings.
+ *
  * Revision 1.1024  1999/06/17 15:46:20  jim
  * Completely rewrote reduction system to eliminate need for sequence numbers.
  *

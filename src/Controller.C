@@ -71,12 +71,8 @@ void Controller::threadRun(Controller* arg)
     arg->algorithm();
 }
 
-void Controller::run(int numberOfCycles)
+void Controller::run(void)
 {
-    this->numberOfCycles = numberOfCycles;
-    if ( numberOfCycles ) 
-      NAMD_die("Sorry, Controller::run() does not support an argument.\n");
-
     // create a Thread and invoke it
     DebugM(4, "Starting thread in controller on this=" << this << "\n");
     thread = CthCreate((CthVoidFn)&(threadRun),(void*)(this),CTRL_STK_SZ);
@@ -824,12 +820,15 @@ void Controller::terminate(void) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1073 $	$Date: 1999/07/06 20:32:42 $
+ *	$Revision: 1.1074 $	$Date: 1999/07/08 21:26:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1074  1999/07/08 21:26:39  jim
+ * Eliminated compiler warnings.
+ *
  * Revision 1.1073  1999/07/06 20:32:42  jim
  * Eliminated warnings from new generation of picky compilers.
  *

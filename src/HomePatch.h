@@ -56,7 +56,7 @@ public:
   // Bind a Sequencer to this HomePatch
   void useSequencer(Sequencer *sequencerPtr);
   // start simulation over this Patch of atoms
-  void runSequencer(int numberOfCycles = 0);
+  void runSequencer(void);
   
   //--------------------------------------------------------------------
   // methods for Sequencer to use
@@ -121,12 +121,15 @@ private:
  *
  *	$RCSfile: HomePatch.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1999/03/19 23:03:01 $
+ *	$Revision: 1.1019 $	$Date: 1999/07/08 21:26:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.1019  1999/07/08 21:26:52  jim
+ * Eliminated compiler warnings.
+ *
  * Revision 1.1018  1999/03/19 23:03:01  jim
  * Fixed bugs in constant pressure code.
  *

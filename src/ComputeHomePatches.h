@@ -48,16 +48,16 @@ class PatchElem {
     a = NULL;
   }
 
-  PatchElem(PatchID p) {
-    patchID = p;
+  PatchElem(PatchID p_param) {
+    patchID = p_param;
   }
 
-  PatchElem(Patch *p, ComputeID cid) {
-    patchID = p->getPatchID();
-    this->p = p;
-    positionBox = p->registerPositionPickup(cid);
-    forceBox = p->registerForceDeposit(cid);
-    atomBox = p->registerAtomPickup(cid);
+  PatchElem(Patch *p_param, ComputeID cid) {
+    patchID = p_param->getPatchID();
+    p = p_param;
+    positionBox = p_param->registerPositionPickup(cid);
+    forceBox = p_param->registerForceDeposit(cid);
+    atomBox = p_param->registerAtomPickup(cid);
     x = NULL;
     r = NULL;
     f = NULL;
@@ -66,12 +66,12 @@ class PatchElem {
     
   ~PatchElem() {};
 
-  int operator==(const PatchElem &a) const {
-    return (a.patchID == patchID);
+  int operator==(const PatchElem &elem) const {
+    return (elem.patchID == patchID);
   }
 
-  int operator<(const PatchElem &a) const {
-    return (patchID < a.patchID);
+  int operator<(const PatchElem &elem) const {
+    return (patchID < elem.patchID);
   }
 };
 
@@ -99,12 +99,15 @@ public:
  *
  *	$RCSfile: ComputeHomePatches.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1999/06/17 15:46:07 $
+ *	$Revision: 1.1006 $	$Date: 1999/07/08 21:26:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomePatches.h,v $
+ * Revision 1.1006  1999/07/08 21:26:34  jim
+ * Eliminated compiler warnings.
+ *
  * Revision 1.1005  1999/06/17 15:46:07  jim
  * Completely rewrote reduction system to eliminate need for sequence numbers.
  *

@@ -31,7 +31,7 @@ class Controller
 public:
     Controller(NamdState *s);
     virtual ~Controller(void);
-    void run(int numberOfCycles);             // spawn thread, etc.
+    void run(void);             // spawn thread, etc.
     void awaken(void) { CthAwaken(thread); };
 
 protected:
@@ -73,7 +73,6 @@ protected:
     void terminate(void);
 
     SimParameters *const simParams;	// for convenience
-    int numberOfCycles;			// stores argument to run()
     NamdState *const state;		// access data in state
     RequireReduction *reduction;
     CollectionMaster *const collection;
@@ -98,12 +97,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1023 $	$Date: 1999/06/17 15:46:16 $
+ *	$Revision: 1.1024 $	$Date: 1999/07/08 21:26:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.h,v $
+ * Revision 1.1024  1999/07/08 21:26:43  jim
+ * Eliminated compiler warnings.
+ *
  * Revision 1.1023  1999/06/17 15:46:16  jim
  * Completely rewrote reduction system to eliminate need for sequence numbers.
  *

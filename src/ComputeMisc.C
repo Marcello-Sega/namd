@@ -47,12 +47,12 @@ void ComputeMisc::easy_init(const char *config) {
 */
 
 void ComputeMisc::easy_calc() {
-  Vector p;
+  Vector myp;
   BigReal k = 10.0;
-  getPosition(0,p);
-  iout << iINFO << "Atom 0 is at " << p << "\n" << endi;
-  addForce(0,-k * p);
-  addEnergy(0.5 * k * p.length2());
+  getPosition(0,myp);
+  iout << iINFO << "Atom 0 is at " << myp << "\n" << endi;
+  addForce(0,-k * myp);
+  addEnergy(0.5 * k * myp.length2());
 }
 
 

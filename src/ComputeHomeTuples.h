@@ -66,12 +66,12 @@ class TuplePatchElem {
     a = NULL;
   }
 
-  TuplePatchElem(Patch *p, ComputeID cid) {
-    patchID = p->getPatchID();
-    this->p = p;
-    positionBox = p->registerPositionPickup(cid);
-    forceBox = p->registerForceDeposit(cid);
-    atomBox = p->registerAtomPickup(cid);
+  TuplePatchElem(Patch *p_param, ComputeID cid) {
+    patchID = p_param->getPatchID();
+    p = p_param;
+    positionBox = p_param->registerPositionPickup(cid);
+    forceBox = p_param->registerForceDeposit(cid);
+    atomBox = p_param->registerAtomPickup(cid);
     x = NULL;
     r = NULL;
     f = NULL;
@@ -80,12 +80,12 @@ class TuplePatchElem {
     
   ~TuplePatchElem() {};
 
-  int operator==(const TuplePatchElem &a) const {
-    return (a.patchID == patchID);
+  int operator==(const TuplePatchElem &elem) const {
+    return (elem.patchID == patchID);
   }
 
-  int operator<(const TuplePatchElem &a) const {
-    return (patchID < a.patchID);
+  int operator<(const TuplePatchElem &elem) const {
+    return (patchID < elem.patchID);
   }
 };
 

@@ -40,7 +40,7 @@ protected:
 
 public:
   double overLoad;
-  char *strategyName;
+  const char *strategyName;
   Rebalancer() {}
   ~Rebalancer();
   Rebalancer(computeInfo *computeArray, patchInfo *patchArray,

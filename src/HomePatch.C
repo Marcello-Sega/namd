@@ -37,7 +37,7 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1052 1999/05/11 23:56:31 brunner Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1053 1999/07/08 21:26:48 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, TransformList tl,
       PositionList pl, VelocityList vl) : Patch(pd,al,pl), v(vl), t(tl)
@@ -66,9 +66,10 @@ HomePatch::HomePatch(PatchID pd, AtomIDList al, TransformList tl,
 // Bind a Sequencer to this HomePatch
 void HomePatch::useSequencer(Sequencer *sequencerPtr)
 { sequencer=sequencerPtr; }
+
 // start simulation over this Patch of atoms
-void HomePatch::runSequencer(int numberOfCycles)
-{ sequencer->run(numberOfCycles); }
+void HomePatch::runSequencer(void)
+{ sequencer->run(); }
 
 void
 HomePatch::readPatchMap() {
@@ -729,13 +730,16 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1052 $	$Date: 1999/05/11 23:56:31 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1053 $	$Date: 1999/07/08 21:26:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1053  1999/07/08 21:26:48  jim
+ * Eliminated compiler warnings.
+ *
  * Revision 1.1052  1999/05/11 23:56:31  brunner
  * Changes for new charm version
  *

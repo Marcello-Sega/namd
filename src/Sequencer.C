@@ -55,12 +55,8 @@ void Sequencer::threadRun(Sequencer* arg)
 }
 
 // Invoked by Node::run() via HomePatch::runSequencer()
-void Sequencer::run(int numberOfCycles)
+void Sequencer::run(void)
 {
-    this->numberOfCycles = numberOfCycles;
-    if ( numberOfCycles ) 
-      NAMD_die("Sorry, Sequencer::run() does not support an argument.\n");
-
     // create a Thread and invoke it
     DebugM(4, "::run() - this = " << this << "\n" );
     thread = CthCreate((CthVoidFn)&(threadRun),(void*)(this),SEQ_STK_SZ);
@@ -617,12 +613,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1066 $     $Date: 1999/07/06 20:32:44 $
+ *      $Revision: 1.1067 $     $Date: 1999/07/08 21:27:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1067  1999/07/08 21:27:02  jim
+ * Eliminated compiler warnings.
+ *
  * Revision 1.1066  1999/07/06 20:32:44  jim
  * Eliminated warnings from new generation of picky compilers.
  *

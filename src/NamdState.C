@@ -78,9 +78,9 @@ void NamdState:: useController(Controller *controllerPtr)
   controller=controllerPtr;
 }
 
-void NamdState:: runController(int numberOfCycles)
+void NamdState:: runController(void)
 {
-  controller->run(numberOfCycles);
+  controller->run();
 }
 
 extern void read_binary_coors(char *fname, PDB *pdbobj);
@@ -280,12 +280,15 @@ NamdState::configFileInit(char *confFile)
  *
  *	$RCSfile: NamdState.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1999/03/09 01:44:15 $
+ *	$Revision: 1.1019 $	$Date: 1999/07/08 21:26:54 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdState.C,v $
+ * Revision 1.1019  1999/07/08 21:26:54  jim
+ * Eliminated compiler warnings.
+ *
  * Revision 1.1018  1999/03/09 01:44:15  jim
  * Added langevinDamping and langevinHydrogen parameters.
  *
