@@ -77,6 +77,12 @@ void ComputeNonbondedSelf::doForce(CompAtom* p,
     params.maxPart = maxPart;
     params.numParts = numParts;
 
+    params.pairlists = &pairlists;
+    // params.savePairlists = 0;
+    // params.usePairlists = 0;
+    params.savePairlists = patch->flags.savePairlists;
+    params.usePairlists = patch->flags.usePairlists;
+
     if ( patch->flags.doFullElectrostatics )
     {
       params.fullf[0] = r->f[Results::slow];

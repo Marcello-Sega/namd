@@ -161,7 +161,7 @@ void Sequencer::integrate() {
 
     rattle1(0.,0);  // enforce rigid bond constraints on initial positions
     doEnergy = ! ( step % energyFrequency );
-    runComputeObjects(1); // must migrate here!
+    runComputeObjects(1,step<numberOfSteps); // must migrate here!
     if ( staleForces ) {
       if ( doNonbonded ) saveForce(Results::nbond);
       if ( doFullElectrostatics ) saveForce(Results::slow);
@@ -238,7 +238,7 @@ void Sequencer::integrate() {
 
 	// Migrate Atoms on stepsPerCycle
         doEnergy = ! ( step % energyFrequency );
-	runComputeObjects(!(step%stepsPerCycle));
+	runComputeObjects(!(step%stepsPerCycle),step<numberOfSteps);
 	if ( staleForces ) {
 	  if ( doNonbonded ) saveForce(Results::nbond);
 	  if ( doFullElectrostatics ) saveForce(Results::slow);
@@ -359,7 +359,7 @@ void Sequencer::minimize() {
   int &doEnergy = patch->flags.doEnergy;
   doEnergy = 1;
 
-  runComputeObjects(1); // must migrate here!
+  runComputeObjects(1,0); // must migrate here!
 
   submitMinimizeReductions(step);
   rebalanceLoad(step);
@@ -374,7 +374,7 @@ void Sequencer::minimize() {
     }  // same direction
     newMinimizePosition(c);  // x = x + c * v
 
-    runComputeObjects(1);
+    runComputeObjects(1,0);
     submitMinimizeReductions(step);
     submitCollections(step);
     rebalanceLoad(step);
@@ -1086,10 +1086,16 @@ void Sequencer::submitCollections(int step)
     collection->submitVelocities(step,patch->atom);
 }
 
-void Sequencer::runComputeObjects(int migration)
+void Sequencer::runComputeObjects(int migration, int pairlists)
 {
+  if ( migration ) pairlistsAreValid = 0;
+  if ( ! simParams->usePairlists ) pairlists = 0;
+  patch->flags.usePairlists = pairlists || pairlistsAreValid;
+  patch->flags.savePairlists =
+	pairlists && ! pairlistsAreValid;
   patch->positionsReady(migration);
   suspend(); // until all deposit boxes close
+  if ( patch->flags.savePairlists ) pairlistsAreValid = 1;
   if ( patch->flags.doMolly ) {
     Tensor virial;
     patch->mollyMollify(&virial);
@@ -1104,6 +1110,7 @@ void Sequencer::rebalanceLoad(int timestep) {
   if ( ! --ldbSteps ) {
     patch->submitLoadStats(timestep);
     ldbCoordinator->rebalance(this,patch->getPatchID());
+    pairlistsAreValid = 0;
   }
 }
 

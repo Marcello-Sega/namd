@@ -28,6 +28,8 @@ Bool		ComputeNonbondedUtil::fixedAtomsOn;
 Real            ComputeNonbondedUtil::cutoff;
 BigReal         ComputeNonbondedUtil::cutoff2;
 BigReal         ComputeNonbondedUtil::groupcutoff2;
+BigReal         ComputeNonbondedUtil::plcutoff2;
+BigReal         ComputeNonbondedUtil::groupplcutoff2;
 BigReal         ComputeNonbondedUtil::dielectric_1;
 const LJTable*  ComputeNonbondedUtil::ljTable = 0;
 const Molecule* ComputeNonbondedUtil::mol;
@@ -143,6 +145,8 @@ void ComputeNonbondedUtil::select(void)
 
   cutoff = simParams->cutoff;
   cutoff2 = cutoff*cutoff;
+  BigReal plcutoff = simParams->pairlistDist;
+  plcutoff2 = plcutoff*plcutoff;
 
 //fepb
   fepOn = simParams->fepOn;
@@ -258,6 +262,7 @@ void ComputeNonbondedUtil::select(void)
   // don't know why...ask jim... :-)
   const BigReal &hcutoff = simParams->hgroupCutoff;
   groupcutoff2 = (cutoff+hcutoff)*(cutoff+hcutoff);
+  groupplcutoff2 = (plcutoff+hcutoff)*(plcutoff+hcutoff);
 
   dielectric_1 = 1.0/simParams->dielectric;
   if ( ! ljTable ) ljTable = new LJTable;

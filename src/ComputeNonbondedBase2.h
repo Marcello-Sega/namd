@@ -22,7 +22,8 @@ NORMAL( MODIFIED( foo bar ) )
       r2 += p_ij_z * p_ij_z;
 
       r2f[k] = r2;
-      const int table_i = ((*((int32 *)&r2f[k])) >> 17) + r2_delta_expc;
+      int table_i = ((*((int32 *)&r2f[k])) >> 17) + r2_delta_expc;
+      if ( r2 < r2_delta ) { table_i = 0; r2f[k] = r2_delta; }
 
       FAST(
       const LJTable::TableEntry * lj_pars = 

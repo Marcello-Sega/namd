@@ -34,7 +34,8 @@ protected:
     void integrate(); // Verlet integrator
     void minimize(); // CG minimizer
 
-    void runComputeObjects(int migration = 0);
+    void runComputeObjects(int migration = 1, int pairlists = 0);
+    int pairlistsAreValid;
 
     void submitReductions(int);
     void submitHalfstep(int);

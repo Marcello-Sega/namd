@@ -16,6 +16,43 @@
 class LJTable;
 class Molecule;
 
+typedef unsigned short plint;
+
+class Pairlists {
+  enum {initsize = 10};
+  plint *data;
+  int curpos;
+  int size;
+  Pairlists(const Pairlists&) { ; }
+  Pairlists& operator=(const Pairlists&) { return *this; }
+public:
+  Pairlists() : size(initsize) { data = new plint[initsize]; }
+  ~Pairlists() { delete [] data; }
+  plint *newlist(int max_size) {  // get a new list w/ room for max_size
+    int reqnewsize = curpos + max_size + 1;
+    int newsize = size;
+    while ( newsize < reqnewsize ) { newsize *= 1.5; }
+    if ( newsize > size ) {
+      plint *newdata = new plint[newsize];
+      memcpy(newdata,data,curpos*sizeof(plint));
+      delete [] data;
+      data = newdata;
+      size = newsize;
+    }
+    return &data[curpos+1];
+  }
+  void newsize(int list_size) {  // set the size of the last list gotten
+    data[curpos] = list_size;
+    curpos += list_size + 1;
+  }
+  void reset() { curpos = 0; }  // go back to the beginning
+  void nextlist(plint **list, int *list_size) {  // get next list and size
+    *list = &data[curpos+1];
+    curpos += ( *list_size = data[curpos] ) + 1;
+  }
+};
+
+
 // function arguments
 struct nonbonded {
   CompAtom* p[2];
@@ -23,20 +60,18 @@ struct nonbonded {
   // for full electrostatics
   Force* fullf [2];
 
-  // used by pair and self
   int numAtoms[2];
+
   BigReal *reduction;
   BigReal *pressureProfileReduction;
 
-  // used by excl
-  Position p_ij;
-  int m14;
+  Pairlists *pairlists;
+  int savePairlists;
+  int usePairlists;
 
-  // used by self
   int minPart;
   int maxPart;
   int numParts;
-
 };
 
 class ComputeNonbondedUtil {
@@ -83,6 +118,8 @@ public:
   static Real cutoff;
   static BigReal cutoff2;
   static BigReal groupcutoff2;
+  static BigReal plcutoff2;
+  static BigReal groupplcutoff2;
   static BigReal dielectric_1;
   static const LJTable* ljTable;
   static const Molecule* mol;

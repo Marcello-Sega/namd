@@ -149,6 +149,12 @@ void ComputeNonbondedUtil :: NAME
   BigReal *pressureProfileReduction = params->pressureProfileReduction;
   )
 
+  Pairlists &pairlists = *(params->pairlists);
+  int savePairlists = params->savePairlists;
+  int usePairlists = params->usePairlists;
+  pairlists.reset();
+  // PAIR(iout << "--------\n" << endi;)
+
   // local variables
   int exclChecksum = 0;
   FAST
@@ -195,8 +201,10 @@ void ComputeNonbondedUtil :: NAME
 
   // Bringing stuff into local namespace for speed.
 
-  register const BigReal cutoff2 = ComputeNonbondedUtil:: cutoff2;
-  register const BigReal groupcutoff2 = ComputeNonbondedUtil:: groupcutoff2;
+  register const BigReal cutoff2 = ( savePairlists ? plcutoff2 :
+				ComputeNonbondedUtil:: cutoff2 );
+  register const BigReal groupcutoff2 = ( savePairlists ? groupplcutoff2 :
+				ComputeNonbondedUtil:: groupcutoff2 );
   const BigReal dielectric_1 = ComputeNonbondedUtil:: dielectric_1;
   const LJTable* const ljTable = ComputeNonbondedUtil:: ljTable;
   LJTable::TableEntry ljNull;  ljNull.A = 0; ljNull.B = 0;
@@ -236,15 +244,44 @@ void ComputeNonbondedUtil :: NAME
   const CompAtom *p_0 = params->p[0];
   const CompAtom *p_1 = params->p[1];
 
-  int grouplist_std[1005];
-  int fixglist_std[1005];  // list of non-fixed groups if fixedAtomsOn
-  int goodglist_std[1005];
-  int *const grouplist = (j_upper < 1000 ? grouplist_std : new int[j_upper+5]);
-  int *const fixglist = (j_upper < 1000 ? fixglist_std : new int[j_upper+5]);
-  int *const goodglist = (j_upper < 1000 ? goodglist_std : new int[j_upper+5]);
+  plint grouplist_std[1005];
+  plint fixglist_std[1005];  // list of non-fixed groups if fixedAtomsOn
+  plint goodglist_std[1005];
+  plint pairlistx_std[1005];
+  plint pairlistm_std[1005];
+  plint pairlist_std[1005];
+  plint pairlist2_std[1005];
+  plint pairlisti_std[1005];
+
+  plint *grouplist = grouplist_std;
+  plint *fixglist = fixglist_std;
+  plint *goodglist = goodglist_std;
+  plint *pairlistx = pairlistx_std;
+  plint *pairlistm = pairlistm_std;
+  plint *pairlist = pairlist_std;
+  plint *pairlist2 = pairlist2_std;
+  plint *pairlistn_save;  int npairn;
+  plint *pairlistx_save;  int npairx;
+  plint *pairlistm_save;  int npairm;
+  plint *pairlisti = ( j_upper >= 1000 ? new plint[j_upper+5] : pairlisti_std );
 
   float r2f_std[1005];
   float *r2f = (j_upper < 1000 ? r2f_std : new float[j_upper+5]);
+
+  int fixg_upper = 0;
+  int g_upper = 0;
+
+  if ( savePairlists || ! usePairlists ) {
+
+  if ( j_upper >= 1000 ) {
+    grouplist = new plint[j_upper+5];
+    fixglist = new plint[j_upper+5];
+    goodglist = new plint[j_upper+5];
+    pairlistx = new plint[j_upper+5];
+    pairlistm = new plint[j_upper+5];
+    pairlist = new plint[j_upper+5];
+    pairlist2 = new plint[j_upper+5];
+  }
 
   register int g = 0;
   for ( j = 0; j < j_upper; ++j ) {
@@ -252,37 +289,34 @@ void ComputeNonbondedUtil :: NAME
       grouplist[g++] = j;
     }
   }
-  const int g_upper = g;
+  g_upper = g;
   if ( g_upper ) grouplist[g_upper] = grouplist[g_upper-1];
   int fixg = 0;
 
-  // check for all fixed atoms
   if ( fixedAtomsOn ) {
-    register int all_fixed = 1;
     for ( g = 0; g < g_upper; ++g ) {
       j = grouplist[g];
       if ( ! p_1[j].groupFixed ) {
-        all_fixed = 0;
         fixglist[fixg++] = j;
       }
     }
-    PAIR
-    (
-    for ( i = 0; all_fixed && i < i_upper; ++i ) {
-      if ( ! p_0[i].atomFixed ) all_fixed = 0;
-    }
-    )
-    if ( all_fixed ) {
-      if (grouplist != grouplist_std) delete [] grouplist;
-      if (fixglist != fixglist_std) delete [] fixglist;
-      if (goodglist != goodglist_std) delete [] goodglist;
-      if (r2f != r2f_std) delete [] r2f;
-      return;
-    }
   }
 
-  const int fixg_upper = fixg;
+  fixg_upper = fixg;
   if ( fixg_upper ) fixglist[fixg_upper] = fixglist[fixg_upper-1];
+
+  *(pairlists.newlist(1)) = i_upper;
+  pairlists.newsize(1);
+
+  } else { // if ( savePairlists || ! usePairlists )
+
+    plint *i_upper_check;
+    int i_upper_check_count;
+    pairlists.nextlist(&i_upper_check,&i_upper_check_count);
+    if ( i_upper_check[0] != i_upper )
+      NAMD_bug("pairlist i_upper mismatch!");
+
+  } // if ( savePairlists || ! usePairlists )
 
   SELF(
   int j_hgroup = 0;
@@ -291,16 +325,6 @@ void ComputeNonbondedUtil :: NAME
   )
   int pairlistindex=0;
   int pairlistoffset=0;
-  int pairlist_std[1005];  // pad 1 + 4 for nonbonded group runover
-  int pairlist2_std[1005];  // pad 1 + 4 for nonbonded group runover
-  int pairlistn_std[1005];  // pad 1 + 4 for nonbonded group runover
-  int pairlistx_std[1005];  // pad 1 + 4 for nonbonded group runover
-  int pairlistm_std[1005];  // pad 1 + 4 for nonbonded group runover
-  int *const pairlist = (j_upper < 1000 ? pairlist_std : new int[j_upper+5]);
-  int *const pairlist2 = (j_upper < 1000 ? pairlist2_std : new int[j_upper+5]);
-  int *const pairlistn = (j_upper < 1000 ? pairlistn_std : new int[j_upper+5]);
-  int *const pairlistx = (j_upper < 1000 ? pairlistx_std : new int[j_upper+5]);
-  int *const pairlistm = (j_upper < 1000 ? pairlistm_std : new int[j_upper+5]);
 
   SHORT
   (
@@ -324,24 +348,12 @@ void ComputeNonbondedUtil :: NAME
 
   for ( i = 0; i < (i_upper SELF(- 1)); ++i )
   {
+	// PAIR( iout << i << " " << i_upper << " start\n" << endi;)
     const CompAtom &p_i = p_0[i];
-    const ExclusionCheck *exclcheck = mol->get_excl_check_for_atom(p_i.id);
-    const int excl_min = exclcheck->min;
-    const int excl_max = exclcheck->max;
-    const char * const excl_flags = exclcheck->flags - excl_min;
     register const BigReal p_i_x = p_i.position.x;
     register const BigReal p_i_y = p_i.position.y;
     register const BigReal p_i_z = p_i.position.z;
 
-    SHORT( FAST( BigReal & f_i_x = f_0[i].x; ) )
-    SHORT( FAST( BigReal & f_i_y = f_0[i].y; ) )
-    SHORT( FAST( BigReal & f_i_z = f_0[i].z; ) )
-    FULL( BigReal & fullf_i_x = fullf_0[i].x; )
-    FULL( BigReal & fullf_i_y = fullf_0[i].y; )
-    FULL( BigReal & fullf_i_z = fullf_0[i].z; )
-
-  if (p_i.hydrogenGroupSize || p_i.nonbondedGroupIsAtom)
-    {
     if ( p_i.hydrogenGroupSize ) {
       int64 opc = pairCount;
       int hgs = p_i.hydrogenGroupSize;
@@ -359,6 +371,17 @@ void ComputeNonbondedUtil :: NAME
         continue;
       }
     }
+
+  if ( savePairlists || ! usePairlists ) {
+
+    if ( ! savePairlists ) pairlists.reset();  // limit space usage
+
+    const ExclusionCheck *exclcheck = mol->get_excl_check_for_atom(p_i.id);
+    const int excl_min = exclcheck->min;
+    const int excl_max = exclcheck->max;
+    const char * const excl_flags = exclcheck->flags - excl_min;
+
+  if (p_i.hydrogenGroupSize || p_i.nonbondedGroupIsAtom) {
 
     pairlistindex = 0;	// initialize with 0 elements
     pairlistoffset=0;
@@ -386,14 +409,14 @@ void ComputeNonbondedUtil :: NAME
     )
 
     // add remaining atoms to pairlist via hydrogen groups
-    register int *pli = pairlist + pairlistindex;
+    register plint *pli = pairlist + pairlistindex;
 
     {
-      register int *gli = goodglist;
-      const int *glist = ( groupfixed ? fixglist : grouplist );
+      register plint *gli = goodglist;
+      const plint *glist = ( groupfixed ? fixglist : grouplist );
       SELF( const int gl = ( groupfixed ? fixg_lower : g_lower ); )
       const int gu = ( groupfixed ? fixg_upper : g_upper );
-      g = PAIR(0) SELF(gl);
+      register int g = PAIR(0) SELF(gl);
       if ( g < gu ) {
        int j2 = glist[g];
        BigReal p_j_x = p_1[j2].position.x;
@@ -434,11 +457,11 @@ void ComputeNonbondedUtil :: NAME
     // make sure padded element on pairlist points to real data
     if ( pairlistindex ) {
        pairlist[pairlistindex] = pairlist[pairlistindex-1];
-    } PAIR( else {  // skip empty loops if no pairs were found
+    } /* PAIR( else {  // skip empty loops if no pairs were found
        int hgs = ( p_i.nonbondedGroupIsAtom ? 1 : p_i.hydrogenGroupSize );
        i += hgs - 1;
        continue;
-    } )
+    } ) */
   } // if i is hydrogen group parent
   SELF
     (
@@ -449,18 +472,10 @@ void ComputeNonbondedUtil :: NAME
 
     const int atomfixed = ( fixedAtomsOn && p_i.atomFixed );
 
-    FEP( BigReal *lambda_table_i = lambda_table + 6 * p_i.partition; )
-
-    LES( BigReal *lambda_table_i =
-			lambda_table + (lesFactor+1) * p_i.partition; )
-
-
-    const BigReal kq_i = COLOUMB * p_i.charge * scaling * dielectric_1;
-    const LJTable::TableEntry * const lj_row =
-		ljTable->table_row(mol->atomvdwtype(p_i.id));
-
-    register int *pli = pairlist2;
-    register int *plin = pairlistn;
+    register plint *pli = pairlist2;
+    plint *pairlistn = pairlists.newlist(j_upper + 5 + 1 + 5) SELF(+ 1);
+    SELF( plint &pairlistn_skip = *(pairlistn-1); )
+    register plint *plin = pairlistn;
 
     INT(
     if ( pairInteractionOn ) {
@@ -499,8 +514,7 @@ void ComputeNonbondedUtil :: NAME
         BigReal p_j_z = p_1[j].position.z;
 	t2 = p_i_z - p_j_z;
 	r2 += t2 * t2;
-	if ( ( ! (atomfixed && p_1[j].atomFixed) ) &&
-	     (r2 <= cutoff2) && ! ((r2 <= r2_delta) && ++exclChecksum) ) {
+	if ( ( ! (atomfixed && p_1[j].atomFixed) ) && (r2 <= cutoff2) ) {
           int atom2 = p_1[j].id;
           if ( atom2 >= excl_min && atom2 <= excl_max ) *(pli++) = j;
           else *(plin++) = j;
@@ -520,8 +534,7 @@ void ComputeNonbondedUtil :: NAME
         BigReal p_j_z = p_1[j].position.z;
 	t2 = p_i_z - p_j_z;
 	r2 += t2 * t2;
-	if ( (! p_1[j].atomFixed) &&
-	     (r2 <= cutoff2) && ! ((r2 <= r2_delta) && ++exclChecksum) ) {
+	if ( (! p_1[j].atomFixed) && (r2 <= cutoff2) ) {
           int atom2 = p_1[j].id;
           if ( atom2 >= excl_min && atom2 <= excl_max ) *(pli++) = j;
           else *(plin++) = j;
@@ -548,7 +561,7 @@ void ComputeNonbondedUtil :: NAME
 	t2 = p_i_z - p_j_z;
 	r2 += t2 * t2;
         p_j_z = p_1[j2].position.z;
-	if ( (r2 <= cutoff2) && ! ((r2 <= r2_delta) && ++exclChecksum) ) {
+	if (r2 <= cutoff2) {
           if ( atom2 >= excl_min && atom2 <= excl_max ) *(pli++) = j;
           else *(plin++) = j;
         }
@@ -559,14 +572,15 @@ void ComputeNonbondedUtil :: NAME
     int npair2 = pli - pairlist2;
     if ( npair2 ) pairlist2[npair2] = pairlist2[npair2-1];
 
-    int *plix = pairlistx;
-    int *plim = pairlistm;
-    int *pln = pairlistn;
+    plint *plix = pairlistx;
+    plint *plim = pairlistm;
+    plint *pln = pairlistn;
     int k=0;
     SELF(
     for (; pln < plin && *pln < j_hgroup; ++pln) {
       *(plix++) = *pln;  --exclChecksum;
     }
+    pairlistn_skip = pln - pairlistn;
     for (; k < npair2 && pairlist2[k] < j_hgroup; ++k) {
       *(plix++) = pairlist2[k];  --exclChecksum;
     }
@@ -584,11 +598,72 @@ void ComputeNonbondedUtil :: NAME
     exclChecksum += (plix - pairlistx);
     exclChecksum += (plim - pairlistm);
 
-    int npairi;
-    int *pairlisti;
+    npairn = plin - pln;
+    pairlistn_save = pln;
+    pairlistn_save[npairn] = npairn ? pairlistn_save[npairn-1] : -1;
+    pairlists.newsize(plin - pairlistn SELF(+ 1) + 1);
 
-    npairi = plin - pln;
-    pairlisti = pln;
+    npairx = plix - pairlistx;
+    pairlistx_save = pairlists.newlist(npairx + 1);
+    for ( k=0; k<npairx; ++k ) {
+      pairlistx_save[k] = pairlistx[k];
+    }
+    pairlistx_save[k] = k ? pairlistx_save[k-1] : -1;
+    pairlists.newsize(npairx + 1);
+
+    npairm = plim - pairlistm;
+    pairlistm_save = pairlists.newlist(npairm + 1);
+    for ( k=0; k<npairm; ++k ) {
+      pairlistm_save[k] = pairlistm[k];
+    }
+    pairlistm_save[k] = k ? pairlistm_save[k-1] : -1;
+    pairlists.newsize(npairm + 1);
+
+	// PAIR( iout << i << " " << i_upper << " save\n" << endi;)
+  } else { // if ( savePairlists || ! usePairlists )
+	// PAIR( iout << i << " " << i_upper << " use\n" << endi;)
+
+    pairlists.nextlist(&pairlistn_save,&npairn);  --npairn;
+    //if ( npairn > 1000 )
+//	iout << i << " " << i_upper << " " << npairn << " n\n" << endi;
+    SELF(
+    int pairlistn_skip = *pairlistn_save;
+    pairlistn_save += (pairlistn_skip + 1);
+    npairn -= (pairlistn_skip + 1);
+    )
+    pairlists.nextlist(&pairlistx_save,&npairx);  --npairx;
+    //if ( npairx > 1000 )
+//	iout << i << " " << i_upper << " " << npairx << " x\n" << endi;
+    // exclChecksum += npairx;
+    pairlists.nextlist(&pairlistm_save,&npairm);  --npairm;
+    //if ( npairm > 1000 )
+//	iout << i << " " << i_upper << " " << npairm << " m\n" << endi;
+    // exclChecksum += npairm;
+
+  } // if ( savePairlists || ! usePairlists )
+
+    FEP( BigReal *lambda_table_i = lambda_table + 6 * p_i.partition; )
+
+    LES( BigReal *lambda_table_i =
+			lambda_table + (lesFactor+1) * p_i.partition; )
+
+
+    const BigReal kq_i = COLOUMB * p_i.charge * scaling * dielectric_1;
+    const LJTable::TableEntry * const lj_row =
+		ljTable->table_row(mol->atomvdwtype(p_i.id));
+
+    SHORT( FAST( BigReal & f_i_x = f_0[i].x; ) )
+    SHORT( FAST( BigReal & f_i_y = f_0[i].y; ) )
+    SHORT( FAST( BigReal & f_i_z = f_0[i].z; ) )
+    FULL( BigReal & fullf_i_x = fullf_0[i].x; )
+    FULL( BigReal & fullf_i_y = fullf_0[i].y; )
+    FULL( BigReal & fullf_i_z = fullf_0[i].z; )
+
+    int npairi;
+    int k;
+
+    npairi = pairlist_from_pairlist(ComputeNonbondedUtil:: cutoff2,
+	p_i_x, p_i_y, p_i_z, p_1, pairlistn_save, npairn, pairlisti);
 
 #define NORMAL(X) X
 #define EXCLUDED(X)
@@ -598,8 +673,9 @@ void ComputeNonbondedUtil :: NAME
 #undef EXCLUDED
 #undef MODIFIED
 
-    npairi = plim - pairlistm;
-    pairlisti = pairlistm;
+    npairi = pairlist_from_pairlist(ComputeNonbondedUtil:: cutoff2,
+	p_i_x, p_i_y, p_i_z, p_1, pairlistm_save, npairm, pairlisti);
+    exclChecksum -= npairm - npairi;
 
 #define NORMAL(X)
 #define EXCLUDED(X)
@@ -610,8 +686,9 @@ void ComputeNonbondedUtil :: NAME
 #undef MODIFIED
 
 #ifdef FULLELECT
-    npairi = plix - pairlistx;
-    pairlisti = pairlistx;
+    npairi = pairlist_from_pairlist(ComputeNonbondedUtil:: cutoff2,
+	p_i_x, p_i_y, p_i_z, p_1, pairlistx_save, npairx, pairlisti);
+    exclChecksum -= npairx - npairi;
 
 #undef FAST
 #define FAST(X)
@@ -630,16 +707,20 @@ void ComputeNonbondedUtil :: NAME
 #undef MODIFIED
 #endif
 
+	// PAIR( iout << i << " " << i_upper << " end\n" << endi;)
   } // for i
+
+  // PAIR(iout << "++++++++\n" << endi;)
+
   if (grouplist != grouplist_std) delete [] grouplist;
   if (fixglist != fixglist_std) delete [] fixglist;
   if (goodglist != goodglist_std) delete [] goodglist;
   if (r2f != r2f_std) delete [] r2f;
   if (pairlist != pairlist_std) delete [] pairlist;
   if (pairlist2 != pairlist2_std) delete [] pairlist2;
-  if (pairlistn != pairlistn_std) delete [] pairlistn;
   if (pairlistx != pairlistx_std) delete [] pairlistx;
   if (pairlistm != pairlistm_std) delete [] pairlistm;
+  if (pairlisti != pairlisti_std) delete [] pairlisti;
 
   reduction[exclChecksumIndex] += exclChecksum;
   FAST

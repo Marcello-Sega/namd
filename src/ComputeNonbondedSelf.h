@@ -27,6 +27,8 @@ protected :
   SubmitReduction *pressureProfileReduction;
   BigReal *pressureProfileData;
 
+  Pairlists pairlists;
+
   int minPart, maxPart, numParts;
 
 };

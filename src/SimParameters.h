@@ -161,6 +161,9 @@ public:
 					//  switching becomes active
 	BigReal pairlistDist;		//  Distance within which atom pairs 
 					//  should be added to pairlist
+	int pairlistMinProcs;		//  Minimum number of processors
+					//  to enable pairlists
+	int usePairlists;		//  Derived from pairlistMinProcs
 
         Bool plMarginCheckOn;           //  Should atom movement be checked
 	  				//  each tstep to see if an atom

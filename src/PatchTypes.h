@@ -25,6 +25,9 @@ public:
   int maxForceUsed;		// may ignore slower force classes
   int maxForceMerged;		// add this and faster to normal
 
+  int usePairlists;
+  int savePairlists;
+
   Lattice lattice;		// rather than shipping around separately
 
 };

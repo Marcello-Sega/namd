@@ -291,10 +291,14 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
    opts.range("vdwcutoff", POSITIVE);
    opts.units("vdwcutoff", N_ANGSTROM);
 
-   opts.optional("switching", "pairlistdist",  "Pairlist inclusion distance",
+   opts.optional("main", "pairlistdist",  "Pairlist inclusion distance",
      &pairlistDist);
    opts.range("pairlistdist", POSITIVE);
    opts.units("pairlistdist", N_ANGSTROM);
+
+   opts.optional("main", "pairlistMinProcs",  "Min procs for pairlists",
+     &pairlistMinProcs,1);
+   opts.range("pairlistMinProcs", POSITIVE);
 
    opts.optionalB("main", "plMarginCheck", 
       "Check atom movement since pairlist made?",
@@ -2473,14 +2477,14 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
       iout << iINFO << "VDW-SWITCHING OFF      "
                << vdwcutoff << "\n";
     */
-      iout << iINFO << "PAIRLIST DISTANCE      "
-               << pairlistDist << "\n";
    }
    else
    {
       iout << iINFO << "CUTOFF                 " 
          << cutoff << "\n";
    }
+   iout << iINFO << "PAIRLIST DISTANCE      "
+         << pairlistDist << "\n";
    iout << endi;
 
 /* No pairlists but check always performed
@@ -2489,6 +2493,12 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    else 
      iout << iINFO << "PAIRLIST CHECK OFF\n";
 */
+
+   if ( pairlistMinProcs > 1 )
+     iout << iINFO << "REQUIRING " << pairlistMinProcs << " PROCESSORS FOR PAIRLISTS\n";
+   usePairlists = ( CkNumPes() >= pairlistMinProcs );
+   iout << iINFO << "PAIRLISTS " << ( usePairlists ? "ENABLED" : "DISABLED" )
+							<< "\n" << endi;
 
    iout << iINFO << "MARGIN                 ";
 
