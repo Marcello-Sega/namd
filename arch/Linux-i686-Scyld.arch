@@ -1,5 +1,5 @@
 NAMD_ARCH = Linux-i686
-CHARMARCH = mpi-linux
+CHARMARCH = net-linux-scyld
 
 CXX = g++ -DSOCKLEN_T=socklen_t
 CXXOPTS = -O3 -Wall -march=pentiumpro -ffast-math
