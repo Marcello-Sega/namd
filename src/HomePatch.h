@@ -31,13 +31,13 @@ class HomePatch : public Patch {
    friend PatchMgr;
    private: // for PatchMgr to use only!!
       HomePatch(PatchID, AtomIDList, PositionList, VelocityList);
-      void registerProxy(RegisterProxyMsg *);
-      void unregisterProxy(UnregisterProxyMsg *);
 
    public:
 
       ~HomePatch();
 
+      void registerProxy(RegisterProxyMsg *);
+      void unregisterProxy(UnregisterProxyMsg *);
       void useSequencer(Sequencer *sequencerPtr) {sequencer=sequencerPtr;}
       void runSequencer(int numberOfCycles = 0)
 		{ sequencer->run(numberOfCycles); }
@@ -101,12 +101,15 @@ class HomePatch : public Patch {
  *
  *	$RCSfile: HomePatch.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1996/12/05 01:44:16 $
+ *	$Revision: 1.9 $	$Date: 1996/12/05 23:45:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.9  1996/12/05 23:45:09  ari
+ * *** empty log message ***
+ *
  * Revision 1.8  1996/12/05 01:44:16  ari
  * started toward proxy management
  *

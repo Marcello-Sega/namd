@@ -12,12 +12,13 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.5 1996/12/05 22:17:48 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.6 1996/12/05 23:45:09 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
 #include "c++interface.h"
 
+#include "main.top.h"
 #include "main.h"
 #include "ProxyPatch.h"
 #include "ProxyMgr.top.h"
@@ -81,13 +82,16 @@ void ProxyPatch::sendResults(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyPatch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/12/05 22:17:48 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.6 $	$Date: 1996/12/05 23:45:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.6  1996/12/05 23:45:09  ari
+ * *** empty log message ***
+ *
  * Revision 1.5  1996/12/05 22:17:48  jim
  * removed .bot.h file
  *

@@ -5,11 +5,12 @@ message RunMsg;
 message DoneMsg;
 message RegisterProxyMsg;
 message UnregisterProxyMsg;
-message ProxyAtomsMsg;
-message ProxyDataMsg;
-message ProxyResultMsg;
-
 message LocalWorkMsg;
+
+packmessage ProxyAtomsMsg;
+packmessage ProxyDataMsg;
+packmessage ProxyResultMsg;
+
 
 chare main {
   entry main();

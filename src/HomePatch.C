@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.9 1996/12/05 01:44:16 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.10 1996/12/05 23:45:09 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -20,6 +20,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C
 #include "HomePatch.h"
 #include "AtomMap.h"
 #include "main.h"
+#include "ProxyMgr.top.h"
+#include "ProxyMgr.h"
 
 #define MIN_DEBUG_LEVEL 3
 #define DEBUGM
@@ -57,6 +59,10 @@ void HomePatch::boxClosed(int)
 
 void HomePatch::registerProxy(RegisterProxyMsg *msg) {
   proxy.add(ProxyListElem(msg->node,forceBox.checkOut()));
+  ProxyAtomsMsg *nmsg = new (MsgIndex(ProxyAtomsMsg)) ProxyAtomsMsg;
+  nmsg->patch = patchID;
+  nmsg->atomIDList = atomIDList;
+  ProxyMgr::Object()->sendProxyAtoms(nmsg);
 }
 
 void HomePatch::unregisterProxy(UnregisterProxyMsg *msg) {
@@ -259,12 +265,15 @@ void HomePatch::dispose(char *&data)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1996/12/05 01:44:16 $
+ *	$Revision: 1.10 $	$Date: 1996/12/05 23:45:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.10  1996/12/05 23:45:09  ari
+ * *** empty log message ***
+ *
  * Revision 1.9  1996/12/05 01:44:16  ari
  * started toward proxy management
  *

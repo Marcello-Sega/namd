@@ -21,6 +21,7 @@
 #include "ProxyMgr.h"
 #include "Namd.h"
 #include "PatchMap.h"
+#include "ProxyPatch.h"
 
 ProxyMgr *ProxyMgr::_instance = 0;
 
@@ -51,8 +52,8 @@ ProxyMgr::registerProxy(PatchID pid) {
 
 void
 ProxyMgr::recvRegisterProxy(RegisterProxyMsg *msg) {
-  Patch *patch = PatchMap::Object()->patch(msg->patch);
-  // patch->registerProxy(msg);
+  HomePatch *homePatch = (HomePatch *)PatchMap::Object()->patch(msg->patch);
+  homePatch->registerProxy(msg);
   delete msg;
 }
 
@@ -66,18 +67,26 @@ ProxyMgr::recvResults(ProxyResultMsg *msg) {
 
 void
 ProxyMgr::sendProxyData(ProxyDataMsg *msg) {
+  NodeID node = PatchMap::Object()->node(msg->patch);
+  CSendMsgBranch(ProxyMgr, recvProxyData, msg, group.proxyMgr, node);
 }
 
 void
 ProxyMgr::recvProxyData(ProxyDataMsg *msg) {
+  ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
+  proxy->receiveData(msg);
 }
 
 void
 ProxyMgr::sendProxyAtoms(ProxyAtomsMsg *msg) {
+  NodeID node = PatchMap::Object()->node(msg->patch);
+  CSendMsgBranch(ProxyMgr, recvProxyAtoms, msg, group.proxyMgr, node);
 }
 
 void
 ProxyMgr::recvProxyAtoms(ProxyAtomsMsg *msg) {
+  ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
+  proxy->receiveAtoms(msg);
 }
 
 #include "ProxyMgr.bot.h"
@@ -87,13 +96,16 @@ ProxyMgr::recvProxyAtoms(ProxyAtomsMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/12/05 22:17:38 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.3 $	$Date: 1996/12/05 23:45:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.3  1996/12/05 23:45:09  ari
+ * *** empty log message ***
+ *
  * Revision 1.2  1996/12/05 22:17:38  jim
  * added functions
  *
