@@ -1,0 +1,32 @@
+##########################################
+##########################################
+# Makefile architecture template
+##########################################
+##########################################
+
+#####
+## Choose your favorite Compiler options
+####
+CXX = CC -Aa -D_HPUX_SOURCE
+CXXOPTS = -O -DGLOBALS
+
+#####
+# Flags
+#####
+# uncomment for no warnings during compile
+#NOWARN=-w
+# uncomment for purify during compile
+# PURIFY=-purify
+
+#####
+# definitions for Charm routines
+#####
+CHARM = /Projects/l1/namd.2.0/charm
+
+#####
+# Unix commands
+#####
+ECHO = echo
+MOVE = mv
+COPY = cp
+

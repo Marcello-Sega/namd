@@ -1,0 +1,45 @@
+##########################################
+##########################################
+# Makefile architecture HPUX10
+##########################################
+##########################################
+
+#####
+## Choose your favorite Compiler options
+####
+CXX = CC -Aa -D_HPUX_SOURCE
+CXXOPTS = -O -DGLOBALS
+#CXXOPTS = +O2
+#CXXOPTS = +O3
+#CXXOPTS = +O3 +DAK220 +DSK220 -G +Oinlinebudget=500 +Olibcalls
+#CXXOPTS = +O3 +DAK220 +DSK220 -G
+#CXXOPTS = +O3 +DAK460 +DSK460
+# this one below leads to numerical changes!
+#CXXOPTS = +O3 -G -z -ptn +Oentrysched +Ofastaccess +Onofltacc +Oregionsched
+#CXXOPTS = +O3 -G -z -ptn +Oentrysched
+#CXXOPTS = +O3 -G
+#CXXOPTS = +O3 -z
+#CXXOPTS = -g -v -z -G
+#CXXOPTS = -g -v
+#CXXOPTS = -g 
+
+#####
+# Flags
+#####
+# uncomment for no warnings during compile
+#NOWARN=-w
+# uncomment for purify during compile
+# PURIFY=-purify
+
+#####
+# definitions for Charm routines
+#####
+CHARM = /Projects/l1/namd.2.0/charm
+
+#####
+# Unix commands
+#####
+ECHO = echo
+MOVE = mv
+COPY = cp
+
