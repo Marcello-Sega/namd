@@ -18,6 +18,9 @@
 #include "ComputeMgr.h"
 #include "ComputeMgr.top.h"
 #include <stdio.h>
+#ifdef GCC
+#include <fstream.h>
+#endif
 
 // #define DEBUGM
 #define MIN_DEBUG_LEVEL 4
@@ -145,12 +148,15 @@ void ComputeFreeEnergy::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1998/02/14 09:55:22 $
+ *	$Revision: 1.6 $	$Date: 1998/03/09 17:06:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFreeEnergy.C,v $
+ * Revision 1.6  1998/03/09 17:06:02  milind
+ * Included fstream.h for GCC.
+ *
  * Revision 1.5  1998/02/14 09:55:22  jim
  * Final changes to allow inline reading of { } delimited input.
  * Strings read this way begin with a { but do not end with a }.
