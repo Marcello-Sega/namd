@@ -1,0 +1,49 @@
+##########################################
+##########################################
+# Makefile architecture for KAI C++
+##########################################
+##########################################
+
+#####
+## Choose your favorite Compiler options
+####
+CC = gcc
+CXX = KCC
+CXXOPTS = -O3 -DGLOBALS -DGCC +K3
+COPTS = -O3 -DGCC
+
+#####
+# Flags
+#####
+# uncomment for no warnings during compile
+#NOWARN=-w
+# uncomment for purify during compile
+# PURIFY=-purify
+PURIFY=-c++ KCC -ld++ KCC
+
+DFLAGS = -O -DGCC
+PVM_ARCH=linux
+
+#####
+# definitions for Charm routines
+#####
+# CHARM = /Projects/l1/namd.2.0/charm
+CHARM = /Home/p1/milind/charm/net-linux
+
+######
+## definitions for TCL interface
+######
+#TCLDIR=/usr/local
+#TCLINCL=-I$(TCLDIR)/include
+#TCLLIB=-L$(TCLDIR)/lib -ltclx -ltcl
+#TCLFLAGS=-DNAMD_TCL
+#TCL=$(TCLINCL) $(TCLFLAGS)
+
+#####
+# Unix commands
+#####
+ECHO = echo
+MOVE = mv
+COPY = cp
+RM = rm -f
+AR = ar
