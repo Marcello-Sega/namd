@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: common.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/06 20:38:38 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1996/12/02 17:05:37 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -21,6 +21,9 @@
  * REVISION HISTORY:
  *
  * $Log: common.h,v $
+ * Revision 1.2  1996/12/02 17:05:37  nealk
+ * Debugging stuff.
+ *
  * Revision 1.1  1996/08/06 20:38:38  ari
  * Initial revision
  *
@@ -187,6 +190,7 @@
 #include <stdlib.h>
 #include <iostream.h>
 #include <errno.h>
+#include "InfoStream.h"
 
 //  Redefine new and delete if the MTS fast malloc is being used
 #ifdef MTS
@@ -377,12 +381,27 @@ int *NAMD_bsearch(int *, int *, int, int, int (*cmpfn) (const void *, const void
 	{ \
 		if (errno == EDOM) \
 		{ \
-			char err_msg[513]; \
-		\
-			sprintf(err_msg, "Domain error at line %d of source file %s", \
-			  ( (__LINE__) - 1), __FILE__); \
-			NAMD_die(err_msg); \
+		  iout << iERRORF << "Domain error\n" << endi; \
+		  NAMD_die("Domain error"); \
 		} \
+	}
+
+#define CHECK_DOMAIN_ACOS(x) \
+	{ \
+	if (errno == EDOM) \
+	  { \
+	    iout << iERRORF << "Domain error with acos(" << x << ")\n" << endi; \
+	    NAMD_die("Domain error"); \
+	  } \
+	}
+
+#define CHECK_DOMAIN_ATAN(x,y) \
+	{ \
+	if (errno == EDOM) \
+	  { \
+	    iout << iERRORF << "Domain error with atan2(" << x << "," << y << ")\n" << endi; \
+	    NAMD_die("Domain error"); \
+	  } \
 	}
 
 #endif
