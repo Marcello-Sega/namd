@@ -44,7 +44,7 @@ public:
 
     // femtoseconds
     SimParameters *params = Node::Object()->simParameters;
-    BigReal fs = params->N * params->dt;
+    BigReal fs = (params->N - params->firstTimestep) * params->dt;
     // scale to nanoseconds
     BigReal ns = fs / 1000000.0;
     BigReal days = 1.0 / (24.0 * 60.0 * 60.0);
@@ -76,13 +76,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: Namd.h,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/07/08 15:48:10 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1997/08/18 23:01:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Namd.h,v $
+ * Revision 1.1008  1997/08/18 23:01:17  jim
+ * Properly reports "Days per ns" with nonzero firstTimeStep.
+ *
  * Revision 1.1007  1997/07/08 15:48:10  milind
  * Made namd2 to work with Origin2000: Again...
  *
