@@ -95,6 +95,8 @@ struct LocalID
   int index;
 };
 
+typedef ResizeArray<NodeID> NodeIDList;
+
 // HP compiler complains that true, false "Will be" future reserved words.
 //enum Boolean
 //{
