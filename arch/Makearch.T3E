@@ -1,7 +1,7 @@
 # config for Cray T3E
 
 # compiler options
-CXX = CC -DPLACEMENT_NEW_GLOBAL
+CXX = CC 
 CXXOPTS = -O2
 CXXTHREADOPTS = $(CXXOPTS)
 CXXSIMPARAMOPTS = -g
