@@ -7,7 +7,6 @@
 module WorkDistrib {
   // WorkDistributor - is a bit of a mishmash
 
-  extern module main;
   message LocalWorkMsg;
   message ComputeMapChangeMsg;
   message [packed] MapDistribMsg;

@@ -13,7 +13,6 @@
 #include "NamdTypes.h"
 #include "BOCgroup.h"
 #include "ProcessorPrivate.h"
-#include "ReductionMgr.decl.h"
 
 #define VECTOR(A) A ## _X, A ## _Y, A ## _Z
 #define TENSOR(A) A ## _XX, A ## _XY, A ## _XZ, \

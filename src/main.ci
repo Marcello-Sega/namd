@@ -10,15 +10,6 @@ mainmodule main {
   mainchare main {
     entry main();
   };
-  extern module WorkDistrib;
-  extern module ReductionMgr;
-  extern module PatchMgr;
-  extern module ProxyMgr;
-  extern module Node;
-  extern module LdbCoordinator;
-  extern module ComputeMgr;
-  extern module CollectionMgr;
-  extern module CollectionMaster;
-  extern module BroadcastMgr;
+
 }
 
