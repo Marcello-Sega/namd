@@ -232,8 +232,7 @@ summary:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(TCLLIB) \
 	$(FFTLIB)
 
-$(DPMTADIR)/mpole/libmpole.a:
-	cd $(DPMTADIR) ; $(MAKE) ; cd ..
+$(DPMTADIR)/mpole/libmpole.a: $(DPMTADIR)/src/libdpmta2.a
 
 $(DPMTADIR)/src/libdpmta2.a:
 	cd $(DPMTADIR) ; $(MAKE) ; cd ..
