@@ -51,7 +51,6 @@ OBJS = \
 	$(DSTDIR)/ComputeHomePatch.o \
 	$(DSTDIR)/ComputeHomePatches.o \
 	$(DSTDIR)/ComputeImpropers.o \
-	$(DSTDIR)/ComputeGeneral.o \
 	$(DSTDIR)/ComputeGlobal.o \
 	$(DSTDIR)/ComputeGlobalEasy.o \
 	$(DSTDIR)/ComputeGlobalMaster.o \
