@@ -11,7 +11,7 @@
  *
  *  $RCSfile: Molecule.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1036 $  $Date: 1999/08/20 19:11:12 $
+ *  $Revision: 1.1037 $  $Date: 1999/09/14 18:16:55 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1037  1999/09/14 18:16:55  jim
+ * Bug fix contributed by A. Krammer.
+ *
  * Revision 1.1036  1999/08/20 19:11:12  jim
  * Added MOLLY - mollified impluse method.
  *
@@ -338,8 +341,8 @@ int ResidueLookupElem::lookup(
     int rval = -1;  // error
     while ( elem && strcasecmp(elem->mySegid,segid) ) elem = elem->next;
     if ( elem && (resid >= elem->firstResid) && (resid <= elem->lastResid) ) {
-      *begin = elem->atomIndex[resid - firstResid];
-      *end = elem->atomIndex[resid - firstResid + 1];
+      *begin = elem->atomIndex[resid - elem->firstResid];
+      *end = elem->atomIndex[resid - elem->firstResid + 1];
       rval = 0;  // no error
     }
     return rval;
@@ -4069,12 +4072,15 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1036 $  $Date: 1999/08/20 19:11:12 $
+ *  $Revision: 1.1037 $  $Date: 1999/09/14 18:16:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1037  1999/09/14 18:16:55  jim
+ * Bug fix contributed by A. Krammer.
+ *
  * Revision 1.1036  1999/08/20 19:11:12  jim
  * Added MOLLY - mollified impluse method.
  *
