@@ -8,6 +8,7 @@
 #include "Node.h"
 #include "Parameters.h"
 #include "Molecule.h"
+#include "InfoStream.h"
 
 #ifdef NAMD_TCL
 
@@ -28,7 +29,7 @@ int Measure::wrapCommand(ClientData clientData,
   return TCL_OK;
 }
 
-int Tcl_centerOfNumber(ClientData, Tcl_Interp *interp, int argc, char *argv[]) {
+static int Tcl_centerOfNumber(ClientData, Tcl_Interp *interp, int argc, char *argv[]) {
 
   Node *node = Node::Object();
   Molecule *molecule = node->molecule;
@@ -51,7 +52,7 @@ int Tcl_centerOfNumber(ClientData, Tcl_Interp *interp, int argc, char *argv[]) {
   return TCL_OK;
 }
 
-int Tcl_centerOfMass(ClientData, Tcl_Interp *interp, int argc, char *argv[]) {
+static int Tcl_centerOfMass(ClientData, Tcl_Interp *interp, int argc, char *argv[]) {
 
   Node *node = Node::Object();
   Molecule *molecule = node->molecule;
@@ -75,7 +76,7 @@ int Tcl_centerOfMass(ClientData, Tcl_Interp *interp, int argc, char *argv[]) {
   return TCL_OK;
 }
 
-int Tcl_radiusOfGyration(ClientData, Tcl_Interp *interp, int argc, char *argv[]) {
+static int Tcl_radiusOfGyration(ClientData, Tcl_Interp *interp, int argc, char *argv[]) {
 
   Node *node = Node::Object();
   Molecule *molecule = node->molecule;
@@ -107,6 +108,62 @@ int Tcl_radiusOfGyration(ClientData, Tcl_Interp *interp, int argc, char *argv[])
   return TCL_OK;
 }
 
+static int Tcl_loadCoords(ClientData, Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+  
+  if (objc < 2 || objc > 3) {
+    Tcl_SetResult(interp,"loadCoords: wrong # args",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  Tcl_Obj * const vname = objv[1];
+  Node *node = Node::Object();
+  Molecule *molecule = node->molecule;
+  // Parameters *parameters = node->parameters;
+  const Vector *coords = node->coords;
+  int numAtoms = molecule->numAtoms;
+ 
+  if (objc == 2) {
+    // get all the coordinates
+    for (int i=0; i<numAtoms; i++) {
+      Tcl_Obj *newlist = Tcl_NewListObj(0, NULL);
+      Tcl_Obj *arrkey = Tcl_NewIntObj(i+1);
+      Tcl_ListObjAppendElement(interp, newlist, 
+        Tcl_NewDoubleObj(coords[i].x));
+      Tcl_ListObjAppendElement(interp, newlist, 
+        Tcl_NewDoubleObj(coords[i].y));
+      Tcl_ListObjAppendElement(interp, newlist, 
+        Tcl_NewDoubleObj(coords[i].z));
+      if (!Tcl_ObjSetVar2(interp, vname, arrkey, newlist, 0))
+        return TCL_ERROR;
+      Tcl_DecrRefCount(arrkey);
+    }
+  } else {
+    // third argument must be a list of indices
+    int nelems;
+    Tcl_Obj **elems;
+    if (Tcl_ListObjGetElements(interp, objv[2], &nelems, &elems) != TCL_OK) {
+      return TCL_ERROR;
+    }
+    for (int i=0; i<nelems; i++) {
+      int ind; 
+      if (Tcl_GetIntFromObj(interp, elems[i], &ind) != TCL_OK)
+        return TCL_ERROR;
+      Tcl_Obj *newlist = Tcl_NewListObj(0, NULL);
+      Tcl_Obj *arrkey = Tcl_NewIntObj(ind);
+      --ind;
+      Tcl_ListObjAppendElement(interp, newlist, 
+        Tcl_NewDoubleObj(coords[ind].x));
+      Tcl_ListObjAppendElement(interp, newlist, 
+        Tcl_NewDoubleObj(coords[ind].y));
+      Tcl_ListObjAppendElement(interp, newlist, 
+        Tcl_NewDoubleObj(coords[ind].z));
+      if (!Tcl_ObjSetVar2(interp, vname, arrkey, newlist, 0))
+        return TCL_ERROR;
+      Tcl_DecrRefCount(arrkey);
+    }
+  }
+  return TCL_OK;
+}
+ 
 void Measure::createCommands(Tcl_Interp *interp) {
   Tcl_CreateCommand(interp, "centerOfNumber", Tcl_centerOfNumber,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
@@ -114,12 +171,15 @@ void Measure::createCommands(Tcl_Interp *interp) {
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "radiusOfGyration", Tcl_radiusOfGyration,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateObjCommand(interp, "loadCoords", Tcl_loadCoords, 
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 }
 
 void Measure::deleteCommands(Tcl_Interp *interp) {
   Tcl_DeleteCommand(interp, "centerOfNumber");
   Tcl_DeleteCommand(interp, "centerOfMass");
   Tcl_DeleteCommand(interp, "radiusOfGyration");
+  Tcl_DeleteCommand(interp, "loadCoords");
 }
 
 #endif
