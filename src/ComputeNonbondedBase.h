@@ -268,6 +268,8 @@ NOEXCL
 	p_j++;
 	} // for j
     }
+    // make sure padded element on pairlist points to real data
+    if ( pairlistindex ) pairlist[pairlistindex] = pairlist[pairlistindex-1];
   } // if i is hydrogen group parent
   SELF
     (
@@ -617,13 +619,16 @@ NOEXCL
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1022 $	$Date: 1997/06/05 20:19:41 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1023 $	$Date: 1997/07/30 20:51:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1023  1997/07/30 20:51:47  jim
+ * Probable bug fix - added sentinal to end of parilist.
+ *
  * Revision 1.1022  1997/06/05 20:19:41  nealk
  * Minor modifications for readability and very minor speedup.
  *
