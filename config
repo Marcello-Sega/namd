@@ -98,8 +98,8 @@ begin:
     echo 'NAMD_PLATFORM = $(NAMD_ARCH)-ScyldCD' >> Makearch
   else if ( $ARCH =~ *-Scyld* ) then
     echo 'NAMD_PLATFORM = $(NAMD_ARCH)-Scyld' >> Makearch
-  else if ( $ARCH =~ *-ClusterMatic* ) then
-    echo 'NAMD_PLATFORM = $(NAMD_ARCH)-ClusterMatic' >> Makearch
+  else if ( $ARCH =~ *-Clustermatic* ) then
+    echo 'NAMD_PLATFORM = $(NAMD_ARCH)-Clustermatic' >> Makearch
   else
     echo 'NAMD_PLATFORM = $(NAMD_ARCH)' >> Makearch
   endif
