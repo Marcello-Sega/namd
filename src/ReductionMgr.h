@@ -71,14 +71,17 @@ private:
 
   #if PANIC > 0
   int panicMode;
+  char tagString[REDUCTION_MAX_RESERVED+1][40];
   #endif
 
   int numSubscribed[REDUCTION_MAX_RESERVED];
   ReductionMgrData *data;
-  ReductionMgrData *createdata(int seq);
   int maxData[REDUCTION_MAX_RESERVED];	// number of data to expect
-  void remove(int seq);	// delete (remove) a sequence
-  ReductionMgrData *find(int seq);
+
+  ReductionMgrData *createdata(int seq);	// make new data
+  void remove(int seq);				// delete (remove) a sequence
+  ReductionMgrData *find(int seq);		// find the data
+  void gotAllData(ReductionMgrData *current);	// done collecting data
 
 public:
 

@@ -60,8 +60,9 @@ void Sequencer::algorithm(void)
     int seq = 0;
     patch->positionsReady();
     suspend();
+    DebugM(1,"Submit seq=" << seq << " Patch=" << patch->getPatchID() << "\n");
     reduction->submit(seq,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
-    collection->submitPositions(seq,patch->atomIDList,patch->p);
+    // collection->submitPositions(seq,patch->atomIDList,patch->p);
     ++seq;
     for ( cycle = 0; cycle < numberOfCycles; ++cycle )
     {
@@ -82,9 +83,10 @@ void Sequencer::algorithm(void)
 		<< ": (" << cycle << "," << step << ") "
 		<< "Awakened!\n");
             patch->addForceToMomentum(0.5*timestep);
+	    DebugM(1,"Submit seq=" << seq << " Patch=" << patch->getPatchID() << "\n");
 	    reduction->submit(seq, REDUCTION_KINETIC_ENERGY,
 		patch->calcKineticEnergy());
-	    collection->submitPositions(seq,patch->atomIDList,patch->p);
+	    // collection->submitPositions(seq,patch->atomIDList,patch->p);
 	    ++seq;
         }
     }
