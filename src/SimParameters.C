@@ -2757,6 +2757,12 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
       NAMD_die("Multiple pressure control algorithms selected!\n");
    }
 
+   if ( (berendsenPressureOn || langevinPistonOn)
+		&& fixedAtomsOn && ! fixedAtomsForces )
+   {
+      NAMD_die("Pressure control requires fixedAtomsForces on!\n");
+   }
+
    if (excludeFromPressure) {
      iout << iINFO << "EXCLUDE FROM PRESSURE ACTIVE\n";
    }
