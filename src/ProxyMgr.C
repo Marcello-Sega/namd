@@ -20,7 +20,7 @@
 #include "ProxyMgr.top.h"
 #include "ProxyMgr.h"
 #include "Namd.h"
-#include "PatchMap.h"
+#include "PatchMap.inl"
 #include "ProxyPatch.h"
 #include "ComputeMap.h"
 #include "HomePatch.h"
@@ -354,12 +354,15 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
  *
  *	$RCSfile: ProxyMgr.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1997/09/28 22:36:53 $
+ *	$Revision: 1.1016 $	$Date: 1997/10/06 00:12:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.1016  1997/10/06 00:12:35  jim
+ * Added PatchMap.inl, sped up cycle-boundary tuple code.
+ *
  * Revision 1.1015  1997/09/28 22:36:53  jim
  * Modified tuple-based computations to not duplicate calculations and
  * only require "upstream" proxies.

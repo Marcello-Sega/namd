@@ -14,7 +14,7 @@
 #include "Node.h"
 #include "SimParameters.h"
 #include "ComputeNonbondedUtil.h"
-#include "PatchMap.h"
+#include "PatchMap.inl"
 #include "AtomMap.h"
 #include "ComputeDPMTA.h"
 #include "PatchMgr.h"
@@ -492,12 +492,15 @@ void ComputeDPMTA::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1046 $	$Date: 1997/10/01 16:46:47 $
+ *	$Revision: 1.1047 $	$Date: 1997/10/06 00:12:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.C,v $
+ * Revision 1.1047  1997/10/06 00:12:28  jim
+ * Added PatchMap.inl, sped up cycle-boundary tuple code.
+ *
  * Revision 1.1046  1997/10/01 16:46:47  milind
  * Removed old NAMD1 messaging and replaced it with new Message Streams library.
  *

@@ -23,7 +23,7 @@
 #include "HomePatch.h"
 #include "AtomMap.h"
 #include "Node.h"
-#include "PatchMap.h"
+#include "PatchMap.inl"
 #include "main.h"
 #include "ProxyMgr.top.h"
 #include "ProxyMgr.h"
@@ -38,7 +38,7 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1036 1997/09/28 10:19:07 milind Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1037 1997/10/06 00:12:31 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
 		     VelocityList vl) : Patch(pd,al,pl), v(vl) 
@@ -451,13 +451,16 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1036 $	$Date: 1997/09/28 10:19:07 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1037 $	$Date: 1997/10/06 00:12:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1037  1997/10/06 00:12:31  jim
+ * Added PatchMap.inl, sped up cycle-boundary tuple code.
+ *
  * Revision 1.1036  1997/09/28 10:19:07  milind
  * Fixed priorities, ReductionMgr etc.
  *

@@ -48,84 +48,84 @@ public:
 
   // numPatches() returns the number of patches being managed 
   // by the map.
-  int numPatches(void);
+  inline int numPatches(void);
 
   void setGridOriginAndLength(Vector o, Vector l);
 
   // assignToPatch(p,l) returns the patchID in which the position
   // p should be placed, based on the lattice l
-  PatchID assignToPatch(Position p /* , Lattice &l */);
+  inline PatchID assignToPatch(Position p /* , Lattice &l */);
 
   // xDimension() returns the how many patches span the simulation space
   // along the x axis.
-  int xDimension(void);
+  inline int xDimension(void);
 
   // yDim() returns the how many patches span the simulation space
   // along the y axis.
-  int yDimension(void);
+  inline int yDimension(void);
 
   // zDim() returns the how many patches span the simulation space
   // along the z axis.
-  int zDimension(void);
+  inline int zDimension(void);
 
   // Origin() returns the vector origin
-  Vector Origin	(void);
+  inline Vector Origin	(void);
 
-  int xIsPeriodic(void);
-  int yIsPeriodic(void);
-  int zIsPeriodic(void);
+  inline int xIsPeriodic(void);
+  inline int yIsPeriodic(void);
+  inline int zIsPeriodic(void);
 
   // pid(xindex, yindex, zindex) returns the patch id for the given
   // patch coordinates.
-  int pid(int xindex, int yindex, int zindex);
+  inline int pid(int xindex, int yindex, int zindex);
 
   // xIndex(pid) returns the x index for the given patch id.
-  int xIndex(int pid);
+  inline int xIndex(int pid);
 
   // yIndex(pid) returns the y index for the given patch id.
-  int yIndex(int pid);
+  inline int yIndex(int pid);
 
   // zIndex(pid) returns the z index for the given patch id.
-  int zIndex(int pid);
+  inline int zIndex(int pid);
 
   // gives more downstream patch of pid1, pid2; handles periodicity right
   // given patches must be neighbors!!!
-  int downstream(int pid1, int pid2);
+  inline int downstream(int pid1, int pid2);
 
   // node(pid) returns the node where the patch currently exists.
-  int node(int pid);
+  inline int node(int pid);
 
   // minX(pid) returns the minimum x coordinate of the region of
   // space the patch is responsible for.
-  Coordinate minX(int pid);
+  inline Coordinate minX(int pid);
 
   // maxX(pid) returns the maximum x coordinate of the region of
   // space the patch is responsible for.
-  Coordinate maxX(int pid);
+  inline Coordinate maxX(int pid);
 
   // minY(pid) returns the minimum y coordinate of the region of
   // space the patch is responsible for.
-  Coordinate minY(int pid);
+  inline Coordinate minY(int pid);
 
   // maxY(pid) returns the maximum y coordinate of the region of
   // space the patch is responsible for.
-  Coordinate maxY(int pid);
+  inline Coordinate maxY(int pid);
   
   // minZ(pid) returns the minimum z coordinate of the region of
   // space the patch is responsible for.
-  Coordinate minZ(int pid);
+  inline Coordinate minZ(int pid);
 
   // maxZ(pid) returns the maximum z coordinate of the region of
   // space the patch is responsible for.
-  Coordinate maxZ(int pid);
+  inline Coordinate maxZ(int pid);
 
   // numCids(pid) returns the number of compute ids which are registered
   // with the patch.  
-  int numCids(int pid);
+  inline int numCids(int pid);
   
   // cid(pid,i) returns the i-th compute id registered
   // with the patch.  
-  int cid(int pid, int i);
+  inline int cid(int pid, int i);
 
   void setPeriodicity(int x_per, int y_per, int z_per);
 
@@ -229,12 +229,15 @@ inline HomePatch *PatchMap::homePatch(PatchID pid)
  *
  *	$RCSfile: PatchMap.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/09/28 22:36:53 $
+ *	$Revision: 1.1007 $	$Date: 1997/10/06 00:12:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.h,v $
+ * Revision 1.1007  1997/10/06 00:12:33  jim
+ * Added PatchMap.inl, sped up cycle-boundary tuple code.
+ *
  * Revision 1.1006  1997/09/28 22:36:53  jim
  * Modified tuple-based computations to not duplicate calculations and
  * only require "upstream" proxies.

@@ -11,7 +11,7 @@
 
 #include "Namd.h"
 #include "Node.h"
-#include "PatchMap.h"
+#include "PatchMap.inl"
 #include "AtomMap.h"
 #include "ComputeHomeTuples.h"
 #include "PatchMgr.h"
@@ -93,7 +93,6 @@ void ComputeHomeTuples<T>::atomUpdate() {
 
 template <class T>
 void ComputeHomeTuples<T>::loadTuples() {
-  doLoadTuples = false;
 
   // cycle through each patch and gather all tuples
   TuplePatchListIter ai(tuplePatchList);
@@ -130,6 +129,7 @@ void ComputeHomeTuples<T>::loadTuples() {
   // Resolve all atoms in tupleList to correct PatchList element and index
   // and eliminate tuples we aren't responsible for
   UniqueSetIter<T> al(tupleList);
+  UniqueSet<T> tupleList2;
 
   LocalID aid[T::size];
   for (al = al.begin(); al != al.end(); al++ ) {
@@ -154,10 +154,10 @@ void ComputeHomeTuples<T>::loadTuples() {
 	*/
 	t.localIndex[i] = aid[i].index;
       }
+      tupleList2.load(t);
     }
-    else tupleList.del(t);
   }
-  tupleList.rehash();
+  tupleList = tupleList2;
 
 }
 
@@ -169,7 +169,10 @@ void ComputeHomeTuples<T>::loadTuples() {
 //-------------------------------------------------------------------
 template <class T>
 void ComputeHomeTuples<T>::doWork() {
-  if ( doLoadTuples ) loadTuples();
+  if ( doLoadTuples ) {
+    loadTuples();
+    doLoadTuples = false;
+  }
 
   DebugM(1, "ComputeHomeTuples::doWork() -- started " << endl );
 
@@ -210,12 +213,15 @@ void ComputeHomeTuples<T>::doWork() {
  *
  *      $RCSfile: ComputeHomeTuples.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1017 $     $Date: 1997/10/02 22:01:20 $
+ *      $Revision: 1.1018 $     $Date: 1997/10/06 00:12:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.C,v $
+ * Revision 1.1018  1997/10/06 00:12:28  jim
+ * Added PatchMap.inl, sped up cycle-boundary tuple code.
+ *
  * Revision 1.1017  1997/10/02 22:01:20  jim
  * Moved loadTuples() out of recvProxyAll entry point and into enqueueWork.
  *

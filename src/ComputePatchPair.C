@@ -14,7 +14,7 @@
 #include "WorkDistrib.top.h"
 #include "Node.h"
 #include "ComputePatchPair.h"
-#include "PatchMap.h"
+#include "PatchMap.inl"
 #include "Patch.h"
 
 //#define DEBUGM
@@ -169,13 +169,16 @@ int ComputePatchPair::sequence(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputePatchPair.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1997/09/28 10:19:06 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1014 $	$Date: 1997/10/06 00:12:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatchPair.C,v $
+ * Revision 1.1014  1997/10/06 00:12:30  jim
+ * Added PatchMap.inl, sped up cycle-boundary tuple code.
+ *
  * Revision 1.1013  1997/09/28 10:19:06  milind
  * Fixed priorities, ReductionMgr etc.
  *

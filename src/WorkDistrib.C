@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1035 1997/09/30 16:22:19 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1036 1997/10/06 00:12:36 jim Exp $";
 
 #include <stdio.h>
 
@@ -27,7 +27,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib
 #include "main.h"
 #include "Node.h"
 #include "PatchMgr.h"
-#include "PatchMap.h"
+#include "PatchMap.inl"
 #include "NamdTypes.h"
 #include "PDB.h"
 #include "SimParameters.h"
@@ -994,13 +994,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1035 $	$Date: 1997/09/30 16:22:19 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1036 $	$Date: 1997/10/06 00:12:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1036  1997/10/06 00:12:36  jim
+ * Added PatchMap.inl, sped up cycle-boundary tuple code.
+ *
  * Revision 1.1035  1997/09/30 16:22:19  brunner
  * Reduced static arrays to allows only 1-away computes to decrease mem usage.
  *

@@ -8,7 +8,7 @@
 
 #include <math.h>
 #include "RecBisection.h"
-#include "PatchMap.h"
+#include "PatchMap.inl"
 #include "Patch.h"
 
 /* ********************************************************************* */
@@ -389,8 +389,8 @@ int RecBisection::prev_better(float prev, float current, float load1)
  * RCS INFORMATION:
  *
  *	$RCSfile: RecBisection.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1997/04/07 22:23:30 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.3 $	$Date: 1997/10/06 00:12:36 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -399,6 +399,9 @@ int RecBisection::prev_better(float prev, float current, float load1)
  * REVISION HISTORY:
  *
  * $Log: RecBisection.C,v $
+ * Revision 1.3  1997/10/06 00:12:36  jim
+ * Added PatchMap.inl, sped up cycle-boundary tuple code.
+ *
  * Revision 1.2  1997/04/07 22:23:30  brunner
  * Changed RB constants so patch distrib equalizes number of atoms, and
  * added weights for initial compute distrib based on self, face neighbor,
@@ -410,4 +413,4 @@ int RecBisection::prev_better(float prev, float current, float load1)
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/RecBisection.C,v 1.2 1997/04/07 22:23:30 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/RecBisection.C,v 1.3 1997/10/06 00:12:36 jim Exp $";

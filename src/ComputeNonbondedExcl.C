@@ -15,6 +15,7 @@
 #include "Parameters.h"
 #include "ComputeNonbondedExcl.h"
 #include "AtomMap.h"
+#include "PatchMap.inl"
 
 //#undef DEBUGM
 #include "Debug.h"
@@ -103,47 +104,38 @@ ComputeNonbondedExcls::loadTuples() {
 	Exclusion *excl = molecule->get_exclusion(i);
 	if ( ! ( molecule->is_atom_fixed(excl->atom1) &&
 		 molecule->is_atom_fixed(excl->atom2) ) )
-	  tupleList.add(NonbondedExclElem(excl));
+	  tupleList.load(NonbondedExclElem(excl));
       }
     }
   } else {
     for (i=0; i<numExclusions; i++) {
       if (exclFlag[i]) {
-	tupleList.add(NonbondedExclElem(node->molecule->get_exclusion(i)));
+	tupleList.load(NonbondedExclElem(node->molecule->get_exclusion(i)));
       }
     }
   }
   delete[] exclFlag;
-  tupleList.rehash();
  
   // Resolve all atoms in tupleList to correct PatchList element and index
   // and eliminate tuples we aren't responsible for
   UniqueSetIter<NonbondedExclElem> al(tupleList);
+  UniqueSet<NonbondedExclElem> tupleList2;
 
   LocalID aid[NonbondedExclElem::size];
   for (al = al.begin(); al != al.end(); al++ ) {
-    register int i;
     aid[0] = atomMap->localID(al->atomID[0]);
     aid[1] = atomMap->localID(al->atomID[1]);
     int homepatch = patchMap->downstream(aid[0].pid,aid[1].pid);;
     NonbondedExclElem &t = *al;
     if ( homepatch != notUsed && patchMap->node(homepatch) == CMyPe() ) {
-      for (i=0; i < NonbondedExclElem::size; i++) {
-	t.p[i] = tuplePatchList.find(TuplePatchElem(aid[i].pid));
-        /*
-        if ( ! (al->p)[i] ) {
- 	  iout << iERROR << "ComputeHomeTuples couldn't find patch " 
- 	    << aid[i].pid << " for atom " << al->atomID[i] 
- 	    << ", aborting.\n" << endi;
- 	  Namd::die();
-        }
-        */
-	t.localIndex[i] = aid[i].index;
-      }
+      t.p[0] = tuplePatchList.find(TuplePatchElem(aid[0].pid));
+      t.p[1] = tuplePatchList.find(TuplePatchElem(aid[1].pid));
+      t.localIndex[0] = aid[0].index;
+      t.localIndex[1] = aid[1].index;
+      tupleList2.load(t);
     }
-    else tupleList.del(t);
   }
-  tupleList.rehash();
+  tupleList = tupleList2;
 
 }
 
@@ -152,12 +144,15 @@ ComputeNonbondedExcls::loadTuples() {
  *
  *	$RCSfile: ComputeNonbondedExcl.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1997/09/30 16:57:44 $
+ *	$Revision: 1.1018 $	$Date: 1997/10/06 00:12:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedExcl.C,v $
+ * Revision 1.1018  1997/10/06 00:12:29  jim
+ * Added PatchMap.inl, sped up cycle-boundary tuple code.
+ *
  * Revision 1.1017  1997/09/30 16:57:44  jim
  * Fixed bug dealing with atoms on unknown patches.
  *

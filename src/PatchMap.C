@@ -17,7 +17,7 @@
 #include "c++interface.h"
 
 #include "PatchMgr.h"
-#include "PatchMap.h"
+#include "PatchMap.inl"
 #include "Patch.h"
 #include "Lattice.h"
 #include "HomePatchList.h"
@@ -157,23 +157,15 @@ void PatchMap::unpack (void *in)
   }
 }
 
-
-//---------------------------------------------------------------------
-// Access HomePatch information
-
+//----------------------------------------------------------------------
 int PatchMap::numHomePatches(void)
 {
   return patchMgr->homePatches.size();
 }
 
+//----------------------------------------------------------------------
 HomePatchList *PatchMap::homePatchList() {
   return &(patchMgr->homePatches);
-}
-
-//----------------------------------------------------------------------
-int PatchMap::numPatches(void)
-{
-  return nPatches;
 }
 
 //----------------------------------------------------------------------
@@ -181,205 +173,6 @@ void PatchMap::setGridOriginAndLength(Vector o, Vector l)
 {
   xOrigin = o.x; yOrigin = o.y; zOrigin = o.z;
   xLength = l.x; yLength = l.y; zLength = l.z;
-}
-
-//----------------------------------------------------------------------
-PatchID PatchMap::assignToPatch(Position p)
-{
-  int xi, yi, zi;
-  xi = (int)floor(((BigReal)xDim)*((p.x-xOrigin)/xLength));
-  yi = (int)floor(((BigReal)yDim)*((p.y-yOrigin)/yLength));
-  zi = (int)floor(((BigReal)zDim)*((p.z-zOrigin)/zLength));
-  return pid(xi,yi,zi);
-}
-
-//----------------------------------------------------------------------
-int PatchMap::xDimension(void)
-{
-  return xDim;
-}
-
-//----------------------------------------------------------------------
-int PatchMap::yDimension(void)
-{
-  return yDim;
-}
-
-//----------------------------------------------------------------------
-int PatchMap::zDimension(void)
-{
-  return zDim;
-}
-
-//----------------------------------------------------------------------
-Vector PatchMap::Origin(void)
-{
-  Vector o;
-  o.x = xOrigin;
-  o.y = yOrigin;
-  o.z = zOrigin;
-  return(o);
-}
-
-//----------------------------------------------------------------------
-int PatchMap::xIsPeriodic(void)
-{
-  return xPeriodic;
-}
-
-//----------------------------------------------------------------------
-int PatchMap::yIsPeriodic(void)
-{
-  return yPeriodic;
-}
-
-//----------------------------------------------------------------------
-int PatchMap::zIsPeriodic(void)
-{
-  return zPeriodic;
-}
-
-//----------------------------------------------------------------------
-#define MODULO(I,J) ( (I)<0 ? (I)-(J)*((I)/(J)-1) : (I)-(J)*((I)/(J)) )
-
-int PatchMap::pid(int xIndex, int yIndex, int zIndex)
-{
-  int allsame = 0;
-  if ( xPeriodic ) xIndex = MODULO(xIndex,xDim);
-  else
-  {
-    if ( xIndex < 0 ) xIndex = 0;
-    if ( xIndex >= xDim ) xIndex = xDim - 1;
-  }
-  if ( yPeriodic ) yIndex = MODULO(yIndex,yDim);
-  else
-  {
-    if ( yIndex < 0 ) yIndex = 0;
-    if ( yIndex >= yDim ) yIndex = yDim - 1;
-  }
-  if ( zPeriodic ) zIndex = MODULO(zIndex,zDim);
-  else
-  {
-    if ( zIndex < 0 ) zIndex = 0;
-    if ( zIndex >= zDim ) zIndex = zDim - 1;
-  }
-  return ((zIndex*yDim)+yIndex)*xDim + xIndex;
-}
-
-//----------------------------------------------------------------------
-int PatchMap::xIndex(int pid)
-{
-  return pid % xDim;
-}
-
-//----------------------------------------------------------------------
-int PatchMap::yIndex(int pid)
-{
-  return (pid / xDim) % yDim;
-}
-
-//----------------------------------------------------------------------
-int PatchMap::zIndex(int pid)
-{
-  return (pid / (xDim*yDim));
-}
-
-//----------------------------------------------------------------------
-int PatchMap::downstream(int pid1, int pid2)
-{
-  register int i1;
-  register int i2;
-  register int i;
-  register int ds;
-
-  if ( pid1 == notUsed || pid2 == notUsed ) return notUsed;
-
-  // z
-  i1 = (pid1 / (xDim*yDim));
-  i2 = (pid2 / (xDim*yDim));
-  if ( zPeriodic ) {
-    i = ( ( ( i1 + 1 ) % zDim ) == i2 ) ? i1 : i2;
-  }
-  else {
-    i = ( i1 < i2 ) ? i1 : i2;
-  }
-  ds = i*yDim;
-  
-  // y
-  i1 = (pid1 / xDim) % yDim;
-  i2 = (pid2 / xDim) % yDim;
-  if ( yPeriodic ) {
-    i = ( ( ( i1 + 1 ) % yDim ) == i2 ) ? i1 : i2;
-  }
-  else {
-    i = ( i1 < i2 ) ? i1 : i2;
-  }
-  ds = (ds+i)*xDim;
-
-  // x
-  i1 = pid1 % xDim;
-  i2 = pid2 % xDim;
-  if ( xPeriodic ) {
-    i = ( ( ( i1 + 1 ) % xDim ) == i2 ) ? i1 : i2;
-  }
-  else {
-    i = ( i1 < i2 ) ? i1 : i2;
-  }
-  return ( ds + i );
-}
-
-//----------------------------------------------------------------------
-int PatchMap::node(int pid)
-{
-  return patchData[pid].node;
-}
-
-//----------------------------------------------------------------------
-Coordinate PatchMap::minX(int pid)
-{
-  return patchData[pid].x0;
-}
-
-//----------------------------------------------------------------------
-Coordinate PatchMap::maxX(int pid)
-{
-  return patchData[pid].x1;
-}
-
-//----------------------------------------------------------------------
-Coordinate PatchMap::minY(int pid)
-{
-  return patchData[pid].y0;
-}
-
-//----------------------------------------------------------------------
-Coordinate PatchMap::maxY(int pid)
-{
-  return patchData[pid].y1;
-}
-
-//----------------------------------------------------------------------
-Coordinate PatchMap::minZ(int pid)
-{
-  return patchData[pid].z0;
-}
-
-//----------------------------------------------------------------------
-Coordinate PatchMap::maxZ(int pid)
-{
-  return patchData[pid].z1;
-}
-
-//----------------------------------------------------------------------
-int PatchMap::numCids(int pid)
-{
-  return patchData[pid].numCids;
-}
-
-//----------------------------------------------------------------------
-int PatchMap::cid(int pid,int i)
-{
-  return patchData[pid].cids[i];
 }
 
 //----------------------------------------------------------------------
@@ -682,12 +475,15 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
  *
  *	$RCSfile: PatchMap.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1997/09/30 16:57:45 $
+ *	$Revision: 1.1014 $	$Date: 1997/10/06 00:12:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.1014  1997/10/06 00:12:33  jim
+ * Added PatchMap.inl, sped up cycle-boundary tuple code.
+ *
  * Revision 1.1013  1997/09/30 16:57:45  jim
  * Fixed bug dealing with atoms on unknown patches.
  *

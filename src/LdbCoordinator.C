@@ -9,7 +9,7 @@
 #include "Node.h"
 #include "Namd.h"
 #include "SimParameters.h"
-#include "PatchMap.h"
+#include "PatchMap.inl"
 #include "ComputeMap.h"
 #define DEBUGM
 #define MIN_DEBUG_LEVEL 4
