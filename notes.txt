@@ -37,103 +37,136 @@ Also added changes to read new format parm files from AMBER 7.
 
 Running NAMD
 
--- Individual Workstations --
+NAMD runs on a variety of serial and parallel platforms.  While it is
+trivial to launch a serial program, a parallel program depends on a
+platform-specific library such as MPI to launch copies of itself on
+other nodes and to provide access to a high performance network such
+as Myrinet if one is available.
+
+For typical workstations (Windows, Linux, Mac OS X, or other Unix)
+with only ethernet networking (100 Megabit or Gigabit), NAMD uses the
+Charm++ native communications layer and the program charmrun to launch
+namd2 processes for parallel runs (either exclusively on the local
+machine with the ++local option or on other hosts as specified by a
+nodelist file).  The namd2 binaries for these platforms can also be
+run directly (known as standalone mode) for single process runs.
+
+For workstation clusters and other massively parallel machines with
+special high-performance networking, NAMD uses the system-provided
+MPI library (with a few exceptions) and standard system tools such as
+mpirun are used to launch jobs.  Since MPI libraries are very often
+incompatible between versions, you will likely need to recompile NAMD
+and its underlying Charm++ libraries to use these machines in parallel
+(the provided non-MPI binaries should still work for serial runs.)
+The provided charmrun program for these platforms is only a script
+that attempts to translate charmrun options into mpirun options, but
+due to the diversity of MPI libraries it often fails to work.
+
+-- Individual Windows, Linux, Mac OS X, or Other Unix Workstations --
 
 Individual workstations use the same version of NAMD as workstation
-networks, but running NAMD is much easier.  You may launch any number
-of namd2 processes on the local machine (for best performance lauch
-one process per processor) using the "++local" option via:
+networks, but running NAMD is much easier.  If your machine has only
+one processor you can run the namd2 binary directly:
+
+  namd2 <configfile>
+
+For multiprocessor workstations, Windows and Solaris released binaries
+are based on SMP versions of Charm++ that can run multiple threads.
+For best performance use one thread per processor with the +p option:
+
+  namd2 +p<procs> <configfile>
+
+Since the SMP versions of NAMD are relatively new, there may be bugs
+that are only present when running multiple threads.  You may want to
+try running with charmrun (see below) if you experience crashes.
+
+For other multiprocessor workstations the included charmrun program is
+needed to run multiple namd2 processes.  The ++local option is also
+required to specify that only the local machine is being used:
 
   charmrun namd2 ++local +p<procs> <configfile>
 
-There is no longer any need to be able to "rsh localhost" or to
-create a nodelist file containing the single host localhost.
+You may need to specify the full path to the namd2 binary.
 
-Intel and Alpha processors produce binary files (restart and DCD
-files) which must be "byte-swapped" to be read on other platforms.
-NAMD and VMD now handle this conversion automatically for most files.
-See the section "Endian Issues" below for details.
+-- Linux, Mac OS X, or Other Unix Workstation Networks --
 
--- Individual Windows Workstations --
+The same binaries used for individual workstations as described above
+can be used with charmrun to run in parallel on a workstation network.
+The only difference is that you must provide a "nodelist" file listing
+the machines where namd2 processes should run, for example:
 
-NAMD may be run on a single Windows workstation via the command:
-
-  charmrun namd2 ++local +p<procs> <configfile>
-
-For best performance, <procs> should be the number of processors in
-your machine, and defaults to one if the "+p" option is omitted.
-However, the "++local" option is required unless charmd is running
-and a nodelist file (containing only localhost) is present.
-
-See "Windows Workstation Networks" below to run on multiple machines.
-
--- Workstation Networks --
-
-Workstation networks require two files, the namd2 executable and the
-charmrun program.  The charmrun program starts namd2 on the desired
-hosts, and handles console I/O for the node programs.
-
-To specify what machines namd2 will run on, the user creates a file
-called "nodelist".  Below is an example nodelist file:
-
-group main
- host brutus
- host romeo
+  group main
+  host brutus
+  host romeo
 
 The "group main" line defines the default machine list.  Hosts brutus
 and romeo are the two machines on which to run the simulation.  Note
 that charmrun may run on one of those machines, or charmrun may run
-on a third machine.
+on a third machine.  All machines used for a simulation must be of the
+same type and have access to the same namd2 binary.
 
-The "rsh" command ("remsh" on HPUX) is used to start namd2 on each node
-specified in the nodelist file.  If NAMD fails without printing any
-output, check to make sure that "rsh" works on your machine, by seeing
-if "rsh hostname ls" works for each host in the nodelist.  If you want
-or need to use "ssh" instead, then add "setenv CONV_RSH ssh" to your
-login or batch script and try "ssh hostname ls" to each host first to
-ensure that the machine is in your .ssh/known_hosts file.  If you are
-unable to use rsh or ssh, then add "setenv CONV_DAEMON" and run charmd
-(or charmd_faceless, which produces a log file) on every node.
+By default, the "rsh" command ("remsh" on HPUX) is used to start namd2
+on each node specified in the nodelist file.  You can change this via
+the CONV_RSH environment variable, i.e., to use ssh instead of rsh run
+"setenv CONV_RSH ssh" or add it to your login or batch script.  You
+must be able to connect to each node via rsh/ssh without typing your
+password; this can be accomplished via a .rhosts files in your home
+directory, by an /etc/hosts.equiv file installed by your sysadmin, or
+by a .ssh/authorized_keys file in your home directory.  You should
+confirm that you can run "ssh hostname pwd" (or "rsh hostname pwd")
+without typing a password before running NAMD.  Contact your local
+sysadmin if you have difficulty setting this up.  If you are unable to
+use rsh or ssh, then add "setenv CONV_DAEMON" to your script and run 
+charmd (or charmd_faceless, which produces a log file) on every node.
 
-Some automounters use a temporary mount directory which is prepended
-to the path returned by the pwd command.  To run on multiple machines
-you must add a "++pathfix" option to your nodelist file.  For example:
+You should now be able to try running NAMD as:
 
-group main ++pathfix /tmp_mnt /
- host alpha1
- host alpha2
+  charmrun namd2 +p<procs> <configfile>
 
-A number of parameters may be passed to charmrun.  The most important
-is the "+pX" option, where X specifies the number of processors.  If X
-is less than the number of hosts in the nodelist, machines are
-selected from top to bottom.  If X is greater than the number of
-hosts, charmrun will start multiple processes on the machines,
-starting from the top.  To run multiple processes on members of a SMP
-workstation cluster, you may either just use the +p option to go
-through the list the right number of times, or list each machine
-several times, once for each processor.  The default is +p1.
+If this fails or just hangs, try adding the ++verbose option to see
+more details of the startup process.  You may need to specify the full
+path to the namd2 binary.  Charmrun will start the number of processes
+specified by the +p option, cycling through the hosts in the nodelist
+file as many times as necessary.  You may list multiprocessor machines
+multiple times in the nodelist file, once for each processor.
 
 You may specify the nodelist file with the "++nodelist" option and the
 group (which defaults to "main") with the "++nodegroup" option.  If
 you do not use "++nodelist" charmrun will first look for "nodelist"
 in your current directory and then ".nodelist" in your home directory.
 
-If you always want to run on the machine you are logged in to you may
-use "localhost" in place of the hostname in your nodelist file, but
-only if there are no other machines.  You will not need "++pathfix".
-For example, ".nodelist" in your home directory could read:
+Some automounters use a temporary mount directory which is prepended
+to the path returned by the pwd command.  To run on multiple machines
+you must add a "++pathfix" option to your nodelist file.  For example:
 
-group main
- host localhost
+  group main ++pathfix /tmp_mnt /
+  host alpha1
+  host alpha2
 
-It is simpler in many cases to instead use the "++local" option as
-described under "Individual Workstations" above, which eliminates the
-need for the nodelist file and rsh entirely.
+There are many other options to charmrun and for the nodelist file.
+These are documented at in the Charm++ Installation and Usage Manual
+available at http://charm.cs.uiuc.edu/manuals/ and a list of available
+charmrun options is available by running charmrun without arguments.
 
-Once the nodelist file is set up, and you have your configuration file
-prepared, run NAMD as follows:
+If your workstation cluster is controlled by a queueing system you
+will need build a nodelist file in your job script.  For example, if
+your queueing system provides a $HOST_FILE environment variable:
 
-  charmrun +p<procs> namd2 <configfile>
+  set NODES = `cat $HOST_FILE`
+  set NODELIST = $TMPDIR/namd2.nodelist
+  echo group main >! $NODELIST
+  foreach node ( $nodes )
+    echo host $node >> $NODELIST
+  end
+  @ NUMPROCS = 2 * $#NODES
+  charmrun namd2 +p$NUMPROCS ++nodelist $NODELIST <configfile>
+
+Note that $NUMPROCS is twice the number of nodes in this example.
+This is the case for dual-processor machines.  For single-processor
+machines you would not multiply $#NODES by two.
+
+Note that these example scripts and the setenv command are for the csh
+or tcsh shells.  They must be translated to work with sh or bash.
 
 -- Windows Workstation Networks ---
 
@@ -141,30 +174,36 @@ Windows is the same as other workstation networks described above,
 except that rsh is not available on this platform.  Instead, you must
 run the provided daemon (charmd.exe) on every node listed in the
 nodelist file.  Using charmd_faceless rather than charmd will eliminate
-consoles for the daemon and node processes.  The "++local" option is
-also available under Windows, eliminating the need for charmd and
-nodelist when running NAMD only on the local machine.
+consoles for the daemon and node processes.
 
--- Scyld Beowulf Clusters --
+-- BProc-Based Clusters (Scyld and Clustermatic) --
 
-Scyld Beowulf clusters replace rsh and other methods of launching jobs
+Scyld and Clustermatic replace rsh and other methods of launching jobs
 via a distributed process space.  There is no need for a nodelist file
-or any special daemons.  In order to allow access to files, the first
-NAMD process must be on the master node of the cluster.  Launch jobs
-from the master node of the cluster via the command:
+or any special daemons, although special Scyld or Clustermatic versions
+of charmrun and namd2 are required.  In order to allow access to files,
+the first NAMD process must be on the master node of the cluster.
+Launch jobs from the master node of the cluster via the command:
 
   charmrun namd2 +p<procs> <configfile>
 
 For best performance, run a single NAMD job on all available nodes and
-never run multiple NAMD jobs at the same time.  You may safely suspend
-and resume a running NAMD job on a Scyld Beowulf using control-Z or
-"kill -STOP" and "kill -CONT" on the charmrun process.
+never run multiple NAMD jobs at the same time.  You should probably
+determine the number of processors via a script, for example on Scyld:
+
+  @ NUMPROCS = `bpstat -u` + 1
+  charmrun namd2 +p$NUMPROCS <configfile>
+
+You may safely suspend and resume a running NAMD job on these clusters
+using kill -STOP and kill -CONT on the process group.  Queueing systems
+typically provide this functionality, allowing you to suspend a running
+job to allow a higher priority job to run immediately.
 
 -- Compaq AlphaServer SC --
 
-Although NAMD uses MPI and the Elan library on this platform, parallel
-jobs are run using the "prun" command.  (The standard MPI charmrun is
-wrong on this platform.)  The syntax for this command is:
+If your machine as a Quadrics interconnect you should use the Elan
+version of NAMD, other wise select the normal MPI version.  In either
+case, parallel jobs are run using the "prun" command as follows:
 
   prun -n <procs> <configfile>
 
@@ -172,10 +211,10 @@ There are additional options.  Consult your local documentation.
 
 -- IBM RS/6000 SP --
 
-Run NAMD as you would any POE program.  The options and environment
-variables for poe are various and arcane, so you should consult your
-local documentation for recommended settings.  As an example, to run
-on Blue Horizon one would specify:
+Run the MPI version of NAMD as you would any POE program.  The options
+and environment variables for poe are various and arcane, so you should
+consult your local documentation for recommended settings.  As an
+example, to run on Blue Horizon one would specify:
 
   poe namd2 <configfile> -nodes <procs/8> -tasks_per_node 8
 
@@ -274,129 +313,122 @@ Your feedback will help us improve NAMD.
     - A description of the problematic behavior and any error messages. 
     - If the problem is consistent or random. 
     - The compressed tar file as an attachment (or a URL if it is too big). 
- 7. We'll get back to you by the next business day. 
+ 7. We'll get back to you with further questions or suggestions.
 
 ----------------------------------------------------------------------
 
 Compiling NAMD
 
 Building a complete NAMD binary from source code requires working
-C and C++ compilers, Charm++/Converse, TCL, and FFTW.  NAMD will still
-compile without TCL and FFTW but certain features will be disabled.
-Fortunately, all required packages are freely available on the net.
-TCL and FFTW are not used by default, but must be enabled when you run
-the NAMD config script and some files in arch may need editing.
+C and C++ compilers, Charm++/Converse, TCL, FFTW, and the VMD molfile
+plugins.  NAMD will compile without TCL, FFTW or plugins but certain
+features will be disabled.  Fortunately, precompiled libraries are
+available from http://www.ks.uiuc.edu/Research/namd/libraries/.  You
+must enable these options by specifying "tcl fftw plugins" as options
+when you run the config script and some files in arch may need editing.
 
 As an example, here is the build sequence for Linux workstations:
 
-Download and build Tcl from http://www.scriptics.com/products/tcltk/
-and FFTW from http://www.fftw.org/ (use --disable-type-prefix) if
-not already available on your machine.  Both are free.
+Download TCL, FFTW, and plugins libraries:
+  mkdir fftw;  cd fftw
+  wget http://www.ks.uiuc.edu/Research/namd/libraries/fftw-linux.tar.gz
+  tar xzf fftw-linux.tar.gz
+  cd ..;  mkdir plugins;  cd plugins
+  wget http://www.ks.uiuc.edu/Research/namd/libraries/plugins-LINUX.tar.gz
+  tar xzf plugins-LINUX.tar.gz
+  cd ..;  mkdir tcl;  cd tcl
+  wget http://www.ks.uiuc.edu/Research/namd/libraries/tcl-linux.tar.gz
+  tar xzf tcl-linux.tar.gz
 
-Unpack source code and enter directory:
-  tar xzf NAMD_2.4_Source.tar.gz
-  cd NAMD_2.4_Source
-
-Download and build Charm++/Converse library:
-  setenv CVSROOT ":pserver:checkout@charm.cs.uiuc.edu:/cvsroot"
-  cvs login   (PRESS RETURN WHEN ASKED FOR A PASSWORD)
-  cvs co -D 2002-02-20 -P charm
+Unpack NAMD and matching Charm++ source code and enter directory:
+  tar xzf NAMD_2.5_Source.tar.gz
+  cd NAMD_2.5_Source
+  tar xf charm.tar
   cd charm
-  ./build charm++ net-linux
+
+Build the Charm++/Converse library:
+  ./build charm++ net-linux -O -DCMK_OPTIMIZE=1
   cd ..
 
 Edit various configuration files:
   vi Make.charm  (set CHARMBASE to .rootdir/charm or full path to charm)
-  vi arch/Linux-i686.tcl   (fix library version and path to Tcl files)
-  vi arch/Linux-i686.fftw  (fix library name and path to files)
+  vi arch/Linux-i686.fftw     (fix library name and path to files)
+  vi arch/Linux-i686.plugins  (fix library name and path to files)
+  vi arch/Linux-i686.tcl      (fix library version and path to TCL files)
 
 Set up build directory and compile:
-  ./config tcl fftw Linux-i686-g++
+  ./config tcl fftw plugins Linux-i686-g++
   cd Linux-i686-g++ 
   make
 
 Quick tests using one and two processes:
-  ./charmrun ++local +p1 ./namd2
+  ./namd2
+  ./namd2 src/alanin
   ./charmrun ++local +p2 ./namd2
-  ./charmrun ++local +p1 ./namd2 src/alanin
   ./charmrun ++local +p2 ./namd2 src/alanin
 
 That's it.  A more complete explanation of the build process follows.
+Note that you will need Cygwin to compile NAMD on Windows.
 
-You must first download and install NAMD's communications library,
-Charm++/Converse, from http://charm.cs.uiuc.edu/.  You will have
-to obtain the February 20, 2002 beta version via public CVS.  Follow the
-directions at http://charm.cs.uiuc.edu/beta.html for connecting but
-use the command "cvs co -D 2002-02-20 -P charm" to get the files.
+Download and unpack fftw, plugins, and tcl libraries for your platform
+from http://www.ks.uiuc.edu/Research/namd/libraries/.  Each tar file
+contains a directory with the name of the platform, and the plugins
+platform names are different from fftw and tcl.  These libraries don't
+change very often, so you should find a permanent home for them.
 
-This table shows the version needed for each NAMD architecture.  It is
-important that the same C++ compiler is used for both Charm and NAMD.
+Unpack the NAMD source code and the enclosed charm.tar archive.  This
+version of Charm++ is the same one used to build the released binaries
+and is more likely to work and be bug free than any other we know of.
+Edit Make.charm to point at .rootdir/charm or the full path to the
+charm directory if you unpacked outside of the NAMD source directory.
 
-    NAMD Arch Name           Charm Version            Comments
-   ----------------------   ---------------------    ------------------
-    AIX-RS6000-xlC           net-rs6k                 IBM compiler
-  * ASCI-Red                 paragon-red              ASCI Red (Sandia)
-  * Cygwin-i686-MSVC         net-win32                Microsoft compiler
-  * Cygwin-i686              net-cygwin               GNU compiler
-    Darwin-PPC-c++           net-ppc-darwin           Mac OS X
-    HPUX-aCC                 net-hp-acc               ANSI HP compiler
-  * HPUX-CC                  net-hp-cc                Old HP compiler
-    HPUX-g++                 net-hp                   GNU compiler
-  * HPUX-KCC                 net-hp-kcc               KAI C++ compiler
-    HPUX-PA2.0-aCC           net-hp-acc               Newer HP CPUs
-    IBM-SP                   mpi-sp                   IBM xlC compiler
-    Linux-Alpha-cxx          net-linux-axp-cxx        Compaq compiler
-    Linux-Alpha-g++          net-linux-axp            GNU compiler
-    Linux-Alpha-MPI-cxx      mpi-linux-axp-cxx        Compaq compiler
-    Linux-Alpha-Scyld-cxx    net-linux-axp-scyld-cxx  Scyld Beowulf
-    Linux-Alpha-ScyldCD-cxx  net-linux-axp-scyld-cxx  Scyld distribution
-    Linux-i686-g++           net-linux                GNU compiler
-    Linux-i686-KCC           net-linux-kcc            KAI C++ compiler
-    Linux-i686-MPI-pgCC      mpi-linux-pgcc           NCSA Linux cluster
-    Linux-i686-MPI           mpi-linux                GNU compiler
-    Linux-i686-Scyld         net-linux-scyld          Scyld Beowulf
-    Linux-i686-ScyldCD       net-linux-scyld          Scyld distribution
-    Origin2000-CC            origin2000               SGI compiler
-    Origin2000-MPI-CC        mpi-origin               SGI compiler
-    Solaris-i686-g++         net-sol-x86              GNU compiler
-    Solaris-Sparc-CC         net-sol-cc               Sun compiler
-    Solaris-Sparc-g++        net-sol                  GNU compiler
-    Solaris-Sparc-MPI        mpi-sol-cc               Sun compiler
-    T3E-CC                   t3e                      Cray compiler
-    Tru64-Alpha-CC           net-axp-cc               Compaq compiler
-  * Tru64-Alpha-g++          net-axp                  GNU compiler
-    Tru64-Alpha-MPI-CC       mpi-axp-cc               Alphaserver SC
-  * Win32-i686-MSVC          net-win32                MSVC and nmake
+Run the config script without arguments to list the available builds,
+which have names like Linux-i686-Clustermatic-TCP-icc.  Each build or
+"ARCH" of the form BASEARCH-options-compiler, where BASEARCH is the
+most generic name for a platform, like Linux-i686.  The options are
+things like Scyld, TCP, SMP, or Elan.
 
-  * These architectures may fail to build or be unstable.  Building
-    on Win32 is not simple.  Cygwin is needed to build Charm on any
-    Windows platform, but Win32-i686-MSVC may be built with only
-    MSVC and nmake from the DOS command line.
+Edit arch/BASEARCH.fftw, arch/BASEARCH.plugins, and arch/BASEARCH.tcl
+to point to the libraries you downloaded.  View arch/ARCH.arch and
+look for a line like "CHARMARCH = net-linux-clustermatic-tcp-icc" to
+find out what Charm++ platform you need to build.  The CHARMARCH name
+is of the format comm-OS-cpu-options-compiler.
 
-Once you have obtained the Charm++/Converse source code, you can
-build the libraries needed by NAMD for each architecture with the
-build command in the charm directory:
+Enter the charm directory and run the build script without options
+to see a list of available platforms.  Only the comm-OS-cpu part will
+be listed.  Any options or compiler tags are listed separately and
+must be separated by spaces on the build command line.  Run the build
+command for your platform as:
 
-  ./build charm++ CHARMVERSION
+  ./build charm++ comm-OS-cpu options compiler -O -DCMK_OPTIMIZE=1
 
-where CHARMVERSION is the appropriate version listed above, separated
-into the comm-OS-cpu base (such as "net-linux-axp") and the separate
-options which are also needed (such as "scyld" and "cxx").  So, for 
-Scyld on Alpha Linux, use "./build charm++ net-linux-axp scyld cxx".
+For this specific example:
+
+  ./build charm++ net-linux clustermatic tcp icc -O -DCMK_OPTIMIZE=1
+
 The README distributed with Charm contains a complete explanation.
-
 You only actually need the bin, include, and lib subdirectories, so
-you can copy those elsewhere and delete the whole build directory.
+you can copy those elsewhere and delete the whole charm directory,
+but don't forget to edit Make.charm if you do this.
 
-Edit Make.charm to point to the directory where Charm++ is installed.
+Now you can run the NAMD config script to set up a build directory:
 
-Now you can type "./config ARCH" where ARCH is a ARCH architecture
-name listed above (or as a file suffix in the arch directory).  This
-will create a build directory for that architecture.  If you wish to
-create this directory elsewhere use "./config DIR/ARCH", replacing
-DIR with the location the build directory should be created.
+  ./config tcl fftw plugins ARCH
 
-Now "cd" to your build directory and type make.  The namd2 binary and
+For this specific example:
+
+  ./config tcl fftw plugins Linux-i686-Clustermatic-TCP-icc
+
+This will create a build directory Linux-i686-Clustermatic-TCP-icc.
+If you wish to create this directory elsewhere use config DIR/ARCH,
+replacing DIR with the location the build directory should be created.
+A symbolic link to the remote directory will be created as well.  You
+can create multiple build directories for the same ARCH by adding a
+suffix.  These can be combined, of course, as in:
+
+  ./config tcl fftw plugins /tmp/Linux-i686-Clustermatic-TCP-icc.test1
+
+Now cd to your build directory and type make.  The namd2 binary and
 a number of utilities will be created.
 
 If you have trouble building NAMD your compiler may be different from
@@ -405,32 +437,6 @@ several options to elicit similar behavior on all platforms.  Your
 compiler may conform to an earlier C++ specification than NAMD uses.
 You compiler may also enforce a later C++ rule than NAMD follows.
 You may ignore repeated warnings about new and delete matching.
-
-You may edit Makefile to enable DPMTA and DPME.  DPMTA is required
-if you want to use the fast multipole algorithm for full
-electrostatics.  DPME is only useful for comparison with the new
-particle mesh Ewald code.  You must specify "useDPME on" in the
-simulation config file to switch to the old DPME code.  DPMTA and
-DPME are *not* included in the release binaries.  In order to build
-NAMD with DPTMA you will also need to compile the PVM compatibility
-library by running "./build pvm CHARMVERSION" in the charm directory.
-
-You may enable linking with Tcl by editing arch/BASEARCH.tcl (where
-BASEARCH is ARCH without the -CC, -g++, or -KCC compiler extension)
-and adding "tcl" to the config command line: "./config tcl ARCH"
-Tcl is required for Tcl global forces (tclForces) and for Tcl
-scripting.  Tcl is available from www.scriptics.com.  If the Tcl
-preinstalled on your system has only shared libraries, you may want
-to build Tcl yourself.  Tcl is included in the release binaries.
-
-You may enable linking with FFTW by editing arch/BASEARCH.fftw (where
-BASEARCH is ARCH without the -CC, -g++, or -KCC compiler extension)
-and adding "fftw" to the config command line: "./config tcl fftw ARCH"
-FFTW is required in order to use the newer particle mesh Ewald.  FFTW
-is available from www.fftw.org.  If you download the RPM or configure
-FFTW with --enable-type-prefix you will need to make symbolic links to
-the double precision versions of the libraries and header files.  FFTW
-is now included in the release binaries under a special license.
 
 ----------------------------------------------------------------------
 
