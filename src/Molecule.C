@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *  $RCSfile: Molecule.C,v $
- *  $Author: brunner $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1020 $  $Date: 1998/01/23 19:50:29 $
+ *  $Author: jim $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1021 $  $Date: 1998/02/11 07:27:23 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,10 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1021  1998/02/11 07:27:23  jim
+ * Completed interface to free energy perturbation, added code for
+ * determining atomid from segid, resid, and atomname.
+ *
  * Revision 1.1020  1998/01/23 19:50:29  brunner
  * More efficient memory allocation by combining allocations for 3 small
  * blocks.  Further improvement by using a pool allocation is still
@@ -242,7 +246,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1020 1998/01/23 19:50:29 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1021 1998/02/11 07:27:23 jim Exp $";
 
 #include "UniqueSortedArray.h"
 #include "Molecule.h"
@@ -266,6 +270,80 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,
 // #define DEBUGM
 #include "Debug.h"
 
+
+class ResidueLookupElem
+{
+public:
+  char mySegid[11];
+  ResidueLookupElem *next;	// stored as a linked list
+  int firstResid;		// valid resid is >= firstResid
+  int lastResid;		// valid resid is <= lastResid
+  ResizeArray<int> atomIndex;	// 0-based index for first atom in residue
+
+  ResidueLookupElem(void) { next = 0; firstResid = -1; lastResid = -1; }
+  ~ResidueLookupElem(void) { delete next; }
+  int lookup(const char *segid, int resid, int *begin, int *end) const;
+  ResidueLookupElem* append(const char *segid, int resid, int aid);
+};
+
+int ResidueLookupElem::lookup(
+	const char *segid, int resid, int *begin, int *end) const {
+    const ResidueLookupElem *elem = this;
+    int rval = -1;  // error
+    while ( elem && strcasecmp(elem->mySegid,segid) ) elem = elem->next;
+    if ( elem && (resid >= elem->firstResid) && (resid <= elem->lastResid) ) {
+      *begin = elem->atomIndex[resid - firstResid];
+      *end = elem->atomIndex[resid - firstResid + 1];
+      rval = 0;  // no error
+    }
+    return rval;
+}
+
+ResidueLookupElem* ResidueLookupElem::append(
+	const char *segid, int resid, int aid) {
+    ResidueLookupElem *rval = this;
+    if ( firstResid == -1 ) {  // nothing added yet
+      strcpy(mySegid,segid);
+      firstResid = resid;
+      lastResid = resid;
+      atomIndex.add(aid);
+      atomIndex.add(aid+1);
+    } else if ( ! strcasecmp(mySegid,segid) ) {  // same segid
+      if ( resid == lastResid ) {  // same resid
+        atomIndex[lastResid - firstResid + 1] = aid + 1;
+      } else if ( resid < lastResid ) {  // error
+        NAMD_die("Residues out of order!");
+      } else {  // new resid
+        for ( ; lastResid < resid; ++lastResid ) atomIndex.add(aid);
+        atomIndex[lastResid - firstResid + 1] = aid + 1;
+      }
+    } else {  // new segid
+      rval = next = new(ResidueLookupElem);
+      next->append(segid,resid,aid);
+    }
+    return rval;
+}
+
+
+//  Lookup atom id from segment, residue, and name
+int Molecule::get_atom_from_name(
+	const char *segid, int resid, const char *aname) const {
+
+  if (atomNames == NULL || resLookup == NULL)
+  {
+    NAMD_die("Tried to find atom from name on node other than node 0");
+  }
+
+  int i = 0;
+  int end = 0;
+  if ( resLookup->lookup(segid,resid,&i,&end) ) return -1;
+  for ( ; i < end; ++i ) {
+    if ( ! strcasecmp(aname,atomNames[i].atomname) ) return i;
+  }
+  return -1;
+}
+
+
 /************************************************************************/
 /*                  */
 /*      FUNCTION Molecule        */
@@ -283,6 +361,7 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
   /*  Initialize array pointers to NULL  */
   atoms=NULL;
   atomNames=NULL;
+  resLookup=NULL;
   bonds=NULL;
   angles=NULL;
   dihedrals=NULL;
@@ -353,6 +432,9 @@ Molecule::~Molecule()
     }
     delete [] atomNames;
   }
+
+  if (resLookup != NULL)
+    delete resLookup;
 
   if (bonds != NULL)
     delete [] bonds;
@@ -734,8 +816,8 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
   int atom_number=0;  // Atom number 
   int last_atom_number=0; // Last atom number, used to assure
         // atoms are in order
-  char molecule_name[11]; // Molecule name
-  char segment_number[21];// Segment number
+  char segment_name[11]; // Segment name
+  int residue_number=0; // Residue number
   char residue_name[11];  // Residue name
   char atom_name[11];  // Atom name
   char atom_type[11];  // Atom type
@@ -746,9 +828,10 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
   /*  Allocate the atom arrays          */
   atoms     = new Atom[numAtoms];
   atomNames = new AtomNameInfo[numAtoms];
+  ResidueLookupElem *tmpResLookup = resLookup = new ResidueLookupElem;
   hydrogenGroup.resize(0);
 
-  if (atoms == NULL || atomNames == NULL )
+  if (atoms == NULL || atomNames == NULL || resLookup == NULL )
   {
     NAMD_die("memory allocation failed in Molecule::read_atoms");
   }
@@ -764,8 +847,8 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
       continue;
 
     /*  Parse up the line          */
-    read_count=sscanf(buffer, "%d %s %s %s %s %s %f %f",
-       &atom_number, molecule_name, segment_number,
+    read_count=sscanf(buffer, "%d %s %d %s %s %s %f %f",
+       &atom_number, segment_name, &residue_number,
        residue_name, atom_name, atom_type, &charge, &mass);
 
     /*  Check to make sure we found what we were expecting  */
@@ -814,6 +897,10 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
     atoms[atom_number-1].mass = mass;
     atoms[atom_number-1].charge = charge;
     atoms[atom_number-1].status = UnknownAtom;
+
+    /*  Add this atom to residue lookup table */
+    tmpResLookup =
+	tmpResLookup->append(segment_name, residue_number, atom_number-1);
 
     /*  Determine the type of the atom (H or O) */
     if (atoms[atom_number-1].mass <=3.5) {
@@ -3665,12 +3752,16 @@ void Molecule::receive_Molecule(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1020 $  $Date: 1998/01/23 19:50:29 $
+ *  $Revision: 1.1021 $  $Date: 1998/02/11 07:27:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1021  1998/02/11 07:27:23  jim
+ * Completed interface to free energy perturbation, added code for
+ * determining atomid from segid, resid, and atomname.
+ *
  * Revision 1.1020  1998/01/23 19:50:29  brunner
  * More efficient memory allocation by combining allocations for 3 small
  * blocks.  Further improvement by using a pool allocation is still

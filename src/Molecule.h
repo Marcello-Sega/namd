@@ -41,6 +41,7 @@ class AngleElem;
 class DihedralElem;
 class ImproperElem;
 class NonbondedExclElem;
+class ResidueLookupElem;
 
 typedef int* intPtr;
 
@@ -63,6 +64,7 @@ private:
 	Atom *atoms;		//  Array of atom structures
 	AtomNameInfo *atomNames;//  Array of atom name info.  Only maintained
 				//  on node 0 for VMD interface
+	ResidueLookupElem *resLookup; // find residues by name
 	Bond *bonds;		//  Array of bond structures
 	Angle *angles;		//  Array of angle structures
 	Dihedral *dihedrals;	//  Array of dihedral structures
@@ -242,6 +244,9 @@ public:
 
 		return(atomNames[anum].atomtype);
 	}
+
+	//  Lookup atom id from segment, residue, and name
+	int get_atom_from_name(const char *segid, int resid, const char *aname) const;
 	
 	//  The following routines are used to get the list of bonds
 	//  for a given atom.  This is used when creating the bond lists
@@ -371,13 +376,17 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: Molecule.h,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1997/12/26 23:10:52 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1016 $	$Date: 1998/02/11 07:27:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.1016  1998/02/11 07:27:24  jim
+ * Completed interface to free energy perturbation, added code for
+ * determining atomid from segid, resid, and atomname.
+ *
  * Revision 1.1015  1997/12/26 23:10:52  milind
  * Made namd2 to compile, link and run under linux. Merged Templates and src
  * directoriies, and removed separate definition and declaration files for
