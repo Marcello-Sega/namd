@@ -454,11 +454,23 @@ void Parameters::read_charmm_parameter_file(char *fname)
       {
         par_type=2; skipline=1;
       }
+      else if (strncasecmp(first_word, "thet", 4)==0)
+      {
+        par_type=2; skipline=1;
+      }
       else if (strncasecmp(first_word, "dihe", 4)==0)
       {
-              par_type=3; skipline=1;
+        par_type=3; skipline=1;
+      }
+      else if (strncasecmp(first_word, "phi", 3)==0)
+      {
+        par_type=3; skipline=1;
       }
       else if (strncasecmp(first_word, "impr", 4)==0)
+      {
+        par_type=4; skipline=1;
+      }
+      else if (strncasecmp(first_word, "imph", 4)==0)
       {
         par_type=4; skipline=1;
       }
@@ -2622,7 +2634,7 @@ void Parameters::assign_vdw_index(char *atomtype, Atom *atom_ptr)
     // since CHARMM allows wildcards "*" in vdw typenames
     // we have to look again if necessary, this way, if
     // we already had an exact match, this is never executed
-    int windx;                      //  wildcard index
+    size_t windx;                      //  wildcard index
 
     /*  Start again at the top				*/
     ptr=vdwp;
@@ -4518,13 +4530,16 @@ int Parameters::vdw_pair_to_arrays(int *ind1_array, int *ind2_array,
  * RCS INFORMATION:
  *
  *  $RCSfile: Parameters.C,v $
- *  $Author: ferenc $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1010 $  $Date: 1999/02/10 00:11:23 $
+ *  $Author: jim $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1011 $  $Date: 1999/03/17 17:54:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Parameters.C,v $
+ * Revision 1.1011  1999/03/17 17:54:18  jim
+ * Added synonyms for angle, dihe, impr for charm19 parameter sets.
+ *
  * Revision 1.1010  1999/02/10 00:11:23  ferenc
  * second argument of pow needs to be a real for kcc!
  *
