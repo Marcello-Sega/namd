@@ -5,67 +5,98 @@
 #include "char.h"
 #include "c++interface.h"
 
-class BoxOwner
-{
-private:
-	boxIsClosed(void *) = 0;
+template <class Owner, class Data>
+class OwnerBox {
+friend Box<Owner,Data>
+public:
+  OwnerBox(Owner *o, void (Owner::*fn)()) : owner(o), callback(fn),
+     numberUsers(0), numberUnclosed(0), data(NULL) {};
+  ~OwnerBox() {
+    if (numberUsers) {
+      CPrintf("OwnerBox::~OwnerBox() - still have boxes out there!\n");
+    }
+  }
+      
+  void open(Data* d, void *box_id = 0) {
+      closeCount = openCount = numberUsers;
+      data = d;
+  }
 
-friend OwnerBox
+  void close() {
+    if (!closeCount && !openCount) {
+      data = NULL; closeCount = openCount = numberUsers;
+
+    }
+    else {
+      CPrintf("OwnerBox::close() - close called, but \
+		closeCount %d openCount %d\n", closeCount, openCount);
+    }
+  }
+
+  Box<Owner,Data> *register(void) {
+    if (closeCount != numberUsers || openCount != numberUsers) {
+      CPrintf("OwnerBox::register() Tried to register while in use\n");
+    }
+    ++numberUsers; ++closeCount; ++openCount; 
+    return (new Box<Owner,Data>(this));
+  }
+
+  void unregister(Box<Owner,Data> * box) {
+    delete box;
+    if (closeCount != numberUsers || openCount != numberUsers) {
+      CPrintf("OwnerBox::unregister() Tried to unregister while in use\n");
+    }
+    if ( ! numberUsers-- ) {
+      CPrintf("OwnerBox::unregister() - no registrants remaining\n");
+      numberUsers = 0;
+    } else {
+      closeCount--; openCount--;
+    }
+  }
+
+  int isOpen() { return (openCount); };
+
+private:
+  Owner *owner;
+  void (Owner::*callback)();
+  int numberUsers;
+  int openCount, closeCount;
+  T* data;
 };
 
-template T
-class OwnerBox<class T>
-{
+
+template <class Owner, class Data>
+class Box {
+friend OwnerBox<Owner,Data>
 public:
-	OwnerBox(BoxOwner *o) :
-		owner(o),
-		number_of_users(0),
-		accesses_remaining(0),
-		data(0)
-		{};
-	void open(T* d, void *box_id = 0)
-	{
-		accesses_remaining = number_of_users;
-		data = d;
-	}
-	void register(void) { ++number_of_users; }
-	void unregister(void)
-	{
-		if ( ! number_of_users-- )
-		{
-			cprintf("OwnerBox::unregister() - no registrants remaining");
-			number_of_users = 0;
-		}
-	}
-	void unregisterAll(void) { number_of_users = 0; }
+
+  // Get access to a pointer
+  T* open(void) { 
+    if (state != OPEN) {
+      state = OPEN; 
+      ownerBox->openCount--;
+    }
+    return ownerBox->data; 
+  }
+
+  // Closed access to the pointer
+  void close(void) {
+    if (state != CLOSED) {
+      state = CLOSED;
+
+      // Trigger callback!
+      if ( ! --ownerBox->closeCount ) {
+	ownerBox->close();
+      }
+    }
+  }
 
 private:
-	BoxOwner *owner;
-	void *id;
-	int number_of_users;
-	int accesses_remaining;
-	T* data;
-	void close(void)
-	{
-		owner->boxIsClosed(id);
-	}
+  Box(OwnerBox<Owner,Data>* o) : ownerBox(o) { state = CLOSED; };
+  ~Box() {};
 
-friend Box<T>
-};
-
-template T
-class Box<class T>
-{
-public:
-	Box(OwnerBox<T>* o) : owner(o) {};
-	T* open(void) { return owner->data; }
-	void close(void)
-	{
-		if ( ! --(owner->accesses_remaining) ) owner->close();
-	}
-
-private:
-	OwnerBox<T> *owner;	
+  enum box_state {OPEN, CLOSED} state;
+  OwnerBox<Owner,Data> *ownerBox;	
 };
 
 #endif // BOX_H
