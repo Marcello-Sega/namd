@@ -27,10 +27,14 @@ long memusageinit::memusage_sbrk() {
 }
 
 #ifdef WIN32
-#define _NO_MALLOC_H
+#define MEMUSAGE_USE_SBRK
 #endif
 
-#ifndef _NO_MALLOC_H
+#ifdef _NO_MALLOC_H
+#define MEMUSAGE_USE_SBRK
+#endif
+
+#ifndef MEMUSAGE_USE_SBRK
 
 #include <malloc.h>
 
@@ -44,7 +48,7 @@ long memusage_mallinfo() {
 
 }
 
-#else // ifndef _NO_MALLOC_H
+#else // ifndef MEMUSAGE_USE_SBRK
 
 long memusage_mallinfo() { return 0; }
 
