@@ -200,6 +200,19 @@ public:
 					//  around the center of mass?
 	Vector sphericalCenter;		//  Center specified by user
 
+        Bool cylindricalCenterCOM;
+        Vector cylindricalCenter;
+        Bool cylindricalBCOn;           //  Flag TRUE->cylindrical boundary
+                                        //  conditions are active
+        BigReal cylindricalBCr1;
+        BigReal cylindricalBCr2;
+        BigReal cylindricalBCl1;
+        BigReal cylindricalBCl2;
+        int cylindricalBCexp1;
+        int cylindricalBCexp2;
+        BigReal cylindricalBCk1;
+        BigReal cylindricalBCk2;
+
 	Bool eFieldOn;                  //  Should a electric field be applied
 	Vector eField;                  //  Electric field vector to be applied
 
@@ -276,13 +289,17 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/04 22:37:19 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/03/15 22:15:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1002  1997/03/15 22:15:33  jim
+ * Added ComputeCylindricalBC.  Doesn't break anything but untested and
+ * cylinder is along x axis (will fix soon).
+ *
  * Revision 1.1001  1997/03/04 22:37:19  ari
  * Clean up of code.  Debug statements removal, dead code removal.
  * Minor fixes, output fixes.

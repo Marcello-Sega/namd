@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1014 1997/03/14 21:40:16 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1015 1997/03/15 22:15:35 jim Exp $";
 
 #include <stdio.h>
 
@@ -365,7 +365,7 @@ void WorkDistrib::mapComputes(void)
   // throw in a few extras, in case I forget some.
 
   int numPotentialCids = 
-    patchMap->numPatches() * (124/2+1) + node->numNodes() * 10;
+    patchMap->numPatches() * (124/2+10) + node->numNodes() * 10;
 
   computeMap->allocateCids(numPotentialCids);
 
@@ -391,6 +391,9 @@ void WorkDistrib::mapComputes(void)
   mapComputeHomePatches(computeAnglesType);
   mapComputeHomePatches(computeDihedralsType);
   mapComputeHomePatches(computeImpropersType);
+
+  if ( node->simParameters->cylindricalBCOn )
+    mapComputePatch(computeCylindricalBCType);
 }
 
 //----------------------------------------------------------------------
@@ -420,6 +423,24 @@ void WorkDistrib::mapComputeHomePatches(ComputeType type)
   }
 
   delete cid;
+}
+
+//----------------------------------------------------------------------
+void WorkDistrib::mapComputePatch(ComputeType type)
+{
+  PatchMap *patchMap = PatchMap::Object();
+  ComputeMap *computeMap = ComputeMap::Object();
+
+  PatchID i;
+  ComputeID cid;
+
+  for(i=0; i<patchMap->numPatches(); i++)
+  {
+    cid=computeMap->storeCompute(patchMap->node(i),1,type);
+    computeMap->newPid(cid,i);
+    patchMap->newCid(i,cid);
+  }
+
 }
 
 //----------------------------------------------------------------------
@@ -746,13 +767,17 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1997/03/14 21:40:16 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1015 $	$Date: 1997/03/15 22:15:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1015  1997/03/15 22:15:35  jim
+ * Added ComputeCylindricalBC.  Doesn't break anything but untested and
+ * cylinder is along x axis (will fix soon).
+ *
  * Revision 1.1014  1997/03/14 21:40:16  ari
  * Reorganized startup to make possible inital load
  * balancing by changing methods in WorkDistrib.

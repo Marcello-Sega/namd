@@ -34,6 +34,7 @@
 #include "ComputeNonbondedExcl.h"
 #include "ComputeFullDirect.h"
 #include "ComputeDPMTA.h"
+#include "ComputeCylindricalBC.h"
 
 ComputeMgr::ComputeMgr(InitMsg *msg)
 {
@@ -161,6 +162,12 @@ void ComputeMgr:: createComputes(ComputeMap *map)
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
+      case computeCylindricalBCType:
+	c = new ComputeCylindricalBC(i,map->computeData[i].pids[0].pid); // unknown delete
+	DebugM(4,"ComputeCylindricalBC created.\n");
+	map->registerCompute(i,c);
+	c->initialize();
+	break;
       default:
 	DebugM(10,"Unknown compute type not created!\n");
     }
@@ -184,8 +191,8 @@ void ComputeMgr:: createComputes(ComputeMap *map)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/04 22:37:08 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1006 $	$Date: 1997/03/15 22:15:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:

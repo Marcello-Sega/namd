@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1014 1997/03/14 21:40:15 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1015 1997/03/15 22:15:29 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -31,12 +31,14 @@ Sequencer::Sequencer(HomePatch *p) :
 	collection(CollectionMgr::Object())
 {
     reduction->Register(REDUCTION_KINETIC_ENERGY);
+    reduction->Register(REDUCTION_BC_ENERGY); // in case not used elsewhere
     threadStatus = NOTSUSPENDED;
 }
 
 Sequencer::~Sequencer(void)
 {
     reduction->unRegister(REDUCTION_KINETIC_ENERGY);
+    reduction->unRegister(REDUCTION_BC_ENERGY); // in case not used elsewhere
 }
 
 // Invoked by thread
@@ -86,6 +88,7 @@ void Sequencer::algorithm(void)
 
     DebugM(4,"Submit seq=" << seq << " Patch=" << patch->getPatchID() << "\n");
     reduction->submit(seq,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
+    reduction->submit(seq,REDUCTION_BC_ENERGY,0.);
     collection->submitPositions(seq+first,patch->atomIDList,patch->p);
     collection->submitVelocities(seq+first,patch->atomIDList,patch->v);
     ++seq;
@@ -111,6 +114,7 @@ void Sequencer::algorithm(void)
 	DebugM(4,"Submit seq=" <<seq<<" Patch="<<patch->getPatchID()<<"\n");
 	reduction->submit(seq, REDUCTION_KINETIC_ENERGY,
 	    patch->calcKineticEnergy());
+	reduction->submit(seq,REDUCTION_BC_ENERGY,0.);
 	collection->submitPositions(seq+first,patch->atomIDList,patch->p);
 	collection->submitVelocities(seq+first,patch->atomIDList,patch->v);
 	++seq;
@@ -129,13 +133,17 @@ Sequencer::terminate() {
  * RCS INFORMATION:
  *
  *      $RCSfile: Sequencer.C,v $
- *      $Author: ari $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1014 $     $Date: 1997/03/14 21:40:15 $
+ *      $Author: jim $  $Locker:  $             $State: Exp $
+ *      $Revision: 1.1015 $     $Date: 1997/03/15 22:15:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1015  1997/03/15 22:15:29  jim
+ * Added ComputeCylindricalBC.  Doesn't break anything but untested and
+ * cylinder is along x axis (will fix soon).
+ *
  * Revision 1.1014  1997/03/14 21:40:15  ari
  * Reorganized startup to make possible inital load
  * balancing by changing methods in WorkDistrib.

@@ -56,6 +56,7 @@ public:
 private:
   void mapComputeNonbonded(void);
   void mapComputeHomePatches(ComputeType);
+  void mapComputePatch(ComputeType);
   void velocities_from_PDB(char *filename, 
 			   Vector *v, int totalAtoms);
   void velocities_from_binfile(char *fname, Vector *vels, int n);
@@ -127,13 +128,17 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/14 21:40:17 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1006 $	$Date: 1997/03/15 22:15:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.1006  1997/03/15 22:15:36  jim
+ * Added ComputeCylindricalBC.  Doesn't break anything but untested and
+ * cylinder is along x axis (will fix soon).
+ *
  * Revision 1.1005  1997/03/14 21:40:17  ari
  * Reorganized startup to make possible inital load
  * balancing by changing methods in WorkDistrib.

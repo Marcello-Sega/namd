@@ -90,7 +90,8 @@ enum ComputeType
   computeDPMTAType,
   computeDPMEType,
 #endif
-  computeFullDirectType
+  computeFullDirectType,
+  computeCylindricalBCType
 };
 
 // HP compiler complains that true, false "Will be" future reserved words.
@@ -111,13 +112,17 @@ typedef int Boolean;
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdTypes.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/04 22:37:14 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/03/15 22:15:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdTypes.h,v $
+ * Revision 1.1004  1997/03/15 22:15:26  jim
+ * Added ComputeCylindricalBC.  Doesn't break anything but untested and
+ * cylinder is along x axis (will fix soon).
+ *
  * Revision 1.1003  1997/03/04 22:37:14  ari
  * Clean up of code.  Debug statements removal, dead code removal.
  * Minor fixes, output fixes.

@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/04 22:37:18 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/03/15 22:15:31 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,10 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1002  1997/03/15 22:15:31  jim
+ * Added ComputeCylindricalBC.  Doesn't break anything but untested and
+ * cylinder is along x axis (will fix soon).
+ *
  * Revision 1.1001  1997/03/04 22:37:18  ari
  * Clean up of code.  Debug statements removal, dead code removal.
  * Minor fixes, output fixes.
@@ -317,7 +321,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1001 1997/03/04 22:37:18 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1002 1997/03/15 22:15:31 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -680,6 +684,46 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.range("sphericalBCexp2", POSITIVE);
    opts.optional("sphericalBC", "sphericalBCCenter", "Center of spherical boundaries",
 		&sphericalCenter);
+
+   /////////////// Cylindrical Boundary Conditions
+   opts.optionalB("main", "cylindricalBC", "Are cylindrical boundary counditions "
+                  "active?", &cylindricalBCOn, FALSE);
+   opts.require("cylindricalBC", "cylindricalBCr1", "Radius for first cylinder "
+                 "potential", &cylindricalBCr1);
+   opts.range("cylindricalBCr1", POSITIVE);
+   opts.units("cylindricalBCr1", ANGSTROM);
+   opts.require("cylindricalBC", "cylindricalBCk1", "Force constant for first "
+                "cylinder potential (+ is an inward force, - outward)",
+                &cylindricalBCk1);
+   opts.units("cylindricalBCk1", KCAL);
+   opts.optional("cylindricalBC", "cylindricalBCexp1", "Exponent for first "
+                "cylinder potential", &cylindricalBCexp1, 2);
+   opts.range("cylindricalBCexp1", POSITIVE);
+
+
+// additions beyond those already found in spherical parameters    JJU
+   opts.require ("cylindricalBC", "cylindricalBCl1", "Length of first cylinder",
+                 &cylindricalBCl1);
+   opts.range("cylindricalBCl1", POSITIVE);
+   opts.units("cylindricalBCl1", ANGSTROM);
+   opts.optional ("cylindricalBCl1", "cylindricalBCl2", "Length of second cylinder",
+                  &cylindricalBCl2);
+   opts.range ("cylindricalBCl2", POSITIVE);
+   opts.units ("cylindricalBCl2", ANGSTROM);
+// end  additions
+
+   opts.optional("cylindricalBCr1", "cylindricalBCr2", "Radius for second cylinder "
+                 "potential", &cylindricalBCr2);
+   opts.range("cylindricalBCr2", POSITIVE);
+   opts.units("cylindricalBCr2", ANGSTROM);
+   opts.require("cylindricalBCr2", "cylindricalBCk2", "Force constant for second "
+                "cylinder potential (+ is an inward force, - outward)",
+                &cylindricalBCk2);
+   opts.units("cylindricalBCk2", KCAL);
+   opts.optional("cylindricalBCr2", "cylindricalBCexp2", "Exponent for second "
+                "cylinder potential", &cylindricalBCexp2, 2);
+   opts.range("cylindricalBCexp2", POSITIVE);
+   opts.optional("cylindricalBC", "cylindricalBCCenter", "Center of cylindrical boundaries", &cylindricalCenter);
 
    ///////////////  Electric field options
    opts.optionalB("main", "eFieldOn", "Should and electric field be applied",
@@ -1440,6 +1484,36 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 	sphericalCenter.z = 0.0;
    }
 
+   if (!cylindricalBCOn)
+   {
+    cylindricalBCr1 = 0.0;
+    cylindricalBCk1 = 0.0;
+    cylindricalBCexp1 = 0;
+    cylindricalBCr2 = 0.0;
+    cylindricalBCk2 = 0.0;
+    cylindricalBCexp2 = 0;
+    cylindricalBCl1 = 0.0;
+    cylindricalBCl2 = 0.0;
+   }
+   else if (!opts.defined("cylindricalBCr2"))
+   {
+    cylindricalBCr2 = -1.0;
+    cylindricalBCk2 = 0.0;
+    cylindricalBCexp2 = 0;
+    cylindricalBCl2 = 0.0;
+   }
+   if (opts.defined ("cylindricalBCCenter"))
+   {
+    cylindricalCenterCOM = FALSE;
+    cylindricalCenter.x = 0.0;
+    cylindricalCenter.y = 0.0;
+    cylindricalCenter.z = 0.0;
+   }
+   else
+   {
+    cylindricalCenterCOM = TRUE;
+   }
+
    if (!eFieldOn)
    {
         eField.x = 0.0;
@@ -1691,6 +1765,31 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
       iout << iINFO << "COLD COLLISION RATE    "
    	    << COLDRate << "\n";
    }
+
+   if (cylindricalBCOn)
+   {
+    iout << iINFO << "CYLINDRICAL BOUNDARY CONDITIONS ACTIVE\n";
+    iout << iINFO << "RADIUS #1                " << cylindricalBCr1 << "\n";
+    iout << iINFO << "FORCE CONSTANT #1        " << cylindricalBCk1 << "\n";
+    iout << iINFO << "EXPONENT #1              " << cylindricalBCexp1 << "\n";
+    iout << iINFO << "LENGTH #1                " << cylindricalBCl1 << "\n";
+    if (cylindricalBCr2 > 0.0)
+    {
+     iout << iINFO << "RADIUS #2               " << cylindricalBCr2 << "\n";
+     iout << iINFO << "FORCE CONSTANT #2       " << cylindricalBCk2 << "\n";
+     iout << iINFO << "EXPONENT #2             " << cylindricalBCexp2 << "\n";
+     iout << iINFO << "LENGTH #2               " << cylindricalBCl2 << "\n";
+    }
+    if (cylindricalCenterCOM)
+    {
+      iout << iINFO << "CYLINDRICAL BOUNDARIES CENTERED AROUND COM\n";
+    }
+    else
+    {
+    iout << iINFO << "CYLINDER BOUNDARY CENTER(" << cylindricalCenter.x << ", "
+             << cylindricalCenter.y << ", " << cylindricalCenter.z << ")\n";
+    }
+  }
 
    if (sphericalBCOn)
    {
@@ -1988,6 +2087,14 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
 	msg->put(dhaCutoffAngle).put(dhaOnAngle).put(dhaOffAngle);
 	msg->put(daCutoffDist).put(daOnDist).put(daOffDist);
 
+	// send cylindrical boundary conditions data
+        msg->put(cylindricalBCOn).put(cylindricalBCr1);
+        msg->put(cylindricalBCr2).put(cylindricalBCk1);
+        msg->put(cylindricalBCk2).put(cylindricalBCl1);
+        msg->put(cylindricalBCl2);
+        msg->put(&cylindricalCenter);
+        msg->put(cylindricalBCexp1).put(cylindricalBCexp2);
+
 	// send periodic box data
 	msg->put(cellBasisVector1.x);
 	msg->put(cellBasisVector2.y);
@@ -2101,6 +2208,18 @@ void SimParameters::receive_SimParameters(Message *msg)
 	msg->get(daCutoffDist);
 	msg->get(daOnDist);
 	msg->get(daOffDist);
+
+	// receive cylindrical boundary conditions data
+        msg->get(cylindricalBCOn);
+        msg->get(cylindricalBCr1);
+        msg->get(cylindricalBCr2);
+        msg->get(cylindricalBCk1);
+        msg->get(cylindricalBCk2);
+        msg->get(cylindricalBCl1);
+        msg->get(cylindricalBCl2);
+        msg->get(&cylindricalCenter);
+        msg->get(cylindricalBCexp1);
+        msg->get(cylindricalBCexp2);
 
 	// receive periodic box data
 	msg->get(cellBasisVector1.x);
