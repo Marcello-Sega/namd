@@ -1,7 +1,7 @@
 # This is a test namd configuration file
 
 timestep	0.5
-numsteps	10000
+numsteps	9
 structure	alanin.psf
 parameters	alanin.params
 coordinates	alanin.pdb
@@ -9,7 +9,7 @@ exclude		scaled1-4
 1-4scaling	0.4
 outputname 	output
 margin		1.0
-stepspercycle   10
+stepspercycle   3
 temperature	0
 
 switching 	on
