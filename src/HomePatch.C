@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1010 1997/02/11 18:51:46 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1011 1997/02/13 04:43:09 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -232,13 +232,6 @@ HomePatch::doAtomMigration()
   // signal depositMigration() that we are inMigration mode
   inMigration = true;
 
-  // Drain the migration message buffer
-  for (i=0; i<numMlBuf; i++) {
-     DebugM(4, "Draining migration buffer ("<<i<<","<<numMlBuf<<")\n");
-     depositMigration(srcID[i], mlBuf[i]);
-  }
-  numMlBuf = 0;
-     
   // realInfo points to migration lists for neighbors we actually have. 
   //    element of mInfo[3][3][3] points to an element of realInfo
   for (i=0; i<numNeighbors; i++) {
@@ -298,6 +291,13 @@ HomePatch::doAtomMigration()
     PatchMgr::Object()->sendMigrationMsg(patchID, realInfo[i]);
   }
 
+  // Drain the migration message buffer
+  for (i=0; i<numMlBuf; i++) {
+     DebugM(4, "Draining migration buffer ("<<i<<","<<numMlBuf<<")\n");
+     depositMigration(srcID[i], mlBuf[i]);
+  }
+  numMlBuf = 0;
+     
   if (!allMigrationIn) {
     DebugM(4,"All Migrations NOT in, we are suspending patch "<<patchID<<"\n");
     migrationSuspended = true;
@@ -338,6 +338,7 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
       // f_short.add(mi->forceShort);
       // f_long.add(mi->forceLong);
     }
+    delete migrationList;
   }
   numAtoms = atomIDList.size();
 
@@ -361,13 +362,18 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/02/11 18:51:46 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1011 $	$Date: 1997/02/13 04:43:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1011  1997/02/13 04:43:09  jim
+ * Fixed initial hanging (bug in PatchMap, but it still shouldn't have
+ * happened) and saved migration messages in the buffer from being
+ * deleted, but migration still dies (even on one node).
+ *
  * Revision 1.1010  1997/02/11 18:51:46  ari
  * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
  * fixed non-buffering of migration msgs

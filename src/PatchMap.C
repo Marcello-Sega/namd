@@ -78,7 +78,7 @@ void * PatchMap::pack (int *length)
 
   // calculate memory needed
   int size = 0;
-  size += 8 * sizeof(int);
+  size += 8 * sizeof(int) + 6 * sizeof(BigReal);
   for(i=0;i<nPatches;++i)
   {
     size += sizeof(PatchData);
@@ -96,6 +96,8 @@ void * PatchMap::pack (int *length)
   DebugM(4,"nPatches = " << nPatches << endl);
   PACK(int,xDim); PACK(int,yDim); PACK(int,zDim);
   PACK(int,xPeriodic); PACK(int,yPeriodic); PACK(int,zPeriodic);
+  PACK(BigReal,xOrigin); PACK(BigReal,yOrigin); PACK(BigReal,zOrigin);
+  PACK(BigReal,xLength); PACK(BigReal,yLength); PACK(BigReal,zLength);
   for(i=0;i<nPatches;++i)
   {
     DebugM(3,"Packing Patch " << i << " is on node " << patchData[i].node << 
@@ -122,6 +124,8 @@ void PatchMap::unpack (void *in)
   DebugM(4,"nPatches = " << nPatches << endl);
   UNPACK(int,xDim); UNPACK(int,yDim); UNPACK(int,zDim);
   UNPACK(int,xPeriodic); UNPACK(int,yPeriodic); UNPACK(int,zPeriodic);
+  UNPACK(BigReal,xOrigin); UNPACK(BigReal,yOrigin); UNPACK(BigReal,zOrigin);
+  UNPACK(BigReal,xLength); UNPACK(BigReal,yLength); UNPACK(BigReal,zLength);
   patchData = new PatchData[nPatches];
   for(i=0;i<nPatches;++i)
   {
@@ -442,6 +446,7 @@ int PatchMap::oneAwayNeighbors(int pid, PatchID *neighbor_ids, int *transform_id
       }
     }
   }
+  DebugM(3,"Patch " << pid << " has " << n << " first neighbors.\n");
   return n;
 }
 
@@ -484,6 +489,7 @@ int PatchMap::twoAwayNeighbors(int pid, PatchID *neighbor_ids,  int *transform_i
       }
     }
   }
+  DebugM(3,"Patch " << pid << " has " << n << " second neighbors.\n");
   return n;
 }
 
@@ -548,12 +554,17 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
  *
  *	$RCSfile: PatchMap.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/02/07 22:52:16 $
+ *	$Revision: 1.1004 $	$Date: 1997/02/13 04:43:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.1004  1997/02/13 04:43:11  jim
+ * Fixed initial hanging (bug in PatchMap, but it still shouldn't have
+ * happened) and saved migration messages in the buffer from being
+ * deleted, but migration still dies (even on one node).
+ *
  * Revision 1.1003  1997/02/07 22:52:16  jim
  * Eliminated use of nAtomBased and uninitialized memory reads.
  *

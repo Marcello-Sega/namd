@@ -72,7 +72,7 @@ public:
 
     MigrateAtomsMsg(void) { migrationList = NULL; }
     ~MigrateAtomsMsg(void) { 
-      delete migrationList; 
+      // delete migrationList; NOW DELETED on pack() and by HomePatch on use!
     }
 
     MigrateAtomsMsg(PatchID source, PatchID destination, MigrationList *m) : 
@@ -173,13 +173,18 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMgr.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:59:07 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/02/13 04:43:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.h,v $
+ * Revision 1.1001  1997/02/13 04:43:13  jim
+ * Fixed initial hanging (bug in PatchMap, but it still shouldn't have
+ * happened) and saved migration messages in the buffer from being
+ * deleted, but migration still dies (even on one node).
+ *
  * Revision 1.1000  1997/02/06 15:59:07  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

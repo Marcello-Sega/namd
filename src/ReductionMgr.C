@@ -28,7 +28,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1007 1997/02/12 19:16:06 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1008 1997/02/13 04:43:16 jim Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -41,12 +41,12 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMg
 #include "PatchMap.h"	// for patchMap
 
 // determine whether PANIC sequence checking is performed (debugging)
-#define PANIC 2
+#define PANIC 0
 // #define PANIC 1
 #include "ReductionMgr.top.h"
 #include "ReductionMgr.h"
 
-#define DEBUGM
+// #define DEBUGM
 #define MIN_DEBUG_LEVEL 2
 #define STDERR_LEVEL 7
 #include "Debug.h"

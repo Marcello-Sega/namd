@@ -19,10 +19,10 @@
 #include "CollectionMgr.h"
 
 #define MIN_DEBUG_LEVEL 4
-#define DEBUGM
+// #define DEBUGM
 #include "Debug.h"
 
-#define MIGRATION 1
+#define MIGRATION 0
 
 Sequencer::Sequencer(HomePatch *p) :
 	patch(p),

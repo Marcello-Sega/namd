@@ -4,7 +4,7 @@
 #include "Node.h"
 #include "Output.h"
 
-#define DEBUGM
+// #define DEBUGM
 #include "Debug.h"
 
 CollectionMaster::CollectionMaster(InitMsg *msg)

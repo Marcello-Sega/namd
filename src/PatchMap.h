@@ -168,7 +168,7 @@ public:
 
 
 protected:
-  friend MapDistribMsg;
+  friend class MapDistribMsg;
   void * pack (int *length);
   void unpack (void *in);
   
@@ -218,13 +218,18 @@ inline HomePatch *PatchMap::homePatch(PatchID pid)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/07 16:56:52 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/02/13 04:43:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.h,v $
+ * Revision 1.1002  1997/02/13 04:43:12  jim
+ * Fixed initial hanging (bug in PatchMap, but it still shouldn't have
+ * happened) and saved migration messages in the buffer from being
+ * deleted, but migration still dies (even on one node).
+ *
  * Revision 1.1001  1997/02/07 16:56:52  nealk
  * Added Origin() to return origin.
  *

@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1001 1997/02/11 22:56:13 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1002 1997/02/13 04:43:10 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -304,6 +304,24 @@ void Node::startup4(InitMsg *msg)
   patchMgr = CLocalBranch(PatchMgr,group.patchMgr);
   DebugM(3, "Created patch managers\n");
 
+  HomePatchList *hpl = PatchMap::Object()->homePatchList();
+  ResizeArrayIter<HomePatchElem> ai(*hpl);
+
+  if ( ! CMyPe() )
+  {
+    DebugM(4, "Node::startup4() - creating controller.\n");
+    Controller *controller = new Controller(state);
+    state->useController(controller);
+  }
+
+  DebugM(4, "Node::startup4() - iterating over home patches!\n");
+  for (ai=ai.begin(); ai != ai.end(); ai++) {
+    HomePatch *p = (*ai).p;
+    DebugM(1, "Node::run() - signaling patch "<< p->getPatchID() << endl);
+    Sequencer *sequencer = new Sequencer(p);
+    p->useSequencer(sequencer);
+  }
+
   messageStartupDone();   // collect on master node
   DebugM(1,"End of startup4()\n");
 }
@@ -360,21 +378,6 @@ void Node::run(RunMsg *msg)
 
   if ( ! CMyPe() )
   {
-    DebugM(4, "Node::run() - creating controller.\n");
-    Controller *controller = new Controller(state);
-    state->useController(controller);
-  }
-
-  DebugM(4, "Node::run() - iterating over home patches!\n");
-  for (ai=ai.begin(); ai != ai.end(); ai++) {
-    HomePatch *p = (*ai).p;
-    DebugM(1, "Node::run() - signaling patch "<< p->getPatchID() << endl);
-    Sequencer *sequencer = new Sequencer(p);
-    p->useSequencer(sequencer);
-  }
-
-  if ( ! CMyPe() )
-  {
     state->runController();
   }
 
@@ -423,12 +426,17 @@ void Node::saveMolDataPointers(Molecule *molecule,
  *
  *	$RCSfile: Node.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/11 22:56:13 $
+ *	$Revision: 1.1002 $	$Date: 1997/02/13 04:43:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1002  1997/02/13 04:43:10  jim
+ * Fixed initial hanging (bug in PatchMap, but it still shouldn't have
+ * happened) and saved migration messages in the buffer from being
+ * deleted, but migration still dies (even on one node).
+ *
  * Revision 1.1001  1997/02/11 22:56:13  jim
  * Added dcd file writing.
  *

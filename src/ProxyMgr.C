@@ -25,7 +25,7 @@
 #include "ComputeMap.h"
 #include "HomePatch.h"
 
-#define DEBUGM
+// #define DEBUGM
 #define MIN_DEBUG_LEVEL 4
 #include "Debug.h"
 
@@ -161,8 +161,6 @@ ProxyMgr::ProxyMgr(InitMsg *) : numProxies(0), proxyList(NULL) {
     // Namd::die();
   }
   _instance = this;
-
-  patchMap = PatchMap::Instance();
 }
 
 ProxyMgr::~ProxyMgr() { 
@@ -187,25 +185,30 @@ void ProxyMgr::createProxies(void)
   removeProxies();
 
   // Figure out which proxies we will be needing.
-  PatchMap *pmap = PatchMap::Object();
-  int n = pmap->numPatches();
+  PatchMap *patchMap = PatchMap::Object();
+  int n = patchMap->numPatches();
   int myNode = CMyPe();
   int *pflags = new int[n]; // 0 = unknown, 1 = home, 2 = proxy needed
   int i, j;
   // Note all home patches.
   for ( i = 0; i < n; ++i )
   {
-    pflags[i] = pmap->node(i) == myNode ? 1 : 0;
+    pflags[i] = ( patchMap->node(i) == myNode ) ? 1 : 0;
   }
   // Check all two-away neighbors.
   PatchID neighbors[PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
   for ( i = 0; i < n; ++i )
   {
-    int nn = pmap->oneAwayNeighbors(i,neighbors);
-    nn += pmap->twoAwayNeighbors(i,neighbors+nn);
+    if ( patchMap->node(i) != myNode ) continue;
+    int nn = patchMap->oneAwayNeighbors(i,neighbors);
+    nn += patchMap->twoAwayNeighbors(i,neighbors+nn);
     for ( j = 0; j < nn; ++j )
     {
-      if ( ! pflags[neighbors[j]] ) pflags[neighbors[j]] = 2;
+      if ( ! pflags[neighbors[j]] )
+      {
+	DebugM(4,"Proxy for " << neighbors[j] << " needed for neighbor.\n");
+	pflags[neighbors[j]] = 2;
+      }
     }
   }
   // Check all patch-based compute objects.
@@ -218,7 +221,11 @@ void ProxyMgr::createProxies(void)
     for ( j = 0; j < ncp; ++j )
     {
       int pid = cmap->pid(i,j);
-      if ( ! pflags[pid] ) pflags[pid] = 2;
+      if ( ! pflags[pid] )
+      {
+	DebugM(4,"Proxy for " << pid << " needed for compute " << i << ".\n");
+	pflags[pid] = 2;
+      }
     }
   }
   
@@ -319,13 +326,18 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/02/11 18:51:55 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/02/13 04:43:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.1004  1997/02/13 04:43:14  jim
+ * Fixed initial hanging (bug in PatchMap, but it still shouldn't have
+ * happened) and saved migration messages in the buffer from being
+ * deleted, but migration still dies (even on one node).
+ *
  * Revision 1.1003  1997/02/11 18:51:55  ari
  * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
  * fixed non-buffering of migration msgs

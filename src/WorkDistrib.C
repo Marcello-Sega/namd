@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1002 1997/02/11 18:51:58 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1003 1997/02/13 04:43:17 jim Exp $";
 
 #include <stdio.h>
 
@@ -35,7 +35,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib
 #include "PDB.h"
 #include "SimParameters.h"
 
-#define MIN_DEBUG_LEVEL 3
+#define MIN_DEBUG_LEVEL 4
 #define DEBUGM
 #include "Debug.h"
 
@@ -227,6 +227,7 @@ void WorkDistrib::mapPatches(void)
     sysDim.x = params->cellBasisVector1.x;
     xdim = (int)(sysDim.x / patchSize);
     if ( xdim < 2 ) xdim = 2;
+    DebugM(4,"Periodic in x dimension with " << xdim << " patches.\n");
   }
   else
   {
@@ -236,6 +237,7 @@ void WorkDistrib::mapPatches(void)
     if ((xdim * patchSize) < sysDim.x)
       xdim++;
     sysDim.x = xdim * patchSize;
+    DebugM(4,"Non-periodic in x dimension with " << xdim << " patches.\n");
   }
 
   if ( params->cellBasisVector2.y )
@@ -244,6 +246,7 @@ void WorkDistrib::mapPatches(void)
     sysDim.y = params->cellBasisVector2.y;
     ydim = (int)((float)sysDim.y / patchSize);
     if ( ydim < 2 ) ydim = 2;
+    DebugM(4,"Periodic in y dimension with " << ydim << " patches.\n");
   }
   else
   {
@@ -253,6 +256,7 @@ void WorkDistrib::mapPatches(void)
     if ((ydim * patchSize) < sysDim.y)
       ydim++;
     sysDim.y = ydim * patchSize;
+    DebugM(4,"Non-periodic in y dimension with " << ydim << " patches.\n");
   }
 
   if ( params->cellBasisVector3.z )
@@ -261,6 +265,7 @@ void WorkDistrib::mapPatches(void)
     sysDim.z = params->cellBasisVector3.z;
     zdim = (int)((float)sysDim.z / patchSize);
     if ( zdim < 2 ) zdim = 2;
+    DebugM(4,"Periodic in z dimension with " << zdim << " patches.\n");
   }
   else
   {
@@ -270,6 +275,7 @@ void WorkDistrib::mapPatches(void)
     if ((zdim * patchSize) < sysDim.z)
       zdim++;
     sysDim.z = zdim * patchSize;
+    DebugM(4,"Non-periodic in z dimension with " << zdim << " patches.\n");
   }
 
   patchMap->setPeriodicity(xper,yper,zper);
@@ -280,6 +286,7 @@ void WorkDistrib::mapPatches(void)
   for(i=0; i < patchMap->numPatches(); i++)
   {
     pid=patchMap->requestPid(&xi,&yi,&zi);
+    DebugM(3,"Patch " << pid << " is at grid " << xi << " " << yi << " " << zi << " on node " << assignedNode << ".\n");
     patchMap->storePatch(pid,assignedNode,250, 
 			 ((float)xi/(float)xdim)*sysDim.x+xmin.x,
 			 ((float)yi/(float)ydim)*sysDim.y+xmin.y,
@@ -445,13 +452,18 @@ void WorkDistrib::movePatchDone(DoneMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/11 18:51:58 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/02/13 04:43:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1003  1997/02/13 04:43:17  jim
+ * Fixed initial hanging (bug in PatchMap, but it still shouldn't have
+ * happened) and saved migration messages in the buffer from being
+ * deleted, but migration still dies (even on one node).
+ *
  * Revision 1.1002  1997/02/11 18:51:58  ari
  * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
  * fixed non-buffering of migration msgs

@@ -11,7 +11,7 @@
 /*								           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1001 1997/02/07 07:50:22 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1002 1997/02/13 04:43:12 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -223,7 +223,7 @@ void * MigrateAtomsMsg::pack (int *length) {
     else {
       *((int*)b) = 0; b += sizeof(int);
     }
-
+    delete migrationList;
     this->~MigrateAtomsMsg();
     return buffer;
 }
@@ -260,11 +260,16 @@ void MigrateAtomsMsg::unpack (void *in) {
  *
  *	$RCSfile: PatchMgr.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/07 07:50:22 $
+ *	$Revision: 1.1002 $	$Date: 1997/02/13 04:43:12 $
  *
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.C,v $
+ * Revision 1.1002  1997/02/13 04:43:12  jim
+ * Fixed initial hanging (bug in PatchMap, but it still shouldn't have
+ * happened) and saved migration messages in the buffer from being
+ * deleted, but migration still dies (even on one node).
+ *
  * Revision 1.1001  1997/02/07 07:50:22  jim
  * Removed debug messages.
  *

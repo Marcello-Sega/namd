@@ -111,8 +111,6 @@ public:
   static ProxyMgr *Object() { return _instance; }
   
 private:
-  PatchMap *patchMap;
-
   static ProxyMgr *_instance;
 
   ProxyPatch** proxyList;
@@ -125,13 +123,18 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:59:13 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/02/13 04:43:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.h,v $
+ * Revision 1.1001  1997/02/13 04:43:15  jim
+ * Fixed initial hanging (bug in PatchMap, but it still shouldn't have
+ * happened) and saved migration messages in the buffer from being
+ * deleted, but migration still dies (even on one node).
+ *
  * Revision 1.1000  1997/02/06 15:59:13  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
