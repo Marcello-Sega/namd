@@ -2,11 +2,11 @@
 
 # compiler options
 CXX = cxx
-CXXOPTS = -O4 -arch host -tune host -fp_reorder -nocleanup
+CXXOPTS = -O4 -arch host -tune host -nocleanup
 CXXTHREADOPTS = $(CXXOPTS)
 CXXSIMPARAMOPTS = $(CXXOPTS)
 CC = cc
-COPTS = -O4 -arch host -tune host -fp_reorder
+COPTS = -O4 -arch host -tune host
 
 # definitions for Charm routines
 CHARMARCH = net-axp-cc
