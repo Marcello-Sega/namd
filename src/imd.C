@@ -158,7 +158,7 @@ int imd_send_energies(void *s, const IMDEnergies *energies) {
   int32 size = HEADERSIZE+sizeof(IMDEnergies);
   char *buf = new char[size];
   fill_header((IMDheader *)buf, IMD_ENERGIES, 1);
-  memcpy((void *)(buf+HEADERSIZE), (void *)energies, sizeof(IMDEnergies));
+  memcpy((void *)(buf+HEADERSIZE), (const void *)energies, sizeof(IMDEnergies));
   int rc = (imd_writen(s, buf, size) != size);
   delete [] buf;
   return rc;
@@ -168,7 +168,7 @@ int imd_send_fcoords(void *s, int32 n, const float *coords) {
   int32 size = HEADERSIZE+12*n;
   char *buf = new char[size];
   fill_header((IMDheader *)buf, IMD_FCOORDS, n);
-  memcpy((void *)(buf+HEADERSIZE), (void *)coords, 12*n);
+  memcpy((void *)(buf+HEADERSIZE), (const void *)coords, 12*n);
   int rc = (imd_writen(s, buf, size) != size);
   delete [] buf;
   return rc;
