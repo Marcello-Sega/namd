@@ -18,9 +18,11 @@
 #include "ReductionMgr.h"
 #include "CollectionMgr.h"
 
-#define MIN_DEBUG_LEVEL 5
-#define DEBUGM
+#define MIN_DEBUG_LEVEL 4
+// #define DEBUGM
 #include "Debug.h"
+
+#define MIGRATION 1
 
 Sequencer::Sequencer(HomePatch *p) :
 	patch(p),
@@ -56,7 +58,7 @@ void Sequencer::algorithm(void)
     const int numberOfCycles = this->numberOfCycles;
     const int stepsPerCycle = this->stepsPerCycle;
     const BigReal timestep = simParams->dt;
-    int step, cycle;
+    int step, cycle=-1;	// cycle is unused!
     int seq = 0;
     patch->positionsReady();
     suspend();
@@ -66,7 +68,7 @@ void Sequencer::algorithm(void)
     ++seq;
     for ( step = 0; step < numberOfCycles; ++step )
     {
-	// DebugM(4,"Cycle #" << cycle << "\n");
+	// DebugM(4,"Cycle #" << step << "\n");
         // for ( step = 0; step < stepsPerCycle; ++step )
         // {
             patch->addForceToMomentum(0.5*timestep);
@@ -74,17 +76,20 @@ void Sequencer::algorithm(void)
 	    DebugM(4, patch->getPatchID()
 		<< ": (" << cycle << "," << step << ") "
 		<< "Sending positionsReady().\n");
+#if MIGRATION
             patch->positionsReady(!(step%stepsPerCycle));
-            // patch->positionsReady(0);
+#else
+            patch->positionsReady(0);
+#endif
 	    DebugM(4, patch->getPatchID()
 		<< ": (" << cycle << "," << step << ") "
-		<< "Suspending.\n");
+		<< "Suspending " << CthSelf() << " @" << CmiTimer() << "\n");
             suspend();
 	    DebugM(4, patch->getPatchID()
 		<< ": (" << cycle << "," << step << ") "
 		<< "Awakened!\n");
             patch->addForceToMomentum(0.5*timestep);
-	    DebugM(1,"Submit seq=" << seq << " Patch=" << patch->getPatchID() << "\n");
+	    DebugM(4,"Submit seq=" << seq << " Patch=" << patch->getPatchID() << "\n");
 	    reduction->submit(seq, REDUCTION_KINETIC_ENERGY,
 		patch->calcKineticEnergy());
 	    // collection->submitPositions(seq,patch->atomIDList,patch->p);
