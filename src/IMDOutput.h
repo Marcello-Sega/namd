@@ -43,6 +43,8 @@ private:
   int transrate;
   int haveEnergies;
   int haveCoords;
+  float *coordtmp;
+  int coordtmpsize;
 };
 
 #endif

@@ -20,6 +20,8 @@ void IMDupdate(void *v) {
 
 IMDOutput::IMDOutput() {
   sock = NULL;
+  coordtmp = NULL;
+  coordtmpsize = 0;
 }
 
 int IMDOutput::connect(void *s) {
@@ -46,7 +48,9 @@ void IMDOutput::disconnect() {
   sock = NULL;
 }
 
-IMDOutput::~IMDOutput() {}
+IMDOutput::~IMDOutput() {
+  delete [] coordtmp;
+  }
 
 void IMDOutput::gather_energies(IMDEnergies *energies) { 
   if (!sock || !vmdsock_selwrite(sock,0)) 
@@ -58,7 +62,21 @@ void IMDOutput::gather_energies(IMDEnergies *energies) {
 void IMDOutput::gather_coordinates(int timestep, int N, FloatVector *coords) {
   if (!sock || !vmdsock_selwrite(sock,0)) return;
   if (timestep % transrate) return;
-  imd_send_fcoords(sock, N, (float *)coords);
+  if (sizeof(FloatVector) == 3*sizeof(float)) {
+    imd_send_fcoords(sock, N, (float *)coords);
+  } else {
+    if (coordtmpsize < N) {
+      delete [] coordtmp;
+      coordtmp = new float[3*N];
+      coordtmpsize = N;
+    }
+    for (int i=0; i<N; i++) {
+      coordtmp[3*i] = coords[i].x; 
+      coordtmp[3*i+1] = coords[i].y; 
+      coordtmp[3*i+2] = coords[i].z; 
+    } 
+    imd_send_fcoords(sock, N, coordtmp);
+  }
 }
 
 void IMDOutput::update() { }
