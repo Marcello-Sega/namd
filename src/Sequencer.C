@@ -716,7 +716,7 @@ void Sequencer::rattle1(BigReal dt, int pressure)
   if ( simParams->rigidBonds != RIGID_NONE ) {
     Tensor virial;
     Tensor *vp = ( pressure ? &virial : 0 );
-    if ( patch->rattle1(dt, vp) ) {
+    if ( patch->rattle1(dt, vp, pressureProfileReduction) ) {
       iout << iERROR << 
         "Constraint failure; simulation has become unstable.\n" << endi;
       Node::Object()->enableEarlyExit();
@@ -816,25 +816,50 @@ void Sequencer::submitHalfstep(int step)
     BigReal idz = 1.0/simParams->pressureProfileThickness;
     BigReal zmin = simParams->pressureProfileMin;
     int nslabs = simParams->pressureProfileSlabs;
+    int useGroupPressure = simParams->useGroupPressure;
 
-    // Compute kinetic energy partition
-    for (int i=0; i<numAtoms; i++) {
-      Position realpos = patch->lattice.reverse_transform(
-        a[i].position, a[i].transform);
-      BigReal z = realpos.z;
-      int slab = (int)floor((z-zmin)*idz);
-      if (slab < 0) slab += nslabs;
-      else if (slab >= nslabs) slab -= nslabs;
-      // factor of 1/2 because submitHalfstep gets called twice
-      // per timestep.
-      pressureProfileReduction->item(3*slab) +=
-        0.5 * a[i].mass * a[i].velocity.x * a[i].velocity.x;
-      pressureProfileReduction->item(3*slab+1) +=
-        0.5 * a[i].mass * a[i].velocity.y * a[i].velocity.y;
-      pressureProfileReduction->item(3*slab+2) +=
-        0.5 * a[i].mass * a[i].velocity.z * a[i].velocity.z;
+    // Compute kinetic energy partition, possibly subtracting off
+    // internal kinetic energy if group pressure is enabled.
+    // Since the regular pressure is 1/2 mvv and the internal kinetic
+    // term that is subtracted off for the group pressure is
+    // 1/2 mv (v-v_cm), the group pressure kinetic contribution is
+    // 1/2 m * v * v_cm.  The factor of 1/2 is because submitHalfstep
+    // gets called twice per timestep.
+    int hgs;
+    for (int i=0; i<numAtoms; i += hgs) {
+      int j;
+      hgs = a[i].hydrogenGroupSize;
+      BigReal m_cm = 0;
+      Velocity v_cm(0,0,0);
+      for (j=i; j< i+hgs; ++j) {
+        m_cm += a[j].mass;
+        v_cm += a[j].mass * a[j].velocity;
+      }
+      v_cm /= m_cm;
+      for (j=i; j < i+hgs; ++j) {
+        BigReal mass = a[j].mass;
+        Position realpos = patch->lattice.reverse_transform(
+          a[j].position, a[j].transform);
+        BigReal z = realpos.z;
+        int slab = (int)floor((z-zmin)*idz);
+        if (slab < 0) slab += nslabs;
+        else if (slab >= nslabs) slab -= nslabs;
+        BigReal wxx, wyy, wzz;
+        if (useGroupPressure) {
+          wxx = 0.5*mass * a[j].velocity.x * v_cm.x;
+          wyy = 0.5*mass * a[j].velocity.y * v_cm.y;
+          wzz = 0.5*mass * a[j].velocity.z * v_cm.z;
+        } else {
+          wxx = 0.5*mass * a[j].velocity.x * a[j].velocity.x;
+          wyy = 0.5*mass * a[j].velocity.y * a[j].velocity.y;
+          wzz = 0.5*mass * a[j].velocity.z * a[j].velocity.z;
+        }
+        pressureProfileReduction->item(3*slab  ) += wxx;
+        pressureProfileReduction->item(3*slab+1) += wyy;
+        pressureProfileReduction->item(3*slab+2) += wzz;
+      }
     }
-  }
+  } 
 
   {
     Tensor intVirialNormal;
@@ -927,6 +952,46 @@ void Sequencer::submitReductions(int step)
     ADD_TENSOR_OBJECT(reduction,REDUCTION_INT_VIRIAL_NORMAL,intVirialNormal);
     ADD_TENSOR_OBJECT(reduction,REDUCTION_INT_VIRIAL_NBOND,intVirialNbond);
     ADD_TENSOR_OBJECT(reduction,REDUCTION_INT_VIRIAL_SLOW,intVirialSlow);
+  }
+
+  if (pressureProfileReduction && simParams->useGroupPressure) {
+    // subtract off internal virial term, calculated as for intVirial.
+    BigReal idz = 1.0/simParams->pressureProfileThickness;
+    BigReal zmin = simParams->pressureProfileMin;
+    int nslabs = simParams->pressureProfileSlabs;
+    int useGroupPressure = simParams->useGroupPressure;
+
+    int hgs;
+    for (int i=0; i<numAtoms; i += hgs) {
+      int j;
+      hgs = a[i].hydrogenGroupSize;
+      BigReal m_cm = 0;
+      Position x_cm(0,0,0);
+      for (j=i; j< i+hgs; ++j) {
+        m_cm += a[j].mass;
+        x_cm += a[j].mass * a[j].position;
+      }
+      x_cm /= m_cm;
+      for (j=i; j < i+hgs; ++j) {
+        BigReal mass = a[j].mass;
+        Vector dx = a[j].position - x_cm;
+        Position realpos = patch->lattice.reverse_transform(
+          a[j].position, a[j].transform);
+        BigReal z = realpos.z;
+        int slab = (int)floor((z-zmin)*idz);
+        if (slab < 0) slab += nslabs;
+        else if (slab >= nslabs) slab -= nslabs;
+        const Vector &fnormal = patch->f[Results::normal][j];
+        const Vector &fnbond  = patch->f[Results::nbond][j];
+        const Vector &fslow   = patch->f[Results::slow][j];
+        BigReal wxx = (fnormal.x + fnbond.x + fslow.x) * dx.x;
+        BigReal wyy = (fnormal.y + fnbond.y + fslow.y) * dx.y;
+        BigReal wzz = (fnormal.z + fnbond.z + fslow.z) * dx.z;
+        pressureProfileReduction->item(3*slab  ) -= wxx;
+        pressureProfileReduction->item(3*slab+1) -= wyy;
+        pressureProfileReduction->item(3*slab+2) -= wzz;
+      }
+    }
   }
 
   if ( simParams->fixedAtomsOn ) {

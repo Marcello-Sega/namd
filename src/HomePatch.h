@@ -29,6 +29,7 @@ class UnregisterProxyMsg;
 class ProxyResultMsg;
 class ProxyCombinedResultMsg;
 class Sequencer;
+class SubmitReduction;
 
 class HomePatch : public Patch {
   friend class PatchMgr;
@@ -76,7 +77,7 @@ public:
   void addVelocityToPosition(const BigReal);
 
   // methods for rigidBonds
-  int rattle1(const BigReal, Tensor *virial);
+  int rattle1(const BigReal, Tensor *virial, SubmitReduction *);
   void rattle2(const BigReal, Tensor *virial);
 
   // methods for mollified impluse (MOLLY)

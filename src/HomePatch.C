@@ -30,7 +30,7 @@
 #include "Sequencer.h"
 #include "LdbCoordinator.h"
 #include "Settle.h"
-
+#include "ReductionMgr.h"
 #include "Sync.h"
 
 #define TINY 1.0e-20;
@@ -415,7 +415,8 @@ void HomePatch::addVelocityToPosition(const BigReal timestep)
 }
 
 //  RATTLE algorithm from Allen & Tildesley
-int HomePatch::rattle1(const BigReal timestep, Tensor *virial)
+int HomePatch::rattle1(const BigReal timestep, Tensor *virial, 
+    SubmitReduction *ppreduction)
 {
   Molecule *mol = Node::Object()->molecule;
   SimParameters *simParams = Node::Object()->simParameters;
@@ -433,6 +434,15 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial)
   BigReal rmass[10];  // 1 / mass
   int fixed[10];  // is atom fixed?
   Tensor wc;  // constraint virial
+  
+  BigReal idz, zmin;
+  int nslabs;
+
+  if (ppreduction) {
+    idz = 1.0/simParams->pressureProfileThickness;
+    zmin = simParams->pressureProfileMin;
+    nslabs = simParams->pressureProfileSlabs;
+  }
   
   for ( int ig = 0; ig < numAtoms; ig += atom[ig].hydrogenGroupSize ) {
     int hgs = atom[ig].hydrogenGroupSize;
@@ -463,9 +473,21 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial)
           atom[ig+i].velocity = vel[i];
         } else for ( i = 0; i < 3; ++i ) {
           Force df = (vel[i] - atom[ig+i].velocity) * ( atom[ig+i].mass / dt );
-          wc += outer(df,ref[i]);
+          Tensor vir = outer(df, ref[i]);
+          wc += vir;
           f[Results::normal][ig+i] += df;
           atom[ig+i].velocity = vel[i];
+          if (ppreduction) {
+            Position realpos = lattice.reverse_transform(
+                atom[ig+i].position, atom[i].transform);
+            BigReal z = realpos.z;
+            int slab = (int)floor((z-zmin)*idz);
+            if (slab < 0) slab += nslabs;
+            else if (slab >= nslabs) slab -= nslabs;
+            ppreduction->item(3*slab) += vir.xx;
+            ppreduction->item(3*slab+1) += vir.yy;
+            ppreduction->item(3*slab+2) += vir.zz;
+          }
         }
         continue;
       }
@@ -546,9 +568,21 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial)
       atom[ig+i].velocity = vel[i];
     } else for ( i = 0; i < hgs; ++i ) {
       Force df = (vel[i] - atom[ig+i].velocity) * ( atom[ig+i].mass / dt );
-      wc += outer(df,ref[i]);
+      Tensor vir = outer(df, ref[i]);
+      wc += vir;
       f[Results::normal][ig+i] += df;
       atom[ig+i].velocity = vel[i];
+      if (ppreduction) {
+        Position realpos = lattice.reverse_transform(
+            atom[ig+i].position, atom[i].transform);
+        BigReal z = realpos.z;
+        int slab = (int)floor((z-zmin)*idz);
+        if (slab < 0) slab += nslabs;
+        else if (slab >= nslabs) slab -= nslabs;
+        ppreduction->item(3*slab) += vir.xx;
+        ppreduction->item(3*slab+1) += vir.yy;
+        ppreduction->item(3*slab+2) += vir.zz;
+      }
     }
   }
   if ( dt && virial ) *virial += wc;
