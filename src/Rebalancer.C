@@ -235,7 +235,7 @@ int Rebalancer::refine()
       bestP = bestP0;
     }
     else { 
-      iout << iINFO << "No receiver found" << "\n" << endi;
+      iout << iINFO << "Refine: No receiver found" << "\n" << endi;
       finish = 0;
       break;
     }

@@ -146,7 +146,7 @@ void Alg7::strategy()
       numAssignedP0++;
     }
     else { 
-      iout << iINFO  << "No receiver found" << "\n" <<endi;
+      iout << iINFO  << "Alg 7 No receiver found 1" << "\n" <<endi;
       break;
     }
     }
@@ -167,7 +167,7 @@ void Alg7::strategy()
       }
       if (!bestP)
       {
-	iout << iINFO  << "No receiver found 2" << "\n" <<endi;
+	iout << iINFO  << "Alg7 No receiver found 2" << "\n" <<endi;
 	break;
       }
       assign(c,bestP);
@@ -212,11 +212,6 @@ void Alg7::strategy()
   //   << "After assignment\n" << endi;
   printLoads();
 }
-
-
-
-
-
 
 
 
