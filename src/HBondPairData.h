@@ -8,49 +8,10 @@
 /***************************************************************************/
 
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: HBondPairData.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:15 $
- *
- ***************************************************************************
  * DESCRIPTION:
  *	
  * HBondPairData simply stores data about a single pair of hydrogen bond
  * parameters.  The atom type names can contain wildcard characters.
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: HBondPairData.h,v $
- * Revision 1.1001  1997/03/19 11:54:15  ari
- * Add Broadcast mechanism.
- * Fixed RCS Log entries on files that did not have Log entries.
- * Added some register variables to Molecule and ComputeNonbondedExcl.C
- *
- * Revision 1.1000  1997/02/06 15:58:23  ari
- * Resetting CVS to merge branches back into the main trunk.
- * We will stick to main trunk development as suggested by CVS manual.
- * We will set up tags to track fixed points of development/release
- * as suggested by CVS manual - all praise the CVS manual.
- *
- * Revision 1.778  1997/01/28 00:55:48  ari
- * uplevel
- *
- * Revision 1.2  1997/01/28 00:54:31  ari
- * Trial uplevel
- *
- * Revision 1.1.2.2  1997/01/28 00:03:19  ari
- * Weird problems getting commit to work.  Part of fix
- * so far is to have group of files set to namd consistently
- *
- * Revision 1.1.2.1  1997/01/24 02:29:47  jim
- * Fixed bug where only first parameter file was read!
- * Added files for hydrogen bond parameter reading.
- *
- * Revision 1.1  1996/04/18 18:44:29  billh
- * Initial revision
  *
  ***************************************************************************/
 
@@ -119,21 +80,3 @@ public:
 
 #endif
 
-
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:15 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: HBondPairData.h,v $
- * Revision 1.1001  1997/03/19 11:54:15  ari
- * Add Broadcast mechanism.
- * Fixed RCS Log entries on files that did not have Log entries.
- * Added some register variables to Molecule and ComputeNonbondedExcl.C
- *
- ***************************************************************************/

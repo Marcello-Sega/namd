@@ -78,25 +78,3 @@ class RecBisection
 
 #endif
 
-
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: RecBisection.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1997/04/07 21:09:57 $
- *
- ***************************************************************************
- * DESCRIPTION:
- *	PatchDistrib is the object that maintains the mapping of patches
- * to processors.
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: RecBisection.h,v $
- * Revision 1.1  1997/04/07 21:09:57  brunner
- * Added RecBisection for initial patch distrib
- *
- * 
- ***************************************************************************/

@@ -43,27 +43,4 @@ private:
 };
 
 #endif
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: ScriptTcl.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1999/08/11 16:53:11 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: ScriptTcl.h,v $
- * Revision 1.3  1999/08/11 16:53:11  jim
- * Added move command to TCL scripting.
- *
- * Revision 1.2  1999/06/21 16:15:36  jim
- * Improved scripting, run now ends and generates output.
- *
- * Revision 1.1  1999/05/27 18:38:58  jim
- * Files to implement general Tcl scripting.
- *
- *
- *
- ***************************************************************************/
 

@@ -31,24 +31,3 @@ infostream iout;
 
 // Debug messages should use DebugM()!  not iout.
 
-
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1999/05/11 23:56:32 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: InfoStream.C,v $
- * Revision 1.1002  1999/05/11 23:56:32  brunner
- * Changes for new charm version
- *
- * Revision 1.1001  1997/03/19 11:54:18  ari
- * Add Broadcast mechanism.
- * Fixed RCS Log entries on files that did not have Log entries.
- * Added some register variables to Molecule and ComputeNonbondedExcl.C
- *
- ***************************************************************************/

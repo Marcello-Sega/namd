@@ -1093,35 +1093,3 @@ double AForcingDiheRestraint::Get_dU_dLambda() {
   return((m_Kf/2)*m_LambdaKf * sin(Dihe-RefDihe) * (m_StartAngle-m_StopAngle));
 }
 
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker $		$State $
- *	$Revision $	$Date $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: FreeEnergyRestrain.C,v $
- * Revision 1.6  1999/03/17 17:59:24  jim
- * Eliminated compiler warnings and errors.
- *
- * Revision 1.5  1998/09/20 16:35:00  hurwitz
- * make sure Lambda control objects start and stop on just the right step.
- * made output shorter and more readable (compile with _VERBOSE_PMF for old output)
- * : ----------------------------------------------------------------------
- *
- * Revision 1.4  1998/06/03 20:09:53  hurwitz
- * changed sign of dihedral angle so it conforms to convention
- *
- * Revision 1.3  1998/06/02 20:39:04  hurwitz
- * corrected bug concerning distribution of force from center-of-mass out to
- * component atoms
- *
- * Revision 1.2  1998/05/29 22:31:18  hurwitz
- * made corrections so dihedral restraints work with negative angles
- * (i.e. a full 360 degrees -- from -pi to +pi)
- *
- *
- ***************************************************************************/

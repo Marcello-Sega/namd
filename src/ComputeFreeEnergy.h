@@ -52,45 +52,4 @@ public:
 };
 
 #endif
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: ComputeFreeEnergy.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1998/05/25 21:55:05 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: ComputeFreeEnergy.h,v $
- * Revision 1.8  1998/05/25 21:55:05  jim
- * Eliminated compile errors in KCC by avoiding use of istrstream.
- *
- * Revision 1.7  1998/05/21 22:37:32  hurwitz
- * initial check in of code for fixed and forcing restraints
- * -Dave Hurwitz
- *
- * Revision 1.6  1998/04/30 04:53:22  jim
- * Added forces from MDComm and other improvements to ComputeGlobal.
- *
- * Revision 1.5  1998/03/26 23:28:27  jim
- * Small changes for KCC port.  Altered use of strstream in ComputeFreeEnergy.
- *
- * Revision 1.4  1998/02/13 22:02:40  jim
- * Added script reading from config file and used streams in free energy.
- *
- * Revision 1.3  1998/02/11 17:49:03  jim
- * Added filename parameter to user_initialize().
- *
- * Revision 1.2  1998/02/11 07:31:35  jim
- * Finished interface to free energy perturbation code, including method
- * for determining atomid from segnamde, resid, and atomname.
- *
- * Revision 1.1  1998/02/10 06:45:09  jim
- * Added class ComputeFreeEnergy.
- *
- *
- *
- *
- ***************************************************************************/
 

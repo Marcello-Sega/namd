@@ -87,29 +87,4 @@ inline int PatchMap::downstream(int pid1, int pid2)
 }
 
 #endif
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: PatchMap.inl,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1999/09/03 20:46:19 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: PatchMap.inl,v $
- * Revision 1.4  1999/09/03 20:46:19  jim
- * Support for non-orthogonal periodic boundary conditions.
- *
- * Revision 1.3  1998/08/17 23:29:53  jim
- * Fixed MODULO macro needed for negative arguments.  I can't do math.
- *
- * Revision 1.2  1998/07/16 18:52:14  jim
- * Localized common downstream patch optimization.
- *
- * Revision 1.1  1997/10/06 00:12:34  jim
- * Added PatchMap.inl, sped up cycle-boundary tuple code.
- *
- *
- ***************************************************************************/
 

@@ -190,27 +190,3 @@ void ComputeGlobalEasy::easy_calc() {
   CkPrintf("Default ComputeGlobalEasy::easy_calc() called.\n");
 }
 
-
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: ComputeGlobalEasy.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1999/06/17 17:05:38 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: ComputeGlobalEasy.C,v $
- * Revision 1.3  1999/06/17 17:05:38  jim
- * Renamed seq to step in most places.  Now has meaning only to user.
- *
- * Revision 1.2  1999/06/17 15:46:06  jim
- * Completely rewrote reduction system to eliminate need for sequence numbers.
- *
- * Revision 1.1  1999/06/03 16:50:08  jim
- * Added simplified interface to ComputeGlobal mechanism.
- *
- *
- *
- ***************************************************************************/

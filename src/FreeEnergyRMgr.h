@@ -45,19 +45,4 @@ public:
 };
 
 #endif
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker $		$State $
- *	$Revision $	$Date $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: FreeEnergyRMgr.h,v $
- * Revision 1.3  1998/06/05 22:54:42  hurwitz
- * accumulate dU/dLambda for free energy calculation
- *
- *
- ***************************************************************************/
+

@@ -46,28 +46,3 @@ BroadcastClient::suspendFor(int tag) {
   CthSuspend();
 }
 
-
-
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1999/03/18 02:41:15 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: BroadcastClient.C,v $
- * Revision 1.3  1999/03/18 02:41:15  jim
- * Turned off stray DEBUGM code.
- *
- * Revision 1.2  1998/03/03 23:05:00  brunner
- * Changed include files for new simplified Charm++ include file structure.
- *
- * Revision 1.1  1997/03/19 11:53:51  ari
- * Add Broadcast mechanism.
- * Fixed RCS Log entries on files that did not have Log entries.
- * Added some register variables to Molecule and ComputeNonbondedExcl.C
- *
- ***************************************************************************/

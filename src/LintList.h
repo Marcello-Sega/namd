@@ -8,65 +8,10 @@
 /***************************************************************************/
 
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: LintList.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:25 $
- *
- ***************************************************************************
  * DESCRIPTION:
  *	LintList implements a linked list of non-negative integers.  It is a 
  * completely inlined class.
  *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: LintList.h,v $
- * Revision 1.1001  1997/03/19 11:54:25  ari
- * Add Broadcast mechanism.
- * Fixed RCS Log entries on files that did not have Log entries.
- * Added some register variables to Molecule and ComputeNonbondedExcl.C
- *
- * Revision 1.1000  1997/02/06 15:58:37  ari
- * Resetting CVS to merge branches back into the main trunk.
- * We will stick to main trunk development as suggested by CVS manual.
- * We will set up tags to track fixed points of development/release
- * as suggested by CVS manual - all praise the CVS manual.
- *
- * Revision 1.778  1997/01/28 00:30:45  ari
- * internal release uplevel to 1.778
- *
- * Revision 1.777.2.1  1997/01/27 22:45:21  ari
- * Basic Atom Migration Code added.
- * Added correct magic first line to .h files for xemacs to go to C++ mode.
- * Compiles and runs without migration turned on.
- *
- * Revision 1.777  1997/01/17 19:36:20  ari
- * Internal CVS leveling release.  Start development code work
- * at 1.777.1.1.
- *
- * Revision 1.1  1996/08/06 20:38:38  ari
- * Initial revision
- *
- * Revision 1.6  1995/10/27 23:27:30  jim
- * Changed "values.h" to <values.h> to fix make depend errors.  Mea culpa.
- *
- * Revision 1.5  95/10/27  12:11:47  12:11:47  jim (Jim Phillips)
- * Added several new functions to merge, delete, and check for items.
- * 
- * Revision 1.4  95/10/09  03:57:29  03:57:29  hazen (Brett Hazen)
- * Updated memory allocation to use C++ new/delete
- * 
- * Revision 1.3  1995/03/08  14:47:43  nelson
- * Added copyright
- *
- * Revision 1.2  94/10/11  10:55:39  10:55:39  nelson (Mark T. Nelson)
- * Added num() routine
- * 
- * Revision 1.1  94/09/22  16:26:05  16:26:05  nelson (Mark T. Nelson)
- * Initial revision
- * 
  ***************************************************************************/
 
 #ifndef LINTLIST_H
@@ -257,21 +202,3 @@ public:
 
 #endif   
 
-
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:25 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: LintList.h,v $
- * Revision 1.1001  1997/03/19 11:54:25  ari
- * Add Broadcast mechanism.
- * Fixed RCS Log entries on files that did not have Log entries.
- * Added some register variables to Molecule and ComputeNonbondedExcl.C
- *
- ***************************************************************************/

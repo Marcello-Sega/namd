@@ -8,101 +8,10 @@
 /***************************************************************************/
 
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: IntList.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:21 $
- *
- ***************************************************************************
  * DESCRIPTION:
  *   Generic list of integers implemented as an extendable array.  This
  * class is completely inlined.
  *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: IntList.h,v $
- * Revision 1.1001  1997/03/19 11:54:21  ari
- * Add Broadcast mechanism.
- * Fixed RCS Log entries on files that did not have Log entries.
- * Added some register variables to Molecule and ComputeNonbondedExcl.C
- *
- * Revision 1.1000  1997/02/06 15:58:32  ari
- * Resetting CVS to merge branches back into the main trunk.
- * We will stick to main trunk development as suggested by CVS manual.
- * We will set up tags to track fixed points of development/release
- * as suggested by CVS manual - all praise the CVS manual.
- *
- * Revision 1.778  1997/01/28 00:30:41  ari
- * internal release uplevel to 1.778
- *
- * Revision 1.777.2.1  1997/01/27 22:45:18  ari
- * Basic Atom Migration Code added.
- * Added correct magic first line to .h files for xemacs to go to C++ mode.
- * Compiles and runs without migration turned on.
- *
- * Revision 1.777  1997/01/17 19:36:15  ari
- * Internal CVS leveling release.  Start development code work
- * at 1.777.1.1.
- *
- * Revision 1.2  1996/11/11 19:54:09  nealk
- * Modified to use InfoStream instead of Inform.
- *
- * Revision 1.1  1996/08/06 20:38:38  ari
- * Initial revision
- *
- * Revision 1.14  1996/04/17 23:40:14  billh
- * added reset routine.
- *
- * Revision 1.13  1996/03/29 23:00:29  jean
- * fixed excise to shrink buffer if possible
- * if not all the atoms in the input list are removed, then
- * there is a possibility that the buffer will shrink too much.
- * this is caught and causes namd to exit with an error message.
- *
- * Revision 1.12  1996/03/21 23:01:50  jean
- * modified excise to take a list of indices to be deleted
- * still need to shrink list if possible
- *
- * Revision 1.11  1996/02/23 23:29:29  jean
- * minor twiddles on variable typing
- *
- * Revision 1.10  1996/02/22 23:04:27  jean
- * added NAMD_bsearch and IntList::excise
- * excise is for moving hydrogens to same patch as their mother
- *
- * Revision 1.9  1995/10/27 21:27:20  jim
- * Fixed compile-time error on SGI's introduced in previous revision.
- *
- * Revision 1.8  95/10/27  12:10:33  12:10:33  jim (Jim Phillips)
- * Added several new functions to merge, clear, and compare lists.
- * 
- * Revision 1.7  95/10/09  03:53:18  03:53:18  hazen (Brett Hazen)
- * Memory allocation error-checking added
- * 
- * Revision 1.6  1995/09/21  17:43:33  billh
- * Removed IntList:: from definition of operator[] function.
- *
- * Revision 1.5  95/03/08  14:46:21  14:46:21  nelson (Mark T. Nelson)
- * Added copyright
- * 
- * Revision 1.4  95/02/05  16:13:53  16:13:53  nelson (Mark T. Nelson)
- * Changed binary search from hand written code to use lirbary function bsearch
- * 
- * Revision 1.3  95/01/19  13:32:07  13:32:07  brunner (Robert Brunner)
- * Fixed the delete [] intarray to check for a null pointer first.  Also
- * if no elements are in the array, NOTFOUND is returned for a find().
- * 
- * Revision 1.2  94/10/12  09:59:04  09:59:04  nelson (Mark T. Nelson)
- * Reworked, added sort() and find(), changed the number of
- * elements allocated at a time, made completely inlined,
- * removed merge, and made the reallocation use memcpy rather
- * than loop
- * 
- * Revision 1.1  94/07/05  12:52:16  12:52:16  dalke (Andrew Dalke)
- * Initial revision
- * 
  ***************************************************************************/
 
 #ifndef INTLIST_H
@@ -350,21 +259,3 @@ class IntList
 
 #endif // INTLIST_H
 
-
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:21 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: IntList.h,v $
- * Revision 1.1001  1997/03/19 11:54:21  ari
- * Add Broadcast mechanism.
- * Fixed RCS Log entries on files that did not have Log entries.
- * Added some register variables to Molecule and ComputeNonbondedExcl.C
- *
- ***************************************************************************/

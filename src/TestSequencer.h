@@ -32,20 +32,3 @@ protected:
 
 #endif // TESTSEQUENCER_H
 
-
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1998/03/31 04:55:50 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: TestSequencer.h,v $
- * Revision 1.1  1998/03/31 04:55:50  jim
- * Added test mode, fixed errors in virial with full electrostatics.
- *
- *
- ***************************************************************************/

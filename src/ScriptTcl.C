@@ -234,30 +234,3 @@ void ScriptTcl::algorithm() {
 
 }
 
-
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1999/08/30 14:53:32 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: ScriptTcl.C,v $
- * Revision 1.4  1999/08/30 14:53:32  jim
- * Added error messages for TCL features if TCL unavailable.
- *
- * Revision 1.3  1999/08/11 16:53:10  jim
- * Added move command to TCL scripting.
- *
- * Revision 1.2  1999/06/21 16:15:36  jim
- * Improved scripting, run now ends and generates output.
- *
- * Revision 1.1  1999/05/27 18:38:58  jim
- * Files to implement general Tcl scripting.
- *
- *
- *
- ***************************************************************************/

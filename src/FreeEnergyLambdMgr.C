@@ -315,27 +315,3 @@ int ALambdaManager::GetTotalNumSteps() {
   return(Total);
 }
 
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker $		$State $
- *	$Revision $	$Date $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: FreeEnergyLambdMgr.C,v $
- * Revision 1.4  1998/09/20 16:34:56  hurwitz
- * make sure Lambda control objects start and stop on just the right step.
- * made output shorter and more readable (compile with _VERBOSE_PMF for old output)
- * : ----------------------------------------------------------------------
- *
- * Revision 1.3  1998/06/05 22:54:39  hurwitz
- * accumulate dU/dLambda for free energy calculation
- *
- * Revision 1.2  1998/05/22 19:08:30  hurwitz
- * Do NAMD_die if there aren't enough steps to complete all pmf & mcti blocks
- *
- *
- ***************************************************************************/

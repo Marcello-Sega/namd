@@ -21,38 +21,3 @@ module WorkDistrib {
   } ;
 }
 
-
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1999/05/11 23:56:53 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: WorkDistrib.ci,v $
- * Revision 1.1008  1999/05/11 23:56:53  brunner
- * Changes for new charm version
- *
- * Revision 1.1007  1998/07/03 20:09:56  brunner
- * Self-compute spliting creation changes.  I hope this works.
- *
- * Revision 1.1006  1998/01/22 20:11:07  brunner
- * Modified the ComputeMap redistribution to send only new patch assignments.
- *
- * Revision 1.1005  1997/08/20 23:27:42  jim
- * Created multiple enqueueWork entry points to aid analysis.
- *
- * Revision 1.1004  1997/04/08 07:09:04  ari
- * Modification for dynamic loadbalancing - moving computes
- * Still bug in new computes or usage of proxies/homepatches.
- * Works if ldbStrategy is none as before.
- *
- * Revision 1.1003  1997/03/19 11:54:59  ari
- * Add Broadcast mechanism.
- * Fixed RCS Log entries on files that did not have Log entries.
- * Added some register variables to Molecule and ComputeNonbondedExcl.C
- *
- ***************************************************************************/

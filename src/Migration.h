@@ -66,34 +66,3 @@ struct MigrationInfo {
 
 #endif // MIGRATION_H
 
-
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1999/09/24 17:15:10 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: Migration.h,v $
- * Revision 1.1006  1999/09/24 17:15:10  jim
- * Added packmsg.h with macros to simplify packing.
- *
- * Revision 1.1005  1998/08/11 16:30:29  jim
- * Modified output from periodic boundary simulations to return atoms to
- * internally consistent coordinates.  We store the transformations which
- * were performed and undo them at the end.  It might be better to do this
- * by always keeping the original coordinates and only doing the transform
- * for the nonbonded terms but this works for now.
- *
- * Revision 1.1004  1997/11/14 04:56:46  jim
- * Added STL-style iterators, eliminated bad algorithm in doAtomMigration.
- *
- * Revision 1.1003  1997/03/19 11:54:31  ari
- * Add Broadcast mechanism.
- * Fixed RCS Log entries on files that did not have Log entries.
- * Added some register variables to Molecule and ComputeNonbondedExcl.C
- *
- ***************************************************************************/

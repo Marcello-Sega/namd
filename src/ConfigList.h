@@ -8,13 +8,6 @@
 /***************************************************************************/
 
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: ConfigList.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1999/07/08 21:26:38 $
- *
- ***************************************************************************
  * DESCRIPTION:
  *   Read in a configuration file of the form:
  *       keyword = information\n
@@ -39,70 +32,6 @@
  * Note:
  *   The returned StringList * is NOT new'ed.  Do NOT free it.
  *   Keywords are case INsensitive
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: ConfigList.h,v $
- * Revision 1.1002  1999/07/08 21:26:38  jim
- * Eliminated compiler warnings.
- *
- * Revision 1.1001  1997/03/19 11:54:12  ari
- * Add Broadcast mechanism.
- * Fixed RCS Log entries on files that did not have Log entries.
- * Added some register variables to Molecule and ComputeNonbondedExcl.C
- *
- * Revision 1.1000  1997/02/06 15:58:20  ari
- * Resetting CVS to merge branches back into the main trunk.
- * We will stick to main trunk development as suggested by CVS manual.
- * We will set up tags to track fixed points of development/release
- * as suggested by CVS manual - all praise the CVS manual.
- *
- * Revision 1.778  1997/01/28 00:30:31  ari
- * internal release uplevel to 1.778
- *
- * Revision 1.777.2.1  1997/01/27 22:45:11  ari
- * Basic Atom Migration Code added.
- * Added correct magic first line to .h files for xemacs to go to C++ mode.
- * Compiles and runs without migration turned on.
- *
- * Revision 1.777  1997/01/17 19:36:05  ari
- * Internal CVS leveling release.  Start development code work
- * at 1.777.1.1.
- *
- * Revision 1.1  1996/08/06 20:38:38  ari
- * Initial revision
- *
- * Revision 1.8  1995/11/11 17:25:27  dalke
- * added a
- *   keyword {
- * this is a line
- * this is another line
- * }
- *
- * option for reading multiple lines without specify the keyword
- * each time.
- *
- * Revision 1.7  95/10/07  01:49:57  01:49:57  hazen (Brett Hazen)
- * Memory Allocation error-checking added
- * 
- * Revision 1.6  1995/06/20  10:36:32  nelson
- * Fixed bug where delete [] was causing core dump on SGI's
- *
- * Revision 1.5  95/04/04  18:44:56  18:44:56  dalke (Andrew Dalke)
- * fixed const references
- * 
- * Revision 1.4  1995/03/08  14:46:33  nelson
- * Added copyright
- *
- * Revision 1.3  94/11/01  21:51:44  21:51:44  dalke (Andrew Dalke)
- * Fixed a delete problem
- * 
- * Revision 1.2  94/10/08  04:09:12  04:09:12  dalke (Andrew Dalke)
- * added missing .h file
- * 
- * Revision 1.1  94/06/27  20:46:09  20:46:09  dalke (Andrew Dalke)
- * Initial revision
- * 
  ***************************************************************************/
 
 // This header introduces two names to the global name space
@@ -195,24 +124,3 @@ class ConfigList {
 
 #endif // CONFIGLIST_H
 
-
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1999/07/08 21:26:38 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: ConfigList.h,v $
- * Revision 1.1002  1999/07/08 21:26:38  jim
- * Eliminated compiler warnings.
- *
- * Revision 1.1001  1997/03/19 11:54:12  ari
- * Add Broadcast mechanism.
- * Fixed RCS Log entries on files that did not have Log entries.
- * Added some register variables to Molecule and ComputeNonbondedExcl.C
- *
- ***************************************************************************/

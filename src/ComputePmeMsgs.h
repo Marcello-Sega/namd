@@ -55,30 +55,3 @@ public:
 
 #endif
 
-
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1999/09/03 20:46:12 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: ComputePmeMsgs.h,v $
- * Revision 1.2  1999/09/03 20:46:12  jim
- * Support for non-orthogonal periodic boundary conditions.
- *
- * Revision 1.1  1999/06/08 14:52:07  jim
- * Incorporated Justin's faster PME code along side DPME.
- *
- * Revision 1.2  1999/05/11 23:56:18  brunner
- * Changes for new charm version
- *
- * Revision 1.1  1998/04/10 04:15:58  jim
- * Finished incorporating DPME.
- *
- *
- *
- ***************************************************************************/

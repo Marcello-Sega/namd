@@ -42,41 +42,4 @@ typedef SortedArray<HomePatchElem> HomePatchList;
 typedef ResizeArrayIter<HomePatchElem> HomePatchListIter;
 
 #endif /* HOMEPATCHLIST_H */
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: HomePatchList.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1998/01/15 05:40:52 $
- *
- ***************************************************************************
- * $Log: HomePatchList.h,v $
- * Revision 1.1003  1998/01/15 05:40:52  jim
- * Added int return type to comparison operators.
- *
- * Revision 1.1002  1997/03/06 22:06:03  ari
- * Removed Compute.ci
- * Comments added - more code cleaning
- *
- * Revision 1.1001  1997/02/26 16:53:10  ari
- * Cleaning and debuging for memory leaks.
- * Adding comments.
- * Removed some dead code due to use of Quiescense detection.
- *
- * Revision 1.1000  1997/02/06 15:58:27  ari
- * Resetting CVS to merge branches back into the main trunk.
- * We will stick to main trunk development as suggested by CVS manual.
- * We will set up tags to track fixed points of development/release
- * as suggested by CVS manual - all praise the CVS manual.
- *
- * Revision 1.2  1997/02/06 15:53:13  ari
- * Updating Revision Line, getting rid of branches
- *
- * Revision 1.1.2.1  1997/02/05 22:20:02  ari
- * Additional File for migration -
- * this is along the lines of a clean-up - HomePatchList
- * is shared among different objects, and this deserves
- * a file of its own.
- *
- *
- ***************************************************************************/
+

@@ -33,24 +33,4 @@ protected:
 };
 
 #endif
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: ComputeMisc.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1999/07/06 20:32:41 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: ComputeMisc.h,v $
- * Revision 1.2  1999/07/06 20:32:41  jim
- * Eliminated warnings from new generation of picky compilers.
- *
- * Revision 1.1  1999/06/03 16:50:08  jim
- * Added simplified interface to ComputeGlobal mechanism.
- *
- *
- *
- ***************************************************************************/
 

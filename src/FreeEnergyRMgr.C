@@ -194,24 +194,3 @@ void ARestraintManager::PrintPreInfo(int Index) {
   iout << Str << ":  ";
 }
 
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker $		$State $
- *	$Revision $	$Date $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: FreeEnergyRMgr.C,v $
- * Revision 1.3  1998/09/20 16:34:59  hurwitz
- * make sure Lambda control objects start and stop on just the right step.
- * made output shorter and more readable (compile with _VERBOSE_PMF for old output)
- * : ----------------------------------------------------------------------
- *
- * Revision 1.2  1998/06/05 22:54:41  hurwitz
- * accumulate dU/dLambda for free energy calculation
- *
- *
- ***************************************************************************/

@@ -8,50 +8,10 @@
 /***************************************************************************/
 
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: HBondParam.h,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/10/01 16:46:49 $
- *
- ***************************************************************************
  * DESCRIPTION:
  *	
  * HBondParam stores parameters needed for hydrogen bond calculations, and
  * provides methods for accessing this data.
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: HBondParam.h,v $
- * Revision 1.1002  1997/10/01 16:46:49  milind
- * Removed old NAMD1 messaging and replaced it with new Message Streams library.
- *
- * Revision 1.1001  1997/03/19 11:54:17  ari
- * Add Broadcast mechanism.
- * Fixed RCS Log entries on files that did not have Log entries.
- * Added some register variables to Molecule and ComputeNonbondedExcl.C
- *
- * Revision 1.1000  1997/02/06 15:58:25  ari
- * Resetting CVS to merge branches back into the main trunk.
- * We will stick to main trunk development as suggested by CVS manual.
- * We will set up tags to track fixed points of development/release
- * as suggested by CVS manual - all praise the CVS manual.
- *
- * Revision 1.778  1997/01/28 00:30:34  ari
- * internal release uplevel to 1.778
- *
- * Revision 1.777.2.2  1997/01/27 22:45:13  ari
- * Basic Atom Migration Code added.
- * Added correct magic first line to .h files for xemacs to go to C++ mode.
- * Compiles and runs without migration turned on.
- *
- * Revision 1.777.2.1  1997/01/24 02:29:50  jim
- * Fixed bug where only first parameter file was read!
- * Added files for hydrogen bond parameter reading.
- *
- * Revision 1.1  1996/04/18 18:44:29  billh
- * Initial revision
  *
  ***************************************************************************/
 
@@ -178,24 +138,3 @@ private:
 
 #endif
 
-
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/10/01 16:46:49 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: HBondParam.h,v $
- * Revision 1.1002  1997/10/01 16:46:49  milind
- * Removed old NAMD1 messaging and replaced it with new Message Streams library.
- *
- * Revision 1.1001  1997/03/19 11:54:17  ari
- * Add Broadcast mechanism.
- * Fixed RCS Log entries on files that did not have Log entries.
- * Added some register variables to Molecule and ComputeNonbondedExcl.C
- *
- ***************************************************************************/

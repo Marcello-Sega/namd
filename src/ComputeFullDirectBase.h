@@ -88,28 +88,3 @@
   return electEnergy;
 }
 
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1999/09/03 20:46:08 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: ComputeFullDirectBase.h,v $
- * Revision 1.4  1999/09/03 20:46:08  jim
- * Support for non-orthogonal periodic boundary conditions.
- *
- * Revision 1.3  1999/05/27 19:00:43  jim
- * Added nonbondedScaling parameter and fixed Tcl scripting bug.
- *
- * Revision 1.2  1999/01/06 00:56:21  jim
- * All compute objects except DPMTA now return diagonal of virial tensor.
- *
- * Revision 1.1  1998/03/30 21:01:16  jim
- * Added nearest-image support for periodic boundary conditions to full direct.
- *
- *
- ***************************************************************************/

@@ -47,29 +47,3 @@ public:
 
 #endif
 
-
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1999/06/17 15:46:02 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: ComputeCylindricalBC.h,v $
- * Revision 1.6  1999/06/17 15:46:02  jim
- * Completely rewrote reduction system to eliminate need for sequence numbers.
- *
- * Revision 1.5  1997/03/20 23:53:32  ari
- * Some changes for comments. Copyright date additions.
- * Hooks for base level update of Compute objects from ComputeMap
- * by ComputeMgr.  Useful for new compute migration functionality.
- *
- * Revision 1.4  1997/03/19 11:54:05  ari
- * Add Broadcast mechanism.
- * Fixed RCS Log entries on files that did not have Log entries.
- * Added some register variables to Molecule and ComputeNonbondedExcl.C
- *
- ***************************************************************************/

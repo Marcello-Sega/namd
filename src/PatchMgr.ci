@@ -16,29 +16,3 @@ module PatchMgr {
   } ;
 }
 
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1999/08/11 16:53:09 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: PatchMgr.ci,v $
- * Revision 1.1006  1999/08/11 16:53:09  jim
- * Added move command to TCL scripting.
- *
- * Revision 1.1005  1999/05/11 23:56:44  brunner
- * Changes for new charm version
- *
- * Revision 1.1004  1997/04/11 06:03:27  jim
- * Message combining implemented for atom migration.
- *
- * Revision 1.1003  1997/03/19 11:54:48  ari
- * Add Broadcast mechanism.
- * Fixed RCS Log entries on files that did not have Log entries.
- * Added some register variables to Molecule and ComputeNonbondedExcl.C
- *
- ***************************************************************************/

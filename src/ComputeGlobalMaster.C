@@ -137,32 +137,3 @@ void ComputeGlobalMaster::calculate() {
   host->comm->sendComputeGlobalResults(msg);
 }
 
-
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1999/05/11 23:56:22 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: ComputeGlobalMaster.C,v $
- * Revision 1.4  1999/05/11 23:56:22  brunner
- * Changes for new charm version
- *
- * Revision 1.3  1999/02/17 04:09:56  jim
- * Fixes to make optional force modules work with more nodes than patches.
- *
- * Revision 1.2  1998/02/16 00:24:37  jim
- * Added atom group centers of mass to Tcl interface.
- *
- * Revision 1.1  1998/02/10 05:35:03  jim
- * Split ComputeGlobal into different classes and files.
- * Switched globalForces and globalForcesTcl to tclForces and tclForcesScript.
- * Added (soon to be used) freeEnergy and freeEnergyConfig.
- *
- *
- *
- ***************************************************************************/

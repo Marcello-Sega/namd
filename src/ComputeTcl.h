@@ -45,29 +45,4 @@ private:
 };
 
 #endif
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: ComputeTcl.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1998/02/16 00:23:20 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: ComputeTcl.h,v $
- * Revision 1.3  1998/02/16 00:23:20  jim
- * Added atom group centers of mass to Tcl interface.
- *
- * Revision 1.2  1998/02/11 09:13:26  jim
- * Added atomid command to tclForces.  Finds id from segname, resid, atomname.
- *
- * Revision 1.1  1998/02/10 05:35:05  jim
- * Split ComputeGlobal into different classes and files.
- * Switched globalForces and globalForcesTcl to tclForces and tclForcesScript.
- * Added (soon to be used) freeEnergy and freeEnergyConfig.
- *
- *
- *
- ***************************************************************************/
 

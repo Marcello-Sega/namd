@@ -51,33 +51,3 @@ void ComputeHomePatches::atomUpdate()
   Compute::atomUpdate();
 }
 
-
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1999/08/20 19:11:08 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: ComputeHomePatches.C,v $
- * Revision 1.1007  1999/08/20 19:11:08  jim
- * Added MOLLY - mollified impluse method.
- *
- * Revision 1.1006  1999/06/17 15:46:07  jim
- * Completely rewrote reduction system to eliminate need for sequence numbers.
- *
- * Revision 1.1005  1997/09/28 10:19:04  milind
- * Fixed priorities, ReductionMgr etc.
- *
- * Revision 1.1004  1997/08/26 16:26:12  jim
- * Revamped prioritites for petter performance and easier changes.
- *
- * Revision 1.1003  1997/03/19 11:54:08  ari
- * Add Broadcast mechanism.
- * Fixed RCS Log entries on files that did not have Log entries.
- * Added some register variables to Molecule and ComputeNonbondedExcl.C
- *
- ***************************************************************************/

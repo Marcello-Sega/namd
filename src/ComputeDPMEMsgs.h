@@ -60,27 +60,3 @@ public:
 
 #endif
 
-
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1999/09/08 16:05:44 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: ComputeDPMEMsgs.h,v $
- * Revision 1.3  1999/09/08 16:05:44  jim
- * Added internal PUB3DFFT package.
- *
- * Revision 1.2  1999/05/11 23:56:18  brunner
- * Changes for new charm version
- *
- * Revision 1.1  1998/04/10 04:15:58  jim
- * Finished incorporating DPME.
- *
- *
- *
- ***************************************************************************/

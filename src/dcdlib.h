@@ -40,32 +40,4 @@ void close_dcd_read(int, int, int *);
 void close_dcd_write(int);	/*  Close a dcd file open for writing   */
 
 #endif /* ! DCDLIB_H */
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: dcdlib.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1999/05/25 21:48:52 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: dcdlib.h,v $
- * Revision 1.3  1999/05/25 21:48:52  jim
- * Modified DCD code to be compatible with Quanta.
- *
- * Revision 1.2  1997/03/19 11:55:02  ari
- * Add Broadcast mechanism.
- * Fixed RCS Log entries on files that did not have Log entries.
- * Added some register variables to Molecule and ComputeNonbondedExcl.C
- *
- * Revision 1.1  1997/02/11 22:56:18  jim
- * Added dcd file writing.
- *
- * Revision 1.2  1995/03/08 14:37:29  nelson
- * Added copyright
- *
- * Revision 1.1  94/10/06  21:40:21  21:40:21  nelson (Mark T. Nelson)
- * Initial revision
- * 
- ***************************************************************************/
+

@@ -20,24 +20,3 @@ mainmodule main {
   extern module BroadcastMgr;
 }
 
-
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1999/05/11 23:56:56 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: main.ci,v $
- * Revision 1.1003  1999/05/11 23:56:56  brunner
- * Changes for new charm version
- *
- * Revision 1.1002  1997/03/19 11:55:04  ari
- * Add Broadcast mechanism.
- * Fixed RCS Log entries on files that did not have Log entries.
- * Added some register variables to Molecule and ComputeNonbondedExcl.C
- *
- ***************************************************************************/

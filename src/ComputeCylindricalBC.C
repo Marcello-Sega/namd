@@ -328,32 +328,3 @@ void ComputeCylindricalBC::doForce(Position* p, Results* r, AtomProperties* a)
 }
 /*			END OF FUNCTION force				*/
 
-
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1999/09/23 20:33:39 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: ComputeCylindricalBC.C,v $
- * Revision 1.8  1999/09/23 20:33:39  jim
- * Eliminated COM centering from docs and params.
- *
- * Revision 1.7  1999/06/17 15:46:01  jim
- * Completely rewrote reduction system to eliminate need for sequence numbers.
- *
- * Revision 1.6  1997/03/20 23:53:31  ari
- * Some changes for comments. Copyright date additions.
- * Hooks for base level update of Compute objects from ComputeMap
- * by ComputeMgr.  Useful for new compute migration functionality.
- *
- * Revision 1.5  1997/03/19 11:54:04  ari
- * Add Broadcast mechanism.
- * Fixed RCS Log entries on files that did not have Log entries.
- * Added some register variables to Molecule and ComputeNonbondedExcl.C
- *
- ***************************************************************************/

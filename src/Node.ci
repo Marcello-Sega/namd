@@ -29,33 +29,3 @@ module Node {
   };
 }
 
-
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1999/06/02 15:14:21 $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: Node.ci,v $
- * Revision 1.1009  1999/06/02 15:14:21  jim
- * Now waits for output files to be written before halting.
- *
- * Revision 1.1008  1999/05/26 22:23:54  jim
- * Added basic Tcl scripting, fixed bugs in broadcasts.
- *
- * Revision 1.1007  1999/05/11 23:56:38  brunner
- * Changes for new charm version
- *
- * Revision 1.1006  1998/01/05 20:33:24  sergei
- * added 'packmessage SMDDataMsg' and an entry recvSMDData.
- *
- * Revision 1.1005  1997/03/19 11:54:35  ari
- * Add Broadcast mechanism.
- * Fixed RCS Log entries on files that did not have Log entries.
- * Added some register variables to Molecule and ComputeNonbondedExcl.C
- *
- ***************************************************************************/

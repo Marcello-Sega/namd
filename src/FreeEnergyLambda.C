@@ -581,33 +581,3 @@ double ALambdaControl::GetLambdaRef() {
   return(m_LambdaRef);
 }
 
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile $
- *	$Author $	$Locker $		$State $
- *	$Revision $	$Date $
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: FreeEnergyLambda.C,v $
- * Revision 1.6  1999/03/17 17:59:23  jim
- * Eliminated compiler warnings and errors.
- *
- * Revision 1.5  1998/09/20 16:34:58  hurwitz
- * make sure Lambda control objects start and stop on just the right step.
- * made output shorter and more readable (compile with _VERBOSE_PMF for old output)
- * : ----------------------------------------------------------------------
- *
- * Revision 1.4  1998/06/09 22:00:17  hurwitz
- * small fix:  if Lambda is decreasing, dLambda is negative
- *
- * Revision 1.3  1998/06/05 22:54:40  hurwitz
- * accumulate dU/dLambda for free energy calculation
- *
- * Revision 1.2  1998/05/22 19:08:31  hurwitz
- * Do NAMD_die if there aren't enough steps to complete all pmf & mcti blocks
- *
- *
- ***************************************************************************/
