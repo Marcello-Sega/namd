@@ -519,6 +519,40 @@ int ScriptTcl::Tcl_reinitatoms(ClientData clientData,
   return TCL_OK;
 }
 
+#define DEG2RAD 3.14159625359/180.0
+#define UNITCELLSLOP 0.0001
+
+static int get_lattice_from_ts(Lattice *lattice, const molfile_timestep_t *ts)
+{
+  // Check if valid unit cell data is contained in the timestep.  We don't
+  // have any formalized way of doing this yet; for now, just check that
+  // the length of the vector is greater than 1.
+  if (ts->A <= 1 || ts->B <= 1 || ts->C <= 1) return 0;
+
+  // convert from degrees to radians
+  double cosAB = cos(ts->alpha*DEG2RAD);
+  double sinAB = sin(ts->alpha*DEG2RAD);
+  double cosAC = cos(ts->beta*DEG2RAD);
+  double cosBC = cos(ts->gamma*DEG2RAD);
+
+  // A will lie along the positive x axis.
+  // B will lie in the x-y plane
+  // The origin will be (0,0,0).
+  Vector A(0), B(0), C(0);
+  A.x = ts->A;
+  B.x = ts->B*cosAB;
+  B.y = ts->B*sinAB;
+  if (fabs(B.x) < UNITCELLSLOP) B.x = 0;
+  if (fabs(B.y) < UNITCELLSLOP) B.y = 0;
+  C.x = ts->C * cosAC;
+  C.y = (ts->B*ts->C*cosBC - B.x*C.x)/B.y;
+  C.z = sqrt(ts->C*ts->C - C.x*C.x - C.y+C.y);
+  if (fabs(C.x) < UNITCELLSLOP) C.x = 0;
+  if (fabs(C.y) < UNITCELLSLOP) C.y = 0;
+  if (fabs(C.z) < UNITCELLSLOP) C.z = 0;
+  lattice->set(A, B, C, Vector(0));
+  return 1;
+}
 
 #ifdef NAMD_PLUGINS
 int ScriptTcl::Tcl_coorfile(ClientData clientData,
@@ -556,13 +590,21 @@ int ScriptTcl::Tcl_coorfile(ClientData clientData,
       Tcl_SetObjResult(interp, Tcl_NewIntObj(-1));
       return TCL_OK;
     }
+    iout << iINFO << "Reading timestep from file.\n" << endi;
+    Lattice lattice;
+    if (get_lattice_from_ts(&lattice, &ts)) {
+      iout << iINFO << "Updating unit cell from timestep.\n" << endi;
+      SetLatticeMsg *msg = new SetLatticeMsg;
+      msg->lattice.set(lattice.a(),lattice.b(),lattice.c(),lattice.origin());
+      (CProxy_PatchMgr(CpvAccess(BOCclass_group).patchMgr)).setLattice(msg);
+      script->barrier();
+    }
     for (int i=0; i<numatoms; i++) {
       vcoords[i].x = coords[3*i+0];
       vcoords[i].y = coords[3*i+1];
       vcoords[i].z = coords[3*i+2];
     }
     Node::Object()->pdb->set_all_positions(vcoords);
-    iout << iINFO << "Reading timestep from file.\n" << endi;
     script->reinitAtoms();
     Tcl_SetObjResult(interp, Tcl_NewIntObj(0));
   } else if (argc == 2 && !strcmp(argv[1], "close")) {

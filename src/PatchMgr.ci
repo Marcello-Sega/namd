@@ -12,6 +12,7 @@ module PatchMgr {
   message [packed] MigrateAtomsCombinedMsg;
   message MoveAtomMsg;
   message MoveAllByMsg;
+  message SetLatticeMsg;
 
   group PatchMgr
   {
@@ -22,6 +23,7 @@ module PatchMgr {
     entry void recvMigrateAtomsCombined(MigrateAtomsCombinedMsg *);
     entry void moveAtom(MoveAtomMsg *);
     entry void moveAllBy(MoveAllByMsg *);
+    entry void setLattice(SetLatticeMsg *);
   } ;
 }
 

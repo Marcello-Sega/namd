@@ -51,6 +51,11 @@ public:
   Vector offset;
 };
 
+class SetLatticeMsg : public CMessage_SetLatticeMsg {
+public:
+  Lattice lattice;
+};
+
 // PatchMgr creates and manages homepatches. There exist one instance of 
 // PatchMgr on each node (derived from Charm++ Group).  // That is, when a new operator causes creation of one instance on each node. 
 // In addition to creation of homepatches, it handles the atom redistribution
@@ -108,6 +113,7 @@ public:
 
   void moveAtom(MoveAtomMsg *msg);
   void moveAllBy(MoveAllByMsg *msg);
+  void setLattice(SetLatticeMsg *msg);
  
 private:
 
