@@ -1,0 +1,8 @@
+NAMD_ARCH = Linux-i686
+CHARMARCH = net-linux-opteron
+
+CXX = g++ -DSOCKLEN_T=socklen_t
+CXXOPTS = -O3 -march=athlon -m64 -fexpensive-optimizations -ffast-math 
+CC = gcc
+COPTS = -O3 -march=athlon -m64 -fexpensive-optimizations -ffast-math
+
