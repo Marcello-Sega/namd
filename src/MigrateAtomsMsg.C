@@ -9,7 +9,7 @@
  *		
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/MigrateAtomsMsg.C,v 1.5 1997/04/11 06:03:22 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/MigrateAtomsMsg.C,v 1.6 1997/04/11 16:54:28 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -102,7 +102,7 @@ void MigrateAtomsCombinedMsg::
 {
   srcPatchID.add(source);
   destPatchID.add(destination);
-  int n = m->size();
+  int n = ( m ? m->size() : 0 );
   numAtoms.add(n);
   totalAtoms += n;
   for ( int i = 0; i < n; ++i )
@@ -209,11 +209,14 @@ void MigrateAtomsCombinedMsg::unpack (void *in) {
  *
  *	$RCSfile: MigrateAtomsMsg.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1997/04/11 06:03:22 $
+ *	$Revision: 1.6 $	$Date: 1997/04/11 16:54:28 $
  *
  * REVISION HISTORY:
  *
  * $Log: MigrateAtomsMsg.C,v $
+ * Revision 1.6  1997/04/11 16:54:28  jim
+ * Fixed bug calling size() on possibly null pointer.
+ *
  * Revision 1.5  1997/04/11 06:03:22  jim
  * Message combining implemented for atom migration.
  *
