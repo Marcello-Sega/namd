@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1062 1998/09/13 21:06:16 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1063 1998/10/16 22:19:32 jim Exp $";
 
 #include <stdio.h>
 
@@ -460,7 +460,7 @@ void WorkDistrib::assignNodeToPatch()
 
   for(i=0; i < nNodes; i++)
     iout << iINFO 
-	 << nAtoms[i] << " atoms assigned to node " << i << endl;
+	 << nAtoms[i] << " atoms assigned to node " << i << "\n" << endi;
   if ( numAtoms != Node::Object()->molecule->numAtoms ) {
     NAMD_die("Incorrect atom count in WorkDistrib::assignNodeToPatch\n");
   }
@@ -1118,12 +1118,15 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1062 $	$Date: 1998/09/13 21:06:16 $
+ *	$Revision: 1.1063 $	$Date: 1998/10/16 22:19:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1063  1998/10/16 22:19:32  jim
+ * Added endi to work around node-limit bug on clusters.
+ *
  * Revision 1.1062  1998/09/13 21:06:16  jim
  * Cleaned up output, defaults, etc.
  *
