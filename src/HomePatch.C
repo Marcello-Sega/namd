@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.13 1996/12/16 22:52:43 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.14 1996/12/17 08:55:25 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -62,7 +62,7 @@ void HomePatch::registerProxy(RegisterProxyMsg *msg) {
   ProxyAtomsMsg *nmsg = new (MsgIndex(ProxyAtomsMsg)) ProxyAtomsMsg;
   nmsg->patch = patchID;
   nmsg->atomIDList = atomIDList;
-  ProxyMgr::Object()->sendProxyAtoms(nmsg);
+  ProxyMgr::Object()->sendProxyAtoms(nmsg,msg->node);
 }
 
 void HomePatch::unregisterProxy(UnregisterProxyMsg *msg) {
@@ -287,12 +287,15 @@ void HomePatch::dispose(char *&data)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.13 $	$Date: 1996/12/16 22:52:43 $
+ *	$Revision: 1.14 $	$Date: 1996/12/17 08:55:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.14  1996/12/17 08:55:25  jim
+ * added node argument to sendProxyAtoms
+ *
  * Revision 1.13  1996/12/16 22:52:43  jim
  * added placement new and explicit destructor calls to ProxyAtomsMsg
  *
