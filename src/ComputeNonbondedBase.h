@@ -312,10 +312,10 @@ void ComputeNonbondedUtil :: NAME
     Force *fullf_1 = params->fullf[1];
   )
 
-  SELF ( int pairCount = ( (i_upper-1) * j_upper ) / 2; )
-  PAIR ( int pairCount = i_upper * j_upper; )
-  int minPairCount = ( pairCount * params->minPart ) / params->numParts;
-  int maxPairCount = ( pairCount * params->maxPart ) / params->numParts;
+  SELF ( int64 pairCount = ( (i_upper-1) * (int64)j_upper ) / 2; )
+  PAIR ( int64 pairCount = i_upper * (int64)j_upper; )
+  int64 minPairCount = ( pairCount * params->minPart ) / params->numParts;
+  int64 maxPairCount = ( pairCount * params->maxPart ) / params->numParts;
   pairCount = 0;
 
   for ( i = 0; i < (i_upper SELF(- 1)); ++i )

@@ -17,10 +17,18 @@
 #include <stdio.h>
 #include <limits.h>
 
-#if ( INT_MAX == 2147483647 )
+#if ( INT_MAX == 2147483647L )
 typedef	int	int32;
-#else
+#elif ( SHRT_MAX == 2147483647L )
 typedef	short	int32;
+#endif
+
+#if ( INT_MAX == 9223372036854775807LL )
+typedef int int64;
+#elif ( LONG_MAX == 9223372036854775807LL )
+typedef long int64;
+#else
+typedef long long int64;
 #endif
 
 #if defined(PLACEMENT_NEW)

@@ -900,7 +900,7 @@ void WorkDistrib::mapComputeNonbonded(void)
 
   for(i=0; i<patchMap->numPatches(); i++) // do the self 
   {
-    int numAtoms = patchMap->patch(i)->getNumAtoms();
+    int64 numAtoms = patchMap->patch(i)->getNumAtoms();  // avoid overflow
     int numPartitions;
     if (node->simParameters->numAtomsSelf == 0) {
       numPartitions = 1 + (numAtoms > 50) + (numAtoms*numAtoms)/50000;
