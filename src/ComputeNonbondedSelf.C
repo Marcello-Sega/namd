@@ -21,7 +21,6 @@ void ComputeNonbondedSelf::doForce(Position* p,
     CPrintf("ComputeNonbondedSelf::doForce() - Eval was sent\n");
     CPrintf(" %d patch 1 atoms\n", numAtoms );
 
-    ComputeNonbondedUtil::select();
     ComputeNonbondedUtil::calcSelf(p,f,a,numAtoms);
 }
 
@@ -30,12 +29,15 @@ void ComputeNonbondedSelf::doForce(Position* p,
  *
  *	$RCSfile: ComputeNonbondedSelf.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/11/21 00:22:01 $
+ *	$Revision: 1.8 $	$Date: 1996/11/21 00:59:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.C,v $
+ * Revision 1.8  1996/11/21 00:59:16  jim
+ * moved ComputeNonbondedUtil::select() call to SimParameters
+ *
  * Revision 1.7  1996/11/21 00:22:01  jim
  * first time using ComputeNonbondedUtil functions
  *

@@ -21,7 +21,6 @@ void ComputeNonbondedPair::doForce(Position* p[2],
     CPrintf("ComputeNonbondedPair::doForce() - Eval was sent\n");
     CPrintf(" %d patch 1 atoms and %d patch 2 atoms\n", numAtoms[0], numAtoms[1] );
 
-    ComputeNonbondedUtil::select();
     ComputeNonbondedUtil::calcPair(p,f,a,numAtoms);
 }
 
@@ -30,12 +29,15 @@ void ComputeNonbondedPair::doForce(Position* p[2],
  *
  *	$RCSfile: ComputeNonbondedPair.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/11/21 00:22:01 $
+ *	$Revision: 1.8 $	$Date: 1996/11/21 00:59:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.C,v $
+ * Revision 1.8  1996/11/21 00:59:16  jim
+ * moved ComputeNonbondedUtil::select() call to SimParameters
+ *
  * Revision 1.7  1996/11/21 00:22:01  jim
  * first time using ComputeNonbondedUtil functions
  *
