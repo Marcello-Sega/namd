@@ -1968,6 +1968,7 @@ void Parameters::add_vdw_pair_param(char *buf)
   Real A14;        //  A value for 1-4 ints
   Real B14;        //  B value for 1-4 ints
   Real sqrt26;     //  2^(1/6)
+  Real expo;       //  just for pow
   int read_count;        //  count from sscanf
   struct vdw_pair_params *new_node;  //  new node
 
@@ -1987,9 +1988,11 @@ void Parameters::add_vdw_pair_param(char *buf)
     A14=-A;
     sqrt26=pow(2.,(1./6.));
     B14=B/sqrt26;
-    A=pow(B14,12.);
+    expo=12.;
+    A=pow(B14,expo);
     A=A*4.*A14;
-    B=pow(B14,6.);
+    expo=6.;
+    B=pow(B14,expo);
     B=B*4.*A14;
     A14=A;
     B14=B;
@@ -4516,12 +4519,15 @@ int Parameters::vdw_pair_to_arrays(int *ind1_array, int *ind2_array,
  *
  *  $RCSfile: Parameters.C,v $
  *  $Author: ferenc $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1009 $  $Date: 1999/02/02 08:02:34 $
+ *  $Revision: 1.1010 $  $Date: 1999/02/10 00:11:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Parameters.C,v $
+ * Revision 1.1010  1999/02/10 00:11:23  ferenc
+ * second argument of pow needs to be a real for kcc!
+ *
  * Revision 1.1009  1999/02/02 08:02:34  ferenc
  * Added support for CHARMM parameter format in parameter files.
  *
