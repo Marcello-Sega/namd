@@ -20,6 +20,9 @@
 #include "Output.h"
 #include "strlib.h"
 #include "BroadcastObject.h"
+#include "NamdState.h"
+#include "Broadcasts.h"
+#include <math.h>
 
 #define MIN_DEBUG_LEVEL 3
 //#define DEBUGM
@@ -31,12 +34,7 @@ Controller::Controller(NamdState *s) :
 	reduction(ReductionMgr::Object()),
 	collection(CollectionMaster::Object())
 {
-    if ( simParams->rescaleFreq > 0 )
-    {
-	velocityRescaleFactor = new
-		SimpleBroadcastObject<BigReal>(velocityRescaleFactorTag);
-    }
-    else velocityRescaleFactor = 0;
+    broadcast = new ControllerBroadcasts;
 
     reduction->subscribe(REDUCTION_BOND_ENERGY);
     reduction->subscribe(REDUCTION_ANGLE_ENERGY);
@@ -51,7 +49,7 @@ Controller::Controller(NamdState *s) :
 
 Controller::~Controller(void)
 {
-    delete velocityRescaleFactor;
+    delete broadcast;
 
     reduction->unsubscribe(REDUCTION_BOND_ENERGY);
     reduction->unsubscribe(REDUCTION_ANGLE_ENERGY);
@@ -95,11 +93,26 @@ void Controller::algorithm(void)
         enqueueCollections(step);
         printEnergies(step);
         rescaleVelocities(step);
+	berendsenPressure(step);
     }
 
     terminate();
 }
 
+void Controller::berendsenPressure(int step)
+{
+  if ( simParams->berendsenPressureOn )
+  {
+    BigReal factor = pressure - simParams->berendsenPressureTarget;
+    factor *= simParams->berendsenPressureCompressibility;
+    factor *= simParams->dt;
+    factor /= simParams->berendsenPressureRelaxationTime;
+    factor += 1.0;
+    factor = cbrt(factor);
+    broadcast->positionRescaleFactor.publish(step,factor);
+    state->lattice.rescale(factor);
+  }
+}
 
 void Controller::rescaleVelocities(int step)
 {
@@ -108,7 +121,7 @@ void Controller::rescaleVelocities(int step)
   {
     const BigReal rescaleTemp = simParams->rescaleTemp;
     BigReal factor = sqrt(rescaleTemp/temperature);
-    velocityRescaleFactor->publish(step,factor);
+    broadcast->velocityRescaleFactor.publish(step,factor);
     iout << "RESCALING VELOCITIES AT STEP " << step
          << " TO " << rescaleTemp << " KELVIN.\n" << endi;
   }
@@ -121,8 +134,10 @@ void Controller::printEnergies(int seq)
 #define FORMAT(X) ( sprintf(tmp_string,"%.4f ",X), NAMD_pad(tmp_string, 12), tmp_string )
 
     Node *node = Node::Object();
+    Lattice &lattice = state->lattice;
 
-    int numDegFreedom = 3 * node->molecule->numAtoms;
+    int numAtoms = node->molecule->numAtoms;
+    int numDegFreedom = 3 * numAtoms;
     if ( ! node->simParameters->comMove ) numDegFreedom -= 3;
 
     BigReal bondEnergy;
@@ -135,6 +150,7 @@ void Controller::printEnergies(int seq)
     BigReal boundaryEnergy;
     BigReal virial;
     BigReal totalEnergy;
+    BigReal volume;
 
     reduction->require(seq, REDUCTION_BOND_ENERGY, bondEnergy);
     reduction->require(seq, REDUCTION_ANGLE_ENERGY, angleEnergy);
@@ -146,7 +162,18 @@ void Controller::printEnergies(int seq)
     reduction->require(seq, REDUCTION_BC_ENERGY, boundaryEnergy);
     reduction->require(seq, REDUCTION_VIRIAL, virial);
 
+    virial /= 3.;  // virial submitted is wrong by factor of 3
+
     temperature = 2.0 * kineticEnergy / ( numDegFreedom * BOLTZMAN );
+
+    if ( (volume=lattice.volume()) != 0. )
+    {
+      pressure = ( numAtoms * BOLTZMAN * temperature + virial ) / volume;
+    }
+    else
+    {
+      pressure = 0.;
+    }
 
     totalEnergy = bondEnergy + angleEnergy + dihedralEnergy + improperEnergy +
 	 electEnergy + ljEnergy + kineticEnergy + boundaryEnergy;
@@ -157,8 +184,9 @@ void Controller::printEnergies(int seq)
     {
 	iout << "ETITLE:     TS    BOND        ANGLE       "
 	     << "DIHED       IMPRP       ELECT       VDW       "
-	     << "BOUNDARY    KINETIC        TOTAL     TEMP     "
-	     << "VIRIAL\n";
+	     << "BOUNDARY    KINETIC        TOTAL     TEMP";
+	if ( volume != 0. ) iout << "     PRESSURE    VOLUME";
+	iout << "\n";
     }
 
     iout << ETITLE(seq)
@@ -171,9 +199,13 @@ void Controller::printEnergies(int seq)
 	 << FORMAT(boundaryEnergy)
 	 << FORMAT(kineticEnergy)
 	 << FORMAT(totalEnergy)
-	 << FORMAT(temperature)
-	 << FORMAT(virial)
-	 << "\n" << endi;
+	 << FORMAT(temperature);
+    if ( volume != 0. )
+    {
+	iout << FORMAT(pressure*PRESSUREFACTOR)
+	     << FORMAT(volume);
+    }
+    iout << "\n" << endi;
 
 }
 
@@ -190,12 +222,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/03/19 22:44:21 $
+ *	$Revision: 1.1012 $	$Date: 1997/03/21 23:05:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1012  1997/03/21 23:05:33  jim
+ * Added Berendsen's pressure coupling method, won't work with MTS yet.
+ *
  * Revision 1.1011  1997/03/19 22:44:21  jim
  * Revamped Controller/Sequencer, added velocity rescaling.
  *

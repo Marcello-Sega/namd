@@ -91,6 +91,18 @@ public:
   return (rc);
   }
 
+  BigReal volume(void) const
+  {
+    return ( a.x * b.y * c.z );
+  }
+
+  void rescale(BigReal factor)
+  {
+    a *= factor;
+    b *= factor;
+    c *= factor;
+  }
+
 private:
   Vector a,b,c;
   int anz, bnz, cnz;
@@ -104,12 +116,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/19 11:54:24 $
+ *	$Revision: 1.1003 $	$Date: 1997/03/21 23:05:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Lattice.h,v $
+ * Revision 1.1003  1997/03/21 23:05:36  jim
+ * Added Berendsen's pressure coupling method, won't work with MTS yet.
+ *
  * Revision 1.1002  1997/03/19 11:54:24  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

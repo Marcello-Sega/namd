@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1019 1997/03/19 22:44:24 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1020 1997/03/21 23:05:41 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -22,6 +22,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C
 #include "BroadcastObject.h"
 #include "Output.h"
 #include "Controller.h"
+#include "Broadcasts.h"
 
 #define MIN_DEBUG_LEVEL 3
 //#define DEBUGM
@@ -33,12 +34,7 @@ Sequencer::Sequencer(HomePatch *p) :
 	reduction(ReductionMgr::Object()),
 	collection(CollectionMgr::Object())
 {
-    if ( simParams->rescaleFreq > 0 )
-    {
-	velocityRescaleFactor = new
-		SimpleBroadcastObject<BigReal>(velocityRescaleFactorTag);
-    }
-    else velocityRescaleFactor = 0;
+    broadcast = new ControllerBroadcasts;
 
     reduction->Register(REDUCTION_KINETIC_ENERGY);
     reduction->Register(REDUCTION_BC_ENERGY); // in case not used elsewhere
@@ -46,7 +42,7 @@ Sequencer::Sequencer(HomePatch *p) :
 
 Sequencer::~Sequencer(void)
 {
-    delete velocityRescaleFactor;
+    delete broadcast;
 
     reduction->unRegister(REDUCTION_KINETIC_ENERGY);
     reduction->unRegister(REDUCTION_BC_ENERGY); // in case not used elsewhere
@@ -98,6 +94,7 @@ void Sequencer::algorithm(void)
     reduction->submit(step,REDUCTION_BC_ENERGY,0.);
     submitCollections(step);
     rescaleVelocities(step);
+    berendsenPressure(step);
 
     for ( ++step; step <= numberOfSteps; ++step )
     {
@@ -120,10 +117,24 @@ void Sequencer::algorithm(void)
 	reduction->submit(step,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
 	reduction->submit(step,REDUCTION_BC_ENERGY,0.);
 	submitCollections(step);
-        rescaleVelocities(step);
+	rescaleVelocities(step);
+	berendsenPressure(step);
     }
 
     terminate();
+}
+
+void Sequencer::berendsenPressure(int step)
+{
+  if ( simParams->berendsenPressureOn )
+  {
+    BigReal factor = broadcast->positionRescaleFactor.get(step);
+    patch->lattice.rescale(factor);
+    for ( int i = 0; i < patch->numAtoms; ++i )
+    {
+      patch->p[i] *= factor;
+    }
+  }
 }
 
 void Sequencer::rescaleVelocities(int step)
@@ -131,7 +142,7 @@ void Sequencer::rescaleVelocities(int step)
   const int rescaleFreq = simParams->rescaleFreq;
   if ( rescaleFreq > 0 && !(step%rescaleFreq) )
   {
-    BigReal factor = velocityRescaleFactor->get(step);
+    BigReal factor = broadcast->velocityRescaleFactor.get(step);
     for ( int i = 0; i < patch->numAtoms; ++i )
     {
       patch->v[i] *= factor;
@@ -159,12 +170,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1019 $     $Date: 1997/03/19 22:44:24 $
+ *      $Revision: 1.1020 $     $Date: 1997/03/21 23:05:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1020  1997/03/21 23:05:41  jim
+ * Added Berendsen's pressure coupling method, won't work with MTS yet.
+ *
  * Revision 1.1019  1997/03/19 22:44:24  jim
  * Revamped Controller/Sequencer, added velocity rescaling.
  *

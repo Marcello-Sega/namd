@@ -171,6 +171,11 @@ public:
 	int rescaleFreq;		//  Velocity rescale frequency
 	BigReal rescaleTemp;		//  Temperature to rescale to
 
+	Bool berendsenPressureOn;	//  Berendsen pressure bath
+	BigReal berendsenPressureTarget;
+	BigReal berendsenPressureCompressibility;
+	BigReal berendsenPressureRelaxationTime;
+
 	unsigned int randomSeed;	//  Seed for random number generator
 
 	Bool FMAOn;                     //  Flag TRUE-> FMA active
@@ -291,12 +296,15 @@ public:
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/16 19:44:08 $
+ *	$Revision: 1.1004 $	$Date: 1997/03/21 23:05:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1004  1997/03/21 23:05:47  jim
+ * Added Berendsen's pressure coupling method, won't work with MTS yet.
+ *
  * Revision 1.1003  1997/03/16 19:44:08  jim
  * Added cylindricalBCAxis option to cylindrical boundary conditions.
  *

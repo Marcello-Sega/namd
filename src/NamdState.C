@@ -7,7 +7,7 @@
  * DESCRIPTION: Holds pointers to large molecule data structure, simulation
  *		Parameters...
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1005 1997/03/18 18:09:06 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1006 1997/03/21 23:05:38 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -120,6 +120,7 @@ NamdState::configFileInit(char *confFile)
   StringList *parameterFilename = configList->find("parameters");
   StringList *coordinateFilename = configList->find("coordinates");
   simParameters =  new SimParameters(configList,currentdir);
+  lattice = simParameters->lattice;
   parameters = new Parameters(parameterFilename);
   parameters->print_param_summary();
 
@@ -157,12 +158,15 @@ NamdState::configFileInit(char *confFile)
  *
  *	$RCSfile: NamdState.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/18 18:09:06 $
+ *	$Revision: 1.1006 $	$Date: 1997/03/21 23:05:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdState.C,v $
+ * Revision 1.1006  1997/03/21 23:05:38  jim
+ * Added Berendsen's pressure coupling method, won't work with MTS yet.
+ *
  * Revision 1.1005  1997/03/18 18:09:06  jim
  * Revamped collection system to ensure ordering and eliminate
  * unnecessary collections.  Also reduced make dependencies.

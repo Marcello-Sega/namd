@@ -14,6 +14,8 @@
 #ifndef _NAMDSTATE_H
 #define _NAMDSTATE_H
 
+#include "Lattice.h"
+
 class Molecule;
 class SimParameters;
 class Parameters;
@@ -27,6 +29,7 @@ class Controller;
 class NamdState {
   friend class Namd; 
   friend class Node;
+  friend class Controller;
   private:
     Molecule *molecule;
     Parameters *parameters;
@@ -34,6 +37,7 @@ class NamdState {
     ConfigList *configList;
     PDB *pdb;
     Controller *controller;
+    Lattice lattice;
   public:
     NamdState(void);
     ~NamdState() {}
@@ -50,12 +54,15 @@ class NamdState {
  *
  *	$RCSfile: NamdState.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/18 18:09:08 $
+ *	$Revision: 1.1004 $	$Date: 1997/03/21 23:05:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdState.h,v $
+ * Revision 1.1004  1997/03/21 23:05:39  jim
+ * Added Berendsen's pressure coupling method, won't work with MTS yet.
+ *
  * Revision 1.1003  1997/03/18 18:09:08  jim
  * Revamped collection system to ensure ordering and eliminate
  * unnecessary collections.  Also reduced make dependencies.

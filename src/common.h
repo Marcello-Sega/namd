@@ -28,6 +28,7 @@ void   ::operator delete (void *);
 #define COLOUMB 332.0636
 #define BOLTZMAN 0.001987191
 #define TIMEFACTOR 48.88821
+#define PRESSUREFACTOR 6.95E4
 
 #ifndef PI
 #define PI	3.141592653589793
@@ -240,13 +241,16 @@ BigReal NAMD_random();
  * RCS INFORMATION:
  *
  *	$RCSfile: common.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/19 11:55:00 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/03/21 23:05:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.h,v $
+ * Revision 1.1004  1997/03/21 23:05:49  jim
+ * Added Berendsen's pressure coupling method, won't work with MTS yet.
+ *
  * Revision 1.1003  1997/03/19 11:55:00  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

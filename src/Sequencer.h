@@ -21,8 +21,7 @@ class HomePatch;
 class SimParameters;
 class ReductionMgr;
 class CollectionMgr;
-template <class T>
-class SimpleBroadcastObject;
+class ControllerBroadcasts;
 
 class Sequencer
 {
@@ -38,6 +37,7 @@ protected:
 
     void submitCollections(int);
     void rescaleVelocities(int);
+    void berendsenPressure(int);
 
     void suspend(void) { CthSuspend(); }
     void terminate(void);
@@ -51,7 +51,7 @@ private:
     CthThread thread;
     static void threadRun(Sequencer*);
 
-    SimpleBroadcastObject<BigReal> * velocityRescaleFactor;
+    ControllerBroadcasts * broadcast;
 };
 
 #endif // SEQUENCER_H
@@ -62,12 +62,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/03/19 22:44:26 $
+ *	$Revision: 1.1007 $	$Date: 1997/03/21 23:05:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.h,v $
+ * Revision 1.1007  1997/03/21 23:05:43  jim
+ * Added Berendsen's pressure coupling method, won't work with MTS yet.
+ *
  * Revision 1.1006  1997/03/19 22:44:26  jim
  * Revamped Controller/Sequencer, added velocity rescaling.
  *

@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/19 18:10:17 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1006 $	$Date: 1997/03/21 23:05:45 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1006  1997/03/21 23:05:45  jim
+ * Added Berendsen's pressure coupling method, won't work with MTS yet.
+ *
  * Revision 1.1005  1997/03/19 18:10:17  nealk
  * Added sorted hydrogen group list to molecule.
  *
@@ -332,7 +335,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1005 1997/03/19 18:10:17 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1006 1997/03/21 23:05:45 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -656,6 +659,24 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 		&rescaleTemp);
    opts.range("rescaleTemp", NOT_NEGATIVE);
    opts.units("rescaleTemp", KELVIN);
+
+   ////  Berendsen pressure bath coupling
+   opts.optionalB("main", "BerendsenPressure", 
+		  "Should Berendsen pressure bath coupling be performed?",
+		  &berendsenPressureOn, FALSE);
+   opts.require("BerendsenPressure", "BerendsenPressureTarget",
+		"Target pressure for pressure coupling",
+		&berendsenPressureTarget);
+   // opts.units("BerendsenPressureTarget",);
+   opts.require("BerendsenPressure", "BerendsenPressureCompressibility",
+		"Isothermal compressibility for pressure coupling",
+		&berendsenPressureCompressibility);
+   // opts.units("BerendsenPressureCompressibility",);
+   opts.require("BerendsenPressure", "BerendsenPressureRelaxationTime",
+		"Relaxation time for pressure coupling",
+		&berendsenPressureRelaxationTime);
+   opts.range("BerendsenPressureRelaxationTime", POSITIVE);
+   opts.units("BerendsenPressureRelaxationTime", FSEC);
 
    ////  Harmonic Constraints
    opts.optionalB("main", "constraints", "Are harmonic constraints active?",
@@ -1912,6 +1933,19 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    		 << rescaleTemp << "\n";
    }
 
+   if (berendsenPressureOn)
+   {
+   	iout << iINFO << "BERENDSEN PRESSURE COUPLING ACTIVE\n";
+   	iout << iINFO << "    TARGET PRESSURE IS "
+   		 << berendsenPressureTarget << " BAR\n";
+   	iout << iINFO << "    COMPRESSIBILITY ESTIMATE IS "
+   		 << berendsenPressureCompressibility << " BAR^(-1)\n";
+   	iout << iINFO << "    RELAXATION TIME IS "
+   		 << berendsenPressureRelaxationTime << " FS\n";
+	berendsenPressureTarget /= PRESSUREFACTOR;
+	berendsenPressureCompressibility *= PRESSUREFACTOR;
+   }
+
    if (vmdFrequency > 0)
    {
    	iout << iINFO << "VMD INTERFACE ON\n"
@@ -2151,6 +2185,12 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
 	msg->put(cellBasisVector2.y);
 	msg->put(cellBasisVector3.z);
 
+	// send pressure control data
+	msg->put(berendsenPressureOn);
+	msg->put(berendsenPressureTarget);
+	msg->put(berendsenPressureCompressibility);
+	msg->put(berendsenPressureRelaxationTime);
+
 	// now broadcast this info to all other nodes
 	com_obj->broadcast_others(msg, SIMPARAMSTAG);
 }
@@ -2279,6 +2319,12 @@ void SimParameters::receive_SimParameters(Message *msg)
 	msg->get(cellBasisVector3.z);
 	lattice.set(cellBasisVector1,cellBasisVector2,cellBasisVector3);
 
+	// receive pressure control data
+	msg->get(berendsenPressureOn);
+	msg->get(berendsenPressureTarget);
+	msg->get(berendsenPressureCompressibility);
+	msg->get(berendsenPressureRelaxationTime);
+
 	//  Free the message
 	delete msg;
 
@@ -2291,12 +2337,15 @@ void SimParameters::receive_SimParameters(Message *msg)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/19 18:10:17 $
+ *	$Revision: 1.1006 $	$Date: 1997/03/21 23:05:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1006  1997/03/21 23:05:45  jim
+ * Added Berendsen's pressure coupling method, won't work with MTS yet.
+ *
  * Revision 1.1005  1997/03/19 18:10:17  nealk
  * Added sorted hydrogen group list to molecule.
  *

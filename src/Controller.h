@@ -19,13 +19,7 @@
 #include "Node.h"
 #include "common.h"
 
-template <class T>
-class SimpleBroadcastObject;
-
-enum {
-  velocityRescaleFactorTag
-};
-
+class ControllerBroadcasts;
 class NamdState;
 class SimParameters;
 class ReductionMgr;
@@ -45,6 +39,7 @@ protected:
     void printEnergies(int);
     void enqueueCollections(int);
     void rescaleVelocities(int);
+    void berendsenPressure(int);
 
     // void suspend(void) { CthSuspend(); };
     void terminate(void) {
@@ -63,10 +58,10 @@ private:
     CthThread thread;
     static void threadRun(Controller*);
 
-    SimpleBroadcastObject<int> * sequence;
-    SimpleBroadcastObject<BigReal> * velocityRescaleFactor;
+    ControllerBroadcasts * broadcast;
 
     BigReal temperature;
+    BigReal pressure;
 };
 
 #endif // SEQUENCER_H
@@ -77,12 +72,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/03/19 22:44:23 $
+ *	$Revision: 1.1007 $	$Date: 1997/03/21 23:05:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.h,v $
+ * Revision 1.1007  1997/03/21 23:05:35  jim
+ * Added Berendsen's pressure coupling method, won't work with MTS yet.
+ *
  * Revision 1.1006  1997/03/19 22:44:23  jim
  * Revamped Controller/Sequencer, added velocity rescaling.
  *
