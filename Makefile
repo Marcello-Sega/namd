@@ -48,6 +48,7 @@ COPY = cp
 
 OBJS = \
 	$(DSTDIR)/common.o \
+	$(DSTDIR)/dcdlib.o \
 	$(DSTDIR)/main.o \
 	$(DSTDIR)/strlib.o \
 	$(DSTDIR)/AtomMap.o \
@@ -87,6 +88,7 @@ OBJS = \
 	$(DSTDIR)/Namd.o \
 	$(DSTDIR)/NamdState.o \
 	$(DSTDIR)/Node.o \
+	$(DSTDIR)/Output.o \
 	$(DSTDIR)/Parameters.o \
 	$(DSTDIR)/ParseOptions.o \
 	$(DSTDIR)/Patch.o \
