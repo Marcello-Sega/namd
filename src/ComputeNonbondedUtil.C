@@ -31,6 +31,7 @@ const LJTable*  ComputeNonbondedUtil::ljTable = 0;
 const Molecule* ComputeNonbondedUtil::mol;
 BigReal		ComputeNonbondedUtil::r2_delta;
 BigReal		ComputeNonbondedUtil::r2_delta_1;
+int		ComputeNonbondedUtil::r2_delta_exp;
 BigReal*	ComputeNonbondedUtil::table_alloc = 0;
 BigReal*	ComputeNonbondedUtil::fast_table;
 BigReal*	ComputeNonbondedUtil::scor_table;
@@ -226,7 +227,8 @@ void ComputeNonbondedUtil::select(void)
   BigReal r2_tol = 0.1;
   
   r2_delta = 1.0;
-  while ( r2_delta > r2_tol ) r2_delta /= 2.0;
+  r2_delta_exp = 0;
+  while ( r2_delta > r2_tol ) { r2_delta /= 2.0; r2_delta_exp += 1; }
   r2_delta_1 = 1.0 / r2_delta;
 
   if ( ! CkMyPe() ) {
@@ -234,9 +236,12 @@ void ComputeNonbondedUtil::select(void)
 				r2_delta << "\n" << endi;
   }
 
+  BigReal r2_tmp = 1.0;
+  int cutoff2_exp = 0;
+  while ( cutoff2 > r2_tmp ) { r2_tmp *= 2.0; cutoff2_exp += 1; }
+
   int i;
-  int n = (int)(cutoff2 / r2_delta) + 4;
-  n += ( (n % 2) ? 0 : 1 );  // ensure that n is odd
+  int n = (r2_delta_exp + cutoff2_exp) * 64 + 1;
 
   if ( ! CkMyPe() ) {
     iout << iINFO << "COULOMB TABLE SIZE: " <<
@@ -252,14 +257,16 @@ void ComputeNonbondedUtil::select(void)
   slow_table = table_align + 8*n;
   corr_table = table_align + 12*n;
   full_table = table_align + 16*n;
-  BigReal *fast_i = fast_table + 4;
-  BigReal *scor_i = scor_table + 4;
-  BigReal *slow_i = slow_table + 4;
+  BigReal *fast_i = fast_table;
+  BigReal *scor_i = scor_table;
+  BigReal *slow_i = slow_table;
 
   // fill in the rest of the table
-  for ( i=1; i<n; ++i ) {
+  for ( i=0; i<n; ++i ) {
 
-    const BigReal r2 = r2_delta * i;
+    const BigReal r2_base = r2_delta * ( 1 << (i/64) );
+    const BigReal r2_del = r2_base / 64.0;
+    const BigReal r2 = r2_base + r2_del * (i%64);
 
     const BigReal r = sqrt(r2);
     const BigReal r_1 = 1.0/r;
@@ -346,6 +353,7 @@ void ComputeNonbondedUtil::select(void)
 
   }
 
+/*
   // patch up data for i=0, in particular slow_
   fast_table[0] = fast_table[4] - fast_table[5] * r2_delta;
   fast_table[1] = fast_table[5];  // fast_gradient
@@ -359,6 +367,7 @@ void ComputeNonbondedUtil::select(void)
   slow_table[1] = slow_table[5];  // slow_gradient
   slow_table[2] = 0;
   slow_table[3] = 0;
+*/
 
   int j;
   for ( j=0; j<3; ++j ) {
@@ -376,7 +385,7 @@ void ComputeNonbondedUtil::select(void)
     }
     BigReal *t;
     for ( i=0,t=t0; i<(n-1); ++i,t+=4 ) {
-      BigReal x = r2_delta;
+      BigReal x = ( r2_delta * ( 1 << (i/64) ) ) / 64.0;
       BigReal v1 = t[0];
       BigReal g1 = t[1];
       BigReal v2 = t[4];
@@ -397,18 +406,21 @@ void ComputeNonbondedUtil::select(void)
     }
     BigReal dvmax = 0;
     BigReal dgmax = 0;
+    BigReal dvmax_i = 0;
+    BigReal dgmax_i = 0;
     for ( i=0,t=t0; i<(n-1); ++i,t+=4 ) {
-      BigReal x = r2_delta;
+      BigReal x = ( r2_delta * ( 1 << (i/64) ) ) / 64.0;
       BigReal dv = ( ( t[3] * x + t[2] ) * x + t[1] ) * x + t[0] - t[4];
       BigReal dg = ( 3.0 * t[3] * x + 2.0 * t[2] ) * x + t[1] - t[5];
-      if ( fabs(dv) > dvmax ) dvmax = fabs(dv);
-      if ( fabs(dg) > dgmax ) dgmax = fabs(dg);
+      if ( fabs(dv) > dvmax ) { dvmax = fabs(dv); dvmax_i = i; }
+      if ( fabs(dg) > dgmax ) { dgmax = fabs(dg); dgmax_i = i; }
       // if ( dv != 0.0 ) CkPrintf("TABLE %d ENERGY ERROR %g AT %g\n",j,dv,x*i);
       // if ( dg != 0.0 ) CkPrintf("TABLE %d FORCE ERROR %g AT %g\n",j,dg,x*i);
     }
     if ( ( ( dvmax != 0.0 ) || ( dgmax != 0.0 ) ) && ! CkMyPe() ) {
       iout << iINFO << "NONZERO IMPRECISION IN COULOMB TABLE: " <<
-				dvmax << " " << dgmax << "\n" << endi;
+	dvmax << " (" << dvmax_i << ") " << dgmax << " (" << dgmax_i << ")\n"
+								<< endi;
     }
   }
 
@@ -417,12 +429,14 @@ void ComputeNonbondedUtil::select(void)
     full_table[i] = fast_table[i] + slow_table[i];
   }
 
-#if 0
+#if 1
   char fname[100];
   sprintf(fname,"/tmp/namd.table.pe%d.dat",CkMyPe());
   FILE *f = fopen(fname,"w");
   for ( i=0; i<(n-1); ++i ) {
-    BigReal r2 = r2_delta * i;
+    const BigReal r2_base = r2_delta * ( 1 << (i/64) );
+    const BigReal r2_del = r2_base / 64.0;
+    const BigReal r2 = r2_base + r2_del * (i%64);
     BigReal *t;
     fprintf(f,"%g",r2);
     t = fast_table + 4*i;

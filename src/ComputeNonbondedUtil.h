@@ -77,6 +77,7 @@ public:
   static const LJTable* ljTable;
   static const Molecule* mol;
   static BigReal r2_delta, r2_delta_1;
+  static int r2_delta_exp;
   static BigReal *table_alloc;
   static BigReal *fast_table;
   static BigReal *scor_table;

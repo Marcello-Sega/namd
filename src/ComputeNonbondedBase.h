@@ -181,6 +181,8 @@ void ComputeNonbondedUtil :: NAME
   )
   const BigReal r2_delta = ComputeNonbondedUtil:: r2_delta;
   const BigReal r2_delta_1 = ComputeNonbondedUtil:: r2_delta_1;
+  const int r2_delta_exp = ComputeNonbondedUtil:: r2_delta_exp;
+  const int r2_delta_expc = 64 * (r2_delta_exp - 127);
 
   const int i_upper = params->numAtoms[0];
   register const int j_upper = params->numAtoms[1];
@@ -376,7 +378,7 @@ void ComputeNonbondedUtil :: NAME
 	if ( ! (p_j->atomFixed) ) {
           register BigReal r2 = square(p_j->position.x-p_i_x,
 			p_j->position.y-p_i_y,p_j->position.z-p_i_z);
-          if ( (r2 <= cutoff2) && ! ((r2 == 0) && ++exclChecksum) ) {
+          if ( (r2 <= cutoff2) && ! ((r2 <= r2_delta) && ++exclChecksum) ) {
             *(pli++) = j;
           }
         }
@@ -407,7 +409,7 @@ void ComputeNonbondedUtil :: NAME
 	p_j_z = p_j->position.z;	// preload
 
         *pli = j;
-        if ( (r2 <= cutoff2) && ! ((r2 == 0) && ++exclChecksum) ) { ++pli; }
+        if ( (r2 <= cutoff2) && ! ((r2 <= r2_delta) && ++exclChecksum) ) { ++pli; }
       }
     }
     int npair2 = pli - pairlist2;
@@ -424,9 +426,17 @@ void ComputeNonbondedUtil :: NAME
       register const BigReal p_ij_z = p_i_z - p_j->position.z;
       r2 += p_ij_z * p_ij_z;
 
-      int table_i = (int) ( r2_delta_1 * r2 );
+      float r2f = r2;
+      const int table_i = ((*((int32 *)&r2f)) >> 17) + r2_delta_expc;
+
       FAST(
       const BigReal r_2 = 1.0 / r2;
+      )
+
+      const LJTable::TableEntry * lj_pars = 
+		lj_row + 2 * mol->atomvdwtype(p_j->id);
+
+      FAST(
       SHORT(
       const BigReal* const fast_i = fast_table + 4*table_i;
       BigReal fast_a = fast_i[0];
@@ -437,8 +447,7 @@ void ComputeNonbondedUtil :: NAME
       BigReal slow_a = scor_i[0]; 
       )
 
-      const LJTable::TableEntry * lj_pars = 
-		lj_row + 2 * mol->atomvdwtype(p_j->id);
+      *((int32 *)&r2f) &= 0xfffe0000;
 
       BigReal modf = 0.0;
       int atom2 = p_j->id;
@@ -457,7 +466,7 @@ void ComputeNonbondedUtil :: NAME
       }
 
       BigReal kqq = kq_i * p_j->charge;
-      BigReal diffa = r2 - r2_delta * table_i;
+      const BigReal diffa = r2 - r2f;
 
     FEP
       (
