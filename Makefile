@@ -230,6 +230,7 @@ clean:
 	rm -rf $(DSTDIR)
 	rm -f namd2
 	cd $(DPMTADIR) ; $(MAKE) clean ; cd ..
+	cd $(PVMDIR) ; $(MAKE) clean ; cd ..
 	cd $(DPMEDIR) ; $(MAKE) clean ; cd ..
 
 veryclean:	clean
