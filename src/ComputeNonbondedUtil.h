@@ -30,6 +30,10 @@ private:
   friend ComputeNonbondedSelf;
   friend ComputeNonbondedPair;
 
+  static void select(void);
+  static void (*calcPair)(Position*[2],Force*[2],AtomProperties*[2],int[2]);
+  static void (*calcSelf)(Position*,Force*,AtomProperties*,int);
+
 #define DECLARATION
 #undef DEFINITON
 
@@ -83,12 +87,15 @@ private:
  *
  *	$RCSfile: ComputeNonbondedUtil.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/11/20 23:16:39 $
+ *	$Revision: 1.3 $	$Date: 1996/11/21 00:00:40 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.h,v $
+ * Revision 1.3  1996/11/21 00:00:40  jim
+ * added select(), calcPair, and calcSelf
+ *
  * Revision 1.2  1996/11/20 23:16:39  jim
  * first compiling version of generic nonbonded function
  *
