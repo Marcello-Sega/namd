@@ -29,10 +29,6 @@ class ComputeDPME;
 class ComputeDPMEDataMsg;
 class ComputeDPMEResultsMsg;
 
-class ComputePme;
-class ComputePmeDataMsg;
-class ComputePmeResultsMsg;
-
 class ComputeMgr : public BOCclass
 {
 public:
@@ -60,11 +56,6 @@ public:
   void sendComputeDPMEResults(ComputeDPMEResultsMsg *, int);
   void recvComputeDPMEResults(ComputeDPMEResultsMsg *);
 
-  void sendComputePmeData(ComputePmeDataMsg *);
-  void recvComputePmeData(ComputePmeDataMsg *);
-  void sendComputePmeResults(ComputePmeResultsMsg *, int);
-  void recvComputePmeResults(ComputePmeResultsMsg *);
-
 private:
   void createCompute(ComputeID, ComputeMap *);
   int numNonbondedSelf;
@@ -72,7 +63,6 @@ private:
 
   ComputeGlobal *computeGlobalObject;
   ComputeDPME *computeDPMEObject;
-  ComputePme *computePmeObject;
 
   int updateComputesCount;
   int updateComputesReturnEP;

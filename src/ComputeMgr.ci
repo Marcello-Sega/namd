@@ -9,9 +9,6 @@ module ComputeMgr {
   message [packed] ComputeGlobalDataMsg;
   message [packed] ComputeGlobalResultsMsg;
 
-  message [packed] ComputePmeDataMsg;
-  message [packed] ComputePmeResultsMsg;
-
   message [packed] ComputeDPMEDataMsg;
   message [packed] ComputeDPMEResultsMsg;
 
@@ -31,9 +28,6 @@ module ComputeMgr {
 
     entry void recvComputeDPMEData(ComputeDPMEDataMsg *);
     entry void recvComputeDPMEResults(ComputeDPMEResultsMsg *);
-
-    entry void recvComputePmeData(ComputePmeDataMsg *);
-    entry void recvComputePmeResults(ComputePmeResultsMsg *);
   } ;
 }
 

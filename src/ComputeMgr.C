@@ -39,7 +39,6 @@
 #include "ComputeDPME.h"
 #include "ComputeDPMEMsgs.h"
 #include "ComputePme.h"
-#include "ComputePmeMsgs.h"
 #include "ComputeSphericalBC.h"
 #include "ComputeCylindricalBC.h"
 #include "ComputeRestraints.h"
@@ -50,7 +49,6 @@ ComputeMgr::ComputeMgr()
   CpvAccess(BOCclass_group).computeMgr = thisgroup;
   computeGlobalObject = 0;
   computeDPMEObject = 0;
-  computePmeObject = 0;
 }
 
 ComputeMgr::~ComputeMgr(void)
@@ -261,7 +259,7 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	break;
 #endif
       case computePmeType:
-	c = computePmeObject = new ComputePme(i,this); // unknown delete
+	c = new ComputePme(i); // unknown delete
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
@@ -419,41 +417,6 @@ void ComputeMgr:: recvComputeDPMEResults(ComputeDPMEResultsMsg *msg)
   }
   else if ( CkMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
   else NAMD_die("ComputeMgr::computeDPMEObject is NULL!");
-}
-
-void ComputeMgr:: sendComputePmeData(ComputePmeDataMsg *msg)
-{
-  if ( computePmeObject ) {
-    int node = computePmeObject->getMasterNode();
-    CProxy_ComputeMgr cm(CpvAccess(BOCclass_group).computeMgr);
-    cm.recvComputePmeData(msg,node);
-  }
-  else if ( CkMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
-  else NAMD_die("ComputeMgr::computePmeObject is NULL!");
-}
-
-void ComputeMgr:: recvComputePmeData(ComputePmeDataMsg *msg)
-{
-  if ( computePmeObject ) {
-    computePmeObject->recvData(msg);
-  }
-  else if ( CkMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
-  else NAMD_die("ComputeMgr::computePmeObject is NULL!");
-}
-
-void ComputeMgr:: sendComputePmeResults(ComputePmeResultsMsg *msg, int node)
-{
-  CProxy_ComputeMgr cm(CpvAccess(BOCclass_group).computeMgr);
-  cm.recvComputePmeResults(msg, node);
-}
-
-void ComputeMgr:: recvComputePmeResults(ComputePmeResultsMsg *msg)
-{
-  if ( computePmeObject ) {
-    computePmeObject->recvResults(msg);
-  }
-  else if ( CkMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
-  else NAMD_die("ComputeMgr::computePmeObject is NULL!");
 }
 
 #include "ComputeMgr.def.h"

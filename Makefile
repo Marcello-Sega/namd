@@ -69,7 +69,6 @@ OBJS = \
 	$(DSTDIR)/ComputePatch.o \
 	$(DSTDIR)/ComputePatchPair.o \
 	$(DSTDIR)/ComputePme.o \
-	$(DSTDIR)/ComputePmeMsgs.o \
 	$(DSTDIR)/ComputeRestraints.o \
 	$(DSTDIR)/ComputeSMD.o \
 	$(DSTDIR)/ComputeSphericalBC.o \

@@ -14,7 +14,6 @@
 #include "PatchMap.inl"
 #include "AtomMap.h"
 #include "ComputePme.h"
-#include "ComputePmeMsgs.h"
 #include "ComputePmeMgr.decl.h"
 #include "PmeRealSpace.h"
 #include "PmeKSpace.h"
@@ -527,128 +526,6 @@ void ComputePmeMgr::ungridCalc(PmeNullMsg *msg) {
   ungrid_count = CkNumPes();
 }
 
-#if 0
-void ComputePmeMgr::start() {
-#ifndef NAMD_FFTW
-  NAMD_die("FFTW (http://www.fftw.org/) is required to use PME.");
-#else
-  // iout << "ComputePmeMgr thread " << thisIndex << " running on " << iPE << "\n" << endi;
-
-  SimParameters *simParams = Node::Object()->simParameters;
-  WorkDistrib *workDistrib = Node::Object()->workDistrib;
-  PmeGrid myGrid;
-  myGrid.K1 = simParams->PMEGridSizeX;
-  myGrid.K2 = simParams->PMEGridSizeY;
-  myGrid.K3 = simParams->PMEGridSizeZ;
-  myGrid.order = simParams->PMEInterpOrder;
-  myGrid.dim2 = myGrid.K2;
-  myGrid.dim3 = 2 * (myGrid.K3/2 + 1);
-  myGrid.block1 = ( myGrid.K1 + CkNumPes() - 1 ) / CkNumPes();
-  myGrid.block2 = ( myGrid.K2 + CkNumPes() - 1 ) / CkNumPes();
-
-  int pe = thisIndex;
-  int k1_start = pe * myGrid.block1;
-  int k1_end = k1_start + myGrid.block1;
-  if ( k1_start > myGrid.K1 ) { k1_start = myGrid.K1; }
-  if ( k1_end > myGrid.K1 ) { k1_end = myGrid.K1; }
-  PmeKSpace myKSpace(myGrid, k1_start, k1_end);
-
-  rfftwnd_mpi_plan forward_plan;
-  forward_plan = rfftw3d_mpi_create_plan(AMPI_COMM_WORLD,
-	myGrid.K1,myGrid.K2,myGrid.K3,
-	FFTW_REAL_TO_COMPLEX, FFTW_MEASURE | FFTW_IN_PLACE);
-
-  rfftwnd_mpi_plan backward_plan;
-  backward_plan = rfftw3d_mpi_create_plan(AMPI_COMM_WORLD,
-	myGrid.K1,myGrid.K2,myGrid.K3,
-	FFTW_COMPLEX_TO_REAL, FFTW_MEASURE | FFTW_IN_PLACE);
-
-  int local_nx, local_x_start, local_ny_after_transpose,
-	local_y_start_after_transpose, total_local_size;
-  rfftwnd_mpi_local_sizes(forward_plan,
-	&local_nx,&local_x_start,&local_ny_after_transpose,
-	&local_y_start_after_transpose,&total_local_size);
-
-  double *q_arr = new double[total_local_size];
-  double *q_work = new double[total_local_size];
-
-  int qsize = myGrid.K1 * myGrid.dim2 * myGrid.dim3;
-  int bsize = myGrid.block1 * myGrid.dim2 * myGrid.dim3;
-  int lqsize = bsize;
-  if ( (pe+1) * bsize > qsize ) lqsize = qsize - pe * bsize;
-  if ( pe * bsize >= qsize ) lqsize = 0;
-  int lqstart = ( pe * bsize );
-  if ( lqstart > qsize ) lqstart = qsize;
-  double *q_buf = new double[lqsize];
-
-  int numSources = CkNumPes();
-  int npatches = (PatchMap::Object())->numPatches();
-  if ( numSources > npatches ) numSources = npatches;
-
-  int i,j;
-
-while ( 1 ) {
-
-  // get data from ComputePme on all nodes
-  int first = 1;
-  AMPI_Status status;
-  for ( j=0; j<numSources; ++j ) {
-    //ckTempoRecv(PME_TAG_QARR,(void*)q_buf,lqsize*sizeof(double));
-    AMPI_Recv((void*)q_buf, lqsize*sizeof(double), AMPI_BYTE,
-	AMPI_ANY_SOURCE, PME_TAG_QARR, AMPI_COMM_WORLD, &status);
-    if ( first ) {
-      // this is needed so that q_arr isn't zeroed before being packed
-      // can be eliminated when compressed format is used in future
-      for ( i=0; i<total_local_size; ++i ) q_arr[i] = 0.;
-      first = 0;
-    }
-    // iout << "ComputePmeMgr thread " << thisIndex << " received " << j << " on " << iPE << "\n" << endi;
-    for ( i=0; i<lqsize; ++i ) q_arr[i] += q_buf[i];
-  }
-  // iout << "ComputePmeMgr thread " << thisIndex << " has all data on " << iPE << "\n" << endi;
-
-  // forward transform
-  rfftwnd_mpi(forward_plan, 1, q_arr, q_work, FFTW_NORMAL_ORDER);
-
-  // fill in guts of PME here
-  Lattice lattice;
-  // ckTempoRecv(PME_TAG_LATTICE,(void*)&lattice,sizeof(Lattice));
-  AMPI_Recv((void*)&lattice, sizeof(Lattice), AMPI_BYTE,
-	AMPI_ANY_SOURCE, PME_TAG_LATTICE, AMPI_COMM_WORLD, &status);
-  // iout << "ComputePmeMgr thread " << thisIndex << " received lattice.\n" << endi;
-  double recipEnergy;
-  double recip_vir[6];
-  BigReal ewaldcof = ComputeNonbondedUtil::ewaldcof;
-  recipEnergy = myKSpace.compute_energy(q_arr, lattice, ewaldcof, recip_vir);
-
-  // backward transform
-  rfftwnd_mpi(backward_plan, 1, q_arr, q_work, FFTW_NORMAL_ORDER);
-
-  // send results back to nodes
-  for ( j=0; j<numSources; ++j ) {
-    ComputePmeResultsMsg *msg = new ComputePmeResultsMsg;
-    if ( ! j ) {  // only need these once
-      msg->energy = recipEnergy;
-      for ( i=0; i<6; ++i ) { msg->virial[i] = recip_vir[i]; }
-    }
-    msg->start = lqstart;
-    msg->q_len = lqsize;
-    msg->will_delete_array = 0;
-    msg->q_arr = q_arr;
-    CProxy_ComputeMgr cm(CpvAccess(BOCclass_group).computeMgr);
-    cm.recvComputePmeResults(msg, j);
-  }
-
-} // while ( 1 )
-
-  delete [] q_buf;
-  delete [] q_work;
-  delete [] q_arr;
-  // iout << "ComputePmeMgr thread " << thisIndex << " finished on " << iPE << "\n" << endi;
-#endif  // NAMD_FFTW
-}
-#endif
-
 
 static void scale_coordinates(PmeParticle p[], int N, Lattice lattice, PmeGrid grid) {
   Vector origin = lattice.origin();
@@ -709,25 +586,8 @@ static void scale_forces(Vector f[], int N, Lattice lattice) {
 }
  
 
-class ComputePmeMaster {
-private:
-  friend class ComputePme;
-  ComputePme *host;
-  ComputePmeMaster(ComputePme *);
-  ~ComputePmeMaster();
-  void recvData(ComputePmeDataMsg *);
-  ResizeArray<int> homeNode;
-  ResizeArray<int> endForNode;
-  int numWorkingPes;
-  int numLocalAtoms;
-  PmeParticle *localData;
-  SubmitReduction *reduction;
-  int runcount;
-  PmeCoulomb *myPme;
-};
-
-ComputePme::ComputePme(ComputeID c, ComputeMgr *m) :
-  ComputeHomePatches(c), comm(m)
+ComputePme::ComputePme(ComputeID c) :
+  ComputeHomePatches(c)
 {
   DebugM(4,"ComputePme created.\n");
 
@@ -741,16 +601,6 @@ ComputePme::ComputePme(ComputeID c, ComputeMgr *m) :
     int npatches=(PatchMap::Object())->numPatches();
     if ( numWorkingPes > npatches ) numWorkingPes = npatches;
   }
-
-/*
-  masterNode = numWorkingPes - 1;
-  if ( CkMyPe() == masterNode ) {
-    master = new ComputePmeMaster(this);
-    master->numWorkingPes = numWorkingPes;
-  }
-  else master = 0;
-*/
-  master = 0;
 
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 
@@ -774,8 +624,6 @@ ComputePme::~ComputePme()
 {
   delete [] q_arr;
   delete [] f_arr;
-
-  delete master;
 }
 
 void ComputePme::doWork()
@@ -910,141 +758,6 @@ void ComputePme::sendData() {
 
 }
 
-void ComputePme::recvData(ComputePmeDataMsg *msg)
-{
-  if ( master ) {
-    master->recvData(msg);
-  }
-  else NAMD_die("ComputePme::master is NULL!");
-}
-
-ComputePmeMaster::ComputePmeMaster(ComputePme *h) :
-  host(h), numLocalAtoms(0), runcount(0)
-{
-  DebugM(4,"ComputePmeMaster created.\n");
-
-//  reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
-  Molecule * molecule = Node::Object()->molecule;
-  localData = new PmeParticle[molecule->numAtoms];
-  SimParameters * simParams = Node::Object()->simParameters;
-  PmeGrid grid;
-  grid.K1 = simParams->PMEGridSizeX;
-  grid.K2 = simParams->PMEGridSizeY;
-  grid.K3 = simParams->PMEGridSizeZ;
-  grid.order = simParams->PMEInterpOrder;
-  myPme = new PmeCoulomb(grid, molecule->numAtoms);
-}
-
-ComputePmeMaster::~ComputePmeMaster()
-{
-  delete reduction;
-  delete [] localData;
-  delete myPme;
-}
-
-void ComputePmeMaster::recvData(ComputePmeDataMsg *msg)
-{ 
-  DebugM(4,"ComputePmeMaster::recvData() " << msg->numParticles
-	<< " particles from node " << msg->node << "\n");
-
-  {
-    homeNode.add(msg->node);
-    PmeParticle *data_ptr = localData + numLocalAtoms;
-    for ( int j = 0; j < msg->numParticles; ++j, ++data_ptr ) {
-      *data_ptr = msg->particles[j];
-    }
-    numLocalAtoms += msg->numParticles;
-    endForNode.add(numLocalAtoms);
-    delete msg;
-  }
-
-  if ( homeNode.size() < numWorkingPes ) return;  // messages outstanding
-
-  DebugM(4,"ComputePmeMaster::recvData() running serial code.\n");
-
-  // single processor version
-
-  Lattice lattice = host->getFlags()->lattice;
-  SimParameters * simParams = Node::Object()->simParameters;
-  int i;
-  Vector *localResults;
-  double recip_vir[6];
-  BigReal ewaldcof = ComputeNonbondedUtil::ewaldcof;
-  localResults = new Vector[numLocalAtoms];
-
-  // perform calculations
-  BigReal electEnergy = 0;
-
-  // calculate self energy
-  PmeParticle *data_ptr = localData;
-  for(i=0; i<numLocalAtoms; ++i)
-  {
-    electEnergy += data_ptr->cg * data_ptr->cg;
-    ++data_ptr;
-  }
-  electEnergy *= -1. * ewaldcof / SQRT_PI;
-
-  DebugM(4,"Ewald self energy: " << electEnergy << "\n");
-
-  double recipEnergy;
-  DebugM(4,"Calling compute_recip.\n");
-  double pme_start_time = 0;
-  if ( runcount == 1 ) pme_start_time = CmiTimer();
-  // Last argument should be nonzero if this is the last call
-  // Compute it using mytime, tsteps, etc.
-  // I'll just let the runtime environment take care of it for now.
-  recipEnergy = myPme->compute_recip(localData, lattice, ewaldcof, recip_vir, localResults);
-  if ( runcount == 1 ) {
-    iout << iINFO << "PME reciprocal sum CPU time per evaluation: "
-         << (CmiTimer() - pme_start_time) << "\n" << endi;
-  }
-  electEnergy += recipEnergy;
-  DebugM(4,"Returned from PmeRecipCoulomb->calc_recip.\n");
-  // No need to reverse sign from new code
-
-  // send out reductions
-  DebugM(4,"Timestep : " << host->getFlags()->step << "\n");
-  DebugM(4,"Reciprocal sum energy: " << electEnergy << "\n");
-  DebugM(4,"Reciprocal sum virial: " << recip_vir[0] << " " <<
-	recip_vir[1] << " " << recip_vir[2] << " " << recip_vir[3] << " " <<
-	recip_vir[4] << " " << recip_vir[5] << "\n");
-  reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += electEnergy;
-  reduction->item(REDUCTION_VIRIAL_SLOW_XX) += (BigReal)(recip_vir[0]);
-  reduction->item(REDUCTION_VIRIAL_SLOW_XY) += (BigReal)(recip_vir[1]);
-  reduction->item(REDUCTION_VIRIAL_SLOW_XZ) += (BigReal)(recip_vir[2]);
-  reduction->item(REDUCTION_VIRIAL_SLOW_YX) += (BigReal)(recip_vir[1]);
-  reduction->item(REDUCTION_VIRIAL_SLOW_YY) += (BigReal)(recip_vir[3]);
-  reduction->item(REDUCTION_VIRIAL_SLOW_YZ) += (BigReal)(recip_vir[4]);
-  reduction->item(REDUCTION_VIRIAL_SLOW_ZX) += (BigReal)(recip_vir[2]);
-  reduction->item(REDUCTION_VIRIAL_SLOW_ZY) += (BigReal)(recip_vir[4]);
-  reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += (BigReal)(recip_vir[5]);
-  reduction->submit();
-
-  Vector *results_ptr;
-  results_ptr = localResults;
-
-//  numLocalAtoms = 0;
-//  for ( i = 0; i < homeNode.size(); ++i ) {
-//    ComputePmeResultsMsg *msg = new ComputePmeResultsMsg;
-//    msg->node = homeNode[i];
-//    msg->numParticles = endForNode[i] - numLocalAtoms;
-//    msg->forces = new Vector[msg->numParticles];
-//    for ( int j = 0; j < msg->numParticles; ++j, ++results_ptr ) {
-//      msg->forces[j] = *results_ptr;
-//    }
-//    numLocalAtoms = endForNode[i];
-//    host->comm->sendComputePmeResults(msg,homeNode[i]);
-//  }
-  delete [] localResults;
-
-  // reset
-  runcount += 1;
-  numLocalAtoms = 0;
-  homeNode.resize(0);
-  endForNode.resize(0);
-
-}
-
 void ComputePme::copyResults(PmeGridMsg *msg) {
 
   int zdim = myGrid.dim3;
@@ -1065,26 +778,6 @@ void ComputePme::copyResults(PmeGridMsg *msg) {
 void ComputePme::copyEnergy(PmeUntransMsg *msg) {
   energy += msg->energy;
   for ( int i=0; i<6; ++i ) { virial[i] += msg->virial[i]; }
-}
-
-void ComputePme::recvResults(ComputePmeResultsMsg *msg)
-{
-  --resultsRemaining;
-
-  // iout << "ComputePme received results " << msg->start << " to "
-// 	<< (msg->start + msg->q_len) << ".\n" << endi;
-
-  int start = msg->start;
-  int end = start + msg->q_len;
-  double *data = msg->q_arr;
-  int i;
-  for ( i=start; i<end; ++i ) { q_arr[i] = *(data++); }
-  for ( i=0; i<6; ++i ) { virial[i] += msg->virial[i]; }
-  energy += msg->energy;
-  delete msg;
-
-  if ( ! resultsRemaining ) ungridForces();
-
 }
 
 void ComputePme::ungridForces() {

@@ -63,6 +63,7 @@ obj/strlib.o: \
 	$(CXX) $(CXXFLAGS) -o obj/strlib.o -c src/strlib.C
 obj/AlgSeven.o: \
 	src/AlgSeven.C \
+	src/common.h \
 	src/InfoStream.h \
 	src/Alg7.h \
 	src/Rebalancer.h \
@@ -1202,7 +1203,6 @@ obj/ComputeMgr.o: \
 	dpme2/protype.h \
 	src/ComputePme.h \
 	src/PmeBase.h \
-	src/ComputePmeMsgs.h \
 	src/ComputeSphericalBC.h \
 	src/ComputeCylindricalBC.h \
 	src/ComputeRestraints.h \
@@ -1462,9 +1462,6 @@ obj/ComputePme.o: \
 	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	src/PmeBase.h \
-	src/ComputePmeMsgs.h \
-	inc/ComputeMgr.decl.h \
-	fftw/rfftw_mpi.h \
 	inc/ComputePmeMgr.decl.h \
 	src/PmeRealSpace.h \
 	src/PmeKSpace.h \
@@ -1478,6 +1475,7 @@ obj/ComputePme.o: \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/ComputeMgr.h \
+	inc/ComputeMgr.decl.h \
 	src/Debug.h \
 	src/SimParameters.h \
 	src/Communicate.h \
@@ -1485,23 +1483,11 @@ obj/ComputePme.o: \
 	src/WorkDistrib.h \
 	src/ComputeMap.h \
 	inc/WorkDistrib.decl.h \
+	src/varsizemsg.h \
 	src/PmeCoulomb.h \
 	src/PmeFFT.h \
 	inc/ComputePmeMgr.def.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputePme.o -c src/ComputePme.C
-obj/ComputePmeMsgs.o: \
-	src/ComputePmeMsgs.C \
-	src/ComputePmeMsgs.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/common.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
-	inc/ComputeMgr.decl.h \
-	src/PmeBase.h \
-	src/packmsg.h \
-	src/Debug.h
-	$(CXX) $(CXXFLAGS) -o obj/ComputePmeMsgs.o -c src/ComputePmeMsgs.C
 obj/ComputeRestraints.o: \
 	src/ComputeRestraints.C \
 	src/ComputeRestraints.h \
@@ -2476,6 +2462,7 @@ obj/Patch.o: \
 	src/Communicate.h \
 	src/MStream.h \
 	src/ResizeArrayPrimIter.h \
+	src/InfoStream.h \
 	src/Sync.h \
 	inc/Sync.decl.h \
 	src/Debug.h
