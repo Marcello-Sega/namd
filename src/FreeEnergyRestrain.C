@@ -163,7 +163,7 @@ double ARestraint::GetDihe(AVector& A, AVector& B, AVector& C, AVector& D) {
   if (cos_u >  1.0) {cos_u =  1.0;}
 
   topVec = CDxCB.cross(BCxBA);
-  sin_u = (topVec/bot).dot(BC/BC.Dist());
+  sin_u = (topVec/bot).dot(CB/CB.Dist());
 
   // protect against asin(<-1.0) and asin(>1.0)
   if (sin_u < -1.0) {sin_u = -1.0;}
@@ -1018,6 +1018,9 @@ double AForcingDiheRestraint::Get_dU_dLambda() {
  * REVISION HISTORY:
  *
  * $Log: FreeEnergyRestrain.C,v $
+ * Revision 1.4  1998/06/03 20:09:53  hurwitz
+ * changed sign of dihedral angle so it conforms to convention
+ *
  * Revision 1.3  1998/06/02 20:39:04  hurwitz
  * corrected bug concerning distribution of force from center-of-mass out to
  * component atoms
