@@ -226,6 +226,8 @@ template <class T, class S> class ComputeHomeTuples : public Compute {
       }
       setNumPatches(tuplePatchList.size());
       doLoadTuples = true;
+
+      basePriority = 0;
     }
 
     //======================================================================
