@@ -776,7 +776,7 @@ void HomePatch::doGroupSizeCheck()
 
   while ( p_i != p_e ) {
     int hgs = p_i->hydrogenGroupSize;
-    p_i->nonbondedGroupSize = hgs;
+    p_i->nonbondedGroupIsAtom = 0;
     BigReal x = p_i->position.x;
     BigReal y = p_i->position.y;
     BigReal z = p_i->position.z;
@@ -784,7 +784,7 @@ void HomePatch::doGroupSizeCheck()
     int oversize = 0;
     // limit spatial extent
     for ( int i = 1; i < hgs; ++i ) {
-      p_i->nonbondedGroupSize = 0;
+      p_i->nonbondedGroupIsAtom = 0;
       BigReal dx = p_i->position.x - x;
       BigReal dy = p_i->position.y - y;
       BigReal dz = p_i->position.z - z;
@@ -796,7 +796,7 @@ void HomePatch::doGroupSizeCheck()
     if ( oversize || hgs > 4 ) {
       p_i -= hgs;
       for ( int i = 0; i < hgs; ++i ) {
-        p_i->nonbondedGroupSize = 1;
+        p_i->nonbondedGroupIsAtom = 1;
         ++p_i;
       }
     }

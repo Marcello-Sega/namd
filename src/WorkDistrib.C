@@ -262,7 +262,7 @@ void WorkDistrib::createHomePatches(void)
       } else {
         a[j].hydrogenGroupSize = 1;
       }
-      a[j].nonbondedGroupSize = a[j].hydrogenGroupSize;
+      a[j].nonbondedGroupIsAtom = 0;
       a[j].atomFixed = molecule->is_atom_fixed(aid) ? 1 : 0;
     }
 

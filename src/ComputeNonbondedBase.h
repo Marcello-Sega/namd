@@ -190,7 +190,7 @@ void ComputeNonbondedUtil :: NAME
     FAST( Force & f_i = f_0[i]; )
     FULL( Force & fullf_i = fullf_0[i]; )
 
-  if (p_i.nonbondedGroupSize) // if hydrogen group parent
+  if (p_i.hydrogenGroupSize || p_i.nonbondedGroupIsAtom)
     {
     if ( p_i.hydrogenGroupSize ) {
       int opc = pairCount;
@@ -215,7 +215,7 @@ void ComputeNonbondedUtil :: NAME
     const int groupfixed = ( p_i.groupFixed );
 
     // If patch divisions are not made by hydrogen groups, then
-    // nonbondedGroupSize is set to 1 for all atoms.  Thus we can
+    // hydrogenGroupSize is set to 1 for all atoms.  Thus we can
     // carry on as if we did have groups - only less efficiently.
     // An optimization in this case is to not rebuild the temporary
     // pairlist but to include every atom in it.  This should be a
@@ -244,7 +244,8 @@ void ComputeNonbondedUtil :: NAME
     if ( groupfixed ) { // tuned assuming most atoms fixed
       while ( j < j_upper )
 	{
-	register int hgs = p_j->nonbondedGroupSize;
+	register int hgs = ( p_j->nonbondedGroupIsAtom ? 1 :
+                                                p_j->hydrogenGroupSize );
 	if ( ! (p_j->groupFixed) )
 	{
 	  // use a slightly large cutoff to include hydrogens
@@ -264,7 +265,8 @@ void ComputeNonbondedUtil :: NAME
       register BigReal p_j_y = p_j->position.y;
       register BigReal p_j_z = p_j->position.z;
       while ( j < j_upper ) {
-	register int hgs = p_j->nonbondedGroupSize;
+	register int hgs = ( p_j->nonbondedGroupIsAtom ? 1 :
+                                                p_j->hydrogenGroupSize );
 	p_j += ( ( j + hgs < j_upper ) ? hgs : 0 );
 	register BigReal r2 = p_i_x - p_j_x;
 	r2 *= r2;

@@ -35,7 +35,7 @@ struct CompAtom {
   Charge charge;
   unsigned int id : 24;
   unsigned int hydrogenGroupSize : 3;
-  unsigned int nonbondedGroupSize : 3;
+  unsigned int nonbondedGroupIsAtom : 1;
   unsigned int atomFixed : 1;
   unsigned int groupFixed : 1;
 
@@ -45,7 +45,7 @@ struct CompAtom {
   inline CompAtom(const CompAtom &a) :
     position(a.position), charge(a.charge),
     id(a.id), hydrogenGroupSize(a.hydrogenGroupSize),
-    nonbondedGroupSize(a.nonbondedGroupSize),
+    nonbondedGroupIsAtom(a.nonbondedGroupIsAtom),
     atomFixed(a.atomFixed), groupFixed(a.groupFixed) {
     ;
   }
@@ -56,7 +56,7 @@ struct CompAtom {
     charge = a.charge;
     id = a.id;
     hydrogenGroupSize = a.hydrogenGroupSize;
-    nonbondedGroupSize = a.nonbondedGroupSize;
+    nonbondedGroupIsAtom = a.nonbondedGroupIsAtom;
     atomFixed = a.atomFixed;
     groupFixed = a.groupFixed;
     return *this;
