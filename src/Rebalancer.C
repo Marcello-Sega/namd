@@ -263,9 +263,9 @@ int Rebalancer::refine()
       // iout << iINFO << "\n Computes on processor " << i << " ";
       // processors[i].computeSet->print();
       // iout << iINFO << "\n" << endi;
-      if (processors[i].load > overLoad*averageLoad)
+      if (processors[i].load >= overLoad*averageLoad)
          heavyProcessors->insert((InfoRecord *) &(processors[i]));
-      else if (processors[i].load < averageLoad)
+      else if (processors[i].load < overLoad * averageLoad)
 	      lightProcessors->insert((InfoRecord *) &(processors[i]));
    }
    int done = 0;
@@ -372,6 +372,36 @@ int Rebalancer::refine()
       else if (donor->load < averageLoad)
          lightProcessors->insert((InfoRecord *) donor);
    }  
+#if 0
+   // After refining, compute min, max and avg processor load
+   double total = processors[0].load;
+   double min = processors[0].load;
+   int min_proc = 0;
+   double max = processors[0].load;
+   int max_proc = 0;
+   for (i=1; i<P; i++) {
+     total += processors[i].load;
+     if (processors[i].load < min) {
+       min = processors[i].load;
+       min_proc = i;
+     }
+     if (processors[i].load > max) {
+       max = processors[i].load;
+       max_proc = i;
+     }
+   }
+   iout << iINFO << "Refinement at overLoad=" << overLoad << "\n";
+   iout << iINFO << "  min = " << min << " processor " << min_proc << "\n";
+   iout << iINFO << "  max = " << max << " processor " << max_proc << "\n";
+   iout << iINFO << "  total = " << total << " average = " << total/P << "\n"
+	<< endi;
+   
+   if (!finish) {
+     iout << iINFO << "Refine: No solution found for overLoad = " 
+	  << overLoad << "\n" << endi;
+   }
+#endif
+
    return finish;
 }
 
