@@ -4,6 +4,9 @@
  *  All rights reserved
  */
 
+#ifndef DPME2_H
+#define DPME2_H
+
 #include <stdlib.h>
 #include <ctype.h>
 #include <sys/time.h>
@@ -47,6 +50,7 @@
 #define Nsign(i,j)  ((j) >=0.0 ?  Nabs((i)): -Nabs((i)) )
 
 
+#endif
 
 
 

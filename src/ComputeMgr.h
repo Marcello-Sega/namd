@@ -33,6 +33,10 @@ class ComputeGlobalConfigMsg;
 class ComputeGlobalDataMsg;
 class ComputeGlobalResultsMsg;
 
+class ComputeDPME;
+class ComputeDPMEDataMsg;
+class ComputeDPMEResultsMsg;
+
 class ComputeMgr : public BOCclass
 {
 public:
@@ -55,12 +59,18 @@ public:
   void sendComputeGlobalResults(ComputeGlobalResultsMsg *);
   void recvComputeGlobalResults(ComputeGlobalResultsMsg *);
 
+  void sendComputeDPMEData(ComputeDPMEDataMsg *);
+  void recvComputeDPMEData(ComputeDPMEDataMsg *);
+  void sendComputeDPMEResults(ComputeDPMEResultsMsg *, int);
+  void recvComputeDPMEResults(ComputeDPMEResultsMsg *);
+
 private:
   void createCompute(ComputeID, ComputeMap *);
   int numNonbondedSelf;
   int numNonbondedPair;
 
   ComputeGlobal *computeGlobalObject;
+  ComputeDPME *computeDPMEObject;
 
   int updateComputesCount;
   int updateComputesReturnEP;
@@ -115,12 +125,15 @@ private:
  *
  *	$RCSfile: ComputeMgr.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1998/03/26 23:28:27 $
+ *	$Revision: 1.1013 $	$Date: 1998/04/10 04:16:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.h,v $
+ * Revision 1.1013  1998/04/10 04:16:01  jim
+ * Finished incorporating DPME.
+ *
  * Revision 1.1012  1998/03/26 23:28:27  jim
  * Small changes for KCC port.  Altered use of strstream in ComputeFreeEnergy.
  *

@@ -7,6 +7,10 @@
 #include "dpme2.h"
 #include "math.h"
 
+extern "C" {
+  extern double rint(double);
+}
+
 /* Subroutine */ 
 int pmesh_kspace_get_sizes( int *nfft1,  int *nfft2, 
      int *nfft3,  int *numatoms,  int *order,  int *sizfftab, 

@@ -75,6 +75,11 @@ void ComputeNonbondedUtil::unregisterReductionData(ReductionMgr *reduction)
 int find_ewaldcof(double *cutoff, double *dtol, double *ewaldcof);
 #endif
 
+//  Not in KCC's math.h
+extern "C" {
+  extern double erfc(double);
+}
+
 void ComputeNonbondedUtil::select(void)
 {
   SimParameters * simParams = Node::Object()->simParameters;
@@ -328,12 +333,15 @@ void ComputeNonbondedUtil::select(void)
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1998/04/06 23:53:00 $
+ *	$Revision: 1.1018 $	$Date: 1998/04/10 04:16:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1018  1998/04/10 04:16:01  jim
+ * Finished incorporating DPME.
+ *
  * Revision 1.1017  1998/04/06 23:53:00  jim
  * Definitions of new static variables.
  *

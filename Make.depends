@@ -474,6 +474,11 @@ obj/ComputeDPME.o: \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/PatchTypes.h \
+	src/ComputeDPMEMsgs.h \
+	dpme2/dpme2.h \
+	dpme2/dpme2_pvm.h \
+	dpme2/dpme2def.h \
+	dpme2/protype.h \
 	src/ComputeNonbondedUtil.h \
 	src/ComputeNonbondedSplitting.h \
 	src/LJTable.h \
@@ -491,8 +496,30 @@ obj/ComputeDPME.o: \
 	src/Migration.h \
 	src/HomePatchTypes.h \
 	src/ReductionMgr.h \
+	src/ComputeMgr.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeDPME.o -c src/ComputeDPME.C
+obj/ComputeDPMEMsgs.o: \
+	src/ComputeDPMEMsgs.C \
+	src/ComputeDPMEMsgs.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/ResizeArrayPrimIter.h \
+	dpme2/dpme2.h \
+	dpme2/dpme2_pvm.h \
+	dpme2/dpme2def.h \
+	dpme2/protype.h \
+	src/Debug.h \
+	inc/ComputeMgr.top.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputeDPMEMsgs.o -c src/ComputeDPMEMsgs.C
 obj/ComputeDPMTA.o: \
 	src/ComputeDPMTA.C \
 	src/common.h \
@@ -1026,6 +1053,12 @@ obj/ComputeMgr.o: \
 	src/ComputeGlobalMsgs.h \
 	src/ComputeDPMTA.h \
 	dpmta-2.6/src/dpmta.h \
+	src/ComputeDPME.h \
+	src/ComputeDPMEMsgs.h \
+	dpme2/dpme2.h \
+	dpme2/dpme2_pvm.h \
+	dpme2/dpme2def.h \
+	dpme2/protype.h \
 	src/ComputeSphericalBC.h \
 	src/ComputeCylindricalBC.h \
 	src/ComputeRestraints.h \

@@ -91,6 +91,7 @@ public:
   virtual ~ComputeHomePatches();
   virtual void initialize();
   virtual void atomUpdate();
+  Flags *getFlags(void) { return &(patchList[0].p->flags); }
 };
 
 #endif
@@ -98,13 +99,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeHomePatches.h,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/12/26 23:10:44 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1998/04/10 04:15:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomePatches.h,v $
+ * Revision 1.1004  1998/04/10 04:15:59  jim
+ * Finished incorporating DPME.
+ *
  * Revision 1.1003  1997/12/26 23:10:44  milind
  * Made namd2 to compile, link and run under linux. Merged Templates and src
  * directoriies, and removed separate definition and declaration files for

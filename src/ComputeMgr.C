@@ -46,6 +46,7 @@
 #ifdef DPME
 #include "ComputeDPME.h"
 #endif
+#include "ComputeDPMEMsgs.h"
 #include "ComputeSphericalBC.h"
 #include "ComputeCylindricalBC.h"
 #include "ComputeRestraints.h"
@@ -241,7 +242,7 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 #endif
 #ifdef DPME
       case computeDPMEType:
-	c = new ComputeDPME(i); // unknown delete
+	c = computeDPMEObject = new ComputeDPME(i,this); // unknown delete
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
@@ -368,6 +369,39 @@ void ComputeMgr:: recvComputeGlobalResults(ComputeGlobalResultsMsg *msg)
   else NAMD_die("ComputeMgr::computeGlobalObject is NULL!");
 }
 
+void ComputeMgr:: sendComputeDPMEData(ComputeDPMEDataMsg *msg)
+{
+  int node;
+  if ( computeDPMEObject ) {
+    node = computeDPMEObject->getMasterNode();
+  }
+  else NAMD_die("ComputeMgr::computeDPMEObject is NULL!");
+
+  CSendMsgBranch(ComputeMgr, recvComputeDPMEData, ComputeDPMEDataMsg, msg,
+    CpvAccess(BOCclass_group).computeMgr, node);
+}
+
+void ComputeMgr:: recvComputeDPMEData(ComputeDPMEDataMsg *msg)
+{
+  if ( computeDPMEObject ) {
+    computeDPMEObject->recvData(msg);
+  }
+  else NAMD_die("ComputeMgr::computeDPMEObject is NULL!");
+}
+
+void ComputeMgr:: sendComputeDPMEResults(ComputeDPMEResultsMsg *msg, int node)
+{
+  CSendMsgBranch(ComputeMgr, recvComputeDPMEResults, ComputeDPMEResultsMsg, msg,
+    CpvAccess(BOCclass_group).computeMgr, node);
+}
+
+void ComputeMgr:: recvComputeDPMEResults(ComputeDPMEResultsMsg *msg)
+{
+  if ( computeDPMEObject ) {
+    computeDPMEObject->recvResults(msg);
+  }
+  else NAMD_die("ComputeMgr::computeDPMEObject is NULL!");
+}
 
 #include "ComputeMgr.bot.h"
 
@@ -377,12 +411,15 @@ void ComputeMgr:: recvComputeGlobalResults(ComputeGlobalResultsMsg *msg)
  *
  *	$RCSfile: ComputeMgr.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1021 $	$Date: 1998/04/06 16:34:04 $
+ *	$Revision: 1.1022 $	$Date: 1998/04/10 04:15:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.C,v $
+ * Revision 1.1022  1998/04/10 04:15:59  jim
+ * Finished incorporating DPME.
+ *
  * Revision 1.1021  1998/04/06 16:34:04  jim
  * Added DPME (single processor only), test mode, and momenta printing.
  *

@@ -16,11 +16,27 @@
 #include "ComputeHomePatches.h"
 #include "NamdTypes.h"
 
+class ComputeDPMEDataMsg;
+class ComputeDPMEResultsMsg;
+class ComputeDPMEMaster;
+class ComputeMgr;
+
 class ComputeDPME : public ComputeHomePatches {
 public:
-  ComputeDPME(ComputeID c);
+  ComputeDPME(ComputeID c, ComputeMgr *m);
   virtual ~ComputeDPME();
   void doWork();
+  void recvData(ComputeDPMEDataMsg *);
+  void recvResults(ComputeDPMEResultsMsg *);
+
+  ComputeMgr *comm;
+  int getMasterNode(void) { return masterNode; }
+
+ private:
+  ComputeDPMEMaster *master;
+  int masterNode;
+  int numLocalAtoms;
+
 };
 
 #endif
@@ -30,12 +46,15 @@ public:
  *
  *	$RCSfile: ComputeDPME.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1998/04/07 00:52:38 $
+ *	$Revision: 1.2 $	$Date: 1998/04/10 04:15:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPME.h,v $
+ * Revision 1.2  1998/04/10 04:15:57  jim
+ * Finished incorporating DPME.
+ *
  * Revision 1.1  1998/04/07 00:52:38  jim
  * Added DPME interface.
  *

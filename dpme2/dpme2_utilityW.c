@@ -3,7 +3,7 @@
  *  Copyright (c) 1996,1997 Duke University
  *  All rights reserved
  */
-/* $Id: dpme2_utilityW.c,v 1.2 1997/04/23 18:15:18 nealk Exp $
+/* $Id: dpme2_utilityW.c,v 1.3 1998/04/10 04:15:47 jim Exp $
  */
 
 /*******************************************************************************
@@ -16,6 +16,11 @@
 
 #include "dpme2.h"
 #include "math.h"
+
+extern "C" {
+  extern double rint(double);
+  extern double erfc(double);
+}
 
 #define FIXIT 1 /* this was added to fix the swap boundaries when NPE=3 */
 

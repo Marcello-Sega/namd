@@ -102,6 +102,7 @@ OBJS = \
 	$(DSTDIR)/ComputeCylindricalBC.o \
 	$(DSTDIR)/ComputeDihedrals.o \
 	$(DSTDIR)/ComputeDPME.o \
+	$(DSTDIR)/ComputeDPMEMsgs.o \
 	$(DSTDIR)/ComputeDPMTA.o \
 	$(DSTDIR)/ComputeFreeEnergy.o \
 	$(DSTDIR)/ComputeFullDirect.o \

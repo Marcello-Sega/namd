@@ -39,7 +39,8 @@ PVM_HOME = ../pvm3
 # Must set the WORKINGDIR and DATADIR in dpme_pvm.h
 
 #DFLAGS = -D$(PVM_ARCH) -DVIRIAL -DTIMEME -DVERBOSE -DDPME_DEBUG(2,3)
-DFLAGS = -D$(PVM_ARCH)  -DTIMEME  -DVERBOSE -DVIRIAL
+#DFLAGS = -D$(PVM_ARCH)  -DTIMEME  -DVERBOSE -DVIRIAL
+DFLAGS = -D$(PVM_ARCH)  -DVIRIAL
 # tell the compiler where to locate the PVM include
 # files
 #

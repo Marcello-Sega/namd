@@ -208,7 +208,7 @@ typedef doublereal E_f;	/* real function with -R not specified */
 #undef u3b
 #undef u3b2
 #undef u3b5
-#undef unix
+/* #undef unix   Trouble under KCC */
 #undef vax
 #endif
 #endif
