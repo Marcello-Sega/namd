@@ -123,8 +123,8 @@ void ComputeNonbondedUtil :: NAME
 
   FULL
   (
-  const ewaldcof = ComputeNonbondedUtil:: ewaldcof;
-  const pi_ewaldcof = ComputeNonbondedUtil:: pi_ewaldcof;
+  const BigReal ewaldcof = ComputeNonbondedUtil:: ewaldcof;
+  const BigReal pi_ewaldcof = ComputeNonbondedUtil:: pi_ewaldcof;
   )
 
   const LJTable* const ljTable = ComputeNonbondedUtil:: ljTable;
