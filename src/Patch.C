@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.4 1996/10/16 08:22:39 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.5 1996/10/29 23:35:27 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -92,6 +92,8 @@ void Patch::boxClosed(int box)
 
 void Patch::positionsReady()
 {
+   ComputeMap *computeMap = ComputeMap::Object();
+
    // Give all position pickup boxes access to positions
    positionPtr = p.unencap();
    positionBox.open(positionPtr);
@@ -104,7 +106,7 @@ void Patch::positionsReady()
    ComputeIDListIter cid(positionComputeList);
    for(cid = cid.begin(); cid != cid.end(); cid++)
    {
-     (node->computeMap).compute(*cid)->patchReady(patchID);
+     computeMap->compute(*cid)->patchReady(patchID);
    } 
 }
 
@@ -114,12 +116,15 @@ void Patch::positionsReady()
  *
  *	$RCSfile: Patch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/10/16 08:22:39 $
+ *	$Revision: 1.5 $	$Date: 1996/10/29 23:35:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.5  1996/10/29 23:35:27  ari
+ * *** empty log message ***
+ *
  * Revision 1.4  1996/10/16 08:22:39  ari
  * *** empty log message ***
  *

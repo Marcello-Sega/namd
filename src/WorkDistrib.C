@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.13 1996/10/29 17:18:20 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.14 1996/10/29 23:35:27 ari Exp $";
 
 #include <stdio.h>
 
@@ -44,20 +44,13 @@ WorkDistrib::WorkDistrib(InitMsg *msg)
 //----------------------------------------------------------------------
 WorkDistrib::~WorkDistrib(void)
 {
-  node = NULL;
-}
-
-//----------------------------------------------------------------------
-void WorkDistrib::parentNode(Node *inode)
-{
-  node = inode;
 }
 
 //----------------------------------------------------------------------
 void WorkDistrib::buildMaps(void)
 {
   int i;
-  PatchMap *patchMap = &(node->patchMap);
+  PatchMap *patchMap = PatchMap::Object();
   
   CPrintf("Building maps\n");
   mapPatches();
@@ -87,7 +80,8 @@ void WorkDistrib::createComputes(void)
 void WorkDistrib::createPatches(void)
 {
   int i;
-  PatchMap *patchMap = &(node->patchMap);
+  PatchMap *patchMap = PatchMap::Object();
+  Node *node = Node::Object();
 
   for(i=0; i < patchMap->numPatches(); i++)
   {
@@ -132,6 +126,8 @@ void WorkDistrib::createPatches(void)
 // saveMaps() is called when the map message is received
 void WorkDistrib::saveMaps(MapDistribMsg *msg)
 {
+  Node *node = Node::Object();
+
   if (node->myid() != 0)
   {
     CPrintf("Saving patch map, compute map\n");
@@ -167,7 +163,9 @@ void WorkDistrib::awaitMaps()
 //----------------------------------------------------------------------
 void WorkDistrib::mapPatches(void)
 {
-  PatchMap *patchMap = &(node->patchMap);
+  PatchMap *patchMap = PatchMap::Object();
+  Node *node = Node::Object();
+
   int xdim, ydim, zdim;
   int xi, yi, zi, pid;
   int i;
@@ -222,8 +220,9 @@ void WorkDistrib::mapPatches(void)
 //----------------------------------------------------------------------
 void WorkDistrib::mapComputes(void)
 {
-  PatchMap *patchMap = &(node->patchMap);
-  ComputeMap *computeMap = &(node->computeMap);
+  PatchMap *patchMap = PatchMap::Object();
+  ComputeMap *computeMap = ComputeMap::Object();
+  Node *node = Node::Object();
 
   CPrintf("Mapping computes\n");
 
@@ -245,8 +244,10 @@ void WorkDistrib::mapComputes(void)
 void WorkDistrib::mapAngleComputes()
 {
   int i;
-  PatchMap *patchMap = &(node->patchMap);
-  ComputeMap *computeMap = &(node->computeMap);
+  PatchMap *patchMap = PatchMap::Object();
+  ComputeMap *computeMap = ComputeMap::Object();
+  Node *node = Node::Object();
+
   int numNodes = node->numNodes();
 
   // Figure out where to put the angleForce objects, and hook up the
@@ -278,8 +279,8 @@ void WorkDistrib::mapElectComputes(void)
   // Then create 1 for each 1-away and 2-away neighbor which has a larger
   // pid.
 
-  PatchMap *patchMap = &(node->patchMap);
-  ComputeMap *computeMap = &(node->computeMap);
+  PatchMap *patchMap = PatchMap::Object();
+  ComputeMap *computeMap = ComputeMap::Object();
 
   PatchID oneAway[PatchMap::MaxOneAway];
   PatchID twoAway[PatchMap::MaxTwoAway];
@@ -338,13 +339,16 @@ void WorkDistrib::enqueueWork(LocalWorkMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.13 $	$Date: 1996/10/29 17:18:20 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.14 $	$Date: 1996/10/29 23:35:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.14  1996/10/29 23:35:27  ari
+ * *** empty log message ***
+ *
  * Revision 1.13  1996/10/29 17:18:20  brunner
  * Added initial thread stuff, but it only works on 1 processor
  *

@@ -6,6 +6,11 @@
 /*									   */
 /***************************************************************************/
 
+/***************************************************************************
+ * DESCRIPTION:
+ *
+ ***************************************************************************/
+
 #ifndef ATOMMAP_H
 #define ATOMMAP_H
 
@@ -16,10 +21,8 @@ enum { notUsed = -1 };
 class AtomMap
 {
 public:
-  static AtomMap *handle;
-
-  AtomMap(void);
-
+  static AtomMap *Instance();
+  inline static AtomMap *Object() {return _instance;}
   ~AtomMap(void);
 
   void allocateMap(int nAtomIDs);
@@ -30,7 +33,13 @@ public:
 
   void clearMap(void);
 
+
+protected:
+  AtomMap(void);
+
 private:
+  static AtomMap *_instance;
+
   LocalID *localIDTable;
   int tableSz;
   Boolean cleared;
@@ -50,16 +59,16 @@ inline LocalID AtomMap::localID(AtomID id)
  * RCS INFORMATION:
  *
  *	$RCSfile: AtomMap.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/10/24 18:50:33 $
- *
- ***************************************************************************
- * DESCRIPTION:
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1996/10/29 23:36:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: AtomMap.h,v $
+ * Revision 1.2  1996/10/29 23:36:13  ari
+ * *** empty log message ***
+ *
  * Revision 1.1  1996/10/24 18:50:33  brunner
  * Initial revision
  *

@@ -7,46 +7,7 @@
 /***************************************************************************/
 
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: PatchMap.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/10/10 17:23:24 $
- *
- ***************************************************************************
- * DESCRIPTION:
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: PatchMap.h,v $
- * Revision 1.4  1996/10/10 17:23:24  brunner
- * Added patch * in patchmap
- *
- * Revision 1.3  1996/08/23 22:03:52  brunner
- * *** empty log message ***
- *
- * Revision 1.2  1996/08/19 21:37:02  brunner
- * Changed Position to Coordinate
- *
- * Revision 1.1  1996/08/16 20:43:53  brunner
- * Initial revision
- *
- * Revision 1.7  1996/08/03 20:08:09  brunner
- * *** empty log message ***
- *
- * Revision 1.6  1996/07/16 20:06:24  brunner
- * *** empty log message ***
- *
- * Revision 1.5  1996/07/16 19:59:00  brunner
- * *** empty log message ***
- *
- * Revision 1.2  1996/06/11 22:36:35  brunner
- * *** empty log message ***
- *
- * Revision 1.1  1996/06/10 18:52:26  brunner
- * Initial revision
- *
+ * DESCRIPTION: PatchMap.h
  *
  ***************************************************************************/
 
@@ -59,31 +20,16 @@ class Patch;
 
 class PatchMap
 {
-private:
-  struct PatchData
-  {
-    int node;
-    int xi, yi, zi;
-    Coordinate x0, x1, y0, y1, z0, z1;
-    int numCids;
-    int numCidsAllocated;
-    ComputeID *cids;
-    Patch *myPatch;
-  };
-  int curPatch;
-  int nPatches;
-  PatchData *patchData;
-  int xDim, yDim, zDim;
-  
 public:
+  static PatchMap *Instance();
+  inline static PatchMap *Object() { return _instance; }
+
+  ~PatchMap(void);
 
   enum { MaxTwoAway = 5*5*5 - 3*3*3 - 1 };
   enum { MaxOneAway = 3*3*3 - 1 };
   enum ErrCode { OK = 0, ERROR = -1 };
   
-  PatchMap(void);
-
-  ~PatchMap(void);
 
   // numPatches() returns the number of patches being managed 
   // by the map.
@@ -189,6 +135,29 @@ public:
   void registerPatch(PatchID pid, Patch *pptr);
   void unregisterPatch(PatchID pid, Patch *pptr);
 
+
+protected:
+  PatchMap(void);
+
+
+private:
+  static PatchMap *_instance;
+
+  struct PatchData
+  {
+    int node;
+    int xi, yi, zi;
+    Coordinate x0, x1, y0, y1, z0, z1;
+    int numCids;
+    int numCidsAllocated;
+    ComputeID *cids;
+    Patch *myPatch;
+  };
+  int curPatch;
+  int nPatches;
+  PatchData *patchData;
+  int xDim, yDim, zDim;
+
 };
 
 
@@ -202,7 +171,46 @@ inline Patch *PatchMap::patch(PatchID pid)
 #endif /* PATCHMAP_H */
 
 
-
-
-
-
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile: PatchMap.h,v $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.5 $	$Date: 1996/10/29 23:35:27 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: PatchMap.h,v $
+ * Revision 1.5  1996/10/29 23:35:27  ari
+ * *** empty log message ***
+ *
+ * Revision 1.4  1996/10/10 17:23:24  brunner
+ * Added patch * in patchmap
+ *
+ * Revision 1.3  1996/08/23 22:03:52  brunner
+ * *** empty log message ***
+ *
+ * Revision 1.2  1996/08/19 21:37:02  brunner
+ * Changed Position to Coordinate
+ *
+ * Revision 1.1  1996/08/16 20:43:53  brunner
+ * Initial revision
+ *
+ * Revision 1.7  1996/08/03 20:08:09  brunner
+ * *** empty log message ***
+ *
+ * Revision 1.6  1996/07/16 20:06:24  brunner
+ * *** empty log message ***
+ *
+ * Revision 1.5  1996/07/16 19:59:00  brunner
+ * *** empty log message ***
+ *
+ * Revision 1.2  1996/06/11 22:36:35  brunner
+ * *** empty log message ***
+ *
+ * Revision 1.1  1996/06/10 18:52:26  brunner
+ * Initial revision
+ *
+ *
+ ***************************************************************************/

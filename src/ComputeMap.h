@@ -7,34 +7,7 @@
 /***************************************************************************/
 
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: ComputeMap.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/10/16 08:22:39 $
- *
- ***************************************************************************
  * DESCRIPTION:
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: ComputeMap.h,v $
- * Revision 1.3  1996/10/16 08:22:39  ari
- * *** empty log message ***
- *
- * Revision 1.2  1996/08/16 21:41:11  brunner
- * *** empty log message ***
- *
- * Revision 1.1  1996/08/16 20:43:53  brunner
- * Initial revision
- *
- * Revision 1.2  1996/08/03 20:08:09  brunner
- * *** empty log message ***
- *
- * Revision 1.1  1996/07/16 20:47:43  brunner
- * Initial revision
- *
  *
  ***************************************************************************/
 
@@ -47,24 +20,9 @@ class Compute;
 
 class ComputeMap
 {
-private:
-  struct ComputeData
-  {
-    int node;
-    Boolean patchBased;
-    int numPids;
-    int numPidsAllocated;
-    PatchID *pids;
-  };
-
-  int nPatchBased;
-  int nAtomBased;
-  int nComputes;
-  int nAllocated;
-  ComputeData *computeData;
-  
 public:
-  ComputeMap(void);
+  static ComputeMap *Instance();
+  inline static ComputeMap *Object() { return _instance; }
 
   ~ComputeMap(void);
 
@@ -116,12 +74,59 @@ public:
 
   Compute *compute(ComputeID cid) { return (NULL); };
 
+protected:
+  ComputeMap(void);
+
+private:
+  static ComputeMap *_instance;
+
+  struct ComputeData
+  {
+    int node;
+    Boolean patchBased;
+    int numPids;
+    int numPidsAllocated;
+    PatchID *pids;
+  };
+
+  int nPatchBased;
+  int nAtomBased;
+  int nComputes;
+  int nAllocated;
+  ComputeData *computeData;
 };
 
 #endif /* COMPUTEMAP_H */
 
 
-
-
-
-
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile: ComputeMap.h,v $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.4 $	$Date: 1996/10/29 23:35:27 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: ComputeMap.h,v $
+ * Revision 1.4  1996/10/29 23:35:27  ari
+ * *** empty log message ***
+ *
+ * Revision 1.3  1996/10/16 08:22:39  ari
+ * *** empty log message ***
+ *
+ * Revision 1.2  1996/08/16 21:41:11  brunner
+ * *** empty log message ***
+ *
+ * Revision 1.1  1996/08/16 20:43:53  brunner
+ * Initial revision
+ *
+ * Revision 1.2  1996/08/03 20:08:09  brunner
+ * *** empty log message ***
+ *
+ * Revision 1.1  1996/07/16 20:47:43  brunner
+ * Initial revision
+ *
+ *
+ ***************************************************************************/

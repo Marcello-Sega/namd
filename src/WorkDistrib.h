@@ -42,8 +42,6 @@ public:
 
   void movePatchDone(MovePatchDoneMsg *msg) {};
 
-  void parentNode(Node *inode);
-
   void buildMaps(void);
   void sendMaps(void);
   void createPatches(void);
@@ -54,7 +52,6 @@ public:
   void enqueueWork(LocalWorkMsg *msg); // This is for testing
 
 private:
-  Node *node;
   void mapPatches(void);
   void mapComputes(void);
   void mapAngleComputes(void);
@@ -72,13 +69,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1996/10/29 17:58:07 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.11 $	$Date: 1996/10/29 23:35:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.11  1996/10/29 23:35:27  ari
+ * *** empty log message ***
+ *
  * Revision 1.10  1996/10/29 17:58:07  brunner
  * Did some stuff.  I forget what
  *

@@ -7,31 +7,11 @@
 /***************************************************************************/
 
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: ComputeMap.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/08/16 21:41:11 $
- *
- ***************************************************************************
  * DESCRIPTION:
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: ComputeMap.C,v $
- * Revision 1.2  1996/08/16 21:41:11  brunner
- * *** empty log message ***
- *
- * Revision 1.1  1996/08/16 20:43:53  brunner
- * Initial revision
- *
- * Revision 1.1  1996/08/03 20:08:09  brunner
- * Initial revision
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.2 1996/08/16 21:41:11 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.3 1996/10/29 23:35:27 ari Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -41,6 +21,16 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.
 #include "c++interface.h"
 
 #include "ComputeMap.h"
+
+ComputeMap *ComputeMap::_instance = 0;
+
+ComputeMap *ComputeMap::Instance() {
+  if (_instance == 0) {
+    _instance = new ComputeMap;
+  }
+  return _instance;
+}
+
 
 //----------------------------------------------------------------------
 ComputeMap::ComputeMap(void)
@@ -244,3 +234,27 @@ void ComputeMap::printComputeMap(void)
 
   }
 }
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile: ComputeMap.C,v $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.3 $	$Date: 1996/10/29 23:35:27 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: ComputeMap.C,v $
+ * Revision 1.3  1996/10/29 23:35:27  ari
+ * *** empty log message ***
+ *
+ * Revision 1.2  1996/08/16 21:41:11  brunner
+ * *** empty log message ***
+ *
+ * Revision 1.1  1996/08/16 20:43:53  brunner
+ * Initial revision
+ *
+ * Revision 1.1  1996/08/03 20:08:09  brunner
+ * Initial revision
+ *
+ ***************************************************************************/

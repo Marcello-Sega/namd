@@ -7,52 +7,7 @@
 /***************************************************************************/
 
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: PatchMap.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/10/16 08:22:39 $
- *
- ***************************************************************************
  * DESCRIPTION:
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: PatchMap.C,v $
- * Revision 1.6  1996/10/16 08:22:39  ari
- * *** empty log message ***
- *
- * Revision 1.5  1996/10/10 17:23:41  brunner
- * Added patch * in patchmap
- *
- * Revision 1.4  1996/08/23 22:03:52  brunner
- * *** empty log message ***
- *
- * Revision 1.3  1996/08/19 21:37:02  brunner
- * Changed Position to Coordinate
- *
- * Revision 1.2  1996/08/16 21:41:11  brunner
- * *** empty log message ***
- *
- * Revision 1.1  1996/08/16 20:43:53  brunner
- * Initial revision
- *
- * Revision 1.2  1996/08/03 20:08:09  brunner
- * *** empty log message ***
- *
- * Revision 1.1  1996/07/16 20:07:08  brunner
- * Initial revision
- *
- * Revision 1.5  1996/07/16 19:59:00  brunner
- * *** empty log message ***
- *
- * Revision 1.2  1996/06/11 22:36:35  brunner
- * *** empty log message ***
- *
- * Revision 1.1  1996/06/10 18:52:26  brunner
- * Initial revision
- *
  *
  ***************************************************************************/
 
@@ -66,6 +21,19 @@
 
 #include "PatchMap.h"
 #include "Patch.h"
+
+// static initialization
+PatchMap *PatchMap::_instance = 0;
+
+// Safe singleton creation
+PatchMap *PatchMap::Instance() {
+  if (_instance == 0) {
+     _instance = new PatchMap;
+  }
+  return(_instance);
+}
+
+
 
 PatchMap::PatchMap(void)
 {
@@ -389,3 +357,55 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
 {
   patchData[pid].myPatch = NULL;
 }
+
+
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile: PatchMap.C,v $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.7 $	$Date: 1996/10/29 23:35:27 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: PatchMap.C,v $
+ * Revision 1.7  1996/10/29 23:35:27  ari
+ * *** empty log message ***
+ *
+ * Revision 1.6  1996/10/16 08:22:39  ari
+ * *** empty log message ***
+ *
+ * Revision 1.5  1996/10/10 17:23:41  brunner
+ * Added patch * in patchmap
+ *
+ * Revision 1.4  1996/08/23 22:03:52  brunner
+ * *** empty log message ***
+ *
+ * Revision 1.3  1996/08/19 21:37:02  brunner
+ * Changed Position to Coordinate
+ *
+ * Revision 1.2  1996/08/16 21:41:11  brunner
+ * *** empty log message ***
+ *
+ * Revision 1.1  1996/08/16 20:43:53  brunner
+ * Initial revision
+ *
+ * Revision 1.2  1996/08/03 20:08:09  brunner
+ * *** empty log message ***
+ *
+ * Revision 1.1  1996/07/16 20:07:08  brunner
+ * Initial revision
+ *
+ * Revision 1.5  1996/07/16 19:59:00  brunner
+ * *** empty log message ***
+ *
+ * Revision 1.2  1996/06/11 22:36:35  brunner
+ * *** empty log message ***
+ *
+ * Revision 1.1  1996/06/10 18:52:26  brunner
+ * Initial revision
+ *
+ *
+ ***************************************************************************/

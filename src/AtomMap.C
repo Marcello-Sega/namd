@@ -6,12 +6,25 @@
 /*									   */
 /***************************************************************************/
 
+/***************************************************************************
+ * DESCRIPTION:
+ *
+ ***************************************************************************/
+
 #include "AtomMap.h"
+
+AtomMap *AtomMap::_instance = 0;
+
+AtomMap *AtomMap::Instance() {
+  if (_instance == 0) {
+    _instance = new AtomMap;
+  }
+  return _instance;
+}
 
 //----------------------------------------------------------------------
 AtomMap::AtomMap(void)
 {
-  handle = this;
   localIDTable = NULL;
   cleared = false;
 }
@@ -19,7 +32,6 @@ AtomMap::AtomMap(void)
 //----------------------------------------------------------------------
 AtomMap::~AtomMap(void)
 {
-  handle = NULL;
   delete [] localIDTable;  // Delete on a NULL pointer should be ok
 }
 
@@ -68,16 +80,16 @@ void AtomMap::clearMap(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: AtomMap.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/10/24 18:50:33 $
- *
- ***************************************************************************
- * DESCRIPTION:
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1996/10/29 23:36:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: AtomMap.C,v $
+ * Revision 1.2  1996/10/29 23:36:13  ari
+ * *** empty log message ***
+ *
  * Revision 1.1  1996/10/24 18:50:33  brunner
  * Initial revision
  *

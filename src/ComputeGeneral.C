@@ -42,7 +42,7 @@ void ComputeGeneral::depositAllForces() {
 void ComputeGeneral::registerForceDeposit(PatchID pid) {
   PatchDeposit pd;
   pd.pid = pid;
-  pd.p = (node->patchMap).patch(pid);
+  pd.p = patchMap->patch(pid);
   pd.box = pd.p->registerForceDeposit(cid);
   patchDepositList.load(pd);
 }
@@ -59,7 +59,7 @@ void ComputeGeneral::unregisterForceDeposit(PatchID pid) {
 void ComputeGeneral::registerPositionPickup(PatchID pid) {
   PatchPickup pp;
   pp.pid = pid;
-  pp.p = (node->patchMap).patch(pid);
+  pp.p = patchMap->patch(pid);
   pp.box = pp.p->registerPositionPickup(cid);
   patchPickupList.load(pp);
   setNumPatches(getNumPatches() + 1);
@@ -99,12 +99,15 @@ void ComputeGeneral::doWork() {
  *
  *	$RCSfile: ComputeGeneral.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/10/22 19:15:14 $
+ *	$Revision: 1.2 $	$Date: 1996/10/29 23:35:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGeneral.C,v $
+ * Revision 1.2  1996/10/29 23:35:27  ari
+ * *** empty log message ***
+ *
  * Revision 1.1  1996/10/22 19:15:14  ari
  * Initial revision
  *

@@ -5,7 +5,7 @@
 /*                           All Rights Reserved                           */
 /*                                                                         */
 /***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.8 1996/10/29 17:18:34 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.9 1996/10/29 23:35:27 ari Exp $";
 
 #include <stdio.h>
 
@@ -33,6 +33,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 //----------------------------------------------------------------------
 // Node(void) can allocate some static data, or set all pointers to NULL
 
+Node *Node::_instance = 0;
+
 Node::Node(NodeInitMsg *msg)
 {
   molecule = NULL;
@@ -41,13 +43,20 @@ Node::Node(NodeInitMsg *msg)
   configList = NULL;
   pdb = NULL;
 
-  Patch::setNode(this);
-  Compute::setNode(this);
+  if (_instance == 0) {
+    _instance = this;
+  } else {
+    CPrintf("Node::Node() - another instance of Node exists!\n");
+  }
 
   workDistribGroup = msg->workDistribGroup;
   workDistrib = CLocalBranch(WorkDistrib,workDistribGroup);
   patchMgrGroup = msg->patchMgrGroup;
   patchMgr = CLocalBranch(PatchMgr,patchMgrGroup);
+
+  patchMap = PatchMap::Instance();
+  atomMap = AtomMap::Instance();
+  computeMap = ComputeMap::Instance();
 }
 
 //----------------------------------------------------------------------
@@ -80,7 +89,6 @@ void Node::startup(InitMsg *msg)
     CharmExit();
   }
 
-  workDistrib->parentNode(this);
   workDistrib->buildMaps();
   workDistrib->sendMaps();
   workDistrib->awaitMaps();
@@ -129,8 +137,8 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1996/10/29 17:18:34 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.9 $	$Date: 1996/10/29 23:35:27 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -139,6 +147,9 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.9  1996/10/29 23:35:27  ari
+ * *** empty log message ***
+ *
  * Revision 1.8  1996/10/29 17:18:34  brunner
  * Changed workDistrib calls
  *

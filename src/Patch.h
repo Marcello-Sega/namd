@@ -68,6 +68,9 @@ class Patch
      void forceBoxClosed(void);
 
      static void setNode(Node * n) { node = n; }
+     int getNumAtoms() { return numAtoms; }
+     const AtomIDList &getAtomIDList() { return (atomIDList); }
+
 
   protected:
      static Node* node;
@@ -101,12 +104,15 @@ class Patch
  *
  *	$RCSfile: Patch.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/10/16 08:22:39 $
+ *	$Revision: 1.5 $	$Date: 1996/10/29 23:35:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.h,v $
+ * Revision 1.5  1996/10/29 23:35:27  ari
+ * *** empty log message ***
+ *
  * Revision 1.4  1996/10/16 08:22:39  ari
  * *** empty log message ***
  *

@@ -20,8 +20,10 @@
 #include "c++interface.h"
 
 #include "NamdTypes.h"
+#include "ComputeMap.h"
 
 class Node;
+class PatchMap;
 
 // Base class for various forms of Compute objects
 // including: <linkto class=ComputeAtoms>ComputeAtoms</linkto> 
@@ -33,12 +35,15 @@ private:
 
 protected:
   static Node* node;
+  static ComputeMap *computeMap;
+  static PatchMap *patchMap;
+
   void enqueueWork();
 
 public:
   const ComputeID cid;
 
-  Compute(ComputeID c) : cid(c) {}
+  Compute(ComputeID c) : cid(c) { computeMap = ComputeMap::Object(); }
   virtual ~Compute() {}
 
   static void setNode(Node *n) { node = n; }
@@ -46,6 +51,7 @@ public:
   void setNumPatches(int n) { patchReadyCounter = numPatches = n; }
   int getNumPatches() { return (numPatches); };
 
+  virtual void mapReady() {};
   virtual void patchReady(void);
   virtual void patchReady(PatchID pid) { if (pid > -1) patchReady(); }
   virtual void doWork();
@@ -57,12 +63,15 @@ public:
  *
  *	$RCSfile: Compute.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/10/22 19:16:11 $
+ *	$Revision: 1.5 $	$Date: 1996/10/29 23:36:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.h,v $
+ * Revision 1.5  1996/10/29 23:36:13  ari
+ * *** empty log message ***
+ *
  * Revision 1.4  1996/10/22 19:16:11  ari
  * *** empty log message ***
  *

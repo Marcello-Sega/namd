@@ -20,6 +20,7 @@
 
 #include "main.h"
 #include "PatchMap.h"
+#include "AtomMap.h"
 #include "ComputeMap.h"
 #include "PatchMgr.h"
 
@@ -34,19 +35,23 @@ class PatchMgr;
 class Node : public groupmember
 {
 public:
+  // NAMD 1.X molecule database objects - must be public for now
   Molecule *molecule;
   Parameters *parameters;
   SimParameters *simParameters;
   ConfigList *configList;
   PDB *pdb;
 
+  // BOC objects for Now public (but should not be in future!)
+  // Access to methods should only be thru Map objects I believe
   int workDistribGroup;
   WorkDistrib *workDistrib;
+
   int patchMgrGroup;
   PatchMgr *patchMgr;
 
-  PatchMap patchMap;
-  ComputeMap computeMap;
+  // Singleton Access method
+  inline static Node *Object() {return _instance;}
 
   // Charm Entry point - distributed contructor
   Node(NodeInitMsg *msg);
@@ -64,6 +69,16 @@ public:
 
   // Run for the number of steps specified in the sim_parameters
   void run(void);                  
+
+protected:
+  // Map Databases - they have a singleton this access method ::Object()
+  AtomMap    *atomMap;
+  PatchMap   *patchMap;
+  ComputeMap *computeMap;
+
+private:
+  static Node *_instance;
+
 };
 
 #endif /* _NODE_H */
@@ -73,12 +88,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1996/10/16 08:22:39 $
+ *	$Revision: 1.10 $	$Date: 1996/10/29 23:35:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.10  1996/10/29 23:35:27  ari
+ * *** empty log message ***
+ *
  * Revision 1.9  1996/10/16 08:22:39  ari
  * *** empty log message ***
  *
