@@ -189,6 +189,14 @@ using kill -STOP and kill -CONT on the process group.  Queueing systems
 typically provide this functionality, allowing you to suspend a running
 job to allow a higher priority job to run immediately.
 
+If you want to run multiple NAMD jobs simultaneously on the same cluster
+you can use the charmrun options ++startpe and ++endpe to specify the
+range of nodes to use.  The master node (-1) is always included unless
+the ++skipmaster option is given.  The requested number of processes are
+assigned to nodes round-robin as with other network versions, or the
+++ppn option can be used to specify the number of processes per node.
+To limit the master node to one process use the ++singlemaster option.
+
 \subsection{Compaq AlphaServer SC}
 
 If your machine as a Quadrics interconnect you should use the Elan
