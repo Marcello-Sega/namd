@@ -46,6 +46,7 @@ OBJS = \
 	$(DSTDIR)/memusage.o \
 	$(DSTDIR)/strlib.o \
 	$(DSTDIR)/AlgSeven.o \
+	$(DSTDIR)/AlgRecBisection.o \
 	$(DSTDIR)/AtomMap.o \
 	$(DSTDIR)/BackEnd.o \
 	$(DSTDIR)/BroadcastMgr.o \

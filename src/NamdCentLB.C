@@ -75,6 +75,19 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
   } else if (simParams->ldbStrategy == LDBSTRAT_ALG7) {
     Alg7(computeArray,patchArray,processorArray,
                           nMoveableComputes, numPatches, numProcessors);
+  } else if (simParams->ldbStrategy == LDBSTRAT_ALGROB) {
+    if (step() == 0) {
+      iout << iINFO << "Load balance cycle " << step()
+        << " using RecBisection\n" << endi;
+      AlgRecBisection(computeArray,patchArray,processorArray,
+                            nMoveableComputes, numPatches, numProcessors);
+    } else {
+      iout << iINFO << "Load balance cycle " << step()
+        << " using RefineOnly\n" << endi;
+      RefineOnly(computeArray,patchArray,processorArray,
+                                  nMoveableComputes, numPatches,
+                                  numProcessors);
+    }
   } else if (simParams->ldbStrategy == LDBSTRAT_OTHER) {
     if (step() == 0) {
       iout << iINFO << "Load balance cycle " << step()
@@ -261,11 +274,11 @@ void NamdCentLB::loadData(char *file, int &numProcessors, int &numPatches, int &
 
   printf("numProcs: %d numPatches: %d numComputes: %d\n", numProcessors,numPatches, numComputes);
 
-  // memory leak waiting to happen!
-  NAMD_bug("NamdCentLB::loadData called!");
-  processorInfo *processorArray = new processorInfo[numProcessors];
-  computeInfo *computeArray = new computeInfo[numComputes];
-  patchInfo *patchArray = new patchInfo [numPatches];
+/*
+  processorInfo *processors = new processorInfo[numProcessors];
+  computeInfo *computes = new computeInfo[numComputes];
+  patchInfo *patchs = new patchInfo [numPatches];
+*/
 
   read(fd, processorArray, sizeof(processorInfo)*numProcessors);
   read(fd, patchArray, sizeof(patchInfo)*numPatches);

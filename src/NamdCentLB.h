@@ -9,6 +9,7 @@
 #include "SimParameters.h"
 #include "RefineOnly.h"
 #include "Alg7.h"
+#include "AlgRecBisection.h"
 #include "InfoStream.h"
 
 void CreateNamdCentLB();

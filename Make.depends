@@ -80,6 +80,29 @@ obj/AlgSeven.o: \
 	src/Set.h \
 	src/heap.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/AlgSeven.o $(COPTC) src/AlgSeven.C
+obj/AlgRecBisection.o: \
+	src/AlgRecBisection.C \
+	src/common.h \
+	src/InfoStream.h \
+	src/AlgRecBisection.h \
+	src/PatchMap.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	src/Rebalancer.h \
+	src/elements.h \
+	src/Set.h \
+	src/heap.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/AlgRecBisection.o $(COPTC) src/AlgRecBisection.C
 obj/AtomMap.o: \
 	src/AtomMap.C \
 	src/ProcessorPrivate.h \
@@ -2007,6 +2030,7 @@ obj/LdbCoordinator.o: \
 	src/Rebalancer.h \
 	src/heap.h \
 	src/Alg7.h \
+	src/AlgRecBisection.h \
 	src/InfoStream.h \
 	inc/LdbCoordinator.decl.h \
 	src/LdbCoordinator.h \
@@ -2175,6 +2199,7 @@ obj/NamdCentLB.o: \
 	src/Rebalancer.h \
 	src/heap.h \
 	src/Alg7.h \
+	src/AlgRecBisection.h \
 	src/InfoStream.h \
 	inc/NamdCentLB.def.h \
 	src/ComputeMap.h \
