@@ -60,6 +60,24 @@ should not be constrained.
 Otherwise, the value specified is used as the force constant for 
 that atom's restraining potential.}
 
+\item
+\NAMDCONFWDEF{selectConstraints}{Restrain only selected Cartesian components of the coordinates?}{\verb!on! or \verb!off!}{\verb!off!}
+{This option is useful to restrain the positions of atoms to a plane or a line in space. If active,
+ this option will ensure that only selected Cartesian components of the coordinates are restrained.
+ E.g.: Restraining the positions of atoms to their current z values with no restraints
+ in x and y will allow the atoms to move in the x-y plane while retaining their original z-coordinate.
+ Restraining the x and y values will lead to free motion only along the z coordinate.}
+
+\item
+\NAMDCONFWDEF{selectConstrX}{Restrain X components of coordinates}{\verb!on! or \verb!off!}{\verb!off!}
+{Restrain the Cartesian x components of the positions.}
+\item
+\NAMDCONFWDEF{selectConstrY}{Restrain Y components of coordinates}{\verb!on! or \verb!off!}{\verb!off!}
+{Restrain the Cartesian y components of the positions.}
+\item
+\NAMDCONFWDEF{selectConstrZ}{Restrain Z components of coordinates}{\verb!on! or \verb!off!}{\verb!off!}
+{Restrain the Cartesian z components of the positions.}
+
 \end{itemize}
 
 \subsubsection{Fixed atoms parameters}
