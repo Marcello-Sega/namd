@@ -9,6 +9,8 @@
 #ifndef _NAMDSTATE_H
 #define _NAMDSTATE_H
 
+#include "Controller.h"
+
 class Molecule;
 class SimParameters;
 class Parameters;
@@ -26,11 +28,15 @@ class NamdState {
     SimParameters *simParameters;
     ConfigList *configList;
     PDB *pdb;
+    Controller *controller;
   public:
     NamdState(void);
     ~NamdState() {}
     int configFileInit(char *);
     int status();
+    void useController(Controller *controllerPtr) {controller=controllerPtr;}
+    void runController(int numberOfCycles = 0)
+		{ controller->run(numberOfCycles); }
 };
 
 #endif /* _NAMDSTATE_H */
@@ -39,8 +45,8 @@ class NamdState {
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdState.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/16 04:39:46 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1997/01/09 20:48:10 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -49,6 +55,9 @@ class NamdState {
  * REVISION HISTORY:
  *
  * $Log: NamdState.h,v $
+ * Revision 1.2  1997/01/09 20:48:10  jim
+ * added Controller code
+ *
  * Revision 1.1  1996/08/16 04:39:46  ari
  * Initial revision
  *

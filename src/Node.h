@@ -34,6 +34,7 @@ class WorkDistrib;
 class PatchMgr;
 class ComputeMgr;
 class Communicate;
+class NamdState;
 
 class Node : public BOCclass
 {
@@ -74,7 +75,7 @@ public:
   // Utility for storing away simulation data for Node
   void saveMolDataPointers(Molecule *, Parameters *,
 			   SimParameters *, ConfigList *,
-			   PDB *);
+			   PDB *, NamdState *);
 
 
   // NAMD 1.X molecule database objects - must be public for now
@@ -83,6 +84,7 @@ public:
   SimParameters *simParameters;
   ConfigList *configList;
   PDB *pdb;
+  NamdState *state;
 
   // Remove these calls?
   int myid() { return CMyPe(); }
@@ -114,12 +116,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.17 $	$Date: 1996/12/20 22:53:27 $
+ *	$Revision: 1.18 $	$Date: 1997/01/09 20:48:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.18  1997/01/09 20:48:10  jim
+ * added Controller code
+ *
  * Revision 1.17  1996/12/20 22:53:27  jim
  * fixing parallel bugs, going home for Christmass
  *

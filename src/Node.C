@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.32 1996/12/30 20:37:38 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.33 1997/01/09 20:48:10 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -40,6 +40,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "Molecule.h"
 #include "AtomMap.h"
 #include "Sequencer.h"
+#include "Controller.h"
+#include "NamdState.h"
 //#include "ProxyMgr.h"
 //#include "MessageComm.h"
 //#include "PatchMap.h"
@@ -78,6 +80,7 @@ Node::Node(GroupInitMsg *msg)
   simParameters = NULL;
   configList = NULL;
   pdb = NULL;
+  state = NULL;
   Compute::setNode(this);
 
   if (_instance == 0) {
@@ -345,6 +348,14 @@ void Node::run(RunMsg *msg)
   HomePatchList *hpl = PatchMap::Object()->homePatchList();
   ResizeArrayIter<HomePatchElem> ai(*hpl);
 
+  if ( ! CMyPe() )
+  {
+    DebugM(4, "Node::run() - creating controller.\n");
+    Controller *controller = new Controller(state);
+    state->useController(controller);
+    state->runController();
+  }
+
   DebugM(4, "Node::run() - iterating over home patches!\n");
   for (ai=ai.begin(); ai != ai.end(); ai++) {
     HomePatch *p = (*ai).p;
@@ -373,13 +384,14 @@ void Node::saveMolDataPointers(Molecule *molecule,
 			       Parameters *parameters,
 			       SimParameters *simParameters,
 			       ConfigList *configList,
-			       PDB *pdb)
+			       PDB *pdb, NamdState *state)
 {
   this->molecule = molecule;
   this->parameters = parameters;
   this->simParameters = simParameters;
   this->configList = configList;
   this->pdb = pdb;
+  this->state = state;
 }
 
 //======================================================================
@@ -392,13 +404,16 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.32 $	$Date: 1996/12/30 20:37:38 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.33 $	$Date: 1997/01/09 20:48:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.33  1997/01/09 20:48:10  jim
+ * added Controller code
+ *
  * Revision 1.32  1996/12/30 20:37:38  nealk
  * Mode debug code.
  *

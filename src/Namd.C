@@ -6,7 +6,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.14 1996/12/26 22:26:29 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.15 1997/01/09 20:48:10 jim Exp $";
 
 #include "unistd.h"
 
@@ -92,7 +92,7 @@ void Namd::startup(char *confFile)
   // or send them on as messages elsewhere.
   Node::Object()->saveMolDataPointers(namdState.molecule,namdState.parameters,
 			    namdState.simParameters,namdState.configList,
-			    namdState.pdb);
+			    namdState.pdb,&namdState);
 
   Node::messageStartup();
 }
@@ -103,8 +103,8 @@ void Namd::startup(char *confFile)
  * RCS INFORMATION:
  *
  *	$RCSfile: Namd.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.14 $	$Date: 1996/12/26 22:26:29 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.15 $	$Date: 1997/01/09 20:48:10 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -113,6 +113,9 @@ void Namd::startup(char *confFile)
  * REVISION HISTORY:
  *
  * $Log: Namd.C,v $
+ * Revision 1.15  1997/01/09 20:48:10  jim
+ * added Controller code
+ *
  * Revision 1.14  1996/12/26 22:26:29  nealk
  * Added instantiation of reduction manager.
  *
