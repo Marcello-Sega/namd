@@ -33,7 +33,7 @@ doc:	$(DOCDIR)/ug.ps
 ### run latex2html
 html:	$(DOCDIR)/ug.ps
 	latex2html -local_icons -split 5 -toc_depth 4 -toc_stars \
-	-t "NAMD 2.2b3 User's Guide" -address "namd@ks.uiuc.edu" \
+	-t "NAMD 2.2 User's Guide" -address "namd@ks.uiuc.edu" \
 	-up_url "../../" -up_title "Main NAMD Page" ug
 
 ### run pdflatex
