@@ -236,12 +236,24 @@ SBGCCFLAGS = $(COPTI)$(SBSRCDIR) $(TCL) $(RELEASE)
 
 BINARIES = namd2 psfgen charmrun flipdcd flipbinpdb
 
+# This should be rebuilt at every compile, but not on Win32.
+BUILDINFO = $(DSTDIR)/buildinfo
+MAKEBUILDINFO = \
+	$(RM) $(BUILDINFO).C; \
+	echo 'const char *namd_build_date = ' \"`date`\"\; > $(BUILDINFO).C; \
+	echo 'const char *namd_build_user = ' \"$(USER)\"\; >> $(BUILDINFO).C; \
+	echo 'const char *namd_build_machine = ' \"`hostname`\"\; >> $(BUILDINFO).C; \
+	cat $(BUILDINFO).C; \
+	$(CXX) $(CXXFLAGS) $(COPTO)$(BUILDINFO).o $(COPTC) $(BUILDINFO).C
+
 all:	$(BINARIES)
 
 namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
+	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
 	-module NeighborLB -language charm++ \
+	$(BUILDINFO).o \
 	$(OBJS) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
@@ -301,9 +313,11 @@ loaddcd:	$(SRCDIR)/loaddcd.c
 	$(CC) -o loaddcd $(SRCDIR)/loaddcd.c
 
 projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
+	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
 	-module NeighborLB -language charm++ -tracemode all \
+	$(BUILDINFO).o \
 	$(OBJS) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
@@ -313,9 +327,11 @@ projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	-lm -o namd2
 
 summary:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
+	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
 	-module NeighborLB -language charm++ -tracemode summary \
+	$(BUILDINFO).o \
 	$(OBJS) \
 	$(DPMTALIB) \
 	$(DPMELIB) \

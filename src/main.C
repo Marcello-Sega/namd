@@ -94,6 +94,12 @@ int tbsoft_sendusage(const char *program,
 
 #endif
 
+#ifndef WIN32
+  extern const char *namd_build_date;
+  extern const char *namd_build_user;
+  extern const char *namd_build_machine;
+#endif
+
 class main : public Chare
 {
 public:
@@ -144,6 +150,9 @@ public:
          << endi;
 
 #ifndef WIN32
+    iout << iINFO << "Built " << namd_build_date << " by "
+         << namd_build_user << " on " << namd_build_machine << "\n"
+         << endi;
     char numcpus[512];
     sprintf(numcpus,"%d",CmiNumPes());
     tbsoft_sendusage("NAMD",NAMD_VERSION,NAMD_PLATFORM,numcpus,"");
