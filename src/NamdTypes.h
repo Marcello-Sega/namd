@@ -26,7 +26,7 @@ typedef double Coordinate;
 
 struct Transform
 {
-  char i,j,k;
+  signed char i,j,k;
   Transform(void) { i=0; j=0; k=0; }
 };
 
