@@ -412,6 +412,50 @@ int PatchMap::upstreamNeighbors(int pid, PatchID *neighbor_ids, int *transform_i
 }
 
 //----------------------------------------------------------------------
+int PatchMap::downstreamNeighbors(int pid, PatchID *neighbor_ids,
+				  int *transform_ids)
+{
+  int xi, yi, zi;
+  int xinc, yinc, zinc;
+  int n=0;
+
+  for(zinc=-1;zinc<=0;zinc++)
+  {
+    zi = patchData[pid].zi + zinc;
+    if ((zi < 0) || (zi >= zDim))
+      if ( ! zPeriodic ) continue;
+    for(yinc=-1;yinc<=0;yinc++)
+    {
+      yi = patchData[pid].yi + yinc;
+      if ((yi < 0) || (yi >= yDim))
+	if ( ! yPeriodic ) continue;
+      for(xinc=-1;xinc<=0;xinc++)
+      {
+	if ((xinc==0) && (yinc==0) && (zinc==0))
+	  continue;
+
+	xi = patchData[pid].xi + xinc;
+	if ((xi < 0) || (xi >= xDim))
+	  if ( ! xPeriodic ) continue;
+
+	if (neighbor_ids)
+	  neighbor_ids[n]=this->pid(xi,yi,zi);
+	if ( transform_ids )
+	{
+	  int xt = 0; if ( xi < 0 ) xt = -1; if ( xi >= xDim ) xt = 1;
+	  int yt = 0; if ( yi < 0 ) yt = -1; if ( yi >= yDim ) yt = 1;
+	  int zt = 0; if ( zi < 0 ) zt = -1; if ( zi >= zDim ) zt = 1;
+	  transform_ids[n] = Lattice::index(xt,yt,zt);
+	}
+	n++;
+      }
+    }
+  }
+  DebugM(3,"Patch " << pid << " has " << n << " upstream neighbors.\n");
+  return n;
+}
+
+//----------------------------------------------------------------------
 void PatchMap::printPatchMap(void)
 {
   CPrintf("---------------------------------------");
@@ -473,13 +517,17 @@ HomePatch *PatchMap::homePatch(PatchID pid)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1998/06/18 14:44:35 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1018 $	$Date: 1998/06/24 23:40:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.1018  1998/06/24 23:40:33  brunner
+ * Added downstreamNeighbors() and LdbCoordinator fixes.  I don't know
+ * why Patch.C is different.
+ *
  * Revision 1.1017  1998/06/18 14:44:35  jim
  * Eliminated warnings and errors from aCC.
  *

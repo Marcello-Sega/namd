@@ -165,9 +165,14 @@ public:
 
   int twoAwayNeighbors(int pid, PatchID *neighbor_ids, int *transform_ids = 0);
 
-  int oneOrTwoAwayNeighbors(int pid, PatchID *neighbor_ids, int *transform_ids = 0);
+  int oneOrTwoAwayNeighbors(int pid, PatchID *neighbor_ids,
+			    int *transform_ids = 0);
 
-  int upstreamNeighbors(int pid, PatchID *neighbor_ids, int *transform_ids = 0);
+  int upstreamNeighbors(int pid, PatchID *neighbor_ids, 
+			int *transform_ids = 0);
+
+  int downstreamNeighbors(int pid, PatchID *neighbor_ids, 
+			  int *transform_ids = 0);
 
   void printPatchMap(void);
 
@@ -221,13 +226,17 @@ inline Patch *PatchMap::patch(PatchID pid)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1998/06/18 14:44:36 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1010 $	$Date: 1998/06/24 23:40:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.h,v $
+ * Revision 1.1010  1998/06/24 23:40:33  brunner
+ * Added downstreamNeighbors() and LdbCoordinator fixes.  I don't know
+ * why Patch.C is different.
+ *
  * Revision 1.1009  1998/06/18 14:44:36  jim
  * Eliminated warnings and errors from aCC.
  *
