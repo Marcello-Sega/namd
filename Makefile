@@ -10,15 +10,14 @@ SRCDIR = src
 DSTDIR = obj
 INCDIR = inc
 DPMTADIR=dpmta-2.6
-PVMDIR=pvm3
 DPMEDIR=dpme2
 
 # comment/uncomment these lines for (D)PMTA routines
-DPMTAINCL=-I$(DPMTADIR)/mpole -I$(DPMTADIR)/src -I$(PVMDIR)
-DPMTALIB=-L$(DPMTADIR)/mpole -L$(DPMTADIR)/src -ldpmta2 -lmpole -L$(PVMDIR) -lpvmc
+DPMTAINCL=-I$(DPMTADIR)/mpole -I$(DPMTADIR)/src
+DPMTALIB=-L$(DPMTADIR)/mpole -L$(DPMTADIR)/src -ldpmta2 -lmpole -lpvmc
 DPMTAFLAGS=-DDPMTA
 DPMTA=$(DPMTAINCL) $(DPMTAFLAGS)
-DPMTALIBS=$(DPMTADIR)/mpole/libmpole.a $(DPMTADIR)/src/libdpmta2.a $(PVMDIR)/libpvmc.a
+DPMTALIBS=$(DPMTADIR)/mpole/libmpole.a $(DPMTADIR)/src/libdpmta2.a
 
 # comment/uncomment these lines for DPME routines
 DPMEINCL=-I$(DPMEDIR)
@@ -237,9 +236,6 @@ $(DPMTADIR)/src/libdpmta2.a:
 $(DPMEDIR)/libdpme.a:
 	cd $(DPMEDIR) ; $(MAKE) ; cd ..
 
-$(PVMDIR)/libpvmc.a:
-	cd $(PVMDIR) ; $(MAKE) ; cd ..
-
 # Unix commands
 
 ECHO = echo
@@ -365,7 +361,6 @@ $(INCDIR):
 clean:
 	rm -rf ptrepository Templates.DB SunWS_cache $(DSTDIR) $(INCDIR)
 	cd $(DPMTADIR) ; $(MAKE) clean ; cd ..
-	cd $(PVMDIR) ; $(MAKE) clean ; cd ..
 	cd $(DPMEDIR) ; $(MAKE) clean ; cd ..
 
 veryclean:	clean
