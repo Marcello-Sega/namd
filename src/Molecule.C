@@ -182,6 +182,8 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
   rigidBondLengths=NULL;
   consIndexes=NULL;
   consParams=NULL;
+  dragIndexes=NULL;
+  dragParams=NULL;
   consForceIndexes=NULL;
   consForce=NULL;
 //fepb
@@ -205,6 +207,7 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
   numAcceptors=0;
   numExclusions=0;
   numConstraints=0;
+  numDrag=0;
   numConsForce=0;
   numFixedAtoms=0;
   numExPressureAtoms=0;
@@ -1672,6 +1675,16 @@ void Molecule::send_Molecule(Communicate *com_obj)
          }
       }
       
+      //  Send the drag information, if used
+      if (simParams->dragOn) {
+         msg->put(numDrag);
+         msg->put(numAtoms, dragIndexes);
+         if (numDrag)
+         {
+           msg->put(numDrag*sizeof(DragParams), (char*)dragParams);
+         }
+      }
+      
       // Send the constant force information, if used
       if (simParams->consForceOn)
       { msg->put(numConsForce);
@@ -1831,6 +1844,20 @@ void Molecule::receive_Molecule(MIStream *msg)
            consParams = new ConstraintParams[numConstraints];
       
            msg->get(numConstraints*sizeof(ConstraintParams), (char*)consParams);
+         }
+      }
+      
+      //  Get the drag information, if it is active
+      if (simParams->dragOn) {
+         msg->get(numDrag);
+         delete [] dragIndexes;
+         dragIndexes = new int32[numAtoms];
+         msg->get(numAtoms, dragIndexes);
+         if (numDrag)
+         {
+           delete [] dragParams;
+           dragParams = new DragParams[numDrag];
+           msg->get(numDrag*sizeof(DragParams), (char*)dragParams);
          }
       }
       
@@ -2760,6 +2787,218 @@ void Molecule::receive_Molecule(MIStream *msg)
 
     }
     /*      END OF FUNCTION build_constraint_params    */
+
+
+    /************************************************************************/
+    /*                  */
+    /*      FUNCTION build_drag_params (modified build_constraint_params)   */
+    /*                  */
+    /*   INPUTS:
+    /*  dragFile - value of dragFile from the config file */
+    /*  dragCol - value of dragCol from the config file */
+    /*  initial_pdb - PDB object that contains initial positions  */
+    /*  cwd - Current working directory          */
+    /*                  */
+    /*  This function builds all the parameters that are necessary  */
+    /*  to do moving or rotating drag. This involves looking through    */
+    /*  one or more PDB objects to determine which atoms are dragged, */
+    /*  and what the drag factor for each atom is. This information */
+    /*  is then stored in the arrays dragIndexes and dragParams. */
+    /*                  */
+    /************************************************************************/
+
+    void Molecule::build_drag_params(StringList *dragFile, 
+             StringList *dragCol, 
+             PDB *initial_pdb,
+             char *cwd)
+       
+    {
+       PDB *dPDB;               //  Pointer to other PDB's if used
+       register int i;          //  Loop counter
+       int current_index=0;     //  Index into values used
+       int dccol = 4;            //  Column to look for drag constant in
+       Real dcval = 0;           //  Drag constant value retreived
+       char filename[129];      //  PDB filename
+       
+       //  Get the PDB to read the drag constants from.  Again, if the user
+       //  gave us another file name, open that one.  Otherwise, just use
+       //  the PDB with the initial coordinates
+       if (dragFile == NULL)
+       {
+	 dPDB = initial_pdb;
+       }
+       else
+	 {
+	   if (dragFile->next != NULL)
+	     {
+	       NAMD_die("Multiple definitions of drag constant file in configuration file");
+	     }
+
+	   if ( (cwd == NULL) || (dragFile->data[0] == '/') )
+	     {
+	       strcpy(filename, dragFile->data);
+	     }
+	   else
+	     {
+	       strcpy(filename, cwd);
+	       strcat(filename, dragFile->data);
+	     }
+    
+	   dPDB = new PDB(filename);
+	   if ( dPDB == NULL )
+	     {
+	       NAMD_die("Memory allocation failed in Molecule::build_drag_params");
+	     }
+	   
+	   if (dPDB->num_atoms() != numAtoms)
+	     {
+	       NAMD_die("Number of atoms in drag constant PDB doesn't match coordinate PDB");
+	     }
+	 }
+       
+       //  Get the column that the force constant is going to be in.  It
+       //  can be in any of the 5 floating point fields in the PDB, according
+       //  to what the user wants.  The allowable fields are X, Y, Z, O, or
+       //  B which correspond to the 1st, 2nd, ... 5th floating point fields.
+       //  The default is the 4th field, which is the occupancy
+       if (dragCol == NULL)
+       {
+    dccol = 4;
+       }
+       else
+       {
+    if (dragCol->next != NULL)
+    {
+       NAMD_die("Multiple definitions of drag column in config file");
+    }
+    
+    if (strcasecmp(dragCol->data, "X") == 0)
+    {
+       dccol=1;
+    }
+    else if (strcasecmp(dragCol->data, "Y") == 0)
+    {
+       dccol=2;
+    }
+    else if (strcasecmp(dragCol->data, "Z") == 0)
+    {
+       dccol=3;
+    }
+    else if (strcasecmp(dragCol->data, "O") == 0)
+    {
+       dccol=4;
+    }
+    else if (strcasecmp(dragCol->data, "B") == 0)
+    {
+       dccol=5;
+    }
+    else
+    {
+       NAMD_die("dragCol must have value of X, Y, Z, O, or B");
+    }
+       }
+       
+       //  Allocate an array that will store an index into the drag
+       //  parameters for each atom.  If the atom is not dragged, its
+       //  value will be set to -1 in this array.
+       dragIndexes = new int32[numAtoms];
+       
+       if (dragIndexes == NULL)
+       {
+    NAMD_die("memory allocation failed in Molecule::build_drag_params()");
+       }
+       
+       //  Loop through all the atoms and find out which ones are dragged
+       for (i=0; i<numAtoms; i++)
+       {
+    //  Get the k value based on where we were told to find it
+    switch (dccol)
+    {
+       case 1:
+    dcval = (dPDB->atom(i))->xcoor();
+    break;
+       case 2:
+    dcval = (dPDB->atom(i))->ycoor();
+    break;
+       case 3:
+    dcval = (dPDB->atom(i))->zcoor();
+    break;
+       case 4:
+    dcval = (dPDB->atom(i))->occupancy();
+    break;
+       case 5:
+    dcval = (dPDB->atom(i))->temperaturefactor();
+    break;
+    }
+    
+    if (dcval != 0.0)
+    {
+       //  This atom is dragged
+       dragIndexes[i] = current_index;
+       current_index++;
+    }
+    else
+    {
+       //  This atom is not dragged
+       dragIndexes[i] = -1;
+    }
+       }
+       
+       if (current_index == 0)
+       {
+    //  Drag was turned on, but there weren't really any dragged
+    iout << iWARN << "NO DRAGGED ATOMS WERE FOUND, BUT DRAG IS ON . . . " << endi;
+       }
+       else
+       {
+    //  Allocate an array to hold the drag parameters
+    dragParams = new DragParams[current_index];
+    
+    if (dragParams == NULL)
+    {
+       NAMD_die("memory allocation failed in Molecule::build_drag_params");
+    }
+       }
+       
+       numDrag = current_index;
+       
+       //  Loop through all the atoms and assign the parameters for those
+       //  that are dragged
+       for (i=0; i<numAtoms; i++)
+       {
+    if (dragIndexes[i] != -1)
+    {
+       //  This atom is dragged, so get the drag value again
+       switch (dccol)
+       {
+          case 1:
+       dragParams[dragIndexes[i]].c = (dPDB->atom(i))->xcoor();
+       break;
+          case 2:
+       dragParams[dragIndexes[i]].c = (dPDB->atom(i))->ycoor();
+       break;
+          case 3:
+       dragParams[dragIndexes[i]].c = (dPDB->atom(i))->zcoor();
+       break;
+          case 4:
+       dragParams[dragIndexes[i]].c = (dPDB->atom(i))->occupancy();
+       break;
+          case 5:
+       dragParams[dragIndexes[i]].c = (dPDB->atom(i))->temperaturefactor();
+       break;
+       }
+       
+    }
+       }
+       
+       //  If we had to create new PDB objects, delete them now
+       if (dragFile != NULL)
+       {
+    delete dPDB;
+       }
+       
+    }
+    /*      END OF FUNCTION build_drag_params    */
 
 
 /************************************************************************/
@@ -3745,6 +3984,8 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, Ambertoppar *amb
   rigidBondLengths=NULL;
   consIndexes=NULL;
   consParams=NULL;
+  dragIndexes=NULL;
+  dragParams=NULL;
   consForceIndexes=NULL;
   consForce=NULL;
  //fepb
@@ -3768,6 +4009,7 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, Ambertoppar *amb
   numAcceptors=0;
   numExclusions=0;
   numConstraints=0;
+  numDrag=0;
   numConsForce=0;
   numFixedAtoms=0;
   numRigidBonds=0;
@@ -4119,6 +4361,8 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param,
   rigidBondLengths=NULL;
   consIndexes=NULL;
   consParams=NULL;
+  dragIndexes=NULL;
+  dragParams=NULL;
   consForceIndexes=NULL;
   consForce=NULL;
   nameArena = new ObjectArena<char>;
@@ -4138,6 +4382,7 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param,
   numAcceptors=0;
   numExclusions=0;
   numConstraints=0;
+  numDrag=0;
   numConsForce=0;
   numFixedAtoms=0;
   numRigidBonds=0;

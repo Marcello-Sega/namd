@@ -182,6 +182,18 @@ public:
         zVector rotConsPivot;            //  Pivot point of rotation
         BigReal rotConsVel;             //  Velocity of rotation, Deg/timestep
         //****** END rotating constraints changes 
+
+        //****** BEGIN drag changes (can NOT do moving and rotating together)
+        Bool dragOn;                    //  Flag TRUE-> ANY drag active
+        char dragFile[129];             //  PDB file for rotation drag
+        Bool movDragOn;                 //  Flag TRUE-> moving drag active
+        Vector movDragVel;              //  Linear velocity, A/timestep
+        Bool rotDragOn;                 //  Flag TRUE-> rotating drag active
+        Vector rotDragAxis;             //  Axis of rotation
+        Vector rotDragPivot;            //  Pivot point of rotation
+        BigReal rotDragVel;             //  Angular velocity, Deg/timestep
+        //****** END drag changes
+
         //****** BEGIN SMD constraints changes   
         Bool SMDOn;                     //  Flag TRUE-> SMD constraints active
         BigReal SMDVel;                 //  Velocity of the movement, A/timestep
@@ -450,6 +462,7 @@ private:
 	void config_parser_fullelect(ParseOptions &opts);
 	void config_parser_methods(ParseOptions &opts);
 	void config_parser_constraints(ParseOptions &opts);
+	void config_parser_drag(ParseOptions &opts);
 	void config_parser_boundary(ParseOptions &opts);
 	void config_parser_misc(ParseOptions &opts);
 

@@ -183,6 +183,7 @@ void SimParameters::config_parser(ParseOptions &opts) {
    config_parser_fullelect(opts);
    config_parser_methods(opts);
    config_parser_constraints(opts);
+   config_parser_drag(opts);
    config_parser_boundary(opts);
    config_parser_misc(opts);
 
@@ -861,6 +862,30 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
      &consForceOn, FALSE);
    opts.require("constantforce", "consforcefile",
      "PDB file containing constant forces", PARSE_STRING);
+}
+
+void SimParameters::config_parser_drag(ParseOptions &opts) {
+   //// ANY drag
+   opts.optionalB("main", "dragOn", "Do we apply ANY drag?",
+      &dragOn, FALSE);
+   opts.require("dragOn", "dragFile",
+      "Moving drag PDB file", dragFile);
+   opts.require("dragOn", "dragCol",
+      "Moving drag PDB column", PARSE_STRING);
+   //// moving drag
+   opts.optionalB("dragOn", "movDragOn", "Do we apply moving drag?",
+      &movDragOn, FALSE);
+   opts.require("movDragOn", "movDragVel",
+      "Moving drag linear velocity", &movDragVel);
+   //// rotating drag
+   opts.optionalB("dragOn", "rotDragOn", "Do we apply rotating drag?",
+      &rotDragOn, FALSE);
+   opts.require("rotDragOn", "rotDragAxis",
+      "Rotating drag axis", &rotDragAxis);
+   opts.require("rotDragOn", "rotDragPivot",
+      "Rotating drag pivot point", &rotDragPivot);
+   opts.require("rotDragOn", "rotDragVel",
+      "Rotating drag angular velocity", &rotDragVel);
 }
 
 void SimParameters::config_parser_boundary(ParseOptions &opts) {
@@ -2350,6 +2375,52 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
       iout << endi;
       //****** END rotating constraints changes 
    }
+
+   // some drag (moving OR rotating)
+   if ( dragOn ) {
+     iout << iINFO << "SOME DRAG DETECTED:\n";
+     
+     iout << iINFO << "DRAG FACTOR FILE    " << dragFile << "\n";
+     
+     iout << endi;
+
+     // need either moving or rotating drag!
+     if ( ! movDragOn && ! rotDragOn ) {
+       NAMD_die("Drag detected, but neither motion, nor rotation active!\n");
+     }
+     
+     // can not combine moving and rotating drag!
+     if ( movDragOn && rotDragOn ) {
+       NAMD_die("Can not combine moving drag and rotating drag!\n");
+     }
+
+     // moving drag
+     if (movDragOn) {
+       iout << iINFO << "MOVING DRAG ACTIVE.\n";
+       
+       iout << iINFO << "MOVING DRAG VELOCITY    " 
+	    << movDragVel << "\n";
+       
+       iout << endi;
+     }
+
+     // rotating drag
+     if (rotDragOn) {
+       iout << iINFO << "ROTATING DRAG ACTIVE.\n";
+       
+       iout << iINFO << "ROTATING DRAG AXIS    " 
+	    << rotDragAxis << "\n";
+       
+       iout << iINFO << "ROTATING DRAG PIVOT POINT    " 
+	    << rotDragPivot << "\n";
+       
+       iout << iINFO << "ROTATING DRAG VELOCITY    " 
+	    << rotDragVel << "\n";
+       
+       iout << endi;
+     }
+   }
+   
 
    //****** BEGIN SMD constraints changes 
    

@@ -58,6 +58,11 @@ typedef struct constraint_params
    Vector refPos;	//  Reference position for restraint
 } ConstraintParams;
 
+typedef struct drag_params
+{
+   Real c;		//  Drag constant
+} DragParams;
+
 friend class BondElem;
 friend class AngleElem;
 friend class DihedralElem;
@@ -80,6 +85,9 @@ private:
 	int32 *consIndexes;	//  Constraint indexes for each atom
 	ConstraintParams *consParams;
 				//  Parameters for each atom constrained
+	int32 *dragIndexes;	//  Drag indexes for each atom
+	DragParams *dragParams;	//  Parameters for each atom dragged
+				// (not all are used)
 	Real *langevinParams;   //  b values for langevin dynamics
 	Real *langForceVals;    //  Calculated values for langvin random forces
 	int32 *fixedAtomFlags;	//  1 for fixed, -1 for fixed group, else 0
@@ -155,6 +163,7 @@ public:
 	int numExclusions;	//  Number of exclusions
 	int numTotalExclusions; //  Real Total Number of Exclusions // hack
 	int numConstraints;	//  Number of atoms constrained
+	int numDrag;	        //  Number of atoms dragged
 	int numFixedAtoms;	//  Number of fixed atoms
 	int numExPressureAtoms; //  Number of atoms excluded from pressure
 	int numHydrogenGroups;	//  Number of hydrogen groups
@@ -209,6 +218,10 @@ public:
 				     PDB *, char *);
 				//  Build the set of harmonic constraint 
 				// parameters
+
+	void build_drag_params(StringList *, StringList *, PDB *, char *);
+				//  Build the set of rotating drag
+				// parameters (mod. build_constraint_params)
 
 	void build_constant_forces(char *);
 				//  Build the set of constant forces
@@ -331,11 +344,33 @@ public:
 		}
 	}
 
+	//  Return true or false based on whether the specified atom
+	//  is dragged or not.
+	Bool is_atom_dragged(int atomnum) const
+	{
+		if (numDrag)
+		{
+			//  Check the index to see if it is constrained
+			return(dragIndexes[atomnum] != -1);
+		}
+		else
+		{
+			//  No constraints at all, so just return FALSE
+			return(FALSE);
+		}
+	}
+
 	//  Get the harmonic constraints for a specific atom
 	void get_cons_params(Real &k, Vector &refPos, int atomnum) const
 	{
 		k = consParams[consIndexes[atomnum]].k;
 		refPos = consParams[consIndexes[atomnum]].refPos;
+	}
+
+	//  Get the drag factor for a specific atom
+	Real get_drag_params(int atomnum) const
+	{
+		return dragParams[dragIndexes[atomnum]].c;
 	}
 
 	Real langevin_param(int atomnum) const

@@ -193,6 +193,15 @@ int NamdState::configListInit(ConfigList *cfgList) {
              configList->find("excludeFromPressureCol"),
 	     pdb, NULL);
         }
+
+	// If any drag is active, build the parameters necessary
+	if (simParameters->dragOn) {
+	  molecule->build_drag_params(configList->find("dragFile"),
+				      configList->find("dragCol"),
+				      pdb,
+				      NULL);
+	}
+
 	//  If langevin dynamics or temperature coupling are active, build 
 	//  the parameters necessary
 	if (simParameters->langevinOn)
