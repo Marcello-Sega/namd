@@ -201,7 +201,7 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 win32binaries: namd2.exe daemon.exe conv-host.exe
 
 namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
-	$(LINK) /out:namd2.exe \
+	$(LINK) $(LINKOPTS) /out:namd2.exe \
 	$(CHARMLIB)/libldb-rand.obj \
 	$(CHARMLIB)/libtrace-none.lib \
 	$(CHARMLIB)/libconv-core.lib \
