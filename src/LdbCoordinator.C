@@ -344,10 +344,12 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
   {
   static int specialTracing = 0;
   if (ldbCycleNum == 1 && traceIsOn() == 0)  specialTracing = 1;
+#ifndef CMK_OPTIMIZE
   if (specialTracing) {
     if (ldbCycleNum == 2) traceBegin();
     if (ldbCycleNum == 4) traceEnd();
   }
+#endif
   }
 #endif
 
