@@ -147,8 +147,8 @@ void ComputeNonbondedUtil :: NAME
   SELF( int j_hgroup = 0; )
   int pairlistindex=0;
   int pairlistoffset=0;
-  int pairlist_std[1001];
-  int *const pairlist = (j_upper < 1000 ? pairlist_std : new int[j_upper+1]);
+  int pairlist_std[1005];  // pad 1 + 4 for nonbonded group runover
+  int *const pairlist = (j_upper < 1000 ? pairlist_std : new int[j_upper+5]);
 
   FAST
   (
@@ -239,16 +239,13 @@ void ComputeNonbondedUtil :: NAME
 	if ( ! (p_j->groupFixed) )
 	{
 	  // use a slightly large cutoff to include hydrogens
-	  if ( square(p_j->position.x-p_i_x,p_j->position.y-p_i_y,p_j->position.z-p_i_z) <= groupcutoff2 )
-		{
-		register int l = j;
-		register int lm = j + hgs;
-		for( ; l<lm; ++l)
-		  {
-		  *pli = l;
-		  ++pli;
-		  }
-		}
+	  if ( square(p_j->position.x-p_i_x,p_j->position.y-p_i_y,p_j->position.z-p_i_z) <= groupcutoff2 ) {
+	    pli[0] = j;   // copy over the next four in any case
+	    pli[1] = j+1;
+	    pli[2] = j+2;
+	    pli[3] = j+3; // assume hgs <= 4
+	    pli += hgs;
+	  }
 	}
 	j += hgs;
 	p_j += hgs;
@@ -257,32 +254,28 @@ void ComputeNonbondedUtil :: NAME
       register BigReal p_j_x = p_j->position.x;
       register BigReal p_j_y = p_j->position.y;
       register BigReal p_j_z = p_j->position.z;
-      while ( j < j_upper )
-	{
+      while ( j < j_upper ) {
 	register int hgs = p_j->nonbondedGroupSize;
 	p_j += ( ( j + hgs < j_upper ) ? hgs : 0 );
 	register BigReal r2 = p_i_x - p_j_x;
 	r2 *= r2;
-	p_j_x = p_j->position.x;					// preload
+	p_j_x = p_j->position.x;	// preload
 	register BigReal t2 = p_i_y - p_j_y;
 	r2 += t2 * t2;
-	p_j_y = p_j->position.y;					// preload
+	p_j_y = p_j->position.y;	// preload
 	t2 = p_i_z - p_j_z;
 	r2 += t2 * t2;
-	p_j_z = p_j->position.z;					// preload
+	p_j_z = p_j->position.z;	// preload
 	// use a slightly large cutoff to include hydrogens
-	if ( r2 <= groupcutoff2 )
-		{
-		register int l = j;
-		j += hgs;
-		for( ; l<j; ++l)
-		  {
-		  *pli = l;
-		  ++pli;
-		  }
-		}
-	else j += hgs;
-	} // for j
+	if ( r2 <= groupcutoff2 ) {
+	  pli[0] = j;   // copy over the next four in any case
+	  pli[1] = j+1;
+	  pli[2] = j+2;
+	  pli[3] = j+3; // assume hgs <= 4
+	  pli += hgs;
+	}
+	j += hgs;
+      } // for j
     }
 
     pairlistindex = pli - pairlist;
