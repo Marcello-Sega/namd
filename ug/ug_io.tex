@@ -208,6 +208,19 @@ then the two files
 would be {\tt /tmp/output.coor} and {\tt /tmp/output.vel}.}
 
 \item
+\NAMDCONFWDEF{binaryoutput}{use binary output files?}
+{{\tt yes} or {\tt no}}{{\tt yes}}
+{
+Activates the use of binary output files.  
+If this option is set to {\tt yes}, then the final output files 
+will be written in binary rather than PDB format.  
+Binary files preserve more accuracy between \NAMD\ restarts 
+than ASCII PDB files, 
+but the binary files are not guaranteed to be transportable 
+between computer architectures.  
+}
+
+\item
 \NAMDCONF{restartname}{restart files}{UNIX filename prefix}
 {
 The prefix to use for restart filenames.  
@@ -229,14 +242,11 @@ If {\tt restartfreq} is defined, then {\tt restartname}
 must also be defined.}
 
 \item
-\NAMDCONFWDEF{binaryrestart}{use binary restart files?}%
-{{\tt yes} or {\tt no}}{{\tt yes}}%
-{%
+\NAMDCONFWDEF{binaryrestart}{use binary restart files?}
+{{\tt yes} or {\tt no}}{{\tt yes}}
+{
 Activates the use of binary restart files.  
-%%  Should binary files be used rather than PDB files for 
-%%  restart coordinate and velocity files?  
-If this option is set to {\tt yes}, then the restart 
-files and final output files 
+If this option is set to {\tt yes}, then the restart files
 will be written in binary rather than PDB format.  
 Binary files preserve more accuracy between \NAMD\ restarts 
 than ASCII PDB files, 
@@ -254,10 +264,10 @@ If {\tt DCDfile} is defined, then {\tt DCDfreq} must also be defined.
 }
 
 \item
-\NAMDCONF{DCDfreq}%
-{timesteps between writing coordinates to trajectory file}%
-{positive integer}%
-{%
+\NAMDCONF{DCDfreq}
+{timesteps between writing coordinates to trajectory file}
+{positive integer}
+{
 The number of timesteps between the writing of position coordinates 
 to the trajectory file.  
 }
@@ -273,19 +283,19 @@ be defined.
 }
 
 \item
-\NAMDCONF{velDCDfreq}%
-{timesteps between writing velocities to trajectory file}%
-{positive integer}%
-{%
+\NAMDCONF{velDCDfreq}
+{timesteps between writing velocities to trajectory file}
+{positive integer}
+{
 The number of timesteps between the writing of 
 velocities to the trajectory file.  
 }
 
 %\item
-%\NAMDCONF{electForceDCDfile}%
-%{electrostatic force trajectory file}%
-%{UNIX filename prefix}%
-%{%
+%\NAMDCONF{electForceDCDfile}
+%{electrostatic force trajectory file}
+%{UNIX filename prefix}
+%{
 %The binary DCD short and long range electrostatic force 
 %trajectory filename prefix.  
 %The short and long range electrostatic force trajectories 
@@ -296,17 +306,17 @@ velocities to the trajectory file.
 %}
 %
 %\item
-%\NAMDCONF{electForceDCDfreq}%
-%{timesteps between writing electrostatic forces to trajectory file}%
-%{positive integer}%
-%{%
+%\NAMDCONF{electForceDCDfreq}
+%{timesteps between writing electrostatic forces to trajectory file}
+%{positive integer}
+%{
 %The number of timesteps between writing 
 %to the long and short range electrostatic force trajectory files.  
 %}
 %
 %\item
 %\NAMDCONF{allForceDCDfile}{total force trajectory file}{UNIX filename}
-%{%
+%{
 %The binary DCD total force trajectory filename.  
 %This file stores the trajectory of the total forces 
 %on each atom.  
@@ -315,18 +325,18 @@ velocities to the trajectory file.
 %}
 %
 %\item
-%\NAMDCONF{allForceDCDfreq}%
-%{timesteps between writing total forces to trajectory file}%
-%{positive integer}%
-%{%
+%\NAMDCONF{allForceDCDfreq}
+%{timesteps between writing total forces to trajectory file}
+%{positive integer}
+%{
 %The number of timesteps between the writing of total forces 
 %to the trajectory file.  
 %}
 
 \item
-\NAMDCONFWDEF{outputEnergies}%
-{timesteps between energy output}{positive integer}{1}%
-{%
+\NAMDCONFWDEF{outputEnergies}
+{timesteps between energy output}{positive integer}{1}
+{
 The number of timesteps between each energy output of \NAMD.  
 This value
 specifies how often \NAMD\ should output the current energy 
@@ -338,18 +348,18 @@ by outputting the energies only occasionally.
 }
 
 \item
-\NAMDCONFWDEF{outputMomenta}%
-{timesteps between momentum output}{nonnegative integer}{0}%
-{%
+\NAMDCONFWDEF{outputMomenta}
+{timesteps between momentum output}{nonnegative integer}{0}
+{
 The number of timesteps between each momentum output of \NAMD.
 If specified and nonzero, linear and angular momenta will be
 output to {\bf stdout}.
 }
 
 \item
-\NAMDCONFWDEF{outputTiming}%
-{timesteps between timing output}{nonnegative integer}{0}%
-{%
+\NAMDCONFWDEF{outputTiming}
+{timesteps between timing output}{nonnegative integer}{0}
+{
 The number of timesteps between each timing output of \NAMD.
 If specified and nonzero, CPU and wallclock times will be
 output to {\bf stdout}.
