@@ -7,13 +7,6 @@
  ***************************************************************************/
 
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: TclCommands.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1999/06/28 19:49:57 $
- *
- ***************************************************************************
  * DESCRIPTION:
  *   Tcl <--> VMD interface commands used for the analysis and 
  * manipulation of structures
