@@ -1,6 +1,6 @@
 ##########################################
 ##########################################
-# Makefile architecture template
+# Makefile for Origin 2000
 ##########################################
 ##########################################
 
@@ -22,9 +22,6 @@ COPTS = -D_SGI_MP_SOURCE -O3 -mips4 -r10000 -INLINE:all
 #NOWARN=-w
 # uncomment for purify during compile
 # PURIFY=-purify
-
-#DFLAGS= -g -D_SGI_MP_SOURCE
-#DFLAGS= -D_SGI_MP_SOURCE -O3 -r10000 -INLINE:all
 
 #####
 # definitions for Charm routines

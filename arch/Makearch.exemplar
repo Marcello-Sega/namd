@@ -1,6 +1,6 @@
 ##########################################
 ##########################################
-# Makefile architecture template
+# Makefile for Exemplar
 ##########################################
 ##########################################
 
@@ -19,10 +19,7 @@ COPTS = +O2
 # uncomment for no warnings during compile
 #NOWARN=-w
 # uncomment for purify during compile
-# PURIFY=-purify
-
-#DFLAGS= +O2 -Wp,-H20000
-PVM_ARCH=EXEMPLAR
+#PURIFY=-purify
 
 #####
 # definitions for Charm routines

@@ -21,9 +21,6 @@ CXXTHREADOPTS = $(CXXOPTS)
 # uncomment for purify during compile
 # PURIFY=-purify
 
-DFLAGS = -Ae -Wp,-H500000
-PVM_ARCH = HPPA
-
 #####
 # definitions for Charm routines
 #####

@@ -20,10 +20,6 @@ CXXTHREADOPTS = $(CXXOPTS)
 #NOWARN=-w
 # uncomment for purify during compile
 # PURIFY=-purify
-PURIFY=-c++ KCC -ld++ KCC
-
-#DFLAGS = -O -DGCC
-PVM_ARCH=linux
 
 #####
 # definitions for Charm routines

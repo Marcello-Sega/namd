@@ -21,9 +21,6 @@ CXXTHREADOPTS = $(CXXOPTS)
 # uncomment for purify during compile
 # PURIFY=-purify
 
-#DFLAGS = -O -DGCC
-PVM_ARCH=linux
-
 #####
 # definitions for Charm routines
 #####
