@@ -1,6 +1,6 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                      NAMD 2.3b1 Release Notes                      |
+|                      NAMD 2.3b2 Release Notes                      |
 |                                                                    |
 +--------------------------------------------------------------------+
 
@@ -37,6 +37,12 @@ system, which provides a single system image for PC clusters.
 A new tool, "psfgen", has been added, which uses CHARMM topology
 files and PDB coordinate files to generate PSF structure files
 suitable for use with NAMD.
+
+--- AMBER Input File Compatibility ---
+
+NAMD can read AMBER parm (combined structure and parameter) and
+coordinate files as input.  Output file formats are still limited
+to PDB and CHARMM DCD trajectory files.
 
 ----------------------------------------------------------------------
 
@@ -299,8 +305,8 @@ and FFTW from http://www.fftw.org/ (use --disable-type-prefix) if
 not already available on your machine.  Both are free.
 
 Unpack source code and enter directory:
-  tar xzf NAMD_2.3b1_Source.tar.gz
-  cd NAMD_2.3b1_Source
+  tar xzf NAMD_2.3b2_Source.tar.gz
+  cd NAMD_2.3b2_Source
 
 Download and build Charm++/Converse library:
   setenv CVSROOT ":pserver:checkout@thrift.cs.uiuc.edu:/expand6/cvsroot"
