@@ -11,7 +11,6 @@
    information is then stored in arrays for use.
 */
 
-#include "UniqueSortedArray.h"
 #include "Molecule.h"
 #include <stdio.h>
 #include <string.h>

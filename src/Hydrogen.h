@@ -8,7 +8,7 @@
 #define HYDROGEN_H
 
 #include "NamdTypes.h"
-#include "UniqueSortedArray.h"
+#include "SortableResizeArray.h"
 
 // List maintaining the global atom indicies sorted by helix groups.
 class HydrogenGroupID {
