@@ -564,12 +564,10 @@ point), given by
 \subsubsection{Moving Constraints}
 
 Moving constraints feature works in conjunction with the Harmonic
-Constraints (see an appropriate section of the User's guide).  In
-addition to the usual parameters used for harmonic constraints, one
-should specify the number (0-based indexing) of the constrained atom
-({\tt movingConsAtom}), the reference position of which (specified in
-the usual manner) will move according to Eq.~\ref{eq:smdrefpos}. Also
-a velocity vector $\vec v$ ({\tt movingConsVel}) needs to be specified.
+Constraints (see an appropriate section of the User's guide).
+The reference positions of all constraints
+will move according to Eq.~\ref{eq:smdrefpos}.
+A velocity vector $\vec v$ ({\tt movingConsVel}) needs to be specified.
 
 The way the moving constraints work is that the moving reference
 position is calculated every integration time step using
@@ -589,31 +587,137 @@ was removed in SMD feature.
 
 The following parameters describe the parameters for the
 moving harmonic constraint feature of \NAMD.
-This feature allows a harmonic restraining force to be applied
-to any ONE atom in the simulation and the restraining reference
-position to be moved.
+This feature allows the restraint reference positions
+for {\em all restrained atoms} to be moved.
+Moving the restraint reference positions for a single atom
+is provided by the SMD feature.
 
 \begin{itemize}
 
 \item
 \NAMDCONFWDEF{movingConstraints}{Are moving constraints active}
-{\verb!on! or \verb!off!}{\verb!off!}                                           {Should moving restraints be applied to the system. If set
-to \verb!on!, then  \verb!movingConsVel! and \verb!movingConsAtom!              must be defined.}
+{\verb!on! or \verb!off!}{\verb!off!}
+{Should moving restraints be applied to the system. If set
+to \verb!on!, then  \verb!movingConsVel! must be defined.
+May not be used with \verb!rotConstraints!.}
 
 \item
 \NAMDCONF{movingConsVel}{Velocity of the reference position movement}
 {vector in \AA/timestep}
 {The velocity of the reference position movement. Gives both absolute
 value and direction}
-                                                                                \item
-\NAMDCONF{movingConsAtom}{Index (0-based) of the atom constrained to
-the moving reference position}
-{non-negative integer}
-{The index of the atom constrained to the moving reference position.
-If the atom is numbered $N$ in the PDB file, $N-1$ must be specified.
-\NAMD\ will crash if the atom is not constrained in the
-\verb!conskfile!.
-}
+
+\end{itemize}
+
+\subsubsection{Rotating Constraints}
+
+The constraints parameters are specified in the same manner as for
+usual (static) harmonic constraints. The reference positions of all
+constrained atoms are then rotated with a given angular velocity
+about a given axis. If the force constant of the constraints is
+sufficiently
+large, the constrained atoms will follow their reference positions.
+
+A rotation matrix $M$ about the axis unit vector $v$ is calculated every
+timestep
+for the angle of rotation corresponding to the current timestep.
+    angle = $\Omega t$,
+where $\Omega$ is the angular velocty of rotation.
+
+From now on, all quantities are 3D vectors, except the matrix $M$ and the
+force constant $K$.
+
+The current reference position $R$ is calculated from the initial
+reference
+position $R_0$ (at $t=0$),
+    $R = M (R_0 - P) + P$,
+where $P$ is the pivot point.
+
+%geometry of rotation:
+%
+%
+%
+%                        * R
+%                      / |
+%                    /   |
+%                  /     | normal to axis
+%                /       |
+%            P /         |
+%        ----*--->-------*---------------------> axis
+%                v       N
+
+Coordinates of point N can be found as
+   $N = P + ( (R - P) \cdot v ) v$.
+Normal from the atom pos to the axis is, similarly,
+   normal $= ( P + ( (X - P) \cdot v ) v ) - X$
+The force is, as usual,
+   $F = K (R - X)$;
+This is the force applied to the atom in NAMD (see below).
+NAMD does not know anything about the torque
+applied. However, the torque applied to the atom can be calculated
+as a vector product
+   torque $= F \times normal$
+Finally, the torque applied to the atom with respect to the axis
+is the projection of the torque on the axis, i.e.,
+   $torque_{proj} = torque \cdot v$
+
+If there are atoms that have to be constrained, but not moved,
+this implementation is not suitable, because it will move {\em all}
+reference positions.
+
+Only one of the moving and rotating constraints can be used at a
+time.
+
+Using very soft springs for rotating constraints leads to the system
+   lagging behind the reference positions, and then the force is applied
+   along a direction different from the "ideal" direction along the
+   circular path.
+
+Pulling on N atoms at the same time with a spring of stiffness K
+   amounts to pulling on the whole system by a spring of stiffness NK,
+   so the overall behavior of the system is as if you are pulling with a
+   very stiff spring if N is large.
+
+In both moving and rotating constraints the force constant that you
+   specify in the constraints pdb file is multiplied by 2 for the force
+   calculation, i.e., if you specified $K = 0.5 \; {\rm kcal}/{\rm mol}/{\rm \AA}^2$ in the pdb
+file,
+   the force actually calculated is $F = 2 K (R-X) = 1 \; {\rm kcal}/{\rm mol}/{\rm \AA}^2 \; (R-X)$.
+   SMD feature of namd2 does the calculation without multiplication of
+the
+   force constant specified in the config file by 2.
+
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{rotConstraints}{Are rotating constraints active}
+{\verb!on! or \verb!off!}{\verb!off!}
+{Should rotating restraints be applied to the system. If set
+to \verb!on!, then \verb!rotConsAxis!, \verb!rotConsPivot! and
+\verb!rotConsVel! must be defined.
+May not be used with \verb!movingConstraints!.}
+
+\item
+\NAMDCONF{rotConsAxis}{Axis of rotation}
+{vector (may be unnormalized)}
+{Axis of rotation. Can be any vector. It gets
+normalized before use. If the vector is 0,
+no rotation will be performed, but the calculations
+will still be done.}
+
+\item
+\NAMDCONF{rotConsPivot}{Pivot point of rotation}
+{position in \AA}
+{Pivot point of rotation. The rotation axis vector
+only gives the direction of the axis. Pivot point
+places the axis in space, so that the axis goes
+through the pivot point.}
+
+\item
+\NAMDCONF{rotConsVel}{Angular velocity of rotation}
+{rate in degrees per timestep}
+{Angular velocity of rotation, degrees/timestep.}
 
 \end{itemize}
 
