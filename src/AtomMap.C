@@ -18,7 +18,7 @@
 #include "AtomMap.h"
 
 #define MIN_DEBUG_LEVEL 4
-#define DEBUGM
+// #define DEBUGM
 #include "Debug.h"
 
 
@@ -120,13 +120,16 @@ void AtomMap::print()
  * RCS INFORMATION:
  *
  *	$RCSfile: AtomMap.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/02/13 16:17:09 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/02/13 17:06:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: AtomMap.C,v $
+ * Revision 1.1004  1997/02/13 17:06:19  jim
+ * Turned off debugging.
+ *
  * Revision 1.1003  1997/02/13 16:17:09  ari
  * Intermediate debuging commit - working to fix deep bug in migration?
  *

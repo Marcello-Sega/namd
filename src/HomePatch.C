@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1012 1997/02/13 16:17:13 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1013 1997/02/13 17:06:22 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -27,7 +27,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C
 #include "PatchMgr.h"
 
 #define MIN_DEBUG_LEVEL 4
-#define DEBUGM
+// #define DEBUGM
 #include "Debug.h"
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
@@ -378,13 +378,16 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/02/13 16:17:13 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1013 $	$Date: 1997/02/13 17:06:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1013  1997/02/13 17:06:22  jim
+ * Turned off debugging.
+ *
  * Revision 1.1012  1997/02/13 16:17:13  ari
  * Intermediate debuging commit - working to fix deep bug in migration?
  *
