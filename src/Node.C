@@ -435,6 +435,29 @@ void Node::quiescence(CkQdMsg * msg)
   CkExit();
 }
 
+void Node::sendEnableExitScheduler(void) {
+  //CmiPrintf("sendEnableExitScheduler\n");
+  CkQdMsg *msg = new CkQdMsg;
+  CProxy_Node(thisgroup).recvEnableExitScheduler(msg,0);
+}
+
+void Node::recvEnableExitScheduler(CkQdMsg *msg) {
+  //CmiPrintf("recvEnableExitScheduler\n");
+  delete msg;
+  enableExitScheduler();
+}
+
+void Node::enableExitScheduler(void) {
+  //CmiPrintf("enableExitScheduler\n");
+  CkStartQD(CProxy_Node::ckIdx_exitScheduler((CkQdMsg*)0),&thishandle);
+}
+
+void Node::exitScheduler(CkQdMsg *msg) {
+  //CmiPrintf("exitScheduler\n");
+  delete msg;
+  CsdExitScheduler();
+}
+
 
 //------------------------------------------------------------------------
 // Some odd utilities

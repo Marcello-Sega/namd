@@ -8,6 +8,13 @@
 #include "ProcessorPrivate.h"
 #include "common.h"
 #include "Namd.h"
+#include "Node.h"
+
+
+// start quiescence detection to return to front end
+void namd_return(void) {
+  Node::Object()->enableExitScheduler();
+}
 
 extern void _initCharm(int, char**);
 
@@ -34,6 +41,16 @@ void namd_init(int argc, char **argv) {
 // called on proc 0 by front end
 void namd_run(char *config) {
   Namd *namd = new Namd;
+
+/*
+  namd_return();
+  CmiPrintf("Should exit 1.\n");
+  CsdScheduler(-1);  // process messages
+  namd_return();
+  CmiPrintf("Should exit 2.\n");
+  CsdScheduler(-1);  // process messages
+*/
+
   namd->startup(config);
   CsdScheduler(-1);  // process messages
 }
