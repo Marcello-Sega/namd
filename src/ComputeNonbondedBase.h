@@ -230,6 +230,10 @@ NOEXCL
   for ( i = 0; i < (i_upper SELF(- 1)); ++i )
   {
     const CompAtom &p_i = p_0[i];
+    const ExclusionCheck *exclcheck = mol->get_excl_check_for_atom(p_i.id);
+    const int excl_min = exclcheck->min;
+    const int excl_max = exclcheck->max;
+    const char * const excl_flags = exclcheck->flags;
     register const BigReal p_i_x = p_i.position.x;
     register const BigReal p_i_y = p_i.position.y;
     register const BigReal p_i_z = p_i.position.z;
@@ -472,21 +476,17 @@ NOEXCL
 		mol->atomvdwtype(p_i.id), mol->atomvdwtype(p_j->id));
       )
 
-      if ( r2 <= lj_pars->exclcut2 SELF( || j < j_hgroup ) )
       {
 	NOEXCL
 	(
-	register int *list;
-	register int other_int;
-	SELF( if ( ! ( j < j_hgroup ) ) ) {
+	register char excl_flag;
+	SELF( if ( j < j_hgroup ) { excl_flag = EXCHCK_FULL; } else ) {
            //  We want to search the array of the smaller atom
-	  int atom1 = p_i.id;
 	  int atom2 = p_j->id;
-	  list = mol->get_excl_check_for_atom(atom1<atom2?atom1:atom2);
-	  other_int = atom1<atom2?atom2:atom1;
-	  for ( ; *list != other_int && *list != -1; ++list );
+	  if ( atom2 < excl_min || atom2 > excl_max ) excl_flag = 0;
+	  else excl_flag = excl_flags[atom2-excl_min];
 	}
-	if ( SELF( j < j_hgroup || ) ! ( *list != other_int ) ) {
+	if ( excl_flag == EXCHCK_FULL ) {
 	  FULL
 	  (
 	    // Do a quick fix and get out!
@@ -510,8 +510,7 @@ NOEXCL
 	  )
 	  continue;  // Must have stored force by now.
 	} else {
-	  for ( ++list ; *list != other_int && *list != -1; ++list );
-          if ( ! ( *list != other_int ) ) {
+          if ( excl_flag == EXCHCK_MOD ) {
 	    FULL
 	    (
 	      // Make full electrostatics match rescaled charges!

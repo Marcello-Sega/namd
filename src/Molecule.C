@@ -184,6 +184,8 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
   nameArena->setAlignment(8);
   arena = new ObjectArena<int>;
   arena->setAlignment(32);
+  exclArena = new ObjectArena<char>;
+  exclArena->setAlignment(32);
 
   /*  Initialize counts to 0 */
   numAtoms=0;
@@ -286,6 +288,7 @@ Molecule::~Molecule()
        delete [] rigidBondLengths;
 
   delete arena;
+  delete exclArena;
 }
 /*      END OF FUNCTION Molecule      */
 
@@ -2469,95 +2472,57 @@ void Molecule::receive_Molecule(MIStream *msg)
          exclusionsByAtom[a1][byAtomSize[a1]++] = i;
        }
 
-       //  Allocate an array of int *'s to hold the exclusions for
-       //  each atom
-       all_exclusions = new int *[numAtoms];
+       delete [] byAtomSize;  byAtomSize = 0;
+
+
+       //  Allocate an array to hold the exclusions for each atom
+       all_exclusions = new ExclusionCheck[numAtoms];
 
        for (i=0; i<numAtoms; i++)
        {
-         byAtomSize[i] = 0;
+         all_exclusions[i].min = numAtoms;
+         all_exclusions[i].max = -1;
        }
        for (i=0; i<numTotalExclusions; i++)
        {
          // first atom should alway have lower number!
-            if ( numFixedAtoms && fixedAtomFlags[exclusions[i].atom1]
-                               && fixedAtomFlags[exclusions[i].atom2] ) continue;
-            byAtomSize[exclusions[i].atom1]++;
+         int a1 = exclusions[i].atom1;
+         int a2 = exclusions[i].atom2;
+         if ( numFixedAtoms && fixedAtomFlags[a1]
+                            && fixedAtomFlags[a2] ) continue;
+         if ( all_exclusions[a1].min > a2 ) all_exclusions[a1].min = a2;
+         if ( all_exclusions[a2].min > a1 ) all_exclusions[a2].min = a1;
+         if ( all_exclusions[a1].max < a2 ) all_exclusions[a1].max = a2;
+         if ( all_exclusions[a2].max < a1 ) all_exclusions[a2].max = a1;
        }
+       int exclmem = 0;
        for (i=0; i<numAtoms; i++)
        {
-         if ( byAtomSize[i] ) {
-           all_exclusions[i] = arena->getNewArray(byAtomSize[i]+2);
+         if ( all_exclusions[i].max != -1 ) {
+           int s = all_exclusions[i].max - all_exclusions[i].min + 1;
+           char *f = all_exclusions[i].flags = exclArena->getNewArray(s);
+           for ( int k=0; k<s; ++k ) f[k] = 0;
+           exclmem += s;
          } else {
-           all_exclusions[i] = 0;
+           all_exclusions[i].flags = 0;
          }
-         byAtomSize[i] = 0;
        }
+       iout << numTotalExclusions << " exclusions consume "
+            << exclmem << " bytes.\n" << endi;
        for (i=0; i<numTotalExclusions; i++)
        {
-         if ( ! exclusions[i].modified )
-         {
-            if ( numFixedAtoms && fixedAtomFlags[exclusions[i].atom1]
-                               && fixedAtomFlags[exclusions[i].atom2] ) continue;
-            int a1 = exclusions[i].atom1;
-            int a2 = exclusions[i].atom2;
-            all_exclusions[a1][byAtomSize[a1]++] = a2;
-         }
-       }
-       for (i=0; i<numAtoms; i++)
-       {
-         if ( all_exclusions[i] ) {
-           all_exclusions[i][byAtomSize[i]++] = -1;
-         }
-       }
-       for (i=0; i<numTotalExclusions; i++)
-       {
-         if ( exclusions[i].modified )
-         {
-            if ( numFixedAtoms && fixedAtomFlags[exclusions[i].atom1]
-                               && fixedAtomFlags[exclusions[i].atom2] ) continue;
-            int a1 = exclusions[i].atom1;
-            int a2 = exclusions[i].atom2;
-            all_exclusions[a1][byAtomSize[a1]++] = a2;
-         }
-       }
-       int *empty_excl = arena->getNewArray(2);
-       empty_excl[0] = -1;
-       empty_excl[1] = -1;
-       for (i=0; i<numAtoms; i++)
-       {
-         if ( all_exclusions[i] ) {
-           all_exclusions[i][byAtomSize[i]++] = -1;
+         int a1 = exclusions[i].atom1;
+         int a2 = exclusions[i].atom2;
+         if ( numFixedAtoms && fixedAtomFlags[a1]
+                            && fixedAtomFlags[a2] ) continue;
+         if ( exclusions[i].modified ) {
+           all_exclusions[a1].flags[a2-all_exclusions[a1].min] = EXCHCK_MOD;
+           all_exclusions[a2].flags[a1-all_exclusions[a2].min] = EXCHCK_MOD;
          } else {
-           all_exclusions[i] = empty_excl;
+           all_exclusions[a1].flags[a2-all_exclusions[a1].min] = EXCHCK_FULL;
+           all_exclusions[a2].flags[a1-all_exclusions[a2].min] = EXCHCK_FULL;
          }
        }
-
-#if 0
-       for (i=0; i<numAtoms; i++) {
-	int *excl_list = all_exclusions[i];
-	int min_excl = numAtoms;
-	int max_excl = -1;
-	// scan full exclusions
-	int j;
-	for (j=0; excl_list[j] != -1; ++j) {
-	  if ( excl_list[j] < min_excl ) min_excl = excl_list[j];
-	  if ( excl_list[j] > max_excl ) max_excl = excl_list[j];
-	}
-	// scan 1-4 exclusions
-	for (++j; excl_list[j] != -1; ++j) {
-	  if ( excl_list[j] < min_excl ) min_excl = excl_list[j];
-	  if ( excl_list[j] > max_excl ) max_excl = excl_list[j];
-	}
-	int num_excl = j-1;
-	int range_size = max_excl-min_excl+1;
-	float frac = 1;
-	if ( num_excl && range_size ) { frac = (float)num_excl / (float)range_size; }
-	iout << "ExclCount: " << num_excl << " " << frac << "\n" << endi;
-       }
-#endif
-
-       delete [] byAtomSize;
 
     }
     /*    END OF FUNCTION build_lists_by_atom    */
@@ -3713,40 +3678,10 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
 
 int Molecule::checkexcl(int atom1, int atom2) const {
 
-           register int check_int;      //  atom whose array we will search
-           int other_int;       //  atom we are looking for
-
-           //  We want to search the array of the smaller atom
-           if (atom1<atom2) {
-                check_int = atom1;
-                other_int = atom2;
-           } else {
-                check_int = atom2;
-                other_int = atom1;
-           }
-
-           //  Do the search and return the correct value
-           register int *list = all_exclusions[check_int];
-           if ( list ) {
-             check_int = *(list++);
-             while( check_int != other_int && check_int != -1 )
-             {
-                check_int = *(list++);
-             }
-
-             if ( check_int == other_int ) {
-               return 1;
-             } else {
-               check_int = *(list++);
-               while( check_int != other_int && check_int != -1 )
-               {
-                  check_int = *(list++);
-               }
-               if ( check_int == other_int ) { return 2; }
-             }
-           }
-
-           return 0;
+  int amin = all_exclusions[atom1].min;
+  int amax = all_exclusions[atom1].max;
+  if ( atom2 < amin || atom2 > amax ) return 0;
+  else return all_exclusions[atom1].flags[atom2-amin];
 
 }
 

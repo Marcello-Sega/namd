@@ -637,7 +637,8 @@ void WorkDistrib::mapComputes(void)
     mapComputeHomePatches(computeGlobalType);
 
   mapComputeNonbonded();
-  mapComputeHomePatches(computeNonbondedExclType);
+//  Don't need these anymore with faster exclusion checking.
+//  mapComputeHomePatches(computeNonbondedExclType);
   mapComputeHomePatches(computeBondsType);
   mapComputeHomePatches(computeAnglesType);
   mapComputeHomePatches(computeDihedralsType);

@@ -677,9 +677,11 @@ void Controller::compareChecksums(int step) {
     if ( ((int)checksum) != molecule->numCalcImpropers )
       NAMD_bug("Bad global improper count!\n");
 
+/*
     checksum = reduction->item(REDUCTION_EXCLUSION_CHECKSUM);
     if ( ((int)checksum) != molecule->numCalcExclusions )
       NAMD_bug("Bad global exclusion count!\n");
+*/
 
     checksum = reduction->item(REDUCTION_MARGIN_VIOLATIONS);
     if ( ((int)checksum) ) iout << iWARN << ((int)checksum) <<

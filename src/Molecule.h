@@ -39,6 +39,14 @@ class NonbondedExclElem;
 class ResidueLookupElem;
 template<class Type> class ObjectArena;
 
+class ExclusionCheck {
+public:
+  int min,max;
+  char *flags;
+};
+#define EXCHCK_FULL 1
+#define EXCHCK_MOD 2
+
 // List maintaining the global atom indicies sorted by helix groups.
 class Molecule
 {
@@ -87,7 +95,8 @@ private:
 	int **impropersByAtom;  //  List of impropers owned by each atom
 	int **exclusionsByAtom; //  List of exclusions owned by each atom
 
-	int **all_exclusions;
+	ObjectArena<char> *exclArena;
+	ExclusionCheck *all_exclusions;
 				//  List of all exclusions, including
 				//  explicit exclusions and those calculated
 				//  from the bonded structure based on the
@@ -270,8 +279,8 @@ public:
         //  Returns 1 for full, 2 for 1-4 exclusions.
 	int checkexcl(int atom1, int atom2) const;
 
-	int *get_excl_check_for_atom(int anum) const
-			 { return all_exclusions[anum]; }
+	ExclusionCheck *get_excl_check_for_atom(int anum) const
+			 { return &all_exclusions[anum]; }
 
 	//  Return true or false based on whether the specified atom
 	//  is constrained or not.
