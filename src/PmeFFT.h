@@ -4,6 +4,10 @@
 
 #ifdef NAMD_FFTW
 #include <rfftw.h>
+#elif defined(NAMD_SGI_COMPLIB_FFT)
+extern "C" {
+#include <fft.h>
+}
 #endif
 
 class PmeFFT {
