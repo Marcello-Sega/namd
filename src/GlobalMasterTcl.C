@@ -167,7 +167,10 @@ int GlobalMasterTcl::Tcl_clearconfig(ClientData clientData,
   }
   GlobalMasterTcl *self = (GlobalMasterTcl *)clientData;
   self->modifyRequestedGroups().resize(0);
+  self->modifyGroupForces().resize(0);
   self->modifyRequestedAtoms().resize(0);
+  self->modifyForcedAtoms().resize(0);
+  self->modifyAppliedForces().resize(0);
   return TCL_OK;
 }
 
