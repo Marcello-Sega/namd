@@ -85,10 +85,17 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 /*      FUNCTION scriptSet                                              */
 /*                                                                      */
 /************************************************************************/
+
+int atobool(const char *s) {
+  return ( (! strncasecmp(s,"yes",8)) ||
+           (! strncasecmp(s,"on",8)) || 
+           (! strncasecmp(s,"true",8)) );
+};
                          
 void SimParameters::scriptSet(const char *param, const char *value) {
 
 #define MAX_SCRIPT_PARAM_SIZE 128
+#define SCRIPT_PARSE_BOOL(NAME,VAR) { if ( ! strncasecmp(param,(NAME),MAX_SCRIPT_PARAM_SIZE) ) { (VAR) = atobool(value); return; } }
 #define SCRIPT_PARSE_INT(NAME,VAR) { if ( ! strncasecmp(param,(NAME),MAX_SCRIPT_PARAM_SIZE) ) { (VAR) = atoi(value); return; } }
 #define SCRIPT_PARSE_FLOAT(NAME,VAR) { if ( ! strncasecmp(param,(NAME),MAX_SCRIPT_PARAM_SIZE) ) { (VAR) = atof(value); return; } }
 #define SCRIPT_PARSE_STRING(NAME,VAR) { if ( ! strncasecmp(param,(NAME),MAX_SCRIPT_PARAM_SIZE) ) { strcpy(VAR,value); return; } }
@@ -103,6 +110,11 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_STRING("outputname",outputFilename)
   if ( ! strncasecmp(param,"nonbondedScaling",MAX_SCRIPT_PARAM_SIZE) ) {
     nonbondedScaling = atof(value);
+    ComputeNonbondedUtil::select();
+    return;
+  }
+  if ( ! strncasecmp(param,"commOnly",MAX_SCRIPT_PARAM_SIZE) ) {
+    commOnly = atobool(value);
     ComputeNonbondedUtil::select();
     return;
   }
