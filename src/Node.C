@@ -9,7 +9,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1020 1998/01/05 20:33:01 sergei Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1021 1998/01/13 23:34:44 sergei Exp $";
 
 #include <unistd.h>
 #include "ckdefs.h"
@@ -172,9 +172,6 @@ void Node::startup(InitMsg *msg) {
        iout << iINFO << " Starting Phase " << startupPhase << "\n" << endi;
     }
 
-    // now that we have SimParameters, we can call this
-    smdData = new SMDData();
-
     // take care of inital thread setting
     threadInit();
 
@@ -269,6 +266,7 @@ void Node::namdOneRecv() {
   simParameters = new SimParameters;
   parameters = new Parameters;
   molecule = new Molecule(simParameters);
+  smdData = new SMDData;
 
   DebugM(4, "Getting SimParameters\n");
   conv_msg = CpvAccess(comm)->newInputStream(0, SIMPARAMSTAG);
@@ -282,6 +280,9 @@ void Node::namdOneRecv() {
   conv_msg = CpvAccess(comm)->newInputStream(0, MOLECULETAG);
   molecule->receive_Molecule(conv_msg);
 
+  DebugM(4, "Getting SMDData\n");
+  conv_msg = CpvAccess(comm)->newInputStream(0, SMDDATATAG);
+
   DebugM(4, "Done Receiving\n");
 }
 
@@ -293,7 +294,9 @@ void Node::namdOneSend() {
   parameters->send_Parameters(CpvAccess(comm));
   DebugM(4, "Sending Molecule\n");
   molecule->send_Molecule(CpvAccess(comm));
-  DebugM(4, "Done Sending\n");
+  DebugM(4, "Sending SMDData\n");
+  smdData->send_SMDData(CpvAccess(comm));
+  DebugM(4, "Done Sending\n");  
 }
 
 // Initial thread setup
@@ -430,6 +433,7 @@ void Node::saveMolDataPointers(NamdState *state)
   this->simParameters = state->simParameters;
   this->configList = state->configList;
   this->pdb = state->pdb;
+  this->smdData = state->smdData;
   this->state = state;
 }
 
@@ -463,12 +467,15 @@ void Node::recvSMDData(SMDDataMsg *msg) {
  *
  *	$RCSfile: Node.C,v $
  *	$Author: sergei $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1020 $	$Date: 1998/01/05 20:33:01 $
+ *	$Revision: 1.1021 $	$Date: 1998/01/13 23:34:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1021  1998/01/13 23:34:44  sergei
+ * Moved smdData initialization to take place together with Molecule.
+ *
  * Revision 1.1020  1998/01/05 20:33:01  sergei
  * added new SMDData() in phase 2 of startup;
  * added functions recvSMDData() and sendSMDData()
