@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.C,v $
- *	$Author: sergei $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1020 $	$Date: 1997/08/18 17:45:09 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1021 $	$Date: 1997/09/05 20:14:28 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1021  1997/09/05 20:14:28  jim
+ * Small fixes.
+ *
  * Revision 1.1020  1997/08/18 17:45:09  sergei
  * added moving restraint capability with input from config file
  * (for one atom only)
@@ -387,7 +390,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1020 1997/08/18 17:45:09 sergei Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1021 1997/09/05 20:14:28 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -1743,7 +1746,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 		strcat(filename, current->data);
 	}
 
-	iout << iINFO << "VELOCITY FILE          " << filename << endi;
+	iout << iINFO << "VELOCITY FILE          " << filename << "\n";
    }
    else
    {
@@ -2447,12 +2450,15 @@ void SimParameters::receive_SimParameters(Message *msg)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1020 $	$Date: 1997/08/18 17:45:09 $
+ *	$Revision: 1.1021 $	$Date: 1997/09/05 20:14:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1021  1997/09/05 20:14:28  jim
+ * Small fixes.
+ *
  * Revision 1.1020  1997/08/18 17:45:09  sergei
  * added moving restraint capability with input from config file
  * (for one atom only)

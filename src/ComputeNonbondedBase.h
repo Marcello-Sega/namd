@@ -123,7 +123,7 @@ void ComputeNonbondedUtil :: NAME
   BigReal fullElectEnergy = 0;
   BigReal fullElectVirial = 0;	// value == fullElectEnergy until the end
   )
-  NOFULL
+  NOEXCL
   (
   // Bringing stuff into local namespace for speed.
   // Probably makes things slower in exclusion mode, though.
@@ -618,12 +618,15 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1024 $	$Date: 1997/07/30 21:23:22 $
+ *	$Revision: 1.1025 $	$Date: 1997/09/05 20:14:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1025  1997/09/05 20:14:27  jim
+ * Small fixes.
+ *
  * Revision 1.1024  1997/07/30 21:23:22  jim
  * More possible bugs (memory references).
  *
