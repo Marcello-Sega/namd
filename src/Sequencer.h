@@ -16,6 +16,7 @@
 #define SEQUENCER_H
 
 #include "converse.h"
+#include "PatchTypes.h"
 
 class HomePatch;
 class SimParameters;
@@ -35,7 +36,14 @@ public:
 protected:
     virtual void algorithm(void);	// subclasses redefine this method
 
+    void runComputeObjects(int migration = 0);
+
+    void submitReductions(int);
     void submitCollections(int);
+
+    void addForceToMomentum(BigReal, const int ftag = Results::normal);
+    void addVelocityToPosition(BigReal);
+
     void rescaleVelocities(int);
     void berendsenPressure(int);
     void langevinVelocities(int);
@@ -63,12 +71,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/03/24 01:44:02 $
+ *	$Revision: 1.1009 $	$Date: 1997/03/25 04:04:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.h,v $
+ * Revision 1.1009  1997/03/25 04:04:59  jim
+ * Simplified algorithm a bit.
+ *
  * Revision 1.1008  1997/03/24 01:44:02  jim
  * Added Langevin dynamics.
  *

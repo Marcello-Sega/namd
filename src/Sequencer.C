@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1021 1997/03/24 01:44:01 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1022 1997/03/25 04:04:57 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -88,12 +88,8 @@ void Sequencer::algorithm(void)
     int &doFullElectrostatics = patch->flags.doFullElectrostatics;
     doFullElectrostatics = dofull;
 
-    // Push out inital positions
-    patch->positionsReady();
-    suspend(); // until all deposit boxes close
-
-    reduction->submit(step,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
-    reduction->submit(step,REDUCTION_BC_ENERGY,0.);
+    runComputeObjects();
+    submitReductions(step);
     submitCollections(step);
     rescaleVelocities(step);
     berendsenPressure(step);
@@ -101,24 +97,21 @@ void Sequencer::algorithm(void)
 
     for ( ++step; step <= numberOfSteps; ++step )
     {
-	patch->addForceToMomentum(0.5*timestep);
+	addForceToMomentum(0.5*timestep);
 	if (dofull && !(step%stepsPerCycle))
-		patch->addForceToMomentum(0.5*slowstep,Results::slow);
-	patch->addVelocityToPosition(timestep);
+		addForceToMomentum(0.5*slowstep,Results::slow);
+	addVelocityToPosition(timestep);
 
 	doFullElectrostatics = (dofull && !(step%stepsPerCycle));
 
 	// Migrate Atoms on stepsPerCycle
-	patch->positionsReady(!(step%stepsPerCycle));
-	suspend(); // until all deposit boxes close
+	runComputeObjects(!(step%stepsPerCycle));
 
-	patch->addForceToMomentum(0.5*timestep);
+	addForceToMomentum(0.5*timestep);
 	if (dofull && !(step%stepsPerCycle))
-		patch->addForceToMomentum(0.5*slowstep,Results::slow);
+		addForceToMomentum(0.5*slowstep,Results::slow);
 
-	// Pass up information from this Patch
-	reduction->submit(step,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
-	reduction->submit(step,REDUCTION_BC_ENERGY,0.);
+	submitReductions(step);
 	submitCollections(step);
 	rescaleVelocities(step);
 	berendsenPressure(step);
@@ -174,12 +167,34 @@ void Sequencer::rescaleVelocities(int step)
   }
 }
 
-void Sequencer::submitCollections(int timestep)
+void Sequencer::addForceToMomentum(BigReal dt, const int ftag)
 {
-  if ( Output::coordinateNeeded(timestep) )
-    collection->submitPositions(timestep,patch->atomIDList,patch->p);
-  if ( Output::velocityNeeded(timestep) )
-    collection->submitVelocities(timestep,patch->atomIDList,patch->v);
+  patch->addForceToMomentum(dt,ftag);
+}
+
+void Sequencer::addVelocityToPosition(BigReal dt)
+{
+  patch->addVelocityToPosition(dt);
+}
+
+void Sequencer::submitReductions(int step)
+{
+  reduction->submit(step,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
+  reduction->submit(step,REDUCTION_BC_ENERGY,0.);
+}
+
+void Sequencer::submitCollections(int step)
+{
+  if ( Output::coordinateNeeded(step) )
+    collection->submitPositions(step,patch->atomIDList,patch->p);
+  if ( Output::velocityNeeded(step) )
+    collection->submitVelocities(step,patch->atomIDList,patch->v);
+}
+
+void Sequencer::runComputeObjects(int migration)
+{
+  patch->positionsReady(migration);
+  suspend(); // until all deposit boxes close
 }
 
 void
@@ -194,12 +209,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1021 $     $Date: 1997/03/24 01:44:01 $
+ *      $Revision: 1.1022 $     $Date: 1997/03/25 04:04:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1022  1997/03/25 04:04:57  jim
+ * Simplified algorithm a bit.
+ *
  * Revision 1.1021  1997/03/24 01:44:01  jim
  * Added Langevin dynamics.
  *
