@@ -85,7 +85,9 @@ void ComputeHomeTuples<T>::mapReady() {
     Patch *p = (*tpi).p;
     DebugM(1, "ComputeHomeTuples::mapReady() - looking at patch " <<
 	p->getPatchID() << " with " << p->getNumAtoms() << " atoms" << endl );
-    AtomIDList &atomID = p->getAtomIDList();
+    AtomIDList atomID = p->getAtomIDList();
+    DebugM(1, "ComputeHomeTuples::mapReady() - confirm patch " <<
+	p->getPatchID() << " with " << atomID.size() << " atoms" << endl );
 
     /* cycle through each atom in the patch */
 
