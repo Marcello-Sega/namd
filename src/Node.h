@@ -85,7 +85,8 @@ public:
   void sendEnableExitScheduler(void);
   void recvEnableExitScheduler(CkQdMsg *);
   void enableExitScheduler(void);
-  void exitScheduler(CkQdMsg *);
+  void bcastExitScheduler(CkQdMsg *);
+  void exitScheduler(void);
 
   // Charm Entry point - Read in system data, get all ready to simulate
   static void messageStartUp();
