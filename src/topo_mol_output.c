@@ -233,7 +233,7 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file,
     int i, fullrows;
     fullrows = atomid/8;
     for (i=0; i<fullrows; ++i) 
-      fprintf(file, "%8d%8d%8d%8d%8d%8d%8d%8\n",0,0,0,0,0,0,0,0);
+      fprintf(file, "%8d%8d%8d%8d%8d%8d%8d%8d\n",0,0,0,0,0,0,0,0);
     for (i=atomid - fullrows*8; i; --i)
       fprintf(file, "%8d",0);
   } 
