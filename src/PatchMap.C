@@ -275,7 +275,16 @@ void PatchMap::newCid(int pid, int cid)
 {
   if (patchData[pid].numCids >= patchData[pid].numCidsAllocated)
   { // allocate more
-    NAMD_die("PatchMap::newCid - not enough compute ID's allocated.");
+//    NAMD_die("PatchMap::newCid - not enough compute ID's allocated.");
+    ComputeID *old = patchData[pid].cids;
+    patchData[pid].numCidsAllocated += 200;
+    patchData[pid].cids = new int[patchData[pid].numCidsAllocated];
+    int i;
+    for (i=0; i<patchData[pid].numCids; i++) 
+    	patchData[pid].cids[i] = old[i];
+    for (i=patchData[pid].numCids; i<patchData[pid].numCidsAllocated; i++) 
+	patchData[pid].cids[i] = -1;
+    delete old;
   }
   patchData[pid].cids[patchData[pid].numCids]=cid;
   patchData[pid].numCids++;
