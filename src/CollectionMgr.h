@@ -7,6 +7,7 @@
 #include "main.h"
 #include "NamdTypes.h"
 #include "BOCgroup.h"
+#include "PatchMap.h"
 
 
 class CollectionMgr : public BOCclass
@@ -16,11 +17,83 @@ public:
   CollectionMgr(SlaveInitMsg *msg);
   ~CollectionMgr(void);
 
-  void submitPositions(AtomIDList &i, PositionList &d);
-  void submitVelocities(AtomIDList &i, VelocityList &d);
-  void submitForces(AtomIDList &i, ForceList &d);
+  void submitPositions(int seq, AtomIDList &i, PositionList &d);
+  void submitVelocities(int seq, AtomIDList &i, VelocityList &d);
+  void submitForces(int seq, AtomIDList &i, ForceList &d);
 
 private:
+
+  ChareIDType master;
+
+  class CollectVectorInstance
+  {
+  public:
+
+    CollectVectorInstance(void) : seq(-1) { ; }
+
+    CollectVectorInstance(int s) :
+      seq(s), remaining(PatchMap::Object()->numHomePatches()) { ; }
+
+    // true -> send it and delete it!
+    int append(AtomIDList &a, ResizeArray<Vector> &d)
+    {
+      int size = a.size();
+      for( int i = 0; i < size; ++i )
+      {
+	aid.add(a[i]);
+	data.add(d[i]);
+      }
+      return ( ! --remaining );
+    }
+
+    int seq;
+    AtomIDList aid;
+    ResizeArray<Vector> data;
+
+    operator<(CollectVectorInstance &o) { return (seq < o.seq); }
+    operator==(CollectVectorInstance &o) { return (seq == o.seq); }
+    void * operator new(size_t size) { return ::operator new(size); }
+    void operator delete(void* ptr) { ::operator delete(ptr); }
+
+  private:
+    int remaining;
+
+  };
+
+  class CollectVectorSequence
+  {
+  public:
+
+    CollectVectorInstance* submitData(
+	int seq, AtomIDList &i, ResizeArray<Vector> &d)
+    {
+      CollectVectorInstance *c = data.find(CollectVectorInstance(seq));
+      if ( ! c )
+      {
+	data.add(CollectVectorInstance(seq));
+	c = data.find(CollectVectorInstance(seq));
+      }
+      if ( c->append(i,d) )
+      {
+	c = new CollectVectorInstance(*c);
+	data.del(CollectVectorInstance(seq));
+        return c;
+      }
+      else
+      {
+        return 0;
+      }
+    }
+
+    ResizeArray<CollectVectorInstance> data;
+
+    void * operator new(size_t size) { return ::operator new(size); }
+    void operator delete(void* ptr) { ::operator delete(ptr); }
+  };
+
+  CollectVectorSequence positions;
+  CollectVectorSequence velocities;
+  CollectVectorSequence forces;
 
 };
 
