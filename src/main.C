@@ -104,6 +104,7 @@ public:
     tbsoft_sendusage("NAMD",NAMD_VERSION,NAMD_PLATFORM,numcpus,"");
 #endif
 
+    iout << iINFO << "Running on " << CmiNumPes() << " processors.\n" << endi;
     iout << iINFO << (memusage()/1024) << " kB of memory in use.\n" << endi;
 
   }
