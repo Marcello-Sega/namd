@@ -13,6 +13,7 @@
 #include "Broadcasts.h"
 #include "ConfigList.h"
 #include "Node.h"
+#include "PDB.h"
 #include "WorkDistrib.h"
 #include "NamdState.h"
 #include "Controller.h"
@@ -34,6 +35,23 @@
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 4
 #include "Debug.h"
+
+
+#ifdef NAMD_PLUGINS
+#include "molfile_plugin.h"
+#include "libmolfile_plugin.h"
+
+static molfile_api *dcdapi;
+static int register_cb(void *v, vmdplugin_t *p) {
+	dcdapi = (molfile_api *)p->api;
+	return 0;
+}
+static int numatoms;
+static void *filehandle;
+static float *coords;
+static Vector *vcoords;
+#endif
+
 
 void ScriptTcl::suspend() {
   BackEnd::suspend();
@@ -470,6 +488,74 @@ int ScriptTcl::Tcl_reinitatoms(ClientData clientData,
 }
 
 
+#ifdef NAMD_PLUGINS
+int ScriptTcl::Tcl_coorfile(ClientData clientData,
+	Tcl_Interp *interp, int argc, char *argv[]) {
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  script->initcheck();
+  if (argc == 4 && !strcmp(argv[1], "open")) {
+    if (strcmp(argv[2], "dcd")) {
+      NAMD_die("Sorry, coorfile presently supports only DCD files");
+    }
+    molfile_header_t header;
+    filehandle = dcdapi->open_file_read(argv[3], "dcd", &header);
+    if (!filehandle) {
+      Tcl_AppendResult(interp, "coorfile: Error opening file ", argv[3], NULL);
+      return TCL_ERROR;
+    }
+    numatoms = header.numatoms;
+    if (numatoms != Node::Object()->pdb->num_atoms()) {
+      Tcl_AppendResult(interp, "Coordinate file ", argv[3], 
+        "\ncontains the wrong number of atoms.", NULL);
+      return TCL_ERROR;
+    }
+    coords = new float[3*numatoms];
+    vcoords = new Vector[3*numatoms];
+    iout << iINFO << "Coordinate file " << argv[3] << " opened for reading.\n"
+         << endi;
+  } else if (argc == 2 && !strcmp(argv[1], "read")) {
+    if (filehandle == NULL) {
+      Tcl_AppendResult(interp, "coorfile read: Error, no file open for reading",
+	NULL);
+      return TCL_ERROR;
+    }
+    molfile_timestep_t ts;
+    ts.numatoms = numatoms;
+    ts.coords = coords;
+    int rc = dcdapi->read_next_timestep(filehandle, &ts);
+    if (rc) {  // EOF
+      Tcl_SetObjResult(interp, Tcl_NewIntObj(-1));
+      return TCL_OK;
+    }
+    for (int i=0; i<numatoms; i++) {
+      vcoords[i].x = coords[3*i+0];
+      vcoords[i].y = coords[3*i+1];
+      vcoords[i].z = coords[3*i+2];
+    }
+    Node::Object()->pdb->set_all_positions(vcoords);
+    iout << iINFO << "Reading timestep from file.\n" << endi;
+    script->reinitAtoms();
+    Tcl_SetObjResult(interp, Tcl_NewIntObj(0));
+  } else if (argc == 2 && !strcmp(argv[1], "close")) {
+    if (!filehandle) {
+      Tcl_AppendResult(interp, "coorfile close: No file opened for reading!", 
+        NULL);
+      return TCL_OK;
+    }
+    iout << iINFO << "Closing coordinate file.\n" << endi; 
+    dcdapi->close_file_read(filehandle);
+    filehandle = NULL;
+    delete [] coords;
+    delete [] vcoords;
+
+  } else {
+    NAMD_die("Unknown option passed to coorfile");
+  }
+  return TCL_OK;
+}
+#endif  // NAMD_PLUGINS
+
+
 #endif  // NAMD_TCL
 
 
@@ -481,6 +567,11 @@ ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
 #endif
   state = new NamdState;
   barrierStep = 0;
+
+#ifdef NAMD_PLUGINS
+  dcdplugin_init();
+  dcdplugin_register(NULL, register_cb);
+#endif
 }
 
 ScriptTcl::~ScriptTcl() {
@@ -488,6 +579,10 @@ ScriptTcl::~ScriptTcl() {
 #ifdef NAMD_TCL
   if ( interp ) Tcl_DeleteInterp(interp);
   delete [] callbackname;
+#endif
+
+#ifdef NAMD_PLUGINS
+  dcdplugin_fini();
 #endif
 }
 
@@ -537,6 +632,11 @@ void ScriptTcl::algorithm() {
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "callback", Tcl_callback,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+
+#ifdef NAMD_PLUGINS
+  Tcl_CreateCommand(interp, "coorfile", Tcl_coorfile,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+#endif
 
   int code = Tcl_EvalFile(interp,scriptFile);
   char *result = Tcl_GetStringResult(interp);

@@ -62,6 +62,9 @@ private:
   static int Tcl_revert(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_callback(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_reinitatoms(ClientData, Tcl_Interp *, int, char **);
+#ifdef NAMD_PLUGINS
+  static int Tcl_coorfile(ClientData, Tcl_Interp *, int, char **);
+#endif
   char *callbackname;
   void doCallback(const char *labels, const char *data);
   int doCallback() { return ! ! callbackname; }
