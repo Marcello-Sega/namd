@@ -35,70 +35,6 @@ void Compute::enqueueWork() {
 		  CMyPe() );
 }
 
-// Close all the deposit boxes
-void Compute::depositAllForces() {
-  PatchDepositListIter pd(patchDepositList);
-  for (pd = pd.begin(); pd != pd.end(); pd++) {
-    (*pd).box->close(&((*pd).f));
-  }
-
-  PatchPickupListIter pp(patchPickupList);
-  for (pp = pp.begin(); pp != pp.end(); pp++) {
-    (*pp).box->close(&((*pp).x));
-  }
-
-}
-
-// Add a patch to the deposit list and register with patch
-void Compute::registerForceDeposit(PatchID pid) {
-  PatchDeposit pd;
-  pd.pid = pid;
-  pd.p = (node->patchMap).patch(pid);
-  pd.box = pd.p->registerForceDeposit(cid);
-  patchDepositList.load(pd);
-}
-
-// Delete a patch from the deposit list and unregister with patch
-void Compute::unregisterForceDeposit(PatchID pid) {
-  PatchDeposit find(pid);
-  PatchDeposit* found = patchDepositList.find(find);
-  found->p->unregisterForceDeposit(cid,&found->box);
-  patchDepositList.del(*found);
-}
-
-// Add a patch to the pickup list and unregister with patch
-void Compute::registerPositionPickup(PatchID pid) {
-  PatchPickup pp;
-  pp.pid = pid;
-  pp.p = (node->patchMap).patch(pid);
-  pp.box = pp.p->registerPositionPickup(cid);
-  patchPickupList.load(pp);
-  patchReadyCounter = ++numPatches;
-}
-
-// Delete a patch from the pickup list and unregister with patch
-void Compute::unregisterPositionPickup(PatchID pid) {
-  PatchPickup* found = patchPickupList.find(PatchPickup(pid));
-  found->p->unregisterPositionPickup(cid,&found->box);
-  patchPickupList.del(*found);
-  patchReadyCounter = --numPatches;
-}
-    
-Compute::~Compute() {
-  // Remove the deposit registrations
-  PatchDepositListIter pd(patchDepositList);
-  for (pd = pd.begin(); pd != pd.end(); pd++) {
-    unregisterForceDeposit((*pd).pid);
-  }
-
-  // Remove the pickup registrations
-  PatchPickupListIter pp(patchPickupList);
-  for (pp = pp.begin(); pp != pp.end(); pp++) {
-    unregisterPositionPickup((*pp).pid);
-  }
-}
-
-
 // Signal from patch or proxy that data is ready.
 // When all Patches and Proxies needed by this Compute object
 // have checked-in, we are ready to enqueueWork()
@@ -115,8 +51,7 @@ void Compute::patchReady(void) {
 
 
 void Compute::doWork() {
-  CPrintf("This is the default Compute::doWork()\n");
-  depositAllForces();
+  CPrintf("This is the default Compute::doWork() Nothing happens\n");
 }
 
 #include "Compute.bot.h"
@@ -127,12 +62,15 @@ void Compute::doWork() {
  *
  *	$RCSfile: Compute.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/10/16 08:22:39 $
+ *	$Revision: 1.2 $	$Date: 1996/10/22 19:12:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.C,v $
+ * Revision 1.2  1996/10/22 19:12:16  ari
+ * *** empty log message ***
+ *
  * Revision 1.1  1996/10/16 08:22:39  ari
  * Initial revision
  *

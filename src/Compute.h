@@ -21,86 +21,30 @@
 
 #include "NamdTypes.h"
 
-#include "Templates/Box.h"
-#include "Templates/OwnerBox.h"
-
-class Patch;
 class Node;
-class PatchMap;
-
-class PatchDeposit {
-public:
-   PatchID pid;
-   Box<Patch,Force> *box;
-   Patch *p;
-   Force *f;
-
-   PatchDeposit(PatchID p) : pid(p) {};
-   PatchDeposit() : pid(-1) {};
-   ~PatchDeposit() {};
-   int operator== (const PatchDeposit p) const { 
-     return (pid == p.pid);
-   }
-   int operator< (const PatchDeposit p) const {
-     return (pid < p.pid);
-   }
-};
-
-class PatchPickup {
-public:
-   PatchID pid;
-   Box<Patch,Position> *box;
-   Patch *p;
-   Position *x;
-
-   PatchPickup(PatchID p) : pid(p) {};
-   PatchPickup() : pid(-1) {};
-   ~PatchPickup() {};
-
-   int operator== (const PatchPickup p) const { 
-     return (pid == p.pid);
-   }
-   int operator< (const PatchPickup p) const {
-     return (pid < p.pid);
-   }
-};
-
-typedef ResizeArrayIter<PatchDeposit> PatchDepositListIter;
-typedef SortedArray<PatchDeposit> PatchDepositList;
-typedef ResizeArrayIter<PatchPickup> PatchPickupListIter;
-typedef SortedArray<PatchPickup> PatchPickupList;
 
 // Base class for various forms of Compute objects
 // including: <linkto class=ComputeAtoms>ComputeAtoms</linkto> 
 // and <linkto class=ComputePatches>ComputePatches</linkto>
 class Compute {
 private:
-  static Node* node;
-  ComputeID cid;
-
-  int numPatches;
   int patchReadyCounter;
+  int numPatches;
 
-  PatchDepositList patchDepositList;
-  PatchPickupList patchPickupList;
-
-protected :
-
+protected:
+  static Node* node;
   void enqueueWork();
-  void depositAllForces();
-  void registerForceDeposit(PatchID pid);
-  void unregisterForceDeposit(PatchID pid);
-  void registerPositionPickup(PatchID pid);
-  void unregisterPositionPickup(PatchID pid);
 
 public:
-  Compute(ComputeID c) 
-      : cid(c) {
-  };
+  const ComputeID cid;
 
-  ~Compute();
+  Compute(ComputeID c) : cid(c) {}
+  virtual ~Compute() {}
 
   static void setNode(Node *n) { node = n; }
+
+  void setNumPatches(int n) { patchReadyCounter = numPatches = n; }
+  int getNumPatches() { return (numPatches); };
 
   virtual void patchReady(void);
   virtual void patchReady(PatchID pid) { if (pid > -1) patchReady(); }
@@ -113,12 +57,15 @@ public:
  *
  *	$RCSfile: Compute.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/10/16 08:22:39 $
+ *	$Revision: 1.4 $	$Date: 1996/10/22 19:16:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.h,v $
+ * Revision 1.4  1996/10/22 19:16:11  ari
+ * *** empty log message ***
+ *
  * Revision 1.3  1996/10/16 08:22:39  ari
  * *** empty log message ***
  *
