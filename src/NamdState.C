@@ -105,7 +105,6 @@ NamdState::configFileInit(char *confFile)
     CPrintf("Number of pdb and psf atoms are not the same!");
     return(1);
   }
-  molecule->build_lists_by_atom();
 
   molecule->print_atoms(parameters);
   molecule->print_bonds(parameters);
@@ -121,8 +120,8 @@ NamdState::configFileInit(char *confFile)
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdState.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/11/21 23:34:24 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.5 $	$Date: 1996/12/06 17:28:15 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -131,6 +130,9 @@ NamdState::configFileInit(char *confFile)
  * REVISION HISTORY:
  *
  * $Log: NamdState.C,v $
+ * Revision 1.5  1996/12/06 17:28:15  jim
+ * put build_lists_by_atom back where it belongs
+ *
  * Revision 1.4  1996/11/21 23:34:24  ari
  * *** empty log message ***
  *
@@ -142,4 +144,4 @@ NamdState::configFileInit(char *confFile)
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.4 1996/11/21 23:34:24 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.5 1996/12/06 17:28:15 jim Exp $";

@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Molecule.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1996/12/06 06:54:41 $
+ *	$Revision: 1.9 $	$Date: 1996/12/06 17:28:15 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -25,6 +25,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.9  1996/12/06 17:28:15  jim
+ * put build_lists_by_atom back where it belongs
+ *
  * Revision 1.8  1996/12/06 06:54:41  jim
  * started from 1.4, added support for treating exclusions like bonds
  *
@@ -176,7 +179,7 @@ private:
 				//  scaled1-4 to track 1-4 interactions that
 				//  need to be handled differently
 
-//	void build_lists_by_atom();
+	void build_lists_by_atom();
 				//  Build the list of structures by atom
 	
 
@@ -227,10 +230,6 @@ public:
 
 	Molecule(SimParameters *, Parameters *param=NULL, char *filename=NULL);
 	~Molecule();		//  Destructor
-
-	// We Did This - ari and jim
-	void build_lists_by_atom();
-				//  Build the list of structures by atom
 
 	void read_psf_file(char *, Parameters *);
 				//  Read in a .psf file given
