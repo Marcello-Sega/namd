@@ -30,6 +30,10 @@
 #include "PatchMap.inl"
 #include "Random.h"
 
+#ifdef NAMDCCS
+extern "C" void CApplicationDepositNode0Data(char *);
+#endif
+
 #ifndef cbrt
   // cbrt() not in math.h on goneril
   #define cbrt(x)  pow(x,(double)(1.0/3.0))
@@ -788,6 +792,15 @@ void Controller::printEnergies(int step)
     iout << FORMAT(totalEnergy);
     iout << FORMAT(temperature);
 
+#ifdef NAMDCCS
+     char webout[80];
+     sprintf(webout,"%d %d %d %d",-(int)totalEnergy,
+	     -(int)(totalEnergy - kineticEnergy),
+	     (int)kineticEnergy,(int)temperature);
+     CApplicationDepositNode0Data(webout);
+     CkPrintf("Depositing %s\n",webout);
+#endif
+
     if ( volume != 0. )
     {
 	if ( printAtomicPressure ) {
@@ -824,12 +837,15 @@ void Controller::terminate(void) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1076 $	$Date: 1999/08/11 16:49:19 $
+ *	$Revision: 1.1077 $	$Date: 1999/08/13 22:57:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1077  1999/08/13 22:57:00  brunner
+ * Added ccs files.  They are all currently disabled by ifdef NAMDCCS
+ *
  * Revision 1.1076  1999/08/11 16:49:19  jim
  * Turned on printing of atomic pressure with RATTLE.
  *

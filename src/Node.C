@@ -57,6 +57,10 @@
 #include "ScriptTcl.h"
 #include "ComputeMgr.decl.h"
 
+#ifdef NAMDCCS
+extern "C" void CApplicationInit();
+#endif
+
 //======================================================================
 // Public Functions
 
@@ -69,6 +73,10 @@ int eventEndOfTimeStep;
 Node::Node(GroupInitMsg *msg)
 {
   DebugM(4,"Creating Node\n");
+#ifdef NAMDCCS
+  CApplicationInit();
+  CkPrintf("Node %d initializing\n",CkMyPe());
+#endif
   if (CpvAccess(Node_instance) == 0) {
     CpvAccess(Node_instance) = this;
     eventEndOfTimeStep = traceRegisterUserEvent("EndOfTimeStep");
@@ -460,13 +468,16 @@ void Node::recvSMDData(SMDDataMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1035 $	$Date: 1999/06/02 15:14:21 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1036 $	$Date: 1999/08/13 22:57:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1036  1999/08/13 22:57:01  brunner
+ * Added ccs files.  They are all currently disabled by ifdef NAMDCCS
+ *
  * Revision 1.1035  1999/06/02 15:14:21  jim
  * Now waits for output files to be written before halting.
  *
