@@ -233,6 +233,7 @@ void ComputeFreeEnergy::calculate() {
   DebugM(4,"Calculating forces on master\n");
 
   resultsMsg = new (MsgIndex(ComputeGlobalResultsMsg)) ComputeGlobalResultsMsg;
+  resultsMsg->gforce.resize(gmass.size());
 
 //  iout << iDEBUG << "Free energy perturbation - calculate()\n" << endi; 
   user_calculate();
@@ -253,12 +254,15 @@ void ComputeFreeEnergy::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.13 $	$Date: 1998/09/20 16:34:55 $
+ *	$Revision: 1.14 $	$Date: 1999/02/17 04:09:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFreeEnergy.C,v $
+ * Revision 1.14  1999/02/17 04:09:55  jim
+ * Fixes to make optional force modules work with more nodes than patches.
+ *
  * Revision 1.13  1998/09/20 16:34:55  hurwitz
  * make sure Lambda control objects start and stop on just the right step.
  * made output shorter and more readable (compile with _VERBOSE_PMF for old output)

@@ -33,6 +33,11 @@ ComputeGlobalMaster::ComputeGlobalMaster(ComputeGlobal *h) {
   host = h;
   initialized = 0;
   msgcount = 0;
+  numWorkingPes = CNumPes();
+  {
+    int npatches=(PatchMap::Object())->numPatches();
+    if ( numWorkingPes > npatches ) numWorkingPes = npatches;
+  }
 }
 
 ComputeGlobalMaster::~ComputeGlobalMaster() {
@@ -45,7 +50,7 @@ void ComputeGlobalMaster::recvData(ComputeGlobalDataMsg *msg) {
   if ( ! initialized )
   {
     delete msg;
-    if ( ++msgcount == CNumPes() ) {
+    if ( ++msgcount == numWorkingPes ) {
        msgcount = 0;
        initialize();
        initialized = 1;
@@ -53,7 +58,7 @@ void ComputeGlobalMaster::recvData(ComputeGlobalDataMsg *msg) {
   }
   else {
     storedata(msg);
-    if ( ++msgcount == CNumPes() ) {
+    if ( ++msgcount == numWorkingPes ) {
        msgcount = 0;
        calculate();
        cleardata();
@@ -121,6 +126,7 @@ void ComputeGlobalMaster::calculate() {
 
   ComputeGlobalResultsMsg *msg =
 	new (MsgIndex(ComputeGlobalResultsMsg)) ComputeGlobalResultsMsg;
+  msg->gforce.resize(gmass.size());
 
   // Build results here
 
@@ -139,12 +145,15 @@ void ComputeGlobalMaster::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1998/02/16 00:24:37 $
+ *	$Revision: 1.3 $	$Date: 1999/02/17 04:09:56 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGlobalMaster.C,v $
+ * Revision 1.3  1999/02/17 04:09:56  jim
+ * Fixes to make optional force modules work with more nodes than patches.
+ *
  * Revision 1.2  1998/02/16 00:24:37  jim
  * Added atom group centers of mass to Tcl interface.
  *

@@ -11,6 +11,7 @@
 #include "Namd.h"
 #include "Node.h"
 #include "PatchMap.h"
+#include "PatchMap.inl"
 #include "AtomMap.h"
 #include "ComputeDPME.h"
 #include "ComputeDPMEMsgs.h"
@@ -36,6 +37,7 @@ private:
   void recvData(ComputeDPMEDataMsg *);
   ResizeArray<int> homeNode;
   ResizeArray<int> endForNode;
+  int numWorkingPes;
   int numLocalAtoms;
   Pme2Particle *localData;
   ReductionMgr *reduction;
@@ -46,8 +48,17 @@ ComputeDPME::ComputeDPME(ComputeID c, ComputeMgr *m) :
 {
   DebugM(4,"ComputeDPME created.\n");
 
-  masterNode = CNumPes() - 1;
-  if ( CMyPe() == masterNode ) master = new ComputeDPMEMaster(this,reduction);
+  int numWorkingPes = CNumPes();
+  {
+    int npatches=(PatchMap::Object())->numPatches();
+    if ( numWorkingPes > npatches ) numWorkingPes = npatches;
+  }
+
+  masterNode = numWorkingPes - 1;
+  if ( CMyPe() == masterNode ) {
+    master = new ComputeDPMEMaster(this,reduction);
+    master->numWorkingPes = numWorkingPes;
+  }
   else master = 0;
 }
 
@@ -209,7 +220,7 @@ void ComputeDPMEMaster::recvData(ComputeDPMEDataMsg *msg)
     delete msg;
   }
 
-  if ( homeNode.size() < CNumPes() ) return;  // messages outstanding
+  if ( homeNode.size() < numWorkingPes ) return;  // messages outstanding
 
   DebugM(4,"ComputeDPMEMaster::recvData() running serial code.\n");
 
@@ -373,12 +384,15 @@ void ComputeDPME::recvResults(ComputeDPMEResultsMsg *msg)
  *
  *	$RCSfile: ComputeDPME.C,v $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1999/02/12 21:55:15 $
+ *	$Revision: 1.8 $	$Date: 1999/02/17 04:09:54 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPME.C,v $
+ * Revision 1.8  1999/02/17 04:09:54  jim
+ * Fixes to make optional force modules work with more nodes than patches.
+ *
  * Revision 1.7  1999/02/12 21:55:15  jim
  * Fixed sign of virial from DPME.
  *

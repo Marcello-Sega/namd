@@ -201,6 +201,10 @@ void ComputeDPMTA::initialize()
   // ONLY THE MASTER (NODE 0) NEEDS TO DO THIS:
 
   int numProcs = CNumPes();
+  {
+    int npatches=(PatchMap::Object())->numPatches();
+    if ( numProcs > npatches ) numProcs = npatches;
+  }
   slavetids = new int[numProcs];
   if (slavetids == NULL)
   {
@@ -505,12 +509,15 @@ void ComputeDPMTA::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1052 $	$Date: 1999/01/06 00:56:20 $
+ *	$Revision: 1.1053 $	$Date: 1999/02/17 04:09:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.C,v $
+ * Revision 1.1053  1999/02/17 04:09:55  jim
+ * Fixes to make optional force modules work with more nodes than patches.
+ *
  * Revision 1.1052  1999/01/06 00:56:20  jim
  * All compute objects except DPMTA now return diagonal of virial tensor.
  *

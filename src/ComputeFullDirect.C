@@ -11,6 +11,7 @@
 #include "Namd.h"
 #include "Node.h"
 #include "PatchMap.h"
+#include "PatchMap.inl"
 #include "AtomMap.h"
 #include "ComputeFullDirect.h"
 #include "ComputeNonbondedUtil.h"
@@ -60,6 +61,13 @@ void ComputeFullDirect::doWork()
   BigReal *newLocalResults;
   register BigReal *local_ptr;
   Lattice *lattice;
+
+  int numWorkingPes = CNumPes();
+  {
+    int npatches=(PatchMap::Object())->numPatches();
+    if ( numWorkingPes > npatches ) numWorkingPes = npatches;
+  }
+  
 
   ResizeArrayIter<PatchElem> ap(patchList);
 
@@ -125,9 +133,9 @@ void ComputeFullDirect::doWork()
   BigReal electEnergy = 0;
   Vector virial(0.,0.,0.);
 
-#define PEMOD(N) (((N)+CNumPes())%CNumPes())
+#define PEMOD(N) (((N)+numWorkingPes)%numWorkingPes)
 
-  int numStages = CNumPes() / 2 + 2;
+  int numStages = numWorkingPes / 2 + 2;
   int lastStage = numStages - 2;
   int sendDataPE = PEMOD(CMyPe()+1);
   int recvDataPE = PEMOD(CMyPe()-1);
@@ -186,7 +194,7 @@ void ComputeFullDirect::doWork()
         localData,localResults,numLocalAtoms,1,lattice,virial);
     }
     else if ( stage < lastStage ||
-            ( stage == lastStage && ( CNumPes() % 2 ) ) )
+            ( stage == lastStage && ( numWorkingPes % 2 ) ) )
     {  // full other interaction
       DebugM(4,"full other interaction\n");
       electEnergy += calc_fulldirect(
@@ -196,7 +204,7 @@ void ComputeFullDirect::doWork()
     else if ( stage == lastStage )
     {  // half other interaction
       DebugM(4,"half other interaction\n");
-      if ( CMyPe() < ( CNumPes() / 2 ) )
+      if ( CMyPe() < ( numWorkingPes / 2 ) )
         electEnergy += calc_fulldirect(
           localData,localResults,numLocalAtoms/2,
           remoteData,remoteResults,numRemoteAtoms,0,lattice,virial);
@@ -279,12 +287,15 @@ void ComputeFullDirect::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1999/01/06 00:56:21 $
+ *	$Revision: 1.1018 $	$Date: 1999/02/17 04:09:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFullDirect.C,v $
+ * Revision 1.1018  1999/02/17 04:09:55  jim
+ * Fixes to make optional force modules work with more nodes than patches.
+ *
  * Revision 1.1017  1999/01/06 00:56:21  jim
  * All compute objects except DPMTA now return diagonal of virial tensor.
  *

@@ -143,6 +143,7 @@ void ComputeMDComm::calculate() {
   DebugM(4,"Calculating forces on master\n");
 
   resultsMsg = new (MsgIndex(ComputeGlobalResultsMsg)) ComputeGlobalResultsMsg;
+  resultsMsg->gforce.resize(gmass.size());
 
   iout << iDEBUG << "MDComm - calculate()\n" << endi; 
 
@@ -176,12 +177,15 @@ void ComputeMDComm::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1998/04/30 04:53:23 $
+ *	$Revision: 1.2 $	$Date: 1999/02/17 04:09:56 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMDComm.C,v $
+ * Revision 1.2  1999/02/17 04:09:56  jim
+ * Fixes to make optional force modules work with more nodes than patches.
+ *
  * Revision 1.1  1998/04/30 04:53:23  jim
  * Added forces from MDComm and other improvements to ComputeGlobal.
  *
