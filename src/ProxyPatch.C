@@ -63,6 +63,7 @@ void ProxyPatch::receiveData(ProxyDataMsg *msg)
   msgBuffer = NULL;
   flags = msg->flags;
   p = msg->positionList;
+  numAtoms = p.size();  // for new proxies since receiveAtoms is not called
   p_avg = msg->avgPositionList;
   delete msg;
   positionsReady(0);
