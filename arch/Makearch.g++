@@ -9,8 +9,8 @@
 ####
 CC = gcc
 CXX = g++
-CXXOPTS = -g -DGLOBALS -DGCC
-COPTS = -g -DGLOBALS -DGCC
+CXXOPTS = -O -DGLOBALS -DGCC
+COPTS = -O -DGCC
 
 #####
 # Flags
@@ -20,6 +20,7 @@ COPTS = -g -DGLOBALS -DGCC
 # uncomment for purify during compile
 # PURIFY=-purify
 
+DFLAGS = -O -DGCC
 PVM_ARCH=linux
 
 #####
@@ -31,11 +32,11 @@ CHARM = /Home/p1/milind/charm/net-linux
 ######
 ## definitions for TCL interface
 ######
-TCLDIR=/usr/local
-TCLINCL=-I$(TCLDIR)/include
-TCLLIB=-L$(TCLDIR)/lib -ltclx -ltcl
-TCLFLAGS=-DNAMD_TCL
-TCL=$(TCLINCL) $(TCLFLAGS)
+#TCLDIR=/usr/local
+#TCLINCL=-I$(TCLDIR)/include
+#TCLLIB=-L$(TCLDIR)/lib -ltclx -ltcl
+#TCLFLAGS=-DNAMD_TCL
+#TCL=$(TCLINCL) $(TCLFLAGS)
 
 #####
 # Unix commands
