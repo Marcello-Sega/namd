@@ -396,6 +396,7 @@ void ComputeNonbondedUtil :: NAME
 
       int table_i = (int) ( r2_delta_1 * r2 );
       FAST(
+      const BigReal r_2 = 1.0 / r2;
       const BigReal* const fast_i = fast_table + 4*table_i;
       BigReal fast_a = fast_i[0];
       )
@@ -480,7 +481,6 @@ void ComputeNonbondedUtil :: NAME
       const BigReal A = scaling * lj_pars->A;
       const BigReal B = scaling * lj_pars->B;
 
-      const BigReal r_2 = 1.0 / r2;
       const BigReal r_6 = r_2*r_2*r_2;
       const BigReal r_12 = r_6*r_6;
 
