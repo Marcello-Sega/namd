@@ -6,6 +6,7 @@
 
 #include "PmeKSpace.h"
 #include <math.h>
+#include <stdlib.h>
 
 static void dftmod(double *bsp_mod, double *bsp_arr, int nfft) {
   int j, k;
