@@ -122,8 +122,6 @@ OBJS = \
 	$(DSTDIR)/Sequencer.o \
 	$(DSTDIR)/Set.o \
 	$(DSTDIR)/SimParameters.o \
-	$(DSTDIR)/SMD.o \
-	$(DSTDIR)/SMDMsgs.o \
 	$(DSTDIR)/TclCommands.o \
 	$(DSTDIR)/TestController.o \
 	$(DSTDIR)/TestSequencer.o \
