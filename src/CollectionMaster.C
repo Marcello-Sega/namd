@@ -17,6 +17,7 @@
 #include "SimParameters.h"
 #include "packmsg.h"
 #include <stdio.h>
+#include <signal.h>
 
 // #define DEBUGM
 #include "Debug.h"
@@ -54,6 +55,18 @@ void CollectionMaster::enqueuePositions(int seq, Lattice &lattice)
   while ( ( c = positions.removeReady() ) ) { disposePositions(c); }
 }
 
+// Handle SIGINT so that restart files get written completely.
+// This should assure that the coordinate restart file corresponds to
+// the last dcd frame; there's no guarantee that velocity or xsc files
+// have any such correspondence.
+static int gotsigint = 0;
+static void my_sigint_handler(int sig) {
+  if (sig == SIGINT) gotsigint = 1;
+}
+extern "C" {
+  typedef void (*sighandler_t)(int);
+}
+
 void CollectionMaster::disposePositions(CollectVectorInstance *c)
 {
     DebugM(3,"Collected positions at " << c->seq << endl);
@@ -62,7 +75,15 @@ void CollectionMaster::disposePositions(CollectVectorInstance *c)
     if ( ! size ) size = c->fdata.size();
     Vector *data = c->data.begin();
     FloatVector *fdata = c->fdata.begin();
+    sighandler_t oldhandler = signal(SIGINT, my_sigint_handler);
     Node::Object()->output->coordinate(seq,size,data,fdata,c->lattice);
+    signal(SIGINT, oldhandler);
+    if (gotsigint) {
+      iout << iINFO 
+        << "Received SIGINT, shutting down after writing restart files.\n" 
+        << endi;
+      NAMD_quit();
+    }
     c->free();
 }
 
