@@ -1,7 +1,7 @@
 #####
 # define version
 #####
-NAMD_VERSION = 2.5b2
+NAMD_VERSION = 2.5b3
 
 #####
 # specific names of programs used in make commands
