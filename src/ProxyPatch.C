@@ -29,7 +29,7 @@ ProxyPatch::~ProxyPatch()
 {
   DebugM(4, "ProxyPatch(" << pd << ") deleted at " << this << "\n");
   ProxyMgr::Object()->unregisterProxy(patchID);
-  numAtoms = -1;
+  AtomMap::Object()->unregisterIDs(patchID,p.begin(),p.end());
 }
 
 void ProxyPatch::boxClosed(int box)
