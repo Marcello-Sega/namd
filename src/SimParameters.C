@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: sergei $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1027 $  $Date: 1998/01/05 20:28:18 $
+ *  $Revision: 1.1028 $  $Date: 1998/01/05 22:07:50 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1028  1998/01/05 22:07:50  sergei
+ * *** empty log message ***
+ *
  * Revision 1.1027  1998/01/05 20:28:18  sergei
  * Introduced SMD parameters.
  *
@@ -411,7 +414,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1027 1998/01/05 20:28:18 sergei Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1028 1998/01/05 22:07:50 sergei Exp $";
 
 
 #include "ckdefs.h"
@@ -838,8 +841,8 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.range("SMDAtom", POSITIVE);
    opts.optional("SMD", "SMDOutputFreq",
 		 "Frequency of output",
-		 &SMDOutputFreq, 0);
-   opts.range("SMDOutputFreq", NOT_NEGATIVE);
+		 &SMDOutputFreq, 1);
+   opts.range("SMDOutputFreq", POSITIVE);
    
    opts.optional("SMD", "SMDTStamp",
 		 "Timestep of the last refPos change",
@@ -2809,12 +2812,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1027 $  $Date: 1998/01/05 20:28:18 $
+ *  $Revision: 1.1028 $  $Date: 1998/01/05 22:07:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1028  1998/01/05 22:07:50  sergei
+ * *** empty log message ***
+ *
  * Revision 1.1027  1998/01/05 20:28:18  sergei
  * Introduced SMD parameters.
  *
