@@ -458,6 +458,14 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     if ( recipPeDest[node] ) ++numDestRecipPes;
   }
 
+  if ( numSources ) {
+    iout << iINFO << "PME " << CkMyPe() << " sources:";
+    for ( node=0; node<numNodes; ++node ) {
+      if ( source_flags[node] ) iout << " " << node;
+    }
+    iout << "\n" << endi;
+  }
+
   delete [] source_flags;
 
   // CkPrintf("PME on node %d has %d sources and %d destinations\n",

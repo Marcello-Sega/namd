@@ -565,6 +565,7 @@ void WorkDistrib::assignPatchesToLowestLoadNode()
   Node *node = nd.ckLocalBranch();
 
   int *load = new int[node->numNodes()];
+  int *assignedNodes = new int[patchMap->numPatches()];
   for (int i=0; i<node->numNodes(); i++) {
     load[i] = 0;
   }
@@ -575,18 +576,13 @@ void WorkDistrib::assignPatchesToLowestLoadNode()
     for (int i=1; i < node->numNodes(); i++) {
       if (load[i] < load[assignedNode]) assignedNode = i;
     }
-    patchMap->assignNode(pid, assignedNode);
+    assignedNodes[pid] = assignedNode;
     load[assignedNode] += patchMap->patch(pid)->getNumAtoms() + 1;
-
-    /*
-    iout << iINFO << "Patch (" << pid << ") has " 
-      << patchMap->patch(pid)->getNumAtoms() 
-      << " atoms:  Assigned to Node(" << assignedNode << ")\n" 
-      << endi;
-    */
   }
 
   delete[] load;
+  sortNodesAndAssign(assignedNodes);
+  delete[] assignedNodes;
 }
 
 //----------------------------------------------------------------------
@@ -626,12 +622,61 @@ void WorkDistrib::assignPatchesBitReversal()
   // extract and sort patch locations
   seq.resize(npatches);
   seq.sort();
-  // iout << iINFO << "PATCH LOCATIONS:";
-  // for ( pid=0; pid<npatches; ++pid ) { iout << " " << seq[pid]; }
-  // iout << "\n" << endi;
+
+  sortNodesAndAssign(seq.begin());
+}
+
+//----------------------------------------------------------------------
+struct nodesort {
+  int node;
+  int a_total;
+  int npatches;
+  nodesort() : node(-1),a_total(0),npatches(0) { ; }
+  int operator==(const nodesort &o) const {
+    float a1 = ((float)a_total)/((float)npatches);
+    float a2 = ((float)o.a_total)/((float)o.npatches);
+    return (a1 == a2);
+  }
+  int operator<(const nodesort &o) const {
+    float a1 = ((float)a_total)/((float)npatches);
+    float a2 = ((float)o.a_total)/((float)o.npatches);
+    return (a1 < a2);
+  }
+};
+
+void WorkDistrib::sortNodesAndAssign(int *assignedNode) {
+  int i, pid; 
+  PatchMap *patchMap = PatchMap::Object();
+  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  Node *node = nd.ckLocalBranch();
+  int nnodes = node->numNodes();
+  int npatches = patchMap->numPatches();
+
+  ResizeArray<nodesort> allnodes(nnodes);
+  for ( i=0; i < nnodes; ++i ) {
+    allnodes[i].node = i;
+  }
+  for ( pid=0; pid<npatches; ++pid ) {
+    // iout << pid << " " << assignedNode[pid] << "\n" << endi;
+    allnodes[assignedNode[pid]].npatches++;
+    allnodes[assignedNode[pid]].a_total += patchMap->index_a(pid);
+  }
+  SortableResizeArray<nodesort> usednodes(nnodes);
+  usednodes.resize(0);
+  for ( i=0; i < nnodes; ++i ) {
+    if ( allnodes[i].npatches ) usednodes.add(allnodes[i]);
+  }
+  usednodes.sort();
+  int nused = usednodes.size();
+  int i2 = nused/2;
+  for ( i=0; i < nnodes; ++i ) {
+    if ( allnodes[i].npatches ) allnodes[usednodes[i2++].node].node = i;
+    if ( i2 == nused ) i2 = 0;
+  }
 
   for ( pid=0; pid<npatches; ++pid ) {
-    patchMap->assignNode(pid, seq[pid]);
+    // iout << pid << " " <<  allnodes[assignedNode[pid]].node << "\n" << endi;
+    patchMap->assignNode(pid, allnodes[assignedNode[pid]].node);
   }
 }
 
@@ -639,27 +684,34 @@ void WorkDistrib::assignPatchesBitReversal()
 void WorkDistrib::assignPatchesRoundRobin() 
 {
   int pid; 
-  int assignedNode = 0;
   PatchMap *patchMap = PatchMap::Object();
   CProxy_Node nd(CpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
+  int *assignedNode = new int[patchMap->numPatches()];
 
   for(pid=0; pid < patchMap->numPatches(); pid++) {
-    assignedNode = pid % node->numNodes();
-    patchMap->assignNode(pid, assignedNode);
+    assignedNode[pid] = pid % node->numNodes();
   }
+
+  sortNodesAndAssign(assignedNode);
+  delete [] assignedNode;
 }
 
 //----------------------------------------------------------------------
 void WorkDistrib::assignPatchesRecursiveBisection() 
 {
+  PatchMap *patchMap = PatchMap::Object();
+  int *assignedNode = new int[patchMap->numPatches()];
   RecBisection recBisec(Node::Object()->numNodes(),PatchMap::Object());
-  if ( !recBisec.partition((int *)NULL) ) {
+  if ( recBisec.partition(assignedNode) ) {
+    sortNodesAndAssign(assignedNode);
+  } else {
     iout << iWARN 
 	 << "WorkDistrib: Recursive bisection fails,"
 	 << "invoking least-load algorithm\n";
     assignPatchesToLowestLoadNode();
   }
+  delete [] assignedNode;
 }
 
 //----------------------------------------------------------------------
