@@ -30,25 +30,30 @@ void NonbondedExclElem::computeForce(BigReal *reduction)
 
   register Patch *patch = p0->p;
 
-  register int localIndex0 = localIndex[0];
-  register int localIndex1 = localIndex[1];
+  if ( patch->flags.doNonbonded )
+  {
+    register int localIndex0 = localIndex[0];
+    register int localIndex1 = localIndex[1];
 
-  Vector x01(patch->lattice.delta(p0->x[localIndex0], p1->x[localIndex1]));
+    Vector x01(patch->lattice.delta(p0->x[localIndex0], p1->x[localIndex1]));
 
-  if ( patch->flags.doFullElectrostatics )
-    ComputeNonbondedUtil::calcFullExcl(
+    if ( patch->flags.doFullElectrostatics )
+      ComputeNonbondedUtil::calcFullExcl(
 	x01,
-	p0->f[localIndex0], p1->f[localIndex1],
+	p0->r->f[Results::nbond][localIndex0],
+	p1->r->f[Results::nbond][localIndex1],
 	p0->r->f[Results::slow][localIndex0],
 	p1->r->f[Results::slow][localIndex1],
 	p0->a[localIndex0], p1->a[localIndex1],
 	modified, reduction);
-  else
-    ComputeNonbondedUtil::calcExcl(
+    else
+      ComputeNonbondedUtil::calcExcl(
 	x01,
-	p0->f[localIndex0], p1->f[localIndex1],
+	p0->r->f[Results::nbond][localIndex0],
+	p1->r->f[Results::nbond][localIndex1],
 	p0->a[localIndex0], p1->a[localIndex1],
 	modified, reduction);
+  }
 }
 
 
@@ -125,13 +130,16 @@ ComputeNonbondedExcls::loadTuples() {
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedExcl.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/03/19 11:54:11 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1011 $	$Date: 1997/03/25 23:00:56 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedExcl.C,v $
+ * Revision 1.1011  1997/03/25 23:00:56  jim
+ * Added nonbondedFrequency parameter and multiple time-stepping
+ *
  * Revision 1.1010  1997/03/19 11:54:11  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

@@ -21,16 +21,17 @@ class Flags
 {
 public:
   int seq;			// sequence number
+  int doNonbonded;
   int doFullElectrostatics;
 
 private:
-  // int spacer;  // Use this to keep byte-aligned for now.  -JCP
+  int spacer;  // Use this to keep byte-aligned for now.  -JCP
 };
 
 class Results
 {
 public:
-  enum { normal, slow, maxNumForces };
+  enum { normal, nbond, slow, maxNumForces };
   Force *f[maxNumForces];
 };
 
@@ -42,12 +43,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1997/03/19 11:54:48 $
+ *	$Revision: 1.5 $	$Date: 1997/03/25 23:01:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchTypes.h,v $
+ * Revision 1.5  1997/03/25 23:01:00  jim
+ * Added nonbondedFrequency parameter and multiple time-stepping
+ *
  * Revision 1.4  1997/03/19 11:54:48  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

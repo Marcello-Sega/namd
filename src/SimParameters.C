@@ -11,7 +11,7 @@
  *
  *	$RCSfile: SimParameters.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/03/21 23:05:45 $
+ *	$Revision: 1.1007 $	$Date: 1997/03/25 23:01:03 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1007  1997/03/25 23:01:03  jim
+ * Added nonbondedFrequency parameter and multiple time-stepping
+ *
  * Revision 1.1006  1997/03/21 23:05:45  jim
  * Added Berendsen's pressure coupling method, won't work with MTS yet.
  *
@@ -335,7 +338,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1006 1997/03/21 23:05:45 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1007 1997/03/25 23:01:03 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -509,7 +512,11 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.optional("main", "rigidBonds", "Rigid bonds to hydrogen",PARSE_STRING);
    opts.optional("main", "rigidTolerance", 
                   "Error tolerance for rigid bonds to hydrogen",&rigidTol);
-   
+
+   opts.optional("main", "nonbondedFreq", "Nonbonded evaluation frequency",
+		&nonbondedFrequency, 1);
+   opts.range("nonbondedFreq", POSITIVE);
+
    /////////////// file I/O
    opts.optional("main", "cwd", "current working directory", PARSE_STRING);
 
@@ -2006,6 +2013,11 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    }
    
 
+   if (nonbondedFrequency != 1)
+   {
+     iout << iINFO << "NONBONDED FORCES EVALUATED EVERY " << nonbondedFrequency << " STEPS\n";
+   }
+
    iout << iINFO << "RANDOM NUMBER SEED     "
    	 << randomSeed << "\n";
 
@@ -2164,6 +2176,7 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
 	msg->put(fmaFrequency).put(fmaTheta);
         msg->put(rigidBonds);
         msg->put(rigidTol);
+	msg->put(nonbondedFrequency);
 
 	// send hydrogen bond data
 	msg->put(HydrogenBonds).put(useAntecedent);
@@ -2285,6 +2298,7 @@ void SimParameters::receive_SimParameters(Message *msg)
 	msg->get(fmaTheta);
 	msg->get(rigidBonds);
 	msg->get(rigidTol);
+	msg->get(nonbondedFrequency);
 
 	// receive hydrogen bond data
 	msg->get(HydrogenBonds);
@@ -2337,12 +2351,15 @@ void SimParameters::receive_SimParameters(Message *msg)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/03/21 23:05:45 $
+ *	$Revision: 1.1007 $	$Date: 1997/03/25 23:01:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1007  1997/03/25 23:01:03  jim
+ * Added nonbondedFrequency parameter and multiple time-stepping
+ *
  * Revision 1.1006  1997/03/21 23:05:45  jim
  * Added Berendsen's pressure coupling method, won't work with MTS yet.
  *

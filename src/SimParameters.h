@@ -83,6 +83,8 @@ public:
 	Lattice lattice;		//  All data for periodic cell
 	
 
+	int nonbondedFrequency;		//  Number of timesteps between
+					//  nonbonded evaluation
 	int fmaFrequency;		//  Number of timesteps between
 					//  FMA execution
         BigReal fmaTheta;	        //  DPMTA theta value
@@ -296,12 +298,15 @@ public:
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/21 23:05:47 $
+ *	$Revision: 1.1005 $	$Date: 1997/03/25 23:01:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1005  1997/03/25 23:01:05  jim
+ * Added nonbondedFrequency parameter and multiple time-stepping
+ *
  * Revision 1.1004  1997/03/21 23:05:47  jim
  * Added Berendsen's pressure coupling method, won't work with MTS yet.
  *

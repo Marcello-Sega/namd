@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1022 1997/03/25 04:04:57 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1023 1997/03/25 23:01:02 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -86,7 +86,12 @@ void Sequencer::algorithm(void)
     const int dofull = ( simParams->fullDirectOn || simParams->FMAOn );
     const BigReal slowstep = timestep * stepsPerCycle;
     int &doFullElectrostatics = patch->flags.doFullElectrostatics;
-    doFullElectrostatics = dofull;
+    doFullElectrostatics = (dofull && !(step%stepsPerCycle));
+
+    const int nonbondedFrequency = simParams->nonbondedFrequency;
+    const BigReal nbondstep = timestep * nonbondedFrequency;
+    int &doNonbonded = patch->flags.doNonbonded;
+    doNonbonded = !(step%nonbondedFrequency);
 
     runComputeObjects();
     submitReductions(step);
@@ -98,17 +103,23 @@ void Sequencer::algorithm(void)
     for ( ++step; step <= numberOfSteps; ++step )
     {
 	addForceToMomentum(0.5*timestep);
-	if (dofull && !(step%stepsPerCycle))
+	if (doNonbonded)
+		addForceToMomentum(0.5*nbondstep,Results::nbond);
+	if (doFullElectrostatics)
 		addForceToMomentum(0.5*slowstep,Results::slow);
+
 	addVelocityToPosition(timestep);
 
+	doNonbonded = !(step%nonbondedFrequency);
 	doFullElectrostatics = (dofull && !(step%stepsPerCycle));
 
 	// Migrate Atoms on stepsPerCycle
 	runComputeObjects(!(step%stepsPerCycle));
 
 	addForceToMomentum(0.5*timestep);
-	if (dofull && !(step%stepsPerCycle))
+	if (doNonbonded)
+		addForceToMomentum(0.5*nbondstep,Results::nbond);
+	if (doFullElectrostatics)
 		addForceToMomentum(0.5*slowstep,Results::slow);
 
 	submitReductions(step);
@@ -209,12 +220,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1022 $     $Date: 1997/03/25 04:04:57 $
+ *      $Revision: 1.1023 $     $Date: 1997/03/25 23:01:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1023  1997/03/25 23:01:02  jim
+ * Added nonbondedFrequency parameter and multiple time-stepping
+ *
  * Revision 1.1022  1997/03/25 04:04:57  jim
  * Simplified algorithm a bit.
  *

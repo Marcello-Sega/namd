@@ -44,11 +44,14 @@ void ComputeNonbondedSelf::doForce(Position* p,
   BigReal reductionData[reductionDataSize];
   for ( int i = 0; i < reductionDataSize; ++i ) reductionData[i] = 0;
 
-  if ( patch->flags.doFullElectrostatics )
-    calcFullSelf(p,r->f[Results::normal],r->f[Results::slow],
+  if ( patch->flags.doNonbonded )
+  {
+    if ( patch->flags.doFullElectrostatics )
+      calcFullSelf(p,r->f[Results::nbond],r->f[Results::slow],
 	a,numAtoms,reductionData);
-  else
-    calcSelf(p,r->f[Results::normal],a,numAtoms,reductionData);
+    else
+      calcSelf(p,r->f[Results::nbond],a,numAtoms,reductionData);
+  }
 
   submitReductionData(reductionData,reduction,patch->flags.seq);
 }
@@ -58,12 +61,15 @@ void ComputeNonbondedSelf::doForce(Position* p,
  *
  *	$RCSfile: ComputeNonbondedSelf.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/18 21:35:30 $
+ *	$Revision: 1.1005 $	$Date: 1997/03/25 23:00:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.C,v $
+ * Revision 1.1005  1997/03/25 23:00:59  jim
+ * Added nonbondedFrequency parameter and multiple time-stepping
+ *
  * Revision 1.1004  1997/03/18 21:35:30  jim
  * Eliminated fake_seq.  Reductions now use Patch::flags.seq.
  *

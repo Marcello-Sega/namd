@@ -35,7 +35,7 @@ ComputeNonbondedPair::~ComputeNonbondedPair()
 
 int ComputeNonbondedPair::noWork() {
 
-  if ( numAtoms[0] && numAtoms[1] )
+  if ( numAtoms[0] && numAtoms[1] && patch[0]->flags.doNonbonded )
   {
     return 0;  // work to do, enqueue as usual
   } else
@@ -82,8 +82,8 @@ void ComputeNonbondedPair::doForce(Position* p[2],
   for ( int i = 0; i < reductionDataSize; ++i ) reductionData[i] = 0;
 
   Force *f[2];
-  f[0] = r[0]->f[Results::normal];
-  f[1] = r[1]->f[Results::normal];
+  f[0] = r[0]->f[Results::nbond];
+  f[1] = r[1]->f[Results::nbond];
   Force *f2[2];
   f2[0] = r[0]->f[Results::slow];
   f2[1] = r[1]->f[Results::slow];
@@ -131,12 +131,15 @@ void ComputeNonbondedPair::doForce(Position* p[2],
  *
  *	$RCSfile: ComputeNonbondedPair.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/03/18 21:35:28 $
+ *	$Revision: 1.1007 $	$Date: 1997/03/25 23:00:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.C,v $
+ * Revision 1.1007  1997/03/25 23:00:57  jim
+ * Added nonbondedFrequency parameter and multiple time-stepping
+ *
  * Revision 1.1006  1997/03/18 21:35:28  jim
  * Eliminated fake_seq.  Reductions now use Patch::flags.seq.
  *
