@@ -52,6 +52,7 @@ class PmeTransMsg : public CMessage_PmeTransMsg {
 public:
 
   int sourceNode;
+  Lattice lattice;
   int x_start;
   int nx;
   double *qgrid;
@@ -62,6 +63,8 @@ class PmeUntransMsg : public CMessage_PmeUntransMsg {
 public:
 
   int sourceNode;
+  double energy;
+  double virial[6];
   int y_start;
   int ny;
   double *qgrid;
@@ -119,6 +122,8 @@ private:
   int fgrid_len;
 
   int numSources;
+  int numGridPes;
+  int numTransPes;
   int numRecipPes;
   int numDestRecipPes;
   int firstDestRecipPe;
@@ -136,6 +141,8 @@ private:
   PmeGridMsg **gridmsg_reuse;
   double recipEnergy;
   double recip_vir[6];
+  double recipEnergy2;
+  double recip_vir2[6];
 };
 
 ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), pmeCompute(0) {
@@ -195,10 +202,13 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     if ( by != ( dimy + nrp - 1 ) / nrp )
       NAMD_bug("Error in selecting number of PME processors.");
 
+    numGridPes = nrpbx;
+    numTransPes = nrpby;
     numRecipPes = nrp;
   }
   if ( ! CkMyPe() ) {
     iout << iINFO << "PME using " << numRecipPes <<
+      " (max of " << numGridPes << " and " << numTransPes << ")" <<
       " processors for FFT and reciprocal sum.\n" << endi;
   }
 
@@ -349,9 +359,11 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   NAMD_die("Sorry, FFTW must be compiled in to use PME.");
 #endif
 
-  if ( numSources == 0 ) NAMD_bug("PME grid elements exist without sources.");
+  if ( myRecipPe < numGridPes && numSources == 0 )
+		NAMD_bug("PME grid elements exist without sources.");
   grid_count = numSources;
   memset( (void*) qgrid, 0, qgrid_len * sizeof(double) );
+  if ( myRecipPe >= numGridPes ) trans_count = numGridPes;
 }
 
 ComputePmeMgr::~ComputePmeMgr() {
@@ -427,12 +439,13 @@ void ComputePmeMgr::sendTrans(void) {
   int nx = localInfo[myRecipPe].nx;
   int x_start = localInfo[myRecipPe].x_start;
   int slicelen = myGrid.K2 * zdim;
-  for (int j=0; j<numRecipPes; j++) {
-    int pe = ( j + myRecipPe ) % numRecipPes;  // different order on each node
+  for (int j=0; j<numTransPes; j++) {
+    int pe = ( j + myRecipPe ) % numTransPes;  // different order on each node
     LocalPmeInfo &li = localInfo[pe];
     int cpylen = li.ny_after_transpose * zdim;
     PmeTransMsg *newmsg = new (nx * cpylen,0) PmeTransMsg;
     newmsg->sourceNode = myRecipPe;
+    newmsg->lattice = lattice;
     newmsg->x_start = x_start;
     newmsg->nx = nx;
     double *q = qgrid + li.y_start_after_transpose * zdim;
@@ -449,7 +462,7 @@ void ComputePmeMgr::sendTrans(void) {
 #endif
   }
 
-  trans_count = numRecipPes;
+  trans_count = numGridPes;
   if ( trans_buf_len ) {
     // CkPrintf("resending %d recvTrans on Pe(%d)\n",trans_buf_len,CkMyPe());
     for ( int m=0; m<trans_buf_len; ++m ) {
@@ -461,6 +474,7 @@ void ComputePmeMgr::sendTrans(void) {
     }
     trans_buf_len = 0;
   }
+  if ( myRecipPe >= numTransPes ) untrans_count = numTransPes;
 }
 
 void ComputePmeMgr::recvTrans(PmeTransMsg *msg) {
@@ -468,6 +482,9 @@ void ComputePmeMgr::recvTrans(PmeTransMsg *msg) {
   if ( trans_count == 0 ) {
     trans_buf[trans_buf_len++] = msg;
     return;
+  }
+  if ( trans_count == numGridPes ) {
+    lattice = msg->lattice;
   }
 
   int zdim = myGrid.dim3;
@@ -505,8 +522,8 @@ void ComputePmeMgr::gridCalc2(void) {
 
   // reciprocal space portion of PME
   BigReal ewaldcof = ComputeNonbondedUtil::ewaldcof;
-  recipEnergy = myKSpace->compute_energy(qgrid, lattice, ewaldcof, recip_vir);
-  // CkPrintf("Ewald reciprocal energy = %f\n", recipEnergy);
+  recipEnergy2 = myKSpace->compute_energy(qgrid, lattice, ewaldcof, recip_vir2);
+  // CkPrintf("Ewald reciprocal energy = %f\n", recipEnergy2);
 
   // start backward FFT (x dimension)
 #ifdef NAMD_FFTW
@@ -528,13 +545,24 @@ void ComputePmeMgr::sendUntrans(void) {
   int ny = localInfo[myRecipPe].ny_after_transpose;
 
   // send data for reverse transpose
-  for (int j=0; j<numRecipPes; j++) {
-    int pe = ( j + myRecipPe ) % numRecipPes;  // different order on each node
+  for (int j=0; j<numGridPes; j++) {
+    int pe = ( j + myRecipPe ) % numGridPes;  // different order on each node
     LocalPmeInfo &li = localInfo[pe];
     int x_start =li.x_start;
     int nx = li.nx;
     PmeUntransMsg *newmsg = new (nx*ny*zdim,0) PmeUntransMsg;
     newmsg->sourceNode = myRecipPe;
+    if ( j == 0 ) {  // only need these once
+      newmsg->energy = recipEnergy2;
+      for ( int i=0; i<6; ++i ) {
+        newmsg->virial[i] = recip_vir2[i];
+      }
+    } else {
+      newmsg->energy = 0.;
+      for ( int i=0; i<6; ++i ) {
+        newmsg->virial[i] = 0.;
+      }
+    }
     newmsg->y_start = y_start;
     newmsg->ny = ny;
     memcpy((void*)(newmsg->qgrid), (void*)(qgrid + x_start*ny*zdim),
@@ -546,7 +574,7 @@ void ComputePmeMgr::sendUntrans(void) {
 #endif
   }
 
-  untrans_count = numRecipPes;
+  untrans_count = numTransPes;
   if ( untrans_buf_len ) {
     // CkPrintf("resending %d recvUntrans on Pe(%d)\n",untrans_buf_len,CkMyPe());
     for ( int m=0; m<untrans_buf_len; ++m ) {
@@ -558,6 +586,7 @@ void ComputePmeMgr::sendUntrans(void) {
     }
     untrans_buf_len = 0;
   }
+  if ( myRecipPe >= numGridPes ) trans_count = numGridPes;
 }
 
 void ComputePmeMgr::recvUntrans(PmeUntransMsg *msg) {
@@ -565,6 +594,15 @@ void ComputePmeMgr::recvUntrans(PmeUntransMsg *msg) {
   if ( untrans_count == 0 ) {
     untrans_buf[untrans_buf_len++] = msg;
     return;
+  }
+  if ( untrans_count == numTransPes ) {
+    recipEnergy = 0;
+    for ( int j=0; j<6; ++j ) recip_vir[j] = 0;
+  }
+
+  recipEnergy += msg->energy;
+  for ( int j=0; j<6; ++j ) {
+    recip_vir[j] += msg->virial[j];
   }
 
   int zdim = myGrid.dim3;
