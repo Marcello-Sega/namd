@@ -22,7 +22,7 @@ PACK_MSG(MyMsg,
 
 */
 
-#define PACKMSG_CHECKSUM(X) X
+#define PACKMSG_CHECKSUM(X)
 
 template<class T> class ResizeArray;
 
