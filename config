@@ -2,7 +2,8 @@
 goto begin
 syntax:
   echo ''
-  echo 'Usage: config [debug] [tcl] [fftw] [<build_dir>/]<arch> '
+  echo 'Usage: config [debug] [tcl] [fftw] [<build_dir>/]<arch>[.comment]'
+  echo 'Environment variable NAMD_BUILD_BASE may point to scratch directory.'
   echo ''
   echo '<arch>: ' 
   ( cd arch ; ls -1 *.arch |sed -e 's/\.arch//' | egrep -v 'template' | pr -3 -t)
@@ -42,43 +43,55 @@ begin:
   endif
 
   if ($#argv < 1) goto syntax
-  set ARCH=$1 ; shift
+  set BUILD_DIR=$1 ; shift
+  if ( x$BUILD_DIR == x ) goto syntax
   set DIR=`pwd`;
 
-  if ( x$ARCH == x ) goto syntax
-  if ( ! -f arch/$ARCH:t.arch ) goto syntax
-  if ( -d $ARCH ) goto exists
+  set ARCH=$BUILD_DIR:t
+  if ( ! -f arch/$ARCH.arch ) set ARCH=$ARCH:r
+  if ( ! -f arch/$ARCH.arch ) goto syntax
 
-  echo "Creating Directory: $ARCH"
-  mkdir $ARCH
-  cd $ARCH
+  set BUILD_LINK = $BUILD_DIR
+  if ( $BUILD_DIR:t == $BUILD_DIR && $?NAMD_BUILD_BASE ) then
+    if ( -d $BUILD_DIR:t ) goto exists
+    set UNIQ = `date '+%Y-%b-%d'`-$$
+    set BUILD_DIR = $NAMD_BUILD_BASE/${UNIQ}_$BUILD_DIR
+    echo "Creating link: $BUILD_DIR to $BUILD_LINK"
+    ln -s $BUILD_DIR $BUILD_LINK
+  endif
+
+  if ( -d $BUILD_DIR ) goto exists
+  echo "Creating directory: $BUILD_DIR"
+  mkdir $BUILD_DIR
+  cd $BUILD_DIR
 
   set ROOTDIR=$DIR
-  if ( $ARCH:t == $ARCH ) set ROOTDIR='..'
+  if ( $BUILD_DIR:t == $BUILD_DIR ) set ROOTDIR='..'
+  if ( ./$BUILD_DIR:t == $BUILD_DIR ) set ROOTDIR='..'
 
   echo "Creating link: $ROOTDIR to .rootdir"
   ln -s $ROOTDIR .rootdir
   echo "Creating Makearch"
-  if ( $ARCH:t =~ *Win32* ) then
+  if ( $ARCH =~ *Win32* ) then
    cat .rootdir/Make.charm >! Makearch
-   cat .rootdir/arch/$ARCH:t.arch >> Makearch
+   cat .rootdir/arch/$ARCH.arch >> Makearch
   else
    echo include .rootdir/Make.charm >! Makearch
-   echo include .rootdir/arch/$ARCH:t.arch >> Makearch
+   echo include .rootdir/arch/$ARCH.arch >> Makearch
   endif
   echo 'CHARM = $(CHARMBASE)/$(CHARMARCH)' >> Makearch
-  if ( $ARCH:t =~ *-MPI* ) then
+  if ( $ARCH =~ *-MPI* ) then
     echo 'NAMD_PLATFORM = $(NAMD_ARCH)-MPI' >> Makearch
-  else if ( $ARCH:t =~ *-VMI* ) then
+  else if ( $ARCH =~ *-VMI* ) then
     echo 'NAMD_PLATFORM = $(NAMD_ARCH)-VMI' >> Makearch
-  else if ( $ARCH:t =~ *-ScyldCD* ) then
+  else if ( $ARCH =~ *-ScyldCD* ) then
     echo 'NAMD_PLATFORM = $(NAMD_ARCH)-ScyldCD' >> Makearch
-  else if ( $ARCH:t =~ *-Scyld* ) then
+  else if ( $ARCH =~ *-Scyld* ) then
     echo 'NAMD_PLATFORM = $(NAMD_ARCH)-Scyld' >> Makearch
   else
     echo 'NAMD_PLATFORM = $(NAMD_ARCH)' >> Makearch
   endif
-  if ( $ARCH:t =~ *Win32* ) then
+  if ( $ARCH =~ *Win32* ) then
    cat .rootdir/arch/Win32.base >> Makearch
    if ( $use_tcl ) cat .rootdir/arch/Win32.tcl >> Makearch
    if ( $use_fftw ) cat .rootdir/arch/Win32.fftw >> Makearch
@@ -90,25 +103,26 @@ begin:
     echo 'CXXOPTS = -g' >> Makearch
     echo 'CXXTHREADOPTS = -g' >> Makearch
     echo 'CXXSIMPARAMOPTS = -g' >> Makearch
+    echo 'CXXNOALIASOPTS = -g' >> Makearch
     echo 'COPTS = -g' >> Makearch
    endif
   endif
   echo "Linking Makefiles"
-  if ( $ARCH:t =~ *Win32* ) then
+  if ( $ARCH =~ *Win32* ) then
    cp .rootdir/Makefile ./Makefile
    cp .rootdir/Make.depends ./Make.depends
   else
    ln -s .rootdir/Makefile ./Makefile
    ln -s .rootdir/Make.depends ./Make.depends
   endif
-  if ( $ARCH:t =~ *Win32* ) then
+  if ( $ARCH =~ *Win32* ) then
    echo "Converting text files"
    foreach f ( .rootdir/*.txt )
      perl -p -i -e 's/(?<!\r)\n$/\r\n/' < $f > $f:t
    end
   endif
   echo "Linking src"
-  if ( $ARCH:t =~ *MSVC* ) then
+  if ( $ARCH =~ *MSVC* ) then
     cp -r .rootdir/src ./src
   else
     ln -s .rootdir/src ./src
@@ -131,4 +145,4 @@ begin:
   sh temp.m
   sh temp.l
   rm -f temp.d temp.f temp.m temp.l
-  echo "You are ready to do a make in directory $ARCH now."
+  echo "You are ready to do a make in directory $BUILD_LINK now."
