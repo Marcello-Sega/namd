@@ -47,6 +47,9 @@ while (<>) {
 	}
     }
   }
+  print "\n\t\$(CXX) \$(CXXFLAGS)";
+  print " -o \$(DSTDIR)/\$\@";
+  print " -c \$(SRCDIR)/\$(\@:.o=.C)";
   print "\n";
 }
 
