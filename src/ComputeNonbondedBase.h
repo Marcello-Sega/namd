@@ -68,6 +68,11 @@ DECL( ; )
   BigReal fullElectEnergy = 0;
   BigReal vdwEnergy = 0;
 
+NOEXCL
+(
+  // Bringing stuff into local namespace for speed.
+  // Probably makes things slower in exclusion mode, though.
+
   register const BigReal cutoff2 = ComputeNonbondedUtil:: cutoff2;
   const BigReal dielectric_1 = ComputeNonbondedUtil:: dielectric_1;
 
@@ -81,6 +86,7 @@ DECL( ; )
   const BigReal c3 = ComputeNonbondedUtil:: c3;
   const BigReal c5 = ComputeNonbondedUtil:: c5;
   const BigReal c6 = ComputeNonbondedUtil:: c6;
+)
 
 NOEXCL
 (
@@ -369,12 +375,15 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/02/28 04:47:02 $
+ *	$Revision: 1.1005 $	$Date: 1997/03/10 00:49:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1005  1997/03/10 00:49:46  jim
+ * Eliminated constant copying in exclusion mode, hopefully saves time.
+ *
  * Revision 1.1004  1997/02/28 04:47:02  jim
  * Full electrostatics now works with fulldirect on one node.
  *
