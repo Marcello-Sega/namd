@@ -42,9 +42,6 @@
         SIMPARAM(Bool,pressureProfileNonbonded,0);  // Compute only nonbonded contribution?
         SIMPARAM(int,pressureProfileSlabs,0);       // Number of slabs
         SIMPARAM(int,pressureProfileFreq,0);        // How often to store profile data
-        // rest of pp params are computed from the previous.
-        SIMPARAM(BigReal,pressureProfileMin,0);     // coordinate of bottom of lowest slab
-        SIMPARAM(BigReal,pressureProfileThickness,0);  // thickness of a slab
 
 	SIMPARAM(Bool,lesOn,0);			//  Locally enhanced sampling?
 	SIMPARAM(int,lesFactor,0);			//  local enhancement factor

@@ -449,9 +449,9 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
   int nslabs;
 
   if (ppreduction) {
-    idz = 1.0/simParams->pressureProfileThickness;
-    zmin = simParams->pressureProfileMin;
     nslabs = simParams->pressureProfileSlabs;
+    idz = nslabs/lattice.c().z;
+    zmin = lattice.origin().z - 0.5*lattice.c().z;
   }
   
   for ( int ig = 0; ig < numAtoms; ig += atom[ig].hydrogenGroupSize ) {

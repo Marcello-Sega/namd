@@ -161,8 +161,6 @@ void ComputeNonbondedUtil::select(void)
   pressureProfileNonbonded = simParams->pressureProfileOn && simParams->pressureProfileNonbonded;
   if (pressureProfileNonbonded) {
     pressureProfileSlabs = simParams->pressureProfileSlabs;
-    pressureProfileThickness = simParams->pressureProfileThickness;
-    pressureProfileMin = simParams->pressureProfileMin;
   }
 
   if ( fepOn ) {

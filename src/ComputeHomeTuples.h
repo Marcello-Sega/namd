@@ -192,8 +192,6 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       if (params->pressureProfileOn && !params->pressureProfileNonbonded) {
         pressureProfileSlabs = T::pressureProfileSlabs = 
           params->pressureProfileSlabs;
-        T::pressureProfileThickness = params->pressureProfileThickness;
-        T::pressureProfileMin = params->pressureProfileMin;
         pressureProfileReduction = ReductionMgr::Object()->willSubmit(
           REDUCTIONS_PPROFILE);
         pressureProfileData = new BigReal[3*pressureProfileSlabs];
@@ -213,8 +211,6 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       if (params->pressureProfileOn && !params->pressureProfileNonbonded) {
         pressureProfileSlabs = T::pressureProfileSlabs = 
           params->pressureProfileSlabs;
-        T::pressureProfileThickness = params->pressureProfileThickness;
-        T::pressureProfileMin = params->pressureProfileMin;
         pressureProfileReduction = ReductionMgr::Object()->willSubmit(
           REDUCTIONS_PPROFILE);
         pressureProfileData = new BigReal[3*pressureProfileSlabs];

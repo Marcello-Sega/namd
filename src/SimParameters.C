@@ -3157,8 +3157,6 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      }
      if (pressureProfileSlabs < 1) 
        NAMD_die("pressureProfileSlabs must be positive.");
-     pressureProfileThickness = cellBasisVector3.z / pressureProfileSlabs; 
-     pressureProfileMin = cellOrigin.z - 0.5*cellBasisVector3.z;
      iout << iINFO << "PRESSURE PROFILE CALCULATIONS ACTIVE\n";
      if (pressureProfileNonbonded) {
        iout << iINFO << "      ONLY NONBONDED CONTRIBUTION WILL BE CALCULATED." << "\n";
@@ -3166,7 +3164,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
        iout << iINFO << "      ONLY BONDED AND KINETIC CONTRIBUTION WILL BE CALCULATED." << "\n";
      }
      iout << iINFO << "      NUMBER OF SLABS: " << pressureProfileSlabs << "\n";
-     iout << iINFO << "      SLAB THICKNESS: " << pressureProfileThickness 
+     iout << iINFO << "      SLAB THICKNESS: " << cellBasisVector3.z / pressureProfileSlabs
                    << "\n";
      iout << iINFO << "      TIMESTEPS BETWEEN DATA OUTPUT: " 
                    << pressureProfileFreq << "\n";
