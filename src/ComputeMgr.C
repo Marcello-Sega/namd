@@ -48,6 +48,7 @@
 #include "ComputeSphericalBC.h"
 #include "ComputeCylindricalBC.h"
 #include "ComputeRestraints.h"
+#include "ComputeSMD.h"
 #include "WorkDistrib.h"
 
 ComputeMgr::ComputeMgr(InitMsg *msg)
@@ -267,6 +268,12 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
+      case computeSMDType:
+	c = new ComputeSMD(i,map->computeData[i].pids[0].pid); // unknown delete
+	map->registerCompute(i,c);
+	c->initialize();
+	break;
+      
       default:
 	break;
     }
@@ -366,13 +373,17 @@ void ComputeMgr:: recvComputeGlobalResults(ComputeGlobalResultsMsg *msg)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1997/12/19 23:48:49 $
+ *	$Author: sergei $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1017 $	$Date: 1998/01/05 20:24:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.C,v $
+ * Revision 1.1017  1998/01/05 20:24:26  sergei
+ * added #include "ComputeSMD.h";
+ * added case computeSMDType in ComputeMgr::createCompute for SMD
+ *
  * Revision 1.1016  1997/12/19 23:48:49  jim
  * Added Tcl interface for calculating forces.
  *
