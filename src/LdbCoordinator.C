@@ -147,7 +147,11 @@ LdbCoordinator::LdbCoordinator()
   nodesDone = 0;
 
   // Register self as an object manager for new charm++ balancer framework
+#if CHARM_VERSION > 050610
+  theLbdb = LBDatabase::Object(); 
+#else
   theLbdb = CProxy_LBDatabase::ckLocalBranch(lbdb);
+#endif
 #if CHARM_VERSION > 050403
   myOMid.id.idx = 1;
 #else
