@@ -112,7 +112,7 @@ public:
   LDObjHandle* objHandles;
   int nRegisteredObjs;
   LDBarrierClient ldBarrierHandle;
-  bool reg_all_objs;
+  int reg_all_objs;
   LDObjHandle* patchHandles;
   Migration* migrations;
 };

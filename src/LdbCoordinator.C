@@ -126,7 +126,7 @@ LdbCoordinator::LdbCoordinator()
     AddLocalBarrierClient((LDResumeFn)staticResumeFromSync,
 			  (void*)this);
   objHandles = 0;
-  reg_all_objs = true;
+  reg_all_objs = 1;
   migrations = 0;
 }
 
@@ -260,7 +260,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
       }
     }
     theLbdb->DoneRegisteringObjects(myHandle);
-    reg_all_objs = false;
+    reg_all_objs = 0;
   }
 
   // Fixup to take care of the extra timestep at startup
