@@ -542,7 +542,8 @@ GM library network version by specifying the "gm" option as in:
 You would then change "net-linux-icc" to "net-linux-gm-icc" in your
 namd2/arch/Linux-i686-icc.arch file (or create a new .arch file).
 Alternatively you could use a Myrinet-aware MPI library.  If you want
-to use MPICH-GM you must edit charm/arch/mpi-linux/conv-mach.h to set
+to use MPICH-GM you must use the "gm" option, as in "mpi-linux gm icc"
+or equivalently you can edit charm/arch/mpi-linux/conv-mach.h to set
 "#define CMK_MALLOC_USE_OS_BUILTIN 1" and the other malloc defines to
 0; alternately you could disable memory registration by specifying
 "--with-device=ch_gm:-disable-registration" when configuring MPICH-GM
