@@ -194,12 +194,25 @@ int NamdState::configListInit(ConfigList *cfgList) {
 	     pdb, NULL);
         }
 
-	// If any drag is active, build the parameters necessary
-	if (simParameters->dragOn) {
-	  molecule->build_drag_params(configList->find("dragFile"),
-				      configList->find("dragCol"),
-				      pdb,
-				      NULL);
+	// If moving drag is active, build the parameters necessary
+	if (simParameters->movDragOn) {
+	  molecule->build_movdrag_params(configList->find("movDragFile"),
+					 configList->find("movDragCol"),
+					 configList->find("movDragVelFile"),
+					 pdb,
+					 NULL);
+	}
+
+	// If rotating drag is active, build the parameters necessary
+	if (simParameters->rotDragOn) {
+	  molecule->build_rotdrag_params(configList->find("rotDragFile"),
+					 configList->find("rotDragCol"),
+					 configList->find("rotDragAxisFile"),
+					 configList->find("rotDragPivotFile"),
+					 configList->find("rotDragVelFile"),
+					 configList->find("rotDragVelCol"),
+					 pdb,
+					 NULL);
 	}
 
 	//  If langevin dynamics or temperature coupling are active, build 

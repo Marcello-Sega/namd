@@ -188,9 +188,6 @@ void Sequencer::integrate() {
         if ( ! commOnly && movDragOn ) addMovDragToPosition(timestep);
         if ( ! commOnly && rotDragOn ) addRotDragToPosition(timestep);
 
-	// THIS IS FOR TESTING ONLY
-	//iout << "commOnly = " << commOnly << "; rotDragOn = " << rotDragOn << "\n";
-
 	doNonbonded = !(step%nonbondedFrequency);
 	doFullElectrostatics = (dofull && !(step%fullElectFrequency));
 	doMolly = simParams->mollyOn && doFullElectrostatics;
@@ -227,33 +224,20 @@ void Sequencer::integrate() {
     }
 }
 
-
 // add moving drag to each atom's position
 void Sequencer::addMovDragToPosition(BigReal timestep) {
   FullAtom *atom = patch->atom.begin();
   int numAtoms = patch->numAtoms;
-  Real c;
-  // need to load molecule first before using its methods
-  Molecule *molecule = Node::Object()->molecule;
-  // moving drag parameters
-  const Bool movDragOn = simParams->movDragOn;
-  const Vector movDragVel = simParams->movDragVel;
-  //
-  const BigReal dt = timestep / TIMEFACTOR;  // as in the integrator
-  Vector dragIncrement;
+  Molecule *molecule = Node::Object()->molecule;   // need its methods
+  // the following MUST be the same as in the integrator!
+  const BigReal dt = timestep / TIMEFACTOR;
+  Vector movDragVel, dragIncrement;
   for ( int i = 0; i < numAtoms; ++i )
   {
     // skip if fixed atom or zero drag attribute
-    if ( (simParams->fixedAtomsOn && atom[i].atomFixed) || !(molecule->is_atom_dragged(atom[i].id)) ) continue;
-    // compute the increment
+    if ( (simParams->fixedAtomsOn && atom[i].atomFixed) || !(molecule->is_atom_movdragged(atom[i].id)) ) continue;
+    molecule->get_movdrag_params(movDragVel, atom[i].id);
     dragIncrement = movDragVel * dt;
-    // scale the increment by the individual atom factor
-    dragIncrement *= (molecule->get_drag_params(atom[i].id));
-
-    // THIS LINE IS FOR TESTING ONLY
-    // iout << "get_drag_params(" << atom[i].id << ") = " << molecule->get_drag_params(atom[i].id) << "\n";
-
-    // add the increment increment
     atom[i].position += dragIncrement;
   }
 }
@@ -262,37 +246,24 @@ void Sequencer::addMovDragToPosition(BigReal timestep) {
 void Sequencer::addRotDragToPosition(BigReal timestep) {
   FullAtom *atom = patch->atom.begin();
   int numAtoms = patch->numAtoms;
-  Real c;
-  // need to load molecule first before using its methods
-  Molecule *molecule = Node::Object()->molecule;
-  // rotating drag parameters
-  const Bool rotDragOn = simParams->rotDragOn;
-  const Vector rotDragAxis = simParams->rotDragAxis;
-  const Vector rotDragPivot = simParams->rotDragPivot;
-  const BigReal rotDragVel = simParams->rotDragVel;
-  //
-  const BigReal dt = timestep / TIMEFACTOR;  // as in the integrator
-  const BigReal dAngle = rotDragVel * dt;
-  const Vector rotDragUnit = rotDragAxis / rotDragAxis.length(); 
+  Molecule *molecule = Node::Object()->molecule;   // need its methods
+  // the following MUST be the same as in the integrator!
+  const BigReal dt = timestep / TIMEFACTOR;
+  BigReal rotDragVel, dAngle;
   Vector atomRadius, atomTangent, atomNormal;
-  Vector dragIncrement;
+  Vector rotDragUnit;
+  Vector rotDragAxis, rotDragPivot, dragIncrement;
   for ( int i = 0; i < numAtoms; ++i )
   {
     // skip if fixed atom or zero drag attribute
-    if ( (simParams->fixedAtomsOn && atom[i].atomFixed) || !(molecule->is_atom_dragged(atom[i].id)) ) continue;
-    // do vector algebra
+    if ( (simParams->fixedAtomsOn && atom[i].atomFixed) || !(molecule->is_atom_rotdragged(atom[i].id)) ) continue;
+    molecule->get_rotdrag_params(rotDragVel, rotDragAxis, rotDragPivot, atom[i].id);
+    dAngle = rotDragVel * dt;
+    rotDragUnit = rotDragAxis / rotDragAxis.length();
     atomRadius = atom[i].position - rotDragPivot;
     atomTangent = rotDragUnit * (atomRadius * rotDragUnit) / atomRadius.length();
     atomNormal = atomRadius - atomTangent;
-    // compute the increment
     dragIncrement = cross(rotDragUnit, atomNormal) * dAngle;
-    // scale the increment by the individual atom factor
-    dragIncrement *= (molecule->get_drag_params(atom[i].id));
-
-    // THIS IS FOR TESTING ONLY
-    // iout << "get_drag_params(" << atom[i].id << ") = " << molecule->get_drag_params(atom[i].id) << "\n";
-
-    // add the increment increment
     atom[i].position += dragIncrement;
   }
 }

@@ -186,8 +186,10 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   rigidBondLengths=NULL;
   consIndexes=NULL;
   consParams=NULL;
-  dragIndexes=NULL;
-  dragParams=NULL;
+  movDragIndexes=NULL;
+  movDragParams=NULL;
+  rotDragIndexes=NULL;
+  rotDragParams=NULL;
   consForceIndexes=NULL;
   consForce=NULL;
 //fepb
@@ -211,7 +213,8 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   numAcceptors=0;
   numExclusions=0;
   numConstraints=0;
-  numDrag=0;
+  numMovDrag=0;
+  numRotDrag=0;
   numConsForce=0;
   numFixedAtoms=0;
   numFixedGroups=0;
@@ -1702,13 +1705,23 @@ void Molecule::send_Molecule(Communicate *com_obj)
          }
       }
       
-      //  Send the drag information, if used
-      if (simParams->dragOn) {
-         msg->put(numDrag);
-         msg->put(numAtoms, dragIndexes);
-         if (numDrag)
+      //  Send the moving drag information, if used
+      if (simParams->movDragOn) {
+         msg->put(numMovDrag);
+         msg->put(numAtoms, movDragIndexes);
+         if (numMovDrag)
          {
-           msg->put(numDrag*sizeof(DragParams), (char*)dragParams);
+           msg->put(numMovDrag*sizeof(MovDragParams), (char*)movDragParams);
+         }
+      }
+      
+      //  Send the rotating drag information, if used
+      if (simParams->rotDragOn) {
+         msg->put(numRotDrag);
+         msg->put(numAtoms, rotDragIndexes);
+         if (numRotDrag)
+         {
+           msg->put(numRotDrag*sizeof(RotDragParams), (char*)rotDragParams);
          }
       }
       
@@ -1874,17 +1887,31 @@ void Molecule::receive_Molecule(MIStream *msg)
          }
       }
       
-      //  Get the drag information, if it is active
-      if (simParams->dragOn) {
-         msg->get(numDrag);
-         delete [] dragIndexes;
-         dragIndexes = new int32[numAtoms];
-         msg->get(numAtoms, dragIndexes);
-         if (numDrag)
+      //  Get the moving drag information, if it is active
+      if (simParams->movDragOn) {
+         msg->get(numMovDrag);
+         delete [] movDragIndexes;
+         movDragIndexes = new int32[numAtoms];
+         msg->get(numAtoms, movDragIndexes);
+         if (numMovDrag)
          {
-           delete [] dragParams;
-           dragParams = new DragParams[numDrag];
-           msg->get(numDrag*sizeof(DragParams), (char*)dragParams);
+           delete [] movDragParams;
+           movDragParams = new MovDragParams[numMovDrag];
+           msg->get(numMovDrag*sizeof(MovDragParams), (char*)movDragParams);
+         }
+      }
+      
+      //  Get the rotating drag information, if it is active
+      if (simParams->rotDragOn) {
+         msg->get(numRotDrag);
+         delete [] rotDragIndexes;
+         rotDragIndexes = new int32[numAtoms];
+         msg->get(numAtoms, rotDragIndexes);
+         if (numRotDrag)
+         {
+           delete [] rotDragParams;
+           rotDragParams = new RotDragParams[numRotDrag];
+           msg->get(numRotDrag*sizeof(RotDragParams), (char*)rotDragParams);
          }
       }
       
@@ -2842,216 +2869,538 @@ void Molecule::receive_Molecule(MIStream *msg)
     /*      END OF FUNCTION build_constraint_params    */
 
 
-    /************************************************************************/
-    /*                  */
-    /*      FUNCTION build_drag_params (modified build_constraint_params)   */
-    /*                  */
-    /*   INPUTS:
-    /*  dragFile - value of dragFile from the config file */
-    /*  dragCol - value of dragCol from the config file */
-    /*  initial_pdb - PDB object that contains initial positions  */
-    /*  cwd - Current working directory          */
-    /*                  */
-    /*  This function builds all the parameters that are necessary  */
-    /*  to do moving or rotating drag. This involves looking through    */
-    /*  one or more PDB objects to determine which atoms are dragged, */
-    /*  and what the drag factor for each atom is. This information */
-    /*  is then stored in the arrays dragIndexes and dragParams. */
-    /*                  */
-    /************************************************************************/
+/************************************************************************/
+/*                  */
+/*      FUNCTION build_movdrag_params  */
+/*                  */
+/*   INPUTS:        */
+/*  movDragFile - value of movDragFile from the config file */
+/*  movDragCol - value of movDragCol from the config file */
+/*  movDragVelFile - value of movDragVelFile from the config file */
+/*  initial_pdb - PDB object that contains initial positions  */
+/*  cwd - Current working directory          */
+/*                  */
+/*  This function builds all the parameters that are necessary  */
+/*  to do moving drag. This involves looking through one or more    */
+/*  PDB objects to determine which atoms are dragged,  and what the */
+/*  drag parameters for each atom are. This information is then stored */
+/*  in the arrays movDragIndexes and movDragParams. */
+/*                  */
+/************************************************************************/
 
-    void Molecule::build_drag_params(StringList *dragFile, 
-             StringList *dragCol, 
-             PDB *initial_pdb,
-             char *cwd)
-       
-    {
-       PDB *dPDB;               //  Pointer to other PDB's if used
-       register int i;          //  Loop counter
-       int current_index=0;     //  Index into values used
-       int dccol = 4;            //  Column to look for drag constant in
-       Real dcval = 0;           //  Drag constant value retreived
-       char filename[129];      //  PDB filename
-       
-       //  Get the PDB to read the drag constants from.  Again, if the user
-       //  gave us another file name, open that one.  Otherwise, just use
-       //  the PDB with the initial coordinates
-       if (dragFile == NULL)
-       {
-	 dPDB = initial_pdb;
-       }
-       else
-	 {
-	   if (dragFile->next != NULL)
-	     {
-	       NAMD_die("Multiple definitions of drag constant file in configuration file");
-	     }
+void Molecule::build_movdrag_params(StringList *movDragFile, 
+				    StringList *movDragCol, 
+				    StringList *movDragVelFile, 
+				    PDB *initial_pdb,
+				    char *cwd)
+  
+{
+  PDB *tPDB, *vPDB;        //  Pointers to other PDB file(s)
+  register int i;          //  Loop counter
+  int current_index=0;     //  Index into values used
+  int dtcol = 4;           //  Column to look for drag tag in
+  Real dtval = 0;          //  Drag tag value retreived
+  char mainfilename[129];  //  main moving drag PDB filename
+  char velfilename[129];   //  moving drag velocity PDB filename
+  
+  //  Get the PDB to read the moving drag tags from. Again, if the
+  //  user gave us another file name, open that one.  Otherwise, just
+  //  use the PDB with the initial coordinates
+  if (movDragFile == NULL) {
+    tPDB = initial_pdb;
+    
+  } else {
 
-	   if ( (cwd == NULL) || (dragFile->data[0] == '/') )
-	     {
-	       strcpy(filename, dragFile->data);
-	     }
-	   else
-	     {
-	       strcpy(filename, cwd);
-	       strcat(filename, dragFile->data);
-	     }
-    
-	   dPDB = new PDB(filename);
-	   if ( dPDB == NULL )
-	     {
-	       NAMD_die("Memory allocation failed in Molecule::build_drag_params");
-	     }
-	   
-	   if (dPDB->num_atoms() != numAtoms)
-	     {
-	       NAMD_die("Number of atoms in drag constant PDB doesn't match coordinate PDB");
-	     }
-	 }
-       
-       //  Get the column that the force constant is going to be in.  It
-       //  can be in any of the 5 floating point fields in the PDB, according
-       //  to what the user wants.  The allowable fields are X, Y, Z, O, or
-       //  B which correspond to the 1st, 2nd, ... 5th floating point fields.
-       //  The default is the 4th field, which is the occupancy
-       if (dragCol == NULL)
-       {
-    dccol = 4;
-       }
-       else
-       {
-    if (dragCol->next != NULL)
-    {
-       NAMD_die("Multiple definitions of drag column in config file");
+    if (movDragFile->next != NULL) {
+      NAMD_die("Multiple definitions of moving drag tag file in configuration file");
     }
     
-    if (strcasecmp(dragCol->data, "X") == 0)
-    {
-       dccol=1;
-    }
-    else if (strcasecmp(dragCol->data, "Y") == 0)
-    {
-       dccol=2;
-    }
-    else if (strcasecmp(dragCol->data, "Z") == 0)
-    {
-       dccol=3;
-    }
-    else if (strcasecmp(dragCol->data, "O") == 0)
-    {
-       dccol=4;
-    }
-    else if (strcasecmp(dragCol->data, "B") == 0)
-    {
-       dccol=5;
-    }
-    else
-    {
-       NAMD_die("dragCol must have value of X, Y, Z, O, or B");
-    }
-       }
-       
-       //  Allocate an array that will store an index into the drag
-       //  parameters for each atom.  If the atom is not dragged, its
-       //  value will be set to -1 in this array.
-       dragIndexes = new int32[numAtoms];
-       
-       if (dragIndexes == NULL)
-       {
-    NAMD_die("memory allocation failed in Molecule::build_drag_params()");
-       }
-       
-       //  Loop through all the atoms and find out which ones are dragged
-       for (i=0; i<numAtoms; i++)
-       {
-    //  Get the k value based on where we were told to find it
-    switch (dccol)
-    {
-       case 1:
-    dcval = (dPDB->atom(i))->xcoor();
-    break;
-       case 2:
-    dcval = (dPDB->atom(i))->ycoor();
-    break;
-       case 3:
-    dcval = (dPDB->atom(i))->zcoor();
-    break;
-       case 4:
-    dcval = (dPDB->atom(i))->occupancy();
-    break;
-       case 5:
-    dcval = (dPDB->atom(i))->temperaturefactor();
-    break;
+    if ( (cwd == NULL) || (movDragFile->data[0] == '/') ) {
+      strcpy(mainfilename, movDragFile->data);
+    } else {
+      strcpy(mainfilename, cwd);
+      strcat(mainfilename, movDragFile->data);
+      }
+    
+    tPDB = new PDB(mainfilename);
+    if ( tPDB == NULL ) {
+      NAMD_die("Memory allocation failed in Molecule::build_movdrag_params");
     }
     
-    if (dcval != 0.0)
-    {
-       //  This atom is dragged
-       dragIndexes[i] = current_index;
-       current_index++;
+    if (tPDB->num_atoms() != numAtoms) {
+      NAMD_die("Number of atoms in moving drag tag PDB doesn't match coordinate PDB");
     }
-    else
-    {
-       //  This atom is not dragged
-       dragIndexes[i] = -1;
+  }
+  
+  // Get the PDB to read atom velocities. If no name given, use
+  // movDragFile if it is defined. Can NOT use the PDB coordinate
+  // file!
+  
+  if (movDragVelFile == NULL) {
+    if (movDragFile == NULL) {
+      NAMD_die("Moving drag velocity file can not be same as coordinate PDB file");
+    } else {
+      if (movDragVelFile->next != NULL) {
+	NAMD_die("Multiple definitions of moving drag velocity file in configuration file");
+      };
+      vPDB = tPDB;
+    };
+
+  } else {
+
+    if ( (cwd == NULL) || (movDragVelFile->data[0] == '/') ) {
+      strcpy(velfilename, movDragVelFile->data);
+    } else {
+      strcpy(velfilename, cwd);
+      strcat(velfilename, movDragVelFile->data);
     }
-       }
-       
-       if (current_index == 0)
-       {
+    
+    vPDB = new PDB(velfilename);
+    if ( vPDB == NULL ) {
+      NAMD_die("Memory allocation failed in Molecule::build_movdrag_params");
+    }
+    
+    if (vPDB->num_atoms() != numAtoms) {
+      NAMD_die("Number of atoms in moving drag velocity PDB doesn't match coordinate PDB");
+    }
+  };
+  
+  
+  //  Get the column that the drag tag is going to be in. If
+  //  movDragFile is defined, it can be in any of the 5 floating point
+  //  fields in the PDB (X, Y, Z, O, or B) which correspond to the
+  //  1st, 2nd, ... 5th floating point fields. If movDragFile is NOT
+  //  defined, it can only be O or B fileds. The default is the O
+  //  (4th) field, which is the occupancy.
+
+  if (movDragCol == NULL) {
+    dtcol = 4;
+  } else {
+    if (movDragCol->next != NULL) {
+      NAMD_die("Multiple definitions of drag column in config file");
+    };
+    
+    if (movDragFile == NULL
+	&& strcasecmp(movDragCol->data, "B")
+	&& strcasecmp(movDragCol->data, "O")) {
+      NAMD_die("Can not read moving drag tags from X, Y, or Z column of the coordinate or velocity file");
+    };
+    if (!strcasecmp(movDragCol->data, "X")) {
+      dtcol=1;
+    } else if (!strcasecmp(movDragCol->data, "Y")) {
+      dtcol=2;
+    } else if (!strcasecmp(movDragCol->data, "Z")) {
+      dtcol=3;
+    } else if (!strcasecmp(movDragCol->data, "O")) {
+      dtcol=4;
+    } else if (!strcasecmp(movDragCol->data, "B")) {
+      dtcol=5;
+    }
+    else {
+      NAMD_die("movDragCol must have value of X, Y, Z, O, or B");
+    };
+  };
+  
+  //  Allocate an array that will store an index into the drag
+  //  parameters for each atom.  If the atom is not dragged, its
+  //  value will be set to -1 in this array.
+  movDragIndexes = new int32[numAtoms];
+    if (movDragIndexes == NULL) {
+    NAMD_die("memory allocation failed in Molecule::build_movdrag_params()");
+  };
+  
+  //  Loop through all the atoms and find out which ones are dragged
+  for (i=0; i<numAtoms; i++) {
+    switch (dtcol) {
+    case 1:
+      dtval = (tPDB->atom(i))->xcoor();
+      break;
+    case 2:
+      dtval = (tPDB->atom(i))->ycoor();
+      break;
+    case 3:
+      dtval = (tPDB->atom(i))->zcoor();
+      break;
+    case 4:
+      dtval = (tPDB->atom(i))->occupancy();
+      break;
+    case 5:
+      dtval = (tPDB->atom(i))->temperaturefactor();
+      break;
+    }
+    
+    if (dtval != 0.0) {
+      //  This atom is dragged
+      movDragIndexes[i] = current_index;
+      current_index++;
+    } else {
+      //  This atom is not dragged
+      movDragIndexes[i] = -1;
+    }
+  }
+  
+  if (current_index == 0) {
     //  Drag was turned on, but there weren't really any dragged
-    iout << iWARN << "NO DRAGGED ATOMS WERE FOUND, BUT DRAG IS ON . . . " << endi;
-       }
-       else
-       {
+    iout << iWARN << "NO DRAGGED ATOMS WERE FOUND, BUT MOVING DRAG IS ON . . . " << endi;
+  } else {
     //  Allocate an array to hold the drag parameters
-    dragParams = new DragParams[current_index];
+    movDragParams = new MovDragParams[current_index];
+    if (movDragParams == NULL) {
+      NAMD_die("memory allocation failed in Molecule::build_movdrag_params");
+    }
+  };
+  
+  numMovDrag = current_index;
+  
+  //  Loop through all the atoms and assign the parameters for those
+  //  that are dragged
+  for (i=0; i<numAtoms; i++) {
+    if (movDragIndexes[i] != -1) {
+      movDragParams[movDragIndexes[i]].v[0] = (vPDB->atom(i))->xcoor();
+      movDragParams[movDragIndexes[i]].v[1] = (vPDB->atom(i))->ycoor();
+      movDragParams[movDragIndexes[i]].v[2] = (vPDB->atom(i))->zcoor();
+    };
+  };
+      
+  if (movDragFile != NULL) delete tPDB;
+  if (movDragVelFile != NULL) delete vPDB;
+}
+/*      END OF FUNCTION build_movdrag_params    */
+
+
+/************************************************************************/
+/*                  */
+/*      FUNCTION build_rotdrag_params  */
+/*                  */
+/*   INPUTS:        */
+/*  rotDragFile - value of rotDragFile from the config file */
+/*  rotDragCol - value of rotDragCol from the config file */
+/*  rotDragAxisFile - value of rotDragAxisFile from the config file */
+/*  rotDragPivotFile - value of rotDragPivotFile from the config file */
+/*  rotDragVelFile - value of rotDragVelFile from the config file */
+/*  rotDragVelCol - value of rotDragVelCol from the config file */
+/*  initial_pdb - PDB object that contains initial positions  */
+/*  cwd - Current working directory          */
+/*                  */
+/*  This function builds all the parameters that are necessary  */
+/*  to do moving drag. This involves looking through one or more    */
+/*  PDB objects to determine which atoms are dragged,  and what the */
+/*  drag parameters for each atom are. This information is then stored */
+/*  in the arrays rotDragIndexes and rotDragParams. */
+/*                  */
+/************************************************************************/
+
+void Molecule::build_rotdrag_params(StringList *rotDragFile, 
+				    StringList *rotDragCol, 
+				    StringList *rotDragAxisFile, 
+				    StringList *rotDragPivotFile, 
+				    StringList *rotDragVelFile, 
+				    StringList *rotDragVelCol, 
+				    PDB *initial_pdb,
+				    char *cwd)
+  
+{
+  PDB *tPDB, *aPDB, *pPDB, *vPDB; //  Pointers to other PDB file(s)
+  register int i;          //  Loop counter
+  int current_index=0;     //  Index into values used
+  int dtcol = 4;           //  Column to look for drag tag in
+  Real dtval = 0;          //  Drag tag value retreived
+  int dvcol = 4;           //  Column to look for angular velocity in
+  Real dvval = 0;          //  Angular velocity value retreived
+  char mainfilename[129];  //  main rotating drag PDB filename
+  char axisfilename[129];  //  rotating drag axis PDB filename
+  char pivotfilename[129]; //  rotating drag pivot point PDB filename
+  char velfilename[129];   //  rotating drag angular velocity PDB filename
+  
+  //  Get the PDB to read the rotating drag tags from. Again, if the
+  //  user gave us another file name, open that one.  Otherwise, just
+  //  use the PDB with the initial coordinates
+  if (rotDragFile == NULL) {
+    tPDB = initial_pdb;
     
-    if (dragParams == NULL)
-    {
-       NAMD_die("memory allocation failed in Molecule::build_drag_params");
+  } else {
+
+    if (rotDragFile->next != NULL) {
+      NAMD_die("Multiple definitions of rotating drag tag file in configuration file");
     }
-       }
-       
-       numDrag = current_index;
-       
-       //  Loop through all the atoms and assign the parameters for those
-       //  that are dragged
-       for (i=0; i<numAtoms; i++)
-       {
-    if (dragIndexes[i] != -1)
-    {
-       //  This atom is dragged, so get the drag value again
-       switch (dccol)
-       {
-          case 1:
-       dragParams[dragIndexes[i]].c = (dPDB->atom(i))->xcoor();
-       break;
-          case 2:
-       dragParams[dragIndexes[i]].c = (dPDB->atom(i))->ycoor();
-       break;
-          case 3:
-       dragParams[dragIndexes[i]].c = (dPDB->atom(i))->zcoor();
-       break;
-          case 4:
-       dragParams[dragIndexes[i]].c = (dPDB->atom(i))->occupancy();
-       break;
-          case 5:
-       dragParams[dragIndexes[i]].c = (dPDB->atom(i))->temperaturefactor();
-       break;
-       }
-       
+    
+    if ( (cwd == NULL) || (rotDragFile->data[0] == '/') ) {
+      strcpy(mainfilename, rotDragFile->data);
+    } else {
+      strcpy(mainfilename, cwd);
+      strcat(mainfilename, rotDragFile->data);
+      }
+    
+    tPDB = new PDB(mainfilename);
+    if ( tPDB == NULL ) {
+      NAMD_die("Memory allocation failed in Molecule::build_rotdrag_params");
     }
-       }
-       
-       //  If we had to create new PDB objects, delete them now
-       if (dragFile != NULL)
-       {
-    delete dPDB;
-       }
-       
+    
+    if (tPDB->num_atoms() != numAtoms) {
+      NAMD_die("Number of atoms in rotating drag tag PDB doesn't match coordinate PDB");
     }
-    /*      END OF FUNCTION build_drag_params    */
+  }
+  
+  // Get the PDB to read atom rotation axes. If no name given, use
+  // rotDragFile if both it AND rotDragPivotFile are defined. Can NOT
+  // use the PDB coordinate file, nor rotDragPivotFile!
+
+  if (rotDragAxisFile == NULL) {
+    if (rotDragFile == NULL) {
+      NAMD_die("Rotating drag axis file can not be same as coordinate PDB file");
+    } else {
+      if (rotDragAxisFile->next != NULL) {
+	NAMD_die("Multiple definitions of rotating drag axis file in configuration file");
+      };
+      if (rotDragPivotFile == NULL) {
+	NAMD_die("Need to specify at least one of rotDragAxisFile and rotDragPivotFile; they can not be same");
+      };
+      aPDB = tPDB;
+    };
+
+  } else {
+
+    if ( (cwd == NULL) || (rotDragAxisFile->data[0] == '/') ) {
+      strcpy(axisfilename, rotDragAxisFile->data);
+    } else {
+      strcpy(axisfilename, cwd);
+      strcat(axisfilename, rotDragAxisFile->data);
+    }
+    
+    aPDB = new PDB(axisfilename);
+    if ( aPDB == NULL ) {
+      NAMD_die("Memory allocation failed in Molecule::build_rotdrag_params");
+    }
+    
+    if (aPDB->num_atoms() != numAtoms) {
+      NAMD_die("Number of atoms in rotating drag axis PDB doesn't match coordinate PDB");
+    }
+  };
+  
+  // Get the PDB to read atom rotation pivot points. If no name given,
+  // use rotDragFile if both it AND rotDragAxisFile are defined. Can
+  // NOT use the PDB coordinate file, nor rotDragAxisFile!
+
+  if (rotDragPivotFile == NULL) {
+    if (rotDragFile == NULL) {
+      NAMD_die("Rotating drag pivot point file can not be same as coordinate PDB file");
+    } else {
+      if (rotDragPivotFile->next != NULL) {
+	NAMD_die("Multiple definitions of rotating drag pivot point file in configuration file");
+      };
+      if (rotDragAxisFile == NULL) {
+	NAMD_die("Need to specify at least one of rotDragAxisFile and rotDragPivotFile; they can not be same");
+      };
+      pPDB = tPDB;
+    };
+
+  } else {
+
+    if ( (cwd == NULL) || (rotDragPivotFile->data[0] == '/') ) {
+      strcpy(pivotfilename, rotDragPivotFile->data);
+    } else {
+      strcpy(pivotfilename, cwd);
+      strcat(pivotfilename, rotDragPivotFile->data);
+    }
+    
+    pPDB = new PDB(pivotfilename);
+    if ( pPDB == NULL ) {
+      NAMD_die("Memory allocation failed in Molecule::build_rotdrag_params");
+    }
+    
+    if (pPDB->num_atoms() != numAtoms) {
+      NAMD_die("Number of atoms in rotating drag pivot point PDB doesn't match coordinate PDB");
+    }
+  };
+  
+  
+  // Get the PDB to read atom angular velocities. If no name given,
+  // use rotDragFile (or the coordinate PDB file if rotDragFile is not
+  // defined).
+
+  if (rotDragVelFile == NULL) {
+    vPDB = tPDB;
+  } else {
+    if (rotDragVelFile->next != NULL) {
+      NAMD_die("Multiple definitions of rotating drag velocity file in configuration file");
+    };
+    
+    if ( (cwd == NULL) || (rotDragVelFile->data[0] == '/') ) {
+      strcpy(velfilename, rotDragVelFile->data);
+    } else {
+      strcpy(velfilename, cwd);
+      strcat(velfilename, rotDragVelFile->data);
+    }
+    
+    vPDB = new PDB(velfilename);
+    if ( vPDB == NULL ) {
+      NAMD_die("Memory allocation failed in Molecule::build_rotdrag_params");
+    }
+    
+    if (vPDB->num_atoms() != numAtoms) {
+      NAMD_die("Number of atoms in rotating drag velocity PDB doesn't match coordinate PDB");
+    }
+  };
+  
+  //  Get the column that the drag tag is going to be in. If
+  //  rotDragFile is defined, it can be in any of the 5 floating point
+  //  fields in the PDB (X, Y, Z, O, or B) which correspond to the
+  //  1st, 2nd, ... 5th floating point fields. If rotDragFile is NOT
+  //  defined, it can only be O or B fileds. The default is the O
+  //  (4th) field, which is the occupancy.
+
+  if (rotDragCol == NULL) {
+    dtcol = 4;
+  } else {
+    if (rotDragCol->next != NULL) {
+      NAMD_die("Multiple definitions of drag tag column in config file");
+    };
+    
+    if ( rotDragFile == NULL
+	 && (!strcasecmp(rotDragCol->data, "X")
+	     || !strcasecmp(rotDragCol->data, "Y")
+	     || !strcasecmp(rotDragCol->data, "Z"))) {
+      NAMD_die("Can not read rotating drag tags from X, Y, or Z column of the PDB coordinate file");
+    };
+    if (!strcasecmp(rotDragCol->data, "X")) {
+      dtcol=1;
+    } else if (!strcasecmp(rotDragCol->data, "Y")) {
+      dtcol=2;
+    } else if (!strcasecmp(rotDragCol->data, "Z")) {
+      dtcol=3;
+    } else if (!strcasecmp(rotDragCol->data, "O")) {
+      dtcol=4;
+    } else if (!strcasecmp(rotDragCol->data, "B")) {
+      dtcol=5;
+    }
+    else {
+      NAMD_die("rotDragCol must have value of X, Y, Z, O, or B");
+    };
+  };
+  
+  //  Get the column that the drag angular velocity is going to be
+  //  in. If rotDragVelFile is defined, it can be in any of the 5
+  //  floating point fields in the PDB (X, Y, Z, O, or B) which
+  //  correspond to the 1st, 2nd, ... 5th floating point fields. If
+  //  NEITHER of rotDragVelFile OR rotDragFile is defined, it can
+  //  only be O or B fileds. The default is the O (4th) field, which
+  //  is the occupancy.
+
+  if (rotDragVelCol == NULL) {
+    dvcol = 4;
+  } else {
+    if (rotDragVelCol->next != NULL) {
+      NAMD_die("Multiple definitions of drag angular velocity column in config file");
+    };
+    
+    if (rotDragVelFile == NULL
+	&& rotDragFile == NULL
+	&& strcasecmp(rotDragCol->data, "B")
+	&& strcasecmp(rotDragCol->data, "O")) {
+      NAMD_die("Can not read rotating drag angular velocities from X, Y, or Z column of the PDB coordinate file");
+    };
+    if (!strcasecmp(rotDragVelCol->data, "X")) {
+      dvcol=1;
+    } else if (!strcasecmp(rotDragVelCol->data, "Y")) {
+      dvcol=2;
+    } else if (!strcasecmp(rotDragVelCol->data, "Z")) {
+      dvcol=3;
+    } else if (!strcasecmp(rotDragVelCol->data, "O")) {
+      dvcol=4;
+    } else if (!strcasecmp(rotDragVelCol->data, "B")) {
+      dvcol=5;
+    }
+    else {
+      NAMD_die("rotDragVelCol must have value of X, Y, Z, O, or B");
+    };
+  };
+  
+  //  Allocate an array that will store an index into the drag
+  //  parameters for each atom.  If the atom is not dragged, its
+  //  value will be set to -1 in this array.
+  rotDragIndexes = new int32[numAtoms];
+  if (rotDragIndexes == NULL) {
+      NAMD_die("memory allocation failed in Molecule::build_rotdrag_params()");
+  };
+  
+  //  Loop through all the atoms and find out which ones are dragged
+  for (i=0; i<numAtoms; i++) {
+    switch (dtcol) {
+    case 1:
+      dtval = (tPDB->atom(i))->xcoor();
+      break;
+    case 2:
+      dtval = (tPDB->atom(i))->ycoor();
+      break;
+    case 3:
+      dtval = (tPDB->atom(i))->zcoor();
+      break;
+    case 4:
+      dtval = (tPDB->atom(i))->occupancy();
+      break;
+    case 5:
+      dtval = (tPDB->atom(i))->temperaturefactor();
+      break;
+    }
+    
+    if (dtval != 0.0) {
+      //  This atom is dragged
+      rotDragIndexes[i] = current_index;
+      current_index++;
+    } else {
+      //  This atom is not dragged
+      rotDragIndexes[i] = -1;
+    }
+  }
+  
+  if (current_index == 0) {
+    iout << iWARN << "NO DRAGGED ATOMS WERE FOUND, BUT ROTATING DRAG IS ON . . . " << endi;
+  } else {
+    rotDragParams = new RotDragParams[current_index];
+    if (rotDragParams == NULL) {
+      NAMD_die("memory allocation failed in Molecule::build_rotdrag_params");
+    }
+  };
+  
+  numRotDrag = current_index;
+  
+  //  Loop through all the atoms and assign the parameters for those
+  //  that are dragged
+  for (i=0; i<numAtoms; i++) {
+    if (rotDragIndexes[i] != -1) {
+      rotDragParams[rotDragIndexes[i]].a[0] = (aPDB->atom(i))->xcoor();
+      rotDragParams[rotDragIndexes[i]].a[1] = (aPDB->atom(i))->ycoor();
+      rotDragParams[rotDragIndexes[i]].a[2] = (aPDB->atom(i))->zcoor();
+      // the following line DID cause segfault
+      rotDragParams[rotDragIndexes[i]].p[0] = (pPDB->atom(i))->xcoor();
+      rotDragParams[rotDragIndexes[i]].p[1] = (pPDB->atom(i))->ycoor();
+      rotDragParams[rotDragIndexes[i]].p[2] = (pPDB->atom(i))->zcoor();
+      switch (dvcol) {
+      case 1:
+	rotDragParams[rotDragIndexes[i]].v = (vPDB->atom(i))->xcoor();
+	break;
+      case 2:
+	rotDragParams[rotDragIndexes[i]].v = (vPDB->atom(i))->ycoor();
+	break;
+      case 3:
+	rotDragParams[rotDragIndexes[i]].v = (vPDB->atom(i))->zcoor();
+	break;
+      case 4:
+	rotDragParams[rotDragIndexes[i]].v = (vPDB->atom(i))->occupancy();
+	break;
+      case 5:
+	rotDragParams[rotDragIndexes[i]].v = (vPDB->atom(i))->temperaturefactor();
+	break;
+      };
+    };
+  };
+      
+  if (rotDragFile != NULL) delete tPDB;
+  if (rotDragAxisFile != NULL) delete aPDB;
+  if (rotDragPivotFile != NULL) delete pPDB;
+  if (rotDragVelFile != NULL) delete vPDB;
+}
+/*      END OF FUNCTION build_rotdrag_params    */
 
 
 /************************************************************************/

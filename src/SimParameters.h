@@ -185,16 +185,22 @@ public:
         BigReal rotConsVel;             //  Velocity of rotation, Deg/timestep
         //****** END rotating constraints changes 
 
-        //****** BEGIN drag changes (can NOT do moving and rotating together)
-        Bool dragOn;                    //  Flag TRUE-> ANY drag active
-        char dragFile[129];             //  PDB file for rotation drag
-        Bool movDragOn;                 //  Flag TRUE-> moving drag active
-        Vector movDragVel;              //  Linear velocity, A/timestep
-        Bool rotDragOn;                 //  Flag TRUE-> rotating drag active
-        Vector rotDragAxis;             //  Axis of rotation
-        Vector rotDragPivot;            //  Pivot point of rotation
-        BigReal rotDragVel;             //  Angular velocity, Deg/timestep
-        //****** END drag changes
+        //****** BEGIN moving drag changes
+        Bool movDragOn;               //  Flag TRUE-> moving drag active
+        char movDragFile[128];        //  PDB file defining dragged atoms
+                                      //  by non-zero value in the column
+	char movDragVelFile[128];     //  PDB file; XYZ define moving drag
+                                      //  velocity (A/step) for each atom
+        //****** END moving drag changes
+        //****** BEGIN rotatingdrag changes
+        Bool rotDragOn;               //  Flag TRUE-> rotating drag active
+        char rotDragFile[128];        //  PDB file defining dragged atoms
+                                      //  by non-zero value in the column
+	char rotDragAxisFile[128];    //  PDB file; XYZ define axes for atoms;
+	char rotDragPivotFile[128];   //  PDB file; XYZ define pivots for atoms
+	char rotDragVelFile[128];     //  PDB file; B or O defines angular
+                                      //  velocity (deg/step)
+        //****** END rotating drag changes
 
         //****** BEGIN SMD constraints changes   
         Bool SMDOn;                     //  Flag TRUE-> SMD constraints active
@@ -469,7 +475,8 @@ private:
 	void config_parser_fullelect(ParseOptions &opts);
 	void config_parser_methods(ParseOptions &opts);
 	void config_parser_constraints(ParseOptions &opts);
-	void config_parser_drag(ParseOptions &opts);
+	void config_parser_movdrag(ParseOptions &opts);
+	void config_parser_rotdrag(ParseOptions &opts);
 	void config_parser_boundary(ParseOptions &opts);
 	void config_parser_misc(ParseOptions &opts);
 

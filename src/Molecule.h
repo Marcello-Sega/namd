@@ -58,10 +58,17 @@ typedef struct constraint_params
    Vector refPos;	//  Reference position for restraint
 } ConstraintParams;
 
-typedef struct drag_params
+typedef struct movdrag_params
 {
-   Real c;		//  Drag constant
-} DragParams;
+   Vector v;            //  Linear velocity (A/step)
+} MovDragParams;
+
+typedef struct rotdrag_params
+{
+   Real v;              //  Angular velocity (deg/step)
+   Vector a;            //  Rotation axis
+   Vector p;            //  Rotation pivot point
+} RotDragParams;
 
 friend class BondElem;
 friend class AngleElem;
@@ -88,9 +95,13 @@ private:
 	int32 *consIndexes;	//  Constraint indexes for each atom
 	ConstraintParams *consParams;
 				//  Parameters for each atom constrained
-	int32 *dragIndexes;	//  Drag indexes for each atom
-	DragParams *dragParams;	//  Parameters for each atom dragged
-				// (not all are used)
+	int32 *movDragIndexes;	//  Moving drag indexes for each atom
+	MovDragParams *movDragParams;
+                                //  Parameters for each atom moving-dragged
+	int32 *rotDragIndexes;	//  Rotating drag indexes for each atom
+	RotDragParams *rotDragParams;
+                                //  Parameters for each atom rotation-dragged
+
 	Real *langevinParams;   //  b values for langevin dynamics
 	Real *langForceVals;    //  Calculated values for langvin random forces
 	int32 *fixedAtomFlags;	//  1 for fixed, -1 for fixed group, else 0
@@ -167,7 +178,8 @@ public:
 	int numExclusions;	//  Number of exclusions
 	int numTotalExclusions; //  Real Total Number of Exclusions // hack
 	int numConstraints;	//  Number of atoms constrained
-	int numDrag;	        //  Number of atoms dragged
+	int numMovDrag;	        //  Number of atoms moving-dragged
+	int numRotDrag;	        //  Number of atoms rotating-dragged
 	int numFixedAtoms;	//  Number of fixed atoms
 	int numExPressureAtoms; //  Number of atoms excluded from pressure
 	int numHydrogenGroups;	//  Number of hydrogen groups
@@ -225,9 +237,15 @@ public:
 				//  Build the set of harmonic constraint 
 				// parameters
 
-	void build_drag_params(StringList *, StringList *, PDB *, char *);
-				//  Build the set of rotating drag
-				// parameters (mod. build_constraint_params)
+	void build_movdrag_params(StringList *, StringList *, StringList *, 
+				  PDB *, char *);
+				//  Build the set of moving drag pars
+
+	void build_rotdrag_params(StringList *, StringList *, StringList *,
+				  StringList *, StringList *, StringList *,
+				  PDB *, char *);
+				//  Build the set of rotating drag pars
+
 
 	void build_constant_forces(char *);
 				//  Build the set of constant forces
@@ -353,13 +371,29 @@ public:
 	}
 
 	//  Return true or false based on whether the specified atom
-	//  is dragged or not.
-	Bool is_atom_dragged(int atomnum) const
+	//  is moving-dragged or not.
+	Bool is_atom_movdragged(int atomnum) const
 	{
-		if (numDrag)
+		if (numMovDrag)
 		{
 			//  Check the index to see if it is constrained
-			return(dragIndexes[atomnum] != -1);
+			return(movDragIndexes[atomnum] != -1);
+		}
+		else
+		{
+			//  No constraints at all, so just return FALSE
+			return(FALSE);
+		}
+	}
+
+	//  Return true or false based on whether the specified atom
+	//  is rotating-dragged or not.
+	Bool is_atom_rotdragged(int atomnum) const
+	{
+		if (numRotDrag)
+		{
+			//  Check the index to see if it is constrained
+			return(rotDragIndexes[atomnum] != -1);
 		}
 		else
 		{
@@ -375,15 +409,24 @@ public:
 		refPos = consParams[consIndexes[atomnum]].refPos;
 	}
 
-	//  Get the drag factor for a specific atom
-	Real get_drag_params(int atomnum) const
-	{
-		return dragParams[dragIndexes[atomnum]].c;
-	}
-
 	Real langevin_param(int atomnum) const
 	{
 		return(langevinParams[atomnum]);
+	}
+
+	//  Get the moving drag factor for a specific atom
+	void get_movdrag_params(Vector &v, int atomnum) const
+	{
+		v = movDragParams[movDragIndexes[atomnum]].v;
+	}
+
+	//  Get the rotating drag factor for a specific atom
+	void get_rotdrag_params(BigReal &v, Vector &a, Vector &p, 
+				int atomnum) const
+	{
+		v = rotDragParams[rotDragIndexes[atomnum]].v;
+		a = rotDragParams[rotDragIndexes[atomnum]].a;
+		p = rotDragParams[rotDragIndexes[atomnum]].p;
 	}
 
 	Real langevin_force_val(int atomnum) const
