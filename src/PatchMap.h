@@ -179,6 +179,9 @@ public:
   inline Patch *patch(PatchID pid);
   HomePatch *homePatch(PatchID pid);
 
+  void registerPatch(PatchID pid, HomePatch *pptr);
+  void unregisterPatch(PatchID pid, HomePatch *pptr);
+
   void registerPatch(PatchID pid, Patch *pptr);
   void unregisterPatch(PatchID pid, Patch *pptr);
 
@@ -201,6 +204,7 @@ private:
     int numCidsAllocated;
     ComputeID *cids;
     Patch *myPatch;
+    HomePatch *myHomePatch;
   };
   int curPatch;
   int nPatches;
@@ -228,13 +232,16 @@ inline Patch *PatchMap::patch(PatchID pid)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1999/05/11 23:56:42 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1013 $	$Date: 1999/08/11 16:52:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.h,v $
+ * Revision 1.1013  1999/08/11 16:52:23  jim
+ * Make homePatch() method return NULL for proxies rather than casting.
+ *
  * Revision 1.1012  1999/05/11 23:56:42  brunner
  * Changes for new charm version
  *

@@ -142,6 +142,7 @@ void PatchMap::unpack (char *ptr)
     UNPACK(PatchData,patchData[i]);
     if (CkMyPe()) {
       patchData[i].myPatch = 0;
+      patchData[i].myHomePatch = 0;
     }
     DebugM(3,"Unpacking Patch " << i << " is on node " << patchData[i].node << 
 	" with " << patchData[i].numCidsAllocated << " allocated.\n");
@@ -212,6 +213,7 @@ PatchMap::ErrCode PatchMap::allocatePids(int ixDim, int iyDim, int izDim)
     patchData[i].cids=NULL;
     patchData[i].numCidsAllocated=0;
     patchData[i].myPatch=NULL;
+    patchData[i].myHomePatch=NULL;
   }
 
   return OK;
@@ -491,6 +493,25 @@ void PatchMap::printPatchMap(void)
 }
 
 //----------------------------------------------------------------------
+void PatchMap::registerPatch(PatchID pid, HomePatch *pptr) {
+  registerPatch(pid,(Patch*)pptr);
+  if (patchData[pid].myHomePatch != 0) {
+    iout << iPE << iERRORF 
+      << "homePatchID("<<pid<<") is being re-registered!\n" << endi;
+  }
+  patchData[pid].myHomePatch = pptr;
+}
+
+//----------------------------------------------------------------------
+void PatchMap::unregisterPatch(PatchID pid, HomePatch *pptr) {
+  unregisterPatch(pid,(Patch*)pptr);
+  if (pptr == patchData[pid].myHomePatch) {
+      DebugM(4, "UnregisterHomePatch("<<pid<<") at " << pptr << "\n");
+      patchData[pid].myHomePatch = NULL;
+  }
+}
+
+//----------------------------------------------------------------------
 void PatchMap::registerPatch(PatchID pid, Patch *pptr)
 {
   if (patchData[pid].myPatch != 0) {
@@ -512,7 +533,7 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
 //----------------------------------------------------------------------
 HomePatch *PatchMap::homePatch(PatchID pid)
 {
-  return (HomePatch *)patchData[pid].myPatch;
+  return patchData[pid].myHomePatch;
 }
 
 
@@ -520,13 +541,16 @@ HomePatch *PatchMap::homePatch(PatchID pid)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1020 $	$Date: 1999/05/11 23:56:42 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1021 $	$Date: 1999/08/11 16:52:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.1021  1999/08/11 16:52:21  jim
+ * Make homePatch() method return NULL for proxies rather than casting.
+ *
  * Revision 1.1020  1999/05/11 23:56:42  brunner
  * Changes for new charm version
  *
