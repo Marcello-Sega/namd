@@ -46,7 +46,6 @@
 #include "Debug.h"
 
 // Later this can be dynamic
-#define REDUCTION_MAX_ELEMENTS REDUCTION_MAX_RESERVED
 #define REDUCTION_MAX_CHILDREN 4
 
 // Used to register and unregister reductions to downstream nodes
@@ -63,7 +62,27 @@ public:
   int sourceNode;
   int sequenceNumber;
   int dataSize;
-  BigReal data[REDUCTION_MAX_ELEMENTS];
+  BigReal *data;
+
+  static void *alloc(int msgnum, int size, int *array, int priobits) {
+    int totalsize = size + array[0]*sizeof(BigReal);
+    ReductionSubmitMsg *newMsg = (ReductionSubmitMsg*)
+				CkAllocMsg(msgnum,totalsize,priobits);
+    newMsg->data = (BigReal*) ((char*)newMsg + size);
+    return (void*)newMsg;
+  }
+
+  static void *pack(ReductionSubmitMsg *in) {
+    in->data = (BigReal*) ((char*)in->data - (char*)&(in->data));
+    return (void*)in;
+  }
+
+  static ReductionSubmitMsg *unpack(void *in) {
+    ReductionSubmitMsg *me = (ReductionSubmitMsg*)in;
+    me->data = (BigReal*) ((char*)&(me->data) + (size_t)(me->data));
+    return me;
+  }
+
 };
 
 // Queue element which stores data for a particular sequence number
@@ -71,13 +90,28 @@ struct ReductionSetData {
   int sequenceNumber;
   int eventsRemaining;  // includes delivery, NOT suspend
   int dataSize;
-  BigReal data[REDUCTION_MAX_ELEMENTS];
+  BigReal *data;
   ReductionSetData *next;
   ReductionSetData(int seqNum, int events) {
     sequenceNumber = seqNum;
     eventsRemaining = events;
     dataSize = 0;
+    data = 0;
     next = 0;
+  }
+  ~ReductionSetData(void) {
+    delete [] data;
+  }
+  void resize(int size) {
+    if ( size > dataSize ) {
+      BigReal *oldData = data;
+      data = new BigReal[size];
+      int i = 0;
+      for ( ; i < dataSize; ++i ) { data[i] = oldData[i]; }
+      for ( ; i < size; ++i ) { data[i] = 0; }
+      dataSize = size;
+      delete [] oldData;
+    }
   }
 };
 
@@ -292,9 +326,7 @@ void ReductionMgr::mergeAndDeliver(
   ReductionSetData *data = set->getData(seqNum);
 
   // merge in this submission
-  for( ; data->dataSize < size; data->dataSize++ ) { // extend as needed
-    data->data[data->dataSize] = 0;
-  }
+  data->resize(size);  // extend as needed
   for ( int i = 0; i < size; ++i ) {
     data->data[i] += newData[i];
   }
@@ -313,7 +345,8 @@ void ReductionMgr::mergeAndDeliver(
       }
     } else {
       // send data to parent
-      ReductionSubmitMsg *msg = new ReductionSubmitMsg;
+      int size = data->dataSize;
+      ReductionSubmitMsg *msg = new(&size,1) ReductionSubmitMsg;
       msg->reductionSetID = set->reductionSetID;
       msg->sourceNode = CkMyPe();
       msg->sequenceNumber = seqNum;
@@ -395,12 +428,15 @@ void ReductionMgr::require(RequireReduction* handle) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1034 $	$Date: 1999/06/17 16:02:54 $
+ *	$Revision: 1.1035 $	$Date: 1999/06/18 17:04:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.C,v $
+ * Revision 1.1035  1999/06/18 17:04:13  jim
+ * Full dynamics allocation and varsize messages for ReductionMgr.
+ *
  * Revision 1.1034  1999/06/17 16:02:54  jim
  * Added error checking for barrier violations.
  *
