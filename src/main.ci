@@ -25,6 +25,6 @@ mainmodule main {
   extern module CollectionMaster;
   extern module BroadcastMgr;
   extern module Sync;
-  extern module ComlibModule;
+//  extern module ComlibModule;
 }
 
