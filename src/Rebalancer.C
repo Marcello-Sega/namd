@@ -381,20 +381,21 @@ void Rebalancer::printLoads()
    int i, total = 0, numBytes = 0;
    double max;
 
-   iout << iINFO << "\n";
-   for(i=0; i<3; i++) iout << iINFO << "     TOTAL  BACKGRD COMPUTE | ";
-   iout << iINFO << "\n";
-   for(i=0; i<3; i++) iout << iINFO << " P#  LOAD    LOAD    LOAD   | ";
-   iout << iINFO << "\n";
-   for(i=0; i<3; i++) iout << iINFO << "--- ------- ------- ------- | ";
-   iout << iINFO << "\n";
+   iout << iINFO << "\n" << iINFO;
+   for(i=0; i<3; i++) iout << "     TOTAL  BACKGRD COMPUTE | ";
+   iout << "\n" << iINFO;
+   for(i=0; i<3; i++) iout << " P#  LOAD    LOAD    LOAD   | ";
+   iout << "\n" << iINFO;
+   for(i=0; i<3; i++) iout << "--- ------- ------- ------- | ";
+   iout << "\n" << endi;
 
    iout.setf(ios::right | ios::fixed);
    iout.precision(3);
    for (i=0; i<P; i++)
    {
-      if (i != 0 && i % 3 == 0) iout << iINFO << "\n";
-      iout << iINFO << setw(3) << i << " "
+      if (i == 0 ) iout << iINFO;
+      if (i != 0 && i % 3 == 0) iout << "\n" << endi << iINFO;
+      iout << setw(3) << i << " "
            << setw(7) << processors[i].load << " "
            << setw(7) << processors[i].backgroundLoad << " "
            << setw(7) << processors[i].computeLoad << " | ";
@@ -426,6 +427,8 @@ void Rebalancer::printLoads()
 
       // iout << iINFO << " # Messages sent: " << count << "\n" << endi;
    }
+
+   iout << "\n" << endi;
 
    computeAverage();
    max = computeMax();
