@@ -12,6 +12,16 @@ obj/main.o: \
 	src/main.C \
 	src/InfoStream.h \
 	inc/main.decl.h \
+	inc/WorkDistrib.decl.h \
+	inc/ReductionMgr.decl.h \
+	inc/PatchMgr.decl.h \
+	inc/ProxyMgr.decl.h \
+	inc/Node.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/ComputeMgr.decl.h \
+	inc/CollectionMgr.decl.h \
+	inc/CollectionMaster.decl.h \
+	inc/BroadcastMgr.decl.h \
 	src/main.h \
 	inc/main.def.h
 	$(CXX) $(CXXFLAGS) -o obj/main.o -c src/main.C
@@ -80,12 +90,14 @@ obj/BackEnd.o: \
 	inc/Node.decl.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/PatchMgr.decl.h \
-	inc/ComputeMgr.decl.h \
 	inc/ReductionMgr.decl.h \
+	inc/PatchMgr.decl.h \
+	inc/ProxyMgr.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
+	inc/BroadcastMgr.decl.h \
 	src/CollectionMgr.h \
 	src/NamdTypes.h \
 	src/Vector.h \
@@ -97,9 +109,7 @@ obj/BackEnd.o: \
 	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
 	src/Lattice.h \
-	src/Tensor.h \
-	inc/BroadcastMgr.decl.h \
-	inc/LdbCoordinator.decl.h
+	src/Tensor.h
 	$(CXX) $(CXXFLAGS) -o obj/BackEnd.o -c src/BackEnd.C
 obj/BroadcastMgr.o: \
 	src/BroadcastMgr.C \
@@ -2208,13 +2218,21 @@ obj/Node.o: \
 	src/common.h \
 	src/imd.h \
 	inc/main.decl.h \
+	inc/WorkDistrib.decl.h \
+	inc/ReductionMgr.decl.h \
+	inc/PatchMgr.decl.h \
+	inc/ProxyMgr.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/ComputeMgr.decl.h \
+	inc/CollectionMgr.decl.h \
+	inc/CollectionMaster.decl.h \
+	inc/BroadcastMgr.decl.h \
 	src/WorkDistrib.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/ComputeMap.h \
-	inc/WorkDistrib.decl.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/SortedArray.h \
@@ -2234,7 +2252,6 @@ obj/Node.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/InfoStream.h \
-	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	src/Compute.h \
 	src/ComputeMgr.h \
@@ -2251,7 +2268,6 @@ obj/Node.o: \
 	src/Output.h \
 	src/ProxyMgr.h \
 	src/UniqueSetIter.h \
-	inc/ProxyMgr.decl.h \
 	src/PatchMap.inl \
 	src/Parameters.h \
 	src/strlib.h \
@@ -2259,14 +2275,11 @@ obj/Node.o: \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/LdbCoordinator.h \
-	inc/LdbCoordinator.decl.h \
 	src/ScriptTcl.h \
 	src/Broadcasts.h \
 	src/BroadcastObject.h \
 	src/BroadcastMgr.h \
-	inc/BroadcastMgr.decl.h \
 	src/BroadcastClient.h \
-	inc/ComputeMgr.decl.h \
 	inc/Node.def.h
 	$(CXX) $(CXXFLAGS) -o obj/Node.o -c src/Node.C
 obj/Output.o: \
@@ -2418,6 +2431,14 @@ obj/PatchMgr.o: \
 	src/AtomMap.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
+	inc/ReductionMgr.decl.h \
+	inc/ProxyMgr.decl.h \
+	inc/Node.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/ComputeMgr.decl.h \
+	inc/CollectionMgr.decl.h \
+	inc/CollectionMaster.decl.h \
+	inc/BroadcastMgr.decl.h \
 	src/WorkDistrib.h \
 	src/ComputeMap.h \
 	src/packmsg.h \
@@ -2574,6 +2595,16 @@ obj/ProxyMgr.o: \
 obj/ProxyPatch.o: \
 	src/ProxyPatch.C \
 	inc/main.decl.h \
+	inc/WorkDistrib.decl.h \
+	inc/ReductionMgr.decl.h \
+	inc/PatchMgr.decl.h \
+	inc/ProxyMgr.decl.h \
+	inc/Node.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/ComputeMgr.decl.h \
+	inc/CollectionMgr.decl.h \
+	inc/CollectionMaster.decl.h \
+	inc/BroadcastMgr.decl.h \
 	src/main.h \
 	src/ProxyPatch.h \
 	src/Patch.h \
@@ -2592,7 +2623,6 @@ obj/ProxyPatch.o: \
 	src/SortedArray.h \
 	src/SortableResizeArray.h \
 	src/PatchTypes.h \
-	inc/ProxyMgr.decl.h \
 	src/ProxyMgr.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
@@ -2845,8 +2875,16 @@ obj/WorkDistrib.o: \
 	src/Lattice.h \
 	src/Tensor.h \
 	inc/main.decl.h \
-	src/Node.h \
+	inc/ReductionMgr.decl.h \
+	inc/PatchMgr.decl.h \
+	inc/ProxyMgr.decl.h \
 	inc/Node.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/ComputeMgr.decl.h \
+	inc/CollectionMgr.decl.h \
+	inc/CollectionMaster.decl.h \
+	inc/BroadcastMgr.decl.h \
+	src/Node.h \
 	src/PatchMgr.h \
 	src/HomePatch.h \
 	src/Patch.h \
@@ -2859,7 +2897,6 @@ obj/WorkDistrib.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/InfoStream.h \
-	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
