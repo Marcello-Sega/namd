@@ -3157,8 +3157,12 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 
    if (pressureProfileOn) {
      if ((berendsenPressureOn || langevinPistonOn) && !dcdUnitCell) {
+#if 0
        iout << iWARN << "Turning on dcdUnitCell so that trajectory files contain unit cell data.\n" << endi;
        dcdUnitCell = 1;
+#else
+       NAMD_die("Sorry, pressure profile not implemented for constant pressure.");
+#endif
      }
      if (pressureProfileSlabs < 1) 
        NAMD_die("pressureProfileSlabs must be positive.");
