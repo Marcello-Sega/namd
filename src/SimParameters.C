@@ -11,7 +11,7 @@
  *
  *	$RCSfile: SimParameters.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/11/13 21:35:29 $
+ *	$Revision: 1.4 $	$Date: 1996/11/13 22:42:43 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.4  1996/11/13 22:42:43  nealk
+ * One more /n and iINFO minor change to make the output look nice.
+ *
  * Revision 1.3  1996/11/13 21:35:29  nealk
  * Corrected location of CR and iINFO statements.
  *
@@ -271,7 +274,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.3 1996/11/13 21:35:29 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.4 1996/11/13 22:42:43 nealk Exp $";
 
 #include "ConfigList.h"
 #include "SimParameters.h"
@@ -1749,7 +1752,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    }
    else
    {
-	iout << iINFO << "NO\n" << endi;
+	iout << "NO\n" << endi;
    }
 
 
