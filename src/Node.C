@@ -9,7 +9,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1022 1998/01/13 23:39:56 sergei Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1023 1998/01/16 08:00:42 sergei Exp $";
 
 #include <unistd.h>
 #include "ckdefs.h"
@@ -282,6 +282,7 @@ void Node::namdOneRecv() {
 
   DebugM(4, "Getting SMDData\n");
   conv_msg = CpvAccess(comm)->newInputStream(0, SMDDATATAG);
+  smdData->receive_SMDData(conv_msg);
 
   DebugM(4, "Done Receiving\n");
 }
@@ -467,12 +468,15 @@ void Node::recvSMDData(SMDDataMsg *msg) {
  *
  *	$RCSfile: Node.C,v $
  *	$Author: sergei $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1022 $	$Date: 1998/01/13 23:39:56 $
+ *	$Revision: 1.1023 $	$Date: 1998/01/16 08:00:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1023  1998/01/16 08:00:42  sergei
+ * minor fix for SMD
+ *
  * Revision 1.1022  1998/01/13 23:39:56  sergei
  * *** empty log message ***
  *
