@@ -153,6 +153,14 @@ public:
 	int numRigidBonds;	//  Number of rigid bonds
 	int numFixedRigidBonds; //  Number of rigid bonds between fixed atoms
 
+	// The following are needed for error checking because we
+	// eliminate bonds, etc. which involve only fixed atoms
+	int numCalcBonds;	//  Number of bonds requiring calculation
+	int numCalcAngles;	//  Number of angles requiring calculation
+	int numCalcDihedrals;	//  Number of dihedrals requiring calculation
+	int numCalcImpropers;	//  Number of impropers requiring calculation
+	int numCalcExclusions;	//  Number of exclusions requiring calculation
+
 	//  Number of dihedrals with multiple periodicity
 	int numMultipleDihedrals; 
 	//  Number of impropers with multiple periodicity
@@ -396,12 +404,15 @@ public:
  *
  *	$RCSfile: Molecule.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1024 $	$Date: 1999/03/09 01:44:15 $
+ *	$Revision: 1.1025 $	$Date: 1999/03/12 02:08:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.1025  1999/03/12 02:08:35  jim
+ * Fixed bug detection to deal with fixed atom optimizations.
+ *
  * Revision 1.1024  1999/03/09 01:44:15  jim
  * Added langevinDamping and langevinHydrogen parameters.
  *

@@ -11,7 +11,7 @@
  *
  *  $RCSfile: Molecule.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1034 $  $Date: 1999/03/09 01:44:14 $
+ *  $Revision: 1.1035 $  $Date: 1999/03/12 02:08:33 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1035  1999/03/12 02:08:33  jim
+ * Fixed bug detection to deal with fixed atom optimizations.
+ *
  * Revision 1.1034  1999/03/09 01:44:14  jim
  * Added langevinDamping and langevinHydrogen parameters.
  *
@@ -474,6 +477,11 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
   numFixedRigidBonds=0;
   numMultipleDihedrals=0;
   numMultipleImpropers=0;
+  numCalcBonds=0;
+  numCalcAngles=0;
+  numCalcDihedrals=0;
+  numCalcImpropers=0;
+  numCalcExclusions=0;
 
   if (param != NULL && filename != NULL) {
       read_psf_file(filename, param);
@@ -2561,11 +2569,13 @@ void Molecule::receive_Molecule(MIStream *msg)
        {
          byAtomSize[i] = 0;
        }
+       numCalcBonds = 0;
        for (i=0; i<numBonds; i++)
        {
          if ( numFixedAtoms && fixedAtomFlags[bonds[i].atom1]
                             && fixedAtomFlags[bonds[i].atom2] ) continue;
          byAtomSize[bonds[i].atom1]++;
+         numCalcBonds++;
        }
        for (i=0; i<numAtoms; i++)
        {
@@ -2588,12 +2598,14 @@ void Molecule::receive_Molecule(MIStream *msg)
        {
          byAtomSize[i] = 0;
        }
+       numCalcAngles = 0;
        for (i=0; i<numAngles; i++)
        {
          if ( numFixedAtoms && fixedAtomFlags[angles[i].atom1]
                             && fixedAtomFlags[angles[i].atom2]
                             && fixedAtomFlags[angles[i].atom3] ) continue;
          byAtomSize[angles[i].atom1]++;
+         numCalcAngles++;
        }
        for (i=0; i<numAtoms; i++)
        {
@@ -2617,6 +2629,7 @@ void Molecule::receive_Molecule(MIStream *msg)
        {
          byAtomSize[i] = 0;
        }
+       numCalcImpropers = 0;
        for (i=0; i<numImpropers; i++)
        {
          if ( numFixedAtoms && fixedAtomFlags[impropers[i].atom1]
@@ -2624,6 +2637,7 @@ void Molecule::receive_Molecule(MIStream *msg)
                             && fixedAtomFlags[impropers[i].atom3]
                             && fixedAtomFlags[impropers[i].atom4] ) continue;
          byAtomSize[impropers[i].atom1]++;
+         numCalcImpropers++;
        }
        for (i=0; i<numAtoms; i++)
        {
@@ -2648,6 +2662,7 @@ void Molecule::receive_Molecule(MIStream *msg)
        {
          byAtomSize[i] = 0;
        }
+       numCalcDihedrals = 0;
        for (i=0; i<numDihedrals; i++)
        {
          if ( numFixedAtoms && fixedAtomFlags[dihedrals[i].atom1]
@@ -2655,6 +2670,7 @@ void Molecule::receive_Molecule(MIStream *msg)
                             && fixedAtomFlags[dihedrals[i].atom3]
                             && fixedAtomFlags[dihedrals[i].atom4] ) continue;
          byAtomSize[dihedrals[i].atom1]++;
+         numCalcDihedrals++;
        }
        for (i=0; i<numAtoms; i++)
        {
@@ -2702,11 +2718,13 @@ void Molecule::receive_Molecule(MIStream *msg)
        {
          byAtomSize[i] = 0;
        }
+       numCalcExclusions = 0;
        for (i=0; i<numTotalExclusions; i++)
        {
          if ( numFixedAtoms && fixedAtomFlags[exclusions[i].atom1]
                             && fixedAtomFlags[exclusions[i].atom2] ) continue;
          byAtomSize[exclusions[i].atom1]++;
+         numCalcExclusions++;
        }
        for (i=0; i<numAtoms; i++)
        {
@@ -4031,12 +4049,15 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1034 $  $Date: 1999/03/09 01:44:14 $
+ *  $Revision: 1.1035 $  $Date: 1999/03/12 02:08:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1035  1999/03/12 02:08:33  jim
+ * Fixed bug detection to deal with fixed atom optimizations.
+ *
  * Revision 1.1034  1999/03/09 01:44:14  jim
  * Added langevinDamping and langevinHydrogen parameters.
  *

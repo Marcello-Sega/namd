@@ -599,23 +599,23 @@ void Controller::printEnergies(int seq)
     }
 
     reduction->require(seq, REDUCTION_BOND_CHECKSUM, checksum);
-    if ( ((int)checksum) != molecule->numBonds )
+    if ( ((int)checksum) != molecule->numCalcBonds )
       NAMD_die("BUG ALERT: Bad global bond count!\n");
 
     reduction->require(seq, REDUCTION_ANGLE_CHECKSUM, checksum);
-    if ( ((int)checksum) != molecule->numAngles )
+    if ( ((int)checksum) != molecule->numCalcAngles )
       NAMD_die("BUG ALERT: Bad global angle count!\n");
 
     reduction->require(seq, REDUCTION_DIHEDRAL_CHECKSUM, checksum);
-    if ( ((int)checksum) != molecule->numDihedrals )
+    if ( ((int)checksum) != molecule->numCalcDihedrals )
       NAMD_die("BUG ALERT: Bad global dihedral count!\n");
 
     reduction->require(seq, REDUCTION_IMPROPER_CHECKSUM, checksum);
-    if ( ((int)checksum) != molecule->numImpropers )
+    if ( ((int)checksum) != molecule->numCalcImpropers )
       NAMD_die("BUG ALERT: Bad global improper count!\n");
 
     reduction->require(seq, REDUCTION_EXCLUSION_CHECKSUM, checksum);
-    if ( ((int)checksum) != molecule->numTotalExclusions )
+    if ( ((int)checksum) != molecule->numCalcExclusions )
       NAMD_die("BUG ALERT: Bad global exclusion count!\n");
 
     reduction->require(seq, REDUCTION_MARGIN_VIOLATIONS, checksum);
@@ -847,12 +847,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1058 $	$Date: 1999/03/10 21:48:26 $
+ *	$Revision: 1.1059 $	$Date: 1999/03/12 02:08:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1059  1999/03/12 02:08:35  jim
+ * Fixed bug detection to deal with fixed atom optimizations.
+ *
  * Revision 1.1058  1999/03/10 21:48:26  jim
  * Added remaining time to timing output.
  *
