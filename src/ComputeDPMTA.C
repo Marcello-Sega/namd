@@ -490,9 +490,9 @@ void ComputeDPMTA::doWork()
   DebugM(4,"Full-electrostatics energy: " << potential << "\n");
   reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += potential;
   // DPMTA won't work correctly if scaled anisotropically anyway.  -JCP
-  reduction->item(REDUCTION_VIRIAL_SLOW_X) += potential / 3.;
-  reduction->item(REDUCTION_VIRIAL_SLOW_Y) += potential / 3.;
-  reduction->item(REDUCTION_VIRIAL_SLOW_Z) += potential / 3.;
+  reduction->item(REDUCTION_VIRIAL_SLOW_XX) += potential / 3.;
+  reduction->item(REDUCTION_VIRIAL_SLOW_YY) += potential / 3.;
+  reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += potential / 3.;
   reduction->submit();
 
   // 5. clean-up
