@@ -47,7 +47,6 @@ TestController::~TestController(void)
 }
 
 extern int eventEndOfTimeStep;
-extern "C" void trace_user_event(int event);
 
 void TestController::algorithm(void)
 {
@@ -64,7 +63,7 @@ void TestController::algorithm(void)
     for ( ; step <= numberOfSteps; ++step )
     {
         enqueueCollections(step);
-        trace_user_event(eventEndOfTimeStep);
+        traceUserEvent(eventEndOfTimeStep);
         receivePressure(step);
         printEnergies(step);
         rescaleVelocities(step);
@@ -74,7 +73,7 @@ void TestController::algorithm(void)
 	if (!((step+1) % stepsPerCycle))
 	{
 	  broadcast->cycleBarrier.publish(step,1);
-	  CPrintf("Cycle time at sync Wall: %f CPU %f\n",
+	  CkPrintf("Cycle time at sync Wall: %f CPU %f\n",
 		  CmiWallTimer(),CmiTimer());
 	}
 #endif
@@ -111,12 +110,15 @@ void TestController::berendsenPressure(int step)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1999/01/06 19:19:21 $
+ *	$Revision: 1.7 $	$Date: 1999/05/11 23:56:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: TestController.C,v $
+ * Revision 1.7  1999/05/11 23:56:52  brunner
+ * Changes for new charm version
+ *
  * Revision 1.6  1999/01/06 19:19:21  jim
  * Broadcast and Sequencers understand anisotropic volume rescaling factors.
  *

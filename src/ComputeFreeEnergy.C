@@ -29,7 +29,7 @@
 #include "Molecule.h"
 #include "ReductionMgr.h"
 #include "ComputeMgr.h"
-#include "ComputeMgr.top.h"
+#include "ComputeMgr.decl.h"
 #include <stdio.h>
 #include <fstream.h>
 
@@ -194,7 +194,7 @@ ComputeFreeEnergy::~ComputeFreeEnergy() {
 void ComputeFreeEnergy::initialize() {
   DebugM(4,"Initializing master\n");
 
-  configMsg = new (MsgIndex(ComputeGlobalConfigMsg)) ComputeGlobalConfigMsg;
+  configMsg = new ComputeGlobalConfigMsg;
 
   // Get our script
   StringList *script = Node::Object()->configList->find("freeEnergyConfig");
@@ -251,7 +251,7 @@ void ComputeFreeEnergy::initialize() {
 void ComputeFreeEnergy::calculate() {
   DebugM(4,"Calculating forces on master\n");
 
-  resultsMsg = new (MsgIndex(ComputeGlobalResultsMsg)) ComputeGlobalResultsMsg;
+  resultsMsg = new ComputeGlobalResultsMsg;
   resultsMsg->gforce.resize(gmass.size());
 
 //  iout << iDEBUG << "Free energy perturbation - calculate()\n" << endi; 
@@ -273,12 +273,15 @@ void ComputeFreeEnergy::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.16 $	$Date: 1999/04/14 15:48:31 $
+ *	$Revision: 1.17 $	$Date: 1999/05/11 23:56:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFreeEnergy.C,v $
+ * Revision 1.17  1999/05/11 23:56:20  brunner
+ * Changes for new charm version
+ *
  * Revision 1.16  1999/04/14 15:48:31  jim
  * Added error checking to file open.
  *

@@ -37,10 +37,10 @@ public:
 
   // last call of system
   static void namdDone(void) { 
-    CPrintf("==========================================\n");
+    CkPrintf("==========================================\n");
     Real CPUtime = CmiCpuTimer()-cmiCpuFirstStart;
     Real Walltime = CmiWallTimer()-cmiWallFirstStart;
-    CPrintf("WallClock : %f  CPUTime : %f \n",Walltime,CPUtime);
+    CkPrintf("WallClock : %f  CPUTime : %f \n",Walltime,CPUtime);
 
     // femtoseconds
     SimParameters *params = Node::Object()->simParameters;
@@ -48,9 +48,9 @@ public:
     // scale to nanoseconds
     BigReal ns = fs / 1000000.0;
     BigReal days = 1.0 / (24.0 * 60.0 * 60.0);
-    CPrintf("Days per ns:  WallClock : %lf  CPUTime : %lf \n",
+    CkPrintf("Days per ns:  WallClock : %lf  CPUTime : %lf \n",
 	days*Walltime/ns, days*CPUtime/ns);
-    CharmExit(); 
+    CkExit(); 
   }
 
   // Emergency bailout 
@@ -88,13 +88,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: Namd.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1998/05/25 21:10:36 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1012 $	$Date: 1999/05/11 23:56:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Namd.h,v $
+ * Revision 1.1012  1999/05/11 23:56:36  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1011  1998/05/25 21:10:36  jim
  * Started using CmiAbort().
  *

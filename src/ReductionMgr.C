@@ -39,7 +39,7 @@
 #include "SimParameters.h"
 
 
-#include "ReductionMgr.top.h"
+#include "ReductionMgr.decl.h"
 #include "ReductionMgr.h"
 
 // #define DEBUGM
@@ -58,9 +58,8 @@
 /*******************************************
  ReductionMgr::ReductionMgr(): init object
  *******************************************/
-ReductionMgr::ReductionMgr(InitMsg *msg)
+ReductionMgr::ReductionMgr()
 {
-    delete msg;
     if (CpvAccess(ReductionMgr_instance) == 0) {
       CpvAccess(ReductionMgr_instance) = this;
     } else {
@@ -72,16 +71,16 @@ ReductionMgr::ReductionMgr(InitMsg *msg)
     // data = createdata();
 
     // fill in the spanning tree fields
-    if (CMyPe() == 0) {
+    if (CkMyPe() == 0) {
       myParent = -1;
     } else {
-      myParent = (CMyPe()-1)/MAX_CHILDREN;
+      myParent = (CkMyPe()-1)/MAX_CHILDREN;
     }
     numChildren = 0;
     int i;
     for(i=0; i<MAX_CHILDREN; i++) {
-      myChildren[i] = CMyPe()*MAX_CHILDREN+i+1;
-      if(myChildren[i] < CNumPes())
+      myChildren[i] = CkMyPe()*MAX_CHILDREN+i+1;
+      if(myChildren[i] < CkNumPes())
         numChildren++;
     }
 
@@ -130,10 +129,10 @@ Optimization: Use multicast instead of broadcast
 
 void ReductionMgr::broadcastDoSubmit(int seq, int n)
 {
-  CheckForPatchMsg *m=new (MsgIndex(CheckForPatchMsg)) CheckForPatchMsg;
+  CheckForPatchMsg *m=new CheckForPatchMsg;
   m->numPatches=n;
   m->seq=seq;
-  CBroadcastMsgBranch(ReductionMgr, doDummySubmit, CheckForPatchMsg, m, thisgroup);
+  CProxy_ReductionMgr(thisgroup).doDummySubmit(m);
 }
 
 /******************************************************
@@ -143,20 +142,21 @@ void ReductionMgr::broadcastDoSubmit(int seq, int n)
 ******************************************************/
 void ReductionMgr::doDummySubmit(CheckForPatchMsg *msg)
 {
-  if (CMyPe() >= msg->numPatches) {  // we are definitely not root node
+  if (CkMyPe() >= msg->numPatches) {  // we are definitely not root node
 
     ReductionMgrData *current=find(msg->seq);
 
     if (current->numEvents >= maxEvents) {
-      ReductionDataMsg *m
-        = new (MsgIndex(ReductionDataMsg)) ReductionDataMsg;
+      ReductionDataMsg *m = new ReductionDataMsg;
       m->seq = msg->seq;
       for(int i=0;i<REDUCTION_MAX_RESERVED;i++)
         m->data[i] = current->tagData[i];
-      CSendMsgBranch(ReductionMgr, recvReductionData, ReductionDataMsg, m, thisgroup, myParent);
+      (CProxy_ReductionMgr(thisgroup)).recvReductionData(m,myParent);
+
+      //      CSendMsgBranch(ReductionMgr, recvReductionData, 
+      //                     ReductionDataMsg, m, thisgroup, myParent);
       gotAllData(current);
     }
-
   }
   delete msg;
 }
@@ -315,12 +315,12 @@ void	ReductionMgr::recvReductionData	(ReductionDataMsg *msg)
 	<< "\n");
 
   if (current->numEvents >= maxEvents && !isRoot()) {
-    ReductionDataMsg *m 
-      = new (MsgIndex(ReductionDataMsg)) ReductionDataMsg;
+    ReductionDataMsg *m = new ReductionDataMsg;
     m->seq = seq;
     for(tag=0;tag<REDUCTION_MAX_RESERVED;tag++)
       m->data[tag] = current->tagData[tag];
-    CSendMsgBranch(ReductionMgr, recvReductionData, ReductionDataMsg, m, thisgroup, myParent);
+    CProxy_ReductionMgr rm(thisgroup);
+    rm.recvReductionData(m,myParent);
     gotAllData(current);
   }
   if(isRoot()) {
@@ -428,12 +428,11 @@ void	ReductionMgr::submit(int seq, ReductionTag tag, BigReal data)
 	<< "\n");
 
   if (current->numEvents >= maxEvents && !isRoot()) {
-    ReductionDataMsg *m 
-      = new (MsgIndex(ReductionDataMsg)) ReductionDataMsg;
+    ReductionDataMsg *m = new ReductionDataMsg;
     m->seq = seq;
     for(int i=0;i<REDUCTION_MAX_RESERVED;i++)
       m->data[i] = current->tagData[i];
-    CSendMsgBranch(ReductionMgr, recvReductionData, ReductionDataMsg, m, thisgroup, myParent);
+    CProxy_ReductionMgr(thisgroup).recvReductionData(m,myParent);
     gotAllData(current);
   }
   if (isRoot() && current->numData[tag] == maxData[tag])
@@ -527,7 +526,7 @@ void	ReductionMgr::unsubscribe(ReductionTag tag)
 /*******************************************
  *******************************************/
 
-#include "ReductionMgr.bot.h"
+#include "ReductionMgr.def.h"
 // nothing should be placed below here
 
 
@@ -536,12 +535,15 @@ void	ReductionMgr::unsubscribe(ReductionTag tag)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1031 $	$Date: 1999/04/29 15:39:23 $
+ *	$Revision: 1.1032 $	$Date: 1999/05/11 23:56:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.C,v $
+ * Revision 1.1032  1999/05/11 23:56:47  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1031  1999/04/29 15:39:23  jim
  * Added check for extra reduction submissions.
  *

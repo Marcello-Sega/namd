@@ -136,7 +136,7 @@ template <class T, class S> class ComputeHomeTuples : public Compute {
 	         aid[i] = atomMap->localID(t.atomID[i]);
 	         homepatch = patchMap->downstream(homepatch,aid[i].pid);
              }
-             if ( homepatch != notUsed && patchMap->node(homepatch) == CMyPe() ) {
+             if ( homepatch != notUsed && patchMap->node(homepatch) == CkMyPe() ) {
                for (i=0; i < T::size; i++) {
 	         t.p[i] = tuplePatchList.find(TuplePatchElem(aid[i].pid));
 	         t.localIndex[i] = aid[i].index;
@@ -198,7 +198,7 @@ template <class T, class S> class ComputeHomeTuples : public Compute {
       for ( ai = ai.begin(); ai != ai.end(); ai++ ) {
         int numNeighbors = patchMap->upstreamNeighbors((*ai).pid,neighbors);
         for ( int i = 0; i < numNeighbors; ++i ) {
-          if ( patchMap->node(neighbors[i]) != CMyPe() &&
+          if ( patchMap->node(neighbors[i]) != CkMyPe() &&
 	       ! tuplePatchList.find(TuplePatchElem(neighbors[i])) ) {
             Patch *patch = patchMap->patch(neighbors[i]);
 	    tuplePatchList.add(TuplePatchElem(patch, cid));

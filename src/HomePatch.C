@@ -24,7 +24,7 @@
 #include "Node.h"
 #include "PatchMap.inl"
 #include "main.h"
-#include "ProxyMgr.top.h"
+#include "ProxyMgr.decl.h"
 #include "ProxyMgr.h"
 #include "Migration.h"
 #include "Molecule.h"
@@ -37,14 +37,14 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1051 1999/04/28 22:50:38 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1052 1999/05/11 23:56:31 brunner Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, TransformList tl,
       PositionList pl, VelocityList vl) : Patch(pd,al,pl), v(vl), t(tl)
 { 
   DebugM(4, "HomePatch("<<pd<<") at " << this << "\n");
   if (atomIDList.size() != v.size()) {
-    CPrintf("HomePatch::HomePatch(...) : size mismatch-Velocities and IDs!\n");
+    CkPrintf("HomePatch::HomePatch(...) : size mismatch-Velocities and IDs!\n");
   }
   AtomMap::Object()->registerIDs(pd,al);  
   min.x = PatchMap::Object()->minX(patchID);
@@ -140,7 +140,7 @@ void HomePatch::boxClosed(int)
 void HomePatch::registerProxy(RegisterProxyMsg *msg) {
   DebugM(4, "registerProxy("<<patchID<<") - adding node " <<msg->node<<"\n");
   proxy.add(ProxyListElem(msg->node,forceBox.checkOut()));
-  ProxyAtomsMsg *nmsg = new (MsgIndex(ProxyAtomsMsg)) ProxyAtomsMsg;
+  ProxyAtomsMsg *nmsg = new ProxyAtomsMsg;
   nmsg->patch = patchID;
   nmsg->atomIDList = atomIDList;
   nmsg->prepack();
@@ -196,8 +196,7 @@ void HomePatch::positionsReady(int doMigration)
   for ( pli = pli.begin(); pli != pli.end(); ++pli )
   {
     if (doMigration) {
-      ProxyAllMsg *allmsg 
-	= new (MsgIndex(ProxyAllMsg)) ProxyAllMsg;
+      ProxyAllMsg *allmsg = new ProxyAllMsg;
       allmsg->patch = patchID;
       allmsg->flags = flags;
       allmsg->positionList = p;
@@ -205,8 +204,7 @@ void HomePatch::positionsReady(int doMigration)
       DebugM(1, "atomIDList.size() = " << atomIDList.size() << " p.size() = " << p.size() << "\n" );
       ProxyMgr::Object()->sendProxyAll(allmsg,pli->node);
     } else {
-      ProxyDataMsg *nmsg 
-	= new (MsgIndex(ProxyDataMsg)) ProxyDataMsg;
+      ProxyDataMsg *nmsg = new ProxyDataMsg;
       nmsg->patch = patchID;
       nmsg->flags = flags;
       nmsg->positionList = p;
@@ -731,13 +729,16 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1051 $	$Date: 1999/04/28 22:50:38 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1052 $	$Date: 1999/05/11 23:56:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1052  1999/05/11 23:56:31  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1051  1999/04/28 22:50:38  jim
  * Fixed tolerance and increased speed for SHAKE/RATTLE.
  *

@@ -20,9 +20,9 @@
 #include "Debug.h"
 
 #include "BOCgroup.h"
-#include "ComputeMgr.top.h"
+#include "ComputeMgr.decl.h"
 #include "ComputeMgr.h"
-#include "ProxyMgr.top.h"
+#include "ProxyMgr.decl.h"
 #include "ProxyMgr.h"
 
 #include "Node.h"
@@ -51,9 +51,8 @@
 #include "ComputeSMD.h"
 #include "WorkDistrib.h"
 
-ComputeMgr::ComputeMgr(InitMsg *msg)
+ComputeMgr::ComputeMgr()
 {
-  delete msg;
   CpvAccess(BOCclass_group).computeMgr = thisgroup;
   computeGlobalObject = 0;
   computeDPMEObject = 0;
@@ -67,34 +66,31 @@ ComputeMgr::~ComputeMgr(void)
 void ComputeMgr::updateComputes(int ep, int chareID) {
   updateComputesReturnEP = ep;
   updateComputesReturnChareID = chareID;
-  updateComputesCount = CNumPes();
+  updateComputesCount = CkNumPes();
 
-  if (CMyPe()) { 
+  if (CkMyPe()) { 
     iout << iPE << iERRORF << "updateComputes signaled on wrong Pe!\n" << endi;
-    CharmExit();
+    CkExit();
     return;
   }
-  CStartQuiescence(GetEntryPtr(ComputeMgr,updateComputes2,QuiescenceMessage),thishandle);
+  CkStartQD(CProxy_ComputeMgr::ckIdx_updateComputes2((CkQdMsg*)0),&thishandle);
 }
 
-void ComputeMgr::updateComputes2(QuiescenceMessage *msg) {
+void ComputeMgr::updateComputes2(CkQdMsg *msg) {
   delete msg;
-  WorkDistrib  *workDistrib = CLocalBranch(WorkDistrib, CpvAccess(BOCclass_group).workDistrib);
-  workDistrib->saveComputeMapChanges(
-    GetEntryPtr(ComputeMgr, updateComputes3, DoneMsg), thisgroup
-  );
+  CProxy_WorkDistrib wd(CpvAccess(BOCclass_group).workDistrib);
+  WorkDistrib  *workDistrib = wd.ckLocalBranch();
+  workDistrib->saveComputeMapChanges(CProxy_ComputeMgr::ckIdx_updateComputes3(),thisgroup);
 }
 
-void ComputeMgr::updateComputes3(DoneMsg *msg) {
-  delete msg;
-  RunMsg *runmsg = new (MsgIndex(RunMsg)) RunMsg;
-  CBroadcastMsgBranch(ComputeMgr, updateLocalComputes, RunMsg, runmsg, thisgroup); 
+void ComputeMgr::updateComputes3() {
+  CProxy_ComputeMgr(thisgroup).updateLocalComputes();
 }
 
-void ComputeMgr::updateLocalComputes(RunMsg *msg) {
-  delete msg;
+void ComputeMgr::updateLocalComputes() {
   ComputeMap *computeMap = ComputeMap::Object();
-  ProxyMgr *proxyMgr = CLocalBranch(ProxyMgr, CpvAccess(BOCclass_group).proxyMgr);
+  CProxy_ProxyMgr pm(CpvAccess(BOCclass_group).proxyMgr);
+  ProxyMgr *proxyMgr = pm.ckLocalBranch();
 
   computeFlag = new int[computeMap->numComputes()];
 
@@ -103,7 +99,7 @@ void ComputeMgr::updateLocalComputes(RunMsg *msg) {
       <<" newnode="<<computeMap->newNode(i)<<"\n");
     computeFlag[i] = 0;
       
-    if (computeMap->newNode(i) == CMyPe() && computeMap->node(i) != CMyPe()) {
+    if (computeMap->newNode(i) == CkMyPe() && computeMap->node(i) != CkMyPe()) {
       DebugM(4, "updateLocal - creating new computeID("<<i<<")\n");
       computeFlag[i] = 1;
       computeMap->setNode(i,computeMap->newNode(i));
@@ -111,8 +107,8 @@ void ComputeMgr::updateLocalComputes(RunMsg *msg) {
 	proxyMgr->createProxy(computeMap->pid(i,n));
       }
     } 
-    else if (computeMap->node(i) == CMyPe() && 
-	(computeMap->newNode(i) != -1 && computeMap->newNode(i) != CMyPe() )) {
+    else if (computeMap->node(i) == CkMyPe() && 
+	(computeMap->newNode(i) != -1 && computeMap->newNode(i) != CkMyPe() )) {
       DebugM(4, "updateLocal - deleting computeID("<<i<<")\n");
       computeFlag[i] = -1;
       computeMap->setNode(i,computeMap->newNode(i));
@@ -123,23 +119,19 @@ void ComputeMgr::updateLocalComputes(RunMsg *msg) {
   }
  
   DebugM(4, "updateComputes - totalComputes = "<<Compute::totalComputes<<"\n");
-  if (!CMyPe()) {
-      CStartQuiescence(GetEntryPtr(ComputeMgr,updateLocalComputes2,QuiescenceMessage),thishandle);  
+  if (!CkMyPe()) {
+      CkStartQD(CProxy_ComputeMgr::ckIdx_updateLocalComputes2((CkQdMsg*)0), &thishandle);
   }
 }
 
 void
-ComputeMgr::updateLocalComputes2(QuiescenceMessage *msg) {
+ComputeMgr::updateLocalComputes2(CkQdMsg *msg) {
   delete msg;
-
-  RunMsg *runmsg = new (MsgIndex(RunMsg)) RunMsg;
-  CBroadcastMsgBranch(ComputeMgr, updateLocalComputes3, RunMsg, runmsg, thisgroup);
+  CProxy_ComputeMgr(thisgroup).updateLocalComputes3();
 }
 
 void
-ComputeMgr::updateLocalComputes3(RunMsg *msg) {
-  delete msg;
-
+ComputeMgr::updateLocalComputes3() {
   ComputeMap *computeMap = ComputeMap::Object();
 
   for (int i=0; i<computeMap->numComputes(); i++) {
@@ -156,27 +148,22 @@ ComputeMgr::updateLocalComputes3(RunMsg *msg) {
   }
   delete[] computeFlag;
 
-  DebugM(4, "msg to doneUpdateLocalComputes on Pe("<<CMyPe()<<")\n");
+  DebugM(4, "msg to doneUpdateLocalComputes on Pe("<<CkMyPe()<<")\n");
   ComputeMap::Object()->checkMap();
   PatchMap::Object()->checkMap();
 
-  if (!CMyPe()) {
-    CStartQuiescence(GetEntryPtr(ComputeMgr,doneUpdateLocalComputes,DoneMsg),
-		      thishandle);
+  if (!CkMyPe()) {
+    CkStartQD(CProxy_ComputeMgr::ckIdx_doneUpdateLocalComputes(), &thishandle);
   }
-  //DoneMsg *donemsg = new (MsgIndex(DoneMsg)) DoneMsg;
-  //CSendMsgBranch(ComputeMgr, doneUpdateLocalComputes, donemsg, thisgroup, 0);
+  //CSendMsgBranch(ComputeMgr, doneUpdateLocalComputes, thisgroup, 0);
 }
 
-void ComputeMgr::doneUpdateLocalComputes(DoneMsg *msg) {
-  delete msg;
-  
+void ComputeMgr::doneUpdateLocalComputes() {
 
 //  if (!--updateComputesCount) {
-    DebugM(4, "doneUpdateLocalComputes on Pe("<<CMyPe()<<")\n");
-    DoneMsg *donemsg = new (MsgIndex(DoneMsg)) DoneMsg;
-    GeneralSendMsgBranch(updateComputesReturnEP, donemsg, 
-      0, -1, updateComputesReturnChareID);
+    DebugM(4, "doneUpdateLocalComputes on Pe("<<CkMyPe()<<")\n");
+    void *msg = CkAllocMsg(0,0,0);
+    CkSendMsgBranch(updateComputesReturnEP,msg,0,updateComputesReturnChareID);
 //  }
 }
 
@@ -329,8 +316,7 @@ ComputeMgr::createComputes(ComputeMap *map)
 
 void ComputeMgr:: sendComputeGlobalConfig(ComputeGlobalConfigMsg *msg)
 {
-  CBroadcastMsgBranch(ComputeMgr, recvComputeGlobalConfig,ComputeGlobalConfigMsg, msg,
-    CpvAccess(BOCclass_group).computeMgr);
+  CProxy_ComputeMgr(CpvAccess(BOCclass_group).computeMgr).recvComputeGlobalConfig(msg);
 }
 
 void ComputeMgr:: recvComputeGlobalConfig(ComputeGlobalConfigMsg *msg)
@@ -338,14 +324,14 @@ void ComputeMgr:: recvComputeGlobalConfig(ComputeGlobalConfigMsg *msg)
   if ( computeGlobalObject ) {
     computeGlobalObject->recvConfig(msg);
   }
-  else if ( CMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
+  else if ( CkMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
   else NAMD_die("ComputeMgr::computeGlobalObject is NULL!");
 }
 
 void ComputeMgr:: sendComputeGlobalData(ComputeGlobalDataMsg *msg)
 {
-  CSendMsgBranch(ComputeMgr, recvComputeGlobalData, ComputeGlobalDataMsg, msg,
-    CpvAccess(BOCclass_group).computeMgr, 0);
+  CProxy_ComputeMgr cm(CpvAccess(BOCclass_group).computeMgr);
+  cm.recvComputeGlobalData(msg, 0);
 }
 
 void ComputeMgr:: recvComputeGlobalData(ComputeGlobalDataMsg *msg)
@@ -353,14 +339,13 @@ void ComputeMgr:: recvComputeGlobalData(ComputeGlobalDataMsg *msg)
   if ( computeGlobalObject ) {
     computeGlobalObject->recvData(msg);
   }
-  else if ( CMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
+  else if ( CkMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
   else NAMD_die("ComputeMgr::computeGlobalObject is NULL!");
 }
 
 void ComputeMgr:: sendComputeGlobalResults(ComputeGlobalResultsMsg *msg)
 {
-  CBroadcastMsgBranch(ComputeMgr, recvComputeGlobalResults, ComputeGlobalResultsMsg, msg,
-    CpvAccess(BOCclass_group).computeMgr);
+  CProxy_ComputeMgr(CpvAccess(BOCclass_group).computeMgr).recvComputeGlobalResults(msg);
 }
 
 void ComputeMgr:: recvComputeGlobalResults(ComputeGlobalResultsMsg *msg)
@@ -368,7 +353,7 @@ void ComputeMgr:: recvComputeGlobalResults(ComputeGlobalResultsMsg *msg)
   if ( computeGlobalObject ) {
     computeGlobalObject->recvResults(msg);
   }
-  else if ( CMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
+  else if ( CkMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
   else NAMD_die("ComputeMgr::computeGlobalObject is NULL!");
 }
 
@@ -376,10 +361,10 @@ void ComputeMgr:: sendComputeDPMEData(ComputeDPMEDataMsg *msg)
 {
   if ( computeDPMEObject ) {
     int node = computeDPMEObject->getMasterNode();
-    CSendMsgBranch(ComputeMgr, recvComputeDPMEData, ComputeDPMEDataMsg, msg,
-      CpvAccess(BOCclass_group).computeMgr, node);
+    CProxy_ComputeMgr cm(CpvAccess(BOCclass_group).computeMgr);
+    cm.recvComputeDPMEData(msg,node);
   }
-  else if ( CMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
+  else if ( CkMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
   else NAMD_die("ComputeMgr::computeDPMEObject is NULL!");
 }
 
@@ -388,14 +373,14 @@ void ComputeMgr:: recvComputeDPMEData(ComputeDPMEDataMsg *msg)
   if ( computeDPMEObject ) {
     computeDPMEObject->recvData(msg);
   }
-  else if ( CMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
+  else if ( CkMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
   else NAMD_die("ComputeMgr::computeDPMEObject is NULL!");
 }
 
 void ComputeMgr:: sendComputeDPMEResults(ComputeDPMEResultsMsg *msg, int node)
 {
-  CSendMsgBranch(ComputeMgr, recvComputeDPMEResults, ComputeDPMEResultsMsg, msg,
-    CpvAccess(BOCclass_group).computeMgr, node);
+  CProxy_ComputeMgr cm(CpvAccess(BOCclass_group).computeMgr);
+  cm.recvComputeDPMEResults(msg, node);
 }
 
 void ComputeMgr:: recvComputeDPMEResults(ComputeDPMEResultsMsg *msg)
@@ -403,24 +388,27 @@ void ComputeMgr:: recvComputeDPMEResults(ComputeDPMEResultsMsg *msg)
   if ( computeDPMEObject ) {
     computeDPMEObject->recvResults(msg);
   }
-  else if ( CMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
+  else if ( CkMyPe() >= (PatchMap::Object())->numPatches() ) delete msg;
   else NAMD_die("ComputeMgr::computeDPMEObject is NULL!");
 }
 
-#include "ComputeMgr.bot.h"
+#include "ComputeMgr.def.h"
 
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1026 $	$Date: 1999/02/17 04:09:56 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1027 $	$Date: 1999/05/11 23:56:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.C,v $
+ * Revision 1.1027  1999/05/11 23:56:25  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1026  1999/02/17 04:09:56  jim
  * Fixes to make optional force modules work with more nodes than patches.
  *

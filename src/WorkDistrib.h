@@ -22,9 +22,9 @@
 #include "NamdTypes.h"
 #include "BOCgroup.h"
 #include "ComputeMap.h"
+#include "WorkDistrib.decl.h"
 
 class Node;
-class DoneMsg;
 class LocalWorkMsg;
 class Molecule;
 
@@ -37,11 +37,11 @@ class ComputeMapDistribMsg;
 class WorkDistrib : public BOCclass
 {
 public:
-  WorkDistrib(InitMsg *msg);
+  WorkDistrib();
   ~WorkDistrib(void);
 
   // static void messageMovePatchDone();
-  // void movePatchDone(DoneMsg *msg);
+  // void movePatchDone();
 
   static void messageEnqueueWork(Compute *);
   void enqueueWork(LocalWorkMsg *msg);
@@ -55,7 +55,7 @@ public:
   void sendMaps(void);
   void saveComputeMapChanges(int,int);
   void recvComputeMapChanges(ComputeMapChangeMsg *);
-  void doneSaveComputeMap(DoneMsg *);
+  void doneSaveComputeMap();
   void createHomePatches(void);
   void distributeHomePatches(void);
   void patchMapInit(void);
@@ -90,39 +90,34 @@ private:
 #include "PatchMap.h"
 #include "ComputeMap.h"
 
-class ComputeMapDistribMsg : public comm_object
+class ComputeMapDistribMsg : public CMessage_ComputeMapDistribMsg
 {
 public:
   ComputeMapDistribMsg(void) : computeMap(0) { ; }
   ComputeMap *computeMap;
 
   // pack and unpack functions
-  void * pack (int *length)
+  static void* pack(ComputeMapDistribMsg* msg)
   {
-    int computeMapSize;
-    char *computeMapData = (char*)computeMap->pack(&computeMapSize);	
-      // "new" for data
-    *length = sizeof(int) + computeMapSize;
-    char *buffer = (char*)new_packbuffer(this,*length);
-    char *b = buffer;
-    *((int*)b) = computeMapSize;
-    b += sizeof(int);
-    memcpy(b,computeMapData,computeMapSize);
-    delete [] computeMapData;	// allocated in ComputeMap.C::pack
+    int computeMapSize = msg->computeMap->packSize();
+    char *buffer = (char*)CkAllocBuffer(msg,computeMapSize);
+    msg->computeMap->pack(buffer);
+    delete msg;
     return buffer;
   }
 
-  void unpack (void *in)
+  static ComputeMapDistribMsg* unpack(void *ptr)
   {
-    char *buffer = (char*)in;
-    // int computeMapSize = *((int*)buffer);
-    buffer += sizeof(int);
-    computeMap = ComputeMap::Object();
-    computeMap->unpack((void*)buffer);
+    void *_ptr = CkAllocBuffer(ptr, sizeof(ComputeMapDistribMsg));
+    ComputeMapDistribMsg *m = new (_ptr) ComputeMapDistribMsg();
+    m->computeMap = ComputeMap::Object();
+    m->computeMap->unpack((char*)ptr);
+    CkFreeMsg(ptr);
+    return m;
   }
 };
 
-class MapDistribMsg : public comm_object
+class MapDistribMsg : public CMessage_MapDistribMsg
 {
 public:
   MapDistribMsg(void) : patchMap(0), computeMap(0) { ; }
@@ -130,47 +125,50 @@ public:
   ComputeMap *computeMap;
 
   // pack and unpack functions
-  void * pack (int *length)
+  static void* pack(MapDistribMsg *msg)
   {
-    int patchMapSize, computeMapSize;
-    char *patchMapData = (char*)patchMap->pack(&patchMapSize);
-    char *computeMapData = (char*)computeMap->pack(&computeMapSize);	// "new" for data
-    *length = sizeof(int) + patchMapSize + sizeof(int) + computeMapSize;
-    char *buffer = (char*)new_packbuffer(this,*length);
+    int patchMapSize = msg->patchMap->packSize();
+    int computeMapSize = msg->computeMap->packSize();
+    int length = sizeof(int) + patchMapSize + sizeof(int) + computeMapSize;
+    char *buffer = (char*)CkAllocBuffer(msg,length);
     char *b = buffer;
     *((int*)b) = patchMapSize;
     b += sizeof(int);
-    memcpy(b,patchMapData,patchMapSize);
-    delete [] patchMapData;
+    msg->patchMap->pack(b);
     b += patchMapSize;
     *((int*)b) = computeMapSize;
     b += sizeof(int);
-    memcpy(b,computeMapData,computeMapSize);
-    delete [] computeMapData;	// allocated in ComputeMap.C::pack
+    msg->computeMap->pack(b);
+    delete msg;
     return buffer;
   }
-  void unpack (void *in)
+
+  static MapDistribMsg* unpack(void *ptr)
   {
-    char *buffer = (char*)in;
+    void *_ptr = CkAllocBuffer(ptr, sizeof(MapDistribMsg));
+    MapDistribMsg *m = new (_ptr) MapDistribMsg;
+    char *buffer = (char*)ptr;
     int patchMapSize = *((int*)buffer);
     buffer += sizeof(int);
-    patchMap = PatchMap::Object();
-    if ( ! ( patchMap->patchData ) )
+    m->patchMap = PatchMap::Object();
+    if ( ! ( m->patchMap->patchData ) )
     {
-      patchMap->unpack((void*)buffer);
+      m->patchMap->unpack(buffer);
     }
     buffer += patchMapSize;
     // int computeMapSize = *((int*)buffer);
     buffer += sizeof(int);
-    computeMap = ComputeMap::Object();
-    if ( ! ( computeMap->computeData ) )
+    m->computeMap = ComputeMap::Object();
+    if ( ! ( m->computeMap->computeData ) )
     {
-      computeMap->unpack((void*)buffer);
+      m->computeMap->unpack(buffer);
     }
+    CkFreeMsg(ptr);
+    return m;
   }
 };
 
-class ComputeMapChangeMsg : public comm_object
+class ComputeMapChangeMsg : public CMessage_ComputeMapChangeMsg
 {
 public:
   int newNodes[20000];
@@ -184,13 +182,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1998/10/24 19:58:05 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1016 $	$Date: 1999/05/11 23:56:54 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.1016  1999/05/11 23:56:54  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1015  1998/10/24 19:58:05  jim
  * Eliminated warnings generated by g++ -Wall.
  *

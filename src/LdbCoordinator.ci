@@ -1,20 +1,19 @@
-extern message InitMsg;
-extern message DoneMsg;
-extern message QuiescenceMessage;
-packmessage LdbStatsMsg;
-message LdbResumeMsg;
+module LdbCoordinator {
+  message [packed] LdbStatsMsg;
+  message LdbResumeMsg;
 
-group LdbCoordinator
-{
-  entry LdbCoordinator(InitMsg *);
-  entry nodeDone(LdbResumeMsg *);
-  entry sendStats(LdbResumeMsg *);
-  entry analyze(LdbStatsMsg *);
-  entry resume(LdbResumeMsg *);
-  entry resumeReady(QuiescenceMessage *);
-  entry resume2(LdbResumeMsg *);
-  entry updateComputesReady(DoneMsg *);
-} ;
+  group LdbCoordinator
+  {
+    entry LdbCoordinator(void);
+    entry void nodeDone(LdbResumeMsg *);
+    entry void sendStats(LdbResumeMsg *);
+    entry void analyze(LdbStatsMsg *);
+    entry void resume(LdbResumeMsg *);
+    entry void resumeReady(CkQdMsg *);
+    entry void resume2(LdbResumeMsg *);
+    entry void updateComputesReady(void);
+  };
+}
 
 
 /***************************************************************************
@@ -22,12 +21,15 @@ group LdbCoordinator
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1998/11/25 00:11:30 $
+ *	$Revision: 1.6 $	$Date: 1999/05/11 23:56:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LdbCoordinator.ci,v $
+ * Revision 1.6  1999/05/11 23:56:34  brunner
+ * Changes for new charm version
+ *
  * Revision 1.5  1998/11/25 00:11:30  jim
  * Fixed load balance barrier hanging bug.
  *

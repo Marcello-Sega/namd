@@ -26,7 +26,7 @@
 
 class Compute;
 class ComputeMap;
-class QuiescenceMessage;
+class CkQdMsg;
 
 class ComputeGlobal;
 class ComputeGlobalConfigMsg;
@@ -41,16 +41,16 @@ class ComputeMgr : public BOCclass
 {
 public:
 
-  ComputeMgr(InitMsg *);
+  ComputeMgr();
   ~ComputeMgr();
   void createComputes(ComputeMap *map);
   void updateComputes(int,int);
-  void updateComputes2(QuiescenceMessage *);
-  void updateComputes3(DoneMsg *);
-  void updateLocalComputes(RunMsg *);
-  void updateLocalComputes2(QuiescenceMessage *);
-  void updateLocalComputes3(RunMsg *);
-  void doneUpdateLocalComputes(DoneMsg *);
+  void updateComputes2(CkQdMsg *);
+  void updateComputes3();
+  void updateLocalComputes();
+  void updateLocalComputes2(CkQdMsg *);
+  void updateLocalComputes3();
+  void doneUpdateLocalComputes();
 
   void sendComputeGlobalConfig(ComputeGlobalConfigMsg *);
   void recvComputeGlobalConfig(ComputeGlobalConfigMsg *);
@@ -125,13 +125,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1999/03/17 17:59:22 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1015 $	$Date: 1999/05/11 23:56:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.h,v $
+ * Revision 1.1015  1999/05/11 23:56:26  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1014  1999/03/17 17:59:22  jim
  * Eliminated compiler warnings and errors.
  *

@@ -188,7 +188,6 @@ void Controller::run(int numberOfCycles)
 }
 
 extern int eventEndOfTimeStep;
-extern "C" void trace_user_event(int event);
 
 void Controller::algorithm(void)
 {
@@ -206,11 +205,11 @@ void Controller::algorithm(void)
 
     for ( ; step <= numberOfSteps; ++step, first = 0 )
     {
-	if (CNumPes() > nPatches) {
+	if (CkNumPes() > nPatches) {
 		reduction->broadcastDoSubmit(step, nPatches);
 	}
         enqueueCollections(step);
-        trace_user_event(eventEndOfTimeStep);
+        traceUserEvent(eventEndOfTimeStep);
         reassignVelocities(step);
 	if ( ! first ) langevinPiston1(step);
 	receivePressure(step);
@@ -223,7 +222,7 @@ void Controller::algorithm(void)
 	if (!((step+1) % stepsPerCycle))
 	{
 	  broadcast->cycleBarrier.publish(step,1);
-	  CPrintf("Cycle time at sync Wall: %f CPU %f\n",
+	  CkPrintf("Cycle time at sync Wall: %f CPU %f\n",
 		  CmiWallTimer(),CmiTimer());
 	}
 #endif
@@ -893,12 +892,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1065 $	$Date: 1999/03/22 05:43:58 $
+ *	$Revision: 1.1066 $	$Date: 1999/05/11 23:56:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1066  1999/05/11 23:56:29  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1065  1999/03/22 05:43:58  jim
  * Fixed bug in langevinPiston routine.
  *

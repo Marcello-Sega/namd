@@ -15,7 +15,7 @@
 #include "SimParameters.h"
 #include "SMD.h"
 #include "SMDMsgs.h"
-#include "Node.top.h"
+#include "Node.decl.h"
 #include "Debug.h"
 #include <math.h>
 #include "InfoStream.h"
@@ -210,7 +210,7 @@ void SMDData::output_new_refpos(int t, const Vector &p) {
 
 // send the SMD data to other nodes
 void SMDData::sendData(int t) {
-  SMDDataMsg *msg = new (MsgIndex(SMDDataMsg)) SMDDataMsg;
+  SMDDataMsg *msg = new SMDDataMsg;
 
   msg->curTime = t;
   msg->timeStamp = timeStamp;

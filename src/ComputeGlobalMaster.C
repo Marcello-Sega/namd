@@ -20,7 +20,7 @@
 #include "Molecule.h"
 #include "ReductionMgr.h"
 #include "ComputeMgr.h"
-#include "ComputeMgr.top.h"
+#include "ComputeMgr.decl.h"
 #include <stdio.h>
 
 // #define DEBUGM
@@ -33,7 +33,7 @@ ComputeGlobalMaster::ComputeGlobalMaster(ComputeGlobal *h) {
   host = h;
   initialized = 0;
   msgcount = 0;
-  numWorkingPes = CNumPes();
+  numWorkingPes = CkNumPes();
   {
     int npatches=(PatchMap::Object())->numPatches();
     if ( numWorkingPes > npatches ) numWorkingPes = npatches;
@@ -69,8 +69,7 @@ void ComputeGlobalMaster::recvData(ComputeGlobalDataMsg *msg) {
 void ComputeGlobalMaster::initialize() {
   DebugM(4,"Initializing master\n");
 
-  ComputeGlobalConfigMsg *msg =
-	new (MsgIndex(ComputeGlobalConfigMsg)) ComputeGlobalConfigMsg;
+  ComputeGlobalConfigMsg *msg = new ComputeGlobalConfigMsg;
 
   // Build config here
 
@@ -124,8 +123,7 @@ void ComputeGlobalMaster::storedefs(AtomIDList newgdef) {
 void ComputeGlobalMaster::calculate() {
   DebugM(4,"Calculating forces on master\n");
 
-  ComputeGlobalResultsMsg *msg =
-	new (MsgIndex(ComputeGlobalResultsMsg)) ComputeGlobalResultsMsg;
+  ComputeGlobalResultsMsg *msg = new ComputeGlobalResultsMsg;
   msg->gforce.resize(gmass.size());
 
   // Build results here
@@ -145,12 +143,15 @@ void ComputeGlobalMaster::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1999/02/17 04:09:56 $
+ *	$Revision: 1.4 $	$Date: 1999/05/11 23:56:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGlobalMaster.C,v $
+ * Revision 1.4  1999/05/11 23:56:22  brunner
+ * Changes for new charm version
+ *
  * Revision 1.3  1999/02/17 04:09:56  jim
  * Fixes to make optional force modules work with more nodes than patches.
  *

@@ -8,6 +8,7 @@
 #include "NamdTypes.h"
 #include "BOCgroup.h"
 #include "ProcessorPrivate.h"
+#include "ReductionMgr.decl.h"
 
 typedef enum
 {
@@ -84,13 +85,13 @@ struct ReductionMgrData
   int suspendFlag[REDUCTION_MAX_RESERVED];
 };
 
-class CheckForPatchMsg : public comm_object {
+class CheckForPatchMsg : public CMessage_CheckForPatchMsg {
 public:
   int seq;
   int numPatches;
 };
 
-class ReductionDataMsg : public comm_object {
+class ReductionDataMsg : public CMessage_ReductionDataMsg {
 public:
   int seq;
   BigReal data[REDUCTION_MAX_RESERVED];
@@ -130,7 +131,7 @@ public:
     return CpvAccess(ReductionMgr_instance);
   }
 
-  ReductionMgr(InitMsg *);
+  ReductionMgr();
   ~ReductionMgr();
 
   // (un)register to submit data for reduction
@@ -170,12 +171,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1999/01/06 00:56:24 $
+ *	$Revision: 1.1015 $	$Date: 1999/05/11 23:56:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.h,v $
+ * Revision 1.1015  1999/05/11 23:56:48  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1014  1999/01/06 00:56:24  jim
  * All compute objects except DPMTA now return diagonal of virial tensor.
  *

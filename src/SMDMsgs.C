@@ -16,34 +16,36 @@
 
 // DATA MESSAGE
 
-void * SMDDataMsg::pack (int *length) {
-  *length = 2 * sizeof(int) + 4 * sizeof(Vector);
+void * SMDDataMsg::pack (SMDDataMsg *m) {
+  int length = 2 * sizeof(int) + 4 * sizeof(Vector);
 
   char *buffer;
-  char *b = buffer = (char*)new_packbuffer(this,*length);
+  char *b = buffer = (char*)CkAllocBuffer(m,length);
 
-  memcpy(b, &curTime, sizeof(int)); b += sizeof(int);
-  memcpy(b, &timeStamp, sizeof(int)); b += sizeof(int);
-  memcpy(b, &direction, sizeof(Vector)); b += sizeof(Vector);
-  memcpy(b, &refPos, sizeof(Vector)); b += sizeof(Vector);
-  memcpy(b, &atomPosVmin, sizeof(Vector)); b += sizeof(Vector);
-  memcpy(b, &atomPosVmax, sizeof(Vector)); b += sizeof(Vector);
+  memcpy(b, &(m->curTime), sizeof(int)); b += sizeof(int);
+  memcpy(b, &(m->timeStamp), sizeof(int)); b += sizeof(int);
+  memcpy(b, &(m->direction), sizeof(Vector)); b += sizeof(Vector);
+  memcpy(b, &(m->refPos), sizeof(Vector)); b += sizeof(Vector);
+  memcpy(b, &(m->atomPosVmin), sizeof(Vector)); b += sizeof(Vector);
+  memcpy(b, &(m->atomPosVmax), sizeof(Vector)); b += sizeof(Vector);
 
-  this->~SMDDataMsg();
+  delete m;
   return buffer;
 }
 
-void SMDDataMsg::unpack (void *in) {
-  new((void*)this) SMDDataMsg;
-  char *b = (char*)in;
+SMDDataMsg* SMDDataMsg::unpack (void *ptr) {
+  void *_ptr = CkAllocBuffer(ptr, sizeof(SMDDataMsg));
+  SMDDataMsg* m = new (_ptr) SMDDataMsg;
+  char *b = (char*)ptr;
 
-  memcpy(&curTime, b, sizeof(int)); b += sizeof(int);
-  memcpy(&timeStamp, b, sizeof(int)); b += sizeof(int);
-  memcpy(&direction, b, sizeof(Vector)); b += sizeof(Vector);
-  memcpy(&refPos, b, sizeof(Vector)); b += sizeof(Vector);
-  memcpy(&atomPosVmin, b, sizeof(Vector)); b += sizeof(Vector);
-  memcpy(&atomPosVmax, b, sizeof(Vector)); b += sizeof(Vector);
+  memcpy(&(m->curTime), b, sizeof(int)); b += sizeof(int);
+  memcpy(&(m->timeStamp), b, sizeof(int)); b += sizeof(int);
+  memcpy(&(m->direction), b, sizeof(Vector)); b += sizeof(Vector);
+  memcpy(&(m->refPos), b, sizeof(Vector)); b += sizeof(Vector);
+  memcpy(&(m->atomPosVmin), b, sizeof(Vector)); b += sizeof(Vector);
+  memcpy(&(m->atomPosVmax), b, sizeof(Vector)); b += sizeof(Vector);
 
-  // DO NOT delete void *in - this is done by Charm
+  CkFreeMsg(ptr);
+  return m;
 }
 

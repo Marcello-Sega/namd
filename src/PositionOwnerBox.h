@@ -16,7 +16,7 @@ template <class Owner> class PositionOwnerBox {
 
     ~PositionOwnerBox() {
       if (numberUsers) {
-        CPrintf("PositionOwnerBox::~PositionOwnerBox() - \
+        CkPrintf("PositionOwnerBox::~PositionOwnerBox() - \
                    still have boxes out there!\n");
       }
     }
@@ -68,7 +68,7 @@ PositionOwnerBox<Owner>::PositionOwnerBox(Owner *o, void (Owner::*fn)() ) :
 template <class Owner>
 PositionBox<Owner>* PositionOwnerBox<Owner>::checkOut(int i) {
   if (closeCount != numberUsers || openCount != numberUsers) {
-    CPrintf("OwnerBox::checkOut() Tried to checkOut while in use\n");
+    CkPrintf("OwnerBox::checkOut() Tried to checkOut while in use\n");
   }
   ++numberUsers; ++closeCount; ++openCount; 
   ++transNeeded[i];
@@ -80,10 +80,10 @@ void PositionOwnerBox<Owner>::checkIn(PositionBox<Owner> * box) {
   int i = box->trans;
   delete box;
   if (closeCount != numberUsers || openCount != numberUsers) {
-    CPrintf("OwnerBox::checkIn() Tried to checkIn while in use\n");
+    CkPrintf("OwnerBox::checkIn() Tried to checkIn while in use\n");
   }
   if ( ! numberUsers-- ) {
-    CPrintf("OwnerBox::checkIn() - no registrants remaining\n");
+    CkPrintf("OwnerBox::checkIn() - no registrants remaining\n");
     numberUsers = 0;
   } else {
     --transNeeded[i];
@@ -98,7 +98,7 @@ void PositionOwnerBox<Owner>::close(void) {
     for ( int i = 0; i < 27; ++i ) lattice->destroy(&transData[i],i);
     (owner->*callback)();
   } else {
-    CPrintf("OwnerBox::close() - close called, but \
+    CkPrintf("OwnerBox::close() - close called, but \
              closeCount %d openCount %d\n", closeCount, openCount);
   }
 }

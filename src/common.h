@@ -279,12 +279,15 @@ int  Fclose(FILE *fout);
  *
  *	$RCSfile: common.h,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1998/09/10 19:07:21 $
+ *	$Revision: 1.1019 $	$Date: 1999/05/11 23:56:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.h,v $
+ * Revision 1.1019  1999/05/11 23:56:55  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1018  1998/09/10 19:07:21  brunner
  * Changed int32 declaration
  *
@@ -321,7 +324,7 @@ int  Fclose(FILE *fout);
  *
  * Revision 1.1008  1997/08/13 21:00:19  brunner
  * Made binary files always use 32 bits for the number of atoms, so that it
- * works on both 64 and 32-bit machines.  Also, I made Inform.C use CPrintf,
+ * works on both 64 and 32-bit machines.  Also, I made Inform.C use CkPrintf,
  * to fix the I/O buffering.
  *
  * Revision 1.1007  1997/08/01 18:45:22  brunner

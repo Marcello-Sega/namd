@@ -20,9 +20,11 @@
 #include "BOCgroup.h"
 #include "NamdTypes.h"
 
+#include "main.decl.h"
+
 // Message to send our per processor BOC's list of groupIDs of 
 // all other BOC's
-class GroupInitMsg : public comm_object
+class GroupInitMsg : public CMessage_GroupInitMsg
 {
 public:
   BOCgroup group;
@@ -31,34 +33,13 @@ public:
 class SlaveInitMsg : public GroupInitMsg
 {
 public:
-  ChareIDType master;
-};
-
-// Our basic trigger message
-class EmptyMsg : public comm_object {
-  int dummy;
-};
-
-// Used for start up of objects
-class InitMsg : public EmptyMsg { 
-};
-
-// Used to trigger running of object
-class RunMsg : public EmptyMsg { 
-};
-
-// Used to acknowledge that data or other resource is ready to be used
-class ReadyMsg : public EmptyMsg { 
-};
-
-// Used to signal completion of a task
-class DoneMsg : public EmptyMsg { 
+  CkChareID master;
 };
 
 class Compute;
 
 // For Compute objects to enqueue themselves when ready to compute
-class LocalWorkMsg : public comm_object
+class LocalWorkMsg : public CMessage_LocalWorkMsg
 {
 public:
   Compute *compute;
@@ -71,12 +52,15 @@ public:
  *
  *	$RCSfile: main.h,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1998/03/03 23:05:32 $
+ *	$Revision: 1.1004 $	$Date: 1999/05/11 23:56:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: main.h,v $
+ * Revision 1.1004  1999/05/11 23:56:57  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1003  1998/03/03 23:05:32  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

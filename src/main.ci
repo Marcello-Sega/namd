@@ -1,17 +1,24 @@
+mainmodule main {
+  // main - defines most of the system wide simple messages
 
-// main - defines most of the system wide simple messages
+  message GroupInitMsg;
+  message SlaveInitMsg;
+  message LocalWorkMsg;
 
-message GroupInitMsg;
-message SlaveInitMsg;
-message InitMsg;
-message ReadyMsg;
-message RunMsg;
-message DoneMsg;
-message LocalWorkMsg;
-
-chare main {
-  entry main();
-};
+  mainchare main {
+    entry main();
+  };
+  extern module WorkDistrib;
+  extern module ReductionMgr;
+  extern module PatchMgr;
+  extern module ProxyMgr;
+  extern module Node;
+  extern module LdbCoordinator;
+  extern module ComputeMgr;
+  extern module CollectionMgr;
+  extern module CollectionMaster;
+  extern module BroadcastMgr;
+}
 
 
 /***************************************************************************
@@ -19,12 +26,15 @@ chare main {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/19 11:55:04 $
+ *	$Revision: 1.1003 $	$Date: 1999/05/11 23:56:56 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: main.ci,v $
+ * Revision 1.1003  1999/05/11 23:56:56  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1002  1997/03/19 11:55:04  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

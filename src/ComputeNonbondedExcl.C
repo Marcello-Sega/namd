@@ -134,7 +134,7 @@ ComputeNonbondedExcls::loadTuples() {
     aid[1] = atomMap->localID(al->atomID[1]);
     int homepatch = patchMap->downstream(aid[0].pid,aid[1].pid);;
     NonbondedExclElem &t = *al;
-    if ( homepatch != notUsed && patchMap->node(homepatch) == CMyPe() ) {
+    if ( homepatch != notUsed && patchMap->node(homepatch) == CkMyPe() ) {
       t.p[0] = tuplePatchList.find(TuplePatchElem(aid[0].pid));
       t.p[1] = tuplePatchList.find(TuplePatchElem(aid[1].pid));
       t.localIndex[0] = aid[0].index;
@@ -153,12 +153,15 @@ ComputeNonbondedExcls::loadTuples() {
  *
  *	$RCSfile: ComputeNonbondedExcl.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1021 $	$Date: 1998/03/03 23:05:11 $
+ *	$Revision: 1.1022 $	$Date: 1999/05/11 23:56:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedExcl.C,v $
+ * Revision 1.1022  1999/05/11 23:56:27  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1021  1998/03/03 23:05:11  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

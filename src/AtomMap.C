@@ -116,8 +116,8 @@ void AtomMap::clearMap(void)
 void AtomMap::print()
 {
   for (int i=0; i<tableSz; i++) {
-    CPrintf("AtomMap on node %d\n", CMyPe());
-    CPrintf("AtomID %d -> PatchID %d:Index %d\n", i, localIDTable[i].pid,
+    CkPrintf("AtomMap on node %d\n", CkMyPe());
+    CkPrintf("AtomID %d -> PatchID %d:Index %d\n", i, localIDTable[i].pid,
       localIDTable[i].index);
   }
 }
@@ -127,12 +127,15 @@ void AtomMap::print()
  *
  *	$RCSfile: AtomMap.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1998/03/03 23:04:59 $
+ *	$Revision: 1.1010 $	$Date: 1999/05/11 23:56:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: AtomMap.C,v $
+ * Revision 1.1010  1999/05/11 23:56:11  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1009  1998/03/03 23:04:59  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

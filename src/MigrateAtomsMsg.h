@@ -22,12 +22,13 @@
 #include "NamdTypes.h"
 #include "SortedArray.h"
 #include "Migration.h"
+#include "PatchMgr.decl.h"
 
 // Message which stores list of atoms and their data
 // which are to be migrated from one patch to another.
 // This message does not contain information that will change asynchronously
 // It does not need to be prepacked
-class MigrateAtomsMsg : public comm_object {
+class MigrateAtomsMsg : public CMessage_MigrateAtomsMsg {
 public:
   NodeID  fromNodeID;
   PatchID srcPatchID;
@@ -39,17 +40,12 @@ public:
 
   MigrateAtomsMsg(PatchID source, PatchID destination, MigrationList *m);
 
-  // Standard new overload for comm_object new
-  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
-  void * operator new(size_t s) { return comm_object::operator new(s); }
-  void * operator new(size_t, void *ptr) { return ptr; }
-
   // pack and unpack functions
-  void * pack (int *length);
-  void unpack (void *in);
+  static void* pack(MigrateAtomsMsg* msg);
+  static MigrateAtomsMsg* unpack(void *ptr);
 };
 
-class MigrateAtomsCombinedMsg : public comm_object
+class MigrateAtomsCombinedMsg : public CMessage_MigrateAtomsCombinedMsg
 {
 public:
   NodeID fromNodeID;
@@ -65,14 +61,9 @@ public:
   void add(PatchID source, PatchID destination, MigrationList *m);
   void distribute(void);
 
-  // Standard new overload for comm_object new
-  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
-  void * operator new(size_t s) { return comm_object::operator new(s); }
-  void * operator new(size_t, void *ptr) { return ptr; }
-
   // pack and unpack functions
-  void * pack (int *length);
-  void unpack (void *in);
+  static void* pack(MigrateAtomsCombinedMsg *msg);
+  static MigrateAtomsCombinedMsg* unpack(void *ptr);
 };
 
 #endif
@@ -83,12 +74,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1998/03/03 23:05:16 $
+ *	$Revision: 1.9 $	$Date: 1999/05/11 23:56:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: MigrateAtomsMsg.h,v $
+ * Revision 1.9  1999/05/11 23:56:35  brunner
+ * Changes for new charm version
+ *
  * Revision 1.8  1998/03/03 23:05:16  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

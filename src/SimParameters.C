@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *  $RCSfile: SimParameters.C,v $
- *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1062 $  $Date: 1999/03/19 01:00:18 $
+ *  $Author: brunner $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1063 $  $Date: 1999/05/11 23:56:51 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1063  1999/05/11 23:56:51  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1062  1999/03/19 01:00:18  jim
  * Minor bug fix.
  *
@@ -1836,7 +1839,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
       NAMD_die("Temperature coupling and temperature rescaling are mutually exclusive");
    }
 
-   if (globalOn && CNumPes() > 1)
+   if (globalOn && CkNumPes() > 1)
    {
       NAMD_die("Global integration does not run in parallel (yet).");
    }
@@ -3613,12 +3616,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1062 $  $Date: 1999/03/19 01:00:18 $
+ *  $Revision: 1.1063 $  $Date: 1999/05/11 23:56:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1063  1999/05/11 23:56:51  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1062  1999/03/19 01:00:18  jim
  * Minor bug fix.
  *

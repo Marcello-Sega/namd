@@ -18,10 +18,10 @@
 #include "ProcessorPrivate.h"
 
 #include "BOCgroup.h"
-#include "WorkDistrib.top.h"
+#include "WorkDistrib.decl.h"
 #include "WorkDistrib.h"
 
-#include "main.top.h"
+#include "main.decl.h"
 #include "main.h"
 #include "Node.h"
 #include "PatchMgr.h"
@@ -44,10 +44,8 @@ extern "C" long int lrand48(void);
 //======================================================================
 // Public functions
 //----------------------------------------------------------------------
-WorkDistrib::WorkDistrib(InitMsg *msg)
+WorkDistrib::WorkDistrib()
 {
-  delete msg;
-
   CpvAccess(BOCclass_group).workDistrib = thisgroup;
   mapsArrived = false;
   awaitingMaps = false;
@@ -61,12 +59,12 @@ WorkDistrib::~WorkDistrib(void)
 //----------------------------------------------------------------------
 void WorkDistrib::sendMaps(void)
 {
-  MapDistribMsg *mapMsg = new (MsgIndex(MapDistribMsg)) MapDistribMsg ;
+  MapDistribMsg *mapMsg = new MapDistribMsg ;
 
   mapMsg->patchMap = PatchMap::Object();
   mapMsg->computeMap = ComputeMap::Object();
 
-  CBroadcastMsgBranch(WorkDistrib, saveMaps, MapDistribMsg, mapMsg, thisgroup);
+  CProxy_WorkDistrib(thisgroup).saveMaps(mapMsg);
   mapsArrived = true;
 }
 
@@ -75,7 +73,7 @@ void WorkDistrib::saveComputeMapChanges(int ep, int chareID)
 {
   saveComputeMapReturnEP = ep;
   saveComputeMapReturnChareID = chareID;
-  saveComputeMapCount = CNumPes();
+  saveComputeMapCount = CkNumPes();
 
   ComputeMap *computeMap = ComputeMap::Object();
 
@@ -85,13 +83,13 @@ void WorkDistrib::saveComputeMapChanges(int ep, int chareID)
   }
   
   ComputeMapChangeMsg *mapMsg 
-    = new (MsgIndex(ComputeMapChangeMsg)) ComputeMapChangeMsg ;
+    = new ComputeMapChangeMsg ;
 
   mapMsg->numNewNodes = computeMap->numComputes();
   for(i=0; i<computeMap->numComputes(); i++)
     mapMsg->newNodes[i] = computeMap->newNode(i);
 
-  CBroadcastMsgBranch(WorkDistrib, recvComputeMapChanges, ComputeMapChangeMsg, mapMsg, thisgroup);
+  CProxy_WorkDistrib(thisgroup).recvComputeMapChanges(mapMsg);
 }
 
 void WorkDistrib::recvComputeMapChanges(ComputeMapChangeMsg *msg) {
@@ -103,8 +101,7 @@ void WorkDistrib::recvComputeMapChanges(ComputeMapChangeMsg *msg) {
 
   delete msg;
 
-  DoneMsg *donemsg = new (MsgIndex(DoneMsg)) DoneMsg;
-  CSendMsgBranch(WorkDistrib, doneSaveComputeMap, DoneMsg, donemsg, thisgroup, 0);
+  CProxy_WorkDistrib(thisgroup).doneSaveComputeMap(0);
 
   DebugM(2, "ComputeMap after send!\n");
   for (i=0; i<computeMap->numComputes(); i++) {
@@ -113,12 +110,9 @@ void WorkDistrib::recvComputeMapChanges(ComputeMapChangeMsg *msg) {
   DebugM(2, "===================================================\n");
 }
 
-void WorkDistrib::doneSaveComputeMap(DoneMsg *msg) {
-  delete msg;
-  DoneMsg *msg2 = new (MsgIndex(DoneMsg)) DoneMsg;
+void WorkDistrib::doneSaveComputeMap() {
   if (!--saveComputeMapCount) { 
-    GeneralSendMsgBranch(saveComputeMapReturnEP, msg2, 0, -1, 
-      saveComputeMapReturnChareID);
+    CkSendMsgBranch(saveComputeMapReturnEP, CkAllocMsg(0,0,0), 0, saveComputeMapReturnChareID);
   }
 }
 
@@ -130,9 +124,11 @@ void WorkDistrib::createHomePatches(void)
 {
   int i;
   StringList *current;	//  Pointer used to retrieve configuration items
-  Node *node = CLocalBranch(Node,CpvAccess(BOCclass_group).node);
+  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  Node *node = nd.ckLocalBranch();
   PatchMap *patchMap = PatchMap::Object();
-  PatchMgr *patchMgr = CLocalBranch(PatchMgr,CpvAccess(BOCclass_group).patchMgr);
+  CProxy_PatchMgr pm(CpvAccess(BOCclass_group).patchMgr);
+  PatchMgr *patchMgr = pm.ckLocalBranch();
   SimParameters *params = node->simParameters;
   Molecule *molecule = node->molecule;
   PDB *pdb = node->pdb;
@@ -254,8 +250,10 @@ void WorkDistrib::createHomePatches(void)
 
 void WorkDistrib::distributeHomePatches() {
   // ref BOC
-  Node *node = CLocalBranch(Node,CpvAccess(BOCclass_group).node);
-  PatchMgr *patchMgr = CLocalBranch(PatchMgr,CpvAccess(BOCclass_group).patchMgr);
+  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  Node *node = nd.ckLocalBranch();
+  CProxy_PatchMgr pm(CpvAccess(BOCclass_group).patchMgr);
+  PatchMgr *patchMgr = pm.ckLocalBranch();
   // ref singleton
   PatchMap *patchMap = PatchMap::Object();
 
@@ -279,7 +277,8 @@ void WorkDistrib::saveMaps(MapDistribMsg *msg)
 {
   delete msg;
 
-  Node *node = CLocalBranch(Node,CpvAccess(BOCclass_group).node);
+  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  Node *node = nd.ckLocalBranch();
 
   if (node->myid() != 0)
   {
@@ -298,7 +297,8 @@ void WorkDistrib::saveMaps(MapDistribMsg *msg)
 void WorkDistrib::patchMapInit(void)
 {
   PatchMap *patchMap = PatchMap::Object();
-  Node *node = CLocalBranch(Node, CpvAccess(BOCclass_group).node);
+  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  Node *node = nd.ckLocalBranch();
   SimParameters *params = node->simParameters;
 
   BigReal patchSize = params->patchDimension;
@@ -507,7 +507,8 @@ void WorkDistrib::assignPatchesToLowestLoadNode()
   int pid; 
   int assignedNode = 0;
   PatchMap *patchMap = PatchMap::Object();
-  Node *node = CLocalBranch(Node, CpvAccess(BOCclass_group).node);
+  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  Node *node = nd.ckLocalBranch();
 
   int *load = new int[node->numNodes()];
   for (int i=0; i<node->numNodes(); i++) {
@@ -540,7 +541,8 @@ void WorkDistrib::assignPatchesRoundRobin()
   int pid; 
   int assignedNode = 0;
   PatchMap *patchMap = PatchMap::Object();
-  Node *node = CLocalBranch(Node, CpvAccess(BOCclass_group).node);
+  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  Node *node = nd.ckLocalBranch();
 
   for(pid=0; pid < patchMap->numPatches(); pid++) {
     assignedNode = pid % node->numNodes();
@@ -565,7 +567,8 @@ void WorkDistrib::mapComputes(void)
 {
   PatchMap *patchMap = PatchMap::Object();
   ComputeMap *computeMap = ComputeMap::Object();
-  Node *node = CLocalBranch(Node, CpvAccess(BOCclass_group).node);
+  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  Node *node = nd.ckLocalBranch();
 
   DebugM(3,"Mapping computes\n");
 
@@ -618,7 +621,8 @@ void WorkDistrib::mapComputeHomePatches(ComputeType type)
 {
   PatchMap *patchMap = PatchMap::Object();
   ComputeMap *computeMap = ComputeMap::Object();
-  Node *node = CLocalBranch(Node, CpvAccess(BOCclass_group).node);
+  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  Node *node = nd.ckLocalBranch();
 
   int i;
 
@@ -675,7 +679,8 @@ void WorkDistrib::mapComputeNonbonded(void)
 
   PatchMap *patchMap = PatchMap::Object();
   ComputeMap *computeMap = ComputeMap::Object();
-  Node *node = CLocalBranch(Node,CpvAccess(BOCclass_group).node);
+  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  Node *node = nd.ckLocalBranch();
 
   PatchID oneAway[PatchMap::MaxOneAway];
   PatchID oneAwayTrans[PatchMap::MaxOneAway];
@@ -815,32 +820,28 @@ void WorkDistrib::mapComputeNonbonded(void)
 //----------------------------------------------------------------------
 void WorkDistrib::messageEnqueueWork(Compute *compute) {
   LocalWorkMsg *msg 
-    = new (MsgIndex(LocalWorkMsg), sizeof(int)*8) LocalWorkMsg;
-
+    = new (sizeof(int)*8) LocalWorkMsg;
   int seq = compute->sequence();
 
   if ( seq < 0 ) {
-    *CPriorityPtr(msg) = 128 + compute->priority();
+    *((int*) CkPriorityPtr(msg)) = 128 + compute->priority();
   } else {
-    *CPriorityPtr(msg) = 128 + (seq %256) * 256 + compute->priority();
+    *((int*) CkPriorityPtr(msg)) = 128 + (seq %256) * 256 + compute->priority();
   }
 
   msg->compute = compute; // pointer is valid since send is to local Pe
 
   if ( seq < 0 ) 
   {
-    CSendMsgBranch(WorkDistrib, enqueueWork, LocalWorkMsg,
-		   msg, CpvAccess(BOCclass_group).workDistrib, CMyPe() );
+    CProxy_WorkDistrib(CpvAccess(BOCclass_group).workDistrib).enqueueWork(msg,CkMyPe());
   } 
   else if (compute->type() == computeNonbondedSelfType)  {
     switch ( seq % 2 ) {
     case 0:
-      CSendMsgBranch(WorkDistrib, enqueueSelfA, LocalWorkMsg, 
- 		     msg, CpvAccess(BOCclass_group).workDistrib, CMyPe() );
+      CProxy_WorkDistrib(CpvAccess(BOCclass_group).workDistrib).enqueueSelfA(msg,CkMyPe());
       break;
     case 1:
-      CSendMsgBranch(WorkDistrib, enqueueSelfB, LocalWorkMsg,
- 		     msg, CpvAccess(BOCclass_group).workDistrib, CMyPe() );
+      CProxy_WorkDistrib(CpvAccess(BOCclass_group).workDistrib).enqueueSelfB(msg,CkMyPe());
       break;
     default:
       NAMD_die("WorkDistrib::messageEnqueueSelf case statement error!");
@@ -849,13 +850,13 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
   }
   else switch ( seq % 2 ) {
   case 0:
-   CSendMsgBranch(WorkDistrib, enqueueWorkA, LocalWorkMsg, msg, CpvAccess(BOCclass_group).workDistrib, CMyPe() );
+      CProxy_WorkDistrib(CpvAccess(BOCclass_group).workDistrib).enqueueWorkA(msg,CkMyPe());
    break;
   case 1:
-   CSendMsgBranch(WorkDistrib, enqueueWorkB, LocalWorkMsg, msg, CpvAccess(BOCclass_group).workDistrib, CMyPe() );
+      CProxy_WorkDistrib(CpvAccess(BOCclass_group).workDistrib).enqueueWorkB(msg,CkMyPe());
    break;
   case 2:
-   CSendMsgBranch(WorkDistrib, enqueueWorkC, LocalWorkMsg, msg, CpvAccess(BOCclass_group).workDistrib, CMyPe() );
+      CProxy_WorkDistrib(CpvAccess(BOCclass_group).workDistrib).enqueueWorkC(msg,CkMyPe());
    break;
   default:
    NAMD_die("WorkDistrib::messageEnqueueWork case statement error!");
@@ -1110,19 +1111,22 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
 }
 /*			END OF FUNCTION remove_com_motion		*/
 
-#include "WorkDistrib.bot.h"
+#include "WorkDistrib.def.h"
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: krishnan $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1065 $	$Date: 1998/11/30 04:13:48 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1066 $	$Date: 1999/05/11 23:56:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1066  1999/05/11 23:56:52  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1065  1998/11/30 04:13:48  krishnan
  * Fixed the numNodes > nPatches bug. It does not create computeHomePatches if there are no patches
  * on that particular node.

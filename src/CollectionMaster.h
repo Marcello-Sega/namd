@@ -8,17 +8,18 @@
 #include "ProcessorPrivate.h"
 #include "PatchMap.h"
 #include "PatchMap.inl"
+#include "CollectionMaster.decl.h"
 
 class CollectVectorMsg;
 
-class CollectionMaster : public chare_object
+class CollectionMaster : public Chare
 {
 public:
 
   static CollectionMaster *Object() { 
     return CpvAccess(CollectionMaster_instance); 
   }
-  CollectionMaster(InitMsg *msg);
+  CollectionMaster();
   ~CollectionMaster(void);
 
   void receivePositions(CollectVectorMsg *msg);
@@ -41,9 +42,9 @@ public:
     CollectVectorInstance(void) : seq(-1) { ; }
 
     CollectVectorInstance(int s) :
-      seq(s), remaining(CNumPes()) { 
+      seq(s), remaining(CkNumPes()) { 
 		int npatches=(PatchMap::Object())->numPatches(); 
-		if (CNumPes() > npatches) remaining=npatches; 
+		if (CkNumPes() > npatches) remaining=npatches; 
 		}
 
     // true -> send it and delete it!
@@ -133,7 +134,7 @@ private:
 };
 
 
-class CollectVectorMsg : public comm_object
+class CollectVectorMsg : public CMessage_CollectVectorMsg
 {
 public:
 
@@ -141,13 +142,8 @@ public:
   AtomIDList aid;
   ResizeArray<Vector> data;
 
-  void * pack(int *length);
-  void unpack(void *in);
-
-  void * operator new(size_t s, int i, int j) {return comm_object::operator new(s,i,j);}
-  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
-  void * operator new(size_t s) { return comm_object::operator new(s); }
-  void * operator new(size_t, void *ptr) { return ptr; }
+  static void* pack(CollectVectorMsg* msg);
+  static CollectVectorMsg* unpack(void *ptr);
 
 };
 
@@ -158,12 +154,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1999/03/17 17:59:22 $
+ *	$Revision: 1.1014 $	$Date: 1999/05/11 23:56:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMaster.h,v $
+ * Revision 1.1014  1999/05/11 23:56:15  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1013  1999/03/17 17:59:22  jim
  * Eliminated compiler warnings and errors.
  *

@@ -16,8 +16,8 @@
 
 #include <iostream.h>	// for cout
 #include <strstream.h>	// for ostrstream
-#include <stdio.h>	// for CPrintf
-#include "charm++.h"	// for CPrintf
+#include <stdio.h>	// for CkPrintf
+#include "charm++.h"	// for CkPrintf
 
 class infostream : public ostrstream
 {
@@ -28,11 +28,11 @@ class infostream : public ostrstream
   infostream() : ostrstream(iBuffer,sizeof(iBuffer)) {;}
   ~infostream() {;}
 
-  /* output using CPrintf() (end by inform) */
+  /* output using CkPrintf() (end by inform) */
   void endi()
     {
     *this << ends;
-    CPrintf("%s",iBuffer);
+    CkPrintf("%s",iBuffer);
     (*this).seekp(0);	// clear buffer
     }
 
@@ -84,7 +84,7 @@ inline ostream& iINFO (ostream& s)  { return s << "Info: "; }
 inline ostream& iWARN (ostream& s)  { return s << "Warning: "; }
 inline ostream& iERROR(ostream& s)  { return s << "ERROR: "; }
 inline ostream& iDEBUG(ostream& s)  { return s << "DEBUG: "; }
-inline ostream& iPE(ostream& s)     { return s << "Pe(" << CMyPe() << ')'; }
+inline ostream& iPE(ostream& s)     { return s << "Pe(" << CkMyPe() << ')'; }
 
 #define iFILE __FILE__<<'('<<__LINE__<<"): "
 #define iINFOF  iINFO << iFILE
@@ -103,12 +103,15 @@ extern infostream iout;
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1998/03/03 23:05:14 $
+ *	$Revision: 1.1004 $	$Date: 1999/05/11 23:56:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: InfoStream.h,v $
+ * Revision 1.1004  1999/05/11 23:56:32  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1003  1998/03/03 23:05:14  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

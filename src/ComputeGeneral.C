@@ -89,7 +89,7 @@ ComputeGeneral::~ComputeGeneral() {
 
 
 void ComputeGeneral::doWork() {
-  CPrintf("This is the default ComputeGeneral::doWork()\n");
+  CkPrintf("This is the default ComputeGeneral::doWork()\n");
   depositAllForces();
 }
 
@@ -99,12 +99,15 @@ void ComputeGeneral::doWork() {
  *
  *	$RCSfile: ComputeGeneral.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1998/03/03 23:05:04 $
+ *	$Revision: 1.1006 $	$Date: 1999/05/11 23:56:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGeneral.C,v $
+ * Revision 1.1006  1999/05/11 23:56:21  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1005  1998/03/03 23:05:04  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

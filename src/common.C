@@ -80,7 +80,7 @@ void NAMD_quit(Bool die_hard)
 void NAMD_die(char *err_msg)
 
 {
-   CPrintf("FATAL ERROR: %s\n",err_msg);
+   CkPrintf("FATAL ERROR: %s\n",err_msg);
    CmiAbort(err_msg);
 }
 
@@ -111,16 +111,16 @@ BigReal NAMD_random()
 
 		//  Seed the random number generator initially.  Add the node
 		//  number to get more randomness
-		srand48(Node::Object()->simParameters->randomSeed+CMyPe());
+		srand48(Node::Object()->simParameters->randomSeed+CkMyPe());
 
 		//  If this is a client node, now pick off the node-1
 		//  first random numbers and then use the next random number
 		//  to again seed the generator.  This will really insure that
 		//  there is no correlation between random numbers on different
 		//  nodes.
-		if (CMyPe())
+		if (CkMyPe())
 		{
-			for (i=0; i<(CMyPe()-1); i++)
+			for (i=0; i<(CkMyPe()-1); i++)
 			{
 				drand48();
 			}
@@ -300,13 +300,16 @@ int	Fclose	(FILE *fout)
  * RCS INFORMATION:
  *
  *	$RCSfile: common.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1999/04/14 16:07:58 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1018 $	$Date: 1999/05/11 23:56:54 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.C,v $
+ * Revision 1.1018  1999/05/11 23:56:54  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1017  1999/04/14 16:07:58  jim
  * Added second message (to stdout) to NAMD_die.
  *
@@ -398,7 +401,7 @@ int	Fclose	(FILE *fout)
  * Modified to use InfoStream instead of Inform.
  *
  * Revision 1.2  1996/08/15 20:32:14  brunner
- * Made NamdDIE use CPrintf
+ * Made NamdDIE use CkPrintf
  *
  * Revision 1.1  1996/08/06 20:38:38  ari
  * Initial revision

@@ -6,7 +6,7 @@
 
 #include "charm++.h"
 
-#include "main.top.h"
+#include "main.decl.h"
 #include "main.h"
 
 // Needed for namd.1.X components
@@ -23,11 +23,14 @@ Inform namdDebug("** DEBUG **");
 //#define DEBUGM
 #include "Debug.h"
 
-class main : public chare_object
+class main : public Chare
 {
 public:
-  main(int argc, char **argv)
+  main(CkArgMsg *msg)
   {
+    int argc = msg->argc;
+    char **argv = msg->argv;
+
     // print banner
     iout << iINFO << "NAMD 2.0\n"
 #if 1
@@ -52,13 +55,13 @@ public:
   }
 };
 
-#include "main.bot.h"
+#include "main.def.h"
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: main.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1999/04/01 20:52:14 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1016 $	$Date: 1999/05/11 23:56:56 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -67,6 +70,9 @@ public:
  * REVISION HISTORY:
  *
  * $Log: main.C,v $
+ * Revision 1.1016  1999/05/11 23:56:56  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1015  1999/04/01 20:52:14  jim
  * Added experimental version warning.
  *

@@ -1,7 +1,7 @@
 #include "charm++.h"
-#include "CollectionMgr.top.h"
+#include "CollectionMgr.decl.h"
 #include "CollectionMgr.h"
-#include "CollectionMaster.top.h"
+#include "CollectionMaster.decl.h"
 #include "CollectionMaster.h"
 #include "Node.h"
 #include "Molecule.h"
@@ -46,12 +46,12 @@ void CollectionMgr::submitPositions(int seq, AtomIDList &i, PositionList &d,
   CollectVectorInstance *c;
   if ( ( c = positions.submitData(seq,i,d2) ) )
   {
-    CollectVectorMsg * msg = 
-      new (MsgIndex(CollectVectorMsg)) CollectVectorMsg;
+    CollectVectorMsg * msg = new CollectVectorMsg;
     msg->seq = c->seq;
     msg->aid = c->aid;
     msg->data = c->data;
-    CSendMsg(CollectionMaster,receivePositions,CollectVectorMsg,msg,&master);
+    CProxy_CollectionMaster cm(master);
+    cm.receivePositions(msg);
     delete c;
   }
 }
@@ -62,12 +62,12 @@ void CollectionMgr::submitVelocities(int seq, AtomIDList &i, VelocityList &d)
   CollectVectorInstance *c;
   if ( ( c = velocities.submitData(seq,i,d) ) )
   {
-    CollectVectorMsg * msg =
-      new (MsgIndex(CollectVectorMsg)) CollectVectorMsg;
+    CollectVectorMsg * msg = new CollectVectorMsg;
     msg->seq = c->seq;
     msg->aid = c->aid;
     msg->data = c->data;
-    CSendMsg(CollectionMaster,receiveVelocities,CollectVectorMsg,msg,&master);
+    CProxy_CollectionMaster cm(master);
+    cm.receiveVelocities(msg);
     delete c;
   }
 }
@@ -78,30 +78,33 @@ void CollectionMgr::submitForces(int seq, AtomIDList &i, ForceList &d)
   CollectVectorInstance *c;
   if ( ( c = forces.submitData(seq,i,d) ) )
   {
-    CollectVectorMsg * msg =
-      new (MsgIndex(CollectVectorMsg)) CollectVectorMsg;
+    CollectVectorMsg * msg = new CollectVectorMsg;
     msg->seq = c->seq;
     msg->aid = c->aid;
     msg->data = c->data;
-    CSendMsg(CollectionMaster,receiveForces,CollectVectorMsg,msg,&master);
+    CProxy_CollectionMaster cm(master);
+    cm.receiveForces(msg);
     delete c;
   }
 }
 
 
-#include "CollectionMgr.bot.h"
+#include "CollectionMgr.def.h"
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1999/01/18 21:53:56 $
+ *	$Revision: 1.1014 $	$Date: 1999/05/11 23:56:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMgr.C,v $
+ * Revision 1.1014  1999/05/11 23:56:15  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1013  1999/01/18 21:53:56  brunner
  * Changes to deal with recent Charm++ changes.  More extensive changes
  * may be needed soon, but this works for now.

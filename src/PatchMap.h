@@ -185,8 +185,9 @@ public:
 
 protected:
   friend class MapDistribMsg;
-  void * pack (int *length);
-  void unpack (void *in);
+  int packSize(void);
+  void pack(char *buf);
+  void unpack(char *buf);
   
   PatchMap(void);
   
@@ -227,13 +228,16 @@ inline Patch *PatchMap::patch(PatchID pid)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1998/07/16 18:52:13 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1012 $	$Date: 1999/05/11 23:56:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.h,v $
+ * Revision 1.1012  1999/05/11 23:56:42  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1011  1998/07/16 18:52:13  jim
  * Localized common downstream patch optimization.
  *

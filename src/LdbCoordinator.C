@@ -4,7 +4,7 @@
 
 #include "ProcessorPrivate.h"
 
-#include "LdbCoordinator.top.h"
+#include "LdbCoordinator.decl.h"
 #include "LdbCoordinator.h"
 #include "Node.h"
 #include "Namd.h"
@@ -24,6 +24,7 @@
 //#include "Alg4.h"
 
 #include "elements.h"
+#include "ComputeMgr.decl.h"
 
 
 class manheap;
@@ -72,61 +73,63 @@ LdbStatsMsg::~LdbStatsMsg()
   delete [] computeTime;
 }
 
-void *LdbStatsMsg::pack(int *length)
+void *LdbStatsMsg::pack(LdbStatsMsg *m)
 {
   // A few extra bytes are allocated for the unused pointers,
   // but it makes the code shorter
 
-  *length = sizeof(LdbStatsMsg) + nPatches * 2 * sizeof(int) 
-    + nComputes * (sizeof(int) + sizeof(float));
+  int length = sizeof(LdbStatsMsg) + m->nPatches * 2 * sizeof(int) 
+    + m->nComputes * (sizeof(int) + sizeof(float));
 
-  char *buffer = (char *)new_packbuffer(this,*length);
+  char *buffer = (char *)CkAllocBuffer(m,length);
 
-  *((LdbStatsMsg *)buffer) = *this;
+  *((LdbStatsMsg *)buffer) = *m;
   char *curbuf = buffer+sizeof(LdbStatsMsg);
 
-  memcpy(curbuf,pid,nPatches*sizeof(int));
-  curbuf += nPatches * sizeof(int);
+  memcpy(curbuf,m->pid,m->nPatches*sizeof(int));
+  curbuf += m->nPatches * sizeof(int);
 
-  memcpy(curbuf,nAtoms,nPatches*sizeof(int));
-  curbuf += nPatches * sizeof(int);
+  memcpy(curbuf,m->nAtoms,m->nPatches*sizeof(int));
+  curbuf += m->nPatches * sizeof(int);
 
-  memcpy(curbuf,cid,nComputes*sizeof(int));
-  curbuf += nComputes * sizeof(int);
+  memcpy(curbuf,m->cid,m->nComputes*sizeof(int));
+  curbuf += m->nComputes * sizeof(int);
 
-  memcpy(curbuf,computeTime,nComputes*sizeof(float));
+  memcpy(curbuf,m->computeTime,m->nComputes*sizeof(float));
 
+  delete m;
   return buffer;
 }
 
-void LdbStatsMsg::unpack(void *buffer)
+LdbStatsMsg* LdbStatsMsg::unpack(void *buffer)
 {
-  new ((void *)this) LdbStatsMsg;
+  void *_ptr = CkAllocBuffer(buffer, sizeof(LdbStatsMsg));
+  LdbStatsMsg* m = new (_ptr) LdbStatsMsg;
 
-  *this = *((LdbStatsMsg *)buffer);
+  *m = *((LdbStatsMsg *)buffer);
   
   char *curbuf = (char *)buffer+sizeof(LdbStatsMsg);
 
-  pid = new int[nPatches];
-  memcpy(pid,curbuf,nPatches*sizeof(int));
-  curbuf += nPatches * sizeof(int);
+  m->pid = new int[m->nPatches];
+  memcpy(m->pid,curbuf,m->nPatches*sizeof(int));
+  curbuf += m->nPatches * sizeof(int);
 
-  nAtoms = new int[nPatches];
-  memcpy(nAtoms,curbuf,nPatches*sizeof(int));
-  curbuf += nPatches * sizeof(int);
+  m->nAtoms = new int[m->nPatches];
+  memcpy(m->nAtoms,curbuf,m->nPatches*sizeof(int));
+  curbuf += m->nPatches * sizeof(int);
 
-  cid = new int[nComputes];
-  memcpy(cid,curbuf,nComputes*sizeof(int));
-  curbuf += nComputes * sizeof(int);
+  m->cid = new int[m->nComputes];
+  memcpy(m->cid,curbuf,m->nComputes*sizeof(int));
+  curbuf += m->nComputes * sizeof(int);
 
-  computeTime = new float[nComputes];
-  memcpy(computeTime,curbuf,nComputes*sizeof(float));
+  m->computeTime = new float[m->nComputes];
+  memcpy(m->computeTime,curbuf,m->nComputes*sizeof(float));
 
-  // Deleteing buffer is unnecessary, the system will do it.
-  return;
+  CkFreeMsg(buffer);
+  return m;
 }
 
-LdbCoordinator::LdbCoordinator(InitMsg *msg)
+LdbCoordinator::LdbCoordinator()
 {
   if (CpvAccess(LdbCoordinator_instance) == NULL)
   {
@@ -134,7 +137,7 @@ LdbCoordinator::LdbCoordinator(InitMsg *msg)
   } else {
     iout << iFILE << iERROR << iPE 
 	 << "LdbCoordinator instanced twice on same node!" << endi;
-    CharmExit();
+    CkExit();
   }
 
   ldbCycleNum = 1;
@@ -142,15 +145,13 @@ LdbCoordinator::LdbCoordinator(InitMsg *msg)
   computeStartTime = computeTotalTime = (double *)NULL;
   patchNAtoms = (int *) NULL;
   sequencerThreads = (Sequencer **) NULL;
-  if (CMyPe() == 0)
-    statsMsgs = new (LdbStatsMsg *[CNumPes()]);
+  if (CkMyPe() == 0)
+    statsMsgs = new (LdbStatsMsg *[CkNumPes()]);
   else statsMsgs = NULL;
   ldbStatsFP = NULL;
   computeArray = NULL;
   patchArray = NULL;
   processorArray = NULL;
-
-  delete msg;
 
   // Register Converse timer routines
 #ifndef NO_IDLE_COMPUTATION
@@ -166,7 +167,7 @@ LdbCoordinator::~LdbCoordinator(void)
   delete [] sequencerThreads;
   delete [] computeStartTime;
   delete [] computeTotalTime;
-  if (CMyPe() == 0)
+  if (CkMyPe() == 0)
   {
     delete [] statsMsgs;
     delete [] computeArray;
@@ -259,9 +260,9 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
   nComputesReported = 0;
   nComputesExpected = nLocalComputes * nLdbSteps;
   controllerReported = 0;
-  controllerExpected = ! CMyPe();
+  controllerExpected = ! CkMyPe();
 
-  if (CMyPe() == 0)
+  if (CkMyPe() == 0)
   {
     if (computeArray == NULL)
       computeArray = new computeInfo[computeMap->numComputes()];
@@ -376,8 +377,9 @@ int LdbCoordinator::checkAndGoToBarrier(void)
        && (controllerReported == controllerExpected) )
   {
     DebugM(3, "Load balance barrier reached.\n");
-    LdbResumeMsg *msg = new (MsgIndex(LdbResumeMsg)) LdbResumeMsg;
-    CSendMsgBranch(LdbCoordinator, nodeDone, LdbResumeMsg, msg, thisgroup,0);
+    LdbResumeMsg *msg = new LdbResumeMsg;
+    CProxy_LdbCoordinator cl(thisgroup);
+    cl.nodeDone(msg,0);
     return 1;
   }
   else return 0;
@@ -389,7 +391,7 @@ void LdbCoordinator::nodeDone(LdbResumeMsg *msg)
   if (nodesDone==Node::Object()->numNodes())
   {
     nodesDone=0;
-    CBroadcastMsgBranch(LdbCoordinator, sendStats, LdbResumeMsg, msg, thisgroup);
+    CProxy_LdbCoordinator(thisgroup).sendStats(msg);
   }
   else delete msg;
 }
@@ -397,9 +399,9 @@ void LdbCoordinator::sendStats(LdbResumeMsg *inMsg)
 {
   delete inMsg;
 /* REMOVE VERBOSE OUTPUT
-  if(CMyPe()==0)
+  if(CkMyPe()==0)
   {
-    CPrintf("WallClock : %f  CPUTime : %f \n", CmiWallTimer()-Namd::cmiWallStart, 
+    CkPrintf("WallClock : %f  CPUTime : %f \n", CmiWallTimer()-Namd::cmiWallStart, 
 	    CmiCpuTimer()-Namd::cmiCpuStart);
   }
 */
@@ -432,8 +434,7 @@ void LdbCoordinator::sendStats(LdbResumeMsg *inMsg)
     NAMD_die(die_msg);
   }
 
-  LdbStatsMsg *msg = 
-    new (MsgIndex(LdbStatsMsg)) LdbStatsMsg(nLocalPatches,nLocalComputes);
+  LdbStatsMsg *msg = new LdbStatsMsg(nLocalPatches,nLocalComputes);
   
   if (msg == NULL)
     NAMD_die("LdbCoordinator::checkAndSendStats: Insufficient memory");
@@ -447,7 +448,7 @@ void LdbCoordinator::sendStats(LdbResumeMsg *inMsg)
        << "  time per step = " << totalTime/nLdbSteps 
        << "\n" << endi;
 #ifndef NO_IDLE_COMPUTATION
-  CPrintf("[%d] Processor idle time (this ldb cycle)=%5.1f%%\n",
+  CkPrintf("[%d] Processor idle time (this ldb cycle)=%5.1f%%\n",
 	  msg->proc,100.*idleTime/totalTime);
 #endif
 */
@@ -478,7 +479,8 @@ void LdbCoordinator::sendStats(LdbResumeMsg *inMsg)
   for(i=0;i<msg->nComputes;i++)
     msg->procLoad -= msg->computeTime[i];
   
-  CSendMsgBranch(LdbCoordinator, analyze, LdbStatsMsg, msg, thisgroup,0);
+  CProxy_LdbCoordinator cl(thisgroup);
+  cl.analyze(msg,0);
   return;
 }
 
@@ -486,7 +488,7 @@ void LdbCoordinator::analyze(LdbStatsMsg *msg)
 {
   if (Node::Object()->myid() != 0)
   {
-    CPrintf("Unexpected call to LdbCoordinator::analyze\n");
+    CkPrintf("Unexpected call to LdbCoordinator::analyze\n");
     return;
   }
 
@@ -501,7 +503,7 @@ void LdbCoordinator::analyze(LdbStatsMsg *msg)
 
 void LdbCoordinator::processStatistics(void)
 {
-  //  CPrintf("LDB: All statistics received at %f, %f\n",
+  //  CkPrintf("LDB: All statistics received at %f, %f\n",
   //  CmiTimer(),CmiWallTimer());
 
   const int numProcessors = Node::Object()->numNodes();
@@ -552,7 +554,7 @@ void LdbCoordinator::processStatistics(void)
     if ( (computeArray[i].processor != computeArray[i].oldProcessor)
 	 && (computeArray[i].processor != -1) )
     {
-      // CPrintf("Assigning compute %d from %d to %d\n",
+      // CkPrintf("Assigning compute %d from %d to %d\n",
       //    i,computeArray[i].oldProcessor,computeArray[i].processor);
       computeMap->setNewNode(computeArray[i].Id,computeArray[i].processor);
       DebugM(2, "setting("<<computeArray[i].Id<<") newNode - curnode="
@@ -588,20 +590,19 @@ void LdbCoordinator::processStatistics(void)
   // computeMgr->updateComputes() call only on Node(0) i.e. right here
   // This will barrier for all Nodes - (i.e. Computes must be
   // here and with proxies before anyone can start up
-
-  ComputeMgr *computeMgr = CLocalBranch(ComputeMgr, CpvAccess(BOCclass_group).computeMgr);
-  computeMgr->updateComputes(GetEntryPtr(LdbCoordinator,updateComputesReady,DoneMsg),thisgroup);
-  //  CPrintf("LDB: Done processing statistics at %f, %f\n",
+  CProxy_ComputeMgr cm(CpvAccess(BOCclass_group).computeMgr);
+  ComputeMgr *computeMgr = cm.ckLocalBranch();
+  computeMgr->updateComputes(CProxy_LdbCoordinator::ckIdx_updateComputesReady(),thisgroup);
+  //  CkPrintf("LDB: Done processing statistics at %f, %f\n",
   //	  CmiTimer(),CmiWallTimer());
 }
 
-void LdbCoordinator::updateComputesReady(DoneMsg *msg) {
+void LdbCoordinator::updateComputesReady() {
   DebugM(3,"updateComputesReady()\n");
-  delete msg;
 
-  LdbResumeMsg *sendmsg = new (MsgIndex(LdbResumeMsg)) LdbResumeMsg;
-  CBroadcastMsgBranch(LdbCoordinator, resume, LdbResumeMsg, sendmsg, thisgroup);
-  CStartQuiescence(GetEntryPtr(LdbCoordinator,resumeReady,QuiescenceMessage),thishandle);
+  LdbResumeMsg *sendmsg = new LdbResumeMsg;
+  CProxy_LdbCoordinator(thisgroup).resume(sendmsg);
+  CkStartQD(CProxy_LdbCoordinator::ckIdx_resumeReady((CkQdMsg*)0),&thishandle);
 }
 
 void LdbCoordinator::resume(LdbResumeMsg *msg)
@@ -614,13 +615,13 @@ void LdbCoordinator::resume(LdbResumeMsg *msg)
   delete msg;
 }
 
-void LdbCoordinator::resumeReady(QuiescenceMessage *msg) {
+void LdbCoordinator::resumeReady(CkQdMsg *msg) {
   DebugM(3,"resumeReady()\n");
   delete msg;
 
   Namd::startTimer();
-  LdbResumeMsg *sendmsg = new (MsgIndex(LdbResumeMsg)) LdbResumeMsg;
-  CBroadcastMsgBranch(LdbCoordinator, resume2, LdbResumeMsg, sendmsg, thisgroup);
+  LdbResumeMsg *sendmsg = new LdbResumeMsg;
+  CProxy_LdbCoordinator(thisgroup).resume2(sendmsg);
 }
 
 void LdbCoordinator::resume2(LdbResumeMsg *msg)
@@ -641,7 +642,7 @@ void LdbCoordinator::awakenSequencers()
   {
     if (sequencerThreads[i])
     {
-      //      CPrintf("Awakening thread %d\n",i);
+      //      CkPrintf("Awakening thread %d\n",i);
       sequencerThreads[i]->awaken();
     }
     sequencerThreads[i]= NULL;
@@ -702,7 +703,7 @@ int LdbCoordinator::buildData(void)
       nMoveableComputes++;
     }
 /* REMOVE VERBOSE OUTPUT
-    CPrintf("PE %d nComputes = %d\n",msg->proc,j);
+    CkPrintf("PE %d nComputes = %d\n",msg->proc,j);
 */
     
   }
@@ -729,7 +730,7 @@ void LdbCoordinator::cleanUpData(void)
 int LdbCoordinator::requiredProxies(PatchID id, int neighborNodes[])
 {
   enum proxyHere { No, Yes };
-  int numNodes = CNumPes();
+  int numNodes = CkNumPes();
   proxyHere *proxyNodes = new proxyHere[numNodes];
   int nProxyNodes;
   int i;
@@ -769,7 +770,7 @@ void LdbCoordinator::printLocalLdbReport(void)
   char outputBuf[255];
   char *curLoc;
 
-  CPrintf("%d:Patch report:\n",CMyPe());
+  CkPrintf("%d:Patch report:\n",CkMyPe());
   
   curLoc = outputBuf;
   int i,j=0;
@@ -783,12 +784,12 @@ void LdbCoordinator::printLocalLdbReport(void)
     if (((j % 4) == 0) && j)
     {
       curLoc = outputBuf;
-      CPrintf("[%d]%s\n",CMyPe(),outputBuf);
+      CkPrintf("[%d]%s\n",CkMyPe(),outputBuf);
       j=0;
     }
   }
 
-  CPrintf("%d:Compute report:\n",CMyPe());
+  CkPrintf("%d:Compute report:\n",CkMyPe());
   
   curLoc = outputBuf;
   j=0;
@@ -802,7 +803,7 @@ void LdbCoordinator::printLocalLdbReport(void)
     if (((j % 4) == 0) && j)
     {
       curLoc = outputBuf;
-      CPrintf("[%d]%s\n",CMyPe(),outputBuf);
+      CkPrintf("[%d]%s\n",CkMyPe(),outputBuf);
       j=0;
     }
   }
@@ -866,7 +867,7 @@ void LdbCoordinator::printLdbReport(const int nMoveableComputes)
     }
   }
   if (numComputesPrinted != nMoveableComputes)
-    CPrintf("LDB stats missing %d %d \n",
+    CkPrintf("LDB stats missing %d %d \n",
 	    numComputesPrinted,nMoveableComputes);
   fprintf(ldbStatsFP,"\n");
   fprintf(ldbStatsFP,"*** Load balancer report complete ***\n");
@@ -887,4 +888,4 @@ void LdbCoordinator::printRequiredProxies(PatchID id, FILE *fp)
     fprintf(fp,"%4d ",neighborNodes[i]);
 }
 
-#include "LdbCoordinator.bot.h"
+#include "LdbCoordinator.def.h"

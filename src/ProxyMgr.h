@@ -23,20 +23,21 @@
 #include "UniqueSet.h"
 #include "UniqueSetIter.h"
 #include "ProcessorPrivate.h"
+#include "ProxyMgr.decl.h"
 
-class RegisterProxyMsg : public comm_object {
+class RegisterProxyMsg : public CMessage_RegisterProxyMsg {
 public:
   NodeID node;
   PatchID patch;
 };
 
-class UnregisterProxyMsg : public comm_object {
+class UnregisterProxyMsg : public CMessage_UnregisterProxyMsg {
 public:
   NodeID node;
   PatchID patch;
 };
 
-class ProxyAtomsMsg : public comm_object {
+class ProxyAtomsMsg : public CMessage_ProxyAtomsMsg {
 public:
   PatchID patch;
   AtomIDList atomIDList;
@@ -45,52 +46,36 @@ public:
 
   void prepack();
 
-  void * pack (int *length);
-  void * operator new(size_t s, int i, int j) {return comm_object::operator new(s,i,j);}
-  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
-  void * operator new(size_t s) { return comm_object::operator new(s); }
-  void * operator new(size_t, void *ptr) { return ptr; }
-  void unpack (void *in);
+  static void* pack(ProxyAtomsMsg *msg);
+  static ProxyAtomsMsg* unpack(void *ptr);
 };
 
-class ProxyDataMsg : public comm_object {
+class ProxyDataMsg : public CMessage_ProxyDataMsg {
 public:
   PatchID patch;
   Flags flags;
   PositionList positionList;
-  void * pack (int *length);
-  void * operator new(size_t s, int i, int j) {return comm_object::operator new(s,i,j);}
-  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
-  void * operator new(size_t s) { return comm_object::operator new(s); }
-  void * operator new(size_t, void *ptr) { return ptr; }
-  void unpack (void *in);
+  static void* pack(ProxyDataMsg *msg);
+  static ProxyDataMsg* unpack(void *ptr);
 };
 
-class ProxyAllMsg : public comm_object {
+class ProxyAllMsg : public CMessage_ProxyAllMsg {
 public:
   PatchID patch;
   Flags flags;
   AtomIDList atomIDList;
   PositionList positionList;
-  void * pack (int *length);
-  void * operator new(size_t s, int i, int j) {return comm_object::operator new(s,i,j);}
-  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
-  void * operator new(size_t s) { return comm_object::operator new(s); }
-  void * operator new(size_t, void *ptr) { return ptr; }
-  void unpack (void *in);
+  static void* pack(ProxyAllMsg *msg);
+  static ProxyAllMsg* unpack(void *ptr);
 };
 
-class ProxyResultMsg : public comm_object {
+class ProxyResultMsg : public CMessage_ProxyResultMsg {
 public:
   NodeID node;
   PatchID patch;
   ForceList forceList[Results::maxNumForces];
-  void * pack (int *length);
-  void * operator new(size_t s, int i, int j) {return comm_object::operator new(s,i,j);}
-  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
-  void * operator new(size_t size) { return comm_object::operator new(size); }
-  void * operator new(size_t, void *ptr) { return ptr; }
-  void unpack (void *in);
+  static void* pack(ProxyResultMsg *msg);
+  static ProxyResultMsg* unpack(void *ptr);
 };
 
 class ProxyPatch;
@@ -115,7 +100,7 @@ class ProxyMgr : public BOCclass
 {
 
 public:
-  ProxyMgr(InitMsg *);
+  ProxyMgr();
   ~ProxyMgr();
 
   void removeProxies(void);
@@ -152,12 +137,15 @@ private:
  *
  *	$RCSfile: ProxyMgr.h,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1998/03/03 23:05:25 $
+ *	$Revision: 1.1011 $	$Date: 1999/05/11 23:56:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.h,v $
+ * Revision 1.1011  1999/05/11 23:56:46  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1010  1998/03/03 23:05:25  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

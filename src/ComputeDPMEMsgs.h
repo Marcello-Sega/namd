@@ -15,6 +15,7 @@
 #include "charm++.h"
 
 #include "NamdTypes.h"
+#include "ComputeMgr.decl.h"
 
 #ifdef DPME
 #include "dpme2.h"
@@ -23,7 +24,7 @@ class Pme2Particle;
 class PmeVector;
 #endif
 
-class ComputeDPMEDataMsg : public comm_object {
+class ComputeDPMEDataMsg : public CMessage_ComputeDPMEDataMsg {
 public:
   // data members
   int node;
@@ -34,18 +35,13 @@ public:
   ComputeDPMEDataMsg(void);
   ~ComputeDPMEDataMsg(void);
 
-  // standard new overload for comm_object new
-  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
-  void * operator new(size_t s) { return comm_object::operator new(s); }
-  void * operator new(size_t, void *ptr) { return ptr; }
-
   // pack and unpack functions
-  void * pack (int *length);
-  void unpack (void *in);
+  static void* pack (ComputeDPMEDataMsg *msg);
+  static ComputeDPMEDataMsg* unpack(void *ptr);
 };
 
 
-class ComputeDPMEResultsMsg : public comm_object {
+class ComputeDPMEResultsMsg : public CMessage_ComputeDPMEResultsMsg {
 public:
   // data members
   int node;
@@ -56,14 +52,9 @@ public:
   ComputeDPMEResultsMsg(void);
   ~ComputeDPMEResultsMsg(void);
 
-  // standard new overload for comm_object new
-  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
-  void * operator new(size_t s) { return comm_object::operator new(s); }
-  void * operator new(size_t, void *ptr) { return ptr; }
-
   // pack and unpack functions
-  void * pack (int *length);
-  void unpack (void *in);
+  static void* pack(ComputeDPMEResultsMsg *msg);
+  static ComputeDPMEResultsMsg* unpack(void *ptr);
 };
 
 
@@ -75,12 +66,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1998/04/10 04:15:58 $
+ *	$Revision: 1.2 $	$Date: 1999/05/11 23:56:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMEMsgs.h,v $
+ * Revision 1.2  1999/05/11 23:56:18  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1  1998/04/10 04:15:58  jim
  * Finished incorporating DPME.
  *

@@ -1,16 +1,16 @@
+module ReductionMgr {
+  // ReductionMgr on each node
 
-// ReductionMgr on each node
+  message ReductionDataMsg;
+  message CheckForPatchMsg;
 
-extern message InitMsg;
-message ReductionDataMsg;
-message CheckForPatchMsg;
-
-group ReductionMgr
-{
-  entry ReductionMgr(InitMsg *);
-  entry recvReductionData(ReductionDataMsg *);
-  entry doDummySubmit(CheckForPatchMsg *);
-};
+  group ReductionMgr
+  {
+    entry ReductionMgr(void);
+    entry void recvReductionData(ReductionDataMsg *);
+    entry void doDummySubmit(CheckForPatchMsg *);
+  };
+}
 
 
 /***************************************************************************
@@ -18,12 +18,15 @@ group ReductionMgr
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1998/11/30 04:16:42 $
+ *	$Revision: 1.1004 $	$Date: 1999/05/11 23:56:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.ci,v $
+ * Revision 1.1004  1999/05/11 23:56:48  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1003  1998/11/30 04:16:42  krishnan
  * Added CheckForPatchMsg and the entry point doDummySubmit().
  *

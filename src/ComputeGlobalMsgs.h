@@ -15,8 +15,9 @@
 #include "charm++.h"
 
 #include "NamdTypes.h"
+#include "ComputeMgr.decl.h"
 
-class ComputeGlobalConfigMsg : public comm_object {
+class ComputeGlobalConfigMsg : public CMessage_ComputeGlobalConfigMsg {
 public:
   // data members
   AtomIDList aid;
@@ -26,18 +27,13 @@ public:
   ComputeGlobalConfigMsg(void);
   ~ComputeGlobalConfigMsg(void);
 
-  // standard new overload for comm_object new
-  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
-  void * operator new(size_t s) { return comm_object::operator new(s); }
-  void * operator new(size_t, void *ptr) { return ptr; }
-
   // pack and unpack functions
-  void * pack (int *length);
-  void unpack (void *in);
+  static void* pack(ComputeGlobalConfigMsg *msg);
+  static ComputeGlobalConfigMsg* unpack(void *ptr);
 };
 
 
-class ComputeGlobalDataMsg : public comm_object {
+class ComputeGlobalDataMsg : public CMessage_ComputeGlobalDataMsg {
 public:
   // data members
   AtomIDList aid;
@@ -48,18 +44,13 @@ public:
   ComputeGlobalDataMsg(void);
   ~ComputeGlobalDataMsg(void);
 
-  // standard new overload for comm_object new
-  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
-  void * operator new(size_t s) { return comm_object::operator new(s); }
-  void * operator new(size_t, void *ptr) { return ptr; }
-
   // pack and unpack functions
-  void * pack (int *length);
-  void unpack (void *in);
+  static void* pack(ComputeGlobalDataMsg *msg);
+  static ComputeGlobalDataMsg* unpack(void *ptr);
 };
 
 
-class ComputeGlobalResultsMsg : public comm_object {
+class ComputeGlobalResultsMsg : public CMessage_ComputeGlobalResultsMsg {
 public:
   // data members
   AtomIDList aid;
@@ -73,14 +64,9 @@ public:
   ComputeGlobalResultsMsg(void);
   ~ComputeGlobalResultsMsg(void);
 
-  // standard new overload for comm_object new
-  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
-  void * operator new(size_t s) { return comm_object::operator new(s); }
-  void * operator new(size_t, void *ptr) { return ptr; }
-
   // pack and unpack functions
-  void * pack (int *length);
-  void unpack (void *in);
+  static void* pack(ComputeGlobalResultsMsg *msg);
+  static ComputeGlobalResultsMsg* unpack(void *ptr);
 };
 
 
@@ -92,12 +78,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1998/03/03 23:13:47 $
+ *	$Revision: 1.4 $	$Date: 1999/05/11 23:56:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGlobalMsgs.h,v $
+ * Revision 1.4  1999/05/11 23:56:23  brunner
+ * Changes for new charm version
+ *
  * Revision 1.3  1998/03/03 23:13:47  brunner
  * Changing include files for new charm++ includes
  *

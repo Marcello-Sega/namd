@@ -13,7 +13,7 @@
 
 #include "charm++.h"
 
-#include "PatchMgr.top.h"
+#include "PatchMgr.decl.h"
 #include "PatchMgr.h"
 
 #include "NamdTypes.h"
@@ -21,13 +21,13 @@
 #include "HomePatch.h"
 #include "PatchMap.h"
 
-#include "main.top.h"
+#include "main.decl.h"
 #include "main.h"
 
-#include "WorkDistrib.top.h"
+#include "WorkDistrib.decl.h"
 #include "WorkDistrib.h"
 
-// #include "Node.top.h"
+// #include "Node.decl.h"
 // #include "Node.h"
 
 // #define DEBUGM
@@ -36,10 +36,9 @@
 
 
 // BOC constructor
-PatchMgr::PatchMgr(InitMsg *msg)
+PatchMgr::PatchMgr()
 {
-    // CPrintf("[%d] PatchMgr Created\n", CMyPe());
-    delete msg;
+    // CkPrintf("[%d] PatchMgr Created\n", CkMyPe());
 
     // Singleton pattern
     if (CpvAccess(PatchMgr_instance) == NULL) {
@@ -47,7 +46,7 @@ PatchMgr::PatchMgr(InitMsg *msg)
     } else {
 	iout << iFILE << iERROR << iPE 
 	  << "PatchMgr instanced twice on same processor!" << endi;
-	CharmExit();
+	CkExit();
     }
 
     // Get PatchMap singleton started
@@ -56,7 +55,7 @@ PatchMgr::PatchMgr(InitMsg *msg)
 
     // Message combining initialization
     migrationCountdown = 0;
-    combineMigrationMsgs = new MigrateAtomsCombinedMsg*[CNumPes()];
+    combineMigrationMsgs = new MigrateAtomsCombinedMsg*[CkNumPes()];
 }
 
 PatchMgr::~PatchMgr()
@@ -99,11 +98,12 @@ void PatchMgr::sendMovePatches()
       HomePatch *p = homePatch(m->pid);
       patchMap->unregisterPatch(m->pid, p);
 
-      MovePatchesMsg *msg = new (MsgIndex(MovePatchesMsg))
+      MovePatchesMsg *msg = new 
 	MovePatchesMsg(m->pid, p->atomIDList, p->t, p->p, p->v);
 
       // Sending to PatchMgr::recvMovePatches on remote node
-      CSendMsgBranch(PatchMgr, recvMovePatches, MovePatchesMsg, msg, thisgroup, m->nodeID);
+      CProxy_PatchMgr cp(thisgroup);
+      cp.recvMovePatches(msg, m->nodeID);
 
       // Deleting the HomePatchElem will call a destructor for clean up
       // but the msg elements are safe since they use a container template
@@ -121,7 +121,7 @@ void PatchMgr::recvMovePatches(MovePatchesMsg *msg) {
 
     // Tell sending PatchMgr we received MovePatchMsg
 //    AckMovePatchesMsg *ackmsg = 
-//      new (MsgIndex(AckMovePatchesMsg)) AckMovePatchesMsg;
+//      new AckMovePatchesMsg;
 //    CSendMsgBranch(PatchMgr,ackMovePatches, ackmsg, thisgroup, msg->fromNodeID);
 }
     
@@ -139,9 +139,9 @@ void PatchMgr::recvMovePatches(MovePatchesMsg *msg) {
 // Message combining could occur here
 void PatchMgr::sendMigrationMsg(PatchID src, MigrationInfo m) {
   // We note that m.mList may be NULL indicating no atoms to migrate
-  MigrateAtomsMsg *msg = 
-    new (MsgIndex(MigrateAtomsMsg)) MigrateAtomsMsg(src,m.destPatchID,m.mList);
-  CSendMsgBranch(PatchMgr,recvMigrateAtoms,MigrateAtomsMsg,msg,thisgroup,m.destNodeID);
+  MigrateAtomsMsg *msg = new MigrateAtomsMsg(src,m.destPatchID,m.mList);
+  CProxy_PatchMgr cp(thisgroup);
+  cp.recvMigrateAtoms(msg, m.destNodeID);
 }
 
 // Called by HomePatch to migrate atoms off to new patches
@@ -157,17 +157,16 @@ void PatchMgr::sendMigrationMsgs(PatchID src, MigrationInfo *m, int numMsgs) {
     // DebugM(3,"migrationCountdown (re)initialize\n");
     numHomePatches = patchMap->numHomePatches();
     migrationCountdown = numHomePatches;
-    int numPes = CNumPes();
+    int numPes = CkNumPes();
     for ( int i = 0; i < numPes; ++i ) combineMigrationMsgs[i] = 0;
   }
   for (int i=0; i < numMsgs; i++) {  // buffer messages
     int destNodeID = m[i].destNodeID;
-    if ( 1 ) // destNodeID != CMyPe() )
+    if ( 1 ) // destNodeID != CkMyPe() )
     {
       if ( ! combineMigrationMsgs[destNodeID] )
       {
-        combineMigrationMsgs[destNodeID] =
-	  new (MsgIndex(MigrateAtomsCombinedMsg)) MigrateAtomsCombinedMsg();
+        combineMigrationMsgs[destNodeID] = new MigrateAtomsCombinedMsg();
       }
       combineMigrationMsgs[destNodeID]->add(src,m[i].destPatchID,m[i].mList);
     }
@@ -180,13 +179,13 @@ void PatchMgr::sendMigrationMsgs(PatchID src, MigrationInfo *m, int numMsgs) {
   // DebugM(3,"migrationCountdown = " << migrationCountdown << "\n");
   if ( ! migrationCountdown )  // send out combined messages
   {
-    int numPes = CNumPes();
+    int numPes = CkNumPes();
     for ( int destNodeID = 0; destNodeID < numPes; ++destNodeID )
       if ( combineMigrationMsgs[destNodeID] )
       {
 	DebugM(3,"Sending MigrateAtomsCombinedMsg to node " << destNodeID << "\n");
-        CSendMsgBranch(PatchMgr, recvMigrateAtomsCombined, MigrateAtomsCombinedMsg,
-		combineMigrationMsgs[destNodeID], thisgroup, destNodeID);
+        CProxy_PatchMgr cp(thisgroup);
+        cp.recvMigrateAtomsCombined(combineMigrationMsgs[destNodeID],destNodeID);
       }
   }
 }
@@ -204,60 +203,66 @@ void PatchMgr::recvMigrateAtomsCombined (MigrateAtomsCombinedMsg *msg)
   delete msg;
 }
 
-void * MovePatchesMsg::pack (int *length)
+void * MovePatchesMsg::pack (MovePatchesMsg *m)
   {
-    DebugM(1,"MovePatchesMsg::pack() - aid.size() = " << aid.size() << endl);
-    DebugM(1,"MovePatchesMsg::pack() - p.size() = " << p.size() << endl);
-    DebugM(1,"MovePatchesMsg::pack() - v.size() = " << v.size() << endl);
-    *length = sizeof(NodeID) + sizeof(PatchID) + sizeof(int) +
-		aid.size() * sizeof(AtomID) +
-		t.size() * sizeof(Transform) +
-		p.size() * sizeof(Position) +
-		v.size() * sizeof(Velocity);
-    char *buffer = (char*)new_packbuffer(this,*length);
+    DebugM(1,"MovePatchesMsg::pack() - aid.size() = " << m->aid.size() << endl);
+    DebugM(1,"MovePatchesMsg::pack() - p.size() = " << m->p.size() << endl);
+    DebugM(1,"MovePatchesMsg::pack() - v.size() = " << m->v.size() << endl);
+    int length = sizeof(NodeID) + sizeof(PatchID) + sizeof(int) +
+		m->aid.size() * sizeof(AtomID) +
+		m->t.size() * sizeof(Transform) +
+		m->p.size() * sizeof(Position) +
+		m->v.size() * sizeof(Velocity);
+    char *buffer = (char*)CkAllocBuffer(m,length);
     char *b = buffer;
-    memcpy(b, &fromNodeID, sizeof(NodeID)); b += sizeof(NodeID);
-    memcpy(b, &pid, sizeof(PatchID)); b += sizeof(PatchID);
-    int size=aid.size(); 
+    memcpy(b, &(m->fromNodeID), sizeof(NodeID)); b += sizeof(NodeID);
+    memcpy(b, &(m->pid), sizeof(PatchID)); b += sizeof(PatchID);
+    int size=m->aid.size(); 
     memcpy(b, &size, sizeof(int)); b += sizeof(int);
-    memcpy(b, aid.begin(), size*sizeof(AtomID)); b += size*sizeof(AtomID);     
-    memcpy(b, t.begin(), size*sizeof(Transform)); b += size*sizeof(Transform);
-    memcpy(b, p.begin(), size*sizeof(Position)); b += size*sizeof(Position);
-    memcpy(b, v.begin(), size*sizeof(Velocity)); b += size*sizeof(Velocity);
-    this->~MovePatchesMsg();
+    memcpy(b, m->aid.begin(),size*sizeof(AtomID)); b += size*sizeof(AtomID);
+    memcpy(b, m->t.begin(),size*sizeof(Transform)); b += size*sizeof(Transform);
+    memcpy(b, m->p.begin(),size*sizeof(Position)); b += size*sizeof(Position);
+    memcpy(b, m->v.begin(),size*sizeof(Velocity)); b += size*sizeof(Velocity);
+    delete m;
     return buffer;
   }
 
-void MovePatchesMsg::unpack (void *in)
+MovePatchesMsg* MovePatchesMsg::unpack (void *ptr)
   {
-    new((void*)this) MovePatchesMsg;
-    char *b = (char*)in;
-    memcpy(&fromNodeID, b, sizeof(NodeID)); b += sizeof(NodeID);
-    memcpy(&pid,b, sizeof(PatchID)); b += sizeof(PatchID);
+    void *_ptr = CkAllocBuffer(ptr, sizeof(MovePatchesMsg));
+    MovePatchesMsg* m = new (_ptr) MovePatchesMsg;
+    char *b = (char*)ptr;
+    memcpy(&(m->fromNodeID), b, sizeof(NodeID)); b += sizeof(NodeID);
+    memcpy(&(m->pid),b, sizeof(PatchID)); b += sizeof(PatchID);
     int size; memcpy(&size, b, sizeof(int)); b += sizeof(int);
     DebugM(1,"MovePatchesMsg::unpack() - size = " << size << endl);
-    aid.resize(size);
-    memcpy(aid.begin(),b,size*sizeof(AtomID)); b += size*sizeof(AtomID);
-    t.resize(size);
-    memcpy(t.begin(),b,size*sizeof(Transform)); b += size*sizeof(Transform);
-    p.resize(size);
-    memcpy(p.begin(),b,size*sizeof(Position)); b += size*sizeof(Position);
-    v.resize(size);
-    memcpy(v.begin(),b,size*sizeof(Velocity)); b += size*sizeof(Velocity);
+    m->aid.resize(size);
+    memcpy(m->aid.begin(),b,size*sizeof(AtomID)); b += size*sizeof(AtomID);
+    m->t.resize(size);
+    memcpy(m->t.begin(),b,size*sizeof(Transform)); b += size*sizeof(Transform);
+    m->p.resize(size);
+    memcpy(m->p.begin(),b,size*sizeof(Position)); b += size*sizeof(Position);
+    m->v.resize(size);
+    memcpy(m->v.begin(),b,size*sizeof(Velocity)); b += size*sizeof(Velocity);
+    CkFreeMsg(ptr);
+    return m;
   }
 
-#include "PatchMgr.bot.h"
+#include "PatchMgr.def.h"
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMgr.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1998/10/24 19:57:52 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1017 $	$Date: 1999/05/11 23:56:43 $
  *
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.C,v $
+ * Revision 1.1017  1999/05/11 23:56:43  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1016  1998/10/24 19:57:52  jim
  * Eliminated warnings generated by g++ -Wall.
  *

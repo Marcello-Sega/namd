@@ -38,7 +38,7 @@
 #include "Molecule.h"
 #include "ReductionMgr.h"
 #include "ComputeMgr.h"
-#include "ComputeMgr.top.h"
+#include "ComputeMgr.decl.h"
 #include "SimParameters.h"
 #include <stdio.h>
 
@@ -63,7 +63,7 @@ ComputeGlobal::ComputeGlobal(ComputeID c, ComputeMgr *m)
 	: ComputeHomePatches(c)
 {
   DebugM(3,"Constructing client\n");
-  if ( CMyPe() ) master = 0;
+  if ( CkMyPe() ) master = 0;
   else {
     SimParameters * simParams = Node::Object()->simParameters;
     if ( simParams->tclForcesOn ) master = new ComputeTcl(this);
@@ -167,8 +167,7 @@ void ComputeGlobal::doWork()
   if ( configured ) sendData();
   else {
     // send message to check in
-    ComputeGlobalDataMsg *msg =
-	new (MsgIndex(ComputeGlobalDataMsg)) ComputeGlobalDataMsg;
+    ComputeGlobalDataMsg *msg = new ComputeGlobalDataMsg;
     comm->sendComputeGlobalData(msg);
   }
 }
@@ -189,8 +188,7 @@ void ComputeGlobal::sendData()
     (*ap).atomBox->close(&a);
   }
 
-  ComputeGlobalDataMsg *msg =
-	new (MsgIndex(ComputeGlobalDataMsg)) ComputeGlobalDataMsg;
+  ComputeGlobalDataMsg *msg = new  ComputeGlobalDataMsg;
 
   AtomIDList::iterator a = aid.begin();
   AtomIDList::iterator a_e = aid.end();
@@ -233,12 +231,15 @@ void ComputeGlobal::sendData()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.11 $	$Date: 1998/05/21 22:43:23 $
+ *	$Revision: 1.12 $	$Date: 1999/05/11 23:56:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGlobal.C,v $
+ * Revision 1.12  1999/05/11 23:56:21  brunner
+ * Changes for new charm version
+ *
  * Revision 1.11  1998/05/21 22:43:23  hurwitz
  * initial check in of fixed and forcing restraints
  * -Dave Hurwitz

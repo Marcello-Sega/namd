@@ -2109,7 +2109,7 @@ void Output::recv_vmd_patch_loads()
     vmdData->patchAtomNums[i] = 1;
   }
 #if 0
-  int notReceived=CNumPes();  //  Number of nodes we are waiting for
+  int notReceived=CkNumPes();  //  Number of nodes we are waiting for
   int tag=PATCHLOADTAG;    //  tag for load messages
   MIStream *msg;      //  Message received
   int i;        //  Loop counter
@@ -2530,13 +2530,16 @@ void Output::output_allforcedcdfile(int timestep, int n, Vector *forces)
  * RCS INFORMATION:
  *
  *  $RCSfile: Output.C,v $
- *  $Author: krishnan $  $Locker:  $    $State: Exp $
- *  $Revision: 1.17 $  $Date: 1998/10/25 04:42:15 $
+ *  $Author: brunner $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.18 $  $Date: 1999/05/11 23:56:40 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Output.C,v $
+ * Revision 1.18  1999/05/11 23:56:40  brunner
+ * Changes for new charm version
+ *
  * Revision 1.17  1998/10/25 04:42:15  krishnan
  * The format of the output files now depend on the binaryOutput parameter
  * instead of binaryRestart
@@ -2573,7 +2576,7 @@ void Output::output_allforcedcdfile(int timestep, int n, Vector *forces)
  *
  * Revision 1.7  1997/08/13 21:00:18  brunner
  * Made binary files always use 32 bits for the number of atoms, so that it
- * works on both 64 and 32-bit machines.  Also, I made Inform.C use CPrintf,
+ * works on both 64 and 32-bit machines.  Also, I made Inform.C use CkPrintf,
  * to fix the I/O buffering.
  *
  * Revision 1.6  1997/04/10 17:28:45  brunner

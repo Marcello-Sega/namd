@@ -20,7 +20,7 @@
 #include "Molecule.h"
 #include "ReductionMgr.h"
 #include "ComputeMgr.h"
-#include "ComputeMgr.top.h"
+#include "ComputeMgr.decl.h"
 // #define DEBUGM
 #define MIN_DEBUG_LEVEL 3
 #include "Debug.h"
@@ -49,14 +49,14 @@ ComputeDPME::ComputeDPME(ComputeID c, ComputeMgr *m) :
 {
   DebugM(4,"ComputeDPME created.\n");
 
-  int numWorkingPes = CNumPes();
+  int numWorkingPes = CkNumPes();
   {
     int npatches=(PatchMap::Object())->numPatches();
     if ( numWorkingPes > npatches ) numWorkingPes = npatches;
   }
 
   masterNode = numWorkingPes - 1;
-  if ( CMyPe() == masterNode ) {
+  if ( CkMyPe() == masterNode ) {
     master = new ComputeDPMEMaster(this,reduction);
     master->numWorkingPes = numWorkingPes;
   }
@@ -165,9 +165,8 @@ void ComputeDPME::doWork()
   }
 
   // send data to master
-  ComputeDPMEDataMsg *msg =
-	new (MsgIndex(ComputeDPMEDataMsg)) ComputeDPMEDataMsg;
-  msg->node = CMyPe();
+  ComputeDPMEDataMsg *msg = new ComputeDPMEDataMsg;
+  msg->node = CkMyPe();
   msg->numParticles = numLocalAtoms;
   msg->particles = localData;
   comm->sendComputeDPMEData(msg);
@@ -331,8 +330,7 @@ void ComputeDPMEMaster::recvData(ComputeDPMEDataMsg *msg)
 
   numLocalAtoms = 0;
   for ( i = 0; i < homeNode.size(); ++i ) {
-    ComputeDPMEResultsMsg *msg =
-	new (MsgIndex(ComputeDPMEResultsMsg)) ComputeDPMEResultsMsg;
+    ComputeDPMEResultsMsg *msg = new ComputeDPMEResultsMsg;
     msg->node = homeNode[i];
     msg->numParticles = endForNode[i] - numLocalAtoms;
     msg->forces = new PmeVector[msg->numParticles];
@@ -353,7 +351,7 @@ void ComputeDPMEMaster::recvData(ComputeDPMEDataMsg *msg)
 
 void ComputeDPME::recvResults(ComputeDPMEResultsMsg *msg)
 {
-  if ( CMyPe() != msg->node ) {
+  if ( CkMyPe() != msg->node ) {
     NAMD_die("ComputeDPME results sent to wrong node!\n");
     return;
   }
@@ -392,12 +390,15 @@ void ComputeDPME::recvResults(ComputeDPMEResultsMsg *msg)
  *
  *	$RCSfile: ComputeDPME.C,v $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1999/03/22 20:55:43 $
+ *	$Revision: 1.11 $	$Date: 1999/05/11 23:56:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPME.C,v $
+ * Revision 1.11  1999/05/11 23:56:17  brunner
+ * Changes for new charm version
+ *
  * Revision 1.10  1999/03/22 20:55:43  jim
  * DPME now compiles using C compiler.
  *

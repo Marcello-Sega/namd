@@ -22,6 +22,7 @@ extern "C" int gethostname( char *name, int namelen);
 #endif
 
 #include "ProcessorPrivate.h"
+#include "Node.decl.h"
 
 class PatchMap;
 class AtomMap;
@@ -55,24 +56,24 @@ public:
 
   // Run for the number of steps specified in the sim_parameters
   static void messageRun();
-  void run(RunMsg *);                  
+  void run();                  
 
   // Signal HomePatch and Node is done
   static void messageHomeDone();
-  void homeDone(DoneMsg *);
-  void nodeDone(DoneMsg *);
+  void homeDone();
+  void nodeDone();
 
   // Deal with quiescence
-  void quiescence(QuiescenceMessage *);
+  void quiescence(CkQdMsg *);
 
   // Charm Entry point - Read in system data, get all ready to simulate
   static void messageStartUp();
-  void startup(InitMsg *);  
-  void startUp(QuiescenceMessage *);  
+  void startup();  
+  void startUp(CkQdMsg *);  
 
   // Charm Entry point - synchronize on BOC creation and startup
   static void messageBOCCheckIn();
-  void BOCCheckIn(InitMsg *msg);
+  void BOCCheckIn();
   void awaitBOCCheckIn();
 
   // Utility for storing away simulation data for Node
@@ -93,8 +94,8 @@ public:
   SMDData *smdData;
 
   // Remove these calls?
-  int myid() { return CMyPe(); }
-  int numNodes() { return CNumPes(); }
+  int myid() { return CkMyPe(); }
+  int numNodes() { return CkNumPes(); }
 
 protected:
   // Map Databases - they have a singleton this access method ::Object()
@@ -135,12 +136,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1998/03/03 23:05:19 $
+ *	$Revision: 1.1012 $	$Date: 1999/05/11 23:56:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.1012  1999/05/11 23:56:39  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1011  1998/03/03 23:05:19  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

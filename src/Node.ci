@@ -1,36 +1,30 @@
+module Node {
+  // Node is on each Pe - 
 
-// Node is on each Pe - 
+  extern module main;
 
-extern message GroupInitMsg;
+  message [packed] SMDDataMsg;
 
-// mostly empty messages with descriptive names
-extern message InitMsg;
-extern message ReadyMsg;
-extern message DoneMsg;
-extern message RunMsg;
-message QuiescenceMessage;
+  group Node
+  {
+    entry Node(GroupInitMsg *);
+    entry void startUp(CkQdMsg *);
+    entry void startup(void);
 
-packmessage SMDDataMsg;
+    // used to move from phase to phase
+    entry void quiescence(CkQdMsg *);
 
-group Node
-{
-  entry Node(GroupInitMsg *);
-  entry startUp(QuiescenceMessage *);
-  entry startup(InitMsg *);
+    // after startup barriers - run simulation
+    entry void run(void);
 
-  // used to move from phase to phase
-  entry quiescence(QuiescenceMessage *);
+    // homeDone counts down homePatch completions
+    entry void homeDone(void);
+    // nodeDone counts down node completions
+    entry void nodeDone(void);
 
-  // after startup barriers - run simulation
-  entry run(RunMsg *);
-
-  // homeDone counts down homePatch completions
-  entry homeDone(DoneMsg *);
-  // nodeDone counts down node completions
-  entry nodeDone(DoneMsg *);
-
-  entry recvSMDData(SMDDataMsg *);
-} ;
+    entry void recvSMDData(SMDDataMsg *);
+  };
+}
 
 
 /***************************************************************************
@@ -38,12 +32,15 @@ group Node
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1998/01/05 20:33:24 $
+ *	$Revision: 1.1007 $	$Date: 1999/05/11 23:56:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.ci,v $
+ * Revision 1.1007  1999/05/11 23:56:38  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1006  1998/01/05 20:33:24  sergei
  * added 'packmessage SMDDataMsg' and an entry recvSMDData.
  *

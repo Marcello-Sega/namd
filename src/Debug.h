@@ -30,7 +30,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <strstream.h>	// for ostrstream
-#include "charm++.h"	// for CPrintf
+#include "charm++.h"	// for CkPrintf
 
 /*****************************************************************
  *  DebugM(): function to display a debug message.
@@ -78,12 +78,15 @@
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1998/03/03 23:05:12 $
+ *	$Revision: 1.1003 $	$Date: 1999/05/11 23:56:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Debug.h,v $
+ * Revision 1.1003  1999/05/11 23:56:31  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1002  1998/03/03 23:05:12  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

@@ -16,7 +16,7 @@
 #include "Molecule.h"
 #include "ReductionMgr.h"
 #include "ComputeMgr.h"
-#include "ComputeMgr.top.h"
+#include "ComputeMgr.decl.h"
 #include <stdio.h>
 
 #ifdef NAMD_TCL
@@ -34,7 +34,7 @@
 int ComputeTcl::Tcl_print(ClientData,
 	Tcl_Interp *, int argc, char *argv[]) {
   char *msg = Tcl_Merge(argc-1,argv+1);
-  CPrintf("TCL: %s\n",msg);
+  CkPrintf("TCL: %s\n",msg);
   free(msg);
   return TCL_OK;
 }
@@ -267,16 +267,16 @@ void ComputeTcl::initialize() {
   DebugM(4,"Initializing master\n");
 
   ComputeGlobalConfigMsg *msg =
-	new (MsgIndex(ComputeGlobalConfigMsg)) ComputeGlobalConfigMsg;
+	new ComputeGlobalConfigMsg;
 
 #ifdef NAMD_TCL
   // Create interpreter
   interp = Tcl_CreateInterp();
   if (Tcl_Init(interp) == TCL_ERROR) {
-    CPrintf("Tcl startup error: %\n", interp->result);
+    CkPrintf("Tcl startup error: %\n", interp->result);
     }
   if (Tclx_Init(interp) == TCL_ERROR) {
-    CPrintf("Tcl-X startup error: %s\n", interp->result);
+    CkPrintf("Tcl-X startup error: %s\n", interp->result);
     } else {
       Tcl_StaticPackage(interp, "Tclx", Tclx_Init, Tclx_SafeInit);
     }
@@ -312,7 +312,7 @@ void ComputeTcl::initialize() {
     int code;
     if ( script->data[0] == '{' ) code = Tcl_Eval(interp,script->data+1);
     else code = Tcl_EvalFile(interp,script->data);
-    if (*interp->result != 0) CPrintf("TCL: %s\n",interp->result);
+    if (*interp->result != 0) CkPrintf("TCL: %s\n",interp->result);
     if (code != TCL_OK) NAMD_die("TCL error in global force initialization!");
   }
 
@@ -331,7 +331,7 @@ void ComputeTcl::calculate() {
   DebugM(4,"Calculating forces on master\n");
 
   ComputeGlobalResultsMsg *msg =
-	new (MsgIndex(ComputeGlobalResultsMsg)) ComputeGlobalResultsMsg;
+	new ComputeGlobalResultsMsg;
   msg->gforce.resize(gmass.size());
 
 #ifdef NAMD_TCL
@@ -351,7 +351,7 @@ void ComputeTcl::calculate() {
 
   char cmd[129];  int code;
   strcpy(cmd,"calcforces");  code = Tcl_Eval(interp,cmd);
-  if (*interp->result != 0) CPrintf("TCL: %s\n",interp->result);
+  if (*interp->result != 0) CkPrintf("TCL: %s\n",interp->result);
   if (code != TCL_OK) NAMD_die("TCL error in global force calculation!");
 
   Tcl_DeleteCommand(interp, "loadcoords");
@@ -378,12 +378,15 @@ void ComputeTcl::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1999/02/17 04:09:56 $
+ *	$Revision: 1.10 $	$Date: 1999/05/11 23:56:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeTcl.C,v $
+ * Revision 1.10  1999/05/11 23:56:29  brunner
+ * Changes for new charm version
+ *
  * Revision 1.9  1999/02/17 04:09:56  jim
  * Fixes to make optional force modules work with more nodes than patches.
  *

@@ -82,23 +82,22 @@ PatchMap::~PatchMap(void)
 #undef PACK
 #define PACK(type,data) { memcpy(b, &data,sizeof(type)); b += sizeof(type); }
 
-void * PatchMap::pack (int *length)
+int PatchMap::packSize(void)
 {
-  DebugM(4,"Packing PatchMap on node " << CMyPe() << endl);
-  int i,j;
-
-  // calculate memory needed
-  int size = 0;
+  int i, size = 0;
   size += 11 * sizeof(int) + 6 * sizeof(BigReal);
   for(i=0;i<nPatches;++i)
   {
     size += sizeof(PatchData);
     size += patchData[i].numCidsAllocated * sizeof(ComputeID);
   }
-  *length = size;
+  return size;
+}
 
-  // allocate needed memory
-  char * const buffer = new char[size];
+void PatchMap::pack (char *buffer)
+{
+  DebugM(4,"Packing PatchMap on node " << CkMyPe() << endl);
+  int i,j;
 
   // fill in the data
   char *b = buffer;
@@ -119,18 +118,16 @@ void * PatchMap::pack (int *length)
       PACK(ComputeID,patchData[i].cids[j]);
   }
   DebugM(3,buffer + size - b << " == 0 ?" << endl);
-
-  return buffer;
 }
 
 #undef UNPACK
 #define UNPACK(type,data) { memcpy(&data, b, sizeof(type)); b += sizeof(type); }
 
-void PatchMap::unpack (void *in)
+void PatchMap::unpack (char *ptr)
 {
-  DebugM(4,"Unpacking PatchMap on node " << CMyPe() << endl);
+  DebugM(4,"Unpacking PatchMap on node " << CkMyPe() << endl);
   int i,j;
-  char *b = (char*)in;
+  char *b = (char*)ptr;
   UNPACK(int,curPatch);
   UNPACK(int,nPatches);
   DebugM(3,"nPatches = " << nPatches << endl);
@@ -143,7 +140,7 @@ void PatchMap::unpack (void *in)
   for(i=0;i<nPatches;++i)
   {
     UNPACK(PatchData,patchData[i]);
-    if (CMyPe()) {
+    if (CkMyPe()) {
       patchData[i].myPatch = 0;
     }
     DebugM(3,"Unpacking Patch " << i << " is on node " << patchData[i].node << 
@@ -464,31 +461,31 @@ int PatchMap::downstreamNeighbors(int pid, PatchID *neighbor_ids,
 //----------------------------------------------------------------------
 void PatchMap::printPatchMap(void)
 {
-  CPrintf("---------------------------------------");
-  CPrintf("---------------------------------------\n");
+  CkPrintf("---------------------------------------");
+  CkPrintf("---------------------------------------\n");
 
-  CPrintf("curPatch = %d\n",curPatch);  
-  CPrintf("nPatches = %d\n",nPatches);
+  CkPrintf("curPatch = %d\n",curPatch);  
+  CkPrintf("nPatches = %d\n",nPatches);
   for(int i=0;i<nPatches;i++)
   {
-    CPrintf("Patch %d:\n",i);
-    CPrintf("  node = %d\n",patchData[i].node);
-    CPrintf("  xi,yi,zi = %d, %d, %d\n",
+    CkPrintf("Patch %d:\n",i);
+    CkPrintf("  node = %d\n",patchData[i].node);
+    CkPrintf("  xi,yi,zi = %d, %d, %d\n",
 	    patchData[i].xi,patchData[i].yi,patchData[i].zi);
-    CPrintf("  x0,y0,z0 = %f, %f, %f\n",
+    CkPrintf("  x0,y0,z0 = %f, %f, %f\n",
 	    patchData[i].x0,patchData[i].y0,patchData[i].z0);
-    CPrintf("  x1,y1,z1 = %f, %f, %f\n",
+    CkPrintf("  x1,y1,z1 = %f, %f, %f\n",
 	    patchData[i].x1,patchData[i].y1,patchData[i].z1);
-    CPrintf("  numCids = %d\n",patchData[i].numCids);
-    CPrintf("  numCidsAllocated = %d\n",patchData[i].numCidsAllocated);
+    CkPrintf("  numCids = %d\n",patchData[i].numCids);
+    CkPrintf("  numCidsAllocated = %d\n",patchData[i].numCidsAllocated);
     for(int j=0; j < patchData[i].numCids; j++)
     {
-      CPrintf(" %10d ",patchData[i].cids[j]);
+      CkPrintf(" %10d ",patchData[i].cids[j]);
       if (!((j+1) % 6))
-	CPrintf("\n");
+	CkPrintf("\n");
     }
-    CPrintf("\n---------------------------------------");
-    CPrintf("---------------------------------------\n");
+    CkPrintf("\n---------------------------------------");
+    CkPrintf("---------------------------------------\n");
   }
 
 }
@@ -523,13 +520,16 @@ HomePatch *PatchMap::homePatch(PatchID pid)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1019 $	$Date: 1998/07/16 18:52:12 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1020 $	$Date: 1999/05/11 23:56:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.1020  1999/05/11 23:56:42  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1019  1998/07/16 18:52:12  jim
  * Localized common downstream patch optimization.
  *

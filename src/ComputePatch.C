@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 #include "charm++.h"
-#include "WorkDistrib.top.h"
+#include "WorkDistrib.decl.h"
 #include "Node.h"
 #include "ComputePatch.h"
 #include "PatchMap.inl"
@@ -68,7 +68,7 @@ void ComputePatch::initialize() {
     << numAtoms  << " patchAddr=" << patch << "\n");
     Compute::initialize();
 
-    int myNode = CMyPe();
+    int myNode = CkMyPe();
     if ( PatchMap::Object()->node(patchID) != myNode )
     {
       basePriority = patchID % 64;
@@ -144,12 +144,15 @@ int ComputePatch::sequence(void)
  *
  *	$RCSfile: ComputePatch.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1999/01/18 21:53:57 $
+ *	$Revision: 1.1013 $	$Date: 1999/05/11 23:56:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatch.C,v $
+ * Revision 1.1013  1999/05/11 23:56:28  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1012  1999/01/18 21:53:57  brunner
  * Changes to deal with recent Charm++ changes.  More extensive changes
  * may be needed soon, but this works for now.

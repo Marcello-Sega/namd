@@ -13,7 +13,7 @@
 #include "main.h"
 #include "charm++.h"
 
-#include "WorkDistrib.top.h"
+#include "WorkDistrib.decl.h"
 #include "WorkDistrib.h"
 
 #include "NamdTypes.h"
@@ -92,13 +92,16 @@ int Compute::sequence(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: Compute.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1019 $	$Date: 1999/03/18 02:41:15 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1020 $	$Date: 1999/05/11 23:56:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.C,v $
+ * Revision 1.1020  1999/05/11 23:56:17  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1019  1999/03/18 02:41:15  jim
  * Turned off stray DEBUGM code.
  *

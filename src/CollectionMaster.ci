@@ -1,28 +1,29 @@
-
-// Collection Chare 
-
-extern message InitMsg;
-packmessage CollectVectorMsg;
-
-chare CollectionMaster
-{
-  entry CollectionMaster(InitMsg *);
-  entry receivePositions(CollectVectorMsg *);
-  entry receiveVelocities(CollectVectorMsg *);
-  entry receiveForces(CollectVectorMsg *);
-};
+module CollectionMaster {
+  message [packed] CollectVectorMsg;
+  
+  chare CollectionMaster
+  {
+    entry CollectionMaster(void);
+    entry void receivePositions(CollectVectorMsg *);
+    entry void receiveVelocities(CollectVectorMsg *);
+    entry void receiveForces(CollectVectorMsg *);
+  };
+}
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/19 11:53:57 $
+ *	$Revision: 1.1003 $	$Date: 1999/05/11 23:56:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMaster.ci,v $
+ * Revision 1.1003  1999/05/11 23:56:14  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1002  1997/03/19 11:53:57  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

@@ -1,16 +1,15 @@
 extern "C" {
 #include "converse.h"
-void InitializeCharm(int argc, char **argv);
-void StartCharm(int argc, char **argv, void *whoknows);
 }
 
 #include "ProcessorPrivate.h"
 
+extern void _initCharm(int, char**);
+
 void charm_init(int argc, char **argv)
 {
   ProcessorPrivateInit();
-  InitializeCharm(argc, argv);
-  StartCharm(argc, argv, (void *)0);
+  _initCharm(argc, argv);
 }
 
 int main(int argc, char **argv)

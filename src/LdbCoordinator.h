@@ -26,12 +26,12 @@
 #include "BOCgroup.h"
 #include "Node.h"
 #include "SimParameters.h"
+#include "LdbCoordinator.decl.h"
 
 class PatchMap;
 class ComputeMap;
 class Controller;
 class Sequencer;
-class InitMsg;
 
 enum {LDB_PATCHES = 4096};
 enum {LDB_COMPUTES = 16384};
@@ -40,7 +40,7 @@ enum {PATCHMAX = 4096};
 enum {PROCESSORMAX = 512};
 
 
-class LdbStatsMsg : public comm_object
+class LdbStatsMsg : public CMessage_LdbStatsMsg
 {
 public:
   int proc;
@@ -55,21 +55,13 @@ public:
   LdbStatsMsg(void);
   LdbStatsMsg(int npatches, int ncomputes);
   ~LdbStatsMsg(void);
-  void *pack (int *length);
-  void unpack (void *in);
-  // Normal constructor
-  void * operator new(size_t s) { return comm_object::operator new(s); }
-  // In-place constructor
-  void *operator new(size_t, void *ptr) { return ptr; } 
-  // This one is needed, too.
-  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
-  // And maybe this one
-  //  void * operator new(size_t s, int i, int j) {return comm_object::operator new(s,i,j);}
+  static void* pack(LdbStatsMsg* msg);
+  static LdbStatsMsg* unpack(void *ptr);
 };
 
 
 
-struct LdbResumeMsg : public comm_object
+struct LdbResumeMsg : public CMessage_LdbResumeMsg
 {
   int dummy;
 };
@@ -77,7 +69,7 @@ struct LdbResumeMsg : public comm_object
 class LdbCoordinator : public BOCclass
 {
 public:
-  LdbCoordinator(InitMsg *msg);
+  LdbCoordinator();
   ~LdbCoordinator(void);
   static LdbCoordinator *Object()  { 
     return CpvAccess(LdbCoordinator_instance); 
@@ -92,9 +84,9 @@ public:
   void nodeDone(LdbResumeMsg *msg);
   void sendStats(LdbResumeMsg *msg);
   void analyze(LdbStatsMsg *msg);
-  void updateComputesReady(DoneMsg *msg);
+  void updateComputesReady();
   void resume(LdbResumeMsg *msg);
-  void resumeReady(QuiescenceMessage *msg);
+  void resumeReady(CkQdMsg *msg);
   void resume2(LdbResumeMsg *msg);
   inline int balanceNow(int timestep);
 
@@ -173,12 +165,15 @@ inline int LdbCoordinator::balanceNow(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.23 $	$Date: 1998/11/25 00:11:30 $
+ *	$Revision: 1.24 $	$Date: 1999/05/11 23:56:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LdbCoordinator.h,v $
+ * Revision 1.24  1999/05/11 23:56:34  brunner
+ * Changes for new charm version
+ *
  * Revision 1.23  1998/11/25 00:11:30  jim
  * Fixed load balance barrier hanging bug.
  *

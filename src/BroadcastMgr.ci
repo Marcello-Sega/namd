@@ -1,23 +1,27 @@
-extern message InitMsg;
-packmessage BroadcastMsg;
+module BroadcastMgr {
+  message [packed] BroadcastMsg;
 
-group BroadcastMgr
-{
-  entry BroadcastMgr(InitMsg *);
-  entry recvBroadcast(BroadcastMsg *);
-} ;
+  group BroadcastMgr
+  {
+    entry BroadcastMgr(void);
+    entry void recvBroadcast(BroadcastMsg *);
+  };
+}
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1998/02/10 23:43:02 $
+ *	$Revision: 1.3 $	$Date: 1999/05/11 23:56:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: BroadcastMgr.ci,v $
+ * Revision 1.3  1999/05/11 23:56:13  brunner
+ * Changes for new charm version
+ *
  * Revision 1.2  1998/02/10 23:43:02  milind
  * Fixed to reflect changes to Charm++ translator.
  *

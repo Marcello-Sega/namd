@@ -1,32 +1,29 @@
-extern message QuiescenceMessage;
-extern message InitMsg;
-extern message RunMsg;
-extern message DoneMsg;
+module ComputeMgr {
+  message [packed] ComputeGlobalConfigMsg;
+  message [packed] ComputeGlobalDataMsg;
+  message [packed] ComputeGlobalResultsMsg;
 
-packmessage ComputeGlobalConfigMsg;
-packmessage ComputeGlobalDataMsg;
-packmessage ComputeGlobalResultsMsg;
+  message [packed] ComputeDPMEDataMsg;
+  message [packed] ComputeDPMEResultsMsg;
 
-packmessage ComputeDPMEDataMsg;
-packmessage ComputeDPMEResultsMsg;
+  group ComputeMgr
+  {
+    entry ComputeMgr(void);
+    entry void updateComputes2(CkQdMsg *);
+    entry void updateComputes3(void);
+    entry void updateLocalComputes(void);
+    entry void updateLocalComputes2(CkQdMsg *);
+    entry void updateLocalComputes3(void);
+    entry void doneUpdateLocalComputes(void);
 
-group ComputeMgr
-{
-  entry ComputeMgr(InitMsg *);
-  entry updateComputes2(QuiescenceMessage *);
-  entry updateComputes3(DoneMsg *);
-  entry updateLocalComputes(RunMsg *);
-  entry updateLocalComputes2(QuiescenceMessage *);
-  entry updateLocalComputes3(RunMsg *);
-  entry doneUpdateLocalComputes(DoneMsg *);
+    entry void recvComputeGlobalConfig(ComputeGlobalConfigMsg *);
+    entry void recvComputeGlobalData(ComputeGlobalDataMsg *);
+    entry void recvComputeGlobalResults(ComputeGlobalResultsMsg *);
 
-  entry recvComputeGlobalConfig(ComputeGlobalConfigMsg *);
-  entry recvComputeGlobalData(ComputeGlobalDataMsg *);
-  entry recvComputeGlobalResults(ComputeGlobalResultsMsg *);
-
-  entry recvComputeDPMEData(ComputeDPMEDataMsg *);
-  entry recvComputeDPMEResults(ComputeDPMEResultsMsg *);
-} ;
+    entry void recvComputeDPMEData(ComputeDPMEDataMsg *);
+    entry void recvComputeDPMEResults(ComputeDPMEResultsMsg *);
+  } ;
+}
 
 
 /***************************************************************************
@@ -34,12 +31,15 @@ group ComputeMgr
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1998/04/10 04:16:00 $
+ *	$Revision: 1.1006 $	$Date: 1999/05/11 23:56:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.ci,v $
+ * Revision 1.1006  1999/05/11 23:56:26  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1005  1998/04/10 04:16:00  jim
  * Finished incorporating DPME.
  *

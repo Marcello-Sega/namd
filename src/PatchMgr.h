@@ -24,12 +24,12 @@
 #include "BOCgroup.h"
 #include "Migration.h"
 #include "MigrateAtomsMsg.h"
+#include "PatchMgr.decl.h"
 
 
-class InitMsg;
 class HomePatch;
 
-class MovePatchesMsg : public comm_object {
+class MovePatchesMsg : public CMessage_MovePatchesMsg {
 public:
     NodeID  fromNodeID;
     PatchID pid;
@@ -44,29 +44,16 @@ public:
 				PositionList pl, VelocityList vl) : 
       pid(n), aid(a), t(tl), p(pl), v(vl)
     {
-      fromNodeID = CMyPe();
+      fromNodeID = CkMyPe();
     }
 
-  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
-  void * operator new(size_t s) { return comm_object::operator new(s); }
-  void * operator new(size_t, void *ptr) { return ptr; }
-
   // pack and unpack functions
-  void * pack (int *length);
-  void unpack (void *in);
+  static void* pack(MovePatchesMsg *msg);
+  static MovePatchesMsg* unpack(void *ptr);
 };
 
-//class AckMovePatchesMsg : public comm_object {
-//public:
- //  int dummy;
-//
- //  AckMovePatchesMsg() {};
-  // ~AckMovePatchesMsg() {};
-//};
-
-
 // PatchMgr creates and manages homepatches. There exist one instance of 
-// PatchMgr on each node (derived from Charm++ groupmember).  // That is, when a new operator causes creation of one instance on each node. 
+// PatchMgr on each node (derived from Charm++ Group).  // That is, when a new operator causes creation of one instance on each node. 
 // In addition to creation of homepatches, it handles the atom redistribution
 // at the end of each cycle (i.e., atoms can move from patch to patch at the
 // cycle boundaries).
@@ -94,7 +81,7 @@ class PatchMgr : public BOCclass
 {
 
 public:
-  PatchMgr(InitMsg *);
+  PatchMgr();
   ~PatchMgr();
 
   static PatchMgr* Object() { return CpvAccess(PatchMgr_instance); }
@@ -146,13 +133,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMgr.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1998/08/11 16:30:30 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1012 $	$Date: 1999/05/11 23:56:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.h,v $
+ * Revision 1.1012  1999/05/11 23:56:44  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1011  1998/08/11 16:30:30  jim
  * Modified output from periodic boundary simulations to return atoms to
  * internally consistent coordinates.  We store the transformations which

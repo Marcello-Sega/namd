@@ -180,7 +180,7 @@ void ComputeDPMTA::initialize()
   get_FMA_cube(FALSE);
   DebugM(2,"DPMTA got FMA cube\n");
 
-  if (CMyPe() != 0)
+  if (CkMyPe() != 0)
   {
     DebugM(2,"waiting for Init go-ahead\n");
     MIStream *msg2 = CpvAccess(comm)->newInputStream(ANY, DPMTATAG);
@@ -200,11 +200,12 @@ void ComputeDPMTA::initialize()
   // *****************************************
   // ONLY THE MASTER (NODE 0) NEEDS TO DO THIS:
 
-  int numProcs = CNumPes();
+  int numProcs = CkNumPes();
   {
     int npatches=(PatchMap::Object())->numPatches();
     if ( numProcs > npatches ) numProcs = npatches;
   }
+
   slavetids = new int[numProcs];
   if (slavetids == NULL)
   {
@@ -307,7 +308,7 @@ ComputeDPMTA::~ComputeDPMTA()
 {
   DebugM(2,"DPMTA exiting\n");
   //  If this is the master node, then call PMTAexit()
-  if (CMyPe() == 0)	PMTAexit();
+  if (CkMyPe() == 0)	PMTAexit();
 
   if (fmaResults)
 	{
@@ -438,7 +439,7 @@ void ComputeDPMTA::doWork()
 #ifdef DUMP_DPMTA
   FILE *fp;
   char dump_file[32];
-  sprintf(dump_file,"DUMP_DPMTA.%d",(int)CMyPe());
+  sprintf(dump_file,"DUMP_DPMTA.%d",(int)CkMyPe());
   fp = fopen(dump_file,"w");
   int32 n32 = i;
   fwrite(&n32,sizeof(int32),1,fp);
@@ -509,12 +510,15 @@ void ComputeDPMTA::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1054 $	$Date: 1999/04/23 20:13:52 $
+ *	$Revision: 1.1055 $	$Date: 1999/05/11 23:56:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.C,v $
+ * Revision 1.1055  1999/05/11 23:56:19  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1054  1999/04/23 20:13:52  jim
  * Dies on startup failure.
  *

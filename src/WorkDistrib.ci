@@ -1,26 +1,25 @@
+module WorkDistrib {
+  // WorkDistributor - is a bit of a mishmash
 
-// WorkDistributor - is a bit of a mishmash
+  extern module main;
+  message ComputeMapChangeMsg;
+  message [packed] MapDistribMsg;
+  message [packed] ComputeMapDistribMsg;
 
-extern message InitMsg;
-extern message DoneMsg;
-extern message LocalWorkMsg;
-message ComputeMapChangeMsg;
-packmessage MapDistribMsg;
-packmessage ComputeMapDistribMsg;
-
-group WorkDistrib
-{
-  entry WorkDistrib(InitMsg *);
-  entry saveMaps(MapDistribMsg *);
-  entry recvComputeMapChanges(ComputeMapChangeMsg *);
-  entry doneSaveComputeMap(DoneMsg *);
-  entry enqueueWork(LocalWorkMsg *);
-  entry enqueueSelfA(LocalWorkMsg *);
-  entry enqueueSelfB(LocalWorkMsg *);
-  entry enqueueWorkA(LocalWorkMsg *);
-  entry enqueueWorkB(LocalWorkMsg *);
-  entry enqueueWorkC(LocalWorkMsg *);
-} ;
+  group WorkDistrib
+  {
+    entry WorkDistrib(void);
+    entry void saveMaps(MapDistribMsg *);
+    entry void recvComputeMapChanges(ComputeMapChangeMsg *);
+    entry void doneSaveComputeMap(void);
+    entry void enqueueWork(LocalWorkMsg *);
+    entry void enqueueSelfA(LocalWorkMsg *);
+    entry void enqueueSelfB(LocalWorkMsg *);
+    entry void enqueueWorkA(LocalWorkMsg *);
+    entry void enqueueWorkB(LocalWorkMsg *);
+    entry void enqueueWorkC(LocalWorkMsg *);
+  } ;
+}
 
 
 /***************************************************************************
@@ -28,12 +27,15 @@ group WorkDistrib
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1998/07/03 20:09:56 $
+ *	$Revision: 1.1008 $	$Date: 1999/05/11 23:56:53 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.ci,v $
+ * Revision 1.1008  1999/05/11 23:56:53  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1007  1998/07/03 20:09:56  brunner
  * Self-compute spliting creation changes.  I hope this works.
  *

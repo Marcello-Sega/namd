@@ -62,7 +62,7 @@ void ComputeFullDirect::doWork()
   register BigReal *local_ptr;
   Lattice *lattice;
 
-  int numWorkingPes = CNumPes();
+  int numWorkingPes = CkNumPes();
   {
     int npatches=(PatchMap::Object())->numPatches();
     if ( numWorkingPes > npatches ) numWorkingPes = npatches;
@@ -137,10 +137,10 @@ void ComputeFullDirect::doWork()
 
   int numStages = numWorkingPes / 2 + 2;
   int lastStage = numStages - 2;
-  int sendDataPE = PEMOD(CMyPe()+1);
-  int recvDataPE = PEMOD(CMyPe()-1);
-  int sendResultsPE = PEMOD(CMyPe()-1);
-  int recvResultsPE = PEMOD(CMyPe()+1);
+  int sendDataPE = PEMOD(CkMyPe()+1);
+  int recvDataPE = PEMOD(CkMyPe()-1);
+  int sendResultsPE = PEMOD(CkMyPe()-1);
+  int recvResultsPE = PEMOD(CkMyPe()+1);
   int numRemoteAtoms = numLocalAtoms;
   int oldNumRemoteAtoms = 0;
   BigReal *remoteData = 0;
@@ -206,7 +206,7 @@ void ComputeFullDirect::doWork()
     else if ( stage == lastStage )
     {  // half other interaction
       DebugM(4,"half other interaction\n");
-      if ( CMyPe() < ( numWorkingPes / 2 ) )
+      if ( CkMyPe() < ( numWorkingPes / 2 ) )
         electEnergy += calc_fulldirect(
           localData,localResults,numLocalAtoms/2,
           remoteData,remoteResults,numRemoteAtoms,0,lattice,virial);
@@ -289,12 +289,15 @@ void ComputeFullDirect::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1019 $	$Date: 1999/04/13 08:17:58 $
+ *	$Revision: 1.1020 $	$Date: 1999/05/11 23:56:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFullDirect.C,v $
+ * Revision 1.1020  1999/05/11 23:56:20  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1019  1999/04/13 08:17:58  jim
  * Eliminated memory leaks and corruption in MStream and ComputeFullDirect.
  *

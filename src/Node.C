@@ -11,7 +11,7 @@
 
 #include <unistd.h>
 #include "charm++.h"
-#include "Node.top.h"
+#include "Node.decl.h"
 #include "Node.h"
 #include "Namd.h"
 #include "pvm3.h"
@@ -27,7 +27,7 @@
 
 #include "unistd.h"
 
-#include "main.top.h"
+#include "main.decl.h"
 #include "main.h"
 #include "WorkDistrib.h"
 #include "PatchMgr.h"
@@ -54,6 +54,7 @@
 #include "SMDMsgs.h"
 #include "TestController.h"
 #include "TestSequencer.h"
+#include "ComputeMgr.decl.h"
 
 //======================================================================
 // Public Functions
@@ -61,7 +62,6 @@
 //----------------------------------------------------------------------
 
 int eventEndOfTimeStep;
-extern "C" int registerEvent(char *);
 
 //----------------------------------------------------------------------
 // BOC constructor
@@ -70,7 +70,7 @@ Node::Node(GroupInitMsg *msg)
   DebugM(4,"Creating Node\n");
   if (CpvAccess(Node_instance) == 0) {
     CpvAccess(Node_instance) = this;
-    eventEndOfTimeStep = registerEvent("EndOfTimeStep");
+    eventEndOfTimeStep = traceRegisterUserEvent("EndOfTimeStep");
   } else {
     iout << iERRORF << "Node::Node() - another instance of Node exists!\n"
       << endi;
@@ -83,7 +83,7 @@ Node::Node(GroupInitMsg *msg)
   CpvAccess(BOCclass_group).node = thisgroup;
 
   startupPhase = 0;
-  numNodeStartup = CNumPes();
+  numNodeStartup = CkNumPes();
 
   molecule = NULL;
   parameters = NULL;
@@ -102,11 +102,16 @@ Node::Node(GroupInitMsg *msg)
   computeMap = ComputeMap::Instance();
 
   DebugM(4,"Binding to BOC's\n");
-  patchMgr = CLocalBranch(PatchMgr,CpvAccess(BOCclass_group).patchMgr);
-  proxyMgr = CLocalBranch(ProxyMgr,CpvAccess(BOCclass_group).proxyMgr);
-  workDistrib = CLocalBranch(WorkDistrib,CpvAccess(BOCclass_group).workDistrib);
-  computeMgr = CLocalBranch(ComputeMgr,CpvAccess(BOCclass_group).computeMgr);
-  ldbCoordinator = CLocalBranch(LdbCoordinator,CpvAccess(BOCclass_group).ldbCoordinator);
+  CProxy_PatchMgr pm(CpvAccess(BOCclass_group).patchMgr);
+  patchMgr = pm.ckLocalBranch();
+  CProxy_ProxyMgr prm(CpvAccess(BOCclass_group).proxyMgr);
+  proxyMgr = prm.ckLocalBranch();
+  CProxy_WorkDistrib wd(CpvAccess(BOCclass_group).workDistrib);
+  workDistrib = wd.ckLocalBranch();
+  CProxy_ComputeMgr cm(CpvAccess(BOCclass_group).computeMgr);
+  computeMgr = cm.ckLocalBranch();
+  CProxy_LdbCoordinator lc(CpvAccess(BOCclass_group).ldbCoordinator);
+  ldbCoordinator = lc.ckLocalBranch();
 
   // Where are we?
   char host[1024];
@@ -130,23 +135,19 @@ Node::~Node(void)
 // Startup Sequence
 
 void Node::messageStartUp() {
-  InitMsg *msg = new (MsgIndex(InitMsg)) InitMsg;
-  CBroadcastMsgBranch(Node, startup, InitMsg, msg, CpvAccess(BOCclass_group).node);
+  CProxy_Node(CpvAccess(BOCclass_group).node).startup();
 }
 
-void Node::startUp(QuiescenceMessage *qmsg) {
+void Node::startUp(CkQdMsg *qmsg) {
   delete qmsg;
-  InitMsg *msg = new (MsgIndex(InitMsg)) InitMsg;
-  CBroadcastMsgBranch(Node, startup, InitMsg, msg, CpvAccess(BOCclass_group).node);
+  CProxy_Node(CpvAccess(BOCclass_group).node).startup();
 }
 
 
-void Node::startup(InitMsg *msg) {
-  delete msg;
-
+void Node::startup() {
   int gotoRun = false;
 
-  if (!CMyPe()) {
+  if (!CkMyPe()) {
      iout << iINFO << "Entering startup phase " << startupPhase << "\n" << endi;
   }
   
@@ -158,7 +159,7 @@ void Node::startup(InitMsg *msg) {
 
   case 1:
     // send & receive molecule, simparameters... (Namd1.X style)
-    if (CMyPe()) {
+    if (CkMyPe()) {
       namdOneRecv();
     } else {
       namdOneSend();
@@ -174,7 +175,7 @@ void Node::startup(InitMsg *msg) {
   break;
 
   case 3:
-    if (!CMyPe()) {
+    if (!CkMyPe()) {
       output = new Output; // create output object just on PE(0)
       workDistrib->patchMapInit(); // create space division
       workDistrib->createHomePatches(); // load atoms into HomePatch(es)
@@ -186,7 +187,7 @@ void Node::startup(InitMsg *msg) {
   break;
 
   case 4:
-    if (!CMyPe()) {
+    if (!CkMyPe()) {
       workDistrib->distributeHomePatches();
     }
   break;
@@ -196,7 +197,7 @@ void Node::startup(InitMsg *msg) {
   break;
 
   case 6:
-    if (!CMyPe()) {
+    if (!CkMyPe()) {
       ComputeMap::Object()->printComputeMap();
     }
     DebugM(4,"Creating Computes\n");
@@ -219,9 +220,9 @@ void Node::startup(InitMsg *msg) {
   }
 
   startupPhase++;
-  if (!CMyPe()) {
+  if (!CkMyPe()) {
     if (!gotoRun) {
-      CStartQuiescence(GetEntryPtr(Node,startUp,QuiescenceMessage), thishandle);
+      CkStartQD(CProxy_Node::ckIdx_startUp((CkQdMsg*)0),&thishandle);
     } else {
       Node::messageRun();
       // CStartQuiescence(GetEntryPtr(Node,quiescence), thishandle);
@@ -302,7 +303,7 @@ void Node::buildSequencers() {
   ResizeArrayIter<HomePatchElem> ai(*hpl);
 
   // Controller object is only on Pe(0)
-  if ( ! CMyPe() ) {
+  if ( ! CkMyPe() ) {
     Controller *controller;
     if ( simParameters->testOn ) controller = new TestController(state);
     else controller = new Controller(state);
@@ -325,8 +326,7 @@ void Node::buildSequencers() {
 // Node run() - broadcast to all nodes
 //-----------------------------------------------------------------------
 void Node::messageRun() {
-  RunMsg *msg = new (MsgIndex(RunMsg)) RunMsg;
-  CBroadcastMsgBranch(Node, run, RunMsg, msg, CpvAccess(BOCclass_group).node);
+  CProxy_Node(CpvAccess(BOCclass_group).node).run();
 }
 
 
@@ -334,13 +334,11 @@ void Node::messageRun() {
 // run(void) runs the specified simulation for the specified number of
 // steps, overriding the contents of the configuration file
 //-----------------------------------------------------------------------
-void Node::run(RunMsg *msg)
+void Node::run()
 {
-  delete msg;
-
   iout << iINFO << iPE << " Running\n" << endi;
   numHomePatchesRunning = patchMap->numHomePatches();
-  if (CMyPe() == 0) {
+  if (CkMyPe() == 0) {
     numHomePatchesRunning++; //Take into account controller on node 0
   } 
 
@@ -353,7 +351,7 @@ void Node::run(RunMsg *msg)
   Namd::startTimer();  // We count timings from this point on
 
   // Start Controller (aka scalar Sequencer) on Pe(0)
-  if ( ! CMyPe() ) {
+  if ( ! CkMyPe() ) {
     state->runController();
   }
 
@@ -372,8 +370,8 @@ void Node::run(RunMsg *msg)
 // Node homeDone() - broadcast to all nodes
 //-----------------------------------------------------------------------
 void Node::messageHomeDone() {
-  DoneMsg *msg = new (MsgIndex(DoneMsg)) DoneMsg;
-  CSendMsgBranch(Node, homeDone, DoneMsg, msg, CpvAccess(BOCclass_group).node, CMyPe());
+  CProxy_Node cn(CpvAccess(BOCclass_group).node);
+  cn.homeDone(CkMyPe());
 }
 
 
@@ -381,12 +379,10 @@ void Node::messageHomeDone() {
 // per node countdown of HomePatch completions.  Signals nodeDone()
 // when completed.
 //-----------------------------------------------------------------------
-void Node::homeDone(DoneMsg *msg) {
-  delete msg;
-
+void Node::homeDone() {
   if (!--numHomePatchesRunning) {
-     DoneMsg *msg = new (MsgIndex(DoneMsg)) DoneMsg;
-     CSendMsgBranch(Node, nodeDone, DoneMsg, msg, CpvAccess(BOCclass_group).node, 0);
+     CProxy_Node cn(CpvAccess(BOCclass_group).node);
+     cn.nodeDone(0);
   }
 }
 
@@ -394,10 +390,8 @@ void Node::homeDone(DoneMsg *msg) {
 //-----------------------------------------------------------------------
 // Countdown of Node completions - 
 //-----------------------------------------------------------------------
-void Node::nodeDone(DoneMsg *msg) {
-  delete msg;
-
-  if (!--numNodesRunning && !CMyPe()) {
+void Node::nodeDone() {
+  if (!--numNodesRunning && !CkMyPe()) {
      Namd::namdDone();
   }
 }
@@ -406,12 +400,12 @@ void Node::nodeDone(DoneMsg *msg) {
 //-----------------------------------------------------------------------
 // Deal with quiescence - this terminates the program (for now)
 //-----------------------------------------------------------------------
-void Node::quiescence(QuiescenceMessage * msg)
+void Node::quiescence(CkQdMsg * msg)
 {
   delete msg;
 
   iout << iINFO << iPE << "Quiescence detected, exiting Charm.\n" << endi;
-  CharmExit();
+  CkExit();
 }
 
 
@@ -433,7 +427,7 @@ void Node::saveMolDataPointers(NamdState *state)
 // send the SMD data
 //------------------------------------------------------------------------
 void Node::sendSMDData(SMDDataMsg *msg) {
-  CBroadcastMsgBranch(Node, recvSMDData, SMDDataMsg, msg, CpvAccess(BOCclass_group).node);
+  CProxy_Node(CpvAccess(BOCclass_group).node).recvSMDData(msg);
 }
 
 //------------------------------------------------------------------------
@@ -452,19 +446,22 @@ void Node::recvSMDData(SMDDataMsg *msg) {
 // Private functions
 
 
-#include "Node.bot.h"
+#include "Node.def.h"
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: ferenc $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1032 $	$Date: 1999/02/02 08:02:32 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1033 $	$Date: 1999/05/11 23:56:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1033  1999/05/11 23:56:38  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1032  1999/02/02 08:02:32  ferenc
  * Added support for CHARMM parameter format in parameter files.
  *

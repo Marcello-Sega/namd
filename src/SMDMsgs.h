@@ -15,8 +15,9 @@
 #include "charm++.h"
 
 #include "NamdTypes.h"
+#include "Node.decl.h"
 
-class SMDDataMsg : public comm_object {
+class SMDDataMsg : public CMessage_SMDDataMsg {
 public:
   // data members
   int curTime;            // current timestep
@@ -30,14 +31,9 @@ public:
   SMDDataMsg(void) {};
   ~SMDDataMsg(void) {}; 
 
-  // standard new overload for comm_object new
-  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
-  void * operator new(size_t s) { return comm_object::operator new(s); }
-  void * operator new(size_t, void *ptr) { return ptr; }
-
   // pack and unpack functions
-  void * pack (int *length);
-  void unpack (void *in);
+  static void* pack(SMDDataMsg *msg);
+  static SMDDataMsg* unpack(void *ptr);
 };
 
 

@@ -1,5 +1,5 @@
 #include "charm++.h"
-#include "CollectionMaster.top.h"
+#include "CollectionMaster.decl.h"
 #include "CollectionMaster.h"
 #include "InfoStream.h"
 #include "Node.h"
@@ -9,9 +9,8 @@
 // #define DEBUGM
 #include "Debug.h"
 
-CollectionMaster::CollectionMaster(InitMsg *msg)
+CollectionMaster::CollectionMaster()
 {
-  delete msg;
   if (CpvAccess(CollectionMaster_instance) == 0) {
     CpvAccess(CollectionMaster_instance) = this;
   } else {
@@ -115,36 +114,39 @@ void CollectionMaster::disposeForces(CollectVectorInstance *c)
 }
 
 
-void * CollectVectorMsg::pack(int *length)
+void * CollectVectorMsg::pack(CollectVectorMsg *msg)
 {
-  *length = sizeof(int) + sizeof(int) +
-		aid.size() * sizeof(AtomID) +
-		data.size() * sizeof(Vector);
-  char *buffer = (char*)new_packbuffer(this,*length);
+  int length = sizeof(int) + sizeof(int) +
+		msg->aid.size() * sizeof(AtomID) +
+		msg->data.size() * sizeof(Vector);
+  char *buffer = (char*)CkAllocBuffer(msg,length);
   char *b = buffer;
-  memcpy(b, &seq, sizeof(int)); b += sizeof(int);
-  int size = aid.size(); memcpy(b, &size, sizeof(int)); b += sizeof(int);
-  memcpy(b, aid.begin(), size*sizeof(AtomID)); b += size*sizeof(AtomID);
-  memcpy(b, data.begin(), size*sizeof(Vector)); b += size*sizeof(Vector);
-  this->~CollectVectorMsg();
+  memcpy(b, &(msg->seq), sizeof(int)); b += sizeof(int);
+  int size = msg->aid.size(); memcpy(b, &size, sizeof(int)); b += sizeof(int);
+  memcpy(b, msg->aid.begin(), size*sizeof(AtomID)); b += size*sizeof(AtomID);
+  memcpy(b, msg->data.begin(), size*sizeof(Vector)); b += size*sizeof(Vector);
+  delete msg;
   return buffer;
 }
 
 
-void CollectVectorMsg::unpack(void *in)
+CollectVectorMsg* CollectVectorMsg::unpack(void *ptr)
 {
-  new((void*)this) CollectVectorMsg;
-  char *b = (char*)in;
-  memcpy(&seq, b, sizeof(int)); b += sizeof(int);
+  void *_ptr = CkAllocBuffer(ptr, sizeof(CollectVectorMsg));
+  CollectVectorMsg* m = new (_ptr) CollectVectorMsg;
+  char *b = (char*)ptr;
+  memcpy(&(m->seq), b, sizeof(int)); b += sizeof(int);
   int size; memcpy(&size, b, sizeof(int)); b += sizeof(int);
-  aid.resize(size);
-  memcpy(aid.begin(), b, size*sizeof(AtomID)); b += size*sizeof(AtomID);
-  data.resize(size);
-  memcpy(data.begin(), b, size*sizeof(Vector)); b += size*sizeof(Vector);
+  m->aid.resize(size);
+  memcpy(m->aid.begin(), b, size*sizeof(AtomID)); b += size*sizeof(AtomID);
+  m->data.resize(size);
+  memcpy(m->data.begin(), b, size*sizeof(Vector)); b += size*sizeof(Vector);
+  CkFreeMsg(ptr);
+  return m;
 }
 
 
-#include "CollectionMaster.bot.h"
+#include "CollectionMaster.def.h"
 
 
 /***************************************************************************
@@ -152,12 +154,15 @@ void CollectVectorMsg::unpack(void *in)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1999/01/18 21:53:55 $
+ *	$Revision: 1.1017 $	$Date: 1999/05/11 23:56:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMaster.C,v $
+ * Revision 1.1017  1999/05/11 23:56:14  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1016  1999/01/18 21:53:55  brunner
  * Changes to deal with recent Charm++ changes.  More extensive changes
  * may be needed soon, but this works for now.

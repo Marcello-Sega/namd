@@ -15,7 +15,7 @@
 
 #include "main.h"
 #include "BOCgroup.h"
-#include "ProxyMgr.top.h"
+#include "ProxyMgr.decl.h"
 #include "ProxyMgr.h"
 #include "Namd.h"
 #include "PatchMap.inl"
@@ -48,129 +48,139 @@ void ProxyAtomsMsg::prepack() {
 }
   
   
-void * ProxyAtomsMsg::pack (int *length) {
-    *length = mylength;
-    char *buffer = (char*)new_packbuffer(this,*length);
-    memcpy(buffer, mybuffer, mylength);
-    delete [] mybuffer;
-
-    this->~ProxyAtomsMsg();
+void * ProxyAtomsMsg::pack (ProxyAtomsMsg *msg) {
+    char *buffer = (char*)CkAllocBuffer(msg,msg->mylength);
+    memcpy(buffer, msg->mybuffer, msg->mylength);
+    delete [] msg->mybuffer;
+    delete msg;
     return buffer;
 }
 
-void ProxyAtomsMsg:: unpack (void *in)
+ProxyAtomsMsg* ProxyAtomsMsg:: unpack (void *ptr)
   {
-    new((void*)this) ProxyAtomsMsg;
-    char *buffer = (char*)in;
-    patch = *((int*)buffer);
+    void *_ptr = CkAllocBuffer(ptr, sizeof(ProxyAtomsMsg));
+    ProxyAtomsMsg*m = new (_ptr) ProxyAtomsMsg;
+    char *buffer = (char*)ptr;
+    m->patch = *((int*)buffer);
     int size = *((int*)(buffer+sizeof(int)));
-    atomIDList.resize(size);
+    m->atomIDList.resize(size);
     AtomID *data = (AtomID*)(buffer+2*sizeof(int));
-    UNPACKDATA(atomIDList,AtomID,data);
+    UNPACKDATA(m->atomIDList,AtomID,data);
+    CkFreeMsg(ptr);
+    return m;
   }
 
-void * ProxyDataMsg:: pack (int *length)
+void * ProxyDataMsg:: pack (ProxyDataMsg *m)
   {
-    int size = positionList.size();
-    *length = 2 * sizeof(int) + sizeof(Flags) + size * sizeof(Position);
-    char *buffer = (char*)new_packbuffer(this,*length);
-    *((int*)buffer) = patch;
+    int size = m->positionList.size();
+    int length = 2 * sizeof(int) + sizeof(Flags) + size * sizeof(Position);
+    char *buffer = (char*)CkAllocBuffer(m,length);
+    *((int*)buffer) = m->patch;
     *((int*)(buffer+sizeof(int))) = size;
-    *((Flags*)(buffer+2*sizeof(int))) = flags;
+    *((Flags*)(buffer+2*sizeof(int))) = m->flags;
     Position *data = (Position*)(buffer+2*sizeof(int)+sizeof(Flags));
-    PACKDATA(positionList,Position,data);
-    this->~ProxyDataMsg();
+    PACKDATA(m->positionList,Position,data);
+    delete m;
     return buffer;
   }
 
-void ProxyDataMsg:: unpack (void *in)
+ProxyDataMsg* ProxyDataMsg:: unpack (void *ptr)
   {
-    new((void*)this) ProxyDataMsg;
-    char *buffer = (char*)in;
-    patch = *((int*)buffer);
+    void *_ptr = CkAllocBuffer(ptr, sizeof(ProxyDataMsg));
+    ProxyDataMsg* m = new (_ptr) ProxyDataMsg;
+    char *buffer = (char*)ptr;
+    m->patch = *((int*)buffer);
     int size = *((int*)(buffer+sizeof(int)));
-    flags = *((Flags*)(buffer+2*sizeof(int)));
-    positionList.resize(size);
+    m->flags = *((Flags*)(buffer+2*sizeof(int)));
+    m->positionList.resize(size);
     Position *data = (Position*)(buffer+2*sizeof(int)+sizeof(Flags));
-    UNPACKDATA(positionList,Position,data);
+    UNPACKDATA(m->positionList,Position,data);
+    CkFreeMsg(ptr);
+    return m;
   }
 
-void * ProxyAllMsg:: pack (int *length)
+void * ProxyAllMsg:: pack (ProxyAllMsg *m)
   {
-    int size = positionList.size();
-    if (size != atomIDList.size()) {
+    int size = m->positionList.size();
+    if (size != m->atomIDList.size()) {
       iout << "ProxyAllMsg::pack() - Bad News, sizes don't match!" << endi;
     }
 
 
-    *length = 2 * sizeof(int) + sizeof(Flags) + size * sizeof(Position) + size * sizeof(AtomID);
-    char *buffer = (char*)new_packbuffer(this,*length);
-    *((int*)buffer) = patch;
+    int length = 2 * sizeof(int) + sizeof(Flags) + size * sizeof(Position) + size * sizeof(AtomID);
+    char *buffer = (char*)CkAllocBuffer(m,length);
+    *((int*)buffer) = m->patch;
     *((int*)(buffer+sizeof(int))) = size;
-    *((Flags*)(buffer+2*sizeof(int))) = flags;
+    *((Flags*)(buffer+2*sizeof(int))) = m->flags;
     Position *data = (Position*)(buffer+2*sizeof(int)+sizeof(Flags));
-    PACKDATA(positionList,Position,data);
+    PACKDATA(m->positionList,Position,data);
     AtomID *data2 = (AtomID*)(buffer+2*sizeof(int)+sizeof(Flags)+size*sizeof(Position));
-    PACKDATA(atomIDList,AtomID,data2);
-    this->~ProxyAllMsg();
+    PACKDATA(m->atomIDList,AtomID,data2);
+    delete m;
     return buffer;
   }
 
-void ProxyAllMsg:: unpack (void *in)
+ProxyAllMsg* ProxyAllMsg:: unpack (void *ptr)
   {
-    new((void*)this) ProxyAllMsg;
-    char *buffer = (char*)in;
-    patch = *((int*)buffer);
+    void *_ptr = CkAllocBuffer(ptr, sizeof(ProxyAllMsg));
+    ProxyAllMsg* m = new (_ptr) ProxyAllMsg;
+    char *buffer = (char*)ptr;
+    m->patch = *((int*)buffer);
     int size = *((int*)(buffer+sizeof(int)));
-    flags = *((Flags*)(buffer+2*sizeof(int)));
-    positionList.resize(size);
+    m->flags = *((Flags*)(buffer+2*sizeof(int)));
+    m->positionList.resize(size);
     Position *data = (Position*)(buffer+2*sizeof(int)+sizeof(Flags));
-    UNPACKDATA(positionList,Position,data);
-    atomIDList.resize(size);
+    UNPACKDATA(m->positionList,Position,data);
+    m->atomIDList.resize(size);
     AtomID *data2 = (AtomID*)(buffer+2*sizeof(int)+sizeof(Flags)+size*sizeof(Position));
-    UNPACKDATA(atomIDList,AtomID,data2);
+    UNPACKDATA(m->atomIDList,AtomID,data2);
+    CkFreeMsg(ptr);
+    return m;
   }
 
-void * ProxyResultMsg:: pack (int *length)
+void * ProxyResultMsg:: pack (ProxyResultMsg *m)
   {
-    *length = ( 4 + Results::maxNumForces ) * sizeof(int);
+    int length = ( 4 + Results::maxNumForces ) * sizeof(int);
     int j;
     for ( j = 0; j < Results::maxNumForces; ++j )
     {
-      *length += sizeof(Force) * forceList[j].size();
+      length += sizeof(Force) * m->forceList[j].size();
     }
-    char *buffer = (char*)new_packbuffer(this,*length);
+    char *buffer = (char*)CkAllocBuffer(m,length);
     char *b = buffer;
-    *((int*)b) = node;  b += sizeof(int);
-    *((int*)b) = patch;  b += sizeof(int);
+    *((int*)b) = m->node;  b += sizeof(int);
+    *((int*)b) = m->patch;  b += sizeof(int);
     for ( j = 0; j < Results::maxNumForces; ++j )
     {
-      int size = forceList[j].size();
+      int size = m->forceList[j].size();
       memcpy((void*)b,(void*)(&size),sizeof(int));  b += sizeof(int);
-      memcpy((void*)b,(void*)(forceList[j].begin()),size*sizeof(Force));
+      memcpy((void*)b,(void*)(m->forceList[j].begin()),size*sizeof(Force));
       b += size*sizeof(Force);
     }
-    this->~ProxyResultMsg();
+    delete m;
     return buffer;
   }
 
-void ProxyResultMsg:: unpack (void *in)
+ProxyResultMsg* ProxyResultMsg:: unpack (void *ptr)
   {
-    new((void*)this) ProxyResultMsg;
-    char *b = (char*)in;
-    node = *((int*)b);  b += sizeof(int);
-    patch = *((int*)b);  b += sizeof(int);
+    void *_ptr = CkAllocBuffer(ptr, sizeof(ProxyResultMsg));
+    ProxyResultMsg* m = new (_ptr) ProxyResultMsg;
+    char *b = (char*)ptr;
+    m->node = *((int*)b);  b += sizeof(int);
+    m->patch = *((int*)b);  b += sizeof(int);
     for ( int j = 0; j < Results::maxNumForces; ++j )
     {
       int size;
       memcpy((void*)(&size),(void*)b,sizeof(int));  b += sizeof(int);
-      forceList[j].resize(size);
-      memcpy((void*)(forceList[j].begin()),(void*)b,size*sizeof(Force));
+      m->forceList[j].resize(size);
+      memcpy((void*)(m->forceList[j].begin()),(void*)b,size*sizeof(Force));
       b += size*sizeof(Force);
     }
+    CkFreeMsg(ptr);
+    return m;
   }
 
-ProxyMgr::ProxyMgr(InitMsg *) { 
+ProxyMgr::ProxyMgr() { 
   if (CpvAccess(ProxyMgr_instance)) {
     Namd::die();
   }
@@ -200,7 +210,7 @@ void ProxyMgr::createProxies(void)
 
   PatchMap *patchMap = PatchMap::Object();
   int numPatches = patchMap->numPatches();
-  int myNode = CMyPe();
+  int myNode = CkMyPe();
   enum PatchFlag { Unknown, Home, NeedProxy };
   int *patchFlag = new int[numPatches]; 
   int i, j;
@@ -284,12 +294,13 @@ ProxyMgr::registerProxy(PatchID pid) {
   // determine which node gets message
   NodeID node = PatchMap::Object()->node(pid);
 
-  RegisterProxyMsg *msg = new (MsgIndex(RegisterProxyMsg)) RegisterProxyMsg;
+  RegisterProxyMsg *msg = new RegisterProxyMsg;
 
-  msg->node=CMyPe();
+  msg->node=CkMyPe();
   msg->patch = pid;
 
-  CSendMsgBranch(ProxyMgr, recvRegisterProxy, RegisterProxyMsg, msg, CpvAccess(BOCclass_group).proxyMgr, node);
+  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+  cp.recvRegisterProxy(msg,node);
 }
 
 void
@@ -301,7 +312,8 @@ ProxyMgr::recvRegisterProxy(RegisterProxyMsg *msg) {
 void
 ProxyMgr::sendResults(ProxyResultMsg *msg) {
   NodeID node = PatchMap::Object()->node(msg->patch);
-  CSendMsgBranch(ProxyMgr, recvResults, ProxyResultMsg, msg, CpvAccess(BOCclass_group).proxyMgr, node);
+  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+  cp.recvResults(msg, node);
 }
 
 void
@@ -312,7 +324,8 @@ ProxyMgr::recvResults(ProxyResultMsg *msg) {
 
 void
 ProxyMgr::sendProxyData(ProxyDataMsg *msg, NodeID node) {
-  CSendMsgBranch(ProxyMgr, recvProxyData, ProxyDataMsg, msg, CpvAccess(BOCclass_group).proxyMgr, node);
+  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+  cp.recvProxyData(msg,node);
 }
 
 void
@@ -323,7 +336,8 @@ ProxyMgr::recvProxyData(ProxyDataMsg *msg) {
 
 void
 ProxyMgr::sendProxyAtoms(ProxyAtomsMsg *msg, NodeID node) {
-  CSendMsgBranch(ProxyMgr, recvProxyAtoms, ProxyAtomsMsg, msg, CpvAccess(BOCclass_group).proxyMgr, node);
+  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+  cp.recvProxyAtoms(msg,node);
 }
 
 void
@@ -334,7 +348,8 @@ ProxyMgr::recvProxyAtoms(ProxyAtomsMsg *msg) {
 
 void
 ProxyMgr::sendProxyAll(ProxyAllMsg *msg, NodeID node) {
-  CSendMsgBranch(ProxyMgr, recvProxyAll, ProxyAllMsg, msg, CpvAccess(BOCclass_group).proxyMgr, node);
+  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+  cp.recvProxyAll(msg,node);
 }
 
 void
@@ -343,20 +358,23 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
   proxy->receiveAll(msg); // delete done in ProxyPatch::receiveAll()
 }
 
-#include "ProxyMgr.bot.h"
+#include "ProxyMgr.def.h"
 
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1023 $	$Date: 1998/03/26 23:28:33 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1024 $	$Date: 1999/05/11 23:56:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.1024  1999/05/11 23:56:45  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1023  1998/03/26 23:28:33  jim
  * Small changes for KCC port.  Altered use of strstream in ComputeFreeEnergy.
  *

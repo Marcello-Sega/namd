@@ -9,6 +9,7 @@
 #include "BOCgroup.h"
 #include "PatchMap.h"
 #include "ProcessorPrivate.h"
+#include "CollectionMgr.decl.h"
 
 
 class CollectionMgr : public BOCclass
@@ -97,7 +98,7 @@ public:
   };
 private:
 
-  ChareIDType master;
+  CkChareID master;
 
 
   CollectVectorSequence positions;
@@ -113,12 +114,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1999/03/17 17:59:22 $
+ *	$Revision: 1.1010 $	$Date: 1999/05/11 23:56:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMgr.h,v $
+ * Revision 1.1010  1999/05/11 23:56:16  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1009  1999/03/17 17:59:22  jim
  * Eliminated compiler warnings and errors.
  *

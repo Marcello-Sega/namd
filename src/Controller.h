@@ -71,7 +71,7 @@ protected:
 
     // void suspend(void) { CthSuspend(); };
     void terminate(void) {
-	// CPrintf("Controller terminating\n");
+	// CkPrintf("Controller terminating\n");
 	Node::messageHomeDone();
 	CthFree(thread); CthSuspend(); 
     };
@@ -102,12 +102,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1020 $	$Date: 1999/01/06 22:50:31 $
+ *	$Revision: 1.1021 $	$Date: 1999/05/11 23:56:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.h,v $
+ * Revision 1.1021  1999/05/11 23:56:30  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1020  1999/01/06 22:50:31  jim
  * Anisotropic (flexible cell) Langevin Piston pressure control finished.
  *

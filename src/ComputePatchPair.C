@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 #include "charm++.h"
-#include "WorkDistrib.top.h"
+#include "WorkDistrib.decl.h"
 #include "Node.h"
 #include "ComputePatchPair.h"
 #include "PatchMap.inl"
@@ -84,7 +84,7 @@ void ComputePatchPair::initialize() {
 
     Compute::initialize();
 
-    int myNode = CMyPe();
+    int myNode = CkMyPe();
     int p0 = patchID[0] % 64;
     int p1 = patchID[1] % 64;
     int patchPrio = ((p0<p1)?p0:p1);
@@ -121,8 +121,8 @@ void ComputePatchPair::doForce(Position* p[2],
                                Results* r[2],
                                AtomProperties* a[2])
 {
-    CPrintf("ComputePatchPair::doForce() - Dummy eval was sent\n");
-    CPrintf(" %d patch 1 atoms and %d patch 2 atoms\n", numAtoms[0], numAtoms[1] );
+    CkPrintf("ComputePatchPair::doForce() - Dummy eval was sent\n");
+    CkPrintf(" %d patch 1 atoms and %d patch 2 atoms\n", numAtoms[0], numAtoms[1] );
 }
 
 //---------------------------------------------------------------------
@@ -171,12 +171,15 @@ int ComputePatchPair::sequence(void)
  *
  *	$RCSfile: ComputePatchPair.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1999/01/18 21:53:58 $
+ *	$Revision: 1.1016 $	$Date: 1999/05/11 23:56:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatchPair.C,v $
+ * Revision 1.1016  1999/05/11 23:56:28  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1015  1999/01/18 21:53:58  brunner
  * Changes to deal with recent Charm++ changes.  More extensive changes
  * may be needed soon, but this works for now.

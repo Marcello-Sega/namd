@@ -9,7 +9,7 @@ include Makearch
 SRCDIR = src
 # destination directory (binaries) -- currently, MUST be .
 DSTDIR = obj
-# temp include directory for .top.h and .bot.h files
+# temp include directory for .decl.h and .def.h files
 INCDIR = inc
 
 #####
@@ -169,28 +169,28 @@ OBJS = \
 # Add new modules here and also define explicit rule below.
 
 CIFILES = 	\
-		$(INCDIR)/BroadcastMgr.top.h \
-		$(INCDIR)/BroadcastMgr.bot.h \
-		$(INCDIR)/CollectionMaster.top.h \
-		$(INCDIR)/CollectionMaster.bot.h \
-		$(INCDIR)/CollectionMgr.top.h \
-		$(INCDIR)/CollectionMgr.bot.h \
-		$(INCDIR)/ComputeMgr.top.h \
-		$(INCDIR)/ComputeMgr.bot.h \
-		$(INCDIR)/LdbCoordinator.top.h \
-		$(INCDIR)/LdbCoordinator.bot.h \
-		$(INCDIR)/Node.top.h \
-		$(INCDIR)/Node.bot.h \
-		$(INCDIR)/PatchMgr.top.h \
-		$(INCDIR)/PatchMgr.bot.h \
-		$(INCDIR)/ProxyMgr.top.h \
-		$(INCDIR)/ProxyMgr.bot.h \
-		$(INCDIR)/ReductionMgr.top.h \
-		$(INCDIR)/ReductionMgr.bot.h \
-		$(INCDIR)/WorkDistrib.top.h \
-		$(INCDIR)/WorkDistrib.bot.h \
-		$(INCDIR)/main.top.h \
-		$(INCDIR)/main.bot.h
+		$(INCDIR)/BroadcastMgr.decl.h \
+		$(INCDIR)/BroadcastMgr.def.h \
+		$(INCDIR)/CollectionMaster.decl.h \
+		$(INCDIR)/CollectionMaster.def.h \
+		$(INCDIR)/CollectionMgr.decl.h \
+		$(INCDIR)/CollectionMgr.def.h \
+		$(INCDIR)/ComputeMgr.decl.h \
+		$(INCDIR)/ComputeMgr.def.h \
+		$(INCDIR)/LdbCoordinator.decl.h \
+		$(INCDIR)/LdbCoordinator.def.h \
+		$(INCDIR)/Node.decl.h \
+		$(INCDIR)/Node.def.h \
+		$(INCDIR)/PatchMgr.decl.h \
+		$(INCDIR)/PatchMgr.def.h \
+		$(INCDIR)/ProxyMgr.decl.h \
+		$(INCDIR)/ProxyMgr.def.h \
+		$(INCDIR)/ReductionMgr.decl.h \
+		$(INCDIR)/ReductionMgr.def.h \
+		$(INCDIR)/WorkDistrib.decl.h \
+		$(INCDIR)/WorkDistrib.def.h \
+		$(INCDIR)/main.decl.h \
+		$(INCDIR)/main.def.h
 
 # Add new executables here.
 
@@ -200,7 +200,7 @@ all:	$(BINARIES)
 
 namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(CHARMC) -verbose -ld++-option \
-	"-I$(INCLUDE) -I$(SRCDIR) $(CXXOPTS) " \
+	"-I$(INCLUDE) -I$(INCDIR) -I$(SRCDIR) $(CXXOPTS) $(LDOPTS)" \
 	-language charm++ \
 	-o namd2 $(OBJS) \
 	$(DPMTALIB) \
@@ -249,93 +249,93 @@ pvm3/libpvmc.a:
 
 # Explicit rules for modules.
 
-MOVECIFILES = $(MOVE) $(SRCDIR)/*.top.h $(SRCDIR)/*.bot.h $(INCDIR)
+MOVECIFILES = $(MOVE) *.decl.h *.def.h $(INCDIR)
 
-$(INCDIR)/BroadcastMgr.top.h:	$(SRCDIR)/BroadcastMgr.ci
+$(INCDIR)/BroadcastMgr.decl.h:	$(SRCDIR)/BroadcastMgr.ci
 	$(CHARMXI) $(SRCDIR)/BroadcastMgr.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/BroadcastMgr.bot.h:	$(SRCDIR)/BroadcastMgr.ci
+$(INCDIR)/BroadcastMgr.def.h:	$(SRCDIR)/BroadcastMgr.ci
 	$(CHARMXI) $(SRCDIR)/BroadcastMgr.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/CollectionMaster.top.h:	$(SRCDIR)/CollectionMaster.ci
+$(INCDIR)/CollectionMaster.decl.h:	$(SRCDIR)/CollectionMaster.ci
 	$(CHARMXI) $(SRCDIR)/CollectionMaster.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/CollectionMaster.bot.h:	$(SRCDIR)/CollectionMaster.ci
+$(INCDIR)/CollectionMaster.def.h:	$(SRCDIR)/CollectionMaster.ci
 	$(CHARMXI) $(SRCDIR)/CollectionMaster.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/CollectionMgr.top.h:	$(SRCDIR)/CollectionMgr.ci
+$(INCDIR)/CollectionMgr.decl.h:	$(SRCDIR)/CollectionMgr.ci
 	$(CHARMXI) $(SRCDIR)/CollectionMgr.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/CollectionMgr.bot.h:	$(SRCDIR)/CollectionMgr.ci
+$(INCDIR)/CollectionMgr.def.h:	$(SRCDIR)/CollectionMgr.ci
 	$(CHARMXI) $(SRCDIR)/CollectionMgr.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/ComputeMgr.top.h:	$(SRCDIR)/ComputeMgr.ci
+$(INCDIR)/ComputeMgr.decl.h:	$(SRCDIR)/ComputeMgr.ci
 	$(CHARMXI) $(SRCDIR)/ComputeMgr.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/ComputeMgr.bot.h:	$(SRCDIR)/ComputeMgr.ci
+$(INCDIR)/ComputeMgr.def.h:	$(SRCDIR)/ComputeMgr.ci
 	$(CHARMXI) $(SRCDIR)/ComputeMgr.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/LdbCoordinator.top.h:	$(SRCDIR)/LdbCoordinator.ci
+$(INCDIR)/LdbCoordinator.decl.h:	$(SRCDIR)/LdbCoordinator.ci
 	$(CHARMXI) $(SRCDIR)/LdbCoordinator.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/LdbCoordinator.bot.h:	$(SRCDIR)/LdbCoordinator.ci
+$(INCDIR)/LdbCoordinator.def.h:	$(SRCDIR)/LdbCoordinator.ci
 	$(CHARMXI) $(SRCDIR)/LdbCoordinator.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/Node.top.h:	$(SRCDIR)/Node.ci
+$(INCDIR)/Node.decl.h:	$(SRCDIR)/Node.ci
 	$(CHARMXI) $(SRCDIR)/Node.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/Node.bot.h:	$(SRCDIR)/Node.ci
+$(INCDIR)/Node.def.h:	$(SRCDIR)/Node.ci
 	$(CHARMXI) $(SRCDIR)/Node.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/PatchMgr.top.h:	$(SRCDIR)/PatchMgr.ci
+$(INCDIR)/PatchMgr.decl.h:	$(SRCDIR)/PatchMgr.ci
 	$(CHARMXI) $(SRCDIR)/PatchMgr.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/PatchMgr.bot.h:	$(SRCDIR)/PatchMgr.ci
+$(INCDIR)/PatchMgr.def.h:	$(SRCDIR)/PatchMgr.ci
 	$(CHARMXI) $(SRCDIR)/PatchMgr.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/ProxyMgr.top.h:	$(SRCDIR)/ProxyMgr.ci
+$(INCDIR)/ProxyMgr.decl.h:	$(SRCDIR)/ProxyMgr.ci
 	$(CHARMXI) $(SRCDIR)/ProxyMgr.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/ProxyMgr.bot.h:	$(SRCDIR)/ProxyMgr.ci
+$(INCDIR)/ProxyMgr.def.h:	$(SRCDIR)/ProxyMgr.ci
 	$(CHARMXI) $(SRCDIR)/ProxyMgr.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/ReductionMgr.top.h:	$(SRCDIR)/ReductionMgr.ci
+$(INCDIR)/ReductionMgr.decl.h:	$(SRCDIR)/ReductionMgr.ci
 	$(CHARMXI) $(SRCDIR)/ReductionMgr.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/ReductionMgr.bot.h:	$(SRCDIR)/ReductionMgr.ci
+$(INCDIR)/ReductionMgr.def.h:	$(SRCDIR)/ReductionMgr.ci
 	$(CHARMXI) $(SRCDIR)/ReductionMgr.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/WorkDistrib.top.h:	$(SRCDIR)/WorkDistrib.ci
+$(INCDIR)/WorkDistrib.decl.h:	$(SRCDIR)/WorkDistrib.ci
 	$(CHARMXI) $(SRCDIR)/WorkDistrib.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/WorkDistrib.bot.h:	$(SRCDIR)/WorkDistrib.ci
+$(INCDIR)/WorkDistrib.def.h:	$(SRCDIR)/WorkDistrib.ci
 	$(CHARMXI) $(SRCDIR)/WorkDistrib.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/main.top.h:	$(SRCDIR)/main.ci
+$(INCDIR)/main.decl.h:	$(SRCDIR)/main.ci
 	$(CHARMXI) $(SRCDIR)/main.ci
 	$(MOVECIFILES)
 
-$(INCDIR)/main.bot.h:	$(SRCDIR)/main.ci
+$(INCDIR)/main.def.h:	$(SRCDIR)/main.ci
 	$(CHARMXI) $(SRCDIR)/main.ci
 	$(MOVECIFILES)
 

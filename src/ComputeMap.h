@@ -153,8 +153,9 @@ public:
 protected:
   friend class MapDistribMsg;
   friend class ComputeMapDistribMsg;
-  void * pack (int *length);
-  void unpack (void *in);
+  int packSize(void);
+  void pack(char* buf);
+  void unpack(char *buf);
 
   ComputeMap(void);
 
@@ -174,12 +175,15 @@ private:
  *
  *	$RCSfile: ComputeMap.h,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1998/07/03 20:09:52 $
+ *	$Revision: 1.1016 $	$Date: 1999/05/11 23:56:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.h,v $
+ * Revision 1.1016  1999/05/11 23:56:25  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1015  1998/07/03 20:09:52  brunner
  * Self-compute spliting creation changes.  I hope this works.
  *

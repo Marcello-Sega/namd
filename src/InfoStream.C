@@ -20,7 +20,7 @@ infostream iout;
 // some suggested usages:
 // Send a warning message to the console:
 //    iout << iWARN << blah << endc;
-// Send running information to the information monitor (CPrintf)
+// Send running information to the information monitor (CkPrintf)
 //    iout << iINFO << blah << endi;
 // Send an error message to the information monitor
 //    iout << iERROR << blah << endi;
@@ -37,12 +37,15 @@ infostream iout;
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:18 $
+ *	$Revision: 1.1002 $	$Date: 1999/05/11 23:56:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: InfoStream.C,v $
+ * Revision 1.1002  1999/05/11 23:56:32  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1001  1997/03/19 11:54:18  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

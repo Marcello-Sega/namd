@@ -16,7 +16,7 @@
 #include "Molecule.h"
 #include "ReductionMgr.h"
 #include "ComputeMgr.h"
-#include "ComputeMgr.top.h"
+#include "ComputeMgr.decl.h"
 #include "mdcomm.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -123,7 +123,7 @@ ComputeMDComm::~ComputeMDComm() {
 void ComputeMDComm::initialize() {
   DebugM(4,"Initializing master\n");
 
-  configMsg = new (MsgIndex(ComputeGlobalConfigMsg)) ComputeGlobalConfigMsg;
+  configMsg = new ComputeGlobalConfigMsg;
 
   iout << iDEBUG << "MDComm - initialize()\n" << endi; 
 
@@ -142,7 +142,7 @@ void ComputeMDComm::initialize() {
 void ComputeMDComm::calculate() {
   DebugM(4,"Calculating forces on master\n");
 
-  resultsMsg = new (MsgIndex(ComputeGlobalResultsMsg)) ComputeGlobalResultsMsg;
+  resultsMsg = new ComputeGlobalResultsMsg;
   resultsMsg->gforce.resize(gmass.size());
 
   iout << iDEBUG << "MDComm - calculate()\n" << endi; 
@@ -177,12 +177,15 @@ void ComputeMDComm::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1999/02/17 04:09:56 $
+ *	$Revision: 1.3 $	$Date: 1999/05/11 23:56:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMDComm.C,v $
+ * Revision 1.3  1999/05/11 23:56:24  brunner
+ * Changes for new charm version
+ *
  * Revision 1.2  1999/02/17 04:09:56  jim
  * Fixes to make optional force modules work with more nodes than patches.
  *

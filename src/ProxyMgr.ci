@@ -1,23 +1,23 @@
+module ProxyMgr {
+  // Handles Message to Proxy(s)
 
-// Handles Message to Proxy(s)
+  message RegisterProxyMsg;
+  message UnregisterProxyMsg;
+  message [packed] ProxyAtomsMsg;
+  message [packed] ProxyDataMsg;
+  message [packed] ProxyAllMsg;
+  message [packed] ProxyResultMsg;
 
-extern message InitMsg;
-message RegisterProxyMsg;
-message UnregisterProxyMsg;
-packmessage ProxyAtomsMsg;
-packmessage ProxyDataMsg;
-packmessage ProxyAllMsg;
-packmessage ProxyResultMsg;
-
-group ProxyMgr
-{
-  entry ProxyMgr(InitMsg *);
-  entry recvRegisterProxy(RegisterProxyMsg *);
-  entry recvProxyData(ProxyDataMsg *);
-  entry recvProxyAtoms(ProxyAtomsMsg *);
-  entry recvProxyAll(ProxyAllMsg *);
-  entry recvResults(ProxyResultMsg *);
-};
+  group ProxyMgr
+  {
+    entry ProxyMgr(void);
+    entry void recvRegisterProxy(RegisterProxyMsg *);
+    entry void recvProxyData(ProxyDataMsg *);
+    entry void recvProxyAtoms(ProxyAtomsMsg *);
+    entry void recvProxyAll(ProxyAllMsg *);
+    entry void recvResults(ProxyResultMsg *);
+  };
+}
 
 
 
@@ -26,12 +26,15 @@ group ProxyMgr
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/19 11:54:52 $
+ *	$Revision: 1.1003 $	$Date: 1999/05/11 23:56:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.ci,v $
+ * Revision 1.1003  1999/05/11 23:56:46  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1002  1997/03/19 11:54:52  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

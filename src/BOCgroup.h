@@ -30,7 +30,7 @@ public:
   int node;
 };
 
-class BOCclass : public groupmember {
+class BOCclass : public Group {
 };
 
 #endif /* BOCGROUP_H */
@@ -41,12 +41,15 @@ class BOCclass : public groupmember {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1998/03/03 23:05:00 $
+ *	$Revision: 1.1005 $	$Date: 1999/05/11 23:56:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: BOCgroup.h,v $
+ * Revision 1.1005  1999/05/11 23:56:12  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1004  1998/03/03 23:05:00  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

@@ -1,24 +1,26 @@
+module CollectionMgr {
+  extern module main;
 
-// CollectionMgr on each Node
-extern message SlaveInitMsg;
-extern packmessage CollectVectorMsg;
-
-group CollectionMgr
-{
-  entry CollectionMgr(SlaveInitMsg *);
-};
+  group CollectionMgr
+  {
+    entry CollectionMgr(SlaveInitMsg *);
+  };
+}
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/19 11:53:59 $
+ *	$Revision: 1.1003 $	$Date: 1999/05/11 23:56:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMgr.ci,v $
+ * Revision 1.1003  1999/05/11 23:56:16  brunner
+ * Changes for new charm version
+ *
  * Revision 1.1002  1997/03/19 11:53:59  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.
