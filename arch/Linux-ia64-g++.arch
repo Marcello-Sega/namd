@@ -2,7 +2,10 @@ NAMD_ARCH = Linux-ia64
 CHARMARCH = net-linux-ia64
 
 CXX = /usr/local/gnu/bin/g++ -D_IA64 -I/usr/local/gnu/include -DSOCKLEN_T=socklen_t
-CXXOPTS = -O1 -Wall -ffast-math
+# the -frename-registers cannot be used to compile whole, but can be used
+# to compile ComputeNonbondedUtil.C.
+CXXOPTS = -O1 -Wall -ffast-math -fomit-frame-pointer -Wall -W -Wcast-qual -Wpointer-arith -Wcast-align -pedantic -fno-schedule-insns -fschedule-insns2 -fstrict-aliasing -fstrength-reduce -fthread-jumps -fcse-follow-jumps -fcse-skip-blocks -frerun-loop-opt -fdelete-null-pointer-checks -fexpensive-optimizations -fregmove -finline-functions -falign-loops -finline-functions -freduce-all-givs -fdelayed-branch -funroll-all-loops #-frename-registers
+
 CXXTHREADOPTS = $(CXXOPTS)
 CXXSIMPARAMOPTS = $(CXXOPTS)
 CC = /usr/local/gnu/bin/gcc  -I/usr/local/gnu/include -static
