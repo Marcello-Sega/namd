@@ -21,6 +21,7 @@
 #include "Molecule.h"
 #include "ReductionMgr.h"
 #include "Communicate.h"
+#include "pvmc.h"
 
 #define MIN_DEBUG_LEVEL 1
 #define DEBUGM
@@ -92,6 +93,8 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   {
     NAMD_die("Memory allocation failed in FMAInterface::FMAInterface");
   }
+  // pvm_spawn is a dummy function under Converse.  Just the array is required.
+  pvm_spawn(NULL,NULL,0,NULL,CNumPes(),slavetids);
   DebugM(1,"DPMTA slavetids allocated\n");
 
   //  Get the size of the FMA cube
@@ -102,7 +105,6 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   // reduce function calling time
   SimParameters *simParams = Node::Object()->simParameters;
 
-  DebugM(1,"DPMTA filling structure\n");
   //  initialize DPMTA
   pmta_data.nprocs = CNumPes();
   pmta_data.nlevels = simParams->FMALevels;
@@ -121,27 +123,10 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   pmta_data.cubectr.y = boxcenter.y;
   pmta_data.cubectr.z = boxcenter.z;
   pmta_data.calling_num = pmta_data.nprocs;
-  DebugM(1,"DPMTA filling tids\n");
-  pmta_data.calling_tids = comm->get_tids();
-  DebugM(1,"DPMTA filled structure.\n");
+  pmta_data.calling_tids = slavetids;
 
   DebugM(1,"DPMTA calling PMTAinit.\n");
-#if 1
   if (PMTAinit(&pmta_data,slavetids) >= 0)
-#else
-  if (PMTAinit(
-	pmta_data.nprocs,
-	pmta_data.nlevels,
-	pmta_data.mp,
-	pmta_data.fft,
-	pmta_data.fftblock,
-	pmta_data.theta,
-	pmta_data.cubelen.x,
-	&pmta_data.cubectr,
-	pmta_data.calling_num,
-	pmta_data.calling_tids,
-	slavetids) >= 0)
-#endif
   {
 	iout << "SUCCESSFULLY STARTED DPMTA\n" << endi;
   }
