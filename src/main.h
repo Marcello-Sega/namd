@@ -63,10 +63,11 @@ public:
   void * pack (int *length)
   {
     int size = atomIDList.size();
-    *length = sizeof(int) + size * sizeof(AtomID);
+    *length = 2 * sizeof(int) + size * sizeof(AtomID);
     char *buffer = (char*)new_packbuffer(this,*length);
-    *((int*)buffer) = size;
-    AtomID *data = (AtomID*)(buffer+sizeof(int));
+    *((int*)buffer) = patch;
+    *((int*)(buffer+sizeof(int))) = size;
+    AtomID *data = (AtomID*)(buffer+2*sizeof(int));
     for ( int i = 0; i < size; ++i )
       data[i] = atomIDList[i];
     this->~ProxyAtomsMsg();
@@ -79,11 +80,12 @@ public:
   {
     new((void*)this) ProxyAtomsMsg;
     char *buffer = (char*)in;
-    int size = *((int*)buffer);
+    int patch = *((int*)buffer);
+    int size = *((int*)(buffer+sizeof(int)));
     atomIDList.resize(size);
-    AtomID *data = (AtomID*)(buffer+sizeof(int));
+    AtomID *data = (AtomID*)(buffer+2*sizeof(int));
     for ( int i = 0; i < size; ++i )
-      atomIDList[i] = buffer[i];
+      atomIDList[i] = data[i];
   }
 };
 
@@ -94,10 +96,11 @@ public:
   void * pack (int *length)
   {
     int size = positionList.size();
-    *length = sizeof(int) + size * sizeof(Position);
+    *length = 2 * sizeof(int) + size * sizeof(Position);
     char *buffer = (char*)new_packbuffer(this,*length);
-    *((int*)buffer) = size;
-    Position *data = (Position*)(buffer+sizeof(int));
+    *((int*)buffer) = patch;
+    *((int*)(buffer+sizeof(int))) = size;
+    Position *data = (Position*)(buffer+2*sizeof(int));
     for ( int i = 0; i < size; ++i )
       data[i] = positionList[i];
     this->~ProxyDataMsg();
@@ -110,11 +113,12 @@ public:
   {
     new((void*)this) ProxyDataMsg;
     char *buffer = (char*)in;
-    int size = *((int*)buffer);
+    int patch = *((int*)buffer);
+    int size = *((int*)(buffer+sizeof(int)));
     positionList.resize(size);
-    Position *data = (Position*)(buffer+sizeof(int));
+    Position *data = (Position*)(buffer+2*sizeof(int));
     for ( int i = 0; i < size; ++i )
-      positionList[i] = buffer[i];
+      positionList[i] = data[i];
   }
 };
 
@@ -125,10 +129,11 @@ public:
   void * pack (int *length)
   {
     int size = forceList.size();
-    *length = sizeof(int) + size * sizeof(Force);
+    *length = 2 * sizeof(int) + size * sizeof(Force);
     char *buffer = (char*)new_packbuffer(this,*length);
-    *((int*)buffer) = size;
-    Force *data = (Force*)(buffer+sizeof(int));
+    *((int*)buffer) = patch;
+    *((int*)(buffer+sizeof(int))) = size;
+    Force *data = (Force*)(buffer+2*sizeof(int));
     for ( int i = 0; i < size; ++i )
       data[i] = forceList[i];
     this->~ProxyResultMsg();
@@ -141,11 +146,12 @@ public:
   {
     new((void*)this) ProxyResultMsg;
     char *buffer = (char*)in;
-    int size = *((int*)buffer);
+    int patch = *((int*)buffer);
+    int size = *((int*)(buffer+sizeof(int)));
     forceList.resize(size);
-    Force *data = (Force*)(buffer+sizeof(int));
+    Force *data = (Force*)(buffer+2*sizeof(int));
     for ( int i = 0; i < size; ++i )
-      forceList[i] = buffer[i];
+      forceList[i] = data[i];
   }
 };
 
@@ -164,12 +170,15 @@ public:
  *
  *	$RCSfile: main.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.17 $	$Date: 1996/12/16 22:52:43 $
+ *	$Revision: 1.18 $	$Date: 1996/12/17 08:54:40 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: main.h,v $
+ * Revision 1.18  1996/12/17 08:54:40  jim
+ * fixed several bugs, including not saving patch
+ *
  * Revision 1.17  1996/12/16 22:52:43  jim
  * added placement new and explicit destructor calls to ProxyAtomsMsg
  *
