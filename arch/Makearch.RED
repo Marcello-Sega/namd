@@ -21,7 +21,7 @@ CHARM = $(CHARMBASE)/$(CHARMARCH)
 # definitions for FFT (used by PME)
 #FFTDIR=/usr/local
 #FFTINCL=-I$(FFTDIR)/include
-#FFTLIB=-L$(FFTDIR)/lib -lfftw -lrfftw
+#FFTLIB=-L$(FFTDIR)/lib -lrfftw -lfftw
 #FFTFLAGS=-DNAMD_FFTW
 #FFT=$(FFTINCL) $(FFTFLAGS)
 
