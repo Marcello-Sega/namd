@@ -19,6 +19,13 @@ ComputeNonbondedSelf::ComputeNonbondedSelf(ComputeID c, PatchID pid,
     minPart(minPartition), maxPart(maxPartition), numParts(numPartitions)
 {
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+  if (pressureProfileNonbonded) {
+    pressureProfileReduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_USER1);
+    pressureProfileData = new BigReal[3*pressureProfileSlabs];
+  } else {
+    pressureProfileReduction = NULL;
+    pressureProfileData = NULL;
+  }
 }
 
 void ComputeNonbondedSelf::initialize() {
@@ -29,6 +36,8 @@ void ComputeNonbondedSelf::initialize() {
 ComputeNonbondedSelf::~ComputeNonbondedSelf()
 {
   delete reduction;
+  delete pressureProfileReduction;
+  delete [] pressureProfileData;
   if (avgPositionBox != NULL) {
     patch->unregisterAvgPositionPickup(cid,&avgPositionBox);
   }
@@ -48,6 +57,8 @@ void ComputeNonbondedSelf::doForce(CompAtom* p,
 
   BigReal reductionData[reductionDataSize];
   for ( int i = 0; i < reductionDataSize; ++i ) reductionData[i] = 0;
+  if (pressureProfileNonbonded)
+    memset(pressureProfileData, 0, 3*pressureProfileSlabs*sizeof(BigReal));
 
   if ( patch->flags.doNonbonded )
   {
@@ -60,6 +71,7 @@ void ComputeNonbondedSelf::doForce(CompAtom* p,
     params.numAtoms[0] = numAtoms;
     params.numAtoms[1] = numAtoms;
     params.reduction = reductionData;
+    params.pressureProfileReduction = pressureProfileData;
 
     params.minPart = minPart;
     params.maxPart = maxPart;
@@ -92,10 +104,14 @@ void ComputeNonbondedSelf::doForce(CompAtom* p,
   }
 
   submitReductionData(reductionData,reduction);
+  if (pressureProfileNonbonded)
+    submitPressureProfileData(pressureProfileData, pressureProfileReduction);
 
   // Inform load balancer
   LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
 
   reduction->submit();
+  if (pressureProfileNonbonded)
+    pressureProfileReduction->submit();
 }
 

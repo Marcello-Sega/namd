@@ -10,7 +10,7 @@
 #include "Node.h"
 #include "ReductionMgr.h"
 #include "Lattice.h"
-
+#include "PressureProfile.h"
 #include "Debug.h"
 
 #if 0
@@ -39,6 +39,11 @@ void BondElem::loadTuplesForAtom
 }
 #endif
 
+// static initialization
+int BondElem::pressureProfileSlabs = 0;
+BigReal BondElem::pressureProfileThickness = 0;
+BigReal BondElem::pressureProfileMin = 0;
+
 void BondElem::getMoleculePointers
     (Molecule* mol, int* count, int32*** byatom, Bond** structarray)
 {
@@ -51,7 +56,8 @@ void BondElem::getParameterPointers(Parameters *p, const BondValue **v) {
   *v = p->bond_array;
 }
 
-void BondElem::computeForce(BigReal *reduction)
+void BondElem::computeForce(BigReal *reduction, 
+                            BigReal *pressureProfileData)
 {
   DebugM(1, "::computeForce() localIndex = " << localIndex[0] << " "
                << localIndex[1] << endl);
@@ -99,8 +105,18 @@ void BondElem::computeForce(BigReal *reduction)
   reduction[virialIndex_ZX] += f12.z * r12.x;
   reduction[virialIndex_ZY] += f12.z * r12.y;
   reduction[virialIndex_ZZ] += f12.z * r12.z;
-}
 
+  if (pressureProfileData) {
+    BigReal z1 = p[0]->x[localIndex[0]].position.z;
+    BigReal z2 = p[1]->x[localIndex[1]].position.z;
+    int n1 = (int)floor((z1-pressureProfileMin)/pressureProfileThickness);
+    int n2 = (int)floor((z2-pressureProfileMin)/pressureProfileThickness);
+    pp_reduction(pressureProfileThickness, pressureProfileMin, 
+                pressureProfileSlabs,
+                z1, z2, n1, n2, f12.x * r12.x, f12.y * r12.y, f12.z * r12.z,
+                pressureProfileData);
+  } 
+}
 
 void BondElem::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {

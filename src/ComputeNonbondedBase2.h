@@ -155,6 +155,19 @@ NORMAL( MODIFIED( foo bar ) )
       f_i.z += tmp_z;
       f_j.z -= tmp_z;
 
+      INT(
+      if (pressureProfileNonbonded) {
+        const BigReal p_j_z = p_j->position.z;
+        int n1 = (int)floor((p_i_z-pressureProfileMin)/pressureProfileThickness);
+        int n2 = (int)floor((p_j_z-pressureProfileMin)/pressureProfileThickness);
+        pp_reduction(pressureProfileThickness, pressureProfileMin,
+                     pressureProfileSlabs, p_i_z, p_j_z, n1, n2, 
+                     tmp_x*p_ij_x, tmp_y * p_ij_y, tmp_z*p_ij_z,
+                     pressureProfileReduction);
+
+      } 
+      )
+
       )
       )
 

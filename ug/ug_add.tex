@@ -1272,4 +1272,58 @@ equal to {\tt pairInteractionGroup1} will be assigned to group 1; likewise
 for group 2.
 }
 
+\subsection{Pressure Profile Calculations}
+\NAMD\ supports the calculation of lateral pressure profiles as a function of
+the z-coordinate in the system.  The algorithm is essentially that described
+by Lindahl and Edholm.  The simulation space is partitioned into slabs, and
+the virial due to the interaction between two particles is distributed across 
+the slabs containing the particles as well as the slabs that lie between the
+particles (taking periodic boundary conditions into account).  The diagonal
+components of the virial for each slab are recorded in the \NAMD\ output file.
+
+The total virial contains contributions from three components: kinetic energy,
+bonded interactions, and nonbonded interactions.  The kinetic and bonded 
+components are easily calculated every timestep, and thus may be computed 
+during a normal simulation run.  The nonbonded component, however, adds 
+significant overhead and has not been implemented for PME calculations.  
+The calculation of the nonbonded contribution should be performed offline,
+using the saved frames of the trajectory file and a long nonbonded cutoff.
+
+Pressure profile calculations must be performed in a constant volume 
+ensemble due to the way the simulation space is partitioned; this constraint
+may be relaxed in future versions.  Periodic boundary conditions must also
+be enabled.
+
+\item
+\NAMDCONFWDEF{pressureProfileOn}{compute pressure profile}{{\tt on} or {\tt off}}{{\tt off}}
+{
+When active, NAMD will compute kinetic and bonded contributions to the 
+pressure profile.  Results will be recorded in the \NAMD\ output file
+in lines with the format
+{\tt PRESSUREPROFILE ts Axx Ayy Azz Bxx Byy Bzz ... }, where {\tt ts} is the
+timestep, followed by the three diagonal components of the virial in the first
+slab (the slab with lowest {\it z}), then the next lowest slab, and so forth.
+}
+\item
+\NAMDCONFWDEF{pressureProfileSlabs}{Number of slabs in the spatial partition}{Positive integer}{10}{
+\NAMD\ divides the entire periodic cell into horizontal slabs of equal 
+thickness; {\tt pressureProfileSlabs} specifies the number of such slabs.
+}
+
+\item
+\NAMDCONFWDEF{pressureProfileFreq}{How often to output pressure profile
+data}{Positive integer}{1}{
+Specifies the number of timesteps between output of pressure profile data.
+}
+
+\item
+\NAMDCONFWDEF{pressureProfileNonbonded}{Compute nonbonded pressure profile
+contribution}{{\tt on} or {\tt off}}{{\tt off}}{
+When enabled, only the nonbonded contribution to the pressure profile will be
+computed.  For trajectory analysis the 
+recommended way to use this option is to use the \NAMD\ Tcl scripting 
+interface as described in Sec.~\ref{section:tclscripting} to run for
+0 steps, so that NAMD prints the pressure profile without performing any 
+dynamics.
+}
 \end{itemize}

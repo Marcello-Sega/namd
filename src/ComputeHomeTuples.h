@@ -177,12 +177,29 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
     PatchMap *patchMap;
     AtomMap *atomMap;
     SubmitReduction *reduction;
+    SubmitReduction *pressureProfileReduction;
+    BigReal *pressureProfileData;
+    int pressureProfileSlabs;
     char *isBasePatch;
   
     ComputeHomeTuples(ComputeID c) : Compute(c) {
       patchMap = PatchMap::Object();
       atomMap = AtomMap::Object();
       reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+      
+      SimParameters *params = Node::Object()->simParameters;
+      if (params->pressureProfileOn && !params->pressureProfileNonbonded) {
+        pressureProfileSlabs = T::pressureProfileSlabs = 
+          params->pressureProfileSlabs;
+        T::pressureProfileThickness = params->pressureProfileThickness;
+        T::pressureProfileMin = params->pressureProfileMin;
+        pressureProfileReduction = ReductionMgr::Object()->willSubmit(
+          REDUCTIONS_USER1);
+        pressureProfileData = new BigReal[3*pressureProfileSlabs];
+      } else {
+        pressureProfileReduction = NULL;
+        pressureProfileData = NULL;
+      }
       doLoadTuples = false;
       isBasePatch = 0;
     }
@@ -191,6 +208,19 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       patchMap = PatchMap::Object();
       atomMap = AtomMap::Object();
       reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+      SimParameters *params = Node::Object()->simParameters;
+      if (params->pressureProfileOn && !params->pressureProfileNonbonded) {
+        pressureProfileSlabs = T::pressureProfileSlabs = 
+          params->pressureProfileSlabs;
+        T::pressureProfileThickness = params->pressureProfileThickness;
+        T::pressureProfileMin = params->pressureProfileMin;
+        pressureProfileReduction = ReductionMgr::Object()->willSubmit(
+          REDUCTIONS_USER1);
+        pressureProfileData = new BigReal[3*pressureProfileSlabs];
+      } else {
+        pressureProfileReduction = NULL;
+        pressureProfileData = NULL;
+      }
       doLoadTuples = false;
       int nPatches = patchMap->numPatches();
       isBasePatch = new char[nPatches];
@@ -204,6 +234,8 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
     virtual ~ComputeHomeTuples() {
       delete reduction;
       delete [] isBasePatch;
+      delete pressureProfileReduction;
+      delete pressureProfileData;
     }
 
     //======================================================================
@@ -275,6 +307,8 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       BigReal reductionData[T::reductionDataSize];
       for ( int i = 0; i < T::reductionDataSize; ++i ) reductionData[i] = 0;
       int tupleCount = 0;
+      if (pressureProfileData)
+        memset(pressureProfileData, 0, 3*pressureProfileSlabs*sizeof(BigReal));
     
       // take triplet and pass with tuple info to force eval
       UniqueSetIter<T> al(tupleList);
@@ -284,7 +318,7 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
         }
       } else {
         for (al = al.begin(); al != al.end(); al++ ) {
-          al->computeForce(reductionData);
+          al->computeForce(reductionData, pressureProfileData);
           tupleCount += 1;
         }
       }
@@ -292,6 +326,12 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       T::submitReductionData(reductionData,reduction);
       reduction->item(T::reductionChecksumLabel) += (BigReal)tupleCount;
       reduction->submit();
+
+      if (pressureProfileReduction) {
+        for (int i=0; i<3*pressureProfileSlabs; i++) 
+          pressureProfileReduction->item(i) += pressureProfileData[i];
+        pressureProfileReduction->submit();
+      }
     
       // Close boxes - i.e. signal we are done with Positions and
       // AtomProperties and that we are depositing Forces

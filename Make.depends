@@ -357,7 +357,8 @@ obj/ComputeAngles.o: \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
 	src/ComputeAngles.inl \
-	src/Debug.h
+	src/Debug.h \
+	src/PressureProfile.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeAngles.o $(COPTC) src/ComputeAngles.C
 obj/ComputeBonds.o: \
 	src/ComputeBonds.C \
@@ -418,7 +419,8 @@ obj/ComputeBonds.o: \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
 	src/ComputeBonds.inl \
-	src/Debug.h
+	src/Debug.h \
+	src/PressureProfile.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeBonds.o $(COPTC) src/ComputeBonds.C
 obj/ComputeCylindricalBC.o: \
 	src/ComputeCylindricalBC.C \
@@ -511,7 +513,8 @@ obj/ComputeDihedrals.o: \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
 	src/ComputeDihedrals.inl \
-	src/Debug.h
+	src/Debug.h \
+	src/PressureProfile.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeDihedrals.o $(COPTC) src/ComputeDihedrals.C
 obj/ComputeDPME.o: \
 	src/ComputeDPME.C \
@@ -926,7 +929,8 @@ obj/ComputeImpropers.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
-	src/Debug.h
+	src/Debug.h \
+	src/PressureProfile.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeImpropers.o $(COPTC) src/ComputeImpropers.C
 obj/ComputeGlobal.o: \
 	src/ComputeGlobal.C \
@@ -1222,7 +1226,8 @@ obj/ComputeNonbondedUtil.o: \
 	src/LJTable.h \
 	src/InfoStream.h \
 	src/ComputeNonbondedBase.h \
-	src/ComputeNonbondedBase2.h
+	src/ComputeNonbondedBase2.h \
+	src/PressureProfile.h
 	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedUtil.o $(COPTC) src/ComputeNonbondedUtil.C
 obj/ComputePatch.o: \
 	src/ComputePatch.C \

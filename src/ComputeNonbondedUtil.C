@@ -69,6 +69,11 @@ BigReal*	ComputeNonbondedUtil::lambda_table = 0;
 Bool            ComputeNonbondedUtil::pairInteractionOn;
 Bool            ComputeNonbondedUtil::pairInteractionSelf;
 
+Bool            ComputeNonbondedUtil::pressureProfileNonbonded;
+int             ComputeNonbondedUtil::pressureProfileSlabs;
+BigReal         ComputeNonbondedUtil::pressureProfileThickness;
+BigReal         ComputeNonbondedUtil::pressureProfileMin;
+
 BigReal		ComputeNonbondedUtil::ewaldcof;
 BigReal		ComputeNonbondedUtil::pi_ewaldcof;
 
@@ -116,6 +121,17 @@ void ComputeNonbondedUtil::submitReductionData(BigReal *data, SubmitReduction *r
   reduction->item(REDUCTION_COMPUTE_CHECKSUM) += 1.;
 }
 
+void ComputeNonbondedUtil::submitPressureProfileData(BigReal *data,
+  SubmitReduction *reduction)
+{
+  if (reduction) {
+    for (int i=0; i<3*pressureProfileSlabs; i++) {
+      reduction->item(i) += data[i];
+    }
+  } 
+}
+  
+  
 #ifndef _IA64
 //  Not in KCC's math.h
 extern "C" {
@@ -144,6 +160,13 @@ void ComputeNonbondedUtil::select(void)
 
   pairInteractionOn = simParams->pairInteractionOn;
   pairInteractionSelf = simParams->pairInteractionSelf;
+
+  pressureProfileNonbonded = simParams->pressureProfileNonbonded;
+  if (pressureProfileNonbonded) {
+    pressureProfileSlabs = simParams->pressureProfileSlabs;
+    pressureProfileThickness = simParams->pressureProfileThickness;
+    pressureProfileMin = simParams->pressureProfileMin;
+  }
 
   if ( fepOn ) {
     lambda = simParams->lambda;
@@ -212,7 +235,7 @@ void ComputeNonbondedUtil::select(void)
     ComputeNonbondedUtil::calcSlowPairEnergy = calc_pair_energy_slow_fullelect_les;
     ComputeNonbondedUtil::calcSlowSelf = calc_self_slow_fullelect_les;
     ComputeNonbondedUtil::calcSlowSelfEnergy = calc_self_energy_slow_fullelect_les;
-  } else if ( pairInteractionOn ) {
+  } else if ( pairInteractionOn || pressureProfileNonbonded ) {
     ComputeNonbondedUtil::calcPairEnergy = calc_pair_energy_int;
     ComputeNonbondedUtil::calcSelfEnergy = calc_self_energy_int;
   } else {
@@ -590,6 +613,8 @@ void ComputeNonbondedUtil::select(void)
 #endif
 
 }
+
+#include "PressureProfile.h"
 
 // clear all
 // define interaction type (pair or self)

@@ -10,7 +10,7 @@
 #include "Node.h"
 #include "ReductionMgr.h"
 #include "Lattice.h"
-
+#include "PressureProfile.h"
 #include "Debug.h"
 
 #if 0
@@ -39,6 +39,11 @@ void DihedralElem::loadTuplesForAtom
 }
 #endif
 
+// static initialization
+int DihedralElem::pressureProfileSlabs = 0;
+BigReal DihedralElem::pressureProfileThickness = 0;
+BigReal DihedralElem::pressureProfileMin = 0;
+
 void DihedralElem::getMoleculePointers
     (Molecule* mol, int* count, int32*** byatom, Dihedral** structarray)
 {
@@ -51,7 +56,8 @@ void DihedralElem::getParameterPointers(Parameters *p, const DihedralValue **v) 
   *v = p->dihedral_array;
 }
 
-void DihedralElem::computeForce(BigReal *reduction)
+void DihedralElem::computeForce(BigReal *reduction, 
+                                BigReal *pressureProfileData)
 {
   DebugM(3, "::computeForce() localIndex = " << localIndex[0] << " "
                << localIndex[1] << " " << localIndex[2] << endl);
@@ -208,6 +214,29 @@ void DihedralElem::computeForce(BigReal *reduction)
   reduction[virialIndex_ZX] += ( f1.z * r12.x + f2.z * r23.x + f3.z * r34.x );
   reduction[virialIndex_ZY] += ( f1.z * r12.y + f2.z * r23.y + f3.z * r34.y );
   reduction[virialIndex_ZZ] += ( f1.z * r12.z + f2.z * r23.z + f3.z * r34.z );
+
+  if (pressureProfileData) {
+    BigReal z1 = p[0]->x[localIndex[0]].position.z;
+    BigReal z2 = p[1]->x[localIndex[1]].position.z;
+    BigReal z3 = p[2]->x[localIndex[2]].position.z;
+    BigReal z4 = p[3]->x[localIndex[3]].position.z;
+    int n1 = (int)floor((z1-pressureProfileMin)/pressureProfileThickness);
+    int n2 = (int)floor((z2-pressureProfileMin)/pressureProfileThickness);
+    int n3 = (int)floor((z3-pressureProfileMin)/pressureProfileThickness);
+    int n4 = (int)floor((z4-pressureProfileMin)/pressureProfileThickness);
+    pp_reduction(pressureProfileThickness, pressureProfileMin,
+                pressureProfileSlabs, z1, z2, n1, n2,
+                f1.x * r12.x, f1.y * r12.y, f1.z * r12.z,
+                pressureProfileData);
+    pp_reduction(pressureProfileThickness, pressureProfileMin,
+                pressureProfileSlabs, z2, z3, n2, n3,
+                f2.x * r23.x, f2.y * r23.y, f2.z * r23.z,
+                pressureProfileData);
+    pp_reduction(pressureProfileThickness, pressureProfileMin,
+                pressureProfileSlabs, z3, z4, n3, n4,
+                f3.x * r34.x, f3.y * r34.y, f3.z * r34.z,
+                pressureProfileData);
+  }
 }
 
 

@@ -26,6 +26,7 @@ struct nonbonded {
   // used by pair and self
   int numAtoms[2];
   BigReal *reduction;
+  BigReal *pressureProfileReduction;
 
   // used by excl
   Position p_ij;
@@ -75,6 +76,7 @@ public:
          VECTOR(pairVDWForceIndex), VECTOR(pairElectForceIndex),
 	 reductionDataSize };
   static void submitReductionData(BigReal*,SubmitReduction*);
+  static void submitPressureProfileData(BigReal*,SubmitReduction*);
 
   static Bool commOnly;
   static Bool fixedAtomsOn;
@@ -122,6 +124,11 @@ public:
 
   static Bool pairInteractionOn;
   static Bool pairInteractionSelf;
+
+  static Bool pressureProfileNonbonded;
+  static int pressureProfileSlabs;
+  static BigReal pressureProfileThickness;
+  static BigReal pressureProfileMin;
 
   // for particle mesh Ewald
   static BigReal ewaldcof;

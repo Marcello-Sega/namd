@@ -80,6 +80,8 @@ protected:
     SimParameters *const simParams;	// for convenience
     HomePatch *const patch;		// access methods in patch
     SubmitReduction *reduction;
+    SubmitReduction *pressureProfileReduction;
+
     CollectionMgr *const collection;
     ControllerBroadcasts * broadcast;
 

@@ -25,6 +25,8 @@ protected :
   PositionBox<Patch> *avgPositionBox[2];
 
   SubmitReduction *reduction;
+  SubmitReduction *pressureProfileReduction;
+  BigReal *pressureProfileData;
 
   int minPart, maxPart, numParts;
 

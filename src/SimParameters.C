@@ -802,6 +802,16 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
       "Surface tension in the x-y plane",
       &surfaceTensionTarget, 0);
 
+   //// Pressure Profile calculations
+   opts.optionalB("main", "pressureprofile", "Compute pressure profile?",
+     &pressureProfileOn, FALSE);
+   opts.optionalB("pressureprofile", "pressureprofilenonbonded",
+     "Compute only nonbonded pressure profile contribution?",
+     &pressureProfileNonbonded, FALSE);
+   opts.require("pressureprofile", "pressureprofileslabs", 
+     "Number of pressure profile slabs", &pressureProfileSlabs, 10);
+   opts.optional("pressureprofile", "pressureprofilefreq",
+     "How often to store profile data", &pressureProfileFreq, 1);
 }
 
 void SimParameters::config_parser_constraints(ParseOptions &opts) {
@@ -2208,6 +2218,21 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
        NAMD_die("Hydrogen bond cutoff distance must be <= pairlist distance");
    }
 
+   // If we're doing pair interaction or nonbonded pressure profile, set 
+   // outputEnergies to 1 to make NAMD not die (the other nonbonded code paths 
+   // aren't defined when these options are enabled), and set nonbondedFreq to 
+   // 1 to avoid getting erroneous output.  Warn the user of what we're doing.
+   if (pairInteractionOn || pressureProfileNonbonded) {
+	   if (outputEnergies != 1) {
+		   iout << iWARN << "Setting outputEnergies to 1 due to\n";
+		   iout << iWARN << "pairInteraction or pressure profile calculations\n" << endi;
+		   outputEnergies  = 1;
+	   }
+	   if (nonbondedFrequency != 1) {
+		   iout << iWARN << "Setting nonbondedFreq to 1 due to\n";
+		   iout << iWARN << "pairInteraction or pressure profile calculations\n" << endi;
+	   }
+   }
 }
 
 void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&cwd) {
@@ -3021,6 +3046,27 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      // multiply by 100 to convert from dyn/cm to bar-Angstroms, then divide
      // by PRESSURE factor to convert bar to NAMD internal pressure units. 
      surfaceTensionTarget *= 100.0 / PRESSUREFACTOR;
+   }
+
+   if (pressureProfileOn) {
+     if (berendsenPressureOn || langevinPistonOn)
+       NAMD_die("Pressure profile calculations cannot be used with constant pressure.");
+     if (pressureProfileSlabs < 1) 
+       NAMD_die("pressureProfileSlabs must be positive.");
+     pressureProfileThickness = cellBasisVector3.z / pressureProfileSlabs; 
+     pressureProfileMin = cellOrigin.z - 0.5*cellBasisVector3.z;
+     iout << iINFO << "PRESSURE PROFILE CALCULATIONS ACTIVE\n";
+     if (pressureProfileNonbonded) {
+       iout << iINFO << "      ONLY NONBONDED CONTRIBUTION WILL BE CALCULATED." << "\n";
+     } else {
+       iout << iINFO << "      ONLY BONDED AND KINETIC CONTRIBUTION WILL BE CALCULATED." << "\n";
+     }
+     iout << iINFO << "      NUMBER OF SLABS: " << pressureProfileSlabs << "\n";
+     iout << iINFO << "      SLAB THICKNESS: " << pressureProfileThickness 
+                   << "\n";
+     iout << iINFO << "      TIMESTEPS BETWEEN DATA OUTPUT: " 
+                   << pressureProfileFreq << "\n";
+     iout << endi;
    }
 
    if (FMAOn)

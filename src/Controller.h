@@ -111,6 +111,7 @@ protected:
     SimParameters *const simParams;	// for convenience
     NamdState *const state;		// access data in state
     RequireReduction *reduction;
+    RequireReduction *pressureProfileReduction;
     CollectionMaster *const collection;
     ControllerBroadcasts * broadcast;
     ofstream xstFile;

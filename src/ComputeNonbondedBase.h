@@ -145,6 +145,10 @@ void ComputeNonbondedUtil :: NAME
   // speedup variables
   BigReal *reduction = params->reduction;
 
+  INT(
+  BigReal *pressureProfileReduction = params->pressureProfileReduction;
+  )
+
   // local variables
   int exclChecksum = 0;
   FAST
@@ -451,7 +455,7 @@ void ComputeNonbondedUtil :: NAME
     register int *plin = pairlistn;
 
     INT(
-    if ( 1 ) {
+    if ( pairInteractionOn ) {
       const int ifep_type = p_i.partition;
       if (pairInteractionSelf) {
         if (ifep_type != 1) continue;

@@ -58,6 +58,12 @@ Controller::Controller(NamdState *s) :
 {
     broadcast = new ControllerBroadcasts;
     reduction = ReductionMgr::Object()->willRequire(REDUCTIONS_BASIC);
+    if (simParams->pressureProfileOn) {
+      pressureProfileReduction = 
+        ReductionMgr::Object()->willRequire(REDUCTIONS_USER1);
+    } else {
+      pressureProfileReduction = NULL;
+    }
     random = new Random(simParams->randomSeed);
     random->split(0,PatchMap::Object()->numPatches()+1);
 
@@ -87,6 +93,7 @@ Controller::~Controller(void)
 {
     delete broadcast;
     delete reduction;
+    delete pressureProfileReduction;
     delete random;
 }
 
@@ -687,6 +694,9 @@ void Controller::receivePressure(int step, int minimize)
     Lattice &lattice = state->lattice;
 
     reduction->require();
+    if (pressureProfileReduction) 
+      pressureProfileReduction->require();
+
 
     Tensor virial;
     Tensor virial_normal;
@@ -845,6 +855,12 @@ void Controller::receivePressure(int step, int minimize)
       controlPressure_nbond << " + " << controlPressure_slow << "\n" << endi;
 #endif
 
+  if (pressureProfileReduction && !(step % simParameters->pressureProfileFreq)) {
+    iout << "PRESSUREPROFILE: " << step << " ";
+    for (int i=0; i<3*simParameters->pressureProfileSlabs; i++) 
+      iout << pressureProfileReduction->item(i) << " ";
+    iout << "\n" << endi; 
+  }
 }
 
 void Controller::compareChecksums(int step) {

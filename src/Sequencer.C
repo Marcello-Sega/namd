@@ -33,6 +33,12 @@ Sequencer::Sequencer(HomePatch *p) :
 {
     broadcast = new ControllerBroadcasts;
     reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+    if (simParams->pressureProfileOn && !simParams->pressureProfileNonbonded) {
+      pressureProfileReduction = 
+        ReductionMgr::Object()->willSubmit(REDUCTIONS_USER1);
+    } else {
+      pressureProfileReduction = NULL;
+    }
     ldbCoordinator = (LdbCoordinator::Object());
     random = new Random(simParams->randomSeed);
     random->split(patch->getPatchID()+1,PatchMap::Object()->numPatches()+1);
@@ -45,6 +51,7 @@ Sequencer::~Sequencer(void)
 {
     delete broadcast;
     delete reduction;
+    delete pressureProfileReduction;
     delete random;
 }
 
@@ -944,6 +951,34 @@ void Sequencer::submitReductions(int step)
   reduction->item(REDUCTION_ANGULAR_MOMENTUM_Z) += angularMomentum.z;  
 
   reduction->submit();
+ 
+  if (pressureProfileReduction) {
+    BigReal idz = 1.0/simParams->pressureProfileThickness;
+    BigReal zmin = simParams->pressureProfileMin;
+    int nslabs = simParams->pressureProfileSlabs;
+
+    // Compute kinetic energy partition
+    for (int i=0; i<numAtoms; i++) {
+      Position realpos = patch->lattice.reverse_transform(
+        patch->atom[i].position, patch->atom[i].transform);
+      BigReal z = realpos.z;
+      int slab = (int)floor((z-zmin)*idz);
+      if (slab < 0) slab += nslabs;
+      if (slab >= nslabs) slab -= nslabs;
+      pressureProfileReduction->item(3*slab) +=
+        patch->atom[i].mass * patch->atom[i].velocity.x * 
+                              patch->atom[i].velocity.x;
+      pressureProfileReduction->item(3*slab+1) +=
+        patch->atom[i].mass * patch->atom[i].velocity.y * 
+                              patch->atom[i].velocity.y;
+      pressureProfileReduction->item(3*slab+2) +=
+        patch->atom[i].mass * patch->atom[i].velocity.z * 
+                              patch->atom[i].velocity.z;
+    }
+
+    // always submit reduction 
+    pressureProfileReduction->submit();
+  }
 }
 
 void Sequencer::submitMinimizeReductions(int step)

@@ -21,11 +21,16 @@ public:
     int    localIndex[size];
     TuplePatchElem *p[size];
     Real scale;
-    void computeForce(BigReal*);
+    void computeForce(BigReal*, BigReal *);
     // The following is evil, but the compiler chokes otherwise. (JCP)
     static void loadTuplesForAtom(void*, AtomID, Molecule*);
     static void getMoleculePointers(Molecule*, int*, int32***, Angle**);
     static void getParameterPointers(Parameters*, const AngleValue**);
+
+    // pressure profile parameters
+    static int pressureProfileSlabs;
+    static BigReal pressureProfileThickness;
+    static BigReal pressureProfileMin;
 
     // Internal data
     const AngleValue *value;
