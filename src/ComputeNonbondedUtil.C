@@ -59,8 +59,9 @@ void (*ComputeNonbondedUtil::calcSlowSelf)(nonbonded *) = calc_self_slow_fullele
 
 // define splitting function
 #define SPLIT_NONE	1
-#define SPLIT_C1	2
-#define SPLIT_XPLOR	3
+#define SPLIT_SHIFT	2
+#define SPLIT_C1	3
+#define SPLIT_XPLOR	4
 
 void ComputeNonbondedUtil::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {
@@ -139,6 +140,7 @@ void ComputeNonbondedUtil::select(void)
   }
 
   int splitType = SPLIT_NONE;
+  if ( simParams->switchingActive ) splitType = SPLIT_SHIFT;
   if ( simParams->fullDirectOn || simParams->FMAOn || PMEOn ) {
     switch ( simParams->longSplitting ) {
       case C1:
@@ -215,7 +217,13 @@ void ComputeNonbondedUtil::select(void)
     }
 
     switch(splitType) {
-      case SPLIT_NONE: {
+      case SPLIT_NONE:
+        fast_energy = 1.0/r;
+        fast_gradient = -1.0/r2;
+        scor_energy = scor_gradient = 0;
+        slow_energy = slow_gradient = 0;
+	break;
+      case SPLIT_SHIFT: {
 	BigReal shiftVal = r2/cutoff2 - 1.0;
 	shiftVal *= shiftVal;
 	BigReal dShiftVal = 2.0 * (r2/cutoff2 - 1.0) * 2.0*r/cutoff2;
