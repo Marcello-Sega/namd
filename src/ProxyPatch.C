@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1002 1997/02/07 16:49:29 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1003 1997/02/07 17:39:41 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -96,8 +96,8 @@ void ProxyPatch::receiveAll(ProxyAllMsg *msg)
   loadAtoms(msg->atomIDList);
   // loadAtomProperties();
   AtomMap::Object()->registerIDs(patchID,msg->atomIDList);
-  DebugM(4,"Processing proxy ALL msg.\n");
   p = msg->positionList;
+  DebugM(4,"  ProxyAll received atomIDList.size = " << atomIDList.size() << " positionList.size = " << p.size() << "\n");
 
   delete msg;
 
@@ -117,13 +117,18 @@ void ProxyPatch::sendResults(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyPatch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/07 16:49:29 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/02/07 17:39:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.1003  1997/02/07 17:39:41  ari
+ * More debugging for atomMigration.
+ * Using -w on CC got us some minor fixes
+ * using purify got us a major memory problem due to bad sizing of dummy force
+ *
  * Revision 1.1002  1997/02/07 16:49:29  jim
  * Fixing bugs that affect parallel atom migration.
  *

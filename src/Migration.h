@@ -3,6 +3,7 @@
 #ifndef MIGRATION_H
 #define MIGRATION_H
 
+#include "InfoStream.h"
 #include "NamdTypes.h"
 
 
@@ -21,6 +22,12 @@ struct MigrationElem {
   ~MigrationElem() {}
   int operator==(const MigrationElem &m) {
     return (atomID == m.atomID);
+  }
+  void print() {
+    iout << "Atom ID = " << atomID << endi;
+    iout << "  position = " << pos << endi;
+    iout << "  velocity = " << vel << endi;
+    iout << "  force = " << force << endi;
   }
 };
 

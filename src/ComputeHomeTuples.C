@@ -156,7 +156,7 @@ void ComputeHomeTuples<T>::sizeDummy() {
   maxProxyAtoms = 0;
 
   // find size of largest patch on tuplePatchList, setup dummy force array
-  ResizeArrayIter<TuplePatchElem> tpi;
+  ResizeArrayIter<TuplePatchElem> tpi(tuplePatchList);
   for ( tpi = tpi.begin(); tpi != tpi.end(); tpi++ ) {
     if (tpi->p->getNumAtoms() > maxProxyAtoms) {
       maxProxyAtoms = tpi->p->getNumAtoms();

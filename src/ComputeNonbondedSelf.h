@@ -18,7 +18,7 @@
 #include "ComputePatch.h"
 #include "ComputeNonbondedUtil.h"
 
-class ComputeNonbondedSelf : public ComputePatch, ComputeNonbondedUtil {
+class ComputeNonbondedSelf : public ComputePatch, private ComputeNonbondedUtil {
 
 public:
   ComputeNonbondedSelf(ComputeID c, PatchID pid);
@@ -40,12 +40,17 @@ protected :
  *
  *	$RCSfile: ComputeNonbondedSelf.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:13 $
+ *	$Revision: 1.1001 $	$Date: 1997/02/07 17:39:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.h,v $
+ * Revision 1.1001  1997/02/07 17:39:37  ari
+ * More debugging for atomMigration.
+ * Using -w on CC got us some minor fixes
+ * using purify got us a major memory problem due to bad sizing of dummy force
+ *
  * Revision 1.1000  1997/02/06 15:58:13  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

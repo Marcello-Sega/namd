@@ -87,6 +87,11 @@ void * ProxyAllMsg:: pack (int *length)
     int i;
 
     int size = positionList.size();
+    if (size != atomIDList.size()) {
+      iout << "ProxyAllMsg::pack() - Bad News, sizes don't match!" << endi;
+    }
+
+
     *length = 2 * sizeof(int) + size * sizeof(Position) + size * sizeof(AtomID);
     char *buffer = (char*)new_packbuffer(this,*length);
     *((int*)buffer) = patch;
@@ -312,13 +317,18 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/06 21:56:34 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/02/07 17:39:40 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.1002  1997/02/07 17:39:40  ari
+ * More debugging for atomMigration.
+ * Using -w on CC got us some minor fixes
+ * using purify got us a major memory problem due to bad sizing of dummy force
+ *
  * Revision 1.1001  1997/02/06 21:56:34  jim
  * Fixed bugs.
  *

@@ -163,9 +163,9 @@ void PatchMap::setGridOriginAndLength(Vector o, Vector l)
 PatchID PatchMap::assignToPatch(Position p)
 {
   int xi, yi, zi;
-  xi = floor(((BigReal)xDim)*((p.x-xOrigin)/xLength));
-  yi = floor(((BigReal)yDim)*((p.y-yOrigin)/yLength));
-  zi = floor(((BigReal)zDim)*((p.z-zOrigin)/zLength));
+  xi = (int)floor(((BigReal)xDim)*((p.x-xOrigin)/xLength));
+  yi = (int)floor(((BigReal)yDim)*((p.y-yOrigin)/yLength));
+  zi = (int)floor(((BigReal)zDim)*((p.z-zOrigin)/zLength));
   return pid(xi,yi,zi);
 }
 
@@ -536,7 +536,8 @@ void PatchMap::registerPatch(PatchID pid, Patch *pptr)
 //----------------------------------------------------------------------
 void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
 {
-  patchData[pid].myPatch = NULL;
+  if (pptr == patchData[pid].myPatch)
+      patchData[pid].myPatch = NULL;
 }
 
 
@@ -545,13 +546,18 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/07 16:56:50 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/02/07 17:39:40 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.1002  1997/02/07 17:39:40  ari
+ * More debugging for atomMigration.
+ * Using -w on CC got us some minor fixes
+ * using purify got us a major memory problem due to bad sizing of dummy force
+ *
  * Revision 1.1001  1997/02/07 16:56:50  nealk
  * Added Origin() to return origin.
  *

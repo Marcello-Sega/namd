@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1000 1997/02/06 15:59:26 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1001 1997/02/07 17:39:42 ari Exp $";
 
 #include <stdio.h>
 
@@ -44,6 +44,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib
 //----------------------------------------------------------------------
 WorkDistrib::WorkDistrib(InitMsg *msg)
 {
+  delete msg;
+
   DebugM(4,"WorkDistrib::WorkDistrib() - constructing\n");
   mapsArrived = false;
   awaitingMaps = false;
@@ -58,8 +60,6 @@ WorkDistrib::~WorkDistrib(void)
 //----------------------------------------------------------------------
 void WorkDistrib::buildMaps(void)
 {
-  int i;
-
   DebugM(4,"Building maps\n");
   mapPatches();
   mapComputes();
@@ -164,6 +164,8 @@ void WorkDistrib::createPatches(void)
 // saveMaps() is called when the map message is received
 void WorkDistrib::saveMaps(MapDistribMsg *msg)
 {
+  delete msg;
+
   Node *node = CLocalBranch(Node,group.node);
 
   if (node->myid() != 0)
@@ -442,12 +444,17 @@ void WorkDistrib::movePatchDone(DoneMsg *msg) {
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:59:26 $
+ *	$Revision: 1.1001 $	$Date: 1997/02/07 17:39:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1001  1997/02/07 17:39:42  ari
+ * More debugging for atomMigration.
+ * Using -w on CC got us some minor fixes
+ * using purify got us a major memory problem due to bad sizing of dummy force
+ *
  * Revision 1.1000  1997/02/06 15:59:26  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

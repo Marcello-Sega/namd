@@ -36,7 +36,7 @@
 
 ComputeMgr::ComputeMgr(InitMsg *msg)
 {
-  ;
+  delete msg;
 }
 
 ComputeMgr::~ComputeMgr(void)
@@ -174,10 +174,6 @@ void ComputeMgr:: createComputes(ComputeMap *map)
 
 }
 
-void ComputeMgr:: enqueueWork(Compute *compute)
-{
-  ;
-}
 
 #include "ComputeMgr.bot.h"
 
@@ -186,7 +182,7 @@ void ComputeMgr:: enqueueWork(Compute *compute)
  *
  *	$RCSfile: ComputeMgr.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/06 16:53:34 $
+ *	$Revision: 1.1002 $	$Date: 1997/02/07 17:39:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:

@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1005 1997/02/07 07:51:42 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1006 1997/02/07 17:39:38 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -153,6 +153,8 @@ void HomePatch::positionsReady(int doMigration)
       allmsg->patch = patchID;
       allmsg->positionList = p;
       allmsg->atomIDList = atomIDList;
+      DebugM(4, "atomIDList.size() = " << atomIDList.size() 
+	<< " positionList.size() = " << positionList.size() << "\n" );
       ProxyMgr::Object()->sendProxyAll(allmsg,pli->node);
     } else {
       ProxyDataMsg *nmsg = new (MsgIndex(ProxyDataMsg)) ProxyDataMsg;
@@ -217,7 +219,7 @@ Vector HomePatch::calcAngularMomentum()
 void
 HomePatch::doAtomMigration()
 {
-  int i,j,k;
+  int i;
   int xdev, ydev, zdev;
   MigrationList *mCur;
 
@@ -329,13 +331,18 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/02/07 07:51:42 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1006 $	$Date: 1997/02/07 17:39:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1006  1997/02/07 17:39:38  ari
+ * More debugging for atomMigration.
+ * Using -w on CC got us some minor fixes
+ * using purify got us a major memory problem due to bad sizing of dummy force
+ *
  * Revision 1.1005  1997/02/07 07:51:42  jim
  * pInit aliases p, leading to problems.  I commented out any add or del
  * involving it.  Now seems to integrate correctly.
