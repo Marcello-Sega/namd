@@ -46,8 +46,6 @@ int tcl_patch(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 
 int Tcl_AppInit(Tcl_Interp *interp) {
 
-  if ( Tcl_Init(interp) == TCL_ERROR) { return TCL_ERROR; }
-
   defs = topo_defs_create();
   topo_defs_error_handler(defs,handle_msg);
 
