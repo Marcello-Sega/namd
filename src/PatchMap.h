@@ -11,7 +11,7 @@
  *
  *	$RCSfile: PatchMap.h,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/08/23 22:03:52 $
+ *	$Revision: 1.4 $	$Date: 1996/10/10 17:23:24 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -20,6 +20,9 @@
  * REVISION HISTORY:
  *
  * $Log: PatchMap.h,v $
+ * Revision 1.4  1996/10/10 17:23:24  brunner
+ * Added patch * in patchmap
+ *
  * Revision 1.3  1996/08/23 22:03:52  brunner
  * *** empty log message ***
  *
@@ -52,6 +55,8 @@
 
 #include "NamdTypes.h"
 
+class Patch;
+
 class PatchMap
 {
 private:
@@ -63,6 +68,7 @@ private:
     int numCids;
     int numCidsAllocated;
     ComputeID *cids;
+    Patch *myPatch;
   };
   int curPatch;
   int nPatches;
@@ -178,7 +184,20 @@ public:
 
   void printPatchMap(void);
 
+  inline Patch *patch(PatchID pid);
+
+  void registerPatch(PatchID pid, Patch *pptr);
+  void unregisterPatch(PatchID pid, Patch *pptr);
+
 };
+
+
+//----------------------------------------------------------------------
+
+inline Patch *PatchMap::patch(PatchID pid)
+{
+  return patchData[pid].myPatch;
+}
 
 #endif /* PATCHMAP_H */
 

@@ -11,7 +11,7 @@
  *
  *	$RCSfile: PatchMap.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/08/23 22:03:52 $
+ *	$Revision: 1.5 $	$Date: 1996/10/10 17:23:41 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -20,6 +20,9 @@
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.5  1996/10/10 17:23:41  brunner
+ * Added patch * in patchmap
+ *
  * Revision 1.4  1996/08/23 22:03:52  brunner
  * *** empty log message ***
  *
@@ -219,6 +222,7 @@ PatchMap::ErrCode PatchMap::allocatePids(int ixDim, int iyDim, int izDim)
     patchData[i].zi = zIndex(i);
     patchData[i].cids=NULL;
     patchData[i].numCidsAllocated=0;
+    patchData[i].myPatch=NULL;
   }
 
   return OK;
@@ -368,4 +372,16 @@ void PatchMap::printPatchMap(void)
     CPrintf("---------------------------------------\n");
   }
 
+}
+
+//----------------------------------------------------------------------
+void PatchMap::registerPatch(PatchID pid, Patch *pptr)
+{
+  patchData[pid].myPatch = pptr;
+}
+
+//----------------------------------------------------------------------
+void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
+{
+  patchData[pid].myPatch = NULL;
 }
