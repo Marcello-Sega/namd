@@ -9,7 +9,7 @@ template <class Elem> class SortableResizeArray : public ResizeArray<Elem> {
   private:
 
     inline void swap(int offset, int i, int j) {
-      register Elem *r = (rep->array+offset);
+      register Elem *r = (this->rep->array+offset);
       memcpy((char *)&obj, (char *)&r[i], sizeof(Elem));
       memcpy((char *)&(r[i]), (char *)&(r[j]), sizeof(Elem));
       memcpy((char *)&r[j], (char *)&obj, sizeof(Elem));
@@ -18,7 +18,7 @@ template <class Elem> class SortableResizeArray : public ResizeArray<Elem> {
 
     inline void siftup(int offset, int i, int size) {
       register int j;
-      register Elem *r = (rep->array+offset);
+      register Elem *r = (this->rep->array+offset);
     
       while ((j = 2*i+1) < size) {
         if (j+1 < size) {
@@ -68,14 +68,14 @@ template <class Elem> class SortableResizeArray : public ResizeArray<Elem> {
   
     void init(void) { }
   
-    void sort(void) { sort(0, rep->size()-1); }
+    void sort(void) { sort(0, this->rep->size()-1); }
 
     // Heap Sort - worst case is O(n log n)
     //      bot = bottom element of sort range
     //      top = top element of sort range
     void sort(int bot, int top) {
       int index, size;
-      if (top > rep->size()) top = rep->size();
+      if (top > this->rep->size()) top = this->rep->size();
       size = top - bot + 1;
     
       // Make all sub-heaps
@@ -100,10 +100,10 @@ template <class Elem> class SortableResizeArray : public ResizeArray<Elem> {
     int bsearch(const Elem& elem) const {
       int test;
       int bot = -1;
-      int top = size();
-      if (size() == 0) return (-1);
+      int top = this->size();
+      if (this->size() == 0) return (-1);
       while (top - bot > 1) {
-        if ( rep->array[test = (bot+top)/2] < elem )
+        if ( this->rep->array[test = (bot+top)/2] < elem )
           bot = test;
         else
           top = test;
@@ -115,20 +115,20 @@ template <class Elem> class SortableResizeArray : public ResizeArray<Elem> {
 
 template <class Elem>
 void SortableResizeArray<Elem>::uniq(void) {
-  if (size()) {
+  if (this->size()) {
     int oldIndex=0;
     int newIndex=0;
-    while (++oldIndex < size()) {
-      if ( ! ( rep->array[oldIndex] == rep->array[newIndex] ) ) {
+    while (++oldIndex < this->size()) {
+      if ( ! ( this->rep->array[oldIndex] == this->rep->array[newIndex] ) ) {
         if (++newIndex != oldIndex)
-          memcpy((void *)&(rep->array[newIndex]),
-                 (void *)&(rep->array[oldIndex]),
+          memcpy((void *)&(this->rep->array[newIndex]),
+                 (void *)&(this->rep->array[oldIndex]),
                  sizeof(Elem));
       } else {
-        rep->array[oldIndex].~Elem();
+        this->rep->array[oldIndex].~Elem();
       }
     }
-    rep->arraySize = ++newIndex;
+    this->rep->arraySize = ++newIndex;
   }
 }
 

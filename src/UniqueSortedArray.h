@@ -13,11 +13,11 @@ template <class Elem> class UniqueSortedArray : public SortedArray<Elem> {
       SortedArray<Elem>(ua) { }
 
     UniqueSortedArray(const SortedArray<Elem> &sa) : SortedArray<Elem>(sa) { 
-      uniq(); 
+      this->uniq(); 
     }
 
     UniqueSortedArray(const ResizeArray<Elem> &ra) : SortedArray<Elem>(ra) {
-      uniq();
+      this->uniq();
     }
   
     UniqueSortedArray<Elem>& operator =(const UniqueSortedArray<Elem> & ua) {
@@ -27,13 +27,13 @@ template <class Elem> class UniqueSortedArray : public SortedArray<Elem> {
   
     UniqueSortedArray<Elem>& operator =(const SortedArray<Elem> &sa) {
       SortedArray<Elem>::operator=(sa);
-      uniq();
+      this->uniq();
       return(*this);
     }
 
     UniqueSortedArray<Elem>& operator =(const ResizeArray<Elem> &ra) {
       SortedArray<Elem>::operator=(ra);
-      uniq();
+      this->uniq();
       return(*this);
     }
   
@@ -46,17 +46,17 @@ template <class Elem> class UniqueSortedArray : public SortedArray<Elem> {
 template <class Elem>
 int 
 UniqueSortedArray<Elem>::insert(const Elem& elem) {
-  found = bsearch(elem);
-  if (found == -1) {
+  this->found = bsearch(elem);
+  if (this->found == -1) {
     return ResizeArray<Elem>::insert(elem, 0);
   }
-  if (found < size() && (*rep)[found] == elem) {
+  if (this->found < this->size() && (*(this->rep))[this->found] == elem) {
     return -2;
   }
-  if (found == (size()-1) && (*rep)[found] < elem) {
-    return ResizeArray<Elem>::insert(elem, size());
+  if (this->found == (this->size()-1) && (*(this->rep))[this->found] < elem) {
+    return ResizeArray<Elem>::insert(elem, this->size());
   } else {
-    return ResizeArray<Elem>::insert(elem, found);
+    return ResizeArray<Elem>::insert(elem, this->found);
   }
 }
 #endif

@@ -68,7 +68,7 @@ template <class Elem> class ResizeArrayRaw {
       memcpy(tmp, varray, sizeof(Elem)*arraySize);
   
       if (allocSize) 
-        delete[] varray;
+        delete[] (char *) varray;
       array = (Elem *)(varray = tmp);
       allocSize = size;
     }
@@ -222,6 +222,6 @@ ResizeArrayRaw<Elem>::~ResizeArrayRaw() {
   for (int i=0; i < size(); i++) {
     array[i].~Elem();
   }
-  delete[] varray;
+  delete[] (char *) varray;
 }
 #endif

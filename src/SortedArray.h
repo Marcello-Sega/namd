@@ -53,7 +53,7 @@ template <class Elem> class SortedArray: public SortableResizeArray<Elem> {
 
     int del(const Elem & elem) {
       found = bsearch(elem);
-      if (size() != 0 && (*rep)[found] == elem) {
+      if (this->size() != 0 && (*(this->rep))[found] == elem) {
         return(SortableResizeArray<Elem>::del(found,1));
       } else {
         found = -1;
@@ -75,11 +75,11 @@ template <class Elem> class SortedArray: public SortableResizeArray<Elem> {
     Elem *find(const Elem& elem);
 
     Elem * find(void) {
-      if (found < 0 || ++found >= size()) {
+      if (found < 0 || ++found >= this->size()) {
         return((Elem *)NULL);
       }
-      else if ((*rep)[found] == (*rep)[found-1]) {
-         return (&(*rep)[found]);
+      else if ((*(this->rep))[found] == (*(this->rep))[found-1]) {
+         return (&(*(this->rep))[found]);
       } else {
         return ((Elem *)NULL);
       }
@@ -92,8 +92,8 @@ int SortedArray<Elem>::insert(const Elem& elem) {
   if (found == -1) {
     return (ResizeArray<Elem>::insert(elem, 0));
   }
-  if (found == (size()-1) && (*rep)[found] < elem) {
-    return (ResizeArray<Elem>::insert(elem, size()));
+  if (found == (this->size()-1) && (*(this->rep))[found] < elem) {
+    return (ResizeArray<Elem>::insert(elem, this->size()));
   } else {
     return (ResizeArray<Elem>::insert(elem, found));
   }
@@ -103,8 +103,8 @@ template <class Elem>
 Elem * SortedArray<Elem>::find(const Elem& elem) {
   if ( (found = bsearch(elem)) < 0) 
     return ((Elem *)NULL);
-  if ((*rep)[found] == elem) {
-    return (&(*rep)[found]);
+  if ((*(this->rep))[found] == elem) {
+    return (&(*(this->rep))[found]);
   } else {
     found = -1;
     return ((Elem *)NULL);
