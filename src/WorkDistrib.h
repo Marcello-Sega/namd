@@ -50,6 +50,7 @@ public:
   void createComputes(void);
 
   void saveMaps(MapDistribMsg *msg);
+  void awaitMaps(void);
   void enqueueWork(LocalWorkMsg *msg); // This is for testing
 
 private:
@@ -58,6 +59,11 @@ private:
   void mapComputes(void);
   void mapAngleComputes(void);
   void mapElectComputes(void);
+
+  Boolean mapsArrived;
+  Boolean awaitingMaps;
+  CthThread awaitingMapsTh;
+
 };
 
 #endif /* WORKDISTRIB_H */
@@ -66,13 +72,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1996/10/16 08:22:39 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.10 $	$Date: 1996/10/29 17:58:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.10  1996/10/29 17:58:07  brunner
+ * Did some stuff.  I forget what
+ *
  * Revision 1.9  1996/10/16 08:22:39  ari
  * *** empty log message ***
  *
