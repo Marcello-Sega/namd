@@ -25,6 +25,7 @@
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <pwd.h>
 
 
 int send_dgram(const char *host_addr, int port, const char *buf, int buflen) {
@@ -60,11 +61,7 @@ int tbsoft_sendusage(const char *program,
   memset(sendbuf, 0, sizeof(sendbuf));
 
   gethostname(host, 1023);
-#if defined(__linux)
-  strcpy(user, getlogin());
-#else
-  cuserid(user);
-#endif
+  strcpy(user, getpwuid(getuid())->pw_name);
 
   sprintf(sendbuf, "1 %s  %s  %s  %s  %s  %s  %s", 
     program, versionnum, platform, numcpus, miscinfo, host, user);
