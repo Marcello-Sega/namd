@@ -28,6 +28,7 @@ void Alg7::strategy()
   computeInfo *c;
   int numAssigned;
   processorInfo* goodP[3][3];  // goodP[# of real patches][# of proxies]
+  processorInfo* poorP[3][3];  // fallback option
 
   double startTime = CmiWallTimer();
 
@@ -58,8 +59,10 @@ void Alg7::strategy()
       pes->iterator((heapIterator *) &nextProcessor);
     int i,j;
     for(i=0;i<3;i++)
-      for(j=0;j<3;j++)
+      for(j=0;j<3;j++) {
 	goodP[i][j]=0;
+	poorP[i][j]=0;
+      }
     while (p) {
       int nPatches = numPatchesAvail(c,p);
       int nProxies = numProxiesAvail(c,p);
@@ -68,48 +71,38 @@ void Alg7::strategy()
       if (nProxies < 0 || nProxies > 2)
 	iout << iERROR << "Too many proxies: " << nProxies << "\n" << endi;
 
-      if (!goodP[nPatches][nProxies]) {
-	if (nPatches == 0 && nProxies == 0)
-	  goodP[0][0] = p;
-	else if (c->load + p->load < overLoad*averageLoad)
+      if (!goodP[nPatches][nProxies] ||
+	    (p->load < goodP[nPatches][nProxies]->load)) {
+        if (c->load + p->load < overLoad*averageLoad) {
 	  goodP[nPatches][nProxies] = p;
-      } else {
-	if (( c->load + p->load < overLoad*averageLoad) &&
-	    (p->load < goodP[nPatches][nProxies]->load))
-	  goodP[nPatches][nProxies] = p;
+        }
+      }
+      if (!poorP[nPatches][nProxies] ||
+	    (p->load < poorP[nPatches][nProxies]->load)) {
+	poorP[nPatches][nProxies] = p;   // fallback
       }
       p = (processorInfo *) pes->next(&nextProcessor);
     }
 
     //    if (numAssigned >= 0) {  Else is commented out below
 
-    processorInfo* selectedP;
-    if (goodP[2][0]) {
-      // Two home, no proxies
-      assign(c, goodP[2][0]);
-      numAssigned++;
-    } else if (goodP[1][1]) {
-      // One home, one proxy
-      assign(c, goodP[1][1]);
-      numAssigned++;
-    } else if (goodP[0][2]) {
-      // No home, two proxies
-      assign(c, goodP[0][2]);
-      numAssigned++;
-    } else if (goodP[1][0]) {
-      // One home, no proxies
-      assign(c, goodP[1][0]);
-      numAssigned++;
-    } else if (goodP[0][1]) {
-      // No home, one proxy
-      assign(c, goodP[0][1]);
-      numAssigned++;
-    } else if (goodP[0][0]) {
-      // No home, no proxies
-      assign(c, goodP[0][0]);
-      numAssigned++;
+    p = 0;
+    if ((p = goodP[2][0])    // Two home, no proxies
+     || (p = goodP[1][1])    // One home, one proxy
+     || (p = goodP[0][2])    // No home, two proxies
+     || (p = goodP[1][0])    // One home, no proxies
+     || (p = goodP[0][1])    // No home, one proxy
+     || (p = goodP[0][0])    // No home, no proxies
+     || (p = poorP[2][0])    // Two home, no proxies
+     || (p = poorP[1][1])    // One home, one proxy
+     || (p = poorP[0][2])    // No home, two proxies
+     || (p = poorP[1][0])    // One home, no proxies
+     || (p = poorP[0][1])    // No home, one proxy
+     || (p = poorP[0][0])    // No home, no proxies
+       ) {
+      assign(c,p); numAssigned++;
     } else {
-      iout << iERROR  << "*** Alg 7 No receiver found 1 ***" << "\n" <<endi;
+      NAMD_bug("*** Alg 7 No receiver found 1 ***");
       break;
     }
 
