@@ -80,7 +80,9 @@ class LdbCoordinator : public BOCclass
 public:
   LdbCoordinator(InitMsg *msg);
   ~LdbCoordinator(void);
-  static LdbCoordinator *Object()  { return _instance; }
+  static LdbCoordinator *Object()  { 
+    return CpvAccess(LdbCoordinator_instance); 
+  }
 
   void initialize(PatchMap *pmap, ComputeMap *cmap);
   void patchLoad(PatchID id, int nAtoms, int timestep);
@@ -109,7 +111,6 @@ private:
   void printLocalLdbReport(void);
   void printLdbReport(const int nMoveableComputes);
 
-  static LdbCoordinator *_instance;
   int stepsPerLdbCycle;
   int nLocalComputes;
   int nLocalPatches;
@@ -167,12 +168,15 @@ inline int LdbCoordinator::balanceNow(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.17 $	$Date: 1997/09/25 22:52:48 $
+ *	$Revision: 1.18 $	$Date: 1997/11/07 20:17:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LdbCoordinator.h,v $
+ * Revision 1.18  1997/11/07 20:17:41  milind
+ * Made NAMD to run on shared memory machines.
+ *
  * Revision 1.17  1997/09/25 22:52:48  brunner
  * I put in a 2-stage load balancing, so first Alg7 is done, then RefineOnly.
  * I also temporarily made the prints occur at every energy output.

@@ -33,8 +33,6 @@ public:
 };
 
 class BOCclass : public groupmember {
-protected:
-    static BOCgroup group;
 };
 
 #endif /* BOCGROUP_H */
@@ -45,12 +43,15 @@ protected:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/27 20:25:39 $
+ *	$Revision: 1.1003 $	$Date: 1997/11/07 20:17:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: BOCgroup.h,v $
+ * Revision 1.1003  1997/11/07 20:17:31  milind
+ * Made NAMD to run on shared memory machines.
+ *
  * Revision 1.1002  1997/03/27 20:25:39  brunner
  * Changes for LdbCoordinator, the load balance control BOC
  *

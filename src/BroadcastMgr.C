@@ -19,11 +19,10 @@
 #include "BroadcastMgr.h"
 #include "BroadcastClient.h"
 #include "BroadcastObject.h"
+#include "ProcessorPrivate.h"
 #define MIN_DEBUG_LEVEL 3
 //#define DEBUGM
 #include "Debug.h"
-
-BroadcastMgr *BroadcastMgr::_instance=0;
 
 BroadcastMgr::~BroadcastMgr(void) {
   UniqueSetIter<BOID> boidIter(boid);
@@ -127,12 +126,15 @@ BroadcastMgr::recvBroadcast(BroadcastMsg *msg) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1997/09/28 10:19:00 $
+ *	$Revision: 1.5 $	$Date: 1997/11/07 20:17:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: BroadcastMgr.C,v $
+ * Revision 1.5  1997/11/07 20:17:32  milind
+ * Made NAMD to run on shared memory machines.
+ *
  * Revision 1.4  1997/09/28 10:19:00  milind
  * Fixed priorities, ReductionMgr etc.
  *

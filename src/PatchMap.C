@@ -27,16 +27,12 @@
 #define MIN_DEBUG_LEVEL 5
 #include "Debug.h"
 
-// static initialization
-PatchMap *PatchMap::_instance = 0;
-PatchMgr *PatchMap::patchMgr;
-
 // Safe singleton creation
 PatchMap *PatchMap::Instance() {
-  if (_instance == 0) {
-     _instance = new PatchMap;
+  if (CpvAccess(PatchMap_instance) == 0) {
+     CpvAccess(PatchMap_instance) = new PatchMap;
   }
-  return(_instance);
+  return(CpvAccess(PatchMap_instance));
 }
 
 
@@ -160,12 +156,12 @@ void PatchMap::unpack (void *in)
 //----------------------------------------------------------------------
 int PatchMap::numHomePatches(void)
 {
-  return patchMgr->homePatches.size();
+  return CpvAccess(PatchMap_patchMgr)->homePatches.size();
 }
 
 //----------------------------------------------------------------------
 HomePatchList *PatchMap::homePatchList() {
-  return &(patchMgr->homePatches);
+  return &(CpvAccess(PatchMap_patchMgr)->homePatches);
 }
 
 //----------------------------------------------------------------------
@@ -474,13 +470,16 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1997/10/06 00:12:33 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1015 $	$Date: 1997/11/07 20:17:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.1015  1997/11/07 20:17:43  milind
+ * Made NAMD to run on shared memory machines.
+ *
  * Revision 1.1014  1997/10/06 00:12:33  jim
  * Added PatchMap.inl, sped up cycle-boundary tuple code.
  *

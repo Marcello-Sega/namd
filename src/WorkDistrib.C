@@ -11,13 +11,15 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1036 1997/10/06 00:12:36 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1037 1997/11/07 20:17:50 milind Exp $";
 
 #include <stdio.h>
 
 #include "ckdefs.h"
 #include "chare.h"
 #include "c++interface.h"
+
+#include "ProcessorPrivate.h"
 
 #include "BOCgroup.h"
 #include "WorkDistrib.top.h"
@@ -50,7 +52,7 @@ WorkDistrib::WorkDistrib(InitMsg *msg)
 {
   delete msg;
 
-  group.workDistrib = thisgroup;
+  CpvAccess(BOCclass_group).workDistrib = thisgroup;
   mapsArrived = false;
   awaitingMaps = false;
 }
@@ -123,9 +125,9 @@ void WorkDistrib::createHomePatches(void)
 {
   int i;
   StringList *current;	//  Pointer used to retrieve configuration items
-  Node *node = CLocalBranch(Node,group.node);
+  Node *node = CLocalBranch(Node,CpvAccess(BOCclass_group).node);
   PatchMap *patchMap = PatchMap::Object();
-  PatchMgr *patchMgr = CLocalBranch(PatchMgr,group.patchMgr);
+  PatchMgr *patchMgr = CLocalBranch(PatchMgr,CpvAccess(BOCclass_group).patchMgr);
   SimParameters *params = node->simParameters;
   Molecule *molecule = node->molecule;
   PDB *pdb = node->pdb;
@@ -242,8 +244,8 @@ void WorkDistrib::createHomePatches(void)
 
 void WorkDistrib::distributeHomePatches() {
   // ref BOC
-  Node *node = CLocalBranch(Node,group.node);
-  PatchMgr *patchMgr = CLocalBranch(PatchMgr,group.patchMgr);
+  Node *node = CLocalBranch(Node,CpvAccess(BOCclass_group).node);
+  PatchMgr *patchMgr = CLocalBranch(PatchMgr,CpvAccess(BOCclass_group).patchMgr);
   // ref singleton
   PatchMap *patchMap = PatchMap::Object();
 
@@ -267,7 +269,7 @@ void WorkDistrib::saveMaps(MapDistribMsg *msg)
 {
   delete msg;
 
-  Node *node = CLocalBranch(Node,group.node);
+  Node *node = CLocalBranch(Node,CpvAccess(BOCclass_group).node);
 
   if (node->myid() != 0)
   {
@@ -286,7 +288,7 @@ void WorkDistrib::saveMaps(MapDistribMsg *msg)
 void WorkDistrib::patchMapInit(void)
 {
   PatchMap *patchMap = PatchMap::Object();
-  Node *node = CLocalBranch(Node, group.node);
+  Node *node = CLocalBranch(Node, CpvAccess(BOCclass_group).node);
   SimParameters *params = node->simParameters;
 
   BigReal patchSize = params->patchDimension;
@@ -446,7 +448,7 @@ void WorkDistrib::assignNodeToPatch()
 //   int pid; 
 //   int assignedNode = 0;
 //   PatchMap *patchMap = PatchMap::Object();
-//   Node *node = CLocalBranch(Node, group.node);
+//   Node *node = CLocalBranch(Node, CpvAccess(BOCclass_group).node);
 
 //   int *numAtoms = new int[node->numNodes()];
 //   for (int i=0; i<node->numNodes(); i++) {
@@ -479,7 +481,7 @@ void WorkDistrib::assignPatchesToLowestLoadNode()
   int pid; 
   int assignedNode = 0;
   PatchMap *patchMap = PatchMap::Object();
-  Node *node = CLocalBranch(Node, group.node);
+  Node *node = CLocalBranch(Node, CpvAccess(BOCclass_group).node);
 
   int *numAtoms = new int[node->numNodes()];
   for (int i=0; i<node->numNodes(); i++) {
@@ -523,7 +525,7 @@ void WorkDistrib::mapComputes(void)
 {
   PatchMap *patchMap = PatchMap::Object();
   ComputeMap *computeMap = ComputeMap::Object();
-  Node *node = CLocalBranch(Node, group.node);
+  Node *node = CLocalBranch(Node, CpvAccess(BOCclass_group).node);
 
   DebugM(3,"Mapping computes\n");
 
@@ -572,7 +574,7 @@ void WorkDistrib::mapComputeHomePatches(ComputeType type)
 {
   PatchMap *patchMap = PatchMap::Object();
   ComputeMap *computeMap = ComputeMap::Object();
-  Node *node = CLocalBranch(Node, group.node);
+  Node *node = CLocalBranch(Node, CpvAccess(BOCclass_group).node);
 
   int i;
 
@@ -623,7 +625,7 @@ void WorkDistrib::mapComputeNonbonded(void)
 
   PatchMap *patchMap = PatchMap::Object();
   ComputeMap *computeMap = ComputeMap::Object();
-  Node *node = CLocalBranch(Node,group.node);
+  Node *node = CLocalBranch(Node,CpvAccess(BOCclass_group).node);
 
   PatchID oneAway[PatchMap::MaxOneAway];
   PatchID oneAwayTrans[PatchMap::MaxOneAway];
@@ -735,17 +737,17 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
   msg->compute = compute; // pointer is valid since send is to local Pe
 
   if ( seq < 0 ) {
-   CSendMsgBranch(WorkDistrib, enqueueWork, msg, group.workDistrib, CMyPe() );
+   CSendMsgBranch(WorkDistrib, enqueueWork, msg, CpvAccess(BOCclass_group).workDistrib, CMyPe() );
   }
   else switch ( seq % 3 ) {
   case 0:
-   CSendMsgBranch(WorkDistrib, enqueueWorkA, msg, group.workDistrib, CMyPe() );
+   CSendMsgBranch(WorkDistrib, enqueueWorkA, msg, CpvAccess(BOCclass_group).workDistrib, CMyPe() );
    break;
   case 1:
-   CSendMsgBranch(WorkDistrib, enqueueWorkB, msg, group.workDistrib, CMyPe() );
+   CSendMsgBranch(WorkDistrib, enqueueWorkB, msg, CpvAccess(BOCclass_group).workDistrib, CMyPe() );
    break;
   case 2:
-   CSendMsgBranch(WorkDistrib, enqueueWorkC, msg, group.workDistrib, CMyPe() );
+   CSendMsgBranch(WorkDistrib, enqueueWorkC, msg, CpvAccess(BOCclass_group).workDistrib, CMyPe() );
    break;
   default:
    NAMD_die("WorkDistrib::messageEnqueueWork case statement error!");
@@ -994,13 +996,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1036 $	$Date: 1997/10/06 00:12:36 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1037 $	$Date: 1997/11/07 20:17:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1037  1997/11/07 20:17:50  milind
+ * Made NAMD to run on shared memory machines.
+ *
  * Revision 1.1036  1997/10/06 00:12:36  jim
  * Added PatchMap.inl, sped up cycle-boundary tuple code.
  *

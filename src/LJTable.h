@@ -13,6 +13,7 @@
 #define LJTABLE_H
 
 #include "common.h"
+#include "ProcessorPrivate.h"
 
 class LJTable
 {
@@ -25,7 +26,7 @@ public:
   };
 
   static LJTable *Instance(void);
-  inline static LJTable *Object(void) {return _instance;}
+  inline static LJTable *Object(void) {return CpvAccess(LJTable_instance);}
   ~LJTable(void);
 
   inline TableEntry *table_entry(const int index) const;
@@ -39,7 +40,6 @@ protected:
   LJTable(void);
 
 private:
-  static LJTable *_instance;
 
   void compute_vdw_params(int i, int j, 
 			  TableEntry *cur, TableEntry *cur_scaled);
@@ -115,12 +115,15 @@ return;
  *
  *	$RCSfile: LJTable.h,v $
  *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/04/04 23:34:19 $
+ *	$Revision: 1.1002 $	$Date: 1997/11/07 20:17:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LJTable.h,v $
+ * Revision 1.1002  1997/11/07 20:17:39  milind
+ * Made NAMD to run on shared memory machines.
+ *
  * Revision 1.1001  1997/04/04 23:34:19  milind
  * Got NAMD2 to run on Origin2000.
  * Included definitions of class static variables in C files.

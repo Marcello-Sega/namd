@@ -6,13 +6,11 @@
 #define DEBUGM
 #include "Debug.h"
 
-CollectionMgr *CollectionMgr::_instance = 0;
-
 CollectionMgr::CollectionMgr(SlaveInitMsg *msg) : master(msg->master)
 {
   delete msg;
-  if (_instance == 0) {
-    _instance = this;
+  if (CpvAccess(CollectionMgr_instance) == 0) {
+    CpvAccess(CollectionMgr_instance) = this;
   } else {
     DebugM(1, "CollectionMgr::CollectionMgr() - another instance of CollectionMgr exists!\n");
   }
@@ -79,12 +77,15 @@ void CollectionMgr::submitForces(int seq, AtomIDList &i, ForceList &d)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/09/28 10:19:02 $
+ *	$Revision: 1.1008 $	$Date: 1997/11/07 20:17:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMgr.C,v $
+ * Revision 1.1008  1997/11/07 20:17:35  milind
+ * Made NAMD to run on shared memory machines.
+ *
  * Revision 1.1007  1997/09/28 10:19:02  milind
  * Fixed priorities, ReductionMgr etc.
  *

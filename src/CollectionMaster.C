@@ -3,17 +3,16 @@
 #include "InfoStream.h"
 #include "Node.h"
 #include "Output.h"
+#include "ProcessorPrivate.h"
 
 // #define DEBUGM
 #include "Debug.h"
 
-CollectionMaster *CollectionMaster::_instance=0;
-
 CollectionMaster::CollectionMaster(InitMsg *msg)
 {
   delete msg;
-  if (_instance == 0) {
-    _instance = this;
+  if (CpvAccess(CollectionMaster_instance) == 0) {
+    CpvAccess(CollectionMaster_instance) = this;
   } else {
     DebugM(1, "CollectionMaster::CollectionMaster() - another instance of CollectionMaster exists!\n");
   }
@@ -178,12 +177,15 @@ void CollectVectorMsg::unpack(void *in)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/04/04 23:34:13 $
+ *	$Revision: 1.1009 $	$Date: 1997/11/07 20:17:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMaster.C,v $
+ * Revision 1.1009  1997/11/07 20:17:33  milind
+ * Made NAMD to run on shared memory machines.
+ *
  * Revision 1.1008  1997/04/04 23:34:13  milind
  * Got NAMD2 to run on Origin2000.
  * Included definitions of class static variables in C files.

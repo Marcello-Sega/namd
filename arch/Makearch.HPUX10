@@ -8,9 +8,11 @@
 ## Choose your favorite Compiler options
 ####
 CC = cc -Aa -D_HPUX_SOURCE
+CFLAGS = -g
+#CFLAGS = -O
 CXX = CC -Aa -D_HPUX_SOURCE
-CXXOPTS = -O -DGLOBALS
-#CXXOPTS = -g -DGLOBALS
+#CXXOPTS = -O -DGLOBALS
+CXXOPTS = -g -DGLOBALS
 #CXXOPTS = +O2
 #CXXOPTS = +O3
 #CXXOPTS = +O3 +DAK220 +DSK220 -G +Oinlinebudget=500 +Olibcalls
@@ -23,7 +25,6 @@ CXXOPTS = -O -DGLOBALS
 #CXXOPTS = +O3 -z
 #CXXOPTS = -g -v -z -G
 #CXXOPTS = -g -v
-#CXXOPTS = -g 
 
 #####
 # Flags
@@ -39,7 +40,7 @@ PVM_ARCH = HPPA
 #####
 # definitions for Charm routines
 #####
-CHARM = /Home/p1/milind/Projects/charm/net-hp-cc
+CHARM = /Home/p1/milind/Projects/charm/uth-hp-cc
 
 #####
 # Unix commands

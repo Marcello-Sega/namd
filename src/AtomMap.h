@@ -23,7 +23,7 @@ class AtomMap
 {
 public:
   static AtomMap *Instance();
-  inline static AtomMap *Object() {return _instance;}
+  inline static AtomMap *Object() {return CpvAccess(AtomMap_instance);}
   ~AtomMap(void);
   void checkMap();
 
@@ -42,7 +42,6 @@ protected:
   AtomMap(void);
 
 private:
-  static AtomMap *_instance;
 
   LocalID *localIDTable;
   int tableSz;
@@ -64,13 +63,16 @@ inline LocalID AtomMap::localID(AtomID id)
  * RCS INFORMATION:
  *
  *	$RCSfile: AtomMap.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/04/10 09:13:47 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/11/07 20:17:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: AtomMap.h,v $
+ * Revision 1.1005  1997/11/07 20:17:30  milind
+ * Made NAMD to run on shared memory machines.
+ *
  * Revision 1.1004  1997/04/10 09:13:47  ari
  * Final debugging for compute migration / proxy creation for load balancing.
  * Lots of debug code added, mostly turned off now.

@@ -23,6 +23,8 @@
 extern "C" int gethostname( char *name, int namelen);
 #endif
 
+#include "ProcessorPrivate.h"
+
 class PatchMap;
 class AtomMap;
 class ProxyMgr;
@@ -49,7 +51,7 @@ public:
   ~Node(void);
 
   // Singleton Access method
-  inline static Node *Object() {return _instance;}
+  inline static Node *Object() {return CpvAccess(Node_instance);}
 
   // Run for the number of steps specified in the sim_parameters
   static void messageRun();
@@ -98,7 +100,6 @@ protected:
   LdbCoordinator *ldbCoordinator;
 
 private:
-  static Node *_instance;
   void namdOneCommInit();
   void namdOneRecv();
   void namdOneSend();
@@ -130,12 +131,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/08/12 22:18:42 $
+ *	$Revision: 1.1009 $	$Date: 1997/11/07 20:17:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.1009  1997/11/07 20:17:42  milind
+ * Made NAMD to run on shared memory machines.
+ *
  * Revision 1.1008  1997/08/12 22:18:42  milind
  * Made NAMD2 to link on Solaris machines.
  *

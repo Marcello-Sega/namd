@@ -25,6 +25,8 @@
 #include "ComputeMap.h"
 #include "HomePatch.h"
 
+#include "ProcessorPrivate.h"
+
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 4
 #include "Debug.h"
@@ -171,18 +173,16 @@ void ProxyResultMsg:: unpack (void *in)
     }
   }
 
-ProxyMgr *ProxyMgr::_instance = 0;
-
 ProxyMgr::ProxyMgr(InitMsg *) { 
-  if (_instance) {
+  if (CpvAccess(ProxyMgr_instance)) {
     Namd::die();
   }
-  _instance = this;
+  CpvAccess(ProxyMgr_instance) = this;
 }
 
 ProxyMgr::~ProxyMgr() { 
   removeProxies();
-  _instance = NULL;
+  CpvAccess(ProxyMgr_instance) = NULL;
 }
 
 void ProxyMgr::removeProxies(void)
@@ -292,7 +292,7 @@ ProxyMgr::registerProxy(PatchID pid) {
   msg->node=CMyPe();
   msg->patch = pid;
 
-  CSendMsgBranch(ProxyMgr, recvRegisterProxy, msg, group.proxyMgr, node);
+  CSendMsgBranch(ProxyMgr, recvRegisterProxy, msg, CpvAccess(BOCclass_group).proxyMgr, node);
 }
 
 void
@@ -304,7 +304,7 @@ ProxyMgr::recvRegisterProxy(RegisterProxyMsg *msg) {
 void
 ProxyMgr::sendResults(ProxyResultMsg *msg) {
   NodeID node = PatchMap::Object()->node(msg->patch);
-  CSendMsgBranch(ProxyMgr, recvResults, msg, group.proxyMgr, node);
+  CSendMsgBranch(ProxyMgr, recvResults, msg, CpvAccess(BOCclass_group).proxyMgr, node);
 }
 
 void
@@ -315,7 +315,7 @@ ProxyMgr::recvResults(ProxyResultMsg *msg) {
 
 void
 ProxyMgr::sendProxyData(ProxyDataMsg *msg, NodeID node) {
-  CSendMsgBranch(ProxyMgr, recvProxyData, msg, group.proxyMgr, node);
+  CSendMsgBranch(ProxyMgr, recvProxyData, msg, CpvAccess(BOCclass_group).proxyMgr, node);
 }
 
 void
@@ -326,7 +326,7 @@ ProxyMgr::recvProxyData(ProxyDataMsg *msg) {
 
 void
 ProxyMgr::sendProxyAtoms(ProxyAtomsMsg *msg, NodeID node) {
-  CSendMsgBranch(ProxyMgr, recvProxyAtoms, msg, group.proxyMgr, node);
+  CSendMsgBranch(ProxyMgr, recvProxyAtoms, msg, CpvAccess(BOCclass_group).proxyMgr, node);
 }
 
 void
@@ -337,7 +337,7 @@ ProxyMgr::recvProxyAtoms(ProxyAtomsMsg *msg) {
 
 void
 ProxyMgr::sendProxyAll(ProxyAllMsg *msg, NodeID node) {
-  CSendMsgBranch(ProxyMgr, recvProxyAll, msg, group.proxyMgr, node);
+  CSendMsgBranch(ProxyMgr, recvProxyAll, msg, CpvAccess(BOCclass_group).proxyMgr, node);
 }
 
 void
@@ -353,13 +353,16 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1997/10/06 00:12:35 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1017 $	$Date: 1997/11/07 20:17:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.1017  1997/11/07 20:17:46  milind
+ * Made NAMD to run on shared memory machines.
+ *
  * Revision 1.1016  1997/10/06 00:12:35  jim
  * Added PatchMap.inl, sped up cycle-boundary tuple code.
  *

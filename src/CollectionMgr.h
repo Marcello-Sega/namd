@@ -9,13 +9,16 @@
 #include "NamdTypes.h"
 #include "BOCgroup.h"
 #include "PatchMap.h"
+#include "ProcessorPrivate.h"
 
 
 class CollectionMgr : public BOCclass
 {
 public:
 
-  static CollectionMgr *Object() { return _instance; }
+  static CollectionMgr *Object() { 
+    return CpvAccess(CollectionMgr_instance); 
+  }
   CollectionMgr(SlaveInitMsg *msg);
   ~CollectionMgr(void);
 
@@ -92,8 +95,6 @@ public:
   };
 private:
 
-  static CollectionMgr *_instance;
-
   ChareIDType master;
 
 
@@ -110,12 +111,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/07/09 21:26:39 $
+ *	$Revision: 1.1005 $	$Date: 1997/11/07 20:17:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMgr.h,v $
+ * Revision 1.1005  1997/11/07 20:17:35  milind
+ * Made NAMD to run on shared memory machines.
+ *
  * Revision 1.1004  1997/07/09 21:26:39  milind
  * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
  * and #endif's.

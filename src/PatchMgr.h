@@ -97,7 +97,7 @@ public:
   PatchMgr(InitMsg *);
   ~PatchMgr();
 
-  static PatchMgr* Object() { return _instance; }
+  static PatchMgr* Object() { return CpvAccess(PatchMgr_instance); }
   
 
   void createHomePatch(PatchID pid, AtomIDList aid, PositionList p, 
@@ -120,8 +120,6 @@ public:
   static void setGroup(BOCgroup g);
  
 private:
-  // Singleton Pattern
-  static PatchMgr* _instance;
 
   friend PatchMap;
   PatchMap *patchMap;
@@ -148,13 +146,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMgr.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/04/11 06:03:29 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1007 $	$Date: 1997/11/07 20:17:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.h,v $
+ * Revision 1.1007  1997/11/07 20:17:45  milind
+ * Made NAMD to run on shared memory machines.
+ *
  * Revision 1.1006  1997/04/11 06:03:29  jim
  * Message combining implemented for atom migration.
  *

@@ -18,7 +18,8 @@ obj/common.o: \
 	src/Templates/ResizeArrayPrimIter.h \
 	src/Node.h \
 	src/main.h \
-	src/BOCgroup.h
+	src/BOCgroup.h \
+	src/ProcessorPrivate.h
 	$(CXX) $(CXXFLAGS) -o obj/common.o -c src/common.C
 obj/dcdlib.o: \
 	src/dcdlib.C \
@@ -46,6 +47,7 @@ obj/main.o: \
 	src/NamdState.h \
 	src/Lattice.h \
 	src/Node.h \
+	src/ProcessorPrivate.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
@@ -70,6 +72,8 @@ obj/AlgSeven.o: \
 	$(CXX) $(CXXFLAGS) -o obj/AlgSeven.o -c src/AlgSeven.C
 obj/AtomMap.o: \
 	src/AtomMap.C \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
 	src/AtomMap.h \
 	src/NamdTypes.h \
 	src/Vector.h \
@@ -104,6 +108,7 @@ obj/BroadcastMgr.o: \
 	src/Templates/SortableResizeArray.h \
 	src/Templates/ResizeArrayIter.h \
 	src/Templates/ResizeArrayPrimIter.h \
+	src/ProcessorPrivate.h \
 	src/BroadcastClient.h \
 	src/BroadcastObject.h \
 	src/Debug.h \
@@ -128,6 +133,7 @@ obj/BroadcastClient.o: \
 	src/Templates/UniqueSet.h \
 	src/Templates/UniqueSetRaw.h \
 	src/Templates/UniqueSetIter.h \
+	src/ProcessorPrivate.h \
 	src/BroadcastClient.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/BroadcastClient.o -c src/BroadcastClient.C
@@ -148,6 +154,7 @@ obj/CollectionMaster.o: \
 	src/Templates/SortableResizeArray.h \
 	src/Templates/ResizeArrayIter.h \
 	src/Templates/ResizeArrayPrimIter.h \
+	src/ProcessorPrivate.h \
 	src/Node.h \
 	src/Output.h \
 	src/Debug.h \
@@ -173,6 +180,7 @@ obj/CollectionMgr.o: \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/Lattice.h \
+	src/ProcessorPrivate.h \
 	inc/CollectionMaster.top.h \
 	src/CollectionMaster.h \
 	src/Debug.h \
@@ -204,6 +212,7 @@ obj/Compute.o: \
 	inc/WorkDistrib.top.h \
 	src/WorkDistrib.h \
 	src/ComputeMap.h \
+	src/ProcessorPrivate.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/Lattice.h \
@@ -242,6 +251,7 @@ obj/ComputeAngles.o: \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/ProcessorPrivate.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/HomePatchTypes.h \
@@ -301,6 +311,7 @@ obj/ComputeBonds.o: \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/ProcessorPrivate.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/HomePatchTypes.h \
@@ -340,6 +351,7 @@ obj/ComputeCylindricalBC.o: \
 	src/PositionBox.h \
 	src/PositionOwnerBox.h \
 	src/ReductionMgr.h \
+	src/ProcessorPrivate.h \
 	src/Node.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
@@ -376,6 +388,7 @@ obj/ComputeDihedrals.o: \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/ProcessorPrivate.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/HomePatchTypes.h \
@@ -417,6 +430,7 @@ obj/ComputeDPMTA.o: \
 	src/Node.h \
 	src/main.h \
 	src/BOCgroup.h \
+	src/ProcessorPrivate.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
@@ -473,6 +487,7 @@ obj/ComputeFullDirect.o: \
 	src/Node.h \
 	src/main.h \
 	src/BOCgroup.h \
+	src/ProcessorPrivate.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
@@ -527,6 +542,7 @@ obj/ComputeHomePatches.o: \
 	src/Node.h \
 	src/main.h \
 	src/BOCgroup.h \
+	src/ProcessorPrivate.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
@@ -586,6 +602,7 @@ obj/ComputeImpropers.o: \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/ProcessorPrivate.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/HomePatchTypes.h \
@@ -625,6 +642,7 @@ obj/ComputeGeneral.o: \
 	src/Templates/Box.h \
 	src/Templates/OwnerBox.h \
 	src/Node.h \
+	src/ProcessorPrivate.h \
 	src/Patch.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
@@ -649,16 +667,18 @@ obj/ComputeMap.o: \
 	src/Templates/SortableResizeArray.h \
 	src/Templates/ResizeArrayIter.h \
 	src/Templates/ResizeArrayPrimIter.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
 	src/Compute.h \
 	src/main.h \
-	src/BOCgroup.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeMap.o -c src/ComputeMap.C
 obj/ComputeMgr.o: \
 	src/ComputeMgr.C \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
 	src/Debug.h \
 	src/InfoStream.h \
-	src/BOCgroup.h \
 	inc/ComputeMgr.top.h \
 	src/ComputeMgr.h \
 	src/main.h \
@@ -746,6 +766,7 @@ obj/ComputeNonbondedExcl.o: \
 	src/Node.h \
 	src/main.h \
 	src/BOCgroup.h \
+	src/ProcessorPrivate.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
@@ -783,9 +804,7 @@ obj/ComputeNonbondedExcl.o: \
 	src/LJTable.h \
 	src/AtomMap.h \
 	src/PatchMap.inl \
-	src/Debug.h \
-	src/Inform.h \
-	src/Templates/UniqueSetIter.h
+	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeNonbondedExcl.o -c src/ComputeNonbondedExcl.C
 obj/ComputeNonbondedSelf.o: \
 	src/ComputeNonbondedSelf.C \
@@ -814,6 +833,7 @@ obj/ComputeNonbondedSelf.o: \
 	src/ComputeNonbondedUtil.h \
 	src/ComputeNonbondedSplitting.h \
 	src/LJTable.h \
+	src/ProcessorPrivate.h \
 	src/Molecule.h \
 	src/IntList.h \
 	src/LintList.h \
@@ -862,6 +882,7 @@ obj/ComputeNonbondedPair.o: \
 	src/ComputeNonbondedUtil.h \
 	src/ComputeNonbondedSplitting.h \
 	src/LJTable.h \
+	src/ProcessorPrivate.h \
 	src/Molecule.h \
 	src/IntList.h \
 	src/LintList.h \
@@ -901,6 +922,8 @@ obj/ComputeNonbondedUtil.o: \
 	src/Templates/ResizeArrayPrimIter.h \
 	src/ComputeNonbondedSplitting.h \
 	src/LJTable.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
 	src/Molecule.h \
 	src/IntList.h \
 	src/LintList.h \
@@ -916,7 +939,6 @@ obj/ComputeNonbondedUtil.o: \
 	src/Lattice.h \
 	src/Node.h \
 	src/main.h \
-	src/BOCgroup.h \
 	src/ReductionMgr.h \
 	src/ComputeNonbondedBase.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeNonbondedUtil.o -c src/ComputeNonbondedUtil.C
@@ -937,6 +959,7 @@ obj/ComputePatch.o: \
 	src/Templates/SortableResizeArray.h \
 	src/Templates/ResizeArrayIter.h \
 	src/Templates/ResizeArrayPrimIter.h \
+	src/ProcessorPrivate.h \
 	src/ComputePatch.h \
 	src/Compute.h \
 	src/PatchTypes.h \
@@ -945,8 +968,10 @@ obj/ComputePatch.o: \
 	src/Templates/OwnerBox.h \
 	src/PositionBox.h \
 	src/PositionOwnerBox.h \
+	src/PatchMap.inl \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/AtomMap.h \
 	src/Patch.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputePatch.o -c src/ComputePatch.C
@@ -967,6 +992,7 @@ obj/ComputePatchPair.o: \
 	src/Templates/SortableResizeArray.h \
 	src/Templates/ResizeArrayIter.h \
 	src/Templates/ResizeArrayPrimIter.h \
+	src/ProcessorPrivate.h \
 	src/ComputePatchPair.h \
 	src/Compute.h \
 	src/PatchTypes.h \
@@ -975,8 +1001,10 @@ obj/ComputePatchPair.o: \
 	src/Templates/OwnerBox.h \
 	src/PositionBox.h \
 	src/PositionOwnerBox.h \
+	src/PatchMap.inl \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/AtomMap.h \
 	src/Patch.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputePatchPair.o -c src/ComputePatchPair.C
@@ -1005,6 +1033,7 @@ obj/ComputeRestraints.o: \
 	src/PositionBox.h \
 	src/PositionOwnerBox.h \
 	src/ReductionMgr.h \
+	src/ProcessorPrivate.h \
 	src/Node.h \
 	src/Molecule.h \
 	src/IntList.h \
@@ -1045,6 +1074,7 @@ obj/ComputeSphericalBC.o: \
 	src/PositionBox.h \
 	src/PositionOwnerBox.h \
 	src/ReductionMgr.h \
+	src/ProcessorPrivate.h \
 	src/Node.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
@@ -1074,6 +1104,7 @@ obj/Controller.o: \
 	src/Templates/SortableResizeArray.h \
 	src/Templates/ResizeArrayIter.h \
 	src/Templates/ResizeArrayPrimIter.h \
+	src/ProcessorPrivate.h \
 	src/Molecule.h \
 	src/IntList.h \
 	src/LintList.h \
@@ -1101,6 +1132,11 @@ obj/Controller.o: \
 	src/Thread.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/Controller.o -c src/Controller.C
+obj/defmain.o: \
+	src/defmain.C \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h
+	$(CXX) $(CXXFLAGS) -o obj/defmain.o -c src/defmain.C
 obj/heap.o: \
 	src/heap.C \
 	src/heap.h \
@@ -1134,13 +1170,15 @@ obj/HomePatch.o: \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/HomePatchTypes.h \
 	src/main.h \
-	src/BOCgroup.h \
 	src/AtomMap.h \
 	src/Node.h \
+	src/PatchMap.inl \
 	inc/ProxyMgr.top.h \
 	src/ProxyMgr.h \
 	src/Templates/UniqueSet.h \
@@ -1192,6 +1230,8 @@ obj/IntTree.o: \
 	$(CXX) $(CXXFLAGS) -o obj/IntTree.o -c src/IntTree.C
 obj/LdbCoordinator.o: \
 	src/LdbCoordinator.C \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
 	inc/LdbCoordinator.top.h \
 	src/LdbCoordinator.h \
 	src/NamdTypes.h \
@@ -1209,7 +1249,6 @@ obj/LdbCoordinator.o: \
 	src/Set.h \
 	src/ComputeMgr.h \
 	src/main.h \
-	src/BOCgroup.h \
 	src/Node.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
@@ -1218,8 +1257,10 @@ obj/LdbCoordinator.o: \
 	src/Lattice.h \
 	src/Namd.h \
 	src/NamdState.h \
+	src/PatchMap.inl \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/AtomMap.h \
 	src/ComputeMap.h \
 	src/Debug.h \
 	src/Sequencer.h \
@@ -1235,9 +1276,10 @@ obj/LJTable.o: \
 	src/LJTable.h \
 	src/common.h \
 	src/InfoStream.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
 	src/Node.h \
 	src/main.h \
-	src/BOCgroup.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/Templates/ResizeArray.h \
@@ -1285,6 +1327,8 @@ obj/MigrateAtomsMsg.o: \
 	inc/PatchMgr.top.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/Templates/OwnerBox.h \
@@ -1292,8 +1336,7 @@ obj/MigrateAtomsMsg.o: \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/HomePatchTypes.h \
-	src/main.h \
-	src/BOCgroup.h
+	src/main.h
 	$(CXX) $(CXXFLAGS) -o obj/MigrateAtomsMsg.o -c src/MigrateAtomsMsg.C
 obj/Molecule.o: \
 	src/Molecule.C \
@@ -1351,6 +1394,7 @@ obj/Namd.o: \
 	src/NamdState.h \
 	src/Lattice.h \
 	src/Node.h \
+	src/ProcessorPrivate.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
@@ -1443,6 +1487,7 @@ obj/NamdState.o: \
 	src/Node.h \
 	src/main.h \
 	src/BOCgroup.h \
+	src/ProcessorPrivate.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/NamdState.o -c src/NamdState.C
 obj/NamdOneTools.o: \
@@ -1489,6 +1534,7 @@ obj/Node.o: \
 	src/Templates/SortableResizeArray.h \
 	src/Templates/ResizeArrayIter.h \
 	src/Templates/ResizeArrayPrimIter.h \
+	src/ProcessorPrivate.h \
 	src/Namd.h \
 	src/NamdState.h \
 	src/Lattice.h \
@@ -1569,6 +1615,7 @@ obj/Output.o: \
 	src/Node.h \
 	src/main.h \
 	src/BOCgroup.h \
+	src/ProcessorPrivate.h \
 	src/Parameters.h \
 	src/MStream.h \
 	src/HBondParam.h \
@@ -1625,9 +1672,10 @@ obj/Patch.o: \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
 	src/Compute.h \
 	src/main.h \
-	src/BOCgroup.h \
 	src/ComputeMap.h \
 	src/Node.h \
 	src/Molecule.h \
@@ -1669,11 +1717,12 @@ obj/PatchMgr.o: \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/HomePatchTypes.h \
 	src/main.h \
-	src/BOCgroup.h \
 	inc/main.top.h \
 	inc/WorkDistrib.top.h \
 	src/WorkDistrib.h \
@@ -1705,11 +1754,12 @@ obj/PatchMap.o: \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/HomePatchTypes.h \
 	src/main.h \
-	src/BOCgroup.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/Debug.h
@@ -1738,6 +1788,11 @@ obj/PDBData.o: \
 	src/common.h \
 	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) -o obj/PDBData.o -c src/PDBData.C
+obj/ProcessorPrivate.o: \
+	src/ProcessorPrivate.C \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h
+	$(CXX) $(CXXFLAGS) -o obj/ProcessorPrivate.o -c src/ProcessorPrivate.C
 obj/ProxyMgr.o: \
 	src/ProxyMgr.C \
 	src/main.h \
@@ -1760,6 +1815,7 @@ obj/ProxyMgr.o: \
 	src/Templates/UniqueSet.h \
 	src/Templates/UniqueSetRaw.h \
 	src/Templates/UniqueSetIter.h \
+	src/ProcessorPrivate.h \
 	src/Namd.h \
 	src/NamdState.h \
 	src/Node.h \
@@ -1767,8 +1823,10 @@ obj/ProxyMgr.o: \
 	src/ConfigList.h \
 	src/Communicate.h \
 	src/MStream.h \
+	src/PatchMap.inl \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/AtomMap.h \
 	src/ProxyPatch.h \
 	src/Patch.h \
 	src/Templates/OwnerBox.h \
@@ -1812,6 +1870,7 @@ obj/ProxyPatch.o: \
 	src/Templates/UniqueSet.h \
 	src/Templates/UniqueSetRaw.h \
 	src/Templates/UniqueSetIter.h \
+	src/ProcessorPrivate.h \
 	src/AtomMap.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ProxyPatch.o -c src/ProxyPatch.C
@@ -1826,6 +1885,7 @@ obj/Rebalancer.o: \
 obj/RecBisection.o: \
 	src/RecBisection.C \
 	src/RecBisection.h \
+	src/PatchMap.inl \
 	src/PatchMap.h \
 	src/NamdTypes.h \
 	src/Vector.h \
@@ -1840,6 +1900,9 @@ obj/RecBisection.o: \
 	src/Templates/ResizeArrayPrimIter.h \
 	src/HomePatchList.h \
 	src/Lattice.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	src/AtomMap.h \
 	src/Patch.h \
 	src/Templates/OwnerBox.h \
 	src/Templates/Box.h \
@@ -1863,9 +1926,10 @@ obj/ReductionMgr.o: \
 	src/Templates/ResizeArrayPrimIter.h \
 	src/HomePatchList.h \
 	src/Lattice.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
 	src/Node.h \
 	src/main.h \
-	src/BOCgroup.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
@@ -1900,6 +1964,7 @@ obj/Sequencer.o: \
 	src/Templates/SortableResizeArray.h \
 	src/Templates/ResizeArrayIter.h \
 	src/Templates/ResizeArrayPrimIter.h \
+	src/ProcessorPrivate.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
@@ -1980,6 +2045,7 @@ obj/VoidTree.o: \
 	$(CXX) $(CXXFLAGS) -o obj/VoidTree.o -c src/VoidTree.C
 obj/WorkDistrib.o: \
 	src/WorkDistrib.C \
+	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
 	inc/WorkDistrib.top.h \
 	src/WorkDistrib.h \

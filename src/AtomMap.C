@@ -15,6 +15,8 @@
 #include "chare.h"
 #include "c++interface.h"
 
+#include "ProcessorPrivate.h"
+
 #include "AtomMap.h"
 
 #define MIN_DEBUG_LEVEL 4
@@ -22,15 +24,12 @@
 #include "Debug.h"
 
 
-// Singleton implementation
-AtomMap *AtomMap::_instance = 0;
-
 // Singleton method
 AtomMap *AtomMap::Instance() {
-  if (_instance == 0) {
-    _instance = new AtomMap;	// this is never deleted!
+  if (CpvAccess(AtomMap_instance) == 0) {
+    CpvAccess(AtomMap_instance) = new AtomMap;	// this is never deleted!
   }
-  return _instance;
+  return CpvAccess(AtomMap_instance);
 }
 
 //----------------------------------------------------------------------
@@ -129,13 +128,16 @@ void AtomMap::print()
  * RCS INFORMATION:
  *
  *	$RCSfile: AtomMap.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/04/10 09:13:46 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1997/11/07 20:17:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: AtomMap.C,v $
+ * Revision 1.1008  1997/11/07 20:17:30  milind
+ * Made NAMD to run on shared memory machines.
+ *
  * Revision 1.1007  1997/04/10 09:13:46  ari
  * Final debugging for compute migration / proxy creation for load balancing.
  * Lots of debug code added, mostly turned off now.

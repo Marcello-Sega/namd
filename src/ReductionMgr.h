@@ -8,6 +8,7 @@
 #include "main.h"
 #include "NamdTypes.h"
 #include "BOCgroup.h"
+#include "ProcessorPrivate.h"
 
 typedef enum
 {
@@ -50,8 +51,6 @@ public:
 class ReductionMgr : public BOCclass
 {
 private:
-  static ReductionMgr *_instance;
-
   int nextSequence;
   int numSubscribed[REDUCTION_MAX_RESERVED];
   ReductionMgrData *data;	// sequence queue
@@ -76,7 +75,9 @@ private:
 public:
 
   // Singleton Access method
-  inline static ReductionMgr *Object(void) {return _instance;}
+  inline static ReductionMgr *Object(void) {
+    return CpvAccess(ReductionMgr_instance);
+  }
 
   ReductionMgr(InitMsg *);
   ~ReductionMgr();
@@ -114,12 +115,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/09/28 10:19:09 $
+ *	$Revision: 1.1007 $	$Date: 1997/11/07 20:17:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.h,v $
+ * Revision 1.1007  1997/11/07 20:17:49  milind
+ * Made NAMD to run on shared memory machines.
+ *
  * Revision 1.1006  1997/09/28 10:19:09  milind
  * Fixed priorities, ReductionMgr etc.
  *

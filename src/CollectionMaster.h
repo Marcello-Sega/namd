@@ -7,6 +7,7 @@
 #include "c++interface.h"
 #include "main.h"
 #include "NamdTypes.h"
+#include "ProcessorPrivate.h"
 
 class CollectVectorMsg;
 
@@ -14,7 +15,9 @@ class CollectionMaster : public chare_object
 {
 public:
 
-  static CollectionMaster *Object() { return _instance; }
+  static CollectionMaster *Object() { 
+    return CpvAccess(CollectionMaster_instance); 
+  }
   CollectionMaster(InitMsg *msg);
   ~CollectionMaster(void);
 
@@ -133,8 +136,6 @@ public:
   };
 private:
 
-  static CollectionMaster *_instance;
-
   CollectVectorSequence positions;
   CollectVectorSequence velocities;
   CollectVectorSequence forces;
@@ -167,12 +168,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/07/09 21:26:39 $
+ *	$Revision: 1.1008 $	$Date: 1997/11/07 20:17:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMaster.h,v $
+ * Revision 1.1008  1997/11/07 20:17:34  milind
+ * Made NAMD to run on shared memory machines.
+ *
  * Revision 1.1007  1997/07/09 21:26:39  milind
  * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
  * and #endif's.

@@ -9,7 +9,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1017 1997/10/01 16:46:58 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1018 1997/11/07 20:17:42 milind Exp $";
 
 #include <unistd.h>
 #include "ckdefs.h"
@@ -19,6 +19,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "Node.h"
 #include "Namd.h"
 #include "pvm3.h"
+
+#include "ProcessorPrivate.h"
 
 #define MIN_DEBUG_LEVEL 3
 //#define DEBUGM
@@ -54,14 +56,10 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 
 extern Communicate *comm;
 
-BOCgroup BOCclass::group;
-
 //======================================================================
 // Public Functions
 
 //----------------------------------------------------------------------
-// Singleton implementation
-Node *Node::_instance = 0;
 
 int eventEndOfTimeStep;
 extern "C" int registerEvent(char *);
@@ -70,8 +68,9 @@ extern "C" int registerEvent(char *);
 // BOC constructor
 Node::Node(GroupInitMsg *msg)
 {
-  if (_instance == 0) {
-    _instance = this;
+  CPrintf("[%d] Node Created\n", CMyPe());
+  if (CpvAccess(Node_instance) == 0) {
+    CpvAccess(Node_instance) = this;
     eventEndOfTimeStep = registerEvent("EndOfTimeStep");
   } else {
     iout << iERRORF << "Node::Node() - another instance of Node exists!\n"
@@ -79,10 +78,10 @@ Node::Node(GroupInitMsg *msg)
     Namd::die();
   }
 
-  group = msg->group;
+  CpvAccess(BOCclass_group) = msg->group;
   delete msg;
 
-  group.node = thisgroup;
+  CpvAccess(BOCclass_group).node = thisgroup;
 
   startupPhase = 0;
   numNodeStartup = CNumPes();
@@ -101,11 +100,11 @@ Node::Node(GroupInitMsg *msg)
   atomMap = AtomMap::Instance();
   computeMap = ComputeMap::Instance();
 
-  patchMgr = CLocalBranch(PatchMgr,group.patchMgr);
-  proxyMgr = CLocalBranch(ProxyMgr,group.proxyMgr);
-  workDistrib = CLocalBranch(WorkDistrib,group.workDistrib);
-  computeMgr = CLocalBranch(ComputeMgr,group.computeMgr);
-  ldbCoordinator = CLocalBranch(LdbCoordinator,group.ldbCoordinator);
+  patchMgr = CLocalBranch(PatchMgr,CpvAccess(BOCclass_group).patchMgr);
+  proxyMgr = CLocalBranch(ProxyMgr,CpvAccess(BOCclass_group).proxyMgr);
+  workDistrib = CLocalBranch(WorkDistrib,CpvAccess(BOCclass_group).workDistrib);
+  computeMgr = CLocalBranch(ComputeMgr,CpvAccess(BOCclass_group).computeMgr);
+  ldbCoordinator = CLocalBranch(LdbCoordinator,CpvAccess(BOCclass_group).ldbCoordinator);
 
   // Where are we?
   char host[1024];
@@ -130,13 +129,13 @@ Node::~Node(void)
 
 void Node::messageStartUp() {
   InitMsg *msg = new (MsgIndex(InitMsg)) InitMsg;
-  CBroadcastMsgBranch(Node, startup, msg, group.node);
+  CBroadcastMsgBranch(Node, startup, msg, CpvAccess(BOCclass_group).node);
 }
 
 void Node::startUp(QuiescenceMessage *qmsg) {
   delete qmsg;
   InitMsg *msg = new (MsgIndex(InitMsg)) InitMsg;
-  CBroadcastMsgBranch(Node, startup, msg, group.node);
+  CBroadcastMsgBranch(Node, startup, msg, CpvAccess(BOCclass_group).node);
 }
 
 
@@ -333,7 +332,7 @@ void Node::buildSequencers() {
 //-----------------------------------------------------------------------
 void Node::messageRun() {
   RunMsg *msg = new (MsgIndex(RunMsg)) RunMsg;
-  CBroadcastMsgBranch(Node, run, msg, group.node);
+  CBroadcastMsgBranch(Node, run, msg, CpvAccess(BOCclass_group).node);
 }
 
 
@@ -375,7 +374,7 @@ void Node::run(RunMsg *msg)
 //-----------------------------------------------------------------------
 void Node::messageHomeDone() {
   DoneMsg *msg = new (MsgIndex(DoneMsg)) DoneMsg;
-  CSendMsgBranch(Node, homeDone, msg, group.node, CMyPe());
+  CSendMsgBranch(Node, homeDone, msg, CpvAccess(BOCclass_group).node, CMyPe());
 }
 
 
@@ -388,7 +387,7 @@ void Node::homeDone(DoneMsg *msg) {
 
   if (!--numHomePatchesRunning) {
      DoneMsg *msg = new (MsgIndex(DoneMsg)) DoneMsg;
-     CSendMsgBranch(Node, nodeDone, msg, group.node, 0);
+     CSendMsgBranch(Node, nodeDone, msg, CpvAccess(BOCclass_group).node, 0);
   }
 }
 
@@ -441,12 +440,15 @@ void Node::saveMolDataPointers(NamdState *state)
  *
  *	$RCSfile: Node.C,v $
  *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1997/10/01 16:46:58 $
+ *	$Revision: 1.1018 $	$Date: 1997/11/07 20:17:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1018  1997/11/07 20:17:42  milind
+ * Made NAMD to run on shared memory machines.
+ *
  * Revision 1.1017  1997/10/01 16:46:58  milind
  * Removed old NAMD1 messaging and replaced it with new Message Streams library.
  *

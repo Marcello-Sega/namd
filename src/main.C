@@ -4,7 +4,7 @@
 /*                           All Rights Reserved                           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.1004 1997/10/01 16:47:04 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.1005 1997/11/07 20:17:52 milind Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -35,6 +35,7 @@ class main : public chare_object
 public:
   main(int argc, char **argv)
   {
+
     // Namd object is only on Pe(0)
     Namd *namd = new Namd;
 
@@ -54,7 +55,7 @@ public:
  *
  *	$RCSfile: main.C,v $
  *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/10/01 16:47:04 $
+ *	$Revision: 1.1005 $	$Date: 1997/11/07 20:17:52 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -63,6 +64,9 @@ public:
  * REVISION HISTORY:
  *
  * $Log: main.C,v $
+ * Revision 1.1005  1997/11/07 20:17:52  milind
+ * Made NAMD to run on shared memory machines.
+ *
  * Revision 1.1004  1997/10/01 16:47:04  milind
  * Removed old NAMD1 messaging and replaced it with new Message Streams library.
  *

@@ -27,7 +27,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1020 1997/09/28 10:19:08 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1021 1997/11/07 20:17:48 milind Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -59,18 +59,14 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMg
  3. who activates the pack/unpack functions
 **/
 
-// *************************** for object control
-
-ReductionMgr *ReductionMgr::_instance = 0;
-
 /*******************************************
  ReductionMgr::ReductionMgr(): init object
  *******************************************/
 ReductionMgr::ReductionMgr(InitMsg *msg)
 {
     delete msg;
-    if (_instance == 0) {
-      _instance = this;
+    if (CpvAccess(ReductionMgr_instance) == 0) {
+      CpvAccess(ReductionMgr_instance) = this;
     } else {
       DebugM(1, "ReductionMgr::ReductionMgr() - another instance exists!\n");
     }
@@ -487,12 +483,15 @@ void	ReductionMgr::unsubscribe(ReductionTag tag)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1020 $	$Date: 1997/09/28 10:19:08 $
+ *	$Revision: 1.1021 $	$Date: 1997/11/07 20:17:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.C,v $
+ * Revision 1.1021  1997/11/07 20:17:48  milind
+ * Made NAMD to run on shared memory machines.
+ *
  * Revision 1.1020  1997/09/28 10:19:08  milind
  * Fixed priorities, ReductionMgr etc.
  *

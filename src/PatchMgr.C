@@ -11,7 +11,7 @@
 /*								           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1009 1997/04/11 06:03:26 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1010 1997/11/07 20:17:45 milind Exp $";
 
 
 #include "ckdefs.h"
@@ -40,20 +40,18 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,
 #include "Debug.h"
 
 
-// Singleton pattern - static initialization
-PatchMgr *PatchMgr::_instance = 0;
-
 // BOC constructor
 PatchMgr::PatchMgr(InitMsg *msg)
 {
+    CPrintf("[%d] PatchMgr Created\n", CMyPe());
     delete msg;
 
     // Singleton pattern
-    if (_instance == NULL) {
-	_instance = this;
+    if (CpvAccess(PatchMgr_instance) == NULL) {
+	CpvAccess(PatchMgr_instance) = this;
     } else {
 	iout << iFILE << iERROR << iPE 
-	  << "PatchMgr instanced twice on same node!" << endi;
+	  << "PatchMgr instanced twice on same processor!" << endi;
 	CharmExit();
     }
 
@@ -274,12 +272,15 @@ void MovePatchesMsg::unpack (void *in)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMgr.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/04/11 06:03:26 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1010 $	$Date: 1997/11/07 20:17:45 $
  *
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.C,v $
+ * Revision 1.1010  1997/11/07 20:17:45  milind
+ * Made NAMD to run on shared memory machines.
+ *
  * Revision 1.1009  1997/04/11 06:03:26  jim
  * Message combining implemented for atom migration.
  *

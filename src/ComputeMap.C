@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1013 1997/04/10 09:13:49 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1014 1997/11/07 20:17:36 milind Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -27,15 +27,12 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.
 //#define DEBUGM
 #include "Debug.h"
 
-// Singleton implementation
-ComputeMap *ComputeMap::_instance = 0;
-
 // Singleton method
 ComputeMap *ComputeMap::Instance() {
-  if (_instance == 0) {
-    _instance = new ComputeMap;	// this is never deleted
+  if (CpvAccess(ComputeMap_instance) == 0) {
+    CpvAccess(ComputeMap_instance) = new ComputeMap;	// this is never deleted
   }
-  return _instance;
+  return CpvAccess(ComputeMap_instance);
 }
 
 
@@ -345,13 +342,16 @@ void ComputeMap::printComputeMap(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1997/04/10 09:13:49 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1014 $	$Date: 1997/11/07 20:17:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.C,v $
+ * Revision 1.1014  1997/11/07 20:17:36  milind
+ * Made NAMD to run on shared memory machines.
+ *
  * Revision 1.1013  1997/04/10 09:13:49  ari
  * Final debugging for compute migration / proxy creation for load balancing.
  * Lots of debug code added, mostly turned off now.

@@ -24,6 +24,7 @@
 #include "PatchTypes.h"
 #include "Templates/UniqueSet.h"
 #include "Templates/UniqueSetIter.h"
+#include "ProcessorPrivate.h"
 
 class RegisterProxyMsg : public comm_object {
 public:
@@ -140,10 +141,9 @@ public:
   void sendProxyAll(ProxyAllMsg *, NodeID);
   void recvProxyAll(ProxyAllMsg *);
 
-  static ProxyMgr *Object() { return _instance; }
+  static ProxyMgr *Object() { return CpvAccess(ProxyMgr_instance); }
   
 private:
-  static ProxyMgr *_instance;
 
   ProxySet proxySet;
 };
@@ -153,13 +153,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/04/08 07:08:57 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1997/11/07 20:17:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.h,v $
+ * Revision 1.1008  1997/11/07 20:17:47  milind
+ * Made NAMD to run on shared memory machines.
+ *
  * Revision 1.1007  1997/04/08 07:08:57  ari
  * Modification for dynamic loadbalancing - moving computes
  * Still bug in new computes or usage of proxies/homepatches.

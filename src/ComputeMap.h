@@ -16,6 +16,7 @@
 #define COMPUTEMAP_H
 
 #include "NamdTypes.h"
+#include "ProcessorPrivate.h"
 
 class Compute;
 class ComputeMgr;
@@ -44,7 +45,7 @@ class ComputeMap
 {
 public:
   static ComputeMap *Instance();
-  inline static ComputeMap *Object() { return _instance; }
+  inline static ComputeMap *Object() { return CpvAccess(ComputeMap_instance); }
 
   void checkMap();
 
@@ -149,9 +150,6 @@ protected:
   ComputeMap(void);
 
 private:
-  static ComputeMap *_instance;
-
-
   int nPatchBased;
   int nAtomBased;
   int nComputes;
@@ -167,12 +165,15 @@ private:
  *
  *	$RCSfile: ComputeMap.h,v $
  *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/07/09 21:26:40 $
+ *	$Revision: 1.1010 $	$Date: 1997/11/07 20:17:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.h,v $
+ * Revision 1.1010  1997/11/07 20:17:37  milind
+ * Made NAMD to run on shared memory machines.
+ *
  * Revision 1.1009  1997/07/09 21:26:40  milind
  * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
  * and #endif's.

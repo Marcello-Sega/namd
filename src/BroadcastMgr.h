@@ -16,6 +16,7 @@
 #include "main.h"
 #include "Templates/UniqueSet.h"
 #include "Templates/UniqueSetIter.h"
+#include "ProcessorPrivate.h"
 
 #ifndef _BCASTMGR_H
 #define _BCASTMGR_H
@@ -123,11 +124,16 @@ public:
 class BroadcastMgr : public BOCclass
 {
 public:
-  BroadcastMgr(GroupInitMsg *msg) { delete msg; _instance = this; }
+  BroadcastMgr(GroupInitMsg *msg) { 
+    delete msg; 
+    CpvAccess(BroadcastMgr_instance) = this; 
+  }
   ~BroadcastMgr(void);
 	  
   // Singleton Access method
-  inline static BroadcastMgr *Object() {return _instance;}
+  inline static BroadcastMgr *Object() {
+    return CpvAccess(BroadcastMgr_instance);
+  }
 
   void *getbuf(BroadcastClient &b, int tag);
   void send(BroadcastClient &b, int tag, void *buf, size_t);
@@ -136,7 +142,6 @@ public:
   void recvBroadcast(BroadcastMsg *msg);
 
 private:
-  static BroadcastMgr *_instance;
   UniqueSet<BOID> boid;
 };
 
@@ -146,12 +151,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1997/09/28 10:19:01 $
+ *	$Revision: 1.4 $	$Date: 1997/11/07 20:17:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: BroadcastMgr.h,v $
+ * Revision 1.4  1997/11/07 20:17:33  milind
+ * Made NAMD to run on shared memory machines.
+ *
  * Revision 1.3  1997/09/28 10:19:01  milind
  * Fixed priorities, ReductionMgr etc.
  *

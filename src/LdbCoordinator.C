@@ -4,6 +4,8 @@
 #include "chare.h"
 #include "c++interface.h"
 
+#include "ProcessorPrivate.h"
+
 #include "LdbCoordinator.top.h"
 #include "LdbCoordinator.h"
 #include "Node.h"
@@ -31,9 +33,6 @@ class maxheap;
 #define DEBUG_LEVEL 4
 
 #define TIMER_FNC()   CmiWallTimer()
-
-// static initialization
-LdbCoordinator *LdbCoordinator::_instance = 0;
 
 CmiHandler notifyIdleStart(void)
 {
@@ -130,9 +129,9 @@ void LdbStatsMsg::unpack(void *buffer)
 
 LdbCoordinator::LdbCoordinator(InitMsg *msg)
 {
-  if (_instance == NULL)
+  if (CpvAccess(LdbCoordinator_instance) == NULL)
   {
-    _instance = this;
+    CpvAccess(LdbCoordinator_instance) = this;
   } else {
     iout << iFILE << iERROR << iPE 
 	 << "LdbCoordinator instanced twice on same node!" << endi;
@@ -548,7 +547,7 @@ void LdbCoordinator::processStatistics(void)
   // This will barrier for all Nodes - (i.e. Computes must be
   // here and with proxies before anyone can start up
 
-  ComputeMgr *computeMgr = CLocalBranch(ComputeMgr, group.computeMgr);
+  ComputeMgr *computeMgr = CLocalBranch(ComputeMgr, CpvAccess(BOCclass_group).computeMgr);
   computeMgr->updateComputes(GetEntryPtr(LdbCoordinator,updateComputesReady),thisgroup);
   //  CPrintf("LDB: Done processing statistics at %f, %f\n",
   //	  CmiTimer(),CmiWallTimer());

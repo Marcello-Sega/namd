@@ -18,6 +18,7 @@
 #include "NamdTypes.h"
 #include "HomePatchList.h"
 #include "Lattice.h"
+#include "ProcessorPrivate.h"
 
 class Patch;
 class PatchMgr;
@@ -27,7 +28,7 @@ class PatchMap
 {
 public:
   static PatchMap *Instance();
-  inline static PatchMap *Object() { return _instance; }
+  inline static PatchMap *Object() { return CpvAccess(PatchMap_instance); }
 
   void checkMap();
 
@@ -40,7 +41,7 @@ public:
   enum ErrCode { OK = 0, ERROR = -1 };
 
   static void registerPatchMgr(PatchMgr *pmgr) {
-    patchMgr = pmgr;
+    CpvAccess(PatchMap_patchMgr) = pmgr;
   }
 
   HomePatchList *homePatchList();
@@ -185,9 +186,6 @@ protected:
   PatchMap(void);
   
 private:
-  static PatchMap *_instance;
-  static PatchMgr *patchMgr;
-  
   struct PatchData
   {
     int node;
@@ -228,13 +226,16 @@ inline HomePatch *PatchMap::homePatch(PatchID pid)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/10/06 00:12:33 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1997/11/07 20:17:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.h,v $
+ * Revision 1.1008  1997/11/07 20:17:44  milind
+ * Made NAMD to run on shared memory machines.
+ *
  * Revision 1.1007  1997/10/06 00:12:33  jim
  * Added PatchMap.inl, sped up cycle-boundary tuple code.
  *

@@ -15,6 +15,8 @@
 #include "chare.h"
 #include "c++interface.h"
 
+#include "ProcessorPrivate.h"
+
 #define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
 #include "Debug.h"
@@ -49,7 +51,7 @@
 ComputeMgr::ComputeMgr(InitMsg *msg)
 {
   delete msg;
-  group.computeMgr = thisgroup;
+  CpvAccess(BOCclass_group).computeMgr = thisgroup;
 }
 
 ComputeMgr::~ComputeMgr(void)
@@ -72,7 +74,7 @@ void ComputeMgr::updateComputes(int ep, int chareID) {
 
 void ComputeMgr::updateComputes2(QuiescenceMessage *msg) {
   delete msg;
-  WorkDistrib  *workDistrib = CLocalBranch(WorkDistrib, group.workDistrib);
+  WorkDistrib  *workDistrib = CLocalBranch(WorkDistrib, CpvAccess(BOCclass_group).workDistrib);
   workDistrib->saveComputeMap(
     GetEntryPtr(ComputeMgr, updateComputes3), thisgroup
   );
@@ -88,7 +90,7 @@ void ComputeMgr::updateLocalComputes(RunMsg *msg) {
   delete msg;
   ComputeMap *computeMap = ComputeMap::Object();
   PatchMap *patchMap = PatchMap::Object();
-  ProxyMgr *proxyMgr = CLocalBranch(ProxyMgr, group.proxyMgr);
+  ProxyMgr *proxyMgr = CLocalBranch(ProxyMgr, CpvAccess(BOCclass_group).proxyMgr);
 
   computeFlag = new int[computeMap->numComputes()];
 
@@ -314,12 +316,15 @@ ComputeMgr::createComputes(ComputeMap *map)
  *
  *	$RCSfile: ComputeMgr.C,v $
  *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1997/10/01 16:46:48 $
+ *	$Revision: 1.1015 $	$Date: 1997/11/07 20:17:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.C,v $
+ * Revision 1.1015  1997/11/07 20:17:38  milind
+ * Made NAMD to run on shared memory machines.
+ *
  * Revision 1.1014  1997/10/01 16:46:48  milind
  * Removed old NAMD1 messaging and replaced it with new Message Streams library.
  *
