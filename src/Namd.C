@@ -6,7 +6,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.5 1996/08/19 22:05:31 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.6 1996/08/21 23:58:25 brunner Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -66,9 +66,16 @@ void Namd::startup(char *confFile)
     CharmExit();
   }
 
+  // Give node[0] pointers to the data objects, so it can use them,
+  // or send them on as messages elsewhere.
+  node->saveMolDataPointers(namdState.molecule,namdState.parameters,
+			    namdState.simParameters,namdState.configList,
+			    namdState.pdb);
+
   // Tell Node to do any startup work
   initmsg = new (MsgIndex(InitMsg)) InitMsg;
   CSendMsgBranch(Node, startup, initmsg, nodeGroup, CMyPe());
+
 }
 
 
@@ -84,8 +91,8 @@ void Namd::run(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: Namd.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/08/19 22:05:31 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.6 $	$Date: 1996/08/21 23:58:25 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -94,6 +101,9 @@ void Namd::run(void)
  * REVISION HISTORY:
  *
  * $Log: Namd.C,v $
+ * Revision 1.6  1996/08/21 23:58:25  brunner
+ * *** empty log message ***
+ *
  * Revision 1.5  1996/08/19 22:05:31  ari
  * *** empty log message ***
  *

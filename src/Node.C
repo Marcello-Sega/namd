@@ -5,7 +5,7 @@
 /*                           All Rights Reserved                           */
 /*                                                                         */
 /***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.3 1996/08/19 22:05:31 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.4 1996/08/21 23:58:25 brunner Exp $";
 
 #include <stdio.h>
 
@@ -33,6 +33,12 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 
 Node::Node(NodeInitMsg *msg)
 {
+  molecule = NULL;
+  parameters = NULL;
+  simParameters = NULL;
+  configList = NULL;
+  pdb = NULL;
+
   workDistrib = CLocalBranch(WorkDistrib,msg->workDistribGroup);
   patchMgr = CLocalBranch(PatchMgr,msg->patchMgrGroup);
 }
@@ -76,6 +82,19 @@ int Node::myid(void)
   return CMyPe();
 }
 
+void Node::saveMolDataPointers(Molecule *molecule,
+			       Parameters *parameters,
+			       SimParameters *simParameters,
+			       ConfigList *configList,
+			       PDB *pdb)
+{
+  this->molecule = molecule;
+  this->parameters = parameters;
+  this->simParameters = simParameters;
+  this->configList = configList;
+  this->pdb = pdb;
+}
+
 //======================================================================
 // Private functions
 
@@ -86,8 +105,8 @@ int Node::myid(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/08/19 22:05:31 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.4 $	$Date: 1996/08/21 23:58:25 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -96,6 +115,9 @@ int Node::myid(void)
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.4  1996/08/21 23:58:25  brunner
+ * *** empty log message ***
+ *
  * Revision 1.3  1996/08/19 22:05:31  ari
  * *** empty log message ***
  *

@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.7 1996/08/19 21:41:31 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.8 1996/08/21 23:58:25 brunner Exp $";
 
 #include <stdio.h>
 
@@ -29,6 +29,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib
 #include "ComputeMap.h"
 #include "Vector.h"
 #include "NamdTypes.h"
+#include "PDB.h"
 
 //======================================================================
 // Public functions
@@ -59,7 +60,7 @@ void WorkDistrib::buildMapsFromScratch()
   mapPatches();
   mapComputes();
 
-  node->patchMap.printPatchMap();
+  //  node->patchMap.printPatchMap();
   //  node->computeMap.printComputeMap();
 
   // Send maps to other nodes.
@@ -72,6 +73,14 @@ void WorkDistrib::buildMapsFromScratch()
 
   for(i=0; i < patchMap->numPatches(); i++)
   {
+    IntList *atomList;
+
+    atomList = node->pdb->find_atoms_in_region(patchMap->minX(i),
+					       patchMap->minY(i),
+					       patchMap->minZ(i),
+					       patchMap->maxX(i),
+					       patchMap->maxY(i),
+					       patchMap->maxZ(i));
     CPrintf("patchMgr->createPatch(%d,atoms,positions)\n",i);
   }
 
@@ -93,7 +102,7 @@ void WorkDistrib::saveMaps(MapDistribMsg *msg)
   }
   else
   {
-    CPrintf("Node 0 patch map already built\n");
+    CPrintf("Node 0 patch map built\n");
   }
   CharmExit();
 }
@@ -112,12 +121,15 @@ void WorkDistrib::mapPatches(void)
   Position sysDim;
 
   CPrintf("Mapping patches\n");
-  /*
-   *  pdb->find_extremes(&xmin,&xmax);
-   */
+  node->pdb->find_extremes(&xmin,&xmax);
 
-  xmax.x = xmax.y = xmax.z = 20.;
-  xmin.x = xmin.y = xmin.z = 0.;
+  CPrintf("xmin.x = %f\n",xmin.x);
+  CPrintf("xmin.y = %f\n",xmin.y);
+  CPrintf("xmin.z = %f\n",xmin.z);
+
+  CPrintf("xmax.x = %f\n",xmax.x);
+  CPrintf("xmax.y = %f\n",xmax.y);
+  CPrintf("xmax.z = %f\n",xmax.z);
 
   sysDim.x = xmax.x - xmin.x;
   sysDim.y = xmax.y - xmin.y;
@@ -269,12 +281,15 @@ void WorkDistrib::mapElectComputes(void)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/08/19 21:41:31 $
+ *	$Revision: 1.8 $	$Date: 1996/08/21 23:58:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.8  1996/08/21 23:58:25  brunner
+ * *** empty log message ***
+ *
  * Revision 1.7  1996/08/19 21:41:31  brunner
  * *** empty log message ***
  *
