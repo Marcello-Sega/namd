@@ -1,7 +1,12 @@
 #ifndef REDUCTIONMGR_H
 #define REDUCTIONMGR_H
 
+#include "ckdefs.h"
+#include "chare.h"
+#include "c++interface.h"
+#include "main.h"
 #include "NamdTypes.h"
+#include "BOCgroup.h"
 
 // debug code to determine if I should panic
 #define PANIC	1
@@ -29,14 +34,43 @@ struct ReductionMgrData
   int numData[REDUCTION_MAX_RESERVED];	// number of data to expect
   BigReal tagData[REDUCTION_MAX_RESERVED];	// values in tags
   ReductionMgrData *next;	// a queue! ugly but effective.
+
+  // for "waiting"
+  CthThread threadNum;
+  int suspendFlag;
 };
 
-class ReductionMgr
+// ***************** for Charm messages
+class RegisterReductionMsg : public comm_object
+{
+  public:
+    NodeID node;
+    PatchID patch;
+};
+
+class UnregisterReductionMsg : public comm_object
+{
+  public:
+    NodeID node;
+    PatchID patch;
+};
+
+class ReductionDataMsg : public comm_object {
+public:
+  int seq;
+  ReductionTag tag;
+  BigReal data;
+};
+
+
+// ***************** for object
+class ReductionMgr : public BOCclass
 {
 private:
   #if PANIC > 0
   int panicMode;
   #endif
+
   int numSubscribed[REDUCTION_MAX_RESERVED];
   ReductionMgrData *data;
   ReductionMgrData *createdata(int seq);
@@ -52,6 +86,7 @@ public:
   // and the first eight after a tensor to allow storage.  -JCP
 
   ReductionMgr();
+  ReductionMgr(InitMsg *)	{ReductionMgr();}
   ~ReductionMgr();
 
   // (un)register to submit data for reduction
@@ -82,6 +117,9 @@ public:
   // void require(int seq, ReductionTag tag, Vector &data);
   // void require(int seq, ReductionTag tag, Tensor &data);
   // void require(int seq, ReductionTag tag); // pass on requiring data
+
+  // for receiving data from other ReductionMgr objects
+  void recvReductionData(ReductionDataMsg *msg);
 };
 
 #endif
