@@ -45,7 +45,6 @@ public:
 
 typedef UniqueSortedArray<LocalAtomID> LocalIndex ;
 
-
 // This the base class of homepatches and proxy patches. It maintains
 // common functions of these patches. These include managing dependences
 // between compute (force) objects and the patch and updating atom map.
@@ -128,13 +127,16 @@ class Patch
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/12 22:06:44 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1006 $	$Date: 1997/03/19 18:10:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.h,v $
+ * Revision 1.1006  1997/03/19 18:10:15  nealk
+ * Added sorted hydrogen group list to molecule.
+ *
  * Revision 1.1005  1997/03/12 22:06:44  jim
  * First step towards multiple force returns and multiple time stepping.
  *

@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: Molecule.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/03/19 11:54:32 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1997/03/19 18:10:13 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1008  1997/03/19 18:10:13  nealk
+ * Added sorted hydrogen group list to molecule.
+ *
  * Revision 1.1007  1997/03/19 11:54:32  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.
@@ -189,8 +192,9 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1007 1997/03/19 11:54:32 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1008 1997/03/19 18:10:13 nealk Exp $";
 
+#include "Templates/UniqueSortedArray.h"
 #include "Molecule.h"
 #include <stdio.h>
 #include <string.h>
@@ -204,6 +208,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,
 #include "Parameters.h"
 #include "PDB.h"
 #include "SimParameters.h"
+#include "Hydrogen.h"
 #include "Templates/UniqueSetIter.h"
 
 #define MIN_DEBUG_LEVEL 3
@@ -682,6 +687,7 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
 	/*  Allocate the atom arrays					*/
 	atoms     = new Atom[numAtoms];
 	atomNames = new AtomNameInfo[numAtoms];
+	hydrogenGroup.resize(0);
 
 	if (atoms == NULL || atomNames == NULL )
 	{
@@ -3263,20 +3269,47 @@ void Molecule::build_atom_status(void) {
 
   // initialize information for each atom (note that the status has
   // already been initialized during the read/receive phase)
+  HydrogenGroupID *hg;
+  hg = new HydrogenGroupID[numAtoms];
   for (i=0; i < numAtoms; i++) {
     atoms[i].partner = (-1);
     atoms[i].donorList = NULL;
     atoms[i].acceptorList = NULL;
+    hg[i].atomID = i;	// currently unsorted
+    hg[i].atomsInGroup = 1;	// currently only 1 in group
+    hg[i].isGP = 1;	// assume it is a group parent
+    hg[i].GPID = i;	// assume it is a group parent
   }
 
   // find which atom each hydrogen is bound to
+  // also determine number of atoms in each group
   for (i=0; i < numBonds; i++) {
     a1 = bonds[i].atom1;
     a2 = bonds[i].atom2;
     if (is_hydrogen(a1))
+      {
       atoms[a1].partner = a2;
+      // check for hydrogen gas...  For H2, explicitly define the group parent.
+      // I have been informed that H3 is not a concern.  This is good since
+      // this code will fail for H3.
+      if (is_hydrogen(a2))
+		hg[a1].isGP = 1;
+      else
+	{
+	hg[a2].atomsInGroup++;
+	hg[a1].atomsInGroup = 0;
+	hg[a1].GPID = a2;
+	hg[a1].isGP = 0;
+	}
+      }
     if (is_hydrogen(a2))
+      {
       atoms[a2].partner = a1;
+      hg[a1].atomsInGroup++;
+      hg[a2].atomsInGroup = 0;
+      hg[a2].GPID = a1;
+      hg[a2].isGP = 0;
+      }
   }
 
   // find the hydrogen bond partners for each atom.  For donors and
@@ -3313,20 +3346,29 @@ void Molecule::build_atom_status(void) {
       atoms[a2].status |= HBAntecedentAtom;
   }
 
+  // sort the hydrogenGroup list
+  for(i=0; i<numAtoms; i++)
+  {
+    hydrogenGroup.add(hg[i]);
+  }
+  hydrogenGroup.sort();
+  delete [] hg;
 }
-
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/03/19 11:54:32 $
+ *	$Revision: 1.1008 $	$Date: 1997/03/19 18:10:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1008  1997/03/19 18:10:13  nealk
+ * Added sorted hydrogen group list to molecule.
+ *
  * Revision 1.1007  1997/03/19 11:54:32  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

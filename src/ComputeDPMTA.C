@@ -118,6 +118,7 @@ void ComputeDPMTA::get_FMA_cube(int resize)
 
 ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
 {
+  DebugM(2,"ComputeDPMTA creating\n");
   // comm should always be initialized by this point...
   // In the (bug) case that it isn't, then initialize it.
   if (comm == NULL)
@@ -419,12 +420,15 @@ void ComputeDPMTA::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1033 $	$Date: 1997/03/19 11:54:05 $
+ *	$Revision: 1.1034 $	$Date: 1997/03/19 18:10:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.C,v $
+ * Revision 1.1034  1997/03/19 18:10:10  nealk
+ * Added sorted hydrogen group list to molecule.
+ *
  * Revision 1.1033  1997/03/19 11:54:05  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

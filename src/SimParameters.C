@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/19 11:54:57 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/03/19 18:10:17 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1005  1997/03/19 18:10:17  nealk
+ * Added sorted hydrogen group list to molecule.
+ *
  * Revision 1.1004  1997/03/19 11:54:57  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.
@@ -329,7 +332,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1004 1997/03/19 11:54:57 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1005 1997/03/19 18:10:17 nealk Exp $";
 
 
 #include "ckdefs.h"
@@ -349,6 +352,9 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParamete
 #ifdef AIX
 #include "strlib.h"		//  For strcasecmp and strncasecmp
 #endif
+
+// #define DEBUGM
+#include "Debug.h"
 
 /************************************************************************/
 /*									*/
@@ -556,6 +562,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    
    /////////// FMA options
 #ifdef DPMTA
+   DebugM(1,"DPMTA setup start\n");
    //  PMTA is included, so really get these values
    opts.optionalB("main", "FMA", "Should FMA be used?", &FMAOn, FALSE);
    opts.optional("FMA", "FMALevels", "Tree levels to use in FMA", &FMALevels,
@@ -567,6 +574,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.optional("FMAFFT", "FMAFFTBlock", "FFT blocking factor",
 		&FMAFFTBlock, 4);
    opts.range("FMAFFTBlock", POSITIVE);
+   DebugM(1,"DPMTA setup end\n");
 #else
    //  PMTA is NOT included.  So just set all the values to 0.
    FMAOn = FALSE;
@@ -2283,12 +2291,15 @@ void SimParameters::receive_SimParameters(Message *msg)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/19 11:54:57 $
+ *	$Revision: 1.1005 $	$Date: 1997/03/19 18:10:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1005  1997/03/19 18:10:17  nealk
+ * Added sorted hydrogen group list to molecule.
+ *
  * Revision 1.1004  1997/03/19 11:54:57  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

@@ -20,6 +20,7 @@
 #define MOLECULE_H
 
 #include "common.h"
+#include "NamdTypes.h"
 #include "IntList.h"
 #include "LintList.h"
 #include "structures.h"
@@ -27,6 +28,7 @@
 #include "Vector.h"
 #include "Templates/UniqueSet.h"
 #include "Templates/ObjectArena.h"
+#include "Hydrogen.h"
 
 class SimParameters;
 class Parameters;
@@ -35,6 +37,7 @@ class Message;
 
 typedef int* intPtr;
 
+// List maintaining the global atom indicies sorted by helix groups.
 class Molecule
 {
 typedef struct constraint_params
@@ -47,6 +50,7 @@ private:
 	Atom *atoms;		//  Array of atom structures
 	AtomNameInfo *atomNames;//  Array of atom name info.  Only maintained
 				//  on node 0 for VMD interface
+	HydrogenGroup hydrogenGroup;	// indexes of "atoms" sorted by hydrogen groups
 	Bond *bonds;		//  Array of bond structures
 	Angle *angles;		//  Array of angle structures
 	Dihedral *dihedrals;	//  Array of dihedral structures
@@ -334,13 +338,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: Molecule.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/03/19 11:54:33 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1007 $	$Date: 1997/03/19 18:10:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.1007  1997/03/19 18:10:15  nealk
+ * Added sorted hydrogen group list to molecule.
+ *
  * Revision 1.1006  1997/03/19 11:54:33  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.
