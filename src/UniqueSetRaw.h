@@ -296,6 +296,9 @@ template <class Elem> class UniqueSetRaw {
     // Utilities
 
     int findSize(int size) {
+      const int hashPrimes[] 
+        = {11,31,101,307,1009,3001,10007,30011,100003,300007,1000003};
+      const int hashPrimesSize = 11;
       for (int i=0; i<hashPrimesSize; i++) {
         if (hashPrimes[i] > size/2) {
           return(hashPrimes[i]);
@@ -348,10 +351,6 @@ template <class Elem> class UniqueSetRaw {
       table[tableSlot] = e->setNext(table[tableSlot]);
     }
   
-    // prime number data
-    int hashPrimesSize;
-    const int *hashPrimes;
-  
     // free list maintenance
     Entry<Elem> *head;
 
@@ -389,14 +388,9 @@ template <class  Elem>
 inline UniqueSetRaw<Elem>::UniqueSetRaw(int size) : 
   table(0), tableLength(0), numElem(0), growable(1) {
   const int minGlobSize = 32;
-  static const int hashThing[] 
-    = {11,31,101,307,1009,3001,10007,30011,100003,300007,1000003};
-  const int hashThingSize = 11;
   isSafeNoDestruction = 1;
   growSize = 0;
   globSize = minGlobSize;
-  hashPrimesSize = hashThingSize;
-  hashPrimes = hashThing;
   init(size);
 }
 
