@@ -17,7 +17,9 @@ OBJS = \
 	strlib.o SimParameters.o ParseOptions.o Namd.o \
 	NamdState.o WorkDistrib.o Node.o PatchMap.o ComputeMap.o \
 	PatchMgr.o Patch.o HomePatch.o Sequencer.o Compute.o \
-	ComputeGeneral.o AtomMap.o
+	ComputeGeneral.o AtomMap.o ComputePatchPair.o \
+	ComputePatch.o ComputeNonbondedUtil.o LJTable.o \
+	ComputeNonbondedSelf.o ComputeNonbondedPair.o
 
 CXXFILES = $(OBJS:.o=.C)
 
