@@ -6,47 +6,12 @@
 /*                                                                         */
 /***************************************************************************/
 
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: WorkDistrib.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/16 20:34:23 $
- *
- ***************************************************************************
- * DESCRIPTION:
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: WorkDistrib.C,v $
- * Revision 1.1  1996/08/16 20:34:23  brunner
- * Initial revision
- *
- * Revision 1.6  1996/08/03 20:08:09  brunner
- * *** empty log message ***
- *
- * Revision 1.5  1996/07/01 16:25:30  brunner
- * *** empty log message ***
- *
- * Revision 1.4  1996/06/14 18:39:00  brunner
- * *** empty log message ***
- *
- * Revision 1.3  1996/06/11 22:36:23  brunner
- * *** empty log message ***
- *
- * Revision 1.2  1996/06/04 16:12:18  brunner
- * Create dummy patches
- *
- * Revision 1.1  1996/05/30 20:16:09  brunner
- * Initial revision
- *
- * Revision 1.1  1996/05/30 20:11:09  brunner
- * Initial revision
- *
- ***************************************************************************/
+/***************************************************************************/
+/* DESCRIPTION:								   */
+/*                                                                         */
+/***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1 1996/08/16 20:34:23 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.2 1996/08/16 21:16:04 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -244,4 +209,43 @@ void WorkDistrib::mapElectComputes(void)
 
 #include "WorkDistrib.bot.h"
 
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile: WorkDistrib.C,v $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1996/08/16 21:16:04 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: WorkDistrib.C,v $
+ * Revision 1.2  1996/08/16 21:16:04  ari
+ * *** empty log message ***
+ *
+ * Revision 1.1  1996/08/16 20:34:23  brunner
+ * Initial revision
+ *
+ * Revision 1.6  1996/08/03 20:08:09  brunner
+ * *** empty log message ***
+ *
+ * Revision 1.5  1996/07/01 16:25:30  brunner
+ * *** empty log message ***
+ *
+ * Revision 1.4  1996/06/14 18:39:00  brunner
+ * *** empty log message ***
+ *
+ * Revision 1.3  1996/06/11 22:36:23  brunner
+ * *** empty log message ***
+ *
+ * Revision 1.2  1996/06/04 16:12:18  brunner
+ * Create dummy patches
+ *
+ * Revision 1.1  1996/05/30 20:16:09  brunner
+ * Initial revision
+ *
+ * Revision 1.1  1996/05/30 20:11:09  brunner
+ * Initial revision
+ *
+ ***************************************************************************/
 

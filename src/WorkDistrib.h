@@ -6,45 +6,10 @@
 /*									   */
 /***************************************************************************/
 
-/***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: WorkDistrib.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/16 20:34:23 $
- *
- ***************************************************************************
- * DESCRIPTION:
- *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: WorkDistrib.h,v $
- * Revision 1.1  1996/08/16 20:34:23  brunner
- * Initial revision
- *
- * Revision 1.6  1996/08/03 20:08:09  brunner
- * *** empty log message ***
- *
- * Revision 1.5  1996/07/01 16:25:30  brunner
- * *** empty log message ***
- *
- * Revision 1.4  1996/06/14 18:40:54  brunner
- * *** empty log message ***
- *
- * Revision 1.3  1996/06/11 22:38:04  brunner
- * *** empty log message ***
- *
- * Revision 1.2  1996/06/04 16:12:18  brunner
- * Create dummy patches
- *
- * Revision 1.1  1996/05/30 20:16:09  brunner
- * Initial revision
- *
- * Revision 1.1  1996/05/30 20:11:09  brunner
- * Initial revision
- *
- ***************************************************************************/
+/***************************************************************************/
+/* DESCRIPTION:								   */
+/*									   */
+/***************************************************************************/
 
 #ifndef _WORKDISTRIB_H
 #define _WORKDISTRIB_H
@@ -84,3 +49,43 @@ public:
 };
 
 #endif /* WORKDISTRIB_H */
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile: WorkDistrib.h,v $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1996/08/16 21:16:04 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: WorkDistrib.h,v $
+ * Revision 1.2  1996/08/16 21:16:04  ari
+ * *** empty log message ***
+ *
+ * Revision 1.1  1996/08/16 20:34:23  brunner
+ * Initial revision
+ *
+ * Revision 1.6  1996/08/03 20:08:09  brunner
+ * *** empty log message ***
+ *
+ * Revision 1.5  1996/07/01 16:25:30  brunner
+ * *** empty log message ***
+ *
+ * Revision 1.4  1996/06/14 18:40:54  brunner
+ * *** empty log message ***
+ *
+ * Revision 1.3  1996/06/11 22:38:04  brunner
+ * *** empty log message ***
+ *
+ * Revision 1.2  1996/06/04 16:12:18  brunner
+ * Create dummy patches
+ *
+ * Revision 1.1  1996/05/30 20:16:09  brunner
+ * Initial revision
+ *
+ * Revision 1.1  1996/05/30 20:11:09  brunner
+ * Initial revision
+ *
+ ***************************************************************************/

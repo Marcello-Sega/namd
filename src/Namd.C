@@ -6,18 +6,23 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.3 1996/08/16 20:33:09 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.4 1996/08/16 21:19:34 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
 #include "c++interface.h"
 
+#include "main.top.h"
+#include "main.h"
 #include "Namd.h"
 #include "Molecule.h"
 #include "Parameters.h"
 #include "SimParameters.h"
 #include "ConfigList.h"
-//#include "Node.h"
+#include "Node.top.h"
+#include "Node.h"
+#include "WorkDistrib.top.h"
+#include "WorkDistrib.h"
 
 // Namd(void ) is the constructor for the startup node.  It needs to
 // read in file data,
@@ -29,11 +34,12 @@ Namd::Namd(void)
   // Create WorkDistrib and send it an empty message
   //
   initmsg = new (MsgIndex(InitMsg)) InitMsg;
-  node_msg->workdistrib_group = new_group(WorkDistrib, initmsg);
+  node_msg->workDistribGroup = new_group(WorkDistrib, initmsg);
 
   // Create the Node object and send it the IDs of all the other
   // parallel objects.
-  node = new_group(Node, node_msg);
+  nodeGroup = new_group(Node, node_msg);
+  node = CLocalBranch(Node,nodeGroup);
 }
 
 
@@ -57,7 +63,7 @@ void Namd::startup(char *confFile)
 
   // Tell Node to do any startup work
   initmsg = new (MsgIndex(InitMsg)) InitMsg;
-  CSendMsgBranch(Node, startup, initmsg, node, CMyPeNum());
+  CSendMsgBranch(Node, startup, initmsg, nodeGroup, CMyPe());
 }
 
 
@@ -73,8 +79,8 @@ void Namd::run(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: Namd.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/08/16 20:33:09 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.4 $	$Date: 1996/08/16 21:19:34 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -83,6 +89,9 @@ void Namd::run(void)
  * REVISION HISTORY:
  *
  * $Log: Namd.C,v $
+ * Revision 1.4  1996/08/16 21:19:34  ari
+ * *** empty log message ***
+ *
  * Revision 1.3  1996/08/16 20:33:09  brunner
  * Not Working
  *

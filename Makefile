@@ -14,11 +14,11 @@ OBJS = \
 	main.o Message.o Molecule.o PDB.o PDBData.o \
 	ConfigList.o Inform.o Parameters.o common.o \
 	strlib.o SimParameters.o ParseOptions.o Namd.o \
-	NamdState.o
+	NamdState.o WorkDistrib.o Node.o PatchMap.o ComputeMap.o
 
 CXXFILES = $(OBJS:.o=.C)
 
-INTERFACES = main.ci
+INTERFACES = main.ci Node.ci WorkDistrib.ci
 
 namd2:	$(OBJS)
 	$(CHARMC) -g -language charm++ -o namd2 $(OBJS)

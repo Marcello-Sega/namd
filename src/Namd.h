@@ -17,6 +17,7 @@ class Namd
 {
 private:
   Node *node;
+  int nodeGroup;
   NamdState namdState;
 
 public:
@@ -37,7 +38,7 @@ public:
  *
  *	$RCSfile: Namd.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/08/16 04:39:46 $
+ *	$Revision: 1.3 $	$Date: 1996/08/16 21:19:34 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -46,6 +47,9 @@ public:
  * REVISION HISTORY:
  *
  * $Log: Namd.h,v $
+ * Revision 1.3  1996/08/16 21:19:34  ari
+ * *** empty log message ***
+ *
  * Revision 1.2  1996/08/16 04:39:46  ari
  * *** empty log message ***
  *
