@@ -1,4 +1,3 @@
-//-*-c++-*-
 /***************************************************************************/
 /*                                                                         */
 /*              (C) Copyright 1996 The Board of Trustees of the            */
@@ -12,98 +11,74 @@
  *
  ***************************************************************************/
 
-#ifndef COMPUTEANGLE_H
-#define COMPUTEANGLE_H
+#ifndef COMPUTEFULLDIRECT_H
+#define COMPUTEFULLDIRECT_H
 
-#include "ComputeHomeTuples.h"
-class ReductionMgr;
-class Molecule;
+#include "ComputeHomePatches.h"
+#include "NamdTypes.h"
 
-class AngleElem {
+class ComputeFullDirect : public ComputeHomePatches {
 public:
-    // ComputeHomeTuples interface
-    enum { size = 3 };
-    AtomID atomID[size];
-    int    localIndex[size];
-    TuplePatchElem *p[size];
-    void computeForce(BigReal*);
-    // The following is evil, but the compiler chokes otherwise. (JCP)
-    static void loadTuplesForAtom(void*, AtomID, Molecule*);
+  ComputeFullDirect(ComputeID c);
+  virtual ~ComputeFullDirect();
+  void doWork();
 
-    // Internal data
-    Index angleType;
+private:
 
-  enum { angleEnergyIndex, reductionDataSize };
-  static void registerReductionData(ReductionMgr*);
-  static void submitReductionData(BigReal*,ReductionMgr*,int);
-  static void unregisterReductionData(ReductionMgr*);
-
-  inline AngleElem();
-  inline AngleElem(const Angle *a);
-  inline AngleElem(AtomID atom0, AtomID atom1, AtomID atom2);
-  ~AngleElem() {};
-
-  inline int operator==(const AngleElem &a) const;
-  inline int operator<(const AngleElem &a) const;
-};
-
-class ComputeAngles : public ComputeHomeTuples<AngleElem>
-{
-public:
-
-  ComputeAngles(ComputeID c) : ComputeHomeTuples<AngleElem>(c) { ; }
+  int numLocalAtoms;
+  Position *localPositions;
+  BigReal *localCharges;
+  Force *localForces;
 
 };
-
-#include "ComputeAngles.inl"
 
 #endif
 /***************************************************************************
  * RCS INFORMATION:
  *
- *	$RCSfile: ComputeAngles.h,v $
+ *	$RCSfile: ComputeFullDirect.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.779 $	$Date: 1997/02/06 15:52:50 $
+ *	$Revision: 1.2 $	$Date: 1997/02/06 15:52:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
- * $Log: ComputeAngles.h,v $
- * Revision 1.779  1997/02/06 15:52:50  ari
+ * $Log: ComputeFullDirect.h,v $
+ * Revision 1.2  1997/02/06 15:52:55  ari
  * Updating Revision Line, getting rid of branches
  *
- * Revision 1.778.2.1  1997/02/05 22:17:57  ari
- * Added migration code - Currently the framework is
- * there with compiling code.  This version does
- * crash shortly after migration is complete.
- * Migration appears to complete, but Patches do
- * not appear to be left in a correct state.
+ * Revision 1.1.2.1  1997/02/06 04:20:25  jim
+ * Added ComputeFullDirect.
  *
- * Revision 1.778  1997/01/28 00:30:02  ari
- * internal release uplevel to 1.778
+ * Revision 1.778  1997/01/28 01:00:33  ari
+ * uplevel
  *
- * Revision 1.777.2.1  1997/01/27 22:44:56  ari
- * Basic Atom Migration Code added.
- * Added correct magic first line to .h files for xemacs to go to C++ mode.
- * Compiles and runs without migration turned on.
+ * Revision 1.2  1997/01/28 01:00:11  ari
+ * Adding This again
  *
- * Revision 1.777  1997/01/17 19:35:35  ari
+ * Revision 1.1.2.1  1997/01/27 21:11:36  jim
+ * test
+ *
+ * Revision 1.777  1997/01/17 19:35:45  ari
  * Internal CVS leveling release.  Start development code work
  * at 1.777.1.1.
  *
- * Revision 1.9  1997/01/16 00:55:49  jim
+ * Revision 1.10  1997/01/16 00:55:56  jim
  * Added reduction of energies from ComputeHomeTuples objects, except
  * for ComputeNonbondedExcl which only reports 0 energy.
  * Some problems with ReductionMgr are apparent, but it still runs.
  *
- * Revision 1.8  1997/01/14 15:29:47  nealk
- * Moved "include" functions into .inl file.
+ * Revision 1.9  1997/01/14 17:59:48  jim
+ * fixed multiple force additions (no adding to proxies now)
  *
- * Revision 1.7  1996/11/22 01:45:28  jim
- * restructured, fixed bugs, now seems to work
+ * Revision 1.8  1996/12/04 18:03:12  jim
+ * added AtomProperties checkout
  *
- * Revision 1.6  1996/11/19 06:58:37  jim
+ * Revision 1.7  1996/11/19 06:58:37  jim
  * first compiling templated version, needed ugly void* hack
+ *
+ * Revision 1.6  1996/11/19 04:24:24  jim
+ * first templated version as ComputeHomeTuples<T>
  *
  * Revision 1.5  1996/11/18 21:28:48  ari
  * *** empty log message ***

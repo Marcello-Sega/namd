@@ -1,6 +1,29 @@
+
+#####
+# definitions for Charm routines
+#####
 CHARMC = /Projects/l1/namd.2.0/charm/bin/charmc
 CHARMXI = /Projects/l1/namd.2.0/charm/bin/charmc
 
+#####
+# definitions for PMTA routines
+#####
+PMTADIR=/Projects/l2/namd/dpmta-2.5/src
+PMTAINCL=-I$(PMTADIR)
+PMTALIBDIR=-L$(PMTADIR)
+PMTALIB=-ldpmta
+PMTAFLAGS=-DDPMTA
+DPMTA=$(PMTAINCL) $(PMTAFLAGS)
+#####
+# definitions for PVM routines
+#####
+PVMDIR=/usr/local/shared/pvm/pvm3/lib/HPPA
+PVMLIBDIR=-L$(PVMDIR)
+PVMLIB=-lpvm3
+
+#####
+# Directories
+#####
 # source directory
 SRCDIR = src
 # destination directory (binaries) -- currently, MUST be .
@@ -8,12 +31,13 @@ DSTDIR = obj
 # temp include directory for cifiles
 INCDIR = inc
 
-CXXOPTS = -O
+# CXXOPTS = -O
+CXXOPTS = -g
 # CXXOPTS = -O +DAK460 +DSK460
 CXX = CC -Aa -D_HPUX_SOURCE
 INCLUDE = /Projects/l1/namd.2.0/charm/include
-CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(CXXOPTS)  -w
-GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) -w
+CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(CXXOPTS) -w
+GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) -w
 
 .SUFFIXES: 	.ci
 
@@ -35,6 +59,7 @@ OBJS = \
 	$(DSTDIR)/ComputeBonds.o \
 	$(DSTDIR)/ComputeDihedrals.o \
 	$(DSTDIR)/ComputeDPMTA.o \
+	$(DSTDIR)/ComputeFullDirect.o \
 	$(DSTDIR)/ComputeHomePatches.o \
 	$(DSTDIR)/ComputeImpropers.o \
 	$(DSTDIR)/ComputeGeneral.o \
@@ -80,8 +105,24 @@ INTERFACES = main.ci Node.ci WorkDistrib.ci PatchMgr.ci Compute.ci \
 		ComputeMgr.ci ProxyMgr.ci ReductionMgr.ci \
 		CollectionMgr.ci CollectionMaster.ci
 
-namd2:	$(INCDIR) $(DSTDIR) $(OBJS)
-	$(CHARMC) -ld++-option "-I $(INCLUDE) -I $(SRCDIR) $(CXXOPTS)" -language charm++ -o namd2 $(OBJS)
+TEMPLATES = \
+	$(SRCDIR)/ComputeHomeTuples.C \
+	$(SRCDIR)/PositionBox.C \
+	$(SRCDIR)/PositionOwnerBox.C \
+	$(SRCDIR)/Templates/Box.C \
+	$(SRCDIR)/Templates/OwnerBox.C \
+	$(SRCDIR)/Templates/ResizeArray.C \
+	$(SRCDIR)/Templates/SortableResizeArray.C \
+	$(SRCDIR)/Templates/SortedArray.C \
+	$(SRCDIR)/Templates/UniqueSortedArray.C
+
+namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES)
+	$(CHARMC) -ld++-option \
+	"-I $(INCLUDE) -I $(SRCDIR) $(CXXOPTS) " \
+	-language charm++ \
+	-o namd2 $(OBJS) \
+	$(PMTALIBDIR) $(PMTALIB) \
+	$(PVMLIBDIR) $(PVMLIB)
 
 cifiles:	$(INCDIR) $(DSTDIR)
 	for i in $(INTERFACES); do \

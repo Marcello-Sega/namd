@@ -19,8 +19,11 @@
 #include "ckdefs.h"
 #include "c++interface.h"
 
+#include "PatchMgr.h"
 #include "PatchMap.h"
 #include "Patch.h"
+#include "Lattice.h"
+#include "HomePatchList.h"
 
 #define DEBUGM
 #define MIN_DEBUG_LEVEL 5
@@ -43,7 +46,8 @@ PatchMap::PatchMap(void)
 {
   nPatches = 0;
   patchData = NULL;
-  int xDim = yDim = zDim = 0;
+  xDim = yDim = zDim = 0;
+  xPeriodic = yPeriodic = zPeriodic = 0;
 }
 
 PatchMap::~PatchMap(void)
@@ -74,7 +78,7 @@ void * PatchMap::pack (int *length)
 
   // calculate memory needed
   int size = 0;
-  size += 5 * sizeof(int);
+  size += 8 * sizeof(int);
   for(i=0;i<nPatches;++i)
   {
     size += sizeof(PatchData);
@@ -91,6 +95,7 @@ void * PatchMap::pack (int *length)
   PACK(int,nPatches);
   DebugM(4,"nPatches = " << nPatches << endl);
   PACK(int,xDim); PACK(int,yDim); PACK(int,zDim);
+  PACK(int,xPeriodic); PACK(int,yPeriodic); PACK(int,zPeriodic);
   for(i=0;i<nPatches;++i)
   {
     DebugM(3,"Packing Patch " << i << " is on node " << patchData[i].node << 
@@ -116,6 +121,7 @@ void PatchMap::unpack (void *in)
   UNPACK(int,nPatches);
   DebugM(4,"nPatches = " << nPatches << endl);
   UNPACK(int,xDim); UNPACK(int,yDim); UNPACK(int,zDim);
+  UNPACK(int,xPeriodic); UNPACK(int,yPeriodic); UNPACK(int,zPeriodic);
   patchData = new PatchData[nPatches];
   for(i=0;i<nPatches;++i)
   {
@@ -147,6 +153,23 @@ int PatchMap::numPatches(void)
 }
 
 //----------------------------------------------------------------------
+void PatchMap::setGridOriginAndLength(Vector o, Vector l)
+{
+  xOrigin = o.x; yOrigin = o.y; zOrigin = o.z;
+  xLength = l.x; yLength = l.y; zLength = l.z;
+}
+
+//----------------------------------------------------------------------
+PatchID PatchMap::assignToPatch(Position p)
+{
+  int xi, yi, zi;
+  xi = floor(((BigReal)xDim)*((p.x-xOrigin)/xLength));
+  yi = floor(((BigReal)yDim)*((p.y-yOrigin)/yLength));
+  zi = floor(((BigReal)zDim)*((p.z-zOrigin)/zLength));
+  return pid(xi,yi,zi);
+}
+
+//----------------------------------------------------------------------
 int PatchMap::xDimension(void)
 {
   return xDim;
@@ -165,8 +188,45 @@ int PatchMap::zDimension(void)
 }
 
 //----------------------------------------------------------------------
+int PatchMap::xIsPeriodic(void)
+{
+  return xPeriodic;
+}
+
+//----------------------------------------------------------------------
+int PatchMap::yIsPeriodic(void)
+{
+  return yPeriodic;
+}
+
+//----------------------------------------------------------------------
+int PatchMap::zIsPeriodic(void)
+{
+  return zPeriodic;
+}
+
+//----------------------------------------------------------------------
 int PatchMap::pid(int xIndex, int yIndex, int zIndex)
 {
+  int allsame = 0;
+  if ( xPeriodic ) xIndex = (xIndex+xDim)%xDim;
+  else
+  {
+    if ( xIndex < 0 ) xIndex = 0;
+    if ( xIndex >= xDim ) xIndex = xDim - 1;
+  }
+  if ( yPeriodic ) yIndex = (yIndex+yDim)%yDim;
+  else
+  {
+    if ( yIndex < 0 ) yIndex = 0;
+    if ( yIndex >= yDim ) yIndex = yDim - 1;
+  }
+  if ( zPeriodic ) zIndex = (zIndex+zDim)%zDim;
+  else
+  {
+    if ( zIndex < 0 ) zIndex = 0;
+    if ( zIndex >= zDim ) zIndex = zDim - 1;
+  }
   return ((zIndex*yDim)+yIndex)*xDim + xIndex;
 }
 
@@ -240,6 +300,14 @@ int PatchMap::numCids(int pid)
 int PatchMap::cid(int pid,int i)
 {
   return patchData[pid].cids[i];
+}
+
+//----------------------------------------------------------------------
+void PatchMap::setPeriodicity(int x_per, int y_per, int z_per)
+{
+  xPeriodic = x_per;
+  yPeriodic = y_per;
+  zPeriodic = z_per;
 }
 
 //----------------------------------------------------------------------
@@ -325,7 +393,7 @@ PatchMap::ErrCode PatchMap::newCid(int pid, int cid)
 }
 
 //----------------------------------------------------------------------
-int PatchMap::oneAwayNeighbors(int pid, PatchID *neighbor_ids)
+int PatchMap::oneAwayNeighbors(int pid, PatchID *neighbor_ids, int *transform_ids)
 {
   int xi, yi, zi;
   int xinc, yinc, zinc;
@@ -335,12 +403,12 @@ int PatchMap::oneAwayNeighbors(int pid, PatchID *neighbor_ids)
   {
     zi = patchData[pid].zi + zinc;
     if ((zi < 0) || (zi >= zDim))
-      continue;
+      if ( ! zPeriodic ) continue;
     for(yinc=-1;yinc<=1;yinc++)
     {
       yi = patchData[pid].yi + yinc;
       if ((yi < 0) || (yi >= yDim))
-	continue;
+	if ( ! yPeriodic ) continue;
       for(xinc=-1;xinc<=1;xinc++)
       {
 	if ((xinc==0) && (yinc==0) && (zinc==0))
@@ -348,9 +416,17 @@ int PatchMap::oneAwayNeighbors(int pid, PatchID *neighbor_ids)
 
 	xi = patchData[pid].xi + xinc;
 	if ((xi < 0) || (xi >= xDim))
-	  continue;
+	  if ( ! xPeriodic ) continue;
 
-	neighbor_ids[n]=this->pid(xi,yi,zi);
+	if (neighbor_ids)
+	  neighbor_ids[n]=this->pid(xi,yi,zi);
+	if ( transform_ids )
+	{
+	  int xt = 0; if ( xi < 0 ) xt = -1; if ( xi >= xDim ) xt = 1;
+	  int yt = 0; if ( yi < 0 ) yt = -1; if ( yi >= yDim ) yt = 1;
+	  int zt = 0; if ( zi < 0 ) zt = -1; if ( zi >= zDim ) zt = 1;
+	  transform_ids[n] = Lattice::index(xt,yt,zt);
+	}
 	n++;
       }
     }
@@ -359,7 +435,7 @@ int PatchMap::oneAwayNeighbors(int pid, PatchID *neighbor_ids)
 }
 
 //----------------------------------------------------------------------
-int PatchMap::twoAwayNeighbors(int pid, PatchID *neighbor_ids)
+int PatchMap::twoAwayNeighbors(int pid, PatchID *neighbor_ids,  int *transform_ids)
 {
   int xi, yi, zi;
   int xinc, yinc, zinc;
@@ -369,12 +445,12 @@ int PatchMap::twoAwayNeighbors(int pid, PatchID *neighbor_ids)
   {
     zi = patchData[pid].zi + zinc;
     if ((zi < 0) || (zi >= zDim))
-      continue;
+      if ( ! zPeriodic ) continue;
     for(yinc=-2;yinc<=2;yinc++)
     {
       yi = patchData[pid].yi + yinc;
       if ((yi < 0) || (yi >= yDim))
-	continue;
+	if ( ! yPeriodic ) continue;
       for(xinc=-2;xinc<=2;xinc++)
       {
 	if (!((xinc==2) || (yinc==2) || (zinc==2) ||
@@ -383,9 +459,16 @@ int PatchMap::twoAwayNeighbors(int pid, PatchID *neighbor_ids)
 
 	xi = patchData[pid].xi + xinc;
 	if ((xi < 0) || (xi >= xDim))
-	  continue;
+	  if ( ! xPeriodic ) continue;
 
 	neighbor_ids[n]=this->pid(xi,yi,zi);
+	if ( transform_ids )
+	{
+	  int xt = 0; if ( xi < 0 ) xt = 1; if ( xi >= xDim ) xt = -1;
+	  int yt = 0; if ( yi < 0 ) yt = 1; if ( yi >= yDim ) yt = -1;
+	  int zt = 0; if ( zi < 0 ) zt = 1; if ( zi >= zDim ) zt = -1;
+	  transform_ids[n] = Lattice::index(xt,yt,zt);
+	}
 	n++;
       }
     }
@@ -394,10 +477,11 @@ int PatchMap::twoAwayNeighbors(int pid, PatchID *neighbor_ids)
 }
 
 //----------------------------------------------------------------------
-int PatchMap::oneOrTwoAwayNeighbors(int pid, PatchID *neighbor_ids)
+int PatchMap::oneOrTwoAwayNeighbors(int pid, PatchID *neighbor_ids, int *transform_ids)
 {
-  int numOneAway = oneAwayNeighbors(pid,neighbor_ids);
-  int numTwoAway = twoAwayNeighbors(pid,neighbor_ids+numOneAway);
+  int numOneAway = oneAwayNeighbors(pid,neighbor_ids,transform_ids);
+  int numTwoAway = twoAwayNeighbors(pid,neighbor_ids+numOneAway,
+			transform_ids?transform_ids+numOneAway:0);
   return numOneAway + numTwoAway;
 }
 
@@ -452,12 +536,32 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
  *
  *	$RCSfile: PatchMap.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:10 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.779  1997/02/06 15:53:22  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.3  1997/02/06 02:35:30  jim
+ * Implemented periodic boundary conditions - may not work with
+ * atom migration yet, but doesn't seem to alter calculation,
+ * appears to work correctly when turned on.
+ * NamdState chdir's to same directory as config file in argument.
+ *
+ * Revision 1.778.2.2  1997/02/05 22:18:18  ari
+ * Added migration code - Currently the framework is
+ * there with compiling code.  This version does
+ * crash shortly after migration is complete.
+ * Migration appears to complete, but Patches do
+ * not appear to be left in a correct state.
+ *
+ * Revision 1.778.2.1  1997/01/28 17:28:49  jim
+ * First top-down changes for periodic boundary conditions, added now to
+ * avoid conflicts with Ari's migration system.
+ *
  * Revision 1.778  1997/01/28 00:31:10  ari
  * internal release uplevel to 1.778
  *

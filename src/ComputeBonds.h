@@ -28,7 +28,7 @@ public:
     TuplePatchElem *p[size];
     void computeForce(BigReal*);
     // The following is evil, but the compiler chokes otherwise. (JCP)
-    static void addTuplesForAtom(void*, AtomID, Molecule*);
+    static void loadTuplesForAtom(void*, AtomID, Molecule*);
 
     // Internal data
     Index bondType;
@@ -63,12 +63,22 @@ public:
  *
  *	$RCSfile: ComputeBonds.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:04 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:52:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeBonds.h,v $
+ * Revision 1.779  1997/02/06 15:52:51  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.1  1997/02/05 22:17:58  ari
+ * Added migration code - Currently the framework is
+ * there with compiling code.  This version does
+ * crash shortly after migration is complete.
+ * Migration appears to complete, but Patches do
+ * not appear to be left in a correct state.
+ *
  * Revision 1.778  1997/01/28 00:30:04  ari
  * internal release uplevel to 1.778
  *

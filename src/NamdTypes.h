@@ -84,7 +84,10 @@ enum ComputeType
   computeBondsType,
   computeAnglesType,
   computeDihedralsType,
-  computeImpropersType
+  computeImpropersType,
+  computeDPMTAType,
+  computeDPMEType,
+  computeFullDirectType
 };
 
 enum Boolean
@@ -100,12 +103,18 @@ enum Boolean
  *
  *	$RCSfile: NamdTypes.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:58 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdTypes.h,v $
+ * Revision 1.779  1997/02/06 15:53:17  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.1  1997/02/06 05:00:44  jim
+ * Added creation of full electrostatics objects.
+ *
  * Revision 1.778  1997/01/28 00:30:58  ari
  * internal release uplevel to 1.778
  *

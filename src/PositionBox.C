@@ -9,7 +9,7 @@ Position* PositionBox<Owner>::open(void) {
       state = OPEN; 
       ownerBox->openCount--;
     }
-    return ownerBox->data; 
+    return ownerBox->transData[trans];
   }
 
 // Closed access to the pointer

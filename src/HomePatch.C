@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.778 1997/01/28 00:30:35 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.779 1997/02/06 15:53:11 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -43,9 +43,50 @@ HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl,
   min.x = PatchMap::Object()->maxX(patchID);
   min.y = PatchMap::Object()->maxY(patchID);
   min.z = PatchMap::Object()->maxZ(patchID);
+
+  patchMapRead = 0; // We delay read of PatchMap data
+		    // to make sure it is really valid
 }
 
+void
+HomePatch::readPatchMap() {
+  PatchMap *p = PatchMap::Object();
+  PatchID nnPatchID[PatchMap::MaxOneAway];
 
+  patchMigrationCounter = numNeighbors 
+    = PatchMap::Object()->oneAwayNeighbors(patchID, nnPatchID);
+  DebugM( 4, "NumNeighbors for pid " <<patchID<<" is "<< numNeighbors << "\n");
+  for (int n=0; n<numNeighbors; n++) {
+    realInfo[n].destNodeID = p->node(realInfo[n].destPatchID = nnPatchID[n]);
+     DebugM( 4, " nnPatchID=" <<nnPatchID[n]<<" nnNodeID="<< realInfo[n].destNodeID<< "\n");
+    realInfo[n].mList = NULL;
+  }
+
+  // Make mapping from the 3x3x3 cube of pointers to real migration info
+  for (int i=0; i<3; i++)
+    for (int j=0; j<3; j++)
+      for (int k=0; k<3; k++)
+      {
+	int pid =  p->pid(p->xIndex(patchID)+i-1, 
+	    p->yIndex(patchID)+j-1, p->zIndex(patchID)+k-1);
+	if (pid == patchID) {
+	  mInfo[i][j][k] = NULL;
+	}
+	else {
+	  for (n = 0; n<numNeighbors; n++) {
+	    if (pid == realInfo[n].destPatchID) {
+	      mInfo[i][j][k] = &realInfo[n];
+	      break;
+	    }
+	  }
+	  if (n == numNeighbors) { // disaster! 
+	    DebugM(4,"BAD News, I could not find PID " << pid << "\n");
+	  }
+	}
+      }
+
+  DebugM(4,"Patch("<<patchID<<") # of neighbors = " << numNeighbors << "\n");
+}
 
 HomePatch::~HomePatch()
 {
@@ -90,12 +131,13 @@ void HomePatch::receiveResults(ProxyResultMsg *msg)
   proxy[i].forceBox->close(&f);
 }
 
-void HomePatch::positionsReady() {
-  positionsReady(0);
-}
 
 void HomePatch::positionsReady(int doMigration)
 {
+  if (!patchMapRead) {
+    readPatchMap();
+    patchMapRead = 1;
+  }
   if (doMigration) {
     doAtomMigration();
   }
@@ -109,12 +151,12 @@ void HomePatch::positionsReady(int doMigration)
       allmsg->patch = patchID;
       allmsg->positionList = p;
       allmsg->atomIDList = atomIDList;
-      ProxyMgr::Object()->sendProxyAll(allmsg,(*pli).node);
+      ProxyMgr::Object()->sendProxyAll(allmsg,pli->node);
     } else {
       ProxyDataMsg *nmsg = new (MsgIndex(ProxyDataMsg)) ProxyDataMsg;
       nmsg->patch = patchID;
       nmsg->positionList = p;
-      ProxyMgr::Object()->sendProxyData(nmsg,(*pli).node);
+      ProxyMgr::Object()->sendProxyData(nmsg,pli->node);
     }   
   }
   Patch::positionsReady(doMigration);
@@ -173,30 +215,43 @@ Vector HomePatch::calcAngularMomentum()
 void
 HomePatch::doAtomMigration()
 {
+  int i,j,k;
   int xdev, ydev, zdev;
-  MigrationList migrationList;
+  MigrationList *mCur;
+
+  // Null pointers to migration lists.
+  for (i=0; i<numNeighbors; i++) {
+    realInfo[i].mList = NULL;
+  }
+
+  int destPatchID;
 
   // Determine atoms that need to migrate
-  int i = 0;
+  i = 0;
   while (i < numAtoms) {
-     if (p[i].x < min.x) xdev = -1;
-     else if (max.x <= p[i].x) xdev = 1; 
-     else xdev = 0;
+     if (p[i].x < min.x) xdev = 0;
+     else if (max.x <= p[i].x) xdev = 2; 
+     else xdev = 1;
 
-     if (p[i].y < min.y) ydev = -1;
-     else if (min.y <= p[i].y) ydev = 1; 
-     else ydev = 0;
+     if (p[i].y < min.y) ydev = 0;
+     else if (min.y <= p[i].y) ydev = 2; 
+     else ydev = 1;
 
-     if (p[i].z < min.z) zdev = -1;
-     else if (max.z <= p[i].z) zdev = 1; 
-     else zdev = 0;
+     if (p[i].z < min.z) zdev = 0;
+     else if (max.z <= p[i].z) zdev = 2; 
+     else zdev = 1;
 
-     if (xdev || ydev || zdev) {
-       // This is not very clean
-       // We should regularize these lists into a more compact
-       // form.
-       migrationList.add(MigrationElem(atomIDList[i], a[i], pInit[i],
-         p[i], v[i], f[i], f_short[i], f_long[i], xdev, ydev, zdev)
+     destPatchID = mInfo[xdev][ydev][zdev]->destPatchID;
+
+     // Don't migrate if destination is myself
+     if (patchID != destPatchID) {
+
+       // See if we have a migration list already
+       if (NULL == (mCur = mInfo[xdev][ydev][zdev]->mList)) {
+	 mCur = mInfo[xdev][ydev][zdev]->mList = new MigrationList;
+       }
+       mCur->add(MigrationElem(atomIDList[i], a[i], pInit[i],
+         p[i], v[i], f[i], f_short[i], f_long[i])
        );
        a.del(i);
        atomIDList.del(i,1);
@@ -207,10 +262,14 @@ HomePatch::doAtomMigration()
        f_short.del(i);
        f_long.del(i);
      }
+     i++;
+  }
+  for (i=0; i < numNeighbors; i++) {
+    PatchMgr::Object()->sendMigrationMsg(patchID, realInfo[i]);
   }
 
-  PatchMgr::Object()->migrate(patchID, migrationList);
   if (!allMigrationIn) {
+    DebugM(4,"All Migrations NOT in, we are suspending patch "<<patchID<<"\n");
     migrationSuspended = true;
     sequencer->suspend();
     migrationSuspended = false;
@@ -223,6 +282,7 @@ HomePatch::doAtomMigration()
 void 
 HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
 {
+  DebugM(4,"depositMigration from "<<srcPatchID<<" on "<<patchID<<"\n");
   if (migrationList) {
     MigrationListIter mi(*migrationList);
     for (mi = mi.begin(); mi != mi.end(); mi++) {
@@ -236,12 +296,13 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
       f_long.add(mi->forceLong);
     }
   }
-  PatchID pid[PatchMap::MaxOneAway];
+  DebugM(4,"Counter on " << patchID << " = " << patchMigrationCounter << "\n");
   if (!--patchMigrationCounter) {
+    DebugM(4,"All Migrations are in for patch "<<patchID<<"\n");
     allMigrationIn = true;
-    patchMigrationCounter = PatchMap::Object()->oneAwayNeighbors(patchID,pid);
-    AtomMap::Object()->registerIDs(patchID,atomIDList);  
+    patchMigrationCounter = numNeighbors;
     if (migrationSuspended) {
+      DebugM(4,"patch "<<patchID<<" is being awakened\n");
       migrationSuspended = false;
       sequencer->awaken();
     }
@@ -254,12 +315,22 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:35 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.779  1997/02/06 15:53:11  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.1  1997/02/05 22:18:13  ari
+ * Added migration code - Currently the framework is
+ * there with compiling code.  This version does
+ * crash shortly after migration is complete.
+ * Migration appears to complete, but Patches do
+ * not appear to be left in a correct state.
+ *
  * Revision 1.778  1997/01/28 00:30:35  ari
  * internal release uplevel to 1.778
  *

@@ -15,10 +15,14 @@
 #include "Node.h"
 #include "ComputePatchPair.h"
 
-ComputePatchPair::ComputePatchPair(ComputeID c, PatchID p[2]) : Compute(c) {
+#define DEBUGM
+#include "Debug.h"
+
+ComputePatchPair::ComputePatchPair(ComputeID c, PatchID p[], int t[]) : Compute(c) {
   setNumPatches(2);
   for (int i=0; i<2; i++) {
       patchID[i] = p[i];
+      trans[i] = t[i];
       patch[i] = NULL;
       positionBox[i] = NULL;
       forceBox[i] = NULL;
@@ -44,22 +48,36 @@ ComputePatchPair::~ComputePatchPair() {
 
 }
 
-void ComputePatchPair::mapReady() {
+void ComputePatchPair::initialize() {
     // How can we tell if BoxOwner has packed up and left?  Need a mechanism
     // to handle this or do we assume the Boxes have been dumped?
 
     for (int i=0; i<2; i++) {
 	if (positionBox[i] == NULL) { // We have yet to get boxes
 	    patch[i] = PatchMap::Object()->patch(patchID[i]);
-	    positionBox[i] = patch[i]->registerPositionPickup(cid);
+	    positionBox[i] = patch[i]->registerPositionPickup(cid,trans[i]);
 	    forceBox[i] = patch[i]->registerForceDeposit(cid);
 	    atomBox[i] = patch[i]->registerAtomPickup(cid);
 	}
 	numAtoms[i] = patch[i]->getNumAtoms();
     }
 
-    Compute::mapReady();
+    Compute::initialize();
 }
+
+void ComputePatchPair::atomUpdate() {
+    // How can we tell if BoxOwner has packed up and left?  Need a mechanism
+    // to handle this or do we assume the Boxes have been dumped?
+
+    DebugM(4,"atomUpdate() - positionBox[0] is " << positionBox[0] << "\n");
+    for (int i=0; i<2; i++) {
+	numAtoms[i] = patch[i]->getNumAtoms();
+    }
+
+    Compute::initialize();
+}
+
+
 
 void ComputePatchPair::doForce(Position* p[2],
                                Force* f[2],
@@ -99,12 +117,28 @@ void ComputePatchPair::doWork() {
  *
  *	$RCSfile: ComputePatchPair.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:29 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatchPair.C,v $
+ * Revision 1.779  1997/02/06 15:53:09  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.2  1997/02/06 02:35:21  jim
+ * Implemented periodic boundary conditions - may not work with
+ * atom migration yet, but doesn't seem to alter calculation,
+ * appears to work correctly when turned on.
+ * NamdState chdir's to same directory as config file in argument.
+ *
+ * Revision 1.778.2.1  1997/02/05 22:18:11  ari
+ * Added migration code - Currently the framework is
+ * there with compiling code.  This version does
+ * crash shortly after migration is complete.
+ * Migration appears to complete, but Patches do
+ * not appear to be left in a correct state.
+ *
  * Revision 1.778  1997/01/28 00:30:29  ari
  * internal release uplevel to 1.778
  *

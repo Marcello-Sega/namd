@@ -12,7 +12,7 @@
  *
  *	$RCSfile: PDB.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:02 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:19 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -30,6 +30,15 @@
  * REVISION HISTORY:
  *
  * $Log: PDB.h,v $
+ * Revision 1.779  1997/02/06 15:53:19  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.1  1997/02/06 02:35:28  jim
+ * Implemented periodic boundary conditions - may not work with
+ * atom migration yet, but doesn't seem to alter calculation,
+ * appears to work correctly when turned on.
+ * NamdState chdir's to same directory as config file in argument.
+ *
  * Revision 1.778  1997/01/28 00:31:02  ari
  * internal release uplevel to 1.778
  *
@@ -85,6 +94,7 @@
 #include "IntList.h"
 #include "PDBData.h"
 #include "Vector.h"
+#include "Lattice.h"
 
 typedef PDBAtom *PDBAtomPtr ;
 typedef struct PAL {
@@ -129,7 +139,7 @@ class PDB {
         //  in general, an atom at coordinate x is in the region 
         //  [x1, x2) iff x1<=x<x2
     IntList *find_atoms_in_region( Real x1, Real y1, Real z1,
-                                  Real x2, Real y2, Real z2 );
+                                  Real x2, Real y2, Real z2, Lattice lat );
 
 	// Find the extreme edges of the molecule
     void find_extremes(Vector *, Vector *);

@@ -22,8 +22,10 @@
 #include "NamdTypes.h"
 #include "Templates/SortedArray.h"
 #include "HomePatch.h"
+#include "HomePatchList.h"
 #include "BOCgroup.h"
 #include "Migration.h"
+
 
 class InitMsg;
 class HomePatch;
@@ -69,7 +71,9 @@ public:
     MigrationList *migrationList;
 
     MigrateAtomsMsg(void) { migrationList = NULL; }
-    ~MigrateAtomsMsg(void) { delete migrationList; }
+    ~MigrateAtomsMsg(void) { 
+      delete migrationList; 
+    }
 
     MigrateAtomsMsg(PatchID source, PatchID destination, MigrationList *m) : 
       srcPatchID(source), destPatchID(destination), migrationList(m)
@@ -95,27 +99,6 @@ public:
 // at the end of each cycle (i.e., atoms can move from patch to patch at the
 // cycle boundaries).
 
-class HomePatch;
-
-class HomePatchElem {
-public:
-  PatchID   pid;
-  HomePatch *p;
-
-  operator<(HomePatchElem e) { return (pid < e.pid); }
-  operator==(HomePatchElem e) { return (pid == e.pid); }
-
-  HomePatchElem(PatchID id=-1, HomePatch *patch=NULL) : pid(id), p(patch) {};
-  ~HomePatchElem() { };
-  HomePatchElem& operator=(const HomePatchElem &e) { 
-    pid = e.pid; p = e.p;  // Do not delete p!  This op only used to shuffle
-			   // we delete the p here only when the HomePatch is 
-			   // moved off!
-    return(*this);
-  };
-};
-
-typedef SortedArray<HomePatchElem> HomePatchList;
 
 struct MovePatch 
 {
@@ -159,7 +142,7 @@ public:
      return homePatches.find(HomePatchElem(pid))->p;
   } 
 
-  void migrate(PatchID,MigrationList);
+  void sendMigrationMsg(PatchID, MigrationInfo);
   void recvMigrateAtoms(MigrateAtomsMsg *);
   static void setGroup(BOCgroup g);
  
@@ -191,12 +174,22 @@ private:
  *
  *	$RCSfile: PatchMgr.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:14 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.h,v $
+ * Revision 1.779  1997/02/06 15:53:24  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.1  1997/02/05 22:18:21  ari
+ * Added migration code - Currently the framework is
+ * there with compiling code.  This version does
+ * crash shortly after migration is complete.
+ * Migration appears to complete, but Patches do
+ * not appear to be left in a correct state.
+ *
  * Revision 1.778  1997/01/28 00:31:14  ari
  * internal release uplevel to 1.778
  *

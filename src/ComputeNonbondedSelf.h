@@ -25,7 +25,7 @@ public:
   virtual ~ComputeNonbondedSelf();
 
 protected :
-  // virtual void mapReady() { ComputePatch::mapReady(); }
+  // virtual void initialize() { ComputePatch::initialize(); }
   virtual void doForce(Position* p, Force* f, AtomProperties* a);
 
   ReductionMgr *reduction;
@@ -40,12 +40,22 @@ protected :
  *
  *	$RCSfile: ComputeNonbondedSelf.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:24 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.h,v $
+ * Revision 1.779  1997/02/06 15:53:07  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.1  1997/02/05 22:18:09  ari
+ * Added migration code - Currently the framework is
+ * there with compiling code.  This version does
+ * crash shortly after migration is complete.
+ * Migration appears to complete, but Patches do
+ * not appear to be left in a correct state.
+ *
  * Revision 1.778  1997/01/28 00:30:24  ari
  * internal release uplevel to 1.778
  *

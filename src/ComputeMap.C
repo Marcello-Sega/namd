@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.778 1997/01/28 00:30:15 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.779 1997/02/06 15:53:00 ari Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -81,7 +81,7 @@ void * ComputeMap::pack (int *length)
   for(i=0;i<nComputes;++i)
   {
     size += sizeof(ComputeData);
-    size += computeData[i].numPidsAllocated * sizeof(PatchID);
+    size += computeData[i].numPidsAllocated * sizeof(PatchRec);
   }
   *length = size;
 
@@ -98,7 +98,7 @@ void * ComputeMap::pack (int *length)
   {
     PACK(ComputeData,computeData[i]);
     for(j=0;j<computeData[i].numPidsAllocated;++j)
-      PACK(PatchID,computeData[i].pids[j]);
+      PACK(PatchRec,computeData[i].pids[j]);
   }
 
   return buffer;
@@ -120,9 +120,9 @@ void ComputeMap::unpack (void *in)
   for(i=0;i<nComputes;++i)
   {
     UNPACK(ComputeData,computeData[i]);
-    computeData[i].pids = new PatchID[computeData[i].numPidsAllocated];
+    computeData[i].pids = new PatchRec[computeData[i].numPidsAllocated];
     for(j=0;j<computeData[i].numPidsAllocated;++j)
-      UNPACK(PatchID,computeData[i].pids[j]);
+      UNPACK(PatchRec,computeData[i].pids[j]);
   }
   DebugM(4,"Done Unpacking ComputeMap\n");
 }
@@ -182,7 +182,7 @@ int ComputeMap::numPids(ComputeID cid)
 int ComputeMap::pid(ComputeID cid,int i)
 {
   if ((computeData != NULL) && (i < computeData[cid].numPids))
-    return computeData[cid].pids[i];
+    return computeData[cid].pids[i].pid;
   else return -1;
 }
 
@@ -251,14 +251,14 @@ ComputeID ComputeMap::storeCompute(int inode, int maxPids, ComputeType type)
   }
 
   computeData[cid].numPids = 0;
-  computeData[cid].pids = new int[maxPids];
+  computeData[cid].pids = new PatchRec[maxPids];
   computeData[cid].numPidsAllocated = maxPids;
 
   return cid;
 }
 
 //----------------------------------------------------------------------
-int ComputeMap::newPid(ComputeID cid, PatchID pid)
+int ComputeMap::newPid(ComputeID cid, PatchID pid, int trans)
 {
   if (!computeData)
     return -1;                   // Have to allocate first
@@ -269,7 +269,8 @@ int ComputeMap::newPid(ComputeID cid, PatchID pid)
   if (computeData[cid].numPids == computeData[cid].numPidsAllocated)
     return -1;                   // Out of space for dependents
 
-  computeData[cid].pids[computeData[cid].numPids]=pid;
+  computeData[cid].pids[computeData[cid].numPids].pid=pid;
+  computeData[cid].pids[computeData[cid].numPids].trans=trans;
   computeData[cid].numPids++;
   return 0;
 }
@@ -293,7 +294,7 @@ void ComputeMap::printComputeMap(void)
     DebugM(1,"  numPidsAllocated = " << computeData[i].numPidsAllocated << '\n');
     for(int j=0; j < computeData[i].numPids; j++)
     {
-      DebugM(1,computeData[i].pids[j]);
+      DebugM(1,computeData[i].pids[j].pid);
       if (!((j+1) % 6))
 	DebugM(1,'\n');
     }
@@ -307,12 +308,21 @@ void ComputeMap::printComputeMap(void)
  *
  *	$RCSfile: ComputeMap.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:15 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.C,v $
+ * Revision 1.779  1997/02/06 15:53:00  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.1  1997/02/06 02:35:17  jim
+ * Implemented periodic boundary conditions - may not work with
+ * atom migration yet, but doesn't seem to alter calculation,
+ * appears to work correctly when turned on.
+ * NamdState chdir's to same directory as config file in argument.
+ *
  * Revision 1.778  1997/01/28 00:30:15  ari
  * internal release uplevel to 1.778
  *

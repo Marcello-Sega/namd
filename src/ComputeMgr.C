@@ -28,6 +28,8 @@
 #include "ComputeImpropers.h"
 #include "ComputeBonds.h"
 #include "ComputeNonbondedExcl.h"
+#include "ComputeFullDirect.h"
+#include "ComputeDMPTA.h"
 #define MIN_DEBUG_LEVEL 4
 #define DEBUGM
 #include "Debug.h"
@@ -61,6 +63,10 @@ void ComputeMgr:: createComputes(ComputeMap *map)
   DebugM(2,"createComputes 1: looping " << map->nComputes << "\n");
   for(int i=0; i < map->nComputes; i++)
   {
+    if ( ! ( i % 100 ) )
+    {
+      DebugM(4,"Created " << i << " compute objects so far.\n");
+    }
     if ( map->computeData[i].node != myNode ) continue;
     DebugM(1,"Compute " << i << '\n');
     DebugM(1,"  node = " << map->computeData[i].node << '\n');
@@ -79,57 +85,78 @@ void ComputeMgr:: createComputes(ComputeMap *map)
 
     Compute *c;
     PatchID pid2[2];
+    int trans2[2];
 
   DebugM(2,"createComputes 2: looping " << i << "on type: " << map->computeData[i].type << "\n");
     switch ( map->computeData[i].type )
     {
       case computeNonbondedSelfType:
-	c = new ComputeNonbondedSelf(i,map->computeData[i].pids[0]);
+	c = new ComputeNonbondedSelf(i,map->computeData[i].pids[0].pid);
 	DebugM(3,"ComputeNonbondedSelf created.\n");
 	++numNonbondedSelf;
 	map->registerCompute(i,c);
-	c->mapReady();
+	c->initialize();
 	break;
       case computeNonbondedPairType:
-	pid2[0] = map->computeData[i].pids[0];
-	pid2[1] = map->computeData[i].pids[1];
-	c = new ComputeNonbondedPair(i,pid2);
+	pid2[0] = map->computeData[i].pids[0].pid;
+	trans2[0] = map->computeData[i].pids[0].trans;
+	pid2[1] = map->computeData[i].pids[1].pid;
+	trans2[1] = map->computeData[i].pids[1].trans;
+	c = new ComputeNonbondedPair(i,pid2,trans2);
 	DebugM(3,"ComputeNonbondedPair created.\n");
 	++numNonbondedPair;
 	map->registerCompute(i,c);
-	c->mapReady();
+	c->initialize();
 	break;
       case computeNonbondedExclType:
 	c = new ComputeNonbondedExcls(i);
-	DebugM(3,"ComputeNonbondedExcls created.\n");
+	DebugM(4,"ComputeNonbondedExcls created.\n");
 	map->registerCompute(i,c);
 	DebugM(3,"ComputeNonbondedExcls registered.\n");
-	c->mapReady();
+	c->initialize();
 	DebugM(3,"ComputeNonbondedExcls ready.\n");
 	break;
       case computeBondsType:
 	c = new ComputeBonds(i);
-	DebugM(3,"ComputeBonds created.\n");
+	DebugM(4,"ComputeBonds created.\n");
 	map->registerCompute(i,c);
-	c->mapReady();
+	c->initialize();
 	break;
       case computeAnglesType:
 	c = new ComputeAngles(i);
-	DebugM(3,"ComputeAngles created.\n");
+	DebugM(4,"ComputeAngles created.\n");
 	map->registerCompute(i,c);
-	c->mapReady();
+	c->initialize();
 	break;
       case computeDihedralsType:
 	c = new ComputeDihedrals(i);
-	DebugM(3,"ComputeDihedrals created.\n");
+	DebugM(4,"ComputeDihedrals created.\n");
 	map->registerCompute(i,c);
-	c->mapReady();
+	c->initialize();
 	break;
       case computeImpropersType:
 	c = new ComputeImpropers(i);
-	DebugM(3,"ComputeImpropers created.\n");
+	DebugM(4,"ComputeImpropers created.\n");
 	map->registerCompute(i,c);
-	c->mapReady();
+	c->initialize();
+	break;
+      case computeDPMTAType:
+	c = new ComputeDPMTA(i);
+	DebugM(4,"ComputeDPMTA created.\n");
+	map->registerCompute(i,c);
+	c->initialize();
+	break;
+      case computeDPMEType:
+	// c = new ComputeDPME(i);
+	DebugM(4,"ComputeDPME *NOT* created.\n");
+	// map->registerCompute(i,c);
+	// c->initialize();
+	break;
+      case computeFullDirectType:
+	c = new ComputeFullDirect(i);
+	DebugM(4,"ComputeFullDirect created.\n");
+	map->registerCompute(i,c);
+	c->initialize();
 	break;
       default:
 	DebugM(10,"Unknown compute type not created!\n");
@@ -159,7 +186,7 @@ void ComputeMgr:: enqueueWork(Compute *compute)
  *
  *	$RCSfile: ComputeMgr.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:16 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:

@@ -17,28 +17,29 @@
 #include "Node.h"
 #include "Debug.h"
 #include "ReductionMgr.h"
+#include "Lattice.h"
 
-void DihedralElem::addTuplesForAtom
+void DihedralElem::loadTuplesForAtom
   (void *voidlist, AtomID atomID, Molecule *molecule)
 {
-      DebugM(1, "::addTuplesForAtom - atomID " << atomID << endl );
+      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
       UniqueSortedArray<DihedralElem> &dihedralList =
                   *( (UniqueSortedArray<DihedralElem>*) voidlist );
 
-      DebugM(1, "::addTuplesForAtom - current list size " << dihedralList.size() << endl );
+      DebugM(1, "::loadTuplesForAtom - current list size " << dihedralList.size() << endl );
 
       /* get list of all dihedrals for the atom */
       LintList *dihedrals = molecule->get_dihedrals_for_atom(atomID);
-      DebugM(1, "::addTuplesForAtom - atomID " << atomID << endl );
-      DebugM(1, "::addTuplesForAtom - dihedrals->head()" << dihedrals->head() << endl );
+      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
+      DebugM(1, "::loadTuplesForAtom - dihedrals->head()" << dihedrals->head() << endl );
 
       /* cycle through each dihedral */
       int dihedralNum = dihedrals->head();
       while(dihedralNum != LIST_EMPTY)
       {
         /* store dihedral in the list */
-        DebugM(1, "::addTuplesForAtom - adding dihedral " << dihedralNum << endl );
-        dihedralList.add(DihedralElem(molecule->get_dihedral(dihedralNum)));
+        DebugM(1, "::loadTuplesForAtom - loading dihedral " << dihedralNum << endl );
+        dihedralList.load(DihedralElem(molecule->get_dihedral(dihedralNum)));
         dihedralNum = dihedrals->next();
       }
 }
@@ -75,9 +76,10 @@ void DihedralElem::computeForce(BigReal *reduction)
   const Position & pos1 = p[1]->x[localIndex[1]];
   const Position & pos2 = p[2]->x[localIndex[2]];
   const Position & pos3 = p[3]->x[localIndex[3]];
-  r12 = pos0-pos1;
-  r23 = pos1-pos2;
-  r34 = pos2-pos3;
+  const Lattice & lattice = p[0]->p->lattice;
+  r12 = lattice.delta(pos0,pos1);
+  r23 = lattice.delta(pos1,pos2);
+  r34 = lattice.delta(pos2,pos3);
 
   //  Calculate the cross products
   A = cross(r12,r23);

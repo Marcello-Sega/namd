@@ -15,6 +15,7 @@
 #include "ConfigList.h"
 #include "PDB.h"
 #include "NamdState.h"
+#include <unistd.h>
 
 #define DEBUGM
 #include "Debug.h"
@@ -69,7 +70,19 @@ NamdState::status()
 int
 NamdState::configFileInit(char *confFile)
 {
-  char *currentdir=NULL;
+  char *currentdir=confFile;
+  char *tmp;
+  for(tmp=confFile;*tmp;++tmp); // find final null
+  for( ; tmp != confFile && *tmp != '/'; --tmp); // find last '/'
+  if ( tmp != confFile )
+  {
+    *tmp = 0; confFile = tmp + 1; 
+    if ( chdir(currentdir) ) NAMD_die("chdir() failed!");
+    CPrintf("NamdState::configFileInit running in %s\n", currentdir);
+  }
+  else if ( *tmp == '/' ) // config file in / is odd, but it might happen
+    if ( chdir("/") ) NAMD_die("chdir() failed!");
+  currentdir = NULL;
 
   CPrintf("NamdState::configFileInit running %s\n",confFile);
 
@@ -130,7 +143,7 @@ NamdState::configFileInit(char *confFile)
  *
  *	$RCSfile: NamdState.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:56 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:16 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -139,6 +152,15 @@ NamdState::configFileInit(char *confFile)
  * REVISION HISTORY:
  *
  * $Log: NamdState.C,v $
+ * Revision 1.779  1997/02/06 15:53:16  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.1  1997/02/06 02:35:26  jim
+ * Implemented periodic boundary conditions - may not work with
+ * atom migration yet, but doesn't seem to alter calculation,
+ * appears to work correctly when turned on.
+ * NamdState chdir's to same directory as config file in argument.
+ *
  * Revision 1.778  1997/01/28 00:30:56  ari
  * internal release uplevel to 1.778
  *
@@ -167,4 +189,4 @@ NamdState::configFileInit(char *confFile)
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.778 1997/01/28 00:30:56 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.779 1997/02/06 15:53:16 ari Exp $";

@@ -11,7 +11,7 @@
  *
  *	$RCSfile: SimParameters.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:26 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:30 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,19 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.779  1997/02/06 15:53:30  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.2  1997/02/06 02:35:34  jim
+ * Implemented periodic boundary conditions - may not work with
+ * atom migration yet, but doesn't seem to alter calculation,
+ * appears to work correctly when turned on.
+ * NamdState chdir's to same directory as config file in argument.
+ *
+ * Revision 1.778.2.1  1997/01/28 17:28:51  jim
+ * First top-down changes for periodic boundary conditions, added now to
+ * avoid conflicts with Ari's migration system.
+ *
  * Revision 1.778  1997/01/28 00:31:26  ari
  * internal release uplevel to 1.778
  *
@@ -293,7 +306,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.778 1997/01/28 00:31:26 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.779 1997/02/06 15:53:30 ari Exp $";
 
 
 #include "ckdefs.h"
@@ -308,6 +321,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParamete
 #include <stdio.h>
 #include "InfoStream.h"
 #include <time.h>
+#include <unistd.h>
 
 #ifdef AIX
 #include "strlib.h"		//  For strcasecmp and strncasecmp
@@ -455,6 +469,12 @@ iout << "called initialize config-data\n" << endi;
    opts.optional("main", "longSplitting", "Long range force splitting option",
 		PARSE_STRING);
 
+   opts.optional("main", "cellBasisVector1", "Basis vector for periodic cell",
+		&cellBasisVector1);
+   opts.optional("main", "cellBasisVector2", "Basis vector for periodic cell",
+		&cellBasisVector2);
+   opts.optional("main", "cellBasisVector3", "Basis vector for periodic cell",
+		&cellBasisVector3);
 
    opts.optional("main", "rigidBonds", "Rigid bonds to hydrogen",PARSE_STRING);
    opts.optional("main", "rigidTolerance", 
@@ -810,6 +830,38 @@ iout << "called initialize config-data\n" << endi;
 	initialTemp = -1.0;
    }
 
+   ///// periodic cell parameters
+
+   /* Save for more flexible PBCs in future
+   if ( opts.defined("cellBasisVector3") &&
+	! opts.defined("cellBasisVector2") )
+   {
+	NAMD_die("Used cellBasisVector3 without cellBasisVector2!");
+   }
+
+   if ( opts.defined("cellBasisVector2") &&
+	! opts.defined("cellBasisVector1") )
+   {
+	NAMD_die("Used cellBasisVector2 without cellBasisVector1!");
+   }
+   */
+
+   if (  cellBasisVector1.y || cellBasisVector1.z
+      || cellBasisVector2.x || cellBasisVector2.z
+      || cellBasisVector3.x || cellBasisVector3.y )
+   {
+	NAMD_die("Basis vectors 1/2/3 must align with x/y/z axes.");
+   }
+
+   if (  cellBasisVector1.x < 0
+      || cellBasisVector2.y < 0
+      || cellBasisVector3.z < 0 )
+   {
+	NAMD_die("Basis vector elements must be positive.");
+   }
+
+   lattice.set(cellBasisVector1,cellBasisVector2,cellBasisVector3);
+
    ///// exclude stuff
    char s[129];
    opts.get("exclude", s);
@@ -1163,6 +1215,11 @@ iout << "called initialize config-data\n" << endi;
 
 	len = strlen(current->data);
 
+	if ( chdir(current->data) )
+ 	{
+		NAMD_die("chdir() to given cwd failed!");
+	}
+
 	if (current->data[len-1] != '/')
 		len++;
 
@@ -1177,6 +1234,9 @@ iout << "called initialize config-data\n" << endi;
 
 	if (current->data[strlen(current->data)-1] != '/')
 		strcat(cwd, "/");
+
+	//  The following checks and prepends should be unnecessary
+	//  if we just change directories to "cwd"!
 
 	//  Now check the file names given and see if we should
 	//  prepend the cwd value
@@ -1919,6 +1979,11 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
 	msg->put(dhaCutoffAngle).put(dhaOnAngle).put(dhaOffAngle);
 	msg->put(daCutoffDist).put(daOnDist).put(daOffDist);
 
+	// send periodic box data
+	msg->put(cellBasisVector1.x);
+	msg->put(cellBasisVector2.y);
+	msg->put(cellBasisVector3.z);
+
 	// now broadcast this info to all other nodes
 	com_obj->broadcast_others(msg, SIMPARAMSTAG);
 }
@@ -2027,6 +2092,12 @@ void SimParameters::receive_SimParameters(Message *msg)
 	msg->get(daCutoffDist);
 	msg->get(daOnDist);
 	msg->get(daOffDist);
+
+	// receive periodic box data
+	msg->get(cellBasisVector1.x);
+	msg->get(cellBasisVector2.y);
+	msg->get(cellBasisVector3.z);
+	lattice.set(cellBasisVector1,cellBasisVector2,cellBasisVector3);
 
 	//  Free the message
 	delete msg;

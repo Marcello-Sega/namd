@@ -3,11 +3,12 @@
 #define LATTICE_H
 
 #include "NamdTypes.h"
+#include <math.h>
 
 class Lattice
 {
 public:
-  Lattice(void) {};
+  Lattice(void) : anz(0), bnz(0), cnz(0) {};
 
   static int index(int i=0, int j=0, int k=0)
   {
@@ -17,9 +18,48 @@ public:
   void set(Vector aa, Vector bb, Vector cc)
   {
     a = aa; b = bb; c = cc;
+    anz = ( a.length2() > 0 );
+    bnz = ( b.length2() > 0 );
+    cnz = ( c.length2() > 0 );
   }
 
-  Position* create(Position *d, int n, int i)
+  Vector nearest(Vector data, Vector ref) const
+  {
+    Vector result = data;
+    if ( anz )
+    {
+      result.x = ref.x + drem(data.x-ref.x,a.x);
+    }
+    if ( bnz )
+    {
+      result.y = ref.y + drem(data.y-ref.y,b.y);
+    }
+    if ( cnz )
+    {
+      result.z = ref.z + drem(data.z-ref.z,c.z);
+    }
+    return result;
+  }
+
+  Vector delta(Vector v1, Vector v2) const
+  {
+    Vector result = v1 - v2;
+    if ( anz )
+    {
+      result.x = drem(result.x,a.x);
+    }
+    if ( bnz )
+    {
+      result.y = drem(result.y,b.y);
+    }
+    if ( cnz )
+    {
+      result.z = drem(result.z,c.z);
+    }
+    return result;
+  }
+
+  Position* create(Position *d, int n, int i) const
   {
     Position *dt;
     if ( i != 13 )
@@ -36,7 +76,7 @@ public:
     return dt;
   }
 
-  void destroy(Position **d, int i)
+  void destroy(Position **d, int i) const
   {
     if ( i != 13 ) delete [] *d;
     *d = NULL;
@@ -44,6 +84,7 @@ public:
 
 private:
   Vector a,b,c;
+  int anz, bnz, cnz;
 
 };
 

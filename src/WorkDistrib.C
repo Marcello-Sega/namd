@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.778 1997/01/28 00:31:29 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.779 1997/02/06 15:53:32 ari Exp $";
 
 #include <stdio.h>
 
@@ -33,6 +33,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib
 #include "Vector.h"
 #include "NamdTypes.h"
 #include "PDB.h"
+#include "SimParameters.h"
 
 #define MIN_DEBUG_LEVEL 3
 #define DEBUGM
@@ -88,47 +89,63 @@ void WorkDistrib::createComputes(void)
 //----------------------------------------------------------------------
 void WorkDistrib::createPatches(void)
 {
-  int i;
+  int i,j;
 
   PatchMap *patchMap = PatchMap::Object();
   Node *node = CLocalBranch(Node,group.node);
   PatchMgr *patchMgr = CLocalBranch(PatchMgr,group.patchMgr);
+  SimParameters *params = node->simParameters;
+  PDB *pdb = node->pdb;
 
-  for(i=0; i < patchMap->numPatches(); i++)
+  int numPatches = patchMap->numPatches();
+  int numAtoms = pdb->num_atoms();
+
+  Vector *positions = new Position[numAtoms];
+  pdb->get_all_positions(positions);
+
+  AtomIDList *atomIDs = new AtomIDList[numPatches];
+  PositionList *atomPositions = new PositionList[numPatches];
+  VelocityList *atomVelocities = new VelocityList[numPatches];
+
+  Lattice lattice = params->lattice;
+  Velocity vel(0.,0.,0.);
+
+  for(i=0; i < numAtoms; i++)
   {
-    
-    PositionList atomPositions;
-    VelocityList atomVelocities;
-    AtomIDList atomIDs;
-
-    IntList *atomList;
-
-    atomList = node->pdb->find_atoms_in_region(patchMap->minX(i),
-					       patchMap->minY(i),
-					       patchMap->minZ(i),
-					       patchMap->maxX(i),
-					       patchMap->maxY(i),
-					       patchMap->maxZ(i));
-    DebugM(1, "::createPatches() - X(" << i << ") = " << patchMap->minX(i) << " , " << patchMap->maxX(i) << endl);
-
-    DebugM(1, "::createPatches() - Y(" << i << ") = " << patchMap->minY(i) << " , " << patchMap->maxY(i) << endl);
-
-    DebugM(1, "::createPatches() - Z(" << i << ") = " << patchMap->minZ(i) << " , " << patchMap->maxZ(i) << endl);
-
-    for(int j=0; j < atomList->num(); j++)
+    if ( ! ( i % 1000 ) )
     {
-      Position pos(node->pdb->atom((*atomList)[j])->xcoor(),
-		   node->pdb->atom((*atomList)[j])->ycoor(),
-		   node->pdb->atom((*atomList)[j])->zcoor() );
-      Velocity vel(0.,0.,0.);
-
-      atomIDs.add((*atomList)[j]);
-      atomPositions.add(pos);
-      atomVelocities.add(vel);
-    }      
-    
-    patchMgr->createHomePatch(i,atomIDs,atomPositions,atomVelocities);
+      DebugM(4,"Assigned " << i << " atoms to patches so far.\n");
+    }
+    int pid = patchMap->assignToPatch(positions[i]);
+    atomIDs[pid].add(i);
+    atomPositions[pid].add(positions[i]);
+    atomVelocities[pid].add(vel);
   }
+
+  delete [] positions;
+
+  for(i=0; i < numPatches; i++)
+  {
+    if ( ! ( i % 100 ) )
+    {
+      DebugM(4,"Created " << i << " patches so far.\n");
+    }
+
+    Position center(0.5*(patchMap->minX(i)+patchMap->maxX(i)),
+		    0.5*(patchMap->minY(i)+patchMap->maxY(i)),
+		    0.5*(patchMap->minZ(i)+patchMap->maxZ(i)));
+
+    for(int j=0; j < atomIDs[i].size(); j++)
+    {
+      atomPositions[i][j] = (lattice.nearest(atomPositions[i][j],center));
+    }
+
+    patchMgr->createHomePatch(i,atomIDs[i],atomPositions[i],atomVelocities[i]);
+  }
+
+  delete [] atomIDs;
+  delete [] atomPositions;
+  delete [] atomVelocities;
 
   // Move patches to the proper node
   for(i=0;i < patchMap->numPatches(); i++)
@@ -182,12 +199,14 @@ void WorkDistrib::mapPatches(void)
 {
   PatchMap *patchMap = PatchMap::Object();
   Node *node = CLocalBranch(Node, group.node);
+  SimParameters *params = node->simParameters;
 
   int xdim, ydim, zdim;
+  int xper, yper, zper;
   int xi, yi, zi, pid;
   int i;
   Vector xmin, xmax;
-  Position sysDim;
+  Vector sysDim;
 
   DebugM(4,"Mapping patches\n");
   node->pdb->find_extremes(&xmin,&xmax);
@@ -200,34 +219,72 @@ void WorkDistrib::mapPatches(void)
   DebugM(4,"xmax.y = " << xmax.y << endl);
   DebugM(4,"xmax.z = " << xmax.z << endl);
 
-  sysDim.x = xmax.x - xmin.x;
-  sysDim.y = xmax.y - xmin.y;
-  sysDim.z = xmax.z - xmin.z;
-  xdim = (int)((float)sysDim.x / patchSize);
-  if ((xdim * patchSize) < sysDim.x)
-    xdim++;
+  if ( params->cellBasisVector1.x )
+  {
+    xper = 1;
+    sysDim.x = params->cellBasisVector1.x;
+    xdim = (int)(sysDim.x / patchSize);
+    if ( xdim < 2 ) xdim = 2;
+  }
+  else
+  {
+    xper = 0;
+    sysDim.x = xmax.x - xmin.x;
+    xdim = (int)((float)sysDim.x / patchSize);
+    if ((xdim * patchSize) < sysDim.x)
+      xdim++;
+    sysDim.x = xdim * patchSize;
+  }
 
-  ydim = (int)((float)sysDim.y / patchSize);
-  if ((ydim * patchSize) < sysDim.y)
-    ydim++;
+  if ( params->cellBasisVector2.y )
+  {
+    yper = 1;
+    sysDim.y = params->cellBasisVector2.y;
+    ydim = (int)(sysDim.y / patchSize);
+    if ( ydim < 2 ) ydim = 2;
+  }
+  else
+  {
+    yper = 0;
+    sysDim.y = xmax.y - xmin.y;
+    ydim = (int)((float)sysDim.y / patchSize);
+    if ((ydim * patchSize) < sysDim.y)
+      ydim++;
+    sysDim.y = ydim * patchSize;
+  }
 
-  zdim = (int)((float)sysDim.z / patchSize);
-  if ((zdim * patchSize) < sysDim.z)
-    zdim++;
+  if ( params->cellBasisVector3.z )
+  {
+    zper = 1;
+    sysDim.z = params->cellBasisVector3.z;
+    zdim = (sysDim.z / patchSize);
+    if ( zdim < 2 ) zdim = 2;
+  }
+  else
+  {
+    zper = 0;
+    sysDim.z = xmax.z - xmin.z;
+    zdim = (int)((float)sysDim.z / patchSize);
+    if ((zdim * patchSize) < sysDim.z)
+      zdim++;
+    sysDim.z = zdim * patchSize;
+  }
 
+  patchMap->setPeriodicity(xper,yper,zper);
   patchMap->allocatePids(xdim, ydim, zdim);
+  patchMap->setGridOriginAndLength(xmin,sysDim);
 
   int assignedNode=0;
   for(i=0; i < patchMap->numPatches(); i++)
   {
     pid=patchMap->requestPid(&xi,&yi,&zi);
     patchMap->storePatch(pid,assignedNode,250, 
-			 (xi*patchSize)+xmin.x,
-			 (yi*patchSize)+xmin.y,
-			 (zi*patchSize)+xmin.z,
-			 (xi*patchSize)+xmin.x+patchSize,
-			 (yi*patchSize)+xmin.y+patchSize,
-			 (zi*patchSize)+xmin.z+patchSize);
+			 ((float)xi/(float)xdim)*sysDim.x+xmin.x,
+			 ((float)yi/(float)ydim)*sysDim.y+xmin.y,
+			 ((float)zi/(float)zdim)*sysDim.z+xmin.z,
+			 ((float)(xi+1)/(float)xdim)*sysDim.x+xmin.x,
+			 ((float)(yi+1)/(float)ydim)*sysDim.y+xmin.y,
+			 ((float)(zi+1)/(float)zdim)*sysDim.z+xmin.z);
     assignedNode++;
     if (node->numNodes()==assignedNode)
       assignedNode=0;
@@ -248,9 +305,15 @@ void WorkDistrib::mapComputes(void)
   // throw in a few extras, in case I forget some.
 
   int numPotentialCids = 
-    patchMap->numPatches() * (124/2+1) + node->numNodes() * 1;
+    patchMap->numPatches() * (124/2+1) + node->numNodes() * 10;
 
   computeMap->allocateCids(numPotentialCids);
+
+  // Handle full electrostatics
+  if ( node->simParameters->fullDirectOn )
+    mapComputeHomePatches(computeFullDirectType);
+  if ( node->simParameters->FMAOn )
+    mapComputeHomePatches(computeDPMTAType);
 
   mapComputeNonbonded();
   mapComputeHomePatches(computeNonbondedExclType);
@@ -300,6 +363,7 @@ void WorkDistrib::mapComputeNonbonded(void)
   ComputeMap *computeMap = ComputeMap::Object();
 
   PatchID oneAway[PatchMap::MaxOneAway];
+  PatchID oneAwayTrans[PatchMap::MaxOneAway];
   PatchID twoAway[PatchMap::MaxTwoAway];
 
   PatchID i;
@@ -315,7 +379,7 @@ void WorkDistrib::mapComputeNonbonded(void)
     patchMap->newCid(i,cid);
 
     // one-away neighbors
-    numNeighbors=patchMap->oneAwayNeighbors(i,oneAway);
+    numNeighbors=patchMap->oneAwayNeighbors(i,oneAway,oneAwayTrans);
     for(j=0;j<numNeighbors;j++)
     {
       if (i < oneAway[j])
@@ -323,7 +387,7 @@ void WorkDistrib::mapComputeNonbonded(void)
 	cid=computeMap->storeCompute(patchMap->node(i),2,
 				     computeNonbondedPairType);
 	computeMap->newPid(cid,i);
-	computeMap->newPid(cid,oneAway[j]);
+	computeMap->newPid(cid,oneAway[j],oneAwayTrans[j]);
 	patchMap->newCid(i,cid);
 	patchMap->newCid(oneAway[j],cid);
       }
@@ -378,12 +442,24 @@ void WorkDistrib::movePatchDone(DoneMsg *msg) {
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:29 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.779  1997/02/06 15:53:32  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.2  1997/02/06 05:00:45  jim
+ * Added creation of full electrostatics objects.
+ *
+ * Revision 1.778.2.1  1997/02/06 02:35:35  jim
+ * Implemented periodic boundary conditions - may not work with
+ * atom migration yet, but doesn't seem to alter calculation,
+ * appears to work correctly when turned on.
+ * NamdState chdir's to same directory as config file in argument.
+ *
  * Revision 1.778  1997/01/28 00:31:29  ari
  * internal release uplevel to 1.778
  *

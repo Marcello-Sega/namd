@@ -16,30 +16,31 @@
 #include "Parameters.h"
 #include "Node.h"
 #include "ReductionMgr.h"
+#include "Lattice.h"
 
 #include "Debug.h"
 
-void AngleElem::addTuplesForAtom
+void AngleElem::loadTuplesForAtom
   (void *voidlist, AtomID atomID, Molecule *molecule)
 {
-      DebugM(1, "::addTuplesForAtom - atomID " << atomID << endl );
+      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
       UniqueSortedArray<AngleElem> &angleList =
                   *( (UniqueSortedArray<AngleElem>*) voidlist );
 
-      DebugM(1, "::addTuplesForAtom - current list size " << angleList.size() << endl );
+      DebugM(1, "::loadTuplesForAtom - current list size " << angleList.size() << endl );
 
       /* get list of all angles for the atom */
       LintList *angles = molecule->get_angles_for_atom(atomID);
-      DebugM(1, "::addTuplesForAtom - atomID " << atomID << endl );
-      DebugM(1, "::addTuplesForAtom - angles->head()" << angles->head() << endl );
+      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
+      DebugM(1, "::loadTuplesForAtom - angles->head()" << angles->head() << endl );
 
       /* cycle through each angle */
       int angleNum = angles->head();
       while(angleNum != LIST_EMPTY)
       {
         /* store angle in the list */
-        DebugM(1, "::addTuplesForAtom - adding angle " << angleNum << endl );
-        angleList.add(AngleElem(molecule->get_angle(angleNum)));
+        DebugM(1, "::loadTuplesForAtom - loading angle " << angleNum << endl );
+        angleList.load(AngleElem(molecule->get_angle(angleNum)));
         angleNum = angles->next();
       }
 }
@@ -55,6 +56,7 @@ void AngleElem::computeForce(BigReal *reduction)
   Force & force1 = p[0]->f[localIndex[0]];
   Force & force2 = p[1]->f[localIndex[1]];
   Force & force3 = p[2]->f[localIndex[2]];
+  const Lattice & lattice = p[0]->p->lattice;
 
   Vector r12, r32, r13;	// vector between atoms 1,2 and 3,2
   BigReal d12, d32, d13;	// distances between atoms
@@ -72,8 +74,8 @@ void AngleElem::computeForce(BigReal *reduction)
   Node::Object()->parameters->get_angle_params(&k,&theta0,&k_ub,&r_ub,angleType);
 
   // compute vectors between atoms and their distances
-  r12 = pos1-pos2;
-  r32 = pos3-pos2;
+  r12 = lattice.delta(pos1,pos2);
+  r32 = lattice.delta(pos3,pos2);
 
   d12 = r12.length();
   d32 = r32.length();
@@ -121,7 +123,7 @@ void AngleElem::computeForce(BigReal *reduction)
   {
 	//  Non-zero k_ub value, so calculate the harmonic
 	//  potential between the 1-3 atoms
-	r13 = pos1-pos3;
+	r13 = lattice.delta(pos1,pos3);
 	d13 = r13.length();
 	diff = d13- r_ub;
 

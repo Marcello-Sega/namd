@@ -21,11 +21,11 @@
 class ComputeNonbondedPair : public ComputePatchPair, ComputeNonbondedUtil {
 
 public:
-  ComputeNonbondedPair(ComputeID c, PatchID pid[]);
+  ComputeNonbondedPair(ComputeID c, PatchID pid[], int trans[]);
   virtual ~ComputeNonbondedPair();
 
 protected :
-  // virtual void mapReady() { ComputePatchPair::mapReady(); }
+  // virtual void initialize() { ComputePatchPair::initialize(); }
   virtual void doForce(Position* p[2], Force* f[2], AtomProperties* a[2]);
 
   ReductionMgr *reduction;
@@ -40,12 +40,28 @@ protected :
  *
  *	$RCSfile: ComputeNonbondedPair.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:23 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.h,v $
+ * Revision 1.779  1997/02/06 15:53:06  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.2  1997/02/06 02:35:20  jim
+ * Implemented periodic boundary conditions - may not work with
+ * atom migration yet, but doesn't seem to alter calculation,
+ * appears to work correctly when turned on.
+ * NamdState chdir's to same directory as config file in argument.
+ *
+ * Revision 1.778.2.1  1997/02/05 22:18:09  ari
+ * Added migration code - Currently the framework is
+ * there with compiling code.  This version does
+ * crash shortly after migration is complete.
+ * Migration appears to complete, but Patches do
+ * not appear to be left in a correct state.
+ *
  * Revision 1.778  1997/01/28 00:30:23  ari
  * internal release uplevel to 1.778
  *

@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.778 1997/01/28 00:30:59 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.779 1997/02/06 15:53:18 ari Exp $";
 
 
 #include "ckdefs.h"
@@ -38,6 +38,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "ComputeMap.h"
 #include "ComputeMgr.h"
 #include "Molecule.h"
+#include "HomePatchList.h"
 #include "AtomMap.h"
 #include "Sequencer.h"
 #include "Controller.h"
@@ -416,12 +417,22 @@ void Node::saveMolDataPointers(Molecule *molecule,
  *
  *	$RCSfile: Node.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:59 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.779  1997/02/06 15:53:18  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.1  1997/02/05 22:18:15  ari
+ * Added migration code - Currently the framework is
+ * there with compiling code.  This version does
+ * crash shortly after migration is complete.
+ * Migration appears to complete, but Patches do
+ * not appear to be left in a correct state.
+ *
  * Revision 1.778  1997/01/28 00:30:59  ari
  * internal release uplevel to 1.778
  *

@@ -11,7 +11,7 @@
 /*								           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.778 1997/01/28 00:31:12 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.779 1997/02/06 15:53:23 ari Exp $";
 
 
 #include "ckdefs.h"
@@ -112,8 +112,7 @@ void PatchMgr::recvMovePatches(MovePatchesMsg *msg) {
       new (MsgIndex(AckMovePatchesMsg)) AckMovePatchesMsg;
     CSendMsgBranch(PatchMgr,ackMovePatches, ackmsg, thisgroup, msg->fromNodeID);
 
-     DebugM(1,"received patch " << msg->pid << " from node "
-		<< msg->fromNodeID << ".\n");
+     DebugM(1,"received patch " << msg->pid << " from node " << msg->fromNodeID << ".\n");
      DebugM(1,"recvMovePatches() - creating patch " << msg->pid << ".\n");
      DebugM(1,"aid.size() = " << msg->aid.size() << "\n");
      DebugM(1,"p.size() = " << msg->p.size() << "\n");
@@ -132,47 +131,25 @@ void PatchMgr::ackMovePatches(AckMovePatchesMsg *msg)
 }
 
 void PatchMgr::recvMigrateAtoms (MigrateAtomsMsg *msg) {
-  DebugM(3, "Received Migration Msg from " << msg->fromNodeID << "\n");
+  DebugM(4, "Received Migration Msg from node " << msg->fromNodeID << "\n");
+  DebugM(4, "         Migration Msg from patch " << msg->srcPatchID << "\n");
+  DebugM(4, "         Migration Msg to patch " << msg->destPatchID << "\n");
   PatchMap::Object()->homePatch(msg->destPatchID)->depositMigration(msg->srcPatchID,
     msg->migrationList);
+  delete msg;
 }
 
-void PatchMgr::migrate(PatchID src, MigrationList m) {
-  DebugM(3, "Received Migration List from " << src 
-	 << " size = " << m.size() << "\n" );
+void PatchMgr::sendMigrationMsg(PatchID src, MigrationInfo m) {
+  DebugM(3, "Received Migration List from " << src << " size = " << m->size() << "\n" );
   
-  int i,j,k;
-
-  MigrationList *mList[3][3][3], *mCur;
-  PatchID pid[3][3][3];
-  NodeID  nid[3][3][3];
-  PatchMap *p = PatchMap::Object();
-
-  for (i=0; i<3; i++)
-    for (j=0; j<3; j++)
-      for (k=0; k<3; k++)
-	mList[i][j][k] = NULL;
-
-  MigrationListIter mi(m);
-  for (mi = mi.begin(); mi != mi.end(); mi++) {
-    if ( (mCur = mList[mi->xdev+1][mi->ydev+1][mi->zdev+1]) == NULL) {
-      mCur = mList[mi->xdev+1][mi->ydev+1][mi->zdev+1] = new MigrationList;
-      int pidtmp = pid[mi->xdev+1][mi->ydev+1][mi->zdev+1] = 
-	p->pid(p->xIndex(src)+mi->xdev,
-	       p->yIndex(src)+mi->ydev,
-	       p->zIndex(src)+mi->zdev);
-      nid[mi->xdev+1][mi->ydev+1][mi->zdev+1] = 
-	p->node( pidtmp );
-    }
-    mCur->add(*mi);
+  MigrateAtomsMsg *msg = new (MsgIndex(MigrateAtomsMsg)) 
+     MigrateAtomsMsg(src,m.destPatchID,m.mList);
+  if (m.mList) {
+    DebugM(4,"Sending "<<m.destPatchID<<" from "<<src<<"size="<<(*m.mList).size()<<"\n" );
+  } else {
+    DebugM(4,"Sending "<<m.destPatchID<<" from "<<src<<" nothing\n");
   }
-  for (i=0; i<3; i++)
-    for (j=0; j<3; j++)
-      for (k=0; k<3; k++) {
-	MigrateAtomsMsg *msg = new (MsgIndex(MigrateAtomsMsg)) 
-		 MigrateAtomsMsg(src,pid[i][j][k],mList[i][j][k]);
-	CSendMsgBranch(PatchMgr,recvMigrateAtoms,msg,thisgroup,nid[i][j][k]);
-      }
+  CSendMsgBranch(PatchMgr,recvMigrateAtoms,msg,thisgroup,m.destNodeID);
 }
 
 void * MovePatchesMsg::pack (int *length)
@@ -222,12 +199,12 @@ void MovePatchesMsg::unpack (void *in)
 
 void * MigrateAtomsMsg::pack (int *length) {
     if (migrationList != NULL) {
-      DebugM(1,"MigrateAtomsMsg::pack() - migrationList->size() = " 
-	        << migrationList->size() << endl);
+      DebugM(4,"MigrateAtomsMsg::pack() - migrationList->size() = " << migrationList->size() << "\n" );
       *length = sizeof(NodeID) + sizeof(PatchID) + sizeof(PatchID)
 	      + sizeof(int) + migrationList->size() * sizeof(MigrationElem);
     } else {
-      *length = sizeof(NodeID) + sizeof(PatchID)
+      DebugM(4,"MigrateAtomsMsg::pack() NULL message\n" );
+      *length = sizeof(NodeID) + sizeof(PatchID) + sizeof(PatchID)
 	      +	sizeof(int);
     }
     char *buffer = (char*)new_packbuffer(this,*length);
@@ -242,7 +219,7 @@ void * MigrateAtomsMsg::pack (int *length) {
       {
 	*((MigrationElem*)b) = (*migrationList)[i]; b += sizeof(MigrationElem);
       }
-    } 
+    }
     else {
       *((int*)b) = 0; b += sizeof(int);
     }
@@ -258,7 +235,10 @@ void MigrateAtomsMsg::unpack (void *in) {
   srcPatchID = *((PatchID*)b); b += sizeof(PatchID);
   destPatchID = *((PatchID*)b); b += sizeof(PatchID);
   int size = *((int*)b); b += sizeof(int);
-  DebugM(1,"MigrateAtomsMsg::unpack() - size = " << size << endl);
+  DebugM(4,"MigrateAtomsMsg::unpack() - from node = " << fromNodeID << endl);
+  DebugM(4,"MigrateAtomsMsg::unpack() - from patch = " << srcPatchID << endl);
+  DebugM(4,"MigrateAtomsMsg::unpack() - to patch = " << destPatchID << endl);
+  DebugM(4,"MigrateAtomsMsg::unpack() - size = " << size << endl);
   if (size != 0) {
     migrationList = new MigrationList();
     migrationList->resize(size);
@@ -270,7 +250,7 @@ void MigrateAtomsMsg::unpack (void *in) {
   else {
     migrationList = NULL;
   }
-}  
+}
 
 
 #include "PatchMgr.bot.h"
@@ -280,11 +260,21 @@ void MigrateAtomsMsg::unpack (void *in) {
  *
  *	$RCSfile: PatchMgr.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:12 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:23 $
  *
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.C,v $
+ * Revision 1.779  1997/02/06 15:53:23  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.1  1997/02/05 22:18:20  ari
+ * Added migration code - Currently the framework is
+ * there with compiling code.  This version does
+ * crash shortly after migration is complete.
+ * Migration appears to complete, but Patches do
+ * not appear to be left in a correct state.
+ *
  * Revision 1.778  1997/01/28 00:31:12  ari
  * internal release uplevel to 1.778
  *

@@ -40,7 +40,7 @@ void Compute::enqueueWork() {
 // have checked-in, we are ready to enqueueWork()
 void Compute::patchReady(PatchID patchID, int doneMigration) { 
   if (doneMigration) { // If any patch has done migration - we must remap
-    doMapReady = 1; 
+    doAtomUpdate = 1; 
   }
 
   if (numPatches <= 0) {
@@ -50,9 +50,9 @@ void Compute::patchReady(PatchID patchID, int doneMigration) {
     if (! --patchReadyCounter) {
       patchReadyCounter = numPatches;
       DebugM(3,"Compute::patchReady() - enqueue()!\n");
-      if (doMapReady) {
-	mapReady();
-	doMapReady = 0;
+      if (doAtomUpdate) {
+	atomUpdate();
+	doAtomUpdate = false;
       }
       enqueueWork();
     }
@@ -72,12 +72,22 @@ void Compute::doWork() {
  *
  *	$RCSfile: Compute.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:29:59 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:52:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.C,v $
+ * Revision 1.779  1997/02/06 15:52:48  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.1  1997/02/05 22:17:54  ari
+ * Added migration code - Currently the framework is
+ * there with compiling code.  This version does
+ * crash shortly after migration is complete.
+ * Migration appears to complete, but Patches do
+ * not appear to be left in a correct state.
+ *
  * Revision 1.778  1997/01/28 00:29:59  ari
  * internal release uplevel to 1.778
  *

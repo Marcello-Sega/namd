@@ -33,7 +33,7 @@ class Compute {
 private:
   int patchReadyCounter;
   int numPatches;
-  int doMapReady;
+  int doAtomUpdate;
 
 protected:
   static Node* node;
@@ -46,7 +46,7 @@ public:
   const ComputeID cid;
 
   Compute(ComputeID c) : cid(c) { 
-    doMapReady = 0;
+    doAtomUpdate = false;
     computeMap = ComputeMap::Object(); 
   }
   virtual ~Compute() {}
@@ -56,7 +56,8 @@ public:
   void setNumPatches(int n) { patchReadyCounter = numPatches = n; }
   int getNumPatches() { return (numPatches); };
 
-  virtual void mapReady() {};
+  virtual void initialize() {};
+  virtual void atomUpdate() {};
   // virtual void patchReady(void);
   virtual void patchReady(PatchID pid) { if (pid > -1) patchReady(pid,0); }
   virtual void patchReady(PatchID, int);
@@ -69,12 +70,22 @@ public:
  *
  *	$RCSfile: Compute.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:00 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:52:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.h,v $
+ * Revision 1.779  1997/02/06 15:52:48  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.1  1997/02/05 22:17:55  ari
+ * Added migration code - Currently the framework is
+ * there with compiling code.  This version does
+ * crash shortly after migration is complete.
+ * Migration appears to complete, but Patches do
+ * not appear to be left in a correct state.
+ *
  * Revision 1.778  1997/01/28 00:30:00  ari
  * internal release uplevel to 1.778
  *

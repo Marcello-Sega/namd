@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: Molecule.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.779 $	$Date: 1997/01/30 18:42:46 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.780 $	$Date: 1997/02/06 15:53:15 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,9 +24,17 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
- * Revision 1.779  1997/01/30 18:42:46  nealk
- * Corrected segmentation fault with er-gre.  langForceVals was not initialized
- * to NULL during instantiation.
+ * Revision 1.780  1997/02/06 15:53:15  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.2  1997/02/06 02:35:25  jim
+ * Implemented periodic boundary conditions - may not work with
+ * atom migration yet, but doesn't seem to alter calculation,
+ * appears to work correctly when turned on.
+ * NamdState chdir's to same directory as config file in argument.
+ *
+ * Revision 1.778.2.1  1997/01/31 15:32:47  nealk
+ * Corrected unititialized langForceVals which cause er-gre to core dump.
  *
  * Revision 1.778  1997/01/28 00:30:53  ari
  * internal release uplevel to 1.778
@@ -145,7 +153,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.779 1997/01/30 18:42:46 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.780 1997/02/06 15:53:15 ari Exp $";
 
 #include "Molecule.h"
 #include <stdio.h>
@@ -161,6 +169,9 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,
 #include "PDB.h"
 #include "SimParameters.h"
 
+#define MIN_DEBUG_LEVEL 3
+#define DEBUGM
+#include "Debug.h"
 
 /************************************************************************/
 /*									*/
@@ -2205,6 +2216,8 @@ void Molecule::build_lists_by_atom()
    {
       NAMD_die("memory allocation failed in Molecule::build_lists_by_atom");
    }
+
+   DebugM(3,"Building bond lists.\n");
       
    //  Build the bond lists
    for (i=0; i<numBonds; i++)
@@ -2213,6 +2226,8 @@ void Molecule::build_lists_by_atom()
       bondsByAtom[bonds[i].atom2].add(i);
    }
    
+   DebugM(3,"Building angle lists.\n");
+      
    //  Build the angle lists
    for (i=0; i<numAngles; i++)
    {  
@@ -2221,6 +2236,8 @@ void Molecule::build_lists_by_atom()
       anglesByAtom[angles[i].atom3].add(i);
    }
    
+   DebugM(3,"Building improper lists.\n");
+      
    //  Build the improper lists
    for (i=0; i<numImpropers; i++)
    {
@@ -2230,6 +2247,8 @@ void Molecule::build_lists_by_atom()
       impropersByAtom[impropers[i].atom4].add(i);
    }
    
+   DebugM(3,"Building dihedral lists.\n");
+      
    //  Build the dihedral lists
    for (i=0; i<numDihedrals; i++)
    {
@@ -2239,12 +2258,16 @@ void Molecule::build_lists_by_atom()
       dihedralsByAtom[dihedrals[i].atom4].add(i);
    }
    
+   DebugM(3,"Building exclusion data.\n");
+      
    //  Build the arrays of exclusions for each atom
    build_exclusions();
 
    if (exclusions != NULL)
    	delete [] exclusions;
 
+   DebugM(3,"Building exclusion lists.\n");
+      
    int numTotalExclusions = exclusionList.size();
    exclusions = exclusionList.unencap();
    for (i=0; i<numTotalExclusions; i++)

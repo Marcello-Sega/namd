@@ -18,8 +18,8 @@
 #define DEBUGM
 #include "Debug.h"
 
-ComputeNonbondedPair::ComputeNonbondedPair(ComputeID c, PatchID pid[])
-  : ComputePatchPair(c,pid)
+ComputeNonbondedPair::ComputeNonbondedPair(ComputeID c, PatchID pid[], int trans[])
+  : ComputePatchPair(c,pid,trans)
 {
   reduction = ReductionMgr::Object();
   registerReductionData(reduction);
@@ -78,12 +78,21 @@ void ComputeNonbondedPair::doForce(Position* p[2],
  *
  *	$RCSfile: ComputeNonbondedPair.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:22 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.C,v $
+ * Revision 1.779  1997/02/06 15:53:05  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.1  1997/02/06 02:35:19  jim
+ * Implemented periodic boundary conditions - may not work with
+ * atom migration yet, but doesn't seem to alter calculation,
+ * appears to work correctly when turned on.
+ * NamdState chdir's to same directory as config file in argument.
+ *
  * Revision 1.778  1997/01/28 00:30:22  ari
  * internal release uplevel to 1.778
  *

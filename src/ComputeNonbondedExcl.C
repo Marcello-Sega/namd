@@ -19,27 +19,27 @@
 #undef DEBUGM
 #include "Debug.h"
 
-void NonbondedExclElem::addTuplesForAtom
+void NonbondedExclElem::loadTuplesForAtom
   (void *voidlist, AtomID atomID, Molecule *molecule)
 {
-      DebugM(1, "::addTuplesForAtom - atomID " << atomID << endl );
+      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
       UniqueSortedArray<NonbondedExclElem> &exclList =
                   *( (UniqueSortedArray<NonbondedExclElem>*) voidlist );
 
-      DebugM(1, "::addTuplesForAtom - current list size " << exclList.size() << endl );
+      DebugM(1, "::loadTuplesForAtom - current list size " << exclList.size() << endl );
 
       /* get list of all bonds for the atom */
       LintList *excls = molecule->get_exclusions_for_atom(atomID);
-      DebugM(1, "::addTuplesForAtom - atomID " << atomID << endl );
-      DebugM(1, "::addTuplesForAtom - excls->head()" << excls->head() << endl );
+      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
+      DebugM(1, "::loadTuplesForAtom - excls->head()" << excls->head() << endl );
 
       /* cycle through each exclusion */
       int exclNum = excls->head();
       while(exclNum != LIST_EMPTY)
       {
         /* store exclusion in the list */
-        DebugM(1, "::addTuplesForAtom - adding excl " << exclNum << endl );
-        exclList.add(NonbondedExclElem(molecule->get_exclusion(exclNum)));
+        DebugM(1, "::loadTuplesForAtom - adding excl " << exclNum << endl );
+        exclList.load(NonbondedExclElem(molecule->get_exclusion(exclNum)));
         exclNum = excls->next();
       }
 }

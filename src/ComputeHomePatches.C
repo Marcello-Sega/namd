@@ -16,6 +16,7 @@
 #include "PatchMap.h"
 #include "ComputeHomePatches.h"
 #include "PatchMgr.h"
+#include "HomePatchList.h"
 #include "Molecule.h"
 #include "ReductionMgr.h"
 #define MIN_DEBUG_LEVEL 3
@@ -33,7 +34,7 @@ ComputeHomePatches::~ComputeHomePatches()
   ;
 }
 
-void ComputeHomePatches::mapReady()
+void ComputeHomePatches::initialize()
 {
   HomePatchList *a = patchMap->homePatchList();
   ResizeArrayIter<HomePatchElem> ai(*a);
@@ -45,5 +46,10 @@ void ComputeHomePatches::mapReady()
   }
 
   setNumPatches(patchList.size());
+}
+
+void ComputeHomePatches::atomUpdate()
+{
+  Compute::atomUpdate();
 }
 

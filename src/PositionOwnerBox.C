@@ -7,6 +7,10 @@
 #include "c++interface.h"
 #include "Lattice.h"
 
+#define MIN_DEBUG_LEVEL 4
+#define DEBUGM
+#include "Debug.h"
+
 template <class Owner>
 PositionOwnerBox<Owner>::PositionOwnerBox(Owner *o, void (Owner::*fn)() ) : 
     owner(o), callback(fn), numberUsers(0), 
@@ -34,6 +38,15 @@ void PositionOwnerBox<Owner>::open(Position* d, int n, Lattice *l) {
       lattice = l;
       for ( int i = 0; i < 27; ++i )
 	if ( transNeeded[i] ) transData[i] = lattice->create(d,n,i);
+      DebugM(2,transNeeded[0]<<","<<transNeeded[1]<<","<<transNeeded[2]<<","
+	<<transNeeded[3]<<","<<transNeeded[4]<<","<<transNeeded[5]<<","
+	<<transNeeded[6]<<","<<transNeeded[7]<<","<<transNeeded[8]<<","
+	<<transNeeded[9]<<","<<transNeeded[10]<<","<<transNeeded[11]<<","
+	<<transNeeded[12]<<","<<transNeeded[13]<<","<<transNeeded[14]<<","
+	<<transNeeded[15]<<","<<transNeeded[16]<<","<<transNeeded[17]<<","
+	<<transNeeded[18]<<","<<transNeeded[19]<<","<<transNeeded[20]<<","
+	<<transNeeded[21]<<","<<transNeeded[22]<<","<<transNeeded[23]<<","
+	<<transNeeded[24]<<","<<transNeeded[25]<<","<<transNeeded[26]<<"\n");
   }
 
 template <class Owner>

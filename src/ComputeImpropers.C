@@ -16,30 +16,31 @@
 #include "Parameters.h"
 #include "Node.h"
 #include "ReductionMgr.h"
+#include "Lattice.h"
 
 #include "Debug.h"
 
-void ImproperElem::addTuplesForAtom
+void ImproperElem::loadTuplesForAtom
   (void *voidlist, AtomID atomID, Molecule *molecule)
 {
-      DebugM(1, "::addTuplesForAtom - atomID " << atomID << endl );
+      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
       UniqueSortedArray<ImproperElem> &improperList =
                   *( (UniqueSortedArray<ImproperElem>*) voidlist );
 
-      DebugM(1, "::addTuplesForAtom - current list size " << improperList.size() << endl );
+      DebugM(1, "::loadTuplesForAtom - current list size " << improperList.size() << endl );
 
       /* get list of all impropers for the atom */
       LintList *impropers = molecule->get_impropers_for_atom(atomID);
-      DebugM(1, "::addTuplesForAtom - atomID " << atomID << endl );
-      DebugM(1, "::addTuplesForAtom - impropers->head()" << impropers->head() << endl );
+      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
+      DebugM(1, "::loadTuplesForAtom - impropers->head()" << impropers->head() << endl );
 
       /* cycle through each improper */
       int improperNum = impropers->head();
       while(improperNum != LIST_EMPTY)
       {
         /* store improper in the list */
-        DebugM(1, "::addTuplesForAtom - adding improper " << improperNum << endl );
-        improperList.add(ImproperElem(molecule->get_improper(improperNum)));
+        DebugM(1, "::loadTuplesForAtom - loading improper " << improperNum << endl );
+        improperList.load(ImproperElem(molecule->get_improper(improperNum)));
         improperNum = impropers->next();
       }
 }
@@ -77,9 +78,10 @@ void ImproperElem::computeForce(BigReal *reduction)
   const Position & pos1 = p[1]->x[localIndex[1]];
   const Position & pos2 = p[2]->x[localIndex[2]];
   const Position & pos3 = p[3]->x[localIndex[3]];
-  r12 = pos0-pos1;
-  r23 = pos1-pos2;
-  r34 = pos2-pos3;
+  const Lattice & lattice = p[0]->p->lattice;
+  r12 = lattice.delta(pos0,pos1);
+  r23 = lattice.delta(pos1,pos2);
+  r34 = lattice.delta(pos2,pos3);
 
   //  Calculate the cross products
   A = cross(r12,r23);

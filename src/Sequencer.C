@@ -18,7 +18,7 @@
 #include "ReductionMgr.h"
 #include "CollectionMgr.h"
 
-#define MIN_DEBUG_LEVEL 4
+#define MIN_DEBUG_LEVEL 5
 #define DEBUGM
 #include "Debug.h"
 
@@ -45,7 +45,7 @@ void Sequencer::run(int numberOfCycles)
 {
     stepsPerCycle = simParams->stepsPerCycle;
     if ( numberOfCycles ) this->numberOfCycles = numberOfCycles;
-    else this->numberOfCycles = simParams->N / stepsPerCycle;
+    else this->numberOfCycles = simParams->N; // / stepsPerCycle;
     thread = CthCreate((CthVoidFn)&(threadRun),(void*)(this),0);
     CthSetStrategyDefault(thread);
     CthAwaken(thread);
@@ -60,26 +60,27 @@ void Sequencer::algorithm(void)
     int seq = 0;
     patch->positionsReady();
     suspend();
-    DebugM(1,"Submit seq=" << seq << " Patch=" << patch->getPatchID() << "\n");
+    DebugM(4,"Submit seq=" << seq << " Patch=" << patch->getPatchID() << "\n");
     reduction->submit(seq,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
     // collection->submitPositions(seq,patch->atomIDList,patch->p);
     ++seq;
-    for ( cycle = 0; cycle < numberOfCycles; ++cycle )
+    for ( step = 0; step < numberOfCycles; ++step )
     {
-	DebugM(1,"Cycle #" << cycle << "\n");
-        for ( step = 0; step < stepsPerCycle; ++step )
-        {
+	// DebugM(4,"Cycle #" << cycle << "\n");
+        // for ( step = 0; step < stepsPerCycle; ++step )
+        // {
             patch->addForceToMomentum(0.5*timestep);
             patch->addVelocityToPosition(timestep);
-	    DebugM(3, patch->getPatchID()
+	    DebugM(4, patch->getPatchID()
 		<< ": (" << cycle << "," << step << ") "
 		<< "Sending positionsReady().\n");
-            patch->positionsReady();
-	    DebugM(2, patch->getPatchID()
+            // patch->positionsReady(!(step%stepsPerCycle));
+            patch->positionsReady(0);
+	    DebugM(4, patch->getPatchID()
 		<< ": (" << cycle << "," << step << ") "
 		<< "Suspending.\n");
             suspend();
-	    DebugM(2, patch->getPatchID()
+	    DebugM(4, patch->getPatchID()
 		<< ": (" << cycle << "," << step << ") "
 		<< "Awakened!\n");
             patch->addForceToMomentum(0.5*timestep);
@@ -88,7 +89,7 @@ void Sequencer::algorithm(void)
 		patch->calcKineticEnergy());
 	    // collection->submitPositions(seq,patch->atomIDList,patch->p);
 	    ++seq;
-        }
+        // }
     }
     DebugM(4, patch->getPatchID() << ": Exiting.\n");
     terminate();

@@ -17,6 +17,7 @@
 #include "AtomMap.h"
 #include "ComputeHomeTuples.h"
 #include "PatchMgr.h"
+#include "HomePatchList.h"
 #include "Molecule.h"
 #include "ReductionMgr.h"
 #define MIN_DEBUG_LEVEL 3
@@ -44,20 +45,25 @@ ComputeHomeTuples<T>::~ComputeHomeTuples()
   T::unregisterReductionData(reduction);
 }
 
+
+//===========================================================================
+// initialize() - Method is invoked only the first time
+// atom maps, patchmaps etc are ready and we are about to start computations
+//===========================================================================
 template <class T>
-void ComputeHomeTuples<T>::mapReady() {
+void ComputeHomeTuples<T>::initialize() {
 
   // Gather all patches
-  DebugM(1, "ComputeHomeTuples::mapReady() - Starting Up" << endl );
+  DebugM(4, "ComputeHomeTuples::initialize() - Starting Up" << endl );
   HomePatchList *a = patchMap->homePatchList();
   ResizeArrayIter<HomePatchElem> ai(*a);
 
   tuplePatchList.resize(0);
-  DebugM(1, "ComputeHomeTuples::mapReady() - Size of the tuplePatchList " << tuplePatchList.size() << endl );
+  DebugM(1, "ComputeHomeTuples::initialize() - Size of the tuplePatchList " << tuplePatchList.size() << endl );
 
   for ( ai = ai.begin(); ai != ai.end(); ai++ ) {
     tuplePatchList.add(TuplePatchElem((*ai).p, HOME, cid));
-    DebugM( 1, "ComputeHomeTuples::mapReady() - adding Patch " << (*ai).p->getPatchID() << " to list" << endl );
+    DebugM( 1, "ComputeHomeTuples::initialize() - adding Patch " << (*ai).p->getPatchID() << " to list" << endl );
   }
 
   // Gather all proxy patches (neighbors, that is)
@@ -73,10 +79,10 @@ void ComputeHomeTuples<T>::mapReady() {
 	   ! tuplePatchList.find(TuplePatchElem(neighbors[i])) )
       {
         Patch *patch = patchMap->patch(neighbors[i]);
-	DebugM( 1, "ComputeHomeTuples::mapReady() - adding (Proxy)Patch " <<
+	DebugM( 1, "ComputeHomeTuples::initialize() - adding (Proxy)Patch " <<
 		patch->getPatchID() << " to list" << endl );
 	tuplePatchList.add(TuplePatchElem(patch, PROXY, cid));
-	DebugM( 1, "ComputeHomeTuples::mapReady() - tuplePatchList now has " <<
+	DebugM( 1, "ComputeHomeTuples::initialize() - tuplePatchList now has " <<
 		tuplePatchList.size() << " elements" << endl );
 	if (patch->getNumAtoms() > maxProxyAtoms) {
 	  maxProxyAtoms = patch->getNumAtoms();
@@ -89,42 +95,73 @@ void ComputeHomeTuples<T>::mapReady() {
 
   dummy = new Force[maxProxyAtoms];
 
-  /* cycle through each home patch */
-  DebugM(1, "ComputeHomeTuples::mapReady() - iterating over home patches to get tuples" << endl);
+  loadTuples();
+
+}
+
+//===========================================================================
+// atomUpdate() - Method is invoked after anytime that atoms have been
+// changed in patches used by this Compute object.
+//===========================================================================
+template <class T>
+void ComputeHomeTuples<T>::atomUpdate() {
+  sizeDummy();
+  loadTuples();
+}
+
+template <class T>
+void ComputeHomeTuples<T>::loadTuples() {
+  // cycle through each home patch and gather all tuples
+  HomePatchList *a = patchMap->homePatchList();
+  ResizeArrayIter<HomePatchElem> ai(*a);
+
   for ( ai = ai.begin(); ai != ai.end(); ai++ )
   {
     Patch *p = (*ai).p;
-    DebugM(1, "ComputeHomeTuples::mapReady() - looking at patch " <<
-	p->getPatchID() << " with " << p->getNumAtoms() << " atoms" << endl );
     AtomIDList atomID = p->getAtomIDList();
-    DebugM(1, "ComputeHomeTuples::mapReady() - confirm patch " <<
-	p->getPatchID() << " with " << atomID.size() << " atoms" << endl );
 
-    /* cycle through each atom in the patch */
-
+    // cycle through each atom in the patch and load up tuples
     for (int i=0; i < p->getNumAtoms(); i++)
     {
-      T::addTuplesForAtom((void*)&tupleList,atomID[i],node->molecule);
+      T::loadTuplesForAtom((void*)&tupleList,atomID[i],node->molecule);
     }
-    DebugM(1, "ComputeHomeTuples::mapReady() - tupleList size = " << tupleList.size() << endl );
   }
-  DebugM(1, "ComputeHomeTuples::mapReady() - iterated over home patches to get tuples" << endl);
+  tupleList.sort();
+  tupleList.uniq();
 
   // Resolve all atoms in tupleList to correct PatchList element and index
   ResizeArrayIter<T> al(tupleList);
 
   for (al = al.begin(); al != al.end(); al++ ) {
     for (int i=0; i < T::size; i++) {
-	LocalID aid = atomMap->localID((*al).atomID[i]);
-	(*al).p[i] = tuplePatchList.find(TuplePatchElem(aid.pid));
-	if ( ! (*al).p[i] )
+	LocalID aid = atomMap->localID(al->atomID[i]);
+	al->p[i] = tuplePatchList.find(TuplePatchElem(aid.pid));
+	if ( ! (al->p)[i] )
 	{
-	  iout << iERROR << "ComputeHomeTuples couldn't find patch " << aid.pid << " for atom " << (*al).atomID[i] << ", aborting.\n" << endi;
+	  iout << iERROR << "ComputeHomeTuples couldn't find patch " 
+	    << aid.pid << " for atom " << al->atomID[i] 
+	    << ", aborting.\n" << endi;
 	  Namd::die();
 	}
-	(*al).localIndex[i] = aid.index;
+	al->localIndex[i] = aid.index;
     }
   }
+}
+
+
+template <class T>
+void ComputeHomeTuples<T>::sizeDummy() {
+  delete[] dummy;
+  maxProxyAtoms = 0;
+
+  // find size of largest patch on tuplePatchList, setup dummy force array
+  ResizeArrayIter<TuplePatchElem> tpi;
+  for ( tpi = tpi.begin(); tpi != tpi.end(); tpi++ ) {
+    if (tpi->p->getNumAtoms() > maxProxyAtoms) {
+      maxProxyAtoms = tpi->p->getNumAtoms();
+    }
+  }
+  dummy = new Force[maxProxyAtoms];
 }
 
 

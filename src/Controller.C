@@ -54,7 +54,7 @@ void Controller::run(int numberOfCycles)
 {
     stepsPerCycle = simParams->stepsPerCycle;
     if ( numberOfCycles ) this->numberOfCycles = numberOfCycles;
-    else this->numberOfCycles = simParams->N / stepsPerCycle;
+    else this->numberOfCycles = simParams->N; // / stepsPerCycle;
     thread = CthCreate((CthVoidFn)&(threadRun),(void*)(this),0);
     CthSetStrategyDefault(thread);
     CthAwaken(thread);
@@ -97,8 +97,8 @@ void Controller::algorithm(void)
     ++seq;
     for ( cycle = 0; cycle < numberOfCycles; ++cycle )
     {
-        for ( step = 0; step < stepsPerCycle; ++step )
-        {
+        // for ( step = 0; step < stepsPerCycle; ++step )
+        // {
     reduction->require(seq, REDUCTION_BOND_ENERGY, bondEnergy);
     reduction->require(seq, REDUCTION_ANGLE_ENERGY, angleEnergy);
     reduction->require(seq, REDUCTION_DIHEDRAL_ENERGY, dihedralEnergy);
@@ -118,7 +118,7 @@ void Controller::algorithm(void)
 	"kinetic: " << kineticEnergy << ", " << 
 	"total: " << totalEnergy << " }\n" << endi;
     ++seq;
-        }
+        // }
     }
     DebugM(4, "Controller: Exiting.\n");
     terminate();

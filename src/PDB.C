@@ -11,7 +11,7 @@
  *
  *	$RCSfile: PDB.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:01 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:18 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,15 @@
  * REVISION HISTORY:
  *
  * $Log: PDB.C,v $
+ * Revision 1.779  1997/02/06 15:53:18  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.1  1997/02/06 02:35:27  jim
+ * Implemented periodic boundary conditions - may not work with
+ * atom migration yet, but doesn't seem to alter calculation,
+ * appears to work correctly when turned on.
+ * NamdState chdir's to same directory as config file in argument.
+ *
  * Revision 1.778  1997/01/28 00:31:01  ari
  * internal release uplevel to 1.778
  *
@@ -80,7 +89,7 @@
  * Initial revision
  * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PDB.C,v 1.778 1997/01/28 00:31:01 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PDB.C,v 1.779 1997/02/06 15:53:18 ari Exp $";
 
 #include <stdio.h>
 #include <strings.h>
@@ -311,7 +320,7 @@ IntList *PDB::find_atom( const char *name, const char *residue, int reseq,
 //  in general, an atom at coordinate x is in the region 
 //  [x1, x2) iff x1<=x<x2
 IntList *PDB::find_atoms_in_region( Real x1, Real y1, Real z1,
-                              Real x2, Real y2, Real z2 )
+                              Real x2, Real y2, Real z2, Lattice lat )
 {
   IntList *ilist = new IntList;
   if ( ilist == NULL )
@@ -319,15 +328,18 @@ IntList *PDB::find_atoms_in_region( Real x1, Real y1, Real z1,
     NAMD_die("memory allocation failed in PDB::find_atoms_in_region");
   }
   PDBAtomPtr *atomptr;
-  Real swaptmp, tmpcoor;
+  Real swaptmp;
   if (x1>x2) { swaptmp=x2; x2=x1; x1=swaptmp; }  // insure x1<x2
   if (y1>y2) { swaptmp=y2; y2=y1; y1=swaptmp; }  // make y1<y2
   if (z1>z2) { swaptmp=z2; z2=z1; z1=swaptmp; }  // ditto for z2 and z2
   int i;
+  Vector center(0.5*(x1+x2),0.5*(y1+y2),0.5*(z1+z2));
   for (i=0, atomptr=atomArray; i<atomCount; atomptr++, i++) {
-    if ( x1 <= (tmpcoor = (*atomptr) -> xcoor()) && tmpcoor < x2 &&
-         y1 <= (tmpcoor = (*atomptr) -> ycoor()) && tmpcoor < y2 &&
-         z1 <= (tmpcoor = (*atomptr) -> zcoor()) && tmpcoor < z2     ) {
+    Vector atom((*atomptr)->xcoor(),(*atomptr)->ycoor(),(*atomptr)->zcoor());
+    atom = lat.nearest(atom,center);
+    if ( x1 <= atom.x && atom.x < x2 &&
+         y1 <= atom.y && atom.y < y2 &&
+         z1 <= atom.z && atom.z < z2     ) {
       ilist -> add(i);
     }
   }

@@ -12,7 +12,7 @@
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:27 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:31 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -21,6 +21,13 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.779  1997/02/06 15:53:31  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.1  1997/01/28 17:28:52  jim
+ * First top-down changes for periodic boundary conditions, added now to
+ * avoid conflicts with Ari's migration system.
+ *
  * Revision 1.778  1997/01/28 00:31:27  ari
  * internal release uplevel to 1.778
  *
@@ -206,6 +213,7 @@
 #include "common.h"
 #include "Communicate.h"
 #include "Vector.h"
+#include "Lattice.h"
 
 //  The class SimParameters is really just a glorified structure used to
 //  maintain the global simulation parameters.  The only functions
@@ -264,6 +272,13 @@ public:
 	BigReal dt;	   		//  Timestep size
 	int N;		   		//  Number of steps to be performed
 	int stepsPerCycle;		//  Number of timesteps per cycle
+
+	Vector cellBasisVector1;	//  Basis vector for periodic cell
+	Vector cellBasisVector2;	//  Basis vector for periodic cell
+	Vector cellBasisVector3;	//  Basis vector for periodic cell
+	Lattice lattice;		//  All data for periodic cell
+	
+
 	int fmaFrequency;		//  Number of timesteps between
 					//  FMA execution
         BigReal fmaTheta;	        //  DPMTA theta value

@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.778 1997/01/28 00:31:19 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.779 1997/02/06 15:53:27 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -89,7 +89,7 @@ void ProxyPatch::receiveAll(ProxyAllMsg *msg)
     return;
   }
   msgAllBuffer = NULL;
-  DebugM(3,"Processing proxy ALL msg.\n");
+  DebugM(4,"Processing proxy ALL msg.\n");
 
   loadAtoms(msg->atomIDList);
   AtomMap::Object()->registerIDs(patchID,msg->atomIDList);
@@ -114,12 +114,22 @@ void ProxyPatch::sendResults(void)
  *
  *	$RCSfile: ProxyPatch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:19 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.779  1997/02/06 15:53:27  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.1  1997/02/05 22:18:22  ari
+ * Added migration code - Currently the framework is
+ * there with compiling code.  This version does
+ * crash shortly after migration is complete.
+ * Migration appears to complete, but Patches do
+ * not appear to be left in a correct state.
+ *
  * Revision 1.778  1997/01/28 00:31:19  ari
  * internal release uplevel to 1.778
  *

@@ -28,7 +28,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.780 1997/01/28 18:11:05 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.781 1997/02/06 15:53:27 ari Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -40,11 +40,14 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMg
 #include "InfoStream.h"
 #include "PatchMap.h"	// for patchMap
 
+// determine whether PANIC sequence checking is performed (debugging)
+#define PANIC 0
 #include "ReductionMgr.top.h"
 #include "ReductionMgr.h"
 
 // #define DEBUGM
 #define MIN_DEBUG_LEVEL 4
+#define STDERR_LEVEL 7
 #include "Debug.h"
 
 // *************************** for Charm messages
@@ -96,7 +99,7 @@ ReductionMgr::ReductionMgr(InitMsg *msg)
 
       // node 0 does not submit to node 0 (but every other Pe does)
       int num = CNumPes()-1;
-      maxEvent += (num*REDUCTION_MAX_RESERVED);	// num events (submit)
+      maxEvents += (num*REDUCTION_MAX_RESERVED); // num events (submit)
 
       DebugM(1,"Initializing with a minimum of " << num << " data.\n");
       for(int i=0; i<REDUCTION_MAX_RESERVED; i++)
@@ -107,6 +110,7 @@ ReductionMgr::ReductionMgr(InitMsg *msg)
     }
     else
     {
+      maxEvents = 0;
       for(int i=0; i<REDUCTION_MAX_RESERVED; i++)
       {
     	numSubscribed[i] = 0;
@@ -168,16 +172,18 @@ ReductionMgrData *ReductionMgr::createdata()
   ReductionMgrData *data;
   data = new ReductionMgrData;
   data->sequenceNum = nextSequence;
+  data->next = NULL;
+  data->numEvents = 0;
   #if PANIC > 0
   data->dataToSend = REDUCTION_MAX_RESERVED;
   #endif
-  data->next = NULL;
-  data->threadNum = 0;
-  data->suspendFlag = 0;
+
   for(int i=0; i<REDUCTION_MAX_RESERVED; i++)
   {
       data->numData[i] = 0;
       data->tagData[i] = 0;
+      data->suspendFlag[i] = 0;
+      data->threadNum[i] = 0;
   }
   data->eventCounter = 0;
 
@@ -208,7 +214,7 @@ void	ReductionMgr::Register(ReductionTag tag)
   #endif
 
   maxData[tag]++;
-  maxEvent++;	// expect an event (submit)
+  maxEvents++;	// expect and event (submit)
   DebugM(1,"Register tag=" << tag << " maxData="<< maxData[tag] <<"\n");
 } /* ReductionMgr::Register() */
 
@@ -231,7 +237,7 @@ void	ReductionMgr::unRegister(ReductionTag tag)
   #endif
 
   maxData[tag]--;
-  maxEvent--;	// expect 1 less event
+  maxEvents--;	// expect 1 less event
   DebugM(1,"unRegister tag=" << tag << " maxData=" << maxData[tag] << "\n");
 } /* ReductionMgr::unRegister() */
 
@@ -257,7 +263,11 @@ void	ReductionMgr::remove(int seq)
   ReductionMgrData *previousdata = NULL;
   int i;	// loop variable
 
-  DebugM(4,"want to remove() seq=" << seq << "\n");
+  DebugM(4,"remove()? seq=" << seq << "\n");
+
+  // check if data is removable
+  if (currentdata->numEvents < maxEvents)
+	return;	// don't delete it!  still required by someone.
 
   // find data to remove
   for(i=data->sequenceNum; i<seq; i++)
@@ -274,14 +284,6 @@ void	ReductionMgr::remove(int seq)
 	currentdata = currentdata->next;
   }
 
-  // check if data is removable
-  if (currentdata->eventCounter < maxEvent)
-	return;	// don't delete it!  still required by someone.
-
-  DebugM(4,"remove() seq=" << seq
-	<< " event #" << currentdata->eventCounter << "/" << maxEvent
-	<< "\n");
-
   #if PANIC > 0
   if (currentdata->sequenceNum != seq)
   {
@@ -290,6 +292,8 @@ void	ReductionMgr::remove(int seq)
     NAMD_die("Remove without register");
   }
   #endif
+
+  DebugM(4,"remove()! seq=" << seq << "\n");
 
   // delete data
   if (!previousdata)
@@ -326,13 +330,11 @@ void	ReductionMgr::recvReductionData	(ReductionDataMsg *msg)
 
   // inform object that new data has been found
   current->numData[tag]++;
-  current->eventCounter++;	// received a submit event
+  current->numEvents++;
 
   DebugM(4,"recv seq=" << current->sequenceNum << " tag=" << tag
 	<< " data=" << current->tagData[tag]
-	<< " #" << current->numData[tag] << "/" << maxData[tag]
-	<< " #" << current->eventCounter << "/" << maxEvent
-	<< "\n");
+	<< " #" << current->numEvents << "/" << maxEvents << "\n");
 
   #if PANIC > 0
   if (current->numData[tag] > maxData[tag])
@@ -355,13 +357,19 @@ void	ReductionMgr::recvReductionData	(ReductionDataMsg *msg)
   if (current->numData[tag] == maxData[tag])
   {
     // displayData(current,tag);
-    if (current->suspendFlag)
+    if (current->suspendFlag[tag])
     {
-      current->suspendFlag = 0;
-      CthAwaken(current->threadNum);
+      current->suspendFlag[tag] = 0;
+      DebugM(5,"Awaken seq=" << current->sequenceNum << " tag=" << tag
+	<< " thread=" << current->threadNum[tag]
+	<< "\n");
+      CthAwaken(current->threadNum[tag]);
     }
     gotAllData(current);
   }
+
+  if (current->numEvents >= maxEvents)
+	remove(current->sequenceNum);
 } /* ReductionMgr::recvReductionData() */
 
 /*******************************************
@@ -440,8 +448,8 @@ void	ReductionMgr::gotAllData(ReductionMgrData *current)
 
   #if PANIC > 0
   // one less data to send (delete if all done)
+  #if PANIC > 0
   current->dataToSend--;
-
   if (current->dataToSend < 0)
   {
     iout << iERRORF << iPE << " gotAllData(): received too much."
@@ -465,7 +473,7 @@ void	ReductionMgr::gotAllData(ReductionMgrData *current)
   }
   #endif
 
-  if (current->eventCounter >= maxEvent)
+  if (current->numEvents >= maxEvents)
 	remove(current->sequenceNum);
 } /* ReductionMgr::gotAllData() */
 
@@ -490,12 +498,11 @@ void	ReductionMgr::submit(int seq, ReductionTag tag, BigReal data, int more)
   // add to tag
   current->tagData[tag] += data;
   current->numData[tag]++;	/* expect 1 less */
-  current->eventCounter++;	// got an event (submit)
+  current->numEvents++;		// got an event (submit)
 
   DebugM(1,"Submit seq=" << seq << " tag=" << tag << " data=" << data
 	<< " #" << current->numData[tag] << "/" << maxData[tag]
-	<< " #" << current->eventCounter << "/" << maxEvent
-	<< "\n");
+	<< " #" << current->numEvents << "/" << maxEvents << "\n");
 
   #if PANIC > 0
   if (current->numData[tag] > maxData[tag])
@@ -534,10 +541,10 @@ void	ReductionMgr::submit(int seq, ReductionTag tag, BigReal data, int more)
       {
 	// displayData(current,tag);
 	// check if Node 0 (the collector) is suspended
-	if (current->suspendFlag)
+	if (current->suspendFlag[tag])
 	{
-	  current->suspendFlag = 0;
-	  CthAwaken(current->threadNum);
+	  current->suspendFlag[tag] = 0;
+	  CthAwaken(current->threadNum[tag]);
 	}
       }
     }
@@ -586,7 +593,7 @@ void	ReductionMgr::require(int seq, ReductionTag tag, BigReal &data)
   while(current->numData[tag] < maxData[tag])
   {
     #if PANIC > 0
-    if (current->suspendFlag)
+    if (current->suspendFlag[tag])
     {
       iout << iERRORF << iPE << " two threads are waiting for the same data! "
 	   << current->threadNum << " is suspended and " << CthSelf()
@@ -596,24 +603,34 @@ void	ReductionMgr::require(int seq, ReductionTag tag, BigReal &data)
     #endif
 
     // suspend thread until numData is 0...
-    current->suspendFlag = 1;
-    current->threadNum = CthSelf();
-    DebugM(1,"Thread " << current->threadNum << " waiting for "
-			<< current->numData[tag] << " data.\n");
-    CthSuspend();
+    current->suspendFlag[tag] = 1;
+    current->threadNum[tag] = CthSelf();
+    DebugM(5,"Suspend seq=" << seq << " tag=" << tag
+	<< " thread=" << current->threadNum[tag]
+	<< "\n");
+    while(current->suspendFlag[tag] == 1)
+	CthSuspend();
     // ...then return value
+    if (current->suspendFlag[tag] == 1)
+    {
+	iout << iERRORF << iPE << " Processes didn't suspend!\n" << endi;
+	NAMD_die("ReductionMgr.C: Processes didn't suspend!");
+    }
+    DebugM(5,"unSuspend seq=" << seq << " tag=" << tag
+	<< " thread=" << current->threadNum[tag]
+	<< "\n");
   }
 
   // 3. use the data
   data = current->tagData[tag];
-  current->eventCounter++;	// got an event (require)
+  current->numEvents++;		// got an event (require)
   #if PANIC > 1
   iout << iPE << " Data for sequence=" << seq << " tag=" << tagString[tag] << " is "
        << data << "\n" << endi;
   #endif
 
-  if (current->eventCounter == maxEvent)
-	remove(seq);	// free it.
+  if (current->numEvents == maxEvents)
+	remove(seq);    // free it.
 } /* ReductionMgr::require() */
 
 /*******************************************
@@ -633,7 +650,7 @@ void	ReductionMgr::subscribe(ReductionTag tag)
   #endif
 
   numSubscribed[tag]++;
-  maxEvent++;	// will be another event (require)
+  maxEvents++;
 } /* ReductionMgr::subscribe() */
 
 /*******************************************
@@ -647,7 +664,7 @@ void	ReductionMgr::unsubscribe(ReductionTag tag)
   #endif
 
   numSubscribed[tag]--;
-  maxEvent--;	// will be one less event (require)
+  maxEvents--;
   #if PANIC > 0
   if (numSubscribed[tag] < 0)
   {

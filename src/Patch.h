@@ -56,6 +56,7 @@ class Patch
      Patch(PatchID pd);
      Patch(PatchID pd, AtomIDList al, PositionList pl);
      void loadAtoms(AtomIDList al);
+     int hasNewAtoms() { return _hasNewAtoms; }
      virtual ~Patch(void) { };
 
      // methods for use by Compute objects
@@ -67,8 +68,8 @@ class Patch
      void unregisterAtomPickup(ComputeID cid, Box<Patch,AtomProperties> **const box);
 
      // methods for use by Sequencer or ProxyManager
-     void positionsReady(void) { positionsReady(0); }
-     void positionsReady(int);
+     // void positionsReady(void) { positionsReady(0); }
+     void positionsReady(int n=0);
 
      // methods for Box callbacks
      void positionBoxClosed(void);
@@ -107,6 +108,7 @@ class Patch
      int boxesOpen;
 
      void indexAtoms();
+     int _hasNewAtoms;
 
   private:
   
@@ -122,12 +124,22 @@ class Patch
  *
  *	$RCSfile: Patch.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:10 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.h,v $
+ * Revision 1.779  1997/02/06 15:53:21  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.1  1997/02/05 22:18:17  ari
+ * Added migration code - Currently the framework is
+ * there with compiling code.  This version does
+ * crash shortly after migration is complete.
+ * Migration appears to complete, but Patches do
+ * not appear to be left in a correct state.
+ *
  * Revision 1.778  1997/01/28 00:31:10  ari
  * internal release uplevel to 1.778
  *

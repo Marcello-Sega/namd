@@ -29,10 +29,11 @@ class PatchMap;
 class ComputePatchPair : public Compute {
 
 public:
-  ComputePatchPair(ComputeID c, PatchID pid[]);
+  ComputePatchPair(ComputeID c, PatchID pid[], int t[]);
   virtual ~ComputePatchPair();
 
-  virtual void mapReady();
+  virtual void initialize();
+  virtual void atomUpdate();
   virtual void doWork();
 
 protected :
@@ -41,6 +42,7 @@ protected :
 
 private:
   PatchID patchID[2];
+  int trans[2];
   Patch *patch[2];
   PositionBox<Patch> *positionBox[2];
   Box<Patch,Force> *forceBox[2];
@@ -54,12 +56,28 @@ private:
  *
  *	$RCSfile: ComputePatchPair.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:29 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatchPair.h,v $
+ * Revision 1.779  1997/02/06 15:53:10  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.2  1997/02/06 02:35:22  jim
+ * Implemented periodic boundary conditions - may not work with
+ * atom migration yet, but doesn't seem to alter calculation,
+ * appears to work correctly when turned on.
+ * NamdState chdir's to same directory as config file in argument.
+ *
+ * Revision 1.778.2.1  1997/02/05 22:18:12  ari
+ * Added migration code - Currently the framework is
+ * there with compiling code.  This version does
+ * crash shortly after migration is complete.
+ * Migration appears to complete, but Patches do
+ * not appear to be left in a correct state.
+ *
  * Revision 1.778  1997/01/28 00:30:29  ari
  * internal release uplevel to 1.778
  *

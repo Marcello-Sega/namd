@@ -11,7 +11,9 @@
 
 // debug code to determine if I should panic
 // 1 means PANIC checking is enabled.  0 means no checking.
+#ifndef PANIC
 #define PANIC	0
+#endif
 
 // typedef Vector[3] Tensor;
 
@@ -35,13 +37,14 @@ struct ReductionMgrData
   int dataToSend;			// number of tags to send (not full)
   #endif
   int numData[REDUCTION_MAX_RESERVED];	// number of data to expect
+  int numEvents;	// number of events to expect
   BigReal tagData[REDUCTION_MAX_RESERVED];	// values in tags
   ReductionMgrData *next;	// a queue! ugly but effective.
   int eventCounter;	// counts number of uses
 
   // for "waiting"
-  CthThread threadNum;
-  int suspendFlag;
+  CthThread threadNum[REDUCTION_MAX_RESERVED];
+  int suspendFlag[REDUCTION_MAX_RESERVED];
 };
 
 // ***************** for Charm messages
@@ -82,7 +85,7 @@ private:
   int numSubscribed[REDUCTION_MAX_RESERVED];
   ReductionMgrData *data;	// sequence queue
   int maxData[REDUCTION_MAX_RESERVED];	// number of data to expect
-  int maxEvent;	// number of events expected per queue element
+  int maxEvents;	// number of events to expect
 
   ReductionMgrData *createdata();		// make new data
   void remove(int seq);				// delete (remove) a sequence

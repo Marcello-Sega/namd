@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.778 1997/01/28 00:31:09 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.779 1997/02/06 15:53:20 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -25,6 +25,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1
 #include "ComputeMap.h"
 #include "Node.h"
 #include "Molecule.h"
+#include "SimParameters.h"
 
 #define MIN_DEBUG_LEVEL 4
 #define  DEBUGM
@@ -38,7 +39,8 @@ Patch::Patch(PatchID pd) :
    atomBox(this,&(Patch::atomBoxClosed)),
    numAtoms(0), boxesOpen(0)
 {
-  ;
+  lattice = Node::Object()->simParameters->lattice;
+  _hasNewAtoms = 0;
 }
 
 Patch::Patch(PatchID pd, AtomIDList al, PositionList pl) :
@@ -49,11 +51,13 @@ Patch::Patch(PatchID pd, AtomIDList al, PositionList pl) :
    atomBox(this,&(Patch::atomBoxClosed)),
    numAtoms(al.size()), boxesOpen(0)
 {
+  lattice = Node::Object()->simParameters->lattice;
   if (atomIDList.size() != p.size()) {
     DebugM( 10, 
 	    "Patch::Patch(...) : Different numbers of Coordinates and IDs!\n");
   }
   loadAtomProperties();
+  _hasNewAtoms = 0;
 }
 
 void Patch::loadAtoms(AtomIDList al)
@@ -132,6 +136,7 @@ Box<Patch,Force>* Patch::registerForceDeposit(ComputeID cid)
    if (forceComputeList.add(cid) < 0)
    {
      DebugM(7, "registerForceDeposit() failed for cid " << cid << endl);
+     DebugM(7, "  size of forceCompueList " << forceComputeList.size() << endl);
      return NULL;
    }
    return forceBox.checkOut();
@@ -149,6 +154,7 @@ Box<Patch,AtomProperties>* Patch::registerAtomPickup(ComputeID cid)
    if (atomComputeList.add(cid) < 0)
    {
      DebugM(7, "registerAtomPickup() failed for cid " << cid << endl);
+     DebugM(7, "  size of atomComputeList " << atomComputeList.size() << endl);
      return NULL;
    }
    return atomBox.checkOut();
@@ -186,10 +192,11 @@ void Patch::boxClosed(int box)
 
 void Patch::positionsReady(int doneMigration)
 {
-   DebugM(1,"Patch::positionsReady() - patchID " << patchID << endl );
+   DebugM(4,"Patch::positionsReady() - patchID " << patchID << endl );
    ComputeMap *computeMap = ComputeMap::Object();
 
    boxesOpen = 3;
+   _hasNewAtoms = (doneMigration > 0);
 
    // Give all position pickup boxes access to positions
    positionPtr = p.unencap();
@@ -222,12 +229,28 @@ void Patch::positionsReady(int doneMigration)
  *
  *	$RCSfile: Patch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:09 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.779  1997/02/06 15:53:20  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.2  1997/02/06 02:35:29  jim
+ * Implemented periodic boundary conditions - may not work with
+ * atom migration yet, but doesn't seem to alter calculation,
+ * appears to work correctly when turned on.
+ * NamdState chdir's to same directory as config file in argument.
+ *
+ * Revision 1.778.2.1  1997/02/05 22:18:16  ari
+ * Added migration code - Currently the framework is
+ * there with compiling code.  This version does
+ * crash shortly after migration is complete.
+ * Migration appears to complete, but Patches do
+ * not appear to be left in a correct state.
+ *
  * Revision 1.778  1997/01/28 00:31:09  ari
  * internal release uplevel to 1.778
  *

@@ -21,6 +21,7 @@
 
 #include "NamdTypes.h"
 #include "Patch.h"
+#include "PatchMap.h"
 
 #include "Sequencer.h"
 
@@ -52,8 +53,7 @@ public:
   }
   
   // methods for Sequencer to use
-  void positionsReady(void);
-  void positionsReady(int);
+  void positionsReady(int doMigration=0);
 
   void depositMigration(PatchID, MigrationList *);
   
@@ -78,46 +78,17 @@ private:
   ProxyList     proxy;
   
   Sequencer  *sequencer;
+
+  int patchMapRead;
+  void readPatchMap();
+
   int allMigrationIn;
   int migrationSuspended;
   int patchMigrationCounter;
-  
-  
-  
-  // 
-  /*
-    void prepare_for_next_cycle();
-    void prepare_for_next_step();
-    */
-  
-  // calculations that depends on remote data
-  /*
-    void compute_f_long();
-    void compute_f_short();
-    */
-  
-  
-  // local calculations
-  /*
-    void update_f_at_cycle_begin();
-    void update_f_at_step(int);
-    void advance_x();
-    void update_f_at_cycle_end();
-    void update_v();
-    void output();
-    void f_short_done();
-    void f_long_done();
-    void atom_redist_data(int, int *);
-    */
-  
-  // pack and unpack functions
-  
-  /*
-    void dispose(char *&);
-    void updateData(char *&);
-    void packInitData(char *&);
-    void packData(char *&);
-    */
+
+  int numNeighbors;
+  MigrationInfo realInfo[PatchMap::MaxOneAway];
+  MigrationInfo *mInfo[3][3][3];
 };
 
 #endif
@@ -126,12 +97,22 @@ private:
  *
  *	$RCSfile: HomePatch.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:36 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.779  1997/02/06 15:53:12  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.1  1997/02/05 22:18:14  ari
+ * Added migration code - Currently the framework is
+ * there with compiling code.  This version does
+ * crash shortly after migration is complete.
+ * Migration appears to complete, but Patches do
+ * not appear to be left in a correct state.
+ *
  * Revision 1.778  1997/01/28 00:30:36  ari
  * internal release uplevel to 1.778
  *

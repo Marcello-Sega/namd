@@ -16,10 +16,12 @@
 #define PATCHMAP_H
 
 #include "NamdTypes.h"
-#include "PatchMgr.h"
+#include "HomePatchList.h"
 
 class Patch;
 class PatchMgr;
+class Lattice;
+class HomePatch;
 
 class PatchMap
 {
@@ -46,6 +48,12 @@ public:
   // by the map.
   int numPatches(void);
 
+  void setGridOriginAndLength(Vector o, Vector l);
+
+  // assignToPatch(p,l) returns the patchID in which the position
+  // p should be placed, based on the lattice l
+  PatchID assignToPatch(Position p /* , Lattice &l */);
+
   // xDimension() returns the how many patches span the simulation space
   // along the x axis.
   int xDimension(void);
@@ -57,6 +65,10 @@ public:
   // zDim() returns the how many patches span the simulation space
   // along the z axis.
   int zDimension(void);
+
+  int xIsPeriodic(void);
+  int yIsPeriodic(void);
+  int zIsPeriodic(void);
 
   // pid(xindex, yindex, zindex) returns the patch id for the given
   // patch coordinates.
@@ -106,6 +118,8 @@ public:
   // with the patch.  
   int cid(int pid, int i);
 
+  void setPeriodicity(int x_per, int y_per, int z_per);
+
   // allocatePids(x_dim, y_dim, z_dim) tells the PatchMap to set aside
   // room for x_dim * y_dim * z_dim patches.
   ErrCode allocatePids(int x_dim, int y_dim, int z_dim);
@@ -131,15 +145,15 @@ public:
   // and ids of adjacent patches.  The caller is expected to provide
   // sufficient storage for the neighbors.
 
-  int oneAwayNeighbors(int pid, PatchID *neighbor_ids);
+  int oneAwayNeighbors(int pid, PatchID *neighbor_ids=0, int *transform_ids=0);
 
   // twoAwayNeighbors(pid, &n, neighbor_ids) returns the number 
   // and ids of all patches exactely two steps distant.  
   // The caller is expected to provide sufficient storage for the neighbors.
 
-  int twoAwayNeighbors(int pid, PatchID *neighbor_ids);
+  int twoAwayNeighbors(int pid, PatchID *neighbor_ids, int *transform_ids = 0);
 
-  int oneOrTwoAwayNeighbors(int pid, PatchID *neighbor_ids);
+  int oneOrTwoAwayNeighbors(int pid, PatchID *neighbor_ids, int *transform_ids = 0);
 
   void printPatchMap(void);
 
@@ -175,6 +189,9 @@ private:
   int nPatches;
   PatchData *patchData;
   int xDim, yDim, zDim;
+  int xPeriodic, yPeriodic, zPeriodic;
+  BigReal xOrigin, yOrigin, zOrigin;
+  BigReal xLength, yLength, zLength;
 
 };
 
@@ -199,12 +216,32 @@ inline HomePatch *PatchMap::homePatch(PatchID pid)
  *
  *	$RCSfile: PatchMap.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:31:11 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.h,v $
+ * Revision 1.779  1997/02/06 15:53:22  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.3  1997/02/06 02:35:31  jim
+ * Implemented periodic boundary conditions - may not work with
+ * atom migration yet, but doesn't seem to alter calculation,
+ * appears to work correctly when turned on.
+ * NamdState chdir's to same directory as config file in argument.
+ *
+ * Revision 1.778.2.2  1997/02/05 22:18:19  ari
+ * Added migration code - Currently the framework is
+ * there with compiling code.  This version does
+ * crash shortly after migration is complete.
+ * Migration appears to complete, but Patches do
+ * not appear to be left in a correct state.
+ *
+ * Revision 1.778.2.1  1997/01/28 17:28:50  jim
+ * First top-down changes for periodic boundary conditions, added now to
+ * avoid conflicts with Ari's migration system.
+ *
  * Revision 1.778  1997/01/28 00:31:11  ari
  * internal release uplevel to 1.778
  *

@@ -74,7 +74,7 @@ public:
 
   // newPid(cid,pid) stores the n patch ids associated with
   // compute id cid.
-  int newPid(int cid, int pid);
+  int newPid(int cid, int pid, int trans = 13);
 
   void printComputeMap(void);
 
@@ -92,6 +92,12 @@ protected:
 private:
   static ComputeMap *_instance;
 
+  struct PatchRec
+  {
+    PatchID pid;
+    int trans;
+  };
+
   struct ComputeData
   {
     Compute *compute;
@@ -100,7 +106,7 @@ private:
     Boolean patchBased;
     int numPids;
     int numPidsAllocated;
-    PatchID *pids;
+    PatchRec *pids;
   };
 
   int nPatchBased;
@@ -118,12 +124,21 @@ private:
  *
  *	$RCSfile: ComputeMap.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:15 $
+ *	$Revision: 1.779 $	$Date: 1997/02/06 15:53:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.h,v $
+ * Revision 1.779  1997/02/06 15:53:02  ari
+ * Updating Revision Line, getting rid of branches
+ *
+ * Revision 1.778.2.1  1997/02/06 02:35:18  jim
+ * Implemented periodic boundary conditions - may not work with
+ * atom migration yet, but doesn't seem to alter calculation,
+ * appears to work correctly when turned on.
+ * NamdState chdir's to same directory as config file in argument.
+ *
  * Revision 1.778  1997/01/28 00:30:15  ari
  * internal release uplevel to 1.778
  *
