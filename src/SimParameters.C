@@ -1633,6 +1633,15 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      if ( lattice.volume() == 0. ) {
 	NAMD_die("PME requires periodic boundary conditions.");
      }
+     if ( PMEGridSizeX < 5 ) {
+	NAMD_die("PMEGridSizeX (number of grid points) is very small.");
+     }
+     if ( PMEGridSizeY < 5 ) {
+	NAMD_die("PMEGridSizeY (number of grid points) is very small.");
+     }
+     if ( PMEGridSizeZ < 5 ) {
+	NAMD_die("PMEGridSizeZ (number of grid points) is very small.");
+     }
      BigReal tolerance = PMETolerance;
      BigReal ewaldcof = 1.0;
      while ( erfc(ewaldcof*cutoff)/cutoff >= tolerance ) ewaldcof *= 2.0;
