@@ -3,7 +3,7 @@
  *  Copyright (c) 1996,1997 Duke University
  *  All rights reserved
  */
-/* $Id: dpme2_utilityW.c,v 1.3 1998/04/10 04:15:47 jim Exp $
+/* $Id: dpme2_utilityW.c,v 1.4 1998/10/24 20:04:11 jim Exp $
  */
 
 /*******************************************************************************
@@ -1829,12 +1829,12 @@ double dpme_adjust_dir(AtomInfo *atom_info, SwapInfo swap_info,
 		  double *my_adj_dir_eng, double *mytime)
      
 {
-  static int firsttime=0;
+  /* static int firsttime=0; */
   float full_interact;
   double adj_dir_eng;
   int i,i_2,ii,j,k,need1,need2;
   int atom_type,atom_id,found;
-  static int prev_nlocal=0;
+  /* static int prev_nlocal=0; */
   int *atompnt,*nlocal;
   int *nlist, *nnlist;
   PmeVector myprd, mymc2;
@@ -2452,7 +2452,7 @@ int dpme_reneighbor(AtomInfo *atom_info, int **list, BoxInfo *box_info,
   PmeVector mbin, mbinlo;
   MYPROC *myproc;
   int *inst_node;
-  int nswap,max_used;
+  int nswap,max_used=0;
   int *nslist, *slist,*nnlist,*spart,*rpart;
   int *npdim,*mpart,*need;
   int *bin,*binpnt;
