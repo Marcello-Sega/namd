@@ -247,85 +247,99 @@ $(INCDIR)/BroadcastMgr.def.h: $(INCDIR)/BroadcastMgr.decl.h
 
 $(INCDIR)/BroadcastMgr.decl.h: $(SRCDIR)/BroadcastMgr.ci
 	$(CHARMXI) $(SRCDIR)/BroadcastMgr.ci
-	$(MOVE) BroadcastMgr.decl.h BroadcastMgr.def.h $(INCDIR)
+	$(MOVE) BroadcastMgr.decl.h $(INCDIR)
+	$(MOVE) BroadcastMgr.def.h $(INCDIR)
 
 $(INCDIR)/CollectionMaster.def.h: $(INCDIR)/CollectionMaster.decl.h
 
 $(INCDIR)/CollectionMaster.decl.h: $(SRCDIR)/CollectionMaster.ci
 	$(CHARMXI) $(SRCDIR)/CollectionMaster.ci
-	$(MOVE) CollectionMaster.decl.h CollectionMaster.def.h $(INCDIR)
+	$(MOVE) CollectionMaster.decl.h $(INCDIR)
+	$(MOVE) CollectionMaster.def.h $(INCDIR)
 
 $(INCDIR)/CollectionMgr.def.h: $(INCDIR)/CollectionMgr.decl.h
 
 $(INCDIR)/CollectionMgr.decl.h: $(SRCDIR)/CollectionMgr.ci
 	$(CHARMXI) $(SRCDIR)/CollectionMgr.ci
-	$(MOVE) CollectionMgr.decl.h CollectionMgr.def.h $(INCDIR)
+	$(MOVE) CollectionMgr.decl.h $(INCDIR)
+	$(MOVE) CollectionMgr.def.h $(INCDIR)
 
 $(INCDIR)/ComputeMgr.def.h: $(INCDIR)/ComputeMgr.decl.h
 
 $(INCDIR)/ComputeMgr.decl.h: $(SRCDIR)/ComputeMgr.ci
 	$(CHARMXI) $(SRCDIR)/ComputeMgr.ci
-	$(MOVE) ComputeMgr.decl.h ComputeMgr.def.h $(INCDIR)
+	$(MOVE) ComputeMgr.decl.h $(INCDIR)
+	$(MOVE) ComputeMgr.def.h $(INCDIR)
 
 $(INCDIR)/ComputePmeMgr.def.h: $(INCDIR)/ComputePmeMgr.decl.h
 
 $(INCDIR)/ComputePmeMgr.decl.h: $(SRCDIR)/ComputePmeMgr.ci
 	$(CHARMXI) $(SRCDIR)/ComputePmeMgr.ci
-	$(MOVE) ComputePmeMgr.decl.h ComputePmeMgr.def.h $(INCDIR)
+	$(MOVE) ComputePmeMgr.decl.h $(INCDIR)
+	$(MOVE) ComputePmeMgr.def.h $(INCDIR)
 
 $(INCDIR)/LdbCoordinator.def.h: $(INCDIR)/LdbCoordinator.decl.h
 
 $(INCDIR)/LdbCoordinator.decl.h: $(SRCDIR)/LdbCoordinator.ci
 	$(CHARMXI) $(SRCDIR)/LdbCoordinator.ci
-	$(MOVE) LdbCoordinator.decl.h LdbCoordinator.def.h $(INCDIR)
+	$(MOVE) LdbCoordinator.decl.h $(INCDIR)
+	$(MOVE) LdbCoordinator.def.h $(INCDIR)
 
 $(INCDIR)/NamdCentLB.def.h: $(INCDIR)/NamdCentLB.decl.h
 
 $(INCDIR)/NamdCentLB.decl.h: $(SRCDIR)/NamdCentLB.ci
 	$(CHARMXI) $(SRCDIR)/NamdCentLB.ci
-	$(MOVE) NamdCentLB.decl.h NamdCentLB.def.h $(INCDIR)
+	$(MOVE) NamdCentLB.decl.h $(INCDIR)
+	$(MOVE) NamdCentLB.def.h $(INCDIR)
 
 $(INCDIR)/Node.def.h: $(INCDIR)/Node.decl.h
 
 $(INCDIR)/Node.decl.h: $(SRCDIR)/Node.ci
 	$(CHARMXI) $(SRCDIR)/Node.ci
-	$(MOVE) Node.decl.h Node.def.h $(INCDIR)
+	$(MOVE) Node.decl.h $(INCDIR)
+	$(MOVE) Node.def.h $(INCDIR)
 
 $(INCDIR)/PatchMgr.def.h: $(INCDIR)/PatchMgr.decl.h
 
 $(INCDIR)/PatchMgr.decl.h: $(SRCDIR)/PatchMgr.ci
 	$(CHARMXI) $(SRCDIR)/PatchMgr.ci
-	$(MOVE) PatchMgr.decl.h PatchMgr.def.h $(INCDIR)
+	$(MOVE) PatchMgr.decl.h $(INCDIR)
+	$(MOVE) PatchMgr.def.h $(INCDIR)
 
 $(INCDIR)/ProxyMgr.def.h: $(INCDIR)/ProxyMgr.decl.h
 
 $(INCDIR)/ProxyMgr.decl.h: $(SRCDIR)/ProxyMgr.ci
 	$(CHARMXI) $(SRCDIR)/ProxyMgr.ci
-	$(MOVE) ProxyMgr.decl.h ProxyMgr.def.h $(INCDIR)
+	$(MOVE) ProxyMgr.decl.h $(INCDIR)
+	$(MOVE) ProxyMgr.def.h $(INCDIR)
 
 $(INCDIR)/ReductionMgr.def.h: $(INCDIR)/ReductionMgr.decl.h
 
 $(INCDIR)/ReductionMgr.decl.h: $(SRCDIR)/ReductionMgr.ci
 	$(CHARMXI) $(SRCDIR)/ReductionMgr.ci
-	$(MOVE) ReductionMgr.decl.h ReductionMgr.def.h $(INCDIR)
+	$(MOVE) ReductionMgr.decl.h $(INCDIR)
+	$(MOVE) ReductionMgr.def.h $(INCDIR)
 
 $(INCDIR)/Sync.def.h: $(INCDIR)/Sync.decl.h
 
 $(INCDIR)/Sync.decl.h: $(SRCDIR)/Sync.ci
 	$(CHARMXI) $(SRCDIR)/Sync.ci
-	$(MOVE) Sync.decl.h Sync.def.h $(INCDIR)
+	$(MOVE) Sync.decl.h $(INCDIR)
+	$(MOVE) Sync.def.h $(INCDIR)
 
 $(INCDIR)/WorkDistrib.def.h: $(INCDIR)/WorkDistrib.decl.h
 
 $(INCDIR)/WorkDistrib.decl.h: $(SRCDIR)/WorkDistrib.ci
 	$(CHARMXI) $(SRCDIR)/WorkDistrib.ci
-	$(MOVE) WorkDistrib.decl.h WorkDistrib.def.h $(INCDIR)
+	$(MOVE) WorkDistrib.decl.h $(INCDIR)
+	$(MOVE) WorkDistrib.def.h $(INCDIR)
 
 $(INCDIR)/main.def.h: $(INCDIR)/main.decl.h
 
 $(INCDIR)/main.decl.h: $(SRCDIR)/main.ci
 	$(CHARMXI) $(SRCDIR)/main.ci
-	$(MOVE) main.decl.h main.def.h $(INCDIR)
+	$(MOVE) main.decl.h $(INCDIR)
+	$(MOVE) main.def.h $(INCDIR)
 
 DEPENDFILE = .rootdir/Make.depends
 
