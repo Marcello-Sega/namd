@@ -9,8 +9,8 @@ struct StreamMessage {
   int PE;
   int tag;
   unsigned short len; // sizeof the data 
-  unsigned short index; // index of packet in stream
   unsigned short isLast; // 1 if its last packet
+  unsigned short index; // index of packet in stream
   StreamMessage *next; // for linked list of early packets
   char data[1];
 };
