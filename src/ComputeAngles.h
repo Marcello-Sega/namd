@@ -16,6 +16,8 @@
 #define COMPUTEANGLE_H
 
 #include "ComputeHomeTuples.h"
+#include "Debug.h"
+
 class ReductionMgr;
 class Molecule;
 
@@ -41,7 +43,7 @@ public:
   inline AngleElem();
   inline AngleElem(const Angle *a);
   inline AngleElem(AtomID atom0, AtomID atom1, AtomID atom2);
-  ~AngleElem() {};
+  ~AngleElem() { };
 
   inline int operator==(const AngleElem &a) const;
   inline int operator<(const AngleElem &a) const;
@@ -62,13 +64,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeAngles.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:57:44 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/02/21 17:38:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.h,v $
+ * Revision 1.1001  1997/02/21 17:38:29  nealk
+ * Got DPMTA to work!
+ *
  * Revision 1.1000  1997/02/06 15:57:44  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

@@ -25,7 +25,7 @@
 #include "pvmc.h"
 
 #define MIN_DEBUG_LEVEL 1
-#define DEBUGM
+// #define DEBUGM
 #include "Debug.h"
 
 extern Communicate *comm;
@@ -74,6 +74,7 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   //  NOTE 2: Theta is now an optional config parameter,
   //  but it defaults to 0.715
 
+  int numProcs = CNumPes();
   PmtaInitData pmta_data;
   BigReal boxsize;	// Dimension of FMA cube
   Vector boxcenter;	// Center for FMA cube
@@ -88,14 +89,14 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
 
   // only the master (node 0) needs to do this.
 
-  slavetids = new int[CNumPes()];
+  slavetids = new int[numProcs];
   if (slavetids == NULL)
   {
     NAMD_die("Memory allocation failed in FMAInterface::FMAInterface");
   }
 
   // pvm_spawn is a dummy function under Converse.  Just the array is required.
-  pvm_spawn(NULL,NULL,0,NULL,CNumPes(),slavetids);
+  pvm_spawn(NULL,NULL,0,NULL,numProcs,slavetids);
   DebugM(1,"DPMTA slavetids allocated\n");
 
   //  Get the size of the FMA cube
@@ -107,7 +108,7 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   SimParameters *simParams = Node::Object()->simParameters;
 
   //  initialize DPMTA
-  pmta_data.nprocs = CNumPes();
+  pmta_data.nprocs = numProcs;
   pmta_data.nlevels = simParams->FMALevels;
   pmta_data.mp = simParams->FMAMp;
   pmta_data.mp_lj = 4;
@@ -129,17 +130,12 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   DebugM(1,"DPMTA calling PMTAinit.\n");
   if (PMTAinit(&pmta_data,slavetids) >= 0)
   {
-	iout << "SUCCESSFULLY STARTED DPMTA\n" << endi;
+	iout << iINFO << "SUCCESSFULLY STARTED DPMTA\n" << endi;
   }
   else
   {
 	iout << "Unable to start DPMTA!\n" << endi;
   }
-  for(int i=0; i<pmta_data.nprocs; i++)
-    {
-      iout << "  ** tid[" << i << "]"
-	   << "=" << pmta_data.calling_tids[i] << "\n" << endi;
-    }
 
   //  Register this master with the other DPMTA processes
   if (PMTAregister() < 0)
@@ -203,7 +199,7 @@ void ComputeDPMTA::doWork()
   totalAtoms = Node::Object()->molecule->numAtoms;
 
   // 2. setup atom list
-  int i=0,j;
+  int i,j;
   particle_list = (PmtaParticle *) calloc(totalAtoms, sizeof(PmtaParticle));
   fmaResults = (PmtaPartInfo *) calloc(totalAtoms, sizeof(PmtaPartInfo));
   if (!particle_list || !fmaResults)
@@ -211,7 +207,9 @@ void ComputeDPMTA::doWork()
 	NAMD_die("DPMTA Failed to allocate memory.");
 	}
 
-  for (ap = ap.begin(); ap != ap.end(); ap++) {
+  i=0;
+  for (ap = ap.begin(); ap != ap.end(); ap++)
+  {
     (*ap).x = (*ap).positionBox->open();
     (*ap).a = (*ap).atomBox->open();
 
@@ -247,11 +245,12 @@ void ComputeDPMTA::doWork()
     (*ap).f = (*ap).forceBox->open();
 
     // deposit here
+    i=0;
     for(j=0; j<(*ap).p->getNumAtoms(); j++)
     {
       (*ap).f[j].x += fmaResults[i].f.x;
       (*ap).f[j].y += fmaResults[i].f.y;
-      (*ap).f[j].x += fmaResults[i].f.z;
+      (*ap).f[j].z += fmaResults[i].f.z;
       patchEnergy += fmaResults[i].v;
       i++;
     }

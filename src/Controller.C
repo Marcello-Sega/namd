@@ -84,7 +84,6 @@ iout << "Starting...\n" << endi;
     reduction->require(seq, REDUCTION_ELECT_ENERGY, electEnergy);
     reduction->require(seq, REDUCTION_LJ_ENERGY, ljEnergy);
     reduction->require(seq, REDUCTION_KINETIC_ENERGY, kineticEnergy);
-iout << "Got it...\n" << endi;
     totalEnergy = bondEnergy + angleEnergy + dihedralEnergy + improperEnergy +
 	 electEnergy + ljEnergy + kineticEnergy;
     iout << "ENERGY[" << seq << "] = { " <<

@@ -16,6 +16,7 @@
 #define COMPUTEANGLE_INL
 
 #include "ComputeAngles.h"
+#include "Debug.h"
 
 inline AngleElem::AngleElem()
   {
@@ -65,13 +66,16 @@ inline int AngleElem::operator<(const AngleElem &a) const
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeAngles.inl,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:57:45 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/02/21 17:38:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.inl,v $
+ * Revision 1.1001  1997/02/21 17:38:31  nealk
+ * Got DPMTA to work!
+ *
  * Revision 1.1000  1997/02/06 15:57:45  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
