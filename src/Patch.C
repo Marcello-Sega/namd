@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1023 1998/06/24 23:40:32 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1024 1998/06/25 14:00:39 brunner Exp $";
 
 #include "charm++.h"
 
@@ -279,7 +279,7 @@ void Patch::positionsReady(int doneMigration)
 
    // process computes or immediately close up boxes
    if (!positionComputeList.size()) {
-     iout << "patchID("<<patchID<<") has no computes dependent\n" << endi;
+//     iout << "patchID("<<patchID<<") has no computes dependent\n" << endi;
    }
    //    positionBoxClosed();
    //    forceBoxClosed();
@@ -340,12 +340,15 @@ void Patch::doGroupSizeCheck(void)
  *
  *	$RCSfile: Patch.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1023 $	$Date: 1998/06/24 23:40:32 $
+ *	$Revision: 1.1024 $	$Date: 1998/06/25 14:00:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.1024  1998/06/25 14:00:39  brunner
+ * Removed extra print
+ *
  * Revision 1.1023  1998/06/24 23:40:32  brunner
  * Added downstreamNeighbors() and LdbCoordinator fixes.  I don't know
  * why Patch.C is different.
