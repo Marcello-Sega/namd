@@ -22,6 +22,7 @@
 #include "NamdTypes.h"
 
 class ProxyPatch;
+class PatchMap;
 
 class ProxyMgr : public BOCclass
 {
@@ -48,6 +49,8 @@ public:
   static ProxyMgr *Object() { return _instance; }
   
 private:
+  PatchMap *patchMap;
+
   static ProxyMgr *_instance;
 
   ProxyPatch** proxyList;
@@ -61,12 +64,15 @@ private:
  *
  *	$RCSfile: ProxyMgr.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/12/06 03:39:09 $
+ *	$Revision: 1.3 $	$Date: 1996/12/14 00:02:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.h,v $
+ * Revision 1.3  1996/12/14 00:02:42  jim
+ * debugging ProxyAtomsMsg path to make compute creation work
+ *
  * Revision 1.2  1996/12/06 03:39:09  jim
  * creation methods
  *

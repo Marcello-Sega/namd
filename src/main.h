@@ -58,26 +58,35 @@ public:
 class ProxyAtomsMsg : public comm_object {
 public:
   PatchID patch;
-  AtomIDList atomIDList;
+  AtomIDList *atomIDList;
+  ProxyAtomsMsg(PatchID pid, AtomIDList a) : patch(pid)
+  {
+    atomIDList = new AtomIDList(a);
+  }
+  ~ProxyAtomsMsg()
+  {
+    delete atomIDList;
+  }
   void * pack (int *length)
   {
-    int size = atomIDList.size();
+    int size = atomIDList->size();
     *length = sizeof(int) + size * sizeof(AtomID);
     char *buffer = (char*)new_packbuffer(this,*length);
     *((int*)buffer) = size;
     AtomID *data = (AtomID*)(buffer+sizeof(int));
     for ( int i = 0; i < size; ++i )
-      data[i] = atomIDList[i];
+      data[i] = (*atomIDList)[i];
+    atomIDList = NULL;
     return buffer;
   }
   void unpack (void *in)
   {
     char *buffer = (char*)in;
     int size = *((int*)buffer);
-    atomIDList.resize(size);
+    atomIDList = new AtomIDList; atomIDList->resize(size);
     AtomID *data = (AtomID*)(buffer+sizeof(int));
     for ( int i = 0; i < size; ++i )
-      atomIDList[i] = buffer[i];
+      (*atomIDList)[i] = buffer[i];
   }
 };
 
@@ -148,12 +157,15 @@ public:
  *
  *	$RCSfile: main.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.14 $	$Date: 1996/12/05 20:26:27 $
+ *	$Revision: 1.15 $	$Date: 1996/12/14 00:02:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: main.h,v $
+ * Revision 1.15  1996/12/14 00:02:42  jim
+ * debugging ProxyAtomsMsg path to make compute creation work
+ *
  * Revision 1.14  1996/12/05 20:26:27  jim
  * missing ;
  *

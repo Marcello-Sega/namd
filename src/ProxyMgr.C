@@ -36,6 +36,8 @@ ProxyMgr::ProxyMgr(InitMsg *) : numProxies(0), proxyList(NULL) {
     // Namd::die();
   }
   _instance = this;
+
+  patchMap = PatchMap::Instance();
 }
 
 ProxyMgr::~ProxyMgr() { 
@@ -100,7 +102,9 @@ void ProxyMgr::createProxies(void)
   numProxies = 0;
   for ( i = 0; i < n; ++i ) if ( pflags[i] == 2 )
   {
-    proxyList[numProxies++] = new ProxyPatch(i);
+    ProxyPatch *proxy = new ProxyPatch(i);
+    proxyList[numProxies++] = proxy;
+    patchMap->registerPatch(i, proxy);
   }
 }
 
@@ -168,12 +172,15 @@ ProxyMgr::recvProxyAtoms(ProxyAtomsMsg *msg) {
  *
  *	$RCSfile: ProxyMgr.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/12/13 19:39:55 $
+ *	$Revision: 1.8 $	$Date: 1996/12/14 00:02:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.8  1996/12/14 00:02:42  jim
+ * debugging ProxyAtomsMsg path to make compute creation work
+ *
  * Revision 1.7  1996/12/13 19:39:55  jim
  * added debugging, looking for error in PatchMap sending
  *

@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.6 1996/12/05 23:45:09 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.7 1996/12/14 00:02:42 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -23,6 +23,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.
 #include "ProxyPatch.h"
 #include "ProxyMgr.top.h"
 #include "ProxyMgr.h"
+#include "AtomMap.h"
 
 #define MIN_DEBUG_LEVEL 3
 #define  DEBUGM
@@ -52,7 +53,8 @@ void ProxyPatch::boxClosed(int box)
 
 void ProxyPatch::receiveAtoms(ProxyAtomsMsg *msg)
 {
-  loadAtoms(msg->atomIDList);
+  loadAtoms(*(msg->atomIDList));
+  AtomMap::Object()->registerIDs(patchID,msg->atomIDList);
   delete msg;
 }
 
@@ -82,13 +84,16 @@ void ProxyPatch::sendResults(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyPatch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/12/05 23:45:09 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.7 $	$Date: 1996/12/14 00:02:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.7  1996/12/14 00:02:42  jim
+ * debugging ProxyAtomsMsg path to make compute creation work
+ *
  * Revision 1.6  1996/12/05 23:45:09  ari
  * *** empty log message ***
  *

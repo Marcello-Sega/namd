@@ -1,8 +1,8 @@
 extern message InitMsg;
 extern message RegisterProxyMsg;
-extern message ProxyDataMsg;
-extern message ProxyAtomsMsg;
-extern message ProxyResultMsg;
+extern packmessage ProxyDataMsg;
+extern packmessage ProxyAtomsMsg;
+extern packmessage ProxyResultMsg;
 
 group ProxyMgr
 {
