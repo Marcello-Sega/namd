@@ -1470,7 +1470,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
    //  Set the default value for the maximum movement parameter
    //  for minimization
-   if (opts.defined("minimization") && !opts.defined("maximumMove")) 
+   if (minimizeOn && (maximumMove == 0.0)) 
    {
       maximumMove = 0.75 * pairlistDist/stepsPerCycle;
    }
