@@ -735,7 +735,7 @@ void Output::write_binary_file(char *fname, int n, Vector *vecs)
   int32 n32 = n;
 
   //  open the file and die if the open fails
-  if ( (fp = fopen(fname, "w")) == NULL)
+  if ( (fp = fopen(fname, "wb")) == NULL)
   {
     char errmsg[256];
 

@@ -59,7 +59,7 @@ void read_binary_file(const char *fname, Vector *data, int n)
   int needToFlip = 0;
 
   //  Open the file and die if the open fails
-  if ( (fp = Fopen(fname, "r")) == NULL)
+  if ( (fp = Fopen(fname, "rb")) == NULL)
   {
     char errmsg[256];
     sprintf(errmsg, "Unable to open binary file %s", fname);

@@ -125,7 +125,7 @@ int open_dcd_read(char *filename)
 
 	/*  Try and open the file				*/
 #ifdef WIN32
-	dcdfd=_open(filename, O_RDONLY);
+	dcdfd=_open(filename, O_RDONLY|O_BINARY);
 #else
 	dcdfd=open(filename, O_RDONLY);
 #endif
@@ -629,7 +629,7 @@ int open_dcd_write(char *dcdname)
 	   delete [] newdcdname;
 	} 
 #if WIN32
-	if ( (dcdfd = _open(dcdname, O_RDWR|O_CREAT|O_EXCL,
+	if ( (dcdfd = _open(dcdname, O_RDWR|O_CREAT|O_EXCL|O_BINARY,
 				_S_IREAD|_S_IWRITE)) < 0)
 #else
 	if ( (dcdfd = open(dcdname, O_RDWR|O_CREAT|O_EXCL,
