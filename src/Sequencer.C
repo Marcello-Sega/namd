@@ -70,7 +70,7 @@ void Sequencer::algorithm(void)
 	}
     DebugM(4,"Submit seq=" << seq << " Patch=" << patch->getPatchID() << "\n");
     reduction->submit(seq,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
-    // collection->submitPositions(seq,patch->atomIDList,patch->p);
+    collection->submitPositions(seq,patch->atomIDList,patch->p);
     ++seq;
     for ( step = 0; step < numberOfCycles; ++step )
     {
@@ -102,7 +102,7 @@ void Sequencer::algorithm(void)
 	    DebugM(4,"Submit seq=" << seq << " Patch=" << patch->getPatchID() << "\n");
 	    reduction->submit(seq, REDUCTION_KINETIC_ENERGY,
 		patch->calcKineticEnergy());
-	    // collection->submitPositions(seq,patch->atomIDList,patch->p);
+	    collection->submitPositions(seq,patch->atomIDList,patch->p);
 	    ++seq;
         // }
     }

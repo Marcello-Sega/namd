@@ -1,6 +1,8 @@
 #include "CollectionMaster.top.h"
 #include "CollectionMaster.h"
 #include "InfoStream.h"
+#include "Node.h"
+#include "Output.h"
 
 #define DEBUGM
 #include "Debug.h"
@@ -22,14 +24,18 @@ void CollectionMaster::receivePositions(CollectVectorMsg *msg)
   if ( c = positions.submitData(msg->seq,msg->aid,msg->data) )
   {
     DebugM(3,"Collected positions at " << c->seq << endl);
-    iout << "\n\n********** POSITIONS " << c->seq << " **********\n\n";
     c->data.sort();
     int size = c->data.size();
+    // iout << "\n\n********** POSITIONS " << c->seq << " **********\n\n";
+    Vector *data = new Vector[size];
     for ( int i = 0; i < size; ++i )
     {
-      iout << c->data[i].aid << "  " << c->data[i].data << "\n" << endi;
+      data[i] = c->data[i].data;
+      // iout << c->data[i].aid << "  " << c->data[i].data << "\n" << endi;
     }
-    iout << "\n" << endi;
+    // iout << "\n" << endi;
+    Node::Object()->output->coordinate(msg->seq,size,data);
+    delete data;
     delete c;
   }
   delete msg;

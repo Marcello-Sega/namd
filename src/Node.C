@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1000 1997/02/06 15:58:50 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1001 1997/02/11 22:56:13 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -43,6 +43,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "Sequencer.h"
 #include "Controller.h"
 #include "NamdState.h"
+#include "Output.h"
 //#include "ProxyMgr.h"
 //#include "MessageComm.h"
 //#include "PatchMap.h"
@@ -83,6 +84,7 @@ Node::Node(GroupInitMsg *msg)
   configList = NULL;
   pdb = NULL;
   state = NULL;
+  output = NULL;
   Compute::setNode(this);
 
   if (_instance == 0) {
@@ -121,6 +123,7 @@ Node::Node(GroupInitMsg *msg)
 
 Node::~Node(void)
 {
+  delete output;
 }
 
 //----------------------------------------------------------------------
@@ -241,10 +244,13 @@ void Node::startup2(InitMsg *msg)
   DebugM(1,"In startup2() on node " << CMyPe() << endl);
   delete msg;
   
-  ComputeMap::Object()->printComputeMap();
-
   DebugM(1, "workDistrib->createPatches() Pe=" << CMyPe() << "\n");
-  if ( ! CMyPe() ) workDistrib->createPatches();
+  if ( ! CMyPe() )
+  {
+    ComputeMap::Object()->printComputeMap();
+    workDistrib->createPatches();
+    output = new Output;
+  }
 
   if ( ! CMyPe() )
   {
@@ -416,13 +422,16 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:50 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/02/11 22:56:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1001  1997/02/11 22:56:13  jim
+ * Added dcd file writing.
+ *
  * Revision 1.1000  1997/02/06 15:58:50  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

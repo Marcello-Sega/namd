@@ -37,6 +37,7 @@ class PatchMgr;
 class ComputeMgr;
 class Communicate;
 class NamdState;
+class Output;
 
 class Node : public BOCclass
 {
@@ -87,6 +88,7 @@ public:
   ConfigList *configList;
   PDB *pdb;
   NamdState *state;
+  Output *output;
 
   // Remove these calls?
   int myid() { return CMyPe(); }
@@ -118,12 +120,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:52 $
+ *	$Revision: 1.1001 $	$Date: 1997/02/11 22:56:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.1001  1997/02/11 22:56:14  jim
+ * Added dcd file writing.
+ *
  * Revision 1.1000  1997/02/06 15:58:52  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
