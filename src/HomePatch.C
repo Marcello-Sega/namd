@@ -68,6 +68,8 @@ HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
   flags.sequence = -1;
 
   numAtoms = atom.size();
+
+  nChild = 0;	// number of proxy spanning tree children
 }
 
 // Bind a Sequencer to this HomePatch
@@ -160,6 +162,39 @@ void HomePatch::unregisterProxy(UnregisterProxyMsg *msg) {
   delete msg;
 }
 
+void HomePatch::buildSpanningTree(void)
+{
+  nChild = 0;
+  if (proxy.size() == 0) return;
+  NodeIDList tree;
+  tree.resize(proxy.size()+1);
+  tree[0] = CkMyPe();
+  int nPatches = PatchMap::Object()->numPatches();
+  int s=1, e=proxy.size()+1;
+  ProxyListIter pli(proxy);
+  for ( pli = pli.begin(); pli != pli.end(); ++pli )
+  {
+    if ( pli->node < nPatches ) {
+      tree[--e] = pli->node;
+    } else {
+      tree[s++] = pli->node;
+    }
+  }
+  
+//CkPrintf("home: %d:(%d) %d %d %d %d %d\n", patchID, tree.size(),tree[0],tree[1],tree[2],tree[3],tree[4]);
+  for (int i=1; i<=PROXY_SPAN_DIM; i++) {
+    if (tree.size() <= i) break;
+    child[i-1] = tree[i];
+    nChild++;
+  }
+  ProxySpanningTreeMsg *msg = new ProxySpanningTreeMsg;
+  msg->patch = patchID;
+  msg->node = CkMyPe();
+  msg->tree = tree;
+  ProxyMgr::Object()->sendSpanningTree(msg);
+
+}
+
 void HomePatch::receiveResults(ProxyResultMsg *msg)
 {
   DebugM(4, "patchID("<<patchID<<") receiveRes() nodeID("<<msg->node<<")\n");
@@ -179,6 +214,29 @@ void HomePatch::receiveResults(ProxyResultMsg *msg)
   delete msg;
 }
 
+void HomePatch::receiveResults(ProxyCombinedResultMsg *msg)
+{
+  DebugM(4, "patchID("<<patchID<<") receiveRes() nodeID("<<msg->node<<")\n");
+//CkPrintf("[%d] Homepatch: %d receiveResults from %d nodes\n", CkMyPe(), patchID, n);
+  for (int i=0; i<msg->nodes.size(); i++) {
+    int node = msg->nodes[i];
+    ProxyListElem *pe = proxy.begin();
+    for ( ; pe->node != node; ++pe );
+    Results *r = pe->forceBox->open();
+    if (i==0) {
+      for ( int k = 0; k < Results::maxNumForces; ++k )
+      {
+        Force *f = r->f[k];
+        register ForceList::iterator f_i, f_e;
+        f_i = msg->forceList[k].begin();
+        f_e = msg->forceList[k].end();
+        for ( ; f_i != f_e; ++f_i, ++f ) *f += *f_i;
+      }
+    }
+    pe->forceBox->close(&r);
+  }
+  delete msg;
+}
 
 void HomePatch::positionsReady(int doMigration)
 {
@@ -209,39 +267,51 @@ void HomePatch::positionsReady(int doMigration)
 
   // Must Add Proxy Changes when migration completed!
   ProxyListIter pli(proxy);
-  int nPatches = PatchMap::Object()->numPatches();
-  int *pids = new int[proxy.size()];
-  int *pidi = pids;
-  int *pide = pids + proxy.size();
-  for ( pli = pli.begin(); pli != pli.end(); ++pli )
-  {
-    if ( pli->node < nPatches ) {
-      *(--pide) = pli->node;
-    } else {
-      *(pidi++) = pli->node;
+  int *pids;
+  int npid;
+  if (proxySendSpanning == 0) {
+    npid = proxy.size();
+    pids = new int[npid];
+    int *pidi = pids;
+    int *pide = pids + proxy.size();
+    int nPatches = PatchMap::Object()->numPatches();
+    for ( pli = pli.begin(); pli != pli.end(); ++pli )
+    {
+      if ( pli->node < nPatches ) {
+        *(--pide) = pli->node;
+      } else {
+        *(pidi++) = pli->node;
+      }
     }
   }
-  int seq = flags.sequence;
-  int priority = 64 + (seq % 256) * 256 + (patchID % 64);
-  if (doMigration) {
-      ProxyAllMsg *allmsg = new (sizeof(int)*8) ProxyAllMsg;
-      CkSetQueueing(allmsg, CK_QUEUEING_IFIFO);
-      *((int*) CkPriorityPtr(allmsg)) = priority;
-      allmsg->patch = patchID;
-      allmsg->flags = flags;
-      allmsg->positionList = p;
-      if (flags.doMolly) allmsg->avgPositionList = p_avg;
-      ProxyMgr::Object()->sendProxyAll(allmsg,proxy.size(),pids);
-  } else {
-      ProxyDataMsg *nmsg = new (sizeof(int)*8) ProxyDataMsg;
-      CkSetQueueing(nmsg, CK_QUEUEING_IFIFO);
-      *((int*) CkPriorityPtr(nmsg)) = priority;
-      nmsg->patch = patchID;
-      nmsg->flags = flags;
-      nmsg->positionList = p;
-      if (flags.doMolly) nmsg->avgPositionList = p_avg;
-      ProxyMgr::Object()->sendProxyData(nmsg,proxy.size(),pids);
-  }   
+  else {
+    npid = nChild;
+    pids = new int[PROXY_SPAN_DIM];
+    for (int i=0; i<nChild; i++) pids[i] = child[i];
+  }
+  if (npid) {
+    int seq = flags.sequence;
+    int priority = 64 + (seq % 256) * 256 + (patchID % 64);
+    if (doMigration) {
+        ProxyAllMsg *allmsg = new (sizeof(int)*8) ProxyAllMsg;
+        CkSetQueueing(allmsg, CK_QUEUEING_IFIFO);
+        *((int*) CkPriorityPtr(allmsg)) = priority;
+        allmsg->patch = patchID;
+        allmsg->flags = flags;
+        allmsg->positionList = p;
+        if (flags.doMolly) allmsg->avgPositionList = p_avg;
+        ProxyMgr::Object()->sendProxyAll(allmsg,npid,pids);
+    } else {
+        ProxyDataMsg *nmsg = new (sizeof(int)*8) ProxyDataMsg;
+        CkSetQueueing(nmsg, CK_QUEUEING_IFIFO);
+        *((int*) CkPriorityPtr(nmsg)) = priority;
+        nmsg->patch = patchID;
+        nmsg->flags = flags;
+        nmsg->positionList = p;
+        if (flags.doMolly) nmsg->avgPositionList = p_avg;
+        ProxyMgr::Object()->sendProxyData(nmsg,npid,pids);
+    }   
+  }
   delete [] pids;
   DebugM(4, "patchID("<<patchID<<") doing positions Ready\n");
   Patch::positionsReady(doMigration);

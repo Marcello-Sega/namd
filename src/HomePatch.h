@@ -21,11 +21,13 @@
 #include "MigrateAtomsMsg.h"
 #include "HomePatchTypes.h"
 #include "main.h"
+#include "common.h"
 #include "Migration.h"
 
 class RegisterProxyMsg;
 class UnregisterProxyMsg;
 class ProxyResultMsg;
+class ProxyCombinedResultMsg;
 class Sequencer;
 
 class HomePatch : public Patch {
@@ -47,6 +49,7 @@ public:
 
   // ProxyPatch sends Forces back to here (via ProxyMgr)
   void receiveResults(ProxyResultMsg *msg);
+  void receiveResults(ProxyCombinedResultMsg *msg);
 
   // AtomMigration messages passes from neighbor HomePatches to here.
   void depositMigration(MigrateAtomsMsg *);
@@ -94,6 +97,8 @@ public:
   // for ComputeHomePatches
   FullAtomList &getAtomList() { return (atom); }
 
+  // build spanning tree for proxy nodes
+  void buildSpanningTree(void);
 protected:
   virtual void boxClosed(int);
 
@@ -133,6 +138,9 @@ private:
   int numNeighbors;
   MigrationInfo realInfo[PatchMap::MaxOneAway];
   MigrationInfo *mInfo[3][3][3];
+
+  int child[PROXY_SPAN_DIM];	// spanning tree of proxies
+  int nChild;
 };
 
 #endif
