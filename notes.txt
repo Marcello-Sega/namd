@@ -1,11 +1,11 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                     NAMD 2.2b3 Release Notes                       |
+|                      NAMD 2.2 Release Notes                        |
 |                                                                    |
 +--------------------------------------------------------------------+
 
-This file includes directions for compiling and running NAMD,
-configuration file parameters for new simulation features,
+This file includes directions for running and compiling NAMD,
+an explanation of the automated usage reporting mechanism,
 advice for dealing with endian issues when switching platforms,
 a list of know deficiencies, and advice for reporting bugs.
 
@@ -15,9 +15,9 @@ New Features
 
 --- First Port to Windows NT ---
 
-NAMD now runs on Windows NT.  Windows 2000 probably works and
-Windows 98 might but I'm not promising anything.  You can now run
-NAMD on all those NT machines sit idle at night.
+NAMD now runs on Windows.  NAMD is built and tested on Windows NT,
+but should work on Windows 98 and 2000 as well.  You can now run
+NAMD on all those desktop machines that sit idle at night.
 
 --- Parallel PME Reciprocal Sum ---
 
@@ -170,6 +170,30 @@ mpirun -np X namd2 alanin.conf
 
 ----------------------------------------------------------------------
 
+Automated Usage Reporting
+
+NAMD may print the information similar to the following at startup:
+
+ Info: Sending usage information to NAMD developers via UDP.
+ Info: Sent data is: 1 NAMD  2.2  Solaris-Sparc  1    verdun  jim
+
+The information you see listed is sent via a single UDP packet and
+logged for future analysis.  The UDP protocol does not retransmit
+lost packets and does not attempt to establish a connection.  We will
+use this information only for statistical analysis to determine how
+frequently NAMD is actually being used.  Your user and machine name
+are only used for counting unique users, they will not be correlated
+with your download registration data.
+
+We collect this information in order to better justify continued
+development of NAMD to the NIH, our primary source of funding.  We
+also use collected information to direct NAMD development efforts.
+If you are opposed to this reporting, you are welcome to recompile
+NAMD and disable it.  Usage reporting is disabled in the released
+Windows binaries for version 2.2, but will be added in version 2.3.
+
+----------------------------------------------------------------------
+
 Endian Issues
 
 Some architectures write binary data (integer or floating point) with
@@ -194,6 +218,9 @@ Known Deficiencies
 - NAMD requires X-PLOR or CHARMM to produce the .psf structure input
   files.  If you don't have one of these, you probably can't use NAMD.
   We are planning on adding these features to VMD or a new program.
+
+- The DPMTA fast multipole electrostatics method is not available on
+  the Windows port.  PME with a periodic system is recommended instead.
 
 ----------------------------------------------------------------------
 
@@ -225,7 +252,7 @@ Compiling NAMD
 
 You must first download and install NAMD's communications library,
 Charm++/Converse, from http://charm.cs.uiuc.edu/.  You will have
-to obtain the latest beta version via public CVS.  The following
+to obtain the Aug 1, 2000 beta version via public CVS.  The following
 table shows the version needed for each NAMD architecture.  It is
 important that the same compiler is used for both Charm++ and NAMD.
 
@@ -233,6 +260,8 @@ important that the same compiler is used for both Charm++ and NAMD.
    ----------------   ---------------------------   ---------------
     Linux-i686-KCC     Linux with KCC 3.3 compiler   net-linux-kcc
     Linux-i686-g++     Linux with GNU compiler       net-linux
+  * Linux-Alpha-cxx    Alpha Linux w/ DEC compiler   net-linux-axp-cxx
+  * Linux-Alpha-g++    Alpha Linux w/ GNU compiler   net-linux-axp
     Origin2000-MPI-CC  SGI Origin 2000 with MPI      mpi-origin
     Origin2000-CC      SGI Origin 2000 w/o MPI       origin2000
     Tru64-Alpha-CC     Tru64 Unix w/ DEC compiler    net-axp-cc
@@ -247,8 +276,10 @@ important that the same compiler is used for both Charm++ and NAMD.
     AIX-RS6000-xlC     IBM AIX with xlC              net-rs6k
     IBM-SP             IBM SP Series                 sp3
     ASCI-Red           ASCI Red                      paragon-red
+  * Win32-i686-MSVC    Windows with MS Visual C++    net-win32
 
-  * These architectures may fail to build or be unstable.
+  * These architectures may fail to build or be unstable.  Building
+    on Win32 is not fully automated yet.  Don't try it at home.
 
 Once you have obtained the Charm++/Converse source code, you can
 build the libraries needed by NAMD for each architecture with the
