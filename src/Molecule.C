@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Molecule.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/06 20:38:38 $
+ *	$Revision: 1.2 $	$Date: 1996/08/16 04:39:46 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.2  1996/08/16 04:39:46  ari
+ * *** empty log message ***
+ *
  * Revision 1.1  1996/08/06 20:38:38  ari
  * Initial revision
  *
@@ -125,7 +128,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1 1996/08/06 20:38:38 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.2 1996/08/16 04:39:46 ari Exp $";
 
 #include "Molecule.h"
 #include <stdio.h>
@@ -153,8 +156,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,
 /*									*/
 /************************************************************************/
 
-Molecule::Molecule(SimParameters *simParams)
-
+Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
 {
 	this->simParams = simParams;
 	/*  Initialize array pointers to NULL	*/
@@ -189,6 +191,10 @@ Molecule::Molecule(SimParameters *simParams)
 	numAcceptors=0;
 	numExclusions=0;
 	numConstraints=0;
+
+	if (param != NULL && filename != NULL) {
+	    read_psf_file(filename, param);
+	}
 }
 /*			END OF FUNCTION Molecule			*/
 

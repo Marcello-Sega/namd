@@ -6,7 +6,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.1 1996/08/16 01:54:59 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.2 1996/08/16 04:39:46 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -35,48 +35,21 @@ Namd::~Namd(void)
 // startup(char *) 
 void Namd::startup(char *confFile)
 {
-  Molecule *molecule;
-  Parameters *parameter;
-  SimParameters *simParams;
-  ConfigList *configList;
-
-    char *currentdir=NULL;
-  // this function is pretty much similar to master_startupp of namd.1.4
-  // for this skeleton version it is empty
-  CPrintf("Namd::startup running %s\n",confFile);
-
-  if ( confFile != NULL )
-    configList = new ConfigList(confFile);
-  else
-    NAMD_die("Namd::startup() Config File ptr is NULL");
-
-  StringList *moleculeFilename = configList->find("structure");
-  StringList *parameterFilename = configList->find("parameters");
-  StringList *coordinateFilename = configList->find("coordinates");
-
-  cout << "files are : " << moleculeFilename->data << " and "
-      << parameterFilename->data << " and " << coordinateFilename->data
-      << endl;
-
-  simParams =  new SimParameters();
-  molecule = new Molecule(simParams);
-  parameter = new Parameters();
-
-  simParams->initialize_config_data(configList,currentdir);
-  parameter->read_parameter_file(parameterFilename->data);
-  parameter->done_reading_files();
-  parameter->print_param_summary();
-
-  cout << "Reading Molecule file" << endl;
-  molecule->read_psf_file(moleculeFilename->data, parameter);
-  cout << "Done Reading Molecule file" << endl;
+  namdState.configFileInit(confFile);
+  if (namdState.status()) {
+    CPrintf("Namd::startup() - could not initialize namdState from %s\n", 
+      confFile);
+    CharmExit();
+  }
 }
 
 
 // run(void) runs the specified simulation to completion
 void Namd::run(void)
 {
-  // node->run();
+  CPrintf("Namd::run() invoked\n");
+//  node->run();
+  CharmExit();
 }
 
 /***************************************************************************
@@ -84,7 +57,7 @@ void Namd::run(void)
  *
  *	$RCSfile: Namd.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/16 01:54:59 $
+ *	$Revision: 1.2 $	$Date: 1996/08/16 04:39:46 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -93,9 +66,10 @@ void Namd::run(void)
  * REVISION HISTORY:
  *
  * $Log: Namd.C,v $
+ * Revision 1.2  1996/08/16 04:39:46  ari
+ * *** empty log message ***
+ *
  * Revision 1.1  1996/08/16 01:54:59  ari
  * Initial revision
- *
- *
  *
  ***************************************************************************/

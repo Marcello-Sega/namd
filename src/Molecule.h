@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Molecule.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/06 20:38:38 $
+ *	$Revision: 1.2 $	$Date: 1996/08/16 04:39:46 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -25,6 +25,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.2  1996/08/16 04:39:46  ari
+ * *** empty log message ***
+ *
  * Revision 1.1  1996/08/06 20:38:38  ari
  * Initial revision
  *
@@ -190,7 +193,6 @@ private:
 	// this is called after a molecule is sent our (or received in)
 	void build_atom_status(void);
 
-
 	// added during the trasition from 1x to 2
 	SimParameters *simParams;
 
@@ -204,12 +206,13 @@ public:
 	int numAcceptors;	//  Number of hydrogen bond acceptors
 	int numExclusions;	//  Number of exclusions
 	int numConstraints;	//  Number of atoms constrained
-	int numMultipleDihedrals; 
-				//  Number of dihedrals with multiple periodicity
-	int numMultipleImpropers; 
-				//  Number of impropers with multiple periodicity
 
-	Molecule(SimParameters *);		//  Constructor
+	//  Number of dihedrals with multiple periodicity
+	int numMultipleDihedrals; 
+	//  Number of impropers with multiple periodicity
+	int numMultipleImpropers; 
+
+	Molecule(SimParameters *, Parameters *param=NULL, char *filename=NULL);
 	~Molecule();		//  Destructor
 	void read_psf_file(char *, Parameters *);
 				//  Read in a .psf file given

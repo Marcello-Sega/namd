@@ -11,7 +11,7 @@
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/06 20:38:38 $
+ *	$Revision: 1.2 $	$Date: 1996/08/16 04:39:46 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -20,6 +20,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.2  1996/08/16 04:39:46  ari
+ * *** empty log message ***
+ *
  * Revision 1.1  1996/08/06 20:38:38  ari
  * Initial revision
  *
@@ -414,6 +417,9 @@ public:
 public:
 
 	SimParameters() {};
+	SimParameters(ConfigList *c, char *&cwd) {
+	  initialize_config_data(c,cwd);
+	};
 	~SimParameters() {};
 
 	void initialize_config_data(ConfigList *, char *&cwd);

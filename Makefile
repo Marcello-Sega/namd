@@ -1,8 +1,8 @@
 CHARMC = /Projects/l1/namd.2.0/charm/bin/charmc
 CHARMXI = /Projects/l1/namd.2.0/charm/bin/charmc
 
-CXX = CC -Aa -D_HPUX_SOURCE -g
-CXXFLAGS = -I/Projects/l1/namd.2.0/charm/include
+CXX = CC -Aa -D_HPUX_SOURCE
+CXXFLAGS = -I/Projects/l1/namd.2.0/charm/include $(CXXOPTS)
 
 .SUFFIXES: 	.ci
 
@@ -11,7 +11,10 @@ ECHO = echo
 MOVE = mv
 
 OBJS = \
-	main.o Message.o Molecule.o PDB.o PDBData.o ConfigList.o Inform.o Parameters.o common.o strlib.o SimParameters.o ParseOptions.o
+	main.o Message.o Molecule.o PDB.o PDBData.o \
+	ConfigList.o Inform.o Parameters.o common.o \
+	strlib.o SimParameters.o ParseOptions.o Namd.o \
+	NamdState.o
 
 CXXFILES = $(OBJS:.o=.C)
 

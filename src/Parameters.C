@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Parameters.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/06 20:38:38 $
+ *	$Revision: 1.2 $	$Date: 1996/08/16 04:39:46 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -25,6 +25,9 @@
  * REVISION HISTORY:
  *
  * $Log: Parameters.C,v $
+ * Revision 1.2  1996/08/16 04:39:46  ari
+ * *** empty log message ***
+ *
  * Revision 1.1  1996/08/06 20:38:38  ari
  * Initial revision
  *
@@ -76,7 +79,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Parameters.C,v 1.1 1996/08/06 20:38:38 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Parameters.C,v 1.2 1996/08/16 04:39:46 ari Exp $";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -198,7 +201,7 @@ struct vdw_pair_params
 /*									*/
 /************************************************************************/
 
-Parameters::Parameters()
+Parameters::Parameters(char *f)
 {
 	/*  Set all the pointers to NULL				*/
         atomTypeNames=NULL;
@@ -228,6 +231,11 @@ Parameters::Parameters()
 	/* have been read in, then this will be set to true and the     */
 	/* arrays of parameters will be set up				*/
 	AllFilesRead = FALSE;
+
+	if (NULL != f) {
+	    read_parameter_file(f);
+	    done_reading_files();
+	}
 }
 /*			END OF FUNCTION Parameters			*/
 

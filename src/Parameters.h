@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Parameters.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/06 20:38:38 $
+ *	$Revision: 1.2 $	$Date: 1996/08/16 04:39:46 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: Parameters.h,v $
+ * Revision 1.2  1996/08/16 04:39:46  ari
+ * *** empty log message ***
+ *
  * Revision 1.1  1996/08/06 20:38:38  ari
  * Initial revision
  *
@@ -263,7 +266,7 @@ private:
 	void free_vdw_pair_list();
 
 public:
-	Parameters();			 	//  Constructor
+	Parameters(char *f=NULL);
 	~Parameters();				//  Destructor
 
         // return a string for the Nth atom type.  This can only be
@@ -274,16 +277,16 @@ public:
 	  return (atomTypeNames + (a * (MAX_ATOMTYPE_CHARS + 1)));
         }
 
-	void read_parameter_file(char *);	//  Read a parameter file
+	//  Read a parameter file
+	void read_parameter_file(char *);
 
-	void done_reading_files();		//  Signal the parameter
-						//  object that all of
-						//  the parameter files
-						//  have been read in
-	void done_reading_structure();		//  Signal the parameter
-						//  object that the
-						//  structure file has
-						//  been read in
+	//  Signal the parameter object that all of
+	//  the parameter files have been read in
+	void done_reading_files();
+
+	//  Signal the parameter object that the
+	//  structure file has been read in
+	void done_reading_structure();
 
 	//  The assign_*_index routines are used to assign
 	//  an index to atoms or bonds.  If an specific atom

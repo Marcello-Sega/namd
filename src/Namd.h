@@ -6,12 +6,38 @@
 /*									   */
 /***************************************************************************/
 
+#ifndef _NAMD_H
+#define _NAMD_H
+
+#include "NamdState.h"
+
+class Node;
+
+class Namd
+{
+private:
+  Node *node;
+  NamdState namdState;
+
+public:
+    // Constructor for startup node
+  Namd(void);             
+    // Shut down slaves and clean up
+  ~Namd();                
+    // read in various input files by invoking
+    // proper classes (parameters, molecule etc)
+  void startup(char *);   
+  void run();
+};
+
+#endif /* _NAMD_H */
+
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: Namd.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/16 01:54:16 $
+ *	$Revision: 1.2 $	$Date: 1996/08/16 04:39:46 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -20,6 +46,9 @@
  * REVISION HISTORY:
  *
  * $Log: Namd.h,v $
+ * Revision 1.2  1996/08/16 04:39:46  ari
+ * *** empty log message ***
+ *
  * Revision 1.1  1996/08/16 01:54:16  ari
  * Initial revision
  *
@@ -39,27 +68,3 @@
  * Initial revision
  *
  ***************************************************************************/
-#ifndef _NAMD_H
-#define _NAMD_H
-
-class Node;
-
-class Namd
-{
-private:
-  Node *node;
-
-public:
-    // Constructor for startup node
-  Namd(void);             
-    // Shut down slaves and clean up
-  ~Namd();                
-    // read in various input files by invoking
-    // proper classes (parameters, molecule etc)
-  void startup(char *);   
-  void run();
-
-
-};
-
-#endif /* _NAMD_H */
