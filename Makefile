@@ -104,6 +104,7 @@ OBJS = \
         $(DSTDIR)/FreeEnergyRestrain.o \
         $(DSTDIR)/FreeEnergyRMgr.o \
         $(DSTDIR)/FreeEnergyVector.o \
+        $(DSTDIR)/GromacsTopFile.o \
 	$(DSTDIR)/heap.o \
 	$(DSTDIR)/HomePatch.o \
 	$(DSTDIR)/IMDOutput.o \
