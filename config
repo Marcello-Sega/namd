@@ -6,7 +6,7 @@ syntax:
   echo 'Environment variable NAMD_BUILD_BASE may point to scratch directory.'
   echo ''
   echo '<arch>: ' 
-  ( cd arch ; ls -1 *.arch |sed -e 's/\.arch//' | egrep -v 'template' | pr -3 -t)
+  ( cd arch ; ls -1 *.arch |sed -e 's/\.arch//' | egrep -v 'template' | pr -2 -t)
   echo ''
   exit 1
 
