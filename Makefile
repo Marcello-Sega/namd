@@ -155,6 +155,7 @@ OBJS = \
 	$(DSTDIR)/RecBisection.o \
 	$(DSTDIR)/ReductionMgr.o \
 	$(DSTDIR)/RefineOnly.o \
+	$(DSTDIR)/ScriptTcl.o \
 	$(DSTDIR)/Sequencer.o \
 	$(DSTDIR)/Set.o \
 	$(DSTDIR)/SimParameters.o \

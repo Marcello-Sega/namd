@@ -2726,6 +2726,11 @@ obj/Node.o: \
 	src/SMDMsgs.h \
 	src/TestController.h \
 	src/TestSequencer.h \
+	src/ScriptTcl.h \
+	src/Broadcasts.h \
+	src/BroadcastObject.h \
+	src/BroadcastMgr.h \
+	src/BroadcastClient.h \
 	inc/Node.def.h
 	$(CXX) $(CXXFLAGS) -o obj/Node.o -c src/Node.C
 obj/Output.o: \
@@ -3175,6 +3180,50 @@ obj/RefineOnly.o: \
 	src/Rebalancer.h \
 	src/heap.h
 	$(CXX) $(CXXFLAGS) -o obj/RefineOnly.o -c src/RefineOnly.C
+obj/ScriptTcl.o: \
+	src/ScriptTcl.C \
+	src/ScriptTcl.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/ResizeArrayPrimIter.h \
+	src/Broadcasts.h \
+	src/Lattice.h \
+	src/BroadcastObject.h \
+	src/BroadcastMgr.h \
+	src/main.h \
+	src/BOCgroup.h \
+	inc/main.decl.h \
+	inc/WorkDistrib.decl.h \
+	inc/ReductionMgr.decl.h \
+	inc/PatchMgr.decl.h \
+	inc/ProxyMgr.decl.h \
+	inc/Node.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/ComputeMgr.decl.h \
+	inc/CollectionMgr.decl.h \
+	inc/CollectionMaster.decl.h \
+	inc/BroadcastMgr.decl.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/UniqueSetIter.h \
+	src/ProcessorPrivate.h \
+	src/BroadcastClient.h \
+	src/ConfigList.h \
+	src/Node.h \
+	src/SimParameters.h \
+	src/Communicate.h \
+	src/MStream.h \
+	src/Thread.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/ScriptTcl.o -c src/ScriptTcl.C
 obj/Sequencer.o: \
 	src/Sequencer.C \
 	src/Node.h \
