@@ -144,6 +144,7 @@ void PatchMgr::sendAtoms(PatchID pid, FullAtomList a) {
 
 void PatchMgr::recvAtoms(MovePatchesMsg *msg) {
     patchMap->homePatch(msg->pid)->reinitAtoms(msg->atom);
+    delete msg;
 }
 
 
