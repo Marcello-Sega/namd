@@ -6,7 +6,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.11 1996/11/30 00:38:14 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.12 1996/12/05 21:37:43 ari Exp $";
 
 #include "unistd.h"
 
@@ -30,6 +30,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.
 #include "PatchMgr.h"
 #include "ComputeMgr.top.h"
 #include "ComputeMgr.h"
+#include "ProxyMgr.top.h"
+#include "ProxyMgr.h"
 
 
 // Namd(void ) is the constructor for the startup node.  It needs to
@@ -43,11 +45,15 @@ Namd::Namd(void)
   initmsg = new (MsgIndex(InitMsg)) InitMsg;
   group.workDistrib = new_group(WorkDistrib, initmsg);
 
-  // Create PatchMgr and send it an empty message
+  // Create ProxyMgr
+  initmsg = new (MsgIndex(InitMsg)) InitMsg;
+  group.proxyMgr = new_group(ProxyMgr, initmsg);
+
+  // Create PatchMgr
   initmsg = new (MsgIndex(InitMsg)) InitMsg;
   group.patchMgr = new_group(PatchMgr, initmsg);
 
-  // Create ComputeMgr and send it an empty message
+  // Create ComputeMgr
   initmsg = new (MsgIndex(InitMsg)) InitMsg;
   group.computeMgr = new_group(ComputeMgr, initmsg);
 
@@ -91,8 +97,8 @@ void Namd::startup(char *confFile)
  * RCS INFORMATION:
  *
  *	$RCSfile: Namd.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.11 $	$Date: 1996/11/30 00:38:14 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.12 $	$Date: 1996/12/05 21:37:43 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -101,6 +107,9 @@ void Namd::startup(char *confFile)
  * REVISION HISTORY:
  *
  * $Log: Namd.C,v $
+ * Revision 1.12  1996/12/05 21:37:43  ari
+ * *** empty log message ***
+ *
  * Revision 1.11  1996/11/30 00:38:14  jim
  * added ComputeMgr creation
  *

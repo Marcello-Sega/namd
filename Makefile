@@ -22,11 +22,13 @@ OBJS = \
 	ComputePatch.o ComputeNonbondedUtil.o LJTable.o \
 	ComputeNonbondedSelf.o ComputeNonbondedPair.o \
 	ComputeAngles.o ComputeDihedrals.o ComputeImpropers.o \
-	ComputeBonds.o ComputeNonbondedExcl.o ComputeMgr.o
+	ComputeBonds.o ComputeNonbondedExcl.o ComputeMgr.o \
+	ProxyMgr.o
 
 CXXFILES = $(OBJS:.o=.C)
 
-INTERFACES = main.ci Node.ci WorkDistrib.ci PatchMgr.ci Compute.ci ComputeMgr.ci
+INTERFACES = main.ci Node.ci WorkDistrib.ci PatchMgr.ci Compute.ci \
+		ComputeMgr.ci ProxyMgr.ci
 
 namd2:	$(OBJS)
 	$(CHARMC) -ld++-option "-I $(INCLUDE)" -g -language charm++ -o namd2 $(OBJS)

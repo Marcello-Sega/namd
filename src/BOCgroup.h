@@ -22,6 +22,7 @@ class BOCgroup {
 public:
   int workDistrib;
   int patchMgr;
+  int proxyMgr;
   int computeMgr;
   int node;
 };

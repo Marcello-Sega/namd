@@ -24,6 +24,7 @@ public:
     // read in various input files by invoking
     // proper classes (parameters, molecule etc)
   void startup(char *);   
+  static void die() { CharmExit(); }
 
 private:
   Node *node;
@@ -41,7 +42,7 @@ private:
  *
  *	$RCSfile: Namd.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/11/22 00:18:51 $
+ *	$Revision: 1.5 $	$Date: 1996/12/05 21:37:53 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -50,6 +51,9 @@ private:
  * REVISION HISTORY:
  *
  * $Log: Namd.h,v $
+ * Revision 1.5  1996/12/05 21:37:53  ari
+ * *** empty log message ***
+ *
  * Revision 1.4  1996/11/22 00:18:51  ari
  * *** empty log message ***
  *
