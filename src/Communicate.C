@@ -14,7 +14,6 @@ CpvStaticDeclare(CmmTable, CsmMessages);
 
 static void CsmHandler(void *msg)
 {
-  CmiGrabBuffer(&msg);
   // get start of user message
   int *m = (int *) ((char *)msg+CmiMsgHeaderSizeBytes);
   // sending node  & tag act as tags
