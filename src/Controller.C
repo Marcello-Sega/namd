@@ -963,6 +963,7 @@ void Controller::printEnergies(int step)
       iout << iINFO;
       if ( benchPhase == 1 ) iout << "Initial time: ";
       else iout << "Benchmark time: ";
+      iout << CkNumPes() << " CPUs ";
       {
         BigReal wallTime = CmiWallTimer() - startBenchTime;
         BigReal wallPerStep =
@@ -971,7 +972,7 @@ void Controller::printEnergies(int step)
 	BigReal days = 1.0 / (24.0 * 60.0 * 60.0);
 	BigReal daysPerNano = wallPerStep * days / ns;
 	iout << wallPerStep << " s/step " << daysPerNano << " days/ns ";
-        iout << (memusage()/1024) << " kB of memory in use.\n" << endi;
+        iout << (memusage()/1024) << " kB memory\n" << endi;
       }
       break;
     }
