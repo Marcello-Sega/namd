@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1011 1997/03/11 04:04:38 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1012 1997/03/11 07:30:20 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -72,6 +72,7 @@ void Sequencer::algorithm(void)
     const int numberOfCycles = this->numberOfCycles;
     const int stepsPerCycle = this->stepsPerCycle;
     const BigReal timestep = simParams->dt;
+    const int first = simParams->firstTimestep;
 
     // Do we do full electrostatics?
     patch->flags.doFullElectrostatics =
@@ -83,8 +84,8 @@ void Sequencer::algorithm(void)
 
     DebugM(4,"Submit seq=" << seq << " Patch=" << patch->getPatchID() << "\n");
     reduction->submit(seq,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
-    collection->submitPositions(seq,patch->atomIDList,patch->p);
-    collection->submitVelocities(seq,patch->atomIDList,patch->v);
+    collection->submitPositions(seq+first,patch->atomIDList,patch->p);
+    collection->submitVelocities(seq+first,patch->atomIDList,patch->v);
     ++seq;
     for ( step = 0; step < numberOfCycles; ++step )
     {
@@ -102,8 +103,8 @@ void Sequencer::algorithm(void)
 	DebugM(4,"Submit seq=" <<seq<<" Patch="<<patch->getPatchID()<<"\n");
 	reduction->submit(seq, REDUCTION_KINETIC_ENERGY,
 	    patch->calcKineticEnergy());
-	collection->submitPositions(seq,patch->atomIDList,patch->p);
-	collection->submitVelocities(seq,patch->atomIDList,patch->v);
+	collection->submitPositions(seq+first,patch->atomIDList,patch->p);
+	collection->submitVelocities(seq+first,patch->atomIDList,patch->v);
 	++seq;
     }
     terminate();
@@ -121,12 +122,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1011 $     $Date: 1997/03/11 04:04:38 $
+ *      $Revision: 1.1012 $     $Date: 1997/03/11 07:30:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1012  1997/03/11 07:30:20  jim
+ * Once more change to support firstTimestep parameter.
+ *
  * Revision 1.1011  1997/03/11 04:04:38  jim
  * Now properly handles firstTimeStep parameter.
  *
