@@ -610,6 +610,9 @@ void WorkDistrib::mapComputes(void)
   if ( node->simParameters->globalForcesOn )
     mapComputeHomePatches(computeGlobalType);
 
+  if ( node->simParameters->extForcesOn )
+    mapComputeHomePatches(computeExtType);
+
   mapComputeNonbonded();
   mapComputeHomePatches(computeBondsType);
   mapComputeHomePatches(computeAnglesType);

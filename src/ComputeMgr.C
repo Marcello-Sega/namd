@@ -34,6 +34,7 @@
 #include "ComputeFullDirect.h"
 #include "ComputeGlobal.h"
 #include "ComputeGlobalMsgs.h"
+#include "ComputeExt.h"
 #include "ComputeDPMTA.h"
 #include "ComputeDPME.h"
 #include "ComputeDPMEMsgs.h"
@@ -303,6 +304,11 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	break;
       case computeGlobalType:
 	c = computeGlobalObject = new ComputeGlobal(i,this); // unknown delete
+	map->registerCompute(i,c);
+	c->initialize();
+	break;
+      case computeExtType:
+	c = new ComputeExt(i); // unknown delete
 	map->registerCompute(i,c);
 	c->initialize();
 	break;

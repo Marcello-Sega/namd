@@ -745,6 +745,16 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
 
    // END rotating constraints changes
 
+   // external command forces
+   opts.optionalB("main", "extForces", "External command forces?",
+      &extForcesOn, FALSE);
+   opts.require("extForces", "extForcesCommand",
+      "External forces command", extForcesCommand);
+   opts.require("extForces", "extCoordFilename",
+      "External forces coordinate filename", extCoordFilename);
+   opts.require("extForces", "extForceFilename",
+      "External forces force filename", extForceFilename);
+
    //****** BEGIN SMD constraints changes 
 
    // SMD constraints
@@ -2274,6 +2284,16 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    
    if (consForceOn)
      iout << iINFO << "CONSTANT FORCE ACTIVE\n";
+
+   // external command forces
+
+   if (extForcesOn) {
+     iout << iINFO << "EXTERNAL COMMAND FORCES ACTIVE\n";
+     iout << iINFO << "EXT FORCES COMMAND: " << extForcesCommand << "\n";
+     iout << iINFO << "EXT COORD FILENAME: " << extCoordFilename << "\n";
+     iout << iINFO << "EXT FORCE FILENAME: " << extForceFilename << "\n";
+     iout << endi;
+   }
    
    // Global forces configuration
 

@@ -26,6 +26,7 @@ obj/main.o: \
 	inc/NamdNborLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
+	inc/ComputeExtMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
@@ -146,6 +147,7 @@ obj/BackEnd.o: \
 	inc/NamdNborLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
+	inc/ComputeExtMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
@@ -658,6 +660,66 @@ obj/ComputeEField.o: \
 	src/SortedArray.h \
 	src/SortableResizeArray.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeEField.o $(COPTC) src/ComputeEField.C
+obj/ComputeExt.o: \
+	src/ComputeExt.C \
+	src/Node.h \
+	src/main.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/Node.decl.h \
+	src/PatchMap.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/PatchMap.inl \
+	src/AtomMap.h \
+	src/ComputeExt.h \
+	src/ComputeHomePatches.h \
+	src/Compute.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/InfoStream.h \
+	inc/PatchMgr.decl.h \
+	src/HomePatchTypes.h \
+	inc/ComputeExtMgr.decl.h \
+	src/PatchMgr.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/GromacsTopFile.h \
+	src/ReductionMgr.h \
+	src/ComputeMgr.h \
+	inc/ComputeMgr.decl.h \
+	src/Debug.h \
+	src/SimParameters.h \
+	src/Communicate.h \
+	src/MStream.h \
+	src/WorkDistrib.h \
+	src/ComputeMap.h \
+	inc/WorkDistrib.decl.h \
+	src/varsizemsg.h \
+	inc/ComputeExtMgr.def.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeExt.o $(COPTC) src/ComputeExt.C
 obj/ComputeFreeEnergy.o: \
 	src/ComputeFreeEnergy.C \
 	src/InfoStream.h \
@@ -1290,6 +1352,7 @@ obj/ComputeMgr.o: \
 	src/ComputeHomePatches.h \
 	src/ComputeGlobal.h \
 	src/ComputeGlobalMsgs.h \
+	src/ComputeExt.h \
 	src/ComputeDPMTA.h \
 	src/ComputeDPME.h \
 	src/ComputeDPMEMsgs.h \
@@ -2016,6 +2079,7 @@ obj/FreeEnergyVector.o: \
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/FreeEnergyVector.o $(COPTC) src/FreeEnergyVector.C
 obj/GromacsTopFile.o: \
 	src/GromacsTopFile.C \
+	src/common.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/GromacsTopFile.h
@@ -2465,6 +2529,7 @@ obj/Node.o: \
 	inc/NamdNborLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
+	inc/ComputeExtMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
@@ -2695,6 +2760,7 @@ obj/PatchMgr.o: \
 	inc/NamdNborLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
+	inc/ComputeExtMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
@@ -2845,6 +2911,7 @@ obj/ProxyPatch.o: \
 	inc/NamdNborLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
+	inc/ComputeExtMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
@@ -3163,6 +3230,7 @@ obj/WorkDistrib.o: \
 	inc/NamdNborLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
+	inc/ComputeExtMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \

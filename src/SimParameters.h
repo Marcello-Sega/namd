@@ -190,6 +190,11 @@ public:
         int SMDOutputFreq;              //  Output frequency for SMD constr.
         //****** END SMD constraints changes 
 
+        Bool extForcesOn;		//  Are ext command forces present?
+        char extForcesCommand[257];
+        char extCoordFilename[129];
+        char extForceFilename[129];
+
 	Bool globalForcesOn;		//  Are global forces present?
 	Bool tclForcesOn;		//  Are Tcl forces present?
 	Bool freeEnergyOn;		//  Doing free energy perturbation?

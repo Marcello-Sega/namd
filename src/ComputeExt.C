@@ -1,0 +1,295 @@
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+#include "Node.h"
+#include "PatchMap.h"
+#include "PatchMap.inl"
+#include "AtomMap.h"
+#include "ComputeExt.h"
+#include "ComputeExtMgr.decl.h"
+#include "PatchMgr.h"
+#include "Molecule.h"
+#include "ReductionMgr.h"
+#include "ComputeMgr.h"
+#include "ComputeMgr.decl.h"
+// #define DEBUGM
+#define MIN_DEBUG_LEVEL 3
+#include "Debug.h"
+#include "SimParameters.h"
+#include "WorkDistrib.h"
+#include "varsizemsg.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
+
+#ifndef SQRT_PI
+#define SQRT_PI 1.7724538509055160273 /* mathematica 15 digits*/
+#endif
+
+class ExtCoordMsg : public CMessage_ExtCoordMsg {
+public:
+  int sourceNode;
+  int numAtoms;
+  Lattice lattice;
+  CompAtom *coord;
+};
+
+class ExtForceMsg : public CMessage_ExtForceMsg {
+public:
+  BigReal energy;
+  BigReal virial[6];
+  Force *force;
+};
+
+class ComputeExtMgr : public BOCclass {
+public:
+  ComputeExtMgr();
+  ~ComputeExtMgr();
+
+  void setCompute(ComputeExt *c) { extCompute = c; }
+
+  void recvCoord(ExtCoordMsg *);
+  void recvForce(ExtForceMsg *);
+
+private:
+  CProxy_ComputeExtMgr extProxy;
+  ComputeExt *extCompute;
+  Lattice lattice;
+
+  int numSources;
+  int numArrived;
+  ExtCoordMsg **coordMsgs;
+  int numAtoms;
+  CompAtom *coord;
+};
+
+ComputeExtMgr::ComputeExtMgr() :
+  extProxy(thisgroup), extCompute(0), numSources(0), numArrived(0),
+  coordMsgs(0), coord(0), numAtoms(0) {
+  CpvAccess(BOCclass_group).computeExtMgr = thisgroup;
+}
+
+ComputeExtMgr::~ComputeExtMgr() {
+  delete [] coordMsgs;
+  delete [] coord;
+}
+
+ComputeExt::ComputeExt(ComputeID c) :
+  ComputeHomePatches(c)
+{
+  CProxy_ComputeExtMgr::ckLocalBranch(
+	CpvAccess(BOCclass_group).computeExtMgr)->setCompute(this);
+
+  reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+
+}
+
+ComputeExt::~ComputeExt()
+{
+}
+
+void ComputeExt::doWork()
+{
+  ResizeArrayIter<PatchElem> ap(patchList);
+
+#if 0
+  // Skip computations if nothing to do.
+  if ( ! patchList[0].p->flags.doFullElectrostatics )
+  {
+    for (ap = ap.begin(); ap != ap.end(); ap++) {
+      CompAtom *x = (*ap).positionBox->open();
+      Results *r = (*ap).forceBox->open();
+      (*ap).positionBox->close(&x);
+      (*ap).forceBox->close(&r);
+    }
+    reduction->submit();
+    return;
+  }
+#endif
+
+  // allocate message
+  int numLocalAtoms = 0;
+  for (ap = ap.begin(); ap != ap.end(); ap++) {
+    numLocalAtoms += (*ap).p->getNumAtoms();
+  }
+
+  ExtCoordMsg *msg = new (numLocalAtoms, 0) ExtCoordMsg;
+  msg->sourceNode = CkMyPe();
+  msg->numAtoms = numLocalAtoms;
+  msg->lattice = patchList[0].p->flags.lattice;
+  CompAtom *data_ptr = msg->coord;
+
+  // get positions
+  for (ap = ap.begin(); ap != ap.end(); ap++) {
+    CompAtom *x = (*ap).positionBox->open();
+#if 0
+    if ( patchList[0].p->flags.doMolly ) {
+      (*ap).positionBox->close(&x);
+      x = (*ap).avgPositionBox->open();
+    }
+#endif
+    int numAtoms = (*ap).p->getNumAtoms();
+
+    for(int i=0; i<numAtoms; ++i)
+    {
+      *data_ptr = x[i];
+      ++data_ptr;
+    }
+
+#if 0
+    if ( patchList[0].p->flags.doMolly ) { (*ap).avgPositionBox->close(&x); }
+    else { (*ap).positionBox->close(&x); }
+#endif
+    (*ap).positionBox->close(&x);
+  }
+
+  CProxy_ComputeExtMgr extProxy(CpvAccess(BOCclass_group).computeExtMgr);
+#if CHARM_VERSION > 050402
+  extProxy[0].recvCoord(msg);
+#else
+  extProxy.recvCoord(msg,0);
+#endif
+
+}
+
+void ComputeExtMgr::recvCoord(ExtCoordMsg *msg) {
+  if ( ! numSources ) {
+    numSources = CkNumPes();
+    int npatches = (PatchMap::Object())->numPatches();
+    if ( numSources > npatches ) numSources = npatches;
+    coordMsgs = new ExtCoordMsg*[numSources];
+    for ( int i=0; i<CkNumPes(); ++i ) { coordMsgs[i] = 0; }
+    numArrived = 0;
+    numAtoms = Node::Object()->molecule->numAtoms;
+    coord = new CompAtom[numAtoms];
+  }
+
+  int i;
+  for ( i=0; i < msg->numAtoms; ++i ) {
+    coord[msg->coord[i].id] = msg->coord[i];
+  }
+
+  coordMsgs[numArrived] = msg;
+  ++numArrived;
+
+  if ( numArrived < numSources ) return;
+  numArrived = 0;
+
+  // ALL DATA ARRIVED --- CALCULATE FORCES
+  SimParameters *simParams = Node::Object()->simParameters;
+  FILE *file;
+  int iret;
+
+  // write coordinates to file
+  //iout << "writing to file " << simParams->extCoordFilename << "\n" << endi;
+  file = fopen(simParams->extCoordFilename,"w");
+  if ( ! file ) { NAMD_die(strerror(errno)); }
+  for ( i=0; i<numAtoms; ++i ) {
+    double x = coord[i].position.x;
+    double y = coord[i].position.y;
+    double z = coord[i].position.z;
+    iret = fprintf(file,"%f %f %f\n",x,y,z);
+    if ( iret < 0 ) { NAMD_die(strerror(errno)); }
+  }
+  fclose(file);
+
+  // run user-specified command
+  //iout << "running command " << simParams->extForcesCommand << "\n" << endi;
+  iret = system(simParams->extForcesCommand);
+  if ( iret == -1 ) { NAMD_die(strerror(errno)); }
+  if ( iret ) { NAMD_die("Error running command for external forces."); }
+
+  // remove coordinate file
+  iret = remove(simParams->extCoordFilename);
+  if ( iret ) { NAMD_die(strerror(errno)); }
+
+  // read forces from file (overwrite positions)
+  //iout << "reading from file " << simParams->extForceFilename << "\n" << endi;
+  file = fopen(simParams->extForceFilename,"r");
+  if ( ! file ) { NAMD_die(strerror(errno)); }
+  for ( i=0; i<numAtoms; ++i ) {
+    double x, y, z;
+    iret = fscanf(file,"%lf %lf %lf\n", &x, &y, &z);
+    if ( iret != 3 ) { NAMD_die("Error reading external forces file."); }
+    coord[i].position.x = x; coord[i].position.y = y; coord[i].position.z = z;
+  }
+  BigReal energy = 0;
+  BigReal virial[6];
+  virial[0] = 0; virial[1] = 0; virial[2] = 0;
+  virial[3] = 0; virial[4] = 0; virial[5] = 0;
+  fclose(file);
+
+  // remove force file
+  iret = remove(simParams->extForceFilename);
+  if ( iret ) { NAMD_die(strerror(errno)); }
+
+  // distribute forces
+
+  for ( int j=0; j < numSources; ++j ) {
+    ExtCoordMsg *cmsg = coordMsgs[j];
+    ExtForceMsg *fmsg = new (cmsg->numAtoms, 0) ExtForceMsg;
+    for ( int i=0; i < cmsg->numAtoms; ++i ) {
+      fmsg->force[i] = coord[cmsg->coord[i].id].position;
+    }
+    if ( ! j ) {
+      fmsg->energy = energy;
+      fmsg->virial[0] = virial[0]; fmsg->virial[1] = virial[1];
+      fmsg->virial[2] = virial[2]; fmsg->virial[3] = virial[3];
+      fmsg->virial[4] = virial[4]; fmsg->virial[5] = virial[5];
+    } else {
+      fmsg->energy = 0;
+      fmsg->virial[0] = 0; fmsg->virial[1] = 0; fmsg->virial[2] = 0;
+      fmsg->virial[3] = 0; fmsg->virial[4] = 0; fmsg->virial[5] = 0;
+    }
+#if CHARM_VERSION > 050402
+    extProxy[cmsg->sourceNode].recvForce(fmsg);
+#else
+    extProxy.recvForce(fmsg,cmsg->sourceNode);
+#endif
+  }
+
+}
+
+void ComputeExtMgr::recvForce(ExtForceMsg *msg) {
+  extCompute->saveResults(msg);
+  delete msg;
+}
+
+void ComputeExt::saveResults(ExtForceMsg *msg)
+{
+  ResizeArrayIter<PatchElem> ap(patchList);
+
+  Force *results_ptr = msg->force;
+
+  // add in forces
+  for (ap = ap.begin(); ap != ap.end(); ap++) {
+    Results *r = (*ap).forceBox->open();
+    Force *f = r->f[Results::normal];
+    int numAtoms = (*ap).p->getNumAtoms();
+
+    for(int i=0; i<numAtoms; ++i) {
+      f[i] += *results_ptr;
+      ++results_ptr;
+    }
+  
+      (*ap).forceBox->close(&r);
+    }
+
+    reduction->item(REDUCTION_MISC_ENERGY) += msg->energy;
+    reduction->item(REDUCTION_VIRIAL_NORMAL_XX) += msg->virial[0];
+    reduction->item(REDUCTION_VIRIAL_NORMAL_XY) += msg->virial[1];
+    reduction->item(REDUCTION_VIRIAL_NORMAL_XZ) += msg->virial[2];
+    reduction->item(REDUCTION_VIRIAL_NORMAL_YX) += msg->virial[1];
+    reduction->item(REDUCTION_VIRIAL_NORMAL_YY) += msg->virial[3];
+    reduction->item(REDUCTION_VIRIAL_NORMAL_YZ) += msg->virial[4];
+    reduction->item(REDUCTION_VIRIAL_NORMAL_ZX) += msg->virial[2];
+    reduction->item(REDUCTION_VIRIAL_NORMAL_ZY) += msg->virial[4];
+    reduction->item(REDUCTION_VIRIAL_NORMAL_ZZ) += msg->virial[5];
+    reduction->submit();
+}
+
+#include "ComputeExtMgr.def.h"
+

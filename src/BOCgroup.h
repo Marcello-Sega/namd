@@ -16,6 +16,7 @@ public:
   int proxyMgr;
   int computeMgr;
   int computePmeMgr;
+  int computeExtMgr;
   int reductionMgr;
   int collectionMgr;
   int broadcastMgr;

@@ -69,6 +69,7 @@ OBJS = \
 	$(DSTDIR)/ComputeDPMEMsgs.o \
 	$(DSTDIR)/ComputeDPMTA.o \
 	$(DSTDIR)/ComputeEField.o \
+	$(DSTDIR)/ComputeExt.o \
 	$(DSTDIR)/ComputeFreeEnergy.o \
 	$(DSTDIR)/ComputeFullDirect.o \
 	$(DSTDIR)/ComputeHomePatch.o \
@@ -164,6 +165,8 @@ CIFILES = 	\
 		$(INCDIR)/ComputeMgr.def.h \
 		$(INCDIR)/ComputePmeMgr.decl.h \
 		$(INCDIR)/ComputePmeMgr.def.h \
+		$(INCDIR)/ComputeExtMgr.decl.h \
+		$(INCDIR)/ComputeExtMgr.def.h \
 		$(INCDIR)/LdbCoordinator.decl.h \
 		$(INCDIR)/LdbCoordinator.def.h \
 		$(INCDIR)/NamdCentLB.decl.h \
@@ -363,6 +366,13 @@ $(INCDIR)/ComputePmeMgr.decl.h: $(SRCDIR)/ComputePmeMgr.ci
 	$(CHARMXI) $(SRCDIR)/ComputePmeMgr.ci
 	$(MOVE) ComputePmeMgr.def.h $(INCDIR)
 	$(MOVE) ComputePmeMgr.decl.h $(INCDIR)
+
+$(INCDIR)/ComputeExtMgr.def.h: $(INCDIR)/ComputeExtMgr.decl.h
+
+$(INCDIR)/ComputeExtMgr.decl.h: $(SRCDIR)/ComputeExtMgr.ci
+	$(CHARMXI) $(SRCDIR)/ComputeExtMgr.ci
+	$(MOVE) ComputeExtMgr.def.h $(INCDIR)
+	$(MOVE) ComputeExtMgr.decl.h $(INCDIR)
 
 $(INCDIR)/LdbCoordinator.def.h: $(INCDIR)/LdbCoordinator.decl.h
 
