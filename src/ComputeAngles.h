@@ -32,43 +32,13 @@ public:
     Index angleType;
 
 
-  AngleElem() {
-    atomID[0] = -1;
-    atomID[1] = -1;
-    atomID[2] = -1;
-    p[0] = NULL;
-    p[1] = NULL;
-    p[2] = NULL;
-  }
-  AngleElem(const Angle *a) {
-    atomID[0] = a->atom1;
-    atomID[1] = a->atom2;
-    atomID[2] = a->atom3;
-    angleType = a->angle_type;
-  }
-
-  AngleElem(AtomID atom0, AtomID atom1, AtomID atom2) {
-    if (atom0 > atom2) {  // Swap end atoms so lowest is first!
-      AtomID tmp = atom2; atom2 = atom0; atom0 = tmp; 
-    }
-    atomID[0] = atom0;
-    atomID[1] = atom1;
-    atomID[2] = atom2;
-  }
+  inline AngleElem();
+  inline AngleElem(const Angle *a);
+  inline AngleElem(AtomID atom0, AtomID atom1, AtomID atom2);
   ~AngleElem() {};
 
-  int operator==(const AngleElem &a) const {
-    return (a.atomID[0] == atomID[0] && a.atomID[1] == atomID[1] &&
-        a.atomID[2] == atomID[2]);
-  }
-
-  int operator<(const AngleElem &a) const {
-    return (atomID[0] < a.atomID[0] ||
-            (atomID[0] == a.atomID[0] &&
-            (atomID[1] < a.atomID[1] ||
-            (atomID[1] == a.atomID[1] &&
-             atomID[2] < a.atomID[2]) )));
-  }
+  inline int operator==(const AngleElem &a) const;
+  inline int operator<(const AngleElem &a) const;
 };
 
 class ComputeAngles : public ComputeHomeTuples<AngleElem>
@@ -79,18 +49,23 @@ public:
 
 };
 
+#include "ComputeAngles.inl"
+
 #endif
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeAngles.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/11/22 01:45:28 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.8 $	$Date: 1997/01/14 15:29:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.h,v $
+ * Revision 1.8  1997/01/14 15:29:47  nealk
+ * Moved "include" functions into .inl file.
+ *
  * Revision 1.7  1996/11/22 01:45:28  jim
  * restructured, fixed bugs, now seems to work
  *
