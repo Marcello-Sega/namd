@@ -1102,3 +1102,96 @@ The following sections describe the format of the free energy perturbation scrip
 
 \input{ug_alchemy}
 
+
+\subsection{Locally Enhanced Sampling}
+\label{section:les}
+
+Locally enhanced sampling (LES) increases sampling and transition rates
+for a portion of a molecule by the use of multiple non-interacting copies
+of the enhanced atoms.  These enhanced atoms experience a nonbonded
+(electrostatics and van der Waals) potential that is divided by the number
+of copies present; the bonded potential is not affected.  In this way the
+enhanced atoms can occupy the same space, while the multiple instances and
+reduces barriers imposed by the nonbonded interactions increase transition
+rates.
+
+\subsubsection{Structure Generation}
+
+To use LES, the structure and coordinate input files must be modified to
+contain multiple copies of the enhanced atoms.  \PSFGEN\ provides the
+{\tt multiply} command for this purpose.  \NAMD\ supports a maximum of 15
+copies, which should be sufficient.  You may create more copies than you
+intend to use in a every simulation and \NAMD\ will scale the nonbonded
+potential of these atoms to zero.
+
+Begin by generating the complete molecular structure and guessing
+coordinates as described in Sec.~\ref{section:psfgen}.  As the last
+operation in your script, prior to writing the psf and pdb files, add
+the {\tt multiply} command, specifying the number of copies desired and
+listing segments, residues, or atoms to be multiplied.  For example,
+\verb#multiply 4 BPTI:56 BPTI:57# will create four copies of the last
+two residues of segment BPTI.  You must include all atoms to be
+enhanced in a single {\tt multiply} command in order for the bonded
+terms in the psf file to be duplicated correctly.  Calling {\tt multiply}
+on connected sets of atoms multiple times will produce unpredictable
+results, as may running other commands after {\tt multiply}.
+
+The enhanced atoms are duplicated exactly in the structure---they have
+the same segment, residue, and atom names.  They are distinguished only
+by the value of the B (beta) column in the pdb file, which is 0 for
+normal atoms and varies from 1 to the number of copies created for
+enhanced atoms.  The enhanced atoms may be easily observed in VMD with
+the atom selection \verb#beta != 0#.
+
+\subsubsection{Simulation}
+
+In practice, LES is a simple method used to increase sampling;
+no special output is generated.
+The following parameters are used to enable LES:
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{les}{is locally enhanced sampling active?}{{\tt on} or {\tt
+off}}{{\tt off}}
+{Specifies whether or not LES is active.}
+
+\item
+\NAMDCONF{lesFactor}{number of LES images to use}
+{positive integer equal to or less than the number of images present}
+{This should generally be equal to the factor used in {\tt multiply}
+ when creating the structure.  The nonbonded potential of images is
+ divided by {\tt lesFactor}.  If atoms are present with an {\tt lesCol}
+ value in {\tt lesFile} that is smaller than {\tt lesFactor}, then the
+ nonbonded potential of these atoms is set to zero.}
+
+\item
+\NAMDCONFWDEF{lesFile}{PDB file containing LES flags}{UNIX filename} {{\tt coordinates}}
+{PDB file to specify the LES image number of each atom.
+If this parameter is not specified, then 
+the PDB file containing initial coordinates specified by 
+{\tt coordinates} is used.}
+
+\item
+\NAMDCONFWDEF{lesCol}{column of PDB file containing LES flags}{{\tt X}, {\tt Y}, {\tt Z}, {\tt O}, or {\tt B}}{{\tt O}}
+{Column of the PDB file to specify the LES image number of each atom.
+This parameter may specify any of the floating point fields of the PDB file, 
+either X, Y, Z, occupancy, or beta-coupling (temperature-coupling).  
+A value of 0 in this column indicates that the atom is not enhanced.
+Any other value should be a positive integer less than 16.
+{\em Note that the default column is O, while \PSFGEN\ writes this value
+in column B, so this parameter is normally required.}}
+
+\end{itemize}
+
+The parameter {\tt lesFactor} may be varied between simulations to
+interpolate between full enhancement and normal simulation (although
+multiple bonded images are present at all times).  If {\tt lesFactor}
+is decreased, the images with flags greater than {\tt lesFactor} will
+be decoupled from nonbonded terms, sample based only on bonded terms,
+and should therefore be excluded from analysis.  When increasing
+{\tt lesFactor} the coordinates of these abandoned images should be
+reset to that of another image to avoid any bad initial contacts and
+the resulting instability in the simulation.
+
+
