@@ -1,0 +1,3 @@
+chare main {
+  entry main();
+} ;
