@@ -22,6 +22,8 @@
 #define MIN_DEBUG_LEVEL 4
 #include "Debug.h"
 
+int proxySendSpanning = 0;
+int proxyRecvSpanning = 0;
 
 PACK_MSG(ProxyAtomsMsg,
   PACK(patch);
@@ -44,16 +46,11 @@ PACK_MSG(ProxyAllMsg,
   if (packmsg_msg->flags.doMolly) PACK_RESIZE(avgPositionList);
 )
 
-
-/*
-PACK_MSG(ProxyResultMsg,
-  PACK(node);
+PACK_MSG(ProxySpanningTreeMsg,
   PACK(patch);
-  for ( int j = 0; j < Results::maxNumForces; ++j ) {
-    PACK_RESIZE(forceList[j]);
-  }
+  PACK(node);
+  PACK_RESIZE(tree);
 )
-*/
 
 void* ProxyResultMsg::pack(ProxyResultMsg *msg) {
   int msg_size = 0;
@@ -133,6 +130,95 @@ ProxyResultMsg* ProxyResultMsg::unpack(void *ptr) {
   return msg;
 }
 
+
+// for spanning tree
+void* ProxyCombinedResultMsg::pack(ProxyCombinedResultMsg *msg) {
+  int msg_size = 0;
+  msg_size += sizeof(int) + msg->nodes.size()*sizeof(NodeID);
+  msg_size += sizeof(msg->patch);
+  int j;
+  for ( j = 0; j < Results::maxNumForces; ++j ) {
+    int array_size = msg->forceList[j].size();
+    msg_size += sizeof(array_size);
+    msg_size += array_size * sizeof(char);
+    Force* f = msg->forceList[j].begin();
+    int nonzero_count = 0;
+    for ( int i = 0; i < array_size; ++i ) {
+      if ( f[i].x != 0. || f[i].y != 0. || f[i].z != 0. ) { ++nonzero_count; }
+    }
+    msg_size += nonzero_count * sizeof(Force);
+  }
+
+  void *msg_buf = CkAllocBuffer(msg,msg_size);
+  char *msg_cur = (char *)msg_buf;
+
+  int nodeSize = msg->nodes.size();
+  memcpy((void*)msg_cur,(void*)(&nodeSize), sizeof(nodeSize));
+  msg_cur += sizeof(nodeSize);
+  for (int i=0; i<nodeSize; i++) {
+    memcpy((void*)msg_cur,(void*)(&msg->nodes[i]), sizeof(NodeID));
+    msg_cur += sizeof(NodeID);
+  }
+  memcpy((void*)msg_cur,(void*)(&(msg->patch)),sizeof(msg->patch));
+  msg_cur += sizeof(msg->patch);
+  for ( j = 0; j < Results::maxNumForces; ++j ) {
+    int array_size = msg->forceList[j].size();
+    memcpy((void*)msg_cur,(void*)(&array_size),sizeof(array_size));
+    msg_cur += sizeof(array_size);
+    char *nonzero = msg_cur;
+    msg_cur += array_size * sizeof(char);
+    Force* f = msg->forceList[j].begin();
+    for ( int i = 0; i < array_size; ++i ) {
+      if ( f[i].x != 0. || f[i].y != 0. || f[i].z != 0. ) {
+        nonzero[i] = 1;
+        memcpy((void*)msg_cur,(void*)(f+i),sizeof(Force));
+        msg_cur += sizeof(Force);
+      } else {
+        nonzero[i] = 0;
+      }
+    }
+  }
+
+  delete msg;
+  return msg_buf;
+}
+
+ProxyCombinedResultMsg* ProxyCombinedResultMsg::unpack(void *ptr) {
+  void *vmsg = CkAllocBuffer(ptr,sizeof(ProxyCombinedResultMsg));
+  ProxyCombinedResultMsg *msg = new (vmsg) ProxyCombinedResultMsg;
+  char *msg_cur = (char*)ptr;
+
+  int nodeSize;
+  memcpy((void*)(&nodeSize),(void*)msg_cur,sizeof(nodeSize));
+  msg_cur += sizeof(nodeSize);
+  for (int i=0; i<nodeSize; i++) {
+    msg->nodes.add(*(int *)msg_cur);
+    msg_cur += sizeof(NodeID);
+  }
+  memcpy((void*)(&(msg->patch)),(void*)msg_cur,sizeof(msg->patch));
+  msg_cur += sizeof(msg->patch);
+  int j;
+  for ( j = 0; j < Results::maxNumForces; ++j ) {
+    int array_size;
+    memcpy((void*)(&array_size),(void*)msg_cur,sizeof(array_size));
+    msg_cur += sizeof(array_size);
+    msg->forceList[j].resize(array_size);
+    char *nonzero = msg_cur;
+    msg_cur += array_size * sizeof(char);
+    Force* f = msg->forceList[j].begin();
+    for ( int i = 0; i < array_size; ++i ) {
+      if ( nonzero[i] ) {
+        memcpy((void*)(f+i),(void*)msg_cur,sizeof(Force));
+        msg_cur += sizeof(Force);
+      } else {
+        f[i].x = 0.;  f[i].y = 0.;  f[i].z = 0.;
+      }
+    }
+  }
+
+  CkFreeMsg(ptr);
+  return msg;
+}
 
 ProxyMgr::ProxyMgr() { 
   if (CpvAccess(ProxyMgr_instance)) {
@@ -301,10 +387,75 @@ ProxyMgr::recvUnregisterProxy(UnregisterProxyMsg *msg) {
   homePatch->unregisterProxy(msg); // message deleted in registerProxy()
 }
 
+void 
+ProxyMgr::buildProxySpanningTree()
+{
+  PatchIDList pids;
+  PatchMap::Object()->homePatchIDList(pids);
+  for (int i=0; i<pids.size(); i++) {
+    HomePatch *home = PatchMap::Object()->homePatch(pids[i]);
+    if (home == NULL) CkPrintf("ERROR: homepatch NULL\n");
+    home->buildSpanningTree();
+  }
+}
+
+void 
+ProxyMgr::sendSpanningTree(ProxySpanningTreeMsg *msg) {
+  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+  cp.recvSpanningTree(msg, msg->tree[0]);
+}
+
+void 
+ProxyMgr::recvSpanningTree(ProxySpanningTreeMsg *msg) {
+  int size = msg->tree.size();
+  int child[PROXY_SPAN_DIM];
+  int nChild = 0;
+  int i;
+  ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
+  for (i=0; i<PROXY_SPAN_DIM; i++) {
+    if (size > i+1) { child[i] = msg->tree[i+1]; nChild++; }
+  }
+  if (!PatchMap::Object()->homePatch(msg->patch)) {
+    proxy->setSpanningTree(msg->node, child, nChild);
+  }
+
+  // build subtree and pass down
+  if (nChild == 0) return;
+//CkPrintf("[%d] %d:(%d) %d %d %d %d %d\n", CkMyPe(), msg->patch, size, msg->tree[0], msg->tree[1], msg->tree[2], msg->tree[3], msg->tree[4]);
+  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+  NodeIDList tree[PROXY_SPAN_DIM];
+  int level = 1, index=1;
+  int done = 0;
+  while (!done) {
+    for (int n=0; n<nChild; n++) {
+      if (done) break;
+      for (int j=0; j<level; j++) {
+       if (index >= size) { done = 1; break; }
+       tree[n].add(msg->tree[index]);
+       index++;
+      }
+    }
+    level *=PROXY_SPAN_DIM;
+  }
+
+  ProxyMgr *proxyMgr = ProxyMgr::Object();
+  for (i=0; i<PROXY_SPAN_DIM; i++) {
+    if (tree[i].size()) {
+      ProxySpanningTreeMsg *cmsg = new ProxySpanningTreeMsg;
+      cmsg->patch = msg->patch;
+      cmsg->node = CkMyPe();
+      cmsg->tree = tree[i];
+      proxyMgr->sendSpanningTree(cmsg);
+    }
+  }
+
+  delete msg;
+}
+
 void
 ProxyMgr::sendResults(ProxyResultMsg *msg) {
-  NodeID node = PatchMap::Object()->node(msg->patch);
   CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+  NodeID node = PatchMap::Object()->node(msg->patch);
   cp.recvResults(msg, node);
 }
 
@@ -312,6 +463,32 @@ void
 ProxyMgr::recvResults(ProxyResultMsg *msg) {
   HomePatch *home = PatchMap::Object()->homePatch(msg->patch);
   home->receiveResults(msg); // delete done in HomePatch::receiveResults()
+}
+
+void
+ProxyMgr::sendResults(ProxyCombinedResultMsg *msg) {
+  ProxyPatch *patch = (ProxyPatch *)PatchMap::Object()->patch(msg->patch);
+  ProxyCombinedResultMsg *cMsg = patch->depositCombinedResultMsg(msg);
+  if (cMsg) {
+    CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+    cp.recvResults(cMsg, patch->getSpanningTreeParent());
+  }
+}
+
+void
+ProxyMgr::recvResults(ProxyCombinedResultMsg *msg) {
+  HomePatch *home = PatchMap::Object()->homePatch(msg->patch);
+  if (home) {
+    home->receiveResults(msg); // delete done in HomePatch::receiveResults()
+  }
+  else {
+    ProxyPatch *patch = (ProxyPatch *)PatchMap::Object()->patch(msg->patch);
+    ProxyCombinedResultMsg *cMsg = patch->depositCombinedResultMsg(msg);
+    if (cMsg) {
+      CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+      cp.recvResults(cMsg, patch->getSpanningTreeParent());
+    }
+  }
 }
 
 void
@@ -323,6 +500,21 @@ ProxyMgr::sendProxyData(ProxyDataMsg *msg, int pcnt, int *pids) {
 void
 ProxyMgr::recvProxyData(ProxyDataMsg *msg) {
   ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
+  if (proxySendSpanning == 1) {
+    // copy the message and send to spanning children
+    int npid = 0;
+    int pids[PROXY_SPAN_DIM];
+    if (npid = proxy->getSpanningTreeChild(pids)) {
+      ProxyDataMsg *newmsg = new(sizeof(int)*8) ProxyDataMsg;
+      CkSetQueueing(newmsg, CK_QUEUEING_IFIFO);
+      *((int*) CkPriorityPtr(newmsg)) = *((int*) CkPriorityPtr(msg));
+      newmsg->patch = msg->patch;
+      newmsg->flags = msg->flags;
+      newmsg->positionList = msg->positionList;
+      newmsg->avgPositionList = msg->avgPositionList;
+      ProxyMgr::Object()->sendProxyData(newmsg,npid,pids);
+    }
+  }
   proxy->receiveData(msg); // deleted in ProxyPatch::receiveAtoms()
 }
 
@@ -335,6 +527,21 @@ ProxyMgr::sendProxyAll(ProxyAllMsg *msg, int pcnt, int *pids) {
 void
 ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
   ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
+  if (proxySendSpanning == 1) {
+    // copy the message and send to spanning children
+    int npid = 0;
+    int pids[PROXY_SPAN_DIM];
+    if (npid = proxy->getSpanningTreeChild(pids)) {
+      ProxyAllMsg *newmsg = new(sizeof(int)*8) ProxyAllMsg;
+      CkSetQueueing(newmsg, CK_QUEUEING_IFIFO);
+      *((int*) CkPriorityPtr(newmsg)) = *((int*) CkPriorityPtr(msg));
+      newmsg->patch = msg->patch;
+      newmsg->flags = msg->flags;
+      newmsg->positionList = msg->positionList;
+      newmsg->avgPositionList = msg->avgPositionList;
+      ProxyMgr::Object()->sendProxyAll(newmsg,npid,pids);
+    }
+  }
   proxy->receiveAll(msg); // delete done in ProxyPatch::receiveAll()
 }
 

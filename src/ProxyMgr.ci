@@ -13,6 +13,8 @@ module ProxyMgr {
   message [packed] ProxyDataMsg;
   message [packed] ProxyAllMsg;
   message [packed] ProxyResultMsg;
+  message [packed] ProxySpanningTreeMsg;
+  message [packed] ProxyCombinedResultMsg;
 
   group ProxyMgr
   {
@@ -22,6 +24,8 @@ module ProxyMgr {
     entry void recvProxyData(ProxyDataMsg *);
     entry void recvProxyAll(ProxyAllMsg *);
     entry void recvResults(ProxyResultMsg *);
+    entry void recvResults(ProxyCombinedResultMsg *);
+    entry void recvSpanningTree(ProxySpanningTreeMsg *);
   };
 }
 

@@ -17,6 +17,8 @@
 #include "ProcessorPrivate.h"
 #include "ProxyMgr.decl.h"
 
+extern int proxySendSpanning, proxyRecvSpanning;
+
 class RegisterProxyMsg : public CMessage_RegisterProxyMsg {
 public:
   NodeID node;
@@ -66,6 +68,24 @@ public:
   static ProxyResultMsg* unpack(void *ptr);
 };
 
+class ProxyCombinedResultMsg : public CMessage_ProxyCombinedResultMsg {
+public:
+  PatchID patch;
+  NodeIDList nodes;
+  ForceList forceList[Results::maxNumForces];
+  static void* pack(ProxyCombinedResultMsg *msg);
+  static ProxyCombinedResultMsg* unpack(void *ptr);
+};
+
+class ProxySpanningTreeMsg : public CMessage_ProxySpanningTreeMsg {
+public:
+  PatchID patch;
+  NodeID  node;
+  NodeIDList tree;
+  static void* pack(ProxySpanningTreeMsg *msg);
+  static ProxySpanningTreeMsg* unpack(void *ptr);
+};
+
 class ProxyPatch;
 class PatchMap;
 
@@ -104,8 +124,14 @@ public:
   void unregisterProxy(PatchID pid);
   void recvUnregisterProxy(UnregisterProxyMsg *);
 
+  void buildProxySpanningTree();
+  void sendSpanningTree(ProxySpanningTreeMsg *);
+  void recvSpanningTree(ProxySpanningTreeMsg *);
+
   void sendResults(ProxyResultMsg *);
   void recvResults(ProxyResultMsg *);
+  void sendResults(ProxyCombinedResultMsg *);
+  void recvResults(ProxyCombinedResultMsg *);
 
   void sendProxyData(ProxyDataMsg *, int, int*);
   void recvProxyData(ProxyDataMsg *);
