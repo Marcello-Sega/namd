@@ -1,0 +1,10 @@
+NAMD_ARCH = Cygwin-i686-MSVC
+CHARMARCH = net-win32
+
+CXX = unix2nt_cc
+CXXOPTS = -DWIN32 -D_AIX -O #-I/usr/include/w32api -O3 -Wall -march=pentiumpro -ffast-math
+CXXTHREADOPTS = $(CXXOPTS)
+CXXSIMPARAMOPTS = $(CXXOPTS)
+CC = unix2nt_cc
+COPTS = -O #-O3 -march=pentiumpro -ffast-math
+
