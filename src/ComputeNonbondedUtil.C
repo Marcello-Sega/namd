@@ -8,6 +8,10 @@
    Common operations for ComputeNonbonded classes
 */
 
+#ifndef NAMD_RESTRICT
+#define restrict
+#endif
+
 #include "ComputeNonbondedUtil.h"
 #include "SimParameters.h"
 #include "Node.h"
