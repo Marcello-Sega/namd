@@ -91,7 +91,7 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
   for(i=0; i<numProcessors; i++) {
     if (computeCount[i]==0)
       iout << iINFO <<"Warning: Processor " << i 
-	   << " has NO moveable computes";
+	   << " has NO moveable computes.\n" << endi;
   }
   
   CkVector migrateInfo;
