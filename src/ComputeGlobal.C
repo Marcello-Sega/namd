@@ -18,6 +18,7 @@
 #include "ComputeGlobalMsgs.h"
 #include "ComputeTcl.h"
 #include "ComputeFreeEnergy.h"
+#include "ComputeMDComm.h"
 #include "PatchMgr.h"
 #include "Molecule.h"
 #include "ReductionMgr.h"
@@ -52,6 +53,9 @@ ComputeGlobal::ComputeGlobal(ComputeID c, ComputeMgr *m)
     SimParameters * simParams = Node::Object()->simParameters;
     if ( simParams->tclForcesOn ) master = new ComputeTcl(this);
     else if ( simParams->freeEnergyOn ) master = new ComputeFreeEnergy(this);
+#ifdef MDCOMM
+    else if ( simParams->vmdFrequency != -1 ) master = new ComputeMDComm(this);
+#endif
     else NAMD_die("Internal error in ComputeGlobal::ComputeGlobal");
   }
   comm = m;
@@ -214,12 +218,15 @@ void ComputeGlobal::sendData()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1998/02/16 00:47:27 $
+ *	$Revision: 1.10 $	$Date: 1998/04/30 04:53:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGlobal.C,v $
+ * Revision 1.10  1998/04/30 04:53:22  jim
+ * Added forces from MDComm and other improvements to ComputeGlobal.
+ *
  * Revision 1.9  1998/02/16 00:47:27  jim
  * Added code to actually distribute group forces to atoms.
  *

@@ -252,6 +252,13 @@ public:
 
 	//  Lookup atom id from segment, residue, and name
 	int get_atom_from_name(const char *segid, int resid, const char *aname) const;
+
+	//  Lookup number of atoms in residue from segment and residue
+	int get_residue_size(const char *segid, int resid) const;
+
+	//  Lookup atom id from segment, residue, and index in residue
+	int get_atom_from_index_in_residue(const char *segid, int resid, int index) const;
+
 	
 	//  The following routines are used to get the list of bonds
 	//  for a given atom.  This is used when creating the bond lists
@@ -388,12 +395,15 @@ public:
  *
  *	$RCSfile: Molecule.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1998/02/18 05:38:31 $
+ *	$Revision: 1.1019 $	$Date: 1998/04/30 04:53:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.1019  1998/04/30 04:53:27  jim
+ * Added forces from MDComm and other improvements to ComputeGlobal.
+ *
  * Revision 1.1018  1998/02/18 05:38:31  jim
  * RigidBonds mainly finished.  Now temperature is correct and a form
  * of Langevin dynamics works with constraints.

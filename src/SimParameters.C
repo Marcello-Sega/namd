@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1038 $  $Date: 1998/04/06 16:34:10 $
+ *  $Revision: 1.1039 $  $Date: 1998/04/30 04:53:31 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1039  1998/04/30 04:53:31  jim
+ * Added forces from MDComm and other improvements to ComputeGlobal.
+ *
  * Revision 1.1038  1998/04/06 16:34:10  jim
  * Added DPME (single processor only), test mode, and momenta printing.
  *
@@ -450,7 +453,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1038 1998/04/06 16:34:10 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1039 1998/04/30 04:53:31 jim Exp $";
 
 
 #include "charm++.h"
@@ -2306,6 +2309,10 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    // Global forces configuration
 
    globalForcesOn = ( tclForcesOn || freeEnergyOn );
+
+#ifdef MDCOMM
+   if ( vmdFrequency != -1 ) globalForcesOn = 1;
+#endif
    
    if (tclForcesOn)
    {
@@ -2996,12 +3003,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1038 $  $Date: 1998/04/06 16:34:10 $
+ *  $Revision: 1.1039 $  $Date: 1998/04/30 04:53:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1039  1998/04/30 04:53:31  jim
+ * Added forces from MDComm and other improvements to ComputeGlobal.
+ *
  * Revision 1.1038  1998/04/06 16:34:10  jim
  * Added DPME (single processor only), test mode, and momenta printing.
  *

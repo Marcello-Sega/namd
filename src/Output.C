@@ -8,7 +8,7 @@
  * This object outputs the data collected on the master node
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Output.C,v 1.13 1998/04/14 03:19:22 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Output.C,v 1.14 1998/04/30 04:53:28 jim Exp $";
 
 #include <string.h>
 #include <stdlib.h>
@@ -1791,6 +1791,12 @@ void Output::print_vmd_static_data()
 /*                  */
 /************************************************************************/
 
+int mdcomm_app_force_cmd(rapp_active_socket_t *);
+
+enum mdcomm_command_tage {
+        MDCOMM_FORCE_CMD
+};
+
 void Output::initialize_vmd_connection()
 {
   vmdHandle = rapp_app_setup();
@@ -1804,6 +1810,10 @@ void Output::initialize_vmd_connection()
 
         rapp_app_init(vmdHandle, mdcomm_send_static, mdcomm_send_dynamic,
                       vmdStaticData, vmdData, NULL);
+
+	if (rapp_app_set_handler(vmdHandle, MDCOMM_FORCE_CMD,
+				(int (*)())mdcomm_app_force_cmd) == -1)
+	  rapp_perror("rapp_appd_set_handler for mdcomm_app_force_cmd");
 
         /*free_vmd_static_data(vmdStaticData);*/
 
@@ -2517,12 +2527,15 @@ void Output::output_allforcedcdfile(int timestep, int n, Vector *forces)
  *
  *  $RCSfile: Output.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.13 $  $Date: 1998/04/14 03:19:22 $
+ *  $Revision: 1.14 $  $Date: 1998/04/30 04:53:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Output.C,v $
+ * Revision 1.14  1998/04/30 04:53:28  jim
+ * Added forces from MDComm and other improvements to ComputeGlobal.
+ *
  * Revision 1.13  1998/04/14 03:19:22  jim
  * Fixed up MDCOMM code.
  *

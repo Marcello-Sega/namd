@@ -40,6 +40,9 @@ private:
 protected:
   // These all return -1 on error.
   int getAtomID(const char *segid, int resid, const char *aname);
+  int getNumAtoms(const char* segid, int resid); // 0 on error
+  int getAtomID(const char *segid, int resid, int index);
+  double getMass(int atomid);
   int requestAtom(int atomid);
   int getPosition(int atomid, Position &position);
   int addForce(int atomid, Force force);
@@ -51,12 +54,15 @@ protected:
  *
  *	$RCSfile: ComputeFreeEnergy.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1998/03/26 23:28:27 $
+ *	$Revision: 1.6 $	$Date: 1998/04/30 04:53:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFreeEnergy.h,v $
+ * Revision 1.6  1998/04/30 04:53:22  jim
+ * Added forces from MDComm and other improvements to ComputeGlobal.
+ *
  * Revision 1.5  1998/03/26 23:28:27  jim
  * Small changes for KCC port.  Altered use of strstream in ComputeFreeEnergy.
  *

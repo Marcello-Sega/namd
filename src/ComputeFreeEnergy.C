@@ -46,6 +46,25 @@ int ComputeFreeEnergy::
   return molecule->get_atom_from_name(segid,resid,aname);
 }
 
+int ComputeFreeEnergy::
+	getNumAtoms(const char* segid, int resid) // 0 on error
+{
+  return molecule->get_residue_size(segid,resid);
+}
+
+int ComputeFreeEnergy::
+	getAtomID(const char *segid, int resid, int index)
+{
+  return molecule->get_atom_from_index_in_residue(segid,resid,index);
+}
+
+double ComputeFreeEnergy::getMass(int atomid)
+{
+  if ( atomid < 0 || atomid >= molecule->numAtoms ) return -1.;  // failure
+  return molecule->atommass(atomid);
+}
+
+
 int ComputeFreeEnergy::requestAtom(int atomid)
 {
   if ( ! configMsg ) return -1;  // failure
@@ -151,12 +170,15 @@ void ComputeFreeEnergy::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1998/03/26 23:28:26 $
+ *	$Revision: 1.8 $	$Date: 1998/04/30 04:53:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFreeEnergy.C,v $
+ * Revision 1.8  1998/04/30 04:53:22  jim
+ * Added forces from MDComm and other improvements to ComputeGlobal.
+ *
  * Revision 1.7  1998/03/26 23:28:26  jim
  * Small changes for KCC port.  Altered use of strstream in ComputeFreeEnergy.
  *
