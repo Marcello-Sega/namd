@@ -32,33 +32,11 @@
   #define NOHGROUPING(X) X
 #endif
 
-// function definitions
-#undef DECL
-#undef NODECL
-#ifdef DECLARATION
-  #define DECL(X) X
-  #define NODECL(X)
-#else
-  #define DECL(X)
-  #define NODECL(X) X
-#endif
-
-// indexing variables
-#undef I_SUB
-#undef I_LOWER
-#undef J_SUB
-
 // determining class name
 #undef NAME
 #undef CLASS
 #undef CLASSNAME
 #define NAME CLASSNAME(calc)
-
-// global variables
-#define I_SUB 0][i
-#define J_SUB 1][j
-#define I_LOWER 0
-// J_LOWER is now a const variable
 
 #undef PAIR
 #ifdef NBPAIR
@@ -185,6 +163,9 @@ void ComputeNonbondedUtil :: NAME
   const BigReal d0 = ComputeNonbondedUtil:: d0;
   )
 
+  BigReal kqq;	// initialized later
+  BigReal f;	// initialized later
+
 EXCL
 (
     const BigReal kq_i = COLOUMB * a_i.charge * dielectric_1;
@@ -222,19 +203,17 @@ NOEXCL
   )
 
 
-  PAIR( const int J_LOWER = 0; )
-  for ( i = I_LOWER; i < i_upper; ++i )
+  for ( i = 0; i < i_upper; ++i )
   {
-    const AtomProperties &a_i = params->a[I_SUB];
-    SELF( const int J_LOWER = i+1 );
+    const AtomProperties &a_i = params->a[0][i];
 
-    const Position p_i = params->p[I_SUB];
+    const Position p_i = params->p[0][i];
     register const BigReal p_i_x = p_i.x;
     register const BigReal p_i_y = p_i.y;
     register const BigReal p_i_z = p_i.z;
 
-    Force & f_i = params->ff[I_SUB];
-    FULL( Force & fullf_i = params->fullf[I_SUB]; )
+    Force & f_i = params->ff[0][i];
+    FULL( Force & fullf_i = params->fullf[0][i]; )
 
   HGROUPING
   (
@@ -256,12 +235,12 @@ NOEXCL
     // this loop may not be necessary -- it's not necessary when
     // migrating by hydrogen groups.
 
-    j = J_LOWER;
+    PAIR( j = 0; )
 // iout << "j=" << j << " p_i=" << p_i << " p_j=" << *p_j << "\n" << endi;
     SELF
       (
       // add all child hydrogens of i
-      for( ; (j<j_upper) && (params->a[J_SUB].hydrogenGroupSize == 0); j++)
+      for( j=i+1; (j<j_upper) && (params->a[1][j].hydrogenGroupSize == 0); j++)
 	{
 	pairlist[pairlistindex++] = j;
 	p_j++;
@@ -271,7 +250,7 @@ NOEXCL
     // add remaining atoms to pairlist via hydrogen groups
     for ( ; j < j_upper; ++j )
 	{
-	const AtomProperties &pa_j = params->a[J_SUB];
+	const AtomProperties &pa_j = params->a[1][j];
 	if (pa_j.hydrogenGroupSize)
 	  {
 	  register BigReal p_ij_x = p_i_x - p_j->x;
@@ -313,8 +292,16 @@ NOEXCL
 
     HGROUPING
     (
-    if (pairlist[pairlistoffset] != J_LOWER)
-	p_j += pairlist[pairlistoffset]-J_LOWER;
+    SELF
+      (
+      if (pairlist[pairlistoffset] != i+1)
+	p_j += pairlist[pairlistoffset]-(i+1);
+      )
+    PAIR
+      (
+      if (pairlist[pairlistoffset] != 0)
+	p_j += pairlist[pairlistoffset];
+      )
     )
     register BigReal p_j_x = p_j->x;
     register BigReal p_j_y = p_j->y;
@@ -330,7 +317,10 @@ NOEXCL
     )
     NOHGROUPING
     (
-    for(j=J_LOWER; j<j_upper; j++)
+
+    SELF( j = i+1; )
+    PAIR( j = 0; )
+    for( ; j<j_upper; j++)
     {
       p_j += ( j + 1 < j_upper );
     )
@@ -355,8 +345,8 @@ NOEXCL
 	    // Do a quick fix and get out!
 	    const BigReal r = sqrt(r2);
 	    const BigReal r_1 = 1.0/r;
-	    BigReal kqq = kq_i * a_j.charge;
-	    BigReal f = kqq*r_1;
+	    kqq = kq_i * a_j.charge;
+	    f = kqq*r_1;
 	    if ( m14 ) f *= ( 1. - scale14 );
 	    fullElectEnergy -= f;
 	    fullElectVirial -= f;
@@ -372,15 +362,15 @@ NOEXCL
 NOEXCL
 (
       BigReal kq_i = kq_i_u;
-      const AtomProperties & a_j = params->a[J_SUB];
+      const AtomProperties & a_j = params->a[1][j];
 
       FULL
       (
-        Force & fullf_j = params->fullf[J_SUB];
+        Force & fullf_j = params->fullf[1][j];
         const BigReal r = sqrt(r2);
         const BigReal r_1 = 1.0/r;
-        BigReal kqq = kq_i * a_j.charge;
-        BigReal f = kqq*r_1;
+        kqq = kq_i * a_j.charge;
+        f = kqq*r_1;
       )
 )
 
@@ -440,7 +430,7 @@ NOEXCL
 
       NOEXCL
       (
-      Force & f_j = params->ff[J_SUB];
+      Force & f_j = params->ff[1][j];
       )
 
       NOFULL
@@ -519,12 +509,7 @@ C1SPLITTING
 //  --------------------------------------------------------------------------
 
 
-      FULL(EXCL(const BigReal))
-      NOFULL(const BigReal)
       kqq = kq_i * a_j.charge;
-
-      FULL(EXCL(BigReal))
-      NOFULL(BigReal)
       f = kqq*r_1;
       
 EXCL
@@ -664,12 +649,15 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1997/05/20 15:49:08 $
+ *	$Revision: 1.1019 $	$Date: 1997/05/23 19:29:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1019  1997/05/23 19:29:38  nealk
+ * Removed more macros.
+ *
  * Revision 1.1018  1997/05/20 15:49:08  nealk
  * Pair, Self, and Excl not use the same parameters!
  *
