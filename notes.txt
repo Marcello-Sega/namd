@@ -54,9 +54,21 @@ compiler may conform to an earlier C++ specification than NAMD uses.
 You compiler may also enforce a later C++ rule than NAMD follows.
 You may ignore repeated warnings about new and delete matching.
 
-You may edit Makefile to enable or disable DPMTA and DPME.  You may
-edit arch/Makearch.ARCH to enable or disable linking with Tcl and FFTW.
-(DPMTA, DPME, and Tcl are included in the release binaries, FFTW is not.)
+You may edit Makefile to enable or disable DPMTA and DPME.  DPMTA is
+required if you want to use the fast multipole algorithm for full
+electrostatics.  DPME is only useful for comparison with the new
+particle mesh Ewald code.  You must specify "useDPME on" in the
+simulation config file to switch to the old DPME code.  (DPMTA and
+DPME are included in the release binaries.)
+
+You may edit arch/Makearch.ARCH to enable or disable linking with Tcl
+and FFTW.  Tcl is required for Tcl global forces (tclForces) and for
+Tcl scripting (tcl).  Tcl is available from www.scriptics.com.  FFTW
+replaces the slower the built-in FFT in particle mesh Ewald.  FFTW is
+available from www.fftw.org.  If you download the RPM or configure FFTW
+with --enable-type-prefix you will need to make symbolic links to the
+double precision versions of the libraries and header files.  (Tcl is
+included in the release binaries, FFTW is not.)
 
 ----------------------------------------------------------------------
 
