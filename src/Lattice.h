@@ -82,6 +82,15 @@ public:
     *d = NULL;
   }
 
+  Vector dimension()
+  {
+  Vector rc;
+  rc.x = a.x;
+  rc.y = b.y;
+  rc.z = c.z;
+  return (rc);
+  }
+
 private:
   Vector a,b,c;
   int anz, bnz, cnz;
