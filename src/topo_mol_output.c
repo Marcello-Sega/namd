@@ -126,7 +126,7 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file,
       }
     }
   }
-  fprintf(file,"\n\n");
+  fprintf(file,"\n");
 
   fprintf(file,"%8d !NBOND: bonds\n",nbonds);
   numinline = 0;
@@ -218,15 +218,24 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file,
   fprintf(file,"\n\n");
 
   fprintf(file,"%8d !NDON: donors\n",0);
-  fprintf(file,"\n");
+  fprintf(file,"\n\n");
 
   fprintf(file,"%8d !NACC: acceptors\n",0);
-  fprintf(file,"\n");
+  fprintf(file,"\n\n");
 
-  fprintf(file,"%8d !NNB\n",0);
-  fprintf(file,"\n");
+  fprintf(file,"%8d !NNB\n\n",0);
+  /* Pad with zeros, one for every atom */
+  {
+    int i, fullrows;
+    fullrows = atomid/8;
+    for (i=0; i<fullrows; ++i) 
+      fprintf(file, "%8d%8d%8d%8d%8d%8d%8d%8\n",0,0,0,0,0,0,0,0);
+    for (i=atomid - fullrows*8; i; --i)
+      fprintf(file, "%8d",0);
+  } 
+  fprintf(file,"\n\n");
 
-  fprintf(file,"%8d %7d !NGRP\n",0,0);
+  fprintf(file,"%8d %7d !NGRP\n%8d%8d%8d\n",1,0,0,0,0);
   fprintf(file,"\n");
 
   return 0;
