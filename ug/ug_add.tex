@@ -1152,6 +1152,35 @@ For example, ``\verb!addforce $groupid { 1. 0. 2. }!''.
 Several vector routines from the VMD Tcl interface are also defined.
 
 
+\subsection{Free Energy of Conformational Change Calculations}
+\label{section:fenergy}
+
+\NAMD\ incorporates methods for performing free energy of conformational change perturbation calculations.
+The system is efficient if only a few coordinates, either of individual atoms or centers of mass of groups of atoms, are needed.
+The following configuration parameters are used to enable free energy perturbation:
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{freeEnergy}{is free energy perturbation active?}{{\tt on} or {\tt off}}{{\tt off}}
+{Specifies whether or not free energy perturbation is active.  If it 
+is set to {\tt off}, then no free energy perturbation is performed.  
+If it is set to {\tt on}, then the free energy perturbation calculation specified in
+{\tt freeEnergyConfig} parameters is executed.}
+
+\item
+\NAMDCONF{freeEnergyConfig}{free energy perturbation script}{file or \{script\}}
+{Must contain either the name of a free energy perturbation script file or the script 
+itself between \{ and \} (may include multiple lines).
+This parameter may occur multiple times and scripts will be executed
+in order of appearance.
+The format of the free energy perturbation script is described below.
+}
+
+\end{itemize}
+
+The following sections describe the format of the free energy perturbation script.
+
 % Free energy perturbation parameters
 \input{ug_fenergy}
 
