@@ -163,6 +163,7 @@ Parameters::Parameters(SimParameters *simParams, StringList *f)
   angle_array=NULL;
   dihedral_array=NULL;
   improper_array=NULL;
+  vdw_array=NULL;
   vdw_pair_tree=NULL;
   maxDihedralMults=NULL;
   maxImproperMults=NULL;
@@ -4588,6 +4589,7 @@ Parameters::Parameters(Ambertoppar *amber_data, BigReal vdw14)
   angle_array=NULL;
   dihedral_array=NULL;
   improper_array=NULL;
+  vdw_array=NULL;
   vdw_pair_tree=NULL;
   maxDihedralMults=NULL;
   maxImproperMults=NULL;
@@ -4750,6 +4752,7 @@ Parameters::Parameters(const GromacsTopFile *gf, Bool min)
   angle_array=NULL;
   dihedral_array=NULL;
   improper_array=NULL;
+  vdw_array=NULL;
   vdw_pair_tree=NULL;
   maxDihedralMults=NULL;
   maxImproperMults=NULL;

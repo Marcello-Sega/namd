@@ -372,10 +372,17 @@ public:
 	void get_vdw_params(Real *sigma, Real *epsilon, Real *sigma14, 
 			    Real *epsilon14, Index index)
 	{
+	    if ( vdw_array ) {
 		*sigma = vdw_array[index].sigma;
 		*epsilon = vdw_array[index].epsilon;
 		*sigma14 = vdw_array[index].sigma14;
 		*epsilon14 = vdw_array[index].epsilon14;
+	    } else {
+		*sigma = 0.;
+		*epsilon = 0.;
+		*sigma14 = 0.;
+		*epsilon14 = 0.;
+	    }
 	}
 
 	int get_vdw_pair_params(Index ind1, Index ind2, Real *, Real *, Real *, Real *);
