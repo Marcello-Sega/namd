@@ -70,10 +70,10 @@ protected:
   
 private:
 
-  PositionList  pInit;   
+  // PositionList  pInit;   
   VelocityList  v; 
-  ForceList     f_short;
-  ForceList     f_long;
+  // ForceList     f_short;
+  // ForceList     f_long;
   
   ProxyList     proxy;
   
@@ -96,13 +96,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:27 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/02/10 08:17:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.1001  1997/02/10 08:17:30  jim
+ * Commented out sending and allocation of unused data.
+ *
  * Revision 1.1000  1997/02/06 15:58:27  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

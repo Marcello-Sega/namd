@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1006 1997/02/07 17:39:38 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1007 1997/02/10 08:17:30 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -31,7 +31,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C
 #include "Debug.h"
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
-		     VelocityList vl) : Patch(pd,al,pl), pInit(pl), v(vl) 
+		     VelocityList vl) : Patch(pd,al,pl), v(vl) 
 { 
   if (atomIDList.size() != v.size()) {
     CPrintf("HomePatch::HomePatch(...) : size mismatch-Velocities and IDs!\n");
@@ -256,8 +256,10 @@ HomePatch::doAtomMigration()
        }
        DebugM(4,"Migrating atom " << atomIDList[i] << " from patch "
 		<< patchID << " with position " << p[i] << "\n");
-       mCur->add(MigrationElem(atomIDList[i], a[i], pInit[i],
-         p[i], v[i], f[i], f_short[i], f_long[i])
+       mCur->add(MigrationElem(atomIDList[i], a[i], p[i],
+         p[i], v[i], f[i], f[i], f[i])
+       // mCur->add(MigrationElem(atomIDList[i], a[i], pInit[i],
+         // p[i], v[i], f[i], f_short[i], f_long[i])
        );
        a.del(i);
        atomIDList.del(i,1);
@@ -265,8 +267,8 @@ HomePatch::doAtomMigration()
        // pInit.del(i);
        v.del(i);
        f.del(i);
-       f_short.del(i);
-       f_long.del(i);
+       // f_short.del(i);
+       // f_long.del(i);
      }
      else
      {
@@ -307,8 +309,8 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
       // pInit.add(mi->posInit);
       v.add(mi->vel);
       f.add(mi->force);
-      f_short.add(mi->forceShort);
-      f_long.add(mi->forceLong);
+      // f_short.add(mi->forceShort);
+      // f_long.add(mi->forceLong);
     }
   }
   numAtoms = atomIDList.size();
@@ -331,13 +333,16 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/02/07 17:39:38 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1007 $	$Date: 1997/02/10 08:17:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1007  1997/02/10 08:17:30  jim
+ * Commented out sending and allocation of unused data.
+ *
  * Revision 1.1006  1997/02/07 17:39:38  ari
  * More debugging for atomMigration.
  * Using -w on CC got us some minor fixes
