@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.22 1996/12/11 22:24:13 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.23 1996/12/12 08:58:12 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -154,15 +154,19 @@ void Node::startup(InitMsg *msg)
   workDistrib = CLocalBranch(WorkDistrib,group.workDistrib);
 
   if ( ! CMyPe() ) {
+  DebugM(1, "workDistrib->buildMaps() Pe=" << CMyPe() << "\n");
     workDistrib->buildMaps();
+  DebugM(1, "workDistrib->sendMaps() Pe=" << CMyPe() << "\n");
     workDistrib->sendMaps();
   }
+  DebugM(1, "workDistrib->awaitMaps() Pe=" << CMyPe() << "\n");
   workDistrib->awaitMaps();
+  DebugM(1, "Finished workDistrib->awaitMaps() Pe=" << CMyPe() << "\n");
 
   ComputeMap::Object()->printComputeMap();
 
-  workDistrib->createPatches();
-  // workDistrib->createComputes();
+  DebugM(1, "workDistrib->createPatches() Pe=" << CMyPe() << "\n");
+  if ( ! CMyPe() ) workDistrib->createPatches();
 
   computeMgr = CLocalBranch(ComputeMgr,group.computeMgr);
   DebugM(3, "Trying to create computes.\n");
@@ -266,12 +270,15 @@ void Node::saveMolDataPointers(Molecule *molecule,
  *
  *	$RCSfile: Node.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.22 $	$Date: 1996/12/11 22:24:13 $
+ *	$Revision: 1.23 $	$Date: 1996/12/12 08:58:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.23  1996/12/12 08:58:12  jim
+ * startup corrections (I hope).
+ *
  * Revision 1.22  1996/12/11 22:24:13  jim
  * made node startup and workDistrib calls work in parallel
  *
