@@ -34,6 +34,7 @@
   #define cbrt(x)  pow(x,(double)(1.0/3.0))
 #endif
 
+//#define DEBUG_PRESSURE
 #define MIN_DEBUG_LEVEL 3
 //#define DEBUGM
 #include "Debug.h"
@@ -275,14 +276,18 @@ void Controller::langevinPiston1(int step)
     BigReal tau = simParams->langevinPistonPeriod;
     BigReal mass = controlNumDegFreedom * kT * tau * tau * cellDims;
 
+#ifdef DEBUG_PRESSURE
     iout << iINFO << "strain rate: " << strainRate << "\n";
+#endif
 
     if ( ! ( (step-1) % slowFreq ) )
     {
       BigReal gamma = 1 / simParams->langevinPistonDecay;
       BigReal f1 = exp( -0.5 * dt_long * gamma );
       BigReal f2 = sqrt( ( 1. - f1*f1 ) * kT / mass );
+#ifdef DEBUG_PRESSURE
       iout << iINFO << "applying langevin to strain rate\n";
+#endif
       strainRate *= f1;
       if ( simParams->useFlexibleCell )
 	strainRate += f2 * gaussian_random_vector();
@@ -293,7 +298,9 @@ void Controller::langevinPiston1(int step)
     strainRate += ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
 	( controlPressure - Vector(1,1,1)*simParams->langevinPistonTarget );
 
+#ifdef DEBUG_PRESSURE
     iout << iINFO << "strain rate: " << strainRate << "\n";
+#endif
 
     if ( ! ( (step-1+slowFreq/2) % slowFreq ) )
     {
@@ -303,7 +310,9 @@ void Controller::langevinPiston1(int step)
       factor.z = exp( dt_long * strainRate.z );
       broadcast->positionRescaleFactor.publish(step,factor);
       state->lattice.rescale(factor);
+#ifdef DEBUG_PRESSURE
       iout << iINFO << "rescaling by: " << factor << "\n";
+#endif
     }
     else
     {
@@ -313,17 +322,25 @@ void Controller::langevinPiston1(int step)
     // corrections to integrator
     if ( ! ( step % nbondFreq ) )
     {
+#ifdef DEBUG_PRESSURE
       iout << iINFO << "correcting strain rate for nbond, ";
+#endif
       strainRate -= ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
 		( 0.5 * (nbondFreq - 1) * controlPressure_nbond );
+#ifdef DEBUG_PRESSURE
       iout << "strain rate: " << strainRate << "\n";
+#endif
     }
     if ( ! ( step % slowFreq ) )
     {
+#ifdef DEBUG_PRESSURE
       iout << iINFO << "correcting strain rate for slow, ";
+#endif
       strainRate -= ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
 		( 0.5 * (slowFreq - 1) * controlPressure_slow );
+#ifdef DEBUG_PRESSURE
       iout << "strain rate: " << strainRate << "\n";
+#endif
     }
 
   }
@@ -344,17 +361,25 @@ void Controller::langevinPiston2(int step)
     // corrections to integrator
     if ( ! ( step % nbondFreq ) )
     {
+#ifdef DEBUG_PRESSURE
       iout << iINFO << "correcting strain rate for nbond, ";
+#endif
       strainRate += ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
 		( 0.5 * (nbondFreq - 1) * controlPressure_nbond );
+#ifdef DEBUG_PRESSURE
       iout << "strain rate: " << strainRate << "\n";
+#endif
     }
     if ( ! ( step % slowFreq ) )
     {
+#ifdef DEBUG_PRESSURE
       iout << iINFO << "correcting strain rate for slow, ";
+#endif
       strainRate += ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
 		( 0.5 * (slowFreq - 1) * controlPressure_slow );
+#ifdef DEBUG_PRESSURE
       iout << "strain rate: " << strainRate << "\n";
+#endif
     }
 
     strainRate += ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
@@ -365,7 +390,9 @@ void Controller::langevinPiston2(int step)
       BigReal gamma = 1 / simParams->langevinPistonDecay;
       BigReal f1 = exp( -0.5 * dt_long * gamma );
       BigReal f2 = sqrt( ( 1. - f1*f1 ) * kT / mass );
+#ifdef DEBUG_PRESSURE
       iout << iINFO << "applying langevin to strain rate\n";
+#endif
       strainRate *= f1;
       if ( simParams->useFlexibleCell )
 	strainRate += f2 * gaussian_random_vector();
@@ -373,7 +400,9 @@ void Controller::langevinPiston2(int step)
 	strainRate += f2 * gaussian_random_number() * Vector(1,1,1);
     }
 
+#ifdef DEBUG_PRESSURE
     iout << iINFO << "strain rate: " << strainRate << "\n";
+#endif
   }
 }
 
@@ -847,12 +876,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1062 $	$Date: 1999/03/17 21:26:32 $
+ *	$Revision: 1.1063 $	$Date: 1999/03/18 02:59:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1063  1999/03/18 02:59:11  jim
+ * Eliminated pressure debugging outputs.
+ *
  * Revision 1.1062  1999/03/17 21:26:32  jim
  * Switching internal nomenclature from fmaFrequency to fullElectFrequency.
  *
