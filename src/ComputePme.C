@@ -341,10 +341,11 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
       " processors for FFT and reciprocal sum.\n" << endi;
   }
   { // generate random orderings for grid and trans messages
-    for ( int i = 0; i < numGridPes; ++i ) {
+    int i;
+    for ( i = 0; i < numGridPes; ++i ) {
       gridPeOrder[i] = i;
     }
-    for ( int i = 0; i < numTransPes; ++i ) {
+    for ( i = 0; i < numTransPes; ++i ) {
       transPeOrder[i] = i;
     }
     Random rand(CkMyPe());
@@ -416,15 +417,16 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   myGrid.block1 = ( myGrid.K1 + numGridPes - 1 ) / numGridPes;
   myGrid.block2 = ( myGrid.K2 + numTransPes - 1 ) / numTransPes;
 
+  int pe;
   int nx = 0;
-  for ( int pe = 0; pe < numGridPes; ++pe ) {
+  for ( pe = 0; pe < numGridPes; ++pe ) {
     localInfo[pe].x_start = nx;
     nx += myGrid.block1;
     if ( nx > myGrid.K1 ) nx = myGrid.K1;
     localInfo[pe].nx = nx - localInfo[pe].x_start;
   }
   int ny = 0;
-  for ( int pe = 0; pe < numTransPes; ++pe ) {
+  for ( pe = 0; pe < numTransPes; ++pe ) {
     localInfo[pe].y_start_after_transpose = ny;
     ny += myGrid.block2;
     if ( ny > myGrid.K2 ) ny = myGrid.K2;
@@ -827,7 +829,8 @@ void ComputePmeMgr::recvUntrans(PmeUntransMsg *msg) {
     }
   }
 
-  for ( int g=0; g<numGrids; ++g ) {
+  int g;
+  for ( g=0; g<numGrids; ++g ) {
     recip_evir[g] += msg->evir[g];
   }
 
@@ -838,7 +841,7 @@ void ComputePmeMgr::recvUntrans(PmeUntransMsg *msg) {
   int ny = msg->ny;
   int slicelen = myGrid.K2 * zdim;
   int cpylen = ny * zdim;
-  for ( int g=0; g<numGrids; ++g ) {
+  for ( g=0; g<numGrids; ++g ) {
     float *q = qgrid + qgrid_size * g + y_start * zdim;
     float *qmsg = msg->qgrid + nx * cpylen * g;
     for ( int x = 0; x < nx; ++x ) {
