@@ -841,18 +841,19 @@ current SMD data values are printed out.}
 \subsubsection{Interactive Molecular Dynamics (IMD)}
 
 \NAMD\ now works directly with \VMD\ to allow you to view and interactively
-steer your simulation.  \NAMD\ will wait for \VMD\ to connect on startup.
+steer your simulation.  With IMD enabled, you can connect to NAMD at any
+time during the simulation to view the current state of the system or perform
+interactive steering. 
 
 \begin{itemize}
 \item
 \NAMDCONFWDEF{IMDon}{is IMD active?}{{\tt on} or {\tt off}}{{\tt off}}
-{Specifies whether or not to expect and wait for a connection.}
+{Specifies whether or not to listen for an IMD connection.}
 
 \item
 \NAMDCONF{IMDport}{port number to expect a connection on}
 {positive integer}
 {This is a free port number on the machine that node 0 is running on.
-\NAMD\ will wait for a connection on this port.
 This number will have to be entered into \VMD.}
 
 \item
@@ -860,6 +861,13 @@ This number will have to be entered into \VMD.}
 {positive integer}
 {This allows coordinates to be sent less often, which may increase
 \NAMD\ performance or be necessary due to a slow network.}
+
+\item 
+\NAMDCONFWDEF{IMDwait}{wait for an IMD connection?}{{\tt yes} or {\tt no}}{{\tt no}}
+{If {\tt yes}, NAMD will proceed with calculations whether a connection is
+present or not.  If {\tt no}, NAMD will pause at startup until a connection is
+made, and pause when the connection is lost.}
+
 \end{itemize}
 
 
