@@ -91,19 +91,19 @@ public:
       tmp=b1*(data.x-o.x)-ref.x;
       rit = rint(tmp);
       v.x = o.x+a1*(ref.x+tmp-rit);
-      t->i -= rit;
+      t->i -= (int) rit;
     }
     if ( a2 ) {
       tmp=b2*(data.y-o.y)-ref.y;
       rit = rint(tmp);
       v.y = o.y+a2*(ref.y+tmp-rit);
-      t->j -= rit;
+      t->j -= (int) rit;
     }
     if ( a3 ) {
       tmp=b3*(data.z-o.z)-ref.z;
       rit = rint(tmp);
       v.z = o.z+a3*(ref.z+tmp-rit);
-      t->k -= rit;
+      t->k -= (int) rit;
     }
     return v;
   }
@@ -190,12 +190,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1998/08/11 16:30:28 $
+ *	$Revision: 1.1009 $	$Date: 1998/08/21 01:15:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Lattice.h,v $
+ * Revision 1.1009  1998/08/21 01:15:04  jim
+ * Eliminated warnings.
+ *
  * Revision 1.1008  1998/08/11 16:30:28  jim
  * Modified output from periodic boundary simulations to return atoms to
  * internally consistent coordinates.  We store the transformations which
