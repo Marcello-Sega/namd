@@ -41,9 +41,9 @@
 #include "molfile_plugin.h"
 #include "libmolfile_plugin.h"
 
-static molfile_api *dcdapi;
+static molfile_plugin_t *dcdplugin;
 static int register_cb(void *v, vmdplugin_t *p) {
-	dcdapi = (molfile_api *)p->api;
+	dcdplugin = (molfile_plugin_t *)p;
 	return 0;
 }
 static int numatoms;
@@ -497,13 +497,11 @@ int ScriptTcl::Tcl_coorfile(ClientData clientData,
     if (strcmp(argv[2], "dcd")) {
       NAMD_die("Sorry, coorfile presently supports only DCD files");
     }
-    molfile_header_t header;
-    filehandle = dcdapi->open_file_read(argv[3], "dcd", &header);
+    filehandle = dcdplugin->open_file_read(argv[3], "dcd", &numatoms);
     if (!filehandle) {
       Tcl_AppendResult(interp, "coorfile: Error opening file ", argv[3], NULL);
       return TCL_ERROR;
     }
-    numatoms = header.numatoms;
     if (numatoms != Node::Object()->pdb->num_atoms()) {
       Tcl_AppendResult(interp, "Coordinate file ", argv[3], 
         "\ncontains the wrong number of atoms.", NULL);
@@ -520,9 +518,8 @@ int ScriptTcl::Tcl_coorfile(ClientData clientData,
       return TCL_ERROR;
     }
     molfile_timestep_t ts;
-    ts.numatoms = numatoms;
     ts.coords = coords;
-    int rc = dcdapi->read_next_timestep(filehandle, &ts);
+    int rc = dcdplugin->read_next_timestep(filehandle, numatoms, &ts);
     if (rc) {  // EOF
       Tcl_SetObjResult(interp, Tcl_NewIntObj(-1));
       return TCL_OK;
@@ -543,7 +540,7 @@ int ScriptTcl::Tcl_coorfile(ClientData clientData,
       return TCL_OK;
     }
     iout << iINFO << "Closing coordinate file.\n" << endi; 
-    dcdapi->close_file_read(filehandle);
+    dcdplugin->close_file_read(filehandle);
     filehandle = NULL;
     delete [] coords;
     delete [] vcoords;
@@ -555,9 +552,8 @@ int ScriptTcl::Tcl_coorfile(ClientData clientData,
       return TCL_ERROR;
     }
     molfile_timestep_t ts;
-    ts.numatoms = numatoms;
     ts.coords = coords;
-    int rc = dcdapi->read_next_timestep(filehandle, &ts);
+    int rc = dcdplugin->read_next_timestep(filehandle, numatoms, &ts);
     if (rc) {  // EOF
       Tcl_SetObjResult(interp, Tcl_NewIntObj(-1));
       return TCL_OK;
