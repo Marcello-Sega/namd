@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1058 $  $Date: 1999/03/10 18:15:48 $
+ *  $Revision: 1.1059 $  $Date: 1999/03/17 21:26:34 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1059  1999/03/17 21:26:34  jim
+ * Switching internal nomenclature from fmaFrequency to fullElectFrequency.
+ *
  * Revision 1.1058  1999/03/10 18:15:48  jim
  * Added output for binary output file usage.
  *
@@ -815,7 +818,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
    opts.optional("main", "fmaFrequency",
       "Number of steps between full electrostatic executions", 
-      &fmaFrequency);
+      &fullElectFrequency);
    opts.range("fmaFrequency", POSITIVE);
 
    opts.optional("main", "fmaTheta",
@@ -2136,17 +2139,17 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
    if (!FMAOn && !PMEOn && !fullDirectOn)
    {
-  fmaFrequency = 0;
+  fullElectFrequency = 0;
    }
    else
    {
   if (!opts.defined("fmaFrequency"))
   {
-    fmaFrequency = stepsPerCycle;
+    fullElectFrequency = stepsPerCycle;
   }
   else
   {
-    if ( (fmaFrequency > stepsPerCycle) || ( (stepsPerCycle % fmaFrequency) != 0) )
+    if ( (fullElectFrequency > stepsPerCycle) || ( (stepsPerCycle % fullElectFrequency) != 0) )
     {
       NAMD_die("stepsPerCycle must be a multiple of fmaFrequency");
     }
@@ -2976,8 +2979,8 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
    if (berendsenPressureOn)
    {
-     if ( (berendsenPressureFreq % nonbondedFrequency) || ( fmaFrequency
-		&& (berendsenPressureFreq % fmaFrequency) ) )
+     if ( (berendsenPressureFreq % nonbondedFrequency) || ( fullElectFrequency
+		&& (berendsenPressureFreq % fullElectFrequency) ) )
 	NAMD_die("berendsenPressureFreq must be a multiple of both fmaFrequency and nonbondedFrequency\n");
      iout << iINFO << "BERENDSEN PRESSURE COUPLING ACTIVE\n";
      iout << iINFO << "    TARGET PRESSURE IS "
@@ -3055,7 +3058,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    if ( FMAOn || PMEOn || fullDirectOn )
    {
      iout << iINFO << "FULL ELECTROSTATIC EVALUATION FREQUENCY      "
-	<< fmaFrequency << "\n";
+	<< fullElectFrequency << "\n";
      iout << endi;
    }
 
@@ -3307,7 +3310,7 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
   msg->put(MTSAlgorithm)->put(sphericalCenterCOM)->put(&sphericalCenter);
   msg->put(longSplitting)->put(tCoupleOn)->put(tCoupleTemp);
   msg->put(splitPatch)->put(hgroupCutoff);
-  msg->put(fmaFrequency)->put(fmaTheta);
+  msg->put(fullElectFrequency)->put(fmaTheta);
   msg->put(rigidBonds);
   msg->put(rigidTol);
   msg->put(rigidIter);
@@ -3507,7 +3510,7 @@ void SimParameters::receive_SimParameters(MIStream *msg)
   msg->get(tCoupleTemp);
   msg->get(splitPatch);
   msg->get(hgroupCutoff);
-  msg->get(fmaFrequency);
+  msg->get(fullElectFrequency);
   msg->get(fmaTheta);
   msg->get(rigidBonds);
   msg->get(rigidTol);
@@ -3579,12 +3582,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1058 $  $Date: 1999/03/10 18:15:48 $
+ *  $Revision: 1.1059 $  $Date: 1999/03/17 21:26:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1059  1999/03/17 21:26:34  jim
+ * Switching internal nomenclature from fmaFrequency to fullElectFrequency.
+ *
  * Revision 1.1058  1999/03/10 18:15:48  jim
  * Added output for binary output file usage.
  *

@@ -166,7 +166,7 @@ void Sequencer::algorithm(void)
     // Do we do full electrostatics?
     const int dofull = ( simParams->fullDirectOn ||
 			simParams->FMAOn || simParams->PMEOn );
-    const int fullElectFrequency = simParams->fmaFrequency;
+    const int fullElectFrequency = simParams->fullElectFrequency;
     const BigReal slowstep = timestep * fullElectFrequency;
     int &doFullElectrostatics = patch->flags.doFullElectrostatics;
     doFullElectrostatics = (dofull && !(step%fullElectFrequency));
@@ -614,12 +614,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1056 $     $Date: 1999/03/17 19:57:58 $
+ *      $Revision: 1.1057 $     $Date: 1999/03/17 21:26:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1057  1999/03/17 21:26:33  jim
+ * Switching internal nomenclature from fmaFrequency to fullElectFrequency.
+ *
  * Revision 1.1056  1999/03/17 19:57:58  jim
  * Fixed logic bug in reassignment.
  *

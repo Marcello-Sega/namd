@@ -96,8 +96,8 @@ public:
 	
 	int nonbondedFrequency;		//  Number of timesteps between
 					//  nonbonded evaluation
-	int fmaFrequency;		//  Number of timesteps between
-					//  FMA execution
+	int fullElectFrequency;		//  Number of timesteps between
+					//  full electrostatic evaluation
         BigReal fmaTheta;	        //  DPMTA theta value
 	int ldbStrategy;                //  What type of load balancing
 	int ldbPeriod;                  //  How often to do load balancing
@@ -412,12 +412,15 @@ public:
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1032 $	$Date: 1999/03/10 05:11:35 $
+ *	$Revision: 1.1033 $	$Date: 1999/03/17 21:26:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1033  1999/03/17 21:26:35  jim
+ * Switching internal nomenclature from fmaFrequency to fullElectFrequency.
+ *
  * Revision 1.1032  1999/03/10 05:11:35  jim
  * Added reassignHold parameter.
  *

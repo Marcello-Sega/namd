@@ -199,7 +199,7 @@ void Controller::algorithm(void)
 
     nbondFreq = simParams->nonbondedFrequency;
     if ( simParams->fullDirectOn || simParams->FMAOn || simParams->PMEOn )
-      slowFreq = simParams->fmaFrequency;
+      slowFreq = simParams->fullElectFrequency;
     else
       slowFreq = simParams->nonbondedFrequency;
 
@@ -847,12 +847,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1061 $	$Date: 1999/03/17 19:57:57 $
+ *	$Revision: 1.1062 $	$Date: 1999/03/17 21:26:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1062  1999/03/17 21:26:32  jim
+ * Switching internal nomenclature from fmaFrequency to fullElectFrequency.
+ *
  * Revision 1.1061  1999/03/17 19:57:57  jim
  * Fixed logic bug in reassignment.
  *
