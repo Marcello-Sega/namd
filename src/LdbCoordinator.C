@@ -331,6 +331,18 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
     theLbdb->CollectStatsOff();
   }
 
+  // in the case when trace is off at the beginning,
+  // only turn trace of from after the first LB to the firstLdbStep after 
+  // the second LB.
+  {
+  static int specialTracing = 0;
+  if (ldbCycleNum == 1 && traceIsOn() == 0)  specialTracing = 1;
+  if (specialTracing) {
+    if (ldbCycleNum == 2) traceBegin();
+    if (ldbCycleNum == 4) traceEnd();
+  }
+  }
+
   nPatchesReported = 0;
   nPatchesExpected = nLocalPatches;
   nComputesReported = 0;
