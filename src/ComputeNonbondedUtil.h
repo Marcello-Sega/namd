@@ -77,6 +77,15 @@ public:
   static BigReal c6;
   static BigReal d0;
 
+  // for simplifying some common functions
+  inline static BigReal square(	const BigReal &x,
+ 				const BigReal &y,
+				const BigReal &z)
+	{
+	return(x*x+y*y+z*z);
+	}
+
+  // for splitting
   // No splitting
   static void calc_pair (nonbonded *);
   static void calc_pair_fullelect (nonbonded *);
@@ -119,12 +128,15 @@ public:
  *
  *	$RCSfile: ComputeNonbondedUtil.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/05/29 19:14:08 $
+ *	$Revision: 1.1013 $	$Date: 1997/06/05 20:19:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.h,v $
+ * Revision 1.1013  1997/06/05 20:19:46  nealk
+ * Minor modifications for readability and very minor speedup.
+ *
  * Revision 1.1012  1997/05/29 19:14:08  nealk
  * Removed some array indexing for minor speed improvement.
  *

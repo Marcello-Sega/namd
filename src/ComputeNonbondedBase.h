@@ -121,7 +121,7 @@ void ComputeNonbondedUtil :: NAME
   FULL
   (
   BigReal fullElectEnergy = 0;
-  BigReal fullElectVirial = 0;
+  BigReal fullElectVirial = 0;	// value == fullElectEnergy until the end
   )
   NOFULL
   (
@@ -146,6 +146,12 @@ void ComputeNonbondedUtil :: NAME
 
   BigReal kqq;	// initialized later
   BigReal f;	// initialized later
+  register BigReal r2;
+
+  // for speedup
+  register BigReal tmp_x;
+  register BigReal tmp_y;
+  register BigReal tmp_z;
 
 EXCL
 (
@@ -244,11 +250,7 @@ NOEXCL
 	const AtomProperties &pa_j = a_1[j];
 	if (pa_j.hydrogenGroupSize)
 	  {
-	  register BigReal p_ij_x = p_i_x - p_j->x;
-	  register BigReal p_ij_y = p_i_y - p_j->y;
-	  register BigReal p_ij_z = p_i_z - p_j->z;
-	  register BigReal
-		r2 = p_ij_x * p_ij_x + p_ij_y * p_ij_y + p_ij_z * p_ij_z;
+	  r2 = square(p_i_x - p_j->x, p_i_y - p_j->y, p_i_z - p_j->z);
 	  // use a slightly large cutoff to include hydrogens
 	  if ( r2 <= groupcutoff2 )
 		{
@@ -325,8 +327,7 @@ NOEXCL
 )
 
       // common code
-      register const BigReal
-		r2 = p_ij_x * p_ij_x + p_ij_y * p_ij_y + p_ij_z * p_ij_z;
+      r2 = square(p_ij_x,p_ij_y,p_ij_z);
 
       if ( r2 > cutoff2 )
       {
@@ -334,18 +335,16 @@ NOEXCL
 	EXCL(
 	  FULL(
 	    // Do a quick fix and get out!
-	    const BigReal r = sqrt(r2);
-	    const BigReal r_1 = 1.0/r;
+	    const BigReal r_1 = 1.0/sqrt(r2);
 	    kqq = kq_i * a_j.charge;
 	    f = kqq*r_1;
-	    if ( m14 ) f *= ( 1. - scale14 );
+	    if ( m14 ) f *= ( 1.0 - scale14 );
 	    fullElectEnergy -= f;
-	    fullElectVirial -= f;
 	    const Vector f_elec = p_ij * ( f * r_1 * r_1 );
 	    fullf_i -= f_elec;
 	    fullf_j += f_elec;
 	    reduction[fullElectEnergyIndex] += fullElectEnergy;
-	    reduction[fullElectVirialIndex] += fullElectVirial;
+	    reduction[fullElectVirialIndex] += fullElectEnergy;
 	  )
 	return; )
       }
@@ -358,17 +357,17 @@ NOEXCL
       FULL
       (
         Force & fullf_j = fullf_1[j];
-        const BigReal r = sqrt(r2);
+	const BigReal r = sqrt(r2);
         const BigReal r_1 = 1.0/r;
         kqq = kq_i * a_j.charge;
         f = kqq*r_1;
       )
 )
 
-      register BigReal force_r = 0.;			//  force / r
+      register BigReal force_r = 0.0;		//  force / r
       FULL
       (
-      register BigReal fullforce_r = 0.;	//  fullforce / r
+      register BigReal fullforce_r = 0.0;	//  fullforce / r
       )
 
       const LJTable::TableEntry * lj_pars = 
@@ -384,15 +383,14 @@ NOEXCL
 	  (
 	    // Do a quick fix and get out!
 	    fullElectEnergy -= f;
-	    fullElectVirial -= f;
-	    fullforce_r = -f * r_1 * r_1;
-	    register BigReal tmp_x = fullforce_r * p_ij_x;
+	    fullforce_r = -f * r_1*r_1;
+	    tmp_x = fullforce_r * p_ij_x;
 	    fullf_i.x += tmp_x;
 	    fullf_j.x -= tmp_x;
-	    register BigReal tmp_y = fullforce_r * p_ij_y;
+	    tmp_y = fullforce_r * p_ij_y;
 	    fullf_i.y += tmp_y;
 	    fullf_j.y -= tmp_y;
-	    register BigReal tmp_z = fullforce_r * p_ij_z;
+	    tmp_z = fullforce_r * p_ij_z;
 	    fullf_i.z += tmp_z;
 	    fullf_j.z -= tmp_z;
 	  )
@@ -405,7 +403,7 @@ NOEXCL
 	    // Make full electrostatics match rescaled charges!
 	    f *= ( 1. - scale14 );
 	    fullElectEnergy -= f;
-	    fullforce_r -= f * r_1 * r_1;
+	    fullforce_r -= f * r_1*r_1;
 	  )
 	  lj_pars = ljTable->table_val(a_i.type, a_j.type, 1);
 	  kq_i = kq_i_s;
@@ -500,16 +498,16 @@ FULL
 (
   EXCL
   (
-      fullElectEnergy += f * ( shiftVal - 1. );
-      if ( m14 ) fullElectEnergy -= f * ( shiftVal - 1. ) * scale14;
-      BigReal f2 = f * ( r_1 * r_1 );
+      fullElectEnergy += f * ( shiftVal - 1.0 );
+      if ( m14 ) fullElectEnergy -= f * ( shiftVal - 1.0 ) * scale14;
+      BigReal f2 = f * r_1*r_1;
   )
   NOEXCL
   (
       fullElectEnergy -= f * shiftVal;
   )
 )
-      f *= r_1*( shiftVal * r_1 - dShiftVal );
+      f *= r_1*(r_1*shiftVal - dShiftVal );
 
       NOEXCL( const ) BigReal f_elec = f;
 
@@ -533,8 +531,8 @@ NOEXCL
       BigReal r_6 = r_1*r_1*r_1; r_6 *= r_6;
       const BigReal r_12 = r_6*r_6;
 
-      const BigReal A = lj_pars->A;
-      const BigReal B = lj_pars->B;
+      const BigReal &A = lj_pars->A;
+      const BigReal &B = lj_pars->B;
 
       const BigReal AmBterm = (A*r_6 - B) * r_6;
 
@@ -545,13 +543,12 @@ EXCL
       if ( m14 )
       {
 	lj_pars = ljTable->table_val(a_i.type, a_j.type, 1);
-	const BigReal A = lj_pars->A;
-	const BigReal B = lj_pars->B;
+	const BigReal &A = lj_pars->A;
+	const BigReal &B = lj_pars->B;
 	const BigReal AmBterm = (A*r_6 - B) * r_6;
 	vdwEnergy += switchVal * AmBterm;
-	const BigReal f_vdwx = ( ( switchVal * 6.0 * (A*r_12 + AmBterm) *
+	force_r += ( ( switchVal * 6.0 * (A*r_12 + AmBterm) *
 			r_1 - AmBterm*dSwitchVal )*r_1 );
-	force_r += f_vdwx;
       }
 )
 NOEXCL
@@ -560,44 +557,42 @@ NOEXCL
 )
 
 
-      const BigReal f_vdw = ( switchVal * 6.0 * (A*r_12 + AmBterm) *
-			r_1 - AmBterm*dSwitchVal )*r_1;
 
 EXCL
 (
-      force_r -= f_vdw;
+      force_r -= ( switchVal * 6.0 * (A*r_12 + AmBterm) *
+			r_1 - AmBterm*dSwitchVal )*r_1;
 )
 NOEXCL
 (
-      force_r += f_vdw;
+      force_r += ( switchVal * 6.0 * (A*r_12 + AmBterm) *
+			r_1 - AmBterm*dSwitchVal )*r_1;
 )
 
       virial += force_r * r2;
 
-      register BigReal tmp_x = force_r * p_ij_x;
+      tmp_x = force_r * p_ij_x;
       f_i.x += tmp_x;
-      register BigReal tmp_y = force_r * p_ij_y;
-      f_i.y += tmp_y;
-      register BigReal tmp_z = force_r * p_ij_z;
-      f_i.z += tmp_z;
-
       f_j.x -= tmp_x;
+      tmp_y = force_r * p_ij_y;
+      f_i.y += tmp_y;
       f_j.y -= tmp_y;
+      tmp_z = force_r * p_ij_z;
+      f_i.z += tmp_z;
       f_j.z -= tmp_z;
 
       FULL
       (
-      fullElectVirial += fullforce_r * r2;
+      fullElectVirial = fullElectEnergy + fullforce_r * r2;
 
       tmp_x = fullforce_r * p_ij_x;
       fullf_i.x += tmp_x;
+      fullf_j.x -= tmp_x;
       tmp_y = fullforce_r * p_ij_y;
       fullf_i.y += tmp_y;
+      fullf_j.y -= tmp_y;
       tmp_z = fullforce_r * p_ij_z;
       fullf_i.z += tmp_z;
-
-      fullf_j.x -= tmp_x;
-      fullf_j.y -= tmp_y;
       fullf_j.z -= tmp_z;
       )
 
@@ -623,12 +618,15 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1021 $	$Date: 1997/06/04 20:13:50 $
+ *	$Revision: 1.1022 $	$Date: 1997/06/05 20:19:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1022  1997/06/05 20:19:41  nealk
+ * Minor modifications for readability and very minor speedup.
+ *
  * Revision 1.1021  1997/06/04 20:13:50  nealk
  * Modified to simplify macros.
  *
