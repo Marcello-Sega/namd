@@ -253,11 +253,11 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     }
   }
 
-  if ( ! CkMyPe() ) {
-    iout << iINFO << "PME LOCATIONS:";
-    for ( int i=0; i<numRecipPes; ++i ) { iout << " " << recipPeMap[i]; }
-    iout << "\n" << endi;
-  }
+  // if ( ! CkMyPe() ) {
+  //   iout << iINFO << "PME LOCATIONS:";
+  //   for ( int i=0; i<numRecipPes; ++i ) { iout << " " << recipPeMap[i]; }
+  //   iout << "\n" << endi;
+  // }
 
   myGrid.K1 = simParams->PMEGridSizeX;
   myGrid.K2 = simParams->PMEGridSizeY;

@@ -564,9 +564,9 @@ void WorkDistrib::assignPatchesBitReversal()
   // extract and sort patch locations
   seq.resize(npatches);
   seq.sort();
-  iout << iINFO << "PATCH LOCATIONS:";
-  for ( pid=0; pid<npatches; ++pid ) { iout << " " << seq[pid]; }
-  iout << "\n" << endi;
+  // iout << iINFO << "PATCH LOCATIONS:";
+  // for ( pid=0; pid<npatches; ++pid ) { iout << " " << seq[pid]; }
+  // iout << "\n" << endi;
 
   for ( pid=0; pid<npatches; ++pid ) {
     patchMap->assignNode(pid, seq[pid]);
