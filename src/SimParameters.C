@@ -118,6 +118,24 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_FLOAT("constraintScaling",constraintScaling)
   SCRIPT_PARSE_STRING("outputname",outputFilename)
   SCRIPT_PARSE_VECTOR("eField",eField)
+
+//Modifications for alchemical fep
+//SD & CC, CNRS - LCTN, Nancy
+  SCRIPT_PARSE_INT("fepEquilSteps",fepEquilSteps)
+
+  if ( ! strncasecmp(param,"lambda",MAX_SCRIPT_PARAM_SIZE) ) {
+    lambda = atof(value);
+    ComputeNonbondedUtil::select();
+    return;
+  }
+
+  if ( ! strncasecmp(param,"lambda2",MAX_SCRIPT_PARAM_SIZE) ) {
+    lambda2 = atof(value);
+    ComputeNonbondedUtil::select();
+    return;
+  }
+//fepe
+
   if ( ! strncasecmp(param,"nonbondedScaling",MAX_SCRIPT_PARAM_SIZE) ) {
     nonbondedScaling = atof(value);
     ComputeNonbondedUtil::select();
@@ -421,6 +439,17 @@ void SimParameters::config_parser_fileio(ParseOptions &opts) {
    opts.require("amber", "parmfile", "AMBER parm file", PARSE_STRING);
    opts.optional("amber", "ambercoor", "AMBER coordinate file", PARSE_STRING);
 
+//Modifications for alchemical fep
+//SD & CC, CNRS - LCTN, Nancy
+// begin fep output options    
+   opts.optional("fep", "fepoutfreq", "Frequency of FEP energy output in "
+     "timesteps", &fepOutFreq, 5);
+   opts.range("fepoutfreq", NOT_NEGATIVE);
+   opts.optional("fepoutfreq", "fepoutfile", "FEP energy output filename",
+     fepOutFile);
+// end fep output options
+//fepe
+
    /* GROMACS options */
    opts.optionalB("main", "gromacs", "Use GROMACS-like force field?",
        &gromacsOn, FALSE);
@@ -542,6 +571,23 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    opts.optional("Langevin", "langevinCol", "Column in the langevinFile "
      "containing the temperature coupling term B(i);\n"
      "default is 'O'", PARSE_STRING);
+
+//Modifications for alchemical fep
+//SD & CC, CNRS - LCTN, Nancy
+//  alchemical fep options
+   opts.optionalB("main", "fep", "Is chemical fep being performed?",
+     &fepOn, FALSE);
+   opts.require("fep", "lambda", "Coupling parameter value", &lambda);
+   opts.require("fep", "lambda2", "Coupling comparison value", &lambda2);
+   opts.optional("fep", "fepFile", "PDB file with perturbation flags "
+     "default is the input PDB file", PARSE_STRING); 
+   opts.optional("fep", "fepCol", "Column in the fepFile with the "
+     "perturbation flag", PARSE_STRING);
+   opts.optional("fep", "fepEquilSteps", "Equilibration steps, before "
+     "data collection in the fep window", &fepEquilSteps, 0);
+   opts.range("fepEquilSteps", NOT_NEGATIVE);
+// end FEP options
+//fepe
 
    //  Dihedral angle dynamics
    opts.optionalB("main", "globalTest", "Should global integration (for development) be used?",
@@ -1657,6 +1703,23 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
       randomSeed = (unsigned int) time(NULL);
    }
 
+//Modifications for alchemical fep
+//SD & CC, CNRS - LCTN, Nancy
+
+   if (lambda < 0.0 || lambda > 1.0 || lambda2 < 0.0 || lambda2 > 1.0)
+   {
+      NAMD_die("lambda values should be in the range [0.0, 1.0]");
+   }
+
+   if (fepOn) {
+      if (!opts.defined("fepoutfile")) {
+        strcpy(fepOutFile, outputFilename);
+        strcat(fepOutFile, ".fep");
+      }
+   } else {
+     fepOutFile[0] = STRINGNULL;
+   }
+//fepe
 
    //  Set up load balancing variables
    if (opts.defined("ldbStrategy"))
@@ -2297,6 +2360,22 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    
    //****** END SMD constraints changes 
    
+//Modifications for alchemical fep
+//SD & CC, CNRS - LCTN, Nancy
+//  Chemical FEP status
+
+   current = config->find("fepOutFile");
+   if (fepOn)
+   {
+     iout << iINFO << "CHEMICAL FEP ON\n";
+     iout << iINFO << "CURRENT LAMBDA VALUE     "
+          << lambda << "\n";
+     iout << iINFO << "COMPARISON LAMBDA VALUE  "
+          << lambda2 << "\n";
+   }
+
+//fepe
+
    if (consForceOn)
      iout << iINFO << "CONSTANT FORCE ACTIVE\n";
 
@@ -2733,7 +2812,6 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    {
   iout << "NO\n" << endi;
    }
-
 
 // If this is AMBER, then print AMBER options
 

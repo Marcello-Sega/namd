@@ -153,7 +153,9 @@ void Controller::integrate() {
 
     receivePressure(step);
     reassignVelocities(step);
+    printFepMessage(step);
     printEnergies(step);
+    outputFepEnergy(step);
     traceUserEvent(eventEndOfTimeStep);
     outputExtendedSystem(step);
     rebalanceLoad(step);
@@ -169,6 +171,7 @@ void Controller::integrate() {
 	langevinPiston2(step);
         reassignVelocities(step);
         printEnergies(step);
+        outputFepEnergy(step);
         traceUserEvent(eventEndOfTimeStep);
         outputExtendedSystem(step);
         cycleBarrier(!((step+1) % stepsPerCycle),step);
@@ -550,6 +553,22 @@ void Controller::rescaleVelocities(int step)
   }
 }
 
+//Modifications for alchemical fep
+//SD & CC, CNRS - LCTN, Nancy
+void Controller::printFepMessage(int step)
+{
+  if (simParams->fepOn) {
+    const BigReal lambda = simParams->lambda;
+    const BigReal lambda2 = simParams->lambda2;
+    const int fepEquilSteps = simParams->fepEquilSteps;
+    iout << "FEP: RESETTING FOR NEW FEP WINDOW "
+         << "LAMBDA SET TO " << lambda << " LAMBDA2 " << lambda2
+         << "\nFEP: WINDOW TO HAVE " << fepEquilSteps
+         << " STEPS OF EQUILIBRATION PRIOR TO FEP DATA COLLECTION.\n" << endi;
+  }
+} 
+//fepe
+
 void Controller::reassignVelocities(int step)
 {
   const int reassignFreq = simParams->reassignFreq;
@@ -900,11 +919,18 @@ void Controller::printEnergies(int step)
     {
       electEnergy = reduction->item(REDUCTION_ELECT_ENERGY);
       ljEnergy = reduction->item(REDUCTION_LJ_ENERGY);
+//fepb
+      electEnergy_f = reduction->item(REDUCTION_ELECT_ENERGY_F);
+      ljEnergy_f = reduction->item(REDUCTION_LJ_ENERGY_F);
+//fepe
     }
 
     if ( ! ( step % slowFreq ) )
     {
       electEnergySlow = reduction->item(REDUCTION_ELECT_ENERGY_SLOW);
+//fepb
+      electEnergySlow_f = reduction->item(REDUCTION_ELECT_ENERGY_SLOW_F);
+//fepe
     }
 
     momentum.x = reduction->item(REDUCTION_MOMENTUM_X);
@@ -1144,6 +1170,79 @@ void Controller::enqueueCollections(int timestep)
   if ( Output::velocityNeeded(timestep) )
     collection->enqueueVelocities(timestep);
 }
+
+//Modifications for alchemical fep
+//SD & CC, CNRS - LCTN, Nancy
+static char *FEPTITLE(int X)
+{ 
+  static char tmp_string[21];
+  sprintf(tmp_string, "FepEnergy:%6d   ",X);
+  return tmp_string;
+}
+
+void Controller::outputFepEnergy(int step) {
+ if (simParams->fepOn) {
+  const int stepInRun = step - simParams->firstTimestep;
+  const int fepEquilSteps = simParams->fepEquilSteps;
+  const BigReal lambda = simParams->lambda;
+  const BigReal lambda2 = simParams->lambda2;
+  if (stepInRun == 0 || stepInRun == fepEquilSteps) {
+    FepNo = 0;
+    exp_dE_ByRT = 0.0;
+    net_dE = 0.0;
+  }
+  if (stepInRun == fepEquilSteps) {
+    fepFile << "#" << fepEquilSteps << " STEPS OF EQUILIBRATION AT "
+            << "LAMBDA " << simParams->lambda << " COMPLETED\n"
+            << "#STARTING COLLECTION OF ENSEMBLE AVERAGE" << endl;
+  }
+  if (simParams->fepOutFreq && ((step%simParams->fepOutFreq)==0)) {
+    if (!fepFile.rdbuf()->is_open()) {
+      fepSum = 0.0;
+      NAMD_backup_file(simParams->fepOutFile);
+      fepFile.open(simParams->fepOutFile);
+      iout << "OPENING FEP ENERGY OUTPUT FILE\n" << endi;
+      fepFile << "#           STEP           Elec          "
+              << "           vdW              dE        dE_avg        Temp        dG\n"
+              << "#                    l         l+dl   "
+              << "       l          l+dl      E(l+dl)-E(l)" << endl;
+    }
+    if (stepInRun == 0) {
+      fepFile << "#RESCALED CHARGE FOR NEW FEP WINDOW "
+              << "LAMBDA SET TO " << lambda << " LAMBDA2 " << lambda2 << endl;
+    }
+    writeFepEnergyData(step, fepFile);
+    fepFile.flush();
+  }
+  if (step == simParams->N) {
+    fepSum = fepSum + dG;
+    fepFile << "#Net free energy change at end of lambda@"<<lambda <<" is " << fepSum << endl;
+  }
+ }
+}
+
+void Controller::writeFepEnergyData(int step, ofstream &file) {
+  BigReal eeng = electEnergy+electEnergySlow;
+  BigReal eeng_f = electEnergy_f + electEnergySlow_f;
+  BigReal dE = eeng_f + ljEnergy_f - eeng - ljEnergy;
+  BigReal RT = BOLTZMAN *temperature;
+  FepNo++;
+  exp_dE_ByRT += exp(-dE/RT);
+  net_dE += dE;
+  dG = -(RT * log(exp_dE_ByRT/FepNo));
+  BigReal dE_avg = net_dE/FepNo;
+  fepFile << FEPTITLE(step);
+  fepFile << FORMAT(eeng);
+  fepFile << FORMAT(eeng_f);
+  fepFile << FORMAT(ljEnergy);
+  fepFile << FORMAT(ljEnergy_f);
+  fepFile << FORMAT(dE);
+  fepFile << FORMAT(dE_avg);
+  fepFile << FORMAT(temperature);
+  fepFile << FORMAT(dG);
+  fepFile << endl;
+}
+//fepe
 
 void Controller::outputExtendedSystem(int step)
 {

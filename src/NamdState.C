@@ -216,7 +216,16 @@ int NamdState::configListInit(ConfigList *cfgList) {
 					    pdb,
 					    NULL);
 	}
-	
+
+//Modifications for alchemical fep
+//SD & CC, CNRS - LCTN, Nancy
+     //identify the mutant atoms for fep simulation
+        if (simParameters->fepOn) {
+           molecule->build_fep_flags(configList->find("fepfile"),
+                configList->find("fepcol"), pdb, NULL);
+        }
+//fepe
+
 	iout << iINFO << "****************************\n";
 	iout << iINFO << "STRUCTURE SUMMARY:\n";
 	iout << iINFO << molecule->numAtoms << " ATOMS\n";
@@ -270,6 +279,16 @@ int NamdState::configListInit(ConfigList *cfgList) {
 	   iout << iINFO << molecule->numFixedRigidBonds <<
 			" RIGID BONDS BETWEEN FIXED ATOMS\n";
 	}
+
+//Modifications for alchemical fep
+//SD & CC, CNRS - LCTN, Nancy
+        if (simParameters->fepOn) {
+           iout << iINFO << molecule->numFepInitial <<
+               " ATOMS TO DISAPPEAR IN FINAL STATE\n";
+           iout << iINFO << molecule->numFepFinal <<
+               " ATOMS TO APPEAR IN FINAL STATE\n";
+        }
+//fepe
 
 	{
 	  // Copied from Controller::printEnergies()

@@ -40,8 +40,7 @@ public:
 
   int sourceNode;
   Lattice lattice;
-  double energy;
-  double virial[6];
+  PmeReduction evir;
   int start;
   int len;
   int zlistlen;
@@ -65,8 +64,7 @@ class PmeUntransMsg : public CMessage_PmeUntransMsg {
 public:
 
   int sourceNode;
-  double energy;
-  double virial[6];
+  PmeReduction evir;
   int y_start;
   int ny;
   double *qgrid;
@@ -117,7 +115,10 @@ private:
   double *work;
 #endif
 
+  int fepOn, numGrids;
+
   LocalPmeInfo *localInfo;
+  int qgrid_size;
   int qgrid_start;
   int qgrid_len;
   int fgrid_start;
@@ -141,10 +142,8 @@ private:
   PmeUntransMsg **untrans_buf;
   int untrans_buf_len;
   PmeGridMsg **gridmsg_reuse;
-  double recipEnergy;
-  double recip_vir[6];
-  double recipEnergy2;
-  double recip_vir2[6];
+  PmeReduction recip_evir;
+  PmeReduction recip_evir2;
 };
 
 ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), pmeCompute(0) {
@@ -170,6 +169,9 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   delete msg;
 
   SimParameters *simParams = Node::Object()->simParameters;
+
+  fepOn = simParams->fepOn;
+  numGrids = fepOn ? 2 : 1;
 
   {  // decide how many pes to use for reciprocal sum
     int nrp = 1;
@@ -369,7 +371,8 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   int local_size = myGrid.block1 * myGrid.K2 * myGrid.dim3;
   int local_size_2 = myGrid.block2 * myGrid.K1 * myGrid.dim3;
   if ( local_size < local_size_2 ) local_size = local_size_2;
-  qgrid = new double[local_size];
+  qgrid = new double[local_size*numGrids];
+  qgrid_size = local_size;
 
   qgrid_start = localInfo[myRecipPe].x_start * myGrid.K2 * myGrid.dim3;
   qgrid_len = localInfo[myRecipPe].nx * myGrid.K2 * myGrid.dim3;
@@ -403,7 +406,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   if ( myRecipPe < numGridPes && numSources == 0 )
 		NAMD_bug("PME grid elements exist without sources.");
   grid_count = numSources;
-  memset( (void*) qgrid, 0, qgrid_len * sizeof(double) );
+  memset( (void*) qgrid, 0, qgrid_size * numGrids * sizeof(double) );
   if ( myRecipPe >= numGridPes ) trans_count = numGridPes;
 }
 
@@ -432,19 +435,21 @@ void ComputePmeMgr::recvGrid(PmeGridMsg *msg) {
     lattice = msg->lattice;
   }
 
-  char *f = msg->fgrid;
   int zdim = myGrid.dim3;
   int zlistlen = msg->zlistlen;
   int *zlist = msg->zlist;
-  double *q = qgrid;
   float *qmsg = msg->qgrid;
-  for ( int i=0; i<fgrid_len; ++i ) {
-    if ( f[i] ) {
-      for ( int k=0; k<zlistlen; ++k ) {
-        q[zlist[k]] += *(qmsg++);
+  for ( int g=0; g<numGrids; ++g ) {
+    char *f = msg->fgrid + fgrid_len * g;
+    double *q = qgrid + qgrid_size * g;
+    for ( int i=0; i<fgrid_len; ++i ) {
+      if ( f[i] ) {
+        for ( int k=0; k<zlistlen; ++k ) {
+          q[zlist[k]] += *(qmsg++);
+        }
       }
+      q += zdim;
     }
-    q += zdim;
   }
 
   gridmsg_reuse[numSources-grid_count] = msg;
@@ -463,8 +468,10 @@ void ComputePmeMgr::gridCalc1(void) {
   // CkPrintf("gridCalc1 on Pe(%d)\n",CkMyPe());
 
 #ifdef NAMD_FFTW
-  rfftwnd_real_to_complex(forward_plan_yz, localInfo[myRecipPe].nx,
-	qgrid, 1, myGrid.dim2 * myGrid.dim3, 0, 0, 0);
+  for ( int g=0; g<numGrids; ++g ) {
+    rfftwnd_real_to_complex(forward_plan_yz, localInfo[myRecipPe].nx,
+	qgrid + qgrid_size * g, 1, myGrid.dim2 * myGrid.dim3, 0, 0, 0);
+  }
 #endif
 
 #if CHARM_VERSION > 050402
@@ -485,17 +492,19 @@ void ComputePmeMgr::sendTrans(void) {
     int pe = ( j + myRecipPe ) % numTransPes;  // different order on each node
     LocalPmeInfo &li = localInfo[pe];
     int cpylen = li.ny_after_transpose * zdim;
-    PmeTransMsg *newmsg = new (nx * cpylen,0) PmeTransMsg;
+    PmeTransMsg *newmsg = new (nx * cpylen * numGrids,0) PmeTransMsg;
     newmsg->sourceNode = myRecipPe;
     newmsg->lattice = lattice;
     newmsg->x_start = x_start;
     newmsg->nx = nx;
-    double *q = qgrid + li.y_start_after_transpose * zdim;
-    double *qmsg = newmsg->qgrid;
-    for ( int x = 0; x < nx; ++x ) {
-      memcpy((void*)qmsg, (void*)q, cpylen*sizeof(double));
-      q += slicelen;
-      qmsg += cpylen;
+    for ( int g=0; g<numGrids; ++g ) {
+      double *q = qgrid + qgrid_size * g + li.y_start_after_transpose * zdim;
+      double *qmsg = newmsg->qgrid + nx * cpylen * g;
+      for ( int x = 0; x < nx; ++x ) {
+        memcpy((void*)qmsg, (void*)q, cpylen*sizeof(double));
+        q += slicelen;
+        qmsg += cpylen;
+      }
     }
 #if CHARM_VERSION > 050402
     pmeProxy[recipPeMap[pe]].recvTrans(newmsg);
@@ -534,8 +543,10 @@ void ComputePmeMgr::recvTrans(PmeTransMsg *msg) {
   int ny = localInfo[myRecipPe].ny_after_transpose;
   int x_start = msg->x_start;
   int nx = msg->nx;
-  memcpy((void*)(qgrid + x_start*ny*zdim), (void*)(msg->qgrid),
-				nx*ny*zdim*sizeof(double));
+  for ( int g=0; g<numGrids; ++g ) {
+    memcpy((void*)(qgrid + qgrid_size * g + x_start*ny*zdim),
+	(void*)(msg->qgrid + nx*ny*zdim*g), nx*ny*zdim*sizeof(double));
+  }
 
   delete msg;
   --trans_count;
@@ -556,22 +567,25 @@ void ComputePmeMgr::gridCalc2(void) {
   // int y_start = localInfo[myRecipPe].y_start_after_transpose;
   int ny = localInfo[myRecipPe].ny_after_transpose;
 
-  // finish forward FFT (x dimension)
+  for ( int g=0; g<numGrids; ++g ) {
+    // finish forward FFT (x dimension)
 #ifdef NAMD_FFTW
-  fftw(forward_plan_x, ny * zdim / 2, (fftw_complex *) qgrid,
+    fftw(forward_plan_x, ny * zdim / 2, (fftw_complex *)(qgrid+qgrid_size*g),
 	ny * zdim / 2, 1, work, 1, 0);
 #endif
 
-  // reciprocal space portion of PME
-  BigReal ewaldcof = ComputeNonbondedUtil::ewaldcof;
-  recipEnergy2 = myKSpace->compute_energy(qgrid, lattice, ewaldcof, recip_vir2);
-  // CkPrintf("Ewald reciprocal energy = %f\n", recipEnergy2);
+    // reciprocal space portion of PME
+    BigReal ewaldcof = ComputeNonbondedUtil::ewaldcof;
+    recip_evir2[7*g] = myKSpace->compute_energy(qgrid+qgrid_size*g,
+			lattice, ewaldcof, &(recip_evir2[7*g+1]));
+    // CkPrintf("Ewald reciprocal energy = %f\n", recip_evir2[7*g]);
 
-  // start backward FFT (x dimension)
+    // start backward FFT (x dimension)
 #ifdef NAMD_FFTW
-  fftw(backward_plan_x, ny * zdim / 2, (fftw_complex *) qgrid,
+    fftw(backward_plan_x, ny * zdim / 2, (fftw_complex *)(qgrid+qgrid_size*g),
 	ny * zdim / 2, 1, work, 1, 0);
 #endif
+  }
 
 #if CHARM_VERSION > 050402
   pmeProxy[CkMyPe()].sendUntrans();
@@ -592,23 +606,20 @@ void ComputePmeMgr::sendUntrans(void) {
     LocalPmeInfo &li = localInfo[pe];
     int x_start =li.x_start;
     int nx = li.nx;
-    PmeUntransMsg *newmsg = new (nx*ny*zdim,0) PmeUntransMsg;
+    PmeUntransMsg *newmsg = new (nx*ny*zdim*numGrids,0) PmeUntransMsg;
     newmsg->sourceNode = myRecipPe;
     if ( j == 0 ) {  // only need these once
-      newmsg->energy = recipEnergy2;
-      for ( int i=0; i<6; ++i ) {
-        newmsg->virial[i] = recip_vir2[i];
-      }
+      newmsg->evir = recip_evir2;
     } else {
-      newmsg->energy = 0.;
-      for ( int i=0; i<6; ++i ) {
-        newmsg->virial[i] = 0.;
-      }
+      newmsg->evir = 0.;
     }
     newmsg->y_start = y_start;
     newmsg->ny = ny;
-    memcpy((void*)(newmsg->qgrid), (void*)(qgrid + x_start*ny*zdim),
-				nx*ny*zdim*sizeof(double));
+    for ( int g=0; g<numGrids; ++g ) {
+      memcpy((void*)(newmsg->qgrid+nx*ny*zdim*g),
+		(void*)(qgrid + qgrid_size*g + x_start*ny*zdim),
+		nx*ny*zdim*sizeof(double));
+    }
 #if CHARM_VERSION > 050402
     pmeProxy[recipPeMap[pe]].recvUntrans(newmsg);
 #else
@@ -638,14 +649,10 @@ void ComputePmeMgr::recvUntrans(PmeUntransMsg *msg) {
     return;
   }
   if ( untrans_count == numTransPes ) {
-    recipEnergy = 0;
-    for ( int j=0; j<6; ++j ) recip_vir[j] = 0;
+    recip_evir = 0.;
   }
 
-  recipEnergy += msg->energy;
-  for ( int j=0; j<6; ++j ) {
-    recip_vir[j] += msg->virial[j];
-  }
+  recip_evir += msg->evir;
 
   int zdim = myGrid.dim3;
   // int x_start = localInfo[myRecipPe].x_start;
@@ -654,12 +661,14 @@ void ComputePmeMgr::recvUntrans(PmeUntransMsg *msg) {
   int ny = msg->ny;
   int slicelen = myGrid.K2 * zdim;
   int cpylen = ny * zdim;
-  double *q = qgrid + y_start * zdim;
-  double *qmsg = msg->qgrid;
-  for ( int x = 0; x < nx; ++x ) {
-    memcpy((void*)q, (void*)qmsg, cpylen*sizeof(double));
-    q += slicelen;
-    qmsg += cpylen;
+  for ( int g=0; g<numGrids; ++g ) {
+    double *q = qgrid + qgrid_size * g + y_start * zdim;
+    double *qmsg = msg->qgrid + nx * cpylen * g;
+    for ( int x = 0; x < nx; ++x ) {
+      memcpy((void*)q, (void*)qmsg, cpylen*sizeof(double));
+      q += slicelen;
+      qmsg += cpylen;
+    }
   }
 
   delete msg;
@@ -679,8 +688,11 @@ void ComputePmeMgr::gridCalc3(void) {
 
   // finish backward FFT
 #ifdef NAMD_FFTW
-  rfftwnd_complex_to_real(backward_plan_yz, localInfo[myRecipPe].nx,
-	(fftw_complex *) qgrid, 1, myGrid.dim2 * myGrid.dim3 / 2, 0, 0, 0);
+  for ( int g=0; g<numGrids; ++g ) {
+    rfftwnd_complex_to_real(backward_plan_yz, localInfo[myRecipPe].nx,
+	(fftw_complex *) (qgrid + qgrid_size * g),
+	1, myGrid.dim2 * myGrid.dim3 / 2, 0, 0, 0);
+  }
 #endif
 
 #if CHARM_VERSION > 050402
@@ -697,31 +709,27 @@ void ComputePmeMgr::sendUngrid(void) {
     PmeGridMsg *newmsg = gridmsg_reuse[j];
     int pe = newmsg->sourceNode;
     if ( j == 0 ) {  // only need these once
-      newmsg->energy = recipEnergy;
-      for ( int i=0; i<6; ++i ) {
-        newmsg->virial[i] = recip_vir[i];
-      }
+      newmsg->evir = recip_evir;
     } else {
-      newmsg->energy = 0.;
-      for ( int i=0; i<6; ++i ) {
-        newmsg->virial[i] = 0.;
-      }
+      newmsg->evir = 0.;
     }
     int zdim = myGrid.dim3;
     int flen = newmsg->len;
     int fstart = newmsg->start;
     int zlistlen = newmsg->zlistlen;
     int *zlist = newmsg->zlist;
-    char *f = newmsg->fgrid;
     float *qmsg = newmsg->qgrid;
-    double *q = qgrid + (fstart-fgrid_start) * zdim;
-    for ( int i=0; i<flen; ++i ) {
-      if ( f[i] ) {
-        for ( int k=0; k<zlistlen; ++k ) {
-          *(qmsg++) = q[zlist[k]];
+    for ( int g=0; g<numGrids; ++g ) {
+      char *f = newmsg->fgrid + fgrid_len * g;
+      double *q = qgrid + qgrid_size * g + (fstart-fgrid_start) * zdim;
+      for ( int i=0; i<flen; ++i ) {
+        if ( f[i] ) {
+          for ( int k=0; k<zlistlen; ++k ) {
+            *(qmsg++) = q[zlist[k]];
+          }
         }
+        q += zdim;
       }
-      q += zdim;
     }
     newmsg->sourceNode = myRecipPe;
 
@@ -732,7 +740,7 @@ void ComputePmeMgr::sendUngrid(void) {
 #endif
   }
   grid_count = numSources;
-  memset( (void*) qgrid, 0, qgrid_len * sizeof(double) );
+  memset( (void*) qgrid, 0, qgrid_size * numGrids * sizeof(double) );
 }
 
 void ComputePmeMgr::recvUngrid(PmeGridMsg *msg) {
@@ -840,6 +848,10 @@ ComputePme::ComputePme(ComputeID c) :
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 
   SimParameters *simParams = Node::Object()->simParameters;
+
+  fepOn = simParams->fepOn;
+  numGrids = fepOn ? 2 : 1;
+
   myGrid.K1 = simParams->PMEGridSizeX;
   myGrid.K2 = simParams->PMEGridSizeY;
   myGrid.K3 = simParams->PMEGridSizeZ;
@@ -848,15 +860,15 @@ ComputePme::ComputePme(ComputeID c) :
   myGrid.dim3 = 2 * (myGrid.K3/2 + 1);
   qsize = myGrid.K1 * myGrid.dim2 * myGrid.dim3;
   fsize = myGrid.K1 * myGrid.dim2;
-  q_arr = new double*[fsize];
-  memset( (void*) q_arr, 0, fsize * sizeof(double*) );
-  f_arr = new char[fsize];
+  q_arr = new double*[fsize*numGrids];
+  memset( (void*) q_arr, 0, fsize*numGrids * sizeof(double*) );
+  f_arr = new char[fsize*numGrids];
   fz_arr = new char[myGrid.K3];
 }
 
 ComputePme::~ComputePme()
 {
-  for (int i=0; i<fsize; ++i) {
+  for (int i=0; i<fsize*numGrids; ++i) {
     if ( q_arr[i] ) {
       delete [] q_arr[i];
     }
@@ -893,10 +905,17 @@ void ComputePme::doWork()
 
   Lattice lattice = patchList[0].p->flags.lattice;
 
-  localData = new PmeParticle[numLocalAtoms];
+  localData = new PmeParticle[numLocalAtoms*(numGrids+(numGrids>1?1:0))];
+  localPartition = new char[numLocalAtoms];
+
+  int g;
+  for ( g=0; g<numGrids; ++g ) {
+    localGridData[g] = localData + numLocalAtoms*(g+1);
+  }
 
   // get positions and charges
   PmeParticle * data_ptr = localData;
+  char * part_ptr = localPartition;
   const BigReal coloumb_sqrt = sqrt( COLOUMB * ComputeNonbondedUtil::scaling
 				* ComputeNonbondedUtil::dielectric_1 );
 
@@ -915,38 +934,61 @@ void ComputePme::doWork()
       data_ptr->z = x[i].position.z;
       data_ptr->cg = coloumb_sqrt * x[i].charge;
       ++data_ptr;
+      *part_ptr = x[i].partition;
+      ++part_ptr;
     }
 
     if ( patchList[0].p->flags.doMolly ) { (*ap).avgPositionBox->close(&x); }
     else { (*ap).positionBox->close(&x); }
   }
 
-  int i;
-  for ( i=0; i<6; ++i ) { virial[i] = 0; }
-  energy = 0;
+  // copy to other grids if needed
+  if ( numGrids > 1 ) {
+    for ( g=0; g<numGrids; ++g ) {
+      PmeParticle *lgd = localGridData[g];
+      int nga = 0;
+      for(int i=0; i<numLocalAtoms; ++i) {
+        if ( localPartition[i] == 0 || localPartition[i] == (g+1) ) {
+          lgd[nga++] = localData[i];
+        }
+      }
+      numGridAtoms[g] = nga;
+    }
+  } else {
+    localGridData[0] = localData;
+    numGridAtoms[0] = numLocalAtoms;
+  }
+
+  evir = 0;
+  memset( (void*) fz_arr, 0, myGrid.K3 * sizeof(char) );
 
   // calculate self energy
   BigReal ewaldcof = ComputeNonbondedUtil::ewaldcof;
-  BigReal selfEnergy = 0;
-  data_ptr = localData;
-  for(i=0; i<numLocalAtoms; ++i)
-  {
-    selfEnergy += data_ptr->cg * data_ptr->cg;
-    ++data_ptr;
-  }
-  selfEnergy *= -1. * ewaldcof / SQRT_PI;
-  energy += selfEnergy;
-
-  for (i=0; i<fsize; ++i) {
-    if ( q_arr[i] ) {
-      memset( (void*) (q_arr[i]), 0, myGrid.dim3 * sizeof(double) );
+  for ( g=0; g<numGrids; ++g ) {
+    BigReal selfEnergy = 0;
+    data_ptr = localGridData[g];
+    int i;
+    for(i=0; i<numGridAtoms[g]; ++i)
+    {
+      selfEnergy += data_ptr->cg * data_ptr->cg;
+      ++data_ptr;
     }
+    selfEnergy *= -1. * ewaldcof / SQRT_PI;
+    evir[7*g] += selfEnergy;
+
+    double **q = q_arr + g*fsize;
+    for (i=0; i<fsize; ++i) {
+      if ( q[i] ) {
+        memset( (void*) (q[i]), 0, myGrid.dim3 * sizeof(double) );
+      }
+    }
+
+    char *f = f_arr + g*fsize;
+    memset( (void*) f, 0, fsize * sizeof(char) );
+    myRealSpace[g] = new PmeRealSpace(myGrid,numGridAtoms[g]);
+    scale_coordinates(localGridData[g], numGridAtoms[g], lattice, myGrid);
+    myRealSpace[g]->fill_charges(q, f, fz_arr, localGridData[g]);
   }
-  memset( (void*) f_arr, 0, fsize * sizeof(char) );
-  memset( (void*) fz_arr, 0, myGrid.K3 * sizeof(char) );
-  myRealSpace = new PmeRealSpace(myGrid,numLocalAtoms);
-  scale_coordinates(localData, numLocalAtoms, lattice, myGrid);
-  myRealSpace->fill_charges(q_arr, f_arr, fz_arr, localData);
 
   CProxy_ComputePmeMgr pmeProxy(CpvAccess(BOCclass_group).computePmeMgr);
 #if CHARM_VERSION > 050402
@@ -981,36 +1023,41 @@ void ComputePme::sendData(int numRecipPes, int firstDestRecipPe,
     int zdim = myGrid.dim3;
     int fstart = start / zdim;
     int flen = len / zdim;
-    char *f = f_arr + fstart;
     int fcount = 0;
     int i;
-    for ( i=0; i<flen; ++i ) {
-      fcount += ( f[i] ? 1 : 0 );
-    }
-    // CkPrintf("count(%d -> %d) = %d\n",CkMyPe(),pe,fcount);
 
-    if ( ! recipPeDest[pe] ) {
-      if ( fcount ) {
-        ++errcount;
-        iout << iERROR << CkMyPe() << " sending to " << recipPeMap[pe] << ":";
-        int iz = -1;
-        for ( i=0; i<flen; ++i ) {
-          if ( f[i] ) {
-            int jz = (i+fstart)/myGrid.K2;
-            if ( iz != jz ) { iout << " " << jz;  iz = jz; }
-          }
-        }
-        iout << "\n" << endi;
+    int g;
+    for ( g=0; g<numGrids; ++g ) {
+      char *f = f_arr + fstart + g*fsize;
+      int fcount_g = 0;
+      for ( i=0; i<flen; ++i ) {
+        fcount_g += ( f[i] ? 1 : 0 );
       }
-      continue;
+      fcount += fcount_g;
+      if ( ! recipPeDest[pe] ) {
+        if ( fcount_g ) {
+          ++errcount;
+          iout << iERROR << CkMyPe() << " sending to " << recipPeMap[pe] << ":";
+          int iz = -1;
+          for ( i=0; i<flen; ++i ) {
+            if ( f[i] ) {
+              int jz = (i+fstart)/myGrid.K2;
+              if ( iz != jz ) { iout << " " << jz;  iz = jz; }
+            }
+          }
+          iout << "\n" << endi;
+        }
+      }
     }
+
+    if ( ! recipPeDest[pe] ) continue;
 
     int zlistlen = 0;
     for ( i=0; i<myGrid.K3; ++i ) {
       if ( fz_arr[i] ) ++zlistlen;
     }
 
-    PmeGridMsg *msg = new (zlistlen, flen, fcount*zlistlen, 0) PmeGridMsg;
+    PmeGridMsg *msg = new (zlistlen, flen*numGrids, fcount*zlistlen, 0) PmeGridMsg;
     msg->sourceNode = CkMyPe();
     msg->lattice = lattice;
     msg->start = fstart;
@@ -1021,14 +1068,16 @@ void ComputePme::sendData(int numRecipPes, int firstDestRecipPe,
     for ( i=0; i<myGrid.K3; ++i ) {
       if ( fz_arr[i] ) zlist[zlistlen++] = i;
     }
-    memcpy((void*)(msg->fgrid),(void*)(f),flen*sizeof(char));
-
-    double **q = q_arr + fstart;
     float *qmsg = msg->qgrid;
-    for ( i=0; i<flen; ++i ) {
-      if ( f[i] ) {
-        for ( int k=0; k<zlistlen; ++k ) {
-          *(qmsg++) = q[i][zlist[k]];
+    for ( g=0; g<numGrids; ++g ) {
+      char *f = f_arr + fstart + g*fsize;
+      memcpy((void*)(msg->fgrid+g*flen),(void*)f,flen*sizeof(char));
+      double **q = q_arr + fstart + g*fsize;
+      for ( i=0; i<flen; ++i ) {
+        if ( f[i] ) {
+          for ( int k=0; k<zlistlen; ++k ) {
+            *(qmsg++) = q[i][zlist[k]];
+          }
         }
       }
     }
@@ -1052,22 +1101,22 @@ void ComputePme::sendData(int numRecipPes, int firstDestRecipPe,
 
 void ComputePme::copyResults(PmeGridMsg *msg) {
 
-  energy += msg->energy;
-  for ( int j=0; j<6; ++j ) {
-    virial[j] += msg->virial[j];
-  }
+  evir += msg->evir;
   int zdim = myGrid.dim3;
   int flen = msg->len;
   int fstart = msg->start;
-  char *f = msg->fgrid;
   int zlistlen = msg->zlistlen;
   int *zlist = msg->zlist;
   float *qmsg = msg->qgrid;
-  double **q = q_arr + fstart;
-  for ( int i=0; i<flen; ++i ) {
-    if ( f[i] ) {
-      for ( int k=0; k<zlistlen; ++k ) {
-        q[i][zlist[k]] = *(qmsg++);
+  int g;
+  for ( g=0; g<numGrids; ++g ) {
+    char *f = msg->fgrid + g*flen;
+    double **q = q_arr + fstart + g*fsize;
+    for ( int i=0; i<flen; ++i ) {
+      if ( f[i] ) {
+        for ( int k=0; k<zlistlen; ++k ) {
+          q[i][zlist[k]] = *(qmsg++);
+        }
       }
     }
   }
@@ -1075,12 +1124,39 @@ void ComputePme::copyResults(PmeGridMsg *msg) {
 
 void ComputePme::ungridForces() {
 
-    Vector *localResults = new Vector[numLocalAtoms];
-    myRealSpace->compute_forces(q_arr, localData, localResults);
-    delete [] localData;
-    delete myRealSpace;
+    SimParameters *simParams = Node::Object()->simParameters;
+
+    Vector *localResults = new Vector[numLocalAtoms*(numGrids>1?2:1)];
+    Vector *gridResults;
+    if ( numGrids > 1 ) {
+      for(int i=0; i<numLocalAtoms; ++i) { localResults[i] = 0.; }
+      gridResults = localResults + numLocalAtoms;
+    } else {
+      gridResults = localResults;
+    }
+
     Lattice lattice = patchList[0].p->flags.lattice;
-    scale_forces(localResults, numLocalAtoms, lattice);
+    int g = 0;
+    for ( g=0; g<numGrids; ++g ) {
+      myRealSpace[g]->compute_forces(q_arr+g*fsize, localGridData[g], gridResults);
+      delete myRealSpace[g];
+      scale_forces(gridResults, numGridAtoms[g], lattice);
+
+      if ( numGrids > 1 ) {
+        double scale = 1.;
+        if ( fepOn && g == 0 ) scale = simParams->lambda;
+        else if ( fepOn && g == 1 ) scale = 1. - simParams->lambda;
+        int nga = 0;
+        for(int i=0; i<numLocalAtoms; ++i) {
+          if ( localPartition[i] == 0 || localPartition[i] == (g+1) ) {
+            localResults[i] += gridResults[nga++] * scale;
+          }
+        }
+      }
+    }
+
+    delete [] localData;
+    delete [] localPartition;
 
     Vector *results_ptr = localResults;
     ResizeArrayIter<PatchElem> ap(patchList);
@@ -1104,16 +1180,26 @@ void ComputePme::ungridForces() {
 
     delete [] localResults;
    
-    reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += energy;
-    reduction->item(REDUCTION_VIRIAL_SLOW_XX) += (BigReal)(virial[0]);
-    reduction->item(REDUCTION_VIRIAL_SLOW_XY) += (BigReal)(virial[1]);
-    reduction->item(REDUCTION_VIRIAL_SLOW_XZ) += (BigReal)(virial[2]);
-    reduction->item(REDUCTION_VIRIAL_SLOW_YX) += (BigReal)(virial[1]);
-    reduction->item(REDUCTION_VIRIAL_SLOW_YY) += (BigReal)(virial[3]);
-    reduction->item(REDUCTION_VIRIAL_SLOW_YZ) += (BigReal)(virial[4]);
-    reduction->item(REDUCTION_VIRIAL_SLOW_ZX) += (BigReal)(virial[2]);
-    reduction->item(REDUCTION_VIRIAL_SLOW_ZY) += (BigReal)(virial[4]);
-    reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += (BigReal)(virial[5]);
+    for ( g=0; g<numGrids; ++g ) {
+      double scale = 1.;
+      if ( fepOn && g == 0 ) scale = simParams->lambda;
+      else if ( fepOn && g == 1 ) scale = 1. - simParams->lambda;
+      reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += evir[0+7*g] * scale;
+      reduction->item(REDUCTION_VIRIAL_SLOW_XX) += evir[1+7*g] * scale;
+      reduction->item(REDUCTION_VIRIAL_SLOW_XY) += evir[2+7*g] * scale;
+      reduction->item(REDUCTION_VIRIAL_SLOW_XZ) += evir[3+7*g] * scale;
+      reduction->item(REDUCTION_VIRIAL_SLOW_YX) += evir[2+7*g] * scale;
+      reduction->item(REDUCTION_VIRIAL_SLOW_YY) += evir[4+7*g] * scale;
+      reduction->item(REDUCTION_VIRIAL_SLOW_YZ) += evir[5+7*g] * scale;
+      reduction->item(REDUCTION_VIRIAL_SLOW_ZX) += evir[3+7*g] * scale;
+      reduction->item(REDUCTION_VIRIAL_SLOW_ZY) += evir[5+7*g] * scale;
+      reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += evir[6+7*g] * scale;
+
+      double scale2 = 0.;
+      if ( fepOn && g == 0 ) scale2 = simParams->lambda2;
+      else if ( fepOn && g == 1 ) scale2 = 1. - simParams->lambda2;
+      reduction->item(REDUCTION_ELECT_ENERGY_SLOW_F) += evir[0+7*g] * scale2;
+    }
     reduction->submit();
 
 }

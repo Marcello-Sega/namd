@@ -3619,7 +3619,7 @@ void Parameters::traverse_vdw_params(struct vdw_params *tree)
   DebugM(3,"vdW " << tree->atomname << " index=" << tree->index \
       << " sigma=" << tree->sigma << " epsilon=" << \
       tree->epsilon << " sigma 1-4=" << tree->sigma14 \
-      << " epsilon 1-4=" << tree->epsilon14);
+      << " epsilon 1-4=" << tree->epsilon14 << endl);
 
   if (tree->right != NULL)
   {

@@ -191,6 +191,18 @@ public:
         int SMDOutputFreq;              //  Output frequency for SMD constr.
         //****** END SMD constraints changes 
 
+//Modifications for alchemical fep
+//SD & CC, CNRS - LCTN, Nancy
+//   Begin FEP flags
+	Bool fepOn;			//  Doing alchemical FEP?
+	BigReal lambda;			//  lambda for dynamics
+	BigReal lambda2;		//  lambda for comparison
+	int fepOutFreq;			//  freq of fep output
+	char fepOutFile[128];		//  fep output filename
+	int fepEquilSteps;		//  no of eqlb steps in the window
+//   End FEP flags
+//fepe
+
         Bool extForcesOn;		//  Are ext command forces present?
         char extForcesCommand[257];
         char extCoordFilename[129];

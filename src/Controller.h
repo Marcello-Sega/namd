@@ -59,6 +59,17 @@ protected:
       BigReal electEnergy;
       BigReal electEnergySlow;
       BigReal ljEnergy;
+//fepb
+      BigReal electEnergy_f;
+      BigReal electEnergySlow_f;
+      BigReal ljEnergy_f;
+      BigReal exp_dE_ByRT;
+      BigReal net_dE;
+      BigReal dG;
+      int FepNo;
+      void printFepMessage(int);
+      BigReal fepSum;
+//fepe
       BigReal kineticEnergy;
       BigReal temperature;
       Tensor pressure;
@@ -93,6 +104,12 @@ protected:
     void outputExtendedSystem(int step);
     void writeExtendedSystemLabels(ofstream &file);
     void writeExtendedSystemData(int step, ofstream &file);
+
+//fepb
+    ofstream fepFile;
+    void outputFepEnergy(int step);
+    void writeFepEnergyData(int step, ofstream &file);
+//fepe
 
     // for checkpoint/revert
     Lattice checkpoint_lattice;

@@ -86,6 +86,9 @@ private:
 	int32 *exPressureAtomFlags; // 1 for excluded, -1 for excluded group.
 	Real *rigidBondLengths;  //  if H, length to parent or 0. or
 				//  if not H, length between children or 0.
+//fepb
+        unsigned char *fepAtomFlags; 
+//fepe
 
 	ObjectArena<int32> *tmpArena;
 	int32 **bondsWithAtom;	//  List of bonds involving each atom
@@ -157,6 +160,10 @@ public:
 	int numHydrogenGroups;	//  Number of hydrogen groups
 	int numRigidBonds;	//  Number of rigid bonds
 	int numFixedRigidBonds; //  Number of rigid bonds between fixed atoms
+//fepb
+        int numFepInitial;	// no. of fep atoms with initial flag
+        int numFepFinal;	// no. of fep atoms with final flag
+//fepe
 
 	int numConsForce;	//  Number of atoms that have constant force applied
 	int32 *consForceIndexes;//  Constant force indexes for each atom
@@ -212,6 +219,10 @@ public:
 
 	void build_fixed_atoms(StringList *, StringList *, PDB *, char *);
 				//  Determine which atoms are fixed (if any)
+//fepb
+        void build_fep_flags(StringList *, StringList *, PDB *, char *);
+                               // selection of the mutant atoms
+//fepe
 
 	void build_exPressure_atoms(StringList *, StringList *, PDB *, char *);
 				//  Determine which atoms are excluded from
@@ -336,6 +347,13 @@ public:
 	{
 		return(langForceVals[atomnum]);
 	}
+
+//fepb
+        unsigned char get_fep_type(int anum) const
+        {
+                return(fepAtomFlags[anum]);
+        }
+//fepe
 
 	Bool is_atom_fixed(int atomnum) const
 	{

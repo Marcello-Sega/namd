@@ -246,6 +246,11 @@ void WorkDistrib::createHomePatches(void)
     int n = atoms[i].size();
     FullAtom *a = atoms[i].begin();
     int j;
+//Modifications for alchemical fep
+//SD & CC, CNRS - LCTN, Nancy
+    Bool fepOn = params->fepOn;
+//fepe
+
     for(j=0; j < n; j++)
     {
       int aid = a[j].id;
@@ -253,6 +258,17 @@ void WorkDistrib::createHomePatches(void)
 		a[j].position, center, &(a[j].transform));
       a[j].mass = molecule->atommass(aid);
       a[j].charge = molecule->atomcharge(aid);
+
+//Modifications for alchemical fep
+//SD & CC, CNRS - LCTN, Nancy
+      if (fepOn) {
+        a[j].partition = molecule->get_fep_type(aid);
+      } 
+      else {
+        a[j].partition = 0;
+      }
+//fepe
+
       if (params->splitPatch == SPLIT_PATCH_HYDROGEN) {
         if ( molecule->is_hydrogenGroupParent(aid) ) {
           a[j].hydrogenGroupSize = molecule->get_groupSize(aid);

@@ -48,18 +48,23 @@ BigReal         ComputeNonbondedUtil::c6;
 BigReal         ComputeNonbondedUtil::c7;
 BigReal         ComputeNonbondedUtil::c8;
 // BigReal         ComputeNonbondedUtil::d0;
+// fepb
+Bool            ComputeNonbondedUtil::fepOn;
+BigReal         ComputeNonbondedUtil::lambda;
+BigReal         ComputeNonbondedUtil::lambda2;
+//fepe
 
 BigReal		ComputeNonbondedUtil::ewaldcof;
 BigReal		ComputeNonbondedUtil::pi_ewaldcof;
 
-void (*ComputeNonbondedUtil::calcPair)(nonbonded *) = calc_pair;
-void (*ComputeNonbondedUtil::calcSelf)(nonbonded *) = calc_self;
+void (*ComputeNonbondedUtil::calcPair)(nonbonded *);
+void (*ComputeNonbondedUtil::calcSelf)(nonbonded *);
 
-void (*ComputeNonbondedUtil::calcFullPair)(nonbonded *) = calc_pair_fullelect;
-void (*ComputeNonbondedUtil::calcFullSelf)(nonbonded *) = calc_self_fullelect;
+void (*ComputeNonbondedUtil::calcFullPair)(nonbonded *);
+void (*ComputeNonbondedUtil::calcFullSelf)(nonbonded *);
 
-void (*ComputeNonbondedUtil::calcSlowPair)(nonbonded *) = calc_pair_slow_fullelect;
-void (*ComputeNonbondedUtil::calcSlowSelf)(nonbonded *) = calc_self_slow_fullelect;
+void (*ComputeNonbondedUtil::calcSlowPair)(nonbonded *);
+void (*ComputeNonbondedUtil::calcSlowSelf)(nonbonded *);
 
 // define splitting function
 #define SPLIT_NONE	1
@@ -73,6 +78,11 @@ void ComputeNonbondedUtil::submitReductionData(BigReal *data, SubmitReduction *r
   reduction->item(REDUCTION_ELECT_ENERGY) += data[electEnergyIndex];
   reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += data[fullElectEnergyIndex];
   reduction->item(REDUCTION_LJ_ENERGY) += data[vdwEnergyIndex];
+//fepb
+  reduction->item(REDUCTION_ELECT_ENERGY_F) += data[electEnergyIndex_s];
+  reduction->item(REDUCTION_ELECT_ENERGY_SLOW_F) += data[fullElectEnergyIndex_s];
+  reduction->item(REDUCTION_LJ_ENERGY_F) += data[vdwEnergyIndex_s];
+//fepe
   ADD_TENSOR(reduction,REDUCTION_VIRIAL_NBOND,data,virialIndex);
   ADD_TENSOR(reduction,REDUCTION_VIRIAL_SLOW,data,fullElectVirialIndex);
   reduction->item(REDUCTION_COMPUTE_CHECKSUM) += 1.;
@@ -94,6 +104,29 @@ void ComputeNonbondedUtil::select(void)
 
   cutoff = simParams->cutoff;
   cutoff2 = cutoff*cutoff;
+
+//fepb
+  fepOn = simParams->fepOn;
+  lambda = simParams->lambda;
+  lambda2 = simParams->lambda2;
+
+  if ( fepOn ) {
+    ComputeNonbondedUtil::calcPair = calc_pair_fep;
+    ComputeNonbondedUtil::calcSelf = calc_self_fep;
+    ComputeNonbondedUtil::calcFullPair = calc_pair_fullelect_fep;
+    ComputeNonbondedUtil::calcFullSelf = calc_self_fullelect_fep;
+    ComputeNonbondedUtil::calcSlowPair = calc_pair_slow_fullelect_fep;
+    ComputeNonbondedUtil::calcSlowSelf = calc_self_slow_fullelect_fep;
+  } else {
+    ComputeNonbondedUtil::calcPair = calc_pair;
+    ComputeNonbondedUtil::calcSelf = calc_self;
+    ComputeNonbondedUtil::calcFullPair = calc_pair_fullelect;
+    ComputeNonbondedUtil::calcFullSelf = calc_self_fullelect;
+    ComputeNonbondedUtil::calcSlowPair = calc_pair_slow_fullelect;
+    ComputeNonbondedUtil::calcSlowSelf = calc_self_slow_fullelect;
+  }
+
+//fepe
 
   // we add slightly more than 2 angstroms to get the same numbers.
   // don't know why...ask jim... :-)
@@ -397,4 +430,28 @@ void ComputeNonbondedUtil::select(void)
 #undef SLOWONLY
 #undef FULLELECT
 #undef  NBTYPE
+
+#define FEPFLAG
+
+#define NBTYPE NBPAIR
+#include "ComputeNonbondedBase.h"
+#define FULLELECT
+#include "ComputeNonbondedBase.h"
+#define SLOWONLY
+#include "ComputeNonbondedBase.h"
+#undef SLOWONLY
+#undef FULLELECT
+#undef  NBTYPE
+
+#define NBTYPE NBSELF
+#include "ComputeNonbondedBase.h"
+#define FULLELECT
+#include "ComputeNonbondedBase.h"
+#define SLOWONLY
+#include "ComputeNonbondedBase.h"
+#undef SLOWONLY
+#undef FULLELECT
+#undef  NBTYPE
+
+#undef FEPFLAG
 

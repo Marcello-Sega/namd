@@ -57,6 +57,9 @@ public:
 
   enum { exclChecksumIndex,
 	 electEnergyIndex, fullElectEnergyIndex, vdwEnergyIndex,
+//sd-db
+	 electEnergyIndex_s, fullElectEnergyIndex_s, vdwEnergyIndex_s,
+//sd-de
 	 TENSOR(virialIndex), TENSOR(fullElectVirialIndex),
 	 reductionDataSize };
   static void submitReductionData(BigReal*,SubmitReduction*);
@@ -87,6 +90,11 @@ public:
   static BigReal c7;
   static BigReal c8;
   // static BigReal d0;
+//sd-db
+  static Bool fepOn;
+  static BigReal lambda;
+  static BigReal lambda2;
+//sd-de
 
   // for particle mesh Ewald
   static BigReal ewaldcof;
@@ -107,6 +115,14 @@ public:
   static void calc_self(nonbonded *);
   static void calc_self_fullelect(nonbonded *);
   static void calc_self_slow_fullelect(nonbonded *);
+
+//alchemical fep calcualtion
+  static void calc_pair_fep(nonbonded *);
+  static void calc_pair_fullelect_fep (nonbonded *);
+  static void calc_pair_slow_fullelect_fep (nonbonded *);
+  static void calc_self_fep (nonbonded *);
+  static void calc_self_fullelect_fep (nonbonded *);
+  static void calc_self_slow_fullelect_fep (nonbonded *);
 
 };
 

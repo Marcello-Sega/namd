@@ -38,6 +38,7 @@ struct CompAtom {
   unsigned int nonbondedGroupIsAtom : 1;
   unsigned int atomFixed : 1;
   unsigned int groupFixed : 1;
+  unsigned int partition : 2;
 
   CompAtom() { ; }
 
@@ -46,7 +47,8 @@ struct CompAtom {
     position(a.position), charge(a.charge),
     id(a.id), hydrogenGroupSize(a.hydrogenGroupSize),
     nonbondedGroupIsAtom(a.nonbondedGroupIsAtom),
-    atomFixed(a.atomFixed), groupFixed(a.groupFixed) {
+    atomFixed(a.atomFixed), groupFixed(a.groupFixed),
+    partition(a.partition) {
     ;
   }
 
@@ -59,6 +61,7 @@ struct CompAtom {
     nonbondedGroupIsAtom = a.nonbondedGroupIsAtom;
     atomFixed = a.atomFixed;
     groupFixed = a.groupFixed;
+    partition = a.partition;
     return *this;
   }
 

@@ -10,11 +10,14 @@
 #include "ComputeHomePatches.h"
 #include "PmeBase.h"
 #include "NamdTypes.h"
+#include "MathArray.h"
 
 class PmeRealSpace;
 class ComputeMgr;
 class SubmitReduction;
 class PmeGridMsg;
+#define PME_MAX_EVALS 3
+typedef MathArray<double,7*PME_MAX_EVALS> PmeReduction;
 
 class ComputePme : public ComputeHomePatches {
 public:
@@ -28,16 +31,19 @@ public:
  private:
   PmeGrid myGrid;
   int qsize, fsize, bsize;
+  int fepOn, numGrids;
   double **q_arr;
   char *f_arr;
   char *fz_arr;
-  double energy;
-  double virial[6];
+  PmeReduction evir;
   SubmitReduction *reduction;
   int resultsRemaining;
-  PmeRealSpace *myRealSpace;
+  PmeRealSpace *myRealSpace[PME_MAX_EVALS];
   int numLocalAtoms;
   PmeParticle *localData;
+  char *localPartition;
+  int numGridAtoms[PME_MAX_EVALS];
+  PmeParticle *localGridData[PME_MAX_EVALS];
 
 };
 

@@ -52,13 +52,23 @@
 #undef FULL
 #undef NOFULL
 #ifdef FULLELECT
-  #define FULLELECTNAME(X) LAST( X ## _fullelect )
+  #define FULLELECTNAME(X) FEPNAME( X ## _fullelect )
   #define FULL(X) X
   #define NOFULL(X)
 #else
-  #define FULLELECTNAME(X) LAST( X )
+  #define FULLELECTNAME(X) FEPNAME( X )
   #define FULL(X)
   #define NOFULL(X) X
+#endif
+
+#undef FEPNAME
+#undef FEP
+#ifdef FEPFLAG
+  #define FEPNAME(X) LAST( X ## _fep )
+  #define FEP(X) X
+#else
+  #define FEPNAME(X) LAST( X )
+  #define FEP(X)
 #endif
 
 #define LAST(X) X
@@ -84,6 +94,13 @@ void ComputeNonbondedUtil :: NAME
   (
   BigReal vdwEnergy = 0;
   BigReal electEnergy = 0;
+
+  FEP
+  (
+  BigReal vdwEnergy_s = 0;
+  BigReal electEnergy_s = 0;
+  )
+  
   BigReal virial_xx = 0;
   BigReal virial_xy = 0;
   BigReal virial_xz = 0;
@@ -94,6 +111,10 @@ void ComputeNonbondedUtil :: NAME
   FULL
   (
   BigReal fullElectEnergy = 0;
+  FEP
+  (
+  BigReal fullElectEnergy_s = 0;
+  )
   BigReal fullElectVirial_xx = 0;
   BigReal fullElectVirial_xy = 0;
   BigReal fullElectVirial_xz = 0;
@@ -302,6 +323,11 @@ void ComputeNonbondedUtil :: NAME
 
     const int atomfixed = ( p_i.atomFixed );
 
+  FEP
+    (
+    const int ifep_type = p_i.partition;
+    )
+
     const BigReal kq_i = COLOUMB * p_i.charge * scaling * dielectric_1;
     const LJTable::TableEntry * const lj_row =
 		ljTable->table_row(mol->atomvdwtype(p_i.id));
@@ -394,6 +420,25 @@ void ComputeNonbondedUtil :: NAME
       BigReal kqq = kq_i * p_j->charge;
       BigReal diffa = r2 - r2_delta * table_i;
 
+    FEP
+      (
+      int jfep_type = p_j->partition;
+      BigReal lambda_pair = 1.0;
+      BigReal d_lambda_pair = 1.0;
+      if (ifep_type || jfep_type) {
+        if (ifep_type && jfep_type && ifep_type != jfep_type) {
+	  lambda_pair = 0.0;
+	  d_lambda_pair = 0.0;
+        } else if (ifep_type == 1 || jfep_type == 1) {
+  	  lambda_pair = lambda;
+	  d_lambda_pair = lambda2;
+        } else if ( ifep_type == 2 || jfep_type == 2) {
+	  lambda_pair = 1.0 - lambda;
+	  d_lambda_pair = 1.0 - lambda2;
+        }
+      }
+      )
+
       FAST
       (
       const BigReal A = scaling * lj_pars->A;
@@ -413,10 +458,11 @@ void ComputeNonbondedUtil :: NAME
 
       const BigReal AmBterm = (A*r_6 - B) * r_6;
 
-      vdwEnergy += switchVal * AmBterm;
+      vdwEnergy += FEP(lambda_pair *) switchVal * AmBterm;
+      BigReal force_r = FEP(lambda_pair *)
+        ( switchVal * 3.0 * (A*r_12 + AmBterm) * r_2 - AmBterm * dSwitchVal );
 
-      BigReal force_r = ( switchVal * 3.0 * (A*r_12 + AmBterm) * r_2
-				- AmBterm * dSwitchVal );
+      FEP( vdwEnergy_s += d_lambda_pair * switchVal * AmBterm; )
 
       BigReal modfc = 1.0 - modf;
       fast_a *= modfc;
@@ -430,8 +476,11 @@ void ComputeNonbondedUtil :: NAME
       register BigReal fast_dir =
 	( 3.0 * diffa * fast_d + 2.0 * fast_c ) * diffa + fast_b;
 
-      electEnergy += kqq * fast_val;
-      force_r -= kqq * fast_dir;
+      electEnergy += FEP(lambda_pair *) kqq * fast_val;
+      force_r -= FEP(lambda_pair *) kqq * fast_dir;
+
+      FEP( electEnergy_s += d_lambda_pair * kqq * fast_val; )
+
 /*
       // JCP ERROR CHECKING CODE
       if ( abs(fast_val) > 1.0e4 || abs(fast_dir) > 1.0e4 ) {
@@ -476,9 +525,10 @@ void ComputeNonbondedUtil :: NAME
       register BigReal slow_dir =
 	( 3.0 * diffa * slow_d + 2.0 * slow_c ) * diffa + slow_b;
 
-      fullElectEnergy += kqq * slow_val;
-      BigReal fullforce_r = -1.0 * kqq * slow_dir;
+      fullElectEnergy += FEP(lambda_pair *) kqq * slow_val;
+      BigReal fullforce_r = -1.0 * kqq * slow_dir FEP(* lambda_pair);
       
+      FEP( fullElectEnergy_s += d_lambda_pair * kqq * slow_val; )
 
       {
       fullforce_r *= 2.0;
@@ -511,6 +561,11 @@ void ComputeNonbondedUtil :: NAME
   (
   reduction[vdwEnergyIndex] += vdwEnergy;
   reduction[electEnergyIndex] += electEnergy;
+  FEP
+  (
+  reduction[vdwEnergyIndex_s] += vdwEnergy_s;
+  reduction[electEnergyIndex_s] += electEnergy_s;
+  )
   reduction[virialIndex_XX] += virial_xx;
   reduction[virialIndex_XY] += virial_xy;
   reduction[virialIndex_XZ] += virial_xz;
@@ -524,6 +579,10 @@ void ComputeNonbondedUtil :: NAME
   FULL
   (
   reduction[fullElectEnergyIndex] += fullElectEnergy;
+  FEP
+  (
+  reduction[fullElectEnergyIndex_s] += fullElectEnergy_s;
+  )
   reduction[fullElectVirialIndex_XX] += fullElectVirial_xx;
   reduction[fullElectVirialIndex_XY] += fullElectVirial_xy;
   reduction[fullElectVirialIndex_XZ] += fullElectVirial_xz;

@@ -184,6 +184,10 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
   consParams=NULL;
   consForceIndexes=NULL;
   consForce=NULL;
+//fepb
+  fepAtomFlags=NULL;
+//fepe
+
   nameArena = new ObjectArena<char>;
   // nameArena->setAlignment(8);
   arena = new ObjectArena<int32>;
@@ -213,6 +217,11 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
   numCalcDihedrals=0;
   numCalcImpropers=0;
   numCalcExclusions=0;
+
+//fepb
+  numFepInitial = 0;
+  numFepFinal = 0;
+//fepe
 
   if (param != NULL && filename != NULL) {
       read_psf_file(filename, param);
@@ -295,6 +304,11 @@ Molecule::~Molecule()
 
   if (rigidBondLengths != NULL)
        delete [] rigidBondLengths;
+
+//fepb
+  if (fepAtomFlags != NULL)
+       delete [] fepAtomFlags;
+//fepe
 
   delete arena;
   delete exclArena;
@@ -1486,8 +1500,9 @@ void Molecule::print_atoms(Parameters *params)
 
   DebugM(2,"ATOM LIST\n" \
       << "******************************************\n" \
-                  << "NUM  NAME TYPE RES  MASS    CHARGE SIGMA   EPSILON SIGMA14 EPSILON14\n" \
-pp      << endi);
+                  << "NUM  NAME TYPE RES  MASS    CHARGE CHARGE   FEP-CHARGE"  \
+      << "SIGMA   EPSILON SIGMA14 EPSILON14\n" \
+        << endi);
 
   for (i=0; i<numAtoms; i++)
   {
@@ -1499,7 +1514,7 @@ pp      << endi);
               << atomNames[i].resname  << " " << atoms[i].mass  \
         << " " << atoms[i].charge << " " << sigma \
         << " " << epsilon << " " << sigma14 \
-        << " " << epsilon14 \
+        << " " << epsilon14 << "\n" \
         << endi);
   }
 }
@@ -1685,6 +1700,15 @@ void Molecule::send_Molecule(Communicate *com_obj)
         msg->put(numAtoms, exPressureAtomFlags);
       }
 
+//fepb
+      // send fep atom info
+      if (simParams->fepOn) {
+        msg->put(numFepInitial);
+        msg->put(numFepFinal);
+        msg->put(numAtoms*sizeof(char), (char*)fepAtomFlags);
+      }
+//fepe
+
       // Broadcast the message to the other nodes
       msg->end();
       delete msg;
@@ -1852,6 +1876,18 @@ void Molecule::receive_Molecule(MIStream *msg)
         msg->get(numAtoms, exPressureAtomFlags);
       }
 
+//fepb
+      //receive fep atom info
+      if (simParams->fepOn) {
+        delete [] fepAtomFlags;
+        fepAtomFlags = new unsigned char[numAtoms];
+
+        msg->get(numFepInitial);
+        msg->get(numFepFinal);
+        msg->get(numAtoms*sizeof(unsigned char), (char*)fepAtomFlags);
+      }
+//fepe
+
       //  Now free the message 
       delete msg;
       
@@ -1880,7 +1916,10 @@ void Molecule::receive_Molecule(MIStream *msg)
     {
        register int i;      //  Loop counter
        register int numFixedAtoms = this->numFixedAtoms;  // many tests
-       
+//fepb
+//     int numFepInitial = this->numFepInitial;
+//     int numFepFinal = this->numFepFinal;
+//fepe
        tmpArena = new ObjectArena<int32>;
        bondsWithAtom = new int32 *[numAtoms];
        bondsByAtom = new int32 *[numAtoms];
@@ -3163,6 +3202,150 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
 }
     /*      END OF FUNCTION build_fixed_atoms    */
 
+//Modifications for alchemical fep
+//SD & CC, CNRS - LCTN, Nancy
+   //
+   //
+   //  FUNCTION build_fep_flags
+   //
+   // INPUTS:
+   // fepfile - Value of fepfile read from config file
+   // fepcol - Value of fep column, read from config file
+   // initial_pdb - PDB object that contains the initial positions
+   //  cwd - current working directory
+   //
+   // This function builds the array of state values necessary
+   // for FEP. It takes the name of the PDB file and column in
+   // the PDB file that contains the fep flag. It then builds
+   // the array FepParams for use in the program.
+   //
+   //
+   
+   void Molecule::build_fep_flags(StringList *fepfile,
+         StringList *fepcol,
+         PDB *initial_pdb,
+         char *cwd)
+   {
+     PDB *bPDB;  //Pointer to PDB object to use
+     int bcol = 4;  //Column that the data is in
+     Real bval = 0; //flag from PDB file
+     int i;         // loop counter
+     char filename[129]; // filename
+
+     // get the pdb object that contains the fep flags.
+     // if the user gave another filename, use it, else
+     // use the pdb file with the initial coordinates
+     if (fepfile == NULL) {
+       bPDB = initial_pdb;
+     }
+     else {
+       if (fepfile->next != NULL) {
+        NAMD_die("Multiple definitions of fep PDB file in configuration file");
+       }
+   
+       if ((cwd == NULL) || (fepfile->data[0] == '/')) {
+         strcpy(filename, fepfile->data);
+       }
+       else {
+         strcpy(filename, cwd);
+         strcat(filename, fepfile->data);
+       }
+
+       bPDB = new PDB(filename);
+       if (bPDB == NULL) {
+         NAMD_die("Memory allocation failed in Molecule:build_fep_flags");
+       }
+
+       if (bPDB->num_atoms() != numAtoms) {
+         NAMD_die("Number of atoms in fep PDB doesnt match coordinate PDB");
+       }
+    }
+   
+    // Get the column that the fep flag is in. It can be in any of the 5 
+    // floating point fields in the PDB ie X, Y, X, O or B.
+    // The default is 4th field ie the occupancy field
+    if (fepcol == NULL) {
+      bcol = 4;
+    }
+    else {
+      if (fepcol->next != NULL) {
+        NAMD_die("Multiple definitions of fep parameter column in config file");
+      }
+
+      if (strcasecmp(fepcol->data, "X") == 0) {
+       bcol = 1;
+      }
+      else if (strcasecmp(fepcol->data, "Y") == 0) {
+       bcol = 2;
+      }
+      else if (strcasecmp(fepcol->data, "Z") == 0) {
+       bcol = 3;
+      }
+      else if (strcasecmp(fepcol->data, "O") == 0) {
+       bcol = 4;
+      }
+      else if (strcasecmp(fepcol->data, "B") == 0) {
+       bcol = 5;
+      }
+      else {
+       NAMD_die("fepcol must have value of X, Y, Z, O or B");
+      }
+    }
+
+   cout << "To read fep data from file: " << filename << endl;
+   cout << "To read fep flag data from column: " << bcol << endl;
+ 
+   //  Allocate the array to hold all the fep data
+   fepAtomFlags = new unsigned char[numAtoms];
+       
+   if (fepAtomFlags == NULL) {
+    NAMD_die("Memory allocation failed in Molecule::build_fep_params()");
+   }
+
+   // loop through all the atoms and get the b value
+   for (i = 0; i < numAtoms; i++) {
+   // Get the fep flag value
+    switch (bcol) {
+      case 1:
+       bval = (bPDB->atom(i))->xcoor();
+       break;
+      case 2:
+       bval = (bPDB->atom(i))->ycoor();
+       break;
+      case 3:
+       bval = (bPDB->atom(i))->zcoor();
+       break;
+      case 4:
+       bval = (bPDB->atom(i))->occupancy();
+       break;
+      case 5:
+       bval = (bPDB->atom(i))->temperaturefactor();
+       break;
+    }
+
+    // Assign fep flag value
+    if (bval == 1.0) {
+      fepAtomFlags[i] = 1;
+      numFepFinal++;
+    } else if (bval == -1.0) {
+      fepAtomFlags[i] = 2;
+      numFepInitial++;
+    } else {
+      fepAtomFlags[i] = 0;
+    }
+
+  }
+
+  // if PDB object was created, delete it
+  if (fepfile != NULL) {
+    delete bPDB;
+  }
+
+}
+ // End of function build_fep_flags
+
+//fepe
+
 void Molecule::build_exPressure_atoms(StringList *fixedfile, 
    StringList *fixedcol, PDB *initial_pdb, char *cwd) {
        
@@ -3553,6 +3736,10 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, Ambertoppar *amb
   consParams=NULL;
   consForceIndexes=NULL;
   consForce=NULL;
+ //fepb
+  fepAtomFlags=NULL;
+ //
+   
   nameArena = new ObjectArena<char>;
   // nameArena->setAlignment(8);
   arena = new ObjectArena<int32>;
@@ -3581,6 +3768,12 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, Ambertoppar *amb
   numCalcDihedrals=0;
   numCalcImpropers=0;
   numCalcExclusions=0;
+
+//fepb
+  numFepInitial = 0;
+  numFepFinal = 0;
+//fepb
+  
   // Read in parm structure
   read_parm(amber_data);
 }
