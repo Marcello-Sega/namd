@@ -328,6 +328,11 @@ public:
 
 	Bool useDPME;			//  Flag TRUE -> old DPME code
 
+	Bool FFTWEstimate;
+	Bool FFTWUseWisdom;
+	char FFTWWisdomFile[129];
+	char *FFTWWisdomString;
+
 	Bool minimizeCGOn;		//  Flag TRUE-> CG minimization active
 	BigReal minTinyStep;		//  Minimization parameter
 	BigReal minBabyStep;		//  Minimization parameter

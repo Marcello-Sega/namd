@@ -22,6 +22,10 @@
 #include <stdio.h>
 #include "InfoStream.h"
 #include <time.h>
+#ifdef NAMD_FFTW
+#include <fftw.h>
+#include <rfftw.h>
+#endif
 #if defined(WIN32) && !defined(__CYGWIN__)
 #include <direct.h>
 #define CHDIR _chdir
@@ -562,6 +566,13 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
 #else
    useDPME = 0;
 #endif
+
+   opts.optionalB("main", "FFTWEstimate", "Use estimates to optimize FFTW?",
+	&FFTWUseWisdom, FALSE);
+   opts.optionalB("main", "FFTWUseWisdom", "Read/save wisdom file for FFTW?",
+	&FFTWUseWisdom, TRUE);
+   opts.optional("FFTWUseWisdom", "FFTWWisdomFile", "File for FFTW wisdom",
+	FFTWWisdomFile);
 
 }
 
@@ -2961,6 +2972,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << endi;
    }
 
+   FFTWWisdomString = 0;
    if (PMEOn)
    {
      iout << iINFO << "PARTICLE MESH EWALD (PME) ACTIVE\n";
@@ -2974,7 +2986,113 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 	<< PMEGridSizeX << " "
 	<< PMEGridSizeY << " "
 	<< PMEGridSizeZ << "\n";
+     iout << endi;
      if ( useDPME ) iout << iINFO << "USING OLD DPME CODE\n";
+#ifdef NAMD_FFTW
+     else if ( FFTWUseWisdom ) {  // handle FFTW wisdom
+       if (! opts.defined("FFTWWisdomFile")) {
+         strcpy(FFTWWisdomFile,"FFTW_NAMD_");
+         strcat(FFTWWisdomFile,NAMD_VERSION);
+	 strcat(FFTWWisdomFile,"_");
+	 strcat(FFTWWisdomFile,NAMD_PLATFORM);
+	 strcat(FFTWWisdomFile,".txt");
+       }
+       iout << iINFO << "Attempting to read FFTW data from "
+		<< FFTWWisdomFile << "\n" << endi;
+       FILE *wisdom_file = fopen(FFTWWisdomFile,"r");
+       if ( wisdom_file ) {
+	 fftw_import_wisdom_from_file(wisdom_file);
+	 fclose(wisdom_file);
+       }
+
+       int nrp = 1;
+
+       // rules based on work available
+       int minslices = 1;
+       int dimx = PMEGridSizeX;
+       int nrpx = ( dimx + minslices - 1 ) / minslices;
+       if ( nrpx > nrp ) nrp = nrpx;
+       int dimy = PMEGridSizeY;
+       int nrpy = ( dimy + minslices - 1 ) / minslices;
+       if ( nrpy > nrp ) nrp = nrpy;
+
+       // rules based on processors available
+       int nrpp = CkNumPes();
+       // if ( nrpp > 32 ) nrpp = 32;  // cap to limit messages
+       if ( nrpp < nrp ) nrp = nrpp;
+
+       // user override
+       int nrps = PMEProcessors;
+       if ( nrps > CkNumPes() ) nrps = CkNumPes();
+       if ( nrps > 0 ) nrp = nrps;
+
+       // make sure there aren't any totally empty processors
+       int bx = ( dimx + nrp - 1 ) / nrp;
+       int nrpbx = ( dimx + bx - 1 ) / bx;
+       int by = ( dimy + nrp - 1 ) / nrp;
+       int nrpby = ( dimy + by - 1 ) / by;
+       nrp = ( nrpby > nrpbx ? nrpby : nrpbx );
+       if ( bx != ( dimx + nrp - 1 ) / nrp )
+         NAMD_bug("Error in selecting number of PME processors.");
+       if ( by != ( dimy + nrp - 1 ) / nrp )
+         NAMD_bug("Error in selecting number of PME processors.");
+
+       // numGridPes = nrpbx;
+       // numTransPes = nrpby;
+       // numRecipPes = nrp;
+       int block2 = (PMEGridSizeY + nrp - 1) / nrp;
+       int block2_min = PMEGridSizeY % block2;
+       if ( ! block2_min ) block2_min = block2;
+       int dim3 = 2 * (PMEGridSizeZ/2 + 1);
+
+       int n[3]; n[0] = PMEGridSizeX; n[1] = PMEGridSizeY; n[2] = PMEGridSizeZ;
+       fftw_complex *work = new fftw_complex[n[0]];
+       double *grid1 = new double[n[1]*n[2]];
+       double *grid2 = new double[n[0]*block2*dim3];
+       iout << iINFO << "Optimizing 6 FFT steps.  1..." << endi;
+       rfftwnd_destroy_plan( rfftwnd_create_plan_specific(
+	 2, n+1, FFTW_REAL_TO_COMPLEX,
+	 ( FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
+	 | FFTW_IN_PLACE | FFTW_USE_WISDOM, grid1, 1, 0, 0) );
+       iout << " 2..." << endi;
+       fftw_destroy_plan( fftw_create_plan_specific(n[0], FFTW_REAL_TO_COMPLEX,
+	 ( FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
+	 | FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) grid2,
+	 block2*dim3/2, work, 1) );
+       iout << " 3..." << endi;
+       fftw_destroy_plan( fftw_create_plan_specific(n[0], FFTW_REAL_TO_COMPLEX,
+	 ( FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
+	 | FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) grid2,
+	 block2_min*dim3/2, work, 1) );
+       iout << " 4..." << endi;
+       fftw_destroy_plan( fftw_create_plan_specific(n[0], FFTW_COMPLEX_TO_REAL,
+	 ( FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
+	 | FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) grid2,
+	 block2*dim3/2, work, 1) );
+       iout << " 5..." << endi;
+       fftw_destroy_plan( fftw_create_plan_specific(n[0], FFTW_COMPLEX_TO_REAL,
+	 ( FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
+	 | FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) grid2,
+	 block2_min*dim3/2, work, 1) );
+       iout << " 6..." << endi;
+       rfftwnd_destroy_plan( rfftwnd_create_plan_specific(
+	 2, n+1, FFTW_COMPLEX_TO_REAL,
+	 ( FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
+	 | FFTW_IN_PLACE | FFTW_USE_WISDOM, grid1, 1, 0, 0) );
+       iout << "   Done.\n" << endi;
+       delete [] work;
+
+       iout << iINFO << "Writing FFTW data to "
+		<< FFTWWisdomFile << "\n" << endi;
+       wisdom_file = fopen(FFTWWisdomFile,"w");
+       if ( wisdom_file ) {
+	 fftw_export_wisdom_to_file(wisdom_file);
+	 fclose(wisdom_file);
+       }
+
+       FFTWWisdomString = fftw_export_wisdom_to_string();
+     }
+#endif
      iout << endi;
    }
 
@@ -3176,6 +3294,11 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
   }
 
   msg->put(sizeof(SimParameters),(char*)this);
+  if ( FFTWWisdomString ) {
+    int fftwlen = strlen(FFTWWisdomString) + 1;
+    msg->put(fftwlen);
+    msg->put(fftwlen,FFTWWisdomString);
+  }
 
   msg->end();
 }
@@ -3194,6 +3317,13 @@ void SimParameters::receive_SimParameters(MIStream *msg)
 
 {
   msg->get(sizeof(SimParameters),(char*)this);
+  if ( FFTWWisdomString ) {
+    int fftwlen;
+    msg->get(fftwlen);
+    FFTWWisdomString = new char[fftwlen];
+    msg->get(fftwlen,FFTWWisdomString);
+    fftw_import_wisdom_from_string(FFTWWisdomString);
+  }
 
   delete msg;
 }
