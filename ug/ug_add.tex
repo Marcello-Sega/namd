@@ -519,6 +519,13 @@ required in conjunction with rigidBonds (SHAKE).}
 to fluctuate independently when this option is enabled.
 This is not currently implemented in Berendsen's method.}
 
+\item
+\NAMDCONFWDEF{useConstantArea}{constant area and normal pressure conditions}
+{{\tt yes} or {\tt no}}{{\tt no}}
+{When enabled, \NAMD\ keeps the dimension of the unit cell in the x-y plane 
+constant while allowing fluctuations along the z axis.
+This is not currently implemented in Berendsen's method.}
+
 \end{itemize}
 
 \subsubsection{Berendsen pressure bath coupling}
