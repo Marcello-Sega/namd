@@ -118,6 +118,21 @@ void ComputeGlobal::recvResults(ComputeGlobalResultsMsg *msg) {
     f[localID.pid][localID.index] += (*f2);
   }
 
+  // calculate forces for atoms in groups
+  Molecule *mol = Node::Object()->molecule;
+  AtomIDList::iterator g_i, g_e;
+  g_i = gdef.begin(); g_e = gdef.end();
+  ResizeArray<BigReal>::iterator gm_i = gmass.begin();
+  ForceList::iterator gf_i = msg->gforce.begin();
+  for ( ; g_i != g_e; ++g_i, ++gm_i, ++gf_i ) {
+    Vector accel = (*gf_i) / (*gm_i);
+    for ( ; *g_i != -1; ++g_i ) {
+      LocalID localID = atomMap->localID(*g_i);
+      if ( localID.pid == notUsed || ! f[localID.pid] ) continue;
+      f[localID.pid][localID.index] += accel * mol->atommass(*g_i);
+    }
+  }
+
   for (ap = ap.begin(); ap != ap.end(); ap++) {
     (*ap).forceBox->close(&((*ap).r));
   }
@@ -199,12 +214,15 @@ void ComputeGlobal::sendData()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1998/02/16 00:23:18 $
+ *	$Revision: 1.9 $	$Date: 1998/02/16 00:47:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGlobal.C,v $
+ * Revision 1.9  1998/02/16 00:47:27  jim
+ * Added code to actually distribute group forces to atoms.
+ *
  * Revision 1.8  1998/02/16 00:23:18  jim
  * Added atom group centers of mass to Tcl interface.
  *
