@@ -74,10 +74,11 @@ int ComputeNonbondedPair::noWork() {
     }
 
     submitReductionData(reductionData,reduction);
-    reduction->submit();
 
     // Inform load balancer
     LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
+
+    reduction->submit();
 
     return 1;  // no work to do, do not enqueue
   }
@@ -170,9 +171,10 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2],
   }
 
   submitReductionData(reductionData,reduction);
-  reduction->submit();
 
   // Inform load balancer
   LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
+
+  reduction->submit();
 }
 

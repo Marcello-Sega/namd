@@ -84,8 +84,10 @@ void ComputeNonbondedSelf::doForce(CompAtom* p,
   }
 
   submitReductionData(reductionData,reduction);
-  reduction->submit();
+
   // Inform load balancer
   LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
+
+  reduction->submit();
 }
 
