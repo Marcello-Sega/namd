@@ -581,6 +581,42 @@ optionally be set to control the behavior of this feature.}
 
 \NAMD\ provides constant pressure simulation using a modified Nos\'{e}-Hoover method in which Langevin dynamics is used to control fluctuations in the barostat.
 This method should be combined with a method of temperature control, such as Langevin dynamics, in order to simulate the NPT ensemble.
+
+The Langevin piston Nose-Hoover method in NAMD is a combination of the
+Nose-Hoover constant pressure method as described in 
+GJ Martyna, DJ Tobias and ML Klein, "Constant pressure molecular dynamics
+algorithms", J. Chem. Phys 101(5), 1994,
+with temperature control implemented using Langevin dynamics as in
+SE Feller, Y Zhang, RW Pastor and BR Brooks, "Constant pressure molecular
+dynamics simulation: The Langevin piston method", J. Chem. Phys. 103(11),
+1995.
+
+The equations of motion are:
+\begin{eqnarray*}
+       r' &=& p/m + e' r  \\
+       p' &=& F - e' p - g p + R \\
+       V' &=& 3 V e' \\
+       e'' &=& 3V/W (P - P_0) - g_e e' + R_e/W  \\
+       W &=&  3 N \tau^2 k T  \\
+       <R^2> &=& 2 m g k T / h \\
+       \tau &=& {\rm oscillation period} \\
+       <R_e^2> &=& 2 W g_e k T / h
+\end{eqnarray*}
+Here, $W$ is the mass of piston, $R$ is noise on atoms, and $R_e$ is
+the noise on the piston.
+
+The user specifies the desired pressure, oscillation and decay times
+of the piston, and temperature of the piston.  The compressibility of  
+the system is not required.  In addition, the user specifies the
+damping coefficients and temperature of the atoms for Langevin dynamics.
+
+Because NAMD's impluse-basd multiple timestepping system alters the
+balance between bonded and non-bonded forces from every timestep to an
+average balance over two steps, the calculated pressure on even and odd
+steps will be different.  The PRESSAVG and GPRESSAVG fields provide the
+average over the non-printed intermediate steps.  If you print energies on
+every timestep you will see the effect clearly in the PRESSURE field.
+
 The following parameters are used to define the algorithm.  
 
 \begin{itemize}
