@@ -39,7 +39,7 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1056 1999/08/25 16:50:58 brunner Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1057 1999/08/25 18:38:21 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, TransformList tl,
       PositionList pl, VelocityList vl) : Patch(pd,al,pl), v(vl), t(tl)
@@ -477,7 +477,7 @@ void HomePatch::mollyAverage()
 	}
 	for ( i = 1; i < hgs; ++i ) {  // normal bonds to mother atom
 	  if ( ( tmp = mol->rigid_bond_length(a[ig+i].id) ) ) {
-	    if ( !(fixed[0] && fixed[1]) ) {
+	    if ( !(fixed[0] && fixed[i]) ) {
 	      redmass[icnt] = 1. / (rmass[0] + rmass[i]);
 	      dsq[icnt] =  tmp * tmp;  ial[icnt] = 0;  ibl[icnt] = i;  ++icnt;
 	    }
@@ -1396,13 +1396,16 @@ void free_dvector(double *v, long nl, long nh)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1056 $	$Date: 1999/08/25 16:50:58 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1057 $	$Date: 1999/08/25 18:38:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1057  1999/08/25 18:38:21  jim
+ * Fixed bug in divide-by-zero bug fix.
+ *
  * Revision 1.1056  1999/08/25 16:50:58  brunner
  * Fixed a divide-by-zero error with fixed atoms in rattle
  *
