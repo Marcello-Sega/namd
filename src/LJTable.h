@@ -11,7 +11,7 @@
  *
  *	$RCSfile: LJTable.h,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/10/08 04:49:01 $
+ *	$Revision: 1.2 $	$Date: 1996/10/12 00:11:27 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -20,6 +20,9 @@
  * REVISION HISTORY:
  *
  * $Log: LJTable.h,v $
+ * Revision 1.2  1996/10/12 00:11:27  brunner
+ * Optimized table_index a bit, and took out bounds checking
+ *
  * Revision 1.1  1996/10/08 04:49:01  brunner
  * Initial revision
  *
@@ -37,9 +40,9 @@ public:
 
   LJTable();
   ~LJTable();
-  inline TableEntry *table_entry(int index);
-  inline int table_index(int i,int j, int scaled14);
-  inline void get_LJ_params(int index, BigReal *A, BigReal *B);
+  inline TableEntry *table_entry(const int index);
+  inline int table_index(const int i,const int j, const int scaled14);
+  inline void get_LJ_params(const int index, BigReal *A, BigReal *B);
 private:
   void compute_vdw_params(int i, int j, 
 			  TableEntry *cur, TableEntry *cur_scaled);
@@ -51,27 +54,26 @@ private:
 };
 
 //======================================================================
-inline LJTable::TableEntry *LJTable::table_entry(int index)
+inline LJTable::TableEntry *LJTable::table_entry(const int index)
 {
   return &(table[index]);
 }
 
 //======================================================================
-inline int LJTable::table_index(int i, int j, int scaled14)
+inline int LJTable::table_index(const int i, const int j, const int scaled14)
 {
+#ifdef NAMD_DEBUG
   if ((i<0) || (i>=table_dim) || (j<0) || (j>table_dim))
   {
     NAMD_die("Unexpected LJ table value requested in LJTable::table_entry()");
   }
-  int index = i * table_dim + j;
-  if (scaled14)
-    index += half_table_sz;
+#endif
 
-  return index;
+  return i * table_dim + j + (scaled14 ? half_table_sz : 0);
 }
 
 //----------------------------------------------------------------------
-inline void LJTable::get_LJ_params(int index, BigReal *A, BigReal *B)
+inline void LJTable::get_LJ_params(const int index, BigReal *A, BigReal *B)
 {
   TableEntry *cur = table + index;
 
