@@ -2,7 +2,7 @@
 goto begin
 syntax:
   echo ''
-  echo 'Usage: config [tcl] [fftw] [<build_dir>/]<arch> '
+  echo 'Usage: config [debug] [tcl] [fftw] [<build_dir>/]<arch> '
   echo ''
   echo 'arch: ' `( cd arch ; ls -1 *.arch |sed -e 's/\.arch//' | egrep -v 'template' )`
   echo ''
@@ -15,6 +15,14 @@ exists:
   exit 1
 
 begin:
+
+  if ($#argv < 1) goto syntax
+  if ( $1 == debug ) then
+    set use_debug = 1
+    shift
+  else
+    set use_debug = 0
+  endif
 
   if ($#argv < 1) goto syntax
   if ( $1 == tcl ) then
@@ -60,6 +68,12 @@ begin:
   echo 'include .rootdir/arch/$(NAMD_ARCH).base' >> Makearch
   if ( $use_tcl ) echo 'include .rootdir/arch/$(NAMD_ARCH).tcl' >> Makearch
   if ( $use_fftw ) echo 'include .rootdir/arch/$(NAMD_ARCH).fftw' >> Makearch
+  if ( $use_debug ) then
+    echo 'CXXOPTS = -g' >> Makearch
+    echo 'CXXTHREADOPTS = -g' >> Makearch
+    echo 'CXXSIMPARAMOPTS = -g' >> Makearch
+    echo 'COPTS = -g' >> Makearch
+  endif
   echo "Linking Makefiles"
   ln -s .rootdir/Makefile ./Makefile
   echo "Linking src"
