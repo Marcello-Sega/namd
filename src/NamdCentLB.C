@@ -342,6 +342,7 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
   int i;
   for (i=0; i<count; ++i) {
     processorArray[i].Id = i;
+    processorArray[i].available = CmiTrue;
     if ( pmeOn && isPmeProcessor(i) ) {
       processorArray[i].backgroundLoad = pmebgfactor * stats[i].bg_walltime;
     } else {
