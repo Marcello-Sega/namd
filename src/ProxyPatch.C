@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.3 1996/12/05 22:02:17 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.4 1996/12/05 22:09:44 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -20,6 +20,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.
 
 #include "main.h"
 #include "ProxyPatch.h"
+#include "ProxyMgr.top.h"
 #include "ProxyMgr.h"
 
 #define MIN_DEBUG_LEVEL 3
@@ -28,7 +29,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.
 
 ProxyPatch::ProxyPatch(PatchID pd) : Patch(pd)
 {
-  ProxyMgr::Object()->registerProxy(pd);
+  ProxyMgr::Object()->registerProxy(patchID);
 }
 
 void ProxyPatch::boxClosed(int box)
@@ -59,7 +60,7 @@ void ProxyPatch::receiveData(ProxyDataMsg *msg)
   if ( boxesOpen )
   {
     // store message in queue
-    DebugM(4,"Proxy data arrived 
+    DebugM(4,"Proxy data arrived.\n");
     msgBuffer.append(msg);
     return;
   }
@@ -71,23 +72,27 @@ void ProxyPatch::receiveData(ProxyDataMsg *msg)
 void ProxyPatch::sendResults(void)
 {
   ProxyResultMsg *msg = new (MsgIndex(ProxyResultMsg)) ProxyResultMsg;
-  msg->patch = pd;
+  msg->patch = patchID;
   msg->forceList = f;
-  ProxyMgr::Object->sendResults(msg);
+  ProxyMgr::Object()->sendResults(msg);
 }
 
+#include "ProxyMgr.bot.h"
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyPatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/12/05 22:02:17 $
+ *	$Revision: 1.4 $	$Date: 1996/12/05 22:09:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.4  1996/12/05 22:09:44  jim
+ * fixed compile errors
+ *
  * Revision 1.3  1996/12/05 22:02:17  jim
  * added positionsReady call to receiveData
  *
