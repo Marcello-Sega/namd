@@ -7,7 +7,7 @@
 #####
 ## Choose your favorite Compiler options
 ####
-CC = gcc
+CC = egcs
 CXX = KCC
 CXXOPTS = -O3 -DGLOBALS -DGCC +K3 -Bstatic --backend -march=pentiumpro --backend -ffast-math
 COPTS = -O3 -DGCC -march=pentiumpro -ffast-math
