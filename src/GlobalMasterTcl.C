@@ -27,9 +27,13 @@
 #ifdef NAMD_TCL
 int GlobalMasterTcl::Tcl_print(ClientData,
 	Tcl_Interp *, int argc, char *argv[]) {
-  char *msg = Tcl_Merge(argc-1,argv+1);
-  CkPrintf("TCL: %s\n",msg);
-  Tcl_Free(msg);
+  int arglen = 1;  int ai;
+  for (ai=1; ai<argc; ++ai) { arglen += strlen(argv[ai]) + 1; }
+  char *buf = new char[arglen];  *buf = 0;
+  for (ai=1; ai<argc; ++ai) { strcat(buf,argv[ai]); strcat(buf," "); }
+  ai = strlen(buf);  if ( ai ) buf[ai-1] = 0;
+  CkPrintf("TCL: %s\n",buf);
+  delete [] buf;
   return TCL_OK;
 }
 
@@ -388,9 +392,8 @@ void GlobalMasterTcl::initialize() {
   for ( ; script; script = script->next ) {
     int code;
     DebugM(1,"here "<<script->data<<"\n");
-    if ( script->data[0] == '{' ) {
-       script->data[strlen(script->data)-1] = 0;
-       code = Tcl_Eval(interp,script->data+1);
+    if ( strstr(script->data,"\n") ) {
+       code = Tcl_Eval(interp,script->data);
     }
     else code = Tcl_EvalFile(interp,script->data);
     DebugM(1,"here\n");
