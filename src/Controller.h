@@ -38,6 +38,17 @@ protected:
     virtual void algorithm(void);	// subclasses redefine this method
 
     void receivePressure(int);
+      BigReal pressure_normal;
+      BigReal pressure_nbond;
+      BigReal pressure_slow;
+      BigReal groupPressure_normal;
+      BigReal groupPressure_nbond;
+      BigReal groupPressure_slow;
+      BigReal controlPressure_normal;
+      BigReal controlPressure_nbond;
+      BigReal controlPressure_slow;
+      int nbondFreq;
+      int slowFreq;
     void printEnergies(int);
       int computeChecksum;
       int numDegFreedom;
@@ -91,12 +102,16 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1998/11/29 22:00:58 $
+ *	$Revision: 1.1019 $	$Date: 1998/12/07 03:54:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.h,v $
+ * Revision 1.1019  1998/12/07 03:54:30  jim
+ * Constant pressure should work with multiple timestepping.
+ * Still needs some testing.  Some debug code still enabled.
+ *
  * Revision 1.1018  1998/11/29 22:00:58  jim
  * Added group-based pressure control to work with rigidBonds.
  * New option useGroupPressure, turned on automatically if needed.

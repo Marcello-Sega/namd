@@ -157,6 +157,12 @@ void Controller::algorithm(void)
     const int numberOfSteps = simParams->N;
     const int nPatches=(PatchMap::Object())->numPatches();
 
+    nbondFreq = simParams->nonbondedFrequency;
+    if ( simParams->fullDirectOn || simParams->FMAOn || simParams->PMEOn )
+      slowFreq = simParams->fmaFrequency;
+    else
+      slowFreq = simParams->nonbondedFrequency;
+
     for ( ; step <= numberOfSteps; ++step, first = 0 )
     {
 	if (CNumPes() > nPatches) {
@@ -210,26 +216,57 @@ void Controller::langevinPiston1(int step)
   {
     BigReal &strainRate = langevinPiston_strainRate;
     BigReal dt = simParams->dt;
+    BigReal dt_long = slowFreq * dt;
     BigReal kT = BOLTZMAN * simParams->langevinPistonTemp;
     BigReal tau = simParams->langevinPistonPeriod;
-    BigReal gamma = 1 / simParams->langevinPistonDecay;
     BigReal mass = controlNumDegFreedom * kT * tau * tau;
-    BigReal f1 = exp( -0.5 * dt * gamma );
-    BigReal f2 = sqrt( ( 1. - f1*f1 ) * kT / mass );
 
-    // iout << iINFO << "strain rate: " << strainRate << "\n";
+    iout << iINFO << "strain rate: " << strainRate << "\n";
 
-    strainRate *= f1;
-    strainRate += f2 * gaussian_random_number();
+    if ( ! ( (step-1) % slowFreq ) )
+    {
+      BigReal gamma = 1 / simParams->langevinPistonDecay;
+      BigReal f1 = exp( -0.5 * dt_long * gamma );
+      BigReal f2 = sqrt( ( 1. - f1*f1 ) * kT / mass );
+      iout << iINFO << "applying langevin to strain rate\n";
+      strainRate *= f1;
+      strainRate += f2 * gaussian_random_number();
+    }
 
     strainRate += ( 0.5 * dt * 3 * state->lattice.volume() / mass ) *
 		( controlPressure - simParams->langevinPistonTarget );
 
-    // iout << iINFO << "strain rate: " << strainRate << "\n";
+    iout << iINFO << "strain rate: " << strainRate << "\n";
 
-    BigReal factor = exp( dt * strainRate );
-    broadcast->positionRescaleFactor.publish(step,factor);
-    state->lattice.rescale(factor);
+    if ( ! ( (step-1+slowFreq/2) % slowFreq ) )
+    {
+      BigReal factor = exp( dt_long * strainRate );
+      broadcast->positionRescaleFactor.publish(step,factor);
+      state->lattice.rescale(factor);
+      iout << iINFO << "rescaling by: " << factor << "\n";
+    }
+    else
+    {
+      BigReal factor = 1.0;
+      broadcast->positionRescaleFactor.publish(step,factor);
+    }
+
+    // corrections to integrator
+    if ( ! ( step % nbondFreq ) )
+    {
+      iout << iINFO << "correcting strain rate for nbond, ";
+      strainRate -= ( 0.5 * dt * 3 * state->lattice.volume() / mass ) *
+		( 0.5 * (nbondFreq - 1) * controlPressure_nbond );
+      iout << "strain rate: " << strainRate << "\n";
+    }
+    if ( ! ( step % slowFreq ) )
+    {
+      iout << iINFO << "correcting strain rate for slow, ";
+      strainRate -= ( 0.5 * dt * 3 * state->lattice.volume() / mass ) *
+		( 0.5 * (slowFreq - 1) * controlPressure_slow );
+      iout << "strain rate: " << strainRate << "\n";
+    }
+
   }
 }
 
@@ -239,20 +276,41 @@ void Controller::langevinPiston2(int step)
   {
     BigReal &strainRate = langevinPiston_strainRate;
     BigReal dt = simParams->dt;
+    BigReal dt_long = slowFreq * dt;
     BigReal kT = BOLTZMAN * simParams->langevinPistonTemp;
     BigReal tau = simParams->langevinPistonPeriod;
-    BigReal gamma = 1 / simParams->langevinPistonDecay;
     BigReal mass = controlNumDegFreedom * kT * tau * tau;
-    BigReal f1 = exp( -0.5 * dt * gamma );
-    BigReal f2 = sqrt( ( 1. - f1*f1 ) * kT / mass );
+
+    // corrections to integrator
+    if ( ! ( step % nbondFreq ) )
+    {
+      iout << iINFO << "correcting strain rate for nbond, ";
+      strainRate += ( 0.5 * dt * 3 * state->lattice.volume() / mass ) *
+		( 0.5 * (nbondFreq - 1) * controlPressure_nbond );
+      iout << "strain rate: " << strainRate << "\n";
+    }
+    if ( ! ( step % slowFreq ) )
+    {
+      iout << iINFO << "correcting strain rate for slow, ";
+      strainRate += ( 0.5 * dt * 3 * state->lattice.volume() / mass ) *
+		( 0.5 * (slowFreq - 1) * controlPressure_slow );
+      iout << "strain rate: " << strainRate << "\n";
+    }
 
     strainRate += ( 0.5 * dt * 3 * state->lattice.volume() / mass ) *
 		( controlPressure - simParams->langevinPistonTarget );
 
-    strainRate *= f1;
-    strainRate += f2 * gaussian_random_number();
+    if ( ! ( step % slowFreq ) )
+    {
+      BigReal gamma = 1 / simParams->langevinPistonDecay;
+      BigReal f1 = exp( -0.5 * dt_long * gamma );
+      BigReal f2 = sqrt( ( 1. - f1*f1 ) * kT / mass );
+      iout << iINFO << "applying langevin to strain rate\n";
+      strainRate *= f1;
+      strainRate += f2 * gaussian_random_number();
+    }
 
-    // iout << iINFO << "strain rate: " << strainRate << "\n";
+    iout << iINFO << "strain rate: " << strainRate << "\n";
   }
 }
 
@@ -320,10 +378,17 @@ void Controller::receivePressure(int seq)
     Lattice &lattice = state->lattice;
 
     BigReal intKineticEnergy;
-    BigReal tmpVirial;
     BigReal virial;
-    BigReal altVirial;
+    BigReal virial_normal;
+    BigReal virial_nbond;
+    BigReal virial_slow;
+    BigReal altVirial_normal;
+    BigReal altVirial_nbond;
+    BigReal altVirial_slow;
     BigReal intVirial;
+    BigReal intVirial_normal;
+    BigReal intVirial_nbond;
+    BigReal intVirial_slow;
     BigReal volume;
 
     int numAtoms = molecule->numAtoms;
@@ -341,38 +406,58 @@ void Controller::receivePressure(int seq)
     reduction->require(seq, REDUCTION_KINETIC_ENERGY, kineticEnergy);
     reduction->require(seq, REDUCTION_INT_KINETIC_ENERGY, intKineticEnergy);
 
-    virial = 0;
-    reduction->require(seq, REDUCTION_VIRIAL_NORMAL, tmpVirial);
-    virial += tmpVirial;
-    reduction->require(seq, REDUCTION_VIRIAL_NBOND, tmpVirial);
-    virial += tmpVirial;
-    reduction->require(seq, REDUCTION_VIRIAL_SLOW, tmpVirial);
-    virial += tmpVirial;
-    virial /= 3.;  // virial submitted is wrong by factor of 3
-    altVirial = 0;
-    reduction->require(seq, REDUCTION_ALT_VIRIAL_NORMAL, tmpVirial);
-    altVirial += tmpVirial;
-    reduction->require(seq, REDUCTION_ALT_VIRIAL_NBOND, tmpVirial);
-    altVirial += tmpVirial;
-    reduction->require(seq, REDUCTION_ALT_VIRIAL_SLOW, tmpVirial);
-    altVirial += tmpVirial;
-    altVirial /= 3.;  // virial submitted is wrong by factor of 3
-    intVirial = 0;
-    reduction->require(seq, REDUCTION_INT_VIRIAL_NORMAL, tmpVirial);
-    intVirial += tmpVirial;
-    reduction->require(seq, REDUCTION_INT_VIRIAL_NBOND, tmpVirial);
-    intVirial += tmpVirial;
-    reduction->require(seq, REDUCTION_INT_VIRIAL_SLOW, tmpVirial);
-    intVirial += tmpVirial;
-    intVirial /= 3.;  // virial submitted is wrong by factor of 3
+    reduction->require(seq, REDUCTION_VIRIAL_NORMAL, virial_normal);
+    virial_normal /= 3.;  // virial submitted is wrong by factor of 3
+    reduction->require(seq, REDUCTION_VIRIAL_NBOND, virial_nbond);
+    virial_nbond /= 3.;  // virial submitted is wrong by factor of 3
+    reduction->require(seq, REDUCTION_VIRIAL_SLOW, virial_slow);
+    virial_slow /= 3.;  // virial submitted is wrong by factor of 3
+
+    reduction->require(seq, REDUCTION_ALT_VIRIAL_NORMAL, altVirial_normal);
+    altVirial_normal /= 3.;  // virial submitted is wrong by factor of 3
+    reduction->require(seq, REDUCTION_ALT_VIRIAL_NBOND, altVirial_nbond);
+    altVirial_nbond /= 3.;  // virial submitted is wrong by factor of 3
+    reduction->require(seq, REDUCTION_ALT_VIRIAL_SLOW, altVirial_slow);
+    altVirial_slow /= 3.;  // virial submitted is wrong by factor of 3
+
+    reduction->require(seq, REDUCTION_INT_VIRIAL_NORMAL, intVirial_normal);
+    intVirial_normal /= 3.;  // virial submitted is wrong by factor of 3
+    reduction->require(seq, REDUCTION_INT_VIRIAL_NBOND, intVirial_nbond);
+    intVirial_nbond /= 3.;  // virial submitted is wrong by factor of 3
+    reduction->require(seq, REDUCTION_INT_VIRIAL_SLOW, intVirial_slow);
+    intVirial_slow /= 3.;  // virial submitted is wrong by factor of 3
 
     temperature = 2.0 * kineticEnergy / ( numDegFreedom * BOLTZMAN );
 
     if ( (volume=lattice.volume()) != 0. )
     {
-      pressure = ( numAtoms * BOLTZMAN * temperature + virial ) / volume;
-      groupPressure = ( (2./3.)*( kineticEnergy - intKineticEnergy ) +
-                        ( virial - intVirial ) ) / volume;
+      pressure_normal = ( numAtoms * BOLTZMAN * temperature +
+						virial_normal ) / volume;
+      groupPressure_normal = ( (2./3.)*( kineticEnergy - intKineticEnergy ) +
+                        ( virial_normal - intVirial_normal ) ) / volume;
+
+      if ( ! ( seq % nbondFreq ) )
+      {
+        pressure_nbond = virial_nbond / volume;
+        groupPressure_nbond = ( virial_nbond - intVirial_nbond ) / volume;
+      }
+
+      if ( ! ( seq % slowFreq ) )
+      {
+        pressure_slow = virial_slow / volume;
+        groupPressure_slow = ( virial_slow - intVirial_slow ) / volume;
+      }
+
+/*
+      iout << "VIRIALS: " << virial_normal << " " << virial_nbond << " " <<
+	virial_slow << " " << ( virial_normal - intVirial_normal ) << " " <<
+	( virial_nbond - intVirial_nbond ) << " " <<
+	( virial_slow - intVirial_slow ) << "\n";
+*/
+
+      pressure = pressure_normal + pressure_nbond + pressure_slow; 
+      groupPressure = groupPressure_normal + groupPressure_nbond +
+						groupPressure_slow;
     }
     else
     {
@@ -382,11 +467,17 @@ void Controller::receivePressure(int seq)
 
     if ( simParameters->useGroupPressure )
     {
+      controlPressure_normal = groupPressure_normal;
+      controlPressure_nbond = groupPressure_nbond;
+      controlPressure_slow = groupPressure_slow;
       controlPressure = groupPressure;
       controlNumDegFreedom = 3 * molecule->numHydrogenGroups;
     }
     else
     {
+      controlPressure_normal = pressure_normal;
+      controlPressure_nbond = pressure_nbond;
+      controlPressure_slow = pressure_slow;
       controlPressure = pressure;
       controlNumDegFreedom = numDegFreedom;
     }
@@ -634,10 +725,6 @@ void Controller::printEnergies(int seq)
     }
 
     iout << "\n" << endi;
-
-    DebugM(4,"step: " << seq << " virial: " << virial
-		<< " altVirial: " << altVirial << "\n");
-
 }
 
 void Controller::enqueueCollections(int timestep)
@@ -653,12 +740,16 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1050 $	$Date: 1998/11/30 04:10:25 $
+ *	$Revision: 1.1051 $	$Date: 1998/12/07 03:54:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1051  1998/12/07 03:54:29  jim
+ * Constant pressure should work with multiple timestepping.
+ * Still needs some testing.  Some debug code still enabled.
+ *
  * Revision 1.1050  1998/11/30 04:10:25  krishnan
  * Added code to trigger the reduction manager on every timestep, if numNodes > nPatches
  *

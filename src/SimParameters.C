@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1051 $  $Date: 1998/11/29 22:00:59 $
+ *  $Revision: 1.1052 $  $Date: 1998/12/07 03:54:30 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,10 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1052  1998/12/07 03:54:30  jim
+ * Constant pressure should work with multiple timestepping.
+ * Still needs some testing.  Some debug code still enabled.
+ *
  * Revision 1.1051  1998/11/29 22:00:59  jim
  * Added group-based pressure control to work with rigidBonds.
  * New option useGroupPressure, turned on automatically if needed.
@@ -2832,6 +2836,9 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
    if (berendsenPressureOn)
    {
+     if ( (berendsenPressureFreq % nonbondedFrequency) || ( fmaFrequency
+		&& (berendsenPressureFreq % fmaFrequency) ) )
+	NAMD_die("berendsenPressureFreq must be a multiple of both fmaFrequency and nonbondedFrequency\n");
      iout << iINFO << "BERENDSEN PRESSURE COUPLING ACTIVE\n";
      iout << iINFO << "    TARGET PRESSURE IS "
         << berendsenPressureTarget << " BAR\n";
@@ -3398,12 +3405,16 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1051 $  $Date: 1998/11/29 22:00:59 $
+ *  $Revision: 1.1052 $  $Date: 1998/12/07 03:54:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1052  1998/12/07 03:54:30  jim
+ * Constant pressure should work with multiple timestepping.
+ * Still needs some testing.  Some debug code still enabled.
+ *
  * Revision 1.1051  1998/11/29 22:00:59  jim
  * Added group-based pressure control to work with rigidBonds.
  * New option useGroupPressure, turned on automatically if needed.
