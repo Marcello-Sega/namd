@@ -225,6 +225,14 @@ NOEXCL
     Force *fullf_1 = params->fullf[1];
     )
 
+  SELF
+  (
+  int pairCount = ( i_upper * (i_upper - 1) ) / 2;
+  int minPairCount = ( pairCount * params->minPart ) / params->numParts;
+  int maxPairCount = ( pairCount * params->maxPart ) / params->numParts;
+  pairCount = 0;
+  )
+
   for ( i = 0; i < i_upper; ++i )
   {
     const AtomProperties &a_i = a_0[i];
@@ -236,10 +244,36 @@ NOEXCL
     Force & f_i = f_0[i];
     FULL( Force & fullf_i = fullf_0[i]; )
 
+  NOHGROUPING
+  (
+  SELF
+  (
+  {
+    int opc = pairCount;
+    pairCount += i_upper - i - 1;
+    if ( opc < minPairCount || opc >= maxPairCount ) continue;
+  }
+  )
+  )
+
   HGROUPING
   (
   if (a_i.nonbondedGroupSize) // if hydrogen group parent
     {
+    SELF
+    (
+    {
+      int opc = pairCount;
+      int nbgs = a_i.nonbondedGroupSize;
+      pairCount += nbgs * ( i_upper - i - 1 );
+      pairCount -= nbgs * ( nbgs - 1 ) / 2;
+      if ( opc < minPairCount || opc >= maxPairCount ) {
+        i += nbgs - 1;
+        continue;
+      }
+    }
+    )
+
     pairlistindex = 0;	// initialize with 0 elements
     pairlistoffset=0;
     const int groupfixed = ( a_i.flags & GROUP_FIXED );
@@ -707,12 +741,15 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1034 $	$Date: 1998/04/14 05:58:24 $
+ *	$Revision: 1.1035 $	$Date: 1998/07/02 21:06:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1035  1998/07/02 21:06:35  jim
+ * Added support for splitting ComputeNonbondedSelf into multiple computes.
+ *
  * Revision 1.1034  1998/04/14 05:58:24  jim
  * Added automatic correction if hgroupCutoff is too small.  No more warnings.
  * However, performance wil degrade if many groups are below cutoff size.

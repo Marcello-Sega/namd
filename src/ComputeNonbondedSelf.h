@@ -21,7 +21,8 @@
 class ComputeNonbondedSelf : public ComputePatch, private ComputeNonbondedUtil {
 
 public:
-  ComputeNonbondedSelf(ComputeID c, PatchID pid);
+  ComputeNonbondedSelf(ComputeID c, PatchID pid,
+	int minPartition = 0, int maxPartition = 1, int numPartitions = 1);
   virtual ~ComputeNonbondedSelf();
 
 protected :
@@ -29,6 +30,8 @@ protected :
   virtual void doForce(Position* p, Results* r, AtomProperties* a);
 
   ReductionMgr *reduction;
+
+  int minPart, maxPart, numParts;
 
 };
 
@@ -38,12 +41,15 @@ protected :
  *
  *	$RCSfile: ComputeNonbondedSelf.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/08/26 16:26:14 $
+ *	$Revision: 1.1006 $	$Date: 1998/07/02 21:06:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.h,v $
+ * Revision 1.1006  1998/07/02 21:06:37  jim
+ * Added support for splitting ComputeNonbondedSelf into multiple computes.
+ *
  * Revision 1.1005  1997/08/26 16:26:14  jim
  * Revamped prioritites for petter performance and easier changes.
  *

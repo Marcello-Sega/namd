@@ -36,6 +36,12 @@ typedef struct
   // used by excl
   Position p_ij;
   int m14;
+
+  // used by self
+  int minPart;
+  int maxPart;
+  int numParts;
+
   } nonbonded;
 
 class ComputeNonbondedUtil {
@@ -142,12 +148,15 @@ public:
  *
  *	$RCSfile: ComputeNonbondedUtil.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1998/04/06 16:34:07 $
+ *	$Revision: 1.1016 $	$Date: 1998/07/02 21:06:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.h,v $
+ * Revision 1.1016  1998/07/02 21:06:37  jim
+ * Added support for splitting ComputeNonbondedSelf into multiple computes.
+ *
  * Revision 1.1015  1998/04/06 16:34:07  jim
  * Added DPME (single processor only), test mode, and momenta printing.
  *

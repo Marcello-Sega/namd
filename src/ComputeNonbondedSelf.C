@@ -20,8 +20,10 @@
 #define DEBUGM
 #include "Debug.h"
 
-ComputeNonbondedSelf::ComputeNonbondedSelf(ComputeID c, PatchID pid)
-  : ComputePatch(c,pid)
+ComputeNonbondedSelf::ComputeNonbondedSelf(ComputeID c, PatchID pid,
+		int minPartition, int maxPartition, int numPartitions)
+  : ComputePatch(c,pid),
+    minPart(minPartition), maxPart(maxPartition), numParts(numPartitions)
 {
   reduction = ReductionMgr::Object();
   registerReductionData(reduction);
@@ -62,6 +64,10 @@ void ComputeNonbondedSelf::doForce(Position* p,
     params.numAtoms[1] = numAtoms;
     params.reduction = reductionData;
 
+    params.minPart = minPart;
+    params.maxPart = maxPart;
+    params.numParts = numParts;
+
     if ( patch->flags.doFullElectrostatics )
       {
       params.fullf[0] = r->f[Results::slow];
@@ -81,13 +87,16 @@ void ComputeNonbondedSelf::doForce(Position* p,
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedSelf.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/05/20 15:49:10 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1011 $	$Date: 1998/07/02 21:06:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.C,v $
+ * Revision 1.1011  1998/07/02 21:06:36  jim
+ * Added support for splitting ComputeNonbondedSelf into multiple computes.
+ *
  * Revision 1.1010  1997/05/20 15:49:10  nealk
  * Pair, Self, and Excl not use the same parameters!
  *
