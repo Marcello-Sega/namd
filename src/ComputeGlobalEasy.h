@@ -23,7 +23,7 @@ class Molecule;
 class SimParameters;
 class SubmitReduction;
 
-class ComputeGlobalEasy : ComputeGlobalMaster {
+class ComputeGlobalEasy : public ComputeGlobalMaster {
 protected:
   friend class ComputeGlobal;
   ComputeGlobalEasy(ComputeGlobal *, const char *);
@@ -63,12 +63,15 @@ private:
  *
  *	$RCSfile: ComputeGlobalEasy.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1999/06/17 17:05:38 $
+ *	$Revision: 1.4 $	$Date: 1999/07/06 20:32:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGlobalEasy.h,v $
+ * Revision 1.4  1999/07/06 20:32:41  jim
+ * Eliminated warnings from new generation of picky compilers.
+ *
  * Revision 1.3  1999/06/17 17:05:38  jim
  * Renamed seq to step in most places.  Now has meaning only to user.
  *

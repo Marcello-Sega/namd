@@ -93,15 +93,6 @@ private:
     ComputeID   cid;
     Compute *c;
 
-    // new matched with delete
-    void * operator new(size_t size) { return ::operator new(size); }	
-    // placement new for use within containers
-    void * operator new(size_t /* size */, void * ptr) { return ptr; }
-
-    // delete matched with new
-    void operator delete(void* ptr) { ::operator delete(ptr); }		
-    // error on IRIX!  void operator delete(void*, void*) { ; }		
-
     int operator<(ComputeElem e) { return (cid < e.cid); }
     int operator==(ComputeElem e) { return (cid == e.cid); }
 
@@ -136,12 +127,15 @@ private:
  *
  *	$RCSfile: ComputeMgr.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1999/06/08 14:52:06 $
+ *	$Revision: 1.1017 $	$Date: 1999/07/06 20:32:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.h,v $
+ * Revision 1.1017  1999/07/06 20:32:41  jim
+ * Eliminated warnings from new generation of picky compilers.
+ *
  * Revision 1.1016  1999/06/08 14:52:06  jim
  * Incorporated Justin's faster PME code along side DPME.
  *

@@ -81,7 +81,7 @@ void NAMD_quit(Bool die_hard)
 
 
 // signal all nodes, it's time to quit
-void NAMD_die(char *err_msg)
+void NAMD_die(const char *err_msg)
 
 {
    CkPrintf("FATAL ERROR: %s\n",err_msg);
@@ -154,7 +154,7 @@ BigReal NAMD_random()
 /*										*/
 /********************************************************************************/
 
-int NAMD_compare_ints(const void *i, const void *j)
+extern "C" int NAMD_compare_ints(const void *i, const void *j)
 
 {
 	if ( *((int *) i) < *((int *) j) )
@@ -171,8 +171,7 @@ int NAMD_compare_ints(const void *i, const void *j)
 	}
 }
 
-int *NAMD_bsearch(int *key, int *base, int n,
-	int size, int (*cmpfn) (const void *, const void *))
+int *NAMD_bsearch(int *key, int *base, int n, int size, CCMPFN *cmpfn)
 {
 	if (cmpfn)
 		return (int *) bsearch((void *) key,(void *) base,n,size,cmpfn);
@@ -304,13 +303,16 @@ int	Fclose	(FILE *fout)
  * RCS INFORMATION:
  *
  *	$RCSfile: common.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1019 $	$Date: 1999/07/01 21:01:21 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1020 $	$Date: 1999/07/06 20:32:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.C,v $
+ * Revision 1.1020  1999/07/06 20:32:46  jim
+ * Eliminated warnings from new generation of picky compilers.
+ *
  * Revision 1.1019  1999/07/01 21:01:21  brunner
  * Removed definitions for default new() for Sun, and got rid of libc.h
  *

@@ -135,12 +135,14 @@ class Communicate;
 void NAMD_title(void);
 void NAMD_check_messages(void);
 void NAMD_quit(Bool die_hard=FALSE);
-void NAMD_die(char *);
+void NAMD_die(const char *);
 void NAMD_write(int fd, const void *buf, size_t count); // NAMD_die on error
-int NAMD_compare_ints(const void *, const void *);
 char *NAMD_stringdup(const char *);
-int *NAMD_bsearch(int *, int *, int, int,
-		int (*cmpfn) (const void *, const void*));
+extern "C" {
+  int NAMD_compare_ints(const void *, const void *);
+  typedef int CCMPFN(const void *, const void*);
+}
+int *NAMD_bsearch(int *, int *, int, int, CCMPFN *cmpfn);
 BigReal NAMD_random();
 FILE *Fopen(const char *filename, const char *mode);
 int  Fclose(FILE *fout);
@@ -282,13 +284,16 @@ int  Fclose(FILE *fout);
  * RCS INFORMATION:
  *
  *	$RCSfile: common.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1020 $	$Date: 1999/07/01 21:01:21 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1021 $	$Date: 1999/07/06 20:32:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.h,v $
+ * Revision 1.1021  1999/07/06 20:32:46  jim
+ * Eliminated warnings from new generation of picky compilers.
+ *
  * Revision 1.1020  1999/07/01 21:01:21  brunner
  * Removed definitions for default new() for Sun, and got rid of libc.h
  *

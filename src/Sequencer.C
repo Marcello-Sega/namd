@@ -73,7 +73,7 @@ void Sequencer::run(int numberOfCycles)
 // when to migrate atoms, when to add forces to velocity update.
 void Sequencer::algorithm(void)
 {
-  int scriptTask;
+  int scriptTask = 1;
   int scriptSeq = 0;
   while ( (! simParams->tclOn) ||
 		(scriptTask = broadcast->scriptBarrier.get(scriptSeq++)) ) {
@@ -617,12 +617,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1065 $     $Date: 1999/06/21 16:15:36 $
+ *      $Revision: 1.1066 $     $Date: 1999/07/06 20:32:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1066  1999/07/06 20:32:44  jim
+ * Eliminated warnings from new generation of picky compilers.
+ *
  * Revision 1.1065  1999/06/21 16:15:36  jim
  * Improved scripting, run now ends and generates output.
  *

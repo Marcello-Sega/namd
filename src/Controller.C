@@ -88,7 +88,7 @@ extern int eventEndOfTimeStep;
 
 void Controller::algorithm(void)
 {
-  int scriptTask;
+  int scriptTask = 1;
   int scriptSeq = 0;
   if (simParams->tclOn) Node::Object()->enableScriptBarrier();
   while ( (! simParams->tclOn) ||
@@ -110,7 +110,6 @@ void Controller::algorithm(void)
     int first = 1;
 
     const int numberOfSteps = simParams->N;
-    const int nPatches=(PatchMap::Object())->numPatches();
 
     nbondFreq = simParams->nonbondedFrequency;
     if ( simParams->fullDirectOn || simParams->FMAOn || simParams->PMEOn )
@@ -396,7 +395,7 @@ void Controller::receivePressure(int step)
 
     reduction->require();
 
-    BigReal intKineticEnergy;
+    // BigReal intKineticEnergy;
     Vector virial;
     Vector virial_normal;
     Vector virial_nbond;
@@ -423,7 +422,7 @@ void Controller::receivePressure(int step)
     numDegFreedom -= ( numRigidBonds - numFixedRigidBonds );
 
     kineticEnergy = reduction->item(REDUCTION_KINETIC_ENERGY);
-    intKineticEnergy = reduction->item(REDUCTION_INT_KINETIC_ENERGY);
+    // intKineticEnergy = reduction->item(REDUCTION_INT_KINETIC_ENERGY);
 
     virial_normal.x = reduction->item(REDUCTION_VIRIAL_NORMAL_X);
     virial_normal.y = reduction->item(REDUCTION_VIRIAL_NORMAL_Y);
@@ -825,12 +824,15 @@ void Controller::terminate(void) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1072 $	$Date: 1999/06/21 16:15:31 $
+ *	$Revision: 1.1073 $	$Date: 1999/07/06 20:32:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1073  1999/07/06 20:32:42  jim
+ * Eliminated warnings from new generation of picky compilers.
+ *
  * Revision 1.1072  1999/06/21 16:15:31  jim
  * Improved scripting, run now ends and generates output.
  *

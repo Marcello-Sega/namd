@@ -3,7 +3,7 @@
 #include "Inform.h"
 #include "string.h"
 
-Inform::Inform(char *str)
+Inform::Inform(const char *str)
 {
    strncpy(name,str,15);
    name[15] = '\0';
@@ -100,12 +100,15 @@ Inform& sendmsg(Inform& inform)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1999/05/11 23:56:33 $
+ *	$Revision: 1.1005 $	$Date: 1999/07/06 20:32:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Inform.C,v $
+ * Revision 1.1005  1999/07/06 20:32:43  jim
+ * Eliminated warnings from new generation of picky compilers.
+ *
  * Revision 1.1004  1999/05/11 23:56:33  brunner
  * Changes for new charm version
  *

@@ -30,7 +30,7 @@ void CollectionMaster::receivePositions(CollectVectorMsg *msg)
   delete msg;
 
   CollectVectorInstance *c;
-  while ( c = positions.removeReady() ) { disposePositions(c); }
+  while ( ( c = positions.removeReady() ) ) { disposePositions(c); }
 }
 
 void CollectionMaster::enqueuePositions(int seq)
@@ -38,7 +38,7 @@ void CollectionMaster::enqueuePositions(int seq)
   positions.enqueue(seq);
 
   CollectVectorInstance *c;
-  while ( c = positions.removeReady() ) { disposePositions(c); }
+  while ( ( c = positions.removeReady() ) ) { disposePositions(c); }
 }
 
 void CollectionMaster::disposePositions(CollectVectorInstance *c)
@@ -58,7 +58,7 @@ void CollectionMaster::receiveVelocities(CollectVectorMsg *msg)
   delete msg;
 
   CollectVectorInstance *c;
-  while ( c = velocities.removeReady() ) { disposeVelocities(c); }
+  while ( ( c = velocities.removeReady() ) ) { disposeVelocities(c); }
 }
 
 void CollectionMaster::enqueueVelocities(int seq)
@@ -66,7 +66,7 @@ void CollectionMaster::enqueueVelocities(int seq)
   velocities.enqueue(seq);
 
   CollectVectorInstance *c;
-  while ( c = velocities.removeReady() ) { disposeVelocities(c); }
+  while ( ( c = velocities.removeReady() ) ) { disposeVelocities(c); }
 }
 
 void CollectionMaster::disposeVelocities(CollectVectorInstance *c)
@@ -86,7 +86,7 @@ void CollectionMaster::receiveForces(CollectVectorMsg *msg)
   delete msg;
 
   CollectVectorInstance *c;
-  while ( c = forces.removeReady() ) { disposeForces(c); }
+  while ( ( c = forces.removeReady() ) ) { disposeForces(c); }
 }
 
 void CollectionMaster::enqueueForces(int seq)
@@ -94,7 +94,7 @@ void CollectionMaster::enqueueForces(int seq)
   forces.enqueue(seq);
 
   CollectVectorInstance *c;
-  while ( c = forces.removeReady() ) { disposeForces(c); }
+  while ( ( c = forces.removeReady() ) ) { disposeForces(c); }
 }
 
 void CollectionMaster::disposeForces(CollectVectorInstance *c)
@@ -148,12 +148,15 @@ CollectVectorMsg* CollectVectorMsg::unpack(void *ptr)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1999/05/14 21:32:46 $
+ *	$Revision: 1.1019 $	$Date: 1999/07/06 20:32:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMaster.C,v $
+ * Revision 1.1019  1999/07/06 20:32:39  jim
+ * Eliminated warnings from new generation of picky compilers.
+ *
  * Revision 1.1018  1999/05/14 21:32:46  jim
  * Fixed bugs which could stall output queue.
  *

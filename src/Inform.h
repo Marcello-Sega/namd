@@ -16,7 +16,7 @@ private :
 
 public  :
 
-   Inform(char *);
+   Inform(const char *);
 
    ~Inform(void);
 
@@ -47,12 +47,15 @@ extern Inform& sendmsg(Inform&);
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:20 $
+ *	$Revision: 1.1002 $	$Date: 1999/07/06 20:32:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Inform.h,v $
+ * Revision 1.1002  1999/07/06 20:32:44  jim
+ * Eliminated warnings from new generation of picky compilers.
+ *
  * Revision 1.1001  1997/03/19 11:54:20  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

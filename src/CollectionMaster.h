@@ -64,10 +64,6 @@ public:
 
     int operator<(const CollectVectorInstance &o) { return (seq < o.seq); }
     int operator==(const CollectVectorInstance &o) { return (seq == o.seq); }
-    void * operator new(size_t size) { return ::operator new(size); }
-    void * operator new(size_t, void * ptr) { return ptr; }
-    void operator delete(void* ptr) { ::operator delete(ptr); }
-    // crashes egcs!  void operator delete(void*, void*) { ; }
 
     ResizeArray<Vector> data;
 
@@ -114,8 +110,6 @@ public:
     ResizeArray<CollectVectorInstance> data;
     ResizeArray<int> queue;
 
-    void * operator new(size_t size) { return ::operator new(size); }
-    void operator delete(void* ptr) { ::operator delete(ptr); }
   };
 private:
 
@@ -146,12 +140,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1999/05/14 21:32:47 $
+ *	$Revision: 1.1016 $	$Date: 1999/07/06 20:32:40 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMaster.h,v $
+ * Revision 1.1016  1999/07/06 20:32:40  jim
+ * Eliminated warnings from new generation of picky compilers.
+ *
  * Revision 1.1015  1999/05/14 21:32:47  jim
  * Fixed bugs which could stall output queue.
  *
