@@ -63,6 +63,7 @@ private:
 				//  Parameters for each atom constrained
 	Real *langevinParams;   //  b values for langevin dynamics
 	Real *langForceVals;    //  Calculated values for langvin random forces
+	int *fixedAtomFlags;	//  1 for fixed, -1 for fixed group, else 0
 
 	ObjectArena<int> arena;
 	int **bondsByAtom;	//  List of bonds involving each atom
@@ -129,6 +130,7 @@ public:
 	int numExclusions;	//  Number of exclusions
 	int numTotalExclusions; //  Real Total Number of Exclusions // hack
 	int numConstraints;	//  Number of atoms constrained
+	int numFixedAtoms;	//  Number of fixed atoms
 
 	//  Number of dihedrals with multiple periodicity
 	int numMultipleDihedrals; 
@@ -159,6 +161,9 @@ public:
 
 	void build_langevin_params(StringList *, StringList *, PDB *, char *);
 				//  Build the set of langevin dynamics parameters
+
+	void build_fixed_atoms(StringList *, StringList *, PDB *, char *);
+				//  Determine which atoms are fixed (if any)
 
         Bool is_hydrogen(int);     // return true if atom is hydrogen
         Bool is_oxygen(int);       // return true if atom is oxygen
@@ -329,6 +334,16 @@ public:
 		return(langForceVals[atomnum]);
 	}
 
+	Bool is_atom_fixed(int atomnum) const
+	{
+		return (numFixedAtoms && fixedAtomFlags[atomnum]);
+	}
+
+	Bool is_group_fixed(int atomnum) const
+	{
+		return (numFixedAtoms && (fixedAtomFlags[atomnum] == -1));
+	}
+
 	void print_atoms(Parameters *);	
 				//  Print out list of atoms
 	void print_bonds(Parameters *);	
@@ -342,13 +357,18 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: Molecule.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/04/03 19:59:05 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1011 $	$Date: 1997/09/19 08:55:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.1011  1997/09/19 08:55:33  jim
+ * Added rudimentary but relatively efficient fixed atoms.  New options
+ * are fixedatoms, fixedatomsfile, and fixedatomscol (nonzero means fixed).
+ * Energies will be affected, although this can be fixed with a little work.
+ *
  * Revision 1.1010  1997/04/03 19:59:05  nealk
  * 1) New Fopen() which handles .Z and .gz files.
  * 2) localWaters and localNonWaters lists on each patch.

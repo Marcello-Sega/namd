@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Molecule.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1997/08/18 05:02:56 $
+ *	$Revision: 1.1015 $	$Date: 1997/09/19 08:55:32 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,9 +24,14 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
- * Revision 1.1014  1997/08/18 05:02:56  jim
- * Fixed bugs related to multiple dihedrals and exclude 1-2, 1-3, or 1-4.
+ * Revision 1.1015  1997/09/19 08:55:32  jim
+ * Added rudimentary but relatively efficient fixed atoms.  New options
+ * are fixedatoms, fixedatomsfile, and fixedatomscol (nonzero means fixed).
+ * Energies will be affected, although this can be fixed with a little work.
  *
+ * Revision 1.1014  97/08/18  05:02:56  05:02:56  jim (Jim Phillips)
+ * Fixed bugs related to multiple dihedrals and exclude 1-2, 1-3, or 1-4.
+ * 
  * Revision 1.1013  1997/04/07 14:54:29  nealk
  * Changed fclose() to Fclose() (found in common.[Ch]) to use with popen().
  * Also corrected compilation warnings in Set.[Ch].
@@ -217,7 +222,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1014 1997/08/18 05:02:56 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1015 1997/09/19 08:55:32 jim Exp $";
 
 #include "Templates/UniqueSortedArray.h"
 #include "Molecule.h"
@@ -273,6 +278,7 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
 	onefour_exclusions=NULL;
 	langevinParams=NULL;
 	langForceVals=NULL;
+	fixedAtomFlags=NULL;
 	consIndexes=0;
 	consParams=0;
 	numMultipleDihedrals=0;
@@ -288,6 +294,7 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
 	numAcceptors=0;
 	numExclusions=0;
 	numConstraints=0;
+	numFixedAtoms=0;
 
 	if (param != NULL && filename != NULL) {
 	    read_psf_file(filename, param);
@@ -364,6 +371,9 @@ Molecule::~Molecule()
 	
 	if (onefour_exclusions != NULL)
 	   	delete [] onefour_exclusions;
+
+	if (fixedAtomFlags != NULL)
+	   	delete [] fixedAtomFlags;
 }
 /*			END OF FUNCTION Molecule			*/
 
@@ -1888,6 +1898,12 @@ void Molecule::send_Molecule(Communicate *com_obj)
 		    msg->put(numAtoms, langForceVals);
 	    }
 
+	    //  Send fixed atoms, if active
+	    if (simParams->fixedAtomsOn)
+	    {
+		    msg->put(numFixedAtoms);
+		    msg->put(numAtoms, fixedAtomFlags);
+	    }
 
 	    // Broadcast the message to the other nodes
 	    com_obj->broadcast_others(msg, MOLECULETAG);
@@ -2242,6 +2258,21 @@ void Molecule::send_Molecule(Communicate *com_obj)
 
 		    msg->get(langevinParams);
 		    msg->get(langForceVals);
+	    }
+
+	    //  Get the fixed atoms, if they are active
+	    if (simParams->fixedAtomsOn)
+	    {
+		    delete [] fixedAtomFlags;
+		    fixedAtomFlags = new int[numAtoms];
+
+		    if (fixedAtomFlags == NULL)
+		    {
+			    NAMD_die("memory allocation failed in Molecule::receive_Molecule");
+		    }
+
+		    msg->get(numFixedAtoms);
+		    msg->get(fixedAtomFlags);
 	    }
 
 
@@ -3226,7 +3257,166 @@ void Molecule::send_Molecule(Communicate *com_obj)
 	  delete bPDB;
        }
     }
-    /*			END OF FUNCTION build_constraint_params		*/
+    /*			END OF FUNCTION build_langevin_params		*/
+
+    /************************************************************************/
+    /*									*/
+    /*			FUNCTION build_fixed_atoms			*/
+    /*									*/
+    /*   INPUTS:							*/
+    /*	fixedfile - Value of langevinfile from config file		*/
+    /*	fixedcol - Value of langevincol from config file		*/
+    /*	initial_pdb - PDB object that contains initial positions	*/
+    /*      cwd - Current working directory				*/
+    /*									*/
+    /*	This function builds the list of fixed atoms.			*/
+    /*   It takes the name of the PDB file and the			*/
+    /*   column in the PDB file that contains the flags.  It then	*/
+    /*   builds the array fixedAtomFlags for use during the program.	*/
+    /*									*/
+    /************************************************************************/
+
+    void Molecule::build_fixed_atoms(StringList *fixedfile, 
+					 StringList *fixedcol, 
+					 PDB *initial_pdb,
+					 char *cwd)
+       
+    {
+       PDB *bPDB;			//  Pointer to PDB object to use
+       int bcol;			//  Column that data is in
+       Real bval;			//  b value from PDB file
+       int i;			//  Loop counter
+       BigReal forceConstant;	//  Constant factor in force calc
+       char filename[129];		//  Filename
+       
+       //  Get the PDB object that contains the b values.  If
+       //  the user gave another file name, use it.  Otherwise, just use
+       //  the PDB file that has the initial coordinates.  
+       if (fixedfile == NULL)
+       {
+	  bPDB = initial_pdb;
+       }
+       else
+       {
+	  if (fixedfile->next != NULL)
+	  {
+	     NAMD_die("Multiple definitions of fixed atoms PDB file in configuration file");
+	  }
+
+	  if ( (cwd == NULL) || (fixedfile->data[0] == '/') )
+	  {
+	       strcpy(filename, fixedfile->data);
+	  }
+	  else
+	  {
+	       strcpy(filename, cwd);
+	       strcat(filename, fixedfile->data);
+	  }
+	  
+	  bPDB = new PDB(filename);
+	  if ( bPDB == NULL )
+	  {
+	    NAMD_die("Memory allocation failed in Molecule::build_fixed_atoms");
+	  }
+	  
+	  if (bPDB->num_atoms() != numAtoms)
+	  {
+	     NAMD_die("Number of atoms in fixed atoms PDB doesn't match coordinate PDB");
+	  }
+       }
+       
+       //  Get the column that the b vaules are in.  It
+       //  can be in any of the 5 floating point fields in the PDB, according
+       //  to what the user wants.  The allowable fields are X, Y, Z, O, or
+       //  B which correspond to the 1st, 2nd, ... 5th floating point fields.
+       //  The default is the 4th field, which is the occupancy
+       if (fixedcol == NULL)
+       {
+	  bcol = 4;
+       }
+       else
+       {
+	  if (fixedcol->next != NULL)
+	  {
+	     NAMD_die("Multiple definitions of fixed atoms column in config file");
+	  }
+	  
+	  if (strcasecmp(fixedcol->data, "X") == 0)
+	  {
+	     bcol=1;
+	  }
+	  else if (strcasecmp(fixedcol->data, "Y") == 0)
+	  {
+	     bcol=2;
+	  }
+	  else if (strcasecmp(fixedcol->data, "Z") == 0)
+	  {
+	     bcol=3;
+	  }
+	  else if (strcasecmp(fixedcol->data, "O") == 0)
+	  {
+	     bcol=4;
+	  }
+	  else if (strcasecmp(fixedcol->data, "B") == 0)
+	  {
+	     bcol=5;
+	  }
+	  else
+	  {
+	     NAMD_die("fixedatomscol must have value of X, Y, Z, O, or B");
+	  }
+       }
+       
+       //  Allocate the array to hold all the data
+       fixedAtomFlags = new int[numAtoms];
+       
+       if (fixedAtomFlags == NULL)
+       {
+	  NAMD_die("memory allocation failed in Molecule::build_fixed_atoms()");
+       }
+       
+	numFixedAtoms = 0;
+
+       //  Loop through all the atoms and get the b value
+       for (i=0; i<numAtoms; i++)
+       {
+	  //  Get the k value based on where we were told to find it
+	  switch (bcol)
+	  {
+	     case 1:
+		bval = (bPDB->atom(i))->xcoor();
+		break;
+	     case 2:
+		bval = (bPDB->atom(i))->ycoor();
+		break;
+	     case 3:
+		bval = (bPDB->atom(i))->zcoor();
+		break;
+	     case 4:
+		bval = (bPDB->atom(i))->occupancy();
+		break;
+	     case 5:
+		bval = (bPDB->atom(i))->temperaturefactor();
+		break;
+	  }
+	  
+	  //  Assign the b value
+	  if ( bval != 0 ) {
+	    fixedAtomFlags[i] = 1;
+	    numFixedAtoms++;
+	  }
+	  else {
+	    fixedAtomFlags[i] = 0;
+	  }
+       }
+       
+       //  If we had to create a PDB object, delete it now
+       if (fixedfile != NULL)
+       {
+	  delete bPDB;
+       }
+    }
+    /*			END OF FUNCTION build_fixed_atoms		*/
 
 
 
@@ -3429,15 +3619,20 @@ void Molecule::send_Molecule(Communicate *com_obj)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1997/08/18 05:02:56 $
+ *	$Revision: 1.1015 $	$Date: 1997/09/19 08:55:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
- * Revision 1.1014  1997/08/18 05:02:56  jim
- * Fixed bugs related to multiple dihedrals and exclude 1-2, 1-3, or 1-4.
+ * Revision 1.1015  1997/09/19 08:55:32  jim
+ * Added rudimentary but relatively efficient fixed atoms.  New options
+ * are fixedatoms, fixedatomsfile, and fixedatomscol (nonzero means fixed).
+ * Energies will be affected, although this can be fixed with a little work.
  *
+ * Revision 1.1014  97/08/18  05:02:56  05:02:56  jim (Jim Phillips)
+ * Fixed bugs related to multiple dihedrals and exclude 1-2, 1-3, or 1-4.
+ * 
  * Revision 1.1013  1997/04/07 14:54:29  nealk
  * Changed fclose() to Fclose() (found in common.[Ch]) to use with popen().
  * Also corrected compilation warnings in Set.[Ch].

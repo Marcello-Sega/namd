@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1015 1997/09/19 05:17:44 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1016 1997/09/19 08:55:35 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -95,11 +95,31 @@ void Patch::loadAtomProperties(void)
 	  ap.hydrogenGroupSize = 0;
       }
       else ap.hydrogenGroupSize = 1;  // A group unto itself.
-      ap.water = mol->is_water(atomIDList[i]);
+      // ap.water = mol->is_water(atomIDList[i]);  NEVER USED -JCP
+
+      ap.flags = 0;
+      // fixed atoms - pass one
+      if ( mol->is_atom_fixed(atomIDList[i]) ) {
+	ap.flags |= ATOM_FIXED;
+      }
 
       // add the property
       a.add(ap);
     }
+
+    int size, allfixed, j;
+    for ( i=0; i<numAtoms; i+=size)
+    {
+      size = a[i].hydrogenGroupSize;
+      allfixed = 1;
+      for ( j = 0; j < size; ++j ) {
+	allfixed = ( allfixed && (a[i+j].flags & ATOM_FIXED) );
+      }
+      if ( allfixed ) for ( j = 0; j < size; ++j ) {
+	a[i+j].flags |= GROUP_FIXED;
+      }
+    }
+
     /* NEVER USED -JCP
     localIndex.sort();
     localIndex.uniq();
@@ -277,12 +297,17 @@ void Patch::positionsReady(int doneMigration)
  *
  *	$RCSfile: Patch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1997/09/19 05:17:44 $
+ *	$Revision: 1.1016 $	$Date: 1997/09/19 08:55:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.1016  1997/09/19 08:55:35  jim
+ * Added rudimentary but relatively efficient fixed atoms.  New options
+ * are fixedatoms, fixedatomsfile, and fixedatomscol (nonzero means fixed).
+ * Energies will be affected, although this can be fixed with a little work.
+ *
  * Revision 1.1015  1997/09/19 05:17:44  jim
  * Cleaned up and tweaked hydrogen-group based temporary pairlist
  * generation for roughly a 6% performance improvement.

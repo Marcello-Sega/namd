@@ -11,7 +11,7 @@
  *
  *	$RCSfile: SimParameters.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1022 $	$Date: 1997/09/19 07:23:36 $
+ *	$Revision: 1.1023 $	$Date: 1997/09/19 08:55:36 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,11 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1023  1997/09/19 08:55:36  jim
+ * Added rudimentary but relatively efficient fixed atoms.  New options
+ * are fixedatoms, fixedatomsfile, and fixedatomscol (nonzero means fixed).
+ * Energies will be affected, although this can be fixed with a little work.
+ *
  * Revision 1.1022  1997/09/19 07:23:36  jim
  * Fixed bug where margin was not extended when user did not specify
  * a patch splitting method - now adds hGroupCutoff to margin.
@@ -394,7 +399,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1022 1997/09/19 07:23:36 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1023 1997/09/19 08:55:36 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -750,6 +755,16 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 		"Number of steps between volume rescaling",
 		&berendsenPressureFreq, 1);
    opts.range("BerendsenPressureFreq", POSITIVE);
+
+   ////  Fixed Atoms
+   opts.optionalB("main", "fixedatoms", "Are there fixed atoms?",
+		&fixedAtomsOn, FALSE);
+   opts.optional("fixedatoms", "fixedAtomsFile", "PDB file with flags for "
+		 "fixed atoms (default is the PDB input file)",
+		 PARSE_STRING);
+   opts.optional("fixedatoms", "fixedAtomsCol", "Column in the fixedAtomsFile "
+		 "containing the flags (nonzero means fixed);\n"
+		 "default is 'O'", PARSE_STRING);
 
    ////  Harmonic Constraints
    opts.optionalB("main", "constraints", "Are harmonic constraints active?",
@@ -1900,6 +1915,11 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    	    << outputEnergies << "\n";
    }
    
+   if (fixedAtomsOn)
+   {
+      iout << iINFO << "FIXED ATOMS ACTIVE\n";
+   }
+
    if (constraintsOn)
    {
       iout << iINFO << "HARMONIC CONSTRAINTS ACTIVE\n";
@@ -2455,12 +2475,17 @@ void SimParameters::receive_SimParameters(Message *msg)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1022 $	$Date: 1997/09/19 07:23:36 $
+ *	$Revision: 1.1023 $	$Date: 1997/09/19 08:55:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1023  1997/09/19 08:55:36  jim
+ * Added rudimentary but relatively efficient fixed atoms.  New options
+ * are fixedatoms, fixedatomsfile, and fixedatomscol (nonzero means fixed).
+ * Energies will be affected, although this can be fixed with a little work.
+ *
  * Revision 1.1022  1997/09/19 07:23:36  jim
  * Fixed bug where margin was not extended when user did not specify
  * a patch splitting method - now adds hGroupCutoff to margin.

@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1032 1997/08/22 19:27:37 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1033 1997/09/19 08:55:36 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -89,9 +89,10 @@ void Sequencer::algorithm(void)
 
     // Do we do full electrostatics?
     const int dofull = ( simParams->fullDirectOn || simParams->FMAOn );
-    const BigReal slowstep = timestep * stepsPerCycle;
+    const int fullElectFrequency = simParams->fmaFrequency;
+    const BigReal slowstep = timestep * fullElectFrequency;
     int &doFullElectrostatics = patch->flags.doFullElectrostatics;
-    doFullElectrostatics = (dofull && !(step%stepsPerCycle));
+    doFullElectrostatics = (dofull && !(step%fullElectFrequency));
 
     const int nonbondedFrequency = simParams->nonbondedFrequency;
     const BigReal nbondstep = timestep * nonbondedFrequency;
@@ -116,7 +117,7 @@ void Sequencer::algorithm(void)
 	addVelocityToPosition(timestep);
 
 	doNonbonded = !(step%nonbondedFrequency);
-	doFullElectrostatics = (dofull && !(step%stepsPerCycle));
+	doFullElectrostatics = (dofull && !(step%fullElectFrequency));
 
 	// Migrate Atoms on stepsPerCycle
 	runComputeObjects(!(step%stepsPerCycle));
@@ -255,13 +256,18 @@ Sequencer::terminate() {
  * RCS INFORMATION:
  *
  *      $RCSfile: Sequencer.C,v $
- *      $Author: brunner $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1032 $     $Date: 1997/08/22 19:27:37 $
+ *      $Author: jim $  $Locker:  $             $State: Exp $
+ *      $Revision: 1.1033 $     $Date: 1997/09/19 08:55:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1033  1997/09/19 08:55:36  jim
+ * Added rudimentary but relatively efficient fixed atoms.  New options
+ * are fixedatoms, fixedatomsfile, and fixedatomscol (nonzero means fixed).
+ * Energies will be affected, although this can be fixed with a little work.
+ *
  * Revision 1.1032  1997/08/22 19:27:37  brunner
  * Added cycle barrier, enabled by compiling with -DCYCLE_BARRIER
  *

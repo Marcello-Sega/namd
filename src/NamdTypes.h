@@ -44,12 +44,17 @@ struct AtomProperties
 
   // other data information
   int hydrogenGroupSize;	// 0 from group members, !0 for group parents
-  Bool water;	// TRUE if water atom (O or H)
+  // Bool water;	// TRUE if water atom (O or H)  NEVER USED -JCP
+  unsigned int flags;	// for fixed atoms, etc. - use with & operator
 
   int operator==(const AtomProperties& a) {
     return( id == a.id );
   }
 };
+
+// Definitions for AtomProperties flags
+#define ATOM_FIXED	0x0001
+#define GROUP_FIXED	0x0002
 
 typedef ResizeArray<Position> PositionList;
 typedef ResizeArrayIter<Position> PositionListIter;
@@ -99,13 +104,18 @@ typedef int Boolean;
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdTypes.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/04/03 19:59:07 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1007 $	$Date: 1997/09/19 08:55:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdTypes.h,v $
+ * Revision 1.1007  1997/09/19 08:55:34  jim
+ * Added rudimentary but relatively efficient fixed atoms.  New options
+ * are fixedatoms, fixedatomsfile, and fixedatomscol (nonzero means fixed).
+ * Energies will be affected, although this can be fixed with a little work.
+ *
  * Revision 1.1006  1997/04/03 19:59:07  nealk
  * 1) New Fopen() which handles .Z and .gz files.
  * 2) localWaters and localNonWaters lists on each patch.

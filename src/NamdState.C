@@ -7,7 +7,7 @@
  * DESCRIPTION: Holds pointers to large molecule data structure, simulation
  *		Parameters...
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1007 1997/03/24 01:43:59 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1008 1997/09/19 08:55:34 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -147,6 +147,14 @@ NamdState::configFileInit(char *confFile)
 					      NULL);
 	}
 
+	if (simParameters->fixedAtomsOn)
+	{
+	   molecule->build_fixed_atoms(configList->find("fixedatomsfile"),
+					configList->find("fixedatomscol"),
+					pdb,
+					NULL);
+	}
+
 	//  If langevin dynamics or temperature coupling are active, build 
 	//  the parameters necessary
 	if (simParameters->langevinOn)
@@ -216,12 +224,17 @@ NamdState::configFileInit(char *confFile)
  *
  *	$RCSfile: NamdState.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/03/24 01:43:59 $
+ *	$Revision: 1.1008 $	$Date: 1997/09/19 08:55:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdState.C,v $
+ * Revision 1.1008  1997/09/19 08:55:34  jim
+ * Added rudimentary but relatively efficient fixed atoms.  New options
+ * are fixedatoms, fixedatomsfile, and fixedatomscol (nonzero means fixed).
+ * Energies will be affected, although this can be fixed with a little work.
+ *
  * Revision 1.1007  1997/03/24 01:43:59  jim
  * Added Langevin dynamics.
  *

@@ -165,6 +165,8 @@ public:
         Vector movingConsVel;           //  Velocity of the movement, A/timestep
         int movingConsAtom;             //  Index of the atom to be moved
 
+	Bool fixedAtomsOn;		//  Are there fixed atoms?
+
 	Bool langevinOn;		//  Flag TRUE-> langevin dynamics active
 	BigReal langevinTemp;		//  Temperature for Langevin dynamics
 
@@ -310,13 +312,18 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.h,v $
- *	$Author: sergei $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/08/18 17:45:11 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1013 $	$Date: 1997/09/19 08:55:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1013  1997/09/19 08:55:38  jim
+ * Added rudimentary but relatively efficient fixed atoms.  New options
+ * are fixedatoms, fixedatomsfile, and fixedatomscol (nonzero means fixed).
+ * Energies will be affected, although this can be fixed with a little work.
+ *
  * Revision 1.1012  1997/08/18 17:45:11  sergei
  * added moving restraint capability with input from config file
  * (for one atom only)

@@ -223,6 +223,7 @@ NOEXCL
     {
     pairlistindex = 0;	// initialize with 0 elements
     pairlistoffset=0;
+    int groupfixed = ( a_i.flags & GROUP_FIXED );
 
     // If patch divisions are not made by hydrogen groups, then
     // hydrogenGroupSize is set to 1 for all atoms.  Thus we can
@@ -265,9 +266,9 @@ NOEXCL
 	t2 = p_i_z - p_j_z;
 	r2 += t2 * t2;
 	p_j_z = p_j->z;					// preload
-	pa_j += hgs;
 	// use a slightly large cutoff to include hydrogens
-	if ( r2 <= groupcutoff2 )
+	if ( r2 <= groupcutoff2 &&
+		! ( groupfixed && (pa_j->flags & GROUP_FIXED) ) )
 		{
 		register int l = j;
 		j += hgs;
@@ -278,6 +279,7 @@ NOEXCL
 		  }
 		}
 	else j += hgs;
+	pa_j += hgs;
 	} // for j
 
     pairlistindex = pli - pairlist;
@@ -631,12 +633,17 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1027 $	$Date: 1997/09/19 05:17:42 $
+ *	$Revision: 1.1028 $	$Date: 1997/09/19 08:55:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1028  1997/09/19 08:55:30  jim
+ * Added rudimentary but relatively efficient fixed atoms.  New options
+ * are fixedatoms, fixedatomsfile, and fixedatomscol (nonzero means fixed).
+ * Energies will be affected, although this can be fixed with a little work.
+ *
  * Revision 1.1027  1997/09/19 05:17:42  jim
  * Cleaned up and tweaked hydrogen-group based temporary pairlist
  * generation for roughly a 6% performance improvement.

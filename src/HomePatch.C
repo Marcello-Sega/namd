@@ -39,7 +39,7 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1034 1997/09/19 05:17:43 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1035 1997/09/19 08:55:31 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
 		     VelocityList vl) : Patch(pd,al,pl), v(vl) 
@@ -228,6 +228,7 @@ void HomePatch::addForceToMomentum(const BigReal timestep, const int ftag)
   for ( int i = 0; i < numAtoms; ++i )
   {
     v[i] += f[ftag][i] * ( dt / a[i].mass );
+    if ( a[i].flags & ATOM_FIXED ) v[i] = 0;
   }
 }
 
@@ -236,7 +237,7 @@ void HomePatch::addVelocityToPosition(const BigReal timestep)
   const BigReal dt = timestep / TIMEFACTOR;
   for ( int i = 0; i < numAtoms; ++i )
   {
-    p[i] += v[i] * dt;
+    if ( ! ( a[i].flags & ATOM_FIXED ) ) p[i] += v[i] * dt;
   }
 }
 
@@ -458,12 +459,17 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1034 $	$Date: 1997/09/19 05:17:43 $
+ *	$Revision: 1.1035 $	$Date: 1997/09/19 08:55:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1035  1997/09/19 08:55:31  jim
+ * Added rudimentary but relatively efficient fixed atoms.  New options
+ * are fixedatoms, fixedatomsfile, and fixedatomscol (nonzero means fixed).
+ * Energies will be affected, although this can be fixed with a little work.
+ *
  * Revision 1.1034  1997/09/19 05:17:43  jim
  * Cleaned up and tweaked hydrogen-group based temporary pairlist
  * generation for roughly a 6% performance improvement.
