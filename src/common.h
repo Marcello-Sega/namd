@@ -41,6 +41,8 @@ void   ::operator delete (void *);
 #define BOLTZMAN 0.001987191
 #define TIMEFACTOR 48.88821
 #define PRESSUREFACTOR 6.95E4
+#define PDBVELFACTOR 20.45482706
+#define PDBVELINVFACTOR (1.0/PDBVELFACTOR)
 
 #ifndef PI
 #define PI	3.141592653589793
@@ -256,12 +258,16 @@ int  Fclose(FILE *fout);
  *
  *	$RCSfile: common.h,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/08/13 21:00:19 $
+ *	$Revision: 1.1009 $	$Date: 1997/09/22 20:24:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.h,v $
+ * Revision 1.1009  1997/09/22 20:24:46  brunner
+ * Corrected velocity PDB output by replacing conversion factor of 20 with
+ * conversion for Ang/ps.  This now shoud match XPLOR.
+ *
  * Revision 1.1008  1997/08/13 21:00:19  brunner
  * Made binary files always use 32 bits for the number of atoms, so that it
  * works on both 64 and 32-bit machines.  Also, I made Inform.C use CPrintf,

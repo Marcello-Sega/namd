@@ -8,7 +8,7 @@
  * This object outputs the data collected on the master node
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Output.C,v 1.9 1997/09/18 22:22:21 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Output.C,v 1.10 1997/09/22 20:24:48 brunner Exp $";
 
 #include <string.h>
 #include <stdlib.h>
@@ -590,10 +590,10 @@ void Output::output_restart_velocities(int timestep, int n, Vector *vel)
 		//  first to make the numbers bigger
 		sprintf(comment, "RESTART VELOCITIES WRITTEN BY NAMD AT TIMESTEP %d", timestep);
 
-		scale_vels(vel, n, 20);
+		scale_vels(vel, n, PDBVELFACTOR);
 		namdMyNode->pdbData->set_all_positions(vel);
 		namdMyNode->pdbData->write(restart_name, comment);
-		scale_vels(vel, n, 0.05);
+		scale_vels(vel, n, PDBVELINVFACTOR);
 	}
 	else
 	{
@@ -780,10 +780,10 @@ void Output::output_final_velocities(int timestep, int n, Vector *vel)
 		//  Write the final velocities to a PDB file
 		sprintf(comment, "FINAL VELOCITIES WRITTEN BY NAMD AT TIMESTEP %d", timestep);
 
-		scale_vels(vel, n, 20);
+		scale_vels(vel, n, PDBVELFACTOR);
 		namdMyNode->pdbData->set_all_positions(vel);
 		namdMyNode->pdbData->write(output_name, comment);
-		scale_vels(vel, n, 0.05);
+		scale_vels(vel, n, PDBVELINVFACTOR);
 	}
 	else
 	{
@@ -2514,13 +2514,17 @@ void Output::output_allforcedcdfile(int timestep, int n, Vector *forces)
  * RCS INFORMATION:
  *
  *	$RCSfile: Output.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1997/09/18 22:22:21 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.10 $	$Date: 1997/09/22 20:24:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Output.C,v $
+ * Revision 1.10  1997/09/22 20:24:48  brunner
+ * Corrected velocity PDB output by replacing conversion factor of 20 with
+ * conversion for Ang/ps.  This now shoud match XPLOR.
+ *
  * Revision 1.9  1997/09/18 22:22:21  jim
  * Cleaned up coordinate ane velocity output code a little.
  * Won't create restart file on first time step.
