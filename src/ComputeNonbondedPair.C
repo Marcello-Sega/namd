@@ -32,7 +32,7 @@ ComputeNonbondedPair::ComputeNonbondedPair(ComputeID c, PatchID pid[], int trans
 void ComputeNonbondedPair::initialize() {
   ComputePatchPair::initialize();
   for (int i=0; i<2; i++) {
-    avgPositionBox[i] = patch[i]->registerAvgPositionPickup(cid);
+    avgPositionBox[i] = patch[i]->registerAvgPositionPickup(cid,trans[i]);
   }
 }
 
