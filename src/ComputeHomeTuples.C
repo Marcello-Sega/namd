@@ -102,7 +102,7 @@ void ComputeHomeTuples<T>::mapReady() {
 
 template <class T>
 void ComputeHomeTuples<T>::doWork() {
-  DebugM(2, "ComputeHomeTuples::doWork() -- started " << endl );
+  DebugM(1, "ComputeHomeTuples::doWork() -- started " << endl );
   // Open Boxes
   ResizeArrayIter<TuplePatchElem> ap(tuplePatchList);
   for (ap = ap.begin(); ap != ap.end(); ap++) {
@@ -112,7 +112,7 @@ void ComputeHomeTuples<T>::doWork() {
   } 
 
   // take triplet and pass with tuple info to force eval
-  DebugM(2, "ComputeHomeTuples::doWork() - size of atom list = " << tupleList.size() << endl );
+  DebugM(2, "ComputeHomeTuples::doWork() - size of tuple list = " << tupleList.size() << endl );
   ResizeArrayIter<T> al(tupleList);
   for (al = al.begin(); al != al.end(); al++ ) {
     // computeForce returns (BigReal)change in energy.  This must be used.
