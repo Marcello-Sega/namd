@@ -195,16 +195,15 @@ NOEXCL
 	    fullElectEnergy -= f;
 	    fullElectVirial -= f;
 	    fullforce_r = -f * r_1 * r_1;
-	    register BigReal tmp;
-	    tmp = fullforce_r * p_ij_x;
-	    fullf_i.x += tmp;
-	    fullf_j.x -= tmp;
-	    tmp = fullforce_r * p_ij_y;
-	    fullf_i.y += tmp;
-	    fullf_j.y -= tmp;
-	    tmp = fullforce_r * p_ij_z;
-	    fullf_i.z += tmp;
-	    fullf_j.z -= tmp;
+	    register BigReal tmp_x = fullforce_r * p_ij_x;
+	    register BigReal tmp_y = fullforce_r * p_ij_y;
+	    register BigReal tmp_z = fullforce_r * p_ij_z;
+	    fullf_i.x += tmp_x;
+	    fullf_i.y += tmp_y;
+	    fullf_i.z += tmp_z;
+	    fullf_j.x -= tmp_x;
+	    fullf_j.y -= tmp_y;
+	    fullf_j.z -= tmp_z;
 	  )
 	  continue;  // Must have stored force by now.
 	}
@@ -406,33 +405,35 @@ NOEXCL
       force_r += f_vdw;
 )
 
-      register BigReal tmp;
-
-      tmp = force_r * p_ij_x;
-      f_i.x += tmp;
-      f_j.x -= tmp;
-      tmp = force_r * p_ij_y;
-      f_i.y += tmp;
-      f_j.y -= tmp;
-      tmp = force_r * p_ij_z;
-      f_i.z += tmp;
-      f_j.z -= tmp;
-
       virial += force_r * r2;
+
+      register BigReal tmp_x = force_r * p_ij_x;
+      register BigReal tmp_y = force_r * p_ij_y;
+      register BigReal tmp_z = force_r * p_ij_z;
+
+      f_i.x += tmp_x;
+      f_i.y += tmp_y;
+      f_i.z += tmp_z;
+
+      f_j.x -= tmp_x;
+      f_j.y -= tmp_y;
+      f_j.z -= tmp_z;
 
 FULL
 (
-      tmp = fullforce_r * p_ij_x;
-      fullf_i.x += tmp;
-      fullf_j.x -= tmp;
-      tmp = fullforce_r * p_ij_y;
-      fullf_i.y += tmp;
-      fullf_j.y -= tmp;
-      tmp = fullforce_r * p_ij_z;
-      fullf_i.z += tmp;
-      fullf_j.z -= tmp;
-
       fullElectVirial += fullforce_r * r2;
+
+      tmp_x = fullforce_r * p_ij_x;
+      tmp_y = fullforce_r * p_ij_y;
+      tmp_z = fullforce_r * p_ij_z;
+
+      fullf_i.x += tmp_x;
+      fullf_i.y += tmp_y;
+      fullf_i.z += tmp_z;
+
+      fullf_j.x -= tmp_x;
+      fullf_j.y -= tmp_y;
+      fullf_j.z -= tmp_z;
 )
 
 NOEXCL
@@ -458,12 +459,15 @@ FULL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/03/17 03:15:01 $
+ *	$Revision: 1.1010 $	$Date: 1997/03/17 03:44:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1010  1997/03/17 03:44:14  jim
+ * Rearranged final force store for better memory access (I hope).
+ *
  * Revision 1.1009  1997/03/17 03:15:01  jim
  * Added virial calculation.
  *
