@@ -30,10 +30,7 @@ const double patchSize = 4.0;
 
 enum { maxPatchDepends = 126 };
 
-class MapDistribMsg : public comm_object
-{
-  int mapData;  // Fill in later
-} ;
+class MapDistribMsg;
 
 class WorkDistrib : public BOCclass
 {
@@ -66,6 +63,53 @@ private:
   CthThread awaitingMapsTh;
 };
 
+#include <string.h>
+#include "PatchMap.h"
+#include "ComputeMap.h"
+
+class MapDistribMsg : public comm_object
+{
+public:
+  MapDistribMsg(void) : patchMap(0), computeMap(0) { ; }
+  PatchMap *patchMap;
+  ComputeMap *computeMap;
+
+  // pack and unpack functions
+  void * pack (int *length)
+  {
+    int patchMapSize, computeMapSize;
+    char *patchMapData = (char*)patchMap->pack(&patchMapSize);
+    char *computeMapData = (char*)computeMap->pack(&computeMapSize);
+    *length = sizeof(int) + patchMapSize + sizeof(int) + computeMapSize;
+    char *buffer = (char*)new_packbuffer(this,*length);
+    char *b = buffer;
+    *((int*)b) = patchMapSize;
+    b += sizeof(int);
+    memcpy(b,patchMapData,patchMapSize);
+    delete [] patchMapData;
+    b += computeMapSize;
+    *((int*)b) = computeMapSize;
+    b += sizeof(int);
+    memcpy(b,computeMapData,computeMapSize);
+    delete [] computeMapData;
+    return buffer;
+  }
+  void unpack (void *in)
+  {
+    char *buffer = (char*)in;
+    int patchMapSize = *((int*)buffer);
+    buffer += sizeof(int);
+    patchMap = PatchMap::Instance();
+    patchMap->unpack((void*)buffer);
+    buffer += patchMapSize;
+    int computeMapSize = *((int*)buffer);
+    buffer += sizeof(int);
+    computeMap = ComputeMap::Instance();
+    computeMap->unpack((void*)buffer);
+  }
+};
+
+
 #endif /* WORKDISTRIB_H */
 
 /***************************************************************************
@@ -73,12 +117,15 @@ private:
  *
  *	$RCSfile: WorkDistrib.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.13 $	$Date: 1996/12/01 21:02:37 $
+ *	$Revision: 1.14 $	$Date: 1996/12/12 08:57:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.14  1996/12/12 08:57:17  jim
+ * added MapDistribMsg packing / unpacking routines
+ *
  * Revision 1.13  1996/12/01 21:02:37  jim
  * now adds all existing compute objects to map
  *

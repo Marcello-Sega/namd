@@ -22,6 +22,10 @@
 #include "PatchMap.h"
 #include "Patch.h"
 
+#define DEBUGM
+#define MIN_DEBUG_LEVEL 3
+#include "Debug.h"
+
 // static initialization
 PatchMap *PatchMap::_instance = 0;
 
@@ -59,6 +63,65 @@ PatchMap::~PatchMap(void)
   }
   
 }
+
+#undef PACK
+#define PACK(type,data) { *((type*)b) = data; b += sizeof(type); }
+
+void * PatchMap::pack (int *length)
+{
+  DebugM(4,"Packing PatchMap\n");
+  int i,j;
+
+  // calculate memory needed
+  int size = 0;
+  size += 5 * sizeof(int);
+  for(i=0;i<nPatches;++i)
+  {
+    size += sizeof(PatchData);
+    size += patchData[i].numCidsAllocated * sizeof(ComputeID);
+  }
+  *length = size;
+
+  // allocate needed memory
+  char * const buffer = new char[size];
+
+  // fill in the data
+  char *b = buffer;
+  PACK(int,curPatch);
+  PACK(int,nPatches);
+  PACK(int,xDim); PACK(int,yDim); PACK(int,zDim);
+  for(i=0;i<nPatches;++i)
+  {
+    PACK(PatchData,patchData[i]);
+    for(j=0;j<patchData[i].numCidsAllocated;++j)
+      PACK(ComputeID,patchData[i].cids[j]);
+  }
+
+  return buffer;
+}
+
+#undef UNPACK
+#define UNPACK(type,data) { data = *((type*)b); b += sizeof(type); }
+
+void PatchMap::unpack (void *in)
+{
+  DebugM(4,"Unpacking PatchMap\n");
+  int i,j;
+  char *b = (char*)in;
+  UNPACK(int,curPatch);
+  UNPACK(int,nPatches);
+  UNPACK(int,xDim); UNPACK(int,yDim); UNPACK(int,zDim);
+  patchData = new PatchData[nPatches];
+  for(i=0;i<nPatches;++i)
+  {
+    UNPACK(PatchData,patchData[i]);
+    patchData[i].cids = new ComputeID[patchData[i].numCidsAllocated];
+    for(j=0;j<patchData[i].numCidsAllocated;++j)
+      UNPACK(ComputeID,patchData[i].cids[j]);
+  }
+}
+
+
 
 HomePatchList *PatchMap::homePatchList() {
   return &(patchMgr->homePatches);
@@ -369,12 +432,15 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
  *
  *	$RCSfile: PatchMap.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1996/11/21 21:17:10 $
+ *	$Revision: 1.10 $	$Date: 1996/12/12 08:57:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.10  1996/12/12 08:57:17  jim
+ * added MapDistribMsg packing / unpacking routines
+ *
  * Revision 1.9  1996/11/21 21:17:10  jim
  * small bug fix in patch indexing functions
  *

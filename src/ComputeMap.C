@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.10 1996/11/30 01:27:34 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.11 1996/12/12 08:57:17 jim Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -64,6 +64,66 @@ ComputeMap::~ComputeMap(void)
       computeData = NULL;
     }
   }    
+}
+
+
+#undef PACK
+#define PACK(type,data) { *((type*)b) = data; b += sizeof(type); }
+
+void * ComputeMap::pack (int *length)
+{
+  DebugM(4,"Packing ComputeMap\n");
+  int i,j;
+
+  // calculate memory needed
+  int size = 0;
+  size += 4 * sizeof(int);
+  for(i=0;i<nComputes;++i)
+  {
+    size += sizeof(ComputeData);
+    size += computeData[i].numPidsAllocated * sizeof(PatchID);
+  }
+  *length = size;
+
+  // allocate needed memory
+  char * const buffer = new char[size];
+
+  // fill in the data
+  char *b = buffer;
+  PACK(int,nPatchBased);
+  PACK(int,nAtomBased);
+  PACK(int,nComputes);
+  PACK(int,nAllocated);
+  for(i=0;i<nComputes;++i)
+  {
+    PACK(ComputeData,computeData[i]);
+    for(j=0;j<computeData[i].numPidsAllocated;++j)
+      PACK(PatchID,computeData[i].pids[j]);
+  }
+
+  return buffer;
+}
+
+#undef UNPACK
+#define UNPACK(type,data) { data = *((type*)b); b += sizeof(type); }
+
+void ComputeMap::unpack (void *in)
+{
+  DebugM(4,"Unpacking ComputeMap\n");
+  int i,j;
+  char *b = (char*)in;
+  UNPACK(int,nPatchBased);
+  UNPACK(int,nAtomBased);
+  UNPACK(int,nComputes);
+  UNPACK(int,nAllocated);
+  computeData = new ComputeData[nAllocated];
+  for(i=0;i<nComputes;++i)
+  {
+    UNPACK(ComputeData,computeData[i]);
+    computeData[i].pids = new PatchID[computeData[i].numPidsAllocated];
+    for(j=0;j<computeData[i].numPidsAllocated;++j)
+      UNPACK(PatchID,computeData[i].pids[j]);
+  }
 }
 
 
@@ -246,12 +306,15 @@ void ComputeMap::printComputeMap(void)
  *
  *	$RCSfile: ComputeMap.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1996/11/30 01:27:34 $
+ *	$Revision: 1.11 $	$Date: 1996/12/12 08:57:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.C,v $
+ * Revision 1.11  1996/12/12 08:57:17  jim
+ * added MapDistribMsg packing / unpacking routines
+ *
  * Revision 1.10  1996/11/30 01:27:34  jim
  * switched to realistic ComputeType definitions
  *

@@ -82,6 +82,10 @@ public:
   friend ComputeMgr;
 
 protected:
+  friend MapDistribMsg;
+  void * pack (int *length);
+  void unpack (void *in);
+
   ComputeMap(void);
 
 private:
@@ -113,12 +117,15 @@ private:
  *
  *	$RCSfile: ComputeMap.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/11/30 00:32:52 $
+ *	$Revision: 1.7 $	$Date: 1996/12/12 08:57:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.h,v $
+ * Revision 1.7  1996/12/12 08:57:17  jim
+ * added MapDistribMsg packing / unpacking routines
+ *
  * Revision 1.6  1996/11/30 00:32:52  jim
  * added ComputeMgr friend and storage of ComputeType
  *

@@ -146,8 +146,11 @@ public:
 
 
 protected:
-  PatchMap(void);
+  friend MapDistribMsg;
+  void * pack (int *length);
+  void unpack (void *in);
 
+  PatchMap(void);
 
 private:
   static PatchMap *_instance;
@@ -186,12 +189,15 @@ inline Patch *PatchMap::patch(PatchID pid)
  *
  *	$RCSfile: PatchMap.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/11/21 20:39:29 $
+ *	$Revision: 1.8 $	$Date: 1996/12/12 08:57:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.h,v $
+ * Revision 1.8  1996/12/12 08:57:17  jim
+ * added MapDistribMsg packing / unpacking routines
+ *
  * Revision 1.7  1996/11/21 20:39:29  jim
  * small bug fixes
  *
