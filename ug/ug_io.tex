@@ -370,6 +370,15 @@ output to {\bf stdout}.
 }
 
 \item
+\NAMDCONFWDEF{outputPressure}
+{timesteps between pressure output}{nonnegative integer}{0}
+{
+The number of timesteps between each pressure output of \NAMD.
+If specified and nonzero, atomic and group pressure tensors
+will be output to {\bf stdout}.
+}
+
+\item
 \NAMDCONFWDEF{outputTiming}
 {timesteps between timing output}{nonnegative integer}{0}
 {
