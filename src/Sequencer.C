@@ -597,7 +597,7 @@ void Sequencer::maximumMove(BigReal timestep)
     if ( killme ) {
       iout << iERROR << 
         "Atoms moving too fast; simulation has become unstable.\n" << endi;
-      Node::Object()->enableHaltBarrier();
+      Node::Object()->enableEarlyExit();
       terminate();
     }
   }

@@ -71,11 +71,6 @@ public:
   // Singleton Access method
   inline static Node *Object() {return CpvAccess(Node_instance);}
 
-  void startupCont(CkQdMsg *);
-#ifdef NAMD_TCL
-  void enableStartupCont(Namd *);
-#endif
-
   // Run for the number of steps specified in the sim_parameters
   static void messageRun();
   void run();                  
@@ -85,16 +80,15 @@ public:
   void scriptBarrier(CkQdMsg *);  
   void scriptParam(ScriptParamMsg *);
 
-  // End of run
-  void enableHaltBarrier();  
-  void haltBarrier(CkQdMsg *);  
-
-  // Deal with quiescence
-  void quiescence(CkQdMsg *);
   void sendEnableExitScheduler(void);
   void recvEnableExitScheduler(CkQdMsg *);
   void enableExitScheduler(void);
   void exitScheduler(CkQdMsg *);
+
+  void sendEnableEarlyExit(void);
+  void recvEnableEarlyExit(CkQdMsg *);
+  void enableEarlyExit(void);
+  void earlyExit(CkQdMsg *);
 
   // Charm Entry point - Read in system data, get all ready to simulate
   static void messageStartUp();

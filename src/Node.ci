@@ -16,11 +16,6 @@ module Node {
     entry void startUp(CkQdMsg *);
     entry void startup(void);
 
-    entry void startupCont(CkQdMsg *);
-
-    // used to move from phase to phase
-    entry void quiescence(CkQdMsg *);
-
     // after startup barriers - run simulation
     entry void run(void);
 
@@ -32,8 +27,9 @@ module Node {
     entry void recvEnableExitScheduler(CkQdMsg *);
     entry void exitScheduler(CkQdMsg *);
 
-    // terminate program at end of run
-    entry void haltBarrier(CkQdMsg *);
+    // clean early exit after quiescence
+    entry void recvEnableEarlyExit(CkQdMsg *);
+    entry void earlyExit(CkQdMsg *);
   };
 }
 

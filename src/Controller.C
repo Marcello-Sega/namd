@@ -27,6 +27,7 @@
 #include "imd.h"
 #include "IMDOutput.h"
 #include "InfoStream.h"
+#include "BackEnd.h"
 
 #if(CMK_CCS_AVAILABLE)
 extern "C" void CApplicationDepositNode0Data(char *);
@@ -94,7 +95,7 @@ void Controller::algorithm(void)
 {
   int scriptTask = SCRIPT_END;
   int scriptSeq = 0;
-  if ( simParams->tclOn ) { Node::Object()->enableExitScheduler(); }
+  if ( simParams->tclOn ) { BackEnd::awaken(); }
   while ( (! simParams->tclOn) ||
     (scriptTask = broadcast->scriptBarrier.get(scriptSeq++)) != SCRIPT_END) {
     switch ( scriptTask ) {
@@ -106,37 +107,37 @@ void Controller::algorithm(void)
       case SCRIPT_OUTPUT:
         enqueueCollections(FILE_OUTPUT);
         outputExtendedSystem(FILE_OUTPUT);
-        Node::Object()->enableExitScheduler();
+        BackEnd::awaken();
         continue;
       case SCRIPT_MEASURE:
         enqueueCollections(EVAL_MEASURE);
-        Node::Object()->enableExitScheduler();
+        BackEnd::awaken();
         continue;
       case SCRIPT_REINITVELS:
         iout << "REINITIALIZING VELOCITIES AT STEP " << simParams->firstTimestep
           << " TO " << simParams->initialTemp << " KELVIN.\n" << endi;
-        Node::Object()->enableExitScheduler();
+        BackEnd::awaken();
         continue;
       case SCRIPT_CHECKPOINT:
         iout << "CHECKPOINTING POSITIONS AT STEP " << simParams->firstTimestep
           << "\n" << endi;
         checkpoint_lattice = state->lattice;
         checkpoint_langevinPiston_strainRate = langevinPiston_strainRate;
-        Node::Object()->enableExitScheduler();
+        BackEnd::awaken();
         continue;
       case SCRIPT_REVERT:
         iout << "REVERTING POSITIONS AT STEP " << simParams->firstTimestep
           << "\n" << endi;
         state->lattice = checkpoint_lattice;
         langevinPiston_strainRate = checkpoint_langevinPiston_strainRate;
-        Node::Object()->enableExitScheduler();
+        BackEnd::awaken();
         continue;
     }
 
     if ( simParams->minimizeCGOn ) {
       minimize();
       if (! simParams->tclOn) break;
-      Node::Object()->enableExitScheduler();
+      BackEnd::awaken();
       continue;
     }
 
@@ -176,10 +177,10 @@ void Controller::algorithm(void)
     }
 
     if (! simParams->tclOn) break;
-    Node::Object()->enableExitScheduler();
+    BackEnd::awaken();
   }
   if (! simParams->tclOn) {
-    Node::Object()->enableExitScheduler();
+    BackEnd::awaken();
     if ( broadcast->scriptBarrier.get(scriptSeq++) != SCRIPT_END )
       NAMD_bug("SCRIPT_END not received properly in Controller.");
   }
@@ -192,7 +193,7 @@ void Controller::algorithm(void)
   printMinimizeEnergies(step); \
   rebalanceLoad(step); \
   if ( step == numberOfSteps ) { \
-    Node::Object()->enableExitScheduler(); \
+    BackEnd::awaken(); \
     return; \
   } else ++step;
 
@@ -1197,7 +1198,7 @@ void Controller::cycleBarrier(int doBarrier, int step) {
 }
 
 void Controller::terminate(void) {
-  Node::Object()->enableHaltBarrier();
+  BackEnd::awaken();
   CthFree(thread);
   CthSuspend();
 }

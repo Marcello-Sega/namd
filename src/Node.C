@@ -54,6 +54,7 @@
 #include "ScriptTcl.h"
 #include "ComputeMgr.decl.h"
 #include "Sync.h"
+#include "BackEnd.h"
 
 #if(CMK_CCS_AVAILABLE)
 extern "C" void CApplicationInit();
@@ -139,21 +140,6 @@ Node::~Node(void)
 
 //----------------------------------------------------------------------
 // Startup Sequence
-
-#ifdef NAMD_TCL
-void Node::enableStartupCont(Namd *n) {
-  namd = n;
-  // CkPrintf("Starting quiescence detection for startup thread.\n");
-  CkStartQD(CProxy_Node::ckIdx_startupCont((CkQdMsg*)0),&thishandle);
-}
-
-void Node::startupCont(CkQdMsg *) {
-  // CkPrintf("Startup thread suspended, continuing with startup.\n");
-  //namd->startupCont();
-}
-#else
-void Node::startupCont(CkQdMsg *) { ; }
-#endif
 
 void Node::messageStartUp() {
   CProxy_Node(CpvAccess(BOCclass_group).node).startup();
@@ -397,32 +383,6 @@ void Node::scriptParam(ScriptParamMsg *msg) {
 }
 
 
-//-----------------------------------------------------------------------
-// Node haltBarrier() - terminate program at end of run
-//-----------------------------------------------------------------------
-
-void Node::enableHaltBarrier() {
-  //CkStartQD(CProxy_Node::ckIdx_haltBarrier((CkQdMsg*)0),&thishandle);
-  enableExitScheduler();
-}
-
-void Node::haltBarrier(CkQdMsg *qmsg) {
-  delete qmsg;
-  //Namd::namdDone();
-}
-
-
-//-----------------------------------------------------------------------
-// Deal with quiescence - this terminates the program (for now)
-//-----------------------------------------------------------------------
-void Node::quiescence(CkQdMsg * msg)
-{
-  delete msg;
-
-  iout << iINFO << iPE << "Quiescence detected, exiting Charm.\n" << endi;
-  CkExit();
-}
-
 void Node::sendEnableExitScheduler(void) {
   //CmiPrintf("sendEnableExitScheduler\n");
   CkQdMsg *msg = new CkQdMsg;
@@ -436,13 +396,40 @@ void Node::recvEnableExitScheduler(CkQdMsg *msg) {
 }
 
 void Node::enableExitScheduler(void) {
-  //CmiPrintf("enableExitScheduler\n");
-  CkStartQD(CProxy_Node::ckIdx_exitScheduler((CkQdMsg*)0),&thishandle);
+  if ( CkMyPe() ) {
+    sendEnableExitScheduler();
+  } else {
+    CkStartQD(CProxy_Node::ckIdx_exitScheduler((CkQdMsg*)0),&thishandle);
+  }
 }
 
 void Node::exitScheduler(CkQdMsg *msg) {
   //CmiPrintf("exitScheduler %d\n",CkMyPe());
   CsdExitScheduler();
+  delete msg;
+}
+
+void Node::sendEnableEarlyExit(void) {
+  CkQdMsg *msg = new CkQdMsg;
+  CProxy_Node(thisgroup).recvEnableEarlyExit(msg,0);
+}
+
+void Node::recvEnableEarlyExit(CkQdMsg *msg) {
+  delete msg;
+  enableEarlyExit();
+}
+
+void Node::enableEarlyExit(void) {
+  if ( CkMyPe() ) {
+    sendEnableEarlyExit();
+  } else {
+    CkStartQD(CProxy_Node::ckIdx_earlyExit((CkQdMsg*)0),&thishandle);
+  }
+}
+
+void Node::earlyExit(CkQdMsg *msg) {
+  iout << iERROR << "Exiting prematurely.\n" << endi;
+  BackEnd::exit();
   delete msg;
 }
 
