@@ -777,6 +777,9 @@ void Controller::printEnergies(int seq)
       const double elapsedC = 
 	(endCTime - startCTime) / simParams->outputTiming;
 
+      const double remainingW = elapsedW * (simParams->N - seq);
+      const double remainingW_hours = remainingW / 3600;
+
       startWTime = endWTime;
       startCTime = endCTime;
 
@@ -784,7 +787,7 @@ void Controller::printEnergies(int seq)
         iout << "TIMING: " << seq
              << "  CPU: " << endCTime << ", " << elapsedC << "/step"
              << "  Wall: " << endWTime << ", " << elapsedW << "/step"
-             << "\n" << endi;
+             << ", " << remainingW_hours << " hours remaining\n" << endi;
       }
     }
 
@@ -844,12 +847,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1057 $	$Date: 1999/03/10 05:11:33 $
+ *	$Revision: 1.1058 $	$Date: 1999/03/10 21:48:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1058  1999/03/10 21:48:26  jim
+ * Added remaining time to timing output.
+ *
  * Revision 1.1057  1999/03/10 05:11:33  jim
  * Added reassignHold parameter.
  *
