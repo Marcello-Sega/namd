@@ -10,7 +10,6 @@ LINK = link /nologo /subsystem:console /incremental:no \
 
 CXXOPTS = /O2 /G6
 CXXTHREADOPTS = /G6
-CXXSIMPARAMOPTS = $(CXXOPTS)
 COPTS = /O2 /G6
 LINKOPTS = /OPT:REF
 

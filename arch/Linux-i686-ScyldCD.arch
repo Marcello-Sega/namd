@@ -1,9 +1,4 @@
-NAMD_ARCH = Linux-i686
-CHARMARCH = net-linux-scyld
+include .rootdir/arch/Linux-i686-Scyld.arch
 
-CXX = g++ -DSOCKLEN_T=socklen_t -DSCYLD_NOTICE
-CXXOPTS = -O3 -Wall -march=pentiumpro -ffast-math
-CXXTHREADOPTS = $(CXXOPTS)
-CXXSIMPARAMOPTS = $(CXXOPTS)
-CC = gcc
-COPTS = -O3 -march=pentiumpro -ffast-math
+SCYLDFLAGS = -DSCYLD_NOTICE
+

@@ -10,7 +10,7 @@ COPTO = -o $(SPACE)
 include Makearch
 
 # pass version/platform information to compile
-RELEASE=$(COPTD)NAMD_VERSION=\"$(NAMD_VERSION)\" $(COPTD)NAMD_PLATFORM=\"$(NAMD_PLATFORM)\"
+RELEASE=$(COPTD)NAMD_VERSION=\"$(NAMD_VERSION)\" $(COPTD)NAMD_PLATFORM=\"$(NAMD_PLATFORM)\" $(SCYLDFLAGS)
 
 # directories
 SRCDIR = src
@@ -32,6 +32,10 @@ DPMEDIR=dpme2
 #DPMEFLAGS=$(COPTD)DPME
 #DPME=$(DPMEINCL) $(DPMEFLAGS)
 #DPMELIBS= $(DPMEDIR)/libdpme.a
+
+# defaults for special cases
+CXXTHREADOPTS = $(CXXOPTS)
+CXXSIMPARAMOPTS = $(CXXOPTS)
 
 include Makearch
 

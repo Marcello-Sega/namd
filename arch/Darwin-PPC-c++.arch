@@ -2,9 +2,8 @@ NAMD_ARCH = Darwin-PPC
 CHARMARCH = net-ppc-darwin
 
 CXX = c++ -D_NO_MALLOC_H
-CXXOPTS = -O2 -Wall
+CXXOPTS = -O4 -fomit-frame-pointer -ffast-math -Wall
 CXXTHREADOPTS = 
-CXXSIMPARAMOPTS = $(CXXOPTS)
 CC = cc
-COPTS = -O2
+COPTS = -O4 -fomit-frame-pointer -ffast-math
 

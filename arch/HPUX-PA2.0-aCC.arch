@@ -3,8 +3,6 @@ CHARMARCH = net-hp-acc
 
 CXX = aCC
 CXXOPTS = -O +Oaggressive +DA2.0 +DS2.0
-CXXTHREADOPTS = $(CXXOPTS)
-CXXSIMPARAMOPTS = $(CXXOPTS)
 CC = cc -Aa -Wp,-H16000 -D_HPUX_SOURCE
 COPTS = -O +Oaggressive +DA2.0 +DS2.0
 

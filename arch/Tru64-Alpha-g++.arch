@@ -3,8 +3,6 @@ CHARMARCH = net-axp
 
 CXX = g++
 CXXOPTS = -O3 -ffast-math
-CXXTHREADOPTS = $(CXXOPTS)
-CXXSIMPARAMOPTS = $(CXXOPTS)
 CC = cc
 COPTS = -O3 -ffast-math
 

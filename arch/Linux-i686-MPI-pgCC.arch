@@ -3,7 +3,6 @@ CHARMARCH = mpi-linux-vmi-pgcc
 
 CXX = pgCC -DSOCKLEN_T=socklen_t
 CXXOPTS = -O2 --no_exceptions -tp p6
-CXXTHREADOPTS = $(CXXOPTS)
-CXXSIMPARAMOPTS = $(CXXOPTS)
 CC = pgcc
 COPTS = -fast -Mvect=assoc,prefetch -tp p6
+
