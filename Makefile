@@ -17,7 +17,8 @@ DSTDIR = obj
 # temp include directory for cifiles
 INCDIR = inc
 # Libraries we may have changed
-LIBS = dpmta2/mpole/libmpole.a dpmta2/src/libdpmta2.a pvm3/libpvmc.a dpme2/libdpme2.a
+LIBS = dpmta2/mpole/libmpole.a dpmta2/src/libdpmta2.a pvm3/libpvmc.a
+# dpme2/libdpme2.a
 
 
 #####
