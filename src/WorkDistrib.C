@@ -19,7 +19,7 @@
 #include "BOCgroup.h"
 #include "WorkDistrib.decl.h"
 #include "WorkDistrib.h"
-
+#include "ComlibManager.h"
 #include "main.decl.h"
 #include "main.h"
 #include "Node.h"

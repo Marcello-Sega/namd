@@ -15,6 +15,7 @@
 #include "PatchMap.h"
 #include "AtomMap.h"
 
+#include "ComlibManager.h"
 #include "main.decl.h"
 #include "main.h"
 

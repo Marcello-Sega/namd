@@ -8,8 +8,13 @@
 #include "InfoStream.h"
 #include "memusage.h"
 
+#ifdef USE_COMM_LIB
+#include "ComlibManager.h"
+#endif
+
 #include "main.decl.h"
 #include "main.h"
+
 
 #ifndef WIN32
 
@@ -29,6 +34,7 @@
 #include <netinet/in.h>
 #include <pwd.h>
 
+CkGroupID delegateMgr;
 
 int send_dgram(const char *host_addr, int port, const char *buf, int buflen) {
   struct sockaddr_in addr;
@@ -93,6 +99,11 @@ class main : public Chare
 public:
   main(CkArgMsg *)
   {
+
+#ifdef USE_COMM_LIB
+    delegateMgr = CProxy_ComlibManager::ckNew(USE_MESH, 1);
+#endif
+
     // print banner
     iout << iINFO << "NAMD " << NAMD_VERSION << " for " << NAMD_PLATFORM
          << "\n"
@@ -140,7 +151,6 @@ public:
 
     iout << iINFO << "Running on " << CmiNumPes() << " processors.\n" << endi;
     iout << iINFO << (memusage()/1024) << " kB of memory in use.\n" << endi;
-
   }
 
 };

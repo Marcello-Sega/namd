@@ -31,6 +31,10 @@
 #include "varsizemsg.h"
 #include "Random.h"
 
+#ifdef USE_COMM_LIB
+#include "ComlibManager.h"
+#endif
+
 #ifndef SQRT_PI
 #define SQRT_PI 1.7724538509055160273 /* mathematica 15 digits*/
 #endif
@@ -72,11 +76,99 @@ public:
 
 };
 
-
 struct LocalPmeInfo {
   int nx, x_start;
   int ny_after_transpose, y_start_after_transpose;
 };
+
+
+//Assigns gridPeMap and transPeMap to the same set of processors.
+void generatePmePeList(int *peMap, int numPes){
+  // decide which pes to use by bit reversal
+  int i;
+  int ncpus = CkNumPes();
+  
+  // find next highest power of two
+  int npow2 = 1;  int nbits = 0;
+  while ( npow2 < ncpus ) { npow2 *= 2; nbits += 1; }
+  
+  // build bit reversal sequence
+  SortableResizeArray<int> seq(ncpus);
+  i = 0;
+  for ( int icpu=0; icpu<ncpus; ++icpu ) {
+    int ri;
+    for ( ri = ncpus; ri >= ncpus; ++i ) {
+      ri = 0;
+      int pow2 = 1;
+      int rpow2 = npow2 / 2;
+      for ( int j=0; j<nbits; ++j ) {
+        ri += rpow2 * ( ( i / pow2 ) % 2 );
+        pow2 *= 2;  rpow2 /= 2;
+      }
+    }
+    seq[icpu] = ri;
+  }
+  
+  // extract and sort PME locations
+  for ( i=0; i<numPes; ++i ) {
+    seq[i] = seq[ncpus - numPes + i];
+  }
+  seq.resize(numPes);
+  seq.sort();
+  
+  for ( i=0; i<numPes; ++i ) 
+      peMap[i] = seq[i];
+
+  //peMap[0] = 0;
+}
+
+//Assigns gridPeMap and transPeMap to different set of processors.
+void generatePmePeList2(int *gridPeMap, int numGridPes, int *transPeMap, int numTransPes){
+  // decide which pes to use by bit reversal
+  int i;
+  int ncpus = CkNumPes();
+  
+  // find next highest power of two
+  int npow2 = 1;  int nbits = 0;
+  while ( npow2 < ncpus ) { npow2 *= 2; nbits += 1; }
+  
+  // build bit reversal sequence
+  SortableResizeArray<int> seq(ncpus);
+  SortableResizeArray<int> seq2(ncpus);
+  i = 0;
+  for ( int icpu=0; icpu<ncpus; ++icpu ) {
+    int ri;
+    for ( ri = ncpus; ri >= ncpus; ++i ) {
+      ri = 0;
+      int pow2 = 1;
+      int rpow2 = npow2 / 2;
+      for ( int j=0; j<nbits; ++j ) {
+        ri += rpow2 * ( ( i / pow2 ) % 2 );
+        pow2 *= 2;  rpow2 /= 2;
+      }
+    }
+    seq[icpu] = ri;
+    seq2[icpu] = ri;
+  }
+  
+  // extract and sort PME locations
+  for ( i=0; i<numGridPes; ++i ) {
+    seq[i] = seq[ncpus - numGridPes + i];
+  }
+  seq.resize(numGridPes);
+  seq.sort();
+  if ( ncpus > numTransPes ) {
+    seq2.del(0);  // node 0 should be first in list
+  }
+  seq2.resize(numTransPes);
+  seq2.sort();
+  
+  for ( i=0; i<numGridPes; ++i ) 
+    gridPeMap[i] = seq[i];
+
+  for ( i=0; i<numTransPes; ++i ) 
+    transPeMap[i] = seq2[i];
+}
 
 class ComputePmeMgr : public BOCclass {
 public:
@@ -102,6 +194,7 @@ public:
 
 private:
   CProxy_ComputePmeMgr pmeProxy;
+  CProxy_ComputePmeMgr pmeProxyDir;
   ComputePme *pmeCompute;
   PmeGrid myGrid;
   Lattice lattice;
@@ -146,8 +239,18 @@ private:
   PmeReduction recip_evir2[PME_MAX_EVALS];
 };
 
-ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), pmeCompute(0) {
+#ifdef USE_COMM_LIB
+extern CkGroupID delegateMgr;
+#endif 
+
+ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), pmeProxyDir(thisgroup), pmeCompute(0) {
+
   CpvAccess(BOCclass_group).computePmeMgr = thisgroup;
+
+#ifdef USE_COMM_LIB
+  pmeProxy.ckDelegate(delegateMgr);
+#endif
+
   myKSpace = 0;
   localInfo = new LocalPmeInfo[CkNumPes()];
   gridPeMap = new int[CkNumPes()];
@@ -228,57 +331,39 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     rand.reorder(transPeOrder,numTransPes);
   }
 
-  {  // decide which pes to use by bit reversal
-    int i;
-    int ncpus = CkNumPes();
+  //generatePmePeList2(gridPeMap, numGridPes, transPeMap, numTransPes);
+  
+  if(numTransPes > numGridPes) {
+    generatePmePeList(transPeMap, numTransPes);
+    gridPeMap = transPeMap;
 
-    // find next highest power of two
-    int npow2 = 1;  int nbits = 0;
-    while ( npow2 < ncpus ) { npow2 *= 2; nbits += 1; }
+#ifdef USE_COMM_LIB
+    if(CkMyPe() == 0) {
+      CProxy_ComlibManager gproxy(delegateMgr);
+      gproxy.ckLocalBranch()->createId(transPeMap, numTransPes);
+    }
+#endif
+  }
+  else {
+    generatePmePeList(gridPeMap, numGridPes);
+    transPeMap = gridPeMap;
 
-    // build bit reversal sequence
-    SortableResizeArray<int> seq(ncpus);
-    SortableResizeArray<int> seq2(ncpus);
-    i = 0;
-    for ( int icpu=0; icpu<ncpus; ++icpu ) {
-      int ri;
-      for ( ri = ncpus; ri >= ncpus; ++i ) {
-        ri = 0;
-        int pow2 = 1;
-        int rpow2 = npow2 / 2;
-        for ( int j=0; j<nbits; ++j ) {
-          ri += rpow2 * ( ( i / pow2 ) % 2 );
-          pow2 *= 2;  rpow2 /= 2;
-        }
-      }
-      seq[icpu] = ri;
-      seq2[icpu] = ri;
+#ifdef USE_COMM_LIB
+    if(CkMyPe() == 0) {
+      CProxy_ComlibManager gproxy(delegateMgr);
+      gproxy.ckLocalBranch()->createId(gridPeMap, numGridPes);
     }
-
-    // extract and sort PME locations
-    for ( i=0; i<numGridPes; ++i ) {
-      seq[i] = seq[ncpus - numGridPes + i];
-    }
-    seq.resize(numGridPes);
-    seq.sort();
-    if ( ncpus > numTransPes ) {
-      seq2.del(0);  // node 0 should be first in list
-    }
-    seq2.resize(numTransPes);
-    seq2.sort();
-
-    myGridPe = -1;
-    for ( i=0; i<numGridPes; ++i ) {
-      gridPeMap[i] = seq[i];
-      if ( gridPeMap[i] == CkMyPe() ) myGridPe = i;
-    }
-    myTransPe = -1;
-    for ( i=0; i<numTransPes; ++i ) {
-      transPeMap[i] = seq2[i];
-      if ( transPeMap[i] == CkMyPe() ) myTransPe = i;
-    }
+#endif
   }
 
+  myGridPe = -1;
+  int i = 0;
+  for ( i=0; i<numGridPes; ++i ) 
+    if ( gridPeMap[i] == CkMyPe() ) myGridPe = i;
+  myTransPe = -1;
+  for ( i=0; i<numTransPes; ++i ) 
+    if ( transPeMap[i] == CkMyPe() ) myTransPe = i;
+  
   if ( ! CkMyPe() ) {
     iout << iINFO << "PME GRID LOCATIONS:";
     int i;
@@ -386,9 +471,9 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   // the following only for nodes doing reciprocal sum
 
   if ( myTransPe >= 0 ) {
-  int k2_start = localInfo[myTransPe].y_start_after_transpose;
-  int k2_end = k2_start + localInfo[myTransPe].ny_after_transpose;
-  myKSpace = new PmeKSpace(myGrid, k2_start, k2_end);
+      int k2_start = localInfo[myTransPe].y_start_after_transpose;
+      int k2_end = k2_start + localInfo[myTransPe].ny_after_transpose;
+      myKSpace = new PmeKSpace(myGrid, k2_start, k2_end);
   }
 
   int local_size = myGrid.block1 * myGrid.K2 * myGrid.dim3;
@@ -497,9 +582,9 @@ void ComputePmeMgr::recvGrid(PmeGridMsg *msg) {
 
   if ( grid_count == 0 ) {
 #if CHARM_VERSION > 050402
-    pmeProxy[CkMyPe()].gridCalc1();
+    pmeProxyDir[CkMyPe()].gridCalc1();
 #else
-    pmeProxy.gridCalc1(CkMyPe());
+    pmeProxyDir.gridCalc1(CkMyPe());
 #endif
   }
 }
@@ -515,9 +600,9 @@ void ComputePmeMgr::gridCalc1(void) {
 #endif
 
 #if CHARM_VERSION > 050402
-  pmeProxy[CkMyPe()].sendTrans();
+  pmeProxyDir[CkMyPe()].sendTrans();
 #else
-  pmeProxy.sendTrans(CkMyPe());
+  pmeProxyDir.sendTrans(CkMyPe());
 #endif
 }
 
@@ -528,6 +613,12 @@ void ComputePmeMgr::sendTrans(void) {
   int nx = localInfo[myGridPe].nx;
   int x_start = localInfo[myGridPe].x_start;
   int slicelen = myGrid.K2 * zdim;
+
+#ifdef USE_COMM_LIB
+  CProxy_ComlibManager gproxy(delegateMgr);
+  gproxy.ckLocalBranch()->beginIteration();
+#endif
+
   for (int j=0; j<numTransPes; j++) {
     int pe = transPeOrder[j];  // different order on each node
     LocalPmeInfo &li = localInfo[pe];
@@ -552,8 +643,18 @@ void ComputePmeMgr::sendTrans(void) {
     pmeProxy.recvTrans(newmsg,transPeMap[pe]);
 #endif
   }
-
+ 
   untrans_count = numTransPes;
+
+#ifdef USE_COMM_LIB
+  gproxy.ckLocalBranch()->endIteration();
+
+  if(myTransPe == -1){
+    // The recv ungrid iteration where this processor sends no data
+    gproxy.ckLocalBranch()->beginIteration();
+    gproxy.ckLocalBranch()->endIteration();
+  }
+#endif  
 }
 
 void ComputePmeMgr::recvTrans(PmeTransMsg *msg) {
@@ -577,9 +678,9 @@ void ComputePmeMgr::recvTrans(PmeTransMsg *msg) {
 
   if ( trans_count == 0 ) {
 #if CHARM_VERSION > 050402
-    pmeProxy[CkMyPe()].gridCalc2();
+    pmeProxyDir[CkMyPe()].gridCalc2();
 #else
-    pmeProxy.gridCalc2(CkMyPe());
+    pmeProxyDir.gridCalc2(CkMyPe());
 #endif
   }
 }
@@ -612,9 +713,9 @@ void ComputePmeMgr::gridCalc2(void) {
   }
 
 #if CHARM_VERSION > 050402
-  pmeProxy[CkMyPe()].sendUntrans();
+  pmeProxyDir[CkMyPe()].sendUntrans();
 #else
-  pmeProxy.sendUntrans(CkMyPe());
+  pmeProxyDir.sendUntrans(CkMyPe());
 #endif
 }
 
@@ -623,6 +724,11 @@ void ComputePmeMgr::sendUntrans(void) {
   int zdim = myGrid.dim3;
   int y_start = localInfo[myTransPe].y_start_after_transpose;
   int ny = localInfo[myTransPe].ny_after_transpose;
+
+#ifdef USE_COMM_LIB
+  CProxy_ComlibManager gproxy(delegateMgr);
+  gproxy.ckLocalBranch()->beginIteration();
+#endif  
 
   // send data for reverse transpose
   for (int j=0; j<numGridPes; j++) {
@@ -650,6 +756,10 @@ void ComputePmeMgr::sendUntrans(void) {
     pmeProxy.recvUntrans(newmsg,gridPeMap[pe]);
 #endif
   }
+
+#ifdef USE_COMM_LIB
+  gproxy.ckLocalBranch()->endIteration();
+#endif  
 
   trans_count = numGridPes;
 }
@@ -688,9 +798,9 @@ void ComputePmeMgr::recvUntrans(PmeUntransMsg *msg) {
 
   if ( untrans_count == 0 ) {
 #if CHARM_VERSION > 050402
-    pmeProxy[CkMyPe()].gridCalc3();
+    pmeProxyDir[CkMyPe()].gridCalc3();
 #else
-    pmeProxy.gridCalc3(CkMyPe());
+    pmeProxyDir.gridCalc3(CkMyPe());
 #endif
   }
 }
@@ -708,9 +818,9 @@ void ComputePmeMgr::gridCalc3(void) {
 #endif
 
 #if CHARM_VERSION > 050402
-  pmeProxy[CkMyPe()].sendUngrid();
+  pmeProxyDir[CkMyPe()].sendUngrid();
 #else
-  pmeProxy.sendUngrid(CkMyPe());
+  pmeProxyDir.sendUngrid(CkMyPe());
 #endif
 }
 
@@ -750,9 +860,9 @@ void ComputePmeMgr::sendUngrid(void) {
     newmsg->sourceNode = myGridPe;
 
 #if CHARM_VERSION > 050402
-    pmeProxy[pe].recvUngrid(newmsg);
+    pmeProxyDir[pe].recvUngrid(newmsg);
 #else
-    pmeProxy.recvUngrid(newmsg,pe);
+    pmeProxyDir.recvUngrid(newmsg,pe);
 #endif
   }
   grid_count = numSources;
@@ -771,9 +881,9 @@ void ComputePmeMgr::recvUngrid(PmeGridMsg *msg) {
 
   if ( ungrid_count == 0 ) {
 #if CHARM_VERSION > 050402
-    pmeProxy[CkMyPe()].ungridCalc();
+    pmeProxyDir[CkMyPe()].ungridCalc();
 #else
-    pmeProxy.ungridCalc(CkMyPe());
+    pmeProxyDir.ungridCalc(CkMyPe());
 #endif
   }
 }

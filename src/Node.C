@@ -29,6 +29,11 @@
 #include <converse.h>
 #include "memusage.h"
 #include "IMDOutput.h"
+
+#ifdef USE_COMM_LIB
+#include "ComlibManager.h"
+#endif
+
 #include "main.decl.h"
 #include "main.h"
 #include "WorkDistrib.h"

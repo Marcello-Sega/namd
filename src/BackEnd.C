@@ -15,6 +15,10 @@
 #include <new.h>
 #include <charm++.h>
 
+#ifdef USE_COMM_LIB
+#include "ComlibManager.h"
+#endif
+
 #include "main.decl.h"
 #include "main.h"
 #include "BOCgroup.h"
@@ -110,6 +114,7 @@ void BackEnd::init(int argc, char **argv) {
   group.computePmeMgr = CProxy_ComputePmeMgr::ckNew();
   group.computeExtMgr = CProxy_ComputeExtMgr::ckNew();
   group.sync = CProxy_Sync::ckNew();
+
 #if CHARM_VERSION > 050402
   CkChareID collectionMaster = CProxy_CollectionMaster::ckNew(0);
 #else

@@ -86,6 +86,7 @@ void ComputeMgr::updateComputes(int ep, CkGroupID chareID) {
     CkExit();
     return;
   }
+  
 #if CHARM_VERSION > 050402
   CkStartQD(CkIndex_ComputeMgr::updateComputes2((CkQdMsg*)0),&thishandle);
 #else
@@ -95,6 +96,7 @@ void ComputeMgr::updateComputes(int ep, CkGroupID chareID) {
 
 void ComputeMgr::updateComputes2(CkQdMsg *msg) {
   delete msg;
+
   CProxy_WorkDistrib wd(CpvAccess(BOCclass_group).workDistrib);
   WorkDistrib  *workDistrib = wd.ckLocalBranch();
 #if CHARM_VERSION > 050402

@@ -5,7 +5,7 @@
 **/
 
 #include "charm++.h"
-
+#include "ComlibManager.h"
 #include "main.decl.h"
 #include "main.h"
 #include "ProxyPatch.h"

@@ -413,6 +413,8 @@ void LdbCoordinator::rebalance(Controller *c)
   controllerReported = 1;
   controllerThread = c;
   checkAndGoToBarrier();
+
+  //CkPrintf("Suspending Threads at %d\n", CkMyPe());
   CthSuspend();
 }
 
@@ -449,6 +451,7 @@ int LdbCoordinator::checkAndGoToBarrier(void)
 void LdbCoordinator::nodeDone(void)
 {
   nodesDone++;
+
   if (nodesDone==Node::Object()->numNodes()) {
     nodesDone=0;
     ExecuteMigrations();
@@ -457,6 +460,7 @@ void LdbCoordinator::nodeDone(void)
 
 void LdbCoordinator::ExecuteMigrations(void)
 {
+
   while (migrations) {
     computeMap->setNewNode(migrations->id,migrations->to);
     Migration *const next = migrations->next;
@@ -472,7 +476,7 @@ void LdbCoordinator::ExecuteMigrations(void)
   ComputeMgr *computeMgr = cm.ckLocalBranch();
 #if CHARM_VERSION > 050402
   computeMgr->updateComputes(CkIndex_LdbCoordinator::
-			     updateComputesReady(),thisgroup);
+                             updateComputesReady(),thisgroup);
 #else
   computeMgr->updateComputes(CProxy_LdbCoordinator::
 			     ckIdx_updateComputesReady(),thisgroup);
@@ -543,6 +547,7 @@ void LdbCoordinator::updateComputesReady() {
 void LdbCoordinator::resume(void)
 {
   DebugM(3,"resume()\n");
+
   //  printLocalLdbReport();
 
   ldbCycleNum++;
@@ -550,6 +555,7 @@ void LdbCoordinator::resume(void)
 }
 
 void LdbCoordinator::resumeReady(CkQdMsg *msg) {
+
   DebugM(3,"resumeReady()\n");
   delete msg;
 
