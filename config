@@ -95,7 +95,11 @@ begin:
   ln -s .rootdir/Makefile ./Makefile
   ln -s .rootdir/Make.depends ./Make.depends
   echo "Linking src"
-  ln -s .rootdir/src ./src
+  if ( $ARCH:t =~ *MSVC* ) then
+    cp -r .rootdir/src ./src
+  else
+    ln -s .rootdir/src ./src
+  endif
   echo "Creating dpme2 and linking files"
   (cd $DIR/dpme2;find . -name CVS -prune -o -type d -print )|sed -e s@.@@> temp.d
   (cd $DIR/dpme2;find . -name CVS -prune -o -type f -print )|sed -e s@.@@> temp.f
