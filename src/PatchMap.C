@@ -129,7 +129,7 @@ void PatchMap::initialize(ScaledPosition xmin, ScaledPosition xmax,
     p.bMax = ((float)(p.bIndex+1)/(float)bDim) * bLength + bOrigin;
     p.cMax = ((float)(p.cIndex+1)/(float)cDim) * cLength + cOrigin;
     p.numCids = 0;
-    int max_computes = 100;
+    int max_computes = 200;
     p.cids = new int[max_computes];
     for ( int j = 0; j < max_computes; ++j ) p.cids[j] = -1;
     p.numCidsAllocated = max_computes;
