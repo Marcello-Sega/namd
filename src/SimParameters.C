@@ -11,7 +11,7 @@
  *
  *	$RCSfile: SimParameters.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/03/27 17:08:31 $
+ *	$Revision: 1.1011 $	$Date: 1997/03/31 19:23:04 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1011  1997/03/31 19:23:04  nealk
+ * Hard-coded +2 angstrom increase in patch margin when using hydrogen grouping.
+ *
  * Revision 1.1010  1997/03/27 17:08:31  nealk
  * Added hydrogen groupings.  Now configuration parameter "splitPatch" determines
  * atom-into-patch distribution.
@@ -348,7 +351,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1010 1997/03/27 17:08:31 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1011 1997/03/31 19:23:04 nealk Exp $";
 
 
 #include "ckdefs.h"
@@ -1094,7 +1097,11 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 	if (!strcasecmp(s, "position"))
 		splitPatch = SPLIT_PATCH_POSITION;
 	else if (!strcasecmp(s,"hydrogen"))
+		{
 		splitPatch = SPLIT_PATCH_HYDROGEN;
+		// increase margin by 1 hydrogen bond length
+		margin += 2;	// assume no greater than 2 angstroms
+		}
 	else
 	{
 		char err_msg[129];
@@ -2389,12 +2396,15 @@ void SimParameters::receive_SimParameters(Message *msg)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/03/27 17:08:31 $
+ *	$Revision: 1.1011 $	$Date: 1997/03/31 19:23:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1011  1997/03/31 19:23:04  nealk
+ * Hard-coded +2 angstrom increase in patch margin when using hydrogen grouping.
+ *
  * Revision 1.1010  1997/03/27 17:08:31  nealk
  * Added hydrogen groupings.  Now configuration parameter "splitPatch" determines
  * atom-into-patch distribution.
