@@ -118,6 +118,21 @@ void ComputeHomeTuples<T>::loadTuples() {
   }
   tupleList.rehash();
 
+  if ( node->simParameters->fixedAtomsOn ) {
+    Molecule *molecule = node->molecule;
+    UniqueSetIter<T> al(tupleList);
+    for (al = al.begin(); al != al.end(); al++ ) {
+      register int i;
+      T &t = *al;
+      register int all_fixed = molecule->is_atom_fixed(t.atomID[0]);
+      for ( i = 1; i < T::size && all_fixed; i++ ) {
+	all_fixed = molecule->is_atom_fixed(t.atomID[i]);
+      }
+      if ( all_fixed ) tupleList.del(t);
+    }
+    tupleList.rehash();
+  }
+
   // Resolve all atoms in tupleList to correct PatchList element and index
   UniqueSetIter<T> al(tupleList);
 
@@ -220,12 +235,15 @@ void ComputeHomeTuples<T>::doWork() {
  *
  *      $RCSfile: ComputeHomeTuples.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1012 $     $Date: 1997/08/26 16:26:12 $
+ *      $Revision: 1.1013 $     $Date: 1997/09/22 03:36:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.C,v $
+ * Revision 1.1013  1997/09/22 03:36:00  jim
+ * Sped up simulations involving fixed atoms.
+ *
  * Revision 1.1012  1997/08/26 16:26:12  jim
  * Revamped prioritites for petter performance and easier changes.
  *

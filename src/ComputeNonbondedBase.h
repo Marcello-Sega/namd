@@ -223,7 +223,7 @@ NOEXCL
     {
     pairlistindex = 0;	// initialize with 0 elements
     pairlistoffset=0;
-    int groupfixed = ( a_i.flags & GROUP_FIXED );
+    const int groupfixed = ( a_i.flags & GROUP_FIXED );
 
     // If patch divisions are not made by hydrogen groups, then
     // hydrogenGroupSize is set to 1 for all atoms.  Thus we can
@@ -294,9 +294,11 @@ NOEXCL
     )
   )
 
-  const BigReal kq_i_u = COLOUMB * a_i.charge * dielectric_1;
+    const int atomfixed = ( a_i.flags & ATOM_FIXED );
 
+    const BigReal kq_i_u = COLOUMB * a_i.charge * dielectric_1;
     const BigReal kq_i_s = kq_i_u * scale14;
+
     register const Position *p_j = p_1;
 
     NOHGROUPING
@@ -366,8 +368,11 @@ NOEXCL
 
 NOEXCL
 (
-      BigReal kq_i = kq_i_u;
       const AtomProperties & a_j = a_1[j];
+
+      if ( atomfixed && ( a_j.flags & ATOM_FIXED ) ) continue;
+
+      BigReal kq_i = kq_i_u;
 
       FULL
       (
@@ -633,12 +638,15 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1028 $	$Date: 1997/09/19 08:55:30 $
+ *	$Revision: 1.1029 $	$Date: 1997/09/22 03:36:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1029  1997/09/22 03:36:01  jim
+ * Sped up simulations involving fixed atoms.
+ *
  * Revision 1.1028  1997/09/19 08:55:30  jim
  * Added rudimentary but relatively efficient fixed atoms.  New options
  * are fixedatoms, fixedatomsfile, and fixedatomscol (nonzero means fixed).

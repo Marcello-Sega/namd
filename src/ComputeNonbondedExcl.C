@@ -100,9 +100,22 @@ ComputeNonbondedExcls::loadTuples() {
        }
     }
   }
-  for (i=0; i<numExclusions; i++) {
-    if (exclFlag[i]) {
-      tupleList.load(NonbondedExclElem(node->molecule->get_exclusion(i)));
+
+  if ( node->simParameters->fixedAtomsOn ) {
+    Molecule *molecule = node->molecule;
+    for (i=0; i<numExclusions; i++) {
+      if (exclFlag[i]) {
+	Exclusion *excl = molecule->get_exclusion(i);
+	if ( ! ( molecule->is_atom_fixed(excl->atom1) &&
+		 molecule->is_atom_fixed(excl->atom2) ) )
+	  tupleList.load(NonbondedExclElem(excl));
+      }
+    }
+  } else {
+    for (i=0; i<numExclusions; i++) {
+      if (exclFlag[i]) {
+	tupleList.load(NonbondedExclElem(node->molecule->get_exclusion(i)));
+      }
     }
   }
   delete[] exclFlag;
@@ -131,13 +144,16 @@ ComputeNonbondedExcls::loadTuples() {
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedExcl.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1997/08/12 22:18:41 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1015 $	$Date: 1997/09/22 03:36:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedExcl.C,v $
+ * Revision 1.1015  1997/09/22 03:36:02  jim
+ * Sped up simulations involving fixed atoms.
+ *
  * Revision 1.1014  1997/08/12 22:18:41  milind
  * Made NAMD2 to link on Solaris machines.
  *
