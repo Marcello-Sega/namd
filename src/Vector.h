@@ -31,6 +31,9 @@ class Vector {
      inline Vector( BigReal newx, BigReal newy, BigReal newz)
        : x(newx), y(newy), z(newz) { ; }
 
+     inline Vector( BigReal newv )  // allow Vector v = 0; etc.
+       : x(newv), y(newv), z(newv) { ; }
+
      inline Vector(const FloatVector &v) : x(v.x), y(v.y), z(v.z) { ; }
 
      inline BigReal &operator[](int i) {
