@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *  $RCSfile: CommunicateConverse.C,v $
- *  $Author: nealk $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1002 $  $Date: 1997/02/28 16:13:50 $
+ *  $Author: brunner $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1003 $  $Date: 1997/03/04 23:36:29 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -21,7 +21,7 @@
  * send/receive data.
  * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/CommunicateConverse.C,v 1.1002 1997/02/28 16:13:50 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/CommunicateConverse.C,v 1.1003 1997/03/04 23:36:29 brunner Exp $";
 
 #include <iostream.h>
 #include <string.h>
@@ -488,8 +488,7 @@ CommunicateConverse::CommunicateConverse(int argc, char *argv[], int dbg)
   CpvAccess(CsmMessages) = CmmNew();
 
   // Initialize PVM-converse library
-  pvmc_init_bufs();
-  pvmc_init_comm();
+  pvmc_init();
 
   // initialize superclass
   TotalNodes = CmiNumPes();
