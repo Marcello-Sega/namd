@@ -734,24 +734,29 @@ void Controller::printEnergies(int step)
     }
 
     int stepInRun = step - simParams->firstTimestep;
+    int benchPhase;
     if ( stepInRun % simParams->firstLdbStep == 0 )
-    switch ( stepInRun / simParams->firstLdbStep )
+    switch ( benchPhase = stepInRun / simParams->firstLdbStep )
     {
     case 0:
-      startBenchTime = CmiWallTimer();
-      break;
-    case 1:
-      iout << iINFO << "Initial time per step: "
-	   << ( (CmiWallTimer() - startBenchTime) / simParams->firstLdbStep )
-	   << "\n" << endi;
-      break;
     case 2:
       startBenchTime = CmiWallTimer();
       break;
+    case 1:
     case 3:
-      iout << iINFO << "Benchmark time per step: "
-	   << ( (CmiWallTimer() - startBenchTime) / simParams->firstLdbStep )
-	   << "\n" << endi;
+      iout << iINFO;
+      if ( benchPhase == 1 ) iout << "Initial time: ";
+      else iout << "Benchmark time: ";
+      {
+        BigReal wallTime = CmiWallTimer() - startBenchTime;
+        BigReal wallPerStep =
+		(CmiWallTimer() - startBenchTime) / simParams->firstLdbStep;
+	BigReal ns = simParams->dt / 1000000.0;
+	BigReal days = 1.0 / (24.0 * 60.0 * 60.0);
+	BigReal daysPerNano = wallPerStep * days / ns;
+	iout << wallPerStep << " s/step "
+		<< daysPerNano << " days/ns\n" << endi;
+      }
       break;
     }
 

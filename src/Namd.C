@@ -122,19 +122,10 @@ void Namd::startup(char *confFile)
 
 // last call of system
 void Namd::namdDone(void) {
-    CkPrintf("==========================================\n");
     Real CPUtime = CmiCpuTimer()-cmiCpuFirstStart;
     Real Walltime = CmiWallTimer()-cmiWallFirstStart;
-    CkPrintf("WallClock : %f  CPUTime : %f \n",Walltime,CPUtime);
-
-    // femtoseconds
-    SimParameters *params = Node::Object()->simParameters;
-    BigReal fs = (params->N - params->firstTimestep) * params->dt;
-    // scale to nanoseconds
-    BigReal ns = fs / 1000000.0;
-    BigReal days = 1.0 / (24.0 * 60.0 * 60.0);
-    CkPrintf("Days per ns:  WallClock : %lf  CPUTime : %lf \n",
-        days*Walltime/ns, days*CPUtime/ns);
+    CkPrintf("==========================================\n"
+	"WallClock : %f  CPUTime : %f \n",Walltime,CPUtime);
     CkExit();
 }
 
