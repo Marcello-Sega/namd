@@ -199,8 +199,11 @@ void Controller::integrate() {
     outputExtendedSystem(step);
     rebalanceLoad(step);
 
-    namd_sighandler_t oldhandler = signal(SIGINT, 
-        (namd_sighandler_t)my_sigint_handler);
+    // Handling SIGINT doesn't seem to be working on Lemieux, and it
+    // sometimes causes the net-xxx versions of NAMD to segfault on exit, 
+    // so disable it for now.
+    // namd_sighandler_t oldhandler = signal(SIGINT, 
+    //  (namd_sighandler_t)my_sigint_handler);
     for ( ++step ; step <= numberOfSteps; ++step )
     {
 
@@ -215,10 +218,10 @@ void Controller::integrate() {
         printDynamicsEnergies(step);
         outputFepEnergy(step);
         traceUserEvent(eventEndOfTimeStep);
-  if (gotsigint) {
-    iout << iINFO << "Received SIGINT; shutting down.\n" << endi;
-    NAMD_quit();
-  }
+  // if (gotsigint) {
+  //   iout << iINFO << "Received SIGINT; shutting down.\n" << endi;
+  //   NAMD_quit();
+  // }
         outputExtendedSystem(step);
 #if CYCLE_BARRIER
         cycleBarrier(!((step+1) % stepsPerCycle),step);
@@ -232,7 +235,7 @@ void Controller::integrate() {
         cycleBarrier(dofull && !((step+1)%slowFreq),step);   // step before PME
 #endif
     }
-    signal(SIGINT, oldhandler);
+    // signal(SIGINT, oldhandler);
 }
 
 
