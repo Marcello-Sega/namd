@@ -121,6 +121,7 @@ private:
   int numSources;
   int numRecipPes;
   int numDestRecipPes;
+  int firstDestRecipPe;
   int myRecipPe;
   int *recipPeMap;
   int *recipPeDest;
@@ -282,8 +283,21 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     if ( source_flags[node] ) ++numSources;
     if ( recipPeDest[node] ) ++numDestRecipPes;
   }
-  CkPrintf("PME on node %d has %d sources and %d destinations\n",
-            CkMyPe(), numSources, numDestRecipPes);
+
+  firstDestRecipPe = CkMyPe() % numDestRecipPes;
+  int c = 0;
+  for ( node=0; node<numNodes ; ++node ) {
+    if ( recipPeDest[node] ) {
+      if ( c == firstDestRecipPe ) {
+        firstDestRecipPe = node;
+        break;
+      }
+      ++c;
+    }
+  }
+
+  // CkPrintf("PME on node %d has %d sources and %d destinations (first=%d)\n",
+  //           CkMyPe(), numSources, numDestRecipPes,firstDestRecipPe);
 
   }  // decide how many pes this node exchanges charges with (end)
 
@@ -348,7 +362,7 @@ ComputePmeMgr::~ComputePmeMgr() {
 }
 
 void ComputePmeMgr::sendGrid(void) {
-  pmeCompute->sendData(numRecipPes,recipPeDest,recipPeMap);
+  pmeCompute->sendData(numRecipPes,firstDestRecipPe,recipPeDest,recipPeMap);
 }
 
 void ComputePmeMgr::recvGrid(PmeGridMsg *msg) {
@@ -408,7 +422,8 @@ void ComputePmeMgr::sendTrans(void) {
   int nx = localInfo[myRecipPe].nx;
   int x_start = localInfo[myRecipPe].x_start;
   int slicelen = myGrid.K2 * zdim;
-  for ( int pe=0; pe<numRecipPes; ++pe ) {
+  for (int j=0; j<numRecipPes; j++) {
+    int pe = ( j + myRecipPe ) % numRecipPes;  // different order on each node
     LocalPmeInfo &li = localInfo[pe];
     int cpylen = li.ny_after_transpose * zdim;
     PmeTransMsg *newmsg = new (nx * cpylen,0) PmeTransMsg;
@@ -508,7 +523,8 @@ void ComputePmeMgr::sendUntrans(void) {
   int ny = localInfo[myRecipPe].ny_after_transpose;
 
   // send data for reverse transpose
-  for ( int pe=0; pe<numRecipPes; ++pe ) {
+  for (int j=0; j<numRecipPes; j++) {
+    int pe = ( j + myRecipPe ) % numRecipPes;  // different order on each node
     LocalPmeInfo &li = localInfo[pe];
     int x_start =li.x_start;
     int nx = li.nx;
@@ -850,7 +866,8 @@ void ComputePme::doWork()
 #endif
 }
 
-void ComputePme::sendData(int numRecipPes, int *recipPeDest, int *recipPeMap) {
+void ComputePme::sendData(int numRecipPes, int firstDestRecipPe,
+				int *recipPeDest, int *recipPeMap) {
 
   // iout << "Sending charge grid for " << numLocalAtoms << " atoms to FFT on " << iPE << ".\n" << endi;
 
@@ -864,7 +881,7 @@ void ComputePme::sendData(int numRecipPes, int *recipPeDest, int *recipPeMap) {
 
   CProxy_ComputePmeMgr pmeProxy(CpvAccess(BOCclass_group).computePmeMgr);
   for (int j=0; j<numRecipPes; j++) {
-    int pe = ( j + CkMyPe() ) % numRecipPes;  // different order on each node
+    int pe = ( j + firstDestRecipPe ) % numRecipPes;  // different order
     int start = pe * bsize;
     int len = bsize;
     if ( start >= qsize ) { start = 0; len = 0; }
