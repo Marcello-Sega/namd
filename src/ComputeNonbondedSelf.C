@@ -17,7 +17,7 @@
 #include "LdbCoordinator.h"
 
 #define MIN_DEBUG_LEVEL 4
-#define DEBUGM
+//#define DEBUGM
 #include "Debug.h"
 
 ComputeNonbondedSelf::ComputeNonbondedSelf(ComputeID c, PatchID pid)
@@ -67,13 +67,17 @@ void ComputeNonbondedSelf::doForce(Position* p,
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedSelf.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/03/27 20:25:43 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1007 $	$Date: 1997/04/06 22:45:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.C,v $
+ * Revision 1.1007  1997/04/06 22:45:02  ari
+ * Add priorities to messages.  Mods to help proxies without computes.
+ * Added quick enhancement to end of list insertion of ResizeArray(s)
+ *
  * Revision 1.1006  1997/03/27 20:25:43  brunner
  * Changes for LdbCoordinator, the load balance control BOC
  *

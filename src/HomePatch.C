@@ -32,13 +32,14 @@
 #include "PatchMgr.h"
 #include "Sequencer.h"
 #include "LdbCoordinator.h"
+#include "Priorities.h"
 
 #define MIN_DEBUG_LEVEL 4
 // #define DEBUGM
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1025 1997/03/31 16:12:51 nealk Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1026 1997/04/06 22:45:04 ari Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
 		     VelocityList vl) : Patch(pd,al,pl), v(vl) 
@@ -184,18 +185,24 @@ void HomePatch::positionsReady(int doMigration)
   for ( pli = pli.begin(); pli != pli.end(); ++pli )
   {
     if (doMigration) {
-      ProxyAllMsg *allmsg = new (MsgIndex(ProxyAllMsg)) ProxyAllMsg;
+      ProxyAllMsg *allmsg 
+	= new (MsgIndex(ProxyAllMsg),Priorities::numBits) ProxyAllMsg;
       allmsg->patch = patchID;
       allmsg->flags = flags;
       allmsg->positionList = p;
       allmsg->atomIDList = atomIDList;
+      *CPriorityPtr(allmsg) = Priorities::urgent;
+      CSetQueueing(allmsg, C_QUEUEING_IFIFO);
       DebugM(1, "atomIDList.size() = " << atomIDList.size() << " p.size() = " << p.size() << "\n" );
       ProxyMgr::Object()->sendProxyAll(allmsg,pli->node);
     } else {
-      ProxyDataMsg *nmsg = new (MsgIndex(ProxyDataMsg)) ProxyDataMsg;
+      ProxyDataMsg *nmsg 
+	= new (MsgIndex(ProxyDataMsg), Priorities::numBits) ProxyDataMsg;
       nmsg->patch = patchID;
       nmsg->flags = flags;
       nmsg->positionList = p;
+      *CPriorityPtr(nmsg) = Priorities::urgent;
+      CSetQueueing(nmsg, C_QUEUEING_IFIFO);
       ProxyMgr::Object()->sendProxyData(nmsg,pli->node);
     }   
   }
@@ -439,13 +446,17 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1025 $	$Date: 1997/03/31 16:12:51 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1026 $	$Date: 1997/04/06 22:45:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1026  1997/04/06 22:45:04  ari
+ * Add priorities to messages.  Mods to help proxies without computes.
+ * Added quick enhancement to end of list insertion of ResizeArray(s)
+ *
  * Revision 1.1025  1997/03/31 16:12:51  nealk
  * Atoms now can migrate by hydrogen groups.
  *

@@ -27,7 +27,7 @@
 #include "Priorities.h"
 
 #define MIN_DEBUG_LEVEL 5
-#define DEBUGM
+//#define DEBUGM
 #include "Debug.h"
 
 Node *Compute::node=0;
@@ -83,20 +83,24 @@ void Compute::doWork() {
 
 int Compute::priority(void)
 {
-  return Priorities::base;
+  return Priorities::low;
 }
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: Compute.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/04/04 23:34:14 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1009 $	$Date: 1997/04/06 22:44:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.C,v $
+ * Revision 1.1009  1997/04/06 22:44:57  ari
+ * Add priorities to messages.  Mods to help proxies without computes.
+ * Added quick enhancement to end of list insertion of ResizeArray(s)
+ *
  * Revision 1.1008  1997/04/04 23:34:14  milind
  * Got NAMD2 to run on Origin2000.
  * Included definitions of class static variables in C files.

@@ -28,7 +28,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1013 1997/04/04 17:31:42 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1014 1997/04/06 22:45:13 ari Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -42,6 +42,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMg
 
 #include "Node.h"
 #include "SimParameters.h"
+
+#include "Priorities.h"
 
 // determine whether PANIC sequence checking is performed (debugging)
 // #define PANIC 2
@@ -558,10 +560,13 @@ void	ReductionMgr::submit(int seq, ReductionTag tag, BigReal data,
     // don't send the data if this object IS the collector
     if (CMyPe() != 0)
     {
-      ReductionDataMsg *m = new (MsgIndex(ReductionDataMsg)) ReductionDataMsg;
+      ReductionDataMsg *m 
+	= new (MsgIndex(ReductionDataMsg),Priorities::numBits) ReductionDataMsg;
       m->seq = seq;
       m->tag = tag;
       m->data = current->tagData[tag];
+      *CPriorityPtr(m) = Priorities::high;
+      CSetQueueing(m, C_QUEUEING_IFIFO);
       DebugM(4,"Sending seq=" << seq
 		 << " tag=" << tag
      		 << " data=" << m->data
@@ -619,10 +624,13 @@ void	ReductionMgr::submit(int seq, ReductionTag tag)
     // don't send the data if this object IS the collector
     if (CMyPe() != 0)
     {
-      ReductionDataMsg *m = new (MsgIndex(ReductionDataMsg)) ReductionDataMsg;
+      ReductionDataMsg *m 
+	= new (MsgIndex(ReductionDataMsg),Priorities::numBits) ReductionDataMsg;
       m->seq = seq;
       m->tag = tag;
       m->data = current->tagData[tag];
+      *CPriorityPtr(m) = Priorities::high;
+      CSetQueueing(m, C_QUEUEING_IFIFO);
       CSendMsgBranch(ReductionMgr, recvReductionData, m, thisgroup, 0);
       gotAllData(current);
     }
@@ -769,12 +777,16 @@ void	ReductionMgr::unsubscribe(ReductionTag tag)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1997/04/04 17:31:42 $
+ *	$Revision: 1.1014 $	$Date: 1997/04/06 22:45:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.C,v $
+ * Revision 1.1014  1997/04/06 22:45:13  ari
+ * Add priorities to messages.  Mods to help proxies without computes.
+ * Added quick enhancement to end of list insertion of ResizeArray(s)
+ *
  * Revision 1.1013  1997/04/04 17:31:42  brunner
  * New charm fixes for CommunicateConverse, and LdbCoordinator data file
  * output, required proxies, and idle time.

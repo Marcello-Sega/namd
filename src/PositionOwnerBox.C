@@ -9,7 +9,7 @@
 
 #undef MIN_DEBUG_LEVEL
 #define MIN_DEBUG_LEVEL 4
-#define DEBUGM
+//#define DEBUGM
 #include "Debug.h"
 
 template <class Owner>
@@ -95,12 +95,16 @@ template <class Owner>
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/04/04 23:34:25 $
+ *	$Revision: 1.1004 $	$Date: 1997/04/06 22:45:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PositionOwnerBox.C,v $
+ * Revision 1.1004  1997/04/06 22:45:09  ari
+ * Add priorities to messages.  Mods to help proxies without computes.
+ * Added quick enhancement to end of list insertion of ResizeArray(s)
+ *
  * Revision 1.1003  1997/04/04 23:34:25  milind
  * Got NAMD2 to run on Origin2000.
  * Included definitions of class static variables in C files.

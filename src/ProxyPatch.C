@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1009 1997/03/12 22:06:48 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1010 1997/04/06 22:45:12 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -24,6 +24,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.
 #include "ProxyMgr.top.h"
 #include "ProxyMgr.h"
 #include "AtomMap.h"
+#include "Priorities.h"
 
 #define MIN_DEBUG_LEVEL 4
 // #define  DEBUGM
@@ -105,10 +106,15 @@ void ProxyPatch::receiveAll(ProxyAllMsg *msg)
 
 void ProxyPatch::sendResults(void)
 {
-  ProxyResultMsg *msg = new (MsgIndex(ProxyResultMsg)) ProxyResultMsg;
+  ProxyResultMsg *msg 
+    = new (MsgIndex(ProxyResultMsg),Priorities::numBits) ProxyResultMsg;
   msg->node = CMyPe();
   msg->patch = patchID;
-  for ( int i = 0; i < Results::maxNumForces; ++i ) msg->forceList[i] = f[i];
+  register int i;
+  for ( i = 0; i < Results::maxNumForces; ++i ) 
+    msg->forceList[i] = f[i];
+  *CPriorityPtr(msg) = (unsigned int)Priorities::urgent;
+  CSetQueueing(msg, C_QUEUEING_IFIFO);
   ProxyMgr::Object()->sendResults(msg);
 }
 
@@ -116,13 +122,17 @@ void ProxyPatch::sendResults(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyPatch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/03/12 22:06:48 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1010 $	$Date: 1997/04/06 22:45:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.1010  1997/04/06 22:45:12  ari
+ * Add priorities to messages.  Mods to help proxies without computes.
+ * Added quick enhancement to end of list insertion of ResizeArray(s)
+ *
  * Revision 1.1009  1997/03/12 22:06:48  jim
  * First step towards multiple force returns and multiple time stepping.
  *

@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1009 1997/04/03 19:59:11 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1010 1997/04/06 22:45:07 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -240,15 +240,23 @@ void Patch::positionsReady(int doneMigration)
    atomPtr = a.unencap();
    atomBox.open(atomPtr);
 
-   DebugM(1,"Patch::positionsReady() - looping over positionComputeList\n");
-   DebugM(1,"Patch::positionsReady() - size " << positionComputeList.size() << "\n" );
-   // Iterate over compute objects that need to be informed we are ready
-   ComputeIDListIter cid(positionComputeList);
-   for(cid = cid.begin(); cid != cid.end(); cid++)
-   {
-     DebugM(1,"Patch::positionsReady() - cid = " << *cid << "\n" );
-     computeMap->compute(*cid)->patchReady(patchID,doneMigration);
+   // process computes or immediately close up boxes
+   if (!positionComputeList.size()) {
+     for (int i=0; i<3; i++) {
+       positionBoxClosed();
+       forceBoxClosed();
+       atomBoxClosed();
+     }
    } 
+   else {
+     // Iterate over compute objects that need to be informed we are ready
+     ComputeIDListIter cid(positionComputeList);
+     for(cid = cid.begin(); cid != cid.end(); cid++)
+     {
+       DebugM(1,"Patch::positionsReady() - cid = " << *cid << "\n" );
+       computeMap->compute(*cid)->patchReady(patchID,doneMigration);
+     } 
+  }
 }
 
 
@@ -256,13 +264,17 @@ void Patch::positionsReady(int doneMigration)
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/04/03 19:59:11 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1010 $	$Date: 1997/04/06 22:45:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.1010  1997/04/06 22:45:07  ari
+ * Add priorities to messages.  Mods to help proxies without computes.
+ * Added quick enhancement to end of list insertion of ResizeArray(s)
+ *
  * Revision 1.1009  1997/04/03 19:59:11  nealk
  * 1) New Fopen() which handles .Z and .gz files.
  * 2) localWaters and localNonWaters lists on each patch.

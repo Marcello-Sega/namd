@@ -9,7 +9,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1014 1997/04/04 23:34:22 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1015 1997/04/06 22:45:06 ari Exp $";
 
 #include <unistd.h>
 #include "ckdefs.h"
@@ -20,7 +20,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "Namd.h"
 
 #define MIN_DEBUG_LEVEL 3
-#define DEBUGM
+//#define DEBUGM
 #include "Debug.h"
 
 #include <stdio.h>
@@ -443,13 +443,17 @@ void Node::saveMolDataPointers(NamdState *state)
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1997/04/04 23:34:22 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1015 $	$Date: 1997/04/06 22:45:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1015  1997/04/06 22:45:06  ari
+ * Add priorities to messages.  Mods to help proxies without computes.
+ * Added quick enhancement to end of list insertion of ResizeArray(s)
+ *
  * Revision 1.1014  1997/04/04 23:34:22  milind
  * Got NAMD2 to run on Origin2000.
  * Included definitions of class static variables in C files.

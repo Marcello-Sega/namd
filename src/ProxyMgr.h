@@ -45,6 +45,7 @@ public:
   void prepack();
 
   void * pack (int *length);
+  void * operator new(size_t s, int i, int j) {return comm_object::operator new(s,i,j);}
   void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
   void * operator new(size_t s) { return comm_object::operator new(s); }
   void * operator new(size_t, void *ptr) { return ptr; }
@@ -57,6 +58,7 @@ public:
   Flags flags;
   PositionList positionList;
   void * pack (int *length);
+  void * operator new(size_t s, int i, int j) {return comm_object::operator new(s,i,j);}
   void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
   void * operator new(size_t s) { return comm_object::operator new(s); }
   void * operator new(size_t, void *ptr) { return ptr; }
@@ -70,6 +72,7 @@ public:
   AtomIDList atomIDList;
   PositionList positionList;
   void * pack (int *length);
+  void * operator new(size_t s, int i, int j) {return comm_object::operator new(s,i,j);}
   void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
   void * operator new(size_t s) { return comm_object::operator new(s); }
   void * operator new(size_t, void *ptr) { return ptr; }
@@ -82,6 +85,7 @@ public:
   PatchID patch;
   ForceList forceList[Results::maxNumForces];
   void * pack (int *length);
+  void * operator new(size_t s, int i, int j) {return comm_object::operator new(s,i,j);}
   void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
   void * operator new(size_t size) { return comm_object::operator new(size); }
   void * operator new(size_t, void *ptr) { return ptr; }
@@ -135,12 +139,16 @@ private:
  *
  *	$RCSfile: ProxyMgr.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/20 23:53:50 $
+ *	$Revision: 1.1006 $	$Date: 1997/04/06 22:45:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.h,v $
+ * Revision 1.1006  1997/04/06 22:45:11  ari
+ * Add priorities to messages.  Mods to help proxies without computes.
+ * Added quick enhancement to end of list insertion of ResizeArray(s)
+ *
  * Revision 1.1005  1997/03/20 23:53:50  ari
  * Some changes for comments. Copyright date additions.
  * Hooks for base level update of Compute objects from ComputeMap

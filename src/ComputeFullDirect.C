@@ -17,7 +17,7 @@
 #include "PatchMgr.h"
 #include "Molecule.h"
 #include "ReductionMgr.h"
-#define DEBUGM
+//#define DEBUGM
 #define MIN_DEBUG_LEVEL 3
 #include "Debug.h"
 
@@ -151,12 +151,16 @@ void ComputeFullDirect::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/03/20 23:53:36 $
+ *	$Revision: 1.1012 $	$Date: 1997/04/06 22:44:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFullDirect.C,v $
+ * Revision 1.1012  1997/04/06 22:44:58  ari
+ * Add priorities to messages.  Mods to help proxies without computes.
+ * Added quick enhancement to end of list insertion of ResizeArray(s)
+ *
  * Revision 1.1011  1997/03/20 23:53:36  ari
  * Some changes for comments. Copyright date additions.
  * Hooks for base level update of Compute objects from ComputeMap

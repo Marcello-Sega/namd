@@ -70,7 +70,7 @@ LdbCoordinator::LdbCoordinator(InitMsg *msg)
   delete msg;
 
   // Register Converse timer routines
-  CsdSetNotifyIdle((CmiHandler)notifyIdleStart,(CmiHandler)notifyIdleEnd);
+  //CsdSetNotifyIdle((CmiHandler)notifyIdleStart,(CmiHandler)notifyIdleEnd);
   idleTime = 0;
 }
 
@@ -160,7 +160,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap)
 
   // Start idle-time recording
   idleTime = 0;
-  CsdStartNotifyIdle();
+  //CsdStartNotifyIdle();
   totalStartTime = TIMER_FNC();
 }
 
@@ -228,7 +228,7 @@ int LdbCoordinator::checkAndSendStats(void)
        && (nComputesReported == nComputesExpected) )
   {
     // Turn off idle-time calculation
-    CsdStopNotifyIdle();
+    //CsdStopNotifyIdle();
     totalTime = TIMER_FNC() - totalStartTime;
     if (idleStart!= -1)
       CPrintf("WARNING: idle time still accumulating?\n");
@@ -355,8 +355,10 @@ void LdbCoordinator::processStatistics(void)
   for (int i=0; i < nStatsMessagesReceived; i++)
     delete statsMsgs[i];
 
-  // 3) Resume operation with a message
-  //    Rewrite to send revised computeMap 
+  // computeMgr->updateComputes() call only on Node(0) i.e. right here
+  // This will barrier for all Nodes - (i.e. Computes must be
+  // here and with proxies before anyone can start up
+
   CPrintf("Node 0 LDB resuming other processors\n",CMyPe());
   LdbResumeMsg *sendmsg = new (MsgIndex(LdbResumeMsg)) LdbResumeMsg;
   CBroadcastMsgBranch(LdbCoordinator, resume, sendmsg, thisgroup);
@@ -364,12 +366,6 @@ void LdbCoordinator::processStatistics(void)
 
 void LdbCoordinator::resume(LdbResumeMsg *msg)
 {
-  // Rewrite to receive new computeMap
-
-  // computeMgr->updateComputes()
-
-  // Barrier for all Nodes - (i.e. Computes must be
-  // here and with proxies before anyone can start
 
   //  printLocalLdbReport();
 

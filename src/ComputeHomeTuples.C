@@ -22,7 +22,7 @@
 #include "Templates/UniqueSet.h"
 #include "Templates/UniqueSetIter.h"
 
-#define DEBUGM
+//#define DEBUGM
 #undef MIN_DEBUG_LEVEL
 #define MIN_DEBUG_LEVEL 3
 #include "Debug.h"
@@ -217,13 +217,17 @@ void ComputeHomeTuples<T>::doWork() {
  * RCS INFORMATION:
  *
  *      $RCSfile: ComputeHomeTuples.C,v $
- *      $Author: milind $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1010 $     $Date: 1997/04/04 23:34:16 $
+ *      $Author: ari $  $Locker:  $             $State: Exp $
+ *      $Revision: 1.1011 $     $Date: 1997/04/06 22:44:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.C,v $
+ * Revision 1.1011  1997/04/06 22:44:58  ari
+ * Add priorities to messages.  Mods to help proxies without computes.
+ * Added quick enhancement to end of list insertion of ResizeArray(s)
+ *
  * Revision 1.1010  1997/04/04 23:34:16  milind
  * Got NAMD2 to run on Origin2000.
  * Included definitions of class static variables in C files.

@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1019 1997/04/03 19:59:13 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1020 1997/04/06 22:45:14 ari Exp $";
 
 #include <stdio.h>
 
@@ -34,6 +34,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib
 #include "Molecule.h"
 #include "NamdOneTools.h"
 #include "Compute.h"
+#include "Priorities.h"
 
 #define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
@@ -570,8 +571,14 @@ void WorkDistrib::mapComputeNonbonded(void)
 
 //----------------------------------------------------------------------
 void WorkDistrib::messageEnqueueWork(Compute *compute) {
-  LocalWorkMsg *msg = new (MsgIndex(LocalWorkMsg)) LocalWorkMsg;
+  // This did not work with 32 for prio (crashed!)
+  LocalWorkMsg *msg 
+    = new (MsgIndex(LocalWorkMsg),16) LocalWorkMsg;
   msg->compute = compute; // pointer is valid since send is to local Pe
+  // *CPriorityPtr(msg) = (unsigned int)128;
+  *CPriorityPtr(msg) = (unsigned int)compute->priority();
+  CSetQueueing(msg, C_QUEUEING_IFIFO);
+  //DebugM(3, "Priority = " << (unsigned int)compute->priority() << "\n");
   CSendMsgBranch(WorkDistrib, enqueueWork, msg, group.workDistrib, CMyPe() );
 }
 
@@ -802,13 +809,17 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1019 $	$Date: 1997/04/03 19:59:13 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1020 $	$Date: 1997/04/06 22:45:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1020  1997/04/06 22:45:14  ari
+ * Add priorities to messages.  Mods to help proxies without computes.
+ * Added quick enhancement to end of list insertion of ResizeArray(s)
+ *
  * Revision 1.1019  1997/04/03 19:59:13  nealk
  * 1) New Fopen() which handles .Z and .gz files.
  * 2) localWaters and localNonWaters lists on each patch.

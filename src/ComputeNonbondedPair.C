@@ -19,7 +19,7 @@
 #include "PatchMap.h"
 
 #define MIN_DEBUG_LEVEL 4
-#define DEBUGM
+//#define DEBUGM
 #include "Debug.h"
 
 ComputeNonbondedPair::ComputeNonbondedPair(ComputeID c, PatchID pid[], int trans[])
@@ -161,13 +161,17 @@ void ComputeNonbondedPair::doForce(Position* p[2],
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedPair.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/04/03 23:22:19 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1010 $	$Date: 1997/04/06 22:45:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.C,v $
+ * Revision 1.1010  1997/04/06 22:45:00  ari
+ * Add priorities to messages.  Mods to help proxies without computes.
+ * Added quick enhancement to end of list insertion of ResizeArray(s)
+ *
  * Revision 1.1009  1997/04/03 23:22:19  jim
  * Added basic priority() method to Compute.  Only distinguishes between
  * local and nonlocal computations for now.

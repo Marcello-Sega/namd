@@ -22,7 +22,7 @@
 #include "Lattice.h"
 #include "HomePatchList.h"
 
-#define DEBUGM
+//#define DEBUGM
 #define MIN_DEBUG_LEVEL 5
 #include "Debug.h"
 
@@ -566,13 +566,17 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/04/04 23:34:24 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1010 $	$Date: 1997/04/06 22:45:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.1010  1997/04/06 22:45:08  ari
+ * Add priorities to messages.  Mods to help proxies without computes.
+ * Added quick enhancement to end of list insertion of ResizeArray(s)
+ *
  * Revision 1.1009  1997/04/04 23:34:24  milind
  * Got NAMD2 to run on Origin2000.
  * Included definitions of class static variables in C files.

@@ -16,7 +16,7 @@
 #include "ComputeNonbondedExcl.h"
 #include "AtomMap.h"
 
-#undef DEBUGM
+//#undef DEBUGM
 #include "Debug.h"
 
 BigReal NonbondedExclElem::reductionDummy[reductionDataSize];
@@ -130,13 +130,17 @@ ComputeNonbondedExcls::loadTuples() {
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedExcl.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/03/25 23:00:56 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1012 $	$Date: 1997/04/06 22:44:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedExcl.C,v $
+ * Revision 1.1012  1997/04/06 22:44:59  ari
+ * Add priorities to messages.  Mods to help proxies without computes.
+ * Added quick enhancement to end of list insertion of ResizeArray(s)
+ *
  * Revision 1.1011  1997/03/25 23:00:56  jim
  * Added nonbondedFrequency parameter and multiple time-stepping
  *
