@@ -54,6 +54,7 @@ protected:
 
     void rescaleVelocities(int);
       int rescaleVelocities_numTemps;
+    void reassignVelocities(int);
     void tcoupleVelocities(BigReal,int);
     void berendsenPressure(int);
     void langevinVelocities(BigReal);
@@ -83,12 +84,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1998/08/02 21:26:41 $
+ *	$Revision: 1.1018 $	$Date: 1998/08/03 15:31:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.h,v $
+ * Revision 1.1018  1998/08/03 15:31:20  jim
+ * Added temperature reassignment.
+ *
  * Revision 1.1017  1998/08/02 21:26:41  jim
  * Altered velocity rescaling to use averaged temperature.
  *

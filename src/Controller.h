@@ -41,6 +41,7 @@ protected:
     void rescaleVelocities(int);
       BigReal rescaleVelocities_sumTemps;
       int rescaleVelocities_numTemps;
+    void reassignVelocities(int);
     void tcoupleVelocities(int);
     void berendsenPressure(int);
 
@@ -78,12 +79,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1998/08/02 21:26:39 $
+ *	$Revision: 1.1012 $	$Date: 1998/08/03 15:31:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.h,v $
+ * Revision 1.1012  1998/08/03 15:31:19  jim
+ * Added temperature reassignment.
+ *
  * Revision 1.1011  1998/08/02 21:26:39  jim
  * Altered velocity rescaling to use averaged temperature.
  *

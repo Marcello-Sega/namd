@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1039 $  $Date: 1998/04/30 04:53:31 $
+ *  $Revision: 1.1040 $  $Date: 1998/08/03 15:31:21 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1040  1998/08/03 15:31:21  jim
+ * Added temperature reassignment.
+ *
  * Revision 1.1039  1998/04/30 04:53:31  jim
  * Added forces from MDComm and other improvements to ComputeGlobal.
  *
@@ -453,7 +456,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1039 1998/04/30 04:53:31 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1040 1998/08/03 15:31:21 jim Exp $";
 
 
 #include "charm++.h"
@@ -814,6 +817,17 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
     &rescaleTemp);
    opts.range("rescaleTemp", NOT_NEGATIVE);
    opts.units("rescaleTemp", N_KELVIN);
+
+   opts.optional("main", "reassignFreq", "Number of steps between "
+    "velocity reassignment", &reassignFreq);
+   opts.range("reassignFreq", POSITIVE);
+   opts.optional("main", "reassignTemp", "Target temperature for velocity reassignment",
+    &reassignTemp);
+   opts.range("reassignTemp", NOT_NEGATIVE);
+   opts.units("reassignTemp", N_KELVIN);
+   opts.optional("main", "reassignIncr", "Temperature increment for velocity reassignment",
+    &reassignIncr);
+   opts.units("reassignIncr", N_KELVIN);
 
    ////  Berendsen pressure bath coupling
    opts.optionalB("main", "BerendsenPressure", 
@@ -1637,13 +1651,58 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    {
   if (!opts.defined("rescaleFreq"))
   {
-    NAMD_die("Must give a rescale temperature if rescaleFreq is given");
+    NAMD_die("Must give a rescale freqency if rescaleTemp is given");
   }
    }
 
    if (minimizeOn && rescaleFreq > 0) 
    {
     NAMD_die("Minimization and temperature rescaling are mutually exclusive dynamics modes");
+   }
+
+   if (opts.defined("reassignFreq"))
+   {
+  if (!opts.defined("reassignTemp"))
+  {
+    if (opts.defined("temperature"))
+    {
+      reassignTemp = initialTemp;
+    }
+    else
+    {
+      NAMD_die("Must give a reassign temperature if reassignFreq is defined");
+    }
+  }
+   }
+   else
+   {
+  reassignFreq = -1;
+  reassignTemp = 0.0;
+   }
+
+   if (opts.defined("reassignTemp"))
+   {
+  if (!opts.defined("reassignFreq"))
+  {
+    NAMD_die("Must give a reassignment freqency if reassignTemp is given");
+  }
+   }
+
+   if (opts.defined("reassignIncr"))
+   {
+  if (!opts.defined("reassignFreq"))
+  {
+    NAMD_die("Must give a reassignment freqency if reassignmentIncr is given");
+  }
+   }
+   else
+   {
+  reassignIncr = 0.0;
+   }
+
+   if (minimizeOn && reassignFreq > 0) 
+   {
+    NAMD_die("Minimization and temperature reassignment are mutually exclusive dynamics modes");
    }
 
    if (!opts.defined("seed")) 
@@ -2493,6 +2552,17 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
         << rescaleTemp << "\n";
    }
 
+   if (reassignFreq > 0)
+   {
+     iout << iINFO << "VELOCITY REASSIGNMENT FREQ  "
+        << reassignFreq << "\n";
+     iout << iINFO << "VELOCITY REASSIGNMENT TEMP  "
+        << reassignTemp << "\n";
+     if ( reassignIncr != 0. )
+       iout << iINFO << "VELOCITY REASSIGNMENT INCR  "
+        << reassignIncr << "\n";
+   }
+
    if (berendsenPressureOn)
    {
      iout << iINFO << "BERENDSEN PRESSURE COUPLING ACTIVE\n";
@@ -2752,6 +2822,7 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
   msg->put(langevinOn)->put(langevinTemp)->put(globalOn);
   msg->put(dihedralOn)->put(COLDOn)->put(COLDRate)->put(COLDTemp);
   msg->put(rescaleFreq)->put(rescaleTemp);
+  msg->put(reassignFreq)->put(reassignTemp)->put(reassignIncr);
   msg->put(sphericalBCOn)->put(sphericalBCr1);
   msg->put(sphericalBCr2)->put(sphericalBCk1)->put(sphericalBCk2);
   msg->put(sphericalBCexp1)->put(sphericalBCexp2);
@@ -2905,6 +2976,9 @@ void SimParameters::receive_SimParameters(MIStream *msg)
   msg->get(COLDTemp);
   msg->get(rescaleFreq);
   msg->get(rescaleTemp);
+  msg->get(reassignFreq);
+  msg->get(reassignTemp);
+  msg->get(reassignIncr);
   msg->get(sphericalBCOn);
   msg->get(sphericalBCr1);
   msg->get(sphericalBCr2);
@@ -3003,12 +3077,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1039 $  $Date: 1998/04/30 04:53:31 $
+ *  $Revision: 1.1040 $  $Date: 1998/08/03 15:31:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1040  1998/08/03 15:31:21  jim
+ * Added temperature reassignment.
+ *
  * Revision 1.1039  1998/04/30 04:53:31  jim
  * Added forces from MDComm and other improvements to ComputeGlobal.
  *

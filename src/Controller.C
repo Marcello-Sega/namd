@@ -140,6 +140,7 @@ void Controller::algorithm(void)
     {
         enqueueCollections(step);
         trace_user_event(eventEndOfTimeStep);
+        reassignVelocities(step);
         printEnergies(step);
         rescaleVelocities(step);
 	tcoupleVelocities(step);
@@ -191,6 +192,18 @@ void Controller::rescaleVelocities(int step)
            << " TO " << rescaleTemp << " KELVIN.\n" << endi;
       rescaleVelocities_sumTemps = 0;  rescaleVelocities_numTemps = 0;
     }
+  }
+}
+
+void Controller::reassignVelocities(int step)
+{
+  const int reassignFreq = simParams->reassignFreq;
+  if ( ( reassignFreq > 0 ) && ! ( step % reassignFreq ) ) {
+    BigReal newTemp = simParams->reassignTemp;
+    newTemp += ( step / reassignFreq ) * simParams->reassignIncr;
+    if ( newTemp < 0 ) newTemp = 0;
+    iout << "REASSIGNING VELOCITIES AT STEP " << step
+         << " TO " << newTemp << " KELVIN.\n" << endi;
   }
 }
 
@@ -429,12 +442,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1038 $	$Date: 1998/08/02 21:26:39 $
+ *	$Revision: 1.1039 $	$Date: 1998/08/03 15:31:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1039  1998/08/03 15:31:19  jim
+ * Added temperature reassignment.
+ *
  * Revision 1.1038  1998/08/02 21:26:39  jim
  * Altered velocity rescaling to use averaged temperature.
  *

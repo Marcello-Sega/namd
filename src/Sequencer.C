@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1044 1998/08/02 21:26:40 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1045 1998/08/03 15:31:20 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -145,6 +145,7 @@ void Sequencer::algorithm(void)
     minimizationQuenchVelocity();
     runComputeObjects();
     addForceToMomentum(0.); // zero velocities of fixed atoms
+    reassignVelocities(step);
     rattle2(timestep,step);  // enfore rigid bonds on initial velocities
     submitReductions(step);
     submitCollections(step);
@@ -184,6 +185,7 @@ void Sequencer::algorithm(void)
 		addForceToMomentum(0.5*slowstep,Results::slow);
 
 	langevinVelocities(0.5*timestep);
+	reassignVelocities(step);
 
 	rattle2(timestep,step);
 
@@ -251,6 +253,22 @@ void Sequencer::rescaleVelocities(int step)
       {
         patch->v[i] *= factor;
       }
+    }
+  }
+}
+
+void Sequencer::reassignVelocities(int step)
+{
+  const int reassignFreq = simParams->reassignFreq;
+  if ( ( reassignFreq > 0 ) && ! ( step % reassignFreq ) ) {
+    BigReal newTemp = simParams->reassignTemp;
+    newTemp += ( step / reassignFreq ) * simParams->reassignIncr;
+    if ( newTemp < 0 ) newTemp = 0;
+    BigReal kbT = BOLTZMAN * newTemp;
+    for ( int i = 0; i < patch->numAtoms; ++i )
+    {
+      patch->v[i] = ( ( patch->a[i].flags & ATOM_FIXED ) ? Vector(0,0,0) :
+        sqrt( kbT / patch->a[i].mass ) * gaussian_random_vector() );
     }
   }
 }
@@ -439,12 +457,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1044 $     $Date: 1998/08/02 21:26:40 $
+ *      $Revision: 1.1045 $     $Date: 1998/08/03 15:31:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1045  1998/08/03 15:31:20  jim
+ * Added temperature reassignment.
+ *
  * Revision 1.1044  1998/08/02 21:26:40  jim
  * Altered velocity rescaling to use averaged temperature.
  *

@@ -224,6 +224,10 @@ public:
 	int rescaleFreq;		//  Velocity rescale frequency
 	BigReal rescaleTemp;		//  Temperature to rescale to
 
+	int reassignFreq;		//  Velocity reassignment frequency
+	BigReal reassignTemp;		//  Temperature to reassign to
+	BigReal reassignIncr;		//  Added to reassignTemp each time
+
 	Bool berendsenPressureOn;	//  Berendsen pressure bath
 	BigReal berendsenPressureTarget;
 	BigReal berendsenPressureCompressibility;
@@ -366,12 +370,15 @@ public:
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1020 $	$Date: 1998/04/06 16:34:11 $
+ *	$Revision: 1.1021 $	$Date: 1998/08/03 15:31:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1021  1998/08/03 15:31:22  jim
+ * Added temperature reassignment.
+ *
  * Revision 1.1020  1998/04/06 16:34:11  jim
  * Added DPME (single processor only), test mode, and momenta printing.
  *
