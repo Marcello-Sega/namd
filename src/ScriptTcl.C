@@ -625,9 +625,7 @@ int ScriptTcl::Tcl_coorfile(ClientData clientData,
 	NULL);
       return TCL_ERROR;
     }
-    molfile_timestep_t ts;
-    ts.coords = coords;
-    int rc = dcdplugin->read_next_timestep(filehandle, numatoms, &ts);
+    int rc = dcdplugin->read_next_timestep(filehandle, numatoms, NULL);
     if (rc) {  // EOF
       Tcl_SetObjResult(interp, Tcl_NewIntObj(-1));
       return TCL_OK;
