@@ -43,7 +43,7 @@ void Alg7::strategy()
 
   //   for (int i=0; i<numPatches; i++)
   //     { cout << "(" << patches[i].Id << "," << patches[i].processor ;}
-  overLoad = 1.1;
+  overLoad = 1.2;
   for (int ic=0; ic<numComputes; ic++) {
     c = (computeInfo *) computesHeap->deleteMax();
     if ( ! c ) NAMD_bug("Alg7: computesHeap empty!");
@@ -65,12 +65,25 @@ void Alg7::strategy()
       if (nProxies < 0 || nProxies > 2)
 	iout << iERROR << "Too many proxies: " << nProxies << "\n" << endi;
 
-      if (!goodP[nPatches][nProxies] ||
-	    (p->load < goodP[nPatches][nProxies]->load)) {
+      if (!goodP[nPatches][nProxies]) {
         if (c->load + p->load < overLoad*averageLoad) {
 	  goodP[nPatches][nProxies] = p;
         }
+      } else if ( nPatches + nProxies == 2 ) {
+        if (p->load < goodP[nPatches][nProxies]->load) {
+          if (c->load + p->load < overLoad*averageLoad) {
+	    goodP[nPatches][nProxies] = p;
+          }
+        }
+      } else {
+        if (p->proxies.numElements() <
+			 goodP[nPatches][nProxies]->proxies.numElements()) {
+          if (c->load + p->load < overLoad*averageLoad) {
+	    goodP[nPatches][nProxies] = p;
+          }
+        }
       }
+
       if (!poorP[nPatches][nProxies] ||
 	    (p->load < poorP[nPatches][nProxies]->load)) {
 	poorP[nPatches][nProxies] = p;   // fallback
@@ -81,8 +94,8 @@ void Alg7::strategy()
     //    if (numAssigned >= 0) {  Else is commented out below
 
     p = 0;
-    if ((p = goodP[2][0])    // Two home, no proxies
-     || (p = goodP[1][1])    // One home, one proxy
+    if ((p = goodP[1][1])    // One home, one proxy
+     || (p = goodP[2][0])    // Two home, no proxies
      || (p = goodP[0][2])    // No home, two proxies
      || (p = goodP[1][0])    // One home, no proxies
      || (p = goodP[0][1])    // No home, one proxy
