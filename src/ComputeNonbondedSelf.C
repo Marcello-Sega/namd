@@ -17,7 +17,7 @@
 #include "LdbCoordinator.h"
 
 #define MIN_DEBUG_LEVEL 4
-#define DEBUGM
+// #define DEBUGM
 #include "Debug.h"
 
 ComputeNonbondedSelf::ComputeNonbondedSelf(ComputeID c, PatchID pid,
@@ -88,12 +88,15 @@ void ComputeNonbondedSelf::doForce(Position* p,
  *
  *	$RCSfile: ComputeNonbondedSelf.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1998/07/02 21:06:36 $
+ *	$Revision: 1.1012 $	$Date: 1999/03/18 02:41:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.C,v $
+ * Revision 1.1012  1999/03/18 02:41:16  jim
+ * Turned off stray DEBUGM code.
+ *
  * Revision 1.1011  1998/07/02 21:06:36  jim
  * Added support for splitting ComputeNonbondedSelf into multiple computes.
  *

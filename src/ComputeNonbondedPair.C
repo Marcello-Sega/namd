@@ -18,7 +18,7 @@
 #include "PatchMap.h"
 
 #define MIN_DEBUG_LEVEL 4
-#define DEBUGM
+// #define DEBUGM
 #include "Debug.h"
 
 ComputeNonbondedPair::ComputeNonbondedPair(ComputeID c, PatchID pid[], int trans[])
@@ -151,12 +151,15 @@ void ComputeNonbondedPair::doForce(Position* p[2],
  *
  *	$RCSfile: ComputeNonbondedPair.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1998/03/26 23:28:28 $
+ *	$Revision: 1.1017 $	$Date: 1999/03/18 02:41:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.C,v $
+ * Revision 1.1017  1999/03/18 02:41:15  jim
+ * Turned off stray DEBUGM code.
+ *
  * Revision 1.1016  1998/03/26 23:28:28  jim
  * Small changes for KCC port.  Altered use of strstream in ComputeFreeEnergy.
  *

@@ -14,7 +14,7 @@
 #include "BroadcastMgr.h"
 #include "BroadcastClient.h"
 #define MIN_DEBUG_LEVEL 3
-#define DEBUGM
+// #define DEBUGM
 #include "Debug.h"
 
 BroadcastClient::BroadcastClient(int id) {
@@ -53,12 +53,15 @@ BroadcastClient::suspendFor(int tag) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1998/03/03 23:05:00 $
+ *	$Revision: 1.3 $	$Date: 1999/03/18 02:41:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: BroadcastClient.C,v $
+ * Revision 1.3  1999/03/18 02:41:15  jim
+ * Turned off stray DEBUGM code.
+ *
  * Revision 1.2  1998/03/03 23:05:00  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *
