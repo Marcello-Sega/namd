@@ -328,6 +328,8 @@ int psf_file_extract(topo_mol *mol, FILE *file, void *v,
       atomtmp->z = 0;       
       atomtmp->xyz_state = TOPO_MOL_XYZ_VOID;
       atomtmp->typeid = 0;
+      atomtmp->partition = 0;
+      atomtmp->copy = 0;
       atomtmp->atomid = 0;
 
       /* Save pointer to atom in my table so I can put in the bond 
