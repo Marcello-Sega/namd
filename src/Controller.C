@@ -816,8 +816,6 @@ void Controller::printEnergies(int step)
       iout << FORMAT(smdEnergy);
     }
 
-    iout << FORMAT(electEnergy);
-    iout << FORMAT(electEnergySlow);
     iout << "\n" << endi;
 }
 
@@ -841,12 +839,15 @@ void Controller::terminate(void) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1079 $	$Date: 1999/08/30 21:38:35 $
+ *	$Revision: 1.1080 $	$Date: 1999/08/31 15:43:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1080  1999/08/31 15:43:29  jim
+ * Cleaned up MOLLY code.
+ *
  * Revision 1.1079  1999/08/30 21:38:35  ferenc
  * Removed negative sign in CCS energies, and fixed some declaration
  * problems int ccsinterface.[Ch]

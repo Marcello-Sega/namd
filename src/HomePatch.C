@@ -50,7 +50,7 @@ void mollify(Vector *qtilde,const HGArrayVector &q0,const BigReal *lambda, HGArr
 
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1058 1999/08/27 16:40:19 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1059 1999/08/31 15:43:31 jim Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, TransformList tl,
       PositionList pl, VelocityList vl) : Patch(pd,al,pl), v(vl), t(tl)
@@ -456,7 +456,6 @@ void HomePatch::mollyAverage()
   HGArrayVector ref;  // reference position
   HGArrayVector refab;  // reference vector
   HGArrayBigReal rmass;  // 1 / mass
-  HGArrayBigReal redmass;  // reduced mass
   BigReal *lambda;  // Lagrange multipliers
   Vector *avg;  // averaged position
   int numLambdas = 0;
@@ -483,14 +482,12 @@ void HomePatch::mollyAverage()
 	    NAMD_die("Hydrogen group error caught in mollyAverage().  It's a bug!\n");
 	  }
 	  if ( !(fixed[1] && fixed[2]) ) {
-	    redmass[icnt] = 1. / (rmass[1] + rmass[2]);
 	    dsq[icnt] = tmp * tmp;  ial[icnt] = 1;  ibl[icnt] = 2;  ++icnt;
 	  }
 	}
 	for ( i = 1; i < hgs; ++i ) {  // normal bonds to mother atom
 	  if ( ( tmp = mol->rigid_bond_length(a[ig+i].id) ) ) {
 	    if ( !(fixed[0] && fixed[i]) ) {
-	      redmass[icnt] = 1. / (rmass[0] + rmass[i]);
 	      dsq[icnt] =  tmp * tmp;  ial[icnt] = 0;  ibl[icnt] = i;  ++icnt;
 	    }
 	  }
@@ -517,18 +514,13 @@ void HomePatch::mollyMollify(Vector *virial)
   Molecule *mol = Node::Object()->molecule;
   SimParameters *simParams = Node::Object()->simParameters;
   Vector wc(0.,0.,0.);  // constraint virial
-  BigReal tol = simParams->mollyTol;
-  int maxiter = simParams->mollyIter;
-  int i, iter;
-  HGArrayBigReal dsq;
-  BigReal tmp;
+  int i;
   HGArrayInt ial, ibl;
   HGArrayVector ref;  // reference position
   Vector *avg;  // averaged position
   HGArrayVector refab;  // reference vector
   HGArrayVector force;  // new force
   HGArrayBigReal rmass;  // 1 / mass
-  HGArrayBigReal redmass;  // reduced mass
   BigReal *lambda;  // Lagrange multipliers
   int numLambdas = 0;
   HGArrayInt fixed;  // is atom fixed?
@@ -545,20 +537,18 @@ void HomePatch::mollyMollify(Vector *virial)
 	}
 	int icnt = 0;
 	// c-ji I'm only going to mollify water for now
-	if ( ( tmp = mol->rigid_bond_length(a[ig].id) ) ) {  // for water
+	if ( ( mol->rigid_bond_length(a[ig].id) ) ) {  // for water
 	  if ( hgs != 3 ) {
 	    NAMD_die("Hydrogen group error caught in mollyMollify().  It's a bug!\n");
 	  }
 	  if ( !(fixed[1] && fixed[2]) ) {
-	    redmass[icnt] = 1. / (rmass[1] + rmass[2]);
-	    dsq[icnt] = tmp * tmp;  ial[icnt] = 1;  ibl[icnt] = 2;  ++icnt;
+	    ial[icnt] = 1;  ibl[icnt] = 2;  ++icnt;
 	  }
 	}
 	for ( i = 1; i < hgs; ++i ) {  // normal bonds to mother atom
-	  if ( ( tmp = mol->rigid_bond_length(a[ig+i].id) ) ) {
+	  if ( ( mol->rigid_bond_length(a[ig+i].id) ) ) {
 	    if ( !(fixed[0] && fixed[i]) ) {
-	      redmass[icnt] = 1. / (rmass[0] + rmass[i]);
-	      dsq[icnt] = tmp * tmp;  ial[icnt] = 0;  ibl[icnt] = i;  ++icnt;
+	      ial[icnt] = 0;  ibl[icnt] = i;  ++icnt;
 	    }
 	  }
 	}
@@ -967,7 +957,7 @@ inline void ludcmp(HGMatrixBigReal &a, int n, HGArrayInt &indx, BigReal *d)
 
 inline void G_q(const HGArrayVector &refab, HGMatrixVector &gqij,
      const int n, const int m, const HGArrayInt &ial, const HGArrayInt &ibl) {
-  int i,j; 
+  int i; 
   // step through the rows of the matrix
   for(i=0;i<m;i++) {
     gqij[i][ial[i]]=2.0*refab[i];
@@ -990,7 +980,6 @@ int average(Vector *qtilde,const HGArrayVector &q,BigReal *lambda,const int n,co
   //          ntrial = max number of Newton's iterations
   //  output: lambda[m] = double array of lagrange multipliers (used by mollify)
   //          qtilde[n] = vector array of averaged (shaked) positions
-  Bool  flag;
 
   int k,k1,i,j;
   BigReal errx,errf,d,tolx;
@@ -1013,7 +1002,6 @@ int average(Vector *qtilde,const HGArrayVector &q,BigReal *lambda,const int n,co
     lambda[i]=0.0;
   }
 
-  flag = 0;
   // define grhs, auxrhs for all iterations
   // grhs= g_x(q)
   //
@@ -1053,7 +1041,6 @@ int average(Vector *qtilde,const HGArrayVector &q,BigReal *lambda,const int n,co
     //  iout<<iINFO << "Calling Jac" << endl<<endi;
     //  Jac(qtilde, q0, fjac,n,water);
     {
-      int ierr;
       //  Vector glhs[3*n+3];
 
       HGMatrixVector grhs2;
@@ -1130,7 +1117,6 @@ int average(Vector *qtilde,const HGArrayVector &q,BigReal *lambda,const int n,co
     iout<<iINFO << "errf: " << errf << endl<<endi;
 #endif
     if (errf <= tolf) {
-      flag=1; // convergence!
       break;
     }
     for (i=0;i<m;i++) p[i] = -fvec[i];
@@ -1159,111 +1145,55 @@ int average(Vector *qtilde,const HGArrayVector &q,BigReal *lambda,const int n,co
 #ifdef DEBUG
   iout<<iINFO << "LAMBDA:" << lambda[0] << " " << lambda[1] << " " << lambda[2] << endl<<endi;
 #endif
-  // restore NR vector, matrix pointers to C++ pointers
-  //  indx++;p++;fvec++;
-//   fjac++;
-//   fjac[0]++;
-//   delete[] glhs;
-//   glhs = NULL;
-//   delete [] auxrhs;
-//   auxrhs = NULL;
-//   delete [] grhs;
-//   grhs = NULL;
-//   delete [] avgab;
-//   avgab = NULL;
-//   delete [] fjac[0];
-//   fjac[0] = NULL;
-//   delete [] fjac;
-//   fjac = NULL;
-//   delete [] fvec;
-//   fvec = NULL;
-//   delete [] p;
-//   p = NULL;
-//   delete [] indx;
-//   indx = NULL;
 
   return k; // 
 }
 
 void mollify(Vector *qtilde,const HGArrayVector &q0,const BigReal *lambda, HGArrayVector &force,const int n, const int m, const HGArrayBigReal &imass,const HGArrayInt &ial,const HGArrayInt &ibl,const HGArrayVector &refab) {
   int i,j,k;
-  // for now,  ignore water and masses parameters
-  //  const int n = 3;
   BigReal d;
   HGMatrixBigReal fjac;
   Vector zero(0.0,0.0,0.0);
   
-  HGMatrixBigReal fjacinv;
   HGArrayVector tmpforce;
   HGArrayVector tmpforce2;
   HGArrayVector y;
-  HGMatrixVector gqij;
   HGMatrixVector grhs;
   HGMatrixVector glhs;
-
   HGArrayBigReal aux;
-  HGArrayBigReal aux2;
-
   HGArrayInt indx;
-  HGArrayBigReal fvec;
-//  indx--;fvec--;fjac--;fjacinv--;
 
   for(i=0;i<n;i++) {
     tmpforce[i]=imass[i]*force[i];
   }
-  //  Jac(qtilde, q0, fjac,n,water);
-    //  iout<<iINFO << "Calling Jac" << endl<<endi;
-    //  Jac(qtilde, q0, fjac,n,water);
-    {
-      int ierr;
-      //  Vector glhs[3*n+3];
 
-      HGMatrixVector grhs2;
-      HGArrayVector avgab;
+  HGMatrixVector grhs2;
+  HGArrayVector avgab;
 
-      for ( i = 0; i < m; i++ ) {
+  for ( i = 0; i < m; i++ ) {
 	avgab[i] = qtilde[ial[i]] - qtilde[ibl[i]];
-      }
+  }
 
-      G_q(avgab,glhs,n,m,ial,ibl);
-      G_q(refab,grhs,n,m,ial,ibl);
-      // update with the masses
-      for (j=0; j<n; j++) { // number of atoms
+  G_q(avgab,glhs,n,m,ial,ibl);
+  G_q(refab,grhs,n,m,ial,ibl);
+  // update with the masses
+  for (j=0; j<n; j++) { // number of atoms
 	for (i=0; i<m;i++) { // number of constraints
 	  grhs2[i][j] = grhs[i][j]*imass[j];
 	}
-      }
+  }
 
-      // G_q(qtilde) * M^-1 G_q'(q0) =
-      // G_q(qtilde) * grhs'
-      for (i=0;i<m;i++) { // number of constraints
+  // G_q(qtilde) * M^-1 G_q'(q0) =
+  // G_q(qtilde) * grhs'
+  for (i=0;i<m;i++) { // number of constraints
 	for (j=0;j<m;j++) { // number of constraints
-	  fjac[i][j] = 0; 
+	  fjac[j][i] = 0; 
 	  for (k=0;k<n;k++) {
-	    fjac[i][j] += glhs[i][k]*grhs2[j][k]; 
+	    fjac[j][i] += glhs[i][k]*grhs2[j][k]; 
 	  }
 	}
-      }
-      //      delete[] avgab;
-      //      delete[] grhs2;
-
-    }
-    // end of Jac calculation
-
-  for (i=0;i<m;i++) {
-    for (j=0;j<m;j++) {
-      fjacinv[i][j]=0.0;
-    }
   }
 
-  for(i=0;i<m;i++) {
-    fjacinv[i][i]=1.0;
-  }
-  
-  ludcmp(fjac,m,indx,&d);
-  for(i=0;i<m;i++) {
-    lubksb(fjac,m,indx,fjacinv[i]);
-  }
   // aux=gqij*tmpforce
   //  globalGrhs::computeGlobalGrhs(q0,n,water);
   //  G_q(refab,grhs,m,ial,ibl);
@@ -1274,43 +1204,20 @@ void mollify(Vector *qtilde,const HGArrayVector &q0,const BigReal *lambda, HGArr
     }
   }
 
-  // aux2=fjacinv'*aux
-  for(i=0;i<m;i++) {
-    aux2[i]=0.0;
-    for(j=0;j<m;j++) {
-      aux2[i]+=fjacinv[i][j]*aux[j];
-    }
-  }
-  // y=gq(qtilde)'*aux
-  //  G_q(qtilde,gqij,n,water);
-  for(i=0;i<m;i++) {
-    for(j=0;j<n;j++) {
-      gqij[i][j] = aux2[i]*glhs[i][j];
-    }
-  }
-  // are these indices right? NO!!!
-//  for(j=0;j<m;j++) {
-//    y[j] = zero;
-//    for(i=0;i<n;i++) {
-//      y[j] += gqij[i*n+j];
-//      iout<<iINFO << i << ", " << n << ", " << j << endl<<endi;
-//    }
-//  }
+  ludcmp(fjac,m,indx,&d);
+  lubksb(fjac,m,indx,aux);
+
   for(j=0;j<n;j++) {
     y[j] = zero;
     for(i=0;i<m;i++) {
-      y[j] += gqij[i][j];
-      //iout<<iINFO << i << ", " << n << ", " << j << endl<<endi;
+      y[j] += aux[i]*glhs[i][j];
     }
   }
   for(i=0;i<n;i++) {
     y[i]=force[i]-y[i];
   }
     
-  //
   // gqq12*y
-      
-
   for(i=0;i<n;i++) {
     tmpforce2[i]=imass[i]*y[i];
   }
@@ -1321,8 +1228,6 @@ void mollify(Vector *qtilde,const HGArrayVector &q0,const BigReal *lambda, HGArr
   }
   
   for (j=0;j<m;j++) {
-    // tmpforce[ial[j]]+=2.0*lambda[j]*(tmpforce2[ial[j]]-tmpforce2[ibl[j]]);
-    // tmpforce[ibl[j]]-=tmpforce[ial[j]];  // BUG HERE! -JCP
     Vector tmpf = 2.0*lambda[j]*(tmpforce2[ial[j]]-tmpforce2[ibl[j]]);
     tmpforce[ial[j]] += tmpf;
     tmpforce[ibl[j]] -= tmpf;
@@ -1333,25 +1238,6 @@ void mollify(Vector *qtilde,const HGArrayVector &q0,const BigReal *lambda, HGArr
     force[i]=tmpforce[i]+y[i];
   }
 
-  //end partial
-//  delete[] gqij;
-  
-//  indx++;fvec++;fjac++;fjacinv++;
-//  fjac[0]++; fjacinv[0]++;
-//   delete [] fjacinv[0];
-//   delete [] fjacinv;
-//   delete [] fjac[0];
-//   delete [] fjac;
-//   delete [] fvec;
-//   delete [] indx;
-//   delete [] aux2;
-//   delete [] aux;
-//   delete[] grhs;
-//   delete [] gqij;
-//   delete [] glhs;
-//   delete [] y;
-//   delete [] tmpforce2;
-//   delete [] tmpforce;
 }
 
 
@@ -1360,12 +1246,15 @@ void mollify(Vector *qtilde,const HGArrayVector &q0,const BigReal *lambda, HGArr
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1058 $	$Date: 1999/08/27 16:40:19 $
+ *	$Revision: 1.1059 $	$Date: 1999/08/31 15:43:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1059  1999/08/31 15:43:31  jim
+ * Cleaned up MOLLY code.
+ *
  * Revision 1.1058  1999/08/27 16:40:19  jim
  * Eliminated memory allocation and 1-based indexing from MOLLY code.
  *
