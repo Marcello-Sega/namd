@@ -29,6 +29,8 @@ DPMTAINCL=-I$(DPMTADIR)/mpole -I$(DPMTADIR)/src
 DPMTALIB=-L$(DPMTADIR)/mpole -L$(DPMTADIR)/src -ldpmta2 -lmpole
 DPMTAFLAGS=-DDPMTA
 DPMTA=$(DPMTAINCL) $(DPMTAFLAGS)
+DPMTALIBS=$(DPMTADIR)/mpole/libmpole.a $(DPMTADIR)/src/libdpmta2.a
+
 
 
 #####
@@ -40,6 +42,7 @@ DPMEINCL=-I$(DPMEDIR)/include
 DPMELIB=-L$(DPMEDIR) -ldpme2 -lmpole
 DPMEFLAGS=-DDPME
 DPME=$(DPMEINCL) $(DPMEFLAGS)
+#DPMELIBS= dpme2/libdpme2.a
 
 
 ######
@@ -49,14 +52,14 @@ DPME=$(DPMEINCL) $(DPMEFLAGS)
 PVMDIR=pvm3
 PVMLIB=-L$(PVMDIR) -lpvmc
 PVM=-I$(PVMDIR)
+PVMLIBS=pvm3/libpvmc.a
 
 
 ######
 ## Libraries we may have changed
 ######
 
-LIBS = $(DPMTADIR)/mpole/libmpole.a $(DPMTADIR)/src/libdpmta2.a pvm3/libpvmc.a
-# dpme2/libdpme2.a
+LIBS = $(DPMTALIBS) $(PVMLIBS) $(DPMELIBS)
 
 
 # CXX is platform dependent
@@ -80,7 +83,6 @@ OBJS = \
 	$(DSTDIR)/CollectionMaster.o \
 	$(DSTDIR)/CollectionMgr.o \
 	$(DSTDIR)/Communicate.o \
-	$(DSTDIR)/CommunicateConverse.o \
 	$(DSTDIR)/Compute.o \
 	$(DSTDIR)/ComputeAngles.o \
 	$(DSTDIR)/ComputeBonds.o \
@@ -111,9 +113,7 @@ OBJS = \
 	$(DSTDIR)/IntTree.o \
 	$(DSTDIR)/LdbCoordinator.o \
 	$(DSTDIR)/LJTable.o \
-	$(DSTDIR)/Message.o \
-	$(DSTDIR)/MessageManager.o \
-	$(DSTDIR)/MessageQueue.o \
+	$(DSTDIR)/MStream.o \
 	$(DSTDIR)/MigrateAtomsMsg.o \
 	$(DSTDIR)/Molecule.o \
 	$(DSTDIR)/Namd.o \
@@ -163,8 +163,6 @@ TEMPLATES = \
 	$(SRCDIR)/Templates/UniqueSortedArray.C
 
 namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES) $(LIBS)
-	cd $(PVMDIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
-	cd $(DPMTADIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
 	$(CHARMC) -verbose -ld++-option \
 	"-I$(INCLUDE) -I$(SRCDIR) -I$(SRCDIR)/Templates $(CXXOPTS) " \
 	-language charm++ \

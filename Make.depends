@@ -3,11 +3,10 @@ obj/common.o: \
 	src/common.h \
 	src/InfoStream.h \
 	src/Communicate.h \
-	src/Message.h \
-	src/IntTree.h \
+	src/MStream.h \
+	src/Vector.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
-	src/Vector.h \
 	src/Lattice.h \
 	src/NamdTypes.h \
 	src/Templates/ResizeArray.h \
@@ -50,9 +49,7 @@ obj/main.o: \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
-	src/Message.h \
-	src/IntTree.h \
-	src/CommunicateConverse.h \
+	src/MStream.h \
 	src/Inform.h \
 	src/Debug.h \
 	inc/main.bot.h
@@ -184,25 +181,11 @@ obj/CollectionMgr.o: \
 obj/Communicate.o: \
 	src/Communicate.C \
 	src/Communicate.h \
-	src/Message.h \
+	src/MStream.h \
+	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
-	src/IntTree.h \
-	src/MessageManager.h \
-	src/MessageQueue.h
+	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) -o obj/Communicate.o -c src/Communicate.C
-obj/CommunicateConverse.o: \
-	src/CommunicateConverse.C \
-	src/CommunicateConverse.h \
-	src/Communicate.h \
-	src/Message.h \
-	src/common.h \
-	src/InfoStream.h \
-	src/IntTree.h \
-	src/MessageQueue.h \
-	src/MessageManager.h \
-	src/Debug.h
-	$(CXX) $(CXXFLAGS) -o obj/CommunicateConverse.o -c src/CommunicateConverse.C
 obj/Compute.o: \
 	src/Compute.C \
 	src/main.h \
@@ -273,7 +256,7 @@ obj/ComputeAngles.o: \
 	src/Hydrogen.h \
 	src/Parameters.h \
 	src/strlib.h \
-	src/Message.h \
+	src/MStream.h \
 	src/HBondParam.h \
 	src/HBondPairData.h \
 	src/VoidTree.h \
@@ -324,7 +307,7 @@ obj/ComputeBonds.o: \
 	src/ComputeBonds.inl \
 	src/Parameters.h \
 	src/strlib.h \
-	src/Message.h \
+	src/MStream.h \
 	src/HBondParam.h \
 	src/HBondPairData.h \
 	src/VoidTree.h \
@@ -361,8 +344,7 @@ obj/ComputeCylindricalBC.o: \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
-	src/Message.h \
-	src/IntTree.h \
+	src/MStream.h \
 	src/Patch.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeCylindricalBC.o -c src/ComputeCylindricalBC.C
 obj/ComputeDihedrals.o: \
@@ -408,7 +390,7 @@ obj/ComputeDihedrals.o: \
 	src/Hydrogen.h \
 	src/Parameters.h \
 	src/strlib.h \
-	src/Message.h \
+	src/MStream.h \
 	src/HBondParam.h \
 	src/HBondPairData.h \
 	src/VoidTree.h \
@@ -438,8 +420,7 @@ obj/ComputeDPMTA.o: \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
-	src/Message.h \
-	src/IntTree.h \
+	src/MStream.h \
 	src/ComputeNonbondedUtil.h \
 	src/ComputeNonbondedSplitting.h \
 	src/LJTable.h \
@@ -494,8 +475,7 @@ obj/ComputeFullDirect.o: \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
-	src/Message.h \
-	src/IntTree.h \
+	src/MStream.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/AtomMap.h \
@@ -549,8 +529,7 @@ obj/ComputeHomePatches.o: \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
-	src/Message.h \
-	src/IntTree.h \
+	src/MStream.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/ComputeHomePatches.h \
@@ -619,7 +598,7 @@ obj/ComputeImpropers.o: \
 	src/Hydrogen.h \
 	src/Parameters.h \
 	src/strlib.h \
-	src/Message.h \
+	src/MStream.h \
 	src/HBondParam.h \
 	src/HBondPairData.h \
 	src/VoidTree.h \
@@ -769,8 +748,7 @@ obj/ComputeNonbondedExcl.o: \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
-	src/Message.h \
-	src/IntTree.h \
+	src/MStream.h \
 	src/Molecule.h \
 	src/IntList.h \
 	src/LintList.h \
@@ -852,8 +830,7 @@ obj/ComputeNonbondedSelf.o: \
 	src/Node.h \
 	src/SimParameters.h \
 	src/Communicate.h \
-	src/Message.h \
-	src/IntTree.h \
+	src/MStream.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeNonbondedSelf.o -c src/ComputeNonbondedSelf.C
 obj/ComputeNonbondedPair.o: \
@@ -901,8 +878,7 @@ obj/ComputeNonbondedPair.o: \
 	src/Node.h \
 	src/SimParameters.h \
 	src/Communicate.h \
-	src/Message.h \
-	src/IntTree.h \
+	src/MStream.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/Debug.h
@@ -934,8 +910,7 @@ obj/ComputeNonbondedUtil.o: \
 	src/Hydrogen.h \
 	src/SimParameters.h \
 	src/Communicate.h \
-	src/Message.h \
-	src/IntTree.h \
+	src/MStream.h \
 	src/Lattice.h \
 	src/Node.h \
 	src/main.h \
@@ -1040,8 +1015,7 @@ obj/ComputeRestraints.o: \
 	src/Hydrogen.h \
 	src/SimParameters.h \
 	src/Communicate.h \
-	src/Message.h \
-	src/IntTree.h \
+	src/MStream.h \
 	src/Patch.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeRestraints.o -c src/ComputeRestraints.C
 obj/ComputeSphericalBC.o: \
@@ -1073,8 +1047,7 @@ obj/ComputeSphericalBC.o: \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
-	src/Message.h \
-	src/IntTree.h \
+	src/MStream.h \
 	src/Patch.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeSphericalBC.o -c src/ComputeSphericalBC.C
 obj/ConfigList.o: \
@@ -1110,8 +1083,7 @@ obj/Controller.o: \
 	src/Hydrogen.h \
 	src/SimParameters.h \
 	src/Communicate.h \
-	src/Message.h \
-	src/IntTree.h \
+	src/MStream.h \
 	src/Lattice.h \
 	src/Controller.h \
 	src/ReductionMgr.h \
@@ -1140,8 +1112,7 @@ obj/HomePatch.o: \
 	src/common.h \
 	src/InfoStream.h \
 	src/Communicate.h \
-	src/Message.h \
-	src/IntTree.h \
+	src/MStream.h \
 	src/Vector.h \
 	src/Lattice.h \
 	src/NamdTypes.h \
@@ -1197,7 +1168,8 @@ obj/HBondParam.o: \
 	src/structures.h \
 	src/Parameters.h \
 	src/strlib.h \
-	src/Message.h \
+	src/MStream.h \
+	src/Vector.h \
 	src/Inform.h
 	$(CXX) $(CXXFLAGS) -o obj/HBondParam.o -c src/HBondParam.C
 obj/Inform.o: \
@@ -1240,8 +1212,7 @@ obj/LdbCoordinator.o: \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
-	src/Message.h \
-	src/IntTree.h \
+	src/MStream.h \
 	src/Lattice.h \
 	src/Namd.h \
 	src/NamdState.h \
@@ -1277,37 +1248,20 @@ obj/LJTable.o: \
 	src/Parameters.h \
 	src/structures.h \
 	src/strlib.h \
-	src/Message.h \
+	src/MStream.h \
 	src/HBondParam.h \
 	src/HBondPairData.h \
 	src/VoidTree.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/LJTable.o -c src/LJTable.C
-obj/Message.o: \
-	src/Message.C \
-	src/Message.h \
+obj/MStream.o: \
+	src/MStream.C \
+	src/Communicate.h \
+	src/MStream.h \
+	src/Vector.h \
 	src/common.h \
 	src/InfoStream.h
-	$(CXX) $(CXXFLAGS) -o obj/Message.o -c src/Message.C
-obj/MessageManager.o: \
-	src/MessageManager.C \
-	src/MessageManager.h \
-	src/MessageQueue.h \
-	src/common.h \
-	src/InfoStream.h \
-	src/Message.h \
-	src/Communicate.h \
-	src/IntTree.h
-	$(CXX) $(CXXFLAGS) -o obj/MessageManager.o -c src/MessageManager.C
-obj/MessageQueue.o: \
-	src/MessageQueue.C \
-	src/MessageQueue.h \
-	src/common.h \
-	src/InfoStream.h \
-	src/Message.h \
-	src/Communicate.h \
-	src/IntTree.h
-	$(CXX) $(CXXFLAGS) -o obj/MessageQueue.o -c src/MessageQueue.C
+	$(CXX) $(CXXFLAGS) -o obj/MStream.o -c src/MStream.C
 obj/MigrateAtomsMsg.o: \
 	src/MigrateAtomsMsg.C \
 	src/Migration.h \
@@ -1362,7 +1316,8 @@ obj/Molecule.o: \
 	src/Templates/ObjectArena.h \
 	src/Hydrogen.h \
 	src/strlib.h \
-	src/Message.h \
+	src/MStream.h \
+	src/Communicate.h \
 	src/Parameters.h \
 	src/HBondParam.h \
 	src/HBondPairData.h \
@@ -1371,8 +1326,6 @@ obj/Molecule.o: \
 	src/PDBData.h \
 	src/Lattice.h \
 	src/SimParameters.h \
-	src/Communicate.h \
-	src/IntTree.h \
 	src/Templates/UniqueSetIter.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/Molecule.o -c src/Molecule.C
@@ -1399,8 +1352,7 @@ obj/Namd.o: \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
-	src/Message.h \
-	src/IntTree.h \
+	src/MStream.h \
 	src/Molecule.h \
 	src/IntList.h \
 	src/LintList.h \
@@ -1475,13 +1427,12 @@ obj/NamdState.o: \
 	src/Hydrogen.h \
 	src/Parameters.h \
 	src/strlib.h \
-	src/Message.h \
+	src/MStream.h \
 	src/HBondParam.h \
 	src/HBondPairData.h \
 	src/VoidTree.h \
 	src/SimParameters.h \
 	src/Communicate.h \
-	src/IntTree.h \
 	src/Lattice.h \
 	src/PDB.h \
 	src/PDBData.h \
@@ -1542,8 +1493,7 @@ obj/Node.o: \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
-	src/Message.h \
-	src/IntTree.h \
+	src/MStream.h \
 	src/Debug.h \
 	inc/main.top.h \
 	src/WorkDistrib.h \
@@ -1582,7 +1532,6 @@ obj/Node.o: \
 	src/HBondParam.h \
 	src/HBondPairData.h \
 	src/VoidTree.h \
-	src/CommunicateConverse.h \
 	src/Inform.h \
 	src/LdbCoordinator.h \
 	src/elements.h \
@@ -1619,7 +1568,7 @@ obj/Output.o: \
 	src/main.h \
 	src/BOCgroup.h \
 	src/Parameters.h \
-	src/Message.h \
+	src/MStream.h \
 	src/HBondParam.h \
 	src/HBondPairData.h \
 	src/VoidTree.h \
@@ -1627,8 +1576,7 @@ obj/Output.o: \
 	src/PDBData.h \
 	src/Lattice.h \
 	src/SimParameters.h \
-	src/Communicate.h \
-	src/IntTree.h
+	src/Communicate.h
 	$(CXX) $(CXXFLAGS) -o obj/Output.o -c src/Output.C
 obj/Parameters.o: \
 	src/Parameters.C \
@@ -1637,12 +1585,12 @@ obj/Parameters.o: \
 	src/InfoStream.h \
 	src/structures.h \
 	src/strlib.h \
-	src/Message.h \
+	src/MStream.h \
+	src/Vector.h \
 	src/HBondParam.h \
 	src/HBondPairData.h \
 	src/VoidTree.h \
 	src/Communicate.h \
-	src/IntTree.h \
 	src/ConfigList.h
 	$(CXX) $(CXXFLAGS) -o obj/Parameters.o -c src/Parameters.C
 obj/ParseOptions.o: \
@@ -1691,8 +1639,7 @@ obj/Patch.o: \
 	src/Hydrogen.h \
 	src/SimParameters.h \
 	src/Communicate.h \
-	src/Message.h \
-	src/IntTree.h \
+	src/MStream.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/Patch.o -c src/Patch.C
 obj/PatchMgr.o: \
@@ -1761,6 +1708,7 @@ obj/PatchMap.o: \
 	src/HomePatchTypes.h \
 	src/main.h \
 	src/BOCgroup.h \
+	src/AtomMap.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/PatchMap.o -c src/PatchMap.C
 obj/PDB.o: \
@@ -1815,8 +1763,7 @@ obj/ProxyMgr.o: \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
-	src/Message.h \
-	src/IntTree.h \
+	src/MStream.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/ProxyPatch.h \
@@ -1919,8 +1866,7 @@ obj/ReductionMgr.o: \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
-	src/Message.h \
-	src/IntTree.h \
+	src/MStream.h \
 	inc/ReductionMgr.top.h \
 	src/ReductionMgr.h \
 	src/Debug.h \
@@ -1954,8 +1900,7 @@ obj/Sequencer.o: \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
-	src/Message.h \
-	src/IntTree.h \
+	src/MStream.h \
 	src/Lattice.h \
 	src/Sequencer.h \
 	src/PatchTypes.h \
@@ -2009,8 +1954,7 @@ obj/SimParameters.o: \
 	src/InfoStream.h \
 	src/SimParameters.h \
 	src/Communicate.h \
-	src/Message.h \
-	src/IntTree.h \
+	src/MStream.h \
 	src/Vector.h \
 	src/Lattice.h \
 	src/NamdTypes.h \
@@ -2071,8 +2015,7 @@ obj/WorkDistrib.o: \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
-	src/Message.h \
-	src/IntTree.h \
+	src/MStream.h \
 	src/Molecule.h \
 	src/LintList.h \
 	src/structures.h \
