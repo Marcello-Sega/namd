@@ -5,6 +5,7 @@
 **/
 
 #include "charm++.h"
+#include "InfoStream.h"
 
 #include "main.decl.h"
 #include "main.h"

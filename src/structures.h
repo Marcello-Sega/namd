@@ -9,9 +9,6 @@
 
 #include "common.h"
 
-// forward references
-class IntList;
-
 
 // status elements, used for Atom status 
 #define UnknownAtom      0x00
@@ -40,8 +37,6 @@ typedef struct atom_constants
 	Index vdw_type;
 	int32 status;	         // flags telling about this atom
 	int32 partner;             // connecting atom, for hydrogens
-	IntList *donorList;      // donor-hydrogen pairs this is part of
-	IntList *acceptorList;   // acceptor-anteced pairs this is part of
 	int32 hydrogenList;	// index of atom in hydrogenGroup list
 } Atom;
 

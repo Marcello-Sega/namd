@@ -18,7 +18,6 @@
 #include "structures.h"
 #include "strlib.h"
 #include "MStream.h"
-#include "HBondParam.h"
 //****** BEGIN CHARMM/XPLOR type changes
 #include "SimParameters.h"
 //****** END CHARMM/XPLOR type changes
@@ -180,8 +179,6 @@ private:
 						//  dihedral bonds
 	int *maxImproperMults;			//  Max multiplicity for
 						//  improper bonds
-
-	HBondParam hbondParams;                //  stores hydrogen bond params
 
 	void add_bond_param(char *);		//  Add a bond parameter
 	struct bond_params *add_to_bond_tree(struct bond_params * , 
@@ -363,8 +360,6 @@ public:
 
 	int get_vdw_pair_params(Index ind1, Index ind2, Real *, Real *, Real *, Real *);
 						//  Find a vwd_pair parameter
-
-	HBondParam &get_hbond_params(void) { return hbondParams; }
 
         int get_num_vdw_params(void) { return NumVdwParamsAssigned; }
 

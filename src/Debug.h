@@ -4,8 +4,6 @@
 ***  All rights reserved.
 **/
 
-#include "InfoStream.h"
-
 #ifndef DEBUG_H
 #define DEBUG_H
 
@@ -20,10 +18,6 @@
   #define STDERR_LEVEL 5
 #endif
 
-#include <stdio.h>
-#include <stdarg.h>
-#include <strstream.h>	// for ostrstream
-#include "charm++.h"	// for CkPrintf
 
 /*****************************************************************
  *  DebugM(): function to display a debug message.
@@ -41,6 +35,8 @@
  *  No functions should be passed as parameters!  (including inline)
  *****************************************************************/
  #ifdef DEBUGM
+
+#include "InfoStream.h"
 
   #define Debug(x) (x)
   #define DebugM(level,format) \

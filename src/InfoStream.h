@@ -11,10 +11,9 @@
 #ifndef INFOSTREAM_H
 #define INFOSTREAM_H
 
-#include <iostream.h>	// for cout
-#include <strstream.h>	// for ostrstream
-#include <stdio.h>	// for CkPrintf
-#include "charm++.h"	// for CkPrintf
+#include <strstream.h>
+class Vector;
+class Tensor;
 
 class infostream : public ostrstream
 {
@@ -25,21 +24,7 @@ class infostream : public ostrstream
   infostream() : ostrstream(iBuffer,sizeof(iBuffer)) {;}
   ~infostream() {;}
 
-  /* output using CkPrintf() (end by inform) */
-  void endi()
-    {
-    *this << ends;
-    CkPrintf("%s",iBuffer);
-    (*this).seekp(0);	// clear buffer
-    }
-
-  /* output to stdout (end by console) */
-  void endc()
-    {
-    *this << ends;
-    cout << iBuffer << ends;
-    (*this).seekp(0);	// clear buffer
-    }
+  void endi();
 
   /* define how to use the remaining << args */
   /** infostream<<ostream (hot to handle inherited modifiers) **/
@@ -69,8 +54,13 @@ class infostream : public ostrstream
   #undef LOCALMOD
 };
 
+ostream& operator<<(ostream& strm, const Vector &v1);
+infostream& operator<<(infostream& strm, const Vector &v1);
+
+ostream& operator<<(ostream& strm, const Tensor &t1);
+infostream& operator<<(infostream& strm, const Tensor &t1);
+
 /** modifiers **/
-inline infostream& endc(infostream& s)  { s.endc(); return s; }
 inline infostream& endi(infostream& s)  { s.endi(); return s; }
 
 /** common messages **/
@@ -81,7 +71,7 @@ inline ostream& iINFO (ostream& s)  { return s << "Info: "; }
 inline ostream& iWARN (ostream& s)  { return s << "Warning: "; }
 inline ostream& iERROR(ostream& s)  { return s << "ERROR: "; }
 inline ostream& iDEBUG(ostream& s)  { return s << "DEBUG: "; }
-inline ostream& iPE(ostream& s)     { return s << "Pe(" << CkMyPe() << ')'; }
+ostream& iPE(ostream& s);  // outlined because of CkMyPe()
 
 #define iFILE __FILE__<<'('<<__LINE__<<"): "
 #define iINFOF  iINFO << iFILE

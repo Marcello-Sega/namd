@@ -10,7 +10,6 @@
 
 #include "charm++.h"
 
-#include "Inform.h"
 #include "common.h"
 #include "InfoStream.h"
 #include "Molecule.h"
@@ -283,13 +282,9 @@ int NamdState::configListInit(ConfigList *cfgList) {
 
   DebugM(4, "::configFileInit() - printing Molecule Information\n");
 
-  namdDebug.on(1);
-
   molecule->print_atoms(parameters);
   molecule->print_bonds(parameters);
   molecule->print_exclusions();
-
-  namdDebug.on(0);
 
   DebugM(4, "::configFileInit() - done printing Molecule Information\n");
   DebugM(1, "::configFileInit() - done\n");

@@ -55,13 +55,6 @@ inline LJTable::TableEntry *LJTable::table_entry(const int index) const
 inline int 
 LJTable::table_index(const int i, const int j, const int scaled14) const
 {
-#ifdef NAMD_DEBUG
-  if ((i<0) || (i>=table_dim) || (j<0) || (j>table_dim))
-  {
-    NAMD_die("Unexpected LJ table value requested in LJTable::table_index()");
-  }
-#endif
-
   return i * table_dim + j + (scaled14 ? half_table_sz : 0);
 }
 
@@ -69,12 +62,6 @@ LJTable::table_index(const int i, const int j, const int scaled14) const
 inline LJTable::TableEntry *
 LJTable::table_val(const int i, const int j, const int scaled14) const
 {
-#if NAMD_DEBUG
-  if ((i<0) || (i>=table_dim) || (j<0) || (j>table_dim))
-  {
-    NAMD_die("Unexpected LJ table value requested in LJTable::table_val()");
-  }
-#endif
   return table + i * table_dim + j + (scaled14 ? half_table_sz : 0);
 }
 
@@ -82,12 +69,6 @@ LJTable::table_val(const int i, const int j, const int scaled14) const
 inline LJTable::TableEntry *
 LJTable::table_val(const int i, const int j) const
 {
-#if NAMD_DEBUG
-  if ((i<0) || (i>=table_dim) || (j<0) || (j>table_dim))
-  {
-    NAMD_die("Unexpected LJ table value requested in LJTable::table_val()");
-  }
-#endif
   return table + i * table_dim + j;
 }
 

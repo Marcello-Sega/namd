@@ -61,8 +61,8 @@ void ComputePatchPair::initialize() {
     for (int i=0; i<2; i++) {
 	if (positionBox[i] == NULL) { // We have yet to get boxes
 	    if (!(patch[i] = PatchMap::Object()->patch(patchID[i]))) {
-	      iout << iPE << iERRORF << "invalid patch(" << patchID[i] 
-		   << ")  pointer!\n" << endi;
+	      DebugM(5,"invalid patch(" << patchID[i] 
+		   << ")  pointer!\n");
 	    }
 	    positionBox[i] = patch[i]->registerPositionPickup(cid,trans[i]);
 	    forceBox[i] = patch[i]->registerForceDeposit(cid);
@@ -133,10 +133,9 @@ void ComputePatchPair::doWork() {
   for (i=0; i<2; i++) {
       p[i] = positionBox[i]->open(&numData);
       if (numData != numAtoms[i]) {
-	iout << iPE << iERRORF 
-	  << "Interesting, doWork has opened a position box with wrong # atoms ("
-	  <<numData<<" vs " << numAtoms << "\n" 
-	  << endi;
+	
+	  DebugM(5,"Interesting, doWork has opened a position box with wrong # atoms ("
+	  <<numData<<" vs " << numAtoms << "\n");
       }
       r[i] = forceBox[i]->open();
       a[i] = atomBox[i]->open();

@@ -7,11 +7,9 @@
 #ifndef TENSOR_H
 #define TENSOR_H
 
-#include <iostream.h>
 #include <math.h>
 #include <stdio.h>
 #include "common.h"
-#include "InfoStream.h"
 #include "Vector.h"
 
 class Tensor {
@@ -207,22 +205,6 @@ class Tensor {
 
      inline friend BigReal trace(const Tensor &t1) {
        return (t1.xx + t1.yy + t1.zz);
-     }
-
-     // print out
-     friend ostream& operator<<(ostream& strm, const Tensor &t1) {
-       strm << t1.xx << " " << t1.xy << " " << t1.xz << " "
-            << t1.yx << " " << t1.yy << " " << t1.yz << " "
-            << t1.zx << " " << t1.zy << " " << t1.zz;
-       return strm;
-     }
-
-     // print out to infostream object
-     friend infostream& operator<<(infostream& strm, const Tensor &t1) {
-       strm << t1.xx << " " << t1.xy << " " << t1.xz << " "
-            << t1.yx << " " << t1.yy << " " << t1.yz << " "
-            << t1.zx << " " << t1.zy << " " << t1.zz;
-       return strm;
      }
 
 /*

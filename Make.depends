@@ -1,47 +1,16 @@
 obj/common.o: \
 	src/common.C \
 	src/common.h \
-	src/InfoStream.h \
-	src/Communicate.h \
-	src/MStream.h \
-	src/Vector.h \
-	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Lattice.h \
-	src/NamdTypes.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
-	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
-	src/Tensor.h \
-	src/Node.h \
-	src/main.h \
-	src/BOCgroup.h \
-	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/PatchMgr.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/ComputeMgr.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h \
-	src/ProcessorPrivate.h \
-	src/Inform.h
+	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) -o obj/common.o -c src/common.C
 obj/dcdlib.o: \
 	src/dcdlib.C \
 	src/dcdlib.h \
-	src/common.h \
-	src/InfoStream.h
+	src/common.h
 	$(CXX) $(CXXFLAGS) -o obj/dcdlib.o -c src/dcdlib.C
 obj/main.o: \
 	src/main.C \
+	src/InfoStream.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -58,32 +27,23 @@ obj/main.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.def.h
 	$(CXX) $(CXXFLAGS) -o obj/main.o -c src/main.C
 obj/mainfunc.o: \
 	src/mainfunc.C \
 	src/common.h \
-	src/InfoStream.h \
 	src/BackEnd.h \
+	src/InfoStream.h \
 	src/NamdState.h \
 	src/Lattice.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/Tensor.h \
 	src/Node.h \
 	src/main.h \
@@ -113,11 +73,11 @@ obj/mainfunc.o: \
 obj/strlib.o: \
 	src/strlib.C \
 	src/strlib.h \
-	src/common.h \
-	src/InfoStream.h
+	src/common.h
 	$(CXX) $(CXXFLAGS) -o obj/strlib.o -c src/strlib.C
 obj/AlgSeven.o: \
 	src/AlgSeven.C \
+	src/InfoStream.h \
 	src/Alg7.h \
 	src/Rebalancer.h \
 	src/elements.h \
@@ -132,14 +92,9 @@ obj/AtomMap.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/AtomMap.o -c src/AtomMap.C
 obj/BackEnd.o: \
@@ -148,18 +103,13 @@ obj/BackEnd.o: \
 	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/Node.h \
 	src/main.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -184,14 +134,9 @@ obj/BroadcastMgr.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -216,14 +161,9 @@ obj/BroadcastClient.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -251,14 +191,9 @@ obj/CollectionMaster.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -272,10 +207,13 @@ obj/CollectionMaster.o: \
 	src/ProcessorPrivate.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
+	src/InfoStream.h \
 	src/Node.h \
 	src/Output.h \
 	src/packmsg.h \
@@ -301,16 +239,13 @@ obj/CollectionMgr.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/ProcessorPrivate.h \
@@ -319,12 +254,12 @@ obj/CollectionMgr.o: \
 	src/AtomMap.h \
 	src/Node.h \
 	src/Molecule.h \
-	src/IntList.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
+	src/UniqueSortedArray.h \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/MStream.h \
@@ -336,8 +271,7 @@ obj/Communicate.o: \
 	src/Communicate.h \
 	src/MStream.h \
 	src/Vector.h \
-	src/common.h \
-	src/InfoStream.h
+	src/common.h
 	$(CXX) $(CXXFLAGS) -o obj/Communicate.o -c src/Communicate.C
 obj/Compute.o: \
 	src/Compute.C \
@@ -346,14 +280,9 @@ obj/Compute.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -370,6 +299,8 @@ obj/Compute.o: \
 	src/ProcessorPrivate.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/Box.h \
@@ -385,14 +316,9 @@ obj/ComputeAngles.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/structures.h \
 	src/Compute.h \
 	src/main.h \
@@ -416,12 +342,16 @@ obj/ComputeAngles.o: \
 	src/PositionBox.h \
 	src/Lattice.h \
 	src/Tensor.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/ProcessorPrivate.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	src/HomePatchTypes.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
@@ -430,19 +360,14 @@ obj/ComputeAngles.o: \
 	src/AtomMap.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
-	src/IntList.h \
 	src/ConfigList.h \
 	src/Hydrogen.h \
 	src/ReductionMgr.h \
-	src/Inform.h \
 	src/UniqueSetIter.h \
 	src/ComputeAngles.inl \
 	src/Parameters.h \
 	src/strlib.h \
 	src/MStream.h \
-	src/HBondParam.h \
-	src/HBondPairData.h \
-	src/VoidTree.h \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/Debug.h
@@ -451,23 +376,20 @@ obj/ComputeBonds.o: \
 	src/ComputeBonds.C \
 	src/ComputeBonds.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/Molecule.h \
-	src/IntList.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/ReductionMgr.h \
 	src/main.h \
 	src/BOCgroup.h \
@@ -498,20 +420,17 @@ obj/ComputeBonds.o: \
 	src/HomePatchList.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	src/HomePatchTypes.h \
 	src/Node.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/PatchMgr.h \
-	src/Inform.h \
 	src/UniqueSetIter.h \
 	src/ComputeBonds.inl \
 	src/Parameters.h \
 	src/strlib.h \
 	src/MStream.h \
-	src/HBondParam.h \
-	src/HBondPairData.h \
-	src/VoidTree.h \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/Debug.h
@@ -526,14 +445,9 @@ obj/ComputeCylindricalBC.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -559,7 +473,10 @@ obj/ComputeCylindricalBC.o: \
 	src/ConfigList.h \
 	src/Communicate.h \
 	src/MStream.h \
-	src/Patch.h
+	src/Patch.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeCylindricalBC.o -c src/ComputeCylindricalBC.C
 obj/ComputeDihedrals.o: \
 	src/ComputeDihedrals.C \
@@ -568,14 +485,9 @@ obj/ComputeDihedrals.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/structures.h \
 	src/Compute.h \
 	src/main.h \
@@ -599,12 +511,16 @@ obj/ComputeDihedrals.o: \
 	src/PositionBox.h \
 	src/Lattice.h \
 	src/Tensor.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/ProcessorPrivate.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	src/HomePatchTypes.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
@@ -613,19 +529,14 @@ obj/ComputeDihedrals.o: \
 	src/AtomMap.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
-	src/IntList.h \
 	src/ConfigList.h \
 	src/Hydrogen.h \
 	src/ReductionMgr.h \
-	src/Inform.h \
 	src/UniqueSetIter.h \
 	src/ComputeDihedrals.inl \
 	src/Parameters.h \
 	src/strlib.h \
 	src/MStream.h \
-	src/HBondParam.h \
-	src/HBondPairData.h \
-	src/VoidTree.h \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/Debug.h
@@ -638,14 +549,9 @@ obj/ComputeDPME.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -660,6 +566,8 @@ obj/ComputeDPME.o: \
 	src/ProcessorPrivate.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/PatchMap.inl \
@@ -673,9 +581,11 @@ obj/ComputeDPME.o: \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
+	src/UniqueSortedArray.h \
 	src/PatchTypes.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	src/HomePatchTypes.h \
 	src/ComputeDPMEMsgs.h \
 	dpme2/dpme2.h \
@@ -686,7 +596,6 @@ obj/ComputeDPME.o: \
 	src/ReductionMgr.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
-	src/IntList.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -704,14 +613,9 @@ obj/ComputeDPMEMsgs.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/ComputeMgr.decl.h \
 	dpme2/dpme2.h \
 	dpme2/dpme2_pvm.h \
@@ -723,7 +627,6 @@ obj/ComputeDPMEMsgs.o: \
 obj/ComputeDPMTA.o: \
 	src/ComputeDPMTA.C \
 	src/common.h \
-	src/InfoStream.h \
 	src/Node.h \
 	src/main.h \
 	src/BOCgroup.h \
@@ -731,11 +634,7 @@ obj/ComputeDPMTA.o: \
 	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -759,6 +658,8 @@ obj/ComputeDPMTA.o: \
 	src/PatchMap.inl \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/AtomMap.h \
 	src/ComputeDPMTA.h \
 	src/ComputeHomePatches.h \
@@ -769,14 +670,15 @@ obj/ComputeDPMTA.o: \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
+	src/UniqueSortedArray.h \
 	src/PatchTypes.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	src/HomePatchTypes.h \
 	dpmta-2.6/src/dpmta.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
-	src/IntList.h \
 	src/structures.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
@@ -802,11 +704,7 @@ obj/ComputeFreeEnergy.o: \
 	src/NamdTypes.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/Compute.h \
 	src/main.h \
 	src/BOCgroup.h \
@@ -829,6 +727,9 @@ obj/ComputeFreeEnergy.o: \
 	src/PositionBox.h \
 	src/Lattice.h \
 	src/Tensor.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
@@ -841,7 +742,6 @@ obj/ComputeFreeEnergy.o: \
 	src/ComputeGlobal.h \
 	src/ComputeGlobalMsgs.h \
 	src/Molecule.h \
-	src/IntList.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -862,14 +762,9 @@ obj/ComputeFullDirect.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -884,6 +779,8 @@ obj/ComputeFullDirect.o: \
 	src/ProcessorPrivate.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/PatchMap.inl \
@@ -897,15 +794,16 @@ obj/ComputeFullDirect.o: \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
+	src/UniqueSortedArray.h \
 	src/PatchTypes.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	src/HomePatchTypes.h \
 	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
-	src/IntList.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -935,14 +833,9 @@ obj/ComputeHomePatch.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/ProcessorPrivate.h \
 	src/ComputeHomePatch.h \
 	src/Compute.h \
@@ -956,11 +849,15 @@ obj/ComputeHomePatch.o: \
 	src/PatchMap.inl \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/AtomMap.h \
 	src/HomePatch.h \
 	src/Patch.h \
+	src/UniqueSortedArray.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	src/HomePatchTypes.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeHomePatch.o -c src/ComputeHomePatch.C
@@ -972,14 +869,9 @@ obj/ComputeHomePatches.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -994,6 +886,8 @@ obj/ComputeHomePatches.o: \
 	src/ProcessorPrivate.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/ComputeHomePatches.h \
@@ -1004,13 +898,14 @@ obj/ComputeHomePatches.o: \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
+	src/UniqueSortedArray.h \
 	src/PatchTypes.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	src/HomePatchTypes.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
-	src/IntList.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -1026,14 +921,9 @@ obj/ComputeImpropers.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/structures.h \
 	src/Compute.h \
 	src/main.h \
@@ -1057,12 +947,16 @@ obj/ComputeImpropers.o: \
 	src/PositionBox.h \
 	src/Lattice.h \
 	src/Tensor.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/ProcessorPrivate.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	src/HomePatchTypes.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
@@ -1071,18 +965,13 @@ obj/ComputeImpropers.o: \
 	src/AtomMap.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
-	src/IntList.h \
 	src/ConfigList.h \
 	src/Hydrogen.h \
 	src/ReductionMgr.h \
-	src/Inform.h \
 	src/UniqueSetIter.h \
 	src/Parameters.h \
 	src/strlib.h \
 	src/MStream.h \
-	src/HBondParam.h \
-	src/HBondPairData.h \
-	src/VoidTree.h \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/Debug.h
@@ -1095,14 +984,9 @@ obj/ComputeGlobal.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -1117,6 +1001,8 @@ obj/ComputeGlobal.o: \
 	src/ProcessorPrivate.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/PatchMap.inl \
@@ -1130,9 +1016,11 @@ obj/ComputeGlobal.o: \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
+	src/UniqueSortedArray.h \
 	src/PatchTypes.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	src/HomePatchTypes.h \
 	src/ComputeGlobalMaster.h \
 	src/ComputeGlobalMsgs.h \
@@ -1153,7 +1041,6 @@ obj/ComputeGlobal.o: \
 	src/ComputeSMD.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
-	src/IntList.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -1174,14 +1061,9 @@ obj/ComputeGlobalEasy.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -1196,6 +1078,8 @@ obj/ComputeGlobalEasy.o: \
 	src/ProcessorPrivate.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/PatchMap.inl \
@@ -1209,9 +1093,11 @@ obj/ComputeGlobalEasy.o: \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
+	src/UniqueSortedArray.h \
 	src/PatchTypes.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	src/HomePatchTypes.h \
 	src/ComputeMisc.h \
 	src/ComputeGlobalEasy.h \
@@ -1219,7 +1105,6 @@ obj/ComputeGlobalEasy.o: \
 	src/ComputeGlobalMsgs.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
-	src/IntList.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -1240,14 +1125,9 @@ obj/ComputeGlobalMaster.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -1262,6 +1142,8 @@ obj/ComputeGlobalMaster.o: \
 	src/ProcessorPrivate.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/PatchMap.inl \
@@ -1275,15 +1157,16 @@ obj/ComputeGlobalMaster.o: \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
+	src/UniqueSortedArray.h \
 	src/PatchTypes.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	src/HomePatchTypes.h \
 	src/ComputeGlobalMaster.h \
 	src/ComputeGlobalMsgs.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
-	src/IntList.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -1299,14 +1182,9 @@ obj/ComputeGlobalMsgs.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/ComputeMgr.decl.h \
 	src/packmsg.h \
 	src/Debug.h
@@ -1320,14 +1198,9 @@ obj/ComputeIMD.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -1357,11 +1230,15 @@ obj/ComputeIMD.o: \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	src/HomePatchTypes.h \
 	src/ComputeGlobalMsgs.h \
 	src/ComputeIMD.h \
@@ -1374,14 +1251,9 @@ obj/ComputeMap.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
 	src/Compute.h \
@@ -1406,14 +1278,9 @@ obj/ComputeMisc.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/Compute.h \
 	src/main.h \
 	src/BOCgroup.h \
@@ -1436,12 +1303,16 @@ obj/ComputeMisc.o: \
 	src/PositionBox.h \
 	src/Lattice.h \
 	src/Tensor.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/ProcessorPrivate.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	src/HomePatchTypes.h \
 	src/ComputeGlobalEasy.h \
 	src/ComputeGlobalMaster.h
@@ -1451,7 +1322,6 @@ obj/ComputeMgr.o: \
 	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
 	src/Debug.h \
-	src/InfoStream.h \
 	inc/ComputeMgr.decl.h \
 	src/ComputeMgr.h \
 	src/main.h \
@@ -1460,11 +1330,7 @@ obj/ComputeMgr.o: \
 	src/common.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -1486,6 +1352,8 @@ obj/ComputeMgr.o: \
 	src/ComputeMap.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/Compute.h \
@@ -1504,15 +1372,15 @@ obj/ComputeMgr.o: \
 	src/structures.h \
 	src/HomePatch.h \
 	src/Patch.h \
+	src/UniqueSortedArray.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	src/HomePatchTypes.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
-	src/IntList.h \
 	src/ConfigList.h \
 	src/Hydrogen.h \
-	src/Inform.h \
 	src/ComputeAngles.inl \
 	src/ComputeDihedrals.h \
 	src/ComputeDihedrals.inl \
@@ -1549,14 +1417,9 @@ obj/ComputeNonbondedExcl.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -1570,18 +1433,17 @@ obj/ComputeNonbondedExcl.o: \
 	inc/BroadcastMgr.decl.h \
 	src/ProcessorPrivate.h \
 	src/Molecule.h \
-	src/IntList.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/Parameters.h \
 	src/strlib.h \
 	src/MStream.h \
-	src/HBondParam.h \
-	src/HBondPairData.h \
-	src/VoidTree.h \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/Lattice.h \
@@ -1600,12 +1462,12 @@ obj/ComputeNonbondedExcl.o: \
 	src/HomePatchList.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	src/HomePatchTypes.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/PatchMgr.h \
 	src/ReductionMgr.h \
-	src/Inform.h \
 	src/UniqueSetIter.h \
 	src/ComputeNonbondedUtil.h \
 	src/Debug.h
@@ -1620,14 +1482,9 @@ obj/ComputeNonbondedSelf.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -1650,6 +1507,9 @@ obj/ComputeNonbondedSelf.o: \
 	src/ReductionMgr.h \
 	src/ProcessorPrivate.h \
 	src/Patch.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/LdbCoordinator.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeNonbondedSelf.o -c src/ComputeNonbondedSelf.C
@@ -1663,14 +1523,9 @@ obj/ComputeNonbondedPair.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -1693,6 +1548,9 @@ obj/ComputeNonbondedPair.o: \
 	src/ReductionMgr.h \
 	src/ProcessorPrivate.h \
 	src/Patch.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/LdbCoordinator.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
@@ -1704,14 +1562,9 @@ obj/ComputeNonbondedUtil.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/ReductionMgr.h \
 	src/main.h \
 	src/BOCgroup.h \
@@ -1735,11 +1588,13 @@ obj/ComputeNonbondedUtil.o: \
 	src/Tensor.h \
 	src/Node.h \
 	src/Molecule.h \
-	src/IntList.h \
 	src/structures.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/LJTable.h \
 	src/ComputeNonbondedBase.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeNonbondedUtil.o -c src/ComputeNonbondedUtil.C
@@ -1762,14 +1617,9 @@ obj/ComputePatch.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/ProcessorPrivate.h \
 	src/ComputePatch.h \
 	src/Compute.h \
@@ -1783,8 +1633,11 @@ obj/ComputePatch.o: \
 	src/PatchMap.inl \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/AtomMap.h \
 	src/Patch.h \
+	src/UniqueSortedArray.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputePatch.o -c src/ComputePatch.C
 obj/ComputePatchPair.o: \
@@ -1806,14 +1659,9 @@ obj/ComputePatchPair.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/ProcessorPrivate.h \
 	src/ComputePatchPair.h \
 	src/Compute.h \
@@ -1827,8 +1675,11 @@ obj/ComputePatchPair.o: \
 	src/PatchMap.inl \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/AtomMap.h \
 	src/Patch.h \
+	src/UniqueSortedArray.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputePatchPair.o -c src/ComputePatchPair.C
 obj/ComputePme.o: \
@@ -1839,14 +1690,9 @@ obj/ComputePme.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -1861,6 +1707,8 @@ obj/ComputePme.o: \
 	src/ProcessorPrivate.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/PatchMap.inl \
@@ -1874,9 +1722,11 @@ obj/ComputePme.o: \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
+	src/UniqueSortedArray.h \
 	src/PatchTypes.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	src/HomePatchTypes.h \
 	src/ComputePmeMsgs.h \
 	src/PmeBase.h \
@@ -1884,7 +1734,6 @@ obj/ComputePme.o: \
 	src/ReductionMgr.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
-	src/IntList.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -1906,14 +1755,9 @@ obj/ComputePmeMsgs.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/ComputeMgr.decl.h \
 	src/PmeBase.h \
 	src/packmsg.h \
@@ -1929,14 +1773,9 @@ obj/ComputeRestraints.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -1959,12 +1798,14 @@ obj/ComputeRestraints.o: \
 	src/ProcessorPrivate.h \
 	src/Node.h \
 	src/Molecule.h \
-	src/IntList.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/MStream.h \
@@ -1981,14 +1822,9 @@ obj/ComputeSMD.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/Compute.h \
 	src/main.h \
 	src/BOCgroup.h \
@@ -2011,12 +1847,16 @@ obj/ComputeSMD.o: \
 	src/PositionBox.h \
 	src/Lattice.h \
 	src/Tensor.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/ProcessorPrivate.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	src/HomePatchTypes.h \
 	src/Node.h \
 	src/SimParameters.h \
@@ -2027,7 +1867,6 @@ obj/ComputeSMD.o: \
 	src/ComputeGlobal.h \
 	src/ComputeGlobalMsgs.h \
 	src/PDB.h \
-	src/IntList.h \
 	src/PDBData.h \
 	src/Molecule.h \
 	src/structures.h \
@@ -2045,14 +1884,9 @@ obj/ComputeSphericalBC.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -2078,7 +1912,10 @@ obj/ComputeSphericalBC.o: \
 	src/ConfigList.h \
 	src/Communicate.h \
 	src/MStream.h \
-	src/Patch.h
+	src/Patch.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeSphericalBC.o -c src/ComputeSphericalBC.C
 obj/ComputeTcl.o: \
 	src/ComputeTcl.C \
@@ -2088,14 +1925,9 @@ obj/ComputeTcl.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -2120,16 +1952,19 @@ obj/ComputeTcl.o: \
 	src/PositionBox.h \
 	src/Lattice.h \
 	src/Tensor.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	src/HomePatchTypes.h \
 	src/ComputeGlobal.h \
 	src/ComputeGlobalMsgs.h \
 	src/Molecule.h \
-	src/IntList.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -2154,14 +1989,9 @@ obj/Controller.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -2175,12 +2005,14 @@ obj/Controller.o: \
 	inc/BroadcastMgr.decl.h \
 	src/ProcessorPrivate.h \
 	src/Molecule.h \
-	src/IntList.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/MStream.h \
@@ -2210,6 +2042,7 @@ obj/Controller.o: \
 	src/Random.h \
 	src/imd.h \
 	src/IMDOutput.h \
+	src/InfoStream.h \
 	src/Debug.h
 	$(CXX) $(CXXTHREADFLAGS) -o obj/Controller.o -c src/Controller.C
 obj/ccsinterface.o: \
@@ -2264,11 +2097,7 @@ obj/FreeEnergyParse.o: \
 	src/NamdTypes.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/Compute.h \
 	src/main.h \
 	src/BOCgroup.h \
@@ -2291,6 +2120,9 @@ obj/FreeEnergyParse.o: \
 	src/PositionBox.h \
 	src/Lattice.h \
 	src/Tensor.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
@@ -2319,11 +2151,7 @@ obj/FreeEnergyRestrain.o: \
 	src/NamdTypes.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/Compute.h \
 	src/main.h \
 	src/BOCgroup.h \
@@ -2346,6 +2174,9 @@ obj/FreeEnergyRestrain.o: \
 	src/PositionBox.h \
 	src/Lattice.h \
 	src/Tensor.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
@@ -2373,11 +2204,7 @@ obj/FreeEnergyRMgr.o: \
 	src/NamdTypes.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/Compute.h \
 	src/main.h \
 	src/BOCgroup.h \
@@ -2400,6 +2227,9 @@ obj/FreeEnergyRMgr.o: \
 	src/PositionBox.h \
 	src/Lattice.h \
 	src/Tensor.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
@@ -2428,7 +2258,6 @@ obj/HomePatch.o: \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/Communicate.h \
 	src/MStream.h \
 	src/Vector.h \
@@ -2436,11 +2265,7 @@ obj/HomePatch.o: \
 	src/NamdTypes.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/Tensor.h \
 	src/HomePatch.h \
 	src/Patch.h \
@@ -2448,6 +2273,9 @@ obj/HomePatch.o: \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
@@ -2455,6 +2283,7 @@ obj/HomePatch.o: \
 	src/BOCgroup.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	src/main.h \
@@ -2476,7 +2305,6 @@ obj/HomePatch.o: \
 	src/UniqueSetRaw.h \
 	src/UniqueSetIter.h \
 	src/Molecule.h \
-	src/IntList.h \
 	src/structures.h \
 	src/Hydrogen.h \
 	src/PatchMgr.h \
@@ -2484,55 +2312,25 @@ obj/HomePatch.o: \
 	src/LdbCoordinator.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/HomePatch.o -c src/HomePatch.C
-obj/HBondParam.o: \
-	src/HBondParam.C \
-	src/HBondParam.h \
-	src/HBondPairData.h \
-	src/common.h \
-	src/InfoStream.h \
-	src/VoidTree.h \
-	src/structures.h \
-	src/Parameters.h \
-	src/strlib.h \
-	src/MStream.h \
-	src/Vector.h \
-	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
-	src/Lattice.h \
-	src/NamdTypes.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
-	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
-	src/Tensor.h \
-	src/Inform.h
-	$(CXX) $(CXXFLAGS) -o obj/HBondParam.o -c src/HBondParam.C
 obj/IMDOutput.o: \
 	src/IMDOutput.C \
 	src/IMDOutput.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/imd.h \
 	src/Molecule.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
-	src/IntList.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/Node.h \
 	src/main.h \
 	src/BOCgroup.h \
@@ -2555,33 +2353,26 @@ obj/IMDOutput.o: \
 	src/Tensor.h \
 	src/vmdsock.h
 	$(CXX) $(CXXFLAGS) -o obj/IMDOutput.o -c src/IMDOutput.C
-obj/Inform.o: \
-	src/Inform.C \
-	src/common.h \
-	src/InfoStream.h \
-	src/Inform.h
-	$(CXX) $(CXXFLAGS) -o obj/Inform.o -c src/Inform.C
 obj/InfoStream.o: \
 	src/InfoStream.C \
-	src/InfoStream.h
+	src/InfoStream.h \
+	src/Vector.h \
+	src/common.h \
+	src/Tensor.h
 	$(CXX) $(CXXFLAGS) -o obj/InfoStream.o -c src/InfoStream.C
 obj/LdbCoordinator.o: \
 	src/LdbCoordinator.C \
 	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
+	src/InfoStream.h \
 	inc/LdbCoordinator.decl.h \
 	src/LdbCoordinator.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/Node.h \
 	src/main.h \
 	inc/main.decl.h \
@@ -2603,6 +2394,8 @@ obj/LdbCoordinator.o: \
 	src/PatchMap.inl \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/AtomMap.h \
 	src/ComputeMap.h \
 	src/Debug.h \
@@ -2623,7 +2416,6 @@ obj/LJTable.o: \
 	src/LJTable.C \
 	src/LJTable.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
 	src/Node.h \
@@ -2632,11 +2424,7 @@ obj/LJTable.o: \
 	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -2652,14 +2440,12 @@ obj/LJTable.o: \
 	src/structures.h \
 	src/strlib.h \
 	src/MStream.h \
-	src/HBondParam.h \
-	src/HBondPairData.h \
-	src/VoidTree.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
 	src/Lattice.h \
 	src/Tensor.h \
+	src/InfoStream.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/LJTable.o -c src/LJTable.C
 obj/Measure.o: \
@@ -2671,14 +2457,9 @@ obj/Measure.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -2695,20 +2476,18 @@ obj/Measure.o: \
 	src/structures.h \
 	src/strlib.h \
 	src/MStream.h \
-	src/HBondParam.h \
-	src/HBondPairData.h \
-	src/VoidTree.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/Molecule.h \
-	src/IntList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/ObjectArena.h \
-	src/Hydrogen.h
+	src/Hydrogen.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h
 	$(CXX) $(CXXFLAGS) -o obj/Measure.o -c src/Measure.C
 obj/MStream.o: \
 	src/MStream.C \
@@ -2716,7 +2495,6 @@ obj/MStream.o: \
 	src/MStream.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/MStream.o -c src/MStream.C
 obj/MigrateAtomsMsg.o: \
@@ -2728,15 +2506,13 @@ obj/MigrateAtomsMsg.o: \
 	src/common.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/PatchTypes.h \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/MigrateAtomsMsg.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	inc/PatchMgr.decl.h \
 	src/Debug.h \
 	src/PatchMap.h \
@@ -2749,6 +2525,7 @@ obj/MigrateAtomsMsg.o: \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
+	src/UniqueSortedArray.h \
 	src/HomePatchTypes.h \
 	src/main.h \
 	inc/main.decl.h \
@@ -2772,25 +2549,20 @@ obj/Molecule.o: \
 	src/ResizeArrayRaw.h \
 	src/Molecule.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
-	src/IntList.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/strlib.h \
+	src/InfoStream.h \
 	src/MStream.h \
 	src/Communicate.h \
 	src/ObjectArena.h \
 	src/Parameters.h \
-	src/HBondParam.h \
-	src/HBondPairData.h \
-	src/VoidTree.h \
 	src/SimParameters.h \
 	src/Lattice.h \
 	src/Tensor.h \
@@ -2801,7 +2573,6 @@ obj/Molecule.o: \
 	$(CXX) $(CXXFLAGS) -o obj/Molecule.o -c src/Molecule.C
 obj/NamdState.o: \
 	src/NamdState.C \
-	src/Inform.h \
 	src/common.h \
 	src/InfoStream.h \
 	src/Molecule.h \
@@ -2809,23 +2580,18 @@ obj/NamdState.o: \
 	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
-	src/IntList.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/Parameters.h \
 	src/strlib.h \
 	src/MStream.h \
-	src/HBondParam.h \
-	src/HBondPairData.h \
-	src/VoidTree.h \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/Lattice.h \
@@ -2860,19 +2626,13 @@ obj/NamdState.o: \
 obj/NamdOneTools.o: \
 	src/NamdOneTools.C \
 	src/common.h \
-	src/InfoStream.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/NamdOneTools.h \
 	src/PDB.h \
-	src/IntList.h \
 	src/PDBData.h \
 	src/Lattice.h \
 	src/Tensor.h \
@@ -2882,6 +2642,10 @@ obj/NamdOneTools.o: \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/InfoStream.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/NamdOneTools.o -c src/NamdOneTools.C
 obj/Node.o: \
@@ -2903,14 +2667,9 @@ obj/Node.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/ProcessorPrivate.h \
 	src/Debug.h \
 	src/IMDOutput.h \
@@ -2919,6 +2678,8 @@ obj/Node.o: \
 	src/ComputeMap.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/PatchMgr.h \
@@ -2928,14 +2689,15 @@ obj/Node.o: \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
+	src/UniqueSortedArray.h \
 	src/PatchTypes.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	src/HomePatchTypes.h \
 	src/Compute.h \
 	src/ComputeMgr.h \
 	src/Molecule.h \
-	src/IntList.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -2952,12 +2714,8 @@ obj/Node.o: \
 	src/Parameters.h \
 	src/strlib.h \
 	src/MStream.h \
-	src/HBondParam.h \
-	src/HBondPairData.h \
-	src/VoidTree.h \
 	src/SimParameters.h \
 	src/Communicate.h \
-	src/Inform.h \
 	src/LdbCoordinator.h \
 	src/ScriptTcl.h \
 	src/Broadcasts.h \
@@ -2970,28 +2728,24 @@ obj/Output.o: \
 	src/Output.C \
 	src/IMDOutput.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/imd.h \
 	src/Output.h \
 	src/dcdlib.h \
 	src/strlib.h \
-	src/Inform.h \
 	src/Molecule.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
-	src/IntList.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/Node.h \
 	src/main.h \
 	src/BOCgroup.h \
@@ -3009,9 +2763,6 @@ obj/Output.o: \
 	src/ProcessorPrivate.h \
 	src/Parameters.h \
 	src/MStream.h \
-	src/HBondParam.h \
-	src/HBondPairData.h \
-	src/VoidTree.h \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/Lattice.h \
@@ -3027,20 +2778,17 @@ obj/Output.o: \
 	src/BroadcastObject.h \
 	src/BroadcastMgr.h \
 	src/UniqueSetIter.h \
-	src/BroadcastClient.h
+	src/BroadcastClient.h \
+	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) -o obj/Output.o -c src/Output.C
 obj/Parameters.o: \
 	src/Parameters.C \
 	src/Parameters.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/structures.h \
 	src/strlib.h \
 	src/MStream.h \
 	src/Vector.h \
-	src/HBondParam.h \
-	src/HBondPairData.h \
-	src/VoidTree.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
@@ -3048,20 +2796,18 @@ obj/Parameters.o: \
 	src/NamdTypes.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
-	src/Tensor.h
+	src/Tensor.h \
+	src/InfoStream.h \
+	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/Parameters.o -c src/Parameters.C
 obj/ParseOptions.o: \
 	src/ParseOptions.C \
 	src/ParseOptions.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/Vector.h \
-	src/ConfigList.h
+	src/ConfigList.h \
+	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) -o obj/ParseOptions.o -c src/ParseOptions.C
 obj/Patch.o: \
 	src/Patch.C \
@@ -3069,20 +2815,18 @@ obj/Patch.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/OwnerBox.h \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/Lattice.h \
 	src/Tensor.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
@@ -3104,7 +2848,6 @@ obj/Patch.o: \
 	src/ComputeMap.h \
 	src/Node.h \
 	src/Molecule.h \
-	src/IntList.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -3113,6 +2856,7 @@ obj/Patch.o: \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/MStream.h \
+	src/ResizeArrayPrimIter.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/Patch.o -c src/Patch.C
 obj/PatchMgr.o: \
@@ -3122,14 +2866,11 @@ obj/PatchMgr.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
+	src/ResizeArrayIter.h \
 	src/SortedArray.h \
 	src/SortableResizeArray.h \
-	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
@@ -3138,6 +2879,7 @@ obj/PatchMgr.o: \
 	src/PositionBox.h \
 	src/Lattice.h \
 	src/Tensor.h \
+	src/UniqueSortedArray.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
@@ -3145,6 +2887,7 @@ obj/PatchMgr.o: \
 	src/BOCgroup.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	src/HomePatchTypes.h \
 	src/main.h \
 	inc/main.decl.h \
@@ -3170,14 +2913,11 @@ obj/PatchMap.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
+	src/ResizeArrayIter.h \
 	src/SortedArray.h \
 	src/SortableResizeArray.h \
-	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
@@ -3186,6 +2926,7 @@ obj/PatchMap.o: \
 	src/PositionBox.h \
 	src/Lattice.h \
 	src/Tensor.h \
+	src/UniqueSortedArray.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
@@ -3193,6 +2934,7 @@ obj/PatchMap.o: \
 	src/BOCgroup.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	src/main.h \
@@ -3213,27 +2955,22 @@ obj/PatchMap.o: \
 obj/PDB.o: \
 	src/PDB.C \
 	src/common.h \
-	src/InfoStream.h \
 	src/PDB.h \
-	src/IntList.h \
 	src/PDBData.h \
 	src/Vector.h \
 	src/Lattice.h \
 	src/NamdTypes.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
-	src/Tensor.h
+	src/Tensor.h \
+	src/SortableResizeArray.h
 	$(CXX) $(CXXFLAGS) -o obj/PDB.o -c src/PDB.C
 obj/PDBData.o: \
 	src/PDBData.C \
+	src/InfoStream.h \
 	src/PDBData.h \
-	src/common.h \
-	src/InfoStream.h
+	src/common.h
 	$(CXX) $(CXXFLAGS) -o obj/PDBData.o -c src/PDBData.C
 obj/PmeBase.o: \
 	src/PmeBase.C \
@@ -3247,17 +2984,12 @@ obj/PmeCoulomb.o: \
 	src/PmeRealSpace.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/PmeKSpace.h \
 	src/Lattice.h \
 	src/NamdTypes.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/Tensor.h
 	$(CXX) $(CXXFLAGS) -o obj/PmeCoulomb.o -c src/PmeCoulomb.C
 obj/PmeFFT.o: \
@@ -3275,14 +3007,9 @@ obj/PmeKSpace.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/Tensor.h
 	$(CXX) $(CXXFLAGS) -o obj/PmeKSpace.o -c src/PmeKSpace.C
 obj/PmeRealSpace.o: \
@@ -3290,8 +3017,7 @@ obj/PmeRealSpace.o: \
 	src/PmeRealSpace.h \
 	src/PmeBase.h \
 	src/Vector.h \
-	src/common.h \
-	src/InfoStream.h
+	src/common.h
 	$(CXX) $(CXXFLAGS) -o obj/PmeRealSpace.o -c src/PmeRealSpace.C
 obj/ProcessorPrivate.o: \
 	src/ProcessorPrivate.C \
@@ -3305,14 +3031,9 @@ obj/ProxyMgr.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -3335,6 +3056,8 @@ obj/ProxyMgr.o: \
 	src/PatchMap.inl \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/AtomMap.h \
 	src/ProxyPatch.h \
 	src/Patch.h \
@@ -3342,10 +3065,12 @@ obj/ProxyMgr.o: \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
+	src/UniqueSortedArray.h \
 	src/ComputeMap.h \
 	src/HomePatch.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	src/HomePatchTypes.h \
 	src/packmsg.h \
 	src/Debug.h \
@@ -3369,14 +3094,9 @@ obj/ProxyPatch.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/ProxyPatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
@@ -3385,6 +3105,9 @@ obj/ProxyPatch.o: \
 	src/PositionBox.h \
 	src/Lattice.h \
 	src/Tensor.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/PatchTypes.h \
 	src/ProxyMgr.h \
 	src/UniqueSet.h \
@@ -3410,15 +3133,12 @@ obj/RecBisection.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
+	src/ResizeArrayIter.h \
+	src/HomePatchList.h \
 	src/SortedArray.h \
 	src/SortableResizeArray.h \
-	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
-	src/HomePatchList.h \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/ProcessorPrivate.h \
@@ -3429,6 +3149,7 @@ obj/RecBisection.o: \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
+	src/UniqueSortedArray.h \
 	src/PatchTypes.h
 	$(CXX) $(CXXFLAGS) -o obj/RecBisection.o -c src/RecBisection.C
 obj/ReductionMgr.o: \
@@ -3440,12 +3161,10 @@ obj/ReductionMgr.o: \
 	src/common.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
+	src/ResizeArrayIter.h \
+	src/HomePatchList.h \
 	src/SortedArray.h \
 	src/SortableResizeArray.h \
-	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
-	src/HomePatchList.h \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/ProcessorPrivate.h \
@@ -3487,14 +3206,9 @@ obj/ScriptTcl.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/Broadcasts.h \
 	src/Lattice.h \
 	src/Tensor.h \
@@ -3527,17 +3241,21 @@ obj/ScriptTcl.o: \
 	src/MStream.h \
 	src/Thread.h \
 	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
+	src/UniqueSortedArray.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	src/HomePatchTypes.h \
 	src/Measure.h \
 	src/Debug.h
@@ -3550,14 +3268,9 @@ obj/Sequencer.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -3584,10 +3297,14 @@ obj/Sequencer.o: \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	src/HomePatchTypes.h \
 	src/ReductionMgr.h \
 	src/CollectionMgr.h \
@@ -3601,7 +3318,6 @@ obj/Sequencer.o: \
 	src/Controller.h \
 	src/Broadcasts.h \
 	src/Molecule.h \
-	src/IntList.h \
 	src/structures.h \
 	src/Hydrogen.h \
 	src/NamdOneTools.h \
@@ -3625,14 +3341,9 @@ obj/SimParameters.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/ReductionMgr.h \
 	src/main.h \
 	src/BOCgroup.h \
@@ -3656,18 +3367,13 @@ obj/SimParameters.o: \
 	src/Tensor.h \
 	src/ParseOptions.h \
 	src/structures.h \
+	src/InfoStream.h \
 	src/Debug.h
 	$(CXX) $(CXXSIMPARAMFLAGS) -o obj/SimParameters.o -c src/SimParameters.C
 obj/TclCommands.o: \
 	src/TclCommands.C \
 	src/TclCommands.h
 	$(CXX) $(CXXFLAGS) -o obj/TclCommands.o -c src/TclCommands.C
-obj/VoidTree.o: \
-	src/VoidTree.C \
-	src/VoidTree.h \
-	src/common.h \
-	src/InfoStream.h
-	$(CXX) $(CXXFLAGS) -o obj/VoidTree.o -c src/VoidTree.C
 obj/WorkDistrib.o: \
 	src/WorkDistrib.C \
 	src/ProcessorPrivate.h \
@@ -3688,17 +3394,14 @@ obj/WorkDistrib.o: \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
-	src/ResizeArrayPrimIter.h \
 	src/ComputeMap.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/Node.h \
@@ -3709,14 +3412,15 @@ obj/WorkDistrib.o: \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
+	src/UniqueSortedArray.h \
 	src/PatchTypes.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	src/InfoStream.h \
 	src/HomePatchTypes.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/PDB.h \
-	src/IntList.h \
 	src/PDBData.h \
 	src/SimParameters.h \
 	src/ConfigList.h \

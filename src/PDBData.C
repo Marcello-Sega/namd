@@ -17,6 +17,7 @@
 #include <stdio.h>    // sprintf and sscanf
 #include <strings.h>  // strncpy
 #include <stdlib.h>   // atoi and atof
+#include "InfoStream.h"
 #include "PDBData.h"
 
 //  Define some constants for the class

@@ -11,14 +11,13 @@
 #include "charm++.h"
 #include "converse.h"
 
+#include <unistd.h>
+#include <errno.h>
 #include <sys/stat.h>
 #include <ctype.h>
 
 #include "common.h"
-#include "Communicate.h"
-#include "SimParameters.h"
-#include "Node.h"
-#include "Inform.h"
+#include "InfoStream.h"
 
 #ifdef USESTDIOSTUBS
 
@@ -36,17 +35,6 @@ int stat(const char* fn, struct stat* buf)
 }
 
 #endif
-
-Inform namdErr("ERROR");
-Inform namdWarn("Warning");
-Inform namdInfo("Info");
-Inform namdDebug("** DEBUG **");
-
-// print out title
-void NAMD_title(void)
-
-{
-}
 
 
 // make a duplicate of a string
@@ -125,67 +113,6 @@ void NAMD_write(int fd, const void *buf, size_t count)
    }
 }
 
-
-/********************************************************************************/
-/*										*/
-/*			FUNCTION NAMD_compare_ints				*/
-/*										*/
-/*   INPUTS:									*/
-/*	i - first integer to compare						*/
-/*	j - second integer to compare						*/
-/*										*/
-/*	This function just compares to integers and returns a -1 if i<j, a 0    */
-/*   if i=j, and a 1 if i>j.  It is used to pass to qsort and bsearch routines  */
-/*   so that standard sorting and seraching can be done.			*/
-/*										*/
-/********************************************************************************/
-
-extern "C" int NAMD_compare_ints(const void *i, const void *j)
-
-{
-	if ( *((int *) i) < *((int *) j) )
-	{
-		return(-1);
-	}
-	else if ( *((int *) i) == *((int *) j) )
-	{
-		return(0);
-	}
-	else 
-	{
-		return(1);
-	}
-}
-
-int *NAMD_bsearch(int *key, int *base, int n, int size, CCMPFN *cmpfn)
-{
-	if (cmpfn)
-		return (int *) bsearch((void *) key,(void *) base,n,size,cmpfn);
-	else
-	{
-		if (*key < base[0] || *key > base[n - 1])
-			return NULL;
-		if (*key == *base)
-			return base;
-		int done = 0;
-		int top = n;
-		int bottom = 0;
-		int step = n / 2;
-		int i = 0;
-		while (!done && step)
-		{
-			i = bottom + step;
-			if (base[i] < *key)
-				bottom = i;
-			else if (base[i] > *key)
-				top = i;
-			else
-				done = 1;
-			step = (top - bottom) / 2;
-		}
-		return done ? base + i : NULL;
-	}
-}
 
 /***************************************************************************
  Fopen(char *Filename, char *mode):  similar to fopen(filename,mode) except

@@ -9,6 +9,7 @@
 #include "charm++.h"
 
 #include "ProcessorPrivate.h"
+#include "InfoStream.h"
 
 #include "LdbCoordinator.decl.h"
 #include "LdbCoordinator.h"

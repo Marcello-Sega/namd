@@ -12,6 +12,8 @@
 #ifndef HOMEPATCHLIST_H
 #define HOMEPATCHLIST_H
 #include "NamdTypes.h"
+#include "SortedArray.h"
+#include "ResizeArrayIter.h"
 
 class HomePatch;
 

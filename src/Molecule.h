@@ -19,7 +19,6 @@
 
 #include "common.h"
 #include "NamdTypes.h"
-#include "IntList.h"
 #include "structures.h"
 #include "ConfigList.h"
 #include "Vector.h"
@@ -189,17 +188,10 @@ public:
 
         Bool is_hydrogen(int);     // return true if atom is hydrogen
         Bool is_oxygen(int);       // return true if atom is oxygen
-        Bool is_hb_donor(int);     // return true if atom is hbond donor
-        Bool is_hb_acceptor(int);  // return true if atom is hbond acceptor
-        Bool is_hb_antecedent(int);// return true if atom is hbond antecedent
-        Bool is_hb_hydrogen(int);  // return true if atom is hbond hydrogen
 	Bool is_hydrogenGroupParent(int); // return true if atom is group parent
 	Bool is_water(int);        // return true if atom is part of water 
 	int  get_groupSize(int);     // return # atoms in (hydrogen) group
         int get_mother_atom(int);  // return mother atom of a hydrogen
-
-	IntList *get_atom_hb_donors(int);    // return list of Nth atom donors
-	IntList *get_atom_hb_acceptors(int); // return list of Nth atom acc's
 
 	//  Get the mass of an atom
 	Real atommass(int anum) const

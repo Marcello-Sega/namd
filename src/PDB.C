@@ -163,112 +163,6 @@ int PDB::num_atoms( void)
   return atomCount;
 }
 
-// A macro definition to search through the array for
-//   a bit o' data (this macro not for public consumption)
-#define find_atom_MACRO(fctnname,vartype,var,comparison)                 \
-IntList *PDB::fctnname( vartype var)                                     \
-{                                                                        \
-  IntList *ilist = new IntList;  /* Basically, I'm going to go through */\
-  if ( ilist == NULL )                                                   \
-  {                                                                      \
-    NAMD_die("memory allocation failed in PDB::fctnname");               \
-  }                                                                      \
-  PDBAtomPtr *atomPtr;           /* the array looking for              */\
-  PDBAtom *atom;                                                         \
-  int i;                         /* when "comparison" is true.         */\
-  for (i=0, atomPtr = atomArray;  atom = *atomPtr, i<atomCount;          \
-                                  atomPtr ++, i++ ) {                    \
-     if (comparison)                                                     \
-       ilist -> add(i);          /* and keep track of where that was   */\
-  }                                                                      \
-  return ilist;                                                          \
-}                                                                        \
-
-// find an atom on the basis of it serial number
-find_atom_MACRO(find_atom_serialnumber, int, serial,
-   atom->serialnumber() == serial)
-   
-// find an atom on the basis of it name
-find_atom_MACRO(find_atom_name, const char *, name,
-  !strcmp(atom->name(), name) )
-
-// lookup atom on alt. location
-find_atom_MACRO(find_atom_alternatelocation, const char *, alt,
-  !strcmp(atom->alternatelocation(), alt))
-  
-// lookup atom on residuename
-find_atom_MACRO( find_atom_residuename, const char *, resname,
-  !strcmp(atom->residuename(), resname) )
-
-// lookup atom on chain
-find_atom_MACRO( find_atom_chain, const char *, chain,
-  !strcmp(atom->chain(), chain) )
-
-// lookup atom on residue seq.
-find_atom_MACRO( find_atom_residueseq, int, reseq,
-  atom->residueseq() == reseq )
-
-// lookup atom on insertion code
-find_atom_MACRO( find_atom_insertioncode, const char *, code,
-  atom->insertioncode() == code )
-
-
-// lookup atom on segment name
-find_atom_MACRO( find_atom_segmentname, const char *, segname,
-  !strcmp(atom->segmentname(), segname) )
-
-// search looking for a match like "CA PRO 34 HRV2"
-IntList *PDB::find_atom( const char *name, const char *residue, int reseq, 
-                    const char *segment)
-{
-  IntList *ilist = new IntList;
-  if ( ilist == NULL )
-  {
-    NAMD_die("memory allocation failed in PDB::find_atom");
-  }
-  PDBAtomPtr *atomptr;
-  int i;
-  for (i=0, atomptr=atomArray;  i<atomCount; atomptr ++, i++ ) {
-     if (
- (!name       || !strcmp(name, (*atomptr)->name())  )      &&
- (!residue    || !strcmp(residue,(*atomptr)->residuename()))&&
- (reseq != -1 ||  (*atomptr)->residueseq() == reseq )     &&
- (!segment    || !strcmp(segment,(*atomptr)->segmentname()))
-        )
-    ilist -> add(i);
-  }
-  return ilist;
-}
-
-// Find all the atoms in a certain region of space
-//  in general, an atom at coordinate x is in the region 
-//  [x1, x2) iff x1<=x<x2
-IntList *PDB::find_atoms_in_region( Real x1, Real y1, Real z1,
-                              Real x2, Real y2, Real z2, Lattice lat )
-{
-  IntList *ilist = new IntList;
-  if ( ilist == NULL )
-  {
-    NAMD_die("memory allocation failed in PDB::find_atoms_in_region");
-  }
-  PDBAtomPtr *atomptr;
-  Real swaptmp;
-  if (x1>x2) { swaptmp=x2; x2=x1; x1=swaptmp; }  // insure x1<x2
-  if (y1>y2) { swaptmp=y2; y2=y1; y1=swaptmp; }  // make y1<y2
-  if (z1>z2) { swaptmp=z2; z2=z1; z1=swaptmp; }  // ditto for z2 and z2
-  int i;
-  Vector center(0.5*(x1+x2),0.5*(y1+y2),0.5*(z1+z2));
-  for (i=0, atomptr=atomArray; i<atomCount; atomptr++, i++) {
-    Vector atom((*atomptr)->xcoor(),(*atomptr)->ycoor(),(*atomptr)->zcoor());
-    atom = lat.nearest(atom,center);
-    if ( x1 <= atom.x && atom.x < x2 &&
-         y1 <= atom.y && atom.y < y2 &&
-         z1 <= atom.z && atom.z < z2     ) {
-      ilist -> add(i);
-    }
-  }
-  return ilist;
-}
 
 // Reset all the atom positions.  This is used in preparation for
 // output in cases like the restart files, etc.
@@ -334,7 +228,6 @@ void PDB::find_extremes(BigReal *min, BigReal *max, Vector rec, BigReal frac) co
 
 main()
 {
- IntList *ilist;
  PDB *pdb = new PDB("pti.pdb");
  if ( atomArray == NULL )
  {

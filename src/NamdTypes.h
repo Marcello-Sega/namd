@@ -10,9 +10,7 @@
 
 #include "Vector.h"
 #include "ResizeArray.h"
-#include "UniqueSortedArray.h"
 #include "ResizeArrayIter.h"
-#include "ResizeArrayPrimIter.h"
 
 class Patch;
 class Compute;
@@ -75,9 +73,6 @@ typedef int NodeID;
 
 typedef ResizeArray<PatchID> PatchIDList;
 typedef ResizeArray<Patch *> PatchList;
-
-typedef UniqueSortedArray<ComputeID> ComputeIDList;
-typedef ResizeArrayPrimIter<ComputeID> ComputeIDListIter;
 
 typedef ResizeArray<Compute *> ComputeList;
 

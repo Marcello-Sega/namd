@@ -39,7 +39,7 @@ Compute::Compute(ComputeID c) : basePriority(DEFPRIO), cid(c) {
 }
 
 void Compute::enqueueWork() {
-  if (!this) { iout << iPE << iERRORF << "This Compute is NULL!!!\n" << endi; }
+  if (!this) { DebugM(4,"This Compute is NULL!!!\n"); }
   if ( ! noWork() )
   {
     WorkDistrib::messageEnqueueWork(this);  // should be in ComputeMgr?
@@ -57,9 +57,7 @@ void Compute::patchReady(PatchID patchID, int doneMigration) {
   }
 
   if (numPatches <= 0) {
-    iout << iERRORF 
-      << "Compute::patchReady("<<patchID<<")-call not valid!\n"
-      << endi;
+      DebugM(5,"Compute::patchReady("<<patchID<<")-call not valid!\n");
   } else {
     if (! --patchReadyCounter) {
       patchReadyCounter = numPatches;
@@ -78,9 +76,7 @@ int Compute::noWork() {
 }
 
 void Compute::doWork() {
-  iout << iERRORF 
-    << "Default Compute::doWork() called.\n"
-    << endi;
+    DebugM(5,"Default Compute::doWork() called.\n");
 }
 
 int Compute::sequence(void)

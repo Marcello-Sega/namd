@@ -25,6 +25,7 @@
 #include "Random.h"
 #include "imd.h"
 #include "IMDOutput.h"
+#include "InfoStream.h"
 
 #if(CMK_CCS_AVAILABLE)
 extern "C" void CApplicationDepositNode0Data(char *);

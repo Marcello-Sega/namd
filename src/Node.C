@@ -48,7 +48,6 @@
 #include "Parameters.h"
 #include "SimParameters.h"
 #include "Communicate.h"
-#include "Inform.h"
 #include "LdbCoordinator.h"
 #include "ScriptTcl.h"
 #include "ComputeMgr.decl.h"

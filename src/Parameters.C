@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <charm++.h>
 #include "Parameters.h"
 #include "InfoStream.h"
 #include "Communicate.h"
@@ -23,6 +24,11 @@
 //****** BEGIN CHARMM/XPLOR type changes
 #include "SimParameters.h"
 //****** END CHARMM/XPLOR type changes
+
+#define MIN_DEBUG_LEVEL 3
+// #define DEBUGM
+#include "Debug.h"
+
 
 //  struct bond_params is used to form a binary tree of bond parameters.
 //  The two atom names are used to determine the order of the nodes in the
@@ -2076,6 +2082,7 @@ void Parameters::add_vdw_pair_param(char *buf)
 void Parameters::add_hb_pair_param(char *buf)
 
 {
+#if 0
   char a1n[11];      //  Atom 1 name
   char a2n[11];      //  Atom 2 name
   Real A, B;      //  A, B value for pair
@@ -2104,6 +2111,7 @@ void Parameters::add_hb_pair_param(char *buf)
     iout << "\n" << iWARN << "Duplicate HBOND parameters for types " << a1n
     << " and " << a2n << " found; using latest values." << "\n" << endi;
   }
+#endif
 }
 /*      END OF FUNCTION add_hb_par_param    */
 
@@ -3447,7 +3455,7 @@ void Parameters::traverse_bond_params(struct bond_params *tree)
     traverse_bond_params(tree->left);
   }
 
-  DEBUG_MSG("BOND " <<  tree->atom1name << "  " << tree->atom2name \
+  DebugM(3,"BOND " <<  tree->atom1name << "  " << tree->atom2name \
       << " index=" << tree->index << " k=" << tree->forceconstant \
       << " x0=" << tree->distance);
 
@@ -3482,7 +3490,7 @@ void Parameters::traverse_angle_params(struct angle_params *tree)
     traverse_angle_params(tree->left);
   }
 
-  DEBUG_MSG("ANGLE " << tree->atom1name << "  " << tree->atom2name \
+  DebugM(3,"ANGLE " << tree->atom1name << "  " << tree->atom2name \
       << "  " << tree->atom3name << " index=" << tree->index \
       << " k=" << tree->forceconstant << " theta0=" << tree->angle \
       );
@@ -3514,7 +3522,7 @@ void Parameters::traverse_dihedral_params(struct dihedral_params *list)
 
   while (list != NULL)
   {
-    DEBUG_MSG("DIHEDRAL  " << list->atom1name << "  " \
+    DebugM(3,"DIHEDRAL  " << list->atom1name << "  " \
         << list->atom2name << "  " << list->atom3name \
         << "  " << list->atom4name << " index=" \
         << list->index \
@@ -3522,7 +3530,7 @@ void Parameters::traverse_dihedral_params(struct dihedral_params *list)
         
     for (i=0; i<list->multiplicity; i++)
     {
-      DEBUG_MSG("k=" << list->values[i].k \
+      DebugM(3,"k=" << list->values[i].k \
           << " n=" << list->values[i].n  \
           << " delta=" << list->values[i].delta);
     }
@@ -3552,7 +3560,7 @@ void Parameters::traverse_improper_params(struct improper_params *list)
 
   while (list != NULL)
   {
-    DEBUG_MSG("Improper  " << list->atom1name << "  " \
+    DebugM(3,"Improper  " << list->atom1name << "  " \
         << list->atom2name << "  " << list->atom3name \
         << "  " << list->atom4name << " index="  \
         << list->index  \
@@ -3560,7 +3568,7 @@ void Parameters::traverse_improper_params(struct improper_params *list)
 
     for (i=0; i<list->multiplicity; i++)
     {
-       DEBUG_MSG("k=" << list->values[i].k \
+       DebugM(3,"k=" << list->values[i].k \
            << " n=" << list->values[i].n \
            << " delta=" << list->values[i].delta);
     }
@@ -3595,7 +3603,7 @@ void Parameters::traverse_vdw_params(struct vdw_params *tree)
     traverse_vdw_params(tree->left);
   }
 
-  DEBUG_MSG("vdW " << tree->atomname << " index=" << tree->index \
+  DebugM(3,"vdW " << tree->atomname << " index=" << tree->index \
       << " sigma=" << tree->sigma << " epsilon=" << \
       tree->epsilon << " sigma 1-4=" << tree->sigma14 \
       << " epsilon 1-4=" << tree->epsilon14);
@@ -3625,7 +3633,7 @@ void Parameters::traverse_vdw_pair_params(struct vdw_pair_params *list)
   if (list==NULL)
     return;
 
-  DEBUG_MSG("vdW PAIR  " << list->atom1name << "  "  \
+  DebugM(3,"vdW PAIR  " << list->atom1name << "  "  \
       << list->atom2name << " A=" << list->A \
       << " B=" << list->B << " A 1-4=" \
       << list->A14 << " B 1-4=" << list->B14 \
@@ -3646,7 +3654,7 @@ void Parameters::traverse_vdw_pair_params(struct vdw_pair_params *list)
 
 void Parameters::print_bond_params()
 {
-  DEBUG_MSG(NumBondParams << " BOND PARAMETERS\n" \
+  DebugM(3,NumBondParams << " BOND PARAMETERS\n" \
       << "*****************************************"  \
       );
 
@@ -3664,7 +3672,7 @@ void Parameters::print_bond_params()
 
 void Parameters::print_angle_params()
 {
-  DEBUG_MSG(NumAngleParams << " ANGLE PARAMETERS\n"
+  DebugM(3,NumAngleParams << " ANGLE PARAMETERS\n"
       << "*****************************************" );
 
   traverse_angle_params(anglep);
@@ -3681,7 +3689,7 @@ void Parameters::print_angle_params()
 
 void Parameters::print_dihedral_params()
 {
-  DEBUG_MSG(NumDihedralParams << " DIHEDRAL PARAMETERS\n" \
+  DebugM(3,NumDihedralParams << " DIHEDRAL PARAMETERS\n" \
       << "*****************************************" );
 
   traverse_dihedral_params(dihedralp);
@@ -3698,7 +3706,7 @@ void Parameters::print_dihedral_params()
 
 void Parameters::print_improper_params()
 {
-  DEBUG_MSG(NumImproperParams << " IMPROPER PARAMETERS\n" \
+  DebugM(3,NumImproperParams << " IMPROPER PARAMETERS\n" \
       << "*****************************************" );
 
   traverse_improper_params(improperp);
@@ -3715,7 +3723,7 @@ void Parameters::print_improper_params()
 
 void Parameters::print_vdw_params()
 {
-  DEBUG_MSG(NumVdwParams << " vdW PARAMETERS\n" \
+  DebugM(3,NumVdwParams << " vdW PARAMETERS\n" \
       << "*****************************************" );
 
   traverse_vdw_params(vdwp);
@@ -3732,7 +3740,7 @@ void Parameters::print_vdw_params()
 
 void Parameters::print_vdw_pair_params()
 {
-  DEBUG_MSG(NumVdwPairParams << " vdW PAIR PARAMETERS\n" \
+  DebugM(3,NumVdwPairParams << " vdW PAIR PARAMETERS\n" \
       << "*****************************************" );
 
   traverse_vdw_pair_params(vdw_pairp);
@@ -3755,8 +3763,7 @@ void Parameters::print_param_summary()
        << iINFO << NumDihedralParams << " DIHEDRAL\n"
        << iINFO << NumImproperParams << " IMPROPER\n"
        << iINFO << NumVdwParams << " VDW\n"
-       << iINFO << NumVdwPairParams << " VDW_PAIRS\n"
-       << iINFO << hbondParams.num() << " HBOND_PAIRS\n" << endi;
+       << iINFO << NumVdwPairParams << " VDW_PAIRS\n" << endi;
 }
 
 
@@ -4073,7 +4080,7 @@ void Parameters::send_Parameters(Communicate *comm_obj)
   }
 
   // send the hydrogen bond parameters
-  hbondParams.create_message(msg);
+  // hbondParams.create_message(msg);
   msg->end();
   delete msg;
 }
@@ -4382,7 +4389,7 @@ void Parameters::receive_Parameters(MIStream *msg)
   }
   
   // receive the hydrogen bond parameters
-  hbondParams.receive_message(msg);
+  // hbondParams.receive_message(msg);
 
   AllFilesRead = TRUE;
 

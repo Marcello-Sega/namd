@@ -9,22 +9,46 @@
 */
 
 #include "InfoStream.h"
+#include <charm++.h>
+#include "Vector.h"
+#include "Tensor.h"
+
+/* output using CkPrintf() (end by inform) */
+void infostream::endi() {
+  *this << ends;
+  CkPrintf("%s",iBuffer);
+  (*this).seekp(0);   // clear buffer
+}
+
+ostream& iPE(ostream& s) {
+  return s << "Pe(" << CkMyPe() << ')';
+}
+
+ostream& operator<<(ostream& strm, const Vector &v1) {
+       strm << v1.x << " " << v1.y << " " << v1.z;
+       return strm;
+}
+
+infostream& operator<<(infostream& strm, const Vector &v1) {
+       strm << v1.x << " " << v1.y << " " << v1.z;
+       return strm;
+}
+
+
+ostream& operator<<(ostream& strm, const Tensor &t1) {
+       strm << t1.xx << " " << t1.xy << " " << t1.xz << " "
+            << t1.yx << " " << t1.yy << " " << t1.yz << " "
+            << t1.zx << " " << t1.zy << " " << t1.zz;
+       return strm;
+}
+
+infostream& operator<<(infostream& strm, const Tensor &t1) {
+       strm << t1.xx << " " << t1.xy << " " << t1.xz << " "
+            << t1.yx << " " << t1.yy << " " << t1.yz << " "
+            << t1.zx << " " << t1.zy << " " << t1.zz;
+       return strm;
+}
+
 
 infostream iout;
-
-// all methods are inlined so far...
-
-// some suggested usages:
-// Send a warning message to the console:
-//    iout << iWARN << blah << endc;
-// Send running information to the information monitor (CkPrintf)
-//    iout << iINFO << blah << endi;
-// Send an error message to the information monitor
-//    iout << iERROR << blah << endi;
-// Set your own information to level 4
-//    iout << blah << level(4) << blah << endi;
-// Display all information that is at level 6 or higher
-//    iout << blah << endi(6);
-
-// Debug messages should use DebugM()!  not iout.
 

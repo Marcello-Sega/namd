@@ -19,7 +19,6 @@
 #include <ctype.h>
 #include "strlib.h"
 #include "InfoStream.h"
-#include "IntList.h"
 #include "MStream.h"
 #include "Communicate.h"
 // #include "Node.h"
@@ -1461,7 +1460,7 @@ void Molecule::print_atoms(Parameters *params)
   Real sigma14;
   Real epsilon14;
 
-  DEBUG_MSG("ATOM LIST\n" \
+  DebugM(2,"ATOM LIST\n" \
       << "******************************************\n" \
                   << "NUM  NAME TYPE RES  MASS    CHARGE SIGMA   EPSILON SIGMA14 EPSILON14\n" \
 pp      << endi);
@@ -1471,7 +1470,7 @@ pp      << endi);
     params->get_vdw_params(&sigma, &epsilon, &sigma14, &epsilon14, 
         atoms[i].vdw_type);
 
-    DEBUG_MSG(i+1 << " " << atomNames[i].atomname  \
+    DebugM(2,i+1 << " " << atomNames[i].atomname  \
               << " " << atomNames[i].atomtype << " " \
               << atomNames[i].resname  << " " << atoms[i].mass  \
         << " " << atoms[i].charge << " " << sigma \
@@ -1498,7 +1497,7 @@ void Molecule::print_bonds(Parameters *params)
   Real k;
   Real x0;
 
-  DEBUG_MSG("BOND LIST\n" << "********************************\n" \
+  DebugM(2,"BOND LIST\n" << "********************************\n" \
       << "ATOM1 ATOM2 TYPE1 TYPE2      k        x0" \
       << endi);
 
@@ -1506,7 +1505,7 @@ void Molecule::print_bonds(Parameters *params)
   {
     params->get_bond_params(&k, &x0, bonds[i].bond_type);
 
-    DEBUG_MSG(bonds[i].atom1+1 << " " \
+    DebugM(2,bonds[i].atom1+1 << " " \
        << bonds[i].atom2+1 << " "   \
        << atomNames[bonds[i].atom1].atomtype << " "  \
        << atomNames[bonds[i].atom2].atomtype << " " << k \
@@ -1528,14 +1527,14 @@ void Molecule::print_exclusions()
 {
   register int i;
 
-  DEBUG_MSG("EXPLICIT EXCLUSION LIST\n" \
+  DebugM(2,"EXPLICIT EXCLUSION LIST\n" \
       << "********************************\n" \
             << "ATOM1 ATOM2 " \
       << endi);
 
   for (i=0; i<numExclusions; i++)
   {
-    DEBUG_MSG(exclusions[i].atom1+1 << "  " \
+    DebugM(2,exclusions[i].atom1+1 << "  " \
        << exclusions[i].atom2+1 << endi);
   }
 }
@@ -2609,13 +2608,6 @@ void Molecule::receive_Molecule(MIStream *msg)
     /*                  */
     /*      FUNCTION build12excl        */
     /*                  */
-    /*   INPUTS:                */
-    /*  lists - An array of IntList objects to put the exclusions into  */
-    /*                  */
-    /*  This function determines all the 1-2 exclusions (that is, atoms */
-    /*   that are bond together by a linear bond) and places these          */
-    /*   exclusions into the array of IntList's that are passed in.    */
-    /*                  */
     /************************************************************************/
 
     void Molecule::build12excl(void)
@@ -2656,13 +2648,6 @@ void Molecule::receive_Molecule(MIStream *msg)
     /************************************************************************/
     /*                  */
     /*      FUNCTION build13excl        */
-    /*                  */
-    /*   INPUTS:                */
-    /*  lists - Array of IntList objects to put exclusions into    */
-    /*                  */
-    /*  This function calculates the 1-3 exclusions (that is, atoms     */
-    /*   that are bonded by linear bonds to a common third atom) and places */
-    /*   these exclusions into the array of IntList objects passed in.  */
     /*                  */
     /************************************************************************/
 
@@ -2724,14 +2709,6 @@ void Molecule::receive_Molecule(MIStream *msg)
     /************************************************************************/
     /*                  */
     /*        FUNCTION build14excl      */
-    /*                  */
-    /*   INPUTS:                */
-    /*  lists - Array of IntList objects to put exclusions into    */
-    /*                  */
-    /*  This function calculates all the 1-4 exclusions (that is,  */
-    /*   atoms that are connected via a sequence of three linear bonds) and */
-    /*   places these interactions into the array of IntList object passed  */
-    /*   in.                */
     /*                  */
     /************************************************************************/
 
@@ -3515,26 +3492,6 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
   return ((atoms[anum].status & OxygenAtom) != 0);
     }
 
-    Bool Molecule::is_hb_donor(int anum)
-    {
-  return ((atoms[anum].status & HBDonorAtom) != 0);
-    }
-
-    Bool Molecule::is_hb_acceptor(int anum)
-    {
-  return ((atoms[anum].status & HBAcceptorAtom) != 0);
-    }
-
-    Bool Molecule::is_hb_antecedent(int anum)
-    {
-  return ((atoms[anum].status & HBAntecedentAtom) != 0);
-    }
-
-    Bool Molecule::is_hb_hydrogen(int anum)
-    {
-  return ((atoms[anum].status & HBHydrogenAtom) != 0);
-    }
-
     Bool Molecule::is_hydrogenGroupParent(int anum)
     {
   return (hydrogenGroup[atoms[anum].hydrogenList].isGP);
@@ -3558,20 +3515,6 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
     }
 
 
-    // return the list of hbond donor interactions for the Nth's atom.
-    IntList *Molecule::get_atom_hb_donors(int anum)
-    {
-  return atoms[anum].donorList;
-    }
-
-
-    // return the list of hbond acceptor interactions for the Nth's atom.
-    IntList *Molecule::get_atom_hb_acceptors(int anum)
-    {
-  return atoms[anum].acceptorList;
-    }
-
-
     // go through the molecular structure, analyze the status of each atom,
     // and save the data in the Atom structures stored for each atom.  This
     // could be built up incrementally while the molecule is being read in,
@@ -3588,8 +3531,6 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
       hg = new HydrogenGroupID[numAtoms];
       for (i=0; i < numAtoms; i++) {
   atoms[i].partner = (-1);
-  atoms[i].donorList = NULL;
-  atoms[i].acceptorList = NULL;
   hg[i].atomID = i;  // currently unsorted
   hg[i].atomsInGroup = 1;  // currently only 1 in group
   hg[i].isGP = 1;  // assume it is a group parent
@@ -3630,40 +3571,6 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
       // check for waters (put them in their own groups: OH or OHH)
       if (is_oxygen(a1))  hg[a1].sortVal++;
       }
-  }
-
-  // find the hydrogen bond partners for each atom.  For donors and
-  // acceptors, the value stored in donorList is actually the index of
-  // the donor-hydrogen pair for the bond.
-  for (i=0; i < numDonors; i++) {
-    a1 = donors[i].atom1;
-    a2 = donors[i].atom2;
-    atoms[a1].status |= HBDonorAtom;
-
-    // add this donor-hydrogen pair to the list of hb donor pairs for the atom
-    if (atoms[a1].donorList == NULL)
-      atoms[a1].donorList = new IntList;
-    atoms[a1].donorList->add(i);
-
-    // check for explicit hydrogen in this pair
-    if (a2 >= 0)
-      atoms[a2].status |= HBHydrogenAtom;
-  }
-
-  // look for acceptors and antecedents now in the same fashion.
-  for (i=0; i < numAcceptors; i++) {
-    a1 = acceptors[i].atom1;
-    a2 = acceptors[i].atom2;
-    atoms[a1].status |= HBAcceptorAtom;
-
-    // add this acceptor-ante pair to the list of hb acc pairs for the atom
-    if (atoms[a1].acceptorList == NULL)
-      atoms[a1].acceptorList = new IntList;
-    atoms[a1].acceptorList->add(i);
-
-    // check for explicit antecedent in this pair
-    if (a2 >= 0)
-      atoms[a2].status |= HBAntecedentAtom;
   }
 
   // sort the hydrogenGroup list and count number of groups

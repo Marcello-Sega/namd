@@ -9,6 +9,7 @@
    messages which simplify the parsing of a ConfigList
 */
 
+#include <stdlib.h>
 #include <iostream.h>
 #ifndef _AIX
 #include <string.h>

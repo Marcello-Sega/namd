@@ -7,15 +7,18 @@
 #include "converse.h"
 #include "common.h"
 #include "BackEnd.h"
+#include "InfoStream.h"
 
 #include "NamdState.h"
 #include "Node.h"
+#include <unistd.h>
 #include <sys/stat.h>
 #include "ConfigList.h"
 #include "ScriptTcl.h"
 
 int main(int argc, char **argv) {
   BackEnd::init(argc,argv);
+  for(argc = 0; argv[argc]; ++argc);
   if ( argc < 2 ) {
     NAMD_die("No simulation config file specified on command line.");
   }

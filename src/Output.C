@@ -15,7 +15,6 @@
 #include "Output.h"
 #include "dcdlib.h"
 #include "strlib.h"
-#include "Inform.h"
 #include "Molecule.h"
 #include "Node.h"
 #include "Parameters.h"
@@ -28,6 +27,7 @@
 #include "PatchMap.h"
 #include "PatchMap.inl"
 #include "ScriptTcl.h"
+#include "InfoStream.h"
 
 // These make the NAMD 1 names work in NAMD 2
 #define namdMyNode Node::Object()

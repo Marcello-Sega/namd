@@ -6,6 +6,7 @@
 
 #include "PmeFFT.h"
 #include "common.h"
+#include "InfoStream.h"
 #include "pub3dfft.h"
 
 PmeFFT::PmeFFT(int K1, int K2, int K3) {

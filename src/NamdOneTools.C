@@ -16,6 +16,7 @@
 #include "Vector.h"
 #include "PDB.h"
 #include "Molecule.h"
+#include "InfoStream.h"
 #define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
 #include "Debug.h"

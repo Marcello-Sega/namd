@@ -14,6 +14,9 @@
 #include "Node.h"
 #include "Molecule.h"
 #include "SimParameters.h"
+#include "ResizeArrayPrimIter.h"
+
+typedef ResizeArrayPrimIter<ComputeID> ComputeIDListIter;
 
 //#define  DEBUGM
 #define MIN_DEBUG_LEVEL 4

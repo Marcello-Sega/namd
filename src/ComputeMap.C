@@ -127,9 +127,7 @@ void ComputeMap::unpack (char *ptr)
 
   if (oldComputeData) {
     if (nComputes != oldNComputes) {
-      iout << iPE << iERRORF 
-        << "number of computes in new patchmap has changed!\n" << endi;
-      CkExit();
+      NAMD_die("number of computes in new patchmap has changed!\n");
       return;
     }
 

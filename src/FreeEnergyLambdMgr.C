@@ -9,6 +9,7 @@
 #include <memory.h>
 #include <iostream.h>
 #include <iomanip.h>
+#include <stdio.h>
 #include "InfoStream.h"
 #include "FreeEnergyEnums.h"
 #include "FreeEnergyAssert.h"

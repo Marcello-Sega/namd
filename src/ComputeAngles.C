@@ -97,9 +97,7 @@ void AngleElem::computeForce(BigReal *reduction)
   sin_theta = sqrt(1.0 - cos_theta*cos_theta);
 
   //  Get theta
-  errno=0;
   theta = acos(cos_theta);
-  CHECK_DOMAIN_ACOS(cos_theta);
 
   //  Compare it to the rest angle
   diff = theta - theta0;

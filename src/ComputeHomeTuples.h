@@ -27,7 +27,6 @@
 #include "HomePatchList.h"
 #include "Molecule.h"
 #include "ReductionMgr.h"
-#include "Inform.h"
 #include "UniqueSet.h"
 #include "UniqueSetIter.h"
 

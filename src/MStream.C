@@ -100,10 +100,10 @@ MIStream *MIStream::Get(char *buf, int len)
         checksum += (unsigned char) msg->data[i];
       }
       if ( checksum != msg->checksum ) {
-        iout << "Error on " << tag << ":" << msg->index <<
+        DebugM(5,"Error on " << tag << ":" << msg->index <<
           " of length " << msg->len <<
           " with checksum " << ((int)checksum) <<
-          " vs " << ((int)(msg->checksum)) <<"\n" << endi;
+          " vs " << ((int)(msg->checksum)) <<"\n");
         NAMD_bug("MStream checksums do not agree!");
       }
     }

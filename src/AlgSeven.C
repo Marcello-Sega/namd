@@ -5,7 +5,7 @@
 **/
 
 #include <iostream.h>
-#include <InfoStream.h>
+#include "InfoStream.h"
 #include "Alg7.h"
 
 #define TINYLOAD 0.0005

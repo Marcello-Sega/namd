@@ -7,11 +7,9 @@
 #ifndef VECTOR_H
 #define VECTOR_H
 
-#include <iostream.h>
 #include <math.h>
 #include <stdio.h>
 #include "common.h"
-#include "InfoStream.h"
 
 class Vector;
 
@@ -160,18 +158,6 @@ class Vector {
                       // k*(-v1.x*v2.z+v2.x*v1.z),
                       k*(v2.x*v1.z-v1.x*v2.z),
                       k*(v1.x*v2.y-v2.x*v1.y) );
-     }
-
-     // print out
-     friend ostream& operator<<(ostream& strm, const Vector &v1) {
-       strm << v1.x << " " << v1.y << " " << v1.z;
-       return strm;
-     }
-
-     // print out to infostream object
-     friend infostream& operator<<(infostream& strm, const Vector &v1) {
-       strm << v1.x << " " << v1.y << " " << v1.z;
-       return strm;
      }
 
      // add a vector to this vector

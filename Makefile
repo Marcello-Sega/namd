@@ -85,9 +85,7 @@ OBJS = \
         $(DSTDIR)/FreeEnergyVector.o \
 	$(DSTDIR)/heap.o \
 	$(DSTDIR)/HomePatch.o \
-	$(DSTDIR)/HBondParam.o \
 	$(DSTDIR)/IMDOutput.o \
-	$(DSTDIR)/Inform.o \
 	$(DSTDIR)/InfoStream.o \
 	$(DSTDIR)/LdbCoordinator.o \
 	$(DSTDIR)/LJTable.o \
@@ -123,7 +121,6 @@ OBJS = \
 	$(DSTDIR)/Set.o \
 	$(DSTDIR)/SimParameters.o \
 	$(DSTDIR)/TclCommands.o \
-	$(DSTDIR)/VoidTree.o \
 	$(DSTDIR)/WorkDistrib.o \
 	$(DSTDIR)/pub3dfft.o \
 	$(DSTDIR)/vmdsock.o \
