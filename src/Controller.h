@@ -50,7 +50,7 @@ protected:
       BigReal pressure_avg;
       BigReal groupPressure_avg;
       int avg_count;
-    void compareChecksums(int);
+    void compareChecksums(int,int=0);
       int computeChecksum;
       int marginViolations;
     void printTiming(int);

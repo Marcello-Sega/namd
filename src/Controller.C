@@ -315,6 +315,7 @@ void Controller::minimize() {
     x *= sqrt( min_f_dot_f / min_v_dot_v ); MOVETO(x)
     // bracket minimum on line
     initstep *= 0.25;
+    BigReal maxinitstep = initstep * 16.0;
     while ( last.u < mid.u ) {
       initstep *= 2.0;
       lo = mid; mid = last;
@@ -322,6 +323,7 @@ void Controller::minimize() {
       noGradients = min_huge_count;
       x *= 2.0; MOVETO(x)
     }
+    if ( initstep > maxinitstep ) initstep = maxinitstep;
     hi = last;
     iout << "BRACKET: " << (hi.x-lo.x) << " " << ((hi.u>lo.u?hi.u:lo.u)-mid.u) << " " << lo.dudx << " " << mid.dudx << " " << hi.dudx << " \n" << endi;
     // converge on minimum on line
@@ -880,7 +882,7 @@ void Controller::receivePressure(int step, int minimize)
   }
 }
 
-void Controller::compareChecksums(int step) {
+void Controller::compareChecksums(int step, int forgiving) {
     Node *node = Node::Object();
     Molecule *molecule = node->molecule;
 
@@ -900,20 +902,32 @@ void Controller::compareChecksums(int step) {
     }
 
     checksum = reduction->item(REDUCTION_BOND_CHECKSUM);
-    if ( checksum && (((int)checksum) != molecule->numCalcBonds) )
-      NAMD_bug("Bad global bond count!\n");
+    if ( checksum && (((int)checksum) != molecule->numCalcBonds) ) {
+      if ( forgiving && (((int)checksum) < molecule->numCalcBonds) )
+        iout << iWARN << "Bad global bond count!\n" << endi;
+      else NAMD_bug("Bad global bond count!\n");
+    }
 
     checksum = reduction->item(REDUCTION_ANGLE_CHECKSUM);
-    if ( checksum && (((int)checksum) != molecule->numCalcAngles) )
-      NAMD_bug("Bad global angle count!\n");
+    if ( checksum && (((int)checksum) != molecule->numCalcAngles) ) {
+      if ( forgiving && (((int)checksum) < molecule->numCalcAngles) )
+        iout << iWARN << "Bad global angle count!\n" << endi;
+      else NAMD_bug("Bad global angle count!\n");
+    }
 
     checksum = reduction->item(REDUCTION_DIHEDRAL_CHECKSUM);
-    if ( checksum && (((int)checksum) != molecule->numCalcDihedrals) )
-      NAMD_bug("Bad global dihedral count!\n");
+    if ( checksum && (((int)checksum) != molecule->numCalcDihedrals) ) {
+      if ( forgiving && (((int)checksum) < molecule->numCalcDihedrals) )
+        iout << iWARN << "Bad global dihedral count!\n" << endi;
+      else NAMD_bug("Bad global dihedral count!\n");
+    }
 
     checksum = reduction->item(REDUCTION_IMPROPER_CHECKSUM);
-    if ( checksum && (((int)checksum) != molecule->numCalcImpropers) )
-      NAMD_bug("Bad global improper count!\n");
+    if ( checksum && (((int)checksum) != molecule->numCalcImpropers) ) {
+      if ( forgiving && (((int)checksum) < molecule->numCalcImpropers) )
+        iout << iWARN << "Bad global improper count!\n" << endi;
+      else NAMD_bug("Bad global improper count!\n");
+    }
 
     checksum = reduction->item(REDUCTION_EXCLUSION_CHECKSUM);
     if ( ((int)checksum) > molecule->numCalcExclusions &&
@@ -967,7 +981,7 @@ void Controller::printMinimizeEnergies(int step) {
     if ( ((int)checksum) && ((int)checksum) < molecule->numCalcExclusions )
       iout << iWARN << "Bad global exclusion count, possible error!\n" << iWARN
         << "Increasing cutoff during minimization may avoid this.\n" << endi;
-    compareChecksums(step);
+    compareChecksums(step,1);
 
     printEnergies(step,1);
 
