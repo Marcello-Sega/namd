@@ -137,22 +137,28 @@ int ComputeTcl::Tcl_reconfig(ClientData clientData,
 
 
 int ComputeTcl::Tcl_loadcoords(ClientData clientData,
-	Tcl_Interp *interp, int argc, char *argv[]) {
-  if (argc != 2) {
+	Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+  if (objc != 2) {
     Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
   }
-  char *vname = argv[1];
+  Tcl_Obj * const vname = objv[1];
   ComputeTcl *self = (ComputeTcl *)clientData;
-  char cmd[129];  int code;
   AtomIDList::iterator a_i = self->aid.begin();
   AtomIDList::iterator a_e = self->aid.end();
   PositionList::iterator p_i = self->p.begin();
   for ( ; a_i != a_e; ++a_i, ++p_i ) {
-    sprintf(cmd, "set %s(%d) { %g %g %g }", vname, (int)((*a_i)+1),
-      (double)((*p_i).x),(double)((*p_i).y),(double)((*p_i).z));
-    code = Tcl_Eval(interp,cmd);
-    if (code != TCL_OK) {
+    Tcl_Obj *newlist = Tcl_NewListObj(0, NULL);
+    Tcl_Obj *arrkey = Tcl_NewIntObj((int)((*a_i)+1));
+    
+    Tcl_ListObjAppendElement(interp, newlist, 
+      Tcl_NewDoubleObj((double)((*p_i).x)));
+    Tcl_ListObjAppendElement(interp, newlist, 
+      Tcl_NewDoubleObj((double)((*p_i).y)));
+    Tcl_ListObjAppendElement(interp, newlist, 
+      Tcl_NewDoubleObj((double)((*p_i).z)));
+   
+    if (!Tcl_ObjSetVar2(interp, vname, arrkey, newlist, 0)) {
       NAMD_die("TCL error in global force calculation!");
       return TCL_ERROR;
     }
@@ -161,10 +167,19 @@ int ComputeTcl::Tcl_loadcoords(ClientData clientData,
   PositionList::iterator c_e = self->gcom.end();
   int gcount = 1;
   for ( ; c_i != c_e; ++c_i, ++gcount ) {
-    sprintf(cmd, "set %s(g%d) { %g %g %g }", vname, gcount,
-      (double)((*c_i).x),(double)((*c_i).y),(double)((*c_i).z));
-    code = Tcl_Eval(interp,cmd);
-    if (code != TCL_OK) {
+    Tcl_Obj *newlist = Tcl_NewListObj(0, NULL);
+    char buf[10];
+    sprintf(buf, "g%d", gcount);
+    Tcl_Obj *arrkey = Tcl_NewStringObj(buf, -1);
+ 
+    Tcl_ListObjAppendElement(interp, newlist,
+      Tcl_NewDoubleObj((double)((*c_i).x)));
+    Tcl_ListObjAppendElement(interp, newlist,
+      Tcl_NewDoubleObj((double)((*c_i).y)));
+    Tcl_ListObjAppendElement(interp, newlist,
+      Tcl_NewDoubleObj((double)((*c_i).z)));
+   
+    if (!Tcl_ObjSetVar2(interp, vname, arrkey, newlist, 0)) {
       NAMD_die("TCL error in global force calculation!");
       return TCL_ERROR;
     }
@@ -174,22 +189,21 @@ int ComputeTcl::Tcl_loadcoords(ClientData clientData,
 
 
 int ComputeTcl::Tcl_loadmasses(ClientData clientData,
-	Tcl_Interp *interp, int argc, char *argv[]) {
-  if (argc != 2) {
+	Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+  if (objc != 2) {
     Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
   }
-  char *vname = argv[1];
+  Tcl_Obj * const vname = objv[1];
   ComputeTcl *self = (ComputeTcl *)clientData;
-  char cmd[129];  int code;
   Molecule *mol = Node::Object()->molecule;
   AtomIDList::iterator a_i = self->aid.begin();
   AtomIDList::iterator a_e = self->aid.end();
   for ( ; a_i != a_e; ++a_i) {
-    sprintf(cmd, "set %s(%d) %g", vname, (int)((*a_i)+1),
-      (double)(mol->atommass(*a_i)) );
-    code = Tcl_Eval(interp,cmd);
-    if (code != TCL_OK) {
+    if (!Tcl_ObjSetVar2(interp, vname,
+                        Tcl_NewIntObj((int)((*a_i)+1)),
+                        Tcl_NewDoubleObj((double)(mol->atommass(*a_i))),
+                        0)) {
       NAMD_die("TCL error in global force calculation!");
       return TCL_ERROR;
     }
@@ -198,9 +212,12 @@ int ComputeTcl::Tcl_loadmasses(ClientData clientData,
   g_i = self->gmass.begin();  g_e = self->gmass.end();
   int gcount = 1;
   for ( ; g_i != g_e; ++g_i, ++gcount) {
-    sprintf(cmd, "set %s(g%d) %g", vname, gcount, (double)(*g_i) );
-    code = Tcl_Eval(interp,cmd);
-    if (code != TCL_OK) {
+    char buf[10];
+    sprintf(buf, "g%d", gcount);
+    if (!Tcl_ObjSetVar2(interp, vname,
+                        Tcl_NewStringObj(buf, -1),
+                        Tcl_NewDoubleObj((double)(*g_i)),
+                        0)) {
       NAMD_die("TCL error in global force calculation!");
       return TCL_ERROR;
     }
@@ -210,31 +227,30 @@ int ComputeTcl::Tcl_loadmasses(ClientData clientData,
 
 
 int ComputeTcl::Tcl_addforce(ClientData clientData,
-	Tcl_Interp *interp, int argc, char *argv[]) {
-  if (argc != 3) {
+	Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
+  if (objc != 3) {
     Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
   }
-  char **fstring;  int fnum;  int atomid;  double x, y, z;
+  Tcl_Obj **force;  int fnum;  int atomid;  double x, y, z;
   int isgroup = 0;
-  if ( argv[1][0] == 'g' ) {
+  char *id = Tcl_GetStringFromObj(objv[1], NULL); 
+  if ( id[0] == 'g' ) {
     isgroup = 1;
-    if ( Tcl_GetInt(interp,argv[1]+1,&atomid) != TCL_OK ) return TCL_ERROR;
+    if ( Tcl_GetInt(interp,id+1,&atomid) != TCL_OK ) return TCL_ERROR;
   } else {
-    if ( Tcl_GetInt(interp,argv[1],&atomid) != TCL_OK ) return TCL_ERROR;
+    if ( Tcl_GetInt(interp,id,&atomid) != TCL_OK ) return TCL_ERROR;
   }
-  if (Tcl_SplitList(interp, argv[2], &fnum, &fstring) != TCL_OK) {
+  if (Tcl_ListObjGetElements(interp, objv[2], &fnum, &force) != TCL_OK) {
     return TCL_ERROR;
   }
   if ( (fnum != 3) ||
-       (Tcl_GetDouble(interp, fstring[0],&x) != TCL_OK) ||
-       (Tcl_GetDouble(interp, fstring[1],&y) != TCL_OK) ||
-       (Tcl_GetDouble(interp, fstring[2],&z) != TCL_OK) ) {
+       (Tcl_GetDoubleFromObj(interp, force[0],&x) != TCL_OK) ||
+       (Tcl_GetDoubleFromObj(interp, force[1],&y) != TCL_OK) ||
+       (Tcl_GetDoubleFromObj(interp, force[2],&z) != TCL_OK) ) {
     Tcl_SetResult(interp,"force not a vector",TCL_VOLATILE);
-    Tcl_Free((char*) fstring);
     return TCL_ERROR;
   }
-  Tcl_Free((char*) fstring);
   ComputeGlobalResultsMsg *msg = (ComputeGlobalResultsMsg *)clientData;
   if ( isgroup ) {
     msg->gforce.item(atomid-1) += Vector(x,y,z);
@@ -332,17 +348,17 @@ void ComputeTcl::calculate() {
 
 #ifdef NAMD_TCL
   // Call interpreter to calculate forces
-  Tcl_CreateCommand(interp, "loadcoords", Tcl_loadcoords,
+  Tcl_CreateObjCommand(interp, (char *)"loadcoords", Tcl_loadcoords,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "loadmasses", Tcl_loadmasses,
+  Tcl_CreateObjCommand(interp, (char *)"loadmasses", Tcl_loadmasses,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "addforce", Tcl_addforce,
+  Tcl_CreateObjCommand(interp, (char *)"addforce", Tcl_addforce,
     (ClientData) msg, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "reconfig", Tcl_reconfig,
+  Tcl_CreateCommand(interp, (char *)"reconfig", Tcl_reconfig,
     (ClientData) &(msg->reconfig), (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "addatom", Tcl_addatom,
+  Tcl_CreateCommand(interp, (char *)"addatom", Tcl_addatom,
     (ClientData) &(msg->newaid), (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "addgroup", Tcl_addgroup,
+  Tcl_CreateCommand(interp, (char *)"addgroup", Tcl_addgroup,
     (ClientData) &(msg->newgdef), (Tcl_CmdDeleteProc *) NULL);
 
   char cmd[129];  int code;
