@@ -13,7 +13,7 @@
 
 #include "NamdState.h"
 #include "Node.h"
-#ifdef WIN32
+#if defined(WIN32) && !defined(__CYGWIN__)
 #include <direct.h>
 #define CHDIR _chdir
 #define PATHSEP '\\'

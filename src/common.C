@@ -11,7 +11,7 @@
 #include "charm++.h"
 #include "converse.h"
 
-#ifndef WIN32
+#if !defined(WIN32) || defined(__CYGWIN__)
 #include <unistd.h>
 #endif
 #include <errno.h>
@@ -117,7 +117,7 @@ void NAMD_backup_file(const char *filename, const char *extension)
 void NAMD_write(int fd, const void *buf, size_t count)
 
 {
-#ifdef WIN32
+#if defined(WIN32) && !defined(__CYGWIN__)
    if ( _write(fd,buf,count) < 0 ) {
 #else
    if ( write(fd,buf,count) < 0 ) {

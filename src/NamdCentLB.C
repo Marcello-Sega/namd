@@ -1,5 +1,5 @@
 
-#ifndef WIN32
+#if !defined(WIN32) || defined(__CYGWIN__)
 #include <unistd.h>
 #endif
 #include <fcntl.h>

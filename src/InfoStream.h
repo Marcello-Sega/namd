@@ -11,7 +11,7 @@
 #ifndef INFOSTREAM_H
 #define INFOSTREAM_H
 
-#ifndef WIN32
+#if !defined(WIN32) || defined(__CYGWIN__)
 #include <strstream.h>
 #else
 #include <strstrea.h>

@@ -5,7 +5,7 @@
 **/
 
 #include <stddef.h>
-#ifndef WIN32
+#if !defined(WIN32) || defined(__CYGWIN__)
 #include <unistd.h>
 #endif
 #include <stdio.h>

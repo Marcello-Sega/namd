@@ -14,7 +14,7 @@
 #include "PDBData.h"
 #include "Molecule.h"
 #include <iostream.h>
-#ifndef WIN32
+#if !defined(WIN32) || defined(__CYGWIN__)
 #include <strstream.h>
 #else
 #include <strstrea.h>

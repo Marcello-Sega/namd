@@ -29,7 +29,7 @@ int vmdsock_selwrite(void *v, int sec) { return 0; }
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(WIN32)
+#if defined(WIN32) && !defined(__CYGWIN__)
 #include <winsock.h>
 #else
 #include <strings.h>
@@ -46,7 +46,7 @@ int vmdsock_selwrite(void *v, int sec) { return 0; }
 #include "vmdsock.h"
 
 int vmdsock_init(void) {
-#if defined(WIN32)
+#if defined(WIN32) && !defined(__CYGWIN__)
   int rc = 0;
   static int initialized=0;
 
@@ -139,7 +139,7 @@ void *vmdsock_accept(void * v) {
 
 int  vmdsock_write(void * v, const void *buf, int len) {
   vmdsocket *s = (vmdsocket *) v;
-#if defined(WIN32)
+#if defined(WIN32) && !defined(__CYGWIN__)
   return send(s->sd, (const char*) buf, len, 0);  // windows lacks the write() call
 #else
   return write(s->sd, buf, len);
@@ -148,7 +148,7 @@ int  vmdsock_write(void * v, const void *buf, int len) {
 
 int  vmdsock_read(void * v, void *buf, int len) {
   vmdsocket *s = (vmdsocket *) v;
-#if defined(WIN32)
+#if defined(WIN32) && !defined(__CYGWIN__)
   return recv(s->sd, (char*) buf, len, 0); // windows lacks the read() call
 #else
   return read(s->sd, buf, len);
@@ -161,7 +161,7 @@ void vmdsock_destroy(void * v) {
   if (s == NULL)
     return;
 
-#if defined(WIN32)
+#if defined(WIN32) && !defined(__CYGWIN__)
   closesocket(s->sd);
 #else
   close(s->sd);

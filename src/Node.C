@@ -9,7 +9,7 @@
    one Node per Pe (processor element).
 */
 
-#ifndef WIN32
+#if !defined(WIN32) || defined(__CYGWIN__)
 #include <unistd.h>
 #endif
 #include <charm++.h>
@@ -142,12 +142,12 @@ Node::~Node(void)
 // Startup Sequence
 
 void Node::messageStartUp() {
-  CProxy_Node(CpvAccess(BOCclass_group).node).startup();
+  (CProxy_Node(CpvAccess(BOCclass_group).node)).startup();
 }
 
 void Node::startUp(CkQdMsg *qmsg) {
   delete qmsg;
-  CProxy_Node(CpvAccess(BOCclass_group).node).startup();
+  (CProxy_Node(CpvAccess(BOCclass_group).node)).startup();
 }
 
 
@@ -320,7 +320,7 @@ void Node::buildSequencers() {
 // Node run() - broadcast to all nodes
 //-----------------------------------------------------------------------
 void Node::messageRun() {
-  CProxy_Node(CpvAccess(BOCclass_group).node).run();
+  (CProxy_Node(CpvAccess(BOCclass_group).node)).run();
 }
 
 

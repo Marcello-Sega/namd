@@ -66,7 +66,7 @@ void ScriptTcl::setParameter(const char* param, const char* value) {
   ScriptParamMsg *msg = new ScriptParamMsg;
   strncpy(msg->param,param,MAX_SCRIPT_PARAM_SIZE);
   strncpy(msg->value,value,MAX_SCRIPT_PARAM_SIZE);
-  CProxy_Node(CpvAccess(BOCclass_group).node).scriptParam(msg);
+  (CProxy_Node(CpvAccess(BOCclass_group).node)).scriptParam(msg);
   barrier();
 }
 
@@ -74,7 +74,7 @@ void ScriptTcl::setParameter(const char* param, int value) {
   ScriptParamMsg *msg = new ScriptParamMsg;
   strncpy(msg->param,param,MAX_SCRIPT_PARAM_SIZE);
   sprintf(msg->value,"%d",value);
-  CProxy_Node(CpvAccess(BOCclass_group).node).scriptParam(msg);
+  (CProxy_Node(CpvAccess(BOCclass_group).node)).scriptParam(msg);
   barrier();
 }
 

@@ -331,7 +331,7 @@ ComputeMgr::createComputes(ComputeMap *map)
 
 void ComputeMgr:: sendComputeGlobalConfig(ComputeGlobalConfigMsg *msg)
 {
-  CProxy_ComputeMgr(CpvAccess(BOCclass_group).computeMgr).recvComputeGlobalConfig(msg);
+  (CProxy_ComputeMgr(CpvAccess(BOCclass_group).computeMgr)).recvComputeGlobalConfig(msg);
 }
 
 void ComputeMgr:: recvComputeGlobalConfig(ComputeGlobalConfigMsg *msg)
@@ -360,7 +360,7 @@ void ComputeMgr:: recvComputeGlobalData(ComputeGlobalDataMsg *msg)
 
 void ComputeMgr:: sendComputeGlobalResults(ComputeGlobalResultsMsg *msg)
 {
-  CProxy_ComputeMgr(CpvAccess(BOCclass_group).computeMgr).recvComputeGlobalResults(msg);
+  (CProxy_ComputeMgr(CpvAccess(BOCclass_group).computeMgr)).recvComputeGlobalResults(msg);
 }
 
 void ComputeMgr:: recvComputeGlobalResults(ComputeGlobalResultsMsg *msg)

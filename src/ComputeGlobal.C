@@ -19,7 +19,7 @@
 #include "ComputeTcl.h"
 //---these include files are needed for ComputeFreeEnergy---
 #include <string.h>
-#ifndef WIN32
+#if !defined(WIN32) || defined(__CYGWIN__)
 #include <strstream.h>
 #else
 #include <strstrea.h>

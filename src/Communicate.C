@@ -5,6 +5,7 @@
 **/
 
 #include <string.h>
+#include <stdlib.h>
 #include "Communicate.h"
 #include "MStream.h"
 #include "converse.h"

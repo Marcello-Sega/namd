@@ -297,7 +297,7 @@ void Output::output_restart_coordinates(Vector *coor, int n, int timestep)
 
     first=FALSE;
   }
-#ifdef WIN32
+#if defined(WIN32) && !defined(__CYGWIN__)
   remove(restart_bak);
 #endif
   rename(restart_name, restart_bak);
@@ -364,7 +364,7 @@ void Output::output_restart_velocities(int timestep, int n, Vector *vel)
 
     first=FALSE;
   }
-#ifdef WIN32
+#if defined(WIN32) && !defined(__CYGWIN__)
   remove(restart_bak);
 #endif
   rename(restart_name, restart_bak);
@@ -534,7 +534,7 @@ void Output::output_final_coordinates(Vector *coor, int n, int timestep)
   char bfname[140];
   strcpy(bfname,output_name);
   strcat(bfname,".BAK");
-#ifdef WIN32
+#if defined(WIN32) && !defined(__CYGWIN__)
   remove(bfname);
 #endif
   rename(output_name,bfname);
@@ -583,7 +583,7 @@ void Output::output_final_velocities(int timestep, int n, Vector *vel)
   char bfname[140];
   strcpy(bfname,output_name);
   strcat(bfname,".BAK");
-#ifdef WIN32
+#if defined(WIN32) && !defined(__CYGWIN__)
   remove(bfname);
 #endif
   rename(output_name,bfname);
