@@ -683,7 +683,7 @@ void Controller::printEnergies(int step)
     }
 
     // callback to Tcl with whatever we can
-#ifdef NAMD_TCL_JCP_FIX_THIS
+#ifdef NAMD_TCL
 #define CALLBACKDATA(LABEL,VALUE) \
 		labels << (LABEL) << " "; values << (VALUE) << " ";
 #define CALLBACKLIST(LABEL,VALUE) \

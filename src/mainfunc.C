@@ -47,6 +47,7 @@ int main(int argc, char **argv) {
   configList = new ConfigList;  // empty, will be filled by Tcl
 
   ScriptTcl *script = new ScriptTcl;
+  Node::Object()->setScript(script);
   script->run(confFile,configList);
 #else
   if ( NULL == confFile || NULL == (configList = new ConfigList(confFile)) ) {
