@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.28 1996/12/20 22:53:27 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.29 1996/12/23 17:37:26 nealk Exp $";
 
 
 #include "ckdefs.h"
@@ -90,6 +90,15 @@ Node::Node(GroupInitMsg *msg)
 
   // Put num<name of BOC>Startup here
   numNodeStartup = CNumPes();
+
+  Message *conv_msg=NULL;
+  conv_msg = new Message;
+  conv_msg->put(1);
+  if (CMyPe()) {
+    DebugM(1,"Sending checkin to node 0 from node " << iPE << "\n");
+    comm->send(conv_msg,0,DISTRIBTAG);
+    DebugM(1,"Sent checkin to node 0 from node " << iPE << "\n");
+  }
 }
 
 //----------------------------------------------------------------------
@@ -111,7 +120,9 @@ Node::~Node(void)
 
 void Node::messageStartup() {
   InitMsg *msg = new (MsgIndex(InitMsg)) InitMsg;
+  DebugM(1,"calling CBroadcastMsgBranch()\n");
   CBroadcastMsgBranch(Node, startup, msg, group.node);
+  DebugM(1,"returned from CBroadcastMsgBranch()\n");
 }
 
 void Node::startup(InitMsg *msg)
@@ -156,12 +167,15 @@ void Node::startup(InitMsg *msg)
 
   AtomMap::Object()->allocateMap(molecule->numAtoms);
 
+  DebugM(1,iPE << " Calling CLocalBranch(WorkDistrib)\n");
   workDistrib = CLocalBranch(WorkDistrib,group.workDistrib);
 
   if ( CMyPe() ) {
      conv_msg = new Message;
      conv_msg->put(1);
+     DebugM(1,"Sending checkin to node 0 from node " << iPE << "\n");
      comm->send(conv_msg,0,DISTRIBTAG);
+     DebugM(1,"Sent checkin to node 0 from node " << iPE << "\n");
   } else {
      for ( int i = 1; i < numNodes(); ++i )
      {
@@ -189,6 +203,7 @@ void Node::startup1(InitMsg *msg)
   DebugM(1, "workDistrib->sendMaps() Pe=" << CMyPe() << "\n");
   workDistrib->sendMaps();
 
+  DebugM(1,"CStartQuiescence in startup1\n");
   CStartQuiescence(GetEntryPtr(Node,messageStartup2), thishandle);
   DebugM(1,"End of startup1()\n");
 }
@@ -211,7 +226,10 @@ void Node::startup2(InitMsg *msg)
   if ( ! CMyPe() ) workDistrib->createPatches();
 
   if ( ! CMyPe() )
+  {
+	DebugM(1,"CStartQuiescence in startup2\n");
 	CStartQuiescence(GetEntryPtr(Node,messageStartup3), thishandle);
+  }
   DebugM(1,"End of startup2()\n");
 }
 
@@ -232,7 +250,10 @@ void Node::startup3(InitMsg *msg)
   proxyMgr->createProxies();
 
   if ( ! CMyPe() )
+  {
+	DebugM(1,"CStartQuiescence in startup3\n");
 	CStartQuiescence(GetEntryPtr(Node,messageStartup4), thishandle);
+  }
   DebugM(1,"End of startup3()\n");
 }
 
@@ -277,6 +298,7 @@ void Node::startupDone(DoneMsg *msg) {
     if (!--numNodeStartup) {
       DebugM(1, "Node::startupDone() - triggered run() \n");
       Node::messageRun();
+      DebugM(1,"CStartQuiescence in startupDone\n");
       CStartQuiescence(GetEntryPtr(Node,quiescence), thishandle);
     }
   } else {
@@ -356,13 +378,16 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.28 $	$Date: 1996/12/20 22:53:27 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.29 $	$Date: 1996/12/23 17:37:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.29  1996/12/23 17:37:26  nealk
+ * Mode debug code...
+ *
  * Revision 1.28  1996/12/20 22:53:27  jim
  * fixing parallel bugs, going home for Christmass
  *
