@@ -1,8 +1,13 @@
 NAMD_ARCH = Linux-i686
 CHARMARCH = net-linux-icc
 
+FLOATOPTS = -march=pentiumpro -mcpu=pentium4 -ip -fno-rtti -align -Zp8
+
 CXX = icc -DSOCKLEN_T=socklen_t -static
-CXXOPTS = -O2 -tpp6 -axiM
+CXXOPTS = -O2 $(FLOATOPTS)
+CXXNOALIASOPTS = -O3 -fno-alias $(FLOATOPTS)
+
 CC = icc -static
-COPTS = -O2 -tpp6 -axiM
+COPTS = -O2 $(FLOATOPTS)
+
 
