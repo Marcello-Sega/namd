@@ -46,11 +46,13 @@ class DoneMsg : public EmptyMsg {
 class RegisterProxyMsg : public comm_object {
 public:
   NodeID node;
+  PatchID patch;
 };
 
 class UnregisterProxyMsg : public comm_object {
 public:
   NodeID node;
+  PatchID patch;
 };
 
 class Compute;
@@ -68,12 +70,15 @@ public:
  *
  *	$RCSfile: main.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1996/12/05 01:47:40 $
+ *	$Revision: 1.10 $	$Date: 1996/12/05 17:00:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: main.h,v $
+ * Revision 1.10  1996/12/05 17:00:05  ari
+ * *** empty log message ***
+ *
  * Revision 1.9  1996/12/05 01:47:40  ari
  * added messages for proxy management
  *
