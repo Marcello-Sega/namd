@@ -849,10 +849,10 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
    ///////////////  Load balance options
    opts.optional("main", "ldbStrategy", "Load balancing strategy",
      loadStrategy);
-   opts.optional("ldbStrategy", "ldbPeriod",
+   opts.optional("main", "ldbPeriod",
      "steps between load balancing", &ldbPeriod);
    opts.range("ldbPeriod", POSITIVE);
-   opts.optional("ldbStrategy", "firstLdbStep", 
+   opts.optional("main", "firstLdbStep", 
      "when to start load balancing",
      &firstLdbStep);
    opts.range("firstLdbStep", POSITIVE);
@@ -1611,31 +1611,22 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    //  Set up load balancing variables
    if (opts.defined("ldbStrategy"))
    {
-  //  Assign the load balancing strategy
-  if (strcasecmp(loadStrategy, "none") == 0)
-  {
-      ldbStrategy=LDBSTRAT_NONE;
-  }
-  else if (strcasecmp(loadStrategy, "refineonly") == 0)
-  {
-      ldbStrategy=LDBSTRAT_REFINEONLY;
-  }
-  else if (strcasecmp(loadStrategy, "alg7") == 0)
-  {
-      ldbStrategy=LDBSTRAT_ALG7;
-  }
-  else if (strcasecmp(loadStrategy, "rob") == 0)
-  {
-      ldbStrategy=LDBSTRAT_ALGROB;
-  }
-  else if (strcasecmp(loadStrategy, "other") == 0)
-  {
-      ldbStrategy=LDBSTRAT_OTHER;
-  }
-  else
-  {
-      NAMD_die("Unknown ldbStrategy selected");
-  }
+     //  Assign the load balancing strategy
+     if (strcasecmp(loadStrategy, "none") == 0)
+       ldbStrategy=LDBSTRAT_NONE;
+     else if (strcasecmp(loadStrategy, "refineonly") == 0)
+       ldbStrategy=LDBSTRAT_REFINEONLY;
+     else if (strcasecmp(loadStrategy, "alg7") == 0)
+       ldbStrategy=LDBSTRAT_ALG7;
+     else if (strcasecmp(loadStrategy, "rob") == 0)
+       ldbStrategy=LDBSTRAT_ALGROB;
+     else if (strcasecmp(loadStrategy, "other") == 0)
+       ldbStrategy=LDBSTRAT_OTHER;
+     else
+       NAMD_die("Unknown ldbStrategy selected");
+   } else {
+     ldbStrategy=LDBSTRAT_OTHER;
+   }
 
   if (!opts.defined("ldbPeriod"))
   {
@@ -1647,13 +1638,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
   {
     firstLdbStep=5*stepsPerCycle;
   }
-   }
-   else
-   {
-  ldbStrategy=LDBSTRAT_OTHER;
-  ldbPeriod=200*stepsPerCycle;
-  firstLdbStep=5*stepsPerCycle;
-   }
 
    if (N < firstTimestep) { N = firstTimestep; }
 
