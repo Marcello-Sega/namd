@@ -68,6 +68,10 @@ void ComputeNonbondedUtil::unregisterReductionData(ReductionMgr *reduction)
   reduction->unRegister(REDUCTION_VIRIAL);
 }
 
+#ifdef DPME
+//  This is defined by dpme if needed.
+int find_ewaldcof(double *cutoff, double *dtol, double *ewaldcof);
+#endif
 
 void ComputeNonbondedUtil::select(void)
 {
@@ -115,7 +119,23 @@ void ComputeNonbondedUtil::select(void)
   c5 = 1/cutoff2;
   c6 = -4 * c5;
 
-  if ( ! ( simParams->fullDirectOn || simParams->FMAOn ) )
+#ifdef DPME
+  int PMEOn = simParams->PMEOn;
+
+  if ( PMEOn ) {
+    double cutoff_double = cutoff;
+    double dtol_double = simParams->PMETolerance;
+    double ewaldcof_double;
+    find_ewaldcof(&cutoff_double, &dtol_double, &ewaldcof_double);
+    ewaldcof = ewaldcof_double;
+    BigReal TwoBySqrtPi = 1.12837916709551;
+    pi_ewaldcof = TwoBySqrtPi * ewaldcof;
+  }
+#else
+  int PMEOn = 0;
+#endif
+
+  if ( ! ( simParams->fullDirectOn || simParams->FMAOn || PMEOn ) )
   {
   	calcFullPair = 0;
   	calcPair = calc_pair;
@@ -129,26 +149,32 @@ void ComputeNonbondedUtil::select(void)
   else switch ( simParams->longSplitting )
   {
     case XPLOR:
-  	calcFullPair = calc_pair_fullelect_xplor;
+	if ( PMEOn ) calcFullPair = calc_pair_fullelect_pme_xplor;
+  	else calcFullPair = calc_pair_fullelect_xplor;
   	calcPair = calc_pair_xplor;
 
-  	calcFullSelf = calc_self_fullelect_xplor;
+	if ( PMEOn ) calcFullSelf = calc_self_fullelect_pme_xplor;
+  	else calcFullSelf = calc_self_fullelect_xplor;
   	calcSelf = calc_self_xplor;
 
-  	calcFullExcl = calc_excl_fullelect_xplor;
+	if ( PMEOn ) calcFullExcl = calc_excl_fullelect_pme_xplor;
+  	else calcFullExcl = calc_excl_fullelect_xplor;
   	calcExcl = calc_excl_xplor;
     	break;
 
     case C1:
-  	calcFullPair = calc_pair_fullelect_c1;
+	if ( PMEOn ) calcFullPair = calc_pair_fullelect_pme_c1;
+  	else calcFullPair = calc_pair_fullelect_c1;
   	calcPair = calc_pair_c1;
 
-  	calcFullSelf = calc_self_fullelect_c1;
+	if ( PMEOn ) calcFullSelf = calc_self_fullelect_pme_c1;
+  	else calcFullSelf = calc_self_fullelect_c1;
   	calcSelf = calc_self_c1;
 
-  	calcFullExcl = calc_excl_fullelect_c1;
+	if ( PMEOn ) calcFullExcl = calc_excl_fullelect_pme_c1;
+  	else calcFullExcl = calc_excl_fullelect_c1;
   	calcExcl = calc_excl_c1;
-	break;
+    	break;
 
     case SKEEL:
     NAMD_die("Sorry, SKEEL splitting not supported.");
@@ -171,6 +197,8 @@ void ComputeNonbondedUtil::select(void)
 #define NBEXCL	3
 // define electrostatics
 #undef FULLELECT
+#define FULLELECT_NOCORRECTION	1
+#define FULLELECT_PME		2
 // define splitting function
 #define SPLIT_NONE	1
 #define SPLIT_C1	2
@@ -183,7 +211,10 @@ void ComputeNonbondedUtil::select(void)
 #undef  NBTYPE
 #define NBTYPE NBPAIR
 //     (1) BEGIN FULLELECT
-#define FULLELECT
+#define FULLELECT FULLELECT_NOCORRECTION
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#define FULLELECT FULLELECT_PME
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
 #include "ComputeNonbondedBase.h"
@@ -191,7 +222,10 @@ void ComputeNonbondedUtil::select(void)
 #undef  NBTYPE
 #define NBTYPE NBSELF
 //     (1) BEGIN FULLELECT
-#define FULLELECT
+#define FULLELECT FULLELECT_NOCORRECTION
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#define FULLELECT FULLELECT_PME
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
 #include "ComputeNonbondedBase.h"
@@ -199,7 +233,10 @@ void ComputeNonbondedUtil::select(void)
 #undef  NBTYPE
 #define NBTYPE NBEXCL
 //     (1) BEGIN FULLELECT
-#define FULLELECT
+#define FULLELECT FULLELECT_NOCORRECTION
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#define FULLELECT FULLELECT_PME
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
 #include "ComputeNonbondedBase.h"
@@ -212,7 +249,10 @@ void ComputeNonbondedUtil::select(void)
 #undef  NBTYPE
 #define NBTYPE NBPAIR
 //     (1) BEGIN FULLELECT
-#define FULLELECT
+#define FULLELECT FULLELECT_NOCORRECTION
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#define FULLELECT FULLELECT_PME
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
 #include "ComputeNonbondedBase.h"
@@ -220,7 +260,10 @@ void ComputeNonbondedUtil::select(void)
 #undef  NBTYPE
 #define NBTYPE NBSELF
 //     (1) BEGIN FULLELECT
-#define FULLELECT
+#define FULLELECT FULLELECT_NOCORRECTION
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#define FULLELECT FULLELECT_PME
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
 #include "ComputeNonbondedBase.h"
@@ -228,7 +271,10 @@ void ComputeNonbondedUtil::select(void)
 #undef  NBTYPE
 #define NBTYPE NBEXCL
 //     (1) BEGIN FULLELECT
-#define FULLELECT
+#define FULLELECT FULLELECT_NOCORRECTION
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#define FULLELECT FULLELECT_PME
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
 #include "ComputeNonbondedBase.h"
@@ -241,7 +287,10 @@ void ComputeNonbondedUtil::select(void)
 #undef  NBTYPE
 #define NBTYPE NBPAIR
 //     (1) BEGIN FULLELECT
-#define FULLELECT
+#define FULLELECT FULLELECT_NOCORRECTION
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#define FULLELECT FULLELECT_PME
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
 #include "ComputeNonbondedBase.h"
@@ -249,7 +298,10 @@ void ComputeNonbondedUtil::select(void)
 #undef  NBTYPE
 #define NBTYPE NBSELF
 //     (1) BEGIN FULLELECT
-#define FULLELECT
+#define FULLELECT FULLELECT_NOCORRECTION
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#define FULLELECT FULLELECT_PME
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
 #include "ComputeNonbondedBase.h"
@@ -257,7 +309,10 @@ void ComputeNonbondedUtil::select(void)
 #undef  NBTYPE
 #define NBTYPE NBEXCL
 //     (1) BEGIN FULLELECT
-#define FULLELECT
+#define FULLELECT FULLELECT_NOCORRECTION
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#define FULLELECT FULLELECT_PME
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
 #include "ComputeNonbondedBase.h"
@@ -271,12 +326,15 @@ void ComputeNonbondedUtil::select(void)
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1997/09/22 04:08:04 $
+ *	$Revision: 1.1016 $	$Date: 1998/04/06 16:34:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1016  1998/04/06 16:34:06  jim
+ * Added DPME (single processor only), test mode, and momenta printing.
+ *
  * Revision 1.1015  1997/09/22 04:08:04  jim
  * Sped up fixed atom simulations by checking for all atoms fixed.
  *

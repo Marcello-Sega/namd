@@ -78,6 +78,10 @@ public:
   static BigReal c6;
   static BigReal d0;
 
+  // for particle mesh Ewald
+  static BigReal ewaldcof;
+  static BigReal pi_ewaldcof;
+
   // for simplifying some common functions
   inline static BigReal square(	const BigReal &x,
  				const BigReal &y,
@@ -90,10 +94,13 @@ public:
   // No splitting
   static void calc_pair (nonbonded *);
   static void calc_pair_fullelect (nonbonded *);
+  static void calc_pair_fullelect_pme (nonbonded *);
   static void calc_self (nonbonded *);
   static void calc_self_fullelect (nonbonded *);
+  static void calc_self_fullelect_pme (nonbonded *);
   static void calc_excl (nonbonded *);
   static void calc_excl_fullelect (nonbonded *);
+  static void calc_excl_fullelect_pme (nonbonded *);
   inline static void shifting(BigReal &, BigReal &,
 		       const BigReal &, const BigReal &,
 		       const BigReal &, const BigReal &);
@@ -101,20 +108,26 @@ public:
   // C1 Splitting
   static void calc_pair_c1 (nonbonded *);
   static void calc_pair_fullelect_c1 (nonbonded *);
+  static void calc_pair_fullelect_pme_c1 (nonbonded *);
   static void calc_self_c1 (nonbonded *);
   static void calc_self_fullelect_c1 (nonbonded *);
+  static void calc_self_fullelect_pme_c1 (nonbonded *);
   static void calc_excl_c1 (nonbonded *);
   static void calc_excl_fullelect_c1 (nonbonded *);
+  static void calc_excl_fullelect_pme_c1 (nonbonded *);
   inline static void c1splitting(BigReal &, BigReal &,
  			  const BigReal &, const BigReal &, const BigReal &);
 
   // XPLOR Splitting
   static void calc_pair_xplor (nonbonded *);
   static void calc_pair_fullelect_xplor (nonbonded *);
+  static void calc_pair_fullelect_pme_xplor (nonbonded *);
   static void calc_self_xplor (nonbonded *);
   static void calc_self_fullelect_xplor (nonbonded *);
+  static void calc_self_fullelect_pme_xplor (nonbonded *);
   static void calc_excl_xplor (nonbonded *);
   static void calc_excl_fullelect_xplor (nonbonded *);
+  static void calc_excl_fullelect_pme_xplor (nonbonded *);
   inline static void xplorsplitting(BigReal &, BigReal &,
 			     const BigReal &,const BigReal &);
 
@@ -129,12 +142,15 @@ public:
  *
  *	$RCSfile: ComputeNonbondedUtil.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1997/09/22 04:08:05 $
+ *	$Revision: 1.1015 $	$Date: 1998/04/06 16:34:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.h,v $
+ * Revision 1.1015  1998/04/06 16:34:07  jim
+ * Added DPME (single processor only), test mode, and momenta printing.
+ *
  * Revision 1.1014  1997/09/22 04:08:05  jim
  * Sped up fixed atom simulations by checking for all atoms fixed.
  *

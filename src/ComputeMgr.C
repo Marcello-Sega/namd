@@ -43,6 +43,9 @@
 #ifdef DPMTA
 #include "ComputeDPMTA.h"
 #endif
+#ifdef DPME
+#include "ComputeDPME.h"
+#endif
 #include "ComputeSphericalBC.h"
 #include "ComputeCylindricalBC.h"
 #include "ComputeRestraints.h"
@@ -235,10 +238,12 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
+#endif
+#ifdef DPME
       case computeDPMEType:
-	// c = new ComputeDPME(i); // unknown delete
-	// map->registerCompute(i,c);
-	// c->initialize();
+	c = new ComputeDPME(i); // unknown delete
+	map->registerCompute(i,c);
+	c->initialize();
 	break;
 #endif
       case computeFullDirectType:
@@ -371,13 +376,16 @@ void ComputeMgr:: recvComputeGlobalResults(ComputeGlobalResultsMsg *msg)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1020 $	$Date: 1998/03/03 23:05:10 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1021 $	$Date: 1998/04/06 16:34:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.C,v $
+ * Revision 1.1021  1998/04/06 16:34:04  jim
+ * Added DPME (single processor only), test mode, and momenta printing.
+ *
  * Revision 1.1020  1998/03/03 23:05:10  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

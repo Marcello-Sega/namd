@@ -22,6 +22,12 @@ typedef enum
   REDUCTION_VIRIAL,
   REDUCTION_ALT_VIRIAL,
   REDUCTION_SMD_ENERGY,
+  REDUCTION_MOMENTUM_X,
+  REDUCTION_MOMENTUM_Y,
+  REDUCTION_MOMENTUM_Z,
+  REDUCTION_ANGULAR_MOMENTUM_X,
+  REDUCTION_ANGULAR_MOMENTUM_Y,
+  REDUCTION_ANGULAR_MOMENTUM_Z,
   REDUCTION_MAX_RESERVED
 } ReductionTag;
 
@@ -115,12 +121,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1998/03/03 23:05:27 $
+ *	$Revision: 1.1010 $	$Date: 1998/04/06 16:34:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.h,v $
+ * Revision 1.1010  1998/04/06 16:34:08  jim
+ * Added DPME (single processor only), test mode, and momenta printing.
+ *
  * Revision 1.1009  1998/03/03 23:05:27  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

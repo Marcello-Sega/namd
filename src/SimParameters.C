@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1037 $  $Date: 1998/03/31 04:55:47 $
+ *  $Revision: 1.1038 $  $Date: 1998/04/06 16:34:10 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1038  1998/04/06 16:34:10  jim
+ * Added DPME (single processor only), test mode, and momenta printing.
+ *
  * Revision 1.1037  1998/03/31 04:55:47  jim
  * Added test mode, fixed errors in virial with full electrostatics.
  *
@@ -447,7 +450,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1037 1998/03/31 04:55:47 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1038 1998/04/06 16:34:10 jim Exp $";
 
 
 #include "charm++.h"
@@ -609,6 +612,10 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
      &outputEnergies, 1);
    opts.range("outputEnergies", POSITIVE);
      
+   opts.optional("main", "outputMomenta", "How often to print linear and angular momenta in timesteps",
+     &outputMomenta, 0);
+   opts.range("outputMomenta", NOT_NEGATIVE);
+     
    opts.optional("main", "MTSAlgorithm", "Multiple timestep algorithm",
     PARSE_STRING);
 
@@ -728,6 +735,22 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
    opts.optionalB("main", "FullDirect", "Should direct calculations of full electrostatics be performed?",
       &fullDirectOn, FALSE);
+
+
+   ///////////  Particle Mesh Ewald
+
+   opts.optionalB("main", "PME", "Use particle mesh Ewald for electrostatics?",
+	&PMEOn, FALSE);
+   opts.optional("PME", "PMETolerance", "PME direct space tolerance",
+	&PMETolerance, 1.e-6);
+   opts.optional("PME", "PMEInterpOrder", "PME interpolation order",
+	&PMEInterpOrder, 4);  // cubic interpolation is default
+   opts.require("PME", "PMEGridSizeX", "PME grid in x dimension",
+	&PMEGridSizeX);
+   opts.require("PME", "PMEGridSizeY", "PME grid in y dimension",
+	&PMEGridSizeY);
+   opts.require("PME", "PMEGridSizeZ", "PME grid in z dimension",
+	&PMEGridSizeZ);
 
    /////////// Special Dynamics Methods
    opts.optionalB("main", "minimization", "Should minimization be performed?",
@@ -1758,10 +1781,27 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
   NAMD_die("First timestep must be a multiple of stepsPerCycle!!");
    }
 
-   if (FMAOn && fullDirectOn)
+   //  Make sure only one full electrostatics algorithm is selected
    {
-  NAMD_die("Can't do FMA and full electrostatic calculations!!!");
+     int i = 0;
+     if ( FMAOn ) ++i;
+     if ( PMEOn ) ++i;
+     if ( fullDirectOn ) ++i;
+     if ( i > 1 )
+	NAMD_die("More than one full electrostatics algorithm selected!!!");
    }
+
+
+   //  Check on PME parameters
+   if (PMEOn) {  // idiot checking
+     if ( lattice.volume() == 0. )
+	NAMD_die("PME requires periodic boundary conditions.");
+   } else {  // initialize anyway
+     PMEGridSizeX = 0;
+     PMEGridSizeY = 0;
+     PMEGridSizeZ = 0;
+   }
+
 
    //  Take care of initializing FMA values to something if FMA is not
    //  active
@@ -1782,7 +1822,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
     NAMD_die("FMAMp: multipole term must be multiple of block length (FMAFFTBlock)");
     }
 
-   if (!FMAOn && !fullDirectOn)
+   if (!FMAOn && !PMEOn && !fullDirectOn)
    {
   fmaFrequency = 0;
    }
@@ -2163,6 +2203,12 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
          << outputEnergies << "\n";
    }
    
+   if (outputMomenta != 0)
+   {
+      iout << iINFO << "MOMENTUM OUTPUT STEPS  "
+         << outputMomenta << "\n";
+   }
+   
    if (fixedAtomsOn)
    {
       iout << iINFO << "FIXED ATOMS ACTIVE\n";
@@ -2465,15 +2511,32 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    if (FMAOn)
    {
      iout << iINFO << "FMA ACTIVE\n";
-     iout << iINFO << "FMA EXECUTION FREQ     "
-        << fmaFrequency << "\n";
      iout << iINFO << "FMA THETA              "
         << fmaTheta << "\n";
    }
 
+   if (PMEOn)
+   {
+     iout << iINFO << "PARTICLE MESH EWALD (PME) ACTIVE\n";
+     iout << iINFO << "PME TOLERANCE               "
+	<< PMETolerance << "\n";
+     iout << iINFO << "PME INTERPOLATION ORDER     "
+	<< PMEInterpOrder << "\n";
+     iout << iINFO << "PME GRID DIMENSIONS         "
+	<< PMEGridSizeX << " "
+	<< PMEGridSizeY << " "
+	<< PMEGridSizeZ << "\n";
+   }
+
    if (fullDirectOn)
    {
-  iout << iINFO << "DIRECT FULL ELECTROSTATIC CALCULATIONS ACTIVE\n";
+     iout << iINFO << "DIRECT FULL ELECTROSTATIC CALCULATIONS ACTIVE\n";
+   }
+
+   if ( FMAOn || PMEOn || fullDirectOn )
+   {
+     iout << iINFO << "FULL ELECTROSTATIC EVALUATION FREQUENCY      "
+	<< fmaFrequency << "\n";
    }
 
    if (MTSAlgorithm != NAIVE)
@@ -2686,6 +2749,8 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
   msg->put(sphericalBCr2)->put(sphericalBCk1)->put(sphericalBCk2);
   msg->put(sphericalBCexp1)->put(sphericalBCexp2);
   msg->put(firstTimestep)->put(fullDirectOn);
+  msg->put(PMEOn)->put(PMETolerance)->put(PMEInterpOrder);
+  msg->put(PMEGridSizeX)->put(PMEGridSizeY)->put(PMEGridSizeZ);
   msg->put(eFieldOn)->put(&eField)->put(binaryRestart);
   msg->put(electForceDcdFilename)->put(electForceDcdFrequency);
   msg->put(allForceDcdFilename)->put(allForceDcdFrequency);
@@ -2842,6 +2907,12 @@ void SimParameters::receive_SimParameters(MIStream *msg)
   msg->get(sphericalBCexp2);
   msg->get(firstTimestep);
   msg->get(fullDirectOn);
+  msg->get(PMEOn);
+  msg->get(PMETolerance);
+  msg->get(PMEInterpOrder);
+  msg->get(PMEGridSizeX);
+  msg->get(PMEGridSizeY);
+  msg->get(PMEGridSizeZ);
   msg->get(eFieldOn);
   msg->get(&eField);
   msg->get(binaryRestart);
@@ -2925,12 +2996,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1037 $  $Date: 1998/03/31 04:55:47 $
+ *  $Revision: 1.1038 $  $Date: 1998/04/06 16:34:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1038  1998/04/06 16:34:10  jim
+ * Added DPME (single processor only), test mode, and momenta printing.
+ *
  * Revision 1.1037  1998/03/31 04:55:47  jim
  * Added test mode, fixed errors in virial with full electrostatics.
  *

@@ -32,6 +32,8 @@ enum ComputeType
   computeImpropersType,
 #ifdef DPMTA
   computeDPMTAType,
+#endif
+#ifdef DPME
   computeDPMEType,
 #endif
   computeFullDirectType,
@@ -167,12 +169,15 @@ private:
  *
  *	$RCSfile: ComputeMap.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1998/01/15 04:58:47 $
+ *	$Revision: 1.1014 $	$Date: 1998/04/06 16:34:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.h,v $
+ * Revision 1.1014  1998/04/06 16:34:04  jim
+ * Added DPME (single processor only), test mode, and momenta printing.
+ *
  * Revision 1.1013  1998/01/15 04:58:47  jim
  * Corrected "friend foo" to "friend class foo".
  *

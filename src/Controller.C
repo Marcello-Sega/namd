@@ -53,6 +53,12 @@ Controller::Controller(NamdState *s) :
     reduction->subscribe(REDUCTION_VIRIAL);
     reduction->subscribe(REDUCTION_ALT_VIRIAL);
     reduction->subscribe(REDUCTION_SMD_ENERGY);
+    reduction->subscribe(REDUCTION_MOMENTUM_X);
+    reduction->subscribe(REDUCTION_MOMENTUM_Y);
+    reduction->subscribe(REDUCTION_MOMENTUM_Z);
+    reduction->subscribe(REDUCTION_ANGULAR_MOMENTUM_X);
+    reduction->subscribe(REDUCTION_ANGULAR_MOMENTUM_Y);
+    reduction->subscribe(REDUCTION_ANGULAR_MOMENTUM_Z);
 }
 
 Controller::~Controller(void)
@@ -70,6 +76,12 @@ Controller::~Controller(void)
     reduction->unsubscribe(REDUCTION_VIRIAL);
     reduction->unsubscribe(REDUCTION_ALT_VIRIAL);
     reduction->unsubscribe(REDUCTION_SMD_ENERGY);
+    reduction->unsubscribe(REDUCTION_MOMENTUM_X);
+    reduction->unsubscribe(REDUCTION_MOMENTUM_Y);
+    reduction->unsubscribe(REDUCTION_MOMENTUM_Z);
+    reduction->unsubscribe(REDUCTION_ANGULAR_MOMENTUM_X);
+    reduction->unsubscribe(REDUCTION_ANGULAR_MOMENTUM_Y);
+    reduction->unsubscribe(REDUCTION_ANGULAR_MOMENTUM_Z);
 }
 
 void Controller::threadRun(Controller* arg)
@@ -209,6 +221,8 @@ void Controller::printEnergies(int seq)
     BigReal smdEnergy;
     BigReal totalEnergy;
     BigReal volume;
+    Vector momentum;
+    Vector angularMomentum;
 
     reduction->require(seq, REDUCTION_BOND_ENERGY, bondEnergy);
     reduction->require(seq, REDUCTION_ANGLE_ENERGY, angleEnergy);
@@ -224,6 +238,13 @@ void Controller::printEnergies(int seq)
     reduction->require(seq, REDUCTION_ALT_VIRIAL, altVirial);
     altVirial /= 3.;  // virial submitted is wrong by factor of 3
 
+    reduction->require(seq, REDUCTION_MOMENTUM_X, momentum.x);
+    reduction->require(seq, REDUCTION_MOMENTUM_Y, momentum.y);
+    reduction->require(seq, REDUCTION_MOMENTUM_Z, momentum.z);
+    reduction->require(seq, REDUCTION_ANGULAR_MOMENTUM_X, angularMomentum.x);
+    reduction->require(seq, REDUCTION_ANGULAR_MOMENTUM_Y, angularMomentum.y);
+    reduction->require(seq, REDUCTION_ANGULAR_MOMENTUM_Z, angularMomentum.z);
+
     temperature = 2.0 * kineticEnergy / ( numDegFreedom * BOLTZMAN );
 
     if ( (volume=lattice.volume()) != 0. )
@@ -237,6 +258,15 @@ void Controller::printEnergies(int seq)
 
     totalEnergy = bondEnergy + angleEnergy + dihedralEnergy + improperEnergy +
 	 electEnergy + ljEnergy + kineticEnergy + boundaryEnergy + smdEnergy;
+
+    if ( node->simParameters->outputMomenta &&
+         ! ( seq % node->simParameters->outputEnergies ) )
+    {
+      iout << "MOMENTA: " << seq 
+           << " P=" << momentum
+           << " L=" << angularMomentum
+           << "\n" << endi;
+    }
 
     // NO CALCULATIONS OR REDUCTIONS BEYOND THIS POINT!!!
     if ( seq % node->simParameters->outputEnergies ) return;
@@ -298,12 +328,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1030 $	$Date: 1998/03/06 20:55:25 $
+ *	$Revision: 1.1031 $	$Date: 1998/04/06 16:34:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1031  1998/04/06 16:34:07  jim
+ * Added DPME (single processor only), test mode, and momenta printing.
+ *
  * Revision 1.1030  1998/03/06 20:55:25  jim
  * Added temperature coupling.
  *

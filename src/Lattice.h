@@ -89,6 +89,16 @@ public:
     return result;
   }
 
+  // calculates shortest vector from origin to p1 (equivalent to p1 - o)
+  Vector delta(Position p1) const
+  {
+    Vector result = p1 - o;
+    result.x -= a1 * rint( b1 * result.x );
+    result.y -= a2 * rint( b2 * result.y );
+    result.z -= a3 * rint( b3 * result.z );
+    return result;
+  }
+
   Position* create(Position *d, int n, int i) const
   {
     Position *dt;
@@ -145,12 +155,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1998/03/30 21:01:17 $
+ *	$Revision: 1.1007 $	$Date: 1998/04/06 16:34:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Lattice.h,v $
+ * Revision 1.1007  1998/04/06 16:34:08  jim
+ * Added DPME (single processor only), test mode, and momenta printing.
+ *
  * Revision 1.1006  1998/03/30 21:01:17  jim
  * Added nearest-image support for periodic boundary conditions to full direct.
  *

@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/TestSequencer.C,v 1.1 1998/03/31 04:55:50 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/TestSequencer.C,v 1.2 1998/04/06 16:34:12 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -68,7 +68,8 @@ void TestSequencer::algorithm(void)
     if ( doNonbonded ) maxForceUsed = Results::nbond;
 
     // Do we do full electrostatics?
-    const int dofull = ( simParams->fullDirectOn || simParams->FMAOn );
+    const int dofull = ( simParams->fullDirectOn ||
+			simParams->FMAOn || simParams->PMEOn );
     const int fullElectFrequency = simParams->fmaFrequency;
     const BigReal slowstep = timestep * fullElectFrequency;
     int &doFullElectrostatics = patch->flags.doFullElectrostatics;
@@ -160,12 +161,15 @@ void TestSequencer::translatePosition(BigReal dx, BigReal dy, BigReal dz) {
  *
  *      $RCSfile: TestSequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1 $     $Date: 1998/03/31 04:55:50 $
+ *      $Revision: 1.2 $     $Date: 1998/04/06 16:34:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: TestSequencer.C,v $
+ * Revision 1.2  1998/04/06 16:34:12  jim
+ * Added DPME (single processor only), test mode, and momenta printing.
+ *
  * Revision 1.1  1998/03/31 04:55:50  jim
  * Added test mode, fixed errors in virial with full electrostatics.
  *

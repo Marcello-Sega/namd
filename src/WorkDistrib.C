@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1045 1998/03/30 21:01:18 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1046 1998/04/06 16:34:13 jim Exp $";
 
 #include <stdio.h>
 
@@ -552,6 +552,10 @@ void WorkDistrib::mapComputes(void)
   if ( node->simParameters->FMAOn )
     mapComputeHomePatches(computeDPMTAType);
 #endif
+#ifdef DPME
+  if ( node->simParameters->PMEOn )
+    mapComputeHomePatches(computeDPMEType);
+#endif
 
   if ( node->simParameters->globalForcesOn )
     mapComputeHomePatches(computeGlobalType);
@@ -1033,12 +1037,15 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1045 $	$Date: 1998/03/30 21:01:18 $
+ *	$Revision: 1.1046 $	$Date: 1998/04/06 16:34:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1046  1998/04/06 16:34:13  jim
+ * Added DPME (single processor only), test mode, and momenta printing.
+ *
  * Revision 1.1045  1998/03/30 21:01:18  jim
  * Added nearest-image support for periodic boundary conditions to full direct.
  *

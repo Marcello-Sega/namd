@@ -241,6 +241,13 @@ public:
 	Bool fullDirectOn;		//  Should direct calculations of
 					//  full electrostatics be performed?
 
+	Bool PMEOn;			//  Flag TRUE -> PME active
+	BigReal PMETolerance;		//  Direct space tolerance
+	int PMEInterpOrder;		//  Order of interpolation
+	int PMEGridSizeX;		//  No. of grid points in x dim
+	int PMEGridSizeY;		//  No. of grid points in y dim
+	int PMEGridSizeZ;		//  No. of grid points in z dim
+
 	Bool minimizeOn;		//  Flag TRUE-> minimization active
 	BigReal maximumMove;		//  Maximum movement per timestep 
 					//  during minimization
@@ -277,6 +284,9 @@ public:
 	Vector eField;                  //  Electric field vector to be applied
 
 	int outputEnergies;		//  Number of timesteps between energy
+					//  outputs
+
+	int outputMomenta;		//  Number of timesteps between momentum
 					//  outputs
 
 	int firstTimestep;		//  Starting timestep.  Will be 0 unless
@@ -356,12 +366,15 @@ public:
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1019 $	$Date: 1998/03/31 04:55:48 $
+ *	$Revision: 1.1020 $	$Date: 1998/04/06 16:34:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1020  1998/04/06 16:34:11  jim
+ * Added DPME (single processor only), test mode, and momenta printing.
+ *
  * Revision 1.1019  1998/03/31 04:55:48  jim
  * Added test mode, fixed errors in virial with full electrostatics.
  *

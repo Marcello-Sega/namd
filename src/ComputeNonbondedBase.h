@@ -72,7 +72,11 @@
 #undef FULL
 #undef NOFULL
 #ifdef FULLELECT
-  #define FULLELECTNAME(X) SPLITTINGNAME( X ## _fullelect )
+  #if FULLELECT == FULLELECT_PME
+    #define FULLELECTNAME(X) SPLITTINGNAME( X ## _fullelect_pme )
+  #else
+    #define FULLELECTNAME(X) SPLITTINGNAME( X ## _fullelect )
+  #endif
   #define FULL(X) X
   #define NOFULL(X)
 #else
@@ -419,6 +423,32 @@ NOEXCL
         const BigReal r_1 = 1.0/r;
         kqq = kq_i * a_j.charge;
         f = kqq*r_1;
+
+	//  Patch code for full electrostatics algorithms which
+	//  need to do a direct component like PME or P3M fits here.
+	//  This may not be the absolutely most efficient position,
+	//  but it is nicely detached from the complex logic of the
+	//  exclusion checking system below so it won't break anything.
+
+	switch ( FULLELECT ) {  // compiler should optimize this away
+	  case FULLELECT_PME: {
+	    tmp_x = r * ewaldcof;
+	    tmp_y = erfc(tmp_x);
+	    tmp_z = pi_ewaldcof*exp(-(tmp_x*tmp_x))*r_1 + tmp_y*r_1*r_1;
+	    register BigReal tmp_f = tmp_z * f;
+	    fullElectEnergy += tmp_y * f;
+	    fullElectVirial += tmp_f * r2;
+	    tmp_x = tmp_f * p_ij_x;
+	    fullf_i.x += tmp_x;
+	    fullf_j.x -= tmp_x;
+	    tmp_y = tmp_f * p_ij_y;
+	    fullf_i.y += tmp_y;
+	    fullf_j.y -= tmp_y;
+	    tmp_z = tmp_f * p_ij_z;
+	    fullf_i.z += tmp_z;
+	    fullf_j.z -= tmp_z;
+	  } break;
+	}
       )
 )
 
@@ -677,12 +707,15 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1032 $	$Date: 1998/03/31 04:55:43 $
+ *	$Revision: 1.1033 $	$Date: 1998/04/06 16:34:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1033  1998/04/06 16:34:05  jim
+ * Added DPME (single processor only), test mode, and momenta printing.
+ *
  * Revision 1.1032  1998/03/31 04:55:43  jim
  * Added test mode, fixed errors in virial with full electrostatics.
  *

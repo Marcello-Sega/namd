@@ -86,7 +86,7 @@ void TestController::berendsenPressure(int step)
   const int freq = simParams->berendsenPressureFreq;
   if ( simParams->berendsenPressureOn && !(step%freq) )
   {
-    BigReal factor = 0.001;
+    BigReal factor = 0.0001;
     /*
     BigReal factor = pressure - simParams->berendsenPressureTarget;
     factor *= simParams->berendsenPressureCompressibility;
@@ -105,12 +105,15 @@ void TestController::berendsenPressure(int step)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1998/03/31 04:55:48 $
+ *	$Revision: 1.2 $	$Date: 1998/04/06 16:34:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: TestController.C,v $
+ * Revision 1.2  1998/04/06 16:34:12  jim
+ * Added DPME (single processor only), test mode, and momenta printing.
+ *
  * Revision 1.1  1998/03/31 04:55:48  jim
  * Added test mode, fixed errors in virial with full electrostatics.
  *

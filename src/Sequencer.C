@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1041 1998/03/06 20:55:26 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1042 1998/04/06 16:34:09 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -47,6 +47,12 @@ Sequencer::Sequencer(HomePatch *p) :
 	;// reduction->Register(REDUCTION_VIRIAL);
     }
     reduction->Register(REDUCTION_ALT_VIRIAL);
+    reduction->Register(REDUCTION_MOMENTUM_X);
+    reduction->Register(REDUCTION_MOMENTUM_Y);
+    reduction->Register(REDUCTION_MOMENTUM_Z);
+    reduction->Register(REDUCTION_ANGULAR_MOMENTUM_X);
+    reduction->Register(REDUCTION_ANGULAR_MOMENTUM_Y);
+    reduction->Register(REDUCTION_ANGULAR_MOMENTUM_Z);
     ldbCoordinator = (LdbCoordinator::Object());
 }
 
@@ -61,6 +67,12 @@ Sequencer::~Sequencer(void)
 	;// reduction->unRegister(REDUCTION_VIRIAL);
     }
     reduction->unRegister(REDUCTION_ALT_VIRIAL);
+    reduction->unRegister(REDUCTION_MOMENTUM_X);
+    reduction->unRegister(REDUCTION_MOMENTUM_Y);
+    reduction->unRegister(REDUCTION_MOMENTUM_Z);
+    reduction->unRegister(REDUCTION_ANGULAR_MOMENTUM_X);
+    reduction->unRegister(REDUCTION_ANGULAR_MOMENTUM_Y);
+    reduction->unRegister(REDUCTION_ANGULAR_MOMENTUM_Z);
 }
 
 // Invoked by thread
@@ -108,7 +120,8 @@ void Sequencer::algorithm(void)
     if ( doNonbonded ) maxForceUsed = Results::nbond;
 
     // Do we do full electrostatics?
-    const int dofull = ( simParams->fullDirectOn || simParams->FMAOn );
+    const int dofull = ( simParams->fullDirectOn ||
+			simParams->FMAOn || simParams->PMEOn );
     const int fullElectFrequency = simParams->fmaFrequency;
     const BigReal slowstep = timestep * fullElectFrequency;
     int &doFullElectrostatics = patch->flags.doFullElectrostatics;
@@ -313,6 +326,17 @@ void Sequencer::submitReductions(int step)
     }
   }
   reduction->submit(step,REDUCTION_ALT_VIRIAL,altVirial);
+
+  Vector momentum = patch->calcMomentum();
+  reduction->submit(step,REDUCTION_MOMENTUM_X,momentum.x);  
+  reduction->submit(step,REDUCTION_MOMENTUM_Y,momentum.y);  
+  reduction->submit(step,REDUCTION_MOMENTUM_Z,momentum.z);  
+
+  Vector angularMomentum = patch->calcAngularMomentum();
+  reduction->submit(step,REDUCTION_ANGULAR_MOMENTUM_X,angularMomentum.x);  
+  reduction->submit(step,REDUCTION_ANGULAR_MOMENTUM_Y,angularMomentum.y);  
+  reduction->submit(step,REDUCTION_ANGULAR_MOMENTUM_Z,angularMomentum.z);  
+
 }
 
 void Sequencer::submitCollections(int step)
@@ -351,12 +375,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1041 $     $Date: 1998/03/06 20:55:26 $
+ *      $Revision: 1.1042 $     $Date: 1998/04/06 16:34:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1042  1998/04/06 16:34:09  jim
+ * Added DPME (single processor only), test mode, and momenta printing.
+ *
  * Revision 1.1041  1998/03/06 20:55:26  jim
  * Added temperature coupling.
  *
