@@ -32,6 +32,7 @@ class ProxyResultMsg;
 
 class HomePatch : public Patch {
    friend PatchMgr;
+   friend Sequencer;
    private: // for PatchMgr to use only!!
       HomePatch(PatchID, AtomIDList, PositionList, VelocityList);
 
@@ -48,6 +49,7 @@ class HomePatch : public Patch {
 
      // methods for Sequencer to use
      void positionsReady(void);
+     void positionsReady(int);
 
      void addForceToMomentum(const BigReal);
      void addVelocityToPosition(const BigReal);
@@ -58,6 +60,7 @@ class HomePatch : public Patch {
 
    protected:
       virtual void boxClosed(int);
+      doMigration();
 
    private:
 
@@ -113,13 +116,16 @@ class HomePatch : public Patch {
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.14 $	$Date: 1997/01/10 22:38:37 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.15 $	$Date: 1997/01/15 17:09:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.15  1997/01/15 17:09:43  ari
+ * Commented out new Atom migration code
+ *
  * Revision 1.14  1997/01/10 22:38:37  jim
  * kinetic energy reporting
  *

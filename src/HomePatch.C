@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.17 1997/01/10 22:38:37 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.18 1997/01/15 17:09:43 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -19,6 +19,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C
 
 #include "HomePatch.h"
 #include "AtomMap.h"
+#include "PatchMap.h"
 #include "main.h"
 #include "ProxyMgr.top.h"
 #include "ProxyMgr.h"
@@ -82,8 +83,15 @@ void HomePatch::receiveResults(ProxyResultMsg *msg)
   proxy[i].forceBox->close(&f);
 }
 
-void HomePatch::positionsReady(void)
+void HomePatch::positionsReady() {
+  positionsReady(0);
+}
+
+void HomePatch::positionsReady(int doMigration)
 {
+  if (doMigration) {
+    // migrateAtoms();
+  }
   ProxyListIter pli(proxy);
   for ( pli = pli.begin(); pli != pli.end(); ++pli )
   {
@@ -146,12 +154,92 @@ Vector HomePatch::calcAngularMomentum()
 }
 
 
+/*
 
+void doMigration()
+{
+  int xdev, ydev, zdev;
+  MigrationList migrationList;
 
+  int xmin = PatchMap::Object()->minX(patchID);
+  int ymin = PatchMap::Object()->minY(patchID);
+  int zmin = PatchMap::Object()->minZ(patchID);
+  int xmax = PatchMap::Object()->maxX(patchID);
+  int ymax = PatchMap::Object()->maxY(patchID);
+  int zmax = PatchMap::Object()->maxZ(patchID);
 
+  // Determine atoms that need to migrate
+  i = 0;
+  while (i < numAtoms) {
+     if (p[i].x < xmin) xdev = -1;
+     else if (xmax <= p[i].x) xdev = 1; 
+     else xdev = 0;
 
+     if (p[i].y < ymin) ydev = -1;
+     else if (ymax <= p[i].y) ydev = 1; 
+     else ydev = 0;
 
-// direct local calculations
+     if (p[i].z < zmin) zdev = -1;
+     else if (zmax <= p[i].z) zdev = 1; 
+     else zdev = 0;
+
+     if (xdev || ydev || zdev) {
+       // This is not very clean
+       // We should regularize these lists into a more compact
+       // form.
+       MigrationList.add(MigrationElem(atomIDList[i], a[i], pInit[i], p[i],
+				       v[i], f[i], f_short[i], f_long[i],
+				       xdev, ydev, zdev)
+			 );
+       a.del(i);
+       atomIDList.del(i);
+       p.del(i);
+       pInit.del(i);
+       v.del(i);
+       f.del(i);
+       f_short.del(i);
+       f_long.del(i);
+     }
+  }
+
+  PatchMgr::Object()->migrate(patchID, migrationList);
+  if (!allMigrationIn) {
+    migrationSuspended = true;
+    sequencer->suspend();
+    migrationSuspended = false;
+  }
+  allMigrationIn = false;
+  // reconstruct local id list
+  
+}
+
+void depositMigration(MigrationList migrationList)
+{
+  for (i=0; i<migrationList.size(); i++) {
+    MigrationElem m = migrationList[i];
+    a.add(m.atomProp);
+    atomIDList.add(m.atomID);
+    p.add(m.p);
+    pInit.add(m.pInit);
+    v.add(m.v);
+    f.add(m.f);
+    f_short.add(m.f_short);
+    f_long.add(m.f_long);
+  }
+  PatchID pid[PatchMap::MaxOneAway];
+  if (!--patchMigrationCounter) {
+    allMigrationIn = true;
+    patchMigrationCounter = PatchMap::Object()->oneAwayNeighbors(pid);
+    if (migrationSuspended) {
+      migrationSuspended = false;
+      sequencer->awaken();
+    }
+  }
+}
+
+*/
+
+    // direct local calculations
 
 /*
 void HomePatch::update_f_at_cycle_begin()
@@ -280,8 +368,9 @@ void HomePatch::atom_redist_data(int n, int *newAtoms )
 void HomePatch::prepare_for_next_step(void)
 {
    CthSuspend();
-   CthAwaken(sequencer); 
+   CthAwaken(sequencer);
 }
+
 
 */
 
@@ -342,13 +431,16 @@ void HomePatch::dispose(char *&data)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.17 $	$Date: 1997/01/10 22:38:37 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.18 $	$Date: 1997/01/15 17:09:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.18  1997/01/15 17:09:43  ari
+ * Commented out new Atom migration code
+ *
  * Revision 1.17  1997/01/10 22:38:37  jim
  * kinetic energy reporting
  *
