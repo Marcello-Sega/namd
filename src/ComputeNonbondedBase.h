@@ -150,7 +150,9 @@ void ComputeNonbondedUtil :: NAME
   int pairlistindex=0;
   int pairlistoffset=0;
   int pairlist_std[1005];  // pad 1 + 4 for nonbonded group runover
+  int pairlist2_std[1005];  // pad 1 + 4 for nonbonded group runover
   int *const pairlist = (j_upper < 1000 ? pairlist_std : new int[j_upper+5]);
+  int *const pairlist2 = (j_upper < 1000 ? pairlist2_std : new int[j_upper+5]);
 
   FAST
   (
@@ -297,32 +299,61 @@ void ComputeNonbondedUtil :: NAME
     const LJTable::TableEntry * const lj_row =
 		ljTable->table_row(mol->atomvdwtype(p_i.id));
 
-    register const CompAtom *pf_j = p_1;
+    register int *pli = pairlist2;
+    if ( atomfixed ) {
+      for (int k=pairlistoffset; k<pairlistindex; k++) {
+        j = pairlist[k];
+        register const CompAtom *p_j = p_1 + j;
+	if ( ! (p_j->atomFixed) ) {
+          register BigReal r2 = square(p_j->position.x-p_i_x,
+			p_j->position.y-p_i_y,p_j->position.z-p_i_z);
+          if ( (r2 <= cutoff2) && ! ((r2 == 0) && ++exclChecksum) ) {
+            *(pli++) = j;
+          }
+        }
+      }
+    } else {
+      register const CompAtom *p_j = p_1;
+      if ( pairlistoffset < pairlistindex ) p_j += pairlist[pairlistoffset];
+      register BigReal p_j_x = p_j->position.x;
+      register BigReal p_j_y = p_j->position.y;
+      register BigReal p_j_z = p_j->position.z;
+      int j1 = pairlist[pairlistoffset];
 
-    if ( pairlistoffset < pairlistindex ) pf_j += pairlist[pairlistoffset];
+      for (int k=pairlistoffset; k<pairlistindex; k++) {
+        int j = j1;
 
-    register BigReal p_j_x = pf_j->position.x;
-    register BigReal p_j_y = pf_j->position.y;
-    register BigReal p_j_z = pf_j->position.z;
+        // don't worry about [k+1] going beyond array since array is 1 too large
+        j1 = pairlist[k+1];
+        p_j = p_1 + j1;			// preload
 
-    for (int k=pairlistoffset; k<pairlistindex; k++)
-    {
-      j = pairlist[k];
+	register BigReal r2 = p_i_x - p_j_x;
+	r2 *= r2;
+	p_j_x = p_j->position.x;	// preload
+	register BigReal t2 = p_i_y - p_j_y;
+	r2 += t2 * t2;
+	p_j_y = p_j->position.y;	// preload
+	t2 = p_i_z - p_j_z;
+	r2 += t2 * t2;
+	p_j_z = p_j->position.z;	// preload
+
+        *pli = j;
+        if ( (r2 <= cutoff2) && ! ((r2 == 0) && ++exclChecksum) ) { ++pli; }
+      }
+    }
+    int npair2 = pli - pairlist2;
+
+    for (int k=0; k<npair2; ++k) {
+
+      const int j = pairlist2[k];
       register const CompAtom *p_j = p_1 + j;
-      // don't worry about [k+1] going beyond array since array is 1 too large
-      pf_j += pairlist[k+1]-j; // preload
-      register const BigReal p_ij_x = p_i_x - p_j_x;
-      p_j_x = pf_j->position.x;					// preload
-      register const BigReal p_ij_y = p_i_y - p_j_y;
-      p_j_y = pf_j->position.y;					// preload
-      register const BigReal p_ij_z = p_i_z - p_j_z;
-      p_j_z = pf_j->position.z;					// preload
 
-      // common code
-      register BigReal r2 = square(p_ij_x,p_ij_y,p_ij_z);
-
-      if ( (r2 > cutoff2) || (atomfixed && p_j->atomFixed) ||
-			((r2 == 0) && ++exclChecksum) ) { continue; }
+      register const BigReal p_ij_x = p_i_x - p_j->position.x;
+      register BigReal r2 = p_ij_x * p_ij_x;
+      register const BigReal p_ij_y = p_i_y - p_j->position.y;
+      r2 += p_ij_y * p_ij_y;
+      register const BigReal p_ij_z = p_i_z - p_j->position.z;
+      r2 += p_ij_z * p_ij_z;
 
       int table_i = (int) ( r2_delta_1 * r2 );
       FAST(
@@ -455,6 +486,7 @@ void ComputeNonbondedUtil :: NAME
     } // for pairlist
   } // for i
   if (pairlist != pairlist_std) delete [] pairlist;
+  if (pairlist2 != pairlist2_std) delete [] pairlist2;
 
   reduction[exclChecksumIndex] += exclChecksum;
   FAST
