@@ -28,7 +28,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.3 1996/12/19 22:03:10 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.4 1996/12/26 22:26:29 nealk Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -67,6 +67,7 @@ ReductionMgr::ReductionMgr()
     	numSubscribed[i] = 0;
 	maxData[i] = 0;
     }
+    DebugM(1,"ReductionMgr() instantiated.\n");
 } /* ReductionMgr::ReductionMgr() */
 
 /*******************************************

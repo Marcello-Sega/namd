@@ -6,7 +6,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.13 1996/12/10 00:13:12 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.14 1996/12/26 22:26:29 nealk Exp $";
 
 #include "unistd.h"
 
@@ -32,6 +32,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.
 #include "ComputeMgr.h"
 #include "ProxyMgr.top.h"
 #include "ProxyMgr.h"
+#include "ReductionMgr.top.h"
+#include "ReductionMgr.h"
 
 
 // Namd(void ) is the constructor for the startup node.  It needs to
@@ -55,6 +57,10 @@ Namd::Namd(void)
   // Create ComputeMgr
   InitMsg *initmsg4 = new (MsgIndex(InitMsg)) InitMsg;
   group.computeMgr = new_group(ComputeMgr, initmsg4);
+
+  // Create ReductionMgr
+  InitMsg *initmsg5 = new (MsgIndex(InitMsg)) InitMsg;
+  group.reductionMgr = new_group(ReductionMgr, initmsg5);
 
   // Create the Node object and send it the IDs of all the other
   // parallel objects.
@@ -97,8 +103,8 @@ void Namd::startup(char *confFile)
  * RCS INFORMATION:
  *
  *	$RCSfile: Namd.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.13 $	$Date: 1996/12/10 00:13:12 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.14 $	$Date: 1996/12/26 22:26:29 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -107,6 +113,9 @@ void Namd::startup(char *confFile)
  * REVISION HISTORY:
  *
  * $Log: Namd.C,v $
+ * Revision 1.14  1996/12/26 22:26:29  nealk
+ * Added instantiation of reduction manager.
+ *
  * Revision 1.13  1996/12/10 00:13:12  ari
  * *** empty log message ***
  *
