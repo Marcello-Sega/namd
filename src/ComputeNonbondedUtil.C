@@ -191,13 +191,21 @@ void ComputeNonbondedUtil::select(void)
         lambda_table[2*(3*ip+jp)+1] = d_lambda_pair;
       }
     }
+    ComputeNonbondedUtil::calcPair = calc_pair_energy_fep;
     ComputeNonbondedUtil::calcPairEnergy = calc_pair_energy_fep;
+    ComputeNonbondedUtil::calcSelf = calc_self_energy_fep;
     ComputeNonbondedUtil::calcSelfEnergy = calc_self_energy_fep;
+    ComputeNonbondedUtil::calcFullPair = calc_pair_energy_fullelect_fep;
     ComputeNonbondedUtil::calcFullPairEnergy = calc_pair_energy_fullelect_fep;
+    ComputeNonbondedUtil::calcFullSelf = calc_self_energy_fullelect_fep;
     ComputeNonbondedUtil::calcFullSelfEnergy = calc_self_energy_fullelect_fep;
+    ComputeNonbondedUtil::calcMergePair = calc_pair_energy_merge_fullelect_fep;
     ComputeNonbondedUtil::calcMergePairEnergy = calc_pair_energy_merge_fullelect_fep;
+    ComputeNonbondedUtil::calcMergeSelf = calc_self_energy_merge_fullelect_fep;
     ComputeNonbondedUtil::calcMergeSelfEnergy = calc_self_energy_merge_fullelect_fep;
+    ComputeNonbondedUtil::calcSlowPair = calc_pair_energy_slow_fullelect_fep;
     ComputeNonbondedUtil::calcSlowPairEnergy = calc_pair_energy_slow_fullelect_fep;
+    ComputeNonbondedUtil::calcSlowSelf = calc_self_energy_slow_fullelect_fep;
     ComputeNonbondedUtil::calcSlowSelfEnergy = calc_self_energy_slow_fullelect_fep;
   } else if ( lesOn ) {
     lesFactor = simParams->lesFactor;
