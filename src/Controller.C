@@ -168,13 +168,21 @@ static char *ETITLE(int X)
 void Controller::printEnergies(int seq)
 {
     Node *node = Node::Object();
+    Molecule *molecule = node->molecule;
+    SimParameters *simParameters = node->simParameters;
     Lattice &lattice = state->lattice;
 
-    int numAtoms = node->molecule->numAtoms;
+    int numAtoms = molecule->numAtoms;
     int numDegFreedom = 3 * numAtoms;
-    int numFixedAtoms = node->molecule->numFixedAtoms;
+    int numFixedAtoms = molecule->numFixedAtoms;
     if ( numFixedAtoms ) numDegFreedom -= 3 * numFixedAtoms;
-    else if ( ! node->simParameters->comMove ) numDegFreedom -= 3;
+    if ( ! ( numFixedAtoms || molecule->numConstraints
+	|| simParameters->comMove || simParameters->langevinOn ) ) {
+      numDegFreedom -= 3;
+    }
+    int numRigidBonds = molecule->numRigidBonds;
+    int numFixedRigidBonds = molecule->numFixedRigidBonds;
+    numDegFreedom -= ( numRigidBonds - numFixedRigidBonds );
 
     BigReal bondEnergy;
     BigReal angleEnergy;
@@ -278,12 +286,16 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1028 $	$Date: 1998/01/05 20:25:29 $
+ *	$Revision: 1.1029 $	$Date: 1998/02/18 05:38:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1029  1998/02/18 05:38:29  jim
+ * RigidBonds mainly finished.  Now temperature is correct and a form
+ * of Langevin dynamics works with constraints.
+ *
  * Revision 1.1028  1998/01/05 20:25:29  sergei
  * added reduction->(un)subscribe(REDUCTION_SMD_ENERGY) to (con/de)structor
  * added SMD fields in printEnergies().

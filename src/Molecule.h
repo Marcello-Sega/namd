@@ -150,6 +150,8 @@ public:
 	int numConstraints;	//  Number of atoms constrained
 	int numFixedAtoms;	//  Number of fixed atoms
 	int numHydrogenGroups;	//  Number of hydrogen groups
+	int numRigidBonds;	//  Number of rigid bonds
+	int numFixedRigidBonds; //  Number of rigid bonds between fixed atoms
 
 	//  Number of dihedrals with multiple periodicity
 	int numMultipleDihedrals; 
@@ -386,12 +388,16 @@ public:
  *
  *	$RCSfile: Molecule.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1998/02/17 06:39:22 $
+ *	$Revision: 1.1018 $	$Date: 1998/02/18 05:38:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.1018  1998/02/18 05:38:31  jim
+ * RigidBonds mainly finished.  Now temperature is correct and a form
+ * of Langevin dynamics works with constraints.
+ *
  * Revision 1.1017  1998/02/17 06:39:22  jim
  * SHAKE/RATTLE (rigidBonds) appears to work!!!  Still needs langevin,
  * proper startup, and degree of freedom tracking.

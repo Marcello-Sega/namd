@@ -7,7 +7,7 @@
  * DESCRIPTION: Holds pointers to large molecule data structure, simulation
  *		Parameters...
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1012 1998/01/13 23:51:45 sergei Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.1013 1998/02/18 05:38:31 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -214,6 +214,33 @@ NamdState::configFileInit(char *confFile)
 	   iout << iINFO << molecule->numFixedAtoms << " FIXED ATOMS\n";
 	}
 
+	if (simParameters->rigidBonds)
+	{
+	   iout << iINFO << molecule->numRigidBonds << " RIGID BONDS\n";
+	}
+
+	if (simParameters->fixedAtomsOn && simParameters->rigidBonds)
+	{
+	   iout << iINFO << molecule->numFixedRigidBonds <<
+			" RIGID BONDS BETWEEN FIXED ATOMS\n";
+	}
+
+	{
+	  // Copied from Controller::printEnergies()
+	  int numAtoms = molecule->numAtoms;
+	  int numDegFreedom = 3 * numAtoms;
+	  int numFixedAtoms = molecule->numFixedAtoms;
+	  if ( numFixedAtoms ) numDegFreedom -= 3 * numFixedAtoms;
+	  if ( ! ( numFixedAtoms || molecule->numConstraints
+		|| simParameters->comMove || simParameters->langevinOn ) ) {
+	    numDegFreedom -= 3;
+	  }
+	  int numRigidBonds = molecule->numRigidBonds;
+	  int numFixedRigidBonds = molecule->numFixedRigidBonds;
+	  numDegFreedom -= ( numRigidBonds - numFixedRigidBonds );
+	  iout << iINFO << numDegFreedom << " DEGREES OF FREEDOM\n";
+	}
+
 	iout << iINFO << molecule->numHydrogenGroups << " HYDROGEN GROUPS\n";
 
 	iout << iINFO << "*****************************\n";
@@ -239,13 +266,17 @@ NamdState::configFileInit(char *confFile)
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdState.C,v $
- *	$Author: sergei $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1998/01/13 23:51:45 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1013 $	$Date: 1998/02/18 05:38:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdState.C,v $
+ * Revision 1.1013  1998/02/18 05:38:31  jim
+ * RigidBonds mainly finished.  Now temperature is correct and a form
+ * of Langevin dynamics works with constraints.
+ *
  * Revision 1.1012  1998/01/13 23:51:45  sergei
  * *** empty log message ***
  *

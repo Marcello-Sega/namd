@@ -11,7 +11,7 @@
  *
  *  $RCSfile: Molecule.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1022 $  $Date: 1998/02/17 06:39:21 $
+ *  $Revision: 1.1023 $  $Date: 1998/02/18 05:38:30 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,10 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1023  1998/02/18 05:38:30  jim
+ * RigidBonds mainly finished.  Now temperature is correct and a form
+ * of Langevin dynamics works with constraints.
+ *
  * Revision 1.1022  1998/02/17 06:39:21  jim
  * SHAKE/RATTLE (rigidBonds) appears to work!!!  Still needs langevin,
  * proper startup, and degree of freedom tracking.
@@ -250,7 +254,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1022 1998/02/17 06:39:21 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1023 1998/02/18 05:38:30 jim Exp $";
 
 #include "UniqueSortedArray.h"
 #include "Molecule.h"
@@ -399,6 +403,8 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
   numExclusions=0;
   numConstraints=0;
   numFixedAtoms=0;
+  numRigidBonds=0;
+  numFixedRigidBonds=0;
   numMultipleDihedrals=0;
   numMultipleImpropers=0;
 
@@ -2050,6 +2056,7 @@ void Molecule::send_Molecule(Communicate *com_obj)
       {
         msg->put(numFixedAtoms);
         msg->put(numAtoms, fixedAtomFlags);
+	msg->put(numFixedRigidBonds);
       }
 
       // Broadcast the message to the other nodes
@@ -2420,6 +2427,7 @@ void Molecule::receive_Molecule(MIStream *msg)
 
         msg->get(numFixedAtoms);
         msg->get(numAtoms, fixedAtomFlags);
+        msg->get(numFixedRigidBonds);
       }
 
       //  Now free the message 
@@ -3443,7 +3451,7 @@ void Molecule::receive_Molecule(MIStream *msg)
            PDB *initial_pdb,
            char *cwd)
        
-    {
+{
        PDB *bPDB;      //  Pointer to PDB object to use
        int bcol;      //  Column that data is in
        Real bval;      //  b value from PDB file
@@ -3576,7 +3584,32 @@ void Molecule::receive_Molecule(MIStream *msg)
        {
     delete bPDB;
        }
+
+  // now figure out how we interact with rigidBonds 
+  // this is mainly for degree of freedom counting
+  if ( numRigidBonds ) {
+    HydrogenGroup::iterator h_i, h_e;
+    h_i = hydrogenGroup.begin();  h_e = hydrogenGroup.end();
+    int parentIsFixed;
+    for( ; h_i != h_e; ++h_i ) {
+      if ( h_i->isGP ) {
+	parentIsFixed = fixedAtomFlags[h_i->atomID];
+	if ( (rigidBondLengths[h_i->atomID] != 0.)  // water
+		&& fixedAtomFlags[h_i[1].atomID]
+		&& fixedAtomFlags[h_i[2].atomID] ) {
+	  ++numFixedRigidBonds;
+	}
+      } else {
+	if ( (rigidBondLengths[h_i->atomID] != 0.)
+		&& fixedAtomFlags[h_i->atomID]
+		&& parentIsFixed ) {
+	  ++numFixedRigidBonds;
+	}
+      }
     }
+  }
+
+}
     /*      END OF FUNCTION build_fixed_atoms    */
 
 
@@ -3794,10 +3827,9 @@ void Molecule::receive_Molecule(MIStream *msg)
       params->get_bond_params(&dum,&x0,bonds[i].bond_type);
       if (is_hydrogen(a1))
       {
-	if (is_hydrogen(a2)) {
-	  rigidBondLengths[a2] = x0;
-	} else if ( is_water(a2) || mode == RIGID_ALL ) {
+	if ( ! is_hydrogen(a2) && ( is_water(a2) || mode == RIGID_ALL ) ) {
 	  rigidBondLengths[a1] = x0;
+	  ++numRigidBonds;
 	} else {
 	  rigidBondLengths[a1] = 0.;
         }
@@ -3806,6 +3838,7 @@ void Molecule::receive_Molecule(MIStream *msg)
       {
 	if ( is_water(a1) || mode == RIGID_ALL ) {
 	  rigidBondLengths[a2] = x0;
+	  ++numRigidBonds;
 	} else {
 	  rigidBondLengths[a2] = 0.;
         }
@@ -3831,6 +3864,7 @@ void Molecule::receive_Molecule(MIStream *msg)
       Real dum, t0;
       params->get_angle_params(&dum,&t0,&dum,&dum,angles[i].angle_type);
       rigidBondLengths[a2] = 2. * rigidBondLengths[a1] * sin(0.5*t0);
+      ++numRigidBonds;
     }
 
   }
@@ -3842,12 +3876,16 @@ void Molecule::receive_Molecule(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1022 $  $Date: 1998/02/17 06:39:21 $
+ *  $Revision: 1.1023 $  $Date: 1998/02/18 05:38:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1023  1998/02/18 05:38:30  jim
+ * RigidBonds mainly finished.  Now temperature is correct and a form
+ * of Langevin dynamics works with constraints.
+ *
  * Revision 1.1022  1998/02/17 06:39:21  jim
  * SHAKE/RATTLE (rigidBonds) appears to work!!!  Still needs langevin,
  * proper startup, and degree of freedom tracking.

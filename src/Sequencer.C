@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1037 1998/02/17 06:39:23 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1038 1998/02/18 05:38:32 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -177,7 +177,7 @@ void Sequencer::algorithm(void)
 
 void Sequencer::langevinVelocities(int step)
 {
-  if ( simParams->langevinOn )
+  if ( simParams->langevinOn && simParams->rigidBonds == RIGID_NONE )
   {
     Molecule *molecule = Node::Object()->molecule;
     BigReal dt = simParams->dt * 0.001;  // convert to ps
@@ -188,6 +188,47 @@ void Sequencer::langevinVelocities(int step)
       BigReal f1 = exp( -1. * dt * molecule->langevin_param(aid) );
       DebugM(1,"At step " << step << " langevin decay is " << f1 << "\n");
       BigReal f2 = sqrt( ( 1. - f1*f1 ) * kbT / patch->a[i].mass );
+
+      patch->v[i] *= f1;
+      patch->v[i] += f2 * gaussian_random_vector();
+    }
+  }
+  else if ( simParams->langevinOn )
+  {
+    //  This case is harder, only apply to center of mass of group
+    Molecule *molecule = Node::Object()->molecule;
+    BigReal dt = simParams->dt * 0.001;  // convert to ps
+    BigReal kbT = BOLTZMAN*(simParams->langevinTemp);
+    for ( int i = 0; i < patch->numAtoms; ++i )
+    {
+      int aid = patch->atomIDList[i];
+      BigReal f1 = exp( -1. * dt * molecule->langevin_param(aid) );
+      DebugM(1,"At step " << step << " langevin decay is " << f1 << "\n");
+      BigReal f2 = sqrt( ( 1. - f1*f1 ) * kbT / patch->a[i].mass );
+
+      int rigid = 0;
+      int hgs = patch->a[i].hydrogenGroupSize;
+      if ( hgs > 1 ) {  // check for rigidBonds in this group
+	rigid = (molecule->rigid_bond_length(aid) != 0.);
+	for ( int j = 1; ! rigid && j < hgs; ++j ) {
+	  rigid = (molecule->rigid_bond_length(patch->atomIDList[i+j]) != 0.);
+	}
+      }
+      if ( rigid ) {  // process the entire group as if rigid w/ parent params
+	Vector vcom;  BigReal gmass;  int j;
+	for ( j = 0; j < hgs; ++j ) {
+	  gmass += patch->a[i+j].mass;
+	  vcom += patch->a[i+j].mass * patch->v[i+j];
+	}
+	vcom /= gmass;
+	vcom *= ( 1. - f1 );  // we will subtract vcom at end
+	f2 = sqrt( ( 1. - f1*f1 ) * kbT / gmass );  // use group mass
+	vcom += f2 * gaussian_random_vector();
+	for ( j = 0; j < hgs; ++j ) {
+	  patch->v[i+j] -= vcom;
+	}
+	i += ( hgs - 1 );  continue;  // skip rest of group in outer loop
+      }
 
       patch->v[i] *= f1;
       patch->v[i] += f2 * gaussian_random_vector();
@@ -301,12 +342,16 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1037 $     $Date: 1998/02/17 06:39:23 $
+ *      $Revision: 1.1038 $     $Date: 1998/02/18 05:38:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1038  1998/02/18 05:38:32  jim
+ * RigidBonds mainly finished.  Now temperature is correct and a form
+ * of Langevin dynamics works with constraints.
+ *
  * Revision 1.1037  1998/02/17 06:39:23  jim
  * SHAKE/RATTLE (rigidBonds) appears to work!!!  Still needs langevin,
  * proper startup, and degree of freedom tracking.
