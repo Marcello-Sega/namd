@@ -23,7 +23,6 @@ class NamdState {
   friend class Namd; 
   friend class Node;
   friend class Controller;
-  friend class TestController;
   private:
     Molecule *molecule;
     Parameters *parameters;

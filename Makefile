@@ -122,8 +122,6 @@ OBJS = \
 	$(DSTDIR)/Set.o \
 	$(DSTDIR)/SimParameters.o \
 	$(DSTDIR)/TclCommands.o \
-	$(DSTDIR)/TestController.o \
-	$(DSTDIR)/TestSequencer.o \
 	$(DSTDIR)/VoidTree.o \
 	$(DSTDIR)/WorkDistrib.o \
 	$(DSTDIR)/pub3dfft.o \
@@ -336,8 +334,6 @@ depends: $(INCDIR) $(CIFILES) $(DSTDIR) $(DEPENDFILE)
 	$(RM) $(DEPENDFILE).sed; \
 	sed -e "/obj\/Controller.o/ s/CXXFLAGS/CXXTHREADFLAGS/" \
 	    -e "/obj\/Sequencer.o/ s/CXXFLAGS/CXXTHREADFLAGS/" \
-	    -e "/obj\/TestController.o/ s/CXXFLAGS/CXXTHREADFLAGS/" \
-	    -e "/obj\/TestSequencer.o/ s/CXXFLAGS/CXXTHREADFLAGS/" \
 	    -e "/obj\/ComputeFullDirect.o/ s/CXXFLAGS/CXXTHREADFLAGS/" \
 	    -e "/obj\/ReductionMgr.o/ s/CXXFLAGS/CXXTHREADFLAGS/" \
 	    -e "/obj\/SimParameters.o/ s/CXXFLAGS/CXXSIMPARAMFLAGS/" \

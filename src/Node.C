@@ -50,8 +50,6 @@
 #include "Communicate.h"
 #include "Inform.h"
 #include "LdbCoordinator.h"
-#include "TestController.h"
-#include "TestSequencer.h"
 #include "ScriptTcl.h"
 #include "ComputeMgr.decl.h"
 
@@ -318,18 +316,14 @@ void Node::buildSequencers() {
 
   // Controller object is only on Pe(0)
   if ( ! CkMyPe() ) {
-    Controller *controller;
-    if ( simParameters->testOn ) controller = new TestController(state);
-    else controller = new Controller(state);
+    Controller *controller = new Controller(state);
     state->useController(controller);
   }
 
   // Assign Sequencer to all HomePatch(es)
   for (ai=ai.begin(); ai != ai.end(); ai++) {
     HomePatch *patch = (*ai).patch;
-    Sequencer *sequencer;
-    if ( simParameters->testOn ) sequencer = new TestSequencer(patch);
-    else sequencer = new Sequencer(patch);
+    Sequencer *sequencer = new Sequencer(patch);
     patch->useSequencer(sequencer);
   }
 }

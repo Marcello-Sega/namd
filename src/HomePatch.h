@@ -31,7 +31,6 @@ class Sequencer;
 class HomePatch : public Patch {
   friend class PatchMgr;
   friend class Sequencer;
-  friend class TestSequencer;
 
 private: 
   // for PatchMgr to use only
