@@ -48,15 +48,6 @@ CmiBool NamdCentLB::QueryBalanceNow(int _step)
   }
 }
 
-CmiBool NamdCentLB::QueryDumpData()
-{
-#if 0
-  if (LdbCoordinator::Object()->ldbCycleNum == 1)  return CmiTrue;
-  if (LdbCoordinator::Object()->ldbCycleNum == 2)  return CmiTrue;
-#endif
-  return CmiFalse;
-}
-
 CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
 {
   //  CkPrintf("LDB: All statistics received at %f, %f\n",
@@ -157,7 +148,6 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
     delete item;
     migrateInfo[i] = 0;
   }
-
   return msg;
 };
 
@@ -325,6 +315,8 @@ void NamdCentLB::loadData(char *file, int &numProcessors, int &numPatches, int &
 
 #endif
 
+extern int isPmeProcessor(int); 
+
 int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 {
   PatchMap* patchMap = PatchMap::Object();
@@ -339,6 +331,23 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
     else 
       processorArray[i].backgroundLoad = stats[i].bg_walltime;
   }
+  
+#if 0
+  //Modification to reduce the coputeload on PME processors
+  const SimParameters* simParams = Node::Object()->simParameters;  
+  
+  CkPrintf("BACKGROUND LOAD\n");
+  if(simParams->PMEOn) {
+    for (i=0; i<count; i++) {
+      CkPrintf("BG[%d] =  %5.5lf,", i, processorArray[i].backgroundLoad);
+      if(isPmeProcessor(i)) {
+	processorArray[i].backgroundLoad *= 10;
+      }
+      CkPrintf("%5.5lf;  ", processorArray[i].backgroundLoad);
+    }
+  }
+  CkPrintf("\n");
+#endif  
 
   int nMoveableComputes=0;
   int nProxies = 0;		// total number of estimated proxies
