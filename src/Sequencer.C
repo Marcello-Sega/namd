@@ -386,6 +386,7 @@ void Sequencer::berendsenPressure(int step)
       patch->lattice.rescale(new_x_cm,factor);
       Position delta_x_cm = new_x_cm - x_cm;
       for ( j = i; j < (i+hgs); ++j ) {
+        if ( a[j].atomFixed ) continue;
         a[j].position += delta_x_cm;
       }
     }
@@ -394,6 +395,7 @@ void Sequencer::berendsenPressure(int step)
    {
     for ( int i = 0; i < numAtoms; ++i )
     {
+      if ( a[i].atomFixed ) continue;
       patch->lattice.rescale(a[i].position,factor);
     }
    }
@@ -434,6 +436,7 @@ void Sequencer::langevinPiston(int step)
       delta_v_cm.y = ( velFactor.y - 1 ) * v_cm.y;
       delta_v_cm.z = ( velFactor.z - 1 ) * v_cm.z;
       for ( j = i; j < (i+hgs); ++j ) {
+        if ( a[j].atomFixed ) continue;
         a[j].position += delta_x_cm;
         a[j].velocity += delta_v_cm;
       }
@@ -443,6 +446,7 @@ void Sequencer::langevinPiston(int step)
    {
     for ( int i = 0; i < numAtoms; ++i )
     {
+      if ( a[i].atomFixed ) continue;
       patch->lattice.rescale(a[i].position,factor);
       a[i].velocity.x *= velFactor.x;
       a[i].velocity.y *= velFactor.y;
