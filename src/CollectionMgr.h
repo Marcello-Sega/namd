@@ -14,6 +14,7 @@ class CollectionMgr : public BOCclass
 {
 public:
 
+  static CollectionMgr *Object() { return _instance; }
   CollectionMgr(SlaveInitMsg *msg);
   ~CollectionMgr(void);
 
@@ -22,6 +23,8 @@ public:
   void submitForces(int seq, AtomIDList &i, ForceList &d);
 
 private:
+
+  static CollectionMgr *_instance;
 
   ChareIDType master;
 

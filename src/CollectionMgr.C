@@ -3,10 +3,19 @@
 #include "CollectionMaster.top.h"
 #include "CollectionMaster.h"
 
+#define DEBUGM
+#include "Debug.h"
+
+CollectionMgr *CollectionMgr::_instance = 0;
 
 CollectionMgr::CollectionMgr(SlaveInitMsg *msg) : master(msg->master)
 {
   delete msg;
+  if (_instance == 0) {
+    _instance = this;
+  } else {
+    DebugM(1, "CollectionMgr::CollectionMgr() - another instance of CollectionMgr exists!\n");
+  }
 }
 
 
