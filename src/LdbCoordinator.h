@@ -143,7 +143,7 @@ inline int LdbCoordinator::balanceNow(int timestep)
 {
   Node *node = Node::Object();
   const SimParameters *simParams = node->simParameters;
-  const int numberOfSteps = simParams->N;
+  const int numberOfSteps = simParams->N - simParams->firstTimestep;
   int stepno = timestep - simParams->firstTimestep + 1;
   int firststep = firstLdbStep;
 
@@ -166,12 +166,15 @@ inline int LdbCoordinator::balanceNow(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.20 $	$Date: 1998/03/20 23:14:25 $
+ *	$Revision: 1.21 $	$Date: 1998/04/02 23:54:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LdbCoordinator.h,v $
+ * Revision 1.21  1998/04/02 23:54:06  jim
+ * Subtracted firstTimeStep from N in balanceNow().
+ *
  * Revision 1.20  1998/03/20 23:14:25  brunner
  * Fixed firstldbstep, when used with firsttimestep
  *
