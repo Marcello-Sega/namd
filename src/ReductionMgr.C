@@ -28,7 +28,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.6 1997/01/09 21:49:44 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.7 1997/01/10 21:17:26 jim Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -213,9 +213,12 @@ void	ReductionMgr::remove(int seq)
  *******************************************/
 void	ReductionMgr::recvReductionData	(ReductionDataMsg *msg)
 {
+  DebugM(2,"ReductionDataMsg received.\n"); 
+
   ReductionMgrData *current=find(msg->seq);
   ReductionTag tag = msg->tag;
   current->tagData[tag] += msg->data;
+  delete msg;
 
   // inform object that new data has been found
   current->numData[tag]--;
@@ -309,11 +312,11 @@ void	ReductionMgr::submit(int seq, ReductionTag tag, BigReal data, int more)
   }
   #endif
 
-  if (current->numData == 0)
+  if (current->numData[tag] == 0)
   {
     // all done here!
     // send the data[tag] to main collector
-    ReductionDataMsg *m = new ReductionDataMsg;
+    ReductionDataMsg *m = new (MsgIndex(ReductionDataMsg)) ReductionDataMsg;
     m->seq = seq;
     m->tag = tag;
     m->data = current->tagData[tag];
