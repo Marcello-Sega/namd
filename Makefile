@@ -247,10 +247,10 @@ charmrun.exe:
 	$(COPY) $(CHARM)\bin\charmrun.exe charmrun.exe
 
 psfgen:	$(DSTDIR) $(SBOBJS)
-	$(CC) $(CFLAGS) -o psfgen $(SBOBJS) $(TCLLIB) -lsocket -lnsl -lm
+	$(CC) $(CFLAGS) -o psfgen $(SBOBJS) $(TCLLIB) $(TCLAPPLIB) -lm
 
 psfgen.exe:	$(DSTDIR) $(SBOBJS)
-	$(LINK) $(LINKOPTS) /out:psfgen.exe $(SBOBJS) $(TCLLIB)
+	$(LINK) $(LINKOPTS) /out:psfgen.exe $(SBOBJS) $(TCLLIB) $(TCLAPPLIB)
 
 flipdcd:	$(SRCDIR)/flipdcd.c
 	$(CC) -o $@ $(SRCDIR)/flipdcd.c || \
