@@ -233,7 +233,7 @@ namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(CHARMLIB)/libconv-cplus-y.a \
 	$(CHARMLIB)/libck.a \
 	$(CHARMLIB)/libconv-util.a \
-	obj/*.o \
+	$(OBJS) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
 	$(TCLLIB) \
