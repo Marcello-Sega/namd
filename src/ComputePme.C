@@ -128,12 +128,12 @@ private:
   int numSources;
   int numGridPes;
   int numTransPes;
-  int numRecipPes;
   int numDestRecipPes;
-  int myRecipPe;
-  int *recipPeMap;
+  int myGridPe;
+  int myTransPe;
+  int *gridPeMap;
+  int *transPeMap;
   int *recipPeDest;
-  int *recipPeOrder;
   int *gridPeOrder;
   int *transPeOrder;
   int grid_count;
@@ -153,9 +153,9 @@ ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), pmeCompute(0) {
   CpvAccess(BOCclass_group).computePmeMgr = thisgroup;
   myKSpace = 0;
   localInfo = new LocalPmeInfo[CkNumPes()];
-  recipPeMap = new int[CkNumPes()];
+  gridPeMap = new int[CkNumPes()];
+  transPeMap = new int[CkNumPes()];
   recipPeDest = new int[CkNumPes()];
-  recipPeOrder = new int[CkNumPes()];
   gridPeOrder = new int[CkNumPes()];
   transPeOrder = new int[CkNumPes()];
   qgrid = 0;
@@ -185,55 +185,51 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   }
 
   {  // decide how many pes to use for reciprocal sum
-    int nrp = 1;
 
     // rules based on work available
     int minslices = 1;
     int dimx = simParams->PMEGridSizeX;
     int nrpx = ( dimx + minslices - 1 ) / minslices;
-    if ( nrpx > nrp ) nrp = nrpx;
     int dimy = simParams->PMEGridSizeY;
     int nrpy = ( dimy + minslices - 1 ) / minslices;
-    if ( nrpy > nrp ) nrp = nrpy;
 
     // rules based on processors available
     int nrpp = CkNumPes();
     // if ( nrpp > 32 ) nrpp = 32;  // cap to limit messages
-    if ( nrpp < nrp ) nrp = nrpp;
+    if ( nrpp < nrpx ) nrpx = nrpp;
+    if ( nrpp < nrpy ) nrpy = nrpp;
 
     // user override
     int nrps = simParams->PMEProcessors;
     if ( nrps > CkNumPes() ) nrps = CkNumPes();
-    if ( nrps > 0 ) nrp = nrps;
+    if ( nrps > 0 ) nrpx = nrps;
+    if ( nrps > 0 ) nrpy = nrps;
 
     // make sure there aren't any totally empty processors
-    int bx = ( dimx + nrp - 1 ) / nrp;
-    int nrpbx = ( dimx + bx - 1 ) / bx;
-    int by = ( dimy + nrp - 1 ) / nrp;
-    int nrpby = ( dimy + by - 1 ) / by;
-    nrp = ( nrpby > nrpbx ? nrpby : nrpbx );
-    if ( bx != ( dimx + nrp - 1 ) / nrp )
+    int bx = ( dimx + nrpx - 1 ) / nrpx;
+    nrpx = ( dimx + bx - 1 ) / bx;
+    int by = ( dimy + nrpy - 1 ) / nrpy;
+    nrpy = ( dimy + by - 1 ) / by;
+    if ( bx != ( dimx + nrpx - 1 ) / nrpx )
       NAMD_bug("Error in selecting number of PME processors.");
-    if ( by != ( dimy + nrp - 1 ) / nrp )
+    if ( by != ( dimy + nrpy - 1 ) / nrpy )
       NAMD_bug("Error in selecting number of PME processors.");
 
-    numGridPes = nrpbx;
-    numTransPes = nrpby;
-    numRecipPes = nrp;
+    numGridPes = nrpx;
+    numTransPes = nrpy;
   }
   if ( ! CkMyPe() ) {
-    iout << iINFO << "PME using " << numRecipPes <<
-      " (max of " << numGridPes << " and " << numTransPes << ")" <<
+    iout << iINFO << "PME using " << numGridPes << " and " << numTransPes <<
       " processors for FFT and reciprocal sum.\n" << endi;
   }
   { // generate random orderings for grid and trans messages
-    for ( int i = 0; i < numRecipPes; ++i ) {
-      recipPeOrder[i] = i;
+    for ( int i = 0; i < numGridPes; ++i ) {
       gridPeOrder[i] = i;
+    }
+    for ( int i = 0; i < numTransPes; ++i ) {
       transPeOrder[i] = i;
     }
     Random rand(CkMyPe());
-    rand.reorder(recipPeOrder,numRecipPes);
     rand.reorder(gridPeOrder,numGridPes);
     rand.reorder(transPeOrder,numTransPes);
   }
@@ -248,6 +244,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 
     // build bit reversal sequence
     SortableResizeArray<int> seq(ncpus);
+    SortableResizeArray<int> seq2(ncpus);
     i = 0;
     for ( int icpu=0; icpu<ncpus; ++icpu ) {
       int ri;
@@ -261,27 +258,48 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
         }
       }
       seq[icpu] = ri;
+      seq2[icpu] = ri;
     }
 
     // extract and sort PME locations
-    for ( i=0; i<numRecipPes; ++i ) {
-      seq[i] = seq[ncpus - numRecipPes + i];
+    for ( i=0; i<numGridPes; ++i ) {
+      seq[i] = seq[ncpus - numGridPes + i];
     }
-    seq.resize(numRecipPes);
+    seq.resize(numGridPes);
     seq.sort();
+    if ( ncpus > numTransPes ) {
+      seq2.del(0);  // node 0 should be first in list
+    }
+    seq2.resize(numTransPes);
+    seq2.sort();
 
-    myRecipPe = -1;
-    for ( i=0; i<numRecipPes; ++i ) {
-      recipPeMap[i] = seq[i];
-      if ( recipPeMap[i] == CkMyPe() ) myRecipPe = i;
+    myGridPe = -1;
+    for ( i=0; i<numGridPes; ++i ) {
+      gridPeMap[i] = seq[i];
+      if ( gridPeMap[i] == CkMyPe() ) myGridPe = i;
+    }
+    myTransPe = -1;
+    for ( i=0; i<numTransPes; ++i ) {
+      transPeMap[i] = seq2[i];
+      if ( transPeMap[i] == CkMyPe() ) myTransPe = i;
     }
   }
 
-  // if ( ! CkMyPe() ) {
-  //   iout << iINFO << "PME LOCATIONS:";
-  //   for ( int i=0; i<numRecipPes; ++i ) { iout << " " << recipPeMap[i]; }
-  //   iout << "\n" << endi;
-  // }
+  if ( ! CkMyPe() ) {
+    iout << iINFO << "PME GRID LOCATIONS:";
+    int i;
+    for ( i=0; i<numGridPes && i<10; ++i ) {
+      iout << " " << gridPeMap[i];
+    }
+    if ( i < numGridPes ) iout << " ...";
+    iout << "\n" << endi;
+    iout << iINFO << "PME TRANS LOCATIONS:";
+    for ( i=0; i<numTransPes && i<10; ++i ) {
+      iout << " " << transPeMap[i];
+    }
+    if ( i < numTransPes ) iout << " ...";
+    iout << "\n" << endi;
+  }
 
   myGrid.K1 = simParams->PMEGridSizeX;
   myGrid.K2 = simParams->PMEGridSizeY;
@@ -289,16 +307,18 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   myGrid.order = simParams->PMEInterpOrder;
   myGrid.dim2 = myGrid.K2;
   myGrid.dim3 = 2 * (myGrid.K3/2 + 1);
-  myGrid.block1 = ( myGrid.K1 + numRecipPes - 1 ) / numRecipPes;
-  myGrid.block2 = ( myGrid.K2 + numRecipPes - 1 ) / numRecipPes;
+  myGrid.block1 = ( myGrid.K1 + numGridPes - 1 ) / numGridPes;
+  myGrid.block2 = ( myGrid.K2 + numTransPes - 1 ) / numTransPes;
 
   int nx = 0;
-  int ny = 0;
-  for ( int pe = 0; pe < numRecipPes; ++pe ) {
+  for ( int pe = 0; pe < numGridPes; ++pe ) {
     localInfo[pe].x_start = nx;
     nx += myGrid.block1;
     if ( nx > myGrid.K1 ) nx = myGrid.K1;
     localInfo[pe].nx = nx - localInfo[pe].x_start;
+  }
+  int ny = 0;
+  for ( int pe = 0; pe < numTransPes; ++pe ) {
     localInfo[pe].y_start_after_transpose = ny;
     ny += myGrid.block2;
     if ( ny > myGrid.K2 ) ny = myGrid.K2;
@@ -341,8 +361,8 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
       while ( ix >= myGrid.K1 ) ix -= myGrid.K1;
       while ( ix < 0 ) ix += myGrid.K1;
       // set source_flags[pnode] if this patch sends to our node
-      if ( myRecipPe >= 0 && ix >= localInfo[myRecipPe].x_start &&
-           ix < localInfo[myRecipPe].x_start + localInfo[myRecipPe].nx ) {
+      if ( myGridPe >= 0 && ix >= localInfo[myGridPe].x_start &&
+           ix < localInfo[myGridPe].x_start + localInfo[myGridPe].nx ) {
         source_flags[pnode] = 1;
       }
       // set dest_flags[] for node that our patch sends to
@@ -368,12 +388,14 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 
   ungrid_count = numDestRecipPes;
 
-  if ( myRecipPe < 0 ) return;
+  if ( myGridPe < 0 && myTransPe < 0 ) return;
   // the following only for nodes doing reciprocal sum
 
-  int k2_start = localInfo[myRecipPe].y_start_after_transpose;
-  int k2_end = k2_start + localInfo[myRecipPe].ny_after_transpose;
+  if ( myTransPe >= 0 ) {
+  int k2_start = localInfo[myTransPe].y_start_after_transpose;
+  int k2_end = k2_start + localInfo[myTransPe].ny_after_transpose;
   myKSpace = new PmeKSpace(myGrid, k2_start, k2_end);
+  }
 
   int local_size = myGrid.block1 * myGrid.K2 * myGrid.dim3;
   int local_size_2 = myGrid.block2 * myGrid.K1 * myGrid.dim3;
@@ -381,10 +403,12 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   qgrid = new double[local_size*numGrids];
   qgrid_size = local_size;
 
-  qgrid_start = localInfo[myRecipPe].x_start * myGrid.K2 * myGrid.dim3;
-  qgrid_len = localInfo[myRecipPe].nx * myGrid.K2 * myGrid.dim3;
-  fgrid_start = localInfo[myRecipPe].x_start * myGrid.K2;
-  fgrid_len = localInfo[myRecipPe].nx * myGrid.K2;
+  if ( myGridPe >= 0 ) {
+  qgrid_start = localInfo[myGridPe].x_start * myGrid.K2 * myGrid.dim3;
+  qgrid_len = localInfo[myGridPe].nx * myGrid.K2 * myGrid.dim3;
+  fgrid_start = localInfo[myGridPe].x_start * myGrid.K2;
+  fgrid_len = localInfo[myGridPe].nx * myGrid.K2;
+  }
 
   int n[3]; n[0] = myGrid.K1; n[1] = myGrid.K2; n[2] = myGrid.K3;
 
@@ -392,37 +416,45 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   work = new fftw_complex[n[0]];
 
   if ( ! CkMyPe() ) iout << iINFO << "Optimizing 4 FFT steps.  1..." << endi;
+  if ( myGridPe >= 0 ) {
   forward_plan_yz = rfftwnd_create_plan_specific(2, n+1, FFTW_REAL_TO_COMPLEX,
 	FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM, qgrid, 1, 0, 0);
+  }
   if ( ! CkMyPe() ) iout << " 2..." << endi;
+  if ( myTransPe >= 0 ) {
   forward_plan_x = fftw_create_plan_specific(n[0], FFTW_REAL_TO_COMPLEX,
 	FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) qgrid,
-	localInfo[myRecipPe].ny_after_transpose * myGrid.dim3 / 2, work, 1);
+	localInfo[myTransPe].ny_after_transpose * myGrid.dim3 / 2, work, 1);
+  }
   if ( ! CkMyPe() ) iout << " 3..." << endi;
+  if ( myTransPe >= 0 ) {
   backward_plan_x = fftw_create_plan_specific(n[0], FFTW_COMPLEX_TO_REAL,
 	FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) qgrid,
-	localInfo[myRecipPe].ny_after_transpose * myGrid.dim3 / 2, work, 1);
+	localInfo[myTransPe].ny_after_transpose * myGrid.dim3 / 2, work, 1);
+  }
   if ( ! CkMyPe() ) iout << " 4..." << endi;
+  if ( myGridPe >= 0 ) {
   backward_plan_yz = rfftwnd_create_plan_specific(2, n+1, FFTW_COMPLEX_TO_REAL,
 	FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM, qgrid, 1, 0, 0);
+  }
   if ( ! CkMyPe() ) iout << "   Done.\n" << endi;
 #else
   NAMD_die("Sorry, FFTW must be compiled in to use PME.");
 #endif
 
-  if ( myRecipPe < numGridPes && numSources == 0 )
+  if ( myGridPe >= 0 && numSources == 0 )
 		NAMD_bug("PME grid elements exist without sources.");
   grid_count = numSources;
   memset( (void*) qgrid, 0, qgrid_size * numGrids * sizeof(double) );
-  if ( myRecipPe >= numGridPes ) trans_count = numGridPes;
+  if ( myGridPe < 0 ) trans_count = numGridPes;
 }
 
 ComputePmeMgr::~ComputePmeMgr() {
   delete myKSpace;
   delete [] localInfo;
-  delete [] recipPeMap;
+  delete [] gridPeMap;
+  delete [] transPeMap;
   delete [] recipPeDest;
-  delete [] recipPeOrder;
   delete [] gridPeOrder;
   delete [] transPeOrder;
   delete [] qgrid;
@@ -433,7 +465,7 @@ ComputePmeMgr::~ComputePmeMgr() {
 }
 
 void ComputePmeMgr::sendGrid(void) {
-  pmeCompute->sendData(numRecipPes,recipPeOrder,recipPeDest,recipPeMap);
+  pmeCompute->sendData(numGridPes,gridPeOrder,recipPeDest,gridPeMap);
 }
 
 void ComputePmeMgr::recvGrid(PmeGridMsg *msg) {
@@ -479,7 +511,7 @@ void ComputePmeMgr::gridCalc1(void) {
 
 #ifdef NAMD_FFTW
   for ( int g=0; g<numGrids; ++g ) {
-    rfftwnd_real_to_complex(forward_plan_yz, localInfo[myRecipPe].nx,
+    rfftwnd_real_to_complex(forward_plan_yz, localInfo[myGridPe].nx,
 	qgrid + qgrid_size * g, 1, myGrid.dim2 * myGrid.dim3, 0, 0, 0);
   }
 #endif
@@ -495,15 +527,15 @@ void ComputePmeMgr::sendTrans(void) {
 
   // send data for transpose
   int zdim = myGrid.dim3;
-  int nx = localInfo[myRecipPe].nx;
-  int x_start = localInfo[myRecipPe].x_start;
+  int nx = localInfo[myGridPe].nx;
+  int x_start = localInfo[myGridPe].x_start;
   int slicelen = myGrid.K2 * zdim;
   for (int j=0; j<numTransPes; j++) {
     int pe = transPeOrder[j];  // different order on each node
     LocalPmeInfo &li = localInfo[pe];
     int cpylen = li.ny_after_transpose * zdim;
     PmeTransMsg *newmsg = new (nx * cpylen * numGrids,0) PmeTransMsg;
-    newmsg->sourceNode = myRecipPe;
+    newmsg->sourceNode = myGridPe;
     newmsg->lattice = lattice;
     newmsg->x_start = x_start;
     newmsg->nx = nx;
@@ -517,9 +549,9 @@ void ComputePmeMgr::sendTrans(void) {
       }
     }
 #if CHARM_VERSION > 050402
-    pmeProxy[recipPeMap[pe]].recvTrans(newmsg);
+    pmeProxy[transPeMap[pe]].recvTrans(newmsg);
 #else
-    pmeProxy.recvTrans(newmsg,recipPeMap[pe]);
+    pmeProxy.recvTrans(newmsg,transPeMap[pe]);
 #endif
   }
 
@@ -535,7 +567,7 @@ void ComputePmeMgr::sendTrans(void) {
     }
     trans_buf_len = 0;
   }
-  if ( myRecipPe >= numTransPes ) untrans_count = numTransPes;
+  if ( myTransPe < 0 ) untrans_count = numTransPes;
 }
 
 void ComputePmeMgr::recvTrans(PmeTransMsg *msg) {
@@ -549,8 +581,8 @@ void ComputePmeMgr::recvTrans(PmeTransMsg *msg) {
   }
 
   int zdim = myGrid.dim3;
-  // int y_start = localInfo[myRecipPe].y_start_after_transpose;
-  int ny = localInfo[myRecipPe].ny_after_transpose;
+  // int y_start = localInfo[myTransPe].y_start_after_transpose;
+  int ny = localInfo[myTransPe].ny_after_transpose;
   int x_start = msg->x_start;
   int nx = msg->nx;
   for ( int g=0; g<numGrids; ++g ) {
@@ -574,8 +606,8 @@ void ComputePmeMgr::gridCalc2(void) {
   // CkPrintf("gridCalc2 on Pe(%d)\n",CkMyPe());
 
   int zdim = myGrid.dim3;
-  // int y_start = localInfo[myRecipPe].y_start_after_transpose;
-  int ny = localInfo[myRecipPe].ny_after_transpose;
+  // int y_start = localInfo[myTransPe].y_start_after_transpose;
+  int ny = localInfo[myTransPe].ny_after_transpose;
 
   for ( int g=0; g<numGrids; ++g ) {
     // finish forward FFT (x dimension)
@@ -607,8 +639,8 @@ void ComputePmeMgr::gridCalc2(void) {
 void ComputePmeMgr::sendUntrans(void) {
 
   int zdim = myGrid.dim3;
-  int y_start = localInfo[myRecipPe].y_start_after_transpose;
-  int ny = localInfo[myRecipPe].ny_after_transpose;
+  int y_start = localInfo[myTransPe].y_start_after_transpose;
+  int ny = localInfo[myTransPe].ny_after_transpose;
 
   // send data for reverse transpose
   for (int j=0; j<numGridPes; j++) {
@@ -617,7 +649,7 @@ void ComputePmeMgr::sendUntrans(void) {
     int x_start =li.x_start;
     int nx = li.nx;
     PmeUntransMsg *newmsg = new (nx*ny*zdim*numGrids,0) PmeUntransMsg;
-    newmsg->sourceNode = myRecipPe;
+    newmsg->sourceNode = myTransPe;
     if ( j == 0 ) {  // only need these once
       newmsg->evir = recip_evir2;
     } else {
@@ -631,9 +663,9 @@ void ComputePmeMgr::sendUntrans(void) {
 		nx*ny*zdim*sizeof(double));
     }
 #if CHARM_VERSION > 050402
-    pmeProxy[recipPeMap[pe]].recvUntrans(newmsg);
+    pmeProxy[gridPeMap[pe]].recvUntrans(newmsg);
 #else
-    pmeProxy.recvUntrans(newmsg,recipPeMap[pe]);
+    pmeProxy.recvUntrans(newmsg,gridPeMap[pe]);
 #endif
   }
 
@@ -649,7 +681,7 @@ void ComputePmeMgr::sendUntrans(void) {
     }
     untrans_buf_len = 0;
   }
-  if ( myRecipPe >= numGridPes ) trans_count = numGridPes;
+  if ( myGridPe < 0 ) trans_count = numGridPes;
 }
 
 void ComputePmeMgr::recvUntrans(PmeUntransMsg *msg) {
@@ -665,8 +697,8 @@ void ComputePmeMgr::recvUntrans(PmeUntransMsg *msg) {
   recip_evir += msg->evir;
 
   int zdim = myGrid.dim3;
-  // int x_start = localInfo[myRecipPe].x_start;
-  int nx = localInfo[myRecipPe].nx;
+  // int x_start = localInfo[myGridPe].x_start;
+  int nx = localInfo[myGridPe].nx;
   int y_start = msg->y_start;
   int ny = msg->ny;
   int slicelen = myGrid.K2 * zdim;
@@ -699,7 +731,7 @@ void ComputePmeMgr::gridCalc3(void) {
   // finish backward FFT
 #ifdef NAMD_FFTW
   for ( int g=0; g<numGrids; ++g ) {
-    rfftwnd_complex_to_real(backward_plan_yz, localInfo[myRecipPe].nx,
+    rfftwnd_complex_to_real(backward_plan_yz, localInfo[myGridPe].nx,
 	(fftw_complex *) (qgrid + qgrid_size * g),
 	1, myGrid.dim2 * myGrid.dim3 / 2, 0, 0, 0);
   }
@@ -741,7 +773,7 @@ void ComputePmeMgr::sendUngrid(void) {
         q += zdim;
       }
     }
-    newmsg->sourceNode = myRecipPe;
+    newmsg->sourceNode = myGridPe;
 
 #if CHARM_VERSION > 050402
     pmeProxy[pe].recvUngrid(newmsg);
@@ -1014,7 +1046,7 @@ void ComputePme::doWork()
 }
 
 void ComputePme::sendData(int numRecipPes, int *recipPeOrder,
-				int *recipPeDest, int *recipPeMap) {
+				int *recipPeDest, int *gridPeMap) {
 
   // iout << "Sending charge grid for " << numLocalAtoms << " atoms to FFT on " << iPE << ".\n" << endi;
 
@@ -1052,7 +1084,7 @@ void ComputePme::sendData(int numRecipPes, int *recipPeOrder,
       if ( ! recipPeDest[pe] ) {
         if ( fcount_g ) {
           ++errcount;
-          iout << iERROR << CkMyPe() << " sending to " << recipPeMap[pe] << ":";
+          iout << iERROR << CkMyPe() << " sending to " << gridPeMap[pe] << ":";
           int iz = -1;
           for ( i=0; i<flen; ++i ) {
             if ( f[i] ) {
@@ -1098,9 +1130,9 @@ void ComputePme::sendData(int numRecipPes, int *recipPeOrder,
     }
 
 #if CHARM_VERSION > 050402
-    pmeProxy[recipPeMap[pe]].recvGrid(msg);
+    pmeProxy[gridPeMap[pe]].recvGrid(msg);
 #else
-    pmeProxy.recvGrid(msg,recipPeMap[pe]);
+    pmeProxy.recvGrid(msg,gridPeMap[pe]);
 #endif
   }
 
