@@ -238,7 +238,7 @@ int tcl_get_vector(char *fctn, Tcl_Interp *interp,
 
 
 // Get a 3-D vector from a TCL list
-int get_3D_vector(Tcl_Interp *interp, char *list, Vector &result)
+static int get_3D_vector(Tcl_Interp *interp, char *list, Vector &result)
 {
   int num, status=1;
   char **data;
@@ -260,7 +260,7 @@ int get_3D_vector(Tcl_Interp *interp, char *list, Vector &result)
 
 
 // Append a 3-D vector to the result string
-void append_3D_vector(Tcl_Interp *interp, Vector &v)
+static void append_3D_vector(Tcl_Interp *interp, const Vector &v)
 {
   char s[3][TCL_DOUBLE_SPACE], *t[3], *list;
   
