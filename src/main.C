@@ -6,7 +6,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.10 1996/12/11 00:04:23 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.11 1996/12/27 22:21:54 nealk Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -21,7 +21,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.
 #include "Inform.h"
 
 // Needed for namd.1.X components
-Communicate *comm;
+Communicate *comm = NULL;
 Inform namdErr("ERROR");
 Inform namdWarn("Warning");
 Inform namdInfo("Info");
@@ -49,8 +49,8 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: main.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1996/12/11 00:04:23 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.11 $	$Date: 1996/12/27 22:21:54 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -59,6 +59,9 @@ public:
  * REVISION HISTORY:
  *
  * $Log: main.C,v $
+ * Revision 1.11  1996/12/27 22:21:54  nealk
+ * Added some debugging code.
+ *
  * Revision 1.10  1996/12/11 00:04:23  milind
  * *** empty log message ***
  *
