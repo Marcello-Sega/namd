@@ -3257,7 +3257,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 
        int n[3]; n[0] = PMEGridSizeX; n[1] = PMEGridSizeY; n[2] = PMEGridSizeZ;
        fftw_complex *work = new fftw_complex[n[0]];
-       float *grid1 = new float[n[1]*n[2]];
+       float *grid1 = new float[n[1]*dim3];
        float *grid2 = new float[n[0]*block2*dim3];
        iout << iINFO << "Optimizing 6 FFT steps.  1..." << endi;
        rfftwnd_destroy_plan( rfftwnd_create_plan_specific(
