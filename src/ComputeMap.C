@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1016 1998/07/03 20:09:51 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1017 1998/07/03 23:13:40 brunner Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -297,7 +297,7 @@ ComputeID ComputeMap::storeCompute(int inode, int maxPids,
 
   computeData[cid].type = type;
   computeData[cid].partition = partition;
-  computeData[cid].partition = numPartitions;
+  computeData[cid].numPartitions = numPartitions;
 
   computeData[cid].patchBased = true;
   nPatchBased++;
@@ -360,12 +360,15 @@ void ComputeMap::printComputeMap(void)
  *
  *	$RCSfile: ComputeMap.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1998/07/03 20:09:51 $
+ *	$Revision: 1.1017 $	$Date: 1998/07/03 23:13:40 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.C,v $
+ * Revision 1.1017  1998/07/03 23:13:40  brunner
+ * Bug fixes put in.  Will load balancing work???
+ *
  * Revision 1.1016  1998/07/03 20:09:51  brunner
  * Self-compute spliting creation changes.  I hope this works.
  *
