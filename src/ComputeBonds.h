@@ -42,7 +42,7 @@ public:
     // Internal data
     Index bondType;
 
-  enum { bondEnergyIndex, reductionDataSize };
+  enum { bondEnergyIndex, virialIndex, reductionDataSize };
   static void registerReductionData(ReductionMgr*);
   static void submitReductionData(BigReal*,ReductionMgr*,int);
   static void unregisterReductionData(ReductionMgr*);
@@ -73,13 +73,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeBonds.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/10 17:40:01 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/03/16 22:56:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeBonds.h,v $
+ * Revision 1.1002  1997/03/16 22:56:22  jim
+ * Added virial calculation for all bonded forces.
+ *
  * Revision 1.1001  1997/03/10 17:40:01  ari
  * UniqueSet changes - some more commenting and cleanup
  *

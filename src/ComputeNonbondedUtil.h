@@ -40,7 +40,8 @@ public:
 		const AtomProperties &, const AtomProperties &,
 		int, BigReal*);
 
-  enum { electEnergyIndex, fullElectEnergyIndex, vdwEnergyIndex, reductionDataSize };
+  enum { electEnergyIndex, fullElectEnergyIndex, vdwEnergyIndex,
+	 virialIndex, fullElectVirialIndex, reductionDataSize };
   static void registerReductionData(ReductionMgr*);
   static void submitReductionData(BigReal*,ReductionMgr*,int);
   static void unregisterReductionData(ReductionMgr*);
@@ -172,12 +173,15 @@ public:
  *
  *	$RCSfile: ComputeNonbondedUtil.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/14 23:18:14 $
+ *	$Revision: 1.1005 $	$Date: 1997/03/16 22:56:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.h,v $
+ * Revision 1.1005  1997/03/16 22:56:31  jim
+ * Added virial calculation for all bonded forces.
+ *
  * Revision 1.1004  1997/03/14 23:18:14  jim
  * Implemented C1 splitting for long-range electrostatics.
  * Energies on sub-timesteps are incorrect.  (Aren't they always?)

@@ -36,7 +36,7 @@ public:
   int hash() const {
     return 0x7FFFFFFF &((atomID[0]<<24) + (atomID[1]<<16) + (atomID[2]<<8) + atomID[3]);
   }
-  enum { improperEnergyIndex, reductionDataSize };
+  enum { improperEnergyIndex, virialIndex, reductionDataSize };
   static void registerReductionData(ReductionMgr*);
   static void submitReductionData(BigReal*,ReductionMgr*,int);
   static void unregisterReductionData(ReductionMgr*);
@@ -101,13 +101,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeImpropers.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/10 17:40:07 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/03/16 22:56:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeImpropers.h,v $
+ * Revision 1.1002  1997/03/16 22:56:28  jim
+ * Added virial calculation for all bonded forces.
+ *
  * Revision 1.1001  1997/03/10 17:40:07  ari
  * UniqueSet changes - some more commenting and cleanup
  *

@@ -23,6 +23,7 @@ void ComputeNonbondedUtil::registerReductionData(ReductionMgr *reduction)
 {
   reduction->Register(REDUCTION_ELECT_ENERGY);
   reduction->Register(REDUCTION_LJ_ENERGY);
+  reduction->Register(REDUCTION_VIRIAL);
 }
 
 void ComputeNonbondedUtil::submitReductionData(BigReal *data, ReductionMgr *reduction, int seq)
@@ -30,12 +31,15 @@ void ComputeNonbondedUtil::submitReductionData(BigReal *data, ReductionMgr *redu
   reduction->submit(seq, REDUCTION_ELECT_ENERGY, data[electEnergyIndex]
 					+ data[fullElectEnergyIndex]);
   reduction->submit(seq, REDUCTION_LJ_ENERGY, data[vdwEnergyIndex]);
+  reduction->submit(seq, REDUCTION_VIRIAL, data[virialIndex]
+					+ data[fullElectVirialIndex]);
 }
 
 void ComputeNonbondedUtil::unregisterReductionData(ReductionMgr *reduction)
 {
   reduction->unRegister(REDUCTION_ELECT_ENERGY);
   reduction->unRegister(REDUCTION_LJ_ENERGY);
+  reduction->unRegister(REDUCTION_VIRIAL);
 }
 
 
@@ -337,12 +341,15 @@ void ComputeNonbondedUtil::select(void)
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/14 23:18:13 $
+ *	$Revision: 1.1005 $	$Date: 1997/03/16 22:56:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1005  1997/03/16 22:56:29  jim
+ * Added virial calculation for all bonded forces.
+ *
  * Revision 1.1004  1997/03/14 23:18:13  jim
  * Implemented C1 splitting for long-range electrostatics.
  * Energies on sub-timesteps are incorrect.  (Aren't they always?)

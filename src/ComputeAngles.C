@@ -52,12 +52,11 @@ void AngleElem::computeForce(BigReal *reduction)
   const Position & pos1 = p[0]->x[localIndex[0]];
   const Position & pos2 = p[1]->x[localIndex[1]];
   const Position & pos3 = p[2]->x[localIndex[2]];
-  Force & force1 = p[0]->f[localIndex[0]];
-  Force & force2 = p[1]->f[localIndex[1]];
-  Force & force3 = p[2]->f[localIndex[2]];
+  Force force1;
+  Force force2;
+  Force force3;
   const Lattice & lattice = p[0]->p->lattice;
 
-  Vector r12, r32, r13;	// vector between atoms 1,2 and 3,2
   BigReal d12, d32, d13;	// distances between atoms
   BigReal theta;	// theta
   BigReal cos_theta;	// cos(theta)
@@ -73,8 +72,8 @@ void AngleElem::computeForce(BigReal *reduction)
   Node::Object()->parameters->get_angle_params(&k,&theta0,&k_ub,&r_ub,angleType);
 
   // compute vectors between atoms and their distances
-  r12 = lattice.delta(pos1,pos2);
-  r32 = lattice.delta(pos3,pos2);
+  const Vector r12 = lattice.delta(pos1,pos2);
+  const Vector r32 = lattice.delta(pos3,pos2);
 
   d12 = r12.length();
   d32 = r32.length();
@@ -102,19 +101,19 @@ void AngleElem::computeForce(BigReal *reduction)
   energy = k *diff*diff;
 
   //  Normalize vector r12 and r32
-  r12 /= d12;
-  r32 /= d32;
+  BigReal d12inv = 1. / d12;
+  BigReal d32inv = 1. / d32;
 
   //  Calculate constant factor 2k(theta-theta0)/sin(theta)
   diff *= (-2.0* k) / sin_theta;
-  c1 = diff/d12;
-  c2 = diff/d32;
+  c1 = diff * d12inv;
+  c2 = diff * d32inv;
 
   //  Calculate the actual forces
-  r13 = c1*(r12*cos_theta - r32);
-  force1 += r13; force2 -= r13;
-  r13 = c2*(r32*cos_theta - r12);
-  force3 += r13; force2 -= r13;
+  Force f12 = c1*(r12*(d12inv*cos_theta) - r32*d32inv);
+  force1 += f12; force2 -= f12;
+  Force f32 = c2*(r32*(d32inv*cos_theta) - r12*d12inv);
+  force3 += f32; force2 -= f32;
 
   //  Check to see if we need to do the Urey-Bradley term
   //  Forces are used only when atom1 or atom3 are local
@@ -122,7 +121,7 @@ void AngleElem::computeForce(BigReal *reduction)
   {
 	//  Non-zero k_ub value, so calculate the harmonic
 	//  potential between the 1-3 atoms
-	r13 = lattice.delta(pos1,pos3);
+	Vector r13 = r12 - r32;
 	d13 = r13.length();
 	diff = d13- r_ub;
 
@@ -135,23 +134,35 @@ void AngleElem::computeForce(BigReal *reduction)
 	force3 -= r13;
   }
 
+  p[0]->f[localIndex[0]] += force1;
+  p[1]->f[localIndex[1]] += force2;
+  p[2]->f[localIndex[2]] += force3;
+
   DebugM(3, "::computeForce() -- ending with delta energy " << energy << endl);
-  if ( p[0]->patchType == HOME ) reduction[angleEnergyIndex] += energy;
+  if ( p[0]->patchType == HOME )
+  {
+    reduction[angleEnergyIndex] += energy;
+    reduction[virialIndex] += ( r12 * force1 + r32 * force3 );
+  }
 }
 
 
 void AngleElem::registerReductionData(ReductionMgr *reduction)
 {
   reduction->Register(REDUCTION_ANGLE_ENERGY);
+  reduction->Register(REDUCTION_VIRIAL);
 }
 
 void AngleElem::submitReductionData(BigReal *data, ReductionMgr *reduction, int seq)
 {
   reduction->submit(seq, REDUCTION_ANGLE_ENERGY, data[angleEnergyIndex]);
+  reduction->submit(seq, REDUCTION_VIRIAL, data[virialIndex]);
+  DebugM(4,"Angle virial = " << data[virialIndex] << "\n");
 }
 
 void AngleElem::unregisterReductionData(ReductionMgr *reduction)
 {
   reduction->unRegister(REDUCTION_ANGLE_ENERGY);
+  reduction->unRegister(REDUCTION_VIRIAL);
 }
 

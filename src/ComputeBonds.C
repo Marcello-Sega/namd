@@ -49,7 +49,6 @@ void BondElem::computeForce(BigReal *reduction)
   DebugM(1, "::computeForce() localIndex = " << localIndex[0] << " "
                << localIndex[1] << endl);
 
-  Force r12;	// vector between atoms 1,2
   BigReal r;		// Distance between atoms
   BigReal diff;		// difference between theta and theta0
   BigReal energy;	// energy from the bond
@@ -62,7 +61,7 @@ void BondElem::computeForce(BigReal *reduction)
 
   // compute vectors between atoms and their distances
   const Lattice & lattice = p[0]->p->lattice;
-  r12 = lattice.delta(p[0]->x[localIndex[0]],p[1]->x[localIndex[1]]);
+  const Vector r12 = lattice.delta(p[0]->x[localIndex[0]],p[1]->x[localIndex[1]]);
   r = r12.length();
 
   //  Compare it to the rest bond
@@ -74,33 +73,38 @@ void BondElem::computeForce(BigReal *reduction)
   //  Determine the magnitude of the force
   diff *= -2.0*k;
 
-  //  Divide by r to normalize the vector
-  diff /= r;
-
   //  Scale the force vector accordingly
-  r12 *= diff;
+  const Force f12 = r12 * (diff/r);
 
   //  Now add the forces to each force vector
-  p[0]->f[localIndex[0]] += r12;
-  p[1]->f[localIndex[1]] -= r12;
+  p[0]->f[localIndex[0]] += f12;
+  p[1]->f[localIndex[1]] -= f12;
 
   DebugM(3, "::computeForce() -- ending with delta energy " << energy << endl);
-  if ( p[0]->patchType == HOME ) reduction[bondEnergyIndex] += energy;
+  if ( p[0]->patchType == HOME )
+  {
+    reduction[bondEnergyIndex] += energy;
+    reduction[virialIndex] += r12 * f12;
+  }
 }
 
 
 void BondElem::registerReductionData(ReductionMgr *reduction)
 {
   reduction->Register(REDUCTION_BOND_ENERGY);
+  reduction->Register(REDUCTION_VIRIAL);
 }
 
 void BondElem::submitReductionData(BigReal *data, ReductionMgr *reduction, int seq)
 {
   reduction->submit(seq, REDUCTION_BOND_ENERGY, data[bondEnergyIndex]);
+  reduction->submit(seq, REDUCTION_VIRIAL, data[virialIndex]);
+  DebugM(4,"Bond virial = " << data[virialIndex] << "\n");
 }
 
 void BondElem::unregisterReductionData(ReductionMgr *reduction)
 {
   reduction->unRegister(REDUCTION_BOND_ENERGY);
+  reduction->unRegister(REDUCTION_VIRIAL);
 }
 

@@ -50,7 +50,7 @@ void ImproperElem::computeForce(BigReal *reduction)
                << localIndex[1] << " " << localIndex[2] << " " <<
 	       localIndex[3] << endl);
 
-  Vector r12, r23, r34;	// vector between atoms
+  // Vector r12, r23, r34;	// vector between atoms
   Vector A,B,C;		// cross products
   BigReal rA, rB, rC;	// length of vectors A, B, and C
   BigReal energy=0;	// energy from the angle
@@ -78,9 +78,9 @@ void ImproperElem::computeForce(BigReal *reduction)
   const Position & pos2 = p[2]->x[localIndex[2]];
   const Position & pos3 = p[3]->x[localIndex[3]];
   const Lattice & lattice = p[0]->p->lattice;
-  r12 = lattice.delta(pos0,pos1);
-  r23 = lattice.delta(pos1,pos2);
-  r34 = lattice.delta(pos2,pos3);
+  const Vector r12 = lattice.delta(pos0,pos1);
+  const Vector r23 = lattice.delta(pos1,pos2);
+  const Vector r34 = lattice.delta(pos2,pos3);
 
   //  Calculate the cross products
   A = cross(r12,r23);
@@ -229,21 +229,29 @@ void ImproperElem::computeForce(BigReal *reduction)
   p[3]->f[localIndex[3]] += -f3;
 
   DebugM(3, "::computeForce() -- ending with delta energy " << energy << endl);
-  if ( p[0]->patchType == HOME ) reduction[improperEnergyIndex] += energy;
+  if ( p[0]->patchType == HOME )
+  {
+    reduction[improperEnergyIndex] += energy;
+    reduction[virialIndex] += ( f1 * r12 + f2 * r23 + f3 * r34 );
+  }
 }
 
 
 void ImproperElem::registerReductionData(ReductionMgr *reduction)
 {
   reduction->Register(REDUCTION_IMPROPER_ENERGY);
+  reduction->Register(REDUCTION_VIRIAL);
 }
 
 void ImproperElem::submitReductionData(BigReal *data, ReductionMgr *reduction, int seq)
 {
   reduction->submit(seq, REDUCTION_IMPROPER_ENERGY, data[improperEnergyIndex]);
+  reduction->submit(seq, REDUCTION_VIRIAL, data[virialIndex]);
+  DebugM(4,"Improper virial = " << data[virialIndex] << "\n");
 }
 
 void ImproperElem::unregisterReductionData(ReductionMgr *reduction)
 {
   reduction->unRegister(REDUCTION_IMPROPER_ENERGY);
+  reduction->unRegister(REDUCTION_VIRIAL);
 }

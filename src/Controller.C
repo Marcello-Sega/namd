@@ -35,6 +35,7 @@ Controller::Controller(NamdState *s) :
     reduction->subscribe(REDUCTION_LJ_ENERGY);
     reduction->subscribe(REDUCTION_KINETIC_ENERGY);
     reduction->subscribe(REDUCTION_BC_ENERGY);
+    reduction->subscribe(REDUCTION_VIRIAL);
 }
 
 Controller::~Controller(void)
@@ -47,6 +48,7 @@ Controller::~Controller(void)
     reduction->unsubscribe(REDUCTION_LJ_ENERGY);
     reduction->unsubscribe(REDUCTION_KINETIC_ENERGY);
     reduction->unsubscribe(REDUCTION_BC_ENERGY);
+    reduction->unsubscribe(REDUCTION_VIRIAL);
 }
 
 void Controller::threadRun(Controller* arg)
@@ -111,6 +113,7 @@ void Controller::printEnergies(int seq)
     BigReal kineticEnergy;
     BigReal boundaryEnergy;
     BigReal temperature;
+    BigReal virial;
     BigReal totalEnergy;
 
     reduction->require(seq, REDUCTION_BOND_ENERGY, bondEnergy);
@@ -121,6 +124,7 @@ void Controller::printEnergies(int seq)
     reduction->require(seq, REDUCTION_LJ_ENERGY, ljEnergy);
     reduction->require(seq, REDUCTION_KINETIC_ENERGY, kineticEnergy);
     reduction->require(seq, REDUCTION_BC_ENERGY, boundaryEnergy);
+    reduction->require(seq, REDUCTION_VIRIAL, virial);
 
     temperature = 2.0 * kineticEnergy / ( numDegFreedom * BOLTZMAN );
 
@@ -132,8 +136,9 @@ void Controller::printEnergies(int seq)
     if ( (seq % (10 * node->simParameters->outputEnergies) ) == 0 )
     {
 	iout << "ETITLE:     TS    BOND        ANGLE       "
-	     << "DIHED       IMPRP       ELECT       VDW       ";
-	iout << "BOUNDARY    KINETIC        TOTAL     TEMP\n";
+	     << "DIHED       IMPRP       ELECT       VDW       "
+	     << "BOUNDARY    KINETIC        TOTAL     TEMP     "
+	     << "VIRIAL\n";
     }
 
     iout << ETITLE(seq + simParams->firstTimestep)
@@ -147,6 +152,7 @@ void Controller::printEnergies(int seq)
 	 << FORMAT(kineticEnergy)
 	 << FORMAT(totalEnergy)
 	 << FORMAT(temperature)
+	 << FORMAT(virial)
 	 << "\n" << endi;
 
 }

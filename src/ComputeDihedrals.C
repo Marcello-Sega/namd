@@ -15,9 +15,10 @@
 #include "Molecule.h"
 #include "Parameters.h"
 #include "Node.h"
-#include "Debug.h"
 #include "ReductionMgr.h"
 #include "Lattice.h"
+
+#include "Debug.h"
 
 void DihedralElem::loadTuplesForAtom
   (void *voidlist, AtomID atomID, Molecule *molecule)
@@ -48,7 +49,7 @@ void DihedralElem::computeForce(BigReal *reduction)
   DebugM(3, "::computeForce() localIndex = " << localIndex[0] << " "
                << localIndex[1] << " " << localIndex[2] << endl);
 
-  Vector r12, r23, r34;	// vector between atoms
+  // Vector r12, r23, r34;	// vector between atoms
   Vector A,B,C;		// cross products
   BigReal rA, rB, rC;	// length of vectors A, B, and C
   BigReal energy=0;	// energy from the angle
@@ -76,9 +77,9 @@ void DihedralElem::computeForce(BigReal *reduction)
   const Position & pos2 = p[2]->x[localIndex[2]];
   const Position & pos3 = p[3]->x[localIndex[3]];
   const Lattice & lattice = p[0]->p->lattice;
-  r12 = lattice.delta(pos0,pos1);
-  r23 = lattice.delta(pos1,pos2);
-  r34 = lattice.delta(pos2,pos3);
+  const Vector r12 = lattice.delta(pos0,pos1);
+  const Vector r23 = lattice.delta(pos1,pos2);
+  const Vector r34 = lattice.delta(pos2,pos3);
 
   //  Calculate the cross products
   A = cross(r12,r23);
@@ -227,22 +228,30 @@ void DihedralElem::computeForce(BigReal *reduction)
   p[3]->f[localIndex[3]] += -f3;
 
   DebugM(3, "::computeForce() -- ending with delta energy " << energy << endl);
-  if ( p[0]->patchType == HOME ) reduction[dihedralEnergyIndex] += energy;
+  if ( p[0]->patchType == HOME )
+  {
+    reduction[dihedralEnergyIndex] += energy;
+    reduction[virialIndex] += ( f1 * r12 + f2 * r23 + f3 * r34 );
+  }
 }
 
 
 void DihedralElem::registerReductionData(ReductionMgr *reduction)
 {
   reduction->Register(REDUCTION_DIHEDRAL_ENERGY);
+  reduction->Register(REDUCTION_VIRIAL);
 }
 
 void DihedralElem::submitReductionData(BigReal *data, ReductionMgr *reduction, int seq)
 {
   reduction->submit(seq, REDUCTION_DIHEDRAL_ENERGY, data[dihedralEnergyIndex]);
+  reduction->submit(seq, REDUCTION_VIRIAL, data[virialIndex]);
+  DebugM(4,"Dihedral virial = " << data[virialIndex] << "\n");
 }
 
 void DihedralElem::unregisterReductionData(ReductionMgr *reduction)
 {
   reduction->unRegister(REDUCTION_DIHEDRAL_ENERGY);
+  reduction->unRegister(REDUCTION_VIRIAL);
 }
 

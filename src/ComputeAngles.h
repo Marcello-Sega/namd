@@ -38,7 +38,7 @@ public:
     return 0x7FFFFFFF & ((atomID[0]<<22) + (atomID[1]<<11) + (atomID[2])); 
   }
 
-  enum { angleEnergyIndex, reductionDataSize };
+  enum { angleEnergyIndex, virialIndex, reductionDataSize };
   static void registerReductionData(ReductionMgr*);
   static void submitReductionData(BigReal*,ReductionMgr*,int);
   static void unregisterReductionData(ReductionMgr*);
@@ -68,12 +68,15 @@ public:
  *
  *	$RCSfile: ComputeAngles.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/12 18:09:41 $
+ *	$Revision: 1.1005 $	$Date: 1997/03/16 22:56:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.h,v $
+ * Revision 1.1005  1997/03/16 22:56:20  jim
+ * Added virial calculation for all bonded forces.
+ *
  * Revision 1.1004  1997/03/12 18:09:41  jim
  * Fixed nasty bug in hash function which occasionally caused duplicate
  * angles to be stored in the hash table.
