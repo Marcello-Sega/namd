@@ -378,8 +378,8 @@ options which are also needed (such as "scyld" and "cxx").  So, for
 Scyld on Alpha Linux, use "./build charm++ net-linux-axp scyld cxx".
 The README distributed with Charm contains a complete explanation.
 
-You only actually need the bin, include, and lib subdirectories, you
-can remove pgms and tmp from each build directory.
+You only actually need the bin, include, and lib subdirectories, so
+you can copy those elsewhere and delete the whole build directory.
 
 Edit Make.charm to point to the directory where Charm++ is installed.
 
