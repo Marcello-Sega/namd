@@ -1,0 +1,10 @@
+NAMD_ARCH = Darwin-PPC
+CHARMARCH = net-darwin
+
+CXX = c++ -D_NO_MALLOC_H
+CXXOPTS = -O2 -Wall
+CXXTHREADOPTS = 
+CXXSIMPARAMOPTS = $(CXXOPTS)
+CC = cc
+COPTS = -O2
+

@@ -14,7 +14,9 @@
 #include "common.h" // for int32 definition
 #include <stdio.h>
 #include <string.h>
+#ifndef _NO_MALLOC_H
 #include <malloc.h>
+#endif
 #ifndef WIN32
 #include <unistd.h>
 #endif
