@@ -128,7 +128,7 @@
 #define PLEN
 #define I_SUB i
 #define I_LOWER 0
-#define I_UPPER numAtoms
+#define I_UPPER numAtoms - 1
 #define J_SUB j
 #define J_LOWER i + 1
 #define J_UPPER numAtoms
@@ -139,12 +139,15 @@
  *
  *	$RCSfile: ComputeNonbondedHack.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/14 06:44:55 $
+ *	$Revision: 1.1004 $	$Date: 1997/04/09 16:15:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedHack.h,v $
+ * Revision 1.1004  1997/04/09 16:15:30  jim
+ * Fixed ABR error in purify.
+ *
  * Revision 1.1003  1997/03/14 06:44:55  jim
  * First working versions of full electrostatics splitting functions.
  *
