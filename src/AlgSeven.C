@@ -5,6 +5,7 @@
 **/
 
 #include <iostream.h>
+#include "common.h"
 #include "InfoStream.h"
 #include "Alg7.h"
 
@@ -28,7 +29,6 @@ void Alg7::strategy()
   int numAssigned;
   processorInfo* goodP[3][3];  // goodP[# of real patches][# of proxies]
 
-  int i,j;
   //   iout << iINFO  << "calling makeHeaps. \n";
   makeHeaps();
   computeAverage();
@@ -47,12 +47,14 @@ void Alg7::strategy()
   //   for (int i=0; i<numPatches; i++)
   //     { cout << "(" << patches[i].Id << "," << patches[i].processor ;}
   overLoad = 1.2;
-  for (i=0; i<numComputes; i++) {
+  for (int ic=0; ic<numComputes; ic++) {
     c = (computeInfo *) computesHeap->deleteMax();
+    if ( ! c ) NAMD_bug("Alg7: computesHeap empty!");
     if (c->processor != -1) continue; // skip to the next compute;
     heapIterator nextProcessor;
     processorInfo *p = (processorInfo *) 
       pes->iterator((heapIterator *) &nextProcessor);
+    int i,j;
     for(i=0;i<3;i++)
       for(j=0;j<3;j++)
 	goodP[i][j]=0;
