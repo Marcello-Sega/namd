@@ -19,13 +19,6 @@
 #include <new.h>
 #include <string.h>
 
-#ifndef _IA64
-// Undefined if src,dest overlap
-extern "C" void *memcpy(void *, const void *, size_t);
-// Use memmove on possibly overlapping memory moves.
-extern "C" void *memmove(void *, const void *, size_t);
-#endif
-
 #define GrowthFactor 1.5
 #define MinSize 8
 

@@ -20,9 +20,6 @@
 #define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
 #include "Debug.h"
-#ifndef _IA64
-extern "C" long int lrand48(void);
-#endif
 
 //#define DEBUGM
 #include "Debug.h"

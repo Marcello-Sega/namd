@@ -132,13 +132,6 @@ void ComputeNonbondedUtil::submitPressureProfileData(BigReal *data,
 }
   
   
-#ifndef _IA64
-//  Not in KCC's math.h
-extern "C" {
-  extern double erfc(double);
-}
-#endif
-
 void ComputeNonbondedUtil::select(void)
 {
   SimParameters * simParams = Node::Object()->simParameters;
