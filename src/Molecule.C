@@ -17,7 +17,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <converse.h>
+#include "charm++.h"
 #include "strlib.h"
 #include "InfoStream.h"
 #include "MStream.h"
@@ -4940,7 +4940,7 @@ void Molecule::build_atom_status(void) {
       ++numZeroMassAtoms;
     }
   }
-  if ( numZeroMassAtoms && ! CmiMyPe() ) {
+  if ( numZeroMassAtoms && ! CkMyPe() ) {
     iout << iWARN << "FOUND " << numZeroMassAtoms <<
 	" ATOMS WITH ZERO OR NEGATIVE MASSES!  CHANGED TO 0.001\n" << endi;
   }
@@ -4975,7 +4975,7 @@ void Molecule::build_atom_status(void) {
       hg[a2].GPID = a1;
     }
   }
-  if ( hhbondcount && ! CmiMyPe() ) {
+  if ( hhbondcount && ! CkMyPe() ) {
     iout << iWARN << "Found " << hhbondcount << " H-H bonds.\n" << endi;
   }
 
@@ -5031,7 +5031,7 @@ void Molecule::build_atom_status(void) {
       }
     }
   }
-  if ( hGPcount && ! CmiMyPe() ) {
+  if ( hGPcount && ! CkMyPe() ) {
     iout << iWARN << "Found " << hGPcount << " H-H molecules.\n" << endi;
   }
 
