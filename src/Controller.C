@@ -680,7 +680,6 @@ void Controller::receivePressure(int step, int minimize)
 
     reduction->require();
 
-    // BigReal intKineticEnergy;
     Tensor virial;
     Tensor virial_normal;
     Tensor virial_nbond;
@@ -717,7 +716,7 @@ void Controller::receivePressure(int step, int minimize)
     numDegFreedom -= ( numRigidBonds - numFixedRigidBonds );
 
     kineticEnergy = reduction->item(REDUCTION_KINETIC_ENERGY);
-    // intKineticEnergy = reduction->item(REDUCTION_INT_KINETIC_ENERGY);
+    kineticEnergyCentered = reduction->item(REDUCTION_CENTERED_KINETIC_ENERGY);
 
     GET_TENSOR(virial_normal,reduction,REDUCTION_VIRIAL_NORMAL);
     GET_TENSOR(virial_nbond,reduction,REDUCTION_VIRIAL_NBOND);
@@ -1013,7 +1012,8 @@ void Controller::printEnergies(int step, int minimize)
     BigReal improperEnergy;
     BigReal boundaryEnergy;
     BigReal miscEnergy;
-    // BigReal totalEnergy;
+    BigReal potentialEnergy;
+    BigReal smoothEnergy;
     Vector momentum;
     Vector angularMomentum;
     BigReal volume = lattice.volume();
@@ -1050,9 +1050,11 @@ void Controller::printEnergies(int step, int minimize)
     angularMomentum.y = reduction->item(REDUCTION_ANGULAR_MOMENTUM_Y);
     angularMomentum.z = reduction->item(REDUCTION_ANGULAR_MOMENTUM_Z);
 
-    totalEnergy = bondEnergy + angleEnergy + dihedralEnergy + improperEnergy +
-	electEnergy + electEnergySlow + ljEnergy + kineticEnergy +
+    potentialEnergy = bondEnergy + angleEnergy + dihedralEnergy +
+	improperEnergy + electEnergy + electEnergySlow + ljEnergy +
 	boundaryEnergy + miscEnergy;
+    totalEnergy = potentialEnergy + kineticEnergy;
+    smoothEnergy = totalEnergy + 2*( kineticEnergyCentered - kineticEnergy);
 
     if ( simParameters->outputMomenta && ! minimize &&
          ! ( step % simParameters->outputMomenta ) )
@@ -1077,7 +1079,7 @@ void Controller::printEnergies(int step, int minimize)
       energies.tstep = step;
       energies.T = temperature;
       energies.Etot = totalEnergy;
-      energies.Epot = totalEnergy - kineticEnergy;
+      energies.Epot = potentialEnergy;
       energies.Evdw = ljEnergy;
       energies.Eelec = electEnergy + electEnergySlow;
       energies.Ebond = bondEnergy;
@@ -1181,6 +1183,7 @@ void Controller::printEnergies(int step, int minimize)
 	iout << "ETITLE:     TS    BOND        ANGLE       "
 	     << "DIHED       IMPRP       ELECT       VDW       "
 	     << "BOUNDARY    MISC        KINETIC        TOTAL     TEMP";
+	iout << "    SMOOTH";
 	if ( volume != 0. ) {
 	  if ( printAtomicPressure ) iout << "     PRESSURE";
 	  iout << "    GPRESSURE";
@@ -1206,11 +1209,12 @@ void Controller::printEnergies(int step, int minimize)
     iout << FORMAT(kineticEnergy);
     iout << FORMAT(totalEnergy);
     iout << FORMAT(temperature);
+    iout << FORMAT(smoothEnergy);
 
 #if(CMK_CCS_AVAILABLE && CMK_WEB_MODE)
      char webout[80];
      sprintf(webout,"%d %d %d %d",(int)totalEnergy,
-	     (int)(totalEnergy - kineticEnergy),
+	     (int)(potentialEnergy),
 	     (int)kineticEnergy,(int)temperature);
      CApplicationDepositNode0Data(webout);
 #endif

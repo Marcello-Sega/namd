@@ -78,6 +78,7 @@ protected:
       BigReal fepSum;
 //fepe
       BigReal kineticEnergy;
+      BigReal kineticEnergyCentered;
       BigReal temperature;
       Tensor pressure;
       Tensor groupPressure;

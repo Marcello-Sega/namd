@@ -148,16 +148,39 @@ void Sequencer::integrate() {
     int &doMolly = patch->flags.doMolly;
     doMolly = simParams->mollyOn && doFullElectrostatics;
 
-    rattle1(0.);  // enforce rigid bond constraints on initial positions
-    minimizationQuenchVelocity();
+    rattle1(0.,0);  // enforce rigid bond constraints on initial positions
     runComputeObjects(1); // must migrate here!
     if ( staleForces ) {
       if ( doNonbonded ) saveForce(Results::nbond);
       if ( doFullElectrostatics ) saveForce(Results::slow);
     }
-    addForceToMomentum(0.); // zero velocities of fixed atoms
-    reassignVelocities(step);
-    rattle2(timestep,step);  // enforce rigid bonds on initial velocities
+    if ( ! commOnly ) {
+      addForceToMomentum(-0.5*timestep);
+      if (staleForces || doNonbonded)
+		addForceToMomentum(-0.5*nbondstep,Results::nbond,staleForces);
+      if (staleForces || doFullElectrostatics)
+		addForceToMomentum(-0.5*slowstep,Results::slow,staleForces);
+    }
+    reassignVelocities(timestep,step);
+    minimizationQuenchVelocity();
+    rattle1(-timestep,0);
+    submitHalfstep(step);
+    if ( ! commOnly ) {
+      addForceToMomentum(timestep);
+      if (staleForces || doNonbonded)
+		addForceToMomentum(nbondstep,Results::nbond,staleForces);
+      if (staleForces || doFullElectrostatics)
+		addForceToMomentum(slowstep,Results::slow,staleForces);
+    }
+    rattle1(timestep,1);
+    submitHalfstep(step);
+    if ( ! commOnly ) {
+      addForceToMomentum(-0.5*timestep);
+      if (staleForces || doNonbonded)
+		addForceToMomentum(-0.5*nbondstep,Results::nbond,staleForces);
+      if (staleForces || doFullElectrostatics)
+		addForceToMomentum(-0.5*slowstep,Results::slow,staleForces);
+    }
     submitReductions(step);
     rebalanceLoad(step);
 
@@ -166,7 +189,6 @@ void Sequencer::integrate() {
 	rescaleVelocities(step);
 	tcoupleVelocities(timestep,step);
 	berendsenPressure(step);
-	// langevinVelocities(0.5*timestep);
 
        if ( ! commOnly ) {
 	addForceToMomentum(0.5*timestep);
@@ -174,15 +196,16 @@ void Sequencer::integrate() {
 		addForceToMomentum(0.5*nbondstep,Results::nbond,staleForces);
 	if (staleForces || doFullElectrostatics)
 		addForceToMomentum(0.5*slowstep,Results::slow,staleForces);
-	langevinVelocitiesBBK1(timestep);
        }
 
 	maximumMove(timestep);
 	if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
 	langevinPiston(step);
 	if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
-	rattle1(timestep);
+
+	reassignVelocities(timestep,step);  // needs full reinitialization!!!
 	minimizationQuenchVelocity();
+	submitHalfstep(step);
 
 	doNonbonded = !(step%nonbondedFrequency);
 	doFullElectrostatics = (dofull && !(step%fullElectFrequency));
@@ -201,21 +224,31 @@ void Sequencer::integrate() {
 
        if ( ! commOnly ) {
 	langevinVelocitiesBBK2(timestep);
-	addForceToMomentum(0.5*timestep);
+	addForceToMomentum(timestep);
 	if (staleForces || doNonbonded)
-		addForceToMomentum(0.5*nbondstep,Results::nbond,staleForces);
+		addForceToMomentum(nbondstep,Results::nbond,staleForces);
 	if (staleForces || doFullElectrostatics)
-		addForceToMomentum(0.5*slowstep,Results::slow,staleForces);
+		addForceToMomentum(slowstep,Results::slow,staleForces);
+	langevinVelocitiesBBK1(timestep);
        }
-
-	// langevinVelocities(0.5*timestep);
-	reassignVelocities(step);
-
-	rattle2(timestep,step);
 
         // add drag to each atom's positions
         if ( ! commOnly && movDragOn ) addMovDragToPosition(timestep);
         if ( ! commOnly && rotDragOn ) addRotDragToPosition(timestep);
+
+	rattle1(timestep,1);
+
+	submitHalfstep(step);
+
+       if ( ! commOnly ) {
+	addForceToMomentum(-0.5*timestep);
+	if (staleForces || doNonbonded)
+		addForceToMomentum(-0.5*nbondstep,Results::nbond,staleForces);
+	if (staleForces || doFullElectrostatics)
+		addForceToMomentum(-0.5*slowstep,Results::slow,staleForces);
+       }
+
+	// rattle2(timestep,step);
 
 	submitReductions(step);
 	submitCollections(step);
@@ -397,7 +430,7 @@ void Sequencer::langevinVelocitiesBBK1(BigReal dt_fs)
       if ( ! dt_gamma ) continue;
 
       a[i].velocity += random->gaussian_vector() *
-             sqrt( dt_gamma * kbT / a[i].mass );
+             sqrt( 2 * dt_gamma * kbT / a[i].mass );
       a[i].velocity /= ( 1. + 0.5 * dt_gamma );
     }
   }
@@ -412,7 +445,7 @@ void Sequencer::langevinVelocitiesBBK2(BigReal dt_fs)
     int numAtoms = patch->numAtoms;
     Molecule *molecule = Node::Object()->molecule;
     BigReal dt = dt_fs * 0.001;  // convert to ps
-    BigReal kbT = BOLTZMAN*(simParams->langevinTemp);
+    // BigReal kbT = BOLTZMAN*(simParams->langevinTemp);
     for ( int i = 0; i < numAtoms; ++i )
     {
       int aid = a[i].id;
@@ -420,8 +453,8 @@ void Sequencer::langevinVelocitiesBBK2(BigReal dt_fs)
       if ( ! dt_gamma ) continue;
 
       a[i].velocity *= ( 1. - 0.5 * dt_gamma );
-      a[i].velocity += random->gaussian_vector() *
-             sqrt( dt_gamma * kbT / a[i].mass );
+      // a[i].velocity += random->gaussian_vector() *
+      //        sqrt( dt_gamma * kbT / a[i].mass );
     }
   }
 }
@@ -580,7 +613,7 @@ void Sequencer::rescaleVelocities(int step)
   }
 }
 
-void Sequencer::reassignVelocities(int step)
+void Sequencer::reassignVelocities(BigReal timestep, int step)
 {
   const int reassignFreq = simParams->reassignFreq;
   if ( ( reassignFreq > 0 ) && ! ( step % reassignFreq ) ) {
@@ -601,6 +634,7 @@ void Sequencer::reassignVelocities(int step)
       a[i].velocity = ( ( simParams->fixedAtomsOn && a[i].atomFixed ) ? Vector(0,0,0) :
         sqrt( kbT / a[i].mass ) * random->gaussian_vector() );
     }
+    rattle1(-timestep,0);
   }
 }
 
@@ -652,15 +686,18 @@ void Sequencer::addVelocityToPosition(BigReal dt)
   patch->addVelocityToPosition(dt);
 }
 
-void Sequencer::rattle1(BigReal dt)
+void Sequencer::rattle1(BigReal dt, int pressure)
 {
   if ( simParams->rigidBonds != RIGID_NONE ) {
-    if ( patch->rattle1(dt) ) {
+    Tensor virial;
+    Tensor *vp = ( pressure ? &virial : 0 );
+    if ( patch->rattle1(dt, vp) ) {
       iout << iERROR << 
         "Constraint failure; simulation has become unstable.\n" << endi;
       Node::Object()->enableEarlyExit();
       terminate();
     }
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,virial);
   }
 }
 
@@ -726,6 +763,58 @@ void Sequencer::minimizationQuenchVelocity(void)
   }
 }
 
+void Sequencer::submitHalfstep(int step)
+{
+  // velocity-dependent quantities *** ONLY ***
+  // positions are not at half-step when called
+  FullAtom *a = patch->atom.begin();
+  int numAtoms = patch->numAtoms;
+
+  {
+    BigReal kineticEnergy = 0;
+    Tensor virial;
+    for ( int i = 0; i < numAtoms; ++i ) {
+      kineticEnergy += a[i].mass * a[i].velocity.length2();
+      virial += ( a[i].mass * outer(a[i].velocity,a[i].velocity) );
+    }
+
+    kineticEnergy *= 0.5 * 0.5;
+    reduction->item(REDUCTION_KINETIC_ENERGY) += kineticEnergy;
+    virial *= 0.5;
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,virial);
+#ifdef ALTVIRIAL
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_ALT_VIRIAL_NORMAL,virial);
+#endif
+  }
+
+  {
+    Tensor intVirialNormal;
+
+    int hgs;
+    for ( int i = 0; i < numAtoms; i += hgs ) {
+      hgs = a[i].hydrogenGroupSize;
+      int j;
+      BigReal m_cm = 0;
+      Velocity v_cm(0,0,0);
+      for ( j = i; j < (i+hgs); ++j ) {
+        m_cm += a[j].mass;
+        v_cm += a[j].mass * a[j].velocity;
+      }
+      v_cm /= m_cm;
+      for ( j = i; j < (i+hgs); ++j ) {
+        BigReal mass = a[j].mass;
+        Vector v = a[j].velocity;
+        Vector dv = v - v_cm;
+        intVirialNormal += mass * outer(v,dv);
+      }
+    }
+
+    intVirialNormal *= 0.5;
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_INT_VIRIAL_NORMAL,intVirialNormal);
+  }
+
+}
+
 void Sequencer::submitReductions(int step)
 {
   FullAtom *a = patch->atom.begin();
@@ -733,17 +822,9 @@ void Sequencer::submitReductions(int step)
 
   reduction->item(REDUCTION_ATOM_CHECKSUM) += numAtoms;
   reduction->item(REDUCTION_MARGIN_VIOLATIONS) += patch->marginViolations;
-  reduction->item(REDUCTION_KINETIC_ENERGY) += patch->calcKineticEnergy();
+  reduction->item(REDUCTION_CENTERED_KINETIC_ENERGY) += patch->calcKineticEnergy();
 
-  {
-    Tensor virial;
-    for ( int i = 0; i < numAtoms; ++i ) {
-      virial += ( a[i].mass * outer(a[i].velocity,a[i].velocity) );
-    }
-    ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,virial);
 #ifdef ALTVIRIAL
-    ADD_TENSOR_OBJECT(reduction,REDUCTION_ALT_VIRIAL_NORMAL,virial);
-  }
   {
     Tensor altVirial;
     for ( int i = 0; i < numAtoms; ++i ) {
@@ -764,11 +845,10 @@ void Sequencer::submitReductions(int step)
       altVirial += outer(patch->f[Results::slow][i],a[i].position);
     }
     ADD_TENSOR_OBJECT(reduction,REDUCTION_ALT_VIRIAL_SLOW,altVirial);
-#endif
   }
+#endif
 
   {
-    BigReal intKineticEnergy = 0;
     Tensor intVirialNormal;
     Tensor intVirialNbond;
     Tensor intVirialSlow;
@@ -779,22 +859,15 @@ void Sequencer::submitReductions(int step)
       int j;
       BigReal m_cm = 0;
       Position x_cm(0,0,0);
-      Velocity v_cm(0,0,0);
       for ( j = i; j < (i+hgs); ++j ) {
         m_cm += a[j].mass;
         x_cm += a[j].mass * a[j].position;
-        v_cm += a[j].mass * a[j].velocity;
       }
       x_cm /= m_cm;
-      v_cm /= m_cm;
       for ( j = i; j < (i+hgs); ++j ) {
-        BigReal mass = a[j].mass;
-        Vector v = a[j].velocity;
-        Vector dv = v - v_cm;
-        intKineticEnergy += mass * (v * dv);
-        intVirialNormal += mass * outer(v,dv);
 	// net force treated as zero for fixed atoms
         if ( simParams->fixedAtomsOn && a[j].atomFixed ) continue;
+        BigReal mass = a[j].mass;
         Vector dx = a[j].position - x_cm;
         intVirialNormal += outer(patch->f[Results::normal][j],dx);
         intVirialNbond += outer(patch->f[Results::nbond][j],dx);
@@ -802,9 +875,6 @@ void Sequencer::submitReductions(int step)
       }
     }
 
-    intKineticEnergy *= 0.5;
-
-    reduction->item(REDUCTION_INT_KINETIC_ENERGY) += intKineticEnergy;
     ADD_TENSOR_OBJECT(reduction,REDUCTION_INT_VIRIAL_NORMAL,intVirialNormal);
     ADD_TENSOR_OBJECT(reduction,REDUCTION_INT_VIRIAL_NBOND,intVirialNbond);
     ADD_TENSOR_OBJECT(reduction,REDUCTION_INT_VIRIAL_SLOW,intVirialSlow);

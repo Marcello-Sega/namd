@@ -37,6 +37,7 @@ protected:
     void runComputeObjects(int migration = 0);
 
     void submitReductions(int);
+    void submitHalfstep(int);
     void submitMinimizeReductions(int);
     void submitCollections(int);
 
@@ -52,15 +53,15 @@ protected:
     void newMinimizePosition(BigReal);
     void quenchVelocities();
 
-    void rattle1(BigReal);
+    void rattle1(BigReal,int);
     void rattle2(BigReal,int);
 
     void maximumMove(BigReal);
     void minimizationQuenchVelocity(void);
 
     void rescaleVelocities(int);
-      int rescaleVelocities_numTemps;
-    void reassignVelocities(int);
+    int rescaleVelocities_numTemps;
+    void reassignVelocities(BigReal,int);
     void reinitVelocities(void);
     void tcoupleVelocities(BigReal,int);
     void berendsenPressure(int);

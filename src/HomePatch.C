@@ -409,7 +409,7 @@ void HomePatch::addVelocityToPosition(const BigReal timestep)
 }
 
 //  RATTLE algorithm from Allen & Tildesley
-int HomePatch::rattle1(const BigReal timestep)
+int HomePatch::rattle1(const BigReal timestep, Tensor *virial)
 {
   Molecule *mol = Node::Object()->molecule;
   SimParameters *simParams = Node::Object()->simParameters;
@@ -426,6 +426,7 @@ int HomePatch::rattle1(const BigReal timestep)
   Vector vel[10];  // new velocity
   BigReal rmass[10];  // 1 / mass
   int fixed[10];  // is atom fixed?
+  Tensor wc;  // constraint virial
   
   for ( int ig = 0; ig < numAtoms; ig += atom[ig].hydrogenGroupSize ) {
     int hgs = atom[ig].hydrogenGroupSize;
@@ -438,7 +439,7 @@ int HomePatch::rattle1(const BigReal timestep)
       rmass[i] = 1. / atom[ig+i].mass;
       fixed[i] = ( simParams->fixedAtomsOn && atom[ig+i].atomFixed );
       // undo addVelocityToPosition to get proper reference coordinates
-      if ( fixed[i] ) rmass[i] = 0.; else ref[i] -= vel[i] * dt;
+      if ( fixed[i] ) rmass[i] = 0.; else pos[i] += vel[i] * dt;
     }
     int icnt = 0;
     if ( ( tmp = mol->rigid_bond_length(atom[ig].id) ) > 0 ) {  // for water
@@ -527,11 +528,18 @@ int HomePatch::rattle1(const BigReal timestep)
       }
     }
     // store data back to patch
-    for ( i = 0; i < hgs; ++i ) {
+    if ( dt == 0 ) for ( i = 0; i < hgs; ++i ) {
       atom[ig+i].position = pos[i];
+    } else if ( virial == 0 ) for ( i = 0; i < hgs; ++i ) {
+      atom[ig+i].velocity = vel[i];
+    } else for ( i = 0; i < hgs; ++i ) {
+      Force df = (vel[i] - atom[ig+i].velocity) * ( atom[i].mass / dt );
+      wc += outer(df,ref[i]);
+      f[Results::normal][ig+i] += df;
       atom[ig+i].velocity = vel[i];
     }
   }
+  if ( dt && virial ) *virial += wc;
   return 0;
 
 }
