@@ -147,15 +147,13 @@ NOEXCL
 /// It's not optimized, and requires hydrogen grouping during migration.
 /// The above "lost hydrogen" loop is necessary when hydrogen group
 /// migration occurs.
-#if 0
 	  register const BigReal p_ij_x = p_i_x - p_j->x;
 	  register const BigReal p_ij_y = p_i_y - p_j->y;
 	  register const BigReal p_ij_z = p_i_z - p_j->z;
 	  register const BigReal
 		r2 = p_ij_x * p_ij_x + p_ij_y * p_ij_y + p_ij_z * p_ij_z;
 	  // use a slightly large cutoff to include hydrogens
-	  if ( r2 <= cutoff2+6 )
-#endif
+	  if ( r2 <= groupcutoff2 )
 		{
 		// be careful, last group may be missing hydrogens
 		for(int l=0; (l<a_j->hydrogenGroupSize) && (l+j<j_upper); l++)
@@ -521,12 +519,15 @@ FULL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/05/05 15:28:24 $
+ *	$Revision: 1.1013 $	$Date: 1997/05/05 16:38:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1013  1997/05/05 16:38:57  nealk
+ * Corrected cutoff value used with hydrogen grouping.  (groupcutoff2)
+ *
  * Revision 1.1012  1997/05/05 15:28:24  nealk
  * Added water-water specific code to NonbondedBase.  The cutoff for the temp
  * pairlist is currently disabled.

@@ -50,6 +50,7 @@ public:
 
   static Real cutoff;
   static BigReal cutoff2;
+  static BigReal groupcutoff2;
   static BigReal dielectric_1;
   static const LJTable* ljTable;
   static const Molecule* mol;
@@ -175,13 +176,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedUtil.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/04/08 07:08:27 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1997/05/05 16:39:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.h,v $
+ * Revision 1.1008  1997/05/05 16:39:00  nealk
+ * Corrected cutoff value used with hydrogen grouping.  (groupcutoff2)
+ *
  * Revision 1.1007  1997/04/08 07:08:27  ari
  * Modification for dynamic loadbalancing - moving computes
  * Still bug in new computes or usage of proxies/homepatches.

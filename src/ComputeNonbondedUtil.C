@@ -38,6 +38,7 @@ void (*ComputeNonbondedUtil::calcFullExcl)(const Position &,
 
 Real            ComputeNonbondedUtil::cutoff;
 BigReal         ComputeNonbondedUtil::cutoff2;
+BigReal         ComputeNonbondedUtil::groupcutoff2;
 BigReal         ComputeNonbondedUtil::dielectric_1;
 const LJTable*  ComputeNonbondedUtil::ljTable;
 const Molecule* ComputeNonbondedUtil::mol;
@@ -83,6 +84,7 @@ void ComputeNonbondedUtil::select(void)
 
   cutoff = simParams->cutoff;
   cutoff2 = cutoff*cutoff;
+  groupcutoff2 = (cutoff+2.0)*(cutoff+2.0);
   dielectric_1 = 1/simParams->dielectric;
   ljTable = LJTable::Instance();
   mol = Node::Object()->molecule;
@@ -376,13 +378,16 @@ void ComputeNonbondedUtil::select(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/04/04 23:34:18 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1997/05/05 16:38:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1008  1997/05/05 16:38:59  nealk
+ * Corrected cutoff value used with hydrogen grouping.  (groupcutoff2)
+ *
  * Revision 1.1007  1997/04/04 23:34:18  milind
  * Got NAMD2 to run on Origin2000.
  * Included definitions of class static variables in C files.
