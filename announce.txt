@@ -1,10 +1,10 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                  NAMD 2.3b2 Release Announcement                   |
+|                   NAMD 2.3 Release Announcement                    |
 |                                                                    |
 +--------------------------------------------------------------------+
 
-                                                        July 2, 2001
+                                                      August 2, 2001
 
 The Theoretical Biophysics Group at the University of Illinois is
 proud to announce the public release of a new version of NAMD, a
@@ -13,7 +13,7 @@ high-performance simulation of large biomolecular systems.  NAMD is
 distributed free of charge and includes source code.  NAMD development
 is supported by the NIH National Center for Research Resources.
 
-NAMD 2.3b2 has several advantages over NAMD 2.2:
+NAMD 2.3 has several advantages over NAMD 2.2:
 
 - AMBER file compatibility (parm and coordinate input only).
 
@@ -21,7 +21,7 @@ NAMD 2.3b2 has several advantages over NAMD 2.2:
 
 - Simpler to run on a single workstation.  (No more rsh!)
 
-- New ports to the Compaq AlphaServer SC and Scyld Beowulf.
+- New ports to the Compaq AlphaServer SC, Scyld Beowulf, and Mac OS X.
 
 - Improved serial performance, particularly with PME on Alpha.
 
