@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.20 1996/11/30 21:59:12 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.21 1996/12/01 02:29:59 jim Exp $";
 
 #include <stdio.h>
 
@@ -243,7 +243,7 @@ void WorkDistrib::mapComputes(void)
   // throw in a few extras, in case I forget some.
 
   int numPotentialCids = 
-    (patchMap->numPatches() * 125 + 1) / 2  + node->numNodes();
+    patchMap->numPatches() * (124/2+1) + node->numNodes() * 1;
 
   computeMap->allocateCids(numPotentialCids);
 
@@ -372,12 +372,15 @@ void WorkDistrib::movePatchDone(DoneMsg *msg) {
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.20 $	$Date: 1996/11/30 21:59:12 $
+ *	$Revision: 1.21 $	$Date: 1996/12/01 02:29:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.21  1996/12/01 02:29:59  jim
+ * improved number of computes estimate
+ *
  * Revision 1.20  1996/11/30 21:59:12  jim
  * fixed use of wrong array in nonbonded allocation
  *
