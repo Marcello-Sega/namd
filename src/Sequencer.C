@@ -122,10 +122,6 @@ void Sequencer::algorithm(void)
     reassignVelocities(step);
     rattle2(timestep,step);  // enforce rigid bonds on initial velocities
     submitReductions(step);
-    //submitCollections(step);
-    //rescaleVelocities(step);
-    //tcoupleVelocities(timestep,step);
-    //berendsenPressure(step);
 
     for ( ++step; step <= numberOfSteps; ++step )
     {
@@ -173,18 +169,7 @@ void Sequencer::algorithm(void)
 
 	submitReductions(step);
 	submitCollections(step);
-	//rescaleVelocities(step);
-	//tcoupleVelocities(timestep,step);
-	//berendsenPressure(step);
-#ifdef CYCLE_BARRIER
-	int x;
-	if (!((step+1) % stepsPerCycle))
-	  x = broadcast->cycleBarrier.get(step);
-#endif
-
-	//
-	// Trigger load balance stats collection
-	//
+        cycleBarrier(!((step+1) % stepsPerCycle),step);
 	rebalanceLoad(step);
     }
 
@@ -577,8 +562,7 @@ void Sequencer::runComputeObjects(int migration)
   }
 }
 
-void Sequencer::rebalanceLoad(int timestep)
-{
+void Sequencer::rebalanceLoad(int timestep) {
   if ( ldbCoordinator->balanceNow(timestep) )
   {
     DebugM(4, "Running ldb!\n");
@@ -587,8 +571,14 @@ void Sequencer::rebalanceLoad(int timestep)
   }
 }
 
-void
-Sequencer::terminate() {
+void Sequencer::cycleBarrier(int doBarrier, int step) {
+#ifdef CYCLE_BARRIER
+	if (doBarrier)
+	  broadcast->cycleBarrier.get(step);
+#endif
+}
+
+void Sequencer::terminate() {
   CthFree(thread);
   CthSuspend();
 }

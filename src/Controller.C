@@ -112,9 +112,9 @@ void Controller::algorithm(int task)
     }
 
     int step = simParams->firstTimestep;
-    int first = 1;
 
     const int numberOfSteps = simParams->N;
+    const int stepsPerCycle = simParams->stepsPerCycle;
 
     nbondFreq = simParams->nonbondedFrequency;
     if ( simParams->fullDirectOn || simParams->FMAOn || simParams->PMEOn )
@@ -122,33 +122,27 @@ void Controller::algorithm(int task)
     else
       slowFreq = simParams->nonbondedFrequency;
 
-    for ( ; step <= numberOfSteps; ++step, first = 0 )
+    receivePressure(step);
+    reassignVelocities(step);
+    printEnergies(step);
+    traceUserEvent(eventEndOfTimeStep);
+    outputExtendedSystem(step);
+
+    for ( ++step ; step <= numberOfSteps; ++step )
     {
-        if ( ! first ) rescaleVelocities(step);
-	if ( ! first ) tcoupleVelocities(step);
-	if ( ! first ) berendsenPressure(step);
-        if ( ! first ) enqueueCollections(step);
-        traceUserEvent(eventEndOfTimeStep);
-	if ( ! first ) langevinPiston1(step);
+        rescaleVelocities(step);
+	tcoupleVelocities(step);
+	berendsenPressure(step);
+        enqueueCollections(step);
+	langevinPiston1(step);
 	receivePressure(step);
-	if ( ! first ) langevinPiston2(step);
+	langevinPiston2(step);
         reassignVelocities(step);
         printEnergies(step);
+        traceUserEvent(eventEndOfTimeStep);
         outputExtendedSystem(step);
-        //rescaleVelocities(step);
-	//tcoupleVelocities(step);
-	//berendsenPressure(step);
-#ifdef CYCLE_BARRIER
-	if (!((step+1) % stepsPerCycle))
-	{
-	  broadcast->cycleBarrier.publish(step,1);
-	  CkPrintf("Cycle time at sync Wall: %f CPU %f\n",
-		  CmiWallTimer(),CmiTimer());
-	}
-#endif
-	if ( LdbCoordinator::Object()->balanceNow(step) ) {
-	  LdbCoordinator::Object()->rebalance(this);
-	}
+        cycleBarrier(!((step+1) % stepsPerCycle),step);
+        rebalanceLoad(step);
     }
 
   if ( task == SCRIPT_END ) {
@@ -876,6 +870,23 @@ void Controller::outputExtendedSystem(int step)
       writeExtendedSystemLabels(xscFile);
       writeExtendedSystemData(simParams->N,xscFile);
     }
+}
+
+void Controller::rebalanceLoad(int timestep)
+{
+  if ( LdbCoordinator::Object()->balanceNow(timestep) ) {
+    LdbCoordinator::Object()->rebalance(this);
+  }
+}
+
+void Controller::cycleBarrier(int doBarrier, int step) {
+#ifdef CYCLE_BARRIER
+	if (doBarrier) {
+	  broadcast->cycleBarrier.publish(step,1);
+	  CkPrintf("Cycle time at sync Wall: %f CPU %f\n",
+		  CmiWallTimer(),CmiTimer());
+	}
+#endif
 }
 
 void Controller::terminate(void) {

@@ -64,6 +64,9 @@ protected:
     void langevinPiston2(int);
       Tensor langevinPiston_strainRate;
 
+    void rebalanceLoad(int);
+    void cycleBarrier(int,int);
+
     // void suspend(void) { CthSuspend(); };
     void terminate(void);
 

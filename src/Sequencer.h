@@ -56,6 +56,7 @@ protected:
     void langevinVelocitiesBBK1(BigReal);
     void langevinVelocitiesBBK2(BigReal);
 
+    void cycleBarrier(int,int);
     void terminate(void);
 
     Random *random;
