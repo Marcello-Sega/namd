@@ -683,7 +683,7 @@ void Rebalancer::printLoads()
 
 }
 
-void Rebalancer::computeAverage()
+double Rebalancer::computeAverage()
 {
    int i;
    double total = 0;
@@ -694,6 +694,7 @@ void Rebalancer::computeAverage()
       total += processors[i].backgroundLoad;
   
    averageLoad = total/P;
+   return averageLoad;
 }
 
 double Rebalancer::computeMax()

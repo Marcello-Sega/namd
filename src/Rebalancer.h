@@ -48,7 +48,7 @@ protected:
   int oldrefine();
   void printResults();
   void printLoads();
-  void computeAverage();
+  double computeAverage();
   double computeMax();
   
   void InitProxyUsage();

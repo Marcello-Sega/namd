@@ -80,8 +80,21 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
     }
   }
 
-  CkVector migrateInfo;
+  // For error checking:
+  // Count up computes, to see if somebody doesn't have any computes
   int i;
+  int* computeCount = new int[numProcessors];
+  for(i=0; i<numProcessors; i++)
+    computeCount[i]=0;
+  for(i=0; i<nMoveableComputes; i++)
+    computeCount[computeArray[i].processor]++;
+  for(i=0; i<numProcessors; i++) {
+    if (computeCount[i]==0)
+      iout << iINFO <<"Warning: Processor " << i 
+	   << " has NO moveable computes";
+  }
+  
+  CkVector migrateInfo;
   for(i=0;i<nMoveableComputes;i++) {
     if (computeArray[i].processor != computeArray[i].oldProcessor) {
       //      CkPrintf("[%d] Obj %d migrating from %d to %d\n",
@@ -221,12 +234,15 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 {
   PatchMap* patchMap = PatchMap::Object();
   ComputeMap* computeMap = ComputeMap::Object();
-  double bg_weight = 1.0;
+  double bg_weight = 0.7;
 
   int i;
   for (i=0; i<count; i++) {
     processorArray[i].Id = i;
-    processorArray[i].backgroundLoad = bg_weight * stats[i].bg_walltime;
+    if (patchMap->numPatches() > 0)
+      processorArray[i].backgroundLoad = bg_weight * stats[i].bg_walltime;
+    else 
+      processorArray[i].backgroundLoad = stats[i].bg_walltime;
     processorArray[i].proxies = new Set();
   }
 
