@@ -6,10 +6,13 @@
 # Copyright (c) 1995 Duke University
 # All rights reserved
 #
-# RCS Info: $Id: Makefile,v 1.5 1999/09/08 23:02:36 jim Exp $
+# RCS Info: $Id: Makefile,v 1.6 2000/03/16 16:57:50 jim Exp $
 #
 # Revision History:
 # $Log: Makefile,v $
+# Revision 1.6  2000/03/16 16:57:50  jim
+# Finds pvm includes again.
+#
 # Revision 1.5  1999/09/08 23:02:36  jim
 # Cleaned up compilation.
 #
@@ -61,12 +64,13 @@
 ################################################################
 
 RM = rm -f
+include .rootdir/Make.charm
 include ../../Makearch
 
 #  for the HPPA machines, add "-Ae" and "-Wp,-H500000" to CFLAGS
 #  for the SGI machines, add "-Woff all" to CFLAGS
 
-CFLAGS = $(COPTS) $(DFLAGS) -I$(CHARM)/include
+CFLAGS = $(COPTS) $(DFLAGS)
 
 SRC  = mpe_fft.c mpe_misc.c mpe_mpoleC.c mpe_allocC.c \
        mpe_mpoleLJ.c mpe_allocLJ.c

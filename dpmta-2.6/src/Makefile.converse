@@ -10,10 +10,13 @@
 # for compilation on generic workstation networks should use the default
 # makefile
 #
-# RCS Info: $Id: Makefile.converse,v 1.6 1999/02/16 01:33:05 jim Exp $
+# RCS Info: $Id: Makefile.converse,v 1.7 2000/03/16 16:57:53 jim Exp $
 #
 # Revision History:
 # $Log: Makefile.converse,v $
+# Revision 1.7  2000/03/16 16:57:53  jim
+# Finds pvm includes again.
+#
 # Revision 1.6  1999/02/16 01:33:05  jim
 # Removed PVM_ARCH from compile line.
 #
@@ -102,14 +105,14 @@
 #
 ################################################################
 
+include .rootdir/Make.charm
 include ../../Makearch
 
 # tell the compiler where to locate the PVM include
 # files
 #
 
-PVM_IDIR = ../../pvm3
-IDIR = -I$(PVM_IDIR) -I../mpole/ -I$(CHARM)/include
+IDIR = -I../mpole/ -I$(CHARM)/include
 
 #
 # library flags - set the flags to point to the directories
@@ -119,8 +122,7 @@ IDIR = -I$(PVM_IDIR) -I../mpole/ -I$(CHARM)/include
 #   standard place.
 #
 
-PVM_LDIR = ../../pvm3/lib
-LDIR =  -L. -L../mpole -L$(PVM_LDIR)
+LDIR =  -L. -L../mpole -L$(CHARM)/lib
 
 
 ################################################################

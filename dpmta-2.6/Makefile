@@ -11,7 +11,7 @@
 # for other platforms.
 #
 #
-# RCS Info: $Id: Makefile,v 1.5 1999/10/29 22:18:54 jim Exp $
+# RCS Info: $Id: Makefile,v 1.6 2000/03/16 16:57:46 jim Exp $
 #
 ################################################################
 
@@ -21,8 +21,8 @@ include ../Makearch
 # specify PVM envronmental variables.  PVM_HOME is the location
 # where the executables and libraries will be placed.
 
-PVM_ROOT = ../../pvm3
-PVM_HOME = ../../pvm3
+PVM_ROOT = $(CHARM)
+PVM_HOME = $(CHARM)
 
 
 # set the compile time flags for the master and slave
