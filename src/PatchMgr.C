@@ -15,7 +15,10 @@
 #include "PatchMap.h"
 #include "AtomMap.h"
 
+#ifdef USE_COMM_LIB
 #include "ComlibManager.h"
+#endif
+
 #include "main.decl.h"
 #include "main.h"
 
