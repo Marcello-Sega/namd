@@ -7,11 +7,15 @@
 /***************************************************************************/
 
 /***************************************************************************
- * DESCRIPTION:
+ * DESCRIPTION: HomePatch owns the actual atoms of a Patch of space
+ *		Proxy(s) get messages via ProxyMgr from HomePatch(es)
+ *		to update lists of atoms and their coordinates
+ *              HomePatch(es) also have a Sequencer bound to them
  *
+ * superclass: 	Patch		
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1018 1997/02/28 04:47:08 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1019 1997/03/06 22:06:02 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -392,13 +396,17 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1997/02/28 04:47:08 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1019 $	$Date: 1997/03/06 22:06:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1019  1997/03/06 22:06:02  ari
+ * Removed Compute.ci
+ * Comments added - more code cleaning
+ *
  * Revision 1.1018  1997/02/28 04:47:08  jim
  * Full electrostatics now works with fulldirect on one node.
  *

@@ -1,4 +1,6 @@
 extern message GroupInitMsg;
+
+// mostly empty messages with descriptive names
 extern message InitMsg;
 extern message ReadyMsg;
 extern message DoneMsg;
@@ -9,6 +11,11 @@ group Node
 {
   entry Node(GroupInitMsg *);
   entry startup(InitMsg *);
+
+  // used to move from phase to phase
+  entry quiescence(QuiescenceMessage *);
+
+  // multiple phases used to order startup over all nodes
   entry startup1(InitMsg *);
   entry messageStartup2(QuiescenceMessage *);
   entry startup2(InitMsg *);
@@ -17,8 +24,12 @@ group Node
   entry messageStartup4(QuiescenceMessage *);
   entry startup4(InitMsg *);
   entry startupDone(DoneMsg *);
+
+  // after startup barriers - run simulation
   entry run(RunMsg *);
-  entry quiescence(QuiescenceMessage *);
+
+  // homeDone counts down homePatch completions
   entry homeDone(DoneMsg *);
+  // nodeDone counts down node completions
   entry nodeDone(DoneMsg *);
 } ;

@@ -1,17 +1,14 @@
 //-*-c++-*-
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1996 The Board of Trustees of the            */
+/*          (C) Copyright 1996, 1997 The Board of Trustees of the          */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*									   */
 /***************************************************************************/
-
 /***************************************************************************
- * DESCRIPTION:
+ * DESCRIPTION: HomePatch is the key distributed source/sink of Atom data
+ *		including positions, velocities and forces applied
  *
  ***************************************************************************/
-
 #ifndef HOMEPATCH_H
 #define HOMEPATCH_H
 
@@ -37,59 +34,78 @@ class ProxyResultMsg;
 class HomePatch : public Patch {
   friend PatchMgr;
   friend Sequencer;
-private: // for PatchMgr to use only!!
+
+private: 
+  // for PatchMgr to use only
   HomePatch(PatchID, AtomIDList, PositionList, VelocityList);
   Vector min, max, center;
 
 public:
-
   ~HomePatch();
 
+  // Message from ProxyPatch (via ProxyMgr) which registers its existence
   void registerProxy(RegisterProxyMsg *);
+  // opposite of above
   void unregisterProxy(UnregisterProxyMsg *);
+
+  // ProxyPatch sends Forces back to here (via ProxyMgr)
   void receiveResults(ProxyResultMsg *msg);
+
+  // AtomMigration messages passes from neighbor HomePatches to here.
+  void depositMigration(MigrateAtomsMsg *);
+
+  // Bind a Sequencer to this HomePatch
   void useSequencer(Sequencer *sequencerPtr) {sequencer=sequencerPtr;}
-  void runSequencer(int numberOfCycles = 0) { 
-    sequencer->run(numberOfCycles); 
-  }
+  // start simulation over this Patch of atoms
+  void runSequencer(int numberOfCycles = 0) { sequencer->run(numberOfCycles); }
   
+  //--------------------------------------------------------------------
   // methods for Sequencer to use
+  //
+
+  // Signal HomePatch that positions stored are to be now to be used
   void positionsReady(int doMigration=0);
 
-  void depositMigration(MigrateAtomsMsg *);
-  
+  // methods to implement integration
   void addForceToMomentum(const BigReal);
   void addVelocityToPosition(const BigReal);
   
+  // patch-wise calculations
   BigReal calcKineticEnergy();
   Vector calcMomentum();
   Vector calcAngularMomentum();
   
 protected:
   virtual void boxClosed(int);
+
+  // Internal Atom Migration methods and data
   void doAtomMigration();
   int inMigration;
   int numMlBuf;
   MigrateAtomsMsg *msgbuf[PatchMap::MaxOneAway];
   
 private:
-
-  // PositionList  pInit;   
+  // Store of Atom-wise variables
   VelocityList  v; 
-  // ForceList     f_short;
-  // ForceList     f_long;
+  /*
+  PositionList  pInit;   
+  ForceList     f_short;
+  ForceList     f_long;
+  */
   
+  // List of Proxies
   ProxyList     proxy;
   
   Sequencer  *sequencer;
 
+  // Needed for initialization
   int patchMapRead;
   void readPatchMap();
 
+  // Atom Migration internals
   int allMigrationIn;
   int migrationSuspended;
   int patchMigrationCounter;
-
   int numNeighbors;
   MigrationInfo realInfo[PatchMap::MaxOneAway];
   MigrationInfo *mInfo[3][3][3];
@@ -100,13 +116,17 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/02/26 21:39:28 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/03/06 22:06:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.1005  1997/03/06 22:06:02  ari
+ * Removed Compute.ci
+ * Comments added - more code cleaning
+ *
  * Revision 1.1004  1997/02/26 21:39:28  jim
  * Fixed migration with periodic boundary conditions to correctly
  * re-center migrated atoms on their new home patch.
@@ -199,38 +219,4 @@ private:
  *
  * Revision 1.1  1996/08/19 22:07:49  ari
  * Initial revision
- *
- * Revision 1.11  1996/07/15 22:57:05  gursoy
- * *** empty log message ***
- *
- * Revision 1.10  1996/07/15 21:18:01  gursoy
- * *** empty log message ***
- *
- * Revision 1.9  1996/07/10 16:19:52  gursoy
- * *** empty log message ***
- *
- * Revision 1.8  1996/07/08 21:32:38  gursoy
- * ,
- *
- * Revision 1.7  1996/06/12 16:34:46  brunner
- * *** empty log message ***
- *
- * Revision 1.6  1996/06/11 22:36:35  brunner
- * *** empty log message ***
- *
- * Revision 1.5  1996/06/11 20:07:22  gursoy
- * *** empty log message ***
- *
- * Revision 1.4  1996/06/10 22:04:14  brunner
- * *** empty log message ***
- *
- * Revision 1.3  1996/06/10 20:31:57  gursoy
- * *** empty log message ***
- *
- * Revision 1.2  1996/06/10 20:30:00  gursoy
- * *** empty log message ***
- *
- * Revision 1.1  1996/05/30 21:31:36  gursoy
- * Initial revision
- *
  ***************************************************************************/

@@ -11,7 +11,7 @@
 /*								           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1004 1997/02/26 16:53:14 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1005 1997/03/06 22:06:08 ari Exp $";
 
 
 #include "ckdefs.h"
@@ -67,7 +67,7 @@ PatchMgr::~PatchMgr()
     HomePatchListIter hi(homePatches);
     for ( hi = hi.begin(); hi != hi.end(); hi++) {
       HomePatchElem* elem = homePatches.find(HomePatchElem(hi->pid));
-      delete elem->p;
+      delete elem->patch;
     }
 }
 
@@ -202,11 +202,15 @@ void MovePatchesMsg::unpack (void *in)
  *
  *	$RCSfile: PatchMgr.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/02/26 16:53:14 $
+ *	$Revision: 1.1005 $	$Date: 1997/03/06 22:06:08 $
  *
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.C,v $
+ * Revision 1.1005  1997/03/06 22:06:08  ari
+ * Removed Compute.ci
+ * Comments added - more code cleaning
+ *
  * Revision 1.1004  1997/02/26 16:53:14  ari
  * Cleaning and debuging for memory leaks.
  * Adding comments.

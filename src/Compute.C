@@ -5,10 +5,11 @@
 /*                           All Rights Reserved                           */
 /*									   */
 /***************************************************************************/
-
 /***************************************************************************
- * DESCRIPTION:
- *
+ * DESCRIPTION: Top of Compute hierarchy.  
+ *	enqueueWork() - delivers Compute object itself to queue up for
+ *			doWork()
+ *	doWork() - called by work queue
  ***************************************************************************/
 
 #include "main.h"
@@ -16,7 +17,6 @@
 #include "chare.h"
 #include "c++interface.h"
 
-#include "Compute.top.h"
 #include "WorkDistrib.top.h"
 #include "WorkDistrib.h"
 
@@ -32,24 +32,26 @@
 #include "Debug.h"
 
 void Compute::enqueueWork() {
-  WorkDistrib::messageEnqueueWork(this);
+  WorkDistrib::messageEnqueueWork(this);  // should be in ComputeMgr?
 }
 
+//---------------------------------------------------------------------
 // Signal from patch or proxy that data is ready.
 // When all Patches and Proxies needed by this Compute object
 // have checked-in, we are ready to enqueueWork()
+//---------------------------------------------------------------------
 void Compute::patchReady(PatchID patchID, int doneMigration) { 
   if (doneMigration) { // If any patch has done migration - we must remap
     doAtomUpdate = true; 
   }
 
   if (numPatches <= 0) {
-    DebugM(10,"Compute::patchReady("<<patchID<<")-call not valid!\n");
+    iout << iERRORF 
+      << "Compute::patchReady("<<patchID<<")-call not valid!\n"
+      << endi;
   } else {
-    DebugM(2,"patchReadyCounter = " << patchReadyCounter << endl);
     if (! --patchReadyCounter) {
       patchReadyCounter = numPatches;
-      DebugM(3,"Compute::patchReady("<<patchID<<") - enqueue()!\n");
       if (doAtomUpdate) {
 	atomUpdate();
 	doAtomUpdate = false;
@@ -61,23 +63,26 @@ void Compute::patchReady(PatchID patchID, int doneMigration) {
 
 
 void Compute::doWork() {
-  DebugM(5,"Default Compute::doWork() called.\n");
+  iout << iERRORF 
+    << "Default Compute::doWork() called.\n"
+    << endi;
 }
-
-#include "Compute.bot.h"
-
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: Compute.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/13 16:17:11 $
+ *	$Revision: 1.1003 $	$Date: 1997/03/06 22:05:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.C,v $
+ * Revision 1.1003  1997/03/06 22:05:57  ari
+ * Removed Compute.ci
+ * Comments added - more code cleaning
+ *
  * Revision 1.1002  1997/02/13 16:17:11  ari
  * Intermediate debuging commit - working to fix deep bug in migration?
  *

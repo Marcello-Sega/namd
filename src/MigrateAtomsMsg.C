@@ -1,28 +1,22 @@
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1996 The Board of Trustees of the            */
+/*         (C) Copyright 1996,1997 The Board of Trustees of the            */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*                                                                         */
 /***************************************************************************/
+/***************************************************************************
+ * DESCRIPTION: Methods are primarily for pack(ing) and unpack(ing)
+ * 		messages for Charm.
+ *		
+ ***************************************************************************/
 
-/***************************************************************************/
-/* DESCRIPTION:                                                            */
-/*								           */
-/***************************************************************************/
-
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/MigrateAtomsMsg.C,v 1.2 1997/02/26 16:53:11 ari Exp $";
-
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/MigrateAtomsMsg.C,v 1.3 1997/03/06 22:06:04 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
 #include "c++interface.h"
-
 #include "Migration.h"
 #include "MigrateAtomsMsg.h"
-
 #include "NamdTypes.h"
-
 // #define DEBUGM
 #define MIN_DEBUG_LEVEL 3
 #include "Debug.h"
@@ -40,7 +34,6 @@ MigrateAtomsMsg::MigrateAtomsMsg(PatchID src, PatchID dest, MigrationList *m) :
 {
     fromNodeID = CMyPe();
 }
-
 
 void * MigrateAtomsMsg::pack (int *length) {
   *length = sizeof(NodeID) + sizeof(PatchID) + sizeof(PatchID) + sizeof(int) 
@@ -91,7 +84,7 @@ void MigrateAtomsMsg::unpack (void *in) {
   else {
     migrationList = NULL;
   }
-  // DO NOT delete in - this is done by Charm
+  // DO NOT delete void *in - this is done by Charm
 }
 
 /***************************************************************************
@@ -99,11 +92,15 @@ void MigrateAtomsMsg::unpack (void *in) {
  *
  *	$RCSfile: MigrateAtomsMsg.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1997/02/26 16:53:11 $
+ *	$Revision: 1.3 $	$Date: 1997/03/06 22:06:04 $
  *
  * REVISION HISTORY:
  *
  * $Log: MigrateAtomsMsg.C,v $
+ * Revision 1.3  1997/03/06 22:06:04  ari
+ * Removed Compute.ci
+ * Comments added - more code cleaning
+ *
  * Revision 1.2  1997/02/26 16:53:11  ari
  * Cleaning and debuging for memory leaks.
  * Adding comments.

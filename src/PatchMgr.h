@@ -110,7 +110,7 @@ public:
   // void ackMovePatches(AckMovePatchesMsg *msg);
 
   HomePatch *homePatch(PatchID pid) {
-     return homePatches.find(HomePatchElem(pid))->p;
+     return homePatches.find(HomePatchElem(pid))->patch;
   } 
 
   void sendMigrationMsg(PatchID, MigrationInfo);
@@ -143,12 +143,16 @@ private:
  *
  *	$RCSfile: PatchMgr.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/02/26 16:53:15 $
+ *	$Revision: 1.1004 $	$Date: 1997/03/06 22:06:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.h,v $
+ * Revision 1.1004  1997/03/06 22:06:09  ari
+ * Removed Compute.ci
+ * Comments added - more code cleaning
+ *
  * Revision 1.1003  1997/02/26 16:53:15  ari
  * Cleaning and debuging for memory leaks.
  * Adding comments.

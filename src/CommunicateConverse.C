@@ -1,19 +1,9 @@
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
+/*         (C) Copyright 1995,1996,1997 The Board of Trustees of the       */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*                        */
 /***************************************************************************/
-
 /***************************************************************************
- * RCS INFORMATION:
- *
- *  $RCSfile: CommunicateConverse.C,v $
- *  $Author: brunner $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1003 $  $Date: 1997/03/04 23:36:29 $
- *
- ***************************************************************************
  * DESCRIPTION:
  *
  * CommunicateConverse - Converse version of the Communicate object.  Allows
@@ -21,7 +11,7 @@
  * send/receive data.
  * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/CommunicateConverse.C,v 1.1003 1997/03/04 23:36:29 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/CommunicateConverse.C,v 1.1004 1997/03/06 22:05:56 ari Exp $";
 
 #include <iostream.h>
 #include <string.h>
@@ -525,3 +515,21 @@ int *CommunicateConverse::get_tids()
 {
   return ((int *)NULL);
 }
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *  $RCSfile: CommunicateConverse.C,v $
+ *  $Author: ari $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1004 $  $Date: 1997/03/06 22:05:56 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: CommunicateConverse.C,v $
+ * Revision 1.1004  1997/03/06 22:05:56  ari
+ * Removed Compute.ci
+ * Comments added - more code cleaning
+ *
+ *
+ ***************************************************************************/

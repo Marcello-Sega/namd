@@ -42,7 +42,7 @@ void ComputeHomePatches::initialize()
   patchList.resize(0);
 
   for ( ai = ai.begin(); ai != ai.end(); ai++ ) {
-    patchList.add(PatchElem((*ai).p, cid));
+    patchList.add(PatchElem((*ai).patch, cid));
   }
 
   setNumPatches(patchList.size());

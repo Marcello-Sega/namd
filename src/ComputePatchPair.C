@@ -15,11 +15,14 @@
 #include "Node.h"
 #include "ComputePatchPair.h"
 
-#define DEBUGM
+//#define DEBUGM
 #include "Debug.h"
 
-ComputePatchPair::ComputePatchPair(ComputeID c, PatchID p[], int t[]) : Compute(c) {
+ComputePatchPair::ComputePatchPair(ComputeID c, PatchID p[], int t[]) 
+    : Compute(c) {
+
   setNumPatches(2);
+
   for (int i=0; i<2; i++) {
       patchID[i] = p[i];
       trans[i] = t[i];
@@ -87,6 +90,10 @@ void ComputePatchPair::doForce(Position* p[2],
     CPrintf(" %d patch 1 atoms and %d patch 2 atoms\n", numAtoms[0], numAtoms[1] );
 }
 
+//---------------------------------------------------------------------
+// Where the actual computation is invoked.  doForce is 
+// overloaded with specific calculation
+//---------------------------------------------------------------------
 void ComputePatchPair::doWork() {
   Position* p[2];
   Force* f[2];
@@ -117,12 +124,16 @@ void ComputePatchPair::doWork() {
  *
  *	$RCSfile: ComputePatchPair.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/02/13 23:17:17 $
+ *	$Revision: 1.1004 $	$Date: 1997/03/06 22:06:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatchPair.C,v $
+ * Revision 1.1004  1997/03/06 22:06:00  ari
+ * Removed Compute.ci
+ * Comments added - more code cleaning
+ *
  * Revision 1.1003  1997/02/13 23:17:17  ari
  * Fixed a final bug in AtomMigration - numatoms in ComputePatchPair.C not
  * set correctly in atomUpdate()

@@ -13,7 +13,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1008 1997/02/28 16:13:55 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1009 1997/03/06 22:06:10 ari Exp $";
 
 #include <stdio.h>
 
@@ -312,11 +312,8 @@ void WorkDistrib::createComputes(void)
 //----------------------------------------------------------------------
 void WorkDistrib::createPatches(void)
 {
-	StringList *current;		//  Pointer used to retrieve
-					//  configuration items
-
   int i;
-
+  StringList *current;	//  Pointer used to retrieve configuration items
   PatchMap *patchMap = PatchMap::Object();
   Node *node = CLocalBranch(Node,group.node);
   PatchMgr *patchMgr = CLocalBranch(PatchMgr,group.patchMgr);
@@ -558,9 +555,22 @@ void WorkDistrib::mapPatches(void)
 			 ((float)(xi+1)/(float)xdim)*sysDim.x+xmin.x,
 			 ((float)(yi+1)/(float)ydim)*sysDim.y+xmin.y,
 			 ((float)(zi+1)/(float)zdim)*sysDim.z+xmin.z);
-    assignedNode++;
+
+    // Strip allocation
+    /*
+    if (i >= (int)( ((float)assignedNode+1.0)
+	       *((float)patchMap->numPatches() / (float)node->numNodes()) ))
+    {
+	assignedNode++;
+    }
+    // just incase the last one is off
     if (node->numNodes()==assignedNode)
-      assignedNode=0;
+      assignedNode--;
+    */
+
+    // Alternating allocation
+    assignedNode++;
+    assignedNode %= node->numNodes();
   }
 }
 
@@ -723,13 +733,17 @@ void WorkDistrib::enqueueWork(LocalWorkMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/02/28 16:13:55 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1009 $	$Date: 1997/03/06 22:06:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1009  1997/03/06 22:06:10  ari
+ * Removed Compute.ci
+ * Comments added - more code cleaning
+ *
  * Revision 1.1008  1997/02/28 16:13:55  nealk
  * Turned off debugging code.
  *

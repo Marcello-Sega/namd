@@ -1,14 +1,16 @@
 //-*-c++-*-
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1996 The Board of Trustees of the            */
+/*         (C) Copyright 1996,1997 The Board of Trustees of the            */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*									   */
 /***************************************************************************/
-
 /***************************************************************************
- * DESCRIPTION:
+ * DESCRIPTION: Migration messages are sent from HomePatch to HomePatch
+ *              with lists of atoms and atom information (if any) that
+ *              need to be migrated.  A message must be sent from a
+ *              neighbor even if null so that the HomePatch knows
+ *              what atoms it will have before commencing a positionsReady()
+ *              to its Computes.
  *
  ***************************************************************************/
 
@@ -39,6 +41,7 @@ public:
 
   MigrateAtomsMsg(PatchID source, PatchID destination, MigrationList *m);
 
+  // Standard new overload for comm_object new
   void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
   void * operator new(size_t s) { return comm_object::operator new(s); }
   void * operator new(size_t, void *ptr) { return ptr; }

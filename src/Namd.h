@@ -33,14 +33,17 @@ public:
   void startup(char *);   
 
   // last call of system
-  static void finishup(void) { 
+  static void namdDone(void) { 
     CPrintf("==========================================\n");
-    CPrintf("WallClock : %f  CPUTime : %f \n", CmiWallTimer(), CmiCpuTimer());
+    CPrintf("WallClock : %f  CPUTime : %f \n", CmiWallTimer()-cmiWallStart, 
+      CmiCpuTimer()-cmiCpuStart);
     CharmExit(); 
   }
 
   // Emergency bailout 
   static void die() { abort(); CharmExit(); }
+  static void startTimer() { cmiWallStart = CmiWallTimer(); 
+			     cmiCpuStart = CmiCpuTimer(); }
 
 private:
   Node *node;
@@ -49,6 +52,9 @@ private:
   int patchMgrGroup;
 
   NamdState namdState;
+
+  static float cmiWallStart;
+  static float cmiCpuStart;
 };
 
 #endif /* _NAMD_H */
@@ -58,12 +64,16 @@ private:
  *
  *	$RCSfile: Namd.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/04 22:37:11 $
+ *	$Revision: 1.1004 $	$Date: 1997/03/06 22:06:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Namd.h,v $
+ * Revision 1.1004  1997/03/06 22:06:05  ari
+ * Removed Compute.ci
+ * Comments added - more code cleaning
+ *
  * Revision 1.1003  1997/03/04 22:37:11  ari
  * Clean up of code.  Debug statements removal, dead code removal.
  * Minor fixes, output fixes.

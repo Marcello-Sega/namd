@@ -1,14 +1,13 @@
 //-*-c++-*-
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1996 The Board of Trustees of the            */
+/*          (C) Copyright 1996,1997 The Board of Trustees of the           */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*									   */
 /***************************************************************************/
-
 /***************************************************************************
- * DESCRIPTION:
+ * DESCRIPTION: Primary class for pairwise force calculations over
+ *              pairs of patches.  Takes care of boxes, depositing of
+ *              Forces etc.
  *
  ***************************************************************************/
 
@@ -45,9 +44,8 @@ private:
   PatchID patchID[2];
   int trans[2];
   PositionBox<Patch> *positionBox[2];
-  Box<Patch,Force> *forceBox[2];
   Box<Patch,AtomProperties> *atomBox[2];
-
+  Box<Patch,Force> *forceBox[2];
 };
 
 #endif
@@ -55,13 +53,17 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputePatchPair.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/28 04:47:08 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/03/06 22:06:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatchPair.h,v $
+ * Revision 1.1002  1997/03/06 22:06:01  ari
+ * Removed Compute.ci
+ * Comments added - more code cleaning
+ *
  * Revision 1.1001  1997/02/28 04:47:08  jim
  * Full electrostatics now works with fulldirect on one node.
  *
