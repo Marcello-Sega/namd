@@ -2,7 +2,7 @@ NAMD_ARCH = Tru64-Alpha
 CHARMARCH = elan-axp-cxx
 
 CXX = cxx
-CXXOPTS = -fast -O4 -nocleanup -DCMK_OPTIMIZE
+CXXOPTS = -fast -O4 -nocleanup
 CC = cc
 COPTS = -fast -O4
 
