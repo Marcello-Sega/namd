@@ -33,7 +33,11 @@
 
 #define DEBUG_LEVEL 4
 
- 
+#if CONVERSE_VERSION_ELAN
+extern "C" void enableBlockingReceives();
+extern "C" void disableBlockingReceives();
+#endif
+
 void LdbCoordinator::staticMigrateFn(LDObjHandle handle, int dest)
 {
 #if CHARM_VERSION > 050606
@@ -70,6 +74,11 @@ void LdbCoordinator::staticQueryEstLoadFn(LDOMHandle h)
 
 void LdbCoordinator::staticReceiveAtSync(void* data)
 {
+
+#if CONVERSE_VERSION_ELAN
+    //disableBlockingReceives();
+#endif
+
   ((LdbCoordinator*)data)->ReceiveAtSync();
 }
 
@@ -363,7 +372,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
     static int specialTracing = 0;
     if (ldbCycleNum == 1 && traceIsOn() == 0)  specialTracing = 1;
     if (specialTracing) {
-      if (ldbCycleNum == 3) traceBegin();
+      if (ldbCycleNum == 4) traceBegin();
       if (ldbCycleNum == 6) traceEnd();
     }
   }
@@ -562,6 +571,10 @@ void LdbCoordinator::resumeReady(CkQdMsg *msg) {
 void LdbCoordinator::resume2(void)
 {
   DebugM(3,"resume2()\n");
+
+#if CONVERSE_VERSION_ELAN
+  //  enableBlockingReceives();
+#endif
 
   awakenSequencers();
 }
