@@ -2083,13 +2083,16 @@ void Molecule::receive_Molecule(MIStream *msg)
          cluster[i] = i;
        }
        for (i=0; i<numAtoms; i++) {
-         int ci = cluster[i];
+         int ci = i;
+         while ( cluster[ci] != ci ) ci = cluster[ci];
          for ( int32 *b = bondsWithAtom[i]; *b != -1; ++b ) {
            int a = bonds[*b].atom1;
            if ( a == i ) a = bonds[*b].atom2;
            if ( a > i ) {
-             if ( cluster[a] < ci ) ci = cluster[i] = cluster[a];
-             else cluster[a] = ci;
+             int ca = a;
+             while ( cluster[ca] != ca ) ca = cluster[ca];
+             if ( ca > ci ) cluster[ca] = cluster[ci];
+             else cluster[ci] = cluster[ca];
            }
          }
        }
