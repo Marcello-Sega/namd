@@ -574,6 +574,10 @@ int read_dcdstep(int fd, int N, float *X, float *Y, float *Z, int num_fixed,
 	return(0);
 }
 
+#define NFILE_POS 8L
+#define NPRIV_POS 12L
+#define NSAVC_POS 16L
+#define NSTEP_POS 20L
 
 /*********************************************************************/
 /*								     */
@@ -611,7 +615,7 @@ int open_dcd_write(char *dcdname)
 		return(DCD_OPENFAILED);
 	   delete [] newdcdname;
 	} 
-	if ( (dcdfd = open(dcdname, O_WRONLY|O_CREAT|O_EXCL,
+	if ( (dcdfd = open(dcdname, O_RDWR|O_CREAT|O_EXCL,
 				S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0)
 	{
 		return(DCD_OPENFAILED);
@@ -642,6 +646,7 @@ int open_dcd_write(char *dcdname)
 int write_dcdstep(int fd, int N, float *X, float *Y, float *Z)
 
 {
+	int32 NSAVC,NSTEP,NFILE;
 	int32 out_integer;
 
 	out_integer = N*4;
@@ -654,6 +659,21 @@ int write_dcdstep(int fd, int N, float *X, float *Y, float *Z)
 	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
 	NAMD_write(fd, (char *) Z, out_integer);
 	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+
+	/* don't update header until after write succeeds */
+	lseek(fd,NSAVC_POS,SEEK_SET);
+	read(fd,(void*) &NSAVC,sizeof(int32));
+	lseek(fd,NSTEP_POS,SEEK_SET);
+	read(fd,(void*) &NSTEP,sizeof(int32));
+	lseek(fd,NFILE_POS,SEEK_SET);
+	read(fd,(void*) &NFILE,sizeof(int32));
+	NSTEP += NSAVC;
+	NFILE += 1;
+	lseek(fd,NSTEP_POS,SEEK_SET);
+	write(fd,(void*) &NSTEP,sizeof(int32));
+	lseek(fd,NFILE_POS,SEEK_SET);
+	write(fd,(void*) &NFILE,sizeof(int32));
+	lseek(fd,0,SEEK_END);
 
 	return(0);
 }
@@ -697,13 +717,15 @@ int write_dcdheader(int fd, char *filename, int N, int NFILE, int NPRIV,
 	NAMD_write(fd, (char *) & out_integer, sizeof(int32));
 	strcpy(title_string, "CORD");
 	NAMD_write(fd, title_string, 4);
-	out_integer = NFILE;
+	out_integer = NFILE;  /* located at fpos 8 */
+	out_integer = 0;  /* ignore the lies */
 	NAMD_write(fd, (char *) & out_integer, sizeof(int32));
-	out_integer = NPRIV;
+	out_integer = NPRIV;  /* located at fpos 12 */
 	NAMD_write(fd, (char *) & out_integer, sizeof(int32));
-	out_integer = NSAVC;
+	out_integer = NSAVC;  /* located at fpos 16 */
 	NAMD_write(fd, (char *) & out_integer, sizeof(int32));
-	out_integer = NSTEP;
+	out_integer = NSTEP;  /* located at fpos 20 */
+	out_integer = NPRIV - NSAVC;  /* ignore the lies */
 	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
 	out_integer=0;
 	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
