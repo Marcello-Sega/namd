@@ -19,8 +19,8 @@
 
 #ifdef MDCOMM
 #include <rapp_app.h>                           // RAPP application defns
-#include "mdcomm.h"                             // NAMD-specific RAPP function
 #endif
+#include "mdcomm.h"                             // NAMD-specific RAPP function
 
 class Vector;
 
@@ -204,12 +204,15 @@ public :
  *
  *	$RCSfile: Output.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1998/04/14 03:19:23 $
+ *	$Revision: 1.6 $	$Date: 1998/04/15 22:13:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Output.h,v $
+ * Revision 1.6  1998/04/15 22:13:52  jim
+ * Make depends returns same results regardless of DPME, DPMTA, TCL or MDCOMM.
+ *
  * Revision 1.5  1998/04/14 03:19:23  jim
  * Fixed up MDCOMM code.
  *

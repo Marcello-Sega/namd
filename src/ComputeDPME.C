@@ -8,8 +8,6 @@
  *
  ***************************************************************************/
 
-#ifdef DPME
-
 #include "Namd.h"
 #include "Node.h"
 #include "PatchMap.h"
@@ -22,10 +20,12 @@
 #include "ReductionMgr.h"
 #include "ComputeMgr.h"
 #include "ComputeMgr.top.h"
-#include "dpme2.h"
 #define DEBUGM
 #define MIN_DEBUG_LEVEL 3
 #include "Debug.h"
+
+#ifdef DPME
+#include "dpme2.h"
 
 class ComputeDPMEMaster {
 private:
@@ -363,12 +363,15 @@ void ComputeDPME::recvResults(ComputeDPMEResultsMsg *msg)
  *
  *	$RCSfile: ComputeDPME.C,v $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1998/04/10 04:15:57 $
+ *	$Revision: 1.3 $	$Date: 1998/04/15 22:13:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPME.C,v $
+ * Revision 1.3  1998/04/15 22:13:49  jim
+ * Make depends returns same results regardless of DPME, DPMTA, TCL or MDCOMM.
+ *
  * Revision 1.2  1998/04/10 04:15:57  jim
  * Finished incorporating DPME.
  *

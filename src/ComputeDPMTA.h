@@ -11,13 +11,14 @@
 #ifndef COMPUTEDPMTA_H
 #define COMPUTEDPMTA_H
 
+#include "ComputeHomePatches.h"
+
 #ifdef DPMTA
 
 extern "C"
   {
   #include "dpmta.h"
   }
-#include "ComputeHomePatches.h"
 
 class ComputeDPMTA : public ComputeHomePatches {
 private:
@@ -45,13 +46,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeDPMTA.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1017 $	$Date: 1997/03/27 16:04:50 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1018 $	$Date: 1998/04/15 22:13:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.h,v $
+ * Revision 1.1018  1998/04/15 22:13:51  jim
+ * Make depends returns same results regardless of DPME, DPMTA, TCL or MDCOMM.
+ *
  * Revision 1.1017  1997/03/27 16:04:50  nealk
  * Removed init() -- no longer necessary.  Thanks Jim!
  * Turned off debugging.

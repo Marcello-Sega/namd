@@ -8,7 +8,6 @@
  *
  ***************************************************************************/
 
-#ifdef DPMTA
 #include "common.h"
 #include "Namd.h"
 #include "Node.h"
@@ -29,6 +28,8 @@
 #define MIN_DEBUG_LEVEL 2
 // #define DEBUGM
 #include "Debug.h"
+
+#ifdef DPMTA
 
 // #define DUMP_DPMTA
 
@@ -491,12 +492,15 @@ void ComputeDPMTA::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1048 $	$Date: 1997/11/10 16:45:54 $
+ *	$Revision: 1.1049 $	$Date: 1998/04/15 22:13:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.C,v $
+ * Revision 1.1049  1998/04/15 22:13:50  jim
+ * Make depends returns same results regardless of DPME, DPMTA, TCL or MDCOMM.
+ *
  * Revision 1.1048  1997/11/10 16:45:54  milind
  * Made comm a Cpv Variable.
  *

@@ -11,7 +11,7 @@
  *
  *	$RCSfile: TclCommands.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1997/12/19 23:48:53 $
+ *	$Revision: 1.2 $	$Date: 1998/04/15 22:13:53 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -20,6 +20,12 @@
  ***************************************************************************/
 #ifndef TCLCOMMANDS_H
 #define TCLCOMMANDS_H
+
+#ifdef NAMD_TCL
+
+#include <tcl.h>
+#include <tclExtend.h>
+
 //forward definition
 class Matrix4;
 class AtomSel;
@@ -56,4 +62,5 @@ int tcl_get_vector(char *fctn, Tcl_Interp *interp,
 // optionally add a space at the beginning
 char *tcl_append_double(char *s, double f, int add_space = 0);
 
+#endif
 #endif

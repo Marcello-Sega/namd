@@ -11,10 +11,10 @@
 #ifndef COMPUTEDPME_H
 #define COMPUTEDPME_H
 
-#ifdef DPME
-
 #include "ComputeHomePatches.h"
 #include "NamdTypes.h"
+
+#ifdef DPME
 
 class ComputeDPMEDataMsg;
 class ComputeDPMEResultsMsg;
@@ -46,12 +46,15 @@ public:
  *
  *	$RCSfile: ComputeDPME.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1998/04/10 04:15:57 $
+ *	$Revision: 1.3 $	$Date: 1998/04/15 22:13:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPME.h,v $
+ * Revision 1.3  1998/04/15 22:13:50  jim
+ * Make depends returns same results regardless of DPME, DPMTA, TCL or MDCOMM.
+ *
  * Revision 1.2  1998/04/10 04:15:57  jim
  * Finished incorporating DPME.
  *

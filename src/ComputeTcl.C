@@ -22,8 +22,8 @@
 #ifdef NAMD_TCL
 #include <tcl.h>
 #include <tclExtend.h>
-#include "TclCommands.h"
 #endif
+#include "TclCommands.h"
 
 // #define DEBUGM
 #define MIN_DEBUG_LEVEL 4
@@ -377,12 +377,15 @@ void ComputeTcl::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1998/02/16 00:23:20 $
+ *	$Revision: 1.7 $	$Date: 1998/04/15 22:13:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeTcl.C,v $
+ * Revision 1.7  1998/04/15 22:13:52  jim
+ * Make depends returns same results regardless of DPME, DPMTA, TCL or MDCOMM.
+ *
  * Revision 1.6  1998/02/16 00:23:20  jim
  * Added atom group centers of mass to Tcl interface.
  *

@@ -11,7 +11,7 @@
  *
  *	$RCSfile: TclCommands.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1998/01/06 05:42:13 $
+ *	$Revision: 1.3 $	$Date: 1998/04/15 22:13:53 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -20,14 +20,15 @@
  *
  ***************************************************************************/
 
-#ifdef NAMD_TCL
-
 #include <stdlib.h> 
 #include <malloc.h>
 #include <errno.h>
+#include "TclCommands.h"
+
+#ifdef NAMD_TCL
+
 #include <tcl.h>
 #include <tclExtend.h>
-#include "TclCommands.h"
 
 #define SIMPLE_TCL_OPT(string,result)       \
 if (!strcmp(argv[1], string)) {             \
