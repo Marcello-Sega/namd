@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1039 1997/12/19 23:48:53 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1040 1998/01/05 20:29:02 sergei Exp $";
 
 #include <stdio.h>
 
@@ -568,6 +568,8 @@ void WorkDistrib::mapComputes(void)
     mapComputePatch(computeCylindricalBCType);
   if ( node->simParameters->constraintsOn )
     mapComputePatch(computeRestraintsType);
+  if ( node->simParameters->SMDOn )
+    mapComputePatch(computeSMDType);
 }
 
 //----------------------------------------------------------------------
@@ -997,13 +999,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1039 $	$Date: 1997/12/19 23:48:53 $
+ *	$Author: sergei $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1040 $	$Date: 1998/01/05 20:29:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1040  1998/01/05 20:29:02  sergei
+ * added mapComputePatch(computeSMDType) to WorkDistrib::mapComputes
+ *
  * Revision 1.1039  1997/12/19 23:48:53  jim
  * Added Tcl interface for calculating forces.
  *
