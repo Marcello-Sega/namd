@@ -135,22 +135,14 @@ struct vdw_pair_params
 };
 
 
-/************************************************************************/
-/*                  */
-/*      FUNCTION Parameters        */
-/*                  */
-/*  This is the constructor for the class.  It simlpy sets the      */
-/*  pointers to the list and trees to NULL and the count of all the     */
-/*  parameters to 0.              */
-/*  The type (format) of the input parameters (Xplor,Charmm) is set here. */
-/*                  */
-/************************************************************************/
+Parameters::Parameters() {
+  initialize();
+}
 
-//****** BEGIN CHARMM/XPLOR type changes
-//// added SimParameters to argument list
-Parameters::Parameters(SimParameters *simParams, StringList *f)
-{
-//****** END CHARMM/XPLOR type changes
+void Parameters::initialize() {
+
+  paramType = -1;
+
   /*  Set all the pointers to NULL        */
   atomTypeNames=NULL;
   bondp=NULL;
@@ -175,6 +167,22 @@ Parameters::Parameters(SimParameters *simParams, StringList *f)
   NumImproperParams=0;
   NumVdwParams=0;
   NumVdwPairParams=0;
+}
+
+/************************************************************************/
+/*                  */
+/*      FUNCTION Parameters        */
+/*                  */
+/*  This is the constructor for the class.  It simlpy sets the      */
+/*  pointers to the list and trees to NULL and the count of all the     */
+/*  parameters to 0.              */
+/*  The type (format) of the input parameters (Xplor,Charmm) is set here. */
+/*                  */
+/************************************************************************/
+
+Parameters::Parameters(SimParameters *simParams, StringList *f)
+{
+  initialize();
 
   //****** BEGIN CHARMM/XPLOR type changes
   //// get current parameter format
@@ -4577,30 +4585,7 @@ int Parameters::vdw_pair_to_arrays(int *ind1_array, int *ind2_array,
 
 Parameters::Parameters(Ambertoppar *amber_data, BigReal vdw14)
 {
-  /*  Set all the pointers to NULL        */
-  atomTypeNames=NULL;
-  bondp=NULL;
-  anglep=NULL;
-  improperp=NULL;
-  dihedralp=NULL;
-  vdwp=NULL;
-  vdw_pairp=NULL;
-  bond_array=NULL;
-  angle_array=NULL;
-  dihedral_array=NULL;
-  improper_array=NULL;
-  vdw_array=NULL;
-  vdw_pair_tree=NULL;
-  maxDihedralMults=NULL;
-  maxImproperMults=NULL;
-
-  /*  Set all the counts to 0          */
-  NumBondParams=0;
-  NumAngleParams=0;
-  NumDihedralParams=0;
-  NumImproperParams=0;
-  NumVdwParams=0;
-  NumVdwPairParams=0;
+  initialize();
 
   // Read in parm parameters
   read_parm(amber_data,vdw14);
@@ -4740,30 +4725,7 @@ void Parameters::read_parm(Ambertoppar *amber_data, BigReal vdw14)
 
 Parameters::Parameters(const GromacsTopFile *gf, Bool min)
 {
-  /*  Set all the pointers to NULL        */
-  atomTypeNames=NULL;
-  bondp=NULL;
-  anglep=NULL;
-  improperp=NULL;
-  dihedralp=NULL;
-  vdwp=NULL;
-  vdw_pairp=NULL;
-  bond_array=NULL;
-  angle_array=NULL;
-  dihedral_array=NULL;
-  improper_array=NULL;
-  vdw_array=NULL;
-  vdw_pair_tree=NULL;
-  maxDihedralMults=NULL;
-  maxImproperMults=NULL;
-
-  /*  Set all the counts to 0          */
-  NumBondParams=0;
-  NumAngleParams=0;
-  NumDihedralParams=0;
-  NumImproperParams=0;
-  NumVdwParams=0;
-  NumVdwPairParams=0;
+  initialize();
 
   // Read in parm parameters
   read_parm(gf,min);

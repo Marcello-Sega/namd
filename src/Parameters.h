@@ -149,6 +149,8 @@ struct vdw_pair_params;
 class Parameters
 {
 private:
+	void initialize();			//  zeros out pointers
+
         char *atomTypeNames;                    //  Names of atom types
 	Bool AllFilesRead;			//  Flag TRUE imples that all
 						//  of the parameter files
@@ -250,7 +252,8 @@ private:
 public:
         //****** BEGIN CHARMM/XPLOR type changes
         //// added SimParameters to argument list
-	Parameters(SimParameters *, StringList *f=NULL);
+	Parameters();
+	Parameters(SimParameters *, StringList *f);
         //****** END CHARMM/XPLOR type changes
         
         Parameters(Ambertoppar *, BigReal);

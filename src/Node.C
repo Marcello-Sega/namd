@@ -274,7 +274,7 @@ void Node::namdOneRecv() {
   // Receive molecule and simulation parameter information
   simParameters = new SimParameters;
   //****** BEGIN CHARMM/XPLOR type changes
-  parameters = new Parameters(simParameters);
+  parameters = new Parameters();
   //****** END CHARMM/XPLOR type changes
   molecule = new Molecule(simParameters,parameters);
 

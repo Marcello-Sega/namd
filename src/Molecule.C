@@ -142,16 +142,16 @@ int Molecule::get_atom_from_index_in_residue(
 
 /************************************************************************/
 /*                  */
-/*      FUNCTION Molecule        */
+/*      FUNCTION initialize  */
 /*                  */
-/*  This is the constructor for the Molecule class.  It simply sets */
+/*  This is the initializer for the Molecule class.  It simply sets */
 /*  the counts for all the various parameters to 0 and sets the pointers*/
 /*  to the arrays that will store these parameters to NULL, since they  */
 /*  have not been allocated yet.          */
 /*                  */
 /************************************************************************/
 
-Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
+void Molecule::initialize(SimParameters *simParams, Parameters *param)
 {
   if ( sizeof(int32) != 4 ) { NAMD_bug("sizeof(int32) != 4"); }
   this->simParams = simParams;
@@ -228,11 +228,38 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
   numFepFinal = 0;
 //fepe
 
-  if (param != NULL && filename != NULL) {
-      read_psf_file(filename, param);
-  }
-  
 }
+
+/*      END OF FUNCTION initialize */
+
+/************************************************************************/
+/*                  */
+/*      FUNCTION Molecule        */
+/*                  */
+/*  This is the constructor for the Molecule class. */
+/*                  */
+/************************************************************************/
+
+Molecule::Molecule(SimParameters *simParams, Parameters *param)
+{
+  initialize(simParams,param);
+}
+
+/************************************************************************/
+/*                  */
+/*      FUNCTION Molecule        */
+/*                  */
+/*  This is the constructor for the Molecule class from CHARMM/XPLOR files. */
+/*                  */
+/************************************************************************/
+
+Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
+{
+  initialize(simParams,param);
+
+  read_psf_file(filename, param);
+}
+
 /*      END OF FUNCTION Molecule      */
 
 /************************************************************************/
@@ -4005,79 +4032,8 @@ int Molecule::checkexcl(int atom1, int atom2) const {
 
 Molecule::Molecule(SimParameters *simParams, Parameters *param, Ambertoppar *amber_data)
 {
-  if ( sizeof(int32) != 4 ) { NAMD_bug("sizeof(int32) != 4"); }
-  this->simParams = simParams;
-  this->params = param;
-  /*  Initialize array pointers to NULL  */
-  atoms=NULL;
-  atomNames=NULL;
-  resLookup=NULL;
-  bonds=NULL;
-  angles=NULL;
-  dihedrals=NULL;
-  impropers=NULL;
-  donors=NULL;
-  acceptors=NULL;
-  exclusions=NULL;
-  tmpArena=NULL;
-  bondsWithAtom=NULL;
-  bondsByAtom=NULL;
-  anglesByAtom=NULL;
-  dihedralsByAtom=NULL;
-  impropersByAtom=NULL;
-  exclusionsByAtom=NULL;
-  all_exclusions=NULL;
-  langevinParams=NULL;
-  langForceVals=NULL;
-  fixedAtomFlags=NULL;
-  clusters=NULL;
-  rigidBondLengths=NULL;
-  consIndexes=NULL;
-  consParams=NULL;
-  dragIndexes=NULL;
-  dragParams=NULL;
-  consForceIndexes=NULL;
-  consForce=NULL;
- //fepb
-  fepAtomFlags=NULL;
- //
-   
-  nameArena = new ObjectArena<char>;
-  // nameArena->setAlignment(8);
-  arena = new ObjectArena<int32>;
-  // arena->setAlignment(32);
-  exclArena = new ObjectArena<char>;
-  // exclArena->setAlignment(32);
+  initialize(simParams,param);
 
-  /*  Initialize counts to 0 */
-  numAtoms=0;
-  numBonds=0;
-  numAngles=0;
-  numDihedrals=0;
-  numImpropers=0;
-  numDonors=0;
-  numAcceptors=0;
-  numExclusions=0;
-  numConstraints=0;
-  numDrag=0;
-  numConsForce=0;
-  numFixedAtoms=0;
-  numRigidBonds=0;
-  numFixedRigidBonds=0;
-  numMultipleDihedrals=0;
-  numMultipleImpropers=0;
-  numCalcBonds=0;
-  numCalcAngles=0;
-  numCalcDihedrals=0;
-  numCalcImpropers=0;
-  numCalcExclusions=0;
-
-//fepb
-  numFepInitial = 0;
-  numFepFinal = 0;
-//fepb
-  
-  // Read in parm structure
   read_parm(amber_data);
 }
 /*      END OF FUNCTION Molecule      */
@@ -4377,75 +4333,8 @@ void Molecule::read_parm(Ambertoppar *amber_data)
 Molecule::Molecule(SimParameters *simParams, Parameters *param,
 		   const GromacsTopFile *gromacsTopFile)
 {
-  /* why is this check here of all places? */
-  if ( sizeof(int32) != 4 ) { NAMD_bug("sizeof(int32) != 4"); }
-  this->simParams = simParams;
-  this->params = param;
+  initialize(simParams,param);
 
-  /* XXX all of the following initializers should be in one member
-     function, so that they aren't copied three times - assuming that
-     they are in fact exactly the same */
-
-  /*  Initialize array pointers to NULL  */
-  atoms=NULL;
-  atomNames=NULL;
-  resLookup=NULL;
-  bonds=NULL;
-  angles=NULL;
-  dihedrals=NULL;
-  impropers=NULL;
-  donors=NULL;
-  acceptors=NULL;
-  exclusions=NULL;
-  tmpArena=NULL;
-  bondsWithAtom=NULL;
-  bondsByAtom=NULL;
-  anglesByAtom=NULL;
-  dihedralsByAtom=NULL;
-  impropersByAtom=NULL;
-  exclusionsByAtom=NULL;
-  all_exclusions=NULL;
-  langevinParams=NULL;
-  langForceVals=NULL;
-  fixedAtomFlags=NULL;
-  clusters=NULL;
-  rigidBondLengths=NULL;
-  consIndexes=NULL;
-  consParams=NULL;
-  dragIndexes=NULL;
-  dragParams=NULL;
-  consForceIndexes=NULL;
-  consForce=NULL;
-  nameArena = new ObjectArena<char>;
-  // nameArena->setAlignment(8);
-  arena = new ObjectArena<int32>;
-  // arena->setAlignment(32);
-  exclArena = new ObjectArena<char>;
-  // exclArena->setAlignment(32);
-
-  /*  Initialize counts to 0 */
-  numAtoms=0;
-  numBonds=0;
-  numAngles=0;
-  numDihedrals=0;
-  numImpropers=0;
-  numDonors=0;
-  numAcceptors=0;
-  numExclusions=0;
-  numConstraints=0;
-  numDrag=0;
-  numConsForce=0;
-  numFixedAtoms=0;
-  numRigidBonds=0;
-  numFixedRigidBonds=0;
-  numMultipleDihedrals=0;
-  numMultipleImpropers=0;
-  numCalcBonds=0;
-  numCalcAngles=0;
-  numCalcDihedrals=0;
-  numCalcImpropers=0;
-  numCalcExclusions=0;
-  // Read in parm structure
   read_parm(gromacsTopFile);
 }
 /*      END OF FUNCTION Molecule      */

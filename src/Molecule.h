@@ -69,6 +69,9 @@ friend class DihedralElem;
 friend class ImproperElem;
 
 private:
+	void initialize(SimParameters *, Parameters *param);
+						// Sets most data to zero
+
 	Atom *atoms;		//  Array of atom structures
 	ObjectArena<char> *nameArena;
 	AtomNameInfo *atomNames;//  Array of atom name info.  Only maintained
@@ -196,7 +199,8 @@ public:
 	HydrogenGroup hydrogenGroup;
 	int waterIndex;
 
-	Molecule(SimParameters *, Parameters *param, char *filename=NULL);
+	Molecule(SimParameters *, Parameters *param);
+	Molecule(SimParameters *, Parameters *param, char *filename);
 	
 	Molecule(SimParameters *, Parameters *, Ambertoppar *);
 	void read_parm(Ambertoppar *);
