@@ -72,18 +72,6 @@ WorkDistrib::~WorkDistrib(void)
 
 
 //----------------------------------------------------------------------
-void WorkDistrib::sendMaps(void)
-{
-  MapDistribMsg *mapMsg = new MapDistribMsg ;
-
-  mapMsg->patchMap = PatchMap::Object();
-  mapMsg->computeMap = ComputeMap::Object();
-
-  CProxy_WorkDistrib(thisgroup).saveMaps(mapMsg);
-  mapsArrived = true;
-}
-
-//----------------------------------------------------------------------
 void WorkDistrib::saveComputeMapChanges(int ep, int chareID)
 {
   saveComputeMapReturnEP = ep;
@@ -316,24 +304,49 @@ void WorkDistrib::distributeHomePatches() {
 
 
 //----------------------------------------------------------------------
+
+class MapDistribMsg: public CMessage_MapDistribMsg {
+  public:
+    char *patchMapData;
+    char *computeMapData;
+
+  VARSIZE_DECL(MapDistribMsg);
+};
+
+VARSIZE_MSG(MapDistribMsg,
+  VARSIZE_ARRAY(patchMapData);
+  VARSIZE_ARRAY(computeMapData);
+)
+
+void WorkDistrib::sendMaps(void)
+{
+  mapsArrived = true;
+
+  if ( CkNumPes() == 1 ) return;
+
+  int sizes[2];
+  sizes[0] = PatchMap::Object()->packSize();
+  sizes[1] = ComputeMap::Object()->packSize();
+
+  MapDistribMsg *mapMsg = new (sizes,0) MapDistribMsg;
+
+  PatchMap::Object()->pack(mapMsg->patchMapData);
+  ComputeMap::Object()->pack(mapMsg->computeMapData);
+
+  CProxy_WorkDistrib(thisgroup).saveMaps(mapMsg,1);
+}
+
 // saveMaps() is called when the map message is received
 void WorkDistrib::saveMaps(MapDistribMsg *msg)
 {
-  delete msg;
-
-  CProxy_Node nd(CpvAccess(BOCclass_group).node);
-  Node *node = nd.ckLocalBranch();
-
-  if (node->myid() != 0)
-  {
-    DebugM(3,"Saving patch map, compute map\n");
-  }
-  else
-  {
-    DebugM(3,"Node 0 patch map built\n");
-  }
+  PatchMap::Object()->unpack(msg->patchMapData);
+  ComputeMap::Object()->unpack(msg->computeMapData);
 
   mapsArrived = true;
+
+  int nextPe = CkMyPe() + 1;
+  if ( CkNumPes() == nextPe ) delete msg;
+  else CProxy_WorkDistrib(thisgroup).saveMaps(msg,nextPe);
 }
 
 

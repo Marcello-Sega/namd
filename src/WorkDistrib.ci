@@ -9,8 +9,7 @@ module WorkDistrib {
 
   message LocalWorkMsg;
   message [varsize] ComputeMapChangeMsg;
-  message [packed] MapDistribMsg;
-  message [packed] ComputeMapDistribMsg;
+  message [varsize] MapDistribMsg;
 
   group WorkDistrib
   {

@@ -131,7 +131,7 @@ public:
 
 
 protected:
-  friend class MapDistribMsg;
+  friend class WorkDistrib;
   int packSize(void);
   void pack(char *buf);
   void unpack(char *buf);

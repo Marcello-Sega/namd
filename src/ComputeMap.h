@@ -147,8 +147,7 @@ public:
     PatchRec *pids;
   };
 protected:
-  friend class MapDistribMsg;
-  friend class ComputeMapDistribMsg;
+  friend class WorkDistrib;
   int packSize(void);
   void pack(char* buf);
   void unpack(char *buf);
