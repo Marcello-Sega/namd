@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1027 1997/04/10 14:44:52 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1028 1997/04/10 15:49:44 brunner Exp $";
 
 #include <stdio.h>
 
@@ -318,7 +318,8 @@ void WorkDistrib::patchMapInit(void)
     sysDim.x = params->cellBasisVector1.x;
     xdim = (int)(sysDim.x / patchSize);
     if ( xdim < 2 ) xdim = 2;
-    DebugM(3,"Periodic in x dimension with " << xdim << " patches.\n");
+    iout << iINFO 
+	 << "Periodic in x dimension with " << xdim << " patches.\n";
     center.x = params->lattice.origin().x;
   }
   else
@@ -329,7 +330,8 @@ void WorkDistrib::patchMapInit(void)
     if ((xdim * patchSize) < sysDim.x)
       xdim++;
     sysDim.x = xdim * patchSize;
-    DebugM(3,"Non-periodic in x dimension with " << xdim << " patches.\n");
+    iout << iINFO
+	 << "Non-periodic in x dimension with " << xdim << " patches.\n";
   }
 
   if ( params->cellBasisVector2.y )
@@ -338,7 +340,8 @@ void WorkDistrib::patchMapInit(void)
     sysDim.y = params->cellBasisVector2.y;
     ydim = (int)((float)sysDim.y / patchSize);
     if ( ydim < 2 ) ydim = 2;
-    DebugM(3,"Periodic in y dimension with " << ydim << " patches.\n");
+    iout << iINFO
+	 << "Periodic in y dimension with " << ydim << " patches.\n";
     center.y = params->lattice.origin().y;
   }
   else
@@ -349,7 +352,8 @@ void WorkDistrib::patchMapInit(void)
     if ((ydim * patchSize) < sysDim.y)
       ydim++;
     sysDim.y = ydim * patchSize;
-    DebugM(3,"Non-periodic in y dimension with " << ydim << " patches.\n");
+    iout << iINFO 
+	 << "Non-periodic in y dimension with " << ydim << " patches.\n";
   }
 
   if ( params->cellBasisVector3.z )
@@ -358,7 +362,8 @@ void WorkDistrib::patchMapInit(void)
     sysDim.z = params->cellBasisVector3.z;
     zdim = (int)((float)sysDim.z / patchSize);
     if ( zdim < 2 ) zdim = 2;
-    DebugM(3,"Periodic in z dimension with " << zdim << " patches.\n");
+    iout << iINFO
+	 << "Periodic in z dimension with " << zdim << " patches.\n";
     center.z = params->lattice.origin().z;
   }
   else
@@ -369,7 +374,8 @@ void WorkDistrib::patchMapInit(void)
     if ((zdim * patchSize) < sysDim.z)
       zdim++;
     sysDim.z = zdim * patchSize;
-    DebugM(3,"Non-periodic in z dimension with " << zdim << " patches.\n");
+    iout << iINFO
+	 << "Non-periodic in z dimension with " << zdim << " patches.\n";
   }
 
   sysMin = center - 0.5 * sysDim;
@@ -925,13 +931,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1027 $	$Date: 1997/04/10 14:44:52 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1028 $	$Date: 1997/04/10 15:49:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1028  1997/04/10 15:49:44  brunner
+ * Added patch array dimension output and RefineOnly load balancer
+ *
  * Revision 1.1027  1997/04/10 14:44:52  milind
  * Changed weights.
  *

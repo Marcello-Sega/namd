@@ -345,7 +345,7 @@ void LdbCoordinator::processStatistics(void)
 
   const int nMoveableComputes = buildData();
   
-  char *algChoice = "Alg7"; 
+  char *algChoice = "RefineOnly"; 
 
   if (strcmp(algChoice,"RefineOnly") == 0)
   {
