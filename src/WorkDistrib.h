@@ -26,6 +26,7 @@
 class Node;
 class DoneMsg;
 class LocalWorkMsg;
+class Molecule;
 
 enum { maxPatchDepends = 126 };
 
@@ -56,6 +57,12 @@ private:
   void mapComputes(void);
   void mapComputeNonbonded(void);
   void mapComputeHomePatches(ComputeType);
+  void velocities_from_PDB(char *filename, 
+			   Vector *v, int totalAtoms);
+  void velocities_from_binfile(char *fname, Vector *vels, int n);
+  void random_velocities(BigReal Temp, Molecule *structure,
+			 Vector *v, int totalAtoms);
+  void remove_com_motion(Vector *vel, Molecule *structure, int n);
 
   Boolean mapsArrived;
   Boolean awaitingMaps;
@@ -121,13 +128,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/02/26 16:53:20 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/03/06 22:18:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.1004  1997/03/06 22:18:17  brunner
+ * Made utility functions private functions of WorkDistrib.
+ *
  * Revision 1.1003  1997/02/26 16:53:20  ari
  * Cleaning and debuging for memory leaks.
  * Adding comments.
