@@ -53,6 +53,7 @@
 #include "LdbCoordinator.h"
 #include "ScriptTcl.h"
 #include "ComputeMgr.decl.h"
+#include "Sync.h"
 
 #if(CMK_CCS_AVAILABLE)
 extern "C" void CApplicationInit();
@@ -213,6 +214,7 @@ void Node::startup() {
   break;
 
   case 5: 
+    Sync::Object()->openSync();  // decide if to open local Sync 
     proxyMgr->createProxies();  // need Home patches before this
   break;
 

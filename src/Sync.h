@@ -28,6 +28,7 @@ private:
 public:
     Sync(void);
     inline static Sync *Object() { return CpvAccess(Sync_instance); }
+    void openSync();
     void PatchReady(void);
 };
 

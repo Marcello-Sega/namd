@@ -42,8 +42,14 @@ Sync::Sync()
 	CkExit();
     }
     counter = 0;
-    // disable Sync if no homepatch at all
-    if (PatchMap::Object()->numHomePatches() == 0) useSync = 0;
+}
+
+void Sync::openSync(void)
+{
+   if (useSync && PatchMap::Object()->numHomePatches() == 0) {
+       CkPrintf("********* Local Sync is removed on node %d ******** \n", CkMyPe());
+       useSync = 0;
+   }
 }
 
 void Sync::PatchReady(void)
