@@ -1,0 +1,6 @@
+extern message InitMsg;
+
+group ComputeMgr
+{
+  entry ComputeMgr(InitMsg *);
+} ;
