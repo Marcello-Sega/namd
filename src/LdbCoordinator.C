@@ -341,19 +341,17 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
   // in the case when trace is off at the beginning,
   // only turn trace of from after the first LB to the firstLdbStep after 
   // the second LB.
-  // 1    2   3     4     5     6 7
-  // off on Alg7 refine refine ...
-#ifndef CMK_OPTIMIZE
-#if CHARM_VERSION >= 050602
-  {
-  static int specialTracing = 0;
-  if (ldbCycleNum == 1 && traceIsOn() == 0)  specialTracing = 1;
-  if (specialTracing) {
-    if (ldbCycleNum == 3) traceBegin();
-    if (ldbCycleNum == 6) traceEnd();
+  // 1    2   3     4     5          6   7
+  // off on Alg7 refine refine ...  on
+#if CHARM_VERSION >= 050606
+  if (traceAvailable()) {
+    static int specialTracing = 0;
+    if (ldbCycleNum == 1 && traceIsOn() == 0)  specialTracing = 1;
+    if (specialTracing) {
+      if (ldbCycleNum == 3) traceBegin();
+      if (ldbCycleNum == 6) traceEnd();
+    }
   }
-  }
-#endif
 #endif
 
   nPatchesReported = 0;
