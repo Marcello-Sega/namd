@@ -39,6 +39,10 @@
 #endif
 #include <fstream.h>
 
+#ifdef WIN32
+double erfc(double);
+#endif
+
 #ifdef _AIX
 #include "strlib.h"    //  For strcasecmp and strncasecmp
 #endif

@@ -12,6 +12,10 @@
 #define restrict
 #endif
 
+#ifdef WIN32
+double erfc(double);
+#endif
+
 #include "ComputeNonbondedUtil.h"
 #include "SimParameters.h"
 #include "Node.h"
