@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *  $RCSfile: Molecule.C,v $
- *  $Author: sergei $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1019 $  $Date: 1998/01/05 20:22:55 $
+ *  $Author: brunner $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1020 $  $Date: 1998/01/23 19:50:29 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,11 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1020  1998/01/23 19:50:29  brunner
+ * More efficient memory allocation by combining allocations for 3 small
+ * blocks.  Further improvement by using a pool allocation is still
+ * desirable.
+ *
  * Revision 1.1019  1998/01/05 20:22:55  sergei
  * for constraints added a NAMD_die for the case when the
  * movingConstraints are ON and the chosen atom is not constrained.
@@ -237,7 +242,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1019 1998/01/05 20:22:55 sergei Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1020 1998/01/23 19:50:29 brunner Exp $";
 
 #include "UniqueSortedArray.h"
 #include "Molecule.h"
@@ -340,9 +345,11 @@ Molecule::~Molecule()
   {
     for( int i=0; i<numAtoms; i++ )
     {
+      // One block is created, so only the start of the block,
+      // resname, needs to be deleted now.
       delete [] atomNames[i].resname;
-      delete [] atomNames[i].atomname;
-      delete [] atomNames[i].atomtype;
+      //      delete [] atomNames[i].atomname;
+      //      delete [] atomNames[i].atomtype;
     }
     delete [] atomNames;
   }
@@ -786,13 +793,16 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
     /*  Dynamically allocate strings for atom name, atom    */
     /*  type, etc so that we only allocate as much space    */
     /*  for these strings as we really need      */
-    atomNames[atom_number-1].resname = new char[strlen(residue_name)+1];
-    atomNames[atom_number-1].atomname = new char[strlen(atom_name)+1];
-    atomNames[atom_number-1].atomtype = new char[strlen(atom_type)+1];
+    int reslength = strlen(residue_name)+1;
+    int namelength = strlen(atom_name)+1;
+    int typelength = strlen(atom_type)+1;
+    char *nameMemBlock =  new char[reslength + namelength + typelength];
+
+    atomNames[atom_number-1].resname = nameMemBlock;
+    atomNames[atom_number-1].atomname = nameMemBlock+reslength;
+    atomNames[atom_number-1].atomtype = nameMemBlock+reslength+namelength;
   
-    if (atomNames[atom_number-1].resname == NULL ||
-        atomNames[atom_number-1].atomname == NULL ||
-        atomNames[atom_number-1].atomtype == NULL )
+    if (atomNames[atom_number-1].resname == NULL)
     {
       NAMD_die("memory allocation failed in Molecule::read_atoms");
     }
@@ -3655,12 +3665,17 @@ void Molecule::receive_Molecule(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1019 $  $Date: 1998/01/05 20:22:55 $
+ *  $Revision: 1.1020 $  $Date: 1998/01/23 19:50:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1020  1998/01/23 19:50:29  brunner
+ * More efficient memory allocation by combining allocations for 3 small
+ * blocks.  Further improvement by using a pool allocation is still
+ * desirable.
+ *
  * Revision 1.1019  1998/01/05 20:22:55  sergei
  * for constraints added a NAMD_die for the case when the
  * movingConstraints are ON and the chosen atom is not constrained.
