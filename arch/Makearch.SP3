@@ -13,11 +13,11 @@ CHARMARCH = sp3
 CHARM = $(CHARMBASE)/$(CHARMARCH)
 
 # definitions for TCL interface
-TCLDIR=/usr/local
-TCLINCL=-I$(TCLDIR)/include
-TCLLIB=-L$(TCLDIR)/lib -ltcl
-TCLFLAGS=-DNAMD_TCL
-TCL=$(TCLINCL) $(TCLFLAGS)
+#TCLDIR=/usr/local
+#TCLINCL=-I$(TCLDIR)/include
+#TCLLIB=-L$(TCLDIR)/lib -ltcl
+#TCLFLAGS=-DNAMD_TCL
+#TCL=$(TCLINCL) $(TCLFLAGS)
 
 # definitions for FFT (used by PME)
 #FFTDIR=/usr/local

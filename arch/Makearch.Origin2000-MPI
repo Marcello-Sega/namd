@@ -1,7 +1,7 @@
 # config for Origin 2000 using MPI
 
 # compiler options
-CXX = CC -64 -D_SGI_MP_SOURCE
+CXX = CC -64 -D_SGI_MP_SOURCE -DEBUG:woff=3333
 CXXOPTS = -O3 -mips4 -r10000 -INLINE:all -OPT:IEEE_arithmetic=3:roundoff=3 -lfastm -lm
 CXXTHREADOPTS = -r10000 -INLINE:all
 CXXSIMPARAMOPTS = $(CXXOPTS)
@@ -13,13 +13,19 @@ CHARMARCH = mpi-origin
 CHARM = $(CHARMBASE)/$(CHARMARCH)
 
 # definitions for TCL interface
-#TCLDIR=/usr/local
+#TCLDIR=$(HOME)/tcl
 #TCLINCL=-I$(TCLDIR)/include
 #TCLLIB=-L$(TCLDIR)/lib -ltcl
 #TCLFLAGS=-DNAMD_TCL
 #TCL=$(TCLINCL) $(TCLFLAGS)
 
 # definitions for FFT (used by PME)
+#FFTDIR=/Projects/namd2/fftw/origin
+#FFTINCL=-I$(FFTDIR)/include
+#FFTLIB=-L$(FFTDIR)/lib -lrfftw -lfftw
+#FFTFLAGS=-DNAMD_FFTW
+#FFT=$(FFTINCL) $(FFTFLAGS)
+# another FFT that SGI's use
 FFTLIB=-lcomplib.sgimath
 FFTFLAGS=-DNAMD_SGI_COMPLIB_FFT
 FFT=$(FFTFLAGS)

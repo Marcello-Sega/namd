@@ -13,16 +13,16 @@ CHARMARCH = net-hp-cc
 CHARM = $(CHARMBASE)/$(CHARMARCH)
 
 # definitions for TCL interface
-TCLDIR=/Projects/namd2/tcl/hpux
-TCLINCL=-I$(TCLDIR)/include
-TCLLIB=-L$(TCLDIR)/lib -ltcl
-TCLFLAGS=-DNAMD_TCL
-TCL=$(TCLINCL) $(TCLFLAGS)
+#TCLDIR=/Projects/namd2/tcl/hpux
+#TCLINCL=-I$(TCLDIR)/include
+#TCLLIB=-L$(TCLDIR)/lib -ltcl
+#TCLFLAGS=-DNAMD_TCL
+#TCL=$(TCLINCL) $(TCLFLAGS)
 
 # definitions for FFT (used by PME)
-FFTDIR=/Projects/namd2/fftw/hpux
-FFTINCL=-I$(FFTDIR)/include
-FFTLIB=-L$(FFTDIR)/lib -lrfftw -lfftw
-FFTFLAGS=-DNAMD_FFTW
-FFT=$(FFTINCL) $(FFTFLAGS)
+#FFTDIR=/Projects/namd2/fftw/hpux
+#FFTINCL=-I$(FFTDIR)/include
+#FFTLIB=-L$(FFTDIR)/lib -lrfftw -lfftw
+#FFTFLAGS=-DNAMD_FFTW
+#FFT=$(FFTINCL) $(FFTFLAGS)
 
