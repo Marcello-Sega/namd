@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.18 1996/11/30 01:27:34 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.19 1996/11/30 21:09:15 jim Exp $";
 
 #include <stdio.h>
 
@@ -43,10 +43,10 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib
 //----------------------------------------------------------------------
 WorkDistrib::WorkDistrib(InitMsg *msg)
 {
-  CPrintf("WorkDistrib::WorkDistrib() - constructing\n");
+  DebugM(4,"WorkDistrib::WorkDistrib() - constructing\n");
   mapsArrived = false;
   awaitingMaps = false;
-  CPrintf("WorkDistrib::WorkDistrib() - done constructing\n");
+  DebugM(4,"WorkDistrib::WorkDistrib() - done constructing\n");
 }
 
 //----------------------------------------------------------------------
@@ -59,7 +59,7 @@ void WorkDistrib::buildMaps(void)
 {
   int i;
 
-  CPrintf("Building maps\n");
+  DebugM(4,"Building maps\n");
   mapPatches();
   mapComputes();
 }
@@ -76,7 +76,7 @@ void WorkDistrib::sendMaps(void)
 //----------------------------------------------------------------------
 void WorkDistrib::createComputes(void)
 {
-  CPrintf("I don't know how to create computes yet\n");
+  DebugM(7,"I don't know how to create computes yet\n");
   CharmExit();
 }
 
@@ -129,7 +129,8 @@ void WorkDistrib::createPatches(void)
   for(i=0;i < patchMap->numPatches(); i++)
   {
     if (patchMap->node(i) != node->myid() )
-      CPrintf("patchMgr->movePatch(%d,%d)\n",i,patchMap->node(i));
+      DebugM(3,"patchMgr->movePatch("
+	<< i << "," << patchMap->node(i) << ")\n");
   }
 }
 
@@ -141,11 +142,11 @@ void WorkDistrib::saveMaps(MapDistribMsg *msg)
 
   if (node->myid() != 0)
   {
-    CPrintf("Saving patch map, compute map\n");
+    DebugM(4,"Saving patch map, compute map\n");
   }
   else
   {
-    CPrintf("Node 0 patch map built\n");
+    DebugM(4,"Node 0 patch map built\n");
   }
 
   mapsArrived = true;
@@ -183,16 +184,16 @@ void WorkDistrib::mapPatches(void)
   Vector xmin, xmax;
   Position sysDim;
 
-  CPrintf("Mapping patches\n");
+  DebugM(4,"Mapping patches\n");
   node->pdb->find_extremes(&xmin,&xmax);
 
-  CPrintf("xmin.x = %f\n",xmin.x);
-  CPrintf("xmin.y = %f\n",xmin.y);
-  CPrintf("xmin.z = %f\n",xmin.z);
+  DebugM(4,"xmin.x = " << xmin.x << endl);
+  DebugM(4,"xmin.y = " << xmin.y << endl);
+  DebugM(4,"xmin.z = " << xmin.z << endl);
 
-  CPrintf("xmax.x = %f\n",xmax.x);
-  CPrintf("xmax.y = %f\n",xmax.y);
-  CPrintf("xmax.z = %f\n",xmax.z);
+  DebugM(4,"xmax.x = " << xmax.x << endl);
+  DebugM(4,"xmax.y = " << xmax.y << endl);
+  DebugM(4,"xmax.z = " << xmax.z << endl);
 
   sysDim.x = xmax.x - xmin.x;
   sysDim.y = xmax.y - xmin.y;
@@ -235,7 +236,7 @@ void WorkDistrib::mapComputes(void)
   ComputeMap *computeMap = ComputeMap::Object();
   Node *node = CLocalBranch(Node, group.node);
 
-  CPrintf("Mapping computes\n");
+  DebugM(4,"Mapping computes\n");
 
   // We need to allocate computes for self, 1 and 2 away pairs for
   // electrostatics, and 1 angleForce for each node.  Then I might
@@ -343,7 +344,7 @@ void WorkDistrib::mapElectComputes(void)
 
 
 void WorkDistrib::messageEnqueueWork(Compute *compute) {
-  CPrintf("WorkDistrib::messageEnqueueWork() triggered\n");
+  DebugM(2,"WorkDistrib::messageEnqueueWork() triggered\n");
   LocalWorkMsg *msg = new (MsgIndex(LocalWorkMsg)) LocalWorkMsg;
   msg->compute = compute; // pointer is valid since send is to local Pe
   CSendMsgBranch(WorkDistrib, enqueueWork, msg, group.workDistrib, CMyPe() );
@@ -371,12 +372,15 @@ void WorkDistrib::movePatchDone(DoneMsg *msg) {
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.18 $	$Date: 1996/11/30 01:27:34 $
+ *	$Revision: 1.19 $	$Date: 1996/11/30 21:09:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.19  1996/11/30 21:09:15  jim
+ * cleaned up debug messages
+ *
  * Revision 1.18  1996/11/30 01:27:34  jim
  * switched to realistic ComputeType definitions
  *

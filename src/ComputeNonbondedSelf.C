@@ -14,12 +14,16 @@
 #include "ComputeNonbondedSelf.h"
 #include "ComputeNonbondedUtil.h"
 
+#define MIN_DEBUG_LEVEL 5
+#define DEBUGM
+#include "Debug.h"
+
 void ComputeNonbondedSelf::doForce(Position* p,
                                Force* f,
                                AtomProperties* a)
 {
-    CPrintf("ComputeNonbondedSelf::doForce() - Eval was sent\n");
-    CPrintf(" %d patch 1 atoms\n", numAtoms );
+    DebugM(2,"doForce() called.\n");
+    DebugM(1,numAtoms << " patch 1 atoms\n");
 
     ComputeNonbondedUtil::calcSelf(p,f,a,numAtoms);
 }
@@ -29,12 +33,15 @@ void ComputeNonbondedSelf::doForce(Position* p,
  *
  *	$RCSfile: ComputeNonbondedSelf.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1996/11/21 00:59:16 $
+ *	$Revision: 1.9 $	$Date: 1996/11/30 21:09:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.C,v $
+ * Revision 1.9  1996/11/30 21:09:15  jim
+ * cleaned up debug messages
+ *
  * Revision 1.8  1996/11/21 00:59:16  jim
  * moved ComputeNonbondedUtil::select() call to SimParameters
  *
