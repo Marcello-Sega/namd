@@ -612,6 +612,11 @@ static void scale_coordinates(PmeParticle p[], int N, Lattice lattice, PmeGrid g
     p[i].x = K1 * ( sx - floor(sx) );
     p[i].y = K2 * ( sy - floor(sy) );
     p[i].z = K3 * ( sz - floor(sz) );
+    //  Check for rare rounding condition where K * ( 1 - epsilon ) == K
+    //  which was observed with g++ on Intel x86 architecture.
+    if ( p[i].x == K1 ) p[i].x = 0;
+    if ( p[i].y == K2 ) p[i].y = 0;
+    if ( p[i].z == K3 ) p[i].z = 0;
   }
 }
 
