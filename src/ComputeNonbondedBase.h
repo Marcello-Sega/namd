@@ -123,6 +123,8 @@ void ComputeNonbondedUtil :: NAME
 
 // function body
 {
+  // int NAME;  // to track errors via unused variable warnings
+
   if ( ComputeNonbondedUtil::commOnly ) return;
 
   // speedup variables
@@ -147,12 +149,15 @@ void ComputeNonbondedUtil :: NAME
   )
   )
   
+  SHORT
+  (
   BigReal virial_xx = 0;
   BigReal virial_xy = 0;
   BigReal virial_xz = 0;
   BigReal virial_yy = 0;
   BigReal virial_yz = 0;
   BigReal virial_zz = 0;
+  )
   )
   FULL
   (
@@ -207,7 +212,6 @@ void ComputeNonbondedUtil :: NAME
   const BigReal c3 = ComputeNonbondedUtil:: c3;
   )
   const BigReal r2_delta = ComputeNonbondedUtil:: r2_delta;
-  const BigReal r2_delta_1 = ComputeNonbondedUtil:: r2_delta_1;
   const int r2_delta_exp = ComputeNonbondedUtil:: r2_delta_exp;
   const int r2_delta_expc = 64 * (r2_delta_exp - 127);
 
@@ -230,6 +234,7 @@ void ComputeNonbondedUtil :: NAME
     }
   }
   const int g_upper = g;
+  if ( g_upper ) grouplist[g_upper] = grouplist[g_upper-1];
   int fixg = 0;
 
   // check for all fixed atoms
@@ -256,6 +261,7 @@ void ComputeNonbondedUtil :: NAME
   }
 
   const int fixg_upper = fixg;
+  if ( fixg_upper ) fixglist[fixg_upper] = fixglist[fixg_upper-1];
 
   SELF(
   int j_hgroup = 0;
@@ -269,10 +275,13 @@ void ComputeNonbondedUtil :: NAME
   int *const pairlist = (j_upper < 1000 ? pairlist_std : new int[j_upper+5]);
   int *const pairlist2 = (j_upper < 1000 ? pairlist2_std : new int[j_upper+5]);
 
+  SHORT
+  (
   FAST
   (
     Force *f_0 = params->ff[0];
     Force *f_1 = params->ff[1];
+  )
   )
   FULL
   (
@@ -297,7 +306,7 @@ void ComputeNonbondedUtil :: NAME
     register const BigReal p_i_y = p_i.position.y;
     register const BigReal p_i_z = p_i.position.z;
 
-    FAST( Force & f_i = f_0[i]; )
+    SHORT( FAST( Force & f_i = f_0[i]; ) )
     FULL( Force & fullf_i = fullf_0[i]; )
 
   if (p_i.hydrogenGroupSize || p_i.nonbondedGroupIsAtom)
@@ -331,9 +340,6 @@ void ComputeNonbondedUtil :: NAME
     // pairlist but to include every atom in it.  This should be a
     // a very minor expense.
 
-    register const CompAtom *p_j = p_1;
-    SELF( p_j += i+1; )
-
     SELF
     (
       if ( p_i.hydrogenGroupSize ) {
@@ -345,7 +351,6 @@ void ComputeNonbondedUtil :: NAME
       // add all child or sister hydrogens of i
       for ( j = i + 1; j < j_hgroup; ++j ) {
 	pairlist[pairlistindex++] = j;
-	p_j++;
       }
     )
 
@@ -356,28 +361,39 @@ void ComputeNonbondedUtil :: NAME
       const int *glist = ( groupfixed ? fixglist : grouplist );
       SELF( const int gl = ( groupfixed ? fixg_lower : g_lower ); )
       const int gu = ( groupfixed ? fixg_upper : g_upper );
-      for ( g = PAIR(0) SELF(gl) ; g < gu; ++g ) {
-        j = glist[g];
-        BigReal p_j_x = p_1[j].position.x;
+      g = PAIR(0) SELF(gl);
+      if ( g < gu ) {
+       int j2 = glist[g];
+       BigReal p_j_x = p_1[j2].position.x;
+       BigReal p_j_y = p_1[j2].position.y;
+       BigReal p_j_z = p_1[j2].position.z;
+       int pli_incr = 0;
+       while ( g < gu ) {
+        j = j2;
+        j2 = glist[++g];
 	BigReal r2 = p_i_x - p_j_x;
 	r2 *= r2;
-        BigReal p_j_y = p_1[j].position.y;
+        p_j_x = p_1[j2].position.x;
 	BigReal t2 = p_i_y - p_j_y;
 	r2 += t2 * t2;
-        BigReal p_j_z = p_1[j].position.z;
+        p_j_y = p_1[j2].position.y;
 	t2 = p_i_z - p_j_z;
 	r2 += t2 * t2;
-	int hgs = ( p_1[j].nonbondedGroupIsAtom ? 1 :
-                                                p_1[j].hydrogenGroupSize );
+        p_j_z = p_1[j2].position.z;
 	// use a slightly large cutoff to include hydrogens
+	pli += pli_incr;
+	pli_incr = 0;
 	if ( r2 <= groupcutoff2 ) {
+          pli_incr = ( p_1[j].nonbondedGroupIsAtom ? 1 :
+					p_1[j].hydrogenGroupSize );
 	  pli[0] = j;   // copy over the next four in any case
 	  pli[1] = j+1;
 	  pli[2] = j+2;
 	  pli[3] = j+3; // assume hgs <= 4
-	  pli += hgs;
 	}
-      } // for g
+       }
+       pli += pli_incr;
+      }
     }
 
     pairlistindex = pli - pairlist;
@@ -460,20 +476,29 @@ void ComputeNonbondedUtil :: NAME
         }
       }
     } else {
-      for (int k=pairlistoffset; k<pairlistindex; k++) {
-        j = pairlist[k];
-        BigReal p_j_x = p_1[j].position.x;
+      int k = pairlistoffset;
+      int ku = pairlistindex;
+      if ( k < ku ) {
+       int j2 = pairlist[k];
+       BigReal p_j_x = p_1[j2].position.x;
+       BigReal p_j_y = p_1[j2].position.y;
+       BigReal p_j_z = p_1[j2].position.z;
+       while ( k < ku ) {
+        j = j2;
+        j2 = pairlist[++k];
 	BigReal r2 = p_i_x - p_j_x;
 	r2 *= r2;
-        BigReal p_j_y = p_1[j].position.y;
+        p_j_x = p_1[j2].position.x;
 	BigReal t2 = p_i_y - p_j_y;
 	r2 += t2 * t2;
-        BigReal p_j_z = p_1[j].position.z;
+        p_j_y = p_1[j2].position.y;
 	t2 = p_i_z - p_j_z;
 	r2 += t2 * t2;
+        p_j_z = p_1[j2].position.z;
 	if ( (r2 <= cutoff2) && ! ((r2 <= r2_delta) && ++exclChecksum) ) {
           *(pli++) = j;
         }
+       }
       }
     }
     int npair2 = pli - pairlist2;
@@ -561,7 +586,6 @@ void ComputeNonbondedUtil :: NAME
         if (ifep_type && jfep_type && ifep_type != jfep_type) {
 	  lambda_pair = 0.0;
         } else {
-          int fep_type = ifep_type ? ifep_type : jfep_type;
           lambda_pair = lesScaling;
         }
       }
