@@ -903,7 +903,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    int len;    //  String length
    char tmpstr[257];  //  Temporary string
    StringList *current; //  Pointer to config option list
-   char filename[129];  //  Temporary file name
 
    //  Take care of cwd processing
    if (opts.defined("cwd"))
@@ -914,8 +913,10 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
     len = strlen(current->data);
 
     if ( chdir(current->data) )
-     {
+    {
       NAMD_die("chdir() to given cwd failed!");
+    } else {
+      iout << iINFO << "Changed directory to " << current->data << "\n" << endi;
     }
 
     if (current->data[len-1] != '/')
@@ -1009,20 +1010,10 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    {
      current = config->find("extendedSystem");
 
-     if ( (cwd == NULL) || (current->data[0] == '/') )
-     {
-       strcpy(filename, current->data);
-     }
-     else
-     {
-       strcpy(filename, cwd);
-       strcat(filename, current->data);
-     }
-
      iout << iINFO << "EXTENDED SYSTEM FILE   "
-        << filename << "\n" << endi;
+        << current->data << "\n" << endi;
 
-     ifstream xscFile(filename);
+     ifstream xscFile(current->data);
      if ( ! xscFile ) NAMD_die("Unable to open extended system file.\n");
 
      char labels[1024];
@@ -1877,7 +1868,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&cwd) {
 
    StringList *current; //  Pointer to config option list
-   char filename[129];  //  Temporary file name
 
    //  Now that we have read everything, print it out so that
    //  the user knows what is going on
@@ -1925,17 +1915,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
     current = config->find("binvelocities");
   }
 
-  if ( (cwd == NULL) || (current->data[0] == '/') )
-  {
-    strcpy(filename, current->data);
-  }
-  else
-  {
-    strcpy(filename, cwd);
-    strcat(filename, current->data);
-  }
-
-  iout << iINFO << "VELOCITY FILE          " << filename << "\n";
+  iout << iINFO << "VELOCITY FILE          " << current->data << "\n";
    }
    else
    {
@@ -2300,17 +2280,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
        continue;
      }
 
-     if ( (cwd == NULL) || (current->data[0] == '/') )
-     {
-       strcpy(filename, current->data);
-     }
-     else
-     {
-       strcpy(filename, cwd);
-       strcat(filename, current->data);
-     }
-
-     iout << iINFO << "TCL GLOBAL FORCES SCRIPT   " << filename << "\n";
+     iout << iINFO << "TCL GLOBAL FORCES SCRIPT   " << current->data << "\n";
 
      }
      iout << endi;
@@ -2329,17 +2299,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
        continue;
      }
 
-     if ( (cwd == NULL) || (current->data[0] == '/') )
-     {
-       strcpy(filename, current->data);
-     }
-     else
-     {
-       strcpy(filename, cwd);
-       strcat(filename, current->data);
-     }
-
-     iout << iINFO << "MISC FORCES SCRIPT   " << filename << "\n";
+     iout << iINFO << "MISC FORCES SCRIPT   " << current->data << "\n";
 
      }
      iout << endi;
@@ -2358,17 +2318,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
        continue;
      }
 
-     if ( (cwd == NULL) || (current->data[0] == '/') )
-     {
-       strcpy(filename, current->data);
-     }
-     else
-     {
-       strcpy(filename, cwd);
-       strcat(filename, current->data);
-     }
-
-     iout << iINFO << "FREE ENERGY PERTURBATION SCRIPT   " << filename << "\n";
+     iout << iINFO << "FREE ENERGY PERTURBATION SCRIPT   " << current->data << "\n";
 
      }
      iout << endi;
@@ -2387,17 +2337,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
        continue;
      }
 
-     if ( (cwd == NULL) || (current->data[0] == '/') )
-     {
-       strcpy(filename, current->data);
-     }
-     else
-     {
-       strcpy(filename, cwd);
-       strcat(filename, current->data);
-     }
-
-     iout << iINFO << "TCL SCRIPT   " << filename << "\n";
+     iout << iINFO << "TCL SCRIPT   " << current->data << "\n";
 
      }
      iout << endi;
@@ -2730,58 +2670,22 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    }
 
 
-   // iout << iINFO << "Here we go config->find\n" << endi;
    current = config->find("coordinates");
-   // iout << iINFO << "Here done config->find\n" << endi;
 
-   if ( (cwd == NULL) || (current->data[0] == '/') )
-   {
-     //   iout << iINFO << "Here cwd==NULL and current is "
-     // << current->data << '\n' << endi;
-     strcpy(filename, current->data);
-   }
-   else
-   {
-     //   iout << iINFO << "cwd != NULL and not abs\n" << endi;
-     strcpy(filename, cwd);
-     strcat(filename, current->data);
-   }
-
-
-   iout << iINFO << "COORDINATE PDB         " << filename << '\n' << endi;
+   iout << iINFO << "COORDINATE PDB         " << current->data << '\n' << endi;
 
    if (opts.defined("bincoordinates"))
    {
   current = config->find("bincoordinates");
 
-     if ( (cwd == NULL) || (current->data[0] == '/') )
-     {
-       strcpy(filename, current->data);
-     }
-     else
-     {
-       strcpy(filename, cwd);
-       strcat(filename, current->data);
-     }
-
      iout << iINFO << "BINARY COORDINATES     " 
-              << filename << "\n";
+              << current->data << "\n";
    }
 
    current = config->find("structure");
 
-   if ( (cwd == NULL) || (current->data[0] == '/') )
-   {
-     strcpy(filename, current->data);
-   }
-   else
-   {
-     strcpy(filename, cwd);
-     strcat(filename, current->data);
-   }
-
    iout << iINFO << "STRUCTURE FILE         " 
-      << filename << "\n" << endi;
+      << current->data << "\n" << endi;
 
    //****** BEGIN CHARMM/XPLOR type changes
    if (paraTypeXplorOn)
@@ -2798,18 +2702,8 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 
    while (current != NULL)
    {
-     if ( (cwd == NULL) || (current->data[0] == '/') )
-     {
-       strcpy(filename, current->data);
-     }
-     else
-     {
-       strcpy(filename, cwd);
-       strcat(filename, current->data);
-     }
-
      iout << iINFO << "PARAMETERS             " 
-        << filename << "\n" << endi;
+        << current->data << "\n" << endi;
      current = current->next;
    }
 
