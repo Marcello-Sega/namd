@@ -26,9 +26,17 @@ public:
   int     Add(ALambdaControl& PmfBlock);
   int     GetNumObjects() {return(m_NumObjects);}
   Bool_t  GetLambdas(double& LambdaKf, double& LambdaRef);
-  Bool_t  IsTimeToPrint(double dT);
+  Bool_t  IsTimeToPrint();
+  Bool_t  IsTimeToPrint_dU_dLambda();
+  Bool_t  IsTimeToClearAccumulator();
+  void    PrintHeader(double dT);
+  void    Print_dU_dLambda_Summary(double Sum_dU_dLambdas);
   void    IncCurrStep() {m_Dummy.IncCurrStep();}
   int     GetTotalNumSteps();
+  void    Accumulate(double dU_dLambda);
+  double  GetAccumulation();
+  void    ZeroAccumulator();
+  int     GetNum_dU_dLambda();
 };
 
 #endif
@@ -43,6 +51,9 @@ public:
  * REVISION HISTORY:
  *
  * $Log: FreeEnergyLambdMgr.h,v $
+ * Revision 1.3  1998/06/05 22:54:40  hurwitz
+ * accumulate dU/dLambda for free energy calculation
+ *
  * Revision 1.2  1998/05/22 19:08:30  hurwitz
  * Do NAMD_die if there aren't enough steps to complete all pmf & mcti blocks
  *

@@ -46,13 +46,31 @@ void ComputeFreeEnergy::update() {
 // and apply the forces to the atoms involved
 //-----------------------------------------------------------------
   double  LambdaKf, LambdaRef;
+  double  Sum_dU_dLambdas;
 
   if (m_LambdaManager.GetLambdas(LambdaKf, LambdaRef)) {
+
+    // stuff that's done every time step
     m_RestraintManager.SetLambdas(LambdaKf, LambdaRef);
     m_RestraintManager.UpdateCOMs(*this);
     m_RestraintManager.AddForces(*this);
-    if (m_LambdaManager.IsTimeToPrint(simParams->dt)) {
-      m_RestraintManager.PrintInfo();
+    if (m_LambdaManager.IsTimeToClearAccumulator()) {
+      m_LambdaManager.ZeroAccumulator();
+    }
+    Sum_dU_dLambdas = m_RestraintManager.Sum_dU_dLambdas();
+    m_LambdaManager.Accumulate(Sum_dU_dLambdas);
+
+    // stuff that's done when it's time to print
+    if (m_LambdaManager.IsTimeToPrint()) {
+      m_LambdaManager.PrintHeader(simParams->dt);
+      m_RestraintManager.PrintEnergyInfo();
+      m_RestraintManager.PrintRestraintInfo();
+      if (m_LambdaManager.IsTimeToPrint_dU_dLambda()) {
+        m_RestraintManager.Print_dU_dLambda_Info();
+        if (m_RestraintManager.ThereIsAForcingRestraint()) {
+          m_LambdaManager.Print_dU_dLambda_Summary(Sum_dU_dLambdas);
+        }
+      }
     }
   }
 }
@@ -221,12 +239,15 @@ void ComputeFreeEnergy::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.11 $	$Date: 1998/05/25 21:55:04 $
+ *	$Revision: 1.12 $	$Date: 1998/06/05 22:54:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFreeEnergy.C,v $
+ * Revision 1.12  1998/06/05 22:54:38  hurwitz
+ * accumulate dU/dLambda for free energy calculation
+ *
  * Revision 1.11  1998/05/25 21:55:04  jim
  * Eliminated compile errors in KCC by avoiding use of istrstream.
  *

@@ -25,15 +25,19 @@ public:
   ARestraintManager();
   ~ARestraintManager();
   ARestraint*  operator[] (int Index);
-  void  Add(ARestraint* pRestraint);
-  int   GetNumRestraints() {return(m_NumRestraints);}
-  void  UpdateCOMs(ComputeFreeEnergy& CFE);
-  void  AddForces(ComputeFreeEnergy& CFE);
-  void  PrintInfo();
-  void  PrintPreInfo(int Index);
-  void  SetLambdaKf(double LambdaKf)   {m_Dummy.SetLambdaKf(LambdaKf);}
-  void  SetLambdaRef(double LambdaRef) {m_Dummy.SetLambdaRef(LambdaRef);}
-  void  SetLambdas(double LambdaKf, double LambdaRef)
+  void   Add(ARestraint* pRestraint);
+  int    GetNumRestraints() {return(m_NumRestraints);}
+  void   UpdateCOMs(ComputeFreeEnergy& CFE);
+  void   AddForces(ComputeFreeEnergy& CFE);
+  void   PrintEnergyInfo();
+  void   PrintRestraintInfo();
+  void   Print_dU_dLambda_Info();
+  double Sum_dU_dLambdas();
+  Bool_t ThereIsAForcingRestraint();
+  void   PrintPreInfo(int Index);
+  void   SetLambdaKf(double LambdaKf)   {m_Dummy.SetLambdaKf(LambdaKf);}
+  void   SetLambdaRef(double LambdaRef) {m_Dummy.SetLambdaRef(LambdaRef);}
+  void   SetLambdas(double LambdaKf, double LambdaRef)
   {
      m_Dummy.SetLambdaKf(LambdaKf);
      m_Dummy.SetLambdaRef(LambdaRef);
@@ -41,3 +45,19 @@ public:
 };
 
 #endif
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker $		$State $
+ *	$Revision $	$Date $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: FreeEnergyRMgr.h,v $
+ * Revision 1.3  1998/06/05 22:54:42  hurwitz
+ * accumulate dU/dLambda for free energy calculation
+ *
+ *
+ ***************************************************************************/

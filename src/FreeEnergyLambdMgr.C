@@ -3,6 +3,7 @@
 #include <memory.h>
 #include <iostream.h>
 #include <iomanip.h>
+#include "InfoStream.h"
 #include "FreeEnergyEnums.h"
 #include "FreeEnergyAssert.h"
 #include "FreeEnergyLambda.h"
@@ -28,13 +29,93 @@ ALambdaManager::~ALambdaManager() {
 }
 
 
-Bool_t ALambdaManager::IsTimeToPrint(double dT) {
+int  ALambdaManager::GetNum_dU_dLambda() {
 //------------------------------------------------------------------------
-// ASSUMING that the m_ActiveIndex'th LambdaControl is active,
-// decide if it's time to print out dU/dLambda
+// get number times dU_dLambda accumulated from active lambda object.
 //------------------------------------------------------------------------
   ASSERT((*this)[m_ActiveIndex].IsActive());
-  return((*this)[m_ActiveIndex].IsTimeToPrint(dT));
+  return((*this)[m_ActiveIndex].GetNum_dU_dLambda());
+}
+
+
+void ALambdaManager::Accumulate(double dU_dLambda) {
+//------------------------------------------------------------------------
+// add dU_dLambda to the active accumulator (in one of the lambda objects)
+//------------------------------------------------------------------------
+  ASSERT((*this)[m_ActiveIndex].IsActive());
+  (*this)[m_ActiveIndex].Accumulate(dU_dLambda);
+}
+
+
+double ALambdaManager::GetAccumulation() {
+//------------------------------------------------------------------------
+// get the accumulation of dU_dLambda from active lambda object.
+//------------------------------------------------------------------------
+  ASSERT((*this)[m_ActiveIndex].IsActive());
+  return((*this)[m_ActiveIndex].GetAccumulation());
+}
+
+
+void ALambdaManager::ZeroAccumulator() {
+//------------------------------------------------------------------------
+// zero accumulation of dU_dLambda in the active lambda object.
+//------------------------------------------------------------------------
+  ASSERT((*this)[m_ActiveIndex].IsActive());
+  (*this)[m_ActiveIndex].ZeroAccumulator();
+}
+
+
+Bool_t ALambdaManager::IsTimeToPrint() {
+//------------------------------------------------------------------------
+// ASSUMING that the m_ActiveIndex'th LambdaControl is active,
+// decide if it's time to print restraint information
+//------------------------------------------------------------------------
+  ASSERT((*this)[m_ActiveIndex].IsActive());
+  return((*this)[m_ActiveIndex].IsTimeToPrint());
+}
+
+
+Bool_t ALambdaManager::IsTimeToPrint_dU_dLambda() {
+//------------------------------------------------------------------------
+// ASSUMING that the m_ActiveIndex'th LambdaControl is active,
+// decide if it's time to print du/dLambda information
+//------------------------------------------------------------------------
+  ASSERT((*this)[m_ActiveIndex].IsActive());
+  return((*this)[m_ActiveIndex].IsTimeToPrint_dU_dLambda());
+}
+
+
+Bool_t ALambdaManager::IsTimeToClearAccumulator() {
+//------------------------------------------------------------------------
+// ASSUMING that the m_ActiveIndex'th LambdaControl is active,
+// decide if it's time to start accumulating dU/dLambda from zero
+//------------------------------------------------------------------------
+  ASSERT((*this)[m_ActiveIndex].IsActive());
+  return((*this)[m_ActiveIndex].IsTimeToClearAccumulator());
+}
+
+
+void ALambdaManager::PrintHeader(double dT) {
+//------------------------------------------------------------------------
+// print information about current time step
+//------------------------------------------------------------------------
+  ASSERT((*this)[m_ActiveIndex].IsActive());
+  (*this)[m_ActiveIndex].PrintHeader(dT);
+}
+
+
+void ALambdaManager::Print_dU_dLambda_Summary(double Sum_dU_dLambdas) {
+//------------------------------------------------------------------------
+// print sum of dU/dLambda's for current time-step and
+// the accumulation of the above.
+//------------------------------------------------------------------------
+  iout << "FreeEnergy: ";
+  iout << "For all forcing restraints, dU/dLambda  = ";
+  iout << Sum_dU_dLambdas << endl << endi;
+  iout << "FreeEnergy: ";
+  iout << "For all forcing restraints, Free Energy = ";
+  iout << GetAccumulation();
+  iout << " for " << GetNum_dU_dLambda() << " steps" << endl << endi;
 }
 
 
@@ -140,6 +221,9 @@ int ALambdaManager::GetTotalNumSteps() {
  * REVISION HISTORY:
  *
  * $Log: FreeEnergyLambdMgr.C,v $
+ * Revision 1.3  1998/06/05 22:54:39  hurwitz
+ * accumulate dU/dLambda for free energy calculation
+ *
  * Revision 1.2  1998/05/22 19:08:30  hurwitz
  * Do NAMD_die if there aren't enough steps to complete all pmf & mcti blocks
  *

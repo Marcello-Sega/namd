@@ -18,8 +18,10 @@ ALambdaControl::ALambdaControl() {
 //------------------------------------------------------------------------
   // initialize these for the first block.
   m_StartStep = 0;
-  m_LambdaKf  = 1.0;   // applied to Kf
-  m_LambdaRef = 0.0;   // applied to reference (pos, dist, angle, dihe)
+  m_LambdaKf  = 1.0;      // applied to Kf
+  m_LambdaRef = 0.0;      // applied to reference (pos, dist, angle, dihe)
+  m_Sum_dU_dLambda = 0.0; // for free energy measurement
+  m_Num_dU_dLambda = 0;   // "
 
   // set the rest to illegal values.
   m_Task =           kUnknownTask;
@@ -81,6 +83,53 @@ ALambdaControl& ALambdaControl::operator= (ALambdaControl& PmfBlock) {
 }
 
 
+void ALambdaControl::Accumulate(double dU_dLambda) {
+//------------------------------------------------------------------------
+// if lambda is constant, sum dU/dLambda
+// if lambda is changing, sum dU/dLambda * dLambda
+//------------------------------------------------------------------------
+
+  m_Num_dU_dLambda++;
+  switch (m_Task) {
+    // lambda is constant
+    case kStop:      case kNoGrow:    case kStepUp:
+    case kStepDown:  case kStepGrow:  case kStepFade:
+      m_Sum_dU_dLambda += dU_dLambda;
+      break;
+    // lambda is changing
+    case kUp:  case kDown:  case kGrow:  case kFade:
+      m_Sum_dU_dLambda += dU_dLambda / (double)m_NumSteps;
+      break;
+    // should never get here
+    default:
+      ASSERT(kFalse);
+      break;
+  }
+}
+
+
+double ALambdaControl::GetAccumulation() {
+//------------------------------------------------------------------------
+// if lambda is constant, return (sum/N)
+// if lambda is changing, return (sum)
+//------------------------------------------------------------------------
+  switch (m_Task) {
+    // lambda is constant
+    case kStop:    case kNoGrow:
+    case kStepUp:  case kStepDown:  case kStepGrow:  case kStepFade:
+      ASSERT(m_Num_dU_dLambda != 0);
+      return(m_Sum_dU_dLambda / (double)m_Num_dU_dLambda);
+    // lambda is changing
+    case kUp:  case kDown:  case kGrow:  case kFade:
+      return(m_Sum_dU_dLambda);
+    // should never get here
+    default:
+      ASSERT(kFalse);
+      return(0);
+  }
+}
+
+
 int ALambdaControl::GetNumSteps() {
 //------------------------------------------------------------------------
 // get the number of steps needed for this pmf or mcti block
@@ -138,20 +187,67 @@ void ALambdaControl::GetTaskStr(char* Str) {
 }
 
 
-Bool_t ALambdaControl::IsTimeToPrint(double dT) {
+Bool_t ALambdaControl::IsTimeToClearAccumulator() {
 //------------------------------------------------------------------------
 // ASSUMING that this object is currently active, decide if it's time
-// to print out dU/dLambda.
-// if it's time to print, write out the current time
+// to start accumulating dU/dLambda from zero.
 //------------------------------------------------------------------------
-  double  Time;
   Bool_t  RetVal=kFalse;
-  char    Str[100];
+
+  switch (m_Task) {
+    // for pmf blocks, clear accumulator on first step
+    case kUp:      case kDown:    case kStop:
+    case kGrow:    case kFade:    case kNoGrow:
+      if (m_CurrStep == m_StartStep) {
+        RetVal = kTrue;
+      }
+      break;
+    // for mcti blocks, clear accumulator after each equilibration
+    case kStepUp:  case kStepDown:  case kStepGrow:  case kStepFade:
+      if ( (m_CurrStep-(m_StartStep+m_NumEquilSteps)) % 
+             (m_NumEquilSteps+m_NumAccumSteps) == 0) {
+        RetVal = kTrue;
+      }
+      break;
+    // should never get here
+    default:
+      ASSERT(kFalse);
+      break;
+  }
+  return(RetVal);
+}
+
+
+Bool_t ALambdaControl::IsTimeToPrint() {
+//------------------------------------------------------------------------
+// ASSUMING that this object is currently active, decide if it's time
+// to print out restraint information.
+//------------------------------------------------------------------------
+  Bool_t  RetVal=kFalse;
 
   // if printing is required
   if (m_NumPrintSteps > 0) {
     // if number-of-steps from StartStep is an even multiple of NumPrintSteps
-    // then it might be time to print
+    // then it's time to print
+    if ( ((m_CurrStep-m_StartStep) % m_NumPrintSteps) == 0) {
+      RetVal = kTrue;
+    }
+  }
+  return(RetVal);
+}
+
+
+Bool_t ALambdaControl::IsTimeToPrint_dU_dLambda() {
+//------------------------------------------------------------------------
+// ASSUMING that this object is currently active, decide if it's time
+// to print out dU/dLambda information.
+//------------------------------------------------------------------------
+  Bool_t  RetVal=kFalse;
+
+  // if printing is required
+  if (m_NumPrintSteps > 0) {
+    // if number-of-steps from StartStep is an even multiple of NumPrintSteps
+    // then it might be time to print du/dLambda
     if ( ((m_CurrStep-m_StartStep) % m_NumPrintSteps) == 0) {
       // for mcti blocks
       if ((m_Task==kStepUp)   || (m_Task==kStepDown) ||
@@ -162,34 +258,42 @@ Bool_t ALambdaControl::IsTimeToPrint(double dT) {
           RetVal = kTrue;
         }
       }
-      // for the other tasks, it's ok to print
+      // for other blocks (up, down, grow, fade) it's time
       else {
         RetVal = kTrue;
       }
     }
   }
-  if (RetVal) {
-    iout << "FreeEnergy: " << endl << endi;
-    iout << "FreeEnergy: ";
-    iout << "Time Step = "  << m_CurrStep            <<    ",  ";
-    iout << "Time = ";
-    // calculate current time in femto-seconds
-    Time = (double)m_CurrStep * dT;
-    // write out time in either fs, ps, or ns
-    if      (Time < 1000)    {iout << Time           << " fs,  ";}
-    else if (Time < 1000000) {iout << Time/1000.0    << " ps,  ";}
-    else                     {iout << Time/1000000.0 << " ns,  ";}
-    iout << "Lambda_Kf = "  << m_LambdaKf            <<    ",  ";
-    iout << "Lambda_Ref = " << m_LambdaRef           <<     "  ";
-    GetTaskStr(Str);
-    iout << "(" << Str << ")";
-    iout << endl << endi;
-    iout << "FreeEnergy: ";
-    iout << "------------------------------------------------";
-    iout << "-------------------";
-    iout << endl << endi;
-  }
   return(RetVal);
+}
+
+
+void ALambdaControl::PrintHeader(double dT) {
+//----------------------------------------------------------------------------
+// ASSUMING that this object is currently active, write out the current time
+//----------------------------------------------------------------------------
+  double  Time;
+  char    Str[100];
+
+  iout << "FreeEnergy: " << endl << endi;
+  iout << "FreeEnergy: ";
+  iout << "Time Step = "  << m_CurrStep            <<    ",  ";
+  iout << "Time = ";
+  // calculate current time in femto-seconds
+  Time = (double)m_CurrStep * dT;
+  // write out time in either fs, ps, or ns
+  if      (Time < 1000)    {iout << Time           << " fs,  ";}
+  else if (Time < 1000000) {iout << Time/1000.0    << " ps,  ";}
+  else                     {iout << Time/1000000.0 << " ns,  ";}
+  iout << "Lambda_Kf = "  << m_LambdaKf            <<    ",  ";
+  iout << "Lambda_Ref = " << m_LambdaRef           <<     "  ";
+  GetTaskStr(Str);
+  iout << "(" << Str << ")";
+  iout << endl << endi;
+  iout << "FreeEnergy: ";
+  iout << "------------------------------------------------";
+  iout << "-------------------";
+  iout << endl << endi;
 }
 
 
@@ -300,6 +404,9 @@ double ALambdaControl::GetLambdaRef() {
  * REVISION HISTORY:
  *
  * $Log: FreeEnergyLambda.C,v $
+ * Revision 1.3  1998/06/05 22:54:40  hurwitz
+ * accumulate dU/dLambda for free energy calculation
+ *
  * Revision 1.2  1998/05/22 19:08:31  hurwitz
  * Do NAMD_die if there aren't enough steps to complete all pmf & mcti blocks
  *

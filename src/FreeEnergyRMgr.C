@@ -109,32 +109,66 @@ void ARestraintManager::AddForces(ComputeFreeEnergy& CFE) {
 }
 
 
-void ARestraintManager::PrintInfo() {
+double ARestraintManager::Sum_dU_dLambdas() {
 //---------------------------------------------------------------------------
-// for each restraint, print Energy of the restraint.
-// for each restraint, print its position, distance, angle, or dihedral angle.
-// for each forcing restraint, print dU/dLambda.
+// sum up dU/dLambda from each forcing restraint
 //---------------------------------------------------------------------------
-  char  Str[100];
+  double Sum=0;
 
-  // for each restraint
   for (int i=0; i<m_NumRestraints; i++) {
-    // output restraint type and Energy
+    Sum += m_ppRestraints[i]->Get_dU_dLambda();
+  }
+  return(Sum);
+}
+
+
+Bool_t ARestraintManager::ThereIsAForcingRestraint() {
+//---------------------------------------------------------------------------
+// return kTrue if there's at least one forcing restraint
+//---------------------------------------------------------------------------
+  for (int i=0; i<m_NumRestraints; i++) {
+    if (m_ppRestraints[i]->IsForcing()) {
+      return(kTrue);
+    }
+  }
+  return(kFalse);
+}
+
+
+void ARestraintManager::PrintEnergyInfo() {
+//---------------------------------------------------------------------------
+// for a restraint, print restraint type and Energy.
+//---------------------------------------------------------------------------
+  for (int i=0; i<m_NumRestraints; i++) {
     PrintPreInfo(i);
     iout << "Energy = ";
     iout << m_ppRestraints[i]->GetEnergy() << endl << endi;
-    // output restraint type and information about the restraint
+  }
+}
+
+
+void ARestraintManager::PrintRestraintInfo() {
+//---------------------------------------------------------------------------
+// for a restraint, print its position, distance, angle, or dihedral angle.
+//---------------------------------------------------------------------------
+  for (int i=0; i<m_NumRestraints; i++) {
     PrintPreInfo(i);
     m_ppRestraints[i]->PrintInfo();
-    // if it's a forcing restraint
+  }
+}
+
+
+void ARestraintManager::Print_dU_dLambda_Info() {
+//---------------------------------------------------------------------------
+// if restraint is a forcing restraint, print dU/dLambda.
+//---------------------------------------------------------------------------
+  for (int i=0; i<m_NumRestraints; i++) {
     if (m_ppRestraints[i]->IsForcing()) {
-      // output restraint type and dU/dLambda
       PrintPreInfo(i);
       iout << "dU/dLambda = ";
       iout << m_ppRestraints[i]->Get_dU_dLambda() << endl << endi;
     }
   }
-  iout << "FreeEnergy: " << endl << endi;
 }
 
 
@@ -150,3 +184,20 @@ void ARestraintManager::PrintPreInfo(int Index) {
   m_ppRestraints[Index]->GetStr(Str);
   iout << Str << ":  ";
 }
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker $		$State $
+ *	$Revision $	$Date $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: FreeEnergyRMgr.C,v $
+ * Revision 1.2  1998/06/05 22:54:41  hurwitz
+ * accumulate dU/dLambda for free energy calculation
+ *
+ *
+ ***************************************************************************/
