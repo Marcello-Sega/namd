@@ -42,6 +42,8 @@ class Communicate;
 class NamdState;
 class Output;
 class LdbCoordinator;
+class SMDData;
+class SMDDataMsg;
 
 class Node : public BOCclass
 {
@@ -78,6 +80,9 @@ public:
   // Utility for storing away simulation data for Node
   void saveMolDataPointers(NamdState *);
 
+  // Deal with SMD data message
+  void sendSMDData(SMDDataMsg *);
+  void recvSMDData(SMDDataMsg *);
 
   // NAMD 1.X molecule database objects - must be public for now
   Molecule *molecule;
@@ -87,6 +92,7 @@ public:
   PDB *pdb;
   NamdState *state;
   Output *output;
+  SMDData *smdData;
 
   // Remove these calls?
   int myid() { return CMyPe(); }
@@ -131,12 +137,16 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/11/07 20:17:42 $
+ *	$Revision: 1.1010 $	$Date: 1998/01/05 20:32:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.1010  1998/01/05 20:32:24  sergei
+ * added public member SMDData smdData
+ * added functions recvSMDData(), sendSMDData()
+ *
  * Revision 1.1009  1997/11/07 20:17:42  milind
  * Made NAMD to run on shared memory machines.
  *
