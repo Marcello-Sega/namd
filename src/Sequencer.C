@@ -37,7 +37,7 @@ Sequencer::Sequencer(HomePatch *p) :
     reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
     if (simParams->pressureProfileOn && !simParams->pressureProfileNonbonded) {
       pressureProfileReduction = 
-        ReductionMgr::Object()->willSubmit(REDUCTIONS_USER1);
+        ReductionMgr::Object()->willSubmit(REDUCTIONS_PPROFILE);
     } else {
       pressureProfileReduction = NULL;
     }

@@ -63,7 +63,7 @@ Controller::Controller(NamdState *s) :
     reduction = ReductionMgr::Object()->willRequire(REDUCTIONS_BASIC);
     if (simParams->pressureProfileOn) {
       pressureProfileReduction = 
-        ReductionMgr::Object()->willRequire(REDUCTIONS_USER1);
+        ReductionMgr::Object()->willRequire(REDUCTIONS_PPROFILE);
       pressureProfileAverage = new BigReal[3*simParams->pressureProfileSlabs];
       memset(pressureProfileAverage, 0, 
           3*simParams->pressureProfileSlabs*sizeof(BigReal));

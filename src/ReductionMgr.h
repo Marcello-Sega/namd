@@ -130,6 +130,7 @@ typedef enum
 // Later this can be dynamic
 enum {
   REDUCTIONS_BASIC,
+  REDUCTIONS_PPROFILE,
   REDUCTIONS_USER1,
   REDUCTIONS_USER2,
  // semaphore (must be last)

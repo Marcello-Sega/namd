@@ -195,7 +195,7 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
         T::pressureProfileThickness = params->pressureProfileThickness;
         T::pressureProfileMin = params->pressureProfileMin;
         pressureProfileReduction = ReductionMgr::Object()->willSubmit(
-          REDUCTIONS_USER1);
+          REDUCTIONS_PPROFILE);
         pressureProfileData = new BigReal[3*pressureProfileSlabs];
       } else {
         pressureProfileReduction = NULL;
@@ -216,7 +216,7 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
         T::pressureProfileThickness = params->pressureProfileThickness;
         T::pressureProfileMin = params->pressureProfileMin;
         pressureProfileReduction = ReductionMgr::Object()->willSubmit(
-          REDUCTIONS_USER1);
+          REDUCTIONS_PPROFILE);
         pressureProfileData = new BigReal[3*pressureProfileSlabs];
       } else {
         pressureProfileReduction = NULL;
