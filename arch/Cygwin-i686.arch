@@ -1,0 +1,10 @@
+NAMD_ARCH = Cygwin-i686
+CHARMARCH = net-cygwin
+
+CXX = g++
+CXXOPTS = -O3 -Wall -march=pentiumpro -ffast-math
+CXXTHREADOPTS = $(CXXOPTS)
+CXXSIMPARAMOPTS = $(CXXOPTS)
+CC = gcc
+COPTS = -O3 -march=pentiumpro -ffast-math
+
