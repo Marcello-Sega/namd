@@ -160,6 +160,9 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   atoms=NULL;
   atomNames=NULL;
   resLookup=NULL;
+  if ( simParams->globalForcesOn ) {
+    resLookup = new ResidueLookupElem;
+  }
   bonds=NULL;
   angles=NULL;
   dihedrals=NULL;
@@ -702,15 +705,7 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
     NAMD_die("memory allocation failed in Molecule::read_atoms");
   }
 
-  ResidueLookupElem *tmpResLookup = NULL;
-  if ( simParams->globalForcesOn )
-  {
-    tmpResLookup = resLookup = new ResidueLookupElem;
-    if ( resLookup == NULL )
-    {
-      NAMD_die("memory allocation failed in Molecule::read_atoms");
-    }
-  }
+  ResidueLookupElem *tmpResLookup = resLookup;
 
   /*  Loop and read in numAtoms atom lines.      */
   while (atom_number < numAtoms)
@@ -4065,6 +4060,7 @@ void Molecule::read_parm(Ambertoppar *amber_data)
   atomNames = new AtomNameInfo[numAtoms];
   if (atoms == NULL || atomNames == NULL )
     NAMD_die("memory allocation failed when reading atom information");
+  ResidueLookupElem *tmpResLookup = resLookup;
   for (i=0; i<numAtoms; ++i)
   { atomNames[i].resname = nameArena->getNewArray(5);
     atomNames[i].atomname = nameArena->getNewArray(5);
@@ -4077,10 +4073,18 @@ void Molecule::read_parm(Ambertoppar *amber_data)
       atomNames[i].atomtype[j] = amber_data->AtomSym[i*4+j];
     }
     atomNames[i].resname[4] = atomNames[i].atomname[4] = atomNames[i].atomtype[4] = '\0';
+    strtok(atomNames[i].resname," ");
+    strtok(atomNames[i].atomname," ");
+    strtok(atomNames[i].atomtype," ");
     atoms[i].mass = amber_data->Masses[i];
     // Divide by 18.2223 to convert to charge in units of the electron charge
     atoms[i].charge = amber_data->Charges[i] / 18.2223;
     atoms[i].vdw_type = amber_data->Iac[i] - 1;
+
+    /*  Add this atom to residue lookup table */
+    if ( tmpResLookup ) tmpResLookup =
+	tmpResLookup->append("MAIN", amber_data->AtomRes[i]+1, i);
+
     /*  Determine the type of the atom (H or O) */
     atoms[i].status = UnknownAtom; // the default
     if (atoms[i].mass <=3.5) {
@@ -4362,6 +4366,7 @@ void Molecule::read_parm(const GromacsTopFile *gf) {
   atomNames = new AtomNameInfo[numAtoms];
   if (atoms == NULL || atomNames == NULL )
     NAMD_die("memory allocation failed when reading atom information");
+  ResidueLookupElem *tmpResLookup = resLookup;
 
   // Copy the individual atoms over
   for (i=0; i<numAtoms; ++i) {
@@ -4384,6 +4389,10 @@ void Molecule::read_parm(const GromacsTopFile *gf) {
     atoms[i].mass = mass;
     atoms[i].charge = charge;
     atoms[i].vdw_type = typenum;
+
+    /*  Add this atom to residue lookup table */
+    if ( tmpResLookup ) tmpResLookup =
+	tmpResLookup->append("MAIN", resnum+1, i);
 
     /*  Determine the type of the atom (H or O) */
     // XXX this cannot be done this way in GROMACS
