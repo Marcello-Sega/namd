@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.14 1996/12/05 01:44:16 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.15 1996/12/11 18:45:51 nealk Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -33,6 +33,10 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1
 Patch::Patch(PatchID pd) :
    patchID(pd),
    positionPtr(0), forcePtr(0), atomPtr(0),
+#if 0
+// STUBBED - NAK
+   momentumPtr(0), velocityPtr(0),
+#endif
    positionBox(this,&(Patch::positionBoxClosed)),
    forceBox(this,&(Patch::forceBoxClosed)),
    atomBox(this,&(Patch::atomBoxClosed)),
@@ -44,6 +48,10 @@ Patch::Patch(PatchID pd) :
 Patch::Patch(PatchID pd, AtomIDList al, PositionList pl) :
    patchID(pd), atomIDList(al), p(pl),
    positionPtr(0), forcePtr(0), atomPtr(0),
+#if 0
+// STUBBED - NAK
+   momentumPtr(0), velocityPtr(0),
+#endif
    positionBox(this,&(Patch::positionBoxClosed)),
    forceBox(this,&(Patch::forceBoxClosed)),
    atomBox(this,&(Patch::atomBoxClosed)),
@@ -84,6 +92,8 @@ void Patch::loadAtomProperties(void)
     localIndex.sort();
     localIndex.uniq();
     f.resize(atomIDList.size());
+    v.resize(atomIDList.size());
+    m.resize(atomIDList.size());
 }
 
 Box<Patch,Position>* Patch::registerPositionPickup(ComputeID cid)
@@ -167,6 +177,17 @@ void Patch::positionsReady()
 
    boxesOpen = 3;
 
+   // sanity check: force and position arrays should be the same size
+   int Size;
+   if (f.size() != p.size())
+   {
+	iout << iERRORF
+		<< "force and position arrays are different lengths\n"
+		<< endi;
+	NAMD_die("Patch::positionsReady force and position arrays are different lengths");
+   }
+   else Size = f.size();
+
    // Give all position pickup boxes access to positions
    positionPtr = p.unencap();
    positionBox.open(positionPtr);
@@ -179,29 +200,78 @@ void Patch::positionsReady()
    atomPtr = a.unencap();
    atomBox.open(atomPtr);
 
-   DebugM(1,"Patch::positionsReady() - looping over positionComputeList" << endl);
-   DebugM(1,"Patch::positionsReady() - size " << positionComputeList.size() << endl );
+   // zero the arrays
+   for(int i=0; i<Size; i++)
+	{
+	forcePtr[i].x = 0;
+	forcePtr[i].y = 0;
+	forcePtr[i].z = 0;
+
+#if 0
+// STUBBED - NAK
+	velocityPtr[i].x = 0;
+	velocityPtr[i].y = 0;
+	velocityPtr[i].z = 0;
+
+	momentumPtr[i].x = 0;
+	momentumPtr[i].y = 0;
+	momentumPtr[i].z = 0;
+#endif
+	}
+
+   DebugM(1,"Patch::positionsReady() - looping over positionComputeList\n");
+   DebugM(1,"Patch::positionsReady() - size " << positionComputeList.size() << "\n" );
    // Iterate over compute objects that need to be informed we are ready
    ComputeIDListIter cid(positionComputeList);
    for(cid = cid.begin(); cid != cid.end(); cid++)
    {
-     DebugM(1,"Patch::positionsReady() - cid = " << *cid << endl );
+     DebugM(1,"Patch::positionsReady() - cid = " << *cid << "\n" );
      computeMap->compute(*cid)->patchReady(patchID);
    } 
 }
 
 
+void Patch::addForceToMomentum	(const BigReal timestep)
+{
+  int i;
+  const int Size = forcePtr->length();
+  for(i=0; i<Size; i++)
+  {
+#if 0
+// STUBBED - NAK
+    momentumPtr[i] += forcePtr[i]*timestep;
+#endif
+  }
+}
+
+
+void Patch::addVelocityToPosition	(const BigReal timestep)
+{
+  int i;
+  const int Size = positionPtr->length();
+  for(i=0; i<Size; i++)
+  {
+#if 0
+// STUBBED - NAK
+    positionPtr[i] += velocityPtr[i]*timestep;
+#endif
+  }
+}
+
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.14 $	$Date: 1996/12/05 01:44:16 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.15 $	$Date: 1996/12/11 18:45:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.15  1996/12/11 18:45:51  nealk
+ * Added stubs for addForceToMomentum and addVelocityToPosition.
+ *
  * Revision 1.14  1996/12/05 01:44:16  ari
  * started toward proxy management
  *

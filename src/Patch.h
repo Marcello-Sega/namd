@@ -70,6 +70,10 @@ class Patch
      void forceBoxClosed(void);
      void atomBoxClosed(void);
 
+     // methods for collecting forces
+     void addForceToMomentum(const BigReal);
+     void addVelocityToPosition(const BigReal);
+
      int getNumAtoms() { return numAtoms; }
      AtomIDList &getAtomIDList() { return (atomIDList); }
 
@@ -87,6 +91,10 @@ class Patch
      Position      *positionPtr;
      ForceList     f;
      Force         *forcePtr;
+     ForceList     m;
+     Force	   *momentumPtr;
+     ForceList     v;
+     Force	   *velocityPtr;
      AtomPropertiesList		a;
      AtomProperties		*atomPtr;
 
@@ -113,13 +121,16 @@ class Patch
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1996/12/05 01:44:16 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.10 $	$Date: 1996/12/11 18:45:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.h,v $
+ * Revision 1.10  1996/12/11 18:45:51  nealk
+ * Added stubs for addForceToMomentum and addVelocityToPosition.
+ *
  * Revision 1.9  1996/12/05 01:44:16  ari
  * started toward proxy management
  *

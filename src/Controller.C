@@ -52,8 +52,8 @@ void Sequencer::algorithm(void)
     {
         for ( step = 0; step < stepsPerCycle; ++step )
         {
-            // patch->addForceToMomentum(0.5*timestep);
-            // patch->addVelocityToPosition(timestep);
+            patch->addForceToMomentum(0.5*timestep);
+            patch->addVelocityToPosition(timestep);
 	    DebugM(3, patch->getPatchID()
 		<< ": (" << cycle << "," << step << ") "
 		<< "Sending positionsReady().\n");
@@ -65,7 +65,7 @@ void Sequencer::algorithm(void)
 	    DebugM(2, patch->getPatchID()
 		<< ": (" << cycle << "," << step << ") "
 		<< "Awakened!\n");
-            // patch->addForceToMomentum(0.5*timestep);
+            patch->addForceToMomentum(0.5*timestep);
         }
     }
     DebugM(4, patch->getPatchID() << ": Exiting.\n");
