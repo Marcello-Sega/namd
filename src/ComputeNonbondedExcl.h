@@ -69,7 +69,6 @@ public:
   }
 
   private:
-    static BigReal reductionDummy[reductionDataSize];
 };
 
 class ComputeNonbondedExcls : public ComputeHomeTuples<NonbondedExclElem>
@@ -87,13 +86,17 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedExcl.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/11 23:46:28 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/09/28 22:36:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedExcl.h,v $
+ * Revision 1.1004  1997/09/28 22:36:51  jim
+ * Modified tuple-based computations to not duplicate calculations and
+ * only require "upstream" proxies.
+ *
  * Revision 1.1003  1997/03/11 23:46:28  ari
  * Improved ComputeNonbondedExcl loadTuples() by overloading the default
  * template method from ComputeHomeTuples and used the checklist suggested

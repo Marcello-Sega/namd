@@ -88,6 +88,10 @@ public:
   // zIndex(pid) returns the z index for the given patch id.
   int zIndex(int pid);
 
+  // gives more downstream patch of pid1, pid2; handles periodicity right
+  // given patches must be neighbors!!!
+  int downstream(int pid1, int pid2);
+
   // node(pid) returns the node where the patch currently exists.
   int node(int pid);
 
@@ -162,6 +166,8 @@ public:
 
   int oneOrTwoAwayNeighbors(int pid, PatchID *neighbor_ids, int *transform_ids = 0);
 
+  int upstreamNeighbors(int pid, PatchID *neighbor_ids, int *transform_ids = 0);
+
   void printPatchMap(void);
 
   inline Patch *patch(PatchID pid);
@@ -222,13 +228,17 @@ inline HomePatch *PatchMap::homePatch(PatchID pid)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/04/10 09:14:02 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1006 $	$Date: 1997/09/28 22:36:53 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.h,v $
+ * Revision 1.1006  1997/09/28 22:36:53  jim
+ * Modified tuple-based computations to not duplicate calculations and
+ * only require "upstream" proxies.
+ *
  * Revision 1.1005  1997/04/10 09:14:02  ari
  * Final debugging for compute migration / proxy creation for load balancing.
  * Lots of debug code added, mostly turned off now.

@@ -32,15 +32,12 @@ ComputeHomeTuples<T>::ComputeHomeTuples(ComputeID c) : Compute(c) {
   patchMap = PatchMap::Object();
   atomMap = AtomMap::Object();
   reduction = ReductionMgr::Object();
-  maxProxyAtoms = 0;
-  dummyForce = NULL;	// initialized to NULL -- won't harm reallocating deletes.
   T::registerReductionData(reduction);
 }
 
 template <class T>
 ComputeHomeTuples<T>::~ComputeHomeTuples()
 {
-  delete [] dummyForce;	// allocated during initialize; reallocated in doWork
   T::unregisterReductionData(reduction);
 }
 
@@ -60,28 +57,27 @@ void ComputeHomeTuples<T>::initialize() {
   tuplePatchList.clear();
 
   for ( ai = ai.begin(); ai != ai.end(); ai++ ) {
-    tuplePatchList.add(TuplePatchElem((*ai).patch, HOME, cid));
+    tuplePatchList.add(TuplePatchElem((*ai).patch, cid));
   }
 
   // Gather all proxy patches (neighbors, that is)
   PatchID neighbors[PatchMap::MaxOneOrTwoAway];
 
   for ( ai = ai.begin(); ai != ai.end(); ai++ ) {
-    int numNeighbors = patchMap->oneOrTwoAwayNeighbors((*ai).pid,neighbors);
+    int numNeighbors = patchMap->upstreamNeighbors((*ai).pid,neighbors);
     for ( int i = 0; i < numNeighbors; ++i )
     {
       if ( patchMap->node(neighbors[i]) != CMyPe() &&
 	   ! tuplePatchList.find(TuplePatchElem(neighbors[i])) )
       {
         Patch *patch = patchMap->patch(neighbors[i]);
-	tuplePatchList.add(TuplePatchElem(patch, PROXY, cid));
+	tuplePatchList.add(TuplePatchElem(patch, cid));
       }
     }
   }
 
   setNumPatches(tuplePatchList.size());
 
-  sizeDummy();
   loadTuples();
 }
 
@@ -91,20 +87,18 @@ void ComputeHomeTuples<T>::initialize() {
 //===========================================================================
 template <class T>
 void ComputeHomeTuples<T>::atomUpdate() {
-  sizeDummy();
   loadTuples();
 }
 
 template <class T>
 void ComputeHomeTuples<T>::loadTuples() {
-  // cycle through each home patch and gather all tuples
-  HomePatchList *a = patchMap->homePatchList();
-  ResizeArrayIter<HomePatchElem> ai(*a);
+  // cycle through each patch and gather all tuples
+  TuplePatchListIter ai(tuplePatchList);
 
   tupleList.clear();
   for ( ai = ai.begin(); ai != ai.end(); ai++ )
   {
-    Patch *patch = (*ai).patch;
+    Patch *patch = (*ai).p;
     AtomIDList atomID = patch->getAtomIDList();
 
     // cycle through each atom in the patch and load up tuples
@@ -131,48 +125,35 @@ void ComputeHomeTuples<T>::loadTuples() {
   }
 
   // Resolve all atoms in tupleList to correct PatchList element and index
+  // and eliminate tuples we aren't responsible for
   UniqueSetIter<T> al(tupleList);
 
+  LocalID aid[T::size];
   for (al = al.begin(); al != al.end(); al++ ) {
-    for (int i=0; i < T::size; i++) {
-	LocalID aid = atomMap->localID(al->atomID[i]);
-	al->p[i] = tuplePatchList.find(TuplePatchElem(aid.pid));
-	if ( ! (al->p)[i] )
-	{
-	  iout << iERROR << "ComputeHomeTuples couldn't find patch " 
-	    << aid.pid << " for atom " << al->atomID[i] 
-	    << ", aborting.\n" << endi;
-	  Namd::die();
-	}
-	al->localIndex[i] = aid.index;
+    register int i;
+    aid[0] = atomMap->localID(al->atomID[0]);
+    int homepatch = aid[0].pid;
+    for (i=1; i < T::size; i++) {
+	aid[i] = atomMap->localID(al->atomID[i]);
+	homepatch = patchMap->downstream(homepatch,aid[i].pid);
     }
-  }
-}
-
-
-//-----------------------------------------------------------------------
-// Figure out maximum # of atoms in the Proxies we will be dealing with
-// and allocate a dummy force vector of that size to take in
-// the force calculation (which is thrown away since only HomePatch
-// forces are of interest)
-//-----------------------------------------------------------------------
-template <class T>
-void ComputeHomeTuples<T>::sizeDummy() {
-  delete[] dummyForce;	// deleted, but reallocated very soon
-  maxProxyAtoms = 0;
-
-  // find size of largest patch on tuplePatchList, setup dummy force array
-  UniqueSetIter<TuplePatchElem> tpi(tuplePatchList);
-  for ( tpi = tpi.begin(); tpi != tpi.end(); tpi++ ) {
-    if (tpi->p->getNumAtoms() > maxProxyAtoms) {
-      maxProxyAtoms = tpi->p->getNumAtoms();
+    T &t = *al;
+    if ( patchMap->node(homepatch) == CMyPe() ) {
+      for (i=0; i < T::size; i++) {
+	t.p[i] = tuplePatchList.find(TuplePatchElem(aid[i].pid));
+        if ( ! (al->p)[i] ) {
+ 	  iout << iERROR << "ComputeHomeTuples couldn't find patch " 
+ 	    << aid[i].pid << " for atom " << al->atomID[i] 
+ 	    << ", aborting.\n" << endi;
+ 	  Namd::die();
+        }
+	t.localIndex[i] = aid[i].index;
+      }
     }
+    else tupleList.del(t);
   }
-  dummyForce = new Force[maxProxyAtoms];	// reallocated
-  for ( int i = 0; i < Results::maxNumForces; ++i )
-  {
-    dummyResults.f[i] = dummyForce;
-  }
+  tupleList.rehash();
+
 }
 
 
@@ -191,15 +172,7 @@ void ComputeHomeTuples<T>::doWork() {
   for (ap = ap.begin(); ap != ap.end(); ap++) {
     ap->x = ap->positionBox->open();
     ap->a = ap->atomBox->open();
-    // We only deposit real forces for HomePatch atoms on our Node
-    if ( ap->patchType == HOME ) 
-    {
-      ap->r = ap->forceBox->open();
-    }
-    else 
-    {
-      ap->r = &dummyResults;
-    }
+    ap->r = ap->forceBox->open();
     ap->f = ap->r->f[Results::normal];
   } 
 
@@ -219,9 +192,7 @@ void ComputeHomeTuples<T>::doWork() {
   for (ap = ap.begin(); ap != ap.end(); ap++) {
     ap->positionBox->close(&(ap->x));
     ap->atomBox->close(&(ap->a));
-
-    if ( ap->patchType == HOME ) 
-      ap->forceBox->close(&(ap->r));
+    ap->forceBox->close(&(ap->r));
   }
   DebugM(1, "ComputeHomeTuples::doWork() -- done" << endl);
 }
@@ -231,13 +202,17 @@ void ComputeHomeTuples<T>::doWork() {
  * RCS INFORMATION:
  *
  *      $RCSfile: ComputeHomeTuples.C,v $
- *      $Author: milind $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1014 $     $Date: 1997/09/28 10:19:05 $
+ *      $Author: jim $  $Locker:  $             $State: Exp $
+ *      $Revision: 1.1015 $     $Date: 1997/09/28 22:36:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.C,v $
+ * Revision 1.1015  1997/09/28 22:36:49  jim
+ * Modified tuple-based computations to not duplicate calculations and
+ * only require "upstream" proxies.
+ *
  * Revision 1.1014  1997/09/28 10:19:05  milind
  * Fixed priorities, ReductionMgr etc.
  *

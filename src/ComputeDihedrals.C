@@ -209,11 +209,8 @@ void DihedralElem::computeForce(BigReal *reduction)
   p[3]->f[localIndex[3]] += -f3;
 
   DebugM(3, "::computeForce() -- ending with delta energy " << energy << endl);
-  if ( p[0]->patchType == HOME )
-  {
-    reduction[dihedralEnergyIndex] += energy;
-    reduction[virialIndex] += ( f1 * r12 + f2 * r23 + f3 * r34 );
-  }
+  reduction[dihedralEnergyIndex] += energy;
+  reduction[virialIndex] += ( f1 * r12 + f2 * r23 + f3 * r34 );
 }
 
 
@@ -242,15 +239,19 @@ void DihedralElem::unregisterReductionData(ReductionMgr *reduction)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/08/18 05:02:53 $
+ *	$Revision: 1.1007 $	$Date: 1997/09/28 22:36:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDihedrals.C,v $
- * Revision 1.1006  1997/08/18 05:02:53  jim
- * Fixed bugs related to multiple dihedrals and exclude 1-2, 1-3, or 1-4.
+ * Revision 1.1007  1997/09/28 22:36:48  jim
+ * Modified tuple-based computations to not duplicate calculations and
+ * only require "upstream" proxies.
  *
+ * Revision 1.1006  97/08/18  05:02:53  05:02:53  jim (Jim Phillips)
+ * Fixed bugs related to multiple dihedrals and exclude 1-2, 1-3, or 1-4.
+ * 
  * Revision 1.1005  1997/03/20 23:53:34  ari
  * Some changes for comments. Copyright date additions.
  * Hooks for base level update of Compute objects from ComputeMap

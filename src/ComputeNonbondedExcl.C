@@ -19,14 +19,10 @@
 //#undef DEBUGM
 #include "Debug.h"
 
-BigReal NonbondedExclElem::reductionDummy[ComputeNonbondedUtil::reductionDataSize];
-
 void NonbondedExclElem::computeForce(BigReal *reduction)
 {
   register TuplePatchElem *p0 = p[0];
   register TuplePatchElem *p1 = p[1];
-
-  if ( p0->patchType != HOME ) reduction = reductionDummy;
 
   register Patch *patch = p0->p;
 
@@ -72,9 +68,8 @@ void NonbondedExclElem::computeForce(BigReal *reduction)
 void
 ComputeNonbondedExcls::loadTuples() {
 
-  // cycle through each home patch and gather all tuples
-  HomePatchList *a = patchMap->homePatchList();
-  ResizeArrayIter<HomePatchElem> ai(*a);
+  // cycle through each patch and gather all tuples
+  TuplePatchListIter ai(tuplePatchList);
   register int i;
   int numExclusions = node->molecule->numTotalExclusions;
 
@@ -84,7 +79,7 @@ ComputeNonbondedExcls::loadTuples() {
   tupleList.clear();
   for ( ai = ai.begin(); ai != ai.end(); ai++ )
   {
-    Patch *patch = (*ai).patch;
+    Patch *patch = (*ai).p;
     AtomIDList atomID = patch->getAtomIDList();
 
     // cycle through each atom in the patch and load up tuples
@@ -108,36 +103,48 @@ ComputeNonbondedExcls::loadTuples() {
 	Exclusion *excl = molecule->get_exclusion(i);
 	if ( ! ( molecule->is_atom_fixed(excl->atom1) &&
 		 molecule->is_atom_fixed(excl->atom2) ) )
-	  tupleList.load(NonbondedExclElem(excl));
+	  tupleList.add(NonbondedExclElem(excl));
       }
     }
   } else {
     for (i=0; i<numExclusions; i++) {
       if (exclFlag[i]) {
-	tupleList.load(NonbondedExclElem(node->molecule->get_exclusion(i)));
+	tupleList.add(NonbondedExclElem(node->molecule->get_exclusion(i)));
       }
     }
   }
   delete[] exclFlag;
+  tupleList.rehash();
  
   // Resolve all atoms in tupleList to correct PatchList element and index
+  // and eliminate tuples we aren't responsible for
   UniqueSetIter<NonbondedExclElem> al(tupleList);
- 
+
+  LocalID aid[NonbondedExclElem::size];
   for (al = al.begin(); al != al.end(); al++ ) {
-    for (i=0; i < NonbondedExclElem::size; i++) {
-      LocalID aid = atomMap->localID(al->atomID[i]);
-      al->p[i] = tuplePatchList.find(TuplePatchElem(aid.pid));
-      /*
-      if ( ! (al->p)[i] ) {
- 	iout << iERROR << "ComputeHomeTuples couldn't find patch " 
- 	    << aid.pid << " for atom " << al->atomID[i] 
+    register int i;
+    aid[0] = atomMap->localID(al->atomID[0]);
+    aid[1] = atomMap->localID(al->atomID[1]);
+    int homepatch = patchMap->downstream(aid[0].pid,aid[1].pid);;
+    NonbondedExclElem &t = *al;
+    if ( patchMap->node(homepatch) == CMyPe() ) {
+      for (i=0; i < NonbondedExclElem::size; i++) {
+	t.p[i] = tuplePatchList.find(TuplePatchElem(aid[i].pid));
+        /*
+        if ( ! (al->p)[i] ) {
+ 	  iout << iERROR << "ComputeHomeTuples couldn't find patch " 
+ 	    << aid[i].pid << " for atom " << al->atomID[i] 
  	    << ", aborting.\n" << endi;
- 	Namd::die();
+ 	  Namd::die();
+        }
+        */
+	t.localIndex[i] = aid[i].index;
       }
-      */
-      al->localIndex[i] = aid.index;
     }
+    else tupleList.del(t);
   }
+  tupleList.rehash();
+
 }
 
 /***************************************************************************
@@ -145,12 +152,16 @@ ComputeNonbondedExcls::loadTuples() {
  *
  *	$RCSfile: ComputeNonbondedExcl.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1997/09/22 03:36:02 $
+ *	$Revision: 1.1016 $	$Date: 1997/09/28 22:36:51 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedExcl.C,v $
+ * Revision 1.1016  1997/09/28 22:36:51  jim
+ * Modified tuple-based computations to not duplicate calculations and
+ * only require "upstream" proxies.
+ *
  * Revision 1.1015  1997/09/22 03:36:02  jim
  * Sped up simulations involving fixed atoms.
  *

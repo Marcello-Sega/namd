@@ -214,14 +214,13 @@ void ProxyMgr::createProxies(void)
     patchFlag[i] = ( patchMap->node(i) == myNode ) ? Home : Unknown;
   }
 
-  // Check all two-away neighbors.
-  PatchID neighbors[PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
+  // Add all upstream neighbors.
+  PatchID neighbors[PatchMap::MaxOneAway];
   for ( i = 0; i < numPatches; ++i )
   {
     if ( patchMap->node(i) != myNode ) 
       continue;
-    int numNeighbors = patchMap->oneAwayNeighbors(i,neighbors);
-    numNeighbors += patchMap->twoAwayNeighbors(i,neighbors+numNeighbors);
+    int numNeighbors = patchMap->upstreamNeighbors(i,neighbors);
     for ( j = 0; j < numNeighbors; ++j )
     {
       if ( ! patchFlag[neighbors[j]] ) {
@@ -354,13 +353,17 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1997/04/10 09:14:09 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1015 $	$Date: 1997/09/28 22:36:53 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.1015  1997/09/28 22:36:53  jim
+ * Modified tuple-based computations to not duplicate calculations and
+ * only require "upstream" proxies.
+ *
  * Revision 1.1014  1997/04/10 09:14:09  ari
  * Final debugging for compute migration / proxy creation for load balancing.
  * Lots of debug code added, mostly turned off now.

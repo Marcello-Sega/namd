@@ -78,11 +78,8 @@ void BondElem::computeForce(BigReal *reduction)
   p[1]->f[localIndex[1]] -= f12;
 
   DebugM(3, "::computeForce() -- ending with delta energy " << energy << endl);
-  if ( p[0]->patchType == HOME )
-  {
-    reduction[bondEnergyIndex] += energy;
-    reduction[virialIndex] += r12 * f12;
-  }
+  reduction[bondEnergyIndex] += energy;
+  reduction[virialIndex] += r12 * f12;
 }
 
 
@@ -111,12 +108,16 @@ void BondElem::unregisterReductionData(ReductionMgr *reduction)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/20 23:53:29 $
+ *	$Revision: 1.1006 $	$Date: 1997/09/28 22:36:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeBonds.C,v $
+ * Revision 1.1006  1997/09/28 22:36:48  jim
+ * Modified tuple-based computations to not duplicate calculations and
+ * only require "upstream" proxies.
+ *
  * Revision 1.1005  1997/03/20 23:53:29  ari
  * Some changes for comments. Copyright date additions.
  * Hooks for base level update of Compute objects from ComputeMap

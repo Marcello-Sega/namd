@@ -284,6 +284,48 @@ int PatchMap::zIndex(int pid)
 }
 
 //----------------------------------------------------------------------
+int PatchMap::downstream(int pid1, int pid2)
+{
+  register int i1;
+  register int i2;
+  register int i;
+  register int ds;
+
+  // z
+  i1 = (pid1 / (xDim*yDim));
+  i2 = (pid2 / (xDim*yDim));
+  if ( zPeriodic ) {
+    i = ( ( ( i1 + 1 ) % zDim ) == i2 ) ? i1 : i2;
+  }
+  else {
+    i = ( i1 < i2 ) ? i1 : i2;
+  }
+  ds = i*yDim;
+  
+  // y
+  i1 = (pid1 / xDim) % yDim;
+  i2 = (pid2 / xDim) % yDim;
+  if ( yPeriodic ) {
+    i = ( ( ( i1 + 1 ) % yDim ) == i2 ) ? i1 : i2;
+  }
+  else {
+    i = ( i1 < i2 ) ? i1 : i2;
+  }
+  ds = (ds+i)*xDim;
+
+  // x
+  i1 = pid1 % xDim;
+  i2 = pid2 % xDim;
+  if ( xPeriodic ) {
+    i = ( ( ( i1 + 1 ) % xDim ) == i2 ) ? i1 : i2;
+  }
+  else {
+    i = ( i1 < i2 ) ? i1 : i2;
+  }
+  return ( ds + i );
+}
+
+//----------------------------------------------------------------------
 int PatchMap::node(int pid)
 {
   return patchData[pid].node;
@@ -537,6 +579,49 @@ int PatchMap::oneOrTwoAwayNeighbors(int pid, PatchID *neighbor_ids, int *transfo
 }
 
 //----------------------------------------------------------------------
+int PatchMap::upstreamNeighbors(int pid, PatchID *neighbor_ids, int *transform_ids)
+{
+  int xi, yi, zi;
+  int xinc, yinc, zinc;
+  int n=0;
+
+  for(zinc=0;zinc<=1;zinc++)
+  {
+    zi = patchData[pid].zi + zinc;
+    if ((zi < 0) || (zi >= zDim))
+      if ( ! zPeriodic ) continue;
+    for(yinc=0;yinc<=1;yinc++)
+    {
+      yi = patchData[pid].yi + yinc;
+      if ((yi < 0) || (yi >= yDim))
+	if ( ! yPeriodic ) continue;
+      for(xinc=0;xinc<=1;xinc++)
+      {
+	if ((xinc==0) && (yinc==0) && (zinc==0))
+	  continue;
+
+	xi = patchData[pid].xi + xinc;
+	if ((xi < 0) || (xi >= xDim))
+	  if ( ! xPeriodic ) continue;
+
+	if (neighbor_ids)
+	  neighbor_ids[n]=this->pid(xi,yi,zi);
+	if ( transform_ids )
+	{
+	  int xt = 0; if ( xi < 0 ) xt = -1; if ( xi >= xDim ) xt = 1;
+	  int yt = 0; if ( yi < 0 ) yt = -1; if ( yi >= yDim ) yt = 1;
+	  int zt = 0; if ( zi < 0 ) zt = -1; if ( zi >= zDim ) zt = 1;
+	  transform_ids[n] = Lattice::index(xt,yt,zt);
+	}
+	n++;
+      }
+    }
+  }
+  DebugM(3,"Patch " << pid << " has " << n << " upstream neighbors.\n");
+  return n;
+}
+
+//----------------------------------------------------------------------
 void PatchMap::printPatchMap(void)
 {
   CPrintf("---------------------------------------");
@@ -593,13 +678,17 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/04/10 09:14:01 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1012 $	$Date: 1997/09/28 22:36:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.1012  1997/09/28 22:36:52  jim
+ * Modified tuple-based computations to not duplicate calculations and
+ * only require "upstream" proxies.
+ *
  * Revision 1.1011  1997/04/10 09:14:01  ari
  * Final debugging for compute migration / proxy creation for load balancing.
  * Lots of debug code added, mostly turned off now.

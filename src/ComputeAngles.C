@@ -139,11 +139,8 @@ void AngleElem::computeForce(BigReal *reduction)
   p[2]->f[localIndex[2]] += force3;
 
   DebugM(3, "::computeForce() -- ending with delta energy " << energy << endl);
-  if ( p[0]->patchType == HOME )
-  {
-    reduction[angleEnergyIndex] += energy;
-    reduction[virialIndex] += ( r12 * force1 + r32 * force3 );
-  }
+  reduction[angleEnergyIndex] += energy;
+  reduction[virialIndex] += ( r12 * force1 + r32 * force3 );
 }
 
 
@@ -171,12 +168,16 @@ void AngleElem::unregisterReductionData(ReductionMgr *reduction)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/20 23:53:27 $
+ *	$Revision: 1.1006 $	$Date: 1997/09/28 22:36:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.C,v $
+ * Revision 1.1006  1997/09/28 22:36:47  jim
+ * Modified tuple-based computations to not duplicate calculations and
+ * only require "upstream" proxies.
+ *
  * Revision 1.1005  1997/03/20 23:53:27  ari
  * Some changes for comments. Copyright date additions.
  * Hooks for base level update of Compute objects from ComputeMap

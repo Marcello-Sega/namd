@@ -31,13 +31,10 @@
 #include "PositionOwnerBox.h"
 #include "Templates/UniqueSet.h"
 
-enum PatchType {HOME,PROXY};
-
 class TuplePatchElem {
   public:
     PatchID patchID;
     Patch *p;
-    PatchType patchType;
     PositionBox<Patch> *positionBox;
     Box<Patch,Results> *forceBox;
     Box<Patch,AtomProperties> *atomBox;
@@ -48,19 +45,7 @@ class TuplePatchElem {
 
     int hash() const { return patchID; }
 
-  TuplePatchElem() {
-    patchID = -1;
-    p = NULL;
-    positionBox = NULL;
-    forceBox = NULL;
-    atomBox = NULL;
-    x = NULL;
-    r = NULL;
-    f = NULL;
-    a = NULL;
-  }
-
-  TuplePatchElem(PatchID p) {
+  TuplePatchElem(PatchID p = -1) {
     patchID = p;
     p = NULL;
     positionBox = NULL;
@@ -72,13 +57,11 @@ class TuplePatchElem {
     a = NULL;
   }
 
-  TuplePatchElem(Patch *p, PatchType pt, ComputeID cid) {
+  TuplePatchElem(Patch *p, ComputeID cid) {
     patchID = p->getPatchID();
     this->p = p;
-    patchType = pt;
     positionBox = p->registerPositionPickup(cid);
-    if ( pt == HOME ) forceBox = p->registerForceDeposit(cid);
-    else forceBox =  NULL;
+    forceBox = p->registerForceDeposit(cid);
     atomBox = p->registerAtomPickup(cid);
     x = NULL;
     r = NULL;
@@ -98,6 +81,7 @@ class TuplePatchElem {
 };
 
 typedef UniqueSet<TuplePatchElem> TuplePatchList;
+typedef UniqueSetIter<TuplePatchElem> TuplePatchListIter;
 
 class AtomMap;
 class ReductionMgr;
@@ -108,8 +92,6 @@ private:
   virtual void loadTuples();
 
 protected:
-  void sizeDummy();
-
   UniqueSet<T> tupleList;
   TuplePatchList tuplePatchList;
 
@@ -117,10 +99,6 @@ protected:
   AtomMap *atomMap;
   ReductionMgr *reduction;
 
-  int maxProxyAtoms;
-  Results dummyResults;
-  Force *dummyForce;
-  
 public:
   ComputeHomeTuples(ComputeID c);
   virtual ~ComputeHomeTuples();
@@ -134,13 +112,17 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeHomeTuples.h,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/07/09 21:26:40 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1009 $	$Date: 1997/09/28 22:36:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.h,v $
+ * Revision 1.1009  1997/09/28 22:36:50  jim
+ * Modified tuple-based computations to not duplicate calculations and
+ * only require "upstream" proxies.
+ *
  * Revision 1.1008  1997/07/09 21:26:40  milind
  * Ported NAMD2 to SP3. The SP specific code is within #ifdef SP2
  * and #endif's.
