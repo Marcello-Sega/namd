@@ -26,14 +26,14 @@ class ScriptTcl {
 public:
   ScriptTcl();
   ~ScriptTcl();
-  void run(char *filename, ConfigList *configList);
+  void load(char *scriptFile);
+  void run(char *scriptFile);
   void measure(Vector *);
 private:
   char *scriptFile;
   ConfigList *config;
   NamdState *state;
   void suspend(void);
-  void algorithm();
   int runWasCalled;
   void barrier();
   void initcheck();

@@ -16,11 +16,13 @@
 #if defined(WIN32) && !defined(__CYGWIN__)
 #include <direct.h>
 #define CHDIR _chdir
+#define GETCWD _getcwd
 #define PATHSEP '\\'
 #define PATHSEPSTR "\\"
 #else
 #include <unistd.h>
 #define CHDIR chdir
+#define GETCWD getcwd
 #define PATHSEP '/'
 #define PATHSEPSTR "/"
 #endif
@@ -30,12 +32,22 @@
 
 int main(int argc, char **argv) {
   BackEnd::init(argc,argv);
+  ScriptTcl *script = new ScriptTcl;
+  Node::Object()->setScript(script);
+
   for(argc = 0; argv[argc]; ++argc);
   if ( argc < 2 ) {
     NAMD_die("No simulation config file specified on command line.");
   }
-
+#ifdef NAMD_TCL
+  if (argc>2)
+    iout << iINFO << "Found " << (argc-1) << " config files.\n" << endi;
+  for(int i = 1; i < argc; ++i) {
+  char *confFile = argv[i];
+#else
   char *confFile = argv[argc-1];
+#endif
+  char *oldcwd = GETCWD(0,0);
   char *currentdir=confFile;
   char *tmp;
   for(tmp=confFile;*tmp;++tmp); // find final null
@@ -57,9 +69,19 @@ int main(int argc, char **argv) {
     NAMD_die("Simulation config file is not accessible.");
   }
 
-  ScriptTcl *script = new ScriptTcl;
-  Node::Object()->setScript(script);
-  script->run(confFile,0);
+#ifdef NAMD_TCL
+  if ( i == argc - 1 ) script->run(confFile);
+  else script->load(confFile);
+#else
+  script->run(confFile);
+#endif
+
+  CHDIR(oldcwd);
+  free(oldcwd);
+
+#ifdef NAMD_TCL
+}
+#endif
 
   BackEnd::exit();
   return 0;

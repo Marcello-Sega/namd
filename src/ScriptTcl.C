@@ -588,28 +588,6 @@ ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
   dcdplugin_init();
   dcdplugin_register(NULL, register_cb);
 #endif
-}
-
-ScriptTcl::~ScriptTcl() {
-  DebugM(3,"Destructing ScriptTcl\n");
-#ifdef NAMD_TCL
-  if ( interp ) Tcl_DeleteInterp(interp);
-  delete [] callbackname;
-#endif
-
-#ifdef NAMD_PLUGINS
-  dcdplugin_fini();
-#endif
-}
-
-void ScriptTcl::run(char *filename, ConfigList *)
-{
-    scriptFile = filename;
-    algorithm();
-}
-
-void ScriptTcl::algorithm() {
-  DebugM(4,"Running ScriptTcl\n");
 
   runWasCalled = 0;
 
@@ -653,7 +631,29 @@ void ScriptTcl::algorithm() {
   Tcl_CreateCommand(interp, "coorfile", Tcl_coorfile,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
 #endif
+#endif
 
+}
+
+void ScriptTcl::load(char *scriptFile) {
+
+#ifdef NAMD_TCL
+  int code = Tcl_EvalFile(interp,scriptFile);
+  char *result = Tcl_GetStringResult(interp);
+  if (*result != 0) CkPrintf("TCL: %s\n",result);
+  if (code != TCL_OK) {
+    char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
+    NAMD_die(errorInfo);
+  }
+#else
+  NAMD_bug("ScriptTcl::load called without Tcl.");
+#endif
+
+}
+
+void ScriptTcl::run(char *scriptFile) {
+
+#ifdef NAMD_TCL
   int code = Tcl_EvalFile(interp,scriptFile);
   char *result = Tcl_GetStringResult(interp);
   if (*result != 0) CkPrintf("TCL: %s\n",result);
@@ -677,5 +677,17 @@ void ScriptTcl::algorithm() {
 
   runController(SCRIPT_END);
 
+}
+
+ScriptTcl::~ScriptTcl() {
+  DebugM(3,"Destructing ScriptTcl\n");
+#ifdef NAMD_TCL
+  if ( interp ) Tcl_DeleteInterp(interp);
+  delete [] callbackname;
+#endif
+
+#ifdef NAMD_PLUGINS
+  dcdplugin_fini();
+#endif
 }
 
