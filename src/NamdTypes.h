@@ -25,6 +25,8 @@ typedef Vector Position;
 typedef Vector Velocity;
 typedef Vector Force;
 
+typedef double Coordinate;
+
 typedef ResizeArray<Position> PositionList;
 typedef ResizeArray<Velocity> VelocityList;
 typedef ResizeArray<Force> ForceList;
@@ -59,13 +61,16 @@ enum Boolean
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdTypes.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/08/19 21:27:51 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.4 $	$Date: 1996/08/19 21:37:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdTypes.h,v $
+ * Revision 1.4  1996/08/19 21:37:02  brunner
+ * Added Coordinate
+ *
  * Revision 1.3  1996/08/19 21:27:51  ari
  * .
  *
