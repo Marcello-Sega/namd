@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.30 1996/12/26 22:26:54 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.31 1996/12/27 22:22:33 nealk Exp $";
 
 
 #include "ckdefs.h"
@@ -64,8 +64,8 @@ Node::Node(GroupInitMsg *msg)
   group = msg->group;
   group.node = thisgroup;
   delete msg;
-  extern Communicate *comm;
 
+  /* in case any node other than 0 reaches this place first. */
   if (comm == NULL) comm = new CommunicateConverse(0,0);
 
   molecule = NULL;
@@ -132,12 +132,12 @@ void Node::messageStartup() {
 void Node::startup(InitMsg *msg)
 {
   char **argvdummy;
-  // extern Communicate *comm;
   Message *conv_msg=NULL;
   
   delete msg;
 
-  // comm = new CommunicateConverse(0,0);
+  /* in case node 0 reaches here before other nodes... */
+  if (comm == NULL) comm = new CommunicateConverse(0,0);
 
   if ( CMyPe() ) {
      simParameters = new SimParameters;
@@ -383,12 +383,15 @@ void Node::saveMolDataPointers(Molecule *molecule,
  *
  *	$RCSfile: Node.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.30 $	$Date: 1996/12/26 22:26:54 $
+ *	$Revision: 1.31 $	$Date: 1996/12/27 22:22:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.31  1996/12/27 22:22:33  nealk
+ * Made extern comm global to file (was already) and readded second comm=new.
+ *
  * Revision 1.30  1996/12/26 22:26:54  nealk
  * Corrected one of the communications bugs for +p2 -- comm wasn't initialized
  * at the right time.

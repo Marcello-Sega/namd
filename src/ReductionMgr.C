@@ -28,7 +28,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.4 1996/12/26 22:26:29 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.5 1996/12/27 22:22:33 nealk Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -108,6 +108,8 @@ ReductionMgrData *ReductionMgr::createdata(int seq)
 /*******************************************
   ReductionMgr::Register(): increase counter
   to a reduction tag.
+  Only registered objects may deposit data.
+
   ASSUMPTION: this function will only be called
   before data has been depositied.
   (un)register to submit data for reduction
@@ -129,7 +131,6 @@ void	ReductionMgr::Register(ReductionTag tag)
 
 /*******************************************
  ReductionMgr::unRegister(): 
- of counters.
  ASSUMPTION: this function will only be called
  after data has been depositied.
  (un)register to submit data for reduction
@@ -269,6 +270,7 @@ ReductionMgrData *	ReductionMgr::find(int seq)
 /*******************************************
  ReductionMgr::submit(): submit data for reduction.
  more == 1 signals immediate submission of other data
+ There should be 1 submit per register.
  *******************************************/
 void	ReductionMgr::submit(int seq, ReductionTag tag, BigReal data, int more)
 {
@@ -388,6 +390,7 @@ void	ReductionMgr::require(int seq, ReductionTag tag, BigReal &data)
 /*******************************************
  ReductionMgr::subscribe(): Allow a process to
  require the data.
+ A process must subscribe if it requires data.
  *******************************************/
 void	ReductionMgr::subscribe(ReductionTag tag)
 {
