@@ -48,6 +48,7 @@ public:
   void rebalance(Controller *seq);
   void nodeDone(void);
   void updateComputesReady();
+  void barrier(void);
   void resume(void);
   void resumeReady(CkQdMsg *msg);
   void resume2(void);
@@ -73,7 +74,6 @@ private:
   };
 
 public:
-  int checkAndGoToBarrier(void);
   void ExecuteMigrations(void);
   void awakenSequencers(void);
   int requiredProxies(PatchID id, int []);

@@ -362,14 +362,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
       processorArray = new processorInfo[Node::Object()->numNodes()];
   }
     
-  // It is important to call ClearLoads before checkAndGoToBarrier, or
-  // processors with no patches or computes will calculate erroneous
-  // performance data, and load balancing won't do well.
-
   theLbdb->ClearLoads();
-
-  if (nLocalPatches == 0 || nLocalComputes==0 )
-  	checkAndGoToBarrier();
 }
 
 void LdbCoordinator::patchLoad(PatchID id, int nAtoms, int /* timestep */)
@@ -380,7 +373,6 @@ void LdbCoordinator::patchLoad(PatchID id, int nAtoms, int /* timestep */)
   } else {
     DebugM(10, "::patchLoad() Unexpected patch reporting in\n");
   }
-  checkAndGoToBarrier();
 }
 
 void LdbCoordinator::startWork(ComputeID id, int /* timestep */ )
@@ -392,7 +384,6 @@ void LdbCoordinator::endWork(ComputeID id, int /* timestep */)
 {
   theLbdb->ObjectStop(objHandles[id]);
   nComputesReported++;
-  checkAndGoToBarrier();
 }
 
 void LdbCoordinator::rebalance(Sequencer *seq, PatchID pid)
@@ -412,41 +403,23 @@ void LdbCoordinator::rebalance(Controller *c)
   DebugM(3, "Controller reached load balance barrier.\n");
   controllerReported = 1;
   controllerThread = c;
-  checkAndGoToBarrier();
 
-  //CkPrintf("Suspending Threads at %d\n", CkMyPe());
+  CProxy_LdbCoordinator(thisgroup).barrier();
+
   CthSuspend();
 }
 
-int LdbCoordinator::checkAndGoToBarrier(void)
+void LdbCoordinator::barrier(void)
 {
-  if ( (nPatchesReported > nPatchesExpected) 
-       || (nComputesReported > nComputesExpected)
-       || (controllerReported > controllerExpected) )
+  if ( (nPatchesReported != nPatchesExpected) 
+       || (nComputesReported != nComputesExpected)
+       || (controllerReported != controllerExpected) )
   {
-    DebugM(3, "load balance barrier countdown: "
-         << nPatchesReported << "/" << nPatchesExpected << " patches, "
-         << nComputesReported << "/" << nComputesExpected << " computes, "
-         << controllerReported << "/" << controllerExpected << " controller\n");
+    NAMD_bug("Load balancer received wrong number of events.\n");
   }
 
-  if (nPatchesReported == nPatchesExpected) 
-  {
-    DebugM(3, "All patches, " << nComputesReported << "/" <<
-	nComputesExpected << " computes reported for load balance barrier.\n");
-  }
-
-  if ( (nPatchesReported == nPatchesExpected) 
-       && (nComputesReported == nComputesExpected)
-       && (controllerReported == controllerExpected) )
-  {
-    DebugM(3, "Load balance barrier reached.\n");
-    theLbdb->AtLocalBarrier(ldBarrierHandle);
-    return 1;
-  }
-  else return 0;
+  theLbdb->AtLocalBarrier(ldBarrierHandle);
 }
-
 
 void LdbCoordinator::nodeDone(void)
 {
