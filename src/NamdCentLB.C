@@ -111,7 +111,7 @@ void NamdCentLB::dumpData(char *file, int numProcessors, int numPatches, int num
      perror("dumpLDStats");
      return;
   }
-  CkPrintf("***** DUMP data to file: %s ***** \n"m file);
+  CkPrintf("***** DUMP data to file: %s ***** \n", file);
   write(fd, &numProcessors, sizeof(int));
   write(fd, &numPatches, sizeof(int));
   write(fd, &numComputes, sizeof(int));
