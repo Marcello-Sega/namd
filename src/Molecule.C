@@ -679,7 +679,8 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
     }
 
     /*  Check if this is in XPLOR format  */
-    if ( atoi(atom_type) )
+    int atom_type_num;
+    if ( sscanf(atom_type, "%d", &atom_type_num) > 0 )
     {
       NAMD_die("Structure (psf) file is in CHARMM format; XPLOR format required.");
     }
