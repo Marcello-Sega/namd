@@ -1128,24 +1128,20 @@ The following sections describe the format of the free energy perturbation scrip
 \subsection{Locally Enhanced Sampling}
 \label{section:les}
 
-Locally enhanced sampling (LES)~\cite{ROIT91,SIMM98,SIMM00}
-increases sampling and transition rates
-for a portion of a molecule by the use of multiple non-interacting copies
-of the enhanced atoms.  These enhanced atoms experience a nonbonded
-(electrostatics and van der Waals) potential that is divided by the number
-of copies present; the bonded potential is not affected.  In this way the
-enhanced atoms can occupy the same space, while the multiple instances and
-reduces barriers imposed by the nonbonded interactions increase transition
-rates.
+Locally enhanced sampling (LES)~\cite{ROIT91,SIMM98,SIMM00} increases
+sampling and transition rates for a portion of a molecule by the use of
+multiple non-interacting copies of the enhanced atoms.  These enhanced
+atoms experience an interaction (electrostatics, van der Waals, and
+covalent) potential that is divided by the number of copies present.
+In this way the enhanced atoms can occupy the same space, while the
+multiple instances and reduces barriers increase transition rates.
 
 \subsubsection{Structure Generation}
 
 To use LES, the structure and coordinate input files must be modified to
 contain multiple copies of the enhanced atoms.  \PSFGEN\ provides the
 {\tt multiply} command for this purpose.  \NAMD\ supports a maximum of 15
-copies, which should be sufficient.  You may create more copies than you
-intend to use in a every simulation and \NAMD\ will scale the nonbonded
-potential of these atoms to zero.
+copies, which should be sufficient.  
 
 Begin by generating the complete molecular structure and guessing
 coordinates as described in Sec.~\ref{section:psfgen}.  As the last
@@ -1181,12 +1177,11 @@ off}}{{\tt off}}
 
 \item
 \NAMDCONF{lesFactor}{number of LES images to use}
-{positive integer equal to or less than the number of images present}
-{This should generally be equal to the factor used in {\tt multiply}
- when creating the structure.  The nonbonded potential of images is
- divided by {\tt lesFactor}.  If atoms are present with an {\tt lesCol}
- value in {\tt lesFile} that is smaller than {\tt lesFactor}, then the
- nonbonded potential of these atoms is set to zero.}
+{positive integer equal to the number of images present}
+{This should be equal to the factor used in {\tt multiply}
+ when creating the structure.  The interaction potentials for images is
+ divided by {\tt lesFactor}.  
+}
 
 \item
 \NAMDCONFWDEF{lesFile}{PDB file containing LES flags}{UNIX filename} {{\tt coordinates}}
@@ -1201,7 +1196,7 @@ the PDB file containing initial coordinates specified by
 This parameter may specify any of the floating point fields of the PDB file, 
 either X, Y, Z, occupancy, or beta-coupling (temperature-coupling).  
 A value of 0 in this column indicates that the atom is not enhanced.
-Any other value should be a positive integer less than 16.}
+Any other value should be a positive integer less than {\tt lesFactor}.}
 
 \end{itemize}
 
