@@ -40,10 +40,12 @@
 #include "ComputeDPMTA.h"
 #include "ComputeSphericalBC.h"
 #include "ComputeCylindricalBC.h"
+#include "WorkDistrib.h"
 
 ComputeMgr::ComputeMgr(InitMsg *msg)
 {
   delete msg;
+  group.computeMgr = thisgroup;
 }
 
 ComputeMgr::~ComputeMgr(void)
@@ -51,33 +53,120 @@ ComputeMgr::~ComputeMgr(void)
   ;
 }
 
-void ComputeMgr::updateComputes() {
+void ComputeMgr::updateComputes(int ep, int chareID) {
+  updateComputesReturnEP = ep;
+  updateComputesReturnChareID = chareID;
+  updateComputesCount = CNumPes();
+
+  if (CMyPe()) { iout << iPE << iERRORF << 
+    "updateComputes signaled on wrong Pe!\n" << endi;
+    CharmExit();
+    return;
+  }
+  WorkDistrib  *workDistrib = CLocalBranch(WorkDistrib, group.workDistrib);
+  workDistrib->saveComputeMap(
+    GetEntryPtr(ComputeMgr, updateComputes2), thisgroup
+  );
+}
+
+void ComputeMgr::updateComputes2(DoneMsg *msg) {
+  delete msg;
+  CStartQuiescence(GetEntryPtr(ComputeMgr,updateComputes3),thishandle);
+}
+
+void ComputeMgr::updateComputes3(QuiescenceMessage *msg) {
+  delete msg;
+  DebugM(4, "Quiescence detected\n");
+  RunMsg *runmsg = new (MsgIndex(RunMsg)) RunMsg;
+  CBroadcastMsgBranch(ComputeMgr, updateLocalComputes, runmsg, thisgroup); 
+  DebugM(4, "Broadcasting out to updateLocalComputes\n");
+}
+
+void ComputeMgr::updateLocalComputes(RunMsg *msg) {
+  delete msg;
   ComputeMap *computeMap = ComputeMap::Object();
   PatchMap *patchMap = PatchMap::Object();
+  ProxyMgr *proxyMgr = CLocalBranch(ProxyMgr, group.proxyMgr);
+
+  computeFlag = new int[computeMap->numComputes()];
+
+  DebugM(4, "updateLocalComputes() running\n");
 
   for (int i=0; i<computeMap->numComputes(); i++) {
+    computeFlag[i] = 0;
+    DebugM(4, " Compute#" << i << " node=" << computeMap->node(i) 
+      << " newNode=" << computeMap->newNode(i) << "\n" );
+      
     if (computeMap->newNode(i) == CMyPe() && computeMap->node(i) != CMyPe()) {
-      // Bring in the needed proxies!
-      for (int n=0; n<computeMap->numPids(i); n++) {
-	if (NULL == patchMap->patch(computeMap->pid(i,n))) {
-	  ProxyMgr::Object()->createProxy(computeMap->pid(i,n));
-	}
+      DebugM(4, " Compute#" << i << " Add compute\n");
+      computeFlag[i] = 1;
+      computeMap->setNode(i,computeMap->newNode(i));
+      for (int n=0; n < computeMap->numPids(i); n++) {
+	proxyMgr->createProxy(computeMap->pid(i,n));
       }
-      // create the compute!
+    } 
+    else if (computeMap->node(i) == CMyPe() && 
+	(computeMap->newNode(i) != -1 && computeMap->newNode(i) != CMyPe() )) {
+      DebugM(4, " Compute#" << i << " Delete compute\n");
+      computeFlag[i] = -1;
+      computeMap->setNode(i,computeMap->newNode(i));
+    }
+    computeMap->setNewNode(i,-1);
+  }
+ 
+  if (!CMyPe()) {
+      CStartQuiescence(GetEntryPtr(ComputeMgr,updateLocalComputes2),thishandle);  }
+  DebugM(4, "updateLocalComputes() first phase done\n");
+}
+
+void
+ComputeMgr::updateLocalComputes2(QuiescenceMessage *msg) {
+  delete msg;
+
+  DebugM(4, "updateLocalComputes2() quiescence detected\n");
+  RunMsg *runmsg = new (MsgIndex(RunMsg)) RunMsg;
+  CBroadcastMsgBranch(ComputeMgr, updateLocalComputes3, runmsg, thisgroup);
+}
+
+void
+ComputeMgr::updateLocalComputes3(RunMsg *msg) {
+  delete msg;
+  DebugM(4, "updateLocalComputes3() running\n");
+
+  ComputeMap *computeMap = ComputeMap::Object();
+
+  for (int i=0; i<computeMap->numComputes(); i++) {
+    if (1 == computeFlag[i]) {
+      DebugM(4, "trying to create compute #" << i << "\n");
       createCompute(i, computeMap);
-
     }
-    else if (computeMap->node(i) == CMyPe() && computeMap->newNode(i) != -1) {
+    else if (-1 == computeFlag[i]) {
       // remove this compute
+      DebugM(4, "Removing compute #" << i 
+	<< " Type=" << computeMap->type(i) << "\n");
       delete computeMap->compute(i);
-      // Should check if Proxy has any dependencies left and remove
-
-    } else {
-      // This should not happen
+      computeMap->registerCompute(i,NULL);
     }
+  }
+  delete[] computeFlag;
+
+  DoneMsg *donemsg = new (MsgIndex(DoneMsg)) DoneMsg;
+  CSendMsgBranch(ComputeMgr, doneUpdateLocalComputes, donemsg, thisgroup, 0);
+}
+
+void ComputeMgr::doneUpdateLocalComputes(DoneMsg *msg) {
+  delete msg;
+
+  DebugM(4, "doneUpdateLocalComputes() started\n");
+  if (!--updateComputesCount) {
+    DoneMsg *donemsg = new (MsgIndex(DoneMsg)) DoneMsg;
+    GeneralSendMsgBranch(updateComputesReturnEP, donemsg, 
+      0, -1, updateComputesReturnChareID);
   }
 }
 
+
+//
 void
 ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 {
@@ -90,7 +179,7 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
     {
       case computeNonbondedSelfType:
 	c = new ComputeNonbondedSelf(i,map->computeData[i].pids[0].pid); // unknown delete
-	DebugM(3,"ComputeNonbondedSelf created.\n");
+	DebugM(4,"ComputeNonbondedSelf created.\n");
 	++numNonbondedSelf;
 	map->registerCompute(i,c);
 	c->initialize();
@@ -101,7 +190,7 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	pid2[1] = map->computeData[i].pids[1].pid;
 	trans2[1] = map->computeData[i].pids[1].trans;
 	c = new ComputeNonbondedPair(i,pid2,trans2); // unknown delete
-	DebugM(3,"ComputeNonbondedPair created.\n");
+	DebugM(4,"ComputeNonbondedPair created.\n");
 	++numNonbondedPair;
 	map->registerCompute(i,c);
 	c->initialize();
@@ -237,13 +326,18 @@ ComputeMgr::createComputes(ComputeMap *map)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/03/27 20:25:41 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1011 $	$Date: 1997/04/08 07:08:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.C,v $
+ * Revision 1.1011  1997/04/08 07:08:16  ari
+ * Modification for dynamic loadbalancing - moving computes
+ * Still bug in new computes or usage of proxies/homepatches.
+ * Works if ldbStrategy is none as before.
+ *
  * Revision 1.1010  1997/03/27 20:25:41  brunner
  * Changes for LdbCoordinator, the load balance control BOC
  *

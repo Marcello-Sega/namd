@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1010 1997/04/06 22:45:07 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.1011 1997/04/08 07:08:49 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -27,8 +27,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1
 #include "Molecule.h"
 #include "SimParameters.h"
 
+//#define  DEBUGM
 #define MIN_DEBUG_LEVEL 4
-// #define  DEBUGM
 #include "Debug.h"
 
 Patch::Patch(PatchID pd) :
@@ -149,7 +149,9 @@ PositionBox<Patch>* Patch::registerPositionPickup(ComputeID cid, int trans)
 
 void Patch::unregisterPositionPickup(ComputeID cid, PositionBox<Patch> **const box)
 {
+   DebugM(4, "Unregister for Position pickup from " << cid << "\n");
    positionComputeList.del(cid);
+   DebugM(4, "unreg list size = " << positionComputeList.size() << "\n");
    positionBox.checkIn(*box);
    *box = 0;
 }
@@ -242,6 +244,7 @@ void Patch::positionsReady(int doneMigration)
 
    // process computes or immediately close up boxes
    if (!positionComputeList.size()) {
+     DebugM(4,"Patch::positionsReady() closing early!\n" );
      for (int i=0; i<3; i++) {
        positionBoxClosed();
        forceBoxClosed();
@@ -253,7 +256,7 @@ void Patch::positionsReady(int doneMigration)
      ComputeIDListIter cid(positionComputeList);
      for(cid = cid.begin(); cid != cid.end(); cid++)
      {
-       DebugM(1,"Patch::positionsReady() - cid = " << *cid << "\n" );
+       DebugM(4,"Patch::positionsReady() - cid = " << *cid << "\n" );
        computeMap->compute(*cid)->patchReady(patchID,doneMigration);
      } 
   }
@@ -265,12 +268,17 @@ void Patch::positionsReady(int doneMigration)
  *
  *	$RCSfile: Patch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/04/06 22:45:07 $
+ *	$Revision: 1.1011 $	$Date: 1997/04/08 07:08:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.1011  1997/04/08 07:08:49  ari
+ * Modification for dynamic loadbalancing - moving computes
+ * Still bug in new computes or usage of proxies/homepatches.
+ * Works if ldbStrategy is none as before.
+ *
  * Revision 1.1010  1997/04/06 22:45:07  ari
  * Add priorities to messages.  Mods to help proxies without computes.
  * Added quick enhancement to end of list insertion of ResizeArray(s)

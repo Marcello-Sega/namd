@@ -25,8 +25,8 @@
 #include "ComputeMap.h"
 #include "HomePatch.h"
 
-// #define DEBUGM
-#define MIN_DEBUG_LEVEL 5
+#define DEBUGM
+#define MIN_DEBUG_LEVEL 4
 #include "Debug.h"
 
 // Use before CSendMsg... but don't use if msg is sent to local node 
@@ -173,11 +173,9 @@ void ProxyResultMsg:: unpack (void *in)
 
 ProxyMgr *ProxyMgr::_instance = 0;
 
-ProxyMgr::ProxyMgr(InitMsg *) : numProxies(0), proxyList(NULL) { 
-  DebugM(1, "::ProxyMgr() - my pe is " << CMyPe() << endl );
+ProxyMgr::ProxyMgr(InitMsg *) { 
   if (_instance) {
-    iout << "More than one ProxyMgr!!!\n" << endi;
-    // Namd::die();
+    Namd::die();
   }
   _instance = this;
 }
@@ -189,13 +187,12 @@ ProxyMgr::~ProxyMgr() {
 
 void ProxyMgr::removeProxies(void)
 {
-  for ( int i = 0; i < numProxies; ++i )
+  ProxySetIter pi(proxySet);
+  for ( pi = pi.begin(); pi != pi.end(); pi++)
   {
-    delete proxyList[i];
+    delete pi->proxyPatch;
   }
-  delete [] proxyList;
-  proxyList = NULL;
-  numProxies = 0;
+  proxySet.clear();
 }
 
 // Figure out which proxies we need and create them
@@ -229,45 +226,35 @@ void ProxyMgr::createProxies(void)
     {
       if ( ! patchFlag[neighbors[j]] ) {
 	patchFlag[neighbors[j]] = NeedProxy;
-	DebugM(4,"Proxy for " << neighbors[j] << " needed for neighbor.\n");
+	DebugM(3,"Proxy for " << neighbors[j] << " needed for neighbor.\n");
       }
     }
   }
 
   // Check all patch-based compute objects.
-  ComputeMap *cmap = ComputeMap::Object();
-  int nc = cmap->numComputes();
+  ComputeMap *computeMap = ComputeMap::Object();
+  int nc = computeMap->numComputes();
   for ( i = 0; i < nc; ++i )
   {
-    if ( cmap->node(i) != myNode || ! cmap->isPatchBased(i) ) continue;
-    int ncp = cmap->numPids(i);
-    for ( j = 0; j < ncp; ++j )
+    if ( computeMap->node(i) != myNode || !computeMap->isPatchBased(i) ) 
+      continue;
+    int numPid = computeMap->numPids(i);
+    for ( j = 0; j < numPid; ++j )
     {
-      int pid = cmap->pid(i,j);
+      int pid = computeMap->pid(i,j);
       if ( ! patchFlag[pid] ) {
 	patchFlag[pid] = NeedProxy;
-	DebugM(4,"Proxy for " << pid << " needed for compute " << i << ".\n");
+	DebugM(3,"Proxy for " << pid << " needed for compute " << i << ".\n");
       }
     }
   }
   
-  // Count needed Proxies
-  numProxies = 0;
-  for ( i = 0; i < numPatches; ++i ) {
-    if ( patchFlag[i] == NeedProxy ) {
-      ++numProxies;
-    }
-  }
-
   // Create proxy list
-  proxyList = new ProxyPatch*[numProxies];
-  int tmpNumProxies = numProxies;
-  numProxies = 0;
   for ( i = 0; i < numPatches; ++i ) {
     if ( patchFlag[i] == NeedProxy )
     { // create proxy patch
       ProxyPatch *proxy = new ProxyPatch(i);
-      proxyList[numProxies++] = proxy;
+      proxySet.add(ProxyElem(i, proxy));
       patchMap->registerPatch(i, proxy);
     }
   }
@@ -276,12 +263,22 @@ void ProxyMgr::createProxies(void)
 
 void
 ProxyMgr::createProxy(PatchID pid) {
-  // need to rework proxyList to be resize array and then fill this
+  Patch *p = PatchMap::Object()->patch(pid);
+  if (!p) {
+     DebugM(4, "creatingProxy(" << pid << ")\n");
+     ProxyPatch *proxy = new ProxyPatch(pid);
+     proxySet.add(ProxyElem(pid,proxy));
+     PatchMap::Object()->registerPatch(pid,proxy);
+  }
 }
 
 void
 ProxyMgr::removeProxy(PatchID pid) {
-  // need to rework proxyList and fill this
+  ProxyElem *p = proxySet.find(ProxyElem(pid));
+  if (p) { 
+    delete p->proxyPatch;
+    proxySet.del(ProxyElem(pid));
+  }
 }
   
 void
@@ -367,12 +364,17 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
  *
  *	$RCSfile: ProxyMgr.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/03/20 23:53:48 $
+ *	$Revision: 1.1013 $	$Date: 1997/04/08 07:08:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.1013  1997/04/08 07:08:55  ari
+ * Modification for dynamic loadbalancing - moving computes
+ * Still bug in new computes or usage of proxies/homepatches.
+ * Works if ldbStrategy is none as before.
+ *
  * Revision 1.1012  1997/03/20 23:53:48  ari
  * Some changes for comments. Copyright date additions.
  * Hooks for base level update of Compute objects from ComputeMap

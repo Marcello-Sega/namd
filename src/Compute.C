@@ -26,8 +26,8 @@
 #include "Compute.h"
 #include "Priorities.h"
 
-#define MIN_DEBUG_LEVEL 5
-//#define DEBUGM
+#define MIN_DEBUG_LEVEL 4
+#define DEBUGM
 #include "Debug.h"
 
 Node *Compute::node=0;
@@ -91,12 +91,17 @@ int Compute::priority(void)
  *
  *	$RCSfile: Compute.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/04/06 22:44:57 $
+ *	$Revision: 1.1010 $	$Date: 1997/04/08 07:08:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.C,v $
+ * Revision 1.1010  1997/04/08 07:08:08  ari
+ * Modification for dynamic loadbalancing - moving computes
+ * Still bug in new computes or usage of proxies/homepatches.
+ * Works if ldbStrategy is none as before.
+ *
  * Revision 1.1009  1997/04/06 22:44:57  ari
  * Add priorities to messages.  Mods to help proxies without computes.
  * Added quick enhancement to end of list insertion of ResizeArray(s)

@@ -19,7 +19,7 @@
 #include "PatchMap.h"
 
 #define MIN_DEBUG_LEVEL 4
-//#define DEBUGM
+#define DEBUGM
 #include "Debug.h"
 
 ComputeNonbondedPair::ComputeNonbondedPair(ComputeID c, PatchID pid[], int trans[])
@@ -162,12 +162,17 @@ void ComputeNonbondedPair::doForce(Position* p[2],
  *
  *	$RCSfile: ComputeNonbondedPair.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/04/06 22:45:00 $
+ *	$Revision: 1.1011 $	$Date: 1997/04/08 07:08:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.C,v $
+ * Revision 1.1011  1997/04/08 07:08:21  ari
+ * Modification for dynamic loadbalancing - moving computes
+ * Still bug in new computes or usage of proxies/homepatches.
+ * Works if ldbStrategy is none as before.
+ *
  * Revision 1.1010  1997/04/06 22:45:00  ari
  * Add priorities to messages.  Mods to help proxies without computes.
  * Added quick enhancement to end of list insertion of ResizeArray(s)

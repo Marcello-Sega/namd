@@ -24,6 +24,8 @@ class ComputeNonbondedUtil {
 
 public:
 
+  ComputeNonbondedUtil() {}
+  virtual ~ComputeNonbondedUtil() {}
   static void select(void);
 
   static void (*calcPair)(Position*[2],Force*[2],AtomProperties*[2],int[2],BigReal*);
@@ -174,12 +176,17 @@ public:
  *
  *	$RCSfile: ComputeNonbondedUtil.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/03/20 23:53:44 $
+ *	$Revision: 1.1007 $	$Date: 1997/04/08 07:08:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.h,v $
+ * Revision 1.1007  1997/04/08 07:08:27  ari
+ * Modification for dynamic loadbalancing - moving computes
+ * Still bug in new computes or usage of proxies/homepatches.
+ * Works if ldbStrategy is none as before.
+ *
  * Revision 1.1006  1997/03/20 23:53:44  ari
  * Some changes for comments. Copyright date additions.
  * Hooks for base level update of Compute objects from ComputeMap

@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1027 1997/04/01 23:20:17 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1028 1997/04/08 07:09:01 ari Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -27,7 +27,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C
 #include "NamdOneTools.h"
 #include "LdbCoordinator.h"
 
-#define MIN_DEBUG_LEVEL 3
+#define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
 #include "Debug.h"
 
@@ -231,6 +231,7 @@ void Sequencer::rebalanceLoad(int timestep)
   if ( (simParams->ldbStrategy != LDBSTRAT_NONE)
        && ((timestep % simParams->ldbStepsPerCycle) == 0))
   {
+    DebugM(4, "Running ldb!\n");
     patch->submitLoadStats(timestep);
     ldbCoordinator->rebalance(this,patch->getPatchID());
   }
@@ -247,13 +248,18 @@ Sequencer::terminate() {
  * RCS INFORMATION:
  *
  *      $RCSfile: Sequencer.C,v $
- *      $Author: brunner $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1027 $     $Date: 1997/04/01 23:20:17 $
+ *      $Author: ari $  $Locker:  $             $State: Exp $
+ *      $Revision: 1.1028 $     $Date: 1997/04/08 07:09:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1028  1997/04/08 07:09:01  ari
+ * Modification for dynamic loadbalancing - moving computes
+ * Still bug in new computes or usage of proxies/homepatches.
+ * Works if ldbStrategy is none as before.
+ *
  * Revision 1.1027  1997/04/01 23:20:17  brunner
  * Collection on node 0 added
  *

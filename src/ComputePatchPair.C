@@ -18,6 +18,7 @@
 #include "Patch.h"
 
 //#define DEBUGM
+#define MIN_DEBUG_LEVEL 4
 #include "Debug.h"
 
 ComputePatchPair::ComputePatchPair(ComputeID c, PatchID p[], int t[]) 
@@ -36,6 +37,9 @@ ComputePatchPair::ComputePatchPair(ComputeID c, PatchID p[], int t[])
 }
 
 ComputePatchPair::~ComputePatchPair() {
+  DebugM(4, "~ComputePatchPair("<<cid<<") numAtoms("<<patchID[0]<<") = " 
+    << numAtoms[0] 
+    << " numAtoms("<<patchID[1]<<") = " << numAtoms[1] << "\n" );
   for (int i=0; i<2; i++) {
     if (positionBox[i] != NULL) {
       PatchMap::Object()->patch(patchID[i])->unregisterPositionPickup(cid,
@@ -59,13 +63,20 @@ void ComputePatchPair::initialize() {
 
     for (int i=0; i<2; i++) {
 	if (positionBox[i] == NULL) { // We have yet to get boxes
-	    patch[i] = PatchMap::Object()->patch(patchID[i]);
+	    if (!(patch[i] = PatchMap::Object()->patch(patchID[i]))) {
+	      iout << iPE << iERRORF << "invalid patch(" << patchID[i] 
+		   << ")  pointer!\n" << endi;
+	    }
 	    positionBox[i] = patch[i]->registerPositionPickup(cid,trans[i]);
 	    forceBox[i] = patch[i]->registerForceDeposit(cid);
 	    atomBox[i] = patch[i]->registerAtomPickup(cid);
 	}
 	numAtoms[i] = patch[i]->getNumAtoms();
     }
+
+  DebugM(4, "initialize("<<cid<<") numAtoms("<<patchID[0]<<") = " 
+    << numAtoms[0] 
+    << " numAtoms(" <<patchID[1]<<") = " << numAtoms[1] << "\n" );
 
     Compute::initialize();
 }
@@ -125,13 +136,18 @@ void ComputePatchPair::doWork() {
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputePatchPair.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/03/19 05:50:04 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1009 $	$Date: 1997/04/08 07:08:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatchPair.C,v $
+ * Revision 1.1009  1997/04/08 07:08:32  ari
+ * Modification for dynamic loadbalancing - moving computes
+ * Still bug in new computes or usage of proxies/homepatches.
+ * Works if ldbStrategy is none as before.
+ *
  * Revision 1.1008  1997/03/19 05:50:04  jim
  * Added ComputeSphericalBC, cleaned up make dependencies.
  *

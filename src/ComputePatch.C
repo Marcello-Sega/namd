@@ -18,7 +18,7 @@
 #include "Patch.h"
 
 #define MIN_DEBUG_LEVEL 4
-#define DEBUGM
+//#define DEBUGM
 #include "Debug.h"
 
 ComputePatch::ComputePatch(ComputeID c, PatchID p) : Compute(c) {
@@ -31,6 +31,8 @@ ComputePatch::ComputePatch(ComputeID c, PatchID p) : Compute(c) {
 }
 
 ComputePatch::~ComputePatch() {
+  DebugM(4, "~ComputePatch("<<cid<<") numAtoms("<<patchID<<") = " 
+    << numAtoms << "\n");
     if (positionBox != NULL) {
       PatchMap::Object()->patch(patchID)->unregisterPositionPickup(cid,
 	 &positionBox);
@@ -50,13 +52,18 @@ void ComputePatch::initialize() {
     // to handle this or do we assume the Boxes have been dumped?
 
 	if (positionBox == NULL) { // We have yet to get boxes
-	    patch = PatchMap::Object()->patch(patchID);
+	    if (!(patch = PatchMap::Object()->patch(patchID))) {
+	      iout << iERRORF << iPE << "invalid patch! during initialize\n" 
+		   << endi;
+	    }
 	    positionBox = patch->registerPositionPickup(cid);
 	    forceBox = patch->registerForceDeposit(cid);
 	    atomBox = patch->registerAtomPickup(cid);
 	}
 	numAtoms = patch->getNumAtoms();
 
+  DebugM(4, "initialize("<<cid<<") numAtoms("<<patchID<<") = " 
+    << numAtoms  << "\n");
     Compute::initialize();
 }
 
@@ -104,13 +111,18 @@ void ComputePatch::doWork() {
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputePatch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/19 05:50:02 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1006 $	$Date: 1997/04/08 07:08:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatch.C,v $
+ * Revision 1.1006  1997/04/08 07:08:30  ari
+ * Modification for dynamic loadbalancing - moving computes
+ * Still bug in new computes or usage of proxies/homepatches.
+ * Works if ldbStrategy is none as before.
+ *
  * Revision 1.1005  1997/03/19 05:50:02  jim
  * Added ComputeSphericalBC, cleaned up make dependencies.
  *

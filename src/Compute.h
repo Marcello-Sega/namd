@@ -43,7 +43,7 @@ public:
   const ComputeID cid;
 
   Compute(ComputeID);
-  virtual ~Compute() {}
+  virtual ~Compute() {};
 
   static void setNode(Node *n) { node = n; }
 
@@ -68,13 +68,18 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: Compute.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/04/03 23:22:18 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/04/08 07:08:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.h,v $
+ * Revision 1.1005  1997/04/08 07:08:10  ari
+ * Modification for dynamic loadbalancing - moving computes
+ * Still bug in new computes or usage of proxies/homepatches.
+ * Works if ldbStrategy is none as before.
+ *
  * Revision 1.1004  1997/04/03 23:22:18  jim
  * Added basic priority() method to Compute.  Only distinguishes between
  * local and nonlocal computations for now.

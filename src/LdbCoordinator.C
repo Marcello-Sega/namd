@@ -10,9 +10,11 @@
 #include "SimParameters.h"
 #include "PatchMap.h"
 #include "ComputeMap.h"
+#define DEBUGM
 #include "Debug.h"
 #include "Sequencer.h"
 #include "RefineOnly.h"
+#include "ComputeMgr.h"
 #include "Alg7.h"
 //#include "Alg0.h"
 //#include "Alg1.h"
@@ -251,7 +253,7 @@ int LdbCoordinator::checkAndSendStats(void)
     //CsdStopNotifyIdle();
     totalTime = TIMER_FNC() - totalStartTime;
     if (idleStart!= -1)
-      CPrintf("WARNING: idle time still accumulating?\n");
+      iout << iPE << "WARNING: idle time still accumulating?\n" << endi;
 
     // Here, all the data gets sent to Node 0
     // For now, just send a dummy message to Node 0.
@@ -366,15 +368,14 @@ void LdbCoordinator::processStatistics(void)
 //     Alg7::Alg7(computeArray,patchArray,processorArray,
 //       numComputes, numPatches, numProcessors);
 
-  // 0) Rebuild ComputeMap using computeMap->newNode()
+  // 0) Rebuild ComputeMap using computeMap->setNewNode()
   int i;
   for(i=0; i < numComputes; i++)
   {
     if ( (computeArray[i].processor != computeArray[i].oldProcessor)
 	 && (computeArray[i].processor != -1) )
     {
-
-      //    CPrintf("Assigning compute %d from %d to %d\n",
+      // CPrintf("Assigning compute %d from %d to %d\n",
       //    i,computeArray[i].oldProcessor,computeArray[i].processor);
       computeMap->setNewNode(computeArray[i].Id,computeArray[i].processor);
     }
@@ -392,14 +393,19 @@ void LdbCoordinator::processStatistics(void)
   // This will barrier for all Nodes - (i.e. Computes must be
   // here and with proxies before anyone can start up
 
-  CPrintf("Node 0 LDB resuming other processors\n",CMyPe());
+  ComputeMgr *computeMgr = CLocalBranch(ComputeMgr, group.computeMgr);
+  computeMgr->updateComputes(GetEntryPtr(LdbCoordinator,updateComputesReady),thisgroup);
+}
+
+void LdbCoordinator::updateComputesReady(DoneMsg *msg) {
+  delete msg;
+
   LdbResumeMsg *sendmsg = new (MsgIndex(LdbResumeMsg)) LdbResumeMsg;
   CBroadcastMsgBranch(LdbCoordinator, resume, sendmsg, thisgroup);
 }
 
 void LdbCoordinator::resume(LdbResumeMsg *msg)
 {
-
   //  printLocalLdbReport();
 
   awakenSequencers();

@@ -24,6 +24,8 @@
 #include "converse.h"
 #include "NamdTypes.h"
 #include "elements.h"
+#include "ComputeMgr.h"
+#include "BOCgroup.h"
 
 class PatchMap;
 class ComputeMap;
@@ -54,7 +56,7 @@ struct LdbResumeMsg : public comm_object
   int dummy;
 };
 
-class LdbCoordinator : public groupmember
+class LdbCoordinator : public BOCclass
 {
 public:
   LdbCoordinator(InitMsg *msg);
@@ -67,6 +69,7 @@ public:
   void endWork(ComputeID id, int timestep);
   void rebalance(Sequencer *seq, PatchID id);
   void analyze(LdbStatsMsg *msg);
+  void updateComputesReady(DoneMsg *msg);
   void resume(LdbResumeMsg *msg);
 
   // Public variables accessed by the idle-event functions
@@ -119,12 +122,17 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1997/04/07 00:04:07 $
+ *	$Revision: 1.7 $	$Date: 1997/04/08 07:08:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LdbCoordinator.h,v $
+ * Revision 1.7  1997/04/08 07:08:47  ari
+ * Modification for dynamic loadbalancing - moving computes
+ * Still bug in new computes or usage of proxies/homepatches.
+ * Works if ldbStrategy is none as before.
+ *
  * Revision 1.6  1997/04/07 00:04:07  brunner
  * LDB Alg7 added and computeMap modified on node 0
  *

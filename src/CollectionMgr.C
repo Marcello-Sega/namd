@@ -35,8 +35,8 @@ void CollectionMgr::submitPositions(int seq, AtomIDList &i, PositionList &d)
     msg->seq = c->seq;
     msg->aid = c->aid;
     msg->data = c->data;
-    *CPriorityPtr(msg) = Priorities::low;
-    CSetQueueing(msg, C_QUEUEING_IFIFO);
+    //*CPriorityPtr(msg) = Priorities::low;
+    //CSetQueueing(msg, C_QUEUEING_IFIFO);
     CSendMsg(CollectionMaster,receivePositions,msg,&master);
     delete c;
   }
@@ -53,8 +53,8 @@ void CollectionMgr::submitVelocities(int seq, AtomIDList &i, VelocityList &d)
     msg->seq = c->seq;
     msg->aid = c->aid;
     msg->data = c->data;
-    *CPriorityPtr(msg) = Priorities::low;
-    CSetQueueing(msg, C_QUEUEING_IFIFO);
+    //*CPriorityPtr(msg) = Priorities::low;
+    //CSetQueueing(msg, C_QUEUEING_IFIFO);
     CSendMsg(CollectionMaster,receiveVelocities,msg,&master);
     delete c;
   }
@@ -71,8 +71,8 @@ void CollectionMgr::submitForces(int seq, AtomIDList &i, ForceList &d)
     msg->seq = c->seq;
     msg->aid = c->aid;
     msg->data = c->data;
-    *CPriorityPtr(msg) = Priorities::low;
-    CSetQueueing(msg, C_QUEUEING_IFIFO);
+    //*CPriorityPtr(msg) = Priorities::low;
+    //CSetQueueing(msg, C_QUEUEING_IFIFO);
     CSendMsg(CollectionMaster,receiveForces,msg,&master);
     delete c;
   }
@@ -86,12 +86,17 @@ void CollectionMgr::submitForces(int seq, AtomIDList &i, ForceList &d)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/04/06 22:44:56 $
+ *	$Revision: 1.1003 $	$Date: 1997/04/08 07:08:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMgr.C,v $
+ * Revision 1.1003  1997/04/08 07:08:07  ari
+ * Modification for dynamic loadbalancing - moving computes
+ * Still bug in new computes or usage of proxies/homepatches.
+ * Works if ldbStrategy is none as before.
+ *
  * Revision 1.1002  1997/04/06 22:44:56  ari
  * Add priorities to messages.  Mods to help proxies without computes.
  * Added quick enhancement to end of list insertion of ResizeArray(s)

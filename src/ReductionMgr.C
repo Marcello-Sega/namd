@@ -28,7 +28,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1015 1997/04/07 14:54:35 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1016 1997/04/08 07:08:59 ari Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -565,8 +565,8 @@ void	ReductionMgr::submit(int seq, ReductionTag tag, BigReal data,
       m->seq = seq;
       m->tag = tag;
       m->data = current->tagData[tag];
-      *CPriorityPtr(m) = Priorities::high;
-      CSetQueueing(m, C_QUEUEING_IFIFO);
+      //*CPriorityPtr(m) = Priorities::high;
+      //CSetQueueing(m, C_QUEUEING_IFIFO);
       DebugM(4,"Sending seq=" << seq
 		 << " tag=" << tag
      		 << " data=" << m->data
@@ -629,8 +629,8 @@ void	ReductionMgr::submit(int seq, ReductionTag tag)
       m->seq = seq;
       m->tag = tag;
       m->data = current->tagData[tag];
-      *CPriorityPtr(m) = Priorities::high;
-      CSetQueueing(m, C_QUEUEING_IFIFO);
+      //*CPriorityPtr(m) = Priorities::high;
+      //CSetQueueing(m, C_QUEUEING_IFIFO);
       CSendMsgBranch(ReductionMgr, recvReductionData, m, thisgroup, 0);
       gotAllData(current);
     }
@@ -777,12 +777,17 @@ void	ReductionMgr::unsubscribe(ReductionTag tag)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1997/04/07 14:54:35 $
+ *	$Revision: 1.1016 $	$Date: 1997/04/08 07:08:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.C,v $
+ * Revision 1.1016  1997/04/08 07:08:59  ari
+ * Modification for dynamic loadbalancing - moving computes
+ * Still bug in new computes or usage of proxies/homepatches.
+ * Works if ldbStrategy is none as before.
+ *
  * Revision 1.1015  1997/04/07 14:54:35  nealk
  * Changed fclose() to Fclose() (found in common.[Ch]) to use with popen().
  * Also corrected compilation warnings in Set.[Ch].

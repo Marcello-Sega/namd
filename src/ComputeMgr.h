@@ -28,20 +28,33 @@
 
 class Compute;
 class ComputeMap;
+class QuiescenceMessage;
 
-class ComputeMgr : public groupmember
+class ComputeMgr : public BOCclass
 {
 public:
 
   ComputeMgr(InitMsg *);
   ~ComputeMgr();
   void createComputes(ComputeMap *map);
-  void updateComputes();
+  void updateComputes(int,int);
+  void updateComputes2(DoneMsg *);
+  void updateComputes3(QuiescenceMessage *);
+  void updateLocalComputes(RunMsg *);
+  void updateLocalComputes2(QuiescenceMessage *);
+  void updateLocalComputes3(RunMsg *);
+  void doneUpdateLocalComputes(DoneMsg *);
 
 private:
   void createCompute(ComputeID, ComputeMap *);
   int numNonbondedSelf;
   int numNonbondedPair;
+
+  int updateComputesCount;
+  int updateComputesReturnEP;
+  int updateComputesReturnChareID;
+
+  int *computeFlag;
 
   class ComputeElem {
   public:
@@ -90,12 +103,17 @@ private:
  *
  *	$RCSfile: ComputeMgr.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/20 23:53:42 $
+ *	$Revision: 1.1006 $	$Date: 1997/04/08 07:08:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.h,v $
+ * Revision 1.1006  1997/04/08 07:08:20  ari
+ * Modification for dynamic loadbalancing - moving computes
+ * Still bug in new computes or usage of proxies/homepatches.
+ * Works if ldbStrategy is none as before.
+ *
  * Revision 1.1005  1997/03/20 23:53:42  ari
  * Some changes for comments. Copyright date additions.
  * Hooks for base level update of Compute objects from ComputeMap

@@ -32,6 +32,7 @@ class Molecule;
 enum { maxPatchDepends = 126 };
 
 class MapDistribMsg;
+class ComputeMapDistribMsg;
 
 class WorkDistrib : public BOCclass
 {
@@ -47,6 +48,9 @@ public:
 
   void mapComputes(void);
   void sendMaps(void);
+  void saveComputeMap(int,int);
+  void recvComputeMap(ComputeMapDistribMsg *);
+  void doneSaveComputeMap(DoneMsg *);
   void createHomePatches(void);
   void distributeHomePatches(void);
   void patchMapInit(void);
@@ -70,11 +74,47 @@ private:
   Boolean mapsArrived;
   Boolean awaitingMaps;
   CthThread awaitingMapsTh;
+
+  int saveComputeMapReturnEP;
+  int saveComputeMapReturnChareID;
+  int saveComputeMapCount;
 };
 
 #include <string.h>
 #include "PatchMap.h"
 #include "ComputeMap.h"
+
+class ComputeMapDistribMsg : public comm_object
+{
+public:
+  ComputeMapDistribMsg(void) : computeMap(0) { ; }
+  ComputeMap *computeMap;
+
+  // pack and unpack functions
+  void * pack (int *length)
+  {
+    int computeMapSize;
+    char *computeMapData = (char*)computeMap->pack(&computeMapSize);	
+      // "new" for data
+    *length = sizeof(int) + computeMapSize;
+    char *buffer = (char*)new_packbuffer(this,*length);
+    char *b = buffer;
+    *((int*)b) = computeMapSize;
+    b += sizeof(int);
+    memcpy(b,computeMapData,computeMapSize);
+    delete [] computeMapData;	// allocated in ComputeMap.C::pack
+    return buffer;
+  }
+
+  void unpack (void *in)
+  {
+    char *buffer = (char*)in;
+    int computeMapSize = *((int*)buffer);
+    buffer += sizeof(int);
+    computeMap = ComputeMap::Object();
+    computeMap->unpack((void*)buffer);
+  }
+};
 
 class MapDistribMsg : public comm_object
 {
@@ -131,13 +171,18 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/04/07 21:09:59 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1009 $	$Date: 1997/04/08 07:09:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.1009  1997/04/08 07:09:05  ari
+ * Modification for dynamic loadbalancing - moving computes
+ * Still bug in new computes or usage of proxies/homepatches.
+ * Works if ldbStrategy is none as before.
+ *
  * Revision 1.1008  1997/04/07 21:09:59  brunner
  * Added RecBisection for initial patch distrib
  *

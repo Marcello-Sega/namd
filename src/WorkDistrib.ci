@@ -2,13 +2,17 @@
 // WorkDistributor - is a bit of a mishmash
 
 extern message InitMsg;
+extern message DoneMsg;
 extern message LocalWorkMsg;
 packmessage MapDistribMsg;
+packmessage ComputeMapDistribMsg;
 
 group WorkDistrib
 {
   entry WorkDistrib(InitMsg *);
   entry saveMaps(MapDistribMsg *);
+  entry recvComputeMap(ComputeMapDistribMsg *);
+  entry doneSaveComputeMap(DoneMsg *);
   entry enqueueWork(LocalWorkMsg *);
 } ;
 
@@ -18,12 +22,17 @@ group WorkDistrib
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/19 11:54:59 $
+ *	$Revision: 1.1004 $	$Date: 1997/04/08 07:09:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.ci,v $
+ * Revision 1.1004  1997/04/08 07:09:04  ari
+ * Modification for dynamic loadbalancing - moving computes
+ * Still bug in new computes or usage of proxies/homepatches.
+ * Works if ldbStrategy is none as before.
+ *
  * Revision 1.1003  1997/03/19 11:54:59  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

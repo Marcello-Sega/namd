@@ -1,8 +1,17 @@
+extern message QuiescenceMessage;
 extern message InitMsg;
+extern message RunMsg;
+extern message DoneMsg;
 
 group ComputeMgr
 {
   entry ComputeMgr(InitMsg *);
+  entry updateComputes2(DoneMsg *);
+  entry updateComputes3(QuiescenceMessage *);
+  entry updateLocalComputes(RunMsg *);
+  entry updateLocalComputes2(QuiescenceMessage *);
+  entry updateLocalComputes3(RunMsg *);
+  entry doneUpdateLocalComputes(DoneMsg *);
 } ;
 
 
@@ -11,12 +20,17 @@ group ComputeMgr
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:10 $
+ *	$Revision: 1.1002 $	$Date: 1997/04/08 07:08:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.ci,v $
+ * Revision 1.1002  1997/04/08 07:08:18  ari
+ * Modification for dynamic loadbalancing - moving computes
+ * Still bug in new computes or usage of proxies/homepatches.
+ * Works if ldbStrategy is none as before.
+ *
  * Revision 1.1001  1997/03/19 11:54:10  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

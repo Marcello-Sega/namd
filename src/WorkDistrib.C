@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1024 1997/04/07 22:23:31 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1025 1997/04/08 07:09:02 ari Exp $";
 
 #include <stdio.h>
 
@@ -35,10 +35,11 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib
 #include "NamdOneTools.h"
 #include "Compute.h"
 #include "Priorities.h"
+#include "ComputeMap.h"
 #include "RecBisection.h"
 
 #define MIN_DEBUG_LEVEL 4
-//#define DEBUGM
+#define DEBUGM
 #include "Debug.h"
 
 extern "C" long int lrand48(void);
@@ -50,6 +51,7 @@ WorkDistrib::WorkDistrib(InitMsg *msg)
 {
   delete msg;
 
+  group.workDistrib = thisgroup;
   mapsArrived = false;
   awaitingMaps = false;
 }
@@ -69,6 +71,50 @@ void WorkDistrib::sendMaps(void)
 
   CBroadcastMsgBranch(WorkDistrib, saveMaps, mapMsg, thisgroup);
   mapsArrived = true;
+}
+
+//----------------------------------------------------------------------
+void WorkDistrib::saveComputeMap(int ep, int chareID)
+{
+  saveComputeMapReturnEP = ep;
+  saveComputeMapReturnChareID = chareID;
+  saveComputeMapCount = CNumPes();
+
+  DebugM(4, "ComputeMap before send!\n");
+  ComputeMap *computeMap = ComputeMap::Object();
+
+  for (int i=0; i<computeMap->numComputes(); i++) {
+    DebugM(3, "ComputeMap (" << i << ") node = " << computeMap->node(i) << " newNode = " << computeMap->newNode(i) << "\n");
+  }
+  
+  ComputeMapDistribMsg *mapMsg 
+    = new (MsgIndex(ComputeMapDistribMsg)) ComputeMapDistribMsg ;
+
+  mapMsg->computeMap = ComputeMap::Object();
+
+  CBroadcastMsgBranch(WorkDistrib, recvComputeMap, mapMsg, thisgroup);
+}
+
+void WorkDistrib::recvComputeMap(ComputeMapDistribMsg *msg) {
+  delete msg;
+  DoneMsg *donemsg = new (MsgIndex(DoneMsg)) DoneMsg;
+  CSendMsgBranch(WorkDistrib, doneSaveComputeMap, donemsg, thisgroup, 0);
+  ComputeMap *computeMap = ComputeMap::Object();
+
+  DebugM(2, "ComputeMap after send!\n");
+  for (int i=0; i<computeMap->numComputes(); i++) {
+    DebugM(2, "ComputeMap (" << i << ") node = " << computeMap->node(i) << " newNode = " << computeMap->newNode(i) << " type=" << computeMap->type(i) << "\n");
+  }
+  DebugM(2, "===================================================\n");
+}
+
+void WorkDistrib::doneSaveComputeMap(DoneMsg *msg) {
+  delete msg;
+  DoneMsg *msg2 = new (MsgIndex(DoneMsg)) DoneMsg;
+  if (!--saveComputeMapCount) { 
+    GeneralSendMsgBranch(saveComputeMapReturnEP, msg2, 0, -1, 
+      saveComputeMapReturnChareID);
+  }
 }
 
 
@@ -139,7 +185,7 @@ void WorkDistrib::createHomePatches(void)
       {
       if ( ! ( i % 1000 ) )
 	{
-        DebugM(4,"Assigned " << i << " atoms to patches so far.\n");
+        DebugM(3,"Assigned " << i << " atoms to patches so far.\n");
         }
       // Assign atoms to patches without splitting hydrogen groups.
       // We know that the hydrogenGroup array is sorted with group parents
@@ -160,7 +206,7 @@ void WorkDistrib::createHomePatches(void)
       {
       if ( ! ( i % 1000 ) )
 	{
-	DebugM(4,"Assigned " << i << " atoms to patches so far.\n");
+	DebugM(3,"Assigned " << i << " atoms to patches so far.\n");
 	}
       int pid = patchMap->assignToPatch(positions[i]);
       atomIDs[pid].add(i);
@@ -176,7 +222,7 @@ void WorkDistrib::createHomePatches(void)
   {
     if ( ! ( i % 100 ) )
     {
-      DebugM(4,"Created " << i << " patches so far.\n");
+      DebugM(3,"Created " << i << " patches so far.\n");
     }
 
     ScaledPosition center(0.5*(patchMap->minX(i)+patchMap->maxX(i)),
@@ -208,7 +254,7 @@ void WorkDistrib::distributeHomePatches() {
   {
     if (patchMap->node(i) != node->myid() )
     {
-      DebugM(4,"patchMgr->movePatch("
+      DebugM(3,"patchMgr->movePatch("
 	<< i << "," << patchMap->node(i) << ")\n");
       patchMgr->movePatch(i,patchMap->node(i));
     }
@@ -227,11 +273,11 @@ void WorkDistrib::saveMaps(MapDistribMsg *msg)
 
   if (node->myid() != 0)
   {
-    DebugM(4,"Saving patch map, compute map\n");
+    DebugM(3,"Saving patch map, compute map\n");
   }
   else
   {
-    DebugM(4,"Node 0 patch map built\n");
+    DebugM(3,"Node 0 patch map built\n");
   }
 
   mapsArrived = true;
@@ -254,16 +300,16 @@ void WorkDistrib::patchMapInit(void)
   Vector xmin, xmax;
   Vector sysDim, sysMin;
 
-  DebugM(4,"Mapping patches\n");
+  DebugM(3,"Mapping patches\n");
   node->pdb->find_extremes(&xmin,&xmax);
 
-  DebugM(4,"xmin.x = " << xmin.x << endl);
-  DebugM(4,"xmin.y = " << xmin.y << endl);
-  DebugM(4,"xmin.z = " << xmin.z << endl);
+  DebugM(3,"xmin.x = " << xmin.x << endl);
+  DebugM(3,"xmin.y = " << xmin.y << endl);
+  DebugM(3,"xmin.z = " << xmin.z << endl);
 
-  DebugM(4,"xmax.x = " << xmax.x << endl);
-  DebugM(4,"xmax.y = " << xmax.y << endl);
-  DebugM(4,"xmax.z = " << xmax.z << endl);
+  DebugM(3,"xmax.x = " << xmax.x << endl);
+  DebugM(3,"xmax.y = " << xmax.y << endl);
+  DebugM(3,"xmax.z = " << xmax.z << endl);
 
   Vector center = 0.5 * ( xmax + xmin );
 
@@ -273,7 +319,7 @@ void WorkDistrib::patchMapInit(void)
     sysDim.x = params->cellBasisVector1.x;
     xdim = (int)(sysDim.x / patchSize);
     if ( xdim < 2 ) xdim = 2;
-    DebugM(4,"Periodic in x dimension with " << xdim << " patches.\n");
+    DebugM(3,"Periodic in x dimension with " << xdim << " patches.\n");
     center.x = params->lattice.origin().x;
   }
   else
@@ -284,7 +330,7 @@ void WorkDistrib::patchMapInit(void)
     if ((xdim * patchSize) < sysDim.x)
       xdim++;
     sysDim.x = xdim * patchSize;
-    DebugM(4,"Non-periodic in x dimension with " << xdim << " patches.\n");
+    DebugM(3,"Non-periodic in x dimension with " << xdim << " patches.\n");
   }
 
   if ( params->cellBasisVector2.y )
@@ -293,7 +339,7 @@ void WorkDistrib::patchMapInit(void)
     sysDim.y = params->cellBasisVector2.y;
     ydim = (int)((float)sysDim.y / patchSize);
     if ( ydim < 2 ) ydim = 2;
-    DebugM(4,"Periodic in y dimension with " << ydim << " patches.\n");
+    DebugM(3,"Periodic in y dimension with " << ydim << " patches.\n");
     center.y = params->lattice.origin().y;
   }
   else
@@ -304,7 +350,7 @@ void WorkDistrib::patchMapInit(void)
     if ((ydim * patchSize) < sysDim.y)
       ydim++;
     sysDim.y = ydim * patchSize;
-    DebugM(4,"Non-periodic in y dimension with " << ydim << " patches.\n");
+    DebugM(3,"Non-periodic in y dimension with " << ydim << " patches.\n");
   }
 
   if ( params->cellBasisVector3.z )
@@ -313,7 +359,7 @@ void WorkDistrib::patchMapInit(void)
     sysDim.z = params->cellBasisVector3.z;
     zdim = (int)((float)sysDim.z / patchSize);
     if ( zdim < 2 ) zdim = 2;
-    DebugM(4,"Periodic in z dimension with " << zdim << " patches.\n");
+    DebugM(3,"Periodic in z dimension with " << zdim << " patches.\n");
     center.z = params->lattice.origin().z;
   }
   else
@@ -324,7 +370,7 @@ void WorkDistrib::patchMapInit(void)
     if ((zdim * patchSize) < sysDim.z)
       zdim++;
     sysDim.z = zdim * patchSize;
-    DebugM(4,"Non-periodic in z dimension with " << zdim << " patches.\n");
+    DebugM(3,"Non-periodic in z dimension with " << zdim << " patches.\n");
   }
 
   sysMin = center - 0.5 * sysDim;
@@ -348,7 +394,7 @@ lattice.scale( Vector(	((float)(xi+1)/(float)xdim)*sysDim.x+sysMin.x,
 			((float)(yi+1)/(float)ydim)*sysDim.y+sysMin.y,
 			((float)(zi+1)/(float)zdim)*sysDim.z+sysMin.z) ) );
     patchMap->allocateCompute(pid, 100);
-    DebugM(4,"Patch " 
+    DebugM(3,"Patch " 
         << pid << " is at grid " << xi << " " << yi << " " << zi << ".\n");
   }
 }
@@ -440,7 +486,7 @@ void WorkDistrib::mapComputes(void)
   ComputeMap *computeMap = ComputeMap::Object();
   Node *node = CLocalBranch(Node, group.node);
 
-  DebugM(4,"Mapping computes\n");
+  DebugM(3,"Mapping computes\n");
 
   // We need to allocate computes for self, 1 and 2 away pairs for
   // electrostatics, and 1 angleForce for each node.  Then I might
@@ -637,13 +683,14 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
     = new (MsgIndex(LocalWorkMsg),16) LocalWorkMsg;
   msg->compute = compute; // pointer is valid since send is to local Pe
   // *CPriorityPtr(msg) = (unsigned int)128;
-  *CPriorityPtr(msg) = (unsigned int)compute->priority();
-  CSetQueueing(msg, C_QUEUEING_IFIFO);
+  //*CPriorityPtr(msg) = (unsigned int)compute->priority();
+  //CSetQueueing(msg, C_QUEUEING_IFIFO);
   //DebugM(3, "Priority = " << (unsigned int)compute->priority() << "\n");
   CSendMsgBranch(WorkDistrib, enqueueWork, msg, group.workDistrib, CMyPe() );
 }
 
 void WorkDistrib::enqueueWork(LocalWorkMsg *msg) {
+  // DebugM(4, "Starting compute#" << msg->compute->cid << " address=" << msg->compute <<"\n");
   msg->compute->doWork();
   delete msg;
 }
@@ -870,13 +917,18 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1024 $	$Date: 1997/04/07 22:23:31 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1025 $	$Date: 1997/04/08 07:09:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1025  1997/04/08 07:09:02  ari
+ * Modification for dynamic loadbalancing - moving computes
+ * Still bug in new computes or usage of proxies/homepatches.
+ * Works if ldbStrategy is none as before.
+ *
  * Revision 1.1024  1997/04/07 22:23:31  brunner
  * Changed RB constants so patch distrib equalizes number of atoms, and
  * added weights for initial compute distrib based on self, face neighbor,

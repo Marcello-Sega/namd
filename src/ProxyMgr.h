@@ -22,6 +22,8 @@
 #include "main.h"
 #include "NamdTypes.h"
 #include "PatchTypes.h"
+#include "Templates/UniqueSet.h"
+#include "Templates/UniqueSetIter.h"
 
 class RegisterProxyMsg : public comm_object {
 public:
@@ -95,6 +97,21 @@ public:
 class ProxyPatch;
 class PatchMap;
 
+struct ProxyElem {
+  ProxyElem() : proxyPatch(0) { };
+  ProxyElem(PatchID pid) : patchID(pid), proxyPatch(0) { };
+  ProxyElem(PatchID pid, ProxyPatch *p) : patchID(pid), proxyPatch(p) { };
+
+  int hash() const { return patchID; }
+  int operator==(const ProxyElem & pe) const { return patchID == pe.patchID; }
+
+  PatchID patchID;
+  ProxyPatch *proxyPatch;
+};
+
+typedef UniqueSet<ProxyElem> ProxySet;
+typedef UniqueSetIter<ProxyElem> ProxySetIter;
+
 class ProxyMgr : public BOCclass
 {
 
@@ -128,9 +145,7 @@ public:
 private:
   static ProxyMgr *_instance;
 
-  ProxyPatch** proxyList;
-  int numProxies;
-
+  ProxySet proxySet;
 };
 
 #endif /* PATCHMGR_H */
@@ -139,12 +154,17 @@ private:
  *
  *	$RCSfile: ProxyMgr.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/04/06 22:45:11 $
+ *	$Revision: 1.1007 $	$Date: 1997/04/08 07:08:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.h,v $
+ * Revision 1.1007  1997/04/08 07:08:57  ari
+ * Modification for dynamic loadbalancing - moving computes
+ * Still bug in new computes or usage of proxies/homepatches.
+ * Works if ldbStrategy is none as before.
+ *
  * Revision 1.1006  1997/04/06 22:45:11  ari
  * Add priorities to messages.  Mods to help proxies without computes.
  * Added quick enhancement to end of list insertion of ResizeArray(s)

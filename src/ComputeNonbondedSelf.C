@@ -17,7 +17,7 @@
 #include "LdbCoordinator.h"
 
 #define MIN_DEBUG_LEVEL 4
-//#define DEBUGM
+#define DEBUGM
 #include "Debug.h"
 
 ComputeNonbondedSelf::ComputeNonbondedSelf(ComputeID c, PatchID pid)
@@ -68,12 +68,17 @@ void ComputeNonbondedSelf::doForce(Position* p,
  *
  *	$RCSfile: ComputeNonbondedSelf.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/04/06 22:45:02 $
+ *	$Revision: 1.1008 $	$Date: 1997/04/08 07:08:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.C,v $
+ * Revision 1.1008  1997/04/08 07:08:25  ari
+ * Modification for dynamic loadbalancing - moving computes
+ * Still bug in new computes or usage of proxies/homepatches.
+ * Works if ldbStrategy is none as before.
+ *
  * Revision 1.1007  1997/04/06 22:45:02  ari
  * Add priorities to messages.  Mods to help proxies without computes.
  * Added quick enhancement to end of list insertion of ResizeArray(s)

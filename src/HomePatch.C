@@ -39,7 +39,7 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1026 1997/04/06 22:45:04 ari Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1027 1997/04/08 07:08:35 ari Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
 		     VelocityList vl) : Patch(pd,al,pl), v(vl) 
@@ -191,8 +191,8 @@ void HomePatch::positionsReady(int doMigration)
       allmsg->flags = flags;
       allmsg->positionList = p;
       allmsg->atomIDList = atomIDList;
-      *CPriorityPtr(allmsg) = Priorities::urgent;
-      CSetQueueing(allmsg, C_QUEUEING_IFIFO);
+      //*CPriorityPtr(allmsg) = Priorities::urgent;
+      //CSetQueueing(allmsg, C_QUEUEING_IFIFO);
       DebugM(1, "atomIDList.size() = " << atomIDList.size() << " p.size() = " << p.size() << "\n" );
       ProxyMgr::Object()->sendProxyAll(allmsg,pli->node);
     } else {
@@ -201,8 +201,8 @@ void HomePatch::positionsReady(int doMigration)
       nmsg->patch = patchID;
       nmsg->flags = flags;
       nmsg->positionList = p;
-      *CPriorityPtr(nmsg) = Priorities::urgent;
-      CSetQueueing(nmsg, C_QUEUEING_IFIFO);
+      //*CPriorityPtr(nmsg) = Priorities::urgent;
+      //CSetQueueing(nmsg, C_QUEUEING_IFIFO);
       ProxyMgr::Object()->sendProxyData(nmsg,pli->node);
     }   
   }
@@ -447,12 +447,17 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  *
  *	$RCSfile: HomePatch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1026 $	$Date: 1997/04/06 22:45:04 $
+ *	$Revision: 1.1027 $	$Date: 1997/04/08 07:08:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1027  1997/04/08 07:08:35  ari
+ * Modification for dynamic loadbalancing - moving computes
+ * Still bug in new computes or usage of proxies/homepatches.
+ * Works if ldbStrategy is none as before.
+ *
  * Revision 1.1026  1997/04/06 22:45:04  ari
  * Add priorities to messages.  Mods to help proxies without computes.
  * Added quick enhancement to end of list insertion of ResizeArray(s)

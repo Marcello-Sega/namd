@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1011 1997/04/04 23:34:17 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1012 1997/04/08 07:08:12 ari Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -104,6 +104,11 @@ void * ComputeMap::pack (int *length)
 
 void ComputeMap::unpack (void *in)
 {
+  // Must copy over the Compute * to new ComputeMap! 
+  ComputeData *oldComputeData = computeData;
+  int oldNComputes = nComputes;
+  computeData = NULL;
+
   DebugM(4,"Unpacking ComputeMap\n");
   int i,j;
   char *b = (char*)in;
@@ -118,6 +123,22 @@ void ComputeMap::unpack (void *in)
     computeData[i].pids = new PatchRec[computeData[i].numPidsAllocated]; // deleted during ~
     for(j=0;j<computeData[i].numPidsAllocated;++j)
       UNPACK(PatchRec,computeData[i].pids[j]);
+  }
+
+  if (oldComputeData) {
+    if (nComputes != oldNComputes) {
+      iout << iPE << iERRORF 
+        << "number of computes in new patchmap has changed!\n" << endi;
+      CharmExit();
+      return;
+    }
+
+    for (int i=0; i<nComputes; i++) {
+      computeData[i].compute = oldComputeData[i].compute;
+      delete[] oldComputeData[i].pids;
+    }
+    delete[] oldComputeData;
+    oldComputeData=NULL;
   }
   DebugM(4,"Done Unpacking ComputeMap\n");
 }
@@ -165,6 +186,10 @@ int ComputeMap::node(ComputeID cid)
   else return -1;
 }
 
+void ComputeMap::setNode(ComputeID cid, NodeID node) {
+  computeData[cid].node = node;
+}
+
 NodeID ComputeMap::newNode(ComputeID cid)
 {
   return (computeData[cid].moveToNode);
@@ -202,11 +227,9 @@ ComputeType ComputeMap::type(ComputeID cid)
 //----------------------------------------------------------------------
 int ComputeMap::allocateCids(int n)
 {
-  int i;
-
   if (computeData != NULL)
   {
-    int i;
+    register int i;
     for(i=0; i<nComputes; i++)
     {
       if (computeData[i].pids != NULL)
@@ -306,13 +329,18 @@ void ComputeMap::printComputeMap(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/04/04 23:34:17 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1012 $	$Date: 1997/04/08 07:08:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.C,v $
+ * Revision 1.1012  1997/04/08 07:08:12  ari
+ * Modification for dynamic loadbalancing - moving computes
+ * Still bug in new computes or usage of proxies/homepatches.
+ * Works if ldbStrategy is none as before.
+ *
  * Revision 1.1011  1997/04/04 23:34:17  milind
  * Got NAMD2 to run on Origin2000.
  * Included definitions of class static variables in C files.

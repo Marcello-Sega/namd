@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1010 1997/04/06 22:45:12 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1011 1997/04/08 07:08:58 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -113,8 +113,8 @@ void ProxyPatch::sendResults(void)
   register int i;
   for ( i = 0; i < Results::maxNumForces; ++i ) 
     msg->forceList[i] = f[i];
-  *CPriorityPtr(msg) = (unsigned int)Priorities::urgent;
-  CSetQueueing(msg, C_QUEUEING_IFIFO);
+  //*CPriorityPtr(msg) = (unsigned int)Priorities::urgent;
+  //CSetQueueing(msg, C_QUEUEING_IFIFO);
   ProxyMgr::Object()->sendResults(msg);
 }
 
@@ -123,12 +123,17 @@ void ProxyPatch::sendResults(void)
  *
  *	$RCSfile: ProxyPatch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/04/06 22:45:12 $
+ *	$Revision: 1.1011 $	$Date: 1997/04/08 07:08:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.1011  1997/04/08 07:08:58  ari
+ * Modification for dynamic loadbalancing - moving computes
+ * Still bug in new computes or usage of proxies/homepatches.
+ * Works if ldbStrategy is none as before.
+ *
  * Revision 1.1010  1997/04/06 22:45:12  ari
  * Add priorities to messages.  Mods to help proxies without computes.
  * Added quick enhancement to end of list insertion of ResizeArray(s)

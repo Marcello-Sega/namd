@@ -75,6 +75,8 @@ public:
   // node(cid) returns the node where the compute object currently exists.
   int node(ComputeID cid);
 
+  void setNode(ComputeID cid, NodeID node);
+
   // newNode(cid,node) sets up map to tell WorkDistrib to send 
   // compute to new node
   NodeID newNode(ComputeID cid);
@@ -113,6 +115,7 @@ public:
 
 protected:
   friend class MapDistribMsg;
+  friend class ComputeMapDistribMsg;
   void * pack (int *length);
   void unpack (void *in);
 
@@ -160,13 +163,18 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/27 20:25:41 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1006 $	$Date: 1997/04/08 07:08:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.h,v $
+ * Revision 1.1006  1997/04/08 07:08:14  ari
+ * Modification for dynamic loadbalancing - moving computes
+ * Still bug in new computes or usage of proxies/homepatches.
+ * Works if ldbStrategy is none as before.
+ *
  * Revision 1.1005  1997/03/27 20:25:41  brunner
  * Changes for LdbCoordinator, the load balance control BOC
  *

@@ -22,7 +22,7 @@ class ComputeNonbondedPair : public ComputePatchPair, private ComputeNonbondedUt
 
 public:
   ComputeNonbondedPair(ComputeID c, PatchID pid[], int trans[]);
-  virtual ~ComputeNonbondedPair();
+  ~ComputeNonbondedPair();
   virtual int priority(void);
 
 protected :
@@ -39,13 +39,18 @@ protected :
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedPair.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/04/03 23:22:21 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1006 $	$Date: 1997/04/08 07:08:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.h,v $
+ * Revision 1.1006  1997/04/08 07:08:23  ari
+ * Modification for dynamic loadbalancing - moving computes
+ * Still bug in new computes or usage of proxies/homepatches.
+ * Works if ldbStrategy is none as before.
+ *
  * Revision 1.1005  1997/04/03 23:22:21  jim
  * Added basic priority() method to Compute.  Only distinguishes between
  * local and nonlocal computations for now.
