@@ -619,6 +619,7 @@ obj/ComputeDPME.o: \
 	dpme2/dpme2def.h \
 	dpme2/protype.h \
 	src/ComputeNonbondedUtil.h \
+	src/ReductionMgr.h \
 	src/PatchMgr.h \
 	src/HomePatch.h \
 	src/MigrateAtomsMsg.h \
@@ -632,7 +633,6 @@ obj/ComputeDPME.o: \
 	src/UniqueSetRaw.h \
 	src/ObjectArena.h \
 	src/Hydrogen.h \
-	src/ReductionMgr.h \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/MStream.h \
@@ -697,6 +697,7 @@ obj/ComputeDPMTA.o: \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/ComputeNonbondedUtil.h \
+	src/ReductionMgr.h \
 	src/PatchMap.inl \
 	src/PatchMap.h \
 	src/HomePatchList.h \
@@ -723,7 +724,6 @@ obj/ComputeDPMTA.o: \
 	src/UniqueSetRaw.h \
 	src/ObjectArena.h \
 	src/Hydrogen.h \
-	src/ReductionMgr.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeDPMTA.o -c src/ComputeDPMTA.C
 obj/ComputeFreeEnergy.o: \
@@ -838,6 +838,7 @@ obj/ComputeFullDirect.o: \
 	src/PositionBox.h \
 	src/PatchTypes.h \
 	src/ComputeNonbondedUtil.h \
+	src/ReductionMgr.h \
 	src/PatchMgr.h \
 	src/HomePatch.h \
 	src/MigrateAtomsMsg.h \
@@ -851,7 +852,6 @@ obj/ComputeFullDirect.o: \
 	src/UniqueSetRaw.h \
 	src/ObjectArena.h \
 	src/Hydrogen.h \
-	src/ReductionMgr.h \
 	src/Communicate.h \
 	src/MStream.h \
 	src/Debug.h \
@@ -1420,6 +1420,7 @@ obj/ComputeMgr.o: \
 	src/AtomMap.h \
 	src/Compute.h \
 	src/ComputeNonbondedUtil.h \
+	src/ReductionMgr.h \
 	src/ComputeNonbondedSelf.h \
 	src/ComputePatch.h \
 	src/Box.h \
@@ -1443,7 +1444,6 @@ obj/ComputeMgr.o: \
 	src/ConfigList.h \
 	src/ObjectArena.h \
 	src/Hydrogen.h \
-	src/ReductionMgr.h \
 	src/Inform.h \
 	src/ComputeAngles.inl \
 	src/ComputeDihedrals.h \
@@ -1663,13 +1663,7 @@ obj/ComputeNonbondedUtil.o: \
 	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
 	src/ResizeArrayPrimIter.h \
-	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
-	src/MStream.h \
-	src/Lattice.h \
-	src/Tensor.h \
-	src/Node.h \
+	src/ReductionMgr.h \
 	src/main.h \
 	src/BOCgroup.h \
 	inc/main.decl.h \
@@ -1684,6 +1678,13 @@ obj/ComputeNonbondedUtil.o: \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
 	src/ProcessorPrivate.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/MStream.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/Node.h \
 	src/Molecule.h \
 	src/IntList.h \
 	src/structures.h \
@@ -1692,7 +1693,6 @@ obj/ComputeNonbondedUtil.o: \
 	src/ObjectArena.h \
 	src/Hydrogen.h \
 	src/LJTable.h \
-	src/ReductionMgr.h \
 	src/ComputeNonbondedBase.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeNonbondedUtil.o -c src/ComputeNonbondedUtil.C
 obj/ComputePatch.o: \
@@ -1830,6 +1830,7 @@ obj/ComputePme.o: \
 	src/ComputePmeMsgs.h \
 	src/PmeBase.h \
 	src/ComputeNonbondedUtil.h \
+	src/ReductionMgr.h \
 	src/PatchMgr.h \
 	src/HomePatch.h \
 	src/MigrateAtomsMsg.h \
@@ -1843,7 +1844,6 @@ obj/ComputePme.o: \
 	src/UniqueSetRaw.h \
 	src/ObjectArena.h \
 	src/Hydrogen.h \
-	src/ReductionMgr.h \
 	src/ComputeMgr.h \
 	src/Debug.h \
 	src/SimParameters.h \
@@ -3593,6 +3593,21 @@ obj/SimParameters.o: \
 	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
 	src/ResizeArrayPrimIter.h \
+	src/ReductionMgr.h \
+	src/main.h \
+	src/BOCgroup.h \
+	inc/main.decl.h \
+	inc/WorkDistrib.decl.h \
+	inc/ReductionMgr.decl.h \
+	inc/PatchMgr.decl.h \
+	inc/ProxyMgr.decl.h \
+	inc/Node.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/ComputeMgr.decl.h \
+	inc/CollectionMgr.decl.h \
+	inc/CollectionMaster.decl.h \
+	inc/BroadcastMgr.decl.h \
+	src/ProcessorPrivate.h \
 	src/ConfigList.h \
 	src/SimParameters.h \
 	src/Communicate.h \
