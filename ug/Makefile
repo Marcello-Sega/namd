@@ -19,6 +19,14 @@ SHELL 		= /bin/sh
 DOCDIR		= .
 MAIN_UG_FILE	= $(DOCDIR)/ug
 
+SRCFILES = namd_begindoc.tex namd_copyright.tex namd_macros.tex \
+namd_title.tex namd_version.tex ug.tex ug_add.tex ug_avail.tex ug_basic.tex \
+ug_intro.tex ug_io.tex ug_macros.tex ug_runit.tex ug_sample.tex ug_start.tex \
+ug_xplor.tex ug_fenergy.tex
+
+PDFFIGS = figures/fmaOn.pdf figures/pairlistdist.pdf \
+figures/shifting.pdf figures/switching.pdf
+
 ### latex the documentation
 doc:	$(DOCDIR)/ug.ps 
 
@@ -28,10 +36,32 @@ html:	$(DOCDIR)/ug.ps
 	-t "NAMD 2.0 User's Guide" -address "namd@ks.uiuc.edu" \
 	-up_url "../../" -up_title "Main NAMD Page" ug 
 
-$(DOCDIR)/ug.ps: namd_begindoc.tex namd_copyright.tex namd_macros.tex \
-namd_title.tex namd_version.tex ug.tex ug_add.tex ug_avail.tex ug_basic.tex \
-ug_intro.tex ug_io.tex ug_macros.tex ug_runit.tex ug_sample.tex ug_start.tex \
-ug_xplor.tex ug_fenergy.tex
+### run pdflatex
+pdf:	$(DOCDIR)/ug.pdf
+
+$(DOCDIR)/ug.pdf: $(SRCFILES) $(PDFFIGS)
+	$(ECHO) "Creating User's Guide ..." ; \
+	$(CD) $(DOCDIR); \
+	pdflatex $(MAIN_UG_FILE); \
+	bibtex $(MAIN_UG_FILE); \
+	pdflatex $(MAIN_UG_FILE); \
+	pdflatex $(MAIN_UG_FILE); \
+
+# need to specify page size because distill can't figure it out (yet?)
+
+figures/fmaOn.pdf: figures/fmaOn.eps
+	distill -pagesize 301 174 pts figures/fmaOn.eps
+
+figures/pairlistdist.pdf: figures/pairlistdist.eps
+	distill -pagesize 240 240 pts figures/pairlistdist.eps
+
+figures/shifting.pdf: figures/shifting.eps
+	distill -pagesize 301 165 pts figures/shifting.eps
+
+figures/switching.pdf: figures/switching.eps
+	distill -pagesize 310 165 pts figures/switching.eps
+
+$(DOCDIR)/ug.ps: $(SRCFILES)
 	$(ECHO) "Creating User's Guide ..." ; \
 	$(CD) $(DOCDIR); \
 	latex $(MAIN_UG_FILE); \
@@ -49,4 +79,6 @@ clean:
 	$(DELETE) $(DOCDIR)/ug.dvi ; \
 	$(DELETE) $(DOCDIR)/ug.lof ; \
 	$(DELETE) $(DOCDIR)/ug.log ; \
-	$(DELETE) $(DOCDIR)/ug.toc
+	$(DELETE) $(DOCDIR)/ug.toc ; \
+	$(DELETE) $(DOCDIR)/ug.pdf ; \
+	$(DELETE) $(PDFFIGS)

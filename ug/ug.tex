@@ -11,7 +11,7 @@
 %
 %       $RCSfile: ug.tex,v $
 %       $Author: jim $        $Locker:  $                $State: Exp $
-%       $Revision: 1.4 $      $Date: 1999/02/26 06:57:15 $
+%       $Revision: 1.5 $      $Date: 1999/10/08 02:29:36 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -20,6 +20,9 @@
 % REVISION HISTORY:
 %
 % $Log: ug.tex,v $
+% Revision 1.5  1999/10/08 02:29:36  jim
+% Now works with LaTeX 2e and can produce PDF files.
+%
 % Revision 1.4  1999/02/26 06:57:15  jim
 % Changes to make latex2html work.
 %
@@ -46,7 +49,8 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\documentstyle[11pt,epsfig]{article}
+\documentclass[11pt]{article}
+\usepackage{graphics}
 
 % define margins, etc
 \topmargin	0.1in
