@@ -517,17 +517,7 @@ AMBER cutoff simulations are desired, the switching functions
 could be turned off by specifying ``switching off'' in NAMD
 configuration file.
 
-\noindent 6. When SHAKE is applied to water molecules, NAMD
-constrains the two O-H bonds and the H-O-H angle, which produces
-the same result as constraining the additional H-H bond. But in
-some AMBER models, water is defined by three real bonds and no
-angle. In this case NAMD will apply SHAKE only to the two O-H
-bonds and not to the angle or the H-H bond (because the angle is
-not defined). Thus, when
-SHAKE is used along with this kind of water model, difference
-would be expected between NAMD and AMBER.
-
-\noindent 7. NAMD and AMBER may have different default values for
+\noindent 6. NAMD and AMBER may have different default values for
 some parameters (e.g., the tolerance of SHAKE). One should check
 other sections of this manual for accurate descriptions
 of the NAMD options.
