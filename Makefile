@@ -44,10 +44,10 @@ PVM=-I$(PVMDIR)
 #####
 ## Choose your favorite Compiler options
 ####
-#CXXOPTS = -O
+CXXOPTS = -O
 #CXXOPTS = +O3 -G -z 
 #CXXOPTS = -O +DAK460 +DSK460
-CXXOPTS = -g
+#CXXOPTS = -g
 
 CXX = CC -Aa -D_HPUX_SOURCE
 INCLUDE = /Projects/l1/namd.2.0/charm/include
