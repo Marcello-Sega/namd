@@ -914,22 +914,29 @@ void Controller::receivePressure(int step, int minimize)
 
   if (pressureProfileReduction) {
     int i;
+
     // accumulate the pressure profile computed for this step into the average.
     for (i=0; i<3*simParameters->pressureProfileSlabs; i++)
       pressureProfileAverage[i] += pressureProfileReduction->item(i);
     if (!(step % simParameters->pressureProfileFreq)) {
+
+      // convert NAMD internal virial to pressure in units of bar by 
+      // multiplying by PRESSUREFACTOR and dividing by the volume of one slab.
+      BigReal scalefac = PRESSUREFACTOR * 
+        simParameters->pressureProfileSlabs / lattice.volume();
+
       // output pressure profile for this step
       iout << "PRESSUREPROFILE: " << step << " ";
       for (i=0; i<3*simParameters->pressureProfileSlabs; i++) 
-        iout << pressureProfileReduction->item(i) << " ";
+        iout << pressureProfileReduction->item(i)*scalefac << " ";
       iout << "\n" << endi; 
 
       if (step != simParameters->firstTimestep) {
         // output pressure profile averaged over the last Freq steps.
+        scalefac /= simParameters->pressureProfileFreq;
         iout << "PRESSUREPROFILEAVG: " << step << " ";
-        BigReal avgscale = 1.0/simParameters->pressureProfileFreq;
         for (i=0; i<3*simParameters->pressureProfileSlabs; i++) 
-          iout << pressureProfileAverage[i]*avgscale << " ";
+          iout << pressureProfileAverage[i]*scalefac << " ";
         iout << "\n" << endi; 
       }
       // Clear the average for the next block
