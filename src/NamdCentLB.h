@@ -20,6 +20,7 @@ public:
   NamdCentLB();
 private:
   CmiBool QueryBalanceNow(int step);
+  CmiBool QueryDumpData();
   CLBMigrateMsg* Strategy(CentralLB::LDStats* stats, int count);
   int buildData(CentralLB::LDStats* stats, int count);
   int requiredProxies(PatchID id, int neighborNodes[]);
