@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *  $RCSfile: CommunicateConverse.C,v $
- *  $Author: ari $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1 $  $Date: 1996/12/06 19:52:20 $
+ *  $Author: milind $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.2 $  $Date: 1996/12/12 20:14:50 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -21,7 +21,7 @@
  * send/receive data.
  * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/CommunicateConverse.C,v 1.1 1996/12/06 19:52:20 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/CommunicateConverse.C,v 1.2 1996/12/12 20:14:50 milind Exp $";
 
 #include <iostream.h>
 #include <string.h>
@@ -230,6 +230,10 @@ Message* CommunicateConverse::unpack_message(char *mcmsg, int &tag, int &node)
     // get number of items in this message
     MemCopy(&nitems, mcmsg, sizeof(int));
     mcmsg += Align(sizeof(int));
+    iout << "Received message with tag " << msg_tag
+         << " from " << sender 
+         << " containing " << nitems 
+         << " Items\n" << endi;
 
     // create data structure for this message
     if(nitems > 0) 
@@ -446,20 +450,20 @@ int CommunicateConverse::do_send_msg(Message *msg, int node, int tag, int delmsg
 Message *CommunicateConverse::do_receive(int &node, int &tag) 
 {
   Message *newmsg = NULL;
-  Bool nomoremessages=FALSE;
+  int nomoremessages = 0;
   int rtag, itag;
   char *msg;
   
-  while ( (newmsg == NULL) && !(nomoremessages) )
+  while ( (newmsg == NULL) && !nomoremessages)
   {
     itag = ((node<0 || node>=TotalNodes) ? (CmmWildCard) : node);
-    CsdScheduler(0); //process pending messages
+    CmiDeliverMsgs(0);
     msg = (char *)CmmGet(CpvAccess(CsmMessages), 1, &itag, &rtag);
     if(msg) {
       newmsg = unpack_message(msg+CmiMsgHeaderSizeBytes, tag, node);
       CmiFree(msg);
     } else {
-      nomoremessages=TRUE;
+      nomoremessages = 1;
     }
   }
   return newmsg;

@@ -54,6 +54,7 @@ public:
   // Charm Entry point - Read in system data, get all ready to simulate
   static void messageStartup();
   void startup(InitMsg *);  
+  void startup2(void);  
 
   static void messageStartupDone();
   void startupDone(DoneMsg *);
@@ -105,12 +106,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.13 $	$Date: 1996/12/06 19:54:12 $
+ *	$Revision: 1.14 $	$Date: 1996/12/12 20:14:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.14  1996/12/12 20:14:50  milind
+ * *** empty log message ***
+ *
  * Revision 1.13  1996/12/06 19:54:12  ari
  * *** empty log message ***
  *

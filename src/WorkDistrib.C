@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.24 1996/12/12 17:24:04 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.25 1996/12/12 20:14:50 milind Exp $";
 
 #include <stdio.h>
 
@@ -156,24 +156,19 @@ void WorkDistrib::saveMaps(MapDistribMsg *msg)
   }
 
   mapsArrived = true;
-  if (awaitingMaps)
-  {
-    awaitingMaps = false;
-    // CthResume(awaitingMapsTh);
-    CthAwaken(awaitingMapsTh);
-  }
+  node->startup2();
 }
 
 //----------------------------------------------------------------------
 // awaitMaps() is called when node needs to wait for the map message
 void WorkDistrib::awaitMaps()
 {
-  if (!mapsArrived)
+  while (!mapsArrived)
   {
     awaitingMapsTh = CthSelf();
     awaitingMaps = true;
     DebugM(4,"suspending in awaitMaps(), thread = " << awaitingMapsTh << "\n");
-    CthSuspend();
+    CthYield();
   }
 }
 
@@ -378,13 +373,16 @@ void WorkDistrib::movePatchDone(DoneMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.24 $	$Date: 1996/12/12 17:24:04 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.25 $	$Date: 1996/12/12 20:14:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.25  1996/12/12 20:14:50  milind
+ * *** empty log message ***
+ *
  * Revision 1.24  1996/12/12 17:24:04  jim
  * forgot to fill in message fields
  *

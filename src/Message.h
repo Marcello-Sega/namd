@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *      $RCSfile: Message.h,v $
- *      $Author: ari $        $Locker:  $             $State: Exp $
- *      $Revision: 1.1 $        $Date: 1996/08/06 20:38:38 $
+ *      $Author: milind $        $Locker:  $             $State: Exp $
+ *      $Revision: 1.2 $        $Date: 1996/12/12 20:14:50 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -25,6 +25,9 @@
  * REVISION HISTORY:
  *
  * $Log: Message.h,v $
+ * Revision 1.2  1996/12/12 20:14:50  milind
+ * *** empty log message ***
+ *
  * Revision 1.1  1996/08/06 20:38:38  ari
  * Initial revision
  *
@@ -143,15 +146,15 @@ private:
     if(!curr || curr->type != t || !data) { 
 	if (!curr)
 	{
-		cerr << "Message: no more items in Message" << endl; 
+		iout << iERROR << "Message: no more items in Message\n" << endi; 
 	}
 	else if (curr->type != t)
 	{
-		cerr << "Message: data type mismatch in get" << endl;
+		iout << iERROR << "Message: data type mismatch in get\n" << endi;
 	}
 	else
 	{
-		cerr << "Message: !data" << endl;
+		iout << iERROR << "Message: !data\n" << endi;
 	}
 		
 	return *this;
@@ -196,7 +199,7 @@ public:
     if(m)
       retval = (m->size > 0 ? m->size : 1);
     else
-      cerr << "Message: cannot get size of item " << N << endl;
+      iout << iERROR << "Message: cannot get size of item " << N << "\n" << endi;
     return retval;
   }
 
@@ -209,7 +212,7 @@ public:
     if(m)
       retval = m->type;
     else
-      cerr << "Message: cannot get type of item " << N << endl;
+      iout << iERROR << "Message: cannot get type of item " << N << "\n" << endi;
     return retval;
   }
 
@@ -221,7 +224,7 @@ public:
     if(m)
       retptr = m->item;
     else
-      cerr << "Message: cannot get pointer to item " << N << endl;
+      iout << iERROR << "Message: cannot get pointer to item " << N << "\n" << endi;
     return retptr;
   }
 

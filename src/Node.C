@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.23 1996/12/12 08:58:12 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.24 1996/12/12 20:14:50 milind Exp $";
 
 
 #include "ckdefs.h"
@@ -60,9 +60,6 @@ Node *Node::_instance = 0;
 
 Node::Node(GroupInitMsg *msg)
 {
-    // Needed for namd.1.X components - comm is global!
-    comm = new CommunicateConverse(0,0);
-
   DebugM(1, "Node::Node() - starting\n");
   group = msg->group;
   group.node = thisgroup;
@@ -121,15 +118,26 @@ void Node::startup(InitMsg *msg)
 {
   char **argvdummy;
   extern Communicate *comm;
+  Message *conv_msg=NULL;
+
+  comm = new CommunicateConverse(0,0);
 
   if ( CMyPe() ) {
-     comm = new CommunicateConverse(0,argvdummy);
      simParameters = new SimParameters;
      parameters = new Parameters;
      molecule = new Molecule(simParameters);
-     simParameters->receive_SimParameters(comm->receive(0,SIMPARAMSTAG));
-     parameters->receive_Parameters(comm->receive(0,STATICPARAMSTAG));
-     molecule->receive_Molecule(comm->receive(0,MOLECULETAG));
+     do{
+        conv_msg = comm->receive(0,SIMPARAMSTAG);
+     } while (conv_msg == NULL);
+     simParameters->receive_SimParameters(conv_msg);
+     do{
+        conv_msg = comm->receive(0,STATICPARAMSTAG);
+     } while (conv_msg == NULL);
+     parameters->receive_Parameters(conv_msg);
+     do{
+        conv_msg = comm->receive(0,MOLECULETAG);
+     } while (conv_msg == NULL);
+     molecule->receive_Molecule(conv_msg);
   } else {
      simParameters->send_SimParameters(comm);
      parameters->send_Parameters(comm);
@@ -159,10 +167,10 @@ void Node::startup(InitMsg *msg)
   DebugM(1, "workDistrib->sendMaps() Pe=" << CMyPe() << "\n");
     workDistrib->sendMaps();
   }
-  DebugM(1, "workDistrib->awaitMaps() Pe=" << CMyPe() << "\n");
-  workDistrib->awaitMaps();
-  DebugM(1, "Finished workDistrib->awaitMaps() Pe=" << CMyPe() << "\n");
+}
 
+void Node::startup2(void)
+{
   ComputeMap::Object()->printComputeMap();
 
   DebugM(1, "workDistrib->createPatches() Pe=" << CMyPe() << "\n");
@@ -269,13 +277,16 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.23 $	$Date: 1996/12/12 08:58:12 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.24 $	$Date: 1996/12/12 20:14:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.24  1996/12/12 20:14:50  milind
+ * *** empty log message ***
+ *
  * Revision 1.23  1996/12/12 08:58:12  jim
  * startup corrections (I hope).
  *

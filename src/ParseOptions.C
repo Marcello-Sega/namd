@@ -11,7 +11,7 @@
  *
  *	$RCSfile: ParseOptions.C,v $
  *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/12/11 00:04:23 $
+ *	$Revision: 1.4 $	$Date: 1996/12/12 20:14:50 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -22,6 +22,9 @@
  * REVISION HISTORY:
  *
  * $Log: ParseOptions.C,v $
+ * Revision 1.4  1996/12/12 20:14:50  milind
+ * *** empty log message ***
+ *
  * Revision 1.3  1996/12/11 00:04:23  milind
  * *** empty log message ***
  *
@@ -54,7 +57,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ParseOptions.C,v 1.3 1996/12/11 00:04:23 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ParseOptions.C,v 1.4 1996/12/12 20:14:50 milind Exp $";
 // set the list of parameters
 #include <libc.h>
 #include <iostream.h>
@@ -1084,7 +1087,6 @@ int ParseOptions::num(const char *name)
 // get or set the range for the given variable
 void ParseOptions::range(const char *name, Range newrange)
 {
-   iout << "range called with " << name << " as param \n" << endi;
    DataElement *el = internal_find(name);
    if (!el) {
       iout << iERROR << "Trying to set the range of undefined variable '"
@@ -1096,7 +1098,6 @@ void ParseOptions::range(const char *name, Range newrange)
 }
 Range ParseOptions::range(const char *name)
 {
-   iout << "range called with " << name << " as param \n" << endi;
    DataElement *el = internal_find(name);
    if (!el) {
       iout << iERROR << "Trying to get the range of undefined variable '"
