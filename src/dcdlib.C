@@ -51,6 +51,10 @@ void NAMD_write(int fd, const char *buf, size_t count) {
   }
 }
 
+#ifndef O_LARGEFILE
+#define O_LARGEFILE 0x0
+#endif
+
 
 /************************************************************************/
 /*									*/
@@ -146,7 +150,7 @@ int open_dcd_read(char *filename)
 
 	/*  Try and open the file				*/
 #ifdef WIN32
-	dcdfd=_open(filename, O_RDONLY|O_BINARY);
+	dcdfd=_open(filename, O_RDONLY|O_BINARY|O_LARGEFILE);
 #else
 	dcdfd=open(filename, O_RDONLY|O_LARGEFILE);
 #endif
@@ -653,7 +657,7 @@ int open_dcd_write(char *dcdname)
 	   delete [] newdcdname;
 	} 
 #ifdef WIN32
-	if ( (dcdfd = _open(dcdname, O_RDWR|O_CREAT|O_EXCL|O_BINARY,
+	if ( (dcdfd = _open(dcdname, O_RDWR|O_CREAT|O_EXCL|O_BINARY|O_LARGEFILE,
 				_S_IREAD|_S_IWRITE)) < 0)
 #else
 	if ( (dcdfd = open(dcdname, O_RDWR|O_CREAT|O_EXCL|O_LARGEFILE,
