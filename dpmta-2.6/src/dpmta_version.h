@@ -9,11 +9,19 @@
 *
 */
 
-/* $Id: dpmta_version.h,v 1.1 1997/09/05 19:42:18 jim Exp $
+/* $Id: dpmta_version.h,v 1.2 1997/09/29 23:58:48 jim Exp $
  *
  * revision history:
  *
  * $Log: dpmta_version.h,v $
+ * Revision 1.2  1997/09/29 23:58:48  jim
+ * Incorporated changes from version 2.6.1 of DPMTA.
+ *   - fixes for bad handling of empty/invalid multipoles when
+ *     using large processor sets.
+ *   - moved functions that provide data mapping to processors.  master
+ *     and slave routines now call the same function in dpmta_distmisc.c
+ * Also, switched pvmc.h back to pvm3.h.
+ *
  * Revision 1.1  1997/09/05 19:42:18  jim
  * Original distribution.
  *
@@ -81,4 +89,4 @@
  *
 */
 
-#define DPMTA_VERSION 2.6
+#define DPMTA_VERSION 2.6.1

@@ -14,12 +14,20 @@
 *
 */
 
-static char rcsid[] = "$Id: dpmta_slvmcalc.c,v 1.1 1997/09/05 19:42:01 jim Exp $";
+static char rcsid[] = "$Id: dpmta_slvmcalc.c,v 1.2 1997/09/29 23:58:41 jim Exp $";
 
 /*
  * revision history:
  *
  * $Log: dpmta_slvmcalc.c,v $
+ * Revision 1.2  1997/09/29 23:58:41  jim
+ * Incorporated changes from version 2.6.1 of DPMTA.
+ *   - fixes for bad handling of empty/invalid multipoles when
+ *     using large processor sets.
+ *   - moved functions that provide data mapping to processors.  master
+ *     and slave routines now call the same function in dpmta_distmisc.c
+ * Also, switched pvmc.h back to pvm3.h.
+ *
  * Revision 1.1  1997/09/05 19:42:01  jim
  * Original distribution.
  *
@@ -165,7 +173,6 @@ static char rcsid[] = "$Id: dpmta_slvmcalc.c,v 1.1 1997/09/05 19:42:01 jim Exp $
 
 
 /* some required prototyping */
-int getnpids( int );
 int getparent( int );
 
 
@@ -233,8 +240,8 @@ int MultipoleCleanup()
 
 /****************************************************************
 *
-*  this procedure will perform the upward pass of the mulitpole
-*  expansion.
+*  Slave_Mpole_Exp() - this procedure will perform the upward
+*  pass of the mulitpole expansion.
 *
 *  this procedure operates on the cell/tree level.  there are no
 *  operations directly on the multipole data structures.  rather,
@@ -374,6 +381,19 @@ int Slave_Mpole_Exp()
       } /* for i */
    } /* if Dpmta_FFT */
 
+#ifdef DEBUG
+   /* dump the level 1 multipoles */
+   if ( Dpmta_Scell[2] != -1 ) {
+      char filename[80];
+      int il;
+      for ( il=Dpmta_Scell[2]; il<=Dpmta_Ecell[2]; il++ ) {
+	 sprintf(filename,"tmp/dpmta/MPD-m%d-p%d-n%d.data",
+		 il,Dpmta_Pid,Dpmta_Nproc);
+	 MDumpRaw_C(Dpmta_CellTbl[2][il]->m, Dpmta_Mp, filename);
+      }
+   }
+#endif
+
 } /* Slave_Mpole_Exp() */
 
 
@@ -481,7 +501,7 @@ int Slave_MPE_Calc()
                   fprintf(stderr,"ERROR: cell %d/%d not allocated\n",i-1,k);
                   exit(-1);
 	       }
-               Calc_L2L(i-1,k,i,j);
+	       Calc_L2L(i-1,k,i,j);
 	    } /* if i */
 #endif            
 
@@ -525,7 +545,7 @@ int Slave_MPE_Calc()
 				    Dpmta_Hlist[posn].plist[k],
 				    Dpmta_Hlist[posn].plist_lj[k]);
 #else
-		       Calc_M2L_FFT_S(rlevel,rcell,i,j,
+		     Calc_M2L_FFT_S(rlevel,rcell,i,j,
 				    Dpmta_Hlist[posn].plist[k]);
 #endif
 
@@ -1028,8 +1048,9 @@ Calc_M2L_S(
    *  check to see if the remote cell has a valid multipole expansion
    */
 
-   if ( Dpmta_CellTbl[rlevel][rcell]->mvalid == FALSE )
+   if ( Dpmta_CellTbl[rlevel][rcell]->mvalid == FALSE ) {
       return;
+   } /* if mvalid */
 
    /*
    *  set the local multipole expansion to valid
@@ -1420,6 +1441,10 @@ int Clear_mpole(
    LJMclear(mpole_lj,Dpmta_Mp_LJ);
 #endif
 
+   /* set valid flag to false */
+
+   Dpmta_CellTbl[level][cell]->mvalid = FALSE;
+   
 } /* Clear_mpole */
 
 
@@ -1462,6 +1487,10 @@ int Clear_local(
 
    LJMclear(local_lj,Dpmta_Mp_LJ);
 #endif
+
+   /* set valid flag to false */
+
+   Dpmta_CellTbl[level][cell]->mdata->lvalid = FALSE;
 
 } /* Clear_local */
 

@@ -10,10 +10,18 @@
 # for compilation on generic workstation networks should use the default
 # makefile
 #
-# RCS Info: $Id: Makefile.serial,v 1.1 1997/09/05 19:41:48 jim Exp $
+# RCS Info: $Id: Makefile.serial,v 1.2 1997/09/29 23:58:35 jim Exp $
 #
 # Revision History:
 # $Log: Makefile.serial,v $
+# Revision 1.2  1997/09/29 23:58:35  jim
+# Incorporated changes from version 2.6.1 of DPMTA.
+#   - fixes for bad handling of empty/invalid multipoles when
+#     using large processor sets.
+#   - moved functions that provide data mapping to processors.  master
+#     and slave routines now call the same function in dpmta_distmisc.c
+# Also, switched pvmc.h back to pvm3.h.
+#
 # Revision 1.1  1997/09/05 19:41:48  jim
 # Original distribution.
 #
@@ -72,10 +80,11 @@ LDFLAGS = $(LDIR)
 
 SSRC  =	dpmta_serial.c \
 	dpmta_slvmkcell.c dpmta_slvmcalc.c dpmta_slvpcalc.c \
-        dpmta_slvmisc.c dpmta_slvclean.c dpmta_slvstart.c \
+        dpmta_slvclean.c dpmta_slvstart.c \
 	dpmta_slvmkil.c dpmta_slvmkhl.c \
 	dpmta_slvcompute.c dpmta_slvmacro.c dpmta_slvscale.c \
-	dpmta_timer.c
+	dpmta_timer.c \
+	dpmta_distmisc.c
 SOBJS =	$(SSRC:.c=.o)
 
 

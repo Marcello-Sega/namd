@@ -11,10 +11,18 @@
 # for other platforms.
 #
 #
-# RCS Info: $Id: Makefile,v 1.2 1997/09/28 10:24:07 milind Exp $
+# RCS Info: $Id: Makefile,v 1.3 1997/09/29 23:58:33 jim Exp $
 #
 # Revision History:
 # $Log: Makefile,v $
+# Revision 1.3  1997/09/29 23:58:33  jim
+# Incorporated changes from version 2.6.1 of DPMTA.
+#   - fixes for bad handling of empty/invalid multipoles when
+#     using large processor sets.
+#   - moved functions that provide data mapping to processors.  master
+#     and slave routines now call the same function in dpmta_distmisc.c
+# Also, switched pvmc.h back to pvm3.h.
+#
 # Revision 1.2  1997/09/28 10:24:07  milind
 # Fixed Makefiles to include arch params from a single file.
 #
@@ -291,14 +299,16 @@ SLFLAGS = $(SLDIR)
 TLFLAGS = $(TLDIR)
 
 
-MSRC  = dpmta_mastiface.c dpmta_mastinit.c dpmta_mastiter.c dpmta_timer.c
+MSRC  = dpmta_mastiface.c dpmta_mastinit.c dpmta_mastiter.c dpmta_timer.c \
+	dpmta_distmisc.c
 MOBJS = $(MSRC:.c=.o)
 
 SSRC  = dpmta_slave.c dpmta_slvmkcell.c dpmta_slvmcalc.c dpmta_slvpcalc.c \
-        dpmta_slvmisc.c dpmta_slvcomm.c  dpmta_slvclean.c dpmta_slvstart.c \
+        dpmta_slvcomm.c  dpmta_slvclean.c dpmta_slvstart.c \
 	dpmta_slvmkiil.c  dpmta_slvmkil.c dpmta_slvmkhl.c \
 	dpmta_slvcompute.c dpmta_slvmacro.c dpmta_slvscale.c \
-	dpmta_timer.c
+	dpmta_timer.c \
+	dpmta_distmisc.c
 SOBJS = $(SSRC:.c=.o)
 
 

@@ -12,12 +12,20 @@
 *
 */
 
-static char rcsid[] = "$Id: dpmta_slvcomm.c,v 1.2 1997/09/12 22:56:32 jim Exp $";
+static char rcsid[] = "$Id: dpmta_slvcomm.c,v 1.3 1997/09/29 23:58:39 jim Exp $";
 
 /*
  * revision history:
  *
  * $Log: dpmta_slvcomm.c,v $
+ * Revision 1.3  1997/09/29 23:58:39  jim
+ * Incorporated changes from version 2.6.1 of DPMTA.
+ *   - fixes for bad handling of empty/invalid multipoles when
+ *     using large processor sets.
+ *   - moved functions that provide data mapping to processors.  master
+ *     and slave routines now call the same function in dpmta_distmisc.c
+ * Also, switched pvmc.h back to pvm3.h.
+ *
  * Revision 1.2  1997/09/12 22:56:32  jim
  * Modifications to work with converse pvm.
  *
@@ -219,7 +227,7 @@ static char rcsid[] = "$Id: dpmta_slvcomm.c,v 1.2 1997/09/12 22:56:32 jim Exp $"
 
 /* include files */
 #include <stdio.h>
-#include "pvmc.h"
+#include "pvm3.h"
 #include "dpmta_pvm.h"
 #include "dpmta_cell.h"
 #include "dpmta_slave.h"
@@ -574,9 +582,6 @@ Slave_Recv_Multipole()
 * 
 *  sends the all mpe for this level to the pids that own them.
 *
-*  Requires following global variables:
-*  MpeSize -- number of Complex in a multipole expansion (fcn of p and
-*             whether or not FFT is used)
 *   
 */
 
@@ -585,6 +590,7 @@ void Send_Mpe_to_Parent( int level )
    int i,j,k;
    int cellid;
    int tpid;
+   int *v_ptr;
    double *mpe_ptr;
 
    /* we do not need to send MPEs too far up the tree */
@@ -597,7 +603,7 @@ void Send_Mpe_to_Parent( int level )
       j = getparent(i);
       if ( j != k ) {
          k = j;
-         tpid = getslvpid(level-1,j);
+         tpid = getslvpid(Dpmta_Nproc,level-1,j);
          if ( tpid != Dpmta_Pid ) {
 
 #ifdef CRAY
@@ -609,13 +615,21 @@ void Send_Mpe_to_Parent( int level )
             cellid = j + Dpmta_LevelLocate[level-1];
             pvm_pkint(&cellid,1,1);
 
-            mpe_ptr = &(Dpmta_CellTbl[0][cellid]->m[0][0].x);
-            pvm_pkdouble(mpe_ptr,Dpmta_MpeSize*2,1);
+	    v_ptr = &(Dpmta_CellTbl[0][cellid]->mvalid);
+	    pvm_pkint(v_ptr,1,1);
+
+	    if ( (*v_ptr) == TRUE ) {
+
+	       mpe_ptr = &(Dpmta_CellTbl[0][cellid]->m[0][0].x);
+	       pvm_pkdouble(mpe_ptr,Dpmta_MpeSize*2,1);
 
 #ifdef COMP_LJ
-            mpe_ptr = &(Dpmta_CellTbl[0][cellid]->m_lj[0][0][0].x);
-            pvm_pkdouble(mpe_ptr,Dpmta_MpeSize_LJ*2,1);
+	       mpe_ptr = &(Dpmta_CellTbl[0][cellid]->m_lj[0][0][0].x);
+	       pvm_pkdouble(mpe_ptr,Dpmta_MpeSize_LJ*2,1);
 #endif
+
+	    } /* if v_ptr */
+
             pvm_send(Dpmta_Tids[tpid], MSG_M2P);
 
 	 } /* if tpid */
@@ -638,6 +652,7 @@ void Rcv_Mpe_from_Child( int level )
 {
    int i,j,k;
    int cellid_tmp;
+   int v_ptr;
    double *mpe_ptr, *mpe_temp;
 
    for (i=0; i<Dpmta_RMcell[level]; i++) {
@@ -649,28 +664,36 @@ void Rcv_Mpe_from_Child( int level )
 
       pvm_recv(-1, MSG_M2P);
       pvm_upkint(&cellid_tmp,1,1);
+      pvm_upkint(&v_ptr,1,1);
 
-      mpe_temp = &(Dpmta_Temp_Mpe[0][0].x);
-      pvm_upkdouble(mpe_temp,Dpmta_MpeSize*2,1);
+      cellid_tmp -= Dpmta_LevelLocate[level];
+
+      if ( v_ptr == TRUE ) {
+	 mpe_temp = &(Dpmta_Temp_Mpe[0][0].x);
+	 pvm_upkdouble(mpe_temp,Dpmta_MpeSize*2,1);
 
 #ifdef COMP_LJ
-      mpe_temp = &(Dpmta_Temp_Mpe_LJ[0][0][0].x);
-      pvm_upkdouble(mpe_temp,Dpmta_MpeSize_LJ*2,1);
+	 mpe_temp = &(Dpmta_Temp_Mpe_LJ[0][0][0].x);
+	 pvm_upkdouble(mpe_temp,Dpmta_MpeSize_LJ*2,1);
 #endif
 
       /*
       *  add child multipole into existing parent
       */
 
-      if (Dpmta_FFT)
-         CMsumF(Dpmta_Temp_Mpe,Dpmta_CellTbl[0][cellid_tmp]->m,Dpmta_Mp);
-      else
-         CMsum(Dpmta_Temp_Mpe,Dpmta_CellTbl[0][cellid_tmp]->m,Dpmta_Mp);
+	 if (Dpmta_FFT)
+	    CMsumF(Dpmta_Temp_Mpe,Dpmta_CellTbl[0][cellid_tmp]->m,
+		   Dpmta_Mp);
+	 else
+	    CMsum(Dpmta_Temp_Mpe,Dpmta_CellTbl[0][cellid_tmp]->m,Dpmta_Mp);
 
 #ifdef COMP_LJ
-      LJMsum(Dpmta_Temp_Mpe_LJ,Dpmta_CellTbl[0][cellid_tmp]->m_lj,Dpmta_Mp_LJ);
+	 LJMsum(Dpmta_Temp_Mpe_LJ,Dpmta_CellTbl[0][cellid_tmp]->m_lj,
+		Dpmta_Mp_LJ);
 #endif
+	 Dpmta_CellTbl[0][cellid_tmp]->mvalid = TRUE;
 
+      } /* if v_ptr */
    } /* for i */
 
 } /* Rcv_Mpe_from_Child */
@@ -695,7 +718,9 @@ void Send_Lcl_to_Child( int level )
    int i, j, k;
    int tpid;
    int ccell, cell_id;
+   int *v_ptr;
    double *lcl_ptr;
+
 
    if (( Dpmta_Scell[level] != -1 ) && ( level < Dpmta_NumLevels-1 )) {
       for ( i=Dpmta_Scell[level]; i<=Dpmta_Ecell[level]; i++ ) {
@@ -711,7 +736,7 @@ void Send_Lcl_to_Child( int level )
 
          for ( j=ccell; j<ccell+8; j++ ) {
 
-	    k = getslvpid(level+1,j);
+	    k = getslvpid(Dpmta_Nproc,level+1,j);
 
             if ( k != Dpmta_Pid ) {
  	       if ( k != tpid ) {
@@ -725,15 +750,21 @@ void Send_Lcl_to_Child( int level )
 
                   pvm_pkint(&cell_id,1,1);
 
-                  lcl_ptr = &(Dpmta_CellTbl[level][i]->mdata->l[0][0].x);
-                  pvm_pkdouble(lcl_ptr,Dpmta_LclSize*2,1);
+		  v_ptr = &(Dpmta_CellTbl[level][i]->mdata->lvalid);
+		  pvm_pkint(v_ptr,1,1);
+
+		  if ( (*v_ptr) == TRUE ) {
+
+		     lcl_ptr = &(Dpmta_CellTbl[level][i]->mdata->l[0][0].x);
+		     pvm_pkdouble(lcl_ptr,Dpmta_LclSize*2,1);
 
 #ifdef COMP_LJ
-                  lcl_ptr = &(Dpmta_CellTbl[level][i]->mdata->l_lj[0][0][0].x);
-                  pvm_pkdouble(lcl_ptr,Dpmta_LclSize_LJ*2,1);
+		     lcl_ptr = &(Dpmta_CellTbl[level][i]->mdata->l_lj[0][0][0].x);
+		     pvm_pkdouble(lcl_ptr,Dpmta_LclSize_LJ*2,1);
 #endif
+		  } /* if v_ptr */
 
-                  pvm_send(Dpmta_Tids[tpid],MSG_L2C);
+		  pvm_send(Dpmta_Tids[tpid],MSG_L2C);
 
 	       } /* if k */
 	    } /* if dpmta_pid */
@@ -752,29 +783,38 @@ void Send_Lcl_to_Child( int level )
 *  to pids holding children.  The number of local expansion that we
 *  will receive has been precomputed and stored in Dpmta_RLcell[].
 *
+*  Note that the local expansion that we are receiving is complete
+*  with all M2L's already included.  Therefor we can just overwrite
+*  the existing local expansion in the cell.
+*
 */
 
 void Rcv_Lcl_from_Parent( int level )
 {
    int i,j,k;
    int cell_id;
+   int *v_ptr;
    double *lcl_ptr;
-
+   
    for ( i=0; i<Dpmta_RLcell[level]; i++ ) {
 
       pvm_recv(-1,MSG_L2C);
       pvm_upkint(&cell_id,1,1);
 
-      lcl_ptr = &(Dpmta_CellTbl[0][cell_id]->mdata->l[0][0].x);
-      pvm_upkdouble(lcl_ptr,Dpmta_LclSize*2,1);
+      v_ptr = &(Dpmta_CellTbl[0][cell_id]->mdata->lvalid);
+      pvm_upkint(v_ptr,1,1);
+
+      if ( (*v_ptr) == TRUE ) {
+
+	 lcl_ptr = &(Dpmta_CellTbl[0][cell_id]->mdata->l[0][0].x);
+	 pvm_upkdouble(lcl_ptr,Dpmta_LclSize*2,1);
 
 #ifdef COMP_LJ
-      lcl_ptr = &(Dpmta_CellTbl[0][cell_id]->mdata->l_lj[0][0][0].x);
-      pvm_upkdouble(lcl_ptr,Dpmta_LclSize_LJ*2,1);
+	 lcl_ptr = &(Dpmta_CellTbl[0][cell_id]->mdata->l_lj[0][0][0].x);
+	 pvm_upkdouble(lcl_ptr,Dpmta_LclSize_LJ*2,1);
 #endif
 
-      Dpmta_CellTbl[0][cell_id]->mdata->lvalid = TRUE;
-
+      } /* if v_ptr */
    } /* for i */
 } /* Rcv_Lcl_from_Parent */
 
@@ -1143,10 +1183,10 @@ Recv_Particles()
        */
 
       pvm_upkint(&cell_id,1,1);
-      
+
       while ( cell_id >= 0 ) {
 
-	 cell_tmp = Dpmta_CellTbl[level][cell_id];
+         cell_tmp = Dpmta_CellTbl[level][cell_id];
 
 	 num_parts = cell_tmp->n;
 

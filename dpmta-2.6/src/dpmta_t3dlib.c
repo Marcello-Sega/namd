@@ -13,12 +13,20 @@
 *
 */
 
-static char rcsid[] = "$Id: dpmta_t3dlib.c,v 1.2 1997/09/12 22:56:34 jim Exp $";
+static char rcsid[] = "$Id: dpmta_t3dlib.c,v 1.3 1997/09/29 23:58:43 jim Exp $";
 
 /*
  * revision history:
  *
  * $Log: dpmta_t3dlib.c,v $
+ * Revision 1.3  1997/09/29 23:58:43  jim
+ * Incorporated changes from version 2.6.1 of DPMTA.
+ *   - fixes for bad handling of empty/invalid multipoles when
+ *     using large processor sets.
+ *   - moved functions that provide data mapping to processors.  master
+ *     and slave routines now call the same function in dpmta_distmisc.c
+ * Also, switched pvmc.h back to pvm3.h.
+ *
  * Revision 1.2  1997/09/12 22:56:34  jim
  * Modifications to work with converse pvm.
  *
@@ -136,7 +144,7 @@ static char rcsid[] = "$Id: dpmta_t3dlib.c,v 1.2 1997/09/12 22:56:34 jim Exp $";
 
 /* include files */
 #include <stdio.h>
-#include "pvmc.h"
+#include "pvm3.h"
 #include "dpmta.h"
 #include "dpmta_pvm.h"
 #include "dpmta_cell.h"

@@ -10,12 +10,20 @@
 *  version 2.4, and dpmta_rcvilist.c version 2.3
 */
 
-static char rcsid[] = "$Id: dpmta_slvmkcell.c,v 1.1 1997/09/05 19:42:03 jim Exp $";
+static char rcsid[] = "$Id: dpmta_slvmkcell.c,v 1.2 1997/09/29 23:58:42 jim Exp $";
 
 /*
  * revision history:
  *
  * $Log: dpmta_slvmkcell.c,v $
+ * Revision 1.2  1997/09/29 23:58:42  jim
+ * Incorporated changes from version 2.6.1 of DPMTA.
+ *   - fixes for bad handling of empty/invalid multipoles when
+ *     using large processor sets.
+ *   - moved functions that provide data mapping to processors.  master
+ *     and slave routines now call the same function in dpmta_distmisc.c
+ * Also, switched pvmc.h back to pvm3.h.
+ *
  * Revision 1.1  1997/09/05 19:42:03  jim
  * Original distribution.
  *
@@ -340,28 +348,9 @@ cell_identify()
    int num_cells;         /* number of cells in that level */
 
    for (i=0; i<Dpmta_NumLevels; i++) {
-      num_cells = 0x1 << (3*i);
 
-      Dpmta_Scell[i] =
-         num_cells - (num_cells*(Dpmta_Nproc-Dpmta_Pid))/Dpmta_Nproc;
-      Dpmta_Ecell[i] =
-         num_cells - (num_cells*(Dpmta_Nproc-Dpmta_Pid-1))/Dpmta_Nproc - 1;
-
-      /*
-      *  check to see if we don't have any cells at this level,
-      *  in which case the pid computed from the Scell will not
-      *  match the pid of this process
-      *
-      *  if this is the case, we should only have one cell per pid.
-      *  and this is an assumption that we make.
-      */
-
-      if ( Dpmta_Nproc > num_cells )  {
-         j = getslvpid(i,Dpmta_Scell[i]);
-         if ( Dpmta_Pid != j )
-            Dpmta_Scell[i] = -1;
-         Dpmta_Ecell[i] = Dpmta_Scell[i];
-      } /* if Dpmta_Nproc */
+      Dpmta_Scell[i] = getscell(Dpmta_Nproc, Dpmta_Pid, i);
+      Dpmta_Ecell[i] = getecell(Dpmta_Nproc, Dpmta_Pid, i);
 
    } /* for i */
 
@@ -393,7 +382,7 @@ cell_identify()
             k = getfirstchild(j);
             m = -1;
             for (l=k; l<(k+8); l++) {
-               n = getslvpid(i+1,l);
+               n = getslvpid(Dpmta_Nproc,i+1,l);
                if ( m != n ) {
                   m = n;
                   if ( n != Dpmta_Pid ) {
@@ -431,7 +420,7 @@ cell_identify()
             k = getparent(j);
             if ( l != k ) {
 	       l = k;
-               m = getslvpid(i-1,k);
+               m = getslvpid(Dpmta_Nproc,i-1,k);
                if ( m != Dpmta_Pid ) {
                   Dpmta_RLcell[i]++;
                } /* if m */

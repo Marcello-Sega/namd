@@ -12,12 +12,20 @@
 *
 */
 
-static char rcsid[]="$Id: dpmta_mastiter.c,v 1.3 1997/09/28 10:24:08 milind Exp $";
+static char rcsid[]="$Id: dpmta_mastiter.c,v 1.4 1997/09/29 23:58:38 jim Exp $";
 
 /*
  * revision history:
  *
  * $Log: dpmta_mastiter.c,v $
+ * Revision 1.4  1997/09/29 23:58:38  jim
+ * Incorporated changes from version 2.6.1 of DPMTA.
+ *   - fixes for bad handling of empty/invalid multipoles when
+ *     using large processor sets.
+ *   - moved functions that provide data mapping to processors.  master
+ *     and slave routines now call the same function in dpmta_distmisc.c
+ * Also, switched pvmc.h back to pvm3.h.
+ *
  * Revision 1.3  1997/09/28 10:24:08  milind
  * Fixed Makefiles to include arch params from a single file.
  *
@@ -161,7 +169,7 @@ static char rcsid[]="$Id: dpmta_mastiter.c,v 1.3 1997/09/28 10:24:08 milind Exp 
 */
 
 #include <stdio.h>
-#include "pvmc.h"
+#include "pvm3.h"
 #include "dpmta.h"
 #include "dpmta_pvm.h"
 
@@ -529,14 +537,14 @@ Send_Slave_Particles(
       }
 #endif
 
-      scell = num_cells - (num_cells * (num_proc-i))/num_proc;
-      ecell = num_cells - (num_cells * (num_proc-(i+1)))/num_proc;
-      cells_per_proc = ecell - scell;
+      scell = getscell( num_proc, i, num_levels-1 );
+      ecell = getecell( num_proc, i, num_levels-1 );
+      cells_per_proc = ecell - scell + 1;
 
       pvm_pkint(&(cells_per_proc),1,1);
       pvm_pkint(&(scell),1,1);
       /* pvm_pkint(&(SendPartCnt[scell]),cells_per_proc,1); */
-      for (j=scell; j<ecell; j++ ) {
+      for (j=scell; j<=ecell; j++ ) {
         pvm_pkint(&(SendPartCnt[j]),1,1);
       }
       
@@ -554,7 +562,7 @@ Send_Slave_Particles(
 
    for (i=0; i<num_parts; i++) {
       cell_id = SendCellId[i];
-      proc_id = (cell_id*num_proc)/num_cells;
+      proc_id = getslvpid(num_proc, num_levels-1, cell_id );
 
       pvm_setsbuf(SendMsgBuf[proc_id]);
 

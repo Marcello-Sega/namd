@@ -22,12 +22,20 @@
 *
 */
 
-static char rcsid[]="$Id: dpmta_direct.c,v 1.2 1997/09/12 22:56:29 jim Exp $";
+static char rcsid[]="$Id: dpmta_direct.c,v 1.3 1997/09/29 23:58:35 jim Exp $";
 
 /*
  * revision history:
  *
  * $Log: dpmta_direct.c,v $
+ * Revision 1.3  1997/09/29 23:58:35  jim
+ * Incorporated changes from version 2.6.1 of DPMTA.
+ *   - fixes for bad handling of empty/invalid multipoles when
+ *     using large processor sets.
+ *   - moved functions that provide data mapping to processors.  master
+ *     and slave routines now call the same function in dpmta_distmisc.c
+ * Also, switched pvmc.h back to pvm3.h.
+ *
  * Revision 1.2  1997/09/12 22:56:29  jim
  * Modifications to work with converse pvm.
  *
@@ -103,12 +111,13 @@ static char rcsid[]="$Id: dpmta_direct.c,v 1.2 1997/09/12 22:56:29 jim Exp $";
 #include <stdlib.h>
 #include <math.h>
 #ifndef SERIAL
-#include "pvmc.h"
+#include "pvm3.h"
 #endif
 #include "dpmta.h"
 
 /* prototype me baby */
 int MAC( double, double, double, double );
+double Vec_Mag(PmtaVector *vec1);
 
 main( int argc, char *argv[] )
 {
@@ -132,6 +141,8 @@ main( int argc, char *argv[] )
    PmtaVector cl, cc;        /* cell edge lengths and center */
 #else
    PmtaVector v1, v2, v3, cc;/* ||-Piped vectors and center */
+   PmtaVector dtmp, v1xv2, v2xv3, v3xv1;
+   double v1xv2dotv3, v2xv3dotv1, v3xv1dotv2, mag;
 #endif
    char ctmp[80];            /* temporary string for reading in data */
 
@@ -437,10 +448,58 @@ main( int argc, char *argv[] )
     */
 
    if ( pbc == 1 ) {
+
 #ifdef PIPED
-      fprintf(stderr, "PBC's not implemented for ||-pipeds.\n");
-      fprintf(stderr, "Results will not include PBC calculations.\n");
-#else
+      dtmp.x = v1.x + v2.x + v3.x;
+      dtmp.y = v1.y + v2.y + v3.y;
+      dtmp.z = v1.z + v2.z + v3.z;
+      rad1 = sqrt(dtmp.x*dtmp.x + dtmp.y*dtmp.y + dtmp.z*dtmp.z)/2.0;
+
+      v2xv3.x = v2.y*v3.z - v2.z*v3.y;
+      v2xv3.y = v2.z*v3.x - v2.x*v3.z;
+      v2xv3.z = v2.x*v3.y - v2.y*v3.x;
+
+      v3xv1.x = v3.y*v1.z - v3.z*v1.y;
+      v3xv1.y = v3.z*v1.x - v3.x*v1.z;
+      v3xv1.z = v3.x*v1.y - v3.y*v1.x;
+
+      v1xv2.x = v1.y*v2.z - v1.z*v2.y;
+      v1xv2.y = v1.z*v2.x - v1.x*v2.z;
+      v1xv2.z = v1.x*v2.y - v1.y*v2.x;
+
+      mag=Vec_Mag(&v2xv3);
+      v2xv3dotv1 = (v2xv3.x * v1.x + v2xv3.y * v1.y +
+                v2xv3.z * v1.z)/mag;
+      mag=Vec_Mag(&v3xv1);
+      v3xv1dotv2 = (v3xv1.x * v2.x + v3xv1.y * v2.y +
+                v3xv1.z * v2.z)/mag;
+      mag=Vec_Mag(&v1xv2);
+      v1xv2dotv3 = (v1xv2.x * v3.x + v1xv2.y * v3.y +
+                v1xv2.z * v3.z)/mag;
+
+      xmax = 0;
+      while ( MAC(rad1, rad1, v2xv3dotv1 * (double)(xmax), theta) == 0 )
+         xmax++;
+      ymax = 0;
+      while ( MAC(rad1, rad1, v3xv1dotv2 * (double)(ymax), theta) == 0 )
+         ymax++;
+      zmax = 0;
+      while ( MAC(rad1, rad1, v1xv2dotv3 * (double)(zmax), theta) == 0 )
+         zmax++;
+
+      for ( x=-xmax; x<=xmax; x++ ) {
+	 for ( y=-ymax; y<=ymax; y++ ) {
+	    for ( z=-zmax; z<=zmax; z++ ) {
+	       sep.x = (double)x * v1.x + (double)y * v2.x + (double)z * v3.x;
+	       sep.y = (double)x * v1.y + (double)y * v2.y + (double)z * v3.y;
+	       sep.z = (double)x * v1.z + (double)y * v2.z + (double)z * v3.z;
+	       if (( x != 0 )||( y != 0 )||( z != 0 )) {
+		  rad2 = sqrt(sep.x*sep.x + sep.y*sep.y + sep.z*sep.z);
+		  if ( MAC(rad1, rad1, rad2, theta) == 0 ) {
+		     for ( i=s_indx; i<e_indx; i++ ) {
+		        for ( j=0; j<nparts; j++ ) {
+
+#else /* ifndef PIPED */
       rad1 = sqrt(cl.x*cl.x + cl.y*cl.y + cl.z*cl.z) / 2.0;
       xmax = 0;
       while ( MAC(rad1, rad1, (double)(xmax)*cl.x, theta) == 0 )
@@ -463,6 +522,8 @@ main( int argc, char *argv[] )
 		  if ( MAC(rad1, rad1, rad2, theta) == 0 ) {
 		     for ( i=s_indx; i<e_indx; i++ ) {
 		        for ( j=0; j<nparts; j++ ) {
+#endif /* ifndef PIPED */
+
 
 			   wtq = plist[i].q * plist[j].q;
 
@@ -516,8 +577,6 @@ main( int argc, char *argv[] )
 	 } /* for y */
       } /* for z */
 
-#endif /* PIPED */
-
    } /* if pbc */
 
 #ifdef MACROSCOPIC
@@ -527,6 +586,56 @@ main( int argc, char *argv[] )
     */
 
    if ( kterm > 0 ) {
+
+#ifdef PIPED
+      for ( x=-xmax; x<=xmax; x++ ) {
+	 for ( y=-ymax; y<=ymax; y++ ) {
+	    for ( z=-zmax; z<=zmax; z++ ) {
+	       sep.x = (double)x * v1.x + (double)y * v2.x + (double)z * v3.x;
+	       sep.y = (double)x * v1.y + (double)y * v2.y + (double)z * v3.y;
+	       sep.z = (double)x * v1.z + (double)y * v2.z + (double)z * v3.z;
+	       rad2 = sqrt(sep.x*sep.x + sep.y*sep.y + sep.z*sep.z);
+	       if ( MAC(rad1, rad1, rad2, theta) == 0 ) {
+		  for ( x2=-1; x2<=1; x2++ ) {
+		     for ( y2=-1; y2<=1; y2++ ) {
+			for ( z2=-1; z2<=1; z2++ ) {
+                           sep2.x = (double)(3*x+x2) * v1.x +
+                                    (double)(3*y+y2) * v2.x +
+                                    (double)(3*z+z2) * v3.x;
+                           sep2.y = (double)(3*x+x2) * v1.y +
+                                    (double)(3*y+y2) * v2.y +
+                                    (double)(3*z+z2) * v3.y;
+                           sep2.z = (double)(3*x+x2) * v1.z +
+                                    (double)(3*y+y2) * v2.z +
+                                    (double)(3*z+z2) * v3.z;
+			   rad2 = sqrt(sep2.x*sep2.x + sep2.y*sep2.y
+				       + sep2.z*sep2.z);
+			   if ( MAC(rad1, rad1, rad2, theta) == 1 ) {
+			      kdist = 1;
+			      for ( klvl=0; klvl<kterm; klvl++ ) {
+				 ncell = kdist/2;
+				 for ( x3=(-ncell); x3<=ncell; x3++ ) {
+				    for ( y3=(-ncell); y3<=ncell; y3++ ) {
+				       for ( z3=(-ncell); z3<=ncell; z3++ ) {
+
+					  for ( i=s_indx; i<e_indx; i++ ) {
+					     for ( j=0; j<nparts; j++ ) {
+
+						wtq = plist[i].q * plist[j].q;
+
+						dx = plist[j].p.x - plist[i].p.x +
+						  (double)(kdist*(3*x+x2)+x3)*v1.x +
+						  (double)(kdist*(3*y+y2)+y3)*v2.x +
+						  (double)(kdist*(3*z+z2)+z3)*v3.x;
+						dy = plist[j].p.y - plist[i].p.y +
+						  (double)(kdist*(3*x+x2)+x3)*v1.y +
+						  (double)(kdist*(3*y+y2)+y3)*v2.y +
+						  (double)(kdist*(3*z+z2)+z3)*v3.y;
+						dz = plist[j].p.z - plist[i].p.z +
+						  (double)(kdist*(3*x+x2)+x3)*v1.z +
+						  (double)(kdist*(3*y+y2)+y3)*v2.z +
+						  (double)(kdist*(3*z+z2)+z3)*v3.z;
+#else /* ifndef PIPED */
 
       for ( x=-xmax; x<=xmax; x++ ) {
 	 sep.x = (double)x * cl.x;
@@ -560,6 +669,8 @@ main( int argc, char *argv[] )
 						dx = plist[j].p.x - plist[i].p.x + (double)(kdist*(3*x+x2)+x3)*cl.x;
 						dy = plist[j].p.y - plist[i].p.y + (double)(kdist*(3*y+y2)+y3)*cl.y;
 						dz = plist[j].p.z - plist[i].p.z + (double)(kdist*(3*z+z2)+z3)*cl.z;
+
+#endif /* ifdef PIPED */
 
 						ir2 = 1.0/(dx*dx + dy*dy + dz*dz);
 						ir = sqrt(ir2);
@@ -618,7 +729,7 @@ main( int argc, char *argv[] )
 
    } /* if kterm */
 
-#endif
+#endif /* ifdef MACROSCOPIC */
 
    /*
    *  if we are the master process, collect other results
@@ -720,3 +831,15 @@ int MAC( double r1, double r2, double rsep, double theta )
    else
       return(0);
 }
+
+double Vec_Mag(PmtaVector *vec1)
+{
+  double mag1;
+
+  mag1 = (vec1->x * vec1->x) + (vec1->y * vec1->y) + (vec1->z * vec1->z);
+  mag1 = sqrt(mag1);
+
+  return(mag1);
+
+}
+
