@@ -153,10 +153,11 @@ void Patch::positionsReady(int doneMigration)
    }
    else {
      int compute_count = 0;
+     int seq = flags.sequence;
      for(cid = cid.begin(); cid != cid.end(); cid++)
      {
          compute_count++;
-	 computeMap->compute(*cid)->patchReady(patchID,doneMigration);
+	 computeMap->compute(*cid)->patchReady(patchID,doneMigration,seq);
      }
      if (compute_count == 0 && patchMap->node(patchID) != CkMyPe()) {
        iout << iINFO << "PATCH_COUNT: Patch " << patchID 

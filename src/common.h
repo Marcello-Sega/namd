@@ -29,10 +29,6 @@ void * ::operator new (size_t, void *p) { return p; }
 void * operator new (size_t, void *p) { return p; }
 #endif
 
-#ifndef DEFPRIO
-#define DEFPRIO (1 * 64)
-#endif
-
 #define COLOUMB 332.0636
 #define BOLTZMAN 0.001987191
 #define TIMEFACTOR 48.88821

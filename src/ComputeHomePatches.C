@@ -36,6 +36,8 @@ void ComputeHomePatches::initialize()
   }
 
   setNumPatches(patchList.size());
+
+  basePriority = 0;
 }
 
 void ComputeHomePatches::atomUpdate()

@@ -230,7 +230,7 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       setNumPatches(tuplePatchList.size());
       doLoadTuples = true;
 
-      basePriority = 0;
+      basePriority = 1;
     }
 
     //======================================================================

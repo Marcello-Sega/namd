@@ -894,19 +894,27 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
   }
 
   msg->compute = compute; // pointer is valid since send is to local Pe
+  int type = compute->type();
 
   CProxy_WorkDistrib wdProxy(CpvAccess(BOCclass_group).workDistrib);
-  if (compute->type() == computeBondsType) {
+  switch ( type ) {
+  case computeBondsType:
+  case computeSelfBondsType:
     wdProxy.enqueueBonds(msg,CkMyPe());
-  } else if (compute->type() == computeAnglesType) {
+    break;
+  case computeAnglesType:
+  case computeSelfAnglesType:
     wdProxy.enqueueAngles(msg,CkMyPe());
-  } else if (compute->type() == computeDihedralsType) {
+    break;
+  case computeDihedralsType:
+  case computeSelfDihedralsType:
     wdProxy.enqueueDihedrals(msg,CkMyPe());
-  } else if (compute->type() == computeImpropersType) {
+    break;
+  case computeImpropersType:
+  case computeSelfImpropersType:
     wdProxy.enqueueImpropers(msg,CkMyPe());
-  } else if ( seq < 0 )  {
-    wdProxy.enqueueWork(msg,CkMyPe());
-  } else if (compute->type() == computeNonbondedSelfType)  {
+    break;
+  case computeNonbondedSelfType:
     switch ( seq % 2 ) {
     case 0:
       wdProxy.enqueueSelfA(msg,CkMyPe());
@@ -917,7 +925,8 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
     default:
       NAMD_bug("WorkDistrib::messageEnqueueSelf case statement error!");
     }
-  } else {
+    break;
+  case computeNonbondedPairType:
     switch ( seq % 2 ) {
     case 0:
       wdProxy.enqueueWorkA(msg,CkMyPe());
@@ -931,6 +940,9 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
     default:
       NAMD_bug("WorkDistrib::messageEnqueueWork case statement error!");
     }
+    break;
+  default:
+    wdProxy.enqueueWork(msg,CkMyPe());
   }
 }
 

@@ -65,7 +65,7 @@ void ComputeHomePatch::initialize() {
     int myNode = CkMyPe();
     if ( PatchMap::Object()->node(patchID) != myNode )
     {
-      basePriority = patchID % 64;
+      basePriority = 64 + patchID % 64;
     }
     else
     {
@@ -102,10 +102,5 @@ void ComputeHomePatch::doWork() {
   forceBox->close(&r);
 
   DebugM(2,patchID << ": doWork() completed.\n");
-}
-
-int ComputeHomePatch::sequence(void)
-{
-  return patch->flags.step;
 }
 

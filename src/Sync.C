@@ -125,7 +125,7 @@ void Sync::triggerCompute()
          int compute_count = 0;
          for(cid = cid.begin(); cid != cid.end(); cid++) {
 	   compute_count++;
-	   computeMap->compute(*cid)->patchReady(pid,clist[i].doneMigration);
+	   computeMap->compute(*cid)->patchReady(pid,clist[i].doneMigration,step);
 	 }
 	 if (compute_count == 0 && patchMap->node(pid) != CkMyPe()) {
 	   iout << iINFO << "PATCH_COUNT-Sync step " << step

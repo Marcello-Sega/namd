@@ -31,6 +31,7 @@ private:
   int numPatches;
   int doAtomUpdate;
   int computeType;
+  int sequenceNumber;
 
 protected:
   static Node* node;
@@ -57,12 +58,10 @@ public:
   // destructor better unregister for boxes!
 
   virtual void atomUpdate() {};
-  // virtual void patchReady(void);
-  virtual void patchReady(PatchID pid) { if (pid > -1) patchReady(pid,0); }
-  virtual void patchReady(PatchID, int);
+  virtual void patchReady(PatchID, int doneMigration, int seq);
   virtual int noWork(); // cleans up and returns 1 if no work to do
   virtual void doWork(); // actually does the work if noWork() returns 0
-  virtual int sequence(void); // returns sequence number for analysis
+  int sequence(void) { return sequenceNumber; }
   virtual unsigned int priority(void) { return basePriority; }
 };
 

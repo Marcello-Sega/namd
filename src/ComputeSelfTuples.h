@@ -103,7 +103,15 @@ template <class T, class S, class P> class ComputeSelfTuples :
       setNumPatches(tuplePatchList.size());
       doLoadTuples = true;
 
-      basePriority = 0;
+      int myNode = CkMyPe();
+      if ( PatchMap::Object()->node(patchID) != myNode )
+      {
+        basePriority = 64 + patchID % 64;
+      }
+      else
+      {
+        basePriority = 2 * 64 + (patchID % 64);
+      }
     }
 
     void doWork(void) {

@@ -33,7 +33,6 @@ public:
   virtual void initialize();
   virtual void atomUpdate();
   virtual void doWork();
-  virtual int sequence(void); // returns sequence number for analysis
 
 protected :
   int numAtoms[2];

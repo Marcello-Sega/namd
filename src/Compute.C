@@ -32,7 +32,7 @@ PatchMap *Compute::patchMap=0;
 
 int Compute::totalComputes = 0;
 
-Compute::Compute(ComputeID c) : basePriority(DEFPRIO), cid(c),
+Compute::Compute(ComputeID c) : basePriority(63), cid(c),
 	localWorkMsg(new (sizeof(int)*8) LocalWorkMsg) { 
   totalComputes++;
   doAtomUpdate = false;
@@ -57,10 +57,11 @@ void Compute::enqueueWork() {
 // When all Patches and Proxies needed by this Compute object
 // have checked-in, we are ready to enqueueWork()
 //---------------------------------------------------------------------
-void Compute::patchReady(PatchID patchID, int doneMigration) { 
+void Compute::patchReady(PatchID patchID, int doneMigration, int seq) { 
   if (doneMigration) { // If any patch has done migration - we must remap
     doAtomUpdate = true; 
   }
+  sequenceNumber = seq;
 
   if (numPatches <= 0) {
       DebugM(5,"Compute::patchReady("<<patchID<<")-call not valid!\n");
@@ -83,10 +84,5 @@ int Compute::noWork() {
 
 void Compute::doWork() {
     DebugM(5,"Default Compute::doWork() called.\n");
-}
-
-int Compute::sequence(void)
-{
-  return -1;
 }
 

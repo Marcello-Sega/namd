@@ -77,11 +77,11 @@ void ComputePatchPair::initialize() {
     int patchPrio = ((p0<p1)?p0:p1);
     if ( PatchMap::Object()->node(patchID[0]) != myNode )
     {
-      basePriority = patchPrio;
+      basePriority = 64 + patchPrio;
     }
     else if ( PatchMap::Object()->node(patchID[1]) != myNode )
     {
-      basePriority = patchPrio;
+      basePriority = 64 + patchPrio;
     }
     else
     {
@@ -140,10 +140,5 @@ void ComputePatchPair::doWork() {
       positionBox[i]->close(&p[i]);
       forceBox[i]->close(&r[i]);
   }
-}
-
-int ComputePatchPair::sequence(void)
-{
-  return patch[0]->flags.step;
 }
 
