@@ -264,13 +264,13 @@ NOEXCL
     {
     SELF
     (
-    {
+    if ( a_i.hydrogenGroupSize ) {
       int opc = pairCount;
-      int nbgs = a_i.nonbondedGroupSize;
-      pairCount += nbgs * ( i_upper - i );
-      pairCount -= nbgs * ( nbgs - 1 ) / 2;
+      int hgs = a_i.hydrogenGroupSize;
+      pairCount += hgs * ( i_upper - i );
+      pairCount -= hgs * ( hgs - 1 ) / 2;
       if ( opc < minPairCount || opc >= maxPairCount ) {
-        i += nbgs - 1;
+        i += hgs - 1;
         continue;
       }
     }
@@ -292,16 +292,17 @@ NOEXCL
 
     PAIR( j = 0; )
     SELF
-      (
-      // exclude child hydrogens of i
-      j_hgroup = i + a_1[i].hydrogenGroupSize;
-      // add all child hydrogens of i
-      for( j=i+1; (j<j_upper) && (a_1[j].nonbondedGroupSize == 0); j++)
-	{
+    (
+      if ( a_i.hydrogenGroupSize ) {
+        // exclude child hydrogens of i
+        j_hgroup = i + a_i.hydrogenGroupSize;
+      }
+      // add all child or sister hydrogens of i
+      for ( j = i + 1; j < j_hgroup; ++j ) {
 	pairlist[pairlistindex++] = j;
 	p_j++;
-	}
-      )
+      }
+    )
 
     // add remaining atoms to pairlist via hydrogen groups
     register const AtomProperties *pa_j = a_1 + j;
@@ -745,12 +746,16 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1038 $	$Date: 1998/07/30 22:18:56 $
+ *	$Revision: 1.1039 $	$Date: 1998/09/09 02:58:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1039  1998/09/09 02:58:31  jim
+ * Fixed bug with interaction between nonbondedGroupSize vs hydrogenGroupSize
+ * and automatic exclusion of atoms within a hydrogen group.
+ *
  * Revision 1.1038  1998/07/30 22:18:56  jim
  * Fixed "load-balancer bug".  Turned out to be array bounds problem.  Only
  * occurs with ComputeHomeSelf, and then much more likely with a Proxy.  Since
