@@ -29,6 +29,8 @@
 
 #include "InfoStream.h"
 
+extern int proxySendSpanning, proxyRecvSpanning;
+
 // make sure all HomePatches get their positions data and sendProxyData to 
 // their proxies before computes get positionsReady.
 int useSync = 1;
@@ -38,7 +40,7 @@ int useSync = 1;
 // when these two combined, it will make sure that homepatch get all its force 
 // and positions data, and proxies receive its updated data before all 
 // computes start.
-int useProxySync = 1;
+int useProxySync = 0;
 
 Sync::Sync()
 {
@@ -66,8 +68,11 @@ Sync::~Sync()
 void Sync::openSync(void)
 {
   if (useSync) {
+    // if use proxy spanning tree, proxy sync is forced
+    if (!useProxySync && (proxySendSpanning || proxyRecvSpanning)) useProxySync = 1;
     // no proxies on this node, no need to use proxy sync.
     if (useProxySync && ProxyMgr::Object()->numProxies() == 0) useProxySync = 0;
+    // if no proxy sync and no home patch, then disable home patch sync as well
     if (!useProxySync && PatchMap::Object()->numHomePatches() == 0) useSync = 0;
   }
 #if 0
