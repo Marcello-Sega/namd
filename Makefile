@@ -95,6 +95,7 @@ OBJS = \
 	$(DSTDIR)/ComputeSphericalBC.o \
 	$(DSTDIR)/ConfigList.o \
 	$(DSTDIR)/Controller.o \
+	$(DSTDIR)/heap.o \
 	$(DSTDIR)/HomePatch.o \
 	$(DSTDIR)/HBondParam.o \
 	$(DSTDIR)/Inform.o \
@@ -121,8 +122,11 @@ OBJS = \
 	$(DSTDIR)/PDBData.o \
 	$(DSTDIR)/ProxyMgr.o \
 	$(DSTDIR)/ProxyPatch.o \
+	$(DSTDIR)/Rebalancer.o \
 	$(DSTDIR)/ReductionMgr.o \
+	$(DSTDIR)/RefineOnly.o \
 	$(DSTDIR)/Sequencer.o \
+	$(DSTDIR)/Set.o \
 	$(DSTDIR)/SimParameters.o \
 	$(DSTDIR)/VoidTree.o \
 	$(DSTDIR)/WorkDistrib.o
