@@ -75,6 +75,7 @@ void ComputeSMD::calculate() {
 
   ComputeGlobalResultsMsg *resultsMsg = new ComputeGlobalResultsMsg;
   resultsMsg->gforce.resize(gmass.size());
+  resultsMsg->gforce.setall(Vector(0,0,0));
 
   Position curcm = gcom[0];
   BigReal diff = (curcm - cm)*moveDir;

@@ -254,6 +254,7 @@ void ComputeFreeEnergy::calculate() {
 
   resultsMsg = new ComputeGlobalResultsMsg;
   resultsMsg->gforce.resize(gmass.size());
+  resultsMsg->gforce.setall(Vector(0,0,0));
 
 //  iout << iDEBUG << "Free energy perturbation - calculate()\n" << endi; 
   user_calculate();

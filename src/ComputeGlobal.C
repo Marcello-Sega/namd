@@ -215,7 +215,7 @@ void ComputeGlobal::sendData()
   g_i = gdef.begin(); g_e = gdef.end();
   ResizeArray<BigReal>::iterator gm_i = gmass.begin();
   for ( ; g_i != g_e; ++g_i, ++gm_i ) {
-    Vector com;
+    Vector com(0,0,0);
     for ( ; *g_i != -1; ++g_i ) {
       LocalID localID = atomMap->localID(*g_i);
       if ( localID.pid == notUsed || ! x[localID.pid] ) continue;

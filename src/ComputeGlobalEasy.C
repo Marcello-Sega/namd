@@ -170,6 +170,7 @@ void ComputeGlobalEasy::calculate() {
 
   resultsMsg = new ComputeGlobalResultsMsg;
   resultsMsg->gforce.resize(gmass.size());
+  resultsMsg->gforce.setall(Vector(0,0,0));
   energy = 0.0;
 
   // Build results here

@@ -76,10 +76,10 @@ public:
 	int N;		   		//  Number of steps to be performed
 	int stepsPerCycle;		//  Number of timesteps per cycle
 
-	Vector cellBasisVector1;	//  Basis vector for periodic cell
-	Vector cellBasisVector2;	//  Basis vector for periodic cell
-	Vector cellBasisVector3;	//  Basis vector for periodic cell
-	Vector cellOrigin;		//  Fixed center of periodic cell
+	zVector cellBasisVector1;	//  Basis vector for periodic cell
+	zVector cellBasisVector2;	//  Basis vector for periodic cell
+	zVector cellBasisVector3;	//  Basis vector for periodic cell
+	zVector cellOrigin;		//  Fixed center of periodic cell
 	Lattice lattice;		//  All data for periodic cell
 	
 	int nonbondedFrequency;		//  Number of timesteps between
@@ -169,19 +169,19 @@ public:
         //****** BEGIN moving constraints changes 
         Bool movingConstraintsOn;       //  Flag TRUE-> moving constraints 
                                         //  active
-        Vector movingConsVel;           //  Velocity of the movement, A/timestep
+        zVector movingConsVel;           //  Velocity of the movement, A/timestep
         //****** END moving constraints changes 
         //****** BEGIN rotating constraints changes 
         Bool rotConstraintsOn;          //  Flag TRUE-> rotating constraints 
                                         //  active
-        Vector rotConsAxis;             //  Axis of rotation
-        Vector rotConsPivot;            //  Pivot point of rotation
+        zVector rotConsAxis;             //  Axis of rotation
+        zVector rotConsPivot;            //  Pivot point of rotation
         BigReal rotConsVel;             //  Velocity of rotation, Deg/timestep
         //****** END rotating constraints changes 
         //****** BEGIN SMD constraints changes   
         Bool SMDOn;                     //  Flag TRUE-> SMD constraints active
         BigReal SMDVel;                 //  Velocity of the movement, A/timestep
-        Vector SMDDir;                  //  Direction of the movement
+        zVector SMDDir;                  //  Direction of the movement
         BigReal SMDk; 			//  Elastic constant for SMD
  	char SMDFile[128];		//  File for SMD information
         int SMDOutputFreq;              //  Output frequency for SMD constr.
@@ -235,8 +235,8 @@ public:
 	BigReal langevinPistonPeriod;
 	BigReal langevinPistonDecay;
 	BigReal langevinPistonTemp;
-	Vector strainRate;
-	Vector strainRate2; // off diagonal elements (xy, xz, yz)
+	zVector strainRate;
+	zVector strainRate2; // off diagonal elements (xy, xz, yz)
 
 	unsigned int randomSeed;	//  Seed for random number generator
 
@@ -265,7 +265,7 @@ public:
 
 	Bool sphericalBCOn;		//  Flag TRUE-> spherical boundary 
 					//  conditions are active
-	Vector sphericalCenter;		//  Center specified by user
+	zVector sphericalCenter;		//  Center specified by user
 	BigReal sphericalBCk1;		//  First force constant for 
 					//  spherical BC
 	BigReal sphericalBCk2;		//  Second force constant for 
@@ -277,7 +277,7 @@ public:
 
         Bool cylindricalBCOn;           //  Flag TRUE->cylindrical boundary
                                         //  conditions are active
-        Vector cylindricalCenter;
+        zVector cylindricalCenter;
 	char cylindricalBCAxis;		//  'x', 'y', or 'z'
         BigReal cylindricalBCr1;
         BigReal cylindricalBCr2;
@@ -289,7 +289,7 @@ public:
         BigReal cylindricalBCk2;
 
 	Bool eFieldOn;                  //  Should a electric field be applied
-	Vector eField;                  //  Electric field vector to be applied
+	zVector eField;                  //  Electric field vector to be applied
 
 	int outputEnergies;		//  Number of timesteps between energy
 					//  outputs

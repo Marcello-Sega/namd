@@ -334,6 +334,7 @@ void ComputeTcl::calculate() {
   ComputeGlobalResultsMsg *msg =
 	new ComputeGlobalResultsMsg;
   msg->gforce.resize(gmass.size());
+  msg->gforce.setall(Vector(0,0,0));
 
 #ifdef NAMD_TCL
   // Call interpreter to calculate forces

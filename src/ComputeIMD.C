@@ -92,6 +92,7 @@ void ComputeIMD::calculate() {
  
   resultsMsg = new ComputeGlobalResultsMsg;
   resultsMsg->gforce.resize(gmass.size());
+  resultsMsg->gforce.setall(Vector(0,0,0));
 
   // Check/get new forces from VMD
   if (sock) {

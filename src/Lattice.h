@@ -18,7 +18,9 @@ typedef Vector ScaledPosition;
 class Lattice
 {
 public:
-  Lattice(void) : p1(0), p2(0), p3(0) {};
+  Lattice(void) : a1(0,0,0), a2(0,0,0), a3(0,0,0),
+                  b1(0,0,0), b2(0,0,0), b3(0,0,0),
+                  o(0,0,0), p1(0), p2(0), p3(0) {};
 
   // maps a transformation triplet onto a single integer
   static int index(int i=0, int j=0, int k=0)

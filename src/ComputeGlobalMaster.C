@@ -85,8 +85,11 @@ void ComputeGlobalMaster::storedata(ComputeGlobalDataMsg *msg) {
     aid.add(*a_i);
     p.add(*p_i);
   }
-  if ( ! gcom.size() ) gcom.resize(msg->gcom.size());
   PositionList::iterator c_i, c_e;
+  if ( ! gcom.size() ) {
+    gcom.resize(msg->gcom.size());
+    gcom.setall(Vector(0,0,0));
+  }
   c_i = msg->gcom.begin(); c_e = msg->gcom.end();
   p_i = gcom.begin();
   for ( ; c_i != c_e; ++c_i, ++p_i ) {
@@ -124,6 +127,7 @@ void ComputeGlobalMaster::calculate() {
 
   ComputeGlobalResultsMsg *msg = new ComputeGlobalResultsMsg;
   msg->gforce.resize(gmass.size());
+  msg->gforce.setall(Vector(0,0,0));
 
   // Build results here
 

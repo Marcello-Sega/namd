@@ -60,9 +60,9 @@ void AngleElem::computeForce(BigReal *reduction)
   const Position & pos1 = p[0]->x[localIndex[0]];
   const Position & pos2 = p[1]->x[localIndex[1]];
   const Position & pos3 = p[2]->x[localIndex[2]];
-  Force force1;
-  Force force2;
-  Force force3;
+  Force force1(0,0,0);
+  Force force2(0,0,0);
+  Force force3(0,0,0);
   const Lattice & lattice = p[0]->p->lattice;
 
   BigReal d12, d32, d13;	// distances between atoms

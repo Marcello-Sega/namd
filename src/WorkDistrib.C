@@ -1058,7 +1058,7 @@ void WorkDistrib::random_velocities(BigReal Temp,Molecule *structure,
 
 void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
 {
-  Vector mv;		//  Sum of (mv)_i
+  Vector mv(0,0,0);		//  Sum of (mv)_i
   BigReal totalMass=0; 	//  Total mass of system
   int i;			//  Loop counter
 

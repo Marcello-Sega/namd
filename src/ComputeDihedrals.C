@@ -63,7 +63,7 @@ void DihedralElem::computeForce(BigReal *reduction)
   Vector dsindB;	// Derivative d(sin(phi))/dB
   BigReal K,K1;		// energy constants
   BigReal diff;		// for periodicity
-  Force f1,f2,f3;	// force components
+  Force f1(0,0,0),f2(0,0,0),f3(0,0,0);	// force components
   Real k, delta;	// angle information
   int n;		// angle information
 

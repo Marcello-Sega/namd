@@ -15,7 +15,7 @@ class Vector;
 
 struct FloatVector {
   float x,y,z;
-  inline FloatVector(void) { x = y = z = 0.0; }
+  inline FloatVector(void) { ; }
   inline FloatVector(const Vector &v);
 };
 
@@ -24,17 +24,13 @@ class Vector {
    public:
      BigReal x,y,z;
      
-     inline Vector(void) {         // default is to create a 0 vector
-       x = y = z = 0.0;
-     }
+     inline Vector(void) : x(-99999), y(-99999), z(-99999) { ; }
+//     inline Vector(void) { ; }
 
-     inline Vector( BigReal newx, BigReal newy, BigReal newz) {
-       x = newx;
-       y = newy;
-       z = newz;
-     }
+     inline Vector( BigReal newx, BigReal newy, BigReal newz)
+       : x(newx), y(newy), z(newz) { ; }
 
-     inline Vector(const FloatVector &v) { x=v.x; y=v.y; z=v.z; }
+     inline Vector(const FloatVector &v) : x(v.x), y(v.y), z(v.z) { ; }
 
      inline BigReal &operator[](int i) {
        return i==0 ? x
@@ -235,7 +231,13 @@ class Vector {
      }
 };
 
-inline FloatVector::FloatVector(const Vector &v) { x=v.x; y=v.y; z=v.z; }
+class zVector : public Vector {
+  public:
+     inline zVector(void) : Vector(0,0,0) { ; }
+     inline zVector(const Vector &v) : Vector(v) { ; }
+};
+
+inline FloatVector::FloatVector(const Vector &v) : x(v.x), y(v.y), z(v.z) { ; }
 
 //#define TEST_VECTOR_CLASS
 #ifdef TEST_VECTOR_CLASS

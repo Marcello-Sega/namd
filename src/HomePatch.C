@@ -614,7 +614,7 @@ BigReal HomePatch::calcKineticEnergy()
 
 Vector HomePatch::calcMomentum()
 {
-  Vector total;
+  Vector total(0,0,0);
   for ( int i = 0; i < numAtoms; ++i )
   {
      total += a[i].mass * v[i];
@@ -624,7 +624,7 @@ Vector HomePatch::calcMomentum()
 
 Vector HomePatch::calcAngularMomentum()
 {
-  Vector total;
+  Vector total(0,0,0);
   for ( int i = 0; i < numAtoms; ++i )
   {
      total += cross(a[i].mass,p[i],v[i]); // m r % v
