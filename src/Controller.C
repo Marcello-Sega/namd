@@ -786,7 +786,12 @@ void Controller::printEnergies(int step)
 }
 
 void Controller::writeExtendedSystemLabels(ofstream &file) {
-  file << "#$LABELS step a_x a_y a_z b_x b_y b_z c_x c_y c_z o_x o_y o_z";
+  Lattice &lattice = state->lattice;
+  file << "#$LABELS step";
+  if ( lattice.a_p() ) file << " a_x a_y a_z";
+  if ( lattice.b_p() ) file << " b_x b_y b_z";
+  if ( lattice.c_p() ) file << " c_x c_y c_z";
+  file << " o_x o_y o_z";
   if ( simParams->langevinPistonOn ) {
     file << " s_x s_y s_z s_u s_v s_w";
   }
@@ -795,11 +800,11 @@ void Controller::writeExtendedSystemLabels(ofstream &file) {
 
 void Controller::writeExtendedSystemData(int step, ofstream &file) {
   Lattice &lattice = state->lattice;
-  file << step
-    << " " << lattice.a().x << " " << lattice.a().y << " " << lattice.a().z
-    << " " << lattice.b().x << " " << lattice.b().y << " " << lattice.b().z
-    << " " << lattice.c().x << " " << lattice.c().y << " " << lattice.c().z
-    << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
+  file << step;
+    if ( lattice.a_p() ) file << " " << lattice.a().x << " " << lattice.a().y << " " << lattice.a().z;
+    if ( lattice.b_p() ) file << " " << lattice.b().x << " " << lattice.b().y << " " << lattice.b().z;
+    if ( lattice.c_p() ) file << " " << lattice.c().x << " " << lattice.c().y << " " << lattice.c().z;
+    file << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
   if ( simParams->langevinPistonOn ) {
     Vector strainRate = diagonal(langevinPiston_strainRate);
     Vector strainRate2 = off_diagonal(langevinPiston_strainRate);
