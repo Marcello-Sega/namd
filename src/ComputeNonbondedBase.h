@@ -43,12 +43,10 @@
 #endif
 
 // indexing variables
-#undef PLEN
 #undef I_SUB
 #undef I_LOWER
 #undef I_UPPER
 #undef J_SUB
-#undef J_LOWER
 #undef J_UPPER
 
 // determining class name
@@ -57,18 +55,19 @@
 #undef CLASSNAME
 #define NAME CLASSNAME(calc)
 
+// global variables
+#define I_SUB 0][i
+#define J_SUB 1][j
+#define I_LOWER 0
+#define I_UPPER numAtoms[0]
+#define J_UPPER numAtoms[1]
+// J_LOWER is now a const variable
+
 #undef PAIR
 #ifdef NBPAIR
   #define PAIR(X) X
   #define CLASS ComputeNonbondedPair
   #define CLASSNAME(X) FULLELECTNAME( X ## _pair )
-  #define PLEN [2]
-  #define I_SUB 0][i
-  #define I_LOWER 0
-  #define I_UPPER numAtoms[0]
-  #define J_SUB 1][j
-  #define J_LOWER 0
-  #define J_UPPER numAtoms[1]
 #else
   #define PAIR(X)
 #endif
@@ -78,13 +77,6 @@
   #define SELF(X) X
   #define CLASS ComputeNonbondedSelf
   #define CLASSNAME(X) FULLELECTNAME( X ## _self )
-  #define PLEN
-  #define I_SUB i
-  #define I_LOWER 0
-  #define I_UPPER (numAtoms - 1)
-  #define J_SUB j
-  #define J_LOWER (i + 1)
-  #define J_UPPER numAtoms
 #else
   #define SELF(X)
 #endif
@@ -150,16 +142,16 @@ void ComputeNonbondedUtil :: NAME
 NOEXCL
 (
   FULL(
-  (Position* p PLEN, Force* ff PLEN,
-   Force* fullf PLEN,
-   AtomProperties* a PLEN,
-   int numAtoms PLEN, BigReal *reduction)
+  (Position* p [2], Force* ff [2],
+   Force* fullf [2],
+   AtomProperties* a [2],
+   int numAtoms [2], BigReal *reduction)
   )
   NOFULL
   (
-  (Position* p PLEN, Force* ff PLEN,
-   AtomProperties* a PLEN,
-   int numAtoms PLEN, BigReal *reduction)
+  (Position* p [2], Force* ff [2],
+   AtomProperties* a [2],
+   int numAtoms [2], BigReal *reduction)
   )
 )
 
@@ -203,7 +195,7 @@ EXCL
   const BigReal scale14 = ComputeNonbondedUtil:: scale14;
   const Real switchOn = ComputeNonbondedUtil:: switchOn;
   const BigReal switchOn2 = ComputeNonbondedUtil:: switchOn2;
-  const BigReal c0 = ComputeNonbondedUtil:: c0;
+  // const BigReal c0 = ComputeNonbondedUtil:: c0;
   const BigReal c1 = ComputeNonbondedUtil:: c1;
   const BigReal c3 = ComputeNonbondedUtil:: c3;
   const BigReal c5 = ComputeNonbondedUtil:: c5;
@@ -242,6 +234,7 @@ NOEXCL
   for ( i = I_LOWER; i < i_upper; ++i )
   {
     const AtomProperties &a_i = a[I_SUB];
+    const int J_LOWER = PAIR(0) SELF(i+1);
 
     const Position p_i = p[I_SUB];
     register const BigReal p_i_x = p_i.x;
@@ -264,7 +257,9 @@ NOEXCL
     // first atoms in the list.
     // Also, the end of the list may be missing hydrogen atoms
     {
-    register Position *p_j = PAIR( p[1] ) SELF( p+i+1 ) ;
+    register Position *p_j = p[1];
+    SELF( p_j += i+1; )
+
     // add all "lost" hydrogens to pairlist
     // this loop may not be necessary -- it's not necessary when
     // migrating by hydrogen groups.
@@ -324,7 +319,9 @@ NOEXCL
 NOEXCL
 (
     const BigReal kq_i_s = kq_i_u * scale14;
-    register Position *p_j = PAIR( p[1] ) SELF( p+i+1 ) ;
+    register Position *p_j = p[1];
+    SELF( p_j += i+1; )
+
     HGROUPING
     (
     if (pairlist[pairlistoffset] != J_LOWER)
@@ -485,7 +482,7 @@ FULL
       if (r > switchOn)
       {
 	const BigReal c2 = cutoff2-r2;
-	const BigReal c4 = c2*(cutoff2+2*r2-3*switchOn2);
+	const BigReal c4 = c2*(cutoff2+2.0*r2-3.0*switchOn2);
 	switchVal = c2*c4*c1;
 	dSwitchVal = c3*r*(c2*c2-c4);
       }
@@ -503,7 +500,7 @@ FULL
 SHIFTING
 (
       // Basic electrostatics shifting function for cutoff simulations
-      shiftVal = 1 - r2*c5;
+      shiftVal = 1.0 - r2*c5;
       dShiftVal = c6*shiftVal*r;
       shiftVal *= shiftVal;
 )
@@ -524,7 +521,7 @@ C1SPLITTING
       if (r > switchOn)
       {
 	const BigReal d1 = d0*(r-switchOn);
-	shiftVal = 1. + d1*d1*(2.*d1-3.);
+	shiftVal = 1.0 + d1*d1*(2.0*d1-3.0);
       }
       else
       {
@@ -608,7 +605,7 @@ EXCL
 	const BigReal B = lj_pars->B;
 	const BigReal AmBterm = (A*r_6 - B) * r_6;
 	vdwEnergy += switchVal * AmBterm;
-	const BigReal f_vdwx = ( ( switchVal * 6 * (A*r_12 + AmBterm) *
+	const BigReal f_vdwx = ( ( switchVal * 6.0 * (A*r_12 + AmBterm) *
 			r_1 - AmBterm*dSwitchVal )*r_1 );
 	force_r += f_vdwx;
       }
@@ -619,7 +616,7 @@ NOEXCL
 )
 
 
-      const BigReal f_vdw = ( switchVal * 6 * (A*r_12 + AmBterm) *
+      const BigReal f_vdw = ( switchVal * 6.0 * (A*r_12 + AmBterm) *
 			r_1 - AmBterm*dSwitchVal )*r_1;
 
 EXCL
@@ -683,12 +680,15 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1997/05/13 18:30:45 $
+ *	$Revision: 1.1017 $	$Date: 1997/05/15 17:43:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1017  1997/05/15 17:43:47  nealk
+ * Merged Pair and Self to use same headers.
+ *
  * Revision 1.1016  1997/05/13 18:30:45  nealk
  * Removed ComputeNonbondedHack.h!
  * Reduced a lot of code in Util and Base.

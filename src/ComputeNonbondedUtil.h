@@ -20,6 +20,16 @@ class LJTable;
 class ReductionMgr;
 class Molecule;
 
+// function arguments
+#define ARGS	Position* p[2], Force* ff[2], \
+		AtomProperties* a[2], \
+		int numAtoms[2], BigReal *reduction
+
+#define FARGS	Position* p[2], Force* ff[2], \
+		Force* fullf [2], \
+		AtomProperties* a[2], \
+		int numAtoms[2], BigReal *reduction
+
 class ComputeNonbondedUtil {
 
 public:
@@ -28,15 +38,15 @@ public:
   virtual ~ComputeNonbondedUtil() {}
   static void select(void);
 
-  static void (*calcPair)(Position*[2],Force*[2],AtomProperties*[2],int[2],BigReal*);
-  static void (*calcSelf)(Position*,Force*,AtomProperties*,int,BigReal*);
+  static void (*calcPair)(ARGS);
+  static void (*calcSelf)(ARGS);
   static void (*calcExcl)(const Position &,
 		Force &, Force &,
 		const AtomProperties &, const AtomProperties &,
 		int, BigReal*);
 
-  static void (*calcFullPair)(Position*[2],Force*[2],Force*[2],AtomProperties*[2],int[2],BigReal*);
-  static void (*calcFullSelf)(Position*,Force*,Force*,AtomProperties*,int,BigReal*);
+  static void (*calcFullPair)(FARGS);
+  static void (*calcFullSelf)(FARGS);
   static void (*calcFullExcl)(const Position &,
 		Force &, Force &, Force &, Force &,
 		const AtomProperties &, const AtomProperties &,
@@ -66,24 +76,10 @@ public:
   static BigReal d0;
 
   // No splitting
-  static void calc_pair (
-			Position* p [2], Force* ff [2],
-			AtomProperties* a [2],
-			int numAtoms [2], BigReal *reduction);
-  static void calc_pair_fullelect (
-			Position* p [2], Force* ff [2],
-			Force* fullf [2],
-			AtomProperties* a [2],
-			int numAtoms [2], BigReal *reduction);
-  static void calc_self (
-			Position* p , Force* ff ,
-			AtomProperties* a ,
-			int numAtoms , BigReal *reduction);
-  static void calc_self_fullelect (
-			Position* p , Force* ff ,
-			Force* fullf ,
-			AtomProperties* a ,
-			int numAtoms , BigReal *reduction);
+  static void calc_pair (ARGS);
+  static void calc_pair_fullelect (FARGS);
+  static void calc_self (ARGS);
+  static void calc_self_fullelect (FARGS);
   static void calc_excl (
 			const Position & p_ij,
 			Force & f_i, Force & f_j,
@@ -97,24 +93,10 @@ public:
 			int m14, BigReal *reduction);
 
   // C1 Splitting
-  static void calc_pair_c1 (
-			Position* p [2], Force* ff [2],
-			AtomProperties* a [2],
-			int numAtoms [2], BigReal *reduction);
-  static void calc_pair_fullelect_c1 (
-			Position* p [2], Force* ff [2],
-			Force* fullf [2],
-			AtomProperties* a [2],
-			int numAtoms [2], BigReal *reduction);
-  static void calc_self_c1 (
-			Position* p , Force* ff ,
-			AtomProperties* a ,
-			int numAtoms , BigReal *reduction);
-  static void calc_self_fullelect_c1 (
-			Position* p , Force* ff ,
-			Force* fullf ,
-			AtomProperties* a ,
-			int numAtoms , BigReal *reduction);
+  static void calc_pair_c1 (ARGS);
+  static void calc_pair_fullelect_c1 (FARGS);
+  static void calc_self_c1 (ARGS);
+  static void calc_self_fullelect_c1 (FARGS);
   static void calc_excl_c1 (
 			const Position & p_ij,
 			Force & f_i, Force & f_j,
@@ -128,24 +110,10 @@ public:
 			int m14, BigReal *reduction);
 
   // XPLOR Splitting
-  static void calc_pair_xplor (
-			Position* p [2], Force* ff [2],
-			AtomProperties* a [2],
-			int numAtoms [2], BigReal *reduction);
-  static void calc_pair_fullelect_xplor (
-			Position* p [2], Force* ff [2],
-			Force* fullf [2],
-			AtomProperties* a [2],
-			int numAtoms [2], BigReal *reduction);
-  static void calc_self_xplor (
-			Position* p , Force* ff ,
-			AtomProperties* a ,
-			int numAtoms , BigReal *reduction);
-  static void calc_self_fullelect_xplor (
-			Position* p , Force* ff ,
-			Force* fullf ,
-			AtomProperties* a ,
-			int numAtoms , BigReal *reduction);
+  static void calc_pair_xplor (ARGS);
+  static void calc_pair_fullelect_xplor (FARGS);
+  static void calc_self_xplor (ARGS);
+  static void calc_self_fullelect_xplor (FARGS);
   static void calc_excl_xplor (
 			const Position & p_ij,
 			Force & f_i, Force & f_j,
@@ -166,12 +134,15 @@ public:
  *
  *	$RCSfile: ComputeNonbondedUtil.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/05/13 18:30:47 $
+ *	$Revision: 1.1010 $	$Date: 1997/05/15 17:43:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.h,v $
+ * Revision 1.1010  1997/05/15 17:43:49  nealk
+ * Merged Pair and Self to use same headers.
+ *
  * Revision 1.1009  1997/05/13 18:30:47  nealk
  * Removed ComputeNonbondedHack.h!
  * Reduced a lot of code in Util and Base.

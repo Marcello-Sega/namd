@@ -51,11 +51,26 @@ void ComputeNonbondedSelf::doForce(Position* p,
 
   if ( patch->flags.doNonbonded )
   {
+    Position* p_r[2];
+    p_r[0] = p;
+    p_r[1] = p;
+    Force* f_r[2];
+    f_r[0] = r->f[Results::nbond];
+    f_r[1] = r->f[Results::nbond];
+    Force* f2_r[2];
+    f2_r[0] = r->f[Results::slow];
+    f2_r[1] = r->f[Results::slow];
+    AtomProperties* a_r[2];
+    a_r[0] = a;
+    a_r[1] = a;
+    int numAtoms_r[2];
+    numAtoms_r[0] = numAtoms-1;
+    numAtoms_r[1] = numAtoms;
+
     if ( patch->flags.doFullElectrostatics )
-      calcFullSelf(p,r->f[Results::nbond],r->f[Results::slow],
-	a,numAtoms,reductionData);
+      calcFullSelf(p_r,f_r,f2_r,a_r,numAtoms_r,reductionData);
     else
-      calcSelf(p,r->f[Results::nbond],a,numAtoms,reductionData);
+      calcSelf(p_r,f_r,a_r,numAtoms_r,reductionData);
   }
 
   submitReductionData(reductionData,reduction,patch->flags.seq);
@@ -67,13 +82,16 @@ void ComputeNonbondedSelf::doForce(Position* p,
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedSelf.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/04/08 07:08:25 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1009 $	$Date: 1997/05/15 17:43:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.C,v $
+ * Revision 1.1009  1997/05/15 17:43:48  nealk
+ * Merged Pair and Self to use same headers.
+ *
  * Revision 1.1008  1997/04/08 07:08:25  ari
  * Modification for dynamic loadbalancing - moving computes
  * Still bug in new computes or usage of proxies/homepatches.

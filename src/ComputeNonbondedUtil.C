@@ -18,24 +18,6 @@
 #include "LJTable.h"
 #include "ReductionMgr.h"
 
-void (*ComputeNonbondedUtil::calcPair)(Position*[2],Force*[2],
-        AtomProperties*[2],int[2],BigReal*);
-void (*ComputeNonbondedUtil::calcSelf)(Position*,Force*,
-        AtomProperties*,int,BigReal*);
-void (*ComputeNonbondedUtil::calcExcl)(const Position &,
-	Force &, Force &,
-	const AtomProperties &, const AtomProperties &,
-	int, BigReal*);
-
-void (*ComputeNonbondedUtil::calcFullPair)(Position*[2],Force*[2],
-        Force*[2],AtomProperties*[2],int[2],BigReal*);
-void (*ComputeNonbondedUtil::calcFullSelf)(Position*,Force*,Force*,
-        AtomProperties*,int,BigReal*);
-void (*ComputeNonbondedUtil::calcFullExcl)(const Position &,
-	Force &, Force &, Force &, Force &,
-	const AtomProperties &, const AtomProperties &,
-	int, BigReal*);
-
 Real            ComputeNonbondedUtil::cutoff;
 BigReal         ComputeNonbondedUtil::cutoff2;
 BigReal         ComputeNonbondedUtil::groupcutoff2;
@@ -119,60 +101,39 @@ void ComputeNonbondedUtil::select(void)
   c5 = 1/cutoff2;
   c6 = -4 * c5;
 
-#undef DECLARATION
-#undef DEFINITION
-
   if ( ! ( simParams->fullDirectOn || simParams->FMAOn ) )
   {
-  	//   (2) BEGIN PAIR / SELF / EXCL
-  	//     (1) BEGIN FULLELECT
   	calcFullPair = 0;
   	calcPair = calc_pair;
-  	//     (1) END FULLELECT
-  	//     (1) BEGIN FULLELECT
+
   	calcFullSelf = 0;
   	calcSelf = calc_self;
-  	//     (1) END FULLELECT
-  	//     (1) BEGIN FULLELECT
+
   	calcFullExcl = 0;
   	calcExcl = calc_excl;
-  	//     (1) END FULLELECT
-  	//   (2) END PAIR / SELF / EXCL
   }
   else switch ( simParams->longSplitting )
   {
     case XPLOR:
-	//   (2) BEGIN PAIR / SELF / EXCL
-	//     (1) BEGIN FULLELECT
   	calcFullPair = calc_pair_fullelect_xplor;
   	calcPair = calc_pair_xplor;
-	//     (1) END FULLELECT
-	//     (1) BEGIN FULLELECT
+
   	calcFullSelf = calc_self_fullelect_xplor;
   	calcSelf = calc_self_xplor;
-	//     (1) END FULLELECT
-	//     (1) BEGIN FULLELECT
+
   	calcFullExcl = calc_excl_fullelect_xplor;
   	calcExcl = calc_excl_xplor;
-	//     (1) END FULLELECT
-	//   (2) END PAIR / SELF / EXCL
     	break;
 
     case C1:
-	//   (2) BEGIN PAIR / SELF / EXCL
-	//     (1) BEGIN FULLELECT
   	calcFullPair = calc_pair_fullelect_c1;
   	calcPair = calc_pair_c1;
-	//     (1) END FULLELECT
-	//     (1) BEGIN FULLELECT
+
   	calcFullSelf = calc_self_fullelect_c1;
   	calcSelf = calc_self_c1;
-	//     (1) END FULLELECT
-	//     (1) BEGIN FULLELECT
+
   	calcFullExcl = calc_excl_fullelect_c1;
   	calcExcl = calc_excl_c1;
-	//     (1) END FULLELECT
-	//   (2) END PAIR / SELF / EXCL
 	break;
 
     case SKEEL:
@@ -188,9 +149,6 @@ void ComputeNonbondedUtil::select(void)
 
   }
 }
-
-#undef DECLARATION
-#define DEFINITION
 
 #define NBPAIR
 #undef NBSELF
@@ -303,12 +261,15 @@ void ComputeNonbondedUtil::select(void)
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/05/13 18:30:47 $
+ *	$Revision: 1.1011 $	$Date: 1997/05/15 17:43:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1011  1997/05/15 17:43:48  nealk
+ * Merged Pair and Self to use same headers.
+ *
  * Revision 1.1010  1997/05/13 18:30:47  nealk
  * Removed ComputeNonbondedHack.h!
  * Reduced a lot of code in Util and Base.
