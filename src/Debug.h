@@ -1,3 +1,16 @@
+/***************************************************************************/
+/*                                                                         */
+/*              (C) Copyright 1996 The Board of Trustees of the            */
+/*                          University of Illinois                         */
+/*                           All Rights Reserved                           */
+/*                                                                         */
+/***************************************************************************/
+
+/***************************************************************************
+ * DESCRIPTION:
+ *
+ ***************************************************************************/
+   
 #ifndef DEBUG_H
 #define DEBUG_H
 
@@ -14,6 +27,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include "ckdefs.h"	// for CPrintf
 
 /*****************************************************************
  *  DebugM(): function to display a debug message.
@@ -36,18 +50,16 @@
   {
 	if ((level >= MIN_DEBUG_LEVEL) && (level <= MAX_DEBUG_LEVEL))
 	{
+	  if (level >= STDERR_LEVEL)
+	    CPrintf("ERROR: ");
+	  CPrintf("%s %d: ",__FILE__,__LINE__);
 	  va_list args;
 	  va_start(args, format);
-	  if (level >= STDERR_LEVEL)
-	  {
-	    fprintf(stderr,"%s %d: ",__FILE__,__LINE__);
-	    vfprintf(stderr,format,args);
-	  }
-	  else
-	  {
-	    fprintf(stdout,"%s %d: ",__FILE__,__LINE__);
-	    vfprintf(stdout,format,args);
-	  }
+	  /* S should be an object or variable size, but I don't think
+	     vsprintf will like it.  This should be checked. */
+	  char S[256];
+	  vsprintf(S,format,args);
+	  CPrintf(S);
 	  va_end(args);
 	}
   }
