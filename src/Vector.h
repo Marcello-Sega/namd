@@ -164,13 +164,13 @@ class Vector {
 
      // print out
      friend ostream& operator<<(ostream& strm, const Vector &v1) {
-       strm << "( "<< v1.x << ", " << v1.y << ", " << v1.z << ')';
+       strm << v1.x << " " << v1.y << " " << v1.z;
        return strm;
      }
 
      // print out to infostream object
      friend infostream& operator<<(infostream& strm, const Vector &v1) {
-       strm << "( "<< v1.x << ", " << v1.y << ", " << v1.z << ")";
+       strm << v1.x << " " << v1.y << " " << v1.z;
        return strm;
      }
 

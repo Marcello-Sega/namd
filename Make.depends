@@ -2211,6 +2211,7 @@ obj/Controller.o: \
 	src/UniqueSetIter.h \
 	src/BroadcastClient.h \
 	src/NamdState.h \
+	src/ScriptTcl.h \
 	src/Broadcasts.h \
 	src/LdbCoordinator.h \
 	src/elements.h \
@@ -3581,6 +3582,8 @@ obj/ScriptTcl.o: \
 	src/BroadcastClient.h \
 	src/ConfigList.h \
 	src/Node.h \
+	src/NamdState.h \
+	src/Controller.h \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/MStream.h \

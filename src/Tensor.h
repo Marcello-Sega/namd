@@ -211,8 +211,8 @@ class Tensor {
 
      // print out
      friend ostream& operator<<(ostream& strm, const Tensor &t1) {
-       strm << t1.xx << " " << t1.xy << " " << t1.xz
-            << t1.yx << " " << t1.yy << " " << t1.yz
+       strm << t1.xx << " " << t1.xy << " " << t1.xz << " "
+            << t1.yx << " " << t1.yy << " " << t1.yz << " "
             << t1.zx << " " << t1.zy << " " << t1.zz;
        return strm;
      }

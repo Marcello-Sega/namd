@@ -798,6 +798,45 @@ void Controller::printEnergies(int step)
       }
     }
 
+    // callback to Tcl with whatever we can
+#ifdef NAMD_TCL
+#define CALLBACKDATA(LABEL,VALUE) \
+		labels << (LABEL) << " "; values << (VALUE) << " ";
+#define CALLBACKLIST(LABEL,VALUE) \
+		labels << (LABEL) << " "; values << "{" << (VALUE) << "} ";
+    if (node->getScript() && node->getScript()->doCallback()) {
+      ostrstream labels, values;
+      CALLBACKDATA("TS",step);
+      CALLBACKDATA("BOND",bondEnergy);
+      CALLBACKDATA("ANGLE",angleEnergy);
+      CALLBACKDATA("DIHED",dihedralEnergy);
+      CALLBACKDATA("IMPRP",improperEnergy);
+      CALLBACKDATA("ELECT",electEnergy+electEnergySlow);
+      CALLBACKDATA("VDW",ljEnergy);
+      CALLBACKDATA("BOUNDARY",boundaryEnergy);
+      CALLBACKDATA("MISC",miscEnergy);
+      CALLBACKDATA("KINETIC",kineticEnergy);
+      CALLBACKDATA("TOTAL",totalEnergy);
+      CALLBACKDATA("TEMP",temperature);
+      CALLBACKLIST("PRESSURE",pressure*PRESSUREFACTOR);
+      CALLBACKLIST("GPRESSURE",groupPressure*PRESSUREFACTOR);
+      CALLBACKDATA("VOLUME",lattice.volume());
+      CALLBACKLIST("CELL_A",lattice.a());
+      CALLBACKLIST("CELL_B",lattice.b());
+      CALLBACKLIST("CELL_C",lattice.c());
+      CALLBACKLIST("CELL_O",lattice.origin());
+      labels << "PERIODIC"; values << "{" << lattice.a_p() << " "
+		<< lattice.b_p() << " " << lattice.c_p() << "}";
+
+      const char *labelstr = labels.str();
+      const char *valuestr = values.str();
+      node->getScript()->doCallback(labelstr,valuestr);
+      delete [] labelstr;
+      delete [] valuestr;
+    }
+#undef CALLBACKDATA
+#endif
+
     // NO CALCULATIONS OR REDUCTIONS BEYOND THIS POINT!!!
     if ( step % node->simParameters->outputEnergies ) return;
     // ONLY OUTPUT SHOULD OCCUR BELOW THIS LINE!!!

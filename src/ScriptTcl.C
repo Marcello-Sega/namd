@@ -71,6 +71,7 @@ int ScriptTcl::Tcl_config(ClientData clientData,
   char *namestart, *nameend, *datastart, *dataend, *s;
   namestart = nameend = datastart = dataend = NULL;
   int spacecount = 0;
+  int inbraces = 0;
 
     for (s = buf; *s; s++) {    // get to the end of the line
        if (*s == '#')                       // found a comment, so break
@@ -83,11 +84,25 @@ int ScriptTcl::Tcl_config(ClientData clientData,
                  namestart && !nameend)
           nameend = s - 1;
        if ( !isspace(*s) && !datastart &&   // found the next char. after name
-                 nameend)
+                 nameend) {
           if (*s == '=' && spacecount == 0) // an equals is allowed
              {spacecount++; continue; }     // but only once
-            else
+          else if (*s == '{') {
+            datastart = s;
+            int escape_next = 0;
+            int open_brace_count = 0;
+            for(; *s; s++) {
+              if (escape_next) { escape_next=0; continue; }
+              if (*s == '\\' && ! escape_next) { escape_next=1; }
+              if (*s == '{' && ! escape_next) { open_brace_count++; }
+              if (*s == '}' && ! escape_next) { open_brace_count--; }
+              if (! open_brace_count) { dataend = s; break; }
+            }
+            continue;
+          }
+          else
              {datastart = s; continue; }    // otherwise, use it
+       }
     }
 
     if (!namestart || !nameend || !datastart || !dataend) {
@@ -246,6 +261,39 @@ int ScriptTcl::Tcl_output(ClientData clientData,
   return TCL_OK;
 }
 
+int ScriptTcl::Tcl_callback(ClientData clientData,
+	Tcl_Interp *interp, int argc, char *argv[]) {
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  if (argc != 2) {
+    interp->result = "wrong # args";
+    return TCL_ERROR;
+  }
+
+  delete [] script->callbackname;
+  script->callbackname = new char[strlen(argv[1])+1];
+  strcpy(script->callbackname,argv[1]);
+
+  iout << "TCL: Reduction callback proc set to " <<
+			script->callbackname << "\n" << endi;
+
+  return TCL_OK;
+}
+
+void ScriptTcl::doCallback(const char *labels, const char *data) {
+  if ( ! callbackname ) return;
+  int len = strlen(callbackname) + strlen(labels) + strlen(data) + 7;
+  char *cmd = new char[len];
+  sprintf(cmd, "%s {%s} {%s}", callbackname, labels, data);
+  int rval = Tcl_Eval(interp,cmd);
+  delete [] cmd;
+  if (rval != TCL_OK) {
+     char *errmsg = new char[strlen(interp->result) + 20];
+     sprintf(errmsg,"Tcl callback: %s",interp->result);
+     NAMD_die(errmsg);
+     delete [] errmsg;
+  }
+}
+
 #endif  // NAMD_TCL
 
 
@@ -253,6 +301,7 @@ ScriptTcl::ScriptTcl() {
   DebugM(3,"Constructing ScriptTcl\n");
 #ifdef NAMD_TCL
   interp = 0;
+  callbackname = 0;
 #endif
 }
 
@@ -260,6 +309,7 @@ ScriptTcl::~ScriptTcl() {
   DebugM(3,"Destructing ScriptTcl\n");
 #ifdef NAMD_TCL
   if ( interp ) Tcl_DeleteInterp(interp);
+  delete [] callbackname;
 #endif
 }
 
@@ -304,6 +354,8 @@ void ScriptTcl::algorithm() {
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "output", Tcl_output,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "callback", Tcl_callback,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
 
 /*
   // Get the script
@@ -323,9 +375,11 @@ void ScriptTcl::algorithm() {
   if (*interp->result != 0) CkPrintf("TCL: %s\n",interp->result);
   if (code != TCL_OK) NAMD_die("TCL error in script!");
   if (runWasCalled == 0) {
-    CkPrintf("TCL: Exiting after processing config file.\n");
-    Tcl_DeleteInterp(interp);
-    interp = 0;
+    if (callbackname == 0) {
+      CkPrintf("TCL: Exiting after processing config file.\n");
+      Tcl_DeleteInterp(interp);
+      interp = 0;
+    }
     CthSuspend();
     Node::Object()->state->controller->algorithm(0);
   }

@@ -48,6 +48,10 @@ private:
   static int Tcl_run(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_move(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_output(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_callback(ClientData, Tcl_Interp *, int, char **);
+  char *callbackname;
+  void doCallback(const char *labels, const char *data);
+  int doCallback() { return ! ! callbackname; }
 #endif
 };
 
