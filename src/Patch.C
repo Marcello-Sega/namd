@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.17 1996/12/17 08:55:02 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.18 1996/12/17 22:12:05 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -36,7 +36,7 @@ Patch::Patch(PatchID pd) :
    positionBox(this,&(Patch::positionBoxClosed)),
    forceBox(this,&(Patch::forceBoxClosed)),
    atomBox(this,&(Patch::atomBoxClosed)),
-   numAtoms(0)
+   numAtoms(0), boxesOpen(0)
 {
   ;
 }
@@ -47,7 +47,7 @@ Patch::Patch(PatchID pd, AtomIDList al, PositionList pl) :
    positionBox(this,&(Patch::positionBoxClosed)),
    forceBox(this,&(Patch::forceBoxClosed)),
    atomBox(this,&(Patch::atomBoxClosed)),
-   numAtoms(al.size())
+   numAtoms(al.size()), boxesOpen(0)
 {
     if (atomIDList.size() != p.size())
     {
@@ -199,12 +199,15 @@ void Patch::positionsReady()
  *
  *	$RCSfile: Patch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.17 $	$Date: 1996/12/17 08:55:02 $
+ *	$Revision: 1.18 $	$Date: 1996/12/17 22:12:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.18  1996/12/17 22:12:05  jim
+ * added boxesOpen initializer
+ *
  * Revision 1.17  1996/12/17 08:55:02  jim
  * added debug statement
  *
