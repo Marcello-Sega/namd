@@ -45,7 +45,7 @@ extern "C" void get_size_() { }
 class ComputePmeMgr : public ampi {
 public:
   ComputePmeMgr() { }
-  ComputePmeMgr(ArrayElementMigrateMessage*) { }
+  ComputePmeMgr(CkMigrateMessage*) { }
   void start();
 };
 
