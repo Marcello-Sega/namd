@@ -258,7 +258,7 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
-	-module NeighborLB -language charm++ \
+	-module NeighborLB -module commlib -language charm++ \
 	$(BUILDINFO).o \
 	$(OBJS) \
 	$(DPMTALIB) \
@@ -266,7 +266,7 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(TCLLIB) \
 	$(FFTLIB) \
 	$(PLUGINLIB) \
-	-lm -o namd2 -module commlib
+	-lm -o namd2
 
 charmrun: $(CHARM)/bin/charmrun # XXX
 	$(COPY) $(CHARM)/bin/charmrun $@
@@ -275,7 +275,7 @@ win32binaries: namd2.exe psfgen.exe charmd.exe charmd_faceless.exe charmrun.exe
 
 namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(CHARMC) -verbose \
-	-module NeighborLB -language charm++ \
+	-module NeighborLB -module commlib -language charm++ \
 	$(OBJS) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
@@ -322,7 +322,7 @@ projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
-	-module NeighborLB -language charm++ \
+	-module NeighborLB -module commlib -language charm++ \
 	-tracemode projections -tracemode summary \
 	$(BUILDINFO).o \
 	$(OBJS) \
@@ -337,7 +337,8 @@ summary:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
-	-module NeighborLB -language charm++ -tracemode summary \
+	-module NeighborLB -module commlib -language charm++ \
+	-tracemode summary \
 	$(BUILDINFO).o \
 	$(OBJS) \
 	$(DPMTALIB) \
