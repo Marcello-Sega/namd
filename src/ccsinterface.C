@@ -55,7 +55,6 @@ static void sendDataFunction(void)
 
 void CApplicationDataCollectionHandler(char *msg){
   int src;
-  int value;
   char *prev;
 
   if(CmiMyPe() != 0){
@@ -77,7 +76,6 @@ extern "C" void CApplicationDepositData(char *data)
 {
   char *msg;
   int msgSize;
-  int i;
 
   if(appletIP == 0) {
     return; 
