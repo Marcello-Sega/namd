@@ -13,7 +13,7 @@ a list of know deficiencies, and advice for reporting bugs.
 
 New Features
 
---- First Port to Windows NT ---
+--- First Port to Windows ---
 
 NAMD now runs on Windows.  NAMD is built and tested on Windows NT,
 but should work on Windows 98 and 2000 as well.  You can now run
@@ -120,9 +120,9 @@ The flipbinpdb and flipdcd programs will perform this conversion.
 NAMD and VMD now handle this conversion automatically for most files.
 See the section "Endian Issues" below.
 
--- Windows NT Workstation Networks ---
+-- Windows Workstation Networks ---
 
-Windows NT is the same as other workstation networks described above,
+Windows is the same as other workstation networks described above,
 except that rsh is not available on this platform.  Instead, you must
 run the provided daemon (daemon.exe) on every node listed in the
 nodelist file, even if you are only running on one machine.  Using
@@ -189,7 +189,7 @@ We collect this information in order to better justify continued
 development of NAMD to the NIH, our primary source of funding.  We
 also use collected information to direct NAMD development efforts.
 If you are opposed to this reporting, you are welcome to recompile
-NAMD and disable it.  Usage reporting is disabled in the released
+NAMD and disable it.  Usage reporting is disabled in the release
 Windows binaries for version 2.2, but will be added in version 2.3.
 
 ----------------------------------------------------------------------
