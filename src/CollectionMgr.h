@@ -30,7 +30,6 @@ public:
   void submitPositions(int seq, AtomIDList &i, PositionList &d,
 				Lattice l, TransformList &t, int prec);
   void submitVelocities(int seq, AtomIDList &i, VelocityList &d);
-  void submitForces(int seq, AtomIDList &i, ForceList &d);
 
   class CollectVectorInstance
   {
