@@ -90,8 +90,9 @@ psfgen_macros.tex: ../psfgen/doc/ug_macros.tex
 
 ug_psfgen.tex: ../psfgen/doc/ug_psfgen.tex
 	$(DELETE) ug_psfgen.tex ; \
-	sed -e "20,$$ s/\\subsection{/\\subsubsection{/" \
-	    -e "20,$$ s/\\section{/\\subsection{/" \
+	sed -e '20,$$ s/\\subsection{/\\subsubsection{/' \
+	    -e '20,$$ s/\\section{/\\subsection{/' \
+	    -e '20,$$ s/\\subsection\*{/\\subsubsection\*{/' \
 	../psfgen/doc/ug_psfgen.tex > ug_psfgen.tex
 
 clean:
