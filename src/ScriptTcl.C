@@ -146,6 +146,26 @@ int ScriptTcl::Tcl_param(ClientData clientData,
   return TCL_OK;
 }
 
+int ScriptTcl::Tcl_reinitvels(ClientData clientData,
+        Tcl_Interp *interp, int argc, char *argv[]) {
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  if (! script->runWasCalled) {
+    interp->result = "called before run";
+    return TCL_ERROR;
+  }
+  if (argc != 2) {
+    interp->result = "wrong # args";
+    return TCL_ERROR;
+  }
+  char *temp = argv[1];
+
+  script->setParameter("initialTemp",temp);
+
+  script->runController(SCRIPT_REINITVELS);
+
+  return TCL_OK;
+}
+
 int ScriptTcl::Tcl_run(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
@@ -383,6 +403,8 @@ void ScriptTcl::algorithm() {
   Tcl_CreateCommand(interp, "output", Tcl_output,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "measure", Tcl_measure,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "reinitvels", Tcl_reinitvels,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "callback", Tcl_callback,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);

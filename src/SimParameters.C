@@ -94,6 +94,7 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_FLOAT("reassignTemp",reassignTemp)
   SCRIPT_PARSE_FLOAT("rescaleTemp",rescaleTemp)
   SCRIPT_PARSE_FLOAT("langevinTemp",langevinTemp)
+  SCRIPT_PARSE_FLOAT("initialTemp",initialTemp)
   SCRIPT_PARSE_FLOAT("constraintScaling",constraintScaling)
   SCRIPT_PARSE_STRING("outputname",outputFilename)
   if ( ! strncasecmp(param,"nonbondedScaling",MAX_SCRIPT_PARAM_SIZE) ) {

@@ -48,6 +48,7 @@ protected:
     void rescaleVelocities(int);
       int rescaleVelocities_numTemps;
     void reassignVelocities(int);
+    void reinitVelocities(void);
     void tcoupleVelocities(BigReal,int);
     void berendsenPressure(int);
     void langevinPiston(int);

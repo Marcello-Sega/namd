@@ -107,6 +107,11 @@ void Controller::algorithm(void)
         enqueueCollections(EVAL_MEASURE);
         Node::Object()->enableExitScheduler();
         continue;
+      case SCRIPT_REINITVELS:
+        iout << "REINITIALIZING VELOCITIES AT STEP " << simParams->firstTimestep
+          << " TO " << simParams->initialTemp << " KELVIN.\n" << endi;
+        Node::Object()->enableExitScheduler();
+        continue;
     }
 
     int step = simParams->firstTimestep;

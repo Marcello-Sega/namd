@@ -81,6 +81,9 @@ void Sequencer::algorithm(void)
       case SCRIPT_MEASURE:
 	submitCollections(EVAL_MEASURE);
 	continue;
+      case SCRIPT_REINITVELS:
+	reinitVelocities();
+	continue;
     }
 
     int &step = patch->flags.step;
@@ -365,6 +368,17 @@ void Sequencer::reassignVelocities(int step)
       patch->v[i] = ( ( patch->a[i].flags & ATOM_FIXED ) ? Vector(0,0,0) :
         sqrt( kbT / patch->a[i].mass ) * random->gaussian_vector() );
     }
+  }
+}
+
+void Sequencer::reinitVelocities(void)
+{
+  BigReal newTemp = simParams->initialTemp;
+  BigReal kbT = BOLTZMAN * newTemp;
+  for ( int i = 0; i < patch->numAtoms; ++i )
+  {
+    patch->v[i] = ( ( patch->a[i].flags & ATOM_FIXED ) ? Vector(0,0,0) :
+      sqrt( kbT / patch->a[i].mass ) * random->gaussian_vector() );
   }
 }
 
