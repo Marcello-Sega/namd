@@ -39,7 +39,7 @@
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1055 1999/08/20 19:11:11 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1056 1999/08/25 16:50:58 brunner Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, TransformList tl,
       PositionList pl, VelocityList vl) : Patch(pd,al,pl), v(vl), t(tl)
@@ -281,13 +281,15 @@ void HomePatch::rattle1(const BigReal timestep)
       if ( hgs != 3 ) {
         NAMD_die("Hydrogen group error caught in rattle1().  It's a bug!\n");
       }
-      dsq[icnt] = tmp * tmp;  ial[icnt] = 1;  ibl[icnt] = 2;  ++icnt;
-      if ( fixed[1] && fixed[2] ) --icnt;  // both fixed so skip it
+      if ( !(fixed[1] && fixed[2]) ) {
+	dsq[icnt] = tmp * tmp;  ial[icnt] = 1;  ibl[icnt] = 2;  ++icnt;
+      }
     }
     for ( i = 1; i < hgs; ++i ) {  // normal bonds to mother atom
       if ( ( tmp = mol->rigid_bond_length(a[ig+i].id) ) > 0 ) {
-        dsq[icnt] = tmp * tmp;  ial[icnt] = 0;  ibl[icnt] = i;  ++icnt;
-        if ( fixed[0] && fixed[i] ) --icnt;  // both fixed so skip it
+	if ( !(fixed[0] && fixed[i]) ) {
+	  dsq[icnt] = tmp * tmp;  ial[icnt] = 0;  ibl[icnt] = i;  ++icnt;
+	}
       }
     }
     if ( icnt == 0 ) continue;  // no constraints
@@ -354,8 +356,10 @@ void HomePatch::rattle2(const BigReal timestep, Vector *virial)
   BigReal rmass[10];  // 1 / mass
   BigReal redmass[10];  // reduced mass
   int fixed[10];  // is atom fixed?
-  
+
+  //  CkPrintf("In rattle2!\n");
   for ( int ig = 0; ig < numAtoms; ig += a[ig].hydrogenGroupSize ) {
+    //    CkPrintf("ig=%d\n",ig);
     int hgs = a[ig].hydrogenGroupSize;
     if ( hgs == 1 ) continue;  // only one atom in group
     // cache data in local arrays and integrate positions normally
@@ -371,21 +375,27 @@ void HomePatch::rattle2(const BigReal timestep, Vector *virial)
       if ( hgs != 3 ) {
         NAMD_die("Hydrogen group error caught in rattle2().  It's a bug!\n");
       }
-      redmass[icnt] = 1. / (rmass[1] + rmass[2]);
-      dsqi[icnt] = 1. / (tmp * tmp);  ial[icnt] = 1;  ibl[icnt] = 2;  ++icnt;
-      if ( fixed[1] && fixed[2] ) --icnt;  // both fixed so skip it
+      if ( !(fixed[1] && fixed[2]) ) {
+	redmass[icnt] = 1. / (rmass[1] + rmass[2]);
+	dsqi[icnt] = 1. / (tmp * tmp);  ial[icnt] = 1;  ibl[icnt] = 2;  ++icnt;
+      }
     }
+    //    CkPrintf("Loop 2\n");
     for ( i = 1; i < hgs; ++i ) {  // normal bonds to mother atom
       if ( ( tmp = mol->rigid_bond_length(a[ig+i].id) ) > 0 ) {
-        redmass[icnt] = 1. / (rmass[0] + rmass[i]);
-        dsqi[icnt] = 1. / (tmp * tmp);  ial[icnt] = 0;  ibl[icnt] = i;  ++icnt;
-        if ( fixed[0] && fixed[i] ) --icnt;  // both fixed so skip it
+        if ( !(fixed[0] && fixed[i]) ) {
+	  redmass[icnt] = 1. / (rmass[0] + rmass[i]);
+	  dsqi[icnt] = 1. / (tmp * tmp);  ial[icnt] = 0;
+	  ibl[icnt] = i;  ++icnt;
+	}
       }
     }
     if ( icnt == 0 ) continue;  // no constraints
+    //    CkPrintf("Loop 3\n");
     for ( i = 0; i < icnt; ++i ) {
       refab[i] = ref[ial[i]] - ref[ibl[i]];
     }
+    //    CkPrintf("Loop 4\n");
     for ( iter = 0; iter < maxiter; ++iter ) {
       int done = 1;
       for ( i = 0; i < icnt; ++i ) {
@@ -414,6 +424,7 @@ void HomePatch::rattle2(const BigReal timestep, Vector *virial)
       v[ig+i] = vel[i];
     }
   }
+  //  CkPrintf("Leaving rattle2!\n");
   // check that there isn't a constant needed here!
   *virial += wc / ( 0.5 * dt );
 
@@ -459,16 +470,17 @@ void HomePatch::mollyAverage()
 	  if ( hgs != 3 ) {
 	    NAMD_die("Hydrogen group error caught in mollyAverage().  It's a bug!\n");
 	  }
-	  redmass[icnt] = 1. / (rmass[1] + rmass[2]);
-	  dsq[icnt] = tmp * tmp;  ial[icnt] = 1;  ibl[icnt] = 2;  ++icnt;
-	  if ( fixed[1] && fixed[2] ) --icnt;  // both fixed so skip it
+	  if ( !(fixed[1] && fixed[2]) ) {
+	    redmass[icnt] = 1. / (rmass[1] + rmass[2]);
+	    dsq[icnt] = tmp * tmp;  ial[icnt] = 1;  ibl[icnt] = 2;  ++icnt;
+	  }
 	}
 	for ( i = 1; i < hgs; ++i ) {  // normal bonds to mother atom
 	  if ( ( tmp = mol->rigid_bond_length(a[ig+i].id) ) ) {
-	    redmass[icnt] = 1. / (rmass[0] + rmass[i]);
-	    dsq[icnt] =  tmp * tmp;  ial[icnt] = 0;  ibl[icnt] = i;  ++icnt;
-
-	    if ( fixed[0] && fixed[i] ) --icnt;  // both fixed so skip it
+	    if ( !(fixed[0] && fixed[1]) ) {
+	      redmass[icnt] = 1. / (rmass[0] + rmass[i]);
+	      dsq[icnt] =  tmp * tmp;  ial[icnt] = 0;  ibl[icnt] = i;  ++icnt;
+	    }
 	  }
 	}
 	if ( icnt == 0 ) continue;  // no constraints
@@ -524,15 +536,17 @@ void HomePatch::mollyMollify(Vector *virial)
 	  if ( hgs != 3 ) {
 	    NAMD_die("Hydrogen group error caught in mollyMollify().  It's a bug!\n");
 	  }
-	  redmass[icnt] = 1. / (rmass[1] + rmass[2]);
-	  dsq[icnt] = tmp * tmp;  ial[icnt] = 1;  ibl[icnt] = 2;  ++icnt;
-	  if ( fixed[1] && fixed[2] ) --icnt;  // both fixed so skip it
+	  if ( !(fixed[1] && fixed[2]) ) {
+	    redmass[icnt] = 1. / (rmass[1] + rmass[2]);
+	    dsq[icnt] = tmp * tmp;  ial[icnt] = 1;  ibl[icnt] = 2;  ++icnt;
+	  }
 	}
 	for ( i = 1; i < hgs; ++i ) {  // normal bonds to mother atom
 	  if ( ( tmp = mol->rigid_bond_length(a[ig+i].id) ) ) {
-	    redmass[icnt] = 1. / (rmass[0] + rmass[i]);
-	    dsq[icnt] = tmp * tmp;  ial[icnt] = 0;  ibl[icnt] = i;  ++icnt;
-	    if ( fixed[0] && fixed[i] ) --icnt;  // both fixed so skip it
+	    if ( !(fixed[0] && fixed[i]) ) {
+	      redmass[icnt] = 1. / (rmass[0] + rmass[i]);
+	      dsq[icnt] = tmp * tmp;  ial[icnt] = 0;  ibl[icnt] = i;  ++icnt;
+	    }
 	  }
 	}
 
@@ -1382,13 +1396,16 @@ void free_dvector(double *v, long nl, long nh)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1055 $	$Date: 1999/08/20 19:11:11 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1056 $	$Date: 1999/08/25 16:50:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1056  1999/08/25 16:50:58  brunner
+ * Fixed a divide-by-zero error with fixed atoms in rattle
+ *
  * Revision 1.1055  1999/08/20 19:11:11  jim
  * Added MOLLY - mollified impluse method.
  *
