@@ -4,9 +4,11 @@
 CC = cc -DSOLARIS
 CXX = CC -DSOLARIS
 CXXOPTS = -fast -xO5 -native -xarch=v8plusa -fsimple=2 -DDONT_DECLARE_NEW
+#CXXOPTS = -g -DDONT_DECLARE_NEW
 #CXXOPTS = -DGLOBALS
 COPTS = -fast -xO5 -native -xarch=v8plusa
-CXXTHREADOPTS = $(CXXOPTS)
+#COPTS = -g
+CXXTHREADOPTS = -fns -ftrap=%none -xlibmil -xlibmopt -xO5 -native -xarch=v8plusa -fsimple=2 -DDONT_DECLARE_NEW
 
 #####
 # Flags
