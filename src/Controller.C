@@ -754,7 +754,7 @@ void Controller::receivePressure(int step, int minimize)
 	( simParameters->fixedAtomsOn ? molecule->numFixedRigidBonds : 0 );
     numDegFreedom -= ( numRigidBonds - numFixedRigidBonds );
 
-    kineticEnergy = reduction->item(REDUCTION_KINETIC_ENERGY);
+    kineticEnergyHalfstep = reduction->item(REDUCTION_HALFSTEP_KINETIC_ENERGY);
     kineticEnergyCentered = reduction->item(REDUCTION_CENTERED_KINETIC_ENERGY);
 
     GET_TENSOR(virial_normal,reduction,REDUCTION_VIRIAL_NORMAL);
@@ -779,7 +779,8 @@ void Controller::receivePressure(int step, int minimize)
     virial_nbond -= outer(extForce_nbond,extPosition);
     virial_slow -= outer(extForce_slow,extPosition);
 
-    temperature = 2.0 * kineticEnergy / ( numDegFreedom * BOLTZMAN );
+    kineticEnergy = (kineticEnergyHalfstep + 2.*kineticEnergyCentered) / 3.0;
+    temperature = 2.0 * kineticEnergyHalfstep / ( numDegFreedom * BOLTZMAN );
 
     if ( (volume=lattice.volume()) != 0. )
     {
@@ -1109,9 +1110,11 @@ void Controller::printEnergies(int step, int minimize)
 	improperEnergy + electEnergy + electEnergySlow + ljEnergy +
 	boundaryEnergy + miscEnergy;
     totalEnergy = potentialEnergy + kineticEnergy;
-    smoothEnergy = totalEnergy + 2*( kineticEnergyCentered - kineticEnergy);
+    smoothEnergy = totalEnergy +
+        (4.0/3.0)*( kineticEnergyCentered - kineticEnergyHalfstep);
     smooth2_avg *= 0.9375;
-    smooth2_avg -= 0.0625 * 2*( kineticEnergyCentered - kineticEnergy);
+    smooth2_avg -= 0.0625 *
+        (4.0/3.0)*( kineticEnergyCentered - kineticEnergyHalfstep);
 
     if ( simParameters->outputMomenta && ! minimize &&
          ! ( step % simParameters->outputMomenta ) )

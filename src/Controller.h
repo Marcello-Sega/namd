@@ -79,6 +79,7 @@ protected:
       BigReal fepSum;
 //fepe
       BigReal kineticEnergy;
+      BigReal kineticEnergyHalfstep;
       BigReal kineticEnergyCentered;
       BigReal temperature;
       BigReal smooth2_avg;

@@ -805,7 +805,7 @@ void Sequencer::submitHalfstep(int step)
     }
 
     kineticEnergy *= 0.5 * 0.5;
-    reduction->item(REDUCTION_KINETIC_ENERGY) += kineticEnergy;
+    reduction->item(REDUCTION_HALFSTEP_KINETIC_ENERGY) += kineticEnergy;
     virial *= 0.5;
     ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,virial);
 #ifdef ALTVIRIAL
