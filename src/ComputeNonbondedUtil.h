@@ -64,7 +64,7 @@ public:
 	 virialXIndex, virialYIndex, virialZIndex,
 	 fullElectVirialXIndex, fullElectVirialYIndex, fullElectVirialZIndex,
 	 reductionDataSize };
-  static void submitReductionData(BigReal*,SubmitReduction*,int);
+  static void submitReductionData(BigReal*,SubmitReduction*);
 
   static Bool fixedAtomsOn;
   static Real cutoff;
@@ -149,12 +149,15 @@ public:
  *
  *	$RCSfile: ComputeNonbondedUtil.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1019 $	$Date: 1999/06/17 15:46:11 $
+ *	$Revision: 1.1020 $	$Date: 1999/06/17 17:05:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.h,v $
+ * Revision 1.1020  1999/06/17 17:05:42  jim
+ * Renamed seq to step in most places.  Now has meaning only to user.
+ *
  * Revision 1.1019  1999/06/17 15:46:11  jim
  * Completely rewrote reduction system to eliminate need for sequence numbers.
  *

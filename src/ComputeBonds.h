@@ -38,7 +38,7 @@ public:
 
   enum { bondEnergyIndex, virialXIndex, virialYIndex, virialZIndex, reductionDataSize };
   enum { reductionChecksumLabel = REDUCTION_BOND_CHECKSUM };
-  static void submitReductionData(BigReal*,SubmitReduction*,int);
+  static void submitReductionData(BigReal*,SubmitReduction*);
 
   inline BondElem();
   inline BondElem(const Bond *a);
@@ -67,12 +67,15 @@ public:
  *
  *	$RCSfile: ComputeBonds.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1999/06/17 15:46:01 $
+ *	$Revision: 1.1008 $	$Date: 1999/06/17 17:05:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeBonds.h,v $
+ * Revision 1.1008  1999/06/17 17:05:35  jim
+ * Renamed seq to step in most places.  Now has meaning only to user.
+ *
  * Revision 1.1007  1999/06/17 15:46:01  jim
  * Completely rewrote reduction system to eliminate need for sequence numbers.
  *

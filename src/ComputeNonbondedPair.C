@@ -67,7 +67,7 @@ int ComputeNonbondedPair::noWork() {
       atomBox[i]->close(&a[i]);
     }
 
-    submitReductionData(reductionData,reduction,patch[0]->flags.seq);
+    submitReductionData(reductionData,reduction);
     reduction->submit();
 
     // Inform load balancer
@@ -140,7 +140,7 @@ void ComputeNonbondedPair::doForce(Position* p[2],
     }
   }
 
-  submitReductionData(reductionData,reduction,patch[0]->flags.seq);
+  submitReductionData(reductionData,reduction);
   reduction->submit();
 
   // Inform load balancer
@@ -152,12 +152,15 @@ void ComputeNonbondedPair::doForce(Position* p[2],
  *
  *	$RCSfile: ComputeNonbondedPair.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1999/06/17 15:46:09 $
+ *	$Revision: 1.1019 $	$Date: 1999/06/17 17:05:40 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.C,v $
+ * Revision 1.1019  1999/06/17 17:05:40  jim
+ * Renamed seq to step in most places.  Now has meaning only to user.
+ *
  * Revision 1.1018  1999/06/17 15:46:09  jim
  * Completely rewrote reduction system to eliminate need for sequence numbers.
  *

@@ -225,7 +225,7 @@ void DihedralElem::computeForce(BigReal *reduction)
 }
 
 
-void DihedralElem::submitReductionData(BigReal *data, SubmitReduction *reduction, int seq)
+void DihedralElem::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {
   reduction->item(REDUCTION_DIHEDRAL_ENERGY) += data[dihedralEnergyIndex];
   reduction->item(REDUCTION_VIRIAL_NORMAL_X) += data[virialXIndex];
@@ -240,12 +240,15 @@ void DihedralElem::submitReductionData(BigReal *data, SubmitReduction *reduction
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1999/06/17 15:46:04 $
+ *	$Revision: 1.1013 $	$Date: 1999/06/17 17:05:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDihedrals.C,v $
+ * Revision 1.1013  1999/06/17 17:05:37  jim
+ * Renamed seq to step in most places.  Now has meaning only to user.
+ *
  * Revision 1.1012  1999/06/17 15:46:04  jim
  * Completely rewrote reduction system to eliminate need for sequence numbers.
  *

@@ -77,7 +77,7 @@ void ComputeNonbondedSelf::doForce(Position* p,
       calcSelf(&params);
   }
 
-  submitReductionData(reductionData,reduction,patch->flags.seq);
+  submitReductionData(reductionData,reduction);
   reduction->submit();
   // Inform load balancer
   LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
@@ -88,12 +88,15 @@ void ComputeNonbondedSelf::doForce(Position* p,
  *
  *	$RCSfile: ComputeNonbondedSelf.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1999/06/17 15:46:10 $
+ *	$Revision: 1.1014 $	$Date: 1999/06/17 17:05:40 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.C,v $
+ * Revision 1.1014  1999/06/17 17:05:40  jim
+ * Renamed seq to step in most places.  Now has meaning only to user.
+ *
  * Revision 1.1013  1999/06/17 15:46:10  jim
  * Completely rewrote reduction system to eliminate need for sequence numbers.
  *

@@ -54,7 +54,6 @@ private:
 
   char *configName;
   BigReal energy;
-  int seq;
 
 };
 
@@ -64,12 +63,15 @@ private:
  *
  *	$RCSfile: ComputeGlobalEasy.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1999/06/17 15:46:07 $
+ *	$Revision: 1.3 $	$Date: 1999/06/17 17:05:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGlobalEasy.h,v $
+ * Revision 1.3  1999/06/17 17:05:38  jim
+ * Renamed seq to step in most places.  Now has meaning only to user.
+ *
  * Revision 1.2  1999/06/17 15:46:07  jim
  * Completely rewrote reduction system to eliminate need for sequence numbers.
  *

@@ -99,7 +99,7 @@ void ComputeRestraints::doForce(Position* p, Results* res, AtomProperties* a)
 	// This version only allows one atom to be moved 
 	// and only ALL ref positions to be rotated
 
-	int currentTime = patch->flags.seq;
+	int currentTime = patch->flags.step;
 	if (consRotOn) {
 	  vec_rotation_matrix(rotVel * currentTime, rotAxis, m);
 	}
@@ -186,12 +186,15 @@ void ComputeRestraints::doForce(Position* p, Results* res, AtomProperties* a)
  *
  *	$RCSfile: ComputeRestraints.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1999/06/17 15:46:13 $
+ *	$Revision: 1.8 $	$Date: 1999/06/17 17:05:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeRestraints.C,v $
+ * Revision 1.8  1999/06/17 17:05:44  jim
+ * Renamed seq to step in most places.  Now has meaning only to user.
+ *
  * Revision 1.7  1999/06/17 15:46:13  jim
  * Completely rewrote reduction system to eliminate need for sequence numbers.
  *

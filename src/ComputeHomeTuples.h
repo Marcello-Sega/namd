@@ -248,7 +248,7 @@ template <class T, class S> class ComputeHomeTuples : public Compute {
         tupleCount += 1;
       }
     
-      T::submitReductionData(reductionData,reduction,ap.begin()->p->flags.seq);
+      T::submitReductionData(reductionData,reduction);
       reduction->item(T::reductionChecksumLabel) += (BigReal)tupleCount;
       reduction->submit();
     

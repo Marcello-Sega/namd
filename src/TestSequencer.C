@@ -46,7 +46,7 @@ TestSequencer::~TestSequencer(void)
 // when to migrate atoms, when to add forces to velocity update.
 void TestSequencer::algorithm(void)
 {
-    int &step = patch->flags.seq;
+    int &step = patch->flags.step;
     step = simParams->firstTimestep;
 
     int &maxForceUsed = patch->flags.maxForceUsed;
@@ -159,12 +159,15 @@ void TestSequencer::translatePosition(BigReal dx, BigReal dy, BigReal dz) {
  *
  *      $RCSfile: TestSequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.7 $     $Date: 1999/06/02 14:23:23 $
+ *      $Revision: 1.8 $     $Date: 1999/06/17 17:05:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: TestSequencer.C,v $
+ * Revision 1.8  1999/06/17 17:05:48  jim
+ * Renamed seq to step in most places.  Now has meaning only to user.
+ *
  * Revision 1.7  1999/06/02 14:23:23  jim
  * Generalized maximumMove to work with any dynamics mode.
  *

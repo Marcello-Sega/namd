@@ -306,8 +306,7 @@ void ComputeDPMEMaster::recvData(ComputeDPMEDataMsg *msg)
   for(i=0; i<6; ++i) recip_vir[i] *= -1.;
 
   // send out reductions
-  int seq = host->getFlags()->seq;
-  DebugM(4,"Timestep : " << seq << "\n");
+  DebugM(4,"Timestep : " << host->getFlags()->step << "\n");
   DebugM(4,"Reciprocal sum energy: " << electEnergy << "\n");
   DebugM(4,"Reciprocal sum virial: " << recip_vir[0] << " " <<
 	recip_vir[1] << " " << recip_vir[2] << " " << recip_vir[3] << " " <<
@@ -382,12 +381,15 @@ void ComputeDPME::recvResults(ComputeDPMEResultsMsg *msg)
  *
  *	$RCSfile: ComputeDPME.C,v $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.14 $	$Date: 1999/06/17 15:46:02 $
+ *	$Revision: 1.15 $	$Date: 1999/06/17 17:05:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPME.C,v $
+ * Revision 1.15  1999/06/17 17:05:35  jim
+ * Renamed seq to step in most places.  Now has meaning only to user.
+ *
  * Revision 1.14  1999/06/17 15:46:02  jim
  * Completely rewrote reduction system to eliminate need for sequence numbers.
  *

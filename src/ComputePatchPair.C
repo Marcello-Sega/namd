@@ -162,7 +162,7 @@ void ComputePatchPair::doWork() {
 
 int ComputePatchPair::sequence(void)
 {
-  return patch[0]->flags.seq;
+  return patch[0]->flags.step;
 }
 
 
@@ -170,13 +170,16 @@ int ComputePatchPair::sequence(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputePatchPair.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1999/05/11 23:56:28 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1017 $	$Date: 1999/06/17 17:05:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatchPair.C,v $
+ * Revision 1.1017  1999/06/17 17:05:43  jim
+ * Renamed seq to step in most places.  Now has meaning only to user.
+ *
  * Revision 1.1016  1999/05/11 23:56:28  brunner
  * Changes for new charm version
  *

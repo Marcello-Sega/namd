@@ -48,7 +48,7 @@ void (*ComputeNonbondedUtil::calcFullPair)(nonbonded *);
 void (*ComputeNonbondedUtil::calcFullSelf)(nonbonded *);
 void (*ComputeNonbondedUtil::calcFullExcl)(nonbonded *);
 
-void ComputeNonbondedUtil::submitReductionData(BigReal *data, SubmitReduction *reduction, int seq)
+void ComputeNonbondedUtil::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {
   reduction->item(REDUCTION_ELECT_ENERGY) += data[electEnergyIndex]
 					+ data[fullElectEnergyIndex];
@@ -328,12 +328,15 @@ void ComputeNonbondedUtil::select(void)
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1024 $	$Date: 1999/06/17 15:46:11 $
+ *	$Revision: 1.1025 $	$Date: 1999/06/17 17:05:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1025  1999/06/17 17:05:41  jim
+ * Renamed seq to step in most places.  Now has meaning only to user.
+ *
  * Revision 1.1024  1999/06/17 15:46:11  jim
  * Completely rewrote reduction system to eliminate need for sequence numbers.
  *

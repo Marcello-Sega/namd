@@ -370,7 +370,7 @@ static char *ETITLE(int X)
   return  tmp_string;
 }
 
-void Controller::receivePressure(int seq)
+void Controller::receivePressure(int step)
 {
     Node *node = Node::Object();
     Molecule *molecule = node->molecule;
@@ -446,13 +446,13 @@ void Controller::receivePressure(int seq)
       pressure_normal = virial_normal / volume;
       groupPressure_normal = ( virial_normal - intVirial_normal ) / volume;
 
-      if ( ! ( seq % nbondFreq ) )
+      if ( ! ( step % nbondFreq ) )
       {
         pressure_nbond = virial_nbond / volume;
         groupPressure_nbond = ( virial_nbond - intVirial_nbond ) / volume;
       }
 
-      if ( ! ( seq % slowFreq ) )
+      if ( ! ( step % slowFreq ) )
       {
         pressure_slow = virial_slow / volume;
         groupPressure_slow = ( virial_slow - intVirial_slow ) / volume;
@@ -515,7 +515,7 @@ void Controller::receivePressure(int seq)
 
 }
 
-void Controller::printEnergies(int seq)
+void Controller::printEnergies(int step)
 {
     Node *node = Node::Object();
     Molecule *molecule = node->molecule;
@@ -559,7 +559,7 @@ void Controller::printEnergies(int seq)
 
     checksum = reduction->item(REDUCTION_MARGIN_VIOLATIONS);
     if ( ((int)checksum) ) iout << iWARN << ((int)checksum) <<
-        " margin violations detected during timestep " << seq << ".\n" << endi;
+        " margin violations detected during timestep " << step << ".\n" << endi;
 
     BigReal bondEnergy;
     BigReal angleEnergy;
@@ -597,9 +597,9 @@ void Controller::printEnergies(int seq)
 	 miscEnergy + smdEnergy;
 
     if ( node->simParameters->outputMomenta &&
-         ! ( seq % node->simParameters->outputMomenta ) )
+         ! ( step % node->simParameters->outputMomenta ) )
     {
-      iout << "MOMENTUM: " << seq 
+      iout << "MOMENTUM: " << step 
            << " P: " << momentum
            << " L: " << angularMomentum
            << "\n" << endi;
@@ -607,7 +607,7 @@ void Controller::printEnergies(int seq)
 
 #ifdef MDCOMM
     if ( node->simParameters->vmdFrequency != -1 &&
-         ! ( seq % node->simParameters->vmdFrequency ) )
+         ! ( step % node->simParameters->vmdFrequency ) )
     {
       BigReal energies[8];
       energies[0] = bondEnergy;
@@ -618,12 +618,12 @@ void Controller::printEnergies(int seq)
       energies[5] = ljEnergy;
       energies[7] = kineticEnergy;
       Node::Object()->output->
-	gather_vmd_energies(seq,energies,temperature,totalEnergy);
+	gather_vmd_energies(step,energies,temperature,totalEnergy);
     }
 #endif  // MDCOMM
 
     // Write out eXtended System Trajectory (XST) file
-    if ( simParameters->xstFrequency != -1 && seq == simParams->firstTimestep )
+    if ( simParameters->xstFrequency != -1 && step == simParams->firstTimestep )
     {
       xstFile.open(simParameters->xstFilename);
       xstFile << "# NAMD extended system trajectory file" << endl;
@@ -634,9 +634,9 @@ void Controller::printEnergies(int seq)
       xstFile << endl;
     }
     if ( simParameters->xstFrequency != -1 &&
-         ! ( seq % simParameters->xstFrequency ) )
+         ! ( step % simParameters->xstFrequency ) )
     {
-      xstFile << seq;
+      xstFile << step;
       xstFile << " " << lattice.a() << " " << lattice.b() << " " << lattice.c() << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
       if ( simParameters->langevinPistonOn ) {
 	xstFile << " " << langevinPiston_strainRate.x;
@@ -646,7 +646,7 @@ void Controller::printEnergies(int seq)
       xstFile << endl;
       xstFile.flush();
     }
-    if ( simParameters->xstFrequency != -1 && seq == simParams->N )
+    if ( simParameters->xstFrequency != -1 && step == simParams->N )
     {
       xstFile.close();
     }
@@ -654,8 +654,8 @@ void Controller::printEnergies(int seq)
     // Write out eXtended System Configuration (XSC) files
     //  Output a restart file
     if ( (simParams->restartFrequency != -1) &&
-         ((seq % simParams->restartFrequency) == 0) &&
-         (seq != simParams->firstTimestep) )
+         ((step % simParams->restartFrequency) == 0) &&
+         (step != simParams->firstTimestep) )
     {
       char fname[140];
       strcpy(fname, simParams->restartFilename);
@@ -671,7 +671,7 @@ void Controller::printEnergies(int seq)
 	xscFile << " s_x s_y s_z";
       }
       xscFile << endl;
-      xscFile << seq;
+      xscFile << step;
       xscFile << " " << lattice.a() << " " << lattice.b() << " " << lattice.c() << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
       if ( simParameters->langevinPistonOn ) {
 	xscFile << " " << langevinPiston_strainRate.x;
@@ -681,7 +681,7 @@ void Controller::printEnergies(int seq)
       xscFile << endl;
     }
     //  Output final coordinates
-    if (seq == simParams->N)
+    if (step == simParams->N)
     {
       static char fname[140];
       strcpy(fname, simParams->outputFilename);
@@ -693,7 +693,7 @@ void Controller::printEnergies(int seq)
 	xscFile << " s_x s_y s_z";
       }
       xscFile << endl;
-      xscFile << seq;
+      xscFile << step;
       xscFile << " " << lattice.a() << " " << lattice.b() << " " << lattice.c() << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
       if ( simParameters->langevinPistonOn ) {
 	xscFile << " " << langevinPiston_strainRate.x;
@@ -703,13 +703,13 @@ void Controller::printEnergies(int seq)
       xscFile << endl;
     }
 
-    if (seq == 32)
+    if (step == 32)
 	startBenchTime = CmiWallTimer();
-    else if (seq == 64)
+    else if (step == 64)
 	iout << iINFO << "Benchmark time per step: "
 	     << (CmiWallTimer() - startBenchTime) / 32. << "\n" << endi;
 
-    if ( simParams->outputTiming && ! ( seq % simParams->outputTiming ) )
+    if ( simParams->outputTiming && ! ( step % simParams->outputTiming ) )
     {
       const double endWTime = CmiWallTimer();
       const double endCTime = CmiTimer();
@@ -719,14 +719,14 @@ void Controller::printEnergies(int seq)
       const double elapsedC = 
 	(endCTime - startCTime) / simParams->outputTiming;
 
-      const double remainingW = elapsedW * (simParams->N - seq);
+      const double remainingW = elapsedW * (simParams->N - step);
       const double remainingW_hours = remainingW / 3600;
 
       startWTime = endWTime;
       startCTime = endCTime;
 
-      if ( seq >= (simParams->firstTimestep + simParams->outputTiming) ) {
-        iout << "TIMING: " << seq
+      if ( step >= (simParams->firstTimestep + simParams->outputTiming) ) {
+        iout << "TIMING: " << step
              << "  CPU: " << endCTime << ", " << elapsedC << "/step"
              << "  Wall: " << endWTime << ", " << elapsedW << "/step"
              << ", " << remainingW_hours << " hours remaining\n" << endi;
@@ -734,7 +734,7 @@ void Controller::printEnergies(int seq)
     }
 
     // NO CALCULATIONS OR REDUCTIONS BEYOND THIS POINT!!!
-    if ( seq % node->simParameters->outputEnergies ) return;
+    if ( step % node->simParameters->outputEnergies ) return;
     // ONLY OUTPUT SHOULD OCCUR BELOW THIS LINE!!!
 
     int printAtomicPressure = 1;
@@ -742,7 +742,7 @@ void Controller::printEnergies(int seq)
     if ( simParams->rigidBonds != RIGID_NONE ) { printAtomicPressure = 0; }
 #endif
 
-    if ( (seq % (10 * node->simParameters->outputEnergies) ) == 0 )
+    if ( (step % (10 * node->simParameters->outputEnergies) ) == 0 )
     {
 	iout << "ETITLE:     TS    BOND        ANGLE       "
 	     << "DIHED       IMPRP       ELECT       VDW       "
@@ -759,7 +759,7 @@ void Controller::printEnergies(int seq)
     // N.B.  HP's aCC compiler merges FORMAT calls in the same expression.
     //       Need separate statements because data returned in static array.
 
-    iout << ETITLE(seq);
+    iout << ETITLE(step);
     iout << FORMAT(bondEnergy);
     iout << FORMAT(angleEnergy);
     iout << FORMAT(dihedralEnergy);
@@ -808,12 +808,15 @@ void Controller::terminate(void) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1070 $	$Date: 1999/06/17 15:46:14 $
+ *	$Revision: 1.1071 $	$Date: 1999/06/17 17:05:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1071  1999/06/17 17:05:44  jim
+ * Renamed seq to step in most places.  Now has meaning only to user.
+ *
  * Revision 1.1070  1999/06/17 15:46:14  jim
  * Completely rewrote reduction system to eliminate need for sequence numbers.
  *

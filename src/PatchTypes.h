@@ -21,7 +21,8 @@
 class Flags
 {
 public:
-  int seq;			// sequence number
+  int step;			// timestep number reported to user
+  				// Same number may appear multiple times!
   int doNonbonded;
   int doFullElectrostatics;
   int submitLoadStats;
@@ -30,9 +31,6 @@ public:
 
   Lattice lattice;		// rather than shipping around separately
 
-private:
-//int spacer;  // Use this to keep byte-aligned for now.  -JCP
-               // Actually double-word aligned, I think -RKB
 };
 
 class Results
@@ -50,12 +48,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1997/12/22 21:29:25 $
+ *	$Revision: 1.10 $	$Date: 1999/06/17 17:05:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchTypes.h,v $
+ * Revision 1.10  1999/06/17 17:05:46  jim
+ * Renamed seq to step in most places.  Now has meaning only to user.
+ *
  * Revision 1.9  1997/12/22 21:29:25  jim
  * Proxies no longer send empty arrays back to HomePatch.  Requires some new
  * flags to be set correctly in Sequencer in order to work.  These are:

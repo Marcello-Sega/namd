@@ -155,7 +155,7 @@ void AngleElem::computeForce(BigReal *reduction)
 }
 
 
-void AngleElem::submitReductionData(BigReal *data, SubmitReduction *reduction, int seq)
+void AngleElem::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {
   reduction->item(REDUCTION_ANGLE_ENERGY) += data[angleEnergyIndex];
   reduction->item(REDUCTION_VIRIAL_NORMAL_X) += data[virialXIndex];
@@ -169,12 +169,15 @@ void AngleElem::submitReductionData(BigReal *data, SubmitReduction *reduction, i
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1999/06/17 15:45:59 $
+ *	$Revision: 1.1012 $	$Date: 1999/06/17 17:05:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.C,v $
+ * Revision 1.1012  1999/06/17 17:05:33  jim
+ * Renamed seq to step in most places.  Now has meaning only to user.
+ *
  * Revision 1.1011  1999/06/17 15:45:59  jim
  * Completely rewrote reduction system to eliminate need for sequence numbers.
  *

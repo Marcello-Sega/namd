@@ -341,8 +341,6 @@ void ComputeDPMTA::doWork()
     return;
   }
 
-  DebugM(2,"DPMTA doWork() started at timestep " << patchList[0].p->flags.seq << "\n");
-
   // setup
   // 1. get totalAtoms
   for (totalAtoms=0, ap = ap.begin(); ap != ap.end(); ap++)
@@ -503,12 +501,15 @@ void ComputeDPMTA::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1057 $	$Date: 1999/06/17 15:46:03 $
+ *	$Revision: 1.1058 $	$Date: 1999/06/17 17:05:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.C,v $
+ * Revision 1.1058  1999/06/17 17:05:36  jim
+ * Renamed seq to step in most places.  Now has meaning only to user.
+ *
  * Revision 1.1057  1999/06/17 15:46:03  jim
  * Completely rewrote reduction system to eliminate need for sequence numbers.
  *

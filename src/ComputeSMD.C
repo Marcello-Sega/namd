@@ -73,7 +73,7 @@ void ComputeSMD::doForce(Position* p, Results* res, AtomProperties* a)
 	Force *f = res->f[Results::normal];
 	BigReal energy = 0;
 
-	int currentTime = patch->flags.seq;
+	int currentTime = patch->flags.step;
 	int timeStamp; 
 	Vector moveDir;
 

@@ -93,7 +93,7 @@ void BondElem::computeForce(BigReal *reduction)
 }
 
 
-void BondElem::submitReductionData(BigReal *data, SubmitReduction *reduction, int seq)
+void BondElem::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {
   reduction->item(REDUCTION_BOND_ENERGY) += data[bondEnergyIndex];
   reduction->item(REDUCTION_VIRIAL_NORMAL_X) += data[virialXIndex];
@@ -107,12 +107,15 @@ void BondElem::submitReductionData(BigReal *data, SubmitReduction *reduction, in
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1999/06/17 15:46:01 $
+ *	$Revision: 1.1011 $	$Date: 1999/06/17 17:05:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeBonds.C,v $
+ * Revision 1.1011  1999/06/17 17:05:34  jim
+ * Renamed seq to step in most places.  Now has meaning only to user.
+ *
  * Revision 1.1010  1999/06/17 15:46:01  jim
  * Completely rewrote reduction system to eliminate need for sequence numbers.
  *

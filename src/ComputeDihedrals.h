@@ -41,7 +41,7 @@ public:
 
   enum { dihedralEnergyIndex, virialXIndex, virialYIndex, virialZIndex, reductionDataSize };
   enum { reductionChecksumLabel = REDUCTION_DIHEDRAL_CHECKSUM };
-  static void submitReductionData(BigReal*,SubmitReduction*,int);
+  static void submitReductionData(BigReal*,SubmitReduction*);
 
   inline DihedralElem();
   inline DihedralElem(const Dihedral *a);
@@ -68,12 +68,15 @@ public:
  *
  *	$RCSfile: ComputeDihedrals.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1999/06/17 15:46:05 $
+ *	$Revision: 1.1007 $	$Date: 1999/06/17 17:05:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDihedrals.h,v $
+ * Revision 1.1007  1999/06/17 17:05:37  jim
+ * Renamed seq to step in most places.  Now has meaning only to user.
+ *
  * Revision 1.1006  1999/06/17 15:46:05  jim
  * Completely rewrote reduction system to eliminate need for sequence numbers.
  *

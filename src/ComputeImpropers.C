@@ -228,7 +228,7 @@ void ImproperElem::computeForce(BigReal *reduction)
   reduction[virialZIndex] += ( f1.z * r12.z + f2.z * r23.z + f3.z * r34.z );
 }
 
-void ImproperElem::submitReductionData(BigReal *data, SubmitReduction *reduction, int seq)
+void ImproperElem::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {
   reduction->item(REDUCTION_IMPROPER_ENERGY) += data[improperEnergyIndex];
   reduction->item(REDUCTION_VIRIAL_NORMAL_X) += data[virialXIndex];
@@ -243,12 +243,15 @@ void ImproperElem::submitReductionData(BigReal *data, SubmitReduction *reduction
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1999/06/17 15:46:08 $
+ *	$Revision: 1.1012 $	$Date: 1999/06/17 17:05:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeImpropers.C,v $
+ * Revision 1.1012  1999/06/17 17:05:39  jim
+ * Renamed seq to step in most places.  Now has meaning only to user.
+ *
  * Revision 1.1011  1999/06/17 15:46:08  jim
  * Completely rewrote reduction system to eliminate need for sequence numbers.
  *

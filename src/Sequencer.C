@@ -73,7 +73,7 @@ void Sequencer::run(int numberOfCycles)
 // when to migrate atoms, when to add forces to velocity update.
 void Sequencer::algorithm(void)
 {
-    int &step = patch->flags.seq;
+    int &step = patch->flags.step;
     step = simParams->firstTimestep;
     int scriptRun = 0;
 
@@ -606,12 +606,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1063 $     $Date: 1999/06/17 15:46:18 $
+ *      $Revision: 1.1064 $     $Date: 1999/06/17 17:05:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1064  1999/06/17 17:05:46  jim
+ * Renamed seq to step in most places.  Now has meaning only to user.
+ *
  * Revision 1.1063  1999/06/17 15:46:18  jim
  * Completely rewrote reduction system to eliminate need for sequence numbers.
  *
