@@ -162,11 +162,14 @@ public:
          << namd_build_user << " on " << namd_build_machine << "\n"
          << endi;
     char numcpus[512];
-    sprintf(numcpus,"%d",CmiNumPes());
+    sprintf(numcpus,"%d",CkNumPes());
     tbsoft_sendusage("NAMD",NAMD_VERSION,NAMD_PLATFORM,numcpus,"");
 #endif
 
-    iout << iINFO << "Running on " << CmiNumPes() << " processors.\n" << endi;
+#if CMK_BLUEGENE_CHARM
+    iout << iINFO << "Running on BigSim using " << CmiNumPes() << " real processors.\n" << endi;
+#endif
+    iout << iINFO << "Running on " << CkNumPes() << " processors.\n" << endi;
     iout << iINFO << (memusage()/1024) << " kB of memory in use.\n" << endi;
   }
 };
