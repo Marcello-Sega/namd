@@ -66,6 +66,9 @@ public:
   // along the z axis.
   int zDimension(void);
 
+  // Origin() returns the vector origin
+  Vector Origin	(void);
+
   int xIsPeriodic(void);
   int yIsPeriodic(void);
   int zIsPeriodic(void);
@@ -215,13 +218,16 @@ inline HomePatch *PatchMap::homePatch(PatchID pid)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:59:04 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/02/07 16:56:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.h,v $
+ * Revision 1.1001  1997/02/07 16:56:52  nealk
+ * Added Origin() to return origin.
+ *
  * Revision 1.1000  1997/02/06 15:59:04  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

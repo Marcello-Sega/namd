@@ -188,6 +188,16 @@ int PatchMap::zDimension(void)
 }
 
 //----------------------------------------------------------------------
+Vector PatchMap::Origin(void)
+{
+  Vector o;
+  o.x = xOrigin;
+  o.y = yOrigin;
+  o.z = zOrigin;
+  return(o);
+}
+
+//----------------------------------------------------------------------
 int PatchMap::xIsPeriodic(void)
 {
   return xPeriodic;
@@ -535,13 +545,16 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:59:03 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/02/07 16:56:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.1001  1997/02/07 16:56:50  nealk
+ * Added Origin() to return origin.
+ *
  * Revision 1.1000  1997/02/06 15:59:03  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
