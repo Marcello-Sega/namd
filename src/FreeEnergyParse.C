@@ -138,7 +138,7 @@ int ReadPmfBlock(char* Str, ALambdaControl& PmfBlock, double dT) {
   TimeUnits_t  TimeUnits;
   TimeUnits_t  DefaultTimeUnits = k_ps;
   // illegal default value.  user will have to specify this.
-  task_t  Task=kUnknownTask;
+  feptask_t  Task=kUnknownTask;
   double  Lambda=-1, LambdaT=-1, Time;
   double  Dummy;
   int     NumRepeats=-1;
@@ -308,7 +308,7 @@ int ReadTimeUnits(char* Str, TimeUnits_t& Units, TimeUnits_t DefaultUnits) {
 }
 
 
-int ReadTaskType(char* Str, task_t& Task) {
+int ReadTaskType(char* Str, feptask_t& Task) {
 //----------------------------------------------------------------------------
 // Str should start with a task, one of:
 //   "up", "down", "stop", "grow", "fade", "nogrow",

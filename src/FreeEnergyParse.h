@@ -32,7 +32,7 @@ ARestraint* GetRestraint(char* Str, int& NumChars, GlobalMasterFreeEnergy& CFE);
 // for reading pmf/mcti blocks
 int    ReadPmfBlock(char* Str, ALambdaControl& PmfBlock, double dT);
 int    ReadNextPmfSpec(char* Str, pmf_t& PmfSpec);
-int    ReadTaskType(char* Str, task_t& Task);
+int    ReadTaskType(char* Str, feptask_t& Task);
 int    ReadTimeUnits(char* Str, TimeUnits_t& Units, TimeUnits_t DefaultUnits);
 double GetTime(double Val, TimeUnits_t Units);
 

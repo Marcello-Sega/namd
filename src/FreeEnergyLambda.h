@@ -22,7 +22,7 @@ private:
   int     m_StopStep;         // "
   double  m_LambdaKf;         // "
   double  m_LambdaRef;        // "
-  task_t  m_Task;             // "
+  feptask_t  m_Task;             // "
   double  m_Sum_dU_dLambda;   // for accumulating dU/dLambda
   int     m_Num_dU_dLambda;   // number averaged
   double  m_MCTI_Integration; // for accumulating <dU/dLambda> * dLambda
@@ -69,8 +69,8 @@ public:
   void   SetStopStep(int Step)         {m_StopStep=Step;}
   void   SetLambdaKf(double LambdaKf)  {m_LambdaKf=LambdaKf;}
   void   SetLambdaRef(double LambdaRef){m_LambdaRef=LambdaRef;}
-  void   SetTask(task_t Task)          {m_Task=Task;}
-  task_t GetTask()                     {return(m_Task);}
+  void   SetTask(feptask_t Task)          {m_Task=Task;}
+  feptask_t GetTask()                     {return(m_Task);}
 
 private:
   Bool_t IsLastStep();

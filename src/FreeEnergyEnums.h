@@ -9,7 +9,7 @@
 
 enum Bool_t  {kFalse=0, kAlsoTrue=1, kTrue=!kFalse};
 enum Bound_t {kLower, kUpper, kUnknownBound};
-enum task_t  {kUp, kDown, kStop, kGrow, kFade, kNoGrow,
+enum feptask_t  {kUp, kDown, kStop, kGrow, kFade, kNoGrow,
               kStepUp, kStepDown, kStepGrow, kStepFade, kUnknownTask};
 enum Error_t {kNoProblem, kParsingProblem, kNAMD_Problem};
 
