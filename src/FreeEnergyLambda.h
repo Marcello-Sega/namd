@@ -31,6 +31,7 @@ public:
   ALambdaControl&  operator= (ALambdaControl& PmfBlock);
   void    GetTaskStr(char* Str);
 
+  int    GetNumSteps();
   void   SetNumSteps(int Steps)        {m_NumSteps=Steps;}
   void   SetNumEquilSteps(int Steps)   {m_NumEquilSteps=Steps;}
   void   SetNumAccumSteps(int Steps)   {m_NumAccumSteps=Steps;}
@@ -48,3 +49,19 @@ private:
 };
 
 #endif
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker $		$State $
+ *	$Revision $	$Date $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: FreeEnergyLambda.h,v $
+ * Revision 1.2  1998/05/22 19:08:31  hurwitz
+ * Do NAMD_die if there aren't enough steps to complete all pmf & mcti blocks
+ *
+ *
+ ***************************************************************************/

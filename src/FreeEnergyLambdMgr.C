@@ -113,3 +113,35 @@ ALambdaControl& ALambdaManager::operator[] (int Index) {
   ASSERT((Index>=0) && (Index<m_NumObjects));
   return(m_pPmfBlocks[Index]);
 }
+
+
+int ALambdaManager::GetTotalNumSteps() {
+//------------------------------------------------------------------------
+// calculate and return the total number of steps needed for all
+// pmf and mcti blocks
+//------------------------------------------------------------------------
+  int  Total, i;
+  
+  Total = 0;
+  for (i=0; i<m_NumObjects; i++) {
+    Total += m_pPmfBlocks[i].GetNumSteps();
+  }
+  return(Total);
+}
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker $		$State $
+ *	$Revision $	$Date $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: FreeEnergyLambdMgr.C,v $
+ * Revision 1.2  1998/05/22 19:08:30  hurwitz
+ * Do NAMD_die if there aren't enough steps to complete all pmf & mcti blocks
+ *
+ *
+ ***************************************************************************/

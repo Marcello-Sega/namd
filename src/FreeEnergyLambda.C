@@ -81,6 +81,17 @@ ALambdaControl& ALambdaControl::operator= (ALambdaControl& PmfBlock) {
 }
 
 
+int ALambdaControl::GetNumSteps() {
+//------------------------------------------------------------------------
+// get the number of steps needed for this pmf or mcti block
+//------------------------------------------------------------------------
+  // make sure m_StopStep is calculated
+  GetLastStep();
+  
+  return( (m_StopStep - m_StartStep) + 1 );
+}
+
+
 int ALambdaControl::GetLastStep() {
 //------------------------------------------------------------------------
 // get the last step of this task
@@ -277,3 +288,20 @@ double ALambdaControl::GetLambdaRef() {
   }
   return(m_LambdaRef);
 }
+
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker $		$State $
+ *	$Revision $	$Date $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: FreeEnergyLambda.C,v $
+ * Revision 1.2  1998/05/22 19:08:31  hurwitz
+ * Do NAMD_die if there aren't enough steps to complete all pmf & mcti blocks
+ *
+ *
+ ***************************************************************************/

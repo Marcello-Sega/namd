@@ -28,6 +28,23 @@ public:
   Bool_t  GetLambdas(double& LambdaKf, double& LambdaRef);
   Bool_t  IsTimeToPrint(double dT);
   void    IncCurrStep() {m_Dummy.IncCurrStep();}
+  int     GetTotalNumSteps();
 };
 
 #endif
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *	$RCSfile $
+ *	$Author $	$Locker $		$State $
+ *	$Revision $	$Date $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: FreeEnergyLambdMgr.h,v $
+ * Revision 1.2  1998/05/22 19:08:30  hurwitz
+ * Do NAMD_die if there aren't enough steps to complete all pmf & mcti blocks
+ *
+ *
+ ***************************************************************************/

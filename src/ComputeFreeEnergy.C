@@ -71,7 +71,15 @@ void ComputeFreeEnergy::user_initialize() {
 
   Str = (config->rdbuf())->str();
   ReadInput(Str, m_RestraintManager, m_LambdaManager, *this, simParams->dt);
-//  update();
+
+  // exit if there aren't enough steps to complete all pmf & mcti blocks
+  int Total = m_LambdaManager.GetTotalNumSteps();
+  if (Total > simParams->N) {
+    iout << "FreeEnergy: Not enough steps to complete pfm & mcti blocks" << endl;
+    iout << "FreeEnergy:   Num Steps Needed =    " << Total << endl;
+    iout << "FreeEnergy:   Num Steps Requested = " << simParams->N << endl << endi;
+    NAMD_die("FreeEnergy: Fatal Run-Time Error");
+  }
 }
 
 
@@ -214,12 +222,15 @@ void ComputeFreeEnergy::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1998/05/21 22:37:31 $
+ *	$Revision: 1.10 $	$Date: 1998/05/22 19:08:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFreeEnergy.C,v $
+ * Revision 1.10  1998/05/22 19:08:29  hurwitz
+ * Do NAMD_die if there aren't enough steps to complete all pmf & mcti blocks
+ *
  * Revision 1.9  1998/05/21 22:37:31  hurwitz
  * initial check in of code for fixed and forcing restraints
  * -Dave Hurwitz
