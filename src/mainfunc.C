@@ -52,6 +52,13 @@ int main(int argc, char **argv) {
   char *tmp;
   for(tmp=confFile;*tmp;++tmp); // find final null
   for( ; tmp != confFile && *tmp != PATHSEP; --tmp); // find last '/'
+#if defined(WIN32) && !defined(__CYGWIN__)
+  if (tmp == confFile) {
+    // in case this is under cygwin, search for '/' as well
+    for(tmp=confFile;*tmp;++tmp); // find final null
+    for( ; tmp != confFile && *tmp != '/'; --tmp); // find last '/'
+  }
+#endif
   if ( tmp != confFile )
   {
     *tmp = 0; confFile = tmp + 1;
