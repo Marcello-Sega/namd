@@ -181,7 +181,7 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
   consParams=NULL;
   nameArena = new ObjectArena<char>;
   nameArena->setAlignment(8);
-  arena = new ObjectArena<int>;
+  arena = new ObjectArena<int32>;
   arena->setAlignment(32);
   exclArena = new ObjectArena<char>;
   exclArena->setAlignment(32);
@@ -1829,15 +1829,15 @@ void Molecule::receive_Molecule(MIStream *msg)
        register int i;      //  Loop counter
        register int numFixedAtoms = this->numFixedAtoms;  // many tests
        
-       tmpArena = new ObjectArena<int>;
-       bondsWithAtom = new int *[numAtoms];
-       bondsByAtom = new int *[numAtoms];
-       anglesByAtom = new int *[numAtoms];
-       dihedralsByAtom = new int *[numAtoms];
-       impropersByAtom = new int *[numAtoms];
-       exclusionsByAtom = new int *[numAtoms];
+       tmpArena = new ObjectArena<int32>;
+       bondsWithAtom = new int32 *[numAtoms];
+       bondsByAtom = new int32 *[numAtoms];
+       anglesByAtom = new int32 *[numAtoms];
+       dihedralsByAtom = new int32 *[numAtoms];
+       impropersByAtom = new int32 *[numAtoms];
+       exclusionsByAtom = new int32 *[numAtoms];
 
-       int *byAtomSize = new int[numAtoms];
+       int32 *byAtomSize = new int32[numAtoms];
 
        DebugM(3,"Building bond lists.\n");
     
@@ -2552,7 +2552,7 @@ void Molecule::receive_Molecule(MIStream *msg)
        //  Allocate an array that will store an index into the constraint
        //  parameters for each atom.  If the atom is not constrained, its
        //  value will be set to -1 in this array.
-       consIndexes = new int[numAtoms];
+       consIndexes = new int32[numAtoms];
        
        if (consIndexes == NULL)
        {
@@ -2965,7 +2965,7 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
        }
        
        //  Allocate the array to hold all the data
-       fixedAtomFlags = new int[numAtoms];
+       fixedAtomFlags = new int32[numAtoms];
        
        if (fixedAtomFlags == NULL)
        {

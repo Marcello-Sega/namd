@@ -40,7 +40,7 @@ template<class Type> class ObjectArena;
 
 class ExclusionCheck {
 public:
-  int min,max;
+  int32 min,max;
   char *flags;
 };
 #define EXCHCK_FULL 1
@@ -74,24 +74,24 @@ private:
 	Bond *acceptors;	//  Array of hydrogen bond acceptor
 	Exclusion *exclusions;	//  Array of exclusion structures
 	UniqueSet<Exclusion> exclusionSet;  //  Used for building
-	int *consIndexes;	//  Constraint indexes for each atom
+	int32 *consIndexes;	//  Constraint indexes for each atom
 	ConstraintParams *consParams;
 				//  Parameters for each atom constrained
 	Real *langevinParams;   //  b values for langevin dynamics
 	Real *langForceVals;    //  Calculated values for langvin random forces
-	int *fixedAtomFlags;	//  1 for fixed, -1 for fixed group, else 0
+	int32 *fixedAtomFlags;	//  1 for fixed, -1 for fixed group, else 0
 	Real *rigidBondLengths;  //  if H, length to parent or 0. or
 				//  if not H, length between children or 0.
 
-	ObjectArena<int> *tmpArena;
-	int **bondsWithAtom;	//  List of bonds involving each atom
+	ObjectArena<int32> *tmpArena;
+	int32 **bondsWithAtom;	//  List of bonds involving each atom
 
-	ObjectArena<int> *arena;
-	int **bondsByAtom;	//  List of bonds owned by each atom
-	int **anglesByAtom;     //  List of angles owned by each atom
-	int **dihedralsByAtom;  //  List of dihedrals owned by each atom
-	int **impropersByAtom;  //  List of impropers owned by each atom
-	int **exclusionsByAtom; //  List of exclusions owned by each atom
+	ObjectArena<int32> *arena;
+	int32 **bondsByAtom;	//  List of bonds owned by each atom
+	int32 **anglesByAtom;     //  List of angles owned by each atom
+	int32 **dihedralsByAtom;  //  List of dihedrals owned by each atom
+	int32 **impropersByAtom;  //  List of impropers owned by each atom
+	int32 **exclusionsByAtom; //  List of exclusions owned by each atom
 
 	ObjectArena<char> *exclArena;
 	ExclusionCheck *all_exclusions;
