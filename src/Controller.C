@@ -1576,6 +1576,8 @@ void Controller::outputExtendedSystem(int step)
          ((step % simParams->restartFrequency) == 0) &&
          (step != simParams->firstTimestep) )
     {
+      iout << "WRITING EXTENDED SYSTEM TO RESTART FILE AT STEP "
+		<< step << "\n" << endi;
       char fname[140];
       strcpy(fname, simParams->restartFilename);
       if ( simParams->restartSave ) {
@@ -1587,14 +1589,18 @@ void Controller::outputExtendedSystem(int step)
       NAMD_backup_file(fname,".old");
       ofstream xscFile(fname);
       if (!xscFile) {
-        iout << iERROR << "Error in writing " << fname << "\n" << endi;
-        NAMD_die("Abort");
+        char err_msg[257];
+        sprintf(err_msg, "Error opening XSC restart file %s",fname);
+        NAMD_err(err_msg);
       } 
-      iout << "WRITING EXTENDED SYSTEM TO RESTART FILE AT STEP "
-		<< step << "\n" << endi;
       xscFile << "# NAMD extended system configuration restart file" << endl;
       writeExtendedSystemLabels(xscFile);
       writeExtendedSystemData(step,xscFile);
+      if (!xscFile) {
+        char err_msg[257];
+        sprintf(err_msg, "Error writing XSC restart file %s",fname);
+        NAMD_err(err_msg);
+      } 
     }
 
   }
@@ -1602,20 +1608,26 @@ void Controller::outputExtendedSystem(int step)
   //  Output final coordinates
   if (step == FILE_OUTPUT || step == END_OF_RUN)
   {
+    iout << "WRITING EXTENDED SYSTEM TO OUTPUT FILE AT STEP "
+		<< simParams->N << "\n" << endi;
     static char fname[140];
     strcpy(fname, simParams->outputFilename);
     strcat(fname, ".xsc");
     NAMD_backup_file(fname);
     ofstream xscFile(fname);
     if (!xscFile) {
-      iout << iERROR << "Error in writing " << fname << "\n" << endi;
-      NAMD_die("Abort");
+      char err_msg[257];
+      sprintf(err_msg, "Error opening XSC output file %s",fname);
+      NAMD_err(err_msg);
     } 
-    iout << "WRITING EXTENDED SYSTEM TO OUTPUT FILE AT STEP "
-		<< simParams->N << "\n" << endi;
     xscFile << "# NAMD extended system configuration output file" << endl;
     writeExtendedSystemLabels(xscFile);
     writeExtendedSystemData(simParams->N,xscFile);
+    if (!xscFile) {
+      char err_msg[257];
+      sprintf(err_msg, "Error writing XSC output file %s",fname);
+      NAMD_err(err_msg);
+    } 
   }
 
   //  Close trajectory file
