@@ -24,10 +24,6 @@
 #include "LJTable.h"
 #include "Molecule.h"
 
-#define MIN_DEBUG_LEVEL 5
-//#define DEBUGM
-#include "Debug.h"
-
 #endif
 
 #if defined DECLARATION || defined DEFINITION
@@ -50,21 +46,13 @@ DECL( ; )
 {
   BigReal electEnergy = 0;
   BigReal vdwEnergy = 0;
-  int flag_i=0, flag_j=0;
 
   register const BigReal cutoff2 = ComputeNonbondedUtil:: cutoff2;
   const BigReal dielectric_1 = ComputeNonbondedUtil:: dielectric_1;
 
   const LJTable* const ljTable = ComputeNonbondedUtil:: ljTable;
   const Molecule* const mol = ComputeNonbondedUtil:: mol;
-
-M14
-(
   const BigReal scale14 = ComputeNonbondedUtil:: scale14;
-)
-
-SW
-(
   const Real switchOn = ComputeNonbondedUtil:: switchOn;
   const BigReal switchOn2 = ComputeNonbondedUtil:: switchOn2;
   const BigReal c0 = ComputeNonbondedUtil:: c0;
@@ -72,7 +60,6 @@ SW
   const BigReal c3 = ComputeNonbondedUtil:: c3;
   const BigReal c5 = ComputeNonbondedUtil:: c5;
   const BigReal c6 = ComputeNonbondedUtil:: c6;
-)
 
 NOEXCL
 (
@@ -91,19 +78,12 @@ NOEXCL
     Force & f_i = f[I_SUB];
 )
 
-    if (a_i.id == 50) {
-    //  DebugM(5, "AtomID 50: type = " << a_i.type << " mass = " << a_i.mass << 
-    //	" charge = " << a_i.charge << "\n");
-      flag_i = 1;
-    }
-
-    const BigReal NOEXCL( M14( kq_i_u ) NOM14( kq_i ) ) EXCL( kq_i ) =
+    const BigReal NOEXCL( kq_i_u ) EXCL( kq_i ) =
     			COLOUMB * a_i.charge * dielectric_1;
 
 NOEXCL
 (
-    M14( const BigReal kq_i_s = kq_i_u * scale14; )
-
+    const BigReal kq_i_s = kq_i_u * scale14;
     register Position *p_j = PAIR( p[1] ) SELF( p+i+1 ) ;
     register BigReal p_j_x = p_j->x;
     register BigReal p_j_y = p_j->y;
@@ -130,15 +110,11 @@ EXCL
 
 NOEXCL
 (
-      M14 ( BigReal kq_i = kq_i_u; )
-
+      BigReal kq_i = kq_i_u;
       const AtomProperties & a_j = a[J_SUB];
 )
-      if (a_j.id == 50) {
-	flag_j=1;
-      }
 
-      const LJTable::TableEntry * NOM14( const ) lj_pars = 
+      const LJTable::TableEntry * lj_pars = 
 		ljTable->table_val(a_i.type, a_j.type);
 
       if ( r2 <= lj_pars->exclcut2 )
@@ -146,15 +122,11 @@ NOEXCL
 NOEXCL
 (
 	if ( mol->checkexcl(a_i.id,a_j.id) ) continue;
-	
-M14
-(
 	else if ( mol->check14excl(a_i.id,a_j.id) )
 	{
 	  lj_pars = ljTable->table_val(a_i.type, a_j.type, 1);
 	  kq_i = kq_i_s;
 	}
-)
 
 )
 EXCL
@@ -172,8 +144,6 @@ NOEXCL
       const BigReal r = sqrt(r2);
       const BigReal r_1 = 1/r;
 
-SW
-(
       BigReal switchVal;
       BigReal shiftVal;
       BigReal dSwitchVal;
@@ -195,7 +165,6 @@ SW
       shiftVal = 1 - r2*c5;
       dShiftVal = c6*shiftVal*r;
       shiftVal *= shiftVal;
-)
 
       const BigReal kqq = kq_i * a_j.charge;
 
@@ -203,40 +172,29 @@ SW
       
 EXCL
 (
-      electEnergy -= f SW( * shiftVal );
-M14
-(
-      if ( m14 ) electEnergy += f SW( * shiftVal ) * scale14;
-)
+      electEnergy -= f * shiftVal;
+      if ( m14 ) electEnergy += f * shiftVal * scale14;
 )
 NOEXCL
 (
-      electEnergy += f SW( * shiftVal );
+      electEnergy += f * shiftVal;
 )
       
-      f *= r_1*( SW( shiftVal * ) r_1 SW( - dShiftVal ) );
+      f *= r_1*( shiftVal * r_1 - dShiftVal );
 
       NOEXCL( const ) Vector f_elec = f_vdw*f;
-
-PAIR(
-      if (flag_i || flag_j) {
-	DebugM(5, "Flagged atoms("<<a_i.id<<","<<a_j.id<<") f_elec = " << f_elec << "\n");
-      }
-)
 
 EXCL
 (
       f_i -= f_elec;
       f_j += f_elec;
-M14
-(
+
       if ( m14 )
       {
 	f_elec *= scale14;
 	f_i += f_elec;
 	f_j -= f_elec;
       }
-)
 )
 NOEXCL
 (
@@ -254,31 +212,29 @@ NOEXCL
 
 EXCL
 (
-      vdwEnergy -= SW( switchVal * ) AmBterm;
-M14
-(
+      vdwEnergy -= switchVal * AmBterm;
+
       if ( m14 )
       {
 	lj_pars = ljTable->table_val(a_i.type, a_j.type, 1);
 	const BigReal A = lj_pars->A;
 	const BigReal B = lj_pars->B;
 	const BigReal AmBterm = (A*r_6 - B) * r_6;
-	vdwEnergy += SW( switchVal * ) AmBterm;
-	const Vector f_vdwx = f_vdw * ( ( SW( switchVal * ) 6 * (A*r_12 + AmBterm) *
-			r_1 SW( - AmBterm*dSwitchVal ) )*r_1 );
+	vdwEnergy += switchVal * AmBterm;
+	const Vector f_vdwx = f_vdw * ( ( switchVal * 6 * (A*r_12 + AmBterm) *
+			r_1 - AmBterm*dSwitchVal )*r_1 );
 	f_i += f_vdwx;
 	f_j -= f_vdwx;
       }
 )
-)
 NOEXCL
 (
-      vdwEnergy += SW( switchVal * ) AmBterm;
+      vdwEnergy += switchVal * AmBterm;
 )
 
 
-      f_vdw *= ( SW( switchVal * ) 6 * (A*r_12 + AmBterm) *
-			r_1 SW( - AmBterm*dSwitchVal ) )*r_1;
+      f_vdw *= ( switchVal * 6 * (A*r_12 + AmBterm) *
+			r_1 - AmBterm*dSwitchVal )*r_1;
 
 EXCL
 (
@@ -291,7 +247,6 @@ NOEXCL
       f_j -= f_vdw;
 )
 
-     flag_j = flag_i=0;
 NOEXCL
 (
     }
@@ -301,8 +256,6 @@ NOEXCL
   reduction[electEnergyIndex] += electEnergy;
   reduction[vdwEnergyIndex] += vdwEnergy;
 
-  DebugM(3, "Nonbonded computation results: electEnergy = " 
-    << electEnergy << " vdwEnergy = " << vdwEnergy << endl);
 }
 #endif
 
@@ -310,13 +263,20 @@ NOEXCL
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/13 23:17:15 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/02/21 20:45:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1003  1997/02/21 20:45:11  jim
+ * Eliminated multiple function for switching and modified 1-4 interactions.
+ * Now assumes a switching function, but parameters are such that nothing
+ * happens, same for modified 1-4.  Slight penalty for rare simulations
+ * in which these features are not used, but otherwise no loss and
+ * simplifies code.
+ *
  * Revision 1.1002  1997/02/13 23:17:15  ari
  * Fixed a final bug in AtomMigration - numatoms in ComputePatchPair.C not
  * set correctly in atomUpdate()

@@ -16,7 +16,6 @@
 #define COMPUTEANGLE_H
 
 #include "ComputeHomeTuples.h"
-#include "Debug.h"
 
 class ReductionMgr;
 class Molecule;
@@ -64,13 +63,20 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeAngles.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/21 17:38:29 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/02/21 20:45:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.h,v $
+ * Revision 1.1002  1997/02/21 20:45:10  jim
+ * Eliminated multiple function for switching and modified 1-4 interactions.
+ * Now assumes a switching function, but parameters are such that nothing
+ * happens, same for modified 1-4.  Slight penalty for rare simulations
+ * in which these features are not used, but otherwise no loss and
+ * simplifies code.
+ *
  * Revision 1.1001  1997/02/21 17:38:29  nealk
  * Got DPMTA to work!
  *

@@ -58,20 +58,9 @@ public:
 #undef NBSELF
 #undef NBEXCL
 
-#define MODIFY14
-#define SWITCHING
+#define FULLELECT
 #include "ComputeNonbondedBase.h"
-
-#define MODIFY14
-#undef SWITCHING
-#include "ComputeNonbondedBase.h"
-
-#undef MODIFY14
-#define SWITCHING
-#include "ComputeNonbondedBase.h"
-
-#undef MODIFY14
-#undef SWITCHING
+#undef FULLELECT
 #include "ComputeNonbondedBase.h"
 
 
@@ -79,20 +68,9 @@ public:
 #define NBSELF
 #undef NBEXCL
 
-#define MODIFY14
-#define SWITCHING
+#define FULLELECT
 #include "ComputeNonbondedBase.h"
-
-#define MODIFY14
-#undef SWITCHING
-#include "ComputeNonbondedBase.h"
-
-#undef MODIFY14
-#define SWITCHING
-#include "ComputeNonbondedBase.h"
-
-#undef MODIFY14
-#undef SWITCHING
+#undef FULLELECT
 #include "ComputeNonbondedBase.h"
 
 
@@ -100,20 +78,9 @@ public:
 #undef NBSELF
 #define NBEXCL
 
-#define MODIFY14
-#define SWITCHING
+#define FULLELECT
 #include "ComputeNonbondedBase.h"
-
-#define MODIFY14
-#undef SWITCHING
-#include "ComputeNonbondedBase.h"
-
-#undef MODIFY14
-#define SWITCHING
-#include "ComputeNonbondedBase.h"
-
-#undef MODIFY14
-#undef SWITCHING
+#undef FULLELECT
 #include "ComputeNonbondedBase.h"
 
 
@@ -124,13 +91,20 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedUtil.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:14 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/02/21 20:45:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.h,v $
+ * Revision 1.1001  1997/02/21 20:45:13  jim
+ * Eliminated multiple function for switching and modified 1-4 interactions.
+ * Now assumes a switching function, but parameters are such that nothing
+ * happens, same for modified 1-4.  Slight penalty for rare simulations
+ * in which these features are not used, but otherwise no loss and
+ * simplifies code.
+ *
  * Revision 1.1000  1997/02/06 15:58:14  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

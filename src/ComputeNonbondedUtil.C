@@ -46,10 +46,26 @@ void ComputeNonbondedUtil::select(void)
   dielectric_1 = 1/Node::Object()->simParameters->dielectric;
   ljTable = LJTable::Instance();
   mol = Node::Object()->molecule;
-  scale14 = Node::Object()->simParameters->scale14;
-  switchOn = Node::Object()->simParameters->switchingDist;
-  switchOn2 = switchOn*switchOn;
-  c0 = 1/(cutoff2-switchOn2);
+  if ( Node::Object()->simParameters->exclude == SCALED14 )
+  {
+    scale14 = Node::Object()->simParameters->scale14;
+  }
+  else
+  {
+    scale14 = 1.;
+  }
+  if ( Node::Object()->simParameters->switchingActive )
+  {
+    switchOn = Node::Object()->simParameters->switchingDist;
+    switchOn2 = switchOn*switchOn;
+    c0 = 1/(cutoff2-switchOn2);
+  }
+  else
+  {
+    switchOn = cutoff;
+    switchOn2 = switchOn*switchOn;
+    c0 = 0.;  // avoid division by zero
+  }
   c1 = c0*c0*c0;
   c3 = c1 * 4;
   c5 = 1/cutoff2;
@@ -58,90 +74,21 @@ void ComputeNonbondedUtil::select(void)
 #undef DECLARATION
 #undef DEFINITION
 
-  if ( Node::Object()->simParameters->exclude == SCALED14 )
-#define MODIFY14
-  {
-    if ( Node::Object()->simParameters->switchingActive )
-#define SWITCHING
-    {
 #define NBPAIR
 #undef NBSELF
 #undef NBEXCL
 #include "ComputeNonbondedHack.h"
-      calcPair = NAME;
+  calcPair = NAME;
 #undef NBPAIR
 #define NBSELF
 #undef NBEXCL
 #include "ComputeNonbondedHack.h"
-      calcSelf = NAME;
+  calcSelf = NAME;
 #undef NBPAIR
 #undef NBSELF
 #define NBEXCL
 #include "ComputeNonbondedHack.h"
-      calcExcl = NAME;
-    }
-    else
-#undef SWITCHING
-    {
-#define NBPAIR
-#undef NBSELF
-#undef NBEXCL
-#include "ComputeNonbondedHack.h"
-      calcPair = NAME;
-#undef NBPAIR
-#define NBSELF
-#undef NBEXCL
-#include "ComputeNonbondedHack.h"
-      calcSelf = NAME;
-#undef NBPAIR
-#undef NBSELF
-#define NBEXCL
-#include "ComputeNonbondedHack.h"
-      calcExcl = NAME;
-    }
-  }
-  else
-#undef MODIFY14
-  {
-    if ( Node::Object()->simParameters->switchingActive )
-#define SWITCHING
-    {
-#define NBPAIR
-#undef NBSELF
-#undef NBEXCL
-#include "ComputeNonbondedHack.h"
-      calcPair = NAME;
-#undef NBPAIR
-#define NBSELF
-#undef NBEXCL
-#include "ComputeNonbondedHack.h"
-      calcSelf = NAME;
-#undef NBPAIR
-#undef NBSELF
-#define NBEXCL
-#include "ComputeNonbondedHack.h"
-      calcExcl = NAME;
-    }
-    else
-#undef SWITCHING
-    {
-#define NBPAIR
-#undef NBSELF
-#undef NBEXCL
-#include "ComputeNonbondedHack.h"
-      calcPair = NAME;
-#undef NBPAIR
-#define NBSELF
-#undef NBEXCL
-#include "ComputeNonbondedHack.h"
-      calcSelf = NAME;
-#undef NBPAIR
-#undef NBSELF
-#define NBEXCL
-#include "ComputeNonbondedHack.h"
-      calcExcl = NAME;
-    }
-  }
+  calcExcl = NAME;
 }
 
 #undef DECLARATION
@@ -151,20 +98,9 @@ void ComputeNonbondedUtil::select(void)
 #undef NBSELF
 #undef NBEXCL
 
-#define MODIFY14
-#define SWITCHING
+#define FULLELECT
 #include "ComputeNonbondedBase.h"
-
-#define MODIFY14
-#undef SWITCHING
-#include "ComputeNonbondedBase.h"
-
-#undef MODIFY14
-#define SWITCHING
-#include "ComputeNonbondedBase.h"
-
-#undef MODIFY14
-#undef SWITCHING
+#undef FULLELECT
 #include "ComputeNonbondedBase.h"
 
 
@@ -172,20 +108,9 @@ void ComputeNonbondedUtil::select(void)
 #define NBSELF
 #undef NBEXCL
 
-#define MODIFY14
-#define SWITCHING
+#define FULLELECT
 #include "ComputeNonbondedBase.h"
-
-#define MODIFY14
-#undef SWITCHING
-#include "ComputeNonbondedBase.h"
-
-#undef MODIFY14
-#define SWITCHING
-#include "ComputeNonbondedBase.h"
-
-#undef MODIFY14
-#undef SWITCHING
+#undef FULLELECT
 #include "ComputeNonbondedBase.h"
 
 
@@ -193,20 +118,9 @@ void ComputeNonbondedUtil::select(void)
 #undef NBSELF
 #define NBEXCL
 
-#define MODIFY14
-#define SWITCHING
+#define FULLELECT
 #include "ComputeNonbondedBase.h"
-
-#define MODIFY14
-#undef SWITCHING
-#include "ComputeNonbondedBase.h"
-
-#undef MODIFY14
-#define SWITCHING
-#include "ComputeNonbondedBase.h"
-
-#undef MODIFY14
-#undef SWITCHING
+#undef FULLELECT
 #include "ComputeNonbondedBase.h"
 
 
@@ -214,13 +128,20 @@ void ComputeNonbondedUtil::select(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:13 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/02/21 20:45:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1001  1997/02/21 20:45:13  jim
+ * Eliminated multiple function for switching and modified 1-4 interactions.
+ * Now assumes a switching function, but parameters are such that nothing
+ * happens, same for modified 1-4.  Slight penalty for rare simulations
+ * in which these features are not used, but otherwise no loss and
+ * simplifies code.
+ *
  * Revision 1.1000  1997/02/06 15:58:13  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

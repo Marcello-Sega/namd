@@ -60,51 +60,29 @@
 
 #undef CLASSNAME
 #ifdef NBPAIR
-#define CLASSNAME(X) M14NAME( X ## _pair )
+#define CLASSNAME(X) FULLELECTNAME( X ## _pair )
 #endif
 #ifdef NBSELF
-#define CLASSNAME(X) M14NAME( X ## _self )
+#define CLASSNAME(X) FULLELECTNAME( X ## _self )
 #endif
 #ifdef NBEXCL
-#define CLASSNAME(X) M14NAME( X ## _excl )
+#define CLASSNAME(X) FULLELECTNAME( X ## _excl )
 #endif
 
-#undef M14FLAG
-#undef M14NAME
-#undef M14
-#undef NOM14
-#ifdef MODIFY14
-#define M14FLAG 1
-#define M14NAME(X) SWNAME( X ## _m14 )
-#define M14(X) X
-#define NOM14(X)
+#undef FULLELECTNAME
+#undef FULL
+#undef NOFULL
+#ifdef FULLELECT
+#define FULLELECTNAME(X) LAST( X ## _fullelect )
+#define FULL(X) X
+#define NOFULL(X)
 #else
-#define M14FLAG 0
-#define M14NAME(X) SWNAME( X )
-#define M14(X)
-#define NOM14(X) X
+#define FULLELECTNAME(X) LAST( X )
+#define FULL(X)
+#define NOFULL(X) X
 #endif
 
 #define LAST(X) X
-
-#undef SWFLAG
-#undef SWNAME
-#undef SW
-#undef NOSW
-#ifdef SWITCHING
-#define SWFLAG 1
-#define SWNAME(X) LAST( X ## _sw )
-#define SW(X) X
-#define NOSW(X)
-#else
-#define SWFLAG 0
-#define SWNAME(X) LAST( X )
-#define SW(X)
-#define NOSW(X) X
-#endif
-
-#define NBINDEX 2 * ( M14FLAG ) + SWFLAG
-#define NBLENGTH 2 * 2
 
 #undef PLEN
 #undef I_SUB
@@ -135,13 +113,20 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedHack.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:09 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/02/21 20:45:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedHack.h,v $
+ * Revision 1.1001  1997/02/21 20:45:12  jim
+ * Eliminated multiple function for switching and modified 1-4 interactions.
+ * Now assumes a switching function, but parameters are such that nothing
+ * happens, same for modified 1-4.  Slight penalty for rare simulations
+ * in which these features are not used, but otherwise no loss and
+ * simplifies code.
+ *
  * Revision 1.1000  1997/02/06 15:58:09  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

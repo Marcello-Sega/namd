@@ -43,7 +43,7 @@ private:
   PmtaPartInfo *fmaResults;	//  Results from the PMTA code
   PmtaPartInfo *ljResults;	//  Results from the PMTA code
 
-  void ComputeDPMTA::get_FMA_cube(BigReal *boxsize, Vector *boxcenter);
+  void get_FMA_cube(BigReal *boxsize, Vector *boxcenter);
 
 public:
   ComputeDPMTA(ComputeID c);
@@ -57,13 +57,20 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeDPMTA.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/11 18:51:41 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/02/21 20:45:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.h,v $
+ * Revision 1.1003  1997/02/21 20:45:11  jim
+ * Eliminated multiple function for switching and modified 1-4 interactions.
+ * Now assumes a switching function, but parameters are such that nothing
+ * happens, same for modified 1-4.  Slight penalty for rare simulations
+ * in which these features are not used, but otherwise no loss and
+ * simplifies code.
+ *
  * Revision 1.1002  1997/02/11 18:51:41  ari
  * Modified with #ifdef DPMTA to safely eliminate DPMTA codes
  * fixed non-buffering of migration msgs
