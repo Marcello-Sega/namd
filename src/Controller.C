@@ -567,9 +567,6 @@ void Controller::printEnergies(int step)
     BigReal angleEnergy;
     BigReal dihedralEnergy;
     BigReal improperEnergy;
-    BigReal electEnergy;
-    BigReal electEnergySlow;
-    BigReal ljEnergy;
     BigReal boundaryEnergy;
     BigReal miscEnergy;
     BigReal smdEnergy;
@@ -582,12 +579,20 @@ void Controller::printEnergies(int step)
     angleEnergy = reduction->item(REDUCTION_ANGLE_ENERGY);
     dihedralEnergy = reduction->item(REDUCTION_DIHEDRAL_ENERGY);
     improperEnergy = reduction->item(REDUCTION_IMPROPER_ENERGY);
-    electEnergy = reduction->item(REDUCTION_ELECT_ENERGY);
-    electEnergySlow = reduction->item(REDUCTION_ELECT_ENERGY_SLOW);
-    ljEnergy = reduction->item(REDUCTION_LJ_ENERGY);
     boundaryEnergy = reduction->item(REDUCTION_BC_ENERGY);
     miscEnergy = reduction->item(REDUCTION_MISC_ENERGY);
     smdEnergy = reduction->item(REDUCTION_SMD_ENERGY);
+
+    if ( ! ( step % nbondFreq ) )
+    {
+      electEnergy = reduction->item(REDUCTION_ELECT_ENERGY);
+      ljEnergy = reduction->item(REDUCTION_LJ_ENERGY);
+    }
+
+    if ( ! ( step % slowFreq ) )
+    {
+      electEnergySlow = reduction->item(REDUCTION_ELECT_ENERGY_SLOW);
+    }
 
     momentum.x = reduction->item(REDUCTION_MOMENTUM_X);
     momentum.y = reduction->item(REDUCTION_MOMENTUM_Y);

@@ -47,6 +47,9 @@ protected:
     void printEnergies(int);
       int computeChecksum;
       int numDegFreedom;
+      BigReal electEnergy;
+      BigReal electEnergySlow;
+      BigReal ljEnergy;
       BigReal kineticEnergy;
       BigReal temperature;
       Tensor pressure;
