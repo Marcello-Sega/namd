@@ -1,46 +1,64 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                      NAMD 2.0 Release Notes                        |
+|                     NAMD 2.1b1 Release Notes                       |
 |                                                                    |
 +--------------------------------------------------------------------+
 
-New Features in NAMD 2.0
-
-- Reads CHARMM (or X-PLOR) formatted parameter files.
-
-- Supports periodic and non-periodic MD simulations.
-
-- Particle mesh Ewald full electrostatics for periodic simulations.
-
-- Triple timestepping.
-
-- Rigid bonds to hydrogen atoms.
-
-- Fixed atoms implemented efficiently, no unnecessary force calculations.
-
-- Berendsen and Langevin piston constant pressure methods.
-
-- Steered Molecular Dynamics (SMD) features.
+This file includes directions for compiling and running NAMD,
+a list of know deficiencies, and advice for reporting bugs.
 
 ----------------------------------------------------------------------
 
-Problems?
+Compiling NAMD
 
-For problems or questions, send email to namd@ks.uiuc.edu.  If you
-think you have found a bug, please include what machine you are
-running on, and, if possible, a dump of the program output and/or a
-copy of your input files.  Your feedback will help us improve NAMD2.
+You must first download and install NAMD's communications library,
+Charm++/Converse 5.0, from http://charm.cs.uiuc.edu/.  The following
+table shows the version needed for each NAMD architecture.  It is
+important that the same compiler is used for both Charm++ and NAMD.
+
+    NAMD Name      Description                   Charm Version
+   ----------     ---------------------------   ---------------
+    KCC-i486       Linux with KCC 3.3 compiler   net-linux-kcc
+    g++-i486       Linux with GNU compiler       net-linux
+    Origin2000-MPI SGI Origin 2000 with MPI      mpi-origin
+    Origin2000     SGI Origin 2000 w/o MPI       origin2000
+    alpha          Tru64 Unix w/ DEC compiler    net-axp-cc
+  * g++-alpha      Tru64 Unix w/ GNU compiler    net-axp
+    T3E            SGI/Cray T3E                  t3e
+    Solaris        Solaris 2.6 or later          net-sol-cc
+  * HPUX           HP-UX 10.0 or later with CC   net-hp-cc
+  * RED            ASCI Red                      paragon-red
+  * SP3            IBM SP Series                 sp3
+  * exemplar       Convex Exemplar               exemplar-mpi
+
+  * These architectures may fail to built or be unstable.
+
+Edit Make.charm to point to the directory where Charm++ is installed.
+
+Now you can type "./config ARCH" where ARCH is a ARCH architecture
+name listed above (or as a file suffix in the arch directory).  This
+will create a build directory for that architecture.  If you wish to
+create this directory elsewhere use "./config DIR/ARCH", replacing
+DIR with the location the build directory should be created.
+
+Now "cd" to your build directory and type make.  The namd2 binary as
+well as the flipdcd and flipbinpdb utilities will be created.  A link
+to conv-host (see below) will be created as appropriate.
+
+If you have trouble building NAMD your compiler may be different from
+ours.  The architecture-specific makefiles in the arch directory use
+several options to elicit similar behavior on all platforms.  Your
+compiler may conform to an earlier C++ specification than NAMD uses.
+You compiler may also enforce a later C++ rule than NAMD follows.
+You may ignore repeated warnings about new and delete matching.
+
+You may edit Makefile to enable or disable DPMTA and DPME.  You may
+edit arch/Makearch.ARCH to enable or disable linking with Tcl and FFTW.
+(DPMTA, DPME, and Tcl are included in the release binaries, FFTW is not.)
 
 ----------------------------------------------------------------------
 
-This File
-
-This file contains brief instructions for running NAMD2.  For more
-detailed information, see the users guide (ug.ps, in the doc directory).
-
-----------------------------------------------------------------------
-
-Runing NAMD2
+Running NAMD
 
 -- Workstation Networks --
 
@@ -75,7 +93,7 @@ through the list the right number of times, or list each machine
 several times, once for each processor.
 
 Once the nodelist file is set up, and you have your configuration file
-prepared (alanin.conf, in this example), run NAMD2 as follows:
+prepared (alanin.conf, in this example), run NAMD as follows:
 
 conv-host +pX namd2 alanin.conf
 
@@ -99,7 +117,7 @@ To run on X processors call the binary directly with the +p option:
 namd2 +pX alanin.conf
 
 For better performance on larger numbers of processors we recommend
-that you use the MPI version of NAMD2.  To run this version, you must
+that you use the MPI version of NAMD.  To run this version, you must
 have MPI installed.  Furthermore, you must set two environment
 variables to tell MPI how to allocate certain internal buffers.  Put
 the following commands in your .cshrc/.profile file, or in your job
@@ -108,18 +126,27 @@ file if you are running under a queuing system:
 setenv MPI_REQUEST_MAX 10240
 setenv MPI_TYPE_MAX 10240
 
-Then run NAMD2 with the following command:
+Then run NAMD with the following command:
 
 mpirun -np X namd2 alanin.conf
 
 ----------------------------------------------------------------------
 
-NAMD2 Known Deficiencies
+Known Deficiencies
 
-- PME does not parallelize well and has had limited testing.
+- PME does not parallelize well.
 
-- NAMD2 requires X-PLOR or CHARMM to produce the .psf structure input
-files.  If you don't have one of these, you probably can't use NAMD2 yet.
+- NAMD requires X-PLOR or CHARMM to produce the .psf structure input
+files.  If you don't have one of these, you probably can't use NAMD yet.
+
+----------------------------------------------------------------------
+
+Problems?
+
+For problems or questions, send email to namd@ks.uiuc.edu.  If you
+think you have found a bug, please include what machine you are
+running on, and, if possible, a dump of the program output and/or a
+copy of your input files.  Your feedback will help us improve NAMD.
 
 ----------------------------------------------------------------------
 

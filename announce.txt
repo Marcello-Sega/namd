@@ -1,61 +1,26 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                   NAMD 2.0 Release Announcement                    |
+|                  NAMD 2.1b1 Release Announcement                   |
 |                                                                    |
 +--------------------------------------------------------------------+
 
-                                                       March 25, 1999
+                                                   September 15, 1999
 
 The Theoretical Biophysics Group at the University of Illinois is
 proud to announce the public release of a new version of NAMD, a
 parallel, object-oriented molecular dynamics code designed for
 high-performance simulation of large biomolecular systems.  NAMD is
-distributed free of charge and includes source code.  NAMD2 is a major
-improvement over NAMD 1.5, in both speed and simulation features.
+distributed free of charge and includes source code.  NAMD 2.1b1 is
+more stable than NAMD 2.0 and adds several new features:
 
-This is a binary-only release of NAMD2.  We still have some additional
-code cleanup before releasing the source in a couple of weeks.
+- Mollified impulse multiple timestepping method.
 
-NAMD2 is available via the web at http://www.ks.uiuc.edu/Research/namd/.
+- Faster particle mesh Ewald implementation.
+
+- Periodic boundaries for non-orthogonal cells.
+
+- New interactive molecular dynamics interface to VMD.
+
+NAMD is available from http://www.ks.uiuc.edu/Research/namd/.
 Mail any questions or comments to namd@ks.uiuc.edu.
-
-----------------------------------------------------------------------
-
-New Features in NAMD 2.0
-
-- Reads CHARMM (or X-PLOR) formatted parameter files.
-
-- Supports periodic and non-periodic MD simulations.
-
-- Particle mesh Ewald full electrostatics for periodic simulations.
-
-- Triple timestepping.
-
-- Rigid bonds to hydrogen atoms.
-
-- Fixed atoms implemented efficiently, no unnecessary force calculations.
-
-- Berendsen and Langevin piston constant pressure methods.
-
-- Steered Molecular Dynamics (SMD) features.
-
-----------------------------------------------------------------------
-
-Problems?
-
-For problems or questions, send email to namd@ks.uiuc.edu.  If you
-think you have found a bug, please include what machine you are
-running on, and, if possible, a dump of the program output and/or a
-copy of your input files.  Your feedback will help us improve NAMD2.
-
-----------------------------------------------------------------------
-
-NAMD2 Known Deficiencies
-
-- PME does not parallelize well and has had limited testing.
-
-- NAMD2 requires X-PLOR or CHARMM to produce the .psf structure input
-files.  If you don't have one of these, you probably can't use NAMD2 yet.
-
-----------------------------------------------------------------------
 
