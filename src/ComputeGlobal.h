@@ -17,7 +17,6 @@
 class ComputeGlobalConfigMsg;
 class ComputeGlobalDataMsg;
 class ComputeGlobalResultsMsg;
-class ComputeGlobalMaster;
 class ComputeMgr;
 
 class ComputeGlobal : public ComputeHomePatches {
@@ -34,7 +33,6 @@ private:
   void sendData();
   void configure(AtomIDList newaid, AtomIDList newgdef);
 
-  ComputeGlobalMaster *master;
   AtomIDList aid;
   AtomIDList gdef;  // definitions of groups
   ResizeArray<BigReal> gmass;  // masses of groups

@@ -959,7 +959,6 @@ obj/ComputeGlobal.o: \
 	src/InfoStream.h \
 	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
-	src/ComputeGlobalMaster.h \
 	src/ComputeGlobalMsgs.h \
 	inc/ComputeMgr.decl.h \
 	src/PatchMgr.h \
@@ -1113,7 +1112,6 @@ obj/ComputeMgr.o: \
 	src/GlobalMasterTcl.h \
 	src/GlobalMasterSMD.h \
 	src/GlobalMasterEasy.h \
-	src/ComputeGlobalMaster.h \
 	src/GlobalMasterMisc.h \
 	src/GlobalMasterFreeEnergy.h \
 	inc/ComputeMgr.def.h
@@ -1856,9 +1854,7 @@ obj/GlobalMasterEasy.o: \
 	src/AtomMap.h \
 	src/GlobalMaster.h \
 	src/GlobalMasterEasy.h \
-	src/ComputeGlobalMaster.h \
-	src/ComputeHomePatches.h \
-	src/Compute.h \
+	src/PatchMgr.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
@@ -1872,7 +1868,6 @@ obj/GlobalMasterEasy.o: \
 	src/InfoStream.h \
 	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
-	src/PatchMgr.h \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
@@ -1922,7 +1917,6 @@ obj/GlobalMasterMisc.o: \
 	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	src/GlobalMasterEasy.h \
-	src/ComputeGlobalMaster.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterMisc.o $(COPTC) src/GlobalMasterMisc.C
 obj/GromacsTopFile.o: \

@@ -11,7 +11,6 @@
 #ifndef GLOBALMASTEREASY_H
 #define GLOBALMASTEREASY_H
 
-#include "ComputeGlobalMaster.h"
 #include "NamdTypes.h"
 
 class Molecule;
