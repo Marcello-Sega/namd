@@ -125,6 +125,8 @@ void ComputeNonbondedUtil :: NAME
   const BigReal c1 = ComputeNonbondedUtil:: c1;
   const BigReal c3 = ComputeNonbondedUtil:: c3;
   )
+  const BigReal r2_delta = ComputeNonbondedUtil:: r2_delta;
+  const BigReal r2_delta_1 = ComputeNonbondedUtil:: r2_delta_1;
 
   const int i_upper = params->numAtoms[0];
   register const int j_upper = params->numAtoms[1];
@@ -425,6 +427,17 @@ void ComputeNonbondedUtil :: NAME
 
       electEnergy += kqq * fast_val;
       force_r -= kqq * fast_dir;
+/*
+      // JCP ERROR CHECKING CODE
+      if ( abs(fast_val) > 1.0e4 || abs(fast_dir) > 1.0e4 ) {
+        iout << iERROR << "atom " << p_i.id << " pos " << p_i.position << "\n";
+        iout << iERROR << "atom " << p_j->id << " pos " << p_j->position << "\n";
+        iout << iERROR << "r2 " << r2 << " h " << r2_delta << " i " << table_i << " d " << diffa << "\n";
+        iout << iERROR << "fast " << fast_a << " " << fast_b << " " << fast_c << " " << fast_d  << "\n";
+        iout << iERROR << "val " << fast_val << " dir " << fast_dir << " kqq " << kqq << "\n";
+        iout << endi;
+      }
+*/
       }
 
       force_r *= 2.0;
