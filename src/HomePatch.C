@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.3 1996/09/03 22:54:09 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.4 1996/10/04 21:14:47 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -19,16 +19,13 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C
 
 #include "HomePatch.h"
 
-HomePatch::HomePatch()
-{
-}
-
 HomePatch::HomePatch(PatchID pd, AtomIDList al, 
   PositionList pl, VelocityList vl)
-  : patchID(pd), atomIDList(al), p(pl), pBegin(pl), v(vl) {
-    if (atomIDList.size() != p.size() || atomIDList.size() != v.size()) {
-      CPrintf("HomePatch::HomePatch(...) : Whoa - got different # of\
-      atom coordinates, id's or velocities!\n");
+  : Patch(pd,al,pl), pBegin(pl), v(vl) {
+    if (atomIDList.size() != v.size())
+    {
+      CPrintf(
+         "HomePatch::HomePatch(...) : Different numbers of Velocities and IDs!\n");
     }
     AtomIDListIter a(atomIDList);
     int i = 0;
@@ -238,13 +235,16 @@ void HomePatch::dispose(char *&data)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/09/03 22:54:09 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.4 $	$Date: 1996/10/04 21:14:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.4  1996/10/04 21:14:47  jim
+ * Moved functionality to Patch
+ *
  * Revision 1.3  1996/09/03 22:54:09  ari
  * *** empty log message ***
  *

@@ -20,40 +20,16 @@
 
 #include "NamdTypes.h"
 #include "Patch.h"
-#include "Templates/UniqueSortedArray.h"
 
-
-class LocalAtomID {
-public:
-    AtomID atomID;
-    int index;
-    LocalAtomID(AtomID a, int i) : atomID(a), index(i) {};
-    LocalAtomID() {};
-    ~LocalAtomID() {};
-    int operator < (const LocalAtomID &a) const {
-	return (atomID < a.atomID);
-    }
-    int operator== (const LocalAtomID &a) const {
-       return (atomID == a.atomID);
-    }
-};
-
-
-typedef UniqueSortedArray<LocalAtomID> LocalIndex ;
 
 class HomePatch : public Patch {
    friend PatchMgr;
 
    private:
-      PatchID       patchID;
-      PositionList  p;
       PositionList  pBegin;
       VelocityList  v; 
-      ForceList     f;
       ForceList     f_short;
       ForceList     f_long;
-      AtomIDList    atomIDList;
-      LocalIndex    localIndex;
 
       //Sequencer  *sequencer;
       // keeps track of remaining proxies that i am waiting to updat my data
@@ -69,7 +45,6 @@ class HomePatch : public Patch {
 
    public:
 
-      HomePatch();
       HomePatch(PatchID, AtomIDList, PositionList, VelocityList);
       ~HomePatch();
 
@@ -115,13 +90,16 @@ class HomePatch : public Patch {
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/09/03 22:54:25 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.4 $	$Date: 1996/10/04 21:14:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.4  1996/10/04 21:14:47  jim
+ * Moved functionality to Patch
+ *
  * Revision 1.3  1996/09/03 22:54:25  ari
  * *** empty log message ***
  *
