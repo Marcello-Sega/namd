@@ -141,6 +141,20 @@ public:
   static void calc_self_merge_fullelect_fep (nonbonded *);
   static void calc_self_slow_fullelect_fep (nonbonded *);
 
+//locally enhanced sampling calcualtion
+  static void calc_pair_les(nonbonded *);
+  static void calc_pair_fullelect_les (nonbonded *);
+  static void calc_pair_merge_fullelect_les (nonbonded *);
+  static void calc_pair_slow_fullelect_les (nonbonded *);
+  static void calc_self_les (nonbonded *);
+  static void calc_self_fullelect_les (nonbonded *);
+  static void calc_self_merge_fullelect_les (nonbonded *);
+  static void calc_self_slow_fullelect_les (nonbonded *);
+
+//pair interaction calcualtion
+  static void calc_pair_int(nonbonded *);
+  static void calc_self_int (nonbonded *);
+
 };
 
 #endif

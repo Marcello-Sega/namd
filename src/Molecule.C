@@ -2661,10 +2661,10 @@ void Molecule::receive_Molecule(MIStream *msg)
 
   void Molecule::stripFepExcl(void)
   {
-    if ( simParams->fepOn || simParams->lesOn ) {
+    UniqueSet<Exclusion> fepExclusionSet;
+    UniqueSetIter<Exclusion> exclIter(exclusionSet);
 
-       UniqueSet<Exclusion> fepExclusionSet;
-       UniqueSetIter<Exclusion> exclIter(exclusionSet);
+    if ( simParams->fepOn || simParams->lesOn ) {
        for ( exclIter=exclIter.begin(); exclIter != exclIter.end(); exclIter++ )
        {
          int t1 = get_fep_type(exclIter->atom1);
@@ -2673,13 +2673,33 @@ void Molecule::receive_Molecule(MIStream *msg)
            fepExclusionSet.add(*exclIter);
          }
        }
-       UniqueSetIter<Exclusion> fepIter(fepExclusionSet);
-       for ( fepIter=fepIter.begin(); fepIter != fepIter.end(); fepIter++ )
-       {
-         exclusionSet.del(*fepIter);
-       }
+    } else if ( simParams->pairInteractionOn ) {
+      for ( exclIter=exclIter.begin(); exclIter != exclIter.end(); exclIter++ )
+      {
+        int ifep_type = get_fep_type(exclIter->atom1);
+        int jfep_type = get_fep_type(exclIter->atom2);
+        if ( simParams->pairInteractionSelf ) {
+          // for pair-self, both atoms must be in group 1.
+          if (ifep_type != 1 || jfep_type != 1) {
+            fepExclusionSet.add(*exclIter);
+          }
+        } else {
 
+          // for pair, must have one from each group.
+          if (!(ifep_type == 1 && jfep_type == 2) &&
+              !(ifep_type == 2 && jfep_type == 1)) {
+            fepExclusionSet.add(*exclIter);
+          }
+        }
+       }
     }
+
+    UniqueSetIter<Exclusion> fepIter(fepExclusionSet);
+    for ( fepIter=fepIter.begin(); fepIter != fepIter.end(); fepIter++ )
+    {
+      exclusionSet.del(*fepIter);
+    }
+
   }
     /*      END OF FUNCTION stripFepExcl      */
 

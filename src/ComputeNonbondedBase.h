@@ -76,18 +76,45 @@
 
 #undef FEPNAME
 #undef FEP
+#undef LES
+#undef INT
+#undef LAM
+#define FEPNAME(X) LAST( X )
+#define FEP(X)
+#define LES(X)
+#define INT(X)
+#define LAM(X)
 #ifdef FEPFLAG
+  #undef FEPNAME
+  #undef FEP
+  #undef LAM
   #define FEPNAME(X) LAST( X ## _fep )
   #define FEP(X) X
-#else
-  #define FEPNAME(X) LAST( X )
-  #define FEP(X)
+  #define LAM(X) X
+#endif
+#ifdef LESFLAG
+  #undef FEPNAME
+  #undef LES
+  #undef LAM
+  #define FEPNAME(X) LAST( X ## _les )
+  #define LES(X) X
+  #define LAM(X) X
+#endif
+#ifdef INTFLAG
+  #undef FEPNAME
+  #undef INT
+  #define FEPNAME(X) LAST( X ## _int )
+  #define INT(X) X
 #endif
 
 #define LAST(X) X
 
 // see if things are really messed up
 SELF( PAIR( foo bar ) )
+LES( FEP( foo bar ) )
+LES( INT( foo bar ) )
+FEP( INT( foo bar ) )
+LAM( INT( foo bar ) )
 
 // ************************************************************
 // function header
@@ -372,16 +399,49 @@ void ComputeNonbondedUtil :: NAME
 
     const int atomfixed = ( fixedAtomsOn && p_i.atomFixed );
 
-  FEP
-    (
-    const int ifep_type = p_i.partition;
-    )
+  LAM ( const int ifep_type = p_i.partition; )
 
     const BigReal kq_i = COLOUMB * p_i.charge * scaling * dielectric_1;
     const LJTable::TableEntry * const lj_row =
 		ljTable->table_row(mol->atomvdwtype(p_i.id));
 
     register int *pli = pairlist2;
+
+    INT(
+    if ( 1 ) {
+      const int ifep_type = p_i.partition;
+      if (ifep_type) for (int k=pairlistoffset; k<pairlistindex; k++) {
+        j = pairlist[k];
+        const int jfep_type = p_1[j].partition;
+        if (pairInteractionSelf) {
+          // for pair-self, both atoms must be in group 1.
+          if (ifep_type != 1 || jfep_type != 1) {
+            continue;
+          }
+        } else {
+
+          // for pair, must have one from each group.
+          if (!(ifep_type == 1 && jfep_type == 2) && 
+              !(ifep_type == 2 && jfep_type == 1)) {
+            continue;
+          }
+        }
+        BigReal p_j_x = p_1[j].position.x;
+	BigReal r2 = p_i_x - p_j_x;
+	r2 *= r2;
+        BigReal p_j_y = p_1[j].position.y;
+	BigReal t2 = p_i_y - p_j_y;
+	r2 += t2 * t2;
+        BigReal p_j_z = p_1[j].position.z;
+	t2 = p_i_z - p_j_z;
+	r2 += t2 * t2;
+	if ( ( ! (atomfixed && p_1[j].atomFixed) ) &&
+	     (r2 <= cutoff2) && ! ((r2 <= r2_delta) && ++exclChecksum) ) {
+          *(pli++) = j;
+        }
+      }
+    } else
+    )
     if ( atomfixed ) {
       for (int k=pairlistoffset; k<pairlistindex; k++) {
         j = pairlist[k];
@@ -477,34 +537,11 @@ void ComputeNonbondedUtil :: NAME
       int jfep_type = p_j->partition;
       BigReal lambda_pair = 1.0;
       BigReal d_lambda_pair = 1.0;
-      if (pairInteractionOn) {
-
-        // for pair-self, both atoms must be in group 1.
-        if (pairInteractionSelf) {
-          if (ifep_type != 1 || jfep_type != 1) {
-            //iout << iINFO << "self: skipping " <<  p_i.id << " " <<  p_j->id 
-                 //<< "\n" << endi;
-            continue;
-          }
-        } else {
-
-          if (!(ifep_type == 1 && jfep_type == 2) && 
-              !(ifep_type == 2 && jfep_type == 1)) {
-            // for pair, must have one from each group.
-            //iout << iINFO << "pair: skipping " <<  p_i.id << " " <<  p_j->id 
-                 //<< "\n" << endi;
-            continue;
-          }
-        }
-        //iout << iINFO << "Doing interaction for atoms " << p_i.id << " " 
-             //<< p_j->id << "\n" << endi;
-
-      } else {
       if (ifep_type || jfep_type) {
         if (ifep_type && jfep_type && ifep_type != jfep_type) {
 	  lambda_pair = 0.0;
 	  d_lambda_pair = 0.0;
-        } else if ( fepOn ) {
+        } else {
           if (ifep_type == 1 || jfep_type == 1) {
 	    lambda_pair = lambda;
 	    d_lambda_pair = lambda2;
@@ -512,13 +549,22 @@ void ComputeNonbondedUtil :: NAME
 	    lambda_pair = 1.0 - lambda;
 	    d_lambda_pair = 1.0 - lambda2;
           }
-        } else { // lesOn
-          int fep_type = ifep_type ? ifep_type : jfep_type;
-          lambda_pair = lesScaling;
-	  d_lambda_pair = 0.0;
         }
       }
-      } // if (pairInteractionOn)
+      )
+
+    LES
+      (
+      int jfep_type = p_j->partition;
+      BigReal lambda_pair = 1.0;
+      if (ifep_type || jfep_type) {
+        if (ifep_type && jfep_type && ifep_type != jfep_type) {
+	  lambda_pair = 0.0;
+        } else {
+          int fep_type = ifep_type ? ifep_type : jfep_type;
+          lambda_pair = lesScaling;
+        }
+      }
       )
 
       FAST
@@ -539,13 +585,13 @@ void ComputeNonbondedUtil :: NAME
 
       const BigReal AmBterm = (A*r_6 - B) * r_6;
 
-      vdwEnergy += FEP(lambda_pair *) switchVal * AmBterm;
-      BigReal force_r = FEP(lambda_pair *)
+      vdwEnergy += LAM(lambda_pair *) switchVal * AmBterm;
+      BigReal force_r = LAM(lambda_pair *)
         ( switchVal * 3.0 * (A*r_12 + AmBterm) * r_2 - AmBterm * dSwitchVal );
 
       FEP( vdwEnergy_s += d_lambda_pair * switchVal * AmBterm; )
       
-      FEP( 
+      INT( 
       reduction[pairVDWForceIndex_X] += 2.0 * force_r * p_ij_x;
       reduction[pairVDWForceIndex_Y] += 2.0 * force_r * p_ij_y;
       reduction[pairVDWForceIndex_Z] += 2.0 * force_r * p_ij_z;
@@ -564,12 +610,12 @@ void ComputeNonbondedUtil :: NAME
       register BigReal fast_dir =
 	( 3.0 * diffa * fast_d + 2.0 * fast_c ) * diffa + fast_b;
 
-      electEnergy += FEP(lambda_pair *) kqq * fast_val;
-      force_r -= FEP(lambda_pair *) kqq * fast_dir;
+      electEnergy += LAM(lambda_pair *) kqq * fast_val;
+      force_r -= LAM(lambda_pair *) kqq * fast_dir;
 
       FEP( electEnergy_s += d_lambda_pair * kqq * fast_val; )
 
-      FEP(
+      INT(
       reduction[pairElectForceIndex_X] -= 2.0 * kqq * fast_dir * p_ij_x;
       reduction[pairElectForceIndex_Y] -= 2.0 * kqq * fast_dir * p_ij_y;
       reduction[pairElectForceIndex_Z] -= 2.0 * kqq * fast_dir * p_ij_z;
@@ -620,12 +666,12 @@ void ComputeNonbondedUtil :: NAME
       register BigReal slow_dir =
 	( 3.0 * diffa * slow_d + 2.0 * slow_c ) * diffa + slow_b;
 
-      fullElectEnergy += FEP(lambda_pair *) kqq * slow_val;
-      BigReal fullforce_r = -1.0 * kqq * slow_dir FEP(* lambda_pair);
+      fullElectEnergy += LAM(lambda_pair *) kqq * slow_val;
+      BigReal fullforce_r = -1.0 * kqq * slow_dir LAM(* lambda_pair);
       
       FEP( fullElectEnergy_s += d_lambda_pair * kqq * slow_val; )
 
-      FEP(
+      INT(
       reduction[pairElectForceIndex_X] -= 2.0 * kqq * slow_dir * p_ij_x;
       reduction[pairElectForceIndex_Y] -= 2.0 * kqq * slow_dir * p_ij_y;
       reduction[pairElectForceIndex_Z] -= 2.0 * kqq * slow_dir * p_ij_z;

@@ -128,11 +128,9 @@ void ComputeNonbondedUtil::select(void)
   pairInteractionOn = simParams->pairInteractionOn;
   pairInteractionSelf = simParams->pairInteractionSelf;
 
-  if ( fepOn || lesOn || pairInteractionOn ) {
-    if ( fepOn ) lambda = simParams->lambda;
-    if ( fepOn ) lambda2 = simParams->lambda2;
-    if ( lesOn ) lesFactor = simParams->lesFactor;
-    if ( lesOn ) lesScaling = 1.0 / (double)lesFactor;
+  if ( fepOn ) {
+    lambda = simParams->lambda;
+    lambda2 = simParams->lambda2;
     ComputeNonbondedUtil::calcPair = calc_pair_fep;
     ComputeNonbondedUtil::calcSelf = calc_self_fep;
     ComputeNonbondedUtil::calcFullPair = calc_pair_fullelect_fep;
@@ -141,6 +139,20 @@ void ComputeNonbondedUtil::select(void)
     ComputeNonbondedUtil::calcMergeSelf = calc_self_merge_fullelect_fep;
     ComputeNonbondedUtil::calcSlowPair = calc_pair_slow_fullelect_fep;
     ComputeNonbondedUtil::calcSlowSelf = calc_self_slow_fullelect_fep;
+  } else if ( lesOn ) {
+    lesFactor = simParams->lesFactor;
+    lesScaling = 1.0 / (double)lesFactor;
+    ComputeNonbondedUtil::calcPair = calc_pair_les;
+    ComputeNonbondedUtil::calcSelf = calc_self_les;
+    ComputeNonbondedUtil::calcFullPair = calc_pair_fullelect_les;
+    ComputeNonbondedUtil::calcFullSelf = calc_self_fullelect_les;
+    ComputeNonbondedUtil::calcMergePair = calc_pair_merge_fullelect_les;
+    ComputeNonbondedUtil::calcMergeSelf = calc_self_merge_fullelect_les;
+    ComputeNonbondedUtil::calcSlowPair = calc_pair_slow_fullelect_les;
+    ComputeNonbondedUtil::calcSlowSelf = calc_self_slow_fullelect_les;
+  } else if ( pairInteractionOn ) {
+    ComputeNonbondedUtil::calcPair = calc_pair_int;
+    ComputeNonbondedUtil::calcSelf = calc_self_int;
   } else {
     ComputeNonbondedUtil::calcPair = calc_pair;
     ComputeNonbondedUtil::calcSelf = calc_self;
@@ -516,4 +528,44 @@ void ComputeNonbondedUtil::select(void)
 #undef  NBTYPE
 
 #undef FEPFLAG
+
+#define LESFLAG
+
+#define NBTYPE NBPAIR
+#include "ComputeNonbondedBase.h"
+#define FULLELECT
+#include "ComputeNonbondedBase.h"
+#define MERGEELECT
+#include "ComputeNonbondedBase.h"
+#undef MERGEELECT
+#define SLOWONLY
+#include "ComputeNonbondedBase.h"
+#undef SLOWONLY
+#undef FULLELECT
+#undef  NBTYPE
+
+#define NBTYPE NBSELF
+#include "ComputeNonbondedBase.h"
+#define FULLELECT
+#include "ComputeNonbondedBase.h"
+#define MERGEELECT
+#include "ComputeNonbondedBase.h"
+#undef MERGEELECT
+#define SLOWONLY
+#include "ComputeNonbondedBase.h"
+#undef SLOWONLY
+#undef FULLELECT
+#undef  NBTYPE
+
+#undef LESFLAG
+
+#define INTFLAG
+
+#define NBTYPE NBPAIR
+#include "ComputeNonbondedBase.h"
+
+#define NBTYPE NBSELF
+#include "ComputeNonbondedBase.h"
+
+#undef INTFLAG
 
