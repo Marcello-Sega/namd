@@ -12,6 +12,7 @@
  ***************************************************************************/
 
 #ifdef DPMTA
+#include "common.h"
 #include "Namd.h"
 #include "Node.h"
 #include "SimParameters.h"
@@ -28,7 +29,7 @@
 #include "InfoStream.h"
 
 #define MIN_DEBUG_LEVEL 2
-#define DEBUGM
+// #define DEBUGM
 #include "Debug.h"
 
 extern Communicate *comm;
@@ -92,7 +93,7 @@ void ComputeDPMTA::get_FMA_cube(int resize)
 	boxcenter = boxCenter;
 
 	// reset DPMTA (only reset it after it has been initialized!)
-	if (resize)
+	if (resize && usePBC)
 	{
 	  PmtaVector center,size;
 	  center.x = boxcenter.x;
@@ -292,18 +293,41 @@ void ComputeDPMTA::doWork()
   for (totalAtoms=0, ap = ap.begin(); ap != ap.end(); ap++)
      totalAtoms += (*ap).p->getNumAtoms();
 
-  // 1b. resize cure if necessary
+  // 1b. resize cube if necessary
   if (CMyPe() == 0)
   {
     // check if box has changes for PBC
     DebugM(2,"Node resizing FMA\n");
     get_FMA_cube(TRUE);
     DebugM(2,"Node resized FMA\n");
+    // tell all nodes that it's ok to continue
+    // *** Using the Communicate::broadcast_all function will be removed later,
+    // *** after the new broadcast function has been build.  Since it currently
+    // *** doesn't exist, we are using the old code.
+    Message *msg = new Message;
+    // don't actually put in data...  Nodes just need it as a flag.
+    msg->put(TRUE);
+    comm->broadcast_all(msg,DPMTATAG);
+    DebugM(2,"FMA go-ahead\n");
   }
   else
   {
     DebugM(2,"Node *not* resizing FMA\n");
   }
+
+  // 1c. wait until node 0 says "go ahead"
+  // *** Using the Communicate::receive function will be removed later,
+  // *** after the new broadcast function has been build.  Since it currently
+  // *** doesn't exist, we are using the old code.
+  Message *conv_msg;
+  DebugM(2,"waiting for FMA go-ahead\n");
+  do
+  {
+    // get next DPMTATAG from node 0
+    conv_msg = comm->receive(-1,DPMTATAG);
+  } while (conv_msg == NULL);
+  delete conv_msg;
+  DebugM(2,"got FMA go-ahead\n");
 
   // 2. setup atom list
   int i,j;

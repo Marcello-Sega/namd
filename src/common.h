@@ -11,8 +11,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: common.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/13 22:27:05 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/03/14 19:07:54 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -22,6 +22,11 @@
  * REVISION HISTORY:
  *
  * $Log: common.h,v $
+ * Revision 1.1002  1997/03/14 19:07:54  nealk
+ * DPMTA nodes now synchronize to PMTAresize doesn't crash system.
+ * Later will will use the "new" Broadcast manager.  But since that system
+ * does not exist yet, we use the "old" Communicate object.
+ *
  * Revision 1.1001  1997/02/13 22:27:05  jim
  * Added inital velocity code from NAMD 1.
  * Reading velocity pdb file appears to work.
@@ -366,7 +371,9 @@ BigReal NAMD_random();
 #define PREINTEGRATETAG	134	//  Tag to send x,v,f to GlobalIntegrate
 #define GLOBALINTTAG	135	//  Tag for GlobalIntegrate messages
 
-#define MAXTAGVALUE	135	//  Maximum tag value.  NOTE!!  Always
+#define DPMTATAG	136	//  Tag for DPMTA
+
+#define MAXTAGVALUE	136	//  Maximum tag value.  NOTE!!  Always
 				//  reset this when new tags are added,
 				//  otherwise MessageManager object will
 				//  almost certainly cause a core dump!!
