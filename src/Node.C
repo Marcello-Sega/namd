@@ -96,7 +96,7 @@ Node::Node(GroupInitMsg *msg)
   pdb = NULL;
   state = NULL;
   output = NULL;
-  imd = NULL;
+  imd = new IMDOutput;
 
   Compute::setNode(this);
 
@@ -258,10 +258,6 @@ void Node::namdOneCommInit()
     pvmc_init();
 #endif
   }
-}
-
-void Node::IMDinit(void *v) {
-  imd = new IMDOutput(v);
 }
 
 // Namd 1.X style Send/Recv of simulation information

@@ -43,42 +43,24 @@ static int find_free_port(void *sock, int defport) {
 ComputeIMD::ComputeIMD(ComputeGlobal *h)
 : ComputeGlobalMaster(h) {
   SimParameters *simparams = Node::Object()->simParameters;
-  int rc;
   int port = simparams->IMDport;
+  IMDwait = simparams->IMDwait;
 
   sock = vmdsock_create();
+  clientsock = NULL;
   port = find_free_port(sock, port);
   if (port < 0) {
     vmdsock_destroy(sock);
     NAMD_die("Unable to find free port\n");
   }
-  iout << iINFO << "INTERACTIVE MD BIND    "<< port << "\n" << endi;
-  rc = vmdsock_listen(sock); 
-  // Wait for VMD to connect
-  rc = vmdsock_selread(sock,3600);
-  if (rc < 0) {
-    iout << iDEBUG << "select: " << strerror(errno) << '\n' << endi;
-    vmdsock_destroy(sock);
-    NAMD_die("Connection error\n");
-  }
-  if (rc == 0) {
-    vmdsock_destroy(sock);
-    NAMD_die("No connection\n");
-  }
-  void *newsock = vmdsock_accept(sock);
-  if (newsock == NULL) {
-    iout << iDEBUG << "Accept: " << strerror(errno) << '\n' << endi;
-    NAMD_die("Connection error\n");
-  } 
-  vmdsock_destroy(sock);
-  sock = newsock;
-  Node::Object()->IMDinit(sock);
-
+  vmdsock_listen(sock); 
 }
 
 ComputeIMD::~ComputeIMD() {
   if (sock) 
     vmdsock_destroy(sock);
+  if (clientsock)
+    vmdsock_destroy(clientsock);
 }
 
 void ComputeIMD::initialize() {
@@ -88,16 +70,41 @@ void ComputeIMD::initialize() {
 }
 
 void ComputeIMD::calculate() {
+
+  if (!clientsock) {
+    // check for incoming connection
+    int rc;
+    if (IMDwait) {
+      iout << iINFO << "INTERACTIVE MD AWAITING CONNECTION\n" << endi;
+      do { rc = vmdsock_selread(sock, 3600); } while (rc <= 0);
+    } else {
+      rc = vmdsock_selread(sock, 0);
+    } 
+    if (rc > 0) {
+      clientsock = vmdsock_accept(sock);
+      if (!clientsock) {
+        iout << iWARN << "ComputeIMD: Accept failed\n" << endi;
+      } else {
+        if (!Node::Object()->imd->connect(clientsock)) {
+          iout << iWARN << "ComputeIMD: IMD handshake failed\n" << endi;
+          vmdsock_destroy(clientsock);
+          clientsock = NULL;
+        }
+      }
+    }
+  }
+
   // Assume for now that the only thing we get from VMD is a set of forces.
   // Later we'll want to look for and implement more sophisticated control
   // parameters. 
- 
+
   resultsMsg = new ComputeGlobalResultsMsg;
   resultsMsg->gforce.resize(gmass.size());
   resultsMsg->gforce.setall(Vector(0,0,0));
 
+  
   // Check/get new forces from VMD
-  if (sock) {
+  if (clientsock) {
     get_vmd_forces();
   }
 
@@ -130,8 +137,8 @@ int ComputeIMD::get_vmd_forces() {
   int retval; 
   vmdforce *vtest, vnew;
 
-  while (vmdsock_selread(sock,0) > 0)  {     // Drain the socket
-    type = imd_recv_header(sock, &length);
+  while (vmdsock_selread(clientsock,0) > 0)  {     // Drain the socket
+    type = imd_recv_header(clientsock, &length);
     int i;
     switch (type) {
       case IMD_MDCOMM:
@@ -140,7 +147,7 @@ int ComputeIMD::get_vmd_forces() {
         // in xyz1 xyz2... format.
         vmd_atoms = new int32[length];
         vmd_forces = new float[3*length];
-        if (imd_recv_mdcomm(sock, length, vmd_atoms, vmd_forces)) {
+        if (imd_recv_mdcomm(clientsock, length, vmd_atoms, vmd_forces)) {
           NAMD_die("Error reading MDComm forces\n");
         } 
         for (i=0; i<length; i++) {
@@ -169,25 +176,26 @@ int ComputeIMD::get_vmd_forces() {
         break;
       case IMD_DISCONNECT:
         iout<<iDEBUG<<"Detaching simulation from remote connection\n" << endi;
-        vmdsock_destroy(sock);
-        sock = 0;
-        Node::Object()->imd->close();
+        vmdsock_destroy(clientsock);
+        clientsock = 0;
+        Node::Object()->imd->disconnect();
         goto vmdEnd;
       case IMD_KILL:
         NAMD_quit(1);
         break;
       case IMD_ENERGIES:
         IMDEnergies junk;
-        imd_recv_energies(sock, &junk);
+        imd_recv_energies(clientsock, &junk);
         break;
       case IMD_FCOORDS:
         vmd_forces = new float[3*length];
-        imd_recv_fcoords(sock, length, vmd_forces);
+        imd_recv_fcoords(clientsock, length, vmd_forces);
         delete [] vmd_forces;
         break;
       case IMD_IOERROR:
-        vmdsock_destroy(sock);
-        NAMD_die("IMD connection lost\n");
+        vmdsock_destroy(clientsock);
+        clientsock = NULL;
+        iout << iWARN << "IMD connection lost\n" << endi;
         break;    
       default: ;
     }

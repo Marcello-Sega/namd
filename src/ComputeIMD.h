@@ -28,8 +28,12 @@ private:
   // Simple function for getting MDComm-style forces from VMD
   int get_vmd_forces();
 
+  // flag for whether to proceed with simulation when there are no connections
+  int IMDwait;
+
   // My socket handle
   void *sock;
+  void *clientsock;
 };
 
 #endif

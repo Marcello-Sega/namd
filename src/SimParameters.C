@@ -878,6 +878,8 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
    opts.range("IMDport",POSITIVE);
    opts.require("IMDon","IMDfreq", "Frequency at which to report", &IMDfreq);
    opts.range("IMDfreq",POSITIVE);
+   opts.optionalB("IMDon","IMDwait","Pause until IMD connection?",&IMDwait,
+     FALSE);
 }
 
 void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&cwd) {
@@ -2252,6 +2254,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << iINFO << "INTERACTIVE MD ACTIVE\n";
      iout << iINFO << "INTERACTIVE MD PORT    " << IMDport << "\n";
      iout << iINFO << "INTERACTIVE MD FREQ    " << IMDfreq << "\n";
+     if (IMDwait) iout << iINFO << "WILL AWAIT INTERACTIVE MD CONNECTION\n";
      iout << endi;
    }
 

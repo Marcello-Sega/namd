@@ -109,9 +109,6 @@ public:
   // Utility for storing away simulation data for Node
   void saveMolDataPointers(NamdState *);
 
-  // Init the socket connect for imd
-  void IMDinit(void *);
-
   // Made public for pmeAid;
   WorkDistrib *workDistrib;
 

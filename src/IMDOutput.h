@@ -24,8 +24,11 @@ extern "C" {
 class IMDOutput {
 
 public:
-  IMDOutput(void *);   // Initialize with socket handle
+  IMDOutput();   
   ~IMDOutput();
+
+  int connect(void *);  // pass socket handle
+  void disconnect();
 
   void gather_energies(IMDEnergies *energies); 
   void gather_coordinates(int timestep, int N, FloatVector *coords);

@@ -365,9 +365,11 @@ public:
 	BigReal daCutoffDist, daOnDist, daOffDist;
 
 	// IMD parameters
-	int IMDon;
-	int IMDport;
- 	int IMDfreq;
+	int IMDon;    // enable IMD
+	int IMDport;  // port on which to listen for connections
+ 	int IMDfreq;  // frequency at which coordinates will be available
+        int IMDwait;  // if true, pause the simulation when there is no
+                      // connection
 
 public:
 
