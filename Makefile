@@ -438,7 +438,7 @@ DOC_FILES = .rootdir/README.txt \
 
 RELEASE_FILES = $(DOC_FILES) namd2 flipdcd flipbinpdb
 
-WIN32_RELEASE_FILES = $(DOC_FILES) namd2.exe conv-host.exe daemon.exe $(TCLDLL)
+WIN32_RELEASE_FILES = $(DOC_FILES) namd2.exe conv-host.exe daemon.exe daemon_background.exe $(TCLDLL)
 
 release: all
 	$(ECHO) Creating release $(RELEASE_DIR_NAME)
