@@ -1,4 +1,4 @@
-nclude .rootdir/arch/Linux-i686-icc.arch
+include .rootdir/arch/Linux-i686-icc.arch
 
 CHARMARCH = mpi-linux
 
