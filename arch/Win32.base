@@ -1,6 +1,6 @@
 
 CHARM = $(WIN32CHARMBASE)\$(CHARMARCH)
-CHARMXI = $(CHARM)\bin\charmxlati.exe -ansi
+CHARMXI = $(CHARM)\bin\charmxi.exe -ansi
 
 MOVE = move
 COPY = copy

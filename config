@@ -92,8 +92,13 @@ begin:
    endif
   endif
   echo "Linking Makefiles"
-  ln -s .rootdir/Makefile ./Makefile
-  ln -s .rootdir/Make.depends ./Make.depends
+  if ( $ARCH:t =~ *Win32* ) then
+   cp .rootdir/Makefile ./Makefile
+   cp .rootdir/Make.depends ./Make.depends
+  else
+   ln -s .rootdir/Makefile ./Makefile
+   ln -s .rootdir/Make.depends ./Make.depends
+  endif
   echo "Linking src"
   if ( $ARCH:t =~ *MSVC* ) then
     cp -r .rootdir/src ./src

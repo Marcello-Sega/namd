@@ -1,5 +1,5 @@
 
-TCLDIR = p:\namd2\tcl\win32
+TCLDIR = $(HOME)\tcl
 TCLINCL = /I$(TCLDIR)\include
 TCLLIB = $(TCLDIR)\lib\tcl80.lib
 TCLDLL = tcl80.dll

@@ -224,13 +224,13 @@ charmrun:
 win32binaries: namd2.exe psfgen.exe charmd.exe charmd_faceless.exe charmrun.exe
 
 namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
-	$(LINK) $(LINKOPTS) /out:namd2.exe \
-	$(CHARMLIB)/libldb-rand.obj \
-	$(CHARMLIB)/libtrace-none.lib \
-	$(CHARMLIB)/libconv-core.lib \
-	$(CHARMLIB)/libconv-cplus-y.lib \
-	$(CHARMLIB)/libck.lib \
-	$(CHARMLIB)/libutil.lib \
+	$(LINK) $(LINKOPTS) /nodefaultlib:libc /out:namd2.exe \
+	$(CHARMLIB)/libldb-rand.o \
+	$(CHARMLIB)/libtrace-none.a \
+	$(CHARMLIB)/libconv-core.a \
+	$(CHARMLIB)/libconv-cplus-y.a \
+	$(CHARMLIB)/libck.a \
+	$(CHARMLIB)/libconv-util.a \
 	obj/*.o \
 	$(DPMTALIB) \
 	$(DPMELIB) \
