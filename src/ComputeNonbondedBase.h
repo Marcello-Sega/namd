@@ -121,6 +121,12 @@ void ComputeNonbondedUtil :: NAME
   register const BigReal groupcutoff2 = ComputeNonbondedUtil:: groupcutoff2;
   const BigReal dielectric_1 = ComputeNonbondedUtil:: dielectric_1;
 
+  FULL
+  (
+  const ewaldcof = ComputeNonbondedUtil:: ewaldcof;
+  const pi_ewaldcof = ComputeNonbondedUtil:: pi_ewaldcof;
+  )
+
   const LJTable* const ljTable = ComputeNonbondedUtil:: ljTable;
   const Molecule* const mol = ComputeNonbondedUtil:: mol;
   const BigReal scaling = ComputeNonbondedUtil:: scaling;
