@@ -106,11 +106,13 @@ public:
   // split into numStreams different steams and take stream iStream
   void split(int iStream, int numStreams) {
 
+    int i;
+
     // make sure that numStreams is odd to ensure maximum period
     numStreams |= 1;
 
     // iterate to get to the correct stream
-    for ( int i = 0; i < iStream; ++i ) skip();
+    for ( i = 0; i < iStream; ++i ) skip();
 
     // save seed and add so we can use skip() for our calculations
     unsigned short save_seed_0 = rand48_seed_0;
@@ -121,7 +123,7 @@ public:
     rand48_seed_0 = rand48_add_0;
     rand48_seed_1 = rand48_add_1;
     rand48_seed_2 = rand48_add_2;
-    for ( int i = 1; i < numStreams; ++i ) skip();
+    for ( i = 1; i < numStreams; ++i ) skip();
     unsigned short new_add_0 = rand48_seed_0;
     unsigned short new_add_1 = rand48_seed_1;
     unsigned short new_add_2 = rand48_seed_2;
@@ -131,7 +133,7 @@ public:
     rand48_seed_1 = rand48_mult_1;
     rand48_seed_2 = rand48_mult_2;
     rand48_add_0  = 0; rand48_add_1  = 0; rand48_add_2  = 0;
-    for ( int i = 1; i < numStreams; ++i ) skip();
+    for ( i = 1; i < numStreams; ++i ) skip();
     rand48_mult_0 = rand48_seed_0;
     rand48_mult_1 = rand48_seed_1;
     rand48_mult_2 = rand48_seed_2;
