@@ -868,38 +868,70 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
 
   msg->compute = compute; // pointer is valid since send is to local Pe
 
-  if ( seq < 0 ) 
-  {
-    CProxy_WorkDistrib(CpvAccess(BOCclass_group).workDistrib).enqueueWork(msg,CkMyPe());
-  } 
-  else if (compute->type() == computeNonbondedSelfType)  {
+  CProxy_WorkDistrib wdProxy(CpvAccess(BOCclass_group).workDistrib);
+  if (compute->type() == computeBondsType) {
+    wdProxy.enqueueBonds(msg,CkMyPe());
+  } else if (compute->type() == computeAnglesType) {
+    wdProxy.enqueueAngles(msg,CkMyPe());
+  } else if (compute->type() == computeDihedralsType) {
+    wdProxy.enqueueDihedrals(msg,CkMyPe());
+  } else if (compute->type() == computeImpropersType) {
+    wdProxy.enqueueImpropers(msg,CkMyPe());
+  } else if ( seq < 0 )  {
+    wdProxy.enqueueWork(msg,CkMyPe());
+  } else if (compute->type() == computeNonbondedSelfType)  {
     switch ( seq % 2 ) {
     case 0:
-      CProxy_WorkDistrib(CpvAccess(BOCclass_group).workDistrib).enqueueSelfA(msg,CkMyPe());
+      wdProxy.enqueueSelfA(msg,CkMyPe());
       break;
     case 1:
-      CProxy_WorkDistrib(CpvAccess(BOCclass_group).workDistrib).enqueueSelfB(msg,CkMyPe());
+      wdProxy.enqueueSelfB(msg,CkMyPe());
       break;
     default:
       NAMD_bug("WorkDistrib::messageEnqueueSelf case statement error!");
     }
-  }
-  else switch ( seq % 2 ) {
-  case 0:
-      CProxy_WorkDistrib(CpvAccess(BOCclass_group).workDistrib).enqueueWorkA(msg,CkMyPe());
-   break;
-  case 1:
-      CProxy_WorkDistrib(CpvAccess(BOCclass_group).workDistrib).enqueueWorkB(msg,CkMyPe());
-   break;
-  case 2:
-      CProxy_WorkDistrib(CpvAccess(BOCclass_group).workDistrib).enqueueWorkC(msg,CkMyPe());
-   break;
-  default:
-   NAMD_bug("WorkDistrib::messageEnqueueWork case statement error!");
+  } else {
+    switch ( seq % 2 ) {
+    case 0:
+      wdProxy.enqueueWorkA(msg,CkMyPe());
+      break;
+    case 1:
+      wdProxy.enqueueWorkB(msg,CkMyPe());
+      break;
+    case 2:
+      wdProxy.enqueueWorkC(msg,CkMyPe());
+      break;
+    default:
+      NAMD_bug("WorkDistrib::messageEnqueueWork case statement error!");
+    }
   }
 }
 
 void WorkDistrib::enqueueWork(LocalWorkMsg *msg) {
+  msg->compute->doWork();
+  if ( msg->compute->localWorkMsg != msg )
+    NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
+}
+
+void WorkDistrib::enqueueBonds(LocalWorkMsg *msg) {
+  msg->compute->doWork();
+  if ( msg->compute->localWorkMsg != msg )
+    NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
+}
+
+void WorkDistrib::enqueueAngles(LocalWorkMsg *msg) {
+  msg->compute->doWork();
+  if ( msg->compute->localWorkMsg != msg )
+    NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
+}
+
+void WorkDistrib::enqueueDihedrals(LocalWorkMsg *msg) {
+  msg->compute->doWork();
+  if ( msg->compute->localWorkMsg != msg )
+    NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
+}
+
+void WorkDistrib::enqueueImpropers(LocalWorkMsg *msg) {
   msg->compute->doWork();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");

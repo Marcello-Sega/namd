@@ -19,6 +19,10 @@ module WorkDistrib {
     entry void recvComputeMapChanges(ComputeMapChangeMsg *);
     entry void doneSaveComputeMap(void);
     entry void enqueueWork(LocalWorkMsg *);
+    entry void enqueueBonds(LocalWorkMsg *);
+    entry void enqueueAngles(LocalWorkMsg *);
+    entry void enqueueDihedrals(LocalWorkMsg *);
+    entry void enqueueImpropers(LocalWorkMsg *);
     entry void enqueueSelfA(LocalWorkMsg *);
     entry void enqueueSelfB(LocalWorkMsg *);
     entry void enqueueWorkA(LocalWorkMsg *);
