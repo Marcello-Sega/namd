@@ -88,23 +88,16 @@ begin:
    echo include .rootdir/arch/$ARCH.arch >> Makearch
   endif
   echo 'CHARM = $(CHARMBASE)/$(CHARMARCH)' >> Makearch
-  if ( $ARCH =~ *-MPI* ) then
-    echo 'NAMD_PLATFORM = $(NAMD_ARCH)-MPI' >> Makearch
-  else if ( $ARCH =~ *-VMI* ) then
-    echo 'NAMD_PLATFORM = $(NAMD_ARCH)-VMI' >> Makearch
-  else if ( $ARCH =~ *-GM* ) then
-    echo 'NAMD_PLATFORM = $(NAMD_ARCH)-GM' >> Makearch
-  else if ( $ARCH =~ *-Elan* ) then
-    echo 'NAMD_PLATFORM = $(NAMD_ARCH)-Elan' >> Makearch
-  else if ( $ARCH =~ *-ScyldCD* ) then
-    echo 'NAMD_PLATFORM = $(NAMD_ARCH)-ScyldCD' >> Makearch
-  else if ( $ARCH =~ *-Scyld* ) then
-    echo 'NAMD_PLATFORM = $(NAMD_ARCH)-Scyld' >> Makearch
-  else if ( $ARCH =~ *-Clustermatic* ) then
-    echo 'NAMD_PLATFORM = $(NAMD_ARCH)-Clustermatic' >> Makearch
-  else
-    echo 'NAMD_PLATFORM = $(NAMD_ARCH)' >> Makearch
-  endif
+  set ARCH_SUFFIX = ""
+  if ( $ARCH =~ *-ScyldCD* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-ScyldCD
+  if ( $ARCH =~ *-Scyld* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-Scyld
+  if ( $ARCH =~ *-Clustermatic* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-Clustermatic
+  if ( $ARCH =~ *-MPI* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-MPI
+  if ( $ARCH =~ *-VMI* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-VMI
+  if ( $ARCH =~ *-TCP* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-TCP
+  if ( $ARCH =~ *-GM* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-GM
+  if ( $ARCH =~ *-Elan* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-Elan
+  echo NAMD_PLATFORM = \$\(NAMD_ARCH\)${ARCH_SUFFIX} >> Makearch
   if ( $ARCH =~ *Win32* ) then
    cat .rootdir/arch/Win32.base >> Makearch
    if ( $use_tcl ) cat .rootdir/arch/Win32.tcl >> Makearch
