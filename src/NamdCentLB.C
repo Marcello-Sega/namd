@@ -25,7 +25,19 @@ NamdCentLB::NamdCentLB()
 {
   //  if (CkMyPe()==0)
   //   CkPrintf("[%d] NamdCentLB created\n",CkMyPe());
+  processorArray = 0;
+  patchArray = 0;
+  computeArray = 0;
 }
+
+/*
+NamdCentLB::~NamdCentLB()
+{
+  delete [] processorArray;
+  delete [] patchArray;
+  delete [] computeArray;
+}
+*/
 
 CmiBool NamdCentLB::QueryBalanceNow(int _step)
 {
@@ -47,9 +59,10 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
   const int numComputes = ComputeMap::Object()->numComputes();
   const SimParameters* simParams = Node::Object()->simParameters;
 
-  processorArray = new processorInfo[numProcessors];
-  patchArray = new patchInfo[numPatches];
-  computeArray = new computeInfo[numComputes];
+  // these sizes should never change
+  if ( ! processorArray ) processorArray = new processorInfo[numProcessors];
+  if ( ! patchArray ) patchArray = new patchInfo[numPatches];
+  if ( ! computeArray ) computeArray = new computeInfo[numComputes];
 
   const int nMoveableComputes = buildData(stats,count);
   // gzheng debug
@@ -97,6 +110,7 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
       iout << iINFO <<"Warning: Processor " << i 
 	   << " has NO moveable computes.\n" << endi;
   }
+  delete [] computeCount;
   
   CkVector migrateInfo;
   for(i=0;i<nMoveableComputes;i++) {
@@ -112,10 +126,6 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
     }
   }
   
-  delete [] processorArray;
-  delete [] patchArray;
-  delete [] computeArray;
-
   int migrate_count=migrateInfo.size();
   // CkPrintf("NamdCentLB migrating %d elements\n",migrate_count);
   CLBMigrateMsg* msg = new(&migrate_count,1) CLBMigrateMsg;
@@ -251,6 +261,9 @@ void NamdCentLB::loadData(char *file, int &numProcessors, int &numPatches, int &
   read(fd, &numComputes, sizeof(int));
 
   printf("numProcs: %d numPatches: %d numComputes: %d\n", numProcessors,numPatches, numComputes);
+
+  // memory leak waiting to happen!
+  NAMD_bug("NamdCentLB::loadData called!");
   processorInfo *processorArray = new processorInfo[numProcessors];
   computeInfo *computeArray = new computeInfo[numComputes];
   patchInfo *patchArray = new patchInfo [numPatches];
