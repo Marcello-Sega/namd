@@ -839,9 +839,7 @@ void Sequencer::submitHalfstep(int step)
       v_cm /= m_cm;
       for (j=i; j < i+hgs; ++j) {
         BigReal mass = a[j].mass;
-        Position realpos = patch->lattice.reverse_transform(
-          a[j].position, a[j].transform);
-        BigReal z = realpos.z;
+        BigReal z = a[j].position.z;
         int slab = (int)floor((z-zmin)*idz);
         if (slab < 0) slab += nslabs;
         else if (slab >= nslabs) slab -= nslabs;
@@ -976,9 +974,7 @@ void Sequencer::submitReductions(int step)
       for (j=i; j < i+hgs; ++j) {
         BigReal mass = a[j].mass;
         Vector dx = a[j].position - x_cm;
-        Position realpos = patch->lattice.reverse_transform(
-          a[j].position, a[j].transform);
-        BigReal z = realpos.z;
+        BigReal z = a[j].position.z;
         int slab = (int)floor((z-zmin)*idz);
         if (slab < 0) slab += nslabs;
         else if (slab >= nslabs) slab -= nslabs;

@@ -478,9 +478,7 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
           f[Results::normal][ig+i] += df;
           atom[ig+i].velocity = vel[i];
           if (ppreduction) {
-            Position realpos = lattice.reverse_transform(
-                atom[ig+i].position, atom[ig+i].transform);
-            BigReal z = realpos.z;
+            BigReal z = pos[i].z;
             int slab = (int)floor((z-zmin)*idz);
             if (slab < 0) slab += nslabs;
             else if (slab >= nslabs) slab -= nslabs;
@@ -573,9 +571,7 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
       f[Results::normal][ig+i] += df;
       atom[ig+i].velocity = vel[i];
       if (ppreduction) {
-        Position realpos = lattice.reverse_transform(
-            atom[ig+i].position, atom[ig+i].transform);
-        BigReal z = realpos.z;
+        BigReal z = pos[i].z;
         int slab = (int)floor((z-zmin)*idz);
         if (slab < 0) slab += nslabs;
         else if (slab >= nslabs) slab -= nslabs;
