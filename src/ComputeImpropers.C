@@ -48,15 +48,16 @@ void ImproperElem::addTuplesForAtom
 BigReal ImproperElem::computeForce(void)
 {
   DebugM(3, "::computeForce() localIndex = " << localIndex[0] << " "
-               << localIndex[1] << " " << localIndex[2] << endl);
+               << localIndex[1] << " " << localIndex[2] << " " <<
+	       localIndex[3] << endl);
 
   Vector r12, r23, r34;	// vector between atoms
   Vector A,B,C;		// cross products
   BigReal rA, rB, rC;	// length of vectors A, B, and C
   BigReal energy=0;	// energy from the angle
   BigReal phi;		// angle between the plans
-  BigReal cos_phi;	// cos(phi)
-  BigReal sin_phi;	// sin(phi)
+  double cos_phi;	// cos(phi)
+  double sin_phi;	// sin(phi)
   Vector dcosdA;	// Derivative d(cos(phi))/dA
   Vector dcosdB;	// Derivative d(cos(phi))/dB
   Vector dsindC;	// Derivative d(sin(phi))/dC
@@ -80,6 +81,12 @@ BigReal ImproperElem::computeForce(void)
   r12 = pos0-pos1;
   r23 = pos1-pos2;
   r34 = pos2-pos3;
+  iout << iWARN << p[0] << " " << p[1] << " " << p[2] << " " << p[3] << "\n" << endi;
+  iout << iWARN << p[0]->x[0] << " " << p[1]->x[0] << " " << p[2]->x[0] << " " << p[3]->x[0] << "\n" << endi;
+  iout << iWARN << pos0 << "\n" << endi;
+  iout << iWARN << pos1 << "\n" << endi;
+  iout << iWARN << pos2 << "\n" << endi;
+  iout << iWARN << pos3 << "\n" << endi;
 
   //  Calculate the cross products
   A = cross(r12,r23);
@@ -99,8 +106,9 @@ BigReal ImproperElem::computeForce(void)
   rB = 1.0/rB;
   B *= rB;
 
+iout << iWARN << "Calling atan2 with " << sin_phi << "," << cos_phi << "\n" << endi;
   phi= -atan2(sin_phi,cos_phi);
-  CHECK_DOMAIN();
+  CHECK_DOMAIN_ATAN(sin_phi,cos_phi);
 
   if (fabs(sin_phi) > 0.1)
   {

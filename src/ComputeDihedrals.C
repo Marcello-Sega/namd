@@ -100,7 +100,7 @@ BigReal DihedralElem::computeForce(void)
   B *= rB;
 
   phi= -atan2(sin_phi,cos_phi);
-  CHECK_DOMAIN();
+  CHECK_DOMAIN_ATAN(sin_phi,cos_phi);
 
   if (fabs(sin_phi) > 0.1)
   {
