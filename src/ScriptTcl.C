@@ -671,6 +671,50 @@ int ScriptTcl::Tcl_dumpbench(ClientData clientData,
   return TCL_OK;
 }
 
+#include "ComputeConsForceMsgs.h"
+// consforceconfig <atomids> <forces>
+static int Tcl_consForceConfig(ClientData, Tcl_Interp *interp, int objc,
+    Tcl_Obj *const objv[]) {
+  if (objc != 3) {
+    Tcl_WrongNumArgs(interp, 1, objv, (char *)"<atomids> <forces>");
+    return TCL_ERROR;
+  }
+  int natoms, nforces;
+  Tcl_Obj **atomobjlist, **forceobjlist;
+  if (Tcl_ListObjGetElements(interp, objv[1], &natoms, &atomobjlist) != TCL_OK ||
+      Tcl_ListObjGetElements(interp, objv[2], &nforces, &forceobjlist) != TCL_OK) {
+    return TCL_ERROR;
+  }
+  if (natoms != nforces) {
+    Tcl_AppendResult(interp, (char *)"consforceconfig: atom list and force list not the same size!", NULL);
+    return TCL_ERROR;
+  }
+  ComputeConsForceMsg *msg = new ComputeConsForceMsg;
+  for (int i=0; i<natoms; i++) {
+    int atomid;
+    int nelem;
+    Tcl_Obj **elemlist;
+    Vector force;
+    if (Tcl_GetIntFromObj(interp, atomobjlist[i], &atomid) != TCL_OK) 
+      return TCL_ERROR;
+    if (Tcl_ListObjGetElements(interp, forceobjlist[i], &nelem, &elemlist) != TCL_OK)
+      return TCL_ERROR;
+    if (nelem != 3) {
+      Tcl_AppendResult(interp, (char *)"consforceconfig: forces must have three elements", NULL);
+      return TCL_ERROR;
+    }
+    if (Tcl_GetDoubleFromObj(interp, elemlist[0], &force.x) != TCL_OK ||
+        Tcl_GetDoubleFromObj(interp, elemlist[1], &force.y) != TCL_OK ||
+        Tcl_GetDoubleFromObj(interp, elemlist[2], &force.z) != TCL_OK) {
+      return TCL_ERROR;
+    }
+    msg->aid.add(atomid);
+    msg->f.add(force);
+  }
+  (CProxy_ComputeMgr(CpvAccess(BOCclass_group).computeMgr)).recvComputeConsForceMsg(msg);
+  return TCL_OK;
+}
+
 #endif  // NAMD_TCL
 
 
@@ -735,6 +779,8 @@ ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
 
   Tcl_CreateCommand(interp, "dumpbench", Tcl_dumpbench,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateObjCommand(interp, "consForceConfig", Tcl_consForceConfig, 
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 #endif
 
 }
