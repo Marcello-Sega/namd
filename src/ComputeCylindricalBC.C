@@ -33,6 +33,7 @@ ComputeCylindricalBC::ComputeCylindricalBC(ComputeID c, PatchID pid)
 	SimParameters *simParams = Node::Object()->simParameters;
 
 	//  Get parameters from the SimParameters object
+	axis = simParams->cylindricalBCAxis;
 	r1 = simParams->cylindricalBCr1;
 	r2 = simParams->cylindricalBCr2;
 	r1_2 = r1*r1;
@@ -70,122 +71,6 @@ ComputeCylindricalBC::ComputeCylindricalBC(ComputeID c, PatchID pid)
 	{
 		center = simParams->cylindricalCenter;
 	}
-
-// Removed work needed checks for simplicity -JCP
-//	doAnything = TRUE;
-//	doLateral = TRUE;
-//	doFaces = TRUE;
-
-/*
-	Vector comparePoint;	//  Point on patch boundary to compare
-	Vector midPoint;	//  Middle of the patch
-	Vector diff;		//  Difference between compare point
-				//  and center of cylinder
-	BigReal dist2;		//  Distance between point and center
-				//  of cylinder squared
-	BigReal dist3;		//  Distance between point and center
-
-	//  Now, determine what point on the patch is furthest to
-	//  the center of the cylinder.  This is done using the following
-	//  algorithm.  For each dimension, compare the midpoint of the
-	//  patch to the center of the cylinder.  If the center of the
-	//  cylinder is less than the midpoint, take the origin plus the
-	//  patch size as the cooridinate in that dimension to check.
-	//  If it is greater than the midpoint, choose the origin's
-	//  coordinate in this dimension as the cooridinate to use.
-
-	//  Determine the midpoint
-	//  size is dimension of patch.  Apparently patches are square.
-	//  Are square patches necessarily optimal for my example
-	//  of an elongated cylinder?
-	midPoint.x = origin->x+0.5*size;
-	midPoint.y = origin->y+0.5*size;
-	midPoint.z = origin->z+0.5*size;
-
-	//  One only needs to check y  and z dimensions.
-	//  Z-dimension
-	if (center.z < midPoint.z)
-	{
-		comparePoint.z = origin->z+size;
-	}
-	else 
-	{
-		comparePoint.z = origin->z;
-	}
-
-	//  Y-dimension
-	if (center.y < midPoint.y)
-	{
-		comparePoint.y = origin->y+size;
-	}
-	else 
-	{
-		comparePoint.y = origin->y;
-	}
-
-	//  X-dimension
-		comparePoint.x= center.x;
-
-
-	//  Now, find a vector from the center to the comparison point
-	diff = center-comparePoint;
-
-	//  Calculate the distance squared
-	dist2 = diff.x*diff.x + diff.y*diff.y + diff.z*diff.z;
-
-        // Now perform computations not for the lateral sides, but
-        // for the faces.  This involves the x-direction only.
-        if (center.x < midPoint.x)
-        {
-                comparePoint.x = origin->x+size;
-        }
-        else
-        {
-                comparePoint.x = origin->x;
-        }
-        dist3 = fabs (comparePoint.x-center.x);
-
-	//  Compare it to the radius values and determine if there
-	//  is really any work for this patch to do
-	if (dist2 > r1_2)
-	{
-		//  Outside of radius 1, we really have work to do
-		doAnything = TRUE;
-		doLateral = TRUE;
-	}
-	else if ( twoForces && (dist2 > r2_2) )
-	{
-		//  Two sets of parameters, and we are inside of
-		//  the second radius, we really have work to do
-		doAnything = TRUE;
-		doLateral = TRUE;
-	}
-	else
-	{
-		//  Inside of all active radii, do nothing
-		doAnything = FALSE;
-		doLateral = FALSE;
-	}
-
-        // Handle cases for the ends
-        if (dist3 > l1)
-        {
-                // beyond cylinder length 1, work to do
-                doAnything = TRUE;
-                doFaces = TRUE;
-        }
-        else if ( twoForces && (dist2 > l2))
-        {
-                // Two sets of parameters, work to do
-                doAnything = TRUE;
-                doFaces = TRUE;
-        }
-	else
-	{
-	doFaces = FALSE;
-	}
-*/
-
 
 }
 /*			END OF FUNCTION ComputeCylindricalBC		*/
@@ -238,19 +123,14 @@ void ComputeCylindricalBC::doForce(Position* p, Results* r, AtomProperties* a)
 	Force *forces = r->f[Results::normal];
 	BigReal energy = 0;
 
-	// There are a couple of possibilities.  We could require
-	// boundary conditions to be applied across the lateral
-	// area, or across the faces, or both.
-//        if (doLateral)
-        {
 	//  Loop through and check each atom
 	for (i=0; i<numAtoms; i++)
 	{
 		//  Calculate the vector from the atom to the center of the
 		//  cylinder
-		diff.z = x[i].z - center.z;
-		diff.y = x[i].y - center.y;
-		diff.x = 0.0;
+		diff.x = ( axis == 'x' ? 0.0 : x[i].x - center.x );
+		diff.y = ( axis == 'y' ? 0.0 : x[i].y - center.y );
+		diff.z = ( axis == 'z' ? 0.0 : x[i].z - center.z );
 		
 		//  Calculate the distance squared
 		dist_2 = diff.x*diff.x + diff.y*diff.y + diff.z*diff.z;
@@ -350,26 +230,14 @@ void ComputeCylindricalBC::doForce(Position* p, Results* r, AtomProperties* a)
 			}
 		}
 	}
-  }    // End lateral condition
-
-
-
-
-
-
-
-
-// Handle ends
-// if (doFaces)
-     {
        //  Loop through and check each atom
         for (i=0; i<numAtoms; i++)
         {
                 //  Calculate the vector from the atom to the center of the
                 //  cylinder
-		diff.z = 0.0;
-		diff.y = 0.0;
-                diff.x = x[i].x - center.x;
+		diff.x = ( axis != 'x' ? 0.0 : x[i].x - center.x );
+		diff.y = ( axis != 'y' ? 0.0 : x[i].y - center.y );
+		diff.z = ( axis != 'z' ? 0.0 : x[i].z - center.z );
 
                 //  Calculate the distance squared
                 dist_2 = diff.x*diff.x + diff.y*diff.y + diff.z*diff.z;
@@ -471,11 +339,7 @@ void ComputeCylindricalBC::doForce(Position* p, Results* r, AtomProperties* a)
         }
 
     reduction->submit(fake_seq, REDUCTION_BC_ENERGY, energy);
-
-    }
-// END Additions for ends
-
-
+    fake_seq++;
 
 }
 /*			END OF FUNCTION force				*/

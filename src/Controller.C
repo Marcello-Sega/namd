@@ -34,6 +34,7 @@ Controller::Controller(NamdState *s) :
     reduction->subscribe(REDUCTION_ELECT_ENERGY);
     reduction->subscribe(REDUCTION_LJ_ENERGY);
     reduction->subscribe(REDUCTION_KINETIC_ENERGY);
+    reduction->subscribe(REDUCTION_BC_ENERGY);
 }
 
 Controller::~Controller(void)
@@ -45,6 +46,7 @@ Controller::~Controller(void)
     reduction->unsubscribe(REDUCTION_ELECT_ENERGY);
     reduction->unsubscribe(REDUCTION_LJ_ENERGY);
     reduction->unsubscribe(REDUCTION_KINETIC_ENERGY);
+    reduction->unsubscribe(REDUCTION_BC_ENERGY);
 }
 
 void Controller::threadRun(Controller* arg)
@@ -107,6 +109,7 @@ void Controller::printEnergies(int seq)
     BigReal electEnergy;
     BigReal ljEnergy;
     BigReal kineticEnergy;
+    BigReal boundaryEnergy;
     BigReal temperature;
     BigReal totalEnergy;
 
@@ -117,11 +120,12 @@ void Controller::printEnergies(int seq)
     reduction->require(seq, REDUCTION_ELECT_ENERGY, electEnergy);
     reduction->require(seq, REDUCTION_LJ_ENERGY, ljEnergy);
     reduction->require(seq, REDUCTION_KINETIC_ENERGY, kineticEnergy);
+    reduction->require(seq, REDUCTION_BC_ENERGY, boundaryEnergy);
 
     temperature = 2.0 * kineticEnergy / ( numDegFreedom * BOLTZMAN );
 
     totalEnergy = bondEnergy + angleEnergy + dihedralEnergy + improperEnergy +
-	 electEnergy + ljEnergy + kineticEnergy;
+	 electEnergy + ljEnergy + kineticEnergy + boundaryEnergy;
 
     if ( seq % node->simParameters->outputEnergies ) return;
 
@@ -129,7 +133,7 @@ void Controller::printEnergies(int seq)
     {
 	iout << "ETITLE:     TS    BOND        ANGLE       "
 	     << "DIHED       IMPRP       ELECT       VDW       ";
-	iout << "KINETIC        TOTAL     TEMP\n";
+	iout << "BOUNDARY    KINETIC        TOTAL     TEMP\n";
     }
 
     iout << ETITLE(seq + simParams->firstTimestep)
@@ -139,6 +143,7 @@ void Controller::printEnergies(int seq)
 	 << FORMAT(improperEnergy)
 	 << FORMAT(electEnergy)
 	 << FORMAT(ljEnergy)
+	 << FORMAT(boundaryEnergy)
 	 << FORMAT(kineticEnergy)
 	 << FORMAT(totalEnergy)
 	 << FORMAT(temperature)

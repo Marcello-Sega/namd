@@ -204,6 +204,7 @@ public:
         Vector cylindricalCenter;
         Bool cylindricalBCOn;           //  Flag TRUE->cylindrical boundary
                                         //  conditions are active
+	char cylindricalBCAxis;		//  'x', 'y', or 'z'
         BigReal cylindricalBCr1;
         BigReal cylindricalBCr2;
         BigReal cylindricalBCl1;
@@ -290,12 +291,15 @@ public:
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/15 22:15:33 $
+ *	$Revision: 1.1003 $	$Date: 1997/03/16 19:44:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1003  1997/03/16 19:44:08  jim
+ * Added cylindricalBCAxis option to cylindrical boundary conditions.
+ *
  * Revision 1.1002  1997/03/15 22:15:33  jim
  * Added ComputeCylindricalBC.  Doesn't break anything but untested and
  * cylinder is along x axis (will fix soon).

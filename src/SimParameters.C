@@ -11,7 +11,7 @@
  *
  *	$RCSfile: SimParameters.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/15 22:15:31 $
+ *	$Revision: 1.1003 $	$Date: 1997/03/16 19:44:06 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1003  1997/03/16 19:44:06  jim
+ * Added cylindricalBCAxis option to cylindrical boundary conditions.
+ *
  * Revision 1.1002  1997/03/15 22:15:31  jim
  * Added ComputeCylindricalBC.  Doesn't break anything but untested and
  * cylinder is along x axis (will fix soon).
@@ -321,7 +324,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1002 1997/03/15 22:15:31 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1003 1997/03/16 19:44:06 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -702,6 +705,8 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
 
 // additions beyond those already found in spherical parameters    JJU
+   opts.optional("cylindricalBC", "cylindricalBCAxis", "Cylinder axis (defaults to x)",
+		PARSE_STRING);
    opts.require ("cylindricalBC", "cylindricalBCl1", "Length of first cylinder",
                  &cylindricalBCl1);
    opts.range("cylindricalBCl1", POSITIVE);
@@ -915,8 +920,39 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
    lattice.set(cellBasisVector1,cellBasisVector2,cellBasisVector3);
 
-   ///// exclude stuff
    char s[129];
+
+   ///// cylindricalBC stuff
+   if ( ! opts.defined("cylindricalBCAxis") )
+   {
+      cylindricalBCAxis = 'x';
+   }
+   else
+   {
+     opts.get("cylindricalBCAxis", s);
+
+     if (!strcasecmp(s, "x"))
+     {
+      cylindricalBCAxis = 'x';
+     }
+     else if (!strcasecmp(s, "y"))
+     {
+      cylindricalBCAxis = 'y';
+     }
+     else if (!strcasecmp(s, "z"))
+     {
+      cylindricalBCAxis = 'z';
+     }
+   else
+     {
+      char err_msg[128];
+
+      sprintf(err_msg, "Illegal value '%s' for 'cylindricalBCAxis' in configuration file", s);
+      NAMD_die(err_msg);
+     }
+   }
+
+   ///// exclude stuff
    opts.get("exclude", s);
 
    if (!strcasecmp(s, "none"))
@@ -1769,6 +1805,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    if (cylindricalBCOn)
    {
     iout << iINFO << "CYLINDRICAL BOUNDARY CONDITIONS ACTIVE\n";
+    iout << iINFO << "AXIS                     " << cylindricalBCAxis << "\n";
     iout << iINFO << "RADIUS #1                " << cylindricalBCr1 << "\n";
     iout << iINFO << "FORCE CONSTANT #1        " << cylindricalBCk1 << "\n";
     iout << iINFO << "EXPONENT #1              " << cylindricalBCexp1 << "\n";
@@ -2094,6 +2131,7 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
         msg->put(cylindricalBCl2);
         msg->put(&cylindricalCenter);
         msg->put(cylindricalBCexp1).put(cylindricalBCexp2);
+        msg->put(cylindricalBCAxis);
 
 	// send periodic box data
 	msg->put(cellBasisVector1.x);
@@ -2220,6 +2258,7 @@ void SimParameters::receive_SimParameters(Message *msg)
         msg->get(&cylindricalCenter);
         msg->get(cylindricalBCexp1);
         msg->get(cylindricalBCexp2);
+        msg->get(cylindricalBCAxis);
 
 	// receive periodic box data
 	msg->get(cellBasisVector1.x);

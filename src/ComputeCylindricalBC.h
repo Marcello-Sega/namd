@@ -22,14 +22,7 @@
 class ComputeCylindricalBC : public ComputePatch
 {
 private:
-	// Bool doAnything;		//  Does this patch need to calc anything
-					//  This is set to TRUE only if some portion
-					//  of the patch that owns this object
-					//  is outside of a cylindrical constraint
-	// Bool doLateral;			//  Constraints across lateral area must
-					//  be applied
-	// Bool doFaces;			//  Constraints on face ends must be 
-					//  applied.
+	char axis;			//  'x', 'y', or 'z'
 	BigReal r1;			//  Radius of first cylinder
 	BigReal r1_2;			//  Radius of first cylinder squared
 	BigReal l1;			//  Length of First cylinder
