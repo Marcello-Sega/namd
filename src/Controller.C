@@ -1289,7 +1289,11 @@ void Controller::printEnergies(int step, int minimize)
 #define CALLBACKLIST(LABEL,VALUE) \
 		labels << (LABEL) << " "; values << "{" << (VALUE) << "} ";
     if (node->getScript() && node->getScript()->doCallback()) {
+#ifndef NO_STRSTREAM_H
       ostrstream labels, values;
+#else
+      ostringstream labels, values;
+#endif
       CALLBACKDATA("TS",step);
       CALLBACKDATA("BOND",bondEnergy);
       CALLBACKDATA("ANGLE",angleEnergy);
@@ -1313,8 +1317,13 @@ void Controller::printEnergies(int step, int minimize)
 		<< lattice.b_p() << " " << lattice.c_p() << "}";
 
       labels << '\0';  values << '\0';  // insane but makes Linux work
+#ifndef NO_STRSTREAM_H
       char *labelstr = labels.str();
       char *valuestr = values.str();
+#else
+      const char *labelstr = labels.str().c_str();
+      const char *valuestr = values.str().c_str();
+#endif
       node->getScript()->doCallback(labelstr,valuestr);
       delete [] labelstr;
       delete [] valuestr;
