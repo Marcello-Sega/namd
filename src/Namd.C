@@ -9,7 +9,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.1007 1998/03/03 23:05:17 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.C,v 1.1008 1998/05/22 00:33:58 jim Exp $";
 
 #include "unistd.h"
 
@@ -46,6 +46,9 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/Namd.
 
 float Namd::cmiWallStart;
 float Namd::cmiCpuStart;
+int Namd::cmiFirstStart;
+float Namd::cmiWallFirstStart;
+float Namd::cmiCpuFirstStart;
 
 // Namd(void ) is the constructor for the startup node.  It needs to
 // read in file data,
@@ -129,13 +132,16 @@ void Namd::startup(char *confFile)
  * RCS INFORMATION:
  *
  *	$RCSfile: Namd.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1998/03/03 23:05:17 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1998/05/22 00:33:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Namd.C,v $
+ * Revision 1.1008  1998/05/22 00:33:58  jim
+ * Fixed final timing when load balancing is used.
+ *
  * Revision 1.1007  1998/03/03 23:05:17  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *

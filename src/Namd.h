@@ -37,8 +37,8 @@ public:
   // last call of system
   static void namdDone(void) { 
     CPrintf("==========================================\n");
-    Real CPUtime = CmiCpuTimer()-cmiCpuStart;
-    Real Walltime = CmiWallTimer()-cmiWallStart;
+    Real CPUtime = CmiCpuTimer()-cmiCpuFirstStart;
+    Real Walltime = CmiWallTimer()-cmiWallFirstStart;
     CPrintf("WallClock : %f  CPUTime : %f \n",Walltime,CPUtime);
 
     // femtoseconds
@@ -54,12 +54,24 @@ public:
 
   // Emergency bailout 
   static void die() { abort(); CharmExit(); }
-  static void startTimer() { cmiWallStart = CmiWallTimer(); 
-			     cmiCpuStart = CmiCpuTimer(); }
+  static void startTimer() {
+	cmiWallStart = CmiWallTimer(); 
+	cmiCpuStart = CmiCpuTimer();
+	if ( ! cmiFirstStart ) {
+		cmiFirstStart = 1;
+		cmiWallFirstStart = cmiWallStart;
+		cmiCpuFirstStart = cmiCpuStart;
+	}
+  }
 
   static float cmiWallStart;
   static float cmiCpuStart;
+
 private:
+  static int cmiFirstStart;
+  static float cmiWallFirstStart;
+  static float cmiCpuFirstStart;
+
   Node *node;
   int nodeGroup;
   int workDistribGroup;
@@ -75,13 +87,16 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: Namd.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1998/03/03 23:05:17 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1010 $	$Date: 1998/05/22 00:33:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Namd.h,v $
+ * Revision 1.1010  1998/05/22 00:33:59  jim
+ * Fixed final timing when load balancing is used.
+ *
  * Revision 1.1009  1998/03/03 23:05:17  brunner
  * Changed include files for new simplified Charm++ include file structure.
  *
