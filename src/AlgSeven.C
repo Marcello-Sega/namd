@@ -22,42 +22,8 @@ strategyName = "Alg7";
 strategy();
 }
 
-void Alg7::strategy()
-{
-  // double bestSize0, bestSize1, bestSize2;
-  computeInfo *c;
-  int numAssigned;
-  processorInfo* goodP[3][3];  // goodP[# of real patches][# of proxies]
-  processorInfo* poorP[3][3];  // fallback option
-
-  double startTime = CmiWallTimer();
-
-  //   iout << iINFO  << "calling makeHeaps. \n";
-  makeHeaps();
-  computeAverage();
-  //   iout << iINFO
-  //	<< "Before assignment\n" << endi;
-     printLoads();
-	      
-  numAssigned = 0;
-
-  //   for (int i=0; i<numPatches; i++)
-  //     { cout << "(" << patches[i].Id << "," << patches[i].processor ;}
-  overLoad = 1.2;
-  for (int ic=0; ic<numComputes; ic++) {
-    c = (computeInfo *) computesHeap->deleteMax();
-    if ( ! c ) NAMD_bug("Alg7: computesHeap empty!");
-    if (c->processor != -1) continue; // skip to the next compute;
-    heapIterator nextProcessor;
-    processorInfo *p = (processorInfo *) 
-      pes->iterator((heapIterator *) &nextProcessor);
-    int i,j;
-    for(i=0;i<3;i++)
-      for(j=0;j<3;j++) {
-	goodP[i][j]=0;
-	poorP[i][j]=0;
-      }
-    while (p) {
+void Alg7::togrid(processorInfo* goodP[3][3], processorInfo* poorP[3][3],
+			processorInfo *p, computeInfo *c) {
       int nPatches = numPatchesAvail(c,p);
       int nProxies = numProxiesAvail(c,p);
       if (nPatches < 0 || nPatches > 2)
@@ -88,6 +54,87 @@ void Alg7::strategy()
 	    (p->load < poorP[nPatches][nProxies]->load)) {
 	poorP[nPatches][nProxies] = p;   // fallback
       }
+}
+
+void Alg7::strategy()
+{
+  // double bestSize0, bestSize1, bestSize2;
+  computeInfo *c;
+  int numAssigned;
+  processorInfo* goodP[3][3];  // goodP[# of real patches][# of proxies]
+  processorInfo* poorP[3][3];  // fallback option
+
+  double startTime = CmiWallTimer();
+
+  //   iout << iINFO  << "calling makeHeaps. \n";
+  makeHeaps();
+  computeAverage();
+  //   iout << iINFO
+  //	<< "Before assignment\n" << endi;
+     printLoads();
+	      
+  numAssigned = 0;
+
+  //   for (int i=0; i<numPatches; i++)
+  //     { cout << "(" << patches[i].Id << "," << patches[i].processor ;}
+  overLoad = 1.2;
+  for (int ic=0; ic<numComputes; ic++) {
+    c = (computeInfo *) computesHeap->deleteMax();
+    if ( ! c ) NAMD_bug("Alg7: computesHeap empty!");
+    if (c->processor != -1) continue; // skip to the next compute;
+    int i,j;
+    for(i=0;i<3;i++)
+      for(j=0;j<3;j++) {
+	goodP[i][j]=0;
+	poorP[i][j]=0;
+      }
+
+    // first try for at least one proxy
+    {
+      Iterator nextProc;
+      processorInfo *p;
+
+      p = &processors[patches[c->patch1].processor];
+      togrid(goodP, poorP, p, c);
+
+      p = &processors[patches[c->patch2].processor];
+      togrid(goodP, poorP, p, c);
+
+      p = (processorInfo *)patches[c->patch1].
+                            proxiesOn.iterator((Iterator *)&nextProc);
+      while (p) {
+        togrid(goodP, poorP, p, c);
+        p = (processorInfo *)patches[c->patch1].
+                            proxiesOn.next((Iterator*)&nextProc);
+      }
+
+      p = (processorInfo *)patches[c->patch2].
+                            proxiesOn.iterator((Iterator *)&nextProc);
+      while (p) {
+        togrid(goodP, poorP, p, c);
+        p = (processorInfo *)patches[c->patch2].
+                            proxiesOn.next((Iterator*)&nextProc);
+      }
+      p = 0;
+      if ((p = goodP[1][1])    // One home, one proxy
+       || (p = goodP[2][0])    // Two home, no proxies
+       || (p = goodP[0][2])    // No home, two proxies
+       || (p = goodP[1][0])    // One home, no proxies
+       || (p = goodP[0][1])    // No home, one proxy
+       || (p = goodP[0][0])    // No home, no proxies
+         ) {
+        assign(c,p); numAssigned++;
+        continue;
+      }
+    }
+
+    // no luck, do it the long way
+
+    heapIterator nextProcessor;
+    processorInfo *p = (processorInfo *) 
+      pes->iterator((heapIterator *) &nextProcessor);
+    while (p) {
+      togrid(goodP, poorP, p, c);
       p = (processorInfo *) pes->next(&nextProcessor);
     }
 
@@ -101,25 +148,6 @@ void Alg7::strategy()
      || (p = goodP[0][1])    // No home, one proxy
      || (p = goodP[0][0])    // No home, no proxies
        ) {
-/*
-      iout << "load " << c->load << " to "
-			<< p->Id << " " << p->load << " : "
-#define PRMAP(X) ((X)?(X)->Id:-1)
-      << PRMAP(goodP[2][0]) << " "
-      << PRMAP(goodP[1][1]) << " "
-      << PRMAP(goodP[0][2]) << " "
-      << PRMAP(goodP[1][0]) << " "
-      << PRMAP(goodP[0][1]) << " "
-      << PRMAP(goodP[0][0]) << " "
-      << " "
-      << PRMAP(poorP[2][0]) << " "
-      << PRMAP(poorP[1][1]) << " "
-      << PRMAP(poorP[0][2]) << " "
-      << PRMAP(poorP[1][0]) << " "
-      << PRMAP(poorP[0][1]) << " "
-      << PRMAP(poorP[0][0]) << " "
-      << "\n" << endi;
-*/
       assign(c,p); numAssigned++;
    } else if (
         (p = poorP[2][0])    // Two home, no proxies, overload
