@@ -88,7 +88,10 @@ void Sync::registerComp(PatchID pid, ComputeIDListIter cid, int doneMigration)
 
 //  CkPrintf("REG[%d]: patch:%d step:%d-%d slot:%d\n", CkMyPe(), pid, patchMap->patch(pid)->flags.step, step, slot);
 
-  if (clist[i].step == step) triggerCompute();
+  if (clist[slot].step == step) {
+//      nPatcheReady++;
+      triggerCompute();
+  }
 }
 
 void Sync::PatchReady(void)
