@@ -1434,7 +1434,7 @@ int ReadAlpha(const char* Str) {
   int  i=0;
 
   while (1) {
-    if (isalpha(Str[i])) {
+    if (isalpha(Str[i]) || Str[i]=='\'' || Str[i]=='\"' || Str[i] == '*') {
       i++;
     }
     else {
@@ -1452,7 +1452,7 @@ int ReadAlphaNum(const char* Str) {
   int  i=0;
 
   while (1) {
-    if (isalnum(Str[i])) {
+    if (isalnum(Str[i]) || Str[i]=='\'' || Str[i]=='\"' || Str[i] == '*') {
       i++;
     }
     else {
