@@ -62,35 +62,106 @@ public:
 #define DECLARATION
 #undef DEFINITON
 
+// (3) BEGIN SPLITTING
+#define NOSPLIT
+#undef SPLIT_XPLOR
+#undef SPLIT_C1
+//   (2) BEGIN PAIR / SELF / EXCL
 #define NBPAIR
 #undef NBSELF
 #undef NBEXCL
-
+//     (1) BEGIN FULLELECT
 #define FULLELECT
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
 #include "ComputeNonbondedBase.h"
-
-
+//     (1) END FULLELECT
 #undef NBPAIR
 #define NBSELF
 #undef NBEXCL
-
+//     (1) BEGIN FULLELECT
 #define FULLELECT
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
 #include "ComputeNonbondedBase.h"
-
-
+//     (1) END FULLELECT
 #undef NBPAIR
 #undef NBSELF
 #define NBEXCL
-
+//     (1) BEGIN FULLELECT
 #define FULLELECT
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
 #include "ComputeNonbondedBase.h"
+//     (1) END FULLELECT
+//   (2) END PAIR / SELF / EXCL
 
+#undef NOSPLIT
+#define SPLIT_XPLOR
+#undef SPLIT_C1
+//   (2) BEGIN PAIR / SELF / EXCL
+#define NBPAIR
+#undef NBSELF
+#undef NBEXCL
+//     (1) BEGIN FULLELECT
+#define FULLELECT
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#include "ComputeNonbondedBase.h"
+//     (1) END FULLELECT
+#undef NBPAIR
+#define NBSELF
+#undef NBEXCL
+//     (1) BEGIN FULLELECT
+#define FULLELECT
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#include "ComputeNonbondedBase.h"
+//     (1) END FULLELECT
+#undef NBPAIR
+#undef NBSELF
+#define NBEXCL
+//     (1) BEGIN FULLELECT
+#define FULLELECT
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#include "ComputeNonbondedBase.h"
+//     (1) END FULLELECT
+//   (2) END PAIR / SELF / EXCL
+
+#undef NOSPLIT
+#undef SPLIT_XPLOR
+#define SPLIT_C1
+//   (2) BEGIN PAIR / SELF / EXCL
+#define NBPAIR
+#undef NBSELF
+#undef NBEXCL
+//     (1) BEGIN FULLELECT
+#define FULLELECT
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#include "ComputeNonbondedBase.h"
+//     (1) END FULLELECT
+#undef NBPAIR
+#define NBSELF
+#undef NBEXCL
+//     (1) BEGIN FULLELECT
+#define FULLELECT
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#include "ComputeNonbondedBase.h"
+//     (1) END FULLELECT
+#undef NBPAIR
+#undef NBSELF
+#define NBEXCL
+//     (1) BEGIN FULLELECT
+#define FULLELECT
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#include "ComputeNonbondedBase.h"
+//     (1) END FULLELECT
+//   (2) END PAIR / SELF / EXCL
+// (3) END SPLITTING
 
 };
 
@@ -100,12 +171,15 @@ public:
  *
  *	$RCSfile: ComputeNonbondedUtil.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/28 04:47:06 $
+ *	$Revision: 1.1003 $	$Date: 1997/03/14 06:44:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.h,v $
+ * Revision 1.1003  1997/03/14 06:44:58  jim
+ * First working versions of full electrostatics splitting functions.
+ *
  * Revision 1.1002  1997/02/28 04:47:06  jim
  * Full electrostatics now works with fulldirect on one node.
  *

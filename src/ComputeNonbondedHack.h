@@ -72,13 +72,39 @@
 #undef FULL
 #undef NOFULL
 #ifdef FULLELECT
-#define FULLELECTNAME(X) LAST( X ## _fullelect )
+#define FULLELECTNAME(X) SPLITTINGNAME( X ## _fullelect )
 #define FULL(X) X
 #define NOFULL(X)
 #else
-#define FULLELECTNAME(X) LAST( X )
+#define FULLELECTNAME(X) SPLITTINGNAME( X )
 #define FULL(X)
 #define NOFULL(X) X
+#endif
+
+#undef SPLITTINGNAME
+
+#undef SHIFTING
+#define SHIFTING(X)
+#ifdef NOSPLIT
+#define SPLITTINGNAME(X) LAST( X )
+#undef SHIFTING
+#define SHIFTING(X) X
+#endif
+
+#undef XPLORSPLITTING
+#define XPLORSPLITTING(X)
+#ifdef SPLIT_XPLOR
+#define SPLITTINGNAME(X) LAST( X ## _xplor )
+#undef XPLORSPLITTING
+#define XPLORSPLITTING(X) X
+#endif
+
+#undef C1SPLITTING
+#define C1SPLITTING(X)
+#ifdef SPLIT_C1
+#define SPLITTINGNAME(X) LAST( X ## _c1 )
+#undef C1SPLITTING
+#define C1SPLITTING(X) X
 #endif
 
 #define LAST(X) X
@@ -113,12 +139,15 @@
  *
  *	$RCSfile: ComputeNonbondedHack.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/28 04:47:03 $
+ *	$Revision: 1.1003 $	$Date: 1997/03/14 06:44:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedHack.h,v $
+ * Revision 1.1003  1997/03/14 06:44:55  jim
+ * First working versions of full electrostatics splitting functions.
+ *
  * Revision 1.1002  1997/02/28 04:47:03  jim
  * Full electrostatics now works with fulldirect on one node.
  *

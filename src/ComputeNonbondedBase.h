@@ -228,11 +228,12 @@ FULL
 )
 )
 
-      BigReal switchVal;
-      BigReal shiftVal;
-      BigReal dSwitchVal;
-      BigReal dShiftVal;
+      BigReal switchVal; // used for Lennard-Jones
+      BigReal shiftVal; // used for electrostatics splitting as well
+      BigReal dSwitchVal; // used for Lennard-Jones
+      BigReal dShiftVal; // used for electrostatics splitting as well
 
+      // Lennard-Jones switching function
       if (r > switchOn)
       {
 	const BigReal c2 = cutoff2-r2;
@@ -246,9 +247,31 @@ FULL
 	dSwitchVal = 0;
       }
 
+SHIFTING
+(
+      // Basic electrostatics shifting function for cutoff simulations
       shiftVal = 1 - r2*c5;
       dShiftVal = c6*shiftVal*r;
       shiftVal *= shiftVal;
+)
+
+XPLORSPLITTING
+(
+      // X-plor electrostatics splitting function for multiple timestepping
+      // Same as X-plor VdW switching function so copy from above.
+      shiftVal = switchVal;
+      dShiftVal = dSwitchVal;
+)
+
+C1SPLITTING
+(
+      // C1 electrostatics splitting function for multiple timestepping
+
+      // NOT IMPLEMENTED PENDING FURTHER STUDY  -JCP
+      shiftVal = 1 - r2*c5;
+      dShiftVal = c6*shiftVal*r;
+      shiftVal *= shiftVal;
+)
 
       NOFULL(const BigReal) EXCL(FULL(const BigReal)) kqq = kq_i * a_j.charge;
 
@@ -375,12 +398,15 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/10 00:49:46 $
+ *	$Revision: 1.1006 $	$Date: 1997/03/14 06:44:53 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1006  1997/03/14 06:44:53  jim
+ * First working versions of full electrostatics splitting functions.
+ *
  * Revision 1.1005  1997/03/10 00:49:46  jim
  * Eliminated constant copying in exclusion mode, hopefully saves time.
  *

@@ -41,23 +41,24 @@ void ComputeNonbondedUtil::unregisterReductionData(ReductionMgr *reduction)
 
 void ComputeNonbondedUtil::select(void)
 {
+  SimParameters * simParams = Node::Object()->simParameters;
 
-  cutoff = Node::Object()->simParameters->cutoff;
+  cutoff = simParams->cutoff;
   cutoff2 = cutoff*cutoff;
-  dielectric_1 = 1/Node::Object()->simParameters->dielectric;
+  dielectric_1 = 1/simParams->dielectric;
   ljTable = LJTable::Instance();
   mol = Node::Object()->molecule;
-  if ( Node::Object()->simParameters->exclude == SCALED14 )
+  if ( simParams->exclude == SCALED14 )
   {
-    scale14 = Node::Object()->simParameters->scale14;
+    scale14 = simParams->scale14;
   }
   else
   {
     scale14 = 1.;
   }
-  if ( Node::Object()->simParameters->switchingActive )
+  if ( simParams->switchingActive )
   {
-    switchOn = Node::Object()->simParameters->switchingDist;
+    switchOn = simParams->switchingDist;
     switchOn2 = switchOn*switchOn;
     c0 = 1/(cutoff2-switchOn2);
   }
@@ -75,33 +76,149 @@ void ComputeNonbondedUtil::select(void)
 #undef DECLARATION
 #undef DEFINITION
 
+  if ( ! ( simParams->fullDirectOn || simParams->FMAOn ) )
+  {
+
+#define NOSPLIT
+#undef SPLIT_XPLOR
+#undef SPLIT_C1
+//   (2) BEGIN PAIR / SELF / EXCL
 #define NBPAIR
 #undef NBSELF
 #undef NBEXCL
+//     (1) BEGIN FULLELECT
+#define FULLELECT
+#include "ComputeNonbondedHack.h"
+  calcFullPair = 0;
+#undef FULLELECT
+#include "ComputeNonbondedHack.h"
+  calcPair = NAME;
+//     (1) END FULLELECT
+#undef NBPAIR
+#define NBSELF
+#undef NBEXCL
+//     (1) BEGIN FULLELECT
+#define FULLELECT
+#include "ComputeNonbondedHack.h"
+  calcFullSelf = 0;
+#undef FULLELECT
+#include "ComputeNonbondedHack.h"
+  calcSelf = NAME;
+//     (1) END FULLELECT
+#undef NBPAIR
+#undef NBSELF
+#define NBEXCL
+//     (1) BEGIN FULLELECT
+#define FULLELECT
+#include "ComputeNonbondedHack.h"
+  calcFullExcl = 0;
+#undef FULLELECT
+#include "ComputeNonbondedHack.h"
+  calcExcl = NAME;
+//     (1) END FULLELECT
+//   (2) END PAIR / SELF / EXCL
+
+  }
+  else switch ( simParams->longSplitting )
+  {
+    case XPLOR:
+
+#undef NOSPLIT
+#define SPLIT_XPLOR
+#undef SPLIT_C1
+//   (2) BEGIN PAIR / SELF / EXCL
+#define NBPAIR
+#undef NBSELF
+#undef NBEXCL
+//     (1) BEGIN FULLELECT
 #define FULLELECT
 #include "ComputeNonbondedHack.h"
   calcFullPair = NAME;
 #undef FULLELECT
 #include "ComputeNonbondedHack.h"
   calcPair = NAME;
+//     (1) END FULLELECT
 #undef NBPAIR
 #define NBSELF
 #undef NBEXCL
+//     (1) BEGIN FULLELECT
 #define FULLELECT
 #include "ComputeNonbondedHack.h"
   calcFullSelf = NAME;
 #undef FULLELECT
 #include "ComputeNonbondedHack.h"
   calcSelf = NAME;
+//     (1) END FULLELECT
 #undef NBPAIR
 #undef NBSELF
 #define NBEXCL
+//     (1) BEGIN FULLELECT
 #define FULLELECT
 #include "ComputeNonbondedHack.h"
   calcFullExcl = NAME;
 #undef FULLELECT
 #include "ComputeNonbondedHack.h"
   calcExcl = NAME;
+//     (1) END FULLELECT
+//   (2) END PAIR / SELF / EXCL
+
+    break;
+
+    case C1:
+
+#undef NOSPLIT
+#undef SPLIT_XPLOR
+#define SPLIT_C1
+//   (2) BEGIN PAIR / SELF / EXCL
+#define NBPAIR
+#undef NBSELF
+#undef NBEXCL
+//     (1) BEGIN FULLELECT
+#define FULLELECT
+#include "ComputeNonbondedHack.h"
+  calcFullPair = NAME;
+#undef FULLELECT
+#include "ComputeNonbondedHack.h"
+  calcPair = NAME;
+//     (1) END FULLELECT
+#undef NBPAIR
+#define NBSELF
+#undef NBEXCL
+//     (1) BEGIN FULLELECT
+#define FULLELECT
+#include "ComputeNonbondedHack.h"
+  calcFullSelf = NAME;
+#undef FULLELECT
+#include "ComputeNonbondedHack.h"
+  calcSelf = NAME;
+//     (1) END FULLELECT
+#undef NBPAIR
+#undef NBSELF
+#define NBEXCL
+//     (1) BEGIN FULLELECT
+#define FULLELECT
+#include "ComputeNonbondedHack.h"
+  calcFullExcl = NAME;
+#undef FULLELECT
+#include "ComputeNonbondedHack.h"
+  calcExcl = NAME;
+//     (1) END FULLELECT
+//   (2) END PAIR / SELF / EXCL
+
+    break;
+
+    case SKEEL:
+    NAMD_die("Sorry, SKEEL splitting not supported.");
+    break;
+
+    case SHARP:
+    NAMD_die("Sorry, SHARP splitting not supported.");
+    break;
+
+    default:
+    NAMD_die("Unknown splitting type found!");
+
+  }
 }
 
 #undef DECLARATION
@@ -111,30 +228,106 @@ void ComputeNonbondedUtil::select(void)
 #undef NBSELF
 #undef NBEXCL
 
+// (3) BEGIN SPLITTING
+#define NOSPLIT
+#undef SPLIT_XPLOR
+#undef SPLIT_C1
+//   (2) BEGIN PAIR / SELF / EXCL
+#define NBPAIR
+#undef NBSELF
+#undef NBEXCL
+//     (1) BEGIN FULLELECT
 #define FULLELECT
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
 #include "ComputeNonbondedBase.h"
-
-
+//     (1) END FULLELECT
 #undef NBPAIR
 #define NBSELF
 #undef NBEXCL
-
+//     (1) BEGIN FULLELECT
 #define FULLELECT
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
 #include "ComputeNonbondedBase.h"
-
-
+//     (1) END FULLELECT
 #undef NBPAIR
 #undef NBSELF
 #define NBEXCL
-
+//     (1) BEGIN FULLELECT
 #define FULLELECT
 #include "ComputeNonbondedBase.h"
 #undef FULLELECT
 #include "ComputeNonbondedBase.h"
+//     (1) END FULLELECT
+//   (2) END PAIR / SELF / EXCL
+
+#undef NOSPLIT
+#define SPLIT_XPLOR
+#undef SPLIT_C1
+//   (2) BEGIN PAIR / SELF / EXCL
+#define NBPAIR
+#undef NBSELF
+#undef NBEXCL
+//     (1) BEGIN FULLELECT
+#define FULLELECT
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#include "ComputeNonbondedBase.h"
+//     (1) END FULLELECT
+#undef NBPAIR
+#define NBSELF
+#undef NBEXCL
+//     (1) BEGIN FULLELECT
+#define FULLELECT
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#include "ComputeNonbondedBase.h"
+//     (1) END FULLELECT
+#undef NBPAIR
+#undef NBSELF
+#define NBEXCL
+//     (1) BEGIN FULLELECT
+#define FULLELECT
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#include "ComputeNonbondedBase.h"
+//     (1) END FULLELECT
+//   (2) END PAIR / SELF / EXCL
+
+#undef NOSPLIT
+#undef SPLIT_XPLOR
+#define SPLIT_C1
+//   (2) BEGIN PAIR / SELF / EXCL
+#define NBPAIR
+#undef NBSELF
+#undef NBEXCL
+//     (1) BEGIN FULLELECT
+#define FULLELECT
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#include "ComputeNonbondedBase.h"
+//     (1) END FULLELECT
+#undef NBPAIR
+#define NBSELF
+#undef NBEXCL
+//     (1) BEGIN FULLELECT
+#define FULLELECT
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#include "ComputeNonbondedBase.h"
+//     (1) END FULLELECT
+#undef NBPAIR
+#undef NBSELF
+#define NBEXCL
+//     (1) BEGIN FULLELECT
+#define FULLELECT
+#include "ComputeNonbondedBase.h"
+#undef FULLELECT
+#include "ComputeNonbondedBase.h"
+//     (1) END FULLELECT
+//   (2) END PAIR / SELF / EXCL
+// (3) END SPLITTING
 
 
 /***************************************************************************
@@ -142,12 +335,15 @@ void ComputeNonbondedUtil::select(void)
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/28 04:47:06 $
+ *	$Revision: 1.1003 $	$Date: 1997/03/14 06:44:56 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1003  1997/03/14 06:44:56  jim
+ * First working versions of full electrostatics splitting functions.
+ *
  * Revision 1.1002  1997/02/28 04:47:06  jim
  * Full electrostatics now works with fulldirect on one node.
  *
