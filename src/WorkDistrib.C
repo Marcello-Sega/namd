@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.9 1996/08/23 22:03:52 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.10 1996/09/03 22:45:35 ari Exp $";
 
 #include <stdio.h>
 
@@ -106,8 +106,7 @@ void WorkDistrib::createPatches(void)
       atomVelocities.add(vel);
     }      
     
-//    node->patchMgr->createPatch(i,atomPositions,atomVelocities);
-    CPrintf("patchMgr->createPatch(%d,atoms,positions)\n",i);
+    node->patchMgr->createHomePatch(i,atomIDs,atomPositions,atomVelocities);
   }
 
   // Move patches to the proper node
@@ -306,13 +305,16 @@ void WorkDistrib::mapElectComputes(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1996/08/23 22:03:52 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.10 $	$Date: 1996/09/03 22:45:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.10  1996/09/03 22:45:35  ari
+ * *** empty log message ***
+ *
  * Revision 1.9  1996/08/23 22:03:52  brunner
  * *** empty log message ***
  *
