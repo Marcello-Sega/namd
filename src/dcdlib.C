@@ -88,9 +88,6 @@ void NAMD_write(int fd, const char *buf, size_t count) {
 
 
 /*			GLOBAL VARIABLES				*/
-#ifndef _IA64
-extern int errno;
-#endif
 
 void pad(char *s, int len)
 {
