@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.27 1996/12/19 02:26:30 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.28 1996/12/27 22:22:33 nealk Exp $";
 
 #include <stdio.h>
 
@@ -72,7 +72,9 @@ void WorkDistrib::sendMaps(void)
   mapMsg->patchMap = PatchMap::Object();
   mapMsg->computeMap = ComputeMap::Object();
 
+  DebugM(3,"calling CBroadcastMsgBranch\n");
   CBroadcastMsgBranch(WorkDistrib, saveMaps, mapMsg, thisgroup);
+  DebugM(3,"called CBroadcastMsgBranch\n");
   mapsArrived = true;
 }
 
@@ -373,13 +375,16 @@ void WorkDistrib::movePatchDone(DoneMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.27 $	$Date: 1996/12/19 02:26:30 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.28 $	$Date: 1996/12/27 22:22:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.28  1996/12/27 22:22:33  nealk
+ * Added debugging code.
+ *
  * Revision 1.27  1996/12/19 02:26:30  jim
  * Node::startup2 is now triggered by quiescence
  *
