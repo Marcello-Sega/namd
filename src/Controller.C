@@ -357,6 +357,57 @@ void Controller::printEnergies(int seq)
     }
 #endif  // MDCOMM
 
+    // Write out eXtended System Trajectory (XST) file
+    if ( node->simParameters->xstFrequency != -1 &&
+         ! ( seq % node->simParameters->xstFrequency ) )
+    {
+      if ( ! xstFile ) {
+	xstFile.open(node->simParameters->xstFilename);
+	xstFile << "# NAMD extended system trajectory file" << endl;
+	xstFile << "#$LABELS step a_x b_y c_z o_x o_y o_z";
+	xstFile << endl;
+      }
+      xstFile << seq;
+      xstFile << " " << lattice.a() << " " << lattice.b() << " " << lattice.c() << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
+      xstFile << endl;
+    }
+
+    // Write out eXtended System Configuration (XSC) files
+    //  Output a restart file
+    if ( (simParams->restartFrequency != -1) &&
+         ((seq % simParams->restartFrequency) == 0) &&
+         (seq != simParams->firstTimestep) )
+    {
+      char fname[140];
+      strcpy(fname, simParams->restartFilename);
+      strcat(fname, ".xsc");
+      char bfname[140];
+      strcpy(bfname, simParams->restartFilename);
+      strcat(bfname, ".xsc.BAK");
+      rename(fname,bfname);
+      ofstream xscFile(fname);
+      xscFile << "# NAMD extended system configuration file" << endl;
+      xscFile << "#$LABELS step a_x b_y c_z o_x o_y o_z";
+      xscFile << endl;
+      xscFile << seq;
+      xscFile << " " << lattice.a() << " " << lattice.b() << " " << lattice.c() << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
+      xscFile << endl;
+    }
+    //  Output final coordinates
+    if (seq == simParams->N)
+    {
+      static char fname[140];
+      strcpy(fname, simParams->outputFilename);
+      strcat(fname, ".xsc");
+      ofstream xscFile(fname);
+      xscFile << "# NAMD extended system configuration file" << endl;
+      xscFile << "#$LABELS step a_x b_y c_z o_x o_y o_z";
+      xscFile << endl;
+      xscFile << seq;
+      xscFile << " " << lattice.a() << " " << lattice.b() << " " << lattice.c() << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
+      xscFile << endl;
+    }
+
     // NO CALCULATIONS OR REDUCTIONS BEYOND THIS POINT!!!
     if ( seq % node->simParameters->outputEnergies ) return;
     // ONLY OUTPUT SHOULD OCCUR BELOW THIS LINE!!!
@@ -442,12 +493,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1039 $	$Date: 1998/08/03 15:31:19 $
+ *	$Revision: 1.1040 $	$Date: 1998/08/04 04:07:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1040  1998/08/04 04:07:21  jim
+ * Added extended system file support and fixed lack of endi in SimParameters.
+ *
  * Revision 1.1039  1998/08/03 15:31:19  jim
  * Added temperature reassignment.
  *

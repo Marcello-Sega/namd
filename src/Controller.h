@@ -18,6 +18,7 @@
 #include "converse.h"
 #include "Node.h"
 #include "common.h"
+#include <fstream.h>
 
 class ControllerBroadcasts;
 class NamdState;
@@ -58,6 +59,7 @@ protected:
     ReductionMgr *const reduction;
     CollectionMaster *const collection;
     ControllerBroadcasts * broadcast;
+    ofstream xstFile;
 
 private:
     CthThread thread;
@@ -71,7 +73,7 @@ private:
 
 };
 
-#endif // SEQUENCER_H
+#endif // CONTROLLER_H
 
 
 /***************************************************************************
@@ -79,12 +81,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1998/08/03 15:31:19 $
+ *	$Revision: 1.1013 $	$Date: 1998/08/04 04:07:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.h,v $
+ * Revision 1.1013  1998/08/04 04:07:21  jim
+ * Added extended system file support and fixed lack of endi in SimParameters.
+ *
  * Revision 1.1012  1998/08/03 15:31:19  jim
  * Added temperature reassignment.
  *

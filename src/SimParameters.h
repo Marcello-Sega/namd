@@ -122,10 +122,13 @@ public:
 					//  force DCD files be updated
 	int allForceDcdFrequency;	//  How often (in timesteps) should
 					//  DCD file with total force be updated
+	int xstFrequency;		//  How often (in timesteps) should
+					//  a XST trajectory file be updated
 	int vmdFrequency;		//  How often (in timesteps) should
 					//  a VMD trajectory to be collected
 	char dcdFilename[129];		//  DCD filename
 	char velDcdFilename[129];       //  Velocity DCD filename
+	char xstFilename[129];		//  Extended system trajectory filename
 	char electForceDcdFilename[129];//  long and short range elect force 
 					//  DCD filename
 	char allForceDcdFilename[129];  //  File name for DCD file containing
@@ -370,12 +373,15 @@ public:
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1021 $	$Date: 1998/08/03 15:31:22 $
+ *	$Revision: 1.1022 $	$Date: 1998/08/04 04:07:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1022  1998/08/04 04:07:23  jim
+ * Added extended system file support and fixed lack of endi in SimParameters.
+ *
  * Revision 1.1021  1998/08/03 15:31:22  jim
  * Added temperature reassignment.
  *

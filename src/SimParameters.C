@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1040 $  $Date: 1998/08/03 15:31:21 $
+ *  $Revision: 1.1041 $  $Date: 1998/08/04 04:07:22 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1041  1998/08/04 04:07:22  jim
+ * Added extended system file support and fixed lack of endi in SimParameters.
+ *
  * Revision 1.1040  1998/08/03 15:31:21  jim
  * Added temperature reassignment.
  *
@@ -456,7 +459,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1040 1998/08/03 15:31:21 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1041 1998/08/04 04:07:22 jim Exp $";
 
 
 #include "charm++.h"
@@ -471,6 +474,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParamete
 #include "InfoStream.h"
 #include <time.h>
 #include <unistd.h>
+#include <fstream.h>
 
 #ifdef SP2
 #include "strlib.h"    //  For strcasecmp and strncasecmp
@@ -632,6 +636,10 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
     PARSE_STRING);
    opts.optional("main", "hgroupCutoff", "Hydrogen margin", &hgroupCutoff);
 
+   opts.optional("main", "extendedSystem",
+    "Initial configuration of extended system variables and periodic cell",
+    PARSE_STRING);
+
    opts.optional("main", "cellBasisVector1", "Basis vector for periodic cell",
     &cellBasisVector1);
    opts.optional("main", "cellBasisVector2", "Basis vector for periodic cell",
@@ -697,6 +705,12 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
     "DCD output, in timesteps", &allForceDcdFrequency);
    opts.range("allForceDCDfreq", POSITIVE);
    
+   opts.optional("main", "XSTfile", "Extended sytem trajectory output file name",
+     xstFilename);
+   opts.require("XSTfile", "XSTfreq", "Frequency of XST trajectory output, in "
+    "timesteps", &xstFrequency);
+   opts.range("XSTfreq", POSITIVE);
+
    opts.optional("main", "restartname", "Prefix for the position and velocity "
      "PDB files used for restarting", restartFilename);
    opts.require("restartname", "restartfreq", "Frequency of restart file "
@@ -1171,6 +1185,11 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
         allForceDcdFrequency = -1;
    }
 
+   if (!opts.defined("xstfreq"))
+   {
+  xstFrequency = -1;
+   }
+
    if (!opts.defined("restartname"))
    {
   restartFrequency = -1;
@@ -1181,6 +1200,11 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    if (!opts.defined("dcdfile"))
    {
   dcdFilename[0] = STRINGNULL;
+   }
+
+   if (!opts.defined("xstfile"))
+   {
+  xstFilename[0] = STRINGNULL;
    }
 
    if (!opts.defined("veldcdfile"))
@@ -1216,6 +1240,68 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    }
 
    ///// periodic cell parameters
+
+   if ( opts.defined("extendedSystem") )
+   {
+     current = config->find("extendedSystem");
+
+     if ( (cwd == NULL) || (current->data[0] == '/') )
+     {
+       strcpy(filename, current->data);
+     }
+     else
+     {
+       strcpy(filename, cwd);
+       strcat(filename, current->data);
+     }
+
+     iout << iINFO << "EXTENDED SYSTEM FILE   "
+        << filename << "\n" << endi;
+
+     ifstream xscFile(filename);
+     if ( ! xscFile ) NAMD_die("Unable to open extended system file.\n");
+
+     char labels[1024];
+     do {
+       if ( ! xscFile ) NAMD_die("Error reading extended system file.\n");
+       xscFile.getline(labels,1023);
+     } while ( strncmp(labels,"#$LABELS ",9) );
+
+     int a_x, b_y, c_z, o_x, o_y, o_z;
+     a_x = b_y = c_z = o_x = o_y = o_z = -1;
+
+     int pos = 0;
+     char *l_i = labels + 8;
+     while ( *l_i ) {
+       if ( *l_i == ' ' ) { ++l_i; continue; }
+       char *l_i2;
+       for ( l_i2 = l_i; *l_i2 && *l_i2 != ' '; ++l_i2 );
+       if ( (l_i2 - l_i) == 3 && (l_i[1] == '_') ) {
+	 if (l_i[0] == 'a' && l_i[2] == 'x') a_x = pos;
+	 if (l_i[0] == 'b' && l_i[2] == 'y') b_y = pos;
+	 if (l_i[0] == 'c' && l_i[2] == 'z') c_z = pos;
+	 if (l_i[0] == 'o' && l_i[2] == 'x') o_x = pos;
+	 if (l_i[0] == 'o' && l_i[2] == 'y') o_y = pos;
+	 if (l_i[0] == 'o' && l_i[2] == 'z') o_z = pos;
+       }
+       ++pos;
+       l_i = l_i2;
+     }
+     int numpos = pos;
+
+     for ( pos = 0; pos < numpos; ++pos ) {
+       double tmp;
+       xscFile >> tmp;
+       if ( ! xscFile ) NAMD_die("Error reading extended system file.\n");
+       if ( pos == a_x ) cellBasisVector1.x = tmp;
+       if ( pos == b_y ) cellBasisVector2.y = tmp;
+       if ( pos == c_z ) cellBasisVector3.z = tmp;
+       if ( pos == o_x ) cellOrigin.x = tmp;
+       if ( pos == o_y ) cellOrigin.y = tmp;
+       if ( pos == o_z ) cellOrigin.z = tmp;
+     }
+
+   }
 
    /* Save for more flexible PBCs in future
    if ( opts.defined("cellBasisVector3") &&
@@ -1750,6 +1836,12 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
     strcpy(dcdFilename, tmpstr);
   }
 
+  if (opts.defined("xstfile") && (xstFilename[0] != '/') )
+  {
+    sprintf(tmpstr, "%s%s", cwd, xstFilename);
+    strcpy(xstFilename, tmpstr);
+  }
+
   if (opts.defined("veldcdfile") && (velDcdFilename[0] != '/') )
   {
     sprintf(tmpstr, "%s%s", cwd, velDcdFilename);
@@ -2081,9 +2173,10 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
    iout << iINFO << "PERIODIC CELL          " << lattice.dimension() << "\n";
    iout << iINFO << "PERIODIC CELL CENTER   " << lattice.origin() << "\n";
+   iout << endi;
 
    if (ldbStrategy==LDBSTRAT_NONE)  {
-     iout << iINFO << "LOAD BALANCE STRATEGY  none\n";
+     iout << iINFO << "LOAD BALANCE STRATEGY  none\n" << endi;
    } else {
      if (ldbStrategy==LDBSTRAT_REFINEONLY) {
        iout << iINFO << "LOAD BALANCE STRATEGY  Refine-only\n";
@@ -2123,6 +2216,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
   iout << iINFO << "INITIAL TEMPERATURE    " 
      << initialTemp << "\n";
    }
+   iout << endi;
 
    iout << iINFO << "CENTER OF MASS MOVING? ";
 
@@ -2134,6 +2228,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    {
      iout << "NO\n";
    }
+   iout << endi;
 
    iout << iINFO << "DIELECTRIC             " 
       << dielectric << "\n";
@@ -2158,6 +2253,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
        iout << "SCALED ONE-FOUR\n";
        break;
    }
+   iout << endi;
 
    if (exclude == SCALED14)
    {
@@ -2175,6 +2271,20 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    {
      iout << iINFO << "NO DCD TRAJECTORY OUTPUT\n";
    }
+   iout << endi;
+   
+   if (xstFrequency > 0)
+   {
+     iout << iINFO << "XST FILENAME           " 
+        << xstFilename << "\n";
+     iout << iINFO << "XST FREQUENCY          " 
+        << xstFrequency << "\n";
+   }
+   else
+   {
+     iout << iINFO << "NO EXTENDED SYSTEM TRAJECTORY OUTPUT\n";
+   }
+   iout << endi;
    
    if (velDcdFrequency > 0)
    {
@@ -2187,13 +2297,14 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    {
      iout << iINFO << "NO VELOCITY DCD OUTPUT\n";
    }
+   iout << endi;
    
    if (electForceDcdFrequency > 0)
    {
      iout << iINFO << "ELECT FORCE DCD NAME   " 
         << electForceDcdFilename << "\n";
      iout << iINFO << "ELECT FORCE DCD FREQ   " 
-        << electForceDcdFrequency << endi;
+        << electForceDcdFrequency << "\n" << endi;
    }
 
    if (allForceDcdFrequency > 0)
@@ -2201,11 +2312,11 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
      iout << iINFO << "TOTAL FORCE DCD NAME   " 
         << allForceDcdFilename << "\n";
      iout << iINFO << "TOTAL FORCE DCD FREQ   " 
-        << allForceDcdFrequency << "\n";
+        << allForceDcdFrequency << "\n" << endi;
    }
      
    iout << iINFO << "OUTPUT FILENAME        " 
-      << outputFilename << "\n";
+      << outputFilename << "\n" << endi;
 
    if (restartFrequency == -1)
    {
@@ -2223,6 +2334,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
     iout << iINFO << "BINARY RESTART FILES WILL BE USED\n";
   }
    }
+   iout << endi;
    
    if (switchingActive)
    {
@@ -2247,6 +2359,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
       iout << iINFO << "CUTOFF                 " 
          << cutoff << "\n";
    }
+   iout << endi;
 
    if (plMarginCheckOn)
      iout << iINFO << "PAIRLIST CHECK ON\n";
@@ -2259,21 +2372,26 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    iout << iINFO << "PATCH DIMENSION        "
             << patchDimension << "\n";
 
+   iout << endi;
+
    if (outputEnergies != 1)
    {
       iout << iINFO << "ENERGY OUTPUT STEPS    "
          << outputEnergies << "\n";
+      iout << endi;
    }
    
    if (outputMomenta != 0)
    {
       iout << iINFO << "MOMENTUM OUTPUT STEPS  "
          << outputMomenta << "\n";
+      iout << endi;
    }
    
    if (fixedAtomsOn)
    {
       iout << iINFO << "FIXED ATOMS ACTIVE\n";
+      iout << endi;
    }
 
    if (constraintsOn)
@@ -2295,6 +2413,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 	     << movingConsAtom << "\n";
       }
       //****** END moving constraints changes 
+      iout << endi;
    }
 
    //****** BEGIN SMD constraints changes 
@@ -2361,6 +2480,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 	    << SMDVmaxTave << " TIMESTEPS\n";	  
      }
      
+     iout << endi;
    }
    
    //****** END SMD constraints changes 
@@ -2399,6 +2519,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
      iout << iINFO << "TCL GLOBAL FORCES SCRIPT   " << filename << "\n";
 
      }
+     iout << endi;
    }
 
    if (freeEnergyOn)
@@ -2427,6 +2548,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
      iout << iINFO << "FREE ENERGY PERTURBATION SCRIPT   " << filename << "\n";
 
      }
+     iout << endi;
    }
 
    if (globalOn && ! dihedralOn)
@@ -2479,6 +2601,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
     iout << iINFO << "CYLINDER BOUNDARY CENTER(" << cylindricalCenter.x << ", "
              << cylindricalCenter.y << ", " << cylindricalCenter.z << ")\n";
     }
+    iout << endi;
   }
 
    if (sphericalBCOn)
@@ -2511,6 +2634,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
   iout << iINFO << "SPHERE BOUNDARY CENTER(" << sphericalCenter.x << ", "
      << sphericalCenter.y << ", " << sphericalCenter.z << ")\n";
       }
+      iout << endi;
    }
    
    if (eFieldOn)
@@ -2520,6 +2644,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
       iout << iINFO << "E-FIELD VECTOR         ("
          << eField.x << ", " << eField.y
          << ", " << eField.z << ")\n";
+      iout << endi;
    }
 
    if (langevinOn)
@@ -2527,6 +2652,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
       iout << iINFO << "LANGEVIN DYNAMICS ACTIVE\n";
       iout << iINFO << "LANGEVIN TEMPERATURE   "
          << langevinTemp << "\n";
+      iout << endi;
    }
 
    if (tCoupleOn)
@@ -2534,6 +2660,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
       iout << iINFO << "TEMPERATURE COUPLING ACTIVE\n";
       iout << iINFO << "COUPLING TEMPERATURE   "
          << tCoupleTemp << "\n";
+      iout << endi;
    }
 
    if (minimizeOn)
@@ -2542,6 +2669,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
       iout << iINFO << "MAXIMUM MOVEMENT       "
          << maximumMove << "\n";
+      iout << endi;
    }
 
    if (rescaleFreq > 0)
@@ -2550,6 +2678,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
         << rescaleFreq << "\n";
      iout << iINFO << "VELOCITY RESCALE TEMP  "
         << rescaleTemp << "\n";
+     iout << endi;
    }
 
    if (reassignFreq > 0)
@@ -2561,6 +2690,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
      if ( reassignIncr != 0. )
        iout << iINFO << "VELOCITY REASSIGNMENT INCR  "
         << reassignIncr << "\n";
+     iout << endi;
    }
 
    if (berendsenPressureOn)
@@ -2576,6 +2706,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
   berendsenPressureCompressibility *= PRESSUREFACTOR;
      iout << iINFO << "    APPLIED EVERY "
         << berendsenPressureFreq << " STEPS\n";
+     iout << endi;
    }
 
    if (vmdFrequency > 0)
@@ -2583,6 +2714,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
      iout << iINFO << "VMD INTERFACE ON\n"
         << "VMD FRREQUENCY    "
         << vmdFrequency << "\n";
+     iout << endi;
    }
 
    if (FMAOn)
@@ -2590,6 +2722,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
      iout << iINFO << "FMA ACTIVE\n";
      iout << iINFO << "FMA THETA              "
         << fmaTheta << "\n";
+     iout << endi;
    }
 
    if (PMEOn)
@@ -2603,17 +2736,20 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 	<< PMEGridSizeX << " "
 	<< PMEGridSizeY << " "
 	<< PMEGridSizeZ << "\n";
+     iout << endi;
    }
 
    if (fullDirectOn)
    {
      iout << iINFO << "DIRECT FULL ELECTROSTATIC CALCULATIONS ACTIVE\n";
+     iout << endi;
    }
 
    if ( FMAOn || PMEOn || fullDirectOn )
    {
      iout << iINFO << "FULL ELECTROSTATIC EVALUATION FREQUENCY      "
 	<< fmaFrequency << "\n";
+     iout << endi;
    }
 
    if (MTSAlgorithm != NAIVE)
@@ -2630,6 +2766,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
   {
     iout << iINFO << "VERLET X MTS SCHEME\n";
   }
+     iout << endi;
    }
 
    if (longSplitting == SHARP)
@@ -2644,6 +2781,8 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    else if (splitPatch == SPLIT_PATCH_HYDROGEN)
   iout << iINFO << "PLACING ATOMS IN PATCHES BY HYDROGEN GROUPS\n";
 
+   iout << endi;
+
    if (rigidBonds == RIGID_ALL)
    {
      iout << iINFO <<"RIGID BONDS TO HYDROGEN : ALL, TOLERANCE=" << rigidTol << "\n";
@@ -2652,6 +2791,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    {
     iout << iINFO<<"RIGID BONDS TO HYDROGEN :  WATER, TOLERANCE="<< rigidTol << "\n";
    }
+   iout << endi;
    
 
    if (nonbondedFrequency != 1)
@@ -2662,6 +2802,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    iout << iINFO << "RANDOM NUMBER SEED     "
       << randomSeed << "\n";
 
+   iout << endi;
 
    iout << iINFO << "USE HYDROGEN BONDS?    ";
    if (HydrogenBonds)
@@ -3077,12 +3218,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1040 $  $Date: 1998/08/03 15:31:21 $
+ *  $Revision: 1.1041 $  $Date: 1998/08/04 04:07:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1041  1998/08/04 04:07:22  jim
+ * Added extended system file support and fixed lack of endi in SimParameters.
+ *
  * Revision 1.1040  1998/08/03 15:31:21  jim
  * Added temperature reassignment.
  *
