@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.13 1996/12/01 02:31:37 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.14 1996/12/05 01:44:16 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -30,21 +30,45 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1
 #define  DEBUGM
 #include "Debug.h"
 
-Patch::Patch(PatchID pd, AtomIDList al, PositionList pl) :
+Patch::Patch(PatchID pd) :
+   patchID(pd),
    positionPtr(0), forcePtr(0), atomPtr(0),
-   patchID(pd), atomIDList(al), p(pl),
    positionBox(this,&(Patch::positionBoxClosed)),
    forceBox(this,&(Patch::forceBoxClosed)),
-   atomBox(this,&(Patch::atomBoxClosed))
+   atomBox(this,&(Patch::atomBoxClosed)),
+   numAtoms(0)
+{
+  ;
+}
+
+Patch::Patch(PatchID pd, AtomIDList al, PositionList pl) :
+   patchID(pd), atomIDList(al), p(pl),
+   positionPtr(0), forcePtr(0), atomPtr(0),
+   positionBox(this,&(Patch::positionBoxClosed)),
+   forceBox(this,&(Patch::forceBoxClosed)),
+   atomBox(this,&(Patch::atomBoxClosed)),
+   numAtoms(al.size())
 {
     if (atomIDList.size() != p.size())
     {
       DebugM( 10, 
          "Patch::Patch(...) : Different numbers of Coordinates and IDs!\n");
     }
-    numAtoms = p.size();
+    loadAtomProperties();
+}
+
+void Patch::loadAtoms(AtomIDList al)
+{
+  atomIDList = al;
+  numAtoms = atomIDList.size();
+  loadAtomProperties();
+}
+
+void Patch::loadAtomProperties(void)
+{
     Molecule *mol = Node::Object()->molecule;
     AtomIDListIter ai(atomIDList);
+    localIndex.resize(0);
     int i = 0;
     for ( ai = ai.begin(); ai != ai.end(); ai++ )
     {
@@ -59,8 +83,8 @@ Patch::Patch(PatchID pd, AtomIDList al, PositionList pl) :
     }
     localIndex.sort();
     localIndex.uniq();
+    f.resize(atomIDList.size());
 }
-
 
 Box<Patch,Position>* Patch::registerPositionPickup(ComputeID cid)
 {
@@ -171,13 +195,16 @@ void Patch::positionsReady()
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.13 $	$Date: 1996/12/01 02:31:37 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.14 $	$Date: 1996/12/05 01:44:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.14  1996/12/05 01:44:16  ari
+ * started toward proxy management
+ *
  * Revision 1.13  1996/12/01 02:31:37  jim
  * improved debugging, fixed boxesOpen possible bug
  *

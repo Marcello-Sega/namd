@@ -23,28 +23,41 @@
 
 #include "Sequencer.h"
 
+#include "HomePatchTypes.h"
+#include "main.h"
+
+
 class HomePatch : public Patch {
    friend PatchMgr;
+   private: // for PatchMgr to use only!!
+      HomePatch(PatchID, AtomIDList, PositionList, VelocityList);
+      void registerProxy(RegisterProxyMsg *);
+      void unregisterProxy(UnregisterProxyMsg *);
 
    public:
 
-      HomePatch(PatchID, AtomIDList, PositionList, VelocityList);
       ~HomePatch();
 
       void useSequencer(Sequencer *sequencerPtr) {sequencer=sequencerPtr;}
       void runSequencer(int numberOfCycles = 0)
 		{ sequencer->run(numberOfCycles); }
 
+
    protected:
       virtual void boxClosed(int);
 
    private:
+
       PositionList  pInit;
       VelocityList  v; 
       ForceList     f_short;
       ForceList     f_long;
 
+      ProxyList	    proxy;
+
       Sequencer  *sequencer;
+
+
 
       // 
       /*
@@ -87,13 +100,16 @@ class HomePatch : public Patch {
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/12/01 22:46:11 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.8 $	$Date: 1996/12/05 01:44:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.h,v $
+ * Revision 1.8  1996/12/05 01:44:16  ari
+ * started toward proxy management
+ *
  * Revision 1.7  1996/12/01 22:46:11  jim
  * switched to use simParams for number of cycles
  *

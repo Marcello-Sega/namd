@@ -49,7 +49,9 @@ class Patch
 {
   public:
 
+     Patch(PatchID pd);
      Patch(PatchID pd, AtomIDList al, PositionList pl);
+     void loadAtoms(AtomIDList al);
      virtual ~Patch(void) { };
 
      // methods for use by Compute objects
@@ -99,6 +101,8 @@ class Patch
      int boxesOpen;
 
   private:
+  
+    void loadAtomProperties(void);
 
 };
 
@@ -109,13 +113,16 @@ class Patch
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1996/11/30 00:41:24 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.9 $	$Date: 1996/12/05 01:44:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.h,v $
+ * Revision 1.9  1996/12/05 01:44:16  ari
+ * started toward proxy management
+ *
  * Revision 1.8  1996/11/30 00:41:24  jim
  * added boxesOpen counting to support HomePatch::boxClosed()
  *
