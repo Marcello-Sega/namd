@@ -1689,6 +1689,10 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
     firstLdbStep=5*stepsPerCycle;
   }
 
+  if (ldbPeriod <= firstLdbStep) {
+    NAMD_die("ldbPeriod must greater than firstLdbStep.");
+  }
+
    if (N < firstTimestep) { N = firstTimestep; }
 
    if ( (firstTimestep%stepsPerCycle) != 0)
