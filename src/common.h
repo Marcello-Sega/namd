@@ -187,7 +187,9 @@ int  Fclose(FILE *fout);
 
 #define DPMTATAG	136	//  Tag for DPMTA
 
-#define MAXTAGVALUE	136	//  Maximum tag value.  NOTE!!  Always
+#define SMDDATATAG      137     //  Tag for sending SMDData to clients
+
+#define MAXTAGVALUE	137	//  Maximum tag value.  NOTE!!  Always
 				//  reset this when new tags are added,
 				//  otherwise MessageManager object will
 				//  almost certainly cause a core dump!!
@@ -261,12 +263,15 @@ int  Fclose(FILE *fout);
  *
  *	$RCSfile: common.h,v $
  *	$Author: sergei $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1998/01/06 20:52:48 $
+ *	$Revision: 1.1014 $	$Date: 1998/01/13 23:31:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.h,v $
+ * Revision 1.1014  1998/01/13 23:31:45  sergei
+ * Added SMDDATATAG tag
+ *
  * Revision 1.1013  1998/01/06 20:52:48  sergei
  * added PNPERKCALMOL
  *
