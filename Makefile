@@ -25,12 +25,13 @@ OBJS = \
 	ComputeBonds.o ComputeNonbondedExcl.o ComputeMgr.o \
 	ProxyMgr.o ProxyPatch.o CommunicateConverse.o \
 	Communicate.o IntTree.o MessageQueue.o MessageManager.o \
-	ReductionMgr.o Controller.o
+	ReductionMgr.o Controller.o CollectionMgr.o CollectionMaster.o
 
 CXXFILES = $(OBJS:.o=.C)
 
 INTERFACES = main.ci Node.ci WorkDistrib.ci PatchMgr.ci Compute.ci \
-		ComputeMgr.ci ProxyMgr.ci ReductionMgr.ci
+		ComputeMgr.ci ProxyMgr.ci ReductionMgr.ci \
+		CollectionMgr.ci CollectionMaster.ci
 
 namd2:	$(OBJS)
 	$(CHARMC) -ld++-option "-I $(INCLUDE)" -g -language charm++ -o namd2 $(OBJS)
