@@ -108,7 +108,7 @@ private:
   Sequencer **sequencerThreads;
   double *computeStartTime;
   double *computeTotalTime;
-  Boolean firstLdbCycle;
+  Boolean ldbCycleNum;
   int nLdbSteps;
   int firstLdbStep;
   int nodesDone;
@@ -128,13 +128,18 @@ inline int LdbCoordinator::balanceNow(int timestep)
   Node *node = Node::Object();
   const SimParameters *simParams = node->simParameters;
   const int numberOfSteps = simParams->N;
+  int stepno = timestep - simParams->firstTimestep + 1;
+  int firststep = firstLdbStep - simParams->firstTimestep;
 
   return 
     ( (node->numNodes() != 1) 
       && (simParams->ldbStrategy != LDBSTRAT_NONE) 
-      && (timestep < numberOfSteps)
-      && (timestep >= firstLdbStep)
-      && (((timestep - firstLdbStep) % simParams->ldbPeriod) == 0));
+      && (stepno <= numberOfSteps)
+      && (stepno >= firststep)
+      && (
+	  (stepno == firststep)
+	  || (((stepno - 2*firststep) % simParams->ldbPeriod) == 0))
+         );
 }
 
 #endif // LDBCOORDINATOR_H
@@ -145,12 +150,16 @@ inline int LdbCoordinator::balanceNow(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.13 $	$Date: 1997/08/27 18:37:00 $
+ *	$Revision: 1.14 $	$Date: 1997/08/29 22:00:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LdbCoordinator.h,v $
+ * Revision 1.14  1997/08/29 22:00:29  brunner
+ * Load balancing improvements, and some diagnostic prints that need
+ * to be removed, but won't occur if load balancing is off.
+ *
  * Revision 1.13  1997/08/27 18:37:00  brunner
  * Load balancer end of computation sync added.  AlgSeven modified slightly.
  *

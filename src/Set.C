@@ -10,11 +10,13 @@ Set::Set()
 
 void Set::insert(InfoRecord *info) 
 {
-  listNode *node = new listNode();
-  
-  node->info = info;
-  node->next = head;
-  head = node;
+  if (!find(info))
+  {
+    listNode *node = new listNode();
+    node->info = info;
+    node->next = head;
+    head = node;
+  }
    
 }
 

@@ -24,8 +24,8 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
     processors[i].computeLoad = 0;
     processors[i].patchSet = new Set();
     processors[i].computeSet = new Set();
-    processors[i].computesWithBoth = new maxHeap(numComputes);
-    processors[i].computesWithOne = new maxHeap(numComputes);
+    processors[i].computesWithBoth = NULL; // new maxHeap(numComputes);
+    processors[i].computesWithOne = NULL; // new maxHeap(numComputes);
   }
   for (i=0; i<nPatches; i++){
     if (!patches[i].proxiesOn->find(&(processors[patches[i].processor]))) {
@@ -51,10 +51,21 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
     processors[i].computeLoad = 0;
   }
 
-  for (i=0; i <P; i++) {
+  int count1=0, count2=0;
+  for (i=0; i<nPatches; i++){
+    if (patches[i].proxiesOn->numElements() <= 1)
+      count1++;
+    else count2++;
+  }		          
+  iout << iINFO
+       << "Count1 = " << count1
+       << " Count2 = " << count2
+       << "\n" << endi;
+
+  //for (i=0; i <P; i++) {
     //    iout << iINFO << "\n proxies on proc. " << i << " are for patches:";
     //    processorArray[i].proxies->print();
-  }
+  //}
   //  iout << iINFO <<"\n" << endi;
 
   //strategy();
@@ -78,17 +89,17 @@ void Rebalancer::makeHeaps()
    computesHeap->insert( (InfoRecord *) &(computes[i]));
 
  for (i=0; i<P; i++) {
-   processors[i].computesWithBoth = new maxHeap(numComputes+2);
-   processors[i].computesWithOne = new maxHeap(numComputes+2);
+   processors[i].computesWithBoth = NULL; // new maxHeap(numComputes+2);
+   processors[i].computesWithOne = NULL; // new maxHeap(numComputes+2);
     for (j=0; j<numComputes; j++) {
       int count = 0;
       if (patches[computes[j].patch1].processor = i) count ++;
       if (patches[computes[j].patch2].processor = i) count ++;
-      if (count ==2) processors[i].computesWithBoth->
-		       insert( (InfoRecord *) &(computes[j]));
+      //      if (count ==2) processors[i].computesWithBoth->
+      //		       insert( (InfoRecord *) &(computes[j]));
 
-      if (count ==1) processors[i].computesWithOne->
-		       insert( (InfoRecord *) &(computes[j]));
+      //      if (count ==1) processors[i].computesWithOne->
+      //		       insert( (InfoRecord *) &(computes[j]));
     }
  }
 

@@ -61,7 +61,7 @@ LdbCoordinator::LdbCoordinator(InitMsg *msg)
     CharmExit();
   }
 
-  firstLdbCycle = true;
+  ldbCycleNum = 1;
   nLocalComputes = nLocalPatches = 0;
   computeStartTime = computeTotalTime = (double *)NULL;
   patchNAtoms = (int *) NULL;
@@ -166,12 +166,16 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap)
 
   // Fixup to take care of the extra timestep at startup
   // This is pretty ugly here, but it makes the count correct
-  if (firstLdbCycle)
+  if ((ldbCycleNum==1) || (ldbCycleNum == 2))
   {
-    nLdbSteps = 1 + firstLdbStep;
-    firstLdbCycle = false;
+    nLdbSteps = firstLdbStep;
+    ldbCycleNum++;
   }
-  else nLdbSteps = stepsPerLdbCycle;
+  else 
+  {
+    nLdbSteps = stepsPerLdbCycle;
+    ldbCycleNum++;
+  }
 
   nPatchesReported = 0;
   nPatchesExpected = nLocalPatches;
@@ -540,6 +544,8 @@ int LdbCoordinator::buildData(void)
       computeArray[cid].load = msg->computeTime[j];
       nMoveableComputes++;
     }
+    CPrintf("PE %d nComputes = %d\n",msg->proc,j);
+    
   }
   return nMoveableComputes;
 }

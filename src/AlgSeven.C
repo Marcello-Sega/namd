@@ -2,7 +2,7 @@
 #include <InfoStream.h>
 #include "Alg7.h"
 
-#define TINYLOAD 0.001
+#define TINYLOAD 0.002
 
 Alg7::Alg7(computeInfo *computeArray, patchInfo *patchArray, 
 	   processorInfo *processorArray, int nComps, 
@@ -30,9 +30,18 @@ void Alg7::strategy()
    printLoads();
 	      
    numAssigned = 0;
+   int numAssigned1 = 0;
+   int numAssigned2 = 0;
+   int numAssignedP2 = 0;
+   int numAssignedP1 = 0;
+   int numAssignedP0 = 0;
+
    //   for (int i=0; i<numPatches; i++)
    //     { cout << "(" << patches[i].Id << "," << patches[i].processor ;}
    int i;
+   int selfTo15=0, selfToOthers=0;
+   int tinyTo15=0, tinyToOthers=0;
+
    for (i=0; i<numComputes; i++){
      /* if compute i is a self-interaction, assign it to the home processor.
 	Also, if compute i represents load below a threshold ("zero load")
@@ -41,7 +50,12 @@ void Alg7::strategy()
      computeInfo * c = (computeInfo *) &(computes[i]);
      if (c->patch1 == c->patch2)
        {
-	 assign(c, patches[c->patch1].processor);
+	 if (c->oldProcessor==15)
+	   selfTo15++;
+	 else selfToOthers++;
+
+	 //	 assign(c, patches[c->patch1].processor);
+	 assign(c, c->oldProcessor);
 
 	 /*
 	   cout << "assigning load " << c->load << "," << "to processor:" <<
@@ -51,12 +65,35 @@ void Alg7::strategy()
 	      */
 
 	 numAssigned++;
+	 numAssigned1++;
        }
      else if (c->load < TINYLOAD) {
+       if (c->oldProcessor==15)
+	   tinyTo15++;
+	 else tinyToOthers++;
        assign(c, c->oldProcessor);
        numAssigned++;
+       numAssigned2++;
      }
    }
+   iout << iINFO
+	<< "selfTo15 = " << selfTo15
+	<< "\nselfToOthers = " << selfToOthers
+	<< "\ntinyTo15 = " << tinyTo15
+	<< "\ntinyToOthers = " << tinyToOthers
+        << "\n" << endi;
+
+  heapIterator nextProcessor;
+  processorInfo *p = (processorInfo *) 
+    pes->iterator((heapIterator *) &nextProcessor);
+  while(p)
+  {
+    iout << iINFO 
+	 << "ID = " << p->Id
+	 << "  NComputes = " << p->computeSet->numElements()
+	 << "\n" << endi;
+     p = (processorInfo *) pes->next(&nextProcessor);
+  }
 
    //   iout << iINFO  << numAssigned <<  "done initial assignments.\n";
 
@@ -68,7 +105,7 @@ void Alg7::strategy()
     processorInfo *p = (processorInfo *) 
       pes->iterator((heapIterator *) &nextProcessor);
     bestSize0 = bestSize1 = bestSize2 = 0;
-    bestP0 = p;
+    bestP0 = bestP1 = bestP2 = (processorInfo *)0;
     while (p){
        int n=0;
        n = numAvailable(c,p);
@@ -113,14 +150,17 @@ void Alg7::strategy()
     if ((bestP2) && (bestP2->load < 1.2*bestP0->load)){
       assign(c, bestP2);
       numAssigned++;
+      numAssignedP2++;
     }
     else if ((bestP1) && (bestP1->load < 1.2*bestP0->load)){
       assign(c, bestP1);
       numAssigned++;
+      numAssignedP1++;
     }
     else if (bestP0){
      assign(c, bestP0);
       numAssigned++;
+      numAssignedP0++;
     }
     else { 
       iout << iINFO  << "No receiver found" << "\n" <<endi;
@@ -128,8 +168,27 @@ void Alg7::strategy()
     }
 
   }
+  iout << iINFO
+       << "numAssigned = " << numAssigned
+       << "\nnumAssigned1 = " << numAssigned1
+       << "\nnumAssigned2 = " << numAssigned2
+       << "\nnumAssignedP2 = " << numAssignedP2
+       << "\nnumAssignedP1 = " << numAssignedP1
+       << "\nnumAssignedP0 = " << numAssignedP0
+       << "\n" << endi;
+
+  p = (processorInfo *) pes->iterator((heapIterator *) &nextProcessor);
+  while(p)
+  {
+    iout << iINFO 
+	 << "ID = " << p->Id
+	 << "  NComputes = " << p->computeSet->numElements()
+	 << "\n" << endi;
+     p = (processorInfo *) pes->next(&nextProcessor);
+  }
+    
   //  printLoads();
-  overLoad = 1.01;
+  overLoad = 1.1;
   //  iout << iINFO  << "num assigned: " << numAssigned << endi;
   //  iout << iINFO  << "Starting overLoad = " << overLoad << endi;
   for (; !refine(); overLoad += .01);
