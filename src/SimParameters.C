@@ -295,6 +295,9 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
    opts.optional("main", "rigidIterations", 
 		 "Max number of SHAKE iterations for rigid bonds to hydrogen",
 		 &rigidIter, 100);
+   opts.optionalB("main", "rigidDieOnError", 
+		 "Die if rigidTolerance is not achieved after rigidIterations",
+		 &rigidDie, TRUE);
 
    opts.optional("main", "nonbondedFreq", "Nonbonded evaluation frequency",
     &nonbondedFrequency, 1);

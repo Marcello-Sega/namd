@@ -360,6 +360,7 @@ public:
 
         BigReal rigidTol;               // error tolerance for rigid bonds
         int rigidIter;                  // Number of NR iterations 
+	int rigidDie;			// die if rigidTol not achieved
 
 	Bool testOn;			//  Do tests rather than simulation
 

@@ -258,6 +258,7 @@ void HomePatch::rattle1(const BigReal timestep)
   const BigReal dt = timestep / TIMEFACTOR;
   BigReal tol2 = 2.0 * simParams->rigidTol;
   int maxiter = simParams->rigidIter;
+  int dieOnError = simParams->rigidDie;
   int i, iter;
   BigReal dsq[10], tmp;
   int ial[10], ibl[10];
@@ -284,7 +285,7 @@ void HomePatch::rattle1(const BigReal timestep)
     int icnt = 0;
     if ( ( tmp = mol->rigid_bond_length(a[ig].id) ) > 0 ) {  // for water
       if ( hgs != 3 ) {
-        NAMD_die("Hydrogen group error caught in rattle1().  It's a bug!\n");
+        NAMD_bug("Hydrogen group error caught in rattle1().");
       }
       if ( !(fixed[1] && fixed[2]) ) {
 	dsq[icnt] = tmp * tmp;  ial[icnt] = 1;  ibl[icnt] = 2;  ++icnt;
@@ -301,8 +302,11 @@ void HomePatch::rattle1(const BigReal timestep)
     for ( i = 0; i < icnt; ++i ) {
       refab[i] = ref[ial[i]] - ref[ibl[i]];
     }
+    int done;
+    int consFailure;
     for ( iter = 0; iter < maxiter; ++iter ) {
-      int done = 1;
+      done = 1;
+      consFailure = 0;
       for ( i = 0; i < icnt; ++i ) {
 	int a = ial[i];  int b = ibl[i];
 	Vector pab = pos[a] - pos[b];
@@ -313,7 +317,9 @@ void HomePatch::rattle1(const BigReal timestep)
 	  Vector &rab = refab[i];
 	  BigReal rpab = rab.x*pab.x + rab.y*pab.y + rab.z*pab.z;
 	  if ( rpab < ( rabsq * 1.0e-6 ) ) {
-	    NAMD_die("Constraint failure in RATTLE algorithm!\n");
+	    done = 0;
+	    consFailure = 1;
+	    continue;
 	  }
 	  BigReal rma = rmass[a];
 	  BigReal rmb = rmass[b];
@@ -331,8 +337,20 @@ void HomePatch::rattle1(const BigReal timestep)
       }
       if ( done ) break;
     }
-    if ( iter == maxiter ) {
-      NAMD_die("Exceeded maximum number of iterations in rattle1().\n");
+    if ( consFailure ) {
+      if ( dieOnError ) {
+	NAMD_die("Constraint failure in RATTLE algorithm!");
+      } else {
+	iout << iWARN <<
+	  "Constraint failure in RATTLE algorithm!\n" << endi;
+      }
+    } else if ( ! done ) {
+      if ( dieOnError ) {
+	NAMD_die("Exceeded maximum number of iterations in rattle1().");
+      } else {
+	iout << iWARN <<
+	  "Exceeded maximum number of iterations in rattle1().\n" << endi;
+      }
     }
     // store data back to patch
     for ( i = 0; i < hgs; ++i ) {
@@ -352,6 +370,7 @@ void HomePatch::rattle2(const BigReal timestep, Tensor *virial)
   Tensor wc;  // constraint virial
   BigReal tol = simParams->rigidTol;
   int maxiter = simParams->rigidIter;
+  int dieOnError = simParams->rigidDie;
   int i, iter;
   BigReal dsqi[10], tmp;
   int ial[10], ibl[10];
@@ -378,7 +397,7 @@ void HomePatch::rattle2(const BigReal timestep, Tensor *virial)
     int icnt = 0;
     if ( ( tmp = mol->rigid_bond_length(a[ig].id) ) > 0 ) {  // for water
       if ( hgs != 3 ) {
-        NAMD_die("Hydrogen group error caught in rattle2().  It's a bug!\n");
+        NAMD_bug("Hydrogen group error caught in rattle2().");
       }
       if ( !(fixed[1] && fixed[2]) ) {
 	redmass[icnt] = 1. / (rmass[1] + rmass[2]);
@@ -401,8 +420,9 @@ void HomePatch::rattle2(const BigReal timestep, Tensor *virial)
       refab[i] = ref[ial[i]] - ref[ibl[i]];
     }
     //    CkPrintf("Loop 4\n");
+    int done;
     for ( iter = 0; iter < maxiter; ++iter ) {
-      int done = 1;
+      done = 1;
       for ( i = 0; i < icnt; ++i ) {
 	int a = ial[i];  int b = ibl[i];
 	Vector vab = vel[a] - vel[b];
@@ -419,8 +439,13 @@ void HomePatch::rattle2(const BigReal timestep, Tensor *virial)
       }
       if ( done ) break;
     }
-    if ( iter == maxiter ) {
-      NAMD_die("Exceeded maximum number of iterations in rattle2().\n");
+    if ( ! done ) {
+      if ( dieOnError ) {
+	NAMD_die("Exceeded maximum number of iterations in rattle2().");
+      } else {
+	iout << iWARN <<
+	  "Exceeded maximum number of iterations in rattle2().\n" << endi;
+      }
     }
     // store data back to patch
     for ( i = 0; i < hgs; ++i ) {
