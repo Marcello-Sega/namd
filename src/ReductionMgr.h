@@ -22,6 +22,7 @@ typedef enum
   REDUCTION_BC_ENERGY,
   REDUCTION_VIRIAL,
   REDUCTION_ALT_VIRIAL,
+  REDUCTION_SMD_ENERGY,
   REDUCTION_MAX_RESERVED
 } ReductionTag;
 
@@ -115,12 +116,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/11/07 20:17:49 $
+ *	$Revision: 1.1008 $	$Date: 1998/01/05 20:27:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.h,v $
+ * Revision 1.1008  1998/01/05 20:27:16  sergei
+ * added REDUCTION_SMD_ENERGY to ReductionTag enum.
+ *
  * Revision 1.1007  1997/11/07 20:17:49  milind
  * Made NAMD to run on shared memory machines.
  *
