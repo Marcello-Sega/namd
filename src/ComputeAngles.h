@@ -176,7 +176,7 @@ private:
   int maxProxyAtoms;
   Force *dummy;
   
-  void angleForce(const Position p1, const Position p2, const Position p3,
+  BigReal angleForce(const Position p1, const Position p2, const Position p3,
 		  Force *f1, Force *f2, Force *f3,
 		    const Index angleType) {};
 
@@ -195,13 +195,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeAngles.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/11/04 16:55:46 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.3 $	$Date: 1996/11/04 19:29:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.h,v $
+ * Revision 1.3  1996/11/04 19:29:02  nealk
+ * Added angleForce() to system, but it is untested.
+ *
  * Revision 1.2  1996/11/04 16:55:46  ari
  * *** empty log message ***
  *
