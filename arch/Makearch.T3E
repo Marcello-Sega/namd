@@ -26,3 +26,6 @@ CHARM = $(CHARMBASE)/$(CHARMARCH)
 #FFTFLAGS=-DNAMD_FFTW
 #FFT=$(FFTINCL) $(FFTFLAGS)
 
+# definitions for CCS (used by BioCoRE)
+#CCS=-DNAMD_CCS
+

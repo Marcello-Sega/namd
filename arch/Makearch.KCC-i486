@@ -3,16 +3,10 @@
 # compiler options
 CXX = KCC
 CXXOPTS = -O3 +K3 -Bstatic --backend -march=pentiumpro --backend -ffast-math
-# uncomment for CCS support of energies
-#CXXOPTS = -DNAMDCCS -O3 +K3 -Bstatic --backend -march=pentiumpro --backend -ffast-math
-
-COPTS = -O3 -march=pentiumpro -ffast-math
-# uncomment for CCS support of energies
-#COPTS = -DNAMDCCS -O3 -march=pentiumpro -ffast-math
-
 CXXTHREADOPTS = $(CXXOPTS)
 CXXSIMPARAMOPTS = $(CXXOPTS)
 CC = egcs -DGCC
+COPTS = -O3 -march=pentiumpro -ffast-math
 
 # definitions for Charm routines
 CHARMARCH = net-linux-kcc
@@ -31,4 +25,7 @@ CHARM = $(CHARMBASE)/$(CHARMARCH)
 #FFTLIB=-L$(FFTDIR)/lib -lrfftw -lfftw
 #FFTFLAGS=-DNAMD_FFTW
 #FFT=$(FFTINCL) $(FFTFLAGS)
+
+# definitions for CCS (used by BioCoRE)
+CCS=-DNAMD_CCS
 
