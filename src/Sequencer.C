@@ -548,7 +548,9 @@ void Sequencer::rattle2(BigReal dt, int step)
     patch->rattle2(dt, &virial);
     ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,virial);
     // we need to add to alt and int virial because not included in forces
+#ifdef ALTVIRIAL
     ADD_TENSOR_OBJECT(reduction,REDUCTION_ALT_VIRIAL_NORMAL,virial);
+#endif
     ADD_TENSOR_OBJECT(reduction,REDUCTION_INT_VIRIAL_NORMAL,virial);
   }
 }
