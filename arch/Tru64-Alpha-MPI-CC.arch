@@ -2,7 +2,7 @@ NAMD_ARCH = Tru64-Alpha
 CHARMARCH = mpi-axp-cxx
 
 CXX = cxx
-CXXOPTS = -O4 -arch host -tune host -nocleanup
+CXXOPTS = -fast -O4 -nocleanup
 CC = cc
-COPTS = -O4 -arch host -tune host
+COPTS = -fast -O4
 

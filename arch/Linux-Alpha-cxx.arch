@@ -2,7 +2,7 @@ NAMD_ARCH = Linux-Alpha
 CHARMARCH = net-linux-axp-cxx
 
 CXX = cxx -DSOCKLEN_T=socklen_t
-CXXOPTS = -O4 -arch host -tune host -nocleanup -non_shared
+CXXOPTS = -fast -O4 -nocleanup -non_shared
 CC = ccc
-COPTS = -O4 -arch host -tune host -non_shared
+COPTS = -fast -O4 -non_shared
 
