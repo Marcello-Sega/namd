@@ -11,7 +11,7 @@
 %
 %       $RCSfile: ug_intro.tex,v $
 %       $Author: jim $        $Locker:  $                $State: Exp $
-%       $Revision: 1.16 $      $Date: 2001/08/02 14:36:40 $
+%       $Revision: 1.17 $      $Date: 2002/01/23 19:45:04 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -21,6 +21,9 @@
 % REVISION HISTORY:
 %
 % $Log: ug_intro.tex,v $
+% Revision 1.17  2002/01/23 19:45:04  jim
+% Changes for version 2.4b1.  Only need to change version in one place now.
+%
 % Revision 1.16  2001/08/02 14:36:40  jim
 % Added AMBER file compatibility to list of new features.
 %
@@ -131,36 +134,18 @@ at {\tt namd@ks.uiuc.edu}.
 
 \subsection{New features in version \NAMDVER}
 
-\subsubsection*{Charmrun on All Platforms}
+\subsubsection*{Improved Parallel Scaling with Particle Mesh Ewald}
 
-The former \verb#conv-host# is now \verb#charmrun# and is present on all
-platforms.  On some platforms this is a script which attempts to
-provide a uniform command format.  Your results may vary but on
-any platform you can try \verb#charmrun namd2 +p<procs> <configfile>#.
+Full electrostatics calculations now transmit less data and take
+better advantage of large clusters of multiprocessors to allow
+efficient use of several hundred processors for large systems.
 
-\subsubsection*{Simple Local Usage}
+\subsubsection*{GROMACS Input File Compatibility}
 
-Workstation network versions of NAMD no longer require the ability
-to \verb#rsh localhost# or a nodelist file in order to run only on the
-local machine.  The new option \verb#++local# spawns processes directly,
-as in \verb#charmrun namd2 ++local +p<procs> <configfile>\verb#.
-
-\subsubsection*{Support for Scyld Beowulf}
-
-NAMD has been ported to the Linux-based Scyld Beowulf operating
-system, which provides a single system image for PC clusters.
-
-\subsubsection*{Building PSF Structure Files}
-
-A new tool, \verb#psfgen#, has been added, which uses CHARMM topology
-files and PDB coordinate files to generate PSF structure files
-suitable for use with NAMD.
-
-\subsubsection*{AMBER Input File Compatibility}
-
-NAMD can read AMBER parm (combined structure and parameter) and
-coordinate files as input.  Output file formats are still limited
-to PDB and CHARMM DCD trajectory files.
+NAMD can load GROMACS ASCII topology (.top) and coordinate (.gro)
+files, allowing most GROMACS simulations to be run in NAMD.  There
+are, however, several performance-enabling features of the GROMACS
+force field which NAMD does not (yet) take advantage of.
 
 
 \subsection{\NAMD\ and molecular dynamics simulations}

@@ -1,4 +1,9 @@
 #####
+# define version
+#####
+NAMD_VERSION = 2.4b1
+
+#####
 # specific names of programs used in make commands
 #####
 CCPP		= CC
@@ -33,14 +38,14 @@ doc:	$(DOCDIR)/ug.ps
 ### run latex2html
 html:	$(DOCDIR)/ug.ps
 	latex2html -local_icons -split 5 -toc_depth 4 -toc_stars \
-	-t "NAMD 2.3 User's Guide" -address "namd@ks.uiuc.edu" \
+	-t "NAMD $(NAMD_VERSION) User's Guide" -address "namd@ks.uiuc.edu" \
 	-up_url "../../" -up_title "Main NAMD Page" ug
 
 ### run pdflatex
 pdf:	$(DOCDIR)/ug.pdf
 
 $(DOCDIR)/ug.pdf: $(SRCFILES) $(PDFFIGS)
-	$(ECHO) "Creating User's Guide ..." ; \
+	$(ECHO) "Creating NAMD $(NAMD_VERSION) User's Guide ..." ; \
 	$(CD) $(DOCDIR); \
 	pdflatex $(MAIN_UG_FILE); \
 	bibtex $(MAIN_UG_FILE); \
@@ -62,7 +67,7 @@ figures/switching.pdf: figures/switching.eps
 	distill -pagesize 310 165 pts figures/switching.eps
 
 $(DOCDIR)/ug.ps: $(SRCFILES)
-	$(ECHO) "Creating User's Guide ..." ; \
+	$(ECHO) "Creating NAMD $(NAMD_VERSION) User's Guide ..." ; \
 	$(CD) $(DOCDIR); \
 	latex $(MAIN_UG_FILE); \
 	bibtex $(MAIN_UG_FILE); \
@@ -70,8 +75,12 @@ $(DOCDIR)/ug.ps: $(SRCFILES)
 	latex $(MAIN_UG_FILE); \
 	dvips -t letter -o ug.ps ug.dvi
 
+namd_version.tex:
+	$(DELETE) namd_version.tex ; \
+	echo '\\newcommand{\\NAMDVER}' "{$(NAMD_VERSION)}" > namd_version.tex
 
 clean:
+	$(DELETE) namd_version.tex ; \
 	$(DELETE) $(DOCDIR)/ug.ps ; \
 	$(DELETE) $(DOCDIR)/ug.aux ; \
 	$(DELETE) $(DOCDIR)/ug.bbl ; \
