@@ -41,6 +41,7 @@ private:
   int numLocalAtoms;
   Pme2Particle *localData;
   ReductionMgr *reduction;
+  int runcount;
 };
 
 ComputeDPME::ComputeDPME(ComputeID c, ComputeMgr *m) :
@@ -183,7 +184,7 @@ void ComputeDPME::recvData(ComputeDPMEDataMsg *msg)
 }
 
 ComputeDPMEMaster::ComputeDPMEMaster(ComputeDPME *h, ReductionMgr *r) :
-  host(h), numLocalAtoms(0), reduction(r)
+  host(h), numLocalAtoms(0), reduction(r), runcount(0)
 {
   reduction->Register(REDUCTION_ELECT_ENERGY);
   reduction->Register(REDUCTION_VIRIAL_SLOW_X);
@@ -299,9 +300,17 @@ void ComputeDPMEMaster::recvData(ComputeDPMEDataMsg *msg)
 
   DebugM(4,"Calling dpme_eval_recip().\n");
 
+  double pme_start_time = 0;
+  if ( runcount == 1 ) pme_start_time = CmiTimer();
+
   electEnergy += dpme_eval_recip( atom_info, localData - 1, &localResults,
 			recip_vir, grid_info, box_info, pe_info,
 			time_count, tsteps, &mytime );
+
+  if ( runcount == 1 ) {
+    iout << iINFO << "PME reciprocal sum CPU time per evaluation: "
+         << (CmiTimer() - pme_start_time) << "\n" << endi;
+  }
 
   DebugM(4,"Returned from dpme_eval_recip().\n");
 
@@ -337,6 +346,7 @@ void ComputeDPMEMaster::recvData(ComputeDPMEDataMsg *msg)
   }
 
   // reset
+  runcount += 1;
   numLocalAtoms = 0;
   homeNode.resize(0);
   endForNode.resize(0);
@@ -384,12 +394,15 @@ void ComputeDPME::recvResults(ComputeDPMEResultsMsg *msg)
  *
  *	$RCSfile: ComputeDPME.C,v $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1999/02/17 04:09:54 $
+ *	$Revision: 1.9 $	$Date: 1999/03/10 00:52:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPME.C,v $
+ * Revision 1.9  1999/03/10 00:52:26  jim
+ * Adding timing output for PME reciprocal sum.
+ *
  * Revision 1.8  1999/02/17 04:09:54  jim
  * Fixes to make optional force modules work with more nodes than patches.
  *
