@@ -69,6 +69,20 @@ void NAMD_die(const char *err_msg)
 }
 
 
+// signal all nodes, it's time to quit and it's our own damn fault
+void NAMD_bug(const char *err_msg)
+
+{
+   const char *bug_msg = 
+     "BUG ALERT: NAMD has detected a bug.  Please notify namd@ks.uiuc.edu.";
+   char *new_err_msg = new char[strlen(err_msg) + 20];
+   sprintf(new_err_msg,"BUG ALERT: %s\n%s\n",err_msg,bug_msg);
+   CkPrintf(new_err_msg);
+   CmiAbort(new_err_msg);
+   delete [] new_err_msg;
+}
+
+
 // same as write, only does error checking internally
 void NAMD_write(int fd, const void *buf, size_t count)
 

@@ -525,35 +525,35 @@ void Controller::printEnergies(int step)
 
     checksum = reduction->item(REDUCTION_ATOM_CHECKSUM);
     if ( ((int)checksum) != molecule->numAtoms )
-      NAMD_die("BUG ALERT: Bad global atom count!\n");
+      NAMD_bug("Bad global atom count!\n");
 
     checksum = reduction->item(REDUCTION_COMPUTE_CHECKSUM);
     if ( ((int)checksum) != computeChecksum ) {
       if ( computeChecksum )
-        NAMD_die("BUG ALERT: Bad global compute count!\n");
+        NAMD_bug("Bad global compute count!\n");
       else
         computeChecksum = ((int)checksum);
     }
 
     checksum = reduction->item(REDUCTION_BOND_CHECKSUM);
     if ( ((int)checksum) != molecule->numCalcBonds )
-      NAMD_die("BUG ALERT: Bad global bond count!\n");
+      NAMD_bug("Bad global bond count!\n");
 
     checksum = reduction->item(REDUCTION_ANGLE_CHECKSUM);
     if ( ((int)checksum) != molecule->numCalcAngles )
-      NAMD_die("BUG ALERT: Bad global angle count!\n");
+      NAMD_bug("Bad global angle count!\n");
 
     checksum = reduction->item(REDUCTION_DIHEDRAL_CHECKSUM);
     if ( ((int)checksum) != molecule->numCalcDihedrals )
-      NAMD_die("BUG ALERT: Bad global dihedral count!\n");
+      NAMD_bug("Bad global dihedral count!\n");
 
     checksum = reduction->item(REDUCTION_IMPROPER_CHECKSUM);
     if ( ((int)checksum) != molecule->numCalcImpropers )
-      NAMD_die("BUG ALERT: Bad global improper count!\n");
+      NAMD_bug("Bad global improper count!\n");
 
     checksum = reduction->item(REDUCTION_EXCLUSION_CHECKSUM);
     if ( ((int)checksum) != molecule->numCalcExclusions )
-      NAMD_die("BUG ALERT: Bad global exclusion count!\n");
+      NAMD_bug("Bad global exclusion count!\n");
 
     checksum = reduction->item(REDUCTION_MARGIN_VIOLATIONS);
     if ( ((int)checksum) ) iout << iWARN << ((int)checksum) <<

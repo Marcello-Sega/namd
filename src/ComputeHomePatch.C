@@ -52,10 +52,10 @@ void ComputeHomePatch::initialize() {
 
 	if (positionBox == NULL) { // We have yet to get boxes
 	    if (!(patch = PatchMap::Object()->patch(patchID))) {
-	      NAMD_die("BUG ALERT: ComputeHomePatch used with unknown patch.");
+	      NAMD_bug("ComputeHomePatch used with unknown patch.");
 	    }
             if (!(homePatch = PatchMap::Object()->homePatch(patchID))) {
-	      NAMD_die("BUG ALERT: ComputeHomePatch used with proxy.");
+	      NAMD_bug("ComputeHomePatch used with proxy.");
 	    }
 	    DebugM(3, "initialize(" << cid <<")  patchid = "<<patch->getPatchID()<<"\n");
 	    positionBox = patch->registerPositionPickup(cid);
@@ -97,7 +97,7 @@ void ComputeHomePatch::doWork() {
   // Open up positionBox, forceBox, and atomBox
   p = positionBox->open(&numData);
   if (numData != numAtoms) {
-    NAMD_die("BUG ALERT: doWork has opened a position box with wrong # atoms.");
+    NAMD_bug("doWork has opened a position box with wrong # atoms.");
   }
   r = forceBox->open();
   a = atomBox->open();

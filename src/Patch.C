@@ -106,6 +106,9 @@ void Patch::loadAtomProperties(void)
     for ( i=0; i<numAtoms; i+=size)
     {
       size = a[i].hydrogenGroupSize;
+      if ( ! size ) {
+        NAMD_bug("Mother atom with hydrogenGroupSize of 0!");
+      }
       allfixed = 1;
       for ( j = 0; j < size; ++j ) {
 	allfixed = ( allfixed && (a[i+j].flags & ATOM_FIXED) );

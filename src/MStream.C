@@ -57,7 +57,7 @@ MIStream *MIStream::Get(char *buf, int len)
             " from Pe(" << msg->PE << ")" <<
             " on stack while waiting for " << currentIndex <<
             " from Pe(" << PE << ").\n");
-          NAMD_die("BUG ALERT: MIStream::Get - duplicate message on stack!");
+          NAMD_bug("MIStream::Get - duplicate message on stack!");
       }
       if ( early && (early->index == currentIndex) ) {
         DebugM(2,"Popping message " << currentIndex << " from stack.\n");
@@ -74,7 +74,7 @@ MIStream *MIStream::Get(char *buf, int len)
             " from Pe(" << msg->PE << ")" <<
             " received while waiting for " << currentIndex <<
             " from Pe(" << PE << ").\n");
-          NAMD_die("BUG ALERT: MIStream::Get - duplicate message received!");
+          NAMD_bug("MIStream::Get - duplicate message received!");
         }
         DebugM(2,"Pushing message " << msg->index << " on stack.\n");
         if ( (! early) || (early->index > msg->index) ) {
