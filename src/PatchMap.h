@@ -29,7 +29,7 @@ public:
 
   ~PatchMap(void);
 
-  enum { MaxTwoAway = 5*5*5 - 3*3*3 - 1 };
+  enum { MaxTwoAway = 5*5*5 - 3*3*3 };
   enum { MaxOneAway = 3*3*3 - 1 };
   enum ErrCode { OK = 0, ERROR = -1 };
 
@@ -185,13 +185,16 @@ inline Patch *PatchMap::patch(PatchID pid)
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMap.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/11/01 21:20:45 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.7 $	$Date: 1996/11/21 20:39:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.h,v $
+ * Revision 1.7  1996/11/21 20:39:29  jim
+ * small bug fixes
+ *
  * Revision 1.6  1996/11/01 21:20:45  ari
  * *** empty log message ***
  *
