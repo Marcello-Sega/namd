@@ -630,17 +630,28 @@ void WorkDistrib::assignPatchesBitReversal()
 struct nodesort {
   int node;
   int a_total;
+  int b_total;
+  int c_total;
   int npatches;
-  nodesort() : node(-1),a_total(0),npatches(0) { ; }
+  nodesort() : node(-1),a_total(0),b_total(0),c_total(0),npatches(0) { ; }
   int operator==(const nodesort &o) const {
     float a1 = ((float)a_total)/((float)npatches);
     float a2 = ((float)o.a_total)/((float)o.npatches);
-    return (a1 == a2);
+    float b1 = ((float)b_total)/((float)npatches);
+    float b2 = ((float)o.b_total)/((float)o.npatches);
+    float c1 = ((float)c_total)/((float)npatches);
+    float c2 = ((float)o.c_total)/((float)o.npatches);
+    return ((a1 == a2) && (b1 == b2) && (c1 == c2));
   }
   int operator<(const nodesort &o) const {
     float a1 = ((float)a_total)/((float)npatches);
     float a2 = ((float)o.a_total)/((float)o.npatches);
-    return (a1 < a2);
+    float b1 = ((float)b_total)/((float)npatches);
+    float b2 = ((float)o.b_total)/((float)o.npatches);
+    float c1 = ((float)c_total)/((float)npatches);
+    float c2 = ((float)o.c_total)/((float)o.npatches);
+    return ( (a1 < a2) || ((a1 == a2) && (b1 < b2)) ||
+		((a1 == a2) && (b1 == b2) && (c1 < c2)) );
   }
 };
 
@@ -660,6 +671,8 @@ void WorkDistrib::sortNodesAndAssign(int *assignedNode) {
     // iout << pid << " " << assignedNode[pid] << "\n" << endi;
     allnodes[assignedNode[pid]].npatches++;
     allnodes[assignedNode[pid]].a_total += patchMap->index_a(pid);
+    allnodes[assignedNode[pid]].b_total += patchMap->index_b(pid);
+    allnodes[assignedNode[pid]].c_total += patchMap->index_c(pid);
   }
   SortableResizeArray<nodesort> usednodes(nnodes);
   usednodes.resize(0);
