@@ -350,11 +350,23 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
     processorArray[i].Id = i;
     processorArray[i].available = CmiTrue;
     if ( pmeOn && isPmeProcessor(i) ) {
+#if CHARM_VERSION > 050607
+      processorArray[i].backgroundLoad = pmebgfactor * stats->procs[i].bg_walltime;
+#else
       processorArray[i].backgroundLoad = pmebgfactor * stats[i].bg_walltime;
+#endif
     } else if (patchMap->numPatchesOnNode(i) > 0) {
+#if CHARM_VERSION > 050607
+      processorArray[i].backgroundLoad = homebgfactor * stats->procs[i].bg_walltime;
+#else
       processorArray[i].backgroundLoad = homebgfactor * stats[i].bg_walltime;
+#endif
     } else {
+#if CHARM_VERSION > 050607
+      processorArray[i].backgroundLoad = bgfactor * stats->procs[i].bg_walltime;
+#else
       processorArray[i].backgroundLoad = bgfactor * stats[i].bg_walltime;
+#endif
     }
   }
 
@@ -374,9 +386,17 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
   for (i=0; i<count; i++) {
     processorArray[i].Id = i;
     if (patchMap->numPatchesOnNode(i) > 0)
+#if CHARM_VERSION > 050607
+      processorArray[i].backgroundLoad = bg_weight * stats->procs[i].bg_walltime;
+#else
       processorArray[i].backgroundLoad = bg_weight * stats[i].bg_walltime;
+#endif
     else 
+#if CHARM_VERSION > 050607
       processorArray[i].backgroundLoad = stats[i].bg_walltime;
+#else
+      processorArray[i].backgroundLoad = stats->procs[i].bg_walltime;
+#endif
   }
   
   //Modification to reduce the coputeload on PME processors
@@ -431,10 +451,16 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 
   int nMoveableComputes=0;
   int nProxies = 0;		// total number of estimated proxies
+#if CHARM_VERSION > 050607
+    int j;
+    for (j=0; j < stats->n_objs; j++) {
+      const LDObjData &this_obj = stats->objData[j];
+#else
   for (i=0; i < count; i++) {
     int j;
     for (j=0; j < stats[i].n_objs; j++) {
       const LDObjData &this_obj = stats[i].objData[j];
+#endif
       // filter out non-NAMD managed objects (like PME array)
 #if CHARM_VERSION > 050405
       if (this_obj.omID().id.idx != 1) continue;
@@ -454,7 +480,11 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 
 	patchArray[pid].Id = pid;
 	patchArray[pid].numAtoms = 0;
+#if CHARM_VERSION > 050607
+	patchArray[pid].processor = stats->from_proc[j];
+#else
 	patchArray[pid].processor = i;
+#endif
 	const int numProxies = requiredProxies(pid,neighborNodes);
         nProxies += numProxies;
 
@@ -476,7 +506,11 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 	  p1 = computeMap->pid(cid,1);
 	else p1 = p0;
 	computeArray[nMoveableComputes].Id = cid;
+#if CHARM_VERSION > 050607
+	computeArray[nMoveableComputes].oldProcessor = stats->from_proc[j];
+#else
 	computeArray[nMoveableComputes].oldProcessor = i;
+#endif
 	computeArray[nMoveableComputes].processor = -1;
 	computeArray[nMoveableComputes].patch1 = p0;
 	computeArray[nMoveableComputes].patch2 = p1;
@@ -485,7 +519,9 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 	nMoveableComputes++;
       }
     }
+#if ! CHARM_VERSION > 050607
   }
+#endif
 #if 0
   int averageProxy = nProxies / count;
   CkPrintf("total proxies: %d, avervage: %d\n", nProxies, averageProxy);
