@@ -31,8 +31,9 @@
 #include "varsizemsg.h"
 #include "Random.h"
 
+#define USE_COMM_LIB 1
 #ifdef USE_COMM_LIB
-#include "ComlibManager.h"
+#include "EachToManyMulticastStrategy.h"
 #endif
 
 #ifndef SQRT_PI
@@ -253,10 +254,6 @@ private:
   CmiNodeLock ComputePmeMgr::fftw_plan_lock;
 #endif
 
-#ifdef USE_COMM_LIB
-extern CkGroupID delegateMgr;
-#endif 
-
 int isPmeProcessor(int p){ 
   return CProxy_ComputePmeMgr::ckLocalBranch(CpvAccess(BOCclass_group).computePmeMgr)->isPmeProcessor(p);
 }
@@ -270,8 +267,7 @@ ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), pmeProxyDir(thisgroup), pm
   CpvAccess(BOCclass_group).computePmeMgr = thisgroup;
 
 #ifdef USE_COMM_LIB
-  CProxy_ComlibManager gproxy(delegateMgr);
-  pmeProxy.ckDelegate(gproxy.ckLocalBranch());
+  ComlibDelegateProxy(&pmeProxy);
 #endif
 
 #ifdef NAMD_FFTW
@@ -366,29 +362,26 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   }
 
   //generatePmePeList2(gridPeMap, numGridPes, transPeMap, numTransPes);
+
+  int max_npes = (numTransPes > numGridPes)?numTransPes:numGridPes;
+  generatePmePeList(transPeMap, max_npes);
+  gridPeMap = transPeMap;
   
-  if(numTransPes > numGridPes) {
-    generatePmePeList(transPeMap, numTransPes);
-    gridPeMap = transPeMap;
-
-#ifdef USE_COMM_LIB
-    if(CkMyPe() == 0) {
-      CProxy_ComlibManager gproxy(delegateMgr);
-      gproxy.ckLocalBranch()->createId(transPeMap, numTransPes);
-    }
-#endif
+#ifdef USE_COMM_LIB  
+  if(CkMyPe() == 0) {
+      ComlibInstanceHandle cinst1 = CkCreateComlibInstance();
+      EachToManyMulticastStrategy *strat = new 
+          EachToManyMulticastStrategy(USE_DIRECT, numGridPes, 
+                                      gridPeMap, numTransPes, transPeMap);
+      cinst1.setStrategy(strat);
+      
+      ComlibInstanceHandle cinst2 = CkCreateComlibInstance();
+      strat = new EachToManyMulticastStrategy(USE_DIRECT, numTransPes, transPeMap
+                                              , numGridPes, gridPeMap);
+      cinst2.setStrategy(strat);
+      ComlibDoneCreating();
   }
-  else {
-    generatePmePeList(gridPeMap, numGridPes);
-    transPeMap = gridPeMap;
-
-#ifdef USE_COMM_LIB
-    if(CkMyPe() == 0) {
-      CProxy_ComlibManager gproxy(delegateMgr);
-      gproxy.ckLocalBranch()->createId(gridPeMap, numGridPes);
-    }
 #endif
-  }
 
   myGridPe = -1;
   int i = 0;
@@ -701,8 +694,8 @@ void ComputePmeMgr::sendTrans(void) {
   int slicelen = myGrid.K2 * zdim;
 
 #ifdef USE_COMM_LIB
-  CProxy_ComlibManager gproxy(delegateMgr);
-  gproxy[CkMyPe()].beginIteration();
+  ComlibInstanceHandle cinst1 = CkGetComlibInstance(0);
+  cinst1.beginIteration();
 #endif
 
   for (int j=0; j<numTransPes; j++) {
@@ -733,13 +726,7 @@ void ComputePmeMgr::sendTrans(void) {
   untrans_count = numTransPes;
 
 #ifdef USE_COMM_LIB
-  gproxy[CkMyPe()].endIteration();
-
-  if(myTransPe == -1){
-    // The recv ungrid iteration where this processor sends no data
-    gproxy[CkMyPe()].beginIteration();
-    gproxy[CkMyPe()].endIteration();
-  }
+  cinst1.endIteration();
 #endif  
 }
 
@@ -812,8 +799,8 @@ void ComputePmeMgr::sendUntrans(void) {
   int ny = localInfo[myTransPe].ny_after_transpose;
 
 #ifdef USE_COMM_LIB
-  CProxy_ComlibManager gproxy(delegateMgr);
-  gproxy[CkMyPe()].beginIteration();
+  ComlibInstanceHandle cinst2 = CkGetComlibInstance(1); 
+  cinst2.beginIteration();
 #endif  
 
   // send data for reverse transpose
@@ -844,7 +831,7 @@ void ComputePmeMgr::sendUntrans(void) {
   }
 
 #ifdef USE_COMM_LIB
-  gproxy[CkMyPe()].endIteration();
+  cinst2.endIteration();
 #endif  
 
   trans_count = numGridPes;

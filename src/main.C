@@ -8,14 +8,8 @@
 #include "InfoStream.h"
 #include "memusage.h"
 
-#ifdef USE_COMM_LIB
-#include "ComlibManager.h"
-#endif
-
 #include "main.decl.h"
 #include "main.h"
-
-CkGroupID delegateMgr;
 
 #ifndef WIN32
 
@@ -105,10 +99,6 @@ class main : public Chare
 public:
   main(CkArgMsg *)
   {
-
-#ifdef USE_COMM_LIB
-    delegateMgr = CProxy_ComlibManager::ckNew(USE_MESH, 1);
-#endif
 
     // print banner
     iout << iINFO << "NAMD " << NAMD_VERSION << " for " << NAMD_PLATFORM

@@ -7,8 +7,6 @@
 mainmodule main {
   // main - defines most of the system wide simple messages
 
-  readonly CkGroupID delegateMgr;
-
   mainchare main {
     entry main();
   };
@@ -25,6 +23,5 @@ mainmodule main {
   extern module CollectionMaster;
   extern module BroadcastMgr;
   extern module Sync;
-//  extern module ComlibModule;
 }
 
