@@ -54,19 +54,6 @@ PVMLIB=-L$(PVMDIR) -lpvmc
 PVM=-I$(PVMDIR)
 PVMLIBS=pvm3/libpvmc.a
 
-######
-## definitions for TCL interface
-######
-##
-## MOVED TO Makearch.* !!!
-##
-######
-##
-#TCLDIR=/usr/local
-#TCLINCL=-I$(TCLDIR)/include
-#TCLLIB=-L$(TCLDIR)/lib -ltclx -ltcl
-#TCLFLAGS=-DNAMD_TCL
-#TCL=$(TCLINCL) $(TCLFLAGS)
 
 ######
 ## Libraries we may have changed
@@ -78,6 +65,7 @@ LIBS = $(DPMTALIBS) $(PVMLIBS) $(DPMELIBS)
 # CXX is platform dependent
 INCLUDE = $(CHARM)/include
 CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(MDCOMM) $(TCL) $(CXXOPTS) $(NOWARN) $(NAMDFLAGS)
+CXXTHREADFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(MDCOMM) $(TCL) $(CXXTHREADOPTS) $(NOWARN) $(NAMDFLAGS)
 GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(PVM) $(MDCOMM) $(TCL) $(NOWARN) $(NAMDFLAGS)
 
 .SUFFIXES: 	.ci
@@ -242,7 +230,14 @@ depends: cifiles $(DSTDIR) $(DEPENDSFILE)
 	      $(ECHO) '	$$(CXX) $$(CXXFLAGS)' -o $$i -c \
 	        $(SRCDIR)/`basename $$i | awk -F. '{print $$1".C"}'` \
 		>> $(DEPENDFILE) ; \
-	done;
+	done; \
+	$(RM) $(DEPENDFILE).sed; \
+	sed -e "/obj\/Controller.o/ s/CXXFLAGS/CXXTHREADFLAGS/" \
+	    -e "/obj\/Sequencer.o/ s/CXXFLAGS/CXXTHREADFLAGS/" \
+	    -e "/obj\/TestController.o/ s/CXXFLAGS/CXXTHREADFLAGS/" \
+	    -e "/obj\/TestSequencer.o/ s/CXXFLAGS/CXXTHREADFLAGS/" \
+	    $(DEPENDFILE) > $(DEPENDFILE).sed; \
+	$(MOVE) -f $(DEPENDFILE).sed $(DEPENDFILE);
 
 Make.depends:
 	touch $(DEPENDSFILE)

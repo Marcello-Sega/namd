@@ -10,6 +10,7 @@
 CC = mpcc -w 
 CXX = mpCC -w 
 CXXOPTS = -O3 -qstrict -Q -qarch=pwr -qtune=pwr -DSP2 -DGLOBALS
+CXXTHREADOPTS = $(CXXOPTS)
 
 #####
 # Flags

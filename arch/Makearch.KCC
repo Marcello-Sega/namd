@@ -11,6 +11,7 @@ CC = gcc
 CXX = KCC
 CXXOPTS = -O3 -DGLOBALS -DGCC +K3
 COPTS = -O3 -DGCC
+CXXTHREADOPTS = $(CXXOPTS)
 
 #####
 # Flags

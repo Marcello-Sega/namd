@@ -566,7 +566,6 @@ obj/ComputeDPMTA.o: \
 	src/HomePatchList.h \
 	src/AtomMap.h \
 	src/ComputeDPMTA.h \
-	dpmta-2.6/src/dpmta.h \
 	src/ComputeHomePatches.h \
 	src/Compute.h \
 	src/Patch.h \
@@ -575,6 +574,7 @@ obj/ComputeDPMTA.o: \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/PatchTypes.h \
+	dpmta-2.6/src/dpmta.h \
 	src/PatchMgr.h \
 	src/HomePatch.h \
 	src/MigrateAtomsMsg.h \
@@ -1545,7 +1545,7 @@ obj/Controller.o: \
 	src/Broadcasts.h \
 	src/Thread.h \
 	src/Debug.h
-	$(CXX) $(CXXFLAGS) -o obj/Controller.o -c src/Controller.C
+	$(CXX) $(CXXTHREADFLAGS) -o obj/Controller.o -c src/Controller.C
 obj/defmain.o: \
 	src/defmain.C \
 	src/ProcessorPrivate.h \
@@ -2046,7 +2046,11 @@ obj/Output.o: \
 	src/PDBData.h \
 	src/Lattice.h \
 	src/SimParameters.h \
-	src/Communicate.h
+	src/Communicate.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/PatchMap.inl \
+	src/AtomMap.h
 	$(CXX) $(CXXFLAGS) -o obj/Output.o -c src/Output.C
 obj/Parameters.o: \
 	src/Parameters.C \
@@ -2431,7 +2435,7 @@ obj/Sequencer.o: \
 	src/ComputeMgr.h \
 	src/Thread.h \
 	src/Debug.h
-	$(CXX) $(CXXFLAGS) -o obj/Sequencer.o -c src/Sequencer.C
+	$(CXX) $(CXXTHREADFLAGS) -o obj/Sequencer.o -c src/Sequencer.C
 obj/Set.o: \
 	src/Set.C \
 	src/Set.h \
@@ -2564,7 +2568,7 @@ obj/TestController.o: \
 	src/Broadcasts.h \
 	src/Thread.h \
 	src/Debug.h
-	$(CXX) $(CXXFLAGS) -o obj/TestController.o -c src/TestController.C
+	$(CXX) $(CXXTHREADFLAGS) -o obj/TestController.o -c src/TestController.C
 obj/TestSequencer.o: \
 	src/TestSequencer.C \
 	src/Node.h \
@@ -2628,7 +2632,7 @@ obj/TestSequencer.o: \
 	src/ComputeMgr.h \
 	src/Thread.h \
 	src/Debug.h
-	$(CXX) $(CXXFLAGS) -o obj/TestSequencer.o -c src/TestSequencer.C
+	$(CXX) $(CXXTHREADFLAGS) -o obj/TestSequencer.o -c src/TestSequencer.C
 obj/VoidTree.o: \
 	src/VoidTree.C \
 	src/VoidTree.h \

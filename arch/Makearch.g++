@@ -11,6 +11,7 @@ CC = gcc
 CXX = g++
 CXXOPTS = -O -DGLOBALS -DGCC
 COPTS = -O -DGCC
+CXXTHREADOPTS = $(CXXOPTS)
 
 #####
 # Flags

@@ -23,6 +23,7 @@ CXXOPTS = -g
 #CXXOPTS = +O3 -z
 #CXXOPTS = -g -v -z -G
 #CXXOPTS = -g -v
+CXXTHREADOPTS = $(CXXOPTS)
 
 #####
 # Flags
