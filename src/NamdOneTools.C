@@ -167,6 +167,43 @@ void velocities_from_binfile(char *fname, Vector *vels, int n)
 }
 /*		END OF FUNCTION velocities_from_binfile		*/
 
+
+
+/************************************************************************/
+/*			FUNCTION gaussian_random_number			*/
+/*	This function returns a normally distributed random number      */
+/*   with zero mean and unit variance. See "Numerical Recipies in C"    */
+/*   for details. To get a distribution with a variance s, multiply     */
+/*   the returned value by s.                                           */
+/************************************************************************/
+BigReal gaussian_random_number(void) {
+  static int iset = 0;
+  static BigReal gset;
+  BigReal fac, r, v1, v2;
+  
+  if (iset == 0) { // we do not have an extra result ready, so 
+    r = 2.;
+    while (r >=1. || r == 0.0) { // make sure we are within unit circle
+      v1 = 2.0 * NAMD_random() - 1.0;
+      v2 = 2.0 * NAMD_random() - 1.0;
+      r = v1*v1 + v2*v2;
+    }
+    
+    fac = sqrt(-2.0 * log(r)/r);
+    // now make the Box-Muller transformation to get two normally 
+    // distributed random numbers. Save one and return the other.
+    gset = v1 * fac;
+    iset = 1;
+    return v2 * fac;
+  }
+  else { // use previously computed value
+    iset = 0;
+    return gset;
+  }
+}
+/*			END OF FUNCTION gaussian_random_number		*/
+
+
 Vector gaussian_random_vector(void)
 {
 	int j;			//  Loop counter
@@ -314,13 +351,16 @@ void remove_com_motion(Vector *vel, Molecule *structure, int n)
 * RCS INFORMATION:
 *
 *	$RCSfile: NamdOneTools.C,v $
-*	$Author: brunner $	$Locker:  $		$State: Exp $
-*	$Revision: 1.9 $	$Date: 1997/08/14 15:29:48 $
+*	$Author: sergei $	$Locker:  $		$State: Exp $
+*	$Revision: 1.10 $	$Date: 1998/01/05 20:34:08 $
 *
 ***************************************************************************
 * REVISION HISTORY:
 *
 * $Log: NamdOneTools.C,v $
+* Revision 1.10  1998/01/05 20:34:08  sergei
+* added function BigReal gaussian_random_number(void);
+*
 * Revision 1.9  1997/08/14 15:29:48  brunner
 * More fixes for 32 bit ints in binary restart format
 *
@@ -361,4 +401,4 @@ void remove_com_motion(Vector *vel, Molecule *structure, int n)
 *
 ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdOneTools.C,v 1.9 1997/08/14 15:29:48 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdOneTools.C,v 1.10 1998/01/05 20:34:08 sergei Exp $";
