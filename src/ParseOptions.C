@@ -840,8 +840,7 @@ Bool ParseOptions::set(const ConfigList& clist)
 	       if (flg == 0) {
 		  flg = 1;
                   iout << iWARN 
-		    << "Following are the variables which were set in the " 
-		    << "\n" << endi; 
+		    << "The following variables were set in the\n";
 		  iout << iWARN 
 		    << "configuation file but were not needed" << "\n" << endi;
 	       }
@@ -859,13 +858,13 @@ Bool ParseOptions::set(const ConfigList& clist)
 	 if (!exists(ptr -> name)) {
 	    if (flg == 0) {
 	       flg = 1;
-               iout << iWARN 
-		  << "Following are the variables which were set in the\n"
-	          << endi;
-               iout << iWARN 
-		  << "configuration file but which are NOT VALID\n" << endi;
+	       has_error = TRUE;
+               iout << iERROR
+		  << "The following variables were set in the\n";
+               iout << iERROR
+		  << "configuration file but are NOT VALID\n" << endi;
 	    }
-	    iout << iWARN << "   " << ptr -> name << "\n" << endi;
+	    iout << iERROR << "   " << ptr -> name << "\n" << endi;
 	 }
       }
    }
