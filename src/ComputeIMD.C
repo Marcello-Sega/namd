@@ -29,11 +29,10 @@ ComputeIMD::ComputeIMD(ComputeGlobal *h)
   else {
     rc = vmdsock_listen(sock); 
     // Wait for VMD to connect
-    iout << iINFO << "Waiting for VMD to bind to port "<<port<<'\n'<<endi;
+    iout << iINFO << "Waiting for VMD to connect to port "<<port<<'\n'<<endi;
     while (!vmdsock_selread(sock));
-    errno = 0;
     rc = vmdsock_accept(sock);
-    iout << "accept: " << strerror(errno) << '\n' << endi;
+    iout << iDEBUG << "Accept returned " << rc << '\n' << endi;
   }
   Node::Object()->IMDinit(sock);
 
@@ -89,16 +88,16 @@ int ComputeIMD::get_vmd_forces() {
   int hlength;
   int hsize; 
   int retval = 0;
+  int rc;
   while (vmdsock_selread(sock))  {     // Drain the socket
-    errno = 0;
-    imd_readheader(sock, &htype, &hlength, &hsize); 
-    iout << iDEBUG << "get_vmd_forces, readheader: " << strerror(errno) 
-          << '\n' << endi;
-    iout << iDEBUG << "htype="<<htype<<"\thsize="<<hsize
-         <<"\thlength="<<hlength<<'\n'<<endi;
+    rc = imd_readheader(sock, &htype, &hlength, &hsize); 
+    if (rc != sizeof(IMDHeader)) {
+      iout << iDEBUG << "header: " << strerror(errno) << '\n' << endi;
+      NAMD_die("Error reading header\n"); 
+    }
     // interpret header
     switch (htype) {
-      case MDCOMM:
+      case IMD_MDCOMM:
         // Expect the msglength to give number of indicies, and the data
         // message to consist of first the indicies, then the coordinates
         // in xyz1 xyz2... format.
@@ -109,21 +108,30 @@ int ComputeIMD::get_vmd_forces() {
           vmd_forces = new float[hlength*3];
           num_vmd_atoms = hlength;
         }
- 	errno = 0;
-        imd_blockread(sock, (char *)vmd_atoms, num_vmd_atoms * sizeof(int));
-        iout << iDEBUG << "get_vmd_forces, indicies: " << strerror(errno) 
-             << '\n' << endi;
- 	errno = 0;
-        imd_blockread(sock, (char *)vmd_forces, num_vmd_atoms*3*sizeof(float));
-        iout << iDEBUG << "get_vmd_forces, forces: " << strerror(errno) 
-             << '\n' << endi;
+        rc  = imd_readn(sock,(char *)vmd_atoms,num_vmd_atoms * sizeof(int));
+        if (rc != num_vmd_atoms*sizeof(int)) {
+          iout << iDEBUG << "read indices returned " << rc 
+               << ", should have returned " << num_vmd_atoms*sizeof(int)
+               << '\n' << endi; 
+          NAMD_die("Error reading indices\n");
+        }
+        rc = imd_readn(sock,(char *)vmd_forces,num_vmd_atoms*3*sizeof(float));
+        if (rc != num_vmd_atoms*3*sizeof(float)) {
+          iout << iDEBUG << "read forces returned " << rc 
+               << ", should have returned " << num_vmd_atoms*3*sizeof(float)
+               << '\n' << endi; 
+          NAMD_die("Error reading forces\n");
+  	}
         retval = 1;
         break;
       default:
         iout << iWARN << "ComputeIMD: Unsupported header received \n "<<endi;
         buf = new char[hsize];
-        imd_blockread(sock,buf,hsize);
+        rc = imd_readn(sock,buf,hsize);
         delete [] buf; 
+        if (rc != hsize) {
+          NAMD_die("Unable to read full message from VMD\n"); 
+        }
     }
   }
   return retval;

@@ -344,7 +344,7 @@ int Output::coordinateNeeded(int timestep)
 #endif
 
   if (simParams->IMDon) 
-    if (( timestep % simParams->IMDfreq) ||
+    if (( (timestep % simParams->IMDfreq)== 0) ||
         ( timestep == simParams->firstTimestep)) 
       positionsNeeded = 1;
  
@@ -395,7 +395,7 @@ void Output::coordinate(int timestep, int n, Vector *coor)
         }
 #endif
   if (simParams->IMDon) {
-    if (( timestep % simParams->IMDfreq) ||
+    if (( (timestep % simParams->IMDfreq)==0) ||
         ( timestep == simParams->firstTimestep)) {
       IMDOutput *imd = Node::Object()->imd;
       if (imd != NULL)
@@ -2591,12 +2591,15 @@ void Output::output_allforcedcdfile(int timestep, int n, Vector *forces)
  *
  *  $RCSfile: Output.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.21 $  $Date: 1999/08/16 22:19:40 $
+ *  $Revision: 1.22 $  $Date: 1999/08/20 21:58:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Output.C,v $
+ * Revision 1.22  1999/08/20 21:58:18  jim
+ * Changes from Justin for interactive molecular dynamics code.
+ *
  * Revision 1.21  1999/08/16 22:19:40  jim
  * Incorporated Justin's interactive MD code.
  *

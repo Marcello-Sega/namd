@@ -7,6 +7,12 @@
  * needed to byteswap, sort into structs, allocate memory, etc.
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include <sys/types.h>  /* For types size_t, ssize_t, etc.  */
+
 typedef struct {
   char type[8];      /* Type of message  */
   char length[8];    /* Some length parameter, not necessarily the number  */
@@ -14,23 +20,29 @@ typedef struct {
   char size[8];      /* The number of bytes in the following data message  */
 } IMDHeader;
 
-typedef enum {
-  TEXT,      /* TEXT */
-  FCOORDS,   /* FCOO */
-  MDCOMM,    /* MDCO */
-  ENERGIES,  /* NRGS */
-  EXIT,      /* EXIT */
-  ERROR      /* XXXX */
-} IMDHeaderType;
-  
+enum IMDHeaderType {
+  IMD_ENERGIES,  /* NRGS */
+  IMD_ERROR,     /* XXXX */
+  IMD_EXIT,      /* EXIT */
+  IMD_FCOORDS,   /* FCOO */
+  IMD_KILL,      /* KILL */
+  IMD_MDCOMM,    /* MDCO */
+  IMD_PAUSE,     /* PAUS */
+  IMD_TEXT,      /* TEXT */
+  IMD_TRATE,     /* TRTE */
+  IMD_XXXX       /* XXXX */
+};
+typedef enum IMDHeaderType IMDHeaderType;
+ 
 extern void imd_setheader(IMDHeader *, IMDHeaderType, int length, int size);
 extern void imd_getheader(const IMDHeader *,IMDHeaderType *, int *, int *);
 extern int  imd_sendheader(void *, IMDHeaderType,int, int);
 extern int  imd_readheader(void *, IMDHeaderType *, int *, int *);
 
-extern int  imd_blockwrite(void *, const char *, int);
-extern int  imd_blockread( void *, char *, int);
-
+/* readn and writen take from Stevens 2nd ed., p. 78. */
+extern ssize_t imd_readn(void *, char *, size_t);
+extern ssize_t imd_writen(void *, const char *, size_t);
+ 
 /*
  * Data structures sent by NAMD to VMD
  *
@@ -47,4 +59,8 @@ typedef struct {
   float Edihe;
   float Eimpr;
 } IMDEnergies;
+
+#ifdef __cplusplus
+}
+#endif
 

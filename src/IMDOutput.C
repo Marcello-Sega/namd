@@ -27,8 +27,11 @@ void IMDOutput::gather_energies(int timestep, BigReal *energies, BigReal T,
   nrgs.Eelec = energies[4];
   nrgs.Evdw = energies[5];
 
-  imd_sendheader(sock, ENERGIES, timestep, sizeof(IMDEnergies));
-  imd_blockwrite(sock, (char *)&nrgs, sizeof(IMDEnergies));
+  size_t msize = sizeof(IMDEnergies);
+  imd_sendheader(sock, IMD_ENERGIES, timestep, msize); 
+  int rc = imd_writen(sock, (char *)&nrgs, msize); 
+  if (rc != msize) 
+    iout << iWARN << "Error sending energies to VMD\n" << endi; 
 }
 
 void IMDOutput::gather_coordinates(int timestep, int N, Vector *coords) {
@@ -39,9 +42,12 @@ void IMDOutput::gather_coordinates(int timestep, int N, Vector *coords) {
     fcoords[3*i+2] = coords[i].z;
   }
   
-  imd_sendheader(sock, FCOORDS, N, 3*N*sizeof(float));
-  imd_blockwrite(sock, (char *)fcoords, 3*N*sizeof(float));
+  size_t msize = 3*N*sizeof(float); 
+  imd_sendheader(sock, IMD_FCOORDS, N, msize);
+  int rc = imd_writen(sock, (char *)fcoords, msize);
   delete [] fcoords; 
+  if (rc != msize) 
+    iout << iWARN << "Error sending coordinates to VMD\n" << endi; 
 }
 
 void IMDOutput::update() { }
