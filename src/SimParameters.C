@@ -3014,7 +3014,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 	<< PMEGridSizeY << " "
 	<< PMEGridSizeZ << "\n";
      if ( PMEBarrier ) {
-       iout << "PME BARRIER ENABLED\n";
+       iout << iINFO << "PME BARRIER ENABLED\n";
      }
      iout << endi;
      if ( useDPME ) iout << iINFO << "USING OLD DPME CODE\n";
