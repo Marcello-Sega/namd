@@ -126,9 +126,7 @@ void BackEnd::init(int argc, char **argv) {
   initmsg7->master = collectionMaster;
   group.collectionMgr = CProxy_CollectionMgr::ckNew(initmsg7);
   group.broadcastMgr = CProxy_BroadcastMgr::ckNew();
-  CkPrintf("Measuring processor speeds...");
   group.ldbCoordinator = CProxy_LdbCoordinator::ckNew();
-  CkPrintf(" Done.\n");
   GroupInitMsg *msg = new GroupInitMsg;
   msg->group = group;
   CProxy_Node::ckNew(msg);

@@ -195,6 +195,7 @@ LdbCoordinator::~LdbCoordinator(void)
 
 void LdbCoordinator::createLoadBalancer()
 {
+  if (CkMyPe()==0) CkPrintf("Measuring processor speeds...");
   const SimParameters *simParams = Node::Object()->simParameters;
   if (simParams->ldbStrategy == LDBSTRAT_ALGNBOR) 
     CreateNamdNborLB();
@@ -202,6 +203,7 @@ void LdbCoordinator::createLoadBalancer()
     //   CreateCentralLB();
     CreateNamdCentLB();
   }
+  if (CkMyPe()==0) CkPrintf(" Done.\n");
 }
 
 void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
