@@ -45,6 +45,8 @@ private:
   friend class Controller;
   friend class ComputeTcl;
   Tcl_Interp *interp;
+  static int Tcl_exit(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_abort(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_print(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_config(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_param(ClientData, Tcl_Interp *, int, char **);

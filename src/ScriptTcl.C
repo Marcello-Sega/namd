@@ -62,6 +62,28 @@ void ScriptTcl::setParameter(const char* param, int value) {
 
 #ifdef NAMD_TCL
 
+int ScriptTcl::Tcl_exit(ClientData clientData,
+	Tcl_Interp *, int argc, char *argv[]) {
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  script->runController(SCRIPT_END);
+  BackEnd::exit();
+  return TCL_OK;
+}
+
+int ScriptTcl::Tcl_abort(ClientData,
+	Tcl_Interp *, int argc, char *argv[]) {
+  Tcl_DString msg;
+  Tcl_DStringInit(&msg);
+  Tcl_DStringAppend(&msg,"TCL:",-1);
+  for ( int i = 1; i < argc; ++i ) {
+    Tcl_DStringAppend(&msg," ",-1);
+    Tcl_DStringAppend(&msg,argv[i],-1);
+  }
+  NAMD_die(Tcl_DStringValue(&msg));
+  Tcl_DStringFree(&msg);
+  return TCL_OK;
+}
+
 int ScriptTcl::Tcl_print(ClientData,
 	Tcl_Interp *, int argc, char *argv[]) {
   Tcl_DString msg;
@@ -469,6 +491,10 @@ void ScriptTcl::algorithm() {
 //  if (Tcl_Init(interp) == TCL_ERROR) {
 //    CkPrintf("Tcl startup error: %s\n", interp->result);
 //  }
+  Tcl_CreateCommand(interp, "exit", Tcl_exit,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "abort", Tcl_abort,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "print", Tcl_print,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "unknown", Tcl_config,
