@@ -8,6 +8,7 @@ extern int Psfgen_Init(Tcl_Interp *);
 int main(int argc, char *argv[]) {
 #ifdef NAMD_VERSION
   printf("PSFGEN from NAMD %s for %s\n",NAMD_VERSION,NAMD_PLATFORM);
+  fflush(stdout);
 #endif
   Tcl_Main(argc, argv, Psfgen_Init);
   return 0;

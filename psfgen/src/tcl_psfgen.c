@@ -30,6 +30,19 @@ void newhandle_msg(void *v, const char *msg) {
   Tcl_Free(script);
 }
 
+/*
+ * Kills molecule to prevent user from saving bogus output.
+ */
+void psfgen_kill_mol(Tcl_Interp *interp, psfgen_data *data) {
+  if (data->mol) {
+    Tcl_AppendResult(interp,
+	"\nMOLECULE DESTROYED BY FATAL ERROR!  Use resetpsf to start over.",
+	NULL);
+  }
+  topo_mol_destroy(data->mol);
+  data->mol = 0;
+}
+
 /* This function gets called if/when the Tcl interpreter is deleted. */
 static void psfgen_deleteproc(ClientData cd, Tcl_Interp *interp) {
   psfgen_data *data = (psfgen_data *)cd;
@@ -44,17 +57,31 @@ void psfgen_data_delete_pointer(ClientData cd, Tcl_Interp *interp) {
   free(dataptr);
 }
 
+static void count_delete_proc(ClientData data, Tcl_Interp *interp) {
+  free(data);
+}
+
 psfgen_data* psfgen_data_create(Tcl_Interp *interp) {
   char namebuf[128];
-  int id = (int) Tcl_GetAssocData(interp,"Psfgen_count",0);
-  psfgen_data *data = (psfgen_data *)malloc(sizeof(psfgen_data));
+  int *countptr;
+  int id;
+  psfgen_data *data;
+  countptr = Tcl_GetAssocData(interp, "Psfgen_count", 0);
+  if (!countptr) {
+    countptr = (int *)malloc(sizeof(int));
+    Tcl_SetAssocData(interp, "Psfgen_count", count_delete_proc, 
+      (ClientData)countptr);
+    *countptr = 0;
+  } 
+  id = *countptr;
+  data = (psfgen_data *)malloc(sizeof(psfgen_data));
   data->defs = topo_defs_create();
   topo_defs_error_handler(data->defs,interp,newhandle_msg);
   data->aliases = stringhash_create();
   data->mol = topo_mol_create(data->defs);
   topo_mol_error_handler(data->mol,interp,newhandle_msg);
   data->id = id;
-  Tcl_SetAssocData(interp,"Psfgen_count",0,(ClientData)(id+1));
+  *countptr = id+1;
   sprintf(namebuf,"Psfgen_%d",id);
   Tcl_SetAssocData(interp,namebuf,psfgen_deleteproc,(ClientData)data);
   return data;
@@ -192,12 +219,14 @@ int tcl_psfcontext(ClientData data, Tcl_Interp *interp,
       delold = 1;
     } else {
       Tcl_SetResult(interp,"second argument must be delete",TCL_VOLATILE);
+      psfgen_kill_mol(interp,*cur);
       return TCL_ERROR;
     }
   }
 
   if ( argc > 3 ) {
     Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
+    psfgen_kill_mol(interp,*cur);
     return TCL_ERROR;
   }
 
@@ -210,6 +239,7 @@ int tcl_psfcontext(ClientData data, Tcl_Interp *interp,
     if ( newid == oldid ) {
       if ( delold ) {
         Tcl_SetResult(interp,"specified context in use",TCL_VOLATILE);
+        psfgen_kill_mol(interp,*cur);
         return TCL_ERROR;
       } else {
         Tcl_SetResult(interp,oldidstr,TCL_VOLATILE);
@@ -221,10 +251,12 @@ int tcl_psfcontext(ClientData data, Tcl_Interp *interp,
       *cur = newdata;
     } else {
       Tcl_SetResult(interp,"specified context does not exist",TCL_VOLATILE);
+      psfgen_kill_mol(interp,*cur);
       return TCL_ERROR;
     }
   } else {
     Tcl_SetResult(interp,"first argument must be existing context or new",TCL_VOLATILE);
+    psfgen_kill_mol(interp,*cur);
     return TCL_ERROR;
   }
 
@@ -251,16 +283,19 @@ int tcl_topology(ClientData data, Tcl_Interp *interp,
 
   if ( argc == 1 ) {
     Tcl_SetResult(interp,"no topology file specified",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   if ( argc > 2 ) {
     Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   filename = argv[1];
   if ( ! ( defs_file = fopen(filename,"r") ) ) {
     sprintf(msg,"ERROR: Unable to open topology file %s\n",filename);
     Tcl_SetResult(interp,msg,TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   } else {
     sprintf(msg,"reading topology file %s\n",filename);
@@ -281,16 +316,19 @@ int tcl_readpsf(ClientData data, Tcl_Interp *interp,
 
   if ( argc == 1 ) {
     Tcl_SetResult(interp,"no psf file specified",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   if ( argc > 2 ) {
     Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   filename = argv[1];
   if ( ! ( psf_file = fopen(filename,"r") ) ) {
     sprintf(msg,"ERROR: Unable to open psf file %s\n",filename);
     Tcl_SetResult(interp,msg,TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   } else {
     sprintf(msg,"reading structure from psf file %s\n",filename);
@@ -298,8 +336,10 @@ int tcl_readpsf(ClientData data, Tcl_Interp *interp,
     retval = psf_file_extract(psf->mol, psf_file, interp, newhandle_msg);
     fclose(psf_file);
   }
-  if (retval) 
+  if (retval) {
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
+  }
   return TCL_OK;
 }
 
@@ -310,10 +350,12 @@ int tcl_segment(ClientData data, Tcl_Interp *interp,
 
   if ( argc < 3 ) {
     Tcl_SetResult(interp,"arguments: segname { commmands }",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   if ( argc > 3 ) {
     Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   strtoupper(argv[1]);
@@ -322,17 +364,20 @@ int tcl_segment(ClientData data, Tcl_Interp *interp,
   newhandle_msg(interp,msg);
   if ( topo_mol_segment(psf->mol,argv[1]) ) {
     Tcl_AppendResult(interp,"ERROR: failed on segment",NULL);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
 
   if ( Tcl_Eval(interp,argv[2]) != TCL_OK ) {
     Tcl_AppendResult(interp,"\nERROR: failed while building segment",NULL);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
 
   newhandle_msg(interp,"generating structure at end of segment");
   if ( topo_mol_end(psf->mol) ) {
     Tcl_AppendResult(interp,"ERROR: failed on end of segment",NULL);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
 
@@ -345,10 +390,12 @@ int tcl_residue(ClientData data, Tcl_Interp *interp,
 
   if ( argc < 3 ) {
     Tcl_SetResult(interp,"arguments: resid resname",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   if ( argc > 3 ) {
     Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   strtoupper(argv[1]);
@@ -356,6 +403,7 @@ int tcl_residue(ClientData data, Tcl_Interp *interp,
 
   if ( topo_mol_residue(psf->mol,argv[1],argv[2]) ) {
     Tcl_AppendResult(interp,"ERROR: failed on residue",NULL);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
 
@@ -368,10 +416,12 @@ int tcl_mutate(ClientData data, Tcl_Interp *interp,
 
   if ( argc < 3 ) {
     Tcl_SetResult(interp,"arguments: resid resname",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   if ( argc > 3 ) {
     Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   strtoupper(argv[1]);
@@ -379,6 +429,7 @@ int tcl_mutate(ClientData data, Tcl_Interp *interp,
 
   if ( topo_mol_mutate(psf->mol,argv[1],argv[2]) ) {
     Tcl_AppendResult(interp,"ERROR: failed on mutate",NULL);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
 
@@ -394,12 +445,14 @@ int tcl_multiply(ClientData data, Tcl_Interp *interp,
 
   if ( argc<3 || Tcl_GetInt(interp,argv[1],&ncopies) != TCL_OK || ncopies<2 ) {
     Tcl_SetResult(interp,"arguments: ncopies segid?:resid?:atomname? ...",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
 
   targets = (topo_mol_ident_t *) Tcl_Alloc(argc*sizeof(topo_mol_ident_t));
   if ( ! targets ) {
     Tcl_SetResult(interp,"memory allocation failed",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
 
@@ -416,6 +469,7 @@ int tcl_multiply(ClientData data, Tcl_Interp *interp,
     sprintf(msg,"ERROR: failed to multiply atoms (error=%d)",ierr);
     Tcl_SetResult(interp,msg,TCL_VOLATILE);
     /* Tcl_AppendResult(interp,"ERROR: failed to multiply atoms",NULL); */
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
 
@@ -430,14 +484,17 @@ int tcl_coord(ClientData data, Tcl_Interp *interp,
 
   if ( argc < 5 ) {
     Tcl_SetResult(interp,"arguments: segid resid atomname { x y z }",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   if ( argc > 5 ) {
     Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   if ( sscanf(argv[4],"%lf %lf %lf",&x,&y,&z) != 3 ) {
     Tcl_SetResult(interp,"arguments: segid resid atomname { x y z }",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   strtoupper(argv[1]);
@@ -449,6 +506,7 @@ int tcl_coord(ClientData data, Tcl_Interp *interp,
   target.aname = argv[3];
   if ( topo_mol_set_xyz(psf->mol,&target,x,y,z) ) {
     Tcl_AppendResult(interp,"ERROR: failed on coord",NULL);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
 
@@ -463,6 +521,7 @@ int tcl_auto(ClientData data, Tcl_Interp *interp,
 
   if ( argc < 2 ) {
     Tcl_SetResult(interp,"arguments: ?angles? ?dihedrals? ?none?",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
 
@@ -472,6 +531,7 @@ int tcl_auto(ClientData data, Tcl_Interp *interp,
     else if ( ! strcmp(argv[i],"dihedrals") ) dihedrals = 1;
     else if ( strcmp(argv[i],"none") ) {
       Tcl_SetResult(interp,"arguments: ?angles? ?dihedrals? ?none?",TCL_VOLATILE);
+      psfgen_kill_mol(interp,psf);
       return TCL_ERROR;
     }
   }
@@ -480,6 +540,7 @@ int tcl_auto(ClientData data, Tcl_Interp *interp,
   else newhandle_msg(interp,"disabling angle autogeneration");
   if ( topo_mol_segment_auto_angles(psf->mol,angles) ) {
     Tcl_AppendResult(interp,"ERROR: failed setting angle autogen",NULL);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
 
@@ -487,6 +548,7 @@ int tcl_auto(ClientData data, Tcl_Interp *interp,
   else newhandle_msg(interp,"disabling dihedral autogeneration");
   if ( topo_mol_segment_auto_dihedrals(psf->mol,dihedrals) ) {
     Tcl_AppendResult(interp,"ERROR: failed setting dihedral autogen",NULL);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
 
@@ -500,12 +562,14 @@ int tcl_alias(ClientData data, Tcl_Interp *interp,
 
   if ( argc < 2 ) {
     Tcl_SetResult(interp,"arguments: atom | residue ...",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
 
   if ( ! strcmp(argv[1],"residue") ) {
     if ( argc < 4 ) {
       Tcl_SetResult(interp,"arguments: residue altres realres",TCL_VOLATILE);
+      psfgen_kill_mol(interp,psf);
       return TCL_ERROR;
     }
     strtoupper(argv[2]);
@@ -514,11 +578,13 @@ int tcl_alias(ClientData data, Tcl_Interp *interp,
     newhandle_msg(interp,msg);
     if ( extract_alias_residue_define(psf->aliases,argv[2],argv[3]) ) {
       Tcl_AppendResult(interp,"ERROR: failed on residue alias",NULL);
+      psfgen_kill_mol(interp,psf);
       return TCL_ERROR;
     }
   } else if ( ! strcmp(argv[1],"atom") ) {
     if ( argc < 5 ) {
       Tcl_SetResult(interp,"arguments: atom resname altatom realatom",TCL_VOLATILE);
+      psfgen_kill_mol(interp,psf);
       return TCL_ERROR;
     }
     strtoupper(argv[2]);
@@ -528,6 +594,7 @@ int tcl_alias(ClientData data, Tcl_Interp *interp,
     newhandle_msg(interp,msg);
     if ( extract_alias_atom_define(psf->aliases,argv[2],argv[3],argv[4]) ) {
       Tcl_AppendResult(interp,"ERROR: failed on atom alias",NULL);
+      psfgen_kill_mol(interp,psf);
       return TCL_ERROR;
     }
   }
@@ -544,16 +611,19 @@ int tcl_pdb(ClientData data, Tcl_Interp *interp,
 
   if ( argc == 1 ) {
     Tcl_SetResult(interp,"no pdb file specified",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   if ( argc > 2 ) {
     Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   filename = argv[1];
   if ( ! ( res_file = fopen(filename,"r") ) ) {
     sprintf(msg,"ERROR: Unable to open pdb file %s to read residues\n",filename);
     Tcl_SetResult(interp,msg,TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   } else {
     sprintf(msg,"reading residues from pdb file %s",filename);
@@ -561,6 +631,7 @@ int tcl_pdb(ClientData data, Tcl_Interp *interp,
     if ( pdb_file_extract_residues(psf->mol,res_file,psf->aliases,interp,newhandle_msg) ) {
       Tcl_AppendResult(interp,"ERROR: failed on reading residues from pdb file",NULL);
       fclose(res_file);
+      psfgen_kill_mol(interp,psf);
       return TCL_ERROR;
     }
     fclose(res_file);
@@ -578,16 +649,19 @@ int tcl_coordpdb(ClientData data, Tcl_Interp *interp,
 
   if ( argc < 2 ) {
     Tcl_SetResult(interp,"arguments: pdbfile ?segid?",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   if ( argc > 3 ) {
     Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   filename = argv[1];
   if ( ! ( res_file = fopen(filename,"r") ) ) {
     sprintf(msg,"ERROR: Unable to open pdb file %s to read coordinates\n",filename);
     Tcl_SetResult(interp,msg,TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   } else {
     const char *segid;
@@ -606,6 +680,7 @@ int tcl_coordpdb(ClientData data, Tcl_Interp *interp,
     if ( pdb_file_extract_coordinates(psf->mol,res_file,segid,psf->aliases,interp,newhandle_msg) ) {
       Tcl_AppendResult(interp,"ERROR: failed on reading coordinates from pdb file",NULL);
       fclose(res_file);
+      psfgen_kill_mol(interp,psf);
       return TCL_ERROR;
     }
     fclose(res_file);
@@ -620,12 +695,14 @@ int tcl_guesscoord(ClientData data, Tcl_Interp *interp,
   psfgen_data *psf = *(psfgen_data **)data;
   if ( argc > 1 ) {
     Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
 
   newhandle_msg(interp,"guessing coordinates based on topology file");
   if ( topo_mol_guess_xyz(psf->mol) ) {
     Tcl_AppendResult(interp,"ERROR: failed on guessing coordinates",NULL);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
 

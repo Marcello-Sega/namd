@@ -13,6 +13,8 @@ int topo_mol_write_pdb(topo_mol *mol, FILE *file, void *v,
   topo_mol_residue_t *res;
   topo_mol_atom_t *atom;
 
+  if ( ! mol ) return -1;
+
   write_pdb_remark(file,"original generated coordinate pdb file");
 
   atomid = 0;
@@ -71,6 +73,8 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, void *v,
   topo_mol_improper_t *impr;
   int nimprs;
   int numinline;
+
+  if ( ! mol ) return -1;
 
   fprintf(file,"PSF\n\n%8d !NTITLE\n",1);
   if ( charmmfmt ) 
