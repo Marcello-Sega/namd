@@ -28,7 +28,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1000 1997/02/06 15:59:15 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1001 1997/02/06 16:53:35 ari Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -446,7 +446,6 @@ void	ReductionMgr::gotAllData(ReductionMgrData *current)
 {
   DebugM(2,"All data collected for seq=" << current->sequenceNum << "\n");
 
-  #if PANIC > 0
   // one less data to send (delete if all done)
   #if PANIC > 0
   current->dataToSend--;

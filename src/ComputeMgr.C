@@ -29,7 +29,7 @@
 #include "ComputeBonds.h"
 #include "ComputeNonbondedExcl.h"
 #include "ComputeFullDirect.h"
-#include "ComputeDMPTA.h"
+#include "ComputeDPMTA.h"
 #define MIN_DEBUG_LEVEL 4
 #define DEBUGM
 #include "Debug.h"
@@ -186,7 +186,7 @@ void ComputeMgr:: enqueueWork(Compute *compute)
  *
  *	$RCSfile: ComputeMgr.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:04 $
+ *	$Revision: 1.1001 $	$Date: 1997/02/06 16:53:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
