@@ -33,11 +33,13 @@ begin:
   echo "Linking Makefiles"
   ln -s ../Makefile ./Makefile
   ln -s ../Make.depends ./Make.depends
+  ln -s .. .rootdir
   echo "Creating src and linking files"
   (cd $DIR/src ; find . -name CVS -prune -o -type d -print )|sed -e s@.@@> temp.d
   (cd $DIR/src ; find . -name CVS -prune -o -type f -print )|sed -e s@.@@> temp.f
   awk '{print "mkdir src"$1;}' < temp.d > temp.m
-  awk '{print "ln -s '$DIR'/src"$1" src"$1;}' < temp.f > temp.l
+  awk '{print "ln -s ../.rootdir src"$1;}' < temp.d >> temp.m
+  awk '{print "ln -s .rootdir/src"$1" src"$1;}' < temp.f > temp.l
   sh temp.m
   sh temp.l
   rm -f temp.d temp.f temp.m temp.l
@@ -45,7 +47,8 @@ begin:
   (cd $DIR/dpme2;find . -name CVS -prune -o -type d -print )|sed -e s@.@@> temp.d
   (cd $DIR/dpme2;find . -name CVS -prune -o -type f -print )|sed -e s@.@@> temp.f
   awk '{print "mkdir dpme2"$1;}' < temp.d > temp.m
-  awk '{print "ln -s '$DIR'/dpme2"$1" dpme2"$1;}' < temp.f > temp.l
+  awk '{print "ln -s ../.rootdir dpme2"$1;}' < temp.d >> temp.m
+  awk '{print "ln -s .rootdir/dpme2"$1" dpme2"$1;}' < temp.f > temp.l
   sh temp.m
   sh temp.l
   rm -f temp.d temp.f temp.m temp.l
@@ -53,7 +56,8 @@ begin:
   (cd $DIR/dpmta-2.6;find . -name CVS -prune -o -type d -print )|sed -e s@.@@> temp.d
   (cd $DIR/dpmta-2.6;find . -name CVS -prune -o -type f -print )|sed -e s@.@@> temp.f
   awk '{print "mkdir dpmta-2.6"$1;}' < temp.d > temp.m
-  awk '{print "ln -s '$DIR'/dpmta-2.6"$1" dpmta-2.6"$1;}' < temp.f > temp.l
+  awk '{print "ln -s ../.rootdir dpmta-2.6"$1;}' < temp.d >> temp.m
+  awk '{print "ln -s .rootdir/dpmta-2.6"$1" dpmta-2.6"$1;}' < temp.f > temp.l
   sh temp.m
   sh temp.l
   rm -f temp.d temp.f temp.m temp.l
@@ -61,7 +65,8 @@ begin:
   (cd $DIR/pvm3 ; find . -name CVS -prune -o -type d -print )|sed -e s@.@@> temp.d
   (cd $DIR/pvm3 ; find . -name CVS -prune -o -type f -print )|sed -e s@.@@> temp.f
   awk '{print "mkdir pvm3"$1;}' < temp.d > temp.m
-  awk '{print "ln -s '$DIR'/pvm3"$1" pvm3"$1;}' < temp.f > temp.l
+  awk '{print "ln -s ../.rootdir pvm3"$1;}' < temp.d >> temp.m
+  awk '{print "ln -s .rootdir/pvm3"$1" pvm3"$1;}' < temp.f > temp.l
   sh temp.m
   sh temp.l
   rm -f temp.d temp.f temp.m temp.l
@@ -69,7 +74,8 @@ begin:
   (cd $DIR/efence;find . -name CVS -prune -o -type d -print )|sed -e s@.@@> temp.d
   (cd $DIR/efence;find . -name CVS -prune -o -type f -print )|sed -e s@.@@> temp.f
   awk '{print "mkdir efence"$1;}' < temp.d > temp.m
-  awk '{print "ln -s '$DIR'/efence"$1" efence"$1;}' < temp.f > temp.l
+  awk '{print "ln -s ../.rootdir efence"$1;}' < temp.d >> temp.m
+  awk '{print "ln -s .rootdir/efence"$1" efence"$1;}' < temp.f > temp.l
   sh temp.m
   sh temp.l
   rm -f temp.d temp.f temp.m temp.l
