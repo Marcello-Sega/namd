@@ -43,11 +43,19 @@ public:
 
     CollectVectorInstance(void) : seq(-1) { ; }
 
-    CollectVectorInstance(int s) :
-      seq(s), remaining(CkNumPes()) { 
-		int npatches=(PatchMap::Object())->numPatches(); 
-		if (CkNumPes() > npatches) remaining=npatches; 
-		}
+    CollectVectorInstance(int s) { reset(s); }
+
+    void free() { seq = -1; }
+    int notfree() { return ( seq != -1 ); }
+
+    void reset(int s) {
+        seq = s;
+        remaining = CkNumPes();
+	int npatches=(PatchMap::Object())->numPatches(); 
+	if (remaining > npatches) remaining=npatches; 
+	data.resize(0);
+	fdata.resize(0);
+    }
 
     // true -> send it and delete it!
     void append(AtomIDList &a, ResizeArray<Vector> &d, ResizeArray<FloatVector> &fd)
@@ -86,8 +94,13 @@ public:
       for( ; c != c_e && (*c)->seq != seq; ++c );
       if ( c == c_e )
       {
-        data.add(new CollectVectorInstance(seq));
-        c = data.end() - 1;
+        c = data.begin();
+        for( ; c != c_e && (*c)->notfree(); ++c );
+        if ( c == c_e ) {
+          data.add(new CollectVectorInstance(seq));
+          c = data.end() - 1;
+        }
+        (*c)->reset(seq);
       }
       (*c)->append(i,d,fd);
     }
@@ -106,7 +119,6 @@ public:
         if ( c != c_e && (*c)->ready() )
         {
 	  o = *c;
-	  data.del(c - data.begin());
 	  queue.del(0,1);
         }
       }

@@ -57,7 +57,7 @@ void CollectionMaster::disposePositions(CollectVectorInstance *c)
     Vector *data = c->data.begin();
     FloatVector *fdata = c->fdata.begin();
     Node::Object()->output->coordinate(seq,size,data,fdata);
-    delete c;
+    c->free();
 }
 
 
@@ -85,7 +85,7 @@ void CollectionMaster::disposeVelocities(CollectVectorInstance *c)
     int size = c->data.size();
     Vector *data = c->data.begin();
     Node::Object()->output->velocity(seq,size,data);
-    delete c;
+    c->free();
 }
 
 
