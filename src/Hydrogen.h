@@ -56,12 +56,15 @@ typedef UniqueSortedArray<HydrogenGroupID> HydrogenGroup ;
  *
  *      $RCSfile: Hydrogen.h,v $
  *      $Author: nealk $        $Locker:  $             $State: Exp $
- *      $Revision: 1.2 $     $Date: 1997/03/19 18:47:30 $
+ *      $Revision: 1.3 $     $Date: 1997/03/19 18:48:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Hydrogen.h,v $
+ * Revision 1.3  1997/03/19 18:48:19  nealk
+ * Forgot to close the log comment.
+ *
  * Revision 1.2  1997/03/19 18:47:30  nealk
  * Added log info to Hydrogen.h
  * Fixed ComputeDPMTA.C so node 0 initializes before any other nodes register
@@ -70,5 +73,5 @@ typedef UniqueSortedArray<HydrogenGroupID> HydrogenGroup ;
  * Revision 1.1001  1997/03/19 18:10:15  nealk
  * Added sorted hydrogen group list to molecule.
  *
- ***************************************************************************
+ ***************************************************************************/
 
