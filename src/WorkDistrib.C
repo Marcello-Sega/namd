@@ -250,12 +250,35 @@ FullAtomList *WorkDistrib::createAtomLists(void)
   
     Bool pairInteractionOn = params->pairInteractionOn;
 
+    Transform mother_transform;
     for(j=0; j < n; j++)
     {
       int aid = a[j].id;
+
+      if (params->splitPatch == SPLIT_PATCH_HYDROGEN) {
+        if ( molecule->is_hydrogenGroupParent(aid) ) {
+          a[j].hydrogenGroupSize = molecule->get_groupSize(aid);
+        } else {
+          a[j].hydrogenGroupSize = 0;
+        }
+      } else {
+        a[j].hydrogenGroupSize = 1;
+      }
+
+      a[j].nonbondedGroupIsAtom = 0;
+
+      a[j].atomFixed = molecule->is_atom_fixed(aid) ? 1 : 0;
       a[j].fixedPosition = a[j].position;
-      a[j].position = lattice.nearest(
+
+      if ( a[j].hydrogenGroupSize ) {
+        a[j].position = lattice.nearest(
 		a[j].position, center, &(a[j].transform));
+        mother_transform = a[j].transform;
+      } else {
+        a[j].position = lattice.apply_transform(a[j].position,mother_transform);
+        a[j].transform = mother_transform;
+      }
+
       a[j].mass = molecule->atommass(aid);
       a[j].charge = molecule->atomcharge(aid);
 
@@ -269,18 +292,13 @@ FullAtomList *WorkDistrib::createAtomLists(void)
       }
 //fepe
 
-      if (params->splitPatch == SPLIT_PATCH_HYDROGEN) {
-        if ( molecule->is_hydrogenGroupParent(aid) ) {
-          a[j].hydrogenGroupSize = molecule->get_groupSize(aid);
-        } else {
-          a[j].hydrogenGroupSize = 0;
-        }
-      } else {
-        a[j].hydrogenGroupSize = 1;
-      }
-      a[j].nonbondedGroupIsAtom = 0;
-      a[j].atomFixed = molecule->is_atom_fixed(aid) ? 1 : 0;
     }
+
+    for(j=0; j < n; j++)
+    {
+      int aid = a[j].id;
+    }
+
 
     int size, allfixed, k;
     for(j=0; j < n; j+=size) {
