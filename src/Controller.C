@@ -1141,6 +1141,7 @@ void Controller::printEnergies(int step, int minimize)
       labels << "PERIODIC"; values << "{" << lattice.a_p() << " "
 		<< lattice.b_p() << " " << lattice.c_p() << "}";
 
+      labels << '\0';  values << '\0';  // insane but makes Linux work
       char *labelstr = labels.str();
       char *valuestr = values.str();
       node->getScript()->doCallback(labelstr,valuestr);
