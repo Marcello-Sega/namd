@@ -15,6 +15,7 @@
 #include <iomanip>
 using namespace std;
 #endif
+#include "charm++.h"
 #include "FreeEnergyAssert.h"
 #include "FreeEnergyGroup.h"
 
@@ -98,7 +99,6 @@ AGroup& AGroup::operator= (AGroup& Group) {
   return(*this);
 }
 
-
 void AGroup::List(int NumToList) {
 //------------------------------------------------------------------------
 // list NumToList integers in the group to standard out.
@@ -110,6 +110,7 @@ void AGroup::List(int NumToList) {
     NumToList = m_NumInts;
   }
   for (i=0; i<NumToList; i++) {
-    cout << setw(10) << i << "   " << setw(10) << (*this)[i] << endl;
+//    cout << setw(10) << i << "   " << setw(10) << (*this)[i] << endl;
+    CkPrintf("%10d   %10d\n", i, (*this)[i]);
   }
 }
