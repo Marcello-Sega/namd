@@ -1,6 +1,6 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                  NAMD 2.2b2 Release Announcement                   |
+|                  NAMD 2.2b3 Release Announcement                   |
 |                                                                    |
 +--------------------------------------------------------------------+
 
@@ -13,7 +13,7 @@ high-performance simulation of large biomolecular systems.  NAMD is
 distributed free of charge and includes source code.  NAMD development
 is supported by the NIH National Center for Research Resources.
 
-NAMD 2.2b2 has several advantages over NAMD 2.1:
+NAMD 2.2b3 has several advantages over NAMD 2.1:
 
 - New ports to the IBM RS/6000 SP and Windows NT.
 
