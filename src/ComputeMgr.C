@@ -542,6 +542,7 @@ void ComputeMgr::recvComputeConsForceMsg(ComputeConsForceMsg *msg)
     m->consForceIndexes = NULL;
     m->consForce = NULL;
   }
+  delete msg;
 }
 
 #include "ComputeMgr.def.h"
