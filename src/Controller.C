@@ -192,9 +192,21 @@ void Controller::algorithm(void)
   } else ++step;
 
 #define MOVETO(X) \
-  if ( (X)-last.x ) { \
+  if ( step == numberOfSteps ) { \
+    if ( 0 ) { iout << "LINE MINIMIZER: RETURNING TO " << mid.x << " FROM " << last.x << "\n" << endi; } \
+    if ( newDir || (mid.x-last.x) ) { \
+      broadcast->minimizeCoefficient.publish(minSeq++,mid.x-last.x); \
+    } else { \
+      broadcast->minimizeCoefficient.publish(minSeq++,0.); \
+      broadcast->minimizeCoefficient.publish(minSeq++,0.); \
+      broadcast->minimizeCoefficient.publish(minSeq++,0.); \
+    } \
+    enqueueCollections(step); \
+    CALCULATE \
+  } else if ( (X)-last.x ) { \
     if ( 0 ) { iout << "LINE MINIMIZER: MOVING FROM " << last.x << " TO " << (X) << "\n" << endi; } \
     broadcast->minimizeCoefficient.publish(minSeq++,(X)-last.x); \
+    newDir = 0; \
     last.x = (X); \
     enqueueCollections(step); \
     CALCULATE \
@@ -225,18 +237,20 @@ void Controller::minimize() {
   BigReal old_f_dot_f = min_f_dot_f;
   broadcast->minimizeCoefficient.publish(minSeq++,0.);
   broadcast->minimizeCoefficient.publish(minSeq++,0.); // v = f
+  int newDir = 1;
   min_f_dot_v = min_f_dot_f;
   min_v_dot_v = min_f_dot_f;
-  int newDir = 1;
   while ( 1 ) {
     // line minimization
     // bracket minimum on line
     minpoint lo,hi,mid,last;
-    BigReal x = last.x = 0;
+    BigReal x = 0;
     lo.x = x;
     lo.u = min_energy;
     lo.dudx = -1. * min_f_dot_v;
+    int noGradients = min_huge_count;
     mid = lo;
+    last = mid;
     BigReal tol = fabs( linegoal * min_f_dot_v );
     if ( initstep > babystep ) initstep = babystep;
     iout << "INITIAL STEP: " << initstep << "\n" << endi;
@@ -245,7 +259,6 @@ void Controller::minimize() {
     x *= sqrt( min_f_dot_f / min_v_dot_v ); MOVETO(x)
     // bracket minimum on line
     initstep *= 0.25;
-    int noGradients;
     while ( last.u < mid.u ) {
       initstep *= 2.0;
       lo = mid; mid = last;
@@ -322,6 +335,7 @@ void Controller::minimize() {
       iout << "NEW SEARCH DIRECTION\n" << endi;
     }
     broadcast->minimizeCoefficient.publish(minSeq++,c); // v = c*v+f
+    newDir = 1;
     old_f_dot_f = min_f_dot_f;
     min_f_dot_v = c * min_f_dot_v + min_f_dot_f;
     min_v_dot_v = c*c*min_v_dot_v + 2*c*min_f_dot_v + min_f_dot_f;

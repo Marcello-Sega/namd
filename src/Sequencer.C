@@ -244,7 +244,6 @@ void Sequencer::minimize() {
   int &doMolly = patch->flags.doMolly;
   doMolly = simParams->mollyOn && doFullElectrostatics;
 
-  patch->checkpoint();  // checkpoint current minimum
   runComputeObjects(1); // must migrate here!
 
   submitMinimizeReductions(step);
@@ -254,7 +253,6 @@ void Sequencer::minimize() {
   for ( ++step; step <= numberOfSteps; ++step ) {
     BigReal c = broadcast->minimizeCoefficient.get(minSeq++);
     if ( ! c ) {  // new direction
-      patch->checkpoint();  // checkpoint current minimum
       c = broadcast->minimizeCoefficient.get(minSeq++);
       newMinimizeDirection(c);  // v = c * v + f
       c = broadcast->minimizeCoefficient.get(minSeq++);
@@ -266,7 +264,6 @@ void Sequencer::minimize() {
     submitCollections(step);
     rebalanceLoad(step);
   }
-  patch->revert();  // go to last known minimum
   quenchVelocities();  // zero out bogus velocity
 }
 
