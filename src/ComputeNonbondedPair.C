@@ -7,17 +7,17 @@
 /***************************************************************************/
 
 /***************************************************************************
- * DESCRIPTION: ComputeNonbonded.C
+ * DESCRIPTION: ComputeNonbondedPair.C
  *
  ***************************************************************************/
 
-#include "ComputeNonbonded.h"
+#include "ComputeNonbondedPair.h"
 
-void ComputeNonbonded::doForce(Position* p[2],
+void ComputeNonbondedPair::doForce(Position* p[2],
                                Force* f[2],
                                AtomProperties* a[2])
 {
-    CPrintf("ComputeNonbonded::doForce() - Dummy eval was sent\n");
+    CPrintf("ComputeNonbondedPair::doForce() - Dummy eval was sent\n");
     CPrintf(" %d patch 1 atoms and %d patch 2 atoms\n", numAtoms[0], numAtoms[1] );
 }
 
@@ -26,12 +26,15 @@ void ComputeNonbonded::doForce(Position* p[2],
  *
  *	$RCSfile: ComputeNonbondedPair.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/10/30 01:16:32 $
+ *	$Revision: 1.4 $	$Date: 1996/10/31 21:43:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.C,v $
+ * Revision 1.4  1996/10/31 21:43:29  jim
+ * First incarnation as ...Pair
+ *
  * Revision 1.3  1996/10/30 01:16:32  jim
  * added AtomProperties structure in Patch plus boxes, passing, etc.
  *
