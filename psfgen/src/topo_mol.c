@@ -55,8 +55,8 @@ void topo_mol_log_error(topo_mol *mol, const char *msg) {
     mol->newerror_handler(mol->newerror_handler_data, msg);
 }
 
-int topo_mol_auto_angles(topo_mol *mol, topo_mol_segment_t *seg);
-int topo_mol_auto_dihedrals(topo_mol *mol, topo_mol_segment_t *seg);
+static int topo_mol_auto_angles(topo_mol *mol, topo_mol_segment_t *seg);
+static int topo_mol_auto_dihedrals(topo_mol *mol, topo_mol_segment_t *seg);
 
 topo_mol_segment_t * topo_mol_get_seg(topo_mol *mol,
 			const topo_mol_ident_t *target) {
@@ -828,7 +828,7 @@ int topo_mol_end(topo_mol *mol) {
       }
     }
     if ( seg->auto_angles && resdef->angles ) {
-      sprintf(errmsg,"Warning: explicit angles in residue %s:%s may conflict with autogeneration",res->name,res->resid);
+      sprintf(errmsg,"Warning: explicit angles in residue %s:%s will be deleted during autogeneration",res->name,res->resid);
       topo_mol_log_error(mol,errmsg);
     }
     for ( angldef = resdef->angles; angldef; angldef = angldef->next ) {
@@ -838,7 +838,7 @@ int topo_mol_end(topo_mol *mol) {
       }
     }
     if ( seg->auto_dihedrals && resdef->dihedrals) {
-      sprintf(errmsg,"Warning: explicit dihedrals in residue %s:%s may conflict with autogeneration",res->name,res->resid);
+      sprintf(errmsg,"Warning: explicit dihedrals in residue %s:%s will be deleted during autogeneration",res->name,res->resid);
       topo_mol_log_error(mol,errmsg);
     }
     for ( dihedef = resdef->dihedrals; dihedef; dihedef = dihedef->next ) {
@@ -881,23 +881,62 @@ int topo_mol_end(topo_mol *mol) {
   if ( topo_mol_patch(mol, &target, 1, seg->plast, 0,
 	seg->auto_angles, seg->auto_dihedrals) ) return -11;
 
-  if (topo_mol_auto_angles(mol, seg)) return -12;
-  if (topo_mol_auto_dihedrals(mol, seg)) return -13;
+  if (seg->auto_angles && topo_mol_auto_angles(mol, seg)) return -12;
+  if (seg->auto_dihedrals && topo_mol_auto_dihedrals(mol, seg)) return -13;
 
   return 0;
 }
 
+int topo_mol_regenerate_angles(topo_mol *mol) {
+  int errval;
+  errval = topo_mol_auto_angles(mol,0);
+  if ( errval ) {
+    char errmsg[128];
+    sprintf(errmsg,"Error code %d",errval);
+    topo_mol_log_error(mol,errmsg);
+  }
+  return errval;
+}
 
-int topo_mol_auto_angles(topo_mol *mol, topo_mol_segment_t *seg) {
-  int ires, nres;
+int topo_mol_regenerate_dihedrals(topo_mol *mol) {
+  int errval;
+  errval = topo_mol_auto_dihedrals(mol,0);
+  if ( errval ) {
+    char errmsg[128];
+    sprintf(errmsg,"Error code %d",errval);
+    topo_mol_log_error(mol,errmsg);
+  }
+  return errval;
+}
+
+int topo_mol_auto_angles(topo_mol *mol, topo_mol_segment_t *segp) {
+  int ires, nres, iseg, nseg;
+  topo_mol_segment_t *seg;
   topo_mol_residue_t *res;
   topo_mol_bond_t *b1, *b2;
   topo_mol_angle_t *tuple;
   topo_mol_atom_t *atom, *a1, *a2, *a3;
 
   if (! mol) return -1;
-  if (! seg) return -2;
-  if ( ! seg->auto_angles ) return 0;
+  nseg = segp ? 1 : hasharray_count(mol->segment_hash);
+
+  for ( iseg=0; iseg<nseg; ++iseg ) {
+    seg = segp ? segp : mol->segment_array[iseg];
+
+    nres = hasharray_count(seg->residue_hash);
+    for ( ires=0; ires<nres; ++ires ) {
+      res = &(seg->residue_array[ires]);
+      for ( atom = res->atoms; atom; atom = atom->next ) {
+        for ( tuple = atom->angles; tuple;
+		tuple = topo_mol_angle_next(tuple,atom) ) {
+          tuple->del = 1;
+        }
+      }
+    }
+  }
+
+  for ( iseg=0; iseg<nseg; ++iseg ) {
+  seg = segp ? segp : mol->segment_array[iseg];
 
   nres = hasharray_count(seg->residue_hash);
   for ( ires=0; ires<nres; ++ires ) {
@@ -930,21 +969,39 @@ int topo_mol_auto_angles(topo_mol *mol, topo_mol_segment_t *seg) {
       }
     }
   }
+  }
 
   return 0;
 }
 
-
-int topo_mol_auto_dihedrals(topo_mol *mol, topo_mol_segment_t *seg) {
-  int ires, nres, found, atomid;
+int topo_mol_auto_dihedrals(topo_mol *mol, topo_mol_segment_t *segp) {
+  int ires, nres, iseg, nseg, found, atomid;
+  topo_mol_segment_t *seg;
   topo_mol_residue_t *res;
   topo_mol_angle_t *g1, *g2;
   topo_mol_dihedral_t *tuple;
   topo_mol_atom_t *atom, *a1, *a2, *a3, *a4;
 
   if (! mol) return -1;
-  if (! seg) return -2;
-  if ( ! seg->auto_dihedrals ) return 0;
+  nseg = segp ? 1 : hasharray_count(mol->segment_hash);
+
+  for ( iseg=0; iseg<nseg; ++iseg ) {
+    seg = segp ? segp : mol->segment_array[iseg];
+
+    nres = hasharray_count(seg->residue_hash);
+    for ( ires=0; ires<nres; ++ires ) {
+      res = &(seg->residue_array[ires]);
+      for ( atom = res->atoms; atom; atom = atom->next ) {
+        for ( tuple = atom->dihedrals; tuple;
+		tuple = topo_mol_dihedral_next(tuple,atom) ) {
+          tuple->del = 1;
+        }
+      }
+    }
+  }
+
+  for ( iseg=0; iseg<nseg; ++iseg ) {
+  seg = segp ? segp : mol->segment_array[iseg];
 
   /*  number atoms, needed to avoid duplicate dihedrals below  */
   atomid = 0;
@@ -956,6 +1013,10 @@ int topo_mol_auto_dihedrals(topo_mol *mol, topo_mol_segment_t *seg) {
       atom->atomid = ++atomid;
     }
   }
+  }
+
+  for ( iseg=0; iseg<nseg; ++iseg ) {
+  seg = segp ? segp : mol->segment_array[iseg];
 
   nres = hasharray_count(seg->residue_hash);
   for ( ires=0; ires<nres; ++ires ) {
@@ -1017,6 +1078,7 @@ int topo_mol_auto_dihedrals(topo_mol *mol, topo_mol_segment_t *seg) {
       }
     }
   }
+  }
 
   return 0;
 }
@@ -1073,7 +1135,7 @@ int topo_mol_patch(topo_mol *mol, const topo_mol_ident_t *targets,
     }
   }
   if ( warn_angles && resdef->angles ) {
-    sprintf(errmsg,"Warning: explicit angles in patch %s may conflict with autogeneration",rname);
+    sprintf(errmsg,"Warning: explicit angles in patch %s will be deleted during autogeneration",rname);
     topo_mol_log_error(mol,errmsg);
   }
   for ( angldef = resdef->angles; angldef; angldef = angldef->next ) {
@@ -1084,7 +1146,7 @@ int topo_mol_patch(topo_mol *mol, const topo_mol_ident_t *targets,
     }
   }
   if ( warn_dihedrals && resdef->dihedrals ) {
-    sprintf(errmsg,"Warning: explicit dihedrals in patch %s may conflict with autogeneration",rname);
+    sprintf(errmsg,"Warning: explicit dihedrals in patch %s will be deleted during autogeneration",rname);
     topo_mol_log_error(mol,errmsg);
   }
   for ( dihedef = resdef->dihedrals; dihedef; dihedef = dihedef->next ) {

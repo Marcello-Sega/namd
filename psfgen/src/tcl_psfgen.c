@@ -95,6 +95,7 @@ int tcl_mutate(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 int tcl_multiply(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 int tcl_coord(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 int tcl_auto(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
+int tcl_regenerate(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 int tcl_alias(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 int tcl_pdb(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 int tcl_coordpdb(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
@@ -159,6 +160,8 @@ int Psfgen_Init(Tcl_Interp *interp) {
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
   Tcl_CreateCommand(interp,"auto",tcl_auto,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
+  Tcl_CreateCommand(interp,"regenerate",tcl_regenerate,
+	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
   Tcl_CreateCommand(interp,"alias",tcl_alias,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
   Tcl_CreateCommand(interp,"pdb",tcl_pdb,
@@ -182,7 +185,7 @@ int Psfgen_Init(Tcl_Interp *interp) {
   Tcl_CreateCommand(interp,"delatom", tcl_delatom,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
  
-  Tcl_PkgProvide(interp, "psfgen", "1.2");
+  Tcl_PkgProvide(interp, "psfgen", "1.3");
 
   return TCL_OK;
 }
@@ -550,6 +553,50 @@ int tcl_auto(ClientData data, Tcl_Interp *interp,
     Tcl_AppendResult(interp,"ERROR: failed setting dihedral autogen",NULL);
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
+  }
+
+  return TCL_OK;
+}
+
+
+int tcl_regenerate(ClientData data, Tcl_Interp *interp,
+					int argc, char *argv[]) {
+  int i, angles, dihedrals;
+  psfgen_data *psf = *(psfgen_data **)data;
+
+  if ( argc < 2 ) {
+    Tcl_SetResult(interp,"arguments: ?angles? ?dihedrals? ?none?",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
+    return TCL_ERROR;
+  }
+
+  angles = 0;  dihedrals = 0;
+  for ( i = 1; i < argc; ++i ) {
+    if ( ! strcmp(argv[i],"angles") ) angles = 1;
+    else if ( ! strcmp(argv[i],"dihedrals") ) dihedrals = 1;
+    else {
+      Tcl_SetResult(interp,"arguments: ?angles? ?dihedrals?",TCL_VOLATILE);
+      psfgen_kill_mol(interp,psf);
+      return TCL_ERROR;
+    }
+  }
+
+  if ( angles ) {
+    newhandle_msg(interp,"regenerating all angles");
+    if ( topo_mol_regenerate_angles(psf->mol) ) {
+      Tcl_AppendResult(interp,"ERROR: angle regeneration failed",NULL);
+      psfgen_kill_mol(interp,psf);
+      return TCL_ERROR;
+    }
+  }
+
+  if ( dihedrals ) {
+    newhandle_msg(interp,"regenerating all dihedrals");
+    if ( topo_mol_regenerate_dihedrals(psf->mol) ) {
+      Tcl_AppendResult(interp,"ERROR: dihedral regeneration failed",NULL);
+      psfgen_kill_mol(interp,psf);
+      return TCL_ERROR;
+    }
   }
 
   return TCL_OK;

@@ -127,6 +127,16 @@ protonation state, or creating disulphide bonds between a pair of residues.}
 \ARGDEF{segid:resid}{List of segment and residue pairs to which patch should be applied.}}
 {After one or more segments have been built.}
 
+\item \COMMAND{\KEY{regenerate} \OKEY{angles} \OKEY{dihedrals}}
+{Remove all angles and/or dihedrals and completely regenerate them using
+the segment automatic generation algorithms.  This is only needed if
+patches were applied that do not correct angles and bonds.  Segment and
+file defaults are ignored, and angles/dihedrals for the entire molecule
+are regenerated from scratch.}
+{\KEYDEF{angles}{Enable generation of angles from bonds.}\\
+\KEYDEF{dihedrals}{Enable generation of dihedrals from angles.}}
+{After one or more segments have been built.}
+
 \item \COMMAND{\KEY{multiply} \ARG{factor} \ARG{segid\OARG{{\em :resid}\OARG{:atomname}}} \OARG{...}}
 {Create multiple images of a set of atoms for use in locally enhanced sampling.  The beta column of the output pdb file is set to 1...\ARG{factor} for each image.  Multiple copies of bonds, angles, etc. are created.  Atom, residue or segment names are not altered; images are distinguished only by beta value.  This is not a normal molecular structure and may confuse other tools.}
 {\ARGDEF{factor}{}\\
