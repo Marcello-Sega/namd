@@ -53,7 +53,7 @@ void BackEnd::ExitSchedOn(int pe)
 {
   void* msg = CmiAlloc(CmiMsgHeaderSizeBytes);
   CmiSetHandler(msg,CpvAccess(exitSchedHndlr));
-  CmiSyncSendAndFree(pe,CmiMsgHeaderSizeBytes,msg);
+  CmiSyncSendAndFree(pe,CmiMsgHeaderSizeBytes,(char *)msg);
 }
 
 #if defined(WIN32) && !defined(__CYGWIN__)
