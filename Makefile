@@ -117,7 +117,8 @@ TEMPLATES = \
 	$(SRCDIR)/Templates/SortedArray.C \
 	$(SRCDIR)/Templates/UniqueSortedArray.C
 
-namd2:	$(DPMTALIB) $(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES)
+namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES)
+	cd $(DPMTADIR) ; $(MAKE) libdpmta.a ; cd ..
 	$(CHARMC) -ld++-option \
 	"-I $(INCLUDE) -I $(SRCDIR) $(CXXOPTS) " \
 	-language charm++ \
@@ -156,11 +157,6 @@ Make.depends:
 	touch $(DEPENDSFILE)
 
 include	$(DEPENDFILE)
-
-
-obj/libdpmta.a:
-	cd $(DPMTADIR) ; $(MAKE) libdpmta.a ; cd ..
-	$(COPY) $(DPMTADIR)/libdpmta.a ../$(DSTDIR)
 
 $(INTERFACES:.ci=.top.h):	$(INCDIR) $$(@:.top.h=.ci)
 	$(CHARMXI) $?
