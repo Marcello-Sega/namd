@@ -55,6 +55,7 @@ class Patch
      void avgPositionBoxClosed(void);
 
      int getNumAtoms() { return numAtoms; }
+     int getNumFixedAtoms() { return numFixedAtoms; }  // not updated
      PatchID getPatchID() { return patchID; }
      int getNumComputes() { return positionComputeList.size(); }
 
@@ -65,6 +66,7 @@ class Patch
 
      const PatchID patchID;
      int           numAtoms;
+     int           numFixedAtoms;
      CompAtomList  p;
      CompAtomList  p_avg;
      CompAtom      *positionPtr;

@@ -233,18 +233,20 @@ void RecBisection::rec_divide(int n, const Partition &p)
 void RecBisection::compute_patch_load() 
 {  
    int   i,nix,neighbour;
-   int   numAtoms, numNeighAtoms;
+   int   numAtoms, numFixed, numNeighAtoms, numNeighFixed;
    float total_icompute;
 
    for(i=0; i<numPatches; i++) { 
 
      numAtoms      = patchMap->patch(i)->getNumAtoms();
+     numFixed      = patchMap->patch(i)->getNumFixedAtoms();
 
      patchload[i].total = 0.0;
      patchload[i].edge  = 0.0;
 
      patchload[i].local = c_local0 + c_local1 * numAtoms;
-     patchload[i].local += c_icompute0 + c_icompute1*numAtoms*numAtoms;
+     patchload[i].local += c_icompute0 +
+	c_icompute1*(numAtoms*numAtoms-numFixed*numFixed);
 
 
      total_icompute = 0.0;
@@ -255,8 +257,10 @@ void RecBisection::compute_patch_load()
      for(nix=0; nix<nNeighbors; nix++) {
        neighbour = neighbors[nix];
        numNeighAtoms = patchMap->patch(neighbour)->getNumAtoms();
+       numNeighFixed = patchMap->patch(neighbour)->getNumFixedAtoms();
        patchload[i].icompute[nix] = 
-	 c_icompute0 + c_icompute1*numNeighAtoms*numAtoms;
+	 c_icompute0 +
+	 c_icompute1*(numNeighAtoms*numAtoms-numNeighFixed*numFixed);
        total_icompute += patchload[i].icompute[nix]; 
        patchload[i].edge += c_edge0 + c_edge1 * numNeighAtoms; 
      }

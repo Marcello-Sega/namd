@@ -28,7 +28,7 @@ typedef ResizeArrayPrimIter<ComputeID> ComputeIDListIter;
 
 Patch::Patch(PatchID pd) :
    lattice(flags.lattice),
-   patchID(pd), numAtoms(0),
+   patchID(pd), numAtoms(0), numFixedAtoms(0),
    positionPtr(0), avgPositionPtr(0),
    positionBox(this,&Patch::positionBoxClosed),
    avgPositionBox(this,&Patch::avgPositionBoxClosed),

@@ -80,6 +80,14 @@ HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
   doPairlistCheck_newTolerance = 
 	0.5 * ( simParams->pairlistDist - simParams->cutoff );
 
+
+  numFixedAtoms = 0;
+  if ( simParams->fixedAtomsOn ) {
+    for ( int i = 0; i < numAtoms; ++i ) {
+      numFixedAtoms += ( atom[i].atomFixed ? 1 : 0 );
+    }
+  }
+
   nChild = 0;	// number of proxy spanning tree children
 #if CMK_PERSISTENT_COMM
   phsReady = 0;
