@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: Molecule.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/08/16 04:39:46 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.3 $	$Date: 1996/11/05 05:01:23 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -25,6 +25,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.3  1996/11/05 05:01:23  jim
+ * added some consts
+ *
  * Revision 1.2  1996/08/16 04:39:46  ari
  * *** empty log message ***
  *
@@ -246,43 +249,43 @@ public:
 	IntList *get_atom_hb_acceptors(int); // return list of Nth atom acc's
 
 	//  Get the mass of an atom
-	Real atommass(int anum)
+	Real atommass(int anum) const
 	{
 		return(atoms[anum].mass);
 	}
 
 	//  Get the charge of an atom
-	Real atomcharge(int anum)
+	Real atomcharge(int anum) const
 	{
 		return(atoms[anum].charge);
 	}
 	
 	//  Get the vdw type of an atom
-	Index atomvdwtype(int anum)
+	Index atomvdwtype(int anum) const
 	{
 	   	return(atoms[anum].vdw_type);
 	}
 
 	//  Retrieve a bond structure
-	Bond *get_bond(int bnum) {return (&(bonds[bnum]));}
+	Bond *get_bond(int bnum) const {return (&(bonds[bnum]));}
 
 	//  Retrieve an angle structure
-	Angle *get_angle(int anum) {return (&(angles[anum]));}
+	Angle *get_angle(int anum) const {return (&(angles[anum]));}
 
 	//  Retrieve an improper strutcure
-	Improper *get_improper(int inum) {return (&(impropers[inum]));}
+	Improper *get_improper(int inum) const {return (&(impropers[inum]));}
 
 	//  Retrieve a dihedral structure
-	Dihedral *get_dihedral(int dnum) {return (&(dihedrals[dnum]));}
+	Dihedral *get_dihedral(int dnum) const {return (&(dihedrals[dnum]));}
 
 	//  Retrieve a hydrogen bond donor structure
-	Bond *get_donor(int dnum) {return (&(donors[dnum]));}
+	Bond *get_donor(int dnum) const {return (&(donors[dnum]));}
 
 	//  Retrieve a hydrogen bond acceptor structure
-	Bond *get_acceptor(int dnum) {return (&(acceptors[dnum]));}
+	Bond *get_acceptor(int dnum) const {return (&(acceptors[dnum]));}
 
 	//  Retrieve an atom type
-	const char *get_atomtype(int anum)
+	const char *get_atomtype(int anum) const
 	{
 		if (atomNames == NULL)
 		{
@@ -305,7 +308,7 @@ public:
 	
 	//  Check for exclusions, either explicit or bonded.
 	//  Inline this funcion since it is called so often
-	Bool checkexcl(int atom1, int atom2)
+	Bool checkexcl(int atom1, int atom2) const
         {
 	   int check_int;	//  atom whose array we will search
 	   int other_int;	//  atom we are looking for
@@ -336,7 +339,7 @@ public:
 	//  Check for 1-4 exclusions.  This is only valid when the
 	//  exclusion policy is set to scaled1-4. Inline this function
 	//  since it will be called so often
-	Bool check14excl(int atom1, int atom2)
+	Bool check14excl(int atom1, int atom2) const
         {
 	   int check_int;
 	   int other_int;
@@ -364,7 +367,7 @@ public:
 
 	//  Return true or false based on whether the specified atom
 	//  is constrained or not.
-	Bool is_atom_constrained(int atomnum)
+	Bool is_atom_constrained(int atomnum) const
 	{
 		if (numConstraints)
 		{
@@ -379,18 +382,18 @@ public:
 	}
 
 	//  Get the harmonic constraints for a specific atom
-	void get_cons_params(Real &k, Vector &refPos, int atomnum)
+	void get_cons_params(Real &k, Vector &refPos, int atomnum) const
 	{
 		k = consParams[consIndexes[atomnum]].k;
 		refPos = consParams[consIndexes[atomnum]].refPos;
 	}
 
-	Real langevin_param(int atomnum)
+	Real langevin_param(int atomnum) const
 	{
 		return(langevinParams[atomnum]);
 	}
 
-	Real langevin_force_val(int atomnum)
+	Real langevin_force_val(int atomnum) const
 	{
 		return(langForceVals[atomnum]);
 	}
