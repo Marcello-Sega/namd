@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.21 1996/12/11 00:04:23 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.22 1996/12/11 22:24:13 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -114,7 +114,7 @@ Node::~Node(void)
 
 void Node::messageStartup() {
   InitMsg *msg = new (MsgIndex(InitMsg)) InitMsg;
-  CSendMsgBranch(Node, startup, msg, group.node, CMyPe() );
+  CBroadcastMsgBranch(Node, startup, msg, group.node);
 }
 
 void Node::startup(InitMsg *msg)
@@ -153,8 +153,10 @@ void Node::startup(InitMsg *msg)
 
   workDistrib = CLocalBranch(WorkDistrib,group.workDistrib);
 
-  workDistrib->buildMaps();
-  workDistrib->sendMaps();
+  if ( ! CMyPe() ) {
+    workDistrib->buildMaps();
+    workDistrib->sendMaps();
+  }
   workDistrib->awaitMaps();
 
   ComputeMap::Object()->printComputeMap();
@@ -263,13 +265,16 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.21 $	$Date: 1996/12/11 00:04:23 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.22 $	$Date: 1996/12/11 22:24:13 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.22  1996/12/11 22:24:13  jim
+ * made node startup and workDistrib calls work in parallel
+ *
  * Revision 1.21  1996/12/11 00:04:23  milind
  * *** empty log message ***
  *
