@@ -260,17 +260,6 @@ an amount of memory equal to the size of the file.
 
 ----------------------------------------------------------------------
 
-Known Deficiencies
-
-- NAMD requires X-PLOR or CHARMM to produce the .psf structure input
-  files.  If you don't have one of these, you probably can't use NAMD.
-  We are planning on adding these features to VMD or a new program.
-
-- The DPMTA fast multipole electrostatics method is not available on
-  the Windows port.  PME with a periodic system is recommended instead.
-
-----------------------------------------------------------------------
-
 Problems?  Found a bug?
 
 For problems or questions, send email to namd@ks.uiuc.edu.  If you
