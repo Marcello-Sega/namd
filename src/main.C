@@ -15,6 +15,7 @@
 #include "main.decl.h"
 #include "main.h"
 
+CkGroupID delegateMgr;
 
 #ifndef WIN32
 
@@ -34,7 +35,6 @@
 #include <netinet/in.h>
 #include <pwd.h>
 
-CkGroupID delegateMgr;
 
 int send_dgram(const char *host_addr, int port, const char *buf, int buflen) {
   struct sockaddr_in addr;
