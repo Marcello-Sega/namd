@@ -158,6 +158,7 @@ void Controller::printEnergies(int seq)
     BigReal kineticEnergy;
     BigReal boundaryEnergy;
     BigReal virial;
+    BigReal altVirial;
     BigReal totalEnergy;
     BigReal volume;
 
@@ -170,8 +171,9 @@ void Controller::printEnergies(int seq)
     reduction->require(seq, REDUCTION_KINETIC_ENERGY, kineticEnergy);
     reduction->require(seq, REDUCTION_BC_ENERGY, boundaryEnergy);
     reduction->require(seq, REDUCTION_VIRIAL, virial);
-
     virial /= 3.;  // virial submitted is wrong by factor of 3
+    reduction->require(seq, REDUCTION_ALT_VIRIAL, altVirial);
+    altVirial /= 3.;  // virial submitted is wrong by factor of 3
 
     temperature = 2.0 * kineticEnergy / ( numDegFreedom * BOLTZMAN );
 
@@ -187,20 +189,22 @@ void Controller::printEnergies(int seq)
     totalEnergy = bondEnergy + angleEnergy + dihedralEnergy + improperEnergy +
 	 electEnergy + ljEnergy + kineticEnergy + boundaryEnergy;
 
+    // NO CALCULATIONS OR REDUCTIONS BEYOND THIS POINT!!!
     if ( seq % node->simParameters->outputEnergies ) return;
+    // ONLY OUTPUT SHOULD OCCUR BELOW THIS LINE!!!
 
     if ( (seq % (10 * node->simParameters->outputEnergies) ) == 0 )
     {
+        iout << iINFO
+    	 << "CPU time = " << CmiTimer() << " Wall Time = " 
+    	 << CmiWallTimer() << "\n" << endi;
+
 	iout << "ETITLE:     TS    BOND        ANGLE       "
 	     << "DIHED       IMPRP       ELECT       VDW       "
 	     << "BOUNDARY    KINETIC        TOTAL     TEMP";
 	if ( volume != 0. ) iout << "     PRESSURE    VOLUME";
 	iout << "\n" << endi;
     }
-
-    //    iout << iINFO
-    //	 << "CPU time = " << CmiTimer() << " Wall Time = " 
-    //	 << CmiWallTimer() << "\n" << endi;
 
     iout << ETITLE(seq)
 	 << FORMAT(bondEnergy)
@@ -220,9 +224,6 @@ void Controller::printEnergies(int seq)
     }
     iout << "\n" << endi;
 
-    BigReal altVirial;
-    reduction->require(seq, REDUCTION_ALT_VIRIAL, altVirial);
-    altVirial /= 3.;  // virial submitted is wrong by factor of 3
     DebugM(4,"step: " << seq << " virial: " << virial
 		<< " altVirial: " << altVirial << "\n");
 
@@ -241,12 +242,16 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1020 $	$Date: 1997/04/16 22:12:16 $
+ *	$Revision: 1.1021 $	$Date: 1997/04/21 00:18:53 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1021  1997/04/21 00:18:53  jim
+ * Fixed slowing-down problem caused by failing to require ALT_VIRIAL from
+ * reduction system in controller when not printing energies.
+ *
  * Revision 1.1020  1997/04/16 22:12:16  brunner
  * Fixed an LdbCoordinator bug, and cleaned up timing and Ldb output some.
  *
