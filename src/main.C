@@ -32,12 +32,12 @@ public:
     char **argv = msg->argv;
 
     // print banner
-    iout << iINFO << "NAMD 2.1b2"
+    iout << iINFO << "NAMD 2.1b3"
 #ifdef NAMD_FFTW
          << " (includes FFTW, do not distribute)"
 #endif
          << "\n"
-#if 1
+#if 0
          << iWARN << "\n"
          << iWARN << "          ***  UNRELEASED EXPERIMENTAL VERSION  ***\n"
          << iWARN << "\n"
