@@ -5,7 +5,11 @@
 **/
 
 #include "memusage.h"
+#ifndef WIN32
 #include <unistd.h>
+#else
+int sbrk(int) { return 0; }
+#endif
 
 int memusageinit::initialized;
 long memusageinit::sbrkval;
