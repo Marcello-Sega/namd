@@ -104,6 +104,7 @@ void DihedralElem::computeForce(BigReal *reduction)
   rB = 1.0/rB;
   B *= rB;
 
+  errno = 0;
   phi= -atan2(sin_phi,cos_phi);
   CHECK_DOMAIN_ATAN(sin_phi,cos_phi);
 
@@ -247,12 +248,15 @@ void DihedralElem::unregisterReductionData(ReductionMgr *reduction)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1998/06/18 14:48:01 $
+ *	$Revision: 1.1010 $	$Date: 1998/08/03 22:09:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDihedrals.C,v $
+ * Revision 1.1010  1998/08/03 22:09:32  brunner
+ * Cleared errno before trig functions
+ *
  * Revision 1.1009  1998/06/18 14:48:01  jim
  * Split virial into NORMAL, NBOND, and SLOW parts to match force classes.
  *

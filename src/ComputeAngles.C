@@ -97,6 +97,7 @@ void AngleElem::computeForce(BigReal *reduction)
   sin_theta = sqrt(1.0 - cos_theta*cos_theta);
 
   //  Get theta
+  errno=0;
   theta = acos(cos_theta);
   CHECK_DOMAIN_ACOS(cos_theta);
 
@@ -176,12 +177,15 @@ void AngleElem::unregisterReductionData(ReductionMgr *reduction)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1998/06/18 14:47:59 $
+ *	$Revision: 1.1009 $	$Date: 1998/08/03 22:09:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.C,v $
+ * Revision 1.1009  1998/08/03 22:09:31  brunner
+ * Cleared errno before trig functions
+ *
  * Revision 1.1008  1998/06/18 14:47:59  jim
  * Split virial into NORMAL, NBOND, and SLOW parts to match force classes.
  *

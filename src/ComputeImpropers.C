@@ -108,6 +108,7 @@ void ImproperElem::computeForce(BigReal *reduction)
   rB = 1.0/rB;
   B *= rB;
 
+  errno=0;
   phi= -atan2(sin_phi,cos_phi);
   CHECK_DOMAIN_ATAN(sin_phi,cos_phi);
 
@@ -252,12 +253,15 @@ void ImproperElem::unregisterReductionData(ReductionMgr *reduction)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1998/06/18 14:48:02 $
+ *	$Revision: 1.1009 $	$Date: 1998/08/03 22:09:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeImpropers.C,v $
+ * Revision 1.1009  1998/08/03 22:09:33  brunner
+ * Cleared errno before trig functions
+ *
  * Revision 1.1008  1998/06/18 14:48:02  jim
  * Split virial into NORMAL, NBOND, and SLOW parts to match force classes.
  *
