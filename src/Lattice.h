@@ -11,8 +11,10 @@
 #include <math.h>
 #include "Tensor.h"
 
-// on T3E rint() is in fp.h, not math.h so just declare it again
-double rint(double);
+// need fp.h for rint() on T3E
+#ifdef _CRAYT3E
+#include <fp.h>
+#endif
 
 typedef Vector ScaledPosition;
 
