@@ -11,7 +11,7 @@
 /*								           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1000 1997/02/06 15:59:05 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.1001 1997/02/07 07:50:22 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -35,8 +35,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,
 #include "Node.top.h"
 #include "Node.h"
 
-#define DEBUGM
-#define MIN_DEBUG_LEVEL 4
+// #define DEBUGM
+#define MIN_DEBUG_LEVEL 3
 #include "Debug.h"
 
 
@@ -259,12 +259,15 @@ void MigrateAtomsMsg::unpack (void *in) {
  * RCS INFORMATION:
  *
  *	$RCSfile: PatchMgr.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:59:05 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/02/07 07:50:22 $
  *
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.C,v $
+ * Revision 1.1001  1997/02/07 07:50:22  jim
+ * Removed debug messages.
+ *
  * Revision 1.1000  1997/02/06 15:59:05  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

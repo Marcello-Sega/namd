@@ -69,7 +69,7 @@ void ComputePatchPair::atomUpdate() {
     // How can we tell if BoxOwner has packed up and left?  Need a mechanism
     // to handle this or do we assume the Boxes have been dumped?
 
-    DebugM(4,"atomUpdate() - positionBox[0] is " << positionBox[0] << "\n");
+    // DebugM(4,"atomUpdate() - positionBox[0] is " << positionBox[0] << "\n");
     for (int i=0; i<2; i++) {
 	numAtoms[i] = patch[i]->getNumAtoms();
     }
@@ -116,13 +116,16 @@ void ComputePatchPair::doWork() {
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputePatchPair.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:17 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1001 $	$Date: 1997/02/07 07:50:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatchPair.C,v $
+ * Revision 1.1001  1997/02/07 07:50:23  jim
+ * Removed debug messages.
+ *
  * Revision 1.1000  1997/02/06 15:58:17  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.
