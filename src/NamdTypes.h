@@ -69,6 +69,7 @@ struct CompAtom {
 
 struct FullAtom : CompAtom {
   Velocity velocity;
+  Position fixedPosition;
   Mass mass;
   Transform transform;
 };

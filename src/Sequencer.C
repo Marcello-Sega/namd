@@ -460,9 +460,15 @@ void Sequencer::berendsenPressure(int step)
    {
     int hgs;
     for ( int i = 0; i < numAtoms; i += hgs ) {
-      hgs = a[i].hydrogenGroupSize;
-      if ( simParams->fixedAtomsOn && a[i].groupFixed ) continue;
       int j;
+      hgs = a[i].hydrogenGroupSize;
+      if ( simParams->fixedAtomsOn && a[i].groupFixed ) {
+        for ( j = i; j < (i+hgs); ++j ) {
+          a[j].position = patch->lattice.apply_transform(
+				a[j].fixedPosition,a[j].transform);
+        }
+        continue;
+      }
       BigReal m_cm = 0;
       Position x_cm(0,0,0);
       for ( j = i; j < (i+hgs); ++j ) {
@@ -475,7 +481,11 @@ void Sequencer::berendsenPressure(int step)
       patch->lattice.rescale(new_x_cm,factor);
       Position delta_x_cm = new_x_cm - x_cm;
       for ( j = i; j < (i+hgs); ++j ) {
-        if ( simParams->fixedAtomsOn && a[j].atomFixed ) continue;
+        if ( simParams->fixedAtomsOn && a[j].atomFixed ) {
+          a[j].position = patch->lattice.apply_transform(
+				a[j].fixedPosition,a[j].transform);
+          continue;
+        }
         a[j].position += delta_x_cm;
       }
     }
@@ -484,7 +494,11 @@ void Sequencer::berendsenPressure(int step)
    {
     for ( int i = 0; i < numAtoms; ++i )
     {
-      if ( simParams->fixedAtomsOn && a[i].atomFixed ) continue;
+      if ( simParams->fixedAtomsOn && a[i].atomFixed ) {
+        a[i].position = patch->lattice.apply_transform(
+				a[i].fixedPosition,a[i].transform);
+        continue;
+      }
       patch->lattice.rescale(a[i].position,factor);
     }
    }
@@ -509,9 +523,15 @@ void Sequencer::langevinPiston(int step)
    {
     int hgs;
     for ( int i = 0; i < numAtoms; i += hgs ) {
-      hgs = a[i].hydrogenGroupSize;
-      if ( simParams->fixedAtomsOn && a[i].groupFixed ) continue;
       int j;
+      hgs = a[i].hydrogenGroupSize;
+      if ( simParams->fixedAtomsOn && a[i].groupFixed ) {
+        for ( j = i; j < (i+hgs); ++j ) {
+          a[j].position = patch->lattice.apply_transform(
+				a[j].fixedPosition,a[j].transform);
+        }
+        continue;
+      }
       BigReal m_cm = 0;
       Position x_cm(0,0,0);
       Velocity v_cm(0,0,0);
@@ -531,7 +551,11 @@ void Sequencer::langevinPiston(int step)
       delta_v_cm.y = ( velFactor.y - 1 ) * v_cm.y;
       delta_v_cm.z = ( velFactor.z - 1 ) * v_cm.z;
       for ( j = i; j < (i+hgs); ++j ) {
-        if ( simParams->fixedAtomsOn && a[j].atomFixed ) continue;
+        if ( simParams->fixedAtomsOn && a[j].atomFixed ) {
+          a[j].position = patch->lattice.apply_transform(
+				a[j].fixedPosition,a[j].transform);
+          continue;
+        }
         if ( mol->is_atom_exPressure(a[j].id) ) continue;
         a[j].position += delta_x_cm;
         a[j].velocity += delta_v_cm;
@@ -542,7 +566,11 @@ void Sequencer::langevinPiston(int step)
    {
     for ( int i = 0; i < numAtoms; ++i )
     {
-      if ( simParams->fixedAtomsOn && a[i].atomFixed ) continue;
+      if ( simParams->fixedAtomsOn && a[i].atomFixed ) {
+        a[i].position = patch->lattice.apply_transform(
+				a[i].fixedPosition,a[i].transform);
+        continue;
+      }
       if ( mol->is_atom_exPressure(a[i].id) ) continue;
       patch->lattice.rescale(a[i].position,factor);
       a[i].velocity.x *= velFactor.x;

@@ -252,6 +252,7 @@ void WorkDistrib::createHomePatches(void)
     for(j=0; j < n; j++)
     {
       int aid = a[j].id;
+      a[j].fixedPosition = a[j].position;
       a[j].position = lattice.nearest(
 		a[j].position, center, &(a[j].transform));
       a[j].mass = molecule->atommass(aid);

@@ -134,6 +134,12 @@ public:
     return unscale(sn);
   }
 
+  // applies stored transform to original coordinates
+  Position apply_transform(Position data, const Transform &t) const
+  {
+    return ( data + t.i*a1 + t.j*a2 + t.k*a3 );
+  }
+
   // reverses cumulative transformations for output
   Position reverse_transform(Position data, const Transform &t) const
   {

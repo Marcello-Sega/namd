@@ -210,8 +210,14 @@ void PatchMgr::moveAtom(MoveAtomMsg *msg) {
   if ( lid.pid != notUsed ) {
     HomePatch *hp = patchMap->homePatch(lid.pid);
     if ( hp ) {
-      if ( msg->moveto ) { hp->atom[lid.index].position = msg->coord; }
-      else { hp->atom[lid.index].position += msg->coord; }
+      FullAtom &a = hp->atom[lid.index];
+      if ( msg->moveto ) {
+        a.fixedPosition = msg->coord;
+      } else {
+        a.fixedPosition = hp->lattice.reverse_transform(a.position,a.transform);
+        a.fixedPosition += msg->coord;
+      }
+      a.position = hp->lattice.apply_transform(a.fixedPosition,a.transform);
     }
   }
   delete msg;
