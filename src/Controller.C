@@ -178,6 +178,11 @@ void Controller::algorithm(void)
     if (! simParams->tclOn) break;
     Node::Object()->enableExitScheduler();
   }
+  if (! simParams->tclOn) {
+    Node::Object()->enableExitScheduler();
+    if ( broadcast->scriptBarrier.get(scriptSeq++) != SCRIPT_END )
+      NAMD_bug("SCRIPT_END not received properly in Controller.");
+  }
   enqueueCollections(END_OF_RUN);
   outputExtendedSystem(END_OF_RUN);
   terminate();

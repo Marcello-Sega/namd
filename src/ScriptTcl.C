@@ -507,6 +507,7 @@ void ScriptTcl::algorithm() {
     Node::Object()->saveMolDataPointers(state);
     Node::messageStartUp();
     suspend();
+    runController(SCRIPT_END);
     return;
   } else {
     runController(SCRIPT_END);

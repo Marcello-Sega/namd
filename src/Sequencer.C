@@ -98,7 +98,6 @@ void Sequencer::algorithm(void)
     if ( simParams->minimizeCGOn ) {
       minimize();
       if (! simParams->tclOn) break;
-      Node::Object()->enableExitScheduler();
       continue;
     }
 
@@ -213,6 +212,11 @@ void Sequencer::algorithm(void)
     }
 
     if (! simParams->tclOn) break;
+  }
+
+  if (! simParams->tclOn) {
+    if ( broadcast->scriptBarrier.get(scriptSeq++) != SCRIPT_END )
+      NAMD_bug("SCRIPT_END not received properly in Sequencer.");
   }
 
   // only reach here on SCRIPT_END or no script

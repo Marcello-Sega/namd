@@ -9,6 +9,7 @@
 #include "common.h"
 #include "BackEnd.h"
 #include "InfoStream.h"
+#include "Broadcasts.h"
 
 #include "NamdState.h"
 #include "Node.h"
@@ -63,10 +64,13 @@ int main(int argc, char **argv) {
   if ( NULL == confFile || NULL == (configList = new ConfigList(confFile)) ) {
     NAMD_die("Simulation config file is empty.");
   }
+  SimpleBroadcastObject<int> scriptBarrier(scriptBarrierTag);
   NamdState *state = new NamdState;
   state->configListInit(configList);
   Node::Object()->saveMolDataPointers(state);
   Node::messageStartUp();
+  BackEnd::suspend();
+  scriptBarrier.publish(0,SCRIPT_END);
   BackEnd::suspend();
 #endif
 
