@@ -8,7 +8,7 @@
  * This object outputs the data collected on the master node
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Output.C,v 1.11 1997/10/01 16:46:59 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Output.C,v 1.12 1997/11/10 16:45:56 milind Exp $";
 
 #include <string.h>
 #include <stdlib.h>
@@ -258,7 +258,7 @@ void Output::energy(int timestep, BigReal *energy)
    {
   MOStream *tempMsg;
 
-  tempMsg = comm->newOutputStream(ALL, LASTTEMPTAG, BUFSIZE);
+  tempMsg = CpvAccess(comm)->newOutputStream(ALL, LASTTEMPTAG, BUFSIZE);
   if ( tempMsg == NULL )
   {
     NAMD_die("memory allocation failed in Output::energy");
@@ -2508,12 +2508,15 @@ void Output::output_allforcedcdfile(int timestep, int n, Vector *forces)
  *
  *  $RCSfile: Output.C,v $
  *  $Author: milind $  $Locker:  $    $State: Exp $
- *  $Revision: 1.11 $  $Date: 1997/10/01 16:46:59 $
+ *  $Revision: 1.12 $  $Date: 1997/11/10 16:45:56 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Output.C,v $
+ * Revision 1.12  1997/11/10 16:45:56  milind
+ * Made comm a Cpv Variable.
+ *
  * Revision 1.11  1997/10/01 16:46:59  milind
  * Removed old NAMD1 messaging and replaced it with new Message Streams library.
  *

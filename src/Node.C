@@ -9,7 +9,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1018 1997/11/07 20:17:42 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1019 1997/11/10 16:45:55 milind Exp $";
 
 #include <unistd.h>
 #include "ckdefs.h"
@@ -53,8 +53,6 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "Communicate.h"
 #include "Inform.h"
 #include "LdbCoordinator.h"
-
-extern Communicate *comm;
 
 //======================================================================
 // Public Functions
@@ -121,7 +119,7 @@ Node::~Node(void)
   delete computeMap;
   delete atomMap;
   delete patchMap;
-  delete comm;
+  delete CpvAccess(comm);
 }
 
 //----------------------------------------------------------------------
@@ -248,8 +246,8 @@ void Node::startup(InitMsg *msg) {
 
 void Node::namdOneCommInit()
 {
-  if (comm == NULL) {
-    comm = new Communicate();
+  if (CpvAccess(comm) == NULL) {
+    CpvAccess(comm) = new Communicate();
     pvmc_init();
   }
 }
@@ -267,15 +265,15 @@ void Node::namdOneRecv() {
   molecule = new Molecule(simParameters);
 
   DebugM(4, "Getting SimParameters\n");
-  conv_msg = comm->newInputStream(0, SIMPARAMSTAG);
+  conv_msg = CpvAccess(comm)->newInputStream(0, SIMPARAMSTAG);
   simParameters->receive_SimParameters(conv_msg);
 
   DebugM(4, "Getting Parameters\n");
-  conv_msg = comm->newInputStream(0, STATICPARAMSTAG);
+  conv_msg = CpvAccess(comm)->newInputStream(0, STATICPARAMSTAG);
   parameters->receive_Parameters(conv_msg);
 
   DebugM(4, "Getting Molecule\n");
-  conv_msg = comm->newInputStream(0, MOLECULETAG);
+  conv_msg = CpvAccess(comm)->newInputStream(0, MOLECULETAG);
   molecule->receive_Molecule(conv_msg);
 
   DebugM(4, "Done Receiving\n");
@@ -284,11 +282,11 @@ void Node::namdOneRecv() {
 void Node::namdOneSend() {
   // I'm Pe(0) so I send what I know
   DebugM(4, "Sending SimParameters\n");
-  simParameters->send_SimParameters(comm);
+  simParameters->send_SimParameters(CpvAccess(comm));
   DebugM(4, "Sending Parameters\n");
-  parameters->send_Parameters(comm);
+  parameters->send_Parameters(CpvAccess(comm));
   DebugM(4, "Sending Molecule\n");
-  molecule->send_Molecule(comm);
+  molecule->send_Molecule(CpvAccess(comm));
   DebugM(4, "Done Sending\n");
 }
 
@@ -440,12 +438,15 @@ void Node::saveMolDataPointers(NamdState *state)
  *
  *	$RCSfile: Node.C,v $
  *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1018 $	$Date: 1997/11/07 20:17:42 $
+ *	$Revision: 1.1019 $	$Date: 1997/11/10 16:45:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1019  1997/11/10 16:45:55  milind
+ * Made comm a Cpv Variable.
+ *
  * Revision 1.1018  1997/11/07 20:17:42  milind
  * Made NAMD to run on shared memory machines.
  *

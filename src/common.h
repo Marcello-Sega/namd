@@ -111,7 +111,6 @@ extern Inform namdErr;
 extern Inform namdDebug;
 
 class Communicate;
-extern Communicate *comm;
 
 // global functions
 void NAMD_title(void);
@@ -262,12 +261,15 @@ int  Fclose(FILE *fout);
  *
  *	$RCSfile: common.h,v $
  *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/09/28 10:19:11 $
+ *	$Revision: 1.1011 $	$Date: 1997/11/10 16:45:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.h,v $
+ * Revision 1.1011  1997/11/10 16:45:58  milind
+ * Made comm a Cpv Variable.
+ *
  * Revision 1.1010  1997/09/28 10:19:11  milind
  * Fixed priorities, ReductionMgr etc.
  *

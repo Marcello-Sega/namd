@@ -1,4 +1,4 @@
 
 
-#define SEQ_STK_SZ	205802
+#define SEQ_STK_SZ	20580
 #define CTRL_STK_SZ	131072

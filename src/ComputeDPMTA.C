@@ -24,14 +24,13 @@
 #include "Communicate.h"
 #include "pvmc.h"
 #include "InfoStream.h"
+#include "ProcessorPrivate.h"
 
 #define MIN_DEBUG_LEVEL 2
 // #define DEBUGM
 #include "Debug.h"
 
 // #define DUMP_DPMTA
-
-extern Communicate *comm;
 
 void ComputeDPMTA::get_FMA_cube(int resize)
 {
@@ -123,7 +122,7 @@ void ComputeDPMTA::initialize()
   DebugM(2,"ComputeDPMTA creating\n");
   // comm should always be initialized by this point...
   // In the (bug) case that it isn't, then initialize it.
-  if (comm == NULL)
+  if (CpvAccess(comm) == NULL)
   {
     NAMD_die("Communication protocol (Converse, PVM, etc.) not initialized.");
   }
@@ -176,7 +175,7 @@ void ComputeDPMTA::initialize()
   if (CMyPe() != 0)
   {
     DebugM(2,"waiting for Init go-ahead\n");
-    MIStream *msg2 = comm->newInputStream(ANY, DPMTATAG);
+    MIStream *msg2 = CpvAccess(comm)->newInputStream(ANY, DPMTATAG);
     int dummy;
     msg2->get(dummy);
     delete msg2;
@@ -271,13 +270,13 @@ void ComputeDPMTA::initialize()
   }
 
   // tell all nodes that it is OK to register
-  MOStream *msg = comm->newOutputStream(ALL, DPMTATAG, BUFSIZE);
+  MOStream *msg = CpvAccess(comm)->newOutputStream(ALL, DPMTATAG, BUFSIZE);
   // don't actually put in data...  Nodes just need it as a flag.
   msg->put(TRUE);
   msg->end();
   delete msg;
   DebugM(2,"Init go-ahead\n");
-  MIStream *msg1 = comm->newInputStream(ANY, DPMTATAG);
+  MIStream *msg1 = CpvAccess(comm)->newInputStream(ANY, DPMTATAG);
   int dummy1;
   msg1->get(dummy1);
   delete msg1;
@@ -492,12 +491,15 @@ void ComputeDPMTA::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1047 $	$Date: 1997/10/06 00:12:28 $
+ *	$Revision: 1.1048 $	$Date: 1997/11/10 16:45:54 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.C,v $
+ * Revision 1.1048  1997/11/10 16:45:54  milind
+ * Made comm a Cpv Variable.
+ *
  * Revision 1.1047  1997/10/06 00:12:28  jim
  * Added PatchMap.inl, sped up cycle-boundary tuple code.
  *

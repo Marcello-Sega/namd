@@ -40,7 +40,7 @@ PVM_ARCH = HPPA
 #####
 # definitions for Charm routines
 #####
-CHARM = /Home/p1/milind/Projects/charm/uth-hp-cc
+CHARM = /Home/p1/milind/Projects/charm/net-hp-cc
 
 #####
 # Unix commands

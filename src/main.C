@@ -4,7 +4,7 @@
 /*                           All Rights Reserved                           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.1005 1997/11/07 20:17:52 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.1006 1997/11/10 16:45:59 milind Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -17,9 +17,6 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.
 #include "Namd.h"
 #include "Communicate.h"
 #include "Inform.h"
-
-// Needed for namd.1.X components
-Communicate *comm = NULL; // Should be initialized in Node::node()
 
 Inform namdErr("ERROR");
 Inform namdWarn("Warning");
@@ -55,7 +52,7 @@ public:
  *
  *	$RCSfile: main.C,v $
  *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/11/07 20:17:52 $
+ *	$Revision: 1.1006 $	$Date: 1997/11/10 16:45:59 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -64,6 +61,9 @@ public:
  * REVISION HISTORY:
  *
  * $Log: main.C,v $
+ * Revision 1.1006  1997/11/10 16:45:59  milind
+ * Made comm a Cpv Variable.
+ *
  * Revision 1.1005  1997/11/07 20:17:52  milind
  * Made NAMD to run on shared memory machines.
  *
