@@ -167,8 +167,8 @@ NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
   }
 
   delete [] computeArray;
-  for(i=0; i<P; i++)
-      delete [] processors[i].proxyUsage;
+  for(i=0; i<numProcessors; i++)
+      delete [] processorArray[i].proxyUsage;
   delete [] processorArray;
 
   return msg;
