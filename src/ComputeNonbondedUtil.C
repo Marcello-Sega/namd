@@ -36,6 +36,8 @@ BigReal         ComputeNonbondedUtil::c5;
 BigReal         ComputeNonbondedUtil::c6;
 BigReal         ComputeNonbondedUtil::d0;
 
+BigReal		ComputeNonbondedUtil::ewaldcof;
+BigReal		ComputeNonbondedUtil::pi_ewaldcof;
 
 void (*ComputeNonbondedUtil::calcPair)(nonbonded *);
 void (*ComputeNonbondedUtil::calcSelf)(nonbonded *);
@@ -326,12 +328,15 @@ void ComputeNonbondedUtil::select(void)
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1998/04/06 16:34:06 $
+ *	$Revision: 1.1017 $	$Date: 1998/04/06 23:53:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1017  1998/04/06 23:53:00  jim
+ * Definitions of new static variables.
+ *
  * Revision 1.1016  1998/04/06 16:34:06  jim
  * Added DPME (single processor only), test mode, and momenta printing.
  *
