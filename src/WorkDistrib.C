@@ -906,8 +906,8 @@ void WorkDistrib::mapComputeNonbonded(void)
       numPartitions = 1 + (numAtoms > 50) + (numAtoms*numAtoms)/50000;
     }
     else {
-      numPartitions =
-        numAtoms*numAtoms / (double)(node->simParameters->numAtomsSelf*node->simParameters->numAtomsSelf) + 0.5;
+      numPartitions = (int) (
+        numAtoms*numAtoms / (double)(node->simParameters->numAtomsSelf*node->simParameters->numAtomsSelf) + 0.5 );
       if (numPartitions < 1) numPartitions = 1;
     }
     if ( numPartitions > node->simParameters->maxSelfPart )
@@ -933,8 +933,8 @@ void WorkDistrib::mapComputeNonbonded(void)
       if (p1 < oneAway[j])
       {
 	int p2 = oneAway[j];
-	int numAtoms1 = patchMap->patch(p1)->getNumAtoms();
-	int numAtoms2 = patchMap->patch(p2)->getNumAtoms();
+	int64 numAtoms1 = patchMap->patch(p1)->getNumAtoms();
+	int64 numAtoms2 = patchMap->patch(p2)->getNumAtoms();
 	const int distance =
  	  ( patchMap->index_a(p1) == patchMap->index_a(p2) ? 0 : 1 ) +
  	  ( patchMap->index_b(p1) == patchMap->index_b(p2) ? 0 : 1 ) +
@@ -950,7 +950,8 @@ void WorkDistrib::mapComputeNonbonded(void)
           numPartitions = 1 + (numAtoms1*numAtoms2 > 2500) + (numAtoms1*numAtoms2)/100000;
 	}
 	else {
-          numPartitions = numAtoms1*numAtoms2/(double)(divide*divide) + 0.5;
+          numPartitions = (int) (
+		numAtoms1*numAtoms2/(double)(divide*divide) + 0.5 );
           if ( numPartitions < 1 ) numPartitions = 1;
 	}
         if ( numPartitions > node->simParameters->maxPairPart )
