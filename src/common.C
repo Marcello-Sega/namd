@@ -80,6 +80,7 @@ void NAMD_quit(Bool die_hard)
 void NAMD_die(char *err_msg)
 
 {
+   CPrintf("FATAL ERROR: %s\n",err_msg);
    CmiAbort(err_msg);
 }
 
@@ -300,12 +301,15 @@ int	Fclose	(FILE *fout)
  *
  *	$RCSfile: common.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1999/03/18 02:32:44 $
+ *	$Revision: 1.1017 $	$Date: 1999/04/14 16:07:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.C,v $
+ * Revision 1.1017  1999/04/14 16:07:58  jim
+ * Added second message (to stdout) to NAMD_die.
+ *
  * Revision 1.1016  1999/03/18 02:32:44  jim
  * NAMD_write returns system error message.
  *
