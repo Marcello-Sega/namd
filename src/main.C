@@ -24,6 +24,7 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
 
 
 int send_dgram(const char *host_addr, int port, const char *buf, int buflen) {
