@@ -15,12 +15,36 @@
 
 template <class Type> class ObjectArena {
   public:
-    ObjectArena(void) : blockSize(1024), pos(0), end(0) {};
+    ObjectArena(void) : blockSize(1024), alignment(1), pos(0), end(0) { };
     ~ObjectArena(void) {
       int i;
       for( i = 0; i < blocks.size(); ++i ) delete [] blocks[i];
     }
     void setBlockSize(int n) { blockSize = n; }
+    void setAlignment(int n) { alignment = n; }
+
+    inline Type* getNewArray(int n) {
+      Type *rpos;
+      if ( n > (blockSize/2) ) {
+        rpos = new Type[n+((alignment-1)/sizeof(Type))];
+        blocks.add(rpos);
+        while ( ((long)rpos) & (alignment-1) ) ++rpos;
+      } else {
+        while ( ((long)pos) & (alignment-1) ) ++pos;
+        rpos = pos;
+        if ( ( pos += n ) > end ) {
+          pos = new Type[blockSize];
+          blocks.add(pos);
+          end = pos + blockSize;
+          while ( ((long)pos) & (alignment-1) ) ++pos;
+          rpos = pos;
+          pos += n;
+        }
+      }
+      return rpos;
+    }
+
+/*
     inline Type* getNewArray(int n) {
       Type *rpos = pos;
       if ( n > (blockSize/2) ) {
@@ -34,9 +58,11 @@ template <class Type> class ObjectArena {
       }
       return rpos;
     }
+*/
 
   private:
     int blockSize;
+    int alignment;
     ResizeArray<Type*> blocks;
     Type *pos, *end;
 };
