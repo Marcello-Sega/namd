@@ -765,6 +765,33 @@ void Controller::compareChecksums(int step) {
 }
 
 void Controller::printMinimizeEnergies(int step) {
+
+    if ( simParams->outputTiming && ! ( step % simParams->outputTiming ) )
+    {
+      const double endWTime = CmiWallTimer();
+      const double endCTime = CmiTimer();
+
+      const double elapsedW = 
+	(endWTime - startWTime) / simParams->outputTiming;
+      const double elapsedC = 
+	(endCTime - startCTime) / simParams->outputTiming;
+
+      const double remainingW = elapsedW * (simParams->N - step);
+      const double remainingW_hours = remainingW / 3600;
+
+      startWTime = endWTime;
+      startCTime = endCTime;
+
+      if ( step >= (simParams->firstTimestep + simParams->outputTiming) ) {
+        iout << "TIMING: " << step
+             << "  CPU: " << endCTime << ", " << elapsedC << "/step"
+             << "  Wall: " << endWTime << ", " << elapsedW << "/step"
+             << ", " << remainingW_hours << " hours remaining"
+             << ", " << (memusage()/1024) << " kB of memory in use"
+             << ".\n" << endi;
+      }
+    }
+
     reduction->require();
 
     Node *node = Node::Object();
