@@ -13,7 +13,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1010 1997/03/06 22:18:16 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1011 1997/03/08 21:09:04 jim Exp $";
 
 #include <stdio.h>
 
@@ -252,7 +252,7 @@ void WorkDistrib::mapPatches(void)
   int xi, yi, zi, pid;
   int i;
   Vector xmin, xmax;
-  Vector sysDim;
+  Vector sysDim, sysMin;
 
   DebugM(4,"Mapping patches\n");
   node->pdb->find_extremes(&xmin,&xmax);
@@ -322,9 +322,11 @@ void WorkDistrib::mapPatches(void)
     DebugM(4,"Non-periodic in z dimension with " << zdim << " patches.\n");
   }
 
+  sysMin = xmin - 0.5 * ( xmin + sysDim - xmax );
+
   patchMap->setPeriodicity(xper,yper,zper);
   patchMap->allocatePids(xdim, ydim, zdim);
-  patchMap->setGridOriginAndLength(xmin,sysDim);
+  patchMap->setGridOriginAndLength(sysMin,sysDim);
 
   int assignedNode=0;
   for(i=0; i < patchMap->numPatches(); i++)
@@ -332,12 +334,12 @@ void WorkDistrib::mapPatches(void)
     pid=patchMap->requestPid(&xi,&yi,&zi);
     DebugM(3,"Patch " << pid << " is at grid " << xi << " " << yi << " " << zi << " on node " << assignedNode << ".\n");
     patchMap->storePatch(pid,assignedNode,250, 
-			 ((float)xi/(float)xdim)*sysDim.x+xmin.x,
-			 ((float)yi/(float)ydim)*sysDim.y+xmin.y,
-			 ((float)zi/(float)zdim)*sysDim.z+xmin.z,
-			 ((float)(xi+1)/(float)xdim)*sysDim.x+xmin.x,
-			 ((float)(yi+1)/(float)ydim)*sysDim.y+xmin.y,
-			 ((float)(zi+1)/(float)zdim)*sysDim.z+xmin.z);
+			 ((float)xi/(float)xdim)*sysDim.x+sysMin.x,
+			 ((float)yi/(float)ydim)*sysDim.y+sysMin.y,
+			 ((float)zi/(float)zdim)*sysDim.z+sysMin.z,
+			 ((float)(xi+1)/(float)xdim)*sysDim.x+sysMin.x,
+			 ((float)(yi+1)/(float)ydim)*sysDim.y+sysMin.y,
+			 ((float)(zi+1)/(float)zdim)*sysDim.z+sysMin.z);
 
     // Strip allocation
     /*
@@ -732,13 +734,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/03/06 22:18:16 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1011 $	$Date: 1997/03/08 21:09:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1011  1997/03/08 21:09:04  jim
+ * Patches are now centered on system so FMA results should match NAMD 1.X.
+ *
  * Revision 1.1010  1997/03/06 22:18:16  brunner
  * Made utility functions private functions of WorkDistrib.
  *
