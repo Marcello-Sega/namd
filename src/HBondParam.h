@@ -11,8 +11,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: HBondParam.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:17 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/10/01 16:46:49 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: HBondParam.h,v $
+ * Revision 1.1002  1997/10/01 16:46:49  milind
+ * Removed old NAMD1 messaging and replaced it with new Message Streams library.
+ *
  * Revision 1.1001  1997/03/19 11:54:17  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.
@@ -63,7 +66,8 @@
 // forward references
 class HBondParam;
 class Parameters;
-class Message;
+class MIStream;
+class MOStream;
 
 
 ////////////////////////// HBondParam class definition
@@ -120,12 +124,12 @@ public:
   // Put necessary info in the given Message, in order to send it to
   // another node.  Return number of pair list items put in message, or
   // -1 if there is an error.
-  int create_message(Message *);
+  int create_message(MOStream *);
 
   // retrieve data from the given message and store it; this clears out
   // any previously stored data.  Return number of items read from message, or
   // -1 if there is an error.
-  int receive_message(Message *);
+  int receive_message(MIStream *);
 
 private:
   // linked list storing the pair parameter data
@@ -180,12 +184,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:17 $
+ *	$Revision: 1.1002 $	$Date: 1997/10/01 16:46:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HBondParam.h,v $
+ * Revision 1.1002  1997/10/01 16:46:49  milind
+ * Removed old NAMD1 messaging and replaced it with new Message Streams library.
+ *
  * Revision 1.1001  1997/03/19 11:54:17  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

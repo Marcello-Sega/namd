@@ -4,7 +4,7 @@
 /*                           All Rights Reserved                           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.1003 1997/03/19 11:55:03 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.1004 1997/10/01 16:47:04 milind Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -15,7 +15,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/main.C,v 1.
 
 // Needed for namd.1.X components
 #include "Namd.h"
-#include "CommunicateConverse.h"
+#include "Communicate.h"
 #include "Inform.h"
 
 // Needed for namd.1.X components
@@ -53,8 +53,8 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: main.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/19 11:55:03 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/10/01 16:47:04 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -63,6 +63,9 @@ public:
  * REVISION HISTORY:
  *
  * $Log: main.C,v $
+ * Revision 1.1004  1997/10/01 16:47:04  milind
+ * Removed old NAMD1 messaging and replaced it with new Message Streams library.
+ *
  * Revision 1.1003  1997/03/19 11:55:03  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

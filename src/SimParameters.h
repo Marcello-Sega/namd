@@ -300,7 +300,7 @@ public:
 					//  Used by the master process
 					//  to send the paramters to
 					//  the other processors
-	void receive_SimParameters(Message *);  
+	void receive_SimParameters(MIStream *);  
 					//  Used by the other processors
 					//  to receive the data from the
 					//  master process
@@ -312,13 +312,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1997/09/19 08:55:38 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1014 $	$Date: 1997/10/01 16:47:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1014  1997/10/01 16:47:03  milind
+ * Removed old NAMD1 messaging and replaced it with new Message Streams library.
+ *
  * Revision 1.1013  1997/09/19 08:55:38  jim
  * Added rudimentary but relatively efficient fixed atoms.  New options
  * are fixedatoms, fixedatomsfile, and fixedatomscol (nonzero means fixed).

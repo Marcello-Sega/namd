@@ -33,7 +33,8 @@
 class SimParameters;
 class Parameters;
 class PDB;
-class Message;
+class MIStream;
+class MOStream;
 
 typedef int* intPtr;
 
@@ -151,7 +152,7 @@ public:
 	void send_Molecule(Communicate *);
 				//  send the molecular structure 
 				//  from the master to the clients
-	void receive_Molecule(Message *);
+	void receive_Molecule(MIStream *);
 				//  receive the molecular structure
 				//  from the master on a client
 	
@@ -358,13 +359,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: Molecule.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/09/21 21:58:31 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1013 $	$Date: 1997/10/01 16:46:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.1013  1997/10/01 16:46:57  milind
+ * Removed old NAMD1 messaging and replaced it with new Message Streams library.
+ *
  * Revision 1.1012  1997/09/21 21:58:31  jim
  * Added printing of hydrogen group count.
  *

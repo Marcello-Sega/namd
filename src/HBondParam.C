@@ -9,8 +9,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: HBondParam.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:16 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/10/01 16:46:49 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -22,6 +22,9 @@
  * REVISION HISTORY:
  *
  * $Log: HBondParam.C,v $
+ * Revision 1.1002  1997/10/01 16:46:49  milind
+ * Removed old NAMD1 messaging and replaced it with new Message Streams library.
+ *
  * Revision 1.1001  1997/03/19 11:54:16  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.
@@ -54,6 +57,7 @@
 #include "HBondParam.h"
 #include "Parameters.h"
 #include "Inform.h"
+#include "MStream.h"
 
 
 ////////////////////////////  constructor
@@ -323,7 +327,7 @@ HBondPairData *HBondParam::get_hbond_data(Index d1, Index a1, Parameters *p) {
 // Put necessary info in the given Message, in order to send it to
 // another node.  Return number of pair list items put in message, or
 // -1 if there is an error.
-int HBondParam::create_message(Message *msg) {
+int HBondParam::create_message(MOStream *msg) {
 
   if (msg == NULL)
     return (-1);
@@ -354,12 +358,12 @@ int HBondParam::create_message(Message *msg) {
       ptr = ptr->next;
     }
 
-    // Put arrays in the message.  Note that since we are only doing this
-    // when we send this note to ANOTHER physical node, we can just give
-    // the message our allocated data and have it delete the storage after
-    // sending.
-    msg->put(num() * 2 * (MAX_ATOMTYPE_CHARS + 1), names, FALSE, TRUE);
-    msg->put(num() * 2, rvals, FALSE, TRUE);
+    msg->put(num() * 2 * (MAX_ATOMTYPE_CHARS + 1));
+    msg->put(num() * 2 * (MAX_ATOMTYPE_CHARS + 1), names);
+    delete[] names;
+    msg->put(num() * 2);
+    msg->put(num() * 2, rvals);
+    delete[] rvals;
   }
 
   // if here, everything worked
@@ -370,7 +374,7 @@ int HBondParam::create_message(Message *msg) {
 // retrieve data from the given message and store it; this clears out
 // any previously stored data.  Return number of items read from message, or
 // -1 if there is an error.
-int HBondParam::receive_message(Message *msg) {
+int HBondParam::receive_message(MIStream *msg) {
   int np;
 
   // get number of items from message
@@ -387,10 +391,14 @@ int HBondParam::receive_message(Message *msg) {
     
     // first get the pointer to the list of names, and then the pointer
     // to the list of parameters
-    char *names = (char *)(msg->item());
-    msg->skip();
-    Real *rvals = (Real *)(msg->item());
-    msg->skip();
+    int numNames;
+    msg->get(numNames);
+    char *names = new char[numNames];
+    msg->get(numNames, names);
+    int numRvals;
+    msg->get(numRvals);
+    Real *rvals = new Real[numRvals];
+    msg->get(numRvals, rvals);
 
     // now go through the lists and create new parameter items
     int i;
@@ -423,12 +431,15 @@ int HBondParam::receive_message(Message *msg) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:16 $
+ *	$Revision: 1.1002 $	$Date: 1997/10/01 16:46:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HBondParam.C,v $
+ * Revision 1.1002  1997/10/01 16:46:49  milind
+ * Removed old NAMD1 messaging and replaced it with new Message Streams library.
+ *
  * Revision 1.1001  1997/03/19 11:54:16  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

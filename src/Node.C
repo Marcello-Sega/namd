@@ -9,7 +9,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1016 1997/08/22 19:54:42 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1017 1997/10/01 16:46:58 milind Exp $";
 
 #include <unistd.h>
 #include "ckdefs.h"
@@ -18,6 +18,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "Node.top.h"
 #include "Node.h"
 #include "Namd.h"
+#include "pvm3.h"
 
 #define MIN_DEBUG_LEVEL 3
 //#define DEBUGM
@@ -47,7 +48,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "PatchMap.h"
 #include "Parameters.h"
 #include "SimParameters.h"
-#include "CommunicateConverse.h"
+#include "Communicate.h"
 #include "Inform.h"
 #include "LdbCoordinator.h"
 
@@ -249,14 +250,15 @@ void Node::startup(InitMsg *msg) {
 void Node::namdOneCommInit()
 {
   if (comm == NULL) {
-    comm = new CommunicateConverse(0,0,1);
+    comm = new Communicate();
+    pvmc_init();
   }
 }
 
 // Namd 1.X style Send/Recv of simulation information
 
 void Node::namdOneRecv() {
-  Message *conv_msg=NULL;
+  MIStream *conv_msg;
   int tag;
   int zero=0;
 
@@ -266,24 +268,15 @@ void Node::namdOneRecv() {
   molecule = new Molecule(simParameters);
 
   DebugM(4, "Getting SimParameters\n");
-  do{
-    tag=SIMPARAMSTAG;
-    conv_msg = comm->receive(zero,tag);
-  } while (conv_msg == NULL);
+  conv_msg = comm->newInputStream(0, SIMPARAMSTAG);
   simParameters->receive_SimParameters(conv_msg);
 
   DebugM(4, "Getting Parameters\n");
-  do{
-    tag=STATICPARAMSTAG;
-    conv_msg = comm->receive(zero,tag);
-  } while (conv_msg == NULL);
+  conv_msg = comm->newInputStream(0, STATICPARAMSTAG);
   parameters->receive_Parameters(conv_msg);
 
   DebugM(4, "Getting Molecule\n");
-  do{
-    tag=MOLECULETAG;
-    conv_msg = comm->receive(zero,tag);
-  } while (conv_msg == NULL);
+  conv_msg = comm->newInputStream(0, MOLECULETAG);
   molecule->receive_Molecule(conv_msg);
 
   DebugM(4, "Done Receiving\n");
@@ -448,12 +441,15 @@ void Node::saveMolDataPointers(NamdState *state)
  *
  *	$RCSfile: Node.C,v $
  *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1997/08/22 19:54:42 $
+ *	$Revision: 1.1017 $	$Date: 1997/10/01 16:46:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1017  1997/10/01 16:46:58  milind
+ * Removed old NAMD1 messaging and replaced it with new Message Streams library.
+ *
  * Revision 1.1016  1997/08/22 19:54:42  milind
  * Added user event EndOfTimeStep.
  *

@@ -19,7 +19,7 @@
 #include "common.h"
 #include "structures.h"
 #include "strlib.h"
-#include "Message.h"
+#include "MStream.h"
 #include "HBondParam.h"
 
 class Communicate;
@@ -276,7 +276,7 @@ public:
 
 	//  receive_parameters is used by all the child processes
 	//  to receive the parameters from the master process
-	void receive_Parameters(Message *);
+	void receive_Parameters(MIStream *);
 
 	//  The get_*_params routines are the routines that really
 	//  do all the work for this object.  Given an index, they
@@ -364,13 +364,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: Parameters.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:44 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/10/01 16:47:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Parameters.h,v $
+ * Revision 1.1002  1997/10/01 16:47:01  milind
+ * Removed old NAMD1 messaging and replaced it with new Message Streams library.
+ *
  * Revision 1.1001  1997/03/19 11:54:44  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

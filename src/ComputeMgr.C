@@ -38,7 +38,9 @@
 #include "ComputeBonds.h"
 #include "ComputeNonbondedExcl.h"
 #include "ComputeFullDirect.h"
+#ifdef DPMTA
 #include "ComputeDPMTA.h"
+#endif
 #include "ComputeSphericalBC.h"
 #include "ComputeCylindricalBC.h"
 #include "ComputeRestraints.h"
@@ -311,13 +313,16 @@ ComputeMgr::createComputes(ComputeMap *map)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1997/04/22 04:25:58 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1014 $	$Date: 1997/10/01 16:46:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.C,v $
+ * Revision 1.1014  1997/10/01 16:46:48  milind
+ * Removed old NAMD1 messaging and replaced it with new Message Streams library.
+ *
  * Revision 1.1013  1997/04/22 04:25:58  jim
  * Added atomic restraints (harmonic constraints) via ComputeRestraints class.
  *

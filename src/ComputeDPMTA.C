@@ -120,8 +120,6 @@ void ComputeDPMTA::initialize()
 {
   ComputeHomePatches::initialize();
 
-  Message *conv_msg;
-
   DebugM(2,"ComputeDPMTA creating\n");
   // comm should always be initialized by this point...
   // In the (bug) case that it isn't, then initialize it.
@@ -178,15 +176,10 @@ void ComputeDPMTA::initialize()
   if (CMyPe() != 0)
   {
     DebugM(2,"waiting for Init go-ahead\n");
-    do
-    {
-      int dummy1=-1, dummy2=DPMTATAG;
-      // get next DPMTATAG from node 0
-      conv_msg = comm->receive(dummy1,dummy2);
-    } while (conv_msg == NULL);
-    delete conv_msg;
-    DebugM(2,"got Init go-ahead\n");
-
+    MIStream *msg2 = comm->newInputStream(ANY, DPMTATAG);
+    int dummy;
+    msg2->get(dummy);
+    delete msg2;
     slavetids=NULL;
     if (PMTAregister() < 0)
     {
@@ -278,18 +271,16 @@ void ComputeDPMTA::initialize()
   }
 
   // tell all nodes that it is OK to register
-  Message *msg = new Message;
+  MOStream *msg = comm->newOutputStream(ALL, DPMTATAG, BUFSIZE);
   // don't actually put in data...  Nodes just need it as a flag.
   msg->put(TRUE);
-  comm->broadcast_all(msg,DPMTATAG);
+  msg->end();
+  delete msg;
   DebugM(2,"Init go-ahead\n");
-  do
-  {
-    int dummy1=-1, dummy2=DPMTATAG;
-    // get next DPMTATAG from node 0
-    conv_msg = comm->receive(dummy1,dummy2);
-  } while (conv_msg == NULL);
-  delete conv_msg;
+  MIStream *msg1 = comm->newInputStream(ANY, DPMTATAG);
+  int dummy1;
+  msg1->get(dummy1);
+  delete msg1;
   DebugM(2,"got Init go-ahead\n");
 
   //  Register this master with the other DPMTA processes
@@ -501,12 +492,15 @@ void ComputeDPMTA::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1045 $	$Date: 1997/09/18 22:49:41 $
+ *	$Revision: 1.1046 $	$Date: 1997/10/01 16:46:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.C,v $
+ * Revision 1.1046  1997/10/01 16:46:47  milind
+ * Removed old NAMD1 messaging and replaced it with new Message Streams library.
+ *
  * Revision 1.1045  1997/09/18 22:49:41  jim
  * Added code to dump DPMTA input to files.  Define DUMP_DPMTA to enable.
  *
