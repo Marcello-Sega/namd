@@ -6,6 +6,7 @@
 #include "charmm_parse_topo_defs.h"
 #include "topo_mol_output.h"
 #include "pdb_file_extract.h"
+#include "psf_file_extract.h"
 
 #ifndef NAMD_TCL
 
@@ -41,6 +42,7 @@ int tcl_alias(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 int tcl_pdb(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 int tcl_coordpdb(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 int tcl_guesscoord(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
+int tcl_readpsf(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 int tcl_writepsf(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 int tcl_writepdb(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
 int tcl_first(ClientData data, Tcl_Interp *interp, int argc, char *argv[]);
@@ -64,6 +66,8 @@ int Tcl_AppInit(Tcl_Interp *interp) {
   Tcl_SetAssocData(interp, (char *)"Psfgen", psfgen_deleteproc, data);
 
   Tcl_CreateCommand(interp,"topology",tcl_topology,
+	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
+  Tcl_CreateCommand(interp,"readpsf",tcl_readpsf,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
   Tcl_CreateCommand(interp,"segment",tcl_segment,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
@@ -137,6 +141,38 @@ int tcl_topology(ClientData data, Tcl_Interp *interp,
     charmm_parse_topo_defs(psf->defs,defs_file,handle_msg);
     fclose(defs_file);
   }
+  return TCL_OK;
+}
+
+int tcl_readpsf(ClientData data, Tcl_Interp *interp,
+					int argc, char *argv[]) {
+  FILE *psf_file;
+  int retval;
+  char *filename;
+  char msg[128];
+  psfgen_data *psf = (psfgen_data *)data;
+
+  if ( argc == 1 ) {
+    Tcl_SetResult(interp,"no psf file specified",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  if ( argc > 2 ) {
+    Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  filename = argv[1];
+  if ( ! ( psf_file = fopen(filename,"r") ) ) {
+    sprintf(msg,"ERROR: Unable to open psf file %s\n",filename);
+    Tcl_SetResult(interp,msg,TCL_VOLATILE);
+    return TCL_ERROR;
+  } else {
+    sprintf(msg,"reading structure from psf file %s\n",filename);
+    handle_msg(msg);
+    retval = psf_file_extract(psf->mol, psf_file, handle_msg);
+    fclose(psf_file);
+  }
+  if (retval) 
+    return TCL_ERROR;
   return TCL_OK;
 }
 
