@@ -75,17 +75,17 @@ void NamdNborLB::neighbors(int* _n) {
     int yDim = (int)sqrt((double)CkNumPes());
     int xDim = CkNumPes() / yDim;
     if (CkNumPes() % yDim) xDim++;
-    int x = CmiMyPe()/yDim;
-    int y = CmiMyPe()%yDim;
+    int x = CkMyPe()/yDim;
+    int y = CkMyPe()%yDim;
     int x1, y1, s;
-    // CmiPrintf("[%d]info: %d %d %d %d\n", CmiMyPe(), xDim, yDim, x,y);
+    // CmiPrintf("[%d]info: %d %d %d %d\n", CkMyPe(), xDim, yDim, x,y);
 
     x1=x; y1 = y-1;
 #if WRAP
     if (y1==-1) y1=yDim-1;
     if (SEQ(x1, y1) >= CkNumPes()) s = CkNumPes()-1;
     else s = SEQ(x1, y1);
-    if (s != CmiMyPe()) _n[numNbors++] = s;
+    if (s != CkMyPe()) _n[numNbors++] = s;
 #else
     if (y1 != -1)  _n[numNbors++] = SEQ(x1, y1);
 #endif
@@ -94,7 +94,7 @@ void NamdNborLB::neighbors(int* _n) {
 #if WRAP
     if (y1 == yDim || SEQ(x1,y1) >= CkNumPes()) y1=0;
     s = SEQ(x1, y1);
-    if (s != _n[numNbors-1] && s != CmiMyPe()) _n[numNbors++] = s;
+    if (s != _n[numNbors-1] && s != CkMyPe()) _n[numNbors++] = s;
 #else
     if (y1 == yDim || SEQ(x1,y1) >= CkNumPes()) ;
     else _n[numNbors++] = SEQ(x1, y1);
@@ -105,7 +105,7 @@ void NamdNborLB::neighbors(int* _n) {
     if (x1==-1) x1=xDim-1;
     if (SEQ(x1, y1) >= CkNumPes()) x1--;
     s = SEQ(x1, y1);
-    if (s != CmiMyPe()) _n[numNbors++] = s;
+    if (s != CkMyPe()) _n[numNbors++] = s;
 #else
     if (x1!=-1) _n[numNbors++] = SEQ(x1, y1);
 #endif
@@ -114,12 +114,12 @@ void NamdNborLB::neighbors(int* _n) {
 #if WRAP
     if (x1==xDim || SEQ(x1,y1) >= CkNumPes()) x1=0;
     s = SEQ(x1, y1);
-    if (s != _n[numNbors-1] && s != CmiMyPe()) _n[numNbors++] = s;
+    if (s != _n[numNbors-1] && s != CkMyPe()) _n[numNbors++] = s;
 #else
     if (x1==xDim || SEQ(x1,y1) >= CkNumPes()) ;
     else _n[numNbors++] = SEQ(x1,y1);
 #endif
-    // CmiPrintf("[%d] %d neighbors: %d %d %d %d\n", CmiMyPe(), numNbors, _n[0], _n[1], _n[2], _n[3]);
+    // CmiPrintf("[%d] %d neighbors: %d %d %d %d\n", CkMyPe(), numNbors, _n[0], _n[1], _n[2], _n[3]);
     act = (x+y)%2;
 #endif
 
@@ -137,7 +137,7 @@ CmiBool NamdNborLB::QueryBalanceNow(int _step)
 
 CmiBool NamdNborLB::QueryMigrateStep(int _step)
 {
-  // CmiPrintf("[%d] QueryMigrateStep %d %d.\n", CmiMyPe(), _step, act);
+  // CmiPrintf("[%d] QueryMigrateStep %d %d.\n", CkMyPe(), _step, act);
   return (act+ldbNum)%2 == 0;
 }
 
@@ -145,13 +145,13 @@ NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
 {
 #if CHARM_VERSION > 050403
   //  CkPrintf("LDB:[%d] All statistics received at %f, %f\n",
-  //  CmiMyPe(), CmiTimer(),CmiWallTimer());
+  //  CkMyPe(), CmiTimer(),CmiWallTimer());
   int i,j;
   int mype = CkMyPe();
 
   ldbNum ++;
 
-  const int numProcessors = CmiNumPes();
+  const int numProcessors = CkNumPes();
   const int numPatches = PatchMap::Object()->numPatches();
   const int numComputes = ComputeMap::Object()->numComputes();
   const SimParameters* simParams = Node::Object()->simParameters;
@@ -171,7 +171,7 @@ NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
       if (this_obj.migratable)  nMoveableComputes++;
     }
   }
-  // CmiPrintf("%d nMoveableComputes: %d\n", CmiMyPe(), nMoveableComputes);
+  // CmiPrintf("%d nMoveableComputes: %d\n", CkMyPe(), nMoveableComputes);
 
   // these sizes should never change
   processorArray = new processorInfo[numProcessors];
@@ -181,10 +181,10 @@ NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
 
   nMoveableComputes = buildData(stats,count);
 
-  //CmiPrintf("AlgNbor begin on %d\n", CmiMyPe());
+  //CmiPrintf("AlgNbor begin on %d\n", CkMyPe());
   AlgNbor(mype, computeArray,patchArray,processorArray,
 			nMoveableComputes, numPatches, numProcessors, count);
-  //CmiPrintf("AlgNbor end on %d\n", CmiMyPe());
+  //CmiPrintf("AlgNbor end on %d\n", CkMyPe());
 
   CkVec<MigrateInfo *> migrateInfo;
   for(i=0;i<nMoveableComputes;i++) {
@@ -239,11 +239,11 @@ int NamdNborLB::buildData(NborBaseLB::LDStats* stats, int count)
   double bg_weight = 0.7;
 
   int i;
-  for (i=0; i<CmiNumPes(); i++) {
+  for (i=0; i<CkNumPes(); i++) {
     processorArray[i].load = 0.0;
     processorArray[i].backgroundLoad = 0.0;
     processorArray[i].available = CmiFalse;
-    if (i == CmiMyPe()) {
+    if (i == CkMyPe()) {
       processorArray[i].Id = i;
       processorArray[i].available = myStats.move;
     if (patchMap->numPatches() > 0)
