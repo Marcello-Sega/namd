@@ -312,7 +312,13 @@ void ComputeNonbondedUtil :: NAME
 
     pairlistindex = pli - pairlist;
     // make sure padded element on pairlist points to real data
-    if ( pairlistindex ) pairlist[pairlistindex] = pairlist[pairlistindex-1];
+    if ( pairlistindex ) {
+       pairlist[pairlistindex] = pairlist[pairlistindex-1];
+    } PAIR( else {  // skip empty loops if no pairs were found
+       int hgs = ( p_i.nonbondedGroupIsAtom ? 1 : p_i.hydrogenGroupSize );
+       i += hgs - 1;
+       continue;
+    } )
   } // if i is hydrogen group parent
   SELF
     (
