@@ -12,12 +12,15 @@
 *
 */
 
-static char rcsid[] = "$Id: dpmta_slvcomm.c,v 1.3 1997/09/29 23:58:39 jim Exp $";
+static char rcsid[] = "$Id: dpmta_slvcomm.c,v 1.4 1997/09/30 00:47:59 jim Exp $";
 
 /*
  * revision history:
  *
  * $Log: dpmta_slvcomm.c,v $
+ * Revision 1.4  1997/09/30 00:47:59  jim
+ * One last fix for 2.6.1.
+ *
  * Revision 1.3  1997/09/29 23:58:39  jim
  * Incorporated changes from version 2.6.1 of DPMTA.
  *   - fixes for bad handling of empty/invalid multipoles when
@@ -665,8 +668,6 @@ void Rcv_Mpe_from_Child( int level )
       pvm_recv(-1, MSG_M2P);
       pvm_upkint(&cellid_tmp,1,1);
       pvm_upkint(&v_ptr,1,1);
-
-      cellid_tmp -= Dpmta_LevelLocate[level];
 
       if ( v_ptr == TRUE ) {
 	 mpe_temp = &(Dpmta_Temp_Mpe[0][0].x);
