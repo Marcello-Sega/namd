@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.25 1996/12/13 08:52:37 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.26 1996/12/16 19:06:30 nealk Exp $";
 
 
 #include "ckdefs.h"
@@ -217,8 +217,9 @@ void Node::startup4(InitMsg *msg)
   computeMgr = CLocalBranch(ComputeMgr,group.computeMgr);
   DebugM(3, "Trying to create computes.\n");
   computeMgr->createComputes(ComputeMap::Object());
-
+  DebugM(3, "Created computes.  Making patch managers\n");
   patchMgr = CLocalBranch(PatchMgr,group.patchMgr);
+  DebugM(3, "Created patch managers\n");
 
   messageStartupDone();   // collect on master node
 }
@@ -315,13 +316,16 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.25 $	$Date: 1996/12/13 08:52:37 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.26 $	$Date: 1996/12/16 19:06:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.26  1996/12/16 19:06:30  nealk
+ * Debugging a core dump when it registers force functions.
+ *
  * Revision 1.25  1996/12/13 08:52:37  jim
  * staged startup implemented
  *
