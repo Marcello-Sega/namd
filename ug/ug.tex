@@ -8,6 +8,7 @@
 
 \documentclass[11pt]{article}
 \usepackage{graphicx}
+\usepackage{makeidx}
 
 \makeindex
 
@@ -81,12 +82,14 @@
 \input{ug_avail}
 
 \newpage
+\addtocontents{toc}{\contentsline {section}{References}{\thepage}}
 \bibliographystyle{abbrv}
 %\bibliography{group,tbpub,ug}
 \bibliography{ug}
 
 \newpage
-\input{ug.ind}
+\addtocontents{toc}{\contentsline {section}{Index}{\thepage}}
+\printindex
 
 % that's all, folks
 \end{document}

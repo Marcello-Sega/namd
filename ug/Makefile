@@ -47,7 +47,6 @@ pdf:	$(DOCDIR)/ug.pdf
 $(DOCDIR)/ug.pdf: $(SRCFILES) $(PDFFIGS)
 	$(ECHO) "Creating NAMD $(NAMD_VERSION) User's Guide ..." ; \
 	$(CD) $(DOCDIR); \
-	touch $(MAIN_UG_FILE).ind; \
 	pdflatex $(MAIN_UG_FILE); \
 	bibtex $(MAIN_UG_FILE); \
 	makeindex $(MAIN_UG_FILE); \
@@ -77,7 +76,6 @@ figures/dual_top.pdf: figures/dual_top.eps
 $(DOCDIR)/ug.ps: $(SRCFILES)
 	$(ECHO) "Creating NAMD $(NAMD_VERSION) User's Guide ..." ; \
 	$(CD) $(DOCDIR); \
-	touch $(MAIN_UG_FILE).ind; \
 	latex $(MAIN_UG_FILE); \
 	bibtex $(MAIN_UG_FILE); \
 	makeindex $(MAIN_UG_FILE); \
