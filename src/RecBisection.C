@@ -184,8 +184,7 @@ void RecBisection::rec_divide(int n, const Partition &p)
     for(i=XDIR; i<=ZDIR; i++) { 
        diff =  load1 - loadarray[i];
        if (diff < 0.0) diff = -diff;
-       diff = diff/load1;
-       if (mindiff > diff) {mindiff = diff; mindir = i;}
+       if (mindiff >= diff) {mindiff = diff; mindir = i;}
     }
 
 
@@ -199,6 +198,8 @@ void RecBisection::rec_divide(int n, const Partition &p)
                  break;
       case ZDIR: p1.corner.z = posk[ZDIR] - 1;
                  p2.origin.z = posk[ZDIR];
+                 break;
+      default:   NAMD_bug("RecBisection failing horribly!");
     }
     p1.load = loadarray[mindir];
     p2.load = p.load - p1.load;
