@@ -20,12 +20,15 @@
 *
 */
 
-static char rcsid[] = "$Id: dpmta_slvmacro.c,v 1.1 1997/09/05 19:42:00 jim Exp $";
+static char rcsid[] = "$Id: dpmta_slvmacro.c,v 1.2 1997/09/12 22:56:33 jim Exp $";
 
 /*
  * revision history:
  *
  * $Log: dpmta_slvmacro.c,v $
+ * Revision 1.2  1997/09/12 22:56:33  jim
+ * Modifications to work with converse pvm.
+ *
  * Revision 1.1  1997/09/05 19:42:00  jim
  * Original distribution.
  *
@@ -99,7 +102,7 @@ static char rcsid[] = "$Id: dpmta_slvmacro.c,v 1.1 1997/09/05 19:42:00 jim Exp $
 #include "dpmta_slvmkil.h"
 
 #ifdef PMACRO
-#include "pvm3.h"
+#include "pvmc.h"
 #include "dpmta_pvm.h"
 #endif
 

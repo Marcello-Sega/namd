@@ -23,12 +23,15 @@
 *      redistribution.
 */
 
-static char rcsid[] = "$Id: dpmta_slave.c,v 1.1 1997/09/05 19:41:57 jim Exp $";
+static char rcsid[] = "$Id: dpmta_slave.c,v 1.2 1997/09/12 22:56:32 jim Exp $";
 
 /*
  * revision history:
  *
  * $Log: dpmta_slave.c,v $
+ * Revision 1.2  1997/09/12 22:56:32  jim
+ * Modifications to work with converse pvm.
+ *
  * Revision 1.1  1997/09/05 19:41:57  jim
  * Original distribution.
  *
@@ -258,7 +261,7 @@ static char rcsid[] = "$Id: dpmta_slave.c,v 1.1 1997/09/05 19:41:57 jim Exp $";
 
 #include <stdio.h>
 #include <unistd.h>
-#include "pvm3.h"
+#include "pvmc.h"
 #include "dpmta_pvm.h"           /* pvm messaging declarations */
 #include "dpmta_cell.h"          /* data type definitions */
 

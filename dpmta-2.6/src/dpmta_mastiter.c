@@ -12,12 +12,15 @@
 *
 */
 
-static char rcsid[]="$Id: dpmta_mastiter.c,v 1.1 1997/09/05 19:41:54 jim Exp $";
+static char rcsid[]="$Id: dpmta_mastiter.c,v 1.2 1997/09/12 22:56:31 jim Exp $";
 
 /*
  * revision history:
  *
  * $Log: dpmta_mastiter.c,v $
+ * Revision 1.2  1997/09/12 22:56:31  jim
+ * Modifications to work with converse pvm.
+ *
  * Revision 1.1  1997/09/05 19:41:54  jim
  * Original distribution.
  *
@@ -155,7 +158,7 @@ static char rcsid[]="$Id: dpmta_mastiter.c,v 1.1 1997/09/05 19:41:54 jim Exp $";
 */
 
 #include <stdio.h>
-#include "pvm3.h"
+#include "pvmc.h"
 #include "dpmta.h"
 #include "dpmta_pvm.h"
 
@@ -241,6 +244,7 @@ Send_Slave_Particles(
    int    proc_id;              /* processor id */
    int    wrap_mask;            /* mask to wrap cells around boundary */
    int    msg_type;             /* message type flag */
+   int    orig_send_msg_buf;	/* to restore after sending messages */
    double cell_edge;            /* number of cells per edge */
    double pscale, poff;         /* offset and scaling for particle position */
 #ifdef PIPED
@@ -499,6 +503,8 @@ Send_Slave_Particles(
    *
    */
 
+   orig_send_msg_buf = pvm_getsbuf();
+
    msg_type = MSG_PART1;
 
    for (i=0; i<num_proc; i++ ) {
@@ -526,7 +532,10 @@ Send_Slave_Particles(
 
       pvm_pkint(&(cells_per_proc),1,1);
       pvm_pkint(&(scell),1,1);
-      pvm_pkint(&(SendPartCnt[scell]),cells_per_proc,1);
+      // pvm_pkint(&(SendPartCnt[scell]),cells_per_proc,1);
+      for (j=scell; j<ecell; j++ ) {
+        pvm_pkint(&(SendPartCnt[j]),1,1);
+      }
       
    } /* for i */
 
@@ -569,6 +578,8 @@ Send_Slave_Particles(
    /*
     * free the send buffers after sending.
     */
+
+   pvm_setsbuf(orig_send_msg_buf);
 
    for (i=0; i<num_proc; i++ ) {
       pvm_freebuf(SendMsgBuf[i]);

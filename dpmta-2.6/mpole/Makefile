@@ -6,10 +6,13 @@
 # Copyright (c) 1995 Duke University
 # All rights reserved
 #
-# RCS Info: $Id: Makefile,v 1.1 1997/09/05 19:41:26 jim Exp $
+# RCS Info: $Id: Makefile,v 1.2 1997/09/12 22:56:21 jim Exp $
 #
 # Revision History:
 # $Log: Makefile,v $
+# Revision 1.2  1997/09/12 22:56:21  jim
+# Modifications to work with converse pvm.
+#
 # Revision 1.1  1997/09/05 19:41:26  jim
 # Original distribution.
 #
@@ -49,9 +52,9 @@
 ################################################################
 
 
-MAKE   = make
+MAKE   = gmake
 SHELL  = /bin/sh
-CC     = gcc
+CC     = cc
 AR     = ar
 RM     = rm -f
 CP     = cp
@@ -59,7 +62,7 @@ CP     = cp
 #  for the HPPA machines, add "-Ae" and "-Wp,-H500000" to CFLAGS
 #  for the SGI machines, add "-Woff all" to CFLAGS
 
-CFLAGS = -O3 $(DFLAGS)
+CFLAGS = $(DFLAGS) -I$(CHARM)/include
 
 SRC  = mpe_fft.c mpe_misc.c mpe_mpoleC.c mpe_allocC.c \
        mpe_mpoleLJ.c mpe_allocLJ.c

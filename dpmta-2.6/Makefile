@@ -11,14 +11,14 @@
 # for other platforms.
 #
 #
-# RCS Info: $Id: Makefile,v 1.1 1997/09/05 19:41:08 jim Exp $
+# RCS Info: $Id: Makefile,v 1.2 1997/09/12 22:56:10 jim Exp $
 #
 ################################################################
 
 
-MAKE   = make
+MAKE   = gmake
 SHELL  = /bin/sh
-CC     = cc
+CC     = cc -O
 AR     = ar
 RM     = rm -f
 
@@ -26,10 +26,8 @@ RM     = rm -f
 # specify PVM envronmental variables.  PVM_HOME is the location
 # where the executables and libraries will be placed.
 
-#PVM_ROOT = /usr/local/pvm3
-PVM_ROOT = /opt/pvm/pvm3
-
-PVM_HOME = $(HOME)/pvm3
+PVM_ROOT = ../../pvm3
+PVM_HOME = ../../pvm3
 
 
 # set the compile time flags for the master and slave
@@ -65,7 +63,7 @@ PVM_HOME = $(HOME)/pvm3
 #                    need parallel-piped regions.
 #
 
-DFLAGS = -DDATADUMP -DPVMHOMO -DTIME 
+DFLAGS = -DDATADUMP
 
 
 ################################################################
@@ -74,7 +72,16 @@ DFLAGS = -DDATADUMP -DPVMHOMO -DTIME
 #
 ################################################################
 
-default: solaris
+default: converse
+
+
+converse:
+	echo this is charm $(CHARM)
+	(cd mpole; $(MAKE) libmpole.a CHARM=$(CHARM) \
+	   CC="$(CC)" DFLAGS="-Ae -Wp,-H500000" )
+	(cd src; $(MAKE) -f Makefile.converse libdpmta2.a \
+           CHARM=$(CHARM) PVM_ARCH=HPPA PVM_ROOT=$(PVM_ROOT) PVM_HOME=$(PVM_HOME) \
+           CC="$(CC)" MAKE=gmake DFLAGS="$(DFLAGS) -Ae -Wp,-H500000" OSLIBS="" )
 
 
 solaris:
@@ -201,7 +208,6 @@ sgi-ser:
 clean: 
 	( cd mpole; $(MAKE) clean )
 	( cd src; $(MAKE) clean )
-	( cd doc; $(MAKE) clean )
 
 paper: 
 	( cd doc; $(MAKE) )

@@ -22,12 +22,15 @@
 *
 */
 
-static char rcsid[]="$Id: dpmta_test5.c,v 1.1 1997/09/05 19:42:14 jim Exp $";
+static char rcsid[]="$Id: dpmta_test5.c,v 1.2 1997/09/12 22:56:38 jim Exp $";
 
 /*
  * revision history:
  *
  * $Log: dpmta_test5.c,v $
+ * Revision 1.2  1997/09/12 22:56:38  jim
+ * Modifications to work with converse pvm.
+ *
  * Revision 1.1  1997/09/05 19:42:14  jim
  * Original distribution.
  *
@@ -43,7 +46,7 @@ static char rcsid[]="$Id: dpmta_test5.c,v 1.1 1997/09/05 19:42:14 jim Exp $";
 /* include files */
 #include <stdio.h>
 #include <stdlib.h>
-#include "pvm3.h"
+#include "pvmc.h"
 #include "dpmta.h"
 
 main( int argc, char *argv[] )

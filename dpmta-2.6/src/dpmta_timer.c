@@ -8,12 +8,15 @@
 *
 */
 
-static char rcsid[] = "$Id: dpmta_timer.c,v 1.1 1997/09/05 19:42:16 jim Exp $";
+static char rcsid[] = "$Id: dpmta_timer.c,v 1.2 1997/09/12 22:56:39 jim Exp $";
 
 /*
  * Revision history:
  *
  * $Log: dpmta_timer.c,v $
+ * Revision 1.2  1997/09/12 22:56:39  jim
+ * Modifications to work with converse pvm.
+ *
  * Revision 1.1  1997/09/05 19:42:16  jim
  * Original distribution.
  *
@@ -45,7 +48,7 @@ static char rcsid[] = "$Id: dpmta_timer.c,v 1.1 1997/09/05 19:42:16 jim Exp $";
 #include "dpmta_slave.h"
 #include "dpmta_timer.h"
 #ifndef SERIAL
-#include "pvm3.h"
+#include "pvmc.h"
 #include "dpmta_pvm.h"
 #endif
 
