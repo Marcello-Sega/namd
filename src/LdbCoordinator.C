@@ -28,8 +28,8 @@ class manheap;
 class maxheap;
 
 #define DEBUG_LEVEL 4
-#define TIMER_FNC()   CmiTimer()
 
+#define TIMER_FNC()   CmiTimer()
 #define NO_IDLE_COMPUTATION
 
 // static initialization
@@ -61,7 +61,7 @@ LdbCoordinator::LdbCoordinator(InitMsg *msg)
     CharmExit();
   }
 
-  first_ldbcycle = TRUE;
+  firstLdbCycle = true;
   nLocalComputes = nLocalPatches = 0;
   computeStartTime = computeTotalTime = (double *)NULL;
   patchNAtoms = (int *) NULL;
@@ -101,8 +101,11 @@ LdbCoordinator::~LdbCoordinator(void)
 
 void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap)
 {
+  const SimParameters *simParams = Node::Object()->simParameters;
+
   //  DebugM(10,"stepsPerLdbCycle initialized\n");
-  stepsPerLdbCycle = (Node::Object()->simParameters)->ldbStepsPerCycle;
+  stepsPerLdbCycle = simParams->ldbPeriod;
+  firstLdbStep = simParams->firstLdbStep;
 
   computeMap = cMap;
   patchMap = pMap;
@@ -160,10 +163,10 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap)
 
   // Fixup to take care of the extra timestep at startup
   // This is pretty ugly here, but it makes the count correct
-  if (first_ldbcycle)
+  if (firstLdbCycle)
   {
-    nLdbSteps = 1 + LDB_START_STEP;
-    first_ldbcycle = FALSE;
+    nLdbSteps = 1 + firstLdbStep;
+    firstLdbCycle = false;
   }
   else nLdbSteps = stepsPerLdbCycle;
 
@@ -352,30 +355,23 @@ void LdbCoordinator::processStatistics(void)
 
   const int numProcessors = Node::Object()->numNodes();
   const int numPatches = patchMap->numPatches();
+  const SimParameters *simParams = Node::Object()->simParameters;
 
   const int nMoveableComputes = buildData();
   
-  char *algChoice = "RefineOnly"; 
+  Rebalancer *rebalancer;
 
-  if (strcmp(algChoice,"RefineOnly") == 0)
+  if (simParams->ldbStrategy == LDBSTRAT_REFINEONLY)
   {
-    new RefineOnly(computeArray,patchArray,processorArray,
-		   nMoveableComputes, numPatches, numProcessors);
+    rebalancer = new RefineOnly(computeArray,patchArray,processorArray,
+				nMoveableComputes, numPatches, numProcessors);
   } 
-  else if (strcmp(algChoice,"Alg7") == 0)
+  else if (simParams->ldbStrategy == LDBSTRAT_ALG7)
   {
-    new Alg7(computeArray,patchArray,processorArray,
-	     nMoveableComputes, numPatches, numProcessors);
+    rebalancer = new Alg7(computeArray,patchArray,processorArray,
+			  nMoveableComputes, numPatches, numProcessors);
   }
-//   else if (algChoice == "Alg1")
-//     Alg1::Alg1(computeArray,patchArray,processorArray,
-//       numComputes, numPatches, numProcessors);
-//   else if (algChoice == "Alg4")
-//     Alg4::Alg4(computeArray,patchArray,processorArray,
-//       numComputes, numPatches, numProcessors);
-//   else if (algChoice == "Alg1")
-//     Alg7::Alg7(computeArray,patchArray,processorArray,
-//       numComputes, numPatches, numProcessors);
+  delete rebalancer;
 
   // 0) Rebuild ComputeMap using computeMap->setNewNode()
   int i;

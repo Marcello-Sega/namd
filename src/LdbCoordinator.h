@@ -34,7 +34,6 @@ class ComputeMap;
 class Sequencer;
 class InitMsg;
 
-enum {LDB_START_STEP = 4};
 enum {LDB_PATCHES = 1024};
 enum {LDB_COMPUTES = 25000};
 enum {COMPUTEMAX = 25000};
@@ -107,8 +106,9 @@ private:
   Sequencer **sequencerThreads;
   double *computeStartTime;
   double *computeTotalTime;
-  int first_ldbcycle;
+  Boolean firstLdbCycle;
   int nLdbSteps;
+  int firstLdbStep;
 
   LdbStatsMsg **statsMsgs;
   FILE *ldbStatsFP;
@@ -130,11 +130,10 @@ inline int LdbCoordinator::balanceNow(int timestep)
     ( (node->numNodes() != 1) 
       && (simParams->ldbStrategy != LDBSTRAT_NONE) 
       && (timestep < numberOfSteps)
-      && (timestep >= LDB_START_STEP)
-      && (((timestep - LDB_START_STEP) % simParams->ldbStepsPerCycle) == 0));
-  
-
+      && (timestep >= firstLdbStep)
+      && (((timestep - firstLdbStep) % simParams->ldbPeriod) == 0));
 }
+
 #endif // LDBCOORDINATOR_H
 
 
@@ -143,12 +142,16 @@ inline int LdbCoordinator::balanceNow(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1997/04/16 22:12:17 $
+ *	$Revision: 1.11 $	$Date: 1997/04/16 23:44:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: LdbCoordinator.h,v $
+ * Revision 1.11  1997/04/16 23:44:03  brunner
+ * Put ldbStrategy={none|refineonly|alg7}, ldbPeriod, and firstLdbStep
+ * in SimParameters.
+ *
  * Revision 1.10  1997/04/16 22:12:17  brunner
  * Fixed an LdbCoordinator bug, and cleaned up timing and Ldb output some.
  *

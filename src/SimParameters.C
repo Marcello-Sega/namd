@@ -11,7 +11,7 @@
  *
  *	$RCSfile: SimParameters.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1997/04/16 22:12:20 $
+ *	$Revision: 1.1014 $	$Date: 1997/04/16 23:44:04 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,10 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1014  1997/04/16 23:44:04  brunner
+ * Put ldbStrategy={none|refineonly|alg7}, ldbPeriod, and firstLdbStep
+ * in SimParameters.
+ *
  * Revision 1.1013  1997/04/16 22:12:20  brunner
  * Fixed an LdbCoordinator bug, and cleaned up timing and Ldb output some.
  *
@@ -357,7 +361,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1013 1997/04/16 22:12:20 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1014 1997/04/16 23:44:04 brunner Exp $";
 
 
 #include "ckdefs.h"
@@ -805,14 +809,15 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.require("eFieldOn", "eField", "Electric field vector", &eField);
    
    ///////////////  Load balance options
-   opts.optional("main", "ldbstrategy", "Load balancing strategy",
+   opts.optional("main", "ldbStrategy", "Load balancing strategy",
 		 loadStrategy);
-   opts.optional("ldbstrategy", "ldbstepspercycle",
-		 "steps between load balancing", &ldbStepsPerCycle);
-   opts.range("ldbstepspercycle", POSITIVE);
-   opts.optional("ldbstrategy", "ldbsendstep", "when to send load stats",
-		 &ldbSendStep);
-   opts.range("ldbsendstep", POSITIVE);
+   opts.optional("ldbStrategy", "ldbPeriod",
+		 "steps between load balancing", &ldbPeriod);
+   opts.range("ldbPeriod", POSITIVE);
+   opts.optional("ldbStrategy", "firstLdbStep", 
+		 "when to start load balancing",
+		 &firstLdbStep);
+   opts.range("firstLdbStep", POSITIVE);
 
    //////  MDComm options
 #ifdef MDCOMM
@@ -1459,51 +1464,20 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    }
 
    //  Set up load balancing variables
-   if (opts.defined("ldbstrategy"))
+   if (opts.defined("ldbStrategy"))
    {
-	//  Set default values
-	if (!opts.defined("ldbsendstep"))
-	{
-		ldbSendStep=ldbStepsPerCycle-1;
-	}
-
-	if (!opts.defined("ldbStepsPerCycle"))
-	{
-		ldbStepsPerCycle=4*stepsPerCycle;
-	}
-
-	//  Check to make things look OK
-	if (ldbStepsPerCycle % stepsPerCycle != 0)
-	{
-		NAMD_die("Number of steps per load balance cycle must be a multiple of stepsPerCycle");
-	}
-
-	if (ldbStepsPerCycle < stepsPerCycle)
-	{
-		NAMD_die("Number of steps per load balance cycle must be at least stepsPerCycle");
-	}
-
-	if (ldbSendStep >= ldbStepsPerCycle )
-	{
-		NAMD_die("ldbSendStep must be less than ldbStepsPerCycle");
-	}
-
 	//  Assign the load balancing strategy
 	if (strcasecmp(loadStrategy, "none") == 0)
 	{
 	    ldbStrategy=LDBSTRAT_NONE;
 	}
-	else if (strcasecmp(loadStrategy, "random") == 0)
+	else if (strcasecmp(loadStrategy, "refineonly") == 0)
 	{
-	    ldbStrategy=LDBSTRAT_RANDOM;
+	    ldbStrategy=LDBSTRAT_REFINEONLY;
 	}
-	else if (strcasecmp(loadStrategy, "nolocality") == 0)
+	else if (strcasecmp(loadStrategy, "alg7") == 0)
 	{
-	    ldbStrategy=LDBSTRAT_NOLOCAL;
-	}
-	else if (strcasecmp(loadStrategy, "bisection") == 0)
-	{
-	    ldbStrategy=LDBSTRAT_RBISEC;
+	    ldbStrategy=LDBSTRAT_ALG7;
 	}
 	else if (strcasecmp(loadStrategy, "other") == 0)
 	{
@@ -1513,12 +1487,23 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 	{
 	    NAMD_die("Unknown ldbStrategy selected");
 	}
+
+	if (!opts.defined("ldbPeriod"))
+	{
+		ldbPeriod=10*stepsPerCycle;
+	}
+
+	//  Set default values
+	if (!opts.defined("firstLdbStep"))
+	{
+		firstLdbStep=ldbPeriod;
+	}
    }
    else
    {
 	ldbStrategy=LDBSTRAT_NONE;
-	ldbStepsPerCycle=4*stepsPerCycle;
-	ldbSendStep=ldbStepsPerCycle-1;
+	ldbPeriod=stepsPerCycle;
+	firstLdbStep=ldbPeriod;
    }
 
 #ifdef MDCOMM
@@ -1675,24 +1660,19 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
    if (ldbStrategy==LDBSTRAT_NONE)  {
      iout << iINFO << "LOAD BALANCE STRATEGY  none\n";
-   } else if (ldbStrategy==LDBSTRAT_RANDOM)  {
-     iout << iINFO << "LOAD BALANCE STRATEGY  random\n";
-     iout << iINFO << "STEPS PER LDB CYCLE    " << ldbStepsPerCycle << "\n";
-     iout << iINFO << "SEND LDB TIMESTEP      " << ldbSendStep << endi;
-   } else if (ldbStrategy==LDBSTRAT_NOLOCAL)  {
-     iout << iINFO << "LOAD BALANCE STRATEGY  nolocality\n";
-     iout << iINFO << "STEPS PER LDB CYCLE    " << ldbStepsPerCycle << "\n";
-     iout << iINFO << "SEND LDB TIMESTEP      " << ldbSendStep << endi;
-   } else if (ldbStrategy==LDBSTRAT_RBISEC)  {
-     iout << iINFO << "LOAD BALANCE STRATEGY  bisection\n";
-     iout << iINFO << "STEPS PER LDB CYCLE    " << ldbStepsPerCycle << "\n";
-     iout << iINFO << "SEND LDB TIMESTEP      " << ldbSendStep << "\n";
-   } else if (ldbStrategy==LDBSTRAT_OTHER)  {
-     iout << iINFO << "LOAD BALANCE STRATEGY  other\n";
-     iout << iINFO << "STEPS PER LDB CYCLE    " << ldbStepsPerCycle << "\n";
-     iout << iINFO << "SEND LDB TIMESTEP      " << ldbSendStep << endi;
+   } else {
+     if (ldbStrategy==LDBSTRAT_REFINEONLY) {
+       iout << iINFO << "LOAD BALANCE STRATEGY  Refine-only\n";
+     } else if (ldbStrategy==LDBSTRAT_ALG7)  {
+       iout << iINFO << "LOAD BALANCE STRATEGY  Alg7\n";
+     } else if (ldbStrategy==LDBSTRAT_OTHER)  {
+       iout << iINFO << "LOAD BALANCE STRATEGY  Other\n";
+     }
+     iout << iINFO << "LDB PERIOD             " << ldbPeriod << " steps\n";
+     iout << iINFO << "FIRST LDB TIMESTEP     " << firstLdbStep 
+	  << "\n" << endi;
    }
-
+   
    if (initialTemp < 0)
    {
 	current = config->find("velocities");
@@ -2201,7 +2181,7 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
 	}
 
 	msg->put(dt).put(N).put(stepsPerCycle);
-	msg->put(ldbStrategy).put(ldbStepsPerCycle).put(ldbSendStep);
+	msg->put(ldbStrategy).put(ldbPeriod).put(firstLdbStep);
 	msg->put(initialTemp).put(comMove);
 	msg->put(dielectric).put(exclude).put(scale14);
 	msg->put(dcdFrequency).put(velDcdFrequency).put(vmdFrequency);
@@ -2282,8 +2262,8 @@ void SimParameters::receive_SimParameters(Message *msg)
 	msg->get(N);
 	msg->get(stepsPerCycle);
 	msg->get(ldbStrategy);
-	msg->get(ldbStepsPerCycle);
-	msg->get(ldbSendStep);
+	msg->get(ldbPeriod);
+	msg->get(firstLdbStep);
 	msg->get(initialTemp);
 	msg->get(comMove);
 	msg->get(dielectric);
@@ -2410,12 +2390,16 @@ void SimParameters::receive_SimParameters(Message *msg)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1997/04/16 22:12:20 $
+ *	$Revision: 1.1014 $	$Date: 1997/04/16 23:44:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1014  1997/04/16 23:44:04  brunner
+ * Put ldbStrategy={none|refineonly|alg7}, ldbPeriod, and firstLdbStep
+ * in SimParameters.
+ *
  * Revision 1.1013  1997/04/16 22:12:20  brunner
  * Fixed an LdbCoordinator bug, and cleaned up timing and Ldb output some.
  *

@@ -55,9 +55,8 @@ typedef int  MTSChoices;
 //  The following definitions are used to distinguish between load
 //  balancing strategies
 #define LDBSTRAT_NONE    0
-#define LDBSTRAT_RANDOM  1
-#define LDBSTRAT_NOLOCAL 2
-#define LDBSTRAT_RBISEC  3
+#define LDBSTRAT_REFINEONLY 1
+#define LDBSTRAT_ALG7 2
 #define LDBSTRAT_OTHER  99
 
 // The following definitions are used to distinguish between patch-splitting
@@ -94,9 +93,9 @@ public:
 					//  FMA execution
         BigReal fmaTheta;	        //  DPMTA theta value
 	int ldbStrategy;                //  What type of load balancing
-	int ldbStepsPerCycle;           //  How often to do load balancing
-	int ldbSendStep;		//  When to send the stats, should
-					//  be less than ldbStepsPerCycle
+	int ldbPeriod;                  //  How often to do load balancing
+	int firstLdbStep;		//  What step to do the first 
+                                        //  load-balance on.
 	BigReal initialTemp;   		//  Initial temperature for the 
 					//  simulation
 	Bool comMove;     		//  Should the center of mass be 
@@ -305,13 +304,17 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/04/08 21:08:51 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1010 $	$Date: 1997/04/16 23:44:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1010  1997/04/16 23:44:05  brunner
+ * Put ldbStrategy={none|refineonly|alg7}, ldbPeriod, and firstLdbStep
+ * in SimParameters.
+ *
  * Revision 1.1009  1997/04/08 21:08:51  jim
  * Contant pressure now correct on multiple nodes, should work with MTS.
  *
