@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.34 1997/01/10 17:41:25 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.35 1997/01/10 21:33:22 milind Exp $";
 
 
 #include "ckdefs.h"
@@ -101,7 +101,7 @@ Node::Node(GroupInitMsg *msg)
 
   // Put num<name of BOC>Startup here
   numNodeStartup = CNumPes();
-
+#if 0
   Message *conv_msg=NULL;
   conv_msg = new Message;
   comm->send_method(Communicate::NOW);
@@ -111,6 +111,7 @@ Node::Node(GroupInitMsg *msg)
     int rc = comm->send(conv_msg,0,DISTRIBTAG);
     DebugM(1,"Sent checkin to node 0, rc=" << rc << "\n");
   }
+#endif
 }
 
 //----------------------------------------------------------------------
@@ -190,6 +191,7 @@ void Node::startup(InitMsg *msg)
   if ( CMyPe() ) {
      conv_msg = new Message;
      conv_msg->put(1);
+     comm->send_method(Communicate::NOW);
      DebugM(1,"Sending checkin to node 0 from node " << iPE << "\n");
      comm->send(conv_msg,0,DISTRIBTAG);
      DebugM(1,"Sent checkin to node 0 from node " << iPE << "\n");
@@ -200,8 +202,8 @@ void Node::startup(InitMsg *msg)
        do
        {
          conv_msg = comm->receive(i,DISTRIBTAG);
-         delete conv_msg;
        } while (conv_msg == NULL);
+       delete conv_msg;
        DebugM(1,"Received checkin from node " << i << "\n");
      }
      DebugM(1,"Received all checkins, messaging startup1()\n");
@@ -412,13 +414,16 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.34 $	$Date: 1997/01/10 17:41:25 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.35 $	$Date: 1997/01/10 21:33:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.35  1997/01/10 21:33:22  milind
+ * Added some debugging statements
+ *
  * Revision 1.34  1997/01/10 17:41:25  jim
  * *** empty log message ***
  *

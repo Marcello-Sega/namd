@@ -97,6 +97,7 @@ void ComputeHomeTuples<T>::mapReady() {
     }
     DebugM(1, "ComputeHomeTuples::mapReady() - tupleList size = " << tupleList.size() << endl );
   }
+  DebugM(1, "ComputeHomeTuples::mapReady() - iterated over home patches to get tuples" << endl);
 
   // Resolve all atoms in tupleList to correct PatchList element and index
   ResizeArrayIter<T> al(tupleList);

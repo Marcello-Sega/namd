@@ -54,10 +54,10 @@ void ComputeMgr:: createComputes(ComputeMap *map)
   DebugM(1,"---------------------------------------\n");
   DebugM(1,"---------------------------------------\n");
 
-  DebugM(1,"nComputes = " << map->nComputes << '\n');
-  DebugM(1,"nPatchBased = " << map->nPatchBased << '\n');
-  DebugM(1,"nAtomBased = " << map->nAtomBased << '\n');
-  DebugM(1,"nAllocated = " << map->nComputes << '\n');
+  DebugM(3,"nComputes = " << map->nComputes << '\n');
+  DebugM(3,"nPatchBased = " << map->nPatchBased << '\n');
+  DebugM(3,"nAtomBased = " << map->nAtomBased << '\n');
+  DebugM(3,"nAllocated = " << map->nComputes << '\n');
   DebugM(2,"createComputes 1: looping " << map->nComputes << "\n");
   for(int i=0; i < map->nComputes; i++)
   {
@@ -103,9 +103,9 @@ void ComputeMgr:: createComputes(ComputeMap *map)
 	c = new ComputeNonbondedExcls(i);
 	DebugM(3,"ComputeNonbondedExcls created.\n");
 	map->registerCompute(i,c);
-	DebugM(2,"ComputeNonbondedExcls registered.\n");
+	DebugM(3,"ComputeNonbondedExcls registered.\n");
 	c->mapReady();
-	DebugM(2,"ComputeNonbondedExcls ready.\n");
+	DebugM(3,"ComputeNonbondedExcls ready.\n");
 	break;
       case computeBondsType:
 	c = new ComputeBonds(i);
@@ -158,8 +158,8 @@ void ComputeMgr:: enqueueWork(Compute *compute)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1996/12/17 08:59:00 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.11 $	$Date: 1997/01/10 21:33:22 $
  *
  ***************************************************************************
  * REVISION HISTORY:
