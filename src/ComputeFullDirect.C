@@ -29,11 +29,13 @@
 ComputeFullDirect::ComputeFullDirect(ComputeID c) : ComputeHomePatches(c)
 {
   reduction->Register(REDUCTION_ELECT_ENERGY);
+  reduction->Register(REDUCTION_VIRIAL);
 }
 
 ComputeFullDirect::~ComputeFullDirect()
 {
   reduction->unRegister(REDUCTION_ELECT_ENERGY);
+  reduction->unRegister(REDUCTION_VIRIAL);
 }
 
 
@@ -50,6 +52,7 @@ void ComputeFullDirect::doWork()
       AtomProperties *a = (*ap).atomBox->open();
       Results *r = (*ap).forceBox->open();
       reduction->submit(fake_seq, REDUCTION_ELECT_ENERGY, 0.);
+      reduction->submit(fake_seq, REDUCTION_VIRIAL, 0.0);
       ++fake_seq;
       (*ap).positionBox->close(&x);
       (*ap).atomBox->close(&a);
@@ -123,6 +126,7 @@ void ComputeFullDirect::doWork()
   // send out reductions
   DebugM(4,"Full-electrostatics energy: " << electEnergy << "\n");
   reduction->submit(fake_seq, REDUCTION_ELECT_ENERGY, electEnergy);
+  reduction->submit(fake_seq, REDUCTION_VIRIAL, electEnergy);  // TRUE! -JCP
   ++fake_seq;
 
   // add in forces

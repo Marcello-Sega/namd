@@ -134,6 +134,7 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   usePBC = FALSE;	// assume not...
 
   reduction->Register(REDUCTION_ELECT_ENERGY);
+  reduction->Register(REDUCTION_VIRIAL);
 
   //  NOTE that the theta value is hardwired to the value of 0.715
   //  as per the recommendation of the Duke developers
@@ -256,6 +257,7 @@ ComputeDPMTA::~ComputeDPMTA()
   DebugM(2,"DPMTA exited\n");
 
   reduction->unRegister(REDUCTION_ELECT_ENERGY);
+  reduction->unRegister(REDUCTION_VIRIAL);
 }
 
 
@@ -282,6 +284,7 @@ void ComputeDPMTA::doWork()
       (*ap).positionBox->close(&x);
     }
     reduction->submit(fake_seq, REDUCTION_ELECT_ENERGY, 0.0);
+    reduction->submit(fake_seq, REDUCTION_VIRIAL, 0.0);
     ++fake_seq;
     return;
   }
@@ -400,6 +403,7 @@ void ComputeDPMTA::doWork()
   potential *= 0.5;
   DebugM(4,"Full-electrostatics energy: " << potential << "\n");
   reduction->submit(fake_seq, REDUCTION_ELECT_ENERGY, potential);
+  reduction->submit(fake_seq, REDUCTION_VIRIAL, potential);  // TRUE! -JCP
   ++fake_seq;
 
   // 5. clean-up
