@@ -90,7 +90,8 @@ void all_init(int argc, char **argv)
 void slave_init(int argc, char **argv)
 {
   all_init(argc, argv);
-  CsdScheduler(-1);
+  if (CkMyRank() < CkMyNodeSize()) 	// skip the communication thread
+    CsdScheduler(-1);
 }
 
 // called by main on one or all procs
