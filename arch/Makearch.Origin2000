@@ -29,7 +29,7 @@ DFLAGS= -D_SGI_MP_SOURCE -O3 -r10000 -INLINE:all
 #####
 # definitions for Charm routines
 #####
-CHARM =/Home/p1/milind/charm/origin2000
+CHARM =/Projects/namd2/charm/origin2000
 
 ######
 ## definitions for TCL interface

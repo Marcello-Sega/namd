@@ -39,7 +39,7 @@ PVM_ARCH = HPPA
 #####
 # definitions for Charm routines
 #####
-CHARM = /Projects/l1/namd.2.0/charm-96.12.09/charm/net-hp-cc
+CHARM = /Projects/namd2/charm/net-hp-cc
 
 ######
 ## definitions for TCL interface
