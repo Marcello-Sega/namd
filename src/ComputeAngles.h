@@ -16,8 +16,8 @@
 #define COMPUTEANGLE_H
 
 #include "ComputeHomeTuples.h"
+#include "ReductionMgr.h"
 
-class ReductionMgr;
 class Molecule;
 
 class AngleElem {
@@ -40,6 +40,7 @@ public:
   }
 
   enum { angleEnergyIndex, virialIndex, reductionDataSize };
+  enum { reductionChecksumLabel = REDUCTION_ANGLE_CHECKSUM };
   static void registerReductionData(ReductionMgr*);
   static void submitReductionData(BigReal*,ReductionMgr*,int);
   static void unregisterReductionData(ReductionMgr*);
@@ -69,12 +70,15 @@ public:
  *
  *	$RCSfile: ComputeAngles.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/10/17 17:16:43 $
+ *	$Revision: 1.1007 $	$Date: 1998/11/01 23:25:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.h,v $
+ * Revision 1.1007  1998/11/01 23:25:44  jim
+ * Added basic correctness checking: atom counts, etc.
+ *
  * Revision 1.1006  1997/10/17 17:16:43  jim
  * Switched from hash tables to checklists, eliminated special exclusion code.
  *

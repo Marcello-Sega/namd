@@ -38,6 +38,7 @@ Sequencer::Sequencer(HomePatch *p) :
 {
     broadcast = new ControllerBroadcasts;
 
+    reduction->Register(REDUCTION_ATOM_CHECKSUM);
     reduction->Register(REDUCTION_KINETIC_ENERGY);
     reduction->Register(REDUCTION_INT_KINETIC_ENERGY);
     reduction->Register(REDUCTION_BC_ENERGY); // in case not used elsewhere
@@ -66,6 +67,7 @@ Sequencer::~Sequencer(void)
 {
     delete broadcast;
 
+    reduction->unRegister(REDUCTION_ATOM_CHECKSUM);
     reduction->unRegister(REDUCTION_KINETIC_ENERGY);
     reduction->unRegister(REDUCTION_INT_KINETIC_ENERGY);
     reduction->unRegister(REDUCTION_BC_ENERGY); // in case not used elsewhere
@@ -363,6 +365,7 @@ void Sequencer::minimizationQuenchVelocity(void)
 
 void Sequencer::submitReductions(int step)
 {
+  reduction->submit(step,REDUCTION_ATOM_CHECKSUM,patch->getNumAtoms());
   reduction->submit(step,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
   reduction->submit(step,REDUCTION_BC_ENERGY,0.);
   reduction->submit(step,REDUCTION_SMD_ENERGY,0.);  
@@ -476,12 +479,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1049 $     $Date: 1998/10/27 16:27:29 $
+ *      $Revision: 1.1050 $     $Date: 1998/11/01 23:25:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1050  1998/11/01 23:25:49  jim
+ * Added basic correctness checking: atom counts, etc.
+ *
  * Revision 1.1049  1998/10/27 16:27:29  jim
  * Fixed busted velocity rescaling (was doing nothing).
  *

@@ -16,7 +16,8 @@
 #define COMPUTEDIHEDRALS_H
 
 #include "ComputeHomeTuples.h"
-class ReductionMgr;
+#include "ReductionMgr.h"
+
 class Molecule;
 
 class DihedralElem {
@@ -39,6 +40,7 @@ public:
   }
 
   enum { dihedralEnergyIndex, virialIndex, reductionDataSize };
+  enum { reductionChecksumLabel = REDUCTION_DIHEDRAL_CHECKSUM };
   static void registerReductionData(ReductionMgr*);
   static void submitReductionData(BigReal*,ReductionMgr*,int);
   static void unregisterReductionData(ReductionMgr*);
@@ -68,12 +70,15 @@ public:
  *
  *	$RCSfile: ComputeDihedrals.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/10/17 17:16:45 $
+ *	$Revision: 1.1004 $	$Date: 1998/11/01 23:25:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDihedrals.h,v $
+ * Revision 1.1004  1998/11/01 23:25:45  jim
+ * Added basic correctness checking: atom counts, etc.
+ *
  * Revision 1.1003  1997/10/17 17:16:45  jim
  * Switched from hash tables to checklists, eliminated special exclusion code.
  *

@@ -16,7 +16,8 @@
 #define COMPUTEIMPROPERS_H
 
 #include "ComputeHomeTuples.h"
-class ReductionMgr;
+#include "ReductionMgr.h"
+
 class Molecule;
 
 class ImproperElem {
@@ -38,6 +39,7 @@ public:
     return 0x7FFFFFFF &((atomID[0]<<24) + (atomID[1]<<16) + (atomID[2]<<8) + atomID[3]);
   }
   enum { improperEnergyIndex, virialIndex, reductionDataSize };
+  enum { reductionChecksumLabel = REDUCTION_IMPROPER_CHECKSUM };
   static void registerReductionData(ReductionMgr*);
   static void submitReductionData(BigReal*,ReductionMgr*,int);
   static void unregisterReductionData(ReductionMgr*);
@@ -103,12 +105,15 @@ public:
  *
  *	$RCSfile: ComputeImpropers.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/10/17 17:16:48 $
+ *	$Revision: 1.1004 $	$Date: 1998/11/01 23:25:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeImpropers.h,v $
+ * Revision 1.1004  1998/11/01 23:25:46  jim
+ * Added basic correctness checking: atom counts, etc.
+ *
  * Revision 1.1003  1997/10/17 17:16:48  jim
  * Switched from hash tables to checklists, eliminated special exclusion code.
  *

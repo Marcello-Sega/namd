@@ -15,13 +15,9 @@
 #include "common.h"
 #include "NamdTypes.h"
 #include "Molecule.h"
-
-//class ReductionMgr;
-//class Molecule;
-
+#include "ReductionMgr.h"
 
 class TuplePatchElem;
-class ReductionMgr;
 
 class BondElem {
 public:
@@ -41,6 +37,7 @@ public:
     Index bondType;
 
   enum { bondEnergyIndex, virialIndex, reductionDataSize };
+  enum { reductionChecksumLabel = REDUCTION_BOND_CHECKSUM };
   static void registerReductionData(ReductionMgr*);
   static void submitReductionData(BigReal*,ReductionMgr*,int);
   static void unregisterReductionData(ReductionMgr*);
@@ -72,12 +69,15 @@ public:
  *
  *	$RCSfile: ComputeBonds.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/10/17 17:16:44 $
+ *	$Revision: 1.1005 $	$Date: 1998/11/01 23:25:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeBonds.h,v $
+ * Revision 1.1005  1998/11/01 23:25:44  jim
+ * Added basic correctness checking: atom counts, etc.
+ *
  * Revision 1.1004  1997/10/17 17:16:44  jim
  * Switched from hash tables to checklists, eliminated special exclusion code.
  *

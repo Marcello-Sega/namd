@@ -11,6 +11,7 @@
 
 typedef enum
 {
+ // energy
   REDUCTION_ANGLE_ENERGY,
   REDUCTION_BOND_ENERGY,
   REDUCTION_DIHEDRAL_ENERGY,
@@ -20,6 +21,8 @@ typedef enum
   REDUCTION_INT_KINETIC_ENERGY,
   REDUCTION_LJ_ENERGY,
   REDUCTION_BC_ENERGY,
+  REDUCTION_SMD_ENERGY,
+ // pressure
   REDUCTION_VIRIAL_NORMAL,
   REDUCTION_VIRIAL_NBOND,
   REDUCTION_VIRIAL_SLOW,
@@ -29,13 +32,23 @@ typedef enum
   REDUCTION_INT_VIRIAL_NORMAL,
   REDUCTION_INT_VIRIAL_NBOND,
   REDUCTION_INT_VIRIAL_SLOW,
-  REDUCTION_SMD_ENERGY,
+ // momentum
   REDUCTION_MOMENTUM_X,
   REDUCTION_MOMENTUM_Y,
   REDUCTION_MOMENTUM_Z,
   REDUCTION_ANGULAR_MOMENTUM_X,
   REDUCTION_ANGULAR_MOMENTUM_Y,
   REDUCTION_ANGULAR_MOMENTUM_Z,
+ // checksum
+  REDUCTION_ATOM_CHECKSUM,
+  REDUCTION_COMPUTE_CHECKSUM,
+  REDUCTION_BOND_CHECKSUM,
+  REDUCTION_ANGLE_CHECKSUM,
+  REDUCTION_DIHEDRAL_CHECKSUM,
+  REDUCTION_IMPROPER_CHECKSUM,
+  REDUCTION_EXCLUSION_CHECKSUM,
+  REDUCTION_MARGIN_VIOLATIONS,
+ // semaphore (must be last)
   REDUCTION_MAX_RESERVED
 } ReductionTag;
 
@@ -129,12 +142,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1998/06/18 14:48:04 $
+ *	$Revision: 1.1012 $	$Date: 1998/11/01 23:25:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.h,v $
+ * Revision 1.1012  1998/11/01 23:25:49  jim
+ * Added basic correctness checking: atom counts, etc.
+ *
  * Revision 1.1011  1998/06/18 14:48:04  jim
  * Split virial into NORMAL, NBOND, and SLOW parts to match force classes.
  *

@@ -166,11 +166,13 @@ template <class T, class S> class ComputeHomeTuples : public Compute {
       atomMap = AtomMap::Object();
       reduction = ReductionMgr::Object();
       T::registerReductionData(reduction);
+      reduction->Register((ReductionTag)T::reductionChecksumLabel);
       doLoadTuples = false;
     }
 
     virtual ~ComputeHomeTuples() {
       T::unregisterReductionData(reduction);
+      reduction->unRegister((ReductionTag)T::reductionChecksumLabel);
     }
 
     //======================================================================
@@ -240,14 +242,18 @@ template <class T, class S> class ComputeHomeTuples : public Compute {
     
       BigReal reductionData[T::reductionDataSize];
       for ( int i = 0; i < T::reductionDataSize; ++i ) reductionData[i] = 0;
+      int tupleCount = 0;
     
       // take triplet and pass with tuple info to force eval
       UniqueSetIter<T> al(tupleList);
       for (al = al.begin(); al != al.end(); al++ ) {
         al->computeForce(reductionData);
+        tupleCount += 1;
       }
     
       T::submitReductionData(reductionData,reduction,ap.begin()->p->flags.seq);
+      reduction->submit(ap.begin()->p->flags.seq,
+		(ReductionTag)T::reductionChecksumLabel, (BigReal)tupleCount);
     
       // Close boxes - i.e. signal we are done with Positions and
       // AtomProperties and that we are depositing Forces

@@ -17,6 +17,8 @@
 
 #include "ComputeHomeTuples.h"
 #include "ComputeNonbondedUtil.h"
+#include "ReductionMgr.h"
+
 class Molecule;
 
 class NonbondedExclElem : public ComputeNonbondedUtil {
@@ -28,6 +30,7 @@ public:
   TuplePatchElem *p[size];
   void computeForce(BigReal*);
 
+  enum { reductionChecksumLabel = REDUCTION_EXCLUSION_CHECKSUM };
   static void loadTuplesForAtom(void*, AtomID, Molecule*) {};
   static void getMoleculePointers(Molecule*, int*, int***, Exclusion**);
 
@@ -88,12 +91,15 @@ public:
  *
  *	$RCSfile: ComputeNonbondedExcl.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/10/17 17:16:49 $
+ *	$Revision: 1.1006 $	$Date: 1998/11/01 23:25:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedExcl.h,v $
+ * Revision 1.1006  1998/11/01 23:25:46  jim
+ * Added basic correctness checking: atom counts, etc.
+ *
  * Revision 1.1005  1997/10/17 17:16:49  jim
  * Switched from hash tables to checklists, eliminated special exclusion code.
  *
