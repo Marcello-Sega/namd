@@ -11,11 +11,8 @@
 #ifndef INFOSTREAM_H
 #define INFOSTREAM_H
 
-#include "conv-config.h"
-
-
 #if !defined(WIN32) || defined(__CYGWIN__)
-#if CMK_STL_USE_DOT_H
+#ifndef NO_STRSTREAM_H
 #include <iostream.h>
 #include <strstream.h>
 #else

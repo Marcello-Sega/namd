@@ -10,7 +10,7 @@
 #include "converse.h"
 #include "Node.h"
 #include "common.h"
-#if CMK_STL_USE_DOT_H
+#ifndef NO_STRSTREAM_H
 #include <fstream.h>
 #else
 #include <fstream>

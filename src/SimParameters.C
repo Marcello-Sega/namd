@@ -37,7 +37,7 @@
 #define PATHSEP '/'
 #define PATHSEPSTR "/"
 #endif
-#if CMK_STL_USE_DOT_H
+#ifndef NO_STRSTREAM_H
 #include <fstream.h>
 #else
 #include <fstream>
