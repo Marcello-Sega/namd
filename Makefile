@@ -23,8 +23,8 @@ LIBS = dpmta2/mpole/libmpole.a dpmta2/src/libdpmta2.a pvm3/libpvmc.a
 # definitions for Charm routines
 #####
 CHARM = /Projects/l1/namd.2.0/charm
-CHARMC = /Projects/l1/namd.2.0/charm/bin/charmc $(PURIFY)
-CHARMXI = /Projects/l1/namd.2.0/charm/bin/charmc $(PURIFY)
+CHARMC = $(CHARM)/bin/charmc $(PURIFY)
+CHARMXI = $(CHARM)/bin/charmc $(PURIFY)
 
 #####
 # definitions for (D)PMTA routines
@@ -41,9 +41,14 @@ PVMDIR=pvm3
 PVMLIB=-L$(PVMDIR) -lpvmc
 PVM=-I$(PVMDIR)
 
-#CXXOPTS = -g
-CXXOPTS = -O 
-# CXXOPTS = -O +DAK460 +DSK460
+#####
+## Choose your favorite Compiler options
+####
+#CXXOPTS = -O
+#CXXOPTS = +O3 -G -z 
+#CXXOPTS = -O +DAK460 +DSK460
+CXXOPTS = -g
+
 CXX = CC -Aa -D_HPUX_SOURCE
 INCLUDE = /Projects/l1/namd.2.0/charm/include
 CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(PVM) $(CXXOPTS) $(NOWARN)
@@ -132,7 +137,7 @@ TEMPLATES = \
 
 namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES) $(LIBS)
 	cd $(PVMDIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
-	cd $(DPMTADIR) ; $(MAKE) ; cd ..
+	cd $(DPMTADIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
 	$(CHARMC) -verbose -ld++-option \
 	"-I $(INCLUDE) -I $(SRCDIR) $(CXXOPTS) " \
 	-language charm++ \
