@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1003 1997/02/07 17:39:41 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1004 1997/02/10 08:26:03 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -26,7 +26,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.
 #include "AtomMap.h"
 
 #define MIN_DEBUG_LEVEL 4
-#define  DEBUGM
+// #define  DEBUGM
 #include "Debug.h"
 
 ProxyPatch::ProxyPatch(PatchID pd) : Patch(pd), msgBuffer(NULL)
@@ -117,13 +117,16 @@ void ProxyPatch::sendResults(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyPatch.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/02/07 17:39:41 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/02/10 08:26:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.1004  1997/02/10 08:26:03  jim
+ * Turned off debugging.
+ *
  * Revision 1.1003  1997/02/07 17:39:41  ari
  * More debugging for atomMigration.
  * Using -w on CC got us some minor fixes
