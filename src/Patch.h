@@ -62,7 +62,6 @@ class Patch
      Flags flags;
 
   protected:
-     static PatchMap *patchMap;
 
      const PatchID patchID;
      int           numAtoms;

@@ -26,8 +26,6 @@ typedef ResizeArrayPrimIter<ComputeID> ComputeIDListIter;
 #define MIN_DEBUG_LEVEL 4
 #include "Debug.h"
 
-PatchMap *Patch::patchMap=0;
-
 Patch::Patch(PatchID pd) :
    lattice(flags.lattice),
    patchID(pd), numAtoms(0),
@@ -160,10 +158,11 @@ void Patch::positionsReady(int doneMigration)
          compute_count++;
 	 computeMap->compute(*cid)->patchReady(patchID,doneMigration,seq);
    }
-   if (compute_count == 0 && patchMap->node(patchID) != CkMyPe()) {
+   if (compute_count == 0 && PatchMap::Object()->node(patchID) != CkMyPe()) {
        iout << iINFO << "PATCH_COUNT: Patch " << patchID 
 	    << " on PE " << CkMyPe() <<" home patch " 
-	    << patchMap->node(patchID) << " does not have any computes\n" 
+	    << PatchMap::Object()->node(patchID)
+	    << " does not have any computes\n" 
 	    << endi;
    }
 }
