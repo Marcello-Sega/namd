@@ -274,8 +274,7 @@ void
 ProxyMgr::recvRegisterProxy(RegisterProxyMsg *msg) {
   DebugM(1,"For patch " << msg->patch << " registering proxy on node " << msg->node << " with home patch on node " << CMyPe() << endl);
   HomePatch *homePatch = (HomePatch *)PatchMap::Object()->patch(msg->patch);
-  homePatch->registerProxy(msg);
-  delete msg;
+  homePatch->registerProxy(msg); // message deleted in registerProxy()
 }
 
 void
@@ -290,7 +289,6 @@ ProxyMgr::recvResults(ProxyResultMsg *msg) {
   DebugM(1,"For patch " << msg->patch << " received results from proxy on node " << msg->node << endl);
   HomePatch *home = (HomePatch *) PatchMap::Object()->patch(msg->patch);
   home->receiveResults(msg);
-  delete msg;
 }
 
 void
@@ -340,12 +338,16 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
  *
  *	$RCSfile: ProxyMgr.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/02/13 16:17:18 $
+ *	$Revision: 1.1006 $	$Date: 1997/02/13 23:17:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.1006  1997/02/13 23:17:19  ari
+ * Fixed a final bug in AtomMigration - numatoms in ComputePatchPair.C not
+ * set correctly in atomUpdate()
+ *
  * Revision 1.1005  1997/02/13 16:17:18  ari
  * Intermediate debuging commit - working to fix deep bug in migration?
  *

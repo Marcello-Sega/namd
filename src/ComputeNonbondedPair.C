@@ -15,7 +15,7 @@
 #include "ReductionMgr.h"
 
 #define MIN_DEBUG_LEVEL 5
-#define DEBUGM
+//#define DEBUGM
 #include "Debug.h"
 
 ComputeNonbondedPair::ComputeNonbondedPair(ComputeID c, PatchID pid[], int trans[])
@@ -38,8 +38,8 @@ void ComputeNonbondedPair::doForce(Position* p[2],
                                AtomProperties* a[2])
 {
   DebugM(2,"doForce() called.\n");
-  DebugM(1, numAtoms[0] << " patch 1 atoms and " <<
-	numAtoms[1] << " patch 2 atoms\n");
+  DebugM(5, numAtoms[0] << " patch #1 atoms and " <<
+	numAtoms[1] << " patch #2 atoms\n");
 
   BigReal reductionData[reductionDataSize];
   for ( int i = 0; i < reductionDataSize; ++i ) reductionData[i] = 0;
@@ -78,12 +78,16 @@ void ComputeNonbondedPair::doForce(Position* p[2],
  *
  *	$RCSfile: ComputeNonbondedPair.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:58:10 $
+ *	$Revision: 1.1001 $	$Date: 1997/02/13 23:17:16 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.C,v $
+ * Revision 1.1001  1997/02/13 23:17:16  ari
+ * Fixed a final bug in AtomMigration - numatoms in ComputePatchPair.C not
+ * set correctly in atomUpdate()
+ *
  * Revision 1.1000  1997/02/06 15:58:10  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

@@ -29,7 +29,11 @@ public:
     // read in various input files by invoking
     // proper classes (parameters, molecule etc)
   void startup(char *);   
-  static void finishup(void) { CPrintf("We're Outta Here\n"); CharmExit(); }
+  static void finishup(void) { 
+    CPrintf("We're Outta Here\n"); 
+    CPrintf("WallClock : %f  CPUTime : %f \n", CmiWallTimer(), CmiCpuTimer());
+    CharmExit(); 
+  }
   static void die() { abort(); CharmExit(); }
 
 private:
@@ -48,7 +52,7 @@ private:
  *
  *	$RCSfile: Namd.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/13 16:17:14 $
+ *	$Revision: 1.1002 $	$Date: 1997/02/13 23:17:18 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -57,6 +61,10 @@ private:
  * REVISION HISTORY:
  *
  * $Log: Namd.h,v $
+ * Revision 1.1002  1997/02/13 23:17:18  ari
+ * Fixed a final bug in AtomMigration - numatoms in ComputePatchPair.C not
+ * set correctly in atomUpdate()
+ *
  * Revision 1.1001  1997/02/13 16:17:14  ari
  * Intermediate debuging commit - working to fix deep bug in migration?
  *

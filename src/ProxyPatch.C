@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1005 1997/02/13 16:17:19 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1006 1997/02/13 23:17:20 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -29,10 +29,9 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.
 // #define  DEBUGM
 #include "Debug.h"
 
-ProxyPatch::ProxyPatch(PatchID pd) : Patch(pd), msgBuffer(NULL)
+ProxyPatch::ProxyPatch(PatchID pd) : 
+  Patch(pd), msgBuffer(NULL), msgAllBuffer(NULL)
 {
-  msgBuffer = NULL;
-  msgAllBuffer = NULL;
   ProxyMgr::Object()->registerProxy(patchID);
 }
 
@@ -117,12 +116,16 @@ void ProxyPatch::sendResults(void)
  *
  *	$RCSfile: ProxyPatch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/02/13 16:17:19 $
+ *	$Revision: 1.1006 $	$Date: 1997/02/13 23:17:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.1006  1997/02/13 23:17:20  ari
+ * Fixed a final bug in AtomMigration - numatoms in ComputePatchPair.C not
+ * set correctly in atomUpdate()
+ *
  * Revision 1.1005  1997/02/13 16:17:19  ari
  * Intermediate debuging commit - working to fix deep bug in migration?
  *

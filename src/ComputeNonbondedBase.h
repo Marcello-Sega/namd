@@ -25,7 +25,7 @@
 #include "Molecule.h"
 
 #define MIN_DEBUG_LEVEL 5
-#define DEBUGM
+//#define DEBUGM
 #include "Debug.h"
 
 #endif
@@ -50,6 +50,7 @@ DECL( ; )
 {
   BigReal electEnergy = 0;
   BigReal vdwEnergy = 0;
+  int flag_i=0, flag_j=0;
 
   register const BigReal cutoff2 = ComputeNonbondedUtil:: cutoff2;
   const BigReal dielectric_1 = ComputeNonbondedUtil:: dielectric_1;
@@ -86,8 +87,15 @@ NOEXCL
     register const BigReal p_i_z = p_i.z;
     const AtomProperties a_i = a[I_SUB];
 
+
     Force & f_i = f[I_SUB];
 )
+
+    if (a_i.id == 50) {
+    //  DebugM(5, "AtomID 50: type = " << a_i.type << " mass = " << a_i.mass << 
+    //	" charge = " << a_i.charge << "\n");
+      flag_i = 1;
+    }
 
     const BigReal NOEXCL( M14( kq_i_u ) NOM14( kq_i ) ) EXCL( kq_i ) =
     			COLOUMB * a_i.charge * dielectric_1;
@@ -126,6 +134,9 @@ NOEXCL
 
       const AtomProperties & a_j = a[J_SUB];
 )
+      if (a_j.id == 50) {
+	flag_j=1;
+      }
 
       const LJTable::TableEntry * NOM14( const ) lj_pars = 
 		ljTable->table_val(a_i.type, a_j.type);
@@ -207,6 +218,12 @@ NOEXCL
 
       NOEXCL( const ) Vector f_elec = f_vdw*f;
 
+PAIR(
+      if (flag_i || flag_j) {
+	DebugM(5, "Flagged atoms("<<a_i.id<<","<<a_j.id<<") f_elec = " << f_elec << "\n");
+      }
+)
+
 EXCL
 (
       f_i -= f_elec;
@@ -274,6 +291,7 @@ NOEXCL
       f_j -= f_vdw;
 )
 
+     flag_j = flag_i=0;
 NOEXCL
 (
     }
@@ -292,13 +310,17 @@ NOEXCL
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/10 08:30:28 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/02/13 23:17:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1002  1997/02/13 23:17:15  ari
+ * Fixed a final bug in AtomMigration - numatoms in ComputePatchPair.C not
+ * set correctly in atomUpdate()
+ *
  * Revision 1.1001  1997/02/10 08:30:28  jim
  * Now handles periodic boundaries correctly (I forgot this when I was
  * changing Bonds, Angles, etc.) but a bit of a hack, needs cleaning up.

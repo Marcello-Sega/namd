@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1013 1997/02/13 17:06:22 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1014 1997/02/13 23:17:17 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -122,12 +122,14 @@ void HomePatch::registerProxy(RegisterProxyMsg *msg) {
   nmsg->patch = patchID;
   nmsg->atomIDList = atomIDList;
   ProxyMgr::Object()->sendProxyAtoms(nmsg,msg->node);
+  delete msg;
 }
 
 void HomePatch::unregisterProxy(UnregisterProxyMsg *msg) {
   int i = proxy.findIndex(ProxyListElem(msg->node));
   forceBox.checkIn(proxy[i].forceBox);
   proxy.del(i);
+  delete msg;
 }
 
 void HomePatch::receiveResults(ProxyResultMsg *msg)
@@ -139,6 +141,7 @@ void HomePatch::receiveResults(ProxyResultMsg *msg)
     f[j] += msg->forceList[j];
   }
   proxy[i].forceBox->close(&f);
+  delete msg;
 }
 
 
@@ -307,7 +310,7 @@ HomePatch::doAtomMigration()
 
   // Drain the migration message buffer
   for (i=0; i<numMlBuf; i++) {
-     DebugM(4, "Draining migration buffer ("<<i<<","<<numMlBuf<<")\n");
+     DebugM(1, "Draining migration buffer ("<<i<<","<<numMlBuf<<")\n");
      depositMigration(srcID[i], mlBuf[i]);
   }
   numMlBuf = 0;
@@ -378,13 +381,17 @@ HomePatch::depositMigration(PatchID srcPatchID, MigrationList *migrationList)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1997/02/13 17:06:22 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1014 $	$Date: 1997/02/13 23:17:17 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1014  1997/02/13 23:17:17  ari
+ * Fixed a final bug in AtomMigration - numatoms in ComputePatchPair.C not
+ * set correctly in atomUpdate()
+ *
  * Revision 1.1013  1997/02/13 17:06:22  jim
  * Turned off debugging.
  *
