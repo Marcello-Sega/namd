@@ -4,29 +4,40 @@
 #include "chare.h"
 #include "c++interface.h"
 
-template <class Owner, class Data>
-OwnerBox<Owner,Data>::OwnerBox(Owner *o, void (Owner::*fn)() ) : 
+template <class Owner>
+PositionOwnerBox<Owner>::OwnerBox(Owner *o, void (Owner::*fn)() ) : 
     owner(o), callback(fn), numberUsers(0), 
-    closeCount(0), openCount(0), data(NULL) {};
+    closeCount(0), openCount(0), data(NULL)
+{
+  for ( int i = 0; i < 27; ++i )
+  {
+    transNeeded[i] = 0;
+    transData[i] = NULL;
+  }
+};
 
 
-template <class Owner, class Data>
-OwnerBox<Owner,Data>::~OwnerBox() {
+template <class Owner>
+PositionOwnerBox<Owner>::~OwnerBox() {
     if (numberUsers) {
       CPrintf("OwnerBox::~OwnerBox() - still have boxes out there!\n");
     }
 }
       
-template <class Owner, class Data>
-void OwnerBox<Owner,Data>::open(Data* d) {
+template <class Owner>
+void PositionOwnerBox<Owner>::open(Data* d, int n, Lattice *l) {
       closeCount = openCount = numberUsers;
       data = d;
+      lattice = l;
+      for ( int i = 0; i < 27; ++i )
+	if ( transNeeded[i] ) transData[i] = lattice->create(d,n,i);
   }
 
-template <class Owner, class Data>
-  void OwnerBox<Owner,Data>::close() {
+template <class Owner>
+  void PositionOwnerBox<Owner>::close() {
     if (!closeCount && !openCount) {
       data = NULL; closeCount = openCount = numberUsers;
+      for ( int i = 0; i < 27; ++i ) lattice->destroy(&transData[i],n,i);
       (owner->*callback)();
     }
     else {
@@ -35,17 +46,20 @@ template <class Owner, class Data>
     }
   }
 
-template <class Owner, class Data>
-  Box<Owner,Data>* OwnerBox<Owner,Data>::checkOut(void) {
+template <class Owner>
+  Box<Owner,Position>* PositionOwnerBox<Owner>::checkOut(LatticeTransform t) {
     if (closeCount != numberUsers || openCount != numberUsers) {
       CPrintf("OwnerBox::checkOut() Tried to checkOut while in use\n");
     }
     ++numberUsers; ++closeCount; ++openCount; 
-    return (new Box<Owner,Data>(this));
+    int i = t.index();
+    ++transNeeded[i];
+    return (new PositionBox<Owner>(this,i));
   }
 
-template <class Owner, class Data>
-  void OwnerBox<Owner,Data>::checkIn(Box<Owner,Data> * box) {
+template <class Owner>
+  void PositionOwnerBox<Owner>::checkIn(PositionBox<Owner> * box) {
+    int i = box.index();
     delete box;
     if (closeCount != numberUsers || openCount != numberUsers) {
       CPrintf("OwnerBox::checkIn() Tried to checkIn while in use\n");
@@ -54,10 +68,11 @@ template <class Owner, class Data>
       CPrintf("OwnerBox::checkIn() - no registrants remaining\n");
       numberUsers = 0;
     } else {
+      --transNeeded[i];
       closeCount--; openCount--;
     }
   }
 
-template <class Owner, class Data>
-  int OwnerBox<Owner,Data>::isOpen() { return (openCount); };
+template <class Owner>
+  int PositionOwnerBox<Owner>::isOpen() { return (openCount); };
 

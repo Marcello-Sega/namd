@@ -1,29 +1,39 @@
-#ifndef OWNERBOX_H
-#define OWNERBOX_H
+#ifndef POSITIONOWNERBOX_H
+#define POSITIONOWNERBOX_H
 
-template <class Owner, class Data>
-class Box;
+#include "Lattice.h"
 
-template <class Owner, class Data>
-class OwnerBox {
-friend class Box<Owner,Data>;
+template <class Owner>
+class PositionBox;
+
+template <class Owner>
+class PositionOwnerBox {
+friend class PositionBox<Owner>;
 public:
-  OwnerBox(Owner *o, void (Owner::*fn)() );
-  ~OwnerBox();
+  PositionOwnerBox(Owner *o, void (Owner::*fn)() );
+  ~PositionOwnerBox();
       
-  void open(Data* d);
+  void open(Position* d, int n, Lattice *l );
 
   void close(); 
-  Box<Owner,Data> *checkOut(void);
+
+  PositionBox<Owner> *checkOut(LatticeTransform t);
 
   void checkIn(Box<Owner,Data> * box); 
+
   int isOpen() { return (openCount); };
 
 private:
   Owner *owner;
   void (Owner::*callback)();
 
-  Data* data;
+  Position* data;
+
+  Position* transData[27];
+  int transNeeded[27];
+  Lattice *lattice;
+
+  void callback(void);
 
   int numberUsers, openCount, closeCount;
 };
