@@ -1,3 +1,6 @@
+message InitMsg;
+message NodeInitMsg;
+
 chare main {
   entry main();
 } ;

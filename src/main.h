@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: main.h,v $
- *	$Author: gursoy $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/08/02 19:20:13 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1996/08/16 20:52:30 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -20,6 +20,9 @@
  * REVISION HISTORY:
  *
  * $Log: main.h,v $
+ * Revision 1.2  1996/08/16 20:52:30  brunner
+ * *** empty log message ***
+ *
  * Revision 1.1  1996/08/02 19:20:13  gursoy
  * Initial revision
  *
@@ -33,6 +36,16 @@
 #include "chare.h"
 #include "c++interface.h"
 
+class InitMsg : public comm_object
+{
+  int x;
+};
+
+class NodeInitMsg : public comm_object
+{
+public:
+  int workDistribGroup;
+};
 
 #endif /* MAIN_H */
 
