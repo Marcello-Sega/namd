@@ -405,6 +405,7 @@ public:
         zVector stirPivot;             // Pivot point of stir axis
 
 	Bool consForceOn;		//  Should constant force be applied
+  char consForceFile[129];
 
 	int outputEnergies;		//  Number of timesteps between energy
 					//  outputs
