@@ -34,6 +34,8 @@ public:
 protected:
     virtual void algorithm(void);	// subclasses redefine this method
 
+    void printEnergies(int seq);
+
     // void suspend(void) { CthSuspend(); };
     void terminate(void) {
 	CPrintf("Controller terminating\n");
