@@ -931,6 +931,7 @@ void Sequencer::submitReductions(int step)
 
   reduction->item(REDUCTION_ATOM_CHECKSUM) += numAtoms;
   reduction->item(REDUCTION_MARGIN_VIOLATIONS) += patch->marginViolations;
+  reduction->item(REDUCTION_PAIRLIST_WARNINGS) += patch->pairlistWarning;
   reduction->item(REDUCTION_CENTERED_KINETIC_ENERGY) += patch->calcKineticEnergy();
 
 #ifdef ALTVIRIAL

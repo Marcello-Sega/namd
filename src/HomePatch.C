@@ -75,6 +75,7 @@ HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
 
   numAtoms = atom.size();
   replacementForces = 0;
+  doPairlistCheck_listsValid = 0;
 
   nChild = 0;	// number of proxy spanning tree children
 #if CMK_PERSISTENT_COMM
@@ -291,6 +292,9 @@ void HomePatch::positionsReady(int doMigration)
   FullAtom *a_i = atom.begin();
   int i; int n = numAtoms;
   for ( i=0; i<n; ++i ) { p_i[i] = a_i[i]; }
+
+  // Measure atom movement to test pairlist validity
+  doPairlistCheck();
 
   if (flags.doMolly) mollyAverage();
 
@@ -888,6 +892,79 @@ Vector HomePatch::calcAngularMomentum()
 void HomePatch::submitLoadStats(int timestep)
 {
   LdbCoordinator::Object()->patchLoad(patchID,numAtoms,timestep);
+}
+
+
+void HomePatch::doPairlistCheck()
+{
+  pairlistWarning = 0;
+
+  if ( ! flags.usePairlists ) {
+    doPairlistCheck_listsValid = 0;
+    return;
+  }
+
+  int i; int n = numAtoms;
+  CompAtom *p_i = p.begin();
+
+  if ( flags.savePairlists ) {
+    doPairlistCheck_listsValid = 1;
+    doPairlistCheck_lattice = lattice;
+    doPairlistCheck_positions.resize(numAtoms);
+    CompAtom *psave_i = doPairlistCheck_positions.begin();
+    for ( i=0; i<n; ++i ) { psave_i[i] = p_i[i]; }
+    return;
+  }
+
+  if ( ! doPairlistCheck_listsValid ) {
+    flags.usePairlists = 0;
+    pairlistWarning = 1;
+    return;
+  }
+
+  Lattice &lattice_old = doPairlistCheck_lattice;
+  Position center_cur = lattice.unscale(center);
+  Position center_old = lattice_old.unscale(center);
+  Vector center_delta = center_cur - center_old;
+  
+  // find max deviation to corner (any neighbor shares a corner)
+  BigReal max_cd = 0.;
+  for ( i=0; i<2; ++i ) {
+    for ( int j=0; j<2; ++j ) {
+      for ( int k=0; k<2; ++k ) {
+	ScaledPosition corner(	i ? min.x : max.x ,
+				j ? min.y : max.y ,
+				k ? min.z : max.z );
+	Vector corner_delta =
+		lattice.unscale(corner) - lattice_old.unscale(corner);
+        corner_delta -= center_delta;
+	BigReal cd = corner_delta.length2();
+        if ( cd > max_cd ) max_cd = cd;
+      }
+    }
+  }
+  max_cd = sqrt(max_cd);
+
+  // find max deviation of atoms relative to center
+  BigReal max_pd = 0.;
+  CompAtom *p_old_i = doPairlistCheck_positions.begin();
+  for ( i=0; i<n; ++i ) {
+    Vector p_delta = p_i[i].position - p_old_i[i].position;
+    p_delta -= center_delta;
+    BigReal pd = p_delta.length2();
+    if ( pd > max_pd ) max_pd = pd;
+  }
+  max_pd = sqrt(max_pd);
+
+  SimParameters *simParams = Node::Object()->simParameters;
+
+  BigReal tol = 0.5 * ( simParams->pairlistDist - simParams->cutoff );
+  if ( max_pd + max_cd > tol ) {
+    doPairlistCheck_listsValid = 0;
+    flags.usePairlists = 0;
+    pairlistWarning = 1;
+  }
+
 }
 
 void HomePatch::doGroupSizeCheck()

@@ -370,6 +370,8 @@ void ComputeNonbondedUtil :: NAME
       }
     }
 
+  SELF ( if ( p_i.hydrogenGroupSize ) j_hgroup = i + p_i.hydrogenGroupSize; )
+
   if ( savePairlists || ! usePairlists ) {
 
     if ( ! savePairlists ) pairlists.reset();  // limit space usage
@@ -396,7 +398,7 @@ void ComputeNonbondedUtil :: NAME
     (
       if ( p_i.hydrogenGroupSize ) {
         // exclude child hydrogens of i
-        j_hgroup = i + p_i.hydrogenGroupSize;
+        // j_hgroup = i + p_i.hydrogenGroupSize;  (moved above)
         while ( g_lower < g_upper &&
                 grouplist[g_lower] < j_hgroup ) ++g_lower;
         while ( fixg_lower < fixg_upper &&
@@ -578,11 +580,11 @@ void ComputeNonbondedUtil :: NAME
     int k=0;
     SELF(
     for (; pln < plin && *pln < j_hgroup; ++pln) {
-      *(plix++) = *pln;  --exclChecksum;
+      *(plix++) = *pln;  // --exclChecksum;
     }
     pairlistn_skip = pln - pairlistn;
     for (; k < npair2 && pairlist2[k] < j_hgroup; ++k) {
-      *(plix++) = pairlist2[k];  --exclChecksum;
+      *(plix++) = pairlist2[k];  // --exclChecksum;
     }
     )
     for (; k < npair2; ++k ) {
@@ -595,8 +597,8 @@ void ComputeNonbondedUtil :: NAME
       case 2:  *(plim++) = j;  break;
       }
     }
-    exclChecksum += (plix - pairlistx);
-    exclChecksum += (plim - pairlistm);
+    // exclChecksum += (plix - pairlistx);
+    // exclChecksum += (plim - pairlistm);
 
     npairn = plin - pln;
     pairlistn_save = pln;
@@ -675,7 +677,7 @@ void ComputeNonbondedUtil :: NAME
 
     npairi = pairlist_from_pairlist(ComputeNonbondedUtil:: cutoff2,
 	p_i_x, p_i_y, p_i_z, p_1, pairlistm_save, npairm, pairlisti);
-    exclChecksum -= npairm - npairi;
+    exclChecksum += npairi;
 
 #define NORMAL(X)
 #define EXCLUDED(X)
@@ -688,7 +690,10 @@ void ComputeNonbondedUtil :: NAME
 #ifdef FULLELECT
     npairi = pairlist_from_pairlist(ComputeNonbondedUtil:: cutoff2,
 	p_i_x, p_i_y, p_i_z, p_1, pairlistx_save, npairx, pairlisti);
-    exclChecksum -= npairx - npairi;
+    exclChecksum += npairi;
+    SELF(
+    for (k=0; k<npairi && pairlisti[k] < j_hgroup; ++k) --exclChecksum;
+    )
 
 #undef FAST
 #define FAST(X)
@@ -705,6 +710,11 @@ void ComputeNonbondedUtil :: NAME
 #undef NORMAL
 #undef EXCLUDED
 #undef MODIFIED
+#else
+    exclChecksum += npairx;
+    SELF(
+      for (k=0; k<npairx && pairlistx_save[k] < j_hgroup; ++k) --exclChecksum;
+    )
 #endif
 
 	// PAIR( iout << i << " " << i_upper << " end\n" << endi;)

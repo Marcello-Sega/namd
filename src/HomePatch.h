@@ -69,6 +69,7 @@ public:
   // Signal HomePatch that positions stored are to be now to be used
   void positionsReady(int doMigration=0);
   int marginViolations;
+  int pairlistWarning;
 
   // methods to implement integration
   void saveForce(const int ftag = Results::normal);
@@ -110,6 +111,7 @@ protected:
   virtual void boxClosed(int);
 
   // Internal Atom Migration methods and data
+  void doPairlistCheck();
   void doGroupSizeCheck();
   void doMarginCheck();
   void doAtomMigration();
@@ -126,6 +128,11 @@ private:
   // checkpointed state
   FullAtomList  checkpoint_atom;
   Lattice  checkpoint_lattice;
+
+  // checkPairlist data
+  CompAtomList doPairlistCheck_positions;
+  Lattice doPairlistCheck_lattice;
+  int doPairlistCheck_listsValid;
 
   // MOLLY data
   ResizeArray<BigReal> molly_lambda;

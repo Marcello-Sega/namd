@@ -128,7 +128,8 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2],
 
     params.pairlists = &pairlists;
     params.savePairlists = patch[0]->flags.savePairlists;
-    params.usePairlists = patch[0]->flags.usePairlists;
+    params.usePairlists =
+	patch[0]->flags.usePairlists && patch[1]->flags.usePairlists;
 
     // swap to place more atoms in inner loop (second patch)
     int a = 0;  int b = 1;

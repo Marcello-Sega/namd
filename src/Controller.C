@@ -47,7 +47,7 @@ extern "C" void CApplicationDepositNode0Data(char *);
 #define XXXBIGREAL 1.0e32
 
 Controller::Controller(NamdState *s) :
-	computeChecksum(0), marginViolations(0),
+	computeChecksum(0), marginViolations(0), pairlistWarnings(0),
 	simParams(Node::Object()->simParameters),
 	state(s),
 	collection(CollectionMaster::Object()),
@@ -969,10 +969,19 @@ void Controller::compareChecksums(int step, int forgiving) {
 
     checksum = reduction->item(REDUCTION_MARGIN_VIOLATIONS);
     if ( ((int)checksum) && ! marginViolations ) {
-      iout << iWARN << ((int)checksum) <<
+      iout << (forgiving ? iWARN : iERROR) << ((int)checksum) <<
         " margin violations detected during timestep " << step << ".\n" << endi;
     }
     marginViolations += (int)checksum;
+
+    checksum = reduction->item(REDUCTION_PAIRLIST_WARNINGS);
+    if ( ((int)checksum) && ! pairlistWarnings ) {
+      iout << iWARN <<
+        "Pairlistdist is too small for " << ((int)checksum) <<
+        " patches during timestep " << step << ".\n" << iWARN <<
+        "Pairlists partially disabled; reduced performance likely.\n" << endi;
+    }
+    pairlistWarnings += (int)checksum;
 }
 
 void Controller::printTiming(int step) {
@@ -1272,6 +1281,12 @@ void Controller::printEnergies(int step, int minimize)
         " margin violations detected since previous energy output.\n" << endi;
     }
     marginViolations = 0;
+
+    if ( pairlistWarnings ) {
+      iout << iWARN << pairlistWarnings <<
+        " pairlist warnings since previous energy output.\n" << endi;
+    }
+    pairlistWarnings = 0;
 
     if ( (step % (10 * (minimize?1:simParameters->outputEnergies) ) ) == 0 )
     {

@@ -53,6 +53,7 @@ protected:
     void compareChecksums(int,int=0);
       int computeChecksum;
       int marginViolations;
+      int pairlistWarnings;
     void printTiming(int);
     void printMinimizeEnergies(int);
       BigReal min_energy;
