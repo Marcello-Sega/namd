@@ -26,23 +26,24 @@ CHARMXI = /Projects/l1/namd.2.0/charm/bin/charmc $(PURIFY)
 #####
 # definitions for PMTA routines
 #####
-DPMTADIR=dpmta
-#PMTAINCL=-I$(DPMTADIR)
-#PMTALIB=-L$(DPMTADIR) -ldpmta
-#PMTAFLAGS=-DDPMTA
-#DPMTA=$(PMTAINCL) $(PMTAFLAGS)
+DPMTADIR=dpmta2
+DPMTAINCL=-I$(DPMTADIR)/include
+DPMTALIB=-L$(DPMTADIR) -ldpmta2 -lmpole
+DPMTAFLAGS=-DDPMTA
+DPMTA=$(DPMTAINCL) $(DPMTAFLAGS)
 ######
 ## definitions for PVM routines
 ######
-#PVMDIR=/usr/local/shared/pvm/pvm3/lib/HPPA
-#PVMLIB=-L$(PVMDIR) -lpvm3
+PVMDIR=pvm3
+PVMLIB=-L$(PVMDIR) -lpvmc
+PVM=-I$(PVMDIR)
 
 # CXXOPTS = -O
 CXXOPTS = -g
 # CXXOPTS = -O +DAK460 +DSK460
 CXX = CC -Aa -D_HPUX_SOURCE
 INCLUDE = /Projects/l1/namd.2.0/charm/include
-CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(CXXOPTS) $(NOWARN)
+CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(PVM) $(CXXOPTS) $(NOWARN)
 GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(NOWARN)
 
 .SUFFIXES: 	.ci
@@ -126,13 +127,15 @@ TEMPLATES = \
 	$(SRCDIR)/Templates/UniqueSortedArray.C
 
 namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES)
-	cd $(DPMTADIR) ; $(MAKE) libdpmta.a ; cd ..
+	cd $(DPMTADIR) ; $(MAKE) ; cd ..
+	cd $(PVMDIR) ; $(MAKE) ; cd ..
 	$(CHARMC) -ld++-option \
 	"-I $(INCLUDE) -I $(SRCDIR) $(CXXOPTS) " \
 	-language charm++ \
 	-o namd2 $(OBJS) \
-	$(PMTALIB) \
-	$(PVMLIB)
+	$(DPMTALIB) \
+	$(PVMLIB) \
+	# Now sit back, have a coke, and relax.
 
 cifiles:	$(INCDIR) $(DSTDIR)
 	for i in $(INTERFACES); do \
