@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.12 1996/11/30 00:41:24 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.13 1996/12/01 02:31:37 jim Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -64,7 +64,11 @@ Patch::Patch(PatchID pd, AtomIDList al, PositionList pl) :
 
 Box<Patch,Position>* Patch::registerPositionPickup(ComputeID cid)
 {
-   if (positionComputeList.add(cid) < 0) return NULL;
+   if (positionComputeList.add(cid) < 0)
+   {
+     DebugM(7, "registerPositionPickup() failed for cid " << cid << endl);
+     return NULL;
+   }
    return positionBox.checkOut();
 }
 
@@ -77,7 +81,11 @@ void Patch::unregisterPositionPickup(ComputeID cid, Box<Patch,Position> **const 
 
 Box<Patch,Force>* Patch::registerForceDeposit(ComputeID cid)
 {
-   if (forceComputeList.add(cid) < 0) return NULL;
+   if (forceComputeList.add(cid) < 0)
+   {
+     DebugM(7, "registerForceDeposit() failed for cid " << cid << endl);
+     return NULL;
+   }
    return forceBox.checkOut();
 }
 
@@ -90,7 +98,11 @@ void Patch::unregisterForceDeposit(ComputeID cid, Box<Patch,Force> **const box)
 
 Box<Patch,AtomProperties>* Patch::registerAtomPickup(ComputeID cid)
 {
-   if (atomComputeList.add(cid) < 0) return NULL;
+   if (atomComputeList.add(cid) < 0)
+   {
+     DebugM(7, "registerAtomPickup() failed for cid " << cid << endl);
+     return NULL;
+   }
    return atomBox.checkOut();
 }
 
@@ -129,21 +141,18 @@ void Patch::positionsReady()
    DebugM(1,"Patch::positionsReady() - patchID " << patchID << endl );
    ComputeMap *computeMap = ComputeMap::Object();
 
-   boxesOpen = 0;
+   boxesOpen = 3;
 
    // Give all position pickup boxes access to positions
    positionPtr = p.unencap();
-   ++boxesOpen;
    positionBox.open(positionPtr);
 
    // Give all force deposit boxes access to forces
    forcePtr = f.unencap();
-   ++boxesOpen;
    forceBox.open(forcePtr);
 
    // Give all atom properties pickup boxes access to atom properties
    atomPtr = a.unencap();
-   ++boxesOpen;
    atomBox.open(atomPtr);
 
    DebugM(1,"Patch::positionsReady() - looping over positionComputeList" << endl);
@@ -163,12 +172,15 @@ void Patch::positionsReady()
  *
  *	$RCSfile: Patch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.12 $	$Date: 1996/11/30 00:41:24 $
+ *	$Revision: 1.13 $	$Date: 1996/12/01 02:31:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.13  1996/12/01 02:31:37  jim
+ * improved debugging, fixed boxesOpen possible bug
+ *
  * Revision 1.12  1996/11/30 00:41:24  jim
  * added boxesOpen counting to support HomePatch::boxClosed()
  *
