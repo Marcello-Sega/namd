@@ -43,8 +43,8 @@ depends: $(DEPENDSFILE)
 	for i in ZZZ $(CXXFILES) ; do \
 	   if [ "$$i" != "ZZZ" -a -f $$i ]; then \
 	      $(ECHO) "checking dependencies for $$i ..."; \
-	      g++ -MM $(CXXFLAGS) $$i |grep -v "/usr/include" \
-	      | grep -v \"$(INCLUDE)\" >> $(DEPENDFILE);\
+	      g++ -MM $(CXXFLAGS) $$i |  \
+	      dc.pl $(INCLUDE) /usr/include >> $(DEPENDFILE);\
 	   fi; \
 	done;
 
