@@ -55,6 +55,8 @@ void ComputeAngles::mapAtoms() {
   HomePatchList *a = patchMap->homePatchList();
   ResizeArrayIter<HomePatchElem> ai(*a);
 
+  anglePatchList.resize(0);
+
   for ( ai = ai.begin(); ai != ai.end(); ai++ ) {
     anglePatchList.add(AnglePatchElem((*ai).p, HOME, cid));
   }
@@ -96,11 +98,27 @@ void ComputeAngles::mapAtoms() {
 
 
 void ComputeAngles::doWork() {
-    // Open Boxes
+  // Open Boxes
+  ResizeArrayIter<AnglePatchElem> ap(anglePatchList);
+  for (ap = ap.begin(); ap != ap.end(); ap++) {
+    (*ap).x = (*ap).positionBox->open();
+    (*ap).f = (*ap).forceBox->open();
+  } 
 
-    // Loop over angles
+  // take triplet and pass with angle info to force eval
+  ResizeArrayIter<AngleElem> al(angleList);
+  for (al = al.begin(); al != al.end(); al++ ) {
+    angleForce((*al).p[0]->x[(*al).localIndex[0]],
+	       (*al).p[1]->x[(*al).localIndex[1]],
+	       (*al).p[2]->x[(*al).localIndex[2]],
+	       (*al).p[0]->f+(*al).localIndex[0],
+	       (*al).p[1]->f+(*al).localIndex[1],
+	       (*al).p[2]->f+(*al).localIndex[2],
+	       (*al).angleType);
+  }
 
-    // take triplet and pass with angle info to force eval
-
-    // 
+  for (ap = ap.begin(); ap != ap.end(); ap++) {
+    (*ap).positionBox->close(&(*ap).x);
+    (*ap).forceBox->close(&(*ap).f);
+  }
 }

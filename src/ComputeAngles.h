@@ -176,6 +176,10 @@ private:
   int maxProxyAtoms;
   Force *dummy;
   
+  void angleForce(const Position p1, const Position p2, const Position p3,
+		  Force *f1, Force *f2, Force *f3,
+		    const Index angleType) {};
+
 public:
   ComputeAngles(ComputeID c);
   virtual ~ComputeAngles() {
@@ -192,12 +196,15 @@ public:
  *
  *	$RCSfile: ComputeAngles.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/11/01 21:20:45 $
+ *	$Revision: 1.2 $	$Date: 1996/11/04 16:55:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.h,v $
+ * Revision 1.2  1996/11/04 16:55:46  ari
+ * *** empty log message ***
+ *
  * Revision 1.1  1996/11/01 21:20:45  ari
  * Initial revision
  *
