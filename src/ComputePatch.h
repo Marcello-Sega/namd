@@ -29,11 +29,11 @@ public:
   ComputePatch(ComputeID c, PatchID pid);
   virtual ~ComputePatch();
 
+  virtual void mapReady();
   virtual void doWork();
 
 protected :
   int numAtoms;
-  virtual void mapReady();
   virtual void doForce(Position* p, Force* f, AtomProperties* a);
 
 private:
@@ -51,12 +51,15 @@ private:
  *
  *	$RCSfile: ComputePatch.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/10/31 22:05:55 $
+ *	$Revision: 1.6 $	$Date: 1996/11/23 22:59:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatch.h,v $
+ * Revision 1.6  1996/11/23 22:59:57  jim
+ * made mapReady() public
+ *
  * Revision 1.5  1996/10/31 22:05:55  jim
  * first incarnation as ComputePatch
  *

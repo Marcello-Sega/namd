@@ -29,11 +29,11 @@ public:
   ComputePatchPair(ComputeID c, PatchID pid[]);
   virtual ~ComputePatchPair();
 
+  virtual void mapReady();
   virtual void doWork();
 
 protected :
   int numAtoms[2];
-  virtual void mapReady();
   virtual void doForce(Position* p[2], Force* f[2], AtomProperties* a[2]);
 
 private:
@@ -51,12 +51,15 @@ private:
  *
  *	$RCSfile: ComputePatchPair.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/10/30 01:16:32 $
+ *	$Revision: 1.5 $	$Date: 1996/11/23 22:59:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatchPair.h,v $
+ * Revision 1.5  1996/11/23 22:59:57  jim
+ * made mapReady() public
+ *
  * Revision 1.4  1996/10/30 01:16:32  jim
  * added AtomProperties structure in Patch plus boxes, passing, etc.
  *
