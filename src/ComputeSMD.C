@@ -33,7 +33,6 @@ ComputeSMD::ComputeSMD(ComputeMgr *c)
 
   char *file = simParams->SMDFile;
   configMsg = new ComputeGlobalConfigMsg;
-  configMsg->tag = tag;
   parse_atoms(file);  
   iout << iINFO << "SMD ATOMS:  ";
   for (int i=0; i<configMsg->gdef.size()-1; i++)
@@ -72,6 +71,7 @@ ComputeSMD::~ComputeSMD() { }
 void ComputeSMD::initialize() {
   // Send the configMsg we created in parse_atoms
   storedefs(configMsg->gdef);
+  configMsg->tag = tag;
   comm->sendComputeGlobalConfig(configMsg);
   configMsg = 0; 
 }
