@@ -319,6 +319,7 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
   }
 
   int nMoveableComputes=0;
+  int nProxies = 0;		// total number of estimated proxies
   for (i=0; i < count; i++) {
     int j;
     for (j=0; j < stats[i].n_objs; j++) {
@@ -333,14 +334,10 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 	patchArray[pid].numAtoms = 0;
 	patchArray[pid].processor = i;
 	const int numProxies = requiredProxies(pid,neighborNodes);
+        nProxies += numProxies;
 
 	for (int k=0; k<numProxies; k++) {
 	  processorArray[neighborNodes[k]].proxies.insert(&patchArray[pid]);
-#if 1
-          // too many proxies on this node, weight the background load
-	  if (processorArray[neighborNodes[k]].proxies.numElements() > 20)
-		processorArray[neighborNodes[k]].backgroundLoad *= 1.5;
-#endif
 	  patchArray[pid].proxiesOn.insert(&processorArray[neighborNodes[k]]);
 	}
       } else if (this_obj.migratable) { // Its a compute
@@ -363,6 +360,19 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
       }
     }
   }
+#if 0
+  int averageProxy = nProxies / count;
+  CkPrintf("total proxies: %d, avervage: %d\n", nProxies, averageProxy);
+  for (i=0; i<count; i++) {
+    // too many proxies on this node, weight the background load
+    int proxies = processorArray[i].proxies.numElements();
+    if (proxies > averageProxy) {
+      double factor = 1.0*(proxies-averageProxy)/nProxies;
+      processorArray[i].backgroundLoad *= (1.0 + factor);
+      CkPrintf("On [%d]: too many proxies: %d, increased bg load by %f\n", i, nProxies, factor);
+    }
+  }
+#endif
   return nMoveableComputes;
 }
 
