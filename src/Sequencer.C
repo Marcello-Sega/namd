@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1018 1997/03/19 11:54:55 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1019 1997/03/19 22:44:24 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -21,6 +21,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C
 #include "CollectionMgr.h"
 #include "BroadcastObject.h"
 #include "Output.h"
+#include "Controller.h"
 
 #define MIN_DEBUG_LEVEL 3
 //#define DEBUGM
@@ -32,14 +33,21 @@ Sequencer::Sequencer(HomePatch *p) :
 	reduction(ReductionMgr::Object()),
 	collection(CollectionMgr::Object())
 {
-    sequence = new SimpleBroadcastObject<int>(1);
+    if ( simParams->rescaleFreq > 0 )
+    {
+	velocityRescaleFactor = new
+		SimpleBroadcastObject<BigReal>(velocityRescaleFactorTag);
+    }
+    else velocityRescaleFactor = 0;
+
     reduction->Register(REDUCTION_KINETIC_ENERGY);
     reduction->Register(REDUCTION_BC_ENERGY); // in case not used elsewhere
-    threadStatus = NOTSUSPENDED;
 }
 
 Sequencer::~Sequencer(void)
 {
+    delete velocityRescaleFactor;
+
     reduction->unRegister(REDUCTION_KINETIC_ENERGY);
     reduction->unRegister(REDUCTION_BC_ENERGY); // in case not used elsewhere
 }
@@ -53,12 +61,9 @@ void Sequencer::threadRun(Sequencer* arg)
 // Invoked by Node::run() via HomePatch::runSequencer()
 void Sequencer::run(int numberOfCycles)
 {
-    stepsPerCycle = simParams->stepsPerCycle;
-    threadStatus = SUSPENDED;
+    this->numberOfCycles = numberOfCycles;
     if ( numberOfCycles ) 
-      this->numberOfCycles = numberOfCycles;
-    else 
-      this->numberOfCycles = simParams->N - simParams->firstTimestep; // / stepsPerCycle;
+      NAMD_die("Sorry, Sequencer::run() does not support an argument.\n");
 
     // create a Thread and invoke it
     DebugM(4, "::run() - this = " << this << "\n" );
@@ -72,56 +77,66 @@ void Sequencer::run(int numberOfCycles)
 // when to migrate atoms, when to add forces to velocity update.
 void Sequencer::algorithm(void)
 {
-    int step, cycle=-1;	// cycle is unused!
-    int &seq = patch->flags.seq; seq = 0; // internal timestep
+    int &step = patch->flags.seq;
+    step = simParams->firstTimestep;
 
-    const int numberOfCycles = this->numberOfCycles;
-    const int stepsPerCycle = this->stepsPerCycle;
+    const int numberOfSteps = simParams->N;
+    const int stepsPerCycle = simParams->stepsPerCycle;
     const BigReal timestep = simParams->dt;
-    const int first = simParams->firstTimestep;
+
     // Do we do full electrostatics?
     const int dofull = ( simParams->fullDirectOn || simParams->FMAOn );
     const BigReal slowstep = timestep * stepsPerCycle;
-
-    patch->flags.doFullElectrostatics = dofull;
+    int &doFullElectrostatics = patch->flags.doFullElectrostatics;
+    doFullElectrostatics = dofull;
 
     // Push out inital positions
     patch->positionsReady();
     suspend(); // until all deposit boxes close
 
-    reduction->submit(seq,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
-    reduction->submit(seq,REDUCTION_BC_ENERGY,0.);
-    // int value = sequence->get(seq); // gets broadcast value (suspend if nec)
-    submitCollections(seq+first);
-    ++seq;
-    for ( step = 0; step < numberOfCycles; ++step )
+    reduction->submit(step,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
+    reduction->submit(step,REDUCTION_BC_ENERGY,0.);
+    submitCollections(step);
+    rescaleVelocities(step);
+
+    for ( ++step; step <= numberOfSteps; ++step )
     {
 	patch->addForceToMomentum(0.5*timestep);
 	if (dofull && !(step%stepsPerCycle))
 		patch->addForceToMomentum(0.5*slowstep,Results::slow);
 	patch->addVelocityToPosition(timestep);
-	threadStatus = NOTSUSPENDED;
 
-	patch->flags.doFullElectrostatics =
-		(dofull && !((step+1)%stepsPerCycle));
+	doFullElectrostatics = (dofull && !(step%stepsPerCycle));
 
 	// Migrate Atoms on stepsPerCycle
-	patch->positionsReady(!(seq%stepsPerCycle));
-	suspend(); // until all Force deposit boxes close
+	patch->positionsReady(!(step%stepsPerCycle));
+	suspend(); // until all deposit boxes close
 
 	patch->addForceToMomentum(0.5*timestep);
-	if (dofull && !((step+1)%stepsPerCycle))
+	if (dofull && !(step%stepsPerCycle))
 		patch->addForceToMomentum(0.5*slowstep,Results::slow);
 
 	// Pass up information from this Patch
-	reduction->submit(seq, REDUCTION_KINETIC_ENERGY,
-	    patch->calcKineticEnergy());
-	reduction->submit(seq,REDUCTION_BC_ENERGY,0.);
-        // value = sequence->get(seq);
-	submitCollections(seq+first);
-	++seq;
+	reduction->submit(step,REDUCTION_KINETIC_ENERGY,patch->calcKineticEnergy());
+	reduction->submit(step,REDUCTION_BC_ENERGY,0.);
+	submitCollections(step);
+        rescaleVelocities(step);
     }
+
     terminate();
+}
+
+void Sequencer::rescaleVelocities(int step)
+{
+  const int rescaleFreq = simParams->rescaleFreq;
+  if ( rescaleFreq > 0 && !(step%rescaleFreq) )
+  {
+    BigReal factor = velocityRescaleFactor->get(step);
+    for ( int i = 0; i < patch->numAtoms; ++i )
+    {
+      patch->v[i] *= factor;
+    }
+  }
 }
 
 void Sequencer::submitCollections(int timestep)
@@ -143,13 +158,16 @@ Sequencer::terminate() {
  * RCS INFORMATION:
  *
  *      $RCSfile: Sequencer.C,v $
- *      $Author: ari $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1018 $     $Date: 1997/03/19 11:54:55 $
+ *      $Author: jim $  $Locker:  $             $State: Exp $
+ *      $Revision: 1.1019 $     $Date: 1997/03/19 22:44:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1019  1997/03/19 22:44:24  jim
+ * Revamped Controller/Sequencer, added velocity rescaling.
+ *
  * Revision 1.1018  1997/03/19 11:54:55  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

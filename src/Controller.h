@@ -22,6 +22,10 @@
 template <class T>
 class SimpleBroadcastObject;
 
+enum {
+  velocityRescaleFactorTag
+};
+
 class NamdState;
 class SimParameters;
 class ReductionMgr;
@@ -40,6 +44,7 @@ protected:
 
     void printEnergies(int);
     void enqueueCollections(int);
+    void rescaleVelocities(int);
 
     // void suspend(void) { CthSuspend(); };
     void terminate(void) {
@@ -50,7 +55,6 @@ protected:
 
     SimParameters *const simParams;	// for convenience
     int numberOfCycles;			// stores argument to run()
-    int stepsPerCycle;			// stores info from run()
     NamdState *const state;		// access data in state
     ReductionMgr *const reduction;
     CollectionMaster *const collection;
@@ -60,6 +64,9 @@ private:
     static void threadRun(Controller*);
 
     SimpleBroadcastObject<int> * sequence;
+    SimpleBroadcastObject<BigReal> * velocityRescaleFactor;
+
+    BigReal temperature;
 };
 
 #endif // SEQUENCER_H
@@ -70,12 +77,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/19 11:54:14 $
+ *	$Revision: 1.1006 $	$Date: 1997/03/19 22:44:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.h,v $
+ * Revision 1.1006  1997/03/19 22:44:23  jim
+ * Revamped Controller/Sequencer, added velocity rescaling.
+ *
  * Revision 1.1005  1997/03/19 11:54:14  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

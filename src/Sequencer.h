@@ -24,8 +24,6 @@ class CollectionMgr;
 template <class T>
 class SimpleBroadcastObject;
 
-enum ThreadStatus { SUSPENDED, NOTSUSPENDED, AWAKENED };
-
 class Sequencer
 {
     friend HomePatch;
@@ -33,36 +31,27 @@ public:
     Sequencer(HomePatch *p);
     ~Sequencer(void);
     void run(int numberOfCycles);             // spawn thread, etc.
-    void awaken(void)
-	{
-	  //if (threadStatus == SUSPENDED) 
-	    CthAwaken(thread);
-	  threadStatus = AWAKENED;
-	};
+    void awaken(void) { CthAwaken(thread); }
 
 protected:
     virtual void algorithm(void);	// subclasses redefine this method
 
     void submitCollections(int);
+    void rescaleVelocities(int);
 
-    void suspend(void)
-	{
-	  threadStatus = SUSPENDED;
-	  CthSuspend();
-	};
+    void suspend(void) { CthSuspend(); }
     void terminate(void);
     SimParameters *const simParams;	// for convenience
     int numberOfCycles;			// stores argument to run()
-    int stepsPerCycle;			// stores info from run()
     HomePatch *const patch;		// access methods in patch
     ReductionMgr *const reduction;
     CollectionMgr *const collection;
 
 private:
-    ThreadStatus threadStatus;
     CthThread thread;
     static void threadRun(Sequencer*);
-    SimpleBroadcastObject<int> *sequence;
+
+    SimpleBroadcastObject<BigReal> * velocityRescaleFactor;
 };
 
 #endif // SEQUENCER_H
@@ -73,12 +62,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/19 11:54:56 $
+ *	$Revision: 1.1006 $	$Date: 1997/03/19 22:44:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.h,v $
+ * Revision 1.1006  1997/03/19 22:44:26  jim
+ * Revamped Controller/Sequencer, added velocity rescaling.
+ *
  * Revision 1.1005  1997/03/19 11:54:56  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

@@ -31,7 +31,12 @@ Controller::Controller(NamdState *s) :
 	reduction(ReductionMgr::Object()),
 	collection(CollectionMaster::Object())
 {
-    sequence = new SimpleBroadcastObject<int>(1);
+    if ( simParams->rescaleFreq > 0 )
+    {
+	velocityRescaleFactor = new
+		SimpleBroadcastObject<BigReal>(velocityRescaleFactorTag);
+    }
+    else velocityRescaleFactor = 0;
 
     reduction->subscribe(REDUCTION_BOND_ENERGY);
     reduction->subscribe(REDUCTION_ANGLE_ENERGY);
@@ -46,6 +51,8 @@ Controller::Controller(NamdState *s) :
 
 Controller::~Controller(void)
 {
+    delete velocityRescaleFactor;
+
     reduction->unsubscribe(REDUCTION_BOND_ENERGY);
     reduction->unsubscribe(REDUCTION_ANGLE_ENERGY);
     reduction->unsubscribe(REDUCTION_DIHEDRAL_ENERGY);
@@ -64,42 +71,48 @@ void Controller::threadRun(Controller* arg)
 
 void Controller::run(int numberOfCycles)
 {
-    stepsPerCycle = simParams->stepsPerCycle;
+    this->numberOfCycles = numberOfCycles;
     if ( numberOfCycles ) 
-      this->numberOfCycles = numberOfCycles;
-    else 
-      this->numberOfCycles = simParams->N - simParams->firstTimestep; 
-      // / stepsPerCycle;
+      NAMD_die("Sorry, Controller::run() does not support an argument.\n");
+
+    // create a Thread and invoke it
     DebugM(4, "Starting thread in controller on this=" << this << "\n");
     thread = CthCreate((CthVoidFn)&(threadRun),(void*)(this),0);
     CthSetStrategyDefault(thread);
-    CthAwaken(thread);
+    awaken();
 }
 
 void Controller::algorithm(void)
 {
-    const int numberOfCycles = this->numberOfCycles;
-    const int stepsPerCycle = this->stepsPerCycle;
+    int step = simParams->firstTimestep;
+
+    const int numberOfSteps = simParams->N;
+    const int stepsPerCycle = simParams->stepsPerCycle;
     const BigReal timestep = simParams->dt;
-    const int first = simParams->firstTimestep;
-    DebugM(4, "Controller algorithm active. timestep = " << timestep << "\n");
-    // int step;
-    int cycle;
-    int seq = 0;
-    enqueueCollections(seq+first);
-    printEnergies(seq);
-    //sequence->publish(seq,seq); // broadcast the value seq to all Sequencers
-    seq++;
-    for ( cycle = 0; cycle < numberOfCycles; ++cycle )
+
+    for ( ; step <= numberOfSteps; ++step )
     {
-        enqueueCollections(seq+first);
-        sequence->publish(seq,seq);
-        printEnergies(seq);
-	seq++;
+        enqueueCollections(step);
+        printEnergies(step);
+        rescaleVelocities(step);
     }
+
     terminate();
 }
 
+
+void Controller::rescaleVelocities(int step)
+{
+  const int rescaleFreq = simParams->rescaleFreq;
+  if ( rescaleFreq > 0 && !(step%rescaleFreq) )
+  {
+    const BigReal rescaleTemp = simParams->rescaleTemp;
+    BigReal factor = sqrt(rescaleTemp/temperature);
+    velocityRescaleFactor->publish(step,factor);
+    iout << "RESCALING VELOCITIES AT STEP " << step
+         << " TO " << rescaleTemp << " KELVIN.\n" << endi;
+  }
+}
 
 void Controller::printEnergies(int seq)
 {
@@ -120,7 +133,6 @@ void Controller::printEnergies(int seq)
     BigReal ljEnergy;
     BigReal kineticEnergy;
     BigReal boundaryEnergy;
-    BigReal temperature;
     BigReal virial;
     BigReal totalEnergy;
 
@@ -149,7 +161,7 @@ void Controller::printEnergies(int seq)
 	     << "VIRIAL\n";
     }
 
-    iout << ETITLE(seq + simParams->firstTimestep)
+    iout << ETITLE(seq)
 	 << FORMAT(bondEnergy)
 	 << FORMAT(angleEnergy)
 	 << FORMAT(dihedralEnergy)
@@ -178,12 +190,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/03/19 11:54:13 $
+ *	$Revision: 1.1011 $	$Date: 1997/03/19 22:44:21 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1011  1997/03/19 22:44:21  jim
+ * Revamped Controller/Sequencer, added velocity rescaling.
+ *
  * Revision 1.1010  1997/03/19 11:54:13  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.
