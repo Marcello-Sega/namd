@@ -124,134 +124,56 @@ void ComputeNonbondedUtil::select(void)
 
   if ( ! ( simParams->fullDirectOn || simParams->FMAOn ) )
   {
-
-#define NOSPLIT
-#undef SPLIT_XPLOR
-#undef SPLIT_C1
-//   (2) BEGIN PAIR / SELF / EXCL
-#define NBPAIR
-#undef NBSELF
-#undef NBEXCL
-//     (1) BEGIN FULLELECT
-#define FULLELECT
-#include "ComputeNonbondedHack.h"
-  calcFullPair = 0;
-#undef FULLELECT
-#include "ComputeNonbondedHack.h"
-  calcPair = NAME;
-//     (1) END FULLELECT
-#undef NBPAIR
-#define NBSELF
-#undef NBEXCL
-//     (1) BEGIN FULLELECT
-#define FULLELECT
-#include "ComputeNonbondedHack.h"
-  calcFullSelf = 0;
-#undef FULLELECT
-#include "ComputeNonbondedHack.h"
-  calcSelf = NAME;
-//     (1) END FULLELECT
-#undef NBPAIR
-#undef NBSELF
-#define NBEXCL
-//     (1) BEGIN FULLELECT
-#define FULLELECT
-#include "ComputeNonbondedHack.h"
-  calcFullExcl = 0;
-#undef FULLELECT
-#include "ComputeNonbondedHack.h"
-  calcExcl = NAME;
-//     (1) END FULLELECT
-//   (2) END PAIR / SELF / EXCL
-
+  	//   (2) BEGIN PAIR / SELF / EXCL
+  	//     (1) BEGIN FULLELECT
+  	calcFullPair = 0;
+  	calcPair = calc_pair;
+  	//     (1) END FULLELECT
+  	//     (1) BEGIN FULLELECT
+  	calcFullSelf = 0;
+  	calcSelf = calc_self;
+  	//     (1) END FULLELECT
+  	//     (1) BEGIN FULLELECT
+  	calcFullExcl = 0;
+  	calcExcl = calc_excl;
+  	//     (1) END FULLELECT
+  	//   (2) END PAIR / SELF / EXCL
   }
   else switch ( simParams->longSplitting )
   {
     case XPLOR:
-
-#undef NOSPLIT
-#define SPLIT_XPLOR
-#undef SPLIT_C1
-//   (2) BEGIN PAIR / SELF / EXCL
-#define NBPAIR
-#undef NBSELF
-#undef NBEXCL
-//     (1) BEGIN FULLELECT
-#define FULLELECT
-#include "ComputeNonbondedHack.h"
-  calcFullPair = NAME;
-#undef FULLELECT
-#include "ComputeNonbondedHack.h"
-  calcPair = NAME;
-//     (1) END FULLELECT
-#undef NBPAIR
-#define NBSELF
-#undef NBEXCL
-//     (1) BEGIN FULLELECT
-#define FULLELECT
-#include "ComputeNonbondedHack.h"
-  calcFullSelf = NAME;
-#undef FULLELECT
-#include "ComputeNonbondedHack.h"
-  calcSelf = NAME;
-//     (1) END FULLELECT
-#undef NBPAIR
-#undef NBSELF
-#define NBEXCL
-//     (1) BEGIN FULLELECT
-#define FULLELECT
-#include "ComputeNonbondedHack.h"
-  calcFullExcl = NAME;
-#undef FULLELECT
-#include "ComputeNonbondedHack.h"
-  calcExcl = NAME;
-//     (1) END FULLELECT
-//   (2) END PAIR / SELF / EXCL
-
-    break;
+	//   (2) BEGIN PAIR / SELF / EXCL
+	//     (1) BEGIN FULLELECT
+  	calcFullPair = calc_pair_fullelect_xplor;
+  	calcPair = calc_pair_xplor;
+	//     (1) END FULLELECT
+	//     (1) BEGIN FULLELECT
+  	calcFullSelf = calc_self_fullelect_xplor;
+  	calcSelf = calc_self_xplor;
+	//     (1) END FULLELECT
+	//     (1) BEGIN FULLELECT
+  	calcFullExcl = calc_excl_fullelect_xplor;
+  	calcExcl = calc_excl_xplor;
+	//     (1) END FULLELECT
+	//   (2) END PAIR / SELF / EXCL
+    	break;
 
     case C1:
-
-#undef NOSPLIT
-#undef SPLIT_XPLOR
-#define SPLIT_C1
-//   (2) BEGIN PAIR / SELF / EXCL
-#define NBPAIR
-#undef NBSELF
-#undef NBEXCL
-//     (1) BEGIN FULLELECT
-#define FULLELECT
-#include "ComputeNonbondedHack.h"
-  calcFullPair = NAME;
-#undef FULLELECT
-#include "ComputeNonbondedHack.h"
-  calcPair = NAME;
-//     (1) END FULLELECT
-#undef NBPAIR
-#define NBSELF
-#undef NBEXCL
-//     (1) BEGIN FULLELECT
-#define FULLELECT
-#include "ComputeNonbondedHack.h"
-  calcFullSelf = NAME;
-#undef FULLELECT
-#include "ComputeNonbondedHack.h"
-  calcSelf = NAME;
-//     (1) END FULLELECT
-#undef NBPAIR
-#undef NBSELF
-#define NBEXCL
-//     (1) BEGIN FULLELECT
-#define FULLELECT
-#include "ComputeNonbondedHack.h"
-  calcFullExcl = NAME;
-#undef FULLELECT
-#include "ComputeNonbondedHack.h"
-  calcExcl = NAME;
-//     (1) END FULLELECT
-//   (2) END PAIR / SELF / EXCL
-
-    break;
+	//   (2) BEGIN PAIR / SELF / EXCL
+	//     (1) BEGIN FULLELECT
+  	calcFullPair = calc_pair_fullelect_c1;
+  	calcPair = calc_pair_c1;
+	//     (1) END FULLELECT
+	//     (1) BEGIN FULLELECT
+  	calcFullSelf = calc_self_fullelect_c1;
+  	calcSelf = calc_self_c1;
+	//     (1) END FULLELECT
+	//     (1) BEGIN FULLELECT
+  	calcFullExcl = calc_excl_fullelect_c1;
+  	calcExcl = calc_excl_c1;
+	//     (1) END FULLELECT
+	//   (2) END PAIR / SELF / EXCL
+	break;
 
     case SKEEL:
     NAMD_die("Sorry, SKEEL splitting not supported.");
@@ -381,12 +303,19 @@ void ComputeNonbondedUtil::select(void)
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/05/09 18:24:23 $
+ *	$Revision: 1.1010 $	$Date: 1997/05/13 18:30:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1010  1997/05/13 18:30:47  nealk
+ * Removed ComputeNonbondedHack.h!
+ * Reduced a lot of code in Util and Base.
+ * ComputeNonbondedBase.h now only contains the function definitions.
+ * The only heavy macro areas are in Util.C (determining which Base.h to define)
+ * and Base.h (where the functions are defined).
+ *
  * Revision 1.1009  1997/05/09 18:24:23  nealk
  * 1. Added hydrogen grouping code to improve performance in ComputeNonbondedBase
  *    CODE ONLY WORKS WITH HYDROGEN GROUPING!

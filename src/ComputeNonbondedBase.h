@@ -16,65 +16,182 @@
 //   NBPAIR, NBSELF, NBEXCL switch environment (mutually exclusive)
 //   FULLELECT full electrostatics calculation?
 
-#include "ComputeNonbondedHack.h"
+#ifdef DEFINITION // (
+  #include "LJTable.h"
+  #include "Molecule.h"
+#endif // )
 
-#ifdef DEFINITION
-
-#include "LJTable.h"
-#include "Molecule.h"
-
+// only define this when using hydrogen grouping code.
+// don't define this if you want the original code.
+#if 1
+  #define HGROUPING(X) X
+  #define NOHGROUPING(X)
+#else
+  #define HGROUPING(X)
+  #define NOHGROUPING(X) X
 #endif
 
-#if defined DECLARATION || defined DEFINITION
-DECL( static ) void NODECL( ComputeNonbondedUtil :: ) NAME
+// function definitions
+#undef DECL
+#undef NODECL
+#ifdef DECLARATION
+  #define DECL(X) X
+  #define NODECL(X)
+#else
+  #define DECL(X)
+  #define NODECL(X) X
+#endif
+
+// indexing variables
+#undef PLEN
+#undef I_SUB
+#undef I_LOWER
+#undef I_UPPER
+#undef J_SUB
+#undef J_LOWER
+#undef J_UPPER
+
+// determining class name
+#undef NAME
+#undef CLASS
+#undef CLASSNAME
+#define NAME CLASSNAME(calc)
+
+#undef PAIR
+#ifdef NBPAIR
+  #define PAIR(X) X
+  #define CLASS ComputeNonbondedPair
+  #define CLASSNAME(X) FULLELECTNAME( X ## _pair )
+  #define PLEN [2]
+  #define I_SUB 0][i
+  #define I_LOWER 0
+  #define I_UPPER numAtoms[0]
+  #define J_SUB 1][j
+  #define J_LOWER 0
+  #define J_UPPER numAtoms[1]
+#else
+  #define PAIR(X)
+#endif
+
+#undef SELF
+#ifdef NBSELF
+  #define SELF(X) X
+  #define CLASS ComputeNonbondedSelf
+  #define CLASSNAME(X) FULLELECTNAME( X ## _self )
+  #define PLEN
+  #define I_SUB i
+  #define I_LOWER 0
+  #define I_UPPER (numAtoms - 1)
+  #define J_SUB j
+  #define J_LOWER (i + 1)
+  #define J_UPPER numAtoms
+#else
+  #define SELF(X)
+#endif
+
+#undef EXCL
+#undef NOEXCL
+#ifdef NBEXCL
+  #define EXCL(X) X
+  #define CLASS ComputeNonbondedExcl
+  #define CLASSNAME(X) FULLELECTNAME( X ## _excl )
+  #define NOEXCL(X)
+#else
+  #define EXCL(X)
+  #define NOEXCL(X) X
+#endif
+
+#undef FULLELECTNAME
+#undef FULL
+#undef NOFULL
+#ifdef FULLELECT
+  #define FULLELECTNAME(X) SPLITTINGNAME( X ## _fullelect )
+  #define FULL(X) X
+  #define NOFULL(X)
+#else
+  #define FULLELECTNAME(X) SPLITTINGNAME( X )
+  #define FULL(X)
+  #define NOFULL(X) X
+#endif
+#undef SPLITTINGNAME
+
+#undef SHIFTING
+#ifdef NOSPLIT
+  #define SPLITTINGNAME(X) LAST( X )
+  #undef SHIFTING
+  #define SHIFTING(X) X
+#else
+  #define SHIFTING(X)
+#endif
+
+#undef XPLORSPLITTING
+#ifdef SPLIT_XPLOR
+  #define SPLITTINGNAME(X) LAST( X ## _xplor )
+  #undef XPLORSPLITTING
+  #define XPLORSPLITTING(X) X
+#else
+  #define XPLORSPLITTING(X)
+#endif
+
+#undef C1SPLITTING
+#ifdef SPLIT_C1
+  #define SPLITTINGNAME(X) LAST( X ## _c1 )
+  #undef C1SPLITTING
+  #define C1SPLITTING(X) X
+#else
+  #define C1SPLITTING(X)
+#endif
+
+#define LAST(X) X
+
+
+// function header
+void ComputeNonbondedUtil :: NAME
 NOEXCL
 (
-NOFULL
-(
-(Position* p PLEN, Force* ff PLEN,
- AtomProperties* a PLEN,
- int numAtoms PLEN, BigReal *reduction)
+  FULL(
+  (Position* p PLEN, Force* ff PLEN,
+   Force* fullf PLEN,
+   AtomProperties* a PLEN,
+   int numAtoms PLEN, BigReal *reduction)
+  )
+  NOFULL
+  (
+  (Position* p PLEN, Force* ff PLEN,
+   AtomProperties* a PLEN,
+   int numAtoms PLEN, BigReal *reduction)
+  )
 )
-FULL
-(
-(Position* p PLEN, Force* ff PLEN, Force* fullf PLEN,
- AtomProperties* a PLEN,
- int numAtoms PLEN, BigReal *reduction)
-)
-)
+
 EXCL
 (
-NOFULL
-(
-(const Position & p_ij,
- Force & f_i, Force & f_j,
- const AtomProperties & a_i, const AtomProperties & a_j,
- int m14, BigReal *reduction)
+  FULL(
+  (const Position & p_ij,
+   Force & f_i, Force & f_j,
+   Force & fullf_i, Force & fullf_j,
+   const AtomProperties & a_i, const AtomProperties & a_j,
+   int m14, BigReal *reduction)
+  )
+  NOFULL(
+  (const Position & p_ij,
+   Force & f_i, Force & f_j,
+   const AtomProperties & a_i, const AtomProperties & a_j,
+   int m14, BigReal *reduction)
+  )
 )
-FULL
-(
-(const Position & p_ij,
- Force & f_i, Force & f_j,
- Force & fullf_i, Force & fullf_j,
- const AtomProperties & a_i, const AtomProperties & a_j,
- int m14, BigReal *reduction)
-)
-)
-DECL( ; )
-#endif
-#ifdef DEFINITION
+
+// function body
 {
   BigReal vdwEnergy = 0;
   BigReal electEnergy = 0;
   BigReal virial = 0;
-FULL
-(
+  FULL
+  (
   BigReal fullElectEnergy = 0;
   BigReal fullElectVirial = 0;
-)
-
-NOEXCL
-(
+  )
+  NOFULL
+  (
   // Bringing stuff into local namespace for speed.
   // Probably makes things slower in exclusion mode, though.
 
@@ -92,7 +209,7 @@ NOEXCL
   const BigReal c5 = ComputeNonbondedUtil:: c5;
   const BigReal c6 = ComputeNonbondedUtil:: c6;
   const BigReal d0 = ComputeNonbondedUtil:: d0;
-)
+  )
 
 NOEXCL
 (
@@ -101,13 +218,8 @@ NOEXCL
   register int j;
   register int i;
 
-#if 1
-// only define this when using hydrogen grouping code.
-// don't define this if you want the original code.
-#define USINGSPECIALCODE
-#endif
-
-#ifdef USINGSPECIALCODE
+  HGROUPING
+  (
   int pairlistindex=0;
   static int pairlist_std[1001];
   int pairlistoffset=0;
@@ -125,7 +237,7 @@ NOEXCL
 	pairlist = pairlist_std;
 	pairlist[1000] = 0;
 	}
-#endif
+  )
 
   for ( i = I_LOWER; i < i_upper; ++i )
   {
@@ -139,9 +251,10 @@ NOEXCL
     Force & f_i = ff[I_SUB];
     FULL( Force & fullf_i = fullf[I_SUB]; )
 
-#ifdef USINGSPECIALCODE
-if (a_i.hydrogenGroupSize)
-{
+  HGROUPING
+  (
+  if (a_i.hydrogenGroupSize)
+    {
     pairlistindex = 0;	// initialize with 0 elements
     pairlistoffset=0;
 
@@ -156,16 +269,16 @@ if (a_i.hydrogenGroupSize)
     // this loop may not be necessary -- it's not necessary when
     // migrating by hydrogen groups.
 
-#ifdef NBSELF
-    // add all child hydrogens of i
-    for(j=J_LOWER; (j<j_upper) && (a[J_SUB].hydrogenGroupSize == 0); j++)
+    j = J_LOWER;
+    SELF
+      (
+      // add all child hydrogens of i
+      for( ; (j<j_upper) && (a[J_SUB].hydrogenGroupSize == 0); j++)
 	{
 	pairlist[pairlistindex++] = j;
 	p_j++;
 	}
-#else
-    j = J_LOWER;
-#endif
+      )
 
     // add remaining atoms to pairlist via hydrogen groups
     for ( ; j < j_upper; ++j )
@@ -195,14 +308,14 @@ if (a_i.hydrogenGroupSize)
 	p_j++;
 	} // for j
     }
-} // if i is hydrogen group parent
-#ifdef NBSELF
-  // self-comparisions require list to be incremented
-  // pair-comparisions use entire list (pairlistoffset is 0)
-  else pairlistoffset++;
-#endif
-#endif
-
+  } // if i is hydrogen group parent
+  SELF
+    (
+    // self-comparisions require list to be incremented
+    // pair-comparisions use entire list (pairlistoffset is 0)
+    else pairlistoffset++;
+    )
+  )
 )
 
     const BigReal NOEXCL( kq_i_u ) EXCL( kq_i ) =
@@ -212,25 +325,29 @@ NOEXCL
 (
     const BigReal kq_i_s = kq_i_u * scale14;
     register Position *p_j = PAIR( p[1] ) SELF( p+i+1 ) ;
-#ifdef USINGSPECIALCODE
+    HGROUPING
+    (
     if (pairlist[pairlistoffset] != J_LOWER)
 	p_j += pairlist[pairlistoffset]-J_LOWER;
-#endif
+    )
     register BigReal p_j_x = p_j->x;
     register BigReal p_j_y = p_j->y;
     register BigReal p_j_z = p_j->z;
 
-#ifdef USINGSPECIALCODE
+    HGROUPING
+    (
     for (int k=pairlistoffset; k<pairlistindex; k++)
     {
       j = pairlist[k];
       // don't worry about [k+1] going beyond array since array is 1 too large
       p_j += pairlist[k+1]-j; // preload
-#else
+    )
+    NOHGROUPING
+    (
     for(j=J_LOWER; j<j_upper; j++)
     {
       p_j += ( j + 1 < j_upper );
-#endif
+    )
       register const BigReal p_ij_x = p_i_x - p_j_x;
       p_j_x = p_j->x;					// preload
       register const BigReal p_ij_y = p_i_y - p_j_y;
@@ -252,39 +369,45 @@ EXCL
       if ( r2 > cutoff2 )
       {
 	NOEXCL( continue; )
-	EXCL( FULL(
-	// Do a quick fix and get out!
-	const BigReal r = sqrt(r2);
-	const BigReal r_1 = 1/r;
-	BigReal kqq = kq_i * a_j.charge;
-	BigReal f = kqq*r_1;
-	if ( m14 ) f *= ( 1. - scale14 );
-	fullElectEnergy -= f;
-	fullElectVirial -= f;
-	const Vector f_elec = p_ij * ( f * r_1 * r_1 );
-	fullf_i -= f_elec;
-	fullf_j += f_elec;
-	reduction[fullElectEnergyIndex] += fullElectEnergy;
-	reduction[fullElectVirialIndex] += fullElectVirial;
-	) return; )
+	EXCL(
+	  FULL(
+	    // Do a quick fix and get out!
+	    const BigReal r = sqrt(r2);
+	    const BigReal r_1 = 1/r;
+	    BigReal kqq = kq_i * a_j.charge;
+	    BigReal f = kqq*r_1;
+	    if ( m14 ) f *= ( 1. - scale14 );
+	    fullElectEnergy -= f;
+	    fullElectVirial -= f;
+	    const Vector f_elec = p_ij * ( f * r_1 * r_1 );
+	    fullf_i -= f_elec;
+	    fullf_j += f_elec;
+	    reduction[fullElectEnergyIndex] += fullElectEnergy;
+	    reduction[fullElectVirialIndex] += fullElectVirial;
+	  )
+	return; )
       }
+
 NOEXCL
 (
       BigReal kq_i = kq_i_u;
       const AtomProperties & a_j = a[J_SUB];
 
-FULL
-(
-      Force & fullf_j = fullf[J_SUB];
-      const BigReal r = sqrt(r2);
-      const BigReal r_1 = 1/r;
-      BigReal kqq = kq_i * a_j.charge;
-      BigReal f = kqq*r_1;
-)
+      FULL
+      (
+        Force & fullf_j = fullf[J_SUB];
+        const BigReal r = sqrt(r2);
+        const BigReal r_1 = 1/r;
+        BigReal kqq = kq_i * a_j.charge;
+        BigReal f = kqq*r_1;
+      )
 )
 
       register BigReal force_r = 0.;			//  force / r
-      FULL( register BigReal fullforce_r = 0.; )	//  fullforce / r
+      FULL
+      (
+      register BigReal fullforce_r = 0.;	//  fullforce / r
+      )
 
       const LJTable::TableEntry * lj_pars = 
 		ljTable->table_val(a_i.type, a_j.type);
@@ -338,18 +461,19 @@ NOEXCL
       Force & f_j = ff[J_SUB];
 )
 
-NOFULL
-(
+      NOFULL
+      (
       const BigReal r = sqrt(r2);
       const BigReal r_1 = 1/r;
-)
-EXCL
-(
+      )
+
 FULL
 (
+  EXCL
+  (
       const BigReal r = sqrt(r2);
       const BigReal r_1 = 1/r;
-)
+  )
 )
 
       BigReal switchVal; // used for Lennard-Jones
@@ -413,9 +537,13 @@ C1SPLITTING
 //  --------------------------------------------------------------------------
 
 
-      NOFULL(const BigReal) EXCL(FULL(const BigReal)) kqq = kq_i * a_j.charge;
+      FULL(EXCL(const BigReal))
+      NOFULL(const BigReal)
+      kqq = kq_i * a_j.charge;
 
-      NOFULL(BigReal) EXCL(FULL(BigReal)) f = kqq*r_1;
+      FULL(EXCL(BigReal))
+      NOFULL(BigReal)
+      f = kqq*r_1;
       
 EXCL
 (
@@ -426,19 +554,20 @@ NOEXCL
 (
       electEnergy += f * shiftVal;
 )
+
 FULL
 (
-EXCL
-(
+  EXCL
+  (
       fullElectEnergy += f * ( shiftVal - 1. );
       if ( m14 ) fullElectEnergy -= f * ( shiftVal - 1. ) * scale14;
-)
-NOEXCL
-(
+      BigReal f2 = f * ( r_1 * r_1 );
+  )
+  NOEXCL
+  (
       fullElectEnergy -= f * shiftVal;
+  )
 )
-)      
-      EXCL( FULL( BigReal f2 = f * ( r_1 * r_1 ); ) )
       f *= r_1*( shiftVal * r_1 - dShiftVal );
 
       NOEXCL( const ) BigReal f_elec = f;
@@ -446,27 +575,18 @@ NOEXCL
 EXCL
 (
       force_r -= f_elec;
-FULL
-(
-      fullforce_r += ( f - f2 );
-)
+      FULL( fullforce_r += ( f - f2 ); )
       if ( m14 )
       {
 	f_elec *= scale14;
 	force_r += f_elec;
-FULL
-(
-	fullforce_r -= ( ( f - f2 ) * scale14 );
-)
+	FULL( fullforce_r -= ( ( f - f2 ) * scale14 ); )
       }
 )
 NOEXCL
 (
       force_r += f_elec;
-FULL
-(
-      fullforce_r -= f_elec;
-)
+      FULL( fullforce_r -= f_elec; )
 )
 
       BigReal r_6 = r_1*r_1*r_1; r_6 *= r_6;
@@ -524,8 +644,8 @@ NOEXCL
       f_j.y -= tmp_y;
       f_j.z -= tmp_z;
 
-FULL
-(
+      FULL
+      (
       fullElectVirial += fullforce_r * r2;
 
       tmp_x = fullforce_r * p_ij_x;
@@ -538,40 +658,44 @@ FULL
       fullf_j.x -= tmp_x;
       fullf_j.y -= tmp_y;
       fullf_j.z -= tmp_z;
-)
+      )
 
 NOEXCL
 (
     } // for pairlist
   } // for i
-#ifdef USINGSPECIALCODE
-  if (pairlist != pairlist_std) delete pairlist;
-#endif
+  HGROUPING( if (pairlist != pairlist_std) delete pairlist; )
 )
 
   reduction[vdwEnergyIndex] += vdwEnergy;
   reduction[electEnergyIndex] += electEnergy;
   reduction[virialIndex] += virial;
-FULL
-(
+  FULL
+  (
   reduction[fullElectEnergyIndex] += fullElectEnergy;
   reduction[fullElectVirialIndex] += fullElectVirial;
-)
+  )
 
 }
-#endif
 
 /***************************************************************************
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1997/05/12 18:45:21 $
+ *	$Revision: 1.1016 $	$Date: 1997/05/13 18:30:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1016  1997/05/13 18:30:45  nealk
+ * Removed ComputeNonbondedHack.h!
+ * Reduced a lot of code in Util and Base.
+ * ComputeNonbondedBase.h now only contains the function definitions.
+ * The only heavy macro areas are in Util.C (determining which Base.h to define)
+ * and Base.h (where the functions are defined).
+ *
  * Revision 1.1015  1997/05/12 18:45:21  nealk
  * Minor coding changes (looks nicer).
  *

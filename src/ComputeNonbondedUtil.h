@@ -65,109 +65,98 @@ public:
   static BigReal c6;
   static BigReal d0;
 
-#define DECLARATION
-#undef DEFINITON
+  // No splitting
+  static void calc_pair (
+			Position* p [2], Force* ff [2],
+			AtomProperties* a [2],
+			int numAtoms [2], BigReal *reduction);
+  static void calc_pair_fullelect (
+			Position* p [2], Force* ff [2],
+			Force* fullf [2],
+			AtomProperties* a [2],
+			int numAtoms [2], BigReal *reduction);
+  static void calc_self (
+			Position* p , Force* ff ,
+			AtomProperties* a ,
+			int numAtoms , BigReal *reduction);
+  static void calc_self_fullelect (
+			Position* p , Force* ff ,
+			Force* fullf ,
+			AtomProperties* a ,
+			int numAtoms , BigReal *reduction);
+  static void calc_excl (
+			const Position & p_ij,
+			Force & f_i, Force & f_j,
+			const AtomProperties & a_i, const AtomProperties & a_j,
+			int m14, BigReal *reduction);
+  static void calc_excl_fullelect (
+			const Position & p_ij,
+			Force & f_i, Force & f_j,
+			Force & fullf_i, Force & fullf_j,
+			const AtomProperties & a_i, const AtomProperties & a_j,
+			int m14, BigReal *reduction);
 
-// (3) BEGIN SPLITTING
-#define NOSPLIT
-#undef SPLIT_XPLOR
-#undef SPLIT_C1
-//   (2) BEGIN PAIR / SELF / EXCL
-#define NBPAIR
-#undef NBSELF
-#undef NBEXCL
-//     (1) BEGIN FULLELECT
-#define FULLELECT
-#include "ComputeNonbondedBase.h"
-#undef FULLELECT
-#include "ComputeNonbondedBase.h"
-//     (1) END FULLELECT
-#undef NBPAIR
-#define NBSELF
-#undef NBEXCL
-//     (1) BEGIN FULLELECT
-#define FULLELECT
-#include "ComputeNonbondedBase.h"
-#undef FULLELECT
-#include "ComputeNonbondedBase.h"
-//     (1) END FULLELECT
-#undef NBPAIR
-#undef NBSELF
-#define NBEXCL
-//     (1) BEGIN FULLELECT
-#define FULLELECT
-#include "ComputeNonbondedBase.h"
-#undef FULLELECT
-#include "ComputeNonbondedBase.h"
-//     (1) END FULLELECT
-//   (2) END PAIR / SELF / EXCL
+  // C1 Splitting
+  static void calc_pair_c1 (
+			Position* p [2], Force* ff [2],
+			AtomProperties* a [2],
+			int numAtoms [2], BigReal *reduction);
+  static void calc_pair_fullelect_c1 (
+			Position* p [2], Force* ff [2],
+			Force* fullf [2],
+			AtomProperties* a [2],
+			int numAtoms [2], BigReal *reduction);
+  static void calc_self_c1 (
+			Position* p , Force* ff ,
+			AtomProperties* a ,
+			int numAtoms , BigReal *reduction);
+  static void calc_self_fullelect_c1 (
+			Position* p , Force* ff ,
+			Force* fullf ,
+			AtomProperties* a ,
+			int numAtoms , BigReal *reduction);
+  static void calc_excl_c1 (
+			const Position & p_ij,
+			Force & f_i, Force & f_j,
+			const AtomProperties & a_i, const AtomProperties & a_j,
+			int m14, BigReal *reduction);
+  static void calc_excl_fullelect_c1 (
+			const Position & p_ij,
+			Force & f_i, Force & f_j,
+			Force & fullf_i, Force & fullf_j,
+			const AtomProperties & a_i, const AtomProperties & a_j,
+			int m14, BigReal *reduction);
 
-#undef NOSPLIT
-#define SPLIT_XPLOR
-#undef SPLIT_C1
-//   (2) BEGIN PAIR / SELF / EXCL
-#define NBPAIR
-#undef NBSELF
-#undef NBEXCL
-//     (1) BEGIN FULLELECT
-#define FULLELECT
-#include "ComputeNonbondedBase.h"
-#undef FULLELECT
-#include "ComputeNonbondedBase.h"
-//     (1) END FULLELECT
-#undef NBPAIR
-#define NBSELF
-#undef NBEXCL
-//     (1) BEGIN FULLELECT
-#define FULLELECT
-#include "ComputeNonbondedBase.h"
-#undef FULLELECT
-#include "ComputeNonbondedBase.h"
-//     (1) END FULLELECT
-#undef NBPAIR
-#undef NBSELF
-#define NBEXCL
-//     (1) BEGIN FULLELECT
-#define FULLELECT
-#include "ComputeNonbondedBase.h"
-#undef FULLELECT
-#include "ComputeNonbondedBase.h"
-//     (1) END FULLELECT
-//   (2) END PAIR / SELF / EXCL
-
-#undef NOSPLIT
-#undef SPLIT_XPLOR
-#define SPLIT_C1
-//   (2) BEGIN PAIR / SELF / EXCL
-#define NBPAIR
-#undef NBSELF
-#undef NBEXCL
-//     (1) BEGIN FULLELECT
-#define FULLELECT
-#include "ComputeNonbondedBase.h"
-#undef FULLELECT
-#include "ComputeNonbondedBase.h"
-//     (1) END FULLELECT
-#undef NBPAIR
-#define NBSELF
-#undef NBEXCL
-//     (1) BEGIN FULLELECT
-#define FULLELECT
-#include "ComputeNonbondedBase.h"
-#undef FULLELECT
-#include "ComputeNonbondedBase.h"
-//     (1) END FULLELECT
-#undef NBPAIR
-#undef NBSELF
-#define NBEXCL
-//     (1) BEGIN FULLELECT
-#define FULLELECT
-#include "ComputeNonbondedBase.h"
-#undef FULLELECT
-#include "ComputeNonbondedBase.h"
-//     (1) END FULLELECT
-//   (2) END PAIR / SELF / EXCL
-// (3) END SPLITTING
+  // XPLOR Splitting
+  static void calc_pair_xplor (
+			Position* p [2], Force* ff [2],
+			AtomProperties* a [2],
+			int numAtoms [2], BigReal *reduction);
+  static void calc_pair_fullelect_xplor (
+			Position* p [2], Force* ff [2],
+			Force* fullf [2],
+			AtomProperties* a [2],
+			int numAtoms [2], BigReal *reduction);
+  static void calc_self_xplor (
+			Position* p , Force* ff ,
+			AtomProperties* a ,
+			int numAtoms , BigReal *reduction);
+  static void calc_self_fullelect_xplor (
+			Position* p , Force* ff ,
+			Force* fullf ,
+			AtomProperties* a ,
+			int numAtoms , BigReal *reduction);
+  static void calc_excl_xplor (
+			const Position & p_ij,
+			Force & f_i, Force & f_j,
+			const AtomProperties & a_i, const AtomProperties & a_j,
+			int m14, BigReal *reduction);
+  static void calc_excl_fullelect_xplor (
+			const Position & p_ij,
+			Force & f_i, Force & f_j,
+			Force & fullf_i, Force & fullf_j,
+			const AtomProperties & a_i, const AtomProperties & a_j,
+			int m14, BigReal *reduction);
 
 };
 
@@ -177,12 +166,19 @@ public:
  *
  *	$RCSfile: ComputeNonbondedUtil.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/05/05 16:39:00 $
+ *	$Revision: 1.1009 $	$Date: 1997/05/13 18:30:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.h,v $
+ * Revision 1.1009  1997/05/13 18:30:47  nealk
+ * Removed ComputeNonbondedHack.h!
+ * Reduced a lot of code in Util and Base.
+ * ComputeNonbondedBase.h now only contains the function definitions.
+ * The only heavy macro areas are in Util.C (determining which Base.h to define)
+ * and Base.h (where the functions are defined).
+ *
  * Revision 1.1008  1997/05/05 16:39:00  nealk
  * Corrected cutoff value used with hydrogen grouping.  (groupcutoff2)
  *
