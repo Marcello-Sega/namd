@@ -6,16 +6,16 @@
 <h1>PatchMgr</h1>
 <h2>Messages</h2>
 <dl>
-  <dt> MovePatchesMsg <dd> (packed)
-  <dt> MigrateAtomsMsg <dd> (packed)
-  <dt> MigrateAtomsCombinedMsg <dd> (packed)
+  <dt> MovePatchesMsg <dd> (packed) Contains basic information about all atoms in a patch.
+  <dt> MigrateAtomsMsg <dd> (packed) Contains a MigrationList with total information about all atoms to be moved.
+  <dt> MigrateAtomsCombinedMsg <dd> (packed) Same as MigrateAtomsMsg only data for different patches is mixed to reduce message count.  Has distribute method to deposit data to patches.
 </dl>
 <h2>Entry Points</h2>
 <dl>
-  <dt> PatchMgr(InitMsg *) <dd>
-  <dt> recvMovePatches(MovePatchesMsg *) <dd>
-  <dt> recvMigrateAtoms(MigrateAtomsMsg *) <dd>
-  <dt> recvMigrateAtomsCombined(MigrateAtomsCombinedMsg *) <dd>
+  <dt> PatchMgr(InitMsg *) <dd> Checks singleton status.  Instances and binds to PatchMap. Initializes migration message combining system.
+  <dt> recvMovePatches(MovePatchesMsg *) <dd> Creates a home patch based on data sent by sendMovePatches.
+  <dt> recvMigrateAtoms(MigrateAtomsMsg *) <dd> Deposits data sent by sendMigrationMsg to appropriate patch.
+  <dt> recvMigrateAtomsCombined(MigrateAtomsCombinedMsg *) <dd> Calls message to distribute combined data sent by sendMigrationMsgs.
 </dl>
 </body>
 </html>

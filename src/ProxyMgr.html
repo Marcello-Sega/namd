@@ -6,21 +6,21 @@
 <h1>ProxyMgr</h1>
 <h2>Messages</h2>
 <dl>
-  <dt> RegisterProxyMsg <dd>
-  <dt> UnregisterProxyMsg <dd>
-  <dt> ProxyAtomsMsg <dd> (packed)
-  <dt> ProxyDataMsg <dd> (packed)
-  <dt> ProxyAllMsg <dd> (packed)
-  <dt> ProxyResultMsg <dd> (packed)
+  <dt> RegisterProxyMsg <dd> Contains node and patch IDs.
+  <dt> UnregisterProxyMsg <dd> Contains node and patch IDs
+  <dt> ProxyAtomsMsg <dd> (packed) Contains AtomIDs but not positions.
+  <dt> ProxyDataMsg <dd> (packed) Contains Positions but not AtomIDs.
+  <dt> ProxyAllMsg <dd> (packed) Contains AtomIDs and Positions.
+  <dt> ProxyResultMsg <dd> (packed) Contains Forces.
 </dl>
 <h2>Entry Points</h2>
 <dl>
-  <dt> ProxyMgr(InitMsg *) <dd>
-  <dt> recvRegisterProxy(RegisterProxyMsg *) <dd>
-  <dt> recvProxyData(ProxyDataMsg *) <dd>
-  <dt> recvProxyAtoms(ProxyAtomsMsg *) <dd>
-  <dt> recvProxyAll(ProxyAllMsg *) <dd>
-  <dt> recvResults(ProxyResultMsg *) <dd>
+  <dt> ProxyMgr(InitMsg *) <dd> Checks singleton status.
+  <dt> recvRegisterProxy(RegisterProxyMsg *) <dd> Passes to HomePatch::registerProxy.
+  <dt> recvProxyData(ProxyDataMsg *) <dd> Deposits data sent by home patch via sendProxyData to proxy.  Used during normal timesteps.
+  <dt> recvProxyAtoms(ProxyAtomsMsg *) <dd> Deposits data sent by home patch via sendProxyAtoms to proxy.  Used when a proxy is created, when sendProxyAtoms is called by HomePatch::registerProxy.
+  <dt> recvProxyAll(ProxyAllMsg *) <dd> Deposits data sent by home patch via sendProxyAtoms to proxy.  Used during atom migration timesteps.
+  <dt> recvResults(ProxyResultMsg *) <dd> Deposits data sent by proxy via sendResults to home patch.
 </dl>
 </body>
 </html>
