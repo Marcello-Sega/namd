@@ -91,7 +91,7 @@ void ComputeMgr:: createComputes(ComputeMap *map)
     switch ( map->computeData[i].type )
     {
       case computeNonbondedSelfType:
-	c = new ComputeNonbondedSelf(i,map->computeData[i].pids[0].pid);
+	c = new ComputeNonbondedSelf(i,map->computeData[i].pids[0].pid); // unknown delete
 	DebugM(3,"ComputeNonbondedSelf created.\n");
 	++numNonbondedSelf;
 	map->registerCompute(i,c);
@@ -102,14 +102,14 @@ void ComputeMgr:: createComputes(ComputeMap *map)
 	trans2[0] = map->computeData[i].pids[0].trans;
 	pid2[1] = map->computeData[i].pids[1].pid;
 	trans2[1] = map->computeData[i].pids[1].trans;
-	c = new ComputeNonbondedPair(i,pid2,trans2);
+	c = new ComputeNonbondedPair(i,pid2,trans2); // unknown delete
 	DebugM(3,"ComputeNonbondedPair created.\n");
 	++numNonbondedPair;
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
       case computeNonbondedExclType:
-	c = new ComputeNonbondedExcls(i);
+	c = new ComputeNonbondedExcls(i); // unknown delete
 	DebugM(4,"ComputeNonbondedExcls created.\n");
 	map->registerCompute(i,c);
 	DebugM(3,"ComputeNonbondedExcls registered.\n");
@@ -117,45 +117,45 @@ void ComputeMgr:: createComputes(ComputeMap *map)
 	DebugM(3,"ComputeNonbondedExcls ready.\n");
 	break;
       case computeBondsType:
-	c = new ComputeBonds(i);
+	c = new ComputeBonds(i); // unknown delete
 	DebugM(4,"ComputeBonds created.\n");
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
       case computeAnglesType:
-	c = new ComputeAngles(i);
+	c = new ComputeAngles(i); // unknown delete
 	DebugM(4,"ComputeAngles created.\n");
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
       case computeDihedralsType:
-	c = new ComputeDihedrals(i);
+	c = new ComputeDihedrals(i); // unknown delete
 	DebugM(4,"ComputeDihedrals created.\n");
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
       case computeImpropersType:
-	c = new ComputeImpropers(i);
+	c = new ComputeImpropers(i); // unknown delete
 	DebugM(4,"ComputeImpropers created.\n");
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
 #ifdef DPMTA
       case computeDPMTAType:
-	c = new ComputeDPMTA(i);
+	c = new ComputeDPMTA(i); // unknown delete
 	DebugM(4,"ComputeDPMTA created.\n");
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
       case computeDPMEType:
-	// c = new ComputeDPME(i);
+	// c = new ComputeDPME(i); // unknown delete
 	DebugM(4,"ComputeDPME *NOT* created.\n");
 	// map->registerCompute(i,c);
 	// c->initialize();
 	break;
 #endif
       case computeFullDirectType:
-	c = new ComputeFullDirect(i);
+	c = new ComputeFullDirect(i); // unknown delete
 	DebugM(4,"ComputeFullDirect created.\n");
 	map->registerCompute(i,c);
 	c->initialize();
@@ -183,8 +183,8 @@ void ComputeMgr:: createComputes(ComputeMap *map)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/02/11 18:51:43 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/02/14 19:18:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:

@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1004 1997/02/14 19:07:30 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1005 1997/02/14 19:18:37 nealk Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -109,11 +109,11 @@ void ComputeMap::unpack (void *in)
   UNPACK(int,nAtomBased);
   UNPACK(int,nComputes);
   UNPACK(int,nAllocated);
-  computeData = new ComputeData[nAllocated];
+  computeData = new ComputeData[nAllocated];	// deleted during ~.
   for(i=0;i<nComputes;++i)
   {
     UNPACK(ComputeData,computeData[i]);
-    computeData[i].pids = new PatchRec[computeData[i].numPidsAllocated];
+    computeData[i].pids = new PatchRec[computeData[i].numPidsAllocated]; // deleted during ~
     for(j=0;j<computeData[i].numPidsAllocated;++j)
       UNPACK(PatchRec,computeData[i].pids[j]);
   }
@@ -293,12 +293,15 @@ void ComputeMap::printComputeMap(void)
  *
  *	$RCSfile: ComputeMap.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/02/14 19:07:30 $
+ *	$Revision: 1.1005 $	$Date: 1997/02/14 19:18:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.C,v $
+ * Revision 1.1005  1997/02/14 19:18:37  nealk
+ * More new/delete commenting.
+ *
  * Revision 1.1004  1997/02/14 19:07:30  nealk
  * Added new/delete comments.
  * Played with DPMTA.
