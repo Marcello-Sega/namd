@@ -327,6 +327,7 @@ public:
 	int rigidDie;			// die if rigidTol not achieved
 
 	Bool testOn;			//  Do tests rather than simulation
+	Bool commOnly;			//  Don't do any force evaluations
 
 	int totalAtoms;			//  Total Number of atoms in simulation
 

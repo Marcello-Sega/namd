@@ -100,6 +100,8 @@ void ComputeNonbondedUtil :: NAME
 
 // function body
 {
+  NOEXCL( if ( ComputeNonbondedUtil::commOnly ) return; )
+
   // speedup variables
   BigReal *reduction = params->reduction;
   EXCL

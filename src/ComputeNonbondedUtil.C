@@ -15,6 +15,7 @@
 #include "LJTable.h"
 #include "ReductionMgr.h"
 
+Bool		ComputeNonbondedUtil::commOnly;
 Bool		ComputeNonbondedUtil::fixedAtomsOn;
 Real            ComputeNonbondedUtil::cutoff;
 BigReal         ComputeNonbondedUtil::cutoff2;
@@ -76,6 +77,7 @@ void ComputeNonbondedUtil::select(void)
 {
   SimParameters * simParams = Node::Object()->simParameters;
 
+  commOnly = simParams->commOnly;
   fixedAtomsOn = simParams->fixedAtomsOn;
 
   cutoff = simParams->cutoff;

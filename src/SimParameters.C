@@ -800,6 +800,8 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
    /////  Test mode options
    opts.optionalB("main", "test", "Perform self-tests rather than simulation",
 		&testOn, FALSE);
+   opts.optionalB("main", "commOnly", "Don't evaluate forces or integrate",
+		&commOnly, FALSE);
 
    ///////////////  hydrogen bond computation options
    opts.optionalB("main", "hbonds", "Use explicit hydrogen bond term",

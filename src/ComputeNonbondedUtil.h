@@ -63,6 +63,7 @@ public:
 	 reductionDataSize };
   static void submitReductionData(BigReal*,SubmitReduction*);
 
+  static Bool commOnly;
   static Bool fixedAtomsOn;
   static Real cutoff;
   static BigReal cutoff2;

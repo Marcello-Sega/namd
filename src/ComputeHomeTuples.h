@@ -20,6 +20,7 @@
 #include "UniqueSet.h"
 
 #include "Node.h"
+#include "SimParameters.h"
 #include "PatchMap.inl"
 #include "AtomMap.h"
 #include "ComputeHomeTuples.h"
@@ -245,9 +246,15 @@ template <class T, class S> class ComputeHomeTuples : public Compute {
     
       // take triplet and pass with tuple info to force eval
       UniqueSetIter<T> al(tupleList);
-      for (al = al.begin(); al != al.end(); al++ ) {
-        al->computeForce(reductionData);
-        tupleCount += 1;
+      if ( Node::Object()->simParameters->commOnly ) {
+        for (al = al.begin(); al != al.end(); al++ ) {
+          tupleCount += 1;
+        }
+      } else {
+        for (al = al.begin(); al != al.end(); al++ ) {
+          al->computeForce(reductionData);
+          tupleCount += 1;
+        }
       }
     
       T::submitReductionData(reductionData,reduction);

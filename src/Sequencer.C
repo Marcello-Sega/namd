@@ -95,6 +95,8 @@ void Sequencer::algorithm(void)
     int &step = patch->flags.step;
     step = simParams->firstTimestep;
 
+    const int commOnly = simParams->commOnly;
+
     int &maxForceUsed = patch->flags.maxForceUsed;
     int &maxForceMerged = patch->flags.maxForceMerged;
     maxForceUsed = Results::normal;
@@ -149,17 +151,19 @@ void Sequencer::algorithm(void)
 	berendsenPressure(step);
 	// langevinVelocities(0.5*timestep);
 
+       if ( ! commOnly ) {
 	addForceToMomentum(0.5*timestep);
 	if (staleForces || doNonbonded)
 		addForceToMomentum(0.5*nbondstep,Results::nbond,staleForces);
 	if (staleForces || doFullElectrostatics)
 		addForceToMomentum(0.5*slowstep,Results::slow,staleForces);
 	langevinVelocitiesBBK1(timestep);
+       }
 
 	maximumMove(timestep);
-	addVelocityToPosition(0.5*timestep);
+	if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
 	langevinPiston(step);
-	addVelocityToPosition(0.5*timestep);
+	if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
 	rattle1(timestep);
 	minimizationQuenchVelocity();
 
@@ -178,12 +182,14 @@ void Sequencer::algorithm(void)
 	  if ( doFullElectrostatics ) saveForce(Results::slow);
 	}
 
+       if ( ! commOnly ) {
 	langevinVelocitiesBBK2(timestep);
 	addForceToMomentum(0.5*timestep);
 	if (staleForces || doNonbonded)
 		addForceToMomentum(0.5*nbondstep,Results::nbond,staleForces);
 	if (staleForces || doFullElectrostatics)
 		addForceToMomentum(0.5*slowstep,Results::slow,staleForces);
+       }
 
 	// langevinVelocities(0.5*timestep);
 	reassignVelocities(step);
