@@ -673,6 +673,8 @@ void WorkDistrib::mapComputes(void)
   mapComputePatch(computeSelfDihedralsType);
   mapComputePatch(computeSelfImpropersType);
 
+  if ( node->simParameters->eFieldOn )
+    mapComputePatch(computeEFieldType);
   if ( node->simParameters->sphericalBCOn )
     mapComputePatch(computeSphericalBCType);
   if ( node->simParameters->cylindricalBCOn )

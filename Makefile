@@ -61,6 +61,7 @@ OBJS = \
 	$(DSTDIR)/ComputeDPME.o \
 	$(DSTDIR)/ComputeDPMEMsgs.o \
 	$(DSTDIR)/ComputeDPMTA.o \
+	$(DSTDIR)/ComputeEField.o \
 	$(DSTDIR)/ComputeFreeEnergy.o \
 	$(DSTDIR)/ComputeFullDirect.o \
 	$(DSTDIR)/ComputeHomePatch.o \

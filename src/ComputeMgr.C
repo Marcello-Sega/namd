@@ -38,6 +38,7 @@
 #include "ComputeDPME.h"
 #include "ComputeDPMEMsgs.h"
 #include "ComputePme.h"
+#include "ComputeEField.h"
 #include "ComputeSphericalBC.h"
 #include "ComputeCylindricalBC.h"
 #include "ComputeRestraints.h"
@@ -281,6 +282,11 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	break;
       case computeGlobalType:
 	c = computeGlobalObject = new ComputeGlobal(i,this); // unknown delete
+	map->registerCompute(i,c);
+	c->initialize();
+	break;
+      case computeEFieldType:
+	c = new ComputeEField(i,map->computeData[i].pids[0].pid); // unknown delete
 	map->registerCompute(i,c);
 	c->initialize();
 	break;

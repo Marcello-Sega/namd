@@ -104,6 +104,7 @@ void SimParameters::scriptSet(const char *param, const char *value) {
 #define SCRIPT_PARSE_BOOL(NAME,VAR) { if ( ! strncasecmp(param,(NAME),MAX_SCRIPT_PARAM_SIZE) ) { (VAR) = atobool(value); return; } }
 #define SCRIPT_PARSE_INT(NAME,VAR) { if ( ! strncasecmp(param,(NAME),MAX_SCRIPT_PARAM_SIZE) ) { (VAR) = atoi(value); return; } }
 #define SCRIPT_PARSE_FLOAT(NAME,VAR) { if ( ! strncasecmp(param,(NAME),MAX_SCRIPT_PARAM_SIZE) ) { (VAR) = atof(value); return; } }
+#define SCRIPT_PARSE_VECTOR(NAME,VAR) { if ( ! strncasecmp(param,(NAME),MAX_SCRIPT_PARAM_SIZE) ) { (VAR).set(value); return; } }
 #define SCRIPT_PARSE_STRING(NAME,VAR) { if ( ! strncasecmp(param,(NAME),MAX_SCRIPT_PARAM_SIZE) ) { strcpy(VAR,value); return; } }
 
   SCRIPT_PARSE_INT("numsteps",N)
@@ -114,6 +115,7 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_FLOAT("initialTemp",initialTemp)
   SCRIPT_PARSE_FLOAT("constraintScaling",constraintScaling)
   SCRIPT_PARSE_STRING("outputname",outputFilename)
+  SCRIPT_PARSE_VECTOR("eField",eField)
   if ( ! strncasecmp(param,"nonbondedScaling",MAX_SCRIPT_PARAM_SIZE) ) {
     nonbondedScaling = atof(value);
     ComputeNonbondedUtil::select();

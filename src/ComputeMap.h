@@ -34,6 +34,7 @@ enum ComputeType
   computePmeType,
   computeFullDirectType,
   computeGlobalType,
+  computeEFieldType,
   computeSphericalBCType,
   computeCylindricalBCType,
   computeRestraintsType,

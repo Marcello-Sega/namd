@@ -456,22 +456,6 @@ use are 2 and 4.}
 
 \end{itemize}
 
-%\paragraph{Applied electric field}
-%
-%\NAMD\ provides the ability to apply a constant electric field to the molecular
-%system being simulated.  There are two parameters that control this feature.
-%
-%\begin{itemize}
-%
-%\item
-%\NAMDCONFWDEF{eFieldOn}{apply electric field?}{{\tt yes} or %{\tt no}}{{\tt no}}
-%{Specifies whether or not an electric field is applied.}
-%
-%\item
-%\NAMDCONF{eField}{electric field vector}{vector of decimals}
-%{Vector which describes the electric field to be applied.}
-%
-%\end{itemize}
 
 \subsubsection{Periodic boundary conditions}
 
@@ -609,10 +593,34 @@ Is overridden by value read from file specified with {\tt extendedSystem}.}
 
 \subsection{Applied Forces and Analysis}
 
-Currently, there are two ways to steer simulations with \NAMD. One
-is called ``moving constraints'' and is based on the harmonic
-constraints feature. The other is a stand-alone feature called
-``SMD''. 
+There are several ways to apply external forces to simulations with \NAMD.
+These are described below.
+
+
+\subsubsection{External Electric Field}
+
+\NAMD\ provides the ability to apply a constant electric field to the molecular
+system being simulated.
+Energy due to the external field will be reported in the MISC column
+and may be discontinuous in simulations using periodic boundary conditions if,
+for example, a charged hydrogen group moves outside of the central cell.
+There are two parameters that control this feature.
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{eFieldOn}{apply electric field?}{{\tt yes} or {\tt no}}{{\tt no}}
+{Specifies whether or not an electric field is applied.}
+
+\item
+\NAMDCONF{eField}{electric field vector}{vector of decimals (x y z)}
+{Vector which describes the electric field to be applied.
+Units are ${\rm kcal} / ({\rm mol \; \AA} \; e)$, which is natural for simulations.
+This parameter may be changed between {\tt run} commands, allowing a square
+wave or other approximate wave form to be applied.}
+
+\end{itemize}
+
 
 \subsubsection{Moving Constraints}
 

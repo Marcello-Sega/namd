@@ -171,12 +171,15 @@ int ScriptTcl::Tcl_config(ClientData clientData,
 
 int ScriptTcl::Tcl_param(ClientData clientData,
         Tcl_Interp *interp, int argc, char *argv[]) {
-  if (argc != 3) {
+  if (argc != 3 && argc != 5) {
     Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
     return TCL_ERROR;
   }
   char *param = argv[1];
-  char *value = argv[2];
+  char value[MAX_SCRIPT_PARAM_SIZE];
+  if ( argc == 3 ) snprintf(value,MAX_SCRIPT_PARAM_SIZE,"%s",argv[2]);
+  if ( argc == 5 ) snprintf(value,MAX_SCRIPT_PARAM_SIZE,"%s %s %s",
+						argv[2],argv[3],argv[4]);
 
   iout << "TCL: Setting parameter " << param << " to " << value << "\n" << endi;
 
