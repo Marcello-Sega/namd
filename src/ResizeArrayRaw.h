@@ -93,7 +93,8 @@ template <class Elem> class ResizeArrayRaw {
     }
 
     // Copy constructor - true copy on construction.
-    ResizeArrayRaw(const ResizeArrayRaw<Elem> &rar ) {
+    ResizeArrayRaw(const ResizeArrayRaw<Elem> &rar ) : 
+      array((Elem *)0), varray((void *)0), arraySize(0), allocSize(0) {
       growthFactor = rar.growthFactor;
       minSize = rar.minSize;
       // We want rar.size() slots, but no constructor run on the elements
@@ -110,6 +111,8 @@ template <class Elem> class ResizeArrayRaw {
       varray = *array;
       this->array = (Elem *)*array;
       *array = 0;
+      growthFactor = GrowthFactor;
+      minSize = MinSize;
     }
   
     ~ResizeArrayRaw(void);
