@@ -512,6 +512,11 @@ The following parameters are used to define these boundary conditions.
 
 \subsection{Pressure Control}
 
+Constant pressure simulation (and pressure calculation) require periodic
+boundary conditions.  Pressure is controlled by dynamically adjusting
+the size of the unit cell and rescaling all atomic coordinates (other than
+those of fixed atoms) during the simulation.
+
 Pressure values in NAMD output are in bar.
 PRESSURE is the pressure calculated based on individual atoms, while
 GPRESSURE incorporates hydrogen atoms into the heavier atoms to which
