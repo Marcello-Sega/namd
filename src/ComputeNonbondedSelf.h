@@ -20,7 +20,7 @@ class ComputeNonbondedSelf : public ComputePatch {
 
 public:
   ComputeNonbondedSelf(ComputeID c, PatchID pid) : ComputePatch(c,pid) { ; }
-  virtual ~ComputeNonbondedSelf();
+  // virtual ~ComputeNonbondedSelf();
 
 protected :
   // virtual void mapReady() { ComputePatch::mapReady(); }
@@ -34,12 +34,15 @@ protected :
  *
  *	$RCSfile: ComputeNonbondedSelf.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/10/31 21:57:41 $
+ *	$Revision: 1.5 $	$Date: 1996/11/05 22:40:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.h,v $
+ * Revision 1.5  1996/11/05 22:40:05  jim
+ * commented out undefined virtual destructor
+ *
  * Revision 1.4  1996/10/31 21:57:41  jim
  * first incarnation as ComputeNonbondedSelf
  *
