@@ -40,6 +40,7 @@ public:
   }
 
   void initialize(PatchMap *pmap, ComputeMap *cmap, int reinit=0);
+  void createLoadBalancer();
   void patchLoad(PatchID id, int nAtoms, int timestep);
   void startWork(ComputeID id, int timestep);
   void endWork(ComputeID id, int timestep);

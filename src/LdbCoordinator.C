@@ -100,7 +100,7 @@ LdbCoordinator::LdbCoordinator()
     CkExit();
   }
   
-#if 1
+#if 0
   // Create a load balancer
   if (CkMyPe() == 0) {
     //   CreateCentralLB();
@@ -123,7 +123,11 @@ LdbCoordinator::LdbCoordinator()
 
   // Register self as an object manager for new charm++ balancer framework
   theLbdb = CProxy_LBDatabase::ckLocalBranch(lbdb);
+#if CHARM_VERSION > 050403
+  myOMid.id.idx = 1;
+#else
   myOMid.id = 1;
+#endif
   LDCallbacks cb = { (LDMigrateFn)staticMigrateFn,
 		     (LDStatsFn)staticStatsFn,
 		     (LDQueryEstLoadFn)staticQueryEstLoadFn
@@ -158,6 +162,17 @@ LdbCoordinator::~LdbCoordinator(void)
   if (ldbStatsFP)
     fclose(ldbStatsFP);
 
+}
+
+void LdbCoordinator::createLoadBalancer()
+{
+  const SimParameters *simParams = Node::Object()->simParameters;
+  if (simParams->ldbStrategy == LDBSTRAT_ALGNBOR) 
+    CreateNamdNborLB();
+  else {
+    //   CreateCentralLB();
+    CreateNamdCentLB();
+  }
 }
 
 void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)

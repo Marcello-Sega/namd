@@ -39,7 +39,7 @@ public:
   ComputeMgr();
   ~ComputeMgr();
   void createComputes(ComputeMap *map);
-  void updateComputes(int,int);
+  void updateComputes(int,CkGroupID);
   void updateComputes2(CkQdMsg *);
   void updateComputes3();
   void updateLocalComputes();
@@ -72,7 +72,7 @@ private:
 
   int updateComputesCount;
   int updateComputesReturnEP;
-  int updateComputesReturnChareID;
+  CkGroupID updateComputesReturnChareID;
 
   int *computeFlag;
 

@@ -74,7 +74,7 @@ WorkDistrib::~WorkDistrib(void)
 
 
 //----------------------------------------------------------------------
-void WorkDistrib::saveComputeMapChanges(int ep, int chareID)
+void WorkDistrib::saveComputeMapChanges(int ep, CkGroupID chareID)
 {
   saveComputeMapReturnEP = ep;
   saveComputeMapReturnChareID = chareID;

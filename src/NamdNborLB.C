@@ -156,7 +156,7 @@ NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
     LDStats &thisLDStats = ((i==count)?myStats:stats[i]);
     for (j=0; j < thisLDStats.n_objs; j++) {
       const LDObjData this_obj = thisLDStats.objData[j];
-      if (this_obj.omID.id != 1) continue;
+      if (this_obj.omID.id.idx != 1) continue;
       if (this_obj.id.id[1] == -2) continue;
       if (this_obj.migratable)  nMoveableComputes++;
     }
@@ -274,7 +274,7 @@ int NamdNborLB::buildData(NborBaseLB::LDStats* stats, int count)
     for (j=0; j < thisLDStats.n_objs; j++) {
       const LDObjData this_obj = thisLDStats.objData[j];
       // filter out non-NAMD managed objects (like PME array)
-      if (this_obj.omID.id != 1) continue;
+      if (this_obj.omID.id.idx != 1) continue;
       if (this_obj.id.id[1] == -2) { // Its a patch
 /*
 	const int pid = this_obj.id.id[0];

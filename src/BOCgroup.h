@@ -11,18 +11,18 @@
 
 class BOCgroup {
 public:
-  int workDistrib;
-  int patchMgr;
-  int proxyMgr;
-  int computeMgr;
-  int computePmeMgr;
-  int computeExtMgr;
-  int reductionMgr;
-  int collectionMgr;
-  int broadcastMgr;
-  int ldbCoordinator;
-  int sync;
-  int node;
+  CkGroupID workDistrib;
+  CkGroupID patchMgr;
+  CkGroupID proxyMgr;
+  CkGroupID computeMgr;
+  CkGroupID computePmeMgr;
+  CkGroupID computeExtMgr;
+  CkGroupID reductionMgr;
+  CkGroupID collectionMgr;
+  CkGroupID broadcastMgr;
+  CkGroupID ldbCoordinator;
+  CkGroupID sync;
+  CkGroupID node;
 };
 
 class BOCclass : public Group {

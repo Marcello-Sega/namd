@@ -215,6 +215,7 @@ void Node::startup() {
   case 6: 
     Sync::Object()->openSync();  // decide if to open local Sync 
     proxyMgr->createProxies();  // need Home patches before this
+    if (!CkMyPe()) LdbCoordinator::Object()->createLoadBalancer();
   break;
 
   case 7:

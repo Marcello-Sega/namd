@@ -76,7 +76,7 @@ ComputeMgr::~ComputeMgr(void)
   ;
 }
 
-void ComputeMgr::updateComputes(int ep, int chareID) {
+void ComputeMgr::updateComputes(int ep, CkGroupID chareID) {
   updateComputesReturnEP = ep;
   updateComputesReturnChareID = chareID;
   updateComputesCount = CkNumPes();

@@ -56,7 +56,7 @@ public:
 
   void mapComputes(void);
   void sendMaps(void);
-  void saveComputeMapChanges(int,int);
+  void saveComputeMapChanges(int,CkGroupID);
   void recvComputeMapChanges(ComputeMapChangeMsg *);
   void doneSaveComputeMap();
   void createHomePatches(void);
@@ -86,7 +86,7 @@ private:
   CthThread awaitingMapsTh;
 
   int saveComputeMapReturnEP;
-  int saveComputeMapReturnChareID;
+  CkGroupID saveComputeMapReturnChareID;
   int saveComputeMapCount;
 };
 
