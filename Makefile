@@ -208,3 +208,5 @@ veryclean:	clean
 	# allow for the makefile to continue to work
 	touch $(DEPENDFILE)
 
+accesslist:
+	cvs admin -aari,brunner,jim,milind,nealk .
