@@ -169,6 +169,8 @@ int Psfgen_Init(Tcl_Interp *interp) {
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
   Tcl_CreateCommand(interp,"alias",tcl_alias,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
+  Tcl_CreateCommand(interp,"pdbalias",tcl_alias,
+	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
   Tcl_CreateCommand(interp,"pdb",tcl_pdb,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
   Tcl_CreateCommand(interp,"coordpdb",tcl_coordpdb,
@@ -190,7 +192,7 @@ int Psfgen_Init(Tcl_Interp *interp) {
   Tcl_CreateCommand(interp,"delatom", tcl_delatom,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
  
-  Tcl_PkgProvide(interp, "psfgen", "1.3.2");
+  Tcl_PkgProvide(interp, "psfgen", "1.3.3");
 
   return TCL_OK;
 }
