@@ -304,7 +304,7 @@ int Rebalancer::refine()
                switch(n)
                {
                   case 0: 
-                     if(c->load > bestSize0) 
+                     if(c->load > bestSize0 && (!bestP0 || p->load<bestP0->load)) 
                      {
                         bestSize0 = c->load;
                         bestCompute0 = c;
@@ -312,7 +312,7 @@ int Rebalancer::refine()
                      }
                      break;
                   case 1: 
-                     if(c->load > bestSize1)
+                     if(c->load > bestSize1 && (!bestP1 || p->load<bestP1->load))
                      {
                         bestSize1 = c->load;
                         bestCompute1 = c;
@@ -320,7 +320,7 @@ int Rebalancer::refine()
                      }
                      break;
                   case 2: 
-                     if(c->load > bestSize2)
+                     if(c->load > bestSize2 && (!bestP2 || p->load<bestP2->load))
                      {
                         bestSize2 = c->load;
                         bestCompute2 = c;
