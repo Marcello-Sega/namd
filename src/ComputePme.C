@@ -192,6 +192,9 @@ public:
 
   void setCompute(ComputePme *c) { pmeCompute = c; }
 
+  //Tells if the current processor is a PME processor or not. Called by NamdCentralLB
+  int isPmeProcessor(int p);  
+
 private:
   CProxy_ComputePmeMgr pmeProxy;
   CProxy_ComputePmeMgr pmeProxyDir;
@@ -242,6 +245,18 @@ private:
 #ifdef USE_COMM_LIB
 extern CkGroupID delegateMgr;
 #endif 
+
+int isPmeProcessor(int p){ 
+  return CProxy_ComputePmeMgr::ckLocalBranch(CpvAccess(BOCclass_group).computePmeMgr)->isPmeProcessor(p);
+}
+
+int ComputePmeMgr::isPmeProcessor(int p){ 
+  for(int count = 0; count < numGridPes; count ++){
+    if(gridPeMap[count] == p)
+      return 1;
+  }
+  return 0;
+}
 
 ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), pmeProxyDir(thisgroup), pmeCompute(0) {
 
@@ -624,7 +639,7 @@ void ComputePmeMgr::sendTrans(void) {
 
 #ifdef USE_COMM_LIB
   CProxy_ComlibManager gproxy(delegateMgr);
-  gproxy.ckLocalBranch()->beginIteration();
+  gproxy[CkMyPe()].beginIteration();
 #endif
 
   for (int j=0; j<numTransPes; j++) {
@@ -655,12 +670,12 @@ void ComputePmeMgr::sendTrans(void) {
   untrans_count = numTransPes;
 
 #ifdef USE_COMM_LIB
-  gproxy.ckLocalBranch()->endIteration();
+  gproxy[CkMyPe()].endIteration();
 
   if(myTransPe == -1){
     // The recv ungrid iteration where this processor sends no data
-    gproxy.ckLocalBranch()->beginIteration();
-    gproxy.ckLocalBranch()->endIteration();
+    gproxy[CkMyPe()].beginIteration();
+    gproxy[CkMyPe()].endIteration();
   }
 #endif  
 }
@@ -735,7 +750,7 @@ void ComputePmeMgr::sendUntrans(void) {
 
 #ifdef USE_COMM_LIB
   CProxy_ComlibManager gproxy(delegateMgr);
-  gproxy.ckLocalBranch()->beginIteration();
+  gproxy[CkMyPe()].beginIteration();
 #endif  
 
   // send data for reverse transpose
@@ -766,7 +781,7 @@ void ComputePmeMgr::sendUntrans(void) {
   }
 
 #ifdef USE_COMM_LIB
-  gproxy.ckLocalBranch()->endIteration();
+  gproxy[CkMyPe()].endIteration();
 #endif  
 
   trans_count = numGridPes;
