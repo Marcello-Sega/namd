@@ -16,6 +16,7 @@
 #include "Molecule.h"
 #include "SimParameters.h"
 #include "ResizeArrayPrimIter.h"
+#include "InfoStream.h"
 
 #include "Sync.h"
 
@@ -151,9 +152,17 @@ void Patch::positionsReady(int doneMigration)
      Sync::Object()->registerComp(patchID, cid, doneMigration);
    }
    else {
+     int compute_count = 0;
      for(cid = cid.begin(); cid != cid.end(); cid++)
      {
+         compute_count++;
 	 computeMap->compute(*cid)->patchReady(patchID,doneMigration);
+     }
+     if (compute_count == 0 && patchMap->node(patchID) != CkMyPe()) {
+       iout << iINFO << "PATCH_COUNT: Patch " << patchID 
+	    << " on PE " << CkMyPe() <<" home patch " 
+	    << patchMap->node(patchID) << " does not have any computes\n" 
+	    << endi;
      }
    }
 }
