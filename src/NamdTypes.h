@@ -32,12 +32,22 @@ typedef float Charge;
 
 typedef double Coordinate;
 
+struct AtomProperties
+{
+  AtomID id;
+  AtomType type;
+  Mass mass;
+  Charge charge;
+};
+
 typedef ResizeArray<Position> PositionList;
 typedef ResizeArrayIter<Position> PositionListIter;
 typedef ResizeArray<Velocity> VelocityList;
 typedef ResizeArrayIter<Velocity> VelocityListIter;
 typedef ResizeArray<Force> ForceList;
 typedef ResizeArrayIter<Force> ForceListIter;
+typedef ResizeArray<AtomProperties> AtomPropertiesList;
+typedef ResizeArrayIter<AtomProperties> AtomPropertiesListIter;
 
 typedef ResizeArray<AtomID> AtomIDList;
 typedef ResizeArrayIter<AtomID> AtomIDListIter;
@@ -63,14 +73,6 @@ struct LocalID
   int index;
 };
 
-struct AtomProperties
-{
-  AtomID id;
-  AtomType type;
-  Mass mass;
-  Charge charge;
-};
-
 enum ComputeType
 {
   electForceType,
@@ -93,12 +95,15 @@ enum Boolean
  *
  *	$RCSfile: NamdTypes.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1996/10/30 00:32:18 $
+ *	$Revision: 1.11 $	$Date: 1996/10/30 01:05:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdTypes.h,v $
+ * Revision 1.11  1996/10/30 01:05:50  jim
+ * added AtomPropertiesList
+ *
  * Revision 1.10  1996/10/30 00:32:18  jim
  * added AtomProperties definition
  *
