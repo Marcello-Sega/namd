@@ -409,6 +409,27 @@ void Node::scriptParam(ScriptParamMsg *msg) {
   delete msg;
 }
 
+void Node::reloadCharges(const char *filename) {
+  FILE *file = fopen(filename,"r");
+  if ( ! file ) NAMD_die("node::reloadCharges():Error opening charge file.");
+
+  int n = molecule->numAtoms;
+  float *charge = new float[n];
+
+  for ( int i = 0; i < n; ++i ) {
+    if ( ! fscanf(file,"%f",&charge[i]) )
+      NAMD_die("Node::reloadCharges():Not enough numbers in charge file.");
+  }
+
+  fclose(file);
+  CProxy_Node(thisgroup).reloadCharges(charge,n);
+  delete [] charge;
+}
+
+void Node::reloadCharges(float charge[], int n) {
+  molecule->reloadCharges(charge,n);
+}
+
 
 void Node::sendEnableExitScheduler(void) {
   //CmiPrintf("sendEnableExitScheduler\n");

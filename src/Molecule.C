@@ -4921,6 +4921,12 @@ void Molecule::build_exPressure_atoms(StringList *fixedfile,
   return atoms[anum].partner;
     }
 
+void Molecule::reloadCharges(float charge[], int n){
+  if ( n != numAtoms )
+    NAMD_die("Incorrect number of atoms in Molecule::reloadCharges().");
+
+  for ( int i=0; i<n; ++i ) atoms[i].charge = charge[i];
+}
 
 // go through the molecular structure, analyze the status of each atom,
 // and save the data in the Atom structures stored for each atom.  This

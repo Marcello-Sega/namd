@@ -80,6 +80,9 @@ public:
   void scriptBarrier(CkQdMsg *);  
   void scriptParam(ScriptParamMsg *);
 
+  void reloadCharges(const char *filename);
+  void reloadCharges(float charge[], int n);
+
   void sendEnableExitScheduler(void);
   void recvEnableExitScheduler(CkQdMsg *);
   void enableExitScheduler(void);

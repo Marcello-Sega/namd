@@ -94,6 +94,9 @@ void Sequencer::algorithm(void)
       case SCRIPT_RESCALEVELS:
 	rescaleVelocitiesByFactor(simParams->scriptArg1);
 	break;
+      case SCRIPT_RELOADCHARGES:
+	reloadCharges();
+	break;
       case SCRIPT_CHECKPOINT:
         patch->checkpoint();
         checkpoint_berendsenPressure_count = berendsenPressure_count;
@@ -713,6 +716,17 @@ void Sequencer::rescaleVelocitiesByFactor(BigReal factor)
   for ( int i = 0; i < numAtoms; ++i )
   {
     a[i].velocity *= factor;
+  }
+}
+
+void Sequencer::reloadCharges()
+{
+  FullAtom *a = patch->atom.begin();
+  int numAtoms = patch->numAtoms;
+  Molecule *molecule = Node::Object()->molecule;
+  for ( int i = 0; i < numAtoms; ++i )
+  {
+    a[i].charge = molecule->atomcharge(a[i].id);
   }
 }
 

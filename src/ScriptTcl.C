@@ -738,6 +738,22 @@ int ScriptTcl::Tcl_consForceConfig(ClientData clientData,
   return TCL_OK;
 }
 
+int ScriptTcl::Tcl_reloadCharges(ClientData clientData,
+	Tcl_Interp *interp, int argc, char *argv[]) {
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  script->initcheck();
+  if (argc != 2) {
+    Tcl_AppendResult(interp, "usage: reloadCharges <filename>", NULL);
+    return TCL_ERROR;
+  }
+
+  Node::Object()->reloadCharges(argv[1]);
+
+  script->runController(SCRIPT_RELOADCHARGES);
+
+  return TCL_OK;
+}
+
 #endif  // NAMD_TCL
 
 
@@ -805,6 +821,8 @@ ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
   Tcl_CreateCommand(interp, "dumpbench", Tcl_dumpbench,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateObjCommand(interp, "consForceConfig", Tcl_consForceConfig, 
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "reloadCharges", Tcl_reloadCharges,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
 #endif
 

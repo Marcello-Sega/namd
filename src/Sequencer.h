@@ -61,6 +61,8 @@ protected:
     void maximumMove(BigReal);
     void minimizationQuenchVelocity(void);
 
+    void reloadCharges();
+
     void rescaleVelocities(int);
     int rescaleVelocities_numTemps;
     void reassignVelocities(BigReal,int);

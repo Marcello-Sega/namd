@@ -69,6 +69,7 @@ private:
 #endif
   static int Tcl_dumpbench(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_consForceConfig(ClientData, Tcl_Interp *, int, Tcl_Obj *const objv[]);
+  static int Tcl_reloadCharges(ClientData, Tcl_Interp *, int, char **);
   char *callbackname;
   void doCallback(const char *labels, const char *data);
   int doCallback() { return ! ! callbackname; }

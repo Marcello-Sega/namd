@@ -23,6 +23,9 @@ module Node {
     entry void scriptBarrier(CkQdMsg *);
     entry void scriptParam(ScriptParamMsg *);
 
+    // used to change Molecule fields in mid-run
+    entry void reloadCharges(float charge[n], int n);
+
     // exit scheduler to return to front end
     entry void recvEnableExitScheduler(CkQdMsg *);
     entry void exitScheduler(CkQdMsg *);
