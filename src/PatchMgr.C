@@ -11,7 +11,7 @@
 /*								           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.3 1996/09/03 22:51:14 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.4 1996/11/01 21:20:45 ari Exp $";
 
 
 #include "ckdefs.h"
@@ -24,6 +24,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,
 #include "NamdTypes.h"
 #include "Compute.h"
 #include "HomePatch.h"
+#include "PatchMap.h"
 
 #include "main.top.h"
 #include "main.h"
@@ -35,6 +36,9 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,
 
 PatchMgr::PatchMgr(PatchMgrInitMsg *msg)
 {
+    patchMap = PatchMap::Instance();
+    patchMap->registerPatchMgr(this);
+
     workDistribGroup = msg->workDistribGroup;
     delete msg;
 }
@@ -122,11 +126,14 @@ void PatchMgr::sigWorkDistrib()
  *
  *	$RCSfile: PatchMgr.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/09/03 22:51:14 $
+ *	$Revision: 1.4 $	$Date: 1996/11/01 21:20:45 $
  *
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.C,v $
+ * Revision 1.4  1996/11/01 21:20:45  ari
+ * *** empty log message ***
+ *
  * Revision 1.3  1996/09/03 22:51:14  ari
  * *** empty log message ***
  *

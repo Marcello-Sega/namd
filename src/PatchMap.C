@@ -60,6 +60,10 @@ PatchMap::~PatchMap(void)
   
 }
 
+HomePatchList *PatchMap::homePatchList() {
+  return &(patchMgr->homePatches);
+}
+
 
 //----------------------------------------------------------------------
 int PatchMap::numPatches(void)
@@ -365,12 +369,15 @@ void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
  *
  *	$RCSfile: PatchMap.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/10/29 23:35:27 $
+ *	$Revision: 1.8 $	$Date: 1996/11/01 21:20:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.C,v $
+ * Revision 1.8  1996/11/01 21:20:45  ari
+ * *** empty log message ***
+ *
  * Revision 1.7  1996/10/29 23:35:27  ari
  * *** empty log message ***
  *

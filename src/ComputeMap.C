@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.3 1996/10/29 23:35:27 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.4 1996/11/01 21:20:45 ari Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -151,6 +151,7 @@ int ComputeMap::allocateCids(int n)
     computeData[i].patchBased=false;
     computeData[i].numPids=0;
     computeData[i].pids=NULL;
+    computeData[i].compute = NULL;
   }
   return 0;
 }
@@ -239,12 +240,15 @@ void ComputeMap::printComputeMap(void)
  *
  *	$RCSfile: ComputeMap.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/10/29 23:35:27 $
+ *	$Revision: 1.4 $	$Date: 1996/11/01 21:20:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.C,v $
+ * Revision 1.4  1996/11/01 21:20:45  ari
+ * *** empty log message ***
+ *
  * Revision 1.3  1996/10/29 23:35:27  ari
  * *** empty log message ***
  *

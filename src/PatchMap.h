@@ -15,8 +15,10 @@
 #define PATCHMAP_H
 
 #include "NamdTypes.h"
+#include "PatchMgr.h"
 
 class Patch;
+class PatchMgr;
 
 class PatchMap
 {
@@ -24,11 +26,18 @@ public:
   static PatchMap *Instance();
   inline static PatchMap *Object() { return _instance; }
 
+
   ~PatchMap(void);
 
   enum { MaxTwoAway = 5*5*5 - 3*3*3 - 1 };
   enum { MaxOneAway = 3*3*3 - 1 };
   enum ErrCode { OK = 0, ERROR = -1 };
+
+  static void registerPatchMgr(PatchMgr *pmgr) {
+    patchMgr = pmgr;
+  }
+
+  HomePatchList *homePatchList();
   
 
   // numPatches() returns the number of patches being managed 
@@ -142,6 +151,7 @@ protected:
 
 private:
   static PatchMap *_instance;
+  static PatchMgr *patchMgr;
 
   struct PatchData
   {
@@ -176,12 +186,15 @@ inline Patch *PatchMap::patch(PatchID pid)
  *
  *	$RCSfile: PatchMap.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/10/29 23:35:27 $
+ *	$Revision: 1.6 $	$Date: 1996/11/01 21:20:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMap.h,v $
+ * Revision 1.6  1996/11/01 21:20:45  ari
+ * *** empty log message ***
+ *
  * Revision 1.5  1996/10/29 23:35:27  ari
  * *** empty log message ***
  *

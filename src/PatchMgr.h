@@ -97,6 +97,7 @@ struct MovePatch
       return ( nodeID == m.nodeID );
     }
 };
+
 typedef SortedArray<MovePatch> MovePatchList;
 typedef ResizeArrayIter<MovePatch> MovePatchListIter;
 
@@ -105,6 +106,8 @@ typedef ResizeArray<int> PatchIndex;
 class PatchMgr : public groupmember
 {
 private:
+  friend PatchMap;
+  PatchMap *patchMap;
 
   int numAllPatches;
   int numHomePatches;
@@ -165,12 +168,15 @@ public:
  *
  *	$RCSfile: PatchMgr.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/09/03 22:54:25 $
+ *	$Revision: 1.4 $	$Date: 1996/11/01 21:20:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.h,v $
+ * Revision 1.4  1996/11/01 21:20:45  ari
+ * *** empty log message ***
+ *
  * Revision 1.3  1996/09/03 22:54:25  ari
  * *** empty log message ***
  *

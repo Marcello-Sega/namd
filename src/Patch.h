@@ -19,8 +19,6 @@
 #include "Templates/Box.h"
 #include "Templates/UniqueSortedArray.h"
 
-class Node;
-
 class Compute;
 class Sequencer;
 class PatchMap;
@@ -70,13 +68,14 @@ class Patch
      void forceBoxClosed(void);
      void atomBoxClosed(void);
 
-     static void setNode(Node * n) { node = n; }
      int getNumAtoms() { return numAtoms; }
-     const AtomIDList &getAtomIDList() { return (atomIDList); }
+     AtomIDList &getAtomIDList() { return (atomIDList); }
+
+     PatchID getPatchID() { return patchID; }
 
 
   protected:
-     static Node* node;
+     static PatchMap *patchMap;
 
      PatchID       patchID;
      int           numAtoms;
@@ -109,13 +108,16 @@ class Patch
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/10/30 01:16:32 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.7 $	$Date: 1996/11/01 21:20:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.h,v $
+ * Revision 1.7  1996/11/01 21:20:45  ari
+ * *** empty log message ***
+ *
  * Revision 1.6  1996/10/30 01:16:32  jim
  * added AtomProperties structure in Patch plus boxes, passing, etc.
  *

@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.7 1996/10/30 01:50:19 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.8 1996/11/01 21:20:45 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -33,6 +33,9 @@ Patch::Patch(PatchID pd, AtomIDList al, PositionList pl) :
    forceBox(this,&(Patch::forceBoxClosed)),
    atomBox(this,&(Patch::atomBoxClosed))
 {
+    patchMap = PatchMap::Object();
+    patchMap->registerPatch(patchID, this);
+
     if (atomIDList.size() != p.size())
     {
       CPrintf(
@@ -55,6 +58,7 @@ Patch::Patch(PatchID pd, AtomIDList al, PositionList pl) :
     localIndex.sort();
     localIndex.uniq();
 }
+
 
 Box<Patch,Position>* Patch::registerPositionPickup(ComputeID cid)
 {
@@ -147,13 +151,16 @@ void Patch::positionsReady()
  * RCS INFORMATION:
  *
  *	$RCSfile: Patch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/10/30 01:50:19 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.8 $	$Date: 1996/11/01 21:20:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.8  1996/11/01 21:20:45  ari
+ * *** empty log message ***
+ *
  * Revision 1.7  1996/10/30 01:50:19  jim
  * atom properties list now filled on creation
  *

@@ -26,6 +26,10 @@ public:
 
   ~ComputeMap(void);
 
+  void registerCompute(ComputeID cid, Compute *c) {
+    computeData[cid].compute = c;
+  }
+
   // numComputes() returns the number of compute objects known
   // by the map.
   int numComputes(void);
@@ -72,7 +76,7 @@ public:
 
   void printComputeMap(void);
 
-  Compute *compute(ComputeID cid) { return (NULL); };
+  Compute *compute(ComputeID cid) { return (computeData[cid].compute); };
 
 protected:
   ComputeMap(void);
@@ -82,6 +86,7 @@ private:
 
   struct ComputeData
   {
+    Compute *compute;
     int node;
     Boolean patchBased;
     int numPids;
@@ -104,12 +109,15 @@ private:
  *
  *	$RCSfile: ComputeMap.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/10/29 23:35:27 $
+ *	$Revision: 1.5 $	$Date: 1996/11/01 21:20:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.h,v $
+ * Revision 1.5  1996/11/01 21:20:45  ari
+ * *** empty log message ***
+ *
  * Revision 1.4  1996/10/29 23:35:27  ari
  * *** empty log message ***
  *
