@@ -42,6 +42,8 @@ Sync::Sync()
 	CkExit();
     }
     counter = 0;
+    // disable Sync if no homepatch at all
+    if (PatchMap::Object()->numHomePatches() == 0) useSync = 0;
 }
 
 void Sync::PatchReady(void)
