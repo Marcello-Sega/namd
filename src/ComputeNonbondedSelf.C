@@ -35,7 +35,7 @@ ComputeNonbondedSelf::~ComputeNonbondedSelf()
 
 
 void ComputeNonbondedSelf::doForce(Position* p,
-                               Force* f,
+                               Results* r,
                                AtomProperties* a)
 {
   DebugM(2,"doForce() called.\n");
@@ -46,9 +46,10 @@ void ComputeNonbondedSelf::doForce(Position* p,
   for ( int i = 0; i < reductionDataSize; ++i ) reductionData[i] = 0;
 
   if ( patch->flags.doFullElectrostatics )
-    ComputeNonbondedUtil::calcFullSelf(p,f,f,a,numAtoms,reductionData);
+    calcFullSelf(p,r->f[Results::normal],r->f[Results::slow],
+	a,numAtoms,reductionData);
   else
-    ComputeNonbondedUtil::calcSelf(p,f,a,numAtoms,reductionData);
+    calcSelf(p,r->f[Results::normal],a,numAtoms,reductionData);
 
   submitReductionData(reductionData,reduction,fake_seq);
   ++fake_seq;
@@ -58,13 +59,16 @@ void ComputeNonbondedSelf::doForce(Position* p,
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedSelf.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/10 17:40:10 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/03/13 06:37:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.C,v $
+ * Revision 1.1003  1997/03/13 06:37:03  jim
+ * Multiple time-stepping implemented, still needs proper splitting functions.
+ *
  * Revision 1.1002  1997/03/10 17:40:10  ari
  * UniqueSet changes - some more commenting and cleanup
  *

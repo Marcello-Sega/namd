@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1012 1997/03/11 07:30:20 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v 1.1013 1997/03/13 06:37:12 jim Exp $";
 
 #include "Node.h"
 #include "SimParameters.h"
@@ -73,10 +73,11 @@ void Sequencer::algorithm(void)
     const int stepsPerCycle = this->stepsPerCycle;
     const BigReal timestep = simParams->dt;
     const int first = simParams->firstTimestep;
-
     // Do we do full electrostatics?
-    patch->flags.doFullElectrostatics =
-	( simParams->fullDirectOn || simParams->FMAOn );
+    const int dofull = ( simParams->fullDirectOn || simParams->FMAOn );
+    const BigReal slowstep = timestep * stepsPerCycle;
+
+    patch->flags.doFullElectrostatics = dofull;
 
     // Push out inital positions
     patch->positionsReady();
@@ -90,14 +91,20 @@ void Sequencer::algorithm(void)
     for ( step = 0; step < numberOfCycles; ++step )
     {
 	patch->addForceToMomentum(0.5*timestep);
+	if (dofull && !(step%stepsPerCycle))
+		patch->addForceToMomentum(0.5*slowstep,Results::slow);
 	patch->addVelocityToPosition(timestep);
 	threadStatus = NOTSUSPENDED;
 
+	patch->flags.doFullElectrostatics =
+		(dofull && !((step+1)%stepsPerCycle));
 	// Migrate Atoms on stepsPerCycle
-	patch->positionsReady(!(step%stepsPerCycle));
+	patch->positionsReady(!(seq%stepsPerCycle));
 	suspend(); // until all Force deposit boxes close
 
 	patch->addForceToMomentum(0.5*timestep);
+	if (dofull && !((step+1)%stepsPerCycle))
+		patch->addForceToMomentum(0.5*slowstep,Results::slow);
 
 	// Pass up information from this Patch
 	DebugM(4,"Submit seq=" <<seq<<" Patch="<<patch->getPatchID()<<"\n");
@@ -122,12 +129,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1012 $     $Date: 1997/03/11 07:30:20 $
+ *      $Revision: 1.1013 $     $Date: 1997/03/13 06:37:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1013  1997/03/13 06:37:12  jim
+ * Multiple time-stepping implemented, still needs proper splitting functions.
+ *
  * Revision 1.1012  1997/03/11 07:30:20  jim
  * Once more change to support firstTimestep parameter.
  *

@@ -26,7 +26,7 @@ public:
 
 protected :
   // virtual void initialize() { ComputePatch::initialize(); }
-  virtual void doForce(Position* p, Force* f, AtomProperties* a);
+  virtual void doForce(Position* p, Results* r, AtomProperties* a);
 
   ReductionMgr *reduction;
 
@@ -39,13 +39,16 @@ protected :
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedSelf.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/07 17:39:37 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/03/13 06:37:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.h,v $
+ * Revision 1.1002  1997/03/13 06:37:04  jim
+ * Multiple time-stepping implemented, still needs proper splitting functions.
+ *
  * Revision 1.1001  1997/02/07 17:39:37  ari
  * More debugging for atomMigration.
  * Using -w on CC got us some minor fixes

@@ -38,7 +38,8 @@ void NonbondedExclElem::computeForce(BigReal *reduction)
     ComputeNonbondedUtil::calcFullExcl(
 	x01,
 	p0->f[localIndex0], p1->f[localIndex1],
-	p0->f[localIndex0], p1->f[localIndex1],
+	p0->r->f[Results::slow][localIndex0],
+	p1->r->f[Results::slow][localIndex1],
 	p0->a[localIndex0], p1->a[localIndex1],
 	modified, reduction);
   else
@@ -122,13 +123,16 @@ ComputeNonbondedExcls::loadTuples() {
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedExcl.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1007 $	$Date: 1997/03/11 23:46:28 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1008 $	$Date: 1997/03/13 06:36:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedExcl.C,v $
+ * Revision 1.1008  1997/03/13 06:36:57  jim
+ * Multiple time-stepping implemented, still needs proper splitting functions.
+ *
  * Revision 1.1007  1997/03/11 23:46:28  ari
  * Improved ComputeNonbondedExcl loadTuples() by overloading the default
  * template method from ComputeHomeTuples and used the checklist suggested

@@ -39,7 +39,7 @@ public:
 
 protected :
   int numAtoms;
-  virtual void doForce(Position* p, Force* f, AtomProperties* a);
+  virtual void doForce(Position* p, Results* r, AtomProperties* a);
   Patch *patch;
 
 private:
@@ -56,12 +56,15 @@ private:
  *
  *	$RCSfile: ComputePatch.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/12 22:06:38 $
+ *	$Revision: 1.1003 $	$Date: 1997/03/13 06:37:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatch.h,v $
+ * Revision 1.1003  1997/03/13 06:37:07  jim
+ * Multiple time-stepping implemented, still needs proper splitting functions.
+ *
  * Revision 1.1002  1997/03/12 22:06:38  jim
  * First step towards multiple force returns and multiple time stepping.
  *

@@ -25,6 +25,7 @@
 #include "Lattice.h"
 #include "Communicate.h"
 #include "pvmc.h"
+#include "InfoStream.h"
 
 #define MIN_DEBUG_LEVEL 1
 // #define DEBUGM
@@ -52,9 +53,9 @@ void ComputeDPMTA::get_FMA_cube(int resize)
     BigReal skirt = 2*simParams->patchDimension;
 
     boxCenter = patchMap->Origin();
-    boxCenter.x += boxsize.x/2.0;
-    boxCenter.y += boxsize.y/2.0;
-    boxCenter.z += boxsize.z/2.0;
+    boxCenter.x += boxSize.x/2.0;
+    boxCenter.y += boxSize.y/2.0;
+    boxCenter.z += boxSize.z/2.0;
 
     //  add the skirt of empty patches by adding 2 patches in every direction
     boxSize.x += skirt;
@@ -100,6 +101,12 @@ void ComputeDPMTA::get_FMA_cube(int resize)
 	  size.x = boxsize.x;
 	  size.y = boxsize.y;
 	  size.z = boxsize.z;
+	  iout << iINFO << "DPMTA box resized:\n";
+	  iout << iINFO << "BOX DIMENSIONS = (" << size.x << ","
+		<< size.y << "," << size.z << ")\n";
+	  iout << iINFO << "BOX CENTER = (" << center.x << ","
+		<< center.y << "," << center.z << ")\n";
+	  iout << endi;
 	  DebugM(1,"calling PMTAresize()\n");
 	  PMTAresize(&size,&center);
 	  DebugM(1,"called PMTAresize()\n");
@@ -201,6 +208,17 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   pmta_data.calling_num = pmta_data.nprocs;
   pmta_data.calling_tids = slavetids;
 
+  iout << iINFO << "DPMTA parameters are:\n";
+  iout << iINFO << "LEVELS = " << pmta_data.nlevels << "\n";
+  iout << iINFO << "NUMBER OF MULTIPOLE TERMS = " << pmta_data.mp << "\n";
+  iout << iINFO << "FFT FLAG = " << pmta_data.fft << "\n";
+  iout << iINFO << "FFT BLOCKING FACTOR = " << pmta_data.fftblock << "\n";
+  iout << iINFO << "BOX DIMENSIONS = (" << pmta_data.cubelen.x << ","
+	<< pmta_data.cubelen.y << "," << pmta_data.cubelen.z << ")\n";
+  iout << iINFO << "BOX CENTER = (" << pmta_data.cubectr.x << ","
+	<< pmta_data.cubectr.y << "," << pmta_data.cubectr.z << ")\n";
+  iout << endi;
+
   DebugM(1,"DPMTA calling PMTAinit.\n");
   if (PMTAinit(&pmta_data,slavetids) >= 0)
   {
@@ -258,13 +276,12 @@ void ComputeDPMTA::doWork()
       Position *x = (*ap).positionBox->open();
       AtomProperties *a = (*ap).atomBox->open();
       Results *r = (*ap).forceBox->open();
-      Force *f = r->f[Results::normal];
-      reduction->submit(fake_seq, REDUCTION_ELECT_ENERGY, 0.0);
-      ++fake_seq;
       (*ap).forceBox->close(&r);
       (*ap).atomBox->close(&a);
       (*ap).positionBox->close(&x);
     }
+    reduction->submit(fake_seq, REDUCTION_ELECT_ENERGY, 0.0);
+    ++fake_seq;
     return;
   }
 
@@ -334,7 +351,7 @@ void ComputeDPMTA::doWork()
   for (i=0, ap = ap.begin(); ap != ap.end(); ap++)
   {
     (*ap).r = (*ap).forceBox->open();
-    (*ap).f = (*ap).r->f[Results::normal];
+    (*ap).f = (*ap).r->f[Results::slow];
 
     // deposit here
     for(j=0; j<(*ap).p->getNumAtoms(); j++)

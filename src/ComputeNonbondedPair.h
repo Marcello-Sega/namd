@@ -27,7 +27,7 @@ public:
 protected :
   // virtual void initialize() { ComputePatchPair::initialize(); }
   virtual int noWork();
-  virtual void doForce(Position* p[2], Force* f[2], AtomProperties* a[2]);
+  virtual void doForce(Position* p[2], Results* r[2], AtomProperties* a[2]);
 
   ReductionMgr *reduction;
 
@@ -41,12 +41,15 @@ protected :
  *
  *	$RCSfile: ComputeNonbondedPair.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/12 23:59:42 $
+ *	$Revision: 1.1003 $	$Date: 1997/03/13 06:37:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.h,v $
+ * Revision 1.1003  1997/03/13 06:37:01  jim
+ * Multiple time-stepping implemented, still needs proper splitting functions.
+ *
  * Revision 1.1002  1997/03/12 23:59:42  jim
  * Added Compute::noWork() protocol to not enqueue do-nothing compute objects.
  *

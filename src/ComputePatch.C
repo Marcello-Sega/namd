@@ -65,11 +65,11 @@ void ComputePatch::atomUpdate() {
 }
 
 void ComputePatch::doForce(Position* p,
-                               Force* f,
+                               Results* r,
                                AtomProperties* a)
 {
     DebugM(1, "ComputePatchPair::doForce() - Dummy eval was sent\n");
-    if (p && f && a) {
+    if (p && r && a) {
       p[0] = Position(0.0,0.0,0.0);
     }
 }
@@ -77,7 +77,6 @@ void ComputePatch::doForce(Position* p,
 void ComputePatch::doWork() {
   Position* p;
   Results* r;
-  Force* f;
   AtomProperties* a;
 
   DebugM(3,patchID << ": doWork() called.\n");
@@ -85,11 +84,10 @@ void ComputePatch::doWork() {
   // Open up positionBox, forceBox, and atomBox
   p = positionBox->open();
   r = forceBox->open();
-  f = r->f[Results::normal];
   a = atomBox->open();
 
   // Pass pointers to doForce
-  doForce(p,f,a);
+  doForce(p,r,a);
 
   // Close up boxes
   positionBox->close(&p);
@@ -105,12 +103,15 @@ void ComputePatch::doWork() {
  *
  *	$RCSfile: ComputePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/12 22:06:37 $
+ *	$Revision: 1.1003 $	$Date: 1997/03/13 06:37:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatch.C,v $
+ * Revision 1.1003  1997/03/13 06:37:06  jim
+ * Multiple time-stepping implemented, still needs proper splitting functions.
+ *
  * Revision 1.1002  1997/03/12 22:06:37  jim
  * First step towards multiple force returns and multiple time stepping.
  *

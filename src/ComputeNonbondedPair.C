@@ -48,14 +48,12 @@ int ComputeNonbondedPair::noWork() {
 
     Position* p[2];
     Results* r[2];
-    Force* f[2];
     AtomProperties* a[2];
 
     // Open up positionBox, forceBox, and atomBox
     for (i=0; i<2; i++) {
       p[i] = positionBox[i]->open();
       r[i] = forceBox[i]->open();
-      f[i] = r[i]->f[Results::normal];
       a[i] = atomBox[i]->open();
     }
 
@@ -75,7 +73,7 @@ int ComputeNonbondedPair::noWork() {
 
 
 void ComputeNonbondedPair::doForce(Position* p[2],
-                               Force* f[2],
+                               Results* r[2],
                                AtomProperties* a[2])
 {
   DebugM(2,"doForce() called.\n");
@@ -84,6 +82,13 @@ void ComputeNonbondedPair::doForce(Position* p[2],
 
   BigReal reductionData[reductionDataSize];
   for ( int i = 0; i < reductionDataSize; ++i ) reductionData[i] = 0;
+
+  Force *f[2];
+  f[0] = r[0]->f[Results::normal];
+  f[1] = r[1]->f[Results::normal];
+  Force *f2[2];
+  f2[0] = r[0]->f[Results::slow];
+  f2[1] = r[1]->f[Results::slow];
 
   if ( numAtoms[0] && numAtoms[1] )
   {
@@ -96,6 +101,9 @@ void ComputeNonbondedPair::doForce(Position* p[2],
       Force* f_r[2];
       f_r[0] = f[1];
       f_r[1] = f[0];
+      Force* f2_r[2];
+      f2_r[0] = f2[1];
+      f2_r[1] = f2[0];
       AtomProperties* a_r[2];
       a_r[0] = a[1];
       a_r[1] = a[0];
@@ -104,16 +112,16 @@ void ComputeNonbondedPair::doForce(Position* p[2],
       numAtoms_r[1] = numAtoms[0];
       DebugM(3, "NUMATOMSxNUMATOMS = " << numAtoms_r[0]*numAtoms_r[1] << "\n" );
       if ( patch[0]->flags.doFullElectrostatics )
-        ComputeNonbondedUtil::calcFullPair(p_r,f_r,f_r,a_r,numAtoms_r,reductionData);
+        calcFullPair(p_r,f_r,f2_r,a_r,numAtoms_r,reductionData);
       else
-        ComputeNonbondedUtil::calcPair(p_r,f_r,a_r,numAtoms_r,reductionData);
+        calcPair(p_r,f_r,a_r,numAtoms_r,reductionData);
     }
     else
     {
       if ( patch[0]->flags.doFullElectrostatics )
-        ComputeNonbondedUtil::calcFullPair(p,f,f,a,numAtoms,reductionData);
+        calcFullPair(p,f,f2,a,numAtoms,reductionData);
       else
-        ComputeNonbondedUtil::calcPair(p,f,a,numAtoms,reductionData);
+        calcPair(p,f,a,numAtoms,reductionData);
     }
   }
 
@@ -126,12 +134,15 @@ void ComputeNonbondedPair::doForce(Position* p[2],
  *
  *	$RCSfile: ComputeNonbondedPair.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/12 23:59:41 $
+ *	$Revision: 1.1005 $	$Date: 1997/03/13 06:36:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedPair.C,v $
+ * Revision 1.1005  1997/03/13 06:36:59  jim
+ * Multiple time-stepping implemented, still needs proper splitting functions.
+ *
  * Revision 1.1004  1997/03/12 23:59:41  jim
  * Added Compute::noWork() protocol to not enqueue do-nothing compute objects.
  *
